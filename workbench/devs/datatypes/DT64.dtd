@@ -1,0 +1,9 @@
+# DataType Description for d64 and t64 files
+Name=DT64
+Version=$VER: DT64 1.0 (13.6.2009)
+BaseName=binary
+Pattern=#?.(t|d)64
+GroupID=syst
+ID=dt64
+Flags=DTF_BINARY,DTF_CASE
+Priority=0

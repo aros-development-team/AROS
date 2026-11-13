@@ -1,0 +1,18 @@
+# Copyright (C) 2013, The AROS Development Team. All rights reserved.
+#
+# Makefile to make Help.
+
+include $(SRCDIR)/config/aros.cfg
+
+FILES := main
+
+EXEDIR := $(AROSDIR)/Utilities
+
+#MM- workbench-utilities : workbench-utilities-help
+#MM workbench-utilities-help : includes linklibs
+
+%build_prog mmake=workbench-utilities-help \
+    progname=Help targetdir=$(EXEDIR) \
+    files=$(FILES)
+
+%common

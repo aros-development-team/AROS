@@ -1,0 +1,57 @@
+Short:    Retargetable audio vAHIVERSION, User's Archive
+Type:     mus/misc
+Author:   Martin Blom <martin@blom.org>
+Uploader: Martin Blom <martin@blom.org>
+
+This archive contains the binary distribution of AHI,
+everything you need to use programs that require AHI,
+and documentation in AmigaGuide® format.
+
+Missing files
+¯¯¯¯¯¯¯¯¯¯¯¯¯
+At present, not all binaries can be build for all architectures:
+
+    * DEVS:MIDI/emu10kx, the CAMD driver for EMU10kx-based sound cards
+    is currently only available in the m68k-amigaos build.
+
+    * L:AHI-Handler is a "resident" or "pure" binary that implements
+    an AmigaOS-style filesystem. As such, it is currently not included
+    in the ppc-amigaos, i686be-amithlon and i386-aros builds.
+
+For architectures that also provides m68k emulation, simply grab these
+missing files from the m68k-amigaos archive instead.
+
+Installation
+¯¯¯¯¯¯¯¯¯¯¯¯
+AHI version 4 used to have a nice installer script. If you would like
+to contribute one for AHI version 6, I'm sure lots of people would be
+very grateful!
+
+Manual installation is easy. Here is a list of files in the archive
+and where they are supposed to be copied:
+
+User/C/AddAudioModes                    C:AddAudioModes
+User/Catalogs/<lang>/ahi.catalog        LOCALE:Catalogs/<lang>/ahi.catalog
+User/Catalogs/<lang>/ahiprefs.catalog   LOCALE:Catalogs/<lang>/ahiprefs.catalog
+User/Devs/ahi.device                    DEVS:ahi.device
+User/Devs/AHI/<driver>.audio            DEVS:AHI/<driver>.audio
+User/Devs/AudioModes/<DRIVER>           DEVS:AudioModes/<DRIVER>
+User/Devs/DOSDrivers/AUDIO              DEVS:DosDrivers/AUDIO or
+                                        SYS:Storage/DosDrivers/AUDIO
+User/Devs/DOSDrivers/AUDIO.info         DEVS:DosDrivers/AUDIO.info or
+                                        SYS:Storage/DosDrivers/AUDIO.info
+User/Devs/DOSDrivers/AUDIO.MWB.info     DEVS:DosDrivers/AUDIO.info or
+                                        SYS:Storage/DosDrivers/AUDIO.info
+User/Devs/MIDI/emu10kx                  DEVS:MIDI/emu10kx
+User/Docs/ahiusr.dvi                    [No default location]
+User/Docs/ahiusr.guide                  HELP:ahi.guide
+User/Docs/ahiusr.html                   [No default location]
+User/Docs/ahiusr.ps                     [No default location]
+User/L/AHI-Handler                      L:AHI-Handler
+User/Prefs/AHI                          SYS:Prefs/AHI
+User/Prefs/AHI.info                     SYS:Prefs/AHI.info
+User/Prefs/AHI.MWB.info                 SYS:Prefs/AHI.info
+
+As you can see, it's basically just a straight copy to your SYS: or
+MOSSYS: partition. The exceptions are the MagicWB ("MWB") icons and
+the help file, which should be renamed to ahi.guide.

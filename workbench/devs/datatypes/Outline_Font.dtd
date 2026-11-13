@@ -1,0 +1,9 @@
+Name=Outline_Font
+Version=$VER: Outline Font 1.0 (20.8.2025)
+BaseName=font
+Pattern=#?.font
+Mask=0x0f 0x03
+GroupID=pict
+ID=outl
+Flags=DTF_BINARY,DTF_CASE
+Priority=1

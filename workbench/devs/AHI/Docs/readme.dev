@@ -1,0 +1,9 @@
+Short:    Retargetable audio vAHIVERSION, Developer's Archive
+Type:     dev/misc
+Author:   Martin Blom <martin@blom.org>
+Uploader: Martin Blom <martin@blom.org>
+
+This archive contains the developer documentation and
+example source code for AHI, both for programmer who wish
+to use AHI in their own applications and those who want
+to write hardware drivers.

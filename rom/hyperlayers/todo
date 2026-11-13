@@ -1,0 +1,9 @@
+- fix: parent layer should get/use layer info hook
+- handling of errors: out of memory error!
+
+
+- optimization: if a layer is already completely hidden
+                there is no need to call _BackupPartsOfLayer() again.
+- optimization: do not copy a bitmap that has the same size and
+                offset as the target bitmap but rather move
+                only the pointer (if possible).

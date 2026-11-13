@@ -1,0 +1,30 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+AMIGAVIDEO_C_SOURCES := \
+            startup \
+            amigavideo_chipset \
+            amigavideo_blitter \
+            amigavideo_hiddclass \
+            amigavideo_compositorclass \
+            amigavideo_bitmapclass
+
+USER_CPPFLAGS += \
+               -D__OOP_NOATTRBASES__ \
+               -D__OOP_NOMETHODBASES__ \
+               -D__OOP_NOLIBBASE__ \
+               -D__GRAPHICS_NOLIBBASE__ \
+               -D__UTILITY_NOLIBBASE__ \
+               -D__GRAPHICS_NOHIDDBASE__
+#USER_CPPFLAGS += -DDEBUG=1
+
+OPTIMIZATION_CFLAGS := $(ROM_OPTIMIZATION_CFLAGS)
+
+%build_module mmake=kernel-amiga-m68k-amigavideo \
+    modname=amigavideo modtype=hidd \
+    files="$(AMIGAVIDEO_C_SOURCES)" uselibs="hiddstubs"
+
+INCLUDE_FILES    := $(call WILDCARD, include/*.h)
+%copy_includes path=hidd dir=include
+
+%common

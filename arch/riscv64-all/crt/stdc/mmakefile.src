@@ -1,0 +1,3 @@
+#MM- compiler-stdc-riscv64 : includes-asm_h-riscv64 compiler-stdc-riscv
+#MM- compiler-stdc-riscv64-quick : compiler-stdc-riscv-quick
+#MM- compiler-stdc-riscv64-linklib : compiler-stdc-riscv-linklib

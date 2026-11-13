@@ -1,0 +1,18 @@
+# Makefile to make Pointer prefs program.
+
+include $(SRCDIR)/config/aros.cfg
+
+FILES := main locale ppreview pteditor prefs args misc
+
+#vars misc prefs
+
+EXEDIR      := $(AROSDIR)/Prefs
+
+#MM- workbench-prefs : workbench-prefs-pointer
+#MM workbench-prefs-pointer : includes linklibs workbench-prefs-pointer-catalogs
+
+%build_prog mmake=workbench-prefs-pointer \
+    progname=Pointer targetdir=$(EXEDIR) \
+    files=$(FILES)
+
+%common

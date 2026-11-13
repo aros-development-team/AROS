@@ -1,0 +1,21 @@
+;
+; protocols -- the protocol database file for AROSTCP
+;
+; Copyright © 1993 AmiTCP/IP Group, <amitcp-group@hut.fi>
+;                  Helsinki University of Technology, Finland.
+;                  All rights reserved.
+;
+; This file should be included from netdb-file with following line:
+; WITH protocols PREFIX=P
+ip   0
+icmp 1 
+tcp  6
+udp  17
+ipv6    41  IPv6
+ipv6-route 43  routing
+ipv6-frag  44  fragment
+ipv6-icmp  58  icmpv6
+ipv6-nonxt 59  none
+ipv6-opts  60  dst
+raw  255
+; EOF

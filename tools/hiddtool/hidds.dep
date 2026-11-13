@@ -1,0 +1,14 @@
+hidd-base :
+
+gfx-base	: hidd-base
+gfx-vga		: gfx-base
+
+io-base		: hidd-base
+mouse-base	: io-base
+mouse-microsoft : mouse-base
+
+paralell-base	: io-base
+paralell-pc	: paralell-base
+
+serial-base	: io-base
+serial-pc	: serial-base

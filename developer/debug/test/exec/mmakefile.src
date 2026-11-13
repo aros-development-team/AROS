@@ -1,0 +1,111 @@
+#
+#   Makefile for AROS exec.library tests
+
+include $(SRCDIR)/config/aros.cfg
+
+EXEDIR := $(AROS_TESTS)/exec
+CUNITEXEDIR := $(AROS_TESTS)/cunit/exec
+
+USER_CFLAGS := -noposixc
+USER_CPPFLAGS := -D__AROS_GIMME_DEPRECATED_STACKSWAP__
+
+EXECPUBLICFILES :=		\
+    alert		\
+    allocmem		\
+    allocxxx        \
+    childstatus		\
+    childwait		\
+    copymem		\
+    dumpmem		\
+    enqueue		\
+    exceptiontest	\
+    exceptiontest2	\
+    messagetest		\
+    openlib	 	\
+    portsend		\
+    portreceive		\
+    makelib		\
+    pool		\
+    rawdofmt		\
+    semaphoretest	\
+    semtorture		\
+    stackswap 		\
+    signaltest		\
+    supertest		\
+    tasklist		\
+    tasktest		\
+    traptest		\
+    vblank
+
+EXECPUBLICFILES +=		\
+    crashtest_highpagefault \
+    crashtest_illegalins \
+    crashtest_pagefault \
+    crashtest_unaligned \
+    crashtest_zerodiv \
+    crashtest_zerodivfloat
+
+CUNITEXECTESTFILES := \
+    cunit-exec-types
+
+#MM- test : test-exec
+#MM- test-quick : test-exec-quick
+
+#MM- test-cunit : test-exec-cunit
+#MM- test-cunit-quick : test-exec-cunit-quick
+
+#MM- test-exec : test-exec-public test-exec-public-posixc test-exec-private test-exec-cunit test-exec-signalexception
+#MM- test-exec-quick : test-exec-public-quick test-exec-public-posixc-quick test-exec-private-quick test-exec-cunit-quick test-exec-signalexception-quick
+
+#MM- test-exec-deps : includes includes-copy linklibs kernel
+#MM test-exec-public : test-exec-deps
+#MM test-exec-public-posixc : test-exec-deps
+#MM test-exec-private : test-exec-deps
+
+#MM- test-exec-cunit : test-exec-$(TARGET_UNITTESTS)-cunit
+#MM- test-exec-cunit-quick : test-exec-$(TARGET_UNITTESTS)-cunit-quick
+
+#MM test-exec-yes-cunit : test-exec-deps linklibs-cunit
+
+%build_progs mmake=test-exec-public \
+    files=$(EXECPUBLICFILES) targetdir=$(EXEDIR)
+
+EXECPOSIXPUBLICFILES := \
+    avltest		\
+    timeport
+
+USER_CFLAGS :=
+
+%build_progs mmake=test-exec-public-posixc \
+    files=$(EXECPOSIXPUBLICFILES) targetdir=$(EXEDIR)
+
+
+%get_archincludes modname=kernel \
+    includeflag=TARGET_KERNEL_INCLUDES maindir=rom/kernel
+
+%get_archincludes modname=exec \
+    includeflag=TARGET_EXEC_INCLUDES maindir=rom/exec
+
+EXECPRIVATEFILES :=		\
+    tasktest2
+
+USER_INCLUDES += \
+    $(TARGET_EXEC_INCLUDES) \
+	-I$(SRCDIR)/rom/exec \
+	$(TARGET_KERNEL_INCLUDES) \
+	-I$(SRCDIR)/rom/kernel
+
+USER_CFLAGS := -noposixc
+
+%build_progs mmake=test-exec-private \
+    files=$(EXECPRIVATEFILES) targetdir=$(EXEDIR)
+
+USER_INCLUDES := -I$(AROS_CONTRIB_INCLUDES)
+USER_CFLAGS := $(STDC_BASE_CFLAGS)
+USER_LDFLAGS := -L$(AROS_CONTRIB_LIB)
+
+%build_progs mmake=test-exec-yes-cunit \
+    files=$(CUNITEXECTESTFILES) targetdir=$(CUNITEXEDIR) \
+    uselibs="cunit posixc"
+
+%common

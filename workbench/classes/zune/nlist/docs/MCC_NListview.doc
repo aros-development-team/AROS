@@ -1,0 +1,284 @@
+TABLE OF CONTENTS
+
+NListview.mcc/NListview.mcc
+NListview.mcc/MUIA_NListview_Horiz_ScrollBar
+NListview.mcc/MUIA_NListview_HSB_Height
+NListview.mcc/MUIA_NListview_NList
+NListview.mcc/MUIA_NListview_Vert_ScrollBar
+NListview.mcc/MUIA_NListview_VSB_Width
+NListview.mcc/MUIM_NListview_QueryBeginning
+NListview.mcc/NListview.mcc
+
+    NAME
+        NListview.mcc -- Add a scrollbar container to an NList object.
+
+    SUPERCLASS
+        Group.mui
+
+    DESCRIPTION
+        This source defines version 19.93. NListview contains an NList
+        object (or subclass, including NFloattext), an inner vertical group,
+        and two scrollbar objects. Use NList directly when you need
+        independent scrollbar management. A standard List object does not
+        provide the NList protocol required by this container.
+
+        On AROS, mode resolution forces both scrollbar modes to Always. This
+        overrides preferences and explicit None, Auto, FullAuto and Left
+        choices. It does not guarantee that both scrollbar objects are
+        already attached: layout changes are queued after successful setup,
+        and setup itself resolves modes while queuing is disabled. Read the
+        dimension attributes after layout to inspect attached scrollbar
+        geometry.
+
+        The container is not a general proxy for its child. Retrieve NList
+        and address it directly for its complete API. Only the methods and
+        notification triggers listed below are forwarded. Other calls go to
+        Group; in particular, most NList attribute gets and sets are not
+        forwarded.
+
+        The container refuses drag queries. Construction consumes Draggable,
+        Dropable and CycleChain tags; Dropable is passed to the child and
+        CycleChain is applied to the outer group. A ControlChar supplied at
+        construction changes the active entry: Shift moves up, otherwise
+        down. The AROS event handler returns zero even after this action.
+        Setting ControlChar later does not update the locally stored
+        character in this implementation.
+
+        GoActive and GoInactive notify the child through the corresponding
+        NList methods, then call the superclass. HandleInput forwards non-
+        NONE MUI keys to the child. The legacy MUI 3.8 HandleEvent
+        forwarding branch is excluded on AROS.
+
+    METHODS
+        Forwarded List methods (MUIM_List_ prefix): Sort, Insert,
+        InsertSingle, GetEntry, Clear, Jump, Select, TestPos, Redraw,
+        Exchange, Move, NextSelected, Remove, CreateImage, DeleteImage.
+
+        Forwarded NList methods (MUIM_NList_ prefix): Sort, Sort2, Insert,
+        InsertSingle, GetEntry, Clear, Jump, Select, TestPos, Redraw,
+        RedrawEntry, Exchange, Move, NextSelected, Remove, CreateImage,
+        DeleteImage, CopyToClip, UseImage, ReplaceSingle, InsertWrap,
+        InsertSingleWrap, GetEntryInfo, GetSelectInfo, CopyTo, DropType,
+        DropDraw, DoMethod, ColWidth, ColToColumn, ColumnToCol.
+
+        Forwarded methods retain the child's arguments, return values and
+        ownership rules. QueryBeginning is handled locally and returns zero.
+        SetScrollers is private; do not call it from application code.
+
+    NOTIFICATIONS
+        Notify, KillNotify and KillNotifyObj are forwarded for these
+        triggers: List_Prop_Entries, List_Prop_Visible, List_Prop_First,
+        List_Active, Listview_SelectChange, Listview_DoubleClick;
+        NList_Horiz_Entries, NList_Horiz_Visible, NList_Horiz_First,
+        NList_HorizDeltaFactor, NList_Prop_Entries, NList_Prop_Visible,
+        NList_Prop_First, NList_VertDeltaFactor, NList_SelectChange,
+        NList_MultiClick, NList_DoubleClick, NList_EntryClick, NList_Active,
+        NList_First, NList_Entries, NList_TitleClick. Each name has the
+        MUIA_ prefix.
+
+        Other notification triggers are handled by the superclass. Scrollbar
+        mode setters consume their tags before superclass dispatch, so
+        ordinary superclass notifications are not generated for those tags
+        by this path.
+
+    NOTES
+        Construction modifies the supplied tag list. Child, inner-group and
+        scrollbar allocation results are not individually checked; the
+        handler does not establish complete recovery from each allocation
+        failure. Setup registers its event handler before superclass setup
+        and has no local rollback if that setup fails. These limitations are
+        not success guarantees.
+
+    SEE ALSO
+        MUIA_NListview_NList, MUIA_NListview_Vert_ScrollBar,
+        MUIA_NListview_Horiz_ScrollBar
+
+NListview.mcc/MUIA_NListview_Horiz_ScrollBar
+
+    NAME
+        MUIA_NListview_Horiz_ScrollBar -- Request the horizontal scrollbar
+        mode.
+
+    INPUTS
+        Initialize/set/get; LONG. The initial request is
+        MUIV_NListview_HSB_Default (5).
+
+    VALUES
+        MUIV_NListview_HSB_Always (1): request a persistent scrollbar. Auto
+        (2): allow it to appear when needed and remain attached. FullAuto
+        (3): allow appearance and removal as needed. None (4): request no
+        scrollbar. Default (5): read MUICFG_NListview_HSB, falling back to
+        Auto. The abbreviated names use the MUIV_NListview_HSB_ prefix.
+
+        On AROS, every nonzero low-nibble mode is resolved to Always,
+        including None. The other choices describe the declared modes, not
+        working alternatives on this AROS path.
+
+    FUNCTION
+        Set stores the nonzero low nibble as the requested mode and resolves
+        the effective mode. Get returns the effective mode, without
+        visibility bits; before the first resolution it returns the
+        constructor value. A zero low nibble leaves the existing mode
+        unchanged.
+
+        MUIV_NListview_HSB_On (0x0300) and HSB_Off (0x0100) are visibility
+        request fields used by NList. They may accompany a mode. This
+        handler also accepts the vertical visibility field carried by the
+        child on this attribute. Off requests are ignored for the effective
+        Always mode.
+
+        After successful setup, accepted attachment changes are queued to
+        the application and are not synchronous with set. Requests before
+        setup are not queued. Setup resolves modes but does not replay an
+        attachment request afterward. Do not use this attribute as a current
+        visibility flag.
+
+        Set consumes the tag as TAG_IGNORE. Supply writable tag storage. The
+        superclass set result does not confirm that a queued group change
+        succeeded.
+
+    SEE ALSO
+        MUIA_NListview_HSB_Height, MUIA_NListview_Vert_ScrollBar
+
+NListview.mcc/MUIA_NListview_HSB_Height
+
+    NAME
+        MUIA_NListview_HSB_Height -- Read the attached horizontal scrollbar
+        height.
+
+    INPUTS
+        Get only; LONG pixel dimension returned through IPTR storage.
+
+    FUNCTION
+        Return the scrollbar object height when attached, or zero when
+        detached. This tests group membership, not whether the window is
+        open or the object is currently visible. Read after layout for
+        meaningful geometry; queued changes may not yet be applied. A zero
+        result alone does not identify the requested mode.
+
+    SEE ALSO
+        MUIA_NListview_VSB_Width, MUIA_NListview_Horiz_ScrollBar
+
+NListview.mcc/MUIA_NListview_NList
+
+    NAME
+        MUIA_NListview_NList -- Supply or retrieve the embedded list.
+
+    INPUTS
+        Initialize/get; Object *. MUIA_Listview_List is a compatibility
+        alias.
+
+    FUNCTION
+        Supply an NList object or subclass. The own tag takes precedence
+        over Listview_List when both are present. An explicitly supplied
+        NULL makes construction return NULL; omitting both tags instead
+        creates an NList from the remaining constructor tags. The
+        constructor modifies the tag list.
+
+        After successful construction, the group hierarchy owns the child
+        and disposes it with the container. Get returns a borrowed pointer;
+        do not dispose it separately. There is no local setter to replace
+        the child.
+
+        For an explicit child, construction forwards these selected values:
+        a true Dropable; NList_DragType (preferred to Listview_DragType);
+        Listview_Input, MultiSelect, DoubleClick and DefClickColumn (each
+        preferred to its NList alias). Each attribute name has the MUIA_
+        prefix. A false Dropable does not clear an explicit child's existing
+        setting.
+
+        Other child initialization belongs on the child itself. Subsequent
+        sets of NList_KeyUpFocus, KeyDownFocus, KeyLeftFocus and
+        KeyRightFocus are forwarded. This does not imply general forwarding
+        of NList attributes.
+
+        Construction sets the child's NList_KeepActive to this container and
+        connects its horizontal-scrollbar notification, which carries
+        requests for both axes. Do not share one child between containers.
+
+    RESULT
+        Get returns TRUE and the existing child pointer. No new object or
+        caller-owned copy is created.
+
+    SEE ALSO
+        NList.mcc, NFloattext.mcc
+
+NListview.mcc/MUIA_NListview_Vert_ScrollBar
+
+    NAME
+        MUIA_NListview_Vert_ScrollBar -- Request the vertical scrollbar
+        mode.
+
+    INPUTS
+        Initialize/set/get; LONG. The initial request is
+        MUIV_NListview_VSB_Default (5).
+
+    VALUES
+        MUIV_NListview_VSB_Always (1), Auto (2), FullAuto (3), None (4),
+        Default (5), Left (6). Abbreviated names use the MUIV_NListview_VSB_
+        prefix. The first four modes have the same intended policies as the
+        horizontal modes. Default reads MUICFG_NListview_VSB and falls back
+        to Always. Left requests an always-attached scrollbar before the
+        list group.
+
+        AROS resolves every nonzero low-nibble choice to Always, including
+        Left and None. Left positioning is therefore not selected by normal
+        mode resolution on AROS.
+
+    FUNCTION
+        Mode storage, getter timing, tag consumption and deferred updates
+        follow Horiz_ScrollBar. Get returns the effective mode, not
+        attachment state. MUIV_NListview_VSB_On (0x0030) and VSB_Off
+        (0x0010) are the vertical visibility fields. Off is ignored for
+        effective Always.
+
+        MUIA_Listview_ScrollerPos is a compatibility input. At construction,
+        None requests None on both axes, Left requests vertical Left, and
+        Right requests vertical Always; explicit own mode attributes take
+        precedence. On set, ScrollerPos translates only to the vertical mode
+        (None, Left, Always or Default). These requests remain subject to
+        the AROS Always override.
+
+    SEE ALSO
+        MUIA_NListview_Horiz_ScrollBar, MUIA_NListview_VSB_Width
+
+NListview.mcc/MUIA_NListview_VSB_Width
+
+    NAME
+        MUIA_NListview_VSB_Width -- Read the attached vertical scrollbar
+        width.
+
+    INPUTS
+        Get only; LONG pixel dimension returned through IPTR storage.
+
+    FUNCTION
+        Return the scrollbar object width when attached, or zero when
+        detached. This is a membership test, not an on-screen visibility
+        test. Read after layout for meaningful geometry and allow queued
+        changes to complete. The result does not report the requested or
+        effective scrollbar mode.
+
+    SEE ALSO
+        MUIA_NListview_HSB_Height, MUIA_NListview_Vert_ScrollBar
+
+NListview.mcc/MUIM_NListview_QueryBeginning
+
+    NAME
+        MUIM_NListview_QueryBeginning -- Obsolete query alias.
+
+    SYNOPSIS
+        DoMethod(obj, MUIM_NListview_QueryBeginning);
+
+    FUNCTION
+        The public header aliases this identifier to
+        MUIM_NList_QueryBeginning. NListview handles that method locally; it
+        does not forward it to the embedded NList. Do not use this obsolete
+        query to obtain a child pointer or an entry position.
+
+    RESULT
+        Always zero from the NListview dispatcher.
+
+    SEE ALSO
+        MUIA_NListview_NList
+
+

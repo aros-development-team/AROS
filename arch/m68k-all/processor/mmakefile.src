@@ -1,0 +1,16 @@
+#
+
+include $(SRCDIR)/config/aros.cfg
+
+
+FILES := \
+    getcpuinfo \
+    processor_init \
+
+#MM- kernel-processor-m68k : includes
+
+USER_CPPFLAGS := -D__UTILITY_NOLIBBASE__
+USER_INCLUDES := -I$(SRCDIR)/rom/processor
+
+%build_archspecific mainmmake=kernel-processor modname=processor maindir=rom/processor \
+    arch=m68k files=$(FILES)

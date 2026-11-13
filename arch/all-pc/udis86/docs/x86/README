@@ -1,0 +1,148 @@
+x86 optable reference
+---------------------
+(incomplete)
+
+    P   - modrm (reg mmx)
+    PR  - modrm (rm mmx, mod must be 11b)
+    Q   - modrm (rm mmx if mod=11b else mem)
+
+    V   - modrm (reg - xmm)
+    VR  - modrm (rm xmm, mod must be 11b)
+    W   - modrm (rm xmm if mod=11b else mem)
+    MU  - modrm (rm xmm if mod=11b else mem) lets us specify different sizes for reg and for mem.
+	
+	B   - modrm (reg bounds)
+	BM  - modrm (rm bounds)
+	
+	K   - modrm (reg opmask)
+	KM  - modrm (rm opmask if mod=11b else mem)
+	KH  - vex.vvvv (opmask)
+	
+	H   - vex.vvvv xmm
+	HR  - vex.vvvv gpr
+	L   - xmm reg encoded in immediate byte
+	XS  - mem with base GPR and index XMM and a scale. (XSd, XSq)
+			index will be xmm or ymm depending on vexl
+	XSX - index will always be XMM
+	XSY - index will always be YMM
+	
+    G   - modrm (reg - gpr)
+    S   - modrm (reg - seg)
+    VR  - modrm (rm gpr, mod must be 11b)
+    E   - modrm (rm gpr if mod=11b else mem)
+    M   - modrm (mem), mod!=11b
+
+    I   - immediate
+    J   - relative immediate
+    O   - memory offset
+    
+    C   - control reg
+    D   - debug reg
+
+
+    opc <>
+
+        /n       - modrm reg field extends opcode
+        /Mnn     - disassembly mode extends opcode
+        /Onn     - operand mode extends opcode
+        /mod=!11 - modrm mod field extends opcode
+
+
+  <!--
+      The most important elements of each instruction definition are the
+      pfx (prefix), opc (opcode), and opr (operand) elements.  Each is a
+      CDATA element consisting of blank-separated words.  Upper and lower
+      case are equivalent.
+
+      <pfx></pfx>
+
+      pfx describes the set of valid prefixes that can precede the main
+      opcode without turning it into a different instruction. These may
+      be:
+
+      aso   accepts address size override
+      oso   accepts operand size override
+      seg   accepts a segment override
+      rexw, rexr, rexx, rexb
+            uses the indicated REX bit
+      vexl  accepts the vex.L prefix bit, in other words, the vexl
+            bit can be used in the decoding of the avx instruction.
+
+      <opr></opr>
+
+      [T][s]
+
+      Size Suffix
+      ===========
+
+      x     - If vex.L = 1 => m256/YMM
+                 vex.L = 0 => m128/XMM
+
+      opc words may be actual byte values (two hex digits), or may be one of
+      the following:
+      /sse=66,f3,f2 - required prefix (always first, and always
+        followed by 0f)
+      /3dnow=00-ff - this is a 3DNow opcode (only in a definition of the
+        form 0f 0f 3dnow=<byte>)
+      /a=16,32,64 - has this address size
+      /m=16,32,64,!64 - applicable only when the CPU is in this mode
+      /o=16,32,64 - has this operand size
+      /mod=11,!11 - has ModR/M with 11 or not-11 in the Mod field
+      /reg=0-7 - has ModR/M with this value in the reg field
+      /rm=0-7 - has ModR/M with this value in the R/M field (only with
+        /mod=11)
+      /x87=00-3f - X87 opcode with this value in the low 6 bits of the
+        following "ModR/M" byte (only with /mod=11 and no other modifiers)
+
+      opr words follow the Intel documentation somewhat, and specify the
+      location and the size of the operand.  The OperandDict table in
+      ud_itab.py maps these words to named OP_ and SZ_ constants for the
+      location and size respectively.  These constants are defined in
+      decode.h, q.v. for details.
+
+      The mode element affects instruction semantics but not decoding:
+          inv64 - invalid in 64-bit mode
+      def64 - default operand size is 64 bits in 64-bit mode
+
+      cpuid
+
+        The cpuid element maybe applied to an instruction or a specific
+        definition of the instruction. One ore more strings define the
+        cpuid features that the instruction (or a definition belongs to)
+
+        Values are: sse, sse2, sse3, sse4, sse4.1, sse4.2, avx
+
+      AVX Instructions
+
+      AVX instructions can be described in two ways. One, the explicit
+      form, and the other that promotes an existing sse instruction
+      definition to its avx form.
+
+      If an instruction is defined to be in cpuid=avx, but is defined in
+      the legacy form (using /sse= extensions), then the opcode generator
+      will infer that as two definitions, one the see instruction and the
+      other, an inferred avx instruction.
+
+      In generating the sse definition from the above, the following
+      transformations happen,
+
+        - /vexw and /vexl extensions (if any) are removed
+        - The operands H and L are removed. Operands specified on
+          the right to removed operands are shifted to the left
+          position.
+        - The vexl prefix is removed.
+        - "avx" is removed form the cpuid definition.
+
+     In generating the avx definition from the above, the following
+     transformations happen,
+
+        - c4 is inserted in the 0th position of the opcode string
+        - /sse extension is removed
+        - A new /vex extension is constructed using /sse, 0f, 38 and
+          3a opcodes (if any).
+        - Operands V, W, H, and U are marked explicitly to have the
+          size suffix "x"
+
+     If the above transformations do not generate the required
+     definitions, the instructions will need to be defined separately.
+  -->

@@ -1,0 +1,30 @@
+Execute S/Test hidds/graphics/convertpixels
+Execute S/Test misc/fileseek
+Execute S/Test diskfont/fontinfo topaz.font 8
+Execute S/Test misc/frequencies
+
+Execute S/Test exec/allocmem
+
+Execute S/Test dos/addpart
+Execute S/Test dos/dosvartest
+Execute S/Test dos/examine Developer/Debug/Tests/dos/examine
+Execute S/Test dos/ExNext
+Execute S/Test dos/filetest
+
+Execute S/Test utility/amiga2date
+Execute S/Test utility/callhooktest
+Execute S/Test utility/date2amiga
+Execute S/Test utility/vartags
+
+Execute S/Try Avail FLUSH
+Execute S/Try LibList
+Execute S/Try DevList
+Execute S/Try ResList
+Execute S/Try TaskList
+
+Echo PASSED TO PASSED
+Shutdown
+
+Lab failure
+Echo FAILED TO FAILED
+Shutdown

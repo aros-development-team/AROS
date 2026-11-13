@@ -1,0 +1,62 @@
+#
+#   Generate cybergraphics
+#
+
+include $(SRCDIR)/config/aros.cfg
+
+USER_LDFLAGS := -static
+
+FUNCS := \
+        alloccmodelisttaglist                   \
+        bestcmodeidtaglist                      \
+        blttemplatealpha                        \
+        cvideoctrltaglist                       \
+        docdrawmethodtaglist                    \
+        extractcolor                            \
+        extractcolor_renderfunc                 \
+        fillpixelarray                          \
+        freecmodelist                           \
+        getcybermapattr                         \
+        getcyberidattr                          \
+        invertpixelarray                        \
+        iscybermodeid                           \
+        lockbitmaptaglist                       \
+        movepixelarray                          \
+        processpixelarray                       \
+        processpixelarray_opbrightness          \
+        processpixelarray_opsetalpha            \
+        processpixelarray_optint                \
+        processpixelarray_opblur                \
+        processpixelarray_opcol2grey            \
+        processpixelarray_opnegative            \
+        processpixelarray_opnegative_fade       \
+        processpixelarray_optint_fade           \
+        processpixelarray_opgradient            \
+        processpixelarray_opshiftrgb            \
+        readpixelarray                          \
+        readrgbpixel                            \
+        scalepixelarray                         \
+        unlockbitmap                            \
+        unlockbitmaptaglist                     \
+        writelutpixelarray                      \
+        writepixelarray                         \
+        writepixelarrayalpha                    \
+        writergbpixel
+
+#MM- workbench-libs-cgfx : linklibs
+#MM- workbench-libs-cgfx-kobj : linklibs
+
+#MM- workbench-libs-cgfx-includes :             \
+#MM      kernel-exec-includes                   \
+#MM      includes-copy
+#MM- core-linklibs: linklibs-cybergraphics
+
+%build_module mmake=workbench-libs-cgfx \
+  modname=cybergraphics modtype=library \
+  files="$(FUNCS) gfxfuncsupport cybergraphics_init"
+
+#MM includes-copy
+
+INCLUDE_FILES := $(call WILDCARD, include/*.h)
+
+%copy_includes path=cybergraphx dir=include

@@ -1,0 +1,94 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+# Trap errors in the early kernel code and display to VGA 
+KERNEL_USE_EARLYTRAP=
+# Print kernel debug for normal CPU traps
+KERNEL_USE_TRAPDEBUG=
+
+%set_archincludes mainmmake=kernel-kernel maindir=rom/kernel \
+  modname=kernel pri=0 arch=pc-x86_64 \
+  includes="-I$(SRCDIR)/$(CURDIR)"
+
+%get_archincludes modname=kernel \
+    includeflag=TARGET_KERNEL_INCLUDES maindir=rom/kernel
+
+%get_archincludes modname=exec \
+    includeflag=TARGET_EXEC_INCLUDES maindir=rom/exec
+
+PRIV_KERNEL_INCLUDES = \
+    $(TARGET_KERNEL_INCLUDES) \
+	-I$(SRCDIR)/rom/kernel \
+	$(TARGET_EXEC_INCLUDES) \
+	-I$(SRCDIR)/rom/exec
+
+FILES    := \
+             kernel_startup
+
+ifneq ($(KERNEL_USE_EARLYTRAP),)
+USER_CPPFLAGS += -D_KERNEL_EARLYTRAP
+FILES   += \
+             kernel_early
+endif
+
+FILES    += \
+             platform_init \
+             kernel_cpu \
+             kernel_debug \
+             kernel_memory \
+             kernel_bootmem \
+             mmu
+
+ifneq ($(KERNEL_USE_TRAPDEBUG),)
+USER_CPPFLAGS += -D_KERNEL_TRAPDEBUG
+FILES    += \
+             kernel_trapdebug
+endif
+
+FUNCS	 := \
+             mapglobal \
+             unmapglobal \
+             setprotection
+ASMFILES := \
+             core_interrupts
+
+MAINDIR	      := rom/kernel
+USER_AFLAGS   := -I$(GENINCDIR) -I$(SRCDIR)/arch/all-pc/kernel
+USER_INCLUDES := $(PRIV_KERNEL_INCLUDES) -I$(SRCDIR)/arch/all-native/kernel \
+		 -isystem $(SRCDIR)/arch/all-native/bootconsole/include
+#USER_CPPFLAGS := -DTARGET_SECTION_COMMENT=\"$(AROS_SECTION_COMMENT)\"
+
+ifeq ($(AROS_TOOLCHAIN),llvm)
+SMPBSLDFLAGS := -m elf_x86_64
+endif
+USER_CFLAGS   += $(CFLAGS_GENERAL_REGS_ONLY)
+
+#MM kernel-kernel-pc-x86_64 : kernel-pc-acpica-includes includes-asm_h includes kernel-kernel-includes linklibs-bootconsole
+#MM kernel-kernel-pc-x86_64-kobj : includes-asm_h includes kernel-kernel-includes linklibs-bootconsole
+#MM kernel-kernel-pc-x86_64-quick : kernel-kernel-native-quick
+#MM kernel-kernel-pc-x86_64-kobj-quick : kernel-kernel-native-quick
+
+%build_archspecific \
+  mainmmake=kernel-kernel maindir=$(MAINDIR) \
+  arch=pc-x86_64 files="$(FILES) $(FUNCS)" compiler=kernel asmfiles=$(ASMFILES) modname=kernel
+
+# This builds SMP bootstrap code
+
+OBJDIR  := $(GENDIR)/$(CURDIR)
+ARCHOBJDIR := $(GENDIR)/$(MAINDIR)/kernel/arch
+
+kernel-kernel-pc-x86_64 :: $(ARCHOBJDIR)/smpboot.bin.o 
+kernel-kernel-pc-x86_64-quick :: $(ARCHOBJDIR)/smpboot.bin.o 
+kernel-kernel-pc-x86_64-kobj :: $(ARCHOBJDIR)/smpboot.bin.o
+kernel-kernel-pc-x86_64-kobj-quick :: $(ARCHOBJDIR)/smpboot.bin.o
+
+%rule_assemble_multi basenames=smpbootstrap targetdir=$(OBJDIR)
+
+# Without -N the linker tries to page-align .text section and produces a huge file (over 2MB)
+%rule_link_binary ldflags=$(SMPBSLDFLAGS) file=$(ARCHOBJDIR)/smpboot.bin.o name=smpbootstrap objs=$(OBJDIR)/smpbootstrap.o
+
+$(OBJDIR)/smpbootstrap.o : | $(OBJDIR) $(ARCHOBJDIR)
+
+GLOB_MKDIRS += $(ARCHOBJDIR) $(OBJDIR)
+
+%common

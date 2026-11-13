@@ -1,0 +1,16 @@
+# Copyright (C) 2003, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+
+FILES           := memset string stdio
+EXEDIR          := $(AROS_TESTS)/benchmarks/clib
+
+#MM- test-benchmarks : test-benchmarks-clib
+#MM- test-benchmarks-quick : test-benchmarks-clib-quick
+
+#MM test-benchmarks-clib : includes linklibs 
+
+%build_progs mmake=test-benchmarks-clib \
+    files=$(FILES) targetdir=$(EXEDIR)
+
+%common

@@ -1,0 +1,10 @@
+# DataType Description for JXL (bare JPEG XL codestream)
+Name=JXL
+Version=$VER: JXL 45.1 (20.07.2026)
+BaseName=jpegxl
+Pattern=#?.jxl
+Mask=0xFF 0x0A
+GroupID=pict
+ID=jxls
+Flags=DTF_BINARY,DTF_CASE
+Priority=0

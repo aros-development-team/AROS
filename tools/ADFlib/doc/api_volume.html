@@ -1,0 +1,171 @@
+<HTML>
+<HEAD><TITLE> Volume </TITLE></HEAD>
+
+<BODY>
+
+<H1 ALIGN=CENTER>the Volume API</H1>
+
+<HR>
+<H1>Use cases</H1>
+
+<P>
+See Device API use cases.
+<P>
+
+<HR>
+
+<H1>Data structures</H1>
+
+<PRE>
+struct Volume{
+    struct Device *dev;            /* the pointer of the Device structure of which the volume belongs to */
+
+    /* physical sector numbers */
+    SECTNUM firstBlock;            /* first block of the data area (from the beginning of the media) */
+    SECTNUM lastBlock;             /* last usable block (from the beginning of the media) */
+
+    /* logical sector number */
+    SECTNUM rootBlock;             /* root block (from firstBlock) */
+
+    char dosType;                  /* FFS/OFS, DIRCACHE, INTERNATIONAL */
+    BOOL bootCode;                 /* TRUE if a floppy is bootable */
+    int dataBlockSize;             /* 488 or 512 */
+
+    char* volName;
+
+    /* bitmap */
+    long bitmapSize;                    /* number of blocks used to store the bitmap 
+                                            (excluding the bitmapExtension blocks)         */
+    SECTNUM *bitmapBlocks;              /* bitmap blocks pointers (excluding bitmap extensions blocks) */
+    struct bBitmapBlock* *bitmapTable;  /* stores the bitmap blocks */
+    BOOL *bitmapBlocksChg;              /* bitmapBlocksChg[i] is TRUE if bitmapTable[i} has changed,
+                                            and need to be written at bitmapBlocks[i]                  */
+
+    SECTNUM curDirPtr;      /* number of the current working directory */
+}
+</PRE>
+
+<P>
+If <I>vol</I> is one Volume structure returned by adfMount() :
+<UL>
+<LI>The devType is <I>vol->dev->devType</I>.
+<LI>The dosType is OFS or FFS (exclusive), and may have the DIRCACHE and INTERNATIONAL
+ modes enabled. Uses isFFS(vol->dosType), isOFS(), isINTL() and isDIRCACHE()
+ to determine it. 
+ <BR>
+<B>Warning ! Even if isINTL() returns FALSE, if isDIRCACHE()
+ is TRUE, the Volume is considered (like with AmigaDOS) as having the
+ international mode enabled !</B>
+</UL>
+
+<HR>
+
+<P ALIGN=CENTER><FONT SIZE=+2> adfMount() </FONT></P>
+
+<H2>Syntax</H2>
+
+<B>struct Volume*</B> adfMount(<B>struct Device *</B>dev, 
+ <B>int</B> nPart, <B>BOOL</B> readOnly)
+
+<H2>Description</H2>
+
+<P>
+Mounts a designed volume (nPart) of the Device (dev), eventually with
+read only access (readOnly). The first partition is #0.
+<P>
+The current working directory is the root block.
+
+<H2>Return values</H2>
+
+The Volume, NULL in case of error.
+
+<H2>Internals</H2>
+<OL>
+<LI>Read the bootblock to determine <I>vol->dosType</I>
+ and <I>vol->datablockSize</I>.
+<LI>Read the rootblock, fills <I>vol->curDirPtr</I>
+<LI>Read and allocate the bitmap : <I>vol->bitmapBlocks[],
+ vol->bitmapTable[], vol->bitmapSize, vol->bitmapBlocksChg[]</I>.
+</OL>
+
+
+
+<HR>
+<P ALIGN=CENTER><FONT SIZE=+2> adfUnMount() </FONT></P>
+
+<H2>Syntax</H2>
+
+<B>void</B> adfUnMount(<B>struct Volume *</B>vol) 
+
+<H2>Description</H2>
+
+Release a Volume. Free the bitmap structures.
+<P>
+
+<HR>
+<P ALIGN=CENTER><FONT SIZE=+2> adfCountFreeBlocks() </FONT></P>
+
+<H2>Syntax</H2>
+
+<B>long</B> adfCountFreeBlocks(<B>struct Volume *</B>vol)
+
+<H2>Description</H2>
+
+Counts the free blocks of a Volume.
+
+<H2>Return values</H2>
+
+The number of free blocks.
+<P>
+
+<HR>
+<P ALIGN=CENTER><FONT SIZE=+2> adfInstallBootBlock() </FONT></P>
+
+<H2>Syntax</H2>
+
+<B>RETCODE</B> adfInstallBootBlock(<B>struct Volume*</B> vol, <B>unsigned char*</B> code)
+
+<H2>Description</H2>
+
+Install a bootblock on a floppy disk. Won't work on any other device.
+<P>
+You must provide the 1024 bytes large bootblock.<BR>
+Doesn't modify the initial 'DOS' header and dosType. Recalculates the checksum.
+
+
+<H2>Return values</H2>
+
+RC_OK, something different in case of error.
+
+<P>
+
+<HR>
+<P ALIGN=CENTER><FONT SIZE=+2> adfCreateHdFile() </FONT></P>
+
+<H2>Syntax</H2>
+
+<B>RETCODE</B> adfCreateHdFile(<B>struct Device*</B> dev, <B>char*</B> volName, <B>int</B> volType)
+
+<H2>Description</H2>
+
+Create an hardfile on a dump file. The size of this file must be larger
+than 1802240 bytes, the size of an high density floppy dump.
+<P>
+Use adfCreateDumpDevice() the create the device passed to adfCreateHdFile(). 
+
+<H2>Return values</H2>
+
+RC_OK, something different in case of error.
+
+<H2>Internals</H2>
+
+The device is created with one volume, and <I>dev->devType if filled with
+DEVTYPE_HARDFILE.
+
+<P>
+
+<HR>
+
+</BODY>
+
+</HTML>

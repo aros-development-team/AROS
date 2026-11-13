@@ -1,0 +1,30 @@
+include $(SRCDIR)/config/aros.cfg
+
+#MM- core-linklibs : linklibs-dynmod linklibs-dynmodglue
+#MM linklibs-dynmod : includes
+#MM linklibs-dynmodglue : includes
+
+#MM- includes-copy : dynmod-includes-copy
+#MM- compiler-includes : dynmod-includes-copy
+
+%copy_includes mmake=dynmod-includes-copy dir=include path=dynmod includes="dynmodule.h dynmodstack.h"
+
+DYNMODULEGLUEFILES := \
+    dynmodule_glue
+
+DYNMODULEFILES := \
+    dynmodule_modules \
+    dynmodule_loadmodule \
+    dynmodule_freemodule \
+    dynmodule_removemodule \
+    dynmodule_export \
+    dynmodule_import \
+    dynmodule_getprocaddr
+
+%build_linklib mmake=linklibs-dynmod \
+    libname=dynmod \
+    files="$(DYNMODULEFILES)"
+
+%build_linklib mmake=linklibs-dynmodglue \
+    libname=dynmodglue \
+    files="$(DYNMODULEGLUEFILES)"

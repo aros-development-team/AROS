@@ -1,0 +1,11 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+INCLUDE_FILES := $(call WILDCARD, *.[hi] aros/*.[hi] asm/*.[hi] exec/*.[hi])
+
+#MM- includes-copy-chrp-ppc-efika : includes-common-ppc
+
+%copy_includes mmake=includes-copy-chrp-ppc-efika
+
+#MM- kernel-exec-includes-chrp-ppc-efika : includes-copy-chrp-ppc-efika
+

@@ -1,0 +1,10 @@
+# DataType Description for MPEG-1 files
+Name=MP1
+Version=$VER: MP1 1.0 (25.10.2011)
+BaseName=mp1
+Pattern=#?
+Mask= 0x00 0x00 0x01 0xBA
+GroupID=movi
+ID=mp1
+Flags=DTF_BINARY,DTF_CASE
+Priority=0

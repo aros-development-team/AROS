@@ -1,0 +1,16 @@
+# Makefile to make Serial prefs program.
+
+include $(SRCDIR)/config/aros.cfg
+
+FILES := main locale bibeditor prefs args misc
+
+EXEDIR      := $(AROSDIR)/Prefs
+
+#MM- workbench-prefs : workbench-prefs-iconbar
+#MM workbench-prefs-iconbar : includes linklibs workbench-prefs-iconbar-catalogs
+
+%build_prog mmake=workbench-prefs-iconbar \
+    progname=BoingIconBar targetdir=$(EXEDIR) \
+    files=$(FILES)
+
+%common

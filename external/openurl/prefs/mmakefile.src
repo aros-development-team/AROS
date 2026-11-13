@@ -1,0 +1,47 @@
+#   $Id$
+#
+#   Makefile for the OpenURL Pref. editor of openurl.library
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM external-openurl-prefs : includes linklibs \
+#MM external-openurl-lib \
+#MM external-openurl-catalogs \
+#MM external-openurl-prefs-setup \
+#MM external-openurl-prefs-icon
+
+#MM
+external-openurl-prefs-setup : locale.h 
+
+EXE := OpenURL
+EXEDIR := $(AROS_PREFS)
+
+# We need to use -idirafter, so that we
+# *don't* pick up the project's local MUI headers.
+USER_INCLUDES := -idirafter $(SRCDIR)/$(CURDIR)/../include
+
+FILES := \
+        OpenURL \
+        locale \
+        utils \
+        popport \
+        popph \
+        ftpeditwin \
+        mailereditwin \
+        browsereditwin \
+        applist \
+        win \
+        register \
+        about \
+        app \
+        vastubs \
+        debug
+
+%build_prog mmake=external-openurl-prefs \
+    progname=$(EXE) files=$(FILES) \
+    targetdir=$(EXEDIR)
+
+locale.h: $(SRCDIR)/$(CURDIR)/../locale/OpenURL.pot $(SRCDIR)/$(CURDIR)/locale_h.sd
+	@$(FLEXCAT) $(SRCDIR)/$(CURDIR)/../locale/OpenURL.pot locale.h=$(SRCDIR)/$(CURDIR)/locale_h.sd
+
+%common

@@ -1,0 +1,31 @@
+# Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
+#
+# Makefile to make the Installer
+
+include $(SRCDIR)/config/aros.cfg
+
+FILES := main misc procedure parse variables gui_zune locale execute cleanup copyfiles
+
+EXEDIR := $(AROSDIR)/Utilities
+
+#MM- workbench-utilities : workbench-utilities-installer
+#MM workbench-utilities-installer : includes linklibs \
+#MM workbench-utilities-installer-script \
+#MM workbench-utilities-installer-catalogs
+
+%build_prog mmake=workbench-utilities-installer \
+    progname=Installer targetdir=$(EXEDIR) \
+    files=$(FILES)
+
+
+SCRIPT    := test.script
+SCRIPTDIR := $(AROS_TESTS)/Installer
+
+#MM
+workbench-utilities-installer-script : $(SCRIPTDIR)/$(SCRIPT)
+
+$(SCRIPTDIR)/$(SCRIPT) : $(SCRIPT)
+	@$(MKDIR) $(SCRIPTDIR)
+	@$(CP) $? $@
+
+%common

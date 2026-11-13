@@ -1,0 +1,45 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+%set_archincludes mainmmake=kernel-kernel maindir=rom/kernel \
+  modname=kernel pri=0 arch=efika-arm \
+  includes="-I$(SRCDIR)/$(CURDIR)"
+
+%get_archincludes modname=kernel \
+    includeflag=TARGET_KERNEL_INCLUDES maindir=rom/kernel
+
+%get_archincludes modname=exec \
+    includeflag=TARGET_EXEC_INCLUDES maindir=rom/exec
+
+PRIV_KERNEL_INCLUDES = \
+    $(TARGET_KERNEL_INCLUDES) \
+	-I$(SRCDIR)/rom/kernel \
+	$(TARGET_EXEC_INCLUDES) \
+	-I$(SRCDIR)/rom/exec
+
+FILES := kernel_startup kernel_debug maygetchar issuper
+
+#MM kernel-efika-arm: \
+#MM     setup-efika-arm \
+#MM     kernel-kernel-kobj
+
+ 
+kernel-efika-arm: $(AROSDIR)/boot/aros-efikamx
+
+$(AROSDIR)/boot/aros-efikamx: $(KOBJSDIR)/kernel_resource.o 
+		%mkdirs_q $(OSGENDIR)/boot
+		%mkdirs_q $(AROSDIR)/boot
+		$(TARGET_LD) -Map $(OSGENDIR)/boot/kernel.map -T $(SRCDIR)/$(CURDIR)/ldscript.lds -o $@ $(KOBJSDIR)/kernel_resource.o -L$(AROS_LIB) -larossupport -lautoinit -lamiga -llibinit -lstdc.static -laeabi
+		$(TARGET_STRIP) --strip-unneeded -R .note -R .comment $@
+	
+
+#MM kernel-kernel-efika-arm : includes
+#MM kernel-kernel-efika-arm-kobj : includes
+
+USER_INCLUDES := $(PRIV_KERNEL_INCLUDES) \
+                 -I$(GENINCDIR) -I$(AROS_DEVELOPER)/include
+
+%build_archspecific \
+  mainmmake=kernel-kernel maindir=rom/kernel arch=efika-arm \
+  files="$(FILES)" compiler=kernel
+  

@@ -1,0 +1,50 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+# For m68k --with-paranoia
+NOWARN_FLAGS := $(NOWARN_FRAME_ADDRESS)
+USER_CFLAGS := $(NOWARN_FLAGS)
+USER_CPPFLAGS := -D__UTILITY_STDLIBBASE__
+USER_LDFLAGS := -static
+
+FILES :=  pm \
+	  pmgraph \
+	  pminit \
+	  pminput \
+	  window \
+	  pmimages \
+	  pmfind \
+	  pmshadow \
+	  pmtopography \
+	  pmdlist \
+	  pmlayout \
+	  pmdrawshadow \
+	  pmtags \
+	  pmcreate \
+	  pmmem \
+	  pmprefs \
+	  iff
+
+#MM workbench-libs-popupmenu-includes : \
+#MM     kernel-exec-includes \
+#MM     kernel-dos-includes \
+#MM     kernel-graphics-includes \
+#MM     kernel-utility-includes \
+#MM     kernel-intuition-includes \
+#MM     workbench-libs-cgfx-includes \
+#MM     kernel-layers-includes \
+#MM     workbench-libs-locale-includes \
+#MM     workbench-libs-iffparse-includes \
+#MM     workbench-libs-diskfont-includes \
+#MM     workbench-libs-gadtools-includes \
+#MM     includes-copy
+
+#MM workbench-libs-popupmenu : \
+#MM     linklibs
+
+%build_module mmake=workbench-libs-popupmenu \
+    modname=popupmenu modtype=library \
+    files="$(FILES)" linklibname=popupmenu-shared \
+    uselibs="popupmenu"
+
+%common

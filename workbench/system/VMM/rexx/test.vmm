@@ -1,0 +1,6 @@
+/* Check VMM ARexx port */
+
+address 'VMM'
+HELP "work:VMM/rexx/help.out"
+exit
+end

@@ -1,0 +1,23 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+#USER_INCLUDES := -isystem $(SRCDIR)/workbench/network/common/include
+USER_INCLUDES += -isystem $(SRCDIR)/workbench/network/stacks/AROSTCP/bsdsocket
+NOWARN_FLAGS := $(NOWARN_UNINITIALIZED) $(NOWARN_PARENTHESES) $(NOWARN_OLD_STYLE_DEFINITION)
+USER_CFLAGS := $(NOWARN_FLAGS) -DAMITCP_NEW_NAMES -DSOCKETBASE_IN_CONTEXT -DUSERGROUPBASE_IN_CONTEXT \
+        -D_XOPEN_SOURCE=600 -D__BSD_VISIBLE=1
+
+#MM- linklibs: arostcp-linklibs-kvm
+#MM- workbench-network-stacks-arostcp : arostcp-linklibs-kvm
+
+#MM arostcp-linklibs-kvm : includes
+
+KVMLIBSRC := \
+           kvm \
+           kvm_open \
+           kvm_geterr \
+           kvm_read
+
+%build_linklib mmake=arostcp-linklibs-kvm libname=kvm files=$(KVMLIBSRC)
+
+%common

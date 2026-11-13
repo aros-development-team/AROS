@@ -1,0 +1,48 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM classes-zune-nlist-class  : includes linklibs
+#MM classes-zune-nlist-test  : includes linklibs
+##MM- test-nlist : classes-zune-nlist-test
+
+FILES := \
+        NList_mcc    \
+        NList_mcc0   \
+        NList_mcc1   \
+        NList_mcc2   \
+        NList_mcc3   \
+        NList_mcc4   \
+        NList_mcc5   \
+        NList_mcc6   \
+        move         \
+        NList_func   \
+        NList_func2  \
+        NList_func3  \
+        NList_func4  \
+        NList_grp    \
+        NList_img    \
+        NList_img2   \
+        ClipboardServer \
+        Pointer      \
+        Debug
+
+USER_INCLUDES := -idirafter $(SRCDIR)/$(CURDIR)/../include -I$(SRCDIR)/$(CURDIR)/../nlistviews_mcp \
+    -idirafter $(SRCDIR)/$(CURDIR)/../include/mui
+
+USER_CPPFLAGS := -DAROS_ABI_V1
+USER_CFLAGS += $(PARANOIA_CFLAGS)
+USER_LDFLAGS := -static
+
+%build_module_simple mmake=classes-zune-nlist-class \
+  modname=NList modtype=mcc \
+  files="library $(FILES)"
+
+%build_prog mmake=classes-zune-nlist-test progname=NList-Test \
+    files="NList-Test $(FILES)" objdir=$(GENDIR)/$(CURDIR)/test targetdir=$(AROS_TESTS)/NList
+
+#MM includes-copy
+
+INCLUDE_FILES := ../include/mui/NList_mcc.h
+%copy_includes path=mui dir=../include/mui
+
+%common

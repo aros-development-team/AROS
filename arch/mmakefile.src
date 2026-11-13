@@ -1,0 +1,8 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM- boot-distfiles : boot-distfiles-$(AROS_TARGET_PLATFORM)
+#MM- boot-distfiles-quick : boot-distfiles-$(AROS_TARGET_PLATFORM)-quick
+
+#MM- distfiles : distfiles-$(AROS_TARGET_PLATFORM)
+#MM- distfiles-quick : distfiles-$(AROS_TARGET_PLATFORM)-quick

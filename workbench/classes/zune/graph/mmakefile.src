@@ -1,0 +1,19 @@
+include $(SRCDIR)/config/aros.cfg
+
+USER_CFLAGS := $(PARANOIA_CFLAGS)
+USER_LDFLAGS := -static
+
+FILES         := graph
+INCLUDE_FILES := graph.h
+
+#MM- workbench-classes-zune : workbench-classes-zune-graph 
+
+%build_module \
+    mmake=workbench-classes-zune-graph \
+    modname=Graph modtype=mcc \
+    conffile=graph.conf
+
+%copy_includes path=zune
+    
+%common
+%include_deps

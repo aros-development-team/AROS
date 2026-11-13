@@ -1,0 +1,19 @@
+#
+# Makefile for SysLog
+
+include $(SRCDIR)/config/aros.cfg
+
+FILES  := main hooks colorlist str
+
+EXEDIR := $(AROS_SYSTEM)/Network/AROSTCP
+
+NOWARN_FLAGS := $(NOWARN_UNINITIALIZED) $(NOWARN_PARENTHESES)
+USER_CFLAGS := $(NOWARN_FLAGS) -D__BSD_VISIBLE=1
+ 
+##MM- contrib : aros-tcpip-apps-syslog
+
+%build_prog mmake=aros-tcpip-apps-syslog \
+    progname=SysLog targetdir=$(EXEDIR) \
+    files=$(FILES)
+
+%common

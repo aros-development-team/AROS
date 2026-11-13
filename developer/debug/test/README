@@ -1,0 +1,11 @@
+"runtests" reads from an input file binaries to be executed.
+Default name of the input file is "testscript".
+Comments start with #
+The commands can have arguments
+
+Test applications should have these properties:
+- non-interactive
+- check itself for correct results
+- be silent when no error happens
+- return error codes and print additional hints with the bug() function
+  in case error happens

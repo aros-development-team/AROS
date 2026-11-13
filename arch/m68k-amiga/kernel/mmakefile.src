@@ -1,0 +1,47 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+%set_archincludes mainmmake=kernel-kernel maindir=rom/kernel \
+  modname=kernel pri=0 arch=amiga-m68k \
+  includes="-I$(SRCDIR)/$(CURDIR)"
+
+%get_archincludes modname=kernel \
+    includeflag=TARGET_KERNEL_INCLUDES maindir=rom/kernel
+
+%get_archincludes modname=exec \
+    includeflag=TARGET_EXEC_INCLUDES maindir=rom/exec
+
+PRIV_KERNEL_INCLUDES = \
+    $(TARGET_KERNEL_INCLUDES) \
+	-I$(SRCDIR)/rom/kernel \
+	$(TARGET_EXEC_INCLUDES) \
+	-I$(SRCDIR)/rom/exec
+
+FILES := \
+        cause \
+        cli \
+        sti \
+        kernel_debug \
+        kernel_timer \
+        maygetchar \
+        amiga_irq \
+        getbootinfo \
+        kernel_globals \
+        obtaininput \
+        releaseinput \
+        romsupport
+
+AFILES=
+
+USER_INCLUDES := $(PRIV_KERNEL_INCLUDES) \
+	       -I$(GENINCDIR) -I$(AROS_DEVELOPER)/include
+USER_CPPFLAGS := -DPARANOIA_STACK
+
+USER_AFLAGS := $(PRIV_KERNEL_INCLUDES) \
+	       -I$(GENINCDIR) -I$(AROS_DEVELOPER)/include
+# Workaround for KERNEL_OPTIMIZATION_CFLAGS not getting included into KERNEL_CFLAGS
+USER_CFLAGS := -Os
+
+%build_archspecific \
+  mainmmake=kernel-kernel modname=kernel maindir=rom/kernel arch=amiga-m68k \
+  files="$(FILES)" asmfiles="$(AFILES)" compiler=kernel

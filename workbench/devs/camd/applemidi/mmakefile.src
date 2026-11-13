@@ -1,0 +1,9 @@
+include $(SRCDIR)/config/aros.cfg
+
+#MM workbench-devs-camd-applemidi : includes linklibs
+
+%build_prog mmake=workbench-devs-camd-applemidi \
+    progname=applemidi targetdir=$(AROS_DEVS)/Midi \
+    files=../networkmidi2/netmididriver
+
+%common

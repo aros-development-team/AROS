@@ -1,0 +1,20 @@
+/*
+    Copyright (C) 2013, The AROS Development Team. All rights reserved.
+*/
+
+#ifndef MBOX_PRIVATE_H_
+#define MBOX_PRIVATE_H_
+
+#include <exec/nodes.h>
+#include <exec/semaphores.h>
+#include <inttypes.h>
+
+struct MBoxBase {
+    struct Node		        mbox_Node;
+    struct SignalSemaphore      mbox_Sem;
+};
+
+volatile unsigned int *mbox_call_locked(struct MBoxBase *MBoxBase, void *mb,
+    unsigned int chan, void *msg);
+
+#endif /* MBOX_PRIVATE_H_ */

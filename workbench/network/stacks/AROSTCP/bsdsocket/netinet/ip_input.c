@@ -1,0 +1,1420 @@
+/*
+ * Copyright (C) 1993 AmiTCP/IP Group, <amitcp-group@hut.fi>
+ *                    Helsinki University of Technology, Finland.
+ *                    All rights reserved.
+ * Copyright (C) 2005 Neil Cafferkey
+ * Copyright (C) 2005-2026, The AROS Development Team.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place - Suite 330, Boston,
+ * MA 02111-1307, USA.
+ *
+ */
+
+/*
+ * Copyright (C) 1982, 1986, 1988 Regents of the University of California.
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ * 3. All advertising materials mentioning features or use of this software
+ *    must display the following acknowledgement:
+ *	This product includes software developed by the University of
+ *	California, Berkeley and its contributors.
+ * 4. Neither the name of the University nor the names of its contributors
+ *    may be used to endorse or promote products derived from this software
+ *    without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
+ *
+ *	@(#)ip_input.c	7.19 (Berkeley) 5/25/91
+ */
+
+#include <conf.h>
+
+#include <libraries/miami.h>
+#include <sys/param.h>
+#include <sys/systm.h>
+#include <sys/malloc.h>
+#include <sys/mbuf.h>
+#include <sys/domain.h>
+#include <sys/protosw.h>
+#include <sys/socket.h>
+#include <sys/errno.h>
+#include <sys/kernel.h>
+#include <sys/synch.h>
+
+#include <net/if.h>
+#include <net/netisr.h>
+#include <net/netmodule.h>
+#include <netinet/inetfamily.h>
+#include <net/if_protos.h>
+#include <net/route.h>
+#include <net/pfil.h>
+#include <net/if_sana.h>
+#include <net/sana2arp.h>		/* arp_init() */
+#include <sys/sysctl.h>			/* IPCTL_xxx */
+
+/* IPv4's packet hook point (netinet/in_proto.c) */
+extern struct pfil_point ip_pfil;
+
+#include <netinet/in.h>
+#include <netinet/in_systm.h>
+#include <netinet/ip.h>
+#include <netinet/in_pcb.h>
+#include "in_var.h"
+#include <netinet/ip_var.h>
+#include <netinet/ip_icmp.h>
+#include <netinet/tcp.h>
+#include <netinet/tcp_timer.h>
+#include <netinet/tcp_var.h>		/* TCPCTL_MSSDFLT */
+
+#include <netinet/ip_input_protos.h>
+#include <netinet/ip_output_protos.h>
+#include <netinet/ip_icmp_protos.h>
+#include <netinet/in_cksum_protos.h>
+#include <netinet/in_protos.h>
+#include <kern/uipc_domain_protos.h>
+
+#include "ip_compat.h"
+#include <protos/kern/kern_random_protos.h>
+#include <protos/net/route_protos.h>
+#include <netinet/inet_transport.h>
+#include <net/netcore_map.h>        /* always the last include */
+
+#ifndef	IPFORWARDING
+#define	IPFORWARDING	0
+#endif
+#ifndef	IPSENDREDIRECTS
+#define	IPSENDREDIRECTS	1
+#endif
+#ifndef IPPRINTFS
+#define IPPRINTFS 0
+#endif
+
+/* These three are now accessed from the configuration module
+ */
+int	ipforwarding = IPFORWARDING;
+int	ipsendredirects = IPSENDREDIRECTS;
+int	ipprintfs = IPPRINTFS;		/* this has effect only if DIAGNOSTIC */
+
+struct	ipstat	ipstat = {0};	/* ip statistics */
+struct	ipq	ipq = {0};	/* ip reass. queue */
+static int nipq = 0;		/* current number of reassembly queues */
+static int maxnipq = 64;	/* limit on reassembly queues; may be tuned */
+u_short	ip_id = {0};		/* ip packet ctr, for ids */
+struct	ifqueue	ipintrq = {0};	/* ip packet input queue */
+
+extern	struct domain inetdomain;
+extern	struct protosw inetsw[];
+
+/*
+ * IPv4's variables and statistics that are read or set from outside it
+ * (net/netmodule.h): by the configuration and ARexx variables (GATEWAY,
+ * IPSENDREDIRECTS, DEBUGIP, DEBUGICMP, USELOOPBACK, IP, ICMP), by sysctl
+ * (net.inet.ip) and by programs that look the stack's symbols up. The core
+ * finds them by name; registered from ip_init().
+ */
+extern struct icmpstat icmpstat;	/* ip_icmp.c */
+extern int icmpprintfs;			/* ip_icmp.c */
+extern int useloopback;			/* net/sana2arp.c */
+extern int tcp_mssdflt;			/* in_family.c: the MSS IPv4 assumes */
+
+static const struct netvar ip_netvars[] = {
+    { "ipstat",          &ipstat,          sizeof(ipstat),   NVT_STATS, PF_INET, IPPROTO_IP, IPCTL_STATS },
+    { "icmpstat",        &icmpstat,        sizeof(icmpstat), NVT_STATS },
+    { "ipforwarding",    &ipforwarding,    sizeof(int),      NVT_INT,   PF_INET, IPPROTO_IP, IPCTL_FORWARDING },
+    { "ipsendredirects", &ipsendredirects, sizeof(int),      NVT_INT,   PF_INET, IPPROTO_IP, IPCTL_SENDREDIRECTS },
+    { "ipprintfs",       &ipprintfs,       sizeof(int),      NVT_INT },
+    { "icmpprintfs",     &icmpprintfs,     sizeof(int),      NVT_INT },
+    { "useloopback",     &useloopback,     sizeof(int),      NVT_INT },
+    /* net.inet.tcp.mssdflt is IPv4's default MSS: IPv4's variable, under
+     * the name it has always had */
+    { "tcp_mssdflt",     &tcp_mssdflt,     sizeof(int),      NVT_INT,   PF_INET, IPPROTO_TCP, TCPCTL_MSSDFLT },
+};
+/*
+ * Which protocol takes which IP protocol number. Filled from inetsw[] at
+ * start; a protocol outside that table takes a number with
+ * ip_proto_register().
+ */
+struct protodispatch ip_protos;
+int	ipqmaxlen = 4 * IFQ_MAXLEN;	/* deeper IP input queue to absorb receive bursts */
+struct	in_ifaddr *in_ifaddr  = NULL; /* first inet address */
+
+/*
+ * We need to save the IP options in case a protocol wants to respond
+ * to an incoming packet over the same route if the packet got here
+ * using IP source routing.  This allows connection establishment and
+ * maintenance when the remote end is on a network that is not known
+ * to us.
+ */
+int	ip_nhops = 0;
+static	struct ip_srcrt {
+    struct	in_addr dst;			/* final destination */
+    char	nop;				/* one NOP to align */
+    char	srcopt[IPOPT_OFFSET + 1];	/* OPTVAL, OLEN and OFFSET */
+    struct	in_addr route[MAX_IPOPTLEN / sizeof(struct in_addr)];
+} ip_srcrt;
+
+struct ip_srcrt_opts {
+    char	nop;				/* one NOP to align */
+    char	srcopt[IPOPT_OFFSET + 1];	/* OPTVAL, OLEN and OFFSET */
+};
+
+#if USE_IF_MATRIX
+extern	int if_index;
+u_long	*ip_ifmatrix = NULL;
+#endif
+
+/*
+ * IP initialization: fill in IP protocol switch table.
+ * All protocols not implemented in kernel go to raw IP protocol handler.
+ *
+ * Called by domain_attach() from IPv4's module start (inet_start(),
+ * netinet/in_proto.c), after the registered transports were given their
+ * entries of inetsw[]: the table is complete when this reads it. Every
+ * registration IPv4 makes with the core and with the transports' common
+ * part is made here or in inet_start().
+ */
+void
+ip_init()
+{
+    /* the raw protocol's entry, there whether raw sockets are or not */
+    extern struct protosw *const in_defaultproto;   /* netinet/in_proto.c */
+    register struct protosw *pr;
+    register int i;
+
+    if(protodispatch_init(&ip_protos, in_defaultproto) != 0)
+        panic("ip_init");
+    for(pr = inetdomain.dom_protosw;
+            pr < inetdomain.dom_protoswNPROTOSW; pr++)
+        if(pr->pr_domain->dom_family == PF_INET &&
+                pr->pr_protocol && pr->pr_protocol != IPPROTO_RAW)
+            (void)protodispatch_set(&ip_protos, pr->pr_protocol, pr);
+    /* a protocol of another module (a tunnel) takes a number here */
+    (void)protodispatch_publish(AF_INET, &ip_protos);
+    {
+        static const struct netinput ip_input_queue = {
+            AF_INET, NETISR_IP, &ipintrq, ipintr
+        };
+
+        (void)netinput_register(&ip_input_queue);
+    }
+    {
+        extern const struct netfamily_ifops in_ifops;
+
+        (void)netfamily_ifops_register(&in_ifops);
+    }
+    {
+        extern const struct inetfamily in_family;
+        extern const struct inet_transport_if *in_transports;  /* netinet/in_proto.c */
+
+        /* the transports may serve IPv4 sockets */
+        (void)(*in_transports->ti_family_register)(&in_family);
+    }
+    /* ARP finds link addresses for the SANA-II interfaces; its timers */
+    arp_init();
+    /* what the configuration, sysctl and netstat find by name */
+    (void)netvar_register(ip_netvars, sizeof(ip_netvars) / sizeof(ip_netvars[0]));
+    ipq.next = ipq.prev = &ipq;
+    kern_random(&ip_id, sizeof(ip_id));
+    ipintrq.ifq_maxlen = ipqmaxlen;
+
+#if USE_IF_MATRIX
+    This does not work, since if_index is not constant, but actually
+    increases after this is done! So change this before enabling
+    (if_index is defined in net / if.c)
+
+    i = (if_index + 1) * (if_index + 1) * sizeof(u_long);
+    if((ip_ifmatrix = (u_long *) bsd_malloc(i, M_RTABLE, M_WAITOK)) == 0)
+        panic("no memory for ip_ifmatrix");
+#endif
+}
+
+struct	ip *ip_reass();
+struct	sockaddr_in ipaddr = { sizeof(ipaddr), AF_INET };
+struct	route ipforward_rt = { 0 };
+
+/*
+ * IPv4 STOPS (inet_stop(), netinet/in_proto.c), in three steps of this
+ * file's, each the reverse of a part of ip_init().
+ *
+ * ip_input_stop(): no packet reaches IPv4 any more. The caller has taken
+ * the read requests of IPv4's link types back from the drivers; here the
+ * input queue is unregistered - the loopback and a tunnel find no queue
+ * for the family from then on and refuse the packet - and what was
+ * waiting on it is dropped. Nothing can be put on it afterwards: the
+ * core's pointer to it is gone (and with it what the SANA-II read path had
+ * kept, net/if_sana.c).
+ */
+void
+ip_input_stop(void)
+{
+    struct mbuf *m;
+    spl_t s;
+
+    (void)netinput_unregister(AF_INET);
+    s = splimp();
+    for(;;) {
+        IF_DEQUEUE(&ipintrq, m);
+        if(m == NULL)
+            break;
+        m_freem(m);
+    }
+    splx(s);
+}
+
+/*
+ * ip_flush(): what is global to IPv4 and has no interface to go with -
+ * after the interfaces' addresses and their routes are gone. The route
+ * kept for forwarding is given back; every route still in IPv4's table,
+ * and the path MTU slots that hold one, go (rt_flushfamily(): the table
+ * is the core's and stays, empty); the reassembly queues are freed with
+ * the fragments they hold; the saved source route is forgotten.
+ */
+void
+ip_flush(void)
+{
+    spl_t s = splnet();
+
+    if(ipforward_rt.ro_rt != NULL) {
+        RTFREE(ipforward_rt.ro_rt);
+        ipforward_rt.ro_rt = NULL;
+    }
+    rt_flushfamily(AF_INET);
+    if(ipq.next != NULL)
+        ip_drain();
+    splx(s);
+}
+
+/*
+ * ip_deinit(): the registrations ip_init() made that are not ARP's or the
+ * transports' are taken back, the dispatch table's memory is freed, and
+ * this file's variables are what the file gives them. The caller has
+ * taken the transports' entries out of the table before (they clear their
+ * numbers in it), and unregisters IPv4's instance of the family interface
+ * itself.
+ */
+void
+ip_deinit(void)
+{
+    extern const struct netfamily_ifops in_ifops;
+
+    (void)netfamily_ifops_unregister(&in_ifops);
+    (void)netvar_unregister(ip_netvars);    /* the core keeps what was set for a switch */
+    (void)protodispatch_publish(AF_INET, (struct protodispatch *)NULL);
+    protodispatch_done(&ip_protos);
+
+    ipforwarding = IPFORWARDING;
+    ipsendredirects = IPSENDREDIRECTS;
+    ipprintfs = IPPRINTFS;
+    bzero((caddr_t)&ipstat, sizeof(ipstat));
+    bzero((caddr_t)&ipq, sizeof(ipq));
+    nipq = 0;
+    maxnipq = 64;
+    ip_id = 0;
+    bzero((caddr_t)&ipintrq, sizeof(ipintrq));
+    ipqmaxlen = 4 * IFQ_MAXLEN;
+    in_ifaddr = NULL;
+    ip_nhops = 0;
+    bzero((caddr_t)&ip_srcrt, sizeof(ip_srcrt));
+    ipaddr.sin_addr.s_addr = 0;
+    bzero((caddr_t)&ipforward_rt, sizeof(ipforward_rt));
+}
+
+/*
+ * An IP protocol number taken by, and given back by, a protocol that is
+ * not in inetsw[] (net/netmodule.h).
+ */
+int
+ip_proto_register(int proto, struct protosw *pr)
+{
+    return (protodispatch_set(&ip_protos, proto, pr));
+}
+
+int
+ip_proto_unregister(int proto, struct protosw *pr)
+{
+    return (protodispatch_clear(&ip_protos, proto, pr));
+}
+
+/*
+ * Ip input routine.  Checksum and byte swap header.  If fragmented
+ * try to reassemble.  Process options.  Pass to next level.
+ */
+void
+ipintr()
+{
+    register struct ip *ip;
+    register struct mbuf *m;
+    register struct ipq *fp;
+    register struct in_ifaddr *ia;
+    int hlen;
+    int mff = 0;
+    spl_t s;
+
+next:
+    /*
+     * Get next datagram off input queue and get IP header
+     * in first mbuf.
+     */
+    s = splimp();
+    IF_DEQUEUE(&ipintrq, m);
+    splx(s);
+    if(m == 0)
+        return;
+#if	DIAGNOSTIC
+    if((m->m_flags & M_PKTHDR) == 0)
+        panic("ipintr no HDR");
+#endif
+    /*
+     * If no IP addresses have been set yet but the interfaces
+     * are receiving, can't do anything with incoming packets yet.
+     */
+    if(in_ifaddr == NULL)
+        goto bad;
+    ipstat.ips_total++;
+    if(m->m_len < sizeof(struct ip) &&
+            (m = m_pullup(m, sizeof(struct ip))) == 0) {
+        ipstat.ips_toosmall++;
+        goto next;
+    }
+    ip = mtod(m, struct ip *);
+    hlen = ip->ip_hl << 2;
+    if(hlen < sizeof(struct ip)) {	/* minimum header length */
+        ipstat.ips_badhlen++;
+        goto bad;
+    }
+    if(hlen > m->m_len) {
+        if((m = m_pullup(m, hlen)) == 0) {
+            ipstat.ips_badhlen++;
+            goto next;
+        }
+        ip = mtod(m, struct ip *);
+    }
+    if(ip->ip_sum = in_cksum(m, hlen)) {
+        ipstat.ips_badsum++;
+        goto bad;
+    }
+
+    /*
+     * Convert fields to host representation.
+     */
+    NTOHS(ip->ip_len);
+    if(ip->ip_len < hlen) {
+        ipstat.ips_badlen++;
+        goto bad;
+    }
+    NTOHS(ip->ip_id);
+    NTOHS(ip->ip_off);
+
+    /*
+     * Check that the amount of data in the buffers
+     * is as at least much as the IP header would have us expect.
+     * Trim mbufs if longer than we expect.
+     * Drop packet if shorter than we expect.
+     */
+    if(m->m_pkthdr.len < ip->ip_len) {
+        ipstat.ips_tooshort++;
+        goto bad;
+    }
+    if(m->m_pkthdr.len > ip->ip_len) {
+        if(m->m_len == m->m_pkthdr.len) {
+            m->m_len = ip->ip_len;
+            m->m_pkthdr.len = ip->ip_len;
+        } else
+            m_adj(m, ip->ip_len - m->m_pkthdr.len);
+    }
+
+    /*
+     * The packet hooks (the filter engine, Miami hooks): one word tested
+     * while nothing is hooked (net/pfil.h). A hook may have replaced the
+     * chain; a dropped packet is freed already.
+     */
+    if(PFIL_HOOKED(&ip_pfil, PFIL_IN)) {
+        struct mbuf *hm = m;    /* m itself stays a register for the paths without hooks */
+
+        if(pfil_run(&ip_pfil, &hm, m->m_pkthdr.rcvif, PFIL_IN) != 0) {
+            DIPF(log(LOG_DEBUG, "ipfilter: dropped an incoming packet\n");)
+            goto next;
+        }
+        m = hm;
+        ip = mtod(m, struct ip *);
+        hlen = ip->ip_hl << 2;
+    }
+
+    /*
+     * Process options and, if not destined for us,
+     * ship it on.  ip_dooptions returns 1 when an
+     * error was detected (causing an icmp message
+     * to be sent and the original packet to be freed).
+     */
+    ip_nhops = 0;		/* for source routed packets */
+    if(hlen > sizeof(struct ip) && ip_dooptions(m))
+        goto next;
+
+    /*
+     * Check our list of addresses, to see if the packet is for us.
+     */
+    for(ia = in_ifaddr; ia; ia = ia->ia_next) {
+#define	satosin(sa)	((struct sockaddr_in *)(sa))
+
+        if(IA_SIN(ia)->sin_addr.s_addr == ip->ip_dst.s_addr)
+            goto ours;
+        if(
+#ifdef	DIRECTED_BROADCAST
+            ia->ia_ifp == m->m_pkthdr.rcvif &&
+#endif
+            (ia->ia_ifp->if_flags & IFF_BROADCAST)) {
+            u_long t;
+
+            if(satosin(&ia->ia_broadaddr)->sin_addr.s_addr ==
+                    ip->ip_dst.s_addr)
+                goto ours;
+            if(ip->ip_dst.s_addr == ia->ia_netbroadcast.s_addr)
+                goto ours;
+            /*
+             * Look for all-0's host part (old broadcast addr),
+             * either for subnet or net.
+             */
+            t = ntohl(ip->ip_dst.s_addr);
+            if(t == ia->ia_subnet)
+                goto ours;
+            if(t == ia->ia_net)
+                goto ours;
+        }
+    }
+#ifdef ENABLE_MULTICAST
+    if(IN_MULTICAST(ntohl(ip->ip_dst.s_addr))) {
+        struct in_multi *inm;
+
+        /*
+         * A group is ours if a socket joined it on the interface the
+         * packet arrived on. This host does not forward multicast.
+         */
+        IN_LOOKUP_MULTI(ip->ip_dst, m->m_pkthdr.rcvif, inm);
+        if(inm == NULL) {
+            ipstat.ips_cantforward++;
+            m_freem(m);
+            goto next;
+        }
+        goto ours;
+    }
+#endif
+    if(ip->ip_dst.s_addr == (u_long)INADDR_BROADCAST)
+        goto ours;
+    if(ip->ip_dst.s_addr == INADDR_ANY)
+        goto ours;
+
+    /*
+     * Not for us; forward if possible and desirable.
+     */
+    if(ipforwarding == 0) {
+        ipstat.ips_cantforward++;
+        m_freem(m);
+    } else
+        ip_forward(m, 0);
+    goto next;
+
+ours:
+    /*
+     * If offset or IP_MF are set, must reassemble.
+     * Otherwise, nothing need be done.
+     * (We could look in the reassembly queue to see
+     * if the packet was previously fragmented,
+     * but it's not worth the time; just let them time out.)
+     */
+    if(ip->ip_off & ~ IP_DF) {
+        if(m->m_flags & M_EXT) {		/* XXX */
+            if((m = m_pullup(m, sizeof(struct ip))) == 0) {
+                ipstat.ips_toosmall++;
+                goto next;
+            }
+            ip = mtod(m, struct ip *);
+        }
+        /*
+         * Look for queue of fragments
+         * of this datagram.
+         */
+        for(fp = ipq.next; fp != &ipq; fp = fp->next)
+            if(ip->ip_id == fp->ipq_id &&
+                    ip->ip_src.s_addr == fp->ipq_src.s_addr &&
+                    ip->ip_dst.s_addr == fp->ipq_dst.s_addr &&
+                    ip->ip_p == fp->ipq_p)
+                goto found;
+        fp = 0;
+found:
+
+        /*
+         * Adjust ip_len to not reflect header,
+         * set ip_mff if more fragments are expected,
+         * convert offset of this to bytes.
+         */
+        ip->ip_len -= hlen;
+        mff = (ip->ip_off & IP_MF) ? 1 : 0;
+        ip->ip_off <<= 3;
+
+        /*
+         * If datagram marked as having more fragments
+         * or if this is not the first fragment,
+         * attempt reassembly; if it succeeds, proceed.
+         */
+        if(mff || ip->ip_off) {
+            ipstat.ips_fragments++;
+            ip = ip_reass(ip, fp, mff);
+            if(ip == 0)
+                goto next;
+            else
+                ipstat.ips_reassembled++;
+            m = dtom(ip);
+        } else if(fp)
+            ip_freef(fp);
+    } else
+        ip->ip_len -= hlen;
+
+    /*
+     * Switch out to protocol's input routine.
+     */
+    ipstat.ips_delivered++;
+    D(bug("[AROSTCP:IP] %s: proto=%u mbuf=0x%p len=%d -> pr_input\n",
+          __func__, ip->ip_p, m, ip->ip_len));
+    (*PROTODISPATCH(&ip_protos, ip->ip_p)->pr_input)(m, hlen);
+    goto next;
+bad:
+    m_freem(m);
+    goto next;
+}
+
+/*
+ * Take incoming datagram fragment and try to
+ * reassemble it into whole datagram.  If a chain for
+ * reassembly of this datagram already exists, then it
+ * is given as fp; otherwise have to make a chain.
+ *
+ * Fragments are chained through separately allocated ipqent nodes rather
+ * than by overlaying link pointers on the IP header (the 4.3BSD struct
+ * ipasfrag): two 8-byte pointers do not fit in the header's address fields
+ * on a 64-bit target, so that overlay both ran past the header into the
+ * payload and mismatched struct ipq, crashing on the first fragment.
+ */
+struct ip *
+ip_reass(ip, fp, mff)
+register struct ip *ip;
+register struct ipq *fp;
+int mff;
+{
+    register struct mbuf *m = dtom(ip);
+    register struct ipqent *q, *nq;
+    struct ipqent *sentinel;
+    struct ipqent *qe = NULL;
+    struct mbuf *t;
+    int hlen = ip->ip_hl << 2;
+    int i, next;
+
+    /*
+     * Presence of header sizes in mbufs
+     * would confuse code below.
+     */
+    m->m_data += hlen;
+    m->m_len -= hlen;
+
+    /*
+     * Reject any fragment whose last byte lies beyond the largest legal
+     * datagram.  ip_off has already been converted to bytes and ip_len
+     * holds the payload length; both are unsigned 16-bit here, so no
+     * signed wrap is possible in the overlap/trim arithmetic below.
+     */
+    if((int)ip->ip_off + (int)ip->ip_len > IP_MAXPACKET)
+        goto dropfrag;
+
+    /*
+     * Allocate this fragment's list node first, so an allocation failure
+     * is handled before the queue is touched.
+     */
+    if((t = m_get(M_DONTWAIT, MT_FTABLE)) == NULL)
+        goto dropfrag;
+    qe = mtod(t, struct ipqent *);
+    qe->ipqe_m = m;
+    qe->ipqe_ip = ip;
+    qe->ipqe_mff = (u_char)mff;
+
+    /*
+     * If first fragment to arrive, create a reassembly queue.
+     */
+    if(fp == 0) {
+        /*
+         * Bound the number of concurrent reassembly queues so a flood
+         * of first-fragments with distinct ids cannot exhaust memory.
+         * When at the limit, reclaim the oldest queue (the tail of the
+         * list) before creating a new one.
+         */
+        if(nipq >= maxnipq)
+            ip_freef(ipq.prev);
+        if((t = m_get(M_DONTWAIT, MT_FTABLE)) == NULL)
+            goto dropfrag;
+        fp = mtod(t, struct ipq *);
+        insque(fp, &ipq);
+        nipq++;
+        fp->ipq_ttl = IPFRAGTTL;
+        fp->ipq_p = ip->ip_p;
+        fp->ipq_id = ip->ip_id;
+        fp->ipq_frag.ipqe_next = fp->ipq_frag.ipqe_prev = &fp->ipq_frag;
+        fp->ipq_src = ip->ip_src;
+        fp->ipq_dst = ip->ip_dst;
+        q = &fp->ipq_frag;
+        goto insert;
+    }
+
+    sentinel = &fp->ipq_frag;
+
+    /*
+     * Find a segment which begins after this one does.
+     */
+    for(q = fp->ipq_frag.ipqe_next; q != sentinel; q = q->ipqe_next)
+        if(q->ipqe_ip->ip_off > ip->ip_off)
+            break;
+
+    /*
+     * If there is a preceding segment, it may provide some of
+     * our data already.  If so, drop the data from the incoming
+     * segment.  If it provides all of our data, drop us.
+     */
+    if(q->ipqe_prev != sentinel) {
+        i = q->ipqe_prev->ipqe_ip->ip_off + q->ipqe_prev->ipqe_ip->ip_len
+            - ip->ip_off;
+        if(i > 0) {
+            if(i >= ip->ip_len)
+                goto dropfrag;
+            m_adj(m, i);
+            ip->ip_off += i;
+            ip->ip_len -= i;
+        }
+    }
+
+    /*
+     * While we overlap succeeding segments trim them or,
+     * if they are completely covered, dequeue them.
+     */
+    while(q != sentinel && ip->ip_off + ip->ip_len > q->ipqe_ip->ip_off) {
+        i = (ip->ip_off + ip->ip_len) - q->ipqe_ip->ip_off;
+        if(i < q->ipqe_ip->ip_len) {
+            q->ipqe_ip->ip_len -= i;
+            q->ipqe_ip->ip_off += i;
+            m_adj(q->ipqe_m, i);
+            break;
+        }
+        nq = q->ipqe_next;
+        m_freem(q->ipqe_m);
+        ip_deq(q);
+        (void) m_free(dtom(q));
+        q = nq;
+    }
+
+insert:
+    /*
+     * Stick new segment in its place;
+     * check for complete reassembly.
+     */
+    ip_enq(qe, q->ipqe_prev);
+    sentinel = &fp->ipq_frag;
+    next = 0;
+    for(q = fp->ipq_frag.ipqe_next; q != sentinel; q = q->ipqe_next) {
+        if(q->ipqe_ip->ip_off != next)
+            return (0);
+        next += q->ipqe_ip->ip_len;
+    }
+    if(sentinel->ipqe_prev->ipqe_mff)
+        return (0);
+
+    /*
+     * Reassembly is complete; concatenate fragments, freeing each
+     * fragment's list node (but not its data) as we go.
+     */
+    q = fp->ipq_frag.ipqe_next;
+    ip = q->ipqe_ip;
+    m = q->ipqe_m;
+    t = m->m_next;
+    m->m_next = 0;
+    m_cat(m, t);
+    nq = q->ipqe_next;
+    (void) m_free(dtom(q));
+    q = nq;
+    while(q != sentinel) {
+        t = q->ipqe_m;
+        nq = q->ipqe_next;
+        (void) m_free(dtom(q));
+        m_cat(m, t);
+        q = nq;
+    }
+
+    /*
+     * Create header for new ip packet by
+     * modifying header of first packet;
+     * dequeue and discard fragment reassembly header.
+     * Make header visible.
+     */
+    ip->ip_len = next;
+    ip->ip_src = fp->ipq_src;
+    ip->ip_dst = fp->ipq_dst;
+    remque(fp);
+    (void) m_free(dtom(fp));
+    if(nipq > 0)		/* queue consumed on completed reassembly */
+        nipq--;
+    m = dtom(ip);
+    m->m_len += (ip->ip_hl << 2);
+    m->m_data -= (ip->ip_hl << 2);
+    /* some debugging cruft by sklower, below, will go away soon */
+    if(m->m_flags & M_PKTHDR) {  /* XXX this should be done elsewhere */
+        register int plen = 0;
+        for(t = m; m; m = m->m_next)
+            plen += m->m_len;
+        t->m_pkthdr.len = plen;
+    }
+    return (ip);
+
+dropfrag:
+    if(qe != NULL)
+        (void) m_free(dtom(qe));
+    ipstat.ips_fragdropped++;
+    m_freem(m);
+    return (0);
+}
+
+/*
+ * Free a fragment reassembly header and all
+ * associated datagrams.
+ */
+void
+ip_freef(fp)
+struct ipq *fp;
+{
+    register struct ipqent *q, *p;
+    struct ipqent *sentinel = &fp->ipq_frag;
+
+    for(q = fp->ipq_frag.ipqe_next; q != sentinel; q = p) {
+        p = q->ipqe_next;
+        ip_deq(q);
+        m_freem(q->ipqe_m);
+        (void) m_free(dtom(q));
+    }
+    remque(fp);
+    (void) m_free(dtom(fp));
+    if(nipq > 0)
+        nipq--;
+}
+
+/*
+ * Put an ip fragment on a reassembly chain.
+ * Like insque, but for ipqent nodes.
+ */
+void
+ip_enq(p, prev)
+register struct ipqent *p, *prev;
+{
+
+    p->ipqe_prev = prev;
+    p->ipqe_next = prev->ipqe_next;
+    prev->ipqe_next->ipqe_prev = p;
+    prev->ipqe_next = p;
+}
+
+/*
+ * To ip_enq as remque is to insque.
+ */
+void
+ip_deq(p)
+register struct ipqent *p;
+{
+
+    p->ipqe_prev->ipqe_next = p->ipqe_next;
+    p->ipqe_next->ipqe_prev = p->ipqe_prev;
+}
+
+/*
+ * IP timer processing;
+ * if a timer expires on a reassembly
+ * queue, discard it.
+ */
+void
+ip_slowtimo()
+{
+    register struct ipq *fp;
+    spl_t s;
+
+    rt_pmtu_timer();            /* path MTUs whose time is up (route.c) */
+    s = splnet();
+
+    fp = ipq.next;
+    if(fp == 0) {
+        splx(s);
+        return;
+    }
+    while(fp != &ipq) {
+        --fp->ipq_ttl;
+        fp = fp->next;
+        if(fp->prev->ipq_ttl == 0) {
+            ipstat.ips_fragtimeout++;
+            ip_freef(fp->prev);
+        }
+    }
+    splx(s);
+}
+
+/*
+ * Drain off all datagram fragments.
+ */
+void
+ip_drain()
+{
+
+    while(ipq.next != &ipq) {
+        ipstat.ips_fragdropped++;
+        ip_freef(ipq.next);
+    }
+}
+
+extern struct in_ifaddr *ifptoia();
+struct in_ifaddr *ip_rtaddr();
+
+/*
+ * Do option processing on a datagram,
+ * possibly discarding it if bad options are encountered,
+ * or forwarding it if source-routed.
+ * Returns 1 if packet has been forwarded/freed,
+ * 0 if the packet should be processed further.
+ */
+int
+ip_dooptions(m)
+struct mbuf *m;
+{
+    register struct ip *ip = mtod(m, struct ip *);
+    register u_char *cp;
+    register struct ip_timestamp *ipt;
+    register struct in_ifaddr *ia;
+    int opt, optlen, cnt, off, code, type = ICMP_PARAMPROB, forward = 0;
+    struct in_addr *sin, dest = {0};	/* zero so no stale stack value
+					   reaches icmp_error() */
+    n_time ntime;
+
+    cp = (u_char *)(ip + 1);
+    cnt = (ip->ip_hl << 2) - sizeof(struct ip);
+    for(; cnt > 0; cnt -= optlen, cp += optlen) {
+        opt = cp[IPOPT_OPTVAL];
+        if(opt == IPOPT_EOL)
+            break;
+        if(opt == IPOPT_NOP)
+            optlen = 1;
+        else {
+            optlen = cp[IPOPT_OLEN];
+            if(optlen <= 0 || optlen > cnt) {
+                code = &cp[IPOPT_OLEN] - (u_char *)ip;
+                goto bad;
+            }
+        }
+        switch(opt) {
+
+        default:
+            break;
+
+        /*
+         * Source routing with record.
+         * Find interface with current destination address.
+         * If none on this machine then drop if strictly routed,
+         * or do nothing if loosely routed.
+         * Record interface address and bring up next address
+         * component.  If strictly routed make sure next
+         * address is on directly accessible net.
+         */
+        case IPOPT_LSRR:
+        case IPOPT_SSRR:
+            if((off = cp[IPOPT_OFFSET]) < IPOPT_MINOFF) {
+                code = &cp[IPOPT_OFFSET] - (u_char *)ip;
+                goto bad;
+            }
+            ipaddr.sin_addr = ip->ip_dst;
+            ia = (struct in_ifaddr *)
+                 ifa_ifwithaddr((struct sockaddr *)&ipaddr);
+            if(ia == 0) {
+                if(opt == IPOPT_SSRR) {
+                    type = ICMP_UNREACH;
+                    code = ICMP_UNREACH_SRCFAIL;
+                    goto bad;
+                }
+                /*
+                 * Loose routing, and not at next destination
+                 * yet; nothing to do except forward.
+                 */
+                break;
+            }
+            off--;			/* 0 origin */
+            if(off > optlen - sizeof(struct in_addr)) {
+                /*
+                 * End of source route.  Should be for us.
+                 */
+                save_rte(cp, ip->ip_src);
+                break;
+            }
+            /*
+             * locate outgoing interface
+             */
+            bcopy((caddr_t)(cp + off), (caddr_t)&ipaddr.sin_addr,
+                  sizeof(ipaddr.sin_addr));
+            if(opt == IPOPT_SSRR) {
+#define	INA	struct in_ifaddr *
+#define	SA	struct sockaddr *
+                if((ia = (INA)ifa_ifwithdstaddr((SA)&ipaddr)) == 0)
+                    ia = in_iaonnetof(in_netof(ipaddr.sin_addr));
+            } else
+                ia = ip_rtaddr(ipaddr.sin_addr);
+            if(ia == 0) {
+                type = ICMP_UNREACH;
+                code = ICMP_UNREACH_SRCFAIL;
+                goto bad;
+            }
+            ip->ip_dst = ipaddr.sin_addr;
+            bcopy((caddr_t) & (IA_SIN(ia)->sin_addr),
+                  (caddr_t)(cp + off), sizeof(struct in_addr));
+            cp[IPOPT_OFFSET] += sizeof(struct in_addr);
+            forward = 1;
+            break;
+
+        case IPOPT_RR:
+            if((off = cp[IPOPT_OFFSET]) < IPOPT_MINOFF) {
+                code = &cp[IPOPT_OFFSET] - (u_char *)ip;
+                goto bad;
+            }
+            /*
+             * If no space remains, ignore.
+             */
+            off--;			/* 0 origin */
+            if(off > optlen - sizeof(struct in_addr))
+                break;
+            ipaddr.sin_addr = ip->ip_dst;
+            /*
+             * locate outgoing interface; if we're the destination,
+             * use the incoming interface (should be same).
+             */
+            if((ia = (INA)ifa_ifwithaddr((SA)&ipaddr)) == 0 &&
+                    (ia = ip_rtaddr(ipaddr.sin_addr)) == 0) {
+                type = ICMP_UNREACH;
+                code = ICMP_UNREACH_HOST;
+                goto bad;
+            }
+            bcopy((caddr_t) & (IA_SIN(ia)->sin_addr),
+                  (caddr_t)(cp + off), sizeof(struct in_addr));
+            cp[IPOPT_OFFSET] += sizeof(struct in_addr);
+            break;
+
+        case IPOPT_TS:
+            code = cp - (u_char *)ip;
+            ipt = (struct ip_timestamp *)cp;
+            if(ipt->ipt_len < 5)
+                goto bad;
+            if(ipt->ipt_ptr > ipt->ipt_len - sizeof(long)) {
+                if(++ipt->ipt_oflw == 0)
+                    goto bad;
+                break;
+            }
+            sin = (struct in_addr *)(cp + ipt->ipt_ptr - 1);
+            switch(ipt->ipt_flg) {
+
+            case IPOPT_TS_TSONLY:
+                break;
+
+            case IPOPT_TS_TSANDADDR:
+                if(ipt->ipt_ptr + sizeof(n_time) +
+                        sizeof(struct in_addr) > ipt->ipt_len)
+                    goto bad;
+                ia = ifptoia(m->m_pkthdr.rcvif);
+                *sin = IA_SIN(ia)->sin_addr;
+                ipt->ipt_ptr += sizeof(struct in_addr);
+                break;
+
+            case IPOPT_TS_PRESPEC:
+                if(ipt->ipt_ptr + sizeof(n_time) +
+                        sizeof(struct in_addr) > ipt->ipt_len)
+                    goto bad;
+                ipaddr.sin_addr = *sin;
+                if(ifa_ifwithaddr((SA)&ipaddr) == 0)
+                    continue;
+                ipt->ipt_ptr += sizeof(struct in_addr);
+                break;
+
+            default:
+                goto bad;
+            }
+            ntime = iptime();
+            bcopy((caddr_t)&ntime, (caddr_t)cp + ipt->ipt_ptr - 1,
+                  sizeof(n_time));
+            ipt->ipt_ptr += sizeof(n_time);
+        }
+    }
+    if(forward) {
+        ip_forward(m, 1);
+        return (1);
+    } else
+        return (0);
+bad:
+    icmp_error(m, type, code, dest); /* dest is not used */
+    return (1);
+}
+
+/*
+ * Given address of next destination (final or next hop),
+ * return internet address info of interface to be used to get there.
+ */
+struct in_ifaddr *
+ip_rtaddr(dst)
+struct in_addr dst;
+{
+    register struct sockaddr_in *sin;
+
+    sin = (struct sockaddr_in *) &ipforward_rt.ro_dst;
+
+    if(ipforward_rt.ro_rt == 0 || dst.s_addr != sin->sin_addr.s_addr) {
+        if(ipforward_rt.ro_rt) {
+            RTFREE(ipforward_rt.ro_rt);
+            ipforward_rt.ro_rt = 0;
+        }
+        sin->sin_family = AF_INET;
+        sin->sin_len = sizeof(*sin);
+        sin->sin_addr = dst;
+
+        rtalloc(&ipforward_rt);
+    }
+    if(ipforward_rt.ro_rt == 0)
+        return ((struct in_ifaddr *)0);
+    return ((struct in_ifaddr *) ipforward_rt.ro_rt->rt_ifa);
+}
+
+/*
+ * Save incoming source route for use in replies,
+ * to be picked up later by ip_srcroute if the receiver is interested.
+ */
+void
+save_rte(option, dst)
+u_char *option;
+struct in_addr dst;
+{
+    unsigned olen;
+
+    olen = option[IPOPT_OLEN];
+#if DIAGNOSTIC
+    if(ipprintfs)
+        printf("save_rte: olen %ld\n", (long)olen);
+#endif
+    if(olen > sizeof(ip_srcrt) - (1 + sizeof(dst)))
+        return;
+    bcopy((caddr_t)option, (caddr_t)ip_srcrt.srcopt, olen);
+    ip_nhops = (olen - IPOPT_OFFSET - 1) / sizeof(struct in_addr);
+    ip_srcrt.dst = dst;
+}
+
+/*
+ * Retrieve incoming source route for use in replies,
+ * in the same form used by setsockopt.
+ * The first hop is placed before the options, will be removed later.
+ */
+struct mbuf *
+ip_srcroute()
+{
+    register struct in_addr *p, *q;
+    register struct mbuf *m;
+
+    if(ip_nhops == 0)
+        return ((struct mbuf *)0);
+    m = m_get(M_DONTWAIT, MT_SOOPTS);
+    if(m == 0)
+        return ((struct mbuf *)0);
+
+    /* length is (nhops+1)*sizeof(addr) + sizeof(nop + srcrt header) */
+    m->m_len = ip_nhops * sizeof(struct in_addr) + sizeof(struct in_addr) +
+               sizeof(struct ip_srcrt_opts);
+#if DIAGNOSTIC
+    if(ipprintfs)
+        printf("ip_srcroute: nhops %ld mlen %ld", (long)ip_nhops, (long)m->m_len);
+#endif
+
+    /*
+     * First save first hop for return route
+     */
+    p = &ip_srcrt.route[ip_nhops - 1];
+    *(mtod(m, struct in_addr *)) = *p--;
+#if DIAGNOSTIC
+    if(ipprintfs)
+        printf(" hops %lx", (u_long)ntohl(mtod(m, struct in_addr *)->s_addr));
+#endif
+
+    /*
+     * Copy option fields and padding (nop) to mbuf.
+     */
+    struct ip_srcrt_opts *tmpOpts = (struct ip_srcrt_opts *)&ip_srcrt.nop;
+    ip_srcrt.nop = IPOPT_NOP;
+    ip_srcrt.srcopt[IPOPT_OFFSET] = IPOPT_MINOFF;
+    aligned_bcopy_const((caddr_t)tmpOpts,
+                        mtod(m, caddr_t) + sizeof(struct in_addr), sizeof(struct ip_srcrt_opts));
+    q = (struct in_addr *)(mtod(m, caddr_t) +
+                           sizeof(struct in_addr) + sizeof(struct ip_srcrt_opts));
+    /*
+     * Record return path as an IP source route,
+     * reversing the path (pointers are now aligned).
+     */
+    while(p >= ip_srcrt.route) {
+#if DIAGNOSTIC
+        if(ipprintfs)
+            printf(" %lx", (u_long)ntohl(q->s_addr));
+#endif
+        *q++ = *p--;
+    }
+    /*
+     * Last hop goes to final destination.
+     */
+    *q = ip_srcrt.dst;
+#if DIAGNOSTIC
+    if(ipprintfs)
+        printf(" %lx\n", (u_long)ntohl(q->s_addr));
+#endif
+    return (m);
+}
+
+/*
+ * Strip out IP options, at higher
+ * level protocol in the kernel.
+ * Second argument is buffer to which options
+ * will be moved, and return value is their length.
+ * XXX should be deleted; last arg currently ignored.
+ */
+void
+ip_stripoptions(m, mopt)
+register struct mbuf *m;
+struct mbuf *mopt;
+{
+    register int i;
+    struct ip *ip = mtod(m, struct ip *);
+    register caddr_t opts;
+    int olen;
+
+    olen = (ip->ip_hl << 2) - sizeof(struct ip);
+    opts = (caddr_t)(ip + 1);
+    i = m->m_len - (sizeof(struct ip) + olen);
+    aligned_bcopy(opts  + olen, opts, (unsigned)i);
+    m->m_len -= olen;
+    if(m->m_flags & M_PKTHDR)
+        m->m_pkthdr.len -= olen;
+    ip->ip_hl = sizeof(struct ip) >> 2;
+}
+
+u_char inetctlerrmap[PRC_NCMDS] = {
+    0,		0,		0,		0,
+    0,		EMSGSIZE,	EHOSTDOWN,	EHOSTUNREACH,
+    EHOSTUNREACH,	EHOSTUNREACH,	ECONNREFUSED,	ECONNREFUSED,
+    EMSGSIZE,	EHOSTUNREACH,	0,		0,
+    0,		0,		0,		0,
+    ENOPROTOOPT
+};
+
+/*
+ * Forward a packet.  If some error occurs return the sender
+ * an icmp packet.  Note we can't always generate a meaningful
+ * icmp message because icmp doesn't have a large enough repertoire
+ * of codes and types.
+ *
+ * If not forwarding, just drop the packet.  This could be confusing
+ * if ipforwarding was zero but some routing protocol was advancing
+ * us as a gateway to somewhere.  However, we must let the routing
+ * protocol deal with that.
+ *
+ * The srcrt parameter indicates whether the packet is being forwarded
+ * via a source route.
+ */
+void
+ip_forward(m, srcrt)
+struct mbuf *m;
+int srcrt;
+{
+    register struct ip *ip = mtod(m, struct ip *);
+    register struct sockaddr_in *sin;
+    register struct rtentry *rt;
+    int error, type = 0, code = 0;
+    struct mbuf *mcopy;
+    struct in_addr dest;
+
+    dest.s_addr = 0;
+#if DIAGNOSTIC
+    if(ipprintfs)
+        printf("forward: src %lx dst %lx ttl %lx\n", (u_long)ip->ip_src.s_addr,
+               (u_long)ip->ip_dst.s_addr, (u_long)ip->ip_ttl);
+#endif
+    if(m->m_flags & M_BCAST || in_canforward(ip->ip_dst) == 0) {
+        ipstat.ips_cantforward++;
+        m_freem(m);
+        return;
+    }
+    HTONS(ip->ip_id);
+    if(ip->ip_ttl <= IPTTLDEC) {
+        icmp_error(m, ICMP_TIMXCEED, ICMP_TIMXCEED_INTRANS, dest);
+        return;
+    }
+    ip->ip_ttl -= IPTTLDEC;
+
+    sin = (struct sockaddr_in *)&ipforward_rt.ro_dst;
+    if((rt = ipforward_rt.ro_rt) == 0 ||
+            ip->ip_dst.s_addr != sin->sin_addr.s_addr) {
+        if(ipforward_rt.ro_rt) {
+            RTFREE(ipforward_rt.ro_rt);
+            ipforward_rt.ro_rt = 0;
+        }
+        sin->sin_family = AF_INET;
+        sin->sin_len = sizeof(*sin);
+        sin->sin_addr = ip->ip_dst;
+
+        rtalloc(&ipforward_rt);
+        if(ipforward_rt.ro_rt == 0) {
+            icmp_error(m, ICMP_UNREACH, ICMP_UNREACH_HOST, dest);
+            return;
+        }
+        rt = ipforward_rt.ro_rt;
+    }
+
+    /*
+     * Save at most 64 bytes of the packet in case
+     * we need to generate an ICMP message to the src.
+     */
+    mcopy = m_copy(m, 0, imin((int)ip->ip_len, 64));
+
+#if USE_IF_MATRIX
+    ip_ifmatrix[rt->rt_ifp->if_index +
+                                     if_index * m->m_pkthdr.rcvif->if_index]++;
+#endif
+    /*
+     * If forwarding packet using same interface that it came in on,
+     * perhaps should send a redirect to sender to shortcut a hop.
+     * Only send redirect if source is sending directly to us,
+     * and if packet was not source routed (or has any options).
+     * Also, don't send redirect if forwarding using a default route
+     * or a route modified by a redirect.
+     */
+#define	satosin(sa)	((struct sockaddr_in *)(sa))
+    if(rt->rt_ifp == m->m_pkthdr.rcvif &&
+            (rt->rt_flags & (RTF_DYNAMIC | RTF_MODIFIED)) == 0 &&
+            satosin(rt_key(rt))->sin_addr.s_addr != 0 &&
+            ipsendredirects && !srcrt) {
+        struct in_ifaddr *ia;
+        u_long src = ntohl(ip->ip_src.s_addr);
+        u_long dst = ntohl(ip->ip_dst.s_addr);
+
+        if((ia = ifptoia(m->m_pkthdr.rcvif)) &&
+                (src & ia->ia_subnetmask) == ia->ia_subnet) {
+            if(rt->rt_flags & RTF_GATEWAY)
+                dest = satosin(rt->rt_gateway)->sin_addr;
+            else
+                dest = ip->ip_dst;
+            /*
+             * If the destination is reached by a route to host,
+             * is on a subnet of a local net, or is directly
+             * on the attached net (!), use host redirect.
+             * (We may be the correct first hop for other subnets.)
+             */
+#define	RTA(rt)	((struct in_ifaddr *)(rt->rt_ifa))
+            type = ICMP_REDIRECT;
+            if((rt->rt_flags & RTF_HOST) ||
+                    (rt->rt_flags & RTF_GATEWAY) == 0)
+                code = ICMP_REDIRECT_HOST;
+            else if(RTA(rt)->ia_subnetmask != RTA(rt)->ia_netmask &&
+                    (dst & RTA(rt)->ia_netmask) ==  RTA(rt)->ia_net)
+                code = ICMP_REDIRECT_HOST;
+            else
+                code = ICMP_REDIRECT_NET;
+#if DIAGNOSTIC
+            if(ipprintfs)
+                printf("redirect (%ld) to %lx\n", (long)code, (u_long)dest.s_addr);
+#endif
+        }
+    }
+
+    /*
+     * The forwarding hooks, with the route known: a packet they drop is
+     * gone (and not counted as forwarded); the output hooks follow in
+     * ip_output().
+     */
+    if(PFIL_HOOKED(&ip_pfil, PFIL_FWD)) {
+        struct mbuf *hm = m;
+
+        if(pfil_run(&ip_pfil, &hm, rt->rt_ifp, PFIL_FWD) != 0) {
+            ipstat.ips_cantforward++;
+            if(mcopy)
+                m_freem(mcopy);
+            return;
+        }
+        m = hm;
+    }
+
+    error = ip_output(m, (struct mbuf *)0, &ipforward_rt, IP_FORWARDING);
+    if(error)
+        ipstat.ips_cantforward++;
+    else {
+        ipstat.ips_forward++;
+        if(type)
+            ipstat.ips_redirectsent++;
+        else {
+            if(mcopy)
+                m_freem(mcopy);
+            return;
+        }
+    }
+    if(mcopy == NULL)
+        return;
+    switch(error) {
+
+    case 0:				/* forwarded, but need redirect */
+        /* type, code set above */
+        break;
+
+    case ENETUNREACH:		/* shouldn't happen, checked above */
+    case EHOSTUNREACH:
+    case ENETDOWN:
+    case EHOSTDOWN:
+    default:
+        type = ICMP_UNREACH;
+        code = ICMP_UNREACH_HOST;
+        break;
+
+    case EMSGSIZE:
+        type = ICMP_UNREACH;
+        code = ICMP_UNREACH_NEEDFRAG;
+        ipstat.ips_cantfrag++;
+        break;
+
+    case ENOBUFS:
+        type = ICMP_SOURCEQUENCH;
+        code = 0;
+        break;
+    }
+    icmp_error(mcopy, type, code, dest);
+}

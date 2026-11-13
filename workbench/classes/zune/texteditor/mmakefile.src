@@ -1,0 +1,6 @@
+
+#MM- workbench-classes-zune : workbench-classes-zune-texteditor
+
+#MM- workbench-classes-zune-texteditor : workbench-classes-zune-betterstring \
+#MM					 workbench-classes-zune-texteditor-class \
+#MM					 workbench-classes-zune-texteditor-mcp

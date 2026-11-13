@@ -1,0 +1,15 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+USER_CPPFLAGS := -DMUIMASTER_YES_INLINE_STDARG
+USER_LDFLAGS := -static
+
+FILES :=    asixeth.class dev debug
+
+#MM- kernel-usb-classes-asixeth : kernel-usb-usbclass kernel-usb-poseidon-includes
+
+%build_module_library mmake=kernel-usb-classes-asixeth \
+    modname=asixeth modtype=usbclass modsuffix="class" \
+    files="$(FILES)"
+
+%common

@@ -1,0 +1,11 @@
+include $(SRCDIR)/config/aros.cfg
+
+EXEDIR := $(AROS_TESTS)/raspi
+
+#MM raspi-modetest2711 : includes linklibs kernel-mbox-bcm2708-includes
+
+%build_prog mmake=raspi-modetest2711 \
+    progname=modetest2711 targetdir=$(EXEDIR) \
+    files=modetest2711
+
+%common

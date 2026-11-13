@@ -1,0 +1,20 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+FUNCTIONS := card_init lowlevel task \
+	owncard releasecard readcardstatus ifamigaxip getcardmap \
+	begincardaccess endcardaccess cardresetremove \
+	cardmiscontrol cardaccessspeed cardprogramvoltage \
+	cardresetcard copytuple devicetuple cardforcechange \
+	cardchangecount cardinterface
+
+%build_archspecific \
+  mainmmake=kernel-cardres modname=card maindir=rom/card \
+  arch=amiga-m68k \
+  files="$(FUNCTIONS)"
+
+#%build_module mmake=kernel-cardres \
+#    modname=cardres modtype=resource \
+#    files="$(FUNCTIONS)"
+
+%common

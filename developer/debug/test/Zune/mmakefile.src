@@ -1,0 +1,41 @@
+#
+# Makefile for Zune test programs
+
+include $(SRCDIR)/config/aros.cfg
+
+FILES  := test             \
+          virttest         \
+          gradient         \
+          volumelist       \
+          dirlist          \
+          disable          \
+          dtpic            \
+          font             \
+          string           \
+          numericbutton    \
+          poplist          \
+          popscreen        \
+          crawling         \
+          levelmeter       \
+          knob             \
+          texticonlist     \
+          graph            \
+          loginwindow      \
+          busy             \
+          hideshow         \
+          settings         \
+          dynlist          \
+          listinsertactive \
+          mui4test         \
+          flextest         \
+          rexxunknown      \
+          gaugeclip
+
+USER_CFLAGS := -I $(SRCDIR)/workbench/system/Wanderer/Classes
+
+EXEDIR := $(AROS_TESTS)/Zune
+
+#MM test-zune : includes linklibs workbench-classes-zune-busy workbench-classes-zune-flexgroup
+
+%build_progs mmake=test-zune \
+    files=$(FILES) targetdir=$(EXEDIR)

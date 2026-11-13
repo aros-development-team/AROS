@@ -1,0 +1,19 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+INCLUDE_FILES := lddemon.h
+
+USER_CPPFLAGS := \
+               -DUSE_EXEC_DEBUG \
+               -D__DOS_NOLIBBASE__
+USER_LDFLAGS := -static
+
+ifneq ($(ROM_OPTIMIZATION_CFLAGS),)
+OPTIMIZATION_CFLAGS := $(ROM_OPTIMIZATION_CFLAGS)
+endif
+
+%build_module mmake=kernel-lddemon \
+  modname=lddemon modtype=resource \
+  files="lddemon" 
+
+%copy_includes dir=include path=resources

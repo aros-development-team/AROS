@@ -1,0 +1,14 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM- workbench-devs-monitors : workbench-devs-monitors-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)
+#MM- workbench-devs-monitors : workbench-devs-monitors-$(AROS_TARGET_ARCH)
+#MM- workbench-devs-monitors : workbench-devs-monitors-$(AROS_TARGET_CPU)
+
+#MM- workbench-devs-monitors-pci : \
+#MM        devs-monitors-intelgma
+
+#MM-  workbench-devs-monitors-pc-i386 : workbench-devs-monitors-pci
+#MM-  workbench-devs-monitors-pc-x86_64 : workbench-devs-monitors-pci
+#MM-  workbench-devs-monitors-opensbi-riscv : workbench-devs-monitors-pci
+#MM-  workbench-devs-monitors-opensbi-riscv64 : workbench-devs-monitors-pci

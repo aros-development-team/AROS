@@ -1,0 +1,189 @@
+SYSTEM := $(shell uname -s)
+CROSS := i386-aros
+CC := $(CROSS)-gcc
+AS := $(CROSS)-as
+AR := $(CROSS)-ar
+RANLIB := $(CROSS)-ranlib
+RM := rm -f
+CP := cp -p --remove-destination
+
+OPTIMIZE := -O3
+CFLAGS := -fno-stack-protector $(OPTIMIZE) -Wall -Wno-pointer-sign -Iinclude -Iinclude/aros -Idms -DCATCOMP_NUMBERS -DMIN_OS_VERSION=39
+DEVICE_FLAGS := -Idevice/include -DDEVICE
+PLUGIN_FLAGS := -D__NOLIBBASE__
+GUI_FLAGS := -Izune_gui/include -DGUI
+LINK := $(OPTIMIZE) -s
+LIBS := -lamiga
+GUI_LIBS := -lmui
+
+TARGET := diskimage.device
+VERSION := 52
+
+SFD := sfd/diskimage_lib.sfd sfd/expat_lib.sfd sfd/z_lib.sfd sfd/bz2_lib.sfd
+PROTO := $(patsubst sfd/%_lib.sfd,include/aros/proto/%.h,$(SFD))
+CLIB := $(patsubst sfd/%_lib.sfd,include/aros/clib/%_protos.h,$(SFD))
+DEFINES := $(patsubst sfd/%_lib.sfd,include/aros/defines/%.h,$(SFD))
+INCLUDE := $(PROTO) $(CLIB) $(DEFINES)
+
+SUPPORT_OBJS := support/aros/asprintf.o support/aros/asprintfpooled.o support/checkbptr.o \
+	support/checklib.o support/copystringbstrtoc.o support/deletelibrary.o support/dos64.o \
+	support/envvar.o support/getcurrentdir.o support/hooks.o support/lists.o support/messages.o \
+	support/mutexes.o support/paths.o support/ports.o support/semaphores.o support/strlcpy.o \
+	support/swab2.o support/tooltypes.o support/istext.o support/trimstr.o support/diskimagedevice.o \
+	support/localeinfo.o support/translatefuncs.o support/reallocbuf.o support/setprocwindow.o
+PREFS_OBJS := prefs/prefs.o prefs/readprefs.o prefs/writeprefs.o
+DEVICE_OBJS := device/stub_x86.o device/init.o device/io.o device/unit.o device/scsicmd.o \
+	device/locale.o device/plugins.o device/tempfile.o device/progress.o device/password.o \
+	device/main_vectors.o device/plugin_vectors.o plugins/generic.o plugins/adf.o plugins/d64.o \
+	plugins/iso.o
+PLUGIN_OBJS := $(patsubst %.c,%.o,$(wildcard plugins/*.c) $(wildcard plugins/cue/*.c) \
+	$(wildcard plugins/dmg/*.c) $(wildcard plugins/fdi/*.c))
+CUE_OBJS := plugins/cue/cue.o plugins/cue/flac.o plugins/cue/wavpack.o audio/aiff.o audio/flac.o \
+	audio/mp3_mpg123.o audio/vorbis.o audio/wave.o audio/wavpack.o plugins/cue/malloc.o \
+	plugins/cue/fdio.o plugins/cue/string.o plugins/cue/stdio.o plugins/cue/select.o
+DMS_OBJS := dms/crc_csum.o dms/getbits.o dms/tables.o dms/maketbl.o dms/u_init.o \
+	dms/u_deep.o dms/u_heavy.o dms/u_medium.o dms/u_quick.o dms/u_rle.o
+GUI_OBJS := zune_gui/locale.o zune_gui/main.o zune_gui/gui.o zune_gui/drivelist.o \
+	zune_gui/pluginlist.o zune_gui/driveops.o zune_gui/requesters.o zune_gui/images.o
+ALL_OBJS := lib/libsupport.a support/*.o support/aros/*.o lib/libprefs.a prefs/*.o \
+	device/*.o plugins/*.o plugins/cue/*.o plugins/dmg/*.o plugins/fdi/*.o dms/*.o \
+	audio/*.o cmd/*.o zune_gui/*.o
+PLUGINS := plugins/CCD plugins/CISO plugins/CPC plugins/cue/CUE plugins/DAA plugins/DAX plugins/dmg/DMG \
+	plugins/DMS plugins/fdi/FDI plugins/GI plugins/NRG plugins/MDS plugins/UIF
+RELEASEDIR := ../release/x86-aros/diskimage_device
+
+# -------------------------------------------------------------
+
+all: $(INCLUDE) lib/libsupport.a device/$(TARGET) $(PLUGINS) z_library bz2_library \
+	expat_library cmd/MountDiskImage cmd/MountHDF zune_gui/DiskImageGUI
+
+include/aros/proto/%.h: sfd/%_lib.sfd
+	sfdc --target=i386-aros --mode=proto --output=$@ $<
+
+include/aros/clib/%_protos.h: sfd/%_lib.sfd
+	sfdc --target=i386-aros --mode=clib --output=$@ $<
+
+include/aros/defines/%.h: sfd/%_lib.sfd
+	sfdc --target=i386-aros --mode=macros --output=$@ $<
+
+lib/libsupport.a: $(SUPPORT_OBJS)
+	$(AR) -crv $@ $^
+	$(RANLIB) $@
+
+lib/libprefs.a: $(PREFS_OBJS)
+	$(AR) -crv $@ $^
+	$(RANLIB) $@
+
+$(DEVICE_OBJS): CFLAGS += $(DEVICE_FLAGS)
+
+device/$(TARGET): $(DEVICE_OBJS) lib/libprefs.a lib/libsupport.a
+	$(CC) -nostartfiles $(LINK) -o $@ $^ $(LIBS)
+
+device/init.o: include/rev/$(TARGET)_rev.h
+device/locale.o: include/device_locale.h
+
+include/device_locale.h: device/catalogs/diskimagedevice.cd
+ifeq ($(SYSTEM),AmigaOS)
+	catcomp $< NOCODE CFILE $@
+else
+	catcomp $< --cfile $@
+endif
+
+plugins/cue/cue.o plugins/cue/flac.o plugins/cue/wavpack.o: CFLAGS += -DUSE_FLAC -DUSE_MPG123 -DUSE_VORBIS -DUSE_WAVPACK
+
+$(PLUGIN_OBJS): include/rev/$(TARGET)_rev.h
+$(PLUGIN_OBJS): CFLAGS += $(PLUGIN_FLAGS)
+
+plugins/CCD: plugins/stub_x86.o plugins/ccd.o lib/libsupport.a
+	$(CC) -nostartfiles $(LINK) -o $@ $^
+
+plugins/CISO: plugins/stub_x86.o plugins/ciso.o lib/libsupport.a
+	$(CC) -nostartfiles $(LINK) -o $@ $^
+
+plugins/CPC: plugins/stub_x86.o plugins/cpc.o lib/libsupport.a
+	$(CC) -nostartfiles $(LINK) -o $@ $^
+
+plugins/cue/CUE: plugins/stub_x86.o $(CUE_OBJS) lib/libsupport.a
+	$(CC) -nostartfiles $(LINK) -o $@ $^ -lmpg123 -lFLAC -lwavpack -lvorbisfile -lvorbis -logg -lm
+
+plugins/DAA: plugins/stub_x86.o plugins/daa.o lib/libsupport.a
+	$(CC) -nostartfiles $(LINK) -o $@ $^
+
+plugins/DAX: plugins/stub_x86.o plugins/dax.o lib/libsupport.a
+	$(CC) -nostartfiles $(LINK) -o $@ $^
+
+plugins/dmg/DMG: plugins/stub_x86.o plugins/dmg/dmg.o plugins/dmg/base64.o plugins/dmg/adc.o lib/libsupport.a
+	$(CC) -nostartfiles $(LINK) -o $@ $^
+
+plugins/DMS: plugins/stub_x86.o plugins/dms.o $(DMS_OBJS) lib/libsupport.a
+	$(CC) -nostartfiles $(LINK) -o $@ $^
+
+plugins/fdi/FDI: plugins/stub_x86.o plugins/fdi/fdi.o plugins/fdi/fdi2raw.o
+	$(CC) -nostartfiles $(LINK) -o $@ $^
+
+plugins/GI: plugins/stub_x86.o plugins/gi.o lib/libsupport.a
+	$(CC) -nostartfiles $(LINK) -o $@ $^
+
+plugins/MDS: plugins/stub_x86.o plugins/mds.o lib/libsupport.a
+	$(CC) -nostartfiles $(LINK) -o $@ $^
+
+plugins/NRG: plugins/stub_x86.o plugins/nrg.o lib/libsupport.a
+	$(CC) -nostartfiles $(LINK) -o $@ $^
+
+plugins/UIF: plugins/stub_x86.o plugins/uif.o lib/libsupport.a
+	$(CC) -nostartfiles $(LINK) -o $@ $^
+
+plugins/XAD: plugins/stub_x86.o plugins/xad.o lib/libsupport.a
+	$(CC) -nostartfiles $(LINK) -o $@ $^
+
+plugins/XPK: plugins/stub_x86.o plugins/xpk.o lib/libsupport.a
+	$(CC) -nostartfiles $(LINK) -o $@ $^
+
+cmd/MountDiskImage: cmd/mountdiskimage.o lib/libsupport.a
+	$(CC) $(LINK) -o $@ $^ -lmui
+
+cmd/mountdiskimage.o: include/rev/MountDiskImage_rev.h
+
+cmd/MountHDF: cmd/mounthdf.o lib/libsupport.a
+	$(CC) $(LINK) -o $@ $^ -lmui
+
+cmd/mounthdf.o: include/rev/MountHDF_rev.h
+
+$(GUI_OBJS): CFLAGS += $(GUI_FLAGS)
+
+zune_gui/DiskImageGUI: $(GUI_OBJS) lib/libsupport.a
+	$(CC) $(LINK) -o $@ $^ $(GUI_LIBS)
+
+zune_gui/main.o zune_gui/gui.o: include/rev/DiskImageGUI_rev.h
+zune_gui/locale.o: zune_gui/include/locale.h
+
+zune_gui/include/locale.h: zune_gui/catalogs/diskimagegui.cd
+ifeq ($(SYSTEM),AmigaOS)
+	catcomp $< NOCODE CFILE $@
+else
+	catcomp $< --cfile $@
+endif
+
+.PHONY: z_library bz2_library expat_library
+
+z_library bz2_library expat_library:
+	$(MAKE) -C $@ -f Makefile.x86-aros
+
+.PHONY: dist clean
+
+dist: all
+	$(CP) device/$(TARGET) $(RELEASEDIR)/Devs/
+	$(CP) $(PLUGINS) $(RELEASEDIR)/Devs/DiskImage/
+	$(CP) z_library/z.library $(RELEASEDIR)/Libs/
+	$(CP) bz2_library/bz2.library $(RELEASEDIR)/Libs/
+	$(CP) expat_library/expat.library $(RELEASEDIR)/Libs/
+	$(CP) cmd/MountDiskImage cmd/MountHDF $(RELEASEDIR)/C/
+	$(CP) zune_gui/DiskImageGUI $(RELEASEDIR)/
+#	$(CP) device/catalogs/*.cd $(RELEASEDIR)/Catalogs/
+#	$(CP) zune_gui/catalogs/*.cd $(RELEASEDIR)/Catalogs/
+
+clean:
+	$(RM) $(ALL_OBJS)
+	$(MAKE) -C z_library -f Makefile.x86-aros clean
+	$(MAKE) -C bz2_library -f Makefile.x86-aros clean
+	$(MAKE) -C expat_library -f Makefile.x86-aros clean

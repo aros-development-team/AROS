@@ -1,0 +1,116 @@
+/*
+    Copyright (C) 1995-2014, The AROS Development Team. All rights reserved.
+*/
+
+#include "mathieeesingbas_intern.h"
+
+/*****************************************************************************
+
+    NAME */
+
+        AROS_LH2(float, IEEESPDiv,
+
+/*  SYNOPSIS */
+        AROS_LHA(float, y, D0),
+        AROS_LHA(float, z, D1),
+
+/*  LOCATION */
+        struct LibHeader *, MathIeeeSingBasBase, 14, Mathieeesingbas)
+
+/*  FUNCTION
+        Divide two IEEE single precision floating point numbers
+        x = y / z;
+
+    INPUTS
+
+    RESULT
+        Flags:
+          zero     : result is zero
+          negative : result is negative
+          overflow : result is out of range
+
+    BUGS
+
+    INTERNALS
+        ALGORITHM:
+        Check if fnum2 == 0: result = 0;
+        Check if fnum1 == 0: result = overflow;
+        The further algorithm comes down to a pen & paper division.
+
+*****************************************************************************/
+{
+    AROS_LIBFUNC_INIT
+    
+    LONG Res = 0;
+    LONG Exponent = (y & IEEESPExponent_Mask)
+                  - (z & IEEESPExponent_Mask) + 0x3f800000;
+    
+    LONG Mant2 = ((y & IEEESPMantisse_Mask) | 0x00800000) << 8;
+    LONG Mant1 = ((z & IEEESPMantisse_Mask) | 0x00800000) << 8;
+    ULONG Bit_Mask = 0x80000000;
+
+    if (0 == z && 0 == y) return 0x7f880000;
+
+    /* check if the dividend is zero */
+    if (0 == z)
+    {
+        SetSR(Zero_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
+        return (IEEESPExponent_Mask | ((y & IEEESPSign_Mask) ^ (z & IEEESPSign_Mask)));
+    }
+
+    /* check for division by zero */
+    if (0 == y)
+    {
+        SetSR(Overflow_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
+        return (y & IEEESPSign_Mask) ^ (z & IEEESPSign_Mask);
+    }
+
+    while (Bit_Mask >= 0x40 && Mant2 != 0)
+    {
+        if (Mant2 - Mant1 >= 0)
+        {
+            Mant2 -= Mant1;
+            Res |= Bit_Mask;
+            
+            while (Mant2 > 0)
+            {
+                Mant2 <<= 1;
+                Bit_Mask >>= 1;
+            }
+            
+            while (Mant1 > 0)
+            {
+                Mant1 <<=1;
+                Bit_Mask <<=1;
+            }
+        } /* if */
+        else
+        {
+            Mant1 = (ULONG) Mant1 >> 1;
+            Bit_Mask >>= 1;
+        }
+    } /* while */
+
+    /* normalize the mantisse */
+    while (Res > 0)
+    {
+        if (Res >= 0x40000000)
+            Res = Res - 0x80000000;
+        Res += Res;
+        Exponent -=0x00800000;
+    }
+
+    if ((char) Res < 0) Res += 0x00000100;
+    Res >>= 8;
+
+    Res &= IEEESPMantisse_Mask;
+    Res |= Exponent;
+    Res |= (y & IEEESPSign_Mask) ^ (z & IEEESPSign_Mask);
+
+    if (Res < 0) SetSR(Negative_Bit, Zero_Bit | Overflow_Bit | Negative_Bit);
+    if (Exponent < 0) SetSR(Overflow_Bit, Negative_Bit | Overflow_Bit);
+
+    return Res;
+
+    AROS_LIBFUNC_EXIT
+}

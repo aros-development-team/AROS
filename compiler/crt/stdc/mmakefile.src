@@ -1,0 +1,940 @@
+include $(SRCDIR)/config/aros.cfg
+
+#MM- AROS : compiler-stdc compiler-stdcio
+
+FMTPRINTFDIR := $(SRCDIR)/compiler/fmtprintf
+USER_INCLUDES += -I$(SRCDIR)/$(CURDIR)/math -iquote $(FMTPRINTFDIR) -iquote $(SRCDIR)/compiler/crt/common
+
+STDC_MATH := \
+    acos \
+    acosl \
+    acosh \
+    acoshl \
+    asin \
+    asinl \
+    atan \
+    atanh \
+    atanhl \
+    atan2 \
+    bessel \
+    cbrt \
+    cos \
+    cosl \
+    cosh \
+    erf \
+    erfc \
+    exp \
+    expl \
+    fmod \
+    fmodl \
+    hypot \
+    lgamma \
+    log \
+    logl \
+    log1p \
+    log10 \
+    log2 \
+    modf \
+    pow \
+    remquo \
+    remquol \
+    sin \
+    sinl \
+    sinh \
+    sinhl \
+    sqrt \
+    sqrtl \
+    tan \
+    tanh \
+    tanhl \
+    tgamma \
+    atan2l \
+    atanl \
+    cbrtl \
+    coshl \
+    erfcl \
+    erfl \
+    hypotl \
+    lgammal \
+    log10l \
+    log1pl \
+    log2l \
+    modfl \
+    powl \
+    tanl \
+    tgammal
+
+STDC_MATH_RAW := \
+    math/bsdsrc/b_exp \
+    math/bsdsrc/b_log \
+    math/bsdsrc/b_tgamma \
+    math/e_acos \
+    math/e_acosf \
+    math/e_acosh \
+    math/e_acoshf \
+    math/e_asin \
+    math/e_asinf \
+    math/e_atan2 \
+    math/e_atan2f \
+    math/e_atanh \
+    math/e_atanhf \
+    math/e_cosh \
+    math/e_coshf \
+    math/e_exp \
+    math/e_expf \
+    math/e_fmod \
+    math/e_fmodf \
+    math/e_gamma \
+    math/e_gammaf \
+    math/e_gamma_r \
+    math/e_gammaf_r \
+    math/e_hypot \
+    math/e_hypotf \
+    math/e_j0 \
+    math/e_j0f \
+    math/e_j1 \
+    math/e_j1f \
+    math/e_jn \
+    math/e_jnf \
+    math/e_lgamma \
+    math/e_lgammaf \
+    math/e_lgamma_r \
+    math/e_lgammaf_r \
+    math/e_log \
+    math/e_logf \
+    math/e_log2 \
+    math/e_log2f \
+    math/e_log10 \
+    math/e_log10f \
+    math/e_pow \
+    math/e_powf \
+    math/e_rem_pio2 \
+    math/e_rem_pio2f \
+    math/e_remainder \
+    math/e_remainderf \
+    math/e_scalb \
+    math/e_scalbf \
+    math/e_sinh \
+    math/e_sinhf \
+    math/e_sqrt \
+    math/e_sqrtf \
+    math/k_cos \
+    math/k_cosf \
+    math/k_exp \
+    math/k_expf \
+    math/k_rem_pio2 \
+    math/k_rem_pio2f \
+    math/k_sin \
+    math/k_sinf \
+    math/k_tan \
+    math/k_tanf \
+    math/s_nan \
+    math/s_asinh \
+    math/s_asinhf \
+    math/s_atan \
+    math/s_atanf \
+    math/s_cacos \
+    math/s_cacosf \
+    math/s_cacosh \
+    math/s_cacoshf \
+    math/s_carg \
+    math/s_cargf \
+    math/s_casin \
+    math/s_casinf \
+    math/s_casinh \
+    math/s_casinhf \
+    math/s_catan \
+    math/s_catanf \
+    math/s_catanh \
+    math/s_catanhf \
+    math/s_cbrt \
+    math/s_cbrtf \
+    math/s_ccos \
+    math/s_ccosf \
+    math/s_ccosh \
+    math/s_ccoshf \
+    math/s_ceil \
+    math/s_ceilf \
+    math/s_cexp \
+    math/s_cexpf \
+    math/s_cimag \
+    math/s_cimagf \
+    math/s_conj \
+    math/s_conjf \
+    math/s_clog \
+    math/s_clogf \
+    math/s_cpow \
+    math/s_cpowf \
+    math/s_cproj \
+    math/s_cprojf \
+    math/s_creal \
+    math/s_crealf \
+    math/s_csinh \
+    math/s_csinhf \
+    math/s_csin \
+    math/s_csqrt \
+    math/s_csqrtf \
+    math/s_ctan \
+    math/s_ctanf \
+    math/s_ctanh \
+    math/s_ctanhf \
+    math/s_copysign \
+    math/s_copysignf \
+    math/s_cos \
+    math/s_cosf \
+    math/s_erf \
+    math/s_erff \
+    math/s_exp2 \
+    math/s_exp2f \
+    math/s_expm1 \
+    math/s_expm1f \
+    math/s_fabs \
+    math/s_fabsf \
+    math/s_fdim \
+    math/s_floor \
+    math/s_floorf \
+    math/s_fpclassify \
+    math/s_fma \
+    math/s_fmaf  \
+    math/s_fmax \
+    math/s_fmaxf \
+    math/s_fmaxl \
+    math/s_fmin \
+    math/s_fminf \
+    math/s_fminl \
+    math/s_frexp \
+    math/s_frexpf  \
+    math/s_ilogb \
+    math/s_ilogbf \
+    math/s_isfinite \
+    math/s_isinf \
+    math/s_isnan \
+    math/s_isnormal \
+    math/s_log1p \
+    math/s_log1pf \
+    math/s_logb \
+    math/s_logbf \
+    math/s_modf \
+    math/s_modff \
+    math/s_nearbyint \
+    math/s_nextafter \
+    math/s_nextafterf  \
+    math/s_nexttowardf \
+    math/s_remquo \
+    math/s_remquof \
+    math/s_rint \
+    math/s_rintf \
+    math/s_lrint \
+    math/s_lrintf \
+    math/s_llrint \
+    math/s_llrintf \
+    math/s_round \
+    math/s_roundf \
+    math/s_lround \
+    math/s_lroundf \
+    math/s_llround \
+    math/s_llroundf \
+    math/s_scalbln \
+    math/s_scalbn \
+    math/s_scalbnf  \
+    math/s_signbit \
+    math/s_significand \
+    math/s_significandf \
+    math/s_sin \
+    math/s_sincos \
+    math/s_sincosf \
+    math/s_sinf \
+    math/s_tan \
+    math/s_tanf \
+    math/s_tanh \
+    math/s_tanhf \
+    math/s_tgammaf \
+    math/s_trunc \
+    math/s_truncf
+
+STDC_SCABS_MATH := \
+    math/s_cabs \
+    math/s_cabsf
+
+STDC_WCABS_MATH := \
+    math/w_cabs \
+    math/w_cabsf
+
+STDC_LONGDB_MATH := \
+    math/e_acosl \
+    math/e_asinl \
+    math/e_atan2l \
+    math/e_fmodl \
+    math/e_hypotl \
+    math/e_lgammal \
+    math/e_remainderl \
+    math/e_sqrtl \
+    math/polevll \
+    math/s_atanl \
+    math/s_cacoshl \
+    math/s_cacosl \
+    math/s_cargl \
+    math/s_casinhl \
+    math/s_casinl \
+    math/s_catanhl \
+    math/s_catanl \
+    math/s_cbrtl \
+    math/s_ccoshl \
+    math/s_ccosl \
+    math/s_ceill \
+    math/s_cexpl \
+    math/s_cimagl \
+    math/s_clogl \
+    math/s_conjl \
+    math/s_copysignl \
+    math/s_cosl \
+    math/s_cpowl \
+    math/s_cprojl \
+    math/s_creall \
+    math/s_csinhl \
+    math/s_csinl \
+    math/s_csqrtl \
+    math/s_ctanhl \
+    math/s_ctanl \
+    math/s_fabsl \
+    math/s_floorl \
+    math/s_fmal \
+    math/s_frexpl \
+    math/s_ilogbl \
+    math/s_llrintl \
+    math/s_llroundl \
+    math/s_lrintl \
+    math/s_lroundl \
+    math/s_logbl \
+    math/s_modfl \
+    math/s_nextafterl \
+    math/s_nexttoward \
+    math/s_remquol \
+    math/s_rintl \
+    math/s_roundl \
+    math/s_scalbnl \
+    math/s_sincosl \
+    math/s_sinl \
+    math/s_tanl \
+    math/s_truncl
+
+# Support files for 80bit and 128bit precision long double.
+
+STDC_LONGDB80_MATH := \
+    math/ld80/e_acoshl \
+    math/ld80/e_atanhl \
+    math/ld80/e_coshl \
+    math/ld80/e_expl \
+    math/ld80/e_lgammal_r \
+    math/ld80/e_log2l \
+    math/ld80/e_log10l \
+    math/ld80/e_logl \
+    math/ld80/e_powl \
+    math/ld80/e_sinhl \
+    math/ld80/e_tgammal \
+    math/ld80/invtrig \
+    math/ld80/k_cosl \
+    math/ld80/k_sinl \
+    math/ld80/k_tanl \
+    math/ld80/s_asinhl \
+    math/ld80/s_erfl \
+    math/ld80/s_exp2l \
+    math/ld80/s_expm1l \
+    math/ld80/s_log1pl \
+    math/ld80/s_nanl \
+    math/ld80/s_tanhl
+
+STDC_LONGDB128_MATH := \
+    math/ld128/e_acoshl \
+    math/ld128/e_atanhl \
+    math/ld128/e_coshl \
+    math/ld128/e_expl \
+    math/ld128/e_lgammal_r \
+    math/ld128/e_log2l \
+    math/ld128/e_log10l \
+    math/ld128/e_logl \
+    math/ld128/e_powl \
+    math/ld128/e_sinhl \
+    math/ld128/e_tgammal \
+    math/ld128/invtrig \
+    math/ld128/k_cosl \
+    math/ld128/k_sinl \
+    math/ld128/k_tanl \
+    math/ld128/s_asinhl \
+    math/ld128/s_erfl \
+    math/ld128/s_exp2l \
+    math/ld128/s_expm1l \
+    math/ld128/s_log1pl \
+    math/ld128/s_nanl \
+    math/ld128/s_tanhl
+
+STDC_MATH_CFLAGS := -fno-math-errno
+ifneq ($(AROS_SECTION_COMMENT),)
+STDC_MATH_CPPFLAGS := -DSECTIONCOMMENT=\"$(AROS_SECTION_COMMENT)\"
+endif
+MATH_NORWARN_FLAGS := $(NOWARN_OLD_STYLE_DEFINITION)
+STDC_MATH_CFLAGS += $(MATH_NORWARN_FLAGS)
+
+#
+# Add 80bit long double support on x86, x64 and m68k
+#
+ifneq ($(filter $(AROS_TARGET_CPU),i386 x86_64 m68k),)
+STDC_MATH_RAW += $(STDC_LONGDB_MATH)
+STDC_MATH_RAW += $(STDC_LONGDB80_MATH)
+USER_INCLUDES += -I$(SRCDIR)/$(CURDIR)/math/ld80
+STDC_SCABS_MATH += math/s_cabsl
+STDC_WCABS_MATH += math/w_cabsl
+else
+#
+# Add 128bit long double support for aarch64 and riscv/riscv64
+#
+ifneq ($(filter $(AROS_TARGET_CPU),aarch64 riscv riscv64),)
+STDC_MATH_RAW += $(STDC_LONGDB_MATH)
+STDC_MATH_RAW += $(STDC_LONGDB128_MATH)
+USER_INCLUDES += -I$(SRCDIR)/$(CURDIR)/math/ld128
+STDC_SCABS_MATH += math/s_cabsl
+STDC_WCABS_MATH += math/w_cabsl
+else
+#
+# We either don't know what long double format is required
+# or the platform doesn't support it, so alias the double versions
+# of necessary functions.
+# These architectures should have
+# LDBL_MANT_DIG == DBL_MANT_DIG in <float.h>
+#
+endif
+endif
+
+STDC_MATH_RAW += $(STDC_WCABS_MATH)
+
+# wide char/string support
+STDC_WCHAR_COMMON := \
+    mbtowc \
+    wctomb \
+    wcrtomb \
+    wcstombs \
+    mbstowcs \
+    mblen \
+    mbrtowc \
+    mbrlen \
+    mbsrtowcs \
+    wcsrtombs
+    
+STDC_WCHAR := \
+    __locale \
+    __vwformat \
+    __vwscanf \
+    $(STDC_WCHAR_COMMON) \
+    wctrans \
+    towctrans \
+    towlower \
+    towupper \
+    iswctype \
+    wmemset \
+    wmemmove \
+    wmemcpy \
+    wmemcmp \
+    wmemchr \
+    wcscspn \
+    wcsstr \
+    wcstok \
+    wcsspn \
+    wcspbrk \
+    wcsrchr \
+    wcschr \
+    wcsncat \
+    wcscat \
+    wcscmp \
+    wcsncmp \
+    wcscpy \
+    wcsncpy \
+    wcslen \
+    wcstod \
+    wcstof \
+    wcstold \
+    wcstol \
+    wcstoul \
+    wcstoll \
+    wcstoull \
+    wcstoimax \
+    wcstoumax \
+    wcscoll \
+    wctob \
+    btowc \
+    wcsftime \
+    swscanf \
+    vswscanf \
+    wcsxfrm \
+    vswprintf \
+    swprintf \
+    mbrtoc16 \
+    c16rtomb \
+    mbrtoc32 \
+    c32rtomb
+
+STDC_WCHAR_LIBSTUBS := \
+    wchar \
+    wctype
+
+STDC := \
+    __ctype \
+    __optionallibs \
+    __arc4random \
+    __signal \
+    __assert \
+    __stdc_gmtoffset \
+    __stdc_time \
+    __stdc_startup \
+    __stdc_threaderrno \
+    __stdc_fpuprivate \
+    __decimalpoint \
+    __vcformat \
+    __vcscan \
+    abort \
+    abs labs llabs \
+    aligned_alloc \
+    arc4random \
+    arc4random_buf \
+    arc4random_uniform \
+    asctime \
+    asprintf \
+    atof \
+    atoi \
+    atol \
+    atoll \
+    bsearch \
+    calloc \
+    clock \
+    ctime \
+    difftime \
+    div ldiv lldiv \
+    fenv _fenv \
+    free \
+    getc \
+    gmtime \
+    imaxabs \
+    imaxdiv \
+    ioerr2errno \
+    localeconv \
+    localtime \
+    longjmp \
+    malloc \
+    $(STDC_MATH_RAW) \
+    $(STDC_MATH) \
+    memccpy \
+    memchr \
+    memcmp \
+    memcpy \
+    memmove \
+    memset \
+    mktime \
+    putc \
+    qsort \
+    qsort_r \
+    raise \
+    rand \
+    realloc \
+    realloc_nocopy \
+    setjmp \
+    setlocale \
+    signal \
+    snprintf \
+    sprintf \
+    sscanf \
+    stccpy \
+    stcd_l \
+    stch_l \
+    stcl_d \
+    stcl_h \
+    stcl_o \
+    stco_l \
+    stcu_d \
+    stpblk \
+    stpcpy \
+    stpsym \
+    strcasecmp \
+    strcat \
+    strchr \
+    strcmp \
+    strcoll \
+    strcpy \
+    strcspn \
+    strdup \
+    strerror \
+    strftime \
+    strlcat \
+    strlcpy \
+    strlen \
+    strnlen \
+    strlwr \
+    strncasecmp \
+    strncat \
+    strncmp \
+    strncpy \
+    strndup \
+    strpbrk \
+    strrchr \
+    strrev \
+    strsep \
+    strspn \
+    strstr \
+    strtod \
+    strtof \
+    strtoimax \
+    strtok \
+    strtol \
+    strtold \
+    strtoll \
+    strtoul \
+    strtoull \
+    strtoumax \
+    strupr \
+    strxfrm \
+    time \
+    vasprintf \
+    vsnprintf \
+    vsprintf \
+    vsscanf
+
+
+STDC_CRT := \
+    __exitfunc
+
+STDC_C_CRT := \
+    _exit \
+    atexit \
+    at_quick_exit \
+    exit \
+    on_exit \
+    quick_exit
+
+STDC_CXX_CRT := \
+    __cxa_atexit \
+    __cxa_finalize
+
+STDC_LINKLIB := \
+    __flt_rounds \
+    __ctype_linklib \
+    strcasestr \
+    __stdc_mathinit
+
+STDC_LINKLIB_COMMON := \
+    __stdc_geterrnoptr \
+    __stdc_mb_cur_max
+
+STDC_CHAR_LIBSTUBS := \
+    ctype
+
+# The common files will be put both in the shared and in the static link lib
+STDC_COMMON := \
+    __stdc_geterrnoptr \
+    __stdc_getsigngamptr \
+    math/infinity
+
+STDCIO := \
+    __env \
+    __stdcio_assert \
+    __stdcio_dos64 \
+    __stdcio_init \
+    __stdcio_env \
+    __stdcio_environ \
+    __stdio \
+    clearerr \
+    fclose \
+    feof \
+    ferror \
+    fflush \
+    fgetc \
+    fgetpos \
+    fgets \
+    fopen \
+    fprintf \
+    fputc \
+    fputs \
+    fread \
+    freopen \
+    fscanf \
+    fseek \
+    fsetpos \
+    ftell \
+    fwrite \
+    getchar \
+    getenv \
+    gets \
+    perror \
+    printf \
+    putchar \
+    puts \
+    remove \
+    rename \
+    rewind \
+    scanf \
+    setbuf \
+    setvbuf \
+    system \
+    tmpfile \
+    tmpnam \
+    ungetc \
+    vfprintf \
+    vfscanf \
+    vprintf \
+    vscanf
+
+STDCIO_WCHAR := \
+    putwc \
+    fputwc \
+    fputws \
+    getwc \
+    fgetwc \
+    fgetws \
+    fwide \
+    ungetwc \
+    getwchar \
+    putwchar \
+    vfwscanf \
+    fwscanf \
+    vwscanf \
+    wscanf \
+    vfwprintf \
+    fwprintf \
+    vwprintf \
+    wprintf
+
+# The common files will be put both in the shared and in the static link lib
+STDCIO_COMMON := \
+    __stdcio_stdstreams
+
+STDCIO_LINKLIB := \
+    stdcio_environ
+
+#MM- core-linklibs : linklibs-stdc linklibs-stdcio linklibs-libm
+
+STDC_LINKOBJS := $(addsuffix .o,$(addprefix $(GENDIR)/$(CURDIR)/stdc/,$(notdir $(STDC_COMMON) $(STDC_WCHAR_COMMON)) $(addprefix linklib/,$(STDC_CHAR_LIBSTUBS) $(STDC_WCHAR_LIBSTUBS))))
+
+# Ugh. These are for the math routines, which have a number of
+# lint issues, that should be fixed.
+NOWARN_FLAGS := $(NOWARN_NONNULL_COMPARE) $(NOWARN_UNUSED_VARIABLE) \
+    $(NOWARN_PARENTHESES) $(NOWARN_UNINITIALIZED)
+
+STDC_COMMON_CFLAGS := $(NOWARN_FLAGS) -noposixc $(STDC_MATH_CFLAGS) $(CFLAGS_NO_BUILTIN)
+
+USER_CFLAGS := $(STDC_COMMON_CFLAGS)
+USER_LDFLAGS := -nostdc -noposixc
+USER_CPPFLAGS := \
+        $(STDC_MATH_CPPFLAGS) \
+        -DSTDC_LOCALE_DEFAULT=\"$(GENDIR)/$(CURDIR)/defaults/en_GB_ISO8859-1.c\" \
+        -D_GNU_SOURCE \
+        -D__ISO_C_VISIBLE=2011 \
+        -Dlint '-D__FBSDID(x)=' 
+#USER_CPPFLAGS += -DDEBUG=1
+
+$(GENDIR)/$(CURDIR)/defaults:
+    %mkdirs_q $@
+
+$(GENDIR)/ucd:
+    %mkdirs_q $@
+
+# The Unicode character database files come from the ports sources
+$(GENDIR)/ucd/%.txt: $(PORTSSOURCEDIR)/%.txt | $(GENDIR)/ucd
+	@$(CP) $< $@
+
+$(GENDIR)/$(CURDIR)/defaults/%.c: $(GENCTBL) $(GENDIR)/ucd/UnicodeData.txt $(GENDIR)/ucd/SpecialCasing.txt | $(GENDIR)/$(CURDIR)/defaults
+	@$(ECHO) "Generating $*.c";
+	@$(GENCTBL) $(GENDIR)/ucd $(GENDIR)/$(CURDIR)/defaults $* --emit-c;
+
+#MM
+compiler-stdc-genwcharsupport : $(GENDIR)/$(CURDIR)/defaults/en_GB_ISO8859-1.c
+
+STDC_FILES := \
+    $(STDC) \
+    $(STDC_CRT) \
+    $(STDC_C_CRT) \
+    $(STDC_CXX_CRT) \
+    $(STDC_LOCALE) \
+    $(STDC_WCHAR) \
+    $(STDC_COMMON)
+
+STDC_LINK_FILES := \
+    $(STDC_LINKLIB) \
+    $(STDC_LINKLIB_COMMON) \
+    $(STDC_CHAR_LIBSTUBS) \
+    $(STDC_WCHAR_LIBSTUBS)
+
+%build_module mmake=compiler-stdc \
+    modname=stdc modtype=library \
+    files="$(STDC_FILES)" linklibfiles="$(STDC_LINK_FILES)" \
+    linklibobjs=$(STDC_LINKOBJS)
+
+#MM compiler-stdc : compiler-stdc-genwcharsupport kernel-entropy-includes
+
+STDCIO_LINKOBJS := $(addsuffix .o,$(addprefix $(GENDIR)/$(CURDIR)/stdcio/,$(notdir $(STDCIO_COMMON))))
+USER_CPPFLAGS := \
+        $(STDC_MATH_CPPFLAGS) \
+        -D_GNU_SOURCE \
+        -D__ISO_C_VISIBLE=2011 \
+        -Dlint '-D__FBSDID(x)=' \
+        -DSTDC_IO \
+        -include $(SRCDIR)/$(CURDIR)/__stdcio_errno.h
+#USER_CPPFLAGS += -DDEBUG=1
+
+%build_module mmake=compiler-stdcio \
+    modname=stdcio modtype=library \
+    files="$(STDCIO) $(STDCIO_WCHAR) $(STDCIO_COMMON)" \
+    linklibfiles=$(STDCIO_LINKLIB) linklibobjs=$(STDCIO_LINKOBJS) \
+    uselibs="stdc_rel"
+
+STDC_MATH_STATIC := \
+    cos \
+    log \
+    log10 \
+    log10l \
+    log2 \
+    pow \
+    powl \
+    sin \
+    sqrt \
+    sqrtl \
+    tan
+
+
+STDC_MATH_STATIC_RAW := \
+    __flt_rounds \
+    math/e_log \
+    math/e_logf \
+    math/e_log2 \
+    math/e_log2f \
+    math/e_log10 \
+    math/e_log10f \
+    math/e_pow \
+    math/e_powf \
+    math/e_rem_pio2 \
+    math/e_sqrt \
+    math/k_cos \
+    math/k_rem_pio2 \
+    math/k_sin \
+    math/k_tan \
+    math/s_copysign \
+    math/s_copysignf \
+    math/s_cos \
+    math/s_sin \
+    math/s_tan \
+    math/s_fabs \
+    math/s_floor \
+    math/s_fpclassify \
+    math/s_scalbn \
+    math/s_scalbnf \
+    math/s_isfinite \
+    math/s_isinf
+
+#
+# Long double support for the static linklib, matching the shared build above
+#
+ifneq ($(filter $(AROS_TARGET_CPU),i386 x86_64 m68k),)
+STDC_MATH_STATIC_RAW += $(STDC_LONGDB_MATH)
+STDC_MATH_STATIC_RAW += $(STDC_LONGDB80_MATH)
+else
+ifneq ($(filter $(AROS_TARGET_CPU),aarch64 riscv riscv64),)
+STDC_MATH_STATIC_RAW += $(STDC_LONGDB_MATH)
+STDC_MATH_STATIC_RAW += $(STDC_LONGDB128_MATH)
+endif
+endif
+
+STDC_STATIC := \
+    __ctype \
+    __decimalpoint \
+    __vcformat \
+    __vcscan \
+    abs labs llabs \
+    asprintf \
+    atoi \
+    atol \
+    atoll \
+    bsearch \
+    $(STDC_MATH_STATIC) \
+    $(STDC_MATH_STATIC_RAW) \
+    memchr \
+    memcmp \
+    memcpy \
+    memmove \
+    memset \
+    qsort \
+    qsort_r \
+    snprintf \
+    sprintf \
+    sscanf \
+    stccpy \
+    stpblk \
+    strcasecmp \
+    strcasestr \
+    strcat \
+    stcd_l \
+    stch_l \
+    stcl_d \
+    stcl_h \
+    stcl_o \
+    stco_l \
+    stcu_d \
+    stpcpy \
+    strchr \
+    strcmp \
+    strcpy \
+    strcspn \
+    strlcat \
+    strlcpy \
+    strlen \
+    strnlen \
+    strlwr \
+    strncasecmp \
+    strncat \
+    strncpy \
+    strncmp \
+    strpbrk \
+    strrchr \
+    strspn \
+    strstr \
+    strtod \
+    strtof \
+    strtok \
+    strtol \
+    strtoul \
+    strtoull \
+    vasprintf \
+    vsnprintf \
+    vsprintf \
+    vsscanf
+
+USER_CFLAGS := $(STDC_COMMON_CFLAGS) $(CFLAGS_MERGE_CONSTANTS)
+USER_CPPFLAGS := \
+        $(STDC_MATH_CPPFLAGS) \
+        -DSTDC_STATIC \
+        -D_GNU_SOURCE \
+        -D__ISO_C_VISIBLE=2011 \
+        -Dlint '-D__FBSDID(x)='
+#USER_CPPFLAGS += -DDEBUG=1
+
+#MM- core-linklibs : linklibs-stdc-static
+%build_linklib mmake=linklibs-stdc-static libname=stdc.static \
+    files="$(STDC_STATIC) $(STDC_LINKLIB_COMMON) $(STDC_CHAR_LIBSTUBS) $(STDC_WCHAR_LIBSTUBS)" objdir=$(GENDIR)/$(CURDIR)/static
+
+#MM- linklibs-romhack : compiler-stdc
+# FIXME: The next romhack linklib is a temporary hack and has to be
+# excommunicated in the future !
+# setjmp()/longjmp() is used in dos.library so make it available.
+# Plan to put stdc.library also in aros-base rom so this is not needed anymore
+%build_linklib mmake=linklibs-romhack \
+    objdir=$(GENDIR)/$(CURDIR)/stdc libname=romhack files="setjmp longjmp"
+
+# A dummy libm.a is provided so that -lm link option does not produce an error
+# objdir is provided to avoid that arch specific files end up in libm.a
+%build_linklib mmake=linklibs-libm \
+    libname=m files=empty objdir=$(GENDIR)/$(CURDIR)/libm
+
+# pc-x86_64 needs a 32bit version stdc.static
+ifneq ($(AROS_TARGET_CPU32),)
+    ISA_FLAGS := $(ISA_32_FLAGS)
+endif
+USER_CPPFLAGS += -DSTDC_LIB32
+
+%build_linklib mmake=linklibs-stdc-static32 \
+    libname=stdc.static files="$(STDC_STATIC)" objs=$(ROM_COMMON_OBJ32) \
+    objdir=$(GENDIR)/$(CURDIR)/32bit libdir=$(GENDIR)/lib32

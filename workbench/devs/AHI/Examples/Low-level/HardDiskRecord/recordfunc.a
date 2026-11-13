@@ -1,0 +1,143 @@
+
+
+	include	"utility/hooks.i"
+	include	"lvo/exec_lib.i"
+	include	"devices/ahi.i"
+
+	STRUCTURE RecordData,0
+	BYTE	signal
+	BYTE	pad
+	ULONG	signalflag
+	APTR	buffer1
+	APTR	buffer2
+	ULONG	bufferlen
+	ULONG	count
+	ULONG	offs
+	APTR	task
+	LABEL	RecordData_SIZEOF
+
+*    A0 - (struct Hook *)
+*    A2 - (struct AHIAudioCtrl *)
+*    A1 - (struct AHIRecordMessage *)
+*The message (AHIRecordMessage) is filled as follows:
+*    ahirm_Type - Always AHIST_S16S at the moment, but you *must*
+*        check this, since it may change in the future!
+*    ahirm_Buffer - Pointer to the samples. The buffer is valid
+*        until next time the Hook is called.
+*    ahirm_Length - Number of sample FRAMES in buffer.
+*        To get the size in bytes, multiply by 4 if ahiim_Type is
+*        AHIST_S16S.
+
+	SECTION	text,CODE
+
+	XDEF	@RecordFuncS
+@RecordFuncS:
+	move.l	a2,-(sp)
+* Check if we know the sample format
+	cmp.l	#AHIST_S16S,ahirm_Type(a1)
+	bne.b	5$				; Unknown format!
+	move.l	h_Data(a0),a0			; Get pointer to RecordData structure
+	move.l	ahirm_Length(a1),d0		; Sample frames in buffer
+	move.l	ahirm_Buffer(a1),a1		; The samples themselves
+	move.l	buffer1(a0),a2			; Our own buffer
+	add.l	offs(a0),a2
+
+	cmp.l	count(a0),d0			; Will all samples fit in our buffer?
+	bls.b	3$				; Branch if yes.
+
+; Fill buffer until it's full
+	move.l	count(a0),d1			; Number of samples left
+	beq.b	2$				; Buffer already full? Skip 1st pass.
+	sub.l	d1,d0				; d0 = # of samples in second pass.
+1$
+	move.l	(a1)+,(a2)+			; Move both left & right word
+	subq.l	#1,d1				; We can't use dbf/dbra here.
+	bne.b	1$
+2$
+	move.l	buffer2(a0),a2			; Swap pointers to 1st and 2nd buffer
+	move.l	buffer1(a0),buffer2(a0)
+	move.l	a2,buffer1(a0)
+	move.l	bufferlen(a0),count(a0)		; Init count
+	clr.l	offs(a0)
+	movem.l	d0/a0-a1/a6,-(sp)
+	move.l	4.w,a6
+	move.l	task(a0),a1
+	move.l	signalflag(a0),d0
+	jsr	_LVOSignal(a6)			; Tell main task buffer is ready
+	movem.l	(sp)+,d0/a0-a1/a6
+
+* Now fill the rest of the new buffer and exit.
+
+3$
+	sub.l	d0,count(a0)			; Update count
+	move.l	d0,d1
+	lsl.l	#2,d1
+	add.l	d1,offs(a0)
+4$
+	move.l	(a1)+,(a2)+			; Move both left & right word
+	subq.l	#1,d0
+	bne.b	4$
+5$
+	move.l	(sp)+,a2
+	moveq	#0,d0
+	rts
+
+
+* This function simulates mono sampling by only
+* storing the left channel in our buffer.
+
+	XDEF	@RecordFuncM
+@RecordFuncM:
+	movem.l	d2/a2,-(sp)
+	cmp.l	#AHIST_S16S,ahirm_Type(a1)
+	bne.b	5$				; Unknown format!
+	move.l	h_Data(a0),a0
+	move.l	ahirm_Length(a1),d0
+	move.l	ahirm_Buffer(a1),a1
+	move.l	buffer1(a0),a2
+	add.l	offs(a0),a2
+
+	cmp.l	count(a0),d0
+	bls.b	3$
+
+; Fill buffer until it's full
+	move.l	count(a0),d1
+	beq.b	2$
+	sub.l	d1,d0				; d0 = # of samples in second pass
+1$
+	move.l	(a1)+,d2
+	swap.w	d2
+	move.w	d2,(a2)+			; Move only left word
+	subq.l	#1,d1
+	bne.b	1$
+2$
+	move.l	buffer2(a0),a2
+	move.l	buffer1(a0),buffer2(a0)
+	move.l	a2,buffer1(a0)
+	move.l	bufferlen(a0),count(a0)
+	clr.l	offs(a0)
+	movem.l	d0/a0-a1/a6,-(sp)
+	move.l	4.w,a6
+	move.l	task(a0),a1
+	move.l	signalflag(a0),d0
+	jsr	_LVOSignal(a6)			; Tell main task buffer is ready
+	movem.l	(sp)+,d0/a0-a1/a6
+; Now fill the rest of the new buffer and exit.
+
+3$
+	sub.l	d0,count(a0)
+	move.l	d0,d1
+	add.l	d1,d1
+	add.l	d1,offs(a0)
+4$
+	move.l	(a1)+,d2
+	swap.w	d2
+	move.w	d2,(a2)+			; Move only left word
+	subq.l	#1,d0
+	bne.b	4$
+5$
+	movem.l	(sp)+,d2/a2
+	moveq	#0,d0
+	rts
+
+	END

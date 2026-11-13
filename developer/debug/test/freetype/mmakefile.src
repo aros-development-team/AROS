@@ -1,0 +1,132 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM- test : test-freetype
+#MM- test-freetype : \
+#MM      test-freetype-ftstring \
+#MM      test-freetype-ftstring-static \
+#MM      test-freetype-ftview \
+#MM      test-freetype-ftview-static
+
+#MM- test-quick : test-freetype-quick
+#MM- test-freetype-quick : \
+#MM      test-freetype-ftstring-quick \
+#MM      test-freetype-ftstring-static-quick \
+#MM      test-freetype-ftview-quick \
+#MM      test-freetype-ftview-static-quick
+
+#MM- test-freetype-common-deps : \
+#MM     freetype2-demos-fetch \
+#MM     includes \
+#MM     linklibs \
+#MM     test-freetype-lib-graph \
+#MM     test-freetype-lib-common \
+#MM     test-freetype-lib-ftcommon
+
+#MM- test-freetype-common-deps-quick : \
+#MM     test-freetype-lib-graph-quick \
+#MM     test-freetype-lib-common-quick \
+#MM     test-freetype-lib-ftcommon-quick
+
+#MM- test-freetype-deps : \
+#MM     test-freetype-common-deps \
+#MM     workbench-libs-freetype-module-linklib \
+#MM     workbench-libs-z-linklib \
+#MM     workbench-libs-png-linklib
+
+#MM- test-freetype-static-deps : \
+#MM     test-freetype-common-deps \
+#MM     workbench-libs-freetype-linklib
+
+#MM test-freetype-ftstring : test-freetype-deps
+#MM test-freetype-ftstring-static : test-freetype-static-deps
+#MM test-freetype-ftview : test-freetype-deps
+#MM test-freetype-ftviewstatic : test-freetype-static-deps
+
+FT2DEMOS        := ftdmo
+FT2VERSION      := 2.14.3
+# archive name uses the version with the dots removed (2.14.3 -> 2143)
+FT2VERS         := $(subst .,,$(FT2VERSION))
+ARCHBASE        := $(FT2DEMOS)$(FT2VERS)
+ARCHDIR         := ft2demos-$(FT2VERSION)
+FT2SRCDIR       := $(PORTSDIR)/$(FT2DEMOS)/$(ARCHDIR)
+
+PATCHSPEC       := $(ARCHBASE)-aros.diff:$(ARCHDIR):-p1
+REPOSITORIES    :=  \
+    cache:// \
+    https://download.savannah.gnu.org/releases/freetype https://sourceforge.net/projects/freetype/files/freetype-demos/$(FT2VERSION)
+
+%fetch mmake=freetype2-demos-fetch archive=$(ARCHBASE) destination=$(PORTSDIR)/$(FT2DEMOS) \
+    location=$(PORTSSOURCEDIR) archive_origins=$(REPOSITORIES) suffixes="zip" \
+    patches_specs=$(PATCHSPEC)
+
+%create_patch mmake=freetype2-demos-create-patch \
+    archive=$(ARCHBASE) srcdir=$(ARCHDIR) suffixes="zip" \
+    destination=$(PORTSDIR)/$(FT2DEMOS)
+
+#MM test-freetype-lib-graph : freetype2-demos-fetch includes linklibs
+
+FILES := \
+        gblblit \
+        gblender\
+        grdevice\
+        grfill \
+        grfont \
+        grinit \
+        grobjs \
+        grswizzle \
+        aros/graros
+
+USER_INCLUDES		:= -I$(SRCDIR)/$(CURDIR) -I$(FT2SRCDIR)/graph
+USER_CPPFLAGS		:= -DDEVICE_AROS
+
+%build_linklib mmake=test-freetype-lib-graph \
+    libname=graph files="$(addprefix $(FT2SRCDIR)/graph/,$(FILES))"
+
+EXEDIR := $(AROS_TESTS)/freetype
+
+# Unfortunately, this code is not yet gcc 4.6.1 paranoia clean
+NOWARN_FLAGS := $(NOWARN_SWITCH) $(NOWARN_STRINGOP_OVERFLOW) -Wno-error
+USER_CFLAGS += $(NOWARN_FLAGS)
+
+FREETYPETEST_COMMON := \
+    common \
+    strbuf \
+    md5
+
+%build_linklib mmake=test-freetype-lib-common \
+    libname=common files="$(addprefix $(FT2SRCDIR)/src/,$(FREETYPETEST_COMMON))" libdir="$(GENDIR)/$(CURDIR)/lib"
+
+FREETYPETEST_FTCOMMON := \
+    ftcommon \
+    ftpngout \
+    rsvg-port
+
+%build_linklib mmake=test-freetype-lib-ftcommon \
+    libname=ftcommon files="$(addprefix $(FT2SRCDIR)/src/,$(FREETYPETEST_FTCOMMON))" libdir="$(GENDIR)/$(CURDIR)/lib"
+
+USER_LDFLAGS := -L$(GENDIR)/$(CURDIR)/lib -lftcommon
+
+%build_prog mmake=test-freetype-ftstring \
+    progname=ftstring targetdir=$(EXEDIR) \
+    files="$(addprefix $(FT2SRCDIR)/src/,ftstring)" \
+    uselibs="graph common freetype2 png"
+
+%build_prog mmake=test-freetype-ftstring-static \
+    progname=ftstring-static targetdir=$(EXEDIR) \
+    files="$(addprefix $(FT2SRCDIR)/src/,ftstring)" \
+    uselibs="graph common freetype2.static png z1" objdir="$(GENDIR)/$(CURDIR)/static"
+
+USER_CPPFLAGS += -DFT2_BUILD_LIBRARY
+
+%build_prog mmake=test-freetype-ftview \
+    progname=ftview targetdir=$(EXEDIR) \
+    files="$(addprefix $(FT2SRCDIR)/src/,ftview)" \
+    uselibs="graph common freetype2 png"
+
+%build_prog mmake=test-freetype-ftview-static \
+    progname=ftview-static targetdir=$(EXEDIR) \
+    files="$(addprefix $(FT2SRCDIR)/src/,ftview)" \
+    uselibs="graph common freetype2.static png z1" objdir="$(GENDIR)/$(CURDIR)/static"
+
+%common

@@ -1,0 +1,22 @@
+# Copyright (C) 2011, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+
+USER_CFLAGS := $(PARANOIA_CFLAGS)
+USER_LDFLAGS := -static
+
+FILES         := lamp
+INCLUDE_FILES := Lamp_mcc.h
+
+#MM- workbench-classes-zune : workbench-classes-zune-lamp 
+
+#MM  workbench-classes-zune-lamp : includes
+
+%build_module \
+    mmake=workbench-classes-zune-lamp \
+    modname=Lamp modtype=mcc \
+    conffile=lamp.conf
+
+%copy_includes path=mui
+
+%common

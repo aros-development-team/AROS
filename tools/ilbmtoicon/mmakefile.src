@@ -1,0 +1,20 @@
+include $(SRCDIR)/config/aros.cfg
+
+#MM- contrib-development : tools-ilbmtoicon
+#MM tools-ilbmtoicon : includes linklibs tools-ilbmtoicon-docs
+
+FILES := ilbmtoicon infoinfo
+EXEDIR := $(AROS_CONTRIB)/$(AROS_DIR_DEVELOPER)/Build
+
+%build_progs mmake=tools-ilbmtoicon \
+    targetdir=$(EXEDIR) \
+    files=$(FILES) uselibs="png z"
+
+#MM
+tools-ilbmtoicon-docs : $(EXEDIR)/Docs/ilbmtoicon.readme
+
+$(EXEDIR)/Docs/ilbmtoicon.readme : $(SRCDIR)/$(CURDIR)/README
+	$(MKDIR) $(dir $@)
+	$(CP) $< $@
+
+%common

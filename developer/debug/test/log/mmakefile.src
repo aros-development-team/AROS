@@ -1,0 +1,20 @@
+# Copyright (C) 2025, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+
+EXEDIR := $(AROS_TESTS)/log
+CUNITEXEDIR := $(AROS_TESTS)/cunit/log
+
+FILES := \
+    listener \
+    producer
+
+#MM- test : test-log
+#MM- test-quick : test-log-quick
+
+#MM  test-log : includes linklibs kernel-log-includes
+
+%build_progs mmake=test-log \
+    files=$(FILES) targetdir=$(EXEDIR)
+
+%common

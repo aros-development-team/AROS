@@ -1,0 +1,21 @@
+# Copyright (C) 2012, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+
+USER_CFLAGS := $(PARANOIA_CFLAGS)
+USER_LDFLAGS := -static
+
+FILES         := Aboutbox
+INCLUDE_FILES := Aboutbox_mcc.h
+
+#MM- workbench-classes-zune : workbench-classes-zune-aboutbox 
+
+#MM workbench-classes-zune-aboutbox : includes
+
+%build_module \
+    mmake=workbench-classes-zune-aboutbox \
+    modname=Aboutbox modtype=mcc
+
+%copy_includes path=mui
+
+%common

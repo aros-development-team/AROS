@@ -1,0 +1,14 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+#USER_CFLAGS := -DDEBUG=1
+USER_LDFLAGS := -static
+
+FILES := parallel_support parallel_interrupthandlers
+
+#MM- workbench-devs-complete : workbench-devs-parallel
+#MM- workbench-devs-parallel : includes linklibs
+
+%build_module mmake=workbench-devs-parallel \
+    modname=parallel modtype=device \
+    files="parallel_init $(FILES)" uselibs="hiddstubs"

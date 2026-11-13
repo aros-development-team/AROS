@@ -1,0 +1,128 @@
+#!/bin/bash
+
+##############################################################################
+# Moves nightly build files from the uploads directory to the website
+# download directory. Checks the integrity of files before moving, so
+#  incomplete or broken files are not available for download.
+
+#-- Configuration & Setup ----------------------------------------------------
+#ROOT=/home/groups/a/ar/aros
+ROOT=/home/project-web/arosdev
+SRC=$ROOT/uploads/nightly2
+DST=$ROOT/htdocs/downloads/nightly2
+LOCK=$SRC.lock
+
+umask 0002 
+
+#-- Support Functions --------------------------------------------------------
+function md5check()
+{
+    # Description:
+    # Checks the MD5 sum of the given file. Will return failure if the MD5 sum
+    # is incorrect, the file is missing, or the MD5 sum file is missing. 
+    #
+    # The MD5 sum must be stored in a separate file with the same name as the 
+    # file to be tested, with ".md5" appended. Eg., if the file is "foo.txt",
+    # then the MD5 sum must be stored in "foo.txt.md5". The format of the file
+    # is that of the output from the GNU md5sum command.
+    #
+    # Inputs:
+    # $1 - path of file to check.
+    # 
+    # Outputs:
+    # $? - 0 if file is OK, !0 if FAILED.
+    
+    local oldpwd="$PWD"
+    cd "$(dirname $1)"
+    md5sum -c "$(basename $1).md5" >/dev/null 2>&1; rc=$?
+    cd "$oldpwd"
+    
+    return $rc
+}
+
+#-- Acquire Lock -------------------------------------------------------------
+aros/bin/lockfile -r 0 "$LOCK"
+if [[ $? != 0 ]]; then
+    echo Could not acquire lock. Aborting...
+    exit 1
+fi
+
+#-- Process Pending Files ----------------------------------------------------
+cd "$SRC"
+
+OLDIFS=$IFS; IFS=";"
+for file in $(find . -type f -not -name "*.md5" -printf "%p;"); do
+    if [ ! -z "$file" ]; then
+        md5check "$file"
+        if [ $? = 0 ]; then
+            echo "> $file"
+            
+            dst="$DST/$(dirname $file)"
+            mkdir -p "$dst"
+
+            if [ "${file:${#file}-4:4}" = ".xml" ]; then
+                cl="$(basename ${file:0:${#file}-4})"
+                xsltproc -o $dst/$cl.php --stringparam date ${cl:5:8} --stringparam module ${cl:24} $ROOT/scripts/cl2html.xslt "$file"
+
+                if [ $? = 0 ]; then
+                    rm "$file"
+                    rm "$file.md5"
+                fi
+            else
+                # Delete older versions of packages
+                echo "../..:" "$(basename $(dirname $(dirname $file)))"
+                if [ "$(basename $(dirname $(dirname $file)))" != "logs" ]; then
+                    #pattern="$(basename ${file:0:5}????????${file:13:${#file}-13})"
+                    f="$(basename $file)"
+                    pattern="${f:0:5}????????${f:13:${#f}-13}"
+                    echo Pattern: "$pattern"
+                    for oldfile in $(find $DST -type f -name "$pattern" -printf "%p;"); do
+
+                        # Delete old file and md5 hash
+                        echo Found: "$oldfile"
+                        rm "$oldfile"
+                        rm "$oldfile.md5"
+
+                        # Delete category dir if empty
+                        olddir=$(dirname $oldfile)
+                        count=$(($(ls -1 $olddir | wc -l)))
+                        if [[ $count = 0 ]]; then
+                            rm -rf "$olddir"
+                        fi
+
+                        # Delete date dir if only logs dir remains
+                        olddir=$(dirname $olddir)
+                        count=$(($(ls -1 $olddir | wc -l)))
+                        if [[ $count -lt 2 ]]; then
+                            rm -rf "$olddir"
+                        fi
+
+                    done
+                else
+                    echo "Skipping search for old versions of:" $file
+                fi
+
+                # Move file to download dir
+                mv -f "$file" $dst/
+                mv -f "$file.md5" $dst/
+            fi
+        else
+            echo "! $file"
+        fi
+    fi
+done
+IFS=$OLDIFS
+
+#-- Prune Downloads Directory ------------------------------------------------
+#cd "$DST"
+
+#count=$(($(ls -1 | wc -l) - 1))
+#for directory in *; do
+#    if [[ $count -gt 0 ]]; then
+#        rm -rf "$directory"
+#        count=$((count - 1))
+#    fi
+#done
+
+#-- Release Lock -------------------------------------------------------------
+rm -f "$LOCK"

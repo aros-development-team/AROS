@@ -1,0 +1,73 @@
+# $Id $
+
+include $(SRCDIR)/config/aros.cfg
+
+TARGETDIR       := $(GENDIR)/$(CURDIR)
+FILES           := boot serialdebug elf support
+USER_CFLAGS     := -ffixed-r8 -Wall $(CFLAGS_NO_BUILTIN)
+USER_CPPFLAGS     := -DUSE_UBOOT 
+OPTIMIZATION_CFLAGS := -O2
+
+#MM arosboot-efika: \
+#MM	   kernel-efika-arm \
+#MM    boot-script-efika-arm \
+#MM    kernel-image-efika-arm
+
+#MM kernel-image-efika-arm: \
+#MM     kernel-package-efika-arm
+
+#MM kernel-package-efika-arm: \
+#MM     kernel-oop \
+#MM     kernel-utility \
+#MM     hidd-i2c
+
+PKG_LIBS     := oop utility
+PKG_RSRC     := 
+PKG_DEVS     := 
+PKG_HANDLERS := 
+PKG_HIDDS    := i2c
+PKG_CLASSES  :=
+
+%make_package mmake=kernel-package-efika-arm file=$(AROSDIR)/boot/kernel.pkg \
+    libs=$(PKG_LIBS) res=$(PKG_RSRC) devs=$(PKG_DEVS) handlers=$(PKG_HANDLERS) \
+    hidds=$(PKD_HIDDS) classes=$(PKG_CLASSES)
+
+#MM-
+boot-script-efika-arm: boot.script
+	mkimage -A arm -O linux -T script -n "AROS boot script" -d $(SRCDIR)/$(CURDIR)/boot.script $(AROSDIR)/boot/boot.scr
+
+kernel-image-efika-arm:
+	mkimage -A arm -O linux -T ramdisk -C none -n "AROS rom" -d $(AROSDIR)/boot/kernel.pkg $(AROSDIR)/boot/uInitrd-aros
+
+arosboot-efika: $(AROSDIR)/boot/arosboot
+
+$(AROSDIR)/boot/arosboot: $(foreach f, $(FILES), $(TARGETDIR)/$(f).o $(TARGETDIR)/$(f).d) $(TARGETDIR)/kernel.bin.o
+	$(KERNEL_LD) -s --entry=bootstrap --script=$(SRCDIR)/$(CURDIR)/ldscript.lds $(foreach f, $(FILES), $(TARGETDIR)/$(f).o) $(TARGETDIR)/kernel.bin.o -L$(AROS_LIB) -lm -larosc.static -lm -laeabi -o $@
+	$(OBJCOPY) -O binary $@ $@.bin
+	gzip $@.bin
+	mv $@.bin.gz $@.bin
+	mkimage -A arm -O linux -T kernel -C gzip -a 0x91000000 -e 0x91000000 -n "AROS Boot" -d $@.bin $(AROSDIR)/boot/uImage-aros
+
+$(TARGETDIR)/kernel.bin.o: $(AROSDIR)/boot/aros-efikamx
+	cp $(AROSDIR)/boot/aros-efikamx $(TARGETDIR)/kernel.bin
+	cd $(TARGETDIR) && $(KERNEL_LD) $(KERNEL_LDFLAGS) -r --format binary --oformat elf32-littlearm kernel.bin -o $@
+
+
+#MM
+clean ::
+		-$(RM) $(TESTS)
+
+$(TARGETDIR)/%.o : %.c
+		%compile_q 
+
+$(TARGETDIR)/%.o : %.S
+		%compile_q 
+
+$(TARGETDIR)/%.d : %.c
+		%mkdepend_q
+
+DEPS            := $(foreach f, $(FILES), $(TARGETDIR)/$(f).d)
+
+-include $(DEPS)
+
+%common

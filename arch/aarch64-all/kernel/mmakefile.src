@@ -1,0 +1,36 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+%set_archincludes mainmmake=kernel-kernel maindir=rom/kernel \
+  modname=kernel pri=5 arch=aarch64 \
+  includes="-I$(SRCDIR)/$(CURDIR)"
+
+%get_archincludes modname=kernel \
+    includeflag=TARGET_KERNEL_INCLUDES maindir=rom/kernel
+
+%get_archincludes modname=exec \
+    includeflag=TARGET_EXEC_INCLUDES maindir=rom/exec
+
+PRIV_KERNEL_INCLUDES = \
+    $(TARGET_KERNEL_INCLUDES) \
+	-I$(SRCDIR)/rom/kernel \
+	$(TARGET_EXEC_INCLUDES) \
+	-I$(SRCDIR)/rom/exec
+
+# Only the frame-pointer backtrace is AArch64-specific here; cpu_init and
+# createcontext stay generic (rom/kernel) for the hosted target.
+FILES := backtracefromframe
+
+USER_INCLUDES := $(PRIV_KERNEL_INCLUDES) \
+	       -I$(GENINCDIR)
+USER_CPPFLAGS := -D__AROS_EXEC_LIBRARY__
+
+-include $(SRCDIR)/arch/all-$(FAMILY)/kernel/make.opts
+-include $(SRCDIR)/arch/all-$(ARCH)/kernel/make.opts
+-include $(SRCDIR)/arch/$(CPU)-$(ARCH)/kernel/make.opts
+
+%build_archspecific \
+ mainmmake=kernel-kernel maindir=rom/kernel \
+ files="$(FILES)" arch=aarch64 modname=kernel
+
+%common

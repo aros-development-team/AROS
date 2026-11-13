@@ -1,0 +1,27 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+FILES := \
+    assert \
+    netinfo \
+    server \
+    entries \
+    groupunit \
+    passwdunit \
+    misc
+
+#MM- workbench-devs-common: workbench-devs-netinfo
+
+#MM- workbench-devs-quick: workbench-devs-netinfo-quick
+
+#USER_CPPFLAGS := -DDEBUG=1
+USER_LDFLAGS := -static
+
+%build_module mmake=workbench-devs-netinfo \
+  modname=netinfo modtype=device \
+  files=$(FILES)
+
+INCLUDE_FILES = include/netinfo.h
+%copy_includes path=devices dir=include
+
+%common

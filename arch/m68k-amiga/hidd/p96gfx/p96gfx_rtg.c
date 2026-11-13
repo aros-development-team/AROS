@@ -1,0 +1,153 @@
+/*
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
+    
+    Desc: p96 RTG support code.
+*/
+
+#include <aros/debug.h>
+#include <proto/oop.h>
+#include <hidd/hidd.h>
+#include <hidd/gfx.h>
+#include <aros/libcall.h>
+#include <aros/symbolsets.h>
+#include <oop/oop.h>
+
+#include "p96gfx_intern.h"
+#include "p96gfx_bitmap.h"
+#include "p96gfx_rtg.h"
+#include "p96call.h"
+
+/*
+ * GC drawmode back to the minterm's truth table. MINTERM_TO_GCDRMD() built
+ * the drawmode by reversing the minterm's four bits, and reversing is its own
+ * inverse, so entry i is i with its bits reversed.
+ */
+const UBYTE modetable[16] =
+        {  0, 8, 4, 12,  2, 10, 6, 14,  1, 9, 5, 13,  3, 11, 7, 15 };
+
+static AROS_UFH1(ULONG, RTGCall_Default,
+    AROS_UFHA(APTR, boardinfo, A0))
+{
+    AROS_USERFUNC_INIT
+
+    pw (boardinfo + PSSO_BoardInfo_AROSFlag, 0);
+    return 0;
+
+    AROS_USERFUNC_EXIT
+}
+
+/* Set fallback functions */
+void P96GFXRTG__Init(APTR boardinfo)
+{
+    UWORD i;
+
+    for (i = PSSO_BoardInfo_AllocCardMem; i <= PSSO_BoardInfo_DeleteFeature; i += 4)
+        pl(boardinfo + i, (ULONG)RTGCall_Default);
+}
+
+WORD P96GFXRTG__GetDepth(ULONG rgbformat)
+{
+    if (rgbformat & RGBFF_CLUT)
+        return 8;
+    if (rgbformat & (RGBFF_R5G5B5PC | RGBFF_R5G5B5 | RGBFF_B5G5R5PC))
+        return 15;
+    if (rgbformat & (RGBFF_R5G6B5PC | RGBFF_R5G6B5 | RGBFF_B5G6R5PC))
+        return 16;
+    if (rgbformat & (RGBFF_R8G8B8 | RGBFF_B8G8R8))
+        return 24;
+    if (rgbformat & (RGBFF_A8R8G8B8 | RGBFF_A8B8G8R8 | RGBFF_R8G8B8A8 | RGBFF_B8G8R8A8))
+        return 32;
+    return 0;
+}
+
+/*
+ * What tells the RGB formats apart, in the order they are tried. swap is
+ * the pixel format's SwapPixelBytes if it matters (SWAP_ANY if not), and
+ * blue is set where the blue mask has to be 0x0000f800 as well.
+ */
+#define SWAP_ANY 2
+
+struct RTGFormatKey
+{
+    ULONG redmask;
+    UBYTE depth;
+    UBYTE rgbformat;
+    UBYTE swap;
+    UBYTE blue;
+};
+
+static const struct RTGFormatKey formatkeys[] =
+{
+    { 0x00007c00, 15, RGBFB_R5G5B5,   FALSE,    FALSE },
+    { 0x00007c00, 15, RGBFB_R5G5B5PC, TRUE,     FALSE },
+    { 0x0000003e, 15, RGBFB_B5G5R5PC, SWAP_ANY, TRUE  },
+    { 0x0000f800, 16, RGBFB_R5G6B5,   FALSE,    FALSE },
+    { 0x0000f800, 16, RGBFB_R5G6B5PC, TRUE,     FALSE },
+    { 0x0000001f, 16, RGBFB_B5G6R5PC, SWAP_ANY, TRUE  },
+    { 0x0000ff00, 32, RGBFB_B8G8R8A8, SWAP_ANY, FALSE },
+    { 0xff000000, 32, RGBFB_R8G8B8A8, SWAP_ANY, FALSE },
+    { 0x000000ff, 32, RGBFB_A8B8G8R8, SWAP_ANY, FALSE },
+    { 0x00ff0000, 32, RGBFB_A8R8G8B8, SWAP_ANY, FALSE },
+    { 0x000000ff, 24, RGBFB_B8G8R8,   SWAP_ANY, FALSE },
+    { 0x00ff0000, 24, RGBFB_R8G8B8,   SWAP_ANY, FALSE },
+};
+_Static_assert(RGBFB_MaxFormats <= 256, "RGB formats must fit a byte");
+
+ULONG P96GFXRTG__GetFormat(struct p96gfx_staticdata *csd, OOP_Object *pixfmt)
+{
+    IPTR depth, redmask, bluemask, endianswitch;
+    const struct RTGFormatKey *key;
+
+    OOP_GetAttr(pixfmt, aHidd_PixFmt_Depth, &depth);
+    OOP_GetAttr(pixfmt, aHidd_PixFmt_RedMask, &redmask);
+    OOP_GetAttr(pixfmt, aHidd_PixFmt_BlueMask, &bluemask);
+    OOP_GetAttr(pixfmt, aHidd_PixFmt_SwapPixelBytes, &endianswitch);
+
+    if (depth == 8)
+        return RGBFB_CLUT;
+
+    for (key = formatkeys; key < &formatkeys[sizeof(formatkeys) / sizeof(formatkeys[0])]; key++)
+    {
+        if ((key->depth == depth) && (key->redmask == redmask) &&
+            ((key->swap == SWAP_ANY) || (key->swap == (endianswitch != 0))) &&
+            (!key->blue || (bluemask == 0x0000f800)))
+            return key->rgbformat;
+    }
+    D(bug("P96GFXRTG__GetFormat RGBFB_NONE!? %d %08x %08x\n", depth, redmask, bluemask));
+    return RGBFB_NONE;
+}
+
+void P96GFXRTG__MakeRenderInfo(struct RenderInfo *ri, struct P96GfxBitMapData *bm)
+{
+    ri->Memory = bm->VideoData;
+    ri->BytesPerRow = bm->bytesperline;
+    ri->RGBFormat = bm->rgbformat;
+}
+
+struct ModeInfo *P96GFXRTG__GetModeInfo(struct p96gfx_staticdata *csd, struct p96gfx_carddata *cid, OOP_Object *sync, OOP_Object *pixfmt, struct ModeInfo *modeinfo)
+{
+    struct LibResolution *node;
+    IPTR width, height, depth;
+
+    OOP_GetAttr(sync, aHidd_Sync_HDisp, &width);
+    OOP_GetAttr(sync, aHidd_Sync_VDisp, &height);
+    OOP_GetAttr(pixfmt, aHidd_PixFmt_Depth, &depth);
+
+    D(bug("P96GFXRTG__GetModeInfo %dx%dx%d\n", width, height, depth));
+    // P96 RTG driver does not need anything else
+    // but real RTG does
+    ForeachNode((cid->boardinfo + PSSO_BoardInfo_ResolutionsList), node) {
+        if (node->Width == width && node->Height == height) {
+            UBYTE index = (depth + 7) / 8;
+            if (node->Modes[index]) {
+                D(bug("RTG ModeInfo found %p\n", node->Modes[index]));
+                return node->Modes[index];
+            }
+        }
+    }
+    D(bug("using fake modeinfo\n"));
+    modeinfo->Width = width;
+    modeinfo->Height = height;
+    modeinfo->Depth = depth;
+    return modeinfo;
+}

@@ -1,0 +1,30 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+%set_archincludes mainmmake=kernel-kernel maindir=rom/kernel \
+  modname=kernel pri=2 arch=native-ppc \
+  includes="-I$(SRCDIR)/$(CURDIR)"
+
+%get_archincludes modname=kernel \
+    includeflag=TARGET_KERNEL_INCLUDES maindir=rom/kernel
+
+%get_archincludes modname=exec \
+    includeflag=TARGET_EXEC_INCLUDES maindir=rom/exec
+
+PRIV_KERNEL_INCLUDES = \
+    $(TARGET_KERNEL_INCLUDES) \
+	-I$(SRCDIR)/rom/kernel \
+	$(TARGET_EXEC_INCLUDES) \
+	-I$(SRCDIR)/rom/exec
+
+ASMFILES := cli sti issuper
+
+MAINDIR	      := rom/kernel
+USER_AFLAGS := $(PRIV_KERNEL_INCLUDES) \
+               -I$(GENINCDIR)
+
+%build_archspecific \
+  mainmmake=kernel-kernel maindir=$(MAINDIR) \
+  arch=native-ppc asmfiles=$(ASMFILES) modname=kernel
+
+%common

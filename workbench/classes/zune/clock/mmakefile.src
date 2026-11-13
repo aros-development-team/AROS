@@ -1,0 +1,19 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+USER_LDFLAGS := -static
+
+FILES         := clock
+INCLUDE_FILES := clock.h
+
+#MM- workbench-classes-zune : workbench-classes-zune-clock 
+#MM workbench-classes-zune-clock
+%build_module \
+    mmake=workbench-classes-zune-clock \
+    modname=Clock modtype=mcc \
+    conffile=clock.conf uselibs=stdc
+    
+%copy_includes path=zune
+    
+%common
+%include_deps

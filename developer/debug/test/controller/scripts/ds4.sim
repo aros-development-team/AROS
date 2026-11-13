@@ -1,0 +1,42 @@
+# DualShock 4 profile: 8 bit sticks and triggers, hat d-pad, touchpad, sensors, light bar
+expect reading mapped 1
+axis 0 128
+expect reading axis 0 0
+axis 0 255
+expect reading axis 0 32767
+expect reading gpaxis 0 32767
+axis 0 0
+expect reading axis 0 -32768
+axis 0 128
+hat 0 0
+expect reading hat 0 1
+expect reading gp dpup 1
+expect event hat 0 1
+hat 0 2
+expect reading gp dpup 0
+expect reading gp dpright 1
+hat 0 8
+expect reading hat 0 0
+btn 1 1
+expect reading gp south 1
+btn 1 0
+btn 0 1
+expect reading gp west 1
+btn 0 0
+axis 4 255
+expect reading gpaxis 4 32767
+axis 4 0
+touch 0 0 1 100 200
+expect event touchdown 0
+touch 0 0 1 110 210
+expect event touchmotion 0
+touch 0 0 0 110 210
+expect event touchup 0
+sensor 1 0 0 1000
+expect event sensor 1 1
+power 2 50
+expect event power 0 50
+led 255 0 0
+expect output led 255 0 0
+rumble 100 200
+expect output rumble 100 200

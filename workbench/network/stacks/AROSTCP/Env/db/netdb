@@ -1,0 +1,49 @@
+;
+; netdb -- the network database file for AROSTCP
+;
+; Copyright © 1993 AmiTCP/IP Group, <amitcp-group@hut.fi>
+;                  Helsinki University of Technology, Finland.
+;                  All rights reserved.
+; Copyright © 2005 - 2006 Pavel Fedin
+;
+; This is a main file controlling loading of other files containing network
+; information (hosts, services, access list, etc). Do not change it unless you
+; really know what you are doing.
+;
+; interfaces
+;
+WITH interfaces PREFIX=I
+;
+; hosts
+;
+WITH hosts PREFIX=H
+;
+; Networks
+;
+WITH networks PREFIX=N
+;
+; Protocols
+; 
+WITH protocols PREFIX=P
+;
+; Network services, Internet style
+;
+WITH services PREFIX=S
+;
+; Static routes
+;
+WITH static-routes PREFIX=R
+;
+; Nameservers and local domains
+;
+WITH netdb-myhost
+;
+; Access control list for incoming connections.
+;
+WITH inet.access PREFIX=ACCESS
+;
+; Startup/shutdown scripts, uncomment to enable this sample.
+;
+;RC rc.d/rc.sample
+;;;; EOF
+

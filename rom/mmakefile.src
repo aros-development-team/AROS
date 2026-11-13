@@ -1,0 +1,156 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM- kernel-modules : \
+#MM     kernel-aros \
+#MM	kernel-disk \
+#MM     kernel-dos \
+#MM     kernel-dos64 \
+#MM	kernel-debug \
+#MM	kernel-m68kemu \
+#MM	kernel-fs-con \
+#MM     kernel-graphics \
+#MM     kernel-hidd-gfx \
+#MM     kernel-hidd-kbd \
+#MM     kernel-hidd-mouse \
+#MM     kernel-utility \
+#MM     kernel-intuition \
+#MM     kernel-keymap \
+#MM     kernel-devs-console \
+#MM	kernel-devs-gameport \
+#MM	kernel-devs-input \
+#MM	kernel-devs-keyboard \
+#MM     kernel-hidd \
+#MM     kernel-oop \
+#MM     kernel-hidd-pci \
+#MM     kernel-layers \
+#MM     kernel-usb-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU) \
+#MM     kernel-bluetooth-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)
+
+# This metatarget represents all includes for SDK.
+# Note that it includes also some machine-specific modules (hostlib.resource,
+# acpica.library, efi.resource, etc). This is because our SDK is universal.
+
+#MM- includes-generate : \
+#MM     kernel-kernel-includes \
+#MM     kernel-exec-includes \
+#MM     kernel-aros-includes \
+#MM     kernel-ata-includes \
+#MM     kernel-cia-includes \
+#MM     kernel-dos-includes \
+#MM     kernel-dos64-includes \
+#MM     kernel-bootloader-includes \
+#MM	kernel-debug-includes \
+#MM	kernel-efi-includes \
+#MM     kernel-hidd-includes \
+#MM	kernel-hostlib-includes \
+#MM     kernel-hidd-gfx-includes \
+#MM     kernel-hidd-input-includes \
+#MM     kernel-hidd-kbd-includes \
+#MM     kernel-hidd-mouse-includes \
+#MM     kernel-graphics-includes \
+#MM     kernel-utility-includes \
+#MM     kernel-intuition-includes \
+#MM     kernel-keymap-includes \
+#MM	kernel-partition-includes \
+#MM     kernel-expansion-includes \
+#MM     kernel-layers-includes \
+#MM     kernel-timer-includes \
+#MM     kernel-oop-includes \
+#MM     kernel-hidd-pci-includes \
+#MM     kernel-battclock-includes \
+#MM     kernel-misc-includes \
+#MM	kernel-openfirmware-includes \
+#MM     kernel-processor-includes \
+#MM	kernel-pc-acpi-includes \
+#MM	kernel-bestcomm-chrp-ppc-efika-includes \
+#MM	kernel-rtas-chrp-ppc-includes \
+#MM     kernel-usb-includes \
+#MM     kernel-bluetooth-includes
+
+# A shortcut for minimal set of BSP modules.
+# All these components are machine-specific.
+#MM- kernel-bsp-objs:			\
+#MM	kernel-kernel-kobj		\
+#MM	kernel-battclock     		\
+#MM	kernel-processor     		\
+#MM	kernel-timer     		\
+#MM	kernel-expansion     		\
+#MM	kernel-exec-kobj
+
+# *** ELF kickstart package ***
+
+#MM- kernel-objs : \
+#MM     kernel-aros \
+#MM	kernel-bootloader \
+#MM     kernel-dos \
+#MM     kernel-dos64 \
+#MM	kernel-debug \
+#MM	kernel-m68kemu \
+#MM     kernel-dosboot \
+#MM	kernel-filesystem \
+#MM     kernel-graphics \
+#MM     kernel-hidd-gfx \
+#MM     kernel-hidd-input \
+#MM     kernel-hidd-kbd \
+#MM     kernel-hidd-mouse \
+#MM     kernel-utility \
+#MM     kernel-intuition \
+#MM     kernel-keymap \
+#MM	kernel-lddemon \
+#MM     kernel-console \
+#MM     kernel-gameport \
+#MM     kernel-input \
+#MM     kernel-keyboard \
+#MM	kernel-fs-ram \
+#MM     kernel-fs-con \
+#MM     kernel-hidd \
+#MM     kernel-oop \
+#MM     kernel-layers \
+#MM     kernel-usb-kobj-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)
+
+# *** PKG kickstart package ***
+
+#MM kernel-package-base : \
+#MM     kernel-aros \
+#MM	kernel-bootloader \
+#MM     kernel-dos \
+#MM     kernel-dos64 \
+#MM	kernel-dosboot \
+#MM	kernel-debug \
+#MM	kernel-m68kemu \
+#MM	kernel-filesystem \
+#MM	kernel-fs-ram \
+#MM     kernel-fs-con \
+#MM     kernel-graphics \
+#MM     kernel-hidd-gfx \
+#MM     kernel-hidd-input \
+#MM     kernel-hidd-kbd \
+#MM     kernel-hidd-mouse \
+#MM     kernel-utility \
+#MM     kernel-intuition \
+#MM     kernel-keymap \
+#MM	kernel-lddemon \
+#MM     kernel-console \
+#MM	kernel-gameport \
+#MM	kernel-input \
+#MM	kernel-keyboard \
+#MM     kernel-hidd \
+#MM     kernel-oop \
+#MM     kernel-layers \
+#MM     workbench-libs-gadtools
+
+# This is what kickstart base package consists of.
+# These modules are architecture-independent and can work on both hosted and native systems.
+
+BASE_DEVICES  := console input gameport keyboard
+BASE_HANDLERS := ram con
+BASE_HIDD     := hiddclass gfx inputclass keyboard mouse
+BASE_LIBS     := aros dos dos64 gadtools graphics intuition keymap layers oop utility
+BASE_LIBS_ARCH := debug
+BASE_RSRCS    := bootloader dosboot FileSystem lddemon
+
+%make_package mmake=kernel-package-base file=$(AROS_BOOT)/aros-base.pkg packfmt=$(AROS_PACKAGE_FMT) \
+	devs=$(BASE_DEVICES) handlers=$(BASE_HANDLERS) hidds=$(BASE_HIDD) libs=$(BASE_LIBS) arch_libs=$(BASE_LIBS_ARCH) res=$(BASE_RSRCS)
+
+%common

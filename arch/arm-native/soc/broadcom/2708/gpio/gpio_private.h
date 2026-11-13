@@ -1,0 +1,22 @@
+/*
+    Copyright (C) 2015, The AROS Development Team. All rights reserved.
+*/
+
+#ifndef GPIO_PRIVATE_H_
+#define GPIO_PRIVATE_H_
+
+#include <exec/nodes.h>
+#include <exec/semaphores.h>
+#include <inttypes.h>
+
+struct GPIOBase {
+    struct Node		        gpio_Node;
+    struct SignalSemaphore      gpio_Sem;
+    unsigned int		gpio_periiobase;
+    IPTR                        gpio_rp1_bar1;
+};
+
+#define ARM_PERIIOBASE GPIOBase->gpio_periiobase
+#include <hardware/bcm2708.h>
+
+#endif /* GPIO_PRIVATE_H_ */

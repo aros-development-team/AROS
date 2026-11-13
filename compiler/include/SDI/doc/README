@@ -1,0 +1,124 @@
+Short:        SDI headers - A set of C macro/defines to make amiga development easier.
+Kurz:         SDI Headers - Ein Bündel von C Makros/Defines um Amiga Entwicklungen einfacher zu machen
+Author:       Jens.Langner@light-speed.de (Jens Langner), soft@dstoecker.de (Dirk Stöcker)
+Uploader:     Jens.Langner@light-speed.de (Jens Langner)
+Version:      1.6 (14.07.2005)
+Type:         dev/c
+Replaces:     dev/c/SDI_headers.lha
+Architecture: ppc-morphos >= 1.4.2; m68k-amigaos >= 2.1.0; ppc-amigaos >= 4.0.0
+
+ABOUT
+-----
+One may ask, what are these "SDI headers" all about? So let me try to
+explain the idea behind those additional headerfiles first:
+
+The so-called "SDI headers" are a set of freely available and freely usable
+C-language header files which provide different sets of macros and defines
+to make the live of developers much more comfortable when it comes to
+dealing with hooks, compiler specific specialities or if one have to keep C
+sources compatible over different AmigaOS-like platforms.
+
+In fact, by using the SDI headers a developer might keep his sources simple
+and compatible to AmigaOS3, AmigaOS4 and also MorphOS much more easier, than
+with having to clutter them with tones of #ifdef statements just because
+these platforms use different approaches for the same path.
+
+WHY?
+----
+Now you may ask why? The answer is quite easy. Because if you have followed
+recent development pathes of AmigaOS3 and its successors AmigaOS4 and
+MorphOS, you might have noticed that many parts of the original AmigaOS
+API/SDK have been changed. On one hand the API changed because OS4 and
+MorphOS are now PPC based, but also because of the senseless "fight" between
+those Amiga-based platforms, it is much harder these days for a developer
+willing to support all of these platforms at once.
+Here is where the SDI headers can clearly help. They release much of the pain
+when it comes to deal with Hooks, compiler differences and platform
+specialities.
+
+DIFFERENT PURPOSES
+------------------
+Currently the "SDI headers" consist of 4 different header files which were
+developed because of different purposes:
+
+SDI_compiler.h - This header file carries compiler independent defines and
+                 macros to allow developers to keep sources compatible to
+                 different compilers and make sources in all more transparent
+                 to compilers.
+
+SDI_hook.h     - Dealing with Amiga-hooks was always a bit tricky and hard,
+                 but in using this header file Hook can be defined in a very
+                 easy and Amiga-platform independent fashion.
+
+SDI_lib.h      - Since AmigaOS4 a new library system has been introduced
+                 which comes with a different fashion of dealing with
+                 shared libraries. This header file allows to keep sources
+                 compatible to the old scheme by using different types
+                 of macros making it transparent for AmigaOS3 and MorphOS
+                 as well.
+
+SDI_stdarg.h   - Unfortunatly variable argument list functions has always
+                 been a bit tricky and especially since we are on the PPC
+                 now, developers have to be more careful in how to use
+                 variable argument list functions. However, this header
+                 file allows to use a simple set of macros to generate a
+                 AmigaOS3/AmigaOS4 and MorphOS compatible variable
+                 argument list function.
+
+SDI_interrupt.h- Dealing with Amiga-interrupts was always a bit tricky and
+                 hard, but in using this header file interrupts and handler
+                 can be defined in a very easy and Amiga-platform
+                 independent fashion.
+                 
+SDI_misc.h     - This file contains miscellaneous function definitions which
+                 may be required during development like the PutChProc() for
+                 RawDoFmt().
+                 
+
+So you see. The SDI headers are a global players and if you use the whole
+set of these headers your sources can be much easier maintainable than
+they are already. Just have a look at the included examples!
+
+USAGE
+-----
+There is nothing really special about these headers and their usage. All
+header files in the "includes" subdirectory of this distributions should be
+perfectly commented and can be directly included in any sources.
+However, for a better understanding we have worked out some examples which
+should illustrate how the SDI headers have to be used and how they are able
+to simplify parts of a source code, especially if this source has to be
+compatible to many different AmigaOS like platforms.
+
+ARE THEY SERIOUSLY USED YET?
+----------------------------
+Of course these headers are not only "theoretical stuff". In fact they are
+currently used in the following well-known Amiga-based projects:
+
+YAM (Yet Another Mailer)    - http://www.sf.net/projects/yamos
+NList MUI classes           - http://www.sf.net/projects/nlist-classes
+MUI (Magic User Interface)  - http://www.sasg.com/
+Freeciv (Amiga port)
+XAD library
+
+.. and many unknown ones :)
+
+So if you are interested in looking into "real" working source code and not
+only into the supplied example code, please feel free to have a look at
+the source code of the above projects (if it is freely available of course).
+
+COPYRIGHT
+---------
+The header files and sources of the SDI headers and its examples are fully
+public domain. They can be reproduced and altered in any way. All we
+(the authors) request is that if you find a bug or better way to deal
+with something please send us a comment or hint about it so that we can
+integrate this stuff in future versions.
+Please share the public domain idea to make development for all us small
+Amiga developer group easier and so painful in future.
+
+AUTHORS
+-------
+The main/original authors of the SDI headers are:
+
+Jens Langner <Jens.Langner@light-speed.de>
+Dirk Stöcker <soft@dstoecker.de>

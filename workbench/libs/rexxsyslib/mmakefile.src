@@ -1,0 +1,29 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+FUNCS := \
+      	 clearrexxmsg \
+	 createargstring \
+	 createrexxmsg \
+	 cva2i \
+	 cvi2a \
+	 cvi2arg \
+	 deleteargstring \
+	 deleterexxmsg \
+	 fillrexxmsg \
+	 isrexxmsg \
+	 lengthargstring \
+	 lockrexxbase \
+	 strcmpn \
+	 strlen \
+	 unlockrexxbase
+
+#MM- workbench-libs-rexxsyslib-includes : kernel-exec-includes includes-copy
+#MM- workbench-libs-rexxsyslib : includes linklibs
+USER_CPPFLAGS += -D__NOLIBBASE__
+USER_LDFLAGS := -static
+
+# TODO: At the moment sprintf needs the math library
+%build_module mmake=workbench-libs-rexxsyslib \
+  modname=rexxsyslib modtype=library \
+  files="rexxsyslib_init $(FUNCS)"

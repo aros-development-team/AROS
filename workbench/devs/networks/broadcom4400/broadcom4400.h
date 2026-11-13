@@ -1,0 +1,454 @@
+/*
+
+Copyright (C) 2023 Neil Cafferkey
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but
+WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 59 Temple Place - Suite 330, Boston,
+MA 02111-1307, USA.
+
+*/
+
+#ifndef BROADCOM4400_H
+#define BROADCOM4400_H
+
+
+/* General */
+/* ======= */
+
+#define B44_REGOFFSET 0x18000000
+#define B44_REGWINSIZE 0x1000
+#define B44_DMAOFFSET 0x40000000
+#define B44_DMALIMIT 0x40000000
+#define B44_DESCSIZE 8
+#define B44_RXHEADERSIZE 30
+#define B44_TXSTATSCOUNT 24
+#define B44_RXSTATSCOUNT 23
+#define B44_STDTXTHRESHOLD 56
+
+
+/* Standard functional core indices */
+/* ================================ */
+
+#define B44_COREINDEX_ETHERNET 0
+#define B44_COREINDEX_PCI      2
+
+
+/* Registers */
+/* ========= */
+
+#define B44_REG_DEVCTRL           0x0
+#define B44_REG_INTSTATUS        0x20
+#define B44_REG_INTMASK          0x24
+#define B44_REG_PCIBCASTINDEX    0x50
+#define B44_REG_PCIBCASTVALUE    0x54
+#define B44_REG_MACCTRL          0xa8
+#define B44_REG_LAZYRXCTRL      0x100
+#define B44_REG_TXDMACTRL       0x200
+#define B44_REG_TXDMALIST       0x204
+#define B44_REG_TXDMALIMIT      0x208
+#define B44_REG_TXDMASTATUS     0x20c
+#define B44_REG_RXDMACTRL       0x210
+#define B44_REG_RXDMALIST       0x214
+#define B44_REG_RXDMALIMIT      0x218
+#define B44_REG_RXDMASTATUS     0x21c
+#define B44_REG_RXCONFIG        0x400
+#define B44_REG_RXMAXSIZE       0x404
+#define B44_REG_TXMAXSIZE       0x408
+#define B44_REG_MIICTRL         0x410
+#define B44_REG_MIIDATA         0x414
+#define B44_REG_MACINTMASK      0x418
+#define B44_REG_MACINTSTATUS    0x41c
+#define B44_REG_ADDRESSLOW      0x420
+#define B44_REG_ADDRESSHIGH     0x424
+#define B44_REG_ADDRESSCTRL     0x428
+#define B44_REG_ENETCTRL        0x42c
+#define B44_REG_TXCTRL          0x430
+#define B44_REG_TXTHRESHOLD     0x434
+#define B44_REG_STATSCTRL       0x438
+#define B44_REG_TXCNTOKBYTES    0x500
+#define B44_REG_TXCNTOK         0x504
+#define B44_REG_TXCNTUNDERRUN   0x53c
+#define B44_REG_TXCNTCOLLISION  0x540
+#define B44_REG_RXCNTOKBYTES    0x580
+#define B44_REG_RXCNTOK         0x584
+#define B44_REG_RXCNTALL        0x58c
+#define B44_REG_RXCNTOVERSIZE   0x5b4
+#define B44_REG_RXCNTOVERRUN    0x5bc
+#define B44_REG_COREINTINFO     0xf18
+#define B44_REG_COREISTATE      0xf90
+#define B44_REG_COREINTMASK     0xf94
+#define B44_REG_CORECTRL        0xf98
+#define B44_REG_CORESTATUS      0xf9c
+#define B44_REG_COREICFGLOW     0xfa8
+#define B44_REG_CORECFGACTIVATE 0xfd8
+#define B44_REG_COREIDLOW       0xff8
+#define B44_REG_COREIDHIGH      0xffc
+
+
+/* SPROM data offsets */
+/* ================== */
+
+#define B44_ROM_ADDRESS 0x104e
+#define B44_ROM_MII     0x105a
+
+
+/* PCI configuration registers */
+/* =========================== */
+
+#define B44_PCI_BAR0WIN   0x80
+#define B44_PCI_INTSTATUS 0x90
+#define B44_PCI_INTMASK   0x94
+
+/* PCI interrupts */
+
+#define B44_PCI_INTB_CORES      8
+#define B44_PCI_INTB_ERROR      2
+#define B44_PCI_INTB_MAILBOXES  0
+
+#define B44_PCI_INTF_CORES     (0xff << B44_PCI_INTBB_CORES)
+#define B44_PCI_INTF_ERROR     (1 << B44_PCI_INTBB_ERROR)
+#define B44_PCI_INTF_MAILBOXES (0x3 << B44_PCI_INTBB_MAILBOXES)
+
+
+/* PCI core registers */
+/* ================== */
+
+#define B44_REG_SBTOPCI0  0x100
+#define B44_REG_SBTOPCI1  0x104
+#define B44_REG_SBTOPCI2  0x108
+
+/* System Backplane to PCI Translation Registers */
+
+#define B44_REG_SBTOPCIB_MRM       5
+#define B44_REG_SBTOPCIB_BURST     3
+#define B44_REG_SBTOPCIB_PREFETCH  2
+
+#define B44_REG_SBTOPCIF_MRM      (1 << B44_REG_SBTOPCIB_MRM)
+#define B44_REG_SBTOPCIF_BURST    (1 << B44_REG_SBTOPCIB_BURST)
+#define B44_REG_SBTOPCIF_PREFETCH (1 << B44_REG_SBTOPCIB_PREFETCH)
+
+
+/* Extended MII registers */
+/* ====================== */
+
+#define MII_AUXCTRL 24
+
+/* Auxiliary Control/Status Register */
+
+#define MII_AUXCTRLB_100BASEX  1
+#define MII_AUXCTRLB_FDUPLEX   0
+
+#define MII_AUXCTRLF_100BASEX (1 << MII_AUXCTRLB_100BASEX)
+#define MII_AUXCTRLF_FDUPLEX  (1 << MII_AUXCTRLB_FDUPLEX)
+
+
+/* Interrupts */
+/* ========== */
+
+#define B44_INTB_MIIWRITE 28
+#define B44_INTB_MIIREAD  27
+#define B44_INTB_MAC      26
+#define B44_INTB_TXDONE   24
+#define B44_INTB_RXDONE   16
+#define B44_INTB_TXUFLOW  15
+#define B44_INTB_RXOFLOW  14
+#define B44_INTB_NORXDESC 13
+#define B44_INTB_PROTOERR 12
+#define B44_INTB_DATAERR  11
+#define B44_INTB_DESCERR  10
+#define B44_INTB_TIMER     7
+#define B44_INTB_POWER     6
+#define B44_INTB_LINK      5
+
+#define B44_INTF_MIIREAD  (1 << B44_INTB_MIIREAD)
+#define B44_INTF_MIIWRITE (1 << B44_INTB_MIIWRITE)
+#define B44_INTF_MAC      (1 << B44_INTB_MAC)
+#define B44_INTF_TXDONE   (1 << B44_INTB_TXDONE)
+#define B44_INTF_RXDONE   (1 << B44_INTB_RXDONE)
+#define B44_INTF_TXUFLOW  (1 << B44_INTB_TXUFLOW)
+#define B44_INTF_RXOFLOW  (1 << B44_INTB_RXOFLOW)
+#define B44_INTF_NORXDESC (1 << B44_INTB_NORXDESC)
+#define B44_INTF_PROTOERR (1 << B44_INTB_PROTOERR)
+#define B44_INTF_DATAERR  (1 << B44_INTB_DATAERR)
+#define B44_INTF_DESCERR  (1 << B44_INTB_DESCERR)
+#define B44_INTF_TIMER    (1 << B44_INTB_TIMER)
+#define B44_INTF_POWER    (1 << B44_INTB_POWER)
+#define B44_INTF_LINK     (1 << B44_INTB_LINK)
+
+
+/* MAC Interrupts */
+/* ============== */
+
+#define B44_MACINTB_FLOW 2
+#define B44_MACINTB_MIB  1
+#define B44_MACINTB_MII  0
+
+#define B44_MACINTF_FLOW (1 << B44_MACINTB_FLOW)
+#define B44_MACINTF_MIB  (1 << B44_MACINTB_MIB)
+#define B44_MACINTF_MII  (1 << B44_MACINTB_MII)
+
+
+/* Register Details */
+/* ================ */
+
+/* Device Control Register */
+
+#define B44_REG_DEVCTRLB_PHYRESET 15
+#define B44_REG_DEVCTRLB_INTPHY   10
+
+#define B44_REG_DEVCTRLF_PHYRESET (1 << B44_REG_DEVCTRLB_PHYRESET)
+#define B44_REG_DEVCTRLF_INTPHY   (1 << B44_REG_DEVCTRLB_INTPHY)
+
+/* MAC Control Register */
+
+#define B44_REG_MACCTRLB_LEDMODE  5
+#define B44_REG_MACCTRLB_CRC      0
+
+#define B44_REG_MACCTRLF_LEDMODE (1 << B44_REG_MACCTRLB_LEDMODE)
+#define B44_REG_MACCTRLF_CRC     (1 << B44_REG_MACCTRLB_CRC)
+
+/* Lazy RX Interrupt Control Register */
+
+#define B44_REG_LAZYRXCTRLB_FRAMECNT 24
+
+#define B44_REG_LAZYRXCTRLF_FRAMECNT (0xff << B44_REG_LAZYRXCTRLB_FRAMECNT)
+
+/* TX DMA Control Register */
+
+#define B44_REG_TXDMACTRLB_ENABLE  0
+
+#define B44_REG_TXDMACTRLF_ENABLE (1 << B44_REG_TXDMACTRLB_ENABLE)
+
+/* TX DMA Status Register */
+
+#define B44_REG_TXDMASTATUSB_STATE 12
+#define B44_REG_TXDMASTATUSB_DESC   0
+
+#define B44_REG_TXDMASTATUSF_STATE (0xf << B44_REG_TXDMASTATUSB_STATE)
+#define B44_REG_TXDMASTATUSF_DESC  (0xfff << B44_REG_TXDMASTATUSB_DESC)
+
+/* RX DMA Control Register */
+
+#define B44_REG_RXDMACTRLB_HDRSIZE  1
+#define B44_REG_RXDMACTRLB_ENABLE   0
+
+#define B44_REG_RXDMACTRLF_HDRSIZE (0x7f << B44_REG_RXDMACTRLB_HDRSIZE)
+#define B44_REG_RXDMACTRLF_ENABLE  (1 << B44_REG_RXDMACTRLB_ENABLE)
+
+/* RX DMA Status Register */
+
+#define B44_REG_RXDMASTATUSB_STATE 12
+#define B44_REG_RXDMASTATUSB_DESC   0
+
+#define B44_REG_RXDMASTATUSF_STATE (0xf << B44_REG_RXDMASTATUSB_STATE)
+#define B44_REG_RXDMASTATUSF_DESC  (0xfff << B44_REG_RXDMASTATUSB_DESC)
+
+/* RX Configuration Register */
+
+#define B44_REG_RXCONFIGB_PROM      3
+#define B44_REG_RXCONFIGB_ALLMCAST  1
+
+#define B44_REG_RXCONFIGF_PROM     (1 << B44_REG_RXCONFIGB_PROM)
+#define B44_REG_RXCONFIGF_ALLMCAST (1 << B44_REG_RXCONFIGB_ALLMCAST)
+
+/* MII Control Register */
+
+#define B44_REG_MIICTRLB_PREAMBLE  7
+#define B44_REG_MIICTRLB_FREQ      0
+
+#define B44_REG_MIICTRLF_PREAMBLE (1 << B44_REG_MIICTRLB_PREAMBLE)
+#define B44_REG_MIICTRLF_FREQ     (0x7f << B44_REG_MIICTRLB_FREQ)
+
+/* MII Data Register */
+
+#define B44_REG_MIIDATAB_START      30
+#define B44_REG_MIIDATAB_READ       29
+#define B44_REG_MIIDATAB_WRITE      28
+#define B44_REG_MIIDATAB_PHYNO      23
+#define B44_REG_MIIDATAB_REGNO      18
+#define B44_REG_MIIDATAB_TURNAROUND 17
+#define B44_REG_MIIDATAB_VALUE       0
+
+#define B44_REG_MIIDATAF_START      (1 << B44_REG_MIIDATAB_START)
+#define B44_REG_MIIDATAF_READ       (1 << B44_REG_MIIDATAB_READ)
+#define B44_REG_MIIDATAF_WRITE      (1 << B44_REG_MIIDATAB_WRITE)
+#define B44_REG_MIIDATAF_PHYNO      (0x1f << B44_REG_MIIDATAB_PHYNO)
+#define B44_REG_MIIDATAF_REGNO      (0x1f << B44_REG_MIIDATAB_REGNO)
+#define B44_REG_MIIDATAF_TURNAROUND (1 << B44_REG_MIIDATAB_TURNAROUND)
+#define B44_REG_MIIDATAF_VALUE      (0xffff << B44_REG_MIIDATAB_VALUE)
+
+/* Address High Register */
+
+#define B44_REG_ADDRESSHIGHB_VALID 16
+
+#define B44_REG_ADDRESSHIGHF_VALID (1 << B44_REG_ADDRESSHIGHB_VALID)
+
+/* Address Control Register */
+
+#define B44_REG_ADDRESSCTRLB_BUSY  31
+#define B44_REG_ADDRESSCTRLB_INDEX 16
+#define B44_REG_ADDRESSCTRLB_WRITE  3
+#define B44_REG_ADDRESSCTRLB_READ   2
+#define B44_REG_ADDRESSCTRLB_MASK   1
+#define B44_REG_ADDRESSCTRLB_ON     0
+
+#define B44_REG_ADDRESSCTRLF_BUSY  (1 << B44_REG_ADDRESSCTRLB_BUSY)
+#define B44_REG_ADDRESSCTRLF_INDEX (0x3f << B44_REG_ADDRESSCTRLB_INDEX)
+#define B44_REG_ADDRESSCTRLF_WRITE (1 << B44_REG_ADDRESSCTRLB_WRITE)
+#define B44_REG_ADDRESSCTRLF_READ  (1 << B44_REG_ADDRESSCTRLB_READ)
+#define B44_REG_ADDRESSCTRLF_MASK  (1 << B44_REG_ADDRESSCTRLB_MASK)
+#define B44_REG_ADDRESSCTRLF_ON    (1 << B44_REG_ADDRESSCTRLB_ON)
+
+/* Ethernet Control Register */
+
+#define B44_REG_ENETCTRLB_EXTPHY    3
+#define B44_REG_ENETCTRLB_MACRESET  2
+#define B44_REG_ENETCTRLB_DISABLE   1
+#define B44_REG_ENETCTRLB_ENABLE    0
+
+#define B44_REG_ENETCTRLF_EXTPHY   (1 << B44_REG_ENETCTRLB_EXTPHY)
+#define B44_REG_ENETCTRLF_MACRESET (1 << B44_REG_ENETCTRLB_MACRESET)
+#define B44_REG_ENETCTRLF_DISABLE  (1 << B44_REG_ENETCTRLB_DISABLE)
+#define B44_REG_ENETCTRLF_ENABLE   (1 << B44_REG_ENETCTRLB_ENABLE)
+
+/* Transmit Control Register */
+
+#define B44_REG_TXCTRLB_FDUPLEX  0
+
+#define B44_REG_TXCTRLF_FDUPLEX (1 << B44_REG_TXCTRLB_FDUPLEX)
+
+/* Statistics Control Register */
+
+#define B44_REG_STATSCTRLB_CLEARONREAD  0
+
+#define B44_REG_STATSCTRLF_CLEARONREAD (1 << B44_REG_STATSCTRLB_CLEARONREAD)
+
+/* Core Interrupt Information Register */
+
+#define B44_REG_COREINTINFOB_ENABLED  6
+#define B44_REG_COREINTINFOB_INTNO    0
+
+#define B44_REG_COREINTINFOF_ENABLED (1 << B44_REG_COREINTINFOB_ENABLED)
+#define B44_REG_COREINTINFOF_INTNO   (0x3f << B44_REG_COREINTINFOB_INTNO)
+
+/* Core Initiator State Register */
+
+#define B44_REG_COREISTATEB_REJECT    25
+#define B44_REG_COREISTATEB_BUSY      23
+#define B44_REG_COREISTATEB_TIMEOUT   18
+#define B44_REG_COREISTATEB_INBANDERR 17
+
+#define B44_REG_COREISTATEF_REJECT    (1 << B44_REG_COREISTATEB_REJECT)
+#define B44_REG_COREISTATEF_BUSY      (0x3 << B44_REG_COREISTATEB_BUSY)
+#define B44_REG_COREISTATEF_TIMEOUT   (1 << B44_REG_COREISTATEB_TIMEOUT)
+#define B44_REG_COREISTATEF_INBANDERR (1 << B44_REG_COREISTATEB_INBANDERR)
+
+/* Core Control Register */
+
+#define B44_REG_CORECTRLB_GATEDCLKSON 17
+#define B44_REG_CORECTRLB_CLKON       16
+#define B44_REG_CORECTRLB_REJECT       1
+#define B44_REG_CORECTRLB_RESET        0
+
+#define B44_REG_CORECTRLF_GATEDCLKSON (1 << B44_REG_CORECTRLB_GATEDCLKSON)
+#define B44_REG_CORECTRLF_CLKON       (1 << B44_REG_CORECTRLB_CLKON)
+#define B44_REG_CORECTRLF_REJECT      (0x3 << B44_REG_CORECTRLB_REJECT)
+#define B44_REG_CORECTRLF_RESET       (1 << B44_REG_CORECTRLB_RESET)
+
+/* Core Status Register */
+
+#define B44_REG_CORESTATUSB_BUSY      2
+#define B44_REG_CORESTATUSB_SLAVEERR  0
+
+#define B44_REG_CORESTATUSF_BUSY      (1 << B44_REG_CORESTATUSB_BUSY)
+#define B44_REG_CORESTATUSF_SLAVEERR  (1 << B44_REG_CORESTATUSB_SLAVEERR)
+
+/* Core Initiator Configuration Register (low) */
+
+#define B44_REG_COREICFGLOWB_REQTIMEOUT  4
+#define B44_REG_COREICFGLOWB_SRVTIMEOUT  0
+
+#define B44_REG_COREICFGLOWF_REQTIMEOUT \
+   (0x7 << B44_REG_COREICFGLOWB_REQTIMEOUT)
+#define B44_REG_COREICFGLOWF_SRVTIMEOUT \
+   (0x7 << B44_REG_COREICFGLOWB_SRVTIMEOUT)
+
+/* Core ID Register (low) */
+
+#define B44_REG_COREIDLOWB_INITIATOR  7
+
+#define B44_REG_COREIDLOWF_INITIATOR (1 << B44_REG_COREIDLOWB_INITIATOR)
+
+/* Core ID Register (high) */
+
+#define B44_REG_COREIDHIGHB_REVHIGH 12
+#define B44_REG_COREIDHIGHB_REVLOW   0
+
+#define B44_REG_COREIDHIGHF_REVHIGH (0x7 << B44_REG_COREIDHIGHB_REVHIGH)
+#define B44_REG_COREIDHIGHF_REVLOW  (0xf << B44_REG_COREIDHIGHB_REVLOW)
+
+
+/* ROM Details */
+/* =========== */
+
+/* MII */
+
+#define B44_ROM_MIIB_PHYNO0  0
+
+#define B44_ROM_MIIF_PHYNO0 (0x1f << B44_ROM_MIIB_PHYNO0)
+
+
+/* Frame descriptor */
+/* ================ */
+
+#define B44_DESC_CONTROL 0
+#define B44_DESC_BUFFER  1
+
+/* Control field */
+
+#define B44_DESC_CONTROLB_FIRSTFRAG 31
+#define B44_DESC_CONTROLB_LASTFRAG  30
+#define B44_DESC_CONTROLB_INT       29
+#define B44_DESC_CONTROLB_LASTDESC  28
+#define B44_DESC_CONTROLB_LENGTH     0
+
+#define B44_DESC_CONTROLF_FIRSTFRAG (1 << B44_DESC_CONTROLB_FIRSTFRAG)
+#define B44_DESC_CONTROLF_LASTFRAG  (1 << B44_DESC_CONTROLB_LASTFRAG)
+#define B44_DESC_CONTROLF_INT       (1 << B44_DESC_CONTROLB_INT)
+#define B44_DESC_CONTROLF_LASTDESC  (1 << B44_DESC_CONTROLB_LASTDESC)
+#define B44_DESC_CONTROLF_LENGTH    (0x1fff << B44_DESC_CONTROLB_LENGTH)
+
+
+/* RX Frame header */
+/* =============== */
+
+#define B44_HDR_STATUS 0
+
+/* RX Status field */
+
+#define B44_HDR_STATUSB_OSIZE  20
+#define B44_HDR_STATUSB_ODD    19
+#define B44_HDR_STATUSB_BADSYM 18
+#define B44_HDR_STATUSB_BADCRC 17
+#define B44_HDR_STATUSB_OFLOW  16
+#define B44_HDR_STATUSB_LENGTH  0
+
+#define B44_HDR_STATUSF_OSIZE  (1 << B44_HDR_STATUSB_OSIZE)
+#define B44_HDR_STATUSF_ODD    (1 << B44_HDR_STATUSB_ODD)
+#define B44_HDR_STATUSF_BADSYM (1 << B44_HDR_STATUSB_BADSYM)
+#define B44_HDR_STATUSF_BADCRC (1 << B44_HDR_STATUSB_BADCRC)
+#define B44_HDR_STATUSF_OFLOW  (1 << B44_HDR_STATUSB_OFLOW)
+#define B44_HDR_STATUSF_LENGTH (0xffff << B44_HDR_STATUSB_LENGTH)
+
+#endif

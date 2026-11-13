@@ -1,0 +1,977 @@
+/*
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
+
+    Desc: Code for CONU_STANDARD console units.
+*/
+
+#define SDEBUG 0
+#define DEBUG 0
+#include <aros/debug.h>
+
+#include <proto/graphics.h>
+#include <proto/intuition.h>
+#include <proto/utility.h>
+
+#include <intuition/intuition.h>
+#include <graphics/rastport.h>
+#include <exec/rawfmt.h>
+#include <aros/asmcall.h>
+
+#include <string.h>
+
+#include "console_gcc.h"
+#include "consoleif.h"
+
+struct stdcondata
+{
+    struct DrawInfo *dri;
+    WORD rendercursorcount;
+    BOOL cursorvisible;
+    BOOL windowactive;
+
+    UWORD pens[CONUNIT_PEN_MAX];
+    UWORD *penmap[CONUNIT_PEN_MAX];
+
+    PLANEPTR charScratch;
+    UWORD charScratchHeight;
+
+    /* Libraries */
+    struct Library *scd_GfxBase;
+};
+
+
+#undef ConsoleDevice
+#define ConsoleDevice ((struct ConsoleBase *)cl->cl_UserData)
+
+/***********  StdCon::New()  **********************/
+
+static Object *stdcon_new(Class *cl, Object *o, struct opSet *msg)
+{
+    EnterFunc(bug("StdCon::New()\n"));
+    o = (Object *) Console_Super(cl, o, (Msg) msg);
+    if (o)
+    {
+        struct stdcondata *data = INST_DATA(cl, o);
+        STACKULONG dispmid = OM_DISPOSE;
+        int i;
+
+        /* Clear for checking inside dispose() whether stuff was allocated.
+           Basically this is bug-prevention.
+         */
+        SetMem(data, 0, sizeof(struct stdcondata));
+        for (i = 0; i < CONUNIT_PEN_MAX; i ++)
+        {
+            data->pens[i] = i;
+            data->penmap[i] = &data->pens[i];
+        }
+
+        data->scd_GfxBase = TaggedOpenLibrary(TAGGEDOPEN_GRAPHICS);
+        if (data->scd_GfxBase)
+        {
+            data->dri = GetScreenDrawInfo(CU(o)->cu_Window->WScreen);
+            if (data->dri)
+            {
+                struct Library *GfxBase = data->scd_GfxBase;
+
+                data->penmap[0] = &data->dri->dri_Pens[BACKGROUNDPEN];
+                data->penmap[1] = &data->dri->dri_Pens[TEXTPEN];
+
+                CU(o)->cu_BgPen = (BYTE)*(data->penmap[0]);
+                CU(o)->cu_FgPen = (BYTE)*(data->penmap[1]);
+
+                data->charScratchHeight = RASTPORT(o)->Font->tf_YSize;
+                data->charScratch = AllocRaster(8, data->charScratchHeight);
+
+                data->cursorvisible = TRUE;
+                data->windowactive =
+                    (CU(o)->cu_Window->Flags & WFLG_WINDOWACTIVE) != 0;
+                Console_RenderCursor(o);
+
+                ReturnPtr("StdCon::New", Object *, o);
+            }
+        }
+        CoerceMethodA(cl, o, (Msg) &dispmid);
+    }
+    ReturnPtr("StdCon::New", Object *, NULL);
+
+}
+
+/***********  StdCon::Dispose()  **************************/
+
+static VOID stdcon_dispose(Class *cl, Object *o, Msg msg)
+{
+    struct stdcondata *data = INST_DATA(cl, o);
+    struct Library *GfxBase = data->scd_GfxBase;
+
+    if (data->charScratch)
+        FreeRaster(data->charScratch, 8, data->charScratchHeight);
+
+    if (data->scd_GfxBase)
+        CloseLibrary(data->scd_GfxBase);
+
+    if (data->dri)
+        FreeScreenDrawInfo(CU(o)->cu_Window->WScreen, data->dri);
+
+    /* Let superclass free its allocations */
+    Console_Super(cl, o, msg);
+
+    return;
+}
+
+VOID setabpen(struct Library *GfxBase, struct RastPort *rp, UBYTE tflags,
+    UBYTE FgPen, UBYTE BgPen)
+{
+    UBYTE fg = FgPen, bg = BgPen;
+    UBYTE style = JAM2;
+
+    if (tflags & CON_TXTFLAGS_CONCEALED)
+        fg = bg;
+    else if (tflags & CON_TXTFLAGS_REVERSED)
+        style |= INVERSVID;
+    SetABPenDrMd(rp, fg, bg, style);
+}
+
+static void setstyle(struct Library *GfxBase, struct RastPort *rp,
+    Object *o)
+{
+    UBYTE tflags = CU(o)->cu_TxFlags;
+    setabpen(GfxBase, rp, tflags, CU(o)->cu_FgPen, CU(o)->cu_BgPen);
+    SetSoftStyle(rp, tflags, CON_TXTFLAGS_MASK);
+}
+
+/* Draw len characters at the cursor position and move the cursor past
+ * them. The characters have to fit in the rest of the line. */
+static void stdcon_text(Object *o, struct stdcondata *data,
+    struct RastPort *rp, CONST_STRPTR text, ULONG len)
+{
+    struct TmpRas *savedTmpRas = rp->TmpRas;
+    struct TmpRas charTmpRas;
+    struct Library *GfxBase = data->scd_GfxBase;
+    ULONG scratchSize = RASSIZE(8, data->charScratchHeight);
+
+    Move(rp, CP_X(o), CP_Y(o) + rp->Font->tf_Baseline);
+
+    if (len == 1 && data->charScratch &&
+        (!savedTmpRas || savedTmpRas->Size < scratchSize))
+        rp->TmpRas = InitTmpRas(&charTmpRas, data->charScratch, scratchSize);
+
+    Text(rp, text, len);
+    rp->TmpRas = savedTmpRas;
+
+    Console_Right(o, len);
+}
+
+/* JAM2 text replaces every pixel in the first character cell, including a
+ * rendered full-cell cursor.  Update cursor nesting without first drawing
+ * the redundant COMPLEMENT erase. */
+static void stdcon_overwritecursor(struct stdcondata *data)
+{
+    data->rendercursorcount--;
+}
+
+/*
+ * ConUnit stores geometry in signed WORD fields. Keep parsed values wide
+ * until this boundary and reject sizes whose character maximum or raster
+ * extent cannot be represented.
+ */
+static BOOL stdcon_validsize(IPTR count, WORD origin, WORD raster)
+{
+    IPTR maxcount = 0x8000;
+    IPTR rastermax;
+
+    if (!count || raster <= 0)
+        return FALSE;
+
+    rastermax = ((IPTR)0x7fff - (IPTR)origin + 1) / (IPTR)raster;
+    if (rastermax < maxcount)
+        maxcount = rastermax;
+
+    return count <= maxcount;
+}
+
+static BOOL stdcon_validoffset(IPTR offset, WORD raster, WORD max,
+    BOOL manual, IPTR limit)
+{
+    IPTR count;
+
+    if (offset > 0x7fff || raster <= 0)
+        return FALSE;
+
+    if (manual)
+    {
+        if (max < 0)
+            return FALSE;
+
+        return stdcon_validsize((IPTR)max + 1, (WORD)offset, raster);
+    }
+
+    if (limit <= offset)
+        return FALSE;
+
+    count = (limit - offset) / (IPTR)raster;
+
+    return count && count <= 0x8000;
+}
+
+/* Send one of the relative cursor movement methods with the cursor removed
+ * from the display. With 'home' set the cursor is put in the leftmost column
+ * before it moves. */
+static VOID stdcon_move(Object *o, ULONG mid, IPTR num, BOOL home)
+{
+    Console_UnRenderCursor(o);
+    if (home)
+    {
+        CU(o)->cu_XCP = CHAR_XMIN(o);
+        CU(o)->cu_XCCP = CHAR_XMIN(o);
+    }
+    Console_Move(o, mid, num);
+    Console_RenderCursor(o);
+}
+
+/* Scroll the area from (xmin, ymin) to the right edge of the console and
+ * ymax by (dx, dy) pixels, with the cursor removed from the display. The
+ * part scrolled in is filled with the background pen. */
+static VOID stdcon_scrollraster(Object *o, struct RastPort *rp,
+    struct Library *GfxBase, LONG dx, LONG dy, LONG xmin, LONG ymin,
+    LONG ymax)
+{
+    UBYTE oldpen = rp->FgPen;
+
+    Console_UnRenderCursor(o);
+    SetAPen(rp, CU(o)->cu_BgPen);
+    ScrollRaster(rp, dx, dy, xmin, ymin, GFX_XMAX(o), ymax);
+    SetAPen(rp, oldpen);
+    Console_RenderCursor(o);
+}
+
+/* Scroll the rows from 'first' to the last one up, or down, by count rows.
+ * The count is limited to the number of rows concerned. */
+static VOID stdcon_vscroll(Object *o, struct RastPort *rp,
+    struct Library *GfxBase, IPTR count, WORD first, BOOL down)
+{
+    IPTR max_count = CHAR_YMAX(o) - first + 1;
+    LONG scroll;
+
+    if (count > max_count)
+        count = max_count;
+    scroll = YRSIZE * (LONG)count;
+    if (down)
+        scroll = -scroll;
+
+    stdcon_scrollraster(o, rp, GfxBase, 0, scroll, GFX_XMIN(o),
+        GFX_Y(o, first), GFX_YMAX(o));
+}
+
+/* Delete, or insert, count cells at the cursor by scrolling the rest of the
+ * line. A count of zero means one; it is limited to the cells from the
+ * cursor to the end of the line. */
+static VOID stdcon_hscroll(Object *o, struct RastPort *rp,
+    struct Library *GfxBase, IPTR count, BOOL insert)
+{
+    IPTR max_count = CHAR_XMAX(o) - XCP + 1;
+
+    if (!count)
+        count = 1;
+    if (count > max_count)
+        count = max_count;
+    if (insert)
+        count = -count;
+
+    stdcon_scrollraster(o, rp, GfxBase, count * XRSIZE, 0, GFX_X(o, XCP),
+        GFX_Y(o, YCP), GFX_Y(o, YCP + 1));
+}
+
+/*********  StdCon::DoCommand()  ****************************/
+
+static VOID stdcon_docommand(Class *cl, Object *o,
+    struct P_Console_DoCommand *msg)
+{
+    struct Window *w = CU(o)->cu_Window;
+    struct RastPort *rp = w->RPort;
+    IPTR *params = msg->Params;
+    struct stdcondata *data = INST_DATA(cl, o);
+    struct Library *GfxBase = data->scd_GfxBase;
+
+    EnterFunc(bug("StdCon::DoCommand(o=%p, cmd=%d, params=%p)\n",
+            o, msg->Command, params));
+
+    switch (msg->Command)
+    {
+    case C_NIL:
+        /* do nothing */
+        break;
+
+    case C_ASCII:
+
+        D(bug("Writing char %c at (%d, %d)\n",
+                params[0], CP_X(o), CP_Y(o) + rp->Font->tf_Baseline));
+
+        stdcon_overwritecursor(data);
+
+        setstyle(GfxBase, rp, o);
+        {
+            UBYTE c = params[0];
+            stdcon_text(o, data, rp, &c, 1);
+        }
+
+        /* Rerender the cursor */
+        Console_RenderCursor(o);
+
+        break;
+
+    case C_ASCII_STRING:
+        D(bug("Writing string %.*s at (%d, %d)\n",
+                (int)params[1], (char *)params[0], CP_X(o),
+                CP_Y(o) + rp->Font->tf_Baseline));
+
+        stdcon_overwritecursor(data);
+
+        setstyle(GfxBase, rp, o);
+
+        {
+            ULONG len = params[1];
+            STRPTR str = (STRPTR) params[0];
+
+            while (len)
+            {
+                ULONG remaining_space = CHAR_XMAX(o) + 1 - XCCP;
+                ULONG line_len =
+                    len < remaining_space ? len : remaining_space;
+
+                stdcon_text(o, data, rp, str, line_len);
+
+                len -= line_len;
+                str += line_len;
+            }
+        }
+
+        /* Rerender the cursor */
+        Console_RenderCursor(o);
+
+        break;
+
+    case C_FORMFEED:
+        {
+            /* Clear the console */
+
+            UBYTE oldpen = rp->FgPen;
+            IPTR newcurpos[2] = { 0, 0 };
+
+            Console_UnRenderCursor(o);
+
+            SetAPen(rp, CU(o)->cu_BgPen);
+            RectFill(rp, CU(o)->cu_XROrigin, CU(o)->cu_YROrigin,
+                CU(o)->cu_XRExtant, CU(o)->cu_YRExtant);
+
+            SetAPen(rp, oldpen);
+
+            Console_DoCommand(o, C_CURSOR_POS, 2, newcurpos);
+
+            Console_RenderCursor(o);
+
+            break;
+        }
+
+    case C_BELL:
+        DisplayBeep(CU(o)->cu_Window->WScreen);
+        break;
+
+    case C_BACKSPACE:
+        stdcon_move(o, M_Console_Left, 1, FALSE);
+        break;
+
+    case C_CURSOR_BACKWARD:
+        stdcon_move(o, M_Console_Left, params[0], FALSE);
+        break;
+
+    case C_CURSOR_FORWARD:
+        stdcon_move(o, M_Console_Right, params[0], FALSE);
+        break;
+
+    case C_DELETE_CHAR:
+        stdcon_hscroll(o, rp, GfxBase, params[0], FALSE);
+        break;
+
+    case C_HTAB:
+        {
+            WORD x = XCCP, i = 0;
+
+            while ((CU(o)->cu_TabStops[i] != (UWORD) - 1) &&
+                (CU(o)->cu_TabStops[i] <= x))
+            {
+                i++;
+            }
+            if (CU(o)->cu_TabStops[i] != (UWORD) - 1)
+            {
+                Console_UnRenderCursor(o);
+                Console_Right(o, CU(o)->cu_TabStops[i] - x);
+                Console_RenderCursor(o);
+            }
+            break;
+        }
+
+    case C_CURSOR_HTAB:
+        {
+            IPTR count = params[0] ? params[0] : 1;
+
+            while (count-- > 0)
+            {
+                IPTR dummy;
+                WORD oldx = XCCP;
+
+                Console_DoCommand(o, C_HTAB, 0, &dummy);
+
+                if (XCCP == oldx)
+                    break;
+            }
+            break;
+        }
+
+    case C_CURSOR_BACKTAB:
+        {
+            IPTR count = params[0] ? params[0] : 1;
+
+            Console_UnRenderCursor(o);
+
+            while (count-- > 0)
+            {
+                WORD x = XCCP, i = 0;
+
+                while ((CU(o)->cu_TabStops[i] != (UWORD) - 1) &&
+                    (CU(o)->cu_TabStops[i] < x))
+                {
+                    i++;
+                }
+
+                i--;
+
+                if ((i < 0) || (CU(o)->cu_TabStops[i] == (UWORD) - 1))
+                    break;
+
+                Console_Left(o, x - CU(o)->cu_TabStops[i]);
+            }
+
+            Console_RenderCursor(o);
+
+            break;
+        }
+
+    case C_LINEFEED:
+        D(bug("Got linefeed command\n"));
+        /*Console_ClearCell(o, XCCP, YCCP); */
+        Console_UnRenderCursor(o);
+
+        Console_Down(o, 1);
+
+        /* Check for linefeed mode (LF or LF+CR) */
+
+        D(bug("conflags: %d\n", ICU(o)->conFlags));
+
+        /* if (ICU(o)->conFlags & CF_LF_MODE_ON) */
+        if (CHECK_MODE(o, M_LNM))
+        {
+            CU(o)->cu_XCP = CHAR_XMIN(o);
+            CU(o)->cu_XCCP = CHAR_XMIN(o);
+        }
+        Console_RenderCursor(o);
+        break;
+
+    case C_CURSOR_PREV_LINE:
+        stdcon_move(o, M_Console_Up, params[0] ? params[0] : 1, TRUE);
+        break;
+
+    case C_CURSOR_UP:
+        stdcon_move(o, M_Console_Up, params[0] ? params[0] : 1, FALSE);
+        break;
+
+    case C_VTAB:
+        stdcon_move(o, M_Console_Up, 1, FALSE);
+        break;
+
+    case C_CURSOR_NEXT_LINE:
+        stdcon_move(o, M_Console_Down, params[0] ? params[0] : 1, TRUE);
+        break;
+
+    case C_CURSOR_DOWN:
+        stdcon_move(o, M_Console_Down, params[0] ? params[0] : 1, FALSE);
+        break;
+
+    case C_CARRIAGE_RETURN:
+        /* Goto start of line */
+
+        Console_UnRenderCursor(o);
+        CU(o)->cu_XCP = CHAR_XMIN(o);
+        CU(o)->cu_XCCP = CHAR_XMIN(o);
+        Console_RenderCursor(o);
+        break;
+
+    case C_INDEX:
+        Console_Down(o, 1);
+        break;
+
+    case C_NEXT_LINE:
+        D(bug("Got NEXT LINE cmd\n"));
+        Console_Down(o, 1);
+        Console_Left(o, XCP);
+        break;
+
+    case C_REVERSE_IDX:
+        Console_Up(o, 1);
+        break;
+
+    case C_CURSOR_POS:
+        {
+            IPTR row = params[0];
+            IPTR col = params[1];
+            WORD x, y;
+
+            if (col <= 1)
+                x = CHAR_XMIN(o);
+            else if (col > (IPTR) CHAR_XMAX(o) + 1)
+                x = CHAR_XMAX(o);
+            else
+                x = (WORD) (col - 1);
+
+            if (row <= 1)
+                y = CHAR_YMIN(o);
+            else if (row > (IPTR) CHAR_YMAX(o) + 1)
+                y = CHAR_YMAX(o);
+            else
+                y = (WORD) (row - 1);
+
+            Console_UnRenderCursor(o);
+
+            XCCP = XCP = x;
+            YCCP = YCP = y;
+
+            Console_RenderCursor(o);
+            break;
+        }
+
+    case C_ERASE_IN_LINE:
+        {
+            /*UBYTE param = 1; */
+            UBYTE oldpen = rp->FgPen;
+
+            Console_UnRenderCursor(o);
+
+            /* Clear till EOL */
+
+            SetAPen(rp, CU(o)->cu_BgPen);
+            SetDrMd(rp, JAM2);
+
+            RectFill(rp, CU(o)->cu_XROrigin + XCP * XRSIZE,
+                CU(o)->cu_YROrigin + YCP * YRSIZE, CU(o)->cu_XRExtant,
+                CU(o)->cu_YROrigin + (YCP + 1) * YRSIZE - 1);
+
+
+            SetAPen(rp, oldpen);
+
+            Console_RenderCursor(o);
+
+        }
+        break;
+
+    case C_ERASE_IN_DISPLAY:
+        {
+            IPTR param = 1;
+            UBYTE oldpen = rp->FgPen;
+
+            /* Clear till EOL */
+            Console_DoCommand(o, C_ERASE_IN_LINE, 1, &param);
+
+            /* Clear rest of area */
+
+            Console_UnRenderCursor(o);
+
+            SetAPen(rp, CU(o)->cu_BgPen);
+            SetDrMd(rp, JAM2);
+
+            RectFill(rp, CU(o)->cu_XROrigin,
+                CU(o)->cu_YROrigin + (YCP + 1) * YRSIZE, CU(o)->cu_XRExtant,
+                CU(o)->cu_YRExtant);
+
+            SetAPen(rp, oldpen);
+
+            Console_RenderCursor(o);
+
+            break;
+        }
+
+    case C_INSERT_CHAR:
+        stdcon_hscroll(o, rp, GfxBase, params[0], TRUE);
+        break;
+
+    case C_INSERT_LINE:
+        stdcon_vscroll(o, rp, GfxBase, params[0], YCP, TRUE);
+        break;
+
+    case C_DELETE_LINE:
+        stdcon_vscroll(o, rp, GfxBase, params[0], YCP, FALSE);
+        break;
+
+    case C_SCROLL_UP:
+        stdcon_vscroll(o, rp, GfxBase, params[0], CHAR_YMIN(o), FALSE);
+        break;
+
+    case C_SCROLL_DOWN:
+        stdcon_vscroll(o, rp, GfxBase, params[0], CHAR_YMIN(o), TRUE);
+        break;
+
+    case C_CURSOR_VISIBLE:
+        if (!data->cursorvisible)
+        {
+            data->cursorvisible = TRUE;
+            data->rendercursorcount--;
+            Console_RenderCursor(o);
+        }
+        break;
+
+    case C_CURSOR_INVISIBLE:
+        if (data->cursorvisible)
+        {
+            Console_UnRenderCursor(o);
+            data->cursorvisible = FALSE;
+            data->rendercursorcount++;
+        }
+        break;
+
+    case C_SET_LEFT_OFFSET:
+        {
+            IPTR origin = msg->NumParams ? params[0] :
+                (w->Flags & WFLG_GIMMEZEROZERO ? 0 : w->BorderLeft);
+            IPTR limit = (IPTR)w->Width - (IPTR)w->BorderRight;
+            BOOL manual =
+                (ICU(o)->conFlags & CF_MANUAL_LINE_LENGTH) != 0;
+
+            if (!stdcon_validoffset(origin, CU(o)->cu_XRSize,
+                    CU(o)->cu_XMax, manual, limit))
+                break;
+
+            Console_UnRenderCursor(o);
+            CU(o)->cu_XROrigin = (WORD)origin;
+            Console_NewWindowSize(o);
+            Console_RenderCursor(o);
+            break;
+        }
+
+    case C_SET_TOP_OFFSET:
+        {
+            IPTR origin = msg->NumParams ? params[0] :
+                (w->Flags & WFLG_GIMMEZEROZERO ? 0 : w->BorderTop);
+            IPTR limit = (IPTR)w->Height - (IPTR)w->BorderBottom;
+            BOOL manual =
+                (ICU(o)->conFlags & CF_MANUAL_PAGE_LENGTH) != 0;
+
+            if (!stdcon_validoffset(origin, CU(o)->cu_YRSize,
+                    CU(o)->cu_YMax, manual, limit))
+                break;
+
+            Console_UnRenderCursor(o);
+            CU(o)->cu_YROrigin = (WORD)origin;
+            Console_NewWindowSize(o);
+            Console_RenderCursor(o);
+            break;
+        }
+
+    case C_SET_PAGE_LENGTH:
+        if (msg->NumParams && params[0] &&
+            !stdcon_validsize(params[0], CU(o)->cu_YROrigin,
+                CU(o)->cu_YRSize))
+            break;
+
+        Console_UnRenderCursor(o);
+
+        if (!msg->NumParams || !params[0])
+        {
+            ICU(o)->conFlags &= ~CF_MANUAL_PAGE_LENGTH;
+        }
+        else
+        {
+            ICU(o)->conFlags |= CF_MANUAL_PAGE_LENGTH;
+            CU(o)->cu_YMax = (WORD)(params[0] - 1);
+        }
+
+        Console_NewWindowSize(o);
+        Console_RenderCursor(o);
+        break;
+
+    case C_SET_LINE_LENGTH:
+        if (msg->NumParams && params[0] &&
+            !stdcon_validsize(params[0], CU(o)->cu_XROrigin,
+                CU(o)->cu_XRSize))
+            break;
+
+        Console_UnRenderCursor(o);
+
+        if (!msg->NumParams || !params[0])
+        {
+            ICU(o)->conFlags &= ~CF_MANUAL_LINE_LENGTH;
+        }
+        else
+        {
+            ICU(o)->conFlags |= CF_MANUAL_LINE_LENGTH;
+            CU(o)->cu_XMax = (WORD)(params[0] - 1);
+        }
+
+        Console_NewWindowSize(o);
+        Console_RenderCursor(o);
+        break;
+
+    case C_WINDOW_STATUS_REQUEST:
+        {
+            UBYTE reply[32];
+            NewRawDoFmt("\x9b" "1;1;%d;%d r", RAWFMTFUNC_STRING, reply,
+                CU(o)->cu_YMax + 1, CU(o)->cu_XMax + 1);
+            con_inject((struct ConsoleBase *)cl->cl_UserData, CU(o), reply,
+                -1);
+            break;
+        }
+
+    case C_DEVICE_STATUS_REPORT:
+        {
+            UBYTE reply[32];
+            NewRawDoFmt("\x9b" "%d;%dR", RAWFMTFUNC_STRING, reply,
+                CU(o)->cu_YCP + 1, CU(o)->cu_XCP + 1);
+            con_inject((struct ConsoleBase *)cl->cl_UserData, CU(o), reply,
+                -1);
+            break;
+        }
+
+    default:
+        Console_Super(cl, o, (Msg) msg);
+        break;
+    }
+
+    ReturnVoid("StdCon::DoCommand");
+}
+
+/*********  StdCon::RenderCursor()  ****************************/
+static VOID stdcon_drawcursor(Object *o, struct stdcondata *data)
+{
+    static const UWORD inactive_pattern[] = { 0xAAAA, 0x5555 };
+    struct RastPort *rp = RASTPORT(o);
+    const UWORD *oldpattern = rp->AreaPtrn;
+    BYTE oldpatternsize = rp->AreaPtSz;
+    struct Library *GfxBase = data->scd_GfxBase;
+
+    SetDrMd(rp, COMPLEMENT);
+    if (!data->windowactive)
+    {
+        rp->AreaPtrn = inactive_pattern;
+        rp->AreaPtSz = 1;
+    }
+    RectFill(rp, CP_X(o), CP_Y(o), CP_X(o) + XRSIZE - 1,
+        CP_Y(o) + YRSIZE - 1);
+    if (!data->windowactive)
+    {
+        rp->AreaPtrn = oldpattern;
+        rp->AreaPtSz = oldpatternsize;
+    }
+    SetDrMd(rp, JAM2);
+}
+
+static VOID stdcon_rendercursor(Class *cl, Object *o,
+    struct P_Console_RenderCursor *msg)
+{
+    struct stdcondata *data = INST_DATA(cl, o);
+
+    /* SetAPen(rp, data->dri->dri_Pens[FILLPEN]); */
+
+    data->rendercursorcount++;
+
+    if (data->cursorvisible && (data->rendercursorcount == 1))
+    {
+        stdcon_drawcursor(o, data);
+    }
+}
+
+/*********  StdCon::UnRenderCursor()  ****************************/
+static VOID stdcon_unrendercursor(Class *cl, Object *o,
+    struct P_Console_UnRenderCursor *msg)
+{
+    struct stdcondata *data = INST_DATA(cl, o);
+
+    data->rendercursorcount--;
+
+    /* SetAPen(rp, data->dri->dri_Pens[FILLPEN]); */
+
+    if (data->cursorvisible && (data->rendercursorcount == 0))
+    {
+        stdcon_drawcursor(o, data);
+    }
+}
+
+static VOID stdcon_setactive(Class *cl, Object *o,
+    struct P_Console_HandleGadgets *msg)
+{
+    struct stdcondata *data = INST_DATA(cl, o);
+    BOOL active = msg->Event->ie_Class == IECLASS_ACTIVEWINDOW;
+
+    if (active == data->windowactive)
+        return;
+
+    if (data->cursorvisible && data->rendercursorcount == 1)
+        stdcon_drawcursor(o, data);
+    data->windowactive = active;
+    if (data->cursorvisible && data->rendercursorcount == 1)
+        stdcon_drawcursor(o, data);
+}
+
+/**************************
+**  StdCon::ClearCell()  **
+**************************/
+static VOID stdcon_clearcell(Class *cl, Object *o,
+    struct P_Console_ClearCell *msg)
+{
+    struct RastPort *rp = RASTPORT(o);
+    struct stdcondata *data = INST_DATA(cl, o);
+    struct Library *GfxBase = data->scd_GfxBase;
+
+    SetAPen(rp, data->dri->dri_Pens[BACKGROUNDPEN]);
+    SetDrMd(rp, JAM1);
+    RectFill(rp, GFX_X(o, msg->X), GFX_Y(o, msg->Y), GFX_X(o,
+            msg->X) + XRSIZE - 1, GFX_Y(o, msg->Y) + YRSIZE - 1);
+}
+
+/*******************************
+**  StdCon::NewWindowSize()  **
+*******************************/
+static VOID stdcon_newwindowsize(Class *cl, Object *o,
+    struct P_Console_NewWindowSize *msg)
+{
+    struct RastPort *rp = RASTPORT(o);
+    struct stdcondata *data = INST_DATA(cl, o);
+    struct Library *GfxBase = data->scd_GfxBase;
+    WORD old_xmax = CHAR_XMAX(o);
+    WORD old_ymax = CHAR_YMAX(o);
+    WORD old_xcp = XCP;
+    WORD old_ycp = YCP;
+
+    WORD x1, y1, x2, y2;
+
+    Console_Super(cl, o, (Msg) msg);
+
+    if (CHAR_XMAX(o) < old_xmax)
+    {
+        x1 = GFX_XMAX(o) + 1;
+        y1 = GFX_YMIN(o);
+        x2 = GFX_XMAX(o);
+        y2 = GFX_YMAX(o) - 1;
+
+        if ((x2 >= x1) && (y2 >= y1))
+        {
+            SetAPen(rp, 0);
+            SetDrMd(rp, JAM2), RectFill(rp, x1, y1, x2, y2);
+        }
+    }
+
+    if (CHAR_YMAX(o) < old_ymax)
+    {
+        x1 = GFX_XMIN(o);
+        y1 = GFX_YMAX(o) + 1;
+        x2 = WINDOW(o)->Width - WINDOW(o)->BorderRight - 1;
+        y2 = WINDOW(o)->Height - WINDOW(o)->BorderBottom - 1;
+
+        if ((x2 >= x1) && (y2 >= y1))
+        {
+            SetAPen(rp, 0);
+            SetDrMd(rp, JAM2), RectFill(rp, x1, y1, x2, y2);
+        }
+    }
+
+    if ((old_xcp != XCP) || (old_ycp != YCP))
+    {
+        SetAPen(rp, 0);
+        SetDrMd(rp, JAM2);
+        RectFill(rp, GFX_XMIN(o), GFX_YMIN(o), GFX_XMAX(o), GFX_YMAX(o));
+        data->rendercursorcount--;
+        Console_RenderCursor(o);
+    }
+    return;
+}
+
+IPTR stdcon_getpencolor(Class *cl, Object *o, struct P_Console_GetColorPen *msg)
+{
+    struct stdcondata *data = INST_DATA(cl, o);
+    *msg->PenPtr = (BYTE)*(data->penmap[msg->ColorIdx]);
+    return TRUE;
+}
+
+AROS_UFH3S(IPTR, dispatch_stdconclass,
+    AROS_UFHA(Class *, cl, A0),
+    AROS_UFHA(Object *, o, A2), AROS_UFHA(Msg, msg, A1))
+{
+    AROS_USERFUNC_INIT
+
+    IPTR retval = 0UL;
+
+    switch (msg->MethodID)
+    {
+    case M_Console_GetColorPen:
+        retval = (IPTR) stdcon_getpencolor(cl, o, (struct P_Console_GetColorPen *)msg);
+        break;
+
+    case OM_NEW:
+        retval = (IPTR) stdcon_new(cl, o, (struct opSet *)msg);
+        break;
+
+    case OM_DISPOSE:
+        stdcon_dispose(cl, o, msg);
+        break;
+
+    case M_Console_DoCommand:
+        stdcon_docommand(cl, o, (struct P_Console_DoCommand *)msg);
+        break;
+
+    case M_Console_RenderCursor:
+        stdcon_rendercursor(cl, o, (struct P_Console_RenderCursor *)msg);
+        break;
+
+    case M_Console_UnRenderCursor:
+        stdcon_unrendercursor(cl, o,
+            (struct P_Console_UnRenderCursor *)msg);
+        break;
+
+    case M_Console_ClearCell:
+        stdcon_clearcell(cl, o, (struct P_Console_ClearCell *)msg);
+        break;
+
+    case M_Console_NewWindowSize:
+        stdcon_newwindowsize(cl, o, (struct P_Console_NewWindowSize *)msg);
+        break;
+
+    case M_Console_HandleGadgets:
+        stdcon_setactive(cl, o,
+            (struct P_Console_HandleGadgets *)msg);
+        break;
+
+    default:
+        retval = Console_Super(cl, o, msg);
+        break;
+    }
+
+    return retval;
+
+    AROS_USERFUNC_EXIT
+}
+
+#undef ConsoleDevice
+
+Class *makeStdConClass(struct ConsoleBase *ConsoleDevice)
+{
+    Class *cl;
+
+    cl = MakeClass(NULL, NULL, CONSOLECLASSPTR, sizeof(struct stdcondata),
+        0UL);
+    if (cl)
+    {
+        cl->cl_Dispatcher.h_Entry = (APTR) dispatch_stdconclass;
+        cl->cl_Dispatcher.h_SubEntry = NULL;
+
+        cl->cl_UserData = (IPTR) ConsoleDevice;
+
+        return (cl);
+    }
+    return NULL;
+}

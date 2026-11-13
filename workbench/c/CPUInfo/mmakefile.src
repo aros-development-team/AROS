@@ -1,0 +1,22 @@
+# Copyright (C) 2003, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+
+FILES	:= main 
+
+x86FILES := x86 \
+            x86_AMD \
+            x86_Cyrix \
+            x86_Intel \
+            x86_NatSemi \
+            x86_RiSE
+
+EXEDIR  := $(AROS_C)
+
+#MM workbench-c-cpuinfo : includes linklibs
+
+%build_prog mmake=workbench-c-cpuinfo \
+    progname=CPUInfo targetdir=$(EXEDIR) \
+    files="$(FILES) $(x86FILES)"
+
+%common

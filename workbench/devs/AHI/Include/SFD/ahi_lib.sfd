@@ -1,0 +1,67 @@
+==copyright Copyright © 1994-2005 Martin Blom
+==id $Id$
+==base _AHIBase
+==basetype struct Library *
+==libname ahi.device
+==include <exec/types.h>
+==include <exec/devices.h>
+==include <utility/tagitem.h>
+==include <devices/ahi.h>
+==bias 42
+==public
+
+* Functions for allocating/deallocating and controlling AudioCtrl handles
+struct AHIAudioCtrl * AHI_AllocAudioA(struct TagItem * tagList) (a1)
+==varargs
+struct AHIAudioCtrl * AHI_AllocAudio(Tag tag1, ...) (a1)
+void AHI_FreeAudio(struct AHIAudioCtrl * AudioCtrl) (a2)
+==private
+void AHI_KillAudio() ()
+==public
+ULONG AHI_ControlAudioA(struct AHIAudioCtrl * AudioCtrl, struct TagItem * tagList) (a2,a1)
+==varargs
+ULONG AHI_ControlAudio(struct AHIAudioCtrl * AudioCtrl, Tag tag1, ...) (a2,a1)
+
+* Functions to control the synthesizer
+void AHI_SetVol(UWORD Channel, Fixed Volume, sposition Pan,
+	struct AHIAudioCtrl * AudioCtrl, ULONG Flags) (d0,d1,d2,a2,d3)
+void AHI_SetFreq(UWORD Channel, ULONG Freq, struct AHIAudioCtrl * AudioCtrl, ULONG Flags) (d0,d1,a2,d2)
+void AHI_SetSound(UWORD Channel, UWORD Sound, ULONG Offset, LONG Length,
+	struct AHIAudioCtrl * AudioCtrl, ULONG Flags) (d0,d1,d2,d3,a2,d4)
+ULONG AHI_SetEffect(APTR Effect, struct AHIAudioCtrl * AudioCtrl) (a0,a2)
+ULONG AHI_LoadSound(UWORD Sound, ULONG Type, APTR Info, struct AHIAudioCtrl * AudioCtrl) (d0,d1,a0,a2)
+void AHI_UnloadSound(UWORD Sound, struct AHIAudioCtrl * Audioctrl) (d0,a2)
+ULONG AHI_NextAudioID(ULONG Last_ID) (d0)
+
+* Functions to query the audio mode database
+BOOL AHI_GetAudioAttrsA(ULONG ID, struct AHIAudioCtrl * Audioctrl, struct TagItem * tagList) (d0,a2,a1)
+==varargs
+BOOL AHI_GetAudioAttrs(ULONG ID, struct AHIAudioCtrl * Audioctrl, Tag tag1, ...) (d0,a2,a1)
+ULONG AHI_BestAudioIDA(struct TagItem * tagList) (a1)
+==varargs
+ULONG AHI_BestAudioID(Tag tag1, ...) (a1)
+
+* Functions for the audio mode requester
+struct AHIAudioModeRequester * AHI_AllocAudioRequestA(struct TagItem * tagList) (a0)
+==varargs
+struct AHIAudioModeRequester * AHI_AllocAudioRequest(Tag tag1, ...) (a0)
+BOOL AHI_AudioRequestA(struct AHIAudioModeRequester * Requester, struct TagItem * tagList) (a0,a1)
+==varargs
+BOOL AHI_AudioRequest(struct AHIAudioModeRequester * Requester, Tag tag1, ...) (a0,a1)
+void AHI_FreeAudioRequest(struct AHIAudioModeRequester * Requester) (a0)
+
+==version 4
+
+* More functions to control the synthesizer
+void AHI_PlayA(struct AHIAudioCtrl * Audioctrl, struct TagItem * tagList) (a2,a1)
+==varargs
+void AHI_Play(struct AHIAudioCtrl * Audioctrl, Tag tag1, ...) (a2,a1)
+
+* Find out how many bytes a sample frame occupy
+ULONG AHI_SampleFrameSize(ULONG SampleType) (d0)
+
+* Semi-private functions to manage the audio mode database
+ULONG AHI_AddAudioMode(struct TagItem * AHIPrivate) (a0)
+ULONG AHI_RemoveAudioMode(ULONG AHIPrivate) (d0)
+ULONG AHI_LoadModeFile(STRPTR AHIPrivate) (a0)
+==end

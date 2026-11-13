@@ -1,0 +1,14 @@
+include $(SRCDIR)/config/aros.cfg
+
+#MM- ports-includes : external-openurl-includes external-openurl-fd
+
+#MM external-openurl-includes : \
+#MM     kernel-exec-includes \
+#MM     kernel-dos-includes \
+#MM     kernel-utility-includes
+
+%copy_dir_recursive mmake=external-openurl-includes \
+    src=$(SRCDIR)/$(CURDIR)/C/include dst=$(AROS_INCLUDES)/
+
+%copy_files_q mmake=external-openurl-fd files=openurl_lib.fd \
+    src=fd dst=$(AROS_SDK_FD)

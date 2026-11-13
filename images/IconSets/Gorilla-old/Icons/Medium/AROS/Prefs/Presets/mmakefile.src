@@ -1,0 +1,10 @@
+# Copyright (C) 2004, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+
+ICONS := Patterns
+
+#MM- iconset-Gorilla-old-icons-aros-clean : iconset-Gorilla-old-icons-aros-prefs-presets-clean
+#MM- iconset-Gorilla-old-icons-aros : iconset-Gorilla-old-icons-aros-prefs-presets
+%build_icons mmake=iconset-Gorilla-old-icons-aros-prefs-presets icons=$(ICONS) \
+             dir=$(AROS_PREFS)/Presets

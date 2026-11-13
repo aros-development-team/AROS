@@ -1,0 +1,13 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+FILES := textclass support agextension
+
+#MM workbench-datatypes-text : includes linklibs
+
+USER_CPPFLAGS   := -DCOMPILE_DATATYPE -DMORPHOS_AG_EXTENSION
+USER_LDFLAGS := -static
+
+%build_module mmake=workbench-datatypes-text \
+    modname=text modtype=datatype \
+    files=$(FILES)

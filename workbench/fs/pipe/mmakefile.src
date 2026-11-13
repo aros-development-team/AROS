@@ -1,0 +1,18 @@
+include $(SRCDIR)/config/aros.cfg
+
+#MM- workbench-fs-complete : workbench-fs-pipe
+
+NOWARN_FLAGS := $(NOWARN_OLD_STYLE_DEFINITION)
+USER_CFLAGS := $(NOWARN_FLAGS)
+USER_LDFLAGS := -static
+
+FILES=pipebuf pipedebug pipecreate pipedir \
+      pipe-handler pipelists pipename pipesched \
+      main
+
+%build_prog mmake=workbench-fs-pipe \
+	progname=pipe-handler targetdir=$(AROS_FS) \
+	files="$(FILES)" \
+	usestartup=no
+
+%common

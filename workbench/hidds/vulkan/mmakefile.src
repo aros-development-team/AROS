@@ -1,0 +1,58 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+INCLUDE_FILES := $(call WILDCARD, include/*.h)
+USER_LDFLAGS := -static
+
+HIDD_VULKAN_FILES := vulkan_init vulkan_class
+
+VULKAN_HPP_FILES := \
+    vulkan.hpp \
+    vulkan_enums.hpp \
+    vulkan_format_traits.hpp \
+    vulkan_funcs.hpp \
+    vulkan_handles.hpp \
+    vulkan_hash.hpp \
+    vulkan_hpp_macros.hpp \
+    vulkan_raii.hpp \
+    vulkan_shared.hpp \
+    vulkan_static_assertions.hpp \
+    vulkan_structs.hpp \
+    vulkan_to_string.hpp \
+    vulkan_video.hpp \
+    vulkan_extension_inspection.hpp
+
+#MM includes-copy
+%copy_includes path=hidd dir=include
+%copy_includes path=vulkan dir=$(SRCDIR)/$(CURDIR)/include/vulkan includes=$(VULKAN_HPP_FILES)
+
+#MM- workbench-hidds: hidd-vulkan
+#MM hidd-vulkan : includes
+
+#MM- workbench-hidds: hidd-vulkan-loader
+#MM hidd-vulkan-loader : includes
+
+USER_INCLUDES += \
+            -iquote $(SRCDIR)/$(CURDIR)
+
+%build_module mmake=hidd-vulkan modname=vulkan modtype=hidd \
+   files="$(HIDD_VULKAN_FILES)"
+
+%build_linklib mmake=hidd-vulkan-loader \
+    libname=vulkan \
+    files="vulkan_loader"
+
+# VulkanProbe: the Vulkan stack on whatever devices the loader finds (the
+# display's driver, else the software one): per device, a logical device, a
+# compute queue and a vkCmdFillBuffer checked through a mapping. A plain C
+# program linking -lvulkan.
+%build_prog mmake=hidd-vulkan-vulkanprobe \
+    progname=VulkanProbe \
+    files=test/VulkanProbe \
+    targetdir=$(AROS_DEBUG)/Hardware \
+    uselibs="vulkan"
+
+#MM- workbench-hidds: hidd-vulkan-vulkanprobe
+#MM- hidd-vulkan-vulkanprobe : hidd-vulkan-loader
+
+%common

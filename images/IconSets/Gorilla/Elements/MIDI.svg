@@ -1,0 +1,295 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 20010904//EN"
+"http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd">
+<!-- Created with Sodipodi ("http://www.sodipodi.com/") -->
+<svg
+   width="42.5pt"
+   height="48pt"
+   viewBox="0 0 42.5 48"
+   xml:space="preserve"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:xml="http://www.w3.org/XML/1998/namespace"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:xlink="http://www.w3.org/1999/xlink"
+   id="svg807"
+   sodipodi:version="0.32"
+   sodipodi:docname="/home/adam/Projekt/AROS/images/Gorilla/Elements/MIDI.svg"
+   sodipodi:docbase="/home/adam/Projekt/AROS/images/Gorilla/Elements">
+  <defs
+     id="defs895" />
+  <sodipodi:namedview
+     id="base" />
+  <g
+     id="Layer_x0020_2"
+     style="fill-rule:nonzero;clip-rule:nonzero;stroke:#000000;stroke-miterlimit:4;">
+    <path
+       style="fill:none;stroke:none;"
+       d="M42.5,48H0V0h42.5v48z"
+       id="path831" />
+  </g>
+  <g
+     id="Layer_x0020_3"
+     style="fill-rule:nonzero;clip-rule:nonzero;fill:none;stroke:#FFFFFF;stroke-width:0.277;stroke-miterlimit:4;"
+     transform="matrix(1.391411,0.000000,0.000000,1.391411,-12.40554,-9.799400)">
+    <linearGradient
+       id="aigrd5"
+       gradientUnits="userSpaceOnUse"
+       x1="13.2061"
+       y1="7.1392"
+       x2="35.0828"
+       y2="40.7435">
+      <stop
+         offset="0"
+         style="stop-color:#FFFFFF"
+         id="stop834" />
+      <stop
+         offset="1"
+         style="stop-color:#EFEFEF"
+         id="stop835" />
+    </linearGradient>
+    <path
+       style="fill:url(#aigrd5);stroke:#000000;stroke-width:1.1079;"
+       d="M34.3,38.4H14.4V10.1h19.9v28.3z"
+       id="path836" />
+    <g
+       id="g837">
+      <path
+         d="M33.6,18.5H14.5"
+         id="path838" />
+      <linearGradient
+         id="aigrd6"
+         gradientUnits="userSpaceOnUse"
+         x1="20.8667"
+         y1="12.9531"
+         x2="27.6324"
+         y2="23.3458">
+        <stop
+           offset="0"
+           style="stop-color:#FFFFFF"
+           id="stop840" />
+        <stop
+           offset="1"
+           style="stop-color:#EFEFEF"
+           id="stop841" />
+      </linearGradient>
+      <path
+         style="opacity:9.000000e-002;fill:url(#aigrd6);stroke:#000000;"
+         d="M34.1,18.2H14.5"
+         id="path842" />
+      <path
+         d="M33.6,34.3H15"
+         id="path843" />
+      <linearGradient
+         id="aigrd7"
+         gradientUnits="userSpaceOnUse"
+         x1="20.8667"
+         y1="28.7402"
+         x2="27.633"
+         y2="39.1339">
+        <stop
+           offset="0"
+           style="stop-color:#FFFFFF"
+           id="stop845" />
+        <stop
+           offset="1"
+           style="stop-color:#EFEFEF"
+           id="stop846" />
+      </linearGradient>
+      <path
+         style="opacity:9.000000e-002;fill:url(#aigrd7);stroke:#000000;"
+         d="M34.1,34H14.5"
+         id="path847" />
+      <path
+         d="M33.6,30.2H15"
+         id="path848" />
+      <linearGradient
+         id="aigrd8"
+         gradientUnits="userSpaceOnUse"
+         x1="20.8667"
+         y1="24.5859"
+         x2="27.633"
+         y2="34.9796">
+        <stop
+           offset="0"
+           style="stop-color:#FFFFFF"
+           id="stop850" />
+        <stop
+           offset="1"
+           style="stop-color:#EFEFEF"
+           id="stop851" />
+      </linearGradient>
+      <path
+         style="opacity:9.000000e-002;fill:url(#aigrd8);stroke:#000000;"
+         d="M34.1,29.9H14.5"
+         id="path852" />
+      <path
+         d="M33.6,26.3H15"
+         id="path853" />
+      <linearGradient
+         id="aigrd9"
+         gradientUnits="userSpaceOnUse"
+         x1="20.8667"
+         y1="20.709"
+         x2="27.633"
+         y2="31.1026">
+        <stop
+           offset="0"
+           style="stop-color:#FFFFFF"
+           id="stop855" />
+        <stop
+           offset="1"
+           style="stop-color:#EFEFEF"
+           id="stop856" />
+      </linearGradient>
+      <path
+         style="opacity:9.000000e-002;fill:url(#aigrd9);stroke:#000000;"
+         d="M34.1,26H14.5"
+         id="path857" />
+      <path
+         d="M33.6,22.7H15"
+         id="path858" />
+      <linearGradient
+         id="aigrd10"
+         gradientUnits="userSpaceOnUse"
+         x1="20.8662"
+         y1="17.1074"
+         x2="27.6326"
+         y2="27.5011">
+        <stop
+           offset="0"
+           style="stop-color:#FFFFFF"
+           id="stop860" />
+        <stop
+           offset="1"
+           style="stop-color:#EFEFEF"
+           id="stop861" />
+      </linearGradient>
+      <path
+         style="opacity:9.000000e-002;fill:url(#aigrd10);stroke:#000000;"
+         d="M34.1,22.4H14.5"
+         id="path862" />
+      <path
+         d="M33.6,14.6H15"
+         id="path863" />
+      <linearGradient
+         id="aigrd11"
+         gradientUnits="userSpaceOnUse"
+         x1="20.8662"
+         y1="9.0752"
+         x2="27.6326"
+         y2="19.4688">
+        <stop
+           offset="0"
+           style="stop-color:#FFFFFF"
+           id="stop865" />
+        <stop
+           offset="1"
+           style="stop-color:#EFEFEF"
+           id="stop866" />
+      </linearGradient>
+      <path
+         style="opacity:9.000000e-002;fill:url(#aigrd11);stroke:#000000;"
+         d="M34.1,14.4H14.5"
+         id="path867" />
+    </g>
+    <path
+       style="fill:#CCCCCC;stroke:none;"
+       d="M33.8,10.9v27H14.9l17.8-1l1.1-26z"
+       id="path868" />
+    <g
+       id="g869">
+      <path
+         style="fill:#000000;stroke:none;"
+         d="M26.3,36.1H14.5v-3.3h11.8v3.3z"
+         id="path870" />
+      <path
+         style="fill:#585858;stroke:none;"
+         d="M26.3,32.8H14.5v3.3l0.7-1v-1.4h10.2l0.9-0.9z"
+         id="path871" />
+      <path
+         style="fill:#888888;stroke:none;"
+         d="M25.2,33.7l-10-0.1l0.1,1.3l0.2-1l9.7-0.1z"
+         id="path872" />
+      <path
+         style="fill:#3F3F3F;stroke:none;"
+         d="M15.8,35.4h9.9v-1.1l-0.2,0.9l-9.6,0.2z"
+         id="path873" />
+    </g>
+    <g
+       id="g874">
+      <path
+         style="fill:#000000;stroke:none;"
+         d="M26.3,31.4H14.5v-3.3h11.8v3.3z"
+         id="path875" />
+      <path
+         style="fill:#585858;stroke:none;"
+         d="M26.3,28.1H14.5v3.3l0.7-1V29h10.2l0.9-0.9z"
+         id="path876" />
+      <path
+         style="fill:#888888;stroke:none;"
+         d="M25.2,29l-10-0.1l0.1,1.3l0.2-1l9.7-0.1z"
+         id="path877" />
+      <path
+         style="fill:#3F3F3F;stroke:none;"
+         d="M15.8,30.7h9.9v-1.1l-0.2,0.9l-9.6,0.2z"
+         id="path878" />
+    </g>
+    <g
+       id="g879">
+      <path
+         style="fill:#000000;stroke:none;"
+         d="M26.3,23.9H14.5v-3.3h11.8v3.3z"
+         id="path880" />
+      <path
+         style="fill:#585858;stroke:none;"
+         d="M26.3,20.6H14.5v3.3l0.7-1v-1.4h10.2l0.9-0.9z"
+         id="path881" />
+      <path
+         style="fill:#888888;stroke:none;"
+         d="M25.2,21.5l-10-0.1l0.1,1.3l0.2-1l9.7-0.1z"
+         id="path882" />
+      <path
+         style="fill:#3F3F3F;stroke:none;"
+         d="M15.8,23.2h9.9v-1.1L25.5,23l-9.6,0.2z"
+         id="path883" />
+    </g>
+    <g
+       id="g884">
+      <path
+         style="fill:#000000;stroke:none;"
+         d="M26.3,19.5H14.5v-3.3h11.8v3.3z"
+         id="path885" />
+      <path
+         style="fill:#585858;stroke:none;"
+         d="M26.3,16.2H14.5v3.3l0.7-1v-1.4h10.2l0.9-0.9z"
+         id="path886" />
+      <path
+         style="fill:#888888;stroke:none;"
+         d="M25.2,17.1l-10-0.1l0.1,1.3l0.2-1l9.7-0.1z"
+         id="path887" />
+      <path
+         style="fill:#3F3F3F;stroke:none;"
+         d="M15.8,18.8h9.9v-1.1l-0.2,0.9l-9.6,0.2z"
+         id="path888" />
+    </g>
+    <g
+       id="g889">
+      <path
+         style="fill:#000000;stroke:none;"
+         d="M26.3,15.1H14.5v-3.3h11.8v3.3z"
+         id="path890" />
+      <path
+         style="fill:#585858;stroke:none;"
+         d="M26.3,11.8H14.5v3.3l0.7-1v-1.4h10.2l0.9-0.9z"
+         id="path891" />
+      <path
+         style="fill:#888888;stroke:none;"
+         d="M25.2,12.6l-10-0.1l0.1,1.3l0.2-1l9.7-0.1z"
+         id="path892" />
+      <path
+         style="fill:#3F3F3F;stroke:none;"
+         d="M15.8,14.3h9.9v-1.1l-0.2,0.9l-9.6,0.2z"
+         id="path893" />
+    </g>
+  </g>
+</svg>

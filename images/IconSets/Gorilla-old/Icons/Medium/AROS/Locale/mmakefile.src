@@ -1,0 +1,10 @@
+# Copyright (C) 2004, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+
+ICONS := Help Catalogs Flags Countries Languages
+
+#MM- iconset-Gorilla-old-icons-aros-clean : iconset-Gorilla-old-icons-aros-locale-clean
+#MM- iconset-Gorilla-old-icons-aros : iconset-Gorilla-old-icons-aros-locale
+%build_icons mmake=iconset-Gorilla-old-icons-aros-locale icons=$(ICONS) \
+             dir=$(AROS_LOCALE)

@@ -1,0 +1,9 @@
+# DataType Description for DataType
+Name=DataType
+Version=$VER: DataType 41.1 (4.1.2017)
+BaseName=datatype
+Pattern=#?
+Mask='F' 'O' 'R' 'M' ANY ANY ANY ANY 'D' 'T' 'Y' 'P'
+GroupID=syst
+Flags=DTF_IFF
+Priority=0

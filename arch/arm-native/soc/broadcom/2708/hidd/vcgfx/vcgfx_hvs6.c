@@ -1,0 +1,1532 @@
+/*
+    Copyright (C) 2026, The AROS Development Team. All rights reserved.
+
+    Desc: BCM VideoCore Gfx Hidd - BCM2712 HVS6 support.
+*/
+
+#define DEBUG 0
+#include <aros/debug.h>
+
+#include <proto/exec.h>
+#include <proto/kernel.h>
+#include <aros/kernel.h>
+
+#include <string.h>
+
+#include "vcgfx_hidd.h"
+#include "vcgfx_hardware.h"
+#include "vcgfx_hvs6.h"
+#include "vcgfx_decode.h"
+
+/* 0 = leave the display list to the firmware */
+#define VC4_HVS6_TAKEOVER 1
+/* 0 = software pointer */
+#define VC4_HVS6_CURSOR   1
+
+/* Register reads; several frames' worth */
+#define HVS6_SPIN_LATCH   2000000
+
+/* Vblank from pixelvalve 0 (GIC SPI 101); the bit is measured, as the
+ * documented one was wrong on VideoCore IV */
+#define HVS6_PV0          0x410000
+#define HVS6_PV_INTEN     0x24
+#define HVS6_PV_INTSTAT   0x28
+#define HVS6_PV_INT_ALL   0x3ff
+#define HVS6_PV0_IRQ      (32 + 101)
+#define HVS6_PROBE_US     60000     /* per bit: ~4 frames at 60 Hz        */
+#define HVS6_WAIT_US      50000     /* a latch wait gives up after this   */
+#define HVS6_LIVE_US      40000     /* a tick this recent means sleep     */
+#define HVS6_SETTLE_US    2000      /* from the tick to the latch, spun   */
+
+/* 1MHz system timer */
+static inline ULONG hvs6_now_us(void)
+{
+    return *(volatile ULONG *)(ARM_PERIIOBASE + 0x3004);
+}
+
+/* Byte offset of a slot from the HVS window base */
+static inline ULONG hvs6_slot(struct vc4_hvs6_state *st, ULONG n)
+{
+    return (st->h6_ListBase + st->h6_List + n * HVS6_SLOT_WORDS) * 4;
+}
+
+/* Copy a plane entry and retarget it; unauthored words stay the firmware's */
+static void hvs6_plane(ULONG dst, ULONG src, UQUAD addr, ULONG pitch,
+                       ULONG ptr0, ULONG x, ULONG y, ULONG w, ULONG h)
+{
+    ULONG i;
+
+    for (i = 0; i < HVS6_ENT_WORDS; i++)
+        hvs6_wr(dst + i * 4, hvs6_rd(src + i * 4));
+
+    hvs6_wr(dst + HVS6_ENT_POS0 * 4, HVS6_POS0(x, y));
+    hvs6_wr(dst + HVS6_ENT_POS2 * 4, HVS6_POS2(w, h));
+    hvs6_wr(dst + HVS6_ENT_PTR0 * 4, ptr0 | HVS6_PTR0_UPPER(addr));
+    hvs6_wr(dst + HVS6_ENT_PTR1 * 4, (ULONG)(addr & 0xffffffffULL));
+    hvs6_wr(dst + HVS6_ENT_PTR2 * 4, pitch);
+}
+
+/* Carve the cursor and framebuffer slices from the top of the UPM
+ * arena; the firmware allocates its planes upwards from 0. */
+static void hvs6_upm_carve(struct vc4_hvs6_state *st)
+{
+    ULONG arena = hvs6_rd(HVS6_UBM_SIZE);
+    ULONG top;
+
+    if (st->h6_CurPTR0)
+        return;
+
+    /* UBM_SIZE units are uncertain: small = allocation units */
+    if (arena && (arena < 0x1000))
+        arena *= HVS6_UPM_GRAN;
+    if ((arena < 4 * HVS6_UPM_SLICE) || (arena > 0x400000))
+        arena = HVS6_UPM_FALLBACK;
+
+    top = (arena - HVS6_UPM_CURSOR) / HVS6_UPM_GRAN;
+    st->h6_CurPTR0 = HVS6_PTR0_BASE(top) | HVS6_PTR0_HANDLE(32)
+                   | HVS6_PTR0_LINES2;
+
+    /* For a framebuffer of our own: the firmware's slice is sized for
+     * the boot surface's pitch, and a wider line overruns it. */
+    top = (arena - HVS6_UPM_SLICE - HVS6_UPM_CURSOR) / HVS6_UPM_GRAN;
+    st->h6_FbPTR0  = HVS6_PTR0_BASE(top) | HVS6_PTR0_HANDLE(30)
+                   | HVS6_PTR0_LINES2;
+
+    /* Screens that are planes get theirs from what is left below */
+    st->h6_UpmTop   = top * HVS6_UPM_GRAN;
+    st->h6_UpmFloor = HVS6_UPM_FW_RESERVE;
+
+    bug("[VC4HVS6] UPM arena %u bytes: cursor PTR0 %08x, framebuffer PTR0 %08x\n",
+        arena, st->h6_CurPTR0, st->h6_FbPTR0);
+}
+
+/* Find a run of slots that still holds the firmware's fill pattern */
+static BOOL hvs6_free_slots(ULONG base, ULONG need, ULONG *out)
+{
+    ULONG rel, words = need * HVS6_SLOT_WORDS;
+
+    for (rel = HVS6_FREE_FROM; rel + words < HVS6_FREE_LIMIT;
+         rel += HVS6_SLOT_WORDS)
+    {
+        ULONG i;
+        BOOL  clean = TRUE;
+
+        for (i = 0; i < words && clean; i++)
+            if (hvs6_rd((base + rel + i) * 4) != HVS6_FILL)
+                clean = FALSE;
+
+        if (clean)
+        {
+            *out = rel;
+            return TRUE;
+        }
+    }
+
+    return FALSE;
+}
+
+void vc4_hvs6_report(struct VideoCoreGfx_staticdata *xsd, ULONG fb_phys,
+                     ULONG fb_pitch, ULONG fb_width, ULONG fb_height)
+{
+    ULONG id = hvs6_rd(HVS6_ID);
+    ULONG base, ch;
+
+    if (id != HVS6_ID_MAGIC)
+    {
+        bug("[VC4HVS6] identity reads %08x, not %08x - not driving this\n",
+            id, HVS6_ID_MAGIC);
+        return;
+    }
+
+    base = HVS6_DLIST_WORD;
+    bug("[VC4HVS6] mailbox gave fb 0x%08x pitch %u for %ux%u; version %02x,"
+        " dlist %u words, upm %u\n", fb_phys, fb_pitch, fb_width, fb_height,
+        hvs6_rd(HVS6_VERSION) & 0xff, hvs6_rd(HVS6_CXM_SIZE),
+        hvs6_rd(HVS6_UBM_SIZE));
+
+    for (ch = 0; ch < HVS6_CHANNELS; ch++)
+    {
+        ULONG ctrl = hvs6_rd(HVS6_CHAN(ch) + HVS6_DISPCTRL);
+        ULONG list = hvs6_rd(HVS6_CHAN(ch) + HVS6_DISPLIST);
+        ULONG act  = hvs6_rd(HVS6_CHAN(ch) + HVS6_DISPLACT);
+        ULONG slot, ctl0, ptr0, pitch, pos2;
+
+        if (!(ctrl & HVS6_DISPCTRL_EN))
+        {
+            bug("[VC4HVS6] ch%u disabled\n", ch);
+            continue;
+        }
+
+        slot = (base + list) * 4;
+        ctl0 = hvs6_rd(slot + HVS6_ENT_CTL0 * 4);
+        pos2 = hvs6_rd(slot + HVS6_ENT_POS2 * 4);
+        ptr0 = hvs6_rd(slot + HVS6_ENT_PTR1 * 4);
+        pitch = hvs6_rd(slot + HVS6_ENT_PTR2 * 4);
+
+        bug("[VC4HVS6] ch%u out %ux%u list %#06x act %#06x: ctl0 %08x"
+            " %ux%u ptr %08x pitch %u%s\n",
+            ch, HVS6_DISPCTRL_W(ctrl), HVS6_DISPCTRL_H(ctrl), list, act,
+            ctl0, (pos2 & 0xffff) + 1, (pos2 >> 16) + 1, ptr0, pitch,
+            (ptr0 == fb_phys) ? "  <= SCANNING OUR FB" : "  <= NOT OUR FB");
+    }
+}
+
+/* Back to our list with only the framebuffer plane, at the current size.
+ * A single-word write: the list may be the one being scanned. */
+static BOOL hvs6_retake(struct vc4_hvs6_state *st)
+{
+    ULONG spin;
+
+    hvs6_wr(hvs6_slot(st, HVS6_SLOT_CUR), HVS6_CTL0_EMPTY);
+    hvs6_wr(HVS6_CHAN(st->h6_Chan) + HVS6_DISPLIST, st->h6_List);
+    st->h6_Cursor = FALSE;
+
+    for (spin = 0; spin < HVS6_SPIN_LATCH; spin++)
+        if (hvs6_rd(HVS6_CHAN(st->h6_Chan) + HVS6_DISPLACT) == st->h6_List)
+            return TRUE;
+
+    bug("[VC4HVS6] ch%u never latched %#06x\n", st->h6_Chan, st->h6_List);
+    return FALSE;
+}
+
+/* Replace the framebuffer channel's list with our own copy of the
+ * firmware's plane entry, setting the output to fb_width x fb_height at
+ * the rate in want (NULL = any) first if needed; at the boot mode the
+ * screen should not change. */
+BOOL vc4_hvs6_takeover(struct VideoCoreGfx_staticdata *xsd, ULONG fb_phys,
+                       ULONG fb_pitch, ULONG fb_width, ULONG fb_height,
+                       const struct vcgfx_timing *want)
+{
+    struct vc4_hvs6_state *st = &xsd->vcsd_HVS6;
+    ULONG base, ch, list = 0, ours = 0, i, spin, out;
+    ULONG src = 0, dst;
+    BOOL resize;
+
+    if (!VC4_HVS6_TAKEOVER)
+        return FALSE;
+
+    if (hvs6_rd(HVS6_ID) != HVS6_ID_MAGIC)
+        return FALSE;
+
+    base = HVS6_DLIST_WORD;
+
+    if (st->h6_Active)
+    {
+        /* Ours already: the same mode only needs our list back;
+         * any other is a mode set from the firmware's entry. */
+        ch  = st->h6_Chan;
+        out = hvs6_rd(HVS6_CHAN(ch) + HVS6_DISPCTRL);
+        if ((HVS6_DISPCTRL_W(out) == fb_width) && (HVS6_DISPCTRL_H(out) == fb_height)
+            && vc4_hvs6_mode_current(xsd, want))
+            return hvs6_retake(st);
+
+        if (!vc4_hvs6_mode_ok(xsd, ch, fb_width, fb_height, want))
+        {
+            bug("[VC4HVS6] ch%u cannot show %ux%u\n", ch, fb_width, fb_height);
+            return FALSE;
+        }
+        list = st->h6_FWList;
+        src  = (base + list) * 4;
+    }
+    else
+    {
+        /* The firmware picks the channel by mode */
+        for (ch = 0; ch < HVS6_CHANNELS; ch++)
+        {
+            ULONG ctl0;
+
+            if (!(hvs6_rd(HVS6_CHAN(ch) + HVS6_DISPCTRL) & HVS6_DISPCTRL_EN))
+                continue;
+
+            list = hvs6_rd(HVS6_CHAN(ch) + HVS6_DISPLIST);
+            src  = (base + list) * 4;
+            ctl0 = hvs6_rd(src + HVS6_ENT_CTL0 * 4);
+
+            if ((ctl0 & HVS6_CTL0_END) || !(ctl0 & HVS6_CTL0_VALID))
+                continue;
+            if (hvs6_rd(src + HVS6_ENT_PTR1 * 4) == xsd->vcsd_BootFB)
+                break;
+        }
+
+        if (ch == HVS6_CHANNELS)
+        {
+            bug("[VC4HVS6] no channel is scanning 0x%08x - staying on firmware\n",
+                xsd->vcsd_BootFB);
+            return FALSE;
+        }
+    }
+
+    /* A mode we cannot set is shown top-left at the current one */
+    out    = hvs6_rd(HVS6_CHAN(ch) + HVS6_DISPCTRL);
+    resize = ((HVS6_DISPCTRL_W(out) != fb_width) || (HVS6_DISPCTRL_H(out) != fb_height)
+              || !vc4_hvs6_mode_current(xsd, want))
+             && vc4_hvs6_mode_ok(xsd, ch, fb_width, fb_height, want);
+
+    /* Reuse our list: it no longer holds the fill pattern */
+    if (st->h6_List && (st->h6_ListBase == base))
+        ours = st->h6_List;
+    else if (!hvs6_free_slots(base, HVS6_LIST_SLOTS, &ours))
+    {
+        bug("[VC4HVS6] no free list slots - staying on firmware\n");
+        return FALSE;
+    }
+
+    st->h6_ListBase = base;
+    st->h6_List     = ours;
+
+    /* Our list may be live; nothing scans it once stopped */
+    if (resize)
+        vc4_hvs6_mode_stop(xsd, ch);
+
+    /* It shows the firmware's surface, or ours with its own slice */
+    dst = hvs6_slot(st, HVS6_SLOT_FB);
+    if (fb_phys == xsd->vcsd_BootFB)
+    {
+        for (i = 0; i < HVS6_SLOT_WORDS; i++)
+            hvs6_wr(dst + i * 4, hvs6_rd(src + i * 4));
+        hvs6_wr(dst + HVS6_ENT_POS0 * 4, HVS6_POS0(0, 0));
+        hvs6_wr(dst + HVS6_ENT_POS2 * 4, HVS6_POS2(fb_width, fb_height));
+    }
+    else
+    {
+        hvs6_upm_carve(st);
+        hvs6_plane(dst, src, (UQUAD)fb_phys, fb_pitch, st->h6_FbPTR0,
+                   0, 0, fb_width, fb_height);
+    }
+    hvs6_wr(hvs6_slot(st, HVS6_SLOT_CUR), HVS6_CTL0_EMPTY);
+    hvs6_wr(hvs6_slot(st, HVS6_SLOT_END), HVS6_CTL0_END);
+
+    if (resize)
+    {
+        if (!vc4_hvs6_mode_start(xsd, ch, fb_width, fb_height, want, ours))
+        {
+            bug("[VC4HVS6] ch%u: mode set to %ux%u failed\n", ch, fb_width, fb_height);
+            return FALSE;
+        }
+    }
+    else
+    {
+        hvs6_wr(HVS6_CHAN(ch) + HVS6_DISPLIST, ours);
+
+        if (hvs6_rd(HVS6_CHAN(ch) + HVS6_DISPLIST) != ours)
+        {
+            bug("[VC4HVS6] ch%u DISPLIST did not take %#06x - restoring\n",
+                ch, ours);
+            hvs6_wr(HVS6_CHAN(ch) + HVS6_DISPLIST, list);
+            return FALSE;
+        }
+
+        /* DISPLIST reaches DISPLACT at the next frame start */
+        for (spin = 0; spin < HVS6_SPIN_LATCH; spin++)
+            if (hvs6_rd(HVS6_CHAN(ch) + HVS6_DISPLACT) == ours)
+                break;
+
+        if (spin == HVS6_SPIN_LATCH)
+        {
+            bug("[VC4HVS6] ch%u never latched %#06x - restoring\n", ch, ours);
+            hvs6_wr(HVS6_CHAN(ch) + HVS6_DISPLIST, list);
+            return FALSE;
+        }
+    }
+
+    st->h6_Chan    = ch;
+    st->h6_FWList  = list;
+    st->h6_Active  = TRUE;
+    st->h6_Cursor  = FALSE;
+
+    bug("[VC4HVS6] ch%u: took over the display list, %#06x -> %#06x\n",
+        ch, list, ours);
+    return TRUE;
+}
+
+/* Scanout memory: page-aligned, flushed, and remapped write-combining
+ * since the HVS does not see the CPU caches. A block that is already big
+ * enough is kept. */
+static BOOL hvs6_scanout(APTR *raw, ULONG *rawsize, ULONG *mapped, UQUAD *phys,
+                         ULONG size)
+{
+    ULONG need = (size + 4095) & ~4095UL;
+    IPTR  page;
+
+    if (*raw && (*mapped >= need))
+        return TRUE;
+
+    if (*raw)
+    {
+        FreeMem(*raw, *rawsize);
+        *raw = NULL;
+    }
+
+    /* 31-bit: the framebuffer's address travels as a ULONG. Over-allocate
+     * so the page-rounded mapping stays inside our block. */
+    *rawsize = need + 4095;
+    if (!(*raw = AllocMem(*rawsize, MEMF_31BIT)))
+    {
+        *rawsize = 0;
+        return FALSE;
+    }
+
+    page = ((IPTR)*raw + 4095) & ~(IPTR)4095;
+
+    /* Flush before remapping, or a later writeback hits our pixels */
+    CacheClearE((APTR)page, need, CACRF_ClearD);
+
+    /* MAP_WriteThrough = Normal-NC; MAP_CacheInhibit would be Device */
+    if (!KrnMapGlobal((APTR)page, (APTR)page, need,
+                      MAP_WriteThrough | MAP_Readable | MAP_Writable))
+    {
+        FreeMem(*raw, *rawsize);
+        *raw     = NULL;
+        *rawsize = 0;
+        return FALSE;
+    }
+
+    *phys   = (UQUAD)page;
+    *mapped = need;
+    return TRUE;
+}
+
+/* A framebuffer for a mode larger than the firmware's boot surface */
+APTR vc4_hvs6_alloc_fb(struct VideoCoreGfx_staticdata *xsd, ULONG pitch, ULONG height)
+{
+    struct vc4_hvs6_state *st = &xsd->vcsd_HVS6;
+    ULONG size = pitch * height;
+
+    if (!hvs6_scanout(&st->h6_FBRaw, &st->h6_FBSize, &st->h6_FBMapped,
+                      &st->h6_FBPhys, size))
+    {
+        bug("[VC4HVS6] no memory for a %u byte framebuffer\n", size);
+        return NULL;
+    }
+
+    memset((APTR)(IPTR)st->h6_FBPhys, 0, size);
+    return (APTR)(IPTR)st->h6_FBPhys;
+}
+
+static inline volatile ULONG *hvs6_pv0(void)
+{
+    return (volatile ULONG *)(ARM_PERIIOBASE + HVS6_PV0);
+}
+
+/* Interrupt context: count, date and wake - no printing */
+static void hvs6_vsync_irq(struct vc4_hvs6_state *st, struct ExecBase *sysBase)
+{
+    volatile ULONG *pv = hvs6_pv0();
+    ULONG stat = pv[HVS6_PV_INTSTAT / 4];
+
+    if (!stat)
+        return;
+    pv[HVS6_PV_INTSTAT / 4] = stat;                 /* W1C */
+
+    if (stat & st->h6_VSyncMask)
+    {
+        st->h6_VSyncCount++;
+        st->h6_VSyncStamp = hvs6_now_us();
+        vcgfx_vbl_signal(&st->h6_VSyncWait);
+    }
+}
+
+/* Install the vblank handler and find the per-frame bit, once at driver
+ * init: KrnAddIRQHandler allocates in supervisor mode, so never mid mode
+ * set. Measured against the HVS frame counter, the spec's bit first, in
+ * short windows so a line-rate bit cannot trip the stuck-IRQ guard. */
+void vc4_hvs6_irq_init(struct VideoCoreGfx_staticdata *xsd)
+{
+    static const UBYTE order[] = { 7, 0, 1, 2, 3, 4, 5, 6, 8, 9 };
+    struct vc4_hvs6_state *st = &xsd->vcsd_HVS6;
+    volatile ULONG *pv = hvs6_pv0();
+    ULONG i, b = 0, c0, f0, frames = 0, ticks = 0, start;
+
+    if ((hvs6_rd(HVS6_ID) != HVS6_ID_MAGIC) || !(pv[0] & 1)
+        || !(hvs6_rd(HVS6_CHAN(0) + HVS6_DISPCTRL) & HVS6_DISPCTRL_EN))
+    {
+        bug("[VC4HVS6] vsync: pixelvalve 0 is not running - flips stay unpaced\n");
+        return;
+    }
+
+    st->h6_VSyncIrq = KrnAddIRQHandler(HVS6_PV0_IRQ, hvs6_vsync_irq, st, SysBase);
+    if (!st->h6_VSyncIrq)
+    {
+        bug("[VC4HVS6] vsync: KrnAddIRQHandler failed\n");
+        return;
+    }
+
+    for (i = 0; i < sizeof(order); i++)
+    {
+        b = order[i];
+        pv[HVS6_PV_INTEN / 4]   = 0;
+        pv[HVS6_PV_INTSTAT / 4] = HVS6_PV_INT_ALL;
+        c0 = st->h6_VSyncCount;
+        f0 = HVS6_DISPSTAT_FRCNT(hvs6_rd(HVS6_CHAN(0) + HVS6_DISPSTAT));
+
+        st->h6_VSyncMask      = 1UL << b;
+        pv[HVS6_PV_INTEN / 4] = 1UL << b;
+        start = hvs6_now_us();
+        while ((hvs6_now_us() - start) < HVS6_PROBE_US)
+            ;
+        pv[HVS6_PV_INTEN / 4]   = 0;
+        pv[HVS6_PV_INTSTAT / 4] = HVS6_PV_INT_ALL;
+
+        ticks  = st->h6_VSyncCount - c0;
+        frames = (HVS6_DISPSTAT_FRCNT(hvs6_rd(HVS6_CHAN(0) + HVS6_DISPSTAT)) - f0) & 0x3f;
+        if ((frames >= 2) && (ticks + 1 >= frames) && (ticks <= frames + 1))
+            break;
+    }
+
+    if (i == sizeof(order))
+    {
+        st->h6_VSyncMask = 0;
+        bug("[VC4HVS6] vsync: no INTEN bit runs at frame rate - flips stay unpaced\n");
+        return;
+    }
+
+    pv[HVS6_PV_INTEN / 4] = st->h6_VSyncMask;
+    bug("[VC4HVS6] vsync: pixelvalve 0 INTEN bit %u, %u ticks in %u frames\n",
+        b, ticks, frames);
+}
+
+/* Sleep until the next vblank if the interrupt runs and a waiter slot is
+ * free; FALSE otherwise, and the caller spins. Any signal ends
+ * the sleep; the caller re-checks either way. */
+static BOOL hvs6_vsync_sleep(struct vc4_hvs6_state *st)
+{
+    ULONG target;
+    LONG slot;
+    BYTE sig;
+
+    if (!st->h6_VSyncMask
+        || ((hvs6_now_us() - st->h6_VSyncStamp) >= HVS6_LIVE_US))
+        return FALSE;
+    if ((sig = AllocSignal(-1)) == -1)
+        return FALSE;
+
+    target = st->h6_VSyncCount + 1;
+    if ((slot = vcgfx_vbl_add(&st->h6_VSyncWait, 1UL << sig)) < 0)
+    {
+        FreeSignal(sig);
+        return FALSE;
+    }
+
+    /* Clear, re-test, sleep: a tick in the gap leaves the signal set */
+    SetSignal(0, 1UL << sig);
+    if ((LONG)(st->h6_VSyncCount - target) < 0)
+        Wait(1UL << sig);
+
+    vcgfx_vbl_rem(&st->h6_VSyncWait, slot);
+    FreeSignal(sig);
+    return TRUE;
+}
+
+/* Wait until (reg & mask) == val, or != val when !equal: sleep on the
+ * vblank, spin briefly for the latch, give up after HVS6_WAIT_US */
+static BOOL hvs6_frame_wait(struct vc4_hvs6_state *st, ULONG reg, ULONG mask,
+                            ULONG val, BOOL equal)
+{
+    ULONG start = hvs6_now_us(), t;
+
+    for (;;)
+    {
+        if (((hvs6_rd(reg) & mask) == val) == equal)
+            return TRUE;
+        if ((hvs6_now_us() - start) >= HVS6_WAIT_US)
+            return FALSE;
+
+        if (hvs6_vsync_sleep(st))
+        {
+            t = hvs6_now_us();
+            while ((((hvs6_rd(reg) & mask) == val) != equal)
+                   && ((hvs6_now_us() - t) < HVS6_SETTLE_US))
+                ;
+        }
+    }
+}
+
+/* The replaced buffers are scanned until FRCNT moves on; bounded in time */
+static void hvs6_arm(struct vc4_hvs6_state *st)
+{
+    st->h6_ArmFrame = HVS6_DISPSTAT_FRCNT(hvs6_rd(HVS6_CHAN(st->h6_Chan)
+                                                  + HVS6_DISPSTAT));
+    st->h6_LatchDue = TRUE;
+}
+
+static void hvs6_latch_wait(struct vc4_hvs6_state *st)
+{
+    if (!st->h6_LatchDue)
+        return;
+    st->h6_LatchDue = FALSE;
+
+    if (hvs6_frame_wait(st, HVS6_CHAN(st->h6_Chan) + HVS6_DISPSTAT, 0x3fUL << 16,
+                        st->h6_ArmFrame << 16, FALSE))
+        return;
+
+    bug("[VC4HVS6] frame counter stuck at %lu\n", (unsigned long)st->h6_ArmFrame);
+}
+
+void vc4_hvs6_latch_wait(struct VideoCoreGfx_staticdata *xsd)
+{
+    struct vc4_hvs6_state *st = &xsd->vcsd_HVS6;
+
+    if (st->h6_Active)
+        hvs6_latch_wait(st);
+}
+
+/* The frame count the last commit armed, bit 8 set while one is due */
+ULONG vc4_hvs6_latch_token(struct VideoCoreGfx_staticdata *xsd)
+{
+    struct vc4_hvs6_state *st = &xsd->vcsd_HVS6;
+
+    return st->h6_LatchDue ? (0x100 | st->h6_ArmFrame) : 0;
+}
+
+/* That commit's latch, once FRCNT has moved on. The counter is 6 bits: a
+ * token 64 frames old can match again and cost one frame. */
+void vc4_hvs6_latch_wait_for(struct VideoCoreGfx_staticdata *xsd, ULONG token)
+{
+    struct vc4_hvs6_state *st = &xsd->vcsd_HVS6;
+
+    if (st->h6_Active && (token & 0x100)
+        && !hvs6_frame_wait(st, HVS6_CHAN(st->h6_Chan) + HVS6_DISPSTAT, 0x3fUL << 16,
+                            (token & 0x3f) << 16, FALSE))
+        bug("[VC4HVS6] frame counter stuck at %lu\n", (unsigned long)(token & 0x3f));
+}
+
+/* Has FRCNT moved on from that commit? With none due, it has. */
+BOOL vc4_hvs6_latch_passed(struct VideoCoreGfx_staticdata *xsd, ULONG token)
+{
+    struct vc4_hvs6_state *st = &xsd->vcsd_HVS6;
+
+    return !st->h6_Active || !(token & 0x100)
+        || (HVS6_DISPSTAT_FRCNT(hvs6_rd(HVS6_CHAN(st->h6_Chan) + HVS6_DISPSTAT)) != (token & 0x3f));
+}
+
+/* No firmware ALLOCMEM on this generation, so allocate the cursor buffer */
+BOOL vc4_hvs6_init_cursor(struct VideoCoreGfx_staticdata *xsd)
+{
+    struct vc4_hvs6_state *st = &xsd->vcsd_HVS6;
+    IPTR page;
+
+    if (!VC4_HVS6_CURSOR)
+        return FALSE;
+
+    xsd->vcsd_CurBufHandle = 0;
+    xsd->vcsd_CurBufBus    = 0;
+    xsd->vcsd_CurVisible   = FALSE;
+
+    st->h6_CurRaw = AllocMem(VC4_CURSOR_BUF_BYTES + 4095,
+                             MEMF_ANY | MEMF_CLEAR);
+    if (!st->h6_CurRaw)
+        return FALSE;
+
+    page = ((IPTR)st->h6_CurRaw + 4095) & ~(IPTR)4095;
+    st->h6_CurPhys   = (UQUAD)page;
+    xsd->vcsd_CurBuf = (APTR)page;
+    CacheClearE(xsd->vcsd_CurBuf, VC4_CURSOR_BUF_BYTES, CACRF_ClearD);
+
+    D(bug("[VC4HVS6] cursor buffer @ 0x%p\n", xsd->vcsd_CurBuf));
+    return TRUE;
+}
+
+/* The HVS does not clip planes: clip to [l,r) x [t,b) by offsetting the
+ * source address and shrinking the extent, keeping the full pitch. FALSE
+ * when nothing is left. */
+static BOOL hvs6_clip(LONG *x, LONG *y, ULONG *w, ULONG *h, UQUAD *phys,
+                      ULONG pitch, ULONG bpp, LONG l, LONG t, LONG r, LONG b)
+{
+    if (*x < l)
+    {
+        ULONG skip = (ULONG)(l - *x);
+
+        if (skip >= *w)
+            return FALSE;
+        *phys += skip * bpp;
+        *w    -= skip;
+        *x     = l;
+    }
+    if (*y < t)
+    {
+        ULONG skip = (ULONG)(t - *y);
+
+        if (skip >= *h)
+            return FALSE;
+        *phys += (UQUAD)skip * pitch;
+        *h    -= skip;
+        *y     = t;
+    }
+    if ((*x >= r) || (*y >= b))
+        return FALSE;
+    if (*x + (LONG)*w > r)
+        *w = (ULONG)(r - *x);
+    if (*y + (LONG)*h > b)
+        *h = (ULONG)(b - *y);
+    return TRUE;
+}
+
+/* The cursor plane's source and place on screen; FALSE when hidden. */
+static BOOL hvs6_cursor_geom(struct VideoCoreGfx_staticdata *xsd, UQUAD *phys,
+                             ULONG *pitch, LONG *x, LONG *y, ULONG *w, ULONG *h)
+{
+    struct vc4_hvs6_state *st = &xsd->vcsd_HVS6;
+    ULONG out = hvs6_rd(HVS6_CHAN(st->h6_Chan) + HVS6_DISPCTRL);
+
+    if (!xsd->vcsd_CurVisible || !xsd->vcsd_CurBuf
+        || !xsd->vcsd_CurWidth || !xsd->vcsd_CurHeight)
+        return FALSE;
+
+    *x     = xsd->vcsd_CurX;
+    *y     = xsd->vcsd_CurY;
+    *w     = xsd->vcsd_CurWidth;
+    *h     = xsd->vcsd_CurHeight;
+    *pitch = *w * 4;
+    *phys  = st->h6_CurPhys;
+
+    return hvs6_clip(x, y, w, h, phys, *pitch, 4, 0, 0,
+                     (LONG)HVS6_DISPCTRL_W(out), (LONG)HVS6_DISPCTRL_H(out));
+}
+
+/* Byte offset of a slot in one of the planes lists */
+static inline ULONG hvs6_pslot(struct vc4_hvs6_state *st, ULONG list, ULONG n)
+{
+    return (st->h6_ListBase + list + n * HVS6_SLOT_WORDS) * 4;
+}
+
+void vc4_hvs6_cursor(struct VideoCoreGfx_staticdata *xsd)
+{
+    struct vc4_hvs6_state *st = &xsd->vcsd_HVS6;
+    ULONG pitch, w, h, geom, pos, addr, ent;
+    UQUAD phys;
+    LONG  x, y;
+
+    if (!st->h6_Active)
+        return;
+
+    /* Screens as planes: the newest list, which carries the cursor next */
+    if (xsd->vcsd_PlanesMode)
+    {
+        if (!st->h6_PlLast)
+            return;
+        ent = hvs6_pslot(st, st->h6_PlLast, HVS6_PL_CUR);
+    }
+    else
+        ent = hvs6_slot(st, HVS6_SLOT_CUR);
+
+    if (!hvs6_cursor_geom(xsd, &phys, &pitch, &x, &y, &w, &h))
+        goto hide;
+
+    hvs6_upm_carve(st);
+
+    geom = (w << 16) | h;
+    pos  = HVS6_POS0((ULONG)x, (ULONG)y);
+    addr = (ULONG)(phys & 0xffffffffULL);
+
+    if (st->h6_Cursor && (st->h6_CurGeom == geom) && (st->h6_CurAddr == addr))
+    {
+        /* Rebuilding a live entry hides a moving pointer */
+        hvs6_wr(ent + HVS6_ENT_POS0 * 4, pos);
+    }
+    else
+    {
+        hvs6_plane(ent, hvs6_slot(st, HVS6_SLOT_FB),
+                   phys, pitch, st->h6_CurPTR0, (ULONG)x, (ULONG)y, w, h);
+
+        /* Per-pixel alpha */
+        hvs6_wr(ent + HVS6_ENT_CTL0 * 4,
+                hvs6_rd(ent + HVS6_ENT_CTL0 * 4) & ~HVS6_CTL0_ALPHAMASK);
+    }
+
+    st->h6_CurGeom = geom;
+    st->h6_CurPos  = pos;
+    st->h6_CurAddr = addr;
+    st->h6_Cursor  = TRUE;
+    return;
+
+hide:
+    if (st->h6_Cursor)
+    {
+        hvs6_wr(ent, HVS6_CTL0_EMPTY);
+        st->h6_Cursor = FALSE;
+    }
+}
+
+/* ------------------------------------------------------------------ */
+/* Screens as planes                                                   */
+/* ------------------------------------------------------------------ */
+
+/*
+ * No firmware list shows a scaled HVS6 entry, so this one is DISPLAY-SPEC
+ * 5.3's word order filled in the way HVS5's measured entry is. It ran on
+ * a BCM2712 D0 (1024x768 to 1280x720): the HVS wrote [5] and [12] as context,
+ * and a 1.067 shrink used the ratio field's bit 24. The first list that
+ * uses one is still checked to latch and run; if not, scaling turns off.
+ */
+#define VC4_HVS6_SCALE      1
+
+#define HVS6_LBM_SIZE       0x0008
+#define HVS6_FETCHER_STATUS 0x0024
+#define HVS6_HANDLE_ERROR   0x002c
+#define HVS6_KERNEL_WORD    1           /* firmware's kernel at +0x4004 */
+#define HVS6_SC_WORDS       17
+#define HVS6_SCL_MASK       ((7UL << 8) | (7UL << 5))
+#define HVS6_PPF(src, dst)  ((1UL << 30) | ((((ULONG)(src) << 16) / (ULONG)(dst)) << 8) | 0x60)
+#define HVS6_PPF_FITS(src, dst) ((((ULONG)(src) << 16) / (ULONG)(dst)) <= 0x18000)
+#define HVS6_VERIFY_US      100000
+
+/* Line buffer for a scaled plane, in what LBM_SIZE counts: lines of 128
+ * words. A line of PPF scaling takes four words per component, four
+ * components a pixel, over the narrower of source and destination. Our
+ * entries scale vertically too, 1:1 or not, so every one needs it. */
+static ULONG hvs6_lbm_need(ULONG sw, ULONG dw)
+{
+    ULONG width = (((sw < dw) ? sw : dw) + 3) & ~3UL;
+
+    return (width * 16 + 127) / 128;
+}
+
+BOOL vc4_hvs6_planes_ok(void)
+{
+    return VC4_HVS6_TAKEOVER;
+}
+
+BOOL vc4_hvs6_scales(struct VideoCoreGfx_staticdata *xsd)
+{
+    return VC4_HVS6_SCALE && !xsd->vcsd_HVS6.h6_ScaleOff;
+}
+
+void vc4_hvs6_out_size(struct VideoCoreGfx_staticdata *xsd, ULONG *w, ULONG *h)
+{
+    ULONG out = hvs6_rd(HVS6_CHAN(xsd->vcsd_HVS6.h6_Chan) + HVS6_DISPCTRL);
+
+    *w = HVS6_DISPCTRL_W(out);
+    *h = HVS6_DISPCTRL_H(out);
+}
+
+/* Can a screen of a w x h mode fill the output without a mode set? */
+BOOL vc4_hvs6_plane_fits(struct VideoCoreGfx_staticdata *xsd, ULONG w, ULONG h)
+{
+    ULONG ow, oh;
+
+    vc4_hvs6_out_size(xsd, &ow, &oh);
+    if ((ow == w) && (oh == h))
+        return TRUE;
+    return vc4_hvs6_scales(xsd) && ow && oh
+        && HVS6_PPF_FITS(w, ow) && HVS6_PPF_FITS(h, oh);
+}
+
+/* Prefetch for a plane of this pitch, lines deep */
+static ULONG hvs6_upm_size(ULONG pitch, ULONG lines)
+{
+    return ((((pitch + 62) / 32) * 32 * lines) + HVS6_UPM_GRAN - 1)
+           & ~(HVS6_UPM_GRAN - 1);
+}
+
+/* Three lists of HVS6_PL_SLOTS, found once and marked used at once so no
+ * later free-slot search takes them. */
+static BOOL hvs6_planes_lists(struct vc4_hvs6_state *st)
+{
+    ULONG at, i, n;
+
+    if (st->h6_PlList[0])
+        return TRUE;
+
+    if (!hvs6_free_slots(st->h6_ListBase, HVS6_PL_LISTS * HVS6_PL_SLOTS, &at))
+    {
+        bug("[VC4HVS6] no free list slots for screen planes\n");
+        return FALSE;
+    }
+
+    for (i = 0; i < HVS6_PL_LISTS; i++)
+    {
+        st->h6_PlList[i] = at + i * HVS6_PL_SLOTS * HVS6_SLOT_WORDS;
+        for (n = 0; n < HVS6_PL_END; n++)
+            hvs6_wr(hvs6_pslot(st, st->h6_PlList[i], n), HVS6_CTL0_EMPTY);
+        hvs6_wr(hvs6_pslot(st, st->h6_PlList[i], HVS6_PL_END), HVS6_CTL0_END);
+    }
+    return TRUE;
+}
+
+/* A plane's rectangle on the output, from display pixels; those are
+ * output pixels where planes do not scale. */
+static void hvs6_plane_rect(struct VideoCoreGfx_staticdata *xsd, struct vcgfx_plane *pl,
+                            LONG out_w, LONG out_h, LONG *dx, LONG *dy, ULONG *dw, ULONG *dh)
+{
+    LONG cw = out_w, ch = out_h;
+
+    if (vc4_hvs6_scales(xsd) && xsd->vcsd_DispW && xsd->vcsd_DispH)
+    {
+        cw = (LONG)xsd->vcsd_DispW;
+        ch = (LONG)xsd->vcsd_DispH;
+    }
+    *dx = pl->pl_X * out_w / cw;
+    *dy = pl->pl_Y * out_h / ch;
+    *dw = pl->pl_W * (ULONG)out_w / (ULONG)cw;
+    *dh = pl->pl_H * (ULONG)out_h / (ULONG)ch;
+}
+
+/* A scaled entry, after the fb entry's CTL0/CTL2; CTL0 goes in last. */
+static void hvs6_scaled(ULONG dst, ULONG fb, UQUAD addr, ULONG pitch, ULONG ptr0,
+                        LONG dx, LONG dy, ULONG dw, ULONG dh, ULONG sw, ULONG sh,
+                        ULONG lbm)
+{
+    ULONG ctl0 = hvs6_rd(fb + HVS6_ENT_CTL0 * 4) & ~(HVS6_CTL0_UNITY | HVS6_SCL_MASK);
+    ULONG i;
+
+    hvs6_wr(dst, HVS6_CTL0_EMPTY);
+    hvs6_wr(dst + 1 * 4, HVS6_POS0((ULONG)dx, (ULONG)dy));
+    hvs6_wr(dst + 2 * 4, hvs6_rd(fb + HVS6_ENT_CTL2 * 4));
+    hvs6_wr(dst + 3 * 4, ((dh - 1) << 16) | ((dw - 1) & 0x1fff));
+    hvs6_wr(dst + 4 * 4, ((sh - 1) << 16) | ((sw - 1) & 0x1fff));
+    hvs6_wr(dst + 5 * 4, 0xc0c0c0c0);
+    hvs6_wr(dst + 6 * 4, ptr0 | HVS6_PTR0_UPPER(addr));
+    hvs6_wr(dst + 7 * 4, (ULONG)(addr & 0xffffffffULL));
+    hvs6_wr(dst + 8 * 4, pitch);
+    hvs6_wr(dst + 9 * 4, lbm);
+    hvs6_wr(dst + 10 * 4, HVS6_PPF(sw, dw));
+    hvs6_wr(dst + 11 * 4, HVS6_PPF(sh, dh));
+    hvs6_wr(dst + 12 * 4, 0xc0c0c0c0);
+    for (i = 13; i < HVS6_SC_WORDS; i++)
+        hvs6_wr(dst + i * 4, HVS6_KERNEL_WORD);
+    hvs6_wr(dst, ctl0);
+}
+
+/* hvs6_clip for a scaled plane: trims the source in proportion. */
+static BOOL hvs6_clip_scaled(LONG *ox, LONG *oy, ULONG *ow, ULONG *oh,
+                             ULONG *sw, ULONG *sh, UQUAD *phys, ULONG pitch,
+                             ULONG bpp, LONG l, LONG t, LONG r, LONG b)
+{
+    if (*ox < l)
+    {
+        ULONG skip = (ULONG)(l - *ox), ssk;
+
+        if (skip >= *ow)
+            return FALSE;
+        ssk = skip * *sw / *ow;
+        *phys += ssk * bpp; *sw -= ssk; *ow -= skip; *ox = l;
+    }
+    if (*oy < t)
+    {
+        ULONG skip = (ULONG)(t - *oy), ssk;
+
+        if (skip >= *oh)
+            return FALSE;
+        ssk = skip * *sh / *oh;
+        *phys += (UQUAD)ssk * pitch; *sh -= ssk; *oh -= skip; *oy = t;
+    }
+    if (*ox + (LONG)*ow > r)
+    {
+        ULONG keep = (r > *ox) ? (ULONG)(r - *ox) : 0;
+
+        *sw = *sw * keep / *ow; *ow = keep;
+    }
+    if (*oy + (LONG)*oh > b)
+    {
+        ULONG keep = (b > *oy) ? (ULONG)(b - *oy) : 0;
+
+        *sh = *sh * keep / *oh; *oh = keep;
+    }
+    return *ow && *oh && *sw && *sh;
+}
+
+/* A plane decided for a list, written once every slot is known. */
+struct hvs6_ent
+{
+    UQUAD phys;
+    ULONG pitch, ptr0;
+    LONG  x, y;
+    ULONG w, h;             /* on screen */
+    ULONG sw, sh;           /* source, when scaled */
+    ULONG lbm;
+    BOOL  scaled, valid;
+    BOOL  bgra;             /* B,G,R,A, in format pxf (0 = the fb's) */
+    BOOL  alpha;            /* per-pixel alpha, not fixed */
+    ULONG pxf;
+    ULONG yuv;              /* HVS YUV format, 0 = RGB */
+    ULONG addr;             /* CTL0 addressing: linear, or SAND128 columns */
+    UQUAD cphys[2];         /* its chroma: CbCr, or Cb then Cr */
+    ULONG cpitch, cptr0[2], csc;
+};
+
+/*
+ * YCbCr to RGB, from the two matrix slots the planes' CTL2 select. The
+ * planes of a list share them: two colour space and range pairs at most,
+ * a plane needing a third gets no place. The C stepping multiplies Y, Cb, Cr by S2.22 factors
+ * and adds an offset in 8-bit units << 15 after; the D stepping subtracts
+ * per-input offsets (12-bit units) first and multiplies by factors with
+ * 1.0 = 0x2000, clamped to 0..0xfff.
+ */
+#define HVS6_VERSION_C          0x53
+#define HVS6_CSC_C_CTRL(n)      (0xa000 + (n) * 0x3000)
+#define HVS6_CSC_C_COEF(n)      (0xa008 + (n) * 0x3000)     /* 3 rows x 5 */
+#define HVS6_CSC_D_ROW(n, r)    (0x200 + (n) * 0x40 + (r) * 0x10)
+#define HVS6_CTL2_CSC_C(n)      ((1UL << 25) | ((ULONG)(n) << 16))
+#define HVS6_CTL2_CSC_D(n)      ((1UL << 19) | ((ULONG)(n) << 20))
+
+static BOOL hvs6_is_c(void)
+{
+    return (hvs6_rd(HVS6_VERSION) & 0xff) == HVS6_VERSION_C;
+}
+
+/* Q22 to Q13, the D stepping's factors */
+static ULONG hvs6_q13(LONG q)
+{
+    LONG v = (q >= 0) ? (q + (1 << 8)) >> 9 : -((-q + (1 << 8)) >> 9);
+
+    return (ULONG)v & 0xffff;
+}
+
+/* Slot n: the YCbCr conversion of a colour space and range */
+static void hvs6_csc_write(ULONG n, ULONG colorspace, ULONG colorrange)
+{
+    struct vcgfx_yuvm m;
+    LONG row[3][3];
+    ULONG r, k;
+
+    vcgfx_yuv_matrix(colorspace, colorrange, &m);
+    row[0][0] = m.ky; row[0][1] = 0;     row[0][2] = m.rcr;
+    row[1][0] = m.ky; row[1][1] = m.gcb; row[1][2] = m.gcr;
+    row[2][0] = m.ky; row[2][1] = m.bcb; row[2][2] = 0;
+
+    if (hvs6_is_c())
+    {
+        for (r = 0; r < 3; r++)
+        {
+            /* Q22 8-bit units of the absolute Y, Cb, Cr */
+            QUAD off = -((QUAD)row[r][0] * m.y0 + ((QUAD)row[r][1] + row[r][2]) * 128);
+
+            for (k = 0; k < 3; k++)
+                hvs6_wr(HVS6_CSC_C_COEF(n) + (r * 5 + k) * 4, (ULONG)row[r][k]);
+            hvs6_wr(HVS6_CSC_C_COEF(n) + (r * 5 + 3) * 4, 0);
+            hvs6_wr(HVS6_CSC_C_COEF(n) + (r * 5 + 4) * 4,
+                    (ULONG)(LONG)((off >= 0) ? (off + 64) >> 7 : -((-off + 64) >> 7)));
+        }
+        hvs6_wr(HVS6_CSC_C_CTRL(n), 1UL << 15);
+    }
+    else
+    {
+        /* Per row: the offset of input r at 28:16 and the Y factor, then Cb and Cr */
+        for (r = 0; r < 3; r++)
+        {
+            LONG ofs = r ? -128 * 16 : -m.y0 * 16;
+
+            hvs6_wr(HVS6_CSC_D_ROW(n, r), (((ULONG)ofs & 0x1fff) << 16) | hvs6_q13(row[r][0]));
+            hvs6_wr(HVS6_CSC_D_ROW(n, r) + 4, (hvs6_q13(row[r][1]) << 16) | hvs6_q13(row[r][2]));
+            hvs6_wr(HVS6_CSC_D_ROW(n, r) + 8, 0xfff00000);
+            if (r == 0)
+                hvs6_wr(HVS6_CSC_D_ROW(n, r) + 12, 1);  /* offset first */
+        }
+    }
+}
+
+/* The matrices one list's planes use: a key per slot, 0 = free */
+struct hvs6_cscs
+{
+    ULONG key[2];
+    ULONG colorspace[2], colorrange[2];
+};
+
+/*
+ * A slot for a plane's matrix in the list being built: one with its
+ * matrix already, else a free one, the one loaded with it first. -1 when
+ * both hold other matrices: the plane gets none.
+ */
+static LONG hvs6_csc_slot(struct vc4_hvs6_state *st, struct hvs6_cscs *c, const struct BitmapData *d)
+{
+    ULONG key = 0x100 | ((ULONG)d->colorspace << 4) | d->colorrange;
+    LONG n, pref = (d->colorspace == vHidd_ColorSpace_BT601) ? 0 : 1;
+
+    for (n = 0; n < 2; n++)
+        if (c->key[n] == key)
+            return n;
+    if (!c->key[1 - pref] && (st->h6_CscKey[1 - pref] == key))
+        pref = 1 - pref;
+    else if (c->key[pref])
+        pref = 1 - pref;
+    if (c->key[pref])
+        return -1;
+
+    c->key[pref]        = key;
+    c->colorspace[pref] = d->colorspace;
+    c->colorrange[pref] = d->colorrange;
+    return pref;
+}
+
+/* Load what a list's planes need, before the list is shown */
+static void hvs6_csc_load(struct vc4_hvs6_state *st, const struct hvs6_cscs *c)
+{
+    ULONG n;
+
+    for (n = 0; n < 2; n++)
+    {
+        if (c->key[n] && (st->h6_CscKey[n] != c->key[n]))
+        {
+            hvs6_csc_write(n, c->colorspace[n], c->colorrange[n]);
+            st->h6_CscKey[n] = c->key[n];
+        }
+    }
+}
+
+/* Line buffer for 4:2:0, PPF down both axes: the larger of the luma
+ * channel and the two-component chroma channel at half width. */
+static ULONG hvs6_yuv_lbm(ULONG sw, ULONG dw)
+{
+    ULONG lw = (((sw < dw) ? sw : dw) + 3) & ~3UL;
+    ULONG cw = ((sw / 2) + 3) & ~3UL;
+    ULONG luma = (lw * 4 + 127) / 128, chroma = (cw * 8 + 63) / 64;
+
+    return (luma > chroma) ? luma : chroma;
+}
+
+/*
+ * A YUV plane's entry: clipped to [l,r) x [t,b) on whole chroma samples,
+ * its line buffer and a prefetch slice per image plane. 1 = placed, 0 =
+ * nothing of it in view, -1 = no room for it.
+ */
+static LONG hvs6_yuv_ent(struct vc4_hvs6_state *st, struct vcgfx_plane *pl,
+                         struct hvs6_ent *e, LONG l, LONG t, LONG r, LONG b,
+                         ULONG lbmsize, ULONG *lbm, ULONG *upm, ULONG *handle,
+                         struct hvs6_cscs *cscs)
+{
+    struct BitmapData *d = pl->pl_Data;
+    ULONG planes = (pl->pl_Yuv == HVS_PXF_YUV420_3PLANE) ? 3 : 2;
+    ULONG cbytes = (planes == 2) ? 2 : 1;
+    ULONG sx = pl->pl_SrcX & ~1UL, sy = pl->pl_SrcY & ~1UL;
+    ULONG sw = pl->pl_SrcW, sh = pl->pl_SrcH, ssk, need, lsize, csize, i;
+    ULONG colpitch = 0, chroma = 0, fetch = 0;
+    LONG slot;
+    BOOL ten = FALSE;
+    UQUAD base = (UQUAD)(IPTR)d->VideoData;
+
+    if (e->x < l)
+    {
+        ULONG skip = (ULONG)(l - e->x);
+
+        if (skip >= e->w)
+            return 0;
+        ssk = (skip * sw / e->w) & ~1UL;
+        sx += ssk; sw -= ssk; e->w -= skip; e->x = l;
+    }
+    if (e->y < t)
+    {
+        ULONG skip = (ULONG)(t - e->y);
+
+        if (skip >= e->h)
+            return 0;
+        ssk = (skip * sh / e->h) & ~1UL;
+        sy += ssk; sh -= ssk; e->h -= skip; e->y = t;
+    }
+    if (e->x + (LONG)e->w > r)
+    {
+        ULONG keep = (r > e->x) ? (ULONG)(r - e->x) : 0;
+
+        sw = (sw * keep / e->w) & ~1UL;
+        e->w = keep;
+    }
+    if (e->y + (LONG)e->h > b)
+    {
+        ULONG keep = (b > e->y) ? (ULONG)(b - e->y) : 0;
+
+        sh = (sh * keep / e->h) & ~1UL;
+        e->h = keep;
+    }
+    if (!e->w || !e->h || !sw || !sh)
+        return 0;
+
+    e->scaled = (e->w != sw) || (e->h != sh);
+    need = hvs6_yuv_lbm(sw, e->w);
+    if (d->dectgt)
+    {
+        /* SAND128: 32-byte words a line fetches, 32 or 24 (10-bit) samples
+         * each; the prefetch line is the width rounded up to a column */
+        ULONG n;
+
+        ten   = vcgfx_dectgt_sand(d->dectgt, &colpitch, &chroma);
+        n     = ten ? 24 : 32;
+        fetch = (sw + sx % n + n - 1) / n;
+        lsize = csize = hvs6_upm_size(ten ? ((d->width + 95) / 96) * 128 : (d->width + 127) & ~127UL,
+                                      HVS6_UPM_LINES);
+    }
+    else
+    {
+        lsize = hvs6_upm_size(d->bytesperrow, HVS6_UPM_LINES);
+        csize = hvs6_upm_size(d->cpitch, HVS6_UPM_LINES);
+    }
+    if ((*lbm + need > lbmsize)
+        || (e->scaled && (!HVS6_PPF_FITS(sw, e->w) || !HVS6_PPF_FITS(sh, e->h)))
+        || (*handle + planes > HVS6_PL_HANDLE_END)
+        || (*upm < st->h6_UpmFloor + lsize + (planes - 1) * csize)
+        || ((slot = hvs6_csc_slot(st, cscs, d)) < 0))
+        return -1;
+
+    e->yuv      = pl->pl_Yuv;
+    e->addr     = 0;
+    e->sw       = sw;
+    e->sh       = sh;
+    if (d->dectgt)
+    {
+        /* The first sample's column, row and byte; the HVS walks on into the
+         * next column. 10-bit: bits 4:0 pick the sample in a 32-byte word. */
+        ULONG r = sx % (ten ? 96 : 128), col = (sx / (ten ? 96 : 128)) * colpitch;
+        ULONG off = ten ? (r / 24) * 32 + r % 24 : r;
+
+        e->yuv      = ten ? HVS6_PXF_YUV10 : HVS_PXF_YUV420_2PLANE;
+        e->addr     = HVS6_ADDR_COL128;
+        e->phys     = base + col + sy * 128 + off;
+        e->cphys[0] = base + chroma + col + (sy / 2) * 128 + (off & ~1UL);
+        /* PTR2: fetch count - 1 and the column height in rows, both planes */
+        e->pitch    = e->cpitch = ((fetch - 1) << 16) | (colpitch / 128);
+    }
+    else
+    {
+        e->pitch    = d->bytesperrow;
+        e->cpitch   = d->cpitch;
+        e->phys     = base + sy * e->pitch + sx;
+        e->cphys[0] = base + d->planeoff[0] + (sy / 2) * e->cpitch + (sx / 2) * cbytes;
+        e->cphys[1] = base + d->planeoff[1] + (sy / 2) * e->cpitch + sx / 2;
+    }
+    e->csc      = hvs6_is_c() ? HVS6_CTL2_CSC_C(slot) : HVS6_CTL2_CSC_D(slot);
+
+    *upm -= lsize;
+    e->ptr0 = HVS6_PTR0_BASE(*upm / HVS6_UPM_GRAN) | HVS6_PTR0_HANDLE((*handle)++)
+            | HVS6_PTR0_LINES2;
+    for (i = 0; i < planes - 1; i++)
+    {
+        *upm -= csize;
+        e->cptr0[i] = HVS6_PTR0_BASE(*upm / HVS6_UPM_GRAN) | HVS6_PTR0_HANDLE((*handle)++)
+                    | HVS6_PTR0_LINES2;
+    }
+    e->lbm = *lbm;
+    *lbm += need;
+    return 1;
+}
+
+/*
+ * After CTL0, POS0, CTL2 (the fb's, with a matrix slot), POS1 when
+ * scaled, POS2 and context: PTR0/PTR1/PTR2 for each image plane, LBM, the
+ * PPF words of the chroma channel and, scaled, of the luma channel, each
+ * H then V and its context, and four kernel pointers. CTL0 goes in last.
+ */
+static void hvs6_put_yuv(ULONG dst, ULONG fb, const struct hvs6_ent *e)
+{
+    ULONG ctl0 = (hvs6_rd(fb + HVS6_ENT_CTL0 * 4)
+                  & ~(HVS6_CTL0_UNITY | HVS6_SCL_MASK | HVS6_CTL0_FORMAT | HVS6_CTL0_ORDER | HVS6_CTL0_ADDR))
+               | e->yuv | e->addr | (e->scaled ? 0 : HVS6_CTL0_UNITY);
+    ULONG planes = (e->yuv == HVS_PXF_YUV420_3PLANE) ? 3 : 2;
+    ULONG n = 1, i;
+
+    hvs6_wr(dst, HVS6_CTL0_EMPTY);
+    hvs6_wr(dst + n++ * 4, HVS6_POS0((ULONG)e->x, (ULONG)e->y));
+    hvs6_wr(dst + n++ * 4, hvs6_rd(fb + HVS6_ENT_CTL2 * 4) | e->csc);
+    if (e->scaled)
+        hvs6_wr(dst + n++ * 4, ((e->h - 1) << 16) | ((e->w - 1) & 0x1fff));
+    hvs6_wr(dst + n++ * 4, ((e->sh - 1) << 16) | ((e->sw - 1) & 0x1fff));
+    hvs6_wr(dst + n++ * 4, 0xc0c0c0c0);
+
+    hvs6_wr(dst + n++ * 4, e->ptr0 | HVS6_PTR0_UPPER(e->phys));
+    hvs6_wr(dst + n++ * 4, (ULONG)(e->phys & 0xffffffffULL));
+    hvs6_wr(dst + n++ * 4, e->pitch);
+    for (i = 0; i < planes - 1; i++)
+    {
+        hvs6_wr(dst + n++ * 4, e->cptr0[i] | HVS6_PTR0_UPPER(e->cphys[i]));
+        hvs6_wr(dst + n++ * 4, (ULONG)(e->cphys[i] & 0xffffffffULL));
+        hvs6_wr(dst + n++ * 4, e->cpitch);
+    }
+    hvs6_wr(dst + n++ * 4, e->lbm);
+
+    /* 4:2:0 chroma: co-sited across, between two luma lines down */
+    hvs6_wr(dst + n++ * 4, vcgfx_ppf(e->sw / 2, e->w, vcgfx_ppf_phase(e->sw / 2, e->w, 0, 2)));
+    hvs6_wr(dst + n++ * 4, vcgfx_ppf(e->sh / 2, e->h, vcgfx_ppf_phase(e->sh / 2, e->h, 32, 2)));
+    hvs6_wr(dst + n++ * 4, 0xc0c0c0c0);
+    if (e->scaled)
+    {
+        hvs6_wr(dst + n++ * 4, vcgfx_ppf(e->sw, e->w, vcgfx_ppf_phase(e->sw, e->w, 0, 1)));
+        hvs6_wr(dst + n++ * 4, vcgfx_ppf(e->sh, e->h, vcgfx_ppf_phase(e->sh, e->h, 0, 1)));
+        hvs6_wr(dst + n++ * 4, 0xc0c0c0c0);
+    }
+    for (i = 0; i < 4; i++)
+        hvs6_wr(dst + n++ * 4, HVS6_KERNEL_WORD);
+    hvs6_wr(dst, ctl0);
+}
+
+static void hvs6_put(ULONG ent, ULONG fb, const struct hvs6_ent *e)
+{
+    ULONG ctl0;
+
+    if (e->yuv)
+    {
+        hvs6_put_yuv(ent, fb, e);
+        return;
+    }
+
+    if (e->scaled)
+        hvs6_scaled(ent, fb, e->phys, e->pitch, e->ptr0, e->x, e->y, e->w, e->h,
+                    e->sw, e->sh, e->lbm);
+    else
+        hvs6_plane(ent, fb, e->phys, e->pitch, e->ptr0, (ULONG)e->x, (ULONG)e->y,
+                   e->w, e->h);
+
+    if (e->bgra)
+    {
+        ctl0 = (hvs6_rd(ent + HVS6_ENT_CTL0 * 4) & ~HVS6_CTL0_ORDER) | HVS6_ORDER_BGRA;
+        if (e->pxf)
+            ctl0 = (ctl0 & ~HVS6_CTL0_FORMAT) | e->pxf;
+        hvs6_wr(ent + HVS6_ENT_CTL0 * 4, ctl0);
+    }
+    if (e->alpha)
+        hvs6_wr(ent + HVS6_ENT_CTL0 * 4,
+                hvs6_rd(ent + HVS6_ENT_CTL0 * 4) & ~HVS6_CTL0_ALPHAMASK);
+}
+
+/*
+ * One list: the screens back to front, each cut off where a screen in
+ * front spans the output's width down to the bottom of what is still
+ * visible; the fb, kept black, as backdrop where none covers; the cursor.
+ * UPM goes to the front screens first; a screen left without any is not
+ * shown. Returns the number of scaled planes.
+ */
+static ULONG hvs6_build_planes(struct VideoCoreGfx_staticdata *xsd, ULONG list,
+                               struct hvs6_cscs *cscs)
+{
+    struct vc4_hvs6_state *st = &xsd->vcsd_HVS6;
+    ULONG fb = hvs6_slot(st, HVS6_SLOT_FB);
+    ULONG out = hvs6_rd(HVS6_CHAN(st->h6_Chan) + HVS6_DISPCTRL);
+    LONG out_w = (LONG)HVS6_DISPCTRL_W(out), out_h = (LONG)HVS6_DISPCTRL_H(out);
+    LONG limit[VCGFX_MAX_PLANES], bottom = out_h, front = (LONG)xsd->vcsd_NumPlanes - 1;
+    LONG px[VCGFX_MAX_PLANES], py[VCGFX_MAX_PLANES];
+    ULONG pw[VCGFX_MAX_PLANES], ph[VCGFX_MAX_PLANES];
+    struct hvs6_ent scr[VCGFX_MAX_PLANES];
+    ULONG upm = st->h6_UpmTop, lbm = 0, scaled = 0, i, slot, pitch, w, h, ent;
+    ULONG handle = HVS6_PL_HANDLE, lbmsize = hvs6_rd(HVS6_LBM_SIZE), need;
+    UQUAD phys;
+    LONG x, y, j;
+
+    memset(cscs, 0, sizeof(*cscs));
+
+    /* Front first: a screen that gets a plane hides what is behind it,
+     * one that does not hides nothing */
+    for (j = front; j >= 0; j--)
+    {
+        struct vcgfx_plane *pl = &xsd->vcsd_Plane[j];
+        struct BitmapData *d = pl->pl_Data;
+        struct hvs6_ent *e = &scr[j];
+        ULONG size;
+
+        need = 0;
+        hvs6_plane_rect(xsd, pl, out_w, out_h, &px[j], &py[j], &pw[j], &ph[j]);
+        limit[j] = bottom;
+        pl->pl_Shown = TRUE;
+        e->valid = FALSE;
+        e->bgra  = FALSE;
+        e->alpha = FALSE;
+        e->yuv   = 0;
+        if (!pw[j] || !ph[j] || (limit[j] <= py[j]) || (limit[j] <= 0))
+            continue;
+
+        if (pl->pl_Yuv)
+        {
+            LONG got;
+
+            e->x = px[j]; e->y = py[j]; e->w = pw[j]; e->h = ph[j];
+            got = hvs6_yuv_ent(st, pl, e, 0, 0, out_w, limit[j], lbmsize, &lbm, &upm, &handle, cscs);
+            if (got < 0)
+                pl->pl_Shown = FALSE;
+            if (got <= 0)
+                continue;
+            scaled++;
+            e->valid = TRUE;
+            bottom = vcgfx_plane_occlude(px[j], py[j], pw[j], ph[j], 0, 0, out_w, bottom);
+            continue;
+        }
+
+        e->pitch  = d->bytesperrow;
+        e->phys   = (UQUAD)(IPTR)d->VideoData + pl->pl_SrcY * e->pitch + pl->pl_SrcX * pl->pl_Bpp;
+        e->bgra   = (pl->pl_Pxf != 0);  /* 16bpp or BGRA: their own order and format */
+        e->alpha  = pl->pl_Alpha;
+        e->pxf    = pl->pl_Pxf;
+        e->x = px[j]; e->y = py[j]; e->w = pw[j]; e->h = ph[j];
+        e->scaled = (pw[j] != pl->pl_SrcW) || (ph[j] != pl->pl_SrcH);
+
+        if (!e->scaled)
+        {
+            if (!hvs6_clip(&e->x, &e->y, &e->w, &e->h, &e->phys, e->pitch, pl->pl_Bpp,
+                           0, 0, out_w, limit[j]))
+                continue;
+        }
+        else
+        {
+            e->sw = pl->pl_SrcW;
+            e->sh = pl->pl_SrcH;
+            if (!hvs6_clip_scaled(&e->x, &e->y, &e->w, &e->h, &e->sw, &e->sh, &e->phys,
+                                  e->pitch, pl->pl_Bpp, 0, 0, out_w, limit[j]))
+                continue;
+            need = hvs6_lbm_need(e->sw, e->w);
+            if ((lbm + need > lbmsize)
+                || !HVS6_PPF_FITS(e->sw, e->w) || !HVS6_PPF_FITS(e->sh, e->h))
+            {
+                pl->pl_Shown = FALSE;
+                continue;
+            }
+        }
+
+        size = hvs6_upm_size(d->bytesperrow, HVS6_UPM_LINES);
+        if ((upm < st->h6_UpmFloor + size) || (handle == HVS6_PL_HANDLE_END))
+        {
+            pl->pl_Shown = FALSE;
+            continue;
+        }
+
+        upm -= size;
+        e->ptr0 = HVS6_PTR0_BASE(upm / HVS6_UPM_GRAN)
+                | HVS6_PTR0_HANDLE(handle++)
+                | HVS6_PTR0_LINES2;
+        if (e->scaled)
+        {
+            e->lbm = lbm;
+            lbm += need;
+            scaled++;
+        }
+        e->valid = TRUE;
+
+        if (!e->alpha)      /* a blended plane hides nothing behind it */
+            bottom = vcgfx_plane_occlude(px[j], py[j], pw[j], ph[j], 0, 0, out_w, bottom);
+    }
+
+    ent = hvs6_pslot(st, list, HVS6_PL_BACK);
+    if (bottom > 0)
+    {
+        for (i = 0; i < HVS6_SLOT_WORDS; i++)
+            hvs6_wr(ent + i * 4, hvs6_rd(fb + i * 4));
+    }
+    else
+        hvs6_wr(ent, HVS6_CTL0_EMPTY);
+
+    slot = HVS6_PL_FIRST;
+    for (i = 0; i < xsd->vcsd_NumPlanes; i++)
+    {
+        if (!scr[i].valid)
+            continue;
+        hvs6_put(hvs6_pslot(st, list, slot++), fb, &scr[i]);
+    }
+    for (; slot < HVS6_PL_CUR; slot++)
+        hvs6_wr(hvs6_pslot(st, list, slot), HVS6_CTL0_EMPTY);
+
+    ent = hvs6_pslot(st, list, HVS6_PL_CUR);
+    st->h6_Cursor = hvs6_cursor_geom(xsd, &phys, &pitch, &x, &y, &w, &h);
+    if (st->h6_Cursor)
+    {
+        hvs6_plane(ent, fb, phys, pitch, st->h6_CurPTR0, (ULONG)x, (ULONG)y, w, h);
+        hvs6_wr(ent + HVS6_ENT_CTL0 * 4,
+                hvs6_rd(ent + HVS6_ENT_CTL0 * 4) & ~HVS6_CTL0_ALPHAMASK);
+        st->h6_CurGeom = (w << 16) | h;
+        st->h6_CurPos  = HVS6_POS0((ULONG)x, (ULONG)y);
+        st->h6_CurAddr = (ULONG)(phys & 0xffffffffULL);
+    }
+    else
+        hvs6_wr(ent, HVS6_CTL0_EMPTY);
+
+    hvs6_wr(hvs6_pslot(st, list, HVS6_PL_END), HVS6_CTL0_END);
+    return scaled;
+}
+
+/* The list with the first scaled plane: it must latch, and the frame
+ * counter must keep going. FALSE when the HVS did not take it. */
+static BOOL hvs6_scale_verify(struct vc4_hvs6_state *st, ULONG list)
+{
+    ULONG chan = HVS6_CHAN(st->h6_Chan), start = hvs6_now_us(), f0 = 0, i, slot;
+    BOOL latched = FALSE, ran = FALSE;
+
+    while ((hvs6_now_us() - start) < HVS6_VERIFY_US)
+    {
+        if (!latched && (hvs6_rd(chan + HVS6_DISPLACT) == list))
+        {
+            latched = TRUE;
+            f0 = HVS6_DISPSTAT_FRCNT(hvs6_rd(chan + HVS6_DISPSTAT));
+        }
+        if (latched && (HVS6_DISPSTAT_FRCNT(hvs6_rd(chan + HVS6_DISPSTAT)) != f0))
+        {
+            ran = TRUE;
+            break;
+        }
+    }
+
+    bug("[VC4HVS6] scaled planes: %s, status %08x, fetcher %08x, handle error %08x,"
+        " lbm %u\n", ran ? "running" : (latched ? "latched, no frames" : "never latched"),
+        hvs6_rd(chan + HVS6_DISPSTAT), hvs6_rd(HVS6_FETCHER_STATUS),
+        hvs6_rd(HVS6_HANDLE_ERROR), hvs6_rd(HVS6_LBM_SIZE));
+    for (slot = HVS6_PL_FIRST; slot < HVS6_PL_CUR; slot++)
+    {
+        ULONG ent = hvs6_pslot(st, list, slot);
+
+        if (hvs6_rd(ent) & HVS6_CTL0_UNITY || !(hvs6_rd(ent) & HVS6_CTL0_VALID))
+            continue;
+        bug("[VC4HVS6]   slot %u:", slot);
+        for (i = 0; i < HVS6_SC_WORDS; i++)
+            bug(" %08x", hvs6_rd(ent + i * 4));
+        bug("\n");
+    }
+    return ran;
+}
+
+/* Build into the list neither latched nor last written, and repoint: the
+ * HVS takes it at the next frame start, whole. Caller holds the mailbox
+ * lock. Armed, so vc4_hvs6_latch_wait() tells when the pages the old
+ * list showed are out of use. */
+void vc4_hvs6_planes_commit(struct VideoCoreGfx_staticdata *xsd)
+{
+    struct vc4_hvs6_state *st = &xsd->vcsd_HVS6;
+    struct hvs6_cscs cscs;
+    ULONG act, list = 0, i;
+
+    if (!st->h6_Active || !hvs6_planes_lists(st))
+        return;
+
+    hvs6_upm_carve(st);
+
+    act = hvs6_rd(HVS6_CHAN(st->h6_Chan) + HVS6_DISPLACT);
+    for (i = 0; i < HVS6_PL_LISTS; i++)
+    {
+        list = st->h6_PlList[i];
+        if ((list != act) && (list != st->h6_PlLast))
+            break;
+    }
+
+    i = hvs6_build_planes(xsd, list, &cscs);
+    hvs6_csc_load(st, &cscs);   /* only for a list that is shown */
+    hvs6_wr(HVS6_CHAN(st->h6_Chan) + HVS6_DISPLIST, list);
+    st->h6_PlLast = list;
+
+    if (i && !st->h6_ScaleOK)
+    {
+        if (hvs6_scale_verify(st, list))
+            st->h6_ScaleOK = TRUE;
+        else
+        {
+            bug("[VC4HVS6] scaled planes refused - scaling off, showing screens 1:1\n");
+            st->h6_ScaleOff = TRUE;
+            vc4_hvs6_planes_commit(xsd);
+            return;
+        }
+    }
+    hvs6_arm(st);
+}
+
+/* Build a list without showing it, for pl_Shown; caller holds the
+ * mailbox lock. It lands in a list no commit is reading, and the matrix
+ * registers stay as the shown list needs them. */
+void vc4_hvs6_planes_try(struct VideoCoreGfx_staticdata *xsd)
+{
+    struct vc4_hvs6_state *st = &xsd->vcsd_HVS6;
+    struct hvs6_cscs cscs;
+    ULONG act, list = 0, i;
+
+    if (!st->h6_Active || !hvs6_planes_lists(st))
+        return;
+
+    hvs6_upm_carve(st);
+
+    act = hvs6_rd(HVS6_CHAN(st->h6_Chan) + HVS6_DISPLACT);
+    for (i = 0; i < HVS6_PL_LISTS; i++)
+    {
+        list = st->h6_PlList[i];
+        if ((list != act) && (list != st->h6_PlLast))
+            break;
+    }
+    hvs6_build_planes(xsd, list, &cscs);
+}

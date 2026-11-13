@@ -1,0 +1,48 @@
+
+prefix		= @prefix@
+exec_prefix	= @exec_prefix@
+bindir		= @bindir@
+infodir		= @infodir@
+datadir		= @datadir@
+fd2inlinedir	= ${datadir}/fd2inline
+
+srcdir		= @srcdir@
+
+INSTALL		= @INSTALL@
+INSTALL_PROGRAM	= @INSTALL_PROGRAM@ -s
+INSTALL_DATA	= @INSTALL_DATA@
+
+all:
+	$(MAKE) fd2inline fd2inline.info
+
+install:	all
+	$(INSTALL) -d $(bindir) $(infodir) $(fd2inlinedir)
+
+	# Install tools
+	$(INSTALL_PROGRAM) fd2inline $(bindir)
+	$(INSTALL_DATA) fd2inline.info $(infodir)
+	$(INSTALL_PROGRAM) cross/bin/gg-fix-includes $(bindir)
+	for f in `cd $(srcdir)/cross/share/ && find * -type f`; do \
+	  $(INSTALL_DATA) -D $(srcdir)/cross/share/$${f} $(fd2inlinedir)/$${f}; \
+	done
+
+	# Install example file structure for fds
+	$(INSTALL) -d $(prefix)/os-lib/fd/3rd
+	$(INSTALL) -d $(prefix)/os-lib/fd/amigaos
+	$(INSTALL) -d $(prefix)/os-lib/fd/morphos
+	$(INSTALL_DATA) $(srcdir)/README.os-lib $(prefix)/os-lib/fd/README
+
+	# Install example file structure for includes
+	$(INSTALL) -d $(prefix)/os-include/3rd
+	for dir in classes clib datatypes devices diskfont dos exec \
+		   gadgets graphics hardware images intuition libraries \
+		   pragma pragmas prefs proto reaction resources rexx \
+		   utility workbench; do \
+	  $(INSTALL) -d $(prefix)/os-include/amigaos/$${dir}; \
+	done
+	for dir in clib cybergraphics cybergraphx datatypes devices \
+		   emul exec powerup ppcdisslib resources; do \
+	  $(INSTALL) -d $(prefix)/os-include/morphos/$${dir}; \
+	done
+	$(INSTALL_DATA) $(srcdir)/README.os-include $(prefix)/os-include/README
+

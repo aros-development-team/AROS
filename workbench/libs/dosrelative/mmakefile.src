@@ -1,0 +1,27 @@
+#
+#   Makefile for building dosrelative.library
+#
+
+include $(SRCDIR)/config/aros.cfg
+
+FUNCS := lockrelative openrelative getdeviceprocrelative isfilesystemrelative \
+         createdirrelative deletefilerelative setcommentrelative \
+         setfiledaterelative setownerrelative setprotectionrelative \
+         makelinkrelative renamerelative
+
+FILES := dosrelative_support
+
+USER_CFLAGS := $(CFLAGS_NO_BUILTIN)
+USER_LDFLAGS := -static
+
+#MM workbench-libs-dosrelative-includes : \
+#MM     kernel-exec-includes \
+#MM     kernel-dos-includes \
+#MM     includes-copy
+#MM- workbench-libs-dosrelative : linklibs
+
+%build_module mmake=workbench-libs-dosrelative \
+    modname=dosrelative modtype=library \
+    files="dosrelative_init $(FUNCS) $(FILES)"
+
+%common

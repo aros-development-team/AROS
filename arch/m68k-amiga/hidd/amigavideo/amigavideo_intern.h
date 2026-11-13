@@ -1,0 +1,200 @@
+#ifndef AMIGAVIDEO_INTERN_H
+#define AMIGAVIDEO_INTERN_H
+
+/* Private definitions for AmigaVideo class */
+
+#define USE_FAST_BMSTACKCHANGE		1
+#define USE_FAST_BMPOSCHANGE		1
+//#define USE_ALIEN_DISPLAYMODES		1
+#define USE_UCOP_DIRECT             1
+
+#define AMIGAVIDEO_LIBNAME          "amigavideo.hidd"
+
+#define COPPEROUT(cop_ptr,val_a,val_b) \
+    *cop_ptr++ = val_a; \
+    *cop_ptr++ = val_b;
+
+struct copper2data
+{
+    struct MinNode            cnode;
+
+    UWORD                       *copper2_palette;
+    UWORD                       *copper2_palette_aga_lo;
+    UWORD                       *copper2_scroll;
+    UWORD                       *copper2_diwstop;
+    UWORD                       *copper2_bpl;
+    UWORD                       *copper2_fmode;
+    UWORD                       *copper2_tail;
+
+    UBYTE                       extralines;
+};
+
+
+struct amigavideo_retiredcl
+{
+    struct amigavideo_retiredcl *next;
+    struct CopList              *cl;
+    ULONG                       compgen;        /* csd->compgen when retired */
+};
+
+struct NativeChipsetMode
+{
+    struct Node                 node;
+    ULONG                       modeid;
+    UWORD                       width, height, depth;
+    OOP_Object                  *pf;
+    OOP_Object                  *sync;
+    UBYTE                       special;
+};
+
+/* Driver-private class ids and datatypes */
+#define CLID_Hidd_Display_AmigaVideo    "hidd.display.amigavideo"
+#define CLID_Hidd_DMEnum_AmigaVideo     "hidd.dmenum.amigavideo"
+
+struct amigadisplay_data
+{
+};
+
+struct amigadmenum_data
+{
+};
+
+struct amigavideo_staticdata
+{
+    struct Task                 *svcTask;
+    OOP_Class 	    	        *cs_basebm;                     /* baseclass for CreateObject */
+
+    OOP_Class 	    	        *amigagfxclass;
+    OOP_Class 	    	        *amigadisplayclass;
+    OOP_Class 	    	        *amigadmenumclass;
+    OOP_Class 	    	        *amigacompositorclass;
+    OOP_Class 	    	        *amigabmclass;
+
+    OOP_AttrBase                hiddAttrBase;
+    OOP_AttrBase                hiddBitMapAttrBase;
+    OOP_AttrBase                hiddPlanarBitMapAttrBase;
+    OOP_AttrBase                hiddAmigaVideoBitMapAttrBase;
+    OOP_AttrBase                hiddGCAttrBase;
+    OOP_AttrBase                hiddSyncAttrBase;
+    OOP_AttrBase                hiddPixFmtAttrBase;
+    OOP_AttrBase                hiddGfxAttrBase;
+    OOP_AttrBase                hiddDisplayAttrBase;
+    OOP_AttrBase                hiddDMEnumAttrBase;
+    OOP_AttrBase                hiddCompositorAttrBase;
+    OOP_AttrBase                hiddColorMapAttrBase;
+
+    OOP_Object                  *amigagfxinstance;              /* There can be only one! */
+    OOP_Object                  *display;
+    OOP_Object                  *dmenum;
+    LONG                        hiddopencnt;
+
+    struct List                 nativemodelist;
+
+    struct List                 *compositedbms;
+    struct List                 *obscuredbms;
+    struct MinList              c2fragments;
+    struct MinList              c2ifragments;
+
+    UWORD                        displaywidth;
+    UWORD                        displayheight;
+
+    struct Interrupt            inter;
+    volatile UWORD              framecounter;
+    struct amigabm_data         *updatescroll;
+
+    /* display lists of deinitialised ViewPorts the copper may still run */
+    struct amigavideo_retiredcl *retiredcl;
+    ULONG                       compgen;        /* compositions done */
+    UWORD                       compframe;      /* framecounter at the last one */
+
+    WORD                        width_alignment;
+    WORD                        startx, starty;
+
+    UWORD                       *copper1;
+    UWORD                       *copper1_pt2;
+    UWORD                       *copper1_spritept;
+    UWORD                       *copper2_backup;
+    UWORD                       spritedatasize;
+    WORD                        sprite_width, sprite_height;
+    UWORD                       spritepos, spritectl;
+    UWORD                       *sprite_null;
+    UWORD                       *sprite;
+    WORD                        spritex, spritey;
+    BYTE                        sprite_offset_x, sprite_offset_y;
+    UWORD                       bplcon0_null,
+                                bplcon1, bplcon2, bplcon3, bplcon4;
+
+    UBYTE                       fmode_bpl, fmode_spr;
+
+    UWORD                       max_colors;
+    ULONG                       dpms_level;
+
+    Gfx_ActiveCallBack_t        acb;
+    APTR                        acbdata;
+    Gfx_DisplayChangeCallBack_t ccb;
+    APTR                        ccbdata;
+
+    BPTR                        cs_SegList;
+
+    struct Library              *cs_OOPBase;
+    struct Library              *cs_GfxBase;
+    struct Library              *cs_UtilityBase;
+
+    OOP_MethodID                cs_HiddGfxBase;
+    OOP_MethodID                cs_HiddBitMapBase;
+    OOP_MethodID                cs_HiddDMEnumBase;
+
+    OOP_MethodID                mid_BitMapStackChanged;
+    OOP_MethodID                mid_BitMapPositionChanged;
+    OOP_MethodID                mid_BitMapRectChanged;
+    OOP_MethodID                mid_ValidateBitMapPositionChange;
+
+    /* flags */
+    BOOL                        superforward;
+    BOOL                        ecs_agnus, ecs_denise, aga;
+    BOOL                        aga_enabled;
+    BOOL                        cursorvisible;
+    UWORD                       *classic_cursor_data;
+    WORD                        classic_cursor_height;
+    WORD                        classic_cursor_xoffset, classic_cursor_yoffset;
+    UBYTE                       classic_sprite_mask;
+    BOOL                        palmode;
+    BOOL                        interlaced;
+   
+    /* New flags for the other sprites */
+    UWORD                       *new_copper1_spritept[8];
+    UWORD                       new_spritedatasize[8];
+    WORD                        new_sprite_width[8], new_sprite_height[8];
+    UWORD                       new_spritepos[8], new_spritectl[8];
+    UWORD                       *new_sprite_null[8];
+    UWORD                       *new_sprite[8];
+    WORD                        new_spritex[8], new_spritey[8];
+    BYTE                        new_sprite_offset_x[8], new_sprite_offset_y[8];
+    BOOL                        spritevisible[8];
+};
+
+struct amigavideoclbase
+{
+    struct Library              library;
+    
+    struct amigavideo_staticdata csd;
+};
+
+#undef CSD
+#define CSD(cl)     	                (&((struct amigavideoclbase *)cl->UserData)->csd)
+
+#define __IHidd 	                (csd->hiddAttrBase)
+#define __IHidd_BitMap	                (csd->hiddBitMapAttrBase)
+#define __IHidd_AmigaVideoCompositor    (csd->hiddCompositorAttrBase)
+#define __IHidd_PlanarBM	        (csd->hiddPlanarBitMapAttrBase)
+#define __IHidd_BitMap_AmigaVideo       (csd->hiddAmigaVideoBitMapAttrBase)
+#define __IHidd_GC			(csd->hiddGCAttrBase)
+#define __IHidd_Sync	                (csd->hiddSyncAttrBase)
+#define __IHidd_PixFmt		        (csd->hiddPixFmtAttrBase)
+#define __IHidd_Gfx 	                (csd->hiddGfxAttrBase)
+#define __IHidd_Display               (csd->hiddDisplayAttrBase)
+#define __IHidd_DMEnum                (csd->hiddDMEnumAttrBase)
+//#define __IHidd_Attr		        (csd->hiddAttrBase)
+#define __IHidd_ColorMap	        (csd->hiddColorMapAttrBase)
+
+#endif /* ! AMIGAVIDEO_INTERN_H */

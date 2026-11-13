@@ -1,0 +1,9 @@
+# DataType Description for REXX scripts
+Name=REXX
+Version=$VER: REXX 1.0 (18.03.2007)
+BaseName=rexx
+Pattern=#?.rexx
+GroupID=text
+ID=rexx
+Flags=DTF_ASCII
+Priority=1

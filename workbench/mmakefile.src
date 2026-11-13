@@ -1,0 +1,66 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+# The workbench target points back to config/$(ARCH)/mmakefile:
+#MM- workbench : workbench-$(ARCH)-$(CPU)
+
+#MM- AROS : workbench-complete
+
+#MM- workbench-complete : \
+#MM	    workbench-directories \
+#MM	    workbench-c \
+#MM	    workbench-hidds \
+#MM	    workbench-classes-complete \
+#MM	    workbench-devs-complete \
+#MM	    workbench-expansion-complete \
+#MM	    workbench-fs-complete \
+#MM	    workbench-libs-complete \
+#MM	    workbench-s	\
+#MM	    workbench-locale \
+#MM	    workbench-fonts \
+#MM	    workbench-system \
+#MM	    workbench-storage \
+#MM	    workbench-utilities \
+#MM	    workbench-tools \
+#MM	    workbench-prefs \
+#MM         workbench-printers \
+#MM	    workbench-network \
+#MM         workbench-rexxc \
+#MM         kernel-usb-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU) \
+#MM         kernel-bluetooth-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)
+
+# These are disk-based hardware drivers.
+# By default they are built only for native targets, however you can
+# build and use them also on hosted AROS (e.g. Linux) using tunnelling PCI driver.
+
+#MM- workbench-drivers :          \
+#MM    workbench-hidds-vmwaresvga \
+#MM    workbench-hidds-amdgpu     \
+#MM    workbench-hidds-radeon	  \
+#MM    devs-monitors-intelgma     \
+#MM    workbench-hidds-nvgfx
+
+WBSTARTUPDIR := $(AROSDIR)/WBStartup
+WBSTORAGEDIR := $(AROSDIR)/Storage
+WBDOSDRIVERDIRS := $(AROSDIR)/Devs/DOSDrivers $(AROSDIR)/Storage/DOSDrivers
+WBPRINTERS := $(AROSDIR)/Devs/Printers
+
+#MM
+workbench-directories ::
+    %mkdirs_q $(WBSTARTUPDIR) $(WBSTORAGEDIR) $(WBDOSDRIVERDIRS) $(WBPRINTERS)
+
+#
+# The Workbench backdrop list. Wanderer reads it from the volume root to
+# decide what appears on the desktop; the distributions that carry an
+# installer put it there so InstallAROS is visible on first boot. It lives
+# here rather than in each target's boot glue, which is where five private
+# copies of the same rule used to be.
+#
+#MM
+workbench-backdrop : $(AROSDIR)/.backdrop
+
+$(AROSDIR)/.backdrop : $(SRCDIR)/workbench/.backdrop
+	@$(ECHO) "Creating   $@"
+	@$(CP) $< $@
+
+#MM- clean : clean-workbench

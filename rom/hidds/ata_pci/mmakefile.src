@@ -1,0 +1,17 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+FILES := class_init probe ata_pci_controllerclass ata_pci_busclass interface_pio interface_dma
+
+USER_CPPFLAGS := \
+        -D__OOP_NOMETHODBASES__ \
+        -D__OOP_NOATTRBASES__
+
+#USER_CPPFLAGS += -DDEBUG
+USER_LDFLAGS := -static
+
+%build_module mmake=kernel-hidd-pciata \
+    modname=ata_pci modtype=hidd \
+    files="$(FILES)"
+
+%common

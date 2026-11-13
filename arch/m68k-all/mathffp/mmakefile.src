@@ -1,0 +1,16 @@
+# $Id: mmakefile.src
+
+include $(SRCDIR)/config/aros.cfg
+
+FILES :=
+AFILES := spcmp sptst
+
+USER_AFLAGS := -I$(GENINCDIR)
+USER_CPPFLAGS := -DDoRegisterCalls
+TARGET_ISA_AFLAGS:=$(ISA_MC68020_FLAGS)
+
+%build_archspecific \
+  mainmmake=workbench-libs-mathffp modname=mathffp maindir=workbench/libs/mathffp arch=m68k \
+  files="$(FILES)" asmfiles="$(AFILES)" compiler=kernel
+
+%common

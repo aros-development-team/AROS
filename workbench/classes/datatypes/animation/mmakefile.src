@@ -1,0 +1,19 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+FILES := animationclass animationbuffer animationframe animationplayback animationsave animationprefs
+
+#MM- workbench-datatypes-animation : workbench-datatype-animation
+#MM workbench-datatype-animation : includes linklibs workbench-datatype-animation-envarc
+
+USER_CPPFLAGS   := -DDEBUG=0
+USER_LDFLAGS := -static
+
+%build_module mmake=workbench-datatype-animation \
+    modname=animation modtype=datatype \
+    files=$(FILES)
+
+#MM
+workbench-datatype-animation-envarc:
+	@$(MKDIR) $(AROS_ENVARC)/Classes/DataTypes
+	@$(ECHO) "NOSKIP" > $(AROS_ENVARC)/Classes/DataTypes/animation.prefs

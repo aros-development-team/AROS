@@ -1,0 +1,98 @@
+#
+#   Makefile for AROS C Library Math Tests
+
+include $(SRCDIR)/config/aros.cfg
+
+EXEDIR := $(AROS_TESTS)/crt/stdc
+CUNITEXEDIR := $(AROS_TESTS)/cunit/crt/stdc/math
+
+USER_CFLAGS = $(CFLAGS_NO_BUILTIN)
+
+FILESFENV := \
+        test-fenv
+
+FILESDOUBLE := \
+        test-double
+
+FILESFLOAT := \
+        test-float
+
+FILESIEEE754 := \
+        tst-ieee754
+
+FILESINFTORTURE := \
+        inf_torture
+
+FILESPARANOIA := \
+        paranoia
+        
+CUNITSTDCMATHTESTFILES := \
+    cunit-crt-math \
+    cunit-crt-ldmath \
+    cunit-crt-complexmath
+
+#MM- test-crt-stdc : test-crt-stdc-math test-crt-stdc-math-cunit
+#MM- test-crt-stdc-quick : test-crt-stdc-math-quick test-crt-stdc-math-cunit-quick
+
+#MM- test-crt-stdc-math-cunit : test-crt-stdc-math-$(TARGET_UNITTESTS)-cunit
+#MM- test-crt-stdc-math-cunit-quick : test-crt-stdc-math-$(TARGET_UNITTESTS)-cunit-quick
+
+#MM- test-crt-stdc-math : test-crt-stdc-math-fenv test-crt-stdc-math-c99-double test-crt-stdc-math-c99-float test-crt-stdc-math-ieee754 test-crt-stdc-math-inftorture test-crt-stdc-math-paranoia-double test-crt-stdc-math-paranoia-float
+#MM- test-crt-stdc-math-quick : test-crt-stdc-math-fenv-quick test-crt-stdc-math-c99-double-quick test-crt-stdc-math-c99-float-quick test-crt-stdc-math-ieee754-quick test-crt-stdc-math-inftorture-quick test-crt-stdc-math-paranoia-double-quick test-crt-stdc-math-paranoia-float-quick
+#MM- test-crt-stdc-math-common : includes includes-copy linklibs kernel
+
+#MM test-crt-stdc-math-fenv : test-crt-stdc-math-common
+#MM test-crt-stdc-math-c99-double : test-crt-stdc-math-common
+#MM test-crt-stdc-math-c99-float : test-crt-stdc-math-common
+#MM test-crt-stdc-math-ieee754 : test-crt-stdc-math-common
+#MM test-crt-stdc-math-inftorture : test-crt-stdc-math-common
+#MM test-crt-stdc-math-paranoia-double : test-crt-stdc-math-common
+#MM test-crt-stdc-math-paranoia-float : test-crt-stdc-math-common
+
+USER_CPPFLAGS = -DSingle
+
+%build_prog mmake=test-crt-stdc-math-paranoia-float \
+    files=$(FILESPARANOIA) targetdir=$(EXEDIR) \
+    progname=math-paranoia-float objdir=$(GENDIR)/$(CURDIR)/float
+
+USER_CPPFLAGS =
+
+%build_prog mmake=test-crt-stdc-math-paranoia-double \
+    files=$(FILESPARANOIA) targetdir=$(EXEDIR) \
+    progname=math-paranoia-double objdir=$(GENDIR)/$(CURDIR)/double
+
+USER_CPPFLAGS = -DNO_STRICT_DFL_ENV
+
+%build_prog mmake=test-crt-stdc-math-fenv \
+    files=$(FILESFENV) targetdir=$(EXEDIR) \
+    progname=math-fenv
+
+USER_CPPFLAGS = -DSYS_MATH_H 
+
+%build_prog mmake=test-crt-stdc-math-c99-float \
+    files=$(FILESFLOAT) targetdir=$(EXEDIR) \
+    progname=math-c99-float objdir=$(GENDIR)/$(CURDIR)/float
+
+%build_prog mmake=test-crt-stdc-math-c99-double \
+    files=$(FILESDOUBLE) targetdir=$(EXEDIR) \
+    progname=math-c99-double objdir=$(GENDIR)/$(CURDIR)/double
+
+%build_prog mmake=test-crt-stdc-math-ieee754 \
+    files=$(FILESIEEE754) targetdir=$(EXEDIR) \
+    progname=math-ieee754
+
+%build_prog mmake=test-crt-stdc-math-inftorture \
+    files=$(FILESINFTORTURE) targetdir=$(EXEDIR) \
+    progname=math-inftorture
+
+USER_CPPFLAGS :=
+USER_INCLUDES := -I$(AROS_CONTRIB_INCLUDES)
+STDC_BASE_CFLAGS := -noposixc -ffloat-store $(CFLAGS_NO_BUILTIN) 
+USER_CFLAGS := $(STDC_BASE_CFLAGS)
+USER_LDFLAGS := -L$(AROS_CONTRIB_LIB)
+
+%build_progs mmake=test-crt-stdc-math-yes-cunit \
+    files=$(CUNITSTDCMATHTESTFILES) targetdir=$(CUNITEXEDIR) \
+    uselibs="cunit posixc"
+
+%common

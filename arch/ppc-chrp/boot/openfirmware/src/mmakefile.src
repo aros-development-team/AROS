@@ -1,0 +1,37 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+TARGETDIR := $(GENDIR)/$(CURDIR)
+FILES     := bootstrap elf menu of1275 support gpr
+DEPS      := $(foreach f, $(FILES), $(TARGETDIR)/$(f).d)
+OBJS      := $(foreach f, $(FILES), $(TARGETDIR)/$(f).o)
+
+USER_INCLUDES := -I$(SRCDIR)/$(CURDIR)/../include
+USER_CPPFLAGS := -DVERSION=\"94\"
+USER_CFLAGS += -ffreestanding -nostdlib -Wall
+OPTIMIZATION_CFLAGS := -Os
+
+#MM ub2lb-chrp-ppc-efika: linklibs
+ub2lb-chrp-ppc-efika: $(AROSDIR)/os_image
+
+#MM
+ub2lb-chrp-ppc-efika-quick: $(AROSDIR)/os_image
+
+$(AROSDIR)/os_image: $(OBJS) $(DEPS)
+	$(KERNEL_LD) -N --entry=bootstrap --script=$(SRCDIR)/$(CURDIR)/ldscript.lds $(OBJS) -o $@
+
+$(TARGETDIR)/%.o : %.c
+	%compile_q opt="$(CFLAGS)"
+
+$(TARGETDIR)/%.o : %.S
+	%compile_q opt="$(CFLAGS)"
+
+$(TARGETDIR)/%.d : %.c
+	%mkdepend_q
+
+$(TARGETDIR)/%.d : %.S
+	%mkdepend_q
+
+-include $(DEPS)
+
+%common

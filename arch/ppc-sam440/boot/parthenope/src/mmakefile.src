@@ -1,0 +1,27 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+TARGETDIR := $(GENDIR)/$(CURDIR)
+FILES     := parthenope cdrom context dos elf ext2 menu rdb sfs support tftp
+DEPS      := $(foreach f, $(FILES), $(TARGETDIR)/$(f).d)
+OBJS      := $(foreach f, $(FILES), $(TARGETDIR)/$(f).o)
+
+USER_CPPFLAGS += -DUSE_UBOOT -DIN_PARTHENOPE -DVERSION=\"91\" -DDATE=\"`date +%-d.%-m.%Y`\"
+USER_CFLAGS += -ffixed-r2 -ffixed-r14 -ffixed-r29 -Wall $(CFLAGS_NO_BUILTIN) -nostdinc -nostdlib -g3
+OPTIMIZATION_CFLAGS := -O2
+
+#MM parthenope-sam440:
+parthenope-sam440: $(AROSDIR)/Parthenope
+
+$(AROSDIR)/Parthenope: $(OBJS) $(DEPS)
+	$(KERNEL_LD) -N --entry=bootstrap --script=$(SRCDIR)/$(CURDIR)/ldscript.lds $(OBJS) -o $@
+
+$(TARGETDIR)/%.o : %.c
+	%compile_q opt="$(CFLAGS) $(CPPFLAGS)"
+
+$(TARGETDIR)/%.d : %.c
+	%mkdepend_q
+
+-include $(DEPS)
+
+%common

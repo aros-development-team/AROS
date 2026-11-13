@@ -1,0 +1,6 @@
+VPATH		= @srcdir@
+srcdir		= @srcdir@
+DRIVER		= rpii2s.audio
+MODEFILE	= RPII2S
+OBJECTS		= rpii2s-init.o rpii2s-main.o rpii2s-playslave.o rpii2s-accel.o rpii2s-hwaccess.o
+include ../Common/Makefile.common

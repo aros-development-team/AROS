@@ -1,0 +1,58 @@
+##
+##  Q&D Protracker DataType
+##
+##      Written by Martin Blom, based on the AIFF DataType by
+##  Olaf `Olsen' Barthel <olsen@sourcery.han.de>
+##  Public domain
+##
+##
+
+.c.o:
+	sc $(CFLAGS) $<
+
+.a.o:
+	asm $(AFLAGS) $<
+
+OPTIMIZE =	optimize nooptinlocal opttime
+DEBUG =		debug=line
+
+CFLAGS =	streq strmerge nostkchk params=r \
+		data=faronly $(OPTIMIZE) $(DEBUG)
+LFLAGS =	smallcode nodebug noicons
+AFLAGS =	-d -u
+
+OBJS =		RomTag.o LibCode.o Class.o
+LIBS =		lib:scnb.lib lib:debug.lib lib:amiga.lib 
+
+CLASS =		ProtrackerDT/Classes/Datatypes/protracker.datatype
+ID =		ProtrackerDT/Devs/DataTypes/Protracker
+
+all:		$(CLASS) $(ID)
+
+$(ID):		DT_ident DT_code
+		MakeDT.rexx  DT_ident
+		AddDataTypes $@
+
+DT_code:	DT_code.o
+		slink $(LFLAGS) FROM DT_code.o TO $@
+
+$(CLASS):	$(OBJS)
+		slink $(LFLAGS) FROM $(OBJS) /PT-AHIPlay/PT-AHIPlay.o TO $@ LIB $(LIBS)
+
+
+DT_code.o:	DT_code.a
+RomTag.o:	protracker.datatype_rev.i RomTag.a
+LibCode.o:	protracker.datatype_rev.h LibCode.c Data.h
+Class.o:	Class.c Data.h
+
+revup:
+		revup VERSION 1 PROJECTNAME protracker.datatype ASM C TINY
+
+dist:
+		smake clean
+		smake
+		--delete Projekt:AHI/ProtrackerDT.lha
+		lha -r a Projekt:AHI/ProtrackerDT.lha ProtrackerDT ProtrackerDT.info
+		smake clean
+clean:
+		--delete \#?.o DT_code

@@ -1,0 +1,15 @@
+#
+# Makefile for Mason's workbench icons
+
+include $(SRCDIR)/config/aros.cfg
+
+ICONS     := AutoPoint Blanker ClickToFront Exchange Opaque
+
+#MM- iconset-Mason-wbench-icons-aros : iconset-Mason-wbench-icons-aros-commodities
+
+%build_icons mmake=iconset-Mason-wbench-icons-aros-commodities icons=$(ICONS) \
+             dir=$(AROS_TOOLS)/$(AROS_DIR_COMMODITIES)
+
+#MM- icons-wbench-tools-commodities : Mason-icons-wbench-tools-commodities
+%build_icons mmake=Mason-icons-wbench-tools-commodities icons=$(ICONS) \
+             dir=$(AROS_PRESETS)/Icons/Mason/Default/$(AROS_DIR_AROS)/$(AROS_DIR_TOOLS)/$(AROS_DIR_COMMODITIES)

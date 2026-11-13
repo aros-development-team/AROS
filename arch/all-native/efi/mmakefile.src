@@ -1,0 +1,12 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+FILES := efi_init
+FUNCS := findconfigtable
+
+USER_LDFLAGS := -static
+
+%build_module mmake=kernel-efi modname=efi modtype=resource \
+  files="$(FILES) $(FUNCS)" 
+
+%common

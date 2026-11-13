@@ -1,0 +1,5 @@
+
+#MM- boot-distfiles-pc-i386 : bootdisk systemdisk
+#MM- boot-distfiles-pc-i386-quick : bootdisk-quick systemdisk-quick
+#MM- distfiles-pc-i386 : bootiso
+#MM- distfiles-pc-i386-quick : bootiso-quick

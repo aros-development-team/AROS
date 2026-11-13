@@ -1,0 +1,16 @@
+#
+#  Makefile.in for the ahi.device loopback sound driver
+#
+
+VPATH		= @srcdir@
+
+srcdir		= @srcdir@
+
+DRIVER		= device.audio
+MODEFILE	= DEVICE
+
+OBJECTS		= device-init.o device-main.o device-playslave.o device-accel.o
+
+DEST		= Storage
+
+include ../Common/Makefile.common

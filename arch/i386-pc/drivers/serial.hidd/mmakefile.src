@@ -1,0 +1,19 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+FILES	:=	serial_init SerialClass SerialUnitClass
+
+USER_CPPFLAGS := \
+          -D__OOP_NOATTRBASES__
+
+#USER_CPPFLAGS += -DDEBUG=1
+
+# Link statically so libc references (e.g. compiler-emitted memcpy) resolve
+# from stdc.static - kickstart modules cannot auto-open stdc.library
+USER_LDFLAGS := -static
+
+%build_module mmake=kernel-pc-i386-serial \
+  modname=serial modtype=hidd \
+  files=$(FILES) \
+  uselibs="hiddstubs"
+  

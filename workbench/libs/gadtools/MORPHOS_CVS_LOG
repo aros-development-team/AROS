@@ -1,0 +1,1571 @@
+? log
+
+RCS file: /home/cvs/morphos/gadtools/.cvsignore,v
+Working file: .cvsignore
+head: 1.1
+branch: 1.1.1
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	morphos: 1.1.1
+keyword substitution: kv
+total revisions: 2;	selected revisions: 2
+description:
+----------------------------
+revision 1.1
+date: 2001/12/17 18:03:24;  author: emm;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/12/17 18:03:24;  author: emm;  state: Exp;  lines: +0 -0
+Initial import.
+=============================================================================
+
+RCS file: /home/cvs/morphos/gadtools/Makefile,v
+Working file: Makefile
+head: 1.3
+branch:
+locks: strict
+access list:
+symbolic names:
+keyword substitution: kv
+total revisions: 3;	selected revisions: 3
+description:
+----------------------------
+revision 1.3
+date: 2002/04/06 12:10:10;  author: laire;  state: Exp;  lines: +2 -2
+fixed menus(lupe problem gone and probably other nasty crashes)..we need to cleanup
+the source though.
+sort of fixed the arrow gadget size problem but this shows an error in the
+sysimage class with filer. The horizontal arrows with size 16*11 (real size 12*9)
+with the border only shows up as a horizontal line. Needs a closer look.
+----------------------------
+revision 1.2
+date: 2002/01/26 11:32:23;  author: emm;  state: Exp;  lines: +78 -36
+Can now be built.
+----------------------------
+revision 1.1
+date: 2002/01/14 15:45:32;  author: laire;  state: Exp;
+not working makefile
+=============================================================================
+
+RCS file: /home/cvs/morphos/gadtools/README.hacks,v
+Working file: README.hacks
+head: 1.1
+branch: 1.1.1
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	morphos: 1.1.1
+keyword substitution: kv
+total revisions: 2;	selected revisions: 2
+description:
+----------------------------
+revision 1.1
+date: 2001/12/17 18:03:25;  author: emm;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/12/17 18:03:25;  author: emm;  state: Exp;  lines: +0 -0
+Initial import.
+=============================================================================
+
+RCS file: /home/cvs/morphos/gadtools/arrowclass.c,v
+Working file: arrowclass.c
+head: 1.5
+branch:
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	morphos: 1.1.1
+keyword substitution: kv
+total revisions: 6;	selected revisions: 6
+description:
+----------------------------
+revision 1.5
+date: 2002/04/09 15:22:13;  author: laire;  state: Exp;  lines: +9 -7
+This fixes an internal gadtools state problem but i have massive debug there
+because the listview notify problem isn't resolved yet.
+----------------------------
+revision 1.4
+date: 2002/04/08 13:42:21;  author: laire;  state: Exp;  lines: +3 -2
+o fixed the scroller listview update problem
+o fixed the initial selected listview problem
+----------------------------
+revision 1.3
+date: 2002/04/06 12:10:10;  author: laire;  state: Exp;  lines: +56 -5
+fixed menus(lupe problem gone and probably other nasty crashes)..we need to cleanup
+the source though.
+sort of fixed the arrow gadget size problem but this shows an error in the
+sysimage class with filer. The horizontal arrows with size 16*11 (real size 12*9)
+with the border only shows up as a horizontal line. Needs a closer look.
+----------------------------
+revision 1.2
+date: 2002/01/26 11:30:55;  author: emm;  state: Exp;  lines: +52 -51
+Can now be built.
+----------------------------
+revision 1.1
+date: 2001/12/17 18:03:26;  author: emm;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/12/17 18:03:26;  author: emm;  state: Exp;  lines: +0 -0
+Initial import.
+=============================================================================
+
+RCS file: /home/cvs/morphos/gadtools/basicfuncs.c,v
+Working file: basicfuncs.c
+head: 1.2
+branch:
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	morphos: 1.1.1
+keyword substitution: kv
+total revisions: 3;	selected revisions: 3
+description:
+----------------------------
+revision 1.2
+date: 2002/04/07 17:02:25;  author: laire;  state: Exp;  lines: +7 -1
+changed the underline HIGHCOLOR mode into simple underline
+o the propscroller listview size calculationg bug is unresolved atm
+----------------------------
+revision 1.1
+date: 2001/12/17 18:03:25;  author: emm;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/12/17 18:03:25;  author: emm;  state: Exp;  lines: +0 -0
+Initial import.
+=============================================================================
+
+RCS file: /home/cvs/morphos/gadtools/buttonclass.c,v
+Working file: buttonclass.c
+head: 1.2
+branch:
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	morphos: 1.1.1
+keyword substitution: kv
+total revisions: 3;	selected revisions: 3
+description:
+----------------------------
+revision 1.2
+date: 2002/01/26 11:30:55;  author: emm;  state: Exp;  lines: +29 -28
+Can now be built.
+----------------------------
+revision 1.1
+date: 2001/12/17 18:03:25;  author: emm;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/12/17 18:03:25;  author: emm;  state: Exp;  lines: +0 -0
+Initial import.
+=============================================================================
+
+RCS file: /home/cvs/morphos/gadtools/checkboxclass.c,v
+Working file: checkboxclass.c
+head: 1.2
+branch:
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	morphos: 1.1.1
+keyword substitution: kv
+total revisions: 3;	selected revisions: 3
+description:
+----------------------------
+revision 1.2
+date: 2002/01/26 11:30:55;  author: emm;  state: Exp;  lines: +75 -74
+Can now be built.
+----------------------------
+revision 1.1
+date: 2001/12/17 18:03:24;  author: emm;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/12/17 18:03:24;  author: emm;  state: Exp;  lines: +0 -0
+Initial import.
+=============================================================================
+
+RCS file: /home/cvs/morphos/gadtools/createcontext.c,v
+Working file: createcontext.c
+head: 1.2
+branch:
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	morphos: 1.1.1
+keyword substitution: kv
+total revisions: 3;	selected revisions: 3
+description:
+----------------------------
+revision 1.2
+date: 2002/02/22 13:13:50;  author: emm;  state: Exp;  lines: +11 -7
+Fixed Triton resizing.
+----------------------------
+revision 1.1
+date: 2001/12/17 18:03:25;  author: emm;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/12/17 18:03:25;  author: emm;  state: Exp;  lines: +0 -0
+Initial import.
+=============================================================================
+
+RCS file: /home/cvs/morphos/gadtools/creategadgeta.c,v
+Working file: creategadgeta.c
+head: 1.4
+branch:
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	morphos: 1.1.1
+keyword substitution: kv
+total revisions: 5;	selected revisions: 5
+description:
+----------------------------
+revision 1.4
+date: 2002/04/09 15:22:13;  author: laire;  state: Exp;  lines: +12 -1
+This fixes an internal gadtools state problem but i have massive debug there
+because the listview notify problem isn't resolved yet.
+----------------------------
+revision 1.3
+date: 2002/02/22 13:13:50;  author: emm;  state: Exp;  lines: +15 -11
+Fixed Triton resizing.
+----------------------------
+revision 1.2
+date: 2002/01/26 11:30:55;  author: emm;  state: Exp;  lines: +29 -3
+Can now be built.
+----------------------------
+revision 1.1
+date: 2001/12/17 18:03:25;  author: emm;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/12/17 18:03:25;  author: emm;  state: Exp;  lines: +0 -0
+Initial import.
+=============================================================================
+
+RCS file: /home/cvs/morphos/gadtools/createmenusa.c,v
+Working file: createmenusa.c
+head: 1.5
+branch:
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	morphos: 1.1.1
+keyword substitution: kv
+total revisions: 6;	selected revisions: 6
+description:
+----------------------------
+revision 1.5
+date: 2002/04/07 17:02:25;  author: laire;  state: Exp;  lines: +2 -2
+changed the underline HIGHCOLOR mode into simple underline
+o the propscroller listview size calculationg bug is unresolved atm
+----------------------------
+revision 1.4
+date: 2002/04/06 15:52:24;  author: henes;  state: Exp;  lines: +8 -5
+fixed compilation
+----------------------------
+revision 1.3
+date: 2002/04/06 12:10:10;  author: laire;  state: Exp;  lines: +496 -5
+fixed menus(lupe problem gone and probably other nasty crashes)..we need to cleanup
+the source though.
+sort of fixed the arrow gadget size problem but this shows an error in the
+sysimage class with filer. The horizontal arrows with size 16*11 (real size 12*9)
+with the border only shows up as a horizontal line. Needs a closer look.
+----------------------------
+revision 1.2
+date: 2002/01/26 11:30:55;  author: emm;  state: Exp;  lines: +125 -126
+Can now be built.
+----------------------------
+revision 1.1
+date: 2001/12/17 18:03:26;  author: emm;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/12/17 18:03:26;  author: emm;  state: Exp;  lines: +0 -0
+Initial import.
+=============================================================================
+
+RCS file: /home/cvs/morphos/gadtools/cycleclass.c,v
+Working file: cycleclass.c
+head: 1.2
+branch:
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	morphos: 1.1.1
+keyword substitution: kv
+total revisions: 3;	selected revisions: 3
+description:
+----------------------------
+revision 1.2
+date: 2002/01/26 11:30:55;  author: emm;  state: Exp;  lines: +105 -104
+Can now be built.
+----------------------------
+revision 1.1
+date: 2001/12/17 18:03:25;  author: emm;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/12/17 18:03:25;  author: emm;  state: Exp;  lines: +0 -0
+Initial import.
+=============================================================================
+
+RCS file: /home/cvs/morphos/gadtools/drawbevelboxa.c,v
+Working file: drawbevelboxa.c
+head: 1.1
+branch: 1.1.1
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	morphos: 1.1.1
+keyword substitution: kv
+total revisions: 2;	selected revisions: 2
+description:
+----------------------------
+revision 1.1
+date: 2001/12/17 18:03:25;  author: emm;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/12/17 18:03:25;  author: emm;  state: Exp;  lines: +0 -0
+Initial import.
+=============================================================================
+
+RCS file: /home/cvs/morphos/gadtools/endtag.c,v
+Working file: endtag.c
+head: 1.1
+branch:
+locks: strict
+access list:
+symbolic names:
+keyword substitution: kv
+total revisions: 1;	selected revisions: 1
+description:
+----------------------------
+revision 1.1
+date: 2002/01/26 11:30:55;  author: emm;  state: Exp;
+Can now be built.
+=============================================================================
+
+RCS file: /home/cvs/morphos/gadtools/freegadgets.c,v
+Working file: freegadgets.c
+head: 1.2
+branch:
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	morphos: 1.1.1
+keyword substitution: kv
+total revisions: 3;	selected revisions: 3
+description:
+----------------------------
+revision 1.2
+date: 2002/02/22 13:13:50;  author: emm;  state: Exp;  lines: +27 -14
+Fixed Triton resizing.
+----------------------------
+revision 1.1
+date: 2001/12/17 18:03:26;  author: emm;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/12/17 18:03:26;  author: emm;  state: Exp;  lines: +0 -0
+Initial import.
+=============================================================================
+
+RCS file: /home/cvs/morphos/gadtools/freemenus.c,v
+Working file: freemenus.c
+head: 1.3
+branch:
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	morphos: 1.1.1
+keyword substitution: kv
+total revisions: 4;	selected revisions: 4
+description:
+----------------------------
+revision 1.3
+date: 2002/04/06 12:10:10;  author: laire;  state: Exp;  lines: +61 -2
+fixed menus(lupe problem gone and probably other nasty crashes)..we need to cleanup
+the source though.
+sort of fixed the arrow gadget size problem but this shows an error in the
+sysimage class with filer. The horizontal arrows with size 16*11 (real size 12*9)
+with the border only shows up as a horizontal line. Needs a closer look.
+----------------------------
+revision 1.2
+date: 2002/01/26 11:30:55;  author: emm;  state: Exp;  lines: +1 -2
+Can now be built.
+----------------------------
+revision 1.1
+date: 2001/12/17 18:03:26;  author: emm;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/12/17 18:03:26;  author: emm;  state: Exp;  lines: +0 -0
+Initial import.
+=============================================================================
+
+RCS file: /home/cvs/morphos/gadtools/freevisualinfo.c,v
+Working file: freevisualinfo.c
+head: 1.1
+branch: 1.1.1
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	morphos: 1.1.1
+keyword substitution: kv
+total revisions: 2;	selected revisions: 2
+description:
+----------------------------
+revision 1.1
+date: 2001/12/17 18:03:26;  author: emm;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/12/17 18:03:26;  author: emm;  state: Exp;  lines: +0 -0
+Initial import.
+=============================================================================
+
+RCS file: /home/cvs/morphos/gadtools/functable.c,v
+Working file: functable.c
+head: 1.1
+branch:
+locks: strict
+access list:
+symbolic names:
+keyword substitution: kv
+total revisions: 1;	selected revisions: 1
+description:
+----------------------------
+revision 1.1
+date: 2002/01/26 11:30:55;  author: emm;  state: Exp;
+Can now be built.
+=============================================================================
+
+RCS file: /home/cvs/morphos/gadtools/gadgets.c,v
+Working file: gadgets.c
+head: 1.6
+branch:
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	morphos: 1.1.1
+keyword substitution: kv
+total revisions: 7;	selected revisions: 7
+description:
+----------------------------
+revision 1.6
+date: 2002/04/09 15:22:13;  author: laire;  state: Exp;  lines: +66 -8
+This fixes an internal gadtools state problem but i have massive debug there
+because the listview notify problem isn't resolved yet.
+----------------------------
+revision 1.5
+date: 2002/04/08 13:42:21;  author: laire;  state: Exp;  lines: +23 -8
+o fixed the scroller listview update problem
+o fixed the initial selected listview problem
+----------------------------
+revision 1.4
+date: 2002/04/06 12:10:10;  author: laire;  state: Exp;  lines: +34 -16
+fixed menus(lupe problem gone and probably other nasty crashes)..we need to cleanup
+the source though.
+sort of fixed the arrow gadget size problem but this shows an error in the
+sysimage class with filer. The horizontal arrows with size 16*11 (real size 12*9)
+with the border only shows up as a horizontal line. Needs a closer look.
+----------------------------
+revision 1.3
+date: 2002/03/29 22:19:21;  author: emm;  state: Exp;  lines: +15 -5
+CreateGadgetA didn't return a pointer to the correct gadget for listviews, scrollers, and sliders.
+----------------------------
+revision 1.2
+date: 2002/02/22 13:13:50;  author: emm;  state: Exp;  lines: +8 -6
+Fixed Triton resizing.
+----------------------------
+revision 1.1
+date: 2001/12/17 18:03:28;  author: emm;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/12/17 18:03:28;  author: emm;  state: Exp;  lines: +0 -0
+Initial import.
+=============================================================================
+
+RCS file: /home/cvs/morphos/gadtools/gadtools_init.c,v
+Working file: gadtools_init.c
+head: 1.1
+branch: 1.1.1
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	morphos: 1.1.1
+keyword substitution: kv
+total revisions: 2;	selected revisions: 2
+description:
+----------------------------
+revision 1.1
+date: 2001/12/17 18:03:28;  author: emm;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/12/17 18:03:28;  author: emm;  state: Exp;  lines: +0 -0
+Initial import.
+=============================================================================
+
+RCS file: /home/cvs/morphos/gadtools/gadtools_intern.h,v
+Working file: gadtools_intern.h
+head: 1.6
+branch:
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	morphos: 1.1.1
+keyword substitution: kv
+total revisions: 7;	selected revisions: 7
+description:
+----------------------------
+revision 1.6
+date: 2002/04/08 13:42:22;  author: laire;  state: Exp;  lines: +2 -2
+o fixed the scroller listview update problem
+o fixed the initial selected listview problem
+----------------------------
+revision 1.5
+date: 2002/04/07 17:02:25;  author: laire;  state: Exp;  lines: +3 -3
+changed the underline HIGHCOLOR mode into simple underline
+o the propscroller listview size calculationg bug is unresolved atm
+----------------------------
+revision 1.4
+date: 2002/04/06 12:10:10;  author: laire;  state: Exp;  lines: +37 -4
+fixed menus(lupe problem gone and probably other nasty crashes)..we need to cleanup
+the source though.
+sort of fixed the arrow gadget size problem but this shows an error in the
+sysimage class with filer. The horizontal arrows with size 16*11 (real size 12*9)
+with the border only shows up as a horizontal line. Needs a closer look.
+----------------------------
+revision 1.3
+date: 2002/02/22 13:13:50;  author: emm;  state: Exp;  lines: +3 -1
+Fixed Triton resizing.
+----------------------------
+revision 1.2
+date: 2002/01/26 11:30:55;  author: emm;  state: Exp;  lines: +168 -104
+Can now be built.
+----------------------------
+revision 1.1
+date: 2001/12/17 18:03:28;  author: emm;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/12/17 18:03:28;  author: emm;  state: Exp;  lines: +0 -0
+Initial import.
+=============================================================================
+
+RCS file: /home/cvs/morphos/gadtools/gadtools_todo.txt,v
+Working file: gadtools_todo.txt
+head: 1.4
+branch:
+locks: strict
+access list:
+symbolic names:
+keyword substitution: kv
+total revisions: 4;	selected revisions: 4
+description:
+----------------------------
+revision 1.4
+date: 2002/04/09 15:22:13;  author: laire;  state: Exp;  lines: +4 -0
+This fixes an internal gadtools state problem but i have massive debug there
+because the listview notify problem isn't resolved yet.
+----------------------------
+revision 1.3
+date: 2002/04/08 13:42:22;  author: laire;  state: Exp;  lines: +0 -22
+o fixed the scroller listview update problem
+o fixed the initial selected listview problem
+----------------------------
+revision 1.2
+date: 2002/04/06 12:10:10;  author: laire;  state: Exp;  lines: +20 -0
+fixed menus(lupe problem gone and probably other nasty crashes)..we need to cleanup
+the source though.
+sort of fixed the arrow gadget size problem but this shows an error in the
+sysimage class with filer. The horizontal arrows with size 16*11 (real size 12*9)
+with the border only shows up as a horizontal line. Needs a closer look.
+----------------------------
+revision 1.1
+date: 2002/04/04 00:06:04;  author: cyfm;  state: Exp;
+
+started on a todo list
+=============================================================================
+
+RCS file: /home/cvs/morphos/gadtools/getvisualinfoa.c,v
+Working file: getvisualinfoa.c
+head: 1.1
+branch: 1.1.1
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	morphos: 1.1.1
+keyword substitution: kv
+total revisions: 2;	selected revisions: 2
+description:
+----------------------------
+revision 1.1
+date: 2001/12/17 18:03:28;  author: emm;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/12/17 18:03:28;  author: emm;  state: Exp;  lines: +0 -0
+Initial import.
+=============================================================================
+
+RCS file: /home/cvs/morphos/gadtools/gt_beginrefresh.c,v
+Working file: gt_beginrefresh.c
+head: 1.1
+branch: 1.1.1
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	morphos: 1.1.1
+keyword substitution: kv
+total revisions: 2;	selected revisions: 2
+description:
+----------------------------
+revision 1.1
+date: 2001/12/17 18:03:28;  author: emm;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/12/17 18:03:28;  author: emm;  state: Exp;  lines: +0 -0
+Initial import.
+=============================================================================
+
+RCS file: /home/cvs/morphos/gadtools/gt_endrefresh.c,v
+Working file: gt_endrefresh.c
+head: 1.1
+branch: 1.1.1
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	morphos: 1.1.1
+keyword substitution: kv
+total revisions: 2;	selected revisions: 2
+description:
+----------------------------
+revision 1.1
+date: 2001/12/17 18:03:28;  author: emm;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/12/17 18:03:28;  author: emm;  state: Exp;  lines: +0 -0
+Initial import.
+=============================================================================
+
+RCS file: /home/cvs/morphos/gadtools/gt_filterimsg.c,v
+Working file: gt_filterimsg.c
+head: 1.2
+branch:
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	morphos: 1.1.1
+keyword substitution: kv
+total revisions: 3;	selected revisions: 3
+description:
+----------------------------
+revision 1.2
+date: 2002/04/09 15:22:13;  author: laire;  state: Exp;  lines: +37 -1
+This fixes an internal gadtools state problem but i have massive debug there
+because the listview notify problem isn't resolved yet.
+----------------------------
+revision 1.1
+date: 2001/12/17 18:03:28;  author: emm;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/12/17 18:03:28;  author: emm;  state: Exp;  lines: +0 -0
+Initial import.
+=============================================================================
+
+RCS file: /home/cvs/morphos/gadtools/gt_getgadgetattrsa.c,v
+Working file: gt_getgadgetattrsa.c
+head: 1.1
+branch: 1.1.1
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	morphos: 1.1.1
+keyword substitution: kv
+total revisions: 2;	selected revisions: 2
+description:
+----------------------------
+revision 1.1
+date: 2001/12/17 18:03:29;  author: emm;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/12/17 18:03:29;  author: emm;  state: Exp;  lines: +0 -0
+Initial import.
+=============================================================================
+
+RCS file: /home/cvs/morphos/gadtools/gt_getimsg.c,v
+Working file: gt_getimsg.c
+head: 1.1
+branch: 1.1.1
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	morphos: 1.1.1
+keyword substitution: kv
+total revisions: 2;	selected revisions: 2
+description:
+----------------------------
+revision 1.1
+date: 2001/12/17 18:03:29;  author: emm;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/12/17 18:03:29;  author: emm;  state: Exp;  lines: +0 -0
+Initial import.
+=============================================================================
+
+RCS file: /home/cvs/morphos/gadtools/gt_postfilterimsg.c,v
+Working file: gt_postfilterimsg.c
+head: 1.1
+branch: 1.1.1
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	morphos: 1.1.1
+keyword substitution: kv
+total revisions: 2;	selected revisions: 2
+description:
+----------------------------
+revision 1.1
+date: 2001/12/17 18:03:29;  author: emm;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/12/17 18:03:29;  author: emm;  state: Exp;  lines: +0 -0
+Initial import.
+=============================================================================
+
+RCS file: /home/cvs/morphos/gadtools/gt_refreshwindow.c,v
+Working file: gt_refreshwindow.c
+head: 1.2
+branch:
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	morphos: 1.1.1
+keyword substitution: kv
+total revisions: 3;	selected revisions: 3
+description:
+----------------------------
+revision 1.2
+date: 2002/01/26 11:30:56;  author: emm;  state: Exp;  lines: +6 -5
+Can now be built.
+----------------------------
+revision 1.1
+date: 2001/12/17 18:03:26;  author: emm;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/12/17 18:03:26;  author: emm;  state: Exp;  lines: +0 -0
+Initial import.
+=============================================================================
+
+RCS file: /home/cvs/morphos/gadtools/gt_replyimsg.c,v
+Working file: gt_replyimsg.c
+head: 1.2
+branch:
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	morphos: 1.1.1
+keyword substitution: kv
+total revisions: 3;	selected revisions: 3
+description:
+----------------------------
+revision 1.2
+date: 2002/01/24 18:49:34;  author: emm;  state: Exp;  lines: +5 -4
+Fixed a ReplyMsg(NULL) problem.
+----------------------------
+revision 1.1
+date: 2001/12/17 18:03:26;  author: emm;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/12/17 18:03:26;  author: emm;  state: Exp;  lines: +0 -0
+Initial import.
+=============================================================================
+
+RCS file: /home/cvs/morphos/gadtools/gt_setgadgetattrsa.c,v
+Working file: gt_setgadgetattrsa.c
+head: 1.1
+branch: 1.1.1
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	morphos: 1.1.1
+keyword substitution: kv
+total revisions: 2;	selected revisions: 2
+description:
+----------------------------
+revision 1.1
+date: 2001/12/17 18:03:26;  author: emm;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/12/17 18:03:26;  author: emm;  state: Exp;  lines: +0 -0
+Initial import.
+=============================================================================
+
+RCS file: /home/cvs/morphos/gadtools/headers.tmpl,v
+Working file: headers.tmpl
+head: 1.1
+branch: 1.1.1
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	morphos: 1.1.1
+keyword substitution: kv
+total revisions: 2;	selected revisions: 2
+description:
+----------------------------
+revision 1.1
+date: 2001/12/17 18:03:24;  author: emm;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/12/17 18:03:24;  author: emm;  state: Exp;  lines: +0 -0
+Initial import.
+=============================================================================
+
+RCS file: /home/cvs/morphos/gadtools/layoutmenuitemsa.c,v
+Working file: layoutmenuitemsa.c
+head: 1.1
+branch: 1.1.1
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	morphos: 1.1.1
+keyword substitution: kv
+total revisions: 2;	selected revisions: 2
+description:
+----------------------------
+revision 1.1
+date: 2001/12/17 18:03:26;  author: emm;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/12/17 18:03:26;  author: emm;  state: Exp;  lines: +0 -0
+Initial import.
+=============================================================================
+
+RCS file: /home/cvs/morphos/gadtools/layoutmenusa.c,v
+Working file: layoutmenusa.c
+head: 1.1
+branch: 1.1.1
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	morphos: 1.1.1
+keyword substitution: kv
+total revisions: 2;	selected revisions: 2
+description:
+----------------------------
+revision 1.1
+date: 2001/12/17 18:03:26;  author: emm;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/12/17 18:03:26;  author: emm;  state: Exp;  lines: +0 -0
+Initial import.
+=============================================================================
+
+RCS file: /home/cvs/morphos/gadtools/lib.conf,v
+Working file: lib.conf
+head: 1.1
+branch: 1.1.1
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	morphos: 1.1.1
+keyword substitution: kv
+total revisions: 2;	selected revisions: 2
+description:
+----------------------------
+revision 1.1
+date: 2001/12/17 18:03:25;  author: emm;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/12/17 18:03:25;  author: emm;  state: Exp;  lines: +0 -0
+Initial import.
+=============================================================================
+
+RCS file: /home/cvs/morphos/gadtools/libdefs.h,v
+Working file: libdefs.h
+head: 1.1
+branch:
+locks: strict
+access list:
+symbolic names:
+keyword substitution: kv
+total revisions: 1;	selected revisions: 1
+description:
+----------------------------
+revision 1.1
+date: 2002/01/26 15:32:28;  author: emm;  state: Exp;
+Added missing libdefs.h.
+=============================================================================
+
+RCS file: /home/cvs/morphos/gadtools/listviewclass.c,v
+Working file: listviewclass.c
+head: 1.4
+branch:
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	morphos: 1.1.1
+keyword substitution: kv
+total revisions: 5;	selected revisions: 5
+description:
+----------------------------
+revision 1.4
+date: 2002/04/09 15:22:13;  author: laire;  state: Exp;  lines: +4 -2
+This fixes an internal gadtools state problem but i have massive debug there
+because the listview notify problem isn't resolved yet.
+----------------------------
+revision 1.3
+date: 2002/04/08 13:42:22;  author: laire;  state: Exp;  lines: +92 -25
+o fixed the scroller listview update problem
+o fixed the initial selected listview problem
+----------------------------
+revision 1.2
+date: 2002/01/26 11:30:56;  author: emm;  state: Exp;  lines: +243 -242
+Can now be built.
+----------------------------
+revision 1.1
+date: 2001/12/17 18:03:27;  author: emm;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/12/17 18:03:27;  author: emm;  state: Exp;  lines: +0 -0
+Initial import.
+=============================================================================
+
+RCS file: /home/cvs/morphos/gadtools/menus.c,v
+Working file: menus.c
+head: 1.3
+branch:
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	morphos: 1.1.1
+keyword substitution: kv
+total revisions: 4;	selected revisions: 4
+description:
+----------------------------
+revision 1.3
+date: 2002/04/07 17:02:25;  author: laire;  state: Exp;  lines: +3 -3
+changed the underline HIGHCOLOR mode into simple underline
+o the propscroller listview size calculationg bug is unresolved atm
+----------------------------
+revision 1.2
+date: 2002/04/06 12:10:10;  author: laire;  state: Exp;  lines: +245 -6
+fixed menus(lupe problem gone and probably other nasty crashes)..we need to cleanup
+the source though.
+sort of fixed the arrow gadget size problem but this shows an error in the
+sysimage class with filer. The horizontal arrows with size 16*11 (real size 12*9)
+with the border only shows up as a horizontal line. Needs a closer look.
+----------------------------
+revision 1.1
+date: 2001/12/17 18:03:27;  author: emm;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/12/17 18:03:27;  author: emm;  state: Exp;  lines: +0 -0
+Initial import.
+=============================================================================
+
+RCS file: /home/cvs/morphos/gadtools/mmakefile.src,v
+Working file: mmakefile.src
+head: 1.1
+branch: 1.1.1
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	morphos: 1.1.1
+keyword substitution: kv
+total revisions: 2;	selected revisions: 2
+description:
+----------------------------
+revision 1.1
+date: 2001/12/17 18:03:25;  author: emm;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/12/17 18:03:25;  author: emm;  state: Exp;  lines: +0 -0
+Initial import.
+=============================================================================
+
+RCS file: /home/cvs/morphos/gadtools/mxclass.c,v
+Working file: mxclass.c
+head: 1.2
+branch:
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	morphos: 1.1.1
+keyword substitution: kv
+total revisions: 3;	selected revisions: 3
+description:
+----------------------------
+revision 1.2
+date: 2002/01/26 11:30:56;  author: emm;  state: Exp;  lines: +110 -109
+Can now be built.
+----------------------------
+revision 1.1
+date: 2001/12/17 18:03:26;  author: emm;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/12/17 18:03:26;  author: emm;  state: Exp;  lines: +0 -0
+Initial import.
+=============================================================================
+
+RCS file: /home/cvs/morphos/gadtools/paletteclass.c,v
+Working file: paletteclass.c
+head: 1.2
+branch:
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	morphos: 1.1.1
+keyword substitution: kv
+total revisions: 3;	selected revisions: 3
+description:
+----------------------------
+revision 1.2
+date: 2002/01/26 11:30:56;  author: emm;  state: Exp;  lines: +326 -325
+Can now be built.
+----------------------------
+revision 1.1
+date: 2001/12/17 18:03:25;  author: emm;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/12/17 18:03:25;  author: emm;  state: Exp;  lines: +0 -0
+Initial import.
+=============================================================================
+
+RCS file: /home/cvs/morphos/gadtools/scrollerclass.c,v
+Working file: scrollerclass.c
+head: 1.4
+branch:
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	morphos: 1.1.1
+keyword substitution: kv
+total revisions: 5;	selected revisions: 5
+description:
+----------------------------
+revision 1.4
+date: 2002/04/09 15:22:13;  author: laire;  state: Exp;  lines: +3 -2
+This fixes an internal gadtools state problem but i have massive debug there
+because the listview notify problem isn't resolved yet.
+----------------------------
+revision 1.3
+date: 2002/04/08 13:42:22;  author: laire;  state: Exp;  lines: +22 -3
+o fixed the scroller listview update problem
+o fixed the initial selected listview problem
+----------------------------
+revision 1.2
+date: 2002/01/26 11:30:56;  author: emm;  state: Exp;  lines: +83 -82
+Can now be built.
+----------------------------
+revision 1.1
+date: 2001/12/17 18:03:26;  author: emm;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/12/17 18:03:26;  author: emm;  state: Exp;  lines: +0 -0
+Initial import.
+=============================================================================
+
+RCS file: /home/cvs/morphos/gadtools/sliderclass.c,v
+Working file: sliderclass.c
+head: 1.2
+branch:
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	morphos: 1.1.1
+keyword substitution: kv
+total revisions: 3;	selected revisions: 3
+description:
+----------------------------
+revision 1.2
+date: 2002/01/26 11:30:56;  author: emm;  state: Exp;  lines: +67 -66
+Can now be built.
+----------------------------
+revision 1.1
+date: 2001/12/17 18:03:26;  author: emm;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/12/17 18:03:26;  author: emm;  state: Exp;  lines: +0 -0
+Initial import.
+=============================================================================
+
+RCS file: /home/cvs/morphos/gadtools/stringclass.c,v
+Working file: stringclass.c
+head: 1.2
+branch:
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	morphos: 1.1.1
+keyword substitution: kv
+total revisions: 3;	selected revisions: 3
+description:
+----------------------------
+revision 1.2
+date: 2002/01/26 11:30:56;  author: emm;  state: Exp;  lines: +121 -120
+Can now be built.
+----------------------------
+revision 1.1
+date: 2001/12/17 18:03:26;  author: emm;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/12/17 18:03:26;  author: emm;  state: Exp;  lines: +0 -0
+Initial import.
+=============================================================================
+
+RCS file: /home/cvs/morphos/gadtools/textclass.c,v
+Working file: textclass.c
+head: 1.2
+branch:
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	morphos: 1.1.1
+keyword substitution: kv
+total revisions: 3;	selected revisions: 3
+description:
+----------------------------
+revision 1.2
+date: 2002/01/26 11:30:56;  author: emm;  state: Exp;  lines: +169 -168
+Can now be built.
+----------------------------
+revision 1.1
+date: 2001/12/17 18:03:28;  author: emm;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/12/17 18:03:28;  author: emm;  state: Exp;  lines: +0 -0
+Initial import.
+=============================================================================
+
+RCS file: /home/cvs/morphos/gadtools/aros/amiga.h,v
+Working file: aros/amiga.h
+head: 1.1
+branch:
+locks: strict
+access list:
+symbolic names:
+keyword substitution: kv
+total revisions: 1;	selected revisions: 1
+description:
+----------------------------
+revision 1.1
+date: 2002/01/26 11:30:56;  author: emm;  state: Exp;
+Can now be built.
+=============================================================================
+
+RCS file: /home/cvs/morphos/gadtools/aros/asmcall.h,v
+Working file: aros/asmcall.h
+head: 1.1
+branch:
+locks: strict
+access list:
+symbolic names:
+keyword substitution: kv
+total revisions: 1;	selected revisions: 1
+description:
+----------------------------
+revision 1.1
+date: 2002/01/26 11:30:56;  author: emm;  state: Exp;
+Can now be built.
+=============================================================================
+
+RCS file: /home/cvs/morphos/gadtools/aros/config.h,v
+Working file: aros/config.h
+head: 1.1
+branch:
+locks: strict
+access list:
+symbolic names:
+keyword substitution: kv
+total revisions: 1;	selected revisions: 1
+description:
+----------------------------
+revision 1.1
+date: 2002/01/26 11:30:56;  author: emm;  state: Exp;
+Can now be built.
+=============================================================================
+
+RCS file: /home/cvs/morphos/gadtools/aros/debug.h,v
+Working file: aros/debug.h
+head: 1.1
+branch:
+locks: strict
+access list:
+symbolic names:
+keyword substitution: kv
+total revisions: 1;	selected revisions: 1
+description:
+----------------------------
+revision 1.1
+date: 2002/01/26 11:30:56;  author: emm;  state: Exp;
+Can now be built.
+=============================================================================
+
+RCS file: /home/cvs/morphos/gadtools/aros/libcall.h,v
+Working file: aros/libcall.h
+head: 1.1
+branch:
+locks: strict
+access list:
+symbolic names:
+keyword substitution: kv
+total revisions: 1;	selected revisions: 1
+description:
+----------------------------
+revision 1.1
+date: 2002/01/26 11:30:56;  author: emm;  state: Exp;
+Can now be built.
+=============================================================================
+
+RCS file: /home/cvs/morphos/gadtools/aros/machine.h,v
+Working file: aros/machine.h
+head: 1.1
+branch:
+locks: strict
+access list:
+symbolic names:
+keyword substitution: kv
+total revisions: 1;	selected revisions: 1
+description:
+----------------------------
+revision 1.1
+date: 2002/01/26 11:30:56;  author: emm;  state: Exp;
+Can now be built.
+=============================================================================
+
+RCS file: /home/cvs/morphos/gadtools/aros/macros.h,v
+Working file: aros/macros.h
+head: 1.1
+branch:
+locks: strict
+access list:
+symbolic names:
+keyword substitution: kv
+total revisions: 1;	selected revisions: 1
+description:
+----------------------------
+revision 1.1
+date: 2002/01/26 11:30:56;  author: emm;  state: Exp;
+Can now be built.
+=============================================================================
+
+RCS file: /home/cvs/morphos/gadtools/aros/options.h,v
+Working file: aros/options.h
+head: 1.1
+branch:
+locks: strict
+access list:
+symbolic names:
+keyword substitution: kv
+total revisions: 1;	selected revisions: 1
+description:
+----------------------------
+revision 1.1
+date: 2002/01/26 11:30:56;  author: emm;  state: Exp;
+Can now be built.
+=============================================================================
+
+RCS file: /home/cvs/morphos/gadtools/aros/system.h,v
+Working file: aros/system.h
+head: 1.1
+branch:
+locks: strict
+access list:
+symbolic names:
+keyword substitution: kv
+total revisions: 1;	selected revisions: 1
+description:
+----------------------------
+revision 1.1
+date: 2002/01/26 11:30:56;  author: emm;  state: Exp;
+Can now be built.
+=============================================================================
+
+RCS file: /home/cvs/morphos/gadtools/exec/lists.h,v
+Working file: exec/lists.h
+head: 1.1
+branch:
+locks: strict
+access list:
+symbolic names:
+keyword substitution: kv
+total revisions: 1;	selected revisions: 1
+description:
+----------------------------
+revision 1.1
+date: 2002/01/26 11:30:56;  author: emm;  state: Exp;
+Can now be built.
+=============================================================================
+
+RCS file: /home/cvs/morphos/gadtools/exec/types.h,v
+Working file: exec/types.h
+head: 1.1
+branch:
+locks: strict
+access list:
+symbolic names:
+keyword substitution: kv
+total revisions: 1;	selected revisions: 1
+description:
+----------------------------
+revision 1.1
+date: 2002/01/26 11:30:56;  author: emm;  state: Exp;
+Can now be built.
+=============================================================================
+
+RCS file: /home/cvs/morphos/gadtools/gadgets/aroscheckbox.h,v
+Working file: gadgets/aroscheckbox.h
+head: 1.1
+branch:
+locks: strict
+access list:
+symbolic names:
+keyword substitution: kv
+total revisions: 1;	selected revisions: 1
+description:
+----------------------------
+revision 1.1
+date: 2002/01/26 11:30:57;  author: emm;  state: Exp;
+Can now be built.
+=============================================================================
+
+RCS file: /home/cvs/morphos/gadtools/gadgets/aroscycle.h,v
+Working file: gadgets/aroscycle.h
+head: 1.1
+branch:
+locks: strict
+access list:
+symbolic names:
+keyword substitution: kv
+total revisions: 1;	selected revisions: 1
+description:
+----------------------------
+revision 1.1
+date: 2002/01/26 11:30:57;  author: emm;  state: Exp;
+Can now be built.
+=============================================================================
+
+RCS file: /home/cvs/morphos/gadtools/gadgets/aroslist.h,v
+Working file: gadgets/aroslist.h
+head: 1.1
+branch:
+locks: strict
+access list:
+symbolic names:
+keyword substitution: kv
+total revisions: 1;	selected revisions: 1
+description:
+----------------------------
+revision 1.1
+date: 2002/01/26 11:30:57;  author: emm;  state: Exp;
+Can now be built.
+=============================================================================
+
+RCS file: /home/cvs/morphos/gadtools/gadgets/aroslistview.h,v
+Working file: gadgets/aroslistview.h
+head: 1.1
+branch:
+locks: strict
+access list:
+symbolic names:
+keyword substitution: kv
+total revisions: 1;	selected revisions: 1
+description:
+----------------------------
+revision 1.1
+date: 2002/01/26 11:30:57;  author: emm;  state: Exp;
+Can now be built.
+=============================================================================
+
+RCS file: /home/cvs/morphos/gadtools/gadgets/arosmx.h,v
+Working file: gadgets/arosmx.h
+head: 1.1
+branch:
+locks: strict
+access list:
+symbolic names:
+keyword substitution: kv
+total revisions: 1;	selected revisions: 1
+description:
+----------------------------
+revision 1.1
+date: 2002/01/26 11:30:57;  author: emm;  state: Exp;
+Can now be built.
+=============================================================================
+
+RCS file: /home/cvs/morphos/gadtools/gadgets/arospalette.h,v
+Working file: gadgets/arospalette.h
+head: 1.1
+branch:
+locks: strict
+access list:
+symbolic names:
+keyword substitution: kv
+total revisions: 1;	selected revisions: 1
+description:
+----------------------------
+revision 1.1
+date: 2002/01/26 11:30:57;  author: emm;  state: Exp;
+Can now be built.
+=============================================================================
+
+RCS file: /home/cvs/morphos/gadtools/gadgets/colorwheel.h,v
+Working file: gadgets/colorwheel.h
+head: 1.1
+branch:
+locks: strict
+access list:
+symbolic names:
+keyword substitution: kv
+total revisions: 1;	selected revisions: 1
+description:
+----------------------------
+revision 1.1
+date: 2002/01/26 11:30:57;  author: emm;  state: Exp;
+Can now be built.
+=============================================================================
+
+RCS file: /home/cvs/morphos/gadtools/gadgets/gradientslider.h,v
+Working file: gadgets/gradientslider.h
+head: 1.1
+branch:
+locks: strict
+access list:
+symbolic names:
+keyword substitution: kv
+total revisions: 1;	selected revisions: 1
+description:
+----------------------------
+revision 1.1
+date: 2002/01/26 11:30:57;  author: emm;  state: Exp;
+Can now be built.
+=============================================================================
+
+RCS file: /home/cvs/morphos/gadtools/proto/alib.h,v
+Working file: proto/alib.h
+head: 1.1
+branch:
+locks: strict
+access list:
+symbolic names:
+keyword substitution: kv
+total revisions: 1;	selected revisions: 1
+description:
+----------------------------
+revision 1.1
+date: 2002/01/30 13:26:15;  author: emm;  state: Exp;
+Added missing proto/alib.h.
+=============================================================================

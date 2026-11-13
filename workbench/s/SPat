@@ -1,0 +1,20 @@
+.key COM/A,PAT/A,OPT1,OPT2,OPT3,OPT4
+.bra {
+.ket }
+
+; Wildcards for commands with no wildcard support
+; Only the first argument can be a wildcard
+
+FailAt 21
+
+List TO T:q{$$} {PAT} LFORMAT "{COM} *"%s%s*" {OPT1} {OPT2} {OPT3} {OPT4}"
+
+IF NOT FAIL
+    Execute T:q{$$}
+Else
+    Echo "{PAT} not found"
+EndIF
+
+Delete T:q{$$} QUIET >NIL:
+
+FailAt 10

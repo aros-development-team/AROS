@@ -1,0 +1,28 @@
+# Copyright (C) 2004-2023, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM- workbench : iconset-$(AROS_TARGET_ICONSET)-wbench-icons
+#MM- workbench-complete : iconset-$(AROS_TARGET_ICONSET)-wbench-icons iconset-$(AROS_TARGET_ICONSET)-additional-icons
+
+#MM- workbench-prefs-presets-icons : \
+#MM         icon-images \
+#MM         icons-developer \
+#MM         icons-developer-debug \
+#MM         icons-developer-debug-hardware \
+#MM         icons-wbench \
+#MM         icons-wbench-devs \
+#MM         icons-wbench-devs-dosdrivers \
+#MM         icons-wbench-devs-monitors \
+#MM         icons-wbench-locale \
+#MM         icons-wbench-locale-help \
+#MM         icons-wbench-prefs \
+#MM         icons-wbench-prefs-envarc \
+#MM         icons-wbench-prefs-envarc-appicon \
+#MM         icons-wbench-prefs-presets \
+#MM         icons-wbench-storage \
+#MM         icons-wbench-storage-dosdrivers \
+#MM         icons-wbench-system \
+#MM         icons-wbench-tools \
+#MM         icons-wbench-tools-commodities \
+#MM         icons-wbench-utilities

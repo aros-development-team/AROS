@@ -1,0 +1,10 @@
+# DataType Description for TIFF
+Name=TIFF
+Version=$VER: TIFF 50.1 (03.06.2025)
+BaseName=tiff
+Pattern=#?.(tif|tiff)
+Mask=
+GroupID=pict
+ID=_tiff
+Flags=DTF_BINARY,DTF_CASE
+Priority=0

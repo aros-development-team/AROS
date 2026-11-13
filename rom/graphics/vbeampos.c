@@ -1,0 +1,54 @@
+/*
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
+
+    Desc: Read the current vertical position of the beam
+*/
+#include <aros/debug.h>
+#include "graphics_intern.h"
+
+/*****************************************************************************
+
+    NAME */
+        #include <clib/graphics_protos.h>
+
+        AROS_LH0(LONG, VBeamPos,
+
+/*  SYNOPSIS */
+        /* void */
+
+/*  LOCATION */
+        struct GfxBase *, GfxBase, 64, Graphics)
+
+/*  FUNCTION
+
+    INPUTS
+        none
+
+    RESULT
+        None.
+
+    NOTES
+        This function isn't implemented on all platforms.
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+    HISTORY
+
+*****************************************************************************/
+{
+    AROS_LIBFUNC_INIT
+
+
+    /* TODO: Write graphics/VBeamPos() */
+    aros_print_not_implemented("VBeamPos");
+
+    return 10;
+
+    AROS_LIBFUNC_EXIT
+} /* VBeamPos */

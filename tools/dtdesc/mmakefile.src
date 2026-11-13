@@ -1,0 +1,17 @@
+include $(SRCDIR)/config/aros.cfg
+
+#MM- contrib-development : tools-dtdesc
+#MM tools-dtdesc : includes linklibs
+
+FILES  := createdtdesc examinedtdesc
+EXEDIR := $(AROS_CONTRIB)/$(AROS_DIR_DEVELOPER)/Build
+USER_CFLAGS :=
+
+%build_progs mmake=tools-dtdesc \
+    files=$(FILES) \
+    targetdir=$(EXEDIR) uselibs="c_iff"
+
+FILES := FORMAT
+%copy_files_q mmake=tools-dtdesc dst=$(EXEDIR)/Docs
+
+%common

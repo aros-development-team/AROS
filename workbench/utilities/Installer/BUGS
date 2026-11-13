@@ -1,0 +1,20 @@
+BUG00001 fixed
+fseek() has a bug -- check in future
+As long as this isn't fixed everything has to be separated by whitespaces!
+
+BUG00002
+Strings are limited to MAXARGSIZE which is 1024 ATM or if concatenated
+(with <MAXARGSIZE sub-strings) up to 256k.
+
+BUG00003
+abort in abort causes some problems. Is this allowed, btw?
+Anyway: an aborted askbool with trap->askbool hangs the system
+(circular dependancy in gadgets)
+
+BUG00005
+FileRequester crashes AROS when in expert mode.  Does not happen if any
+program has successfully opened a FileRequester before.
+
+BUG00006 fixed
+GUI of askchoice crashes.
+

@@ -1,0 +1,174 @@
+/*
+    Copyright (C) 2026, The AROS Development Team. All rights reserved.
+
+    Desc: AUX: handler. Hands the startup packet to con-handler with a
+          serial device underneath it instead of console.device.
+*/
+
+/*
+  This implementation lifts con-handler, which can already drive any device
+  that answers CMD_READ and CMD_WRITE.
+
+  Line-oriented I/O, ACTION_WAIT_CHAR, ^C..^F handling and line editing are
+  performed by con-handler.
+
+  The handover is:
+    - Find con-handler via FindSegment()
+    - Point the startup packet at a FileSysStartupMsg naming the device
+    - Set dp_Arg4 to say that dp_Arg2 names a device
+    - Post the packet back to our own port
+    - Call con-handler's entry point
+    - Then con-handler starts up in this same process and picks up the
+      packet as if it had been mounted directly.
+*/
+
+#include <exec/types.h>
+#include <exec/execbase.h>
+#include <dos/dos.h>
+#include <dos/dosextens.h>
+#include <dos/filehandler.h>
+
+#include <aros/asmcall.h>
+
+#include <proto/exec.h>
+#include <proto/dos.h>
+
+#define DEFAULT_DEVICE          "serial.device"
+
+/*
+ * con-handler registers itself under this name, so it can be found without
+ * knowing where it was loaded from.
+ */
+#define CON_HANDLER_NAME        "con-handler"
+
+struct auxStartup
+{
+    struct FileSysStartupMsg fssm;
+    UBYTE                    device[AROS_BSTR_MEMSIZE4LEN(sizeof(DEFAULT_DEVICE))];
+};
+
+static void buildDefaultStartup(struct auxStartup *startup,
+                                struct ExecBase *SysBase)
+{
+    BSTR device = MKBADDR(startup->device);
+
+    /* A BSTR is a plain C string on AROS_FAST_BSTR targets, so build it
+       with the macros rather than a length byte. */
+    CopyMem(DEFAULT_DEVICE, AROS_BSTR_ADDR(device), sizeof(DEFAULT_DEVICE) - 1);
+    AROS_BSTR_setstrlen(device, sizeof(DEFAULT_DEVICE) - 1);
+
+    startup->fssm.fssm_Unit    = 0;
+    startup->fssm.fssm_Device  = device;
+    startup->fssm.fssm_Environ = (BPTR)0;
+    startup->fssm.fssm_Flags   = 0;
+}
+
+/*
+ * Failure codes. A handler that swallows its startup packet without replying
+ * wedges whoever opened it, so every path out of here has to reply, and saying
+ * which step failed costs nothing. They are deliberately outside the range
+ * dos.library knows, so Fault() prints the number rather than a wrong message.
+ */
+#define AUXERR_NO_DOS           2901    /* dos.library would not open */
+#define AUXERR_NO_CON           2902    /* con-handler is not in the segment list */
+#define AUXERR_CON_NOT_SYSTEM   2903    /* found, but not a resident segment */
+
+LONG aux_handler(struct ExecBase *SysBase)
+{
+    struct DosLibrary *DOSBase;
+    struct Process *me = (struct Process *)FindTask(NULL);
+    struct MsgPort *mp = &me->pr_MsgPort;
+    struct Message *mn;
+    struct DosPacket *dp;
+    LONG err = AUXERR_NO_DOS;
+
+    /*
+     * con-handler is called rather than jumped to, so this frame stays live
+     * underneath it for as long as the handler runs. That is what lets the
+     * startup it is handed live on the stack.
+     */
+    struct auxStartup startup;
+
+    WaitPort(mp);
+    mn = GetMsg(mp);
+    dp = (struct DosPacket *)mn->mn_Node.ln_Name;
+
+    Forbid();
+
+    if ((DOSBase = (struct DosLibrary *)OpenLibrary("dos.library", 36)))
+    {
+        struct Segment *seg = FindSegment(CON_HANDLER_NAME, NULL, CMD_SYSTEM);
+
+        err = seg ? AUXERR_CON_NOT_SYSTEM : AUXERR_NO_CON;
+
+        /* Only a resident con-handler will do: a loaded one would be
+           unloaded out from under us when its user count drops. */
+        if (seg && seg->seg_UC == CMD_SYSTEM)
+        {
+            struct FileSysStartupMsg *fssm;
+            LONG_FUNC conentry;
+
+            /* A seglist begins with the BPTR to the next segment, which
+               is pointer sized - stepping over it as a ULONG lands four
+               bytes short of the code on a 64 bit target. */
+            conentry = (LONG_FUNC)((BPTR *)BADDR(seg->seg_Seg) + 1);
+
+            /*
+             * The mountlist may have supplied a startup naming any device and
+             * unit, in which case it is used untouched. TypeOfMem() is how to
+             * tell a real pointer from the small integers the built-in
+             * mountlists use as a startup.
+             */
+            fssm = (struct FileSysStartupMsg *)BADDR(dp->dp_Arg2);
+
+            if (!TypeOfMem(fssm))
+            {
+                struct DeviceNode *dn = (struct DeviceNode *)BADDR(dp->dp_Arg3);
+
+                fssm = dn ? (struct FileSysStartupMsg *)BADDR(dn->dn_Startup)
+                          : NULL;
+
+                if (!TypeOfMem(fssm))
+                {
+                    buildDefaultStartup(&startup, SysBase);
+                    fssm = &startup.fssm;
+                }
+            }
+
+            dp->dp_Arg2 = (SIPTR)MKBADDR(fssm);
+            dp->dp_Arg4 = DOSTRUE;
+
+            /* con-handler collects this once it starts up below. */
+            PutMsg(mp, mn);
+
+            Permit();
+            CloseLibrary((struct Library *)DOSBase);
+
+            /*
+             * A handler entry point is an AROS_PROCH(), so it expects its
+             * three arguments the way DOS's CallEntry() supplies them -
+             * argptr in A0, argsize in D0 and SysBase in A6. Calling it as
+             * a plain no-argument function leaves SysBase holding whatever
+             * happened to be in that register, and the entry dereferences
+             * it immediately (SysBase->lib_Version). con-handler ignores
+             * argptr/argsize, so an empty argument string will do.
+             */
+            AROS_UFC3(ULONG, conentry,
+                      AROS_UFCA(STRPTR, NULL, A0),
+                      AROS_UFCA(ULONG, 0, D0),
+                      AROS_UFCA(struct ExecBase *, SysBase, A6));
+
+            return RETURN_OK;
+        }
+
+        CloseLibrary((struct Library *)DOSBase);
+    }
+
+    Permit();
+
+    dp->dp_Res1 = DOSFALSE;
+    dp->dp_Res2 = err;
+    PutMsg(dp->dp_Port, mn);
+
+    return RETURN_FAIL;
+}

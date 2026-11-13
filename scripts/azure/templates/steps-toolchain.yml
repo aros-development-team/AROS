@@ -1,0 +1,134 @@
+# steps-toolchain.yml
+#
+# Toolchain stage: build the AROS cross toolchain into $(AROSBUILDTOOLCHAINDIR)
+# and hand it forward as a pipeline artifact. The expensive crosstools/LLVM
+# build is skipped when the Cache@2 task in the orchestrator restored the
+# toolchain (cacheHitVar: TOOLCHAIN_RESTORED) - this is what stops LLVM being
+# rebuilt on every nightly.
+#
+# Pre-req in the orchestrator job (before this template):
+#   - task: Cache@2
+#     inputs:
+#       key: 'aros-toolchain | "$(arosbuild.name)" | ... | tools/crosstools/**'
+#       path: '$(AROSBUILDTOOLCHAINDIR)'
+#       cacheHitVar: TOOLCHAIN_RESTORED
+
+steps:
+# Free host disk before a full toolchain build - the LLVM tree in
+# particular needs the room. Skipped when the toolchain was restored from
+# cache, since nothing heavy runs in that case.
+- template: steps-reclaim-disk.yml
+  parameters:
+    condition: and( eq( variables['Agent.OS'], 'Linux' ), ne( variables['TOOLCHAIN_RESTORED'], 'true' ) )
+
+- script: |
+    function execute {
+      {
+        echo '>>>' $*
+        $*
+        if [ $? != 0 ]; then
+          touch /tmp/_aros_build_failed
+        fi
+      } 2>&1 | tee -a $(AROSLOGSDIR)/$(arosbuild.package)-$(arosbuild.name).log
+      if [ -f /tmp/_aros_build_failed ]; then
+        exit 5
+      fi
+    }
+    if [ "$AROSBUILDENVPATH" != "" ]; then
+        export PATH="$AROSBUILDENVPATH"
+        echo "Using PATH=$AROSBUILDENVPATH"
+    fi
+    execute $(AROSSRCDIR)/configure $(AROSCONFIGOPTIONS) --with-aros-toolchain-install=$(AROSBUILDTOOLCHAINDIR)
+  workingDirectory: '$(AROSBUILDDIR)'
+  condition: ne( variables['TOOLCHAIN_RESTORED'], 'true' )
+  displayName: 'Configuring $(arosbuild.name) $(TOOLCHAIN) toolchain (cache miss)'
+
+- script: |
+    cp config.* $(AROSLOGSDIR)
+  workingDirectory: '$(AROSBUILDDIR)'
+  condition: and( ne( variables['TOOLCHAIN_RESTORED'], 'true' ), eq( variables['Agent.OS'], 'Darwin' ))
+  displayName: 'Gathering MacOS config logs'
+
+- script: |
+    function execute {
+      {
+        echo '>>>' $*
+        $*
+        if [ $? != 0 ]; then
+          touch /tmp/_aros_build_failed
+        fi
+      } 2>&1 | tee -a $(AROSLOGSDIR)/$(arosbuild.package)-$(arosbuild.name).log
+      if [ -f /tmp/_aros_build_failed ]; then
+        exit 5
+      fi
+    }
+    if [ "$AROSBUILDENVPATH" != "" ]; then
+        export PATH="$AROSBUILDENVPATH"
+    fi
+    execute make -j $(BUILDTHREADS) crosstools
+    rm -Rf $(AROSBUILDDIR)/bin
+  workingDirectory: '$(AROSBUILDDIR)'
+  condition: ne( variables['TOOLCHAIN_RESTORED'], 'true' )
+  displayName: 'Build $(arosbuild.name) $(TOOLCHAIN) toolchain (cache miss)'
+
+- script: |
+    echo "Toolchain restored from cache - skipping crosstools build."
+  condition: eq( variables['TOOLCHAIN_RESTORED'], 'true' )
+  displayName: 'Toolchain restored from cache'
+
+# Tar the toolchain for the SourceForge Developer_Tools upload, then drop the
+# (now redundant) build directory. Runs whether the toolchain was built or
+# restored from cache.
+- script: |
+    cd $(AROSBUILDTOOLCHAINDIR)/../
+    tar cjvf $(AROSBUILDID)-$(Agent.OS)-$(TOOLCHAIN)-$(arosbuild.name)-toolchain.tar.bz2 toolchain
+    md5sum $(AROSBUILDID)-$(Agent.OS)-$(TOOLCHAIN)-$(arosbuild.name)-toolchain.tar.bz2 >$(AROSBUILDID)-$(Agent.OS)-$(TOOLCHAIN)-$(arosbuild.name)-toolchain.tar.bz2.md5
+    mv $(AROSBUILDID)-$(Agent.OS)-$(TOOLCHAIN)-$(arosbuild.name)-toolchain.tar.bz2 $(AROSBUILDBINDIR)/
+    mv $(AROSBUILDID)-$(Agent.OS)-$(TOOLCHAIN)-$(arosbuild.name)-toolchain.tar.bz2.md5 $(AROSBUILDBINDIR)/
+    rm -Rf $(AROSBUILDDIR)/*
+  workingDirectory: '$(AROSBUILDDIR)'
+  displayName: 'Packaging $(arosbuild.name) toolchain'
+
+# Stash the packaged toolchain tarball where the orchestrator's Cache@2
+# post-job save (path: $(Agent.TempDirectory)/toolchain-cache) will pick
+# it up. Without this the cache is never populated and the heavy
+# crosstools/LLVM build would rerun every night. Only needed when the
+# toolchain was rebuilt this run - after a cache hit the task skips
+# saving anyway.
+- script: |
+    mkdir -p '$(Agent.TempDirectory)/toolchain-cache'
+    cp '$(AROSBUILDBINDIR)/$(AROSBUILDID)-$(Agent.OS)-$(TOOLCHAIN)-$(arosbuild.name)-toolchain.tar.bz2' '$(Agent.TempDirectory)/toolchain-cache/'
+  condition: ne( variables['TOOLCHAIN_RESTORED'], 'true' )
+  displayName: 'Stash toolchain tarball for cache save'
+
+# Hand the toolchain *directory* forward to the Core and Contrib stages.
+# Restore it to the SAME absolute path it was built at (see README - the
+# toolchain is not relocatable).
+- publish: '$(AROSBUILDBINDIR)/$(AROSBUILDID)-$(Agent.OS)-$(TOOLCHAIN)-$(arosbuild.name)-toolchain.tar.bz2'
+  artifact: 'toolchain-$(arosbuild.name)'
+  displayName: 'Publish toolchain artifact (for Core/Contrib stages)'
+
+ # Prepare toolchain upload directory on SourceForge
+- script: |
+    mkdir -p "$(Build.BinariesDirectory)/Prepare/uploads/nightly2"
+    rsync -avz -e ssh \
+      "$(Build.BinariesDirectory)/Prepare/uploads/" \
+      "$MAPPED_USER,arosdev@web.sourceforge.net:"
+    rm -rf "$(Build.BinariesDirectory)/Prepare"
+  env:
+    MAPPED_USER: $(SF_RSYNC_USER)
+  condition: and(ne(variables['SF_RSYNC_USER'], ''), ne(variables['arosbuild.deploy'], 'no'), eq(variables['arosbuild.withtoolchain'], 'yes'))
+  displayName: 'Preparing toolchain upload directory on SourceForge'
+
+- script: |
+    mkdir -p ~/.ssh
+    mkdir -p '$(Build.BinariesDirectory)/Upload/$(arosbuilddate)/Developer_Tools/'
+    mv $(AROSBUILDBINDIR)/$(AROSBUILDID)*-toolchain* $(Build.BinariesDirectory)/Upload/$(arosbuilddate)/Developer_Tools/
+    rsync -avz -e ssh \
+         $(Build.BinariesDirectory)/Upload/ \
+         "$MAPPED_USER,arosdev@web.sourceforge.net:uploads/nightly2/"
+    rm -Rf '$(Build.BinariesDirectory)/Upload/$(arosbuilddate)'
+  env:
+    MAPPED_USER: $(SF_RSYNC_USER)
+  condition: and( eq( variables['arosbuild.withtoolchain'], 'yes' ), ne( variables['SF_RSYNC_USER'], '' ))
+  displayName: 'Deploying toolchain'

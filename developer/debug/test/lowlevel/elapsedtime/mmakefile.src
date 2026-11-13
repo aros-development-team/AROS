@@ -1,0 +1,11 @@
+# Copyright (C) 2026, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+USER_LDFLAGS := -static
+
+#MM test-lowlevel-elapsedtime : includes linklibs
+
+%build_progs mmake=test-lowlevel-elapsedtime \
+    files=elapsedtime targetdir=$(AROS_TESTS)/lowlevel/elapsedtime
+
+%common

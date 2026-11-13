@@ -1,0 +1,15 @@
+# Copyright (C) 2017-2023, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+
+ADDITIONALICONS := PCITool 
+
+#MM- iconset-GorillaSmall-additional-icons-aros-clean : iconset-GorillaSmall-additional-icons-aros-debug-hardware-clean
+#MM- iconset-GorillaSmall-additional-icons-aros-debug : iconset-GorillaSmall-additional-icons-aros-debug-hardware
+
+%build_icons mmake=iconset-GorillaSmall-additional-icons-aros-debug-hardware icons=$(ADDITIONALICONS) \
+             dir=$(AROS_DEBUG)/Hardware
+
+#MM- icons-developer-debug-hardware : gorillasmall-icons-developer-developer-debug-hardware
+%build_icons mmake=gorillasmall-icons-developer-developer-debug-hardware icons=$(ADDITIONALICONS) \
+             dir=$(AROS_PRESETS)/Icons/Gorilla/Small/$(AROS_DIR_AROS)/$(AROS_DIR_DEVELOPER)/Debug/Hardware

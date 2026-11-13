@@ -1,0 +1,32 @@
+#
+#   Makefile to make Locale prefs program.
+
+include $(SRCDIR)/config/aros.cfg
+
+FILES 	    := main args misc locale languagelist \
+               page_language page_region page_timezone prefs registertab
+
+EXEDIR      := $(AROSDIR)/Prefs
+
+#MM- workbench-prefs : workbench-prefs-locale
+
+#MM workbench-prefs-locale : includes linklibs \
+#MM     workbench-prefs-locale-catalogs \
+#MM     workbench-prefs-locale-images
+
+%build_prog mmake=workbench-prefs-locale \
+    progname=Locale targetdir=$(EXEDIR) \
+    files=$(FILES)
+
+
+IMAGES      := earthmap_small timezones_small
+SRCIMAGES   := $(foreach f, $(IMAGES), pics/$(f).ilbm)
+C_IMAGES    := $(foreach f, $(IMAGES), $(f)_image.c)
+
+#MM
+workbench-prefs-locale-images : $(C_IMAGES)
+
+./%_image.c : pics/%.ilbm
+	@$(ILBMTOC) $< >$@
+
+%common

@@ -1,0 +1,4 @@
+#!/bin/sh
+export PKG_CONFIG_LIBDIR="@AROS_BUILDDIR@/bin/@aros_target_arch@-@aros_target_cpu@@aros_target_suffix@/AROS/Developer/lib/pkgconfig"
+export PKG_CONFIG_SYSROOT_DIR="@AROS_BUILDDIR@/bin/@aros_target_arch@-@aros_target_cpu@@aros_target_suffix@/AROS"
+exec pkg-config "$@"

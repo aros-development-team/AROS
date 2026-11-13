@@ -1,0 +1,23 @@
+#
+#   Makefile for AROS Test
+
+include $(SRCDIR)/config/aros.cfg
+
+FILES := vartest rexxsyslibtest
+EXEDIR := $(AROS_TESTS)/rexx
+
+USER_CFLAGS := -I$(SRCDIR)/workbench/libs
+
+#MM- test : test-rexx
+#MM- test-rexx : test-rexx-util test-rexx-copy
+
+%build_progs mmake=test-rexx-util \
+    files=$(FILES) targetdir=$(EXEDIR)
+
+#MM
+test-rexx-copy : $(EXEDIR)/vartest.rexx
+
+$(EXEDIR)/vartest.rexx: vartest.rexx test-rexx-util
+	@$(CP) $< $@
+
+%common

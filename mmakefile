@@ -1,0 +1,57 @@
+# Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM AROS : clean-errors toolchain-linklibs AROS-$(ARCH)-$(CPU)-$(AROS_TARGET_VARIANT) AROS-$(ARCH)-$(CPU)
+AROS : checkerr
+	@$(NOP)
+
+#MM AROS-complete : clean-errors AROS-complete-$(ARCH)-$(CPU) test
+AROS-complete : checkerr
+	@$(NOP)
+
+# Delete the global error file
+#MM
+clean-errors :
+	@$(RM) -f $(GENDIR)/errors
+	
+# Checks if any error has been occurred during compile
+checkerr :
+	@if [ -f $(GENDIR)/errors ]; then wc -l $(GENDIR)/errors ; else $(NOP) ; fi
+
+#MM- install : install-$(ARCH)-$(CPU)
+
+# Remove all generated dependency files.
+#MM
+cleandep :
+	find $(GENDIR) -name "*.d" -exec $(RM) "{}" \;
+
+#MM
+query :
+	@$(ECHO) "HOST_CPP              : $(HOST_CPP)"
+	@$(ECHO) "HOST_CC               : $(HOST_CC)"
+	@$(ECHO) "HOST_CFLAGS           : $(HOST_CFLAGS)"
+	@$(ECHO) "HOST_CXX              : $(HOST_CXX)"
+	@$(ECHO) "HOST_CXXFLAGS         : $(HOST_CXXFLAGS)"
+	@$(ECHO) "HOST_LD               : $(HOST_LD)"
+	@$(ECHO) "HOST_LDFLAGS          : $(HOST_LDFLAGS)"
+	@$(ECHO) "KERNEL_CPP            : $(KERNEL_CPP)"
+	@$(ECHO) "KERNEL_CC             : $(KERNEL_CC)"
+	@$(ECHO) "KERNEL_CFLAGS         : $(KERNEL_CFLAGS)"
+	@$(ECHO) "KERNEL_INCLUDES       : $(KERNEL_INCLUDES)"
+	@$(ECHO) "KERNEL_LD             : $(KERNEL_LD)"
+	@$(ECHO) "KERNEL_LDFLAGS        : $(KERNEL_LDFLAGS)"
+	@$(ECHO) "AROS_TARGET_TOOLCHAIN : $(AROS_TARGET_TOOLCHAIN)"
+	@$(ECHO) "AROS_TARGET_CPU32     : $(AROS_TARGET_CPU32)"
+	@$(ECHO) "TARGET_CPP            : $(TARGET_CPP)"
+	@$(ECHO) "TARGET_CC             : $(TARGET_CC)"
+	@$(ECHO) "TARGET_CFLAGS         : $(TARGET_CFLAGS)"
+	@$(ECHO) "TARGET_LD             : $(TARGET_LD)"
+	@$(ECHO) "TARGET_LDFLAGS        : $(TARGET_LDFLAGS)"
+	@$(ECHO) "TARGET_CXX            : $(TARGET_CXX)"
+	@$(ECHO)
+	@$(ECHO) "SRCDIR                : $(SRCDIR)"
+	@$(ECHO) "GENDIR                : $(GENDIR)"
+	@$(ECHO) "PORTSDIR              : $(PORTSDIR)"
+	@$(ECHO) "PORTSSOURCEDIR        : $(PORTSSOURCEDIR)"
+	@$(ECHO) "CROSSTOOLSDIR         : $(CROSSTOOLSDIR)"

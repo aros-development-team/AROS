@@ -1,0 +1,10 @@
+# DataType Description for PCX
+Name=PCX
+Version=$VER: PCX 1.0 (14.02.2017)
+BaseName=pcx
+Pattern=#?
+Mask=0x0a ANY 0x01
+GroupID=pict
+ID=pcx
+Flags=DTF_BINARY,DTF_CASE
+Priority=0

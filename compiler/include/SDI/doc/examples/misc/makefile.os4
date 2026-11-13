@@ -1,0 +1,59 @@
+#
+#	$Id: makefile.os4,v 1.1 2005/06/08 06:54:25 damato Exp $
+#
+#	:ts=4
+#
+
+CC	= ppc-amigaos-gcc
+
+.c.o:
+	@echo "Compiling $<"
+	@$(CC) -c $(CFLAGS) -o $*.o $<
+
+###########################################################################
+
+NAME	= hellomisc
+VERSION	= 51
+
+###########################################################################
+
+WARNINGS = \
+	-Wall -W -Wshadow -Wpointer-arith -Wsign-compare -Wmissing-prototypes \
+	-Wundef -Wbad-function-cast -Wmissing-declarations
+
+CPU = -mcpu=604e -mmultiple
+OPTIONS = -DNDEBUG -D__USE_INLINE__
+OPTIMIZE = -O3 -fomit-frame-pointer -fstrength-reduce -finline-functions
+DEBUG = -g
+
+###########################################################################
+
+CFLAGS = $(WARNINGS) $(OPTIMIZE) $(DEBUG) $(CPU) $(OPTIONS) -I. \
+         -I../../includes
+LFLAGS = -L.
+
+###########################################################################
+
+OBJS = \
+	example_miscuse.o \
+
+LIBS = \
+	-lc -lm
+
+###########################################################################
+
+all: $(NAME)
+
+$(NAME): $(OBJS)
+	@echo "Linking $@"
+	@$(CC) -o $@.debug $(CFLAGS) $(LFLAGS) $(OBJS) $(LIBS)
+	@ppc-amigaos-strip -R.comment -o $@ $@.debug
+
+###########################################################################
+
+example_miscuse.o : example_miscuse.c
+
+###########################################################################
+
+clean:
+	-rm *.o *.debug $(NAME)

@@ -1,0 +1,792 @@
+This file forms part of PFS3 (Professional File System 3)
+Written by Michiel Pelt
+Copyright 1999 by GREat Effects Development
+$Id: Proginfo 1.7 1999/06/30 18:38:08 Michiel Exp Michiel $
+
+13 May 1999
+
+                            PFS3 disk structure
+                            -------------------
+
+This  document  describes  the blocks and structures used by PFS.  Only the
+new  harddisk  version  will be described here.  For the floppy version you
+can refer to previous releases.
+
+*********************
+* the bootblocks
+*********************
+
+The  first  two  blocks  are  the bootblocks, as required by AmigaDOS.  The
+first  longword  of  the first bootblock contains the dostype:  PFS\1.  The
+rest is empty.  So the first bootblock looks like this:
+
+     ___________________
+    |                   |
+000 | disktype          |
+    |___________________|
+004 |                   |
+    |                   |
+    |         .         |
+    |         .         |
+200 |___________________|
+
+
+********************
+* the rootblock
+********************
+
+Directly  behind  the  bootblocks  you  can find the rootblock, on block 2.
+This  is  the  most  important  block  of a PFS disk.  PFS keeps this block
+cached at all times.  It looks like this:
+
+     ___________________
+    |                   |
+000 | disktype          |   'PFS\1'
+004 | options           |   see below
+008 | datestamp         |
+    |___________________|
+    |         |         |
+00c | cday    | cminute |   creation date (DOS format)
+010 | ctick   | prot    |   protection
+    |_________|_________|
+    |                   |   32 character diskname. Size of string followed
+014 | diskname          |   by that number of characters
+    |                   |
+    |___________________|
+    |                   |
+034 | last reserved     |   first and last reserved block (blocknumbers)
+038 | first reserved    |
+03c | reserved free     |   number of reserved blocks free
+    |___________________|
+    |         |         |
+040 | blksize | rblkclt |   reserved blocksize; rootblock cluster
+    |_________|_________|
+    |                   |
+044 | blocks free       |   number of blocks free
+048 | always free       |   number of blocks always kept free
+04c | roving pointer    |   used for allocation
+050 | deldir            |   (<4.3) the location of the delete directory
+054 | disksize          |   size of the disk in blocks
+058 | rblk extension    |   reference to rootblock extension
+05c | reserved_2        |
+    |___________________|
+060 |                   |
+    | bitmap index      |   reference to bitmap index blocks
+    |                   |
+    |___________________|
+074 |                   |
+    | anode index       |   reference to anode index blocks
+    |                   |   (not if MODE_SUPERINDEX enabled)
+200 |___________________|
+
+
+With  the disktype field PFS3 recognizes that the disk is a PFS disk.  It is
+the same as what can be found in the bootblock.
+
+Options is a 32 bit field which specifies which PFS3 extensions are enabled.
+The table below states the bit number, the symbolic name, the release in
+which the option was introduced and its meaning.
+
+bit | name                 | rel | function
+----|----------------------|-----|-----------------------------------------
+0   | MODE_HARDDISK        | 4.1 | harddisk mode if 1; currently always 1
+1   | MODE_SPLITTED_ANODES | 4.1 | anodes splitted in block/offset if 1
+2   | MODE_DIR_EXTENSION   | 4.1 | enables directory-entry extension
+3   | MODE_DELDIR          | 4.1 | deldir enabled if 1
+4   | MODE_SIZEFIELD       | 4.1 | the disksize field (offset 0x54) is valid
+5   | MODE_EXTENSION       | 4.1 | the rootblock extension is enabled
+6   | MODE_DATESTAMP       | 4.1 | block datestamps enabled if 1
+7   | MODE_SUPERINDEX      | 4.2 | extension that makes disks >5G possible
+8   | MODE_SUPERDELDIR     | 5.0 | extension that makes larger deldir possible
+9   | MODE_EXTROVING       | 5.0 | reserved roving pointer is per block (was 32)
+10  | MODE_LONGFN          | 5.0 | support for long filenames
+
+PFS3 has, by default, all options enabled. One exception to this is
+MODE_SUPERINDEX, which is only enabled for disks larger than 5G. If
+MODE_SUPERINDEX is enabled, the list of bitmap index blocks is larger
+and covers offset 060 to 200 of the rootblock. The anodeindex blocks
+are referenced by a new blocktype: the superblock which can be reached
+from the rootblock extension.
+
+PFS3 checks the options when the volume is mounted.  If MODE_DELDIR is
+cleared, PFS3 will automatically create a delete directory and set
+MODE_DELDIR.  The rootblock extension is also automatically created if not
+present.
+
+If future versions of PFS3 extend the diskstructure this will be reflected by
+a new option bit.
+
+All 'not_used' fields are reserved for future use and must be set to 0.
+
+First   and   last   reserved  indicate  the  'reserved  area'.   All  disk
+information,  like  directories,  allocation  data  etc  are stored in this
+reserved  area.   The  rest  of  the disk is available for data.  Currently
+firstreserved  always is 2, so the reserved area starts with the rootblock.
+'Reserved   free'   indicates  the  number  of  reserved  blocks  that  are
+unoccupied.
+
+The 'datestamp' is an update counter. When the disk is formatted, all blocks
+will have a datestamp of 0. Every time the disk is updated (goes from one
+state to the next using atomic commit), the datestamp is increased by one.
+Using the datestamp all blocks in the reserved area can be ordered in time.
+This is usefull for repair tools enabling easier and more reliable recovery
+of a broken volume.
+
+'Blksize'  indicates  the size of reserved blocks in bytes.  Currently this
+is  always  1024  (1K),  independent  of  the actual blocksize.  The actual
+blocksize  (as  specified in the mountlist) can be either 512 or 1024 byte.
+So  if  blocks  are 512 byte, which is the normal case, each reserved block
+takes  two  blocks  on  disk.   BTW:   the  before mentioned first and last
+reserved  indicate real blocknumbers, not reserved block numbers.  However,
+'reserved  free' does refer to reserved blocks.  It indicates the number of
+reserved blocks that can be allocated before the reserved area is full.
+
+Blocks  free indicates the number of free blocks.  It is equal to the total
+number  of  blocks  on  the  disk - the number of reserved blocks - 2 - the
+number  of blocks taken by data.  PFS always keeps a small part of the data
+area free.  This is indicated by 'always free'.
+
+The roving pointer is used for allocation.  If you change any bitmap blocks
+it is wise to set this pointer to zero.  This will never hurt.
+
+********************
+* Block ID
+********************
+
+The following blocks each have a 2 byte block id field.  This indicates the
+blocktype.  Currenly used IDs are:
+
+DB -- dirblock
+AB -- anodeblock
+IB -- anode index block
+BM -- bitmap block
+MI -- bitmap index block
+DD -- deldir block
+EX -- rootblock extension
+SB -- super block
+
+********************
+* Bitmap blocks
+********************
+
+To  keep  track  of  which  blocks are occupied and which are not, PFS uses
+bitmap blocks.  Such a block looks like this:
+
+     ___________________
+    |         |         |
+000 | id      |    x    |
+    |_________|_________|
+    |                   |
+004 | datestamp         |
+008 | sequence number   |
+    |___________________|
+00c |                   |
+    | the bitmap        |
+    |                   |
+400 |___________________|
+
+
+Each  block  has  room  for 253 longwords allocating 8096 blocks.  Each bit
+represents  a  block and a bit is set if it is available, and clear when it
+is taken.
+
+There are two bitmaps, one for the reserved area and one for the data area.
+For the data area several bitmap blocks are needed.  They are numbered with
+the  sequence  number  field,  starting with 0.  The first bit of the first
+bitmap block represents the first data block (the block directly behind the
+last reserved block)
+
+The  bitmap  for  the  reserved area is directly behind the rootblock.  The
+rootblock  cluster field in the rootblock (rblkclt) indicates the number of
+blocks  occupied  by  the rootblock together with the reserved bitmap.  The
+reserved bitmap has the same header as the data bitmap, but has a different
+size.   The  rootblock  cluster  is  chosen  such,  that it can contain the
+rootblock  itself and the entire reserved bitmap, and it is rounded up to a
+multiple of 1024 byte blocks.
+
+The  first  bit  of the reserved bitmap represents the first reserved block
+(usually 2).  Each bit represents a 1024 byte reserved block.
+
+
+********************
+* Index blocks
+********************
+
+PFS  refers to bitmap and anode blocks by using index blocks.  These blocks
+look like this:
+
+     ___________________
+    |         |         |
+000 | id      |    x    |
+    |_________|_________|
+    |                   |
+004 | datestamp         |
+008 | sequence number   |
+    |___________________|
+00c |                   |
+    | 253 indices       |
+    |                   |
+400 |___________________|
+
+
+
+Each  block  contains  references to 253 anode or bitmap blocks.  For large
+disks  several  index  blocks  will  be needed.  They are numbered with the
+sequence number, starting with 0.
+
+There is a maximum of 5 bitmap index blocks and 99 anode index blocks.  The
+rootblock contains the pointers to these blocks.
+
+An  anode or bitmap block of a certain sequence number doesn't exist if the
+corresponding  field  in the index is zero.  Holes in the index are allowed
+(e.g.  it is possible for anode block 5 to exist, while 4 doesn't).
+
+********************
+* Anode blocks
+********************
+
+Files  and  directories  take  space on the disk.  PFS keeps track of which
+objects takes which blocks by means of so called anodes.  Anodes are stored
+in anode blocks, which look like this:
+
+     ___________________
+    |         |         |
+000 | id      |    x    |
+    |_________|_________|
+    |                   |
+004 | datestamp         |
+    |___________________|
+    |                   |
+008 | sequence number   |
+    |___________________|
+    |                   |
+00c | reserved          |
+    |___________________|
+010 |                   |
+    | 84 anodes         |
+    |                   |
+400 |___________________|
+
+The way anodes are numbered depends on the MODE_SPLITTED_ANODES:
+
+MODE_SPLITTED_ANODES disabled:
+The anodes are numbered starting with 0.  The first 84 are in anodeblock 0,
+the  next  84  in  anodeblock  1  etc.   Each object (file or directory) is
+identified by such an anode number.
+
+MODE_SPLITTED_ANODES enabled:
+The  first  16 bit of the anode indicate the anodeblock by sequence number.
+The  following  16 bit indicate the offset within the anodeblock.  So anode
+0x00010004 is the fifth anode in the second anodeblock.
+
+
+An anode looks like this:
+
+     ___________________
+    |                   |
+000 | clustersize       |
+004 | blocknr           |
+008 | next              |
+    |___________________|
+
+The clustersize indicates how many blocks are allocated by this anode.  The
+blocknr is the first block allocated.  So an unfragmented file can always
+be allocated by a single anode.  A fragmented file, however, needs one
+anode for each fragment.  For that purpose is the next field.  It indicates
+the anode number of the next fragment.  If this is the last fragment, the
+next field will be zero.
+
+The clustersize and blocknr in an anode always refer to real block numbers,
+even if the blocks are in the reserved area.
+
+If  all  fields  of  the  anode  are zero, it is considered free and can be
+reused.
+
+It  is  possible  to  associate an anode with a file without allocation any
+blocks.   This  can be done by setting the clustersize and next fields to 0
+and the blocknr field to -1.
+
+The first six anodes have a special meaning:
+
+anode   name                use
+----------------------------------------------
+ 0      ANODE_EOF           should always be 0
+ 1                          not used, set to 0
+ 2                          not used, set to 0
+ 3                          not used, set to 0
+ 4      ANODE_BADBLOCKS     Bad block list. Not used by PFS3. Repair
+                            tools can chain bad blocks to this anode
+ 5      ANODE_ROOTDIR       The anode of the root directory. You can find 
+                            the root directory by looking at this anode
+
+All anodes from 6 and higher are used for directory and file allocation.
+
+
+********************
+* dirblocks
+********************
+
+Directories have an anode number, just like files.  Each anode points to
+one directory block of 1024 byte (so, with 512 byte blocks, the clustersize
+field of an anode belonging to a directory is always 2).  If 1024 byte is
+not enough for the directory, a new block with a new anode is allocated and
+chained to the first.  Two anodes belonging to the same directory are never
+joined to form one (by increasing the clustersize).
+
+A dirblock looks like this.
+
+     ___________________
+    |         |         |
+000 | id      |    x    |
+    |_________|_________|
+004 |                   |
+    | datestamp         |
+    |___________________|
+    |                   |
+008 | reserved          |
+    |___________________|
+    |                   |
+00c | anodenr           |
+010 | parent            |
+    |___________________|
+014 |                   |
+    | directory entries |
+400 |___________________|
+
+
+The anodenr (anode number) refers to the anode belonging to the directory,
+not the anode belonging to the block.  So it always points to the head of
+the anode chain, and is the same for all blocks of the same directory.
+
+The parent is the anode number of the parent of this directory, or 0 if
+this is the rootdirectory (which doesn't have a parent).
+
+
+A directory entry looks like this:
+
+         ___________________
+        |         |         |
+000     | next    | type    |
+        |_________|_________|___________________
+        |                                       |
+002     | anode number                          |
+006     | size                                  |
+        |_______________________________________|
+        |                   |
+00a     | creation day      |
+00c     | creation minute   |
+00e     | creation tick     |
+        |___________________|
+        |         |         |
+010     | prot    | nlength |
+        |_________|_________|
+        |                   |
+012     | name              |
+        |                   |
+        |___________________|
+012 +   |         |
+nlength | flength |
+        |_________|_________
+013 +   |                   |
+nlength | filenote          |
+        |                   |
+        |___________________|
+
+        |                   |   MODE_DIREXTENSION only
+        | extension         |
+          
+        |                   |
+
+        |___________________|
+
+
+The next field indicates the length of this directory entry in bytes.  This
+must always be even.
+
+The  type is the type of direntry, just like FFS:  ST_FILE, ST_USERDIR etc.
+See include file <dos/dosextens.h> for details.
+
+The  anode number is the head of the anode chain for this object.  The size
+is  the  filesize  in  bytes.  The number of blocks in the anode chain must
+correspond to the number of blocks needed to store 'size' bytes.
+
+The  creation day, minute and tick is the DOS timestamp of the object.  The
+protection are the lower 8 file protection bits, like FFS.
+
+The  name  and  the  filenote  are  pascal strings (length followed by that
+number  of characters).  They are placed directly behind each other and are
+byte aligned.  If the file has no filenote, flength will be zero.
+
+Each  directory  entry  is  padded if that is needed to word align the next
+directory entry.
+
+The  end of the directory block is indicated by appending a zero at the end
+of  the  last  entry.   The  directory ends with the last entry in the last
+block, where the blocks are chained by anodes.
+
+********************
+* dirextension
+********************
+
+If  MODE_DIREXTENSION  is  enabled some optional extra WORD size fields are
+added  after  the  word align pad.  The last extension field is a WORD size
+bitfield that indicates which fields are present.
+
+Currently the extra fields include:
+
+     ___________________
+    |                   |
+    | link (high)       | Anodenr of link
+    |___________________|
+    |                   |
+    | link (low)        |
+    |___________________|
+    |                   |
+    | uid               | User ID
+    |___________________|
+    |                   |
+    | gid               | Group ID
+    |___________________|
+    |                   |
+    | prot (high)       | 32 bit protection field
+    |___________________|
+    |                   |
+    | prot (low)        |
+    |___________________|
+    |                   |
+    | virtualsize (high)| 32 bit virtual size (for rollover files)
+    |___________________|
+    |                   |
+    | virtualsize (low) |
+    |___________________|
+    |                   |
+    | rollpointer (high)| 32 bit rollpointer (for rollover files)
+    |___________________|
+    |                   |
+    | rollpointer (low) |
+    |___________________|
+    |                   |
+    | flagfield         | Only field that always is present
+    |___________________|
+
+'Link'  is for links, described later.  The prot field is combined with the
+8 bit protection field direntry->protection (OR operation) to form a 32 bit
+protection  value.   If the upper 24 bit are zero, this prot field will not
+be  used.   The  filesystem only checks direntry->protection when accessing
+files.
+    
+The following code fragments show how to extract and make extrafields. Used
+macros and types can be found in 'pfs.h'.
+
+void GetExtraFields (struct direntry *direntry, struct extrafields *extrafields)
+{
+    UWORD *extra = (UWORD *)extrafields;
+    UWORD *fields = (UWORD *)(((UBYTE *)direntry)+direntry->next);
+    UWORD flags, i;
+
+    flags = *(--fields);
+    for (i=0; i < sizeof(struct extrafields)/2; i++, flags>>=1)
+        *(extra++) = (flags&1) ? *(--fields) : NULL;
+}
+
+static void AddExtraFields (struct direntry *direntry, struct extrafields *extra)
+{
+    UWORD offset, *dirext;
+    UWORD array[16], i=0, j=0;
+    UWORD flags = 0, orvalue;
+    UWORD *fields = (UWORD *)extra;
+
+    offset = (sizeof(struct direntry) + (direntry->nlength) + *FILENOTE(direntry))&0xfffe;
+    dirext = (UWORD *)((UBYTE *)(direntry) + (UBYTE)offset);
+
+    orvalue = 1;
+    /* fill packed field array */
+    for (i=0; i < sizeof(struct extrafields)/2; i++)
+    {
+        if (*fields)
+        {
+            array[j++] = *fields++;
+            flags |= orvalue;
+        }
+        else
+        {
+            fields++;
+        }
+
+        orvalue <<= 1;
+    }
+
+    /* add fields to direntry */
+    i=j;
+    while (i)
+        *dirext++ = array[--i];
+    *dirext++ = flags;
+
+    direntry->next = offset + 2*j + 2;
+}
+
+BTW:   if  MODE_DIREXTENSION  is  enabled,  the  flags field must always be
+present,  even  if  none  of the other fields are used.  An unused field is
+assumed to be zero.
+
+********************
+* hard links
+********************
+
+The  main  object  (the object that is linked to) has type ST_FILE (ST_DIR)
+like  an  ordinary  file  (dir).  Its anodenr points to the object data, as
+usual.  The link field in the directory extension points to the head of the
+LINK LIST.
+
+The  LINK LIST is mapped on an anode list.  The 'link' is nothing more than
+an anode number.  The fields have been redefined, however:
+
+     ___________________
+    |                   |
+000 | object dir        |
+004 | link dir          |
+008 | next              |
+    |___________________| 
+
+Each  entry  in  the LINK LIST represents a link (the object itself doesn't
+have a LINK LIST node).
+
+The  'object dir' is the anode number of the directory where the object can
+be  found.   The  'link dir' is the anodenr of the directory where the link
+can  be found.  'Next' is the anodenr of the next LIST NODE or 0 for end of
+list.
+
+A link has type ST_LINKFILE (ST_LINKDIR).  Its anode number points to its
+LINK LIST element.  The link entry in the directory extension is the
+anode number of the object.
+
+A link can be resolved as follows:
+� Get LINK LIST element (anodenr in directory)
+� Get object dir (object dir field)
+� Locate object by looking for anodenr as stated in the directory extension
+  link field.
+
+BTW:  the anode number as stated in the directory is an unique directory
+entry identifier, even for links.
+
+********************
+* soft links
+********************
+
+A  softlink  is  a file of length strlen(target) and type ST_SOFTLINK.  The
+block  containing the name of the target can be located by reading the link
+as a file (anode.blocknr).
+
+********************
+* deldir
+********************
+
+The deldir is a hidden directory that contains the 31 most recently deleted
+and overwritten files. It can be accessed from the root by its name
+'.deldir'.
+
+The delete directory looks like this:
+
+     ___________________
+    |         |         |
+000 | id      |    x    |
+    |_________|_________|
+    |                   |
+004 | datestamp         |
+    |___________________|
+    |                   |
+010 | roving            |   (<4.3) current delete position
+012 | uid               |   (<4.3) deldir user id
+014 | gid               |   (<4.3) deldir group id
+016 | protection        |   (<4.3) deldir protection (LW)
+01a | creationday       |   (<4.3)
+01c | creationminute    |   (<4.3)
+01e | creationtick      |   (<4.3)
+    |___________________|
+020 |                   |
+    |                   |
+    | 31 deldirentries  |
+    |                   |
+400 |___________________|
+
+
+The deldir contains 31 slots containing deldirentries. These slots are
+filled in a round-robin manner, using 'roving' as position pointer.
+
+A deldirentry looks like this:
+
+     ___________________
+    |                   |
+000 | anodenr           |
+004 | size              |   size in bytes
+008 | creationday       |   datestamp (copied from original file)
+00a | creationminute    |
+00c | creationtick      |
+    |___________________|
+00e |                   |
+    | filename          |   filename, truncated to 17 characters
+020 |___________________|
+
+
+'filename' is a pascal string; length followed by 17 characters.
+
+When a file is deleted or overwritten it is added to the deldir in the slot
+indicated by 'roving'.  Only files are put in the deldir, no directories or
+links.  The diskspace taken by these files is freed at the moment the
+original file is deleted, so an entry in the deldir can become invalid at
+any time data is written to the disk.  When the deldir is scanned (e.g.  by
+calling "dir pfs:.deldir") PFS will check the vadility of each entry and
+will return only the valid entries.  The scan routine adds the deldir slot
+number to each entry (e.g.  foo@003) to make sure each entry has an unique
+name.  Files in the deldir should also be accessed by that name.
+
+The anodechain taken by a deldirentry is not freed until the deldirentry is
+reused.
+
+********************
+* rootblock extension
+********************
+
+AFS version 16.4 introduced the rootblock extension.  This is a reserved
+area block that contains general information about the disk that didn't fit
+in the rootblock.  The block is referenced by the 'extension' field in the
+rootblock.  Its presence is indicated by the MODE_EXTENSION bit in the
+rootblock options field.  PFS3 automatically creates the rootblock
+extension on older disks, so every disks that is operated on PFS3 should
+have an extension block.
+
+The rootblock extension looks like this:
+
+     ___________________
+    |         |         |
+000 | id      |    x    |
+    |_________|_________|
+    |                   |
+004 | ext. options      |   flags for (future) options. Currently 0.
+008 | datestamp         |
+00c | pfsversion        |   PFS revision id.
+    |___________________|
+    |                   |
+010 | rootdate day, min |   the root directory datestamp
+    |___________________|
+    |         |
+014 | tick    |
+    |_________|_________
+    |                   |
+016 | voldate day, min  |   the volume datestamp
+    |___________________|
+    |         |
+01a | tick    |
+    |_________|_________
+    |                   |
+01c | postponed -       |
+    | operation         |
+    |___________________|
+    |                   |
+02c | reserved roving   |   reserved area roving pointer
+    |___________________|
+    |                   |
+030 | roving bit        |   roving pointer bitnumber (normal area)
+    |___________________|
+    |                   |
+032 | current anode seq |   roving pointer for anode allocation
+    |___________________|
+    |         |         |
+034 | dd_rov  | dd_size |   roving pointer and size of deldir
+    |_________|_________|
+    |         |
+038 | fnsize  |				filename size (18 +)
+    |_________|_________
+    |                   |
+03a |         x         |
+    |___________________|
+    |                   |
+040 | superindex        |   MODE_SUPERINDEX only: upto 16 superblocks
+    |                   |
+    |    �              |
+    |    �              |
+    |___________________|
+    |         |         |
+080 | dd_uid  | dd_gid  |   uid and gid of delete directory
+    |_________|_________|
+    |                   |
+084 | dd_protection     |   protection of delete directory
+    |___________________|
+    |                   |
+088 | deldir day, min   |   deldir datestamp
+    |___________________|
+    |         |         |
+08c | tick    |    x    |
+    |_________|_________|
+    |                   |
+090 | deldir            |   upto 32 deldir blocks
+    |                   |
+    |    �              |
+    |    �              |
+    |___________________|
+110 |    .              |
+    |    .              |
+    |    .              |
+400 |___________________|
+
+
+PFS stores the current revision id (version number in high word, revision
+number in low word, e.g.  $00100004 for version 16.4) in the 'pfsversion' field
+when formatting a disk.  This way the oldest PFS revision that accessed the
+volume can be identified. The two new dates, rootdate and volumedate,
+complement the creationdate in the rootblock. The three datestamps are used as
+follows:
+
+Volume creation date (rootblock):  Only set by format and by
+ACTION_SERIALIZE_DISK.
+
+Volume date (extension): Zerod by format. Touched each update.
+
+Root date (extension): Root directory datestamp.
+
+The postponed operation is a 4 longword field used internally by PFS3. It is to
+be considered an error if these fields are non-zero on an inhibited PFS3 volume.
+
+The superindex is for MODE_SUPERINDEX only. The longwords in the superindex are
+references to superblocks. A superblock is an indexblock which indexes anodeindex
+blocks. 
+
+
+********************
+* rollover files
+********************
+
+Rollover files are files with a filesystem enforced maximum size. When the file
+is appended to it will be trimmed to keep the size under the maximum.
+
+Rollover files are identified by the filetype ST_ROLLOVERFILE (== -16).  The
+size field in the directory specifies how much diskspace is allocated for the
+rollover file.  The virtualsize field in the extrafields indicates how much of
+the allocated diskspace currently is in use.  This will initially be 0 and grow
+until it is equal to the allocated diskspace (extrafields->vitualsize ==
+direntry->size).  The virtual size can never be larger than the allocated size.
+The rollpointer field in the extrafields specifies the location in the
+allocated area where the rollover file starts. Rollover files are read
+circular, starting and ending at the rollover pointer.
+
+Example rollover file with 2048 allocated bytes:
+
+     0  real offsets                                            2047
+     ______________________________________________________________
+    |                            | |                               |
+    |                           L|N|F                              |
+    |____________________________|_|_______________________________|
+
+        virtual offsets      2046   0
+
+    <-------------------------------------------------------------->
+                            allocated area
+                              2048 bytes
+
+    L = last byte of file
+    N = end of file
+    F = first byte of file
+
+The usable size of rollover files always is a multiple of the blocksize
+minus one.
+

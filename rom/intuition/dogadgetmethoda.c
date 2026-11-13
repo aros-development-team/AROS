@@ -1,0 +1,202 @@
+/*
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
+    Copyright (C) 2001-2003, The MorphOS Development Team. All Rights Reserved.
+*/
+
+#include <exec/memory.h>
+#include <intuition/classusr.h>
+#include <intuition/gadgetclass.h>
+#include <intuition/cghooks.h>
+#include <graphics/rpattr.h>
+#include <proto/alib.h>
+#include <proto/exec.h>
+#include <proto/graphics.h>
+#include <proto/layers.h>
+#include <proto/intuition.h>
+#include "intuition_intern.h"
+#include "gadgets.h"
+
+/*****************************************************************************
+
+    NAME */
+#include <intuition/intuition.h>
+#include <proto/intuition.h>
+
+        AROS_LH4(IPTR, DoGadgetMethodA,
+
+/*  SYNOPSIS */
+        AROS_LHA(struct Gadget    *, gad, A0),
+        AROS_LHA(struct Window    *, win, A1),
+        AROS_LHA(struct Requester *, req, A2),
+        AROS_LHA(Msg               , msg, A3),
+
+/*  LOCATION */
+        struct IntuitionBase *, IntuitionBase, 135, Intuition)
+
+/*  FUNCTION
+        Invokes a BOOPSI method on an object with a GadgetInfo derived from
+        the supplied window or requester parameter.
+
+    INPUTS
+        gad - The gadget to work on
+        win - The window which contains the gadget or the requester with
+            the gadgets.
+        req - If the gadget is in a requester, you must specify that one,
+            too.
+        message - Send this message to the gadget.
+
+    RESULT
+        The result depends on the contents of the message sent to the
+        gadget.
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+        I have derived from a simular function from ClassAct where I have
+        to "fake" the function which is not implemented under OS 2.04.
+        There are likely a few differences between this routine and the
+        real code, but this gets the job done.
+
+        One thing to note, the Amiga Rom routine causes some form of
+        (layer?) locking. I presume the point of the lock is to avoid
+        removing the gadget from the window during a refresh, or to avoid
+        resizing the window during refresh, etc.
+
+        This locking is fairly obvious within Workbench itself. When
+        refreshing most any boopsi gadget(s) via RefreshGList() and you try
+        to drag a Workbench icon you will get stuck in a layer lock.
+        Workbench has a deadlock timer and is smart enough to release the
+        lock and abort the drag. With this routine below this locking does
+        not occur. Some might call it a good thing, however the issue
+        should be revisited once more of Intuition has been implemented -
+        if it hasn't been already?!. :)
+
+*****************************************************************************/
+{
+    AROS_LIBFUNC_INIT
+
+    struct GfxBase *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
+    struct LayersBase *LayersBase = GetPrivIBase(IntuitionBase)->LayersBase;
+    struct GadgetInfo   *gi = &GetPrivIBase(IntuitionBase)->DoGadgetMethodGI;
+    struct RastPort     *rp = &GetPrivIBase(IntuitionBase)->DoGadgetMethodRP;
+    IPTR                 ret = 0;
+
+    DEBUG_DOGADGETMETHOD(dprintf("DoGadgetMethod[%x]: Gad %p Win %p Req %p Method %ld (0x%lx)\n",
+                                 gi, gad, win, req, msg->MethodID, msg->MethodID));
+
+    if (!win && req) win = req->RWindow;
+
+    if (gad && (((gad->GadgetType & GTYP_GTYPEMASK) == GTYP_CUSTOMGADGET) || (gad->GadgetType & 0x100))) /* OS routines work with NULL objects */
+    {
+
+        /* Protect DoMethodA against race conditions between app task
+        and input.device task (which executes Intuitions Inputhandler) */
+
+        ObtainSemaphore(&GetPrivIBase(IntuitionBase)->GadgetLock);
+
+        //jDc: SetupGInfo fails when there's no window (but it also clears gadgetinfo!)
+        SetupGInfo(gi, win, req, gad, IntuitionBase);
+
+        if (gi->gi_RastPort)
+        {
+            InitRastPort(rp);
+            rp->Layer = gi->gi_RastPort->Layer;
+            rp->BitMap = gi->gi_RastPort->BitMap;
+            gi->gi_RastPort = rp;
+            SetFont(rp, gi->gi_DrInfo->dri_Font);
+        }
+
+        switch (msg->MethodID)
+        {
+            case OM_NEW:
+            case OM_SET:
+            case OM_NOTIFY:
+            case OM_UPDATE:
+                ((struct opSet *)msg)->ops_GInfo = gi;
+                ret = Custom_DoMethodA(IntuitionBase, gad, msg);
+                break;
+
+            case GM_LAYOUT:
+                ((struct gpLayout *)msg)->gpl_GInfo = gi;
+                ret = Custom_DoMethodA(IntuitionBase, gad, msg);
+                break;
+
+            case GM_RENDER:
+                {
+                    struct Layer *layer = rp->Layer;
+
+                    /* DoGadgetMethodA is serialized by GadgetLock and already
+                     * owns a reusable RastPort. Avoid allocating and freeing a
+                     * cloned RastPort for every system gadget rendered during
+                     * a window-frame refresh. Preserve ObtainGIRPort's layer
+                     * and clipping semantics around the reusable port. */
+                    if (layer)
+                    {
+                        LockLayer(0, layer);
+
+                        if (((GetPrivIBase(IntuitionBase)->BackupLayerContext.nestcount)++) == 0)
+                        {
+                            GetPrivIBase(IntuitionBase)->BackupLayerContext.scroll_x = layer->Scroll_X;
+                            GetPrivIBase(IntuitionBase)->BackupLayerContext.scroll_y = layer->Scroll_Y;
+                            layer->Scroll_X = 0;
+                            layer->Scroll_Y = 0;
+                            GetPrivIBase(IntuitionBase)->BackupLayerContext.clipregion =
+                                InstallClipRegion(layer, NULL);
+                        }
+
+                        SetWriteMask(rp, 0xFF);
+                        SetRPAttrs(rp, RPTAG_DrMd, JAM1,
+                                  RPTAG_PenMode, TRUE, TAG_DONE);
+
+                        if (gi->gi_DrInfo)
+                            SetFont(rp, gi->gi_DrInfo->dri_Font);
+
+                        ((struct gpRender *)msg)->gpr_RPort = rp;
+                        ((struct gpRender *)msg)->gpr_GInfo = gi;
+                        ret = Custom_DoMethodA(IntuitionBase, gad, msg);
+
+                        if ((--GetPrivIBase(IntuitionBase)->BackupLayerContext.nestcount) == 0)
+                        {
+                            InstallClipRegion(layer,
+                                GetPrivIBase(IntuitionBase)->BackupLayerContext.clipregion);
+                            layer->Scroll_X = GetPrivIBase(IntuitionBase)->BackupLayerContext.scroll_x;
+                            layer->Scroll_Y = GetPrivIBase(IntuitionBase)->BackupLayerContext.scroll_y;
+                        }
+
+                        UnlockLayer(layer);
+                    }
+                    else if (gi->gi_RastPort)
+                    {
+                        ((struct gpRender *)msg)->gpr_RPort = rp;
+                        ((struct gpRender *)msg)->gpr_GInfo = gi;
+                        ret = Custom_DoMethodA(IntuitionBase, gad, msg);
+                    }
+                }
+                break;
+
+            default:
+                ((struct gpRender *)msg)->gpr_GInfo = gi;
+                ret = Custom_DoMethodA (IntuitionBase, gad, msg);
+                break;
+
+        } /* switch (msg->MethodID) */
+
+        if (gi->gi_DrInfo) FreeScreenDrawInfo (gi->gi_Screen, gi->gi_DrInfo );
+
+        ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->GadgetLock);
+
+    } /* if (gad) */
+
+    DEBUG_DOGADGETMETHOD(dprintf("DoGadgetMethod[%x]: Return 0x%lx\n", gi, ret));
+
+    return ret;
+
+    AROS_LIBFUNC_EXIT
+
+} /* DoGadgetMethodA */

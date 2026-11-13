@@ -1,0 +1,380 @@
+/*
+    Copyright (C) 2011-2026, The AROS Development Team. All rights reserved.
+*/
+
+#define MUIMASTER_YES_INLINE_STDARG
+#define DEBUG 0
+
+#include <proto/alib.h>
+#include <proto/exec.h>
+#include <proto/graphics.h>
+#include <proto/utility.h>
+#include <proto/intuition.h>
+
+#include <exec/rawfmt.h>
+#include <libraries/mui.h>
+#include <zune/customclasses.h>
+#include <mui/NFloattext_mcc.h>
+
+#include <stdio.h>
+
+#include "locale.h"
+
+#include "smattributes.h"
+
+struct SMFloattext_DATA
+{
+};
+
+IPTR SMFloattext__MUIM_DrawBackground(Class *CLASS, Object *self, struct MUIP_DrawBackground *message)
+{
+    return DoMethod(_parent(self), MUIM_DrawBackground, message->left, message->top, message->width, message->height, message->xoffset, message->yoffset, message->flags);
+}
+
+ZUNE_CUSTOMCLASS_1
+(
+    SMFloattext, NULL, MUIC_NFloattext, NULL,
+    MUIM_DrawBackground,     struct MUIP_DrawBackground *
+);
+
+
+struct ScreenModeAttributes_DATA
+{
+    Object * objColGrp;
+    Object * objDispOGroup;
+    Object * objDisplay;
+    Object * objAspM;
+    Object * objAspR;
+    Object * objVisibleW;
+    Object * objVisibleH;
+    Object * objMinimumW;
+    Object * objMinimumH;
+    Object * objMaximumW;
+    Object * objMaximumH;
+    Object * objMaximumColors;
+    Object * objFreqH;
+    Object * objFreqK;
+    Object * objFeaturesGrp;
+    Object * objFeatures;
+
+    ULONG DisplayID;
+};
+
+CONST_STRPTR str_empty = "";
+CONST_STRPTR spec_displand = "3:Images:display-landscape";
+CONST_STRPTR spec_dispport = "3:Images:display-portrait";
+
+/*
+ * Every cell of the table below is plain text, so all of them use the
+ * frameless label macros: the Label1()/LLabel1() variants are for labelling a
+ * framed gadget, and the frame they reserve costs vertical padding the table
+ * cannot afford on a 200-line screen. FixWidthTxt still aligns the columns.
+ */
+static inline Object *makeSMLabel(char *label)
+{
+    Object *labObj = MUI_MakeObject(MUIO_Label, (IPTR)(label), 0);
+    if (labObj)
+    {
+        SET(labObj, MUIA_FixWidthTxt , (IPTR)"000000");
+    }
+    return labObj;
+}
+
+Object *ScreenModeAttributes__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
+{
+    struct ScreenModeAttributes_DATA *data;
+    Object  * objColGrp, * objVisibleW, * objVisibleH, * objMinimumW, * objMinimumH,
+            * objMaximumW, * objMaximumH, * objMaximumColors, * objFreqH, * objFreqK,
+            * objFeaturesGrp, * objFeatures, *aspM, *aspR, *objDispOGrp, *objDisp;
+
+    ULONG id;
+
+    self = (Object *)DoSuperNewTags
+    (
+        CLASS, self, NULL,
+        MUIA_Group_Horiz, TRUE,
+        Child, (IPTR)(objFeaturesGrp = VGroup,
+            Child, (IPTR)(objDispOGrp = HGroup,
+                Child, (IPTR)HVSpace,
+                Child, (IPTR)(objDisp = ImageObject,
+                    MUIA_Image_Spec, (IPTR)"3:Images:display-landscape",
+                    MUIA_FixWidth, 52,
+                    MUIA_FixHeight, 48,
+                End),
+                Child, (IPTR)HVSpace,
+            End),
+            Child, (IPTR)(objColGrp = (Object *)ColGroup(5),
+                MUIA_Group_VertSpacing, 0,
+
+                Child, (IPTR)LLabel("Aspect"),
+                Child, (IPTR)LLabel(": "),
+                Child, (IPTR)(aspM = (Object *)makeSMLabel("16368")),
+                Child, (IPTR)Label("(ratio:"),
+                Child, (IPTR)(aspR = (Object *)makeSMLabel("16384")),
+
+                Child, (IPTR)LLabel(_(MSG_VISIBLE_SIZE)),
+                Child, (IPTR)LLabel(": "),
+                Child, (IPTR)(objVisibleW = (Object *)makeSMLabel("16368")),
+                Child, (IPTR)Label("x"),
+                Child, (IPTR)(objVisibleH = (Object *)makeSMLabel("16384")),
+
+                Child, (IPTR)LLabel(_(MSG_MINIMUM_SIZE)),
+                Child, (IPTR)LLabel(": "),
+                Child, (IPTR)(objMinimumW = (Object *)makeSMLabel("16368")),
+                Child, (IPTR)Label("x"),
+                Child, (IPTR)(objMinimumH = (Object *)makeSMLabel("16368")),
+
+                Child, (IPTR)LLabel(_(MSG_MAXIMUM_SIZE)),
+                Child, (IPTR)LLabel(": "),
+                Child, (IPTR)(objMaximumW = (Object *)makeSMLabel("16368")),
+                Child, (IPTR)Label("x"),
+                Child, (IPTR)(objMaximumH = (Object *)makeSMLabel("16368")),
+
+                Child, (IPTR)LLabel(_(MSG_FREQUENCY)),
+                Child, (IPTR)LLabel(": "),
+                Child, (IPTR)(objFreqH = (Object *)makeSMLabel("16368")),
+                Child, (IPTR)Label(","),
+                Child, (IPTR)(objFreqK = (Object *)makeSMLabel("16368")),
+
+                Child, (IPTR)LLabel(_(MSG_MAXIMUM_COLORS)),
+                Child, (IPTR)LLabel(": "),
+                Child, (IPTR)(objMaximumColors = (Object *)LLabel("16777216")),
+                Child, (IPTR)RectangleObject, End,
+                Child, (IPTR)RectangleObject, End,
+
+            End),
+            Child, (IPTR)(objFeatures = NewObject(SMFloattext_CLASS->mcc_Class, NULL,
+                NoFrame,
+                MUIA_Floattext_Text, (IPTR)str_empty,
+            TAG_DONE)),
+            Child, (IPTR)RectangleObject,
+            End,
+        End),
+
+        TAG_MORE, (IPTR)message->ops_AttrList
+    );
+
+    if (!self)
+        goto err;
+
+    D(bug("[smattributes] Created ScreenModeAttributes object 0x%p\n", self));
+    data = INST_DATA(CLASS, self);
+
+    data->objColGrp             = objColGrp;
+
+    data->objDispOGroup         = objDispOGrp;
+    data->objDisplay            = objDisp;
+    data->objAspM               = aspM;
+    data->objAspR               = aspR;
+
+    data->objVisibleW           = objVisibleW;
+    data->objVisibleH           = objVisibleH;
+    data->objMinimumW           = objMinimumW;
+    data->objMinimumH           = objMinimumH;
+    data->objMaximumW           = objMaximumW;
+    data->objMaximumH           = objMaximumH;
+    data->objMaximumColors      = objMaximumColors;
+    data->objFreqH              = objFreqH;
+    data->objFreqK              = objFreqK;
+    data->objFeaturesGrp        = objFeaturesGrp;
+    data->objFeatures           = objFeatures;
+
+    id = GetTagData(MUIA_ScreenModeAttributes_DisplayID, INVALID_ID, message->ops_AttrList);
+    D(bug("[smattributes] Setting initial ModeID 0x%08lX\n", id));
+    set(self, MUIA_ScreenModeAttributes_DisplayID, id);
+
+    return self;
+
+err:
+    CoerceMethod(CLASS, self, OM_DISPOSE);
+    return NULL;
+}
+
+static int getgcd(int x, int y) 
+{ 
+	if (x == 0) 	return y; 
+	if (y == 0) 	return x; 
+	if (x == y)		return x; 
+	if (x > y)  	return getgcd(x-y, y); 
+	return getgcd(x, y-x); 
+}
+
+IPTR ScreenModeAttributes__OM_SET(Class *CLASS, Object *self, struct opSet *message)
+{
+    struct ScreenModeAttributes_DATA *data = INST_DATA(CLASS, self);
+    struct TagItem *tags;
+    struct TagItem *tag;
+    IPTR ret;
+
+    DB2(bug("[smattributes] OM_SET called\n"));
+    for (tags = message->ops_AttrList; (tag = NextTagItem(&tags)); )
+    {
+        switch (tag->ti_Tag)
+        {
+            case MUIA_ScreenModeAttributes_DisplayID:
+            {
+                ULONG dflags = 0;
+                struct DisplayInfo di;
+                struct DimensionInfo dim;
+                struct MonitorInfo mi;
+                TEXT buffer[1024];
+                char *featstr;
+                ULONG pclock = (ULONG)-1;
+
+                D(bug("[smattributes] Set DisplayID = 0x%08lx\n", tag->ti_Data));
+
+                if (GetDisplayInfoData(NULL, (UBYTE *)&di, sizeof(di), DTAG_DISP, tag->ti_Data))
+                {
+                    pclock = di.PixelSpeed;
+                    dflags = di.PropertyFlags;
+                }
+
+                if (GetDisplayInfoData(NULL, (UBYTE *)&dim, sizeof(dim), DTAG_DIMS, tag->ti_Data))
+                {
+                    const char *dispOSpec = NULL;
+                    ULONG val[2];
+
+                    if (DoMethod(data->objColGrp, MUIM_Group_InitChange))
+                    {
+                        if (dim.Nominal.MaxX - dim.Nominal.MinX + 1 > dim.Nominal.MaxY - dim.Nominal.MinY + 1)
+                        {
+                            dispOSpec = spec_displand;
+                            set(data->objAspM, MUIA_Text_Contents, "Landscape");
+                        }
+                        else
+                        {
+                            dispOSpec = spec_dispport;
+                            set(data->objAspM, MUIA_Text_Contents, "Portrait");
+                        }
+
+                        int dispgcd = getgcd(dim.Nominal.MaxX - dim.Nominal.MinX + 1, dim.Nominal.MaxY - dim.Nominal.MinY + 1);
+                        val[0] = (dim.Nominal.MaxX - dim.Nominal.MinX + 1) / dispgcd;
+                        val[1] = (dim.Nominal.MaxY - dim.Nominal.MinY + 1) / dispgcd;
+                        RawDoFmt("%ld:%ld)", (RAWARG)val, RAWFMTFUNC_STRING, buffer);                           
+                        set(data->objAspR, MUIA_Text_Contents, buffer);
+
+                        val[0] = dim.Nominal.MaxX - dim.Nominal.MinX + 1;
+                        RawDoFmt("%ld", (RAWARG)val, RAWFMTFUNC_STRING, buffer);
+                        set(data->objVisibleW, MUIA_Text_Contents, buffer);
+                        val[0] = dim.Nominal.MaxY - dim.Nominal.MinY + 1;
+                        RawDoFmt("%ld", (RAWARG)val, RAWFMTFUNC_STRING, buffer);
+                        set(data->objVisibleH, MUIA_Text_Contents, buffer);
+
+                        RawDoFmt("%d", (RAWARG)&dim.MinRasterWidth, RAWFMTFUNC_STRING, buffer);
+                        set(data->objMinimumW, MUIA_Text_Contents, buffer);
+                        RawDoFmt("%d", (RAWARG)&dim.MinRasterHeight, RAWFMTFUNC_STRING, buffer);
+                        set(data->objMinimumH, MUIA_Text_Contents, buffer);
+
+                        RawDoFmt("%d", (RAWARG)&dim.MaxRasterWidth, RAWFMTFUNC_STRING, buffer);
+                        set(data->objMaximumW, MUIA_Text_Contents, buffer);
+                        RawDoFmt("%d", (RAWARG)&dim.MaxRasterHeight, RAWFMTFUNC_STRING, buffer);
+                        set(data->objMaximumH, MUIA_Text_Contents, buffer);
+
+                        val[0] = 1 << (dim.MaxDepth > 24 ? 24 : dim.MaxDepth);
+                        RawDoFmt("%ld", (RAWARG)val, RAWFMTFUNC_STRING, buffer);
+                        set(data->objMaximumColors, MUIA_Text_Contents, buffer);
+
+                        DoMethod(data->objColGrp, MUIM_Group_ExitChange);
+                    }
+                    if (dispOSpec && DoMethod(data->objDispOGroup, MUIM_Group_InitChange))
+                    {
+                        set(data->objDisplay, MUIA_Image_Spec, (IPTR)dispOSpec);
+                        DoMethod(data->objDispOGroup, MUIM_Group_ExitChange);
+                    }
+                }
+                else
+                {
+                    if (DoMethod(data->objColGrp, MUIM_Group_InitChange))
+                    {
+                        set(data->objVisibleW, MUIA_Text_Contents, (IPTR)str_empty);
+                        set(data->objVisibleH, MUIA_Text_Contents, (IPTR)str_empty);
+                        set(data->objMinimumW, MUIA_Text_Contents, (IPTR)str_empty);
+                        set(data->objMinimumH, MUIA_Text_Contents, (IPTR)str_empty);
+                        set(data->objMaximumW, MUIA_Text_Contents, (IPTR)str_empty);
+                        set(data->objMaximumH, MUIA_Text_Contents, (IPTR)str_empty);
+                        set(data->objMaximumColors, MUIA_Text_Contents, (IPTR)str_empty);
+                        DoMethod(data->objColGrp, MUIM_Group_ExitChange);
+                    }
+                }
+
+                if ((pclock != (ULONG)-1) && (pclock != 0) && (GetDisplayInfoData(NULL, (UBYTE *)&mi, sizeof(mi), DTAG_MNTR, tag->ti_Data)))
+                {
+                    if (DoMethod(data->objColGrp, MUIM_Group_InitChange))
+                    {
+                        ULONG values[2] = {0};
+                        ULONG phz = (1000000000/ pclock);
+                        ULONG pcline = (280/ pclock) * mi.TotalColorClocks;
+
+                        if ((pcline != 0) && (mi.TotalRows != 0))
+                        {
+                            values[0] = phz / pcline;
+                            values[1] = values[0] / mi.TotalRows;
+                            values[0] /= 1000;
+                        }
+                        RawDoFmt("%ldHz", (RAWARG)&values[1], RAWFMTFUNC_STRING, buffer);
+                        set(data->objFreqH, MUIA_Text_Contents, buffer);
+
+                        RawDoFmt("%ldkHz", (RAWARG)values, RAWFMTFUNC_STRING, buffer);
+                        set(data->objFreqK, MUIA_Text_Contents, buffer);
+
+                        DoMethod(data->objColGrp, MUIM_Group_ExitChange);
+                    }
+                }
+                else
+                {
+                    if (DoMethod(data->objColGrp, MUIM_Group_InitChange))
+                    {
+                        set(data->objFreqH, MUIA_Text_Contents, (IPTR)str_empty);
+                        set(data->objFreqK, MUIA_Text_Contents, (IPTR)str_empty);
+                        DoMethod(data->objColGrp, MUIM_Group_ExitChange);
+                    }
+                }
+
+                featstr = (char *)str_empty;
+                if (dflags != 0)
+                {
+                    int offset = 0;
+
+                    if (dflags & DIPF_IS_LACE)
+                        offset += sprintf(&buffer[offset], "%s", _(MSG_INTERLACED));
+                    if (dflags & DIPF_IS_ECS)
+                        offset += sprintf(&buffer[offset], "%s", _(MSG_WANTS_ECS));
+                    if (dflags & DIPF_IS_DUALPF)
+                        offset += sprintf(&buffer[offset], "%s", _(MSG_DUALP));
+                    if (dflags & DIPF_IS_GENLOCK)
+                        offset += sprintf(&buffer[offset], "%s", _(MSG_GENLOCK));
+                    if (dflags & DIPF_IS_DRAGGABLE)
+                        offset += sprintf(&buffer[offset], "%s", _(MSG_DRAGGABLE));
+                    if (dflags & DIPF_IS_PANELLED)
+                        offset += sprintf(&buffer[offset], "%s", _(MSG_PANELLED));
+                    if (dflags & DIPF_IS_BEAMSYNC)
+                        offset += sprintf(&buffer[offset], "%s", _(MSG_BEAM_SYNC));
+
+                    if (offset > 0)
+                        featstr = buffer;
+                }
+
+                if (DoMethod(data->objFeaturesGrp, MUIM_Group_InitChange))
+                {
+                    set(data->objFeatures, MUIA_Floattext_Text, (IPTR)featstr);
+                    DoMethod(data->objFeaturesGrp, MUIM_Group_ExitChange);
+                }
+                SetAttrs(self, MUIA_Disabled, tag->ti_Data == INVALID_ID, TAG_DONE);
+
+                break;
+            }
+        }
+    }
+
+    DB2(bug("[smattributes] Calling OM_SET() on superclass\n"));
+    ret = DoSuperMethodA(CLASS, self, (Msg)message);
+    DB2(bug("[smattributes] OM_SET() on superclass returned %ld\n", ret));
+    return ret;
+}
+
+ZUNE_CUSTOMCLASS_2
+(
+    ScreenModeAttributes, NULL, MUIC_Group, NULL,
+    OM_NEW,     struct opSet *,
+    OM_SET,     struct opSet *
+);

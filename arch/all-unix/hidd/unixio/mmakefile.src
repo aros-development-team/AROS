@@ -1,0 +1,47 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM kernel-unixio : kernel-kernel-includes hidd-unixio-stubs
+#MM kernel-unixio-kobj : kernel-kernel-includes hidd-unixio-stubs
+
+USER_CPPFLAGS := -DHOST_OS_$(ARCH) -DHOST_OS_$(AROS_TARGET_VARIANT)
+USER_INCLUDES := -DAROS_ARCHITECTURE="\"$(AROS_TARGET_PLATFORM)\"" \
+	       -isystem $(GENINCDIR) $(KERNEL_INCLUDES)
+
+ifeq ($(ARCH),darwin)
+USER_CPPFLAGS += -D_FORTIFY_SOURCE=0
+endif
+
+## The '-Wno-attributes' is here due to a gcc 4.5.x bug
+## where its strcmp() builtin generates a number of spurious
+## complaints with -O1 or higher optimizations enabled.
+USER_CFLAGS += -Wno-attributes
+
+USER_LDFLAGS := -static
+
+#MM- includes-generate: kernel-unixio-includes
+
+# unixpkt_class uses Linux-only raw packet sockets (PF_PACKET, sockaddr_ll,
+# SIOCGIFHWADDR), which do not exist on darwin. The packet methods are required
+# by the UnixIO class method table, so on darwin we build failing stubs for
+# them instead (the filesystem path - emul-handler - never calls them).
+UNIXIO_FILES := unixio_class
+ifeq ($(ARCH),darwin)
+UNIXIO_FILES += unixpkt_darwin
+else
+UNIXIO_FILES += unixpkt_class
+endif
+
+%build_module mmake=kernel-unixio \
+    modname=unixio modtype=hidd version=$(AROS_TARGET_PLATFORM) \
+    files="$(UNIXIO_FILES)" archspecific=yes
+
+MY_INCLS := $(call WILDCARD, include/*.h)
+DEST_INC := $(foreach f,$(MY_INCLS), $(AROS_INCLUDES)/hidd/$(notdir $f))
+GEN_INC	 := $(foreach f,$(MY_INCLS), $(GENINCDIR)/hidd/$(notdir $f))
+
+INCLUDE_FILES    := $(call WILDCARD, include/*.h)
+
+%copy_includes path=hidd dir=include
+
+%common

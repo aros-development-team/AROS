@@ -1,0 +1,13 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+USER_AFLAGS 	:= -I$(GENINCDIR)
+
+#MM- compiler-posixc-arm : includes-asm_h
+
+%build_archspecific \
+  mainmmake=compiler-posixc modname=posixc maindir=compiler/crt/posixc \
+  arch=arm \
+  asmfiles="siglongjmp sigsetjmp vfork vfork_longjmp"
+
+%common

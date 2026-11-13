@@ -1,0 +1,16 @@
+.key NEWDIR
+
+.bra {
+.ket }
+
+; Changes directory and remembers the previous one
+
+IF "{NEWDIR}" EQ ""
+  Assign ofrom{$$}: ""
+  CD from{$$}:
+  Assign from{$$}: ofrom{$$}:
+  Assign ofrom{$$}:
+Else
+  Assign from{$$}: ""
+  CD {NEWDIR}
+EndIF

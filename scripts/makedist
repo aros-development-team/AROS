@@ -1,0 +1,125 @@
+#!/bin/bash
+# be verbose:
+# set -x
+# Create a source archive plus binaries.
+#
+# Install:
+# > mkdir .../dist
+# > cvs -d ... checkout AROS
+# > mv AROS AROS.source
+# > ln -s AROS.source/scripts/makedist .
+#
+# Usage:
+# - Update AROS.source if necessary:
+#   > cd .../dist/AROS.source ; cvs -z3 upd -dP
+# > cd .../dist
+# > ./makedist
+# - Copy the files to some public place
+#
+
+rel=${rel-`date '+%Y%m%d'`}
+fail=0
+
+if [ -z "$dstdir" ]; then
+    dstdir=snapshots
+fi
+if [ ! -d "$dstdir" ]; then
+    mkdir -p "$dstdir" || exit 1
+fi
+
+if [ ! -f "$dstdir/AROS-source-$rel.tgz" ]; then
+    # Create source dist
+    rm -rf AROS
+    cp -a AROS.source AROS
+    find AROS -name CVS -prune -print0 | xargs -0 rm -r
+    tar cz --exclude="AROS/contrib*" -f "$dstdir/AROS-source-$rel.tgz" AROS
+    tar cz -f "$dstdir/AROS-contrib-$rel.tgz" AROS/contrib
+fi
+
+if [ ! -f "$dstdir/AROS-lx86-bin-$rel.tgz" ]; then
+    # Build Linux/i386
+    rm -rf AROS
+    cp -a AROS.source AROS
+    (
+	cd AROS && \
+	autoconf && \
+	./configure && \
+	make
+    ) >& "$dstdir/AROS-lx86-bin-$rel.log"
+    if [ $? -ne 0 ]; then
+	( 
+	    echo "Building Linux/i386 failed. See the complete log at"
+	    echo "ftp://www.aros.org/pub/aros/snapshots/AROS-lx86-bin-$rel.log"
+	    echo "..."
+	    tail -50 "$dstdir/AROS-lx86-bin-$rel.log"
+	    echo
+	    echo
+	) 1>&2
+	fail=1
+    else
+	tar czf "$dstdir/AROS-lx86-bin-$rel.tgz" AROS/bin/linux-i386/AROS
+    fi
+fi
+
+if [ ! -f "$dstdir/AROS-ibmpc-bin-$rel.tgz" ]; then
+    # Build Native/i386
+    rm -rf AROS
+    cp -a AROS.source AROS
+    (
+	#sed 's/ = yes/ = no/' make.defaults > make.opts 
+
+	cd AROS && \
+	autoconf && \
+	./configure --target=pc-i386 && \
+	make
+    ) >& "$dstdir/AROS-ibmpc-bin-$rel.log"
+    if [ $? -ne 0 ]; then
+	( 
+	    echo "Building Native/i386 failed. See the complete log at"
+	    echo "ftp://www.aros.org/pub/aros/snapshots/AROS-ibmpc-bin-$rel.log"
+	    echo "..."
+	    tail -50 "$dstdir/AROS-ibmpc-bin-$rel.log"
+	    echo
+	    echo
+	) 1>&2
+	fail=1
+    else
+	mv AROS/bin/pc-i386/AROS AROS/bin/pc-i386/AROS.bak
+	mkdir -p AROS/bin/pc-i386/AROS
+	cp AROS/bin/pc-i386/gen/rom/boot/aros-pc-i386.bin AROS/bin/pc-i386/AROS/Image
+	cp AROS/bin/pc-i386/gen/rom/boot/aros.map AROS/bin/pc-i386/AROS/Image.map
+	cp AROS/docs/README.native-i386 AROS/bin/pc-i386/AROS/
+	tar czf "$dstdir/AROS-ibmpc-bin-$rel.tgz" AROS/bin/pc-i386/AROS
+	rm -rf AROS/bin/pc-i386/AROS
+	mv AROS/bin/pc-i386/AROS.bak AROS/bin/pc-i386/AROS
+    fi
+fi
+
+if [ ! -f "$dstdir/AROS-DiskImage-$rel.log" ]; then
+    # Build Native/i386
+    (
+	#sed 's/ = yes/ = no/' make.defaults > make.opts 
+
+	cd AROS && \
+	make contrib-disks
+    ) >& "$dstdir/AROS-DiskImage-$rel.log"
+    if [ $? -ne 0 ]; then
+	( 
+	    echo "Building DiskImages for Native/i386 failed. See the complete log at"
+	    echo "ftp://www.aros.org/pub/aros/snapshots/AROS-DiskImage-$rel.log"
+	    echo "..."
+	    tail -50 "$dstdir/AROS-DiskImage-$rel.log"
+	    echo
+	    echo
+	) 1>&2
+	fail=1
+    else
+	cp bin/pc-i386/gen/contrib-disks/*.img "$dstdir"
+    fi
+fi
+
+if [ $fail -eq 0 ]; then
+    echo "Whopee !! All builds were ok !"
+fi
+
+exit $fail

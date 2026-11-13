@@ -1,0 +1,10 @@
+# Copyright (C) 2004, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+
+ICONS := Include Lib
+
+#MM- iconset-Gorilla-old-icons-aros-clean : iconset-Gorilla-old-icons-aros-development-clean
+#MM- iconset-Gorilla-old-icons-aros : iconset-Gorilla-old-icons-aros-development
+%build_icons mmake=iconset-Gorilla-old-icons-aros-development icons=$(ICONS) \
+             dir=$(AROS_DEVELOPER)

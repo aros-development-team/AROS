@@ -1,0 +1,12 @@
+# $Id: mmakefile.src$
+
+include $(SRCDIR)/config/aros.cfg
+
+USER_INCLUDES := -I.. -I$(SRCDIR)/rom/devs/ata
+
+%build_archspecific \
+  mainmmake=kernel-ata modname=ata maindir=rom/devs/ata \
+  arch=amiga-m68k \
+  files="waitnano" 
+
+%common

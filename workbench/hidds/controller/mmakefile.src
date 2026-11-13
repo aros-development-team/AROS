@@ -1,0 +1,24 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM- workbench-hidds : workbench-hidds-controller
+#MM workbench-hidds-controller : kernel-hidd-includes kernel-hidd-input-includes
+
+INCLUDE_FILES := $(call WILDCARD, include/*.h)
+%copy_includes path=hidd dir=include
+
+FILES := controller_init controllerclass controllersubsystem \
+         controller_controls controller_reading controller_notify \
+         controller_mapping controller_lowlevel
+
+USER_CPPFLAGS += \
+    -D__OOP_NOLIBBASE__ \
+    -D__OOP_NOATTRBASES__ \
+    -D__UTILITY_NOLIBBASE__
+USER_LDFLAGS := -static
+
+%build_module mmake=workbench-hidds-controller \
+    modname=controller modtype=hidd \
+    files="$(FILES)"
+
+%common

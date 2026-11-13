@@ -1,0 +1,57 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM kernel-kernel-m68k : includes-asm_h
+
+%set_archincludes mainmmake=kernel-kernel maindir=rom/kernel \
+  modname=kernel pri=5 arch=m68k \
+  includes="-I$(SRCDIR)/$(CURDIR)"
+
+%get_archincludes modname=kernel \
+    includeflag=TARGET_KERNEL_INCLUDES maindir=rom/kernel
+
+%get_archincludes modname=exec \
+    includeflag=TARGET_EXEC_INCLUDES maindir=rom/exec
+
+PRIV_KERNEL_INCLUDES = \
+    $(TARGET_KERNEL_INCLUDES) \
+	-I$(SRCDIR)/rom/kernel \
+	$(TARGET_EXEC_INCLUDES) \
+	-I$(SRCDIR)/rom/exec
+
+FILES := \
+        dispatch \
+        schedule \
+        schedulecpu \
+        switch \
+        m68k_exception \
+        kernel_cpu \
+        kernel_intr \
+        platform_init \
+        setprotection \
+        mapglobal \
+        createcontext \
+        deletecontext \
+        mmu \
+        virtualtophysical \
+        bushandler
+#kernel_gdb
+
+AFILES=issuper fpusavecontext fpurestorecontext buserror ammxsavecontext ammxrestorecontext
+
+USER_INCLUDES := $(PRIV_KERNEL_INCLUDES) \
+	       -I$(GENINCDIR) -I$(AROS_DEVELOPER)/include
+
+USER_CPPFLAGS := -DPARANOIA_STACK
+
+USER_AFLAGS := $(USER_INCLUDES)
+
+TARGET_ISA_AFLAGS:=$(ISA_MC68060_FLAGS)
+# Workaround for KERNEL_OPTIMIZATION_CFLAGS not getting included into KERNEL_CFLAGS
+USER_CFLAGS := -Os
+
+%build_archspecific \
+  mainmmake=kernel-kernel modname=kernel maindir=rom/kernel arch=m68k \
+  files="$(FILES)" asmfiles="$(AFILES)" compiler=kernel
+
+%common

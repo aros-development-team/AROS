@@ -1,0 +1,357 @@
+/*
+ * fat-handler - FAT12/16/32 filesystem handler
+ *
+ * Copyright (C) 2006 Marek Szyprowski
+ * Copyright (C) 2007-2026 The AROS Development Team
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the same terms as AROS itself.
+ *
+ * $Id$
+ */
+
+#ifndef FAT_HANDLER_H
+#define FAT_HANDLER_H
+
+#define DEBUG_DIRENTRY      0
+#define DEBUG_FILE          0
+#define DEBUG_DUMP          0
+#define DEBUG_LOCK          0
+#define DEBUG_NAMES         0
+#define DEBUG_NOTIFY        0
+#define DEBUG_OPS           0
+#define DEBUG_PACKETS       0
+#define DEBUG_CACHESTATS    0
+#define DEBUG_MISC          0
+
+#include <dos/dos.h>
+#include <exec/interrupts.h>
+
+#include "fat_struct.h"
+
+#include "cache.h"
+
+/* Supported Filesystem Ids */
+#if !defined(ID_FAT12_DISK)
+#define ID_FAT12_DISK   0x46415400UL
+#endif
+#if !defined(ID_FAT16_DISK)
+#define ID_FAT16_DISK   0x46415401UL
+#endif
+#if !defined(ID_FAT32_DISK)
+#define ID_FAT32_DISK   0x46415402UL
+#endif
+#if !defined(ID_FAT_DISK)
+#define ID_FAT_DISK     ID_FAT12_DISK
+#endif
+
+/* Filesystem structures */
+
+#define ACTION_VOLUME_ADD 16000
+#define ACTION_VOLUME_REMOVE 16001
+
+#define DEF_POOL_SIZE 65536
+#define DEF_POOL_THRESHOLD DEF_POOL_SIZE
+
+
+/* A handle on something, file or directory */
+struct IOHandle
+{
+    struct FSSuper      *sb;            /* filesystem data */
+
+    ULONG               first_cluster;  /* first cluster of this file */
+    ULONG               cur_cluster;    /* cluster that the current sector is within */
+
+    ULONG               cluster_offset; /* cluster number of this cluster within the current file */
+
+    ULONG               first_sector;   /* first sector in the first cluster, for fat12/16 root dir */
+    ULONG               cur_sector;     /* sector number our block is currently in */
+
+    ULONG               sector_offset;  /* current sector as an offset in the current cluster
+                                           i.e. cur = sector(cur_cluster) + offset */
+
+    APTR block;         /* current block from the cache */
+    UBYTE *data;        /* current data buffer (from cache) */
+};
+
+/* A handle on a directory */
+struct DirHandle
+{
+    struct IOHandle     ioh;
+
+    ULONG               cur_index;      /* last entry returned, for GetNextDirEntry */
+};
+
+/* Single directory entry */
+struct DirEntry
+{
+    struct FSSuper      *sb;            /* filesystem data */
+
+    ULONG               cluster;        /* cluster the containing directory starts at */
+    ULONG               index;          /* index of this entry */
+
+    ULONG               pos;            /* byte offset within directory that the entry came from */
+    
+    union {
+        struct FATDirEntry      entry;
+        struct FATLongDirEntry  long_entry;
+    } e;
+};
+
+#define FAT_ROOTDIR_MARK    0xFFFFFFFFlu
+
+struct GlobalLock;
+
+struct ExtFileLock
+{
+    /* struct FileLock */
+    BPTR                fl_Link;
+    IPTR                fl_Key;
+    LONG                fl_Access;
+    struct MsgPort *    fl_Task;
+    BPTR                fl_Volume;
+
+    ULONG               magic;          /* we set this to ID_FAT_DISK so we can tell
+                                           our locks from those of other filesystems */
+
+    struct MinNode      node;           /* node in the list of locks attached to the global lock */
+    struct GlobalLock   *gl;            /* pointer to the global lock for this file */
+
+    struct IOHandle     ioh;            /* handle for reads and writes */
+    ULONG               pos;            /* current seek position within the file */
+
+    BOOL                do_notify;      /* if set, send notification on file close (ACTION_END) */
+    struct FSSuper      *sb;            /* pointer to sb, for unlocking when volume is removed */
+};
+
+struct GlobalLock
+{
+    struct MinNode      node;
+
+    ULONG               dir_cluster;    /* first cluster of the directory we're in */
+    ULONG               dir_entry;      /* this is our dir entry within dir_cluster */
+
+    LONG                access;         /* access mode, shared or exclusive */
+
+    ULONG               first_cluster;  /* first data cluster */
+
+    ULONG               attr;           /* file attributes, from the dir entry */
+    ULONG               size;           /* file size, from the dir entry */
+
+    UBYTE name[FAT_MAX_LONG_FILENAME + 1];  /* copy of the name (bstr) */
+#if DEBUG_NAMES
+    UBYTE shortname[FAT_MAX_SHORT_NAME + 2]; /* copy of the short name (bstr) */
+#endif
+
+    struct MinList      locks;          /* list of ExtFileLocks opened on this file */
+};
+
+/* A node in the list of notification requests */
+struct NotifyNode
+{
+    struct MinNode          node;
+
+    struct GlobalLock       *gl;        /* pointer to global lock if this file is
+                                           locked. if it's not, this is NULL */
+
+    struct NotifyRequest    *nr;        /* the request that DOS passed us */
+};
+
+struct VolumeInfo
+{
+    APTR mem_pool;
+    ULONG id;
+    struct MinList locks;           /* global locks */
+    struct GlobalLock root_lock;
+    struct MinList notifies;
+};
+
+struct VolumeIdentity
+{
+    UBYTE               name[FAT_MAX_SHORT_NAME + 2];     /* BCPL string */
+    struct DateStamp    create_time;
+};
+
+struct FSSuper
+{
+    struct Node node;
+
+    struct Globals *glob;
+    struct DosList *doslist;
+
+    struct VolumeInfo *info;
+
+    struct cache *cache;
+    ULONG first_device_sector;
+
+    ULONG sectorsize;
+    ULONG sectorsize_bits;
+
+    ULONG cluster_sectors;
+    ULONG clustersize;
+    ULONG clustersize_bits;
+    ULONG cluster_sectors_bits;
+
+    ULONG first_fat_sector;
+    ULONG first_data_sector;
+    ULONG first_rootdir_sector;
+
+    ULONG rootdir_sectors;
+    ULONG total_sectors;
+    ULONG data_sectors;
+    ULONG clusters_count;
+    ULONG fat_size;
+    UWORD fat_count;
+
+    ULONG free_clusters;
+    ULONG next_cluster;
+
+    ULONG volume_id;
+    ULONG type;
+    ULONG eoc_mark;
+
+    APTR  *fat_blocks;
+    UBYTE **fat_buffers;
+    ULONG fat_blocks_count;
+
+    ULONG fat_cachesize;
+    ULONG fat_cachesize_bits;
+    ULONG fat_cache_block;
+    UWORD fat_cache_no;    /* FAT number that cached FAT blocks belong to */
+    BOOL fat_io_error;     /* a FAT sector could not be read; cleared by
+                              whoever needs to know */
+
+    /* Clean shutdown bit tracking, see validate.c */
+    BOOL volume_dirty;      /* clean shutdown bit is currently cleared */
+    BOOL suppress_dirty;    /* don't touch the bit for the writes in progress */
+    BOOL needs_validation;  /* a validation attempt did not complete */
+
+    APTR fsinfo_block;
+    struct FATFSInfo *fsinfo_buffer;
+
+    ULONG rootdir_cluster;
+    ULONG rootdir_sector;
+
+    struct VolumeIdentity volume;
+
+    /* function table */
+    ULONG (*func_get_fat_entry)(struct FSSuper *sb, ULONG n);
+    BOOL (*func_set_fat_entry)(struct FSSuper *sb, ULONG n, ULONG val);
+    /* ... */
+};
+
+struct Globals
+{
+    /* Libraries */
+    struct ExecBase *gl_SysBase;
+    struct DosLibrary *gl_DOSBase;
+    struct Library *gl_UtilityBase;
+    struct Device *gl_TimerBase;
+
+    /* mem/task */
+    struct Task *ourtask;
+    struct MsgPort *ourport;
+    APTR mempool;
+
+    struct MsgPort *notifyport;
+
+    /* fs */
+    struct DosList *devnode;
+    struct FileSysStartupMsg *fssm;
+    BOOL quit;
+    struct DosPacket *death_packet;
+    BOOL autodetect;
+
+    /* io */
+    struct IOExtTD *diskioreq;
+    struct IOExtTD *diskchgreq;
+    struct MsgPort *diskport;
+    ULONG diskchgsig_bit;
+    struct timerequest *timereq;
+    struct MsgPort *timerport;
+    ULONG last_num;    /* last block number that was outside boundaries */
+    BOOL io_muted[2];  /* a read ([0]) or write ([1]) error was cancelled and
+                          no transfer of that kind has succeeded since */
+    ULONG max_transfer_bytes;   /* device's DE_MAXTRANSFER, 0xFFFFFFFF if none given */
+    UWORD readcmd;
+    UWORD writecmd;
+    BOOL timer_active;
+    BOOL restart_timer;
+    UWORD timer_deferred;       /* flushes postponed by continuing activity */
+
+    /* volumes */
+    struct FSSuper *sb;    /* current sb */
+    struct MinList sblist;   /* sbs with outstanding locks or notifies */
+
+    /* disk status */
+    LONG disk_inhibited;
+    BOOL disk_inserted;
+    BOOL formatting;
+
+    /* Character sets translation */
+    UBYTE from_unicode[65536];
+    UWORD to_unicode[256];
+
+    /* Disk change interrupt */
+    struct IntData {
+        struct Interrupt Interrupt;
+        struct ExecBase *SysBase;
+        struct Task *task;
+        ULONG signal;
+    } DiskChangeIntData;
+};
+
+#define DOSBase (glob->gl_DOSBase)
+#define SysBase (glob->gl_SysBase)
+#define UtilityBase (glob->gl_UtilityBase)
+#define TimerBase (glob->gl_TimerBase)
+
+#include "support.h"
+
+/* Get the first sector of a cluster */
+#define SECTOR_FROM_CLUSTER(sb,cl) \
+    ((ULONG) (((cl-2) << sb->cluster_sectors_bits) + sb->first_data_sector))
+
+#define FIRST_FILE_CLUSTER(de) \
+    (AROS_LE2WORD((de)->e.entry.first_cluster_lo) | \
+     (((ULONG) AROS_LE2WORD((de)->e.entry.first_cluster_hi)) << 16))
+
+#define RESET_HANDLE(ioh) \
+    do \
+    { \
+        (ioh)->cluster_offset = (ioh)->sector_offset = 0xffffffff; \
+        if ((ioh)->block != NULL) \
+        { \
+            Cache_FreeBlock((ioh)->sb->cache, (ioh)->block); \
+            (ioh)->block = NULL; \
+        } \
+    } \
+    while (0);
+
+#define RESET_DIRHANDLE(dh) \
+    do \
+    { \
+        RESET_HANDLE(&((dh)->ioh)); \
+        (dh)->cur_index = 0xffffffff; \
+    } \
+    while(0);
+
+#define GET_NEXT_CLUSTER(sb,cl)     (sb->func_get_fat_entry(sb,cl))
+#define SET_NEXT_CLUSTER(sb,cl,val) (sb->func_set_fat_entry(sb,cl,val))
+
+#define CALC_SHORT_NAME_CHECKSUM(name,checksum) \
+    do \
+    { \
+        ULONG i; \
+        checksum = 0; \
+        for (i = 0; i < FAT_MAX_SHORT_NAME; i++) \
+            checksum = \
+                ((checksum & 1) ? 0x80 : 0) + (checksum >> 1) + name[i]; \
+    } \
+    while(0);
+
+#define LOCKFROMNODE(A) \
+    ((struct ExtFileLock *) \
+    (((BYTE *)(A)) - (IPTR)&((struct ExtFileLock *)NULL)->node))
+
+#endif

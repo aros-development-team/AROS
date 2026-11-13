@@ -1,0 +1,15 @@
+#
+# Makefile for Mason's workbench icons
+
+include $(SRCDIR)/config/aros.cfg
+
+ICONS     := Commodities Calculator HDToolBox WiMP
+
+#MM- iconset-Mason-wbench-icons-aros : iconset-Mason-wbench-icons-aros-tools
+
+%build_icons mmake=iconset-Mason-wbench-icons-aros-tools icons=$(ICONS) \
+             dir=$(AROS_TOOLS)
+
+#MM- icons-wbench-tools : Mason-icons-wbench-tools
+%build_icons mmake=iconset-Mason-wbench-icons-aros-tools icons=$(ICONS) \
+             dir=$(AROS_PRESETS)/Icons/Mason/Default/$(AROS_DIR_AROS)/$(AROS_DIR_TOOLS)

@@ -1,0 +1,22 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+MODNAME	:=  parallel
+MODTYPE	:=  hidd
+
+USER_INCLUDES := -I$(SRCDIR)/$(CURDIR)
+
+FILES       :=
+STUBS	    := $(MODNAME)_stubs
+
+INCLUDE_FILES := $(call WILDCARD, include/*.h)
+
+# When there is actually a hidd.parallel class for here, generate the whole
+# lot.
+%make_hidd_stubs hidd=parallel
+
+#MM includes-copy
+%copy_includes path=hidd dir=include
+
+%include_deps
+%common

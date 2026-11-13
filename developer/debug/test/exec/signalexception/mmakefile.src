@@ -1,0 +1,12 @@
+# Copyright (C) 2026, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+USER_CFLAGS := -noposixc
+USER_LDFLAGS := -static
+
+#MM test-exec-signalexception : includes linklibs
+
+%build_progs mmake=test-exec-signalexception \
+    files="signalexception exceptioncontext" targetdir=$(AROS_TESTS)/exec/signalexception
+
+%common

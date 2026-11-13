@@ -1,0 +1,1081 @@
+@database "CDVDFS.guide"
+
+@node main "CDVDFS Table Of Contents"
+
+CDVDFS - a CD/DVD filesystem for Amiga family of operaing systems
+-----------------------------------------------------------------
+
+Version 1.4    16-Jun-08   (C) 2007-2008 Pavel Fedin
+			   (sonic_amiga@rambler.ru)
+
+Based on AmiCDROM 1.15     (C) 1993,1994 by Frank Munkert
+                           (ln_fmu@pki-nbg.philips.de)
+
+* IMPORTANT NOTICE FOR USERS OF AMICDROM:
+*
+* The format of the Mountlist has been changed.
+* Please consult the section "USAGE" for further information.
+
+Table of Contents:
+
+	@{"INTRODUCTION" link "INTRODUCTION"}	  -  Introduction to CDVDFS
+	@{"DISCLAIMER" link "DISCLAIMER"}	  -  Standard Disclaimer
+	@{"LEGAL" link "LEGAL"}           -  Copyrights and distribution
+	@{"REQUIREMENTS" link "REQUIREMENTS"}	  -  CDVDFS Requirements
+	@{"INSTALLATION" link "INSTALLATION"}	  -  Installing CDVDFS
+	@{"USAGE" link "USAGE"}		  -  Using CDVDFS
+	@{"FILENAMES" link "FILENAMES"}	  -  CDROM Filenames (ISO-9660, RockRidge and Joliet)
+	@{"SYMLINKS" link "SYMLINKS"}	  -  Symbolic links on Rockridge disks
+	@{"DISKCHANGE" link "DISKCHANGE"}	  -  Diskchange recognition
+	@{"MACHFS" link "MACHFS"}		  -  Macintosh HFS format
+	@{"AUDIO" link "AUDIO"}		  -  Audio disks (CD-DA)
+	@{"MULTISESSION" link "MULTISESSION"}	  -  Multisession Support
+	@{"CDCONTROL" link "CDCONTROL"}	  -  The 'CDCONTROL' Program
+	@{"CDROM" link "CDROM"}		  -  The 'CDROM' Program
+	@{"CHECKCD" link "CHECKCD"}		  -  The 'CHECKCD' Program
+        @{"KILLDEVICE" link "KILLDEVICE"}	  -  The 'KILLDEVICE' Program (MorphOS only)
+	@{"TROUBLESHOOTING" link "TROUBLESHOOTING"}	  -  Troubleshooting
+	@{"UTILITIES" link "UTILITIES"}	  -  Other utilities of interest
+	@{"THANKS" link "THANKS"}		  -  Thanks must go to..
+	@{"BUGS" link "BUGS"}		  -  Bugs and not supported features
+	@{"TODO" link "TODO"}		  -  Things still to do
+	@{"HISTORY" link "HISTORY"}		  -  History of CDVDFS
+
+@endnode
+
+@node INTRODUCTION "Introduction to CDVDFS"
+
+  CDVDFS is a CD/DVD disk filing system for the Amiga family of operating
+  systems (AmigaOS, MorphOS and AROS). It supports the ISO-9660 standard
+  (single and multiple sessions), the Rock Ridge Interchange Protocol, the
+  Joliet extension and the Macintosh HFS format.
+
+  The CDROM drive is mounted as a DOS device (e.g. CD0:). You
+  can access files and directories on a CDROM disk by the usual
+  syntax, e.g. "type cd0:foo/readme.txt".
+
+@endnode
+
+@node DISCLAIMER "Standard Disclaimer"
+
+  This software is provided as-is, without warranty of any kind,
+  either expressed or implied. In no event will the author be liable
+  for direct, indirect, incidental or consequential damages or data
+  loss resulting from the use or application of this software. The
+  entire risk as to the results and performance of this software is
+  assumed by the user.
+
+@endnode
+
+@node LEGAL "Copyrights and distribution"
+
+  CDVDFS author is Pavel Fedin (sonic_amiga@rambler.ru).
+  CDVDFS is a forked project based on AmiCDROM v1.15.
+
+  AmiCDROM 1.15 is (C) Copyright 1993,1994 by Frank Munkert.
+  All rights reserved.
+  This software may be freely distributed and redistributed for
+  non-commercial purposes, provided this notice is included.
+
+  There are no objections to anyone using or enhancing this code.
+
+@endnode
+
+@node REQUIREMENTS "CDVDFS Requirements"
+
+  CDVDFS should work with:
+  
+  1) Any "SCSI-direct" compatible SCSI bus adapter.
+  2) Any IDE adapter whose driver supports "SCSI-direct" (this means passing
+     through special commands for CD-ROM drives whose protocol is similar to
+     SCSI).
+  3) It might also work with old SCSI drivers that have no SCSI-direct feature;
+     see 'T' option.)
+
+  The running handler requires about 60K of memory (with default parameter
+  settings).
+
+  If you are using a GVP controller, you probably will have to disable
+  the "disconnect/reconnect" feature; see your SCSI controller manual.
+
+  Users of the Pioneer drives DRM600 and DRM602 possibly have to add
+  the option SI=0 to the Control field.
+
+  CDVDFS and its precedessor AmiCDROM have been tested on the following
+  hardware and software configurations:
+
+   * Amiga 500 + GVP A500-HD+ + NEC 3Xp (CDR-400) + AmiCDROM 1.11
+   * Amiga 500 + Trumpcard + NEC CDR-25 + AmiCDROM 1.7
+   * Amiga 500 + Blizzard w Supra 500XP contr + Apple CD300 +
+         AmiCDROM 1.6
+   * Amiga 500 + GVP Series II + Toshiba 4101 + AmiCDROM 1.8
+   * Amiga 500 + cdtv.device + A570 + AmiCDROM 1.7
+   * Amiga 2000 + GForce030 + Apple PowerCD + AmiCDROM 1.8 and 1.9
+   * Amiga 2000 + GVP Series II V4.13 + NEC CDR-55JD + AmiCDROM 1.4
+   * Amiga 2000 + GVP Series II + Apple CD-300 + AmiCDROM 1.4
+   * Amiga 2000 + GVP Series I + Toshiba 3401 + AmiCDROM 1.8
+   * Amiga 2000 + GVP 030 & internal SCSI II host adapter + Sony CDU-561 +
+         AmiCDROM 1.7
+   * Amiga 2000 + Masoboshi MasterCard + Toshiba 3401 + AmiCDROM 1.6
+   * Amiga 2000 + ICD Advantage 2000 + Apple CD150 + AmiCDROM 1.4
+   * Amiga 2000 + A2091 SCSI Controller + NEC CDR-37 + AmiCDROM 1.12
+   * Amiga 2000 + A2091 SCSI controller + NEC CDR-55JD-1 + AmiCDROM 1.4
+   * Amiga 2000 + GVP Series II (v4.13) + NEC CDR-55JD-1 + AmiCDROM 1.7
+   * Amiga 2000 + GVP Series II + Apple CD300 + AmiCDROM 1.9
+   * Amiga 2000 + A2091 SCSI controller + Toshiba 3301 + AmiCDROM 1.6
+   * Amiga 2000 + A2091 SCSI controller + Sony CDU-561 + AmiCDROM 1.7
+   * Amiga 2000 + Evolution-Controller (V3.x) + Toshiba 3401 +
+         AmiCDROM 1.4
+   * Amiga 2500 + A2091 SCSI controller + Apple CD300 + AmiCDROM 1.4
+   * Amiga 3000 + internal SCSI device + Toshiba 3301 + AmiCDROM 1.7
+   * Amiga 3000 + internal SCSI device + Toshiba 3401 + AmiCDROM 1.9
+   * Amiga 3000 + internal SCSI device + Chinon 435 + AmiCDROM 1.4
+   * Amiga 3000 + internal SCSI device + NEC CDR 84-1 + AmiCDROM 1.4
+   * Amiga 3000 (WD-08 Chip) + internal SCSI device + Apple CD150 +
+          AmiCDROM 1.7
+   * Amiga 3000 + internal SCSI device + Apple CD300 + AmiCDROM 1.7
+   * Amiga 3000 (Mercury '040, WD-08 Chip) + internal SCSI device +
+          Apple CD300 + AmiCDROM 1.7
+   * Amiga 3000 + internal SCSI device + Texel DM5028 + AmiCDROM 1.7
+   * Amiga 3000 + internal SCSI + NEC 3Xp + AmiCDROM 1.7
+   * Amiga 3000 + internal SCSI device + Pioneer DRM-604X QuadSpeed Changer +
+          AmiCDROM 1.9
+     [works partly]
+   * Amiga 3000 + Commodore 2091 + Toshiba 2100/3200 + AmiCDROM 1.7
+   * Amiga 3000 + Emplant w SCSI (using empscsi.device) + Apple CD 300 +
+         AmiCDROM 1.7
+   * Amiga 4000 + GVP Series I + Toshiba 3401 + AmiCDROM 1.8
+   * Amiga 4000 + Commodore 2091 SCSI controller + Toshiba 3401 +
+         AmiCDROM 1.7
+   * Amiga 4000 + Fastlane SCSI II + Toshiba 3401 + AmiCDROM 1.2
+   * Amiga 4000 + Fastlane Z3 SCSI Host Adapter + Apple CD-300 +
+         AmiCDROM 1.4-1.7
+   * Amiga 4000 + A4091 + Apple CD300 + AmiCDROM 1.7
+   * Amiga 4000 + Golem SCSI controller + Toshiba 3401 + AmiCDROM 1.7
+   * Amiga 4000/30 + DataFlyer + Apple SC + AmiCDROM 1.7
+   * Amiga 4000 + Commodore A2091 SCSI controller + NEC 3Xp + AmiCDROM 1.7
+   * Amiga 4000/040 + Oktagon 2008 + Toshiba 3401 + AmiCDROM 1.9
+   * Amiga 4000 + WarpEngine40/28 + Toshiba 3401 + AmiCDROM ?.?
+   * Amiga 4000 + A4091 SCSI controller + NEC 3Xi (CDR-500) + AmiCDROM ?.?
+     [ but: audio support does not work + READ TOC command has funny results ]
+   * Amiga ???? + Oktagon 2008 + Teac CD-50 / Pioneer DRM600 / DRM602 +
+        AmiCDROM 1.10
+   * Pegasos-II + Samsung SM-352N CDRW+DVD-R combo drive + MorphOS 1.4.5 +
+	CDVDFS 1.3
+ 
+The following hardware setups have been reported not to work:
+
+   * Amiga 2000 + GVP Series I + Toshiba 3401 + AmiCDROM 1.6
+   * Amiga 2000 + GVP Series II (v4.13) + NEC CDR-55JD-1 + AmiCDROM 1.8/1.9
+   * Amiga 2000 + GVP combo 68030/gvpscsi 3.12 + Toshiba 3401 + AmiCDROM 1.6
+   * Amiga 2000 + G-Force-030/gvpscsi 4.5 + Toshiba 3401 + AmiCDROM 1.6
+   * Amiga 2000 + ICD Advantage 2000 + Apple CD150 + AmiCDROM 1.6
+   * Amiga 2000 + Amiga 2000 Vector Acc w SCSI port + Nec MultiSpin 3Xp +
+         AmiCDROM 1.7
+   * AmiCDROM <= 1.7 + Digital RDD40  (will be fixed in AmiCDROM 1.8)
+   * Amiga 3000 + EMPLANT with SCSI (using empscsi.device) + 
+         Texel DM5024 drive + AmiCDROM 1.6
+   * Amiga 3000 (with 68040 acc) + internal SCSI device + Texel CDROM +
+         AmiCDROM 1.4
+   * Amiga 3000 + internal SCSI device + Apple CD300 + AmiCDROM 1.6
+     [works partially]
+   * Amiga 3000 + internal SCSI device (WD-08) + Apple CD150 + AmiCDROM 1.8
+
+The following hardware setups have been reported to work for some users
+and not to work for other users:
+
+   * Amiga 2000 + Evolution-Controller (V3.x) + Toshiba 3401 +
+	 AmiCDROM 1.6/1.7
+@endnode
+
+@node INSTALLATION "Installing CDVDFS"
+
+  On AROS CDVDFS is the part of bootimage and does not need any
+  installation. It works automatically out of the box by default.
+
+  On other systems you can perform the installation as follows:
+
+  1. Copy the 'cdrom-handler' file to L:cdrom-handler.
+
+  2. @{"If you use Workbench 2.0" link "2.0"}
+     @{"If you use Workbench 2.1 or higher or MorphOS" link "2.1"}
+
+
+     @{"Control" link "startup"} - The 'Control' field
+
+@endnode
+
+
+@node 2.0 "Installation on 2.0 systems"
+
+     Create an entry in DEVS:MountList like this:
+
+     CD0:	FileSystem     = L:cdrom-handler
+		Stacksize      = 10000
+		Priority       = 5
+		GlobVec        = -1
+		Mount          = 1
+		BufMemType     = 0
+		Device         = scsi.device
+		Unit           = 1
+		LowCyl         = 0
+		HighCyl        = 0
+		Surfaces       = 1
+		BlocksPerTrack = 1
+		DosType        = 0x43444653
+		Control	       = "ROCKRIDGE LOWERCASE" /* see below */
+     #
+
+     You can choose any name you like for "CD0".
+
+     Install the handler in DOS using the CLI command "Mount CD0:".
+     If there is a problem during mounting, CDVDFS will put up a
+     requester with an error message.
+     If you use CDVDFS regularily, you might consider to put
+     "Mount CD0:" in the user startup-sequence.
+
+@endnode
+
+@node 2.1 "Installation on 2.1 and higher systems and MorphOS"
+
+     Edit the file CD0. It contains a Mountlist as described in step 2a
+     (with the exception that "CD0:" and "#" are missing).
+     If you don't like the name "CD0", rename this file and the file
+     CD0.info. Use the Workbench to move the icon CD0 into the drawer
+     sys:Storage/DOSDrivers. Now enter the command "Mount CD0:" to
+     install the handler.
+     If you use CDVDFS regularily, you might consider to put
+     the icon in the drawer WBStartup or Devs:DOSDrivers; all files in these
+     drawers will be mounted at startup. If the icon is in the WBStartup
+     drawer, the Workbench will not wait until "CD0:" is mounted; if the
+     icon is in Devs:DOSDrivers, the Workbench will wait. The first
+     method is recommendable if you want your system to come up as fast
+     as possible. The second method has to be used if you want to refer
+     to "CD0:" in your s:user-startup sequence.
+     
+  IMPORTANT:
+     Make sure, that all assigned volume names (such as "L:") are known
+     at the time of mounting. Otherwise, the handler will not be
+     mounted, and no error message will be issued.
+     
+     If you have put CD0 into DEVS:DosDrivers and the handler does not
+     auto-mount, then you probably have a wrong filename in the 'Handler'
+     or 'Device' field.
+
+  IMPORTANT FOR MORPHOS:
+     If you wish to completely replace MorphOS internal CD-ROM handler
+     with CDVDFS you need to use "KillDevice" utility to remove built-in
+     handler before installing this one. In order to do this you'll have
+     to insert "KillDevice" command into MOSSYS:S/Startup-Sequence file
+     before the line:
+
+     Mount >NIL: MOSSYS:Devs/DOSDrivers/~(#?.info) DEVS:DOSDrivers/~(#?.info)
+
+     So that this would look like:
+
+     KillDevice CD0:
+     Mount >NIL: MOSSYS:Devs/DOSDrivers/~(#?.info) DEVS:DOSDrivers/~(#?.info)
+
+     This assumes that you put CD0 into DEVS:DOSDrivers directory.
+
+     Also, be sure that Mountlist for CDVDFS contains "ForceLoad = 1"
+     parameter,	otherwise builtin MorphOS CD-ROM handler will be used for the
+     device instead of CDVDFS.
+
+     If you don't wish to remove MorphOS builtin handler you'll need to
+     choose another name for CDVDFS, for example ACD0.
+
+@endnode
+
+@node startup "The 'Control' field"
+
+  The 'Control' field in the MountList is a string with the following
+  template:
+
+    RETRY/S,L=LOWERCASE/S,ML=MAYBELOWERCASE/S,
+    R=ROCKRIDGE/S,J=JOLIET/S,MI=MACTOISO/S,CS=CONVERTSPACES/S,
+    SV=SHOWVERSION/S,HF=HFSFIRST/S,FB=FILEBUFFERS/K/N,
+    DE=DATAEXT/K,RE=RESOURCEEXT/K,SI=SCANINTERVAL/K/N,PC=PLAYCDDA/K,
+    X=XPOS/K/N,Y=YPOS/K/N,UT=UNICODETABLE/K
+
+  The following options may be used:
+  
+  L            Map ISO-9660 names to lower case
+  LOWERCASE
+  
+  ML           Do not convert the filenames if the CDROM is a 
+  MAYBE-       CDTV or CD32 disk, or a disk created by Mkisofs.
+  LOWERCASE    Otherwise, map the filenames to lower case.
+  	       (LOWERCASE and MAYBELOWERCASE are mutually exclusive.)
+
+  R            Use Rock Ridge file names, if possible.
+  ROCKRIDGE
+
+  J            Use Joliet file names, if possible.
+  JOLIET
+
+  MI           Convert Mac characters into ISO-Latin-1 (Amiga) characters.
+  MACTOISO     (The conversion applies only to the filenames, not to
+               the contents of the files.) Additionally, the character
+	       ':' will be converted into a '.', and '/' will be
+	       converted into '-'; this is necessary because AmigaDOS cannot
+	       handle filenames containing those characters.
+
+  CS           Convert spaces in MacHFS filenames into underscores ('_').
+  CONVERTSPACES
+  
+  SV           Show version numbers.
+  SHOWVERSION
+  
+  HF	       If a new disk is mounted, CDVDFS normally tests first
+  HFSFIRST     if the new disk is a ISO-9660 disk. If the option "HF"
+               is given, then the disk is first examined for a HFS
+	       partition.
+	       This option is useful if you have a "multi-platform"
+	       disk with both a ISO-9660 and a HFS partition. Without
+	       the option you get the ISO partition; with the option
+	       you get the HFS partition.
+
+  FB           Number of 2048 byte buffers for file access with the
+  FILEBUFFERS  AmigaDOS Read() call. Default = the same as specified in
+	       "Buffers" keyword of the mountlist.
+
+  DE           Extension for the data fork of a file on MacHFS disks.
+  DATAEXT
+
+  RE           Extension for the resource fork of a file on MacHFS disks.
+  RESOURCEEXT  (If neither DE nor RE are given, DE is set to the empty
+               string and RE is set to ".rsrc".)
+
+  SI           Time between two successive diskchange checks.
+  SCANINTERVAL Default = 3 seconds.
+               If the value of this option is 0, then no diskchange
+	       checks will be performed; in this case, you have to use
+	       the DISKCHANGE command in order to inform CDVDFS that
+	       a disk has been changed.
+
+  PC           Name of the command to be executed if the user double-
+  PLAYCDDA     clicks at the "CD-DA" icon. If you want to execute
+               a command with parameters, you have to create
+	       a script file containing the command plus parameters.
+	       The name of the script file has to be passed as an
+	       argument to the PC option. Don't forget to set the
+	       "S" protection bit of the script file.
+
+  X            X position of CD-DA icon. (Default: WB selects position.)
+  XPOS
+
+  Y            Y position of CD-DA icon. (Default: WB selects position.)
+  YPOS
+
+  UT           Specify file name of Unicode translation table used
+  UNICODETABLE to translate national characters on Joliet disks.
+	       These tables are standard Unicode mappings, the same as,
+	       for example, supplied with codesets.library. You can
+	       find more of them at http://www.unicode.org.
+  
+  RETRY	       Report no error if the CDROM drive is switched off while
+  	       mounting the filesystem. The "mount" program will hang until
+	       the CDROM drive is switched on.
+
+  I recommend to specify at least MAYBELOWERCASE, ROCKRIDGE and JOLIET , for
+  better readability.
+
+  Examples:
+  
+	 Control = "ROCKRIDGE FB=10 DE=.1 RE=.2"
+
+    Use Rock Ridge if possible and use 10 buffers for file access (FB=10).
+    In HFS filenames, mark the data fork with the extension ".1" (DE=.1)
+    and the resource fork with the extension ".2" (RE=.2).
+
+	 Control = "ROCKRIDGE JOLIET UT=LIBS:Charsets/windows-1251.txt"
+
+    Use RockRidge or Joliet if possible and use windows-1251 Unicode conversion
+    table (this table defines russian character set).
+
+  Older Mount commands (e.g. those distributed with Workbench 2.0)
+  cannot handle space characters and "=" signs within startup
+  parameters. In CDVDFS, the following workaround has been made
+  available: every '+' sign will be replaced internally by a space
+  character. This means that
+  
+	 Control = "ROCKRIDGE+FB+10+DE+.1+RE+.2"
+ 
+  is equivalent to the example above.
+
+  If you really need a '+' character in the control field (e.g. if
+  yoy want to append ".+res" and ".+data" to HFS file names), then you have
+  to write '++' instead of '+', e.g.
+  
+	 Control = "DE+.++data+RE+.++res"
+
+@endnode
+
+@node USAGE "Using CDVDFS"
+
+  You may use "CD0:" as if it were an ordinary volume, i.e. you may
+  execute commands such as:
+  
+         dir cd0:
+	 cd cd0:
+	 type cd0:readme.txt
+  
+
+@endnode
+
+@node FILENAMES "CDROM Filenames (ISO-9660, RockRidge and Joliet)"
+
+  A standard CDROM disk ("volume") contains a ISO-9660 directory tree.
+  ISO file names have the following format:
+
+                FILENAME.EXTENSION;VERSION
+
+  e.g.  README.TXT;1
+
+  The filenames may contain upper-case letters, digits and underscores.
+
+  CDVDFS normally ignores the version number of a file. If you
+  specify the option "SV", however, the version numbers will be
+  displayed. If you have to supply a file name, you may or may not
+  specify a version number. E.g. in order to type the contents of the file
+  README.TXT;1 you might use one of the following commands:
+  
+                type readme.txt
+		type "readme.txt;1"
+
+  (don't forget the quotation marks!)
+  If a directory contains more than one file with the same name (and
+  different version numbers), then you have to supply the version number
+  in order to be able to choose the version you want.
+
+  Filenames may be mapped to lower-case by specifying the control option "L".
+  Lower-case names are generally easier to read than upper-case names.
+
+  ISO filenames have a limited length and format. To overcome this
+  restriction, the Rock Ridge Group has devised the Rock Ridge Interchange
+  Protocol which allows arbitrary filenames. Rock Ridge filenames
+  are stored in so-called "system use areas" within the ISO-9660
+  filesystem.
+  
+  By specifying the control option "R", CDVDFS recognizes Rock Ridge
+  filenames on a Rock Ridge CDROM disk.
+
+@endnode
+
+@node SYMLINKS "Symbolic links on Rockridge disks"
+
+  The Rock Ridge protocol standard also defines so-called symbolic links.
+  A symbolic link is a file A which contains the filename of another
+  file B. Whenever the name of file A is used, file B will be accessed.
+  
+  CDVDFS maps symbolic links to AmigaDOS soft links. The soft links as
+  specified and implemented in AmigaDOS 2.1/3.0, however, do not work
+  very well. Actually, soft links are not officially supported by Commodore.
+  You most probably will encounter problems, if you use path names which
+  contain soft links in their middle. Therefore, you should always ensure that
+  the soft link part of the path name is the last part, i.e.
+  use "cd cd0:foo/soft" and "cd bar" instead of "cd cd0:foo/soft/bar", if
+  "soft" is a soft link.
+
+  The AmigaDOS comment field for symbolic links will be set to "Symbolic Link".
+  Therefore, you may use the "list" command in order to identify symbolic
+  links. If you want to know what the target file of a symbolic link is,
+  then you might use the command "cdrom o <symlink-name>".
+
+@endnode
+
+@node DISKCHANGE "Diskchange recognition"
+
+  In order to recognize a "disk changed" condition, the CDROM drive is
+  periodically (each 3 seconds) queried by the filesystem handler.
+  
+  On some Amigas this may cause the "Hard Disk" LED to flash every
+  3 seconds. Obviously, the "Hard Disk" LED isn't actually connected to
+  a hard disk drive; it is simply an indicator for SCSI bus activity.
+
+  The time between two successive diskchange checks can be modified
+  with the SCANINTERVAL option. If this option is set to 0, no diskchange
+  checks will be performed. This might especially be useful for BBS
+  systems, where disks aren't changed very often.
+
+  You may force a diskchange check with the AmigaDOS DISKCHANGE
+  command, e.g. "DISKCHANGE CD0:".
+
+@endnode
+
+@node MACHFS "Macintosh HFS format"
+
+  Each MacHFS file consists of two parts: a "data fork" and a "resource
+  fork". Each fork may be regarded as an individual file. Both the
+  data fork and the resource fork may be empty.
+
+  CDVDFS treats each fork as an individual file. While other CDROM
+  filesystems may require you to switch between the modes "show only
+  data forks" and "show only resource forks", CDVDFS displays both
+  data and resource forks in one directory. If either of the two forks
+  is empty, it will not be displayed.
+
+  By default, the resource fork is marked with the extension ".rsrc".
+  You may change the extensions with the options DATAEXT and RESOURCEEXT.
+
+  MacHFS file names tend to contain lots of space characters. If you
+  don't like this, you may use the switch CONVERTSPACES to convert
+  all space characters into underscores.
+  
+  The Macintosh uses a slightly different character set than the
+  Amiga. The upper 128 characters in the Amiga character set
+  correspond to the ISO-Latin-1 standard. The upper 128 characters in
+  the Macintosh character set, however, are specific to the Mac.
+  If you want to convert Mac characters in filenames into ISO-Latin-1
+  characters, you should use the MACTOISO option.
+
+@endnode
+
+@node AUDIO "Audio disks (CD-DA)"
+
+  If a disk that contains one or more audio tracks is inserted into the
+  drive, CDVDFS will display an icon with the name "CD-DA". If you
+  double-click on this icon, the CDROM drive will start to play the
+  first track on the disk. If you double-click on this icon again, the
+  CDROM drive stops playing.
+
+  If you want to use a more sophisticated way to handle audio disks,
+  you may provide the name of a CD-DA player program as an argument
+  to the PLAYCDDA option. Recommendable programs are "JukeBox" by
+  F-J. Reichert, which uses a CD-player like user-interface,
+  "CDDA" by Olaf Barthel (for an Apple CD-300) and "PlayCDDA" by
+  Frank Munkert and Heiko Rath. PlayCDDA V1.1 is suitable only
+  for Toshiba 3401 and Apple CD-300 drives; these drives can send CD-DA
+  data over the SCSI bus. PlayCDDA reproduces the sound which is recorded
+  on the disk on the Amiga's audio.device.
+
+  The position of the CD-DA icon on the Workbench can be modified with
+  the options XPOS and YPOS.
+
+  If you do not like the default CD-DA icon, then you might create an
+  icon in the file "ENV:cdda.info". Then this icon will be used by
+  CDVDFS. The tooltype argument "ICONNAME" will be used as a replacement
+  for the default icon name ("CD-DA"). An example icon can be found in the
+  drawer "icons" in the CDVDFS distribution.
+
+  You can use this feature only if your CDROM drive supports audio commands.
+  If you only have a SCSI-1 CDROM drive, you probably also won't be able to
+  use this feature (use "cdrom a" to test whether or not you have a SCSI-1
+  drive).
+
+@endnode
+
+@node MULTISESSION "Multisession Support"
+
+  Some CD-ROMs, such as PhotoCDs, can be recorded in multiple sessions.
+  If your CD-ROM drive supports extended architecture (XA) disks and
+  can read multiple sessions, then CDVDFS will show you always the
+  latest session.
+
+  If you only have a SCSI-1 CDROM drive, you probably won't be able
+  to use this feature (use "cdrom a" to test whether or not you have a SCSI-1
+  drive).
+
+@endnode
+
+@node CDCONTROL "The 'CDCONTROL' Program"
+  
+  The 'cdcontrol' lets the user change parameters of the CDROM handler
+  while the handler is running. These changes are only temporary, and
+  persist only as long as the handler is running.
+  
+  'cdcontrol' is invoked as
+  
+       cdcontrol device: command
+  
+  where 'command' may be one of the following commands:
+  
+    lowercase on        Convert ISO filenames to lowercase
+    
+    lowercase off       Don't convert ISO filenames
+
+    mactoiso on         Convert Mac to Amiga characters
+    
+    mactoiso off        Don't convert Mac filenames
+    
+    convertspaces on    Convert HFS spaces into underscores
+    
+    convertspaces off   Don't convert spaces in HFS filenames
+    
+    hfsfirst on         Look for a HFS partition first
+    
+    hfsfirst off        Look for an ISO partition first
+    
+    dataext <name>      Set extension for HFS data forks
+    
+    resourceext <name>  Set extension for HFS resource forks
+
+    unicodetable <name> Load Joliet character set conversion table
+			(use special name "none" in order to use
+			defauit built-in Latin-1 table)
+
+  Examples:
+  
+    cdcontrol CD0: dataext ".data"
+    cdcontrol CD0: unicodetable "L:FileSystem_Trans/windows-1251.txt"
+
+  All command names may be abbreviated to the one- or two-letter
+  abbreviations shown in the section "The 'Control' field".
+
+
+@endnode
+
+@node CDROM "THE 'CDROM' PROGRAM"
+
+  The 'cdrom' program is mainly for developers of CDVDFS.
+  However, there are some features which might be useful to
+  everyone.
+  
+  In order to use 'cdrom' you have to set the following
+  environment variables:
+  
+     CDROM_DEVICE       Name of your SCSI device, e.g. "scsi.device"
+     
+     CDROM_UNIT         SCSI-ID of your CDROM drive, e.g. "2"
+
+     CDROM_FASTMEM      Has to be set to any value if you want to use
+		        fast memory instead of chip memory for buffers.
+
+     CDROM_UNICODETABLE Name of character conversion table for Joliet disks.
+
+  Here are some useful commands:
+  
+     cdrom a          Show information on the CDROM drive.
+  
+     cdrom d[rl] dir  Show directory 'dir'.
+     		      Option r: also show subdirectories.
+		      Option l: show additional information.
+
+     cdrom e[rlL] dir Show directory 'dir' using Rock Ridge names.
+     		      Option r: also show subdirectories.
+		      Option l: show names of system use fields.
+		      Option L: show names and contents of system use fields.
+
+     cdrom i          Show the format (ISO, RR, J or HFS) of the current disk.
+     
+     cdrom s num      Read the contents of sector 'num'.
+
+     cdrom v          Show the primary volume descriptor of the CDROM disk.
+     
+     cdrom z          Test if the CDROM drive is ready.
+
+@endnode
+
+@node CHECKCD "The 'CHECKCD' Program"
+
+  Checkcd performs some consistency checks on an ISO 9660 disk.
+  Set the options CDROM_DEVICE, CDROM_FASTMEM and CDROM_UNICODETABLE as
+  described in the previous section and invoke "checkcd" without arguments.
+  The test may take up to 20 minutes, depending on the complexity of
+  your CD.
+
+@endnode
+
+@node KILLDEVICE "The 'KILLDEVICE' Program"
+
+  Unfortunately MorphOS operating system has a problem - it can't dismount
+  handlers correctly. KillDevice is a hack which allows you to remove
+  existing CD-ROM handler in order to replace it with CDVDFS.
+
+  Note that it is REALLY A HACK! It actually rips off the device from
+  the system, and not shuts it down in somehow friendly manner. I hope
+  some day this problem will be fixed and this tool will not be needed any
+  more.
+
+  The only argument for KillDevice is physical device name:
+
+     killdevice cd0:
+
+  This program exists only in MorphOS version of the package. It is simply
+  not useful on other systems due to its weird nature.
+
+@endnode
+
+@node TROUBLESHOOTING "Troubleshooting"
+
+  Q: My Amiga crashes if I mount the CD0 device.
+  A: Possibly your SCSI driver does not support the selected
+     access method. Play around with the options "CHIP", "FAST", "DMA" and
+     "ANY"; there should be a setting which also works for you.
+
+  Q: If I use many screens or many colors, my Amiga runs slower
+     and slower.
+  A: Probably you are running out of chip memory. Use the "FAST"
+     option, if your SCSI driver supports this. Otherwise, decrease
+     the size of the CDVDFS buffers with the options FB and SB.
+
+  Q: My system does not boot if no disk is inserted in the CDROM drive.
+  A: L. Scott Emmons (csusac.csus.edu!cdsac!scotte) suggests this:
+     If the CDROM drive is at a SCSI address lower than the last
+     hard drive device, the system will not boot unless either the
+     drive is powered off, or a data CD is in the drive. To fix,
+     I changed my hard drive to SCSI device 0, put the CDROM drive
+     as device 5, and then rebooted with the CDROM drive powered OFF.
+     I ran HDTOOLBOX, which complained that "something had changed",
+     did a "SAVE", and exited. Now, I can reboot with the CDROM drive
+     either on or off, and everything is fine. Apparently this has to
+     do with setting the "last drive" bit on the hard drive, or some
+     such. This will be a problem with any factory-installed hard
+     drives, since CBM insists on installing them as SCSI device 6.
+
+@endnode
+
+@node UTILITIES "Other utilities of interest"
+
+  "SCSIUtil" by Gary Duncan and Heiko Rath:
+  Provides low level access to your CDROM drive. Useful for debugging.
+
+  "ForceIcon" by Kai Iske:
+  A commodity which places icons for volumes and devices at user-definable
+  locations. Useful if you don't like the icon locations and images on
+  your CDROM.
+
+  "cdromemu.device" (can be found in m68k AmiCDROM v1.15 archive):
+  Emulates a trackdisk device which reads a CDROM image from an AmigaDOS
+  file. Can be used by CDROM manufacturers to verify the output of
+  their pre-mastering program. It is removed from MorphOS distribution
+  because it comes without source code and can't be recompiled.
+
+@endnode
+
+@node THANKS "Thanks must go to.."
+
+  My promary thanks go to original author, Frank Munkert, for releasing
+  source code of AmiCDROM version 1.15.
+
+  Also the following people were involved into development and beta testing
+  of previous versions of AmiCDROM:
+ 
+    Thomas Baetzler
+    Olaf Barthel
+    Stefan Becker
+    Johanna Berewinkel
+    J. M. Bezeau
+    Stefan Le Breton
+    Dirk-Michael Brosig
+    James Cooper
+    Gary Duncan
+    Richard L. Dyson
+    Brent Earl
+    Phillip Eastham
+    L. Scott Emmons
+    Stephan Feinen
+    Manuel Fischer
+    Fred Fish
+    Jos Fries
+    Thorsten Frueauf
+    Humberto L. Gomez
+    Oliver Graf
+    Christoph Guelicher
+    Carsten Hammer
+    Joe Hanson
+    Thorsten Herrmann
+    Rainer Hess
+    Martin Jahner
+    Tom Kennedy
+    Thomas Kessler
+    Stephan Kohler
+    Thomas Kroener
+    Roy S. Laufer
+    W. R. Leach
+    Martin Loos
+    Dylan McNamee
+    Thomas J. Moore
+    Gunther Nikl
+    Bo Najdrovsky
+    Ottmar Roehrig
+    Nicola Salmoria
+    Matthias Scheler
+    Henning Schmiedehausen
+    Martin Schulze
+    Bill Seymour
+    Ignatios Souvatzis
+    Ken Sowinski
+    Luca Spada
+    Erkki Tapola
+    Joergen Thomsen
+    Mark Tomlinson
+    Olivier Tonino
+    Roy Trevino
+    Frank Wuerkner
+    Jim Zepeda
+
+@endnode
+
+@node BUGS "Bugs and not supported features"
+
+  Bugs: If you find any bugs, please send an e-mail message to:
+	   sonic_amiga@rambler.ru
+
+    If you want to report an error, please describe your system
+    configuration (computer model, operating system name and version,
+    SCSI device name, CDROM drive model) and include your MountList
+    entry for the "CD0:" device. Include in your bug report the output
+    of the commands "cdrom a" and "cdrom v".
+
+  Not supported features:
+  
+    - Interleaved mode (ISO)
+    - Multi-disk volumes (ISO)
+    - Multi-volume disks (ISO)
+
+@endnode
+
+@node TODO "TO DO"
+
+Things to do:
+-------------
+
+  My current plans for this project are:
+
+- Implement UDF filesystem support.
+- Create MUI-based preferences editor instead of old "cdcontrol" program.
+- Implement reading CDDA tracks as files (like in AsimCDFS).
+
+  The project can be supported for all existing branches of Amiga operating
+  systems. Current source code supports three flavours:
+
+- AmigaOS/m68k (until v3.9)
+- MorphOS
+- AROS
+
+  MorphOS and AROS flavours are maintained by me. Maintainers for m68k build and
+  possible AmigaOS4 build are wanted. Support for unmaintained architectures can
+  not be guaranteed.
+
+  If you wish to become a maintainer please mail me at sonic_amiga@rambler.ru.
+
+Original to-do from Frank Murket:
+---------------------------------
+
+- Support trackdisk disk change interrupt:
+  Neither trackdisk interrupts nor trackdisk changenums are supported
+  by the V40 scsi.device for A3000(T). Therefore the trackdisk disk change
+  recognition feature currently cannot be supported by CDVDFS.
+
+@endnode
+
+@node HISTORY "History of CDVDFS"
+
+Changes in V1.4:
+
+* Fixed reading multisession discs, previously it worked not on all drives.
+* Supports "Hidden" flag on ISO9660/Joliet volumes, used by for example MacOS.
+* Hides files with "Associated" flag set, this helps to read discs created
+  under	MacOS.
+
+Changes in V1.3:
+
+* Now reports correct DOS type for volumes.
+* Fixed losing a volume under MorphOS if a disk has been removed with some
+  files or directories open.
+* Fixed some problems with RockRidge volumes on some machines.
+* Fixed disappearing volume upon disc read failure.
+* Fixed broken CDDA handling.
+
+Changes in V1.2:
+
+* Added support for protection bits and file comments
+* Fixed crash with too long file names (longer than 106 characters).
+* Fixed Mountlist format, now correct and compatible with all systems.
+
+Changes in V1.1:
+
+* Removed redundant TRACKDISK option, standard trackdisk commands are used
+  for reading data and SCSI-2 commands for other operations.
+* Added support for trackdisk64 standard, now will really work with DVD disks,
+  even double-layered.
+
+Changes in V1.0:
+
+* First release under new name.
+* Rewritten startup procedure, now uses new format of mountlist.
+* Added Joliet support.
+
+Original AmiCDROM changelog follows.
+
+Changes for MorphOS port:
+
+* Rewritten CDDA play routine, now it should work with all IDE drives.
+
+Changes in V1.15:
+
+* Mount command returns now even if the SCSI device cannot be opened
+  (with RETRY option only!)
+* Fixed bug in HFS driver which caused slow or even incorrect file access.
+* Truncate file names to 30 characters.
+* Included installer script.
+
+Changes in V1.14:
+
+* Fixed bug in volume handling routines.
+* Start sector of files is now returned in the fl_Key field of
+  FileLock structures, for compatibility with the Commodore CDROM file
+  system.
+
+Changes in V1.13:
+
+* Offset of last session is determined with a vendor specific command
+  on Toshiba drives.
+* Added a workaround for the bad NEC 3X READ TOC command, which sometimes
+  contains a wrong track number for the lead-out track.
+* Added support for packet ACTION_EXAMINE_FH; this fixes the problems with
+  some implementations of the C library routine fstat().
+* Added support for packet ACTION_PARENT_FH.
+* Better error message for ACTION_MAKE_LINK.
+* A volume node will be removed if the last lock from the volume node has
+  been freed.
+* READ TOC command disabled for Apple CD 150, because this command caused
+  some CD 150 drives to block the SCSI bus.
+* AmiCDROM sources can now be compiled with the GNU C compiler gcc.
+* Aztec C and DICE C are no longer supported.
+
+Changes in V1.12:
+
+* Tries to cope with CDROMs which have an incorrect table of contents.
+* New default CD-DA icon.
+* User-definable CD-DA icon.
+* New option RETRY.
+
+Changes in V1.11:
+
+* New option MAYBELOWERCASE.
+* Audio support for Apple CD-150 (= Sony 8002) und CD-300 (= Sony 8003).
+* Sense length 20 instead of 18 (needed by ALF driver).
+* Fixed bug in ACTION_DISK_INFO.
+* Performance improvement for lock+filehandle processing.
+
+Changes in V1.10:
+
+* Larger buffer for startup strings.
+* Improved handling of volumes: locks and file handles will not be
+  discarded if a CDROM is removed from the drive.
+* Adapted ACTION_CURRENT_VOLUME to new volume handling.
+* CDROM emulator now also supports TD_CHANGESTATE and TD_CHANGENUM,
+  and the virtual CDROMs can be inserted into and removed from the
+  emulated drive.
+* Fixed bug concerning TRACKDISK disk change recognition.
+* Improved implementation of ACTION_INHIBIT.
+* Minor improvements and bug fixes in the HFS driver.
+* The extended attribute record length has to be considered when
+  reading file sections.
+
+Changes in V1.9:
+
+* Added support for Rock Ridge relocated directories.
+  AmiCDROM now conforms fully to the Rock Ridge Interchange Protocol Rev 1.09.
+* Added CDROM emulator cdromemu.device.
+* Included "checkcd" tool.
+* Full support for ACTION_INHIBIT.
+* Better trackdisk disk change recognition.
+* Toshiba 4101 support.
+
+Changes in V1.8:
+
+* Support for symbolic links on RockRidge disks.
+* Support for multisession disks (such as PhotoCDs).
+* New memory options CHIP, DMA and ANY.
+* Removed the assembly stubs for the debug process (Aztec and SAS/C).
+* Support for the ACTION_FLUSH packet.
+* Changed the packet number for cdcontrol from 666 to 2050.
+* The option LOWERCASE now also applies to ISO volume names.
+* Double-clicking at the CD-DA icon (without PLAYCDDA option) now plays
+  the whole CD.
+* Support for CDROM drives with block lengths of 512, 1024 and 2048 bytes.
+* Better method for finding HFS master directory blocks.
+* User may define the location of the CD-DA icon.
+* If the CD-DA icon cannot be displayed because the WB is not open, then
+  the display function will be retried periodically (all SCANINTERVAL seconds).
+* The AmiCDROM device node now also contains a pointer a FileSysStartupMsg,
+  in order to live peacefully together with SysInfo and similar tools.
+* Support for drives which do not support the SCSI-2 READ TOC command.
+
+Changes in V1.7:
+
+* Some packets are now handled even if no disk is inserted (e.g. the
+  ACTION_INHIBIT packet). Otherwise WB would bring up the requester "No Disk
+  in drive CD0:" when the system is booted without a CD in the drive.
+* Improved "cdrom d" and "cdrom e" commands.
+* Removed call to GetDefDiskObject(). This call sometimes caused a crash,
+  because GetDefDiskObject sends/receives DOS packets. A DOS handler isn't
+  allowed to do this.
+* Added custom CD-DA icon.
+* Support for logical block sizes of 512, 1024 and 2048 bytes.
+* Fixed bug in HFS module.
+* Option MACTOISO now also converts ':' and '/' characters.
+* Options MACTOISO and CONVERTSPACES now also apply to volume names.
+
+Changes in V1.6:
+
+* CD-DA support; new option: PLAYCDDA.
+* New option: SCANINTERVAL (user-programmable diskchange check interval).
+* Better support for ACTION_INHIBIT packet.
+* Allows ISO filenames with ';' characters.
+* Can now be compiled with DICE 2.07.56R.
+
+Changes in V1.5:
+
+* Make Toshiba-3401 drives switch between XA and normal mode, depending
+  on the inserted disk. (Useful for PhotoCDs.)
+* New option: SHOWVERSION.
+* New option: HFSFIRST.
+* Fixed a bug which caused an enforcer hit with the "cdrom" program.
+* "cdcontrol" control program.
+
+Changes in V1.4:
+
+* Added Mac HFS support.
+* The path table of ISO disks is no longer examined. This results in a
+  little speed increase. Furthermore, the FishMarket V2.0 disk by AsimWare
+  (which has a corrupted path table) can now be read with AmiCDROM.
+* Bug fix: if a there is a disk change immediatedly before mounting AmiCDROM,
+  the new disk will now be recognized.
+* SAS/C support for debug process (dbproc.a).
+
+Changes in V1.3:
+
+* Improved caching algorithm.
+* New buffering options 'STDBUFFERS' and 'FILEBUFFERS'.
+* Fixed bug with locks containing wrong fl_Volume entry. Now the AmigaDOS
+  shell should show the correct volume prompt.
+* New format for the Mountlist 'Startup' field.
+* Compiled with small memory model.
+* Uses utility.library in order to reduce the size of the executable.
+* Recognizes if a non-ISO disk is in the CDROM drive and creates a
+  'no DOS disk' volume node. This solves some problems with Audio-CDs.
+* The volume node now contains the volume creation date.
+* Can now be compiled with SAS/C and DICE in addition to Aztec C.
+
+Changes in V1.2:
+
+* Support for new packets: ACTION_SAME_LOCK, ACTION_IS_FILESYSTEM,
+  ACTION_CURRENT_VOLUME.
+* Send 'disk inserted' or 'disk removed' event, so that the Workbench
+  detects disk changes faster.
+* Added fast memory option 'F'.
+* Writing ACTIONs now return a 'write protected' error status.
+* Unload handler after ACTION_DIE.
+* Immediately terminate program if called from CLI.
+* Set volume label to "Unnamed" for disks without name.
+* Added support for LUNs other than 0.
+* Included an icon for the Mountlist.
+* DOS list changes now bracketed by Forbid() and Permit().
+* Corrected another ACTION_SEEK bug.
+* Handler cannot be killed if locks or filehandles are in use.
+
+Changes in V1.1:
+
+* Bug in ACTION_SEEK handling fixed.
+* Bug with top-level ACTION_EXAMINE_OBJECT for Rock Ridge disks fixed.
+* Added code to detect whether a lock stems from the current volume
+  or from another volume which has been removed from the drive.
+  (In this case the error 'object not found' (205) is reported.)
+* Added support for trackdisk calls. (Startup option 'T')
+
+@endnode

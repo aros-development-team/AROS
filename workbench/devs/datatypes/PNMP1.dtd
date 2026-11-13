@@ -1,0 +1,10 @@
+# DataType Description for PNMP1
+Name=PNMP1
+Version=$VER: PNMP1 41.0 (09.07.2010)
+BaseName=pnm
+Pattern=#?
+Mask='P' '1'
+GroupID=pict
+ID=pnm1
+Flags=DTF_BINARY,DTF_CASE
+Priority=0

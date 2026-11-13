@@ -1,0 +1,28 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+ifneq ($(FAMILY),)
+    FAMILY_INCLUDES := -I$(SRCDIR)/arch/all-$(FAMILY)/filesys/emul_handler
+endif
+
+USER_CPPFLAGS := -DADATE="\"$(shell date '+%d.%m.%Y')\""
+USER_INCLUDES := -I$(SRCDIR)/arch/all-$(ARCH)/filesys/emul_handler $(FAMILY_INCLUDES) -I$(SRCDIR)/$(CURDIR) -iquote $(SRCDIR)/rom/expansion -iquote $(SRCDIR)/rom/dosboot
+USER_LDFLAGS := -static
+
+FILES	      := emul_init emul_handler filenames emul_host
+CONSOLE_FILES := boot
+
+# Emergency console is useless on mobile platforms (currently all targets with variants),
+# because they don't provide somehow usable stdin/stdout.
+ifeq ($(AROS_TARGET_VARIANT),)
+    FILES += $(CONSOLE_FILES)
+else
+    USER_CPPFLAGS += -DNO_EMERGENCY_CONSOLE
+endif
+
+%build_module mmake=kernel-fs-emul \
+    modname=emul modtype=resource modsuffix=handler version=$(AROS_TARGET_PLATFORM) \
+    files="$(FILES) $(FUNCS)" \
+    moduledir=$(AROS_DIR_BOOTARCH)/L
+
+%common

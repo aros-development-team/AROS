@@ -1,0 +1,16 @@
+diff -ruN compiler-rt-11.0.0.src/lib/builtins/CMakeLists.txt compiler-rt-11.0.0.src.aros/lib/builtins/CMakeLists.txt
+--- compiler-rt-11.0.0.src/lib/builtins/CMakeLists.txt	2020-10-07 10:10:48.000000000 +0000
++++ compiler-rt-11.0.0.src.aros/lib/builtins/CMakeLists.txt	2020-10-07 10:10:48.000000000 +0000
+@@ -196,9 +196,11 @@
+   set(GENERIC_SOURCES
+     ${GENERIC_SOURCES}
+     emutls.c
+-    enable_execute_stack.c
+     eprintf.c
+   )
++  if(NOT AROS_BUILD)
++    list(APPEND GENERIC_SOURCES enable_execute_stack.c)
++  endif()
+ endif()
+ 
+ if(COMPILER_RT_HAS_ATOMIC_KEYWORD AND NOT COMPILER_RT_EXCLUDE_ATOMIC_BUILTIN)

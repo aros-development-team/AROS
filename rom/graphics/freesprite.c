@@ -1,0 +1,61 @@
+/*
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
+
+    Desc: Graphics function FreeSprite()
+*/
+#include <graphics/gfxbase.h>
+#include <proto/exec.h>
+#include "graphics_intern.h"
+
+/*****************************************************************************
+
+    NAME */
+#include <proto/graphics.h>
+
+        AROS_LH1(void, FreeSprite,
+
+/*  SYNOPSIS */
+        AROS_LHA(WORD, pick, D0),
+
+/*  LOCATION */
+        struct GfxBase *, GfxBase, 69, Graphics)
+
+/*  FUNCTION
+        Free a via GetSprite previously allocated sprite.
+        Don't even dare to free a sprite you didn't allocate.
+
+    INPUTS
+        pick - number of sprite in range 0-7
+
+    RESULT
+        Sprite is made available for other tasks and the Virtual Sprite
+        Machine.
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+        GetSprite(), ChangeSprite(), MoveSprite(), graphics/sprite.h
+
+    INTERNALS
+
+    HISTORY
+
+*****************************************************************************/
+{
+    AROS_LIBFUNC_INIT
+
+    if(pick >= 0 && pick < 8) {
+        UBYTE Mask = (0x01 << pick) ^ 0xff;
+        Disable();
+        GfxBase->SpriteReserved &= Mask;
+        GfxBase->ExtSprites &= Mask;
+        if (GfxBase->SimpleSprites)
+            GfxBase->SimpleSprites[pick] = NULL;
+        Enable();
+    }
+    AROS_LIBFUNC_EXIT
+} /* FreeSprite */

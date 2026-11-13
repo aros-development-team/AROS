@@ -1,0 +1,41 @@
+##rem $Id: RexCat.sd,v 2.1 2010/02/11 18:46:51 AmigaPhil $
+##stringtype None
+/* - Locale support in ARexx (RexCat) - %b
+REMOVE THE tls() AND gettlstext() FUNCTIONS FROM YOUR SCRIPT, IF ANY;
+AND COPY/PASTE THE NEWER FUNCTIONS BELOW THIS LINE INSTEAD.
+(Note: You need to replace these functions each time you update your
+       script and the Catalog Description is modified.)
+--------------------------------------------------------------------- */
+
+/* (RexCat) Function which translates the strings */
+
+tls: PROCEDURE EXPOSE tlstext.
+
+  PARSE ARG instring
+
+  IF instring = '' THEN RETURN instring
+  IF LENGTH(instring) > 250 THEN instring = LEFT(instring,250)
+  XID = "XID_" || C2X(instring)
+  IF tlstext.XID == 'TLSTEXT.' || XID THEN RETURN instring
+  IF tlstext.XID = '' THEN RETURN instring
+
+  RETURN tlstext.XID
+
+
+/* (RexCat) Function to load the translation file */
+
+gettlstext: PROCEDURE EXPOSE tlstext.
+
+  IF ~SHOW('L',"locale.library") THEN
+    IF ~ADDLIB("locale.library",0,-30) THEN RETURN 0
+
+  cat = OPENCATALOG("%b.catalog","%l",%v)
+  IF cat = 0 THEN DO
+    CALL CLOSECATALOG(cat)
+    RETURN 0
+  END
+
+ tlstext.%i=GETCATALOGSTR(cat,%d,"")
+
+  RETURN 1
+

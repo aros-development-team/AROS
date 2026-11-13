@@ -1,0 +1,103 @@
+/*
+ * Copyright (C) 1994 AmiTCP/IP Group, <amitcp-group@hut.fi>
+ *                    Helsinki University of Technology, Finland.
+ *                    All rights reserved.
+ * Copyright (C) 2005-2026 The AROS Dev Team
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place - Suite 330, Boston,
+ * MA 02111-1307, USA.
+ *
+ */
+
+#ifndef NET_SANA2CONFIG_H
+#define NET_SANA2CONFIG_H
+
+#ifndef DOS_RDARGS_H
+#include <dos/rdargs.h>
+#endif
+
+#include "net/netdbpaths.h"
+
+#define SSC_TEMPLATE \
+  "NAME/A," \
+  "DEV=DEVICE/K," \
+  "UNIT/N/K," \
+  "IP/K,NETMASK/K,UP/S," \
+  "IP6/K,PREFIXLEN/N/K," \
+  "GW/K,GW6/K," \
+  "DNS/K,DNS6/K," \
+  "IPTYPE/N/K," \
+  "ARPTYPE=IPARPTYPE/N/K," \
+  "IPREQ=IPREQUESTS/N/K," \
+  "ARPREQ=ARPREQUESTS/N/K," \
+  "WRITEREQ=WRITEREQUESTS/N/K," \
+  "NOTRACKING/S," \
+  "NOARP/S," \
+  "ARPHDR/N/K," \
+  "P2P=POINT2POINT/S,NOSIMPLEX/S,LOOPBACK/S," \
+  "TUNNEL/S,TSRC/K,TDST/K,TTL/N/K," \
+  "DEFER/S"
+
+struct ssc_args {
+  UBYTE *a_name;
+  UBYTE *a_dev;
+  LONG  *a_unit;
+  UBYTE *a_ip;
+  UBYTE *a_netmask;
+  SIPTR   a_up;
+  UBYTE *a_ip6;
+  LONG  *a_prefixlen;
+  UBYTE *a_gw;
+  UBYTE *a_gw6;
+  UBYTE *a_dns;			/* comma-separated DNS servers (IPv4 protocol)  */
+  UBYTE *a_dns6;		/* comma-separated DNS servers (IPv6 protocol)  */
+  LONG  *a_iptype;
+  LONG  *a_arptype;
+  LONG  *a_ipno;
+  LONG  *a_arpno;
+  LONG  *a_writeno;
+  SIPTR   a_notrack;
+  SIPTR   a_noarp;
+  LONG  *a_arphdr;
+  SIPTR   a_point2point;
+  SIPTR   a_nosimplex;
+  SIPTR   a_loopback;
+  SIPTR   a_tunnel;		/* 6in4 tunnel interface */
+  UBYTE  *a_tsrc;		/* tunnel outer IPv4 local endpoint */
+  UBYTE  *a_tdst;		/* tunnel outer IPv4 remote endpoint */
+  LONG   *a_ttl;		/* tunnel outer IPv4 TTL */
+  SIPTR   a_defer;		/* device may not be there yet: keep trying in the background */
+};
+
+struct ssconfig {
+  LONG            flags;
+  LONG            unit;
+  char            name[IFNAMSIZ];
+  struct RDArgs   *rdargs;
+  struct ssc_args args[1];
+};
+
+#define SSCF_RDARGS 1		/* set iff rdargs should be freed */
+
+/*
+ * Define how the interface database should be interpreted
+ */
+#define SSC_ALIAS  0
+#define SSC_COMPAT 1
+
+/* ssconfig_parse() and ssconfig_free() (kern/netconfig_module.c), and
+ * ssconfig(), which sets up an interface from them (kern/netconfig_iface.c):
+ * the configuration reader's own, static there */
+
+#endif /* !NET_SANA2CONFIG_H */

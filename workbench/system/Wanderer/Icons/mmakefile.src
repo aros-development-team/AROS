@@ -1,0 +1,18 @@
+# Copyright (C) 2004, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM- workbench-system-wanderer-icons : workbench-system-wanderer-mainicons workbench-system-wanderer-extraicons
+
+MAINICONS := \
+   Wanderer
+
+EXTRAICONS := \
+   drawer file
+
+
+%build_icons mmake=workbench-system-wanderer-mainicons icons=$(MAINICONS) \
+             dir=$(AROS_SYSTEM)/Wanderer
+
+%build_icons mmake=workbench-system-wanderer-extraicons icons=$(EXTRAICONS) \
+             dir=$(AROS_SYSTEM)/Wanderer/Icons

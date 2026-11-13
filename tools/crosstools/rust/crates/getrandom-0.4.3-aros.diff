@@ -1,0 +1,35 @@
+diff -ruN -x .cargo-checksum.json -x Cargo.toml.orig -x .cargo_vcs_info.json -x target -x Cargo.lock a/Cargo.toml b/Cargo.toml
+--- a/Cargo.toml	2006-07-24 02:21:28.000000000 +0100
++++ b/Cargo.toml	2026-10-12 01:57:27.390018695 +0100
+@@ -116,7 +116,7 @@
+ version = "0.2.154"
+ default-features = false
+ 
+-[target.'cfg(any(target_os = "macos", target_os = "openbsd", target_os = "vita", target_os = "emscripten"))'.dependencies.libc]
++[target.'cfg(any(target_os = "macos", target_os = "aros", target_os = "openbsd", target_os = "vita", target_os = "emscripten"))'.dependencies.libc]
+ version = "0.2.154"
+ default-features = false
+ 
+diff -ruN -x .cargo-checksum.json -x Cargo.toml.orig -x .cargo_vcs_info.json -x target -x Cargo.lock a/src/backends.rs b/src/backends.rs
+--- a/src/backends.rs	2006-07-24 02:21:28.000000000 +0100
++++ b/src/backends.rs	2026-10-12 01:31:17.925544660 +0100
+@@ -51,6 +51,7 @@
+         pub use use_file::*;
+     } else if #[cfg(any(
+         target_os = "macos",
++        target_os = "aros",
+         target_os = "openbsd",
+         target_os = "vita",
+         target_os = "emscripten",
+diff -ruN -x .cargo-checksum.json -x Cargo.toml.orig -x .cargo_vcs_info.json -x target -x Cargo.lock a/src/utils/get_errno.rs b/src/utils/get_errno.rs
+--- a/src/utils/get_errno.rs	2006-07-24 02:21:28.000000000 +0100
++++ b/src/utils/get_errno.rs	2026-10-12 01:57:27.390121195 +0100
+@@ -19,6 +19,8 @@
+         use __errno as errno_location;
+     } else if #[cfg(target_os = "aix")] {
+         use libc::_Errno as errno_location;
++    } else if #[cfg(target_os = "aros")] {
++        use libc::__stdc_geterrnoptr as errno_location;
+     } else {
+         compile_error!("errno_location is not provided for the target");
+     }

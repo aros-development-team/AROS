@@ -1,0 +1,471 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+ifneq ($(AROS_TARGET_VARIANT),tiny)
+MAKE_BUILTIN_ABOUTMUI      := no
+MAKE_BUILTIN_BALANCE       := no
+MAKE_BUILTIN_BOOPSI        := no
+MAKE_BUILTIN_COLORADJUST   := no
+MAKE_BUILTIN_COLORFIELD    := no
+MAKE_BUILTIN_POPASL        := no
+MAKE_BUILTIN_POPFRAME      := no
+MAKE_BUILTIN_POPIMAGE      := no
+MAKE_BUILTIN_POPPEN        := no
+MAKE_BUILTIN_RADIO         := no
+MAKE_BUILTIN_SCROLLGROUP   := no
+MAKE_BUILTIN_SETTINGSGROUP := no
+MAKE_BUILTIN_VIRTGROUP     := no
+else
+MAKE_BUILTIN_ABOUTMUI      := yes
+MAKE_BUILTIN_BALANCE       := yes
+MAKE_BUILTIN_BOOPSI        := yes
+MAKE_BUILTIN_COLORADJUST   := yes
+MAKE_BUILTIN_COLORFIELD    := yes
+MAKE_BUILTIN_POPASL        := yes
+MAKE_BUILTIN_POPFRAME      := yes
+MAKE_BUILTIN_POPIMAGE      := yes
+MAKE_BUILTIN_POPPEN        := yes
+MAKE_BUILTIN_RADIO         := yes
+MAKE_BUILTIN_SCROLLGROUP   := yes
+MAKE_BUILTIN_SETTINGSGROUP := yes
+MAKE_BUILTIN_VIRTGROUP     := yes
+endif
+
+MAKE_BUILTIN_FRAMEADJUST   := yes
+MAKE_BUILTIN_FRAMEDISPLAY  := yes
+MAKE_BUILTIN_GAUGE         := yes
+MAKE_BUILTIN_IMAGEADJUST   := yes
+MAKE_BUILTIN_IMAGEDISPLAY  := yes
+MAKE_BUILTIN_PENADJUST     := yes
+MAKE_BUILTIN_PENDISPLAY    := yes
+MAKE_BUILTIN_SCALE         := yes
+MAKE_BUILTIN_NUMERICBUTTON := yes
+MAKE_BUILTIN_PANEL	       := yes
+MAKE_BUILTIN_PANELGROUP    := yes
+MAKE_BUILTIN_DRAGHANDLE    := yes
+MAKE_BUILTIN_PANELTITLE    := yes
+MAKE_BUILTIN_VOLUMELIST    := no
+MAKE_BUILTIN_DIRLIST       := no
+MAKE_BUILTIN_POPLIST	   := no
+MAKE_BUILTIN_POPSCREEN	   := no
+MAKE_BUILTIN_CRAWLING	   := no
+MAKE_BUILTIN_LEVELMETER	   := no
+MAKE_BUILTIN_KNOB          := no
+MAKE_BUILTIN_DTPIC         := no
+MAKE_BUILTIN_PALETTE	   := no
+MAKE_BUILTIN_TITLE         := no
+MAKE_BUILTIN_PROCESS       := no
+MAKE_BUILTIN_PIXMAP        := no
+
+CLASSES := \
+    application \
+    area \
+    bitmap \
+    bodychunk \
+    chunkyimage \
+    configdata \
+    cycle \
+    dataspace \
+    family \
+    group \
+    image \
+    list \
+    listview \
+    mccprefs \
+    menuitem \
+    notify \
+    numeric \
+    popobject \
+    popstring \
+    prop \
+    rectangle \
+    register \
+    semaphore \
+    scrollbar \
+    scrollbutton \
+    slider \
+    string \
+    text \
+    window
+
+FILES := \
+    bubbleengine \
+    clipboard \
+    datatypescache \
+    dragndrop \
+    font \
+    frame \
+    imspec \
+    imspec_gradient \
+    imspec_gradientdraw \
+    imspec_vector \
+    locale \
+    menu \
+    penspec \
+    support \
+    support_aros \
+    support_classes \
+    textengine
+
+FUNCS := \
+    mui_addclipping \
+    mui_addclipregion \
+    mui_allocaslrequest \
+    mui_aslrequest \
+    mui_beginrefresh \
+    mui_createcustomclass \
+    mui_deletecustomclass \
+    mui_disposeobject \
+    mui_endrefresh \
+    mui_error \
+    mui_freeaslrequest \
+    mui_freeclass \
+    mui_getclass \
+    mui_layout \
+    mui_makeobject \
+    mui_newobject \
+    mui_obtainpen \
+    mui_redraw \
+    mui_rejectidcmp \
+    mui_releasepen \
+    mui_removeclipping \
+    mui_removeclipregion \
+    mui_request \
+    mui_requestidcmp \
+    mui_seterror
+
+USER_CPPFLAGS := -DHAVE_COOLIMAGES
+EXTCLASSES  :=
+
+ifeq ($(MAKE_BUILTIN_ABOUTMUI),yes)
+    CLASSES     := $(CLASSES) aboutmui
+    USER_CPPFLAGS := $(USER_CPPFLAGS) -DZUNE_BUILTIN_ABOUTMUI=1
+else
+    EXTCLASSES  := $(EXTCLASSES) aboutmui
+    USER_CPPFLAGS := $(USER_CPPFLAGS) -DZUNE_BUILTIN_ABOUTMUI=0
+endif
+
+ifeq ($(MAKE_BUILTIN_BOOPSI),yes)
+    CLASSES     := $(CLASSES) boopsi
+    USER_CPPFLAGS := $(USER_CPPFLAGS) -DZUNE_BUILTIN_BOOPSI=1
+else
+    EXTCLASSES  := $(EXTCLASSES) boopsi
+    USER_CPPFLAGS := $(USER_CPPFLAGS) -DZUNE_BUILTIN_BOOPSI=0
+endif
+
+ifeq ($(MAKE_BUILTIN_BALANCE),yes)
+    CLASSES     := $(CLASSES) balance
+    USER_CPPFLAGS := $(USER_CPPFLAGS) -DZUNE_BUILTIN_BALANCE=1
+else
+    EXTCLASSES  := $(EXTCLASSES) balance
+    USER_CPPFLAGS := $(USER_CPPFLAGS) -DZUNE_BUILTIN_BALANCE=0
+endif
+
+ifeq ($(MAKE_BUILTIN_COLORADJUST),yes)
+    CLASSES     := $(CLASSES) coloradjust
+    USER_CPPFLAGS := $(USER_CPPFLAGS) -DZUNE_BUILTIN_COLORADJUST=1
+else
+    EXTCLASSES  := $(EXTCLASSES) coloradjust
+    USER_CPPFLAGS := $(USER_CPPFLAGS) -DZUNE_BUILTIN_COLORADJUST=0
+endif
+
+ifeq ($(MAKE_BUILTIN_COLORFIELD),yes)
+    CLASSES     := $(CLASSES) colorfield
+    USER_CPPFLAGS := $(USER_CPPFLAGS) -DZUNE_BUILTIN_COLORFIELD=1
+else
+    EXTCLASSES  := $(EXTCLASSES) colorfield
+    USER_CPPFLAGS := $(USER_CPPFLAGS) -DZUNE_BUILTIN_COLORFIELD=0
+endif
+
+ifeq ($(MAKE_BUILTIN_FRAMEADJUST),yes)
+    CLASSES     := $(CLASSES) frameadjust
+    USER_CPPFLAGS := $(USER_CPPFLAGS) -DZUNE_BUILTIN_FRAMEADJUST=1
+else
+    EXTCLASSES  := $(EXTCLASSES) frameadjust
+    USER_CPPFLAGS := $(USER_CPPFLAGS) -DZUNE_BUILTIN_FRAMEADJUST=0
+endif
+
+ifeq ($(MAKE_BUILTIN_FRAMEDISPLAY),yes)
+    CLASSES     := $(CLASSES) framedisplay
+    USER_CPPFLAGS := $(USER_CPPFLAGS) -DZUNE_BUILTIN_FRAMEDISPLAY=1
+else
+    EXTCLASSES  := $(EXTCLASSES) framedisplay
+    USER_CPPFLAGS := $(USER_CPPFLAGS) -DZUNE_BUILTIN_FRAMEDISPLAY=0
+endif
+
+ifeq ($(MAKE_BUILTIN_GAUGE),yes)
+    CLASSES     := $(CLASSES) gauge
+    USER_CPPFLAGS := $(USER_CPPFLAGS) -DZUNE_BUILTIN_GAUGE=1
+else
+    EXTCLASSES  := $(EXTCLASSES) gauge
+    USER_CPPFLAGS := $(USER_CPPFLAGS) -DZUNE_BUILTIN_GAUGE=0
+endif
+
+ifeq ($(MAKE_BUILTIN_PANEL),yes)
+    CLASSES     := $(CLASSES) panel
+    USER_CPPFLAGS := $(USER_CPPFLAGS) -DZUNE_BUILTIN_PANEL=1 -DZUNE_BUILTIN_DRAGHANDLE=1 -DZUNE_BUILTIN_PANELTITLE=1
+else
+    EXTCLASSES  := $(EXTCLASSES) panel
+    USER_CPPFLAGS := $(USER_CPPFLAGS) -DZUNE_BUILTIN_PANEL=0 -DZUNE_BUILTIN_DRAGHANDLE=0 -DZUNE_BUILTIN_PANELTITLE=0
+endif
+
+ifeq ($(MAKE_BUILTIN_PANELGROUP),yes)
+    CLASSES     := $(CLASSES) panelgroup
+    USER_CPPFLAGS := $(USER_CPPFLAGS) -DZUNE_BUILTIN_PANELGROUP=1
+else
+    EXTCLASSES  := $(EXTCLASSES) panelgroup
+    USER_CPPFLAGS := $(USER_CPPFLAGS) -DZUNE_BUILTIN_PANELGROUP=0
+endif
+
+ifeq ($(MAKE_BUILTIN_IMAGEADJUST),yes)
+    CLASSES     := $(CLASSES) imageadjust
+    USER_CPPFLAGS := $(USER_CPPFLAGS) -DZUNE_BUILTIN_IMAGEADJUST=1
+else
+    EXTCLASSES  := $(EXTCLASSES) imageadjust
+    USER_CPPFLAGS := $(USER_CPPFLAGS) -DZUNE_BUILTIN_IMAGEADJUST=0
+endif
+
+ifeq ($(MAKE_BUILTIN_IMAGEDISPLAY),yes)
+    CLASSES     := $(CLASSES) imagedisplay
+    USER_CPPFLAGS := $(USER_CPPFLAGS) -DZUNE_BUILTIN_IMAGEDISPLAY=1
+else
+    EXTCLASSES  := $(EXTCLASSES) imagedisplay
+    USER_CPPFLAGS := $(USER_CPPFLAGS) -DZUNE_BUILTIN_IMAGEDISPLAY=0
+endif
+
+ifeq ($(MAKE_BUILTIN_PENADJUST),yes)
+    CLASSES     := $(CLASSES) penadjust
+    USER_CPPFLAGS := $(USER_CPPFLAGS) -DZUNE_BUILTIN_PENADJUST=1
+else
+    EXTCLASSES  := $(EXTCLASSES) penadjust
+    USER_CPPFLAGS := $(USER_CPPFLAGS) -DZUNE_BUILTIN_PENADJUST=0
+endif
+
+ifeq ($(MAKE_BUILTIN_PENDISPLAY),yes)
+    CLASSES     := $(CLASSES) pendisplay
+    USER_CPPFLAGS := $(USER_CPPFLAGS) -DZUNE_BUILTIN_PENDISPLAY=1
+else
+    EXTCLASSES  := $(EXTCLASSES) pendisplay
+    USER_CPPFLAGS := $(USER_CPPFLAGS) -DZUNE_BUILTIN_PENDISPLAY=0
+endif
+
+ifeq ($(MAKE_BUILTIN_POPASL),yes)
+    CLASSES     := $(CLASSES) popasl
+    USER_CPPFLAGS := $(USER_CPPFLAGS) -DZUNE_BUILTIN_POPASL=1
+else
+    EXTCLASSES  := $(EXTCLASSES) popasl
+    USER_CPPFLAGS := $(USER_CPPFLAGS) -DZUNE_BUILTIN_POPASL=0
+endif
+
+ifeq ($(MAKE_BUILTIN_POPFRAME),yes)
+    CLASSES     := $(CLASSES) popframe
+    USER_CPPFLAGS := $(USER_CPPFLAGS) -DZUNE_BUILTIN_POPFRAME=1
+else
+    EXTCLASSES  := $(EXTCLASSES) popframe
+    USER_CPPFLAGS := $(USER_CPPFLAGS) -DZUNE_BUILTIN_POPFRAME=0
+endif
+
+ifeq ($(MAKE_BUILTIN_POPIMAGE),yes)
+    CLASSES     := $(CLASSES) popimage
+    USER_CPPFLAGS := $(USER_CPPFLAGS) -DZUNE_BUILTIN_POPIMAGE=1
+else
+    EXTCLASSES  := $(EXTCLASSES) popimage
+    USER_CPPFLAGS := $(USER_CPPFLAGS) -DZUNE_BUILTIN_POPIMAGE=0
+endif
+
+ifeq ($(MAKE_BUILTIN_POPPEN),yes)
+    CLASSES     := $(CLASSES) poppen
+    USER_CPPFLAGS := $(USER_CPPFLAGS) -DZUNE_BUILTIN_POPPEN=1
+else
+    EXTCLASSES  := $(EXTCLASSES) poppen
+    USER_CPPFLAGS := $(USER_CPPFLAGS) -DZUNE_BUILTIN_POPPEN=0
+endif
+
+ifeq ($(MAKE_BUILTIN_RADIO),yes)
+    CLASSES     := $(CLASSES) radio
+    USER_CPPFLAGS := $(USER_CPPFLAGS) -DZUNE_BUILTIN_RADIO=1
+else
+    EXTCLASSES  := $(EXTCLASSES) radio
+    USER_CPPFLAGS := $(USER_CPPFLAGS) -DZUNE_BUILTIN_RADIO=0
+endif
+
+ifeq ($(MAKE_BUILTIN_SCALE),yes)
+    CLASSES     := $(CLASSES) scale
+    USER_CPPFLAGS := $(USER_CPPFLAGS) -DZUNE_BUILTIN_SCALE=1
+else
+    EXTCLASSES  := $(EXTCLASSES) scale
+    USER_CPPFLAGS := $(USER_CPPFLAGS) -DZUNE_BUILTIN_SCALE=0
+endif
+
+ifeq ($(MAKE_BUILTIN_SCROLLGROUP),yes)
+    CLASSES     := $(CLASSES) scrollgroup
+    USER_CPPFLAGS := $(USER_CPPFLAGS) -DZUNE_BUILTIN_SCROLLGROUP=1
+else
+    EXTCLASSES  := $(EXTCLASSES) scrollgroup
+    USER_CPPFLAGS := $(USER_CPPFLAGS) -DZUNE_BUILTIN_SCROLLGROUP=0
+endif
+
+ifeq ($(MAKE_BUILTIN_SETTINGSGROUP),yes)
+    CLASSES     := $(CLASSES) settingsgroup
+    USER_CPPFLAGS := $(USER_CPPFLAGS) -DZUNE_BUILTIN_SETTINGSGROUP=1
+else
+    EXTCLASSES  := $(EXTCLASSES) settingsgroup
+    USER_CPPFLAGS := $(USER_CPPFLAGS) -DZUNE_BUILTIN_SETTINGSGROUP=0
+endif
+
+ifeq ($(MAKE_BUILTIN_VIRTGROUP),yes)
+    CLASSES     := $(CLASSES) virtgroup
+    USER_CPPFLAGS := $(USER_CPPFLAGS) -DZUNE_BUILTIN_VIRTGROUP=1
+else
+    EXTCLASSES  := $(EXTCLASSES) virtgroup
+    USER_CPPFLAGS := $(USER_CPPFLAGS) -DZUNE_BUILTIN_VIRTGROUP=0
+endif
+
+ifeq ($(MAKE_BUILTIN_VOLUMELIST),yes)
+    CLASSES     := $(CLASSES) volumelist
+    USER_CPPFLAGS := $(USER_CPPFLAGS) -DZUNE_BUILTIN_VOLUMELIST=1
+else
+    EXTCLASSES  := $(EXTCLASSES) volumelist
+    USER_CPPFLAGS := $(USER_CPPFLAGS) -DZUNE_BUILTIN_VOLUMELIST=0
+endif
+
+ifeq ($(MAKE_BUILTIN_DIRLIST),yes)
+    CLASSES     := $(CLASSES) dirlist
+    USER_CPPFLAGS := $(USER_CPPFLAGS) -DZUNE_BUILTIN_DIRLIST=1
+else
+    EXTCLASSES  := $(EXTCLASSES) dirlist
+    USER_CPPFLAGS := $(USER_CPPFLAGS) -DZUNE_BUILTIN_DIRLIST=0
+endif
+
+ifeq ($(MAKE_BUILTIN_NUMERICBUTTON),yes)
+    CLASSES     := $(CLASSES) numericbutton
+    USER_CPPFLAGS := $(USER_CPPFLAGS) -DZUNE_BUILTIN_NUMERICBUTTON=1
+else
+    EXTCLASSES  := $(EXTCLASSES) numericbutton
+    USER_CPPFLAGS := $(USER_CPPFLAGS) -DZUNE_BUILTIN_NUMERICBUTTON=0
+endif
+
+ifeq ($(MAKE_BUILTIN_POPLIST),yes)
+    CLASSES     := $(CLASSES) poplist
+    USER_CPPFLAGS := $(USER_CPPFLAGS) -DZUNE_BUILTIN_POPLIST=1
+else
+    EXTCLASSES  := $(EXTCLASSES) poplist
+    USER_CPPFLAGS := $(USER_CPPFLAGS) -DZUNE_BUILTIN_POPLIST=0
+endif
+
+ifeq ($(MAKE_BUILTIN_POPSCREEN),yes)
+    CLASSES     := $(CLASSES) popscreen
+    USER_CPPFLAGS := $(USER_CPPFLAGS) -DZUNE_BUILTIN_POPSCREEN=1
+else
+    EXTCLASSES  := $(EXTCLASSES) popscreen
+    USER_CPPFLAGS := $(USER_CPPFLAGS) -DZUNE_BUILTIN_POPSCREEN=0
+endif
+
+ifeq ($(MAKE_BUILTIN_CRAWLING),yes)
+    CLASSES     := $(CLASSES) crawling
+    USER_CPPFLAGS := $(USER_CPPFLAGS) -DZUNE_BUILTIN_CRAWLING=1
+else
+    EXTCLASSES  := $(EXTCLASSES) crawling
+    USER_CPPFLAGS := $(USER_CPPFLAGS) -DZUNE_BUILTIN_CRAWLING=0
+endif
+
+ifeq ($(MAKE_BUILTIN_LEVELMETER),yes)
+    CLASSES     := $(CLASSES) levelmeter
+    USER_CPPFLAGS := $(USER_CPPFLAGS) -DZUNE_BUILTIN_LEVELMETER=1
+else
+    EXTCLASSES  := $(EXTCLASSES) levelmeter
+    USER_CPPFLAGS := $(USER_CPPFLAGS) -DZUNE_BUILTIN_LEVELMETER=0
+endif
+
+ifeq ($(MAKE_BUILTIN_KNOB),yes)
+    CLASSES     := $(CLASSES) knob
+    USER_CPPFLAGS := $(USER_CPPFLAGS) -DZUNE_BUILTIN_KNOB=1
+else
+    EXTCLASSES  := $(EXTCLASSES) knob
+    USER_CPPFLAGS := $(USER_CPPFLAGS) -DZUNE_BUILTIN_KNOB=0
+endif
+
+ifeq ($(MAKE_BUILTIN_DTPIC),yes)
+    CLASSES     := $(CLASSES) dtpic
+    USER_CPPFLAGS := $(USER_CPPFLAGS) -DZUNE_BUILTIN_DTPIC=1
+else
+    EXTCLASSES  := $(EXTCLASSES) dtpic
+    USER_CPPFLAGS := $(USER_CPPFLAGS) -DZUNE_BUILTIN_DTPIC=0
+endif
+
+ifeq ($(MAKE_BUILTIN_PALETTE),yes)
+    CLASSES     := $(CLASSES) palette
+    USER_CPPFLAGS := $(USER_CPPFLAGS) -DZUNE_BUILTIN_PALETTE=1
+else
+    EXTCLASSES  := $(EXTCLASSES) palette
+    USER_CPPFLAGS := $(USER_CPPFLAGS) -DZUNE_BUILTIN_PALETTE=0
+endif
+
+ifeq ($(MAKE_BUILTIN_TITLE),yes)
+    CLASSES     := $(CLASSES) title
+    USER_CPPFLAGS := $(USER_CPPFLAGS) -DZUNE_BUILTIN_TITLE=1
+else
+    EXTCLASSES  := $(EXTCLASSES) title
+    USER_CPPFLAGS := $(USER_CPPFLAGS) -DZUNE_BUILTIN_TITLE=0
+endif
+
+ifeq ($(MAKE_BUILTIN_PROCESS),yes)
+    CLASSES     := $(CLASSES) process
+    USER_CPPFLAGS := $(USER_CPPFLAGS) -DZUNE_BUILTIN_PROCESS=1
+else
+    EXTCLASSES  := $(EXTCLASSES) process
+    USER_CPPFLAGS := $(USER_CPPFLAGS) -DZUNE_BUILTIN_PROCESS=0
+endif
+
+ifeq ($(MAKE_BUILTIN_PIXMAP),yes)
+    CLASSES     := $(CLASSES) pixmap
+    USER_CPPFLAGS := $(USER_CPPFLAGS) -DZUNE_BUILTIN_PIXMAP=1
+else
+    EXTCLASSES  := $(EXTCLASSES) pixmap
+    USER_CPPFLAGS := $(USER_CPPFLAGS) -DZUNE_BUILTIN_PIXMAP=0
+endif
+
+CLASSFILES    := $(foreach f, $(CLASSES), classes/$(f))
+CLASSINCLUDES := $(foreach f, $(CLASSES), $(SRCDIR)/$(CURDIR)/classes/$(f).h) \
+                 $(foreach f, $(EXTCLASSES), $(SRCDIR)/$(CURDIR)/classes/$(f).h)
+FILES         := $(FILES) $(CLASSFILES)
+
+#MM workbench-libs-muimaster : includes linklibs \
+#MM workbench-libs-coolimages external-bz2 \
+#MM workbench-libs-muimaster-catalogs
+
+%build_module mmake=workbench-libs-muimaster \
+    modname=muimaster modtype=library \
+    files="muimaster_init-aros $(FUNCS) $(FILES)" \
+    uselibs="coolimages stdc rexxsyslib"
+
+BUILDINCTOOL := $(GENDIR)/$(CURDIR)/buildincludes
+INCLUDEFILES := $(AROS_INCLUDES)/libraries/mui.h $(GENINCDIR)/libraries/mui.h
+
+#MM- includes-generate-deps : includes-libraries-mui
+#MM- core-linklibs : linklibs-muimaster
+
+#MM
+includes-libraries-mui : includes-mui-setup $(INCLUDEFILES)
+	@$(NOP)
+
+includes-mui-setup : $(GENINCDIR)/libraries $(AROS_INCLUDES)/libraries
+
+%copy_includes includes=customclasses.h path=zune
+
+$(GENINCDIR)/libraries $(AROS_INCLUDES)/libraries :
+	%mkdir_q dir=$@
+
+$(AROS_INCLUDES)/libraries/mui.h : $(GENINCDIR)/libraries/mui.h
+	@$(ECHO) "Copying    $< to $@"
+	@$(CP) $< $@
+
+$(GENINCDIR)/libraries/mui.h : $(BUILDINCTOOL) mui.h macros.h $(CLASSINCLUDES)
+	@$(ECHO) Rebuilding $@
+	@cd $(SRCDIR)/$(CURDIR); $(BUILDINCTOOL) > $@
+
+$(BUILDINCTOOL) : buildincludes.c
+	%mkdirs_q $(dir $(BUILDINCTOOL))
+	@$(HOST_CC) $(HOST_CFLAGS) $< -o $@
+
+%common

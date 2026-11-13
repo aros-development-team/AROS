@@ -1,0 +1,56 @@
+To: announce@cs.ucdavis.edu
+
+
+TITLE
+
+     VMM
+
+VERSION
+
+     2.1
+
+AUTHOR
+
+     Martin Apel, email: apel@physik.uni-kl.de
+
+DESCRIPTION
+
+     VMM is a virtual memory manager for any Amiga with
+     a 68030 or 68040 processor. Up to 128 MB of virtual memory is 
+     available to all processes just like physical memory.
+     Paging can be done either to a dedicated partition, a file or a 
+     so-called pseudo-partition. The paging buffer can be specified 
+     as a fixed amount or dynamically allocated.
+
+NEW FEATURES
+
+     A newly implemented write buffer reduces disk i/o and speeds 
+     up VMM considerably.
+     Paging to a file has been speeded up.
+     Support for external statistics modules.
+
+SPECIAL REQUIREMENTS
+
+     VMM needs at least OS2.0 and a 68030 or 68040 with a functional MMU
+     to work. At least 2 MB of Fast-RAM and a harddisk are recommended 
+     although not definitely needed.
+
+HOST NAME
+
+     Aminet (e.g. ftp.uni-kl.de)
+
+DIRECTORY
+
+     #####
+
+FILE NAMES
+
+     VMM_V2.1.lha (####  bytes)
+
+PRICE
+
+     Completely free
+
+DISTRIBUTABILITY
+
+     Copyright by Martin Apel, freely distributable

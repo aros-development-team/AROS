@@ -1,0 +1,101 @@
+20MAR08
+ADFlib 0.7.12
+- use GNU autotools build system
+- fix building on 64bit architectures but needs C99 compliant compliler
+- remove some windows specific stuff maybe one should add it again updating it
+to use the current directory structure
+20JAN07
+ADFlib 0.7.11a
+- Minor Makefile fixes. Works under Fedora Core 5, gcc 4.1.0.
+- Inclusing of Bjarke Viksoe C++ wrapper (adfwrapper.h). Windows specific for the moment, 
+  but good example of C++ wrapper on top of ADFlib.
+- Inclusion of GPL license and text inside every code source file 
+  (requested by Gürkan Sengün to build a Debian package for unadf)
+
+31MAR06
+ADFlib 0.7.11
+Minor Makefile and compilation process changes to work under cygwin and with gcc 3.4.4.
+
+16OCT02
+ADFlib 0.7.9d by Gary Harris
+- changes all occurences of // foo, into /* foo */
+- updated "Copyright Laurent Clevy" message date up to 2002 intead of 1999
+- marked all Bjarke changes by the /* BV */ comment
+
+22JAN01
+ADFlib 0.7.9c by Bjarke Viksoe 
+- changes : Win32/nt4_dev.c
+	.return RC_ERROR instead of FALSE
+	.return TRUE when input parameter of NT4CloseDrive is NULL
+- changes : Win32/defendian.h
+	changes printf and putchar into -empty string- for Win32 GUI applications
+- fix : in adf_hd.c, in adfMountDev(), dumpfiledevice was assumed sometimes, but it could be native. 
+	"if (dev->isNativeDev)" when needed
+- fix : in adf_hd.c, in adfMountDev(), some memory release was forgotten in case of error
+- change : adf_hd.c, line 36, floppy dump files with 83 sectors are now valid (request by users)
+- change : adf_hd.c , adfReadRDSKBlock(), ignore checksum error. Win98 modifies this sector
+
+10SEP00
+- ADFlib 0.7.9b refixes and Win32 code improvements by Gary Harris
+27FEB00
+- ADFlib 0.7.9a bug with hardfiles fixed some months ago by Dan Sutherland
+05SEP99
+- ADFlib 0.7.9 released. Docs updated.
+15AUG99
+- fix: bug in adfGetHashValue() : must use unsigned char...
+- unadf 1.0 : with multiple files and recursive extraction, pipe redirection
+01AUG99
+- adfGetDelEnt(), adfUndelEntry(), adfCheckEntry()
+??JUN99
+- fix: forgot the secType for the cache entry in adfCreateDir()
+- fix: adfRemoveEntry() with a dir did not remove the related cache blocks
+26MAY99
+- 0.7.8a released.
+- a minor buf was detected in the bootblock checksum checking
+24MAY99
+- 0.7.8 released. the 0.7.9 will have some links support. the next unadf version will have extraction (-x).
+- Win32 dynamic library makefile added
+- test scripts floppy.sh and bigdev.sh added
+- small bug fix in adfGetRDirEnt().
+20MAY99
+- the ENV_DECLARATION is put in the library (adf_env.c), and must be removed from the main() files.
+  Will be consistent will the .dll version.
+- unadf.c started : a unzip like utility for the .ADF files. Extraction not provided yet.
+- adfGetRDirEnt() added, adfFreeDirList() modified : to get recursively the entire directories entries tree.
+13MAY99
+- adfSetEntryAccess() and adfSetEntryComment() added
+- Win32 makefile added for the static library form
+06MAY99
+- adfGetVersionNumber() and adfGetVersionDate() added
+01MAY99
+- many date and time fields filled 
+- bug fix in adfCreateDir()
+- adfRenameEntry() already worked with two differents dirs, but it's verified now
+29APR
+- Hardfile support added (requested by Dan Sutherland)
+19APR
+- bug fix in cache routines
+- adfRenameEntry() works in the same directory, only
+6APR99
+- bug fix in adfWriteBootBlock() : disks can really be made bootable
+- bug fix around adfCreateDumpDevice()
+22MAR99
+- removed the fread() bug : fopen(,"rb")
+- removed the LSEG checking
+01FEB99
+- adfFlushFile()
+- dir cache support for files and directories
+- bugfix : adfCloseFile() when filesize==0
+- bugfix : parent field in file header block
+28JAN99
+- safier and proper error handling
+27JAN99
+- bugfix : adfGetFreeBlocks(), physical and logical block numbers confused
+24JAN99
+- adfRemoveEntry() : delete files and empty directories
+- modified Makefile : remplace links for Linux/ and
+  adf_nativ.h with gcc flags -I. -I..
+19JAN99
+- Remove most of signed/unsigned warning from MSVC
+- Error handling : test exe
+- Read only support

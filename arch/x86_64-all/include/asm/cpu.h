@@ -1,0 +1,367 @@
+#ifndef ASM_X86_64_CPU_H
+#define ASM_X86_64_CPU_H
+
+/*
+    Copyright © 1995-2025, The AROS Development Team. All rights reserved.
+    $Id$
+
+    Desc: assembler-level specific definitions for x86-64 CPU
+    Lang: english
+*/
+
+#include <inttypes.h>
+  
+#ifdef __cplusplus
+extern "C" {
+#endif
+    
+/* CR0 bits */
+#define _CR0_PE_B               0    /* RW: Protected mode enable */
+#define _CR0_MP_B               1    /* RW: Monitor FPU? If 1 then #NM exception may be generated */
+#define _CR0_EM_B               2    /* RW: Emulate FPU */
+#define _CR0_TS_B               3    /* RW: Task switched */
+#define _CR0_ET_B               4    /* RO: Exception type */
+#define _CR0_NE_B               5    /* RW: Numeric error */
+#define _CR0_WP_B               16    /* RW: Write protect for RO pages in supervisor mode */
+#define _CR0_AM_B               18    /* RW: Require data alignment */
+#define _CR0_NW_B               29    /* RW: IGNORED: Not writethrough */
+#define _CR0_CD_B               30    /* RW: Cache disable */
+#define _CR0_PG_B               31    /* RW: Paging enable */
+
+#define _CR0_PE                 (1 << _CR0_PE_B)
+#define _CR0_MP                 (1 << _CR0_MP_B)
+#define _CR0_EM                 (1 << _CR0_EM_B)
+#define _CR0_TS                 (1 << _CR0_TS_B)
+#define _CR0_ET                 (1 << _CR0_ET_B)
+#define _CR0_NE                 (1 << _CR0_NE_B)
+#define _CR0_WP                 (1 << _CR0_WP_B)
+#define _CR0_AM                 (1 << _CR0_AM_B)
+#define _CR0_NW                 (1 << _CR0_NW_B)
+#define _CR0_CD                 (1 << _CR0_CD_B)
+#define _CR0_PG                 (1 << _CR0_PG_B)
+
+/* CR3 bits */
+#define _CR3_PWT_B              3   /* RW: Page writethrough */
+#define _CR3_PCD_B              4   /* RW: Cache disable */
+
+#define _CR3_PWT                (1 << _CR3_PWT_B)
+#define _CR3_PCD                (1 << _CR3_PCD_B)
+
+/* CR4 bits */
+#define _CR4_VME_B              0  /* RW: Virtual-8086 enable */
+#define _CR4_PVI_B              1  /* RW: Protected mode virtual interrupts */
+#define _CR4_TSD_B              2  /* RW: Time stamp disable for usermode */
+#define _CR4_DE_B               3  /* RW: Debug extensions */
+#define _CR4_PSE_B              4  /* RW: Page size extensions */
+#define _CR4_PAE_B              5  /* RW: Physical-address extensions */
+#define _CR4_MCE_B              6  /* RW: Machine check enable */
+#define _CR4_PGE_B              7  /* RW: Page-Global enable */
+#define _CR4_PCE_B              8  /* RW: Performance monitoring counter enable */
+#define _CR4_OSFXSR_B           9  /* RW: Operating system fxsave/fsrstor support */
+#define _CR4_OSXMMEXCPT_B       10 /* RW: Operating system unmasked exception support */
+#define _CR4_OSXSBV_B           18 /* RW: Operating system xsetbv/xgetbv support */
+
+#define _CR4_VME                (1 << _CR4_VME_B)
+#define _CR4_PVI                (1 << _CR4_PVI_B)
+#define _CR4_TSD                (1 << _CR4_TSD_B)
+#define _CR4_DE                 (1 << _CR4_DE_B)
+#define _CR4_PSE                (1 << _CR4_PSE_B)
+#define _CR4_PAE                (1 << _CR4_PAE_B)
+#define _CR4_MCE                (1 << _CR4_MCE_B)
+#define _CR4_PGE                (1 << _CR4_PGE_B)
+#define _CR4_PCE                (1 << _CR4_PCE_B)
+#define _CR4_OSFXSR             (1 << _CR4_OSFXSR_B)
+#define _CR4_OSXMMEXCPT         (1 << _CR4_OSXMMEXCPT_B)
+#define _CR4_OSXSBV             (1 << _CR4_OSXSBV_B)
+
+/* EFER */
+#define EFER                    0xc0000080  /* EFER number for rsmsr/wrmsr */
+#define _EFER_SCE_B             0      /* RW: System call extensions */
+#define _EFER_LME_B             8      /* RW: Long mode enable */
+#define _EFER_LMA_B             10      /* RW: Long mode activated */
+#define _EFER_NXE_B             11      /* RW: No-execute bit enable */
+#define _EFER_FFXSR_B           14      /* RW: Fast fxsave/fxrstor */
+
+/* SYSCALL/SYSRET registers */
+#define IA32_STAR               0xc0000081
+#define IA32_LSTAR              0xc0000082
+#define IA32_FMASK              0xc0000084
+
+#define _EFER_SCE               (1 << _EFER_SCE_B)
+#define _EFER_LME               (1 << _EFER_LME_B)
+#define _EFER_LMA               (1 << _EFER_LMA_B)
+#define _EFER_NXE               (1 << _EFER_NXE_B)
+#define _EFER_FFXSR             (1 << _EFER_FFXSR_B)
+
+#define HALT asm volatile("hlt")
+
+/*
+ * Selector used for lgdt and lidt commands.
+ * Intentionally use unsigned long for base address since this file can be compiled also in 32-bit mode.
+ */
+struct segment_selector
+{
+    unsigned short size;
+    unsigned long base;
+} __attribute__((packed));
+
+struct int_gate_64bit {
+    uint16_t    offset_low;
+    uint16_t    selector;
+    unsigned    ist:3, __pad0:5, type:5, dpl:2, p:1;
+    uint16_t    offset_mid;
+    uint32_t    offset_high;
+    uint32_t    __pad1;
+} __attribute__((packed));
+
+/* Segment descriptor in the GDT */
+struct segment_desc
+{
+    uint16_t    limit_low;
+    uint16_t    base_low;
+    uint8_t     base_mid;
+    unsigned        type:5, dpl:2, p:1;
+    unsigned        limit_high:4, avl:1, l:1, d:1, g:1;
+    uint8_t     base_high:8;
+} __attribute__((packed));
+
+struct segment_ext {
+    uint32_t    base_ext;
+    uint32_t    __pad0;
+} __attribute__((packed));
+
+struct tss_64bit {
+    uint32_t    __pad0;
+    uint64_t    rsp0;
+    uint64_t    rsp1;
+    uint64_t    rsp2;
+    uint64_t    __pad1;
+    uint64_t    ist1;
+    uint64_t    ist2;
+    uint64_t    ist3;
+    uint64_t    ist4;
+    uint64_t    ist5;
+    uint64_t    ist6;
+    uint64_t    ist7;
+    uint64_t    __pad2;
+    uint16_t    __pad3;
+    uint16_t    iopb;
+    uint32_t    bmp[];
+} __attribute__((packed));
+
+struct segment_tss
+{
+    struct segment_desc tss_low;
+    struct segment_ext  tss_high;
+} __attribute__((packed));
+
+struct gdt_64bit
+{
+    struct segment_desc seg0;           /* seg 0x00 */
+    struct segment_desc super_cs;       /* seg 0x08 */
+    struct segment_desc super_ds;       /* seg 0x10 */
+    struct segment_desc user_cs32;      /* seg 0x18 */
+    struct segment_desc user_ds;        /* seg 0x20 */
+    struct segment_desc user_cs;        /* seg 0x28 */
+    struct segment_desc gs;             /* seg 0x30 */
+    struct segment_desc ldt;            /* seg 0x38 */
+    struct segment_tss  tss[0];
+} __attribute__((packed));
+
+#define MMU_PAGEB_P     0
+#define MMU_PAGEB_RW    1
+#define MMU_PAGEB_US    2
+#define MMU_PAGEB_PWT   3
+#define MMU_PAGEB_PCD   4
+#define MMU_PAGEB_A     5
+
+struct PML4E
+{
+    unsigned p:1,rw:1,us:1,pwt:1,pcd:1,a:1,mbz:3,avl:3,base_low:20;
+    unsigned base_high:20,avail:11,nx:1;
+} __attribute__((packed));
+
+struct PDPE {
+    unsigned p:1,rw:1,us:1,pwt:1,pcd:1,a:1,__pad0:1,mbz:2,avl:3,base_low:20;
+    unsigned base_high:20,avail:11,nx:1;
+} __attribute__((packed));
+
+struct PDE4K {
+    unsigned p:1,rw:1,us:1,pwt:1,pcd:1,a:1,__pad0:1,ps:1,_pad1:1,avl:3,base_low:20;
+    unsigned base_high:20,avail:11,nx:1;
+} __attribute__((packed));
+
+struct PDE2M {
+    unsigned p:1,rw:1,us:1,pwt:1,pcd:1,a:1,d:1,ps:1,g:1,avl:3,pat:1,base_low:19;
+    unsigned base_high:20,avail:11,nx:1;
+} __attribute__((packed));
+
+struct PTE {
+    unsigned p:1,rw:1,us:1,pwt:1,pcd:1,a:1,d:1,pat:1,g:1,avl:3,base_low:20;
+    unsigned base_high:20,avail:11,nx:1;
+} __attribute__((packed));
+
+#define _ljmp(seg, addr) \
+    do { asm volatile("ljmp $" #seg ", $" #addr); }while(0)
+#define ljmp(s, a) _ljmp(s, a)
+
+#define _ljmp_arg(seg, addr, arg) \
+    do { asm volatile("ljmp $" #seg ", $" #addr ::"D"(arg)); }while(0)
+#define ljmp_arg(s, a, p) _ljmp_arg(s, a, p)
+
+#define rdcr(reg) \
+    ({ long val; asm volatile("mov %%" #reg ",%0":"=r"(val)); val; })
+
+#define wrcr(reg, val) \
+    do { asm volatile("mov %0,%%" #reg::"r"(val)); } while(0)
+
+#define cpuid(num, eax, ebx, ecx, edx) \
+    do { asm volatile("cpuid":"=a"(eax),"=b"(ebx),"=c"(ecx),"=d"(edx):"a"(num)); } while(0)
+
+static inline __attribute__((always_inline))
+void cpuid2(unsigned int leaf, unsigned int subleaf,
+            unsigned int *eax, unsigned int *ebx,
+            unsigned int *ecx, unsigned int *edx)
+{
+#if defined(__x86_64__)
+    unsigned int a = leaf, b, c = subleaf, d;
+    __asm__ volatile(
+        "mov %%rbx, %%rdi\n\t"   /* save RBX (used by PIC) */
+        "cpuid\n\t"
+        "xchg %%rbx, %%rdi\n\t"  /* restore RBX */
+        : "+a"(a), "=D"(b), "+c"(c), "=d"(d)
+        :
+        : "memory");
+    if (eax) *eax = a;
+    if (ebx) *ebx = b;
+    if (ecx) *ecx = c;
+    if (edx) *edx = d;
+
+#elif defined(__i386__)
+    unsigned int a = leaf, b, c = subleaf, d;
+    __asm__ volatile(
+        "xchg %%ebx, %%edi\n\t"  /* save EBX (PIC-safe) */
+        "cpuid\n\t"
+        "xchg %%ebx, %%edi\n\t"  /* restore EBX */
+        : "=a"(a), "=D"(b), "=c"(c), "=d"(d)
+        : "a"(leaf), "c"(subleaf)
+        : "memory");
+    if (eax) *eax = a;
+    if (ebx) *ebx = b;
+    if (ecx) *ecx = c;
+    if (edx) *edx = d;
+
+#else
+# error "x86 only"
+#endif
+}
+
+static inline void __attribute__((always_inline)) rdmsr(uint32_t msr_no, uint32_t *ret_lo, uint32_t *ret_hi)
+{
+    uint32_t ret1,ret2;
+    asm volatile("rdmsr":"=a"(ret1),"=d"(ret2):"c"(msr_no));
+    *ret_lo=ret1;
+    *ret_hi=ret2;
+}
+
+static inline uint64_t __attribute__((always_inline)) rdmsrq(uint32_t msr_no)
+{
+    uint32_t ret1,ret2;
+    asm volatile("rdmsr":"=a"(ret1),"=d"(ret2):"c"(msr_no));
+    return ((uint64_t)ret1 | ((uint64_t)ret2 << 32));
+}
+
+#define rdmsri rdmsrq
+
+static inline void __attribute__((always_inline)) wrmsr(uint32_t msr_no, uint32_t val_lo, uint32_t val_hi)
+{
+    asm volatile("wrmsr"::"a"(val_lo),"d"(val_hi),"c"(msr_no));
+}
+
+static inline void __attribute__((always_inline)) wrmsrq(uint32_t msr_no, uint64_t val)
+{
+    asm volatile("wrmsr"::"a"((uint32_t)(val & 0xffffffff)),"d"((uint32_t)(val >> 32)),"c"(msr_no));
+}
+
+/*
+Compare value stored at "addr" with "expected". If they are equal, function returns 1 and stores "xchg" value
+at "addr". If *addr != expected, function returns 0. Either "expected" or current value at *addr are stored back
+at *found. The operation is atomic
+*/
+static inline int compare_and_exchange_long(uint32_t *addr, uint32_t expected, uint32_t xchg, uint32_t *found)
+{
+    char flag;
+    uint32_t ret;
+    asm volatile("lock cmpxchg %4, %0; setz %1":"+m"(*addr),"=r"(flag),"=a"(ret):"2"(expected),"r"(xchg):"memory","cc");
+    if (found)
+        *found = ret;
+    return flag;
+}
+
+static inline int compare_and_exchange_short(uint16_t *lock, uint16_t expected, uint16_t xchg, uint16_t *found)
+{
+    char flag;
+    uint16_t ret;
+    asm volatile("lock cmpxchg %4, %0; setz %1":"+m"(*lock),"=r"(flag),"=a"(ret):"2"(expected),"r"(xchg):"memory","cc");
+    if (found)
+        *found = ret;
+    return flag;
+}
+
+static inline int compare_and_exchange_byte(uint8_t *lock, uint8_t expected, uint8_t xchg, uint8_t *found)
+{
+    char flag;
+    uint16_t ret;
+    asm volatile("lock cmpxchg %4, %0; setz %1":"+m"(*lock),"=r"(flag),"=a"(ret):"2"(expected),"r"(xchg):"memory","cc");
+    if (found)
+        *found = ret;
+    return flag;
+}
+
+static inline int bit_test_and_set_long(uint32_t *addr, int32_t bit)
+{
+    char retval = 0;
+    asm volatile("lock btsl %2, %0; setc %1":"+m"(*addr),"=q"(retval):"Ir"(bit):"memory");
+    return retval;
+}
+
+static inline int bit_test_and_set_short(uint16_t *addr, int32_t bit)
+{
+    char retval = 0;
+    asm volatile("lock btsw %2, %0; setc %1":"+m"(*addr),"=q"(retval):"Ir"(bit):"memory");
+    return retval;
+}
+
+static inline int bit_test_and_clear_long(uint32_t *addr, int32_t bit)
+{
+    char retval = 0;
+    asm volatile("lock btrl %2, %0; setc %1":"+m"(*addr),"=q"(retval):"Ir"(bit):"memory");
+    return retval;
+}
+
+static inline int bit_test_and_clear_short(uint16_t *addr, int32_t bit)
+{
+    char retval = 0;
+    asm volatile("lock btrw %2, %0; setc %1":"+m"(*addr),"=q"(retval):"Ir"(bit):"memory");
+    return retval;
+}
+
+static inline int bit_test_and_complement_long(uint32_t *addr, int32_t bit)
+{
+    char retval = 0;
+    asm volatile("lock btcl %2, %0; setc %1":"+m"(*addr),"=q"(retval):"Ir"(bit):"memory");
+    return retval;
+}
+
+static inline int bit_test_and_complement_short(uint16_t *addr, int32_t bit)
+{
+    char retval = 0;
+    asm volatile("lock btcw %2, %0; setc %1":"+m"(*addr),"=q"(retval):"Ir"(bit):"memory");
+    return retval;
+}
+
+#ifdef __cplusplus
+}
+#endif
+    
+#endif /*ASM_CPU_H*/

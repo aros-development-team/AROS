@@ -1,0 +1,26 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+%set_archincludes mainmmake=kernel-exec maindir=rom/exec \
+  modname=exec pri=0 arch=linux-arm \
+  includes="-I$(SRCDIR)/$(CURDIR)"
+
+%get_archincludes modname=kernel \
+    includeflag=TARGET_KERNEL_INCLUDES maindir=rom/kernel
+
+%get_archincludes modname=exec \
+    includeflag=TARGET_EXEC_INCLUDES maindir=rom/exec
+
+PRIV_EXEC_INCLUDES = \
+    $(TARGET_EXEC_INCLUDES) \
+    -I$(SRCDIR)/rom/exec \
+    $(TARGET_KERNEL_INCLUDES) \
+    -I$(SRCDIR)/rom/kernel
+
+USER_INCLUDES := $(PRIV_EXEC_INCLUDES)
+
+%build_archspecific \
+  mainmmake=kernel-exec maindir=rom/exec \
+  files="cachecleare" arch=linux-arm modname=exec
+
+%common

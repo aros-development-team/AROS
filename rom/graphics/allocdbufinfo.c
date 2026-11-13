@@ -1,0 +1,63 @@
+/*
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
+
+    Desc:
+*/
+
+#include <exec/memory.h>
+#include <proto/exec.h>
+#include "graphics_intern.h"
+
+/*****************************************************************************
+
+    NAME */
+
+#include <graphics/view.h>
+
+    AROS_LH1(struct DBufInfo *, AllocDBufInfo,
+
+/*  SYNOPSIS */
+
+        AROS_LHA(struct ViewPort *, vp, A0),
+
+/*  LOCATION */
+
+        struct GfxBase *, GfxBase, 161, Graphics)
+
+/*  FUNCTION
+
+    Allocates a double buffering structure used by ChangeVPBitMap().
+
+    INPUTS
+
+    vp  -  pointer to a ViewPort (currently unused).
+
+    RESULT
+
+    A newly allocated DBufInfo structure, or NULL if allocation fails.
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+    Which ViewPorts doesn't support double buffering?
+
+    HISTORY
+
+******************************************************************************/
+
+{
+    AROS_LIBFUNC_INIT
+
+    return (struct DBufInfo *)AllocMem(sizeof(struct DBufInfo),
+                                       MEMF_ANY | MEMF_CLEAR);
+
+    AROS_LIBFUNC_EXIT
+} /* AllocDBufInfo */
+

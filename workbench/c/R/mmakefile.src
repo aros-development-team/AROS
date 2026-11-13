@@ -1,0 +1,17 @@
+# Copyright (C) 2012, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+
+FILES   := locale gui main
+
+EXEDIR  := $(AROS_C)
+
+#MM- workbench-c : workbench-c-r
+#MM  workbench-c-r : includes linklibs \
+#MM  workbench-c-r-catalogs
+
+%build_prog mmake=workbench-c-r \
+    progname=R targetdir=$(EXEDIR) \
+    files=$(FILES)
+
+%common

@@ -1,0 +1,322 @@
+Overview:
+This document tries to explain the choices that
+are made in deciding the design of the new OOP
+system, which will be used fo (among other things)
+the HIDDs.
+
+General design goals:
+
+The system should..
+
+- have fast method invocation. Especially when calling the same method
+on the same objetc many times. (Eg. GetPixel()/SetPixel())
+
+
+- allow non-centralized allocation of IDs. This means that there is no
+agency somewhere in the world where you have to allocate an ID. IDs
+are allocated at runtime.
+
+
+- be location transparent. Ie. you invoke a
+method the same way as for a local objet, even if
+the object is owned by another task, or is
+located on a different machine.
+
+
+- support transparent object migration. This means that the object, the
+system or the user can decide that the object should be moved or copied
+to another host. Uses: If an object is accessed more often from a remote
+host than locally, it can create a copy of itself. If the object is deleted
+locally, it can move itself to the remote host.
+
+
+- Exceptions.
+
+
+- Thread safe method invocation.
+
+
+Definitions:
+
+Class - A collection of Interfaces and a description of the Objects
+of this Class.
+
+Object - Instance of a class. If you think of a Class as a blueprint of
+something, then an Object is what you get when you build the something
+after the instructuctions of the blueprint.
+
+Method - A method is a function which is called with a class, an object
+and a message as arguments.
+
+Interface - An interface is a view of an object. Interfaces are
+defined globally. A class can implement any number of Interfaces.
+An Interface contains a table of Methods.
+
+Method Stub - This is a normal C function which is called with an
+object and a message. It is used to simplify the call of a method.
+The Method Stub extracts the class from the Object and the Interface
+from the Full Method ID and invokes the Method.
+
+Method Base - The lowest ID of all methods on an Interface. Along with the
+Method Count, this is used to determine if a method if supported by an
+Interface. This is a constant during the lifetime of the system.
+
+Method Count - The number of methods of an Interface. This value
+can change (it is possible to add methods to an interface during
+runtime).
+
+Interface ID - The ID of an Interface. It is used to look up an
+Interface when a Method should be invoked.
+This is a constant during the lifetime of the system.
+
+Method Offset - The offset to the Method Base for a Method. Always
+positive. This is a constant during the lifetime of the system.
+
+Method ID - The addition of Method Base and Method Offset for a specific
+Method. This is a constant during the lifetime of the system.
+If you have an Interface Object, you can call the method.
+
+Full Method ID - The addition of Method ID and the Interface ID. The
+Interface ID is used to look up the Interface and then the Method ID is
+used to call the method in the Interface. This is a constant during the
+lifetime of the system.
+
+Method Name - A string with the name of a method.
+
+Method Object - An Object used to store a Method to allow to invoke
+the method fast.
+
+Interface Object - An object used to store an Interface
+which allows you to invoke all methods of that interface fast.
+
+
+Possible solutions to design goals w/pros & cons
+
+1) Invocation speed.
+-------------------
+For having ultimately fast method invocation we supply method objects.
+
+Example of usage of method objects:
+
+-------------
+
+struct HIDDP_Gfx_SetPixel sp_msg;
+
+struct TagItem mobj_tags[] =
+{
+    {A_Method_TargetObject, (IPTR)gfxhidd },
+    {A_Method_Message,	    (IPTR)&sp_msg},
+    {A_Method_MethodID,     HIDDM_Gfx_SetPixel},
+    {TAG_DONE, }
+};
+..
+
+/* If you don't pass a message, then memory for one could be allocated,
+and disposed in DisposeObject(spmethod).
+The msg's methodid will be initialized by NewObject.
+If you want to use other msg mem, then you
+can use the Set method on the method object.
+*/
+
+spmethod = NewObject(NULL, METHODCLASS, mobj_tags);
+
+
+...
+sp_msg.Pen = 0;
+for (x = 0; x < 100; x ++)
+{
+    for (y = 0; y < 100; y ++)
+    {
+	  sp_msg.X = x;
+	  sp_msg.Y = y;
+
+	  /* CallMethod() might be a macro */
+	  CallMethod(spmethod);
+
+    }
+};
+
+-------------
+
+For normal method invocation there are generally two approaches:
+
+a) Hashing single methods.
+b) Hashing interfaces, where an interface
+is an array of methods (kinda like a AmigaOS library
+jump table.)
+
+a) is a bit faster than b)
+
+In order to avoid having to hash the methods, all methods of a class
+are in a single table. This includes the methods of all parent classes
+so these can also be called directly (no need for DoSuperMethod()
+in the dispatcher).
+
+For this to work, we need:
+
+- A method string -> ID to convert the method name to the method ID
+
+- When you allocate a new class, you must allocate a table (size =
+parentClass->numMethods + self->numMethods), copy the parent method
+table and overwrite/add the own methods to the table
+
+- The user uses a global variable in the classbase as the basic offset
+to call methods of this class. The header file defines the offsets.
+
+Interfaces work as usual but they store maybe only the real methodID
+(one lookup more and one method object less).
+
+Caveats:
+
+- When a parent class changes its method table, then the child classes
+won't notice. This could be avoided it we copy method objects.
+
+- the DoMethod() stub must do an add for each method invokation but
+no hashing.
+
+Interfaces can be implemented like this:
+
+- One hash table which contains tables of methods/method IDs and the
+key is the interface ID.
+
+- One hash table which contains method objects and the key is the
+computed interface+method ID.
+
+2) Noncentralized ID allocation.
+-------------------------------
+To allow for this, we avoid fixed integer
+IDs (like in BOOPSI).
+Instead we use global variables for
+IDs.
+
+Two ways to allocate IDs:
+
+a)
+Store interface IDs in global vars, and generate method IDs on the fly as
+sum of interface ID and a offset ID for the method.
+
+Example:
+
+extern ULONG __OOPI_Root;
+
+#define I_Root	__OOPI_Root
+#define MIDX_Root_New		0
+#define MIDX_Root_Dispose	1
+
+#define M_Root_New	(I_Root + MIDX_Root_New)
+#define M_Root_Dispose	(I_Root + MIDX_Root_Dispose)
+
+Pro:
+- Uses little mem.
+- Relatively little CPU time used for initialization.
+
+Con:
+- uses more CPU time for initialization.
+
+b)
+Use one global var for each methodID.
+
+Pro:
+- Faster pr. call.
+- Leaves more flexibility for future changes.
+- Allows to specify each method as a string
+in MakeClass().
+
+Con:
+- Uses more mem.
+- Very hard to initialize
+
+
+As for AttrIDs, there is a problem with using II), because then one can't
+use switch() to parse AttrIDs.
+
+Solution: Use methods for set & get of each attribute. which will use some
+mem. Con: Clumsy.
+
+To avoid the problems with init, we can use a global ClassBase (like a
+library base) and use a public field in there to store the offsets. As for
+attributes, a class should allocate a fixed number of IDs for its
+attributes and store the base in the ClassBase. The header file then
+contains offsets for each Attribute. In the class, you can very quickly
+check if an attribute is part of the class:
+
+    ULONG id = tag->ti_Tag - class->cl_attrBase;
+
+    if (id < class->cl_numAttrs)
+	... handle own attributes
+    else
+	... handle attributes of other classes
+
+Location Transparent and Object Migration
+-----------------------------------------
+
+To allow these two, we use method objects. Method objects
+contain the following attributes:
+
+- A pointer to the method
+- The method ID
+- The class
+- The object
+- If several objects are created for the same method and the
+method, for which they were created, changes, then all other
+method objects change as well.
+- The Method class contains a DoMethod() which is used to
+call the method stored in the object.
+
+By overloading DoMethod() of the Method class, you can implement
+thread safe objects, migrate objects to other computers, etc.
+
+
+Exceptions
+----------
+
+The easy part is to create the Exception class and the objects.
+
+Now the hard part:
+
+- How do I get the position information (stack frames, function names,
+local variables (?), line numbers, filename) ?
+
+- How do I "throw" an exception ?
+
+- How do I catch an exception ?
+
+
+On Unix, I can use GNU C extensions for most things. With a special
+assembler, it should be possible to create position information and update
+the call stack.
+
+To throw and catch an exception, I can use a global array which contains
+jmp_bufs and catched exceptions and throw just calls a global function
+which looks through the array for a matching catch and does a longjmp()
+to the place. We can use macros to throw and catch exceptions.
+
+
+On Amiga, we might be able to use similar techniques. The globals
+must be stored in the ETask info.
+
+Thread safe method invocation.
+-----------------------------
+
+This can be done through the use of proxy objects
+and IPC, where the server runs inside one task,
+an the clients (other tasks) get proxies to the object
+residing inside the server.
+The server will the Wait() for incoming
+methods and execute them on the proxied
+object. Currently the system is using Exec messages,
+and since AROS has no MP (yet), I only have to pass a
+pointer.
+
+
+A problem that has to be addressed here is
+deadlocks. Say task A has object a, and task B
+has object b.
+
+Now, A calls a method on b, but the method calls another
+method on a. Since A will be Wait()ing for a response from
+B, then it can't execute the method, and both
+tasks will be waiting forever.
+
+
+

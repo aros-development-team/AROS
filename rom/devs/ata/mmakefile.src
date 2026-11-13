@@ -1,0 +1,44 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM- kernel-ata-includes : kernel-scsi-includes kernel-hidd-bus-includes kernel-hidd-storage-includes
+#MM- kernel-ata-kobj-includes : kernel-scsi--kobj-includes
+
+USER_CPPFLAGS := \
+        -DUSE_EXEC_DEBUG \
+        -D__OOP_NOMETHODBASES__ \
+        -D__OOP_NOATTRBASES__
+#USER_CPPFLAGS += -DDEBUG
+
+INCLUDE_FILES := $(call WILDCARD, include/hardware/*.h)
+%copy_includes path=hardware dir=include/hardware
+
+INCLUDE_FILES := $(call WILDCARD, include/hidd/*.h)
+%copy_includes path=hidd dir=include/hidd
+
+USER_LDFLAGS := -static
+
+ATA_DEVICEFILES := \
+    ata_init \
+    lowlevel \
+    ata \
+    ata_trim \
+    ata_smart \
+    timer \
+    waitnano \
+    waitto \
+    scsiemu \
+    bootwait
+
+ATA_CLASSFILES := \
+    ata_controllerclass \
+    ata_busclass \
+    ata_unitclass
+
+ifneq ($(ROM_OPTIMIZATION_CFLAGS),)
+OPTIMIZATION_CFLAGS := $(ROM_OPTIMIZATION_CFLAGS)
+endif
+
+%build_module mmake=kernel-ata \
+  modname=ata modtype=device version=$(AROS_TARGET_PLATFORM) \
+  files="$(ATA_DEVICEFILES) $(ATA_CLASSFILES)"

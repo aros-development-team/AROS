@@ -1,0 +1,9 @@
+include $(SRCDIR)/config/aros.cfg
+
+FILES := sys_group sys_user sys_pass
+
+#MM- themes-kalamatee-images-gadgets : themes-kalamatee-images-gadgets-system 
+
+%copy_files_q mmake=themes-kalamatee-images-gadgets-system files=$(FILES) dst=$(AROS_IMAGES)/Gadgets/System
+
+%common

@@ -1,0 +1,36 @@
+# Copyright (C) 2004-2023, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+
+BASEICONS := About FixFonts Format FTManager WorkBook Shell
+ADDITIONALICONS := SysMon Snoopy Find VMM
+
+DISKIMAGESRCS := DiskImageGUI-1.png DiskImageGUI-2.png
+DISKIMAGEICON := DiskImageGUI
+
+#MM- iconset-GorillaSmall-wbench-icons-aros-clean : iconset-GorillaSmall-wbench-icons-aros-system-clean
+#MM- iconset-GorillaSmall-additional-icons-aros-clean : iconset-GorillaSmall-additional-icons-aros-system-clean
+#MM- iconset-GorillaSmall-wbench-icons-aros : iconset-GorillaSmall-wbench-icons-aros-system
+#MM- iconset-GorillaSmall-additional-icons-aros : iconset-GorillaSmall-additional-icons-aros-system
+#MM  iconset-GorillaSmall-additional-icons-aros-system : iconset-GorillaSmall-additional-icons-aros-system-diskimage
+
+%build_icons mmake=iconset-GorillaSmall-wbench-icons-aros-system icons=$(BASEICONS) \
+             dir=$(AROS_SYSTEM)
+
+%build_icons mmake=iconset-GorillaSmall-additional-icons-aros-system icons=$(ADDITIONALICONS) \
+             dir=$(AROS_SYSTEM)
+
+%build_icons mmake=iconset-GorillaSmall-additional-icons-aros-system-diskimage icons=$(DISKIMAGEICON) \
+             dir=$(AROS_SYSTEM) image=$(DISKIMAGESRCS)
+
+#MM- icons-additional-wbench-system : gorillasmall-icons-additional-wbench-system
+%build_icons mmake=gorillasmall-icons-additional-wbench-system icons=$(BASEICONS) \
+             dir=$(AROS_PRESETS)/Icons/Gorilla/Small/$(AROS_DIR_AROS)/$(AROS_DIR_SYSTEM)
+
+#MM- icons-additional-wbench-system : gorillasmall-icons-additional-wbench-system
+%build_icons mmake=gorillasmall-icons-additional-wbench-system icons=$(ADDITIONALICONS) \
+             dir=$(AROS_PRESETS)/Icons/Gorilla/Small/$(AROS_DIR_AROS)/$(AROS_DIR_SYSTEM)
+
+#MM- icons-additional-wbench-system-diskimage : gorillasmall-icons-additional-wbench-system-diskimage
+%build_icons mmake=gorillasmall-icons-additional-wbench-system-diskimage icons=$(DISKIMAGEICON) \
+             dir=$(AROS_PRESETS)/Icons/Gorilla/Small/$(AROS_DIR_AROS)/$(AROS_DIR_SYSTEM) image=$(DISKIMAGESRCS)

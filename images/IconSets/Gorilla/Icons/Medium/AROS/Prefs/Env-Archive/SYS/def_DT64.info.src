@@ -1,0 +1,2 @@
+DEFAULTTOOL = extras:Emu/VICE-i686-AROS-2.0/x64.exe
+TOOLTYPE = CLI

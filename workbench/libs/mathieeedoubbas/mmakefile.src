@@ -1,0 +1,31 @@
+# Copyright (C) 2003, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+
+USER_CFLAGS :=  $(AROSROM_MODULE_CFLAGS)
+USER_LDFLAGS := -static
+
+FILES := \
+    mathieeedoubbas_init \
+    ieeedpbas_fpu 
+
+FUNCS := \
+    ieeedpabs \
+    ieeedpadd \
+    ieeedpceil \
+    ieeedpcmp \
+    ieeedpdiv \
+    ieeedpfix \
+    ieeedpfloor \
+    ieeedpflt \
+    ieeedpmul \
+    ieeedpneg \
+    ieeedpsub \
+    ieeedptst
+
+
+#MM- workbench-libs-mathieeedoubbas : includes
+
+%build_module mmake=workbench-libs-mathieeedoubbas \
+  modname=mathieeedoubbas modtype=library \
+  files="$(FILES) $(FUNCS)"

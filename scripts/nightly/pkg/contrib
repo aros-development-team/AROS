@@ -1,0 +1,39 @@
+#!/bin/zsh
+# Creates generic contrib package.
+
+source  $SP/setup
+
+# The log-name MUST match the name of the package script
+setl    contrib-$BUILDTARGET.log
+
+ARCHIVE_BASE=$ARCHIVE_BASE/Binaries
+
+printi "Creating AROS/$BUILDTARGET contrib binary package..."
+
+delete  $BUILD_BASE/AROS
+copy    $SOURCE_AROS      $BUILD_BASE/AROS
+copy    $SOURCE_CONTRIB $BUILD_BASE/AROS/contrib
+
+cd      $BUILD_BASE/AROS
+execute ./configure --target=$BUILDTARGET --enable-ccache --enable-build-type=nightly $PORTSSOURCESOPT $AROSTOOLCHAININSTALLOPT $AROSTOOLCHAINOPT
+make    -j $MAKE_JOBS tools mmake contrib
+
+PACKAGE=$BASENAME-$BUILDTARGET-contrib
+ARCHIVE=$ARCHIVE_BASE/$PACKAGE.tar.bz2
+
+if [ -z ${BUILDTARGETDIR+x} ]; then BUILDTARGETDIR=$BUILDTARGET; fi
+
+cd      $BUILD_BASE/AROS/bin/$BUILDTARGETDIR/AROS
+mkdir   $PACKAGE
+move    Extras $PACKAGE/
+move    Developer $PACKAGE/
+move    Libs $PACKAGE/
+mkdir   -p $PACKAGE/Prefs/Env-Archive/SYS
+move    Prefs/Env-Archive/SYS/Packages $PACKAGE/Prefs/Env-Archive/SYS/
+copy    $SOURCE_AROS/LICENSE $PACKAGE
+copy    $SOURCE_AROS/ACKNOWLEDGEMENTS $PACKAGE
+archive $ARCHIVE $PACKAGE
+
+cd      $ROOT
+delete  $BUILD_BASE/AROS
+resetl

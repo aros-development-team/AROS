@@ -1,0 +1,32 @@
+#
+#   Makefile for AROS intuition.library tests
+
+include $(SRCDIR)/config/aros.cfg
+
+FILES := \
+    customscreen \
+    displayalert \
+    drawinfoattr \
+    gamma \
+    monitorclass \
+    movescreen \
+    pubscreen \
+    smallscreen \
+    screenclass \
+    screentest \
+    screendrag \
+    compwindow \
+    planescreens \
+    pointerpos \
+    scrollerwin \
+    compflicker \
+    windowinputregion \
+    windowinputdrop \
+    strgtextval
+
+EXEDIR := $(AROS_TESTS)/intuition
+
+%build_progs mmake=test-intuition \
+    files=$(FILES) targetdir=$(EXEDIR)
+
+%common

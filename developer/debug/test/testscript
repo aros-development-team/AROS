@@ -1,0 +1,24 @@
+# default test script for "runtests"
+
+hidds/graphics/convertpixels
+misc/fileseek
+diskfont/fontinfo topaz.font 8
+misc/frequencies
+
+exec/allocmem
+
+dos/addpart
+dos/dosvartest
+dos/examine SYS:Developer/Debug/Tests/dos/examine
+dos/ExNext
+dos/filetest
+
+utility/amiga2date
+utility/callhooktest
+utility/date2amiga
+
+Avail FLUSH
+LibList
+DevList
+ResList
+TaskList

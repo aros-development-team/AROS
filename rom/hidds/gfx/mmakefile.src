@@ -1,0 +1,59 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+COLORCONVFILES := \
+                rgbconv \
+                rgbconv_arch \
+                colorconv_init \
+
+FILES       := \
+                gfx_init \
+                gfx_hwclass \
+                gfx_hiddclass \
+                gfx_displayclass \
+                gfx_compositorclass \
+                gfx_palette \
+                gfx_cursorfbclass \
+                gfx_dmenumclass \
+                gfx_bitmapclass \
+                gfx_histogramclass \
+                gfx_colormapclass \
+                gfx_gcclass \
+                gfx_planarbitmapclass \
+                gfx_chunkybitmapclass \
+                gfx_bitmapconvertpixels \
+                gfx_bitmapmemblit \
+                gfx_pixfmtclass \
+                gfx_syncclass
+
+NOWARN_FLAGS := $(NOWARN_PARENTHESES)
+USER_CFLAGS      := $(NOWARN_FLAGS)
+USER_CPPFLAGS:= -D__GRAPHICS_NOLIBBASE__ \
+                    -D__OOP_NOLIBBASE__ \
+                    -D__UTILITY_NOLIBBASE__
+# Test build: make kernel-hidd-gfx COMPOSITOR_FAULT_INJECTION=yes (see compflicker NOMEM)
+ifeq ($(COMPOSITOR_FAULT_INJECTION),yes)
+USER_CPPFLAGS += -DCOMPOSITOR_FAULT_INJECTION
+endif
+USER_LDFLAGS := -static
+
+ifneq ($(ROM_OPTIMIZATION_CFLAGS),)
+OPTIMIZATION_CFLAGS := $(ROM_OPTIMIZATION_CFLAGS)
+endif
+
+%build_module mmake=kernel-hidd-gfx \
+  modname=gfx modtype=hidd \
+  files="$(FILES) $(COLORCONVFILES)"
+
+LIBNAME     := gfx
+
+INCLUDE_FILES    := $(call WILDCARD, include/*.h)
+
+%copy_includes path=hidd dir=include
+
+#MM
+clean ::
+	-$(RM) $(OBJDIR) *.err $(LIB) *.s
+
+
+%common

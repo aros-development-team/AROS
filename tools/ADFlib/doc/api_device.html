@@ -1,0 +1,334 @@
+<HTML>
+<HEAD>
+<TITLE>Device</TITLE>
+</HEAD>
+
+
+<BODY>
+
+<H1 ALIGN=CENTER>the Device API</H1>
+
+<HR>
+<H1>Use cases</H1>
+
+<UL>
+
+<P>
+<LI>Mounting volume of a existing device (ADF dump or real one) :
+ <OL>
+ <LI>adfMountDev()
+ <LI>adfMount()
+ <LI>adfUnMount()
+ <LI>adfUnMountDev()
+ </OL>
+
+<P>
+<LI>Creating an ADF dump of a floppy :
+ <OL>
+ <LI>adfCreateDumpDevice()
+ <LI>adfCreateFlop()
+ <LI>adfMount()
+ <LI>adfUnMount()
+ <LI>adfUnMountDev()
+ </OL>
+
+<P>
+<LI>Creating an ADF dump of a harddisk :
+ <OL>
+ <LI>adfCreateDumpDevice()
+ <LI>adfCreateHd()
+ <LI>adfMount()
+ <LI>adfUnMount()
+ <LI>adfUnMountDev()
+ </OL>
+
+<P>
+<LI>Creating an new filesystem for an harddisk on a real device :
+ <OL>
+ <LI>adfMountDev()
+ <LI>adfCreateHd()
+ <LI>adfMount()
+ <LI>adfUnMount()
+ <LI>adfUnMountDev()
+ </OL>
+
+</UL>
+
+<HR>
+
+<H1>Data structures</H1>
+
+<P>
+<B>
+Warning ! None of the fields of the structure below must be modified directly. In this case,
+i can not tell how will behave the library. Unless specified, read access
+is of course allowed.
+</B>
+<P>
+The dynamic memory allocation/releasing is done by the library (i hope :). 
+<P>
+
+<PRE>
+struct Device {
+    int devType;                      /* DEVTYPE_FLOPDD, DEVTYPE_FLOPHD or DEVTYPE_HARDDISK */
+    long size;                        /* size in bytes of the media. ADFlib is limited to 4Gb */
+    
+    int nVol;                         /* number of partitions (volumes) */
+    struct Volume* *volList;          /* volumes */
+
+    long cylinders, heads, sectors;   /* device geometry */
+    
+    BOOL isNativeDev;
+
+    void *nativeDev;                  /* native specific and private structure */
+}
+</PRE>
+
+<P>
+The Partition structure is used with adfCreateHd().
+
+
+<PRE>
+struct Partition{
+    long startCyl;      /* starting cylinder of the usable space : should be 2 */
+    long lenCyl;        /* length of this area, in cylinders */
+
+    char* volName;      /* name of the volume, if any. Instead filled with 0.  */
+
+    int volType;        /* filesystem caracteristics : use the flags FSMASK_FFS, 
+                            FSMASK_INTL and FSMASK_DIRCACHE                     */
+
+} 
+</PRE>
+
+
+<HR>
+
+
+<P ALIGN=CENTER><FONT SIZE=+2> adfMountDev() </FONT></P>
+
+<H2>Syntax</H2>
+
+ <B>struct Device*</B> adfMountDev( <B>char*</B> name)
+
+<H2>Description</H2>
+
+Mounts a device. The name could be a filename for an ADF dump, or a
+real device name like "|F:" for the Win32 F: partition. <BR>
+The real device name is plateform dependent.
+
+<H2>Return values</H2>
+
+ NULL if an error occurs, a Device structure pointer instead.
+
+<H2>Internals</H2>
+<OL>
+<LI>Allocation of <I>struct Device *dev</I>
+<LI>Calls <I>adfIsNativeDev()</I> to determine if the name point out
+a ADF dump or a real (native) device. The field <I>dev->isNativeDev</I> is filled.
+<LI>Initialize the (real or dump) device. The field <I>dev->size</I> is filled. 
+<LI><I>dev->devType</I> is filled.
+<LI>The device is mounted : <I>dev->nVol, dev->volList[], dev->cylinders,
+dev->heads, dev->sectors</I> are filled.
+<LI><I>dev</I> is returned
+</OL>
+Warning, in each <I>dev->volList[i]</I> volumes (vol), 
+only <I>vol->volName</I> (might be NULL), <I>vol->firstBlock, vol->lastBlock</I>
+and <I>vol->rootBlock</I> are filled !
+
+<H2>See also</H2>
+
+ struct Device, real (native) devices
+
+<H2>Files</H2>
+
+Real devices allocation : adf_nativ.c, adf_nativ.h <BR>
+ADF allocation : adf_dump.c, adf_dump.h
+<P>
+
+<HR>
+<P ALIGN=CENTER><FONT SIZE=+2> adfUnMountDev() </FONT></P>
+
+
+<H2>Syntax</H2>
+
+<B>void</B> adfUnMountDev( <B>struct Device*</B> dev)
+
+<H2>Description</H2>
+
+Releases a Device and frees related resources.
+
+<H2>Internals</H2>
+
+<OL>
+<LI>Frees <I>dev->volList[]</I>
+<LI>Releases the ADF dump or real (native) device : call the suited function.
+</OL>
+
+<HR>
+<P ALIGN=CENTER><FONT SIZE=+2> adfCreateHd() </FONT></P>
+
+<H2>Syntax</H2>
+
+<B>RETCODE</B> adfCreateHd(<B>struct Device*</B> dev, <B>int</B> nPart,
+ <B>struct Partition*</B> *partList )
+
+<H2>Description</H2>
+
+Create the filesystem of a device which will be used as an Harddisk.
+<I>AdfMount()</I> must be used after to mount
+a volume (partition).
+<P>
+In case of a new ADF dump, <I>adfCreateDumpDevice()</I> must be called before to
+create an empty media of the right size.
+<P>
+An Harddisk ADF dump created with ADFlib -can not be- used back by the AmigaDOS,
+since some fields of the header structures are missing : they can not be
+automatically determined.
+
+<H2>Return values</H2>
+
+RC_OK, or Something different in case of error.
+
+<H2>Examples</H2>
+
+Creation of an ADF Zip disk dump : <BR>
+
+<PRE>
+struct Partition part1;
+struct Partition **partList;
+struct Device *hd;
+RETCODE rc;
+
+/* Env init */
+
+/* cyl = 2891, heads = 1, sectors = 68 */
+hd = adfCreateDumpDevice("newdev",2891,1,68);
+if (!hd) { /* cleanup and exit */ }
+
+/* allocation of partlist[] */
+
+/* the filesystem definition : size, FFS with DIRCACHE */
+part1.startCyl = 2;
+part1.lenCyl = 2889;
+part1.volName = strdup("zip");
+part1.volType = FSMASK_FFS|FSMASK_DIRCACHE;
+
+partList[0] = &part1;
+
+/* creates the filesystem */
+rc = adfCreateHd(hd,1,partList);
+if (rc!=RC_OK) { /* something wrong, cleaning up and exit */ }
+
+/* freeing of partList[] and part1.volName */
+
+/* device usage */
+
+adfUnMountDev(hd);
+
+/* Env cleanup */
+
+</PRE>
+
+
+<H2>Internals</H2>
+
+<OL>
+<LI>Creates and fill <I>dev->volList[]</I>
+<LI>Creates the Harddisk header structures on the media. It uses usually the
+2 first cylinders of the device.
+</OL>
+
+
+
+<HR>
+<P ALIGN=CENTER><FONT SIZE=+2> adfCreateFlop() </FONT></P>
+
+<H2>Syntax</H2>
+
+<B>RETCODE</B> adfCreateFlop(<B>struct Device*</B> dev, 
+ <B>char*</B> volName, <B>int</B> volType )
+
+<H2>Description</H2>
+
+Creates the filesystem of a DD or HD floppy. 
+<I>AdfMount()</I> must be used after to mount the only volume.
+<P>
+In case of a new ADF dump, <I>adfCreateDumpDevice()</I> must be called before to
+create an empty media of the right size.
+<P>
+An Harddisk ADF dump created with ADFlib -can be- used back by the AmigaDOS.
+
+
+<H2>Return values</H2>
+
+RC_OK, or Something different in case of error.
+
+
+<H2>Examples</H2>
+
+<PRE>
+struct Device *flop;
+
+/* Env init */
+
+/* creates a DD floppy empty dump */
+/* cyl = 80, heads = 2, sectors = 11. HD floppies has 22 sectors */
+flop = adfCreateDumpDevice("newdev", 80, 2, 11);
+if (!flop) { /* cleanup and exit */ }
+
+/* create the filesystem : OFS with DIRCACHE */
+rc = adfCreateFlop( flop, "empty", FSMASK_DIRCACHE );
+if (rc!=RC_OK) { /* error : cleanup and exit() */
+
+/* device usage */
+
+adfUnMountDev(flop);
+
+/* Env cleanup */
+
+</PRE>
+
+<H2>Internals</H2>
+
+<OL>
+<LI>Allocation of dev->volList[]. It contains one volume.
+<LI>Creation of the volume
+</OL>
+
+<HR>
+
+<P ALIGN=CENTER><FONT SIZE=+2> ADF only : adfCreateDumpDevice() </FONT></P>
+
+<H2>Syntax</H2>
+
+<B>struct Device*</B> adfCreateDumpDevice(<B>char*</B> filename,
+<B>long</B> cyl, <B>long</B> heads, <B>long</B> sect)
+
+<H2>Description</H2>
+
+Create a file of the right size, and fills some fields of the Device
+structure. Must be followed by adfCreateFlop() and adfCreateHd().
+
+<H2>Return values</H2>
+
+the Device, NULL in case of error.
+
+<H2>Examples</H2>
+See adfCreateFlop() and adfCreateHd() examples.
+
+<H2>Internals</H2>
+
+<OL>
+<LI>Allocate <I>struct Device* dev</I>
+<LI>Allocate <I>dev->nativeDev</I>
+<LI>Create an empty file with a size equals to : cyl*heads*sect*512.
+<LI>Open this file with "rb+" mode
+<LI>Fills <I>dev->cylinders, dev->heads, dev->sectors, dev->size,
+ dev->devType</I>, and <I>dev->nVol</I> = 0.
+<LI>Returns <I>dev</I>
+</OL>
+
+</BODY>
+
+</HTML>

@@ -1,0 +1,12 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+USER_CPPFLAGS := -DMUIMASTER_YES_INLINE_STDARG
+
+#MM- kernel-usb-romstrap-raspi : kernel-usb-poseidon
+
+%build_module_simple mmake=kernel-usb-romstrap-raspi \
+  modname=usbromstartup modtype=resource \
+  files="usbromstartup"
+
+%common

@@ -1,0 +1,2 @@
+USER_CPPFLAGS := -DLOWLEVEL_ARCHDATA
+USER_INCLUDES += -iquote $(SRCDIR)/arch/$(CPU)-$(ARCH)/lowlevel

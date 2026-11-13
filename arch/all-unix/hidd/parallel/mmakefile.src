@@ -1,0 +1,15 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+FILES       := ParallelClass ParallelUnitClass
+
+USER_CPPFLAGS := -DAROS_ARCHITECTURE="\"$(AROS_TARGET_PLATFORM)\""
+USER_INCLUDES := -isystem $(GENINCDIR) $(KERNEL_INCLUDES)
+
+%build_module mmake=workbench-hidd-unix-parallel \
+  modname=parallel modtype=hidd \
+  files=$(FILES)
+
+#MM workbench-hidd-unix-parallel : kernel-unixio
+
+%common

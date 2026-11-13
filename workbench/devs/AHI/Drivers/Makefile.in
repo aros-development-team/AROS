@@ -1,0 +1,132 @@
+#
+#  Makefile.in for the drivers
+#
+
+#
+# Autoconfig stuff
+########################################
+
+@SET_MAKE@
+
+top_srcdir      = @top_srcdir@
+srcdir          = @srcdir@
+DISTDIR	        = @DISTDIR@
+
+DEVDIR          = ${DISTDIR}/Developer
+DRIVERDIR       = ${DEVDIR}/Drivers
+
+host            = @host@
+host_cpu        = @host_cpu@
+
+INSTALL         = @INSTALL@
+INSTALL_DATA    = @INSTALL_DATA@
+
+VPATH           = @srcdir@
+
+HAVE_ASMIO      = @HAVE_ASMIO@
+HAVE_OPENPCI    = @HAVE_OPENPCI@
+HAVE_DMA_H      = @HAVE_DMA_H@
+
+HAVE_ALSA       = @HAVE_ALSA@
+HAVE_OSS        = @HAVE_OSS@
+HAVE_PULSEAUDIO = @HAVE_PULSEAUDIO@
+HAVE_WASAPI     = @HAVE_WASAPI@
+
+#
+# Targets
+########################################
+
+.PHONY:		all clean distclean maintainer-clean bindist
+
+SUBDIRS		= Device Filesave Void
+
+#
+# Add supported native drivers
+#
+ifneq ($(strip $(HAVE_ASMIO)),)
+SUBDIRS		+= ac97
+SUBDIRS		+= HDAudio
+SUBDIRS		+= NVHDMI
+SUBDIRS		+= SB128
+SUBDIRS		+= VIA-AC97
+SUBDIRS		+= CMI8738
+ifneq ($(host_cpu),x86_64)
+SUBDIRS		+= EMU10kx
+SUBDIRS		+= Envy24HT
+SUBDIRS		+= Envy24
+endif
+endif
+
+ifneq ($(strip $(HAVE_OPENPCI)),)
+SUBDIRS		+= EMU10kx
+endif
+
+ifeq ($(strip $(host)),powerpc-unknown-amigaos)
+SUBDIRS		+= EMU10kx
+endif
+
+#
+# Add supported AROS hosted drivers
+#
+ifneq ($(strip $(HAVE_ALSA)),)
+SUBDIRS		+= Alsa
+endif
+
+ifneq ($(strip $(HAVE_OSS)),)
+SUBDIRS		+= OSS
+endif
+
+ifneq ($(strip $(HAVE_PULSEAUDIO)),)
+SUBDIRS		+= PulseAudio
+endif
+
+ifneq ($(strip $(HAVE_WASAPI)),)
+SUBDIRS		+= WASAPI
+endif
+
+#
+# Raspberry Pi audio drivers (ARM targets, require the BCM2708 DMA resource includes)
+ifneq ($(strip $(HAVE_DMA_H)),)
+ifneq ($(filter arm aarch64,$(host_cpu)),)
+SUBDIRS		+= RPiPWM
+SUBDIRS		+= RPiHDMI
+SUBDIRS		+= RPiI2S
+endif
+endif
+
+all:
+	@for i in $(SUBDIRS); do (cd $$i && $(MAKE) $@) || exit; done
+
+install:
+	@for i in $(SUBDIRS); do (cd $$i && $(MAKE) $@) || exit; done
+
+clean:
+	-@for i in $(SUBDIRS); do (cd $$i && $(MAKE) $@); done
+
+distclean:	clean
+	-@for i in $(SUBDIRS); do (cd $$i && $(MAKE) $@); done
+	$(RM) Makefile
+
+maintainer-clean: distclean
+	-@for i in $(SUBDIRS); do (cd $$i && $(MAKE) $@); done
+
+bindist:
+	@for i in $(SUBDIRS); do (cd $$i && $(MAKE) $@) || exit; done
+	$(INSTALL) -d $(DRIVERDIR) 
+	for d in $(SUBDIRS) Paula Toccata Void Wavetools; do \
+	  cd $(srcdir) && find $${d} -type f -and -not -path '*CVS*' \
+	    -exec $(INSTALL_DATA) -D {} $(DRIVERDIR)/{} \; ; \
+	done
+
+#
+# Auto-remake autoconf stuff
+########################################
+
+Makefile: Makefile.in ../config.status
+	(cd .. && ./config.status)
+
+
+#
+# Rules
+########################################
+

@@ -1,0 +1,333 @@
+/*
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
+*/
+
+/*
+ * -date------ -name------------------- -description-----------------------------
+ * 26-dec-2007 [Tomasz Wiszkowski]      added disk validation
+ * 04-jan-2008 [Tomasz Wiszkowski]      corrected tabulation
+ * 05-jan-2008 [Tomasz Wiszkowski]               removed requester prompting for validation
+ *                                                                                               to allow volume validation during boot-up
+ */
+
+#include <string.h>
+
+#ifdef DEBUG
+#undef DEBUG
+#endif
+#define DEBUG 0
+
+#include "os.h"
+#include "bitmap.h"
+#include "checksums.h"
+#include "error.h"
+#include "afsblocks.h"
+#include "baseredef.h"
+#include "validator.h"
+
+
+BOOL mediumPresent(struct IOHandle *ioh) {
+        return (ioh->ioflags & IOHF_DISK_IN)==IOHF_DISK_IN;
+}
+
+/*******************************************
+ Name  : newMedium
+ Descr.: build infos for a new medium
+ Input : volume  -
+ Output: 0 for success; error code otherwise
+********************************************/
+LONG newMedium(struct AFSBase *afsbase, struct Volume *volume) {
+struct BlockCache *blockbuffer;
+UWORD i;
+BOOL gotdostype = FALSE;
+BOOL counted = FALSE;
+LONG error;
+ULONG dostype;
+UBYTE dosflags;
+
+#ifdef __AROS__
+        error = prepareMediumCache(afsbase, volume);
+        if (error != 0)
+                return error;
+#endif
+        volume->bitmapinvalid = FALSE; /* New media starts with an unknown root state. */
+        /* Check validity of root block first, since boot block may be left over
+           from an overwritten partition of a different size
+           Read bootblock first to prevent multiple seeks when using floppies
+        */
+        blockbuffer=getBlock(afsbase, volume,0);
+        volume->dostype = dostype = 0;
+        volume->dosflags = dosflags = 0;
+        if (blockbuffer != NULL) {
+                gotdostype = TRUE;
+                dostype = OS_BE2LONG(blockbuffer->buffer[0]) & 0xFFFFFF00;
+                dosflags = OS_BE2LONG(blockbuffer->buffer[0]) & 0xFF;
+        }
+
+        blockbuffer=getBlock(afsbase, volume,volume->rootblock);
+        if (blockbuffer == NULL) {
+                volume->dostype = ID_UNREADABLE_DISK;
+                return ERROR_UNKNOWN;
+        }
+        if (calcChkSum(volume->SizeBlock, blockbuffer->buffer) != 0 ||
+                OS_BE2LONG(blockbuffer->buffer[BLK_PRIMARY_TYPE]) != T_SHORT ||
+                OS_BE2LONG(blockbuffer->buffer[BLK_SECONDARY_TYPE(volume)]) != ST_ROOT)
+        {
+                D(bug("[afs] newMedium: incorrect checksum or root block type (%d)\n",
+                        OS_BE2LONG(blockbuffer->buffer[BLK_SECONDARY_TYPE(volume)])));
+                volume->dostype = ID_NOT_REALLY_DOS;
+                return ERROR_NOT_A_DOS_DISK;
+        }
+
+        if (gotdostype == FALSE) {
+                volume->dostype = ID_UNREADABLE_DISK;
+                return ERROR_UNKNOWN;
+        }
+        if ((dostype != ID_DOS_DISK) && (dostype != ID_DOS_muFS_DISK))
+        {
+                blockbuffer = getBlock(afsbase, volume, 1);
+                if (blockbuffer == NULL)
+                        return ERROR_UNKNOWN;
+                dostype = OS_BE2LONG(blockbuffer->buffer[0]) & 0xFFFFFF00;
+                dosflags = OS_BE2LONG(blockbuffer->buffer[0]) & 0xFF;
+        }
+        if ((dostype != ID_DOS_DISK) && (dostype != ID_DOS_muFS_DISK))
+        {
+                D(bug("[afs] newMedium: incorrect DOS type (0x%x)\n",
+                        volume->dostype));
+                volume->dostype = ID_NOT_REALLY_DOS;
+                return ERROR_NOT_A_DOS_DISK;
+        }
+        blockbuffer=getBlock(afsbase, volume,volume->rootblock);
+        if (blockbuffer == NULL) {
+                volume->dostype = ID_UNREADABLE_DISK;
+                return ERROR_UNKNOWN;
+        }
+
+        volume->dostype = dostype;
+        volume->dosflags = dosflags;
+
+        volume->bitmapinvalid = blockbuffer->buffer[BLK_BITMAP_VALID_FLAG(volume)] == 0;
+        for (i=0;i<=24;i++)
+        {
+                volume->bitmapblockpointers[i]=OS_BE2LONG
+                        (
+                                blockbuffer->buffer[BLK_BITMAP_POINTERS_START(volume)+i]
+                        );
+        }
+        volume->bitmapextensionblock=OS_BE2LONG
+                (
+                        blockbuffer->buffer[BLK_BITMAP_EXTENSION(volume)]
+                );
+        if (!blockbuffer->buffer[BLK_BITMAP_VALID_FLAG(volume)])
+        {
+                /* since our disk is invalid at this point, *
+                 * we want to spawn a new process that will *
+                 * perform disk validation while we move on */
+
+                volume->usedblockscount=0;
+                volume->state = ID_VALIDATING;
+
+#ifdef __AROS__
+                counted = launchValidator(afsbase, volume) == vr_OK;
+#else
+                launchValidator(afsbase, volume);
+#endif
+        }
+
+        /*
+         * it's safe to assume that the block is still there
+         */
+        blockbuffer=getBlock(afsbase, volume,volume->rootblock);
+        if (blockbuffer == NULL)
+                return ERROR_UNKNOWN;
+        
+        if (blockbuffer->buffer[BLK_BITMAP_VALID_FLAG(volume)])
+        {
+                blockbuffer->flags |= BCF_USED; // won't be cleared until volume is ejected
+                D(bug("[afs] counting used blocks...\n"));
+                if (!counted)
+                        volume->usedblockscount=countUsedBlocks(afsbase, volume);
+                D(bug("[afs] %u blocks in use\n", volume->usedblockscount));
+                volume->state = diskWritable(afsbase, &volume->ioh) ?
+                        ID_VALIDATED : ID_WRITE_PROTECTED;
+        }
+        error = osMediumInit(afsbase, volume, blockbuffer);
+        if (error != 0)
+                return error;
+        /* for free block searching */
+        volume->lastaccess=volume->rootblock;
+        return 0;
+}
+
+/*******************************************
+ Name  : initVolume
+ Descr.: maybe a better name would be mountVolume
+         allocate resources for a new mounted device
+ Input : device      - device pointer
+         blockdevice - name of blockdevice
+         unit        - unit number of blockdevice
+         devicedef   - medium geometry data
+         error       - return error code
+ Output: 0 on error (error set dos dos error);
+         pointer to struct Volume on success
+********************************************/
+struct Volume *initVolume
+        (
+                struct AFSBase *afsbase,
+                struct Device *device,
+                CONST_STRPTR blockdevice,
+                ULONG unit,
+                ULONG flags,
+                struct DosEnvec *devicedef,
+                LONG *error
+        )
+{
+        struct Volume *volume;
+
+        if (blockdevice == NULL) {
+            *error = ERROR_NO_DISK;
+            return NULL;
+        }
+
+        volume = AllocMem(sizeof(struct Volume) + strlen(blockdevice) + 1,MEMF_PUBLIC | MEMF_CLEAR);
+        if (volume != NULL)
+        {
+                volume->FNameMax = MAX_NAME_LENGTH;
+                D(bug("[afs] initVolume: NameLen MAX =%d\n",volume->FNameMax));
+                volume->device = device;
+                volume->ioh.blockdevice = (STRPTR)(&volume[1]); /* Data after the volume alloc */
+                strcpy(volume->ioh.blockdevice, blockdevice);
+                volume->ioh.unit = unit;
+                volume->ioh.flags = flags;
+                volume->SizeBlock = devicedef->de_SizeBlock
+                        * devicedef->de_SectorPerBlock;
+                volume->sectorsize = devicedef->de_SizeBlock << 2;
+                volume->blocksectors = devicedef->de_SectorPerBlock;
+                if (devicedef->de_TableSize>=20)
+                        volume->bootblocks=devicedef->de_BootBlocks;
+                else
+                        volume->bootblocks=devicedef->de_Reserved;
+                volume->numbuffers = devicedef->de_NumBuffers;
+                /* Respect the device's transfer limit, if one is given */
+                volume->maxtransfer = 0xFFFFFFFF;
+                if ((devicedef->de_TableSize >= DE_MAXTRANSFER)
+                        && (devicedef->de_MaxTransfer != 0))
+                        volume->maxtransfer = devicedef->de_MaxTransfer;
+                D(bug("[afs] initVolume: MaxTransfer=%lu\n", volume->maxtransfer));
+                volume->blockcache=initCache(afsbase, volume, volume->numbuffers);
+                if (volume->blockcache != NULL)
+                {
+                        initBulkBuffer(afsbase, volume);
+                        if (openBlockDevice(afsbase, &volume->ioh)!= NULL)
+                        {
+                                volume->countblocks =
+                                        (
+                                                (
+                                                        devicedef->de_HighCyl-devicedef->de_LowCyl+1
+                                                )*devicedef->de_Surfaces*devicedef->de_BlocksPerTrack
+                                                /
+                                                devicedef->de_SectorPerBlock
+                                        );
+                                volume->rootblock =(volume->countblocks-1+devicedef->de_Reserved)/2;
+                                volume->startblock=
+                                                devicedef->de_LowCyl*
+                                                devicedef->de_Surfaces*
+                                                devicedef->de_BlocksPerTrack;
+                                volume->lastblock=
+                                                (
+                                                        (devicedef->de_HighCyl+1)
+                                                        *devicedef->de_Surfaces
+                                                        *devicedef->de_BlocksPerTrack
+                                                )-1;
+                                check64BitSupport(afsbase, volume);
+                                volume->ah.volume=volume;
+                                if (mediumPresent(&volume->ioh))
+                                {
+                                        *error = newMedium(afsbase, volume);
+                                }
+                                else
+                                        *error = 0;
+                                if ((*error == 0) || (*error == ERROR_NOT_A_DOS_DISK))
+                                {
+                                        D(bug("[afs] initVolume: BootBlocks=%d\n",volume->bootblocks));
+                                        D(bug("[afs] initVolume: RootBlock=%d\n",volume->rootblock));
+                                        volume->ah.header_block = volume->rootblock;
+                                        return volume;
+                                }
+                        }
+                        else
+                        {
+                                *error=ERROR_NO_FREE_STORE;
+                        }
+                        freeCache(afsbase, volume->blockcache);
+                        freeBulkBuffer(afsbase, volume);
+                }
+                else
+                {
+                        *error=ERROR_NO_FREE_STORE;
+                }
+                FreeMem(volume,sizeof(struct Volume) + strlen(blockdevice) + 1);
+        }
+        else
+                *error=ERROR_NO_FREE_STORE;
+        return NULL;
+}
+
+/*******************************************
+ Name  : uninitVolume
+ Descr.: maybe a better name would be unmountVolume
+         free resources allocated by initVolume
+ Input : volume  - volume to unmount
+ Output: -
+********************************************/
+void uninitVolume(struct AFSBase *afsbase, struct Volume *volume) {
+
+        osMediumFree(afsbase, volume, TRUE);
+        if (volume->blockcache != NULL)
+                freeCache(afsbase, volume->blockcache);
+        freeBulkBuffer(afsbase, volume);
+        closeBlockDevice(afsbase, &volume->ioh);
+        FreeMem(volume,sizeof(struct Volume) + strlen(volume->ioh.blockdevice) + 1);
+}
+
+
+LONG writeprotectVolume(struct AFSBase *afsbase, struct Volume *volume, BOOL on, ULONG key)
+{
+    LONG error = 0;
+
+    if(on && (volume->state == ID_WRITE_PROTECTED))
+    { // Already write protected
+        error = ERROR_DISK_WRITE_PROTECTED;
+        D(bug("[AFS] Volume: Already write protected (%d)\n", error));
+    } else {
+        if(on)
+        { // Attempt to write protect
+            if (key)
+            { // With a key
+                volume->key = key;
+                volume->state = ID_WRITE_PROTECTED; // : ID_VALIDATED;
+            } else { // Without a key
+                volume->state = ID_WRITE_PROTECTED;
+            }
+        } else { // Attempt to write enable
+            if (volume->key)
+            { // There is a key
+                if(key == volume->key)
+                { // Key is correct
+                    volume->state = ID_VALIDATED;
+                    volume->key = 0;
+                } else { // Key is incorrect
+                    error = ERROR_INVALID_COMPONENT_NAME;
+                    D(bug("[AFS] Volume: Wrong key (%d)\n", error));
+                    return error;
+                }
+            } else { // There is no key
+                volume->state = ID_VALIDATED;
+            }
+        }
+    }
+    /* Return success indicator */
+    return error;
+}
+/* vim: set noet ts=3 ai fdm=marker fmr={,} :*/

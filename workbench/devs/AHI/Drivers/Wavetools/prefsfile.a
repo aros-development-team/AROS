@@ -1,0 +1,143 @@
+*** ScR ***
+
+	incdir	include:
+	include	devices/ahi.i
+	include	libraries/ahi_sub.i
+
+TRUE		EQU	1
+FALSE		EQU	0
+
+BEG:
+
+*** FORM AHIM
+	dc.l	ID_FORM
+	dc.l	E-S
+S:
+	dc.l	ID_AHIM
+
+
+*** AUDN
+	dc.l	ID_AUDN
+	dc.l	.e-.s
+.s:
+	dc.b	"wavetools",0
+.e:
+	CNOP	0,2
+
+*** AUDM
+ModeA:
+	dc.l	ID_AUDM
+	dc.l	.e-.s
+.s
+	dc.l	AHIDB_AudioID,		$00080001
+
+	dc.l	AHIDB_Volume,		TRUE
+	dc.l	AHIDB_Panning,		TRUE
+	dc.l	AHIDB_Stereo,		TRUE
+	dc.l	AHIDB_HiFi,		FALSE
+	dc.l	AHIDB_MultTable,	FALSE
+
+	dc.l	AHIDB_Name,		.name-.s
+	dc.l	TAG_DONE
+.name	dc.b	"WAVETOOLS:16 bit stereo++",0
+.e
+	CNOP	0,2
+
+*** AUDM
+ModeB:
+	dc.l	ID_AUDM
+	dc.l	.e-.s
+.s
+	dc.l	AHIDB_AudioID,		$00080002
+
+	dc.l	AHIDB_Volume,		TRUE
+	dc.l	AHIDB_Panning,		TRUE
+	dc.l	AHIDB_Stereo,		TRUE
+	dc.l	AHIDB_HiFi,		FALSE
+	dc.l	AHIDB_MultTable,	TRUE
+
+	dc.l	AHIDB_Name,		.name-.s
+	dc.l	TAG_DONE
+.name	dc.b	"WAVETOOLS:Fast 16 bit stereo++",0
+.e
+	CNOP	0,2
+
+*** AUDM
+ModeC:
+	dc.l	ID_AUDM
+	dc.l	.e-.s
+.s
+	dc.l	AHIDB_AudioID,		$00080003
+
+	dc.l	AHIDB_Volume,		TRUE
+	dc.l	AHIDB_Panning,		FALSE
+	dc.l	AHIDB_Stereo,		TRUE
+	dc.l	AHIDB_HiFi,		FALSE
+	dc.l	AHIDB_MultTable,	FALSE
+
+	dc.l	AHIDB_Name,		.name-.s
+	dc.l	TAG_DONE
+.name	dc.b	"WAVETOOLS:16 bit stereo",0
+.e
+	CNOP	0,2
+
+*** AUDM
+ModeD:
+	dc.l	ID_AUDM
+	dc.l	.e-.s
+.s
+	dc.l	AHIDB_AudioID,		$00080004
+
+	dc.l	AHIDB_Volume,		TRUE
+	dc.l	AHIDB_Panning,		FALSE
+	dc.l	AHIDB_Stereo,		TRUE
+	dc.l	AHIDB_HiFi,		FALSE
+	dc.l	AHIDB_MultTable,	TRUE
+
+	dc.l	AHIDB_Name,		.name-.s
+	dc.l	TAG_DONE
+.name	dc.b	"WAVETOOLS:Fast 16 bit stereo",0
+.e
+	CNOP	0,2
+
+*** AUDM
+ModeE:
+	dc.l	ID_AUDM
+	dc.l	.e-.s
+.s
+	dc.l	AHIDB_AudioID,		$00080005
+
+	dc.l	AHIDB_Volume,		TRUE
+	dc.l	AHIDB_Panning,		TRUE
+	dc.l	AHIDB_Stereo,		FALSE
+	dc.l	AHIDB_HiFi,		FALSE
+	dc.l	AHIDB_MultTable,	FALSE
+
+	dc.l	AHIDB_Name,		.name-.s
+	dc.l	TAG_DONE
+.name	dc.b	"WAVETOOLS:16 bit mono",0
+.e
+	CNOP	0,2
+
+*** AUDM
+ModeF:
+	dc.l	ID_AUDM
+	dc.l	.e-.s
+.s
+	dc.l	AHIDB_AudioID,		$00080006
+
+	dc.l	AHIDB_Volume,		TRUE
+	dc.l	AHIDB_Panning,		TRUE
+	dc.l	AHIDB_Stereo,		FALSE
+	dc.l	AHIDB_HiFi,		FALSE
+	dc.l	AHIDB_MultTable,	TRUE
+
+	dc.l	AHIDB_Name,		.name-.s
+	dc.l	TAG_DONE
+.name	dc.b	"WAVETOOLS:Fast 16 bit mono",0
+.e
+	CNOP	0,2
+
+E:
+	CNOP	0,2
+END:

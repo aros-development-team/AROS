@@ -1,0 +1,37 @@
+
+include $(SRCDIR)/config/aros.cfg
+-include $(SRCDIR)/arch/$(CPU)-$(ARCH)/lowlevel/make.opts
+-include $(SRCDIR)/arch/$(CPU)-all/lowlevel/make.opts
+
+USER_CFLAGS :=  $(AROSROM_MODULE_CFLAGS)
+USER_LDFLAGS := -static
+
+FUNCS	:= \
+	addkbint \
+	addtimerint \
+	addvblankint \
+	elapsedtime \
+	getkey \
+	getlanguageselection \
+	querykeys \
+	readjoyport \
+	remkbint \
+	remtimerint \
+	remvblankint \
+	setjoyportattrsa \
+	starttimerint \
+	stoptimerint \
+	systemcontrola \
+	systemrequesters
+
+#MM workbench-libs-lowlevel-includes : \
+#MM     kernel-exec-includes \
+#MM     workbench-libs-locale-includes \
+#MM     includes-copy
+#MM- workbench-libs-lowlevel : linklibs
+
+%build_module mmake=workbench-libs-lowlevel \
+    modname=lowlevel modtype=library \
+    files="lowlevel_init $(FUNCS)"
+
+%common

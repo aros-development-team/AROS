@@ -1,0 +1,27 @@
+#
+# Makefile for traceroute
+
+include $(SRCDIR)/config/aros.cfg
+
+FILES  := \
+    as \
+    traceroute \
+    ifaddrlist \
+    findsaddr-udp
+
+NOWARN_FLAGS := $(NOWARN_UNINITIALIZED) $(NOWARN_PARENTHESES) $(NOWARN_OLD_STYLE_DEFINITION)
+USER_CFLAGS := $(NOWARN_FLAGS)
+USER_CPPFLAGS := -D_GNU_SOURCE=1 -D__BSD_VISIBLE=1 -DHAVE_USLEEP
+
+#MM- workbench-network-common-c : workbench-network-common-c-traceroute
+#MM workbench-network-common-c-traceroute : \
+#MM     network-includes \
+#MM     arostcp-linklibs-netlib \
+#MM     arostcp-linklibs-miami \
+#MM     arostcp-linklibs-kvm
+
+%build_prog mmake=workbench-network-common-c-traceroute \
+    progname=traceroute targetdir=$(AROS_C) \
+    files=$(FILES) uselibs="kvm miami net"
+
+%common

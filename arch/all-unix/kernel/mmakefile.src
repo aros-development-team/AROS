@@ -1,0 +1,74 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+%set_archincludes mainmmake=kernel-kernel maindir=rom/kernel \
+  modname=kernel pri=9 arch=unix \
+  includes="-I$(SRCDIR)/$(CURDIR)"
+
+%get_archincludes modname=kernel \
+    includeflag=TARGET_KERNEL_INCLUDES maindir=rom/kernel
+
+%get_archincludes modname=exec \
+    includeflag=TARGET_EXEC_INCLUDES maindir=rom/exec
+
+PRIV_KERNEL_INCLUDES = \
+    $(TARGET_KERNEL_INCLUDES) \
+	-I$(SRCDIR)/rom/kernel \
+	$(TARGET_EXEC_INCLUDES) \
+	-I$(SRCDIR)/rom/exec
+
+MAINDIR	    := rom/kernel
+USER_INCLUDES := $(PRIV_KERNEL_INCLUDES)
+USER_CPPFLAGS := \
+               -D__KERNEL_NOLIBBASE__ \
+               -DAROS_ARCHITECTURE="\"$(AROS_TARGET_PLATFORM)\"" \
+	       -DHOST_OS_$(ARCH)
+
+ifneq ($(AROS_TARGET_VARIANT),)
+USER_CPPFLAGS += -DHOST_OS_$(AROS_TARGET_VARIANT)
+endif
+
+ifneq ("","$(strip $(WARN_ERROR))")
+CONFIG_CFLAGS := $(subst $(WARN_ERROR),,$(CONFIG_CFLAGS))
+endif
+
+# special flag so that included components know we are compiling the
+# arch specific code, and need special handling.
+AROS_ARCH_KERNEL:=yes
+# Allow to add architecture-specific options
+-include $(SRCDIR)/arch/all-$(FAMILY)/kernel/make.opts
+-include $(SRCDIR)/arch/all-$(ARCH)/kernel/make.opts
+-include $(SRCDIR)/arch/$(CPU)-$(ARCH)/kernel/make.opts
+ifneq ($(AROS_TARGET_VARIANT),)
+-include $(SRCDIR)/arch/all-$(ARCH)/$(AROS_TARGET_VARIANT)/kernel/make.opts
+-include $(SRCDIR)/arch/$(CPU)-$(ARCH)/$(AROS_TARGET_VARIANT)/kernel/make.opts
+endif
+
+FUNCS := cause cli issuper kernel_debug maygetchar sti setprotection \
+	 obtaininput releaseinput getpagesize allockernelbase \
+	 allocpages freepages
+FILES := kernel_startup kernel kernel_cpu kernel_intr cpu_$(CPU)
+SUPPORTFILES := kernel_cpusupport
+
+%build_archspecific \
+  mainmmake=kernel-kernel maindir=rom/kernel \
+  arch=unix-support files="$(SUPPORTFILES)" modname=kernel
+
+#MM kernel-kernel-unix : kernel-kernel-unix-support
+
+USER_INCLUDES += -I$(GENDIR)/$(MAINDIR)/include \
+	       -isystem $(GENINCDIR) $(KERNEL_INCLUDES)
+
+%build_archspecific \
+  mainmmake=kernel-kernel maindir=rom/kernel \
+  arch=unix files="$(FILES) $(FUNCS)" modname=kernel
+
+TESTS		:= coretest
+
+#MM
+check-kernel-unix : $(TESTS)
+
+% : %.c
+	$(KERNEL_CC) -DTEST $(CFLAGS) $(KERNEL_CFLAGS) $< -o $@
+
+%common

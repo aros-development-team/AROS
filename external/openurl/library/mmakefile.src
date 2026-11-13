@@ -1,0 +1,31 @@
+#   $Id$
+
+#   AROS metamakefile for openurl
+
+include $(SRCDIR)/config/aros.cfg
+
+FILES:= libinit \
+        init    \
+        utils   \
+        api     \
+        handler \
+        prefs   \
+        stubs-aros \
+        debug
+
+USER_INCLUDES := -I$(SRCDIR)/$(CURDIR)/../include
+USER_LDFLAGS := -static
+
+#MM- external-openurl-lib : linklibs external-openurl-includes
+
+%build_module_simple mmake=external-openurl-lib \
+    modname=openurl modtype=library \
+    files=$(FILES)
+
+#MM external-openurl-clean : external-openurl-lib-clean
+
+#MM
+external-libs-openurl-clean :
+	$(RM) $(GENDIR)/workbench/libs/openurl
+
+%common

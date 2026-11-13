@@ -1,0 +1,15 @@
+#
+
+include $(SRCDIR)/config/aros.cfg
+
+USER_CFLAGS := -I$(SRCDIR)/rom/processor
+
+FILES := \
+    getcpuinfo
+
+#MM- kernel-processor-ppc : includes
+
+USER_CPPFLAGS += -D__UTILITY_NOLIBBASE__
+
+%build_archspecific mainmmake=kernel-processor maindir=rom/processor \
+    arch=ppc files=$(FILES) modname=processor

@@ -1,0 +1,79 @@
+/*
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
+
+    Desc:
+*/
+
+#include <aros/kernel.h>
+#include <aros/libcall.h>
+#include <proto/exec.h>
+
+#include <kernel_base.h>
+#include <kernel_interrupts.h>
+#include <kernel_objects.h>
+
+/*****************************************************************************
+
+    NAME */
+#include <proto/kernel.h>
+
+        AROS_LH1(void, KrnRemIRQHandler,
+
+/*  SYNOPSIS */
+        AROS_LHA(void *, handle, A0),
+
+/*  LOCATION */
+         struct KernelBase *, KernelBase, 8, Kernel)
+
+/*  FUNCTION
+        Remove a registered hardware IRQ handler.
+
+    INPUTS
+        handle - Handle returned by KrnAddIRQHandler().
+
+    RESULT
+        None.
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+        KrnAddIRQHandler(), KrnModifyIRQHandler()
+
+    INTERNALS
+
+******************************************************************************/
+{
+    AROS_LIBFUNC_INIT
+
+    struct IntrNode *h = handle;
+    irqid_t irq = h->in_nr;
+
+    if (h && (h->in_type == it_interrupt))
+    {
+        (void)goSuper();
+
+        Disable();
+#if defined(__AROSEXEC_SMP__)
+        KrnSpinLock(&KernelBase->kb_IntrSpinLock, NULL, SPINLOCK_MODE_WRITE);
+#endif
+        REMOVE(h);
+        if (IsListEmpty(&KERNELIRQ_LIST(irq)))
+        {
+                ictl_disable_irq(irq, KernelBase);
+        }
+#if defined(__AROSEXEC_SMP__)
+        KrnSpinUnLock(&KernelBase->kb_IntrSpinLock);
+#endif
+        Enable();
+
+        krnFreeIntrNode(h);
+
+        goUser();
+    }
+
+    AROS_LIBFUNC_EXIT
+}

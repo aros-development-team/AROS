@@ -1,0 +1,61 @@
+# -------- Bootstrap part --------
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM boot-unix: kernel-bootstrap-hosted
+
+BOOTSTRAPCONF := $(AROSARCHDIR)/AROSBootstrap.conf
+
+#MM
+boot-unix: $(BOOTSTRAPCONF)
+
+ifeq ($(AROS_TARGET_VARIANT),android)
+$(BOOTSTRAPCONF): INPUT_FILE := $(SRCDIR)/$(CURDIR)/AROSBootstrap_android.conf
+$(BOOTSTRAPCONF): AROSBootstrap_android.conf
+else
+$(BOOTSTRAPCONF): INPUT_FILE := $(SRCDIR)/$(CURDIR)/AROSBootstrap.conf
+$(BOOTSTRAPCONF): AROSBootstrap.conf
+endif
+$(BOOTSTRAPCONF): mkbootconf.sh | $(AROSARCHDIR)
+	@$(ECHO) "Writing    $@..."
+	@$(SRCDIR)/$(CURDIR)/mkbootconf.sh $(INPUT_FILE) $(AROS_DIR_BOOTARCH) >$@
+
+$(AROSARCHDIR):
+	@$(ECHO) "Making     $@..."
+	@mkdir -p $@
+
+# -------- Kickstart part --------
+
+#MM- kernel-unix: kernel-objs
+
+#MM- kernel-link-unix : \
+#MM     kernel-$(ARCH)-$(AROS_TARGET_VARIANT)   \
+#MM	kernel-kernel-kobj			\
+#MM     kernel-hostlib     			\
+#MM	kernel-battclock     			\
+#MM	kernel-entropy     			\
+#MM	kernel-processor     			\
+#MM	kernel-timer     			\
+#MM	kernel-expansion     			\
+#MM	kernel-exec-kobj			\
+#MM	kernel-task-kobj			\
+#MM     hidd-x11gfx-$(OPT_HOST_X11GFX)	        \
+#MM     hidd-sdlgfx-$(OPT_HOST_SDLGFX)	        \
+#MM     hidd-androidgfx-$(OPT_HOST_ANDROIDGFX)     \
+#MM     kernel-fs-emul                          \
+#MM	kernel-unixio     			\
+#MM	linklibs
+
+# ---- UNIX board support package ----
+
+KDEVS	:= 
+KLIBS   := exec
+KHNDLRS := 
+KHIDDS  := 
+KRSRCS  := task
+
+%link_kickstart mmake=kernel-link-unix file=$(AROSARCHDIR)/kernel \
+	devs=$(KDEVS) handlers=$(KHNDLRS) hidds=$(KHIDDS) libs=$(KLIBS) res=$(KRSRCS) startup=$(KOBJSDIR)/kernel_resource.o \
+	uselibs="hiddstubs"
+
+%common

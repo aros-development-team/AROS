@@ -1,0 +1,25 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+USER_CPPFLAGS := -DMUIMASTER_YES_INLINE_STDARG
+#USER_CPPFLAGS += -DDEBUG=1
+USER_LDFLAGS := -static
+
+FILES := \
+    massstorage.class \
+    massstorage_bulk \
+    massstorage_cbi \
+    massstorage_uas \
+    dev \
+    debug \
+    partitions
+
+#MM- kernel-usb-classes-massstorage : kernel-usb-usbclass \
+#MM    kernel-usb-poseidon-includes linklibs-fatbpb
+
+%build_module_library mmake=kernel-usb-classes-massstorage \
+    modname=massstorage modtype=usbclass modsuffix="class" \
+    files="$(FILES)" \
+    uselibs="debug fatbpb"
+
+%common

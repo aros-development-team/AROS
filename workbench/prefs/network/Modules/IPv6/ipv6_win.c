@@ -1,0 +1,383 @@
+/*
+    Copyright (C) 2009-2026, The AROS Development Team. All rights reserved.
+
+    net6.c - IPv6 protocol-address configuration window class (Net6WinClass):
+      - Subclass of PAWinClass (protocols.c, passed in via the plugin API)
+      - MUIM_PAWin_Show        : populate gadgets from a ProtocolAddress
+      - MUIM_PAWin_Apply       : read gadgets back into a ProtocolAddress
+      - MUIM_PAWin_ModeChanged : enable/disable addr+prefix for manual mode
+      - Net6_WriteTokens       : write IP6= / GW6= to a FILE
+
+    This file is compiled as part of the net6.netprefs plugin module.
+*/
+
+#define MUIMASTER_YES_INLINE_STDARG
+
+#include <exec/types.h>
+#include <libraries/mui.h>
+#include <intuition/classes.h>
+#include <proto/exec.h>
+#include <proto/intuition.h>
+#include <proto/muimaster.h>
+#include <proto/alib.h>
+#include <utility/hooks.h>
+#include <string.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+#include "protocols.h"
+#include "prefsdata.h"
+#include "locale.h"
+
+struct MUI_CustomClass *Net6WinClass = NULL;
+
+struct Net6Win_Data
+{
+    Object *n6_modeObj;
+    Object *n6_addrObj;
+    Object *n6_prefixObj;
+    Object *n6_gateObj;
+    Object *n6_dnsObj[2];
+};
+
+static CONST_STRPTR IPv6ModeCycle[] = { NULL, NULL, NULL, NULL };
+
+/*---------------------------------------------------------------------------*/
+static IPTR Net6Win__OM_NEW(Class *cl, Object *obj, struct opSet *msg)
+{
+    Object *mode, *addr, *prefix, *gate, *dns1, *dns2, *content;
+
+    IPv6ModeCycle[0] = _(MSG_IP_MODE_DHCP);
+    IPv6ModeCycle[1] = _(MSG_IP6_MODE_AUTO);
+    IPv6ModeCycle[2] = _(MSG_IP_MODE_MANUAL);
+
+    /* Build the IPv6-specific content group */
+    content = (Object *)ColGroup(2),
+        GroupFrame,
+        Child, (IPTR)Label2(__(MSG_ADDR_MODE)),
+        Child, (IPTR)(mode = (Object *)CycleObject,
+            MUIA_Cycle_Entries, (IPTR)IPv6ModeCycle,
+        End),
+        Child, (IPTR)Label2(__(MSG_IP)),
+        Child, (IPTR)(addr = (Object *)StringObject,
+            StringFrame,
+            MUIA_String_Accept, (IPTR)IP6CHARS,
+            MUIA_CycleChain,    1,
+        End),
+        Child, (IPTR)Label2(__(MSG_PREFIX_LEN)),
+        Child, (IPTR)HGroup,
+            Child, (IPTR)(prefix = (Object *)StringObject,
+                StringFrame,
+                MUIA_String_Accept,  (IPTR)"0123456789",
+                MUIA_CycleChain,     1,
+                MUIA_FixWidthTxt,    (IPTR)"128 ",
+            End),
+            Child, (IPTR)HVSpace,
+        End,
+        Child, (IPTR)Label2(__(MSG_GATE)),
+        Child, (IPTR)(gate = (Object *)StringObject,
+            StringFrame,
+            MUIA_String_Accept, (IPTR)IP6CHARS,
+            MUIA_CycleChain,    1,
+        End),
+        Child, (IPTR)Label2(__(MSG_DNS1)),
+        Child, (IPTR)(dns1 = (Object *)StringObject,
+            StringFrame,
+            MUIA_String_Accept, (IPTR)IP6CHARS,
+            MUIA_CycleChain,    1,
+        End),
+        Child, (IPTR)Label2(__(MSG_DNS2)),
+        Child, (IPTR)(dns2 = (Object *)StringObject,
+            StringFrame,
+            MUIA_String_Accept, (IPTR)IP6CHARS,
+            MUIA_CycleChain,    1,
+        End),
+    End;
+
+    if (!content)
+        return 0;
+
+    /* Pass content + protocol name to the PAWin base class */
+    obj = (Object *)DoSuperNewTags(cl, obj, NULL,
+        MUIA_PAWin_ProtocolName, (IPTR)"IPv6",
+        MUIA_PAWin_Content,      (IPTR)content,
+        MUIA_Window_ID,          MAKE_ID('I','P','6','W'),
+        TAG_MORE, (IPTR)msg->ops_AttrList);
+
+    if (!obj)
+        return 0;
+
+    struct Net6Win_Data *data = INST_DATA(cl, obj);
+    data->n6_modeObj   = mode;
+    data->n6_addrObj   = addr;
+    data->n6_prefixObj = prefix;
+    data->n6_gateObj   = gate;
+    data->n6_dnsObj[0] = dns1;
+    data->n6_dnsObj[1] = dns2;
+
+    /* Mode cycle notifies the window to update gadget states */
+    DoMethod(mode, MUIM_Notify, MUIA_Cycle_Active, MUIV_EveryTime,
+             obj, 2, MUIM_PAWin_ModeChanged, MUIV_TriggerValue);
+
+    return (IPTR)obj;
+}
+
+/*---------------------------------------------------------------------------*/
+static IPTR Net6Win__MUIM_PAWin_Show(Class *cl, Object *obj,
+    struct MUIP_PAWin_Show *msg)
+{
+    struct Net6Win_Data *data = INST_DATA(cl, obj);
+    struct ProtocolAddress *pa = msg->pa;
+
+    SET(data->n6_modeObj, MUIA_Cycle_Active, (IPTR)pa->pa_mode);
+
+    if (pa->pa_mode == IP_MODE_MANUAL)
+    {
+        LONG plen = pa->pa_prefix ? pa->pa_prefix : 64;
+        SET(data->n6_addrObj,   MUIA_Disabled, FALSE);
+        SET(data->n6_addrObj,   MUIA_String_Contents, pa->pa_addr);
+        SET(data->n6_prefixObj, MUIA_Disabled, FALSE);
+        SET(data->n6_prefixObj, MUIA_String_Integer, plen);
+    }
+    else
+    {
+        SET(data->n6_addrObj,   MUIA_Disabled, TRUE);
+        SET(data->n6_addrObj,   MUIA_String_Contents, "");
+        SET(data->n6_prefixObj, MUIA_Disabled, TRUE);
+        SET(data->n6_prefixObj, MUIA_String_Contents, "");
+    }
+    SET(data->n6_gateObj, MUIA_String_Contents, pa->pa_gate);
+    SET(data->n6_dnsObj[0], MUIA_String_Contents, pa->pa_dns[0]);
+    SET(data->n6_dnsObj[1], MUIA_String_Contents, pa->pa_dns[1]);
+    return 0;
+}
+
+/*---------------------------------------------------------------------------*/
+static IPTR Net6Win__MUIM_PAWin_Apply(Class *cl, Object *obj,
+    struct MUIP_PAWin_Apply *msg)
+{
+    struct Net6Win_Data *data = INST_DATA(cl, obj);
+    struct ProtocolAddress *pa = msg->pa;
+
+    pa->pa_mode = (enum IPMode)XGET(data->n6_modeObj, MUIA_Cycle_Active);
+
+    /* strlcpy always NUL-terminates and never over-reads (unlike strncpy). */
+    if (pa->pa_mode == IP_MODE_MANUAL)
+    {
+        strlcpy(pa->pa_addr,
+                (STRPTR)XGET(data->n6_addrObj, MUIA_String_Contents),
+                sizeof(pa->pa_addr));
+        pa->pa_prefix = (LONG)XGET(data->n6_prefixObj, MUIA_String_Integer);
+    }
+    else
+    {
+        pa->pa_addr[0] = '\0';
+        pa->pa_prefix  = 0;
+    }
+    strlcpy(pa->pa_gate,
+            (STRPTR)XGET(data->n6_gateObj, MUIA_String_Contents),
+            sizeof(pa->pa_gate));
+    strlcpy(pa->pa_dns[0],
+            (STRPTR)XGET(data->n6_dnsObj[0], MUIA_String_Contents),
+            sizeof(pa->pa_dns[0]));
+    strlcpy(pa->pa_dns[1],
+            (STRPTR)XGET(data->n6_dnsObj[1], MUIA_String_Contents),
+            sizeof(pa->pa_dns[1]));
+    return 0;
+}
+
+/*---------------------------------------------------------------------------*/
+static IPTR Net6Win__MUIM_PAWin_ModeChanged(Class *cl, Object *obj,
+    struct MUIP_PAWin_ModeChanged *msg)
+{
+    struct Net6Win_Data *data = INST_DATA(cl, obj);
+    ULONG newMode = msg->newMode;
+
+    if (newMode == IP_MODE_MANUAL)
+    {
+        SET(data->n6_addrObj,   MUIA_Disabled, FALSE);
+        SET(data->n6_prefixObj, MUIA_Disabled, FALSE);
+    }
+    else
+    {
+        SET(data->n6_addrObj,   MUIA_Disabled, TRUE);
+        SET(data->n6_addrObj,   MUIA_String_Contents, "");
+        SET(data->n6_prefixObj, MUIA_Disabled, TRUE);
+        SET(data->n6_prefixObj, MUIA_String_Contents, "");
+    }
+    return 0;
+}
+
+/*---------------------------------------------------------------------------*/
+BOOPSI_DISPATCHER(IPTR, Net6Win_Dispatch, cl, obj, msg)
+{
+    switch (msg->MethodID)
+    {
+        case OM_NEW:
+            return Net6Win__OM_NEW(cl, obj, (struct opSet *)msg);
+        case MUIM_PAWin_Show:
+            return Net6Win__MUIM_PAWin_Show(cl, obj,
+                       (struct MUIP_PAWin_Show *)msg);
+        case MUIM_PAWin_Apply:
+            return Net6Win__MUIM_PAWin_Apply(cl, obj,
+                       (struct MUIP_PAWin_Apply *)msg);
+        case MUIM_PAWin_ModeChanged:
+            return Net6Win__MUIM_PAWin_ModeChanged(cl, obj,
+                       (struct MUIP_PAWin_ModeChanged *)msg);
+        default:
+            return DoSuperMethodA(cl, obj, msg);
+    }
+}
+BOOPSI_DISPATCHER_END
+
+/*---------------------------------------------------------------------------*/
+BOOL Net6Win_InitClass(struct MUI_CustomClass *PAWinCl)
+{
+    if (Net6WinClass)
+        return TRUE;
+    if (!PAWinCl)
+        return FALSE;
+    Net6WinClass = MUI_CreateCustomClass(NULL, NULL, PAWinCl,
+                       sizeof(struct Net6Win_Data), Net6Win_Dispatch);
+    return Net6WinClass != NULL;
+}
+
+void Net6Win_FreeClass(void)
+{
+    if (Net6WinClass)
+    {
+        MUI_DeleteCustomClass(Net6WinClass);
+        Net6WinClass = NULL;
+    }
+}
+
+/*---------------------------------------------------------------------------*/
+void Net6_WriteTokens(FILE *f, struct ProtocolAddress *pa)
+{
+    switch (pa->pa_mode)
+    {
+        case IP_MODE_DHCP:
+            fprintf(f, "IP6=DHCP ");
+            break;
+        case IP_MODE_AUTO:
+            fprintf(f, "IP6=AUTO ");
+            break;
+        case IP_MODE_MANUAL:
+            if (pa->pa_addr[0])
+                fprintf(f, "IP6=%s PREFIXLEN=%ld ",
+                    pa->pa_addr,
+                    pa->pa_prefix ? pa->pa_prefix : 64L);
+            break;
+        default:
+            break;
+    }
+    if (pa->pa_gate[0])
+        fprintf(f, "GW6=%s ", pa->pa_gate);
+    /* DNS servers as one comma-separated token (the interface line is parsed
+     * with a strict ReadArgs template, so a repeated keyword is not allowed). */
+    if (pa->pa_dns[0][0] && pa->pa_dns[1][0])
+        fprintf(f, "DNS6=%s,%s ", pa->pa_dns[0], pa->pa_dns[1]);
+    else if (pa->pa_dns[0][0])
+        fprintf(f, "DNS6=%s ", pa->pa_dns[0]);
+    else if (pa->pa_dns[1][0])
+        fprintf(f, "DNS6=%s ", pa->pa_dns[1]);
+}
+
+/* Find (or create and append) this plugin's address node on an interface's
+ * protocol list, tagged with our id in ln_Type. */
+static struct ProtocolAddress *net6_node(struct List *list, UBYTE id)
+{
+    struct Node *n;
+
+    for (n = list->lh_Head; n->ln_Succ; n = n->ln_Succ)
+        if (n->ln_Type == id)
+            return (struct ProtocolAddress *)n;
+
+    struct ProtocolAddress *pa = AllocVec(sizeof(*pa), MEMF_CLEAR);
+    if (pa)
+    {
+        pa->pa_node.ln_Type = id;
+        pa->pa_family       = PROTO_FAMILY_IPV6;
+        AddTail(list, &pa->pa_node);
+    }
+    return pa;
+}
+
+/* Claim and parse one IPv6 token (IP6= / PREFIXLEN= / GW6=). */
+struct Node *Net6_ReadTokens(struct List *protoList, CONST_STRPTR token, UBYTE id)
+{
+    struct ProtocolAddress *pa;
+    CONST_STRPTR val;
+
+    if (strncmp(token, "IP6=", 4) == 0)
+    {
+        if (!(pa = net6_node(protoList, id))) return NULL;
+        val = token + 4;
+        if (strncmp(val, "DHCP", 4) == 0)
+        {
+            pa->pa_mode = IP_MODE_DHCP; pa->pa_addr[0] = '\0';
+        }
+        else if (strncmp(val, "AUTO", 4) == 0)
+        {
+            pa->pa_mode = IP_MODE_AUTO; pa->pa_addr[0] = '\0';
+        }
+        else
+        {
+            pa->pa_mode = IP_MODE_MANUAL;
+            strlcpy(pa->pa_addr, val, sizeof(pa->pa_addr));
+        }
+        return &pa->pa_node;
+    }
+    if (strncmp(token, "PREFIXLEN=", 10) == 0)
+    {
+        if (!(pa = net6_node(protoList, id))) return NULL;
+        pa->pa_prefix = atol(token + 10);
+        return &pa->pa_node;
+    }
+    if (strncmp(token, "GW6=", 4) == 0)
+    {
+        if (!(pa = net6_node(protoList, id))) return NULL;
+        strlcpy(pa->pa_gate, token + 4, sizeof(pa->pa_gate));
+        return &pa->pa_node;
+    }
+    if (strncmp(token, "DNS6=", 5) == 0)
+    {
+        CONST_STRPTR comma;
+        if (!(pa = net6_node(protoList, id))) return NULL;
+        val = token + 5;
+        comma = (CONST_STRPTR)strchr((const char *)val, ',');
+        if (comma)
+        {
+            ULONG n = (ULONG)(comma - val);
+            if (n >= sizeof(pa->pa_dns[0]))
+                n = sizeof(pa->pa_dns[0]) - 1;
+            memcpy(pa->pa_dns[0], val, n);
+            pa->pa_dns[0][n] = '\0';
+            strlcpy(pa->pa_dns[1], comma + 1, sizeof(pa->pa_dns[1]));
+        }
+        else
+        {
+            strlcpy(pa->pa_dns[0], val, sizeof(pa->pa_dns[0]));
+        }
+        return &pa->pa_node;
+    }
+    return NULL;
+}
+
+/* Format the address column for the interface list. */
+void Net6_Display(struct ProtocolAddress *pa, STRPTR buf, ULONG buflen)
+{
+    switch (pa->pa_mode)
+    {
+        case IP_MODE_DHCP:
+            strlcpy(buf, _(MSG_IP_MODE_DHCP), buflen);
+            break;
+        case IP_MODE_AUTO:
+            strlcpy(buf, _(MSG_IP6_MODE_AUTO), buflen);
+            break;
+        default:
+            strlcpy(buf, pa->pa_addr[0] ? pa->pa_addr : _(MSG_IP_MODE_MANUAL),
+                    buflen);
+            break;
+    }
+}

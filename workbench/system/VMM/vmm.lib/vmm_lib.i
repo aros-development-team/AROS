@@ -1,0 +1,10 @@
+                    STRUCTURE VM_LIB,LIB_SIZE
+                    APTR      VM_LIB_SEGLIST
+                    APTR      VM_HNDL_SEGLIST
+                    APTR      VM_DOSLIB
+                    APTR      VM_PORT
+                    APTR      VM_STARTERPORT
+                    APTR      VM_SEMA
+                    APTR      VM_MEMHEADER
+                    APTR      VM_INIT_MSG
+                    LABEL     VM_LIB_SIZE

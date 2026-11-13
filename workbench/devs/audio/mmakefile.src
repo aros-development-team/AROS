@@ -1,0 +1,29 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM- workbench-devs-complete : workbench-devs-audio
+#MM- workbench-devs-audio : workbench-devs-eaudio-$(AROS_TARGET_CPU)
+
+# m68k not included, do not override ROM Paula audio.device
+#MM- workbench-devs-eaudio-i386 : workbench-devs-eaudio
+#MM- workbench-devs-eaudio-x86_64 : workbench-devs-eaudio
+#MM- workbench-devs-eaudio-ppc : workbench-devs-eaudio
+#MM- workbench-devs-eaudio-arm : workbench-devs-eaudio
+#MM- workbench-devs-eaudio-aarch64 : workbench-devs-eaudio
+#MM- workbench-devs-eaudio-riscv : workbench-devs-eaudio
+#MM- workbench-devs-eaudio-riscv64 : workbench-devs-eaudio
+
+FILES := libfunctions audio_commands objpoollite audio_esys
+
+#MM- workbench-devs-eaudio : includes linklibs workbench-devs-AHI
+
+USER_INCLUDES := -I$(SRCDIR)/workbench/devs/AHI/Include/C
+USER_LDFLAGS := -static
+
+ifneq ($(ROM_OPTIMIZATION_CFLAGS),)
+OPTIMIZATION_CFLAGS := $(ROM_OPTIMIZATION_CFLAGS)
+endif
+
+%build_module mmake=workbench-devs-eaudio \
+    modname=audio modtype=device \
+    files="$(FILES)" uselibs="hiddstubs"

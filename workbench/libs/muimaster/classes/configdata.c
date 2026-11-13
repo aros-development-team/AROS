@@ -1,0 +1,1935 @@
+/*
+    Copyright (C) 2002-2026, The AROS Development Team. All rights reserved.
+
+*/
+#include <stdlib.h>
+#include <string.h>
+#include <stdio.h>
+
+#include <exec/types.h>
+#include <prefs/prefhdr.h>
+#include <clib/alib_protos.h>
+#include <proto/exec.h>
+#include <proto/intuition.h>
+#include <proto/utility.h>
+#include <proto/iffparse.h>
+#include <proto/dos.h>
+#include <proto/commodities.h>
+#include <proto/muimaster.h>
+
+/*  #define MYDEBUG 1 */
+#include "debug.h"
+
+#include "muimaster_intern.h"
+#include "mui.h"
+#include "support.h"
+#include "prefs.h"
+#include "imspec.h"
+
+#include <proto/muiscreen.h>
+
+#define PUBSCREEN_FILE "env:Zune/PublicScreens.iff"
+
+#define DFSN(x)
+#define DPSD(x)
+
+/****** Configdata.mui/MUIC_Configdata ************
+*
+*   NAME
+*       MUIC_Configdata
+*
+*   SUPERCLASS
+*       Dataspace.mui
+*
+*   DESCRIPTION
+*       Store Zune preferences by configuration ID, using compiled defaults
+*       for missing records. Numeric records hold four-byte big-endian ULONGs;
+*       strings include the terminating zero. Typed getters do not check the
+*       stored record size or type.
+*
+*       Construction tries ENV:zune/<base>.prefs, then ENVARC:zune/<base>.prefs
+*       when an application base is available. Only if neither succeeds does
+*       it try the corresponding global.prefs files. Local and global files
+*       are alternatives, not layers.
+*
+*       Dataspace owns copied records. GetString returns borrowed pointers;
+*       the private ZunePrefsNew view is not generally refreshed by setters
+*       or subsequent Load operations. Supply a live Application for
+*       notification handling and retain it through disposal.
+*
+*   NOTES
+*       Save and Load are synchronous. Save replaces the file without atomic
+*       rollback and always returns zero. Load may return TRUE for partial
+*       or malformed records, after discarding existing records.
+*       Window-position methods trust record lengths and temporarily swap
+*       bytes in place; concurrent access is not safe without serialization.
+*       Public-screen descriptors are borrowed and may expire after reload.
+*
+*/
+/****** Configdata.mui/MUIA_Configdata_Application ************
+*
+*   NAME
+*       MUIA_Configdata_Application
+*
+*   FUNCTION
+*       Associate Configdata with the Application used for notifications and
+*       window positions.
+*
+*   INPUTS
+*       Initialize only, borrowed live Application object pointer. Default NULL
+*       in storage, but notification setup is not NULL-safe.
+*
+*   NOTES
+*       Borrowed Application pointer. Used to register/remove the filesystem
+*       notification handler and access window positions; keep it alive until
+*       Configdata is disposed. No local setter/getter.
+*
+*/
+/****** Configdata.mui/MUIA_Configdata_ApplicationBase ************
+*
+*   NAME
+*       MUIA_Configdata_ApplicationBase
+*
+*   FUNCTION
+*       Choose the application preference-file base name.
+*
+*   INPUTS
+*       Initialize only, borrowed CONST_STRPTR, not an object pointer despite
+*       the header annotation. Default NULL.
+*
+*   NOTES
+*       The explicit name takes precedence over MUIA_Application_Base. Paths use a
+*       255-byte buffer and may be truncated. The name is borrowed, not copied; no
+*       local setter/getter.
+*
+*/
+/****** Configdata.mui/MUIM_Configdata_GetString ************
+*
+*   NAME
+*       MUIM_Configdata_GetString
+*
+*   SYNOPSIS
+*       CONST_STRPTR value = (CONST_STRPTR)DoMethod(obj,
+*       MUIM_Configdata_GetString, id);
+*
+*   FUNCTION
+*       Find a stored string or its builtin fallback.
+*
+*   INPUTS
+*       id - ULONG configuration ID whose record is a terminated string.
+*
+*   RESULT
+*       Borrowed CONST_STRPTR, or NULL if no stored record or builtin
+*       string/image/frame default exists.
+*
+*   NOTES
+*       Search stored records before string, image and frame defaults. The pointer
+*       is borrowed and unvalidated; copy it before replacing records, loading
+*       preferences or disposing Configdata. Unknown IDs return NULL.
+*
+*/
+/****** Configdata.mui/MUIM_Configdata_GetULong ************
+*
+*   NAME
+*       MUIM_Configdata_GetULong
+*
+*   SYNOPSIS
+*       ULONG value = (ULONG)DoMethod(obj, MUIM_Configdata_GetULong, id);
+*
+*   FUNCTION
+*       Read a numeric preference in host byte order.
+*
+*   INPUTS
+*       id - ULONG ID whose stored record contains at least four bytes of
+*       big-endian numeric data.
+*
+*   RESULT
+*       Stored value converted to host order; otherwise builtin numeric default,
+*       otherwise zero. Zero does not distinguish missing from stored zero.
+*
+*   NOTES
+*       Stored values are interpreted as four-byte big-endian ULONGs without
+*       size/type checks. The numeric default (or zero) is returned when no record
+*       exists.
+*
+*/
+/****** Configdata.mui/MUIM_Configdata_SetULong ************
+*
+*   NAME
+*       MUIM_Configdata_SetULong
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_Configdata_SetULong, id, val);
+*
+*   FUNCTION
+*       Store a four-byte numeric preference or remove a redundant default.
+*
+*   INPUTS
+*       id - Valid nonzero numeric configuration ID.
+*       val - ULONG in host byte order.
+*
+*   RESULT
+*       Always zero, including successful storage, removal and allocation
+*       failure.
+*
+*   NOTES
+*       Remove a record matching the compiled numeric default; otherwise store
+*       four big-endian bytes. The private preference view is not refreshed. Check
+*       stored values separately if failure matters.
+*
+*/
+/****** Configdata.mui/MUIM_Configdata_SetImspec ************
+*
+*   NAME
+*       MUIM_Configdata_SetImspec
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_Configdata_SetImspec, id, imspec);
+*
+*   FUNCTION
+*       Store a imspec string in the preference Dataspace.
+*
+*   INPUTS
+*       id - Valid nonzero configuration ID for this representation.
+*       imspec - Borrowed terminated CONST_STRPTR for the call, with NULL
+*       handled as described below.
+*
+*   RESULT
+*       Always zero; storage/removal success is not reported.
+*
+*   NOTES
+*       NULL, empty and strings starting with '6' are ignored. Matching image or
+*       string defaults remove the record; other strings are copied without format
+*       validation. Source storage must not alias the record being replaced.
+*
+*/
+/****** Configdata.mui/MUIM_Configdata_SetFramespec ************
+*
+*   NAME
+*       MUIM_Configdata_SetFramespec
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_Configdata_SetFramespec, id,
+*       framespec);
+*
+*   FUNCTION
+*       Store a framespec string in the preference Dataspace.
+*
+*   INPUTS
+*       id - Valid nonzero configuration ID for this representation.
+*       framespec - Borrowed terminated CONST_STRPTR for the call, with NULL
+*       handled as described below.
+*
+*   RESULT
+*       Always zero; storage/removal success is not reported.
+*
+*   NOTES
+*       NULL and empty strings are ignored. Matching frame defaults remove the
+*       record; other strings are copied without parsing or private-frame refresh.
+*       Source storage must not alias the replaced record.
+*
+*/
+/****** Configdata.mui/MUIM_Configdata_SetPenspec ************
+*
+*   NAME
+*       MUIM_Configdata_SetPenspec
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_Configdata_SetPenspec, id, penspec);
+*
+*   FUNCTION
+*       Store a penspec string in the preference Dataspace.
+*
+*   INPUTS
+*       id - Valid nonzero configuration ID for this representation.
+*       penspec - Borrowed terminated CONST_STRPTR for the call, with NULL
+*       handled as described below.
+*
+*   RESULT
+*       Always zero; storage/removal success is not reported.
+*
+*   NOTES
+*       NULL and empty strings are ignored. Matching string defaults remove the
+*       record; other strings are copied. The private pen view is not refreshed;
+*       source storage must not alias the replaced record.
+*
+*/
+/****** Configdata.mui/MUIM_Configdata_SetFont ************
+*
+*   NAME
+*       MUIM_Configdata_SetFont
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_Configdata_SetFont, id, font);
+*
+*   FUNCTION
+*       Store a font string in the preference Dataspace.
+*
+*   INPUTS
+*       id - Valid nonzero configuration ID for this representation.
+*       font - Borrowed terminated CONST_STRPTR for the call, with NULL handled
+*       as described below.
+*
+*   RESULT
+*       Always zero; storage/removal success is not reported.
+*
+*   NOTES
+*       NULL or empty strings remove the record; nonempty strings are copied
+*       without checking font availability. The private font view is not
+*       refreshed. Source storage must not alias the replaced record.
+*
+*/
+/****** Configdata.mui/MUIM_Configdata_SetString ************
+*
+*   NAME
+*       MUIM_Configdata_SetString
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_Configdata_SetString, id, string);
+*
+*   FUNCTION
+*       Store a string and synchronize recognized private string fields.
+*
+*   INPUTS
+*       id - Valid nonzero string configuration ID.
+*       string - Non-NULL terminated CONST_STRPTR, readable for the call.
+*
+*   RESULT
+*       Always zero; allocation, removal or parse success is not reported.
+*
+*   NOTES
+*       Matching string defaults remove the record. Other strings are copied, then
+*       recognized private fields are synchronized; keyboard specifications use
+*       ParseIX, but errors are not returned. NULL and self-aliasing replacement
+*       pointers are unsafe.
+*
+*/
+/****** Configdata.mui/MUIM_Configdata_Save ************
+*
+*   NAME
+*       MUIM_Configdata_Save
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_Configdata_Save, filename);
+*
+*   FUNCTION
+*       Write the current preference Dataspace to a file.
+*
+*   INPUTS
+*       obj - Live Configdata; associated Application must remain valid.
+*       filename - Non-NULL terminated path, readable for the call.
+*
+*   RESULT
+*       Always zero. It is not a success/failure indicator.
+*
+*   NOTES
+*       Captures Application window positions, then writes PREF/PRHD/MUIC directly
+*       to MODE_NEWFILE, creating the parent directory once if needed. Writes are
+*       not fully checked and no atomic replacement or rollback is provided;
+*       verify the file when persistence matters.
+*
+*/
+/****** Configdata.mui/MUIM_Configdata_Load ************
+*
+*   NAME
+*       MUIM_Configdata_Load
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_Configdata_Load, filename);
+*
+*   FUNCTION
+*       Replace Dataspace contents with preference records from an IFF file.
+*
+*   INPUTS
+*       obj - Live Configdata with no retained record pointers in use.
+*       filename - Non-NULL terminated path, readable for the call.
+*
+*   RESULT
+*       FALSE if IFF allocation, file opening or OpenIFF fails. Otherwise TRUE,
+*       regardless of later parsing, record-reading or completeness.
+*
+*   NOTES
+*       After successful OpenIFF, clears existing records and reads MUIC chunks
+*       without checking all read/parse results. TRUE can mean partial or
+*       malformed data; old records cannot be restored. Reloads screen descriptors
+*       but does not rebuild private preferences, invalidating borrowed pointers.
+*
+*/
+/****** Configdata.mui/MUIM_Configdata_GetWindowPos ************
+*
+*   NAME
+*       MUIM_Configdata_GetWindowPos
+*
+*   SYNOPSIS
+*       IPTR record = DoMethod(obj, MUIM_Configdata_GetWindowPos);
+*
+*   FUNCTION
+*       Copy the stored window-position record into the associated Application.
+*
+*   INPUTS
+*       obj - Live Configdata. No payload argument is read by this
+*       implementation. The stored record must be valid for the Application
+*       window-position layout and capacity.
+*
+*   RESULT
+*       Borrowed pointer to the stored record, or zero when absent. With no
+*       Application, returns the record without copying.
+*
+*   NOTES
+*       Reads MUICFG_WindowPos and copies it to the Application if present.
+*       Temporarily swaps the stored record on little-endian targets. Record size
+*       is not validated; use only valid native data with serialized access.
+*       Returned storage is borrowed.
+*
+*/
+/****** Configdata.mui/MUIM_Configdata_SetWindowPos ************
+*
+*   NAME
+*       MUIM_Configdata_SetWindowPos
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_Configdata_SetWindowPos);
+*
+*   FUNCTION
+*       Capture the Application window-position record in Dataspace.
+*
+*   INPUTS
+*       obj - Live Configdata with a valid associated Application, or no
+*       Application for a no-op. No payload argument is read.
+*
+*   RESULT
+*       Always zero; Dataspace copy success is ignored.
+*
+*   NOTES
+*       Copies the associated Application position record into Dataspace and
+*       temporarily swaps source bytes on little-endian targets. Pointer/size
+*       validity and storage success are unchecked. Save calls this method.
+*
+*/
+/****** Configdata.mui/MUIM_Configdata_GetPubScrnDesc ************
+*
+*   NAME
+*       MUIM_Configdata_GetPubScrnDesc
+*
+*   SYNOPSIS
+*       IPTR descriptor = DoMethod(obj, MUIM_Configdata_GetPubScrnDesc, name);
+*
+*   FUNCTION
+*       Find a loaded public-screen descriptor by exact name.
+*
+*   INPUTS
+*       name - Non-NULL terminated CONST_STRPTR, readable for the call.
+*
+*   RESULT
+*       Borrowed MUI_PubScreenDesc pointer for a case-sensitive match, otherwise
+*       NULL. Missing muiscreen.library yields NULL.
+*
+*   NOTES
+*       Looks up the name case-sensitively under a shared lock, released before
+*       return. The pointer is borrowed and may become invalid on reload/disposal;
+*       callers must synchronize concurrent access.
+*
+*/
+/****** Configdata.mui/MUIM_Configdata_LoadPubScreens ************
+*
+*   NAME
+*       MUIM_Configdata_LoadPubScreens
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_Configdata_LoadPubScreens);
+*
+*   FUNCTION
+*       Reload public-screen descriptors from env:Zune/PublicScreens.iff.
+*
+*   INPUTS
+*       obj - Live Configdata; no payload argument is used. Requires
+*       muiscreen.library for actual loading.
+*
+*   RESULT
+*       Always TRUE, including missing library, missing file and an empty
+*       descriptor list.
+*
+*   NOTES
+*       Replaces the descriptor list from env:Zune/PublicScreens.iff when
+*       muiscreen.library is available; old pointers become invalid. Missing files
+*       leave an empty list. Allocation errors are not reported; notification-port
+*       messages are not drained or replied to.
+*
+*/
+
+extern struct Library *MUIMasterBase;
+
+struct MUI_ConfigdataData
+{
+    Object                      *app;
+    CONST_STRPTR                appbase;
+    struct ZunePrefsNew         prefs;
+    struct SignalSemaphore      psLock;
+    struct MsgPort             *fsNotifyPort;
+    struct MUI_InputHandlerNode fsNotifyIHN;
+    struct NotifyRequest        fsNotifyRequest;
+    struct List                 pubscreens;
+};
+
+/*
+ * Return borrowed stored/default string or NULL; requires a valid object and
+ * ID.
+ */
+static inline CONST_STRPTR GetConfigString(Object *obj, ULONG id)
+{
+    return (CONST_STRPTR) DoMethod(obj, MUIM_Configdata_GetString, id);
+}
+
+/*
+ * Return host-order stored/default ULONG (or zero); stored record must contain
+ * four valid bytes.
+ */
+static inline ULONG GetConfigULong(Object *obj, ULONG id)
+{
+    return (ULONG) DoMethod(obj, MUIM_Configdata_GetULong, id);
+}
+
+
+/**************************************************************************
+ Default ImageSpec values
+**************************************************************************/
+
+struct spec_cfg
+{
+    ULONG muiv;
+    ULONG cfgid;
+    CONST_STRPTR defspec;
+};
+
+const static struct spec_cfg DefImspecValues[] =
+{
+    { MUII_WindowBack,    MUICFG_Background_Window,     "0:128" },
+    { MUII_RequesterBack, MUICFG_Background_Requester,  "0:137" },
+    { MUII_ButtonBack,    MUICFG_Background_Button,     "0:128" },
+    { MUII_ListBack,      MUICFG_Background_List,       "0:128" },
+    { MUII_TextBack,      MUICFG_Background_Text,       "0:128" },
+    { MUII_PropBack,      MUICFG_Background_Prop,       "0:128" },
+    { MUII_PopupBack,     MUICFG_Background_PopUp,      "0:128" },
+    { MUII_SelectedBack,  MUICFG_Background_Selected,   "0:131" },
+    { MUII_ListCursor,    MUICFG_Background_ListCursor, "0:131" },
+    { MUII_ListSelect,    MUICFG_Background_ListSelect, "0:135" },
+    { MUII_ListSelCur,    MUICFG_Background_ListSelCur, "0:138" },
+    { MUII_ArrowUp,       MUICFG_Image_ArrowUp,         "1:0" },
+    { MUII_ArrowDown,     MUICFG_Image_ArrowDown,       "1:1" },
+    { MUII_ArrowLeft,     MUICFG_Image_ArrowLeft,       "1:2" },
+    { MUII_ArrowRight,    MUICFG_Image_ArrowRight,      "1:3" },
+    { MUII_CheckMark,     MUICFG_Image_CheckMark,       "1:4" },
+    { MUII_RadioButton,   MUICFG_Image_RadioButton,     "1:5" },
+    { MUII_Cycle,         MUICFG_Image_Cycle,           "1:6" },
+    { MUII_PopUp,         MUICFG_Image_PopUp,           "1:7" },
+    { MUII_PopFile,       MUICFG_Image_PopFile,         "1:8" },
+    { MUII_PopDrawer,     MUICFG_Image_PopDrawer,       "1:9" },
+    { MUII_PropKnob,      MUICFG_Image_PropKnob,        "0:129" },
+    { MUII_Drawer,        MUICFG_Image_Drawer,          "1:10" },
+    { MUII_HardDisk,      MUICFG_Image_HardDisk,        "1:11" },
+    { MUII_Disk,          MUICFG_Image_Disk,            "1:12" },
+    { MUII_Chip,          MUICFG_Image_Chip,            "1:13" },
+    { MUII_Volume,        MUICFG_Image_Volume,          "1:14" },
+    { MUII_RegisterBack,  MUICFG_Background_Register,   "0:128" },
+    { MUII_Network,       MUICFG_Image_Network,         "1:15" },
+    { MUII_Assign,        MUICFG_Image_Assign,          "1:16" },
+    { MUII_TapePlay,      MUICFG_Image_TapePlay,        "1:17" },
+    { MUII_TapePlayBack,  MUICFG_Image_TapePlayBack,    "1:18" },
+    { MUII_TapePause,     MUICFG_Image_TapePause,       "1:19" },
+    { MUII_TapeStop,      MUICFG_Image_TapeStop,        "1:20" },
+    { MUII_TapeRecord,    MUICFG_Image_TapeRecord,      "1:21" },
+    { MUII_GroupBack,     MUICFG_Background_Framed,     "0:128" },
+    { MUII_SliderBack,    MUICFG_Background_Slider,     "0:128" },
+    { MUII_SliderKnob,    MUICFG_Background_SliderKnob, "0:128" },
+    { MUII_TapeUp,        MUICFG_Image_TapeUp,          "1:22" },
+    { MUII_TapeDown,      MUICFG_Image_TapeDown,        "1:23" },
+    { MUII_PageBack,      MUICFG_Background_Page,       "0:128" },
+    { MUII_ReadListBack,  MUICFG_Background_ReadList,   "0:128" },
+    { 0,                  0,                            NULL },
+};
+
+/* called by Configdata_New */
+/*
+ * Initialize private image slots from borrowed stored/default specs; pointers
+ * follow Dataspace lifetime.
+ */
+static void init_imspecs(Object *obj, struct MUI_ConfigdataData *data)
+{
+    int i;
+
+    for (i = 0; DefImspecValues[i].defspec; i++)
+    {
+        CONST_STRPTR imspec;
+        const struct spec_cfg *img = DefImspecValues + i;
+
+        imspec = GetConfigString(obj, img->cfgid);
+/*          D(bug("init_imspecs: %ld %lx %s ...\n", img->muiv, img->cfgid, imspec)); */
+        data->prefs.imagespecs[img->muiv] = imspec;
+        if (!data->prefs.imagespecs[img->muiv])
+        {
+/*              D(bug("*** init_imspecs: null imagespec %ld\n", img->muiv)); */
+        }
+    }
+}
+
+/**************************************************************************
+ Default FrameSpec values
+**************************************************************************/
+
+/* spec format : type, recessed, left, right, up, down spacing */
+const static struct spec_cfg DefFramespecValues[] =
+{
+    { MUIV_Frame_None,        MUICFG_Invalid,           "000000" }, /* invisible frame          */
+    { MUIV_Frame_Button,      MUICFG_Frame_Button,      "202211" }, /* text button              */
+    { MUIV_Frame_ImageButton, MUICFG_Frame_ImageButton, "202211" }, /* image button             */
+    { MUIV_Frame_Text,        MUICFG_Frame_Text,        "212211" }, /* textfield without input  */
+    { MUIV_Frame_String,      MUICFG_Frame_String,      "302211" }, /* string gadget            */
+    { MUIV_Frame_ReadList,    MUICFG_Frame_ReadList,    "212211" }, /* list without input       */
+    { MUIV_Frame_InputList,   MUICFG_Frame_InputList,   "202211" }, /* list with input          */
+    { MUIV_Frame_Prop,        MUICFG_Frame_Prop,        "202211" }, /* scrollbar container      */
+    { MUIV_Frame_Gauge,       MUICFG_Frame_Gauge,       "210000" }, /* gauge                    */
+    { MUIV_Frame_Group,       MUICFG_Frame_Group,       "314444" }, /* normal group             */
+    { MUIV_Frame_PopUp,       MUICFG_Frame_PopUp,       "112211" }, /* cycle menu, popup window */
+    { MUIV_Frame_Virtual,     MUICFG_Frame_Virtual,     "212211" }, /* virt group               */
+    { MUIV_Frame_Slider,      MUICFG_Frame_Slider,      "400000" }, /* slider container         */
+    { MUIV_Frame_Knob,        MUICFG_Frame_Knob,        "202211" }, /* slider knob              */
+    { MUIV_Frame_Drag,        MUICFG_Frame_Drag,        "300000" }, /* dnd frame                */
+    { -1,                     -1,                       NULL     },
+};
+
+/* called by Configdata_New */
+/*
+ * Parse stored/default frame specifications into private frame state; requires
+ * initialized Dataspace.
+ */
+static void init_framespecs(Object *obj, struct MUI_ConfigdataData *data)
+{
+    int i;
+
+    for (i = 0; DefFramespecValues[i].defspec; i++)
+    {
+        CONST_STRPTR framespec;
+        const struct spec_cfg *fcfg = DefFramespecValues + i;
+
+        framespec = GetConfigString(obj, fcfg->cfgid);
+        zune_frame_spec_to_intern(framespec,
+            &data->prefs.frames[fcfg->muiv]);
+    }
+}
+
+/**************************************************************************
+ Default ULONG values
+**************************************************************************/
+
+struct def_ulval
+{
+    ULONG id;
+    ULONG val;
+};
+
+const static struct def_ulval DefULValues[] = {
+    {MUICFG_Window_Spacing_Left, 4},
+    {MUICFG_Window_Spacing_Right, 4},
+    {MUICFG_Window_Spacing_Top, 3},
+    {MUICFG_Window_Buttons, 0},
+    {MUICFG_Window_Spacing_Bottom, 3},
+    {MUICFG_Window_Positions, WINDOW_POSITION_FORGET_ON_EXIT},
+    {MUICFG_Window_Redraw, WINDOW_REDRAW_WITHOUT_CLEAR},
+    {MUICFG_Window_Refresh, WINDOW_REFRESH_SIMPLE},
+    {MUICFG_Radio_HSpacing, 4},
+    {MUICFG_Radio_VSpacing, 1},
+    {MUICFG_Group_HSpacing, 6},
+    {MUICFG_Group_VSpacing, 3},
+    {MUICFG_Cycle_MenuCtrl_Position, CYCLE_MENU_POSITION_BELOW},
+    {MUICFG_Cycle_MenuCtrl_Level, 2},
+    {MUICFG_Cycle_MenuCtrl_Speed, 0},
+    {MUICFG_Cycle_Menu_Recessed, FALSE},
+    {MUICFG_Listview_Font_Leading, 1},
+    {MUICFG_Listview_Smoothed, FALSE},
+    {MUICFG_Listview_SmoothVal, 0},
+    {MUICFG_Listview_Refresh, LISTVIEW_REFRESH_MIXED},
+    {MUICFG_Listview_Multi, LISTVIEW_MULTI_SHIFTED},
+    {MUICFG_GroupTitle_Position, GROUP_TITLE_POSITION_CENTERED},
+    {MUICFG_GroupTitle_Color, GROUP_TITLE_COLOR_HILITE},
+    {MUICFG_Scrollbar_Type, SCROLLBAR_TYPE_STANDARD},
+    {MUICFG_Scrollbar_Arrangement, SCROLLBAR_ARRANGEMENT_TOP},
+    {MUICFG_Balance_Look, BALANCING_SHOW_FRAMES},
+    {MUICFG_Dragndrop_Look, DND_LOOK_GHOSTED_ON_BOX},
+    {MUICFG_Drag_Autostart, TRUE},
+    {MUICFG_Drag_Autostart_Length, 3},
+    {MUICFG_Drag_LeftButton, TRUE},
+    {MUICFG_Drag_MiddleButton, FALSE},
+    {MUICFG_Register_TruncateTitles, FALSE},
+    {MUICFG_Screen_Mode, 0},
+    {MUICFG_Screen_Mode_ID, -1},
+    {MUICFG_Screen_Width, 0},
+    {MUICFG_Screen_Height, 0},
+    {MUICFG_PublicScreen_PopToFront, TRUE},
+    {MUICFG_Iconification_ShowIcon, TRUE},
+    {MUICFG_Iconification_ShowMenu, FALSE},
+    {MUICFG_Iconification_OnStartup, FALSE},
+    {MUICFG_Interfaces_EnableARexx, TRUE},
+    {MUICFG_BubbleHelp_FirstDelay, 30},
+    {MUICFG_BubbleHelp_NextDelay, 10},
+    {0, 0},
+};
+
+/**************************************************************************
+ Default string values
+**************************************************************************/
+
+struct def_strval
+{
+    ULONG id;
+    CONST_STRPTR val;
+};
+
+/* NULL values not allowed */
+const static struct def_strval DefStrValues[] = {
+    {MUICFG_Font_Normal, ""},
+    {MUICFG_Font_List, ""},
+    {MUICFG_Font_Tiny, ""},
+    {MUICFG_Font_Fixed, ""},
+    {MUICFG_Font_Title, ""},
+    {MUICFG_Font_Big, ""},
+    {MUICFG_Font_Button, ""},
+    {MUICFG_Font_Knob, ""},
+    {MUICFG_String_Background, "2:m2"},
+    {MUICFG_String_Text, "m5"},
+    {MUICFG_String_ActiveBackground, "2:m1"},
+    {MUICFG_String_ActiveText, "m5"},
+    {MUICFG_String_Cursor, "m7"},
+    {MUICFG_String_MarkedBackground, "m6"},
+    {MUICFG_String_MarkedText, "m0"},
+    {MUICFG_ActiveObject_Color, "m0"},
+    {MUICFG_Keyboard_Press, "-upstroke return"},
+    {MUICFG_Keyboard_Toggle, "-repeat space"},
+    {MUICFG_Keyboard_Up, "-repeat up"},
+    {MUICFG_Keyboard_Down, "-repeat down"},
+    {MUICFG_Keyboard_PageUp, "-repeat shift up"},
+    {MUICFG_Keyboard_PageDown, "-repeat shift down"},
+    {MUICFG_Keyboard_Top, "control up"},
+    {MUICFG_Keyboard_Bottom, "control down"},
+    {MUICFG_Keyboard_Left, "-repeat left"},
+    {MUICFG_Keyboard_Right, "-repeat right"},
+    {MUICFG_Keyboard_WordLeft, "-repeat control left"},
+    {MUICFG_Keyboard_WordRight, "-repeat control right"},
+    {MUICFG_Keyboard_LineStart, "shift left"},
+    {MUICFG_Keyboard_LineEnd, "shift right"},
+    {MUICFG_Keyboard_NextGadget, "-repeat tab"},
+    {MUICFG_Keyboard_PrevGadget, "-repeat shift tab"},
+    {MUICFG_Keyboard_GadgetOff, "control tab"},
+    {MUICFG_Keyboard_CloseWindow, "esc"},
+    {MUICFG_Keyboard_NextWindow, "-repeat alt tab"},
+    {MUICFG_Keyboard_PrevWindow, "-repeat alt shift tab"},
+    {MUICFG_Keyboard_Help, "help"},
+    {MUICFG_Keyboard_Popup, "control p"},
+    {MUICFG_Drag_LMBModifier, "control"},
+    {MUICFG_Drag_MMBModifier, ""},
+    {MUICFG_PublicScreen, ""},
+    {MUICFG_Iconification_Hotkey, ""},
+    {0, 0},
+};
+
+/*
+ * Store borrowed keyboard specification and ParseIX validity in private
+ * preferences.
+ */
+static inline void Configdata__SetKey(ZuneKeySpec *key, CONST_STRPTR val)
+{
+    if ((key->readable_hotkey = val) != NULL)
+        key->ix_well =
+            !ParseIX(key->readable_hotkey,
+            &key->ix);
+    else
+        key->ix_well = 0;
+}
+
+/* Always assign a !persistent! string stored in dataspace (or default) to ZunePrefsNew fields */
+/*
+ * Synchronize recognized private string and key fields from
+ * Dataspace/defaults; other IDs are ignored.
+ */
+static void Configdata_SynchronizeString(Object *obj, ULONG id)
+{
+    struct MUI_ConfigdataData *data = INST_DATA(OCLASS(obj), obj);
+    CONST_STRPTR val = GetConfigString(obj, id);
+
+    switch (id) {
+    case MUICFG_Font_Normal:
+        data->prefs.fonts[-MUIV_Font_Normal] = val;
+        break;
+
+    case MUICFG_Font_List:
+        data->prefs.fonts[-MUIV_Font_List] = val;
+        break;
+
+    case MUICFG_Font_Tiny:
+        data->prefs.fonts[-MUIV_Font_Tiny] = val;
+        break;
+
+    case MUICFG_Font_Fixed:
+        data->prefs.fonts[-MUIV_Font_Fixed] = val;
+        break;
+
+    case MUICFG_Font_Title:
+        data->prefs.fonts[-MUIV_Font_Title] = val;
+        break;
+
+    case MUICFG_Font_Big:
+        data->prefs.fonts[-MUIV_Font_Big] = val;
+        break;
+
+    case MUICFG_Font_Button:
+        data->prefs.fonts[-MUIV_Font_Button] = val;
+        break;
+
+    case MUICFG_Font_Knob:
+        data->prefs.fonts[-MUIV_Font_Knob] = val;
+        break;
+
+    /*---------- system stuff ----------*/
+    case MUICFG_PublicScreen:
+        data->prefs.publicscreen_name = val;
+        break;
+
+    case MUICFG_Iconification_Hotkey:
+        data->prefs.iconification_hotkey = val;
+        break;
+
+    /*---------- Strings ----------*/
+    case MUICFG_String_Background:
+        data->prefs.string_bg_inactive = val;
+        break;
+
+    case MUICFG_String_Text:
+        data->prefs.string_text_inactive = val;
+        break;
+
+    case MUICFG_String_ActiveBackground:
+        data->prefs.string_bg_active = val;
+        break;
+
+    case MUICFG_String_ActiveText:
+        data->prefs.string_text_active = val;
+        break;
+
+    case MUICFG_String_Cursor:
+        data->prefs.string_cursor = val;
+        break;
+
+    case MUICFG_String_MarkedBackground:
+        data->prefs.string_bg_marked = val;
+        break;
+
+    case MUICFG_String_MarkedText:
+        data->prefs.string_text_marked = val;
+        break;
+
+    /*---------- Navigation ----------*/
+
+    case MUICFG_Drag_LMBModifier:
+        Configdata__SetKey(&data->prefs.drag_left_modifier, val);
+        break;
+
+    case MUICFG_Drag_MMBModifier:
+        Configdata__SetKey(&data->prefs.drag_middle_modifier, val);
+        break;
+
+    case MUICFG_ActiveObject_Color:
+        data->prefs.active_object_color = val;
+        break;
+
+    /*---------- mui keys ----------*/
+    case MUICFG_Keyboard_Press:
+        Configdata__SetKey(&data->prefs.muikeys[MUIKEY_PRESS], val);
+        break;
+
+    case MUICFG_Keyboard_Toggle:
+        Configdata__SetKey(&data->prefs.muikeys[MUIKEY_TOGGLE], val);
+        break;
+
+    case MUICFG_Keyboard_Up:
+        Configdata__SetKey(&data->prefs.muikeys[MUIKEY_UP], val);
+        break;
+
+    case MUICFG_Keyboard_Down:
+        Configdata__SetKey(&data->prefs.muikeys[MUIKEY_DOWN], val);
+        break;
+
+    case MUICFG_Keyboard_PageUp:
+        Configdata__SetKey(&data->prefs.muikeys[MUIKEY_PAGEUP], val);
+        break;
+
+    case MUICFG_Keyboard_PageDown:
+        Configdata__SetKey(&data->prefs.muikeys[MUIKEY_PAGEDOWN], val);
+        break;
+
+    case MUICFG_Keyboard_Top:
+        Configdata__SetKey(&data->prefs.muikeys[MUIKEY_TOP], val);
+        break;
+
+    case MUICFG_Keyboard_Bottom:
+        Configdata__SetKey(&data->prefs.muikeys[MUIKEY_BOTTOM], val);
+        break;
+
+    case MUICFG_Keyboard_Left:
+        Configdata__SetKey(&data->prefs.muikeys[MUIKEY_LEFT], val);
+        break;
+
+    case MUICFG_Keyboard_Right:
+        Configdata__SetKey(&data->prefs.muikeys[MUIKEY_RIGHT], val);
+        break;
+
+    case MUICFG_Keyboard_WordLeft:
+        Configdata__SetKey(&data->prefs.muikeys[MUIKEY_WORDLEFT], val);
+        break;
+
+    case MUICFG_Keyboard_WordRight:
+        Configdata__SetKey(&data->prefs.muikeys[MUIKEY_WORDRIGHT], val);
+        break;
+
+    case MUICFG_Keyboard_LineStart:
+        Configdata__SetKey(&data->prefs.muikeys[MUIKEY_LINESTART], val);
+        break;
+
+    case MUICFG_Keyboard_LineEnd:
+        Configdata__SetKey(&data->prefs.muikeys[MUIKEY_LINEEND], val);
+        break;
+
+    case MUICFG_Keyboard_NextGadget:
+        Configdata__SetKey(&data->prefs.muikeys[MUIKEY_GADGET_NEXT], val);
+        break;
+
+    case MUICFG_Keyboard_PrevGadget:
+        Configdata__SetKey(&data->prefs.muikeys[MUIKEY_GADGET_PREV], val);
+        break;
+
+    case MUICFG_Keyboard_GadgetOff:
+        Configdata__SetKey(&data->prefs.muikeys[MUIKEY_GADGET_OFF], val);
+        break;
+
+    case MUICFG_Keyboard_CloseWindow:
+        Configdata__SetKey(&data->prefs.muikeys[MUIKEY_WINDOW_CLOSE], val);
+        break;
+
+    case MUICFG_Keyboard_NextWindow:
+        Configdata__SetKey(&data->prefs.muikeys[MUIKEY_WINDOW_NEXT], val);
+        break;
+
+    case MUICFG_Keyboard_PrevWindow:
+        Configdata__SetKey(&data->prefs.muikeys[MUIKEY_WINDOW_PREV], val);
+        break;
+
+    case MUICFG_Keyboard_Help:
+        Configdata__SetKey(&data->prefs.muikeys[MUIKEY_HELP], val);
+        break;
+
+    case MUICFG_Keyboard_Popup:
+        Configdata__SetKey(&data->prefs.muikeys[MUIKEY_POPUP], val);
+        break;
+
+    /*---------- CustomFrames ----------*/
+    case MUICFG_CustomFrame_1:
+        data->prefs.customframe_config_1 = val;
+        break;
+    case MUICFG_CustomFrame_2:
+        data->prefs.customframe_config_2 = val;
+        break;
+    case MUICFG_CustomFrame_3:
+        data->prefs.customframe_config_3 = val;
+        break;
+    case MUICFG_CustomFrame_4:
+        data->prefs.customframe_config_4 = val;
+        break;
+    case MUICFG_CustomFrame_5:
+        data->prefs.customframe_config_5 = val;
+        break;
+    case MUICFG_CustomFrame_6:
+        data->prefs.customframe_config_6 = val;
+        break;
+    case MUICFG_CustomFrame_7:
+        data->prefs.customframe_config_7 = val;
+        break;
+    case MUICFG_CustomFrame_8:
+        data->prefs.customframe_config_8 = val;
+        break;
+    case MUICFG_CustomFrame_9:
+        data->prefs.customframe_config_9 = val;
+        break;
+    case MUICFG_CustomFrame_10:
+        data->prefs.customframe_config_10 = val;
+        break;
+    case MUICFG_CustomFrame_11:
+        data->prefs.customframe_config_11 = val;
+        break;
+    case MUICFG_CustomFrame_12:
+        data->prefs.customframe_config_12 = val;
+        break;
+    case MUICFG_CustomFrame_13:
+        data->prefs.customframe_config_13 = val;
+        break;
+    case MUICFG_CustomFrame_14:
+        data->prefs.customframe_config_14 = val;
+        break;
+    case MUICFG_CustomFrame_15:
+        data->prefs.customframe_config_15 = val;
+        break;
+    case MUICFG_CustomFrame_16:
+        data->prefs.customframe_config_16 = val;
+        break;
+    }
+}
+
+/**************************************************************************
+ OM_NEW
+ Load global (and maybe application-specific) prefs files into the dataspace,
+ then fill the prefs struct with dataspace or default values
+**************************************************************************/
+/*
+ * Initialize Dataspace, load local or global preferences and register
+ * Application notifications. Application/base are borrowed; notification
+ * errors do not fail construction.
+ */
+IPTR Configdata__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
+{
+    struct MUI_ConfigdataData *data;
+    struct TagItem *tags;
+    struct TagItem *tag;
+    //APTR cdata;
+    int i, res = 0;
+
+    obj = (Object *) DoSuperMethodA(cl, obj, (Msg) msg);
+    if (!obj)
+        return (IPTR) NULL;
+
+/*      D(bug("Configdata_New(%p)\n", obj)); */
+
+    data = INST_DATA(cl, obj);
+
+    NEWLIST(&data->pubscreens);
+    InitSemaphore(&data->psLock);
+
+    for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags));)
+    {
+        switch (tag->ti_Tag)
+        {
+        case MUIA_Configdata_Application:
+            data->app = (Object *) tag->ti_Data;
+            break;
+        case MUIA_Configdata_ApplicationBase:
+            data->appbase = (CONST_STRPTR) tag->ti_Data;
+            break;
+        }
+    }
+
+    if (data->app && !data->appbase)
+    {
+        get(data->app, MUIA_Application_Base, &data->appbase);
+    }
+
+    if (data->appbase)
+    {
+        char filename[255];
+        snprintf(filename, 255, "ENV:zune/%s.prefs", data->appbase);
+        res = DoMethod(obj, MUIM_Configdata_Load, (IPTR) filename);
+        if (!res)
+        {
+            snprintf(filename, 255, "ENVARC:zune/%s.prefs", data->appbase);
+            res = DoMethod(obj, MUIM_Configdata_Load, (IPTR) filename);
+        }
+    }
+
+    // load only global prefs if no local app pref is found
+    if (!res)
+    {
+        if (!DoMethod(obj, MUIM_Configdata_Load,
+                (IPTR) "ENV:zune/global.prefs"))
+        {
+            DoMethod(obj, MUIM_Configdata_Load,
+                (IPTR) "ENVARC:zune/global.prefs");
+        }
+    }
+
+    data->fsNotifyPort = CreateMsgPort();
+    if (data->fsNotifyPort) {
+        /* Setup filesystem notification handler ---------------------------*/
+        data->fsNotifyIHN.ihn_Signals = 1UL << data->fsNotifyPort->mp_SigBit;
+        data->fsNotifyIHN.ihn_Object  = obj;
+        data->fsNotifyIHN.ihn_Method  = MUIM_Configdata_LoadPubScreens;
+
+        DoMethod(data->app, MUIM_Application_AddInputHandler, (IPTR)&data->fsNotifyIHN);
+
+        data->fsNotifyRequest.nr_Name                 = PUBSCREEN_FILE;
+        data->fsNotifyRequest.nr_Flags                = NRF_SEND_MESSAGE;
+        data->fsNotifyRequest.nr_stuff.nr_Msg.nr_Port = data->fsNotifyPort;
+        if (StartNotify(&data->fsNotifyRequest)) {
+            DFSN(bug("[MUI:Cfg] %s: FileSystem-Notification setup for '%s'\n", __func__, data->fsNotifyRequest.nr_Name));
+        } else {
+            DFSN(bug("[MUI:Cfg] %s: FAILED to setup FileSystem-Notification for '%s'\n", __func__, data->fsNotifyRequest.nr_Name));
+            DoMethod(data->app, MUIM_Application_RemInputHandler, (IPTR)&data->fsNotifyIHN);
+            DeleteMsgPort(data->fsNotifyPort);
+            data->fsNotifyPort = NULL;
+        }
+    }
+
+    /*---------- init strings ----------*/
+    for (i = 0; DefStrValues[i].id; i++)
+    {
+        Configdata_SynchronizeString(obj,  DefStrValues[i].id);
+    }
+
+    /*---------- images stuff ----------*/
+
+    init_imspecs(obj, data);
+
+    /*---------- frame stuff ----------*/
+
+    init_framespecs(obj, data);
+
+    /*---------- system stuff ----------*/
+    data->prefs.publicscreen_pop_to_front =
+        GetConfigULong(obj, MUICFG_PublicScreen_PopToFront);
+    data->prefs.iconification_show_icon =
+        GetConfigULong(obj, MUICFG_Iconification_ShowIcon);
+    data->prefs.iconification_show_menu =
+        GetConfigULong(obj, MUICFG_Iconification_ShowMenu);
+    data->prefs.iconification_on_startup =
+        GetConfigULong(obj, MUICFG_Iconification_OnStartup);
+    data->prefs.interfaces_enable_arexx =
+        GetConfigULong(obj, MUICFG_Interfaces_EnableARexx);
+    data->prefs.bubblehelp_first_delay =
+        GetConfigULong(obj, MUICFG_BubbleHelp_FirstDelay);
+    data->prefs.bubblehelp_next_delay =
+        GetConfigULong(obj, MUICFG_BubbleHelp_NextDelay);
+
+    /*---------- window stuff ----------*/
+
+    data->prefs.window_inner_left =
+        GetConfigULong(obj, MUICFG_Window_Spacing_Left);
+    data->prefs.window_inner_right =
+        GetConfigULong(obj, MUICFG_Window_Spacing_Right);
+    data->prefs.window_inner_top =
+        GetConfigULong(obj, MUICFG_Window_Spacing_Top);
+    data->prefs.window_inner_bottom =
+        GetConfigULong(obj, MUICFG_Window_Spacing_Bottom);
+    data->prefs.window_position =
+        GetConfigULong(obj, MUICFG_Window_Positions);
+    data->prefs.window_redraw = GetConfigULong(obj, MUICFG_Window_Redraw);
+    data->prefs.window_refresh = GetConfigULong(obj, MUICFG_Window_Refresh);
+    data->prefs.screenmode = GetConfigULong(obj, MUICFG_Screen_Mode);
+    data->prefs.screenmodeid = GetConfigULong(obj, MUICFG_Screen_Mode_ID);
+    data->prefs.screen_width = GetConfigULong(obj, MUICFG_Screen_Width);
+    data->prefs.screen_height = GetConfigULong(obj, MUICFG_Screen_Height);
+    data->prefs.window_buttons = GetConfigULong(obj, MUICFG_Window_Buttons);
+
+    /*---------- group stuff ----------*/
+
+    data->prefs.group_title_position =
+        GetConfigULong(obj, MUICFG_GroupTitle_Position);
+    data->prefs.group_title_color =
+        GetConfigULong(obj, MUICFG_GroupTitle_Color);
+    data->prefs.group_hspacing = GetConfigULong(obj, MUICFG_Group_HSpacing);
+    data->prefs.group_vspacing = GetConfigULong(obj, MUICFG_Group_VSpacing);
+
+    /*---------- registers ----------*/
+
+    data->prefs.register_look = REGISTER_LOOK_TRADITIONAL;
+    data->prefs.register_truncate_titles =
+        GetConfigULong(obj, MUICFG_Register_TruncateTitles);
+
+    /*---------- Buttons ----------*/
+
+    data->prefs.radiobutton_hspacing =
+        GetConfigULong(obj, MUICFG_Radio_HSpacing);
+    data->prefs.radiobutton_vspacing =
+        GetConfigULong(obj, MUICFG_Radio_VSpacing);
+
+    /*---------- Cycles ----------*/
+
+    data->prefs.cycle_menu_position =
+        GetConfigULong(obj, MUICFG_Cycle_MenuCtrl_Position);
+    data->prefs.cycle_menu_min_entries =
+        GetConfigULong(obj, MUICFG_Cycle_MenuCtrl_Level);
+    data->prefs.cycle_menu_speed =
+        GetConfigULong(obj, MUICFG_Cycle_MenuCtrl_Speed);
+    data->prefs.cycle_menu_recessed_entries =
+        GetConfigULong(obj, MUICFG_Cycle_Menu_Recessed);
+
+    /*---------- Sliders ----------*/
+    /* all taken care of in frames and images */
+
+    /*---------- Scrollbars ----------*/
+
+    data->prefs.scrollbar_type = GetConfigULong(obj, MUICFG_Scrollbar_Type);
+    data->prefs.scrollbar_arrangement =
+        GetConfigULong(obj, MUICFG_Scrollbar_Arrangement);
+
+    /*---------- Lists ----------*/
+
+    data->prefs.list_linespacing =
+        GetConfigULong(obj, MUICFG_Listview_Font_Leading);
+    data->prefs.list_smoothed =
+        GetConfigULong(obj, MUICFG_Listview_Smoothed);
+    data->prefs.list_smoothval =
+        GetConfigULong(obj, MUICFG_Listview_SmoothVal);
+    data->prefs.list_multi = GetConfigULong(obj, MUICFG_Listview_Multi);
+    data->prefs.list_refresh = GetConfigULong(obj, MUICFG_Listview_Refresh);
+
+    /*---------- Navigation ----------*/
+
+    data->prefs.drag_left_button =
+        GetConfigULong(obj, MUICFG_Drag_LeftButton);
+    data->prefs.drag_middle_button =
+        GetConfigULong(obj, MUICFG_Drag_MiddleButton);
+    data->prefs.drag_autostart = GetConfigULong(obj, MUICFG_Drag_Autostart);
+    data->prefs.drag_autostart_length =
+        GetConfigULong(obj, MUICFG_Drag_Autostart_Length);
+    data->prefs.drag_look = GetConfigULong(obj, MUICFG_Dragndrop_Look);
+    data->prefs.balancing_look = GetConfigULong(obj, MUICFG_Balance_Look);
+
+    /*---------- CustomFrames ----------*/
+    data->prefs.customframe_config_1 =
+        GetConfigString(obj, MUICFG_CustomFrame_1);
+    data->prefs.customframe_config_2 =
+        GetConfigString(obj, MUICFG_CustomFrame_2);
+    data->prefs.customframe_config_3 =
+        GetConfigString(obj, MUICFG_CustomFrame_3);
+    data->prefs.customframe_config_4 =
+        GetConfigString(obj, MUICFG_CustomFrame_4);
+    data->prefs.customframe_config_5 =
+        GetConfigString(obj, MUICFG_CustomFrame_5);
+    data->prefs.customframe_config_6 =
+        GetConfigString(obj, MUICFG_CustomFrame_6);
+    data->prefs.customframe_config_7 =
+        GetConfigString(obj, MUICFG_CustomFrame_7);
+    data->prefs.customframe_config_8 =
+        GetConfigString(obj, MUICFG_CustomFrame_8);
+    data->prefs.customframe_config_9 =
+        GetConfigString(obj, MUICFG_CustomFrame_9);
+    data->prefs.customframe_config_10 =
+        GetConfigString(obj, MUICFG_CustomFrame_10);
+    data->prefs.customframe_config_11 =
+        GetConfigString(obj, MUICFG_CustomFrame_11);
+    data->prefs.customframe_config_12 =
+        GetConfigString(obj, MUICFG_CustomFrame_12);
+    data->prefs.customframe_config_13 =
+        GetConfigString(obj, MUICFG_CustomFrame_13);
+    data->prefs.customframe_config_14 =
+        GetConfigString(obj, MUICFG_CustomFrame_14);
+    data->prefs.customframe_config_15 =
+        GetConfigString(obj, MUICFG_CustomFrame_15);
+    data->prefs.customframe_config_16 =
+        GetConfigString(obj, MUICFG_CustomFrame_16);
+
+    /*---------- Special ----------*/
+    /* all taken care of in frames and images */
+
+    return (IPTR) obj;
+}
+
+/*
+ * Under exclusive lock free all cached public-screen descriptors and list
+ * nodes.
+ */
+static void Configdata__DisposeDescriptors(struct MUI_ConfigdataData *data)
+{
+    struct Node *psNode, *tmp;
+
+    DPSD(bug("[MUI:Cfg] %s()\n", __func__);)
+
+    ObtainSemaphore(&data->psLock);
+    ForeachNodeSafe(&data->pubscreens, psNode, tmp) {
+        Remove(psNode);
+        MUIS_FreePubScreenDesc((struct MUI_PubScreenDesc *)psNode->ln_Name);
+        FreeVec(psNode);
+    }
+    ReleaseSemaphore(&data->psLock);
+}
+
+/**************************************************************************
+ OM_DISPOSE
+**************************************************************************/
+/*
+ * Release notification handler/port and cached descriptors before superclass
+ * disposal. Application must remain live.
+ */
+IPTR Configdata__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
+{
+    struct MUI_ConfigdataData *data = INST_DATA(cl, obj);
+
+    if (data->fsNotifyPort) {
+        DoMethod(data->app, MUIM_Application_RemInputHandler, (IPTR) &data->fsNotifyIHN);
+        EndNotify(&data->fsNotifyRequest);
+        DeleteMsgPort(data->fsNotifyPort);
+    }
+
+    if (MUIScreenBase)
+        Configdata__DisposeDescriptors(data);
+
+    return DoSuperMethodA(cl, obj, msg);
+}
+
+/**************************************************************************
+ OM_GET
+**************************************************************************/
+/*
+ * Return borrowed private ZunePrefsNew pointer after synchronizing window
+ * positions; no ownership transfer.
+ */
+IPTR Configdata__OM_GET(struct IClass *cl, Object *obj,
+    struct opGet *msg)
+{
+    struct MUI_ConfigdataData *data = INST_DATA(cl, obj);
+    IPTR *store = msg->opg_Storage;
+    ULONG tag = msg->opg_AttrID;
+
+    switch (tag)
+    {
+    case MUIA_Configdata_ZunePrefs:
+        *store = (IPTR) & data->prefs;
+        DoMethod(obj, MUIM_Configdata_GetWindowPos, 0);
+        return 1;
+    }
+
+    return DoSuperMethodA(cl, obj, (Msg) msg);
+}
+
+#ifndef AROS_BIG_ENDIAN
+#define AROS_BIG_ENDIAN 0
+#endif
+
+#if (!AROS_BIG_ENDIAN)
+/*
+ * Swap each window-position record and count in place on little-endian
+ * targets. Trusts record bounds; requires serialized valid data.
+ */
+static LONG windowpos_swapbytes(IPTR data, LONG size)
+{
+    LONG items;
+    WORD cnt, i, j;
+    void *p = (void *)data;
+
+    *((LONG *) p) = AROS_SWAP_BYTES_LONG(*((LONG *) p));
+
+    cnt = sizeof(LONG);
+    items = (size - sizeof(LONG)) / sizeof(struct windowpos);
+    D(bug("[MUI:Cfg] %s: size = %d items = %d\n", __func__, size, items));
+    for (i = 0; i < items; i++) {
+        *((LONG *) ((IPTR)p + cnt)) =
+            AROS_SWAP_BYTES_LONG(*((LONG *) ((IPTR)p + cnt)));
+        cnt += sizeof(LONG);
+        for (j = 0; j < 8; j++) {
+            *((WORD *) ((IPTR)p + cnt)) =
+                AROS_SWAP_BYTES_WORD(*((WORD *) ((IPTR)p + cnt)));
+            cnt += sizeof(WORD);
+        }
+    }
+    D(bug("[MUI:Cfg] %s: actual = %d\n", __func__, cnt));
+    return cnt;
+}
+#endif
+
+/*
+ * Return borrowed stored window positions, copying to Application with
+ * temporary byte swap when present.
+ */
+static IPTR Configdata_GetWindowPos(struct IClass *cl, Object *obj,
+    struct MUIP_Configdata_GetString *msg)
+{
+    struct MUI_ConfigdataData *data = INST_DATA(cl, obj);
+    IPTR s;
+    s = (IPTR) DoMethod(obj, MUIM_Dataspace_Find, MUICFG_WindowPos);
+    if (s && data->app) {
+#if (!AROS_BIG_ENDIAN)
+        LONG size = AROS_BE2LONG(*((LONG *)s));
+        D(bug("[MUI:Cfg] %s: %ld bytes\n", __func__, size));
+        windowpos_swapbytes(s, size);
+#endif
+        set(data->app, MUIA_Application_CopyWinPosToApp, s);
+#if (!AROS_BIG_ENDIAN)
+        windowpos_swapbytes(s, size);
+#endif
+    }
+    return s;
+}
+
+/*
+ * Capture Application window positions in Dataspace, temporarily swapping
+ * source bytes. Caller must provide valid Application data.
+ */
+static IPTR Configdata_SetWindowPos(struct IClass *cl, Object *obj,
+    struct MUIP_Configdata_GetString *msg)
+{
+    struct MUI_ConfigdataData *data;
+    //kprintf ("setwindowpos\n");
+    data = INST_DATA(cl, obj);
+
+    if (data->app)
+    {
+        IPTR addr = 0;
+        IPTR size = 0;
+
+        get(data->app, MUIA_Application_GetWinPosAddr, &addr);
+        get(data->app, MUIA_Application_GetWinPosSize, &size);
+
+        D(bug("[MUI:Cfg] %s: 0x%p (%d bytes)\n", __func__, addr, size));
+
+#if (!AROS_BIG_ENDIAN)
+        windowpos_swapbytes(addr, size);
+#endif
+        DoMethod(obj, MUIM_Dataspace_Add, addr, size, MUICFG_WindowPos);
+#if (!AROS_BIG_ENDIAN)
+        windowpos_swapbytes(addr, size);
+#endif
+    }
+    return 0;
+}
+
+/**************************************************************************
+ MUIM_Configdata_GetString
+ Check if string is found in dataspace, then if not found, search each
+ builtin array
+**************************************************************************/
+/*
+ * Return borrowed string from Dataspace or compiled string/image/frame
+ * defaults; no size/type check.
+ */
+IPTR Configdata__MUIM_GetString(struct IClass *cl, Object *obj,
+    struct MUIP_Configdata_GetString *msg)
+{
+    CONST_STRPTR s;
+
+    s = (CONST_STRPTR) DoMethod(obj, MUIM_Dataspace_Find, msg->id);
+    if (!s)
+    {
+        int i;
+
+        for (i = 0; DefStrValues[i].id; i++)
+        {
+            if (DefStrValues[i].id == msg->id)
+                return (IPTR) DefStrValues[i].val;
+        }
+        for (i = 0; DefImspecValues[i].defspec; i++)
+        {
+            if (DefImspecValues[i].cfgid == msg->id)
+                return (IPTR) DefImspecValues[i].defspec;
+        }
+        for (i = 0; DefFramespecValues[i].defspec; i++)
+        {
+            if (DefFramespecValues[i].cfgid == msg->id)
+                return (IPTR) DefFramespecValues[i].defspec;
+        }
+        return (IPTR) 0;
+    }
+    else
+    {
+        return (IPTR) s;
+    }
+}
+
+/**************************************************************************
+ MUIM_Configdata_SetImspec
+ search in builtin array first, to not not have in dataspace the default
+ value (would be redundant)
+**************************************************************************/
+/*
+ * Ignore NULL/empty/leading '6' input; remove matching defaults or copy string
+ * into Dataspace. Returns zero; no private-view update.
+ */
+IPTR Configdata__MUIM_SetImspec(struct IClass *cl, Object *obj,
+    struct MUIP_Configdata_SetImspec *msg)
+{
+    int i;
+
+    if (!msg->imspec || !*msg->imspec || *msg->imspec == '6')
+    {
+/*          D(bug("Configdata_SetImspec(%p) : id %08lx, val invalid\n", */
+/*                obj, msg->id)); */
+        return 0;
+    }
+
+    for (i = 0; DefImspecValues[i].defspec; i++)
+    {
+        if (DefImspecValues[i].cfgid == msg->id)
+            if (!strcmp(DefImspecValues[i].defspec, msg->imspec))
+            {
+/*                  D(bug("Configdata_SetImspec(%p) : set to def, id %08lx, val %s\n", */
+/*                        obj, msg->id, msg->imspec)); */
+                DoMethod(obj, MUIM_Dataspace_Remove, msg->id);
+                return 0;
+            }
+    }
+
+    for (i = 0; DefStrValues[i].id; i++)
+    {
+        if (DefStrValues[i].id == msg->id)
+            if (!strcmp(DefStrValues[i].val, msg->imspec))
+            {
+                DoMethod(obj, MUIM_Dataspace_Remove, msg->id);
+                return 0;
+            }
+    }
+
+    DoMethod(obj, MUIM_Dataspace_Add, (IPTR) msg->imspec,
+        strlen(msg->imspec) + 1, msg->id);
+    return 0;
+}
+
+/**************************************************************************
+ MUIM_Configdata_SetFramespec
+**************************************************************************/
+/*
+ * Ignore NULL/empty input; remove matching frame default or copy string.
+ * Returns zero; no private-view update.
+ */
+IPTR Configdata__MUIM_SetFramespec(struct IClass *cl, Object *obj,
+    struct MUIP_Configdata_SetFramespec *msg)
+{
+    int i;
+
+    if (!msg->framespec || !*msg->framespec)
+    {
+/*          D(bug("Configdata_SetFramespec(%p) : id %08lx, val invalid\n", */
+/*                obj, msg->id)); */
+        return 0;
+    }
+
+    for (i = 0; DefFramespecValues[i].defspec; i++)
+    {
+        if (DefFramespecValues[i].cfgid == msg->id)
+            if (!strcmp(DefFramespecValues[i].defspec, msg->framespec))
+            {
+/*                D(bug("Configdata_SetFramespec(%p): " */
+/*                    "set to def, id %08lx, val %s\n", */
+/*                    obj, msg->id, msg->framespec)); */
+                DoMethod(obj, MUIM_Dataspace_Remove, msg->id);
+                return 0;
+            }
+    }
+
+    DoMethod(obj, MUIM_Dataspace_Add, (IPTR) msg->framespec,
+        strlen(msg->framespec) + 1, msg->id);
+    return 0;
+}
+
+/**************************************************************************
+ MUIM_Configdata_SetPenspec
+**************************************************************************/
+/*
+ * Ignore NULL/empty input; remove matching string default or copy string.
+ * Returns zero; no private-view update.
+ */
+IPTR Configdata__MUIM_SetPenspec(struct IClass *cl, Object *obj,
+    struct MUIP_Configdata_SetPenspec *msg)
+{
+    int i;
+
+    if (!msg->penspec || !*msg->penspec)
+        return 0;
+
+    for (i = 0; DefStrValues[i].id; i++)
+    {
+        if (DefStrValues[i].id == msg->id)
+            if (!strcmp(DefStrValues[i].val, msg->penspec))
+            {
+                DoMethod(obj, MUIM_Dataspace_Remove, msg->id);
+                return 0;
+            }
+    }
+
+    DoMethod(obj, MUIM_Dataspace_Add, (IPTR) msg->penspec,
+        strlen(msg->penspec) + 1, msg->id);
+    return 0;
+}
+
+/**************************************************************************
+ MUIM_Configdata_SetFont
+**************************************************************************/
+/*
+ * Remove record for NULL/empty font; otherwise copy font string. Returns zero;
+ * no private-view update.
+ */
+IPTR Configdata__MUIM_SetFont(struct IClass *cl, Object *obj,
+    struct MUIP_Configdata_SetFont *msg)
+{
+    if (!msg->font || !*msg->font)
+    {
+/*          D(bug("Configdata_SetFont(%p) : id %08lx, val invalid\n", */
+/*                obj, msg->id)); */
+        DoMethod(obj, MUIM_Dataspace_Remove, msg->id);
+        return 0;
+    }
+
+    DoMethod(obj, MUIM_Dataspace_Add, (IPTR) msg->font,
+        strlen(msg->font) + 1, msg->id);
+    return 0;
+}
+
+/**************************************************************************
+ MUIM_Configdata_SetString
+**************************************************************************/
+/*
+ * Remove default-matching string or copy it, then synchronize recognized
+ * private fields. NULL/self-aliasing source is unsafe.
+ */
+IPTR Configdata__MUIM_SetString(struct IClass *cl, Object *obj,
+    struct MUIP_Configdata_SetString *msg)
+{
+    int i;
+
+    /* If the value is the same as default value, remove it from dataspace (and config file) */
+    for (i = 0; DefStrValues[i].id; i++)
+    {
+        if (DefStrValues[i].id == msg->id)
+            if (!strcmp(DefStrValues[i].val, msg->string))
+            {
+                DoMethod(obj, MUIM_Dataspace_Remove, msg->id);
+                Configdata_SynchronizeString(obj, msg->id);
+                return 0;
+            }
+    }
+
+    DoMethod(obj, MUIM_Dataspace_Add, (IPTR) msg->string,
+        strlen(msg->string) + 1, msg->id);
+    Configdata_SynchronizeString(obj, msg->id);
+
+    return 0;
+}
+
+/**************************************************************************
+ MUIM_Configdata_GetULong
+**************************************************************************/
+/*
+ * Return stored big-endian ULONG converted to host order, compiled default or
+ * zero. No record size/type check.
+ */
+IPTR Configdata__MUIM_GetULong(struct IClass *cl, Object *obj,
+    struct MUIP_Configdata_GetULong *msg)
+{
+    ULONG *vp;
+
+    vp = (ULONG *) DoMethod(obj, MUIM_Dataspace_Find, msg->id);
+    if (!vp)
+    {
+        int i;
+
+        for (i = 0; DefULValues[i].id != 0; i++)
+        {
+            if (DefULValues[i].id == msg->id)
+                return DefULValues[i].val;
+        }
+        return 0;
+    }
+    else
+    {
+        return AROS_BE2LONG(*vp);
+    }
+}
+
+/**************************************************************************
+ MUIM_Configdata_SetULong
+**************************************************************************/
+/*
+ * Remove numeric-default record or store four big-endian bytes; ignore storage
+ * failures and return zero.
+ */
+IPTR Configdata__MUIM_SetULong(struct IClass *cl, Object *obj,
+    struct MUIP_Configdata_SetULong *msg)
+{
+    ULONG v = msg->val;
+    ULONG *vp = &v;
+    int i;
+
+    for (i = 0; DefULValues[i].id != 0; i++)
+    {
+        if (DefULValues[i].id == msg->id)
+            if (DefULValues[i].val == v)
+            {
+/*                D(bug("Configdata_SetULong(%p):" */
+/*                    " set to def, id %08lx, val %ld\n", */
+/*                    obj, msg->id, v)); */
+                DoMethod(obj, MUIM_Dataspace_Remove, msg->id);
+                return 0;
+            }
+    }
+
+    v = AROS_LONG2BE(v);
+/*      D(bug("Configdata_SetULong(%p): adding %08lx to %08lx chunk\n", */
+/*          obj, v, msg->id)); */
+    DoMethod(obj, MUIM_Dataspace_Add, (IPTR) vp, 4, msg->id);
+    return 0;
+}
+
+
+/**************************************************************************
+ SavePrefsHeader: Write a PRHD chunk
+**************************************************************************/
+/*
+ * Write PRHD chunk; nonzero byte count is accepted without verifying an
+ * exact-length write.
+ */
+static int SavePrefsHeader(struct IFFHandle *iff)
+{
+    if (!PushChunk(iff, 0, MAKE_ID('P', 'R', 'H', 'D'), IFFSIZE_UNKNOWN))
+    {
+        struct PrefHeader ph;
+        ph.ph_Version = 0;
+        ph.ph_Type = 0;
+        ph.ph_Flags = 0;
+
+        if (WriteChunkBytes(iff, &ph, sizeof(struct PrefHeader)))
+            if (!PopChunk(iff))
+                return 1;
+        PopChunk(iff);
+    }
+    return 0;
+}
+
+/**************************************************************************
+ MUIM_Configdata_Save
+**************************************************************************/
+/*
+ * Replace preference file synchronously, writing PREF/PRHD/MUIC after window
+ * capture. Return zero regardless of write failures; no rollback.
+ */
+IPTR Configdata__MUIM_Save(struct IClass *cl, Object *obj,
+    struct MUIP_Configdata_Save *msg)
+{
+    struct IFFHandle *iff;
+    if ((iff = AllocIFF()))
+    {
+        if (!(iff->iff_Stream = (IPTR) Open(msg->filename, MODE_NEWFILE)))
+        {
+            /* Try to Create the directory where the file is located */
+            char *path = StrDup(msg->filename);
+            if (path)
+            {
+                char *path_end = PathPart(path);
+                if (path_end != path)
+                {
+                    BPTR lock;
+                    *path_end = 0;
+                    if ((lock = CreateDir(path)))
+                    {
+                        UnLock(lock);
+                        iff->iff_Stream =
+                            (IPTR) Open(msg->filename, MODE_NEWFILE);
+                    }
+                }
+                FreeVec(path);
+            }
+        }
+
+        if (iff->iff_Stream)
+        {
+            InitIFFasDOS(iff);
+
+            if (!OpenIFF(iff, IFFF_WRITE))
+            {
+                if (!PushChunk(iff, MAKE_ID('P', 'R', 'E', 'F'), ID_FORM,
+                        IFFSIZE_UNKNOWN))
+                {
+                    Configdata_SetWindowPos(cl, obj, (APTR) msg);
+                    if (SavePrefsHeader(iff))
+                    {
+                        DoMethod(obj, MUIM_Dataspace_WriteIFF, (IPTR) iff,
+                            0, MAKE_ID('M', 'U', 'I', 'C'));
+                    }
+                    PopChunk(iff);
+                }
+
+                CloseIFF(iff);
+            }
+            Close((BPTR) iff->iff_Stream);
+        }
+        FreeIFF(iff);
+    }
+    return 0;
+}
+
+
+/**************************************************************************
+ MUIM_Configdata_Load
+ Get the content of the file into the object.
+**************************************************************************/
+/*
+ * After successful OpenIFF clear Dataspace and parse records; subsequent
+ * read/parse errors are ignored and TRUE is returned.
+ */
+IPTR Configdata__MUIM_Load(struct IClass *cl, Object *obj,
+    struct MUIP_Configdata_Load *msg)
+{
+    struct IFFHandle *iff;
+    IPTR res = TRUE;
+
+    if ((iff = AllocIFF()))
+    {
+        D(bug("loading prefs from %s\n", msg->filename));
+        if ((iff->iff_Stream = (IPTR) Open(msg->filename, MODE_OLDFILE)))
+        {
+            InitIFFasDOS(iff);
+
+            if (!OpenIFF(iff, IFFF_READ))
+            {
+                StopChunk(iff, MAKE_ID('P', 'R', 'E', 'F'), MAKE_ID('M',
+                        'U', 'I', 'C'));
+
+                DoMethod(obj, MUIM_Dataspace_Clear);
+
+                while (!ParseIFF(iff, IFFPARSE_SCAN))
+                {
+                    struct ContextNode *cn;
+                    if (!(cn = CurrentChunk(iff)))
+                        continue;
+                    if (cn->cn_ID == MAKE_ID('M', 'U', 'I', 'C'))
+                        DoMethod(obj, MUIM_Dataspace_ReadIFF, (IPTR) iff);
+                }
+
+                CloseIFF(iff);
+            }
+            else
+            {
+                res = FALSE;
+            }
+            Close((BPTR) iff->iff_Stream);
+        }
+        else
+        {
+            res = FALSE;
+        }
+        FreeIFF(iff);
+    }
+    else
+    {
+        res = FALSE;
+    }
+
+    if (res) {
+        DoMethod(obj, MUIM_Configdata_LoadPubScreens);
+    }
+
+    return res;
+}
+
+/*
+ * Return borrowed case-sensitive public-screen descriptor under shared lock;
+ * pointer is unprotected after return.
+ */
+static IPTR Configdata_GetPubScrnDesc(struct IClass *cl, Object *obj,
+    struct MUIP_Configdata_GetPubScrnDesc *msg)
+{
+    struct MUI_ConfigdataData *data = INST_DATA(cl, obj);
+    struct MUI_PubScreenDesc *desc = NULL;
+
+    DPSD(bug("[MUI:Cfg] %s()\n", __func__);)
+
+    if (MUIScreenBase) {
+        struct Node *psNode;
+        ObtainSemaphoreShared(&data->psLock);
+        ForeachNode(&data->pubscreens, psNode) {
+            if (!strcmp(((struct MUI_PubScreenDesc *)(psNode->ln_Name))->Name, msg->name)) {
+                desc = (struct MUI_PubScreenDesc *)psNode->ln_Name;
+                break;
+            }
+        }
+        ReleaseSemaphore(&data->psLock);
+    }
+    return (IPTR)desc;
+}
+
+/*
+ * Replace cached public-screen descriptors under exclusive lock; missing
+ * file/library yields TRUE; existing pointers expire.
+ */
+static IPTR Configdata_LoadPubScreens(struct IClass *cl, Object *obj,
+    Msg msg)
+{
+    DPSD(bug("[MUI:Cfg] %s()\n", __func__);)
+
+    if (MUIScreenBase) {
+        struct MUI_ConfigdataData *data = INST_DATA(cl, obj);
+        struct Node *psNode, *tmpName;
+        APTR pfh;
+
+        Configdata__DisposeDescriptors(data);
+
+        DPSD(bug("[MUI:Cfg] %s: loading public screen details from '%s'\n", __func__, PUBSCREEN_FILE);)
+
+        ObtainSemaphore(&data->psLock);
+        if ((pfh = MUIS_OpenPubFile(PUBSCREEN_FILE, MODE_OLDFILE))) {
+            struct MUI_PubScreenDesc *desc;
+            while ((desc = MUIS_ReadPubFile(pfh))) {
+                DPSD(bug("[MUI:Cfg] %s: descriptor @ 0x%p\n", __func__, desc);)
+                psNode = AllocVec(sizeof(struct Node), MEMF_CLEAR);
+                psNode->ln_Name = (char *)desc;
+                AddTail(&data->pubscreens, psNode);
+            }
+            MUIS_ClosePubFile(pfh);
+        }
+        ReleaseSemaphore(&data->psLock);
+    }
+    return (IPTR)TRUE;
+}
+
+/*
+ * The class dispatcher
+ */
+/*
+ * Dispatch Configdata methods and pass unhandled methods to Dataspace
+ * superclass.
+ */
+BOOPSI_DISPATCHER(IPTR, Configdata_Dispatcher, cl, obj, msg)
+{
+    switch (msg->MethodID)
+    {
+    case OM_NEW:
+        return Configdata__OM_NEW(cl, obj, (struct opSet *)msg);
+    case OM_DISPOSE:
+        return Configdata__OM_DISPOSE(cl, obj, (APTR) msg);
+    case OM_GET:
+        return Configdata__OM_GET(cl, obj, (APTR) msg);
+    case MUIM_Configdata_GetString:
+        return Configdata__MUIM_GetString(cl, obj, (APTR) msg);
+    case MUIM_Configdata_GetULong:
+        return Configdata__MUIM_GetULong(cl, obj, (APTR) msg);
+    case MUIM_Configdata_SetULong:
+        return Configdata__MUIM_SetULong(cl, obj, (APTR) msg);
+    case MUIM_Configdata_SetImspec:
+        return Configdata__MUIM_SetImspec(cl, obj, (APTR) msg);
+    case MUIM_Configdata_SetFramespec:
+        return Configdata__MUIM_SetFramespec(cl, obj, (APTR) msg);
+    case MUIM_Configdata_SetPenspec:
+        return Configdata__MUIM_SetPenspec(cl, obj, (APTR) msg);
+    case MUIM_Configdata_SetFont:
+        return Configdata__MUIM_SetFont(cl, obj, (APTR) msg);
+    case MUIM_Configdata_SetString:
+        return Configdata__MUIM_SetString(cl, obj, (APTR) msg);
+    case MUIM_Configdata_Save:
+        return Configdata__MUIM_Save(cl, obj, (APTR) msg);
+    case MUIM_Configdata_Load:
+        return Configdata__MUIM_Load(cl, obj, (APTR) msg);
+    case MUIM_Configdata_SetWindowPos:
+        return Configdata_SetWindowPos(cl, obj, (APTR) msg);
+    case MUIM_Configdata_GetWindowPos:
+        return Configdata_GetWindowPos(cl, obj, (APTR) msg);
+    case MUIM_Configdata_GetPubScrnDesc:
+        return Configdata_GetPubScrnDesc(cl, obj, (APTR) msg);
+    case MUIM_Configdata_LoadPubScreens:
+        return Configdata_LoadPubScreens(cl, obj, (APTR) msg);
+    }
+
+    return DoSuperMethodA(cl, obj, msg);
+}
+BOOPSI_DISPATCHER_END
+
+/*
+ * Class descriptor.
+ */
+const struct __MUIBuiltinClass _MUI_Configdata_desc =
+{
+    MUIC_Configdata,            /* Class name */
+    MUIC_Dataspace,             /* super class name */
+    sizeof(struct MUI_ConfigdataData),  /* size of class own datas */
+    (void *) Configdata_Dispatcher       /* class dispatcher */
+};

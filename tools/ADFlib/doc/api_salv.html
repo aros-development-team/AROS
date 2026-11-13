@@ -1,0 +1,119 @@
+<HTML>
+<HEAD><TITLE> Salvage </TITLE></HEAD>
+
+<BODY>
+
+<H1 ALIGN=CENTER>the Salvage API</H1>
+
+
+<HR>
+<H1>Typical usage</H1>
+
+
+<PRE>
+#include"adflib.h"
+
+
+int main()
+{
+    struct List *list, *cell;
+
+    /* initialization */    
+    /* the device and volume are mounted */
+
+    cell = list = adfGetDelEnt(vol);
+    while(cell) {
+        block =(struct Block*) cell->content;
+        printf("%s %d %d %ld\n",block->name,block->type,block->secType,
+            block->sect);
+        cell = cell->next;
+    }
+    /* we noted the entry 883 and 885 */
+    adfFreeDelList(list);
+
+    /* 883 is a file */
+    if (adfCheckEntry(vol,883,0)==RC_OK)
+        adfUndelEntry(vol,vol->curDirPtr,883); 
+
+    /* 885 is a directory */
+    if (adfCheckEntry(vol,885,0)==RC_OK)
+        adfUndelEntry(vol,vol->curDirPtr,885);
+ 
+    /* unmounts done */
+    /* cleanup */
+}
+</PRE>
+
+
+
+<HR>
+
+<P ALIGN=CENTER><FONT SIZE=+2> adfGetDelEnt() </FONT></P>
+
+<H2>Syntax</H2>
+
+<B>struct List*</B> adfGetDelEnt(<B>struct Volume *</B>vol) 
+
+<H2>Description</H2>
+
+Returns the list of the files/directories that MIGHT be undeleted. The
+entries must be checked before !
+<P>
+See <B>adfFreeDelList()</B> to free this list.<BR>
+See <B>adfCheckEntry()</B> to check if the entry could be undeleted.
+
+<H2>Internals</H2>
+
+Scans all the blocks of the volume to find directory blocks 
+and file header blocks that are not allocated in the bitmap.
+<P>
+
+<HR>
+
+<P ALIGN=CENTER><FONT SIZE=+2> adfCheckEntry() </FONT></P>
+
+<H2>Syntax</H2>
+
+<B>RETCODE</B> adfCheckEntry(<B>struct Volume*</B> vol, <B>SECTNUM</B> nSect, <B>int</B> level)
+
+<H2>Description</H2>
+
+Checks if an entry (directory or file) could be undeleted.
+<P>
+The 'level' argument is not used yet. Could be set to 0.
+
+<P>
+
+<HR>
+<P ALIGN=CENTER><FONT SIZE=+2> adfUndelEntry()</FONT></P>
+
+<H2>Syntax</H2>
+
+<B>RETCODE</B> adfUndelEntry(<B>struct Volume*</B> vol, <B>SECTNUM</B> parent, <B>SECTNUM</B> nSect)
+
+<H2>Description</H2>
+
+Undelete a directory or a file. The parent directory of an entry must exist.
+
+<H2>Internals</H2>
+
+Add the entry first block pointer in the parent directory list and allocated
+the related blocks in the bitmap.
+
+<HR>
+
+<P ALIGN=CENTER><FONT SIZE=+2> void adfFreeDelList(struct List* list) </FONT></P>
+
+<H2>Syntax</H2>
+
+<B>void</B> adfFreeDelList(<B>struct List*</B> list)
+
+<H2>Description</H2>
+
+Free the list of deleted entries.
+<P>
+
+
+</BODY>
+
+</HTML>

@@ -1,0 +1,12 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+DIRS := $(AROSDIR)/Locale $(AROSDIR)/Locale/Catalogs
+
+#MM- workbench-locale : workbench-locale-setup
+
+#MM
+workbench-locale-setup : $(DIRS)
+
+$(DIRS):
+	@$(IF) $(TEST) ! -d $@ ; then ; $(MKDIR) $@) ; else $(NOP) ; fi

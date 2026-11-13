@@ -1,0 +1,12 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+USER_LDFLAGS := -static
+
+FILES := htmlclass tables parse layout
+
+#MM workbench-datatypes-html : includes linklibs
+
+%build_module mmake=workbench-datatypes-html \
+    modname=html modtype=datatype \
+    files=$(FILES)

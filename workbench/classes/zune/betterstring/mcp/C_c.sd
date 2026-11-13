@@ -1,0 +1,102 @@
+##stringtype C
+##shortstrings
+/***************************************************************************
+
+ BetterString.mcc - A better String gadget MUI Custom Class
+ Copyright (C) 1997-2000 Allan Odgaard
+ Copyright (C) 2005-2018 BetterString.mcc Open Source Team
+
+ This library is free software; you can redistribute it and/or
+ modify it under the terms of the GNU Lesser General Public
+ License as published by the Free Software Foundation; either
+ version 2.1 of the License, or (at your option) any later version.
+
+ This library is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ Lesser General Public License for more details.
+
+ BetterString class Support Site:  http://www.sf.net/projects/bstring-mcc/
+
+ $Id$
+
+***************************************************************************/
+
+/****************************************************************
+   This file was created automatically by `FlexCat V1.3'
+****************************************************************/
+
+#include <proto/locale.h>
+
+#include "SDI_compiler.h"
+
+struct FC_Type { const long ID; const char *Str; };
+
+const struct FC_Type _%i = { %d, %s };
+
+static struct Catalog *BS_Catalog = NULL;
+
+/*** Catalog functions ***/
+/// GetStr()
+/*
+ * Read a valid generated FC_Type record and return a borrowed catalog
+ * string or built-in fallback. Do not free or modify it; finish using
+ * catalog-backed strings before CloseCat. This is a FlexCat template.
+ */
+const char *GetStr(APTR fcstr)
+{
+  const char *defaultstr = ((struct FC_Type *)fcstr)->Str;
+
+  if(LocaleBase)
+  {
+    return GetCatalogStr(BS_Catalog, ((struct FC_Type *)fcstr)->ID, (STRPTR)defaultstr);
+  }
+
+  return defaultstr;
+}
+///
+/// GetStripStr()
+// function that will strip out the special menusigns
+/*
+ * Get the borrowed localized string and return its third byte when the
+ * second byte is NUL; otherwise return its start. Require the generated
+ * prefix representation and enough readable bytes. This does not generally
+ * search for or remove menu markers.
+ */
+const char *GetStripStr(APTR fcstr)
+{
+   const char *loc_str = GetStr(fcstr);
+
+   return (0 == loc_str[1] ? &loc_str[2] : loc_str);
+}
+///
+/// CloseCat()
+/*
+ * Close the stored catalog when LocaleBase is available, then clear its
+ * pointer. Require catalog-string users to have finished. Do not close
+ * locale.library.
+ */
+void CloseCat(void)
+{
+  if (LocaleBase) CloseCatalog(BS_Catalog);
+  BS_Catalog = NULL;
+}
+///
+/// OpenCat(void)
+/*
+ * Open the generated catalog name with built-in language and version tags
+ * when LocaleBase exists and no catalog is open. Retain it until CloseCat.
+ * Failure leaves NULL and is not returned; GetStr can use built-in text.
+ */
+void OpenCat(void)
+{
+  static const struct TagItem tags[] = {
+                                         { OC_BuiltInLanguage, (IPTR)%l },
+                                         { OC_Version,         %v },
+                                         { TAG_DONE,           0  }
+                                       };
+
+  if(LocaleBase && !BS_Catalog)
+    BS_Catalog = OpenCatalogA(NULL, (STRPTR)"%b.catalog", (struct TagItem *)&tags[0]);
+}
+///

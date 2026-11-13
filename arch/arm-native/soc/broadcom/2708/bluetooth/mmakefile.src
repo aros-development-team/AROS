@@ -1,0 +1,16 @@
+include $(SRCDIR)/config/aros.cfg
+
+#
+# The PL011 that the BCM283x wires to the on-board Bluetooth radio.
+#
+# It uses gpio.resource, mbox.resource and openfirmware.resource, so it
+# needs their generated headers first.
+#
+#MM kernel-pl011bt-bcm2708 : kernel-gpio-bcm2708-includes kernel-mbox-bcm2708-includes \
+#MM     kernel-openfirmware-includes
+
+%build_module mmake=kernel-pl011bt-bcm2708 \
+    modname=pl011bt modtype=resource \
+    files="pl011bt_init"
+
+%common

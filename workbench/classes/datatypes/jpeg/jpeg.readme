@@ -1,0 +1,15 @@
+$Id$
+
+"This software is based in part on the work of the Independent JPEG Group"
+
+This is jpeg.datatype, based on the jpegsrc.v6b distribution from IJG.
+It uses the libjpeg linker library. See README and doc directory in the
+source tree of libjpeg for full documentation and copyright information.
+
+Only jpegclass.c contains code from IJG and references libjpeg. The other
+source files are derived more or less directly from ppm.datatype.
+
+jpeg.datatype supports all JPEG files (well, the file format is called JFIF)
+that libjpeg supports. These are all common JPEGs including progessive
+JPEGs (they are displayed after decoding the whole picture). Additional
+lossless JPEGs are supported, which is less common.

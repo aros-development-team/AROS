@@ -1,0 +1,121 @@
+#ifndef SHCOMMANDS_EMBEDDED_H
+
+/*
+    Copyright © 1995-2026, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
+#include <dos/dos.h>
+#include <proto/dos.h>
+#include <proto/exec.h>
+#include <aros/symbolsets.h>
+
+/* This defines many of the macros we will be using.
+ */
+#include <aros/shcommands_notembedded.h>
+
+DECLARESET(SHCOMMANDS)
+
+#if defined(SHCOMMANDS_SHARED_PRINTF)
+/* Builds short of ROM space (m68k) share one Printf() between the embedded
+   commands instead of giving every command its own copy of the varargs
+   inline; the helper lives in the shellcommands resource. */
+LONG __shcommands_Printf(struct DosLibrary *DOSBase, CONST_STRPTR format, ...);
+#undef Printf
+#define Printf(...) __shcommands_Printf((struct DosLibrary *)__DOS_LIBBASE, __VA_ARGS__)
+#endif
+
+struct shcommand
+{
+    STRPTR      sh_Name;
+    IPTR        sh_Command;
+    ULONG       sh_NumArgs;
+    STRPTR      sh_Template;
+};
+
+/* We only need to override __AROS_SH_ARGS */
+#undef __AROS_SH_ARGS
+#define __AROS_SH_ARGS(name, version, numargs, defl, templ, help)       \
+static ULONG name##_main(CONST_STRPTR , IPTR *,                \
+                         struct ExecBase *_SysBase,            \
+                         struct DosLibrary *_DOSBase);         \
+AROS_UFP2S(LONG, name##_entry,                                 \
+    AROS_UFPA(char *,argstr,A0),                               \
+    AROS_UFPA(ULONG,argsize,D0)                                \
+);                                                             \
+static const struct shcommand __##name##_##shcommand =         \
+{                                                              \
+    .sh_Name = stringify(name),                                \
+    .sh_Command = (IPTR)name##_entry,                          \
+    .sh_NumArgs = numargs,                                     \
+    .sh_Template = templ                                       \
+};                                                             \
+                                                               \
+ADD2SET(__##name##_##shcommand, SHCOMMANDS, 0);                \
+							       \
+AROS_UFH2S(LONG, name##_entry,                                 \
+    AROS_UFHA(char *,argstr,A0),                               \
+    AROS_UFHA(ULONG,argsize,D0)                                \
+)                                                              \
+{                                                              \
+    AROS_USERFUNC_INIT                                         \
+    extern struct ExecBase *SysBase;                           \
+    APTR DOSBase;                                              \
+                                                               \
+    LONG __retcode = RETURN_FAIL;                              \
+    IPTR __shargs[numargs] = defl;                             \
+    struct RDArgs *__rda  = NULL;                              \
+    struct RDArgs *__rda2 = NULL;                              \
+							       \
+    DOSBase = OpenLibrary(DOSNAME, 0);                         \
+                                                               \
+    if (!DOSBase)                                              \
+    {                                                          \
+        /* Can't use SetIOErr(), since DOSBase is not open! */ \
+        ((struct Process *)FindTask(NULL))->pr_Result2 =       \
+                              ERROR_INVALID_RESIDENT_LIBRARY;  \
+	goto __exit;                                           \
+    }                                                          \
+							       \
+    if (help[0])                                               \
+    {                                                          \
+        __rda2 = (struct RDArgs *)AllocDosObject(DOS_RDARGS, NULL);             \
+	if (!__rda2)                                           \
+	{                                                      \
+            PrintFault(IoErr(), stringify(name));              \
+	    goto __exit;                                       \
+	}                                                      \
+	__rda2->RDA_ExtHelp = help;                            \
+    }                                                          \
+							       \
+    __rda = ReadArgs(templ, __shargs, __rda2);                 \
+					                       \
+    if (!__rda)                                                \
+    {                                                          \
+        PrintFault(IoErr(), stringify(name));                  \
+	goto __exit;                                           \
+    }                                                          \
+							       \
+    __retcode = name##_main(argstr, __shargs, SysBase, DOSBase); \
+    							       \
+__exit:                                                        \
+    if (__rda) FreeArgs(__rda);                                \
+    if (help[0] && __rda2) FreeDosObject(DOS_RDARGS, __rda2);  \
+    if (DOSBase) CloseLibrary(DOSBase);                        \
+                                                               \
+    return __retcode;                                          \
+                                                               \
+    AROS_USERFUNC_EXIT                                         \
+}                                                              \
+DEFINE_SysBase_global                                          \
+DEFINE_DOSBase_global                                          \
+static ULONG name##_main(CONST_STRPTR __argstr,                \
+                         IPTR *__shargs,                       \
+                         struct ExecBase *_SysBase,            \
+                         struct DosLibrary *_DOSBase)          \
+{                                                              \
+    DEFINE_SysBase_local                                       \
+    DEFINE_DOSBase_local                                       \
+    SysBase = _SysBase; DOSBase = _DOSBase;
+
+#endif

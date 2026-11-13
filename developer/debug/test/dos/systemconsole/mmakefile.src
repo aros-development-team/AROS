@@ -1,0 +1,11 @@
+# Copyright (C) 2026, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+USER_LDFLAGS := -static
+
+#MM test-dos-systemconsole : includes linklibs
+
+%build_progs mmake=test-dos-systemconsole \
+    files="systemconsole consolechild" targetdir=$(AROS_TESTS)/dos/systemconsole
+
+%common

@@ -1,0 +1,19 @@
+source  $SP/setup
+setl    update.log
+
+printi  "Updating sources..."
+
+printi  "Updating AROS sources..."
+cd      $SOURCE_AROS
+execute svn update
+
+printi  "Updating contrib sources..."
+cd      $SOURCE_CONTRIB
+execute svn update
+
+printi  "Updating documentation sources..."
+cd      $SOURCE_DOCS
+execute svn update 
+
+cd      $ROOT
+resetl

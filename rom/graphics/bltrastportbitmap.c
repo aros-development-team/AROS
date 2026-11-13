@@ -1,0 +1,200 @@
+/*
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
+
+    Desc: Blit the content of a rastport into a bitmap
+*/
+
+#include <aros/debug.h>
+#include <proto/graphics.h>
+
+#include "graphics_intern.h"
+#include "gfxfuncsupport.h"
+
+void BltRastPortBitMap(struct RastPort *srcRastPort, WORD xSrc, WORD ySrc,
+                       struct BitMap *destBitMap, WORD xDest, WORD yDest,
+                       WORD xSize, WORD ySize, ULONG minterm,
+                       struct GfxBase *GfxBase)
+{
+    struct Layer *srcLayer;
+
+    FIX_GFXCOORD(xSrc);
+    FIX_GFXCOORD(ySrc);
+    FIX_GFXCOORD(xDest);
+    FIX_GFXCOORD(yDest);
+
+    if(NULL == (srcLayer = srcRastPort->Layer)) {
+        /*
+         * Rastport without a layer is a screen.
+         */
+        BltBitMap(srcRastPort->BitMap,
+                  xSrc,
+                  ySrc,
+                  destBitMap,
+                  xDest,
+                  yDest,
+                  xSize,
+                  ySize,
+                  minterm,
+                  ~0,
+                  NULL);
+    } else {
+        struct BitMap *srcBM = srcRastPort->BitMap;
+        struct ClipRect *srcCR;
+        int area = xSize * ySize;
+        UBYTE useminterm = 0;
+        ULONG bltMask = 0xFFFFFFFF;
+
+        LockLayerRom(srcLayer);
+        srcCR = srcLayer->ClipRect;
+
+        while(NULL != srcCR &&
+                area > 0) {
+            /*
+             * Is the current cliprect withing the
+             * required region?
+             */
+            WORD crX0, crX1, crY0, crY1;
+            /* cr?? have to be coordinates related to the rastport:
+               rastport x is on screen at x + bounds.MinX - Scroll_X */
+            crX0 = srcCR->bounds.MinX - srcLayer->bounds.MinX + srcLayer->Scroll_X;
+            crX1 = srcCR->bounds.MaxX - srcLayer->bounds.MinX + srcLayer->Scroll_X;
+            crY0 = srcCR->bounds.MinY - srcLayer->bounds.MinY + srcLayer->Scroll_Y;
+            crY1 = srcCR->bounds.MaxY - srcLayer->bounds.MinY + srcLayer->Scroll_Y;
+
+            /* the only case that must not happen is that
+              this ClipRect is outside the source area.  */
+
+            if(!(crX0 > (xSrc + xSize - 1) ||
+                    crX1 <  xSrc          ||
+                    crY0 > (ySrc + ySize - 1) ||
+                    crY1 <  ySrc)) {
+                WORD MinX, MinY;
+                WORD bltSrcX, bltSrcY, bltDestX, bltDestY, bltWidth, bltHeight;
+                WORD SrcOffsetX;
+
+                /* this cliprect contains bitmap data that need to be copied */
+                /*
+                 * get the pointer to the bitmap structure and fill out
+                 * the rectangle structure that shows which part we mean to copy
+                 */
+                if(srcCR->lobs && (NULL != srcCR->BitMap || (srcLayer->Flags & LAYERSUPER))) {
+                    if(0 == (srcLayer->Flags & LAYERSUPER)) {
+                        /* no superbitmap */
+                        SrcOffsetX = CR_BMOFFX(srcCR);
+
+                        if(xSrc >= crX0) {
+                            bltSrcX  = xSrc - crX0 + SrcOffsetX;
+                            bltDestX = 0;
+                        } else {
+                            bltSrcX  = SrcOffsetX;
+                            bltDestX = crX0 - xSrc;
+                        }
+
+                        if(ySrc > crY0) {
+                            bltSrcY  = ySrc - crY0 + CR_BMOFFY(srcCR);
+                            bltDestY = 0;
+                        } else {
+                            bltSrcY  = CR_BMOFFY(srcCR);
+                            bltDestY = crY0 - ySrc;
+                        }
+
+                        srcBM = srcCR->BitMap;
+                    } else {
+                        /* with superbitmap: rastport coordinates are superbitmap coordinates */
+                        if(xSrc >= crX0) {
+                            bltSrcX  = xSrc;
+                            bltDestX = 0;
+                        } else {
+                            bltSrcX  = crX0;
+                            bltDestX = crX0 - xSrc;
+                        }
+
+                        if(ySrc >= crY0) {
+                            bltSrcY  = ySrc;
+                            bltDestY = 0;
+                        } else {
+                            bltSrcY  = crY0;
+                            bltDestY = crY0 - ySrc;
+                        }
+
+                        srcBM = srcLayer->SuperBitMap;
+                    }
+
+                } else {
+                    /* this part of the layer is not hidden. */
+                    /* The source bitmap is the bitmap of the rastport */
+                    srcBM    = srcRastPort->BitMap;
+
+                    /* xSrc and ySrc are relative to the rastport of the window
+                     * or layer - here we have to make them absolute to the
+                     * screen's rastport
+                     */
+
+                    if(xSrc <= crX0) {
+                        bltSrcX  = srcCR->bounds.MinX;
+                        bltDestX = crX0 - xSrc;
+                    } else {
+                        bltSrcX  = xSrc + srcLayer->bounds.MinX - srcLayer->Scroll_X;
+                        bltDestX = 0;
+                    }
+
+                    if(ySrc <= crY0) {
+                        bltSrcY  = srcCR->bounds.MinY;
+                        bltDestY = crY0 - ySrc;
+                    } else {
+                        bltSrcY  = ySrc + srcLayer->bounds.MinY - srcLayer->Scroll_Y;
+                        bltDestY = 0;
+                    }
+                }
+
+                if(crX0 > xSrc)
+                    MinX = crX0 - xSrc;
+                else
+                    MinX = 0;
+
+                if(crX1 < (xSrc + xSize - 1))
+                    bltWidth = crX1 - xSrc - MinX + 1;
+                else
+                    bltWidth = xSize - 1 - MinX + 1;
+
+                if(crY0 > ySrc)
+                    MinY = crY0 - ySrc;
+                else
+                    MinY = 0;
+
+                if(crY1 < (ySrc + ySize - 1))
+                    bltHeight = crY1 - ySrc - MinY + 1;
+                else
+                    bltHeight = ySize - 1 - MinY + 1;
+
+                if((0 != (srcLayer->Flags & LAYERSIMPLE) &&
+                        (NULL != srcCR->lobs ||
+                         0 != (srcCR->Flags & CR_NEEDS_NO_CONCEALED_RASTERS))))
+                    useminterm = 0x0;                /* clear this area in the destination */
+                else
+                    useminterm = minterm;
+
+
+                /*
+                 * Finally blit from the srcBM to the
+                 * destBM
+                 */
+                BltBitMap(srcBM,
+                          bltSrcX,
+                          bltSrcY,
+                          destBitMap,
+                          bltDestX,
+                          bltDestY,
+                          bltWidth,
+                          bltHeight,
+                          useminterm,
+                          bltMask,
+                          NULL);
+                area -= (bltWidth * bltHeight);
+            }
+            srcCR = srcCR->Next;
+        }
+        UnlockLayerRom(srcLayer);
+    }
+    ReturnVoid("BltRastPortBitMap");
+}

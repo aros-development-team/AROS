@@ -1,0 +1,322 @@
+Änderungen von V1.0 zu V1.1:
+
+- VMM lagerte bei Systemen mit mehreren Festplatten immer auf die Platte
+  mit Unit 0 aus.
+
+- Es  gibt  jetzt eine dynamische Allokationsstrategie für Kacheln.  VMM
+  allokiert  bei  einem  Seitenfehler eine neue Kachel falls möglich, um
+  Festplattenzugriffe zu sparen.  Wenn dieser Speicher für andere Zwecke
+  benötigt wird, wird dieser von VMM wieder freigegeben.
+
+- Auslagerung  auf  Datei.  Dies ist leider relativ langsam aufgrund des
+  hohen Overheads des Amiga-Dateisystems.
+
+- VMM sollte jetzt auf allen echten 68040-Prozessoren problemlos laufen.
+  Bei Bedarf wird eine eigene MMU-Tabelle installiert.
+
+- Das   Statistik-Fenster   in   nun   Font-sensitiv   und  stellt  mehr
+  Informationen über den Auslagerungsprozeß dar.  Zusätzlich gibt es ein
+  Programm   "VMMStat",  sodaß  das  Statistikfenster  nicht  die  ganze
+  benötigt wird.
+
+- Bis zu 64 MB virtueller Speicher werden nun unterstützt.
+
+- Es gibt zwei verschiedene Programmversionen für Seitengrößen von 4 und
+  8 KB.
+
+- Die   Zugriffszeit   auf   die   Platte  wurde  reduziert,  indem  die
+  Kopfbewegungen minimiert werden.
+
+
+
+Änderungen von V1.1 zu V1.2:
+
+- Aus  Sicherheitsgründen wurde es in V1.1 Tasks verboten, bei gesetztem
+  Forbid()   virtuellen   Speicher  zu  allokieren.   Dies  wurde  wegen
+  Problemen mit AdPro rückgängig gemacht.
+
+- Es   gibt  jetzt  eine  Programm  "ShowPageSize",  daß  die  möglichen
+  Seitengrößen für ein gegebenes System ermittelt.
+
+- Fehler behoben, der zu merkwürdigen Fehlern führte, falls der Name der
+  Auslagerungsdatei oder der Auslagerungspartition länger als 20 Zeichen
+  war.  Die maximale Pfadlänge beträgt nun 80 Zeichen.
+
+- Die  maximal  verfügbare Menge virtuellen Speichers wurde nach Anfrage
+  auf 128 MB angehoben.
+
+- Es  wurde  eine  spezielle  Bibliothek  zu VMM hinzugefügt, die es nur
+  dafür  geschriebenen  Programmen  ermöglicht,  virtuellen  Speicher zu
+  nutzen.   Es  gibt  Funktionen  wie AllocVMem, FreeVMem und AvailVMem.
+  Siehe vmm_lib.doc.
+
+
+
+Änderungen von V1.2 zu V1.3:
+
+- FreeMem  markiert freigegebene Seiten jetzt als leer, um das Auslagern
+  unbenutzter Seiten beim Freigeben des Speichers zu vermindern.  Leider
+  werden dadurch Tools wie Mungwall behindert, die Speicher beschreiben,
+  den sie nicht allokiert haben.
+
+- Fehler    behoben,    der    ein    merkwürdiges   Verhalten   während
+  Festplattenzugriffen  verursachte,  deren  Units  das  gleiche  Device
+  verwenden.  Vermutlich war dies für Probleme mit der Grafikausgabe von
+  Text und Icons verantwortlich.
+
+- Das Statistikfenster ist jetzt "zoombar", sodaß nur die Titelzeile zur
+  Anzeige  des  freien  virtuellen Speichers sichtbar ist.  Position und
+  Anfangszustand können konfiguriert werden.
+
+- Die  Einstellungen  können  jetzt verändert werden, während VMM läuft.
+  Alle Parameter außer der Auslagerungspartition/-datei, deren Größe und
+  der Position des Statistikfensters werden jetzt sofort geändert.
+
+- Es  gibt  nun  eine  "fortgeschrittene"  Einstellmöglichkeit  für  die
+  Speicherallokation  in  VMMPrefs.   Man  kann  jetzt für jede Task die
+  minimale     Größe     der     VM-Allokationen    für    PUBLIC    und
+  nicht-PUBLIC-Speicher getrennt einstellen.
+
+- Anzahl   der  Signale,  die  eine  Task  während  eines  Seitenfehlers
+  benötigt,  reduziert.   Vorher gab es Probleme mit Tasks, die all ihre
+  Signale selbst benötigten.
+
+- Die  Wait-Funktion  wurde  gepatcht, um Probleme mit Tasks zu umgehen,
+  deren Stack im virtuellen Speicher liegt.
+
+- VMM  kann  nun  verlassen werden, selbst wenn noch virtueller Speicher
+  allokiert  ist.   In  diesem  Fall  lädt  VMM  alle  noch  in Gebrauch
+  befindlichen   Seiten   in   den  Hauptspeicher  und  modifiziert  die
+  MMU-Tabelle entsprechend.  Anschließend wird das Programm verlassen.
+
+- Modifizierte  Seiten  werden  geschrieben,  bevor dies unbedingt nötig
+  ist.  Dies reduziert die mittlere Zeit für einen Seitenfehler.
+
+- Resethandler  eingefügt,  der einen Reset so lange verzögert, bis alle
+  laufenden  Ein-/Ausgabeoperationen  auf  die  Festplatte abgeschlossen
+  sind.   Ein  Validieren  der  Festplatte  nach  dem  Neustart  wird so
+  verhindert.
+
+- Fehler  behoben,  der  verursachte,  daß VMM beim Schreiben der ersten
+  Seite auf eine Festplatte mit DMA hing.
+
+- Kleinere Änderungen und Aufräumarbeiten.
+
+
+
+Änderungen von V1.3 zu V2.0:
+
+- VMM  läuft  jetzt  auf  dem  68030.   Daher  wurde es von VMM40 zu VMM
+  umbenannt.
+
+- Sogenannte  Pseudo-Partition  implementiert.  Diese sieht aus wie eine
+  Datei,  darauf  kann  jedoch  mit  der Geschwindigkeit einer Partition
+  zugegriffen werden.
+
+- VMM  ist  jetzt  ein  Commodity,  dessen Benutzerschnittstelle mittels
+  eines Hotkeys angezeigt wird.  Daher hat sich der Aufbau von VMM etwas
+  verändert.   VMM40  wurde  nach L:VMM-Handler umbenannt und VMM40Prefs
+  heißt  jetzt nur noch VMM.  Das VMM:  Assign und das StartVMM-Programm
+  sind damit überflüssig.
+
+- Hoffentlich  alle  Probleme mit DMA-Geräten beseitigt (CachePreDMA und
+  CachePostDMA gepatcht).
+
+- Das    Benutzerinterface    wurde    erweitert,    um    einige   neue
+  Einstellmöglichkeiten aufzunehmen.
+
+- VMM  patcht  jetzt  die  Titelzeile  der Workbench, um dort den freien
+  virtuellen  Speicher  mit  anzuzeigen.  Dies wird durch einen Schalter
+  freigegeben.
+
+- Saubereres Verlassen von VMM, falls noch virtueller Speicher allokiert
+  ist.
+
+- Weitere kleine Fehlerbehebungen und Erweiterungen.
+
+
+
+Änderungen von V2.0 zu V2.1:
+
+- AvailMem  liefert  jetzt  den  freien  physikalischen Speicher zurück,
+  falls eine Task keinen virtuellen Speicher verwenden darf.
+
+- Fehler   behoben,  der  dazu  führte,  daß  VMM  abstürzte,  wenn  die
+  Einstellungsdatei  nicht  gefunden  wurde.   Jetzt  wird ein Requester
+  geöffnet.
+
+- Fehler      bei      der     Installation     behoben,     der     die
+  Standard-Einstellungsdatei nicht kopierte.
+
+- Schreibpuffer  implementiert,  der  mehrere  Seite auf ein Mal auf die
+  Platte  schreibt.   Zwar  müssen  dafür  die  Seiten  einmal umkopiert
+  werden,   meist   resultiert   dies   aber   in  einem  substantiellen
+  Geschwindigkeitsgewinn.
+
+- Die  Option,  den  größten  freien  Speicherblock  für  die Kacheln zu
+  verwenden, wurde gelöscht, da offensichtlich niemand dies benutzt.
+
+- Auslagerung  auf Datei wurde drastisch beschleunigt, indem zusätzliche
+  Puffer  beim  Dateisystem angefordert werden.  FFS und OFS sind leider
+  sehr  ineffizient  bei  der  Positionierung  in  langen  Dateien.  VMM
+  fordert   so   viele   Puffer   an,   wie   für  die  Speicherung  der
+  Dateiverkettungsinformation  benötigt werden.  Andere Dateisysteme wie
+  das MSDOS-Dateisystem benötigen dies nicht.
+
+- FreeMem  markiert  freigegebene Seiten nun als unbenutzt und nicht als
+  ungültig.  Vorher wurde beim nächsten Zugriff jeweils ein Seitenfehler
+  ausgelöst, der jedoch keinen Plattenzugriff hervorrief.
+
+- Fontberechnung für Statistikfenster korrigiert.
+
+- Verbesserte Fehlerbehandlung
+
+- Schwer  zu  findenden  Fehler  behoben,  der  zufällige  Abstürze  auf
+  Systemen  mit  68030  und  68882  hervorrief.  Ich hatte die benötigte
+  Stackgröße   bei   einem   Seitenfehler  unterschätzt,  wenn  die  FPU
+  beschäftigt ist.
+
+- Unterstützung für externe Statistikprogramme implementiert.  Es können
+  nun  eigene  (z.B.   grafische)  Statistiktools  für  VMM  geschrieben
+  werden.
+
+- DOS Fehler umgangen, der Fehler bei Pseudo-Partitionen auf Partitionen
+  mit dem gleichen Volume- und Devicenamen verursachte.
+
+
+
+Änderungen von V2.1 zu V3.0:
+
+- Code-Paging  eingebaut,  d.h. man kann jetzt den Programmcode in den
+  virtuellen  Speicher  legen  und  VMM lagert diesen aus wie normalen 
+  Speicher.
+
+- Speicher-Tracking eingebaut. Es ist nun möglich zu verfolgen, welche
+  Task wieviel virtuellen Speicher verwendet.
+
+- Zusätzlicher  Modus zur Angabe des Hauptspeichers für den virtuellen
+  Speicher.  Der 'eingeschränkt dynamische Modus' funktioniert wie der
+  dynamische  Modus  mit  einer  Angabe  für Unter- und Obergrenze des
+  belegten Speichers.
+
+- Komplett  neue Benutzeroberfläche, die MUI verwendet. Dadurch werden
+  jetzt auch verschiedene Sprachen unterstützt.
+
+- Hoffentlich  Probleme  mit  einigen Prozessorkarten beseitigt, indem
+  die Transparent Translation Register besser genutzt werden.
+
+- Zusätzliches  'spezielles MMU-Setup' implementiert, das alle Karten,
+  die bisher Probleme bereiteten, zur Zusammenarbeit bringen sollte.
+
+- VMM kann über ARexx angesteuert werden.
+
+- VMM unterstützt nun die Kombination 68020 + 68851.
+
+- Fehler  behoben,  der  VMM  eine  Nachricht  ' Nicht genug Speicher' 
+  ausgeben  ließ, wenn das Statistikfenster während des Programmlaufs 
+  geöffnet wurde.
+
+- Das   Format  der  Konfigurationsdatei  wurde  auf  ein  Binärformat
+  geändert.   Es   gibt   ein  Programm  zum  Konvertieren  der  alten 
+  Konfigurationsdateien.
+
+
+
+Änderungen von V3.0 zu V3.1:
+
+- Fehler  behoben , der verhinderte, daß VMM unter OS2.0 lief. Ein mir
+  unbekanntes   Auto-OpenLibrary   der  libnix-Library  versuchte  die 
+  Locale.library  zu öffnen.  Wenn diese nicht vorhanden war, weigerte 
+  sich VMM zu starten.
+
+- Es  gibt  nun  ein neues Schlüsselwort 'FORCE'. Wenn es im Icon oder 
+  auf  der Kommandozeile angegeben wird, fragt VMM nicht mehr nach, ob
+  eine vorher anderweitig genutzte Partition überschrieben werden soll.
+  Dies ist insbesondere für Leute nützlich, die die Swap-Partition z.B.
+  für LINUX nutzen möchten.
+
+- Die  Obergrenze  des  verfügbaren  virtuellen  Speichers  wurde nach
+  mehreren Anfragen von 128 MB auf 512 MB erhöht.
+
+- Es  gibt  nun eine FastROM option für VMM. Auf manchen Rechnern gibt
+  es Probleme mit anderen Tools, die eine FastROM-Option anbieten.
+
+- Pseudo-Partitionen sind jetzt auch auf DC-FFS Partitionen möglich.
+
+- Es  wurde  ein  Algorithmus zum Sammeln unbenutzter Seiten implemen-
+  tiert.  Dies  reduziert die Anzahl der Plattenzugriffe wegen Seiten-
+  fehlern um bis zu 30 %.
+
+- Fehler  im  Resethandler behoben, der auf manchen Rechner beim Reset
+  einen GURU hervorrief.
+
+- Kleinen  Fehler  behoben,  der VMM manchmal veranlaßte, immer wieder
+  Speicher  freigeben  zu  wollen . Diese passierte meistens, wenn das 
+  Chip-Memory knapp wurde.
+
+- Das  MMU-Mapping  wurde  leicht  verändert, wenn die VMM_MMU.config-
+  Datei  verwendet  wird. Vorher konnte VMM auf manchen Rechnern nicht
+  starten,  da es versuchte für die kompletten 4 GB Adressraum Seiten-
+  tabellen anzulegen (4 MB).
+
+- Das  Memory-Tracking  wurde  geändert, so daß das jeweilige Programm
+  als Besitzer seines Codes angezeigt wird und nicht die Task, die den 
+  entsprechenden   Speicher  allokiert.  Dies  ist  hauptsächlich  für
+  Libraries von Interesse.
+
+- Fehler  gefunden,  den  ich  schon lange gesucht habe. Ein Fehler in
+  ramlib  führte  zu  nicht reproduzierbaren Abstürzen. Ein Patch wird
+  wenn möglich von VMM durchgeführt.
+
+- Kleinen  Fehler behoben, wegen dem VMM fälschlicherweise Partitionen 
+  mit  ein  anderen  Blockgröße  als  512  Byte für Pseudo-Partitionen 
+  akzeptierte.
+
+- Workaround  für  einen  Fehler  in  GCC eingebaut, der VMM immer die 
+  Standardeinstellungen für die Compilerpässe benutzen ließ.
+
+
+
+Änderungen von V3.1 zu V3.2:
+
+- Enforcer-Hit  entfernt,  der  auftrat,  wenn  VMM mit dem Statistik-
+  fenster als Titelzeile gestartet wurde.
+
+- Mögliche Resetverzögerung entfernt.
+
+- Fehler  in  ReadMMUConfig  behoben.  Wenn es mit 8K-Seiten verwendet 
+  wurde, wurde eine leere VMM_MMU.config-Datei erzeugt.
+
+- Man  kann  jetzt  auch Verzeichnisse in der Task-Liste eingeben. Man 
+  kann  so  seine  Programme  in Verzeichnisse gruppieren, für die die 
+  gleichen  Einstellungen  gelten  sollen.  Nur Dateien direkt aus dem 
+  angegebenen  Verzeichnis  werden  berücksichtigt,  nicht die Dateien
+  aus Unterverzeichnissen.
+
+- VMM erkennt jetzt automatisch LINUX-Swap-Partitionen.
+
+
+
+Änderungen von V3.2 zu V3.3:
+
+- Die Ausgabe von VMMUsageCLI sieht jetzt etwas schöner aus (empfohlen
+  von Steve Koren).
+
+- Jeder  Eintrag  in der Taskliste kann jetzt beliebig lang sein. Dies
+  ist insbesondere für komplizierte Suchmuster wichtig.
+
+- VMM läuft jetzt auch auf dem 68060.
+
+- Fehler behoben, der eine Absturz hervorrief, wenn die FastROM-Option
+  auf einem 68030 eingeschaltet wurde.
+
+
+
+Änderungen von V3.3 zu V3.3a
+
+- Deutsche Dokumentation
+
+- Russische Sprachunterstützung
+
+- Update der BGUI-Oberfläche
+

@@ -1,0 +1,628 @@
+/*
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
+
+    Desc:
+*/
+
+#include <aros/debug.h>
+#include <utility/tagitem.h>
+#include <dos/dostags.h>
+#include <proto/utility.h>
+#include <dos/dosextens.h>
+#include <aros/asmcall.h>
+#include <exec/ports.h>
+
+#include <string.h>
+
+#include "dos_newcliproc.h"
+#include "dos_intern.h"
+#include "fs_driver.h"
+
+/*****************************************************************************
+
+    NAME */
+
+#include <proto/dos.h>
+
+        AROS_LH2(LONG, SystemTagList,
+
+/*  SYNOPSIS */
+        AROS_LHA(CONST_STRPTR, command, D1),
+        AROS_LHA(const struct TagItem *, tags, D2),
+
+/*  LOCATION */
+        struct DosLibrary *, DOSBase, 101, Dos)
+
+/*  FUNCTION
+        Execute a command via a shell. As defaults, the process will use the
+        current Input() and Output(), and the current directory as well as the
+        path will be inherited from your process. If no path is specified, this
+        path will be used to find the command.
+
+        Normally, the boot shell is used but other shells may be specified
+        via tags. The tags are passed through to CreateNewProc() except those
+        that conflict with SystemTagList(). Currently, these are
+
+            NP_Seglist
+            NP_FreeSeglist
+            NP_Entry
+            NP_Input
+            NP_Error
+            NP_Output
+            NP_CloseInput
+            NP_CloseOutput
+            NP_CloseError
+            NP_HomeDir
+            NP_Cli
+            NP_Arguments
+            NP_Synchrounous
+            NP_UserData
+
+    INPUTS
+        command - program and arguments as a string
+        tags    - see <dos/dostags.h>. Note that both SystemTagList() tags and
+                  tags for CreateNewProc() may be passed.
+
+    RESULT
+        The return code of the command executed or -1 if the command could
+        not run because the shell couldn't be created. If the command is not
+        found, the shell will return an error code, usually RETURN_ERROR.
+
+    NOTES
+        You must close the input and output filehandles yourself (if needed)
+        after System() returns if they were specified via SYS_Input or
+        SYS_Output (also, see below).
+
+        You may NOT use the same filehandle for both SYS_Input and SYS_Output.
+        If you want them to be the same CON: window, set SYS_Input to a
+        filehandle on the CON: window and set SYS_Output to NULL. Then the
+        shell will automatically set the output by opening CONSOLE: on that
+        handler. Note that SYS_Error also follows this rule, so passing it
+        set to NULL will automatically set the error by opening CONSOLE: on
+        that handler.
+
+        If you specified SYS_Asynch, both the input and the output filehandles
+        will be closed when the command is finished (even if this was your
+        Input() and Output()).
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+        Execute(), CreateNewProc(), Input(), Output(), <dos/dostags.h>
+
+    INTERNALS
+
+*****************************************************************************/
+{
+    AROS_LIBFUNC_INIT
+
+    struct Process *me = (struct Process *)FindTask(NULL);
+    BPTR   cis = BNULL;
+    BPTR   sis;
+    BPTR   sos;
+    BPTR   ses = BNULL;
+    BPTR   shellseg = BNULL;
+    STRPTR resShell    = BNULL;
+    STRPTR shellName   = "Custom Shell";
+    APTR   entry;
+    BOOL sis_opened    = FALSE;
+    BOOL cis_opened    = FALSE;
+    BOOL sos_opened    = FALSE;
+    BOOL ses_opened    = FALSE;
+#ifdef __mc68000
+    BOOL isCLI         = TRUE;  /* Default is BCPL compatible CLI */
+#else
+    BOOL isCLI         = FALSE; /* Default is C style Shell */
+#endif
+    BOOL isBoot        = TRUE;
+    BOOL isCustom      = FALSE;
+    BOOL isAsynch      = FALSE;
+    BOOL isBackground  = TRUE;
+    LONG cliType       = CLI_INVALID;
+    ULONG commandlen;
+    LONG rc            = -1;
+
+    struct TagItem *tags2 = (struct TagItem *)tags;
+    struct TagItem *newtags, *tag;
+
+    ASSERT_VALID_PROCESS(me);
+    D(bug("SystemTagList('%s',%p)\n", command, tags));
+
+    sis = Input();
+    sos = Output();
+
+    while ((tag = NextTagItem(&tags2)))
+    {
+        D(bug("Tag=%08x Data=%08x\n", tag->ti_Tag, tag->ti_Data));
+        switch (tag->ti_Tag)
+        {
+            case SYS_ScriptInput:
+                cis = (BPTR)tag->ti_Data;
+                break;
+
+            case SYS_Input:
+                sis = (BPTR)tag->ti_Data;
+                break;
+
+            case SYS_Output:
+                sos = (BPTR)tag->ti_Data;
+                break;
+
+            case SYS_Error:
+                ses = (BPTR)tag->ti_Data;
+                break;
+
+            case SYS_CustomShell:
+                resShell = (STRPTR)tag->ti_Data;
+                isCustom = TRUE;
+                isCLI   = FALSE;
+                break;
+
+            case SYS_UserShell:
+                isBoot = !tag->ti_Data;
+                isCustom = FALSE;
+                break;
+
+            case SYS_Asynch:
+                isAsynch = tag->ti_Data ? TRUE : FALSE;
+                break;
+
+            case SYS_Background:
+                isBackground = tag->ti_Data ? TRUE : FALSE;
+                break;
+
+            case SYS_CliType:
+                cliType = (LONG)tag->ti_Data;
+                break;
+        }
+    }
+
+    /* Validate cliType */
+    switch (cliType) {
+    case CLI_SYSTEM:
+        isAsynch = FALSE;
+        isBackground = TRUE;
+        break;
+    case CLI_BOOT:
+        isAsynch = TRUE;
+        isBackground = FALSE;
+        break;
+    case CLI_NEWCLI:
+        isAsynch = TRUE;
+        isBackground = FALSE;
+        break;
+    case CLI_RUN:
+    case CLI_ASYSTEM:
+        isAsynch = TRUE;
+        isBackground = TRUE;
+        break;
+    case CLI_INVALID:
+        /* default */
+        if (isBackground)
+            cliType = isAsynch ? CLI_ASYSTEM : CLI_SYSTEM;
+        else
+            cliType = isAsynch ? CLI_NEWCLI : CLI_BOOT;
+        break;
+    default:
+        /* invalid */
+        goto end;
+    }
+
+    /* Set up the streams */
+    if (sis == (BPTR)SYS_DupStream)
+    {
+        sis = OpenFromLock(DupLockFromFH(Input()));
+        if (!sis) goto end;
+
+        sis_opened = TRUE;
+    }
+    if (sis == BNULL) {
+        sis = Open("NIL:", MODE_OLDFILE);
+        if (!sis) goto end;
+
+        sis_opened = TRUE;
+    }
+    D(bug("[SystemTagList] cli_StandardInput: %p\n", sis));
+
+    if (cis == BNULL || cis == (BPTR)SYS_DupStream)
+        cis = sis;
+    D(bug("[SystemTagList] cli_CurrentInput: %p\n", cis));
+
+    if (sos == (BPTR)SYS_DupStream)
+    {
+        sos = OpenFromLock(DupLockFromFH(Output()));
+        if (!sos) goto end;
+
+        sos_opened = TRUE;
+    }
+    D(bug("[SystemTagList] cli_StandardOutput: %p\n", sos));
+
+    if (ses == (BPTR)SYS_DupStream)
+    {
+        ses = OpenFromLock(DupLockFromFH(me->pr_CES));
+        if (!ses) goto end;
+
+        ses_opened = TRUE;
+    }
+    D(bug("[SystemTagList] cli_StandardError: %p\n", ses));
+
+    /* Inject the arguments, adding a trailing '\n'
+     * if the user did not.
+     */
+    if (command == NULL)
+        command = "";
+
+    commandlen = strlen(command);
+    if (commandlen) {
+        STRPTR cmdcopy = NULL;
+        BOOL ok;
+
+        if (command[commandlen-1] != '\n') {
+            cmdcopy = AllocVec(commandlen + 2, MEMF_ANY);
+            CopyMem(command, cmdcopy, commandlen);
+            cmdcopy[commandlen++] = '\n';
+            cmdcopy[commandlen] = 0;
+            command = cmdcopy;
+        }
+
+        ok = vbuf_inject(cis, command, commandlen);
+        FreeVec(cmdcopy);
+
+        if (!ok)
+            goto end;
+    }
+
+    /* Load the shell */
+    if (!isCustom) {
+        /* Seglist of default shell is stored in RootNode when loaded */
+        D(bug("[SystemTagList] Loading standard %s\n", isCLI? "CLI" : "shell"));
+        if (isCLI)
+            shellseg = findseg_cli(isBoot, DOSBase);
+        else
+            shellseg = findseg_shell(isBoot, DOSBase);
+        /*
+         * Set shell process name.
+         */
+        if (isCLI)
+            shellName = "CLI";
+        else
+            shellName = "Shell";
+    } else if (resShell != BNULL) {
+        struct Segment *seg;
+
+        /* Get the custom shell from the DOS resident list */
+        D(bug("[SystemTagList] Loading custom shell\n"));
+        Forbid();
+        seg = FindSegment(resShell, NULL, TRUE);
+        if (seg)
+            shellseg = seg->seg_Seg;
+        Permit();
+
+        shellName = resShell;
+    }
+
+    if (!shellseg && isCLI) {
+        /* We wanted the CLI shell, but it's not available.
+         * Let's try to use the Shell instead.
+         */
+        D(bug("[SystemTagList] No CLI. Attempting to use shell instead\n"));
+        shellseg = findseg_shell(isBoot, DOSBase);
+        isCLI = FALSE;
+    }
+
+    if (!shellseg) {
+        D(bug("[SystemTagList] No shell available\n"));
+        goto end;
+    }
+
+#ifdef __mc68000
+    if (isCLI)
+    {
+        D(bug("[SystemTagList] BCPL 'CLI' shell selected\n"));
+        /* On the m68k AOS, the "CLI" shell was always a BCPL
+         * program, that ran like a BCPL DOS packet handler.
+         */
+        extern void BCPL_RunHandler(void);
+        entry = BCPL_RunHandler;
+    }
+    else
+#endif
+    {
+        D(bug("[SystemTagList] C 'shell' shell selected\n"));
+        /* Use the standard C entry point */
+        entry = NULL;
+    }
+
+    newtags = CloneTagItems(tags);
+    if (newtags)
+    {
+        struct Process *cliproc;
+
+        /* Note: SystemTagList + CliInitNewcli/CliInitRun + AROS_CLI macro manage
+         * the creation and destruction of pr_CIS/pr_COS/pr_CES. CreateNewProc
+         * logic is not used in such case.
+         */
+        /* The tags below as offsets from NP_Dummy; all data defaults to 0
+           (BNULL / FALSE), the others are filled in afterwards.
+           NP_TAGID() fails to compile if a tag does not fit the byte. */
+#define NP_TAGID(tag) ((tag) - NP_Dummy + 0 * sizeof(char[((tag) - NP_Dummy) <= 255 ? 1 : -1]))
+        static const UBYTE proctag_ids[] =
+        {
+            NP_TAGID(NP_Priority),     /* 0  */
+            NP_TAGID(NP_Name),         /* 1  */
+            NP_TAGID(NP_Input),        /* 2  */
+            NP_TAGID(NP_Output),       /* 3  */
+            NP_TAGID(NP_Error),        /* 4  */
+            NP_TAGID(NP_CloseInput),   /* 5  */
+            NP_TAGID(NP_CloseOutput),  /* 6  */
+            NP_TAGID(NP_CloseError),   /* 7  */
+            NP_TAGID(NP_Cli),          /* 8  */
+            NP_TAGID(NP_WindowPtr),    /* 9  */
+            NP_TAGID(NP_Seglist),      /* 10 */
+            NP_TAGID(NP_FreeSeglist),  /* 11 */
+            NP_TAGID(NP_Synchronous),  /* 12 */
+            NP_TAGID(NP_Entry),        /* 13 */
+            NP_TAGID(NP_CurrentDir),   /* 14 */
+            NP_TAGID(NP_ConsoleTask),  /* 15 */
+#ifdef __mc68000
+            NP_TAGID(NP_StackSize),    /* 16 */
+#endif
+        };
+#define NUM_PROCTAGS (sizeof(proctag_ids))
+        struct TagItem proctags[NUM_PROCTAGS + 1];
+        ULONG pi;
+
+        for (pi = 0; pi < NUM_PROCTAGS; pi++)
+        {
+            proctags[pi].ti_Tag  = NP_Dummy + proctag_ids[pi];
+            proctags[pi].ti_Data = 0;
+        }
+        proctags[0].ti_Data  = me->pr_Task.tc_Node.ln_Pri;
+        proctags[1].ti_Data  = (IPTR)shellName;
+        proctags[8].ti_Data  = ((cliType == CLI_NEWCLI) || (cliType == CLI_ASYSTEM)) ? TRUE : FALSE;
+        proctags[9].ti_Data  = isAsynch ? (IPTR)NULL : (IPTR)me->pr_WindowPtr;
+        proctags[10].ti_Data = (IPTR)shellseg;
+        proctags[13].ti_Data = (IPTR)entry;
+        /* A synchronous command retains its caller's console even
+         * when its input stream is non-interactive. */
+        proctags[15].ti_Data = GetTagData(NP_ConsoleTask,
+                               isAsynch ? (IPTR)BNULL :
+                               (IPTR)me->pr_ConsoleTask, tags);
+#ifdef __mc68000
+        /* Shell-seg itself peaks below 2 KB during CD32 boot. Commands
+         * retain the conservative 8 KB m68k process default. */
+        proctags[16].ti_Data = 4096;
+#endif
+
+        static const Tag filterList[] =
+        {
+            NP_Seglist,
+            NP_FreeSeglist,
+            NP_Entry,
+            NP_Input,
+            NP_Output,
+            NP_CloseInput,
+            NP_CloseOutput,
+            NP_CloseError,
+            NP_HomeDir,
+            NP_Cli,
+            NP_Arguments,
+            NP_Synchronous,
+            NP_UserData,
+            0
+        };
+
+        struct DosPacket *dp;
+        BPTR currdir = BNULL;
+
+        FilterTagItems(newtags, (Tag *)filterList, TAGFILTER_NOT);
+        currdir = (BPTR)GetTagData(NP_CurrentDir, (IPTR)BNULL, newtags);
+
+        proctags[NUM_PROCTAGS].ti_Tag  = TAG_MORE;
+        proctags[NUM_PROCTAGS].ti_Data = (IPTR)newtags;
+
+        dp = AllocDosObject(DOS_STDPKT, NULL);
+        if (dp) {
+            cliproc = CreateNewProc(proctags);
+
+            if (cliproc)
+            {
+                SIPTR oldSignal = 0;
+                struct FileHandle *fh = NULL;
+                struct ExtArg *ea = AllocMem(sizeof(struct ExtArg), MEMF_PUBLIC | MEMF_CLEAR);
+
+                ea->ea_CES = ses;
+                if (isAsynch || ses_opened)
+                    ea->ea_Flags |= EAF_CLOSECES;
+                if (commandlen && cliType == CLI_BOOT)
+                    ea->ea_Flags |= EAF_INITIALCOMMAND;
+
+                D(bug("[SystemTagList] cliType = %d (background=%d, asynch=%d)\n", cliType, isBackground, isAsynch));
+#ifdef __mc68000
+                /* Trickery needed for BCPL user shells.
+                 * This is needed for the trimmed AROS m68k
+                 * ROMs that don't have shell.resource, and
+                 * load the CLI from a BCPL L:Shell-Seg, like
+                 * the one on Workbench 1.3
+                 */
+                if (isCLI) {
+                    extern void BCPL_CliInit_NEWCLI(void);
+                    extern void BCPL_CliInit_RUN(void);
+                    extern void BCPL_CliInit_SYSTEM(void);
+                    extern void BCPL_CliInit_ASYSTEM(void);
+                    extern void BCPL_CliInit_SYSTEM(void);
+                    extern void BCPL_CliInit_BOOT(void);
+                    switch (cliType) {
+                    case CLI_NEWCLI:  dp->dp_Type = (LONG)BCPL_CliInit_NEWCLI;  break;
+                    case CLI_RUN:     dp->dp_Type = (LONG)BCPL_CliInit_RUN;     break;
+                    case CLI_SYSTEM:  dp->dp_Type = (LONG)BCPL_CliInit_SYSTEM;  break;
+                    case CLI_ASYSTEM: dp->dp_Type = (LONG)BCPL_CliInit_ASYSTEM; break;
+                    case CLI_BOOT:    dp->dp_Type = (LONG)BCPL_CliInit_BOOT;    break;
+                    default: goto end;
+                    }
+                } else /* Fallthough to the next line for user shells */
+#endif
+                dp->dp_Type = cliType;
+                dp->dp_Res2 = 0;
+                dp->dp_Arg2 = (IPTR)sis;        /* Input */
+                dp->dp_Arg3 = (IPTR)sos;        /* Output */
+                dp->dp_Arg7 = (IPTR)ea;         /* AROS extension information*/
+                dp->dp_Arg4 = (IPTR)cis;        /* Arguments & Script*/
+
+                /* Current directory - either provided or inherited */
+                if (currdir == BNULL && me->pr_CurrentDir) currdir = DupLock(me->pr_CurrentDir);
+
+                /* The rest of the packet depends on the cliType. */
+                if (cliType == CLI_NEWCLI) {
+                    /* CliInitNewcli style */
+                    dp->dp_Res1 = 1;
+                    dp->dp_Arg1 = (IPTR)currdir;
+                } else {
+                    /* CliInitRun style */
+                    dp->dp_Res1 = 0;
+                    dp->dp_Arg1 = (IPTR)(__is_process(me) ? MKBADDR(Cli()) : BNULL);
+                    dp->dp_Arg5 = (IPTR)currdir;
+                    dp->dp_Arg6 = 1;
+                }
+
+                /* Migrate the CIS handle to the new process */
+                if (!isAsynch && IsInteractive(sis)) {
+                    fh = BADDR(sis);
+
+                    if (dopacket5f(&oldSignal, fh->fh_Type, ACTION_CHANGE_SIGNAL, (SIPTR)fh->fh_Arg1, (SIPTR)&cliproc->pr_MsgPort, 0, 0, 0) == DOSFALSE)
+                        oldSignal = 0;
+                }
+
+                SendPkt(dp, &cliproc->pr_MsgPort, &me->pr_MsgPort);
+                if (WaitPkt() != dp)
+                    Alert(AN_QPktFail);
+
+                /* The shell has run CliInit by the time it replies the
+                   startup packet, so its CLI number is valid here. */
+                {
+                    LONG *cliNumPtr = (LONG *)GetTagData(SYS_CliNumPtr, (IPTR)NULL, tags);
+
+                    if (cliNumPtr)
+                        *cliNumPtr = cliproc->pr_TaskNum;
+                }
+
+                if (fh && oldSignal) {
+                    DoPkt(fh->fh_Type, ACTION_CHANGE_SIGNAL, (SIPTR)fh->fh_Arg1, oldSignal, 0, 0, 0);
+                }
+
+                rc = dp->dp_Res1;
+                SetIoErr(dp->dp_Res2);
+
+                cis_opened = FALSE;
+                if (isAsynch) {
+                    sis_opened    =
+                    sos_opened    =
+                    ses_opened    = FALSE;
+                }
+            }
+
+            FreeDosObject(DOS_STDPKT, dp);
+        }
+        FreeTagItems(newtags);
+    }
+
+end:
+    if (sis_opened)    Close(sis);
+    if (cis_opened)    Close(cis);
+    if (sos_opened)    Close(sos);
+    if (ses_opened)    Close(ses);
+
+    return rc;
+
+    AROS_LIBFUNC_EXIT
+} /* SystemTagList */
+
+#ifdef DOS_REUSE_BOOT_PROCESS
+/*
+ * Run the boot shell in the calling process, the way the AmigaOS boot
+ * process becomes the Initial CLI, instead of starting a second process
+ * and blocking on it for as long as the boot shell runs. The startup
+ * packet is the one SystemTagList() sends for CLI_BOOT. Its reply uses a
+ * private port because the shell does further DOS I/O after replying it.
+ */
+LONG internal_RunBootShell(BPTR shellseg, BPTR sis, BPTR sos, BPTR script, struct DosLibrary *DOSBase)
+{
+    struct Process *me = (struct Process *)FindTask(NULL);
+    struct DosPacket *dp;
+    struct ExtArg *ea;
+    struct MsgPort *replyport;
+    BPTR currdir = BNULL;
+    BPTR olddir;
+    APTR oldReturnAddr;
+    STRPTR oldName;
+    LONG rc = -1;
+
+    dp = AllocDosObject(DOS_STDPKT, NULL);
+    ea = AllocMem(sizeof(struct ExtArg), MEMF_PUBLIC | MEMF_CLEAR);
+    replyport = CreateMsgPort();
+    if (!dp || !ea || !replyport)
+    {
+        SetIoErr(ERROR_NO_FREE_STORE);
+        goto end;
+    }
+
+    if (me->pr_CurrentDir)
+    {
+        currdir = DupLock(me->pr_CurrentDir);
+        if (!currdir)
+            goto end;
+    }
+
+    {
+        dp->dp_Port = replyport;
+        dp->dp_Link->mn_ReplyPort = replyport;
+        dp->dp_Type = CLI_BOOT;
+        dp->dp_Res1 = 0;                /* CliInitRun style */
+        dp->dp_Res2 = 0;
+        dp->dp_Arg1 = (IPTR)MKBADDR(Cli());
+        dp->dp_Arg2 = (IPTR)sis;
+        dp->dp_Arg3 = (IPTR)sos;
+        dp->dp_Arg4 = (IPTR)(script ? script : sis);
+        dp->dp_Arg5 = (IPTR)currdir;
+        dp->dp_Arg6 = 1;
+        dp->dp_Arg7 = (IPTR)ea;         /* freed by CliInitRun() */
+        ea = NULL;
+        currdir = BNULL;                /* handed to CliInitRun() */
+
+        /* Detach the old directory before CliInitRun installs the duplicate.
+         * Only free an owned lock: a borrowed lock may belong to SYS: or
+         * another assign. AROS_CLI frees the duplicate on shell exit.
+         */
+        olddir = CurrentDir(BNULL);
+        if (olddir && (me->pr_Flags & PRF_FREECURRDIR))
+            UnLock(olddir);
+
+        oldReturnAddr = me->pr_ReturnAddr;
+        oldName = me->pr_Task.tc_Node.ln_Name;
+        me->pr_Task.tc_Node.ln_Name = "Initial CLI";
+        CallEntry((STRPTR)dp, 0, (LONG_FUNC)((BPTR *)BADDR(shellseg) + 1), me);
+        me->pr_ReturnAddr = oldReturnAddr;
+        me->pr_Task.tc_Node.ln_Name = oldName;
+
+        if (GetMsg(replyport) != dp->dp_Link)
+            Alert(AN_QPktFail);
+
+        rc = dp->dp_Res1;
+        SetIoErr(dp->dp_Res2);
+    }
+
+end:
+    if (currdir)
+        UnLock(currdir);
+    if (replyport)
+        DeleteMsgPort(replyport);
+    if (ea)
+        FreeMem(ea, sizeof(struct ExtArg));
+    if (dp)
+        FreeDosObject(DOS_STDPKT, dp);
+
+    return rc;
+}
+#endif

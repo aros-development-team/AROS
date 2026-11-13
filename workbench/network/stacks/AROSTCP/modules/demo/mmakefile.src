@@ -1,0 +1,29 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+#
+# demo.atcp - the smallest module of the stack that is a library
+# file of its own (see demo.c). It proves the mechanism by which a protocol
+# library reaches the core; the test is cunit-net-modlib.
+#
+# Names, install directory, include paths and options: bsdsocket/stack.cfg,
+# shared with the stack program and the protocol libraries.
+#
+
+include $(SRCDIR)/workbench/network/stacks/AROSTCP/bsdsocket/stack.cfg
+
+#MM- workbench-network-stacks-arostcp-modules : workbench-network-stacks-arostcp-modules-demo
+#MM workbench-network-stacks-arostcp-modules-demo : includes linklibs network-includes-copy
+
+USER_INCLUDES := $(STACK_INCLUDES)
+USER_CPPFLAGS := $(STACK_MODULE_CPPFLAGS)
+USER_CFLAGS   := $(STACK_CFLAGS)
+USER_LDFLAGS  := $(STACK_MODULE_LDFLAGS)
+
+%build_module_library mmake=workbench-network-stacks-arostcp-modules-demo \
+    modname=demo modtype=library modsuffix=$(STACK_MODULE_ATCP) \
+    conffile=$(STACK_MODULE_CONF) \
+    files="demo $(STACK_SRC_REL)/$(STACK_MODULE_GLUE)" \
+    moduledir=$(STACK_MODULE_DIR)
+
+%common

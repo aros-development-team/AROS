@@ -1,0 +1,2048 @@
+dnl Copyright © 1997-2026, The AROS Development Team. All rights reserved.
+dnl $Id$
+dnl
+dnl Desc: Autoconf source for target compiler feature detection
+dnl Lang: english 
+
+# Note: After file changes, generate features anew and commit _both_ files.
+-------------------------
+
+AC_INIT
+AC_CONFIG_SRCDIR([../mmakefile])
+AC_PREREQ([2.71])
+AC_CONFIG_AUX_DIR(../scripts/autoconf)
+
+AROS_BUILDDIR=`${PWDCMD-pwd}`
+AROS_BUILDDIR_UNIX=${PWD}
+
+srcpwd=`cd ${srcdir} ; ${PWDCMD-pwd}`
+SRCDIR=${srcpwd}
+
+NOLINKFLAGS="-nostdlib -nostartfiles"
+LDFLAGS=$NOLINKFLAGS
+# The first step is to find the binaries.
+AC_PROG_CC
+
+AC_MSG_CHECKING([target config location])
+AC_ARG_WITH(config-dir,AS_HELP_STRING([--with-config-dir=VERSION],[Location of generated target config files]),targetcfg_dir="$withval",targetcfg_dir="")
+if test "$targetcfg_dir" = ""; then
+    AC_MSG_ERROR([missing config directory!])
+else
+    aros_targetcfg_dir="$targetcfg_dir"
+fi
+AC_MSG_RESULT($aros_targetcfg_dir)
+
+#-----------------------------------------------------------------------------
+
+# Check if the target compiler supports some features:
+# C/ObjC
+#  -fexceptions
+#  -ffast-math
+#  -fassociative-math
+#  -fno-math-errno
+#  -fno-trapping-math
+#  -ffloat-store
+#  -ftree-vectorize
+#  -fno-tree-loop-distribute-patterns
+#  -flto
+#  -fwhole-program
+#  -floop-block
+#  -floop-interchange
+#  -floop-strip-mine
+#  -fpeel-loops
+#  -fstrict-aliasing
+#  -finline-small-functions
+#  -fipa-cp
+#  -funroll-loops
+#  -fomit-frame-pointer
+#  -fprofile-arcs
+#  -ftest-coverage
+#  -finstrument-functions
+#  -faligned-new
+#  -fcommon
+#  -fno-delete-null-pointer-checks
+
+#  -fno-builtin
+#  -fno-builtin-floor
+#  -fno-builtin-vsnprintf
+
+#  -ffreestanding
+#  -funwind-tables
+#  -fasynchronous-unwind-tables
+#  -ffunction-sections
+#  -fdata-sections
+#  -fmerge-constants
+#  -fmerge-all-constants
+
+#  -ffile-prefix-map
+
+# C++/ObjC++
+#  -fpermissive
+#  -frtti
+
+#  -fvisibility=hidden
+
+# Clang/LLVM
+# -no-integrated-as
+
+# C features first 
+AC_LANG_PUSH(C)
+
+AC_MSG_CHECKING([whether ${CC} supports -std=c89])
+CFLAGS=-std=c89
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_c89="yes"],[aros_c89="no"])
+AC_MSG_RESULT($aros_c89)
+if test "x-$aros_c89" = "x-yes" ; then
+    aros_cflags_c89=-std=c89
+fi
+
+AC_MSG_CHECKING([whether ${CC} supports -std=gnu89])
+CFLAGS=-std=gnu89
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_cgnu89="yes"],[aros_cgnu89="no"])
+AC_MSG_RESULT($aros_cgnu89)
+if test "x-$aros_cgnu89" = "x-yes" ; then
+    aros_cflags_gnu89=-std=gnu89
+fi
+
+AC_MSG_CHECKING([whether ${CC} supports -std=c99])
+CFLAGS=-std=c99
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_c99="yes"],[aros_c99="no"])
+AC_MSG_RESULT($aros_c99)
+if test "x-$aros_c99" = "x-yes" ; then
+    aros_cflags_c99=-std=c99
+fi
+
+AC_MSG_CHECKING([whether ${CC} supports -std=gnu99])
+CFLAGS=-std=gnu99
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_cgnu99="yes"],[aros_cgnu99="no"])
+AC_MSG_RESULT($aros_cgnu99)
+if test "x-$aros_cgnu99" = "x-yes" ; then
+    aros_cflags_gnu99=-std=gnu99
+fi
+
+AC_MSG_CHECKING([whether ${CC} supports -std=c11])
+CFLAGS=-std=c11
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_c11="yes"],[aros_c11="no"])
+AC_MSG_RESULT($aros_c11)
+if test "x-$aros_c11" = "x-yes" ; then
+    aros_cflags_c11=-std=c11
+fi
+
+AC_MSG_CHECKING([whether ${CC} supports -std=gnu11])
+CFLAGS=-std=gnu11
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_cgnu11="yes"],[aros_cgnu11="no"])
+AC_MSG_RESULT($aros_cgnu11)
+if test "x-$aros_cgnu11" = "x-yes" ; then
+    aros_cflags_gnu11=-std=gnu11
+fi
+
+AC_MSG_CHECKING([whether ${CC} supports -std=c17])
+CFLAGS=-std=c17
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_c17="yes"],[aros_c17="no"])
+AC_MSG_RESULT($aros_c17)
+if test "x-$aros_c17" = "x-yes" ; then
+    aros_cflags_c17=-std=c17
+fi
+
+AC_MSG_CHECKING([whether ${CC} supports -std=gnu17])
+CFLAGS=-std=gnu17
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_cgnu17="yes"],[aros_cgnu17="no"])
+AC_MSG_RESULT($aros_cgnu17)
+if test "x-$aros_cgnu17" = "x-yes" ; then
+    aros_cflags_gnu17=-std=gnu17
+fi
+
+AC_MSG_CHECKING([whether ${CC} supports -fno-jump-tables])
+CFLAGS=-fno-jump-tables
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_no_jump_tables="yes"],[aros_no_jump_tables="no"])
+AC_MSG_RESULT($aros_no_jump_tables)
+if test "x-$aros_no_jump_tables" = "x-yes" ; then
+    aros_cflags_no_jump_tables=-fno-jump-tables
+fi
+
+save_cflags="$CFLAGS"
+AC_MSG_CHECKING([whether ${CC} accepts -fexceptions])
+CFLAGS=-fexceptions
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_exceptions="yes"],[aros_exceptions="no"])
+AC_MSG_RESULT($aros_exceptions)
+if test "x-$aros_exceptions" = "x-yes" ; then
+    aros_cflags_exceptions=-fexceptions
+    aros_cflags_noexceptions=-fno-exceptions
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -ffast-math])
+CFLAGS=-ffast-math
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_fast_math="yes"],[aros_fast_math="no"])
+AC_MSG_RESULT($aros_fast_math)
+if test "x-$aros_fast_math" = "x-yes" ; then
+    aros_cflags_fast_math=-ffast-math
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -fassociative-math])
+CFLAGS=-fassociative-math
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_associative_math="yes"],[aros_associative_math="no"])
+AC_MSG_RESULT($aros_associative_math)
+if test "x-$aros_associative_math" = "x-yes" ; then
+    aros_cflags_associative_math=-fassociative-math
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -fno-math-errno])
+CFLAGS=-fno-math-errno
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_no_math_errno="yes"],[aros_no_math_errno="no"])
+AC_MSG_RESULT($aros_no_math_errno)
+if test "x-$aros_no_math_errno" = "x-yes" ; then
+    aros_cflags_no_math_errno=-fno-math-errno
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -fno-trapping-math])
+CFLAGS=-fno-trapping-math
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_no_trapping_math="yes"],[aros_no_trapping_math="no"])
+AC_MSG_RESULT($aros_no_trapping_math)
+if test "x-$aros_no_trapping_math" = "x-yes" ; then
+    aros_cflags_no_trapping_math=-fno-trapping-math
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -ffloat-store])
+CFLAGS=-ffloat-store
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_float_store="yes"],[aros_float_store="no"])
+AC_MSG_RESULT($aros_float_store)
+if test "x-$aros_float_store" = "x-yes" ; then
+    aros_cflags_float_store=-ffloat-store
+    aros_cflags_no_float_store=-fno-float-store
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -ftree-vectorize])
+CFLAGS=-ftree-vectorize
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_tree_vectorize="yes"],[aros_tree_vectorize="no"])
+AC_MSG_RESULT($aros_tree_vectorize)
+if test "x-$aros_tree_vectorize" = "x-yes" ; then
+    aros_cflags_tree_vectorize=-ftree-vectorize
+fi
+
+AC_MSG_CHECKING([for an option to disable vectorization])
+aros_cflags_no_vectorize=
+for flag in -fno-vectorize -fno-tree-vectorize; do
+    CFLAGS="$flag -Werror"
+    AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_cflags_no_vectorize=$flag; break],[])
+done
+if test -n "$aros_cflags_no_vectorize" ; then
+    AC_MSG_RESULT([$aros_cflags_no_vectorize])
+else
+    AC_MSG_RESULT([no])
+fi
+
+dnl gcc turns loops that fill or copy memory into memset/memcpy calls; code built
+dnl without a C runtime (security.library's plugins, for one) must keep the loops.
+AC_MSG_CHECKING([whether ${CC} accepts -fno-tree-loop-distribute-patterns])
+CFLAGS="-fno-tree-loop-distribute-patterns -Werror"
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_no_tree_loop_distribute_patterns="yes"],[aros_no_tree_loop_distribute_patterns="no"])
+AC_MSG_RESULT($aros_no_tree_loop_distribute_patterns)
+if test "x-$aros_no_tree_loop_distribute_patterns" = "x-yes" ; then
+    aros_cflags_no_tree_loop_distribute_patterns=-fno-tree-loop-distribute-patterns
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -flto])
+CFLAGS=-flto
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_lto="yes"],[aros_lto="no"])
+AC_MSG_RESULT($aros_lto)
+if test "x-$aros_lto" = "x-yes" ; then
+    aros_cflags_lto=-flto
+    aros_cflags_nolto=-fno-lto
+    
+    AC_MSG_CHECKING([whether ${CC} accepts -fwhole-program])
+    CFLAGS=-fwhole-program
+    AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_whole_program="yes"],[aros_whole_program="no"])
+    AC_MSG_RESULT($aros_whole_program)
+    if test "x-$aros_whole_program" = "x-yes" ; then
+        aros_cflags_whole_program=-fwhole-program
+    fi
+    
+    AC_MSG_CHECKING([whether ${CC} accepts -floop-block])
+    CFLAGS=-floop-block
+    AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_loop_block="yes"],[aros_loop_block="no"])
+    AC_MSG_RESULT($aros_loop_block)
+    if test "x-$aros_loop_block" = "x-yes" ; then
+        aros_cflags_loop_block=-floop-block
+    fi
+    
+    AC_MSG_CHECKING([whether ${CC} accepts -floop-interchange])
+    CFLAGS=-floop-interchange
+    AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_loop_interchange="yes"],[aros_loop_interchange="no"])
+    AC_MSG_RESULT($aros_loop_interchange)
+    if test "x-$aros_loop_interchange" = "x-yes" ; then
+        aros_cflags_loop_interchange=-floop-interchange
+    fi
+    
+    AC_MSG_CHECKING([whether ${CC} accepts -floop-strip-mine])
+    CFLAGS=-floop-strip-mine
+    AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_loop_strip_mine="yes"],[aros_loop_strip_mine="no"])
+    AC_MSG_RESULT($aros_loop_strip_mine)
+    if test "x-$aros_loop_strip_mine" = "x-yes" ; then
+        aros_cflags_loop_strip_mine=-floop-strip-mine
+    fi
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -fpeel-loops])
+CFLAGS=-fpeel-loops
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_peel_loops="yes"],[aros_peel_loops="no"])
+AC_MSG_RESULT($aros_peel_loops)
+if test "x-$aros_peel_loops" = "x-yes" ; then
+    aros_cflags_peel_loops=-fpeel-loops
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -funroll-loops])
+CFLAGS=-funroll-loops
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_unroll_loops="yes"],[aros_unroll_loops="no"])
+AC_MSG_RESULT($aros_unroll_loops)
+if test "x-$aros_unroll_loops" = "x-yes" ; then
+    aros_cflags_unroll_loops=-funroll-loops
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -fstrict-aliasing])
+CFLAGS=-fstrict-aliasing
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_strict_aliasing="yes"],[aros_strict_aliasing="no"])
+AC_MSG_RESULT($aros_strict_aliasing)
+if test "x-$aros_strict_aliasing" = "x-yes" ; then
+    aros_cflags_strictaliasing=-fstrict-aliasing
+    aros_cflags_nostrictaliasing=-fno-strict-aliasing
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -finline-small-functions])
+CFLAGS=-finline-small-functions
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_inline_small_functions="yes"],[aros_inline_small_functions="no"])
+AC_MSG_RESULT($aros_inline_small_functions)
+if test "x-$aros_inline_small_functions" = "x-yes" ; then
+    aros_cflags_inlinesmallfunctions=-finline-small-functions
+    aros_cflags_noinlinesmallfunctions=-fno-inline-small-functions
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -fipa-cp])
+CFLAGS=-fipa-cp
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_ipa_cp="yes"],[aros_ipa_cp="no"])
+AC_MSG_RESULT($aros_ipa_cp)
+if test "x-$aros_ipa_cp" = "x-yes" ; then
+    aros_cflags_ipacp=-fipa-cp
+    aros_cflags_noipacp=-fno-ipa-cp
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -fomit-frame-pointer])
+CFLAGS=-fomit-frame-pointer
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_omit_frame_pointer="yes"],[aros_omit_frame_pointer="no"])
+AC_MSG_RESULT($aros_omit_frame_pointer)
+if test "x-$aros_omit_frame_pointer" = "x-yes" ; then
+    aros_cflags_omitfp=-fomit-frame-pointer
+    aros_cflags_noomitfp=-fno-omit-frame-pointer
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -fprofile-arcs])
+CFLAGS=-fprofile-arcs
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_profile_arcs="yes"],[aros_profile_arcs="no"])
+AC_MSG_RESULT($aros_profile_arcs)
+if test "x-$aros_profile_arcs" = "x-yes" ; then
+    aros_cflags_profilearcs=-fprofile-arcs
+    aros_cflags_noprofilearcs=-fno-profile-arcs
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -ftest-coverage])
+CFLAGS=-ftest-coverage
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_test_coverage="yes"],[aros_test_coverage="no"])
+AC_MSG_RESULT($aros_test_coverage)
+if test "x-$aros_test_coverage" = "x-yes" ; then
+    aros_cflags_testcoverage=-ftest-coverage
+    aros_cflags_notestcoverage=-fno-test-coverage
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -finstrument-functions])
+CFLAGS=-finstrument-functions
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_instrument_functions="yes"],[aros_instrument_functions="no"])
+AC_MSG_RESULT($aros_instrument_functions)
+if test "x-$aros_instrument_functions" = "x-yes" ; then
+    aros_cflags_instrfuncs=-finstrument-functions
+    aros_cflags_noinstrfuncs=-fno-instrument-functions
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -faligned-new])
+CFLAGS=-faligned-new
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_aligned_new="yes"],[aros_aligned_new="no"])
+AC_MSG_RESULT($aros_aligned_new)
+if test "x-$aros_aligned_new" = "x-yes" ; then
+    aros_cflags_alignednew=-faligned-new
+    aros_cflags_noalignednew=-fno-aligned-new
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -fcommon])
+CFLAGS=-fcommon
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_common="yes"],[aros_common="no"])
+AC_MSG_RESULT($aros_common)
+if test "x-$aros_common" = "x-yes" ; then
+    aros_cflags_common=-fcommon
+    aros_cflags_no_common=-fno-common
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -fno-delete-null-pointer-checks])
+CFLAGS=-fno-delete-null-pointer-checks
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_no_delete_null_pointer_checks="yes"],[aros_no_delete_null_pointer_checks="no"])
+AC_MSG_RESULT($aros_no_delete_null_pointer_checks)
+if test "x-$aros_no_delete_null_pointer_checks" = "x-yes" ; then
+    aros_cflags_nodelete_nullpointer_checks=-fno-delete-null-pointer-checks
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -fbuiltin])
+CFLAGS=-fbuiltin
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_builtin="yes"],[aros_builtin="no"])
+AC_MSG_RESULT($aros_builtin)
+if test "x-$aros_builtin" = "x-yes" ; then
+    aros_cflags_builtin=-fbuiltin
+    aros_cflags_no_builtin=-fno-builtin
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -fno-builtin-floor])
+CFLAGS=-fno-builtin-floor
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_builtin_floor="yes"],[aros_builtin_floor="no"])
+AC_MSG_RESULT($aros_builtin_floor)
+if test "x-$aros_builtin_floor" = "x-yes" ; then
+    aros_cflags_no_builtin_floor=-fno-builtin-floor
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -fno-builtin-vsnprintf])
+CFLAGS=-fno-builtin-vsnprintf
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_builtin_vsnprintf="yes"],[aros_builtin_vsnprintf="no"])
+AC_MSG_RESULT($aros_builtin_vsnprintf)
+if test "x-$aros_builtin_vsnprintf" = "x-yes" ; then
+    aros_cflags_no_builtin_vsnprintf=-fno-builtin-vsnprintf
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -fno-builtin-ffs])
+CFLAGS=-fno-builtin-ffs
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_builtin_ffs="yes"],[aros_builtin_ffs="no"])
+AC_MSG_RESULT($aros_builtin_ffs)
+if test "x-$aros_builtin_ffs" = "x-yes" ; then
+    aros_cflags_no_builtin_ffs=-fno-builtin-ffs
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -fno-builtin-ffsll])
+CFLAGS=-fno-builtin-ffsll
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_builtin_ffsll="yes"],[aros_builtin_ffsll="no"])
+AC_MSG_RESULT($aros_builtin_ffsll)
+if test "x-$aros_builtin_ffsll" = "x-yes" ; then
+    aros_cflags_no_builtin_ffsll=-fno-builtin-ffsll
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -fno-builtin-bswap32])
+CFLAGS=-fno-builtin-bswap32
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_builtin_bswap32="yes"],[aros_builtin_bswap32="no"])
+AC_MSG_RESULT($aros_builtin_bswap32)
+if test "x-$aros_builtin_bswap32" = "x-yes" ; then
+    aros_cflags_no_builtin_bswap32=-fno-builtin-bswap32
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -fno-builtin-bswap64])
+CFLAGS=-fno-builtin-bswap64
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_builtin_bswap64="yes"],[aros_builtin_bswap64="no"])
+AC_MSG_RESULT($aros_builtin_bswap64)
+if test "x-$aros_builtin_bswap64" = "x-yes" ; then
+    aros_cflags_no_builtin_bswap64=-fno-builtin-bswap64
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -fno-builtin-clz])
+CFLAGS=-fno-builtin-clz
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_builtin_clz="yes"],[aros_builtin_clz="no"])
+AC_MSG_RESULT($aros_builtin_clz)
+if test "x-$aros_builtin_clz" = "x-yes" ; then
+    aros_cflags_no_builtin_clz=-fno-builtin-clz
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -fno-builtin-clzll])
+CFLAGS=-fno-builtin-clzll
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_builtin_clzll="yes"],[aros_builtin_clzll="no"])
+AC_MSG_RESULT($aros_builtin_clzll)
+if test "x-$aros_builtin_clzll" = "x-yes" ; then
+    aros_cflags_no_builtin_clzll=-fno-builtin-clzll
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -fno-builtin-ctz])
+CFLAGS=-fno-builtin-ctz
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_builtin_ctz="yes"],[aros_builtin_ctz="no"])
+AC_MSG_RESULT($aros_builtin_ctz)
+if test "x-$aros_builtin_ctz" = "x-yes" ; then
+    aros_cflags_no_builtin_ctz=-fno-builtin-ctz
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -fno-builtin-expect])
+CFLAGS=-fno-builtin-expect
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_builtin_expect="yes"],[aros_builtin_expect="no"])
+AC_MSG_RESULT($aros_builtin_expect)
+if test "x-$aros_builtin_expect" = "x-yes" ; then
+    aros_cflags_no_builtin_expect=-fno-builtin-expect
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -fno-builtin-popcount])
+CFLAGS=-fno-builtin-popcount
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_builtin_popcount="yes"],[aros_builtin_popcount="no"])
+AC_MSG_RESULT($aros_builtin_popcount)
+if test "x-$aros_builtin_popcount" = "x-yes" ; then
+    aros_cflags_no_builtin_popcount=-fno-builtin-popcount
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -fno-builtin-popcountll])
+CFLAGS=-fno-builtin-popcountll
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_builtin_popcountll="yes"],[aros_builtin_popcountll="no"])
+AC_MSG_RESULT($aros_builtin_popcountll)
+if test "x-$aros_builtin_popcountll" = "x-yes" ; then
+    aros_cflags_no_builtin_popcountll=-fno-builtin-popcountll
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -fno-builtin-unreachable])
+CFLAGS=-fno-builtin-unreachable
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_builtin_unreachable="yes"],[aros_builtin_unreachable="no"])
+AC_MSG_RESULT($aros_builtin_unreachable)
+if test "x-$aros_builtin_unreachable" = "x-yes" ; then
+    aros_cflags_no_builtin_unreachable=-fno-builtin-unreachable
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -ffreestanding])
+CFLAGS=-ffreestanding
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_freestanding="yes"],[aros_freestanding="no"])
+AC_MSG_RESULT($aros_freestanding)
+if test "x-$aros_freestanding" = "x-yes" ; then
+    aros_cflags_freestanding=-ffreestanding
+    aros_cflags_no_freestanding=-fno-freestanding
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -funwind-tables])
+CFLAGS=-funwind-tables
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_unwind_tables="yes"],[aros_unwind_tables="no"])
+AC_MSG_RESULT($aros_unwind_tables)
+if test "x-$aros_unwind_tables" = "x-yes" ; then
+    aros_cflags_unwind_tables=-funwind-tables
+    aros_cflags_no_unwind_tables=-fno-unwind-tables
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -fasynchronous-unwind-tables])
+CFLAGS=-fasynchronous-unwind-tables
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_asynchronous_unwind_tables="yes"],[aros_asynchronous_unwind_tables="no"])
+AC_MSG_RESULT($aros_asynchronous_unwind_tables)
+if test "x-$aros_asynchronous_unwind_tables" = "x-yes" ; then
+    aros_cflags_asynchronous_unwind_tables=-fasynchronous-unwind-tables
+    aros_cflags_no_asynchronous_unwind_tables=-fno-asynchronous-unwind-tables
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -ffunction-sections])
+CFLAGS=-ffunction-sections
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_function_sections="yes"],[aros_function_sections="no"])
+AC_MSG_RESULT($aros_function_sections)
+if test "x-$aros_function_sections" = "x-yes" ; then
+    aros_cflags_function_sections=-ffunction-sections
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -fdata-sections])
+CFLAGS=-fdata-sections
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_data_sections="yes"],[aros_data_sections="no"])
+AC_MSG_RESULT($aros_data_sections)
+if test "x-$aros_data_sections" = "x-yes" ; then
+    aros_cflags_data_sections=-fdata-sections
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -fmerge-constants])
+CFLAGS=-fmerge-constants
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_merge_constants="yes"],[aros_merge_constants="no"])
+AC_MSG_RESULT($aros_merge_constants)
+if test "x-$aros_merge_constants" = "x-yes" ; then
+    aros_cflags_merge_constants=-fmerge-constants
+    aros_cflags_no_merge_constants=-fno-merge-constants
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -fmerge-all-constants])
+CFLAGS=-fmerge-all-constants
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_merge_all_constants="yes"],[aros_merge_all_constants="no"])
+AC_MSG_RESULT($aros_merge_all_constants)
+if test "x-$aros_merge_all_constants" = "x-yes" ; then
+    aros_cflags_merge_all_constants=-fmerge-all-constants
+    aros_cflags_no_merge_all_constants=-fno-merge-all-constants
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -fvisibility=hidden])
+CFLAGS=-fvisibility=hidden
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_visibility_hidden="yes"],[aros_visibility_hidden="no"])
+AC_MSG_RESULT($aros_visibility_hidden)
+if test "x-$aros_visibility_hidden" = "x-yes" ; then
+    aros_cflags_visibility_hidden=-fvisibility=hidden
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -ffile-prefix-map])
+CFLAGS=-ffile-prefix-map=/a=/b
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_file_prefix_map="yes"],[aros_file_prefix_map="no"])
+AC_MSG_RESULT($aros_file_prefix_map)
+if test "x-$aros_file_prefix_map" = "x-yes" ; then
+    aros_cflags_file_prefix_map=-ffile-prefix-map
+fi
+
+# C++ features
+AC_LANG_PUSH(C++)
+save_cxxflags="$CXXFLAGS"
+
+AC_MSG_CHECKING([whether ${CXX} supports -std=c++98])
+CXXFLAGS=-std=c++98
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_cxx98="yes"],[aros_cxx98="no"])
+AC_MSG_RESULT($aros_cxx98)
+if test "x-$aros_cxx98" = "x-yes" ; then
+    aros_cxxflags_cxx98=-std=c++98
+fi
+
+AC_MSG_CHECKING([whether ${CXX} supports -std=gnu++98])
+CXXFLAGS=-std=gnu++98
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_cxxgnu98="yes"],[aros_cxxgnu98="no"])
+AC_MSG_RESULT($aros_cxxgnu98)
+if test "x-$aros_cxxgnu98" = "x-yes" ; then
+    aros_cxxflags_gnu98=-std=gnu++98
+fi
+
+AC_MSG_CHECKING([whether ${CXX} supports -std=c++03])
+CXXFLAGS=-std=c++03
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_cxx03="yes"],[aros_cxx03="no"])
+AC_MSG_RESULT($aros_cxx03)
+if test "x-$aros_cxx03" = "x-yes" ; then
+    aros_cxxflags_cxx03=-std=c++03
+fi
+
+AC_MSG_CHECKING([whether ${CXX} supports -std=gnu++03])
+CXXFLAGS=-std=gnu++03
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_cxxgnu03="yes"],[aros_cxxgnu03="no"])
+AC_MSG_RESULT($aros_cxxgnu03)
+if test "x-$aros_cxxgnu03" = "x-yes" ; then
+    aros_cxxflags_gnu03=-std=gnu++03
+fi
+
+AC_MSG_CHECKING([whether ${CXX} supports -std=c++11])
+CXXFLAGS=-std=c++11
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_cxx11="yes"],[aros_cxx11="no"])
+AC_MSG_RESULT($aros_cxx11)
+if test "x-$aros_cxx11" = "x-yes" ; then
+    aros_cxxflags_cxx11=-std=c++11
+fi
+
+AC_MSG_CHECKING([whether ${CXX} supports -std=gnu++11])
+CXXFLAGS=-std=gnu++11
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_cxxgnu11="yes"],[aros_cxxgnu11="no"])
+AC_MSG_RESULT($aros_cxxgnu11)
+if test "x-$aros_cxxgnu11" = "x-yes" ; then
+    aros_cxxflags_gnu11=-std=gnu++11
+fi
+
+AC_MSG_CHECKING([whether ${CXX} supports -std=c++14])
+CXXFLAGS=-std=c++14
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_cxx14="yes"],[aros_cxx14="no"])
+AC_MSG_RESULT($aros_cxx14)
+if test "x-$aros_cxx14" = "x-yes" ; then
+    aros_cxxflags_cxx14=-std=c++14
+fi
+
+AC_MSG_CHECKING([whether ${CXX} supports -std=gnu++14])
+CXXFLAGS=-std=gnu++14
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_cxxgnu14="yes"],[aros_cxxgnu14="no"])
+AC_MSG_RESULT($aros_cxxgnu14)
+if test "x-$aros_cxxgnu14" = "x-yes" ; then
+    aros_cxxflags_gnu14=-std=gnu++14
+fi
+
+AC_MSG_CHECKING([whether ${CXX} supports -std=c++17])
+CXXFLAGS=-std=c++17
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_cxx17="yes"],[aros_cxx17="no"])
+AC_MSG_RESULT($aros_cxx17)
+if test "x-$aros_cxx17" = "x-yes" ; then
+    aros_cxxflags_cxx17=-std=c++17
+fi
+
+AC_MSG_CHECKING([whether ${CXX} supports -std=gnu++17])
+CXXFLAGS=-std=gnu++17
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_cxxgnu17="yes"],[aros_cxxgnu17="no"])
+AC_MSG_RESULT($aros_cxxgnu17)
+if test "x-$aros_cxxgnu17" = "x-yes" ; then
+    aros_cxxflags_gnu17=-std=gnu++17
+fi
+
+AC_MSG_CHECKING([whether ${CXX} supports -std=c++20])
+CXXFLAGS=-std=c++20
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_cxx20="yes"],[aros_cxx20="no"])
+AC_MSG_RESULT($aros_cxx20)
+if test "x-$aros_cxx20" = "x-yes" ; then
+    aros_cxxflags_cxx20=-std=c++20
+fi
+
+AC_MSG_CHECKING([whether ${CXX} supports -std=gnu++20])
+CXXFLAGS=-std=gnu++20
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_cxxgnu20="yes"],[aros_cxxgnu20="no"])
+AC_MSG_RESULT($aros_cxxgnu20)
+if test "x-$aros_cxxgnu20" = "x-yes" ; then
+    aros_cxxflags_gnu20=-std=gnu++20
+fi
+
+AC_MSG_CHECKING([whether ${CXX} supports -std=c++23])
+CXXFLAGS=-std=c++23
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_cxx23="yes"],[aros_cxx23="no"])
+AC_MSG_RESULT($aros_cxx23)
+if test "x-$aros_cxx23" = "x-yes" ; then
+    aros_cxxflags_cxx23=-std=c++23
+fi
+
+AC_MSG_CHECKING([whether ${CXX} supports -std=gnu++23])
+CXXFLAGS=-std=gnu++23
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_cxxgnu23="yes"],[aros_cxxgnu23="no"])
+AC_MSG_RESULT($aros_cxxgnu23)
+if test "x-$aros_cxxgnu23" = "x-yes" ; then
+    aros_cxxflags_gnu23=-std=gnu++23
+fi
+
+dnl gcc's lifetime dead-store elimination drops stores made to an object's
+dnl memory before its constructor runs; code that fills in fields from a
+dnl placement operator new (Mesa's glsl ir, for one) needs it lowered.
+AC_MSG_CHECKING([whether ${CXX} supports -flifetime-dse=1])
+CXXFLAGS=-flifetime-dse=1
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_cxxlifetimedse="yes"],[aros_cxxlifetimedse="no"])
+AC_MSG_RESULT($aros_cxxlifetimedse)
+if test "x-$aros_cxxlifetimedse" = "x-yes" ; then
+    aros_cxxflags_lifetime_dse1=-flifetime-dse=1
+fi
+
+AC_MSG_CHECKING([whether ${CXX} accepts -fpermissive])
+CXXFLAGS=-fpermissive
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_permissive="yes"],[aros_permissive="no"])
+AC_MSG_RESULT($aros_permissive)
+if test "x-$aros_permissive" = "x-yes" ; then
+    aros_cxxflags_permissive=-fpermissive
+    aros_cxxflags_nopermissive=-fno-permissive
+fi
+
+AC_MSG_CHECKING([whether ${CXX} accepts -frtti])
+CXXFLAGS=-frtti
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_rtti="yes"],[aros_rtti="no"])
+AC_MSG_RESULT($aros_rtti)
+if test "x-$aros_rtti" = "x-yes" ; then
+    aros_cxxflags_rtti=-frtti
+    aros_cxxflags_nortti=-fno-rtti
+fi
+
+CXXFLAGS="$save_cxxflags"
+
+# Check for additional C compiler options..
+AC_LANG_PUSH(C)
+
+AC_MSG_CHECKING([whether ${CC} accepts -no-integrated-as])
+CFLAGS=-no-integrated-as
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_no_integrated_as="yes"],[aros_no_integrated_as="no"])
+AC_MSG_RESULT($aros_no_integrated_as)
+if test "x-$aros_no_integrated_as" = "x-yes" ; then
+    aros_cflags_no_integrated_as=-no-integrated-as
+fi
+
+#-----------------------------------------------------------------------------
+#
+# Check if the target compiler supports some include directory options:
+
+AC_MSG_CHECKING([whether ${CC} accepts -iquote])
+CFLAGS="-iquote."
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[has_iquote="yes"],[has_iquote="no"])
+AC_MSG_RESULT($has_iquote)
+if test "x-$has_iquote" = "x-yes" ; then
+    aros_cflags_iquote=-iquote
+    aros_cflags_iquote_end=
+else
+    aros_cflags_iquote=-I
+    aros_cflags_iquote_end=-I-
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -isystem])
+CFLAGS="-isystem."
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[has_isystem="yes"],[has_isystem="no"])
+AC_MSG_RESULT($has_isystem)
+if test "x-$has_isystem" = "x-yes" ; then
+    aros_cflags_isystem=-isystem
+    aros_cflags_isystem_end=
+else
+    aros_cflags_isystem=-I
+    aros_cflags_isystem_end=
+fi
+
+#-----------------------------------------------------------------------------
+
+# Check if the target compiler supports some ISA options:
+#  -mno-red-zone
+
+AC_MSG_CHECKING([whether ${CC} accepts -mred-zone])
+CFLAGS=-mred-zone
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_no_red_zone="yes"],[aros_no_red_zone="no"])
+AC_MSG_RESULT($aros_no_red_zone)
+if test "x-$aros_no_red_zone" = "x-yes" ; then
+    aros_cflags_red_zone=-mred-zone
+    aros_cflags_no_red_zone=-mno-red-zone
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -mms-bitfields])
+CFLAGS=-mms-bitfields
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_ms_bitfields="yes"],[aros_ms_bitfields="no"])
+AC_MSG_RESULT($aros_ms_bitfields)
+if test "x-$aros_ms_bitfields" = "x-yes" ; then
+    aros_cflags_ms_bitfields=-mms-bitfields
+    aros_cflags_no_ms_bitfields=-mno-ms-bitfields
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -mgeneral-regs-only])
+dnl Use -Werror: clang accepts but silently ignores -mgeneral-regs-only on
+dnl x86 (it only emits an unused-argument warning), which must not count
+dnl as support
+CFLAGS="-mgeneral-regs-only -Werror"
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_general_regs_only="yes"],[aros_general_regs_only="no"])
+AC_MSG_RESULT($aros_general_regs_only)
+if test "x-$aros_general_regs_only" = "x-yes" ; then
+    aros_cflags_general_regs_only=-mgeneral-regs-only
+else
+    AC_MSG_CHECKING([whether ${CC} accepts -mno-mmx -mno-sse -mno-sse2 -msoft-float])
+    CFLAGS="-mno-mmx -mno-sse -mno-sse2 -msoft-float -Werror"
+    AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_no_vector_regs="yes"],[aros_no_vector_regs="no"])
+    AC_MSG_RESULT($aros_no_vector_regs)
+    if test "x-$aros_no_vector_regs" = "x-yes" ; then
+        aros_cflags_general_regs_only="-mno-mmx -mno-sse -mno-sse2 -msoft-float"
+    fi
+fi
+
+CFLAGS="$save_cflags"
+
+#-----------------------------------------------------------------------------
+
+# Check if the target compiler supports some options used for de-linting:
+#  -Werror
+#  -Wall
+#  -Wrestrict
+#  -Wunused-command-line-argument
+#  -Wunknown-warning-option
+#  -Wunused-but-set-variable
+#  -Wstrict-aliasing
+#  -Warray-bounds
+#  -Wenum-compare
+#  -Wstrict-prototypes
+#  -Wstrict-overflow
+#  -Wformat-security
+#  -Wmisleading-indentation
+#  -Wnonnull-compare
+#  -Wunused
+#  -Wunused-label
+#  -Wunused-value
+#  -Wunused-variable
+#  -Wunused-function
+#  -Wunused-parameter
+#  -Wuninitialized
+#  -Wmaybe-uninitialized
+#  -Wimplicit-function-declaration
+#  -Wformat
+#  -Wparentheses
+#  -Wchar-subscripts
+#  -Wendif-labels
+#  -Wformat-contains-nul
+#  -Wimplicit-int
+#  -Waggressive-loop-optimizations
+#  -Wcpp
+#  -Wswitch
+#  -Wdiscarded-qualifiers
+#  -Wsequence-point
+#  -Wunknown-pragmas
+#  -Wdiscarded-array-qualifiers
+#  -Wint-conversion
+#  -Wint-to-pointer-cast
+#  -Wpointer-to-int-cast
+#  -Wunused-const-variable
+#  -Wwrite-strings 
+#  -Wcomment
+#  -Wincompatible-pointer-types
+#  -Wincompatible-function-pointer-types
+#  -Wbool-compare
+#  -Wlogical-not-parentheses
+#  -Wpointer-sign
+#  -Wshift-overflow
+#  -Wframe-address
+#  -Wdeprecated-declarations
+#  -Wsign-compare
+#  -Wattributes
+#  -Woverflow
+#  -Wunused-local-typedefs
+#  -Wmissing-braces
+#  -Wconversion-null
+#  -Wregister
+#  -Wnarrowing
+#  -Wvolatile-register-var
+#  -Wsizeof-pointer-memaccess
+#  -Wreturn-type
+#  -Wformat-zero-length
+#  -Wlto-type-mismatch
+#  -Wtautological-compare
+#  -Wempty-body
+#  -Wformat-overflow
+#  -Wstringop-overflow
+#  -Wformat-truncation
+#  -Wstringop-truncation
+#  -Wshift-negative-value
+#  -Wmissing-field-initializers
+#  -Wimplicit-fallthrough
+#  -Wmissing-prototypes
+#  -Wclass-memaccess
+#  -Wint-in-bool-context
+#  -Wignored-optimization-argument
+#  -Wbuiltin-declaration-mismatch
+#  -Wold-style-definition
+#  -Wno-error=int-conversion
+#  -Wno-error=incompatible-pointer-types
+
+# C warnings first
+AC_LANG_PUSH(C)
+
+save_cflags="$CFLAGS"
+AC_MSG_CHECKING([whether ${CC} accepts -Werror])
+CFLAGS=-Werror
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_error="yes"],[aros_error="no"])
+AC_MSG_RESULT($aros_error)
+if test "x-$aros_error" = "x-yes" ; then
+    aros_warnflags_error=-Werror
+    aros_nowarnflags_error=-Wno-error
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -Wall])
+CFLAGS=-Wall
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_all="yes"],[aros_all="no"])
+AC_MSG_RESULT($aros_all)
+if test "x-$aros_all" = "x-yes" ; then
+    aros_warnflags_all=-Wall
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -Wrestrict])
+CFLAGS=-Wrestrict
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_restrict="yes"],[aros_restrict="no"])
+AC_MSG_RESULT($aros_restrict)
+if test "x-$aros_restrict" = "x-yes" ; then
+    aros_warnflags_restrict=-Wrestrict
+    aros_nowarnflags_restrict=-Wno-restrict
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -Wunused-command-line-argument])
+CFLAGS=-Wunused-command-line-argument
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_unused_command_line_argument="yes"],[aros_unused_command_line_argument="no"])
+AC_MSG_RESULT($aros_unused_command_line_argument)
+if test "x-$aros_unused_command_line_argument" = "x-yes" ; then
+    aros_warnflags_unused_command_line_argument=-Wunused-command-line-argument
+    aros_nowarnflags_unused_command_line_argument=-Wno-unused-command-line-argument
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -Wunknown-warning-option])
+CFLAGS=-Wunknown-warning-option
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_unknown_warning_option="yes"],[aros_unknown_warning_option="no"])
+AC_MSG_RESULT($aros_unknown_warning_option)
+if test "x-$aros_unknown_warning_option" = "x-yes" ; then
+    aros_warnflags_unknown_warning_option=-Wunknown-warning-option
+    aros_nowarnflags_unknown_warning_option=-Wno-unknown-warning-option
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -Wunused-but-set-variable])
+CFLAGS=-Wunused-but-set-variable
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_unused_but_set_variable="yes"],[aros_unused_but_set_variable="no"])
+AC_MSG_RESULT($aros_unused_but_set_variable)
+if test "x-$aros_unused_but_set_variable" = "x-yes" ; then
+    aros_warnflags_unused_but_set_variable=-Wunused-but-set-variable
+    aros_nowarnflags_unused_but_set_variable=-Wno-unused-but-set-variable
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -Wstrict-aliasing])
+CFLAGS=-Wstrict-aliasing
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_strict_aliasing="yes"],[aros_strict_aliasing="no"])
+AC_MSG_RESULT($aros_strict_aliasing)
+if test "x-$aros_strict_aliasing" = "x-yes" ; then
+    aros_warnflags_strict_aliasing=-Wstrict-aliasing
+    aros_nowarnflags_strict_aliasing=-Wno-strict-aliasing
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -Warray-bounds])
+CFLAGS=-Warray-bounds
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_array_bounds="yes"],[aros_array_bounds="no"])
+AC_MSG_RESULT($aros_array_bounds)
+if test "x-$aros_array_bounds" = "x-yes" ; then
+    aros_warnflags_array_bounds=-Warray-bounds
+    aros_nowarnflags_array_bounds=-Wno-array-bounds
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -Wenum-compare])
+CFLAGS=-Wenum-compare
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_enum_compare="yes"],[aros_enum_compare="no"])
+AC_MSG_RESULT($aros_enum_compare)
+if test "x-$aros_enum_compare" = "x-yes" ; then
+    aros_warnflags_enum_compare=-Wenum-compare
+    aros_nowarnflags_enum_compare=-Wno-enum-compare
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -Wstrict-prototypes])
+CFLAGS=-Wstrict-prototypes
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_strict_prototypes="yes"],[aros_strict_prototypes="no"])
+AC_MSG_RESULT($aros_strict_prototypes)
+if test "x-$aros_strict_prototypes" = "x-yes" ; then
+    aros_warnflags_strict_prototypes=-Wstrict-prototypes
+    aros_nowarnflags_strict_prototypes=-Wno-strict-prototypes
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -Wstrict-overflow])
+CFLAGS=-Wstrict-overflow
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_strict_overflow="yes"],[aros_strict_overflow="no"])
+AC_MSG_RESULT($aros_strict_overflow)
+if test "x-$aros_strict_overflow" = "x-yes" ; then
+    aros_warnflags_strict_overflow=-Wstrict-overflow
+    aros_nowarnflags_strict_overflow=-Wno-strict-overflow
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -Wformat-security])
+CFLAGS=-Wformat-security
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_format_security="yes"],[aros_format_security="no"])
+AC_MSG_RESULT($aros_format_security)
+if test "x-$aros_format_security" = "x-yes" ; then
+    aros_warnflags_format_security=-Wformat-security
+    aros_nowarnflags_format_security=-Wno-format-security
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -Wmisleading-indentation])
+CFLAGS=-Wmisleading-indentation
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_misleading_indentation="yes"],[aros_misleading_indentation="no"])
+AC_MSG_RESULT($aros_misleading_indentation)
+if test "x-$aros_misleading_indentation" = "x-yes" ; then
+    aros_warnflags_misleading_indentation=-Wmisleading-indentation
+    aros_nowarnflags_misleading_indentation=-Wno-misleading-indentation
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -Wnonnull-compare])
+CFLAGS=-Wnonnull-compare
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_nonnull_compare="yes"],[aros_nonnull_compare="no"])
+AC_MSG_RESULT($aros_nonnull_compare)
+if test "x-$aros_nonnull_compare" = "x-yes" ; then
+    aros_warnflags_nonnull_compare=-Wnonnull-compare
+    aros_nowarnflags_nonnull_compare=-Wno-nonnull-compare
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -Wunused])
+CFLAGS=-Wunused
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_unused="yes"],[aros_unused="no"])
+AC_MSG_RESULT($aros_unused)
+if test "x-$aros_unused" = "x-yes" ; then
+    aros_warnflags_unused=-Wunused
+    aros_nowarnflags_unused=-Wno-unused
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -Wunused-label])
+CFLAGS=-Wunused-label
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_unused_label="yes"],[aros_unused_label="no"])
+AC_MSG_RESULT($aros_unused_label)
+if test "x-$aros_unused_label" = "x-yes" ; then
+    aros_warnflags_unused_label=-Wunused-label
+    aros_nowarnflags_unused_label=-Wno-unused-label
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -Wunused-value])
+CFLAGS=-Wunused-value
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_unused_value="yes"],[aros_unused_value="no"])
+AC_MSG_RESULT($aros_unused_value)
+if test "x-$aros_unused_value" = "x-yes" ; then
+    aros_warnflags_unused_value=-Wunused-value
+    aros_nowarnflags_unused_value=-Wno-unused-value
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -Wunused-variable])
+CFLAGS=-Wunused-variable
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_unused_variable="yes"],[aros_unused_variable="no"])
+AC_MSG_RESULT($aros_unused_variable)
+if test "x-$aros_unused_variable" = "x-yes" ; then
+    aros_warnflags_unused_variable=-Wunused-variable
+    aros_nowarnflags_unused_variable=-Wno-unused-variable
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -Wunused-function])
+CFLAGS=-Wunused-function
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_unused_function="yes"],[aros_unused_function="no"])
+AC_MSG_RESULT($aros_unused_function)
+if test "x-$aros_unused_function" = "x-yes" ; then
+    aros_warnflags_unused_function=-Wunused-function
+    aros_nowarnflags_unused_function=-Wno-unused-function
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -Wunused-parameter])
+CFLAGS=-Wunused-parameter
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_unused_parameter="yes"],[aros_unused_parameter="no"])
+AC_MSG_RESULT($aros_unused_parameter)
+if test "x-$aros_unused_parameter" = "x-yes" ; then
+    aros_warnflags_unused_parameter=-Wunused-parameter
+    aros_nowarnflags_unused_parameter=-Wno-unused-parameter
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -Wuninitialized])
+CFLAGS=-Wuninitialized
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_uninitialized="yes"],[aros_uninitialized="no"])
+AC_MSG_RESULT($aros_uninitialized)
+if test "x-$aros_uninitialized" = "x-yes" ; then
+    aros_warnflags_uninitialized=-Wuninitialized
+    aros_nowarnflags_uninitialized=-Wno-uninitialized
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -Wmaybe-uninitialized])
+CFLAGS=-Wmaybe-uninitialized
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_maybe_uninitialized="yes"],[aros_maybe_uninitialized="no"])
+AC_MSG_RESULT($aros_maybe_uninitialized)
+if test "x-$aros_maybe_uninitialized" = "x-yes" ; then
+    aros_warnflags_maybe_uninitialized=-Wmaybe-uninitialized
+    aros_nowarnflags_maybe_uninitialized=-Wno-maybe-uninitialized
+else
+    aros_warnflags_maybe_uninitialized=$aros_warnflags_uninitialized
+    aros_nowarnflags_maybe_uninitialized=$aros_nowarnflags_uninitialized
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -Wimplicit-function-declaration])
+CFLAGS=-Wimplicit-function-declaration
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_implicit_function_declaration="yes"],[aros_implicit_function_declaration="no"])
+AC_MSG_RESULT($aros_implicit_function_declaration)
+if test "x-$aros_implicit_function_declaration" = "x-yes" ; then
+    aros_warnflags_implicit_function_declaration=-Wimplicit-function-declaration
+    aros_nowarnflags_implicit_function_declaration=-Wno-implicit-function-declaration
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -Wformat])
+CFLAGS=-Wformat
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_format="yes"],[aros_format="no"])
+AC_MSG_RESULT($aros_format)
+if test "x-$aros_format" = "x-yes" ; then
+    aros_warnflags_format=-Wformat
+    aros_nowarnflags_format=-Wno-format
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -Wparentheses])
+CFLAGS=-Wparentheses
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_parentheses="yes"],[aros_parentheses="no"])
+AC_MSG_RESULT($aros_parentheses)
+if test "x-$aros_parentheses" = "x-yes" ; then
+    aros_warnflags_parentheses=-Wparentheses
+    aros_nowarnflags_parentheses=-Wno-parentheses
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -Wchar-subscripts])
+CFLAGS=-Wchar-subscripts
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_char_subscripts="yes"],[aros_char_subscripts="no"])
+AC_MSG_RESULT($aros_char_subscripts)
+if test "x-$aros_char_subscripts" = "x-yes" ; then
+    aros_warnflags_char_subscripts=-Wchar-subscripts
+    aros_nowarnflags_char_subscripts=-Wno-char-subscripts
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -Wendif-labels])
+CFLAGS=-Wendif-labels
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_endif_labels="yes"],[aros_endif_labels="no"])
+AC_MSG_RESULT($aros_endif_labels)
+if test "x-$aros_endif_labels" = "x-yes" ; then
+    aros_warnflags_endif_labels=-Wendif-labels
+    aros_nowarnflags_endif_labels=-Wno-endif-labels
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -Wformat-contains-nul])
+CFLAGS=-Wformat-contains-nul
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_format_contains_nul="yes"],[aros_format_contains_nul="no"])
+AC_MSG_RESULT($aros_format_contains_nul)
+if test "x-$aros_format_contains_nul" = "x-yes" ; then
+    aros_warnflags_format_contains_nul=-Wformat-contains-nul
+    aros_nowarnflags_format_contains_nul=-Wno-format-contains-nul
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -Wimplicit-int])
+CFLAGS=-Wimplicit-int
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_implicit_int="yes"],[aros_implicit_int="no"])
+AC_MSG_RESULT($aros_implicit_int)
+if test "x-$aros_implicit_int" = "x-yes" ; then
+    aros_warnflags_implicit_int=-Wimplicit-int
+    aros_nowarnflags_implicit_int=-Wno-implicit-int
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -Waggressive-loop-optimizations])
+CFLAGS=-Waggressive-loop-optimizations
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_aggressive_loop_optimizations="yes"],[aros_aggressive_loop_optimizations="no"])
+AC_MSG_RESULT($aros_aggressive_loop_optimizations)
+if test "x-$aros_aggressive_loop_optimizations" = "x-yes" ; then
+    aros_warnflags_aggressive_loop_optimizations=-Waggressive-loop-optimizations
+    aros_nowarnflags_aggressive_loop_optimizations=-Wno-aggressive-loop-optimizations
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -Wcpp])
+CFLAGS=-Wcpp
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_cpp="yes"],[aros_cpp="no"])
+AC_MSG_RESULT($aros_cpp)
+if test "x-$aros_cpp" = "x-yes" ; then
+    aros_warnflags_cpp=-Wcpp
+    aros_nowarnflags_cpp=-Wno-cpp
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -Wswitch])
+CFLAGS=-Wswitch
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_switch="yes"],[aros_switch="no"])
+AC_MSG_RESULT($aros_switch)
+if test "x-$aros_switch" = "x-yes" ; then
+    aros_warnflags_switch=-Wswitch
+    aros_nowarnflags_switch=-Wno-switch
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -Wdiscarded-qualifiers])
+CFLAGS=-Wdiscarded-qualifiers
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_discarded_qualifiers="yes"],[aros_discarded_qualifiers="no"])
+AC_MSG_RESULT($aros_discarded_qualifiers)
+if test "x-$aros_discarded_qualifiers" = "x-yes" ; then
+    aros_warnflags_discarded_qualifiers=-Wdiscarded-qualifiers
+    aros_nowarnflags_discarded_qualifiers=-Wno-discarded-qualifiers
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -Wsequence-point])
+CFLAGS=-Wsequence-point
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_sequence_point="yes"],[aros_sequence_point="no"])
+AC_MSG_RESULT($aros_sequence_point)
+if test "x-$aros_sequence_point" = "x-yes" ; then
+    aros_warnflags_sequence_point=-Wsequence-point
+    aros_nowarnflags_sequence_point=-Wno-sequence-point
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -Wunknown-pragmas])
+CFLAGS=-Wunknown-pragmas
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_unknown_pragmas="yes"],[aros_unknown_pragmas="no"])
+AC_MSG_RESULT($aros_unknown_pragmas)
+if test "x-$aros_unknown_pragmas" = "x-yes" ; then
+    aros_warnflags_unknown_pragmas=-Wunknown-pragmas
+    aros_nowarnflags_unknown_pragmas=-Wno-unknown-pragmas
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -Wdiscarded-array-qualifiers])
+CFLAGS=-Wdiscarded-array-qualifiers
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_discarded_array_qualifiers="yes"],[aros_discarded_array_qualifiers="no"])
+AC_MSG_RESULT($aros_discarded_array_qualifiers)
+if test "x-$aros_discarded_array_qualifiers" = "x-yes" ; then
+    aros_warnflags_discarded_array_qualifiers=-Wdiscarded-array-qualifiers
+    aros_nowarnflags_discarded_array_qualifiers=-Wno-discarded-array-qualifiers
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -Wint-conversion])
+CFLAGS=-Wint-conversion
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_int_conversion="yes"],[aros_int_conversion="no"])
+AC_MSG_RESULT($aros_int_conversion)
+if test "x-$aros_int_conversion" = "x-yes" ; then
+    aros_warnflags_int_conversion=-Wint-conversion
+    aros_nowarnflags_int_conversion=-Wno-int-conversion
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -Wint-to-pointer-cast])
+CFLAGS=-Wint-to-pointer-cast
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_int_to_pointer_cast="yes"],[aros_int_to_pointer_cast="no"])
+AC_MSG_RESULT($aros_int_to_pointer_cast)
+if test "x-$aros_int_to_pointer_cast" = "x-yes" ; then
+    aros_warnflags_int_to_pointer_cast=-Wint-to-pointer-cast
+    aros_nowarnflags_int_to_pointer_cast=-Wno-int-to-pointer-cast
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -Wpointer-to-int-cast])
+CFLAGS=-Wpointer-to-int-cast
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_pointer_to_int_cast="yes"],[aros_pointer_to_int_cast="no"])
+AC_MSG_RESULT($aros_pointer_to_int_cast)
+if test "x-$aros_pointer_to_int_cast" = "x-yes" ; then
+    aros_warnflags_pointer_to_int_cast=-Wpointer-to-int-cast
+    aros_nowarnflags_pointer_to_int_cast=-Wno-pointer-to-int-cast
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -Wunused-const-variable])
+CFLAGS=-Wunused-const-variable
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_unused_const_variable="yes"],[aros_unused_const_variable="no"])
+AC_MSG_RESULT($aros_unused_const_variable)
+if test "x-$aros_unused_const_variable" = "x-yes" ; then
+    aros_warnflags_unused_const_variable=-Wunused-const-variable
+    aros_nowarnflags_unused_const_variable=-Wno-unused-const-variable
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -Wwrite-strings])
+CFLAGS=-Wwrite-strings
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_write_strings="yes"],[aros_write_strings="no"])
+AC_MSG_RESULT($aros_write_strings)
+if test "x-$aros_write_strings" = "x-yes" ; then
+    aros_warnflags_write_strings=-Wwrite-strings
+    aros_nowarnflags_write_strings=-Wno-write-strings
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -Wcomment])
+CFLAGS=-Wcomment
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_comment="yes"],[aros_comment="no"])
+AC_MSG_RESULT($aros_comment)
+if test "x-$aros_comment" = "x-yes" ; then
+    aros_warnflags_comment=-Wcomment
+    aros_nowarnflags_comment=-Wno-comment
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -Wincompatible-pointer-types])
+CFLAGS=-Wincompatible-pointer-types
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_incompatible_pointer_types="yes"],[aros_incompatible_pointer_types="no"])
+AC_MSG_RESULT($aros_incompatible_pointer_types)
+if test "x-$aros_incompatible_pointer_types" = "x-yes" ; then
+    aros_warnflags_incompatible_pointer_types=-Wincompatible-pointer-types
+    aros_nowarnflags_incompatible_pointer_types=-Wno-incompatible-pointer-types
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -Wincompatible-function-pointer-types])
+CFLAGS=-Wincompatible-function-pointer-types
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_incompatible_function_pointer_types="yes"],[aros_incompatible_function_pointer_types="no"])
+AC_MSG_RESULT($aros_incompatible_function_pointer_types)
+if test "x-$aros_incompatible_function_pointer_types" = "x-yes" ; then
+    aros_warnflags_incompatible_function_pointer_types=-Wincompatible-function-pointer-types
+    aros_nowarnflags_incompatible_function_pointer_types=-Wno-incompatible-function-pointer-types
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -Wno-error=int-conversion])
+CFLAGS=-Wno-error=int-conversion
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_noerror_int_conversion="yes"],[aros_noerror_int_conversion="no"])
+AC_MSG_RESULT($aros_noerror_int_conversion)
+if test "x-$aros_noerror_int_conversion" = "x-yes" ; then
+    aros_errorflags_int_conversion=-Werror=int-conversion
+    aros_noerrorflags_int_conversion=-Wno-error=int-conversion
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -Wno-error=incompatible-pointer-types])
+CFLAGS=-Wno-error=incompatible-pointer-types
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_noerror_incompatible_pointer_types="yes"],[aros_noerror_incompatible_pointer_types="no"])
+AC_MSG_RESULT($aros_noerror_incompatible_pointer_types)
+if test "x-$aros_noerror_incompatible_pointer_types" = "x-yes" ; then
+    aros_errorflags_incompatible_pointer_types=-Werror=incompatible-pointer-types
+    aros_noerrorflags_incompatible_pointer_types=-Wno-error=incompatible-pointer-types
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -Wbool-compare])
+CFLAGS=-Wbool-compare
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_bool_compare="yes"],[aros_bool_compare="no"])
+AC_MSG_RESULT($aros_bool_compare)
+if test "x-$aros_bool_compare" = "x-yes" ; then
+    aros_warnflags_bool_compare=-Wbool-compare
+    aros_nowarnflags_bool_compare=-Wno-bool-compare
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -Wlogical-not-parentheses])
+CFLAGS=-Wlogical-not-parentheses
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_logical_not_parentheses="yes"],[aros_logical_not_parentheses="no"])
+AC_MSG_RESULT($aros_logical_not_parentheses)
+if test "x-$aros_logical_not_parentheses" = "x-yes" ; then
+    aros_warnflags_logical_not_parentheses=-Wlogical-not-parentheses
+    aros_nowarnflags_logical_not_parentheses=-Wno-logical-not-parentheses
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -Wpointer-sign])
+CFLAGS=-Wpointer-sign
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_pointer_sign="yes"],[aros_pointer_sign="no"])
+AC_MSG_RESULT($aros_pointer_sign)
+if test "x-$aros_pointer_sign" = "x-yes" ; then
+    aros_warnflags_pointer_sign=-Wpointer-sign
+    aros_nowarnflags_pointer_sign=-Wno-pointer-sign
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -Wshift-overflow])
+CFLAGS=-Wshift-overflow
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_shift_overflow="yes"],[aros_shift_overflow="no"])
+AC_MSG_RESULT($aros_shift_overflow)
+if test "x-$aros_shift_overflow" = "x-yes" ; then
+    aros_warnflags_shift_overflow=-Wshift-overflow
+    aros_nowarnflags_shift_overflow=-Wno-shift-overflow
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -Wframe-address])
+CFLAGS=-Wframe-address
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_frame_address="yes"],[aros_frame_address="no"])
+AC_MSG_RESULT($aros_frame_address)
+if test "x-$aros_frame_address" = "x-yes" ; then
+    aros_warnflags_frame_address=-Wframe-address
+    aros_nowarnflags_frame_address=-Wno-frame-address
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -Wdeprecated-declarations])
+CFLAGS=-Wdeprecated-declarations
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_deprecated_declarations="yes"],[aros_deprecated_declarations="no"])
+AC_MSG_RESULT($aros_deprecated_declarations)
+if test "x-$aros_deprecated_declarations" = "x-yes" ; then
+    aros_warnflags_deprecated_declarations=-Wdeprecated-declarations
+    aros_nowarnflags_deprecated_declarations=-Wno-deprecated-declarations
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -Wsign-compare])
+CFLAGS=-Wsign-compare
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_sign_compare="yes"],[aros_sign_compare="no"])
+AC_MSG_RESULT($aros_sign_compare)
+if test "x-$aros_sign_compare" = "x-yes" ; then
+    aros_warnflags_sign_compare=-Wsign-compare
+    aros_nowarnflags_sign_compare=-Wno-sign-compare
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -Wattributes])
+CFLAGS=-Wattributes
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_attributes="yes"],[aros_attributes="no"])
+AC_MSG_RESULT($aros_attributes)
+if test "x-$aros_attributes" = "x-yes" ; then
+    aros_warnflags_attributes=-Wattributes
+    aros_nowarnflags_attributes=-Wno-attributes
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -Woverflow])
+CFLAGS=-Woverflow
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_overflow="yes"],[aros_overflow="no"])
+AC_MSG_RESULT($aros_overflow)
+if test "x-$aros_overflow" = "x-yes" ; then
+    aros_warnflags_overflow=-Woverflow
+    aros_nowarnflags_overflow=-Wno-overflow
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -Wunused-local-typedefs])
+CFLAGS=-Wunused-local-typedefs
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_unused_local_typedefs="yes"],[aros_unused_local_typedefs="no"])
+AC_MSG_RESULT($aros_unused_local_typedefs)
+if test "x-$aros_unused_local_typedefs" = "x-yes" ; then
+    aros_warnflags_unused_local_typedefs=-Wunused-local-typedefs
+    aros_nowarnflags_unused_local_typedefs=-Wno-unused-local-typedefs
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -Wmissing-braces])
+CFLAGS=-Wmissing-braces
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_missing_braces="yes"],[aros_missing_braces="no"])
+AC_MSG_RESULT($aros_missing_braces)
+if test "x-$aros_missing_braces" = "x-yes" ; then
+    aros_warnflags_missing_braces=-Wmissing-braces
+    aros_nowarnflags_missing_braces=-Wno-missing-braces
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -Wnarrowing])
+CFLAGS=-Wnarrowing
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_narrowing="yes"],[aros_narrowing="no"])
+AC_MSG_RESULT($aros_narrowing)
+if test "x-$aros_narrowing" = "x-yes" ; then
+    aros_warnflags_narrowing=-Wnarrowing
+    aros_nowarnflags_narrowing=-Wno-narrowing
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -Wvolatile-register-var])
+CFLAGS=-Wvolatile-register-var
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_volatile_register_var="yes"],[aros_volatile_register_var="no"])
+AC_MSG_RESULT($aros_volatile_register_var)
+if test "x-$aros_volatile_register_var" = "x-yes" ; then
+    aros_warnflags_volatile_register_var=-Wvolatile-register-var
+    aros_nowarnflags_volatile_register_var=-Wno-volatile-register-var
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -Wsizeof-pointer-memaccess])
+CFLAGS=-Wsizeof-pointer-memaccess
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_sizeof_pointer_memaccess="yes"],[aros_sizeof_pointer_memaccess="no"])
+AC_MSG_RESULT($aros_sizeof_pointer_memaccess)
+if test "x-$aros_sizeof_pointer_memaccess" = "x-yes" ; then
+    aros_warnflags_sizeof_pointer_memaccess=-Wsizeof-pointer-memaccess
+    aros_nowarnflags_sizeof_pointer_memaccess=-Wno-sizeof-pointer-memaccess
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -Wreturn-type])
+CFLAGS=-Wreturn-type
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_return_type="yes"],[aros_return_type="no"])
+AC_MSG_RESULT($aros_return_type)
+if test "x-$aros_return_type" = "x-yes" ; then
+    aros_warnflags_return_type=-Wreturn-type
+    aros_nowarnflags_return_type=-Wno-return-type
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -Wformat-zero-length])
+CFLAGS=-Wformat-zero-length
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_format_zero_length="yes"],[aros_format_zero_length="no"])
+AC_MSG_RESULT($aros_format_zero_length)
+if test "x-$aros_format_zero_length" = "x-yes" ; then
+    aros_warnflags_format_zero_length=-Wformat-zero-length
+    aros_nowarnflags_format_zero_length=-Wno-format-zero-length
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -Wlto-type-mismatch])
+CFLAGS=-Wlto-type-mismatch
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_lto_type_mismatch="yes"],[aros_lto_type_mismatch="no"])
+AC_MSG_RESULT($aros_lto_type_mismatch)
+if test "x-$aros_lto_type_mismatch" = "x-yes" ; then
+    aros_warnflags_lto_type_mismatch=-Wlto-type-mismatch
+    aros_nowarnflags_lto_type_mismatch=-Wno-lto-type-mismatch
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -Wtautological-compare])
+CFLAGS=-Wtautological-compare
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_tautological_compare="yes"],[aros_tautological_compare="no"])
+AC_MSG_RESULT($aros_tautological_compare)
+if test "x-$aros_tautological_compare" = "x-yes" ; then
+    aros_warnflags_tautological_compare=-Wtautological-compare
+    aros_nowarnflags_tautological_compare=-Wno-tautological-compare
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -Wempty-body])
+CFLAGS=-Wempty-body
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_empty_body="yes"],[aros_empty_body="no"])
+AC_MSG_RESULT($aros_empty_body)
+if test "x-$aros_empty_body" = "x-yes" ; then
+    aros_warnflags_empty_body=-Wempty-body
+    aros_nowarnflags_empty_body=-Wno-empty-body
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -Wformat-overflow])
+CFLAGS=-Wformat-overflow
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_format_overflow="yes"],[aros_format_overflow="no"])
+AC_MSG_RESULT($aros_format_overflow)
+if test "x-$aros_format_overflow" = "x-yes" ; then
+    aros_warnflags_format_overflow=-Wformat-overflow
+    aros_nowarnflags_format_overflow=-Wno-format-overflow
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -Wstringop-overflow])
+CFLAGS=-Wstringop-overflow
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_stringop_overflow="yes"],[aros_stringop_overflow="no"])
+AC_MSG_RESULT($aros_stringop_overflow)
+if test "x-$aros_stringop_overflow" = "x-yes" ; then
+    aros_warnflags_stringop_overflow=-Wstringop-overflow
+    aros_nowarnflags_stringop_overflow=-Wno-stringop-overflow
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -Wformat-truncation])
+CFLAGS=-Wformat-truncation
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_format_truncation="yes"],[aros_format_truncation="no"])
+AC_MSG_RESULT($aros_format_truncation)
+if test "x-$aros_format_truncation" = "x-yes" ; then
+    aros_warnflags_format_truncation=-Wformat-truncation
+    aros_nowarnflags_format_truncation=-Wno-format-truncation
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -Wstringop-truncation])
+CFLAGS=-Wstringop-truncation
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_stringop_truncation="yes"],[aros_stringop_truncation="no"])
+AC_MSG_RESULT($aros_stringop_truncation)
+if test "x-$aros_stringop_truncation" = "x-yes" ; then
+    aros_warnflags_stringop_truncation=-Wstringop-truncation
+    aros_nowarnflags_stringop_truncation=-Wno-stringop-truncation
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -Wshift-negative-value])
+CFLAGS=-Wshift-negative-value
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_shift_negative_value="yes"],[aros_shift_negative_value="no"])
+AC_MSG_RESULT($aros_shift_negative_value)
+if test "x-$aros_shift_negative_value" = "x-yes" ; then
+    aros_warnflags_shift_negative_value=-Wshift-negative-value
+    aros_nowarnflags_shift_negative_value=-Wno-shift-negative-value
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -Wmissing-field-initializers])
+CFLAGS=-Wmissing-field-initializers
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_missing_field_initializers="yes"],[aros_missing_field_initializers="no"])
+AC_MSG_RESULT($aros_missing_field_initializers)
+if test "x-$aros_missing_field_initializers" = "x-yes" ; then
+    aros_warnflags_missing_field_initializers=-Wmissing-field-initializers
+    aros_nowarnflags_missing_field_initializers=-Wno-missing-field-initializers
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -Wimplicit-fallthrough])
+CFLAGS=-Wimplicit-fallthrough
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_implicit_fallthrough="yes"],[aros_implicit_fallthrough="no"])
+AC_MSG_RESULT($aros_implicit_fallthrough)
+if test "x-$aros_implicit_fallthrough" = "x-yes" ; then
+    aros_warnflags_implicit_fallthrough=-Wimplicit-fallthrough
+    aros_nowarnflags_implicit_fallthrough=-Wno-implicit-fallthrough
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -Wmissing-prototypes])
+CFLAGS=-Wmissing-prototypes
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_missing_prototypes="yes"],[aros_missing_prototypes="no"])
+AC_MSG_RESULT($aros_missing_prototypes)
+if test "x-$aros_missing_prototypes" = "x-yes" ; then
+    aros_warnflags_missing_prototypes=-Wmissing-prototypes
+    aros_nowarnflags_missing_prototypes=-Wno-missing-prototypes
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -Wclass-memaccess])
+CFLAGS=-Wclass-memaccess
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_class_memaccess="yes"],[aros_class_memaccess="no"])
+AC_MSG_RESULT($aros_class_memaccess)
+if test "x-$aros_class_memaccess" = "x-yes" ; then
+    aros_warnflags_class_memaccess=-Wclass-memaccess
+    aros_nowarnflags_class_memaccess=-Wno-class-memaccess
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -Wint-in-bool-context])
+CFLAGS=-Wint-in-bool-context
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_int_in_bool_context="yes"],[aros_int_in_bool_context="no"])
+AC_MSG_RESULT($aros_int_in_bool_context)
+if test "x-$aros_int_in_bool_context" = "x-yes" ; then
+    aros_warnflags_int_in_bool_context=-Wint-in-bool-context
+    aros_nowarnflags_int_in_bool_context=-Wno-int-in-bool-context
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -Wignored-optimization-argument])
+CFLAGS=-Wignored-optimization-argument
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_ignored_optimization_argument="yes"],[aros_ignored_optimization_argument="no"])
+AC_MSG_RESULT($aros_ignored_optimization_argument)
+if test "x-$aros_ignored_optimization_argument" = "x-yes" ; then
+    aros_warnflags_ignored_optimization_argument=-Wignored-optimization-argument
+    aros_nowarnflags_ignored_optimization_argument=-Wno-ignored-optimization-argument
+fi
+
+AC_MSG_CHECKING([whether ${CC} accepts -Wbuiltin-declaration-mismatch])
+CFLAGS=-Wbuiltin-declaration-mismatch
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_builtin_declaration_mismatch="yes"],[aros_builtin_declaration_mismatch="no"])
+AC_MSG_RESULT($aros_builtin_declaration_mismatch)
+if test "x-$aros_builtin_declaration_mismatch" = "x-yes" ; then
+    aros_warnflags_builtin_declaration_mismatch=-Wbuiltin-declaration-mismatch
+    aros_nowarnflags_builtin_declaration_mismatch=-Wno-builtin-declaration-mismatch
+fi
+CFLAGS="$save_cflags"
+
+AC_MSG_CHECKING([whether ${CC} accepts -Wold-style-definition])
+CFLAGS=-Wold-style-definition
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_old_style_definition="yes"],[aros_old_style_definition="no"])
+AC_MSG_RESULT($aros_old_style_definition)
+if test "x-$aros_old_style_definition" = "x-yes" ; then
+    aros_warnflags_old_style_definition=-Wold-style-definition
+    aros_nowarnflags_old_style_definition=-Wno-old-style-definition
+fi
+CFLAGS="$save_cflags"
+
+# Check the C++ warnings
+AC_LANG_PUSH(C++)
+save_cxxflags="$CXXFLAGS"
+
+AC_MSG_CHECKING([whether ${CXX} accepts -Wconversion-null])
+CXXFLAGS=-Wconversion-null
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_conversion_null="yes"],[aros_conversion_null="no"])
+AC_MSG_RESULT($aros_conversion_null)
+if test "x-$aros_conversion_null" = "x-yes" ; then
+    aros_warnflags_conversion_null=-Wconversion-null
+    aros_nowarnflags_conversion_null=-Wno-conversion-null
+fi
+
+dnl clang makes -Wregister a hard error from C++17 on, so ports that still use
+dnl the 'register' keyword need the -Wno- form to stay buildable.
+AC_MSG_CHECKING([whether ${CXX} accepts -Wregister])
+CXXFLAGS=-Wregister
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_register="yes"],[aros_register="no"])
+AC_MSG_RESULT($aros_register)
+if test "x-$aros_register" = "x-yes" ; then
+    aros_warnflags_register=-Wregister
+    aros_nowarnflags_register=-Wno-register
+fi
+
+CXXFLAGS="$save_cxxflags"
+
+AC_MSG_CHECKING([whether ${CXX} accepts -nostdlib++])
+CXXFLAGS=-nostdlib++
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_nostdlibxx="yes"],[aros_nostdlibxx="no"])
+AC_MSG_RESULT($aros_nostdlibxx)
+if test "x-$aros_nostdlibxx" = "x-yes" ; then
+    aros_cxxflags_nostdlibxx=-nostdlib++
+fi
+
+CXXFLAGS="$save_cxxflags"
+
+AC_LANG_PUSH(C)
+
+#########################################################
+#
+# Now check what we need to use with the toolchain
+
+COMPILER_VERSION=`${CC} --version 2>/dev/null`
+IS_LLVM_COMPILER=`echo "$COMPILER_VERSION" | grep -i -c -E 'LLVM|clang'`
+if test "$IS_LLVM_COMPILER" -ne "0"; then
+    IS_GNU_COMPILER=0
+fi
+if test "$IS_LLVM_COMPILER" -eq "0"; then
+    IS_GNU_COMPILER=`echo "$COMPILER_VERSION" | grep -i -c -E 'gcc'`
+fi
+if test "$IS_GNU_COMPILER" -ne "0"; then
+    GNU_COMPILER_VERS="`${CC} -dumpversion`"
+    GCC_VERSION_MAJOR=$(echo $GNU_COMPILER_VERS | cut -d'.' -f1)
+    GCC_VERSION_MINOR=$(echo $GNU_COMPILER_VERS | cut -d'.' -f2)
+    GCC_VERSION_PATCH=$(echo $GNU_COMPILER_VERS | cut -d'.' -f3)
+    if test "$GCC_VERSION_MAJOR" -gt "9" ; then
+        dnl $""(CFLAGS_COMMON)
+        aros_toolchain_cflags_common=""
+    fi
+fi
+
+cat >$AROS_DEVELOPER/include/__testsincdir.h <<_ACEOF
+/* Copyright (c) The AROS Dev Team  */
+#define _TESTINCFOUND
+_ACEOF
+
+AC_MSG_CHECKING([if we need to use --sysroot])
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
+     [[
+     #include <__testsincdir.h>
+     #ifndef _TESTINCFOUND
+      error: Couldnt find include!
+     #endif
+     ]])],
+     [toolchain_needs_sysroot=no],
+     [toolchain_needs_sysroot=yes])
+AC_MSG_RESULT($toolchain_needs_sysroot)
+
+if test "$toolchain_needs_sysroot" = "yes" ; then
+    aros_toolchain_sysroot="--sysroot $""(AROS_DEVELOPER)"
+fi
+
+#AC_MSG_CHECKING([if we need to use --isysroot])
+#AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
+#     [[
+#     (#include <__testsincdir.h>
+#     #ifndef _TESTINCFOUND
+#      error: Couldnt find include!
+#     #endif
+#     ]])],
+#     [toolchain_needs_isysroot=no],
+#     [toolchain_needs_isysroot=yes])
+#AC_MSG_RESULT($toolchain_needs_isysroot)
+#
+#if test "$toolchain_needs_isysroot" = "yes" ; then
+#    aros_toolchain_isysroot="-isysroot $""(AROS_SDK)"
+#    aros_toolchain_iarchdir="-I $""(AROS_SDK)/$""(AROS_TARGET_CPU)-aros/include"
+#fi
+
+if test "$AROS_TARGET_CPU" = "arm"; then
+    AC_MSG_CHECKING([if we need to comment out the compilers section attributes])
+    AC_LINK_IFELSE([AC_LANG_PROGRAM([[asm("\t.section\t.aros.startup,\"ax\"\n\t.globl\tstart\n\t.type\tstart,%function\n\t\tldr\tsp, section_ptr\n");
+static void * section_ptr __attribute__((used, section(".aros.startup")));]],[[]])],
+        [
+            aros_targetsection_needscomment=no
+        ],[
+            aros_targetsection_needscomment=yes
+        ])
+    AC_MSG_RESULT($aros_targetsection_needscomment)
+    if test "$aros_targetsection_needscomment" = "yes"; then
+        AC_MSG_CHECKING([which comment style to use])
+        AC_LINK_IFELSE([AC_LANG_PROGRAM([[asm("\t.section\t.aros.startup,\"ax\"\n\t.globl\tstart\n\t.type\tstart,%function\n\t\tldr\tsp, section_ptr\n");
+static void * section_ptr __attribute__((used, section(".aros.startup #")));]],[[]])],
+            [
+                aros_targetsection_commentset=yes
+                aros_targetsection_comment=\"#\"
+            ],[
+                aros_targetsection_commentset=no
+            ])
+        if test "$aros_targetsection_commentset" = "no"; then
+            AC_LINK_IFELSE([AC_LANG_PROGRAM([[asm("\t.section\t.aros.startup,\"ax\"\n\t.globl\tstart\n\t.type\tstart,%function\n\t\tldr\tsp, section_ptr\n");
+static void * section_ptr __attribute__((used, section(".aros.startup @")));]],[[]])],
+                [
+                    aros_targetsection_commentset=yes
+                    aros_targetsection_comment=\"@\"
+                ],[
+                    aros_targetsection_commentset=no
+                ])
+            if test "$aros_targetsection_commentset" = "no"; then
+                aros_targetsection_comment=\"//\"
+            fi
+        fi
+        AC_MSG_RESULT($aros_targetsection_comment)
+    fi
+fi
+
+rm -f $AROS_DEVELOPER/include/__testsincdir.h
+
+#
+AC_SUBST(aros_cflags_c89)
+AC_SUBST(aros_cflags_gnu89)
+AC_SUBST(aros_cflags_c99)
+AC_SUBST(aros_cflags_gnu99)
+AC_SUBST(aros_cflags_c11)
+AC_SUBST(aros_cflags_gnu11)
+AC_SUBST(aros_cflags_c17)
+AC_SUBST(aros_cflags_gnu17)
+AC_SUBST(aros_cflags_no_jump_tables)
+
+AC_SUBST(aros_cxxflags_cxx98)
+AC_SUBST(aros_cxxflags_gnu98)
+AC_SUBST(aros_cxxflags_cxx03)
+AC_SUBST(aros_cxxflags_gnu03)
+AC_SUBST(aros_cxxflags_cxx11)
+AC_SUBST(aros_cxxflags_gnu11)
+AC_SUBST(aros_cxxflags_cxx14)
+AC_SUBST(aros_cxxflags_gnu14)
+AC_SUBST(aros_cxxflags_cxx17)
+AC_SUBST(aros_cxxflags_gnu17)
+AC_SUBST(aros_cxxflags_cxx20)
+AC_SUBST(aros_cxxflags_gnu20)
+AC_SUBST(aros_cxxflags_cxx23)
+AC_SUBST(aros_cxxflags_gnu23)
+AC_SUBST(aros_cxxflags_lifetime_dse1)
+
+AC_SUBST(aros_cxxflags_nostdlibxx)
+
+#
+# export the feature flags...
+#
+AC_SUBST(aros_targetsection_comment)
+AC_SUBST(aros_cflags_no_integrated_as)
+AC_SUBST(aros_cflags_exceptions)
+AC_SUBST(aros_cflags_noexceptions)
+AC_SUBST(aros_cxxflags_permissive)
+AC_SUBST(aros_cxxflags_nopermissive)
+AC_SUBST(aros_cxxflags_rtti)
+AC_SUBST(aros_cxxflags_nortti)
+AC_SUBST(aros_cflags_fast_math)
+AC_SUBST(aros_cflags_associative_math)
+AC_SUBST(aros_cflags_no_math_errno)
+AC_SUBST(aros_cflags_no_trapping_math)
+AC_SUBST(aros_cflags_float_store)
+AC_SUBST(aros_cflags_no_float_store)
+AC_SUBST(aros_cflags_tree_vectorize)
+AC_SUBST(aros_cflags_no_vectorize)
+AC_SUBST(aros_cflags_no_tree_loop_distribute_patterns)
+AC_SUBST(aros_cflags_lto)
+AC_SUBST(aros_cflags_nolto)
+AC_SUBST(aros_cflags_whole_program)
+AC_SUBST(aros_cflags_loop_block)
+AC_SUBST(aros_cflags_loop_interchange)
+AC_SUBST(aros_cflags_loop_strip_mine)
+AC_SUBST(aros_cflags_peel_loops)
+AC_SUBST(aros_cflags_unroll_loops)
+
+AC_SUBST(aros_cflags_strictaliasing)
+AC_SUBST(aros_cflags_nostrictaliasing)
+
+AC_SUBST(aros_cflags_inlinesmallfunctions)
+AC_SUBST(aros_cflags_noinlinesmallfunctions)
+
+AC_SUBST(aros_cflags_ipacp)
+AC_SUBST(aros_cflags_noipacp)
+
+AC_SUBST(aros_cflags_omitfp)
+AC_SUBST(aros_cflags_noomitfp)
+
+AC_SUBST(aros_cflags_profilearcs)
+AC_SUBST(aros_cflags_noprofilearcs)
+
+AC_SUBST(aros_cflags_testcoverage)
+AC_SUBST(aros_cflags_notestcoverage)
+
+AC_SUBST(aros_cflags_instrfuncs)
+AC_SUBST(aros_cflags_noinstrfuncs)
+
+AC_SUBST(aros_cflags_alignednew)
+AC_SUBST(aros_cflags_noalignednew)
+
+AC_SUBST(aros_cflags_common)
+AC_SUBST(aros_cflags_no_common)
+AC_SUBST(aros_cflags_nodelete_nullpointer_checks)
+
+AC_SUBST(aros_cflags_builtin)
+AC_SUBST(aros_cflags_no_builtin)
+AC_SUBST(aros_cflags_no_builtin_floor)
+AC_SUBST(aros_cflags_no_builtin_vsnprintf)
+AC_SUBST(aros_cflags_no_builtin_ffs)
+AC_SUBST(aros_cflags_no_builtin_ffsll)
+AC_SUBST(aros_cflags_no_builtin_bswap32)
+AC_SUBST(aros_cflags_no_builtin_bswap64)
+AC_SUBST(aros_cflags_no_builtin_clz)
+AC_SUBST(aros_cflags_no_builtin_clzll)
+AC_SUBST(aros_cflags_no_builtin_ctz)
+AC_SUBST(aros_cflags_no_builtin_expect)
+AC_SUBST(aros_cflags_no_builtin_popcount)
+AC_SUBST(aros_cflags_no_builtin_popcountll)
+AC_SUBST(aros_cflags_no_builtin_unreachable)
+
+AC_SUBST(aros_cflags_freestanding)
+AC_SUBST(aros_cflags_no_freestanding)
+
+AC_SUBST(aros_cflags_unwind_tables)
+AC_SUBST(aros_cflags_no_unwind_tables)
+AC_SUBST(aros_cflags_asynchronous_unwind_tables)
+AC_SUBST(aros_cflags_no_asynchronous_unwind_tables)
+
+AC_SUBST(aros_cflags_function_sections)
+AC_SUBST(aros_cflags_data_sections)
+AC_SUBST(aros_cflags_merge_constants)
+AC_SUBST(aros_cflags_no_merge_constants)
+AC_SUBST(aros_cflags_merge_all_constants)
+AC_SUBST(aros_cflags_no_merge_all_constants)
+
+AC_SUBST(aros_cflags_visibility_hidden)
+AC_SUBST(aros_cflags_file_prefix_map)
+
+#
+AC_SUBST(aros_cflags_isystem)
+AC_SUBST(aros_cflags_isystem_end)
+AC_SUBST(aros_cflags_iquote)
+AC_SUBST(aros_cflags_iquote_end)
+
+#
+# export the feature options...
+#
+AC_SUBST(aros_cflags_red_zone)
+AC_SUBST(aros_cflags_no_red_zone)
+AC_SUBST(aros_cflags_general_regs_only)
+AC_SUBST(aros_cflags_ms_bitfields)
+AC_SUBST(aros_cflags_no_ms_bitfields)
+
+#
+# ...and warning flags...
+#
+AC_SUBST(aros_warnflags_error)
+AC_SUBST(aros_nowarnflags_error)
+AC_SUBST(aros_warnflags_all)
+AC_SUBST(aros_warnflags_restrict)
+AC_SUBST(aros_nowarnflags_restrict)
+AC_SUBST(aros_warnflags_unused_command_line_argument)
+AC_SUBST(aros_nowarnflags_unused_command_line_argument)
+AC_SUBST(aros_warnflags_unknown_warning_option)
+AC_SUBST(aros_nowarnflags_unknown_warning_option)
+AC_SUBST(aros_warnflags_unused_but_set_variable)
+AC_SUBST(aros_nowarnflags_unused_but_set_variable)
+AC_SUBST(aros_warnflags_strict_aliasing)
+AC_SUBST(aros_nowarnflags_strict_aliasing)
+AC_SUBST(aros_warnflags_array_bounds)
+AC_SUBST(aros_nowarnflags_array_bounds)
+AC_SUBST(aros_warnflags_enum_compare)
+AC_SUBST(aros_nowarnflags_enum_compare)
+AC_SUBST(aros_warnflags_strict_prototypes)
+AC_SUBST(aros_nowarnflags_strict_prototypes)
+AC_SUBST(aros_warnflags_strict_overflow)
+AC_SUBST(aros_nowarnflags_strict_overflow)
+AC_SUBST(aros_warnflags_format_security)
+AC_SUBST(aros_nowarnflags_format_security)
+AC_SUBST(aros_warnflags_misleading_indentation)
+AC_SUBST(aros_nowarnflags_misleading_indentation)
+AC_SUBST(aros_warnflags_nonnull_compare)
+AC_SUBST(aros_nowarnflags_nonnull_compare)
+AC_SUBST(aros_warnflags_register)
+AC_SUBST(aros_nowarnflags_register)
+AC_SUBST(aros_warnflags_unused)
+AC_SUBST(aros_nowarnflags_unused)
+AC_SUBST(aros_warnflags_unused_label)
+AC_SUBST(aros_nowarnflags_unused_label)
+AC_SUBST(aros_warnflags_unused_value)
+AC_SUBST(aros_nowarnflags_unused_value)
+AC_SUBST(aros_warnflags_unused_variable)
+AC_SUBST(aros_nowarnflags_unused_variable)
+AC_SUBST(aros_warnflags_unused_function)
+AC_SUBST(aros_nowarnflags_unused_function)
+AC_SUBST(aros_warnflags_unused_parameter)
+AC_SUBST(aros_nowarnflags_unused_parameter)
+AC_SUBST(aros_warnflags_uninitialized)
+AC_SUBST(aros_nowarnflags_uninitialized)
+AC_SUBST(aros_warnflags_maybe_uninitialized)
+AC_SUBST(aros_nowarnflags_maybe_uninitialized)
+AC_SUBST(aros_warnflags_implicit_function_declaration)
+AC_SUBST(aros_nowarnflags_implicit_function_declaration)
+AC_SUBST(aros_warnflags_format)
+AC_SUBST(aros_nowarnflags_format)
+AC_SUBST(aros_warnflags_parentheses)
+AC_SUBST(aros_nowarnflags_parentheses)
+AC_SUBST(aros_warnflags_char_subscripts)
+AC_SUBST(aros_nowarnflags_char_subscripts)
+AC_SUBST(aros_warnflags_endif_labels)
+AC_SUBST(aros_nowarnflags_endif_labels)
+AC_SUBST(aros_warnflags_format_contains_nul)
+AC_SUBST(aros_nowarnflags_format_contains_nul)
+AC_SUBST(aros_warnflags_implicit_int)
+AC_SUBST(aros_nowarnflags_implicit_int)
+AC_SUBST(aros_warnflags_aggressive_loop_optimizations)
+AC_SUBST(aros_nowarnflags_aggressive_loop_optimizations)
+AC_SUBST(aros_warnflags_cpp)
+AC_SUBST(aros_nowarnflags_cpp)
+AC_SUBST(aros_warnflags_switch)
+AC_SUBST(aros_nowarnflags_switch)
+AC_SUBST(aros_warnflags_discarded_qualifiers)
+AC_SUBST(aros_nowarnflags_discarded_qualifiers)
+AC_SUBST(aros_warnflags_sequence_point)
+AC_SUBST(aros_nowarnflags_sequence_point)
+AC_SUBST(aros_warnflags_unknown_pragmas)
+AC_SUBST(aros_nowarnflags_unknown_pragmas)
+AC_SUBST(aros_warnflags_discarded_array_qualifiers)
+AC_SUBST(aros_nowarnflags_discarded_array_qualifiers)
+AC_SUBST(aros_warnflags_int_conversion)
+AC_SUBST(aros_nowarnflags_int_conversion)
+AC_SUBST(aros_warnflags_int_to_pointer_cast)
+AC_SUBST(aros_nowarnflags_int_to_pointer_cast)
+AC_SUBST(aros_warnflags_pointer_to_int_cast)
+AC_SUBST(aros_nowarnflags_pointer_to_int_cast)
+AC_SUBST(aros_warnflags_unused_const_variable)
+AC_SUBST(aros_nowarnflags_unused_const_variable)
+AC_SUBST(aros_warnflags_write_strings)
+AC_SUBST(aros_nowarnflags_write_strings)
+AC_SUBST(aros_warnflags_comment)
+AC_SUBST(aros_nowarnflags_comment)
+AC_SUBST(aros_warnflags_incompatible_pointer_types)
+AC_SUBST(aros_nowarnflags_incompatible_pointer_types)
+AC_SUBST(aros_warnflags_incompatible_function_pointer_types)
+AC_SUBST(aros_nowarnflags_incompatible_function_pointer_types)
+AC_SUBST(aros_warnflags_bool_compare)
+AC_SUBST(aros_nowarnflags_bool_compare)
+AC_SUBST(aros_warnflags_logical_not_parentheses)
+AC_SUBST(aros_nowarnflags_logical_not_parentheses)
+AC_SUBST(aros_warnflags_pointer_sign)
+AC_SUBST(aros_nowarnflags_pointer_sign)
+AC_SUBST(aros_warnflags_shift_overflow)
+AC_SUBST(aros_nowarnflags_shift_overflow)
+AC_SUBST(aros_warnflags_frame_address)
+AC_SUBST(aros_nowarnflags_frame_address)
+AC_SUBST(aros_warnflags_deprecated_declarations)
+AC_SUBST(aros_nowarnflags_deprecated_declarations)
+AC_SUBST(aros_warnflags_sign_compare)
+AC_SUBST(aros_nowarnflags_sign_compare)
+AC_SUBST(aros_warnflags_attributes)
+AC_SUBST(aros_nowarnflags_attributes)
+AC_SUBST(aros_warnflags_overflow)
+AC_SUBST(aros_nowarnflags_overflow)
+AC_SUBST(aros_warnflags_unused_local_typedefs)
+AC_SUBST(aros_nowarnflags_unused_local_typedefs)
+AC_SUBST(aros_warnflags_missing_braces)
+AC_SUBST(aros_nowarnflags_missing_braces)
+AC_SUBST(aros_warnflags_conversion_null)
+AC_SUBST(aros_nowarnflags_conversion_null)
+AC_SUBST(aros_warnflags_narrowing)
+AC_SUBST(aros_nowarnflags_narrowing)
+AC_SUBST(aros_warnflags_volatile_register_var)
+AC_SUBST(aros_nowarnflags_volatile_register_var)
+AC_SUBST(aros_warnflags_sizeof_pointer_memaccess)
+AC_SUBST(aros_nowarnflags_sizeof_pointer_memaccess)
+AC_SUBST(aros_warnflags_return_type)
+AC_SUBST(aros_nowarnflags_return_type)
+AC_SUBST(aros_warnflags_format_zero_length)
+AC_SUBST(aros_nowarnflags_format_zero_length)
+AC_SUBST(aros_warnflags_lto_type_mismatch)
+AC_SUBST(aros_nowarnflags_lto_type_mismatch)
+AC_SUBST(aros_warnflags_tautological_compare)
+AC_SUBST(aros_nowarnflags_tautological_compare)
+AC_SUBST(aros_warnflags_empty_body)
+AC_SUBST(aros_nowarnflags_empty_body)
+AC_SUBST(aros_warnflags_format_overflow)
+AC_SUBST(aros_nowarnflags_format_overflow)
+AC_SUBST(aros_warnflags_stringop_overflow)
+AC_SUBST(aros_nowarnflags_stringop_overflow)
+AC_SUBST(aros_warnflags_format_truncation)
+AC_SUBST(aros_nowarnflags_format_truncation)
+AC_SUBST(aros_warnflags_stringop_truncation)
+AC_SUBST(aros_nowarnflags_stringop_truncation)
+AC_SUBST(aros_warnflags_shift_negative_value)
+AC_SUBST(aros_nowarnflags_shift_negative_value)
+AC_SUBST(aros_warnflags_missing_field_initializers)
+AC_SUBST(aros_nowarnflags_missing_field_initializers)
+AC_SUBST(aros_warnflags_implicit_fallthrough)
+AC_SUBST(aros_nowarnflags_implicit_fallthrough)
+AC_SUBST(aros_warnflags_missing_prototypes)
+AC_SUBST(aros_nowarnflags_missing_prototypes)
+AC_SUBST(aros_warnflags_class_memaccess)
+AC_SUBST(aros_nowarnflags_class_memaccess)
+AC_SUBST(aros_warnflags_int_in_bool_context)
+AC_SUBST(aros_nowarnflags_int_in_bool_context)
+AC_SUBST(aros_warnflags_ignored_optimization_argument)
+AC_SUBST(aros_nowarnflags_ignored_optimization_argument)
+AC_SUBST(aros_warnflags_builtin_declaration_mismatch)
+AC_SUBST(aros_nowarnflags_builtin_declaration_mismatch)
+AC_SUBST(aros_warnflags_old_style_definition)
+AC_SUBST(aros_nowarnflags_old_style_definition)
+AC_SUBST(aros_errorflags_int_conversion)
+AC_SUBST(aros_noerrorflags_int_conversion)
+AC_SUBST(aros_errorflags_incompatible_pointer_types)
+AC_SUBST(aros_noerrorflags_incompatible_pointer_types)
+
+# Additional toolchain support ...
+AC_SUBST(aros_toolchain_sysroot)
+AC_SUBST(aros_toolchain_cflags_common)
+
+AC_CONFIG_FILES(
+    ${aros_targetcfg_dir}/compiler.cfg:compiler.cfg.in
+)
+
+AC_OUTPUT

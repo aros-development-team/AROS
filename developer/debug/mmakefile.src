@@ -1,0 +1,9 @@
+#
+#   Makefile for Debug Tests and Tools
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM- workbench-tools : debug-tools
+
+%common
+

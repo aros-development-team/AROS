@@ -1,0 +1,10 @@
+# DataType Description for FLV files
+Name=FLV
+Version=$VER: FLV 1.0 (25.10.2011)
+BaseName=flv
+Pattern=#?
+Mask= 0x46 0x4C 0x56 0x01
+GroupID=movi
+ID=flv
+Flags=DTF_BINARY,DTF_CASE
+Priority=0

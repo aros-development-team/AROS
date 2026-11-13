@@ -1,0 +1,31 @@
+CFLAGS = -O2 -Wall -Wno-uninitialized -Wno-parentheses -D__NOLIBBASE__ -DUSE_INLINE_STDARG
+CC = gcc $(CFLAGS)
+MAKEFILE = Makefile.MOS
+LINKER = ld -e Main -s
+AMIGA_LIB = -labox
+
+DEV_NAME = realtek8180.device
+OBJS = mos_device.o device.o unit.o encryption.o request.o usb.o radio.o\
+ eeprom.o timer.o
+HDRS = device.h wireless.h io.h
+
+all: $(DEV_NAME)
+
+.c.o :
+	$(CC) -c $<
+
+$(DEV_NAME): $(MAKEFILE) startup.o $(OBJS)
+	$(LINKER) startup.o $(OBJS) $(AMIGA_LIB) -o $(DEV_NAME)
+	Protect "$(DEV_NAME)" "-e"
+
+$(OBJS) startup.o: $(MAKEFILE) $(HDRS)
+$(OBJS): $(HDRS)
+unit.o radio.o eeprom.o: realtek8187.h
+
+install: all
+	Copy "$(DEV_NAME)" "DEVS:networks/" CLONE
+	Flush "$(DEV_NAME)"
+
+clean:
+	Delete "$(DEV_NAME)" "#?.o"
+

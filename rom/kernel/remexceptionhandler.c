@@ -1,0 +1,79 @@
+/*
+    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
+
+    Desc:
+*/
+
+#include <aros/kernel.h>
+#include <aros/libcall.h>
+#include <proto/exec.h>
+
+#include <kernel_base.h>
+#include <kernel_cpu.h>
+#include <kernel_debug.h>
+#include <kernel_interrupts.h>
+#include <kernel_objects.h>
+
+/* We use own implementation of bug(), so we don't need aros/debug.h */
+#define D(x)
+
+/*****************************************************************************
+
+    NAME */
+#include <proto/kernel.h>
+
+        AROS_LH1(void, KrnRemExceptionHandler,
+
+/*  SYNOPSIS */
+        AROS_LHA(void *, handle, A0),
+
+/*  LOCATION */
+        struct KernelBase *, KernelBase, 15, Kernel)
+
+/*  FUNCTION
+        Remove a registered CPU exception handler.
+
+    INPUTS
+        handle - Handle returned by KrnAddExceptionHandler().
+
+    RESULT
+        None.
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+        KrnAddExceptionHandler()
+
+    INTERNALS
+
+******************************************************************************/
+{
+    AROS_LIBFUNC_INIT
+
+    struct IntrNode *h = handle;
+
+    if (h && (h->in_type == it_exception))
+    {
+        (void)goSuper();
+
+        Disable();
+#if defined(__AROSEXEC_SMP__)
+        KrnSpinLock(&KernelBase->kb_IntrSpinLock, NULL, SPINLOCK_MODE_WRITE);
+#endif
+        REMOVE(h);
+#if defined(__AROSEXEC_SMP__)
+        KrnSpinUnLock(&KernelBase->kb_IntrSpinLock);
+#endif
+        Enable();
+
+        krnFreeIntrNode(h);
+
+        goUser();
+    }
+
+    AROS_LIBFUNC_EXIT
+}

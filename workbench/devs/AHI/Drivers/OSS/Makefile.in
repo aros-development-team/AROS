@@ -1,0 +1,16 @@
+#
+#  Makefile.in for the AROS hosted OSS sound driver
+#
+
+VPATH		= @srcdir@
+
+srcdir		= @srcdir@
+
+DRIVER		= OSS.audio
+MODEFILE	= OSS
+
+OBJECTS		= OSS-init.o OSS-main.o OSS-playslave.o OSS-accel.o 
+
+include ../Common/Makefile.common
+
+LIBS		+= -lossshared

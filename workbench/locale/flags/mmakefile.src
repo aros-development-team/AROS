@@ -1,0 +1,16 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+REGIONFLAGS := $(notdir $(call WILDCARD, countries/*))
+MISCFLAGS := $(notdir $(call WILDCARD, misc/*))
+
+#MM- workbench-locale : workbench-locale-flags-countries workbench-locale-flags-misc
+
+%copy_files_q mmake=workbench-locale-flags-countries files=$(REGIONFLAGS) src=countries \
+    dst=$(AROS_LOCALE)/Flags/Countries
+
+%copy_files_q mmake=workbench-locale-flags-misc files=$(MISCFLAGS) src=misc \
+    dst=$(AROS_LOCALE)/Flags/Misc
+
+
+%common

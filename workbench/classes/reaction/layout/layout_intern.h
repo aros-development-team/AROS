@@ -1,0 +1,153 @@
+/*
+    Copyright (C) 2026, The AROS Development Team. All rights reserved.
+
+    Desc: Reaction layout.gadget - Internal definitions
+*/
+
+#ifndef LAYOUT_INTERN_H
+#define LAYOUT_INTERN_H
+
+#ifndef EXEC_TYPES_H
+#include <exec/types.h>
+#endif
+#ifndef EXEC_LIBRARIES_H
+#include <exec/libraries.h>
+#endif
+#ifndef EXEC_LISTS_H
+#include <exec/lists.h>
+#endif
+#ifndef INTUITION_INTUITION_H
+#include <intuition/intuition.h>
+#endif
+#ifndef INTUITION_CLASSES_H
+#include <intuition/classes.h>
+#endif
+#ifndef INTUITION_GADGETCLASS_H
+#include <intuition/gadgetclass.h>
+#endif
+#ifndef GADGETS_LAYOUT_H
+#include <gadgets/layout.h>
+#endif
+
+/* Fallback definitions in case the installed <gadgets/layout.h> is stale
+ * (built before these methods were added). The public header has the same
+ * definitions for external consumers (e.g. window.class). */
+#ifndef LM_ADDTOWINDOW
+#define LM_ADDTOWINDOW          (LAYOUT_Dummy + 0x500)
+#define LM_REMOVEFROMWINDOW     (LAYOUT_Dummy + 0x501)
+struct lpAddToWindow
+{
+    ULONG               MethodID;
+    struct Window      *lpaw_Window;
+    struct Requester   *lpaw_Requester;
+};
+#endif
+
+#ifdef __AROS__
+#include <aros/debug.h>
+#endif
+
+#include LC_LIBDEFS_FILE
+
+/* Module library base with stored class pointer */
+struct LayoutBase_intern
+{
+    struct Library lib;
+    Class *rc_Class;
+    struct Library *rc_BevelBase;       /* bevel.image kept open for NewObject lookups */
+    struct Library *rc_PageBase;        /* page.gadget — opened lazily by PAGE_GetClass */
+};
+
+#define G(obj)  ((struct Gadget *)(obj))
+
+/* Child node in layout */
+struct LayoutChild
+{
+    struct MinNode      lc_Node;
+    Object              *lc_Object;     /* Child BOOPSI object */
+    BOOL                lc_IsImage;     /* TRUE if image, FALSE if gadget */
+    BOOL                lc_NoDispose;   /* Don't dispose on removal */
+
+    /* Size hints */
+    UWORD               lc_MinWidth;
+    UWORD               lc_MinHeight;
+    UWORD               lc_MaxWidth;
+    UWORD               lc_MaxHeight;
+    UWORD               lc_WeightedWidth;
+    UWORD               lc_WeightedHeight;
+    BOOL                lc_NominalSize;
+    BOOL                lc_ScaleWidth;
+    BOOL                lc_ScaleHeight;
+    BOOL                lc_CacheDomain;
+    BOOL                lc_WeightMinimum;
+
+    /* Computed layout */
+    UWORD               lc_NatWidth;    /* natural/min size from query_child_size */
+    UWORD               lc_NatHeight;
+    WORD                lc_Left;
+    WORD                lc_Top;
+    UWORD               lc_Width;
+    UWORD               lc_Height;
+
+    /* Label */
+    Object              *lc_Label;      /* Label image object */
+    UWORD               lc_LabelW;      /* its natural size */
+    UWORD               lc_LabelH;
+};
+
+#define LAYOUT_LABEL_GAP 4               /* between a label and its child */
+
+/* Layout gadget instance data */
+struct LayoutData
+{
+    UWORD               ld_LabelCol;    /* vertical groups: width of the label column */
+    struct MinList      ld_Children;     /* List of LayoutChild */
+    ULONG               ld_Orientation;  /* LAYOUT_ORIENT_HORIZ/VERT */
+    ULONG               ld_BevelStyle;   /* Bevel style */
+    ULONG               ld_HorizAlignment;
+    ULONG               ld_VertAlignment;
+    BOOL                ld_VertAlignSet;    /* LAYOUT_VertAlignment given */
+    ULONG               ld_BevelState;      /* LAYOUT_BevelState (IDS_*) */
+    LONG                ld_FillPen;         /* LAYOUT_FillPen (-1 = none) */
+
+    BOOL                ld_SpaceOuter;   /* Add outer spacing */
+    BOOL                ld_SpaceInner;   /* Add inner spacing */
+    BOOL                ld_EvenSize;     /* Even sizing */
+    BOOL                ld_DeferLayout;  /* Defer layout */
+    BOOL                ld_ShrinkWrap;   /* Shrink wrap */
+
+    STRPTR              ld_Label;        /* Group label */
+    ULONG               ld_LabelPlace;   /* Label placement */
+    BOOL                ld_LabelPlaceSet;
+    BOOL                ld_3DLook;       /* cap_3DLook snapshot - draw frames */
+
+    UWORD               ld_HorizSpacing; /* Horizontal spacing */
+    UWORD               ld_VertSpacing;  /* Vertical spacing */
+    UWORD               ld_TopSpacing;
+    UWORD               ld_BottomSpacing;
+    UWORD               ld_LeftSpacing;
+    UWORD               ld_RightSpacing;
+
+    /* Computed domain */
+    UWORD               ld_MinWidth;
+    UWORD               ld_MinHeight;
+    UWORD               ld_MaxWidth;
+    UWORD               ld_MaxHeight;
+    BOOL                ld_DomainValid;
+    BOOL                ld_ComputingDomain; /* Cycle guard for recursive GM_DOMAIN */
+
+    /* Cached frame bevel.image (lazy) */
+    Object             *ld_BevelImage;
+    UWORD               ld_FrameH;       /* Cached frame horiz thickness */
+    UWORD               ld_FrameV;       /* Cached frame vert  thickness */
+
+    /* Current layout area */
+    struct IBox         ld_GadgetBox;
+};
+
+/* Helper functions */
+void layout_compute_domain(Class *cl, Object *o, struct LayoutData *data);
+void layout_perform_layout(Class *cl, Object *o, struct LayoutData *data,
+                           struct GadgetInfo *gi);
+
+#endif /* LAYOUT_INTERN_H */

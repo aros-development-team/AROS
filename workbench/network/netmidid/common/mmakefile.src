@@ -1,0 +1,11 @@
+include $(SRCDIR)/config/aros.cfg
+
+# Transport-neutral port ownership, UTF-8 name bounds and timed MIDI events.
+FILES := ports text queue
+USER_INCLUDES := -I$(SRCDIR)/$(CURDIR)/include
+
+#MM linklibs-netmidi-common : includes
+%build_linklib mmake=linklibs-netmidi-common \
+    libname=netmidi-common files="$(FILES)"
+
+%common

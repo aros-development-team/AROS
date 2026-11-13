@@ -1,0 +1,22 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+FILES :=    log log_event log_str log_listener
+FUNCS := \
+
+USER_CPPFLAGS := -D__NOLIBBASE__
+#USER_CPPFLAGS += -DDEBUG=1
+
+#MM- kernel-log : linklibs
+#MM- kernel-yes-log-includes : kernel-log-includes
+
+INCLUDE_FILES := log.h
+%copy_includes path=resources
+
+USER_LDFLAGS := -static
+
+%build_module mmake=kernel-log \
+    modname=log modtype=resource \
+    files="$(FUNCS) $(FILES)"
+
+%common

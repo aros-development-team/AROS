@@ -1,0 +1,52 @@
+#
+
+include $(SRCDIR)/config/aros.cfg
+
+USER_AFLAGS 	:= -I$(GENINCDIR)
+
+STDC_X8664_FILES := \
+    fenv
+
+# Link-library only sources (pulled into every executable, not part of the
+# shared stdc.library). __stdc_mathinit overrides the generic placeholder and
+# establishes the default x87 rounding direction at program start-up.
+STDC_X8664_LINKLIB_FILES := \
+    __stdc_mathinit
+
+STDC_X8664_ASMFILES := \
+    longjmp \
+    setjmp
+
+# Add replacement math functions ..
+STDC_X8664_ASMFILES += \
+    math/e_fmod \
+    math/e_fmodf \
+    math/e_fmodl \
+    math/e_remainder \
+    math/e_remainderf \
+    math/e_remainderl \
+    math/e_sqrt \
+    math/e_sqrtf \
+    math/e_sqrtl \
+    math/s_llrint \
+    math/s_llrintf \
+    math/s_llrintl \
+    math/s_logbl \
+    math/s_lrint \
+    math/s_lrintf \
+    math/s_lrintl \
+    math/s_remquo \
+    math/s_remquof \
+    math/s_remquol \
+    math/s_rintl \
+    math/s_scalbn \
+    math/s_scalbnf \
+    math/s_scalbnl
+
+%build_archspecific \
+  mainmmake=compiler-stdc \
+  modname=stdc maindir=compiler/crt/stdc \
+  arch=x86_64 \
+  files="$(STDC_X8664_FILES)" linklibfiles="$(STDC_X8664_LINKLIB_FILES)" asmfiles="$(STDC_X8664_ASMFILES)"
+
+#MM compiler-stdc-x86_64 : includes-asm_h

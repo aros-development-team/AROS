@@ -1,0 +1,52 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+EXEDIR       := $(AROSARCHDIR)
+EXENAME      := bootstrap
+FILES	     := bootstrap memory_io multiboot1 multiboot2 support vesa_setup
+
+ifeq ($(AROS_TARGET_CPU),x86_64)
+    ISA_FLAGS := $(ISA_X86_FLAGS)
+    ARCH_DEFS := -DMULTIBOOT_64BIT
+    ARCH_LIBS := -L$(GENDIR)/lib32 -nostdlib
+else
+    ARCH_LIBS := -L$(AROS_DEVELOPER)/lib -L$(GENDIR)/lib
+endif
+
+USER_CFLAGS  := -Wl,--oformat,elf_i386
+USER_INCLUDES := -isystem $(SRCDIR)/arch/all-native/bootconsole/include -isystem $(SRCDIR)/bootstrap/include
+USER_CPPFLAGS := $(ARCH_DEFS) -DBOOTLOADER_$(AROS_TARGET_BOOTLOADER)
+USER_LDFLAGS := -m32 -Wl,-N,-e,kernel_bootstrap -Wl,-Map,$(GENDIR)/boot/bootstrap-pc.map \
+		-Wl,-T,$(SRCDIR)/$(CURDIR)/ldscript.lds -static-libgcc $(ARCH_LIBS)
+USER_OBJS    := $(OBJDIR)/vesa.bin.o
+#USER_CPPFLAGS += -DDEBUG
+
+kernel-bootstrap-pc_LINK := $(KERNEL_CC) $(SYSROOT_FLAG) $(KERNEL_LDFLAGS)
+
+ifeq ($(AROS_TOOLCHAIN),llvm)
+# The bootstrap is a standalone multiboot ELF executable linked at a fixed
+# address via ldscript.lds. The AROS clang triple links via collect-aros,
+# which emits AROS relocatable modules and ignores the linker script, so
+# use a bare linux triple for the link and let clang drive the system
+# linker. TARGET_ISA_LDFLAGS is what %build_prog passes to the link.
+TARGET_ISA_LDFLAGS := --target=i386-pc-linux-gnu -march=i486
+# The bootstrap is 32-bit, so it needs the 32-bit compiler-rt builtins
+# (%build_prog adds $(TARGET_C_LIBS), which names the 64-bit archive).
+TARGET_C_LIBS := $(TARGET_32_C_LIBS)
+endif
+
+%build_prog mmake=kernel-bootstrap-pc progname=$(EXENAME) \
+	files=$(FILES) targetdir=$(EXEDIR) \
+	uselibs="bootstrap bootconsole stdc.static" usestartup=no lto=no
+
+%rule_link_binary mmake=kernel-bootstrap-pc file=$(OBJDIR)/vesa.bin.o name=vesa files=vesa \
+	start=0x1000 ldflags="-m elf_i386"
+
+%compress_file mmake=kernel-bootstrap-pc file=$(EXEDIR)/$(EXENAME) fmt=$(AROS_PACKAGE_FMT)
+
+# Add $(GENDIR)/boot to file's dependencies
+$(EXEDIR)/$(EXENAME) : $(GENDIR)/boot
+
+GLOB_MKDIRS += $(GENDIR)/boot
+
+%common

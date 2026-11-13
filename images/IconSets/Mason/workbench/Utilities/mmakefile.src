@@ -1,0 +1,15 @@
+#
+# Makefile for Mason's workbench icons
+
+include $(SRCDIR)/config/aros.cfg
+
+ICONS     := MultiView Clock More Installer
+
+#MM- iconset-Mason-wbench-icons-aros : iconset-Mason-wbench-icons-aros-utility
+
+%build_icons mmake=iconset-Mason-wbench-icons-aros-utility icons=$(ICONS) \
+             dir=$(AROS_UTILITIES)
+
+#MM- icons-wbench-utility : Mason-icons-wbench-utility
+%build_icons mmake=Mason-icons-wbench-utility icons=$(ICONS) \
+             dir=$(AROS_PRESETS)/Icons/Mason/Default/$(AROS_DIR_AROS)/$(AROS_DIR_UTILITIES)

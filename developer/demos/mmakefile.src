@@ -1,0 +1,83 @@
+#
+#   Makefile for AROS Demos
+
+include $(SRCDIR)/config/aros.cfg
+
+#   Some files cause problems for native compiles:
+#
+#   1) No working __chip keyword in the standard cc/ld
+#   2) Missing functions because we don't link with libc.a
+#   3) "Fixed or forbidden register was spilled"
+
+FILES	:= \
+    childchild \
+    childwindow \
+    colorwheel \
+    compleximage \
+    consoledemo \
+	cons \
+	cons_charmap \
+    coolbutton \
+    cxtest \
+    demowin \
+    dto \
+    easyreq \
+    filereq \
+    font2c \
+    fontreq \
+    gtdemo \
+    gtmultiselect \
+    intuitext \
+    iconscale \
+    lens \
+    listfonts \
+    menudemo \
+    modelclassdemo \
+    multiple_timers \
+    mxgads \
+    notify \
+    readicon \
+    regiontest \
+    register \
+    realtdemo \
+    roundshape \
+    roundwindow \
+    rtezrequest \
+    rtfont \
+    rtlong \
+    rtfile \
+    rtscreen \
+    rtstring \
+    rtpalette \
+    scrbackfill \
+    screenmodereq \
+    shadowborder \
+    sift \
+    simple_timer \
+    simpleimage \
+    strtest \
+    sysreq \
+    test_text \
+    turboprint \
+    winbackfill \
+    window \
+    winshape
+
+USER_INCLUDES := -I$(SRCDIR)/workbench/libs
+NOWARN_FLAGS:= $(NOWARN_OLD_STYLE_DEFINITION)
+USER_CFLAGS := $(NOWARN_FLAGS)
+
+#MM demos :includes linklibs demos-images-setup workbench-demos-zune
+
+%build_progs mmake=demos \
+    files=$(FILES) targetdir=$(AROSDIR)/Demos \
+    uselibs="coolimagesstatic"
+
+
+demos : $(AROSDIR)/Demos/forkbomb
+
+# Don't need to compile this, so it gets a rule to itself.
+$(AROSDIR)/Demos/forkbomb : forkbomb
+	@$(CP) $< $@
+
+%common

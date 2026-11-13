@@ -1,0 +1,9 @@
+Short:    Very basic hard disk record program (AHI)
+Author:   Martin Blom <lcs@lysator.liu.se>
+Uploader: Martin Blom <lcs@lysator.liu.se>
+Type:     mus/misc
+Requires: AmigaOS 2.0, AHI v2
+
+This is the binary distribution of HardDiskRecord, a simple program
+that I wrote to demonstrate how to use AHI for recording. The full
+source is included in the AHI Developer's Archive.

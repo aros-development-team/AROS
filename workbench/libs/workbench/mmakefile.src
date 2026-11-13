@@ -1,0 +1,58 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+USER_CFLAGS :=  $(AROSROM_MODULE_CFLAGS)
+USER_CPPFLAGS := \
+               -DUSE_EXEC_DEBUG \
+               -D__DOS_NOLIBBASE__ \
+	       -D__UTILITY_NOLIBBASE__ \
+	       -D__INTUITION_NOLIBBASE__ \
+	       -D__ICON_NOLIBBASE__
+USER_LDFLAGS := -static
+
+FILES := support support_messages handler handler_support 
+FUNCS := \
+    addappicona \
+    addappmenuitema \
+    addappwindowa \
+    addappwindowdropzonea \
+    changeworkbenchselectiona \
+    closeworkbenchobjecta \
+    getnextappicon \
+    makeworkbenchobjectvisiblea \
+    notifyworkbench \
+    openworkbenchobjecta \
+    quoteworkbench \
+    registerworkbench \
+    removeappicon \
+    removeappmenuitem \
+    removeappwindow \
+    removeappwindowdropzone \
+    sendappwindowmessage \
+    startworkbench \
+    unregisterworkbench \
+    updateworkbenchobjecta \
+    wbconfig \
+    wbinfo \
+    workbenchcontrola \
+    uae_integration \
+    updateworkbench
+
+#MM workbench-libs-workbench-includes : \
+#MM     kernel-exec-includes \
+#MM     kernel-utility-includes \
+#MM     kernel-intuition-includes \
+#MM     kernel-dos-includes \
+#MM     workbench-libs-icon-includes \
+#MM     includes-copy
+
+#MM workbench-libs-workbench : workbench-libs-icon-linklib
+#MM- core-linklibs: linklibs-workbench
+
+ifneq ($(ROM_OPTIMIZATION_CFLAGS),)
+OPTIMIZATION_CFLAGS := $(ROM_OPTIMIZATION_CFLAGS)
+endif
+
+%build_module mmake=workbench-libs-workbench \
+  modname=workbench modtype=library \
+  files="workbench_init $(FUNCS) $(FILES)"

@@ -1,0 +1,13 @@
+#
+#   Makefile for Bifteck.
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM- debug-tools : debug-tools-bifteck
+#MM debug-tools-bifteck : includes linklibs
+
+%build_prog mmake=debug-tools-bifteck \
+    progname=Bifteck targetdir=$(AROS_DEBUG) \
+    files=Bifteck
+
+%common

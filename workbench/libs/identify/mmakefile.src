@@ -1,0 +1,56 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+FILES := library \
+    idalert  \
+    idestimateformatsize  \
+    idexpansion  \
+    idformatstring  \
+    idfunction  \
+    idhardware  \
+    idhardwarenum  \
+    idhardwareupdate \
+    locale
+
+#MM- workbench-libs-identify : \
+#MM     workbench-libs-identify-lib \
+#MM     workbench-libs-identify-test \
+#MM     workbench-libs-identify-tools
+
+#MM- workbench-libs-identify-quick : \
+#MM     workbench-libs-identify-lib-quick \
+#MM     workbench-libs-identify-test-quick \
+#MM     workbench-libs-identify-tools-quick
+
+#MM- workbench-libs-identify-clean : \
+#MM     workbench-libs-identify-lib-clean \
+#MM     workbench-libs-identify-test-clean \
+#MM     workbench-libs-identify-tools-clean
+
+#MM  workbench-libs-identify-lib : \
+#MM    workbench-libs-identify-includes linklibs \
+#MM    workbench-libs-identify-catalogs
+
+#MM- workbench-libs-identify-includes : \
+#MM     kernel-exec-includes \
+#MM     kernel-dos-includes \
+#MM     kernel-utility-includes \
+#MM     includes-copy
+
+#MM workbench-libs-identify-test : \
+#MM    workbench-libs-identify-lib includes linklibs
+
+%build_prog mmake=workbench-libs-identify-test progname=identifylib files=testidentifylib \
+    targetdir=$(AROS_TESTS) \
+    cflags=$(CFLAGS) \
+    uselibs="identify"
+
+USER_LDFLAGS := -static
+
+%build_module mmake=workbench-libs-identify-lib \
+    modname=identify modtype=library \
+    files="$(FILES)"
+
+%copy_includes mmake=includes-copy includes=identify.h path=libraries
+
+%common

@@ -1,0 +1,17 @@
+#
+#   Makefile for WinDebug.
+
+include $(SRCDIR)/config/aros.cfg
+
+NOWARN_FLAGS := $(NOWARN_FORMAT) $(NOWARN_ATTRIBUTES)
+USER_CFLAGS := $(NOWARN_FLAGS) \
+        -DADATE="\"$(shell date "+%d.%m.%Y")\""
+
+#MM- debug-tools : debug-tools-windebug
+#MM debug-tools-windebug : includes linklibs
+
+%build_prog mmake=debug-tools-windebug \
+    progname=WinDebug targetdir=$(AROS_DEBUG) \
+    files=windebug
+
+%common

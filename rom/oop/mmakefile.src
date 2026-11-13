@@ -1,0 +1,51 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM- core-linklibs : linklibs-oop
+
+FILES	  :=	hash hiddmetaclass metaclass basemetaclass  \
+		rootclass support privatestubs
+	
+FUNCS :=    addclass		\
+	    disposeobject	\
+	    findclass		\
+	    getattr		\
+	    getattrbase		\
+	    getmethod		\
+	    getmethodid		\
+	    newobject		\
+	    obtainattrbase	\
+	    obtainattrbases	\
+            obtainattrbasesarray   \
+            obtainmethodbasesarray \
+	    parseattrs		\
+	    releaseattrbase	\
+	    releaseattrbases	\
+            releaseattrbasesarray  \
+	    removeclass		\
+	    setattrs
+
+USER_CPPFLAGS := \
+               -DUSE_EXEC_DEBUG \
+               -D__OOP_NOLIBBASE__ \
+               -D__UTILITY_NOLIBBASE__
+USER_CPPFLAGS += \
+               -DINTUITION_INLINE_NEWOBJECT
+USER_LDFLAGS := -static
+
+#MM kernel-oop-includes : \
+#MM     kernel-exec-includes \
+#MM     kernel-utility-includes
+
+ifneq ($(ROM_OPTIMIZATION_CFLAGS),)
+OPTIMIZATION_CFLAGS := $(ROM_OPTIMIZATION_CFLAGS)
+endif
+
+%build_module mmake=kernel-oop \
+  modname=oop modtype=library \
+  files="oop_init $(FUNCS) $(FILES)"
+
+#MM includes-copy
+
+INCLUDE_FILES := $(call WILDCARD, include/*.h)
+%copy_includes path=oop dir=include

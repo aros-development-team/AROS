@@ -1,0 +1,13 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+USER_LDFLAGS := -static
+
+FILES := binaryclass
+
+#MM workbench-datatypes-binary : includes linklibs
+
+%build_module mmake=workbench-datatypes-binary \
+    modname=binary modtype=datatype \
+    files=$(FILES)
+

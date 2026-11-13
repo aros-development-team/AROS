@@ -1,0 +1,183 @@
+#ifndef _POSIXC_SYS_STAT_H
+#define _POSIXC_SYS_STAT_H
+
+/*
+    Copyright © 1995-2026, The AROS Development Team. All rights reserved.
+    $Id$
+
+    Desc: POSIX.1-2008 header file sys/stat.h
+*/
+
+#include <aros/features.h>
+#include <aros/system.h>
+
+/* POSIX.1-2008 */
+#include <aros/types/blk_t.h> /* blkcnt_t and blksize_t */
+#include <aros/types/dev_t.h>
+#include <aros/types/ino_t.h>
+#include <aros/types/mode_t.h>
+#include <aros/types/nlink_t.h>
+#include <aros/types/uid_t.h>
+#include <aros/types/gid_t.h>
+#include <aros/types/off_t.h>
+#include <aros/types/time_t.h>
+#include <aros/types/timespec_s.h>
+
+/* NB we must use the __xxx_t types here, because the xxx_t version
+ * may not be defined */
+struct stat
+{
+    dev_t           st_dev;	    /* inode's device */
+#if defined(__USE_FILE_OFFSET64)
+    __ino64_t       st_ino;	    /* inode's number */
+#else
+    __ino_t         st_ino;	    /* inode's number */
+#endif
+    mode_t          st_mode;	    /* inode protection mode */
+    nlink_t         st_nlink;	    /* number of hard links */
+    uid_t           st_uid;	    /* user ID of the file's owner */
+    gid_t           st_gid;	    /* group ID of the file's group */
+    dev_t           st_rdev;	    /* device type */
+#if defined(__USE_FILE_OFFSET64)
+    __off64_t       st_size;        /* file size, in bytes */
+#else
+    __off_t         st_size;	    /* file size, in bytes */
+#endif
+    struct timespec st_atim;	    /* time of last access */
+    struct timespec st_mtim;	    /* time of last data modification */
+    struct timespec st_ctim;	    /* time of last file status change */
+    __blksize_t     st_blksize;	    /* optimal blocksize for I/O */
+#if defined(__USE_FILE_OFFSET64)
+    __blkcnt64_t    st_blocks;      /* blocks allocated for file */
+#else
+    __blkcnt_t      st_blocks;      /* blocks allocated for file */
+#endif
+    unsigned long   st_flags;	    /* user defined flags for file */
+    unsigned long   st_gen;         /* file generation number */
+};
+
+struct stat64
+{
+    dev_t           st_dev;	    /* inode's device */
+    __ino64_t       st_ino;	    /* inode's number */
+    mode_t          st_mode;	    /* inode protection mode */
+    nlink_t         st_nlink;	    /* number of hard links */
+    uid_t           st_uid;	    /* user ID of the file's owner */
+    gid_t           st_gid;	    /* group ID of the file's group */
+    dev_t           st_rdev;	    /* device type */
+    __off64_t       st_size;        /* file size, in bytes */
+    struct timespec st_atim;	    /* time of last access */
+    struct timespec st_mtim;	    /* time of last data modification */
+    struct timespec st_ctim;	    /* time of last file status change */
+    __blksize_t     st_blksize;	    /* optimal blocksize for I/O */
+    __blkcnt64_t    st_blocks;      /* blocks allocated for file */
+    unsigned long   st_flags;	    /* user defined flags for file */
+    unsigned long   st_gen;         /* file generation number */
+};
+
+#define st_atime st_atim.tv_sec
+#define st_mtime st_mtim.tv_sec
+#define st_ctime st_ctim.tv_sec
+
+/* mode_t values */
+
+#define	S_IFMT	 0170000		/* type of file */
+#define	S_IFBLK	 0060000		/* block special */
+#define	S_IFCHR	 0020000		/* character special */
+#define	S_IFIFO	 0010000		/* named pipe (fifo) */
+#define	S_IFREG	 0100000		/* regular */
+#define	S_IFDIR	 0040000		/* directory */
+#define	S_IFLNK	 0120000		/* symbolic link */
+#define	S_IFSOCK 0140000		/* socket */
+
+#define	S_IRWXU	0000700			/* RWX mask for owner */
+#define	S_IRUSR	0000400			/* R for owner */
+#define S_IREAD  S_IRUSR
+#define	S_IWUSR	0000200			/* W for owner */
+#define S_IWRITE S_IWUSR
+#define	S_IXUSR	0000100			/* X for owner */
+
+#define	S_IRWXG	0000070			/* RWX mask for group */
+#define	S_IRGRP	0000040			/* R for group */
+#define	S_IWGRP	0000020			/* W for group */
+#define	S_IXGRP	0000010			/* X for group */
+
+#define	S_IRWXO	0000007			/* RWX mask for other */
+#define	S_IROTH	0000004			/* R for other */
+#define	S_IWOTH	0000002			/* W for other */
+#define	S_IXOTH	0000001			/* X for other */
+#define	S_ISUID	0004000			/* set user id on execution */
+#define	S_ISGID	0002000			/* set group id on execution */
+#define	S_ISVTX	0001000			/* save swapped text even after use */
+#define	S_ISBLK(m)	((m & 0170000) == 0060000)	/* block special */
+#define	S_ISCHR(m)	((m & 0170000) == 0020000)	/* char special */
+#define	S_ISDIR(m)	((m & 0170000) == 0040000)	/* directory */
+#define	S_ISFIFO(m)	((m & 0170000) == 0010000)	/* fifo */
+#define	S_ISREG(m)	((m & 0170000) == 0100000)	/* regular file */
+#define	S_ISLNK(m)	((m & 0170000) == 0120000)	/* symbolic link */
+#define S_ISSOCK(m)	((m & 0170000) == 0140000)	/* socket */
+
+/* NOTIMPL
+S_TYPEISMQ(buf)
+S_TYPEISSEM(buf)
+S_TYPEISSHM(buf)
+S_TYPEISTMO(buf)
+*/
+
+/* Extras */
+/* FIXME: Are they needed ? */
+#define	ACCESSPERMS	(S_IRWXU|S_IRWXG|S_IRWXO)	/* 0777 */
+							/* 7777 */
+#define	ALLPERMS	(S_ISUID|S_ISGID|S_ISTXT|S_IRWXU|S_IRWXG|S_IRWXO)
+							/* 0666 */
+#define	DEFFILEMODE	(S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH)
+
+#define S_BLKSIZE	512		/* block size used in the stat struct */
+
+
+
+__BEGIN_DECLS
+
+int chmod(const char *path, mode_t mode);
+int fchmod(int fildes, mode_t mode);
+int fchmodat(int dirfd, const char *pathname, mode_t mode, int flags);
+/* When _FILE_OFFSET_BITS==64 is requested, __USE_FILE_OFFSET64 widens
+ * struct stat (st_ino grows to 64 bit, shifting st_size et al). The plain
+ * stat/fstat/lstat entry points fill the narrow layout, so a caller built
+ * with the wide struct would read st_size from the wrong offset. Redirect
+ * such callers to the *64 implementations, which fill the wide struct.
+ * Older code (no __USE_FILE_OFFSET64) keeps the narrow struct and calls. */
+#if defined(__USE_FILE_OFFSET64)
+int fstat(int fd, struct stat *sb) __asm__("fstat64");
+#else
+int fstat(int fd, struct stat *sb);
+#endif
+int fstat64(int fd, struct stat64 *sb);
+
+int fstatat(int, const char *__restrict, struct stat *__restrict, int);
+/* NOTIMPL int futimens(int, const struct timespec [2]); */
+int lstat64(const char * __restrict path, struct stat64 * __restrict sb);
+#if defined(__USE_FILE_OFFSET64)
+int lstat(const char * __restrict path, struct stat * __restrict sb) __asm__("lstat64");
+#else
+int lstat(const char * __restrict path, struct stat * __restrict sb);
+#endif
+
+int mkdir(const char *path, mode_t mode);
+/* NOTIMPL int mkdirat(int, const char *, mode_t); */
+/* NOTIMPL int mkfifo(const char *path, mode_t mode); */
+/* NOTIMPL int mkfifoat(int, const char *, mode_t); */
+int mknod(const char *path, mode_t mode, dev_t dev);
+/* NOTIMPL int mknodat(int, const char *, mode_t, dev_t); */
+#if defined(__USE_FILE_OFFSET64)
+int stat(const char * __restrict path, struct stat * __restrict sb) __asm__("stat64");
+#else
+int stat(const char * __restrict path, struct stat * __restrict sb);
+#endif
+int stat64(const char * __restrict path, struct stat64 * __restrict sb);
+mode_t umask(mode_t numask);
+/* NOTIMPL int utimensat(int, const char *, const struct timespec [2], int); */
+
+__END_DECLS
+
+#endif /* _POSIXC_SYS_STAT_H */

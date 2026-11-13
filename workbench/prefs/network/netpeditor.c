@@ -1,0 +1,3174 @@
+/*
+    Copyright (C) 2009-2026, The AROS Development Team. All rights reserved.
+*/
+
+#define MUIMASTER_YES_INLINE_STDARG
+
+#include <exec/types.h>
+#include <utility/tagitem.h>
+#include <libraries/asl.h>
+#include <libraries/locale.h>
+#include <libraries/mui.h>
+#include <prefs/prefhdr.h>
+#include <zune/customclasses.h>
+#include <zune/prefseditor.h>
+
+#include <proto/exec.h>
+#include <proto/intuition.h>
+#include <proto/graphics.h>
+#include <proto/utility.h>
+#include <proto/muimaster.h>
+#include <proto/dos.h>
+#include <proto/iffparse.h>
+#include <dos/dostags.h>
+
+#include <string.h>
+#include <stdio.h>
+
+#include "misc.h"
+#include "locale.h"
+#include "netpeditor.h"
+#include "prefsdata.h"
+#include "protocols.h"
+#include "popinterface.h"
+
+#include <proto/alib.h>
+#include <utility/hooks.h>
+
+#include <aros/debug.h>
+#include <aros/libcall.h>
+#include "netprefs_intern.h"
+
+static CONST_STRPTR NetworkTabs[] = { NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL};
+static CONST_STRPTR EncCycle[] = { NULL, NULL, NULL, NULL };
+static CONST_STRPTR KeyCycle[] = { NULL, NULL, NULL };
+static CONST_STRPTR TunnelTypeCycle[] = { "6in4", NULL };
+static const TEXT max_ip_str[] = "255.255.255.255 ";
+
+/* -----------------------------------------------------------------------
+ * Interface list icon: 16x16 BodychunkObject using embedded pixel art.
+ * Registered with MUIM_List_CreateImage and embedded via \33O[ptr] escape.
+ * ----------------------------------------------------------------------- */
+#define USE_NET_IFICON_COLORS
+#define USE_NET_IFICON_BODY
+#include "net_ificon.h"
+
+static APTR netListIconImg = NULL;   /* result of MUIM_List_CreateImage */
+
+static Object *netListIconObj = NULL; /* BodychunkObject used as source */
+
+static Object *NetListIconObject_Create(void)
+{
+    return BodychunkObject,
+        MUIA_Bitmap_SourceColors, (IPTR)net_ificon_colors,
+        MUIA_FixWidth,            NET_IFICON_WIDTH,
+        MUIA_FixHeight,           NET_IFICON_HEIGHT,
+        MUIA_Bitmap_Width,        NET_IFICON_WIDTH,
+        MUIA_Bitmap_Height,       NET_IFICON_HEIGHT,
+        MUIA_Bodychunk_Depth,     NET_IFICON_DEPTH,
+        MUIA_Bodychunk_Body,      (IPTR)net_ificon_body,
+        MUIA_Bodychunk_Compression, NET_IFICON_COMPRESSION,
+        MUIA_Bodychunk_Masking,   NET_IFICON_MASKING,
+        MUIA_Bitmap_Transparent,  NET_IFICON_TRANSPARENT,
+    End;
+}
+
+static struct Hook  netpeditor_displayHook,
+                    netpeditor_constructHook,
+                    netpeditor_destructHook;
+static struct Hook  hosts_displayHook,
+                    hosts_constructHook,
+                    hosts_destructHook;
+static struct Hook  wireless_displayHook,
+                    wireless_constructHook,
+                    wireless_destructHook;
+static struct Hook  share_displayHook,
+                    share_constructHook,
+                    share_destructHook;
+static struct Hook  service_displayHook;
+
+/* One per-type mounted-share edit window (created from each registered
+ * filesystem handler's window class; ln_Type = the handler's fsh_ID). */
+struct ShareWinNode
+{
+    struct Node swn_Node;
+    Object     *swn_Win;
+};
+
+/*** Instance Data **********************************************************/
+struct NetPEditor_DATA
+{
+    // Main window
+    Object  *netped_interfaceList,
+            *netped_hostString,
+            *netped_domainString,
+            *netped_Autostart,
+            *netped_addInterface,
+            *netped_editButton,
+            *netped_removeButton,
+            *netped_inputGroup,
+            *netped_hostList,
+            *netped_hostAddButton,
+            *netped_hostEditButton,
+            *netped_hostRemoveButton,
+            *netped_networkList,
+            *netped_netAddButton,
+            *netped_netEditButton,
+            *netped_netRemoveButton,
+            *netped_MBBInitString[MAXATCOMMANDS],
+            *netped_MBBDeviceString,
+            *netped_MBBUnit,
+            *netped_MBBUsername,
+            *netped_MBBPassword,
+            *netped_shareList,
+            *netped_shareAddButton,
+            *netped_shareEditButton,
+            *netped_shareRemoveButton,
+            *netped_serviceList,
+            *netped_svcEnabled,
+            *netped_svcOrder,
+            *netped_svcConfigure,
+            *netped_svcPath,
+            *netped_mainTabs;
+
+    // Interface window
+    Object  *netped_ifWindow,
+            *netped_upState,
+            *netped_deferState,
+            *netped_nameString,
+            *netped_deviceString,
+            *netped_unitString,
+            *netped_protoAddrList,
+            *netped_protoEditButton,
+            *netped_applyButton,
+            *netped_closeButton;
+
+    // tunnel window
+    Object  *netped_tunnelWindow,
+            *netped_tunTypeCycle,
+            *netped_tunNameString,
+            *netped_tunRemoteString,
+            *netped_tunLocalString,
+            *netped_tunTTLString,
+            *netped_tunIP6String,
+            *netped_tunPrefixString,
+            *netped_tunGate6String,
+            *netped_tunUpState,
+            *netped_tunApplyButton,
+            *netped_tunCloseButton;
+
+    /* Protocol address data (authoritative while the interface window is open) */
+    struct ProtocolAddress netped_protoAddrs[2]; /* [0]=IPv4  [1]=IPv6 */
+
+    /* Plugin module system */
+    struct NetPrefsBase *netped_NetPrefsBase;
+    ULONG               netped_protoCount;
+    Object             *netped_protoWindows[2]; /* indexed by ProtocolFamily */
+
+    // Host window
+    Object  *netped_hostWindow,
+            *netped_hostNamesString,
+            *netped_hostAddressString,
+            *netped_hostApplyButton,
+            *netped_hostCloseButton;
+
+    // Wireless network window
+    Object  *netped_netWindow,
+            *netped_sSIDString,
+            *netped_encType,
+            *netped_keyType,
+            *netped_keyString,
+            *netped_hiddenState,
+            *netped_adHocState,
+            *netped_netApplyButton,
+            *netped_netCloseButton;
+
+    // Mounted-share edit windows: one per registered filesystem handler
+    // (ShareWinNode entries; ln_Type = fsh_ID).  Dynamic - no fixed slots.
+    struct List netped_shareWindows;
+};
+
+AROS_UFH3S(APTR, constructFunc,
+AROS_UFHA(struct Hook *, hook, A0),
+AROS_UFHA(APTR, pool, A2),
+AROS_UFHA(struct Interface *, entry, A1))
+{
+    AROS_USERFUNC_INIT
+
+    struct Interface *new;
+
+    if ((new = AllocPooled(pool, sizeof(*new))))
+    {
+        *new = *entry;
+        /* The struct copy above duplicated the list header, whose nodes still
+         * point at the original interface's storage.  Give this copy its own
+         * independent set of protocol-address nodes. */
+        NEWLIST(&new->protoAddrs);
+        ProtoAddr_CopyList(&new->protoAddrs, &entry->protoAddrs);
+    }
+    return new;
+
+    AROS_USERFUNC_EXIT
+}
+
+AROS_UFH3S(void, destructFunc,
+AROS_UFHA(struct Hook *, hook, A0),
+AROS_UFHA(APTR, pool, A2),
+AROS_UFHA(struct Interface *, entry, A1))
+{
+    AROS_USERFUNC_INIT
+
+    ProtoAddr_FreeList(&entry->protoAddrs);
+    FreePooled(pool, entry, sizeof(struct Interface));
+
+    AROS_USERFUNC_EXIT
+}
+
+AROS_UFH3S(LONG, displayFunc,
+AROS_UFHA(struct Hook *, hook, A0),
+AROS_UFHA(char **, array, A2),
+AROS_UFHA(struct Interface *, entry, A1))
+{
+    AROS_USERFUNC_INIT
+    if (entry)
+    {
+        static char namebuffer[NAMEBUFLEN + 32]; /* room for \33O[ptr] prefix */
+        static char addrbuffer[256];
+        static char devbuffer[NAMEBUFLEN + IPBUFLEN + 8];
+        struct Node *n;
+        LONG apos = 0;
+
+        /* Prepend icon to interface name if available */
+        if (hook->h_Data)
+            sprintf(namebuffer, "\33O[%p] %s", hook->h_Data, entry->name);
+        else
+            strcpy(namebuffer, entry->name);
+
+        *array++ = namebuffer;
+        *array++ = entry->up ? "*" : "";
+        if (entry->isTunnel)
+        {
+            /* A tunnel has no SANA-II device; show it as a 6in4 tunnel to its
+             * remote endpoint. */
+            if (entry->tunnelRemote[0])
+                sprintf(devbuffer, "6in4 \xbb%s", entry->tunnelRemote);
+            else
+                strcpy(devbuffer, "6in4");
+        }
+        else
+        {
+            sprintf(devbuffer, "%s/%d", FilePart(entry->device), (int)entry->unit);
+        }
+        *array++ = devbuffer;
+
+        /* Build the address column generically from the interface's protocol
+         * objects.  The core stays protocol-agnostic: each plugin formats its
+         * own node and supplies its own label. */
+        addrbuffer[0] = '\0';
+        for (n = entry->protoAddrs.lh_Head; n->ln_Succ; n = n->ln_Succ)
+        {
+            struct ProtoHandlerNode *ph = ProtoHandler_ByID(n->ln_Type);
+            char one[IP6BUFLEN + 1];
+
+            if (!ph || !ph->ph_Display)
+                continue;
+
+            ph->ph_Display((struct ProtocolAddress *)n, one, sizeof(one));
+            apos += snprintf(addrbuffer + apos, sizeof(addrbuffer) - apos,
+                             "%s%s (%s)", apos ? " / " : "", one,
+                             ph->ph_Node.ln_Name);
+            if (apos >= (LONG)sizeof(addrbuffer))
+                break;
+        }
+        *array = addrbuffer;
+    }
+    else
+    {
+        *array++ = (STRPTR)_(MSG_IFNAME);
+        *array++ = (STRPTR)_(MSG_UP);
+        *array++ = (STRPTR)_(MSG_DEVICE);
+        *array = (STRPTR)_(MSG_IP);
+    }
+
+    return 0;
+
+    AROS_USERFUNC_EXIT
+}
+
+AROS_UFH3S(APTR, hostsConstructFunc,
+AROS_UFHA(struct Hook *, hook, A0),
+AROS_UFHA(APTR, pool, A2),
+AROS_UFHA(struct Host *, entry, A1))
+{
+    AROS_USERFUNC_INIT
+
+    struct Host *new;
+
+    if ((new = AllocPooled(pool, sizeof(*new))))
+    {
+        *new = *entry;
+    }
+    return new;
+
+    AROS_USERFUNC_EXIT
+}
+
+AROS_UFH3S(void, hostsDestructFunc,
+AROS_UFHA(struct Hook *, hook, A0),
+AROS_UFHA(APTR, pool, A2),
+AROS_UFHA(struct Host *, entry, A1))
+{
+    AROS_USERFUNC_INIT
+
+    FreePooled(pool, entry, sizeof(struct Host));
+
+    AROS_USERFUNC_EXIT
+}
+
+AROS_UFH3S(LONG, hostsDisplayFunc,
+AROS_UFHA(struct Hook *, hook, A0),
+AROS_UFHA(char **, array, A2),
+AROS_UFHA(struct Host *, entry, A1))
+{
+    AROS_USERFUNC_INIT
+    if (entry)
+    {
+        *array++ = entry->address;
+        *array++ = entry->names;
+    }
+    else
+    {
+        *array++ = (STRPTR)_(MSG_IP);
+        *array++ = (STRPTR)_(MSG_HOST_NAMES);
+    }
+
+    return 0;
+
+    AROS_USERFUNC_EXIT
+}
+
+AROS_UFH3S(APTR, netConstructFunc,
+AROS_UFHA(struct Hook *, hook, A0),
+AROS_UFHA(APTR, pool, A2),
+AROS_UFHA(struct Network *, entry, A1))
+{
+    AROS_USERFUNC_INIT
+
+    struct Network *new;
+
+    if ((new = AllocPooled(pool, sizeof(*new))))
+    {
+        *new = *entry;
+    }
+    return new;
+
+    AROS_USERFUNC_EXIT
+}
+
+AROS_UFH3S(void, netDestructFunc,
+AROS_UFHA(struct Hook *, hook, A0),
+AROS_UFHA(APTR, pool, A2),
+AROS_UFHA(struct Network *, entry, A1))
+{
+    AROS_USERFUNC_INIT
+
+    FreePooled(pool, entry, sizeof(struct Network));
+
+    AROS_USERFUNC_EXIT
+}
+
+AROS_UFH3S(LONG, netDisplayFunc,
+AROS_UFHA(struct Hook *, hook, A0),
+AROS_UFHA(char **, array, A2),
+AROS_UFHA(struct Network *, entry, A1))
+{
+    AROS_USERFUNC_INIT
+    if (entry)
+    {
+        *array++ = entry->name;
+        switch(entry->encType)
+        {
+            case 2:
+                *array++ = (STRPTR)_(MSG_ENC_WPA);
+                break;
+            case 1:
+                *array++ = (STRPTR)_(MSG_ENC_WEP);
+                break;
+            default:
+                *array++ = (STRPTR)_(MSG_ENC_NONE);
+        }
+        *array++ = (STRPTR)L_(entry->hidden ? YESSTR : NOSTR);
+        *array++ = (STRPTR)L_(entry->adHoc ? YESSTR : NOSTR);
+    }
+    else
+    {
+        *array++ = (STRPTR)_(MSG_SSID);
+        *array++ = (STRPTR)_(MSG_ENCTYPE);
+        *array++   = (STRPTR)_(MSG_HIDDEN);
+        *array++   = (STRPTR)_(MSG_ADHOC);
+    }
+
+    return 0;
+
+    AROS_USERFUNC_EXIT
+}
+
+AROS_UFH3S(APTR, shareConstructFunc,
+AROS_UFHA(struct Hook *, hook, A0),
+AROS_UFHA(APTR, pool, A2),
+AROS_UFHA(struct MountedShare *, entry, A1))
+{
+    AROS_USERFUNC_INIT
+
+    struct MountedShare *new;
+
+    if ((new = AllocPooled(pool, sizeof(*new))))
+    {
+        *new = *entry;
+        /* the copy is a list-detached value object */
+        new->ms_node.ln_Succ = new->ms_node.ln_Pred = NULL;
+        new->ms_node.ln_Name = new->ms_device;
+    }
+    return new;
+
+    AROS_USERFUNC_EXIT
+}
+
+AROS_UFH3S(void, shareDestructFunc,
+AROS_UFHA(struct Hook *, hook, A0),
+AROS_UFHA(APTR, pool, A2),
+AROS_UFHA(struct MountedShare *, entry, A1))
+{
+    AROS_USERFUNC_INIT
+
+    FreePooled(pool, entry, sizeof(struct MountedShare));
+
+    AROS_USERFUNC_EXIT
+}
+
+AROS_UFH3S(LONG, shareDisplayFunc,
+AROS_UFHA(struct Hook *, hook, A0),
+AROS_UFHA(char **, array, A2),
+AROS_UFHA(struct MountedShare *, entry, A1))
+{
+    AROS_USERFUNC_INIT
+    if (entry)
+    {
+        struct FSHandlerNode *fsh = FSHandler_ByID(entry->ms_node.ln_Type);
+
+        *array++ = entry->ms_device;
+        *array++ = entry->ms_active ? "*" : "";
+        *array++ = fsh ? fsh->fsh_Node.ln_Name : (char *)"?";
+        *array++ = entry->ms_host;
+        *array++ = entry->ms_volume;
+        *array++ = entry->ms_user;
+    }
+    else
+    {
+        *array++ = (STRPTR)_(MSG_DEVICE);
+        *array++ = (STRPTR)_(MSG_UP);
+        *array++ = (STRPTR)_(MSG_TYPE);
+        *array++ = (STRPTR)_(MSG_HOST_NAME);
+        *array++ = (STRPTR)_(MSG_VOLUME);
+        *array++ = (STRPTR)_(MSG_USERNAME);
+    }
+
+    return 0;
+
+    AROS_USERFUNC_EXIT
+}
+
+/* Services tab: name, enabled, program. List entries point into netservices[]. */
+AROS_UFH3S(LONG, serviceDisplayFunc,
+AROS_UFHA(struct Hook *, hook, A0),
+AROS_UFHA(char **, array, A2),
+AROS_UFHA(struct NetSvcEntry *, entry, A1))
+{
+    AROS_USERFUNC_INIT
+    if (entry)
+    {
+        *array++ = entry->nse_FriendlyName[0]
+                   ? entry->nse_FriendlyName : entry->nse_Name;
+        *array++ = entry->nse_Enabled ? (STRPTR)_(MSG_SVC_YES) : (STRPTR)_(MSG_SVC_NO);
+        *array++ = entry->nse_Order;
+    }
+    else
+    {
+        *array++ = (STRPTR)_(MSG_SVC_COL_NAME);
+        *array++ = (STRPTR)_(MSG_SVC_COL_ENABLED);
+        *array++ = (STRPTR)_(MSG_SVC_COL_PRIORITY);
+    }
+
+    return 0;
+
+    AROS_USERFUNC_EXIT
+}
+
+/* ------------------------------------------------------------------------
+ * Protocol-address working-slot helpers.
+ *
+ * The interface config window edits a small fixed set of working slots (one
+ * per registered plugin, indexed by ProtocolFamily).  These helpers move data
+ * between those slots and an interface's authoritative protoAddrs list without
+ * the core needing to understand any protocol's fields.
+ * ---------------------------------------------------------------------- */
+
+/* TRUE if the slot carries a configuration worth writing as a node.  An empty
+ * manual slot means "this protocol is not configured on the interface" - which
+ * is how an IPv4-only (or IPv6-only) interface is expressed: the absent
+ * protocol simply has no node. */
+static BOOL proto_present(struct ProtocolAddress *pa)
+{
+    return pa->pa_mode == IP_MODE_DHCP ||
+           pa->pa_mode == IP_MODE_AUTO ||
+           pa->pa_addr[0] != '\0' ||
+           pa->pa_dns[0][0] != '\0' ||
+           pa->pa_dns[1][0] != '\0';
+}
+
+/* Load a working slot from the interface's node for this plugin id (or leave
+ * it as an empty manual slot if the interface has no such node). */
+static void proto_slot_load(struct ProtocolAddress *slot,
+                            struct Interface *iface, UBYTE id,
+                            enum ProtocolFamily fam)
+{
+    struct ProtocolAddress *pa = ProtoAddr_Find(&iface->protoAddrs, id);
+
+    memset(slot, 0, sizeof(*slot));
+    slot->pa_node.ln_Type = id;
+    slot->pa_family       = fam;
+    /* Default an un-configured protocol slot to the usual automatic mode for
+     * its family - DHCP for IPv4, stateless autoconfiguration for IPv6 - so a
+     * newly added interface comes up automatic rather than Manual.  An
+     * existing node (below) overrides this with the saved mode. */
+    slot->pa_mode         = (fam == PROTO_FAMILY_IPV6) ? IP_MODE_AUTO
+                                                       : IP_MODE_DHCP;
+
+    if (pa)
+    {
+        slot->pa_mode   = pa->pa_mode;
+        slot->pa_prefix = pa->pa_prefix;
+        strlcpy(slot->pa_addr, pa->pa_addr, sizeof(slot->pa_addr));
+        strlcpy(slot->pa_mask, pa->pa_mask, sizeof(slot->pa_mask));
+        strlcpy(slot->pa_gate, pa->pa_gate, sizeof(slot->pa_gate));
+    }
+}
+
+/* Copy one working slot's fields into a list node. */
+static void proto_node_store(struct ProtocolAddress *pa,
+                             struct ProtocolAddress *slot)
+{
+    pa->pa_family = slot->pa_family;
+    pa->pa_mode   = slot->pa_mode;
+    pa->pa_prefix = slot->pa_prefix;
+    strlcpy(pa->pa_addr, slot->pa_addr, sizeof(pa->pa_addr));
+    strlcpy(pa->pa_mask, slot->pa_mask, sizeof(pa->pa_mask));
+    strlcpy(pa->pa_gate, slot->pa_gate, sizeof(pa->pa_gate));
+}
+
+/* (Re)build iface->protoAddrs as a fresh, independent list holding a node for
+ * each configured working slot.  The list header is reset rather than freed -
+ * the caller holds a shallow struct copy whose header still aliases the source
+ * interface's nodes, which must not be touched.  The freshly built nodes belong
+ * to the caller and must be freed with ProtoAddr_FreeList after use. */
+static void proto_build_list(struct Interface *iface,
+                             struct ProtocolAddress *slots, ULONG count)
+{
+    ULONG f;
+
+    NEWLIST(&iface->protoAddrs);
+    for (f = 0; f < count; f++)
+    {
+        struct ProtocolAddress *pa;
+
+        if (!proto_present(&slots[f]))
+            continue;
+        pa = ProtoAddr_FindOrAdd(&iface->protoAddrs, slots[f].pa_node.ln_Type);
+        if (pa)
+            proto_node_store(pa, &slots[f]);
+    }
+}
+
+BOOL Gadgets2NetworkPrefs(struct NetPEditor_DATA *data)
+{
+    STRPTR str = NULL;
+    IPTR lng = 0;
+    LONG i,a;
+
+    LONG entries = XGET(data->netped_interfaceList, MUIA_List_Entries);
+    for(i = 0; i < entries; i++)
+    {
+        struct Interface *iface = GetInterface(i);
+        struct Interface *ifaceentry;
+        DoMethod
+        (
+            data->netped_interfaceList,
+            MUIM_List_GetEntry, i, &ifaceentry
+        );
+        SetName(iface, ifaceentry->name);
+        SetUp(iface, ifaceentry->up);
+        SetDefer(iface, ifaceentry->defer);
+        SetDevice(iface, ifaceentry->device);
+        SetUnit(iface, ifaceentry->unit);
+        /* Deep-copy the interface's protocol objects into the persistent global.
+         * The core stays protocol-agnostic - it just clones whatever nodes the
+         * plugins put on the list. */
+        ProtoAddr_FreeList(&iface->protoAddrs);
+        NEWLIST(&iface->protoAddrs);
+        ProtoAddr_CopyList(&iface->protoAddrs, &ifaceentry->protoAddrs);
+        /* 6in4 tunnel fields (omitted above would be lost on save) */
+        SetIsTunnel(iface, ifaceentry->isTunnel);
+        SetTunnelRemote(iface, ifaceentry->tunnelRemote);
+        SetTunnelLocal(iface, ifaceentry->tunnelLocal);
+        SetTunnelTTL(iface, ifaceentry->tunnelTTL);
+    }
+    SetInterfaceCount(entries);
+
+    GET(data->netped_hostString, MUIA_String_Contents, &str);
+    SetHostname(str);
+    GET(data->netped_domainString, MUIA_String_Contents, &str);
+    SetDomain(str);
+    GET(data->netped_Autostart, MUIA_Selected, &lng);
+    SetAutostart(lng);
+
+    entries = XGET(data->netped_hostList, MUIA_List_Entries);
+    for(i = 0; i < entries; i++)
+    {
+        struct Host *host = GetHost(i);
+        struct Host *hostentry;
+        DoMethod
+        (
+            data->netped_hostList,
+            MUIM_List_GetEntry, i, &hostentry
+        );
+        SetHostAddress(host, hostentry->address);
+        SetHostNames(host, hostentry->names);
+    }
+    SetHostCount(entries);
+
+    entries = XGET(data->netped_networkList, MUIA_List_Entries);
+    for(i = 0; i < entries; i++)
+    {
+        struct Network *net = GetNetwork(i);
+        struct Network *netentry;
+        DoMethod
+        (
+            data->netped_networkList,
+            MUIM_List_GetEntry, i, &netentry
+        );
+        SetNetworkName(net, netentry->name);
+        SetEncType(net, netentry->encType);
+        SetKey(net, netentry->key, netentry->keyIsHex);
+        SetHidden(net, netentry->hidden);
+        SetAdHoc(net, netentry->adHoc);
+    }
+    SetNetworkCount(entries);
+
+    for(i = 0 ; i < MAXATCOMMANDS; i++) SetMobile_atcommand(i,"");
+
+    a = 0;
+    for(i = 0 ; i < MAXATCOMMANDS; i++)
+    {
+        GET(data->netped_MBBInitString[i], MUIA_String_Contents, &str);
+        if( strlen(str) > 0 ) SetMobile_atcommand( a++ , str );
+    }
+    GET(data->netped_MBBDeviceString, MUIA_String_Contents, &str);
+    SetMobile_devicename(str);
+    GET(data->netped_MBBUnit, MUIA_Numeric_Value , &lng);
+    SetMobile_unit(lng);
+    GET(data->netped_MBBUsername, MUIA_String_Contents, &str);
+    SetMobile_username(str);
+    GET(data->netped_MBBPassword, MUIA_String_Contents, &str);
+    SetMobile_password(str);
+
+    /* Mounted shares: rebuild the prefs list from the listview copies */
+    ClearShares();
+    entries = XGET(data->netped_shareList, MUIA_List_Entries);
+    for(i = 0; i < entries; i++)
+    {
+        struct MountedShare *shareentry, *share;
+
+        DoMethod
+        (
+            data->netped_shareList,
+            MUIM_List_GetEntry, i, &shareentry
+        );
+        if (shareentry == NULL)
+            continue;
+        share = AddShare(shareentry->ms_node.ln_Type);
+        if (share == NULL)
+            continue;
+        strlcpy(share->ms_device, shareentry->ms_device, sizeof(share->ms_device));
+        strlcpy(share->ms_host,   shareentry->ms_host,   sizeof(share->ms_host));
+        strlcpy(share->ms_volume, shareentry->ms_volume, sizeof(share->ms_volume));
+        strlcpy(share->ms_user,   shareentry->ms_user,   sizeof(share->ms_user));
+        strlcpy(share->ms_secret, shareentry->ms_secret, sizeof(share->ms_secret));
+        strlcpy(share->ms_extra,  shareentry->ms_extra,  sizeof(share->ms_extra));
+        share->ms_active = shareentry->ms_active;
+    }
+
+    return TRUE;
+}
+
+/* Services tab: reflect the active list entry in the Enabled checkmark + path. */
+static void ShowSelectedService(struct NetPEditor_DATA *data)
+{
+    struct NetSvcEntry *e = NULL;
+
+    DoMethod(data->netped_serviceList, MUIM_List_GetEntry,
+             MUIV_List_GetEntry_Active, (IPTR)&e);
+    NNSET(data->netped_svcEnabled, MUIA_Selected, e ? e->nse_Enabled : FALSE);
+    SET(data->netped_svcEnabled, MUIA_Disabled, e == NULL);
+    NNSET(data->netped_svcOrder, MUIA_String_Contents,
+          (IPTR)(e ? e->nse_Order : ""));
+    SET(data->netped_svcOrder, MUIA_Disabled, e == NULL);
+    SET(data->netped_svcConfigure, MUIA_Disabled,
+        e == NULL || e->nse_ConfigTool[0] == '\0');
+    SET(data->netped_svcPath, MUIA_Text_Contents, (IPTR)(e ? e->nse_Path : ""));
+}
+
+BOOL NetworkPrefs2Gadgets
+(
+    struct NetPEditor_DATA *data
+)
+{
+    LONG i;
+    LONG entries = GetInterfaceCount();
+
+    SET(data->netped_interfaceList, MUIA_List_Quiet, TRUE);
+    DoMethod(data->netped_interfaceList, MUIM_List_Clear);
+    for(i = 0; i < entries; i++)
+    {
+        struct Interface *iface = GetInterface(i);
+        /* Full struct copy so ALL fields (including the 6in4 tunnel fields)
+         * carry over - a field-by-field SetInterface() would leave the tunnel
+         * members uninitialised (stack garbage) and mis-render the row. */
+        struct Interface ifaceentry = *iface;
+
+        DoMethod
+        (
+            data->netped_interfaceList,
+            MUIM_List_InsertSingle, &ifaceentry, MUIV_List_Insert_Bottom
+        );
+    }
+
+    SET(data->netped_interfaceList, MUIA_List_Quiet, FALSE);
+
+    NNSET(data->netped_hostString, MUIA_String_Contents, (IPTR)GetHostname());
+    NNSET(data->netped_domainString, MUIA_String_Contents, (IPTR)GetDomain());
+    NNSET(data->netped_Autostart, MUIA_Selected, (IPTR)GetAutostart());
+
+    entries = GetHostCount();
+
+    SET(data->netped_hostList, MUIA_List_Quiet, TRUE);
+    DoMethod(data->netped_hostList, MUIM_List_Clear);
+    for(i = 0; i < entries; i++)
+    {
+        struct Host *host = GetHost(i);
+        struct Host hostentry;
+
+        SetHost
+        (
+            &hostentry,
+            GetHostNames(host),
+            GetHostAddress(host)
+        );
+
+        DoMethod
+        (
+            data->netped_hostList,
+            MUIM_List_InsertSingle, &hostentry, MUIV_List_Insert_Bottom
+        );
+    }
+    SET(data->netped_hostList, MUIA_List_Quiet, FALSE);
+
+    SET(data->netped_networkList, MUIA_List_Quiet, TRUE);
+    DoMethod(data->netped_networkList, MUIM_List_Clear);
+    entries = GetNetworkCount();
+    for(i = 0; i < entries; i++)
+    {
+        struct Network *net = GetNetwork(i);
+        struct Network netentry;
+
+        SetNetwork
+        (
+            &netentry,
+            GetNetworkName(net),
+            GetEncType(net),
+            GetKey(net),
+            net->keyIsHex,
+            GetHidden(net),
+            GetAdHoc(net)
+        );
+
+        DoMethod
+        (
+            data->netped_networkList,
+            MUIM_List_InsertSingle, &netentry, MUIV_List_Insert_Bottom
+        );
+    }
+
+    SET(data->netped_networkList, MUIA_List_Quiet, FALSE);
+
+    for(i = 0 ; i < MAXATCOMMANDS; i++)
+        NNSET((data->netped_MBBInitString[i]), MUIA_String_Contents, "");
+
+    entries = GetMobile_atcommandcount();
+    for(i = 0 ; i < entries; i++)
+    {
+        NNSET((data->netped_MBBInitString[i+MAXATCOMMANDS-entries]), MUIA_String_Contents, GetMobile_atcommand(i));
+    }
+
+    NNSET((data->netped_MBBDeviceString), MUIA_String_Contents, GetMobile_devicename());
+    NNSET((data->netped_MBBUnit), MUIA_Numeric_Value, GetMobile_unit());
+    NNSET((data->netped_MBBUsername), MUIA_String_Contents, GetMobile_username());
+    NNSET((data->netped_MBBPassword), MUIA_String_Contents, GetMobile_password());
+
+    SET(data->netped_shareList, MUIA_List_Quiet, TRUE);
+    DoMethod(data->netped_shareList, MUIM_List_Clear);
+    entries = GetShareCount();
+    for(i = 0; i < entries; i++)
+    {
+        struct MountedShare *share = GetShare(i);
+
+        if (share == NULL)
+            break;
+        /* the list's construct hook copies the entry */
+        DoMethod
+        (
+            data->netped_shareList,
+            MUIM_List_InsertSingle, share, MUIV_List_Insert_Bottom
+        );
+    }
+
+    SET(data->netped_shareList, MUIA_List_Quiet, FALSE);
+
+    /* Services tab */
+    SET(data->netped_serviceList, MUIA_List_Quiet, TRUE);
+    DoMethod(data->netped_serviceList, MUIM_List_Clear);
+    for (i = 0; i < netserviceCount; i++)
+        DoMethod(data->netped_serviceList, MUIM_List_InsertSingle,
+                 (IPTR)&netservices[i], MUIV_List_Insert_Bottom);
+    SET(data->netped_serviceList, MUIA_List_Quiet, FALSE);
+    SET(data->netped_serviceList, MUIA_List_Active,
+        netserviceCount ? 0 : MUIV_List_Active_Off);
+    ShowSelectedService(data);
+
+    return TRUE;
+}
+
+void DisplayErrorMessage(Object * obj, enum ErrorCode errorcode)
+{
+    CONST_STRPTR title = _(MSG_ERROR_TITLE);
+    CONST_STRPTR errormessage = NULL;
+    CONST_STRPTR additionaldata = NULL;
+    Object * app = NULL;
+    Object * wnd = NULL;
+
+    GET(obj, MUIA_ApplicationObject, &app);
+    GET(obj, MUIA_Window_Window, &wnd);
+
+    switch(errorcode)
+    {
+        case UNKNOWN_ERROR:
+            errormessage = _(MSG_ERR_UNKNOWN_ERROR);
+            break;
+        case NOT_RESTARTED_WIRELESS:
+            errormessage = _(MSG_ERR_NOT_RESTARTED_WIRELESS);
+            break;
+        case NOT_RESTARTED_MOBILE:
+            errormessage = _(MSG_ERR_NOT_RESTARTED_MOBILE);
+            break;
+        case NOT_RESTARTED_STACK:
+            errormessage = _(MSG_ERR_NOT_RESTARTED_STACK);
+            break;
+        case NOT_SAVED_PREFS_ENV:
+            errormessage = _(MSG_ERR_NOT_SAVED_PREFS);
+            additionaldata = PREFS_PATH_ENV;
+            break;
+        case NOT_SAVED_PREFS_ENVARC:
+            errormessage = _(MSG_ERR_NOT_SAVED_PREFS);
+            additionaldata = PREFS_PATH_ENVARC;
+            break;
+        case NOT_COPIED_FILES_ENV:
+            errormessage = _(MSG_ERR_NOT_COPIED_FILES);
+            additionaldata = PREFS_PATH_ENV;
+            break;
+        case NOT_COPIED_FILES_ENVARC:
+            errormessage = _(MSG_ERR_NOT_COPIED_FILES);
+            additionaldata = PREFS_PATH_ENVARC;
+            break;
+        case MULTIPLE_IFACES:
+            errormessage = _(MSG_WARN_MULTIPLE_IFACES);
+            title = _(MSG_WARNING_TITLE);
+            break;
+        case ALL_OK:
+            return;
+    }
+
+    MUI_Request(app, wnd, 0, title, _(MSG_BUTTON_OK), errormessage,
+        additionaldata);
+}
+
+/*** Module loading **********************************************************/
+static CONST_STRPTR NetModuleDir = "PROGDIR:NetModules";
+
+extern void netprefs_initlib(struct NetPrefsBase **basePtr);
+extern void NetPrefs_SetBase(struct NetPrefsBase *base);
+extern struct NetPrefsBase *NetPrefs_GetBase(void);
+
+static void LoadNetModules(struct NetPrefsBase *NetPrefsBase)
+{
+    BPTR dirLock;
+    struct FileInfoBlock *fib;
+
+    D(bug("[NetPrefs] %s: scanning '%s' for modules\n", __func__, NetModuleDir));
+
+    dirLock = Lock(NetModuleDir, SHARED_LOCK);
+    if (!dirLock)
+    {
+        D(bug("[NetPrefs] %s: cannot lock '%s'\n", __func__, NetModuleDir));
+        return;
+    }
+
+    fib = AllocDosObject(DOS_FIB, NULL);
+    if (fib && Examine(dirLock, fib))
+    {
+        while (ExNext(dirLock, fib))
+        {
+            int namelen = strlen(fib->fib_FileName);
+            char *path;
+
+            /* Skip .dbg debug-symbol files */
+            if ((namelen > 4) &&
+                (strcmp(&fib->fib_FileName[namelen - 4], ".dbg")))
+            {
+                path = AllocVec(strlen(NetModuleDir) + 1 + namelen + 1,
+                                MEMF_CLEAR);
+                if (path)
+                {
+                    sprintf(path, "%s/%s", NetModuleDir, fib->fib_FileName);
+
+                    APTR modBase = (APTR)OpenLibrary(path, 0);
+                    if (modBase)
+                    {
+                        D(bug("[NetPrefs] %s: '%s' loaded @ 0x%p\n",
+                              __func__, fib->fib_FileName, modBase));
+
+                        AROS_LC1(void, ModuleInit,
+                            AROS_LCA(struct NetPrefsBase *, NetPrefsBase, A0),
+                            struct Library *, modBase, 5, Module);
+                    }
+                    FreeVec(path);
+                }
+            }
+        }
+    }
+
+    if (fib)
+        FreeDosObject(DOS_FIB, fib);
+    UnLock(dirLock);
+}
+
+/* Create the registration library, load the protocol plugins and run their
+ * startups.  This MUST happen before the config is parsed: the plugins are what
+ * claim and parse the per-protocol tokens (IP=/IP6=/...) at load time, and what
+ * write them back at save time.  It is also needed in headless SAVE/USE mode,
+ * where no editor window (and therefore no OM_NEW) is ever created.  Idempotent:
+ * a base already installed (e.g. by main() before InitNetworkPrefs) is reused. */
+struct NetPrefsBase *NetPrefs_Bootstrap(void)
+{
+    struct NetPrefsBase *NetPrefsBase = NetPrefs_GetBase();
+
+    if (NetPrefsBase)
+        return NetPrefsBase;
+
+    /* Initialise the registration library and PAWinClass */
+    netprefs_initlib(&NetPrefsBase);
+    if (!NetPrefsBase)
+        return NULL;
+
+    /* Store globally for prefsdata.c and others */
+    NetPrefs_SetBase(NetPrefsBase);
+
+    if (!PAWin_InitClass())
+        return NULL;
+
+    /* Register PAWinClass so modules can retrieve it via GetBase() */
+    AROS_LC2(void, RegisterBase,
+        AROS_LCA(CONST_STRPTR, "PAWin.Class", A0),
+        AROS_LCA(APTR, PAWinClass, A1),
+        struct NetPrefsBase *, NetPrefsBase, 6, NetPrefs);
+
+    /* Discover and load protocol modules from PROGDIR:NetModules */
+    LoadNetModules(NetPrefsBase);
+
+    /* Call Startup on every registered module */
+    {
+        struct NetPrefsIntModule *mod;
+        ForeachNode(&NetPrefsBase->npb_Modules, mod)
+        {
+            if (mod->npim_Module.npm_Startup)
+                mod->npim_Module.npm_Startup(NetPrefsBase);
+        }
+    }
+
+    return NetPrefsBase;
+}
+
+/*** Methods ****************************************************************/
+Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
+{
+    struct NetPrefsBase *NetPrefsBase = NetPrefs_Bootstrap();
+
+    if (!NetPrefsBase)
+        return NULL;
+
+    // main window
+    Object  *hostString, *domainString,
+            *autostart, *interfaceList,
+            *addInterface, *editButton, *removeButton, *inputGroup,
+            *hostList, *hostAddButton, *hostEditButton, *hostRemoveButton,
+            *networkList, *netAddButton, *netEditButton, *netRemoveButton,
+            *shareList, *shareAddButton, *shareEditButton, *shareRemoveButton,
+            *MBBInitString[MAXATCOMMANDS], *MBBDeviceString, *MBBUnit,
+            *MBBUsername, *MBBPassword, *tetheringAddButton, *mainTabs,
+            *serviceList, *svcEnabled, *svcOrder, *svcConfigure, *svcPath;
+
+    // inferface window
+    Object  *deviceString, *protoAddrList, *protoEditButton,
+            *unitString, *nameString, *upState, *deferState,
+            *ifWindow, *applyButton, *closeButton;
+
+    // tunnel window
+    Object  *tunnelWindow, *tunTypeCycle, *tunNameString, *tunRemoteString,
+            *tunLocalString, *tunTTLString, *tunIP6String, *tunPrefixString,
+            *tunGate6String, *tunUpState, *tunApplyButton, *tunCloseButton;
+
+    // host window
+    Object  *hostNamesString, *hostAddressString, *hostWindow,
+            *hostApplyButton, *hostCloseButton;
+
+    // network window
+    Object  *sSIDString, *keyString, *encType, *keyType, *hiddenState,
+            *adHocState, *netWindow, *netApplyButton, *netCloseButton;
+
+    // file-server window
+
+
+    EncCycle[0] = _(MSG_ENC_NONE);
+    EncCycle[1] = _(MSG_ENC_WEP);
+    EncCycle[2] = _(MSG_ENC_WPA);
+
+    KeyCycle[0] = _(MSG_KEY_TEXT);
+    KeyCycle[1] = _(MSG_KEY_HEX);
+
+
+    NetworkTabs[0] = _(MSG_TAB_IP_CONFIGURATION);
+    NetworkTabs[1] = _(MSG_TAB_COMPUTER_NAMES);
+    NetworkTabs[2] = _(MSG_TAB_WIRELESS);
+    NetworkTabs[3] = _(MSG_TAB_TETHERING);
+    NetworkTabs[4] = _(MSG_TAB_MOBILE);
+    NetworkTabs[5] = _(MSG_TAB_SERVERS);
+    NetworkTabs[6] = _(MSG_TAB_SERVICES);
+
+    netpeditor_constructHook.h_Entry = (HOOKFUNC)constructFunc;
+    netpeditor_destructHook.h_Entry = (HOOKFUNC)destructFunc;
+    netpeditor_displayHook.h_Entry = (HOOKFUNC)displayFunc;
+
+    hosts_constructHook.h_Entry = (HOOKFUNC)hostsConstructFunc;
+    hosts_destructHook.h_Entry = (HOOKFUNC)hostsDestructFunc;
+    hosts_displayHook.h_Entry = (HOOKFUNC)hostsDisplayFunc;
+
+    wireless_constructHook.h_Entry = (HOOKFUNC)netConstructFunc;
+    wireless_destructHook.h_Entry = (HOOKFUNC)netDestructFunc;
+    wireless_displayHook.h_Entry = (HOOKFUNC)netDisplayFunc;
+
+    share_constructHook.h_Entry = (HOOKFUNC)shareConstructFunc;
+    share_destructHook.h_Entry = (HOOKFUNC)shareDestructFunc;
+    share_displayHook.h_Entry = (HOOKFUNC)shareDisplayFunc;
+    service_displayHook.h_Entry = (HOOKFUNC)serviceDisplayFunc;
+
+    self = (Object *)DoSuperNewTags
+    (
+        CLASS, self, NULL,
+
+        MUIA_PrefsEditor_Name, __(MSG_NAME),
+        MUIA_PrefsEditor_Path, (IPTR)"AROSTCP/arostcp.prefs",
+        /* Applying restarts the stack, wpa_supplicant and the share mounts;
+           none of that can be undone by a Revert, so do not offer Test. */
+        MUIA_PrefsEditor_CanTest, FALSE,
+
+        Child, mainTabs = RegisterGroup((IPTR)NetworkTabs),
+
+            Child, (IPTR)VGroup,
+                Child, (IPTR)(HGroup,
+                    GroupFrame,
+                    Child, (IPTR)ListviewObject,
+                        MUIA_Listview_List, (IPTR)(interfaceList = (Object *)ListObject,
+                            ReadListFrame,
+                            MUIA_List_Title, TRUE,
+                            MUIA_List_Format, (IPTR)"BAR,P=\33c BAR,BAR,",
+                            MUIA_List_ConstructHook, (IPTR)&netpeditor_constructHook,
+                            MUIA_List_DestructHook, (IPTR)&netpeditor_destructHook,
+                            MUIA_List_DisplayHook, (IPTR)&netpeditor_displayHook,
+                        End),
+                    End,
+                    Child, (IPTR)(VGroup,
+                        MUIA_HorizWeight, 0,
+                        Child, (IPTR)(addInterface = (Object *)PopInterfaceObject,
+                        End),
+                        Child, (IPTR)(editButton = SimpleButton(_(MSG_BUTTON_EDIT))),
+                        Child, (IPTR)(removeButton = SimpleButton(_(MSG_BUTTON_REMOVE))),
+                        Child, (IPTR)HVSpace,
+                    End),
+                End),
+                Child, (IPTR)(inputGroup = (Object *)ColGroup(2),
+                    GroupFrame,
+                    Child, (IPTR)Label2(__(MSG_HOST_NAME)),
+                    Child, (IPTR)(hostString = (Object *)StringObject,
+                        StringFrame,
+                        MUIA_String_Accept, (IPTR)NAMECHARS,
+                        MUIA_CycleChain, 1,
+                    End),
+                    Child, (IPTR)Label2(__(MSG_DOMAIN_NAME)),
+                    Child, (IPTR)(domainString = (Object *)StringObject,
+                        StringFrame,
+                        MUIA_String_Accept, (IPTR)NAMECHARS,
+                        MUIA_CycleChain, 1,
+                    End),
+                End),
+                Child, (IPTR)ColGroup(2),
+                    Child, (IPTR)(autostart = MUI_MakeObject(MUIO_Checkmark, NULL)),
+                    Child, (IPTR)HGroup,
+                        Child, (IPTR)Label2(__(MSG_AUTOSTART_STACK)),
+                        Child, (IPTR)HVSpace,
+                    End,
+                End,
+            End,
+
+            Child, (IPTR)VGroup,
+                Child, (IPTR)(HGroup,
+                    GroupFrame,
+                    Child, (IPTR)ListviewObject,
+                        MUIA_Listview_List, (IPTR)(hostList = (Object *)ListObject,
+                            ReadListFrame,
+                            MUIA_List_Title, TRUE,
+                            MUIA_List_Format, (IPTR)"BAR,",
+                            MUIA_List_ConstructHook, (IPTR)&hosts_constructHook,
+                            MUIA_List_DestructHook, (IPTR)&hosts_destructHook,
+                            MUIA_List_DisplayHook, (IPTR)&hosts_displayHook,
+                        End),
+                    End,
+                    Child, (IPTR)(VGroup,
+                        MUIA_HorizWeight, 0,
+                        Child, (IPTR)(hostAddButton = SimpleButton(_(MSG_BUTTON_ADD))),
+                        Child, (IPTR)(hostEditButton = SimpleButton(_(MSG_BUTTON_EDIT))),
+                        Child, (IPTR)(hostRemoveButton = SimpleButton(_(MSG_BUTTON_REMOVE))),
+                        Child, (IPTR)HVSpace,
+                    End),
+                End),
+            End,
+
+            Child, (IPTR)VGroup,
+                Child, (IPTR)(HGroup,
+                    GroupFrame,
+                    Child, (IPTR)ListviewObject,
+                        MUIA_Listview_List, (IPTR)(networkList = (Object *)ListObject,
+                            ReadListFrame,
+                            MUIA_List_Title, TRUE,
+                            MUIA_List_Format, (IPTR)"BAR,BAR,BAR,",
+                            MUIA_List_ConstructHook, (IPTR)&wireless_constructHook,
+                            MUIA_List_DestructHook, (IPTR)&wireless_destructHook,
+                            MUIA_List_DisplayHook, (IPTR)&wireless_displayHook,
+                        End),
+                    End,
+                    Child, (IPTR)(VGroup,
+                        MUIA_HorizWeight, 0,
+                        Child, (IPTR)(netAddButton = SimpleButton(_(MSG_BUTTON_ADD))),
+                        Child, (IPTR)(netEditButton = SimpleButton(_(MSG_BUTTON_EDIT))),
+                        Child, (IPTR)(netRemoveButton = SimpleButton(_(MSG_BUTTON_REMOVE))),
+                        Child, (IPTR)HVSpace,
+                    End),
+                End),
+            End,
+
+            Child, (IPTR)VGroup,
+                GroupFrame,
+                Child, (IPTR)(tetheringAddButton = SimpleButton(_(MSG_BUTTON_ADD))),
+                Child, (IPTR)Label2(__(MSG_TETHERING_WARNING)),
+                Child, (IPTR)VSpace(0),
+            End,
+
+            Child, (IPTR)VGroup,
+
+                Child, (IPTR)ColGroup(2),
+                GroupFrame,
+                    Child, (IPTR)HGroup,
+                        Child, (IPTR)Label2(_(MSG_SERIAL_DEVICE)),
+                        Child, (IPTR)(MBBDeviceString = (Object *)StringObject,
+                            StringFrame,
+                            MUIA_CycleChain, 1,
+                        End),
+
+                        Child, (IPTR)Label2(_(MSG_UNIT_NUMBER)),
+                        Child, (IPTR)(MBBUnit = (Object *)NumericbuttonObject,
+                            MUIA_Numeric_Min, 0,
+                            MUIA_Numeric_Max, 100,
+                        End),
+
+                    End,
+                End,
+
+                Child, (IPTR)ColGroup(2),
+                GroupFrame,
+                    Child, (IPTR)HGroup,
+                        Child, (IPTR)Label2(_(MSG_USERNAME)),
+                        Child, (IPTR)(MBBUsername = (Object *)StringObject,
+                            StringFrame,
+                            MUIA_CycleChain, 1,
+                        End),
+                        Child, (IPTR)Label2(_(MSG_PASSWORD)),
+                        Child, (IPTR)(MBBPassword = (Object *)StringObject,
+                            StringFrame,
+                            MUIA_String_Secret, TRUE,
+                            MUIA_CycleChain, 1,
+                        End),
+                    End,
+                End,
+
+                Child, (IPTR)ColGroup(2),
+                    GroupFrame,
+                    Child, (IPTR)Label2("Init1"),
+                    Child, (IPTR)(MBBInitString[0] = (Object *)StringObject,
+                        StringFrame,
+                        MUIA_CycleChain, 1,
+                    End),
+
+                    Child, (IPTR)Label2("Init2"),
+                    Child, (IPTR)(MBBInitString[1] = (Object *)StringObject,
+                        StringFrame,
+                        MUIA_CycleChain, 1,
+                    End),
+
+                    Child, (IPTR)Label2("Init3"),
+                    Child, (IPTR)(MBBInitString[2] = (Object *)StringObject,
+                        StringFrame,
+                        MUIA_CycleChain, 1,
+                    End),
+
+                    Child, (IPTR)Label2("Init4"),
+                    Child, (IPTR)(MBBInitString[3] = (Object *)StringObject,
+                        StringFrame,
+                        MUIA_CycleChain, 1,
+                    End),
+
+                    Child, (IPTR)Label2("Init5"),
+                    Child, (IPTR)(MBBInitString[4] = (Object *)StringObject,
+                        StringFrame,
+                        MUIA_CycleChain, 1,
+                    End),
+                End,
+
+            End,
+
+            Child, (IPTR)VGroup,
+                Child, (IPTR)(HGroup,
+                    GroupFrame,
+                    Child, (IPTR)ListviewObject,
+                        MUIA_Listview_List, (IPTR)(shareList = (Object *)ListObject,
+                            ReadListFrame,
+                            MUIA_List_Title, TRUE,
+                            MUIA_List_Format, (IPTR)"BAR,P=\33c BAR,BAR,BAR,BAR,",
+                            MUIA_List_ConstructHook, (IPTR)&share_constructHook,
+                            MUIA_List_DestructHook, (IPTR)&share_destructHook,
+                            MUIA_List_DisplayHook, (IPTR)&share_displayHook,
+                        End),
+                    End,
+                    Child, (IPTR)(VGroup,
+                        MUIA_HorizWeight, 0,
+                        Child, (IPTR)(shareAddButton = SimpleButton(_(MSG_BUTTON_ADD))),
+                        Child, (IPTR)(shareEditButton = SimpleButton(_(MSG_BUTTON_EDIT))),
+                        Child, (IPTR)(shareRemoveButton = SimpleButton(_(MSG_BUTTON_REMOVE))),
+                        Child, (IPTR)HVSpace,
+                    End),
+                End),
+            End,
+
+            /* Services tab: enable/disable the stack's managed network services */
+            Child, (IPTR)VGroup,
+                Child, (IPTR)(TextObject,
+                    MUIA_Text_Contents, (IPTR)_(MSG_SVC_DESC),
+                End),
+                Child, (IPTR)ListviewObject,
+                    MUIA_Listview_List, (IPTR)(serviceList = (Object *)ListObject,
+                        ReadListFrame,
+                        MUIA_List_Title, TRUE,
+                        MUIA_List_Format, (IPTR)"BAR,P=\33c BAR,BAR,",
+                        MUIA_List_DisplayHook, (IPTR)&service_displayHook,
+                    End),
+                End,
+                Child, (IPTR)ColGroup(2),
+                    GroupFrameT(_(MSG_SVC_GROUP)),
+                    Child, (IPTR)Label1(_(MSG_SVC_ENABLED)),
+                    Child, (IPTR)(HGroup,
+                        Child, (IPTR)(svcEnabled = MUI_MakeObject(MUIO_Checkmark, NULL)),
+                        Child, (IPTR)HVSpace,
+                    End),
+                    Child, (IPTR)Label2(_(MSG_SVC_COL_PRIORITY)),
+                    Child, (IPTR)(HGroup,
+                        Child, (IPTR)(svcOrder = (Object *)StringObject,
+                            StringFrame,
+                            MUIA_String_Accept,  (IPTR)"0123456789",
+                            MUIA_String_MaxLen,  7,
+                            MUIA_FixWidthTxt,    (IPTR)"999999",
+                            MUIA_CycleChain,     1,
+                        End),
+                        Child, (IPTR)HVSpace,
+                        Child, (IPTR)(svcConfigure = SimpleButton(_(MSG_SVC_CONFIGURE))),
+                    End),
+                    Child, (IPTR)Label2(_(MSG_SVC_PATH)),
+                    Child, (IPTR)(svcPath = (Object *)TextObject,
+                        MUIA_Text_Contents, (IPTR)"",
+                    End),
+                End,
+            End,
+
+        End, // register
+
+        TAG_DONE
+    );
+
+    /* Create protocol-address config sub-windows from loaded modules */
+    Object *protoWindows[2] = { NULL, NULL };
+    ULONG protoCount = 0;
+    {
+        struct ProtoHandlerNode *ph;
+        ForeachNode(&NetPrefsBase->npb_ProtoHandlers, ph)
+        {
+            if (ph->ph_Family < 2 && ph->ph_WinClass)
+            {
+                protoWindows[ph->ph_Family] =
+                    NewObject(ph->ph_WinClass->mcc_Class, NULL, TAG_DONE);
+                protoCount++;
+            }
+        }
+    }
+
+    ifWindow = (Object *)WindowObject,
+        MUIA_Window_Title, __(MSG_IFWINDOW_TITLE),
+        MUIA_Window_ID, MAKE_ID('I', 'P', 'W', 'I'),
+        MUIA_Window_CloseGadget, FALSE,
+        WindowContents, (IPTR)VGroup,
+            GroupFrame,
+            Child, (IPTR)HGroup,
+                Child, (IPTR)HVSpace,
+                Child, (IPTR)ImageObject,
+                    MUIA_Image_Spec, (IPTR)"3:Images:interface",
+                    MUIA_FixWidth, 52,
+                    MUIA_FixHeight, 48,
+                End,
+                Child, (IPTR)HVSpace,
+            End,
+            Child, (IPTR)ColGroup(2),
+                GroupFrame,
+                Child, (IPTR)Label2(_(MSG_IFNAME)),
+                Child, (IPTR)HGroup,
+                    Child, (IPTR)(nameString = (Object *)StringObject,
+                        StringFrame,
+                        MUIA_String_Accept, (IPTR)NAMECHARS,
+                        MUIA_CycleChain, 1,
+                    End),
+                    Child, (IPTR)(upState = MUI_MakeObject(MUIO_Checkmark, NULL)),
+                    Child, (IPTR)Label2(_(MSG_UP)),
+                    Child, (IPTR)HVSpace,
+                End,
+                Child, (IPTR)Label2(__(MSG_DEVICE)),
+                Child, (IPTR)PopaslObject,
+                    MUIA_Popasl_Type,              ASL_FileRequest,
+                    ASLFO_MaxHeight,               100,
+                    MUIA_Popstring_String, (IPTR)(deviceString = (Object *)StringObject,
+                        StringFrame,
+                        MUIA_Background, MUII_TextBack,
+                        MUIA_CycleChain, 1,
+                    End),
+                    MUIA_Popstring_Button,  (IPTR)PopButton(MUII_PopUp),
+                End,
+                Child, (IPTR)Label2(_(MSG_UNIT)),
+                Child, (IPTR)HGroup,
+                    Child, (IPTR)(unitString = (Object *)StringObject,
+                        StringFrame,
+                        MUIA_String_Accept, (IPTR)"0123456789",
+                        MUIA_CycleChain, 1,
+                        MUIA_FixWidthTxt, (IPTR)"0",
+                    End),
+                    Child, (IPTR)HVSpace,
+                End,
+            End,
+            Child, (IPTR)HGroup,
+                GroupFrame,
+                Child, (IPTR)ListviewObject,
+                    MUIA_Listview_DoubleClick, TRUE,
+                    MUIA_Listview_List, (IPTR)(protoAddrList = (Object *)ListObject,
+                        ReadListFrame,
+                        MUIA_List_Title,         TRUE,
+                        MUIA_List_Format,        (IPTR)"BAR,",
+                        MUIA_List_ConstructHook, (IPTR)&proto_constructHook,
+                        MUIA_List_DestructHook,  (IPTR)&proto_destructHook,
+                        MUIA_List_DisplayHook,   (IPTR)&proto_displayHook,
+                    End),
+                End,
+                Child, (IPTR)VGroup,
+                    MUIA_HorizWeight, 0,
+                    Child, (IPTR)(protoEditButton = SimpleButton(_(MSG_BUTTON_EDIT))),
+                    Child, (IPTR)HVSpace,
+                End,
+            End,
+            /* DEFER in the interfaces file: the device may turn up after
+               the stack has started */
+            Child, (IPTR)HGroup,
+                Child, (IPTR)(deferState = MUI_MakeObject(MUIO_Checkmark, NULL)),
+                Child, (IPTR)Label2(_(MSG_DEFER)),
+                Child, (IPTR)HVSpace,
+            End,
+            Child, (IPTR)HGroup,
+                Child, (IPTR)(applyButton = ImageButton(_(MSG_BUTTON_APPLY), "THEME:Images/Gadgets/Prefs/Save")),
+                Child, (IPTR)(closeButton = ImageButton(_(MSG_BUTTON_CLOSE), "THEME:Images/Gadgets/Prefs/Cancel")),
+            End,
+        End,
+    End;
+
+    /* The outer/inner frame and endpoint labels name the carried protocols,
+       which depend on the tunnel type (6in4 carries IPv6 over IPv4). */
+    static char tunOuterFrame[64], tunInnerFrame[64],
+                tunRemoteLabel[64], tunLocalLabel[64];
+    CONST_STRPTR outerProto = _(MSG_PROTO_IPV4), innerProto = _(MSG_PROTO_IPV6);
+    snprintf(tunOuterFrame,  sizeof(tunOuterFrame),  _(MSG_TUN_OUTER),  outerProto);
+    snprintf(tunInnerFrame,  sizeof(tunInnerFrame),  _(MSG_TUN_INNER),  innerProto);
+    snprintf(tunRemoteLabel, sizeof(tunRemoteLabel), _(MSG_TUN_REMOTE), outerProto);
+    snprintf(tunLocalLabel,  sizeof(tunLocalLabel),  _(MSG_TUN_LOCAL),  outerProto);
+
+    tunnelWindow = (Object *)WindowObject,
+        MUIA_Window_Title, __(MSG_TUNWINDOW_TITLE),
+        MUIA_Window_ID, MAKE_ID('T', 'U', 'N', 'W'),
+        MUIA_Window_CloseGadget, FALSE,
+        WindowContents, (IPTR)VGroup,
+            GroupFrame,
+            Child, (IPTR)HGroup,
+                Child, (IPTR)HVSpace,
+                Child, (IPTR)ImageObject,
+                    MUIA_Image_Spec, (IPTR)"3:Images:interface",
+                    MUIA_FixWidth, 52,
+                    MUIA_FixHeight, 48,
+                End,
+                Child, (IPTR)HVSpace,
+            End,
+            Child, (IPTR)ColGroup(2),
+                Child, (IPTR)Label2(_(MSG_TUN_TYPE)),
+                Child, (IPTR)(tunTypeCycle = (Object *)CycleObject,
+                    MUIA_CycleChain, 1,
+                    MUIA_Cycle_Entries, (IPTR)TunnelTypeCycle,
+                End),
+            End,
+            Child, (IPTR)ColGroup(2),
+                GroupFrameT((IPTR)tunOuterFrame),
+                Child, (IPTR)Label2(_(MSG_IFNAME)),
+                Child, (IPTR)HGroup,
+                    Child, (IPTR)(tunNameString = (Object *)StringObject,
+                        StringFrame,
+                        MUIA_String_Accept, (IPTR)NAMECHARS,
+                        MUIA_CycleChain, 1,
+                    End),
+                    Child, (IPTR)(tunUpState = MUI_MakeObject(MUIO_Checkmark, NULL)),
+                    Child, (IPTR)Label2(_(MSG_UP)),
+                    Child, (IPTR)HVSpace,
+                End,
+                Child, (IPTR)Label2(tunRemoteLabel),
+                Child, (IPTR)(tunRemoteString = (Object *)StringObject,
+                    StringFrame,
+                    MUIA_String_Accept, (IPTR)IPCHARS,
+                    MUIA_CycleChain, 1,
+                End),
+                Child, (IPTR)Label2(tunLocalLabel),
+                Child, (IPTR)(tunLocalString = (Object *)StringObject,
+                    StringFrame,
+                    MUIA_String_Accept, (IPTR)IPCHARS,
+                    MUIA_CycleChain, 1,
+                End),
+                Child, (IPTR)Label2(_(MSG_TUN_TTL)),
+                Child, (IPTR)HGroup,
+                    Child, (IPTR)(tunTTLString = (Object *)StringObject,
+                        StringFrame,
+                        MUIA_String_Accept, (IPTR)"0123456789",
+                        MUIA_CycleChain, 1,
+                        MUIA_FixWidthTxt, (IPTR)"000",
+                    End),
+                    Child, (IPTR)HVSpace,
+                End,
+            End,
+            Child, (IPTR)ColGroup(2),
+                GroupFrameT((IPTR)tunInnerFrame),
+                Child, (IPTR)Label2(_(MSG_IP6)),
+                Child, (IPTR)(tunIP6String = (Object *)StringObject,
+                    StringFrame,
+                    MUIA_String_Accept, (IPTR)IP6CHARS,
+                    MUIA_CycleChain, 1,
+                End),
+                Child, (IPTR)Label2(_(MSG_IP6_PREFIX)),
+                Child, (IPTR)HGroup,
+                    Child, (IPTR)(tunPrefixString = (Object *)StringObject,
+                        StringFrame,
+                        MUIA_String_Accept, (IPTR)"0123456789",
+                        MUIA_CycleChain, 1,
+                        MUIA_FixWidthTxt, (IPTR)"000",
+                    End),
+                    Child, (IPTR)HVSpace,
+                End,
+                Child, (IPTR)Label2(_(MSG_GATE6)),
+                Child, (IPTR)(tunGate6String = (Object *)StringObject,
+                    StringFrame,
+                    MUIA_String_Accept, (IPTR)IP6CHARS,
+                    MUIA_CycleChain, 1,
+                End),
+            End,
+            Child, (IPTR)HGroup,
+                Child, (IPTR)(tunApplyButton = ImageButton(_(MSG_BUTTON_APPLY), "THEME:Images/Gadgets/Prefs/Save")),
+                Child, (IPTR)(tunCloseButton = ImageButton(_(MSG_BUTTON_CLOSE), "THEME:Images/Gadgets/Prefs/Cancel")),
+            End,
+        End,
+    End;
+
+    hostWindow = (Object *)WindowObject,
+        MUIA_Window_Title, __(MSG_HOST_NAMES),
+        MUIA_Window_ID, MAKE_ID('H', 'O', 'S', 'T'),
+        MUIA_Window_CloseGadget, FALSE,
+        MUIA_Window_SizeGadget, TRUE,
+        WindowContents, (IPTR)VGroup,
+            GroupFrame,
+            Child, (IPTR)HGroup,
+                Child, (IPTR)HVSpace,
+                Child, (IPTR)ImageObject,
+                    MUIA_Image_Spec, (IPTR)"3:Images:host",
+                    MUIA_FixWidth, 26,
+                    MUIA_FixHeight, 50,
+                End,
+                Child, (IPTR)HVSpace,
+            End,
+            Child, (IPTR)ColGroup(2),
+                GroupFrame,
+                Child, (IPTR)Label2(__(MSG_IP)),
+                Child, (IPTR)(hostAddressString = (Object *)StringObject,
+                    StringFrame,
+                    MUIA_CycleChain, 1,
+                End),
+                Child, (IPTR)Label2(_(MSG_HOSTWINDOW_TITLE)),
+                Child, (IPTR)(hostNamesString = (Object *)StringObject,
+                    StringFrame,
+                    MUIA_CycleChain, 1,
+                End),
+            End,
+            Child, (IPTR)HGroup,
+                Child, (IPTR)(hostApplyButton = ImageButton(_(MSG_BUTTON_APPLY), "THEME:Images/Gadgets/Save")),
+                Child, (IPTR)(hostCloseButton = ImageButton(_(MSG_BUTTON_CLOSE), "THEME:Images/Gadgets/Cancel")),
+            End,
+        End,
+    End;
+
+    netWindow = (Object *)WindowObject,
+        MUIA_Window_Title, __(MSG_NETWINDOW_TITLE),
+        MUIA_Window_ID, MAKE_ID('W', 'I', 'F', 'I'),
+        MUIA_Window_CloseGadget, FALSE,
+        MUIA_Window_SizeGadget, TRUE,
+        WindowContents, (IPTR)VGroup,
+            GroupFrame,
+            Child, (IPTR)HGroup,
+                Child, (IPTR)HVSpace,
+                Child, (IPTR)ImageObject,
+                    MUIA_Image_Spec, (IPTR)"3:Images:wireless",
+                    MUIA_FixWidth, 50,
+                    MUIA_FixHeight, 50,
+                End,
+                Child, (IPTR)HVSpace,
+            End,
+            Child, (IPTR)ColGroup(2),
+                GroupFrame,
+                Child, (IPTR)Label2(_(MSG_SSID)),
+                Child, (IPTR)(sSIDString = (Object *)StringObject,
+                    StringFrame,
+                    MUIA_CycleChain, 1,
+                End),
+
+                Child, (IPTR)Label2(__(MSG_ENCTYPE)),
+                Child, (IPTR)(encType = (Object *)CycleObject,
+                    MUIA_Cycle_Entries, (IPTR)EncCycle,
+                End),
+                Child, (IPTR)Label2(__(MSG_KEYTYPE)),
+                Child, (IPTR)(keyType = (Object *)CycleObject,
+                    MUIA_Cycle_Entries, (IPTR)KeyCycle,
+                End),
+                Child, (IPTR)Label2(__(MSG_KEY)),
+                Child, (IPTR)(keyString = (Object *)StringObject,
+                    StringFrame,
+                    MUIA_String_Secret, TRUE,
+                    MUIA_CycleChain, 1,
+                End),
+                Child, (IPTR)HGroup,
+                    Child, (IPTR)(hiddenState = MUI_MakeObject(MUIO_Checkmark, NULL)),
+                    Child, (IPTR)Label2(_(MSG_HIDDEN)),
+                    Child, (IPTR)HVSpace,
+                End,
+                Child, (IPTR)HGroup,
+                    Child, (IPTR)(adHocState = MUI_MakeObject(MUIO_Checkmark, NULL)),
+                    Child, (IPTR)Label2(_(MSG_ADHOC)),
+                    Child, (IPTR)HVSpace,
+                End,
+            End,
+            Child, (IPTR)HGroup,
+                Child, (IPTR)(netApplyButton = ImageButton(_(MSG_BUTTON_APPLY), "THEME:Images/Gadgets/Save")),
+                Child, (IPTR)(netCloseButton = ImageButton(_(MSG_BUTTON_CLOSE), "THEME:Images/Gadgets/Cancel")),
+            End,
+        End,
+    End;
+
+    if (self != NULL && ifWindow != NULL && tunnelWindow != NULL
+        && hostWindow != NULL
+        && netWindow != NULL
+        && protoCount > 0)
+    {
+        struct NetPEditor_DATA *data = INST_DATA(CLASS, self);
+
+        // main window
+        data->netped_mainTabs = mainTabs;
+        data->netped_hostString = hostString;
+        data->netped_domainString = domainString;
+        data->netped_Autostart = autostart;
+        data->netped_interfaceList = interfaceList;
+        data->netped_inputGroup = inputGroup;
+        data->netped_addInterface = addInterface;
+        data->netped_editButton = editButton;
+        data->netped_removeButton = removeButton;
+        data->netped_hostList = hostList;
+        data->netped_hostAddButton = hostAddButton;
+        data->netped_hostEditButton = hostEditButton;
+        data->netped_hostRemoveButton = hostRemoveButton;
+        data->netped_networkList = networkList;
+        data->netped_netAddButton = netAddButton;
+        data->netped_netEditButton = netEditButton;
+        data->netped_netRemoveButton = netRemoveButton;
+        data->netped_serviceList = serviceList;
+        data->netped_svcEnabled = svcEnabled;
+        data->netped_svcOrder = svcOrder;
+        data->netped_svcConfigure = svcConfigure;
+        data->netped_svcPath = svcPath;
+        set(svcEnabled, MUIA_CycleChain, 1);
+        data->netped_shareList = shareList;
+        data->netped_shareAddButton = shareAddButton;
+        data->netped_shareEditButton = shareEditButton;
+        data->netped_shareRemoveButton = shareRemoveButton;
+
+        data->netped_MBBInitString[0] = MBBInitString[0];
+        data->netped_MBBInitString[1] = MBBInitString[1];
+        data->netped_MBBInitString[2] = MBBInitString[2];
+        data->netped_MBBInitString[3] = MBBInitString[3];
+        data->netped_MBBInitString[4] = MBBInitString[4];
+        data->netped_MBBDeviceString = MBBDeviceString;
+        data->netped_MBBUnit = MBBUnit;
+        data->netped_MBBUsername = MBBUsername;
+        data->netped_MBBPassword = MBBPassword;
+
+        // interface window
+        data->netped_ifWindow      = ifWindow;
+        data->netped_upState       = upState;
+        data->netped_deferState    = deferState;
+        data->netped_nameString    = nameString;
+        data->netped_deviceString  = deviceString;
+        data->netped_unitString    = unitString;
+        data->netped_protoAddrList = protoAddrList;
+        data->netped_protoEditButton = protoEditButton;
+        data->netped_applyButton   = applyButton;
+        data->netped_closeButton   = closeButton;
+
+        // tunnel window
+        data->netped_tunnelWindow    = tunnelWindow;
+        data->netped_tunTypeCycle    = tunTypeCycle;
+        data->netped_tunNameString   = tunNameString;
+        data->netped_tunRemoteString = tunRemoteString;
+        data->netped_tunLocalString  = tunLocalString;
+        data->netped_tunTTLString    = tunTTLString;
+        data->netped_tunIP6String    = tunIP6String;
+        data->netped_tunPrefixString = tunPrefixString;
+        data->netped_tunGate6String  = tunGate6String;
+        data->netped_tunUpState      = tunUpState;
+        data->netped_tunApplyButton  = tunApplyButton;
+        data->netped_tunCloseButton  = tunCloseButton;
+
+        // Protocol address sub-windows (from loaded modules)
+        data->netped_NetPrefsBase = NetPrefsBase;
+        data->netped_protoCount   = protoCount;
+        for (ULONG i = 0; i < 2; i++)
+            data->netped_protoWindows[i] = protoWindows[i];
+
+        // host window
+        data->netped_hostWindow = hostWindow;
+        data->netped_hostAddressString = hostAddressString;
+        data->netped_hostNamesString = hostNamesString;
+        data->netped_hostApplyButton = hostApplyButton;
+        data->netped_hostCloseButton = hostCloseButton;
+
+        // wireless window
+        data->netped_netWindow = netWindow;
+        data->netped_hiddenState = hiddenState;
+        data->netped_adHocState = adHocState;
+        data->netped_sSIDString = sSIDString;
+        data->netped_encType = encType;
+        data->netped_keyType = keyType;
+        data->netped_keyString = keyString;
+        data->netped_netApplyButton = netApplyButton;
+        data->netped_netCloseButton = netCloseButton;
+
+        // mounted-share edit windows: one per registered filesystem handler
+        NEWLIST(&data->netped_shareWindows);
+        {
+            struct FSHandlerNode *fsh;
+
+            ForeachNode(&NetPrefsBase->npb_FSHandlers, fsh)
+            {
+                struct ShareWinNode *swn;
+                Object *win, *useBtn;
+
+                if (fsh->fsh_WinClass == NULL)
+                    continue;
+                win = NewObject(fsh->fsh_WinClass->mcc_Class, NULL, TAG_DONE);
+                if (win == NULL)
+                    continue;
+                swn = AllocVec(sizeof(*swn), MEMF_CLEAR);
+                if (swn == NULL)
+                {
+                    MUI_DisposeObject(win);
+                    continue;
+                }
+                swn->swn_Node.ln_Type = fsh->fsh_ID;
+                swn->swn_Win = win;
+                AddTail(&data->netped_shareWindows, &swn->swn_Node);
+
+                /* its Use button applies the active share of this type */
+                useBtn = (Object *)XGET(win, MUIA_PAWin_UseButton);
+                if (useBtn != NULL)
+                {
+                    DoMethod
+                    (
+                        useBtn, MUIM_Notify, MUIA_Pressed, FALSE,
+                        (IPTR)self, 2, MUIM_NetPEditor_ApplyShareEntry,
+                        fsh->fsh_ID
+                    );
+                }
+            }
+        }
+
+        SET(removeButton, MUIA_Disabled, TRUE);
+        SET(editButton, MUIA_Disabled, TRUE);
+
+        SET(hostRemoveButton, MUIA_Disabled, TRUE);
+        SET(hostEditButton, MUIA_Disabled, TRUE);
+
+        SET(netRemoveButton, MUIA_Disabled, TRUE);
+        SET(netEditButton, MUIA_Disabled, TRUE);
+
+        SET(shareRemoveButton, MUIA_Disabled, TRUE);
+        SET(shareEditButton, MUIA_Disabled, TRUE);
+
+        /*-- Set up notifications ------------------------------------------*/
+
+        // main window
+        DoMethod
+        (
+            interfaceList, MUIM_Notify, MUIA_List_Active, MUIV_EveryTime,
+            (IPTR)self, 1, MUIM_NetPEditor_ShowEntry
+        );
+        DoMethod
+        (
+            interfaceList, MUIM_Notify, MUIA_Listview_DoubleClick, MUIV_EveryTime,
+            (IPTR)self, 3, MUIM_NetPEditor_EditEntry, FALSE
+        );
+
+        DoMethod
+        (
+            hostString, MUIM_Notify, MUIA_String_Contents, MUIV_EveryTime,
+            (IPTR)self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE
+        );
+        DoMethod
+        (
+            domainString, MUIM_Notify, MUIA_String_Contents, MUIV_EveryTime,
+            (IPTR)self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE
+        );
+        DoMethod
+        (
+            autostart, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
+            (IPTR)self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE
+        );
+
+        DoMethod
+        (
+            addInterface, MUIM_Notify, MUIA_PopInterface_Chosen, MUIV_EveryTime,
+            (IPTR)self, 2, MUIM_NetPEditor_AddConnection, MUIV_TriggerValue
+        );
+        DoMethod
+        (
+            editButton, MUIM_Notify, MUIA_Pressed, FALSE,
+            (IPTR)self, 2, MUIM_NetPEditor_EditEntry, FALSE
+        );
+
+        // tunnel window
+        DoMethod
+        (
+            tunUpState, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
+            (IPTR)self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE
+        );
+        DoMethod
+        (
+            tunApplyButton, MUIM_Notify, MUIA_Pressed, FALSE,
+            (IPTR)self, 1, MUIM_NetPEditor_ApplyTunnelEntry
+        );
+        DoMethod
+        (
+            tunCloseButton, MUIM_Notify, MUIA_Pressed, FALSE,
+            (IPTR)tunnelWindow, 3, MUIM_Set, MUIA_Window_Open, FALSE
+        );
+        DoMethod
+        (
+            removeButton, MUIM_Notify, MUIA_Pressed, FALSE,
+            (IPTR)interfaceList, 2, MUIM_List_Remove, MUIV_List_Remove_Active
+        );
+        DoMethod
+        (
+            removeButton, MUIM_Notify, MUIA_Pressed, FALSE,
+            (IPTR)self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE
+        );
+
+        DoMethod
+        (
+            hostList, MUIM_Notify, MUIA_List_Active, MUIV_EveryTime,
+            (IPTR)self, 1, MUIM_NetPEditor_ShowHostEntry
+        );
+        DoMethod
+        (
+            hostList, MUIM_Notify, MUIA_Listview_DoubleClick, MUIV_EveryTime,
+            (IPTR)self, 3, MUIM_NetPEditor_EditHostEntry, FALSE
+        );
+
+        DoMethod
+        (
+            hostAddButton, MUIM_Notify, MUIA_Pressed, FALSE,
+            (IPTR)self, 2, MUIM_NetPEditor_EditHostEntry, TRUE
+        );
+        DoMethod
+        (
+            hostEditButton, MUIM_Notify, MUIA_Pressed, FALSE,
+            (IPTR)self, 1, MUIM_NetPEditor_EditHostEntry, FALSE
+        );
+        DoMethod
+        (
+            hostRemoveButton, MUIM_Notify, MUIA_Pressed, FALSE,
+            (IPTR)hostList, 2, MUIM_List_Remove, MUIV_List_Remove_Active
+        );
+        DoMethod
+        (
+            hostRemoveButton, MUIM_Notify, MUIA_Pressed, FALSE,
+            (IPTR)self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE
+        );
+
+        DoMethod
+        (
+            networkList, MUIM_Notify, MUIA_List_Active, MUIV_EveryTime,
+            (IPTR)self, 1, MUIM_NetPEditor_ShowNetEntry
+        );
+        DoMethod
+        (
+            networkList, MUIM_Notify, MUIA_Listview_DoubleClick, MUIV_EveryTime,
+            (IPTR)self, 3, MUIM_NetPEditor_EditNetEntry, FALSE
+        );
+
+        DoMethod
+        (
+            netAddButton, MUIM_Notify, MUIA_Pressed, FALSE,
+            (IPTR)self, 2, MUIM_NetPEditor_EditNetEntry, TRUE
+        );
+        DoMethod
+        (
+            netEditButton, MUIM_Notify, MUIA_Pressed, FALSE,
+            (IPTR)self, 1, MUIM_NetPEditor_EditNetEntry, FALSE
+        );
+        DoMethod
+        (
+            netRemoveButton, MUIM_Notify, MUIA_Pressed, FALSE,
+            (IPTR)networkList, 2, MUIM_List_Remove, MUIV_List_Remove_Active
+        );
+        DoMethod
+        (
+            netRemoveButton, MUIM_Notify, MUIA_Pressed, FALSE,
+            (IPTR)self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE
+        );
+
+        DoMethod
+        (
+            MBBDeviceString, MUIM_Notify, MUIA_String_Contents, MUIV_EveryTime,
+            (IPTR)self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE
+        );
+
+        DoMethod
+        (
+            MBBUnit, MUIM_Notify, MUIA_Numeric_Value, MUIV_EveryTime,
+            (IPTR)self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE
+        );
+         DoMethod
+        (
+            MBBUsername, MUIM_Notify, MUIA_String_Contents, MUIV_EveryTime,
+            (IPTR)self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE
+        );
+         DoMethod
+        (
+            MBBPassword, MUIM_Notify, MUIA_String_Contents, MUIV_EveryTime,
+            (IPTR)self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE
+        );
+        LONG i;
+        for(i=0;i<MAXATCOMMANDS;i++)
+            DoMethod
+            (
+                MBBInitString[i], MUIM_Notify, MUIA_String_Contents, MUIV_EveryTime,
+                (IPTR)self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE
+            );
+
+        DoMethod
+        (
+            shareList, MUIM_Notify, MUIA_List_Active, MUIV_EveryTime,
+            (IPTR)self, 1, MUIM_NetPEditor_ShowShareEntry
+        );
+        DoMethod
+        (
+            shareList, MUIM_Notify, MUIA_Listview_DoubleClick, MUIV_EveryTime,
+            (IPTR)self, 3, MUIM_NetPEditor_EditShareEntry, FALSE
+        );
+
+        /* Services tab */
+        DoMethod
+        (
+            serviceList, MUIM_Notify, MUIA_List_Active, MUIV_EveryTime,
+            (IPTR)self, 1, MUIM_NetPEditor_ShowServiceEntry
+        );
+        DoMethod
+        (
+            svcEnabled, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
+            (IPTR)self, 1, MUIM_NetPEditor_ToggleService
+        );
+        DoMethod
+        (
+            svcOrder, MUIM_Notify, MUIA_String_Contents, MUIV_EveryTime,
+            (IPTR)self, 1, MUIM_NetPEditor_SetServicePri
+        );
+        DoMethod
+        (
+            svcConfigure, MUIM_Notify, MUIA_Pressed, FALSE,
+            (IPTR)self, 1, MUIM_NetPEditor_ConfigureService
+        );
+
+        DoMethod
+        (
+            shareAddButton, MUIM_Notify, MUIA_Pressed, FALSE,
+            (IPTR)self, 2, MUIM_NetPEditor_EditShareEntry, TRUE
+        );
+        DoMethod
+        (
+            shareEditButton, MUIM_Notify, MUIA_Pressed, FALSE,
+            (IPTR)self, 1, MUIM_NetPEditor_EditShareEntry, FALSE
+        );
+        DoMethod
+        (
+            shareRemoveButton, MUIM_Notify, MUIA_Pressed, FALSE,
+            (IPTR)shareList, 2, MUIM_List_Remove, MUIV_List_Remove_Active
+        );
+        DoMethod
+        (
+            shareRemoveButton, MUIM_Notify, MUIA_Pressed, FALSE,
+            (IPTR)self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE
+        );
+
+        DoMethod
+        (
+            tetheringAddButton, MUIM_Notify, MUIA_Pressed, FALSE,
+            (IPTR)self, 1, MUIM_NetPEditor_AddTetheringEntry
+        );
+
+        // interface window — protocol address list
+        DoMethod
+        (
+            protoAddrList, MUIM_Notify, MUIA_Listview_DoubleClick, MUIV_EveryTime,
+            (IPTR)self, 1, MUIM_NetPEditor_EditProtoEntry
+        );
+        DoMethod
+        (
+            protoEditButton, MUIM_Notify, MUIA_Pressed, FALSE,
+            (IPTR)self, 1, MUIM_NetPEditor_EditProtoEntry
+        );
+        DoMethod
+        (
+            upState, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
+            (IPTR)self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE
+        );
+        SET(deferState, MUIA_CycleChain, 1);
+        SET(deferState, MUIA_ShortHelp, (IPTR)_(MSG_DEFER_HELP));
+        DoMethod
+        (
+            deferState, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
+            (IPTR)self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE
+        );
+        DoMethod
+        (
+            applyButton, MUIM_Notify, MUIA_Pressed, FALSE,
+            (IPTR)self, 1, MUIM_NetPEditor_ApplyEntry
+        );
+        DoMethod
+        (
+            closeButton, MUIM_Notify, MUIA_Pressed, FALSE,
+            (IPTR)ifWindow, 3, MUIM_Set, MUIA_Window_Open, FALSE
+        );
+
+        // Protocol sub-windows: Use button notifies generic ApplyProtoEntry
+        for (ULONG pi = 0; pi < 2; pi++)
+        {
+            if (protoWindows[pi])
+            {
+                DoMethod
+                (
+                    (Object *)XGET(protoWindows[pi], MUIA_PAWin_UseButton),
+                    MUIM_Notify, MUIA_Pressed, FALSE,
+                    (IPTR)self, 2, MUIM_NetPEditor_ApplyProtoEntry, pi
+                );
+            }
+        }
+
+        // host window
+        DoMethod
+        (
+            hostApplyButton, MUIM_Notify, MUIA_Pressed, FALSE,
+            (IPTR)self, 1, MUIM_NetPEditor_ApplyHostEntry
+        );
+        DoMethod
+        (
+            hostCloseButton, MUIM_Notify, MUIA_Pressed, FALSE,
+            (IPTR)hostWindow, 3, MUIM_Set, MUIA_Window_Open, FALSE
+        );
+
+        // network window
+        DoMethod
+        (
+            netApplyButton, MUIM_Notify, MUIA_Pressed, FALSE,
+            (IPTR)self, 1, MUIM_NetPEditor_ApplyNetEntry
+        );
+        DoMethod
+        (
+            netCloseButton, MUIM_Notify, MUIA_Pressed, FALSE,
+            (IPTR)netWindow, 3, MUIM_Set, MUIA_Window_Open, FALSE
+        );
+
+    }
+
+    return self;
+}
+
+IPTR NetPEditor__MUIM_Setup
+(
+    Class *CLASS, Object *self, Msg message
+)
+{
+    struct NetPEditor_DATA *data = INST_DATA(CLASS, self);
+
+    if (!DoSuperMethodA(CLASS, self, message)) return FALSE;
+
+    /* Create list icon from embedded BodychunkObject bitmap */
+    netListIconObj = NetListIconObject_Create();
+    if (netListIconObj)
+        netListIconImg = (APTR)DoMethod(
+            data->netped_interfaceList,
+            MUIM_List_CreateImage, netListIconObj, 0);
+    netpeditor_displayHook.h_Data = netListIconImg;
+
+    DoMethod(_app(self), OM_ADDMEMBER, data->netped_ifWindow);
+    DoMethod(_app(self), OM_ADDMEMBER, data->netped_tunnelWindow);
+    for (ULONG pi = 0; pi < 2; pi++)
+    {
+        if (data->netped_protoWindows[pi])
+            DoMethod(_app(self), OM_ADDMEMBER, data->netped_protoWindows[pi]);
+    }
+    DoMethod(_app(self), OM_ADDMEMBER, data->netped_hostWindow);
+    DoMethod(_app(self), OM_ADDMEMBER, data->netped_netWindow);
+    {
+        struct ShareWinNode *swn;
+        ForeachNode(&data->netped_shareWindows, swn)
+            DoMethod(_app(self), OM_ADDMEMBER, swn->swn_Win);
+    }
+
+    /* Fill the gadgets from the loaded configuration. */
+    NetworkPrefs2Gadgets(data);
+    SET(self, MUIA_PrefsEditor_Changed, FALSE);
+
+    return TRUE;
+}
+
+IPTR NetPEditor__MUIM_Cleanup
+(
+    Class *CLASS, Object *self, Msg message
+)
+{
+    struct NetPEditor_DATA *data = INST_DATA(CLASS, self);
+
+    DoMethod(_app(self), OM_REMMEMBER, data->netped_ifWindow);
+    DoMethod(_app(self), OM_REMMEMBER, data->netped_tunnelWindow);
+    for (ULONG pi = 0; pi < 2; pi++)
+    {
+        if (data->netped_protoWindows[pi])
+            DoMethod(_app(self), OM_REMMEMBER, data->netped_protoWindows[pi]);
+    }
+    DoMethod(_app(self), OM_REMMEMBER, data->netped_hostWindow);
+    DoMethod(_app(self), OM_REMMEMBER, data->netped_netWindow);
+    {
+        struct ShareWinNode *swn;
+        ForeachNode(&data->netped_shareWindows, swn)
+            DoMethod(_app(self), OM_REMMEMBER, swn->swn_Win);
+    }
+
+    /* Destroy list icon */
+    if (netListIconImg)
+    {
+        DoMethod(data->netped_interfaceList,
+            MUIM_List_DeleteImage, netListIconImg);
+        netListIconImg = NULL;
+        netpeditor_displayHook.h_Data = NULL;
+    }
+    if (netListIconObj)
+    {
+        MUI_DisposeObject(netListIconObj);
+        netListIconObj = NULL;
+    }
+
+    /* Shutdown all loaded modules (frees their MUI classes) */
+    {
+        struct NetPrefsIntModule *mod;
+        ForeachNode(&data->netped_NetPrefsBase->npb_Modules, mod)
+        {
+            if (mod->npim_Module.npm_Shutdown)
+                mod->npim_Module.npm_Shutdown(data->netped_NetPrefsBase);
+        }
+    }
+    PAWin_FreeClass();
+
+    return DoSuperMethodA(CLASS, self, message);
+}
+
+IPTR NetPEditor__MUIM_PrefsEditor_Save
+(
+    Class *CLASS, Object *self, Msg message
+)
+{
+    struct NetPEditor_DATA *data = INST_DATA(CLASS, self);
+    enum ErrorCode errorcode = UNKNOWN_ERROR;
+
+    Gadgets2NetworkPrefs(data);
+
+    if ((errorcode = SaveNetworkPrefs()) == ALL_OK)
+    {
+        SET(self, MUIA_PrefsEditor_Changed, FALSE);
+        SET(self, MUIA_PrefsEditor_Testing, FALSE);
+        return TRUE;
+    }
+
+    DisplayErrorMessage(self, errorcode);
+
+    /* Prefs saved to disk, but stack not restarted. Inform about restart will 'apply' changes */
+    if (errorcode == NOT_RESTARTED_STACK)
+    {
+        Object * app = NULL;
+        Object * wnd = NULL;
+
+        GET(self, MUIA_ApplicationObject, &app);
+        GET(self, MUIA_Window_Window, &wnd);
+
+        MUI_Request(app, wnd, 0, _(MSG_INFO_TITLE), _(MSG_BUTTON_OK),
+            _(MSG_PREFS_SAVED_RESTART), PREFS_PATH_ENVARC);
+
+        return TRUE;
+    }
+
+    return FALSE;
+}
+
+IPTR NetPEditor__MUIM_PrefsEditor_Use
+(
+    Class *CLASS, Object *self, Msg message
+)
+{
+    struct NetPEditor_DATA *data = INST_DATA(CLASS, self);
+    enum ErrorCode errorcode = UNKNOWN_ERROR;
+
+    Gadgets2NetworkPrefs(data);
+
+    if ((errorcode = UseNetworkPrefs()) == ALL_OK)
+    {
+        SET(self, MUIA_PrefsEditor_Changed, FALSE);
+        SET(self, MUIA_PrefsEditor_Testing, FALSE);
+        return TRUE;
+    }
+
+    DisplayErrorMessage(self, errorcode);
+
+    return FALSE;
+}
+
+IPTR NetPEditor__MUIM_PrefsEditor_ImportFH
+(
+    Class *CLASS, Object *self,
+    struct MUIP_PrefsEditor_ImportFH *message
+)
+{
+    struct NetPEditor_DATA *data = INST_DATA(CLASS, self);
+    BOOL success = TRUE;
+
+    NetworkPrefs2Gadgets(data);
+
+    return success;
+}
+
+IPTR NetPEditor__MUIM_PrefsEditor_ExportFH
+(
+    Class *CLASS, Object *self,
+    struct MUIP_PrefsEditor_ExportFH *message
+)
+{
+    return TRUE;
+}
+
+
+/* IPv4 mode cycle changed inside the IPv4 config sub-window */
+/* (removed - mode changes are now handled internally by Net4WinClass) */
+
+/* IPv6 mode cycle changed inside the IPv6 config sub-window */
+/* (removed - mode changes are now handled internally by Net6WinClass) */
+
+/* Open the protocol-address config sub-window for the active list entry */
+IPTR NetPEditor__MUIM_NetPEditor_EditProtoEntry
+(
+    Class *CLASS, Object *self,
+    Msg message
+)
+{
+    struct NetPEditor_DATA *data = INST_DATA(CLASS, self);
+    LONG active = XGET(data->netped_protoAddrList, MUIA_List_Active);
+
+    if (active == MUIV_List_Active_Off || active < 0 ||
+        (ULONG)active >= data->netped_protoCount)
+        return 0;
+
+    Object *win = data->netped_protoWindows[active];
+    if (win)
+    {
+        DoMethod(win, MUIM_PAWin_Show, &data->netped_protoAddrs[active]);
+        SET(win, MUIA_Window_Open, TRUE);
+    }
+
+    return 0;
+}
+
+/* Apply a protocol config sub-window back to protoAddrs[family] and refresh */
+IPTR NetPEditor__MUIM_NetPEditor_ApplyProtoEntry
+(
+    Class *CLASS, Object *self,
+    struct MUIP_NetPEditor_ApplyProtoEntry *msg
+)
+{
+    struct NetPEditor_DATA *data = INST_DATA(CLASS, self);
+    ULONG family = msg->family;
+
+    if (family >= data->netped_protoCount || !data->netped_protoWindows[family])
+        return 0;
+
+    Object *win = data->netped_protoWindows[family];
+
+    DoMethod(win, MUIM_PAWin_Apply, &data->netped_protoAddrs[family]);
+
+    /* Replace the list entry with the updated ProtocolAddress */
+    DoMethod(data->netped_protoAddrList, MUIM_List_Remove, family);
+    DoMethod(data->netped_protoAddrList, MUIM_List_InsertSingle,
+             &data->netped_protoAddrs[family], family);
+    SET(data->netped_protoAddrList, MUIA_List_Active, family);
+
+    SET(win, MUIA_Window_Open, FALSE);
+    SET(self, MUIA_PrefsEditor_Changed, TRUE);
+    return 0;
+}
+
+/*
+    Shows content of current list entry in the interface window.
+*/
+IPTR NetPEditor__MUIM_NetPEditor_ShowEntry
+(
+    Class *CLASS, Object *self,
+    Msg message
+)
+{
+    struct NetPEditor_DATA *data = INST_DATA(CLASS, self);
+
+    struct Interface *iface;
+
+    DoMethod
+    (
+        data->netped_interfaceList,
+        MUIM_List_GetEntry, MUIV_List_GetEntry_Active, &iface
+    );
+    if (iface)
+    {
+        SET(data->netped_removeButton, MUIA_Disabled, FALSE);
+        SET(data->netped_editButton, MUIA_Disabled, FALSE);
+
+        /* Load the per-protocol working slots from the interface's nodes.
+         * An unconfigured protocol yields an empty manual slot. */
+        proto_slot_load(&data->netped_protoAddrs[PROTO_FAMILY_IPV4], iface,
+                        (UBYTE)(PROTO_FAMILY_IPV4 + 1), PROTO_FAMILY_IPV4);
+        proto_slot_load(&data->netped_protoAddrs[PROTO_FAMILY_IPV6], iface,
+                        (UBYTE)(PROTO_FAMILY_IPV6 + 1), PROTO_FAMILY_IPV6);
+
+        /* Rebuild the protocol address list */
+        SET(data->netped_protoAddrList, MUIA_List_Quiet, TRUE);
+        DoMethod(data->netped_protoAddrList, MUIM_List_Clear);
+        DoMethod(data->netped_protoAddrList, MUIM_List_InsertSingle,
+                 &data->netped_protoAddrs[PROTO_FAMILY_IPV4],
+                 MUIV_List_Insert_Bottom);
+        DoMethod(data->netped_protoAddrList, MUIM_List_InsertSingle,
+                 &data->netped_protoAddrs[PROTO_FAMILY_IPV6],
+                 MUIV_List_Insert_Bottom);
+        SET(data->netped_protoAddrList, MUIA_List_Quiet, FALSE);
+
+        /* Set the remaining interface-window gadgets */
+        SET(data->netped_nameString,   MUIA_String_Contents, GetName(iface));
+        SET(data->netped_upState,      MUIA_Selected,        GetUp(iface) ? 1 : 0);
+        SET(data->netped_deferState,   MUIA_Selected,        GetDefer(iface) ? 1 : 0);
+        SET(data->netped_deviceString, MUIA_String_Contents, GetDevice(iface));
+        SET(data->netped_unitString,   MUIA_String_Integer,  GetUnit(iface));
+    }
+    else
+    {
+        SET(data->netped_removeButton, MUIA_Disabled, TRUE);
+        SET(data->netped_editButton,   MUIA_Disabled, TRUE);
+        SET(data->netped_ifWindow,     MUIA_Window_Open, FALSE);
+    }
+    return 0;
+}
+
+static void NetPEditor_AddEntry(Class *CLASS, Object *self, STRPTR devicename)
+{
+    struct NetPEditor_DATA *data = INST_DATA(CLASS, self);
+
+    /*
+        Create a new entry and make it the current one
+    */
+    LONG entries = XGET(data->netped_interfaceList, MUIA_List_Entries);
+    if (entries < MAXINTERFACES)
+    {
+        struct Interface iface;
+        InitInterface(&iface);
+        iface.name[strlen(iface.name) - 1] += entries;
+        SetUp(&iface, TRUE);    // new entries are UP
+        if (devicename != NULL)
+            SetDevice(&iface, devicename);
+        DoMethod
+        (
+            data->netped_interfaceList,
+            MUIM_List_InsertSingle, &iface, MUIV_List_Insert_Bottom
+        );
+        SET(data->netped_interfaceList, MUIA_List_Active, entries);
+    }
+}
+/* Create a new 6in4 tunnel entry and make it current. */
+static void NetPEditor_AddTunnel(Class *CLASS, Object *self)
+{
+    struct NetPEditor_DATA *data = INST_DATA(CLASS, self);
+
+    LONG entries = XGET(data->netped_interfaceList, MUIA_List_Entries);
+    if (entries < MAXINTERFACES)
+    {
+        struct Interface iface;
+        InitTunnel(&iface);
+        iface.name[strlen(iface.name) - 1] += entries;  // sit0 -> sit1 ...
+        DoMethod
+        (
+            data->netped_interfaceList,
+            MUIM_List_InsertSingle, &iface, MUIV_List_Insert_Bottom
+        );
+        SET(data->netped_interfaceList, MUIA_List_Active, entries);
+    }
+}
+
+/* Populate the tunnel window gadgets from an interface. */
+static void NetPEditor_ShowTunnel(Class *CLASS, Object *self, struct Interface *iface)
+{
+    struct NetPEditor_DATA *data = INST_DATA(CLASS, self);
+
+    SET(data->netped_tunNameString,   MUIA_String_Contents, GetName(iface));
+    SET(data->netped_tunUpState,      MUIA_Selected,        GetUp(iface) ? 1 : 0);
+    SET(data->netped_tunRemoteString, MUIA_String_Contents, GetTunnelRemote(iface));
+    SET(data->netped_tunLocalString,  MUIA_String_Contents, GetTunnelLocal(iface));
+    SET(data->netped_tunTTLString,    MUIA_String_Integer,  GetTunnelTTL(iface));
+
+    /* Inner IPv6 endpoint is just this interface's IPv6 protocol object. */
+    struct ProtocolAddress *pa =
+        ProtoAddr_Find(&iface->protoAddrs, (UBYTE)(PROTO_FAMILY_IPV6 + 1));
+    SET(data->netped_tunIP6String,    MUIA_String_Contents,
+        (IPTR)(pa ? pa->pa_addr : (STRPTR)""));
+    SET(data->netped_tunPrefixString, MUIA_String_Integer,
+        pa ? pa->pa_prefix : 0);
+    SET(data->netped_tunGate6String,  MUIA_String_Contents,
+        (IPTR)(pa ? pa->pa_gate : (STRPTR)""));
+}
+
+IPTR NetPEditor__MUIM_NetPEditor_EditEntry
+(
+    Class *CLASS, Object *self,
+    struct MUIP_NetPEditor_EditEntry *message
+)
+{
+    struct NetPEditor_DATA *data = INST_DATA(CLASS, self);
+
+    if (message->addEntry)
+    {
+        NetPEditor_AddEntry(CLASS, self, NULL);
+    }
+
+    LONG active = XGET(data->netped_interfaceList, MUIA_List_Active);
+    if (active != MUIV_List_Active_Off)
+    {
+        struct Interface *iface = NULL;
+        DoMethod(data->netped_interfaceList, MUIM_List_GetEntry, active, &iface);
+        if (iface && GetIsTunnel(iface))
+        {
+            /* Editing a tunnel row -> use the tunnel window instead */
+            NetPEditor_ShowTunnel(CLASS, self, iface);
+            SET(data->netped_tunnelWindow, MUIA_Window_Open, TRUE);
+        }
+        else
+        {
+            SET(data->netped_ifWindow, MUIA_Window_Open, TRUE);
+        }
+    }
+
+    return 0;
+}
+
+/*
+    Add a new connection of the type chosen in the PopInterface gadget
+    (MUIV_PopInterface_DeviceInterface or MUIV_PopInterface_TunnelInterface).
+*/
+IPTR NetPEditor__MUIM_NetPEditor_AddConnection
+(
+    Class *CLASS, Object *self,
+    struct MUIP_NetPEditor_AddConnection *message
+)
+{
+    if (message->type == MUIV_PopInterface_TunnelInterface)
+        DoMethod(self, MUIM_NetPEditor_EditTunnelEntry, TRUE);
+    else if (message->type == MUIV_PopInterface_DeviceInterface)
+        DoMethod(self, MUIM_NetPEditor_EditEntry, TRUE);
+
+    return 0;
+}
+
+/*
+    Open the tunnel window for the active entry, optionally creating one first.
+*/
+IPTR NetPEditor__MUIM_NetPEditor_EditTunnelEntry
+(
+    Class *CLASS, Object *self,
+    struct MUIP_NetPEditor_EditTunnelEntry *message
+)
+{
+    struct NetPEditor_DATA *data = INST_DATA(CLASS, self);
+
+    if (message->addEntry)
+        NetPEditor_AddTunnel(CLASS, self);
+
+    LONG active = XGET(data->netped_interfaceList, MUIA_List_Active);
+    if (active != MUIV_List_Active_Off)
+    {
+        struct Interface *iface = NULL;
+        DoMethod(data->netped_interfaceList, MUIM_List_GetEntry, active, &iface);
+        if (iface)
+        {
+            NetPEditor_ShowTunnel(CLASS, self, iface);
+            SET(data->netped_tunnelWindow, MUIA_Window_Open, TRUE);
+        }
+    }
+
+    return 0;
+}
+
+/*
+    Store data from the tunnel window back into the current list entry.
+*/
+IPTR NetPEditor__MUIM_NetPEditor_ApplyTunnelEntry
+(
+    Class *CLASS, Object *self,
+    Msg message
+)
+{
+    struct NetPEditor_DATA *data = INST_DATA(CLASS, self);
+
+    LONG active = XGET(data->netped_interfaceList, MUIA_List_Active);
+    if (active != MUIV_List_Active_Off)
+    {
+        struct Interface *entry = NULL;
+        struct Interface iface;
+
+        DoMethod(data->netped_interfaceList, MUIM_List_GetEntry, active, &entry);
+        if (!entry) return 0;
+        iface = *entry;                 /* full copy - keep fields not edited here */
+
+        SetIsTunnel(&iface, TRUE);
+        iface.device[0] = '\0';         /* a tunnel has no SANA-II device */
+        SetName(&iface,
+            (STRPTR)XGET(data->netped_tunNameString, MUIA_String_Contents));
+        SetUp(&iface,
+            XGET(data->netped_tunUpState, MUIA_Selected));
+        SetTunnelRemote(&iface,
+            (STRPTR)XGET(data->netped_tunRemoteString, MUIA_String_Contents));
+        SetTunnelLocal(&iface,
+            (STRPTR)XGET(data->netped_tunLocalString, MUIA_String_Contents));
+        SetTunnelTTL(&iface,
+            XGET(data->netped_tunTTLString, MUIA_String_Integer));
+
+        /* Inner IPv6 endpoint (always manual for a tunnel) becomes the sole
+         * protocol object on the interface, built into a fresh independent
+         * list.  The core never learns this is "IPv6" - it is just a node. */
+        struct ProtocolAddress slot;
+        memset(&slot, 0, sizeof(slot));
+        slot.pa_node.ln_Type = (UBYTE)(PROTO_FAMILY_IPV6 + 1);
+        slot.pa_family = PROTO_FAMILY_IPV6;
+        slot.pa_mode   = IP_MODE_MANUAL;
+        slot.pa_prefix = XGET(data->netped_tunPrefixString, MUIA_String_Integer);
+        strlcpy(slot.pa_addr,
+                (STRPTR)XGET(data->netped_tunIP6String, MUIA_String_Contents),
+                sizeof(slot.pa_addr));
+        strlcpy(slot.pa_gate,
+                (STRPTR)XGET(data->netped_tunGate6String, MUIA_String_Contents),
+                sizeof(slot.pa_gate));
+
+        proto_build_list(&iface, &slot, 1);
+
+        DoMethod(data->netped_interfaceList, MUIM_List_Remove, active);
+        DoMethod(data->netped_interfaceList, MUIM_List_InsertSingle, &iface, active);
+        SET(data->netped_interfaceList, MUIA_List_Active, active);
+        SET(self, MUIA_PrefsEditor_Changed, TRUE);
+
+        /* proto_build_list gave iface its own nodes; the list InsertSingle
+         * deep-copied them, so release our transient copy. */
+        ProtoAddr_FreeList(&iface.protoAddrs);
+    }
+
+    return 0;
+}
+
+/*
+    Store data from interface window back in current list entry
+*/
+IPTR NetPEditor__MUIM_NetPEditor_ApplyEntry
+(
+    Class *CLASS, Object *self,
+    Msg message
+)
+{
+    struct NetPEditor_DATA *data = INST_DATA(CLASS, self);
+
+    LONG active = XGET(data->netped_interfaceList, MUIA_List_Active);
+    if (active != MUIV_List_Active_Off)
+    {
+        struct Interface *entry = NULL;
+        struct Interface iface;
+
+        /* Start from a full copy of the current list entry so fields not edited
+         * in this window (e.g. the 6in4 tunnel members) are preserved rather
+         * than left as stack garbage. */
+        DoMethod(data->netped_interfaceList,
+                 MUIM_List_GetEntry, active, &entry);
+        if (!entry) return 0;
+        iface = *entry;
+
+        /* Overwrite with the current gadget values */
+        SetName(&iface,
+            (STRPTR)XGET(data->netped_nameString, MUIA_String_Contents));
+        SetDevice(&iface,
+            (STRPTR)XGET(data->netped_deviceString, MUIA_String_Contents));
+        SetUnit(&iface,
+            XGET(data->netped_unitString, MUIA_String_Integer));
+        SetUp(&iface,
+            XGET(data->netped_upState, MUIA_Selected));
+        SetDefer(&iface,
+            XGET(data->netped_deferState, MUIA_Selected));
+
+        /* Rebuild the interface's protocol objects from the working slots.
+         * Only configured slots produce a node, so an interface left with just
+         * an IPv4 (or just an IPv6) address carries exactly that - no spurious
+         * empty protocol is written. */
+        proto_build_list(&iface, data->netped_protoAddrs,
+                         sizeof(data->netped_protoAddrs) /
+                         sizeof(data->netped_protoAddrs[0]));
+
+        DoMethod(data->netped_interfaceList, MUIM_List_Remove, active);
+        DoMethod(data->netped_interfaceList, MUIM_List_InsertSingle, &iface, active);
+        SET(data->netped_interfaceList, MUIA_List_Active, active);
+        SET(self, MUIA_PrefsEditor_Changed, TRUE);
+
+        /* Release the transient nodes proto_build_list created (the list
+         * InsertSingle above deep-copied them into the stored entry). */
+        ProtoAddr_FreeList(&iface.protoAddrs);
+    }
+
+    return 0;
+}
+
+/*
+    Shows content of current list entry in the host window.
+*/
+IPTR NetPEditor__MUIM_NetPEditor_ShowHostEntry
+(
+    Class *CLASS, Object *self,
+    Msg message
+)
+{
+    struct NetPEditor_DATA *data = INST_DATA(CLASS, self);
+
+    struct Host *host;
+
+    DoMethod
+    (
+        data->netped_hostList,
+        MUIM_List_GetEntry, MUIV_List_GetEntry_Active, &host
+    );
+    if (host)
+    {
+        SET(data->netped_hostRemoveButton, MUIA_Disabled, FALSE);
+        SET(data->netped_hostEditButton, MUIA_Disabled, FALSE);
+
+        SET(data->netped_hostAddressString, MUIA_String_Contents, GetHostAddress(host));
+        SET(data->netped_hostNamesString, MUIA_String_Contents, GetHostNames(host));
+    }
+    else
+    {
+        SET(data->netped_hostRemoveButton, MUIA_Disabled, TRUE);
+        SET(data->netped_hostEditButton, MUIA_Disabled, TRUE);
+        SET(data->netped_hostWindow, MUIA_Window_Open, FALSE);
+    }
+    return 0;
+}
+
+IPTR NetPEditor__MUIM_NetPEditor_EditHostEntry
+(
+    Class *CLASS, Object *self,
+    struct MUIP_NetPEditor_EditEntry *message
+)
+{
+    struct NetPEditor_DATA *data = INST_DATA(CLASS, self);
+
+    if (message->addEntry)
+    {
+        /*
+            Create a new entry and make it the current one
+        */
+        LONG entries = XGET(data->netped_hostList, MUIA_List_Entries);
+        if (entries < MAXHOSTS)
+        {
+            struct Host host;
+            InitHost(&host);
+            DoMethod
+            (
+                data->netped_hostList,
+                MUIM_List_InsertSingle, &host, MUIV_List_Insert_Bottom
+            );
+            SET(data->netped_hostList, MUIA_List_Active, entries);
+        }
+    }
+
+    LONG active = XGET(data->netped_hostList, MUIA_List_Active);
+    if (active != MUIV_List_Active_Off)
+    {
+        SET(data->netped_hostWindow, MUIA_Window_Open, TRUE);
+    }
+
+    return 0;
+}
+
+/*
+    Store data from host window back in current list entry
+*/
+IPTR NetPEditor__MUIM_NetPEditor_ApplyHostEntry
+(
+    Class *CLASS, Object *self,
+    Msg message
+)
+{
+    struct NetPEditor_DATA *data = INST_DATA(CLASS, self);
+
+    LONG active = XGET(data->netped_hostList, MUIA_List_Active);
+    if (active != MUIV_List_Active_Off)
+    {
+        struct Host host;
+        SetHost
+        (
+            &host,
+            (STRPTR)XGET(data->netped_hostNamesString, MUIA_String_Contents),
+            (STRPTR)XGET(data->netped_hostAddressString, MUIA_String_Contents)
+        );
+        DoMethod(data->netped_hostList, MUIM_List_Remove, active);
+        DoMethod(data->netped_hostList, MUIM_List_InsertSingle, &host, active);
+        SET(data->netped_hostList, MUIA_List_Active, active);
+        SET(self, MUIA_PrefsEditor_Changed, TRUE);
+    }
+
+    return 0;
+}
+
+/*
+    Shows content of current list entry in the network window.
+*/
+IPTR NetPEditor__MUIM_NetPEditor_ShowNetEntry
+(
+    Class *CLASS, Object *self,
+    Msg message
+)
+{
+    struct NetPEditor_DATA *data = INST_DATA(CLASS, self);
+
+    struct Network *net;
+
+    DoMethod
+    (
+        data->netped_networkList,
+        MUIM_List_GetEntry, MUIV_List_GetEntry_Active, &net
+    );
+    if (net)
+    {
+        SET(data->netped_netRemoveButton, MUIA_Disabled, FALSE);
+        SET(data->netped_netEditButton, MUIA_Disabled, FALSE);
+
+        SET(data->netped_sSIDString, MUIA_String_Contents, GetNetworkName(net));
+        SET(data->netped_encType, MUIA_Cycle_Active, GetEncType(net));
+        SET(data->netped_keyType, MUIA_Cycle_Active, net->keyIsHex ? 1 : 0);
+        SET(data->netped_keyString, MUIA_String_Contents, GetKey(net));
+        SET(data->netped_adHocState, MUIA_Selected, GetAdHoc(net) ? 1 : 0);
+        SET(data->netped_hiddenState, MUIA_Selected, GetHidden(net) ? 1 : 0);
+    }
+    else
+    {
+        SET(data->netped_netRemoveButton, MUIA_Disabled, TRUE);
+        SET(data->netped_netEditButton, MUIA_Disabled, TRUE);
+        SET(data->netped_netWindow, MUIA_Window_Open, FALSE);
+    }
+    return 0;
+}
+
+IPTR NetPEditor__MUIM_NetPEditor_EditNetEntry
+(
+    Class *CLASS, Object *self,
+    struct MUIP_NetPEditor_EditEntry *message
+)
+{
+    struct NetPEditor_DATA *data = INST_DATA(CLASS, self);
+
+    if (message->addEntry)
+    {
+        /*
+            Create a new entry and make it the current one
+        */
+        LONG entries = XGET(data->netped_networkList, MUIA_List_Entries);
+        if (entries < MAXNETWORKS)
+        {
+            struct Network net;
+            InitNetwork(&net);
+            DoMethod
+            (
+                data->netped_networkList,
+                MUIM_List_InsertSingle, &net, MUIV_List_Insert_Bottom
+            );
+            SET(data->netped_networkList, MUIA_List_Active, entries);
+        }
+    }
+
+    LONG active = XGET(data->netped_networkList, MUIA_List_Active);
+    if (active != MUIV_List_Active_Off)
+    {
+        SET(data->netped_netWindow, MUIA_Window_Open, TRUE);
+    }
+
+    return 0;
+}
+
+/*
+    Store data from network window back in current list entry
+*/
+IPTR NetPEditor__MUIM_NetPEditor_ApplyNetEntry
+(
+    Class *CLASS, Object *self,
+    Msg message
+)
+{
+    struct NetPEditor_DATA *data = INST_DATA(CLASS, self);
+
+    LONG active = XGET(data->netped_networkList, MUIA_List_Active);
+    if (active != MUIV_List_Active_Off)
+    {
+        struct Network net;
+        SetNetwork
+        (
+            &net,
+            (STRPTR)XGET(data->netped_sSIDString, MUIA_String_Contents),
+            XGET(data->netped_encType, MUIA_Cycle_Active),
+            (STRPTR)XGET(data->netped_keyString, MUIA_String_Contents),
+            XGET(data->netped_keyType, MUIA_Cycle_Active),
+            XGET(data->netped_hiddenState, MUIA_Selected),
+            XGET(data->netped_adHocState, MUIA_Selected)
+        );
+        DoMethod(data->netped_networkList, MUIM_List_Remove, active);
+        DoMethod(data->netped_networkList, MUIM_List_InsertSingle, &net, active);
+        SET(data->netped_networkList, MUIA_List_Active, active);
+        SET(self, MUIA_PrefsEditor_Changed, TRUE);
+    }
+
+    return 0;
+}
+
+/* Find the mounted-share edit window for a handler ID, or NULL. */
+static Object *ShareWindowByID(struct NetPEditor_DATA *data, UBYTE id)
+{
+    struct ShareWinNode *swn;
+
+    ForeachNode(&data->netped_shareWindows, swn)
+        if (swn->swn_Node.ln_Type == id)
+            return swn->swn_Win;
+    return NULL;
+}
+
+/* Close every mounted-share edit window. */
+static void CloseShareWindows(struct NetPEditor_DATA *data)
+{
+    struct ShareWinNode *swn;
+
+    ForeachNode(&data->netped_shareWindows, swn)
+        SET(swn->swn_Win, MUIA_Window_Open, FALSE);
+}
+
+/* Make a new share's device name unique among the listview's entries by
+ * appending/raising a numeric suffix (replaces the old SMB0..SMB9 hack). */
+static void UniquifyShareDevice(Object *list, struct MountedShare *share)
+{
+    TEXT base[MOUNT_DEVBUFLEN];
+    LONG n = 0, len;
+
+    strlcpy(base, share->ms_device, sizeof(base));
+    len = strlen(base);
+    while (len > 0 && base[len - 1] >= '0' && base[len - 1] <= '9')
+        base[--len] = '\0';
+
+    for (;;)
+    {
+        LONG i, entries = XGET(list, MUIA_List_Entries);
+        BOOL used = FALSE;
+
+        for (i = 0; i < entries; i++)
+        {
+            struct MountedShare *e = NULL;
+
+            DoMethod(list, MUIM_List_GetEntry, i, &e);
+            if (e != NULL && strcasecmp(e->ms_device, share->ms_device) == 0)
+            {
+                used = TRUE;
+                break;
+            }
+        }
+        if (!used)
+            break;
+        snprintf(share->ms_device, sizeof(share->ms_device), "%s%ld",
+                 base, (long)n++);
+    }
+}
+
+/*
+    Selection changed on the mounted-shares list.
+*/
+IPTR NetPEditor__MUIM_NetPEditor_ShowShareEntry
+(
+    Class *CLASS, Object *self,
+    Msg message
+)
+{
+    struct NetPEditor_DATA *data = INST_DATA(CLASS, self);
+    struct MountedShare *share = NULL;
+
+    DoMethod
+    (
+        data->netped_shareList,
+        MUIM_List_GetEntry, MUIV_List_GetEntry_Active, &share
+    );
+    if (share)
+    {
+        SET(data->netped_shareRemoveButton, MUIA_Disabled, FALSE);
+        SET(data->netped_shareEditButton, MUIA_Disabled, FALSE);
+    }
+    else
+    {
+        SET(data->netped_shareRemoveButton, MUIA_Disabled, TRUE);
+        SET(data->netped_shareEditButton, MUIA_Disabled, TRUE);
+        CloseShareWindows(data);
+    }
+    return 0;
+}
+
+IPTR NetPEditor__MUIM_NetPEditor_EditShareEntry
+(
+    Class *CLASS, Object *self,
+    struct MUIP_NetPEditor_EditEntry *message
+)
+{
+    struct NetPEditor_DATA *data = INST_DATA(CLASS, self);
+    struct MountedShare *share = NULL;
+    Object *win;
+
+    if (message->addEntry)
+    {
+        /* Pick the share type, then create a new entry of that type. */
+        struct FSHandlerNode *fsh = NULL;
+        LONG handlers = 0;
+
+        while (FSHandler_ByIndex(handlers) != NULL)
+            handlers++;
+        if (handlers == 0)
+            return 0;                   /* no filesystem modules loaded */
+
+        if (handlers == 1)
+            fsh = FSHandler_ByIndex(0);
+        else
+        {
+            TEXT gadgets[256];
+            LONG i, res;
+
+            gadgets[0] = '\0';
+            for (i = 0; i < handlers; i++)
+            {
+                strlcat(gadgets, FSHandler_ByIndex(i)->fsh_Node.ln_Name,
+                        sizeof(gadgets));
+                strlcat(gadgets, "|", sizeof(gadgets));
+            }
+            strlcat(gadgets, _(MSG_BUTTON_CANCEL), sizeof(gadgets));
+
+            res = MUI_Request(_app(self), NULL, 0,
+                              _(MSG_SERVICE_TYPES), gadgets,
+                              "%s", (IPTR)_(MSG_SERVICE_TYPES));
+            if (res == 0)
+                return 0;               /* cancelled */
+            fsh = FSHandler_ByIndex(res - 1);
+        }
+        if (fsh == NULL)
+            return 0;
+
+        {
+            struct MountedShare newshare;
+            LONG entries = XGET(data->netped_shareList, MUIA_List_Entries);
+
+            memset(&newshare, 0, sizeof(newshare));
+            if (fsh->fsh_InitShare != NULL)
+                fsh->fsh_InitShare(&newshare,
+                    (CONST_STRPTR)XGET(data->netped_domainString,
+                                       MUIA_String_Contents));
+            newshare.ms_node.ln_Type = fsh->fsh_ID;
+            UniquifyShareDevice(data->netped_shareList, &newshare);
+            DoMethod
+            (
+                data->netped_shareList,
+                MUIM_List_InsertSingle, &newshare, MUIV_List_Insert_Bottom
+            );
+            SET(data->netped_shareList, MUIA_List_Active, entries);
+        }
+    }
+
+    /* Open the type-specific editor for the active entry. */
+    DoMethod
+    (
+        data->netped_shareList,
+        MUIM_List_GetEntry, MUIV_List_GetEntry_Active, &share
+    );
+    if (share != NULL)
+    {
+        win = ShareWindowByID(data, share->ms_node.ln_Type);
+        if (win != NULL)
+        {
+            DoMethod(win, MUIM_PAWin_Show, (IPTR)share);
+            SET(win, MUIA_Window_Open, TRUE);
+        }
+    }
+
+    return 0;
+}
+
+/*
+    Store the type-specific editor's gadgets back into the active list entry.
+*/
+IPTR NetPEditor__MUIM_NetPEditor_ApplyShareEntry
+(
+    Class *CLASS, Object *self,
+    struct MUIP_NetPEditor_ApplyShareEntry *message
+)
+{
+    struct NetPEditor_DATA *data = INST_DATA(CLASS, self);
+    struct MountedShare *entry = NULL, share;
+    Object *win;
+    LONG active = XGET(data->netped_shareList, MUIA_List_Active);
+
+    if (active == MUIV_List_Active_Off)
+        return 0;
+    DoMethod(data->netped_shareList, MUIM_List_GetEntry, active, &entry);
+    if (entry == NULL || entry->ms_node.ln_Type != (UBYTE)message->fshID)
+        return 0;
+    win = ShareWindowByID(data, entry->ms_node.ln_Type);
+    if (win == NULL)
+        return 0;
+
+    share = *entry;
+    DoMethod(win, MUIM_PAWin_Apply, (IPTR)&share);
+    share.ms_node.ln_Type = (UBYTE)message->fshID;
+
+    DoMethod(data->netped_shareList, MUIM_List_Remove, active);
+    DoMethod(data->netped_shareList, MUIM_List_InsertSingle, &share, active);
+    SET(data->netped_shareList, MUIA_List_Active, active);
+    SET(self, MUIA_PrefsEditor_Changed, TRUE);
+
+    return 0;
+}
+
+/*
+    Add network device responsible for tethering
+*/
+IPTR NetPEditor__MUIM_NetPEditor_AddTetheringEntry
+(
+    Class *CLASS, Object *self,
+    Msg message
+)
+{
+    struct NetPEditor_DATA *data = INST_DATA(CLASS, self);
+
+    NetPEditor_AddEntry(CLASS, self, "usbrndis.device");
+
+    SET(data->netped_mainTabs, MUIA_Group_ActivePage, 0);
+
+    return 0;
+}
+/* Services tab: list selection changed -> reflect it in the Enabled checkmark */
+IPTR NetPEditor__MUIM_NetPEditor_ShowServiceEntry
+(
+    Class *CLASS, Object *self, Msg message
+)
+{
+    struct NetPEditor_DATA *data = INST_DATA(CLASS, self);
+
+    ShowSelectedService(data);
+    return 0;
+}
+
+/* Services tab: Enabled checkmark toggled -> update the active service entry */
+IPTR NetPEditor__MUIM_NetPEditor_ToggleService
+(
+    Class *CLASS, Object *self, Msg message
+)
+{
+    struct NetPEditor_DATA *data = INST_DATA(CLASS, self);
+    struct NetSvcEntry *e = NULL;
+
+    DoMethod(data->netped_serviceList, MUIM_List_GetEntry,
+             MUIV_List_GetEntry_Active, (IPTR)&e);
+    if (e == NULL)
+        return 0;
+    e->nse_Enabled = XGET(data->netped_svcEnabled, MUIA_Selected) ? TRUE : FALSE;
+    DoMethod(data->netped_serviceList, MUIM_List_Redraw, MUIV_List_Redraw_Active);
+    SET(self, MUIA_PrefsEditor_Changed, TRUE);
+    return 0;
+}
+
+/* Services tab: priority string edited -> update the active service entry */
+IPTR NetPEditor__MUIM_NetPEditor_SetServicePri
+(
+    Class *CLASS, Object *self, Msg message
+)
+{
+    struct NetPEditor_DATA *data = INST_DATA(CLASS, self);
+    struct NetSvcEntry *e = NULL;
+
+    DoMethod(data->netped_serviceList, MUIM_List_GetEntry,
+             MUIV_List_GetEntry_Active, (IPTR)&e);
+    if (e == NULL)
+        return 0;
+    strlcpy(e->nse_Order,
+            (STRPTR)XGET(data->netped_svcOrder, MUIA_String_Contents),
+            sizeof(e->nse_Order));
+    DoMethod(data->netped_serviceList, MUIM_List_Redraw, MUIV_List_Redraw_Active);
+    SET(self, MUIA_PrefsEditor_Changed, TRUE);
+    return 0;
+}
+
+/* Services tab: launch the selected service's configuration tool */
+IPTR NetPEditor__MUIM_NetPEditor_ConfigureService
+(
+    Class *CLASS, Object *self, Msg message
+)
+{
+    struct NetPEditor_DATA *data = INST_DATA(CLASS, self);
+    struct NetSvcEntry *e = NULL;
+
+    DoMethod(data->netped_serviceList, MUIM_List_GetEntry,
+             MUIV_List_GetEntry_Active, (IPTR)&e);
+    if (e == NULL || e->nse_ConfigTool[0] == '\0')
+        return 0;
+    SystemTags(e->nse_ConfigTool,
+               SYS_Asynch, TRUE,
+               SYS_Input, BNULL,
+               SYS_Output, BNULL,
+               TAG_DONE);
+    return 0;
+}
+
+/*** Setup ******************************************************************/
+ZUNE_CUSTOMCLASS_29
+(
+    NetPEditor, NULL, MUIC_PrefsEditor, NULL,
+    OM_NEW,                               struct opSet *,
+    MUIM_Setup,                           Msg,
+    MUIM_Cleanup,                         Msg,
+    MUIM_PrefsEditor_ImportFH,            struct MUIP_PrefsEditor_ImportFH *,
+    MUIM_PrefsEditor_ExportFH,            struct MUIP_PrefsEditor_ExportFH *,
+    MUIM_PrefsEditor_Save,                Msg,
+    MUIM_PrefsEditor_Use,                 Msg,
+    MUIM_NetPEditor_ShowEntry,            Msg,
+    MUIM_NetPEditor_EditEntry,            struct MUIP_NetPEditor_EditEntry *,
+    MUIM_NetPEditor_ApplyEntry,           Msg,
+    MUIM_NetPEditor_ShowHostEntry,        Msg,
+    MUIM_NetPEditor_EditHostEntry,        struct MUIP_NetPEditor_EditEntry *,
+    MUIM_NetPEditor_ApplyHostEntry,       Msg,
+    MUIM_NetPEditor_ShowNetEntry,         Msg,
+    MUIM_NetPEditor_EditNetEntry,         struct MUIP_NetPEditor_EditEntry *,
+    MUIM_NetPEditor_ApplyNetEntry,        Msg,
+    MUIM_NetPEditor_ShowShareEntry,       Msg,
+    MUIM_NetPEditor_EditShareEntry,       struct MUIP_NetPEditor_EditEntry *,
+    MUIM_NetPEditor_ApplyShareEntry,      struct MUIP_NetPEditor_ApplyShareEntry *,
+    MUIM_NetPEditor_AddTetheringEntry,    Msg,
+    MUIM_NetPEditor_EditProtoEntry,       Msg,
+    MUIM_NetPEditor_ApplyProtoEntry,      struct MUIP_NetPEditor_ApplyProtoEntry *,
+    MUIM_NetPEditor_AddConnection,        struct MUIP_NetPEditor_AddConnection *,
+    MUIM_NetPEditor_EditTunnelEntry,      struct MUIP_NetPEditor_EditTunnelEntry *,
+    MUIM_NetPEditor_ApplyTunnelEntry,     Msg,
+    MUIM_NetPEditor_ShowServiceEntry,     Msg,
+    MUIM_NetPEditor_ToggleService,        Msg,
+    MUIM_NetPEditor_SetServicePri,        Msg,
+    MUIM_NetPEditor_ConfigureService,     Msg
+);

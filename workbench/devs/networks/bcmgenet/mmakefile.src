@@ -1,0 +1,16 @@
+include $(SRCDIR)/config/aros.cfg
+
+#
+# SANA-II driver for the Broadcom GENETv5 on-chip Ethernet MAC
+# (Raspberry Pi 4 / BCM2711). Found through the device tree rather
+# than a probeable bus, so only built for a target that asks for it.
+#
+
+FILES := bcmgenet_dt bcmgenet_hw bcmgenet_unit bcmgenet_handler
+
+%build_module mmake=workbench-devs-networks-bcmgenet \
+    modname=bcmgenet modtype=device \
+    files="bcmgenet_init $(FILES)" \
+    moduledir=Devs/Networks
+
+%common

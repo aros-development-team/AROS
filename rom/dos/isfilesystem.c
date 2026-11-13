@@ -1,0 +1,91 @@
+/*
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
+
+    Desc: Check if a device is a filesystem.
+*/
+
+#include <aros/debug.h>
+#include <proto/exec.h>
+#include <dos/dosextens.h>
+#include <proto/utility.h>
+#include "dos_intern.h"
+#include <string.h>
+
+/*****************************************************************************
+
+    NAME */
+#include <proto/dos.h>
+
+        AROS_LH1(BOOL, IsFileSystem,
+
+/*  SYNOPSIS */
+        AROS_LHA(CONST_STRPTR, devicename, D1),
+
+/*  LOCATION */
+        struct DosLibrary *, DOSBase, 118, Dos)
+
+/*  FUNCTION
+        Query the device whether it is a filesystem.
+
+    INPUTS
+        devicename      - Name of the device to query.
+
+    RESULT
+        TRUE if the device is a filesystem, FALSE otherwise.
+
+    NOTES
+        DF0:, HD0:, ... are filesystems.
+        CON:, PIPE:, AUX:, ... are not
+
+        In AmigaOS if devicename contains no ":" then result
+        is always TRUE. Also volume and assign names return
+        TRUE.
+        
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+*****************************************************************************/
+{
+    AROS_LIBFUNC_INIT
+
+    LONG err = ERROR_OBJECT_NOT_FOUND;
+    LONG code = DOSFALSE;
+    struct DevProc *dvp = NULL;
+
+    /* The Open() aliases '*' and 'CONSOLE:'
+     * are never filesystems
+     */
+    if (Stricmp(devicename, "*") == 0 ||
+        Stricmp(devicename, "CONSOLE:") == 0) {
+        SetIoErr(err);
+        return code;
+    }
+
+    /* We can't call GetDeviceProc() on CON: nor RAW:,
+     * since that will (implicitly) cause a window to
+     * open.
+     */
+    if (Stricmp(devicename, "CON:") == 0 ||
+        Stricmp(devicename, "RAW:") == 0) {
+        SetIoErr(err);
+        return code;
+    }
+
+
+    if ((dvp = GetDeviceProc(devicename, dvp))) {
+        if (dvp->dvp_Port != NULL) // No port? Not a filesystem
+            code = dopacket0n(DOSBase, dvp->dvp_Port, ACTION_IS_FILESYSTEM);
+        FreeDeviceProc(dvp);
+    } else {
+        SetIoErr(err);
+    }
+   
+    return code;
+    
+    AROS_LIBFUNC_EXIT
+} /* IsFilesystem */

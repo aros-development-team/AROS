@@ -1,0 +1,15 @@
+include $(SRCDIR)/config/aros.cfg
+
+USER_LDFLAGS := -static
+
+#MM- workbench-devs-complete : workbench-devs-speech workbench-devs-speech-resource
+#MM workbench-devs-speech : includes linklibs-speechcore workbench-devs-speech-resource
+
+%build_module mmake=workbench-devs-speech \
+    modname=speech modtype=device files="speech" \
+    uselibs="speechcore"
+
+%copy_files_q mmake=workbench-devs-speech-resource \
+    files=speech.iff dst=$(AROS_DEVS)/Speech
+
+%common

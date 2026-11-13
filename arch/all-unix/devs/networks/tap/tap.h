@@ -1,0 +1,185 @@
+/*
+ * tap - TUN/TAP network driver for AROS
+ * Copyright (C) 2007 Robert Norris. All rights reserved.
+ * Copyright (C) 2010-2026 The AROS Development Team. All rights reserved.
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the same terms as AROS itself.
+ */
+
+#ifndef _TAP_DEVICE_H
+#define _TAP_DEVICE_H 1
+
+#include <aros/debug.h>
+#include <exec/types.h>
+#include <exec/libraries.h>
+#include <exec/semaphores.h>
+#include <exec/devices.h>
+#include <exec/interrupts.h>
+#include <exec/errors.h>
+#include <exec/lists.h>
+#include <devices/sana2.h>
+#include <devices/sana2specialstats.h>
+#include <devices/newstyle.h>
+#include <hidd/unixio.h>
+#include <oop/oop.h>
+#include <proto/exec.h>
+#include <proto/utility.h>
+#include <aros/libcall.h>
+#include <aros/symbolsets.h>
+
+#define timeval sys_timeval
+
+/* avoid conflicts between our __unused define and the ones that might come in
+   via fcntl.h */
+#undef __unused
+#include <fcntl.h>
+#include <sys/ioctl.h>
+
+#include <netinet/in.h>
+#include <linux/if.h>
+#include <linux/if_tun.h>
+#include <linux/if_ether.h>
+
+#include <poll.h>
+#include <stdio.h>
+
+#undef timeval
+
+#include LC_LIBDEFS_FILE
+
+/* explicitly prototype rand() so we don't have pull in stdlib.h */
+extern int rand(void);
+
+/* NewStyle device support */
+#define NEWSTYLE_DEVICE 1
+
+#define MAX_TAP_UNITS (4)
+
+#define TAP_DEV_NODE "/dev/net/tun"
+
+#define TAP_IFACE_FORMAT "aros%ld"
+#define TAP_TASK_FORMAT "TAP IO: unit %d"
+
+/* Per-unit MTU is read at open time from an environment variable, defaulting
+ * to standard Ethernet.  Set e.g. ENV:SYS/Net/tap/unit0/MTU to 9000 (and raise
+ * the host tap's MTU to match) to exercise jumbo frames.  The on-wire frame the
+ * host TUN/TAP delivers has no FCS, so the frame buffer is header + MTU. */
+#define TAP_DEFAULT_MTU  1500
+#define TAP_MAX_MTU      9000
+#define TAP_ENV_MTU_FORMAT "SYS/Net/tap/unit%ld/MTU"
+#define TAP_FRAME_MAX(mtu) (ETH_HLEN + (mtu))
+
+/* packet types a unit remembers its openers read (receive backpressure) */
+#define TAP_RXTYPES      8
+/* the longest a frame waits for a read request before it is dropped */
+#define TAP_HOLD_MS      50
+
+
+struct tap_opener {
+    struct MinNode              node;
+
+    struct MsgPort              read_pending;
+
+    BOOL                        (*rx)(APTR, APTR, ULONG);
+    BOOL                        (*tx)(APTR, APTR, ULONG);
+
+    struct Hook                 *filter;
+};
+
+struct tap_tracker {
+    struct MinNode              node;
+    ULONG                       refcount;
+    ULONG                       packet_type;
+    struct Sana2PacketTypeStats stats;
+};
+
+/* A multicast address range added with S2_ADDMULTICASTADDRESS(ES), counted
+ * per add so that each S2_DELMULTICASTADDRESS(ES) undoes one. */
+struct tap_mcast_range {
+    struct MinNode              node;
+    ULONG                       refcount;
+    UBYTE                       lower[ETH_ALEN];
+    UBYTE                       upper[ETH_ALEN];
+};
+
+struct tap_unit
+{
+    ULONG                       num;
+    ULONG                       refcount;
+
+    int                         fd;
+
+    char                        name[IFNAMSIZ];
+    unsigned char               hwaddr[ETH_ALEN];
+
+    struct Sana2DeviceQuery     info;
+
+    ULONG                       mtu;            /* protocol MTU (info.MTU)     */
+    ULONG                       frame_max;      /* header + MTU (rx/tx buffer) */
+    UBYTE                       *rxbuf;         /* frame_max receive buffer    */
+    UBYTE                       *txbuf;         /* frame_max transmit buffer   */
+
+    ULONG                       flags;
+
+    struct MinList              openers;
+
+    struct MinList              trackers;
+    struct Sana2DeviceStats     stats;
+
+    struct MinList              mcast_ranges;
+
+    struct MsgPort              *iosyncport;
+    struct Task              	*iotask;
+
+    LONG                        abort_signal;
+    LONG			io_signal;
+
+    struct MsgPort              *write_queue;
+
+    struct uioInterrupt		irq;
+
+    /*
+     * Receive backpressure. A frame that no read request took, of a type
+     * an opener reads (rxtypes, recorded by CMD_READ), is held in rxbuf
+     * (rxheld bytes) and the descriptor is not read until a CMD_READ
+     * comes: what follows waits in the host's tap queue, as on a real
+     * wire it would wait in the card's ring, instead of being dropped.
+     * A frame is held at most TAP_HOLD_MS (rxexpired, set by the I/O
+     * task's timer): then it is dropped as before, and its type is no
+     * longer held for until a CMD_READ of it records it again, so that an
+     * opener that stops posting reads while it stays open does not stall
+     * the others' traffic. rxholdseq counts the holds (one timer each).
+     * rxreset (an opener closed) drops the held frame and the types.
+     */
+    ULONG                       rxheld;
+    ULONG                       rxtypes[TAP_RXTYPES];
+    ULONG                       nrxtypes;
+    ULONG                       rxholdseq;
+    BOOL                        rxexpired;
+    BOOL                        rxreset;
+};
+
+struct tap_base
+{
+    struct Device           tap_device;
+    struct tap_unit         unit[MAX_TAP_UNITS];
+    OOP_AttrBase	    UnixIOAttrBase;
+    OOP_Object		   *unixio;
+};
+
+#undef HiddUnixIOAttrBase
+#define HiddUnixIOAttrBase LIBBASE->UnixIOAttrBase
+
+/* unit flags */
+#define tu_CONFIGURED   (1<<0)
+#define tu_ONLINE       (1<<1)
+
+
+extern void tap_handle_request(struct IOSana2Req *req);
+
+extern void tap_hexdump(unsigned char *buf, int bufsz);
+
+extern void tap_iotask(struct tap_base *TAPBase, struct tap_unit *unit);
+
+#endif

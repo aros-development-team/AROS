@@ -1,0 +1,27 @@
+# Copyright (C) 2010, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+
+SDKDIR     := $(AROSDIR)/../AROS-SDK
+SDKINCDIR  := $(AROSDIR)/../AROS-SDK/$(AROS_TARGET_CPU)/include
+SDKLIBDIR  := $(AROSDIR)/../AROS-SDK/$(AROS_TARGET_CPU)/lib
+SDKTOOLDIR := $(AROSDIR)/../AROS-SDK/tools
+
+#MM sdk : sdk-setup includes linklibs
+sdk:
+	$(CP) -a $(AROS_INCLUDES)/* $(SDKINCDIR)
+	$(CP) -a $(AROS_LIB)/* $(SDKLIBDIR)
+	$(CP) -a $(SRCDIR)/tools/collect-aros/* $(SDKTOOLDIR)/collect-aros
+	$(CP) $(HOSTGENDIR)/tools/collect-aros/env.h $(SDKTOOLDIR)/collect-aros
+	$(CP) -a $(SRCDIR)/$(CURDIR)/scripts $(SDKDIR)
+	$(CP) $(SRCDIR)/$(CURDIR)/AROS-SDK-Install $(SRCDIR)/LICENSE $(SRCDIR)/ACKNOWLEDGEMENTS $(SDKDIR)
+
+#MM
+sdk-setup ::
+	%mkdirs_q $(SDKDIR) $(SDKINCDIR) $(SDKLIBDIR) $(SDKTOOLDIR)/collect-aros
+
+#MM
+clean ::
+	$(RM) $(SDKDIR)
+
+.PHONY: setup sdk clean

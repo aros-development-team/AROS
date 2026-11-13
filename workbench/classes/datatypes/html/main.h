@@ -1,0 +1,1 @@
+/* There is empty space all around us */

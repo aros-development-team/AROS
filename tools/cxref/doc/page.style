@@ -1,0 +1,42 @@
+%
+% page.sty - Copyright 1995,1996 Andrew M. Bishop
+%
+% Page layout for cxref, smaller margins than usual to get more on a page (cxref *is* rather verbose).
+%
+
+\typeout{Page Style-sheet (A4) -- By A. M. Bishop. (1 inch margins)}	CONFIG-ONLY PAGE=A4
+\typeout{Page Style-sheet (US) -- By A. M. Bishop. (1 inch margins)}	CONFIG-ONLY PAGE=US
+
+%
+% Physical paper size.
+%
+
+\vsize=11.7 in          % Page height (A4)	CONFIG-ONLY PAGE=A4
+\hsize=8.25 in          % Page width (A4)	CONFIG-ONLY PAGE=A4
+\vsize=11 in            % Page height (US)	CONFIG-ONLY PAGE=US
+\hsize=8.5 in           % Page width (US)	CONFIG-ONLY PAGE=US
+
+%
+% Margins etc. Vertically
+%
+
+\topmargin=-0.5in       % Between (top of page + 1 inch) & top of header
+
+\headheight=0.25in      % Height of the header
+
+\headsep=0.25in         % Between header and text
+
+\textheight=9.7in       % Height of text (A4)	CONFIG-ONLY PAGE=A4
+\textheight=9.0in       % Height of text (US)	CONFIG-ONLY PAGE=US
+
+\footskip=0.25in        % Between bottom of text and bottom of footer
+
+%
+% Margins etc. Horizontally
+%
+
+\oddsidemargin=0.0in    % Between (left side of page + 1 inch) & left edge of text
+\evensidemargin=0.0in   % Between (left side of page + 1 inch) & left edge of text
+
+\textwidth=6.25in       % Width of text (A4)	CONFIG-ONLY PAGE=A4
+\textwidth=6.5in        % Width of text (US)	CONFIG-ONLY PAGE=US

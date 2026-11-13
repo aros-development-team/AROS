@@ -1,0 +1,14 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+USER_LDFLAGS := -static
+
+FILES := fontclass prefs otag
+
+#MM workbench-datatypes-font : includes linklibs
+
+#USER_CPPFLAGS   := -DDEBUG
+
+%build_module mmake=workbench-datatypes-font \
+    modname=font modtype=datatype \
+    files=$(FILES)

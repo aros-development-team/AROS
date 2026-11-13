@@ -1,0 +1,25 @@
+
+When you translate a catalog, there are some important things to pay
+attention to:
+
+	1) Check with me (martin@blom.org) if there already is
+	   a translation in your language.
+	2) Make sure the version string matches the CVS ID.
+	   You should update the version string date to the day when you
+	   made the translation.
+	3) Fill in the "#language ..." line with the name of your language.
+	4) Fill in your name in the "## chunk AUTH ..." line.
+	5) Make sure you get all those escape sequences and binary codes
+	   right. You can use Flexcat (from Aminet) to make catalog files
+	   and test them yourself.
+	6) When you send the files to me, you should put them in separate
+	   directories, and rename them to "<language>.ct". For example,
+	   if your language is Swedish, you should call the files
+	   "svenska.ct".
+
+The source files for the translations are in the ahidev archive. DON'T
+send binary .catalog files -- I need the text files.
+
+Oh, by the way.. Thanks for translating! ;-)
+
+/Martin

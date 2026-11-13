@@ -1,0 +1,92 @@
+/*
+    Copyright (C) 1995-2007, The AROS Development Team. All rights reserved.
+
+    Desc: TimeDelay() - wait a specified time.
+*/
+
+
+#include <exec/types.h>
+#include <aros/asmcall.h>
+#include <devices/timer.h>
+#include <exec/tasks.h>
+#include <proto/exec.h>
+
+/*****************************************************************************
+
+    NAME */
+        LONG TimeDelay(
+
+/*  SYNOPSIS */
+        LONG Unit,
+        ULONG Seconds,
+        ULONG MicroSeconds)
+
+/*  FUNCTION
+        TimeDelay() waits for the specified period of time before returning
+        to the caller.
+
+    INPUTS
+        Unit         -  The timer.device unit to use for this command.
+        Seconds      -  The number of seconds to wait.
+        MicroSeconds -  The number of microseconds to wait.
+
+    RESULT
+        Zero if everything went OK, non-zero if there was a problem.
+
+    NOTES
+        If this function fails, the most likely reasons are:
+        - invalid timer.device unit numbers
+
+        This function uses the SIGF_SINGLE signal, strange things can
+        happen if you are waiting on this signal when you call this
+        function. Basically: Don't use it and call this function.
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+        timer.device/TR_ADDREQUEST
+
+    INTERNALS
+
+    HISTORY
+
+******************************************************************************/
+{
+    struct timerequest tr;
+    struct MsgPort *mp;
+    UBYTE error = 0;
+
+    /* Create a message port */
+    if ((mp = CreateMsgPort()) != NULL)
+    {
+        FreeSignal(mp->mp_SigBit);
+        mp->mp_SigBit = SIGB_SINGLE;
+
+        tr.tr_node.io_Message.mn_Node.ln_Type = NT_MESSAGE;
+        tr.tr_node.io_Message.mn_Node.ln_Pri = 0;
+        tr.tr_node.io_Message.mn_Node.ln_Name = NULL;
+        tr.tr_node.io_Message.mn_ReplyPort = mp;
+        tr.tr_node.io_Message.mn_Length = sizeof(struct timerequest);
+
+        SetSignal(0, SIGF_SINGLE);
+
+        if(OpenDevice("timer.device", Unit, (struct IORequest *)&tr, 0) == 0)
+        {
+            tr.tr_node.io_Command = TR_ADDREQUEST;
+            tr.tr_node.io_Flags = 0;
+            tr.tr_time.tv_secs = Seconds;
+            tr.tr_time.tv_micro = MicroSeconds;
+                    
+            DoIO((struct IORequest *)&tr);
+
+            CloseDevice((struct IORequest *)&tr);
+            error = 1;
+        }
+        mp->mp_SigBit = -1;
+        DeleteMsgPort(mp);
+    }
+    return error;
+
+} /* TimeDelay() */

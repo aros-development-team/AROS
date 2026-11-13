@@ -1,0 +1,9 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+FILES	:=	ParallelClass ParallelUnitClass
+
+%build_module mmake=kernel-pc-i386-parallel \
+  modname=parallel modtype=hidd \
+  files=$(FILES) \
+  uselibs="hiddstubs"

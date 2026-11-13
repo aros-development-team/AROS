@@ -1,0 +1,13 @@
+==id $Id: amisslmaster_lib.sfd,v 1.0 2005/01/08 04:59:58 noname Exp $
+==base _AmiSSLMasterBase
+==basetype struct Library *
+==libname amisslmaster.library
+==bias 30
+==public
+==include <exec/types.h>
+LONG InitAmiSSLMaster(LONG APIVersion, LONG AllowUserStructs) (d0,d1)
+struct Library * OpenAmiSSL() ()
+void CloseAmiSSL() ()
+struct Library * OpenAmiSSLCipher(LONG Cipher) (d0)
+void CloseAmiSSLCipher(struct Library * CipherBase) (a0)
+==end

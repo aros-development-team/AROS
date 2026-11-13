@@ -1,0 +1,1875 @@
+@database "Professional File System 3 documentation"
+@author "Michiel Pelt"
+@(c) "Copyright 1999 by Great Effects Development"
+@$VER: PFS3.guide 2.0 (01/07/1999)
+@master pfs3.guide
+
+@node "Main" "Professional File System 3 Manual"
+
+@{jcenter}@{b}Professional File System 3@{ub}
+Copyright (c) 1999 by GREat Effects Development
+@{jcenter}@{b}@{"watch the logo" Link "images/pfs3.iff/main"}@{ub}
+
+Documentation version 2.0 8-6-1999
+PFS3 version 5.1 7-6-1999
+
+Disclaimer and distribution conditions
+
+@{"Distribution Conditions" Link Distribution}
+@{"Disclaimer" Link Disclaimer}
+
+Introduction
+
+@{"Introduction" link Introduction}
+@{"Features" link Features}
+@{"System Requirements" Link SystemReq}
+@{"Limitations" link Limitations}
+
+Installation
+
+@{"Preparing installation" link Prepare}
+@{"Installation" link Installation}
+@{"Preparing volumes for PFS3" link PrepareVol}
+@{"Installing PFS3 on RDB" link InstallRDB}
+@{"Upgrading PFS3" link Upgrade}
+
+Using PFS3
+
+@{"Mounting PFS3 volumes" link Mounting}
+@{"Formatting PFS3 volumes" link Format}
+@{"Differences with FFS" link Differences}
+@{"Compatibility" link Compatibility}
+@{"Restrictions" link Restrictions}
+@{"Adding buffers" link AddingBuffers}
+@{"The delete directory" link Deldir}
+@{"Rollover files" link Rollover}
+
+Using floppyPFS
+
+@{"Using floppyPFS" link floppyPFS}
+
+Included Utilities
+
+@{"Using diskvalid" link Diskvalid.guide/main}
+@{"Using PFSLS" link PFSLS.guide/main}
+@{"PFSDoctor, rollover commands and other tools" link PFS3tools.guide/main}
+
+Advanced Information
+
+@{"Atomic commit" link AtomicCommit}
+@{"Sleepmode" link Sleepmode}
+@{"Problem detection" Link "ProblemDetection"}
+
+Developers Info
+
+@{"PFS3 custom packets" link PFS3packets.guide/main}
+@{"PFS3 disk structure" link Proginfo/main}
+
+Miscellaneous
+
+@{"Trouble shooting" link trouble}
+@{"Support" link Support}
+@{"Upgrades" link Upgrades}
+@{"Contact Us" link Contact}
+@{"Glossary" link Glossary}
+@{"Credits" link Credits}
+
+@endnode
+
+@rem --------------------------------------------------------------------
+
+@node "Distribution" "Distribution Conditions"
+
+@{jcenter}@{b}Distribution Conditions@{ub}
+@{jleft}
+
+Professional File System 3 (PFS3) is copyright (c) 1999 by Great Effects
+Development, all rights reserved.
+
+No part of the software or the documentation may be reproduced,
+transcribed, stored in a retrieval system, translated into any language or
+transmitted in any form without the express written consent of Great
+Effects Development.
+
+This software is provided as a single machine licence and one copy of the
+software must be purchased for every machine that the software is installed on.
+
+@endnode
+
+@node "Disclaimer" "Disclaimer"
+@{jcenter}@{b}Disclaimer@{ub}
+@{jleft}
+
+Great Effects Development shall not be liable for errors contained in the
+software and/or documentation or for incidental or consequential damage in
+connection with the furnishing, performance or use of the software and/or
+the documentation.
+
+Great Effects Development reserve the right to revise and make changes to
+the software and/or documentation without obligation to notify any person
+of such changes.
+
+@endnode
+@rem --------------------------------------------------------------------
+@node "Introduction" "Introduction"
+@{jcenter}@{b}Introduction@{ub}
+@{jleft}
+
+Thank you for buying Professional File System 3!  You have made a good
+decision.  PFS3 improves the performance of your system and offers much
+more reliability and stability than the standard environment can offer.
+Extended features like the long file names, rollover files and delete 
+directory make the product complete.
+
+This manual will explain how to install and use PFS3 and tools.
+Programmers can find details in the appendix.
+
+
+@{"The history of PFS3" Link history}
+@{"Advantages of using PFS3" link Features}
+@{"System Requirements" link SystemReq}
+
+@endnode
+@rem --------------------------------------------------------------------
+@node "History" "The History of PFS3"
+@{jcenter}@{b}The History of PFS3@{ub}
+@{jleft}
+
+The standard AmigaDos filesystem (OFS) is not very fast.  Commodore
+has tried to improve the performance of their file-system a number of
+times.  Workbench 2.0 added the fast file system (FFS), and now, with
+Workbench 3.0, we have the fast file system with directory caching
+(FFS-DC).  This makes directoryscan faster but writing to disk and
+directory-operations like delete and rename are slower than ever.
+
+For these reasons, I, Michiel Pelt, started developing a new filesystem in
+the summer of 1993. At the end of 1993 the Professional File System was
+first published on Aminet as a shareware tool. Using the experience gained
+from the original shareware tool a completely new filesystem was developed.
+This new filesystem was published by Fourth Level Developments in 1995.
+They named it Ami-FileSafe and it was successful until late 1996.
+
+Since April, 1998 the copyright of the product came back to me, as author
+of the software. I placed the copyright into my own company, Great Effects
+Development. We renamed it back to Professional File System 2. PFS2 was 
+released in August '98 and PFS2 V4.2 (a free upgrade) in November '98.
+This is the second release of the software under the copyright of 
+Great Effects Development. The product is now called Professional File
+System 3 (PFS3).
+
+@endnode
+@rem --------------------------------------------------------------------
+@node "Features" "Features"
+@{jcenter}@{b}Features@{ub}
+@{jleft}
+
+Using PFS3 has a lot of advantages over the standard filesystem. The main
+features are
+
+@{b}High Performance@{ub}
+
+PFS3 has been highly optimised to deliver outstanding performance for all
+disk operations. The most significant improvements over FFS are gained when 
+reading and writing files to disk and scanning directories. The performance 
+gain varies with the available devices, buffers and processor but gains 
+of up-to 500% are no exception.
+
+@{b}Disks are always valid@{ub}
+
+A PFS3 volume is always valid, no matter what happens.  A program crashes,
+power fails, etc, turn the computer back on and PFS3 will start as if
+nothing happened.  Details about how this atomic commit mechanism works can
+be found in @{"PFS3 atomic commit" Link "AtomicCommit"}.
+
+@{b}Reliability@{ub}
+
+PFS3 has been very thoroughly tested and is a very reliable and stable
+filesystem. But for PFS3 that is not enough. PFS3 has a build in problem
+detection mechanism. When PFS3 detects a problem it will do everything it
+can to save your data. See @{"problem detection" Link ProblemDetection}.
+
+@{b}Parralel access without performance loss@{ub}
+
+FFS breaks down when you try to do several things simultaneously on one
+volume. Using PFS3 you will hardly notice any performance loss.
+
+@{b}Full @{"AmigaDos compatibility" link Compatibility}@{ub}
+
+@{b}Easy filerecovery@{ub}
+
+Lost files can be restored easily from the @{"delete directory" Link DelDir}.
+Not only deleted files, but also overwritten files can be restored.
+
+@{b}Long filename support@{ub}
+
+PFS3 supports the use of long filenames of upto 107 characters. 
+See @{"SetFnSize" link "PFS3tools.guide/setfnsize"}
+
+@{b}Automatically truncated logfiles@{ub}
+
+PFS3 can automatically truncate logfiles, stopping them from growing
+indefinitely. See @{"Rollover files" link rollover} for more information.
+
+@{b}Large disk support@{ub}
+
+PFS3 supports disk and partitions of upto 104G using the @{"direct scsi" link DirectSCSI}
+and @{"TD64" Link TD64} interfaces.
+
+@{b}Multiuser support@{ub}
+
+A special version is provided for use with the @{"Multiuser" link multiuser} system by
+Geert Uytterhoeven.
+
+@endnode
+@rem --------------------------------------------------------------------
+@node "SystemReq" "System Requirements"
+@{jcenter}@{b}System Requirements@{ub}
+@{jleft}
+
+PFS3 will work on any Amiga with kickstart 2.0 or higher. It accepts both
+double density and high density diskdrives and RDB (Rigid Disk Block)
+harddisks. Any device that works with FFS, also works with PFS3. The amount
+of memory PFS3 uses depends on the number of buffers PFS3 is configured to
+use. In a minimal configuration it uses less than 150K of memory. If more
+memory is available it can be used to improve PFS3 performance. The floppy
+version uses about 60K per floppy-drive.
+
+PFS3 makes full use of the computer's engine, the processor. Faster
+processors on higher clockrates will boost the performance of PFS3.
+Specially compiled versions are available for almost all 680x0 processors.
+PFS3 is currently only available for 680x0 machines. Special versions for
+PowerPC based Amiga's are planned for future releases.
+
+@endnode
+@rem --------------------------------------------------------------------
+@node "Limitations" "Limitations"
+@{jcenter}@{b}Limitations@{ub}
+@{jleft}
+
+The limits of PFS3 are:
+
+· @{b}Harddisk size@{ub}              unlimited (see note)
+· @{b}Partition size@{ub}             upto 104G (see note)
+· @{b}Maximum filename size@{ub}      107 characters (see note2)
+· @{b}Maximum path depth@{ub}         unlimited
+· @{b}Maximum filesize@{ub}           2G
+
+note: uses td64 or direct-scsi for disks larger than 4G
+note2: limited to 32 by default, configurable with tool
+@endnode
+
+@rem --------------------------------------------------------------------
+@node "Prepare" "Preparing Installation"
+@{jcenter}@{b}Preparing Installation@{ub}
+@{jleft}
+
+Before installing PFS3 consider which versions and options you are going to need.
+
+@{"The standard version" Link "Standard"}
+@{"The multiuser option" Link "Multiuser"}
+@{"Direct SCSI option" link "DirectSCSI"}
+@{"Processor type" link "ProcessorType"}
+
+@endnode
+@rem --------------------------------------------------------------------
+@node "Standard" "Standard version"
+@next "Multiuser"
+@{jcenter}@{b}Standard version@{ub}
+@{jleft}
+@toc Prepare
+
+The standard version is what most of you will use. It has all the functionality
+of FFS and more. Since PFS2 V4.2 it even supports drives and partitions larger 
+than 4G by using the @{"TD64" Link "TD64"} interface.
+TD64 is used automatically if PFS3 is mounted on a partition that exceeds 
+the 4G border.
+
+@endnode
+@rem --------------------------------------------------------------------
+@node "TD64" "TD64"
+@{jcenter}@{b}TD64@{ub}
+@next Prepare
+@{jleft}
+@toc Prepare
+
+TD64 is a new device standard for supporting disks larger than 4G.  TD64 is
+selected automatically if PFS3 is mounted on a partition that exceeds the
+4G border.  It is supported by the latest Phase5 boards and others.  Check
+the documentation of your controller for details.
+
+If your device does not support TD64 then you'll have to use the @{"direct scsi" link "DirectSCSI"}
+version in order to access the area above 4G.
+
+@endnode
+@rem --------------------------------------------------------------------
+@node "Multiuser" "Multiuser option"
+@{jcenter}@{b}Multiuser option@{ub}
+@prev Standard
+@{jleft}
+@toc Prepare
+
+If you are using Multiuser by Geert Uytterhoeven you will have to install
+the multiuser version of PFS3.  The multiuser option of PFS3 turns PFS3
+into a muFS replacement.  It adds user based access rights to the files on
+the disk.  Each file and directory can be assigned to specific users and
+user groups.  The owner of a file can then determine who may access the file.
+He can do this at owner, user group and world level.  The multiuser version 
+of PFS3 only works if you have Multiuser installed.  The Multiuser package is
+available on Aminet. If several people use your system and you want to be
+able to restrict access on a per user bases, this is what you need.
+
+
+Please note we don't give support for MultiUser itself. For enquiries about
+Multiuser visit the MuFS Development Team website:
+
+http://www.twinklestar.demon.co.uk/Multiuser/
+
+
+@endnode
+@rem --------------------------------------------------------------------
+@node "DirectSCSI" "Direct SCSI option"
+@{jcenter}@{b}Direct SCSI option@{ub}
+@{jleft}
+@toc Prepare
+
+Normally PFS3 uses the standard device interface to access the underlying
+device. If this device is the "scsi.device" you can choose to bypass the
+standard device interface and have PFS3 send direct scsi commands to the
+device. This is what the direct scsi version does. It can be used for any
+scsi device. The advantage of using direct scsi calls and the reason PFS3
+offers it is that it enables PFS3 to circumvent limitations of the standard
+device interface. There is NO speed difference between the normal and the
+Direct SCSI versions.
+
+When to use the direct scsi version.
+
+Using direct scsi makes it possible to use disks larger than 4GB on which
+@{"TD64" Link "TD64"} is not supported.  Some devices already show problems if the
+device is larger than 2GB.  If you experience such problems, try the direct
+scsi version.  Warning:  direct scsi may not function correctly on all systems
+and controllers due to bugs in the scsi.device.
+
+ONLY use the Direct SCSI version when your controller doesn't support TD64
+and your harddisk is larger than 4GB.
+
+Why not to use the direct scsi version.
+
+The functions of the standard interface are best adapted to access the
+device and can deal with problems of the used scsi device. PFS3 is not
+and cannot be aware of the specific problems of all scsi devices which
+could cause problems in some cases. Therefore don't use the direct scsi
+version if you don't have to.
+
+Note:  Direct scsi can also be used for the internal IDE controller of the
+A4000 and A1200 (this IDE controller is accessed by an emulated scsi
+controller which supports direct scsi calls). DS works great on those
+internal IDE controllers.
+
+
+
+
+@endnode
+@rem --------------------------------------------------------------------
+@node "ProcessorType" "Processor Type"
+@{jcenter}@{b}Processor Type@{ub}
+@{jleft}
+@toc Prepare
+
+Included are versions for almost all different 680x0 processor types. The
+compatiblity of the different versions is shown in the following table:
+
+Processor   Standard    020 040 060 Best version    
+---------   --------    --- --- --- ------------
+68000       x                       Standard
+68010       x                       Standard
+68020       x           x           020 
+68030       x           x           020
+68040       x           x   x       040
+68060       x           x   x   x   060
+
+Normally the best choice is to install the optimal version for your system,
+which is shown in the 'Best version' column. Caution should be taken when
+you want to use RDB installed PFS3 partitions on removable devices. If you
+use these devices on several Amiga's a version which is compatible with
+each Amiga should be used on the RDB of the disk. See @{"Installing PFS3 on RDB" Link InstallRDB}.
+
+@endnode
+
+@rem --------------------------------------------------------------------
+@node "Installation" "Installation"
+@{jcenter}@{b}Installation@{ub}
+@{jleft}
+
+Install PFS3 to your harddisk by double clicking the 'Install' icon. 
+DO NOT copy files directly from the CD onto your harddrive. Follow the 
+instructions and choose the options as described in the previous section.
+When asked type in your CD-key. This is the number on the sticker at your CD box.
+If you are upgrading from PFS2, the install program will ask for the original
+PFS2 CD to be placed in the CDrom. The install program installs the filesystem 
+in l: and additional tools and documentation in Workbench:tools/PFS3.
+
+@{"Preparing volumes for PFS3" Link PrepareVol}
+@{"Installing PFS3 on RDB" Link InstallRDB}
+@{"Upgrading PFS3" link Upgrade}
+
+For floppyPFS see also @{"Using floppyPFS" link floppyPFS}.
+
+@endnode
+@rem --------------------------------------------------------------------
+@node "PrepareVol" "Preparing volumes for PFS3"
+@{jcenter}@{b}Preparing volumes for PFS3@{ub}
+@{jleft}
+@toc "Installation"
+
+Now that the filesystem and its mountlists are properly installed, you can
+create PFS3 volumes.
+
+@{"Installing on a previously unused or new disk or partition" Link NewDisk}
+@{"Installing over an existing FFS partition" Link OverFFS}
+@{"Installing over an existing PFS2 or Ami-FileSafe partition" Link OverAFS}
+@{"Installing on floppy disk" Link OnFloppy}
+
+@endnode
+@rem --------------------------------------------------------------------
+@node "NewDisk" "Installation on new disk"
+@{jcenter}@{b}Installation on new disk@{ub}
+@{jleft}
+@next InstallRDB
+@toc PrepareVol
+
+@{b}Installing on a previously unused or new disk or partition@{ub}
+
+Before proceeding to @{"Installing PFS3 on RDB" Link InstallRDB}, consider if the current
+partitioning of the disk is right. Once the decision of the sizes of the
+different partitions has been made, it is hard to change it later. One large
+volume generally uses less memory and is more efficient with diskspace, whereas
+using several smaller partitions can boost performance and allows easier 
+management of the disk. Proceed to @{"Installing PFS3 on RDB" Link InstallRDB}.
+
+@endnode
+@rem --------------------------------------------------------------------
+@node "OverFFS" "Installation over FFS"
+@{jcenter}@{b}Installation over an existing FFS partition@{ub}
+@{jleft}
+@next InstallRDB
+@toc PrepareVol
+
+Installing PFS3 on a partition that previously contained a FFS partition will
+destroy all data. Therefore, make sure you make a complete backup before
+proceeding to @{"Installing PFS3 on RDB" Link InstallRDB}.
+
+@endnode
+@rem --------------------------------------------------------------------
+@node "OverAFS" "Installation over AFS"
+@{jcenter}@{b}Installation over an existing PFS2 or Ami-FileSafe partition@{ub}
+@{jleft}
+@next InstallRDB
+@toc PrepareVol
+
+PFS3 is fully compatible with PFS2 and Ami-FileSafe. PFS2 can simply be replaced by
+PFS3. Proceed to @{"Installing PFS3 on RDB" Link InstallRDB}.
+
+@endnode
+@rem --------------------------------------------------------------------
+@node "OnFloppy" "Installation on floppy"
+@{jcenter}@{b}Installation on floppy disk@{ub}
+@{jleft}
+@toc PrepareVol
+
+There is a special version of PFS3 for floppy disks, see @{"using floppyPFS" link floppypfs}.
+
+Note:
+Floppy PFS is mounted using mountlists, whereas the harddisk version
+normally uses the RDB to mount. The harddisk version can also be
+mounted using a mountlist, which can be usefull in some cases. See
+@{"using mountlists" link mountlist}.
+
+@endnode
+@rem --------------------------------------------------------------------
+@node "InstallRDB" "Installing PFS3 on RDB"
+@{jcenter}@{b}Installing PFS3 on RDB@{ub}
+@{jleft}
+@toc Installation
+
+The RigidDiskBlock (RDB) is an area on a harddisk that describes the
+partitions that are on the disk. It occupies the first two tracks of each
+disk. The filesystem itself is also contained on the RigidDiskBlock. Using
+the RDB the partitions on the disk are automatically mounted when the
+system boots. By installing PFS3 on the RDB it is even possible to boot
+from a PFS3 partition, the RDB code in your Kickstart takes care of
+starting the filesystem. It is possible to mix any combination of
+filesystems, including FFS and PFS3, but not necessary: you can use PFS3 on
+@{i}all@{ui} your partitions, completely banning FFS from your system.
+
+PFS3 can be installed on the RDB using any RDB install tool. The tool that
+will be used in this chapter is HDInstTools, which is included in the
+PFS3 distribution.
+
+What follows is a walkthrough of installing PFS3 on RDB using HDInstTools:
+
+@{"Using HDInsttools" link HDInstTools}
+@{"Adding the filesystem" link AddingFileSys}
+@{"Installing PFS3 on a partition" link AssignPFS}
+@{"Configuring the partition" link FileSysChar}
+@{"Completing RDB installation" link CompleteRDB}
+
+If you prefer HDToolbox then go to @{"HDToolbox" link HDToolBox}.
+
+@{"Next chapter: Usage" link Usage}
+
+@endnode
+@rem --------------------------------------------------------------------
+@node "HDInstTools" "HDInstTools"
+@{jcenter}@{b}HDInstTools@{ub}
+@{jleft}
+@toc InstallRDB
+
+HDInsttools is a RDB installation tool written by Oliver Kastl. We
+recommend to use this progam instead of the tool supplied with the
+Workbench, @{"HDToolbox" link HDToolBox}. You can find HDInsttools in the PFS3
+installation drawer. Please refer to the @{"HDInstTools manual" Link "HDInstTools.doc/main"}
+for details about this program.
+
+When HDInstTools is started it scans the SCSI bus for devices. After this
+scan process the opening screen comes up. In order to use HDInstTools to
+install PFS3, it has to be set to manual mode. Do this by selecting
+'Mode/Manual' in the Preferences menu.
+
+Next we recommend to make a backup of the RDB by selecting
+'Rigid Disk Blocks/Save to file' in the Extras menu.
+
+Now proceed to @{"Adding the filesystem" Link AddingFileSys}.
+
+@endnode
+@rem --------------------------------------------------------------------
+@node "AddingFileSys" "Adding the filesystem"
+@{jcenter}@{b}Adding PFS3 to the RDB@{ub}
+@{jleft}
+@toc InstallRDB
+
+Select the drive you want to use PFS3 on. Click on 'File System'.
+The list of filesystems currently installed on the selected
+device are shown. Click on 'Add..'. Now select the filesystem you want
+to install. This can be
+
+	l:PFS3      for the standard version
+	l:PFS3ds    for the direct scsi version
+	l:muPFS3    for the multiuser version
+	l:muPFS3ds  for the multiuser direct scsi version
+
+Next a requester appears which shows the DosType and the Version. For the
+DosType look up the value in the table below. The 'Version' and 'Revision'
+should already be filled in with the current PFS3 version.  Don't change them.
+
+	version		dostype
+	-------------------
+	standard 	PFS\\3
+	PFS3ds		PDS\\3
+	muPFS3		muPF
+	muPFS3ds	muPF
+
+If all goes well the filesystem will be added and shows up in the File System
+Maintenance window. Now proceed to @{"Installing PFS3 on the partition" Link AssignPFS}.
+
+@endnode
+@rem --------------------------------------------------------------------
+@node "AssignPFS" "Installing PFS3 on a partition"
+@{jcenter}@{b}Installing PFS3 on a partition@{ub}
+@{jleft}
+@next CompleteRDB
+@toc InstallRDB
+
+To install PFS3 on a partition first select the device in the main window
+and select 'Partition Drive'.
+
+Select the partition on which you want to install PFS3. Then select
+'Edit Partition'.
+
+Now click the 'File System' cycle gadget until it reads 'Custom'. You can
+fill in the DosType now. Use the same value as you used when
+@{"adding the filesystem" link AddingFileSys}. Set buffers to a value between 150 and 500.
+See @{"adding buffers" link AddingBuffers} for details.
+
+If you are reusing a partition you can leave all other options in the Edit
+Partition window the same. Otherwise use the settings recommended
+by the manufacturer of your controller. For a description of the fields,
+see @{"File Systems Characteristics" Link FileSysChar}.
+
+When everything is filled in, click 'Use' to go back to the Partitioning
+window.
+
+Proceed to @{"completing installation" link CompleteRDB}.
+
+@endnode
+@rem --------------------------------------------------------------------
+@node "FileSysChar" "File Systems Characteristics window"
+@{jcenter}@{b}File Systems Characteristics window@{ub}
+@{jleft}
+@toc InstallRDB
+
+The options in the Edit Partition window are:
+
+@{b}Automount@{ub}.
+  With this option the partition will be automatically mounted when the
+  Amiga is booted. Make sure it is selected!
+
+@{b}File system block size@{ub}.
+  PFS3 will automatically use the blocksize your device uses.
+  Set or leave on 512 bytes. Only if you have a device that can only operate with
+  1024 byte blocks, set it to 1024. PFS3 currently doesn't support larger
+  blocksizes.
+
+@{b}Reserved blocks at beginning@{ub}.
+  Set to 2.
+
+@{b}Reserved blocks at end@{ub}.
+  Set to 0.
+
+@{b}Use custom boot code (HDToolbox only)@{ub}.
+  No (don't select).
+
+@{b}Mask@{ub}
+  The DMAMask indicates which memory areas the device can access with DMA. High
+  speed devices like disk controllers can read and write data from memory
+  without any CPU load. This is called Dynamic Memory Access or DMA.
+  Unfortunately some devices can only access part of the memory. Any ZorroII
+  board, for instance, can only access the lower 16MB of memory. The
+  corresponding value for Mask is 0xfffffc. ZorroIII boards can access all
+  memory, so for those 0xfffffffc should be used. Double check what kind of
+  board is used, since if the Mask is set wrong it can result in serious
+  problems with the disk.
+
+  The mask is also used to control the alignment of any buffers used to access
+  the device. Alignment to longword is recommended. Some controllers will work
+  without alignment, but even those will perform a lot better with aligned
+  memory. Longword alignment is selected by ending the mask with a 'c'.
+
+  For most boards the best Mask settings are:
+  Zorro II board:  use 0xfffffc.
+  Zorro III board: use 0xfffffffc.
+
+
+  If you don't have memory problems you should use the same mask as FFS/PFS2
+  did. The mask is filesystem independent.
+
+  For the A1200/A4000 internal IDE controller  use 0xfffffffc
+  For ZorroIII boards (Fastlane, Phase5, 4091) use 0xffffffff
+  For ZorroII boards and Oktagon 4008          use 0x7ffffffc
+
+
+  If you experience problems with the Mask, you can try other values.
+
+@{b}MaxTransfer@{ub}
+  This setting indicates how much data can be sent to the device in one go.
+  Some drives cannot handle very large blocks of data. By specifying the maximum
+  the device can handle here, problems are prevented. Most scsi devices can
+  handle a MaxTransfer of 0xfffe00, which is 16MB. For some IDE devices
+  0x1fe00 (130K) is necessary. If files greater than 64K get corrupted then
+  reduce it to 0xfe00.
+
+  The MaxTransfer must be divisible by the sector size (usually 512) due to a
+  bug in the Workbench format code. This is done by ending the value with 'e00'.
+  For example: instead of 0xffffff, use 0xfffe00.
+
+
+  Use the same maxtransfer as FFS/PFS2 did. Maxtransfer is filesystem independent.
+
+
+@{b}Bootable@{ub}
+  Select this if you want to be able to boot from the partition. If you don't
+  select this now you can always come back later and change it.
+
+@{b}Boot Priority@{ub}
+  If there are several bootable partitions (bootable checkbox checked), the
+  system uses this number to decide which partition is booted from. The
+  partition with the highest Boot Priority wins.
+
+@endnode
+@rem --------------------------------------------------------------------
+@node "CompleteRDB" "Completing RDB installation"
+@{jcenter}@{b}Completing RDB installation@{ub}
+@{jleft}
+@toc InstallRDB
+@next Usage
+
+Repeat the process of @{"installing PFS3 on the partition" link AssignPFS} for each partition
+you want to use PFS3 on.
+
+If all partitions are done, go back to the main window. The
+device on which you have worked will now have a status of "Modified".
+Select it and click on "Save Changes to Drive".
+
+Now PFS3 is installed on your disk!
+
+Repeat the process of @{"Adding the filesystem" link AddingFileSys} and
+@{"installing PFS3 on the partition" link AssignPFS} for each device you are going to use PFS3 on.
+
+@endnode
+@rem --------------------------------------------------------------------
+@node "Upgrade" "Upgrading PFS3"
+@{jcenter}@{b}Upgrading PFS3@{ub}
+@{jleft}
+@toc Installation
+@next Usage
+
+To upgrade PFS3 with a new version, first install the new version in l:
+using the install script. Then start HDInstTools, select the device and
+select 'File System'.
+
+The list of installed filesystems is shown. Select PFS and select Update.
+In the requester choose the new version. Repeat this for each version of
+PFS installed, and on each device PFS is used on.
+
+Make sure you update @{i}every@{ui} copy of PFS3 you have with the new
+version, because otherwise an old copy could 'overrule' the upgrade.
+See also the piece about DosType in @{"Creating a mountlist" link mountlist}.
+
+Save the changes to disk and the upgrade is complete.
+
+@endnode
+@rem --------------------------------------------------------------------
+@node "HDToolbox" "HDToolbox"
+@{jcenter}@{b}HDToolbox@{ub}
+@{jleft}
+@toc InstallRDB
+
+HDToolbox is the RDB installation tools shipped with Amiga Workbench. This
+section explains how to install PFS3 using HDToolbox. 
+
+WARNING: HDToolbox is outdated and buggy and has caused many users to pull out 
+their (last) hairs, smash their keyboards and /or use the WB install disk for
+skeetshooting.
+
+When HDToolBox is started it scans the SCSI bus for devices. This can take
+a while, especially if you have just added or removed a device. After this
+scan process the @{"opening screen" Link images/hdt_start.iff/main} comes up. The devices are ordered by
+SCSI id, a number between 0 and 6. This number is usually set by
+dipswitches on the device. Please refer to the device documentation for
+details. Known devices are shown with brand and model name. If you want to
+install PFS3 on such a disk, select it, click on 'Partition Drive' and
+proceed to @{"Installing PFS3 on a partition" link assignPFSTB}.
+
+Devices on which no RDB (Rigid Disk Block) was found are shown as 'Unknown'.
+Before you can install PFS3 on such a disk, a RDB has to be created for it.
+Do this by clicking on @{"change drive type" link DriveTypeTB}.
+
+What follows are step by step installation instruction using HDToolbox
+@{"Defining the drive type" link DriveTypeTB}
+@{"Adding the filesystem" link AddingFileSysTB}
+@{"Installing PFS3 on a partition" link AssignPFSTB}
+@{"Configuring the partition" link ConfigPartTB}
+@{"Completing RDB installation" link CompleteRDBTB}
+
+
+@endnode
+@rem --------------------------------------------------------------------
+@node "DriveTypeTB" "Define drive type"
+@{jcenter}@{b}HDToolbox: Defining the drive type@{ub}
+@{jleft}
+@toc HDToolBox
+
+If you're upgrading an existing PFS3 or PFS2 partition, then proceed to
+@{"Adding the filesystem" Link AddingFileSysTB}.
+
+The drivetype can be selected in the @{"Set Drive Type window" link images/hdt_drivetype.iff/main}.
+Click on "Define New ..." to go to the @{"Define a New Drive Type window" link images/hdt_editdrivetype.iff/main}.
+HDToolbox can ask the disk in question what kind of disk it is. You can do this by 
+clicking on "Read Configuration". If your HD is smaller than 4GB HDToolbox will be 
+able to read the configuration from the disk. The result looks something like @{"this" link images/hdt_editdrivetype2.iff/main}.
+When your HD is bigger than 4GB the results will appear as garbage. In most
+cases they are ok though. Try to ignore the results when partitioning.
+Sometimes it is necessary to fill in the fields yourself. If you have to do
+this, refer to documentation of the device for information about the number of
+cylinders, heads and blocks per track. If it is unclear, then you can use a few
+rules to deduct the correct values:
+
+- heads * blocks per track = blocks per cylinder
+- cylinders * blocks per cylinder * blocksize = disk capacity
+
+On most devices the blocksize is 512 bytes (2 blocks in 1 K).
+
+Click on "Ok" to go back to the @{"Set Drive Type window" link images/hdt_drivetype.iff/main}. If at some time
+you want to edit or delete the definition of the drive you can do that with
+the "Edit Old..." and "Delete old" buttons.
+
+Click on "Ok" to accept and go back to the @{"main window" Link images/hdt_start.iff/main}.
+Now you are ready to @{"add PFS3" link AddingFileSysTB} to the drive.
+
+@endnode
+@rem --------------------------------------------------------------------
+@node "AddingFileSysTB" "Adding the filesystem"
+@{jcenter}@{b}HDToolbox: Adding PFS3 to the RDB@{ub}
+@{jleft}
+@toc HDToolBox
+
+Clicking on 'Partition Drive' in the main window brings you to the
+partitioning window. Before we can use PFS3 on a partition, it has to be
+installed on the RDB. If you've already done that, proceed to
+@{"Installing PFS3 on a partition" Link AssignPFSTB}.
+
+Click on the 'Advanced Options' button and a number of extra buttons will
+appear, like shown @{"here" link images/hdt_part.iff/main}. Click on the 'Add/Update...' button to go to
+the @{"File System Maintenance window" link images/hdt_filesys.iff/main}.
+
+It shows the list of filesystems currently installed on the selected
+device. In this example only FFS is installed. Click on "Add New File
+System..". In the requester enter the location of the filesystem you want
+to install. This can be
+
+	l:PFS3      for the standard version
+	l:PFS3ds    for the direct scsi version
+	l:muPFS3    for the multiuser version
+	l:muPFS3ds  for the multiuser direct scsi version
+
+Next a requester appears which shows the DosType and the Version. For the
+DosType look up the value in the table below. The 'Version' and 'Revision'
+should already be filled in with the current PFS3 version.  Don't change them.
+
+	version		dostype		id
+	---------------------------------------------
+	standard 	0x50465303	PFS\\03
+	PFS3ds		0x50445303	PDS\\03
+	muPFS3		0x6d755046	muPF
+	muPFS3ds	0x6d755046	muPF
+
+If both Version and Revision are '0', then HDToolbox hasn't been able to
+find the filesystem. Click cancel and try again. Check if the version you
+requested is really present in l:.
+
+If all goes well the filesystem will be added and shows up in the File System
+Maintenance window as is shown @{"here" link images/hdt_filesys2.iff/main}. Accept ("Ok" button) takes you back
+to the Partitioning window. Now proceed to @{"Installing PFS3 on the partition" Link AssignPFSTB}.
+
+@endnode
+@rem --------------------------------------------------------------------
+@node "AssignPFSTB" "Installing PFS3 on a partition"
+@{jcenter}@{b}HDToolbox: Installing PFS3 on a partition@{ub}
+@{jleft}
+@next ConfigPartTB
+@toc HDToolBox
+
+To install PFS3 on a partition go to the @{"Partitioning window" link images/hdt_part.iff/main}.
+
+Make sure the "Advanced Options" checkbox is enabled. Select the partition on
+which you want to install PFS3. The selected partition will show black. In the
+example we selected partition 'A' which occupies the first 197 MB of the disk.
+It is currently formatted with FFS, as is shown at the lower left of the
+window.
+
+To change this to PFS3, click the "Change.." button.
+The @{"File System Characteristics window" link images/hdt_filesys3.iff/main} appears.
+Click on the 'File System' cycle button until the id of the PFS3 version you
+want to install appears. The id's are listed in the table below.
+
+	version		dostype		id
+	---------------------------------------------
+	standard 	0x50465303	PFS\\03
+	PFS3ds		0x50445303	PDS\\03
+	muPFS3		0x6d755046	muPF
+	muPFS3ds	0x6d755046	muPF
+
+So, for the standard version select 'PFS\\03', as shown in
+the picture. If it doesn't appear then the filesystem hasn't been installed on
+the RDB or the wrong DosType has been typed in during installation on the RDB.
+Go back to @{"adding PFS3 to the RDB" Link AddingFileSysTB} to fix this problem.
+
+If you are reusing a partitions you can leave all other options in the File
+Systems Characteristics window the same. Otherwise use the settings recommended
+by the manufacturer of your controller. For a description of the fields,
+see @{"File Systems Characteristics" Link FileSysChar}.
+
+When everything is filled in, click 'Ok' to go back to the Partitioning window,
+which should look like @{"this" link images/hdt_part2.iff/main} now. Notice the 'File System: Custom File System'
+on the right.
+
+Proceed to @{"configuring the partition" link ConfigPartTB}.
+
+@endnode
+@rem --------------------------------------------------------------------
+@node "ConfigPartTB" "Partition configuration"
+@{jcenter}@{b}HDToolbox: Configuring the partition@{ub}
+@{jleft}
+@toc HDToolBox
+
+After installing PFS3 on the partition, we can configure some filesystem
+options in the @{"Partitioning window" link images/hdt_part2.iff/main}. The important fields are:
+
+@{b}Buffers@{ub}.
+  The default HDToolbox value is 30, which will result in poor performance. 
+  The minimum should be 100. Recommended is 200. See @{"adding buffers" link AddingBuffers}.
+  Note that HDToolbox will return the buffer value to 30 when you alter something
+  else on that partition.
+
+@{b}Bootable@{ub}
+  Select this if you want to be able to boot from the partition. If you don't
+  select this now you can always come back later and change it.
+
+@{b}Boot Priority@{ub}
+  If there are several bootable partitions (bootable checkbox checked), the
+  system uses this number to decide which partition is booted from. The
+  partition with the highest Boot Priority wins.
+
+Proceed to @{"completing RDB installation" link CompleteRDBTB}
+
+@endnode
+@rem --------------------------------------------------------------------
+@node "CompleteRDBTB" "Completing RDB installation"
+@{jcenter}@{b}HDToolbox: Completing RDB installation@{ub}
+@{jleft}
+@toc HDToolBox
+
+Repeat the process of @{"installing PFS3 on the partition" link AssignPFSTB} for each partition you
+want to use PFS3 on.
+
+If all partitions are done, click on 'Ok' to go back to the main window. The
+device on which you have worked will now have a status of "Changed", as in
+the @{"picture" link images/hdt_save.iff/main}. Select it and click on "Save Changes to Drive".
+Now PFS3 is installed on your disk!
+
+Repeat the process of @{"Adding the filesystem" link AddingFileSysTB} and
+@{"installing PFS3 on the partition" link AssignPFSTB} for each device you are going to use
+PFS3 on.
+
+Finally click "Exit" and select "Continue". The system will now reboot.
+
+@endnode
+@rem --------------------------------------------------------------------
+@node "UpgradeTB" "Upgrading PFS3"
+@{jcenter}@{b}HDToolbox: Upgrading PFS3@{ub}
+@{jleft}
+@toc Installation
+
+To upgrade PFS3 with a new version, first install the new version in l: using
+the install script. Then start HDToolbox and go to the @{"Partioning window" link images/hdt_part.iff/main}.
+
+Turn 'Advanced Options' on and select 'Add/Update..'. In the
+@{"File System Maintenance" link images/hdt_filesys.iff/main} window select the 'Custom File System' with
+Identifier 0x50465303 and click 'Update File System ...'. In the requester
+enter the location of the new version of the filesystem.
+
+Make sure you update @{i}every@{ui} copy of PFS3 you have with the new
+version, because otherwise an old copy could 'overrule' the upgrade.
+See also the piece about DosType in @{"Creating a mountlist" link mountlist}.
+
+
+@endnode
+@rem --------------------------------------------------------------------
+@node "Usage" "Using PFS3"
+@prev InstallRDB
+@{jcenter}@{b}Using PFS3@{ub}
+@{jleft}
+
+This chapter describes how to use PFS3. Discussed are
+
+@{"Mounting PFS3 Volumes" link Mounting}
+@{"Formatting PFS3 volumes" link Format}
+@{"Compatibility" link Compatibility}
+@{"Differences with FFS" link Differences}
+@{"Restrictions" link Restrictions}
+@{"Adding buffers" link AddingBuffers}
+@{"The delete directory" Link Deldir}
+@{"Rollover files" Link Rollover}
+
+@endnode
+@rem --------------------------------------------------------------------
+@node "Mounting" "Mounting PFS3 Volumes"
+@{jcenter}@{b}Mounting PFS3 Volumes@{ub}
+@{jleft}
+@toc Usage
+
+The mounting and volume management of PFS3 is the same as it is with FFS.
+For PFS3 specifics, skip to @{"Compatibility" Link "Compatibility"}.
+
+Once PFS3 has been installed on a partition (volume) it will be
+automatically mounted during system initialization, this happens
+@{i}before@{ui} the system boots. To prevent a volume from being mounted,
+or to boot from a different volume, use the boot menu which can be
+activated by keeping both mousebuttons pressed during system
+initialization. See the Workbench manual for details.
+
+Mountlist mounted volumes are mounted during the startup of the Workbench,
+as part of the boot process. This happens only if the mount file is placed
+in de workbench:devs/dosdrivers drawer. To disable such a volume from being
+mounted, move it to workbench:storage/dosdrivers. It is always possible to
+mount a PFS3 volume from a mountfile by double clicking the icon in the
+workbench:devs/dosdrivers drawer. This is called 'manual mounting'. See
+also @{"Creating mountlists" Link mountlist}.
+
+If the device is removable, PFS3 will automatically detect if the volume is
+removed. Its icon will dissappear. If a program is still using files on a
+volume that has been removed, PFS3 will ask for the specific volume to be
+re-inserted. If the wrong volume is inserted, PFS3 will keep asking for the
+right one.
+
+@endnode
+@rem --------------------------------------------------------------------
+@node "Format" "Formatting PFS3 volumes"
+@{jcenter}@{b}Formatting PFS3 Volumes@{ub}
+@{jleft}
+@toc Usage
+
+A PFS3 volume can be formatted just like a FFS volume. It is even possible
+to use the 'quick' format option on a volume that used to be a FFS volume.
+It is tempting to use quick format since it is a very fast way to format
+your disk. There is a problem with quick format, though: it leaves a lot of
+mess behind. For normal operation this is no problem at all. But in the
+unfortunate event that the disk gets faulty and needs to be repaired, it is
+a lot easier to recover data if the volume was fully formatted and
+initialised, not using the quick option.
+
+Warning: the standard Workbench and AmigaDos format contains bugs causing huge
+problems with a disk larger than 4G. Use @{"PFSFormat" link "PFS3tools.guide/format"}, included on the CD,
+instead!
+
+@endnode
+@rem --------------------------------------------------------------------
+@node "Compatibility" "Compatibility"
+@{jcenter}@{b}Compatibility@{ub}
+@toc Usage
+@{jleft}
+
+@{"Compatibility with FFS" Link FFSCompatibility}
+@{"Compatibility with PFS2 and Ami-FileSafe" Link AFSCompatibility}
+
+@endnode
+@rem --------------------------------------------------------------------
+@node "FFSCompatibility" "Compatibility with FFS"
+@{jcenter}@{b}Compatibility with FFS@{ub}
+@{jleft}
+@toc Compatibility
+
+PFS3 is fully compatible with FFS at filesystem level, but for a few rarely
+used filesystem packets. What this means is that practically all tools and
+applications that use the filesystem to access the disk work. All normal
+applications do this, including most backup tools.
+
+Some applications, however, access the disk directly, bypassing the
+filesystem.  Such applications won't work if they expect a FFS disk.
+Examples are disk optimisers and repair tools (like Quarterback Tools and
+DiskSalv). Such tools have to be specially made or adapted in order to 
+function with PFS3. The reason those tools don't work is that PFS3 stores 
+information differently on the disk than FFS does. In fact, PFS3 does this 
+in a more efficient and reliable way.
+
+The only feature of FFS that is not supported by PFS3 are record locks. Not
+a single application that uses this FFS feature is known to us.
+
+@endnode
+@rem --------------------------------------------------------------------
+@node "AFSCompatibility" "Compatibility with Ami-FileSafe"
+@{jcenter}@{b}Compatibility with PFS2 and Ami-FileSafe@{ub}
+@{jleft}
+@toc Compatibility
+
+PFS3 is fully compatible with PFS2 and AFS at disk level.  What this means
+is that PFS3 can access PFS2 and AFS volumes as if it were PFS3 volumes,
+and so can all the PFS3 tools. PFS3 is not downward compatible.
+
+
+@endnode
+@rem --------------------------------------------------------------------
+@node "Differences" "Differences with FFS"
+@{jcenter}@{b}Differences with FFS@{ub}
+@{jleft}
+@toc Usage
+
+The difference with FFS is in the @{"features and improvements" link features} it
+has to offer, which makes it superior to FFS. Other than that it is
+fully compatible, see @{"Compatibility" link Compatibility}.
+
+
+@endnode
+@rem --------------------------------------------------------------------
+@node "Restrictions" "Restrictions"
+@{jcenter}@{b}Restrictions@{ub}
+@{jleft}
+@toc Usage
+
+PFS3 has the standard AmigaDos restrictions on file and disk naming:
+
+- maximum diskname length: 32
+- maximum filename length: 108
+- maximum comment length: 80
+- almost unrestricted use of characters in filenames
+
+These restrictions are forced by AmigaDos, they are not inherent to
+the filesystem. The number of files in a directory or on a disk is
+restricted by available diskspace only.
+
+The maximum disksize depends on the controller, but is up-to 4G for the
+normal version and 2T (terabyte) for the ds (direct scsi) version.
+
+@endnode
+@rem --------------------------------------------------------------------
+@node "AddingBuffers" "Adding buffers"
+@{jcenter}@{b}Adding buffers@{ub}
+@{jleft}
+@toc Usage
+
+To access a file on disk PFS3 needs information about the file, which it
+retrieves from the directory and the allocation tables. Once such information
+has been read from the disk it is kept in memory. This cache memory is
+divided in buffers, each of which can contain one cached block.
+
+Caching blocks improves performance since memory can be accessed much faster
+than the disk. Disks are especially slow with seeking. Therefore PFS3 will
+try to minimize the number of seeks and it uses the buffers to do this. PFS3
+will only reach high levels of performance if it has enough buffers available.
+
+How much buffers PFS3 needs is dependant on the largest number of files that
+is in one directory.
+
+PFS3 partitions should have at least 100 buffers. Recommended is to use between
+200 and 300, using larger values for larger partitions. If the partition
+contains large directories (more than 2000 files), use 350 to 500 buffers.
+
+PFS3 has a build in sanity check ensuring the number of buffers is between
+70 and 600. Below 70 buffers PFS3 cannot function properly and above 600 the
+overhead of maintaining the cache would become a problem.
+
+Each buffer in the cache is 1024 byte (1K), independent of blocksize.
+
+To change the number of buffers the 'AddBuffers' command (which is a
+standard Workbench command) can be used. Without arguments it prints the
+current number of buffers:
+
+> 1.Workbench:> Addbuffers Workbench:
+> Workbench: has 200 buffers
+
+Add buffers by adding a positive number:
+
+> 1.Workbench:> Addbuffers Workbench: 50
+> Workbench: has 250 buffers
+
+Remove buffers by adding a negative number:
+
+> 1.Workbench:> Addbuffers Workbench: -50
+> Workbench: has 200 buffers
+
+These changes are temporary: after a reboot the partition will have the original
+number of buffers. To make the changes permanent, the RDB has to be changed.
+
+You can do this in the @{"partition window" link images/hdt_part2.iff/main} of HDToolbox.
+For partitions mounted by mountlist, change the 'Buffers' in the corresponding
+file in storage:dosdrivers/ or devs:dosdrivers/, see @{"Creating mountlists" link mountlist}.
+
+@endnode
+@rem --------------------------------------------------------------------
+@node "Deldir" "Using the deldir"
+@{jcenter}@{b}Using the delete directory@{ub}
+@{jleft}
+@toc Usage
+
+Sometimes files are accidently deleted. Can happen to anyone. Of course you
+don't have a backup. What now?
+
+In PFS3 this is no problem: look in the delete directory. The delete
+directory, also called the @{i}deldir@{ui}, is a PFS3 only special directory
+PFS3 stores deleted files in. It contains the latest deleted files.
+Accessing it is very simple. Suppose you deleted 'Foo' and want it back.
+Simply type
+
+1.Workbench:> list workbench:.deldir
+
+and the result will look something like this:
+
+Execute\@000                 4432 ----r-e- 16-Aug-93 11:50:50
+Filenote\@001                 896 ----r-e- 16-Aug-93 11:50:50
+FlushCX\@002                 1300 ----r-e- 02-Sep-92 13:43:18
+FlushCX.info\@003             831 ----r-e- 02-Sep-92 14:05:36
+For\@004                     4380 ----r-e- 18-Mar-93 22:35:52
+Format\@005                 13368 ----r-e- 16-Aug-93 11:50:50
+GTree\@006                  23544 ----r-e- 13-Mar-94 10:45:24
+gunzip\@007                 76560 ----r-e- 02-Sep-94 16:10:50
+gzip\@008                   61476 ----r-e- 22-Dec-94 16:36:44
+Info\@009                    1980 ----r-e- 16-Aug-93 11:50:50
+InjectBrush\@010             3372 ----r-e- 25-Apr-94 15:28:46
+Assign\@011                  3220 ----r-e- 16-Aug-93 11:50:50
+Avail\@012                    736 ----r-e- 16-Aug-93 11:50:50
+BindDrivers\@013             1420 ----r-e- 20-Nov-95 14:17:40
+Break\@014                    432 ----r-e- 20-Nov-95 14:17:40
+ChangeTaskPri\@015            460 ----r-e- 20-Nov-95 14:17:40
+cls\@016                      128 ----r-e- 20-Nov-95 14:17:38
+ConClip\@017                 2432 ----r-e- 20-Nov-95 14:17:40
+Copy\@018                    5580 ----r-e- 20-Nov-95 14:17:40
+CPU\@019                     3652 ----r-e- 20-Nov-95 14:17:40
+Date\@020                    1092 ----r-e- 20-Nov-95 14:17:40
+DefIcons\@021                6376 ----r-e- 20-Nov-95 14:17:34
+Delete\@022                  1972 ----r-e- 16-Aug-93 11:50:50
+dir\@023                     3440 ----r-e- 23-Jun-95 20:36:17
+DiskChange\@024               312 ----r-e- 16-Aug-93 11:50:50
+display\@025                24052 ----r-e- 13-Jul-96 12:16:16
+DLD\@026                     2640 ----r-e- 02-Apr-94 12:26:29
+Foo\@027                     6832 ----r-e- 07-Jul-93 10:01:18
+Foo.info\@028                1478 ----r-e- 07-Jul-93 10:01:20
+Edit\@029                   14792 ----r-e- 16-Aug-93 11:50:50
+Eval\@030                    2084 ----r-e- 16-Aug-93 11:50:50
+
+Get foo by copying it to the ram disk:
+
+1.Workbench:> copy workbench:.deldir/foo\@027 ram:foo
+
+Set the protection bits right
+
+1.Workbench:> protect rwed ram:foo
+
+and copy it to the original location. Done!
+
+@{b}Location of the deldir@{ub}
+
+The deldir is a hidden directory. It doesn't show up if the complete
+directory tree of a partition is scanned. It can only be accessed by
+completely typing the full name of the deldir which is '.deldir'. It
+is located in the root of the partition. Any program can access this
+directory, but only if you specify its location.
+
+@{b}Files stored in the deldir@{ub}
+
+Every file which is deleted is actually moved to the delete directory.
+This also includes files which are overwritten. For instance, if the
+startup-sequence is accidently overwritten, the old version can be
+retrieved from the deldir.
+
+By default the deldir has 62 'slots' numbered 0 to 61. Each slot
+can contain one deleted file. If all slots are full, the oldest one is
+removed from the deldir. So only the last 62 deleted files can be restored.
+The @{"SetDeldir" link "PFS3tools.guide/setdeldir"} command can be used to increase the capacity of
+the deldir to a maximum of 992 slots.
+
+The files in the deldir are all named like 'foo\@027'. Here is 'foo' the
+original filename and '027' the slot number, which is a number between 000 and
+991. This number is added to distinguish between several versions of the same
+file. For example, if foo is overwritten twice, it will also be placed in the
+deldir twice, but with different slot numbers.
+
+The deldir is for restoring only, it cannot be written. Therefore all
+the files in the deldir are read only.
+
+@{b}Diskspace used by files in the deldir@{ub}
+
+The files in the deldir use space on the disk. This diskspace can be
+reused by new files. When this happens, the effected files are removed
+from the deldir. All files that do show up in the deldir are guaranteed
+to be intact and fully restorable.
+
+@{b}Restoring files@{ub}
+
+Restore files from the deldir by copying them from the deldir. We recommend
+to copy all files you want to restore to another disk before putting them
+back to their original location. Reason for this is that any write to the disk
+could potentially destroy a deleted file. So restoring one file could make
+another deleted file unrestorable.
+
+After copying you'll probably want to strip the slot number from the filename
+and set the protection bits back to their original setting.
+
+@{b}Limitations@{ub}
+
+- Filenames in the deldir are truncated to 17 characters before adding the
+  slot number.
+- There can be no more than 992 files in the deldir.
+- The filenotes of deleted files are lost
+- The original protection bits are lost
+
+@endnode
+@rem --------------------------------------------------------------------
+@node "Rollover" "Rollover files"
+@{jcenter}@{b}Rollover files@{ub}
+@{jleft}
+@toc Special
+
+Some programs keep logs of events in textfiles called @{i}logfiles@{ui}. Every
+time an event occurs a message is appended to such a logfile. This way these
+files grow indefinitely until at some point they are thrown away or have to be
+truncated by hand. PFS3 can do this automatically for you. All you have to do
+is turn the logfile into a @{i}rollover file@{ui} and specify the maximum size you
+want the file to be (the @{i}rollover size@{ui}).
+
+A logfile that has been turned into a rollover file will grow like a normal
+logfile until the specified size is reached. From then on PFS3 will truncate
+the file from the start whenever it is appended to. So the file always
+contains the @{i}latest@{ui} messages.
+
+Rollover files can be accessed as any other files, including random seeks,
+reads and writes. Normally they will only be appended to.
+
+Some @{"tools" Link PFS3tools.guide/makerollover} are included to create and change rollover files.
+@{"Pfsls" link pfsls.guide/main} can be used to show the status of a rollover file.
+
+@{b}Limitations@{ub}
+
+- the rollover size must be a multiple of the blocksize (usually 512 byte)
+- files are truncated per character, not per line. Therefore the first line
+  of a rollover logfile can be incomplete.
+- backup programs don't recognise rollover files. During a restore the backup
+  program will restore them as normal files. They have to be converted back
+  to a rollover file using the rollover tools.
+
+@endnode
+
+@rem --------------------------------------------------------------------
+@node "floppyPFS" "floppyPFS"
+@{jcenter}@{b}floppyPFS@{ub}
+@{jleft}
+
+PFS3 can be used on floppies, and this will work just fine. But PFS3 has been
+optimised for use on harddisk and large removables like Zip disks. To get an
+optimally performing floppy disk requires a different strategy. Therefore
+included with PFS3 is a second filesystem specially for floppies: floppyPFS.
+
+Advantages of floppyPFS are:
+
+@{b}dynamic cache@{ub}
+  floppyPFS dynamically allocates its cache depending on the currently
+  inserted floppy disk.
+
+@{b}optimal use of diskspace@{ub}
+  Floppies are small, you don't want the filesystem to waste the little
+  space there is. A floppy formatted with floppyPFS will store considerably
+  more than a FFS formatted floppy.
+
+@{b}optimal performance@{ub}
+  FloppyPFS is an order of magnitude faster than FFS.
+
+
+Notes:
+- diskvalid cannot be used on floppies formatted with floppyPFS
+- floppyPFS does not have a delete directory
+- floppyPFS does not support rollover files
+- floppyPFS does not support softlinks and hardlinks
+- floppyPFS does not support notification
+
+Now proceed to
+
+@{"Using floppyPFS" Link usefloppypfs}
+@{"Creating a mountlist" link mountlist}
+
+
+@endnode
+@rem --------------------------------------------------------------------
+@node "usefloppyPFS" "Using floppyPFS"
+@{jcenter}@{b}Using floppyPFS@{ub}
+@{jleft}
+
+@{b}activating floppyPFS@{ub}
+
+To activate floppyPFS on your floppy drive double-click the file 'PF0'
+in the workbench:storage/dosdrivers drawer. If a second diskdrive is
+available, activate it with 'PF1'.
+
+It can also be mounted from the shell with  'mount pf0:' and 'mount PF1:'.
+
+@{b}permanently activating floppyPFS@{ub}
+
+To permanently activate floppyPFS drag the PF0 icon from the drawer
+workbench:storage/dosdrivers to workbench:devs/dosdrivers. Now PF0
+will be automatically mounted when the workbench starts up.
+
+@{b}accessing floppyPFS@{ub}
+
+floppyPFS disks can be used just like FFS disks, they just work faster! It
+is even possible to use quick format on a former FFS floppy to turn it
+into a floppyPFS floppy!
+
+@{b}editing the mountlist@{ub}
+
+To use floppyPFS on a third diskdrive or on another kind of floppy,
+you have to create a new mountlist. See @{"creating a mountlist" link mountlist}.
+
+
+
+@endnode
+@rem --------------------------------------------------------------------
+@node "mountlist" "Creating a mountlist"
+@{jcenter}@{b}Creating a mountlist@{ub}
+@{jleft}
+
+Mountlists are found in devs:dosdrivers for permanently mounted
+devices and in storage:dosdrivers for hand-mounted devices. When
+creating a new mountlist, first try it in storage:dosdrivers and
+make sure it works before moving it to devs:dosdrivers.
+
+To create a mountlist for another but identical volume, like a third
+floppy disk, all you have to do is copy the file and change 'UNIT'
+in the Tool Types  to the unit desired. If more is wanted, edit the
+mountfile.
+
+The mountfile of a floppyPFS volume looks like this:
+
+FileSystem      = l:floppyPFS
+Device          = trackdisk.device
+Priority        = 10
+StackSize       = 600
+Buffers         = 5
+BufMemType      = 1
+Mask            = 0x7ffffffe
+Flags           = 0x0
+Surfaces        = 2
+BlockSize       = 512
+BlocksPerTrack  = 11
+LowCyl          = 0
+HighCyl         = 79
+Interleave      = 0
+Reserved        = 2
+GlobVec         = -1
+DosType         = 0x50465300
+MaxTransfer     = 2097152
+#
+
+It is also possible to mount a PFS3 volume with a mountlist. This
+can be usefull for removable devices like ZIP drives. Such a mountlist
+could look like this:
+
+FileSystem     = l:PFS3
+Device         = scsi.device
+Unit           = 5
+Priority       = 10
+StackSize      = 600
+Buffers        = 200
+BufMemType     = 0
+Mask           = 0xffffffe
+Flags          = 0
+Surfaces       = 1
+BlocksPerTrack = 68
+LowCyl         = 0
+HighCyl        = 2890
+Interleave     = 0
+Reserved       = 2
+GlobVec        = -1
+DosType        = 0x50465303
+MaxTransfer    = 0x1fe00
+#
+
+The meaning of the different fields is as follows:
+
+@{b}FileSystem@{ub}
+The filesystem to use on the disk. The installation program has installed
+PFS3 in the l: directory. Floppypfs is l:floppyPFS and PFS3 is l:PFS3.
+
+@{b}Device@{ub}
+The controller used to access the device. For floppies this is the
+'trackdisk.device'. The internal ide controller of the A4000/A1200
+is called 'scsi.device'. Third party controllers have other names.
+Check the documentation of your controller for details.
+
+@{b}Unit@{ub}
+Most controllers allow several disks to be connected. The unit number
+distinguishes between these disks. The unit number can also be set
+in the Tool Types of the mountlist icon.
+
+@{b}Priority@{ub}
+The priority the filesystem process will have. The default value of 10
+is recommended.
+
+@{b}Stacksize@{ub}
+The stacksize of the filesystem process. Use 600.
+
+@{b}Buffers@{ub}
+Number of buffers to use. Ignored in floppyPFS (floppyPFS uses dynamic
+cache allocation). For PFS3, see @{"Adding Buffers" link AddingBuffers}.
+
+@{b}BufMemType@{ub}
+Memory type used for buffers. Use '1' for floppyPFS.
+
+@{b}Mask@{ub}
+For floppy this is 0x7ffffffe. For other devices
+see @{"Installing PFS3 on a partition" link AssignPFS}.
+
+@{b}Flags@{ub}
+Flags used for opening the device. Usually 0.
+
+@{b}Surfaces@{ub}
+Number of surfaces. For floppies this is 2. For other devices you can use
+HDToolBox or another harddisk tool to determine this and the following
+values.
+
+@{b}Blocksize@{ub}
+The size of a block. For floppyPFS this is always 512 and does not need to
+be specified. For PFS3 this can be 512 or 1024.
+See also @{"Installing PFS3 on a partition" link AssignPFS}.
+
+@{b}BlocksPerTrack@{ub}
+Number of blocks a single track contains.
+
+@{b}LowCyl@{ub}
+The cylinder where the volume starts. For removables we recommend not to
+devide it in partitions and use the whole volume for data. To do this,
+enter 0 here. To leave space for a RDB, use 2.
+
+@{b}HighCyl@{ub}
+The last cylinder to use. To use the whole disk enter the number of
+cylinders - 1 here. The size of the volume becomes
+Blocksize * BlocksPerTrack * Surfaces * (HighCyl - LowCyl + 1)
+
+Note: use double-density values for floppyPFS. High density floppies are
+automatically detected and capacity is adapted automatically.
+
+@{b}Interleave@{ub}
+Usually 0.
+
+@{b}Reserved@{ub}
+Should be 2.
+
+@{b}GlobVec@{ub}
+Should be -1
+
+@{b}DosType@{ub}
+For floppyPFS use 0x50465300 (PFS\00)
+For PFS3 use 0x50465303 (PFS\03)
+For PFS3 Direct SCSI use 0x50445303 (PDS\03)
+For PFS3 multiuser use 0x6d755046 (muPF)
+
+The system uses the DosType to identify the filesystem. When mounting a
+filesystem it will first check if a filesystem with that DosType is
+already running. If it is, the system will present the new disk to the
+already running filesystem instead of loading it. This includes filesystems
+loaded from the RDB during boot!
+
+Only if no such filesystem is found will the filesystem specified by
+'FileSystem' be started. The advantage of this mechanism of sharing
+filesystems is that it makes mounting faster and saves memory, but it is
+a problem if you want to use different versions of the same filesystem
+simultaneously.
+
+If you want to force the system to load a new filesystem from disk, you
+have to use a different DosType. You can use any DosType as long as it is
+four characters. For beta testing new PFS3 versions we often use
+DosType 0x42455441 (BETA).
+
+The DosType has no influence on the formatting of the disk. It is used
+for recognizing filesystems, @{i}not@{ui} for recognizing disk format.
+
+Note for users of the multiuser version: every PFS3 multiuser partition
+has to have DosType 0x6d755046, because the multiuser system depends
+on this to recognise the partition as being multiuser.
+
+@{b}MaxTransfer@{ub}
+
+See  @{"Installing PFS3 on a partition" link AssignPFS}.
+
+
+
+@endnode
+@rem --------------------------------------------------------------------
+@node "Advanced" "PFS3 Advanced Information"
+@{jcenter}@{b}PFS3 Advanced Information@{ub}
+@{jleft}
+
+In this chapter some miscellaneous information for the more experienced user
+is collected.
+
+@{"Atomic commit" Link "AtomicCommit"}
+@{"Sleep mode" Link "SleepMode" }
+@{"Problem detection" Link "ProblemDetection"}
+
+@endnode
+@rem --------------------------------------------------------------------
+@node "AtomicCommit" "Atomic Commit"
+@{jcenter}@{b}Atomic Commit@{ub}
+@{jleft}
+@toc "Special"
+
+If your Amiga crashes during a write operation a standard AmigaDos FFS disk
+gets 'invalidated'.  When you reboot the system the disk will be
+revalidated automatically.  After this the directory is back in the state it
+was before the write operation.  This actually is a neat feature, but it has
+three drawbacks:
+
+1. Revalidating takes time. On a big disk it can become tedious if it happens
+   often.
+2. If you were overwriting a file at the time of the crash, you lose both the
+   original and the new version, since the file has been half overwritten.
+   The directory states falsely that nothing happened, however.
+3. It doesn't always work, leaving you with a broken disk.
+
+With PFS3 the directory structure is correct at all times. The disk never
+needs to be validated. Even if the machine crashes during a write operation,
+the disk will be ok after reboot, without any errors and without having to
+validate it.
+
+PFS3 achieves this by using a procedure called 'Atomic Commit'. This means
+that the disk goes from one valid state to the next valid state in an
+undividable (hence 'atomic') single disk access. It works like
+'Transactions' known from the Database world, where changes to the database
+have to be 'committed' to make them permanent. The difference is that
+transactions from databases are explicit: the user has to tell the database
+he wants to commit the changes. PFS3 decides on its own, without user
+intervention, when to commit.
+
+PFS3 uses this Atomic Commit mechanism on the complete directory and
+allocation structure, including the files. So if the computer was overwriting
+a file at the time of the crash, the original file will be intact and working
+when the system reboots. As if nothing happened!
+
+@endnode
+@rem --------------------------------------------------------------------
+@node "Sleepmode" "Sleepmode"
+@{jcenter}@{b}Sleepmode@{ub}
+@{jleft}
+@toc "Advanced"
+
+PFS3 has a build in interface for 'live optimisation'. This means that,
+using this interface, an external optimiser can optimise the PFS3 volume
+without taking the volume off-line. So people can keep accessing the
+volume during optimisation! This interface is called 'sleep mode'.
+
+Sleep mode is like inhibit. While in sleep mode PFS3 won't access the disk,
+allowing the optimiser to do its work. The difference with inhibit is that
+the filesystem remains active, it is, as it were, sleeping. Whenever PFS3
+get a request for which it needs to access the disk, it wakes up. Before
+doing so it puts the optimiser to sleep, which can continue after PFS3 has
+completed the request and has gone back to sleep.
+
+
+@endnode
+@rem --------------------------------------------------------------------
+@node "ProblemDetection" "Problem detection"
+@{jcenter}@{b}Problem detection@{ub}
+@{jleft}
+@toc "Advanced"
+
+PFS3 does a lot of work to keep your data safe, but even a PFS3 volume can
+have problems:
+- some blocks on the harddisk become bad, causing read/write errors
+- some external program corrupts PFS3 cached blocks
+- some external program (like a virus) messes with the disk
+
+If there is one such an error, more are likely to follow. The best thing to
+do in such cases is to stop writing to the disk and use a backup tool to
+save as much of your work as possible.
+
+PFS3 has build-in code to detect these problems. If such a problem is
+detected PFS3 immediately makes the disk read-only making sure things
+don't get worse than they already are.
+
+Some of the problems PFS3 will detect:
+
+@{b}Out of bounds checking@{ub}
+Block references pointing outside the partition will be blocked.
+
+@{b}Block validity checking@{ub}
+PFS3 checks if blocks are syntacticly correct.
+
+@{b}Configuration errors@{ub}
+PFS3 checks if memory allocated with the specified Mask and BufMemType is
+indeed accessible by the device.
+
+
+@endnode
+@rem --------------------------------------------------------------------
+@node "Miscellaneous" "Miscellaneous"
+@{jcenter}@{b}Miscellaneous@{ub}
+@{jleft}
+
+@{"Trouble shooting" link trouble}
+@{"Support" link Support}
+@{"Upgrades" link Upgrades}
+@{"Version history" link VHistory}
+@{"Contact us" Link Contact}
+@{"Glossary" link Glossary}
+@{"Credits" link Credits}
+
+@endnode
+@rem --------------------------------------------------------------------
+@node "trouble" "Trouble shooting"
+@{jcenter}@{b}Trouble shooting@{ub}
+@{jleft}
+
+
+> PFS3 uses all my Chip RAM
+
+  You are using a wrong memory mask. Try 0x7ffffffc.
+
+> Why do I get a 'volume xxx is write protected' requestor?
+
+  When an error occurs, PFS3 will write protect that partition to protect
+  your data from worse. You can unlock this with the C:lock command
+  (lock partitionname: off). Examine what could have caused the error.
+
+> After using HDToolbox all settings are gone
+
+  HDToolbox can behave strangely when you have more than 5 devices attached,
+  especially if you have several controllers. If after changing your RDB
+  your precious data seems to be lost, just reinstall PFS3 and your data
+  will be back. Formatting a partition will permanently destroy all data
+  on that partition, so don't do this unless you are sure what you're doing.
+
+@endnode
+
+@rem --------------------------------------------------------------------
+@node "Support" "Support"
+@{jcenter}@{b}Support@{ub}
+@{jleft}
+
+@{b}Website@{ub}
+
+Before contacting support, check out our website, www.greed.nl. The website
+contains the latest information about PFS3 and will allow registered users
+to submit questions and problem reports.
+
+@{b}Repair service@{ub}
+
+If you have a corrupted disk and PFSDoctor can't repair it,
+we offer a special service: send us the disk and we will recover as much of
+it as possible. This service is free! All we ask is that you pay for the P&P,
+so please include DM20 or US$10.
+We can't guarantee we recover everything and Great Effects Development shall
+not be liable for any data loss or other damage on disks send.
+
+@{b}Contact support@{ub}
+
+Support can be reached at email address support@greed.nl, or by
+mail, see @{"contact Great Effects Development" link contact}.
+
+When contacting support, always mention your PFS3 SERIAL number.
+
+@{b}Submitting a bug report@{ub}
+
+When filing a bug report, describe clearly how the problem happened, and what
+kind of error you got. Also let us know :
+
+- PFS3 version and type (normal/DS)
+- Hardisk size and partition size
+- Used mask, maxtransfer and buffer values
+- Used controller and configuration
+
+
+@endnode
+@rem --------------------------------------------------------------------
+@node "Upgrades" "Upgrades"
+@{jcenter}@{b}Upgrades@{ub}
+@{jleft}
+
+Upgrades will be announced on our website, www.greed.nl. Minor upgrades
+will be released as patches, free of charge. Major upgrades will have
+upgrade versions which will be significantly cheaper than the full
+package.
+
+@endnode
+@rem --------------------------------------------------------------------
+@node "Contact" "Contact Us"
+@{jcenter}@{b}Contact Us@{ub}
+@{jleft}
+
+Great Effects development members are:
+  Michiel Pelt            author of PFS3, coder of Kang-FU
+  Hugo Hoekstra           head of games department, graphics, PR
+  Fred Hoekstra           advisor
+  Richard van Meurs       additional coding and PC-porting
+  Mark Harden             support, FAQ and tools development
+
+Great Effects Development can be reached at:
+email:
+  info@greed.nl           general questions and information
+  support@greed.nl        support
+
+www:
+  www.greed.nl
+
+address:
+  Great Effects Development
+  Hofwijckplein 46a
+  2515 RL Den Haag
+  the Netherlands
+
+@endnode
+@rem --------------------------------------------------------------------
+@node "Glossary" "Glossary"
+@{jcenter}@{b}Glossary@{ub}
+@{jleft}
+
+AFS,
+Ami-FileSafe    predecessor of PFS3.
+
+atomic commit   Mechanism to change from one state to the next in an undividable
+                manner.
+
+controller      piece of hardware (usually a board) which allows access to
+                disk devices.
+
+cylinder        All the blocks that can be accessed by all the heads without
+                having to move them. The size of a cylinder is the product
+                of the number of surfaces and the size of a track.
+
+DMA             Dynamic Memory Access. Method to allow devices to access memory
+                without intervention of the processor.
+
+fixed disk      a non-removable disk, usually a harddisk.
+
+head            Device in a harddisk that reads the information from the surface
+                of the disk.
+
+mounting        Activating a disk or partition to make it accessible.
+
+mountlist       A textfile containing information about a disk or partition. It
+                can be used to mount a filesystem on a volume.
+
+off-line        Disabled, unaccessible
+
+PFS2            Professional File System 2, predecessor of PFS3
+
+PFS3            Professional File System 3
+
+rdb             rigid disk block. An area on the device which is used to
+                store partition information and file systems
+
+Tool Types      Arguments for a program stored in the icon. Click on the icon
+                and select ICONS | INFORMATION from the menu to view and edit
+                them
+
+seek            Disk head movement from one cylinder to another.
+
+surface         A side of a disk that is accessible by a head. Some harddisks
+                consist of several disks, so the number of surfaces can be
+                larger than 2.
+
+TD64			A new device interface that extends the standard device
+				interface to support disks larger than 4G.
+
+terabyte        1 Terabyte (TB) = 1000 Gigabyte (GB) = 1000000 Megabyte (MB)
+
+track           All the blocks that can be accessed by a single head without
+                having to move it.
+
+validating      Process of restoring an inconsistent disk.
+
+volume          A disk inserted into a device.  For instance:  a floppydisk
+                is a volume, which can be inserted in a diskdrive. A harddisk
+                is an instance of a non-removable volume, in which case the
+                device is also the volume.
+
+@endnode
+@rem --------------------------------------------------------------------
+@node "Credits" "Credits"
+@{jcenter}@{b}Credits@{ub}
+@{jleft}
+
+Here we wish to thank
+
+@{b}Olivier Kastl@{ub}
+for letting us include HDInstTools.
+
+@{b}Internet Connect Center@{ub}, www.iconnect.nl
+for hosting our website.
+
+@{b}Vincenzo Iodice@{ub}
+for translating this manual to Italian
+
+@{b}Phillipe Reux@{ub}
+for translating this manual to French
+
+@{b}Martin Berndt@{ub}
+for translating this manual to German
+
+@{b}Stefan Ossowski@{ub} and @{b}Tim Corringham@{ub}
+for their trust in our products
+
+
+Our beta testers for their bugreports:
+
+Mark Harden
+Andy Krauss
+Michael Krüger
+Hagen Hageman
+
+@endnode

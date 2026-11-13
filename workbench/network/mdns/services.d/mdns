@@ -1,0 +1,20 @@
+#
+# AROSTCP network service: multicast DNS responder (mdnsd).
+#
+# Answers for this host's name in the mDNS domain, "<hostname>.local", so
+# that other machines on the link find it by name without a DNS server.
+#
+# One file per service under db/services.d/ (the file name is the service name).
+#   Path    - the daemon executable
+#   Order   - bring-up priority hint (higher starts earlier)
+#   StopSig - signal bit sent to stop it (12 = CTRL-C)
+#   Policy  - reload policy: signal. Across a reconfiguration mdnsd lets go
+#             of the stack and takes it up again on the interfaces it finds.
+#   Enabled - yes or no
+#
+Name=mDNS Responder
+Path=SYS:System/Network/Services/mdnsd
+Order=20
+StopSig=12
+Policy=signal
+Enabled=yes

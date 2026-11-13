@@ -1,0 +1,14 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+USER_LDFLAGS := -static
+
+FILES := 8svxclass
+
+#MM workbench-datatypes-8svx : includes linklibs
+
+USER_CPPFLAGS   := -DMYDEBUG
+
+%build_module mmake=workbench-datatypes-8svx \
+    modname=8svx modtype=datatype \
+    files=$(FILES)

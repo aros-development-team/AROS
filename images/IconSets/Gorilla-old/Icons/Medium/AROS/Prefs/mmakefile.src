@@ -1,0 +1,11 @@
+# Copyright (C) 2004, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+
+ICONS := Time Locale Serial Presets Input IControl Font ReqTools Wanderer \
+         Zune ScreenMode AHI EditPrefs Trackdisk
+
+#MM- iconset-Gorilla-old-icons-aros-clean : iconset-Gorilla-old-icons-aros-prefs-clean
+#MM- iconset-Gorilla-old-icons-aros : iconset-Gorilla-old-icons-aros-prefs
+%build_icons mmake=iconset-Gorilla-old-icons-aros-prefs icons=$(ICONS) \
+             dir=$(AROS_PREFS)

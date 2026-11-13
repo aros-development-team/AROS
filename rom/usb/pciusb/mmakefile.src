@@ -1,0 +1,51 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+FILES := \
+        pciusb_init \
+        pciusb_arospci \
+        pciusb_dev \
+        buffer \
+        ohci/ohci_hcd \
+        ohci/ohci_hcport \
+        ohci/ohci_isoch \
+        uhci/uhci_hcd \
+        uhci/uhci_hcport \
+        uhci/uhci_isoch \
+        ehci/ehci_hcd \
+        ehci/ehci_hcport \
+        ehci/ehci_isoch \
+        uhwcmd \
+        debug
+
+USBHARDWAREPATH := Devs/USBHardware
+WBUSBHARDWAREDIR := $(AROSDIR)/$(USBHARDWAREPATH)
+
+#MM
+kernel-usb-pciusb-directories ::
+    %mkdirs_q $(WBUSBHARDWAREDIRS)
+
+#MM kernel-usb-pciusb : kernel-usb-pciusb-directories  kernel-$(TARGET_USELOGRES)-log-includes
+
+# Allow to add architecture-specific options
+-include $(SRCDIR)/arch/all-$(FAMILY)/usb/pciusb/make.opts
+-include $(SRCDIR)/arch/all-$(ARCH)/usb/pciusb/make.opts
+-include $(SRCDIR)/arch/$(CPU)-$(ARCH)/usb/pciusb/make.opts
+ifneq ($(AROS_TARGET_VARIANT),)
+-include $(SRCDIR)/arch/all-$(ARCH)/$(AROS_TARGET_VARIANT)/usb/pciusb/make.opts
+-include $(SRCDIR)/arch/$(CPU)-$(ARCH)/$(AROS_TARGET_VARIANT)/usb/pciusb/make.opts
+endif
+-include $(SRCDIR)/$(CURDIR)/make.opts
+
+#FIXME: Currently pciusb.device is different when compiled for pc or not.
+#       It should thus normally be in SYS:Arch but it is not ATM.
+USER_LDFLAGS := -static
+#USER_CPPFLAGS += -DDEBUG=1
+
+%build_module mmake=kernel-usb-pciusb \
+    modname=pciusb modtype=device \
+    moduledir=$(USBHARDWAREPATH) \
+    files="$(FILES)" \
+    uselibs="hiddstubs debug"
+
+%common

@@ -1,0 +1,15 @@
+#
+# Makefile for Mason's workbench icons
+
+include $(SRCDIR)/config/aros.cfg
+
+ICONS   := Help 
+
+#MM- iconset-Mason-wbench-icons-aros : iconset-Mason-wbench-icons-aros-locale
+
+%build_icons mmake=iconset-Mason-wbench-icons-aros-locale icons=$(ICONS) \
+             dir=$(AROS_LOCALE)
+
+#MM- icons-wbench-locale : Mason-icons-wbench-locale
+%build_icons mmake=Mason-icons-wbench-locale icons=$(ICONS) \
+             dir=$(AROS_PRESETS)/Icons/Mason/Default/$(AROS_DIR_AROS)/$(AROS_DIR_LOCALE)

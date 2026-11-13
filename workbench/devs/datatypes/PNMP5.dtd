@@ -1,0 +1,10 @@
+# DataType Description for PNMP5
+Name=PNMP5
+Version=$VER: PNMP5 41.0 (09.07.2010)
+BaseName=pnm
+Pattern=#?
+Mask='P' '5'
+GroupID=pict
+ID=pnm5
+Flags=DTF_BINARY,DTF_CASE
+Priority=0

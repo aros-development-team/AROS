@@ -1,0 +1,14 @@
+#  $Id $
+#
+#  Makefile.in for VIA AC97 AHI driver
+#
+
+VPATH		= @srcdir@
+srcdir		= @srcdir@
+
+DRIVER		= via-ac97.audio
+MODEFILE	= VIA-AC97
+
+OBJECTS		= driver-init.o via.o accel.o misc.o interrupt.o pci_wrapper.o
+
+include ../Common/Makefile.common

@@ -1,0 +1,290 @@
+#   $Id$
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM- workbench-datatypes-complete: workbench-datatypes-$(JPEGXL_TOOLCHAINSUPPORT)-jpegxl
+#MM- workbench-datatypes--jpegxl : workbench-datatypes-jpegxl
+
+#MM workbench-datatypes-jpegxl : \
+#MM includes \
+#MM linklibs \
+#MM datatypes-jpegxl-linklibs-jxl
+
+#MM datatypes-jpegxl-linklibs-jxl : \
+#MM includes \
+#MM linklibs \
+#MM datatypes-jpegxl-linklibs-jxl-genfiles \
+#MM datatypes-jpegxl-linklibs-hwy \
+#MM datatypes-jpegxl-linklibs-brotli
+
+#MM- workbench-datatypes-jpegxl-quick : \
+#MM datatypes-jpegxl-linklibs-brotli-quick \
+#MM datatypes-jpegxl-linklibs-hwy-quick \
+#MM datatypes-jpegxl-linklibs-jxl-quick
+
+##################################################################
+# libbrotli (decoder parts only, needed by libjxl)               #
+##################################################################
+
+LIBBROTLIVERSION=1.2.0
+BROTLIREPOSITORIES = https://github.com/google/brotli/archive/refs/tags
+BROTLIARCHBASE     := v$(LIBBROTLIVERSION)
+BROTLIARCHSUFFIX := "tar.gz"
+#BROTLIPATCHSPEC := $(BROTLIARCHBASE)-aros.diff:brotli-$(LIBBROTLIVERSION):-f,-p1
+BROTLIARCHSRCDIR := $(PORTSDIR)/brotli/brotli-$(LIBBROTLIVERSION)
+
+%fetch mmake=linklibs-jxlbrotli-fetch archive=$(BROTLIARCHBASE) destination=$(PORTSDIR)/brotli \
+    location=$(PORTSSOURCEDIR)/brotli archive_origins=$(BROTLIREPOSITORIES) suffixes=$(BROTLIARCHSUFFIX) \
+    patches_specs=$(BROTLIPATCHSPEC)
+
+%create_patch mmake=linklibs-jxlbrotli-create-patch \
+    archive=$(BROTLIARCHBASE) suffixes=$(BROTLIARCHSUFFIX) \
+    location=$(PORTSSOURCEDIR)/brotli destination=$(PORTSDIR)/brotli \
+    srcdir="brotli-$(LIBBROTLIVERSION)"
+
+#MM datatypes-jpegxl-linklibs-brotli : linklibs-jxlbrotli-fetch
+
+USER_INCLUDES := -I$(BROTLIARCHSRCDIR)/c/include
+
+BROTLICFILES := \
+        c/common/constants \
+        c/common/context \
+        c/common/dictionary \
+        c/common/platform \
+        c/common/shared_dictionary \
+        c/common/transform \
+        c/dec/bit_reader \
+        c/dec/decode \
+        c/dec/huffman \
+        c/dec/prefix \
+        c/dec/state \
+        c/dec/static_init
+
+%build_linklib mmake=datatypes-jpegxl-linklibs-brotli \
+    libname=brotli files="$(addprefix $(BROTLIARCHSRCDIR)/,$(BROTLICFILES))" \
+    objdir=$(GENDIR)/$(CURDIR)/brotli libdir=$(GENDIR)/$(CURDIR)/lib
+
+##################################################################
+# libhwy (google highway - SIMD support library used by libjxl)  #
+##################################################################
+
+LIBHWYVERSION=1.4.0
+HWYREPOSITORIES = https://github.com/google/highway/archive/refs/tags
+HWYARCHBASE     := $(LIBHWYVERSION)
+HWYARCHSUFFIX := "tar.gz"
+HWYPATCHSPEC := $(HWYARCHBASE)-aros.diff:highway-$(LIBHWYVERSION):-f,-p1
+HWYARCHSRCDIR := $(PORTSDIR)/highway/highway-$(LIBHWYVERSION)
+
+%fetch mmake=linklibs-jxlhwy-fetch archive=$(HWYARCHBASE) destination=$(PORTSDIR)/highway \
+    patches_origins="$(SRCDIR)/$(CURDIR)/highway" \
+    location=$(PORTSSOURCEDIR)/highway archive_origins=$(HWYREPOSITORIES) suffixes=$(HWYARCHSUFFIX) \
+    patches_specs=$(HWYPATCHSPEC)
+
+%create_patch mmake=linklibs-jxlhwy-create-patch \
+    archive=$(HWYARCHBASE) suffixes=$(HWYARCHSUFFIX) \
+    location=$(PORTSSOURCEDIR)/highway destination=$(PORTSDIR)/highway \
+    srcdir="highway-$(LIBHWYVERSION)"
+
+#MM datatypes-jpegxl-linklibs-hwy : linklibs-jxlhwy-fetch
+
+# highway only checks the compiler version for AVX10.2 support
+# (gcc >= 15.2), but assembling the instructions it then emits also
+# needs binutils >= 2.44 - which not every toolchain pairing provides.
+# Disable the AVX10.2 target when the assembler is too old.
+ifeq ($(AROS_TOOLCHAIN),gnu)
+BINUTILS_VER_MINOR := $(shell echo "$(TARGET_BINUTILS_VER)" | cut -d"." -f2)
+ifneq ($(shell [ 0$(BINUTILS_VER_MINOR) -ge 44 ] 2>/dev/null && echo true),true)
+HWY_TARGET_CPPFLAGS := -DHWY_BROKEN_AVX10_2=HWY_AVX10_2
+endif
+endif
+
+USER_INCLUDES := -I$(HWYARCHSRCDIR)
+USER_CPPFLAGS := $(HWY_TARGET_CPPFLAGS)
+
+HWYCXXFILES := \
+        hwy/abort \
+        hwy/aligned_allocator \
+        hwy/nanobenchmark \
+        hwy/per_target \
+        hwy/print \
+        hwy/targets \
+        hwy/timer
+
+%build_linklib mmake=datatypes-jpegxl-linklibs-hwy \
+    libname=hwy cxxfiles="$(addprefix $(HWYARCHSRCDIR)/,$(HWYCXXFILES))" \
+    objdir=$(GENDIR)/$(CURDIR)/hwy libdir=$(GENDIR)/$(CURDIR)/lib
+
+##################################################################
+# libjxl (decoder parts only)                                    #
+##################################################################
+
+LIBJXLVERSION=0.12.0
+# version components for jxl/version.h
+JXL_VER_MAJOR := $(word 1,$(subst ., ,$(LIBJXLVERSION)))
+JXL_VER_MINOR := $(word 2,$(subst ., ,$(LIBJXLVERSION)))
+JXL_VER_PATCH := $(word 3,$(subst ., ,$(LIBJXLVERSION)))
+JXLREPOSITORIES = https://github.com/libjxl/libjxl/archive/refs/tags
+JXLARCHBASE     := v$(LIBJXLVERSION)
+JXLARCHSUFFIX := "tar.gz"
+# The libjxl AROS patch only addresses C++ standard features missing from
+# older gcc (the m68k baseline is 6.5) - newer toolchains build the
+# pristine sources.
+ifeq ($(AROS_TOOLCHAIN),gnu)
+ifneq ($(findstring -,$(TARGET_GCC_VER)),)
+  GCC_VERSION_MAJOR := $(firstword $(subst -, ,$(TARGET_GCC_VER)))
+else
+  GCC_VERSION_MAJOR = $(shell echo "$(TARGET_GCC_VER)" | cut -d"." -f1)
+endif
+ifeq ($(shell [ $(GCC_VERSION_MAJOR) -lt 13 ] && echo true),true)
+JXLPATCHSPEC := $(JXLARCHBASE)-aros.diff:libjxl-$(LIBJXLVERSION):-f,-p1
+endif
+endif
+JXLARCHSRCDIR := $(PORTSDIR)/libjxl/libjxl-$(LIBJXLVERSION)
+
+%fetch mmake=linklibs-jxl-fetch archive=$(JXLARCHBASE) destination=$(PORTSDIR)/libjxl \
+    patches_origins="$(SRCDIR)/$(CURDIR)/libjxl" \
+    location=$(PORTSSOURCEDIR)/jpegxl archive_origins=$(JXLREPOSITORIES) suffixes=$(JXLARCHSUFFIX) \
+    patches_specs=$(JXLPATCHSPEC)
+
+%create_patch mmake=linklibs-jxl-create-patch \
+    archive=$(JXLARCHBASE) suffixes=$(JXLARCHSUFFIX) \
+    location=$(PORTSSOURCEDIR)/jpegxl destination=$(PORTSDIR)/libjxl \
+    srcdir="libjxl-$(LIBJXLVERSION)"
+
+#MM datatypes-jpegxl-linklibs-jxl : linklibs-jxl-fetch
+
+JXLGENINCDIR := $(GENDIR)/$(CURDIR)/include
+
+USER_INCLUDES := \
+        -I$(JXLARCHSRCDIR) \
+        -I$(JXLARCHSRCDIR)/lib/include \
+        -I$(JXLGENINCDIR) \
+        -I$(HWYARCHSRCDIR) \
+        -I$(BROTLIARCHSRCDIR)/c/include
+
+USER_CPPFLAGS := \
+        $(HWY_TARGET_CPPFLAGS) \
+        -DJXL_INTERNAL_LIBRARY_BUILD \
+        -DJXL_STATIC_DEFINE \
+        -DJPEGXL_ENABLE_TRANSCODE_JPEG=0 \
+        -DJPEGXL_ENABLE_BOXES=1
+
+# decoder sources, from JPEGXL_INTERNAL_DEC_SOURCES (+ the box decoder)
+# in lib/jxl_lists.cmake
+LIBJXLCXXFILES := \
+        lib/jxl/ac_strategy \
+        lib/jxl/alpha \
+        lib/jxl/ans_common \
+        lib/jxl/blending \
+        lib/jxl/box_content_decoder \
+        lib/jxl/chroma_from_luma \
+        lib/jxl/coeff_order \
+        lib/jxl/color_encoding_internal \
+        lib/jxl/compressed_dc \
+        lib/jxl/convolve_slow \
+        lib/jxl/convolve_symmetric5 \
+        lib/jxl/dct_scales \
+        lib/jxl/dec_ans \
+        lib/jxl/dec_bit_reader \
+        lib/jxl/dec_cache \
+        lib/jxl/dec_context_map \
+        lib/jxl/dec_external_image \
+        lib/jxl/dec_frame \
+        lib/jxl/dec_group \
+        lib/jxl/dec_group_border \
+        lib/jxl/dec_huffman \
+        lib/jxl/dec_modular \
+        lib/jxl/dec_noise \
+        lib/jxl/dec_patch_dictionary \
+        lib/jxl/dec_xyb \
+        lib/jxl/decode \
+        lib/jxl/entropy_coder \
+        lib/jxl/epf \
+        lib/jxl/fields \
+        lib/jxl/frame_header \
+        lib/jxl/headers \
+        lib/jxl/huffman_table \
+        lib/jxl/icc_codec \
+        lib/jxl/icc_codec_common \
+        lib/jxl/image \
+        lib/jxl/image_bundle \
+        lib/jxl/image_metadata \
+        lib/jxl/image_ops \
+        lib/jxl/loop_filter \
+        lib/jxl/luminance \
+        lib/jxl/memory_manager_internal \
+        lib/jxl/modular/encoding/dec_ma \
+        lib/jxl/modular/encoding/encoding \
+        lib/jxl/modular/modular_image \
+        lib/jxl/modular/transform/palette \
+        lib/jxl/modular/transform/rct \
+        lib/jxl/modular/transform/squeeze \
+        lib/jxl/modular/transform/squeeze_params \
+        lib/jxl/modular/transform/transform \
+        lib/jxl/opsin_params \
+        lib/jxl/passes_state \
+        lib/jxl/quant_weights \
+        lib/jxl/quantizer \
+        lib/jxl/render_pipeline/low_memory_render_pipeline \
+        lib/jxl/render_pipeline/render_pipeline \
+        lib/jxl/render_pipeline/render_pipeline_stage \
+        lib/jxl/render_pipeline/simple_render_pipeline \
+        lib/jxl/render_pipeline/stage_blending \
+        lib/jxl/render_pipeline/stage_chroma_upsampling \
+        lib/jxl/render_pipeline/stage_cms \
+        lib/jxl/render_pipeline/stage_epf \
+        lib/jxl/render_pipeline/stage_from_linear \
+        lib/jxl/render_pipeline/stage_gaborish \
+        lib/jxl/render_pipeline/stage_noise \
+        lib/jxl/render_pipeline/stage_patches \
+        lib/jxl/render_pipeline/stage_splines \
+        lib/jxl/render_pipeline/stage_spot \
+        lib/jxl/render_pipeline/stage_to_linear \
+        lib/jxl/render_pipeline/stage_tone_mapping \
+        lib/jxl/render_pipeline/stage_upsampling \
+        lib/jxl/render_pipeline/stage_write \
+        lib/jxl/render_pipeline/stage_xyb \
+        lib/jxl/render_pipeline/stage_ycbcr \
+        lib/jxl/simd_util \
+        lib/jxl/splines \
+        lib/jxl/toc
+
+$(JXLGENINCDIR)/jxl/version.h : $(JXLARCHSRCDIR)/lib/jxl/version.h.in
+	@$(ECHO) "Generating jxl/version.h ..."
+	%mkdir_q dir=$(JXLGENINCDIR)/jxl
+	@cat $< | $(SED) s/@JPEGXL_MAJOR_VERSION@/$(JXL_VER_MAJOR)/ | $(SED) s/@JPEGXL_MINOR_VERSION@/$(JXL_VER_MINOR)/ | $(SED) s/@JPEGXL_PATCH_VERSION@/$(JXL_VER_PATCH)/ > $@
+
+$(JXLGENINCDIR)/jxl/jxl_export.h : $(SRCDIR)/$(CURDIR)/jxl_export.h
+	@$(ECHO) "Generating jxl/jxl_export.h ..."
+	%mkdir_q dir=$(JXLGENINCDIR)/jxl
+	@$(CP) $< $@
+
+#MM datatypes-jpegxl-linklibs-jxl-genfiles : linklibs-jxl-fetch
+
+#MM
+datatypes-jpegxl-linklibs-jxl-genfiles : $(JXLGENINCDIR)/jxl/version.h $(JXLGENINCDIR)/jxl/jxl_export.h
+
+%build_linklib mmake=datatypes-jpegxl-linklibs-jxl \
+    libname=jxl cxxfiles="$(addprefix $(JXLARCHSRCDIR)/,$(LIBJXLCXXFILES))" \
+    objdir=$(GENDIR)/$(CURDIR)/jxl libdir=$(GENDIR)/$(CURDIR)/lib
+
+##################################################################
+# the datatype class itself                                      #
+##################################################################
+
+USER_INCLUDES := \
+        -I$(JXLARCHSRCDIR)/lib/include \
+        -I$(JXLGENINCDIR)
+
+USER_CPPFLAGS := \
+        -DJXL_STATIC_DEFINE \
+        -DJPEGXLCLASS_USESUPPORTPROC
+
+USER_LDFLAGS := -static-libstdc++ -L$(GENDIR)/$(CURDIR)/lib
+
+JPEGXLCLASSFILES := jpegxlclass
+
+%build_module mmake=workbench-datatypes-jpegxl \
+    modname=jpegxl modtype=datatype \
+    files=$(JPEGXLCLASSFILES) cxxfiles=jpegxldummy \
+    uselibs="jxl hwy brotli posixc stdc"

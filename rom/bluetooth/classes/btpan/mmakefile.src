@@ -1,0 +1,14 @@
+include $(SRCDIR)/config/aros.cfg
+
+USER_LDFLAGS := -static
+USER_CPPFLAGS := -DMUIMASTER_YES_INLINE_STDARG
+
+FILES := btpan.class dev debug
+
+#MM- kernel-bluetooth-classes-btpan : kernel-bluetooth-btclass kernel-bluetooth-library-includes
+
+%build_module_library mmake=kernel-bluetooth-classes-btpan \
+    modname=btpan modtype=btclass modsuffix="class" \
+    files="$(FILES)"
+
+%common

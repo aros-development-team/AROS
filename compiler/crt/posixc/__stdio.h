@@ -1,0 +1,46 @@
+#ifndef ___STDIO_H
+#define ___STDIO_H
+
+/*
+    Copyright © 1995-2026, The AROS Development Team. All rights reserved.
+    $Id$
+
+    Desc: internal header file for stdio
+    Lang: English
+*/
+
+#include <stdio.h>
+#include <stddef.h>
+#include <exec/lists.h>
+
+#include <aros/types/file_s.h>
+
+#define __POSIXC_STDIO_EOF    0x0001L
+#define __POSIXC_STDIO_ERROR  0x0002L
+#define __POSIXC_STDIO_WRITE  0x0004L
+#define __POSIXC_STDIO_READ   0x0008L
+#define __POSIXC_STDIO_RDWR   __POSIXC_STDIO_WRITE | __POSIXC_STDIO_READ
+#define __POSIXC_STDIO_APPEND 0x0010L
+
+typedef struct
+{
+    struct MinNode Node;
+    FILE File;
+} FILENODE;
+
+#define FILENODE2FILE(fn)       (&((fn)->File))
+#define FILE2FILENODE(f)        ((FILENODE *)(((char *)(f))-offsetof(FILENODE,File)))
+
+/* Allocate a FILE wrapper without validating or changing its descriptor. */
+extern FILE *__stdio_file(int fd, int oflags);
+
+extern int __smode2oflags(const char *mode);
+extern int __oflags2sflags(int oflags);
+
+extern FILE * __fopen (const char * pathname, const char * mode, int large);
+extern int __fseeko (FILE * stream, off_t offset, int whence);
+extern off_t __ftello (FILE *stream);
+extern int __fseeko64 (FILE * stream, __off64_t offset, int whence);
+extern __off64_t __ftello64 (FILE *stream);
+
+#endif /* ___STDIO_H */

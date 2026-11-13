@@ -1,0 +1,28 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+FILES := pulse
+
+FUNCS := createplayera \
+	 deleteplayer \
+	 externalsync \
+	 findconductor \
+	 getplayerattrsa \
+	 lockrealtime \
+	 nextconductor \
+	 setconductorstate \
+	 setplayerattrsa \
+	 unlockrealtime
+
+#MM workbench-libs-realtime-includes : \
+#MM     kernel-exec-includes \
+#MM     kernel-dos-includes \
+#MM     kernel-utility-includes \
+#MM     includes-copy
+#MM- workbench-libs-realtime : linklibs
+
+%build_module mmake=workbench-libs-realtime \
+    modname=realtime modtype=library \
+    files="realtime_init realtime_timer $(FUNCS) $(FILES)"
+
+%common

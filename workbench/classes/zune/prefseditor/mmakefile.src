@@ -1,0 +1,20 @@
+# Copyright (C) 2003, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+
+USER_LDFLAGS := -static
+
+FILES         := prefseditor support
+INCLUDE_FILES := prefseditor.h
+
+#MM- workbench-classes-zune : workbench-classes-zune-prefseditor
+#MM workbench-classes-zune-prefseditor : includes
+%build_module \
+    mmake=workbench-classes-zune-prefseditor \
+    modname=PrefsEditor modtype=mcc \
+    conffile=prefseditor.conf
+    
+%copy_includes path=zune
+    
+%common
+%include_deps

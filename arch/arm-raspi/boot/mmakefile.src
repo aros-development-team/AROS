@@ -1,0 +1,294 @@
+# $Id $
+
+include $(SRCDIR)/config/aros.cfg
+
+TARGETDIR       := $(GENDIR)/$(CURDIR)
+FILES           := boot mmu kprintf support vc_mb serialdebug elf devicetree \
+                   bc/vars bc/font8x14 bc/screen_fb vc_fb
+USER_CFLAGS     := -Wall $(CFLAGS_NO_BUILTIN)
+KERNEL_LDFLAGS  =
+USER_INCLUDES   := -isystem $(SRCDIR)/$(CURDIR)/include -I$(SRCDIR)/rom/openfirmware
+USER_CPPFLAGS   := -DTARGET_SECTION_COMMENT=\"$(AROS_SECTION_COMMENT)\"
+USER_CPPFLAGS   += -DUSE_UBOOT
+OPTIMIZATION_CFLAGS := -O2
+
+ARM_BSP := aros-$(AROS_TARGET_CPU)-bsp.rom
+
+#MM- distfiles-raspi-armhf : distfiles-raspi-armle
+#MM- distfiles-raspi-arm : distfiles-raspi-armle
+#MM- distfiles-raspi-armeb : distfiles-raspi-armbe
+
+#MM- distfiles-raspi-armhf-quick : distfiles-raspi-armle
+#MM- distfiles-raspi-arm-quick : distfiles-raspi-armle
+#MM- distfiles-raspi-armeb-quick : distfiles-raspi-armbe
+
+
+#MM distfiles-raspi-armle : \
+#MM kernel-raspi-arm \
+#MM kernel-package-raspi-arm \
+#MM workbench-devs-networks-bwfm \
+#MM distfiles-raspi-fw \
+#MM distfiles-raspi-wifi-fw
+
+#MM distfiles-raspi-armbe : \
+#MM kernel-raspi-arm \
+#MM kernel-package-raspi-arm \
+#MM workbench-devs-networks-bwfm \
+#MM distfiles-raspi-fw \
+#MM distfiles-raspi-wifi-fw
+
+#MM kernel-package-raspi-arm-quick: \
+#MM linklibs-stdc-static-quick \
+#MM kernel-dos-quick \
+#MM kernel-dos64-quick \
+#MM kernel-entropy-quick \
+#MM kernel-bootloader-quick \
+#MM kernel-dosboot-quick \
+#MM kernel-oop-quick \
+#MM kernel-utility-quick \
+#MM kernel-debug-quick \
+#MM kernel-expansion-quick \
+#MM kernel-openfirmware-quick \
+#MM kernel-graphics-quick \
+#MM kernel-cgxbootpic-quick \
+#MM workbench-libs-gadtools-quick \
+#MM workbench-libs-lowlevel-quick \
+#MM workbench-libs-fd-quick \
+#MM kernel-intuition-quick \
+#MM kernel-partition-quick \
+#MM kernel-layers-quick \
+#MM kernel-timer-quick \
+#MM kernel-lddemon-quick \
+#MM kernel-hidd-quick \
+#MM kernel-aros-quick \
+#MM kernel-misc-quick \
+#MM kernel-keymap-quick \
+#MM kernel-input-quick \
+#MM kernel-gameport-quick \
+#MM kernel-keyboard-quick \
+#MM kernel-console-quick \
+#MM kernel-shell-quick \
+#MM kernel-shellcommands-quick \
+#MM kernel-filesystem-quick \
+#MM kernel-fs-con-quick \
+#MM kernel-fs-afs-quick \
+#MM kernel-fs-cdvdfs-quick \
+#MM kernel-fs-fat-quick \
+#MM kernel-fs-sfs-quick \
+#MM kernel-fs-ram-quick \
+#MM kernel-processor-quick \
+#MM kernel-mbox-bcm2708-quick \
+#MM kernel-dma-bcm2708-quick \
+#MM kernel-sdio-bcm2708-quick \
+#MM kernel-bwfm-bcm2708-quick \
+#MM hidd-i2c-quick \
+#MM hidd-i2c-bcm2708-quick \
+#MM kernel-hidd-gfx-quick \
+#MM hidd-vcgfx-quick \
+#MM kernel-sdcard-quick \
+#MM kernel-hidd-input-quick \
+#MM kernel-hidd-kbd-quick \
+#MM kernel-hidd-mouse-quick \
+#MM kernel-usb-nopci-quick \
+#MM kernel-usb-usb2otg-quick \
+#MM kernel-usb-romstrap-raspi-quick
+
+#MM kernel-package-raspi-arm: \
+#MM linklibs-stdc-static \
+#MM kernel-dos \
+#MM kernel-dos64 \
+#MM kernel-battclock \
+#MM kernel-entropy \
+#MM kernel-bootloader \
+#MM kernel-dosboot \
+#MM kernel-oop \
+#MM kernel-utility \
+#MM kernel-debug \
+#MM kernel-expansion \
+#MM kernel-openfirmware \
+#MM kernel-graphics \
+#MM kernel-cgxbootpic \
+#MM workbench-libs-gadtools \
+#MM workbench-libs-lowlevel \
+#MM workbench-libs-fd \
+#MM kernel-intuition \
+#MM kernel-partition \
+#MM kernel-layers \
+#MM kernel-timer \
+#MM kernel-lddemon \
+#MM kernel-hidd \
+#MM kernel-aros \
+#MM kernel-misc \
+#MM kernel-keymap \
+#MM kernel-input \
+#MM kernel-gameport \
+#MM kernel-keyboard \
+#MM kernel-console \
+#MM kernel-shell \
+#MM kernel-shellcommands \
+#MM kernel-filesystem \
+#MM kernel-fs-con \
+#MM kernel-fs-afs \
+#MM kernel-fs-cdvdfs \
+#MM kernel-fs-fat \
+#MM kernel-fs-sfs \
+#MM kernel-fs-ram \
+#MM kernel-processor \
+#MM kernel-mbox-bcm2708 \
+#MM kernel-dma-bcm2708 \
+#MM kernel-sdio-bcm2708 \
+#MM kernel-bwfm-bcm2708 \
+#MM kernel-sdcard \
+#MM hidd-i2c \
+#MM hidd-i2c-bcm2708 \
+#MM hidd-vcgfx \
+#MM kernel-hidd-gfx \
+#MM kernel-hidd-input \
+#MM kernel-hidd-kbd \
+#MM kernel-hidd-mouse \
+#MM kernel-usb-nopci \
+#MM kernel-usb-usb2otg \
+#MM kernel-usb-romstrap-raspi
+
+# Pin to a specific firmware release tag, not the rolling 'master' branch:
+# start.elf and fixup.dat are a version-matched pair, and fetching them from
+# master at different times (with wget -c never re-fetching) yields a mismatch
+# ("MISMATCHED FILES: start.elf and fixup.dat do not fit to each other!").
+RASPIFW_BRANCH    := 1.20260521
+RASPIFW_URI       := https://github.com/raspberrypi/firmware/blob/$(RASPIFW_BRANCH)/boot
+# No BCM2711 dtb here: arm-native has no Pi 4 platform, only bcm2708.
+RASPIFW_FILES     := LICENCE.broadcom bootcode.bin fixup.dat start.elf \
+                     bcm2709-rpi-2-b.dtb bcm2710-rpi-3-b-plus.dtb bcm2710-rpi-3-b.dtb \
+                     bcm2710-rpi-zero-2-w.dtb bcm2710-rpi-zero-2.dtb
+
+# Broadcom WiFi firmware for bwfm.device (loaded at runtime from DEVS:Firmware).
+# The "buster" branch keeps real files under brcm/ (newer branches symlink to
+# cypress/, which github ?raw= would return as link text). The generic nvram
+# .txt names match what bwfm.device requests for the detected chip; brcmfmac
+# firmware is redistributable under LICENCE.broadcom_bcm43xx (shipped too).
+RASPIWIFIFW_BRANCH := buster
+RASPIWIFIFW_URI    := https://github.com/RPi-Distro/firmware-nonfree/blob/$(RASPIWIFIFW_BRANCH)
+# 43455 and 43456 are both chip id 0x4345 and cannot share a blob: bwfm.device
+# picks by chip revision (9 = CYW43456, on the Pi 400 and CM4), so both sets
+# have to be on the card.
+RASPIWIFIFW_FILES  := brcm/brcmfmac43455-sdio.bin brcm/brcmfmac43455-sdio.txt \
+                     brcm/brcmfmac43455-sdio.clm_blob \
+                     brcm/brcmfmac43456-sdio.bin brcm/brcmfmac43456-sdio.txt \
+                     brcm/brcmfmac43456-sdio.clm_blob \
+                     brcm/brcmfmac43430-sdio.bin brcm/brcmfmac43430-sdio.txt \
+                     LICENCE.broadcom_bcm43xx
+
+PKG_LIBS      := aros partition utility oop graphics layers intuition keymap dos dos64 poseidon cgxbootpic gadtools lowlevel fd
+PKG_LIBS_ARCH := expansion
+PKG_RSRC      := openfirmware misc bootloader dosboot lddemon usbromstartup FileSystem shell shellcommands entropy mbox dma sdio bwfm
+PKG_RSRC_ARCH := processor battclock
+PKG_DEVS      := input gameport keyboard console sdcard USBHardware/usb2otg
+PKG_DEVS_ARCH := timer
+PKG_HANDLERS  := con ram cdrom sfs fat afs
+PKG_HIDDS     := hiddclass inputclass gfx keyboard mouse i2c i2c-bcm2708 vcgfx
+PKG_CLASSES   := USB/hub USB/massstorage
+
+%make_package mmake=kernel-package-raspi-arm file=$(AROSDIR)/$(ARM_BSP) \
+    libs=$(PKG_LIBS) arch_libs=$(PKG_LIBS_ARCH) res=$(PKG_RSRC) \
+    arch_res=$(PKG_RSRC_ARCH) devs=$(PKG_DEVS) arch_devs=$(PKG_DEVS_ARCH) \
+    handlers=$(PKG_HANDLERS) hidds=$(PKG_HIDDS) classes=$(PKG_CLASSES)
+
+#MM
+distfiles-raspi-fw:
+	$(foreach file, $(RASPIFW_FILES), $(shell wget -t 5 -T 15 -c "$(addprefix $(RASPIFW_URI)/, $(addsuffix ?raw=true, $(file)))" -O "$(addprefix $(AROSDIR)/, $(file))"))
+
+#MM
+distfiles-raspi-wifi-fw:
+	@$(MKDIR) $(AROSDIR)/Devs/Firmware
+	@for f in $(RASPIWIFIFW_FILES) ; do \
+	    wget -t 5 -T 15 -c "$(RASPIWIFIFW_URI)/$$f?raw=true" -O "$(AROSDIR)/Devs/Firmware/$${f##*/}" \
+	        || $(ECHO) "WARNING: could not fetch WiFi firmware $$f" ; \
+	done
+
+#MM
+distfiles-raspi-armbe-bootimg: $(AROSDIR)/aros-$(AROS_TARGET_CPU)-raspi.img
+
+#MM
+distfiles-raspi-armle-bootimg: $(AROSDIR)/aros-$(AROS_TARGET_CPU)-raspi.img
+
+#MM
+distfiles-raspi-armbe-bootimg-quick: $(AROSDIR)/aros-$(AROS_TARGET_CPU)-raspi.img
+
+#MM
+distfiles-raspi-armle-bootimg-quick: $(AROSDIR)/aros-$(AROS_TARGET_CPU)-raspi.img
+
+# gpu_mem: the vc4 GL stack needs headroom in VideoCore RAM (full-res
+# framebuffer + overlay page ring + BO pools); 64 (the firmware default)
+# runs out during a full-screen GL session. 128 is the working minimum.
+$(AROSDIR)/config.txt: $(AROSDIR)/$(ARM_BSP)
+	@printf "kernel=aros-$(AROS_TARGET_CPU)-raspi.img\nkernel_address=0x10000\ninitramfs $(ARM_BSP) 0x00800000\narm_64bit=0\nhdmi_drive=2\ngpu_mem=128\n" > $@
+
+$(AROSDIR)/aros-armeb-raspi.img: $(TARGETDIR)/core-be.bin.o $(foreach f, $(FILES), $(TARGETDIR)/$(f).o $(TARGETDIR)/$(f).d)
+	@$(ECHO) "Creating   $@"
+	@$(KERNEL_LD) --be8 --format elf32-bigarm --entry=bootstrap --script=$(SRCDIR)/$(CURDIR)/ldscript-be.lds $(foreach f, $(FILES), $(TARGETDIR)/$(f).o) $ $(TARGETDIR)/core-be.bin.o -L$(AROS_LIB) -lstdc.static -laeabi -o $(OSGENDIR)/boot/aros-armeb-raspi.img.elf
+	@$(TARGET_STRIP) --strip-unneeded -R .note -R .comment $(OSGENDIR)/boot/aros-armeb-raspi.img.elf
+	$(TARGET_OBJCOPY) -O binary $(OSGENDIR)/boot/aros-armeb-raspi.img.elf $@
+
+$(AROSDIR)/aros-arm-raspi.img: $(TARGETDIR)/core.bin.o $(foreach f, $(FILES), $(TARGETDIR)/$(f).o $(TARGETDIR)/$(f).d)
+	@$(ECHO) "Creating   $@"
+	@$(KERNEL_LD) -Map $(OSGENDIR)/boot/aros-arm-raspi.img.map --entry=bootstrap --script=$(SRCDIR)/$(CURDIR)/ldscript-le.lds $(foreach f, $(FILES), $(TARGETDIR)/$(f).o) $ $(TARGETDIR)/core.bin.o -L$(AROS_LIB) -lstdc.static $(TARGET_C_LIBS) -o $(OSGENDIR)/boot/aros-arm-raspi.img.elf
+	@$(TARGET_STRIP) --strip-unneeded -R .note -R .comment $(OSGENDIR)/boot/aros-arm-raspi.img.elf
+	@$(TARGET_OBJCOPY) -O binary $(OSGENDIR)/boot/aros-arm-raspi.img.elf $@
+
+$(TARGETDIR)/core-be.bin.o: $(OSGENDIR)/boot/core.elf
+	@$(ECHO) "Creating   $@"
+	@$(CP) $(OSGENDIR)/boot/core.elf $(TARGETDIR)/core-be.bin
+	@cd $(TARGETDIR) && $(KERNEL_LD) $(KERNEL_LDFLAGS) --be8 -r --format binary --oformat elf32-bigarm core-be.bin -o $@
+
+$(TARGETDIR)/core.bin.o: $(OSGENDIR)/boot/core.elf
+	@$(CP) $(OSGENDIR)/boot/core.elf $(TARGETDIR)/core.bin
+	@cd $(TARGETDIR) && $(TARGET_OBJCOPY) -I binary -O elf32-littlearm -B arm core.bin $@
+
+#MM
+distfiles-raspi-armbe : $(AROSDIR)/aros-armeb-raspi.img  $(AROSDIR)/$(ARM_BSP) $(AROSDIR)/config.txt
+	@$(ECHO) Copying RasPi-BE distfiles...
+# Copy the contents, not the directory - see the aarch64 rule.
+	@$(CP) -R $(AROSDIR)/. $(DISTDIR)/
+
+#MM
+distfiles-raspi-armle : $(AROSDIR)/aros-arm-raspi.img  $(AROSDIR)/$(ARM_BSP) $(AROSDIR)/config.txt
+	@$(ECHO) Copying RasPi distfiles...
+# Copy the contents, not the directory - see the aarch64 rule.
+	@$(CP) -R $(AROSDIR)/. $(DISTDIR)/
+
+#MM
+clean ::
+	-$(RM) $(TESTS)
+
+$(TARGETDIR)/%.o : %.c
+	%compile_q
+
+$(TARGETDIR)/%.o : %.S
+	%compile_q
+
+$(TARGETDIR)/%.d : %.c
+	%mkdepend_q
+
+#
+# the following rules are for testing purposes only ..
+#
+
+#MM
+distfiles-raspi-test-imgobjects : $(foreach f, $(FILES), $(TARGETDIR)/$(f).o)
+
+#MM- distfiles-raspi-test-imgobjects-quick : distfiles-raspi-test-imgobjects
+
+#MM
+distfiles-raspi-test-img : $(AROSDIR)/aros-arm-raspi.img
+
+#MM- distfiles-raspi-test-img-quick : distfiles-raspi-test-img
+
+#
+#
+#
+
+DEPS	:= $(foreach f, $(FILES), $(TARGETDIR)/$(f).d)
+
+-include $(DEPS)
+
+%common

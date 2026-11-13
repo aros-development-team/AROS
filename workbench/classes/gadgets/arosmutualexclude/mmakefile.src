@@ -1,0 +1,13 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+USER_LDFLAGS := -static
+
+FILES := mxclass support
+
+#MM workbench-gadgets-arosmutualexclude : includes linklibs
+
+%build_module mmake=workbench-gadgets-arosmutualexclude \
+  modname=arosmutualexclude modtype=gadget \
+  files=$(FILES)
+

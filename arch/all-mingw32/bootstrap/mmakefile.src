@@ -1,0 +1,27 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+ICONDIR := $(GENDIR)/arch/all-hosted/bootstrap/arch
+
+FILES         := hostinterface hostlib memory shutdown support ui
+ICON          := $(ICONDIR)/icon.o
+USER_INCLUDES := -I$(SRCDIR)/arch/all-hosted/bootstrap \
+		 -I$(SRCDIR)/arch/all-mingw32/kernel   \
+		 -I$(GENINCDIR)
+USER_CPPFLAGS   := -DARCH=\"$(AROS_DIR_BOOTARCH)\"
+
+#MM kernel-bootstrap-hosted-mingw32: kernel-bootstrap-icon-mingw32
+
+%build_archspecific \
+	mainmmake=kernel-bootstrap-hosted maindir=arch/all-hosted/bootstrap arch=mingw32 \
+	files=$(FILES) compiler=kernel
+
+#MM
+kernel-bootstrap-icon-mingw32: $(ICON)
+
+$(ICON): $(SRCDIR)/$(CURDIR)/icon.rc $(SRCDIR)/$(CURDIR)/icon.ico
+	@$(ECHO) Compiling $<...
+	@$(MKDIR) $(ICONDIR)
+	@$(KERNEL_RESCOMP) --output-format=coff $< $@
+
+%common

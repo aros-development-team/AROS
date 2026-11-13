@@ -1,0 +1,13 @@
+include $(SRCDIR)/config/aros.cfg
+
+NOWARN_FLAGS := $(NOWARN_PARENTHESES)
+USER_CFLAGS := $(NOWARN_FLAGS)
+USER_LDFLAGS := -static
+
+FILES := init handler ppp serial
+
+#MM workbench-devs-networks-ppp : workbench-devs-networks-ppp-mm
+
+%build_module mmake=workbench-devs-networks-ppp \
+    modname=ppp modtype=device \
+    moduledir=Devs/Networks

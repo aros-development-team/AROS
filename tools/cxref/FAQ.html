@@ -1,0 +1,431 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<HTML>
+
+<HEAD>
+<TITLE>CXREF VERSION 1.5 - FREQUENTLY ASKED QUESTIONS AND ANSWERS</TITLE>
+</HEAD>
+
+<BODY>
+
+<h1>CXREF VERSION 1.5 - FREQUENTLY ASKED QUESTIONS AND ANSWERS</h1>
+
+This file contains a list of frequently asked questions and their answers
+relating to cxref version 1.5.
+
+Not all of the questions here are real users questions, some of them have been
+made up to give some help to people trying to use the program who find that the
+README documentation is insufficient.
+<hr>
+<p><b><a href="#Section-0">Section 0 - Why doesn't this FAQ answer my question?</a></b>
+<p><b><a href="#Section-1">Section 1 - What does cxref do (and what it doesn't)</a></b>
+<p><a href="#Q-1.1">Q 1.1   Does cxref support C++?</a>
+<p><a href="#Q-1.2">Q 1.2   Does cxref show which #includes that are not needed?</a>
+<p><a href="#Q-1.3">Q 1.3   Can cxref document automatic function variables?</a>
+<p><a href="#Q-1.4">Q 1.4   Does cxref run on systems other than UNIX?</a>
+<p><b><a href="#Section-2">Section 2 - When cxref does not work</a></b>
+<p><a href="#Q-2.1a">Q 2.1a  How do I find out what is causing the parse error?</a>
+<p><a href="#Q-2.1b">Q 2.1b  What does this parse error message mean?</a>
+<p><a href="#Q-2.2">Q 2.2   Where are files doc/cxref.html &amp; FAQ.html referenced from README.html?</a>
+<p><a href="#Q-2.3">Q 2.3   Why are half of the cross references missing?</a>
+<p><a href="#Q-2.4">Q 2.4   Why can't cxref process my header file in isolation?</a>
+<p><a href="#Q-2.5">Q 2.5   Why can't LaTeX process the output files?</a>
+<p><a href="#Q-2.6">Q 2.6   Why does the include file name have the complete path name?</a>
+<p><a href="#Q-2.7">Q 2.7   Why does the include file name have the wrong path name?</a>
+<p><a href="#Q-2.8">Q 2.8   Why does cxref put in links to system include files?</a>
+<p><b><a href="#Section-3">Section 3 - How to make cxref do what you want</a></b>
+<p><a href="#Q-3.1">Q 3.1   How do I use cxref to process source files in more than one directory?</a>
+<p><a href="#Q-3.2">Q 3.2   How can I add my own information to the output files?</a>
+<p><a href="#Q-3.3">Q 3.3   Can I get a subset of the cross-reference information?</a>
+<p><a href="#Q-3.4">Q 3.4   Is there an easy way to generate the comments in the correct format?</a>
+<p><a href="#Q-3.5">Q 3.5   How do I produce LaTeX output from a single source.c.tex output file?</a>
+<p><a href="#Q-3.6">Q 3.6   How can I pass extra arguments to the C pre-processor?</a>
+<p><a href="#Q-3.7">Q 3.7   Can I cross-reference my source code at the same time as compiling it?</a>
+<p><a href="#Q-3.8">Q 3.8   What use is the .cxref configuration file?</a>
+<p><b><a href="#Section-4">Section 4 - More information about cxref</a></b>
+<p><a href="#Q-4.1">Q 4.1   Who wrote cxref, When and Why?</a>
+<p><a href="#Q-4.2">Q 4.2   How do I report bugs in cxref?</a>
+<hr>
+<h2><a name="Section-0">Section 0 - Why doesn't this FAQ answer my question?</a></h2>
+
+This FAQ is released with each new version of the cxref program, so if the
+question is one that is frequently asked about the new version then you will by
+definition not find the answer here.
+
+You can find the latest information about cxref at the cxref web-page, this
+contains among other things a list of bug-fixes for the latest version.
+<a href="http://www.gedanken.demon.co.uk/cxref/">http://www.gedanken.demon.co.uk/cxref/</a>
+<hr>
+<h2><a name="Section-1">Section 1 - What does cxref do (and what it doesn't)</a></h2>
+<h3><a name="Q-1.1">Q 1.1   Does cxref support C++?</a></h3>
+<pre>
+No.
+
+The cxref program only works for C, More specifically:
+
+1) ANSI standard C with some leniency for common non-ANSI syntax.
+        For example, the construct 'switch(foo) { case 1: ... default: }' is not
+        ANSI, there must be a ';' after the default label, but it is accepted by
+        cxref.
+
+2) Traditional (K&amp;R) function declarations, with implicit 'int' and 'void'.
+        For example 'foo(){}' is parsed as if 'int foo(void){}' was specified.
+
+3) The ability to parse GCC extensions.
+        The GCC '__attribute__' and '__extension__' keywords and most of the
+        other GCC extensions. The 'inline' keyword is allowed.
+</pre>
+<h3><a name="Q-1.2">Q 1.2   Does cxref show which #includes that are not needed?</a></h3>
+<pre>
+No.
+
+The output of the cxref program cross-references all of the functions,
+variables, type definitions, included file etc.  There is not a way of
+identifying files that are included in another source file that do not need to
+be.
+</pre>
+<h3><a name="Q-1.3">Q 1.3   Can cxref document automatic function variables?</a></h3>
+<pre>
+No.
+
+The inclusion of automatic variables in the output is not included.  This is
+because of the number of them in a typical function.  In theory it could be made
+to do this.
+</pre>
+<h3><a name="Q-1.4">Q 1.4   Does cxref run on systems other than UNIX?</a></h3>
+<pre>
+For example DOS / Win3 / Win95 / WinNT / OS/2.
+
+UNIX    = Yes
+        This is the system that the program way designed and initially written
+        for, it should work on many versions of UNIX.
+        I know that it works on Linux, SunOS 4.1.x, Solaris 2.x, AIX &amp; HP-UX 10.
+
+DOS/Win3 = No
+        The program was not designed for DOS, the filenames used and the
+        multi-process nature of the program do not allow this.
+
+Win95/WinNT = Yes
+        Using the Cygwin library and tools <a href="http://sourceware.cygnus.com/cygwin/">http://sourceware.cygnus.com/cygwin/</a>
+        it is possible to compile and run the programs.
+
+OS/2    = Maybe
+        I have reports that it is possible with OS/2 Warp with emx, but I do not
+        support cxref for this OS.
+</pre>
+<hr>
+<h2><a name="Section-2">Section 2 - When cxref does not work</a></h2>
+<h3><a name="Q-2.1a">Q 2.1a  How do I find out what is causing the parse error?</a></h3>
+<pre>
+The following error message is generated by cxref when parsing a source file
+(with YYDEBUG set to 0 in parse-yy.h when cxref was compiled).
+
+test.c:   4: parse error, expecting `','' or `';''
+^^^^^^  ^^^  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+file    line            type of error
+name    number        generated by yacc
+
+The error is on line 4 of the file test.c.  In this case, the error message that
+the yacc parser is generating is of some help, more often the error message is
+just 'parse error'.
+
+If YYDEBUG was set to 1 in parse-yy.h, then a more detailed error message would
+be given (<a href="#Q-2.1b">See Q 2.1b</a>).
+</pre>
+<h3><a name="Q-2.1b">Q 2.1b  What does this parse error message mean?</a></h3>
+<pre>
+The following error message is generated by cxref when parsing a source file
+(with YYDEBUG set to 1 in parse-yy.h when cxref was compiled).
+
+test.c:   4: parse error, expecting `','' or `';''
+
+The previous 10, current and next 10 symbols are:
+ -8 | 296 :              INT : int
+ -7 | 258 :       IDENTIFIER : foo
+ -6 |  40 :                  : (
+ -5 | 292 :             VOID : void
+ -4 |  41 :                  : )
+ -3 | 123 :                  : {
+ -2 | 296 :              INT : int
+ -1 | 258 :       IDENTIFIER : a
+  0 | 296 :              INT : int
+  1 | 258 :       IDENTIFIER : b
+  2 |  59 :                  : ;
+  3 | 125 :                  : }
+END OF FILE
+^^^               ^^^^^^^^^^  ^^^^^
+symbol              symbol    symbol
+number               type     value
+
+From this we can reconstruct part of the file test.c, using the previous and
+next 10 symbol values from the lexer.
+
+int foo(void) { int a   int b; }
+                      ^
+This is where the parse error occurred, after 'int a' and before 'int b;'.
+The cause of the error is now clear, there is a ';' missing after the
+declaration of the variable a.
+
+The cxref program is intended to be used on source files that are known to
+compile with a C compiler.  In this case a parse error message should not be
+seen except for either non-standard C, (and compiler) or a bug in cxref.
+</pre>
+<h3><a name="Q-2.2">Q 2.2   Where are files doc/cxref.html &amp; FAQ.html referenced from README.html?</a></h3>
+<pre>
+The README.html file has a reference to the files doc/cxref.html and FAQ.html
+these files are only present when 'make docs' has been run to generate the cross
+references for the cxref program itself.
+</pre>
+<h3><a name="Q-2.3">Q 2.3   Why are half of the cross references missing?</a></h3>
+<pre>
+The way that cxref works is that it processes all of the source files for a
+program, one at a time and generates a cross reference database.  A second pass
+of the program is required to generate all of the cross references from the
+database of cross reference information.
+
+For this reason, the Makefile for the doc directory of cxref uses 'cxref *.c
+-xref -Odoc' for the first pass and 'cxref *.c -xref -Odoc -html -latex' for the
+second pass.  The first to build the database, the second to produce the
+outputs.
+
+The reason that the cross references are missing is that only one pass of the
+program has been done on all of the files.  The later files to be be processed
+will have cross references for the earlier files processed.
+</pre>
+<h3><a name="Q-2.4">Q 2.4   Why can't cxref process my header file in isolation?</a></h3>
+<pre>
+The cxref program needs to process the header files to enable a cross reference
+for them to be generated.  In many cases, the header file will not have been
+written with this in mind, and may rely on other header files being included
+before the one being processed.  The best solution to this is to modify the
+header file so that it includes all of the header files that it needs.
+
+Another option is to use '-- -include filename.h' on the command line.  This
+will include the specified file (filename.h) into the source file that is being
+processed at the beginning.
+
+There is a Perl script supplied with the cxref source files called fixheader.
+This can be used to automatically determine what header files may be required.
+The decision is based on the header files that are used for the files that cxref
+can process and lots of test compilations.
+</pre>
+<h3><a name="Q-2.5">Q 2.5   Why can't LaTeX process the output files?</a></h3>
+<pre>
+There are two options for producing LaTeX output, '-latex' and '-latex2e'.
+These refer to two different versions of the LaTeX program.  The first is for
+use with LaTeX version 2.0.9, the second for use with LaTeX version 2e.
+
+The file cxref.tex (or basename.tex if '-Nbasename' is used) is the file that
+must be processed by LaTeX.
+</pre>
+<h3><a name="Q-2.6">Q 2.6   Why does the include file name have the complete path name?</a></h3>
+<pre>
+This is because a standard C preprocessor is being used instead of cxref-cpp or
+an appropriate version of gcc.  One of the changes to the recent versions of gcc
+(2.8.0) has been made to the GNU cccp to make cxref-cpp.  This is to make it
+output the names of the include files as they are in the original source code
+and not after the files have been translated into an absolute pathname.
+</pre>
+<h3><a name="Q-2.7">Q 2.7   Why does the include file name have the wrong path name?</a></h3>
+<pre>
+If the answer to this question is not the same as the answer to Q 2.6 then it
+could be the following.  When the files that are being cross-referenced are in a
+directory that contains a symbolic link in the path then the current directory
+has two (or more) possible names.  The way that the cxref program works is that
+it finds the current working directory (which is the real pathname, not using
+any links).  If the name that you specify using -R is another name for the same
+directory then cxref will not realise that they are the same.  This can cause
+the pathnames to become confused.  Try using relative pathnames where possible
+for the -R and -I options.
+</pre>
+<h3><a name="Q-2.8">Q 2.8   Why does cxref put in links to system include files?</a></h3>
+<pre>
+The way that cxref knows which include files are local to the program and which
+ones are system ones is by the way that they are included.  Any that use double
+quotes '"' are local ones and wil have links to them included in the cross
+reference output.  The include files that use the angle brackets '&lt;&gt;' are system
+files and do not have links to them included.
+
+The best solution is to change the include files so that the distinction is
+clear.  An alternative is to use the '-isystem DIRNAME' option of gcc.  This
+will cause gcc to treat files in this directory as if they are system files.
+Since cxref uses gcc for the pre-processing, this option can be passed through
+using 'cxref file.c -- -isystem DIRNAME'.
+</pre>
+<hr>
+<h2><a name="Section-3">Section 3 - How to make cxref do what you want</a></h2>
+<h3><a name="Q-3.1">Q 3.1   How do I use cxref to process source files in more than one directory?</a></h3>
+<pre>
+The cxref program depends on a database of cross references, these must all be
+consistent.  This requires that all of the files to be cross referenced are in
+the same directory tree.
+
+Example:
+
+directory     files
+- - - - -     - - -
+basedir    :  f0.c f0.h ...
+ |- s1     :  f1.c f1.h ...
+ |- s2     :  f2.c f2.h ...
+...
+
+-- f2.c --
+#include &lt;...&gt;
+#include "f2.h"
+#include "../s1/f1.h"
+#include "f0.h"
+----------
+
+In the base directory 'basedir' run 'cxref -xref -Odoc s2/f2.c -html -I.'.  This
+will create the file 'doc/s2/f2.c.html' for the file 'f2.c' and this will
+contain references to the files 'doc/s2/f2.h.html', 'doc/s1/f1.h.html' and
+'doc/f0.h.html'.  The subdirectories 'doc/s1', 'doc/s2' will be automatically
+created within the 'doc' directory to put the files into (the 'doc' directory
+must already exist).
+
+directory        files
+- - - - -        - - -
+basedir
+ |- doc       :  f0.c.html f0.h.html ... cxref.html
+     |- s1    :  f1.c.html f1.h.html ...
+     |- s2    :  f2.c.html f2.h.html ...
+...
+
+An alternative method is to use the -R option to cxref.  In the directory 's2',
+cxref can be run as 'cxref -R.. -xref -Odoc f2.c -html -I.'.  This will change
+directory to '..' ('basedir') before cxref is run, and will modify the cxref
+arguments so that it is equivalent to running cxref from 'basedir' as detailed
+above.
+</pre>
+<h3><a name="Q-3.2">Q 3.2   How can I add my own information to the output files?</a></h3>
+<pre>
+The files cxref.html and cxref.tex (depending on whether using HTML or LaTeX
+format and the use of the '-Nbasename' option) are the ones to edit.  These
+files contain the lines 'Begin-Of-Source-Files' and 'End-Of-Source-Files' as
+comments.  The output files for each source file are automatically included
+between these lines if they do not already exist there.  The order of these
+files and any other text between these lines is not important.  Customisation of
+the files should be added here.  The output files for each source file are
+automatically generated so any edits made to these will be lost when cxref is
+run.
+</pre>
+<h3><a name="Q-3.3">Q 3.3   Can I get a subset of the cross-reference information?</a></h3>
+<pre>
+At the moment, the only one way to limit the amount of cross referencing is to
+use the '-xref-*' command line option (see README).  There are plans for a
+future version of cxref to have an options file that would allow different
+amounts of information to be generated in the output.  For example, only to
+display called and not calls information for each function.
+</pre>
+<h3><a name="Q-3.4">Q 3.4   Is there an easy way to generate the comments in the correct format?</a></h3>
+<pre>
+The only easy way to do this is to use the cxref.el macro file and Emacs.  This
+is what is used to generate the comments in the cxref source code itself.
+</pre>
+<h3><a name="Q-3.5">Q 3.5   How do I produce LaTeX output from a single source.c.tex output file?</a></h3>
+<pre>
+The file cxref.tex (or basename.tex if '-Nbasename' is used) is the file that
+must be processed by LaTeX.  All of the individual LaTeX files for the source
+files are included into this file.  If an individual file source.c.tex needs to
+be processed then a copy of the file cxref.tex should be modified to include
+only the required source.c.tex file.
+</pre>
+<h3><a name="Q-3.6">Q 3.6   How can I pass extra arguments to the C pre-processor?</a></h3>
+<pre>
+The cxref program itself has three ways that you can specify the arguments that
+are passed to the C pre-processor.
+
+a) The -CPP option allows the name of the pre-processor program itself to be
+   changed.
+   e.g. 'cxref -CPP "/usr/foo/cpp -C" foo.c' will use the cpp from /usr/foo
+   instead of the compiled in default and pass it the option -C.
+
+b) The most common C pre-processor commands are recognised by cxref
+   automatically, these are -D*, -U* and -I*.
+
+c) Any amount of extra options can be passed to the preprocessor by appending
+   them to the command line after the end-of-arguments marker '--'.
+   e.g. 'cxref foo.c -- -traditional' will pass -traditional to the
+   pre-processor.
+</pre>
+<h3><a name="Q-3.7">Q 3.7   Can I cross-reference my source code at the same time as compiling it?</a></h3>
+<pre>
+It is possible to cross-reference and document your source code at the same time
+as compiling it by using the cxref-cc script.  This takes the same arguments as
+your usual C compiler and performs both functions.
+
+First it calls the C compiler and passes on all of the command line arguments.
+The real C compiler is specified by the CXREFCC environment variable, or the CC
+environment variable or it will use gcc if neither of these are set.
+
+Second the arguments that cxref needs to have are extracted from the arguments
+that the C compiler had and cxref is called.  The arguments that are kept are
+the -D*, -U*, -I* arguments to specify #defines and #include paths, and the file
+name of the source file itself.  Any other arguments are taken from the .cxref
+file (<a href="#Q-3.8">See Q 3.8</a>).
+
+After doing this it will still be necessary to sort out the header files since
+these are not cross-referenced using this method.
+</pre>
+<h3><a name="Q-3.8">Q 3.8   What use is the .cxref configuration file?</a></h3>
+<pre>
+The most obvious use is if you have a lot of command line options that you don't
+want to have to enter every time that you run the program.
+
+However the .cxref file is most useful when you have a multiple directory source
+tree (See&lt; Q 3.1), or when you are using an existing Makefile to build
+documentation.
+
+When there are various subdirectories containing source code, a .cxref file in
+each sub-directory can be used just containing the line '-R..' or whatever is
+appropriate to point cxref to the root of the source tree.  This means that
+there is no need to keep track of which directory you are in, they all will use
+the correct directory to work from.
+
+If you already have a Makefile that goes through all of the source code then you
+may want to modify it so that it calls cxref instead of calling the C compiler.
+This means that there is no room to put the extra arguments to cxref on the
+command line.  A .cxref file can contain the command line arguments so that you
+only need to need the arguments that are already there for the C compiler
+(<a href="#Q-3.7">See Q 3.7</a>).
+</pre>
+<hr>
+<h2><a name="Section-4">Section 4 - More information about cxref</a></h2>
+<h3><a name="Q-4.1">Q 4.1   Who wrote cxref, When and Why?</a></h3>
+<pre>
+The cxref program was written by Andrew M. Bishop (amb@gedanken.demon.co.uk) in
+1995,96,97,98,99 and maintained since then.
+
+There is a cxref home-page on the World Wide Web, available via the author's
+home-page at <a href="http://www.gedanken.demon.co.uk/">http://www.gedanken.demon.co.uk/</a> .  This is kept updated with news
+about the program, as new versions become available.
+
+An earlier program by the same author using basically the same comment
+convention was written in Emacs Lisp in 1994.  This version was slow, the amount
+of cross referencing was poor and the output was only in troff format.  The
+current C program was written to replace this but has grown to become much
+better in the cross referencing that is done and the format of the output has
+increased greatly.
+
+The cxref program can be freely distributed according to the terms of the GNU
+General Public License (see the file `COPYING').
+</pre>
+<h3><a name="Q-4.2">Q 4.2   How do I report bugs in cxref?</a></h3>
+<pre>
+By e-mail, send them to me at amb@gedanken.demon.co.uk and put cxref somewhere
+in the subject line.  You can also report bugs or provide comments via the
+feedback form on the cxref home-page on the World Wide Web accessible via
+<a href="http://www.gedanken.demon.co.uk/">http://www.gedanken.demon.co.uk/</a> .
+
+Before doing this, you should check the FAQ and the cxref web-page to see if the
+answer is there.  If it is not, and it is a parse error then check that it is a
+cxref problem and not a syntax error in the source file.
+When you are sure that it is a cxref bug, give me as much information as you
+can, about the error, when it happens, what system you are using etc.  It is
+useful if you can provide a small example and the output of using the '-raw'
+option to provide the actual output that you are seeing.  (If it is an HTML or
+LaTeX specific problem then send that file instead.)
+</pre>
+<hr>
+</BODY>
+
+</HTML>

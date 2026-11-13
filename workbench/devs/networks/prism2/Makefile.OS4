@@ -1,0 +1,42 @@
+CFLAGS = -O3 -Wall -Wno-uninitialized -Wno-parentheses -D__USE_INLINE__\
+ -D__USE_BASETYPE__ -D__NOLIBBASE__ -D__NOGLOBALIFACE__
+CC = gcc $(CFLAGS)
+MAKEFILE = Makefile.OS4
+#LINKER = ld -e Main -s -lauto
+LINKER = gcc -nostdlib
+AMIGA_LIB = -lamiga
+#C_LIB = -lauto
+
+DEV_NAME = prism2.device
+OBJS = os4_device.o device.o unit.o encryption.o request.o pci.o\
+ expansion.o pccard.o timer.o
+HDRS = device.h wireless.h io.h
+
+all: $(DEV_NAME)
+
+.c.o :
+	$(CC) -c $<
+
+$(DEV_NAME): $(MAKEFILE) startup.o $(OBJS)
+	$(LINKER) startup.o $(OBJS) $(AMIGA_LIB) $(C_LIB) -o $(DEV_NAME)
+	strip $(DEV_NAME)
+	Protect "$(DEV_NAME)" "-e"
+
+$(OBJS): $(MAKEFILE) $(HDRS)
+
+unit.o: prism2.h
+pci.o expansion.o: pci.h
+
+install: all
+	Copy "$(DEV_NAME)" "DEVS:networks/" CLONE
+	Avail FLUSH >NIL:
+
+test: all
+	NetShutdown
+	Copy "$(DEV_NAME)" "DEVS:networks/" CLONE
+	Avail FLUSH >NIL:
+	AddNetInterface prism2
+
+clean:
+	Delete "$(DEV_NAME)" "#?.o"
+

@@ -1,0 +1,15 @@
+
+# A general catch-all target. You can use this if everything compiles on your
+# machine, and you want to save yourself some typing.
+#MM- workbench-gadgets-complete : \
+#MM	    workbench-gadgets-aroscheckbox \
+#MM	    workbench-gadgets-aroslist \
+#MM	    workbench-gadgets-aroslistview \
+#MM	    workbench-gadgets-arosmutualexclude \
+#MM	    workbench-gadgets-aroscycle \
+#MM	    workbench-gadgets-arospalette \
+#MM         workbench-gadgets-colorwheel \
+#MM	    workbench-gadgets-gradientslider 
+
+#MM- includes-generate : \
+#MM      workbench-gadgets-colorwheel-includes

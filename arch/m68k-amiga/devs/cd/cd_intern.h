@@ -1,0 +1,52 @@
+/*
+ * Copyright (C) 2013, The AROS Development Team
+ * All right reserved.
+ * Author: Jason S. McMullan <jason.mcmullan@gmail.com>
+ *
+ * Licensed under the AROS PUBLIC LICENSE (APL) Version 1.1
+ */
+
+#ifndef CD_INTERN_H
+#define CD_INTERN_H
+
+#include <exec/devices.h>
+#include <exec/io.h>
+#include <exec/semaphores.h>
+
+#include <devices/timer.h>
+
+#include <dos/filehandler.h>
+
+#include LC_LIBDEFS_FILE
+
+struct cdBase {
+    struct Device cb_Device;
+    struct List cb_Units;
+    struct SignalSemaphore cb_UnitsLock;
+    ULONG       cb_MaxUnit;
+
+    struct MsgPort  cb_TimerPort;
+    struct timerequest cb_TimerRequest;
+};
+
+struct cdUnitOps {
+    CONST_STRPTR  uo_Name;
+    LONG        (*uo_DoIO)(struct IOStdReq *io, APTR priv);
+    BOOL        (*uo_CanQuick)(const struct IOStdReq *io, APTR priv);
+    struct IOStdReq *(*uo_Service)(APTR priv); /* optional asynchronous I/O */
+    ULONG         uo_SignalMask;
+    VOID        (*uo_Expunge)(APTR priv);
+    VOID        (*uo_Init)(APTR priv);  /* optional; runs on the unit task
+                                         * before any I/O is served */
+};
+
+/* uo_DoIO() result used when the backend retains the request and will return
+ * it from uo_Service() after the hardware operation has really completed. */
+#define CDIO_PENDING ((LONG)(1UL << 31))
+
+LONG cdAddUnit(LIBBASETYPE *cb, const struct cdUnitOps *ops, APTR priv, const struct DosEnvec *de);
+VOID cdDelayMS(LIBBASETYPE *cb, ULONG timeout_ms);
+
+#define IOF_ABORT       (1 << 7)
+
+#endif /* CD_INTERN_H */

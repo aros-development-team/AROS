@@ -1,0 +1,114 @@
+
+# Copyright (C) 2026, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+
+%get_archincludes modname=dos \
+    includeflag=TARGET_DOS_INCLUDES maindir=$(CURDIR)
+
+REPODIR      ?= $(SRCDIR)
+REPOTYPE     := $(shell $(SRCDIR)/scripts/repo_type.sh $(REPODIR))
+REPOREVISION := $(shell $(SRCDIR)/scripts/repo_rev.sh $(REPODIR))
+REPOID       := $(shell $(SRCDIR)/scripts/repo_id.sh $(REPODIR))
+
+# dos_platform.h can be overridden in an arch-specific directory: the arch
+# includes come first, then this directory for the generic fallback.
+USER_INCLUDES := $(TARGET_DOS_INCLUDES) -I$(SRCDIR)/$(CURDIR) -I$(GENDIR)/$(CURDIR)/dos
+DOS_CPPFLAGS := \
+               -DUSE_EXEC_DEBUG \
+	       -D__DOS_NOLIBBASE__ \
+	       -DISODATE="\"$(shell date '+%Y-%m-%d')\""
+ifneq ($(REPOTYPE),)
+    DOS_CPPFLAGS  += -DREPOTYPE=\"$(REPOTYPE)\" -DREPOREVISION=\"$(REPOREVISION)\" -DREPOID=\"$(REPOID)\"
+endif
+USER_LDFLAGS := -static
+ifeq ($(AROS_TARGET_CPU),m68k)
+DOS_CPPFLAGS   += -D__DOS_NOLIBINLINE__ 
+endif
+# The amiga-m68k ROM link defines SysBase as the absolute address 4. Tell
+# the assembler as well, so that the module's objects reach it with a short
+# absolute reference instead of a relocated 32-bit one. dos_CFLAGS is only
+# used for the module's own objects, not for the link libraries built here.
+ifeq ($(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU),amiga-m68k)
+dos_CFLAGS     += -Wa,--defsym,SysBase=4
+endif
+ifneq ($(ROM_OPTIMIZATION_CFLAGS),)
+OPTIMIZATION_CFLAGS := $(ROM_OPTIMIZATION_CFLAGS)
+endif
+
+DOS_CPPFLAGS += -DDOCACHECLEAR
+
+IMAGE_TYPES := aos elf
+
+FILES	  := bstr_helper errorlist \
+             boot bootconsole banner isbootable \
+	     match_misc newcliproc rootnode fs_driver \
+	     patternmatching internalseek internalflush \
+	     packethelper namefrom internalloadseg_support \
+	     shell_helper
+
+LOADSEG_FILES := internalloadseg \
+		 $(foreach img, $(IMAGE_TYPES), internalloadseg_$(img))
+
+FUNCTIONS := abortpkt addbuffers adddosentry addpart addsegment \
+	     allocdosobject assignadd assignaddtolist assignlate assignlock \
+	     assignpath attemptlockdoslist changemode checksignal \
+	     cli cliinit cliinitnewcli cliinitrun \
+	     close comparedates createdir createnewproc \
+	     createproc currentdir datestamp datetostr delay deletefile \
+	     deletevar deviceproc displayerror dopkt dosgetstring \
+	     duplock duplockfromfh endnotify errorreport \
+	     exall exallend examine examinefh execute exit exnext \
+	     fault fgetc fgets filepart findarg findcliproc finddosentry findsegment \
+	     findvar flush format fputc fputs fread freeargs freedeviceproc \
+	     freedosentry freedosobject fwrite getargstr getconsoletask \
+	     getcurrentdirname getdeviceproc getfilesystask getprogramdir \
+	     getprogramname getprompt getseglistinfo getvar info inhibit \
+	     input internalunloadseg ioerr isfilesystem \
+	     isinteractive loadseg lock lockdoslist lockrecord lockrecords \
+	     makedosentry makelink matchend matchfirst matchnext matchpattern \
+	     matchpatternnocase maxcli namefromfh namefromlock newloadseg nextdosentry nil \
+	     open openfromlock output parentdir parentoffh parsepattern \
+	     parsepatternnocase pathpart printfault putstr read readargs \
+	     readitem relabel readlink remassignlist remdosentry remsegment rename \
+	     replypkt runcommand samedevice samelock scanvars seek \
+	     selectinput selectoutput sendpkt setargstr setcomment setconsoletask \
+	     setcurrentdirname setfiledate setfilesize setfilesystask \
+	     setioerr setmode setowner setprogramdir setprogramname \
+	     setprompt setprotection setvar setvbuf splitname startnotify \
+	     strtodate strtolong systemtaglist ungetc unloadseg unlock \
+	     unlockdoslist unlockrecord unlockrecords vfprintf vfwritef \
+	     vprintf waitforchar waitpkt write writechars runhandler
+
+#MM kernel-dos-linklib : workbench-libs-dos-catalogs
+# dos.library calls security.library (setuid executables, per-user assigns):
+# its objects need security.library's current includes
+#MM kernel-dos-kobj : workbench-libs-dos-catalogs kernel-security-includes
+#MM kernel-dos : workbench-libs-dos-catalogs kernel-security-includes
+
+#MM kernel-dos-includes : \
+#MM     kernel-utility-includes \
+#MM     kernel-exec-includes \
+#MM     kernel-timer-includes \
+#MM     kernel-intuition-includes \
+#MM     kernel-m68kemu-library-includes
+
+#MM- core-linklibs : linklibs-dos
+
+DOS_CPPFLAGS += -DAROS_CPU="\"$(AROS_TARGET_CPU)\""
+USER_CPPFLAGS := $(DOS_CPPFLAGS)
+#USER_CPPFLAGS += -DDEBUG=1
+
+%build_module mmake=kernel-dos \
+  modname=dos modtype=library \
+  files="dos_init $(FUNCTIONS) $(FILES) $(LOADSEG_FILES)" uselibs="romhack"
+
+$(GENDIR)/$(CURDIR)/dos/errorlist.d : $(GENDIR)/$(CURDIR)/dos/errorlist.h
+
+$(GENDIR)/$(CURDIR)/dos/errorlist.h : $(SRCDIR)/$(CURDIR)/catalogs/dos.cd $(SRCDIR)/$(CURDIR)/genstrings.py
+	@$(ECHO) Generating $@...
+	@$(PYTHON) $(SRCDIR)/$(CURDIR)/genstrings.py $< > $@
+
+%build_linklib mmake=linklibs-loadseg libname=loadseg files="$(LOADSEG_FILES)" objdir=$(OBJDIR)/loadseg libdir=$(GENDIR)/lib
+
+%common

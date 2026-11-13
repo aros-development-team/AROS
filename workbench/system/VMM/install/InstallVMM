@@ -1,0 +1,727 @@
+; VMM Installer script by Martin Apel
+; Installation script for VMM 3.3a
+
+(set @app-name "VMM")
+
+; English is the default language 
+    (set #Welcome
+     (cat "        Welcome to the VMM installation\n\n"
+          "       Virtual Memory for Amigas with MMU\n\n"
+          "        Copyright 1993-95 by Martin Apel\n\n"
+          "Novice   installs everything except the developer files.\n"
+          "Advanced installs everything without confirmation.\n"
+          "Expert   installs everything with confirmation of all actions.\n")
+     )
+    (set #WhatInstall "What do you want to install ?")
+    (set #VMM "VMM")
+    (set #Icons "Icons")
+    (set #Docs "Documents")
+    (set #Devel "Developer files")
+    (set #Tools "Tools")
+    (set #Rexx "Rexx scripts")
+    (set #DefHelp "\n\nIf you need more help, please refer to \"VMM.guide\"\n\n")
+    (set #Dest "Select the directory where you want to put the VMM executable (and tools).")
+    (set #DestHelp (cat "This should be a directory where you can easily access VMM "
+                     "via Workbench or CLI/Shell."))
+    (set #AlreadyInstalled1 "\nYou have VMM ")
+    (set #AlreadyInstalled2 (cat " already installed"
+                                 ".\nDo you wish to overwrite it with VMM "))
+    (set #AlreadyInstalled3 "?\n")
+    (set #Yes "Yes")
+    (set #No  "No")
+    (set #InternalError "Internal error in Installer script")
+    (set #Page4KUsable "A pagesize of 4K is usable on your system")
+    (set #Page8KUsable "A pagesize of 8K is usable on your system")
+    (set #PageBoth "Either pages of 4K or 8K are usable on your system")
+    (set #SelectPagesize "\nPlease select the pagesize:\n\n")
+    (set #Page4K "4K pagesize")
+    (set #Page8K "8K pagesize")
+    (set #SelectGUI "Choose the VMM user interface library to use")
+    (set #CopyingVMM "\nCopying VMM to %s.")
+    (set #CopyingCat "\nCopying VMM.catalog to LOCALE:catalogs/english.")
+    (set #CopyingHandler "\nCopying VMM-Handler to l:.")
+    (set #CopyingHandlerCat "\nCopying VMM-Handler.catalog to LOCALE:catalogs/english.")
+    (set #OverwritePrefs "\nYou have a preferences file already installed.\nDo you wish to overwrite it ?\n\n")
+    (set #OverwritePrefsHelp "If you don't overwrite the prefs file it will be converted in the next step")
+    (set #CopyingPrefs1 "\nCopying VMM.prefs to env:\n")
+    (set #CopyingPrefs2 "\nCopying VMM.prefs to envarc:\n")
+    (set #ConvertPrefs "The preferences file format has changed since V2.1\nDo you want to have it converted?")
+    (set #DocDir "Select the directory where you want to put\nthe documents and guides.")
+    (set #DocDirHelp "This should be the directory where you normally put your guides.\n\n")
+    (set #CopyingDocs "\nCopying docs...")
+    (set #CopyingGuide "\nCopying VMM.guide to ")
+    (set #CopyingLibrary "\nCopying VMM.library to libs:.")
+    (set #SelectFDDir "Select the directory where you want to put the fd file.")
+    (set #SelectIncludeDir "Select the directory where you want to put the include file.")
+    (set #SelectLibDir "Select the directory where you want to put the lib file.")
+    (set #CopyingFD "\nCopying VMM_lib.fd to ")
+    (set #CopyingInclude "\nCopying VMM_stat.h to ")
+    (set #CopyingLib "\nCopying VMM_lib.lib to ")
+    (set #CopyingTools "\nCopying tools to ")
+    (set #CopyingRexx "\nCopying ARexx scripts to REXX:")
+    (set CopyCatalogs 0)
+
+    (set DocSrcDir "/doc/english")
+
+(if (= @language "deutsch") ; then
+  (
+    (set #Welcome
+     (cat 
+"        Willkommen zur Installation von VMM"
+         "       Virtueller Speicher für Amigas mit MMU\n\n"
+         "        Copyright 1993-95 Martin Apel\n\n"
+         "Novice   installiert alles außer den Entwicklerdateien.\n"
+         "Advanced installiert alles ohne Bestätigung.\n"
+         "Expert   installiert alles mit Bestätigung jeder Aktion.\n")
+     )
+    (set #WhatInstall "Was wollen Sie installieren ?")
+    (set #VMM "VMM")
+    (set #Icons "Icons")
+    (set #Docs "Dokumente")
+    (set #Devel "Entwicklerdateien")
+    (set #Tools "Zusatzprogramme")
+    (set #Rexx "Rexx Skripte")
+    (set #DefHelp "\n\nWenn Sie mehr Hilfe benötigen, sehen Sie in \"VMM.guide\"\n\n")
+    (set #Dest "Wählen Sie das Verzeichnis für VMM (und Zusatzprogramme) aus.")
+    (set #DestHelp (cat "Dies sollte ein Verzeichnis sein, in dem Sie VMM einfach von "
+                     "der Workbench oder der Shell aus starten können."))
+    (set #AlreadyInstalled1 "\nSie haben VMM ")
+    (set #AlreadyInstalled2 ".\nWollen Sie es mit VMM ")
+    (set #AlreadyInstalled3 " überschreiben ?\n")
+
+    (set #Yes "Ja")
+    (set #No  "Nein")
+    (set #InternalError "Interner Fehler im Installer script")
+    (set #Page4KUsable "Eine Seitengröße von 4K ist auf Ihrem System möglich")
+    (set #Page8KUsable "Eine Seitengröße von 8K ist auf Ihrem System möglich")
+    (set #PageBoth "Sowohl 4K als auch 8K-Seiten sind auf Ihrem System möglich")
+    (set #SelectPagesize "\nWählen Sie die Seitengröße:\n\n")
+    (set #Page4K "4K Seiten")
+    (set #Page8K "8K Seiten")
+    (set #SelectGUI "Wählen Sie die Bibliothek für das VMM-Benutzerinterface")
+    (set #CopyingVMM "\nKopiere VMM nach %s.")
+    (set #CopyingCat "\nKopiere VMM.catalog nach LOCALE:catalogs/deutsch.")
+    (set #CopyingHandler "\nKopiere VMM-Handler nach L:.")
+    (set #CopyingHandlerCat "\nKopiere VMM-Handler.catalog nach LOCALE:catalogs/deutsch.")
+    (set #OverwritePrefs "\nSie haben schon eine Einstellungsdatei für VMM installiert.\nWollen Sie sie überschreiben ?\n\n")
+    (set #OverwritePrefsHelp "Wenn Sie die Einstellungsdatei nicht überschreiben lassen, so können Sie sie im nächsten Schritt konvertieren lassen")
+    (set #CopyingPrefs1 "\nKopiere VMM.prefs nach env:\n")
+    (set #CopyingPrefs2 "\nKopiere VMM.prefs nach envarc:\n")
+    (set #ConvertPrefs "Das Format der Einstellungsdatei hat sich seit V2.1 geändert\nWollen Sie, daß es konvertiert wird ?")
+    (set #DocDir "Wählen Sie das Verzeichnis für die Dokumentation aus\n.")
+    (set #DocDirHelp "Dies sollte das Verzeichnis sein, in dem Sie normalerweise Ihre Dokumentation aufbewahren.\n\n")
+    (set #CopyingDocs "\nKopiere Dokumentation")
+    (set #CopyingGuide "\nKopiere VMM.guide nach ")
+    (set #CopyingLibrary "\nKopiere VMM.library nach LIBS:.")
+    (set #SelectFDDir "Wählen Sie das Verzeichnis für die FD-Datei aus.")
+    (set #SelectIncludeDir "Wählen Sie das Verzeichnis für die Include-Datei aus.")
+    (set #SelectLibDir "Wählen Sie das Verzeichnis für die Lib-Datei aus.")
+    (set #CopyingFD "\nKopiere VMM_lib.fd nach ")
+    (set #CopyingInclude "\nKopiere VMM_stat.h nach ")
+    (set #CopyingLib "\nKopiere VMM_lib.lib nach ")
+    (set #CopyingTools "\nKopiere Zusatzprogramme nach")
+    (set #CopyingRexx "\nKopiere ARexx Skripte nach REXX:")
+
+    (set DocSrcDir "/doc/deutsch")
+    (set CopyCatalogs 1)
+  )
+)
+
+(if (= @language "dansk") ; then
+  (
+    (set #Welcome
+     (cat "        Velkommen til VMM installationen\n\n"
+         "       Virtuel Hukommelse for Amigaer med MMU\n\n"
+         "        Copyright 1993-95 af Martin Apel\n\n"
+         "Novice   installerer alt pånær udviklerfilerne.\n"
+         "Advanced installerer alt uden bekræftelse.\n"
+         "Expert   installerer alt med bekræftelse af alle\n"
+         "         handlinger.\n")
+     )
+    (set #WhatInstall "Hvad ønsker du at installere ?")
+    (set #VMM "VMM")
+    (set #Icons "Ikoner")
+    (set #Docs "Dokumenter")
+    (set #Devel "Udviklerfiler")
+    (set #Tools "Værktøjer")
+    (set #Rexx "Rexx programmer")
+    (set #DefHelp "\n\nDu kan finde mere hjælp i \"VMM.guide\"\n\n")
+    (set #Dest "Vælg det katalog som du ønsker at installere VMM programfil og værktøjer i.")
+    (set #DestHelp (cat "Dette bør være et katalog som er nemt tilgængeligt enten"
+                     "fra Workbench eller CLI/Shell."))
+    (set #AlreadyInstalled1 "\nDu har allerede VMM ")
+    (set #AlreadyInstalled2 " installeret.\nØnsker du at overskrive den med VMM ")
+    (set #AlreadyInstalled3 " ?\n")
+
+    (set #Yes "Ja")
+    (set #No  "Nej")
+    (set #InternalError "Intern fejl i Installer script")
+    (set #Page4KUsable "En sidestørrelse på 4K er brugbart på dit system")
+    (set #Page8KUsable "En sidestørrelse på 8K er brugbart på dit system")
+    (set #PageBoth "Sidestørrelser på enten 4K eller 8K er brugbare på dit system")
+    (set #SelectPagesize "\nVælg venligst sidestørrelsen:\n\n")
+    (set #Page4K "4K sidestørrelse")
+    (set #Page8K "8K sidestørrelse")
+    (set #SelectGUI "Choose the VMM user interface library to use")
+    (set #CopyingVMM "\nKopierer VMM til %s.")
+    (set #CopyingCat "\nKopierer VMM.catalog til LOCALE:catalogs/dansk.")
+    (set #CopyingHandler "\nKopierer VMM-Handler til l:.")
+    (set #CopyingHandlerCat "\nKopierer VMM-Handler.catalog til LOCALE:catalogs/dansk.")
+    (set #OverwritePrefs "\nDu har allerede en præferencefil installeret.\nØnsker du at overskrive den ?\n\n")
+    (set #OverwritePrefsHelp "Hvis du ikke ønsker at overskrive præferencefilen vil den blive konverteret i det næste trin")
+    (set #CopyingPrefs1 "\nKopierer VMM.prefs til ENV:\n")
+    (set #CopyingPrefs2 "\nKopierer VMM.prefs til ENVARC:\n")
+    (set #ConvertPrefs "Præferencefilformatet er blevet ændret siden V2.1\nØnsker du at få filen konverteret?")
+    (set #DocDir "Vælg det katalog hvori du ønsker at installere\ndokumenter og guides.")
+    (set #DocDirHelp "Dette bør være det katalog hvori du normalt installerer guides.\n\n")
+    (set #CopyingDocs "\nKopierer dokumenter...")
+    (set #CopyingGuide "\nKopierer VMM.guide til ")
+    (set #CopyingLibrary "\nKopierer VMM.library til libs:.")
+    (set #SelectFDDir "Vælg katalog til fd fil.")
+    (set #SelectIncludeDir "Vælg katalog til include filer.")
+    (set #SelectLibDir "Vælg kataloger til lib fil.")
+    (set #CopyingFD "\nKopierer VMM_lib.fd til ")
+    (set #CopyingInclude "\nKopierer VMM_stat.h til ")
+    (set #CopyingLib "\nKopierer VMM_lib.lib til ")
+    (set #CopyingTools "\nKopierer værktøjer til ")
+    (set #CopyingRexx "\nKopierer ARexx scripts til REXX:")
+    (set CopyCatalogs 1)
+  )
+)
+
+(if (= @language "español") ; then
+  (
+    (set #Welcome
+     (cat "      Bienvenido a la instalación de VMM\n\n"
+         "      Memoria Virtual para Amigas con MMU\n\n"
+         "        Copyright 1993-95 de Martin Apel\n"
+         "        Traducción española de Dimas Caparrós\n"
+         "        dimas@maze.mazanet.es ó 2:343/119.76\n\n"
+         "Novazto  instala todo escepto los ficheros de desarrolladores.\n"
+         "Avanzado instala todo sin confirmación.\n"
+         "Experto  instala todo con confirmación para todo.\n")
+     )
+    (set #WhatInstall "¿Qué quiere instalar?")
+    (set #VMM "VMM")
+    (set #Icons "Iconoss")
+    (set #Docs "Documentos")
+    (set #Devel "Fichero de Desarrolladores")
+    (set #Tools "Herramientas")
+    (set #Rexx "ARexx scripts")
+    (set #DefHelp "\n\nSi necesita más ayuda, mire en el manual \"VMM.guide\"\n\n")
+    (set #Dest "Seleccione el directorio donde quiere poner el ejecutable de VMM (y las herramientas).")
+    (set #DestHelp (cat "Debe ser un directorio donde pueda acceder fácilmente a VMM"
+                     "desde el Workbench o el CLI/Shell."))
+    (set #AlreadyInstalled1 "\nTiene VMM ")
+    (set #AlreadyInstalled2 " ya instalado.\n¿Quiere borrarlo por VMM ")
+    (set #AlreadyInstalled3 " ?\n")
+
+    (set #Yes "Si")
+    (set #No  "No")
+    (set #InternalError "Error interno en el Script de instalación")
+    (set #Page4KUsable "Un tamaño de página de 4K se puede usar en su sistema")
+    (set #Page8KUsable "Un tamaño de página de 8K se puede usar en su sistema")
+    (set #PageBoth "Se puede usar un tamaño de página de 4K u 8K en su sistema")
+    (set #SelectPagesize "\nElija un tamaño de página:\n\n")
+    (set #Page4K "4K página")
+    (set #Page8K "8K página")
+    (set #SelectGUI "Choose the VMM user interface library to use")
+    (set #CopyingVMM "\nCopiando VMM a %s.")
+    (set #CopyingCat "\nCopiando VMM.catalog a LOCALE:catalogs/español.")
+    (set #CopyingHandler "\nCopiando VMM-Handler a l:.")
+    (set #CopyingHandlerCat "\nCopiando VMM-Handler.catalog a LOCALE:catalogs/español.")
+    (set #OverwritePrefs "\nYa tenia grabadas unas preferencias.\n¿Quiere reescribirlas?\n\n")
+    (set #OverwritePrefsHelp "Si no las sobreescribe serán convertidas en el próximo paso.")
+    (set #CopyingPrefs1 "\nCopiando VMM.prefs a env:\n")
+    (set #CopyingPrefs2 "\nCopiando VMM.prefs a envarc:\n")
+    (set #ConvertPrefs "El formato de las preferencias ha cambiado desde la versión V2.1\n¿Quiere convertirlas al nuevo formato?")
+    (set #DocDir "Seleccione el directorio donde quiere poner\nlos manuales y las guías.")
+    (set #DocDirHelp "Debería ser un directorio donde pone normalmente las guías.\n\n")
+    (set #CopyingDocs "\nCopiando manuales...")
+    (set #CopyingGuide "\nCopiando VMM.guide a ")
+    (set #CopyingLibrary "\nCopiando VMM.library a libs:.")
+    (set #SelectFDDir "Elija el directorio donde quiere poner el fichero fd.")
+    (set #SelectIncludeDir "Elija el directorio donde quiere poner los 'includes'.")
+    (set #SelectLibDir "Elija el directorio donde quiere poner el fichero 'lib'.")
+    (set #CopyingFD "\nCopiando VMM_lib.fd a ")
+    (set #CopyingInclude "\nCopiando VMM_stat.h a ")
+    (set #CopyingLib "\nCopiando VMM_lib.lib a ")
+    (set #CopyingTools "\nCopiando herramientas a ")
+    (set #CopyingRexx "\nCopiando scripts ARexx to REXX:")
+    (set CopyCatalogs 1)
+  )
+)
+
+(if (= @language "svenska") ; then
+  (
+    (set #Welcome
+     (cat "        Välkommen till VMM-installeraren\n\n"
+         "       Virtuellt minne för Amigor med MMU\n\n"
+         "        Upphovsrätt 1993-95 av Martin Apel\n\n"
+         "Nybörjare  installerar allt utom utvecklarfilerna.\n"
+         "Avancerad  installerar allt utan konfirmering.\n"
+         "Expert     installerar allt med konfirmering av allt.\n")
+     )
+    (set #WhatInstall "Vad vill du installera?")
+    (set #VMM "VMM")
+    (set #Icons "Symboler")
+    (set #Docs "Dokument")
+    (set #Devel "Utvecklarfiler")
+    (set #Tools "Verktyg")
+    (set #Rexx "Rexx-program")
+    (set #DefHelp "\n\nOm du behöver mer hjälp, var god se \"VMM.guide\"\n\n")
+    (set #Dest "Välj den låda där du vill placera VMM-programmet (och verktygen).")
+    (set #DestHelp (cat "Det här bör vara en låda där du lätt kan komma åt VMM "
+                     "via Workbench eller ett skal."))
+    (set #AlreadyInstalled1 "\nDu har redan VMM ")
+    (set #AlreadyInstalled2 " installerad.\nVill du skriva över den med VMM ")
+    (set #AlreadyInstalled3 " ?\n")
+    (set #Yes "Ja")
+    (set #No  "Nej")
+    (set #InternalError "Internt fel i installerar-programmet")
+    (set #Page4KUsable "En sidstorlek på 4K går att använda på ditt system")
+    (set #Page8KUsable "En sidstorlek på 4K går att använda på ditt system")
+    (set #PageBoth "Du kan ha antingen 4K eller 8K som sidstorlek på ditt system")
+    (set #SelectPagesize "\nVar god välj sidstorlek:\n\n")
+    (set #Page4K "4K")
+    (set #Page8K "8K")
+    (set #SelectGUI "Var god välj user interface biblioteket")
+    (set #CopyingVMM "\nKopierar VMM till %s.")
+    (set #CopyingCat "\nKopierar VMM.catalog till Locale:catalogs/svenska.")
+    (set #CopyingHandler "\nKopierar VMM-Handler till L:.")
+    (set #CopyingHandlerCat "\nKopierar VMM-Handler.catalog till Locale:catalogs/svenska.")
+    (set #OverwritePrefs "\nDu har redan en inställningsfil installerad.\nVill du skriva över den?\n\n")
+    (set #OverwritePrefsHelp "Om du inte skriver över inställningsfilen så kommer den att konverteras i nästa steg")
+    (set #CopyingPrefs1 "\nKopierar VMM.prefs till Env:\n")
+    (set #CopyingPrefs2 "\nKopierar VMM.prefs till EnvArc:\n")
+    (set #ConvertPrefs "Formatet på inställningsfilen har ändrats sedan V2.1\nVill du konvertera den?")
+    (set #DocDir "Välj den låda där du vill placera dokumenten och AmigaGuide-filerna.")
+    (set #DocDirHelp "Det här bör vara den låda där du normalt sett placerar dina AmigaGuide-filer.\n\n")
+    (set #CopyingDocs "\nKopierar dokumentationen...")
+    (set #CopyingGuide "\nKopierar VMM.guide till ")
+    (set #CopyingLibrary "\nKopierar VMM.library till Libs:.")
+    (set #SelectFDDir "Välj den låda där du vill placera fd-filen.")
+    (set #SelectIncludeDir "Välj den låda där du vill placera inkluderingsfilen.")
+    (set #SelectLibDir "Välj den låda där du vill placera lib-filen.")
+    (set #CopyingFD "\nKopierar VMM_lib.fd till ")
+    (set #CopyingInclude "\nKopierar VMM_stat.h till ")
+    (set #CopyingLib "\nKopierar VMM_lib.lib till ")
+    (set #CopyingTools "\nKopierar verktygen till ")
+    (set #CopyingRexx "\nKopierar ARexx-programmen till Rexx:")
+    (set CopyCatalogs 1)
+  )
+)
+
+
+(welcome #Welcome)
+
+(if (= 0 @user-level) ; then
+    (set install_level %000111)
+; else
+    (set install_level (askoptions (prompt #WhatInstall)
+                                   (help   @askoptions-help)
+                                   (choices #VMM #Icons #Docs #Devel #Tools #Rexx)))
+)
+
+(set def_help #DefHelp)
+
+(set my_level @user-level)
+(user 2)
+(set vmmdest
+    ;get destination directory for "VMM"
+     (askdir (prompt #Dest)
+             (help   #DestHelp def_help
+                     @askdir-help)
+             (default @default-dest)
+             (disk)
+     )
+)
+(user my_level)
+
+(set copy_vmm   (BITAND %000001 install_level))
+(set copy_icons (BITAND %000010 install_level))
+(set copy_docs  (BITAND %000100 install_level))
+(set copy_dev   (BITAND %001000 install_level))
+(set copy_tools (BITAND %010000 install_level))
+(set copy_rexx  (BITAND %100000 install_level))
+
+; Copy VMM files
+
+(if copy_vmm
+  (
+    (set @default-dest vmmdest)
+    (set vmmtacked (tackon vmmdest "VMM"))
+
+    ; ask, if we want to overwrite the old VMM if it exists
+    (set overwrite 1)
+    (if (exists "L:VMM-Handler")
+      (
+        (set old_version (getversion "l:VMM-Handler"))
+        (set old_ver (/ old_version 65536))
+        (set old_rev (- old_version (* old_ver 65536)))
+
+        (set new_version (getversion "/l/VMM-Handler_4K"))
+        (set new_ver (/ new_version 65536))
+        (set new_rev (- new_version (* new_ver 65536)))
+
+        (set overwrite (askbool (prompt #AlreadyInstalled1
+                                         old_ver "." old_rev #AlreadyInstalled2
+                                         new_ver "." new_rev #AlreadyInstalled3)
+                                (help def_help @askbool-help)
+                                (default 1)
+                                (choices #Yes #No))
+
+        )
+      )
+    )
+
+    (if overwrite
+        (
+           ; detect the pagesize (4K or 8K)
+           (set pagesize (run "/tools/ShowPageSize"))
+
+           (select pagesize
+             (abort #InternalError)
+             ((set info_string #Page4KUsable)
+              (set default_choice 0))
+             ((set info_string #Page8KUsable)
+              (set default_choice 1))
+             ((set info_string #PageBoth)
+              (set default_choice 0))
+           )
+
+           (set my_choice (askchoice (prompt #SelectPagesize
+                                           info_string ".\n")
+                                   (help   def_help @askchoice-help)
+                                   (choices #Page4K #Page8K)
+                                   (default default_choice))
+           )
+
+           (select my_choice
+            (set sizestr "4K")
+            (set sizestr "8K")
+           )
+
+           (set GUIChoice (askchoice (prompt #SelectGUI)
+                                   (help   def_help @askchoice-help)
+                                   (choices "MUI" "BGUI")
+                                   (default 0))
+           )
+
+           (select GUIChoice 
+            (set GUIName "/VMM_MUI")
+            (set GUIName "/VMM_BGUI")
+           )
+
+           ; copy the new VMM file to the destination directory
+           (if copy_icons
+              ; then
+                (copyfiles (prompt (#CopyingVMM vmmdest))
+                           (help   def_help @copyfiles-help)
+                           (optional "oknodelete")
+                           (optional "askuser")
+                           (source GUIName)
+                           (dest     vmmdest)
+                           (newname "VMM")
+                           (infos)
+                           (confirm)
+                )
+              ; else
+                (copyfiles (prompt (#CopyingVMM vmmdest))
+                           (help   def_help @copyfiles-help)
+                           (optional "oknodelete")
+                           (optional "askuser")
+                           (source GUIName)
+                           (dest     vmmdest)
+                           (newname "VMM")
+                           (confirm)
+                )
+           )
+
+(if CopyCatalogs    ; then
+           ; copy the catalog for VMM
+           ; not used in english version, because English is built in
+          (copyfiles (prompt #CopyingCat)
+                      (help   def_help @copyfiles-help)
+                      (optional "oknodelete")
+                      (optional "askuser")
+                      (source  (cat "/catalogs/" @language "/VMM.catalog"))
+                      (dest    (cat "LOCALE:catalogs/" @language))
+                      (confirm)
+          )
+)
+
+
+           ; copy the new VMM-Handler file to l: and rename it as "VMM-Handler"
+           (set handler_name (cat "/l/VMM-Handler_" sizestr))
+           (copyfiles (prompt #CopyingHandler)
+                      (help   def_help @copyfiles-help)
+                      (optional "oknodelete")
+                      (optional "askuser")
+                      (source  handler_name)
+                      (dest    "l:")
+                      (newname "VMM-Handler")
+                      (confirm)
+           )
+
+(if CopyCatalogs    ; then
+           ; copy the catalog for the VMM-handler
+           ; not used in english version, because English is built in
+          (copyfiles (prompt #CopyingHandlerCat)
+                      (help   def_help @copyfiles-help)
+                      (optional "oknodelete")
+                      (optional "askuser")
+                      (source  (cat "/catalogs/" @language "/VMM-Handler.catalog"))
+                      (dest    (cat "LOCALE:catalogs/" @language))
+                      (confirm)
+          )
+        )
+     )
+  )
+
+
+    ; ask, if we want to overwrite the old preferences file
+    ; default: do overwrite preferences file
+    (set overwrite 1)
+    (if (exists "envarc:VMM.prefs")
+        (if (= 0 (askbool (prompt #OverwritePrefs)
+                     (help #OverwritePrefsHelp @askbool-help)
+                     (default 0)
+                     (choices #Yes #No)))
+              (set overwrite 0)
+        )
+    )
+
+    (if overwrite
+      (
+        ; copy the new preferences file to env: and envarc:
+        (copyfiles (prompt (#CopyingPrefs1))
+                   (help   def_help @copyfiles-help)
+                   (optional "oknodelete")
+                   (optional "askuser")
+                   (source  "/env/VMM.prefs")
+                   (dest    "env:")
+                   (confirm)
+        )
+        (copyfiles (prompt (#CopyingPrefs2))
+                   (help   def_help @copyfiles-help)
+                   (optional "oknodelete")
+                   (optional "askuser")
+                   (source  "/env/VMM.prefs")
+                   (dest    "envarc:")
+                   (confirm)
+        )
+      )
+    ; else
+      (if (= 1 (askbool (prompt #ConvertPrefs
+                     (help def_help @askbool-help)
+                     (default 1)
+                     (choices #Yes #No))))
+        (run "/tools/ConvVMMCfg")
+      )
+    )
+  )
+)
+
+; Copy docs
+
+(if copy_docs
+    (
+      ;get destination directory for "VMM.guide"
+      (set doc_dir (tackon vmmdest "doc"))
+
+      (if (AND (= 0 @user-level) (NOT (exists doc_dir)))
+          ; then
+          (makedir doc_dir (infos))
+      )
+
+      (set vmmdocs
+           (askdir (prompt #DocDir)
+                   (help   #DocDirHelp def_help @askdir-help)
+                   (default doc_dir)
+                   (newpath)
+                   (disk)
+           )
+      )
+
+      (if copy_dev
+        (if copy_icons
+           ; then
+           (copyfiles (prompt (#CopyingDocs))
+                      (help   def_help @copyfiles-help)
+                      (optional "oknodelete")
+                      (optional "askuser")
+                      (source  DocSrcDir)
+                      (choices "VMM.guide" "VMM_Rexx.guide" "VMMTools.guide" "VMM_lib.doc")
+                      (dest    vmmdocs)
+                      (infos)
+                      (confirm)
+           )
+           ; else
+           (copyfiles (prompt (#CopyingDocs))
+                      (help   def_help @copyfiles-help)
+                      (optional "oknodelete")
+                      (optional "askuser")
+                      (source  DocSrcDir)
+                      (choices "VMM.guide" "VMM_Rexx.guide" "VMMTools.guide" "VMM_lib.doc")
+                      (dest    vmmdocs)
+                      (confirm)
+           )
+        )
+      ; else
+        (if copy_icons
+            ; then
+              (copyfiles (prompt (#CopyingGuide vmmdocs "."))
+                         (help   def_help @copyfiles-help)
+                         (optional "oknodelete")
+                         (optional "askuser")
+                         (source  DocSrcDir)
+                         (choices "VMM.guide" "VMM_Rexx.guide" "VMMTools.guide")
+                         (dest    vmmdocs)
+                         (infos)
+                         (confirm)
+              )
+            ; else
+              (copyfiles (prompt (#CopyingGuide vmmdocs "."))
+                         (help   def_help @copyfiles-help)
+                         (optional "oknodelete")
+                         (optional "askuser")
+                         (source  DocSrcDir)
+                         (choices "VMM.guide" "VMM_Rexx.guide" "VMMTools.guide")
+                         (dest    vmmdocs)
+                         (confirm)
+              )
+        )
+      )
+    )
+)
+
+; Copy developer files
+
+(if copy_dev
+    (
+      (copylib (prompt (#CopyingLibrary))
+               (help   def_help @copyfiles-help)
+               (optional "oknodelete")
+               (optional "askuser")
+               (source  "/Developer/libs/VMM.library")
+               (dest    "libs:")
+               (confirm)
+      )
+
+      (if (exists ("fd:") (noreq))
+          ; then
+            (set fd_dir "fd:")
+          ; else
+            (set fd_dir
+                 (askdir (prompt #SelectFDDir)
+                         (help   def_help  @askdir-help)
+                         (default "SYS:")
+                         (disk)
+                 )
+            )
+      )
+
+      (if (exists ("include:") (noreq))
+          ; then
+            (set inc_dir "include:")
+          ; else
+            (set inc_dir 
+                 (askdir (prompt #SelectIncludeDir)
+                         (help   def_help  @askdir-help)
+                         (default "SYS:")
+                         (disk)
+                 )
+            )
+      )
+
+      (if (exists ("lib:") (noreq))
+          ; then
+            (set lib_dir "lib:")
+          ; else
+            (set lib_dir
+                 (askdir (prompt #SelectLibDir)
+                         (help   def_help  @askdir-help)
+                         (default "SYS:")
+                         (disk)
+                 )
+            )
+      )
+
+
+      (copyfiles (prompt (#CopyingFD fd_dir "."))
+                 (help   def_help @copyfiles-help)
+                 (optional "oknodelete")
+                 (optional "askuser")
+                 (source  "/Developer/fd")
+                 (choices "VMM_lib.fd")
+                 (dest    fd_dir)
+                 (confirm)
+      )
+
+      (copyfiles (prompt (#CopyingInclude inc_dir "."))
+                 (help   def_help @copyfiles-help)
+                 (optional "oknodelete")
+                 (optional "askuser")
+                 (source  "/Developer/include")
+                 (choices "VMM_Stat.h")
+                 (dest    inc_dir)
+                 (confirm)
+      )
+
+      (copyfiles (prompt (#CopyingLib lib_dir "."))
+                 (help   def_help @copyfiles-help)
+                 (optional "oknodelete")
+                 (optional "askuser")
+                 (source  "/Developer/lib")
+                 (choices "VMM_lib.lib")
+                 (dest    lib_dir)
+                 (confirm)
+      )
+    )
+)
+
+; Copy tools
+
+(if copy_tools
+  (
+  if copy_icons
+    ; then
+      (copyfiles (prompt (#CopyingTools vmmdest "."))
+                 (help   def_help @copyfiles-help)
+                 (optional "oknodelete")
+                 (optional "askuser")
+                 (source  "/tools")
+                 (choices "VMMStat" "VMMUsage" "VMMUsageCLI")
+                 (dest    vmmdest)
+                 (infos)
+                 (confirm)
+      )
+    ; else
+      (copyfiles (prompt (#CopyingTools vmmdest "."))
+                 (help   def_help @copyfiles-help)
+                 (optional "oknodelete")
+                 (optional "askuser")
+                 (source  "/tools")
+                 (choices "VMMStat" "VMMUsage" "VMMUsageCLI")
+                 (dest    vmmdest)
+                 (confirm)
+      )
+  )
+)
+
+;
+
+; Copy ARexx scripts
+
+(if copy_rexx
+  (copyfiles (prompt (#CopyingRexx))
+             (help   def_help @copyfiles-help)
+             (optional "oknodelete")
+             (optional "askuser")
+             (source  "/rexx")
+             (choices "stat_on.vmm" "stat_off.vmm" "show.vmm" "hide.vmm")
+             (dest    "REXX:")
+             (confirm)
+  )
+)

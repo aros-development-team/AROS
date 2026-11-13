@@ -1,0 +1,413 @@
+/*
+    Copyright (C) 2026, The AROS Development Team. All rights reserved.
+    Author: Fabian Schmieder (@metaneutrons)
+
+    BCM2712 (Raspberry Pi 5) experimental platform support for AArch64.
+
+    The Raspberry Pi 5 uses the Broadcom BCM2712 SoC with quad Cortex-A76
+    cores and an ARM GIC-400 (GICv2) interrupt controller. Most I/O
+    peripherals reside behind the RP1 southbridge chip connected via PCIe.
+    The BCM2712 itself provides the core PL011 UART, GIC-400, and ARM
+    generic timer.
+*/
+
+#include <aros/kernel.h>
+#include <aros/symbolsets.h>
+
+#include "kernel_base.h"
+
+#include <proto/kernel.h>
+#include <proto/exec.h>
+
+#include <inttypes.h>
+#include <hardware/intbits.h>
+
+#include "kernel_intern.h"
+#include "kernel_debug.h"
+#include "kernel_cpu.h"
+#include "kernel_interrupts.h"
+#include "kernel_intr.h"
+#include "kernel_fb.h"
+#include "tls.h"
+#include "io.h"
+
+#include "exec_platform.h"
+
+/* SoC-common bits shared with Raspberry Pi platforms */
+#include "bcm27xx.h"
+#include "gic400.h"
+
+#define DTIMER(x)
+
+/* BCM2712 Peripheral Base and PL011 UART. PI5 use D0, Pi500 use C1 */
+#define BCM2712_PERIBASE        0x107C000000UL
+#define BCM2712_UART_BASE       0x1C00030000UL
+
+#define PL011_DR                0x00
+#define PL011_FR                0x18
+#define PL011_FR_TXFF           (1 << 5)
+#define PL011_FR_RXFE           (1 << 4)
+
+static inline void bcm2712_mmio_wr(unsigned long addr, uint32_t val)
+{
+    *(volatile uint32_t *)addr = val;
+}
+
+static inline uint32_t bcm2712_mmio_rd(unsigned long addr)
+{
+    return *(volatile uint32_t *)addr;
+}
+
+static void bcm2712_ser_putc(uint8_t chr)
+{
+    int timeout = 100000;
+    while (timeout-- > 0 && (bcm2712_mmio_rd(BCM2712_UART_BASE + PL011_FR) & PL011_FR_TXFF))
+        ;
+    if (chr == '\n')
+    {
+        bcm2712_mmio_wr(BCM2712_UART_BASE + PL011_DR, '\r');
+        timeout = 100000;
+        while (timeout-- > 0 && (bcm2712_mmio_rd(BCM2712_UART_BASE + PL011_FR) & PL011_FR_TXFF))
+            ;
+    }
+    bcm2712_mmio_wr(BCM2712_UART_BASE + PL011_DR, chr);
+}
+
+static int bcm2712_ser_getc(void)
+{
+    if (!(bcm2712_mmio_rd(BCM2712_UART_BASE + PL011_FR) & PL011_FR_RXFE))
+        return (int)bcm2712_mmio_rd(BCM2712_UART_BASE + PL011_DR);
+    return -1;
+}
+
+/* ---- GIC-400 (GICv2) ---- */
+/* From the DT: /soc/interrupt-controller@7fff9000, i.e. 0x10_0000_0000 +
+   0x7fff9000. */
+#define GICD_BASE   0x107FFF9000UL
+#define GICC_BASE   0x107FFFA000UL
+#define GICD(o)     (*(volatile uint32_t *)(GICD_BASE + (o)))
+#define GICC(o)     (*(volatile uint32_t *)(GICC_BASE + (o)))
+
+#define GICD_CTLR       0x000
+#define GICD_ISENABLER  0x100
+#define GICD_ICENABLER  0x180
+#define GICD_IPRIORITYR 0x400
+#define GICD_ITARGETSR  0x800
+#define GICD_ICFGR      0xC00
+
+#define GIC_FIRST_SPI   32
+/* INTIDs below this are SGIs (IPIs) */
+#define GIC_FIRST_PPI   16
+
+#define GICC_CTLR   0x000
+#define GICC_PMR    0x004
+#define GICC_IAR    0x00C
+#define GICC_EOIR   0x010
+
+#define GIC_SPURIOUS 1023
+
+/* ARM generic timer (EL1 physical, CNTP) -> scheduling heartbeat. PPI 30. */
+#define GENTIMER_PPI    30
+#define GENTIMER_HZ     50
+
+static uint64_t gentimer_interval;
+
+/* -------------------------- GIC-400 driver -------------------------- */
+
+static void bcm2712_irq_init(void)
+{
+    /* Distributor + CPU interface: mask everything, then enable, PMR open. */
+    GICD(GICD_CTLR) = 0;
+    GICC(GICC_CTLR) = 0;
+    GICC(GICC_PMR) = 0xF0;
+    GICD(GICD_CTLR) = 1;
+    GICC(GICC_CTLR) = 1;
+}
+
+/*
+ * MSIs are pulses where everything else on this SoC holds a level, so
+ * their SPIs - and only those - need edge triggering.  Which ones comes
+ * from the mip node's msi-ranges: <phandle type base flags count>, plus
+ * brcm,msi-offset - the SPIs raised start at base + offset. Each host
+ * bridge has its own block, so all three are consulted.
+ */
+#define MIP_MAX_RANGES  3
+
+static struct
+{
+    uint32_t    first;
+    uint32_t    count;
+} mip_ranges[MIP_MAX_RANGES];
+static int mip_nranges;
+static int mip_queried;
+
+static void bcm2712_msi_range_add(char *bridge)
+{
+    void *node;
+    void *prop;
+    uint32_t *cells;
+    uint32_t offset = 0;
+
+    if (mip_nranges >= MIP_MAX_RANGES)
+        return;
+
+    node = dt_find_node(bridge);
+    prop = node ? dt_find_property(node, "msi-parent") : NULL;
+    if (!prop || (dt_get_prop_len(prop) < 4))
+        return;
+
+    node = dt_find_node_by_phandle(AROS_BE2LONG(*(uint32_t *)dt_get_prop_value(prop)));
+    prop = node ? dt_find_property(node, "msi-ranges") : NULL;
+    if (!prop || (dt_get_prop_len(prop) < 20))
+        return;
+
+    cells = dt_get_prop_value(prop);
+
+    /* Only an edge triggered range is ours to reconfigure. */
+    if (AROS_BE2LONG(cells[3]) != 1)
+        return;
+
+    prop = dt_find_property(node, "brcm,msi-offset");
+    if (prop && (dt_get_prop_len(prop) >= 4))
+        offset = AROS_BE2LONG(*(uint32_t *)dt_get_prop_value(prop));
+
+    mip_ranges[mip_nranges].first = AROS_BE2LONG(cells[2]) + offset + GIC_FIRST_SPI;
+    mip_ranges[mip_nranges].count = AROS_BE2LONG(cells[4]);
+    mip_nranges++;
+}
+
+static void bcm2712_msi_range_query(void)
+{
+    mip_queried = 1;
+
+    bcm2712_msi_range_add("/axi/pcie@1000100000");
+    bcm2712_msi_range_add("/axi/pcie@1000110000");
+    bcm2712_msi_range_add("/axi/pcie@1000120000");
+}
+
+static int bcm2712_irq_is_msi(uint32_t irq)
+{
+    int i;
+
+    for (i = 0; i < mip_nranges; i++)
+    {
+        if ((irq >= mip_ranges[i].first) &&
+            (irq < mip_ranges[i].first + mip_ranges[i].count))
+            return 1;
+    }
+
+    return 0;
+}
+
+static void bcm2712_irq_enable(int irq)
+{
+    *((volatile uint8_t *)(GICD_BASE + GICD_IPRIORITYR + irq)) = 0xA0;
+
+    if (irq >= GIC_FIRST_SPI)
+    {
+        uint32_t cfg;
+
+        /* On first use: irq_init() runs before the device tree is up. */
+        if (!mip_queried)
+            bcm2712_msi_range_query();
+
+        *((volatile uint8_t *)(GICD_BASE + GICD_ITARGETSR + irq)) = 0x01;
+
+        cfg = GICD(GICD_ICFGR + 4 * (irq / 16));
+        if (bcm2712_irq_is_msi((uint32_t)irq))
+            cfg |= (2u << ((irq % 16) * 2));
+        else
+            cfg &= ~(2u << ((irq % 16) * 2));
+        GICD(GICD_ICFGR + 4 * (irq / 16)) = cfg;
+    }
+
+    GICD(GICD_ISENABLER + 4 * (irq / 32)) = 1u << (irq % 32);
+}
+
+static void bcm2712_irq_disable(int irq)
+{
+    GICD(GICD_ICENABLER + 4 * (irq / 32)) = 1u << (irq % 32);
+}
+
+static uint32_t irq_last = GIC_SPURIOUS;
+static unsigned int irq_repeats;
+static uint64_t irq_since;
+
+static void bcm2712_gentimer_tick(void);
+
+static void bcm2712_irq_process(void)
+{
+    for (;;)
+    {
+        uint32_t iar = GICC(GICC_IAR);
+        uint32_t intid = iar & 0x3FF;
+        uint64_t now, freq;
+
+        if (intid >= GIC_SPURIOUS)
+            break;
+
+        /* SGIs and the tick bypass krnRunIRQHandlers: the global
+         * KernelBase is still NULL while the secondaries already tick. */
+        if (intid < GIC_FIRST_PPI)
+            gic400_handle_ipi();
+        else if (intid == GENTIMER_PPI)
+            bcm2712_gentimer_tick();
+        else if (KernelBase)
+            krnRunIRQHandlers(KernelBase, intid);
+
+        GICC(GICC_EOIR) = iar;
+
+        /* Self-clearing, and the tick repeats by design; only SPIs (all on CPU 0) count */
+        if (intid < GIC_FIRST_PPI || intid == GENTIMER_PPI)
+            continue;
+
+        /* Mask a level-triggered source that its handler never clears */
+        asm volatile("mrs %0, cntpct_el0" : "=r"(now));
+        asm volatile("mrs %0, cntfrq_el0" : "=r"(freq));
+
+        /* Only a burst within 250ms counts, not a merely busy source */
+        if ((intid != irq_last) || (now - irq_since > freq / 4))
+        {
+            irq_last = intid;
+            irq_repeats = 0;
+            irq_since = now;
+        }
+        else if (++irq_repeats > 10000)
+        {
+            bcm2712_irq_disable(intid);
+            bug("[Kernel] IRQ %u not cleared by its handler, masked\n", intid);
+            irq_repeats = 0;
+            break;
+        }
+    }
+}
+
+/* --------------- ARM generic timer (CNTP) scheduler tick --------------- */
+
+static void bcm2712_gentimer_tick(void)
+{
+    /* Reload compare for next quantum */
+    __asm__ volatile("msr cntp_tval_el0, %0" :: "r"(gentimer_interval));
+
+#if defined(__AROSEXEC_SMP__)
+    /* PPI 30 is banked: each core expires its own quantum, VBlank stays on core 0 */
+    bcm27xx_sched_tick();
+
+    if (GetCPUNumber() != 0)
+        return;
+#endif
+
+    /* Cause scheduler quantum */
+    if (SysBase && (IDNESTCOUNT_GET < 0))
+        core_Cause(INTB_VERTB, 1L << INTB_VERTB);
+
+    /* Without this TaskTag_CPUUsage never advances */
+    core_TaskCPUUsage();
+}
+
+/* CNTP and its PPI are per core */
+static void bcm2712_init_timer_core(void)
+{
+    if (!gentimer_interval)
+    {
+        uint64_t freq;
+
+        __asm__ volatile("mrs %0, cntfrq_el0" : "=r"(freq));
+        gentimer_interval = freq / GENTIMER_HZ;
+    }
+
+    bcm2712_irq_enable(GENTIMER_PPI);
+
+    __asm__ volatile("msr cntp_tval_el0, %0" :: "r"(gentimer_interval));
+    __asm__ volatile("msr cntp_ctl_el0, %0" :: "r"((uint64_t)1));
+}
+
+static APTR bcm2712_init_gentimer(APTR _kernelBase)
+{
+    DTIMER(bug("[Kernel:BCM2712] %s\n", __func__));
+
+    bcm2712_init_timer_core();
+
+    /* No IntrNode: bcm2712_irq_process dispatches the tick directly */
+    return _kernelBase;
+}
+
+/* --------------------------- per-core setup --------------------------- */
+
+static void bcm2712_init_cpu(APTR _kernelBase, APTR _sysBase)
+{
+    struct ExecBase *SysBase = (struct ExecBase *)_sysBase;
+    struct KernelBase *KernelBase = (struct KernelBase *)_kernelBase;
+    (void)SysBase; (void)KernelBase;
+
+    /* Per-CPU TLS; PrepareExecBase only sets the boot core's */
+    SCHEDQUANTUM_SET(SCHEDQUANTUM_VALUE);
+    SCHEDELAPSED_SET(SCHEDQUANTUM_VALUE);
+
+    gic400_init_core();
+}
+
+/* ------------------------------- probe ------------------------------- */
+
+static IPTR bcm2712_probe(struct ARM_Implementation *krnARMImpl, struct TagItem *msg)
+{
+    void *bootPutC = NULL;
+    IPTR periibase = 0;
+    uint64_t midr;
+
+    while (msg->ti_Tag != TAG_DONE)
+    {
+        switch (msg->ti_Tag)
+        {
+        case KRN_FuncPutC:
+            bootPutC = (void *)msg->ti_Data;
+            break;
+        case KRN_PeripheralBase:
+            periibase = (IPTR)msg->ti_Data;
+            break;
+        }
+
+        msg++;
+    }
+
+    __asm__ volatile("mrs %0, midr_el1" : "=r"(midr));
+
+    /* Detect BCM2712 platform ID (0x2712) or Cortex-A76 core (MIDR part 0xD0B) */
+    if (krnARMImpl->ARMI_Platform != 0x2712 && ((midr >> 4) & 0xFFF) != 0xD0B)
+        return FALSE;
+
+    krnARMImpl->ARMI_Family = 8;
+    // TODO: Remove
+    krnARMImpl->ARMI_Platform = 0x2712;
+    krnARMImpl->ARMI_PeripheralBase = (APTR)(periibase ? periibase : BCM2712_PERIBASE);
+    krnARMImpl->ARMI_InitCore = &bcm2712_init_cpu;
+    krnARMImpl->ARMI_SendIPI = &gic400_send_ipi;
+
+    krnARMImpl->ARMI_GetTime = &bcm27xx_get_time;
+    krnARMImpl->ARMI_InitTimer = &bcm2712_init_gentimer;
+#if defined(__AROSEXEC_SMP__)
+    krnARMImpl->ARMI_InitTimerCore = &bcm2712_init_timer_core;
+#endif
+    krnARMImpl->ARMI_LED_Toggle = &bcm27xx_toggle_led;
+
+    krnARMImpl->ARMI_SerPutChar = &bcm2712_ser_putc;
+    krnARMImpl->ARMI_SerGetChar = &bcm2712_ser_getc;
+
+    if ((krnARMImpl->ARMI_PutChar = bootPutC) != NULL)
+    {
+        krnARMImpl->ARMI_PutChar(0xFF); /* Clear the display */
+    }
+
+    gic400_setbase(GICD_BASE, GICC_BASE);
+
+    krnARMImpl->ARMI_IRQInit = &bcm2712_irq_init;
+    krnARMImpl->ARMI_IRQEnable = &bcm2712_irq_enable;
+    krnARMImpl->ARMI_IRQDisable = &bcm2712_irq_disable;
+    krnARMImpl->ARMI_IRQProcess = &bcm2712_irq_process;
+
+    krnARMImpl->ARMI_Init = &bcm27xx_init;
+
+    return TRUE;
+}
+
+ADD2SET(bcm2712_probe, ARMPLATFORMS, 0);

@@ -1,0 +1,20 @@
+--- timer.h.orig	Wed Aug 30 16:13:01 1995
++++ timer.h	Sat Aug 10 15:53:59 1996
+@@ -22,10 +22,17 @@
+ 
+ #define TIMERNAME	"timer.device"
+ 
++#ifndef _SYS_TIME_H_
++/* Use whatever was included first, standard (sys/time.h) or Amiga
++ * includes (jch). */
+ struct timeval {
+     ULONG tv_secs;
+     ULONG tv_micro;
+ };
++#else
++#define tv_secs  tv_sec
++#define tv_micro tv_usec
++#endif
+ 
+ struct EClockVal {
+     ULONG ev_hi;

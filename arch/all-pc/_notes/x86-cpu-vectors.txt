@@ -1,0 +1,59 @@
+X86 CPU Vectors and Interrupt handling.
+
+This diagram shows the relationship between the CPU vectors (on the left, their use cases in AROS (middle) and
+where they are handled in the Kernel (right)
+
+"x86" Vectors
+
+0
+|  ---                                  ------------------------------------------------------------------------
+|   |                                                  | ExceptionsA        | KernelBase->kb_Exceptions[0..31]
+|   |  ----- x86 CPU Exceptions                        |                    |
+|   |                                                  |                    |
+|   |                                                  |                    |
+|  ---     -----                        ------------------------------------------------------------------------
+|           | |                                        | Device IRQs        | KernelBase->kb_Interrupts[0.. 213(*)]
+|           | |                                        | #0 - #213(*)       |
+|           | |                                        |                    |
+|           | |      -----  PIC interrupts             | #2 is directly     |
+|           | |                                        | connected to PIC   |
+|           | |                                        | and unusable by the|
+|           |---                                       | IO-APIC            |
+|           |                                          |                    |
+|           |                                          |                    |
+|           |        ----- IO-APIC interrupts          |                    |
+|           |                                          |                    |
+|           |                                          |                    |
+|          ---   ---                                   |                    |
+|                 |                                    |                    |
+|                 |                                    |                    |
+|                 |                                    |                    |
+|                 |  ----- APIC/"MSI" interrupts       |                    |
+|                 |                                    |                    |
+|                 |                                    |                    |
+|                 |                                    |                    |
+|                 |                                    |                    |
+|                 |                                    |                    |
+|                 |                                    |                    |
+|                 |                                    |                    |
+|                 |                                    |                    |
+|                 |                                    |                    |
+|                 |                                    |                    |
+|  ~~~           ~~~                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+|   |                                                  | ExceptionsB        | KernelBase->kb_Exceptions[32..41(*)]
+|   |                                                  |                    |
+|   | ------ System CPU Exceptions                     |                    |
+|   |                                                  |                    |
+|   |                                                  |                    |
+|  ---                                   ----------------------------------------------------------------------
+255
+
+* - May vary, depending on how many System CPU Exceptions are defined.
+
+Depending on the System, IRQs may be handled differently.
+# On machines where APIC is not available or disabled, only ExceptionsA, and the PIC interrupts will be Available/Used.
+# On ACPI machines with APIC, ExceptionsA & B will be used. If enough remaingin vectors are available, and MSI is not
+explicitly disabled by ACPI, then KrnAllocIRQ will allow allocating IRQTYPE_APIC IRQs.
+# If, on ACPI machines with APIC, an IOAPIC is available and enabled, the first 24 Device IRQs will be controlled/routed through it,
+otherwise the legacy PIC controller will be used.
+

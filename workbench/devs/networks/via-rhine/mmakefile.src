@@ -1,0 +1,24 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM- devs-networks-drivers-viarhine-i386 : networking-drivers-viarhine
+#MM- devs-networks-drivers-viarhine-x86_64 : networking-drivers-viarhine
+
+FILES := handler unit via-rhine
+
+CFLAGSNORMAL = $(CFLAGS) -DDEBUG=0
+CFLAGSDEBUG = $(CFLAGS) -DDEBUG=1
+USER_LDFLAGS := -static
+
+#MM- networking-drivers-viarhine : networking-drivers-viarhine-normal
+#MM- networking-drivers-viarhine : networking-drivers-viarhine-debug
+
+%build_module mmake=networking-drivers-viarhine-normal \
+    modname=viarhine modtype=device \
+    files="via-rhine_init $(FILES)" cflags=$(CFLAGSNORMAL) \
+    objdir=$(OBJDIR)/normal moduledir=Devs/Networks uselibs="hiddstubs"
+
+%build_module mmake=networking-drivers-viarhine-debug \
+    modname=viarhine_debug modtype=device \
+    files="via-rhine_init $(FILES)" conffile=viarhine.conf cflags=$(CFLAGSDEBUG) \
+    objdir=$(OBJDIR)/debug moduledir=Storage/Networks uselibs="hiddstubs"

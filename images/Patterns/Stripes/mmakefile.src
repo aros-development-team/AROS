@@ -1,0 +1,10 @@
+include $(SRCDIR)/config/aros.cfg
+
+FILES := \
+    Blue.iff \
+    Yellow.iff
+    
+%copy_files_q mmake=workbench-prefs-patterns files=$(FILES) \
+    dst=$(AROSDIR)/Prefs/Presets/Patterns/Stripes
+
+%common

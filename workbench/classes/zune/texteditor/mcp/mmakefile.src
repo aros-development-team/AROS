@@ -1,0 +1,56 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM workbench-classes-zune-texteditor-mcp : includes \
+#MM 					    linklibs \
+#MM					    workbench-classes-zune-texteditor-class \
+#MM					    workbench-classes-zune-texteditor-mcp-locale \
+#MM					    workbench-classes-zune-betterstring-class \
+#MM					    workbench-classes-zune-hotkeystring-class
+
+#MM- clean :  texteditor-mcp-clean
+
+# We need to use -idirafter, so that we
+# *don't* pick up the project's local MUI headers.
+USER_INCLUDES = -idirafter $(SRCDIR)/$(CURDIR)/../include -I$(TOP)/$(CURDIR)/ -I$(SRCDIR)/$(CURDIR)/../mcc
+USER_CPPFLAGS := -DAROS_ABI_V1
+USER_LDFLAGS := -static
+
+FILES := library \
+     locale \
+	 CreatePrefsGroup \
+	 Dispatcher \
+	 Keybindings \
+	 KeyStorage \
+	 icon \
+	 ObjectCreator \
+	 Debug
+	 
+%build_module_simple mmake=workbench-classes-zune-texteditor-mcp \
+  modname=TextEditor modtype=mcp \
+  files=$(FILES)
+
+
+#MM includes-copy
+
+INCLUDE_FILES := TextEditor_mcp.h
+%copy_includes path=mui
+
+
+TARGETDIR := $(AROS_CATALOGS)
+LANGUAGES := $(basename $(notdir $(call WILDCARD,$(SRCDIR)/$(CURDIR)/locale/*.po)))
+CATALOGS := $(addprefix $(TARGETDIR)/,$(addsuffix /TextEditor_mcp.catalog,$(LANGUAGES)))
+
+#MM
+workbench-classes-zune-texteditor-mcp-locale : locale.h locale.c $(CATALOGS)
+
+locale.h: locale.c
+locale.c: $(SRCDIR)/$(CURDIR)/locale/TextEditor_mcp.pot $(SRCDIR)/$(CURDIR)/C_h.sd $(SRCDIR)/$(CURDIR)/C_c.sd
+	$(FLEXCAT) $(SRCDIR)/$(CURDIR)/locale/TextEditor_mcp.pot locale.h=$(SRCDIR)/$(CURDIR)/C_h.sd locale.c=$(SRCDIR)/$(CURDIR)/C_c.sd
+
+$(TARGETDIR)/%/TextEditor_mcp.catalog: $(SRCDIR)/$(CURDIR)/locale/%.po
+	$(ECHO) "Building catalog $@"
+	$(MKDIR) $(dir $@)
+	$(FLEXCAT) POFILE $< CATALOG $@
+
+%common

@@ -1,0 +1,23 @@
+#
+
+include $(SRCDIR)/config/aros.cfg
+
+FILES := \
+	rtallocrequest \
+	rtchangereqattr \
+	rtfilerequest \
+	rtezrequest \
+	rtezrequesttags \
+	rtgetstring \
+	rtgetlong \
+	rtfontrequest \
+	rtpaletterequest \
+	rtreqhandler \
+	rtscreenmoderequest \
+    
+#MM- linklibs : linklibs-reqtoolsstubs
+#MM linklibs-reqtoolsstubs : includes
+
+%build_linklib mmake=linklibs-reqtoolsstubs libname=reqtoolsstubs files=$(FILES)
+
+%common

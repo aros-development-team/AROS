@@ -1,0 +1,71 @@
+50.3 (20-Nov-2007)
+ - Increased optimisation and some code cleanup
+ - Improved the decoder system somewhat
+ - Added 2-bit g723 support to the g72x decoder (no idea if this works or not)
+ - Also removed some g72x code that wasn't being used (encoders and some alaw/
+   ulaw stuff)
+
+50.2 (15-Aug-06)
+ - Improved low memory handling. now tries to allocate a smaller decode/encode
+   buffer if there isn't enough free memory for the default size (~16kB).
+   Previous versions just returned an error if this was the case
+ - Fixed saved size of "data" chunk (DTM_WRITE) for stereo sounds. the code
+   didn't multiply totalFrames with numChannels so stereo sound files written by
+   the datatype were half their original length when loaded back in
+
+50.1 (27-Feb-2006)
+ - enabled G.72X support (untested)
+
+0.11 (24-Jan-2006)
+ - removed (now) redundant makefile (Makefile.nogsm)
+ - fixed bug in 64-bit float decoder (pointer was incremented by 4 instead of
+   8...)
+ - fixed PPC inline asm in endian.h write_lexx routines (source and destination
+   registers were wrong), used in DTM_WRITE
+
+0.10 (22-Nov-2005)
+ - added missing signed->unsigned conversion to DTM_WRITE (saving in native
+   format should work OK now)
+ - added workaround for sounds that have a much too small total frames count in
+   their fact chunk
+ - removed some useless junk from the code
+
+0.9 (10-Nov-2005)
+ - fixed ms adpcm support, finally!! :-D
+ - GetWave() now obtains it's file handle properly with DTA_Handle tag instead
+   of IDOS->Open()
+
+0.8 (21-Sep-2005)
+ - optimised wave_gsm610.c and wave_ieee_float.c a little
+ - added option to compile without gsm support (make -f Makefile.nogsm)
+ - wave_ms_adpcm.c still not working correctly :-(
+
+0.7 (1-Apr-2005)
+ - added 64-bit float support
+ - fixed crashes in gsm decoder (wave_gsm610.c)
+
+0.6 (23-Mar-2005):
+ - fixed bug in bitpack_seek (bitpack.c)
+ - rewrote the decoder system (again) and moved most of it to decoders.c from
+   wave_class.c.
+ - added GSM610 support
+
+0.5 (6-Mar-2005):
+ - no more mysterious "Error 1" error returns!
+ - major rewrite of + optimisations to ConvertWAVE() fmt chunk handling...
+ - added support for writing in the dt's native format
+ - some minor code fixes that I can't remember
+ - switched to VBCC
+
+0.3 (28-Feb-2005):
+ - added MS ADPCM support (not working)
+ - added u-Law A-Law support
+ - added IEEE float support
+ - minor code fixes (error messages etc.)
+ - fixed possible memory trashing (IMA decoder)
+
+0.2 (22-Feb-2005):
+ - fixed bug in IMA ADPCM decoder (stereo sounds weren't loaded correctly)
+
+0.1 (21-Feb-2005):
+ - first released version of the datatype

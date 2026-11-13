@@ -1,0 +1,1069 @@
+/*
+    Copyright (C) 2002-2026, The AROS Development Team. All rights reserved.
+*/
+
+#include <string.h>
+#include <stdlib.h>
+
+#include <exec/types.h>
+
+#include <clib/alib_protos.h>
+#include <proto/intuition.h>
+#include <proto/graphics.h>
+#include <proto/utility.h>
+#include <proto/exec.h>
+#include <proto/muimaster.h>
+
+#include "mui.h"
+#include "muimaster_intern.h"
+#include "support.h"
+#include "prefs.h"
+#include "balance_private.h"
+
+/*  #define MYDEBUG 0 */
+#include "debug.h"
+
+/****** Balance.mui/MUIC_Balance ************
+*
+*   NAME
+*       MUIC_Balance
+*
+*   SUPERCLASS
+*       Area.mui
+*
+*   DESCRIPTION
+*       Let the user redistribute sibling layout weights by dragging a separator
+*       in a Group. Setup reads the parent's Group_Horiz once. A horizontal
+*       group uses a vertical separator and horizontal weights; a vertical group
+*       uses a horizontal separator and vertical weights. Changing parent
+*       orientation later does not update this cached selection.
+*       Place Balance between visible siblings in a normally laid-out Group,
+*       with resizable members on both sides for normal dragging. Parent, child
+*       list and sibling objects are borrowed. Keep group membership, visibility
+*       and geometry stable during a drag. The implementation caches sibling
+*       pointers and weight totals without lifetime protection. No public
+*       position attribute or class-specific method is provided.
+*
+*   METHODS
+*       Setup registers a window mouse-button handler after successful Area
+*       setup and returns TRUE without checking registration status. Cleanup
+*       removes that handler and returns the superclass result. AskMinMax adds
+*       three pixels to minimum separator thickness, fixes its default and
+*       maximum thickness to that minimum, and allows MUI_MAXMAX along the other
+*       axis. It returns TRUE.
+*       SELECTDOWN inside the object starts a drag and enables mouse-move
+*       events. Shift at mouse-down selects only the nearest visible sibling on
+*       each side; this search does not skip fixed-size siblings. Without Shift,
+*       dragging redistributes weights across visible, non-fixed siblings on
+*       both sides. Shift state is sampled only at the start. Every other
+*       changed-position move is skipped by a private toggle, which is not reset
+*       at mouse-down.
+*       Any subsequent mouse-button code other than SELECTDOWN ends the drag.
+*       Changes already made are retained; there is no cancel-and-restore path.
+*       A final parent Hide/Layout/Show and redraw occurs when weight totals
+*       were established. HandleEvent always returns zero and does not delegate
+*       to Area. It adds no keyboard resizing behavior.
+*
+*   NOTES
+*       Weight changes write Area's private UWORD fields directly and do not
+*       issue attribute setters or weight notifications. Intermediate
+*       calculations also use signed WORD values; large weights, counts or
+*       coordinates can overflow or truncate. Normal dragging divides changes
+*       among siblings with integer remainders, using rand and at most four
+*       redistribution passes. Mouse-down calls srand(1), affecting the C
+*       random-generator state used by this code. Exact weight conservation is
+*       not guaranteed after truncation or the pass limit.
+*       The balancing-look preference selects full live object display or an
+*       outline preview. Both paths modify weights and invoke parent Layout
+*       during dragging. The full-display path surrounds layout with Hide and
+*       Show. Outline mode clears the parent background and draws sibling
+*       frames, with crosses for resizable objects. Its attempted separator
+*       redraw passes MADF_DRAWOBJECT as a method identifier rather than
+*       invoking MUIM_Draw. Quiet has no effect on either mode.
+*       Use the normal window-handler lifecycle; Cleanup does not implement drag
+*       cancellation or restore weights. Draw calls Area, paints a three-pixel
+*       separator with reversed edge pens while dragging, and returns TRUE;
+*       without MADF_DRAWOBJECT it returns zero. No separately allocated private
+*       drag buffer is owned.
+*
+*/
+/****** Balance.mui/MUIA_Balance_Quiet ************
+*
+*   NAME
+*       MUIA_Balance_Quiet
+*
+*   FUNCTION
+*       Declared constructor attribute with no implemented behavior.
+*
+*   INPUTS
+*       Header declares initialize-only LONG. The constructor recognizes the
+*       identifier but ignores its value.
+*
+*   NOTES
+*       No state is stored and no local getter or setter implements this
+*       attribute. It does not defer layout, suppress notifications, select
+*       outline mode or change redraw behavior. The balancing-look preference
+*       controls the display mode instead.
+*
+*/
+
+extern struct Library *MUIMasterBase;
+
+/*
+ *  [FirstBound .... <- balance -> .... SecondBound]
+ */
+
+
+/*
+ * Construct Area and initialize mouse-handler descriptor. Quiet tags are
+ * accepted but ignored. Return object or zero on superclass failure.
+ * Private zero-initialized state starts not clicked; no sibling ownership
+ * or buffer allocation.
+ */
+IPTR Balance__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
+{
+    struct Balance_DATA *data;
+    struct TagItem *tags;
+    struct TagItem *tag;
+
+    obj = (Object *) DoSuperMethodA(cl, obj, (Msg) msg);
+
+    if (!obj)
+        return 0;
+
+    /* Initial local instance data */
+    data = INST_DATA(cl, obj);
+
+    /* parse initial taglist */
+
+    for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags));)
+    {
+        switch (tag->ti_Tag)
+        {
+        case MUIA_Balance_Quiet:
+            break;
+        }
+    }
+
+    data->ehn.ehn_Events = IDCMP_MOUSEBUTTONS;
+    data->ehn.ehn_Priority = 0;
+    data->ehn.ehn_Flags = MUI_EHF_GUIMODE;
+    data->ehn.ehn_Object = obj;
+    data->ehn.ehn_Class = cl;
+
+    D(bug("Balance_New(0x%p)\n", obj));
+
+    return (IPTR) obj;
+}
+
+/*
+ * Call Area, cache parent Group_Horiz when parent exists, and register
+ * window mouse handler. Return FALSE on superclass failure, otherwise TRUE
+ * ignoring getter/registration status. Requires connected group/window and
+ * matching Cleanup.
+ */
+IPTR Balance__MUIM_Setup(struct IClass *cl, Object *obj,
+    struct MUIP_Setup *msg)
+{
+    struct Balance_DATA *data = INST_DATA(cl, obj);
+
+    if (!(DoSuperMethodA(cl, obj, (Msg) msg)))
+        return FALSE;
+
+    if (_parent(obj))
+        get(_parent(obj), MUIA_Group_Horiz, &data->horizgroup);
+
+    DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR) & data->ehn);
+
+    return TRUE;
+}
+
+/*
+ * Remove window mouse handler and return Area Cleanup result. Requires live
+ * enclosing window and matching Setup. Does not reset drag state, restore
+ * weights or own/free sibling objects.
+ */
+IPTR Balance__MUIM_Cleanup(struct IClass *cl, Object *obj,
+    struct MUIP_Cleanup *msg)
+{
+    struct Balance_DATA *data = INST_DATA(cl, obj);
+
+    DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR) & data->ehn);
+
+    return DoSuperMethodA(cl, obj, (Msg) msg);
+}
+
+/**************************************************************************
+ MUIM_AskMinMax
+**************************************************************************/
+/*
+ * Call Area; add three pixels to separator minimum thickness, fix
+ * default/maximum thickness, and allow maximum extent on the other axis.
+ * Return TRUE. Requires writable MinMaxInfo and cached orientation; no
+ * layout or allocation.
+ */
+IPTR Balance__MUIM_AskMinMax(struct IClass *cl, Object *obj,
+    struct MUIP_AskMinMax *msg)
+{
+    struct Balance_DATA *data = INST_DATA(cl, obj);
+
+    DoSuperMethodA(cl, obj, (Msg) msg);
+
+    if (data->horizgroup)
+    {
+        msg->MinMaxInfo->MinWidth += 3;
+        msg->MinMaxInfo->DefWidth = msg->MinMaxInfo->MinWidth;
+        msg->MinMaxInfo->MaxWidth = msg->MinMaxInfo->DefWidth;
+        msg->MinMaxInfo->MaxHeight = MUI_MAXMAX;
+    }
+    else
+    {
+        msg->MinMaxInfo->MinHeight += 3;
+        msg->MinMaxInfo->DefHeight = msg->MinMaxInfo->MinHeight;
+        msg->MinMaxInfo->MaxHeight = msg->MinMaxInfo->DefHeight;
+        msg->MinMaxInfo->MaxWidth = MUI_MAXMAX;
+    }
+
+    return TRUE;
+}
+
+
+/*
+ * Call Area; return zero unless MADF_DRAWOBJECT, otherwise TRUE after
+ * drawing or empty-geometry skip. Paint three-pixel separator using pens
+ * reversed while clicked. Requires live render context and cached
+ * orientation; no resource allocation.
+ */
+IPTR Balance__MUIM_Draw(struct IClass *cl, Object *obj,
+    struct MUIP_Draw *msg)
+{
+    struct Balance_DATA *data = INST_DATA(cl, obj);
+    LONG col1, col2;
+
+    DoSuperMethodA(cl, obj, (Msg) msg);
+
+    if (!(msg->flags & MADF_DRAWOBJECT))
+        return 0;
+
+    if (_mwidth(obj) < 1 || _mheight(obj) < 1)
+        return TRUE;
+
+    if (data->state == NOT_CLICKED)
+    {
+        col1 = MPEN_TEXT;
+        col2 = MPEN_SHINE;
+    }
+    else
+    {
+        col2 = MPEN_TEXT;
+        col1 = MPEN_SHINE;
+    }
+
+    if (data->horizgroup)
+    {
+        SetAPen(_rp(obj), _pens(obj)[col1]);
+        Move(_rp(obj), _mleft(obj), _mtop(obj));
+        Draw(_rp(obj), _mleft(obj), _mbottom(obj));
+        SetAPen(_rp(obj), _pens(obj)[MPEN_FILL]);
+        Move(_rp(obj), _mleft(obj) + 1, _mtop(obj));
+        Draw(_rp(obj), _mleft(obj) + 1, _mbottom(obj));
+        SetAPen(_rp(obj), _pens(obj)[col2]);
+        Move(_rp(obj), _mleft(obj) + 2, _mtop(obj));
+        Draw(_rp(obj), _mleft(obj) + 2, _mbottom(obj));
+    }
+    else
+    {
+        SetAPen(_rp(obj), _pens(obj)[col1]);
+        Move(_rp(obj), _mleft(obj), _mtop(obj));
+        Draw(_rp(obj), _mright(obj), _mtop(obj));
+        SetAPen(_rp(obj), _pens(obj)[MPEN_FILL]);
+        Move(_rp(obj), _mleft(obj), _mtop(obj) + 1);
+        Draw(_rp(obj), _mright(obj), _mtop(obj) + 1);
+        SetAPen(_rp(obj), _pens(obj)[col2]);
+        Move(_rp(obj), _mleft(obj), _mtop(obj) + 2);
+        Draw(_rp(obj), _mright(obj), _mtop(obj) + 2);
+    }
+
+    return TRUE;
+}
+
+/*
+ * Outline a borrowed sibling using the balance RastPort; add diagonals
+ * unless fixed. Requires valid object geometry and live pens/RastPort.
+ * Mutates drawing state only; returns no status.
+ */
+static void draw_object_frame(Object *obj, Object *o, BOOL fixed)
+{
+    SetAPen(_rp(obj), _pens(obj)[MPEN_TEXT]);
+    Move(_rp(obj), _left(o), _top(o));
+    Draw(_rp(obj), _left(o), _bottom(o));
+    Draw(_rp(obj), _right(o), _bottom(o));
+    Draw(_rp(obj), _right(o), _top(o));
+    Draw(_rp(obj), _left(o), _top(o));
+    if (!fixed)
+    {
+        Draw(_rp(obj), _right(o), _bottom(o));
+        Move(_rp(obj), _right(o), _top(o));
+        Draw(_rp(obj), _left(o), _bottom(o));
+    }
+}
+
+/*
+ * Return leading sibling coordinate plus minimum dimension, subdimension
+ * and parent spacing on selected axis. Requires live parent and Area
+ * geometry; getter failure leaves spacing zero. No mutation or ownership
+ * transfer.
+ */
+static LONG get_first_bound(struct Balance_DATA *data, Object *obj)
+{
+    ULONG spacing = 0;
+
+    if (data->horizgroup)
+    {
+        get(_parent(obj), MUIA_Group_HorizSpacing, &spacing);
+        return _left(obj) + _minwidth(obj) + _subwidth(obj) + spacing;
+    }
+    else
+    {
+        get(_parent(obj), MUIA_Group_VertSpacing, &spacing);
+        return _top(obj) + _minheight(obj) + _subheight(obj) + spacing;
+    }
+}
+
+/*
+ * Return trailing sibling coordinate minus minimum dimension, subdimension
+ * and parent spacing on selected axis. Requires live parent and Area
+ * geometry; getter failure leaves spacing zero. No mutation or ownership
+ * transfer.
+ */
+static LONG get_second_bound(struct Balance_DATA *data, Object *obj)
+{
+    ULONG spacing = 0;
+
+    if (data->horizgroup)
+    {
+        get(_parent(obj), MUIA_Group_HorizSpacing, &spacing);
+        return _right(obj) - _minwidth(obj) - _subwidth(obj) - spacing;
+    }
+    else
+    {
+        get(_parent(obj), MUIA_Group_VertSpacing, &spacing);
+        return _bottom(obj) - _minheight(obj) - _subheight(obj) - spacing;
+    }
+}
+
+
+/*
+ * Return the parent inner leading coordinate on the cached group axis.
+ * Requires a live parent and valid geometry. No allocation, mutation or
+ * ownership transfer.
+ */
+static LONG get_first_bound_multi(struct Balance_DATA *data, Object *obj)
+{
+    if (data->horizgroup)
+    {
+        return _mleft(_parent(obj));
+    }
+    else
+    {
+        return _mtop(_parent(obj));
+    }
+}
+
+/*
+ * Return the parent inner trailing coordinate on the cached group axis.
+ * Requires a live parent and valid geometry. No allocation, mutation or
+ * ownership transfer.
+ */
+static LONG get_second_bound_multi(struct Balance_DATA *data, Object *obj)
+{
+    if (data->horizgroup)
+    {
+        return _mright(_parent(obj));
+    }
+    else
+    {
+        return _mbottom(_parent(obj));
+    }
+}
+
+/*
+ * Return whether sibling minimum and maximum dimensions match on the cached
+ * axis. Requires live Area-compatible object. Does not inspect weight,
+ * visibility or ownership.
+ */
+static BOOL is_fixed_size(struct Balance_DATA *data, Object *obj)
+{
+    if (data->horizgroup)
+    {
+        return (_minwidth(obj) == _maxwidth(obj));
+    }
+    else
+    {
+        return (_minheight(obj) == _maxheight(obj));
+    }
+}
+
+
+/*
+ * Return sum of two sibling weights on cached axis. Requires two live Area-
+ * compatible objects. No attribute getter, mutation or ownership transfer.
+ */
+static ULONG get_total_weight_2(struct Balance_DATA *data, Object *objA,
+    Object *objB)
+{
+    if (data->horizgroup)
+    {
+        return _hweight(objA) + _hweight(objB);
+    }
+    else
+    {
+        return _vweight(objA) + _vweight(objB);
+    }
+}
+
+
+/*
+ * Partition cached total weight between cached neighbors from pointer
+ * coordinate and bounds; endpoints assign all weight to one side. Write
+ * private UWORD weights directly without notifications. Requires valid live
+ * neighbors and consistent bounds; arithmetic/conversion is unchecked. No
+ * result.
+ */
+static void set_weight_2(struct Balance_DATA *data, WORD current)
+{
+    LONG weightB;
+    LONG weightA;
+
+    if (current >= data->second_bound)
+    {
+        weightB = 0;
+        weightA = data->total_weight;
+        D(bug("weightB = 0\n"));
+    }
+    else if (current <= data->first_bound)
+    {
+        weightA = 0;
+        weightB = data->total_weight;
+        D(bug("weightA = 0\n"));
+    }
+    else
+    {
+        D(bug("L=%ld, mid=%ld, R=%ld || M=%d\n",
+                data->first_bound, data->clickpos, data->second_bound,
+                current));
+        weightA = (current - data->first_bound + 1) * data->total_weight
+            / (data->second_bound - data->first_bound + 1);
+
+        D(bug("found wA = %ld\n", weightA));
+        if (weightA > data->total_weight)
+        {
+            D(bug("*** weightA > data->total_weight\n"));
+            weightA = data->total_weight;
+        }
+        weightB = data->total_weight - weightA;
+    }
+
+    if (data->horizgroup)
+    {
+        _hweight(data->obj_before) = weightA;
+        _hweight(data->obj_after) = weightB;
+    }
+    else
+    {
+        _vweight(data->obj_before) = weightA;
+        _vweight(data->obj_after) = weightB;
+    }
+}
+
+
+/*
+ * Lazily locate nearest visible siblings around Balance and cache
+ * bounds/total; return without mutation if either is missing. Otherwise
+ * update their weights from mouse coordinate. Fixed-size siblings are not
+ * skipped. Requires stable borrowed child list; cached pointers are not
+ * retained or protected.
+ */
+static void recalc_weights_neighbours(struct IClass *cl, Object *obj,
+    WORD mouse)
+{
+    struct Balance_DATA *data = INST_DATA(cl, obj);
+
+    if ((data->total_weight == -1) || (data->first_bound == -1)
+        || (data->second_bound == -1))
+    {
+        Object *sibling;
+        Object *object_state;
+
+        object_state = (Object *) data->objs->lh_Head;
+        while ((sibling = NextObject(&object_state)))
+        {
+            if (!(_flags(sibling) & MADF_SHOWME))
+                continue;
+/*          D(bug("sibling 0x%p\n", sibling)); */
+            if (sibling == obj)
+            {
+                while ((sibling = NextObject(&object_state)))
+                {
+                    if (!(_flags(sibling) & MADF_SHOWME))
+                        continue;
+                    data->obj_after = sibling;
+                    break;
+                }
+                break;
+            }
+            data->obj_before = sibling;
+        }
+        if (!(data->obj_before && data->obj_after))
+        {
+            D(bug
+                ("Balance(0x%p): missing siblings; before=0x%p, after=0x%p\n",
+                    obj, data->obj_before, data->obj_after));
+            return;
+        }
+        if (data->total_weight == -1)
+            data->total_weight =
+                get_total_weight_2(data, data->obj_before, data->obj_after);
+        if (data->first_bound == -1)
+            data->first_bound = get_first_bound(data, data->obj_before);
+        if (data->second_bound == -1)
+            data->second_bound = get_second_bound(data, data->obj_after);
+    }
+
+    set_weight_2(data, mouse);
+}
+
+/*
+ * Read private axis-specific UWORD weight and return it as LONG. Requires
+ * live Area-compatible object and cached orientation. No notification,
+ * mutation or ownership transfer.
+ */
+static LONG get_weight(struct Balance_DATA *data, Object *obj)
+{
+    if (data->horizgroup)
+    {
+        return _hweight(obj);
+    }
+    else
+    {
+        return _vweight(obj);
+    }
+}
+
+/*
+ * Assign LONG argument to private axis-specific UWORD weight with normal C
+ * conversion. Requires live Area-compatible object. No range validation,
+ * setter dispatch, notification or result.
+ */
+static void set_weight(struct Balance_DATA *data, Object *obj, LONG w)
+{
+    if (data->horizgroup)
+    {
+        _hweight(obj) = w;
+    }
+    else
+    {
+        _vweight(obj) = w;
+    }
+}
+
+/*
+ * Return current outer width or height on cached axis. Requires live object
+ * with valid layout geometry. No mutation, allocation or ownership
+ * transfer.
+ */
+static LONG get_size(struct Balance_DATA *data, Object *obj)
+{
+    if (data->horizgroup)
+    {
+        return _width(obj);
+    }
+    else
+    {
+        return _height(obj);
+    }
+}
+
+#if 0
+/*
+ * Inactive #if 0 helper: scale private axis weight by neww/oldw or set zero
+ * if oldw is zero. Would require live object and representable
+ * multiplication; no validation, notifications or result. Not part of the
+ * compiled behavior.
+ */
+static void set_interpolated_weight(struct Balance_DATA *data, Object *obj,
+    LONG oldw, LONG neww)
+{
+    if (data->horizgroup)
+    {
+        if (oldw)
+            _hweight(obj) = _hweight(obj) * neww / oldw;
+        else
+            _hweight(obj) = 0;
+    }
+    else
+    {
+        if (oldw)
+            _vweight(obj) = _vweight(obj) * neww / oldw;
+        else
+            _vweight(obj) = 0;
+    }
+
+}
+#endif
+
+/*
+ * Compute side totals from drag displacement and initial weight/size
+ * density, then distribute deltas among cached eligible counts. Use random
+ * remainder offsets and up to four redistribution passes. Write private
+ * weights and cache desired totals. Requires nonzero counts and stable
+ * list; signed WORD conversions can lose range. No status or exact-
+ * conservation guarantee.
+ */
+static void set_weight_all(struct Balance_DATA *data, Object *obj,
+    WORD current)
+{
+    LONG weightB;
+    LONG weightA;
+    LONG ldelta, rdelta, lwbygad, rwbygad, lbonus, rbonus, lneg, rneg,
+        lzero, rzero, count;
+    int lfirst, rfirst;
+
+    {
+        if (data->lsize && data->rsize)
+        {
+            weightA = data->lsum
+                + ((current - data->clickpos)
+                * ((data->lsum / (double)data->lsize) +
+                    (data->rsum / (double)data->rsize)) / 2.0);
+        }
+        else
+            weightA = data->lsum;
+
+        if (weightA > data->total_weight)
+        {
+            D(bug("*** weightA > data->total_weight\n"));
+            weightA = data->total_weight;
+        }
+        if (weightA < 0)
+        {
+            D(bug("*** weightA < 0n"));
+            weightA = 0;
+        }
+        weightB = data->total_weight - weightA;
+        D(bug("normal : weights = %ld/%ld\n", weightA, weightB));
+    }
+
+    ldelta = weightA - data->oldWeightA;
+    rdelta = weightB - data->oldWeightB;
+    lwbygad = ldelta / data->lsiblings;
+    rwbygad = rdelta / data->rsiblings;
+    lbonus = ldelta % data->lsiblings;
+    if (lbonus < 0)
+        lbonus = -lbonus;
+    rbonus = rdelta % data->rsiblings;
+    if (rbonus < 0)
+        rbonus = -rbonus;
+    lfirst = (int)((double)data->lsiblings * rand() / (RAND_MAX + 1.0));
+    rfirst = (int)((double)data->rsiblings * rand() / (RAND_MAX + 1.0));
+
+    count = 0;
+    do
+    {
+        Object *sibling;
+        Object *object_state;
+        WORD left = data->lsiblings;
+
+        D(bug("delta=%ld/%ld; wbygad=%ld/%ld; bonus=%ld/%ld; first=%d/%d\n",
+                ldelta, rdelta, lwbygad, rwbygad, lbonus, rbonus, lfirst,
+                rfirst));
+
+        if (count++ == 4)
+        {
+            D(bug("avoiding deadloop\n"));
+            break;
+        }
+        lneg = 0;
+        rneg = 0;
+        lzero = 0;
+        rzero = 0;
+
+/*          D(bug("left weight : from %d to %d\n", data->lsum, weightA)); */
+/*          D(bug("right weight : from %d to %d\n", data->rsum, weightB)); */
+        object_state = (Object *) data->objs->lh_Head;
+        while ((sibling = NextObject(&object_state)))
+        {
+            if (!(_flags(sibling) & MADF_SHOWME))
+                continue;
+            if (is_fixed_size(data, sibling))
+                continue;
+
+/*              D(bug(" B %d\n", left)); */
+            if (left > 0)
+            {
+                WORD w1, w2;
+                w1 = get_weight(data, sibling);
+                w2 = w1;
+                if (w2 || (count < 2))
+                {
+                    w2 += lwbygad;
+                    if ((lfirst-- <= 0) && lbonus-- > 0)
+                        w2 += ((ldelta > 0) ? 1 : -1);
+                    if (w2 < 0)
+                    {
+                        lzero++;
+                        lneg += w2;
+                        w2 = 0;
+                    }
+                    set_weight(data, sibling, w2);
+                    /*  D(bug(" w (left) from %d to %d (%ld -> %ld)\n",
+                     *      w1, w2, data->oldWeightA, weightA)); */
+                }
+            }
+            else
+            {
+                WORD w1, w2;
+                w1 = get_weight(data, sibling);
+                w2 = w1;
+                if (w2 || (count < 2))
+                {
+                    w2 += rwbygad;
+                    if ((rfirst-- <= 0) && rbonus-- > 0)
+                        w2 += ((rdelta > 0) ? 1 : -1);
+                    if (w2 < 0)
+                    {
+                        rzero++;
+                        rneg += w2;
+                        w2 = 0;
+                    }
+                    set_weight(data, sibling, w2);
+                    /*   D(bug(" w (right) from %d to %d (%ld -> %ld)\n",
+                     *       w1, w2, data->oldWeightB, weightB)); */
+                }
+            }
+            left--;
+        }
+        if (lzero == data->lsiblings)
+            break;
+        if (rzero == data->rsiblings)
+            break;
+
+        lwbygad = lneg / (data->lsiblings - lzero);
+        lbonus = -(lneg % (data->lsiblings - lzero)) + lbonus;
+        rwbygad = rneg / (data->rsiblings - rzero);
+        rbonus = -(rneg % (data->rsiblings - rzero)) + rbonus;
+    }
+    while (lneg || rneg || (lbonus > 0) || (rbonus > 0));
+
+    data->oldWeightA = weightA;
+    data->oldWeightB = weightB;
+}
+
+
+/*
+ * Lazily scan visible non-fixed siblings, collect side counts/weights/sizes
+ * and parent bounds, then redistribute weights. Return early when first,
+ * balance position or last is missing. Requires eligible siblings on both
+ * sides and stable borrowed list; malformed ordering is not fully
+ * validated. No allocation or status.
+ */
+static void recalc_weights_all(struct IClass *cl, Object *obj, WORD mouse)
+{
+    struct Balance_DATA *data = INST_DATA(cl, obj);
+    Object *first = NULL;
+    Object *last = NULL;
+
+    D(bug("recalc_weights_all\n"));
+
+    if ((data->total_weight == -1) || (data->lsiblings == -1)
+        || (data->rsiblings == -1) || (data->first_bound == -1)
+        || (data->second_bound == -1))
+    {
+        Object *sibling;
+        Object *object_state;
+        Object *next;
+        BOOL mid = FALSE;
+
+        data->lsum = 0;
+        data->rsum = 0;
+        data->lsize = 0;
+        data->rsize = 0;
+
+        object_state = (Object *) data->objs->lh_Head;
+        for (next = NextObject(&object_state); next;
+            next = NextObject(&object_state))
+        {
+            sibling = next;
+            if (!(_flags(sibling) & MADF_SHOWME))
+                continue;
+
+            if (sibling == obj)
+            {
+                mid = TRUE;
+                data->rsiblings = 0;
+                continue;
+            }
+
+            if (is_fixed_size(data, sibling))
+                continue;
+
+            if (!first)
+            {
+                first = sibling;
+                data->lsiblings = 1;
+                data->lsum += get_weight(data, sibling);
+                data->lsize += get_size(data, sibling);
+            }
+            else
+            {
+                if (!mid)
+                {
+                    data->lsiblings++;
+                    data->lsum += get_weight(data, sibling);
+                    data->lsize += get_size(data, sibling);
+                }
+                else
+                {
+                    data->rsiblings++;
+                    data->rsum += get_weight(data, sibling);
+                    data->rsize += get_size(data, sibling);
+                    last = sibling;
+                }
+            }
+        }
+
+        if (!first || !mid || !last)
+            return;
+        if (data->total_weight == -1)
+            data->total_weight = data->lsum + data->rsum;
+
+        if (data->first_bound == -1)
+            data->first_bound = get_first_bound_multi(data, first);
+
+        if (data->second_bound == -1)
+            data->second_bound = get_second_bound_multi(data, last);
+
+        data->oldWeightA = data->lsum;
+        data->oldWeightB = data->rsum;
+    }
+    D(bug("Total Weight = %ld, left = %ld, right = %ld\n",
+            data->total_weight, data->lsum, data->rsum));
+    D(bug("bound 1 = %ld, bound 2 = %ld\n", data->first_bound,
+            data->second_bound));
+    set_weight_all(data, obj, mouse);
+}
+
+
+/*
+ * Recalculate all or neighbor weights according to clicked state; return
+ * when not clicked. Relayout and redraw parent using live-object or outline
+ * preference, ignoring method results. Requires stable parent/list/render
+ * context. Outline path issues MADF_DRAWOBJECT as a method ID; no ownership
+ * or cancellation rollback.
+ */
+static void handle_move(struct IClass *cl, Object *obj, WORD mouse)
+{
+    struct Balance_DATA *data = INST_DATA(cl, obj);
+
+    if (data->state == CLICKED)
+        recalc_weights_all(cl, obj, mouse);
+    else if (data->state == SHIFT_CLICKED)
+        recalc_weights_neighbours(cl, obj, mouse);
+    else
+        return;
+
+    /* full drawing, or sketch */
+    if (muiGlobalInfo(obj)->mgi_Prefs->balancing_look ==
+        BALANCING_SHOW_OBJECTS)
+    {
+        DoMethod(_parent(obj), MUIM_Hide);
+
+        /* relayout with new weights */
+        DoMethod(_parent(obj), MUIM_Layout);
+
+        DoMethod(_parent(obj), MUIM_Show);
+
+        MUI_Redraw(_parent(obj), MADF_DRAWALL);
+    }
+    else
+    {
+        Object *sibling;
+        Object *object_state;
+
+        DoMethod(_parent(obj), MUIM_DrawBackground, _mleft(_parent(obj)),
+            _mtop(_parent(obj)), _mwidth(_parent(obj)),
+            _mheight(_parent(obj)), 0, 0, 0);
+
+        /* relayout with new weights */
+        DoMethod(_parent(obj), MUIM_Layout);
+
+        DoMethod(obj, MADF_DRAWOBJECT);
+
+        /* for each child, draw a black frame */
+        object_state = (Object *) data->objs->lh_Head;
+        while ((sibling = NextObject(&object_state)))
+        {
+            if ((!(_flags(sibling) & MADF_SHOWME)) && (obj != sibling))
+                continue;
+/*          D(bug("sibling 0x%p\n", sibling)); */
+
+            draw_object_frame(obj, sibling, is_fixed_size(data, sibling));
+        }
+    }
+}
+
+
+/**************************************************************************
+ MUIM_HandleEvent
+**************************************************************************/
+/*
+ * Start in-object SELECTDOWN drag, sample Shift, borrow child list and
+ * reseed random generator; end on any other button code retaining changes.
+ * Throttle changed moves by toggle, temporarily remove handler during
+ * relayout and re-add it. Return zero on all paths, including NULL imsg.
+ * Requires stable group/window and normal event lifecycle; no superclass
+ * delegation.
+ */
+IPTR Balance__MUIM_HandleEvent(struct IClass *cl, Object *obj,
+    struct MUIP_HandleEvent *msg)
+{
+    struct Balance_DATA *data = INST_DATA(cl, obj);
+
+    if (msg->imsg)
+    {
+        switch (msg->imsg->Class)
+        {
+        case IDCMP_MOUSEBUTTONS:
+            if (msg->imsg->Code == SELECTDOWN)
+            {
+                if (_isinobject(obj, msg->imsg->MouseX, msg->imsg->MouseY))
+                {
+                    get(_parent(obj), MUIA_Group_ChildList, &data->objs);
+                    data->clickpos =
+                        data->horizgroup ? msg->imsg->MouseX : msg->imsg->
+                        MouseY;
+                    data->lastpos = data->clickpos;
+                    DoMethod(_win(obj), MUIM_Window_RemEventHandler,
+                        (IPTR) & data->ehn);
+                    data->ehn.ehn_Events |= IDCMP_MOUSEMOVE;
+                    DoMethod(_win(obj), MUIM_Window_AddEventHandler,
+                        (IPTR) & data->ehn);
+                    if (msg->imsg->
+                        Qualifier & (IEQUALIFIER_LSHIFT |
+                            IEQUALIFIER_RSHIFT))
+                    {
+                        data->state = SHIFT_CLICKED;
+                        data->obj_before = NULL;
+                        data->obj_after = NULL;
+                    }
+                    else
+                    {
+                        data->state = CLICKED;
+                        data->lsiblings = -1;
+                        data->rsiblings = -1;
+                    }
+                    data->total_weight = -1;
+                    data->first_bound = -1;
+                    data->second_bound = -1;
+                    srand(1);
+                    MUI_Redraw(obj, MADF_DRAWOBJECT);
+                }
+            }
+            else                /* msg->imsg->Code != SELECTDOWN */
+            {
+                if (data->state != NOT_CLICKED)
+                {
+                    DoMethod(_win(obj), MUIM_Window_RemEventHandler,
+                        (IPTR) & data->ehn);
+                    data->ehn.ehn_Events &= ~IDCMP_MOUSEMOVE;
+                    DoMethod(_win(obj), MUIM_Window_AddEventHandler,
+                        (IPTR) & data->ehn);
+                    data->state = NOT_CLICKED;
+                    if (data->total_weight != -1)
+                    {
+                        DoMethod(_parent(obj), MUIM_Hide);
+
+                        /* relayout with new weights */
+                        DoMethod(_parent(obj), MUIM_Layout);
+
+                        DoMethod(_parent(obj), MUIM_Show);
+                        MUI_Redraw(_parent(obj), MADF_DRAWOBJECT);
+                    }
+                    else
+                        MUI_Redraw(obj, MADF_DRAWALL);
+                }
+            }
+            break;
+
+        case IDCMP_MOUSEMOVE:
+            {
+                if ((data->horizgroup)
+                    && (msg->imsg->MouseX == data->lastpos))
+                    break;
+                if ((!data->horizgroup)
+                    && (msg->imsg->MouseY == data->lastpos))
+                    break;
+                data->lazy ^= 1;
+                if (data->lazy)
+                    break;
+
+                DoMethod(_win(obj), MUIM_Window_RemEventHandler,
+                    (IPTR) & data->ehn);
+
+                if (data->horizgroup)
+                {
+                    handle_move(cl, obj, msg->imsg->MouseX);
+                    data->lastpos = msg->imsg->MouseX;
+                }
+                else
+                {
+                    handle_move(cl, obj, msg->imsg->MouseY);
+                    data->lastpos = msg->imsg->MouseY;
+                }
+
+                data->ehn.ehn_Events |= IDCMP_MOUSEMOVE;
+                DoMethod(_win(obj), MUIM_Window_AddEventHandler,
+                    (IPTR) & data->ehn);
+            }
+            break;
+        }
+    }
+
+    return 0;
+}
+
+#if ZUNE_BUILTIN_BALANCE
+/*
+ * Dispatch local overrides and return their results; delegate other
+ * messages to Area. Requires ABI-correct message and live object except
+ * construction. Private resource ownership follows the class lifecycle
+ * contract.
+ */
+BOOPSI_DISPATCHER(IPTR, Balance_Dispatcher, cl, obj, msg)
+{
+    switch (msg->MethodID)
+    {
+    case OM_NEW:
+        return Balance__OM_NEW(cl, obj, (struct opSet *)msg);
+    case MUIM_Setup:
+        return Balance__MUIM_Setup(cl, obj, (APTR) msg);
+    case MUIM_Cleanup:
+        return Balance__MUIM_Cleanup(cl, obj, (APTR) msg);
+    case MUIM_AskMinMax:
+        return Balance__MUIM_AskMinMax(cl, obj, (APTR) msg);
+    case MUIM_Draw:
+        return Balance__MUIM_Draw(cl, obj, (APTR) msg);
+    case MUIM_HandleEvent:
+        return Balance__MUIM_HandleEvent(cl, obj, (APTR) msg);
+    default:
+        return DoSuperMethodA(cl, obj, msg);
+    }
+}
+BOOPSI_DISPATCHER_END const struct __MUIBuiltinClass _MUI_Balance_desc =
+{
+    MUIC_Balance,
+    MUIC_Area,
+    sizeof(struct Balance_DATA),
+    (void *)Balance_Dispatcher
+};
+#endif

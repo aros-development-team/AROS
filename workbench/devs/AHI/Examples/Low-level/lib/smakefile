@@ -1,0 +1,19 @@
+
+
+ahi.lib:	AHI_lib.o
+	oml $@ a AHI_lib.o
+
+AHI_lib.o:	AHI_lib.c
+	sc to $@ AHI_lib.c
+
+dist:
+	smake allclean
+	smake ahi.lib
+	smake clean
+
+clean:
+	--delete \#?.(o|info|map|tmp|lnk)
+
+allclean:
+	smake clean
+	--delete ahi.lib

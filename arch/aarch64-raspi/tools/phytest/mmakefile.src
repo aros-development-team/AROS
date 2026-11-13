@@ -1,0 +1,11 @@
+include $(SRCDIR)/config/aros.cfg
+
+EXEDIR := $(AROS_TESTS)/raspi
+
+#MM raspi-phytest : includes linklibs kernel-mbox-bcm2708-includes
+
+%build_prog mmake=raspi-phytest \
+    progname=phytest targetdir=$(EXEDIR) \
+    files=phytest
+
+%common

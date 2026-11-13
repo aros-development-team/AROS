@@ -1,0 +1,21 @@
+#
+# Makefile for Zune step by step examples
+
+include $(SRCDIR)/config/aros.cfg
+
+FILES  := \
+    HelloZune \
+    HGroup    \
+    VGroup    \
+    VHGroup   \
+    VHGroup2  \
+    HVGroup   \
+    Notify    \
+    PanelGroup
+
+#MM workbench-libs-muimaster-examples : includes linklibs
+
+%build_progs mmake=workbench-libs-muimaster-examples \
+    files=$(FILES) targetdir=$(AROSDIR)/Demos/Zune
+
+%common

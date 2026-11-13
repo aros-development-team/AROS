@@ -1,0 +1,34 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+USER_INCLUDES := -I.
+
+USER_CPPFLAGS := -D__KERNEL__
+USER_LDFLAGS := -static
+
+FILES	:= pci_init pcidriverclass pcideviceclass pciclass pciutil
+
+#MM kernel-hidd-pci : kernel-hidd-pci-ids-fetch kernel-hidd-pci-ids-copy
+#MM kernel-hidd-pci-kobj : kernel-hidd-pci-ids-fetch
+
+#MM
+includes-copy : $(AROS_INCLUDES)/hidd/pci.h $(GENINCDIR)/hidd/pci.h
+
+$(AROS_INCLUDES)/hidd/pci.h: include/pci_hidd.h
+	$(CP) $< $(AROS_INCLUDES)/hidd/pci.h
+
+$(GENINCDIR)/hidd/pci.h: include/pci_hidd.h
+	$(CP) $< $(GENINCDIR)/hidd/pci.h
+
+INCLUDE_FILES := $(call WILDCARD, include/hardware/*.h)
+%copy_includes path=hardware dir=include/hardware
+
+%fetch mmake=kernel-hidd-pci-ids-fetch \
+    archive_origins="https://raw.githubusercontent.com/pciutils/pciids/master/ https://pci-ids.ucw.cz/v2.2/" \
+    archive="pci.ids" suffixes="" location=$(GENDIR)/$(CURDIR)
+
+%copy_files_q mmake=kernel-hidd-pci-ids-copy files="pci.ids" src=$(GENDIR)/$(CURDIR) dst=$(AROS_DEVS)
+
+%build_module mmake=kernel-hidd-pci \
+    modname=pci modtype=hidd \
+    files="$(FILES)"

@@ -1,0 +1,7 @@
+#MM- kernel-kernel-riscv64 : kernel-kernel-riscv
+#MM- kernel-kernel-riscv64-quick : kernel-kernel-riscv-quick
+#MM- kernel-kernel-riscv64-includes : kernel-kernel-riscv-includes
+#MM- kernel-kernel-riscv64-linklib : kernel-kernel-riscv-linklib
+#MM- kernel-kernel-riscv64-kobj : kernel-kernel-riscv-kobj
+#MM- kernel-kernel-riscv64-kobj-quick : kernel-kernel-riscv-kobj-quick
+#MM- kernel-kernel-riscv64-set-archincludes : kernel-kernel-riscv-set-archincludes

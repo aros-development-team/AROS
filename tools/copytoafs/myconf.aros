@@ -1,0 +1,55 @@
+#! /bin/sh
+
+TOP=$1
+
+cat >$TOP/myctest.c <<END
+
+#include<stdio.h>
+
+union u{
+    long l;
+    char c[4];
+    };
+
+
+
+int main(int argc, char *argv[])
+{
+    union u val;
+
+    printf("%d ", (int)sizeof(long));
+    printf("%d ", (int)sizeof(short));
+    printf("%d ", (int)sizeof(int));
+    
+    val.l=1L;
+    if (val.c[3]==1)
+        puts("BIG");
+    else
+        puts("LITTLE");
+}
+
+END
+
+gcc $TOP/myctest.c -o $TOP/myctest
+
+if [ `$TOP/myctest |cut -d' ' -f 1` != 4 ]
+    then echo "#error sizeof(long)!=4"
+fi
+if [ `$TOP/myctest |cut -d' ' -f 2` != 2 ]
+    then echo "#error sizeof(short)!=2"
+fi
+if [ `$TOP/myctest |cut -d' ' -f 3` != 4 ]
+    then echo "#error sizeof(int)!=4"
+fi
+
+if [ `$TOP/myctest |cut -d' ' -f 4` = LITTLE ]
+    then 
+    echo "#ifndef LITT_ENDIAN"
+    echo "#define LITT_ENDIAN 1"
+    echo "#endif /* LITT_ENDIAN */"
+else
+    echo "#ifndef LITT_ENDIAN"
+    echo "#endif /* LITT_ENDIAN */"
+fi
+
+rm $TOP/myctest*

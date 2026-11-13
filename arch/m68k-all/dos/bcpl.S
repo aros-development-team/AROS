@@ -1,0 +1,2105 @@
+/*
+    Copyright © 1995-2026, The AROS Development Team. All rights reserved.
+    $Id$
+
+    Desc: BCPL stubs that call into Exec and Dos libraries.
+    Lang: english
+*/
+#define DEBUG 0
+#define BCPLSTRINGDEBUG 0
+#include <aros/m68k/asm.h>
+
+#include "bcpl.h"
+
+#define BCPL(id,name)	.equ GV_##name, id
+#include "bcpl.inc"
+#undef BCPL
+
+    /* BCPL equivalents of JSR and RTS */
+
+    .text
+    .balign 2
+    .globl  BCPL_jsr  /* A5 */
+BCPL_jsr:
+    move.l  %sp@+,%a3           /* Get return address from C stack */
+    movem.l %a1/%a3-%a4,-12(%a1,%d0.l)
+    adda.l  %d0,%a1             /* Move to next BCPL FP */
+    movem.l %d1-%d4,(%a1)       /* Save argument on BCPL FP */
+    jmp     (%a4)
+    bra.s   BCPL_jsr_mult       /* This MUST be at BCPL_jsr+0x10 */
+    bra.s   BCPL_jsr_divmod     /* This MUST be at BCPL_jsr+0x12 */
+BCPL_jsr_mult:
+    /* Call out to GCC's __mulsi3 */
+    movem.l  %a0-%a1,%sp@-
+    move.l  %d2, %sp@-
+    move.l  %d1, %sp@-
+    jsr     __mulsi3
+    addq.l  #8,%sp
+    move.l  %d0, %d1
+    movem.l  %sp@+,%a0-%a1
+    rts
+BCPL_jsr_divmod:
+    /* Call out to GCC's __divsi3 and __modsi3 */
+    movem.l  %a0-%a1,%sp@-
+    move.l  %d2, %sp@-
+    move.l  %d1, %sp@-
+    jsr     __modsi3
+    move.l  %d0, %d2
+    jsr     __divsi3
+    move.l  %d0, %d1
+    addq.l  #8, %sp
+    movem.l  %sp@+,%a0-%a1
+    rts
+
+    .globl  BCPL_rts  /* A6 */
+BCPL_rts:
+    movem.l -12(%a1),%a1/%a3   /* Restore old BCPL FP and return address */
+    move.l  -4(%a1),%a4        /* Get old A4 */
+    jmp     (%a3)              /* Go back */
+
+
+/* BCPL macros
+ */
+    .section .rodata
+.LBCPL_format_trace:
+    .string  "BCPL %s, D1=%p D2=%p D3=%p D4=%p, GV %p\n"
+#if DEBUG
+.LBCPL_format_ret:
+    .string  "     %s, D1=%p\n"
+.LBCPL_format_err:
+    .string  "     %s, D1=%p IoErr=%p\n"
+#endif
+
+    /* For dummy functions: report the call on the debug output and
+     * return DOSFALSE in D0. The stub only names itself; BCPL_dummy does
+     * the work and returns to the code that follows the macro.
+     */
+    .macro  BCPLd name
+    .section .rodata
+99:
+    .string "\name"
+    .text
+    .balign 4
+    .globl  BCPL_\name
+BCPL_\name:
+    pea.l   99b
+    bsr.w   BCPL_dummy
+    .endm
+
+    .macro  BRTSd
+    /* Retrieve old pr_Result2 */
+    move.l  %a2@(GV_DEBUG_Result2), %d2
+
+    movem.l %d0/%a0-%a1,%sp@-
+    move.l  SysBase,%a0
+    move.l  %a0@(ThisTask),%a0
+    move.l  %a0@(pr_Result2),%a1
+    move.l  %a1,%sp@-
+    move.l  %d0,%sp@-
+    move.l  #99b,%sp@-
+    cmp.l   %sp@(8),%d2
+    beq.s   0f
+    move.l  #.LBCPL_format_err,%sp@-
+    bra.s   1f
+0:
+    move.l  #.LBCPL_format_ret,%sp@-
+1:
+    jsr     bcpl_command_name
+    jsr     kprintf
+    lea.l   %sp@(4*4),%sp
+    movem.l %sp@+,%d0/%a0-%a1
+    move.l  %d0,%d1
+    jmp     (%a6)
+    .endm
+
+    /* For real functions */
+    .macro  BCPLnd name
+    .balign 4
+    .globl  BCPL_\name
+BCPL_\name:
+    move.l  %a1,%a2@(GV_PktWaitFrame)
+    .endm
+
+    .macro  BRTSnd
+    move.l  %d0,%d1
+    jmp     (%a6)
+    .endm
+
+#if DEBUG
+#define BCPL BCPLd
+#define BRTS BRTSd
+#else
+#define BCPL BCPLnd
+#define BRTS BRTSnd
+#endif
+
+    /* A BCPL program may use a private A2 global vector without updating
+     * pr_GlobVec. Publish it while calling DOS so packet waits can reach
+     * that vector's legacy callback, and restore the process vector on return.
+     * Only A0 is borrowed; keep the DOS arguments and result intact.
+     */
+    .macro BCPL_ENTER_DOS
+    move.l  %a0,%sp@-
+    move.l  SysBase,%a0
+    move.l  %a0@(ThisTask),%a0
+    move.l  %a0@(pr_GlobVec),%sp@-
+    move.l  %a2,%a0@(pr_GlobVec)
+    move.l  %sp@(4),%a0
+    .endm
+
+    .macro BCPL_LEAVE_DOS
+    move.l  %a0,%sp@-
+    move.l  SysBase,%a0
+    move.l  %a0@(ThisTask),%a0
+    move.l  %sp@(4),%a0@(pr_GlobVec)
+    move.l  %sp@+,%a0
+    lea.l   %sp@(8),%sp
+    .endm
+
+    .macro BCPL_DOSCALL vector
+    bsr.w   BCPL_callDOS
+    .word   (\vector * -6)
+    .endm
+
+    /* Share the context switch between DOS entries. The signed vector offset
+     * follows the BSR; skip it in the saved return address and enter the DOS
+     * vector with the original A0/A1 arguments and A6 library base.
+     */
+    .text
+    .balign 4
+BCPL_callDOS:
+    BCPL_ENTER_DOS
+    move.l  %a1,%sp@-
+    move.l  %sp@(12),%a1
+    addq.l  #2,%sp@(12)
+    move.l  %a6,%a0
+    adda.w  %a1@,%a0
+    pea.l   .L_BCPL_dosreturn
+    move.l  %a0,%sp@-
+    move.l  %sp@(16),%a0
+    move.l  %sp@(8),%a1
+    rts
+.L_BCPL_dosreturn:
+    lea.l   %sp@(4),%sp
+    BCPL_LEAVE_DOS
+    rts
+
+    /* Body of the BCPLd stubs.
+     * On entry the stack holds the return address into the stub and,
+     * above it, the address of the stub's name. The name is removed
+     * before returning. On return D0 is 0 (DOSFALSE) and A0 is 0, as
+     * BCPL code expects it; the other registers are preserved.
+     */
+    .text
+    .balign 4
+BCPL_dummy:
+    move.l  %a1,%a2@(GV_PktWaitFrame)
+    /* Stash away pr_Result2 into the GV */
+    move.l  SysBase,%a0
+    move.l  %a0@(ThisTask),%a0
+    move.l  %a0@(pr_Result2),%d0
+    move.l  %d0,%a2@(GV_DEBUG_Result2)
+    sub.l   %a0,%a0
+
+    movem.l %d1/%a0-%a1,%sp@-
+    move.l  %a2,%sp@-
+    move.l  %d4,%sp@-
+    move.l  %d3,%sp@-
+    move.l  %d2,%sp@-
+    move.l  %d1,%sp@-
+    move.l  %sp@(9*4),%sp@-             /* the stub's name */
+    move.l  #.LBCPL_format_trace,%sp@-
+    jsr     bcpl_command_name
+    jsr     kprintf
+    lea.l   %sp@(7*4),%sp
+    movem.l %sp@+,%d1/%a0-%a1
+    clr.l   %d0		/* DOSFALSE */
+    move.l  %sp@+,%sp@                  /* drop the name */
+    rts
+
+    /* Global vector entries that pass their BCPL arguments to a DOS
+     * function unchanged and return its result are all the same code,
+     * so it lives here once. The stub (see BCPL_DOS below) is a BSR to
+     * this routine followed by the signed DOS vector offset; the routine
+     * does not return to the stub but straight to the BCPL caller.
+     */
+    .balign 4
+BCPL_simpleDOS:
+    move.l  %a1,%a2@(GV_PktWaitFrame)
+    movem.l %a0-%a1/%a6,%sp@-
+    move.l  %a2@(GV_DOSBase),%a6
+    BCPL_ENTER_DOS
+    move.l  %sp@(5*4),%a0               /* -> vector offset in the stub */
+    move.w  %a0@,%a0
+    adda.l  %a6,%a0                     /* DOS vector */
+    pea.l   .L_BCPL_simplereturn
+    move.l  %a0,%sp@-
+    move.l  %sp@(3*4),%a0               /* the caller's A0 */
+    rts
+.L_BCPL_simplereturn:
+    BCPL_LEAVE_DOS
+    movem.l %sp@+,%a0-%a1/%a6
+    addq.l  #4,%sp                      /* the stub's return address */
+    move.l  %d0,%d1
+    jmp     (%a6)
+
+    /* BCPL_DOS name vector: a global vector entry that calls the DOS
+     * function 'vector' with the BCPL arguments in D1-D4.
+     */
+#if DEBUG
+    .macro BCPL_DOS name vector
+BCPLd \name
+    movem.l	%a0-%a1/%a6,%sp@-
+    move.l	%a2@(GV_DOSBase),%a6
+    BCPL_DOSCALL \vector
+    movem.l	%sp@+,%a0-%a1/%a6
+    BRTSd
+    .endm
+#else
+    .macro BCPL_DOS name vector
+    .balign 4
+    .globl  BCPL_\name
+BCPL_\name:
+    bsr.w   BCPL_simpleDOS
+    .word   (\vector * -6)
+    .endm
+#endif
+
+    /* Global vector table entries */
+BCPLd sysRequest     /* -84, void, @line1, @line2, @line3 */
+    BRTS
+
+    /* In-place conversion of BSTR to C string */
+BCPL toCStr          /* -80, char *, @string */
+    movem.l     %a0-%a1,%sp@-
+    move.l      %d1,%d0
+    lsl.l       #2,%d0
+    addq.l      #1,%d0
+    move.l      %d0,%a0
+    clr.l       %d1
+    move.b      %a0@+,%d1
+    subq.l      #1,%d1
+    blt         1f
+0:  
+    move.b      %a0@+,%d2
+    move.b      %d2,%a0@(-2)
+    dbra        %d1,0b
+1:
+    move.b      #0,%a0@(-1)
+    movem.l     %sp@+,%a0-%a1
+    BRTS
+
+BCPL toBSTR         /* -7c, void, &src, @dest */
+    movem.l     %d1-%d2/%a0-%a1,%sp@-
+    lsl.l       #2,%d2
+    move.l      %d1,%a0
+    move.l      %d2,%a1
+    clr.l       %d2
+    tst.l       %d1
+    beq         1f      /* src == NULL */
+0:
+    move.b      %a0@+,%d0
+    tst.b       %d0
+    beq         1f
+    addq.l      #1,%d2
+    tst.b       %d2
+    beq         1f
+    move.b      %d0,%a1@(%d2)
+    bra         0b
+1:
+    move.b      %d2,%a1@
+    movem.l     %sp@+,%d1-%d2/%a0-%a1
+    BRTS
+
+BCPL_DOS Execute 37	/* -6c, BOOL, &command, @input, @output; DOS/Execute() */
+
+BCPL_DOS IsInteractive 36	/* -68, BOOL, @filehandle; DOS/IsInteractive() */
+
+BCPL_DOS DateStamp 32	/* -64, timeval *, &time; DOS/DateStamp() */
+
+BCPL_DOS SetProtection 31	/* -60, BOOL, &name, mask; DOS/SetProtection() */
+
+BCPL_DOS SetComment 30	/* -5c, BOOL, &name, &comment; DOS/SetComment() */
+
+BCPL_DOS DeviceProc 29	/* -58, &name; DOS/DeviceProc() */
+
+BCPL_DOS NoReqLoadSeg 28	/* -54, SegList ^, @name; DOS/NoReqLoadSeg() */
+
+BCPL clearvec       /* -50, void, @buff, lw_length */
+    tst.l	%d2
+    bmi.s	.Lclearmem_end
+    lsl.l	#2,%d1
+	/* clears one extra long by design! */
+.Lclearmem_loop:
+    clr.l	%a0@(%d1)
+    addq.l	#4,%d1
+    dbf		%d2,.Lclearmem_loop
+.Lclearmem_end:
+    BRTS
+
+BCPL_DOS LoadSeg 25	/* -4c, SegList ^, &name; DOS/LoadSeg() */
+
+BCPL_DOS CreateProc 23	/* -48, MessagePort *, &name, pri, seg, stackbytes; DOS/CreateProc() */
+
+BCPL_DOS IoErr 22	/* -44, long; DOS/IoErr() */
+
+BCPL_DOS CurrentDir 21	/* -40, FileLock ^, @FileLock; DOS/CurrentDir() */
+
+BCPL_DOS CreateDir 20	/* -3c, FileLock ^, &name; DOS/CreateDir() */
+
+BCPL_DOS Info 19	/* -38, BOOL, @FileLock, &InfoData; DOS/Info() */
+
+BCPL_DOS ExNext 18	/* -34, BOOL, @FileLock, &FileInfo; DOS/ExNext() */
+
+BCPL_DOS Examine 17	/* -30, BOOL, @FileLock, &FileInfo; DOS/Examine() */
+
+BCPL_DOS Lock 14	/* -2c, FileLock ^, &name, mode; DOS/Lock() */
+
+BCPL_DOS Rename 13	/* -28, BOOL, &oldname, &newname; DOS/Rename() */
+
+BCPL_DOS DeleteFile 12	/* -24, BOOL, &name; DOS/DeleteFile() */
+
+BCPL_DOS Seek 11	/* -20, LONG, @FileHandle, pos, mode; DOS/Seek() */
+
+BCPL_DOS Write 8	/* -18, LONG, Write, @FileHandle, &buf, len; DOS/Write() */
+
+BCPL_DOS Read 7	/* -0c, LONG, Read, @FileHandle, &buf, len; DOS/Read() */
+
+BCPL copyvec        /* -08, void, @src, @dest, n */
+    movem.l	%d2-%d3/%a0-%a1,%sp@-
+	tst.l	%d3
+	bmi.s	.copydone
+	lsl.l	#2,%d1
+	move.l	%d1,%a0
+	lsl.l	#2,%d2
+	move.l	%d2,%a1
+	/* copies one extra long by design! */
+.copyloop:
+	move.l	%a0@+,%a1@+
+	dbf		%d3,.copyloop
+.copydone:
+    movem.l	%sp@+,%d2-%d3/%a0-%a1
+    BRTS
+
+#if BCPLSTRINGDEBUG
+BCPL Open           /* -04, FileHandle ^, &name, mode */
+    movem.l	%a0-%a1/%a6,%sp@-
+
+#if BCPLSTRINGDEBUG
+    move.l	%d1,%d0
+	bsr		bstr_debug
+#endif
+
+    move.l	%a2@(GV_DOSBase),%a6
+    BCPL_DOSCALL 5	/* DOS/Open() */
+    movem.l	%sp@+,%a0-%a1/%a6
+    BRTS
+#else
+BCPL_DOS Open 5	/* -04, FileHandle ^, &name, mode; DOS/Open() */
+#endif
+
+                     /* 4, void main */
+BCPL Entry
+    jsr         BCPL_RunHandler
+    /* FALLTHROUGH to BCPL_Exit */
+
+BCPL Exit            /*  08, void, code */
+    move.l	SysBase,%a6
+    sub.l	%a1,%a1
+    move.l	%d1,%d2
+    jsr		%a6@(FindTask)
+    move.l	%d0,%a0
+    move.l	%a0@(pr_ReturnAddr),%a0
+    lea.l	%a0@(-4),%sp
+    move.l	%d2,%d0
+    rts
+
+BCPL multiply       /*  0c, D1 = D1 * D2 */
+    jsr	%a5@(0x10)
+    BRTS
+
+BCPL divide         /*  10, D1 = D1 / D2 */
+    jsr	%a5@(0x12)
+    move.l	%a1@(4),%d2
+    BRTS
+
+BCPL mod            /*  14, D1 = D1 % D2 */
+    jsr	%a5@(0x12)
+    move.l	%d2,%d0 /* BRTS does move.l %d0,%d1 */
+    move.l	%a1@(4),%d2
+    BRTS
+
+BCPL setIO          /*  18, void, @IOStdReq, command, &data, len, offset */
+    lsl.l	#2,%d1
+    move.w	%d2,%a0@(28,%d1)
+    move.l	%d3,%d0
+    lsl.l	#2,%d0
+    move.l	%d0,%a0@(40,%d1)
+    move.l	%d4,%a0@(36,%d1)
+    /* only first 4 params are in registers */
+    move.l	%a1@(4*4),%a0@(44,%d1)
+    BRTS
+
+BCPL packlw         /*  20, LONG, &data, len */
+	movem.l	%d2,%sp@-
+	moveq	#0,%d0
+.packlw_loop:
+	lsl.l	#8,%d0
+	move.b	%a0@(%d1.l),%d0
+	addq.l	#1,%d1
+	subq.b	#1,%d2
+	bne.s	.packlw_loop
+	movem.l	%sp@+,%d2
+    BRTS
+
+BCPL unpacklw       /*  24, void, &data, len, LONG */
+	movem.l	%d2/%d3,%sp@-
+.unpacklw_loop:
+	rol.l	#8,%d3
+	move.b	%d3,%a0@(%d1.l)
+	addq.l	#1,%d1
+	subq.b	#1,%d2
+	bne.s	.unpacklw_loop
+	movem.l	%sp@+,%d2/%d3
+    BRTS
+
+BCPL Res2           /*  28, LONG, is_set_flag, result_code */
+    movem.l	%a0-%a1/%a6,%sp@-
+    move.l	%a2@(GV_DOSBase),%a6
+    tst.l	%d1
+    beq         .LRes2_get
+.LRes2_set:
+    move.l	%d2,%d1
+    BCPL_DOSCALL 77 /* DOS/SetIoErr */
+.LRes2_get:
+    BCPL_DOSCALL 22 /* DOS/IoErr */
+    movem.l	%sp@+,%a0-%a1/%a6
+    BRTS
+
+                     /*  30, BCPL_FrameLower */
+
+BCPLd makeGVarea     /*  34, void, @buff */
+    BRTS
+
+BCPL findtask        /*  38, &Process->MsgPort *, */
+    movem.l	%a0-%a1/%a6,%sp@-
+    move.l	SysBase,%a6
+    sub.l	%a1,%a1
+    jsr		%a6@(FindTask)
+    add.l	#92,%d0	/* point to &MsgPort */
+    movem.l	%sp@+,%a0-%a1/%a6
+    BRTS
+
+BCPL getbyte        /*  3c, BYTE, @lw_addr, bytenum */
+    lsl.l	#2,%d1
+    add.l	%d2,%d1
+    moveq	#0,%d0
+    move.b	%a0@(%d1.l),%d0
+    BRTS
+
+BCPL putbyte        /*  40, BYTE, @lw_addr, bytenum, byte */
+	lsl.l	#2,%d1
+	add.l	%d2,%d1
+	move.b	%d3,%a0@(%d1.l)
+    BRTS
+
+BCPL level          /*  44, LONG (or BPTR?) */
+    move.l  %a1@(-12),%d0  /* Return caller's BCPL frame */
+    BRTS
+
+BCPL longcall       /*  48, LONG, level, label */
+    move.l	%d1,%a1
+    move.l	%a1@(-4),%a4
+    jmp		%a0@(%d2.l)
+
+BCPL allocMem       /*  4c, BPTR, lwlength, reqs */
+    movem.l	%a0-%a1/%a6,%sp@-
+    move.l	SysBase,%a6
+    move.l	%d1,%d0
+    addq.l	#4,%d0         /* 4 additional words for padding */
+    lsl.l	#2,%d0
+    move.l	%d2,%d1
+    bset.l	#16,%d1        /* MEMF_CLEAR */
+    jsr		%a6@(114 * -6) /* Exec/AllocVec() */
+    lsr.l	#2,%d0
+    movem.l	%sp@+,%a0-%a1/%a6
+    BRTS
+
+BCPLd longjump       /*  50, LONG, label */
+    BRTS
+
+BCPL doIO           /*  54, LONG, @IORequest */
+    movem.l	%a0-%a1/%a6,%sp@-
+    move.l	SysBase,%a6
+    lsl.l	#2,%d1
+    move.l	%d1,%a1
+    jsr		%a6@(76 * -6)	/* Exec/DoIO() */
+    ext.w	%d0
+    ext.l	%d0
+    movem.l	%sp@+,%a0-%a1/%a6
+    BRTS
+
+BCPL sendIO         /*  58, void, @IORequest */
+    movem.l     %a0-%a1/%a6,%sp@-
+    lsl.l       #2,%d1
+    move.l      %d1, %a1
+    move.l      SysBase,%a6
+    jsr         %a6@(77 * -6)   /* Exec/SendIO */
+    movem.l     %sp@+,%a0-%a1/%a6
+    BRTS
+
+    /* Coroutine support:
+     * struct coroutine {
+     *      BPTR colist;
+     *      BPTR parent;
+     *      APTR frame;
+     *      APTR procedure;
+     */
+BCPLd createco       /*  5c, void, @coroutine, lwlength */
+    BRTS
+
+BCPLd deleteco       /*  60, void, @coroutine */
+    BRTS
+
+BCPLd callco         /*  64, void, @coroutine, arg */
+    BRTS
+
+BCPLd cowait         /*  68, void, result */
+    BRTS
+
+BCPLd resumeco       /*  6c, void, @coroutine */
+    BRTS
+
+BCPL installSeg     /*  70, BOOL, @memseg_BCPL */
+    movem.l	%a0-%a1,%sp@-
+    move.l	%a2,%sp@-
+    move.l	%d1,%sp@-
+    jsr		BCPL_InstallSeg
+    addq.l	#8,%sp
+    movem.l	%sp@+,%a0-%a1
+    BRTS
+
+BCPL getvec         /*  74, LONG ^, lw_length */
+    movem.l	%a0-%a1/%a6,%sp@-
+    move.l	SysBase,%a6
+    move.l	%d1,%d0
+    addq.l	#1,%d0         /* extra long */
+    lsl.l	#2,%d0
+    moveq	#1,%d1
+    jsr		%a6@(114 * -6) /* Exec/AllocVec() */
+    lsr.l	#2,%d0
+    tst.l       %d0     /* If the result is NULL... */
+    bne         1f
+    move.l      %a2,%d1
+    tst.l       %d1     /* And we have a GlobVec... */
+    bne         1f
+    move.l      %a2@(GV_DOSBase),%a6
+    move.l      103,%d1 /* ERRROR_NO_FREE_STORE */
+    BCPL_DOSCALL 77 /* DOS/SetIoErr */
+    clr.l       %d0
+1:
+    movem.l	%sp@+,%a0-%a1/%a6
+    BRTS
+
+BCPL freevec        /*  78, void, @vec */
+    movem.l	%a0-%a1/%a6,%sp@-
+    move.l	SysBase,%a6
+    lsl.l	#2,%d1
+    move.l	%d1,%a1
+    jsr		%a6@(115 * -6) /* Exec/FreeVec() */
+    movem.l	%sp@+,%a0-%a1/%a6
+    BRTS
+
+BCPL openDevice     /*  7c, BOOL, @IORequest, @name, unit, flags */
+    movem.l	%d5/%a0-%a1/%a6,%sp@-
+    move.l	SysBase,%a6
+
+#if BCPLSTRINGDEBUG
+    move.l	%d2,%d0
+	bsr		bstr_debug
+#endif
+
+    lsl.l	#2,%d1
+    move.l	%d1,%d5
+
+    sub.l	%a1,%a1
+    jsr		%a6@(FindTask)
+    
+    lsl.l	#2,%d2
+    addq.l	#1,%d2
+    move.l	%d2,%a0
+    move.l	%d5,%a1
+    add.l	#92,%d0
+    move.l	%d0,%a1@(14)	/* replyport = &Process->pr_MsgPort */
+    move.l	%d4,%d1
+    move.l	%d3,%d0
+    jsr		%a6@(74 * -6)	/* Exec/OpenDevice() */
+    moveq	#-1,%d1
+    tst.b	%d0
+    beq.s	od_ok
+    moveq	#0,%d1
+od_ok:
+	move.l	%d1,%d0
+    movem.l	%sp@+,%d5/%a0-%a1/%a6
+    BRTS
+
+BCPL closeDevice    /*  80, void, @IORequest */
+    movem.l	%a0-%a1/%a6,%sp@-
+    move.l	SysBase,%a6
+    lsl.l	#2,%d1
+    move.l	%d1,%a1
+    jsr		%a6@(75 * -6)	/* Exec/CloseDevice() */
+    movem.l	%sp@+,%a0-%a1/%a6
+    BRTS
+
+/*
+ * On older AmigaOS versions, Both NewCLI and Run call this function.
+ * It:
+ *      Allocates memory for Process structure and stack, and puts this
+ *        on the MemList
+ *      Fills the Task, Process, and DOS MsgPort:
+ *        SigWait for signal 8, and default TrapCode
+ *      Reserves stack space to hold the Process name
+ *      Copies the parent's Console Handler, File Handler, and Window
+ *      AddTask()'s with special initPC and finalPC.
+ *        The finalPC code frees the SegArray.
+ *        The initPC code:
+ *      Fills the stack with "tttu", terminating with -1 and SP;
+ *      Sets the BCPL coroutine list to point to SPLower;
+ *      Looks at the Segarray.  If there is more than one entry, it calls
+ *        GetSegList to fill in the GV;
+ *      It then fills in a5 and a6, waits for a startup packet, and
+ *        then calls the program code at 4(a2).
+ */
+
+BCPL createProcBCPL     /*  84, MessagePort *, @segarray, lw_stack_size, pri, @name,  */
+    movem.l	%a0-%a1/%a6,%sp@-
+    move.l	%a2@(GV_DOSBase),%a6
+
+    move.l	%d3,%sp@-
+    lsl.l	#2,%d2
+    move.l	%d2,%sp@-
+    lsl.l	#2,%d1
+    move.l	%d1,%sp@-
+    move.l	%d4,%d1
+    moveq.l	#4, %d0
+    bsr		bstr_to_cstr
+    move.l	%d1,%sp@-
+    move.l	%a6,%sp@-
+    jsr		BCPL_CreateProcBCPL
+    lea.l	%sp@(5 * 4),%sp
+    movem.l	%sp@+,%a0-%a1/%a6
+    BRTS
+
+BCPL remProcess     /*  88, void */
+    jmp BCPL_Exit	/* TODO: Review if this is correct */
+
+BCPL_DOS ParentDir 35	/*  8c, FileLock ^, @FileLock; DOS/ParentDir() */
+
+BCPL setSignals     /*  90, void, &MsgPort, mask */
+    movem.l	%a0-%a1/%a6,%sp@-
+    move.l	SysBase,%a6
+    add.l	#mp_SigTask,%d1
+    move.l	%a0@(%d1),%a1
+    move.l	%d2,%d0
+    lsl.l	#8,%d0
+    lsl.l	#4,%d0			/* shift to C-F signals */
+    and.l	#0xf000,%d0		/* mask only C-F signals */
+    jsr		%a6@(54 * -6)	/* Exec/Signal() */
+    movem.l	%sp@+,%a0-%a1/%a6
+    BRTS
+
+BCPL clearSignals   /* 94, BOOL , mask */
+    movem.l	%d2/%a0-%a1/%a6,%sp@-
+    move.l	SysBase,%a6
+    clr.l	%d0
+    lsl.l	#8,%d1
+    lsl.l	#4,%d1
+    and.l	#0xf000,%d1
+    move.l	%d1,%d2
+    jsr		%a6@(51 * -6)	/* Exec/SetSignal() */
+    moveq	#0,%d1
+    and.l	%d2,%d0
+    beq.s	0f
+    moveq	#-1,%d1
+0:	move.l	%d1,%d0
+    movem.l	%sp@+,%d2/%a0-%a1/%a6
+    BRTS
+
+BCPL DOSAlert       /* 98, void, alertnumber */
+    movem.l	%d7/%a0-%a1/%a6,%sp@-
+    move.l	SysBase,%a6
+    move.l	%d1,%d7
+    jsr		%a6@(18 * -6)	/* Exec/Alert() */
+    movem.l	%sp@+,%d7/%a0-%a1/%a6
+    BRTS
+
+BCPL findRootNode   /* 9c, RootNode @,  */
+    move.l	%a2@(GV_DOSBase),%d0
+    add.l	#dl_Root,%d0
+    move.l	%a0@(%d0),%d0	/* %a0 is always 0 in BCPL */
+    lsr.l	#2,%d0
+    BRTS
+
+BCPL readinput      /* a0, bytelength , &buf, bytelength */
+    movem.l	%d1-%d3/%a0-%a1/%a6,%sp@-
+    move.l	%a2@(GV_DOSBase),%a6
+    move.l	%d2,%d3
+    move.l	%d1,%d2
+    BCPL_DOSCALL 9	/* DOS/Input() */
+    move.l	%d0,%d1
+    BCPL_DOSCALL 7	/* DOS/Read() */
+    movem.l	%sp@+,%d1-%d3/%a0-%a1/%a6
+    BRTS
+
+    /* Wait on the process's pr_MsgPort for a packet.
+     */
+BCPL taskwait       /* a4, DosPacket @,  */
+    movem.l	%a0-%a1/%a6,%sp@-
+    jsr		BCPL_TaskWait
+    lsr.l	#2,%d0
+    movem.l	%sp@+,%a0-%a1/%a6
+    BRTS
+
+    /* When passed in, DosPacket's dp_Link points to
+     * an allocated, but empty, memory location. 
+     * Sent to the port of the current directory's handler.
+     */
+BCPL putPkt         /* a8, void, @DosPacket */
+    movem.l	%a0-%a1/%a6,%sp@-
+    move.l	%a2@(GV_DOSBase),%a6
+    jsr		Dos_BCPL_putpkt
+    movem.l	%sp@+,%a0-%a1/%a6
+    BRTS
+
+BCPL writeoutput    /* ac, void, &buf, bytelength */
+    movem.l	%d2-%d3/%a0-%a1/%a6,%sp@-
+    move.l	%a2@(GV_DOSBase),%a6
+    move.l	%d2,%d3
+    move.l	%d1,%d2
+    BCPL_DOSCALL 10	/* DOS/Output() */
+    move.l	%d0,%d1
+    BCPL_DOSCALL 8	/* DOS/Write() */
+    movem.l	%sp@+,%d2-%d3/%a0-%a1/%a6
+    BRTS
+
+    /* copy src LONG array to destination, LONG -> BYTE */
+BCPL packstring     /* b0, long, @Array, @String */
+    movem.l	%d2-%d3/%a0-%a1,%sp@-
+#if BCPLSTRINGDEBUG
+    move.l	%d2,%d3
+#endif
+    lsl.l	#2,%d1
+    move.l	%d1,%a0
+    lsl.l	#2,%d2
+    move.l	%d2,%a1
+    moveq	#0,%d2
+    move.b	(3,%a0),%d2
+    move.l	%d2,%d0
+    lsr.w	#2,%d0
+1:  move.l	(%a0)+,%d1
+    move.b	%d1,(%a1)+
+    dbf		%d2,1b
+
+#if BCPLSTRINGDEBUG
+	move.l	%d0,%d2
+    move.l	%d3,%d0
+    bsr		bstr_debug
+    move.l	%d2,%d0
+#endif
+
+    movem.l	%sp@+,%d2-%d3/%a0-%a1
+    BRTS
+
+    /* copy src BSTR to destination array, BYTE -> LONG */
+BCPL unpackstring   /* b4, void, @String, @Array */
+    movem.l	%a0-%a1,%sp@-
+
+#if BCPLSTRINGDEBUG
+    move.l	%d1,%d0
+    bsr		bstr_debug
+#endif
+
+    lsl.l	#2,%d1
+    move.l	%d1,%a0
+    lsl.l	#2,%d2
+    move.l	%d2,%a1
+    moveq	#0,%d0
+    move.b	(%a0),%d0
+    moveq	#0,%d1
+1:  move.b	(%a0)+,%d1
+    move.l	%d1,(%a1)+
+    dbf		%d0,1b
+    movem.l	%sp@+,%a0-%a1
+    BRTS
+
+BCPLd holdTask       /* b8, void, @memseg */
+    BRTS
+
+BCPL_DOS Delay 33	/* bc, void, ticks; DOS/Delay() */
+
+    /* Call the DOS internal 'dopacket' function
+     */
+BCPL sendPacket     /* c0, BOOL, -, MsgPort, Type, -, -, Arg1,... */
+    movem.l	%a0-%a1/%a6,%sp@-
+    BCPL_ENTER_DOS
+    move.l	%a1@((4 + 7) * 4), %sp@-        /* Arg7 */
+    move.l	%a1@((4 + 6) * 4), %sp@-        /* Arg6 */
+    move.l	%a1@((4 + 5) * 4), %sp@-        /* Arg5 */
+    move.l	%a1@((4 + 4) * 4), %sp@-        /* Arg4 */
+    move.l	%a1@((4 + 3) * 4), %sp@-        /* Arg3 */
+    move.l	%a1@((4 + 2) * 4), %sp@-        /* Arg2 */
+    move.l	%a1@((4 + 1) * 4), %sp@-        /* Arg1 */
+    move.l	%d3, %sp@-                      /* Type */
+    move.l	%d2, %sp@-                      /* Port */
+    move.l	%a0, %sp@-                      /* A0 is still 0 */
+    jsr		dopacket
+    lea.l	%sp@(10 * 4), %sp
+    BCPL_LEAVE_DOS
+    movem.l	%sp@+,%a0-%a1/%a6
+    BRTS
+
+BCPL returnPacket   /* c4, void, @DosPacket, res1, res2 */
+    tst.l	%d1     /* Don't try to reply NULL Dos Packets */
+    beq.s	0f
+    movem.l	%a0-%a1/%a6,%sp@-
+    move.l	%a2@(GV_DOSBase),%a6
+    lsl.l	#2, %d1
+    BCPL_DOSCALL 43	/* DOS/ReplyPkt() */
+    movem.l	%sp@+,%a0-%a1/%a6
+0:
+    BRTS
+
+#define TAG_END 0
+#define TAG_USER	(1 << 31)
+#define WA_Dummy	(TAG_USER + 99)
+#define WA_Left		(WA_Dummy + 1)
+#define WA_Top		(WA_Dummy + 2)
+#define WA_Width	(WA_Dummy + 3)
+#define WA_Height	(WA_Dummy + 4)
+#define WA_Title	(WA_Dummy + 11)
+#define WA_MinWidth	(WA_Dummy + 15)
+#define WA_MinHeight	(WA_Dummy + 16)
+#define WA_MaxWidth	(WA_Dummy + 17)
+#define WA_MaxHeight	(WA_Dummy + 18)
+#define WA_PubScreen	(WA_Dummy + 22)
+#define WA_SizeGadget	(WA_Dummy + 30)
+#define WA_DragBar	(WA_Dummy + 31)
+#define WA_DepthGadget	(WA_Dummy + 32)
+#define WA_Activate	(WA_Dummy + 38)
+#define WA_SmartRefresh	(WA_Dummy + 42)
+#define WA_SizeBRight	(WA_Dummy + 43)
+#define WA_AutoAdjust	(WA_Dummy + 45)
+
+BCPL openWindow     /* c8, struct Window *, leftedge, topedge, width, height, @title */
+	movem.l	%a0-%a1/%a6,%sp@-
+	move.l	%a2@(GV_DOSBase),%a6
+	move.l	%a6@(dl_IntuitionBase),%a6
+	clr.l	%sp@-			/* TAG_END */
+	moveq	#-1,%d0			/* TRUE for the boolean tags below */
+	pea.l	32767:w
+	move.l	#WA_MaxHeight, %sp@-
+	pea.l	32767:w
+	move.l	#WA_MaxWidth, %sp@-
+	pea.l	70:w
+	move.l	#WA_MinHeight, %sp@-
+	pea.l	100:w
+	move.l	#WA_MinWidth, %sp@-
+	move.l	%d0, %sp@-
+	move.l	#WA_SizeBRight, %sp@-
+	move.l	%d0, %sp@-
+	move.l	#WA_SmartRefresh, %sp@-
+	move.l	%d0, %sp@-
+	move.l	#WA_DepthGadget, %sp@-
+	move.l	%d0, %sp@-
+	move.l	#WA_DragBar, %sp@-
+	move.l	%d0, %sp@-
+	move.l	#WA_SizeGadget, %sp@-
+	move.l	%d0, %sp@-
+	move.l	#WA_AutoAdjust, %sp@-
+	move.l	%d0, %sp@-
+	move.l	#WA_Activate, %sp@-
+	move.l	%a0, %sp@-
+	move.l	#WA_PubScreen, %sp@-
+	/* NEWCON passes a BCPL word pointer to the first title character.
+	 * Convert it to the byte pointer required by WA_Title (BADDR), while
+	 * preserving a NULL title.  This is not an AmigaDOS length-prefixed
+	 * BSTR, so no byte is skipped after conversion.
+	 */
+	move.l	%a1@(4*4),%d0
+	beq.s	1f
+	lsl.l	#2,%d0
+1:
+	move.l	%d0,%sp@-
+	move.l	#WA_Title, %sp@-
+	move.l	%d4, %sp@-
+	move.l	#WA_Height, %sp@-
+	move.l	%d3, %sp@-
+	move.l	#WA_Width, %sp@-
+	move.l	%d2, %sp@-
+	move.l	#WA_Top, %sp@-
+	move.l	%d1, %sp@-
+	move.l	#WA_Left, %sp@-
+	move.l	%sp, %a1			/* a0 is still 0 here */
+	jsr		%a6@(101 * -6)		/* OpenWindowTagList */
+	lea.l	%sp@(35 * 4),%sp
+	movem.l	%sp@+,%a0-%a1/%a6
+    BRTS
+
+    /* If BOOL is DOSTRUE, set current directory
+     * Always return old current directory
+     */
+BCPL setCurrentDir  /* cc, FileLock @, BOOL, @FileLock */
+    movem.l	%d3-%d4/%a0-%a1/%a6,%sp@-
+
+	move.l	%d1,%d3
+
+    move.l	SysBase,%a6
+    sub.l	%a1,%a1
+    jsr		%a6@(FindTask)
+    move.l	%d0,%a0
+    /* sanity check in CurrentDir() complained so I did this */
+    move.l	%a0@(152),%d4	/* pr_CurrentDir */
+
+    tst.l	%d3
+    beq.s	0f
+
+    move.l	%a2@(GV_DOSBase),%a6
+    move.l	%d2,%d1
+    BCPL_DOSCALL 21	/* DOS/CurrentDir() */
+0:
+	move.l	%d4,%d0
+    movem.l	%sp@+,%d3-%d4/%a0-%a1/%a6
+    BRTS
+
+BCPLd systemRequest  /* d0, void, @line1, @line2, @line3 */
+    BRTS
+
+BCPL writet         /* d4, void, @string, n */
+    movem.l	%d2-%d4,%sp@-
+    move.l	%d1, %d3
+    lsl.l	#2, %d3		/* D3 = BADDR(string) */
+    clr.l	%d4
+    move.b	%a0@(%d3),%d4	/* D4 = string[0] (strlen) */
+    tst.l	%d4
+    beq		.LBCPL_writet_pad
+
+    bra		.LBCPL_writet_loop_cond
+
+.LBCPL_writet_loop:
+    addq.l	#1,%d3		/* D3 = pointer to next char */
+    subq.l	#1,%d2		/* D2 = reduce pad amount by 1 */
+    move.l	#(3*4 + 1*4),%d0
+    clr.l	%d1
+    move.b	%a0@(%d3),%d1	/* D1 = next char */
+    move.l	%a2@(GV_wrch), %a4
+    jsr		(%a5)
+.LBCPL_writet_loop_cond:
+    dbf		%d4,.LBCPL_writet_loop
+
+.LBCPL_writet_pad:
+    tst.l	%d2
+    ble		.LBCPL_writet_exit
+    bra		.LBCPL_writet_pad_cond
+
+.LBCPL_writet_pad_loop:
+    move.l	#(3*4 + 2*4),%d0
+    moveq.l	#' ',%d1
+    move.l	%a2@(GV_wrch), %a4
+    jsr		(%a5)
+.LBCPL_writet_pad_cond:
+    dbf		%d2,.LBCPL_writet_pad_loop
+
+.LBCPL_writet_exit:
+    movem.l	%sp@+,%d2-%d4
+    BRTS
+
+BCPLnd rdch           /* d8, char ,  */
+    movem.l	%a0-%a1/%a6,%sp@-
+    move.l	%a2@(GV_DOSBase),%a6
+    BCPL_DOSCALL 9	/* DOS/Input() */
+    move.l	%d0, %d1
+    BCPL_DOSCALL 51	/* DOS/FGetC() */
+    movem.l	%sp@+,%a0-%a1/%a6
+    BRTSnd
+
+BCPL unrdch         /* dc, void,  */
+    movem.l	%d2/%a0-%a1/%a6,%sp@-
+    move.l	%a2@(GV_DOSBase),%a6
+    BCPL_DOSCALL 9	/* DOS/Input() */
+    move.l	%d0, %d1
+    moveq	#-1,%d2
+    BCPL_DOSCALL 53	/* DOS/UnGetC() */
+    movem.l	%sp@+,%d2/%a0-%a1/%a6
+    BRTS
+
+BCPLnd wrch           /* e0, void, char */
+    movem.l	%d2/%a0-%a1/%a6,%sp@-
+    move.l	%a2@(GV_DOSBase),%a6
+    move.l	%d1, %d2
+    BCPL_DOSCALL 10	/* DOS/Output() */
+    move.l	%d0, %d1
+    BCPL_DOSCALL 52	/* DOS/FPutC() */
+    movem.l	%sp@+,%d2/%a0-%a1/%a6
+    BRTSnd
+
+BCPL readinput_long   /* e4, lwlength , @buf, lwlength */
+    movem.l	%d1-%d3/%a0-%a1/%a6,%sp@-
+    move.l	%a2@(GV_DOSBase),%a6
+    move.l	%d2,%d3
+    move.l	%d1,%d2
+    BCPL_DOSCALL 9	/* DOS/Input() */
+    move.l	%d0,%d1
+    lsl.l	#2,%d2
+    lsl.l	#2,%d3
+    BCPL_DOSCALL 7	/* DOS/Read() */
+    asr.l	#2,%d0
+    movem.l	%sp@+,%d1-%d3/%a0-%a1/%a6
+    BRTS
+
+BCPL writeoutput_long /* e8, void, @buf, lwlength */
+    movem.l	%d2-%d4/%a0-%a1/%a6,%sp@-
+    move.l	%a2@(GV_DOSBase),%a6
+    move.l	%d2, %d4	/* Num blocks */
+    moveq.l	#4, %d3		/* Block len (sizeof(ULONG)) */
+    move.l	%d1, %d2	/* Buffer */
+    lsl.l	#2, %d2
+    BCPL_DOSCALL 10	/* DOS/Output() */
+    move.l	%d0, %d1	/* Outfile */
+    BCPL_DOSCALL 55	/* DOS/FWrite() */
+    movem.l	%sp@+,%d2-%d4/%a0-%a1/%a6
+    BRTS
+
+BCPL findinput      /* ec, FileHandle ^, @name */
+    movem.l	%d2/%a0-%a1/%a6,%sp@-
+
+#if BCPLSTRINGDEBUG
+    move.l	%d1,%d0
+    bsr		bstr_debug
+#endif
+
+    moveq.l	#1, %d0
+    bsr		bstr_to_cstr
+
+    move.l	%a2@(GV_DOSBase),%a6
+    move.l	#1005 /* MODE_OLDFILE */,%d2
+    BCPL_DOSCALL 5	/* DOS/Open() */
+    movem.l	%sp@+,%d2/%a0-%a1/%a6
+    BRTS
+
+BCPL findoutput     /* f0, FileHandle ^, @name */
+    movem.l	%d2/%a0-%a1/%a6,%sp@-
+  
+#if BCPLSTRINGDEBUG
+    move.l	%d1,%d0
+    bsr		bstr_debug
+#endif
+
+    moveq.l	#1, %d0
+    bsr		bstr_to_cstr
+
+    move.l	%a2@(GV_DOSBase),%a6
+    move.l	#1006 /* MODE_NEWFILE */,%d2
+    BCPL_DOSCALL 5	/* DOS/Open() */
+    movem.l	%sp@+,%d2/%a0-%a1/%a6
+    BRTS
+
+BCPL_DOS SelectInput 49	/* f4, void , @FileHandle; DOS/SelectInput() */
+
+BCPL_DOS SelectOutput 50	/* f8, void , @FileHandle; DOS/SelectOutput() */
+
+BCPL endread        /* fc, void,  */
+    movem.l	%a0-%a1/%a6,%sp@-
+    move.l	%a2@(GV_DOSBase),%a6
+    BCPL_DOSCALL 9	/* DOS/Input() */
+    move.l	%d0,%d1
+    BCPL_DOSCALL 6	/* DOS/Close() */
+    moveq.l	#0,%d1
+    BCPL_DOSCALL 49	/* DOS/SelectInput() */
+    movem.l	%sp@+,%a0-%a1/%a6
+    BRTS
+
+BCPL endwrite       /* 100, void,  */
+    movem.l	%a0-%a1/%a6,%sp@-
+    move.l	%a2@(GV_DOSBase),%a6
+    BCPL_DOSCALL 10	/* DOS/Output() */
+    move.l	%d0,%d1
+    BCPL_DOSCALL 6	/* DOS/Close() */
+    moveq.l	#0,%d1
+    BCPL_DOSCALL 50	/* DOS/SelectOutput() */
+    movem.l	%sp@+,%a0-%a1/%a6
+    BRTS
+
+BCPL_DOS Input 9	/* 104, FileHandle @, ; DOS/Input() */
+
+BCPL_DOS Output 10	/* 108, FileHandle @, ; DOS/Output() */
+
+BCPL readn          /* 10c, void,  */
+    /* no dos.library equivalent for this :(
+     * ignore all whitespace at the beginning
+     * converts ascii to decimal
+     */
+    movem.l	%d2-%d7/%a0-%a1/%a6,%sp@-
+    move.l	%a2@(GV_DOSBase),%a6
+    BCPL_DOSCALL 9 /* DOS/Input() */
+    move.l	%d0,%d6
+    moveq	#0,%d4 /* val */
+    moveq	#0,%d5 /* neg */
+    moveq	#10,%d3
+    moveq	#0,%d7
+
+.readn_ws:
+    move.l	%d6,%d1
+    BCPL_DOSCALL 51 /* DOS/FGetC() */
+    move.l	%d0,%d2
+    cmp.b	#' ',%d2
+    beq.s	.readn_ws
+    cmp.b	#'\t',%d2
+    beq.s	.readn_ws
+    cmp.b	#'\n',%d2
+    beq.s	.readn_ws
+    cmp.b	#'+',%d2
+    beq.s	.readn_ch
+    cmp.b	#'-',%d2
+    bne.s	.readn_ch2
+    moveq	#1,%d5
+    bra.s	.readn_ch
+.readn_ch2:
+    cmp.b	#'0',%d2
+    bcs.s	.readn_end
+    cmp.b	#'9',%d2
+    bhi.s	.readn_end
+    move.l  %d3, %sp@-
+    move.l  %d4, %sp@-
+    jsr     __mulsi3
+    addq.l	#8,%sp
+    move.l	%d0,%d4
+    moveq	#0,%d0
+    move.b	%d2,%d0
+    sub.b	#'0',%d0
+    add.l	%d0,%d4
+.readn_ch:
+    moveq	#1,%d7 /* got at least one digit */
+    move.l	%d6,%d1
+    BCPL_DOSCALL 51 /* DOS/FGetC() */
+    move.l	%d0,%d2
+    bra.s	.readn_ch2
+
+.readn_end: 
+    move.l	%d6,%d1
+    BCPL_DOSCALL 53 /* DOS/UnGetC() */
+
+    moveq	#-1,%d1
+    tst.b	%d7
+    beq.s	.readn_fail
+    moveq	#0,%d1
+.readn_fail:
+    BCPL_DOSCALL 77 /* DOS/SetIoErr() */
+
+    tst.b	%d5 /* negative? */
+    beq.s	.readn_nneg
+    neg.l	%d4
+.readn_nneg:
+    move.l	%d4,%d0
+    movem.l	%sp@+,%d2-%d7/%a0-%a1/%a6
+    BRTS
+
+BCPL newline        /* 110, void,  */
+    moveq.l	#'\n',%d1
+    jmp		BCPL_wrch
+
+BCPL_write_base:	/* number, width, base, canneg */
+    movem.l	%d2-%d7,%sp@-
+
+    move.l	%d3,%d6		/* D6 = base */
+    move.l	%d2,%d5		/* D5 = width */
+    move.l	%d1,%d3		/* D3 = Number */
+    moveq	#0,%d7
+
+    tst.l	%d4
+    beq		.Lwrite_base_pos
+
+    tst.l	%d3		/* Number < 0? */
+    bge		.Lwrite_base_pos
+
+    bset	#31,%d7	/* D7 bit 31 = negative sign needed */
+    neg.l	%d3
+    subq.l	#1,%d5
+
+.Lwrite_base_pos:
+    clr.l	%d4		/* D4 = Digit */
+    clr.w	%d7		/* D7 = Num pushed chars */
+
+.Lwrite_base_loop:
+    move.l	%d3,%d1
+    move.l	%d6,%d2
+    jsr		%a5@(0x12)	/* divmod: D1 = D3/base, D2 = D3 % base */
+    move.l	%d1, %d3
+
+    /* Push char */
+    move.l	%d2, %d1
+    cmp.b	#10, %d1
+    blt		0f
+    add.b	#(('A'-10)-'0'),%d1
+0:
+    add.b	#'0',%d1	/* D1 = '0' .. '9' */
+    move.b	%d1, %a1@(3*4 + 4*4, %d7.w)
+    addq.w	#1, %d7
+    subq.l	#1, %d5
+    tst.l	%d3
+    bgt.s	.Lwrite_base_loop
+
+    /* Any extra field bits? */
+    bra		.LBCPL_write_base_pad_cond
+.LBCPL_write_base_pad:
+    moveq	#' ',%d1
+    cmp.b	#10,%d6
+    beq.s	.LBCPL_write_base_pad_char
+    moveq	#'0',%d1
+.LBCPL_write_base_pad_char:
+    move.l	#(3*4 + 4*4 + 8*4), %d0
+    move.l	%a2@(GV_wrch), %a4
+    jsr		(%a5)
+.LBCPL_write_base_pad_cond:
+    subq.l	#1,%d5
+    bpl.s	.LBCPL_write_base_pad
+
+	btst	#31,%d7
+	beq.s	.Lwrite_base_emit
+    /* Negative sign */
+    move.l	#'-',%d1
+    move.l	#(3*4 + 4*4 + 8*4), %d0
+    move.l	%a2@(GV_wrch), %a4
+    jsr		(%a5)
+
+    /* Write chars */
+.Lwrite_base_emit:
+    subq.w	#1, %d7
+    bmi.s	0f
+    clr.l	%d1
+    move.b	%a1@(3*4 + 4*4, %d7.w),%d1
+    move.l	#(3*4 + 4*4 + 8*4), %d0
+    move.l	%a2@(GV_wrch), %a4
+    jsr		(%a5)
+    jmp		.Lwrite_base_emit
+0:
+
+    movem.l	%sp@+,%d2-%d7
+    BRTS
+
+BCPL writei         /* 114, void, number, width */
+    movem.l	%d3-%d4,%sp@-
+
+    move.l	#(3*4 + 2*4), %d0
+    move.l	#10,%d3
+    move.l	#-1,%d4
+    lea.l	BCPL_write_base, %a4
+    jsr		(%a5)
+
+    movem.l	%sp@+,%d3-%d4
+    BRTS
+
+BCPL writen         /* 118, void, number */
+    movem.l	%d2-%d4,%sp@-
+
+    move.l	#(3*4 + 1*4), %d0
+    clr.l	%d2
+    move.l	#10,%d3
+    move.l	#-1,%d4
+    lea.l	BCPL_write_base, %a4
+    jsr		(%a5)
+
+    movem.l	%sp@+,%d2-%d4
+    BRTS
+
+BCPL writehex       /* 11c, void, number, width */
+    movem.l	%d3-%d4,%sp@-
+
+    move.l	#(3*4 + 2*4), %d0
+    move.l	#16,%d3
+    clr.l	%d4
+    lea.l	BCPL_write_base, %a4
+    jsr		(%a5)
+
+    movem.l	%sp@+,%d3-%d4
+    BRTS
+
+BCPL writeoct       /* 120, void, number, width */
+    movem.l	%d3-%d4,%sp@-
+
+    move.l	#(3*4 + 2*4), %d0
+    move.l	#8,%d3
+    clr.l	%d4
+    lea.l	BCPL_write_base, %a4
+    jsr		(%a5)
+
+    movem.l	%sp@+,%d3-%d4
+    BRTS
+
+BCPL writes         /* 124, void, @string */
+    move.l	%d2,%sp@-
+    clr.l	%d2
+    move.l	#(3*4 + 1*4),%d0
+    move.l	%a2@(GV_writet), %a4
+    jsr		(%a5)
+    move.l	%sp@+,%d2
+    BRTS
+
+#if 0 /* This is defined in bcpl_writef.S */
+BCPLd writef         /* 128, void, @format, arg1, arg2, ... */
+    BRTS
+#endif
+
+BCPL toupper        /* 12c, void, char */
+    move.l	%d1,%d0
+    cmp.b	#'a',%d0
+    bcs.s	1f
+    cmp.b	#'z',%d0
+    bhi.s	1f
+    bclr	#5,%d0
+1:  BRTS
+
+BCPL charicmp        /* 130, long , char1, char2 */
+    move.l	%d2,%d0
+    cmp.b	#'a',%d0
+    bcs.s	1f
+    cmp.b	#'z',%d0
+    bhi.s	1f
+    bclr	#5,%d0
+1:  cmp.b	#'a',%d1
+    bcs.s	2f
+    cmp.b	#'z',%d1
+    bhi.s	2f
+    bclr	#5,%d1
+2:  exg		%d1,%d0
+	sub.l	%d1,%d0
+    BRTS
+
+BCPL stricmp         /* 134, long , @String1, @String2 */
+    movem.l	%d1-%d3/%a0-%a1,%sp@-
+
+#if BCPLSTRINGDEBUG
+    move.l	%d1,%d0
+	bsr		bstr_debug
+	move.l	%d2,%d0
+	bsr		bstr_debug
+#endif
+
+    lsl.l	#2,%d1
+    move.l	%d1,%a0
+    lsl.l	#2,%d2
+    move.l	%d2,%a1
+    move.b	%a0@+,%d2
+    move.b	%a1@+,%d3
+    moveq	#0,%d0
+sicmp1:
+    tst.b	%d2
+    beq.b	sicmp2
+    tst.b	%d3
+    beq.b	sicmp2
+    subq.b	#1,%d2
+    subq.b	#1,%d3
+
+    moveq	#0,%d0
+    move.b	%a0@+,%d0
+    cmp.b	#'a',%d0
+    bcs.s	sicmp3
+    cmp.b	#'z',%d0
+    bhi.s	sicmp3
+    bclr	#5,%d0
+sicmp3:
+    moveq	#0,%d1
+    move.b	%a1@+,%d1
+    cmp.b	#'a',%d1
+    bcs.s	sicmp4
+    cmp.b	#'z',%d1
+    bhi.s	sicmp4
+    bclr	#5,%d1
+sicmp4:
+    sub.l	%d1,%d0
+    beq.s	sicmp1
+	bra.s	sicmp0
+sicmp2:
+	cmp.b	%d2,%d3
+	beq.s	sicmp0
+	moveq	#-1,%d0
+	tst.b	%d2
+	beq.s	sicmp0
+	moveq	#1,%d0
+sicmp0:
+	movem.l	%sp@+,%d1-%d3/%a0-%a1
+    BRTS
+
+BCPL rdargs         /* 138, ULONG, @template, array, array_size */
+    /* BCPL rdargs and DOS/ReadArgs() don't match up
+     *      very nicely. We'll need to call a BCPL/ReadArgs
+     *      routine that works the way this expects
+     */
+    movem.l	%a0-%a1/%a6,%sp@-
+    move.l	%a2@(GV_DOSBase),%a6
+    jsr		BCPL_ReadArgs
+    movem.l	%sp@+,%a0-%a1/%a6
+    BRTS
+
+BCPL rditem         /* 13c, void, @buf, maxlongs  */
+    movem.l	%d2-%d3/%a0-%a2/%a6,%sp@-
+    move.l	%a2@(GV_DOSBase),%a6
+    lsl.l	#2,%d1
+    addq.l	#1,%d1
+    move.l	%d1,%a2
+    clr.b	%a2@
+    lsl.l	#2,%d2
+    subq.l	#1,%d2
+    moveq	#0,%d3
+    /* this can't be right but at least c:execute does something now */
+    BCPL_DOSCALL 135	/* DOS/ReadItem() */
+
+    move.l	%a2,%a0
+    moveq	#-1,%d2
+0:  addq.w	#1,%d2
+    tst.b	%a0@+
+	bne		0b
+	move.b	%d2,%a2@(-1)	/* fix buf BSTR length */
+
+#if BCPLSTRINGDEBUG
+    move.l      %d0,%d2
+    lea.l	%a2@(-1),%a2
+    move.l      %a2,%d0
+    lsr.l       #2,%d0
+    bsr		bstr_debug
+    move.l      %d2,%d0
+#endif
+
+    movem.l	%sp@+,%d2-%d3/%a0-%a2/%a6
+    BRTS
+
+BCPL subString      /* 140, void, @string, @substring */
+
+    movem.l	%d2-%d3/%a0-%a6,%sp@-
+    move.l	SysBase,%a6
+    move.l	%a2@(GV_DOSBase),%a5
+
+#if BCPLSTRINGDEBUG
+    move.l	%d1,%d0
+	bsr		bstr_debug
+	move.l	%d2,%d0
+	bsr		bstr_debug
+#endif
+
+    moveq	#0,%d3
+
+    lsl.l	#2,%d1
+    move.l	%d1,%a2
+    lsl.l	#2,%d2
+    move.l	%d2,%a3
+
+	moveq	#0,%d0
+	move.b	(%a2),%d0
+	moveq	#0,%d1
+	move.b	(%a3),%d1
+	add.l	%d1,%d0
+	addq.l	#2,%d0
+	moveq	#1,%d1
+	jsr		%a6@(114 * -6)	/* AllocVec */
+	move.l	%d0,%a4
+	tst.l	%d0
+	beq.s	findarg_end
+	move.l	%a4,%a0
+
+	move.l	%a0,%d1
+	move.b	%a2@+,%d0
+findarg_copy12:
+	beq.s	findarg_copy11
+	move.b	%a2@+,%a0@+
+	subq.b	#1,%d0
+	bra.s	findarg_copy12
+findarg_copy11:
+	clr.b	%a0@+
+
+	move.l	%a0,%d2
+    move.b	%a3@+,%d0
+findarg_copy22:
+ 	beq.s	findarg_copy21
+	move.b	%a3@+,%a0@+
+	subq.b	#1,%d0
+	bra.s	findarg_copy22
+findarg_copy21:
+    clr.b	%a0@+
+
+	exg		%a5,%a6
+    BCPL_DOSCALL 134	/* DOS/FindArg() */
+    exg		%a5,%a6
+	move.l	%d0,%d3
+
+findarg_end:
+	move.l	%a4,%a1
+	jsr		%a6@(115 * -6)	/* FreeVec */
+
+	move.l	%d3,%d0
+    movem.l	%sp@+,%d2-%d3/%a0-%a6
+    BRTS
+
+	/* C:Resident uses this */
+BCPL load           /* 144, SegList ^, @filename */
+    movem.l	%a0-%a1/%a6,%sp@-
+    move.l	%a2@(GV_DOSBase),%a6
+
+#if BCPLSTRINGDEBUG
+    move.l	%d1,%d0
+	bsr		bstr_debug
+#endif
+
+    moveq	#1,%d0
+    bsr		bstr_to_cstr
+    BCPL_DOSCALL 25	/* DOS/LoadSeg() */
+    movem.l	%sp@+,%a0-%a1/%a6
+    BRTS
+
+BCPL_DOS UnLoadSeg 26	/* 148, void, @seg; DOS/UnLoadSeg */
+
+BCPLd tidyup         /* 150, void,  */
+    BRTS
+
+BCPL addDevice      /* 154, void, @name */
+    movem.l	%d2/%a0-%a1/%a6,%sp@-
+    move.l	%a2@(GV_DOSBase),%a6
+
+#if BCPLSTRINGDEBUG
+    move.l	%d1,%d0
+	bsr		bstr_debug
+#endif
+
+    moveq.l	#1,%d0
+    bsr		bstr_to_cstr
+    moveq	#0,%d2			/* DLT_DEVICE */
+    BCPL_DOSCALL 116	/* DOS/MakeDosEntry */
+    move.l	%d0,%d2
+    beq.s	0f
+    move.l	%d2,%d1
+    lsr.l	#2,%d2
+    BCPL_DOSCALL 113	/* DOS/AddDosEntry */
+    move.l	%d0,%d1
+    bne.s	0f
+    BCPL_DOSCALL 117	/* DOS/FreeDosEntry */
+    moveq	#0,%d2
+0:	move.l	%d2,%d0
+    movem.l	%sp@+,%d2/%a0-%a1/%a6
+    BRTS
+
+BCPL datestamp      /* 158, @DateStamp, @DateStamp */
+    movem.l	%a0-%a1/%a6,%sp@-
+    lsl.l	#2,%d1
+    move.l	%a2@(GV_DOSBase),%a6
+    jsr.l	%a6@(32 * -6)   /* DOS/DateStamp() */
+    lsr.l	#2,%d0
+    movem.l	%sp@+,%a0-%a1/%a6
+    BRTS
+
+BCPLd WaitForChar    /* 15c, BOOL , @FileHandle, time */
+    BRTS
+
+BCPL execLib        /* 160, long , LVOffset, d0, d1, a0, a1, a2 */
+    movem.l	%d2/%a0-%a3/%a6,%sp@-
+    move.l	SysBase,%a6
+    move.l	%a1,%a3
+    move.w	%d1,%d2
+    movem.l %a3@(4),%d0-%d1/%a0-%a2
+    jsr		%a6@(%d2.w)
+    movem.l	%sp@+,%d2/%a0-%a3/%a6
+    BRTS
+
+BCPL findSegArray   /* 164, Array @,  */
+    movem.l	%a0-%a1/%a6,%sp@-
+    sub.l	%a1,%a1
+    move.l	SysBase,%a6
+    jsr		FindTask(%a6)
+    move.l	%d0,%a0
+    move.l	%a0@(pr_SegList),%d0
+    movem.l	%sp@+,%a0-%a1/%a6
+    BRTS
+
+BCPL deleteObject   /* 168, void, @name */
+    movem.l	%a0-%a1/%a6,%sp@-
+    moveq	#1,%d0
+    bsr		bstr_to_cstr
+    move.l	%a2@(GV_DOSBase),%a6
+    BCPL_DOSCALL 12	/* DOS/DeleteFile() */
+    movem.l	%sp@+,%a0-%a1/%a6
+    BRTS
+
+BCPL rename         /* 16c, void, @oldname, @newname */
+    movem.l	%d2/%a0-%a2/%a6,%sp@-
+    move.l	%a2@(GV_DOSBase),%a6
+    moveq	#1,%d0
+    bsr		bstr_to_cstr
+    lea		%sp@(-256),%sp
+    move.l	%sp,%a2
+    move.l	%a2,%a1
+    move.l	%d1,%a0
+0:  move.b	%a0@+,%a1@+
+    bne.s	0b
+    move.l	%d2,%d1
+    moveq	#1,%d0
+    bsr		bstr_to_cstr
+    move.l	%d1,%d2
+    move.l	%a2,%d1
+    BCPL_DOSCALL 13	/* DOS/Rename() */
+    lea		%sp@(256),%sp
+    movem.l	%sp@+,%d2/%a0-%a2/%a6
+    BRTS
+
+/*      170 - contains APTR to IntuitionBase */
+
+BCPL_DOS Close 6	/* 174, void, @FileHandle; DOS/Close() */
+
+BCPL getword        /* 178, void, longaddress, wordnumber */
+	movem.l	%sp@+,%d2
+	lsl.l	#2,%d1
+	add.l	%d2,%d2
+	add.l	%d1,%d2
+	moveq	#0,%d0
+    move.w	%a0@(%d2.l),%d0
+	movem.l	%sp@+,%d2
+    BRTS
+
+BCPL putword        /* 17c, void, longaddress, wordnumber */
+	movem.l	%sp@+,%d2
+	lsl.l	#2,%d1
+	add.l	%d2,%d2
+	add.l	%d1,%d2
+	move.w	%d3,%a0@(%d2.l)
+	movem.l	%sp@+,%d2
+    BRTS
+                     /* 180, ??? */
+
+BCPLd taskwait_190   /* 190, DosPacket ^,  */
+    jmp	BCPL_taskwait
+
+BCPL_DOS execute 37	/* 194, void, &string , @in, @out; DOS/Execute() */
+
+BCPL deviceproc     /* 198, FileLock ^, @filename */
+    movem.l	%a0-%a1/%a6,%sp@-
+    move.l	%a2@(GV_DOSBase),%a6
+
+    moveq.l	#1, %d0
+    bsr		bstr_to_cstr
+
+    BCPL_DOSCALL 29	/* DOS/DeviceProc() */
+    movem.l	%sp@+,%a0-%a1/%a6
+    BRTS
+
+BCPL libcall        /* 19c, void, libbase, LVOffset, d0, d1, a0, a1 */
+    movem.l	%a0-%a1/%a6,%sp@-
+    move.l	%d1,%a6
+    move.l	%a1@(0x08),%d0
+    move.l	%a1@(0x0c),%d1
+    move.l	%a1@(0x10),%a0
+    move.l	%a1@(0x14),%a1
+    jsr		%a6@(%d2)
+    movem.l	%sp@+,%a0-%a1/%a6
+    BRTS
+
+BCPL writeErr		/* 1a0, void, LONG, BSTR */
+    /* oddly enough D2 points to BSTR name of the command
+     * which seems to be ignored.
+     */
+    movem.l	%d2/%a0-%a1/%a6,%sp@-
+    tst.l	%d1
+    beq.s	1f
+    moveq	#0,%d2
+    move.l	%a2@(GV_DOSBase),%a6
+    jsr		%a6@(-0x1da)	/* PrintFault */
+    tst.l	%d0
+    beq.s	0f
+1:  moveq	#-1,%d0
+0:  movem.l	%sp@+,%d2/%a0-%a1/%a6
+    BRTS
+
+BCPL findConsoleHandler /* 1a4, MsgPort *,  */
+    movem.l     %a0-%a1/%a6,%sp@-
+    move.l      SysBase,%a6
+    sub.l       %a1,%a1
+    jsr         %a6@(FindTask)
+    move.l      %d0,%a0
+    move.l      %a0@(pr_ConsoleTask),%d0
+    movem.l     %sp@+,%a0-%a1/%a6
+    BRTS
+
+BCPL findFileHandler    /* 1a8, MsgPort *,  */
+    movem.l     %a0-%a1/%a6,%sp@-
+    move.l      SysBase,%a6
+    sub.l       %a1,%a1
+    jsr         %a6@(FindTask)
+    move.l      %d0,%a0
+    move.l      %a0@(pr_FileSystemTask),%d0
+    movem.l     %sp@+,%a0-%a1/%a6
+    BRTS
+
+BCPL extractDeviceName  /* 1ac, void, @buf, separator, @name , oldpos */
+    movem.l	%d1-%d5/%a0-%a1/%a6,%sp@-
+    move.l	%a2@(GV_DOSBase),%a6
+
+#if BCPLSTRINGDEBUG
+    move.l	%d3,%d0
+	bsr		bstr_debug
+#endif
+
+							/* D2 = SplitName 'separator' */
+    subq.l	#1,%d4			/* D4 = oldpos - 1 (?) */
+							
+    move.l	%d3, %d1
+    moveq	#4, %d0
+    bsr		bstr_to_cstr
+    						/* D1 = SplitName 'name' */
+
+    move.l	%a1@(0), %d3	/* Recover D1 (buf) from A1[0] */
+    lsl.l	#2,%d3
+    addq.l	#1,%d3			/* D3 = SplitName 'buf' */
+
+	moveq	#30,%d5			/* D5 = SplitName 'size' */
+
+    jsr		%a6@(69 * -6)	/* SplitName */
+
+    move.l	%d3,%a0
+    moveq	#-1,%d1
+0:  addq.w	#1,%d1
+    tst.b	%a0@+
+	bne		0b
+	move.l	%d3,%a0
+	move.b	%d1,%a0@(-1)	/* fix buf BSTR length */
+	
+    addq.l	#1,%d0			/* newpos + 1 (?) */
+    movem.l	%sp@+,%d1-%d5/%a0-%a1/%a6
+    BRTS
+
+BCPL lock           /* 1b0, FileLock ^, @name */
+    movem.l	%d2/%a0-%a1/%a6,%sp@-
+    move.l	%a2@(GV_DOSBase),%a6
+
+    moveq.l	#1, %d0
+    bsr		bstr_to_cstr
+
+    moveq.l	#-2,%d2		/* Shared lock */
+    BCPL_DOSCALL 14	/* DOS/Lock() */
+    movem.l	%sp@+,%d2/%a0-%a1/%a6
+    BRTS
+
+BCPL_DOS UnLock 15	/* 1b4, void, @FileLock; DOS/UnLock() */
+
+BCPL getlong        /* 1b8, void, longoffset, &struct */
+    lsl.l	#2,%d1
+    add.l	%d2,%d1
+    move.l	%a0@(%d1),%d0
+    BRTS
+
+BCPL putlong        /* 1bc, void, longoffset, &struct, data */
+    lsl.l	#2,%d1
+    add.l	%d2,%d1
+    move.l	%a0@(%d1),%d0
+    move.l	%d3,%a0@(%d1)
+    BRTS
+
+BCPL openDevInfo       /* 1c0, FileHandle ^, @DevInfo, @filename/window */
+    movem.l	%a0-%a1/%a6,%sp@-
+    move.l	%a2@(GV_DOSBase),%a6
+    move.l	%a6,%sp@-
+    move.l	%d2,%sp@-
+    move.l	%d1,%sp@-
+    jsr		RunHandler
+    lea.l	%sp@(12),%sp
+    movem.l	%sp@+,%a0-%a1/%a6
+    BRTS
+
+BCPL_DOS DupLock 16	/* 1c4, FileLock ^, @FileLock; DOS/DupLock() */
+
+/* Calls ErrorReport(IoErr(), ...)
+ * Why this is called 'makesysreq' is a question
+ * for the TripOS guys.
+ */
+BCPL makesysreq     /* 1c8, BOOL, type, arg, *msgport */
+    movem.l	%a0-%a1/%a6,%sp@-
+    move.l	%d3,%d4
+    move.l	%d2,%d3
+    move.l	%d1,%d2
+    move.l	%a2@(GV_DOSBase),%a6
+    jsr 	%a6@(22 * -6)	/* IoErr */
+    jsr 	%a6@(80 * -6)	/* ErrorReport */
+    movem.l	%sp@+,%a0-%a1/%a6
+    BRTS
+
+BCPL strcpy         /* 1cc, void, @src, @dest */
+    move.l	%d2,%sp@-
+    lsl.l	#2,%d1
+    lsl.l	#2,%d2
+    moveq	#0,%d0
+    move.b	%a0@(%d1),%d0
+0:  move.b	%a0@(%d1),%a0@(%d2)
+    addq.l	#1,%d1
+    addq.l	#1,%d2
+    dbf		%d0,0b
+    move.l	%sp@+,%d2
+    BRTS
+
+BCPL runCommand    /* 1e4, ULONG, @codeseg, stacklongs, @cmdline, cmdlinelength */
+    movem.l     %a0-%a1/%a6,%sp@-
+    addq.l      #1,%d2
+    lsl.l       #2,%d2
+    lsl.l       #2,%d3
+    move.l      %a2@(GV_DOSBase),%a6
+    BCPL_DOSCALL 84   /* DOS/RunCommand() */
+    movem.l     %sp@+,%a0-%a1/%a6
+    BRTS
+
+BCPL lock_1ec       /* 1ec, FileLock ^, &name */
+    movem.l	%d2/%a0-%a1/%a6,%sp@-
+#if BCPLSTRINGDEBUG
+    move.l	%d1,%d0
+    bsr		bstr_debug
+#endif
+    move.l	%a2@(GV_DOSBase),%a6
+    moveq.l	#1, %d0
+    bsr		bstr_to_cstr
+    moveq.l	#-2,%d2		/* Shared lock */
+    BCPL_DOSCALL 14	/* DOS/Lock() */
+    movem.l	%sp@+,%d2/%a0-%a1/%a6
+    BRTS
+
+BCPL findDevInfo    /* 1f0, DevInfo ^, @name */
+    movem.l	%d2-%d3/%a0-%a1/%a6,%sp@-
+    move.l	%a2@(GV_DOSBase),%a6
+
+#if BCPLSTRINGDEBUG
+    move.l	%d1,%d0
+	bsr		bstr_debug
+#endif
+
+    moveq.l	#1,%d0
+    bsr		bstr_to_cstr
+
+    move.l	%d1,%sp@-
+    moveq	#0x1d,%d1	/* LDF_ALL | LDF_READ */
+    BCPL_DOSCALL 109	/* DOS/LockDosList */
+    move.l	%d0,%d1
+    move.l	%sp@+,%d2
+    moveq	#0x1d,%d3	/* LDF_ALL | LDF_READ */
+    BCPL_DOSCALL 114	/* DOS/FindDosEntry */
+    move.l	%d0,%sp@-
+    moveq	#0x1d,%d1	/* LDF_ALL | LDF_READ */
+    BCPL_DOSCALL 110	/* DOS/UnlockDosList */
+    move.l	%sp@+,%d0
+    lsr.l	#2,%d0
+    movem.l	%sp@+,%d2-%d3/%a0-%a1/%a6
+    BRTS
+
+BCPL createDir      /* 1f4, FileLock^, @name */
+    movem.l	%a0-%a1/%a6,%sp@-
+    move.l	%a2@(GV_DOSBase),%a6
+
+    moveq.l	#1,%d0
+    bsr		bstr_to_cstr
+
+    BCPL_DOSCALL 20	/* DOS/CreateDir() */
+    movem.l	%sp@+,%a0-%a1/%a6
+    BRTS
+
+BCPLd compareTime    /* 1f8, SIGN , @timeval, @timeval */
+    /* I suspect this is actually Dos/CompareDates(), but
+     * I haven't found a user of this routine yet.
+     */
+    BRTS
+
+BCPL timerIO        /* 1fc, void, command, @IOStdReq, secs, usecs */
+    movem.l     %a0-%a1/%a6,%sp@-
+    lsl.l       #2,%d2
+    move.l      %d2,%a1
+    move.w      %d1,%a1@(io_Command)
+    move.l      %d3,%a1@(tr_time + 0)
+    move.l      %d4,%a1@(tr_time + 4)
+    move.l      SysBase, %a6
+    jsr.l       %a6@(76 * -6)   /* Exec/DoIO() */
+    moveq.l     #-1,%d0 
+    movem.l     %sp@+,%a0-%a1/%a6
+    BRTS
+
+BCPL settime        /* 200, void, @DateStamp */
+    move.l      %a2@(GV_DOSBase),%d0
+    move.l      %a0@(dl_TimeReq,%d0),%d2
+    lsl.l       #2,%d1
+    move.l      %a0@(0,%d1),%d3 /* ds_Days */
+    mulu.w      #(60*24),%d3    /* mulu.w is fine until 2162 AD,  */
+                                /* but tv_secs is too small in 2047 AD */
+    add.l       %a0@(4,%d1),%d3 /* ds_Minute */
+    move.l      %d3,%d4
+    mulu.w      #(60),%d3
+    lsr.l       #8,%d4
+    lsr.l       #8,%d4
+    mulu.w      #(60),%d4
+    lsl.l       #8,%d4
+    lsl.l       #8,%d4
+    add.l       %d4,%d3
+    mov.l       %a0@(8,%d1),%d4 /* ds_Tick */
+    divu.w      #50,%d4
+    ext.l       %d4
+    add.l       %d4,%d3
+    moveq.l     #0,%d4
+    lsr.l       #2,%d2
+    move.l      #11,%d1         /* TR_SETSYSTIME */
+    move.l      #(1*4 + 3*4),%d0
+    move.l      %a2@(GV_timerIO),%a4
+    jsr         %a5@
+    BRTS
+
+    /*
+     * On AOS, this routine called the internal
+     * CliInit(), which handled setting up the
+     * core SYS: lock, assigns, and paths.
+     *
+     * The (normally NULL) DOS Packet is always ignored.
+     *
+     * Although (for various reasons) this has been done
+     * before this routine has been called, we still need
+     * to call CliInit* to process the inbound AROS packet.
+     *
+     * If the passed in DOS Packet is NULL, then we have
+     * nothing to do, since that's not valid under AROS.
+     *
+     * If the DOS Packet is *not* NULL, then pass it
+     * to the appropriate CliInit* routine.
+     *
+     */
+BCPL CliInit         /* 214, APTR, @DosPacket */
+    tst.l       %d1
+    beq.s       .L_CliInit_gv_exit
+
+    lsl.l       #2,%d1
+    move.l      %a0@(dp_Res1,%d1),%d2
+    tst.l       %d2
+    beq.s       0f
+    move.l      #(155*-6),%d2   /* CliInitNewcli */
+    bra.s       1f
+0:
+    move.l      #(156*-6),%d2   /* CliInitRun */
+1:
+    movem.l     %a0-%a1/%a6,%sp@-
+    move.l      %d1,%a0
+    move.l	%a2@(GV_DOSBase),%a6
+    jsr         %a6@(%d2)
+    movem.l     %sp@+,%a0-%a1/%a6
+    /* AROS CliInit*() returns FNF_#? flags (bit 31 = FNF_VALIDFLAGS).
+     * A genuine BCPL Shell-Seg - the only caller of this global vector
+     * entry - follows the AOS contract: CliInit returns zero on success
+     * and the Shell-Seg replies the startup packet itself. */
+    tst.l       %d0
+    bpl.s       .L_CliInit_gv_exit
+    moveq.l     #0,%d0
+.L_CliInit_gv_exit:
+    BRTS
+
+    /*
+     * Entered from the BCPL_CliInit_* thunks SystemTagList plants in
+     * dp_Type for AROS shells. These callers consume the FNF_#? flags,
+     * so no translation may happen here.
+     */
+.L_CliInit_Newcli:
+    /* CliInitNewcli */
+    move.l      #(155*-6),%d2
+    bra.s       .L_CliInit_Init
+
+.L_CliInit_Run:
+    /* CliInitRun */
+    move.l      #(156*-6),%d2
+
+.L_CliInit_Init:
+    movem.l      %a0-%a1/%a6,%sp@-
+    move.l      %d1,%a0
+    move.l	%a2@(GV_DOSBase),%a6
+    jsr         %a6@(%d2)
+    movem.l      %sp@+,%a0-%a1/%a6
+.L_CliInit_exit:
+    BRTS
+
+BCPLnd CliInit_NEWCLI
+    lsl.l       #2, %d1
+    move.l      #1, %a0@(dp_Type, %d1)
+    jmp         .L_CliInit_Newcli
+
+BCPLnd CliInit_RUN
+    lsl.l       #2, %d1
+    move.l      #-1, %a0@(dp_Type, %d1)
+    jmp         .L_CliInit_Run
+
+BCPLnd CliInit_SYSTEM
+    lsl.l       #2, %d1
+    move.l      #-2, %a0@(dp_Type, %d1)
+    jmp         .L_CliInit_Run
+
+BCPLnd CliInit_ASYSTEM
+    lsl.l       #2, %d1
+    move.l      #-3, %a0@(dp_Type, %d1)
+    jmp         .L_CliInit_Run
+
+BCPLnd CliInit_BOOT
+    lsl.l       #2, %d1
+    move.l      #-4, %a0@(dp_Type, %d1)
+    jmp         .L_CliInit_Run
+
+
+BCPL findCLI        /* 218, CommandLineInterpreter ^,  */
+    movem.l		%a0-%a1/%a6,%sp@-
+    move.l		%a2@(GV_DOSBase),%a6
+    BCPL_DOSCALL 82	/* DOS/Cli() */
+    lsr.l		#2,%d0
+    movem.l		%sp@+,%a0-%a1/%a6
+    BRTS
+
+
+/* Helper routines */
+    /* Convert BCPL string to Cstring inline in the A1 vector
+     * In:
+     *   D0: Index into A1, in words, to hold dest
+     *   D1: BSTR to convert
+     *   A1: ULONG vector
+     * Out:
+     *   D0: Clobbered
+     *   D1: Memory address of Cstring
+     *   A1: Unchanged
+     */
+bstr_to_cstr:
+    movem.l	%d0/%a0-%a1,%sp@-
+    sub.l	%a0,%a0
+    lsl.l	#2,%d1
+    addq.l	#1,%d1
+    clr.l	%sp@-
+    move.b	%a0@(-1,%d1),%sp@(3)	/* Arg3 = strlen */
+    move.l	%d1,%sp@-		/* Arg2 = src */
+    lsl.l	#2,%d0
+    pea.l	%a1@(%d0)		/* Arg1 = dest */
+    jsr		memcpy
+    move.l	%sp@+,%a0		/* A0 = dest */
+    addq.l	#4,%sp			/* Drop src */
+    move.l	%sp@+,%d1		/* D1 = strlen */
+    move.b	#0,%a0@(%d1)		/* Terminate string with an ASCIIZ */
+    move.l	%a0,%d1			/* D1 = dest */
+    movem.l	%sp@+,%d0/%a0-%a1
+    rts
+
+#if BCPLSTRINGDEBUG
+.bstr_format:
+    .string  "%p->%p:%d:'%b'\n"
+bstr_debug:
+	movem.l	%d1/%a0-%a1,%sp@-
+    move.l	%d0,%a0
+    add.l	%a0,%a0
+    add.l	%a0,%a0
+    moveq	#0,%d1
+    move.b	(%a0),%d1
+    move.l	%d0,%sp@-
+    move.l	%d1,%sp@-
+    move.l  %a0,%sp@-
+    move.l	%d0,%sp@-
+    pea		.bstr_format(%pc)
+    jsr     kprintf
+    lea		20(%sp),%sp
+    movem.l	%sp@+,%d1/%a0-%a1
+    rts
+#endif

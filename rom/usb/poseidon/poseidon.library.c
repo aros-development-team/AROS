@@ -1,0 +1,13216 @@
+/****************************************************************************
+
+                 __   __                                    V/\V.       /\
+                |" | |" |                                   mMMnw,      || []
+                |  | |  |                                  (o  o)W   () || ||
+                |__|_|_"|                                  | /  |Mw  || ||//
+                ("  "  \|                                  \ -'_/mw   \\||/
+                 \______)                                   ~%%/WM"    \||
+ _____    ___     ______  _____  __  _____     ___  __  __/~~__ ~~\    _||
+|"("  \()/\" \ ()/"_    )|"(___) ) )|"("  \ ()/\" \(__)/" ) /" ) " \  /_)O
+|  )   )/" \  \ (_/"\__/ |  )_  ( ( |  )_  ) /" \  \  /  /|/  / .\  \/ ,|O
+| (___/(  (_\__) _\  \_  | (__)  ) )| (__) |(  (_\__)/  /"/  /   |\   '_|O
+|  |  _ \  /  / /" \_/ ) | ")__ ( ( |  )"  ) \  /  //  /|/  / . .|/\__/ ||
+|__| (_) \/__/ (______/  |_(___) )_)|_(___/ . \/__/(__/ (__/ .:.:|      ||
+                 _____
+                |" __ \  Poseidon -- The divine USB stack for Amiga computers
+                | (__) )
+                |  __ (  Designed and written by
+                |"(__) )   Chris Hodges <chrisly@platon42.de>
+                |_____/  Copyright (c) 2009-2026 The AROS Dev Team.
+                         Copyright (c) 2002-2009 Chris Hodges.
+ ****************************************************************************/
+
+/*
+ *----------------------------------------------------------------------------
+ *                          Poseidon main library
+ *----------------------------------------------------------------------------
+ *                   By Chris Hodges <chrisly@platon42.de>
+ */
+
+#include "debug.h"
+
+#include "poseidon.library.h"
+
+#include "numtostr.h"
+
+#include <proto/exec.h>
+#include <proto/dos.h>
+#include <proto/utility.h>
+#include <proto/usbclass.h>
+#include <proto/timer.h>
+
+#include <string.h>
+
+#ifdef __AROS__
+#include <aros/bootloader.h>
+#include <proto/bootloader.h>
+#endif
+
+#define NewList(list) NEWLIST(list)
+
+#define min(x,y) (((x) < (y)) ? (x) : (y))
+#define max(x,y) (((x) > (y)) ? (x) : (y))
+
+extern const struct PsdWStringMap usbclasscodestr[];
+extern const struct PsdULStringMap usbcomboclasscodestr[];
+extern const struct PsdULStringMap usbdesctypestr[];
+extern const struct PsdWStringMap usbhwioerrstr[];
+extern const struct PsdUWStringMap usblangids[];
+extern const struct PsdUWStringMap usbvendorids[];
+
+#if !defined(__AROS__)
+extern struct ExecBase *SysBase;
+#endif
+
+// Define the following to disable "legacy" driver support.
+//#define POSEIDON_NOLEGACYDRIVERS
+
+/* Static data */
+const char GM_UNIQUENAME(libname)[]     = MOD_NAME_STRING;
+
+static UWORD pGetMaxStreamsForEndpoint(const struct PsdEndpoint *pep);
+
+#define UsbClsBase puc->puc_ClassBase
+#define DOSBase ps->ps_DosBase
+#define TimerBase ps->ps_TimerIOReq.tr_node.io_Device
+
+/*
+ * Initialize the Poseidon library base.
+ *
+ * Open utility.library (version 39 or later), initialize library-owned lists
+ * and locks, and create the two memory pools. Return TRUE after both pools and
+ * the base/configuration locks are ready. Return FALSE if utility.library or
+ * either pool cannot be obtained; release acquired library/pool resources on
+ * these failure paths.
+ */
+static int GM_UNIQUENAME(libInit)(LIBBASETYPEPTR ps)
+{
+    KPRINTF(10, ("libInit ps: 0x%p SysBase: 0x%p\n",
+                 ps, SysBase));
+
+    ps->ps_StackInit = FALSE;
+    ps->ps_UtilityBase = (struct UtilityBase *) OpenLibrary("utility.library", 39);
+
+#define UtilityBase ps->ps_UtilityBase
+
+    if (UtilityBase) {
+#ifdef __AROS__
+        APTR BootLoaderBase = OpenResource("bootloader.resource");
+
+        if (BootLoaderBase) {
+            struct List *args = GetBootInfo(BL_Args);
+
+            if (args) {
+                struct Node *node;
+
+                for (node = args->lh_Head; node->ln_Succ; node = node->ln_Succ) {
+                    if (stricmp(node->ln_Name, "usbdebug") == 0) {
+                        ps->ps_Flags = PSF_KLOG;
+                        break;
+                    }
+                }
+            }
+        }
+#endif
+
+        NewList(&ps->ps_Hardware);
+        NewList(&ps->ps_Classes);
+        NewList(&ps->ps_ErrorMsgs);
+        NewList(&ps->ps_EventHooks);
+        memset(&ps->ps_EventReplyPort, 0, sizeof(ps->ps_EventReplyPort));
+        ps->ps_EventReplyPort.mp_Flags = PA_IGNORE;
+        NewList(&ps->ps_EventReplyPort.mp_MsgList);
+        NewList(&ps->ps_ConfigRoot);
+        NewList(&ps->ps_AlienConfigs);
+
+        NewList(&ps->ps_DeadlockDebug);
+
+        InitSemaphore(&ps->ps_ReentrantLock);
+        InitSemaphore(&ps->ps_PoPoLock);
+
+        if((ps->ps_MemPool = CreatePool(MEMF_CLEAR|MEMF_PUBLIC|MEMF_SEM_PROTECTED, 16384, 1024))) {
+            if((ps->ps_SemaMemPool = CreatePool(MEMF_CLEAR|MEMF_PUBLIC, 16*sizeof(struct PsdReadLock), sizeof(struct PsdBorrowLock)))) {
+                pInitSem(ps, &ps->ps_Lock, "PBase");
+                pInitSem(ps, &ps->ps_ConfigLock, "ConfigLock");
+                KPRINTF(20, ("libInit: Done!\n"));
+                return TRUE;
+            }
+            DeletePool(ps->ps_MemPool);
+        } else {
+            KPRINTF(20, ("libInit: CreatePool() failed!\n"));
+        }
+        CloseLibrary((struct Library *) UtilityBase);
+    } else {
+        KPRINTF(20, ("libInit: OpenLibrary(\"utility.library\", 39) failed!\n"));
+    }
+    return FALSE;
+}
+
+/*
+ * Perform first-open initialization of the Poseidon stack.
+ *
+ * With ps_ReentrantLock held, open timer.device and allocate default global
+ * configuration. After successful setup, mark the stack initialized and
+ * release the lock. Call pStartEventHandler(), then return TRUE without
+ * checking its result; TRUE does not guarantee that the event handler started.
+ * Later opens return TRUE without repeating setup. Return FALSE if the timer
+ * open or configuration allocation fails. If configuration allocation fails
+ * after opening the timer device, this function does not close that device.
+ */
+static int GM_UNIQUENAME(libOpen)(LIBBASETYPEPTR ps)
+{
+    struct PsdIFFContext *pic;
+
+    KPRINTF(10, ("libOpen ps: 0x%p\n", ps));
+    ObtainSemaphore(&ps->ps_ReentrantLock);
+    if(!ps->ps_StackInit) {
+        ps->ps_TimerIOReq.tr_node.io_Message.mn_Node.ln_Type = NT_REPLYMSG;
+        ps->ps_TimerIOReq.tr_node.io_Message.mn_ReplyPort    = NULL;
+        ps->ps_TimerIOReq.tr_node.io_Message.mn_Length       = sizeof(struct timerequest);
+        if(!OpenDevice("timer.device", UNIT_MICROHZ, (struct IORequest *) &ps->ps_TimerIOReq, 0)) {
+            ps->ps_TimerIOReq.tr_node.io_Message.mn_Node.ln_Name = "Poseidon";
+            ps->ps_TimerIOReq.tr_node.io_Command = TR_ADDREQUEST;
+
+            ps->ps_ReleaseVersion = RELEASEVERSION;
+            ps->ps_OSVersion = MAKE_ID('A','R','O','S');
+
+            pic = pAllocForm(ps, NULL, IFFFORM_PSDCFG);
+            if((ps->ps_GlobalCfg = psdAllocVec(sizeof(struct PsdGlobalCfg)))) {
+                ps->ps_GlobalCfg->pgc_ChunkID = AROS_LONG2BE(IFFCHNK_GLOBALCFG);
+                ps->ps_GlobalCfg->pgc_Length = AROS_LONG2BE(sizeof(struct PsdGlobalCfg)-8);
+                ps->ps_GlobalCfg->pgc_LogInfo = TRUE;
+                ps->ps_GlobalCfg->pgc_LogWarning = TRUE;
+                ps->ps_GlobalCfg->pgc_LogError = TRUE;
+                ps->ps_GlobalCfg->pgc_LogFailure = TRUE;
+                ps->ps_GlobalCfg->pgc_BootDelay = 2;
+                ps->ps_GlobalCfg->pgc_SubTaskPri = 5;
+                ps->ps_GlobalCfg->pgc_PopupDeviceNew = PGCP_ISNEW;
+                ps->ps_GlobalCfg->pgc_PopupDeviceGone = TRUE;
+                ps->ps_GlobalCfg->pgc_PopupDeviceDeath = TRUE;
+                ps->ps_GlobalCfg->pgc_PopupCloseDelay = 5;
+                ps->ps_GlobalCfg->pgc_PopupActivateWin = FALSE;
+                ps->ps_GlobalCfg->pgc_PopupWinToFront = TRUE;
+                ps->ps_GlobalCfg->pgc_AutoDisableLP = FALSE;
+                ps->ps_GlobalCfg->pgc_AutoDisableDead = FALSE;
+                ps->ps_GlobalCfg->pgc_AutoRestartDead = TRUE;
+                ps->ps_GlobalCfg->pgc_PowerSaving = FALSE;
+                ps->ps_GlobalCfg->pgc_ForceSuspend = FALSE;
+                ps->ps_GlobalCfg->pgc_SuspendTimeout = 30;
+
+                ps->ps_GlobalCfg->pgc_PrefsVersion = 0; // is updated on writing
+                ps->ps_ConfigRead = FALSE;
+                if(pic) {
+                    pic = pAllocForm(ps, pic, IFFFORM_STACKCFG);
+                    if(pic) {
+                        pAddCfgChunk(ps, pic, ps->ps_GlobalCfg);
+                    }
+                }
+                ps->ps_PoPo.po_InsertSndFile = psdCopyStr("SYS:Prefs/Presets/Poseidon/Connect.iff");
+                ps->ps_PoPo.po_RemoveSndFile = psdCopyStr("SYS:Prefs/Presets/Poseidon/Disconnect.iff");
+
+                {
+                    STRPTR tmpstr;
+                    tmpstr = psdCopyStr((STRPTR) VERSION_STRING);
+                    if(tmpstr) {
+                        tmpstr[strlen(tmpstr)-2] = 0;
+                        psdAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname), "Welcome to %s (%p)!", tmpstr, ps->ps_ReleaseVersion);
+                        psdFreeVec(tmpstr);
+                    } else {
+                        psdAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname), "Welcome to %s", VERSION_STRING);
+                    }
+                }
+
+                psdAddErrorMsg0(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname), "This is the AROS port.");
+
+                KPRINTF(10, ("libOpen: Ok\n"));
+                ps->ps_StackInit = TRUE;
+                ReleaseSemaphore(&ps->ps_ReentrantLock);
+                pStartEventHandler(ps);
+
+                return TRUE;
+            } else {
+                KPRINTF(20, ("libOpen: No memory for cfg!\n"));
+            }
+        } else {
+            KPRINTF(20, ("libOpen: OpenDevice(timer.device) failed!\n"));
+        }
+        ReleaseSemaphore(&ps->ps_ReentrantLock);
+        return FALSE;
+    }
+    ReleaseSemaphore(&ps->ps_ReentrantLock);
+    KPRINTF(5, ("libOpen: openCnt = %ld\n", ps->ps_Library.lib_OpenCnt));
+    return TRUE;
+}
+
+/*
+ * Release Poseidon library-owned resources during expunge.
+ *
+ * Remove hardware, classes, error messages, and configuration forms. Signal
+ * the popup and event-handler tasks to stop, then wait for each task pointer
+ * to clear. Free remaining event and popup resources, close the timer device
+ * and libraries, delete the memory pools, unlink the library node, and
+ * return TRUE. The task-shutdown waits have no timeout.
+ */
+int GM_UNIQUENAME(libExpunge)(LIBBASETYPEPTR ps)
+{
+    struct PsdHardware *phw = (struct PsdHardware *) ps->ps_Hardware.lh_Head;
+    struct PsdUsbClass *puc = (struct PsdUsbClass *) ps->ps_Classes.lh_Head;
+    struct PsdErrorMsg *pem = (struct PsdErrorMsg *) ps->ps_ErrorMsgs.lh_Head;
+    struct PsdIFFContext *pic = (struct PsdIFFContext *) ps->ps_ConfigRoot.lh_Head;
+    KPRINTF(10, ("libExpunge ps: 0x%p\n", ps));
+    while(phw->phw_Node.ln_Succ) {
+        psdRemHardware(phw);
+        phw = (struct PsdHardware *) ps->ps_Hardware.lh_Head;
+    }
+    while(puc->puc_Node.ln_Succ) {
+        psdRemClass(puc);
+        puc = (struct PsdUsbClass *) ps->ps_Classes.lh_Head;
+    }
+    while(pem->pem_Node.ln_Succ) {
+        psdRemErrorMsg(pem);
+        pem = (struct PsdErrorMsg *) ps->ps_ErrorMsgs.lh_Head;
+    }
+
+    while(pic->pic_Node.ln_Succ) {
+        pFreeForm(ps, pic);
+        pic = (struct PsdIFFContext *) ps->ps_ConfigRoot.lh_Head;
+    }
+
+    if(ps->ps_PoPo.po_Task) {
+        ps->ps_PoPo.po_ReadySignal = SIGB_SINGLE;
+        ps->ps_PoPo.po_ReadySigTask = FindTask(NULL);
+        Signal(ps->ps_PoPo.po_Task, SIGBREAKF_CTRL_C);
+        while(ps->ps_PoPo.po_Task) {
+            Wait(1L<<ps->ps_PoPo.po_ReadySignal);
+        }
+        ps->ps_PoPo.po_ReadySigTask = NULL;
+        //FreeSignal(ps->ps_PoPo.po_ReadySignal);
+    }
+    if(ps->ps_EventHandler.ph_Task) {
+        ps->ps_EventHandler.ph_ReadySignal = SIGB_SINGLE;
+        ps->ps_EventHandler.ph_ReadySigTask = FindTask(NULL);
+        Signal(ps->ps_EventHandler.ph_Task, SIGBREAKF_CTRL_C);
+        while(ps->ps_EventHandler.ph_Task) {
+            Wait(1L<<ps->ps_EventHandler.ph_ReadySignal);
+        }
+        ps->ps_EventHandler.ph_ReadySigTask = NULL;
+        //FreeSignal(ps->ps_EventHandler.ph_ReadySignal);
+    }
+    psdFreeVec(ps->ps_PoPo.po_InsertSndFile);
+    psdFreeVec(ps->ps_PoPo.po_RemoveSndFile);
+    pGarbageCollectEvents(ps);
+
+    CloseDevice((struct IORequest *) &ps->ps_TimerIOReq);
+    DeletePool(ps->ps_SemaMemPool);
+    DeletePool(ps->ps_MemPool);
+
+    KPRINTF(1, ("libExpunge: closelibrary utilitybase 0x%p\n",
+                UtilityBase));
+    CloseLibrary((struct Library *) UtilityBase);
+
+    CloseLibrary(DOSBase);
+
+    KPRINTF(1, ("libExpunge: removing library node 0x%p\n",
+                &ps->ps_Library.lib_Node));
+    Remove(&ps->ps_Library.lib_Node);
+
+    return TRUE;
+}
+/* \\\ */
+
+ADD2INITLIB(GM_UNIQUENAME(libInit), 0)
+ADD2OPENLIB(GM_UNIQUENAME(libOpen), 0)
+ADD2EXPUNGELIB(GM_UNIQUENAME(libExpunge), 0);
+
+/*
+ * ***********************************************************************
+ * * Library functions                                                   *
+ * ***********************************************************************
+ */
+
+static const ULONG *PsdPTArray[PGA_LAST+1];
+
+/* *** Memory *** */
+
+struct psdMemHeader
+{
+    APTR  pmem_raw;  /* Pointer returned by AllocPooled() */
+    ULONG size;      /* Size requested by caller */
+};
+
+/* /// "psdAllocVec()" */
+/****** poseidon.library/psdAllocVec ***************************************
+
+    NAME */
+        AROS_LH1(APTR, psdAllocVec,
+/*  SYNOPSIS */
+         AROS_LHA(ULONG, size, D0),
+/*  LOCATION */
+         LIBBASETYPEPTR, ps, 5, psd)
+/*  FUNCTION
+        Allocate an aligned block from the Poseidon memory pool.
+
+    INPUTS
+        size - Requested number of usable bytes.
+
+    RESULT
+        Allocated block aligned to AROS_WORSTALIGN, or NULL on pool
+        allocation failure. Release it with psdFreeVec().
+
+    NOTES
+        An allocation header immediately preceding the returned pointer
+        records the original pool pointer and requested size. Successful
+        allocations increase the library's allocated-byte counter by size.
+        MEMDEBUG builds reserve an additional 1024-byte overrun area.
+        The requested allocation is not explicitly zero-initialized here.
+
+    BUGS
+        The calculation adding the header, alignment padding and optional
+        debugging area does not check for ULONG overflow.
+
+    SEE ALSO
+        psdFreeVec(), psdCopyStr()
+
+******************************************************************************/
+{
+    AROS_LIBFUNC_INIT
+    struct psdMemHeader *hdr;
+    APTR raw;
+    ULONG alloc_size;
+    UBYTE *p;
+    UBYTE *aligned;
+    IPTR mask;
+    APTR result;
+
+    KPRINTF(1, ("psdAllocVec(%ld)\n", size));
+
+    /* Space = requested size + header + alignment slop + optional MEMDEBUG tail */
+#ifdef MEMDEBUG
+    alloc_size = size + sizeof(struct psdMemHeader) + (AROS_WORSTALIGN - 1) + 1024;
+#else
+    alloc_size = size + sizeof(struct psdMemHeader) + (AROS_WORSTALIGN - 1);
+#endif
+
+    raw = AllocPooled(ps->ps_MemPool, alloc_size);
+    if (raw)
+    {
+        /* Start alignment after the header */
+        p    = (UBYTE *)raw + sizeof(struct psdMemHeader);
+        mask = (IPTR)AROS_WORSTALIGN - 1;
+
+        aligned = (UBYTE *)(((IPTR)p + mask) & ~mask);
+        hdr     = (struct psdMemHeader *)(aligned - sizeof(struct psdMemHeader));
+
+        hdr->pmem_raw = raw;
+        hdr->size     = size;
+
+#ifdef MEMDEBUG
+        {
+            /* Fill 1024 bytes after the user area for overrun detection */
+            ULONG upos = size;
+            UWORD unum = 1024;
+            UBYTE *dbptr = (UBYTE *)aligned;
+
+            while (unum--)
+            {
+                dbptr[upos] = (UBYTE)upos;
+                upos++;
+            }
+        }
+#endif
+
+        ps->ps_MemAllocated += size;
+        result = (APTR)aligned;
+        return result;
+    }
+
+    return NULL;
+    AROS_LIBFUNC_EXIT
+}
+/* \\\ */
+
+/* /// "psdFreeVec()" */
+/****** poseidon.library/psdFreeVec ****************************************
+
+    NAME */
+        AROS_LH1(void, psdFreeVec,
+/*  SYNOPSIS */
+         AROS_LHA(APTR, pmem, A1),
+/*  LOCATION */
+         LIBBASETYPEPTR, ps, 6, psd)
+/*  FUNCTION
+        Release a block allocated by psdAllocVec().
+
+    INPUTS
+        pmem - Block returned by psdAllocVec(), or NULL for no action.
+
+    NOTES
+        The allocator header immediately before the block supplies the
+        original pooled allocation pointer and the requested byte count.
+        The function decreases the library's allocated-byte counter and
+        frees the original pool block using its original total allocation
+        size, including alignment storage and optional MEMDEBUG space.
+        The pointer becomes invalid on return; non-Poseidon pointers are
+        not accepted.
+
+    SEE ALSO
+        psdAllocVec()
+
+******************************************************************************/
+{
+    AROS_LIBFUNC_INIT
+    struct psdMemHeader *hdr;
+    ULONG size;
+    ULONG alloc_size;
+
+    KPRINTF(1, ("psdFreeVec(%p)\n", pmem));
+
+    if (pmem)
+    {
+        /* Header is located immediately before the returned aligned pointer */
+        hdr  = ((struct psdMemHeader *)pmem) - 1;
+        size = hdr->size;
+
+        ps->ps_MemAllocated -= size;
+
+#ifdef MEMDEBUG
+        alloc_size = size + sizeof(struct psdMemHeader) + (AROS_WORSTALIGN - 1) + 1024;
+#else
+        alloc_size = size + sizeof(struct psdMemHeader) + (AROS_WORSTALIGN - 1);
+#endif
+
+        /* Free using the original pointer from AllocPooled() and the original size */
+        FreePooled(ps->ps_MemPool, hdr->pmem_raw, alloc_size);
+    }
+
+    AROS_LIBFUNC_EXIT
+}
+/* \\\ */
+
+/* *** PBase *** */
+
+/* /// "pDebugSemaInfo()" */
+/*
+ * Write the tracked owner, nesting counts and shared-lock holders to the
+ * Poseidon diagnostic log.
+ */
+void pDebugSemaInfo(LIBBASETYPEPTR ps, struct PsdSemaInfo *psi)
+{
+    struct PsdReadLock *prl;
+    psdAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname),
+                   "Semaphore %p %s (Excl/SharedLockCount %ld/%ld) (Owner: %s):",
+                   psi->psi_LockSem,
+                   psi->psi_LockSem->pls_Node.ln_Name,
+                   psi->psi_LockSem->pls_ExclLockCount,
+                   psi->psi_LockSem->pls_SharedLockCount,
+                   psi->psi_LockSem->pls_Owner ? (const char *)psi->psi_LockSem->pls_Owner->tc_Node.ln_Name : "None");
+
+    prl = (struct PsdReadLock *) psi->psi_LockSem->pls_WaitQueue.lh_Head;
+    while(prl->prl_Node.ln_Succ) {
+        psdAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname),
+                       "  Waiting Task: %p (%s) %s",
+                       prl->prl_Task, prl->prl_Task->tc_Node.ln_Name,
+                       prl->prl_IsExcl ? "Excl" : "Shared");
+        prl = (struct PsdReadLock *) prl->prl_Node.ln_Succ;
+    }
+    prl = (struct PsdReadLock *) psi->psi_LockSem->pls_ReadLocks.lh_Head;
+    while(prl->prl_Node.ln_Succ) {
+        psdAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname),
+                       "  Readlock Task: %p (%s), Count %ld",
+                       prl->prl_Task, prl->prl_Task->tc_Node.ln_Name,
+                       prl->prl_Count);
+        prl = (struct PsdReadLock *) prl->prl_Node.ln_Succ;
+    }
+}
+/* \\\ */
+
+/* /// "pInitSem()" */
+/*
+ * Initialize semaphore state and attempt to register it for deadlock
+ * diagnostics; allocation failure leaves the lock untracked.
+ */
+void pInitSem(LIBBASETYPEPTR ps, struct PsdLockSem *pls, STRPTR name)
+{
+    struct PsdSemaInfo *psi = NULL;
+    NewList(&pls->pls_WaitQueue);
+    NewList(&pls->pls_ReadLocks);
+    pls->pls_Node.ln_Name = name;
+    // struct should be nulled anyway
+    pls->pls_Owner = NULL;
+    pls->pls_ExclLockCount = 0;
+    pls->pls_SharedLockCount = 0;
+    pls->pls_Dead = FALSE;
+
+    Forbid();
+    psi = (struct PsdSemaInfo *) AllocPooled(ps->ps_SemaMemPool, sizeof(struct PsdSemaInfo));
+    if(!psi) {
+        Permit();
+        return;
+    }
+    psi->psi_LockSem = pls;
+    AddTail(&ps->ps_DeadlockDebug, &psi->psi_Node);
+    Permit();
+}
+/* \\\ */
+
+/* /// "pDeleteSem()" */
+/*
+ * Mark a tracked lock dead; remove its diagnostic record only if no locks
+ * remain, otherwise report the held lock and retain that record.
+ */
+void pDeleteSem(LIBBASETYPEPTR ps, struct PsdLockSem *pls)
+{
+    struct PsdSemaInfo *psi;
+    Forbid();
+    pls->pls_Dead = TRUE;
+    psi = (struct PsdSemaInfo *) ps->ps_DeadlockDebug.lh_Head;
+    while(psi->psi_Node.ln_Succ) {
+        if(psi->psi_LockSem == pls) {
+            if(pls->pls_SharedLockCount + pls->pls_ExclLockCount) {
+                psdAddErrorMsg0(RETURN_ERROR, (STRPTR) GM_UNIQUENAME(libname), "Semaphore still locked when attempting to delete it!\n");
+                pDebugSemaInfo(ps, psi);
+            } else {
+                Remove(&psi->psi_Node);
+                FreePooled(ps->ps_SemaMemPool, psi, sizeof(struct PsdSemaInfo));
+            }
+            break;
+        }
+        psi = (struct PsdSemaInfo *) psi->psi_Node.ln_Succ;
+    }
+    Permit();
+}
+/* \\\ */
+
+/* /// "pLockSemExcl()" */
+/*
+ * Acquire a recursive exclusive Poseidon lock, queuing the calling task when
+ * ownership conflicts.
+ */
+void pLockSemExcl(LIBBASETYPEPTR ps, struct PsdLockSem *pls)
+{
+    struct PsdReadLock waitprl;
+    struct Task *thistask = FindTask(NULL);
+
+    waitprl.prl_Task = thistask;
+    waitprl.prl_IsExcl = TRUE;
+
+    Forbid();
+    do {
+        // it's already mine!!
+        if(thistask == pls->pls_Owner) {
+            break;
+        }
+        if(!pls->pls_ExclLockCount) {
+            // easy case: no shared locks, no exclusive locker
+            if(!pls->pls_SharedLockCount) {
+                break;
+            }
+            // sole readlock promotion case
+            if((pls->pls_SharedLockCount == 1) && ((struct PsdReadLock *) pls->pls_ReadLocks.lh_Head)->prl_Task == thistask) {
+                KPRINTF(1, ("Promoting read lock (%p) to write lock!\n", thistask));
+                break;
+            }
+        }
+
+        // okay, bad luck, we've got to wait somehow
+        AddHead(&pls->pls_WaitQueue, &waitprl.prl_Node);
+        thistask->tc_SigRecvd &= ~SIGF_SINGLE;
+
+        Wait(SIGF_SINGLE);
+
+        Remove(&waitprl.prl_Node);
+    } while(TRUE);
+    pls->pls_Owner = thistask;
+    pls->pls_ExclLockCount++;
+    Permit();
+}
+/* \\\ */
+
+/* /// "pLockSemShared()" */
+/*
+ * Acquire a tracked shared lock; nest an existing exclusive hold, or fall
+ * back to an exclusive lock if shared-lock bookkeeping cannot be allocated.
+ */
+void pLockSemShared(LIBBASETYPEPTR ps, struct PsdLockSem *pls)
+{
+    struct PsdReadLock *prl;
+    struct Task *thistask = FindTask(NULL);
+
+    Forbid();
+    // is this already locked exclusively by me?
+    if(thistask == pls->pls_Owner) {
+        // yes? then just increase exclusive lock count
+        pls->pls_ExclLockCount++;
+        Permit();
+        return;
+    }
+
+    // find existing readlock
+    prl = (struct PsdReadLock *) pls->pls_ReadLocks.lh_Head;
+    while(prl->prl_Node.ln_Succ) {
+        if(prl->prl_Task == thistask) {
+            KPRINTF(1, ("Increasing ReadLock (%p) count to %ld\n", thistask, prl->prl_Count));
+            prl->prl_Count++;
+            Permit();
+            return;
+        }
+        prl = (struct PsdReadLock *) prl->prl_Node.ln_Succ;
+    }
+
+    // this is a new readlock, generate context
+    if(!(prl = (struct PsdReadLock *) AllocPooled(ps->ps_SemaMemPool, sizeof(struct PsdReadLock)))) {
+        KPRINTF(20, ("No mem for shared lock! context (%p) on %p\n", thistask, pls));
+        // try exclusive lock as fallback (needs no memory)
+        Permit();
+        pLockSemExcl(ps, pls);
+        return;
+    }
+
+    KPRINTF(1, ("New ReadLockShared context (%p) on %p\n", thistask, pls));
+    prl->prl_Task = thistask;
+    prl->prl_Count = 0;
+    prl->prl_IsExcl = FALSE;
+
+    // if it's exclusively locked, wait for this lock to vanish
+    while(pls->pls_Owner) {
+        AddTail(&pls->pls_WaitQueue, &prl->prl_Node);
+        thistask->tc_SigRecvd &= ~SIGF_SINGLE;
+
+        Wait(SIGF_SINGLE);
+
+        Remove(&prl->prl_Node);
+    }
+
+    if(prl->prl_IsExcl) {
+        // we got promoted by BorrowLocks during the process! So we don't need the shared stuff anymore
+        FreePooled(ps->ps_SemaMemPool, prl, sizeof(struct PsdReadLock));
+        pls->pls_Owner = thistask;
+        pls->pls_ExclLockCount++;
+    } else {
+        // got the lock!
+        AddHead(&pls->pls_ReadLocks, &prl->prl_Node);
+        prl->prl_Count++;
+        pls->pls_SharedLockCount++;
+    }
+    Permit();
+    return;
+}
+/* \\\ */
+
+/* /// "pUnlockSem()" */
+/*
+ * Release one level of the calling task's exclusive or shared lock and signal
+ * waiting tasks.
+ */
+void pUnlockSem(LIBBASETYPEPTR ps, struct PsdLockSem *pls)
+{
+    struct PsdReadLock *prl;
+    struct Task *thistask = FindTask(NULL);
+    BOOL gotit = FALSE;
+
+    Forbid();
+    if(pls->pls_Owner) {
+        // exclusively locked, this means unlocking task must be owner
+        if(pls->pls_Owner != thistask) {
+            Permit();
+            psdDebugSemaphores();
+            psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
+                           "Attempt to unlock exclusive semaphore %p not owned by task %s!",
+                           pls, thistask->tc_Node.ln_Name);
+            return;
+
+        }
+        if(--pls->pls_ExclLockCount) {
+            // still locked
+            Permit();
+            return;
+        }
+        pls->pls_Owner = NULL;
+        // otherwise drop through and notify
+    } else {
+        if(!pls->pls_SharedLockCount) {
+            Permit();
+            psdDebugSemaphores();
+            psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
+                           "Attempt to unlock (free) semaphore %p once too often by task %s!",
+                           pls, thistask->tc_Node.ln_Name);
+            return;
+        }
+        // find readlock
+        prl = (struct PsdReadLock *) pls->pls_ReadLocks.lh_Head;
+        while(prl->prl_Node.ln_Succ) {
+            if(prl->prl_Task == thistask) {
+                if(--prl->prl_Count) {
+                    // can't be the last lock, so just reduce count and return
+                    Permit();
+                    return;
+                }
+                // remove read lock, it's no longer needed
+                KPRINTF(1, ("Removing read lock context (%p) on %p!\n", thistask, pls));
+                Remove(&prl->prl_Node);
+                FreePooled(ps->ps_SemaMemPool, prl, sizeof(struct PsdReadLock));
+                gotit = TRUE;
+                // losing a designated lock
+                pls->pls_SharedLockCount--;
+                break;
+            }
+            prl = (struct PsdReadLock *) prl->prl_Node.ln_Succ;
+        }
+        if(!gotit) {
+            Permit();
+            psdDebugSemaphores();
+            psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
+                           "Attempt to unlock (shared) semaphore %p once too often by task %s!",
+                           pls, thistask->tc_Node.ln_Name);
+            return;
+        }
+
+        // we need to notify anyway, because the waiter could already have a shared lock
+        // on the same semaphore, and if we only notified on LockCount reaching zero,
+        // the locker would wait forever.
+    }
+
+    // notify waiting tasks
+    prl = (struct PsdReadLock *) pls->pls_WaitQueue.lh_Head;
+    while(prl->prl_Node.ln_Succ) {
+        Signal(prl->prl_Task, SIGF_SINGLE);
+        prl = (struct PsdReadLock *) prl->prl_Node.ln_Succ;
+    }
+    Permit();
+}
+/* \\\ */
+
+/* /// "psdDebugSemaphores()" */
+/*****************************************************************************
+    NAME
+        VOID psdDebugSemaphores(
+
+    SYNOPSIS
+        )
+
+    FUNCTION
+        Log the registered Poseidon semaphore owners, readers and waiters.
+
+    RESULT
+        None. Output is added to the Poseidon message log.
+
+    NOTES
+        Reports the calling task, then each registered semaphore's name,
+        exclusive and shared counts, owner, waiting tasks and shared-lock counts.
+        It does not acquire, release or repair the reported locks.
+
+        Messages use informational severity and are suppressed when information
+        logging is disabled. Allocation failure can omit individual messages;
+        there is no complete-output indication. Only registered Poseidon locks
+        are visited, not arbitrary Exec semaphores.
+
+        Use from task context. Traversal uses Forbid()/Permit(), while logging
+        can allocate memory and perform other system calls. The output is a
+        diagnostic view, not a guaranteed atomic snapshot or a deadlock verdict.
+
+    SEE ALSO
+        psdBorrowLocksWait(), psdAddErrorMsgA(),
+        psdLockReadPBase(), psdLockWritePBase()
+
+*****************************************************************************/
+        AROS_LH0(void, psdDebugSemaphores,
+         LIBBASETYPEPTR, ps, 81, psd)
+{
+    AROS_LIBFUNC_INIT
+    struct Task *thistask = FindTask(NULL);
+    struct PsdSemaInfo *psi;
+
+    psdAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname),
+                   "Debug Semaphores (%p)", thistask);
+
+    Forbid();
+    // search for context
+    psi = (struct PsdSemaInfo *) ps->ps_DeadlockDebug.lh_Head;
+    while(psi->psi_Node.ln_Succ) {
+        pDebugSemaInfo(ps, psi);
+        psi = (struct PsdSemaInfo *) psi->psi_Node.ln_Succ;
+    }
+    Permit();
+    AROS_LIBFUNC_EXIT
+}
+/* \\\ */
+
+/* /// "psdLockReadPBase()" */
+/****** poseidon.library/psdLockReadPBase **********************************
+
+    NAME */
+        AROS_LH0(void, psdLockReadPBase,
+/*  SYNOPSIS */
+/*  LOCATION */
+         LIBBASETYPEPTR, ps, 8, psd)
+/*  FUNCTION
+        Acquire a shared lock on the Poseidon base state.
+
+    NOTES
+        The lock protects access to mutable global Poseidon structures,
+        including the hardware, device and class lists. It is acquired
+        through pLockSemShared() and must be released with
+        psdUnlockPBase(). The call may block while an exclusive owner
+        prevents shared access.
+
+    SEE ALSO
+        psdLockWritePBase(), psdUnlockPBase()
+
+******************************************************************************/
+{
+    AROS_LIBFUNC_INIT
+    KPRINTF(2, ("psdLockReadPBase(%p)\n", FindTask(NULL)));
+    pLockSemShared(ps, &ps->ps_Lock);
+    AROS_LIBFUNC_EXIT
+}
+/* \\\ */
+
+/* /// "psdLockWritePBase()" */
+/****** poseidon.library/psdLockWritePBase *********************************
+
+    NAME */
+        AROS_LH0(void, psdLockWritePBase,
+/*  SYNOPSIS */
+/*  LOCATION */
+         LIBBASETYPEPTR, ps, 7, psd)
+/*  FUNCTION
+        Acquire an exclusive lock on the Poseidon base state.
+
+    NOTES
+        The function delegates to pLockSemExcl(). It may block until
+        conflicting owners release the lock. The caller must balance the
+        acquisition with psdUnlockPBase() and avoid lock-order inversions
+        when also locking a device or other Poseidon state.
+
+    SEE ALSO
+        psdLockReadPBase(), psdUnlockPBase()
+
+******************************************************************************/
+{
+    AROS_LIBFUNC_INIT
+    KPRINTF(2, ("psdLockWritePBase(%p)\n", FindTask(NULL)));
+    pLockSemExcl(ps, &ps->ps_Lock);
+    AROS_LIBFUNC_EXIT
+}
+/* \\\ */
+
+/* /// "psdUnlockPBase()" */
+/****** poseidon.library/psdUnlockPBase ************************************
+
+    NAME */
+        AROS_LH0(void, psdUnlockPBase,
+/*  SYNOPSIS */
+/*  LOCATION */
+         LIBBASETYPEPTR, ps, 9, psd)
+/*  FUNCTION
+        Release the current task's Poseidon base lock.
+
+    NOTES
+        Delegates to pUnlockSem() for the shared/exclusive lock state
+        held by the calling task. Each acquisition must be balanced with
+        a corresponding release; this function does not report success
+        or verify a higher-level lock-order contract.
+
+    SEE ALSO
+        psdLockReadPBase(), psdLockWritePBase()
+
+******************************************************************************/
+{
+    AROS_LIBFUNC_INIT
+    KPRINTF(2, ("psdUnlockPBase(%p)\n", FindTask(NULL)));
+    pUnlockSem(ps, &ps->ps_Lock);
+    AROS_LIBFUNC_EXIT
+}
+/* \\\ */
+
+/* /// "psdBorrowLocksWait()" */
+/*****************************************************************************
+    NAME
+        ULONG psdBorrowLocksWait(
+
+    SYNOPSIS
+        struct Task *task, ULONG signals)
+
+    FUNCTION
+        Temporarily lend the caller's registered Poseidon locks to another
+        task while waiting for signals, then reclaim them.
+
+    INPUTS
+        task - Valid, non-NULL cooperating task distinct from the caller.
+            Keep it alive throughout the wait and lock reclamation.
+        signals - Exec signal mask for completion. The caller must arrange for
+            the cooperating operation to signal it.
+
+    RESULT
+        The signal mask returned by Wait(signals), after lock reclamation.
+        This is not a lock-transfer status or a count of transferred locks.
+
+    NOTES
+        Used when a cooperating task must access Poseidon state protected by
+        locks held by the caller. Only locks registered with Poseidon's lock
+        implementation participate; ordinary Exec semaphores are unaffected.
+        With no caller-held registered locks, behaves as Wait(signals).
+
+        The cooperating task must balance its own lock acquisitions and must
+        not consume the caller's borrowed lock counts. Keep all participating
+        lock objects alive until reclamation finishes. Do not use this operation
+        as permission to destroy or replace protected objects.
+
+        Transfers or temporarily releases exclusive and shared ownership,
+        including recursive counts. A waiting recipient can be moved to the
+        front of a wait queue and its shared request promoted to exclusive.
+        After receiving a signal, restores ownership directly where possible
+        and otherwise reacquires the saved lock counts.
+
+        Reclamation can block after the requested signal arrives. There is no
+        timeout or cancellation result. A completion signal should represent
+        a point at which the cooperating operation can release its locks.
+
+    BUGS
+        The recipient task is dereferenced without NULL validation.
+        Transfer bookkeeping allocation can fail without an error result.
+        Some locks can remain with the caller while others have been lent;
+        waiting can then deadlock. Queue reordering or promotion can precede
+        the failed allocation. This function does not guarantee deadlock
+        avoidance or an all-or-nothing transfer.
+
+    SEE ALSO
+        psdDebugSemaphores(), exec.library/Wait()
+
+*****************************************************************************/
+        AROS_LH2(ULONG, psdBorrowLocksWait,
+         AROS_LHA(struct Task *, task, A1),
+         AROS_LHA(ULONG, signals, D0),
+         LIBBASETYPEPTR, ps, 97, psd)
+{
+    AROS_LIBFUNC_INIT
+    struct Task *thistask = FindTask(NULL);
+    ULONG cnt = 0;
+    ULONG sigmask;
+    struct PsdSemaInfo *psi;
+    struct PsdLockSem *pls;
+    struct PsdReadLock *prl;
+    struct PsdBorrowLock *pbl;
+    struct List borrows;
+    struct List reclaims;
+    BOOL moveowner;
+
+    XPRINTF(10, ("Borrowing locks from %p (%s) to %p (%s)!\n",
+                 thistask, thistask->tc_Node.ln_Name, task, task->tc_Node.ln_Name));
+
+    Forbid();
+    psi = (struct PsdSemaInfo *) ps->ps_DeadlockDebug.lh_Head;
+    while(psi->psi_Node.ln_Succ) {
+        pls = psi->psi_LockSem;
+        if(pls->pls_Owner == thistask) {
+            cnt++;
+        }
+        if(pls->pls_SharedLockCount) {
+            struct PsdReadLock *prl = (struct PsdReadLock *) pls->pls_ReadLocks.lh_Head;
+            do {
+                if(prl->prl_Task == thistask) {
+                    cnt++;
+                    break;
+                }
+            } while((prl = (struct PsdReadLock *) prl->prl_Node.ln_Succ)->prl_Node.ln_Succ);
+        }
+        psi = (struct PsdSemaInfo *) psi->psi_Node.ln_Succ;
+    }
+    if(!cnt) {
+        Permit();
+        XPRINTF(10, ("Nothing to borrow!\n"));
+        return(Wait(signals));
+    }
+
+    NewList(&borrows);
+    NewList(&reclaims);
+    XPRINTF(10, ("Borrowing %ld locks\n", cnt));
+
+    psi = (struct PsdSemaInfo *) ps->ps_DeadlockDebug.lh_Head;
+    while(psi->psi_Node.ln_Succ) {
+        moveowner = TRUE;
+        pls = psi->psi_LockSem;
+        if(pls->pls_Owner == thistask) {
+            // check if the target task is already waiting for that lock
+            // in this case, we simply remove our exclusive lock and let
+            // the other task catch it
+            prl = (struct PsdReadLock *) pls->pls_WaitQueue.lh_Head;
+            while(prl->prl_Node.ln_Succ) {
+                if(prl->prl_Task == task) {
+                    if(!prl->prl_IsExcl) {
+                        // if we hand over the excl lock, we have to make sure that the exclusiveness is kept
+                        // and no other thread may catch it while it is shared.
+                        // hence we will need set this lock exclusive aswell
+                        // this no optimal solution, but it guarantees the same
+                        // behaviour with pending lock and no pending lock
+                        prl->prl_IsExcl = TRUE;
+                        XPRINTF(10, ("Promo waiting lock to excl\n"));
+                    }
+                    // move shared lock to top of the list
+                    Remove(&prl->prl_Node);
+                    AddHead(&pls->pls_WaitQueue, &prl->prl_Node);
+                    if((pbl = (struct PsdBorrowLock *) AllocPooled(ps->ps_SemaMemPool, sizeof(struct PsdBorrowLock)))) {
+                        pbl->pbl_LockSem = pls;
+                        pbl->pbl_ExclLockCount = pls->pls_ExclLockCount;
+                        AddTail(&reclaims, &pbl->pbl_Node);
+
+                        // unlock exclusive lock
+                        pls->pls_ExclLockCount = 0;
+                        pls->pls_Owner = NULL;
+                        Signal(task, SIGF_SINGLE);
+                        XPRINTF(10, ("Waiting lock %p transfer\n", pls));
+                    }
+                    moveowner = FALSE;
+                    break;
+                }
+                prl = (struct PsdReadLock *) prl->prl_Node.ln_Succ;
+            }
+            if(moveowner) {
+                if((pbl = (struct PsdBorrowLock *) AllocPooled(ps->ps_SemaMemPool, sizeof(struct PsdBorrowLock)))) {
+                    pbl->pbl_LockSem = pls;
+                    pbl->pbl_ExclLockCount = pls->pls_ExclLockCount;
+                    AddTail(&borrows, &pbl->pbl_Node);
+                    pls->pls_Owner = task;
+                    XPRINTF(10, ("Lock %p transfer\n", pls));
+                }
+            }
+        }
+        if(pls->pls_SharedLockCount) {
+            prl = (struct PsdReadLock *) pls->pls_ReadLocks.lh_Head;
+            do {
+                if(prl->prl_Task == thistask) {
+                    // check if target task is waiting for this task
+                    struct PsdReadLock *prl2 = (struct PsdReadLock *) pls->pls_WaitQueue.lh_Head;
+                    while(prl2->prl_Node.ln_Succ) {
+                        if(prl2->prl_Task == task) {
+                            // move lock to top of the list
+                            Remove(&prl2->prl_Node);
+                            AddHead(&pls->pls_WaitQueue, &prl2->prl_Node);
+                            if((pbl = (struct PsdBorrowLock *) AllocPooled(ps->ps_SemaMemPool, sizeof(struct PsdBorrowLock)))) {
+                                pbl->pbl_LockSem = pls;
+                                pbl->pbl_ReadLock = prl;
+                                pbl->pbl_Count = prl->prl_Count;
+                                AddHead(&reclaims, &pbl->pbl_Node);
+
+                                // unlock shared lock
+                                Remove(&prl->prl_Node);
+                                FreePooled(ps->ps_SemaMemPool, prl, sizeof(struct PsdReadLock));
+                                pls->pls_SharedLockCount--;
+                                Signal(task, SIGF_SINGLE);
+                            }
+                            moveowner = FALSE;
+                            XPRINTF(10, ("Waiting shared lock %p transfer\n", pls));
+                            break;
+                        }
+                        prl2 = (struct PsdReadLock *) prl2->prl_Node.ln_Succ;
+                    }
+                    if(moveowner) {
+                        // check if target task already has a shared lock on this
+                        prl2 = (struct PsdReadLock *) pls->pls_ReadLocks.lh_Head;
+                        do {
+                            if(prl2->prl_Task == task) {
+                                if((pbl = (struct PsdBorrowLock *) AllocPooled(ps->ps_SemaMemPool, sizeof(struct PsdBorrowLock)))) {
+                                    // we redirect to this other lock
+                                    pbl->pbl_LockSem = pls;
+                                    pbl->pbl_ReadLock = prl2;
+                                    pbl->pbl_Count = prl->prl_Count; // save the old lock count
+                                    AddTail(&borrows, &pbl->pbl_Node);
+
+                                    // unlock shared lock
+                                    Remove(&prl->prl_Node);
+                                    FreePooled(ps->ps_SemaMemPool, prl, sizeof(struct PsdReadLock));
+                                    pls->pls_SharedLockCount--;
+                                    // just increase lockcount, so a split occurs automatically
+                                    prl2->prl_Count += pbl->pbl_Count;
+                                }
+                                XPRINTF(10, ("Already locked %p transfer\n", pls));
+                                moveowner = FALSE;
+                                break;
+                            }
+                        } while((prl2 = (struct PsdReadLock *) prl2->prl_Node.ln_Succ)->prl_Node.ln_Succ);
+                    }
+                    if(moveowner) {
+                        if((pbl = (struct PsdBorrowLock *) AllocPooled(ps->ps_SemaMemPool, sizeof(struct PsdBorrowLock)))) {
+                            pbl->pbl_LockSem = pls;
+                            pbl->pbl_ReadLock = prl;
+                            pbl->pbl_Count = prl->prl_Count;
+                            AddTail(&borrows, &pbl->pbl_Node);
+                            prl->prl_Task = task;
+                            XPRINTF(10, ("Std lock %p transfer\n", pls));
+                        }
+                    }
+                    break;
+                }
+            } while((prl = (struct PsdReadLock *) prl->prl_Node.ln_Succ)->prl_Node.ln_Succ);
+        }
+        psi = (struct PsdSemaInfo *) psi->psi_Node.ln_Succ;
+    }
+
+    sigmask = Wait(signals);
+
+    // try to get moved locks back first
+    pbl = (struct PsdBorrowLock *) borrows.lh_Head;
+    while(pbl->pbl_Node.ln_Succ) {
+        Remove(&pbl->pbl_Node);
+        pls = pbl->pbl_LockSem;
+        if(pbl->pbl_ExclLockCount) {
+            if(pbl->pbl_ExclLockCount == pls->pls_ExclLockCount) {
+                // all fine, other task didn't use the locks or returned them already
+                pls->pls_Owner = thistask;
+                FreePooled(ps->ps_SemaMemPool, pbl, sizeof(struct PsdBorrowLock));
+            } else {
+                // okay, bad thing, release lock and try to obtain it again -- eventually the other task should free the lock again
+                pls->pls_ExclLockCount -= pbl->pbl_ExclLockCount;
+                AddTail(&reclaims, &pbl->pbl_Node);
+            }
+        } else {
+            if(pls->pls_Owner == task) {
+                // oh, damn. The other task converted our shared lock into an exclusive lock --
+                // we cannot claim this back right now. This gets tricky now.
+                if(pbl->pbl_Count == pbl->pbl_ReadLock->prl_Count) {
+                    // luckily, the count didn't change, so we just release the shared lock and requeue us into the reclaim list
+                    Remove(&pbl->pbl_ReadLock->prl_Node);
+                    FreePooled(ps->ps_SemaMemPool, pbl->pbl_ReadLock, sizeof(struct PsdReadLock));
+                    pbl->pbl_ReadLock = NULL;
+                    pls->pls_SharedLockCount--; // should turn to 0
+                } else {
+                    // can it get worse? obviously, the alien task also has added some read locks
+                    // this means we need to split up!
+                    // therefore we leave a few lock counts and requeue
+                    pbl->pbl_ReadLock->prl_Count -= pbl->pbl_Count;
+                    pbl->pbl_ReadLock = NULL;
+                }
+                AddHead(&reclaims, &pbl->pbl_Node);
+            } else {
+                if(pbl->pbl_Count == pbl->pbl_ReadLock->prl_Count) {
+                    // the count didn't change, just so just change owner
+                    pbl->pbl_ReadLock->prl_Task = thistask;
+                    FreePooled(ps->ps_SemaMemPool, pbl, sizeof(struct PsdBorrowLock));
+                } else {
+                    // the alien task still has some read locks
+                    // this means we need to split up!
+                    // therefore we leave a few lock counts and requeue
+                    pbl->pbl_ReadLock->prl_Count -= pbl->pbl_Count;
+                    pbl->pbl_ReadLock = NULL;
+                    AddHead(&reclaims, &pbl->pbl_Node);
+                }
+            }
+        }
+        pbl = (struct PsdBorrowLock *) borrows.lh_Head;
+    }
+
+    // try to reclaim released locks
+    pbl = (struct PsdBorrowLock *) reclaims.lh_Head;
+    while(pbl->pbl_Node.ln_Succ) {
+        Remove(&pbl->pbl_Node);
+        pls = pbl->pbl_LockSem;
+        while(pbl->pbl_Count) {
+            pLockSemShared(ps, pls);
+            --pbl->pbl_Count;
+        }
+        while(pbl->pbl_ExclLockCount) {
+            pLockSemExcl(ps, pls);
+            --pbl->pbl_ExclLockCount;
+        }
+        FreePooled(ps->ps_SemaMemPool, pbl, sizeof(struct PsdBorrowLock));
+        pbl = (struct PsdBorrowLock *) reclaims.lh_Head;
+    }
+    Permit();
+
+    return(sigmask);
+    AROS_LIBFUNC_EXIT
+}
+/* \\\ */
+
+/* *** Support *** */
+
+/* /// "psdCopyStr()" */
+/****** poseidon.library/psdCopyStr ****************************************
+
+    NAME */
+        AROS_LH1(STRPTR, psdCopyStr,
+/*  SYNOPSIS */
+         AROS_LHA(CONST_STRPTR, name, A0),
+/*  LOCATION */
+         LIBBASETYPEPTR, ps, 10, psd)
+/*  FUNCTION
+        Allocate a copy of a NUL-terminated string in Poseidon memory.
+
+    INPUTS
+        name - Valid NUL-terminated string; must not be NULL.
+
+    RESULT
+        Newly allocated copy or NULL if allocation fails. Release the
+        returned string with psdFreeVec().
+
+    NOTES
+        The function allocates strlen(name) plus one byte through
+        psdAllocVec() and copies the string with strcpy(). It does not
+        validate the source pointer or bound its length.
+
+    SEE ALSO
+        psdAllocVec(), psdFreeVec(), psdCopyStrFmtA()
+
+******************************************************************************/
+{
+    AROS_LIBFUNC_INIT
+    STRPTR rs = psdAllocVec((ULONG) strlen(name)+1);
+    KPRINTF(1, ("psdCopyStr(%s)\n", name));
+    if(rs) {
+        strcpy(rs, name);
+    }
+    return(rs);
+    AROS_LIBFUNC_EXIT
+}
+/* \\\ */
+
+/* /// "psdSafeRawDoFmtA()" */
+/****** poseidon.library/psdSafeRawDoFmtA **********************************
+
+    NAME */
+        AROS_LH4(void, psdSafeRawDoFmtA,
+/*  SYNOPSIS */
+         AROS_LHA(STRPTR, buf, A0),
+         AROS_LHA(ULONG, len, D0),
+         AROS_LHA(CONST_STRPTR, fmtstr, A1),
+         AROS_LHA(RAWARG, fmtdata, A2),
+/*  LOCATION */
+         LIBBASETYPEPTR, ps, 42, psd)
+/*  FUNCTION
+        Write formatted text into a caller-provided bounded buffer.
+
+    INPUTS
+        buf     - Writable output buffer when len is nonzero.
+        len     - Buffer capacity in bytes, including the terminating NUL.
+        fmtstr  - Valid RawDoFmt() format string.
+        fmtdata - Matching RawDoFmt() argument stream.
+
+    NOTES
+        Writes at most len bytes through a bounded RawDoFmt() callback,
+        then sets buf[len - 1] to NUL. With len zero, does nothing.
+        The callback does not report truncation; callers must not infer
+        that the complete formatted result was written.
+
+    SEE ALSO
+        psdCopyStrFmtA(), psdAddErrorMsgA()
+
+******************************************************************************/
+{
+    AROS_LIBFUNC_INIT
+    struct PsdRawDoFmt rdf;
+
+    if(len > 0) {
+        rdf.rdf_Len = len;
+        rdf.rdf_Buf = buf;
+        RawDoFmt(fmtstr, fmtdata, (void (*)()) pPutChar, &rdf);
+        buf[len-1] = 0;
+    }
+    AROS_LIBFUNC_EXIT
+}
+/* \\\ */
+
+/* /// "pPutChar()" */
+/*
+ * Bounded RawDoFmt() character sink: write a byte only while output capacity
+ * remains.
+ */
+AROS_UFH2(void, pPutChar,
+          AROS_UFHA(char, ch, D0),
+          AROS_UFHA(struct PsdRawDoFmt *, rdf, A3))
+{
+    AROS_USERFUNC_INIT
+    if(rdf->rdf_Len) {
+        rdf->rdf_Len--;
+        *rdf->rdf_Buf++ = ch;
+    }
+    AROS_USERFUNC_EXIT
+}
+/* \\\ */
+
+/* /// "psdCopyStrFmtA()" */
+/*****************************************************************************
+    NAME
+        STRPTR psdCopyStrFmtA(
+
+    SYNOPSIS
+        CONST_STRPTR fmtstr, RAWARG fmtdata)
+
+    FUNCTION
+        Allocate a string formatted with Exec RawDoFmt().
+
+    INPUTS
+        fmtstr - Non-NULL RawDoFmt format string.
+        fmtdata - Argument stream in the format required by RawDoFmt(),
+            matching fmtstr. Referenced strings must remain valid and unchanged
+            throughout both formatting passes.
+
+    RESULT
+        A NUL-terminated allocated string, or NULL on allocation failure.
+        Release the result with psdFreeVec().
+
+    NOTES
+        Formats once to count output characters and again to fill the buffer.
+        The format and argument data are borrowed and are not retained.
+        RawDoFmt conventions apply, including argument widths and string
+        representations; this is not a printf argument list.
+
+        The character count, terminator and allocator overhead must fit in
+        ULONG. Count overflow and NULL input pointers are not checked.
+
+    SEE ALSO
+        psdSafeRawDoFmtA(), psdFreeVec(), exec.library/RawDoFmt()
+
+*****************************************************************************/
+        AROS_LH2(STRPTR, psdCopyStrFmtA,
+         AROS_LHA(CONST_STRPTR, fmtstr, A0),
+         AROS_LHA(RAWARG, fmtdata, A1),
+         LIBBASETYPEPTR, ps, 68, psd)
+{
+    AROS_LIBFUNC_INIT
+    ULONG len = 0;
+    STRPTR buf;
+
+    RawDoFmt(fmtstr, fmtdata, (void (*)()) pRawFmtLength, &len);
+    buf = psdAllocVec(len+1);
+    if(buf) {
+        psdSafeRawDoFmtA(buf, len+1, fmtstr, fmtdata);
+    }
+    return(buf);
+    AROS_LIBFUNC_EXIT
+}
+/* \\\ */
+
+/* /// "pRawFmtLength()" */
+/*
+ * RawDoFmt() character sink used to count the bytes required for formatted
+ * output.
+ */
+AROS_UFH2(void, pRawFmtLength,
+          AROS_UFHA(char, ch, D0),
+          AROS_UFHA(ULONG *, len, A3))
+{
+    AROS_USERFUNC_INIT
+    (*len)++;
+    AROS_USERFUNC_EXIT
+}
+/* \\\ */
+
+/* /// "psdDelayMS()" */
+/****** poseidon.library/psdDelayMS ****************************************
+
+    NAME */
+        AROS_LH1(void, psdDelayMS,
+/*  SYNOPSIS */
+         AROS_LHA(ULONG, milli, D0),
+/*  LOCATION */
+         LIBBASETYPEPTR, ps, 11, psd)
+/*  FUNCTION
+        Perform a synchronous delay through Poseidon's timer device.
+
+    INPUTS
+        milli - Requested delay in milliseconds.
+
+    NOTES
+        The function initializes a private message port using the current
+        task's SIGB_SINGLE signal, copies the library's timer request,
+        sets its time to milli * 1000 microseconds and calls DoIO().
+        It does not expose a timer error or signal-interruption result.
+
+    BUGS
+        The multiplication by 1000 has no explicit overflow check.
+        The requested duration is not normalized into seconds here.
+
+    SEE ALSO
+        psdBorrowLocksWait()
+
+******************************************************************************/
+{
+    AROS_LIBFUNC_INIT
+    struct MsgPort mp;
+    struct timerequest tr;
+
+    /* Clear memory for messageport */
+    memset(&mp, 0, sizeof(mp));
+
+    KPRINTF(1, ("psdDelayMS(%ld)\n", milli));
+    mp.mp_Flags = PA_SIGNAL;
+    mp.mp_SigBit = SIGB_SINGLE;
+    mp.mp_SigTask = FindTask(NULL);
+    NewList(&mp.mp_MsgList);
+    CopyMem(&ps->ps_TimerIOReq, &tr, sizeof(tr));
+    tr.tr_node.io_Message.mn_ReplyPort = &mp;
+    tr.tr_time.tv_secs  = 0;
+    tr.tr_time.tv_micro = milli * 1000;
+    DoIO((struct IORequest *) &tr);
+    AROS_LIBFUNC_EXIT
+}
+/* \\\ */
+
+/* /// "psdGetAttrsA()" */
+/****** poseidon.library/psdGetAttrsA **************************************
+
+    NAME */
+        AROS_LH3(LONG, psdGetAttrsA,
+/*  SYNOPSIS */
+         AROS_LHA(ULONG, type, D0),
+         AROS_LHA(APTR, psdstruct, A0),
+         AROS_LHA(struct TagItem *, tags, A1),
+/*  LOCATION */
+         LIBBASETYPEPTR, ps, 22, psd)
+/*  FUNCTION
+        Read supported attributes from a Poseidon object or stack state.
+
+    INPUTS
+        type      - PGA_* object category selecting the attribute table.
+        psdstruct - Object of the selected category; PGA_STACK uses the
+                    library's own base state.
+        tags      - Tag list identifying attributes and writable result
+                    addresses; result addresses must be valid.
+
+    RESULT
+        Number of recognized attributes read, or -1 when the category
+        has no pack table.
+
+    NOTES
+        Explicit attributes are handled by the selected category's
+        special cases; remaining attributes are read with
+        UnpackStructureTags(). Returned pointers refer to live Poseidon
+        structures and must not be freed or retained beyond their valid
+        lifetime. See libraries/poseidon.h for supported tag identifiers.
+
+    SEE ALSO
+        psdSetAttrsA(), psdLockReadPBase(), psdGetNextDevice()
+
+******************************************************************************/
+{
+    AROS_LIBFUNC_INIT
+    struct TagItem *ti;
+    ULONG count = 0;
+    ULONG *packtab = NULL;
+
+    KPRINTF(1, ("psdGetAttrsA(%ld, %p, %p)\n", type, psdstruct, tags));
+
+    if(type <= PGA_LAST) {
+        packtab = (ULONG *) PsdPTArray[type];
+    }
+
+    switch(type) {
+    case PGA_STACK:
+        psdstruct = ps;
+        if((ti = FindTagItem(PA_HardwareList, tags))) {
+            *((struct List **) ti->ti_Data) = &ps->ps_Hardware;
+            count++;
+        }
+        if((ti = FindTagItem(PA_ClassList, tags))) {
+            *((struct List **) ti->ti_Data) = &ps->ps_Classes;
+            count++;
+        }
+        if((ti = FindTagItem(PA_ErrorMsgList, tags))) {
+            *((struct List **) ti->ti_Data) = &ps->ps_ErrorMsgs;
+            count++;
+        }
+        break;
+
+    case PGA_HARDWARE:
+        if((ti = FindTagItem(HA_DeviceList, tags))) {
+            *((struct List **) ti->ti_Data) = &(((struct PsdHardware *) psdstruct)->phw_Devices);
+            count++;
+        }
+        break;
+
+    case PGA_DEVICE:
+        if((ti = FindTagItem(DA_ConfigList, tags))) {
+            *((struct List **) ti->ti_Data) = &(((struct PsdDevice *) psdstruct)->pd_Configs);
+            count++;
+        }
+        if((ti = FindTagItem(DA_DescriptorList, tags))) {
+            *((struct List **) ti->ti_Data) = &(((struct PsdDevice *) psdstruct)->pd_Descriptors);
+            count++;
+        }
+        break;
+
+    case PGA_CONFIG:
+        if((ti = FindTagItem(CA_InterfaceList, tags))) {
+            *((struct List **) ti->ti_Data) = &(((struct PsdConfig *) psdstruct)->pc_Interfaces);
+            count++;
+        }
+        break;
+
+    case PGA_INTERFACE:
+        if((ti = FindTagItem(IFA_EndpointList, tags))) {
+            *((struct List **) ti->ti_Data) = &(((struct PsdInterface *) psdstruct)->pif_EPs);
+            count++;
+        }
+        if((ti = FindTagItem(IFA_AlternateIfList, tags))) {
+            *((struct List **) ti->ti_Data) = &(((struct PsdInterface *) psdstruct)->pif_AlterIfs);
+            count++;
+        }
+        break;
+
+    case PGA_ERRORMSG:
+        if((ti = FindTagItem(EMA_DateStamp, tags))) {
+            *((struct DateStamp **) ti->ti_Data) = &(((struct PsdErrorMsg *) psdstruct)->pem_DateStamp);
+            count++;
+        }
+        break;
+
+    case PGA_PIPE:
+        if((ti = FindTagItem(PPA_IORequest, tags))) {
+            *((struct IOUsbHWReq **) ti->ti_Data) = &(((struct PsdPipe *) psdstruct)->pp_IOReq);
+            count++;
+        }
+        break;
+
+    case PGA_STACKCFG:
+        if((ti = FindTagItem(GCA_InsertionSound, tags))) {
+            count++;
+            *((STRPTR *) ti->ti_Data) = ps->ps_PoPo.po_InsertSndFile;
+        }
+        if((ti = FindTagItem(GCA_RemovalSound, tags))) {
+            count++;
+            *((STRPTR *) ti->ti_Data) = ps->ps_PoPo.po_RemoveSndFile;
+        }
+        break;
+    }
+    if(packtab) {
+        return((LONG) (UnpackStructureTags(psdstruct, (ULONG *) packtab, tags)+count));
+    } else {
+        return(-1);
+    }
+    AROS_LIBFUNC_EXIT
+}
+/* \\\ */
+
+/* /// "psdSetAttrsA()" */
+/****** poseidon.library/psdSetAttrsA **************************************
+
+    NAME */
+        AROS_LH3(LONG, psdSetAttrsA,
+/*  SYNOPSIS */
+         AROS_LHA(ULONG, type, D0),
+         AROS_LHA(APTR, psdstruct, A0),
+         AROS_LHA(struct TagItem *, tags, A1),
+/*  LOCATION */
+         LIBBASETYPEPTR, ps, 23, psd)
+/*  FUNCTION
+        Change writable attributes of a Poseidon object.
+
+    INPUTS
+        type      - PGA_* object category selecting the attribute table.
+        psdstruct - Object to update; required when the category uses
+                    object-specific state.
+        tags      - Attribute/value tag list for the selected category.
+
+    RESULT
+        The generic path returns the number of attributes processed by
+        PackStructureTags(), or -1 if no pack table is available.
+        PGA_ENDPOINT and PGA_PIPESTREAM return their own processed-tag
+        counts. The generic result does not include every attribute
+        handled explicitly.
+
+    NOTES
+        Certain device and global configuration tags also update stored
+        configuration records or schedule a power recalculation. Changing
+        an attribute is not equivalent to sending a USB control request
+        unless the corresponding code path explicitly does so.
+        A nonnegative tag count does not guarantee successful resource
+        changes: PIPESTREAM reallocation failures are not reflected in
+        the returned count. Callers must respect object lifetimes and
+        the lock requirements of data shared with other tasks.
+
+    SEE ALSO
+        psdGetAttrsA(), psdCalculatePower(), psdSetDeviceConfig()
+
+******************************************************************************/
+{
+    AROS_LIBFUNC_INIT
+    struct TagItem *ti;
+    ULONG count = 0;
+    ULONG *packtab = NULL;
+    BOOL savepopocfg = FALSE;
+    BOOL checkcfgupdate = FALSE;
+    BOOL powercalc = FALSE;
+    LONG res;
+
+    KPRINTF(1, ("psdSetAttrsA(%ld, %p, %p)\n", type, psdstruct, tags));
+
+    if(type <= PGA_LAST) {
+        packtab = (ULONG *) PsdPTArray[type];
+    }
+
+    switch(type) {
+    case PGA_DEVICE:
+        if(FindTagItem(DA_InhibitPopup, tags) || FindTagItem(DA_InhibitClassBind, tags)) {
+            savepopocfg = TRUE;
+        }
+        if(FindTagItem(DA_OverridePowerInfo, tags)) {
+            savepopocfg = TRUE;
+            powercalc = TRUE;
+        }
+        break;
+
+    case PGA_STACK:
+        psdstruct = ps;
+        break;
+
+    case PGA_STACKCFG:
+        if((ti = FindTagItem(GCA_InsertionSound, tags))) {
+            count++;
+            if(strcmp(ps->ps_PoPo.po_InsertSndFile, (STRPTR) ti->ti_Data)) {
+                psdFreeVec(ps->ps_PoPo.po_InsertSndFile);
+                ps->ps_PoPo.po_InsertSndFile = psdCopyStr((STRPTR) ti->ti_Data);
+            }
+        }
+        if((ti = FindTagItem(GCA_RemovalSound, tags))) {
+            count++;
+            if(strcmp(ps->ps_PoPo.po_RemoveSndFile, (STRPTR) ti->ti_Data)) {
+                psdFreeVec(ps->ps_PoPo.po_RemoveSndFile);
+                ps->ps_PoPo.po_RemoveSndFile = psdCopyStr((STRPTR) ti->ti_Data);
+            }
+        }
+        checkcfgupdate = TRUE;
+        break;
+
+    case PGA_ENDPOINT: {
+        struct PsdEndpoint *pep = (struct PsdEndpoint *) psdstruct;
+        UWORD maxstreams;
+
+        count += PackStructureTags(psdstruct, packtab, tags);
+        maxstreams = pGetMaxStreamsForEndpoint(pep);
+        pep->pep_MaxStreams = maxstreams;
+        if (!maxstreams && pep->pep_StreamBase) {
+            psdAddErrorMsg0(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
+                            "Stream base requested for endpoint without USB3 stream support.");
+            pep->pep_StreamBase = 0;
+        } else if (maxstreams && pep->pep_StreamBase > maxstreams) {
+            psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
+                           "Stream base %ld exceeds max streams %ld; disabling stream IDs.",
+                           pep->pep_StreamBase, maxstreams);
+            pep->pep_StreamBase = 0;
+        }
+
+        return((LONG) count);
+    }
+
+    case PGA_PIPESTREAM: {
+        struct PsdPipeStream *pps = (struct PsdPipeStream *) psdstruct;
+        struct PsdPipe *pp;
+        ULONG oldbufsize = pps->pps_BufferSize;
+        ULONG oldnumpipes = pps->pps_NumPipes;
+        ULONG cnt;
+        UWORD maxstreams;
+        UWORD streambase;
+
+        KPRINTF(1, ("SetAttrs PIPESTREAM\n"));
+        ObtainSemaphore(&pps->pps_AccessLock);
+        if((ti = FindTagItem(PSA_MessagePort, tags))) {
+            count++;
+            if((pps->pps_Flags & PSFF_OWNMSGPORT) && pps->pps_MsgPort) {
+                KPRINTF(1, ("Deleting old MsgPort\n"));
+                DeleteMsgPort(pps->pps_MsgPort);
+                pps->pps_MsgPort = NULL;
+            }
+            pps->pps_Flags &= ~PSFF_OWNMSGPORT;
+        }
+        count += PackStructureTags(psdstruct, packtab, tags);
+        KPRINTF(1, ("Pipes = %ld (old: %ld), BufferSize = %ld (old: %ld)\n",
+                    pps->pps_NumPipes, oldnumpipes, pps->pps_BufferSize, oldbufsize));
+
+        maxstreams = pGetMaxStreamsForEndpoint(pps->pps_Endpoint);
+        streambase = pps->pps_Endpoint->pep_StreamBase;
+        if (streambase) {
+            if (!maxstreams) {
+                psdAddErrorMsg0(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
+                                "Stream IDs requested but endpoint does not support USB3 streams.");
+                streambase = 0;
+            } else if (streambase > maxstreams) {
+                psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
+                               "Stream base %ld exceeds max streams %ld; disabling stream IDs.",
+                               streambase, maxstreams);
+                streambase = 0;
+            } else {
+                UWORD usable = (UWORD)(maxstreams - streambase + 1);
+                if (pps->pps_NumPipes > usable) {
+                    psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
+                                   "Stream pipe count %ld exceeds available streams %ld; capping.",
+                                   pps->pps_NumPipes, usable);
+                    pps->pps_NumPipes = usable;
+                }
+            }
+        }
+        if(pps->pps_NumPipes < 1) {
+            pps->pps_NumPipes = 1; /* minimal */
+        }
+        if(pps->pps_BufferSize < pps->pps_Endpoint->pep_MaxPktSize) {
+            pps->pps_BufferSize = pps->pps_Endpoint->pep_MaxPktSize; /* minimal */
+        }
+        if(!pps->pps_MsgPort) {
+            if((pps->pps_MsgPort = CreateMsgPort())) {
+                KPRINTF(1, ("Creating MsgPort\n"));
+                pps->pps_Flags |= PSFF_OWNMSGPORT;
+            }
+        }
+        /* do we need to reallocate? */
+        if((oldbufsize != pps->pps_BufferSize) ||
+                (oldnumpipes != pps->pps_NumPipes) ||
+                (!pps->pps_Pipes) ||
+                (!pps->pps_Buffer)) {
+            if(pps->pps_Pipes) {
+                KPRINTF(1, ("freeing %ld old pipes\n", oldnumpipes));
+                for(cnt = 0; cnt < oldnumpipes; cnt++) {
+                    pp = pps->pps_Pipes[cnt];
+                    //if(pp->pp_IOReq.iouh_Req.io_Message.mn_Node.ln_Type == NT_MESSAGE)
+                    {
+                        KPRINTF(1, ("Abort %ld\n", cnt));
+                        psdAbortPipe(pp);
+                        KPRINTF(1, ("Wait %ld\n", cnt));
+                        psdWaitPipe(pp);
+                    }
+                    KPRINTF(1, ("Free %ld\n", cnt));
+                    psdFreePipe(pp);
+                }
+                psdFreeVec(pps->pps_Pipes);
+            }
+            psdFreeVec(pps->pps_Buffer);
+            /* reset stuff */
+            NewList(&pps->pps_FreePipes);
+            NewList(&pps->pps_ReadyPipes);
+            pps->pps_Offset = 0;
+            pps->pps_BytesPending = 0;
+            pps->pps_ReqBytes = 0;
+            pps->pps_ActivePipe = NULL;
+            pps->pps_Buffer = psdAllocVec(pps->pps_NumPipes * pps->pps_BufferSize);
+            pps->pps_Pipes = psdAllocVec(pps->pps_NumPipes * sizeof(struct PsdPipe *));
+            if(pps->pps_Pipes && pps->pps_Buffer) {
+                KPRINTF(1, ("allocating %ld new pipes\n", pps->pps_NumPipes));
+                for(cnt = 0; cnt < pps->pps_NumPipes; cnt++) {
+                    pp = psdAllocPipe(pps->pps_Device, pps->pps_MsgPort, pps->pps_Endpoint);
+                    if((pps->pps_Pipes[cnt] = pp)) {
+                        pp->pp_Num = cnt;
+                        if (streambase && maxstreams) {
+                            pp->pp_StreamID = (UWORD)(streambase + cnt);
+                        } else {
+                            pp->pp_StreamID = 0;
+                        }
+                        if(pps->pps_Flags & PSFF_NOSHORTPKT) pp->pp_IOReq.iouh_Flags |= UHFF_NOSHORTPKT;
+                        if(pps->pps_Flags & PSFF_NAKTIMEOUT) pp->pp_IOReq.iouh_Flags |= UHFF_NAKTIMEOUT;
+                        if(pps->pps_Flags & PSFF_ALLOWRUNT) pp->pp_IOReq.iouh_Flags |= UHFF_ALLOWRUNTPKTS;
+                        pp->pp_IOReq.iouh_NakTimeout = pps->pps_NakTimeoutTime;
+                        AddTail(&pps->pps_FreePipes, &pp->pp_Msg.mn_Node);
+                    } else {
+                        KPRINTF(1, ("Allocating Pipe %ld failed!\n", cnt));
+                    }
+                }
+            } else {
+                KPRINTF(1, ("Allocating Pipe array failed!\n"));
+                psdFreeVec(pps->pps_Buffer);
+                pps->pps_Buffer = NULL;
+                psdFreeVec(pps->pps_Pipes);
+                pps->pps_Pipes = NULL;
+            }
+        } else if (pps->pps_Pipes) {
+            for(cnt = 0; cnt < pps->pps_NumPipes; cnt++) {
+                pp = pps->pps_Pipes[cnt];
+                if (streambase && maxstreams) {
+                    pp->pp_StreamID = (UWORD)(streambase + cnt);
+                } else {
+                    pp->pp_StreamID = 0;
+                }
+            }
+        }
+        ReleaseSemaphore(&pps->pps_AccessLock);
+        return((LONG) count);
+    }
+    }
+
+    if(packtab) {
+        res = (LONG) PackStructureTags(psdstruct, packtab, tags);
+    } else {
+        res = -1;
+    }
+    if(savepopocfg) {
+        struct PsdDevice *pd = (struct PsdDevice *) psdstruct;
+        struct PsdIFFContext *pic;
+
+        pic = psdGetUsbDevCfg("Trident", pd->pd_IDString, NULL);
+        if(!pic) {
+            psdSetUsbDevCfg("Trident", pd->pd_IDString, NULL, NULL);
+            pic = psdGetUsbDevCfg("Trident", pd->pd_IDString, NULL);
+        }
+        if(pic) {
+            pAddCfgChunk(ps, pic, &pd->pd_PoPoCfg);
+            checkcfgupdate = TRUE;
+        }
+    }
+    if(checkcfgupdate) {
+        pUpdateGlobalCfg(ps, (struct PsdIFFContext *) ps->ps_ConfigRoot.lh_Head);
+        pCheckCfgChanged(ps);
+    }
+    if(powercalc) {
+        psdCalculatePower(((struct PsdDevice *) psdstruct)->pd_Hardware);
+    }
+    return(res);
+    AROS_LIBFUNC_EXIT
+}
+/* \\\ */
+
+/* /// "psdSpawnSubTask()" */
+/****** poseidon.library/psdSpawnSubTask ***********************************
+
+    NAME */
+        AROS_LH3(struct Task *, psdSpawnSubTask,
+/*  SYNOPSIS */
+         AROS_LHA(STRPTR, name, A0),
+         AROS_LHA(APTR, initpc, A1),
+         AROS_LHA(APTR, userdata, A2),
+/*  LOCATION */
+         LIBBASETYPEPTR, ps, 39, psd)
+/*  FUNCTION
+        Start a Poseidon worker as a process when DOS is available, or
+        as an Exec task during early startup.
+
+    INPUTS
+        name     - Non-NULL task or process name.
+        initpc   - Non-NULL entry point for the worker.
+        userdata - Pointer stored as task user data.
+
+    RESULT
+        New task pointer, or NULL if argument validation, allocation or
+        task/process creation fails.
+
+    NOTES
+        The DOS path uses CreateNewProcTags() with the configured worker
+        priority and stack size. The early-boot path allocates an Exec
+        task, stack and copied name through an attached memory list and
+        starts it with AddTask(). The returned worker has its own lifetime;
+        this function does not wait for worker initialization or exit.
+
+    SEE ALSO
+        psdAddHardware(), psdBorrowLocksWait()
+
+******************************************************************************/
+{
+    AROS_LIBFUNC_INIT
+#define SUBTASKSTACKSIZE AROS_STACKSIZE
+    struct {
+        struct MemList mrm_ml;
+        struct MemEntry mtm_me[2];
+    } memlist;
+
+    struct MemList *newmemlist;
+    struct MemEntry *me;
+    struct Task *nt;
+    struct Process *subtask;
+
+    if(!(name && initpc)) {
+        return(NULL);
+    }
+
+    /* If there's dos available, create a process instead of a task */
+    if(pOpenDOS(ps)) {
+        subtask = CreateNewProcTags(NP_Entry, initpc,
+                                    NP_StackSize, SUBTASKSTACKSIZE,
+                                    NP_Priority, ps->ps_GlobalCfg->pgc_SubTaskPri,
+                                    NP_Name, name,
+                                    NP_CopyVars, FALSE,
+                                    NP_UserData, userdata,
+                                    TAG_END);
+        return((struct Task *) subtask);
+    }
+
+    /* Allocate memory of memlist */
+
+    memlist.mrm_ml.ml_Node.ln_Type = NT_MEMORY;
+    memlist.mrm_ml.ml_Node.ln_Pri = 0;
+    memlist.mrm_ml.ml_Node.ln_Name = NULL;
+    memlist.mrm_ml.ml_NumEntries = 3;
+    me = &memlist.mrm_ml.ml_ME[0];
+    me[1].me_Un.meu_Reqs = memlist.mrm_ml.ml_ME[0].me_Un.meu_Reqs = MEMF_CLEAR|MEMF_PUBLIC;
+    me[0].me_Length = sizeof(struct Task);
+    me[1].me_Length = SUBTASKSTACKSIZE;
+    me[2].me_Un.meu_Reqs = MEMF_PUBLIC;
+    me[2].me_Length = strlen(name) + 1;
+
+#ifdef __AROS__
+    newmemlist = NewAllocEntry(&memlist.mrm_ml, NULL);
+    if (!newmemlist)
+#else
+    newmemlist = AllocEntry(&memlist.mrm_ml);
+    if((IPTR) newmemlist & 0x80000000)
+#endif
+    {
+        return(NULL);
+    }
+    me = &newmemlist->ml_ME[0];
+    nt = me[0].me_Un.meu_Addr;
+    nt->tc_Node.ln_Name = me[2].me_Un.meu_Addr;
+    strcpy(nt->tc_Node.ln_Name, name);
+    nt->tc_Node.ln_Type = NT_TASK;
+    nt->tc_Node.ln_Pri = ps->ps_GlobalCfg->pgc_SubTaskPri;
+    nt->tc_SPLower = me[1].me_Un.meu_Addr;
+    nt->tc_SPUpper = nt->tc_SPReg = (APTR) ((IPTR) nt->tc_SPLower + SUBTASKSTACKSIZE);
+    nt->tc_UserData = userdata;
+    NewList(&nt->tc_MemEntry);
+    AddTail(&nt->tc_MemEntry, (struct Node *) newmemlist);
+#if !defined(__AROSEXEC_SMP__)
+    KPRINTF(1, ("TDNestCnt=%ld\n", SysBase->TDNestCnt));
+#endif
+    if((nt = AddTask(nt, initpc, NULL))) {
+        XPRINTF(10, ("Started task %p (%s)\n", nt, name));
+        return(nt);
+    }
+    FreeEntry(newmemlist);
+    return(NULL);
+    AROS_LIBFUNC_EXIT
+}
+/* \\\ */
+
+/* /// "psdNumToStr()" */
+/****** poseidon.library/psdNumToStr ***************************************
+
+    NAME */
+        AROS_LH3(STRPTR, psdNumToStr,
+/*  SYNOPSIS */
+         AROS_LHA(UWORD, type, D0),
+         AROS_LHA(LONG, idx, D1),
+         AROS_LHA(STRPTR, defstr, A0),
+/*  LOCATION */
+         LIBBASETYPEPTR, ps, 38, psd)
+/*  FUNCTION
+        Look up a human-readable name for a USB value or enumeration.
+
+    INPUTS
+        type   - NTS_* lookup category, such as NTS_IOERR or NTS_LANGID.
+        idx    - Numeric value within the selected category.
+        defstr - Fallback string returned when no name is available.
+
+    RESULT
+        Pointer to a static lookup string or the supplied fallback.
+        The returned pointer is not a new Poseidon allocation.
+
+    NOTES
+        The supported categories and mappings are implemented in the
+        library's lookup tables and switch statement. Callers must not
+        free a returned table string.
+
+    SEE ALSO
+        psdGetPipeError(), psdGetStringDescriptor()
+
+******************************************************************************/
+{
+    AROS_LIBFUNC_INIT
+    switch(type) {
+    case NTS_IOERR: {
+        const struct PsdWStringMap *psm = usbhwioerrstr;
+        while(psm->psm_ID) {
+            if(psm->psm_ID == idx) {
+                return(psm->psm_String);
+            }
+            psm++;
+        }
+        break;
+    }
+
+    case NTS_LANGID: {
+        const struct PsdUWStringMap *psm = usblangids;
+        while(psm->psm_ID) {
+            if(psm->psm_ID == idx) {
+                return(psm->psm_String);
+            }
+            psm++;
+        }
+        break;
+    }
+
+    case NTS_TRANSTYPE:
+        switch(idx) {
+        case USEAF_CONTROL:
+            return("control");
+        case USEAF_ISOCHRONOUS:
+            return("isochronous");
+        case USEAF_BULK:
+            return("bulk");
+        case USEAF_INTERRUPT:
+            return("interrupt");
+        }
+        break;
+
+    case NTS_SYNCTYPE:
+        switch(idx) {
+        case USEAF_NOSYNC:
+            return("no synchronization");
+        case USEAF_ASYNC:
+            return("asynchronous");
+        case USEAF_ADAPTIVE:
+            return("adaptive");
+        case USEAF_SYNC:
+            return("synchronous");
+        }
+        break;
+
+    case NTS_USAGETYPE:
+        switch(idx) {
+        case USEAF_DATA:
+            return("data");
+        case USEAF_FEEDBACK:
+            return("feedback");
+        case USEAF_IMPLFEEDBACK:
+            return("implicit feedback data");
+        }
+        break;
+
+    case NTS_VENDORID: {
+        const struct PsdUWStringMap *psm = usbvendorids;
+        while(psm->psm_ID) {
+            if(psm->psm_ID == idx) {
+                return(psm->psm_String);
+            }
+            psm++;
+        }
+        break;
+    }
+
+    case NTS_CLASSCODE: {
+        const struct PsdWStringMap *psm = usbclasscodestr;
+        while(psm->psm_ID) {
+            if(psm->psm_ID == idx) {
+                return(psm->psm_String);
+            }
+            psm++;
+        }
+        break;
+    }
+
+    case NTS_DESCRIPTOR: {
+        const struct PsdULStringMap *psm = usbdesctypestr;
+        while(psm->psm_ID) {
+            if(psm->psm_ID == idx) {
+                return(psm->psm_String);
+            }
+            psm++;
+        }
+        break;
+    }
+
+    case NTS_COMBOCLASS: {
+        const struct PsdULStringMap *psm = usbcomboclasscodestr;
+        if(idx & (NTSCCF_CLASS|NTSCCF_SUBCLASS|NTSCCF_PROTO)) {
+            while(psm->psm_ID) {
+                BOOL take;
+                take = TRUE;
+                if(psm->psm_ID & NTSCCF_CLASS) {
+                    if((!(idx & NTSCCF_CLASS)) || ((idx & 0x0000ff) != (psm->psm_ID & 0x0000ff))) {
+                        take = FALSE;
+                    }
+                }
+                if(psm->psm_ID & NTSCCF_SUBCLASS) {
+                    if((!(idx & NTSCCF_SUBCLASS)) || ((idx & 0x00ff00) != (psm->psm_ID & 0x00ff00))) {
+                        take = FALSE;
+                    }
+                }
+                if(psm->psm_ID & NTSCCF_PROTO) {
+                    if((!(idx & NTSCCF_PROTO)) || ((idx & 0xff0000) != (psm->psm_ID & 0xff0000))) {
+                        take = FALSE;
+                    }
+                }
+                if(take) {
+                    return(psm->psm_String);
+                }
+                psm++;
+            }
+        }
+        break;
+    }
+    }
+    return(defstr);
+    AROS_LIBFUNC_EXIT
+}
+/* \\\ */
+
+/* *** Endpoint *** */
+
+/* /// "pTearDownHWEndpoint()" */
+/*
+ * Invoke controller-specific endpoint teardown when an endpoint owns prepared
+ * hardware state.
+ */
+void pTearDownHWEndpoint(struct PsdEndpoint *pep)
+{
+    if(!pep || !pep->pep_IOReq) {
+        return;
+    }
+
+    struct PsdHardware *phw = pep->pep_Interface->pif_Config->pc_Device->pd_Hardware;
+    LIBBASETYPEPTR ps = phw->phw_Base;
+
+    if(phw->phw_DestroyEndpoint) {
+        phw->phw_DestroyEndpoint(pep->pep_IOReq);
+    }
+
+    psdFreeVec(pep->pep_IOReq);
+    pep->pep_IOReq = NULL;
+}
+/* \\\ */
+
+/* /// "pPrepareHWEndpoint()" */
+/*
+ * Return success without work if no endpoint, existing endpoint I/O state,
+ * or no controller prepare callback exists. Otherwise allocate an endpoint
+ * I/O request, initialize it from the pipe and call the controller hook.
+ * On callback failure, release the request and clear its endpoint pointer.
+ */
+BOOL pPrepareHWEndpoint(struct PsdPipe *pp)
+{
+    struct PsdEndpoint *pep = pp->pp_Endpoint;
+    struct PsdHardware *phw = pp->pp_Device->pd_Hardware;
+
+    if(!pep || pep->pep_IOReq || !phw->phw_PrepareEndpoint) {
+        return(TRUE);
+    }
+
+    LIBBASETYPEPTR ps = phw->phw_Base;
+
+    pep->pep_IOReq = psdAllocVec(sizeof(struct IOUsbHWReq));
+    if(!pep->pep_IOReq) {
+        psdAddErrorMsg(RETURN_ERROR, (STRPTR) GM_UNIQUENAME(libname),
+                       "AllocPipe(): Failed to allocate endpoint context for %s",
+                       pp->pp_Device->pd_ProductStr);
+        return(FALSE);
+    }
+
+    CopyMem(&pp->pp_IOReq, pep->pep_IOReq, sizeof(struct IOUsbHWReq));
+
+    LONG rc = phw->phw_PrepareEndpoint(pep->pep_IOReq);
+    if(!rc) {
+        return(TRUE);
+    }
+
+    psdAddErrorMsg(RETURN_ERROR, (STRPTR) GM_UNIQUENAME(libname),
+                   "Hardware refused to prepare endpoint %u on device %s: %s (%ld)",
+                   (unsigned)pep->pep_EPNum,
+                   pp->pp_Device->pd_ProductStr,
+                   psdNumToStr(NTS_IOERR, rc, "unknown"),
+                   rc);
+
+    psdFreeVec(pep->pep_IOReq);
+    pep->pep_IOReq = NULL;
+    return(FALSE);
+}
+/* \\\ */
+
+/* /// "pFreeEndpoint()" */
+/*
+ * Tear down an endpoint's hardware resources, unlink the endpoint, and free
+ * its allocation.
+ */
+void pFreeEndpoint(struct PsdEndpoint *pep)
+{
+    LIBBASETYPEPTR ps = pep->pep_Interface->pif_Config->pc_Device->pd_Hardware->phw_Base;
+    KPRINTF(2, ("    FreeEndpoint()\n"));
+    pTearDownHWEndpoint(pep);
+    Remove(&pep->pep_Node);
+    psdFreeVec(pep);
+}
+/* \\\ */
+
+/* /// "pAllocEndpoint()" */
+/* Allocate an endpoint record and link it to its owning USB interface. */
+struct PsdEndpoint * pAllocEndpoint(struct PsdInterface *pif)
+{
+    LIBBASETYPEPTR ps = pif->pif_Config->pc_Device->pd_Hardware->phw_Base;
+    struct PsdEndpoint *pep;
+    if((pep = psdAllocVec(sizeof(struct PsdEndpoint)))) {
+        pep->pep_Interface = pif;
+        pep->pep_IOReq = NULL;
+        pep->pep_StreamBase = 0;
+        pep->pep_MaxStreams = 0;
+        AddTail(&pif->pif_EPs, &pep->pep_Node);
+        return(pep);
+    }
+    return(NULL);
+}
+/* \\\ */
+
+/* /// "psdFindEndpointA()" */
+/*****************************************************************************
+    NAME
+        APTR psdFindEndpointA(
+
+    SYNOPSIS
+        APTR pif, APTR pep, struct TagItem *taglist)
+
+    FUNCTION
+        Find the next endpoint matching all supplied filters.
+
+    INPUTS
+        pif - Valid interface handle.
+        pep - NULL to start at the first endpoint; otherwise a previous result
+            belonging to pif. Searching resumes after that endpoint.
+        taglist - Filter list, or NULL for no filters.
+
+    TAGS
+        EA_IsIn - Nonzero for IN, zero for OUT.
+        EA_EndpointNum, EA_TransferType, EA_MaxPktSize, EA_Interval,
+        EA_MaxBurst, EA_CompAttributes, EA_BytesPerInterval - Exact matches
+            against the corresponding stored endpoint attributes.
+
+    RESULT
+        A borrowed endpoint handle, or NULL if no further endpoint matches.
+
+    NOTES
+        Searches only this interface's endpoint list. Does not allocate an
+        endpoint, issue USB requests or retain the tag list. Unknown tags are
+        ignored. No lock is taken: keep the interface, cursor and returned
+        object alive and exclude concurrent list changes while traversing.
+        Do not free the result.
+
+    BUGS
+        EA_Interface, EA_SyncType, EA_UsageType and EA_MaxStreams are
+        declared but are not supported as search filters. A NULL
+        interface and an unrelated continuation cursor are unchecked.
+
+    SEE ALSO
+        psdFindInterfaceA(), psdGetAttrsA(), psdLockReadDevice()
+
+*****************************************************************************/
+        AROS_LH3(struct PsdEndpoint *, psdFindEndpointA,
+         AROS_LHA(struct PsdInterface *, pif, A0),
+         AROS_LHA(struct PsdEndpoint *, pep, A2),
+         AROS_LHA(struct TagItem *, tags, A1),
+         LIBBASETYPEPTR, ps, 67, psd)
+{
+    AROS_LIBFUNC_INIT
+    struct TagItem *ti;
+    BOOL takeit;
+
+    KPRINTF(2, ("psdFindEndpointA(%p, %p, %p)\n", pif, pep, tags));
+    if(!pep) {
+        pep = (struct PsdEndpoint *) pif->pif_EPs.lh_Head;
+    } else {
+        pep = (struct PsdEndpoint *) pep->pep_Node.ln_Succ;
+    }
+    while(pep->pep_Node.ln_Succ) {
+        takeit = TRUE;
+        if((ti = FindTagItem(EA_IsIn, tags))) {
+            if((ti->ti_Data && !pep->pep_Direction) || (!ti->ti_Data && pep->pep_Direction)) {
+                takeit = FALSE;
+            }
+        }
+        if((ti = FindTagItem(EA_EndpointNum, tags))) {
+            if(ti->ti_Data != pep->pep_EPNum) {
+                takeit = FALSE;
+            }
+        }
+        if((ti = FindTagItem(EA_TransferType, tags))) {
+            if(ti->ti_Data != pep->pep_TransType) {
+                takeit = FALSE;
+            }
+        }
+        if((ti = FindTagItem(EA_MaxPktSize, tags))) {
+            if(ti->ti_Data != pep->pep_MaxPktSize) {
+                takeit = FALSE;
+            }
+        }
+        if((ti = FindTagItem(EA_Interval, tags))) {
+            if(ti->ti_Data != pep->pep_Interval) {
+                takeit = FALSE;
+            }
+        }
+        if((ti = FindTagItem(EA_MaxBurst, tags))) {
+            if(ti->ti_Data != pep->pep_MaxBurst) {
+                takeit = FALSE;
+            }
+        }
+        if((ti = FindTagItem(EA_CompAttributes, tags))) {
+            if(ti->ti_Data != pep->pep_CompAttributes) {
+                takeit = FALSE;
+            }
+        }
+        if((ti = FindTagItem(EA_BytesPerInterval, tags))) {
+            if(ti->ti_Data != pep->pep_BytesPerInterval) {
+                takeit = FALSE;
+            }
+        }
+
+        if(takeit) {
+            return(pep);
+        }
+        pep = (struct PsdEndpoint *) pep->pep_Node.ln_Succ;
+    }
+    return(NULL);
+    AROS_LIBFUNC_EXIT
+}
+/* \\\ */
+
+/* *** Interface *** */
+
+/* /// "pFreeInterface()" */
+/*
+ * Release all alternate settings and endpoints belonging to an interface,
+ * then unlink and free it.
+ */
+void pFreeInterface(struct PsdInterface *pif)
+{
+    LIBBASETYPEPTR ps = pif->pif_Config->pc_Device->pd_Hardware->phw_Base;
+    struct PsdEndpoint *pep = (struct PsdEndpoint *) pif->pif_EPs.lh_Head;
+    struct PsdInterface *altif = (struct PsdInterface *) pif->pif_AlterIfs.lh_Head;
+    KPRINTF(2, ("   FreeInterface()\n"));
+    /* Remove alternate interfaces */
+    while(altif->pif_Node.ln_Succ) {
+        pFreeInterface(altif);
+        altif = (struct PsdInterface *) pif->pif_AlterIfs.lh_Head;
+    }
+    /* Remove endpoints */
+    while(pep->pep_Node.ln_Succ) {
+        pFreeEndpoint(pep);
+        pep = (struct PsdEndpoint *) pif->pif_EPs.lh_Head;
+    }
+    psdFreeVec(pif->pif_IfStr);
+    psdFreeVec(pif->pif_IDString);
+    Remove(&pif->pif_Node);
+    psdFreeVec(pif);
+}
+/* \\\ */
+
+/* /// "pAllocInterface()" */
+/*
+ * Allocate a USB interface with initialized endpoint and alternate-setting
+ * lists.
+ */
+struct PsdInterface * pAllocInterface(struct PsdConfig *pc)
+{
+    LIBBASETYPEPTR ps = pc->pc_Device->pd_Hardware->phw_Base;
+    struct PsdInterface *pif;
+    if((pif = psdAllocVec(sizeof(struct PsdInterface)))) {
+        pif->pif_Config = pc;
+        NewList(&pif->pif_EPs);
+        NewList(&pif->pif_AlterIfs);
+        AddTail(&pc->pc_Interfaces, &pif->pif_Node);
+        return(pif);
+    }
+    return(NULL);
+}
+/* \\\ */
+
+/* /// "psdFindInterfaceA()" */
+/*****************************************************************************
+    NAME
+        APTR psdFindInterfaceA(
+
+    SYNOPSIS
+        APTR pd, APTR pif, struct TagItem *taglist)
+
+    FUNCTION
+        Find the next interface matching all supplied filters.
+
+    INPUTS
+        pd - Valid device handle. A fresh search uses its current configuration.
+        pif - NULL to start; otherwise a previous result for this device.
+        taglist - Filter list, or NULL for no filters.
+
+    TAGS
+        IFA_InterfaceNum, IFA_NumEndpoints, IFA_Class, IFA_SubClass,
+        IFA_Protocol - Exact matches against stored attributes.
+        IFA_AlternateNum - Enables alternate-interface searching. Values
+            through 255 also select that alternate number; larger values
+            accept any alternate number.
+        IFA_Binding - Exact binding-pointer match, including NULL.
+        IFA_InterfaceName, IFA_IDString - Case-sensitive string matches.
+            Supply valid strings; the corresponding stored string must exist.
+
+    RESULT
+        A borrowed interface handle, or NULL if no further match is found
+        or a fresh search has no current configuration.
+
+    NOTES
+        Without IFA_AlternateNum, fresh searches visit main interfaces only.
+        With it, each main interface is followed by its alternates. Resuming
+        from an alternate also enables alternate traversal. Unknown tags are
+        ignored. This call does not select an alternate or issue USB requests.
+
+        No lock is taken. Keep device, configuration, cursor and results alive
+        and exclude concurrent topology changes while traversing. The result
+        is owned by Poseidon; do not free it. Tag data is not retained.
+
+    BUGS
+        Resuming after the last alternate can return NULL before visiting
+        later main interfaces. Name filters pass stored pointers to strcmp()
+        without checking for NULL. Other declared interface filters,
+        including IFA_Config and IFA_BindingClass, are not handled.
+
+    SEE ALSO
+        psdFindEndpointA(), psdSetAltInterface(), psdLockReadDevice()
+
+*****************************************************************************/
+        AROS_LH3(struct PsdInterface *, psdFindInterfaceA,
+         AROS_LHA(struct PsdDevice *, pd, A0),
+         AROS_LHA(struct PsdInterface *, pif, A2),
+         AROS_LHA(struct TagItem *, tags, A1),
+         LIBBASETYPEPTR, ps, 66, psd)
+{
+    AROS_LIBFUNC_INIT
+    struct PsdConfig *pc;
+    struct TagItem *ti;
+    BOOL takeit;
+    BOOL searchalt = FALSE;
+    BOOL isalt = FALSE;
+    struct PsdInterface *oldpif = NULL;
+
+    KPRINTF(2, ("psdFindInterfaceA(%p, %p, %p)\n", pd, pif, tags));
+    if(!pif) {
+        pc = pd->pd_CurrentConfig;
+        if(pc) {
+            pif = (struct PsdInterface *) pc->pc_Interfaces.lh_Head;
+        }
+        if(!pif) {
+            return(NULL);
+        }
+    } else {
+        if(FindTagItem(IFA_AlternateNum, tags)) {
+            searchalt = TRUE;
+        }
+        if(pif->pif_ParentIf) {
+            // special case: we are in an alternate interface right now
+            searchalt = TRUE;
+            if(pif->pif_Node.ln_Succ) {
+                isalt = TRUE;
+                oldpif = pif->pif_ParentIf;
+                pif = (struct PsdInterface *) pif->pif_Node.ln_Succ;
+            } else {
+                pif = (struct PsdInterface *) pif->pif_ParentIf->pif_Node.ln_Succ;
+            }
+        } else {
+            // go into alt interfaces
+            if(searchalt && pif->pif_AlterIfs.lh_Head->ln_Succ) {
+                isalt = TRUE;
+                oldpif = pif;
+                pif = (struct PsdInterface *) pif->pif_AlterIfs.lh_Head;
+            } else {
+                pif = (struct PsdInterface *) pif->pif_Node.ln_Succ;
+            }
+        }
+    }
+
+    while(pif->pif_Node.ln_Succ) {
+        takeit = TRUE;
+        if((ti = FindTagItem(IFA_InterfaceNum, tags))) {
+            if(ti->ti_Data != pif->pif_IfNum) {
+                takeit = FALSE;
+            }
+        }
+        if((ti = FindTagItem(IFA_AlternateNum, tags))) {
+            searchalt = TRUE;
+            if(ti->ti_Data <= 0xff) { // if alternate number is greater than 0xff, don't check compliance, but just enable alternate interface searching
+                if(ti->ti_Data != pif->pif_Alternate) {
+                    takeit = FALSE;
+                }
+            }
+        }
+        if((ti = FindTagItem(IFA_NumEndpoints, tags))) {
+            if(ti->ti_Data != pif->pif_NumEPs) {
+                takeit = FALSE;
+            }
+        }
+        if((ti = FindTagItem(IFA_Class, tags))) {
+            if(ti->ti_Data != pif->pif_IfClass) {
+                takeit = FALSE;
+            }
+        }
+        if((ti = FindTagItem(IFA_SubClass, tags))) {
+            if(ti->ti_Data != pif->pif_IfSubClass) {
+                takeit = FALSE;
+            }
+        }
+        if((ti = FindTagItem(IFA_Protocol, tags))) {
+            if(ti->ti_Data != pif->pif_IfProto) {
+                takeit = FALSE;
+            }
+        }
+        if((ti = FindTagItem(IFA_Binding, tags))) {
+            if((APTR) ti->ti_Data != pif->pif_IfBinding) {
+                takeit = FALSE;
+            }
+        }
+        if((ti = FindTagItem(IFA_InterfaceName, tags))) {
+            if(strcmp((STRPTR) ti->ti_Data, pif->pif_IfStr)) {
+                takeit = FALSE;
+            }
+        }
+        if((ti = FindTagItem(IFA_IDString, tags))) {
+            if(strcmp((STRPTR) ti->ti_Data, pif->pif_IDString)) {
+                takeit = FALSE;
+            }
+        }
+
+        if(takeit) {
+            return(pif);
+        }
+        if(searchalt) {
+            if(isalt) {
+                pif = (struct PsdInterface *) pif->pif_Node.ln_Succ;
+                if(!pif->pif_Node.ln_Succ) {
+                    pif = (struct PsdInterface *) oldpif->pif_Node.ln_Succ;
+                    isalt = FALSE;
+                }
+            } else {
+                oldpif = pif;
+                pif = (struct PsdInterface *) pif->pif_AlterIfs.lh_Head;
+                if(!pif->pif_Node.ln_Succ) {
+                    pif = (struct PsdInterface *) oldpif->pif_Node.ln_Succ;
+                } else {
+                    isalt = TRUE;
+                }
+            }
+        } else {
+            pif = (struct PsdInterface *) pif->pif_Node.ln_Succ;
+        }
+    }
+    return(NULL);
+    AROS_LIBFUNC_EXIT
+}
+/* \\\ */
+
+/* *** Config *** */
+
+/* /// "pFreeConfig()" */
+/*
+ * Release a device configuration, its interface bindings and interface
+ * records.
+ */
+void pFreeConfig(struct PsdConfig *pc)
+{
+    LIBBASETYPEPTR ps = pc->pc_Device->pd_Hardware->phw_Base;
+    struct PsdInterface *pif = (struct PsdInterface *) pc->pc_Interfaces.lh_Head;
+    KPRINTF(2, ("  FreeConfig()\n"));
+    while(pif->pif_Node.ln_Succ) {
+        psdReleaseIfBinding(pif);
+        pFreeInterface(pif);
+        pif = (struct PsdInterface *) pc->pc_Interfaces.lh_Head;
+    }
+    psdFreeVec(pc->pc_CfgStr);
+    Remove(&pc->pc_Node);
+    psdFreeVec(pc);
+}
+/* \\\ */
+
+/* /// "pAllocConfig()" */
+/* Allocate a configuration record and attach it to the owning device. */
+struct PsdConfig * pAllocConfig(struct PsdDevice *pd)
+{
+    LIBBASETYPEPTR ps = pd->pd_Hardware->phw_Base;
+    struct PsdConfig *pc;
+    KPRINTF(2, ("  AllocConfig()\n"));
+    if((pc = psdAllocVec(sizeof(struct PsdConfig)))) {
+        pc->pc_Device = pd;
+        NewList(&pc->pc_Interfaces);
+        AddTail(&pd->pd_Configs, &pc->pc_Node);
+        return(pc);
+    }
+    return(NULL);
+}
+/* \\\ */
+
+/* *** Descriptors *** */
+
+/* /// "pFreeDescriptor()" */
+/* Unlink and release a parsed USB descriptor record. */
+void pFreeDescriptor(struct PsdDescriptor *pdd)
+{
+    LIBBASETYPEPTR ps = pdd->pdd_Device->pd_Hardware->phw_Base;
+    KPRINTF(2, ("  FreeDescriptor()\n"));
+    //psdFreeVec(pdd->pdd_Data); // part of the structure alloc
+    Remove(&pdd->pdd_Node);
+    psdFreeVec(pdd);
+}
+/* \\\ */
+
+/* /// "pAllocDescriptor()" */
+/* Allocate and register a parsed USB descriptor associated with a device. */
+struct PsdDescriptor * pAllocDescriptor(struct PsdDevice *pd, UBYTE *buf)
+{
+    LIBBASETYPEPTR ps = pd->pd_Hardware->phw_Base;
+    struct PsdDescriptor *pdd;
+
+    KPRINTF(2, ("  AllocDescriptor()\n"));
+    if((pdd = psdAllocVec(sizeof(struct PsdDescriptor) + (ULONG) buf[0]))) {
+        pdd->pdd_Device = pd;
+        pdd->pdd_Data = ((UBYTE *) pdd) + sizeof(struct PsdDescriptor);
+        pdd->pdd_Length = buf[0];
+        pdd->pdd_Type = buf[1];
+        if((pdd->pdd_Type >= UDT_CS_UNDEFINED) && (pdd->pdd_Type <= UDT_CS_ENDPOINT)) {
+            pdd->pdd_CSSubType = buf[2];
+        }
+        pdd->pdd_Name = psdNumToStr(NTS_DESCRIPTOR, (LONG) pdd->pdd_Type, "<unknown>");
+        CopyMem(buf, pdd->pdd_Data, (ULONG) buf[0]);
+        AddTail(&pd->pd_Descriptors, &pdd->pdd_Node);
+        return(pdd);
+    }
+    return(NULL);
+}
+/* \\\ */
+
+/* /// "psdFindDescriptorA()" */
+/*****************************************************************************
+    NAME
+        APTR psdFindDescriptorA(
+
+    SYNOPSIS
+        APTR pd, APTR pdd, struct TagItem *taglist)
+
+    FUNCTION
+        Find the next stored descriptor matching all supplied filters.
+
+    INPUTS
+        pd - Valid device handle.
+        pdd - NULL to start; otherwise a previous descriptor from this device.
+            Searching resumes after it.
+        taglist - Filter list, or NULL for default configuration filtering.
+
+    TAGS
+        DDA_Config - Configuration handle to match. NULL accepts every
+            configuration. If omitted, matches the current configuration.
+        DDA_Interface, DDA_Endpoint - Exact association-pointer matches.
+            NULL matches an unassociated descriptor, not every association.
+        DDA_DescriptorType, DDA_CS_SubType, DDA_DescriptorLength - Exact
+            matches against stored descriptor attributes.
+
+    RESULT
+        A borrowed descriptor handle, or NULL if no further match is found.
+
+    NOTES
+        Searches the device's stored descriptor list without issuing USB
+        requests. Unknown tags are ignored. With no current configuration,
+        the default matches descriptors whose configuration pointer is NULL.
+
+        No lock is taken. Keep the device, cursor and returned objects alive
+        and exclude concurrent list changes. Do not free the result. The tag
+        list is not retained.
+
+    BUGS
+        DDA_Device, DDA_Name and DDA_DescriptorData are declared but
+        not interpreted as search filters. A NULL device and a
+        foreign continuation descriptor are not validated.
+
+    SEE ALSO
+        psdGetAttrsA(), psdFindInterfaceA(), psdLockReadDevice()
+
+*****************************************************************************/
+        AROS_LH3(struct PsdDescriptor *, psdFindDescriptorA,
+         AROS_LHA(struct PsdDevice *, pd, A0),
+         AROS_LHA(struct PsdDescriptor *, pdd, A2),
+         AROS_LHA(struct TagItem *, tags, A1),
+         LIBBASETYPEPTR, ps, 91, psd)
+{
+    AROS_LIBFUNC_INIT
+    struct PsdConfig *pc = pd->pd_CurrentConfig;
+    struct TagItem *ti;
+    BOOL takeit;
+
+    KPRINTF(2, ("psdFindDescriptorA(%p, %p, %p)\n", pd, pdd, tags));
+    if(!pdd) {
+        pdd = (struct PsdDescriptor *) pd->pd_Descriptors.lh_Head;
+    } else {
+        pdd = (struct PsdDescriptor *) pdd->pdd_Node.ln_Succ;
+    }
+
+    while(pdd->pdd_Node.ln_Succ) {
+        takeit = TRUE;
+
+        if((ti = FindTagItem(DDA_Config, tags))) {
+            // special case to workaround default: with NULL given, all configs are matched
+            if(ti->ti_Data && (((struct PsdConfig *) ti->ti_Data) != pdd->pdd_Config)) {
+                takeit = FALSE;
+            }
+        } else {
+            // only take descriptors from the current configuration by default
+            if(pc != pdd->pdd_Config) {
+                takeit = FALSE;
+            }
+        }
+        if((ti = FindTagItem(DDA_Interface, tags))) {
+            if(((struct PsdInterface *) ti->ti_Data) != pdd->pdd_Interface) {
+                takeit = FALSE;
+            }
+        }
+        if((ti = FindTagItem(DDA_Endpoint, tags))) {
+            if(((struct PsdEndpoint *) ti->ti_Data) != pdd->pdd_Endpoint) {
+                takeit = FALSE;
+            }
+        }
+        if((ti = FindTagItem(DDA_DescriptorType, tags))) {
+            if(ti->ti_Data != pdd->pdd_Type) {
+                takeit = FALSE;
+            }
+        }
+        if((ti = FindTagItem(DDA_CS_SubType, tags))) {
+            if(ti->ti_Data != pdd->pdd_CSSubType) {
+                takeit = FALSE;
+            }
+        }
+        if((ti = FindTagItem(DDA_DescriptorLength, tags))) {
+            if(ti->ti_Data != pdd->pdd_Length) {
+                takeit = FALSE;
+            }
+        }
+
+        if(takeit) {
+            return(pdd);
+        }
+        pdd = (struct PsdDescriptor *) pdd->pdd_Node.ln_Succ;
+    }
+    return(NULL);
+    AROS_LIBFUNC_EXIT
+}
+/* \\\ */
+
+/* *** Device *** */
+
+/* /// "pFreeBindings()" */
+/*
+ * Move the device to its controller dead-device list, then release its device
+ * and interface bindings under the device write lock.
+ */
+void pFreeBindings(LIBBASETYPEPTR ps, struct PsdDevice *pd)
+{
+    struct PsdHardware *phw = pd->pd_Hardware;
+    struct PsdConfig *pc;
+    struct PsdInterface *pif;
+    KPRINTF(3, (" FreeBindings(%p)\n", pd));
+
+    /* move device to list of dead devices first
+       This caused a lot of trouble as it could
+       happen that a device got into class scan
+       right after the bindings had been released. */
+    psdLockWritePBase();
+    Remove(&pd->pd_Node);
+    AddTail(&phw->phw_DeadDevices, &pd->pd_Node);
+    psdUnlockPBase();
+
+    /* If there are bindings, get rid of them. */
+    psdLockWriteDevice(pd);
+    psdReleaseDevBinding(pd);
+
+    pc = (struct PsdConfig *) pd->pd_Configs.lh_Head;
+    while(pc->pc_Node.ln_Succ) {
+        pif = (struct PsdInterface *) pc->pc_Interfaces.lh_Head;
+        while(pif->pif_Node.ln_Succ) {
+            psdReleaseIfBinding(pif);
+            pif = (struct PsdInterface *) pif->pif_Node.ln_Succ;
+        }
+        pc = (struct PsdConfig *) pc->pc_Node.ln_Succ;
+    }
+    psdUnlockDevice(pd);
+}
+/* \\\ */
+
+/* /// "pFreeDevice()" */
+/*
+ * If references remain, mark the device for deferred expunge; otherwise
+ * release its owned state and unlink it, retaining the device record
+ * allocation.
+ */
+void pFreeDevice(LIBBASETYPEPTR ps, struct PsdDevice *pd)
+{
+    struct PsdHardware *phw = pd->pd_Hardware;
+    struct PsdConfig *pc;
+    struct PsdDescriptor *pdd;
+
+    psdCalculatePower(phw);
+    psdLockWriteDevice(pd);
+    if(pd->pd_UseCnt) {
+        KPRINTF(20, ("Couldn't free device, use cnt %ld\n", pd->pd_UseCnt));
+        pd->pd_Flags &= ~PDFF_CONNECTED;
+        pd->pd_Flags |= PDFF_DELEXPUNGE;
+        psdUnlockDevice(pd);
+    } else {
+        pc = (struct PsdConfig *) pd->pd_Configs.lh_Head;
+        while(pc->pc_Node.ln_Succ) {
+            pFreeConfig(pc);
+            pc = (struct PsdConfig *) pd->pd_Configs.lh_Head;
+        }
+
+        pdd = (struct PsdDescriptor *) pd->pd_Descriptors.lh_Head;
+        while(pdd->pdd_Node.ln_Succ) {
+            pFreeDescriptor(pdd);
+            pdd = (struct PsdDescriptor *) pd->pd_Descriptors.lh_Head;
+        }
+
+        psdFreeVec(pd->pd_LangIDArray);
+        pd->pd_LangIDArray = NULL;
+        psdFreeVec(pd->pd_MnfctrStr);
+        pd->pd_MnfctrStr = NULL;
+        /*if(!ps->ps_PoPo.po_Task) // keep name at least
+        {
+            psdFreeVec(pd->pd_ProductStr);
+            pd->pd_ProductStr = NULL;
+        }*/
+        psdFreeVec(pd->pd_OldProductStr);
+        pd->pd_OldProductStr = NULL;
+        psdFreeVec(pd->pd_SerNumStr);
+        pd->pd_SerNumStr = NULL;
+        psdFreeVec(pd->pd_IDString);
+        pd->pd_IDString = NULL;
+        if(pd->pd_DevAddr) {
+            KPRINTF(5,("Released DevAddr %ld\n", pd->pd_DevAddr));
+            phw->phw_DevArray[pd->pd_DevAddr] = NULL;
+        }
+        psdUnlockDevice(pd);
+        psdLockWritePBase();
+        Remove(&pd->pd_Node);
+        psdUnlockPBase();
+        pDeleteSem(ps, &pd->pd_Lock);
+        /* cannot free this vector -- tasks might still call LockDevice */
+        //psdFreeVec(pd);
+    }
+    KPRINTF(3, ("FreeDevice done\n"));
+}
+/* \\\ */
+
+/* /// "psdFreeDevice()" */
+/****** poseidon.library/psdFreeDevice *************************************
+
+    NAME */
+        AROS_LH1(void, psdFreeDevice,
+/*  SYNOPSIS */
+         AROS_LHA(struct PsdDevice *, pd, A0),
+/*  LOCATION */
+         LIBBASETYPEPTR, ps, 16, psd)
+/*  FUNCTION
+        Remove a device from active enumeration and begin its teardown.
+
+    INPUTS
+        pd - Valid device to retire; NULL is not accepted.
+
+    NOTES
+        Moves the device to its controller's dead-device list, notifies
+        registered real-time isochronous release hooks, and releases
+        device and interface bindings under the device lock. The internal
+        release routine may defer final reclamation while pipe references
+        remain. Callers must not use the device as an active device after
+        this call.
+
+    SEE ALSO
+        psdAllocDevice(), psdFreePipe(), psdReleaseDevBinding()
+
+******************************************************************************/
+{
+    AROS_LIBFUNC_INIT
+    struct PsdHardware *phw = pd->pd_Hardware;
+    struct PsdConfig *pc;
+    struct PsdInterface *pif;
+    struct PsdRTIsoHandler *prt;
+    struct PsdRTIsoHandler *nextprt;
+
+    KPRINTF(3, (" FreeDevice(%p)\n", pd));
+
+    /* move device to list of dead devices first
+       This caused a lot of trouble as it could
+       happen that a device got into class scan
+       right after the bindings had been released. */
+    psdLockWritePBase();
+    Remove(&pd->pd_Node);
+    AddTail(&phw->phw_DeadDevices, &pd->pd_Node);
+    pd->pd_Flags &= ~PDFF_DELEXPUNGE;
+    psdUnlockPBase();
+
+    psdLockWriteDevice(pd);
+
+    /* Inform all ISO handlers about the device going offline */
+    prt = (struct PsdRTIsoHandler *) pd->pd_RTIsoHandlers.lh_Head;
+    while((nextprt = (struct PsdRTIsoHandler *) prt->prt_Node.ln_Succ)) {
+        if(prt->prt_ReleaseHook) {
+            CallHookPkt(prt->prt_ReleaseHook, prt, NULL);
+        }
+        prt = nextprt;
+    }
+
+    /* If there are bindings, get rid of them. */
+    psdHubReleaseDevBinding(pd);
+
+    pc = (struct PsdConfig *) pd->pd_Configs.lh_Head;
+    while(pc->pc_Node.ln_Succ) {
+        pif = (struct PsdInterface *) pc->pc_Interfaces.lh_Head;
+        while(pif->pif_Node.ln_Succ) {
+            psdHubReleaseIfBinding(pif);
+            pif = (struct PsdInterface *) pif->pif_Node.ln_Succ;
+        }
+        pc = (struct PsdConfig *) pc->pc_Node.ln_Succ;
+    }
+    psdUnlockDevice(pd);
+
+    pFreeDevice(ps, pd);
+    AROS_LIBFUNC_EXIT
+}
+/* \\\ */
+
+/* /// "psdAllocDevice()" */
+/****** poseidon.library/psdAllocDevice ************************************
+
+    NAME */
+        AROS_LH1(struct PsdDevice *, psdAllocDevice,
+/*  SYNOPSIS */
+         AROS_LHA(struct PsdHardware *, phw, A0),
+/*  LOCATION */
+         LIBBASETYPEPTR, ps, 15, psd)
+/*  FUNCTION
+        Allocate and register a device record under a USB controller.
+
+    INPUTS
+        phw - Valid controller owning the new device record.
+
+    RESULT
+        Initialized device record, or NULL on allocation failure.
+
+    NOTES
+        Initializes device locks, descriptor/configuration lists,
+        real-time isochronous-handler list, and default device options.
+        Inserts the record into the controller's device list under the
+        Poseidon base write lock. The record is not enumerated or assigned
+        an address by this call.
+
+    SEE ALSO
+        psdEnumerateDevice(), psdFreeDevice(), psdAllocPipe()
+
+******************************************************************************/
+{
+    AROS_LIBFUNC_INIT
+    struct PsdDevice *pd;
+    KPRINTF(2, ("psdAllocDevice(%p)\n", phw));
+    if((pd = psdAllocVec(sizeof(struct PsdDevice)))) {
+        memset(pd, 0, sizeof(struct PsdDevice));
+        pd->pd_Hardware = phw;
+        pd->pd_Hub = NULL;
+        pd->pd_MaxPktSize0 = 8;
+
+        pInitSem(ps, &pd->pd_Lock, "Device");
+
+        NewList(&pd->pd_Configs);
+        NewList(&pd->pd_Descriptors);
+        NewList(&pd->pd_RTIsoHandlers);
+
+        // init prefs
+        pd->pd_PoPoCfg.poc_ChunkID = AROS_LONG2BE(IFFCHNK_POPUP);
+        pd->pd_PoPoCfg.poc_Length = AROS_LONG2BE(sizeof(struct PsdPoPoCfg) - 8);
+        pd->pd_PoPoCfg.poc_InhibitPopup = FALSE;
+        pd->pd_PoPoCfg.poc_NoClassBind = FALSE;
+        pd->pd_PoPoCfg.poc_OverridePowerInfo = POCP_TRUST_DEVICE;
+
+        psdLockWritePBase();
+        AddTail(&phw->phw_Devices, &pd->pd_Node);
+        psdUnlockPBase();
+        return(pd);
+    } else {
+        KPRINTF(20, ("psdAllocDevice(): out of memory!\n"));
+    }
+    return(NULL);
+    AROS_LIBFUNC_EXIT
+}
+/* \\\ */
+
+/* /// "psdLockReadDevice()" */
+/****** poseidon.library/psdLockReadDevice *********************************
+
+    NAME */
+        AROS_LH1(void, psdLockReadDevice,
+/*  SYNOPSIS */
+         AROS_LHA(struct PsdDevice *, pd, A0),
+/*  LOCATION */
+         LIBBASETYPEPTR, ps, 17, psd)
+/*  FUNCTION
+        Acquire the shared lock for a Poseidon device.
+
+    INPUTS
+        pd - Valid device whose lock is to be acquired; not NULL.
+
+    NOTES
+        Calls pLockSemShared() on the device's lock. The acquisition may
+        block, and each acquisition must be balanced with
+        psdUnlockDevice(). The caller must preserve lock ordering when
+        also accessing the global Poseidon base state.
+
+    SEE ALSO
+        psdLockWriteDevice(), psdUnlockDevice()
+
+******************************************************************************/
+{
+    AROS_LIBFUNC_INIT
+    KPRINTF(2, ("psdLockReadDevice(%p, %p)\n", pd, FindTask(NULL)));
+    pLockSemShared(ps, &pd->pd_Lock);
+    AROS_LIBFUNC_EXIT
+}
+/* \\\ */
+
+/* /// "psdLockWriteDevice()" */
+/****** poseidon.library/psdLockWriteDevice ********************************
+
+    NAME */
+        AROS_LH1(void, psdLockWriteDevice,
+/*  SYNOPSIS */
+         AROS_LHA(struct PsdDevice *, pd, A0),
+/*  LOCATION */
+         LIBBASETYPEPTR, ps, 18, psd)
+/*  FUNCTION
+        Acquire the exclusive lock for a Poseidon device.
+
+    INPUTS
+        pd - Valid device whose lock is to be acquired; not NULL.
+
+    NOTES
+        Calls pLockSemExcl() on the device's lock. The acquisition may
+        block, and each acquisition must be balanced with
+        psdUnlockDevice().
+
+    SEE ALSO
+        psdLockReadDevice(), psdUnlockDevice()
+
+******************************************************************************/
+{
+    AROS_LIBFUNC_INIT
+    KPRINTF(2, ("psdLockWriteDevice(%p, %p)\n", pd, FindTask(NULL)));
+    pLockSemExcl(ps, &pd->pd_Lock);
+    AROS_LIBFUNC_EXIT
+}
+/* \\\ */
+
+/* /// "psdUnlockDevice()" */
+/****** poseidon.library/psdUnlockDevice ***********************************
+
+    NAME */
+        AROS_LH1(void, psdUnlockDevice,
+/*  SYNOPSIS */
+         AROS_LHA(struct PsdDevice *, pd, A0),
+/*  LOCATION */
+         LIBBASETYPEPTR, ps, 19, psd)
+/*  FUNCTION
+        Release the current task's lock on a Poseidon device.
+
+    INPUTS
+        pd - Valid device whose lock is held; not NULL.
+
+    NOTES
+        Calls pUnlockSem() on the device's lock. The function does not
+        report a completion result. Balance each shared or exclusive
+        device-lock acquisition with its corresponding release.
+
+    SEE ALSO
+        psdLockReadDevice(), psdLockWriteDevice()
+
+******************************************************************************/
+{
+    AROS_LIBFUNC_INIT
+    KPRINTF(2, ("psdUnlockDevice(%p, %p)\n", pd, FindTask(NULL)));
+    pUnlockSem(ps, &pd->pd_Lock);
+    AROS_LIBFUNC_EXIT
+}
+/* \\\ */
+
+/* /// "pAllocDevAddr()" */
+/*
+ * Reuse the device's existing address, or reserve the first free address
+ * from 1 through 127 in the controller address array and set pd_DevAddr.
+ * Return zero when no address is available.
+ */
+UWORD pAllocDevAddr(struct PsdDevice *pd)
+{
+    struct PsdHardware *phw = pd->pd_Hardware;
+    UWORD da;
+    if(pd->pd_DevAddr) {
+        return(pd->pd_DevAddr);
+    }
+    for(da = 1; da < 128; da++) {
+        if(!phw->phw_DevArray[da]) {
+            phw->phw_DevArray[da] = pd;
+            pd->pd_DevAddr = da;
+            return(da);
+        }
+    }
+    return(0);
+}
+/* \\\ */
+
+/* /// "psdGetStringDescriptor()" */
+/****** poseidon.library/psdGetStringDescriptor ****************************
+
+    NAME */
+        AROS_LH2(STRPTR, psdGetStringDescriptor,
+/*  SYNOPSIS */
+         AROS_LHA(struct PsdPipe *, pp, A1),
+         AROS_LHA(UWORD, idx, D0),
+/*  LOCATION */
+         LIBBASETYPEPTR, ps, 33, psd)
+/*  FUNCTION
+        Read a USB string descriptor and convert it to a C string.
+
+    INPUTS
+        pp  - Valid device control pipe.
+        idx - USB string-descriptor index to request.
+
+    RESULT
+        Newly allocated NUL-terminated string, or NULL when a required
+        descriptor request or allocation fails. Release it with
+        psdFreeVec() unless ownership has been transferred explicitly.
+
+    NOTES
+        The first request for a device also attempts to discover language
+        identifiers and select a language. Subsequent control transfers
+        fetch the descriptor data. The implementation converts characters
+        from the device's UTF-16 string representation to its supported
+        narrow-string form, substituting '?' for code points outside
+        the byte range or below U+0020. It does not preserve arbitrary
+        Unicode input.
+
+    BUGS
+        When fetching the language-ID array, the second transfer starts
+        two bytes after the beginning of an allocation sized to the
+        descriptor length. A full-length reply can overwrite two bytes
+        beyond that allocation. The string-descriptor transfer also
+        uses the size advertised by the device without bounding the
+        destination against the remaining bytes in its local buffer.
+        Both transfers can overrun their destination allocations.
+
+    SEE ALSO
+        psdDoPipe(), psdFreeVec(), psdGetAttrsA()
+
+******************************************************************************/
+{
+    AROS_LIBFUNC_INIT
+    struct PsdDevice *pd = pp->pp_Device;
+    ULONG len;
+    UBYTE buf[256];
+    UWORD *tmpptr;
+    UWORD *tmpbuf;
+    STRPTR rs;
+    STRPTR cbuf;
+    LONG ioerr;
+    UWORD widechar;
+    KPRINTF(1, ("psdGetStringDescriptor(%p, %ld)\n", pp, idx));
+
+    buf[0] = 0;
+    if(!pd->pd_LangIDArray) {
+        KPRINTF(10,("Trying to get language array...\n"));
+        psdPipeSetup(pp, URTF_IN|URTF_STANDARD|URTF_DEVICE,
+                     USR_GET_DESCRIPTOR, UDT_STRING<<8, 0);
+        ioerr = psdDoPipe(pp, buf, 2);
+        if(ioerr == UHIOERR_OVERFLOW) {
+            ioerr = 0;
+            psdAddErrorMsg0(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname), "Language array overflow.");
+        }
+        if(ioerr) {
+            ioerr = psdDoPipe(pp, buf, 256);
+            if(ioerr == UHIOERR_RUNTPACKET) {
+                ioerr = 0;
+            }
+        }
+        if(!ioerr) {
+            len = buf[0];
+            if((pd->pd_LangIDArray = psdAllocVec(max(len, 4)))) {
+                tmpbuf = tmpptr = pd->pd_LangIDArray;
+                KPRINTF(1, ("Getting LangID Array length %ld\n", len));
+                // generate minimal sized array
+                if(len < 4) {
+                    len = 4;
+                    *tmpbuf++ = 0;
+                    *tmpbuf = 0x0409;
+                    /*psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
+                                   "Language array descriptor too small (len %ld), using dummy.",
+                                   len);*/
+                    ioerr = 0;
+                } else {
+                    ioerr = psdDoPipe(pp, tmpbuf++, len);
+                }
+                if(!ioerr) {
+                    len >>= 1;
+                    while(--len) {
+                        KPRINTF(1, ("LangID: %04lx\n", AROS_LE2WORD(*tmpbuf)));
+                        *tmpptr++ = AROS_LE2WORD(*tmpbuf);
+                        tmpbuf++;
+                    }
+                    *tmpptr = 0;
+                    tmpptr = pd->pd_LangIDArray;
+                    pd->pd_CurrLangID = *tmpptr;
+                    while(*tmpptr) {
+                        if(*tmpptr == 0x0409) {
+                            pd->pd_CurrLangID = *tmpptr;
+                            break;
+                        }
+                        tmpptr++;
+                    }
+                } else {
+                    psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
+                                   "Reading language array descriptor (len %ld) failed: %s (%ld)",
+                                   len, psdNumToStr(NTS_IOERR, ioerr, "unknown"), ioerr);
+                    KPRINTF(15, ("Error reading lang array descriptor (%ld) failed %ld\n", len, ioerr));
+                    *tmpptr = 0;
+                }
+            } else {
+                KPRINTF(20, ("No langid array memory!\n"));
+            }
+        } else {
+            psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
+                           "Reading language array descriptor (len %ld) failed: %s (%ld)",
+                           2, psdNumToStr(NTS_IOERR, ioerr, "unknown"), ioerr);
+            KPRINTF(15, ("Error reading lang array descriptor (2) failed %ld\n", ioerr));
+            /* Create empty array */
+            if((pd->pd_LangIDArray = psdAllocVec(2))) {
+                *pd->pd_LangIDArray = 0;
+            }
+        }
+    }
+    buf[0] = 0;
+    psdPipeSetup(pp, URTF_IN|URTF_STANDARD|URTF_DEVICE,
+                 USR_GET_DESCRIPTOR, (UDT_STRING<<8)|idx, pd->pd_CurrLangID);
+    ioerr = psdDoPipe(pp, buf, 2);
+    if(ioerr == UHIOERR_OVERFLOW) {
+        ioerr = 0;
+        psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname), "String %ld overflow.", idx);
+    }
+    if(ioerr) {
+        ioerr = psdDoPipe(pp, buf, 256);
+    }
+    if(!ioerr) {
+        len = buf[0];
+        if(len > 2) {
+            tmpptr = (UWORD *) buf;
+            KPRINTF(1, ("Getting String Descriptor %ld, length %ld\n", idx, len));
+            ioerr = psdDoPipe(pp, tmpptr++, len);
+            if(ioerr == UHIOERR_RUNTPACKET) {
+                len = pp->pp_IOReq.iouh_Actual;
+                if(len > 3) {
+                    psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
+                                   "String descriptor %ld truncated to %ld, requested %ld",
+                                   idx, len, buf[0]);
+                    ioerr = 0;
+                }
+            } else if(ioerr) {
+                ioerr = psdDoPipe(pp, buf, 256);
+            }
+            if(!ioerr) {
+                if((cbuf = rs = psdAllocVec(len>>1))) {
+                    len >>= 1;
+                    while(--len) {
+                        widechar = *tmpptr++;
+                        widechar = AROS_LE2WORD(widechar);
+                        if(widechar == 0) {
+                            break;
+                        }
+                        if((widechar < 0x20) || (widechar > 255)) {
+                            *cbuf++ = '?';
+                        } else {
+                            *cbuf++ = widechar;
+                        }
+                    }
+                    *cbuf = 0;
+                    KPRINTF(1, ("String \"%s\"\n", rs));
+                    if(*rs) {
+                        return(rs);
+                    } else {
+                        psdFreeVec(rs);
+                        return(NULL);
+                    }
+                } else {
+                    KPRINTF(20, ("No memory for string!\n"));
+                }
+            } else {
+                psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
+                               "Reading string descriptor %ld (len %ld) failed: %s (%ld)",
+                               idx, len, psdNumToStr(NTS_IOERR, ioerr, "unknown"), ioerr);
+                KPRINTF(15, ("Error reading string descriptor %ld (%ld) failed %ld\n",
+                             idx, len, ioerr));
+            }
+        } else {
+            KPRINTF(5, ("Empty string\n"));
+            return(psdCopyStr(""));
+        }
+    } else {
+        psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
+                       "Reading string descriptor %ld (len %ld) failed: %s (%ld)",
+                       idx, 2, psdNumToStr(NTS_IOERR, ioerr, "unknown"), ioerr);
+        KPRINTF(15, ("Error reading string descriptor %ld (2) failed %ld\n", idx, ioerr));
+    }
+    return(NULL);
+    AROS_LIBFUNC_EXIT
+}
+/* \\\ */
+
+/* /// "psdSetDeviceConfig()" */
+/****** poseidon.library/psdSetDeviceConfig ********************************
+
+    NAME */
+        AROS_LH2(BOOL, psdSetDeviceConfig,
+/*  SYNOPSIS */
+         AROS_LHA(struct PsdPipe *, pp, A1),
+         AROS_LHA(UWORD, cfgnum, D0),
+/*  LOCATION */
+         LIBBASETYPEPTR, ps, 34, psd)
+/*  FUNCTION
+        Select a USB device configuration through its control pipe.
+
+    INPUTS
+        pp     - Valid default-control pipe for the device.
+        cfgnum - Configuration value to request.
+
+    RESULT
+        TRUE if SET_CONFIGURATION completed without an I/O error;
+        otherwise FALSE.
+
+    NOTES
+        Records the new configuration number only after a successful
+        SET_CONFIGURATION transfer. Regardless of transfer success, it
+        resolves the active configuration pointer from the previously
+        stored number. If a matching configuration exists, it may query
+        device status or request remote wakeup. Failure of these later
+        requests does not change the original transfer result; the
+        active configuration pointer may remain NULL.
+
+    SEE ALSO
+        psdPipeSetup(), psdDoPipe(), psdSetAltInterface()
+
+******************************************************************************/
+{
+    AROS_LIBFUNC_INIT
+    struct PsdConfig *pc;
+    struct PsdDevice *pd = pp->pp_Device;
+    LONG ioerr;
+    BOOL res = FALSE;
+
+    KPRINTF(2, ("Setting configuration to %ld...\n", cfgnum));
+    psdPipeSetup(pp, URTF_STANDARD|URTF_DEVICE,
+                 USR_SET_CONFIGURATION, cfgnum, 0);
+    ioerr = psdDoPipe(pp, NULL, 0);
+    if(!ioerr) {
+#if 0 // MacOS X does not verify the configuration set. And as we don't check the results anyway, don't obtain current configuration to avoid bad devices breaking down
+        psdPipeSetup(pp, URTF_IN|URTF_STANDARD|URTF_DEVICE,
+                     USR_GET_CONFIGURATION, 0, 0);
+        ioerr = psdDoPipe(pp, buf, 1);
+        if(!ioerr) {
+            pd->pd_CurrCfg = buf[0];
+            if(cfgnum != buf[0]) {
+                pd->pd_CurrCfg = cfgnum;
+                psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
+                               "Broken: SetConfig/GetConfig mismatch (%ld != %ld) for %s!",
+                               cfgnum, buf[0], pp->pp_Device->pd_ProductStr);
+            }
+            res = TRUE;
+        } else {
+            psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
+                           "GET_CONFIGURATION failed: %s (%ld)",
+                           psdNumToStr(NTS_IOERR, ioerr, "unknown"), ioerr);
+            pd->pd_CurrCfg = cfgnum;
+            KPRINTF(15, ("GET_CONFIGURATION failed %ld!\n", ioerr));
+        }
+#else
+        pd->pd_CurrCfg = cfgnum;
+        res = TRUE;
+#endif
+    } else {
+        psdAddErrorMsg(RETURN_ERROR, (STRPTR) GM_UNIQUENAME(libname),
+                                "SET_CONFIGURATION for %s/%ld Addr=%lu failed: %s (%ld)",
+                                pd->pd_Hardware->phw_DevName, pd->pd_Hardware->phw_Unit, (ULONG)pd->pd_DevAddr,
+                                psdNumToStr(NTS_IOERR, ioerr, "unknown"), ioerr);
+        KPRINTF(15, ("SET_CONFIGURATION failed %ld!\n", ioerr));
+    }
+    // update direct link
+    Forbid();
+    pd->pd_CurrentConfig = NULL;
+    pc = (struct PsdConfig *) pd->pd_Configs.lh_Head;
+    while(pc->pc_Node.ln_Succ) {
+        if(pc->pc_CfgNum == pd->pd_CurrCfg) {
+            pd->pd_CurrentConfig = pc;
+            break;
+        }
+        pc = (struct PsdConfig *) pc->pc_Node.ln_Succ;
+    }
+    Permit();
+    if(!pd->pd_CurrentConfig) {
+        psdAddErrorMsg0(RETURN_ERROR, (STRPTR) GM_UNIQUENAME(libname), "No current configuration, huh?");
+    } else {
+        UWORD status = 0;
+        // power saving stuff
+        if(ps->ps_GlobalCfg->pgc_PowerSaving && (pd->pd_CurrentConfig->pc_Attr & USCAF_REMOTE_WAKEUP)) {
+            psdPipeSetup(pp, URTF_STANDARD|URTF_DEVICE,
+                         USR_SET_FEATURE, UFS_DEVICE_REMOTE_WAKEUP, 0);
+            ioerr = psdDoPipe(pp, NULL, 0);
+            if(ioerr) {
+                psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
+                               "SET_DEVICE_REMOTE_WAKEUP failed: %s (%ld)",
+                               psdNumToStr(NTS_IOERR, ioerr, "unknown"), ioerr);
+                KPRINTF(15, ("SET_DEVICE_REMOTE_WAKEUP failed %ld!\n", ioerr));
+            }
+            psdPipeSetup(pp, URTF_IN|URTF_STANDARD|URTF_DEVICE, USR_GET_STATUS, 0, 0);
+            ioerr = psdDoPipe(pp, &status, 2);
+            if(!ioerr) {
+                if(status & U_GSF_REMOTE_WAKEUP) {
+                    psdAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname),
+                                   "Enabled remote wakeup feature for '%s'.",
+                                   pd->pd_ProductStr);
+                } else {
+                    pd->pd_CurrentConfig->pc_Attr &= ~USCAF_REMOTE_WAKEUP;
+                    psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
+                                   "Remote wakeup feature for '%s' could not be enabled.",
+                                   pd->pd_ProductStr);
+                }
+            } else {
+                /*psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
+                               "GET_STATUS failed: %s (%ld)",
+                               psdNumToStr(NTS_IOERR, ioerr, "unknown"), ioerr);*/
+                KPRINTF(15, ("GET_STATUS failed %ld!\n", ioerr));
+            }
+        } else {
+            psdPipeSetup(pp, URTF_IN|URTF_STANDARD|URTF_DEVICE, USR_GET_STATUS, 0, 0);
+            ioerr = psdDoPipe(pp, &status, 2);
+        }
+        if(!ioerr) {
+            if((status & U_GSF_SELF_POWERED) && (!(pd->pd_CurrentConfig->pc_Attr & USCAF_SELF_POWERED))) {
+                pd->pd_CurrentConfig->pc_Attr |= USCAF_SELF_POWERED;
+                psdAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname),
+                               "Device '%s' says it is currently self-powered. Fixing config.",
+                               pd->pd_ProductStr);
+            } else if((!(status & U_GSF_SELF_POWERED)) && (pd->pd_CurrentConfig->pc_Attr & USCAF_SELF_POWERED)) {
+                pd->pd_CurrentConfig->pc_Attr &= ~USCAF_SELF_POWERED;
+                psdAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname),
+                               "Device '%s' says it is currently bus-powered. Fixing config.",
+                               pd->pd_ProductStr);
+            }
+        } else {
+            /*psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
+                           "GET_STATUS failed: %s (%ld)",
+                           psdNumToStr(NTS_IOERR, ioerr, "unknown"), ioerr);*/
+            KPRINTF(15, ("GET_STATUS failed %ld!\n", ioerr));
+        }
+    }
+
+    return(res);
+    AROS_LIBFUNC_EXIT
+}
+/* \\\ */
+
+/* /// "psdSetAltInterface()" */
+/****** poseidon.library/psdSetAltInterface ********************************
+
+    NAME */
+        AROS_LH2(BOOL, psdSetAltInterface,
+/*  SYNOPSIS */
+         AROS_LHA(struct PsdPipe *, pp, A1),
+         AROS_LHA(struct PsdInterface *, pif, A0),
+/*  LOCATION */
+         LIBBASETYPEPTR, ps, 43, psd)
+/*  FUNCTION
+        Select an alternate setting of a configured USB interface.
+
+    INPUTS
+        pp  - Control pipe for the containing device, or NULL to
+              select the alternate setting only in Poseidon's local state.
+        pif - Valid interface or alternate interface to activate.
+
+    RESULT
+        TRUE when the requested setting is already active or the selected
+        path succeeds; otherwise FALSE. With pp set to NULL, TRUE does
+        not confirm any USB transfer or device-side selection.
+
+    NOTES
+        Locates the main interface and alternate setting and takes the
+        device write lock. A non-NULL pp sends SET_INTERFACE followed by
+        GET_INTERFACE confirmation; with NULL pp the code skips both
+        requests and rearranges the local interface lists. The list
+        linkage changes only on the accepted path. USB errors are
+        reported through Poseidon's log.
+
+    SEE ALSO
+        psdSetDeviceConfig(), psdFindInterfaceA(), psdPipeSetup()
+
+******************************************************************************/
+{
+    AROS_LIBFUNC_INIT
+    struct PsdConfig *pc = pif->pif_Config;
+    struct PsdInterface *curif = (struct PsdInterface *) pc->pc_Interfaces.lh_Head;
+    struct PsdInterface *tmpif;
+    struct PsdDevice *pd = pc->pc_Device;
+    UBYTE buf[8]; // VIA babble bug safety buffer (8 instead of 2)
+    LONG ioerr;
+    UWORD ifnum = pif->pif_IfNum;
+    UWORD altnum = pif->pif_Alternate;
+
+    KPRINTF(2, ("Setting interface %ld to alt %ld...\n", ifnum, altnum));
+    psdLockWriteDevice(pd);
+
+    /* Find root config structure */
+    while(curif->pif_Node.ln_Succ) {
+        if(curif->pif_IfNum == ifnum) {
+            break;
+        }
+        curif = (struct PsdInterface *) curif->pif_Node.ln_Succ;
+    }
+    if(!curif->pif_Node.ln_Succ) {
+        KPRINTF(20, ("Where did you get that fucking interface from?!?"));
+        psdUnlockDevice(pd);
+        return(FALSE);
+    }
+    if(curif == pif) { /* Is already the current alternate setting */
+        psdUnlockDevice(pd);
+        return(TRUE);
+    }
+    KPRINTF(1, ("really setting interface...\n"));
+    if(pp) {
+        psdPipeSetup(pp, URTF_STANDARD|URTF_INTERFACE,
+                     USR_SET_INTERFACE, altnum, ifnum);
+        ioerr = psdDoPipe(pp, NULL, 0);
+    } else {
+        ioerr = 0;
+    }
+    if((!ioerr) || (ioerr == UHIOERR_STALL)) {
+        if(pp) {
+            psdPipeSetup(pp, URTF_IN|URTF_STANDARD|URTF_INTERFACE,
+                         USR_GET_INTERFACE, 0, ifnum);
+            ioerr = psdDoPipe(pp, buf, 1);
+        } else {
+            buf[0] = altnum;
+        }
+        if(!ioerr) {
+            if(altnum == buf[0]) {
+                KPRINTF(1, ("resorting list..."));
+                /*psdAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname),
+                               "Changed to alt %ld",
+                               altnum);*/
+                Forbid();
+                /* Remove pif from alt list */
+                Remove(&pif->pif_Node);
+                pif->pif_ParentIf = NULL;
+                /* Now move bindings */
+                pif->pif_ClsBinding = curif->pif_ClsBinding;
+                pif->pif_IfBinding = curif->pif_IfBinding;
+                curif->pif_IfBinding = NULL;
+                curif->pif_ClsBinding = NULL;
+                /* Insert it after root interface */
+                Insert(&pc->pc_Interfaces, (struct Node *) &pif->pif_Node, (struct Node *) &curif->pif_Node);
+                /* Unlink root interface */
+                Remove(&curif->pif_Node);
+                /* Now move all remaining alt interfaces to the new root interface */
+                tmpif = (struct PsdInterface *) curif->pif_AlterIfs.lh_Head;
+                while(tmpif->pif_Node.ln_Succ) {
+                    Remove(&tmpif->pif_Node);
+                    AddTail(&pif->pif_AlterIfs, &tmpif->pif_Node);
+                    tmpif->pif_ParentIf = pif;
+                    tmpif = (struct PsdInterface *) curif->pif_AlterIfs.lh_Head;
+                }
+                /* Add old root to the end of the alt list */
+                AddTail(&pif->pif_AlterIfs, &curif->pif_Node);
+                curif->pif_ParentIf = pif;
+                Permit();
+                psdUnlockDevice(pd);
+                return(TRUE);
+            } else {
+                psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
+                               "Attempt to change interface %ld to alt %ld remained at alt %ld.",
+                               ifnum, altnum, buf[0]);
+            }
+        } else {
+            psdAddErrorMsg(RETURN_ERROR, (STRPTR) GM_UNIQUENAME(libname),
+                           "GET_INTERFACE(%ld) failed: %s (%ld)",
+                           ifnum, psdNumToStr(NTS_IOERR, ioerr, "unknown"), ioerr);
+            KPRINTF(15, ("GET_INTERFACE failed %ld!\n", ioerr));
+        }
+    } else {
+        psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
+                       "SET_INTERFACE(%ld)=%ld failed: %s (%ld)",
+                       ifnum, altnum,
+                       psdNumToStr(NTS_IOERR, ioerr, "unknown"), ioerr);
+        KPRINTF(15, ("SET_INTERFACE failed %ld!\n", ioerr));
+    }
+    psdUnlockDevice(pd);
+    return(FALSE);
+    AROS_LIBFUNC_EXIT
+}
+/* \\\ */
+
+/*
+ * Write the current USB pipe and endpoint parameters to debug output with
+ * interrupts disabled.
+ */
+static void DumpPipe(struct PsdPipe *pp)
+{
+    struct PsdDevice   *pd  = pp ? pp->pp_Device   : NULL;
+    struct PsdEndpoint *pep = pp ? pp->pp_Endpoint : NULL;
+
+    Disable();
+    KPRINTF(15, ("--- PIPE DUMP ---\n"));
+    KPRINTF(15, ("Pipe:      %p\n", pp));
+    KPRINTF(15, ("  MsgPort: %p  Num=%lu  Flags=%04lx\n",
+                 pp ? pp->pp_MsgPort : NULL,
+                 pp ? (ULONG)pp->pp_Num : 0,
+                 pp ? (ULONG)pp->pp_Flags : 0));
+
+    if (pd) {
+        const STRPTR hwName  = (pd->pd_Hardware && pd->pd_Hardware->phw_DevName)
+                               ? pd->pd_Hardware->phw_DevName
+                               : (STRPTR)"(n/a)";
+        LONG hwUnit          = pd->pd_Hardware ? pd->pd_Hardware->phw_Unit : -1;
+        const STRPTR prodStr = pd->pd_ProductStr ? pd->pd_ProductStr : (STRPTR)"(no product)";
+        const STRPTR mnfStr  = pd->pd_MnfctrStr ? pd->pd_MnfctrStr  : (STRPTR)"(no mfg)";
+        const STRPTR idStr   = pd->pd_IDString ? pd->pd_IDString    : (STRPTR)"(no ID string)";
+
+        KPRINTF(15, ("Device:    %p  DevName=%s Unit=%ld\n",
+                     pd, hwName, hwUnit));
+        KPRINTF(15, ("  Addr=%lu  Hub=%p Port=%u Flags=%04x\n",
+                     (ULONG)pd->pd_DevAddr,
+                     pd->pd_Hub,
+                     (unsigned)pd->pd_HubPort,
+                     (unsigned)pd->pd_Flags));
+        KPRINTF(15, ("  USBVers=%04x  Class=%u SubClass=%u Proto=%u\n",
+                     (unsigned)pd->pd_USBVers,
+                     (unsigned)pd->pd_DevClass,
+                     (unsigned)pd->pd_DevSubClass,
+                     (unsigned)pd->pd_DevProto));
+        KPRINTF(15, ("  VID:PID=%04x:%04x  DevVers=%04x  MaxPkt0=%u\n",
+                     (unsigned)pd->pd_VendorID,
+                     (unsigned)pd->pd_ProductID,
+                     (unsigned)pd->pd_DevVers,
+                     (unsigned)pd->pd_MaxPktSize0));
+        KPRINTF(15, ("  Product=\"%s\"  Manufacturer=\"%s\"\n",
+                     prodStr, mnfStr));
+        KPRINTF(15, ("  IDString=\"%s\"\n", idStr));
+
+#ifdef HUB_CLASSCODE
+        if (pd->pd_DevClass == HUB_CLASSCODE) {
+            KPRINTF(15, ("  (This device is a HUB)\n"));
+        }
+#endif
+
+        /* Walk upstream hub chain to show physical location */
+        if (pd->pd_Hub) {
+            struct PsdDevice *child = pd;
+            struct PsdDevice *hub   = pd->pd_Hub;
+            UWORD             level = 0;
+
+            KPRINTF(15, ("Hub path (child -> root):\n"));
+            while (hub) {
+                const STRPTR hubName  = (hub->pd_Hardware && hub->pd_Hardware->phw_DevName)
+                                        ? hub->pd_Hardware->phw_DevName
+                                        : (STRPTR)"(n/a)";
+                LONG hubUnit          = hub->pd_Hardware ? hub->pd_Hardware->phw_Unit : -1;
+                const STRPTR hubProd  = hub->pd_ProductStr ? hub->pd_ProductStr : (STRPTR)"(no product)";
+
+                KPRINTF(15, (
+                            "  lvl %u: HUB=%p Addr=%lu DevName=%s Unit=%ld "
+                            "Port(child=%u) Prod=\"%s\"\n",
+                            (unsigned)level,
+                            hub,
+                            (ULONG)hub->pd_DevAddr,
+                            hubName,
+                            hubUnit,
+                            (unsigned)child->pd_HubPort,
+                            hubProd));
+
+                /* Move one level up: this hub is now the child of the next hub */
+                child = hub;
+                hub   = hub->pd_Hub;
+                level++;
+            }
+        } else {
+            KPRINTF(15, ("Hub path: (device is directly attached to root)\n"));
+        }
+
+    } else {
+        KPRINTF(15, ("Device:    (NULL)\n"));
+    }
+
+    KPRINTF(15, ("IOReq:\n"));
+    if (pp) {
+        KPRINTF(15, ("  DevAddr=%lu  MaxPktSize=%lu  Flags=%08lx  NakTimeout=%lu\n",
+                     (ULONG)pp->pp_IOReq.iouh_DevAddr,
+                     (ULONG)pp->pp_IOReq.iouh_MaxPktSize,
+                     (ULONG)pp->pp_IOReq.iouh_Flags,
+                     (ULONG)pp->pp_IOReq.iouh_NakTimeout));
+        KPRINTF(15, ("  HubPort(root)=%u  SplitHubAddr=%u  SplitHubPort=%u  RouteString=%05lx\n",
+                     (unsigned)pp->pp_IOReq.iouh_RootPort,
+                     (unsigned)pp->pp_IOReq.iouh_SplitHubAddr,
+                     (unsigned)pp->pp_IOReq.iouh_SplitHubPort,
+                     (ULONG)pp->pp_IOReq.iouh_RouteString));
+    } else {
+        KPRINTF(15, ("  (no IOReq, pipe is NULL)\n"));
+    }
+
+    if (pep) {
+        KPRINTF(15, ("Endpoint:\n"));
+        KPRINTF(15, ("  EPNum=%u  Dir=%u  Type=%u  MaxPktSize=%u  Interval=%u\n",
+                     (unsigned)pep->pep_EPNum,
+                     (unsigned)pep->pep_Direction,
+                     (unsigned)pep->pep_TransType,
+                     (unsigned)pep->pep_MaxPktSize,
+                     (unsigned)pep->pep_Interval));
+        KPRINTF(15, ("  NumTransMuFr=%u  SyncType=%u  UsageType=%u\n",
+                     (unsigned)pep->pep_NumTransMuFr,
+                     (unsigned)pep->pep_SyncType,
+                     (unsigned)pep->pep_UsageType));
+        KPRINTF(15, ("  MaxBurst=%u  CompAttr=%u  BytesPerInterval=%lu\n",
+                     (unsigned)pep->pep_MaxBurst,
+                     (unsigned)pep->pep_CompAttributes,
+                     (ULONG)pep->pep_BytesPerInterval));
+    } else {
+        KPRINTF(15, ("Endpoint:  default (EP0)\n"));
+    }
+
+    KPRINTF(15, ("--- END PIPE DUMP ---\n"));
+    Enable();
+}
+
+
+/* Log a USB pipe and controller-specific transfer state for diagnostics. */
+static void pLogPipe(struct PsdPipe *pp)
+{
+    Disable();
+    if (pp) {
+        struct PsdDevice   *pd  = pp->pp_Device;
+        struct PsdEndpoint *pep = pp->pp_Endpoint;
+
+        LIBBASETYPEPTR ps = pd->pd_Hardware->phw_Base;
+
+        psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
+	                   "Pipe %lu flags %04x",
+	                   (ULONG)pp->pp_Num,
+	                   (ULONG)pp->pp_Flags);
+        psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
+	                   "  DevAddr=%lu  MaxPktSize=%lu  Flags=%08lx  NakTimeout=%lu\n",
+                       (ULONG)pp->pp_IOReq.iouh_DevAddr,
+                       (ULONG)pp->pp_IOReq.iouh_MaxPktSize,
+                       (ULONG)pp->pp_IOReq.iouh_Flags,
+                       (ULONG)pp->pp_IOReq.iouh_NakTimeout);
+        psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
+	                   "  HubPort(root)=%u  SplitHubAddr=%u  SplitHubPort=%u  RouteString=%05lx\n",
+                       (unsigned)pp->pp_IOReq.iouh_RootPort,
+                       (unsigned)pp->pp_IOReq.iouh_SplitHubAddr,
+                       (unsigned)pp->pp_IOReq.iouh_SplitHubPort,
+                       (ULONG)pp->pp_IOReq.iouh_RouteString);
+
+        psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
+                       "Device MaxPktSize0=%u",
+	                   (unsigned)pd->pd_MaxPktSize0);
+
+        if (pep) {
+            psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
+	                   "Endpoint %u  Dir=%u  Type=%u  MaxPktSize=%u  Interval=%u\n",
+                       (unsigned)pep->pep_EPNum,
+                       (unsigned)pep->pep_Direction,
+                       (unsigned)pep->pep_TransType,
+                       (unsigned)pep->pep_MaxPktSize,
+                       (unsigned)pep->pep_Interval);
+            psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
+	                   "  NumTransMuFr=%u  SyncType=%u  UsageType=%u\n",
+                       (unsigned)pep->pep_NumTransMuFr,
+                       (unsigned)pep->pep_SyncType,
+                       (unsigned)pep->pep_UsageType);
+            psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
+	                   "  MaxBurst=%u  CompAttr=%u  BytesPerInterval=%lu\n",
+                       (unsigned)pep->pep_MaxBurst,
+                       (unsigned)pep->pep_CompAttributes,
+                       (ULONG)pep->pep_BytesPerInterval);
+        }
+    }
+    Enable();
+}
+
+/*
+ * Map BOS-derived capabilities into poseidons device structure.
+  */
+static void
+pApplyDeviceBosCapabilities(struct PsdDevice *pd, const struct PsdBosCaps *caps)
+{
+    if (!pd || !caps || !caps->hasBos)
+        return;
+
+    /* USB 2.0 LPM (L1) */
+    if (caps->hasUsb20Ext) {
+        pd->pd_Usb20LpmCapable = caps->usb20LpmCapable;
+    }
+
+    /* SuperSpeed device capability */
+    if (caps->hasSSCap) {
+        pd->pd_Usb30LtmCapable   = (caps->ssBmAttributes & 0x02) ? TRUE : FALSE;
+        pd->pd_SupportedSpeeds  |= caps->ssSpeedsSupported;
+        pd->pd_Usb30U1ExitLat    = caps->ssU1DevExitLat;
+        pd->pd_Usb30U2ExitLat    = caps->ssU2DevExitLat;
+
+        /* Choose the highest supported speed */
+        if (caps->ssSpeedsSupported & (1U << 3)) {          /* SuperSpeed */
+            pd->pd_MaxUsbSpeed = 4;
+        } else if (caps->ssSpeedsSupported & (1U << 2)) {   /* High-speed */
+            pd->pd_MaxUsbSpeed = 3;
+        } else if (caps->ssSpeedsSupported & (1U << 1)) {   /* Full-speed */
+            pd->pd_MaxUsbSpeed = 2;
+        } else if (caps->ssSpeedsSupported & (1U << 0)) {   /* Low-speed */
+            pd->pd_MaxUsbSpeed = 1;
+        }
+    }
+
+    /* Container ID */
+    if (caps->hasContainerId) {
+        pd->pd_HasContainerId = TRUE;
+        CopyMem(caps->containerId, pd->pd_ContainerId, 16);
+    }
+}
+
+/*
+ * Extract supported USB BOS capabilities from a descriptor buffer.
+ *
+ * Return FALSE without modifying the output if the input or output pointer
+ * is NULL, or if bosbuflen is shorter than a BOS descriptor header. Otherwise
+ * clear boscaps, set hasBos, and parse recognized USB 2.0 extension,
+ * SuperSpeed, and Container ID capabilities. A zero-length or overrunning
+ * descriptor ends the scan; the function retains any capabilities
+ * already parsed and still returns TRUE. The BOS header's bLength supplies
+ * the initial scan offset; its value is not independently validated here.
+ */
+static BOOL
+pParseBosDescriptor(const UBYTE *bosbuf, UWORD bosbuflen,
+                    struct PsdBosCaps *boscaps)
+{
+    const struct UsbStdBOSDesc *bosHdr;
+    UWORD offset;
+
+    if (!bosbuf || !boscaps || bosbuflen < sizeof(struct UsbStdBOSDesc)) {
+        return FALSE;
+    }
+
+    memset(boscaps, 0, sizeof(*boscaps));
+    boscaps->hasBos = TRUE;
+
+    bosHdr = (const struct UsbStdBOSDesc *)bosbuf;
+    offset = bosHdr->bLength;
+    while (offset + 3 < bosbuflen) {
+        UBYTE bLength         = bosbuf[offset + 0];
+        UBYTE bDescriptorType = bosbuf[offset + 1];
+
+        if (!bLength) {
+            XPRINTF(1, ("BOS: zero-length descriptor at offset %u, aborting\n",
+                        (unsigned)offset));
+            break;
+        }
+        if (offset + bLength > bosbuflen) {
+            XPRINTF(1, ("BOS: descriptor len %u overruns buffer (%u), aborting\n",
+                        (unsigned)bLength,
+                        (unsigned)bosbuflen));
+            break;
+        }
+
+        if (bDescriptorType == UDT_DEVICE_CAPABILITY) {
+            UBYTE bDevCapType = bosbuf[offset + 2];
+            const UBYTE *p = &bosbuf[offset];
+
+            switch (bDevCapType) {
+
+            case UDC_USB20_EXTENSION:
+                if (bLength >= sizeof(struct Usb20ExtDesc)) {
+                    struct Usb20ExtDesc *ext = (struct Usb20ExtDesc *)p;
+
+                    boscaps->hasUsb20Ext          = TRUE;
+                    boscaps->usb20ExtBmAttributes =
+                        AROS_LE2LONG(ext->bmAttributes);
+                    boscaps->usb20LpmCapable =
+                        (boscaps->usb20ExtBmAttributes & (1UL << 1))
+                        ? TRUE : FALSE;
+
+                    XPRINTF(2, ("BOS: USB2.0 ext: bmAttributes=0x%08lx, LPM=%ld\n",
+                                boscaps->usb20ExtBmAttributes,
+                                (LONG)boscaps->usb20LpmCapable));
+                } else {
+                    XPRINTF(1, ("BOS: USB2.0 ext cap too small (len=%u)\n",
+                                (unsigned)bLength));
+                }
+                break;
+
+            case UDC_SUPERSPEED_USB:
+                if (bLength >= sizeof(struct UsbSSDevCapDesc)) {
+                    struct UsbSSDevCapDesc *ss =
+                        (struct UsbSSDevCapDesc *)p;
+
+                    boscaps->hasSSCap              = TRUE;
+                    boscaps->ssBmAttributes        = ss->bmAttributes;
+                    boscaps->ssSpeedsSupported     =
+                        AROS_LE2WORD(ss->wSpeedSupported);
+                    boscaps->ssLowestFullFuncSpeed =
+                        ss->bFunctionalitySupport;
+                    boscaps->ssU1DevExitLat        = ss->bU1DevExitLat;
+                    boscaps->ssU2DevExitLat        =
+                        AROS_LE2WORD(ss->bU2DevExitLat);
+
+                    XPRINTF(2, ("BOS: SS DevCap: speeds=0x%04x, attr=0x%02x, U1=%u, U2=%u\n",
+                                (unsigned)boscaps->ssSpeedsSupported,
+                                (unsigned)boscaps->ssBmAttributes,
+                                (unsigned)boscaps->ssU1DevExitLat,
+                                (unsigned)boscaps->ssU2DevExitLat));
+                } else {
+                    XPRINTF(1, ("BOS: SS DevCap too small (len=%u)\n",
+                                (unsigned)bLength));
+                }
+                break;
+
+            case UDC_CONTAINER_ID:
+                /* Container ID is 16 bytes, descriptor is 20 bytes total */
+                if (bLength >= 20) {
+                    boscaps->hasContainerId = TRUE;
+                    CopyMem(p + 4, boscaps->containerId, 16);
+                    XPRINTF(2, ("BOS: Container ID present\n"));
+                } else {
+                    XPRINTF(1, ("BOS: Container ID cap too small (len=%u)\n",
+                                (unsigned)bLength));
+                }
+                break;
+
+            default:
+                XPRINTF(2, ("BOS: ignoring devcap type %u (len=%u)\n",
+                            (unsigned)bDevCapType,
+                            (unsigned)bLength));
+                break;
+            }
+        }
+
+        offset += bLength;
+    }
+
+    return TRUE;
+}
+
+/*
+ * Request a device's USB BOS descriptor and decode supported capabilities.
+ *
+ * Use pp to request the BOS header, then request the descriptor again with
+ * its advertised total length, clamped to at least the header's bLength and
+ * at most the 256-byte local buffer. Restore the first header to that buffer
+ * before parsing. Return FALSE if either transfer reports an error; otherwise
+ * return pParseBosDescriptor()'s result. A larger BOS descriptor is truncated,
+ * and successful transfers do not by themselves guarantee complete parsing.
+ * pp must point to a valid device pipe.
+ */
+static BOOL
+pFetchBosCaps(struct PsdPipe *pp, struct PsdBosCaps *boscaps)
+{
+    LIBBASETYPEPTR ps = pp->pp_Device->pd_Hardware->phw_Base;
+    struct UsbStdBOSDesc bosHdr;
+    LONG ioerr_bos;
+    UWORD bosTotalLength;
+    UWORD toRead;
+    UBYTE bosbuf[256];
+
+    /* First, read just the BOS header */
+    psdPipeSetup(pp,
+                 URTF_IN|URTF_STANDARD|URTF_DEVICE,
+                 USR_GET_DESCRIPTOR,
+                 UDT_BOS << 8,
+                 0);
+    ioerr_bos = psdDoPipe(pp, &bosHdr, sizeof(struct UsbStdBOSDesc));
+    if (ioerr_bos) {
+        XPRINTF(1, ("GET_DESCRIPTOR (BOS header) failed %ld\n", ioerr_bos));
+        return FALSE;
+    }
+
+    bosTotalLength = AROS_LE2WORD(bosHdr.wTotalLength);
+
+    XPRINTF(1, ("BOS header: len=%u, numCaps=%u, totalLen=%u\n",
+                (unsigned)bosHdr.bLength,
+                (unsigned)bosHdr.bNumDeviceCaps,
+                (unsigned)bosTotalLength));
+
+    if (bosTotalLength < bosHdr.bLength) {
+        XPRINTF(1, ("BOS wTotalLength=%u smaller than header %u, clamping\n",
+                    (unsigned)bosTotalLength,
+                    (unsigned)bosHdr.bLength));
+        bosTotalLength = bosHdr.bLength;
+    }
+
+    /* Fetch the full BOS (bounded to bosbuf) */
+    toRead = bosTotalLength;
+    if (toRead > sizeof(bosbuf)) {
+        XPRINTF(1, ("BOS wTotalLength=%u too large, truncating to %u bytes\n",
+                    (unsigned)bosTotalLength,
+                    (unsigned)sizeof(bosbuf)));
+        toRead = sizeof(bosbuf);
+    }
+
+    psdPipeSetup(pp,
+                 URTF_IN|URTF_STANDARD|URTF_DEVICE,
+                 USR_GET_DESCRIPTOR,
+                 UDT_BOS << 8,
+                 0);
+    ioerr_bos = psdDoPipe(pp, bosbuf, toRead);
+    if (ioerr_bos) {
+        XPRINTF(1, ("GET_DESCRIPTOR (BOS full, len=%u) failed %ld\n",
+                    (unsigned)toRead, ioerr_bos));
+        return FALSE;
+    }
+
+    XPRINTF(1, ("Full BOS descriptor (%u bytes) received\n",
+                (unsigned)toRead));
+
+    /* Ensure header is at the front of the buffer */
+    memcpy(bosbuf, &bosHdr, sizeof(struct UsbStdBOSDesc));
+
+    return pParseBosDescriptor(bosbuf, toRead, boscaps);
+}
+
+/*
+ * Compute the default per-transfer USB link-power policy flags.
+ *
+ * Start with USBPWR_POLICY_BALANCED. Allow L1 for LPM-capable USB 2.1 or newer
+ * devices. For SuperSpeed devices, allow U1 when its exit latency is nonzero.
+ * Allow U2 only when its exit latency is nonzero and pep identifies a
+ * non-isochronous endpoint. Leave U3 disabled.
+ * pd must refer to a valid device; pep may be NULL. phw is not used. Return
+ * the policy flags without applying them to the hardware.
+ */
+static UWORD
+pBuildDefaultPowerPolicy(struct PsdHardware *phw, struct PsdDevice *pd,
+                         struct PsdEndpoint *pep)
+{
+    UWORD policy = USBPWR_PROFILE_LEGACY;
+
+    /* Start with a balanced profile; HCD can change this based on global prefs */
+    policy &= ~USBPWR_POLICY_MASK;
+    policy |= USBPWR_POLICY_BALANCED;
+
+    /* USB 2.0 LPM (L1) */
+    if (pd->pd_Usb20LpmCapable &&
+            pd->pd_USBVers >= 0x0201) {
+        policy |= USBPWR_ALLOW_L1;
+    }
+
+    /* USB 3.x link states */
+    if (pd->pd_Flags & PDFF_SUPERSPEED) {
+        /* U1 is usually safe for most endpoints if U1 exit latency is low */
+        if (pd->pd_Usb30U1ExitLat != 0) {
+            policy |= USBPWR_ALLOW_U1;
+        }
+
+        /* U2 is deeper; be more conservative for time-sensitive endpoints */
+        if (pd->pd_Usb30U2ExitLat != 0 &&
+                pep && pep->pep_TransType != USEAF_ISOCHRONOUS) {
+            policy |= USBPWR_ALLOW_U2;
+        }
+
+        /* U3 (full suspend) is typically controlled by higher-level PM,
+           not per-transfer, so leave USBPWR_ALLOW_U3 off by default. */
+    }
+
+    /* Endpoint-specific adjustments */
+    if (pep) {
+        switch (pep->pep_TransType) {
+        case USEAF_ISOCHRONOUS:
+            /* Isochronous streams are latency-sensitive:
+               - allow U1, but usually avoid U2/U3 */
+            policy &= ~(USBPWR_ALLOW_U2 | USBPWR_ALLOW_U3);
+            break;
+
+        case USEAF_INTERRUPT:
+            /* Interrupt IN devices (keyboards, mice) are good candidates
+               for power saving - keep U1/U2 if supported */
+            /* Nothing special here; keep defaults. */
+            break;
+
+        case USEAF_BULK:
+        case USEAF_CONTROL:
+        default:
+            /* Bulk/control can tolerate deeper states except during high
+               throughput; the HCD can downgrade to PERF on heavy traffic. */
+            break;
+        }
+    }
+
+    return policy;
+}
+
+/*
+ * Calculate the stream count encoded for a SuperSpeed bulk endpoint.
+ *
+ * Return zero for a NULL endpoint, a non-SuperSpeed device, a non-bulk
+ * endpoint, or a zero stream exponent. Otherwise return 1 << n, where n is
+ * the low five bits of pep_CompAttributes, saturating to 0xffff for n >= 16.
+ * A non-NULL endpoint must have a valid interface, configuration, and device.
+ */
+static UWORD
+pGetMaxStreamsForEndpoint(const struct PsdEndpoint *pep)
+{
+    const struct PsdDevice *pd;
+    UBYTE n;
+
+    if (!pep) {
+        return 0;
+    }
+
+    pd = pep->pep_Interface->pif_Config->pc_Device;
+    if (!(pd->pd_Flags & PDFF_SUPERSPEED)) {
+        return 0;
+    }
+
+    if (pep->pep_TransType != USEAF_BULK) {
+        return 0;
+    }
+
+    n = (UBYTE)(pep->pep_CompAttributes & 0x1F);
+    if (n == 0) {
+        return 0;
+    }
+
+    if (n >= 16) {
+        return 0xFFFF;
+    }
+
+    return (UWORD)(1U << n);
+}
+
+/* /// "psdEnumerateDevice()" */
+/****** poseidon.library/psdEnumerateDevice ********************************
+
+    NAME */
+        AROS_LH1(struct PsdDevice *, psdEnumerateDevice,
+/*  SYNOPSIS */
+         AROS_LHA(struct PsdPipe *, pp, A1),
+/*  LOCATION */
+         LIBBASETYPEPTR, ps, 20, psd)
+/*  FUNCTION
+        Assign and query USB device state through an enumeration pipe.
+
+    INPUTS
+        pp - Valid default-control pipe for a device being enumerated.
+
+    RESULT
+        Device associated with the pipe, or NULL on an earlier enumeration
+        failure. A non-NULL result does not guarantee that configuration
+        descriptors were read successfully or that a configuration was set.
+
+    NOTES
+        The procedure acquires the device write lock, performs USB
+        requests to determine speed, address, descriptors and available
+        configurations, and updates the device's parsed state. It saves
+        the pipe flags and NAK timeout and restores them on completion.
+        On the address-assigned failure path, it clears the temporary
+        address and connected flags before returning NULL. Failure to
+        parse configurations is logged but returns the device pointer.
+        The call may block on USB transfers and does not establish a
+        class binding.
+
+    SEE ALSO
+        psdAllocDevice(), psdEnumerateHardware(), psdClassScan()
+
+******************************************************************************/
+{
+    AROS_LIBFUNC_INIT
+
+    struct PsdDevice *pd = pp->pp_Device;
+    struct PsdDevice *itpd = pp->pp_Device;
+    struct PsdConfig *pc;
+    struct PsdInterface *pif;
+    struct UsbStdDevDesc usdd;
+
+    UWORD oldflags = 0;
+    ULONG oldnaktimeout = 0;
+
+    LONG ioerr = 0;
+
+    STRPTR classname;
+    STRPTR vendorname;
+
+    ULONG devclass;
+
+    IPTR islowspeed = 0;
+    IPTR ishighspeed = 0;
+    IPTR issuperspeed = 0;
+
+    BOOL hasprodname;
+    BOOL haspopupinhibit;
+
+    UWORD cfgnum;
+
+    struct PsdIFFContext *pic;
+
+    ULONG *chnk;
+
+    /* Track whether we successfully assigned an address, for cleanup. */
+    BOOL addr_assigned = FALSE;
+
+    KPRINTF(2, ("psdEnumerateDevice(%p)\n", pp));
+
+    /* Ensure descriptor buffer is not used uninitialised */
+    memset(&usdd, 0, sizeof(usdd));
+
+    psdLockWriteDevice(pd);
+
+    if(!pAllocDevAddr(pd)) {
+        psdAddErrorMsg0(RETURN_FAIL, (STRPTR) GM_UNIQUENAME(libname),
+                        "This cannot happen! More than 127 devices on the bus???");
+        KPRINTF(20, ("out of addresses???\n"));
+        goto fail;
+    }
+
+    oldflags = pp->pp_IOReq.iouh_Flags;
+    oldnaktimeout = pp->pp_IOReq.iouh_NakTimeout;
+
+    pp->pp_IOReq.iouh_Flags |= UHFF_NAKTIMEOUT;
+    pp->pp_IOReq.iouh_NakTimeout = 1000;
+    pp->pp_IOReq.iouh_DevAddr = 0;
+
+    /*
+     * Initial EP0 max packet size depends on device speed:
+     *
+     *  - Low-Speed (USB 1.x):        8 bytes (fixed)
+     *  - Full-Speed (USB 1.x):       Start with 8 bytes; actual size
+     *                                (8/16/32/64) is learned from
+     *                                bMaxPacketSize0 after the first
+     *                                GET_DESCRIPTOR(8)
+     *  - High-Speed (USB 2.0):       64 bytes (fixed for EP0)
+     *  - SuperSpeed / SuperSpeed+:   512 bytes (fixed for EP0)
+     */
+    psdGetAttrs(PGA_DEVICE, pd,
+                DA_IsLowspeed,  &islowspeed,
+                DA_IsHighspeed, &ishighspeed,
+                DA_IsSuperspeed,&issuperspeed,
+                TAG_END);
+
+    if (issuperspeed) {
+        pp->pp_IOReq.iouh_MaxPktSize = 512;
+        pp->pp_IOReq.iouh_Flags |= UHFF_SUPERSPEED;
+    } else if (ishighspeed) {
+        pp->pp_IOReq.iouh_MaxPktSize = 64;
+        pp->pp_IOReq.iouh_Flags |= UHFF_HIGHSPEED;
+    } else {
+        /* FS or LS initial */
+        pp->pp_IOReq.iouh_MaxPktSize = 8; /* LS fixed 8, FS starts 8 */
+    }
+
+    psdPipeSetup(pp, URTF_IN|URTF_STANDARD|URTF_DEVICE, USR_GET_DESCRIPTOR, UDT_DEVICE<<8, 0);
+    ioerr = psdDoPipe(pp, &usdd, 8);
+    if(ioerr && (ioerr != UHIOERR_RUNTPACKET)) {
+        psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
+                       "%s/%ld GET_DESCRIPTOR (8) failed: %s (%ld)",
+                       pd->pd_Hardware->phw_DevName, pd->pd_Hardware->phw_Unit,
+                       psdNumToStr(NTS_IOERR, ioerr, "unknown"), ioerr);
+        KPRINTF(15, ("%s/%ld GET_DESCRIPTOR (8) failed %ld!\n",
+                     pd->pd_Hardware->phw_DevName, pd->pd_Hardware->phw_Unit, ioerr));
+        pLogPipe(pp);
+        DumpPipe(pp);
+
+        /*
+         * Do not continue: usdd may be incomplete/invalid, and using it to
+         * select MaxPktSize0 or class/hub behaviour can lock up the device.
+         */
+        goto fail_restore;
+    }
+
+    /* we have the first 8 bytes now, so bDeviceClass is valid */
+    if (!ioerr || ioerr == UHIOERR_RUNTPACKET) {
+        if (usdd.bDeviceClass == HUB_CLASSCODE) {
+            /* tell the HCD from now on */
+            pp->pp_IOReq.iouh_Flags |= UHFF_HUB;
+        }
+    }
+
+    KPRINTF(1, ("Setting DevAddr %ld...\n", pd->pd_DevAddr));
+    psdPipeSetup(pp, URTF_STANDARD|URTF_DEVICE, USR_SET_ADDRESS, pd->pd_DevAddr, 0);
+    ioerr = psdDoPipe(pp, NULL, 0);
+
+    /*
+        This is tricky: Maybe the device has accepted the command,
+        but failed to send an ACK. Now, every resend trial will
+        go to the wrong address!
+    */
+    if((ioerr == UHIOERR_TIMEOUT) || (ioerr == UHIOERR_STALL)) {
+        KPRINTF(1, ("First attempt failed, retrying new address\n"));
+        psdDelayMS(250);
+        ioerr = psdDoPipe(pp, NULL, 0);
+    }
+
+    if(ioerr) {
+        psdAddErrorMsg(RETURN_FAIL, (STRPTR) GM_UNIQUENAME(libname),
+                       "SET_ADDRESS(%ld) failed: %s (%ld)",
+                       pd->pd_DevAddr, psdNumToStr(NTS_IOERR, ioerr, "unknown"), ioerr);
+        KPRINTF(15, ("SET_ADDRESS(%ld) failed %ld!\n", pd->pd_DevAddr, ioerr));
+        DumpPipe(pp);
+        goto fail_restore;
+    }
+
+    /* Address is now active */
+    addr_assigned = TRUE;
+    pd->pd_Flags |= PDFF_HASDEVADDR|PDFF_CONNECTED;
+    pp->pp_IOReq.iouh_DevAddr = pd->pd_DevAddr;
+
+    psdDelayMS(50); /* Allowed time to settle */
+
+    /*
+        We have already received at least the first 8 bytes from the descriptor.
+        Validate bMaxPacketSize0 *now* and bail out if it is invalid to avoid
+        wedging devices on subsequent control transfers.
+    */
+    KPRINTF(1, ("Getting MaxPktSize0...\n"));
+    {
+        BOOL maxpkt_ok = FALSE;
+        ULONG bcdUSB = AROS_LE2WORD(usdd.bcdUSB);
+
+        if(bcdUSB >= 0x0300) {
+            /* USB 3.x: bMaxPacketSize0 encodes an exponent; 9 => 512 bytes */
+            if(usdd.bMaxPacketSize0 == 9) {
+                pp->pp_IOReq.iouh_MaxPktSize = pd->pd_MaxPktSize0 = (1UL << 9);
+                maxpkt_ok = TRUE;
+            }
+        } else {
+            /* USB 2.0 and below: literal size in bytes */
+            switch(usdd.bMaxPacketSize0) {
+            case 8:
+            case 16:
+            case 32:
+            case 64:
+                pp->pp_IOReq.iouh_MaxPktSize = pd->pd_MaxPktSize0 = usdd.bMaxPacketSize0;
+                maxpkt_ok = TRUE;
+                break;
+            default:
+                break;
+            }
+        }
+
+        /* Explicitly reject 0 and any unsupported values */
+        if(!maxpkt_ok) {
+            psdAddErrorMsg(RETURN_ERROR, (STRPTR) GM_UNIQUENAME(libname),
+                           "Illegal bMaxPacketSize0=%ld for endpoint 0 (bcdUSB=%04lx)",
+                           (ULONG)usdd.bMaxPacketSize0, (ULONG)bcdUSB);
+            KPRINTF(2, ("Illegal bMaxPacketSize0=%ld (bcdUSB=%04lx)!\n",
+                        (ULONG)usdd.bMaxPacketSize0, (ULONG)bcdUSB));
+            ioerr = UHIOERR_CRCERROR;
+            goto fail_restore;
+        }
+    }
+
+    KPRINTF(1, ("  MaxPktSize0 = %ld\n", pd->pd_MaxPktSize0));
+
+    KPRINTF(1, ("Getting full descriptor...\n"));
+    /* We have set a new address for the device so we need to setup the pipe again */
+    psdPipeSetup(pp, URTF_IN|URTF_STANDARD|URTF_DEVICE, USR_GET_DESCRIPTOR, UDT_DEVICE<<8, 0);
+    ioerr = psdDoPipe(pp, &usdd, sizeof(struct UsbStdDevDesc));
+    if(ioerr) {
+        psdAddErrorMsg(RETURN_ERROR, (STRPTR) GM_UNIQUENAME(libname),
+                       "GET_DESCRIPTOR (len %u) failed: %s (%ld)",
+                       sizeof(struct UsbStdDevDesc), psdNumToStr(NTS_IOERR, ioerr, "unknown"), ioerr);
+        KPRINTF(15, ("GET_DESCRIPTOR (%u) failed %ld!\n", sizeof(struct UsbStdDevDesc), ioerr));
+        goto fail_restore;
+    }
+
+    pAllocDescriptor(pd, (UBYTE *) &usdd);
+    pd->pd_Flags |= PDFF_HASDEVDESC;
+    pd->pd_USBVers = AROS_LE2WORD(usdd.bcdUSB);
+    pd->pd_DevClass = usdd.bDeviceClass;
+    pd->pd_DevSubClass = usdd.bDeviceSubClass;
+    pd->pd_DevProto = usdd.bDeviceProtocol;
+    pd->pd_VendorID = AROS_LE2WORD(usdd.idVendor);
+    pd->pd_ProductID = AROS_LE2WORD(usdd.idProduct);
+    pd->pd_DevVers = AROS_LE2WORD(usdd.bcdDevice);
+    vendorname = psdNumToStr(NTS_VENDORID, (LONG) pd->pd_VendorID, NULL);
+
+#if !defined(POSEIDON_NOLEGACYDRIVERS)
+    /* For legacy drivers, the RootHub is highspeed if
+     * the USB version is > 2.0,
+     */
+    if ((!pd->pd_Hub) &&
+        (pd->pd_Hardware->phw_DriverVers < 0x300) &&
+        (pd->pd_USBVers >= 0x200)) {
+        pd->pd_Flags &= ~PDFF_LOWSPEED;
+        pd->pd_Flags |= PDFF_HIGHSPEED;
+    }
+#endif
+
+    /*
+        The USB 3.0 and USB 2.0 LPM specifications define a new USB descriptor called
+        the Binary Device Object Store (BOS) for a USB device with bcdUSB > 0x0200.
+    */
+    if (pd->pd_USBVers > 0x0200) {
+        struct PsdBosCaps boscaps;
+        if (pFetchBosCaps(pp, &boscaps)) {
+            pApplyDeviceBosCapabilities(pd, &boscaps);
+        }
+    }
+
+    if(usdd.iManufacturer) {
+        pd->pd_MnfctrStr = psdGetStringDescriptor(pp, usdd.iManufacturer);
+    }
+
+    if(usdd.iProduct) {
+        pd->pd_ProductStr = psdGetStringDescriptor(pp, usdd.iProduct);
+    }
+
+    if(usdd.iSerialNumber) {
+        pd->pd_SerNumStr = psdGetStringDescriptor(pp, usdd.iSerialNumber);
+    }
+
+    if(!pd->pd_MnfctrStr) {
+        pd->pd_MnfctrStr = psdCopyStr(vendorname ? vendorname : (STRPTR) "n/a");
+    }
+
+    if(!pd->pd_ProductStr) {
+        hasprodname = FALSE;
+        classname = psdNumToStr(NTS_CLASSCODE, (LONG) pd->pd_DevClass, NULL);
+        if(classname) {
+            pd->pd_ProductStr = psdCopyStrFmt("%s: Vdr=%04lx/PID=%04lx", classname, pd->pd_VendorID, pd->pd_ProductID);
+        } else {
+            pd->pd_ProductStr = psdCopyStrFmt("Cls=%ld/Vdr=%04lx/PID=%04lx", pd->pd_DevClass, pd->pd_VendorID, pd->pd_ProductID);
+        }
+    } else {
+        hasprodname = TRUE;
+    }
+
+    if(!pd->pd_SerNumStr) {
+        pd->pd_SerNumStr = psdCopyStr("n/a");
+    }
+
+    KPRINTF(2, ("Product     : %s\n"
+                "Manufacturer: %s\n"
+                "SerialNumber: %s\n",
+                pd->pd_ProductStr, pd->pd_MnfctrStr, pd->pd_SerNumStr));
+    KPRINTF(2, ("USBVersion: %04lx\n"
+                "Class     : %ld\n"
+                "SubClass  : %ld\n"
+                "DevProto  : %ld\n"
+                "VendorID  : %ld\n"
+                "ProductID : %ld\n"
+                "DevVers   : %04lx\n",
+                pd->pd_USBVers, pd->pd_DevClass, pd->pd_DevSubClass, pd->pd_DevProto,
+                pd->pd_VendorID, pd->pd_ProductID, pd->pd_DevVers));
+
+    /* check for clones */
+    itpd = NULL;
+    while((itpd = psdGetNextDevice(itpd))) {
+        if(itpd != pd) {
+            if((itpd->pd_ProductID == pd->pd_ProductID) &&
+               (itpd->pd_VendorID == pd->pd_VendorID) &&
+               (itpd->pd_SerNumStr && !strcmp(itpd->pd_SerNumStr, pd->pd_SerNumStr)) &&
+               (itpd->pd_CloneCount == pd->pd_CloneCount)) {
+                pd->pd_CloneCount++;
+                itpd = NULL;
+            }
+        }
+    }
+
+    pd->pd_IDString = psdCopyStrFmt("%s-%04lx-%04lx-%s-%02lx",
+                                    pd->pd_ProductStr, pd->pd_VendorID, pd->pd_ProductID,
+                                    pd->pd_SerNumStr, pd->pd_CloneCount);
+
+    pStripString(ps, pd->pd_MnfctrStr);
+    pStripString(ps, pd->pd_ProductStr);
+    pStripString(ps, pd->pd_SerNumStr);
+
+    /* get custom name of device */
+    pLockSemExcl(ps, &ps->ps_ConfigLock); // Exclusive lock to avoid deadlock situation when promoting read to write
+    pd->pd_OldProductStr = pd->pd_ProductStr;
+    pd->pd_ProductStr = NULL;
+    haspopupinhibit = FALSE;
+    pic = psdGetUsbDevCfg("Trident", pd->pd_IDString, NULL);
+    if(pic) {
+        pd->pd_IsNewToMe = FALSE;
+        if((pd->pd_ProductStr = pGetStringChunk(ps, pic, IFFCHNK_NAME))) {
+            hasprodname = TRUE;
+        }
+        if((chnk = pFindCfgChunk(ps, pic, IFFCHNK_POPUP))) {
+            struct PsdPoPoCfg *poc = (struct PsdPoPoCfg *) chnk;
+            CopyMem(((UBYTE *) poc) + 8, ((UBYTE *) &pd->pd_PoPoCfg) + 8,
+                    min(AROS_LONG2BE(poc->poc_Length), AROS_LONG2BE(pd->pd_PoPoCfg.poc_Length)));
+            haspopupinhibit = TRUE;
+        }
+    } else {
+        pd->pd_IsNewToMe = TRUE;
+        psdSetUsbDevCfg("Trident", pd->pd_IDString, NULL, NULL);
+    }
+    if(!pd->pd_ProductStr) {
+        pd->pd_ProductStr = psdCopyStr(pd->pd_OldProductStr);
+    }
+    if(!haspopupinhibit) {
+        if(pd->pd_DevClass == HUB_CLASSCODE) { // hubs default to true
+            pd->pd_PoPoCfg.poc_InhibitPopup = TRUE;
+        }
+    }
+    pUnlockSem(ps, &ps->ps_ConfigLock);
+
+    pd->pd_NumCfgs = usdd.bNumConfigurations;
+    KPRINTF(10, ("Device has %ld different configurations\n", pd->pd_NumCfgs));
+
+    if(pGetDevConfig(pp)) {
+        cfgnum = 1;
+        if(pd->pd_Configs.lh_Head->ln_Succ) {
+            cfgnum = ((struct PsdConfig *) pd->pd_Configs.lh_Head)->pc_CfgNum;
+        }
+        psdSetDeviceConfig(pp, cfgnum); /* *** FIXME *** Workaround for USB2.0 devices */
+        {
+            if(!hasprodname) {
+                devclass = pd->pd_DevClass;
+                pc = (struct PsdConfig *) pd->pd_Configs.lh_Head;
+                while(pc->pc_Node.ln_Succ) {
+                    pif = (struct PsdInterface *) pc->pc_Interfaces.lh_Head;
+                    while(pif->pif_Node.ln_Succ) {
+                        if(pif->pif_IfClass) {
+                            if(!devclass) {
+                                devclass = pif->pif_IfClass;
+                            } else {
+                                if(devclass != pif->pif_IfClass) {
+                                    devclass = 0;
+                                    break;
+                                }
+                            }
+                        }
+                        pif = (struct PsdInterface *) pif->pif_Node.ln_Succ;
+                    }
+                    pc = (struct PsdConfig *) pc->pc_Node.ln_Succ;
+                }
+                if(devclass) {
+                    classname = psdNumToStr(NTS_CLASSCODE, (LONG) devclass, NULL);
+                    if(classname) {
+                        psdFreeVec(pd->pd_ProductStr);
+                        if(vendorname) {
+                            pd->pd_ProductStr = psdCopyStrFmt("%s (%s/%04lx)",
+                                                             classname, vendorname, pd->pd_ProductID);
+                        } else {
+                            pd->pd_ProductStr = psdCopyStrFmt("%s (%04lx/%04lx)",
+                                                             classname, pd->pd_VendorID, pd->pd_ProductID);
+                        }
+                    }
+                }
+            }
+            pFixBrokenConfig(pp);
+            pp->pp_IOReq.iouh_Flags = oldflags;
+            pp->pp_IOReq.iouh_NakTimeout = oldnaktimeout;
+            psdUnlockDevice(pd);
+            psdCalculatePower(pd->pd_Hardware);
+            return(pd);
+        }
+    } else {
+        psdAddErrorMsg(RETURN_ERROR, (STRPTR) GM_UNIQUENAME(libname),
+                       "Could not acquire device configuration for %s",
+                       pd->pd_ProductStr ? pd->pd_ProductStr : (STRPTR) "new device");
+        KPRINTF(15, ("GetDevConfig() failed\n"));
+    }
+
+    /* Although the device failed to configure fully, maybe some firmware will use it anyway */
+    pp->pp_IOReq.iouh_Flags = oldflags;
+    pp->pp_IOReq.iouh_NakTimeout = oldnaktimeout;
+    psdUnlockDevice(pd);
+    return(pd);
+
+fail_restore:
+    /* If we assigned an address but later fail, do not keep it active in the pipe state. */
+    if(addr_assigned) {
+        pp->pp_IOReq.iouh_DevAddr = 0;
+        pd->pd_Flags &= ~(PDFF_HASDEVADDR | PDFF_CONNECTED);
+    }
+    pp->pp_IOReq.iouh_Flags = oldflags;
+    pp->pp_IOReq.iouh_NakTimeout = oldnaktimeout;
+
+fail:
+    psdAddErrorMsg0(RETURN_FAIL, (STRPTR) GM_UNIQUENAME(libname),
+                    "Device enumeration failed, sorry.");
+    psdUnlockDevice(pd);
+    return(NULL);
+
+    AROS_LIBFUNC_EXIT
+}
+/* \\\ */
+
+/* /// "psdGetNextDevice()" */
+/****** poseidon.library/psdGetNextDevice **********************************
+
+    NAME */
+        AROS_LH1(struct PsdDevice *, psdGetNextDevice,
+/*  SYNOPSIS */
+         AROS_LHA(struct PsdDevice *, pd, A0),
+/*  LOCATION */
+         LIBBASETYPEPTR, ps, 21, psd)
+/*  FUNCTION
+        Return the next device in Poseidon's controller/device lists.
+
+    INPUTS
+        pd - Previous device, or NULL to start with the first controller.
+
+    RESULT
+        Next device pointer, or NULL when no further device is found.
+
+    NOTES
+        The function first examines the next node in the current
+        controller's device list. When that list is exhausted, it visits
+        subsequent controllers. With NULL input, it starts at the first
+        controller. It takes no lock; callers must keep the relevant
+        lists stable for the traversal and must not retain a returned
+        pointer beyond the device's valid lifetime.
+
+    SEE ALSO
+        psdLockReadPBase(), psdUnlockPBase(), psdFindDeviceA()
+
+******************************************************************************/
+{
+    AROS_LIBFUNC_INIT
+    struct PsdHardware *phw;
+
+    KPRINTF(1, ("psdGetNextDevice(%p)\n", pd));
+    if(pd) {
+        /* Is there another device node in the current hardware? */
+        if(pd->pd_Node.ln_Succ->ln_Succ) {
+            return((struct PsdDevice *) pd->pd_Node.ln_Succ);
+        }
+        /* No, then check if there's another hardware to scan */
+        phw = (struct PsdHardware *) pd->pd_Hardware->phw_Node.ln_Succ;
+    } else {
+        /* No context, start with first hardware */
+        phw = (struct PsdHardware *) ps->ps_Hardware.lh_Head;
+    }
+    while(phw->phw_Node.ln_Succ) {
+        pd = (struct PsdDevice *) phw->phw_Devices.lh_Head;
+        /* Is this an valid entry, or is the list empty? */
+        if(pd->pd_Node.ln_Succ) {
+            return(pd);
+        }
+        phw = (struct PsdHardware *) phw->phw_Node.ln_Succ;
+    }
+    /* End of list reached */
+    return(NULL);
+    AROS_LIBFUNC_EXIT
+}
+/* \\\ */
+
+/* /// "psdSuspendBindings()" */
+/*****************************************************************************
+    NAME
+        BOOL psdSuspendBindings(
+
+    SYNOPSIS
+        APTR pd)
+
+    FUNCTION
+        Prepare the device binding and current interface bindings for suspension.
+
+    INPUTS
+        pd - Device with a valid current configuration, or NULL. Keep the
+            device, configuration and bindings alive throughout the call.
+
+    RESULT
+        TRUE if traversal finishes without a binding refusing suspension.
+        FALSE for NULL or a rejected suspension request. TRUE does not mean
+        that the hub port has been suspended.
+
+    NOTES
+        Call in a context that serializes device and binding changes; this
+        function takes no device lock. Class methods and binding release can
+        block. psdSuspendDevice() performs this preparation under a device
+        write lock before asking the hub to suspend the port.
+
+        Classes advertising UCCA_SupportsSuspend receive
+        UCM_AttemptSuspendDevice. A refusal stops traversal. Classes without
+        that capability are accepted if the device has no active I/O.
+
+        When GCA_ForceSuspend is enabled and the current configuration advertises
+        remote wakeup, application bindings and busy bindings of classes without
+        suspend support are released. Otherwise an application binding or a busy,
+        unsupported class causes failure. A suspend-capable class may still veto
+        suspension when force mode is enabled.
+
+        Visits the device binding and every interface in the current
+        configuration. Released binding handles become invalid. This function
+        does not change the port state or the device's suspended flag.
+
+    BUGS
+        Failure does not undo earlier class suspension or binding releases.
+        Release requests have no status, so TRUE cannot establish that forced
+        release completed. A non-NULL device without a current configuration
+        is invalid and can cause a NULL dereference.
+
+    SEE ALSO
+        psdSuspendDevice(), psdResumeBindings(), psdReleaseDevBinding()
+
+*****************************************************************************/
+        AROS_LH1(BOOL, psdSuspendBindings,
+         AROS_LHA(struct PsdDevice *, pd, A0),
+         LIBBASETYPEPTR, ps, 100, psd)
+{
+    AROS_LIBFUNC_INIT
+    struct PsdUsbClass *puc;
+    struct PsdConfig *pc;
+    struct PsdInterface *pif;
+    BOOL res = FALSE;
+    IPTR suspendable;
+    BOOL force = FALSE;
+
+    KPRINTF(5, ("psdSuspendBindings(%p)\n", pd));
+    if(pd) {
+        /* pd_CurrentConfig is NULL for an enumerated but unconfigured device */
+        if(ps->ps_GlobalCfg->pgc_ForceSuspend && pd->pd_CurrentConfig &&
+           (pd->pd_CurrentConfig->pc_Attr & USCAF_REMOTE_WAKEUP)) {
+            force = TRUE;
+        }
+        // ask existing bindings to go to suspend first -- if they don't support it, break off
+        if(pd->pd_DevBinding) {
+            if(pd->pd_Flags & PDFF_APPBINDING) {
+                if(!force) {
+                    // can't suspend application binding devices
+                    psdAddErrorMsg(RETURN_ERROR, (STRPTR) GM_UNIQUENAME(libname),
+                                   "Cannot suspend with application binding on '%s'.",
+                                   pd->pd_ProductStr);
+                    return FALSE;
+                }
+                psdReleaseDevBinding(pd);
+            }
+            if((puc = pd->pd_ClsBinding)) {
+                suspendable = 0;
+                usbGetAttrs(UGA_CLASS, NULL, UCCA_SupportsSuspend, &suspendable, TAG_END);
+                if(suspendable) {
+                    res = usbDoMethod(UCM_AttemptSuspendDevice, pd->pd_DevBinding);
+                    if(!res) {
+                        // didn't want to suspend
+                        psdAddErrorMsg(RETURN_ERROR, (STRPTR) GM_UNIQUENAME(libname),
+                                       "Class '%s' failed to suspend device '%s'.",
+                                       puc->puc_Node.ln_Name, pd->pd_ProductStr);
+                        return FALSE;
+                    }
+                } else {
+                    if(pd->pd_IOBusyCount) {
+                        if(!force) {
+                            psdAddErrorMsg(RETURN_ERROR, (STRPTR) GM_UNIQUENAME(libname),
+                                           "Class '%s' does not support suspending.",
+                                           puc->puc_Node.ln_Name);
+                            return FALSE;
+                        } else {
+                            psdReleaseDevBinding(pd);
+                        }
+                    } else {
+                        psdAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname),
+                                       "Class '%s' does not support suspending, but has no active IO. Suspending anyway.",
+                                       puc->puc_Node.ln_Name);
+                    }
+                }
+            }
+        }
+        pc = pd->pd_CurrentConfig;
+        pif = pc ? (struct PsdInterface *) pc->pc_Interfaces.lh_Head : NULL;
+        while(pif && pif->pif_Node.ln_Succ) {
+            if(pif->pif_IfBinding) {
+                if((puc = pif->pif_ClsBinding)) {
+                    suspendable = 0;
+                    usbGetAttrs(UGA_CLASS, NULL, UCCA_SupportsSuspend, &suspendable, TAG_END);
+                    if(suspendable) {
+                        res = usbDoMethod(UCM_AttemptSuspendDevice, pif->pif_IfBinding);
+                        if(!res) {
+                            // didn't want to suspend
+                            psdAddErrorMsg(RETURN_ERROR, (STRPTR) GM_UNIQUENAME(libname),
+                                           "%s failed to suspend device '%s'.",
+                                           puc->puc_Node.ln_Name, pd->pd_ProductStr);
+                            return FALSE;
+                        }
+                    } else {
+                        if(pd->pd_IOBusyCount) {
+                            if(!force) {
+
+                                psdAddErrorMsg(RETURN_ERROR, (STRPTR) GM_UNIQUENAME(libname),
+                                               "%s does not support suspending.",
+                                               puc->puc_Node.ln_Name);
+                                return FALSE;
+                            } else {
+                                psdReleaseIfBinding(pif);
+                            }
+                        } else {
+                            psdAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname),
+                                           "%s does not support suspending, but has no active IO. Suspending anyway.",
+                                           puc->puc_Node.ln_Name);
+                        }
+                    }
+                }
+            }
+            pif = (struct PsdInterface *) pif->pif_Node.ln_Succ;
+        }
+        return TRUE;
+    }
+    return FALSE;
+    AROS_LIBFUNC_EXIT
+}
+/* \\\ */
+
+/* /// "psdSuspendDevice()" */
+/*****************************************************************************
+    NAME
+        BOOL psdSuspendDevice(
+
+    SYNOPSIS
+        APTR pd)
+
+    FUNCTION
+        Prepare a device for suspension and request suspension of its hub port.
+
+    INPUTS
+        pd - Valid, non-NULL device with a current configuration. Keep it and
+            its parent hub alive until return; serialize competing state changes.
+
+    RESULT
+        TRUE if the device is already marked suspended, or if binding
+        preparation and the dispatched hub method report success. FALSE if
+        preparation or the hub method fails, or a root hub needs suspension.
+        See BUGS for the missing-parent-binding case.
+
+    NOTES
+        May block on device locks, class callbacks, hub-task replies and USB
+        control transfers. There is no whole-operation timeout.
+
+        Runs psdSuspendBindings() under the device write lock, then dispatches
+        UCM_HubSuspendDevice under a device read lock. Preparation may release
+        bindings. The supplied hub.class sets PORT_SUSPEND; on successful control
+        transfer it marks the device suspended and sends EHMB_DEVSUSPENDED.
+        This reports command completion, not an independent measurement of
+        power consumption.
+
+        Root-hub suspension is unsupported unless the suspended flag was already
+        set, in which case the initial state check returns TRUE.
+
+    BUGS
+        If preparation succeeds but the parent has no device binding or class
+        binding, no hub request is sent and TRUE is still returned. Preparation
+        is not rolled back after a failed port-suspend request.
+
+        NULL is unsafe: the failure diagnostic dereferences pd. State checks and
+        preparation are not one atomic transition with the subsequent hub call.
+
+    SEE ALSO
+        psdSuspendBindings(), psdResumeDevice(), psdGetAttrsA()
+
+*****************************************************************************/
+        AROS_LH1(BOOL, psdSuspendDevice,
+         AROS_LHA(struct PsdDevice *, pd, A0),
+         LIBBASETYPEPTR, ps, 98, psd)
+{
+    AROS_LIBFUNC_INIT
+    struct PsdUsbClass *puc;
+    struct PsdDevice *hubpd;
+    APTR binding;
+    BOOL res = FALSE;
+
+    KPRINTF(5, ("psdSuspendDevice(%p)\n", pd));
+    if(pd) {
+        if(pd->pd_Flags & PDFF_SUSPENDED) {
+            return TRUE;
+        }
+        hubpd = pd->pd_Hub;
+        if(!hubpd) { // suspend root hub
+            // suspend whole USB, using the HCI UHCMD_USBSUSPEND command
+            // FIXME currently unsupported!
+            psdAddErrorMsg0(RETURN_ERROR, (STRPTR) GM_UNIQUENAME(libname), "Suspending of root hub currently not supported.");
+            return FALSE;
+        }
+
+        psdLockWriteDevice(pd);
+        res = psdSuspendBindings(pd);
+        psdUnlockDevice(pd);
+        if(res) {
+            psdLockReadDevice(pd);
+            if((binding = hubpd->pd_DevBinding) && (puc = hubpd->pd_ClsBinding)) {
+                res = usbDoMethod(UCM_HubSuspendDevice, binding, pd);
+            }
+            psdUnlockDevice(pd);
+        }
+    }
+    if(!res) {
+        psdAddErrorMsg(RETURN_ERROR, (STRPTR) GM_UNIQUENAME(libname),
+                       "Suspending of device '%s' failed.",
+                       pd->pd_ProductStr);
+    }
+    return(res);
+    AROS_LIBFUNC_EXIT
+}
+/* \\\ */
+
+/* /// "psdResumeBindings()" */
+/*****************************************************************************
+    NAME
+        BOOL psdResumeBindings(
+
+    SYNOPSIS
+        APTR pd)
+
+    FUNCTION
+        Ask existing class bindings to resume and rescan after a failed callback.
+
+    INPUTS
+        pd - Device with a valid current configuration, or NULL. Keep the
+            device, configuration and bindings alive throughout the call.
+
+    RESULT
+        Always TRUE, including for NULL and when a class resume method fails.
+        The result does not certify that all bindings resumed.
+
+    NOTES
+        Requires serialized access to the device and its bindings; this function
+        takes no device lock. Class callbacks, releases and rescanning can block.
+        It neither resumes the hub port nor changes the suspended flag.
+
+        Sends UCM_AttemptResumeDevice to a device class binding. Application
+        bindings are left alone. A failed class callback requests release of
+        that binding and schedules a stack-wide psdClassScan(). The same
+        handling is applied to every bound interface in the current
+        configuration. A rescan can create new bindings; it does not guarantee
+        replacement of each released binding. A device without a current
+        configuration has no interface bindings to resume.
+
+    BUGS
+        Failures are not returned and release completion is not checked.
+
+    SEE ALSO
+        psdResumeDevice(), psdSuspendBindings(), psdClassScan()
+
+*****************************************************************************/
+        AROS_LH1(BOOL, psdResumeBindings,
+         AROS_LHA(struct PsdDevice *, pd, A0),
+         LIBBASETYPEPTR, ps, 101, psd)
+{
+    AROS_LIBFUNC_INIT
+    struct PsdUsbClass *puc;
+    struct PsdConfig *pc;
+    struct PsdInterface *pif;
+    BOOL res = FALSE;
+    BOOL rescan = FALSE;
+
+    KPRINTF(5, ("psdResumeBindings(%p)\n", pd));
+    if(pd) {
+        // ask existing bindings to resume -- if they don't support it, rebind
+        if(pd->pd_DevBinding) {
+            if(!(pd->pd_Flags & PDFF_APPBINDING)) {
+                if((puc = pd->pd_ClsBinding)) {
+                    res = usbDoMethod(UCM_AttemptResumeDevice, pd->pd_DevBinding);
+                    if(!res) {
+                        // if the device couldn't resume, better get rid of the binding
+                        psdReleaseDevBinding(pd);
+                        rescan = TRUE;
+                    }
+                }
+            }
+        }
+        /* walk every bound interface, the same way psdSuspendBindings() does:
+           stopping at the first one left the remaining bindings of a composite
+           device (two-interface HID receivers, headsets) stopped after a resume */
+        pc = pd->pd_CurrentConfig;
+        pif = pc ? (struct PsdInterface *) pc->pc_Interfaces.lh_Head : NULL;
+        while(pif && pif->pif_Node.ln_Succ) {
+            if(pif->pif_IfBinding) {
+                if((puc = pif->pif_ClsBinding)) {
+                    res = usbDoMethod(UCM_AttemptResumeDevice, pif->pif_IfBinding);
+                    if(!res) {
+                        // didn't want to resume, so rebind
+                        psdReleaseIfBinding(pif);
+                        rescan = TRUE;
+                    }
+                }
+            }
+            pif = (struct PsdInterface *) pif->pif_Node.ln_Succ;
+        }
+        if(rescan) {
+            psdClassScan();
+        }
+    }
+    return(TRUE);
+    AROS_LIBFUNC_EXIT
+}
+/* \\\ */
+
+/* /// "psdResumeDevice()" */
+/*****************************************************************************
+    NAME
+        BOOL psdResumeDevice(
+
+    SYNOPSIS
+        APTR pd)
+
+    FUNCTION
+        Request port resume through the parent hub, then resume class bindings.
+
+    INPUTS
+        pd - Device handle, or NULL. A suspended device must have a valid
+            current configuration. Keep the device and parent hub alive until
+            return; serialize competing state changes.
+
+    RESULT
+        TRUE if the device is already marked active, or if the hub resume
+        method succeeds. FALSE for NULL, an unsupported root-hub resume, a
+        missing parent binding or class, or a failed hub resume method.
+        TRUE does not certify successful resumption of all class bindings.
+
+    NOTES
+        May block on the device write lock, a hub-task reply, USB control I/O,
+        class callbacks and rescanning. There is no whole-operation timeout.
+
+        Dispatches UCM_HubResumeDevice while holding the device write lock.
+        The supplied hub.class clears PORT_SUSPEND; after a successful transfer
+        it clears the suspended flag, sends EHMB_DEVRESUMED and waits 30 ms.
+        After the hub method returns successfully, this function releases the
+        lock and calls psdResumeBindings(). The resumed event therefore does
+        not establish that binding callbacks have finished.
+
+        An already-active device returns immediately without resuming bindings.
+        An active root hub also returns TRUE; resuming a suspended root hub is
+        unsupported.
+
+    BUGS
+        The binding phase has no usable failure result and only processes the
+        first bound interface. State checks, hub resume and binding callbacks
+        are not one atomic transition.
+
+    SEE ALSO
+        psdResumeBindings(), psdSuspendDevice(), psdGetAttrsA()
+
+*****************************************************************************/
+        AROS_LH1(BOOL, psdResumeDevice,
+         AROS_LHA(struct PsdDevice *, pd, A0),
+         LIBBASETYPEPTR, ps, 99, psd)
+{
+    AROS_LIBFUNC_INIT
+    struct PsdUsbClass *puc;
+    struct PsdDevice *hubpd;
+    APTR binding;
+    BOOL res = FALSE;
+
+    KPRINTF(5, ("psdResumeDevice(%p)\n", pd));
+    if(pd) {
+        if(!(pd->pd_Flags & PDFF_SUSPENDED)) {
+            return(TRUE);
+        }
+        hubpd = pd->pd_Hub;
+        if(!hubpd) { // resume root hub
+            // resume whole USB, using the HCI UHCMD_USBRESUME command
+            // FIXME currently unsupported!
+            return(FALSE);
+        }
+        psdLockWriteDevice(pd);
+        if((binding = hubpd->pd_DevBinding) && (puc = hubpd->pd_ClsBinding)) {
+            res = usbDoMethod(UCM_HubResumeDevice, binding, pd);
+        }
+        psdUnlockDevice(pd);
+
+        if(res) {
+            psdResumeBindings(pd);
+        }
+    }
+
+    return(res);
+    AROS_LIBFUNC_EXIT
+}
+/* \\\ */
+
+/* /// "psdFindDeviceA()" */
+/****** poseidon.library/psdFindDeviceA ************************************
+
+    NAME */
+        AROS_LH2(struct PsdDevice *, psdFindDeviceA,
+/*  SYNOPSIS */
+         AROS_LHA(struct PsdDevice *, pd, A0),
+         AROS_LHA(struct TagItem *, tags, A1),
+/*  LOCATION */
+         LIBBASETYPEPTR, ps, 44, psd)
+/*  FUNCTION
+        Find the next device satisfying all supplied search attributes.
+
+    INPUTS
+        pd   - Previous device, or NULL to begin at the first device.
+        tags - Matching criteria expressed as DA_* search tags.
+
+    RESULT
+        First subsequent matching device, or NULL at the end of traversal.
+
+    NOTES
+        Traverses the same controller/device lists as psdGetNextDevice().
+        Only search tags handled by this implementation constrain a match;
+        unrecognized tags are ignored. The function takes no base lock; callers requiring a stable result
+        must hold psdLockReadPBase() during traversal.
+
+    SEE ALSO
+        psdGetNextDevice(), psdGetAttrsA(), psdLockReadPBase()
+
+******************************************************************************/
+{
+    AROS_LIBFUNC_INIT
+    struct TagItem *ti;
+    BOOL takeit;
+    KPRINTF(2, ("psdFindDeviceA(%p, %p)\n", pd, tags));
+    while((pd = psdGetNextDevice(pd))) {
+        takeit = TRUE;
+        if((ti = FindTagItem(DA_ProductID, tags))) {
+            if(ti->ti_Data != pd->pd_ProductID) {
+                takeit = FALSE;
+            }
+        }
+        if((ti = FindTagItem(DA_VendorID, tags))) {
+            if(ti->ti_Data != pd->pd_VendorID) {
+                takeit = FALSE;
+            }
+        }
+        if((ti = FindTagItem(DA_Class, tags))) {
+            if(ti->ti_Data != pd->pd_DevClass) {
+                takeit = FALSE;
+            }
+        }
+        if((ti = FindTagItem(DA_SubClass, tags))) {
+            if(ti->ti_Data != pd->pd_DevSubClass) {
+                takeit = FALSE;
+            }
+        }
+        if((ti = FindTagItem(DA_Protocol, tags))) {
+            if(ti->ti_Data != pd->pd_DevProto) {
+                takeit = FALSE;
+            }
+        }
+        if((ti = FindTagItem(DA_Version, tags))) {
+            if(ti->ti_Data != pd->pd_DevVers) {
+                takeit = FALSE;
+            }
+        }
+        if((ti = FindTagItem(DA_SerialNumber, tags))) {
+            if(!pd->pd_SerNumStr || strcmp((STRPTR) ti->ti_Data, pd->pd_SerNumStr)) {
+                takeit = FALSE;
+            }
+        }
+        if((ti = FindTagItem(DA_ProductName, tags))) {
+            if(!pd->pd_ProductStr || strcmp((STRPTR) ti->ti_Data, pd->pd_ProductStr)) {
+                takeit = FALSE;
+            }
+        }
+        if((ti = FindTagItem(DA_Manufacturer, tags))) {
+            if(!pd->pd_MnfctrStr || strcmp((STRPTR) ti->ti_Data, pd->pd_MnfctrStr)) {
+                takeit = FALSE;
+            }
+        }
+        if((ti = FindTagItem(DA_IDString, tags))) {
+            if(!pd->pd_IDString || strcmp((STRPTR) ti->ti_Data, pd->pd_IDString)) {
+                takeit = FALSE;
+            }
+        }
+        if((ti = FindTagItem(DA_Binding, tags))) {
+            if(ti->ti_Data != (IPTR) pd->pd_DevBinding) {
+                takeit = FALSE;
+            }
+        }
+        if((ti = FindTagItem(DA_HubDevice, tags))) {
+            if(ti->ti_Data != (IPTR) pd->pd_Hub) {
+                takeit = FALSE;
+            }
+        }
+
+        if(takeit) {
+            return(pd);
+        }
+    }
+    return(NULL);
+    AROS_LIBFUNC_EXIT
+}
+/* \\\ */
+
+/* *** Hardware *** */
+
+/* /// "pFindHardware()" */
+/*
+ * Find a registered USB controller matching the requested device name and
+ * unit.
+ */
+struct PsdHardware * pFindHardware(LIBBASETYPEPTR ps, STRPTR name, ULONG unit)
+{
+    struct PsdHardware *phw;
+    Forbid();
+    while(*name) {
+        phw = (struct PsdHardware *) ps->ps_Hardware.lh_Head;
+        while(phw->phw_Node.ln_Succ) {
+            if((phw->phw_Unit == unit) && (!strcmp(phw->phw_DevName, name))) {
+                Permit();
+                return(phw);
+            }
+            phw = (struct PsdHardware *) phw->phw_Node.ln_Succ;
+        }
+        do {
+            if((*name == '/') || (*name == ':')) {
+                ++name;
+                break;
+            }
+        } while(*(++name));
+    }
+    Permit();
+    return(NULL);
+}
+/* \\\ */
+
+/* Helpers: map the post-reset IOReq speed flags into the PsdDevice flags
+ * that psdEnumerateDevice() reads via DA_Is*speed attributes.
+ *
+ * force_usb2_view:
+ *   - FALSE: keep the real link speed (SS/HS/LS as reported by the HCD).
+ *   - TRUE : when the HCD reports SS, treat it as at least HS for the
+ *            "normal" (USB2) root hub enumeration path.
+ */
+
+/* TODO: Document UHCMD_USBRESET for poseidon 5
+ * controllers device driver is expected to leave the ioreq flags
+ * in the state defining the port speed for the root hub connection
+ */
+static VOID pApplySpeedFromReset(struct PsdDevice *pd,
+                                 struct PsdPipe *pp,
+                                 BOOL force_usb2_view)
+{
+    ULONG f = pp->pp_IOReq.iouh_Flags;
+
+    /* Clear any previous classification on the device */
+    pd->pd_Flags &= ~(PDFF_SUPERSPEED | PDFF_HIGHSPEED | PDFF_LOWSPEED);
+
+    if (force_usb2_view && (f & UHFF_SUPERSPEED)) {
+        /* USB2 roothub behind a USB3 link: treat as at least HS */
+        pd->pd_Flags |= PDFF_HIGHSPEED;
+    } else {
+        if (f & UHFF_SUPERSPEED)       pd->pd_Flags |= PDFF_SUPERSPEED;
+        else if (f & UHFF_HIGHSPEED)   pd->pd_Flags |= PDFF_HIGHSPEED;
+        else if (f & UHFF_LOWSPEED)    pd->pd_Flags |= PDFF_LOWSPEED;
+        /* else: Full-Speed (no PDFF_* speed bit set) */
+    }
+
+    /* Keep iouh_Flags coherent with the chosen PDFF_* speed (some HCDs look here). */
+    pp->pp_IOReq.iouh_Flags &= ~(UHFF_SUPERSPEED | UHFF_HIGHSPEED | UHFF_LOWSPEED);
+
+    if (pd->pd_Flags & PDFF_SUPERSPEED)      pp->pp_IOReq.iouh_Flags |= UHFF_SUPERSPEED;
+    else if (pd->pd_Flags & PDFF_HIGHSPEED)  pp->pp_IOReq.iouh_Flags |= UHFF_HIGHSPEED;
+    else if (pd->pd_Flags & PDFF_LOWSPEED)   pp->pp_IOReq.iouh_Flags |= UHFF_LOWSPEED;
+}
+
+/*
+ * On a non-NULL device, release bindings and attempt teardown; pFreeDevice()
+ * retains the device record allocation.
+ */
+static VOID pFreeDevAndBindings(LIBBASETYPEPTR ps, struct PsdDevice *pd)
+{
+    if (pd) {
+        pFreeBindings(ps, pd);
+        pFreeDevice(ps, pd);
+    }
+}
+
+/* /// "psdEnumerateHardware()" */
+/****** poseidon.library/psdEnumerateHardware ******************************
+
+    NAME */
+        AROS_LH1(struct PsdDevice *, psdEnumerateHardware,
+/*  SYNOPSIS */
+         AROS_LHA(struct PsdHardware *, phw, A0),
+/*  LOCATION */
+         LIBBASETYPEPTR, ps, 14, psd)
+/*  FUNCTION
+        Enumerate the root USB device or root hubs of a registered
+        controller.
+
+    INPUTS
+        phw - Initialized controller handle returned by psdAddHardware().
+
+    RESULT
+        Root device established by the enumeration procedure, or NULL if
+        no root device can be configured.
+
+    NOTES
+        Uses a temporary message port and control pipe to reset and probe
+        the controller's root topology. The implementation includes
+        separate USB 2 and SuperSpeed root-hub handling where supported.
+        Unusable probe resources are released along failure paths. The
+        caller can run psdClassScan() after root enumeration to establish
+        suitable class bindings.
+
+    SEE ALSO
+        psdAddHardware(), psdEnumerateDevice(), psdClassScan()
+
+******************************************************************************/
+{
+    AROS_LIBFUNC_INIT
+
+    struct PsdDevice *rootpd = NULL;
+
+    struct MsgPort   *mp = NULL;
+
+    /* "Probe" device/pipe used to run USBRESET and (maybe) enumerate SS hub */
+    struct PsdDevice *probe_pd = NULL;
+    struct PsdPipe   *probe_pp = NULL;
+
+    ULONG reset_flags = 0;
+    LONG  ioerr = 0;
+    BOOL  resetdone = FALSE;
+    BOOL  ss_ok = FALSE;
+
+    KPRINTF(2, ("psdEnumerateHardware(%p)\n", phw));
+
+    mp = CreateMsgPort();
+    if(!mp) {
+        psdAddErrorMsg0(RETURN_FAIL, (STRPTR) GM_UNIQUENAME(libname),
+                        "Could not create MsgPort for root hub enumeration.");
+        return NULL;
+    }
+
+    /* ------------------------------------------------------------
+     * 1) Create a device + pipe and run USBRESET once.
+     *    v0x300 HCD drivers leave iouh_Flags in a state
+     *    that indicates link speed (notably UHFF_SUPERSPEED).
+     * ------------------------------------------------------------ */
+    Forbid();
+    probe_pd = psdAllocDevice(phw);
+    Permit();
+
+    if(!probe_pd) {
+        psdAddErrorMsg0(RETURN_FAIL, (STRPTR) GM_UNIQUENAME(libname),
+                        "Could not allocate probe device for root hub enumeration.");
+        DeleteMsgPort(mp);
+        return NULL;
+    }
+
+    probe_pp = psdAllocPipe(probe_pd, mp, NULL);
+    if(!probe_pp) {
+        pFreeDevAndBindings(ps, probe_pd);
+        DeleteMsgPort(mp);
+        return NULL;
+    }
+
+    probe_pd->pd_Flags |= PDFF_CONNECTED;
+
+    probe_pp->pp_IOReq.iouh_Req.io_Command = UHCMD_USBRESET;
+    ioerr = psdDoPipe(probe_pp, NULL, 0);
+    if(ioerr == UHIOERR_HOSTERROR) {
+        psdAddErrorMsg0(RETURN_FAIL, (STRPTR) GM_UNIQUENAME(libname),
+                        "UHCMD_USBRESET reset failed.");
+        psdFreePipe(probe_pp);
+        pFreeDevAndBindings(ps, probe_pd);
+        DeleteMsgPort(mp);
+        return NULL;
+    }
+
+    psdDelayMS(100);
+    resetdone = TRUE;
+
+    /* Capture post-reset flags. */
+    reset_flags = probe_pp->pp_IOReq.iouh_Flags;
+
+    /* Apply "true" speed view to the probe device/pipe first. */
+    pApplySpeedFromReset(probe_pd, probe_pp, FALSE);
+
+    /* ------------------------------------------------------------
+     * 2) If reset indicates SuperSpeed and the HCD is USB3-capable,
+     *    try to enumerate the SuperSpeed root hub.
+     * ------------------------------------------------------------ */
+    if ((phw->phw_Capabilities & UHCF_USB30) &&
+        (reset_flags & UHFF_SUPERSPEED))
+    {
+        KPRINTF(1, ("Reset indicates SuperSpeed; attempting SS RootHub...\n"));
+
+        probe_pp->pp_IOReq.iouh_Req.io_Command = UHCMD_CONTROLXFER;
+
+        if (psdEnumerateDevice(probe_pp)) {
+            ss_ok = TRUE;
+
+            KPRINTF(1, ("SuperSpeed RootHub Enumeration finished!\n"));
+            psdAddErrorMsg0(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname),
+                            "SuperSpeed root hub has been enumerated.");
+
+            phw->phw_RootDevice = probe_pd;
+            rootpd = probe_pd;
+
+            psdSendEvent(EHMB_ADDDEVICE, probe_pd, NULL);
+        } else {
+            KPRINTF(1, ("SuperSpeed RootHub enumeration failed; will try normal hub.\n"));
+
+            psdFreePipe(probe_pp);
+            probe_pp = NULL;
+
+            pFreeDevAndBindings(ps, probe_pd);
+            probe_pd = NULL;
+        }
+    }
+
+    /* If SS enumeration succeeded, the probe pipe is no longer needed. */
+    if (ss_ok && probe_pp) {
+        psdFreePipe(probe_pp);
+        probe_pp = NULL;
+        /* probe_pd is now owned/managed as a live enumerated device */
+    }
+
+    /* ------------------------------------------------------------
+     * 3) Enumerate the "normal" root hub if:
+     *    (a) link is not SS, or SS hub not found, OR
+     *    (b) SS hub found but driver reports >1 root hub.
+     * ------------------------------------------------------------ */
+    if (!ss_ok || (phw->phw_NumRootHubs > 1))
+    {
+        struct PsdDevice *pd = NULL;
+        struct PsdPipe   *pp = NULL;
+        BOOL hubconnect = FALSE;
+
+        /* Reuse probe device/pipe if SS was not enumerated and we still have them. */
+        if (!ss_ok && probe_pd && probe_pp) {
+            pd = probe_pd;
+            pp = probe_pp;
+        } else {
+            Forbid();
+            pd = psdAllocDevice(phw);
+            Permit();
+
+            if (pd) {
+                pp = psdAllocPipe(pd, mp, NULL);
+                if (!pp) {
+                    pFreeDevAndBindings(ps, pd);
+                    pd = NULL;
+                }
+            }
+        }
+
+        if (pd && pp) {
+            pd->pd_Flags |= PDFF_CONNECTED;
+
+            /* Ensure normal-hub enumeration sees correct speed via DA_Is*speed:
+             * - Use post-reset speed flags; if SS is indicated, force HS view.
+             */
+            if (pp != probe_pp) {
+                /* Seed this new pipe with the speed bits learned from reset. */
+                pp->pp_IOReq.iouh_Flags |= (reset_flags & (UHFF_SUPERSPEED | UHFF_HIGHSPEED | UHFF_LOWSPEED));
+            }
+            pApplySpeedFromReset(pd, pp, TRUE);
+
+            /* If, for any reason, reset was not done above, do it now. */
+            if (!resetdone) {
+                pp->pp_IOReq.iouh_Req.io_Command = UHCMD_USBRESET;
+                ioerr = psdDoPipe(pp, NULL, 0);
+                if(ioerr == UHIOERR_HOSTERROR) {
+                    psdAddErrorMsg0(RETURN_FAIL, (STRPTR) GM_UNIQUENAME(libname),
+                                    "UHCMD_USBRESET reset failed.");
+                    psdFreePipe(pp);
+                    pFreeDevAndBindings(ps, pd);
+                    DeleteMsgPort(mp);
+                    return NULL;
+                }
+                psdDelayMS(100);
+                resetdone = TRUE;
+
+                /* Re-apply speed after reset in case the HCD updated iouh_Flags. */
+                pApplySpeedFromReset(pd, pp, TRUE);
+            }
+
+            pp->pp_IOReq.iouh_Req.io_Command = UHCMD_CONTROLXFER;
+
+            KPRINTF(1, ("Enumerating normal RootHub...\n"));
+            if (psdEnumerateDevice(pp)) {
+                hubconnect = TRUE;
+
+                KPRINTF(1, ("RootHub Enumeration finished!\n"));
+                psdAddErrorMsg0(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname),
+                                "Root hub has been enumerated.");
+
+                /* Preserve SS root device as phw_RootDevice if present; only set if none. */
+                if (!rootpd) {
+                    phw->phw_RootDevice = pd;
+                    rootpd = pd;
+                }
+
+                psdSendEvent(EHMB_ADDDEVICE, pd, NULL);
+            } else {
+                KPRINTF(1, ("Failed to enumerate normal RootHub\n"));
+            }
+
+            psdFreePipe(pp);
+
+            if (!hubconnect) {
+                pFreeDevAndBindings(ps, pd);
+            }
+        }
+    }
+
+    DeleteMsgPort(mp);
+
+    if (!rootpd) {
+        psdAddErrorMsg0(RETURN_FAIL, (STRPTR) GM_UNIQUENAME(libname),
+                        "Root hub enumeration failed. Blame your hardware driver programmer.");
+        return NULL;
+    }
+
+    return rootpd;
+
+    AROS_LIBFUNC_EXIT
+}
+/* \\\ */
+
+/* /// "psdRemHardware()" */
+/****** poseidon.library/psdRemHardware ************************************
+
+    NAME */
+        AROS_LH1(void, psdRemHardware,
+/*  SYNOPSIS */
+         AROS_LHA(struct PsdHardware *, phw, A0),
+/*  LOCATION */
+         LIBBASETYPEPTR, ps, 13, psd)
+/*  FUNCTION
+        Shut down a registered USB controller and release its stack state.
+
+    INPUTS
+        phw - Valid controller returned by psdAddHardware().
+
+    NOTES
+        Releases bindings and retires attached devices, then waits for
+        the controller task to exit. Pending pipe references delay device
+        teardown, but repeated unsuccessful waits can cause the code to
+        clear the device use count and continue. The internal device
+        cleanup releases owned state without freeing the device record.
+        Controller metadata is freed before EHMB_REMHARDWARE is sent.
+        No completion status is returned.
+
+    BUGS
+        EHMB_REMDEVICE can carry a retired device whose owned state has
+        already been released. EHMB_REMHARDWARE carries the pointer to
+        a freed controller. Event recipients must not dereference either
+        pointer after the associated teardown.
+
+    SEE ALSO
+        psdAddHardware(), psdFreeDevice(), psdRemClass()
+
+******************************************************************************/
+{
+    AROS_LIBFUNC_INIT
+    struct PsdDevice *pd;
+    ULONG cnt;
+
+    KPRINTF(5, ("FreeHardware(%p)\n", phw));
+
+    pd = (struct PsdDevice *) phw->phw_Devices.lh_Head;
+    while(pd->pd_Node.ln_Succ) {
+        pFreeBindings(ps, pd);
+        pFreeDevice(ps, pd);
+        psdSendEvent(EHMB_REMDEVICE, pd, NULL);
+        pd = (struct PsdDevice *) phw->phw_Devices.lh_Head;
+    }
+    cnt = 0;
+    pd = (struct PsdDevice *) phw->phw_DeadDevices.lh_Head;
+    while(pd->pd_Node.ln_Succ) {
+        if(pd->pd_UseCnt) {
+            KPRINTF(20, ("Can't remove device, usecnt %ld\n", pd->pd_UseCnt));
+            if(++cnt == 5) {
+                psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
+                               "Can't remove device '%s', there are still %ld pipes in use...",
+                               pd->pd_ProductStr, pd->pd_UseCnt);
+            }
+            if(++cnt == 30) {
+                psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
+                               "Okay, going down with device '%s' anyway, maybe the driver crashed?",
+                               pd->pd_ProductStr);
+                pd->pd_UseCnt = 0;
+                cnt--;
+            } else {
+                psdDelayMS(1000);
+            }
+        } else {
+            pFreeDevice(ps, pd);
+            //psdSendEvent(EHMB_REMDEVICE, pd, NULL);
+        }
+        pd = (struct PsdDevice *) phw->phw_DeadDevices.lh_Head;
+    }
+
+    Forbid();
+    /* Note that the subtask unlinks the hardware! */
+    phw->phw_ReadySignal = SIGB_SINGLE;
+    phw->phw_ReadySigTask = FindTask(NULL);
+    if(phw->phw_Task) {
+        Signal(phw->phw_Task, SIGBREAKF_CTRL_C);
+    }
+    Permit();
+    while(phw->phw_Task) {
+        Wait(1L<<phw->phw_ReadySignal);
+    }
+    //FreeSignal(phw->phw_ReadySignal);
+    KPRINTF(1, ("FreeHardware(%p) freevec name\n", phw));
+    psdAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname),
+                   "Removed hardware %s/%ld. Bye bye!",
+                   phw->phw_DevName, phw->phw_Unit);
+    psdFreeVec(phw->phw_DevName);
+    psdFreeVec(phw->phw_ProductName);
+    psdFreeVec(phw->phw_Manufacturer);
+    psdFreeVec(phw->phw_Description);
+    psdFreeVec(phw->phw_Copyright);
+    psdFreeVec(phw);
+    psdSendEvent(EHMB_REMHARDWARE, phw, NULL);
+    KPRINTF(1, ("FreeHardware(%p) done\n", phw));
+    AROS_LIBFUNC_EXIT
+}
+/* \\\ */
+
+/* /// "psdAddHardware()" */
+/****** poseidon.library/psdAddHardware ************************************
+
+    NAME */
+        AROS_LH2(struct PsdHardware *,psdAddHardware,
+/*  SYNOPSIS */
+         AROS_LHA(STRPTR, name, A0),
+         AROS_LHA(ULONG, unit, D0),
+/*  LOCATION */
+         LIBBASETYPEPTR, ps, 12, psd)
+/*  FUNCTION
+        Open a USB controller and register it with the Poseidon stack.
+
+    INPUTS
+        name - Controller device name used for OpenDevice().
+        unit - Controller device unit number.
+
+    RESULT
+        Initialized controller handle, or NULL if allocation, startup or
+        controller initialization fails.
+
+    NOTES
+        Allocates controller state and a dedicated device task, and waits
+        for its initialization signal. Successful registration emits
+        EHMB_ADDHARDWARE. Attached USB devices are not enumerated by this
+        call; use psdEnumerateHardware() afterwards. The returned state
+        belongs to the stack and is released by psdRemHardware().
+
+    SEE ALSO
+        psdEnumerateHardware(), psdRemHardware(), psdSpawnSubTask()
+
+******************************************************************************/
+{
+    AROS_LIBFUNC_INIT
+    struct PsdHardware *phw;
+    char buf[64];
+    struct Task *tmptask;
+    KPRINTF(5, ("psdAddHardware(%s, %ld)\n", name, unit));
+
+    if((phw = psdAllocVec(sizeof(struct PsdHardware)))) {
+        NewList(&phw->phw_Devices);
+        NewList(&phw->phw_DeadDevices);
+        phw->phw_Unit = unit;
+        phw->phw_Base = ps;
+        phw->phw_NumRootHubs = 1;
+        if((phw->phw_Node.ln_Name = phw->phw_DevName = psdCopyStr(name))) {
+            psdSafeRawDoFmt(buf, 64, "usbhw<%s/%ld>", name, unit);
+            phw->phw_ReadySignal = SIGB_SINGLE;
+            phw->phw_ReadySigTask = FindTask(NULL);
+            SetSignal(0, SIGF_SINGLE); // clear single bit
+            if((tmptask = psdSpawnSubTask(buf, pDeviceTask, phw))) {
+                psdBorrowLocksWait(tmptask, 1UL<<phw->phw_ReadySignal);
+                if(phw->phw_Task) {
+                    phw->phw_ReadySigTask = NULL;
+                    //FreeSignal(phw->phw_ReadySignal);
+                    psdAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname),
+                                   "New hardware %s/%ld added (%s).",
+                                   phw->phw_DevName,
+                                   phw->phw_Unit,
+                                   phw->phw_ProductName);
+                    psdSendEvent(EHMB_ADDHARDWARE, phw, NULL);
+                    return(phw);
+                }
+            }
+            phw->phw_ReadySigTask = NULL;
+            //FreeSignal(phw->phw_ReadySignal);
+            psdFreeVec(phw->phw_DevName);
+        }
+        psdFreeVec(phw);
+    }
+    return(NULL);
+    AROS_LIBFUNC_EXIT
+}
+/* \\\ */
+
+/* /// "psdCalculatePower()" */
+/*****************************************************************************
+    NAME
+        VOID psdCalculatePower(
+
+    SYNOPSIS
+        APTR phw)
+
+    FUNCTION
+        Recalculate the stored power estimates for a hardware device tree.
+
+    INPUTS
+        phw - Valid, non-NULL hardware handle. Keep the hardware and its
+            device topology alive and stable until return.
+
+    RESULT
+        None. Read device estimates through DA_PowerSupply and DA_PowerDrained.
+
+    NOTES
+        Visits every root device of this hardware and recursively updates
+        supply and drain estimates in milliamperes. Uses current configurations,
+        self-powered status, power overrides and the suspended flag.
+
+        The model starts roots at 500 mA, allows 500 mA per downstream connection
+        from self-powered devices, and caps downstream supply from bus-powered
+        devices at 100 mA after accounting for their own demand. Suspended
+        configured devices use a 1 or 3 mA drain estimate.
+
+        A newly detected deficit sets the low-power flag, logs a warning and
+        sends EHMB_DEVICELOWPW. A resolved deficit clears the flag and logs a
+        message; it does not send a matching recovery event.
+
+        May wait for the base read lock and perform logging and event allocation.
+        It does not measure current, negotiate power, switch ports or reject
+        configurations. Coordinate concurrent configuration and power-state
+        changes; the read lock does not serialize these stored-value updates.
+
+    BUGS
+        A NULL hardware pointer is dereferenced without validation.
+        The fixed 500/100 mA model is not a speed-specific USB power budget.
+        Suspended devices stop drain recursion, so descendants can retain old
+        drain values. Self-powered devices report zero upstream drain. Treat
+        these values as implementation estimates, not electrical guarantees.
+
+    SEE ALSO
+        psdGetAttrsA(), psdSuspendDevice(), psdResumeDevice()
+
+*****************************************************************************/
+        AROS_LH1(void, psdCalculatePower,
+         AROS_LHA(struct PsdHardware *, phw, A0),
+         LIBBASETYPEPTR, ps, 78, psd)
+{
+    AROS_LIBFUNC_INIT
+    struct PsdDevice *roothub = NULL;
+    struct PsdDevice *pd;
+
+    psdLockReadPBase();
+    /* process each root device */
+    pd = (struct PsdDevice *) phw->phw_Devices.lh_Head;
+    while(pd->pd_Node.ln_Succ) {
+        if(!pd->pd_Hub) {
+            roothub = pd;
+            roothub->pd_PowerDrain = 0;
+            roothub->pd_PowerSupply = 500;
+
+            /* calculate drain */
+            pPowerRecurseDrain(ps, roothub);
+
+            /* calculate supply */
+            pPowerRecurseSupply(ps, roothub);
+        }
+        pd = (struct PsdDevice *) pd->pd_Node.ln_Succ;
+    }
+    psdUnlockPBase();
+    AROS_LIBFUNC_EXIT
+}
+/* \\\ */
+
+/* *** Pipes *** */
+
+/* /// "psdAllocPipe()" */
+/****** poseidon.library/psdAllocPipe **************************************
+
+    NAME */
+        AROS_LH3(struct PsdPipe *, psdAllocPipe,
+/*  SYNOPSIS */
+         AROS_LHA(struct PsdDevice *, pd, A0),
+         AROS_LHA(struct MsgPort *, mp, A1),
+         AROS_LHA(struct PsdEndpoint *, pep, A2),
+/*  LOCATION */
+         LIBBASETYPEPTR, ps, 24, psd)
+/*  FUNCTION
+        Allocate a transfer pipe for a USB device endpoint or endpoint zero.
+
+    INPUTS
+        pd  - Valid Poseidon device with an initialized hardware controller.
+        mp  - Message port receiving completed transfers; must not be NULL.
+        pep - Endpoint to address, or NULL for the default control endpoint.
+
+    RESULT
+        Allocated pipe, or NULL on invalid input, allocation failure,
+        unsupported transfer type or controller capability, or failed
+        endpoint preparation. Release it with psdFreePipe().
+
+    NOTES
+        The IO request inherits the hardware-controller request template.
+        The function sets device address, endpoint parameters, speed flags,
+        root-port routing and, where required, split-transaction details.
+        Isochronous endpoints require UHCF_ISO. A successful allocation
+        increments the device use count. The caller must retain a valid
+        message port for pending transfers and must not reuse a pending pipe.
+
+    SEE ALSO
+        psdFreePipe(), psdPipeSetup(), psdDoPipe(), psdSendPipe()
+
+******************************************************************************/
+{
+    AROS_LIBFUNC_INIT
+    struct PsdPipe   *pp;
+
+    KPRINTF(2, ("psdAllocPipe(%p, %p, %p)\n", pd, mp, pep));
+    if(!mp || !pd)
+        return(NULL);
+
+    if(pep &&
+            (pep->pep_TransType == USEAF_ISOCHRONOUS) &&
+            (!(pd->pd_Hardware->phw_Capabilities & UHCF_ISO))) {
+        psdAddErrorMsg0(RETURN_FAIL, (STRPTR) GM_UNIQUENAME(libname),
+                        "Your HW controller driver does not support iso transfers. Sorry.");
+        return(NULL);
+    }
+
+    if((pp = psdAllocVec(sizeof(struct PsdPipe)))) {
+        UWORD rootPort;
+        ULONG routeString;
+
+        /* TT info (only used if PDFF_NEEDSSPLIT is set) */
+        UWORD ttHubAddr  = 0;
+        UWORD ttHubPort  = 0;
+        UWORD ttThink    = 0;
+        BOOL  ttIsMulti  = FALSE;
+
+        /* Compute topology-derived values up front */
+        rootPort    = pGetRootPort(pd);
+        routeString = pBuildRouteString(pd);
+        pGetTTInfo(pd, &ttHubAddr, &ttHubPort, &ttThink, &ttIsMulti);
+
+        pp->pp_Msg.mn_Node.ln_Type = NT_FREEMSG;
+        pp->pp_MsgPort = pp->pp_Msg.mn_ReplyPort = mp;
+        pp->pp_Msg.mn_Length = sizeof(struct PsdPipe);
+        pp->pp_Device = pd;
+        pp->pp_Endpoint = pep;
+        pp->pp_StreamID = 0;
+
+        /* Base template IOReq from HW driver */
+        pp->pp_IOReq                            = *(pd->pd_Hardware->phw_RootIOReq);
+        pp->pp_IOReq.iouh_DevAddr               = pd->pd_DevAddr; /* Device address is per-pipe */
+
+        /* V3: root hub port (1-based) + route string */
+        pp->pp_IOReq.iouh_RootPort               = rootPort;
+        pp->pp_IOReq.iouh_RouteString           = routeString;
+
+        /* Initialise other V3 fields to safe defaults */
+        pp->pp_IOReq.iouh_SS_MaxBurst           = 0;
+        pp->pp_IOReq.iouh_SS_Mult               = 0;
+        pp->pp_IOReq.iouh_SS_BytesPerInterval   = 0;
+        pp->pp_IOReq.iouh_StreamID              = 0;
+        pp->pp_IOReq.iouh_PowerPolicy =
+            pBuildDefaultPowerPolicy(pd->pd_Hardware, pd, pep);
+
+        /* Common speed flags */
+        if(pd->pd_Flags & PDFF_LOWSPEED)
+            pp->pp_IOReq.iouh_Flags |= UHFF_LOWSPEED;
+
+        if(pd->pd_Flags & PDFF_HIGHSPEED) {
+            pp->pp_IOReq.iouh_Flags |= UHFF_HIGHSPEED;
+            /* MULT for HS interrupt/isoch (transactions per microframe) */
+            if(pep) {
+                switch(pep->pep_NumTransMuFr) {
+                case 2:
+                    pp->pp_IOReq.iouh_Flags |= UHFF_MULTI_2;
+                    break;
+                case 3:
+                    pp->pp_IOReq.iouh_Flags |= UHFF_MULTI_3;
+                    break;
+                default:
+                    pp->pp_IOReq.iouh_Flags |= UHFF_MULTI_1;
+                    break;
+                }
+            } else {
+                pp->pp_IOReq.iouh_Flags |= UHFF_MULTI_1;
+            }
+        }
+
+        if(pd->pd_Flags & PDFF_SUPERSPEED) {
+            pp->pp_IOReq.iouh_Flags |= UHFF_SUPERSPEED;
+
+            /* SuperSpeed endpoint companion information */
+            if (pep) {
+                /* bMaxBurst - spec is 5 bits, clamp to 8-bit field */
+                if (pep->pep_MaxBurst > 0xFF)
+                    pp->pp_IOReq.iouh_SS_MaxBurst = 0xFF;
+                else
+                    pp->pp_IOReq.iouh_SS_MaxBurst = (pep->pep_MaxBurst > 0) ? (UBYTE)(pep->pep_MaxBurst - 1) : 0;
+
+                /* Mult: for isoch EPs, bits 1:0 of bmAttributes */
+                if (pep->pep_TransType == USEAF_ISOCHRONOUS)
+                    pp->pp_IOReq.iouh_SS_Mult = (UBYTE)(pep->pep_CompAttributes & 0x3);
+                else
+                    pp->pp_IOReq.iouh_SS_Mult = 0;
+
+                /* wBytesPerInterval - spec is 16 bits; field is UWORD */
+                if (pep->pep_BytesPerInterval > 0xFFFFUL)
+                    pp->pp_IOReq.iouh_SS_BytesPerInterval = 0xFFFF;
+                else
+                    pp->pp_IOReq.iouh_SS_BytesPerInterval =
+                        (UWORD)pep->pep_BytesPerInterval;
+
+            }
+        }
+
+        /* Split transactions / TT info for FS/LS behind HS hubs */
+        if(pd->pd_Flags & PDFF_NEEDSSPLIT) {
+            /* USB1.1 device connected to a USB2.0 hub */
+            pp->pp_IOReq.iouh_Flags        |= UHFF_SPLITTRANS;
+            pp->pp_IOReq.iouh_SplitHubAddr  = ttHubAddr;
+            pp->pp_IOReq.iouh_SplitHubPort  = ttHubPort;
+
+            if(ttThink)
+                pp->pp_IOReq.iouh_Flags |= (ttThink << UHFS_THINKTIME);
+
+            if(ttIsMulti)
+                pp->pp_IOReq.iouh_Flags |= UHFF_TT_MULTI;
+
+            if(!ttHubAddr) {
+                psdAddErrorMsg0(RETURN_ERROR, (STRPTR) GM_UNIQUENAME(libname),
+                                "Internal error obtaining split transaction hub!");
+                psdFreeVec(pp);
+                return(NULL);
+            }
+        }
+
+        /* Endpoint / transfer type specific setup */
+        if(pep) {
+            switch(pep->pep_TransType) {
+            case USEAF_CONTROL:
+                pp->pp_IOReq.iouh_Req.io_Command = UHCMD_CONTROLXFER;
+                break;
+            case USEAF_ISOCHRONOUS:
+                pp->pp_IOReq.iouh_Req.io_Command = UHCMD_ISOXFER;
+                break;
+            case USEAF_BULK:
+                pp->pp_IOReq.iouh_Req.io_Command = UHCMD_BULKXFER;
+                break;
+            case USEAF_INTERRUPT:
+                pp->pp_IOReq.iouh_Req.io_Command = UHCMD_INTXFER;
+                break;
+            default:
+                psdAddErrorMsg(RETURN_ERROR, (STRPTR) GM_UNIQUENAME(libname),
+                               "AllocPipe(): Illegal transfer type %ld",
+                               pep->pep_TransType);
+                KPRINTF(20, ("Illegal transfer type for endpoint!"));
+                psdFreeVec(pp);
+                return(NULL);
+            }
+
+            pp->pp_IOReq.iouh_Dir        = (pep->pep_Direction ? UHDIR_IN : UHDIR_OUT);
+            pp->pp_IOReq.iouh_Endpoint   = pep->pep_EPNum;
+            pp->pp_IOReq.iouh_MaxPktSize = pep->pep_MaxPktSize;
+            pp->pp_IOReq.iouh_Interval   = pep->pep_Interval;
+        } else {
+            /* Default pipe (EP0) */
+            pp->pp_IOReq.iouh_Req.io_Command = UHCMD_CONTROLXFER;
+            pp->pp_IOReq.iouh_Dir            = UHDIR_SETUP;
+            pp->pp_IOReq.iouh_Endpoint       = 0;
+            pp->pp_IOReq.iouh_MaxPktSize     = pd->pd_MaxPktSize0;
+        }
+
+        if(pep && !pPrepareHWEndpoint(pp)) {
+            psdFreeVec(pp);
+            return(NULL);
+        }
+
+        pd->pd_UseCnt++;
+        return(pp);
+    }
+
+    return(NULL);
+    AROS_LIBFUNC_EXIT
+}
+/* \\\ */
+
+/* /// "psdFreePipe()" */
+/****** poseidon.library/psdFreePipe ***************************************
+
+    NAME */
+        AROS_LH1(void, psdFreePipe,
+/*  SYNOPSIS */
+         AROS_LHA(struct PsdPipe *, pp, A1),
+/*  LOCATION */
+         LIBBASETYPEPTR, ps, 25, psd)
+/*  FUNCTION
+        Release a pipe and its associated device reference.
+
+    INPUTS
+        pp - Pipe returned by psdAllocPipe(); NULL has no effect.
+
+    NOTES
+        When the pipe message is still pending, this function requests an
+        abort and waits for the reply before freeing the pipe. It then
+        tears down the endpoint hardware state, decrements the device use
+        count and frees the pipe. If this was the last reference to a device
+        marked for deferred expunge, the device is also released.
+
+        The pipe becomes invalid on return. Waiting for a pending transfer
+        may block; the function returns no abort or completion status.
+
+    SEE ALSO
+        psdAllocPipe(), psdAbortPipe(), psdWaitPipe()
+
+******************************************************************************/
+{
+    AROS_LIBFUNC_INIT
+    struct PsdDevice *pd;
+    if(!pp) {
+        return;
+    }
+    KPRINTF(2, ("psdFreePipe(%p)\n", pp));
+    pd = pp->pp_Device;
+
+    if(pp->pp_Msg.mn_Node.ln_Type == NT_MESSAGE) {
+        psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
+                       "Tried to free pipe on %s that was still pending!", pd->pd_ProductStr);
+        psdAbortPipe(pp);
+        psdWaitPipe(pp);
+    }
+
+    pTearDownHWEndpoint(pp->pp_Endpoint);
+
+    if(!(--pd->pd_UseCnt) && (pd->pd_Flags & PDFF_DELEXPUNGE)) {
+        KPRINTF(20, ("Finally getting rid of device %s\n", pd->pd_ProductStr));
+        pFreeDevice(ps, pd);
+        //psdSendEvent(EHMB_REMDEVICE, pd, NULL);
+    }
+
+    psdFreeVec(pp);
+    AROS_LIBFUNC_EXIT
+}
+/* \\\ */
+
+/* /// "psdPipeSetup()" */
+/****** poseidon.library/psdPipeSetup **************************************
+
+    NAME */
+        AROS_LH5(void, psdPipeSetup,
+/*  SYNOPSIS */
+         AROS_LHA(struct PsdPipe *, pp, A1),
+         AROS_LHA(UWORD, rt, D0),
+         AROS_LHA(UWORD, rq, D1),
+         AROS_LHA(UWORD, val, D2),
+         AROS_LHA(UWORD, idx, D3),
+/*  LOCATION */
+         LIBBASETYPEPTR, ps, 26, psd)
+/*  FUNCTION
+        Set the USB setup request fields on a control pipe.
+
+    INPUTS
+        pp  - Valid control pipe to configure.
+        rt  - bmRequestType field.
+        rq  - bRequest field.
+        val - Host-order wValue field.
+        idx - Host-order wIndex field.
+
+    NOTES
+        The request fields are written into the pipe's setup data. The
+        two 16-bit values are converted to USB little-endian representation
+        with AROS_WORD2LE(). For a control transfer, psdDoPipe() or
+        psdSendPipe() fills wLength from the requested data length.
+        This function does not submit a transfer or validate the request.
+
+    SEE ALSO
+        psdDoPipe(), psdSendPipe()
+
+******************************************************************************/
+{
+    AROS_LIBFUNC_INIT
+    struct UsbSetupData *usd = &pp->pp_IOReq.iouh_SetupData;
+
+    KPRINTF(1, ("psdSetupPipe(%p, (%02lx %02lx %04lx %04lx))\n",
+                pp, rt, rq, val, idx));
+    usd->bmRequestType = rt;
+    usd->bRequest = rq;
+    usd->wValue = AROS_WORD2LE(val);
+    usd->wIndex = AROS_WORD2LE(idx);
+    AROS_LIBFUNC_EXIT
+}
+/* \\\ */
+
+/* /// "psdDoPipe()" */
+/****** poseidon.library/psdDoPipe *****************************************
+
+    NAME */
+        AROS_LH3(LONG, psdDoPipe,
+/*  SYNOPSIS */
+         AROS_LHA(struct PsdPipe *, pp, A1),
+         AROS_LHA(APTR, data, A0),
+         AROS_LHA(ULONG, len, D0),
+/*  LOCATION */
+         LIBBASETYPEPTR, ps, 27, psd)
+/*  FUNCTION
+        Submit a pipe transfer and wait for its completion.
+
+    INPUTS
+        pp   - Allocated pipe that is not already pending.
+        data - Transfer buffer, or NULL for a control request without data.
+        len  - Number of bytes to transfer.
+
+    RESULT
+        IO error code returned by psdWaitPipe() after the transfer, or
+        UHIOERR_TIMEOUT if the device is disconnected. Zero indicates
+        successful completion.
+
+    NOTES
+        For a connected device, the function requests resume if suspended,
+        sets the data pointer, transfer length and stream ID, and sets the
+        control-request wLength when using endpoint zero. It queues the
+        pipe to the hardware task, updates the device busy count and last
+        activity, then waits for a reply. A disconnected device instead
+        delays for 50 ms, clears the actual length and returns a timeout.
+        The call may block while the transfer is pending.
+
+    SEE ALSO
+        psdPipeSetup(), psdSendPipe(), psdWaitPipe(), psdGetPipeError()
+
+******************************************************************************/
+{
+    AROS_LIBFUNC_INIT
+    struct PsdDevice *pd = pp->pp_Device;
+    KPRINTF(200, ("psdDoPipe(%p, %p, %ld)\n", pp, data, len));
+
+    if(pd->pd_Flags & PDFF_CONNECTED) {
+        if(pd->pd_Flags & PDFF_SUSPENDED) {
+            // make sure the device is up and running before trying to send a new pipe
+            psdResumeDevice(pd);
+        }
+
+        pp->pp_IOReq.iouh_Data = data;
+        pp->pp_IOReq.iouh_Length = len;
+        pp->pp_IOReq.iouh_StreamID = pp->pp_StreamID;
+        if(!pp->pp_Endpoint) {
+            pp->pp_IOReq.iouh_SetupData.wLength = AROS_WORD2LE(len);
+        }
+        PutMsg(&pd->pd_Hardware->phw_TaskMsgPort, &pp->pp_Msg);
+        ++pd->pd_IOBusyCount;
+        GetSysTime((APTR) &pd->pd_LastActivity);
+        return(psdWaitPipe(pp));
+    } else {
+        psdDelayMS(50);
+        pp->pp_IOReq.iouh_Actual = 0;
+        pp->pp_Msg.mn_Node.ln_Type = NT_FREEMSG;
+        return(pp->pp_IOReq.iouh_Req.io_Error = UHIOERR_TIMEOUT);
+    }
+    AROS_LIBFUNC_EXIT
+}
+/* \\\ */
+
+/* /// "psdSendPipe()" */
+/****** poseidon.library/psdSendPipe ***************************************
+
+    NAME */
+        AROS_LH3(void, psdSendPipe,
+/*  SYNOPSIS */
+         AROS_LHA(struct PsdPipe *, pp, A1),
+         AROS_LHA(APTR, data, A0),
+         AROS_LHA(ULONG, len, D0),
+/*  LOCATION */
+         LIBBASETYPEPTR, ps, 28, psd)
+/*  FUNCTION
+        Submit a pipe transfer without waiting for completion.
+
+    INPUTS
+        pp   - Allocated pipe that is not already pending.
+        data - Transfer buffer, or NULL for a control request without data.
+        len  - Number of bytes to transfer.
+
+    NOTES
+        On a connected device, this function requests resume if needed,
+        prepares the IO request and queues the pipe to the hardware task.
+        For a disconnected device, it delays for 50 ms, records
+        UHIOERR_TIMEOUT and replies to the pipe message without queuing
+        the hardware transfer. Both paths increment the device busy count.
+
+        The buffer and pipe must remain valid and unchanged until their
+        completion message has been received and handled. The function
+        does not return a completion status.
+
+    SEE ALSO
+        psdWaitPipe(), psdAbortPipe(), psdGetPipeError(), psdDoPipe()
+
+******************************************************************************/
+{
+    AROS_LIBFUNC_INIT
+    struct PsdDevice *pd = pp->pp_Device;
+    KPRINTF(200, ("psdSendPipe(%p, %p, %ld)\n", pp, data, len));
+    if(pd->pd_Flags & PDFF_CONNECTED) {
+        if(pd->pd_Flags & PDFF_SUSPENDED) {
+            // make sure the device is up and running before trying to send a new pipe
+            psdResumeDevice(pd);
+        }
+
+        pp->pp_IOReq.iouh_Data = data;
+        pp->pp_IOReq.iouh_Length = len;
+        pp->pp_IOReq.iouh_StreamID = pp->pp_StreamID;
+        if(!pp->pp_Endpoint) {
+            pp->pp_IOReq.iouh_SetupData.wLength = AROS_WORD2LE(len);
+        }
+        PutMsg(&pd->pd_Hardware->phw_TaskMsgPort, &pp->pp_Msg);
+        GetSysTime((APTR) &pd->pd_LastActivity);
+        ++pd->pd_IOBusyCount;
+    } else {
+        psdDelayMS(50);
+        pp->pp_IOReq.iouh_Actual = 0;
+        //pp->pp_Msg.mn_Node.ln_Type = NT_REPLYMSG;
+        pp->pp_IOReq.iouh_Req.io_Error = UHIOERR_TIMEOUT;
+        ReplyMsg(&pp->pp_Msg);
+        ++pd->pd_IOBusyCount;
+    }
+    AROS_LIBFUNC_EXIT
+}
+/* \\\ */
+
+/* /// "psdAbortPipe()" */
+/****** poseidon.library/psdAbortPipe **************************************
+
+    NAME */
+        AROS_LH1(void, psdAbortPipe,
+/*  SYNOPSIS */
+         AROS_LHA(struct PsdPipe *, pp, A1),
+/*  LOCATION */
+         LIBBASETYPEPTR, ps, 29, psd)
+/*  FUNCTION
+        Request cancellation of an outstanding pipe transfer.
+
+    INPUTS
+        pp - Valid pipe with a possible pending transfer.
+
+    NOTES
+        The function has no effect unless the pipe message is pending.
+        When pending, it allocates a temporary pipe-like request referring
+        to the original pipe, sends it to the hardware task, waits for the
+        cancellation request to complete and releases the temporary object.
+        It does not wait for or remove the original pipe's completion reply.
+        Call psdWaitPipe() before reusing or releasing the original pipe.
+
+        Must be called from the task that owns the pipe's message port: the
+        cancellation request replies to that port and the wait blocks on its
+        signal bit, so another task would never be woken by the reply. A
+        class that needs to abort from a different context (e.g. from
+        usbDoMethodA()) should signal its own task to do the abort.
+
+    BUGS
+        If allocation of the temporary cancellation request fails, no
+        cancellation request is sent and the caller receives no error.
+
+    SEE ALSO
+        psdWaitPipe(), psdSendPipe(), psdFreePipe()
+
+******************************************************************************/
+{
+    AROS_LIBFUNC_INIT
+    struct PsdPipe *npp;
+
+    KPRINTF(5, ("psdAbortPipe(%p)\n", pp));
+    if(pp->pp_Msg.mn_Node.ln_Type != NT_MESSAGE) {
+        KPRINTF(5, ("Nothing to abort %02lx\n", pp->pp_IOReq.iouh_Req.io_Message.mn_Node.ln_Type));
+        return;
+    }
+    if((npp = psdAllocVec(sizeof(struct PsdPipe)))) {
+        //npp->pp_Msg.mn_Node.ln_Type = NT_MESSAGE;
+        npp->pp_Device = pp->pp_Device;
+        npp->pp_MsgPort = npp->pp_Msg.mn_ReplyPort = pp->pp_MsgPort;
+        npp->pp_Msg.mn_Length = sizeof(struct PsdPipe);
+
+        npp->pp_AbortPipe = pp;
+        PutMsg(&pp->pp_Device->pd_Hardware->phw_TaskMsgPort, &npp->pp_Msg);
+        psdWaitPipe(npp);
+        psdFreeVec(npp);
+    }
+    AROS_LIBFUNC_EXIT
+}
+/* \\\ */
+
+/* /// "psdWaitPipe()" */
+/****** poseidon.library/psdWaitPipe ***************************************
+
+    NAME */
+        AROS_LH1(LONG, psdWaitPipe,
+/*  SYNOPSIS */
+         AROS_LHA(struct PsdPipe *, pp, A1),
+/*  LOCATION */
+         LIBBASETYPEPTR, ps, 30, psd)
+/*  FUNCTION
+        Wait for a pending pipe message and return the recorded IO error.
+
+    INPUTS
+        pp - Valid pipe with a message port used for its submission.
+
+    RESULT
+        IO error stored in the pipe request; zero indicates success.
+
+    NOTES
+        The function waits on the pipe's message-port signal while the
+        pipe message remains pending. For a replied message, it removes
+        the message from the reply queue and marks it free. Signals seen
+        while waiting are restored for other messages on the port.
+
+        The device busy count is decremented and last activity updated.
+        Transfer errors contribute to a device dead-count heuristic that
+        can emit EHMB_DEVICEDEAD; improving results can clear the dead flag.
+        Calling this function without a matching submitted transfer is
+        not supported by the bookkeeping in this implementation.
+
+    SEE ALSO
+        psdSendPipe(), psdDoPipe(), psdAbortPipe(), psdGetPipeError()
+
+******************************************************************************/
+{
+    AROS_LIBFUNC_INIT
+    ULONG sigs = 0;
+    struct PsdDevice *pd = pp->pp_Device;
+    LONG ioerr;
+    KPRINTF(5, ("psdWaitPipe(%p)\n", pp));
+    while(pp->pp_Msg.mn_Node.ln_Type == NT_MESSAGE) {
+        KPRINTF(5, ("ln_Type = %02lx\n", pp->pp_Msg.mn_Node.ln_Type));
+        sigs |= Wait(1L<<pp->pp_MsgPort->mp_SigBit);
+        KPRINTF(5, ("sigs = %p\n", sigs));
+    }
+#if 1 // broken?
+    Forbid();
+    if(pp->pp_Msg.mn_Node.ln_Type == NT_REPLYMSG) {
+        pp->pp_Msg.mn_Node.ln_Type = NT_FREEMSG;
+        Remove(&pp->pp_Msg.mn_Node);
+    }
+    //if(pp->pp_MsgPort->mp_MsgList.lh_Head->ln_Succ)
+    {
+        // avoid signals getting lost for other messages arriving.
+        SetSignal(sigs, sigs);
+    }
+    Permit();
+#else
+    Forbid();
+    Remove(&pp->pp_Msg.mn_Node);
+    Permit();
+#endif
+    ioerr = pp->pp_IOReq.iouh_Req.io_Error;
+    switch(ioerr) {
+    case UHIOERR_TIMEOUT:
+        pd->pd_DeadCount++;
+    // fall through
+    case UHIOERR_NAKTIMEOUT:
+        pd->pd_DeadCount++;
+    // fall through
+    case UHIOERR_CRCERROR:
+        pd->pd_DeadCount++;
+        break;
+    case UHIOERR_RUNTPACKET:
+    default:
+        if(pd->pd_DeadCount) {
+            pd->pd_DeadCount >>= 1;
+            /*psdAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname),
+                           "Device %s starts recovering with %s (%ld)!",
+                           pd->pd_ProductStr,
+                           psdNumToStr(NTS_IOERR, ioerr, "unknown"), ioerr);*/
+        }
+    }
+    KPRINTF(200, ("psdWaitPipe(%p)=%ld\n", pp, ioerr));
+    --pd->pd_IOBusyCount;
+    GetSysTime((APTR) &pd->pd_LastActivity);
+
+    if((pd->pd_DeadCount > 19) || ((pd->pd_DeadCount > 14) && (pd->pd_Flags & (PDFF_HASDEVADDR|PDFF_HASDEVDESC)))) {
+        if(!(pd->pd_Flags & PDFF_DEAD)) {
+            pd->pd_Flags |= PDFF_DEAD;
+            psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
+                           "Device %s probably dropped dead!", pd->pd_ProductStr);
+
+            psdSendEvent(EHMB_DEVICEDEAD, pp->pp_Device, NULL);
+        }
+    } else {
+        if((!pd->pd_DeadCount) && ((pd->pd_Flags & (PDFF_DEAD|PDFF_CONNECTED)) == (PDFF_DEAD|PDFF_CONNECTED))) {
+            pd->pd_Flags &= ~PDFF_DEAD;
+            psdAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname),
+                           "Uuuhuuuhh, the zombie %s returned from the dead!", pd->pd_ProductStr);
+        }
+    }
+    return(ioerr);
+    AROS_LIBFUNC_EXIT
+}
+/* \\\ */
+
+/* /// "psdCheckPipe()" */
+/*****************************************************************************
+    NAME
+        APTR psdCheckPipe(
+
+    SYNOPSIS
+        APTR pp)
+
+    FUNCTION
+        Test whether a pipe is marked as pending.
+
+    INPUTS
+        pp - Valid, non-NULL pipe handle.
+
+    RESULT
+        NULL while the pipe message has type NT_MESSAGE; otherwise pp.
+        A non-NULL result does not mean that the transfer succeeded, and an
+        idle pipe need not have completed a transfer at all.
+
+    NOTES
+        Does not wait, remove a reply message or inspect transfer status.
+        Use psdWaitPipe() for the normal completion path and inspect its result
+        and the actual byte count before reusing transfer data. Serialize
+        submission, completion and freeing of the pipe with this check.
+        The returned handle is the original pipe, not a new allocation.
+
+    BUGS
+        The implementation dereferences pp without checking for NULL.
+
+    SEE ALSO
+        psdSendPipe(), psdWaitPipe(), psdGetPipeActual(), psdGetPipeError()
+
+*****************************************************************************/
+        AROS_LH1(struct PsdPipe *, psdCheckPipe,
+         AROS_LHA(struct PsdPipe *, pp, A1),
+         LIBBASETYPEPTR, ps, 71, psd)
+{
+    AROS_LIBFUNC_INIT
+    KPRINTF(5, ("psdCheckPipe(%p)\n", pp));
+    if(pp->pp_Msg.mn_Node.ln_Type == NT_MESSAGE) {
+        return(NULL);
+    }
+    return(pp);
+    AROS_LIBFUNC_EXIT
+}
+/* \\\ */
+
+/* /// "psdGetPipeActual()" */
+/****** poseidon.library/psdGetPipeActual **********************************
+
+    NAME */
+        AROS_LH1(ULONG, psdGetPipeActual,
+/*  SYNOPSIS */
+         AROS_LHA(struct PsdPipe *, pp, A1),
+/*  LOCATION */
+         LIBBASETYPEPTR, ps, 31, psd)
+/*  FUNCTION
+        Read the actual byte count recorded for a pipe transfer.
+
+    INPUTS
+        pp - Valid Poseidon pipe; NULL is not accepted.
+
+    RESULT
+        Value of the pipe request's iouh_Actual field.
+
+    NOTES
+        The function does not wait for completion or validate the pipe
+        state. Read the count after handling the transfer completion.
+
+    SEE ALSO
+        psdGetPipeError(), psdWaitPipe(), psdGetAttrsA()
+
+******************************************************************************/
+{
+    AROS_LIBFUNC_INIT
+    KPRINTF(1, ("psdGetPipeActual(%p)\n", pp));
+    return(pp->pp_IOReq.iouh_Actual);
+    AROS_LIBFUNC_EXIT
+}
+/* \\\ */
+
+/* /// "psdGetPipeError()" */
+/****** poseidon.library/psdGetPipeError ***********************************
+
+    NAME */
+        AROS_LH1(LONG, psdGetPipeError,
+/*  SYNOPSIS */
+         AROS_LHA(struct PsdPipe *, pp, A1),
+/*  LOCATION */
+         LIBBASETYPEPTR, ps, 32, psd)
+/*  FUNCTION
+        Read the IO error recorded for a pipe transfer.
+
+    INPUTS
+        pp - Valid Poseidon pipe; NULL is not accepted.
+
+    RESULT
+        The pipe request's io_Error value, cast to LONG. Zero indicates
+        no recorded error.
+
+    NOTES
+        The function does not wait for completion or validate the pipe
+        state. Read the error after handling an asynchronous completion.
+
+    SEE ALSO
+        psdGetPipeActual(), psdWaitPipe(), psdNumToStr()
+
+******************************************************************************/
+{
+    AROS_LIBFUNC_INIT
+    KPRINTF(1, ("psdGetPipeError(%p)\n", pp));
+    return((LONG) pp->pp_IOReq.iouh_Req.io_Error);
+    AROS_LIBFUNC_EXIT
+}
+/* \\\ */
+
+/* *** Streams *** */
+
+/* /// "psdOpenStreamA()" */
+/*****************************************************************************
+    NAME
+        APTR psdOpenStreamA(
+
+    SYNOPSIS
+        APTR pep, struct TagItem *taglist)
+
+    FUNCTION
+        Create a buffered pipe stream for an endpoint.
+
+    INPUTS
+        pep - Live endpoint with a nonzero maximum packet size.
+        taglist - PSA_* settings, or NULL for defaults.
+
+    TAGS
+        PSA_MessagePort - Dedicated reply port, owned by the caller. If NULL
+            or omitted, a port is created for the calling task. The task doing
+            blocking stream I/O must receive its signals.
+        PSA_NumPipes - Pipe count; default 4, minimum 1. USB3 stream-ID
+            availability may further limit the count.
+        PSA_BufferSize - Per-pipe buffer size; minimum one maximum packet.
+            Default: 32 packets for IN, 4 for OUT. Allocation products and
+            overhead must fit in ULONG; overflow is not checked.
+        PSA_BufferedRead, PSA_ReadAhead, PSA_AllowRuntPackets - Enabled by
+            default for IN. Plain reads do not support read-ahead or terminators.
+        PSA_BufferedWrite - Retain incomplete output in the stream; default off.
+        PSA_NoZeroPktTerm - Suppress the automatic zero-length terminator;
+            enabled by default for OUT.
+        PSA_ShortPktTerm - End a buffered read after a non-packet-aligned
+            received length. A zero-length packet does not meet this test.
+        PSA_NakTimeout, PSA_NakTimeoutTime - Enable per-pipe NAK timeout and
+            set its duration in milliseconds. Duration defaults to 5000; the
+            enable flag defaults off. This is not a whole-operation deadline.
+        PSA_TermArray - Retained table of eight sorted termination bytes, or
+            NULL. Repeating the last value pads a shorter set. The terminator
+            is included in the transfer count. See psdStreamWrite() limitations.
+        PSA_DoNotWait - Return from buffered reads without waiting for more
+            data. Does not prevent semaphore waits or hardware submission.
+        PSA_AbortSigMask - Signals that interrupt supported stream waits.
+            Observed abort signals are reasserted for the calling task.
+        PSA_AsyncIO - Leave disabled: read and write have no async transfer path.
+        PSA_Error - Initial stored error value; normally leave at zero.
+        PSA_BytesPending, PSA_ActivePipe - Read-only query attributes.
+
+    RESULT
+        A stream handle, or NULL for a NULL endpoint or a detected allocation
+        failure. Close a successfully created stream with psdCloseStream().
+
+    NOTES
+        Call in task context. The endpoint determines direction; no endpoint
+        transfer-type check is made here. Port and terminator-table pointers
+        are retained; tag-list storage is not. Keep retained objects valid
+        until close. Do not share the reply port with unrelated traffic.
+
+        Stream operations use an access semaphore, but the caller must still
+        coordinate port signal ownership, configuration changes and lifetime.
+        Do not change message ports or buffer settings during active I/O.
+
+    BUGS
+        psdSetAttrsA() return status is ignored during setup.
+        Individual pipe-allocation failures do not make opening fail. A
+        non-NULL stream can contain missing pipes. Failure cleanup can itself
+        enter flush with incomplete arrays or a missing port. Non-NULL is
+        therefore not proof that every resource was initialized successfully.
+
+    SEE ALSO
+        psdStreamRead(), psdStreamWrite(), psdStreamFlush(), psdCloseStream()
+
+*****************************************************************************/
+        AROS_LH2(struct PsdPipeStream *, psdOpenStreamA,
+         AROS_LHA(struct PsdEndpoint *, pep, A0),
+         AROS_LHA(struct TagItem *, tags, A1),
+         LIBBASETYPEPTR, ps, 72, psd)
+{
+    AROS_LIBFUNC_INIT
+    struct PsdPipeStream *pps;
+
+    KPRINTF(2, ("psdOpenStream(%p, %p)\n", pep, tags));
+    if(!pep) {
+        return(NULL);
+    }
+    if((pps = psdAllocVec(sizeof(struct PsdPipeStream)))) {
+        pps->pps_Device = pep->pep_Interface->pif_Config->pc_Device;
+        pps->pps_Endpoint = pep;
+        NewList(&pps->pps_FreePipes);
+        NewList(&pps->pps_ReadyPipes);
+        InitSemaphore(&pps->pps_AccessLock);
+        pps->pps_NakTimeoutTime = 5000;
+        if(pep->pep_Direction) {
+            /* Defaults for IN */
+            pps->pps_NumPipes = 4;
+            pps->pps_Flags = PSFF_READAHEAD|PSFF_BUFFERREAD|PSFF_ALLOWRUNT;
+            pps->pps_BufferSize = 32*pps->pps_Endpoint->pep_MaxPktSize;
+        } else {
+            /* Defaults for OUT */
+            pps->pps_NumPipes = 4;
+            pps->pps_Flags = PSFF_NOSHORTPKT;
+            pps->pps_BufferSize = 4*pps->pps_Endpoint->pep_MaxPktSize;
+        }
+
+        psdSetAttrsA(PGA_PIPESTREAM, pps, tags);
+        if(!pps->pps_Pipes) {
+            psdCloseStream(pps);
+            pps = NULL;
+        }
+        return(pps);
+    }
+    return(NULL);
+    AROS_LIBFUNC_EXIT
+}
+/* \\\ */
+
+/* /// "psdCloseStream()" */
+/*****************************************************************************
+    NAME
+        VOID psdCloseStream(
+
+    SYNOPSIS
+        APTR pps)
+
+    FUNCTION
+        Flush a stream, stop its pipes and release its storage.
+
+    INPUTS
+        pps - Live stream returned by psdOpenStreamA(), or NULL.
+
+    NOTES
+        NULL is ignored. Call in task context after excluding other users.
+        Flushes first, then aborts, waits for and frees each pipe. Releases
+        internal buffers and an internally created message port. A supplied
+        port and terminator table remain caller-owned. The handle is invalid
+        after return. Close can wait for controller completion.
+
+        For output, explicitly flush and inspect the result before closing
+        when delivery matters. Close returns no status and ignores flush
+        failure. For input, unread data is discarded.
+
+    BUGS
+        Cleanup assumes the configured pipe array and port are usable.
+        Partially initialized streams can violate that assumption.
+
+    SEE ALSO
+        psdStreamFlush(), psdGetStreamError(), psdOpenStreamA()
+
+*****************************************************************************/
+        AROS_LH1(void, psdCloseStream,
+         AROS_LHA(struct PsdPipeStream *, pps, A1),
+         LIBBASETYPEPTR, ps, 73, psd)
+{
+    AROS_LIBFUNC_INIT
+    struct PsdPipe *pp;
+    ULONG cnt;
+
+    KPRINTF(2, ("psdCloseStream(%p)\n", pps));
+    if(!pps) {
+        return;
+    }
+    psdStreamFlush(pps);
+    ObtainSemaphore(&pps->pps_AccessLock);
+    if(pps->pps_Pipes) {
+        for(cnt = 0; cnt < pps->pps_NumPipes; cnt++) {
+            pp = pps->pps_Pipes[cnt];
+            //if(pp->pp_IOReq.iouh_Req.io_Message.mn_Node.ln_Type == NT_MESSAGE)
+            {
+                KPRINTF(1, ("Abort %ld\n", cnt));
+                psdAbortPipe(pp);
+                KPRINTF(1, ("Wait %ld\n", cnt));
+                psdWaitPipe(pp);
+            }
+            KPRINTF(1, ("Free %ld\n", cnt));
+            psdFreePipe(pp);
+        }
+        psdFreeVec(pps->pps_Pipes);
+        if((pps->pps_Flags & PSFF_OWNMSGPORT) && pps->pps_MsgPort) {
+            DeleteMsgPort(pps->pps_MsgPort);
+        }
+    }
+    psdFreeVec(pps->pps_Buffer);
+    ReleaseSemaphore(&pps->pps_AccessLock);
+    psdFreeVec(pps);
+    AROS_LIBFUNC_EXIT
+}
+/* \\\ */
+
+/* /// "psdStreamRead()" */
+/*****************************************************************************
+    NAME
+        LONG psdStreamRead(
+
+    SYNOPSIS
+        APTR pps, APTR buffer, LONG length)
+
+    FUNCTION
+        Read bytes from an IN stream.
+
+    INPUTS
+        pps - Live IN stream.
+        buffer - Writable storage for length bytes. Must remain valid during
+            the call and while any in-place read still references it.
+        length - Nonnegative byte capacity. The legacy -1 mode selects all
+            currently buffered bytes without a capacity check; avoid it.
+            Other negative values are invalid and are not rejected safely.
+
+    RESULT
+        Bytes delivered, possibly zero or fewer than requested. Returns -1
+        for NULL, wrong direction, missing pipe array or detected queue
+        inconsistency. Zero is not an end-of-file indication. Inspect
+        psdGetStreamError() even after a nonnegative or partial result.
+
+    NOTES
+        Call from the task receiving the stream port signals. Resets the
+        stored error and holds the access semaphore. Buffered reads consume
+        ready packets, optionally stop at an included terminator or a short
+        packet, and may submit read-ahead requests. Zero length can still
+        collect completions or queue read-ahead; it is not necessarily a no-op.
+
+        PSA_DoNotWait applies only to buffered reads. The plain path uses
+        synchronous pipe I/O and ignores the stream abort mask. A buffered
+        NAK timeout with received bytes is treated as successful data. Other
+        observed errors stop that read and disable read-ahead.
+
+        An abort signal is reasserted but does not itself set the stream error.
+        There is no whole-call timeout.
+
+    BUGS
+        The implementation does not validate a non-NULL data buffer.
+        A buffered read can submit directly into the caller buffer. Early
+        return on abort or PSA_DoNotWait does not cancel and join that request.
+        Keep the buffer valid until outstanding reads have been stopped and
+        waited for, for example through a valid stream's flush or close.
+        PSA_AsyncIO skips transfer processing and returns zero after validation.
+        Queue-consistency failures can return -1 with a zero stored error.
+
+    SEE ALSO
+        psdStreamFlush(), psdGetStreamError(), psdOpenStreamA()
+
+*****************************************************************************/
+        AROS_LH3(LONG, psdStreamRead,
+         AROS_LHA(struct PsdPipeStream *, pps, A1),
+         AROS_LHA(UBYTE *, buffer, A0),
+         AROS_LHA(LONG, length, D0),
+         LIBBASETYPEPTR, ps, 74, psd)
+{
+    AROS_LIBFUNC_INIT
+    struct PsdPipe *pp;
+    ULONG cnt;
+    LONG ioerr;
+    LONG remlen;
+    BOOL term = FALSE;
+    LONG actual = 0;
+    ULONG sigmask;
+
+    UBYTE *bufptr;
+    UBYTE *srcptr;
+    UBYTE *tarrptr;
+    ULONG tcnt;
+    UBYTE cchar;
+
+    KPRINTF(2, ("psdStreamRead(%p, %p, %ld)\n", pps, buffer, length));
+    if(!pps) {
+        return(-1);
+    }
+    ObtainSemaphore(&pps->pps_AccessLock);
+    KPRINTF(2, ("Sema\n"));
+    pps->pps_Error = 0;
+    if((!pps->pps_Pipes) || (!pps->pps_Endpoint->pep_Direction)) {
+        KPRINTF(2, ("Wrong direction!\n"));
+        pps->pps_Error = UHIOERR_BADPARAMS;
+        ReleaseSemaphore(&pps->pps_AccessLock);
+        return(-1);
+    }
+    if(!(pps->pps_Flags & PSFF_ASYNCIO)) {
+        if(pps->pps_Flags & PSFF_BUFFERREAD) {
+            /* buffered reading */
+            do {
+                /* check for incoming packets */
+                while((pp = (struct PsdPipe *) GetMsg(pps->pps_MsgPort))) {
+                    KPRINTF(1, ("PktBack(%p, %p, %ld/%ld)=%ld\n",
+                                pp, pp->pp_IOReq.iouh_Data, pp->pp_IOReq.iouh_Actual,
+                                pp->pp_IOReq.iouh_Length, pp->pp_IOReq.iouh_Req.io_Error));
+
+                    pps->pps_ReqBytes -= pp->pp_IOReq.iouh_Length;
+                    ioerr = pp->pp_IOReq.iouh_Req.io_Error;
+                    if((ioerr == UHIOERR_NAKTIMEOUT) && pp->pp_IOReq.iouh_Actual) {
+                        ioerr = 0;
+                    }
+
+                    if(ioerr) {
+                        pps->pps_Error = ioerr;
+                        term = TRUE;
+                        if(ioerr != UHIOERR_TIMEOUT) {
+                            psdAddErrorMsg(RETURN_WARN, (STRPTR) "StreamRead",
+                                           "Packet(%s) failed: %s (%ld)", (STRPTR) "b",
+                                           psdNumToStr(NTS_IOERR, ioerr, "unknown"), ioerr);
+                        }
+                        /* stop automatic queueing */
+                        pps->pps_Flags &= ~PSFF_READAHEAD;
+                        AddTail(&pps->pps_FreePipes, &pp->pp_Msg.mn_Node);
+                    } else {
+                        /* successfully received packet */
+                        pps->pps_BytesPending += pp->pp_IOReq.iouh_Actual;
+                        AddTail(&pps->pps_ReadyPipes, &pp->pp_Msg.mn_Node);
+                    }
+                }
+                if(length == -1) { /* get all that's there (STRONGLY DISCOURAGED! Might cause buffer overflows) */
+                    length = pps->pps_BytesPending;
+                }
+                /* check for buffered data */
+                while(length && pps->pps_BytesPending) {
+                    pp = (struct PsdPipe *) pps->pps_ReadyPipes.lh_Head;
+                    if(!pp->pp_Msg.mn_Node.ln_Succ) { /* debug */
+                        psdAddErrorMsg0(RETURN_FAIL, (STRPTR) "StreamRead", "Readqueue empty!");
+                        ReleaseSemaphore(&pps->pps_AccessLock);
+                        return(-1);
+                    }
+                    if(pp->pp_IOReq.iouh_Actual < pps->pps_Offset) {
+                        psdAddErrorMsg(RETURN_FAIL, (STRPTR) "StreamRead",
+                                       "Actual %ld < offset %ld!", pp->pp_IOReq.iouh_Actual, pps->pps_Offset);
+                        ReleaseSemaphore(&pps->pps_AccessLock);
+                        return(-1);
+                    }
+                    remlen = pp->pp_IOReq.iouh_Actual - pps->pps_Offset;
+                    if(length < remlen) {
+                        KPRINTF(1, ("PktBit(%p, %p, %ld)\n", pp, buffer, length));
+                        remlen = length;
+                    } else {
+                        KPRINTF(1, ("PktRem(%p, %p, %ld)\n", pp, buffer, remlen));
+                    }
+                    /* copy packet */
+                    if(pp->pp_Flags & PFF_INPLACE) {
+                        KPRINTF(1, ("PktRemIP(%p, %p, %ld)\n", pp, buffer, remlen));
+                    } else {
+                        if(pps->pps_TermArray) {
+                            /* EOF Mode */
+                            KPRINTF(1, ("PktCpyEOF(%p, %p, %ld)\n", pp, buffer, remlen));
+                            bufptr = buffer;
+                            srcptr = &(((UBYTE *) pp->pp_IOReq.iouh_Data)[pps->pps_Offset]);
+                            tarrptr = pps->pps_TermArray;
+                            cnt = remlen;
+                            remlen = 0;
+                            if(cnt) {
+                                do {
+                                    cchar = *bufptr++ = *srcptr++;
+                                    remlen++;
+                                    tcnt = 0;
+                                    do {
+                                        if(cchar < tarrptr[tcnt]) {
+                                            break;
+                                        } else if(cchar == tarrptr[tcnt]) {
+                                            cnt = 1;
+                                            term = TRUE;
+                                            KPRINTF(2, ("EOF char %02lx found, length = %ld\n", cchar, remlen));
+                                            break;
+                                        }
+                                        if(tcnt < 7) {
+                                            if(tarrptr[tcnt] == tarrptr[tcnt+1]) {
+                                                break;
+                                            }
+                                        }
+                                    } while(++tcnt < 8);
+                                } while(--cnt);
+                            }
+                        } else {
+                            KPRINTF(1, ("PktCpy(%p, %p, %ld)\n", pp, buffer, remlen));
+                            /* quick non-eof mode */
+                            CopyMem(&(((UBYTE *) pp->pp_IOReq.iouh_Data)[pps->pps_Offset]), buffer, remlen);
+                        }
+                    }
+                    actual += remlen;
+                    length -= remlen;
+                    buffer += remlen;
+                    pps->pps_BytesPending -= remlen;
+                    pps->pps_Offset += remlen;
+                    /* end of packet reached? */
+                    if(pps->pps_Offset == pp->pp_IOReq.iouh_Actual) {
+                        pps->pps_Offset = 0;
+                        Remove(&pp->pp_Msg.mn_Node);
+                        AddTail(&pps->pps_FreePipes, &pp->pp_Msg.mn_Node);
+                        /* check for short packet */
+                        if((pps->pps_Flags & PSFF_SHORTTERM) && (pp->pp_IOReq.iouh_Actual % pp->pp_IOReq.iouh_MaxPktSize)) {
+                            term = TRUE;
+                        }
+                    }
+                    if(term) {
+                        break;
+                    }
+                }
+                /* start sending out requests */
+                remlen = length;
+                pp = (struct PsdPipe *) pps->pps_FreePipes.lh_Head;
+                if(!(pps->pps_BytesPending || pps->pps_ReqBytes || pps->pps_TermArray || (length < pps->pps_BufferSize))) {
+                    /* faster non-buffered mode */
+                    if(pp->pp_Msg.mn_Node.ln_Succ) {
+                        pp->pp_Flags |= PFF_INPLACE;
+                        Remove(&pp->pp_Msg.mn_Node);
+                        remlen = length - (length % pp->pp_IOReq.iouh_MaxPktSize);
+                        KPRINTF(1, ("OutFast(%p, %p, %ld/%ld)\n",
+                                    pp, buffer, remlen, length));
+                        psdSendPipe(pp, buffer, remlen);
+                        pps->pps_ReqBytes += remlen;
+                        pp = (struct PsdPipe *) pps->pps_FreePipes.lh_Head;
+                    }
+                }
+                /* slower buffered mode */
+                while(pp->pp_Msg.mn_Node.ln_Succ && ((remlen > pps->pps_ReqBytes) || (pps->pps_Flags & PSFF_READAHEAD))) {
+                    pp->pp_Flags &= ~PFF_INPLACE;
+                    Remove(&pp->pp_Msg.mn_Node);
+                    if((pps->pps_Flags & PSFF_READAHEAD) || (remlen % pp->pp_IOReq.iouh_MaxPktSize)) {
+                        KPRINTF(1, ("OutSlow(%p, %p, %ld)\n",
+                                    pp, &pps->pps_Buffer[pp->pp_Num * pps->pps_BufferSize], pps->pps_BufferSize));
+                        remlen = pps->pps_BufferSize;
+                    } else {
+                        KPRINTF(1, ("OutExact(%p, %p, %ld)\n",
+                                    pp, &pps->pps_Buffer[pp->pp_Num * pps->pps_BufferSize], remlen));
+                    }
+                    psdSendPipe(pp, &pps->pps_Buffer[pp->pp_Num * pps->pps_BufferSize], remlen);
+                    pps->pps_ReqBytes += remlen;
+                    pp = (struct PsdPipe *) pps->pps_FreePipes.lh_Head;
+                }
+                if((!length) || (pps->pps_Flags & PSFF_DONOTWAIT)) {
+                    term = TRUE;
+                }
+                if(!term) {
+                    sigmask = (1UL<<pps->pps_MsgPort->mp_SigBit)|pps->pps_AbortSigMask;
+                    KPRINTF(1, ("WaitPort (%p)\n", sigmask));
+                    sigmask = Wait(sigmask);
+                    KPRINTF(1, ("Wait back (%p)\n", sigmask));
+                    if(sigmask & pps->pps_AbortSigMask) {
+                        KPRINTF(1, ("Aborted!\n"));
+                        term = TRUE;
+                        Signal(FindTask(NULL), pps->pps_AbortSigMask & sigmask);
+                    }
+                }
+            } while(!term);
+        } else {
+            /* plain reading (might lose data) */
+            if(pps->pps_TermArray || (pps->pps_Flags & PSFF_READAHEAD)) {
+                psdAddErrorMsg0(RETURN_WARN, (STRPTR) "StreamRead", "This mode combination for the stream is not supported!");
+            }
+            /* start sending out requests */
+            pp = (struct PsdPipe *) pps->pps_FreePipes.lh_Head;
+            if(pp->pp_Msg.mn_Node.ln_Succ && length) {
+                ioerr = psdDoPipe(pp, buffer, length);
+                if(ioerr) {
+                    pps->pps_Error = ioerr;
+                    if(ioerr != UHIOERR_TIMEOUT) {
+                        psdAddErrorMsg(RETURN_WARN, (STRPTR) "StreamRead",
+                                       "Packet(%s) failed: %s (%ld)", (STRPTR) "u",
+                                       psdNumToStr(NTS_IOERR, ioerr, "unknown"), ioerr);
+                    }
+                }
+                actual = pp->pp_IOReq.iouh_Actual;
+            }
+        }
+    }
+    ReleaseSemaphore(&pps->pps_AccessLock);
+    return(actual);
+    AROS_LIBFUNC_EXIT
+}
+/* \\\ */
+
+/* /// "psdStreamWrite()" */
+/*****************************************************************************
+    NAME
+        LONG psdStreamWrite(
+
+    SYNOPSIS
+        APTR pps, APTR buffer, LONG length)
+
+    FUNCTION
+        Write bytes to an OUT stream or accept them into its buffer.
+
+    INPUTS
+        pps - Live OUT stream.
+        buffer - Readable storage for length bytes, valid until return.
+        length - Nonnegative byte count, or -1 for a NUL-terminated string
+            whose length fits in LONG. String mode does not send the NUL.
+            Other negative values are invalid and are not checked safely.
+
+    RESULT
+        Bytes accepted, including bytes retained for a later flush when
+        buffering is enabled. This is not necessarily a transmitted-byte count.
+        Returns -1 for NULL, wrong direction or missing pipe array. Inspect
+        psdGetStreamError() even after a positive result; failures can follow
+        partial device writes. Retrying the entire payload can duplicate data.
+
+    NOTES
+        Call from the task receiving the stream port signals. Resets the
+        stored error and holds the access semaphore. Direct transfers are
+        waited for before return; buffered tails are copied into stream storage.
+        An observed abort signal is reasserted, and the active request is
+        aborted and waited for before returning. There is no whole-call timeout.
+
+        A terminator table limits the accepted prefix through its first matched
+        byte. PSA_DoNotWait does not make writes nonblocking. Use flush to
+        submit remaining buffered output and inspect that result before close.
+
+    BUGS
+        The implementation does not validate a non-NULL data buffer.
+        The terminator scan can read table element 8 after checking element 7,
+        outside the eight-byte table, and its duplicate-value test differs from
+        the read path. Leave PSA_TermArray NULL for output until corrected.
+        PSA_AsyncIO skips transfer processing and returns zero after validation.
+        Buffered error recovery trusts the controller's actual byte count.
+
+    SEE ALSO
+        psdStreamFlush(), psdGetStreamError(), psdOpenStreamA()
+
+*****************************************************************************/
+        AROS_LH3(LONG, psdStreamWrite,
+         AROS_LHA(struct PsdPipeStream *, pps, A1),
+         AROS_LHA(UBYTE *, buffer, A0),
+         AROS_LHA(LONG, length, D0),
+         LIBBASETYPEPTR, ps, 75, psd)
+{
+    AROS_LIBFUNC_INIT
+    struct PsdPipe *pp;
+    struct PsdPipe *newpp;
+    ULONG cnt;
+    LONG ioerr;
+    LONG remlen;
+    LONG actual = 0;
+    ULONG sigmask;
+
+    UBYTE *bufptr;
+    UBYTE *srcptr;
+    UBYTE *tarrptr;
+    ULONG tcnt;
+    UBYTE cchar;
+
+    KPRINTF(2, ("psdStreamWrite(%p, %p, %ld)\n", pps, buffer, length));
+    if(!pps) {
+        return(-1);
+    }
+    ObtainSemaphore(&pps->pps_AccessLock);
+    pps->pps_Error = 0;
+    if((!pps->pps_Pipes) || pps->pps_Endpoint->pep_Direction) {
+        KPRINTF(2, ("Wrong direction!\n"));
+        pps->pps_Error = UHIOERR_BADPARAMS;
+        ReleaseSemaphore(&pps->pps_AccessLock);
+        return(-1);
+    }
+    if(length == -1) { /* null terminated string mode */
+        KPRINTF(2, ("EOL mode!\n"));
+        length = strlen(buffer);
+    }
+    if((tarrptr = pps->pps_TermArray)) { /* EOF Mode */
+        KPRINTF(1, ("EOFSearch(%p, %ld)\n", buffer, length));
+        srcptr = buffer;
+        cnt = length;
+        length = 0;
+        if(cnt) {
+            do {
+                cchar = *srcptr++;
+                length++;
+                tcnt = 0;
+                do {
+                    if(cchar < tarrptr[tcnt]) {
+                        break;
+                    } else if(cchar == tarrptr[tcnt]) {
+                        cnt = 1;
+                        KPRINTF(2, ("EOF char %02lx found, length = %ld\n", cchar, length));
+                        break;
+                    }
+                    if(tcnt) {
+                        if(tarrptr[tcnt] == tarrptr[tcnt+1]) {
+                            break;
+                        }
+                    }
+                } while(++tcnt < 8);
+            } while(--cnt);
+        }
+    }
+    if(!(pps->pps_Flags & PSFF_ASYNCIO)) {
+        pp = (struct PsdPipe *) pps->pps_FreePipes.lh_Head;
+        if(pp->pp_Msg.mn_Node.ln_Succ && length) {
+            if(pps->pps_Flags & PSFF_BUFFERWRITE) {
+                /* buffered writing */
+                if(pps->pps_BytesPending) {
+                    remlen = pps->pps_BytesPending % pp->pp_IOReq.iouh_MaxPktSize;
+                    /* align to packet boundary */
+                    if(remlen + length >= pp->pp_IOReq.iouh_MaxPktSize) {
+                        /* new data crosses at least on packet size */
+                        if(pps->pps_BytesPending + length <= pps->pps_BufferSize) {
+                            /* copy everything up to the last (!) boundary */
+                            remlen = pps->pps_BytesPending + length;
+                            remlen = remlen - (remlen % pp->pp_IOReq.iouh_MaxPktSize);
+                            remlen -= pps->pps_BytesPending;
+                            KPRINTF(1, ("PendOptCpy(%p, %ld+%ld/%ld)\n", buffer, pps->pps_BytesPending, remlen, length));
+                        } else {
+                            /* just calculate amount to copy to the next boundary */
+                            remlen = pp->pp_IOReq.iouh_MaxPktSize - remlen;
+                            KPRINTF(1, ("PendOneCpy(%p, %ld+%ld/%ld)\n", buffer, pps->pps_BytesPending, remlen, length));
+                        }
+                        CopyMem(buffer, &pps->pps_Buffer[pps->pps_BytesPending], remlen);
+                        pps->pps_BytesPending += remlen;
+                        actual += remlen;
+                        buffer += remlen;
+                        length -= remlen;
+                    } else {
+                        KPRINTF(1, ("PendAdd(%p, %ld+%ld)\n", buffer, pps->pps_BytesPending, length));
+                        /* only a few bytes, see if we can fit them */
+                        CopyMem(buffer, &pps->pps_Buffer[pps->pps_BytesPending], length);
+                        pps->pps_BytesPending += length;
+                        actual += length;
+                        //buffer += length; /* not needed */
+                        length = 0;
+                    }
+                    /* flush some buffers */
+                    if((length >= pp->pp_IOReq.iouh_MaxPktSize) ||
+                            ((pps->pps_BytesPending >= (pps->pps_BufferSize>>1)) && (pps->pps_BytesPending >= pp->pp_IOReq.iouh_MaxPktSize))) {
+                        remlen = pps->pps_BytesPending - (pps->pps_BytesPending % pp->pp_IOReq.iouh_MaxPktSize);
+                        KPRINTF(1, ("PendFlush(%ld/%ld)\n", remlen, pps->pps_BytesPending));
+                        Remove(&pp->pp_Msg.mn_Node);
+                        psdSendPipe(pp, pps->pps_Buffer, remlen);
+                        pps->pps_ActivePipe = pp;
+                        while(!(newpp = (struct PsdPipe *) GetMsg(pps->pps_MsgPort))) {
+                            sigmask = (1UL<<pps->pps_MsgPort->mp_SigBit)|pps->pps_AbortSigMask;
+                            sigmask = Wait(sigmask);
+                            if(sigmask & pps->pps_AbortSigMask) {
+                                KPRINTF(1, ("Kill signal detected!\n"));
+                                Signal(FindTask(NULL), pps->pps_AbortSigMask & sigmask);
+                                break;
+                            }
+                        }
+                        if(!newpp) {
+                            psdAbortPipe(pp);
+                        }
+                        ioerr = psdWaitPipe(pp);
+                        pps->pps_ActivePipe = NULL;
+                        AddTail(&pps->pps_FreePipes, &pp->pp_Msg.mn_Node);
+
+                        /* move end of buffer */
+                        cnt = pps->pps_BytesPending;
+                        tcnt = pp->pp_IOReq.iouh_Actual;
+                        pps->pps_BytesPending -= tcnt;
+                        bufptr = pps->pps_Buffer;
+                        srcptr = bufptr + tcnt;
+                        cnt -= tcnt;
+                        if(cnt) {
+                            do {
+                                *bufptr++ = *srcptr++;
+                            } while(--cnt);
+                        }
+                        if(ioerr) {
+                            pps->pps_Error = ioerr;
+                            if(ioerr != UHIOERR_TIMEOUT) {
+                                psdAddErrorMsg(RETURN_WARN, (STRPTR) "StreamWrite",
+                                               "Packet(%s) failed: %s (%ld)", (STRPTR) "b",
+                                               psdNumToStr(NTS_IOERR, ioerr, "unknown"), ioerr);
+                            }
+                            ReleaseSemaphore(&pps->pps_AccessLock);
+                            return(actual);
+                        }
+                    }
+                }
+                /* send out large chunk (avoid copying) */
+                if(length >= pp->pp_IOReq.iouh_MaxPktSize) {
+                    remlen = length - (length % pp->pp_IOReq.iouh_MaxPktSize);
+                    KPRINTF(1, ("BulkFlush(%p, %ld/%ld)\n", buffer, remlen, length));
+                    Remove(&pp->pp_Msg.mn_Node);
+                    psdSendPipe(pp, buffer, remlen);
+                    pps->pps_ActivePipe = pp;
+                    while(!(newpp = (struct PsdPipe *) GetMsg(pps->pps_MsgPort))) {
+                        sigmask = (1UL<<pps->pps_MsgPort->mp_SigBit)|pps->pps_AbortSigMask;
+                        sigmask = Wait(sigmask);
+                        if(sigmask & pps->pps_AbortSigMask) {
+                            KPRINTF(1, ("Kill signal detected!\n"));
+                            Signal(FindTask(NULL), pps->pps_AbortSigMask & sigmask);
+                            break;
+                        }
+                    }
+                    if(!newpp) {
+                        psdAbortPipe(pp);
+                    }
+                    ioerr = psdWaitPipe(pp);
+                    pps->pps_ActivePipe = NULL;
+                    AddTail(&pps->pps_FreePipes, &pp->pp_Msg.mn_Node);
+
+                    actual += pp->pp_IOReq.iouh_Actual;
+                    buffer += pp->pp_IOReq.iouh_Actual;
+                    length -= pp->pp_IOReq.iouh_Actual;
+                    if(ioerr) {
+                        pps->pps_Error = ioerr;
+                        if(ioerr != UHIOERR_TIMEOUT) {
+                            psdAddErrorMsg(RETURN_WARN, (STRPTR) "StreamWrite",
+                                           "Packet(%s) failed: %s (%ld)", (STRPTR) "c",
+                                           psdNumToStr(NTS_IOERR, ioerr, "unknown"), ioerr);
+                        }
+                        ReleaseSemaphore(&pps->pps_AccessLock);
+                        return(actual);
+                    }
+                }
+                /* buffer remaining bytes */
+                if(length) {
+                    KPRINTF(1, ("BufAdd(%p, %ld)\n", buffer, length));
+                    /* only a few bytes left, so lets buffer them */
+                    CopyMem(buffer, &pps->pps_Buffer[pps->pps_BytesPending], length);
+                    pps->pps_BytesPending += length;
+                    actual += length;
+                }
+            } else {
+                /* plain writing */
+                /* start sending out requests */
+                KPRINTF(1, ("PlainWrite(%p, %ld)\n", buffer, length));
+                Remove(&pp->pp_Msg.mn_Node);
+                psdSendPipe(pp, buffer, length);
+                pps->pps_ActivePipe = pp;
+                while(!(newpp = (struct PsdPipe *) GetMsg(pps->pps_MsgPort))) {
+                    sigmask = (1UL<<pps->pps_MsgPort->mp_SigBit)|pps->pps_AbortSigMask;
+                    sigmask = Wait(sigmask);
+                    if(sigmask & pps->pps_AbortSigMask) {
+                        KPRINTF(1, ("Kill signal detected!\n"));
+                        Signal(FindTask(NULL), pps->pps_AbortSigMask & sigmask);
+                        break;
+                    }
+                }
+                if(!newpp) {
+                    psdAbortPipe(pp);
+                }
+                ioerr = psdWaitPipe(pp);
+                pps->pps_ActivePipe = NULL;
+                AddTail(&pps->pps_FreePipes, &pp->pp_Msg.mn_Node);
+                if(ioerr) {
+                    pps->pps_Error = ioerr;
+                    if(ioerr != UHIOERR_TIMEOUT) {
+                        psdAddErrorMsg(RETURN_WARN, (STRPTR) "StreamWrite",
+                                       "Packet(%s) failed: %s (%ld)", (STRPTR) "u",
+                                       psdNumToStr(NTS_IOERR, ioerr, "unknown"), ioerr);
+                    }
+                }
+                actual = pp->pp_IOReq.iouh_Actual;
+            }
+        } else {
+            KPRINTF(2, ("No free pipe!\n"));
+        }
+    }
+    ReleaseSemaphore(&pps->pps_AccessLock);
+    return(actual);
+    AROS_LIBFUNC_EXIT
+}
+/* \\\ */
+
+/* /// "psdStreamFlush()" */
+/*****************************************************************************
+    NAME
+        LONG psdStreamFlush(
+
+    SYNOPSIS
+        APTR pps)
+
+    FUNCTION
+        Discard pending input or submit buffered output.
+
+    INPUTS
+        pps - Live stream.
+
+    RESULT
+        TRUE after input cleanup or successful output processing; FALSE if
+        output has no free pipe or its transfer fails. NULL returns -1, which
+        is nonzero: do not treat every nonzero result as success.
+
+    NOTES
+        Call in task context with exclusive lifetime ownership. Takes the
+        access semaphore and resets the stored error. For IN, aborts and waits
+        for all pipes, recycles ready replies and discards unread data and
+        read offsets. Does not clear the read-ahead option.
+
+        For OUT, synchronously sends pending bytes using a free pipe. Empty
+        output succeeds only if a free pipe is present. Does not implement
+        PSA_DoNotWait or a stream-level abort wait; there is no whole-call
+        timeout. Query psdGetStreamError() immediately after the operation.
+
+    BUGS
+        Output pending bytes are cleared even when transfer fails, so an
+        unsent suffix is lost from the stream. Input abort/wait errors are
+        ignored. FALSE caused by no free output pipe leaves the error zero.
+        Flush assumes initialized pipe-array and port storage.
+
+    SEE ALSO
+        psdStreamRead(), psdStreamWrite(), psdGetStreamError(), psdCloseStream()
+
+*****************************************************************************/
+        AROS_LH1(LONG, psdStreamFlush,
+         AROS_LHA(struct PsdPipeStream *, pps, A1),
+         LIBBASETYPEPTR, ps, 76, psd)
+{
+    AROS_LIBFUNC_INIT
+    struct PsdPipe *pp;
+    ULONG cnt;
+    LONG ioerr;
+    LONG ret = FALSE;
+
+    KPRINTF(2, ("psdStreamFlush(%p)\n", pps));
+    if(!pps) {
+        return(-1);
+    }
+    ObtainSemaphore(&pps->pps_AccessLock);
+    pps->pps_Error = 0;
+    if(pps->pps_Endpoint->pep_Direction) {
+        /* IN */
+        KPRINTF(2, ("Flushing in...\n"));
+        for(cnt = 0; cnt < pps->pps_NumPipes; cnt++) {
+            psdAbortPipe(pps->pps_Pipes[cnt]);
+        }
+        for(cnt = 0; cnt < pps->pps_NumPipes; cnt++) {
+            psdWaitPipe(pps->pps_Pipes[cnt]);
+        }
+        pp = (struct PsdPipe *) pps->pps_ReadyPipes.lh_Head;
+        while(pp->pp_Msg.mn_Node.ln_Succ) {
+            Remove(&pp->pp_Msg.mn_Node);
+            AddTail(&pps->pps_FreePipes, &pp->pp_Msg.mn_Node);
+            pp = (struct PsdPipe *) pps->pps_ReadyPipes.lh_Head;
+        }
+        while((pp = (struct PsdPipe *) GetMsg(pps->pps_MsgPort))) {
+            AddTail(&pps->pps_FreePipes, &pp->pp_Msg.mn_Node);
+        }
+        pps->pps_ReqBytes = 0;
+        pps->pps_BytesPending = 0;
+        pps->pps_Offset = 0;
+        ret = TRUE;
+    } else {
+        /* OUT */
+        pp = (struct PsdPipe *) pps->pps_FreePipes.lh_Head;
+        if(pp->pp_Msg.mn_Node.ln_Succ) {
+            ret = TRUE;
+            if(pps->pps_BytesPending) {
+                KPRINTF(2, ("Flushing out %ld...\n", pps->pps_BytesPending));
+                Remove(&pp->pp_Msg.mn_Node);
+                ioerr = psdDoPipe(pp, pps->pps_Buffer, pps->pps_BytesPending);
+                AddTail(&pps->pps_FreePipes, &pp->pp_Msg.mn_Node);
+                pps->pps_BytesPending = 0;
+                if(ioerr) {
+                    pps->pps_Error = ioerr;
+                    psdAddErrorMsg(RETURN_WARN, (STRPTR) "StreamFlush",
+                                   "Packet(%s) failed: %s (%ld)", (STRPTR) "f",
+                                   psdNumToStr(NTS_IOERR, ioerr, "unknown"), ioerr);
+                    ret = FALSE;
+                }
+            } else {
+                KPRINTF(2, ("Nothing to flush\n"));
+            }
+        }
+    }
+    ReleaseSemaphore(&pps->pps_AccessLock);
+    return(ret);
+    AROS_LIBFUNC_EXIT
+}
+/* \\\ */
+
+/* /// "psdGetStreamError()" */
+/*****************************************************************************
+    NAME
+        LONG psdGetStreamError(
+
+    SYNOPSIS
+        APTR pps)
+
+    FUNCTION
+        Return a stream's stored error value.
+
+    INPUTS
+        pps - Live stream, or NULL.
+
+    RESULT
+        The stored error value, or -1 for NULL. Zero means no error is stored;
+        it does not prove transfer completion or successful delivery.
+
+    NOTES
+        Does not wait, collect pipe replies, clear the error or acquire the
+        stream semaphore. Read, write and flush reset the value on entry and
+        then record selected errors. Query immediately after the operation
+        under the caller's serialization policy; another operation or an
+        explicit PSA_Error update can replace it.
+
+    SEE ALSO
+        psdStreamRead(), psdStreamWrite(), psdStreamFlush()
+
+*****************************************************************************/
+        AROS_LH1(LONG, psdGetStreamError,
+         AROS_LHA(struct PsdPipeStream *, pps, A1),
+         LIBBASETYPEPTR, ps, 77, psd)
+{
+    AROS_LIBFUNC_INIT
+    KPRINTF(1, ("psdGetStreamError(%p)\n", pps));
+    if(pps) {
+        return((LONG) pps->pps_Error);
+    } else {
+        return(-1);
+    }
+    AROS_LIBFUNC_EXIT
+}
+/* \\\ */
+
+/* *** Realtime Iso */
+
+/* /// "psdAllocRTIsoHandler()" */
+/*****************************************************************************
+    NAME
+        APTR psdAllocRTIsoHandlerA(
+
+    SYNOPSIS
+        APTR pep, struct TagItem *taglist)
+
+    FUNCTION
+        Register a real-time isochronous endpoint handler with its controller.
+
+    INPUTS
+        pep - Live isochronous endpoint. NULL is rejected.
+        taglist - RTA_* attributes, or NULL for defaults.
+
+    TAGS
+        RTA_InRequestHook, RTA_OutRequestHook - Buffer request hooks for
+            input or output, using struct IOUsbHWBufferReq.
+        RTA_InDoneHook, RTA_OutDoneHook - Buffer completion hooks.
+        RTA_ReleaseHook - Device-removal notification hook, called with the
+            handler as object and NULL as message.
+        RTA_OutPrefetchSize - Maximum output prefetch in bytes; default 2048.
+
+    RESULT
+        A registered handler, or NULL if the endpoint is unsuitable, the
+        controller lacks UHCF_RT_ISO, allocation fails or registration fails.
+        Allocation does not start transfers. Release with psdFreeRTIsoHandler().
+
+    NOTES
+        Call in task context and coordinate endpoint lifetime. Hook pointers
+        are retained, not copied; keep hook structures, code and associated
+        state valid until the controller no longer uses them. The tag list
+        itself is not retained. No hook is installed by default.
+
+        Data hooks follow <devices/usbhardware.h>. They may run with interrupts
+        disabled; do not wait, perform DOS I/O or call these lifecycle functions
+        from a data hook. The callback object is controller-private, not the
+        Poseidon handler. Request buffers and completion semantics must satisfy
+        the selected controller; do not release buffers while it can use them.
+
+        The release hook runs during device removal with the device write lock
+        held. Arrange cleanup without waiting for a task that needs that lock.
+        Registration uses synchronous controller I/O with no reply port and
+        requires quick completion support; there is no library-level timeout.
+
+    BUGS
+        The endpoint ownership chain is dereferenced without separate
+        validation. Controller quick-I/O support is required by the
+        synchronous calls but is not independently verified here.
+
+    SEE ALSO
+        psdStartRTIso(), psdStopRTIso(), psdFreeRTIsoHandler(), psdSetAttrsA()
+
+*****************************************************************************/
+        AROS_LH2(struct PsdRTIsoHandler *, psdAllocRTIsoHandlerA,
+         AROS_LHA(struct PsdEndpoint *, pep, A0),
+         AROS_LHA(struct TagItem *, tags, A1),
+         LIBBASETYPEPTR, ps, 93, psd)
+{
+    AROS_LIBFUNC_INIT
+    struct PsdRTIsoHandler *prt;
+    struct PsdPipe *pp;
+    LONG ioerr;
+
+    KPRINTF(2, ("psdAllocRTIso(%p, %p)\n", pep, tags));
+    if(!pep) {
+        return(NULL);
+    }
+    if(pep->pep_TransType != USEAF_ISOCHRONOUS) {
+        return(NULL);
+    }
+    if(!(pep->pep_Interface->pif_Config->pc_Device->pd_Hardware->phw_Capabilities & UHCF_RT_ISO)) {
+        psdAddErrorMsg0(RETURN_FAIL, (STRPTR) GM_UNIQUENAME(libname), "Your HW controller driver does not support realtime iso transfers. Sorry.");
+        return(NULL);
+    }
+    if((prt = psdAllocVec(sizeof(struct PsdRTIsoHandler)))) {
+        prt->prt_Device = pep->pep_Interface->pif_Config->pc_Device;
+        prt->prt_Endpoint = pep;
+        prt->prt_RTIso.urti_OutPrefetch = 2048;
+        if((pp = prt->prt_Pipe = psdAllocPipe(prt->prt_Device, (struct MsgPort *) 0xffffffff, pep))) {
+            pp->pp_MsgPort = pp->pp_Msg.mn_ReplyPort = NULL;
+            psdSetAttrsA(PGA_RTISO, prt, tags);
+            pp->pp_IOReq.iouh_Req.io_Command = UHCMD_ADDISOHANDLER;
+            pp->pp_IOReq.iouh_Data = &prt->prt_RTIso;
+            // hardware must support quick IO for this to work!
+            ioerr = DoIO((struct IORequest *) &pp->pp_IOReq);
+            if(!ioerr) {
+                Forbid();
+                AddTail(&prt->prt_Device->pd_RTIsoHandlers, &prt->prt_Node);
+                Permit();
+                return(prt);
+            } else {
+                psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
+                               "Adding RT Iso Handler failed: %s (%ld)",
+                               psdNumToStr(NTS_IOERR, ioerr, "unknown"), ioerr);
+            }
+            psdFreePipe(prt->prt_Pipe);
+        }
+        psdFreeVec(prt);
+    }
+    return(NULL);
+    AROS_LIBFUNC_EXIT
+}
+/* \\\ */
+
+/* /// "psdFreeRTIsoHandler()" */
+/*****************************************************************************
+    NAME
+        VOID psdFreeRTIsoHandler(
+
+    SYNOPSIS
+        APTR prt)
+
+    FUNCTION
+        Remove a real-time isochronous handler and free its library storage.
+
+    INPUTS
+        prt - Live handler returned by psdAllocRTIsoHandlerA(), or NULL.
+
+    NOTES
+        NULL is ignored. Call in task context. Stop a running handler first
+        and serialize this call with all operations using it. Removes the
+        handler from the device list, asks the controller to remove it, then
+        frees its pipe and storage. The handle is invalid after return.
+
+        Does not stop an active handler, call the release hook or
+        balance a successful start itself.
+        This call has no library-level timeout.
+
+    BUGS
+        The controller removal result is ignored. Storage is freed even if
+        removal fails, so return does not independently prove that callbacks
+        or controller references have been quiesced.
+
+    SEE ALSO
+        psdAllocRTIsoHandlerA(), psdStopRTIso()
+
+*****************************************************************************/
+        AROS_LH1(void, psdFreeRTIsoHandler,
+         AROS_LHA(struct PsdRTIsoHandler *, prt, A1),
+         LIBBASETYPEPTR, ps, 94, psd)
+{
+    AROS_LIBFUNC_INIT
+    struct PsdPipe *pp;
+
+    if(!prt) {
+        return;
+    }
+    Forbid();
+    Remove(&prt->prt_Node);
+    Permit();
+    pp = prt->prt_Pipe;
+    pp->pp_IOReq.iouh_Req.io_Command = UHCMD_REMISOHANDLER;
+    DoIO((struct IORequest *) &pp->pp_IOReq);
+    psdFreePipe(pp);
+    psdFreeVec(prt);
+    AROS_LIBFUNC_EXIT
+}
+/* \\\ */
+
+/* /// "psdStartRTIso()" */
+/*****************************************************************************
+    NAME
+        LONG psdStartRTIso(
+
+    SYNOPSIS
+        APTR prt)
+
+    FUNCTION
+        Ask the controller to start a registered real-time ISO handler.
+
+    INPUTS
+        prt - Live, stopped handler returned by psdAllocRTIsoHandlerA().
+
+    RESULT
+        Zero on controller-command success; otherwise the controller I/O
+        error. NULL returns UHIOERR_BADPARAMS. Success is not a completed
+        transfer or a guarantee of error-free future frames.
+
+    NOTES
+        Call in task context. Serializes neither concurrent lifecycle calls
+        nor attribute changes; the caller must do so. If the device is
+        suspended, attempts to resume it before issuing the start command.
+        Data hooks can run during controller setup. There is no library-level
+        timeout or rollback guarantee for a failed start.
+
+        Each successful start increments the device busy count. Pair it with
+        one successful psdStopRTIso() before freeing the handler.
+
+    BUGS
+        No running-state guard prevents repeated starts. The device-resume
+        result is ignored; the returned status belongs to the start command.
+
+    SEE ALSO
+        psdAllocRTIsoHandlerA(), psdStopRTIso(), psdFreeRTIsoHandler()
+
+*****************************************************************************/
+        AROS_LH1(LONG, psdStartRTIso,
+         AROS_LHA(struct PsdRTIsoHandler *, prt, A1),
+         LIBBASETYPEPTR, ps, 95, psd)
+{
+    AROS_LIBFUNC_INIT
+    struct PsdPipe *pp;
+    LONG ioerr;
+
+    if(!prt) {
+        return UHIOERR_BADPARAMS;
+    }
+    pp = prt->prt_Pipe;
+    if(pp->pp_Device->pd_Flags & PDFF_SUSPENDED) {
+        // make sure the device is up and running before trying to send a new pipe
+        psdResumeDevice(pp->pp_Device);
+    }
+    pp->pp_IOReq.iouh_Req.io_Command = UHCMD_STARTRTISO;
+    ioerr = DoIO((struct IORequest *) &pp->pp_IOReq);
+    if(!ioerr) {
+        ++pp->pp_Device->pd_IOBusyCount;
+    }
+    return(ioerr);
+    AROS_LIBFUNC_EXIT
+}
+/* \\\ */
+
+/* /// "psdStopRTIso()" */
+/*****************************************************************************
+    NAME
+        LONG psdStopRTIso(
+
+    SYNOPSIS
+        APTR prt)
+
+    FUNCTION
+        Ask the controller to stop a running real-time ISO handler.
+
+    INPUTS
+        prt - Live handler with one unmatched successful psdStartRTIso().
+
+    RESULT
+        Zero on controller-command success; otherwise the controller I/O
+        error. NULL returns UHIOERR_BADPARAMS. On failure, do not assume that
+        the controller has stopped accessing callback state or buffers.
+
+    NOTES
+        Call in task context and serialize lifecycle operations. On success,
+        decrements the device busy count. The registered handler remains
+        allocated and may be started again. There is no library-level timeout;
+        callback and buffer quiescence depend on the controller implementation.
+
+    BUGS
+        No running-state guard prevents unmatched or repeated stops. Each
+        successful command decrements the busy count, even without a matching
+        successful start.
+
+    SEE ALSO
+        psdStartRTIso(), psdFreeRTIsoHandler()
+
+*****************************************************************************/
+        AROS_LH1(LONG, psdStopRTIso,
+         AROS_LHA(struct PsdRTIsoHandler *, prt, A1),
+         LIBBASETYPEPTR, ps, 96, psd)
+{
+    AROS_LIBFUNC_INIT
+    struct PsdPipe *pp;
+    LONG ioerr;
+
+    if(!prt) {
+        return UHIOERR_BADPARAMS;
+    }
+    pp = prt->prt_Pipe;
+    pp->pp_IOReq.iouh_Req.io_Command = UHCMD_STOPRTISO;
+    ioerr = DoIO((struct IORequest *) &pp->pp_IOReq);
+    if(!ioerr) {
+        --pp->pp_Device->pd_IOBusyCount;
+    }
+    return(ioerr);
+    AROS_LIBFUNC_EXIT
+}
+/* \\\ */
+
+/* *** Classes *** */
+
+/* /// "psdAddClass()" */
+/****** poseidon.library/psdAddClass ***************************************
+
+    NAME */
+        AROS_LH2(struct PsdUsbClass *, psdAddClass,
+/*  SYNOPSIS */
+         AROS_LHA(STRPTR, name, A1),
+         AROS_LHA(ULONG, vers, D0),
+/*  LOCATION */
+         LIBBASETYPEPTR, ps, 35, psd)
+/*  FUNCTION
+        Open a USB class library and register it with Poseidon.
+
+    INPUTS
+        name - Valid class library name or pathname.
+        vers - Minimum version passed to OpenLibrary().
+
+    RESULT
+        Registered class record, or NULL if the library cannot be opened,
+        is already registered, or record allocation fails.
+
+    NOTES
+        Attempts the supplied path and progressively shorter path
+        components when opening the library. Rejects duplicate class
+        names. On success, reads class attributes, adds the class to the
+        priority-ordered list and emits EHMB_ADDCLASS. Call psdRemClass()
+        to unregister the class.
+
+    SEE ALSO
+        psdRemClass(), psdClassScan(), psdGetAttrsA()
+
+******************************************************************************/
+{
+    AROS_LIBFUNC_INIT
+    struct Library *cls = NULL;
+    struct PsdUsbClass *puc;
+    IPTR pri = 0;
+    STRPTR desc;
+    UWORD msgoff;
+    STRPTR origname = name;
+    STRPTR evilmsg[8] = { "Say hello to %s V%ld.%ld (%s).",
+                          "Whoah! %s V%ld.%ld surprised as %s.",
+                          "The door bell rang for %s V%ld.%ld (%s).",
+                          "Welcome %s V%ld.%ld (%s) to the party.",
+
+                          "Don't laugh at %s V%ld.%ld for %s.",
+                          "Time has come for %s V%ld.%ld (%s) to join the show.",
+                          "Start blaming %s V%ld.%ld for helping at %s.",
+                          "Ain't %s V%ld.%ld useful for %s?"
+                        };
+
+    KPRINTF(5, ("psdAddClass(%s, %ld)\n", name, vers));
+
+    while(*name) {
+        if((cls = OpenLibrary(name, vers))) {
+            break;
+        }
+        do {
+            if((*name == '/') || (*name == ':')) {
+                ++name;
+                break;
+            }
+        } while(*(++name));
+    }
+    if(cls) {
+        Forbid();
+        if(FindName(&ps->ps_Classes, cls->lib_Node.ln_Name)) {
+            Permit();
+            psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
+                           "Attempted to add class %s twice. Nothing is good enough for people like you.",
+                           name);
+            KPRINTF(20, ("attempt to add class twice!\n"));
+            CloseLibrary(cls);
+            return(NULL);
+        }
+        Permit();
+        if((puc = psdAllocVec(sizeof(struct PsdUsbClass)))) {
+            puc->puc_Base = ps;
+            puc->puc_ClassBase = cls;
+            puc->puc_Node.ln_Name = puc->puc_ClassName = psdCopyStr(cls->lib_Node.ln_Name);
+            puc->puc_FullPath = psdCopyStr(origname);
+
+            usbGetAttrs(UGA_CLASS, NULL,
+                        UCCA_Priority, &pri,
+                        UCCA_Description, &desc,
+                        TAG_END);
+
+            puc->puc_Node.ln_Pri = pri;
+            psdLockWritePBase();
+            Enqueue(&ps->ps_Classes, &puc->puc_Node);
+            psdUnlockPBase();
+            msgoff = ps->ps_FunnyCount++ & 7;
+
+            psdAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname),
+                           evilmsg[msgoff],
+                           cls->lib_Node.ln_Name, cls->lib_Version, cls->lib_Revision, desc);
+            psdSendEvent(EHMB_ADDCLASS, puc, NULL);
+            return(puc);
+        }
+        CloseLibrary(cls);
+    }
+    return(NULL);
+    AROS_LIBFUNC_EXIT
+}
+/* \\\ */
+
+/* /// "psdRemClass()" */
+/****** poseidon.library/psdRemClass ***************************************
+
+    NAME */
+        AROS_LH1(void, psdRemClass,
+/*  SYNOPSIS */
+         AROS_LHA(struct PsdUsbClass *, puc, A1),
+/*  LOCATION */
+         LIBBASETYPEPTR, ps, 36, psd)
+/*  FUNCTION
+        Unregister and close a previously installed USB class.
+
+    INPUTS
+        puc - Valid class record returned by psdAddClass().
+
+    NOTES
+        Removes the class from the global list and tries to release
+        outstanding device and interface bindings before closing the
+        class library and freeing the class record. If the class use
+        count remains nonzero, the release loop retries without a sleep
+        and may run indefinitely. It sends EHMB_REMCLASS without a
+        completion status.
+        The record is invalid after successful teardown.
+
+    BUGS
+        EHMB_REMCLASS is queued after the class record is freed. The
+        event pointer cannot safely be dereferenced by receivers.
+
+    SEE ALSO
+        psdAddClass(), psdReleaseDevBinding(), psdReleaseIfBinding()
+
+******************************************************************************/
+{
+    AROS_LIBFUNC_INIT
+    KPRINTF(5, ("psdRemClass(%p)\n", puc));
+    psdLockWritePBase();
+    Remove(&puc->puc_Node);
+    psdUnlockPBase();
+
+    /* Check if there are still bindings remaining */
+    while(puc->puc_UseCnt) {
+        struct PsdDevice *pd;
+        struct PsdConfig *pc;
+        struct PsdInterface *pif;
+
+        KPRINTF(20, ("This should never happen: Class %s still in use (%ld), can't close!\n",
+                     puc->puc_ClassBase->lib_Node.ln_Name, puc->puc_UseCnt));
+
+        /* Well, try to release the open bindings in a best effort attempt */
+        psdLockReadPBase();
+        pd = NULL;
+        while((pd = psdGetNextDevice(pd))) {
+            if(pd->pd_DevBinding && (pd->pd_ClsBinding == puc) && (!(pd->pd_Flags & PDFF_APPBINDING))) {
+                psdUnlockPBase();
+                psdReleaseDevBinding(pd);
+                psdLockReadPBase();
+                pd = NULL; /* restart */
+                continue;
+            }
+            pc = (struct PsdConfig *) pd->pd_Configs.lh_Head;
+            while(pc->pc_Node.ln_Succ) {
+                pif = (struct PsdInterface *) pc->pc_Interfaces.lh_Head;
+                while(pif->pif_Node.ln_Succ) {
+                    if(pif->pif_IfBinding && (pif->pif_ClsBinding == puc)) {
+                        psdUnlockPBase();
+                        psdReleaseIfBinding(pif);
+                        psdLockReadPBase();
+                        pd = NULL; /* restart */
+                        continue;
+                    }
+                    pif = (struct PsdInterface *) pif->pif_Node.ln_Succ;
+                }
+                pc = (struct PsdConfig *) pc->pc_Node.ln_Succ;
+            }
+        }
+        psdUnlockPBase();
+        if(puc->puc_UseCnt) {
+            psdAddErrorMsg(RETURN_FAIL, (STRPTR) GM_UNIQUENAME(libname),
+                           "This should never happen! Class %s still in use (cnt=%ld). Could not get rid of it! Sorry, we're broke.",
+                           puc->puc_ClassBase->lib_Node.ln_Name, puc->puc_UseCnt);
+
+            /*psdDelayMS(2000);*/
+        }
+    }
+    psdAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname),
+                   "I shot class %s, but I didn't kill the deputy.",
+                   puc->puc_ClassBase->lib_Node.ln_Name);
+    CloseLibrary(puc->puc_ClassBase);
+    psdFreeVec(puc->puc_ClassName);
+    psdFreeVec(puc->puc_FullPath);
+    psdFreeVec(puc);
+    psdSendEvent(EHMB_REMCLASS, puc, NULL);
+    AROS_LIBFUNC_EXIT
+}
+/* \\\ */
+
+/* *** Error Msgs *** */
+
+/* /// "psdAddErrorMsgA()" */
+/****** poseidon.library/psdAddErrorMsgA ***********************************
+
+    NAME */
+        AROS_LH4(struct PsdErrorMsg *, psdAddErrorMsgA,
+/*  SYNOPSIS */
+         AROS_LHA(UWORD, level, D0),
+         AROS_LHA(STRPTR, origin, A0),
+         AROS_LHA(STRPTR, fmtstr, A1),
+         AROS_LHA(RAWARG, fmtdata, A2),
+/*  LOCATION */
+         LIBBASETYPEPTR, ps, 40, psd)
+/*  FUNCTION
+        Append a formatted diagnostic message to Poseidon's error log.
+
+    INPUTS
+        level   - Severity compared with the current logging preferences.
+        origin  - Valid source name copied into the error record.
+        fmtstr  - RawDoFmt() format string.
+        fmtdata - Matching RawDoFmt() argument stream.
+
+    RESULT
+        New error-message record, or NULL if logging at this severity is
+        disabled or a required allocation fails.
+
+    NOTES
+        Applies the configured info, warning, error and failure filters
+        before allocating or formatting a message. Depending on stack
+        flags, the text can also be sent to the kernel log. The record
+        becomes part of the Poseidon message list; callers must not free
+        its fields independently.
+
+    SEE ALSO
+        psdRemErrorMsg(), psdCopyStrFmtA(), psdGetAttrsA()
+
+******************************************************************************/
+{
+    AROS_LIBFUNC_INIT
+    struct PsdErrorMsg *pem;
+    if(((!ps->ps_GlobalCfg->pgc_LogInfo) && (level < RETURN_WARN)) ||
+            ((!ps->ps_GlobalCfg->pgc_LogWarning) && (level >= RETURN_WARN) && (level < RETURN_ERROR)) ||
+            ((!ps->ps_GlobalCfg->pgc_LogError) && (level >= RETURN_ERROR) && (level < RETURN_FAIL)) ||
+            ((!ps->ps_GlobalCfg->pgc_LogFailure) && (level >= RETURN_FAIL))) {
+        return(NULL);
+    }
+    if((pem = psdAllocVec(sizeof(struct PsdErrorMsg)))) {
+        pem->pem_Base = ps;
+        pem->pem_Level = level;
+        if((pem->pem_Origin = psdCopyStr(origin))) {
+            if((pem->pem_Msg = psdCopyStrFmtA(fmtstr, fmtdata))) {
+                if (ps->ps_Flags & PSF_KLOG) {
+                    KPrintF("[%s] %s\n", origin, pem->pem_Msg);
+                }
+
+                /*
+                 * Its possible that we get called in supervisor mode here,
+                 * due to a race condition when booting - so dont try to open
+                 * DOS directly since it will cause a crash/stack/corruption
+                 */
+                if(pHaveDOS(ps)) {
+                    DateStamp(&pem->pem_DateStamp);
+                } else {
+                    struct timerequest tr = ps->ps_TimerIOReq;
+                    tr.tr_node.io_Command = TR_GETSYSTIME;
+                    DoIO((struct IORequest *) &tr);
+                    pem->pem_DateStamp.ds_Days = tr.tr_time.tv_secs / (24*60*60);
+                    pem->pem_DateStamp.ds_Minute = (tr.tr_time.tv_secs / 60) % 60;
+                    pem->pem_DateStamp.ds_Tick = (tr.tr_time.tv_secs % 60) * 50;
+                }
+                Forbid();
+                AddTail(&ps->ps_ErrorMsgs, &pem->pem_Node);
+                Permit();
+                psdSendEvent(EHMB_ADDERRORMSG, pem, NULL);
+                return(pem);
+            }
+            psdFreeVec(pem->pem_Origin);
+        }
+        psdFreeVec(pem);
+    }
+    return(NULL);
+    AROS_LIBFUNC_EXIT
+}
+/* \\\ */
+
+/* /// "psdRemErrorMsg()" */
+/****** poseidon.library/psdRemErrorMsg ************************************
+
+    NAME */
+        AROS_LH1(void, psdRemErrorMsg,
+/*  SYNOPSIS */
+         AROS_LHA(struct PsdErrorMsg *, pem, A0),
+/*  LOCATION */
+         LIBBASETYPEPTR, ps, 41, psd)
+/*  FUNCTION
+        Remove a Poseidon error-log entry and release its storage.
+
+    INPUTS
+        pem - Valid error-message record currently linked in the list.
+
+    NOTES
+        Unlinks the record under Forbid()/Permit(), frees its origin and
+        text, and releases the record. An EHMB_REMERRORMSG event is emitted.
+        The pointer is invalid after this call, and no status is returned.
+
+    BUGS
+        EHMB_REMERRORMSG is emitted after freeing pem; consumers must
+        not dereference the event pointer.
+
+    SEE ALSO
+        psdAddErrorMsgA(), psdGetAttrsA()
+
+******************************************************************************/
+{
+    AROS_LIBFUNC_INIT
+    KPRINTF(1, ("psdRemErrorMsg()\n"));
+    Forbid();
+    Remove(&pem->pem_Node);
+    Permit();
+    psdFreeVec(pem->pem_Origin);
+    psdFreeVec(pem->pem_Msg);
+    psdFreeVec(pem);
+    psdSendEvent(EHMB_REMERRORMSG, pem, NULL);
+    AROS_LIBFUNC_EXIT
+}
+/* \\\ */
+
+/* *** Bindings *** */
+
+/* /// "pReleaseAfterDOSBindings()" */
+/*
+ * Called the first time a class scan happens from a process after the stack
+ * was started as a task (i.e. before DOS was available). Classes that flag
+ * themselves with UCCA_AfterDOSRestart (bootmouse.class, bootkeyboard.class)
+ * are only meant to bridge the gap until the full classes (hid.class) can be
+ * loaded, so their bindings are released here to let the subsequent scan
+ * hand the devices over. All classes are told about DOS being available.
+ */
+static void pReleaseAfterDOSBindings(LIBBASETYPEPTR ps)
+{
+    struct PsdUsbClass *puc;
+    IPTR restartme;
+
+    psdLockReadPBase();
+    psdAddErrorMsg0(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname), "Checking AfterDOS...");
+    puc = (struct PsdUsbClass *) ps->ps_Classes.lh_Head;
+    while(puc->puc_Node.ln_Succ) {
+        restartme = FALSE;
+        usbGetAttrs(UGA_CLASS, NULL,
+                    UCCA_AfterDOSRestart, &restartme,
+                    TAG_END);
+
+        if(restartme && puc->puc_UseCnt) {
+            struct PsdDevice *pd;
+            struct PsdConfig *pc;
+            struct PsdInterface *pif;
+
+            /* Well, try to release the open bindings in a best effort attempt */
+            pd = NULL;
+            while((pd = psdGetNextDevice(pd))) {
+                if(pd->pd_DevBinding && (pd->pd_ClsBinding == puc) && (!(pd->pd_Flags & PDFF_APPBINDING))) {
+                    psdUnlockPBase();
+                    psdAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname),
+                                   "AfterDOS: Temporarily releasing %s %s binding to %s.",
+                                   puc->puc_ClassName, "device", pd->pd_ProductStr);
+                    psdReleaseDevBinding(pd);
+                    psdLockReadPBase();
+                    pd = NULL; /* restart */
+                    continue;
+                }
+                ForeachNode(&pd->pd_Configs, pc) {
+                    ForeachNode(&pc->pc_Interfaces, pif) {
+                        if(pif->pif_IfBinding && (pif->pif_ClsBinding == puc)) {
+                            psdUnlockPBase();
+                            psdAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname),
+                                           "AfterDOS: Temporarily releasing %s %s binding to %s.",
+                                           puc->puc_ClassName, "interface", pd->pd_ProductStr);
+                            psdReleaseIfBinding(pif);
+                            psdLockReadPBase();
+                            pd = NULL; /* restart */
+                            continue;
+                        }
+                    }
+                }
+            }
+        }
+        usbDoMethodA(UCM_DOSAvailableEvent, NULL);
+        puc = (struct PsdUsbClass *) puc->puc_Node.ln_Succ;
+    }
+    psdUnlockPBase();
+}
+/* \\\ */
+
+/* /// "psdClassScan()" */
+/****** poseidon.library/psdClassScan **************************************
+
+    NAME */
+        AROS_LH0(void, psdClassScan,
+/*  SYNOPSIS */
+/*  LOCATION */
+         LIBBASETYPEPTR, ps, 37, psd)
+/*  FUNCTION
+        Ask USB class drivers to bind devices found by Poseidon.
+
+    NOTES
+        On the first process-driven scan after early task-based startup,
+        releases provisional boot-class bindings before selecting normal
+        drivers. Takes the base read lock and scans root devices through
+        psdHubClassScan(); downstream hub tasks handle their own devices.
+        If no class is registered, reports a warning and returns. No
+        binding count or completion status is returned.
+
+    SEE ALSO
+        psdHubClassScan(), psdAddClass(), psdParseCfg()
+
+******************************************************************************/
+{
+    AROS_LIBFUNC_INIT
+    struct PsdHardware *phw;
+    struct PsdDevice *pd;
+    struct PsdUsbClass *puc;
+    BOOL nodos = (FindTask(NULL)->tc_Node.ln_Type != NT_PROCESS);
+    BOOL handover;
+
+    if(nodos && (!ps->ps_ConfigRead)) {
+        // it's the first time we were reading the config and DOS was not available
+        ps->ps_StartedAsTask = TRUE;
+    }
+
+    /*
+     * First scan from a process after the stack came up as a task before DOS:
+     * the boot classes only bridged the gap, so release their bindings now and
+     * let the classes that are available by now (hid.class) take the devices
+     * over. This used to happen only in psdParseCfg(), i.e. only when a saved
+     * poseidon.prefs existed, leaving bootmouse/bootkeyboard in charge forever
+     * on systems without one.
+     */
+    Forbid();
+    handover = (!nodos) && ps->ps_StartedAsTask;
+    if(handover) {
+        ps->ps_StartedAsTask = FALSE;
+    }
+    Permit();
+    if(handover) {
+        pReleaseAfterDOSBindings(ps);
+    }
+
+    psdLockReadPBase();
+
+    puc = (struct PsdUsbClass *) ps->ps_Classes.lh_Head;
+    if(!puc->puc_Node.ln_Succ) {
+        psdAddErrorMsg0(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname), "ClassScan attempted with no classes installed!");
+        psdUnlockPBase();
+        return;
+    }
+
+    phw = (struct PsdHardware *) ps->ps_Hardware.lh_Head;
+    while(phw->phw_Node.ln_Succ) {
+        pd = (struct PsdDevice *) phw->phw_Devices.lh_Head;
+        while (pd->pd_Node.ln_Succ) {
+            if (!pd->pd_Hub) {
+                // for the root, do it ourselves, the rest is done by each hub task
+                psdHubClassScan(pd);
+            }
+            pd = (struct PsdDevice *) pd->pd_Node.ln_Succ;
+        }
+        phw = (struct PsdHardware *) phw->phw_Node.ln_Succ;
+    }
+    psdUnlockPBase();
+    //psdSendEvent(EHMB_CLSSCANRDY, NULL, NULL);
+    KPRINTF(5, ("************ Scanning finished!\n"));
+    AROS_LIBFUNC_EXIT
+}
+/* \\\ */
+
+/* /// "psdDoHubMethodA()" */
+/*****************************************************************************
+    NAME
+        IPTR psdDoHubMethodA(
+
+    SYNOPSIS
+        APTR pd, ULONG methodid, IPTR *methoddata)
+
+    FUNCTION
+        Dispatch a method to the class bound to a device's parent hub.
+
+    INPUTS
+        pd - Device used to select the parent hub class, or NULL. Keep the
+            device, parent hub and class binding alive until return.
+        methodid - Method identifier understood by that class.
+        methoddata - Array of IPTR arguments in the layout required by the
+            method. Keep the array and referenced objects valid until return
+            and for any longer lifetime required by that method.
+
+    RESULT
+        The method result, subject to the return-width defect below. Returns
+        zero without dispatch if pd is NULL, has no parent hub, or the parent
+        has no device binding or class binding. Zero is also a possible method
+        result and does not distinguish these cases.
+
+    NOTES
+        The argument array is passed unchanged. This function does not insert
+        the parent hub binding or validate the method identifier, argument count,
+        argument pointers or target port. The routing device and the objects in
+        the argument array have distinct roles.
+
+        For UCM_HubPowerCyclePort and UCM_HubDisablePort, the supplied hub.class
+        expects { hub device, one-based port number }. For UCM_HubClassScan it
+        expects { hub binding }; for UCM_HubClaimAppBinding,
+        { hub binding, tag list }; for UCM_HubReleaseIfBinding,
+        { hub binding, interface }; and for UCM_HubReleaseDevBinding,
+        UCM_HubSuspendDevice and UCM_HubResumeDevice, { hub binding, device }.
+
+        Takes no device or base lock. The caller must coordinate topology and
+        binding changes. The class method may block. For the supplied hub.class,
+        claim, release, suspend and resume requests can wait for its task to
+        reply. Power-cycle, disable-port and class-scan methods schedule work;
+        their return does not establish completion of that work.
+
+        Prefer the dedicated binding and power-state APIs when they provide the
+        requested operation; they perform additional bookkeeping and callbacks.
+
+    BUGS
+        The public result type is IPTR, but this implementation returns LONG.
+        On targets with pointers wider than 32 bits, pointer-valued and other
+        wide results cannot be relied on. In particular, do not obtain an
+        application-binding handle through this dispatcher on such targets;
+        use psdClaimAppBindingA(). The source also uses APTR for methoddata;
+        the public array layout remains IPTR elements.
+
+    SEE ALSO
+        psdClaimAppBindingA(), psdReleaseDevBinding(), psdReleaseIfBinding(),
+        psdSuspendDevice(), psdResumeDevice(), psdClassScan(),
+        psdHubClassScan(), psdHubClaimAppBindingA()
+
+*****************************************************************************/
+        AROS_LH3(LONG, psdDoHubMethodA,
+         AROS_LHA(struct PsdDevice *, pd, A0),
+         AROS_LHA(ULONG, methodid, D0),
+         AROS_LHA(APTR, methoddata, A1),
+         LIBBASETYPEPTR, ps, 92, psd)
+{
+    AROS_LIBFUNC_INIT
+    struct PsdUsbClass *puc;
+    KPRINTF(2, ("psdDoHubMethodA(%p)\n", pd));
+
+    if(pd) {
+        if(pd->pd_Hub) {
+            if((pd->pd_Hub->pd_DevBinding) && (puc = pd->pd_Hub->pd_ClsBinding)) {
+                return(usbDoMethodA(methodid, methoddata));
+            }
+        }
+    }
+    return 0;
+    AROS_LIBFUNC_EXIT
+}
+/* \\\ */
+
+/* /// "psdClaimAppBindingA()" */
+/****** poseidon.library/psdClaimAppBindingA *******************************
+
+    NAME */
+        AROS_LH1(struct PsdAppBinding *, psdClaimAppBindingA,
+/*  SYNOPSIS */
+         AROS_LHA(struct TagItem *, tags, A1),
+/*  LOCATION */
+         LIBBASETYPEPTR, ps, 45, psd)
+/*  FUNCTION
+        Claim a USB device for an application, bypassing normal class
+        ownership where the hub accepts the request.
+
+    INPUTS
+        tags - ABA_* binding attributes, including ABA_Device and
+               ABA_ReleaseHook; both are required.
+
+    RESULT
+        Application-binding handle, or NULL if required attributes are
+        absent or the hub declines the claim.
+
+    NOTES
+        ABA_ForceRelease requests release of existing class bindings
+        before attempting the claim. Root-hub claims are handled locally;
+        downstream devices delegate through the parent hub's class method.
+        On success the binding records the current task and an
+        EHMB_ADDBINDING event is sent. The supplied release hook is called
+        during release; the handle must not be used after that callback.
+
+    SEE ALSO
+        psdReleaseAppBinding(), psdHubClaimAppBindingA(), psdSetAttrsA()
+
+******************************************************************************/
+{
+    AROS_LIBFUNC_INIT
+    struct PsdDevice *pd;
+    struct PsdConfig *pc;
+    struct PsdInterface *pif;
+    struct PsdDevice *hubpd;
+    struct PsdAppBinding tmppab;
+    struct PsdAppBinding *pab = NULL;
+    struct PsdUsbClass *puc;
+
+    APTR binding;
+
+    KPRINTF(2, ("psdClaimAppBindingA(%p)\n", tags));
+
+    tmppab.pab_Device = NULL;
+    tmppab.pab_ReleaseHook = NULL;
+    tmppab.pab_Task = NULL;
+    tmppab.pab_ForceRelease = FALSE;
+    psdSetAttrsA(PGA_APPBINDING, &tmppab, tags);
+    if(tmppab.pab_Device && tmppab.pab_ReleaseHook) {
+        pd = tmppab.pab_Device;
+
+        // force release of other bindings first
+        if(tmppab.pab_ForceRelease) {
+            /* If there are bindings, get rid of them. */
+            if(pd->pd_DevBinding) {
+                psdAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname),
+                               "%s really wants to bind to %s, so I'm letting the old binding go.",
+                               FindTask(NULL)->tc_Node.ln_Name,
+                               pd->pd_ProductStr);
+
+                psdReleaseDevBinding(pd);
+            } else {
+                pc = (struct PsdConfig *) pd->pd_Configs.lh_Head;
+                while(pc->pc_Node.ln_Succ) {
+                    pif = (struct PsdInterface *) pc->pc_Interfaces.lh_Head;
+                    while(pif->pif_Node.ln_Succ) {
+                        if(pif->pif_IfBinding) {
+                            psdAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname),
+                                           "%s really wants to bind to %s, so I'm letting the old binding go.",
+                                           FindTask(NULL)->tc_Node.ln_Name,
+                                           pd->pd_ProductStr);
+                            psdReleaseIfBinding(pif);
+                        }
+                        pif = (struct PsdInterface *) pif->pif_Node.ln_Succ;
+                    }
+                    pc = (struct PsdConfig *) pc->pc_Node.ln_Succ;
+                }
+            }
+        }
+        hubpd = pd->pd_Hub;
+        if(!hubpd) { // claim app binding at the root hub -- improbable, but possible.
+            pab = psdHubClaimAppBindingA(tags);
+        } else {
+            if((binding = hubpd->pd_DevBinding) && (puc = hubpd->pd_ClsBinding)) {
+                pab = (struct PsdAppBinding *) usbDoMethod(UCM_HubClaimAppBinding, binding, tags);
+            }
+        }
+        if(pab) {
+            // fill in task names
+            pab->pab_Task = FindTask(NULL);
+            pab->pab_Node.ln_Name = pab->pab_Task->tc_Node.ln_Name;
+            psdSendEvent(EHMB_ADDBINDING, pd, NULL);
+            return(pab);
+        }
+    }
+    return(NULL);
+    AROS_LIBFUNC_EXIT
+}
+/* \\\ */
+
+/* /// "psdReleaseAppBinding()" */
+/****** poseidon.library/psdReleaseAppBinding ******************************
+
+    NAME */
+        AROS_LH1(void, psdReleaseAppBinding,
+/*  SYNOPSIS */
+         AROS_LHA(struct PsdAppBinding *, pab, A0),
+/*  LOCATION */
+         LIBBASETYPEPTR, ps, 46, psd)
+/*  FUNCTION
+        Request release of an application-owned device binding.
+
+    INPUTS
+        pab - Binding returned by psdClaimAppBindingA(), or NULL.
+
+    NOTES
+        For a root hub the implementation invokes the local hub release
+        path. For downstream devices it delegates to the parent hub class
+        through UCM_HubReleaseDevBinding when that hub is bound. The
+        binding release path invokes its registered release hook. No
+        completion or error result is returned.
+
+    SEE ALSO
+        psdClaimAppBindingA(), psdHubReleaseDevBinding()
+
+******************************************************************************/
+{
+    AROS_LIBFUNC_INIT
+    struct PsdDevice *pd;
+    struct PsdDevice *hubpd;
+    struct PsdUsbClass *puc;
+    APTR binding;
+
+    KPRINTF(2, ("psdReleaseAppBinding(%p)\n", pab));
+
+    if(pab) {
+        pd = pab->pab_Device;
+        hubpd = pd->pd_Hub;
+        if(!hubpd) { // release binding of hub (improbable)
+            psdHubReleaseDevBinding(pd);
+            return;
+        }
+        if((binding = hubpd->pd_DevBinding) && (puc = hubpd->pd_ClsBinding)) {
+            usbDoMethod(UCM_HubReleaseDevBinding, binding, pd);
+        }
+    }
+    AROS_LIBFUNC_EXIT
+}
+/* \\\ */
+
+/* /// "psdReleaseDevBinding()" */
+/*****************************************************************************
+    NAME
+        VOID psdReleaseDevBinding(
+
+    SYNOPSIS
+        APTR pd)
+
+    FUNCTION
+        Request release of the current device-level class or application binding.
+
+    INPUTS
+        pd - Valid, non-NULL device handle. Keep the device alive until return.
+
+    RESULT
+        None. Dispatch and release failures are not reported.
+
+    NOTES
+        Does nothing if the device has no device-level binding. Interface
+        bindings are not released by this call.
+
+        For a root device, calls psdHubReleaseDevBinding() directly. For a
+        child device, dispatches UCM_HubReleaseDevBinding through its parent
+        hub class. The supplied hub.class waits for the hub task to finish;
+        callbacks and that wait may block without a timeout.
+
+        The release path can invoke an application release hook or a class
+        release method. Stop using the binding before requesting release.
+        Coordinate device lifetime and competing binding operations with the
+        owner of the device.
+
+    BUGS
+        If the parent hub has no device binding or class binding, the request
+        is silently skipped. Returning does not by itself prove release.
+
+    SEE ALSO
+        psdReleaseIfBinding(), psdReleaseAppBinding(), psdHubReleaseDevBinding()
+
+*****************************************************************************/
+        AROS_LH1(void, psdReleaseDevBinding,
+         AROS_LHA(struct PsdDevice *, pd, A0),
+         LIBBASETYPEPTR, ps, 50, psd)
+{
+    AROS_LIBFUNC_INIT
+    struct PsdUsbClass *puc;
+    struct PsdDevice *hubpd;
+    APTR binding;
+
+    KPRINTF(5, ("psdReleaseDevBinding(%p)\n", pd));
+    if(pd->pd_DevBinding) {
+        hubpd = pd->pd_Hub;
+        if(!hubpd) { // release binding of hub
+            psdHubReleaseDevBinding(pd);
+            return;
+        }
+        if((binding = hubpd->pd_DevBinding) && (puc = hubpd->pd_ClsBinding)) {
+            usbDoMethod(UCM_HubReleaseDevBinding, binding, pd);
+        }
+    }
+    AROS_LIBFUNC_EXIT
+}
+/* \\\ */
+
+/* /// "psdReleaseIfBinding()" */
+/*****************************************************************************
+    NAME
+        VOID psdReleaseIfBinding(
+
+    SYNOPSIS
+        APTR pif)
+
+    FUNCTION
+        Request release of an interface class binding.
+
+    INPUTS
+        pif - Valid, non-NULL interface handle whose configuration and device
+            remain alive until return.
+
+    RESULT
+        None. Dispatch and release failures are not reported.
+
+    NOTES
+        Does nothing unless both an interface binding and its class are present.
+        Other interface bindings and the device-level binding are left intact.
+
+        For a root device, calls psdHubReleaseIfBinding() directly. Otherwise
+        dispatches UCM_HubReleaseIfBinding through the parent hub class. The
+        supplied hub.class waits for the hub task to finish; the class release
+        callback and that wait may block without a timeout.
+
+        Stop using the binding before requesting release. Coordinate interface
+        and device lifetime and competing binding operations with their owner.
+
+    BUGS
+        If the parent hub has no device binding or class binding, the request
+        is silently skipped. Returning does not by itself prove release.
+
+    SEE ALSO
+        psdReleaseDevBinding(), psdHubReleaseIfBinding()
+
+*****************************************************************************/
+        AROS_LH1(void, psdReleaseIfBinding,
+         AROS_LHA(struct PsdInterface *, pif, A0),
+         LIBBASETYPEPTR, ps, 51, psd)
+{
+    AROS_LIBFUNC_INIT
+    struct PsdUsbClass *puc;
+    struct PsdDevice *hubpd;
+    APTR binding;
+
+    KPRINTF(5, ("psdReleaseIfBinding(%p)\n", pif));
+    if(pif->pif_IfBinding && pif->pif_ClsBinding) {
+        hubpd = pif->pif_Config->pc_Device->pd_Hub;
+        if(!hubpd) { // release binding of hub (improbable)
+            psdHubReleaseIfBinding(pif);
+            return;
+        }
+        if((binding = hubpd->pd_DevBinding) && (puc = hubpd->pd_ClsBinding)) {
+            usbDoMethod(UCM_HubReleaseIfBinding, binding, pif);
+        }
+    }
+    AROS_LIBFUNC_EXIT
+}
+/* \\\ */
+
+/* /// "psdUnbindAll()" */
+/*****************************************************************************
+    NAME
+        VOID psdUnbindAll(
+
+    SYNOPSIS
+        )
+
+    FUNCTION
+        Release device and interface bindings throughout the stack.
+
+    RESULT
+        None.
+
+    NOTES
+        Visits hardware, devices, configurations and interfaces. Requests one
+        release, then restarts traversal from the beginning. Returns after a
+        complete traversal finds no binding. This is not an atomic snapshot
+        or a guarantee that later scans cannot create new bindings.
+
+        Can invoke class release methods and application release hooks, and
+        can wait for hub tasks. Coordinate stack teardown and exclude concurrent
+        device removal or rebinding before calling. Devices and hardware are
+        not explicitly freed by this function, but release callbacks can have
+        additional effects.
+
+    BUGS
+        There is no timeout or progress check. If a release leaves its binding
+        in place, the traversal can retry indefinitely. The base read lock is
+        released before each release request; the selected object is not pinned
+        across that interval, so concurrent removal can invalidate it.
+
+    SEE ALSO
+        psdReleaseDevBinding(), psdReleaseIfBinding(), psdClassScan()
+
+*****************************************************************************/
+        AROS_LH0(void, psdUnbindAll,
+         LIBBASETYPEPTR, ps, 61, psd)
+{
+    AROS_LIBFUNC_INIT
+    struct PsdHardware *phw;
+    struct PsdDevice *pd;
+    struct PsdConfig *pc;
+    struct PsdInterface *pif;
+    BOOL restart;
+
+    KPRINTF(10, ("pUnbindAll()\n"));
+    /* FIXME What happens if devices or hardware gets removed during the process? Need notify semaphore */
+    psdLockReadPBase();
+    do {
+        restart = FALSE;
+        phw = (struct PsdHardware *) ps->ps_Hardware.lh_Head;
+        while(phw->phw_Node.ln_Succ) {
+            pd = (struct PsdDevice *) phw->phw_Devices.lh_Head;
+            while(pd->pd_Node.ln_Succ) {
+                /* If there are bindings, get rid of them. */
+                if(pd->pd_DevBinding) {
+                    psdUnlockPBase();
+                    psdReleaseDevBinding(pd);
+                    psdLockReadPBase();
+                    restart = TRUE;
+                    break;
+                }
+                pc = (struct PsdConfig *) pd->pd_Configs.lh_Head;
+                while(pc->pc_Node.ln_Succ) {
+                    pif = (struct PsdInterface *) pc->pc_Interfaces.lh_Head;
+                    while(pif->pif_Node.ln_Succ) {
+                        if(pif->pif_IfBinding) {
+                            psdUnlockPBase();
+                            psdReleaseIfBinding(pif);
+                            psdLockReadPBase();
+                            restart = TRUE;
+                            break;
+                        }
+                        pif = (struct PsdInterface *) pif->pif_Node.ln_Succ;
+                    }
+                    if(restart) {
+                        break;
+                    }
+                    pc = (struct PsdConfig *) pc->pc_Node.ln_Succ;
+                }
+                if(restart) {
+                    break;
+                }
+                pd = (struct PsdDevice *) pd->pd_Node.ln_Succ;
+            }
+            if(restart) {
+                break;
+            }
+            phw = (struct PsdHardware *) phw->phw_Node.ln_Succ;
+        }
+    } while(restart);
+    psdUnlockPBase();
+    AROS_LIBFUNC_EXIT
+}
+/* \\\ */
+
+/* /// "psdHubClassScan()" */
+/*****************************************************************************
+    NAME
+        VOID psdHubClassScan(
+
+    SYNOPSIS
+        APTR pd)
+
+    FUNCTION
+        Try to bind installed USB classes to a device and request a hub scan.
+
+    INPUTS
+        pd - Valid, non-NULL device with a stable configuration and interface
+            tree. Keep it alive until return.
+
+    RESULT
+        None. Allocation, configuration and binding failures are not aggregated.
+
+    NOTES
+        Runs in the owning hub context. Ordinary clients should normally use
+        psdClassScan() to initiate scanning through the stack.
+
+        Creates a message port and control pipe, takes the base read lock and
+        the device write lock, and may perform USB control transfers and invoke
+        class methods while those locks are held. There is no whole-scan timeout.
+        Allocation failure for the message port or control pipe prevents
+        new binding attempts.
+
+        An existing device binding or the device's no-class-binding setting
+        skips new binding attempts. Otherwise a forced device class is tried
+        first when no interface binding exists. A configured forced name
+        suppresses ordinary fallback even when that class is absent or refuses.
+
+        Without that forced-device path, classes are offered the device one
+        binding-priority tier at a time (see UCCA_Priority), highest first.
+        Each tier is first tried on the unbound interfaces across eligible
+        configurations and alternate settings, in configuration and class
+        order, and then, if the device has no interface binding at all, at
+        device level. A lower-priority tier only sees what the higher tiers
+        declined. Existing interface bindings restrict configuration
+        selection. Forced interface names restrict class selection.
+
+        Successful bindings update class use counts and send EHMB_ADDBINDING.
+        Configuration and alternate-setting selection can change even when no
+        class binds. Do not retain assumptions about current interface ordering
+        across this call.
+
+        Finally, if a device class binding exists, invokes UCM_HubClassScan on
+        it, including when new binding attempts were skipped. The supplied
+        hub.class schedules its downstream scan; this call does not wait for
+        that downstream scan to finish.
+
+    BUGS
+        A NULL device handle is not validated before dereference.
+        Class callbacks run under stack and device locks and can deadlock if
+        they wait for another task requiring those locks. Forced class names
+        are borrowed from configuration storage; concurrent configuration
+        replacement can invalidate them. Coordinate configuration mutation
+        with scanning. Failed attempts do not restore the original configuration
+        or guarantee that all temporary alternate selections were undone.
+
+    SEE ALSO
+        psdClassScan(), psdSetForcedBinding(), psdSetDeviceConfig(),
+        psdSetAltInterface(), psdHubClaimAppBindingA()
+
+*****************************************************************************/
+        AROS_LH1(void, psdHubClassScan,
+         AROS_LHA(struct PsdDevice *, pd, A0),
+         LIBBASETYPEPTR, ps, 82, psd)
+{
+    AROS_LIBFUNC_INIT
+    struct PsdUsbClass *puc;
+    struct PsdUsbClass *tierpuc;
+    struct PsdUsbClass *tierend;
+    struct PsdConfig *pc;
+    struct PsdInterface *pif;
+    struct PsdInterface *firstpif;
+    struct PsdPipe *pp = NULL;
+    struct MsgPort *mp;
+    APTR binding;
+    UWORD hasifbinding;
+    BOOL mainif;
+    STRPTR owner;
+    BYTE tierpri;
+
+    KPRINTF(5, ("psdHubClassScan()\n"));
+
+    if(!(mp = CreateMsgPort())) {
+        return;
+    }
+    psdLockReadPBase();
+    psdLockWriteDevice(pd);
+    while(!(pd->pd_PoPoCfg.poc_NoClassBind || pd->pd_DevBinding)) {
+        if(!(pp = psdAllocPipe(pd, mp, NULL))) {
+            break;
+        }
+        KPRINTF(5, ("Doing ClassScan on Device: %s\n", pd->pd_ProductStr));
+        hasifbinding = 0;
+        /* First look if there is any interface binding. We may not change
+           the current config in this case! */
+        pc = (struct PsdConfig *) pd->pd_Configs.lh_Head;
+        while(pc->pc_Node.ln_Succ) {
+            pif = (struct PsdInterface *) pc->pc_Interfaces.lh_Head;
+
+            while(pif->pif_Node.ln_Succ) {
+                if(pif->pif_IfBinding) {
+                    hasifbinding = pc->pc_CfgNum;
+                    break;
+                }
+                pif = (struct PsdInterface *) pif->pif_Node.ln_Succ;
+            }
+            pc = (struct PsdConfig *) pc->pc_Node.ln_Succ;
+        }
+
+        owner = psdGetForcedBinding(pd->pd_IDString, NULL);
+        if((!hasifbinding) && owner) {
+            puc = (struct PsdUsbClass *) ps->ps_Classes.lh_Head;
+            while(puc->puc_Node.ln_Succ) {
+                if(!strcmp(owner, puc->puc_ClassName)) {
+                    if((pd->pd_DevBinding = (APTR) usbDoMethod(UCM_ForceDeviceBinding, pd))) {
+                        pd->pd_ClsBinding = puc;
+                        puc->puc_UseCnt++;
+                        psdSendEvent(EHMB_ADDBINDING, pd, NULL);
+                    } else {
+                        psdAddErrorMsg(RETURN_ERROR, (STRPTR) GM_UNIQUENAME(libname),
+                                       "Forced device binding of %s to %s failed.", pd->pd_ProductStr, owner);
+                    }
+                    break;
+                }
+                puc = (struct PsdUsbClass *) puc->puc_Node.ln_Succ;
+            }
+            /* no more scanning required, abort here */
+            break;
+        }
+
+        /* The class list is kept sorted by binding priority (UCCA_Priority).
+           Walk it one priority tier at a time: a class only gets to see the
+           device once every class of a higher priority has declined it, at
+           device level as well as at interface level. Within a tier the
+           historical order holds: interface bindings first, in configuration
+           and class order, then device bindings. */
+        tierpuc = (struct PsdUsbClass *) ps->ps_Classes.lh_Head;
+        while(tierpuc->puc_Node.ln_Succ) {
+            tierpri = tierpuc->puc_Node.ln_Pri;
+            tierend = tierpuc;
+            while(tierend->puc_Node.ln_Succ && (tierend->puc_Node.ln_Pri == tierpri)) {
+                tierend = (struct PsdUsbClass *) tierend->puc_Node.ln_Succ;
+            }
+            KPRINTF(5, ("  Classes with priority %ld\n", (LONG) tierpri));
+
+            /* Interface bindings for this tier */
+            pc = (struct PsdConfig *) pd->pd_Configs.lh_Head;
+            while(pc->pc_Node.ln_Succ) {
+                if((!hasifbinding) || (hasifbinding == pc->pc_CfgNum)) {
+                    /* If the current config is not the one selected, change it */
+                    if(pd->pd_CurrCfg != pc->pc_CfgNum) {
+                        psdSetDeviceConfig(pp, pc->pc_CfgNum);
+                    }
+                    KPRINTF(5, ("  Config %ld\n", pc->pc_CfgNum));
+                    /* If something went wrong above, we must exclude this config */
+                    if(pd->pd_CurrCfg == pc->pc_CfgNum) {
+                        pif = (struct PsdInterface *) pc->pc_Interfaces.lh_Head;
+                        while(pif->pif_Node.ln_Succ) {
+                            KPRINTF(5, ("    Interface %ld\n", pif->pif_IfNum));
+                            firstpif = pif;
+                            mainif = TRUE;
+                            if(!pif->pif_IfBinding) {
+                                binding = NULL;
+                                do {
+                                    if(!psdSetAltInterface(pp, pif)) {
+                                        pif->pif_IfBinding = NULL;
+                                        /* Okay, this alternate setting failed. Try to get next one */
+                                        if(!mainif) {
+                                            pif = (struct PsdInterface *) pif->pif_Node.ln_Succ;
+                                            if(pif->pif_Node.ln_Succ) {
+                                                KPRINTF(5, ("CONT!\n"));
+                                                continue;
+                                            } else {
+                                                KPRINTF(5, ("BREAK!\n"));
+                                                pif = firstpif;
+                                                break;
+                                            }
+                                        }
+                                    }
+                                    owner = psdGetForcedBinding(pd->pd_IDString, pif->pif_IDString);
+                                    puc = tierpuc;
+                                    while(puc != tierend) {
+                                        KPRINTF(5, (">>>PING %s!\n", puc->puc_ClassName));
+                                        if(owner) {
+                                            if(!strcmp(owner, puc->puc_ClassName)) {
+                                                binding = (APTR) usbDoMethod(UCM_ForceInterfaceBinding, pif);
+                                                if(!binding) {
+                                                    psdAddErrorMsg(RETURN_ERROR, (STRPTR) GM_UNIQUENAME(libname),
+                                                                   "Forced interface binding of %s to %s failed.", pd->pd_ProductStr, owner);
+                                                }
+                                            }
+                                            if(!binding) {
+                                                puc = (struct PsdUsbClass *) puc->puc_Node.ln_Succ;
+                                                continue;
+                                            }
+                                        } else {
+                                            binding = (APTR) usbDoMethod(UCM_AttemptInterfaceBinding, pif);
+                                        }
+                                        Forbid();
+                                        KPRINTF(5, ("<<<PONG!!\n"));
+                                        if(binding) {
+                                            KPRINTF(5, ("Got binding!\n"));
+                                            /* Find root config structure */
+                                            pif = (struct PsdInterface *) pc->pc_Interfaces.lh_Head;
+                                            while(pif->pif_Node.ln_Succ) {
+                                                if(pif->pif_IfNum == firstpif->pif_IfNum) {
+                                                    break;
+                                                }
+                                                pif = (struct PsdInterface *) pif->pif_Node.ln_Succ;
+                                            }
+                                            if(!pif->pif_Node.ln_Succ) {
+                                                KPRINTF(5, ("Fucked it up!\n"));
+                                                psdAddErrorMsg0(RETURN_FAIL, (STRPTR) GM_UNIQUENAME(libname), "Something incredibly stupid happend. I've given up.");
+                                                Permit();
+                                                break;
+                                            }
+                                            pif->pif_IfBinding = binding;
+                                            pif->pif_ClsBinding = puc;
+                                            hasifbinding = pc->pc_CfgNum;
+                                            puc->puc_UseCnt++;
+                                            psdSendEvent(EHMB_ADDBINDING, pd, NULL);
+                                            Permit();
+                                            break;
+                                        }
+                                        Permit();
+                                        puc = (struct PsdUsbClass *) puc->puc_Node.ln_Succ;
+                                    }
+                                    if(binding) {
+                                        break;
+                                    }
+                                    //break; /* FIXME: DISABLED ALTSCANNING */
+                                    /* Check alternate setting */
+                                    if(pif->pif_AlterIfs.lh_Head->ln_Succ) {
+                                        /* There are some alternative interfaces, start at top */
+                                        pif = (struct PsdInterface *) pif->pif_AlterIfs.lh_Head;
+                                        mainif = FALSE;
+                                    }
+                                } while(pif != firstpif);
+                                //pif->pif_IfBinding = binding;
+                                if(!binding) {
+                                    psdSetAltInterface(pp, pif);
+                                }
+                                /* Hohum, search current main interface then */
+                                pif = (struct PsdInterface *) pc->pc_Interfaces.lh_Head;
+                                while(pif->pif_Node.ln_Succ) {
+                                    if(pif->pif_IfNum == firstpif->pif_IfNum) {
+                                        break;
+                                    }
+                                    pif = (struct PsdInterface *) pif->pif_Node.ln_Succ;
+                                }
+                            }
+                            pif = (struct PsdInterface *) pif->pif_Node.ln_Succ;
+                        }
+                    }
+                }
+                KPRINTF(5, ("End, next ConfigCheck!\n"));
+                pc = (struct PsdConfig *) pc->pc_Node.ln_Succ;
+            }
+            /* No interface binding so far, offer the whole device to this tier.
+               A forced device owner was handled before the tier loop, so only
+               ordinary attempts are made here. */
+            if(!hasifbinding) {
+                binding = NULL;
+                puc = tierpuc;
+                while(puc != tierend) {
+                    binding = (APTR) usbDoMethod(UCM_AttemptDeviceBinding, pd);
+                    if(binding) {
+                        pd->pd_DevBinding = binding;
+                        pd->pd_ClsBinding = puc;
+                        puc->puc_UseCnt++;
+                        psdSendEvent(EHMB_ADDBINDING, pd, NULL);
+                        break;
+                    }
+                    puc = (struct PsdUsbClass *) puc->puc_Node.ln_Succ;
+                }
+                if(binding) {
+                    break;
+                }
+            }
+            tierpuc = tierend;
+        }
+        break;
+    }
+    if(pp) {
+        psdFreePipe(pp);
+    }
+    // call hub class scan code
+    if((binding = pd->pd_DevBinding) && (puc = pd->pd_ClsBinding)) {
+        usbDoMethod(UCM_HubClassScan, binding);
+    }
+    psdUnlockDevice(pd);
+    psdUnlockPBase();
+    DeleteMsgPort(mp);
+    AROS_LIBFUNC_EXIT
+}
+/* \\\ */
+
+/* /// "psdHubClaimAppBindingA()" */
+/*****************************************************************************
+    NAME
+        APTR psdHubClaimAppBindingA(
+
+    SYNOPSIS
+        struct TagItem *taglist)
+
+    FUNCTION
+        Install an application binding on an unbound device.
+
+    INPUTS
+        taglist - TagItem list describing the application binding.
+
+    TAGS
+        ABA_Device - Required valid device handle.
+        ABA_ReleaseHook - Required hook, retained until release. It is called
+            with the binding handle as the object and ABA_UserData as the message.
+        ABA_UserData - Value passed to the release hook; defaults to zero.
+            Keep any referenced data alive until the hook has returned.
+        ABA_Task - Task pointer stored in the binding; defaults to NULL.
+            This function does not substitute the current task.
+        ABA_ForceRelease - Stored flag; does not force release in this function.
+
+    RESULT
+        An installed binding handle, or NULL if allocation fails, a required
+        attribute is missing, or any device or interface binding already exists.
+        Do not free the handle with psdFreeVec().
+
+    NOTES
+        This is the hub-side operation. Applications should normally use
+        psdClaimAppBindingA(), which dispatches to the hub owner, handles forced
+        release, records the calling task and sends the binding-added event.
+
+        The caller must serialize access to the device and its configurations;
+        this function takes no device lock. Tag values are copied, but referenced
+        objects are retained rather than copied. Keep the device, hook and any
+        supplied task pointer valid for the binding lifetime. The tag list itself
+        is not retained.
+
+        Release through the owning binding path. On release, the hook must
+        finish using the binding before returning; Poseidon then frees it.
+        This function neither emits a binding-added event nor assigns a task
+        name to the binding.
+
+    SEE ALSO
+        psdClaimAppBindingA(), psdReleaseAppBinding(), psdHubReleaseDevBinding()
+
+*****************************************************************************/
+        AROS_LH1(struct PsdAppBinding *, psdHubClaimAppBindingA,
+         AROS_LHA(struct TagItem *, tags, A1),
+         LIBBASETYPEPTR, ps, 83, psd)
+{
+    AROS_LIBFUNC_INIT
+    struct PsdDevice *pd;
+    struct PsdAppBinding *pab;
+    struct PsdConfig *pc;
+    struct PsdInterface *pif;
+
+    BOOL hasbinding = FALSE;
+    KPRINTF(2, ("psdHubClaimAppBindingA(%p)\n", tags));
+
+    if((pab = psdAllocVec(sizeof(struct PsdAppBinding)))) {
+        psdSetAttrsA(PGA_APPBINDING, pab, tags);
+        if(pab->pab_Device && pab->pab_ReleaseHook) {
+            pd = pab->pab_Device;
+            if(pd->pd_DevBinding) {
+                hasbinding = TRUE;
+            } else {
+                pc = (struct PsdConfig *) pd->pd_Configs.lh_Head;
+                while(pc->pc_Node.ln_Succ) {
+                    pif = (struct PsdInterface *) pc->pc_Interfaces.lh_Head;
+
+                    while(pif->pif_Node.ln_Succ) {
+                        if(pif->pif_IfBinding) {
+                            hasbinding = TRUE;
+                            break;
+                        }
+                        pif = (struct PsdInterface *) pif->pif_Node.ln_Succ;
+                    }
+                    pc = (struct PsdConfig *) pc->pc_Node.ln_Succ;
+                }
+            }
+            if(!hasbinding) {
+                pd->pd_Flags |= PDFF_APPBINDING;
+                pd->pd_DevBinding = pab;
+                pd->pd_ClsBinding = NULL;
+                return(pab);
+            }
+        }
+        psdFreeVec(pab);
+    }
+    return(NULL);
+    AROS_LIBFUNC_EXIT
+}
+/* \\\ */
+
+/* /// "psdHubReleaseDevBinding()" */
+/*****************************************************************************
+    NAME
+        VOID psdHubReleaseDevBinding(
+
+    SYNOPSIS
+        APTR pd)
+
+    FUNCTION
+        Remove a device-level binding and invoke its release callback.
+
+    INPUTS
+        pd - Device handle, or NULL to do nothing. Keep a non-NULL device
+            alive until return.
+
+    RESULT
+        None. Callback results are ignored.
+
+    NOTES
+        This is the hub-side operation; ordinary clients should use
+        psdReleaseDevBinding() or psdReleaseAppBinding(). Waits for the device
+        write lock and keeps it held while invoking the release callback.
+        Coordinate device lifetime and avoid callback dependencies on another
+        task that needs this lock.
+
+        Clears the device binding pointer before the callback. For an application
+        binding, calls its release hook with the binding as the object and its
+        user data as the message, then clears the application-binding flag,
+        frees the binding and sends EHMB_REMBINDING. The hook must not free the
+        binding or retain it after returning.
+
+        For a class binding, clears the class pointer, calls
+        UCM_ReleaseDeviceBinding, decrements the class use count and sends
+        EHMB_REMBINDING. If no class pointer is present, only the device binding
+        pointer is cleared. Interface bindings are not released here.
+
+        Release callbacks must complete before return. Do not install a new
+        binding from the callback while this release is still cleaning up.
+
+    SEE ALSO
+        psdReleaseDevBinding(), psdReleaseAppBinding(), psdHubReleaseIfBinding()
+
+*****************************************************************************/
+        AROS_LH1(void, psdHubReleaseDevBinding,
+         AROS_LHA(struct PsdDevice *, pd, A0),
+         LIBBASETYPEPTR, ps, 84, psd)
+{
+    AROS_LIBFUNC_INIT
+    struct PsdUsbClass *puc;
+    APTR binding;
+    struct PsdAppBinding *pab;
+
+    KPRINTF(5, ("psdHubReleaseDevBinding(%p)\n", pd));
+    if(pd) {
+        psdLockWriteDevice(pd);
+        if((binding = pd->pd_DevBinding)) {
+            pd->pd_DevBinding = NULL;
+            if(pd->pd_Flags & PDFF_APPBINDING) {
+                pab = (struct PsdAppBinding *) binding;
+                CallHookPkt(pab->pab_ReleaseHook, pab, (APTR) pab->pab_UserData);
+                pd->pd_ClsBinding = NULL;
+                pd->pd_Flags &= ~PDFF_APPBINDING;
+                psdFreeVec(pab);
+                psdSendEvent(EHMB_REMBINDING, pd, NULL);
+            } else {
+                puc = pd->pd_ClsBinding;
+                if(puc) {
+                    pd->pd_ClsBinding = NULL;
+                    usbDoMethod(UCM_ReleaseDeviceBinding, binding);
+                    puc->puc_UseCnt--;
+                    psdSendEvent(EHMB_REMBINDING, pd, NULL);
+                }
+            }
+        }
+        psdUnlockDevice(pd);
+    }
+    AROS_LIBFUNC_EXIT
+}
+/* \\\ */
+
+/* /// "psdHubReleaseIfBinding()" */
+/*****************************************************************************
+    NAME
+        VOID psdHubReleaseIfBinding(
+
+    SYNOPSIS
+        APTR pif)
+
+    FUNCTION
+        Remove an interface binding and invoke its class release method.
+
+    INPUTS
+        pif - Interface handle, or NULL to do nothing. Keep a non-NULL
+            interface, its configuration and its device alive until return.
+
+    RESULT
+        None. The class method result is ignored.
+
+    NOTES
+        This is the hub-side operation; ordinary clients should use
+        psdReleaseIfBinding(). Waits for the device write lock and holds it
+        through the class callback. Avoid callback dependencies on another
+        task that needs this lock.
+
+        If a binding exists, clears the interface binding pointer. If its class
+        is present, also clears the class pointer, calls
+        UCM_ReleaseInterfaceBinding and decrements the class use count.
+        Sends EHMB_REMBINDING for the device whenever a binding was removed,
+        including when no class pointer was present.
+
+        Does nothing if the interface has no binding. Other interface bindings
+        and the device-level binding are left intact. Stop using the released
+        binding; the class owns its cleanup. This function does not free the
+        interface or its configuration.
+
+    SEE ALSO
+        psdReleaseIfBinding(), psdHubReleaseDevBinding()
+
+*****************************************************************************/
+        AROS_LH1(void, psdHubReleaseIfBinding,
+         AROS_LHA(struct PsdInterface *, pif, A0),
+         LIBBASETYPEPTR, ps, 85, psd)
+{
+    AROS_LIBFUNC_INIT
+    struct PsdUsbClass *puc;
+    struct PsdDevice *pd;
+    APTR binding;
+
+    KPRINTF(5, ("psdHubReleaseIfBinding(%p)\n", pif));
+
+    if(pif) {
+        pd = pif->pif_Config->pc_Device;
+        psdLockWriteDevice(pd);
+        if((binding = pif->pif_IfBinding)) {
+            pif->pif_IfBinding = NULL;
+            puc = pif->pif_ClsBinding;
+            if(puc) {
+                pif->pif_ClsBinding = NULL;
+                usbDoMethod(UCM_ReleaseInterfaceBinding, binding);
+                puc->puc_UseCnt--;
+            }
+            psdSendEvent(EHMB_REMBINDING, pd, NULL);
+        }
+        psdUnlockDevice(pd);
+    }
+    AROS_LIBFUNC_EXIT
+}
+/* \\\ */
+
+/* *** Events *** */
+
+/* /// "psdAddEventHandler()" */
+/*****************************************************************************
+    NAME
+        APTR psdAddEventHandler(
+
+    SYNOPSIS
+        struct MsgPort *mp, ULONG msgmask)
+
+    FUNCTION
+        Subscribe a message port to Poseidon events.
+
+    INPUTS
+        mp - Live message port dedicated to this registration.
+        msgmask - Bitwise OR of EHMF_* masks from <libraries/poseidon.h>.
+            Zero registers a handler that receives no events.
+
+    RESULT
+        An opaque registration handle, or NULL for a NULL port or allocation
+        failure. Remove a successful registration with psdRemEventHandler().
+
+    NOTES
+        Call in task context; registration may wait for a semaphore. The
+        port is retained, not copied or owned. Keep it alive until removal
+        completes and coordinate removal with the receiving task.
+
+        Each notification is a PsdEventNote message. Read ENA_EventID,
+        ENA_Param1 and ENA_Param2 with psdGetAttrsA(PGA_EVENTNOTE, ...), then
+        ReplyMsg() exactly once. Do not free the message or use it after reply.
+        Parameter pointers do not pin their objects; removal notifications
+        can refer to objects that are no longer safe to dereference.
+
+        There is no initial state snapshot. Allocation failure can silently
+        drop individual notifications; use events as change notifications,
+        not as a guaranteed transaction log.
+
+    SEE ALSO
+        psdRemEventHandler(), psdSendEvent(), psdGetAttrsA()
+
+*****************************************************************************/
+        AROS_LH2(struct PsdEventHook *, psdAddEventHandler,
+
+         AROS_LHA(struct MsgPort *, mp, A1),
+         AROS_LHA(ULONG, msgmask, D0),
+         LIBBASETYPEPTR, ps, 47, psd)
+{
+    AROS_LIBFUNC_INIT
+    struct PsdEventHook *peh = NULL;
+
+    KPRINTF(5, ("psdAddEventHandler(%p, %p)\n", mp, msgmask));
+
+    if(mp) {
+        ObtainSemaphore(&ps->ps_ReentrantLock);
+        if((peh = psdAllocVec(sizeof(struct PsdEventHook)))) {
+            peh->peh_MsgPort = mp;
+            peh->peh_MsgMask = msgmask;
+            AddTail(&ps->ps_EventHooks, &peh->peh_Node);
+        }
+        ReleaseSemaphore(&ps->ps_ReentrantLock);
+    }
+    return(peh);
+    AROS_LIBFUNC_EXIT
+}
+/* \\\ */
+
+/* /// "psdRemEventHandler()" */
+/*****************************************************************************
+    NAME
+        VOID psdRemEventHandler(
+
+    SYNOPSIS
+        APTR peh)
+
+    FUNCTION
+        Remove an event registration and reply to queued port messages.
+
+    INPUTS
+        peh - Live registration returned by psdAddEventHandler(), or NULL.
+
+    NOTES
+        NULL is ignored. Call in task context. Removes the registration
+        under the event semaphore, drains its port with GetMsg()/ReplyMsg(),
+        and frees the registration. No later send can select that registration.
+        The port itself is not deleted.
+
+        Coordinate with the receiving task before removal. Messages already
+        taken by the consumer are not drained; the consumer must still reply
+        to each exactly once. Do not reuse the registration handle.
+
+    BUGS
+        Drains every message on the port without checking its origin. Use a
+        dedicated port, not a port shared with another registration or protocol.
+
+    SEE ALSO
+        psdAddEventHandler(), psdSendEvent()
+
+*****************************************************************************/
+        AROS_LH1(void, psdRemEventHandler,
+
+         AROS_LHA(struct PsdEventHook *, peh, A0),
+         LIBBASETYPEPTR, ps, 48, psd)
+{
+    AROS_LIBFUNC_INIT
+    struct Message *msg;
+
+    KPRINTF(5, ("psdRemEventHandler(%p)\n", peh));
+    if(!peh) {
+        return;
+    }
+    ObtainSemaphore(&ps->ps_ReentrantLock);
+    Remove(&peh->peh_Node);
+    while((msg = GetMsg(peh->peh_MsgPort))) {
+        ReplyMsg(msg);
+    }
+    ReleaseSemaphore(&ps->ps_ReentrantLock);
+    pGarbageCollectEvents(ps);
+    psdFreeVec(peh);
+    AROS_LIBFUNC_EXIT
+}
+/* \\\ */
+
+/* /// "psdSendEvent()" */
+/*****************************************************************************
+    NAME
+        VOID psdSendEvent(
+
+    SYNOPSIS
+        ULONG ehmt, APTR param1, APTR param2)
+
+    FUNCTION
+        Queue a notification for each registration selecting an event.
+
+    INPUTS
+        ehmt - EHMB_* event number, not an EHMF_* mask. Use a defined event
+            from <libraries/poseidon.h>; the shift count is not validated.
+        param1, param2 - Event-specific values copied into each notification.
+            Pointed-to objects are neither copied nor retained.
+
+    NOTES
+        Call in task context; allocation and the event semaphore may wait.
+        The call queues messages and returns without waiting for recipients.
+        Each recipient must ReplyMsg() its notification. Replied messages are
+        reclaimed by Poseidon during subsequent event garbage collection.
+
+        Keep event payload lifetime independent of message delivery. An object
+        address may identify a change without remaining safe to dereference.
+
+    BUGS
+        Allocation failure drops the notification for that recipient without
+        a return status. Delivery is neither all-or-nothing nor guaranteed.
+
+    SEE ALSO
+        psdAddEventHandler(), psdRemEventHandler()
+
+*****************************************************************************/
+        AROS_LH3(void, psdSendEvent,
+
+         AROS_LHA(ULONG, ehmt, D0),
+         AROS_LHA(APTR, param1, A0),
+         AROS_LHA(APTR, param2, A1),
+         LIBBASETYPEPTR, ps, 49, psd)
+{
+    AROS_LIBFUNC_INIT
+    struct PsdEventNote *pen;
+    struct PsdEventHook *peh;
+    ULONG msgmask = (1L<<ehmt);
+
+    KPRINTF(1, ("psdSendEvent(%p, %p, %p)\n", ehmt, param1, param2));
+
+    pGarbageCollectEvents(ps);
+    ObtainSemaphore(&ps->ps_ReentrantLock);
+    peh = (struct PsdEventHook *) ps->ps_EventHooks.lh_Head;
+    while(peh->peh_Node.ln_Succ) {
+        if(peh->peh_MsgMask & msgmask) {
+            if((pen = psdAllocVec(sizeof(struct PsdEventNote)))) {
+                pen->pen_Msg.mn_ReplyPort = &ps->ps_EventReplyPort;
+                pen->pen_Msg.mn_Length = sizeof(struct PsdEventNote);
+                pen->pen_Event = ehmt;
+                pen->pen_Param1 = param1;
+                pen->pen_Param2 = param2;
+                PutMsg(peh->peh_MsgPort, &pen->pen_Msg);
+            }
+        }
+        peh = (struct PsdEventHook *) peh->peh_Node.ln_Succ;
+    }
+    ReleaseSemaphore(&ps->ps_ReentrantLock);
+    AROS_LIBFUNC_EXIT
+}
+/* \\\ */
+
+/* *** Configuration *** */
+
+/* /// "pRdBE32()/pWrBE32()" */
+/*
+    IFF only pads chunks to even addresses, so a chunk or form header inside a
+    config buffer can sit two bytes off a longword boundary. Access those
+    headers bytewise: the compiler is otherwise free to merge neighbouring
+    longword accesses into an LDRD/LDM (or STRD/STM) pair, which faults on ARM
+    regardless of how the alignment check is configured.
+*/
+static ULONG pRdBE32(APTR ptr)
+{
+    UBYTE *b = ptr;
+
+    return(((ULONG) b[0]<<24)|((ULONG) b[1]<<16)|((ULONG) b[2]<<8)|(ULONG) b[3]);
+}
+
+static void pWrBE32(APTR ptr, ULONG val)
+{
+    UBYTE *b = ptr;
+
+    b[0] = val>>24;
+    b[1] = val>>16;
+    b[2] = val>>8;
+    b[3] = val;
+}
+/* \\\ */
+
+/* /// "psdReadCfg()" */
+/****** poseidon.library/psdReadCfg ****************************************
+
+    NAME */
+        AROS_LH2(BOOL, psdReadCfg,
+/*  SYNOPSIS */
+         AROS_LHA(struct PsdIFFContext *, pic, A0),
+         AROS_LHA(APTR, formdata, A1),
+/*  LOCATION */
+         LIBBASETYPEPTR, ps, 52, psd)
+/*  FUNCTION
+        Replace a Poseidon configuration context with a serialized IFF
+        FORM of the same type.
+
+    INPUTS
+        pic      - Target IFF context, or NULL for the configuration root.
+        formdata - Valid serialized IFF FORM buffer with matching form ID.
+
+    RESULT
+        TRUE when the form data was accepted, otherwise FALSE.
+
+    NOTES
+        Takes the configuration write lock, validates the FORM header and
+        form identifier, and rebuilds the context contents. The serialized
+        input is not a PsdIFFContext pointer. No rollback guarantee is
+        established for a failure after partial context modification.
+
+    SEE ALSO
+        psdWriteCfg(), psdFindCfgForm(), psdAddCfgEntry()
+
+******************************************************************************/
+{
+    AROS_LIBFUNC_INIT
+    struct PsdIFFContext *subpic;
+    LONG len;
+    ULONG chlen;
+    ULONG *buf = formdata;
+    BOOL res = TRUE;
+    KPRINTF(10, ("psdReadCfg(%p, %p)\n", pic, formdata));
+
+    pLockSemExcl(ps, &ps->ps_ConfigLock);
+    if(!pic) {
+        pic = (struct PsdIFFContext *) ps->ps_ConfigRoot.lh_Head;
+        if(!(pic->pic_Node.ln_Succ)) {
+            pUnlockSem(ps, &ps->ps_ConfigLock);
+            return(FALSE);
+        }
+    }
+    if((pRdBE32(buf) != ID_FORM) || (pRdBE32(&buf[2]) != pic->pic_FormID)) {
+        psdAddErrorMsg0(RETURN_FAIL, (STRPTR) GM_UNIQUENAME(libname), "Tried to replace a cfg form with a chunk or with an alien form!");
+        pUnlockSem(ps, &ps->ps_ConfigLock);
+        return(FALSE);
+    }
+    subpic = (struct PsdIFFContext *) pic->pic_SubForms.lh_Head;
+    while(subpic->pic_Node.ln_Succ) {
+        pFreeForm(ps, subpic);
+        subpic = (struct PsdIFFContext *) pic->pic_SubForms.lh_Head;
+    }
+    pic->pic_ChunksLen = 0;
+    len = (pRdBE32(&buf[1]) - 3) & ~1UL;
+    buf += 3;
+    while(len >= 8) {
+        if(!(pAddCfgChunk(ps, pic, buf))) {
+            break;
+        }
+        chlen = (pRdBE32(&buf[1]) + 9) & ~1UL;
+        len -= chlen;
+        buf = (ULONG *) (((UBYTE *) buf) + chlen);
+    }
+    if(len) {
+        psdAddErrorMsg0(RETURN_FAIL, (STRPTR) GM_UNIQUENAME(libname), "Tried to add a nasty corrupted FORM chunk! Configuration is probably b0rken!");
+        res = 0;
+    }
+
+    pUnlockSem(ps, &ps->ps_ConfigLock);
+    ps->ps_CheckConfigReq = TRUE;
+    return(res);
+    AROS_LIBFUNC_EXIT
+}
+/* \\\ */
+
+/* /// "psdLoadCfgFromDisk()" */
+/*****************************************************************************
+    NAME
+        BOOL psdLoadCfgFromDisk(
+
+    SYNOPSIS
+        STRPTR filename)
+
+    FUNCTION
+        Read a Poseidon preferences file and apply its configuration to the
+        running stack.
+
+    INPUTS
+        filename - NUL-terminated DOS path, valid until return. NULL tries
+            ENV:Sys/poseidon.prefs first, then ENVARC:Sys/poseidon.prefs if
+            the first attempt returns FALSE.
+
+    RESULT
+        TRUE after the header and declared payload have been read and
+        configuration application has been attempted. FALSE if DOS cannot be
+        opened, the file cannot be opened, the header is rejected, allocation
+        fails, or the requested bytes cannot be read.
+
+    NOTES
+        This call performs synchronous file I/O and may add or remove hardware,
+        load or unload classes, and change device bindings through psdParseCfg().
+        Call from a context that permits DOS I/O and blocking stack operations.
+        The filename is not retained. A reported success updates the saved
+        configuration hash.
+
+    BUGS
+        Only load trusted, structurally valid Poseidon IFF configuration files.
+        The declared FORM length is used without complete bounds or overflow
+        validation. Malformed lengths can cause invalid memory accesses.
+
+        The result of psdReadCfg() is ignored. TRUE does not establish that the
+        configuration was imported completely or that all devices and classes
+        were configured. Import failure can leave a partially replaced tree;
+        there is no rollback. A TRUE result also prevents default-path fallback.
+
+    SEE ALSO
+        psdReadCfg(), psdParseCfg(), psdSaveCfgToDisk()
+
+*****************************************************************************/
+        AROS_LH1(BOOL, psdLoadCfgFromDisk,
+         AROS_LHA(STRPTR, filename, A1),
+         LIBBASETYPEPTR, ps, 79, psd)
+{
+    AROS_LIBFUNC_INIT
+    ULONG *buf;
+    BPTR filehandle;
+    UWORD level;
+    BOOL loaded = FALSE;
+
+    XPRINTF(10, ("Loading config file: %s\n", filename));
+
+    if(!filename) {
+        loaded = psdLoadCfgFromDisk("ENV:Sys/poseidon.prefs");
+        if(loaded) {
+            return(TRUE);
+        }
+
+        loaded = psdLoadCfgFromDisk("ENVARC:Sys/poseidon.prefs");
+
+        return(loaded);
+    }
+
+    if(!pOpenDOS(ps)) {
+        KPRINTF(1, ("dos.library not available yet\n"));
+        return(FALSE);
+    }
+
+    filehandle = Open(filename, MODE_OLDFILE);
+    KPRINTF(1, ("File handle 0x%p\n", filehandle));
+    if(filehandle) {
+        ULONG formhead[3];
+        ULONG formlen;
+
+        level = RETURN_ERROR;
+
+        if(Read(filehandle, formhead, 12) == 12) {
+            KPRINTF(1, ("Read header\n"));
+            if((AROS_LONG2BE(formhead[0]) == ID_FORM) && (AROS_LONG2BE(formhead[2]) == IFFFORM_PSDCFG)) {
+                formlen = AROS_LONG2BE(formhead[1]);
+                KPRINTF(1, ("Header OK, %lu bytes\n", formlen));
+
+                buf = (ULONG *) psdAllocVec(formlen + 8);
+                if(buf) {
+                    buf[0] = formhead[0];
+                    buf[1] = formhead[1];
+                    buf[2] = formhead[2];
+                    if(Read(filehandle, &buf[3], formlen - 4) == formlen - 4) {
+                        KPRINTF(1, ("Data read OK\n"));
+
+                        psdReadCfg(NULL, buf);
+                        psdParseCfg();
+
+                        KPRINTF(1, ("All done\n"));
+                        loaded = TRUE;
+                        level = RETURN_OK;
+                    }
+                    psdFreeVec(buf);
+                }
+            }
+        }
+        Close(filehandle);
+    } else
+        level = RETURN_WARN;
+
+    if (level != RETURN_OK) {
+        psdAddErrorMsg(level, (STRPTR) GM_UNIQUENAME(libname),
+                       "Failed to %s '%s'!", (level == RETURN_ERROR) ? "load config from" : "find config file",
+                       filename);
+    }
+    if(loaded) {
+        ps->ps_SavedConfigHash = ps->ps_ConfigHash;
+    }
+    return(loaded);
+    AROS_LIBFUNC_EXIT
+}
+/* \\\ */
+
+/* /// "psdSaveCfgToDisk()" */
+/*****************************************************************************
+    NAME
+        BOOL psdSaveCfgToDisk(
+
+    SYNOPSIS
+        STRPTR filename, BOOL mode)
+
+    FUNCTION
+        Write the current configuration to a Poseidon preferences file.
+
+    INPUTS
+        filename - NUL-terminated DOS path, valid until return. NULL writes
+            both ENVARC:Sys/poseidon.prefs and ENV:Sys/poseidon.prefs, in
+            that order. Both writes are attempted.
+        mode - Ignored by this implementation. Pass FALSE.
+
+    RESULT
+        TRUE if serialization and opening the destination succeeded. FALSE
+        if DOS cannot be opened, serialization fails, or opening fails. With
+        filename NULL, TRUE requires both default-path calls to return TRUE.
+
+    NOTES
+        Performs synchronous DOS I/O while holding the configuration read lock.
+        Opening an existing destination truncates it. There is no temporary-file
+        replacement or rollback. The filename is not retained. A reported
+        success updates the saved configuration hash.
+
+    BUGS
+        Write() and Close() results are ignored. TRUE does not establish that
+        the file was written completely or closed successfully. A failed write
+        can leave a truncated file and still mark the configuration as saved.
+        The two default destinations are not updated atomically.
+
+    SEE ALSO
+        psdWriteCfg(), psdLoadCfgFromDisk()
+
+*****************************************************************************/
+        AROS_LH2(BOOL, psdSaveCfgToDisk,
+         AROS_LHA(STRPTR, filename, A1),
+         AROS_LHA(BOOL, executable, D0),
+         LIBBASETYPEPTR, ps, 80, psd)
+{
+    AROS_LIBFUNC_INIT
+    ULONG *buf;
+    BOOL saved = FALSE;
+    BPTR filehandle;
+
+    if(!filename) {
+        saved = psdSaveCfgToDisk("ENVARC:Sys/poseidon.prefs", FALSE);
+        saved &= psdSaveCfgToDisk("ENV:Sys/poseidon.prefs", FALSE);
+        return(saved);
+    }
+
+    if(!pOpenDOS(ps)) {
+        return(FALSE);
+    }
+    pLockSemShared(ps, &ps->ps_ConfigLock);
+
+    buf = (ULONG *) psdWriteCfg(NULL);
+    if(buf) {
+        /* Write file */
+        filehandle = Open(filename, MODE_NEWFILE);
+        if(filehandle) {
+            Write(filehandle, buf, (AROS_LONG2BE(buf[1])+9) & ~1UL);
+            Close(filehandle);
+            saved = TRUE;
+        } else {
+            psdAddErrorMsg(RETURN_ERROR, (STRPTR) GM_UNIQUENAME(libname),
+                           "Failed to write config to '%s'!",
+                           filename);
+        }
+        psdFreeVec(buf);
+    }
+    pUnlockSem(ps, &ps->ps_ConfigLock);
+    if(saved) {
+        ps->ps_SavedConfigHash = ps->ps_ConfigHash;
+    }
+    return(saved);
+    AROS_LIBFUNC_EXIT
+}
+/* \\\ */
+
+/* /// "psdWriteCfg()" */
+/****** poseidon.library/psdWriteCfg ***************************************
+
+    NAME */
+        AROS_LH1(APTR, psdWriteCfg,
+/*  SYNOPSIS */
+         AROS_LHA(struct PsdIFFContext *, pic, A0),
+/*  LOCATION */
+         LIBBASETYPEPTR, ps, 53, psd)
+/*  FUNCTION
+        Serialize a Poseidon IFF configuration context into an allocated
+        FORM buffer.
+
+    INPUTS
+        pic - Context to serialize, or NULL for the configuration root.
+
+    RESULT
+        Newly allocated serialized FORM buffer, or NULL when no suitable
+        root context exists or allocation fails. Free with psdFreeVec().
+
+    NOTES
+        The function updates the global configuration fields, marks a
+        configuration check as needed, measures the serialized form and
+        writes it to a new buffer while holding the configuration lock.
+        The serialized FORM contains its IFF size in the header.
+
+    SEE ALSO
+        psdReadCfg(), psdGetCfgChunk(), psdFreeVec()
+
+******************************************************************************/
+{
+    AROS_LIBFUNC_INIT
+    ULONG len;
+    APTR buf = NULL;
+
+    KPRINTF(10, ("psdWriteCfg(%p)\n", pic));
+
+    pLockSemShared(ps, &ps->ps_ConfigLock);
+    if(!pic) {
+        pic = (struct PsdIFFContext *) ps->ps_ConfigRoot.lh_Head;
+        if(!(pic->pic_Node.ln_Succ)) {
+            pUnlockSem(ps, &ps->ps_ConfigLock);
+            return(NULL);
+        }
+    }
+    pUpdateGlobalCfg(ps, pic);
+    ps->ps_CheckConfigReq = TRUE;
+    len = pGetFormLength(pic);
+    if((buf = psdAllocVec(len))) {
+        pInternalWriteForm(pic, buf);
+    }
+    pUnlockSem(ps, &ps->ps_ConfigLock);
+    return(buf);
+    AROS_LIBFUNC_EXIT
+}
+/* \\\ */
+
+/* /// "psdFindCfgForm()" */
+/****** poseidon.library/psdFindCfgForm ************************************
+
+    NAME */
+        AROS_LH2(struct PsdIFFContext *, psdFindCfgForm,
+/*  SYNOPSIS */
+         AROS_LHA(struct PsdIFFContext *, pic, A0),
+         AROS_LHA(ULONG, formid, D0),
+/*  LOCATION */
+         LIBBASETYPEPTR, ps, 54, psd)
+/*  FUNCTION
+        Find the first child IFF FORM of a given identifier.
+
+    INPUTS
+        pic    - Parent context, or NULL for the configuration root.
+        formid - Identifier of the required child form.
+
+    RESULT
+        Matching internal IFF context, or NULL if none exists.
+
+    NOTES
+        The search is restricted to immediate child forms. The function
+        takes and releases the shared configuration lock internally, but
+        the returned context is not copied and may become stale after a
+        concurrent modification. Use psdNextCfgForm() for further matches.
+
+    SEE ALSO
+        psdNextCfgForm(), psdGetCfgChunk(), psdRemCfgForm()
+
+******************************************************************************/
+{
+    AROS_LIBFUNC_INIT
+    struct PsdIFFContext *subpic;
+
+    KPRINTF(160, ("psdFindCfgForm(0x%p, 0x%08lx)\n", pic, formid));
+    pLockSemShared(ps, &ps->ps_ConfigLock);
+    if(!pic) {
+        pic = (struct PsdIFFContext *) ps->ps_ConfigRoot.lh_Head;
+        if(!(pic->pic_Node.ln_Succ)) {
+            pUnlockSem(ps, &ps->ps_ConfigLock);
+            return(NULL);
+        }
+    }
+    subpic = (struct PsdIFFContext *) pic->pic_SubForms.lh_Head;
+    while(subpic->pic_Node.ln_Succ) {
+        if(subpic->pic_FormID == formid) {
+            pUnlockSem(ps, &ps->ps_ConfigLock);
+            return(subpic);
+        }
+        subpic = (struct PsdIFFContext *) subpic->pic_Node.ln_Succ;
+    }
+    pUnlockSem(ps, &ps->ps_ConfigLock);
+    return(NULL);
+    AROS_LIBFUNC_EXIT
+}
+/* \\\ */
+
+/* /// "psdNextCfgForm()" */
+/****** poseidon.library/psdNextCfgForm ************************************
+
+    NAME */
+        AROS_LH1(struct PsdIFFContext *, psdNextCfgForm,
+/*  SYNOPSIS */
+         AROS_LHA(struct PsdIFFContext *, pic, A0),
+/*  LOCATION */
+         LIBBASETYPEPTR, ps, 55, psd)
+/*  FUNCTION
+        Find the next sibling IFF FORM with the same identifier.
+
+    INPUTS
+        pic - Existing IFF context, typically returned by
+              psdFindCfgForm(); NULL returns NULL.
+
+    RESULT
+        Next matching sibling context, or NULL if no further match exists.
+
+    NOTES
+        The current form ID is reused for the search. The returned
+        context points into mutable configuration state and is not
+        independently reference-counted by this function.
+
+    SEE ALSO
+        psdFindCfgForm(), psdRemCfgForm()
+
+******************************************************************************/
+{
+    AROS_LIBFUNC_INIT
+    ULONG formid;
+    KPRINTF(160, ("psdNextCfgForm(%p)\n", pic));
+
+    if(!pic) {
+        return(NULL);
+    }
+    pLockSemShared(ps, &ps->ps_ConfigLock);
+    formid = pic->pic_FormID;
+    pic = (struct PsdIFFContext *) pic->pic_Node.ln_Succ;
+    while(pic->pic_Node.ln_Succ) {
+        if(pic->pic_FormID == formid) {
+            pUnlockSem(ps, &ps->ps_ConfigLock);
+
+            KPRINTF(1, ("Found context 0x%p\n", pic));
+            return(pic);
+        }
+        pic = (struct PsdIFFContext *) pic->pic_Node.ln_Succ;
+    }
+    pUnlockSem(ps, &ps->ps_ConfigLock);
+    return(NULL);
+    AROS_LIBFUNC_EXIT
+}
+/* \\\ */
+
+/* /// "psdAllocCfgForm()" */
+/*****************************************************************************
+    NAME
+        APTR psdAllocCfgForm(
+
+    SYNOPSIS
+        ULONG formid)
+
+    FUNCTION
+        Allocate an empty, detached configuration form.
+
+    INPUTS
+        formid - Numeric four-character form identifier in host byte order.
+
+    RESULT
+        An opaque form handle, or NULL if allocation fails.
+
+    NOTES
+        The form starts with no chunks or child forms and with a
+        four-byte payload for its type identifier. It is tracked
+        separately from the active configuration tree.
+        Allocation alone neither installs configuration nor saves it to disk.
+        Release the form and its contents with psdRemCfgForm(); do not free
+        the handle with psdFreeVec(). Coordinate its lifetime with all users.
+
+    SEE ALSO
+        psdAddStringChunk(), psdWriteCfg(), psdRemCfgForm()
+
+*****************************************************************************/
+        AROS_LH1(struct PsdIFFContext *, psdAllocCfgForm,
+         AROS_LHA(ULONG, formid, D0),
+         LIBBASETYPEPTR, ps, 86, psd)
+{
+    AROS_LIBFUNC_INIT
+    struct PsdIFFContext *pic;
+    KPRINTF(10, ("psdAllocCfgForm(%p)\n", formid));
+    if((pic = psdAllocVec(sizeof(struct PsdIFFContext)))) {
+        NewList(&pic->pic_SubForms);
+        //pic->pic_Parent = parent;
+        pic->pic_FormID = formid;
+        pic->pic_FormLength = 4;
+        pic->pic_Chunks = NULL;
+        pic->pic_ChunksLen = 0;
+        pic->pic_BufferLen = 0;
+        Forbid();
+        AddTail(&ps->ps_AlienConfigs, &pic->pic_Node);
+        Permit();
+    }
+    return(pic);
+    AROS_LIBFUNC_EXIT
+}
+/* \\\ */
+
+/* /// "psdRemCfgForm()" */
+/****** poseidon.library/psdRemCfgForm *************************************
+
+    NAME */
+        AROS_LH1(void, psdRemCfgForm,
+/*  SYNOPSIS */
+         AROS_LHA(struct PsdIFFContext *, pic, A0),
+/*  LOCATION */
+         LIBBASETYPEPTR, ps, 56, psd)
+/*  FUNCTION
+        Remove a configuration FORM and all its nested data.
+
+    INPUTS
+        pic - Context to remove, or NULL to select the configuration root.
+
+    NOTES
+        Takes the exclusive configuration lock and recursively frees the
+        selected form. Sets the configuration-check flag after removal.
+        References to the removed context and its descendants become
+        invalid. The function returns no status.
+
+    SEE ALSO
+        psdRemCfgChunk(), psdFindCfgForm(), psdAddCfgEntry()
+
+******************************************************************************/
+{
+    AROS_LIBFUNC_INIT
+    KPRINTF(10, ("psdRemCfgForm(%p)\n", pic));
+
+    pLockSemExcl(ps, &ps->ps_ConfigLock);
+    if(!pic) {
+        pic = (struct PsdIFFContext *) ps->ps_ConfigRoot.lh_Head;
+        if(!(pic->pic_Node.ln_Succ)) {
+            pUnlockSem(ps, &ps->ps_ConfigLock);
+            return;
+        }
+    }
+    pFreeForm(ps, pic);
+    pUnlockSem(ps, &ps->ps_ConfigLock);
+    ps->ps_CheckConfigReq = TRUE;
+    AROS_LIBFUNC_EXIT
+}
+/* \\\ */
+
+/* /// "psdAddCfgEntry()" */
+/****** poseidon.library/psdAddCfgEntry ************************************
+
+    NAME */
+        AROS_LH2(struct PsdIFFContext *, psdAddCfgEntry,
+/*  SYNOPSIS */
+         AROS_LHA(struct PsdIFFContext *, pic, A0),
+         AROS_LHA(APTR, formdata, A1),
+/*  LOCATION */
+         LIBBASETYPEPTR, ps, 57, psd)
+/*  FUNCTION
+        Add an IFF FORM or data chunk to an existing configuration context.
+
+    INPUTS
+        pic      - Parent context, or NULL for the configuration root.
+        formdata - Valid serialized IFF FORM or chunk to incorporate.
+
+    RESULT
+        Resulting configuration context from the internal addition
+        routine, or NULL on failure.
+
+    NOTES
+        Takes the configuration write lock, delegates parsing and
+        insertion to pAddCfgChunk(), and marks configuration for checking.
+        Form and chunk replacement rules are those of the internal IFF
+        context implementation, not those of a general-purpose IFF parser.
+
+    SEE ALSO
+        psdRemCfgChunk(), psdGetCfgChunk(), psdReadCfg()
+
+******************************************************************************/
+{
+    AROS_LIBFUNC_INIT
+    struct PsdIFFContext *res;
+
+    KPRINTF(10, ("psdAddCfgEntry(%p, %p)\n", pic, formdata));
+    pLockSemExcl(ps, &ps->ps_ConfigLock);
+    if(!pic) {
+        pic = (struct PsdIFFContext *) ps->ps_ConfigRoot.lh_Head;
+        if(!(pic->pic_Node.ln_Succ)) {
+            pUnlockSem(ps, &ps->ps_ConfigLock);
+            return(NULL);
+        }
+    }
+    res = pAddCfgChunk(ps, pic, formdata);
+    pUnlockSem(ps, &ps->ps_ConfigLock);
+    ps->ps_CheckConfigReq = TRUE;
+    return(res);
+    AROS_LIBFUNC_EXIT
+}
+/* \\\ */
+
+/* /// "psdRemCfgChunk()" */
+/****** poseidon.library/psdRemCfgChunk ************************************
+
+    NAME */
+        AROS_LH2(BOOL, psdRemCfgChunk,
+/*  SYNOPSIS */
+         AROS_LHA(struct PsdIFFContext *, pic, A0),
+         AROS_LHA(ULONG, chnkid, D0),
+/*  LOCATION */
+         LIBBASETYPEPTR, ps, 58, psd)
+/*  FUNCTION
+        Remove a chunk by identifier, or clear a form's entire contents.
+
+    INPUTS
+        pic    - Context to modify, or NULL for the configuration root.
+        chnkid - Chunk identifier; zero clears the context's entries.
+
+    RESULT
+        TRUE when an entry was removed or a context was cleared,
+        otherwise FALSE.
+
+    NOTES
+        The exclusive configuration lock protects modification. Clearing
+        with identifier zero retains the selected context object while
+        releasing its subordinate forms and chunks.
+
+    SEE ALSO
+        psdRemCfgForm(), psdAddCfgEntry(), psdGetCfgChunk()
+
+******************************************************************************/
+{
+    AROS_LIBFUNC_INIT
+    BOOL res = FALSE;
+
+    KPRINTF(10, ("psdRemCfgChunk(%p, %p)\n", pic, chnkid));
+    pLockSemExcl(ps, &ps->ps_ConfigLock);
+    if(!pic) {
+        pic = (struct PsdIFFContext *) ps->ps_ConfigRoot.lh_Head;
+        if(!(pic->pic_Node.ln_Succ)) {
+            pUnlockSem(ps, &ps->ps_ConfigLock);
+            return(FALSE);
+        }
+    }
+    if(chnkid) {
+        res = pRemCfgChunk(ps, pic, chnkid);
+    } else {
+        struct PsdIFFContext *subpic = (struct PsdIFFContext *) pic->pic_SubForms.lh_Head;
+        while(subpic->pic_Node.ln_Succ) {
+            pFreeForm(ps, subpic);
+            res = TRUE;
+            subpic = (struct PsdIFFContext *) pic->pic_SubForms.lh_Head;
+        }
+        if(pic->pic_ChunksLen) {
+            res = TRUE;
+        }
+        pic->pic_ChunksLen = 0;
+        pic->pic_FormLength = 4;
+    }
+
+    pUnlockSem(ps, &ps->ps_ConfigLock);
+    ps->ps_CheckConfigReq = TRUE;
+    return(res);
+    AROS_LIBFUNC_EXIT
+}
+/* \\\ */
+
+/* /// "psdGetCfgChunk()" */
+/****** poseidon.library/psdGetCfgChunk ************************************
+
+    NAME */
+        AROS_LH2(APTR, psdGetCfgChunk,
+/*  SYNOPSIS */
+         AROS_LHA(struct PsdIFFContext *, pic, A0),
+         AROS_LHA(ULONG, chnkid, D0),
+/*  LOCATION */
+         LIBBASETYPEPTR, ps, 59, psd)
+/*  FUNCTION
+        Copy a serialized IFF chunk out of a configuration context.
+
+    INPUTS
+        pic    - Context, or NULL for the configuration root.
+        chnkid - Identifier of the requested chunk.
+
+    RESULT
+        Allocated copy of the full chunk including its IFF header, or
+        NULL if the chunk is absent or allocation fails. Free with
+        psdFreeVec().
+
+    NOTES
+        Searches under the shared configuration lock and copies the
+        stored chunk into independent memory. Root-context lookup may
+        refresh stored global configuration chunks before reading, so
+        this operation is not strictly read-only. The IFF size field
+        describes payload size; the copy also includes the eight-byte
+        chunk header.
+
+    SEE ALSO
+        psdAddCfgEntry(), psdRemCfgChunk(), psdWriteCfg()
+
+******************************************************************************/
+{
+    AROS_LIBFUNC_INIT
+    ULONG *chnk;
+    ULONG *res = NULL;
+
+    KPRINTF(10, ("psdGetCfgChunk(%p, 0x%08lx)\n", pic, chnkid));
+
+    pLockSemShared(ps, &ps->ps_ConfigLock);
+    if(!pic) {
+        pic = (struct PsdIFFContext *) ps->ps_ConfigRoot.lh_Head;
+        if(!(pic->pic_Node.ln_Succ)) {
+            pUnlockSem(ps, &ps->ps_ConfigLock);
+            return(NULL);
+        }
+    }
+    pUpdateGlobalCfg(ps, pic);
+    chnk = pFindCfgChunk(ps, pic, chnkid);
+    if(chnk) {
+        ULONG chnklen = pRdBE32(&chnk[1]) + 8;
+
+        res = psdAllocVec(chnklen);
+        if(res) {
+            memcpy(res, chnk, chnklen);
+        }
+    }
+    pUnlockSem(ps, &ps->ps_ConfigLock);
+    return(res);
+    AROS_LIBFUNC_EXIT
+}
+/* \\\ */
+
+/* /// "psdParseCfg()" */
+/*****************************************************************************
+    NAME
+        VOID psdParseCfg(
+
+    SYNOPSIS
+        )
+
+    FUNCTION
+        Apply the in-memory stack configuration to hardware and USB classes,
+        then scan devices for class bindings.
+
+    RESULT
+        None. Failures are not returned to the caller.
+
+    NOTES
+        May block while opening classes, adding or enumerating hardware,
+        removing resources, or scanning bindings. Coordinate the call with
+        other configuration changes and stack lifecycle operations.
+
+        If no stack configuration form exists, hardware and class reconciliation
+        is skipped. If the form has no hardware entries, existing hardware is
+        preserved. Otherwise hardware absent from the enabled entries is
+        removed. Classes absent from the configured list are removed, except
+        resident classes whose use count is nonzero.
+
+        Missing classes are opened. Missing enabled hardware is added and
+        enumerated; hardware whose initial enumeration fails is removed again.
+        These operations can invalidate existing device and binding handles.
+
+        After reconciliation, marks the configuration as read, updates the saved
+        configuration hash, and calls psdClassScan(). When called by a task
+        rather than a process, a configured boot delay may wait for hubs and
+        mass-storage bindings. This call does not save a preferences file.
+
+    BUGS
+        Application is not transactional. Individual add and remove failures
+        have no aggregate result, and completed changes are not rolled back.
+        Class opening occurs while the configuration read lock is held; a class
+        that waits for another task to modify configuration can deadlock.
+
+    SEE ALSO
+        psdReadCfg(), psdLoadCfgFromDisk(), psdSaveCfgToDisk(), psdClassScan()
+
+*****************************************************************************/
+        AROS_LH0(void, psdParseCfg,
+         LIBBASETYPEPTR, ps, 60, psd)
+{
+    AROS_LIBFUNC_INIT
+    struct PsdIFFContext *pic;
+    struct PsdIFFContext *subpic;
+    ULONG *chnk;
+    STRPTR name;
+    ULONG unit;
+    struct PsdHardware *phw;
+    struct PsdUsbClass *puc;
+    BOOL removeall = TRUE;
+    BOOL nodos = (FindTask(NULL)->tc_Node.ln_Type != NT_PROCESS);
+
+    XPRINTF(10, ("psdParseCfg()\n"));
+
+    pLockSemShared(ps, &ps->ps_ConfigLock);
+    pCheckCfgChanged(ps);
+    pic = psdFindCfgForm(NULL, IFFFORM_STACKCFG);
+    if(!pic) {
+        pUnlockSem(ps, &ps->ps_ConfigLock);
+        return;
+    }
+
+    // if no config for hardware is found, we don't remove the devices,
+    // because this could render the system useless (no USB mice or
+    // keyboards to configure the hardware!)
+    if(!psdFindCfgForm(pic, IFFFORM_UHWDEVICE)) {
+        XPRINTF(10, ("No hardware data present\n"));
+        removeall = FALSE;
+    }
+
+    psdLockReadPBase();
+
+    /* select all hardware devices for removal */
+    ForeachNode(&ps->ps_Hardware, phw) {
+        phw->phw_RemoveMe = removeall;
+    }
+
+    /* select all classes for removal */
+    ForeachNode(&ps->ps_Classes, puc) {
+        /*
+         * For kickstart-resident classes we check usage count, and
+         * remove them only if it's zero.
+         * These classes can be responsible for devices which we can use
+         * at boot time. If we happen to remove them, we can end up with
+         * no input or storage devices at all.
+         */
+        if (FindResident(puc->puc_ClassName))
+            puc->puc_RemoveMe = (puc->puc_UseCnt == 0);
+        else
+            puc->puc_RemoveMe = TRUE;
+    }
+
+    psdUnlockPBase();
+
+    /* Get Hardware config */
+    subpic = psdFindCfgForm(pic, IFFFORM_UHWDEVICE);
+    while(subpic) {
+        chnk = pFindCfgChunk(ps, subpic, IFFCHNK_NAME);
+        if(chnk) {
+            name = (STRPTR) &chnk[2];
+            unit = 0;
+            chnk = pFindCfgChunk(ps, subpic, IFFCHNK_UNIT);
+            if(chnk) {
+                unit = chnk[2];
+            }
+            if(!pFindCfgChunk(ps, subpic, IFFCHNK_OFFLINE)) {
+                phw = pFindHardware(ps, name, unit);
+                XPRINTF(5, ("Have configuration for device 0x%p (%s unit %u)\n", phw, name, unit));
+                if(phw) {
+                    phw->phw_RemoveMe = FALSE;
+                }
+            }
+        }
+        subpic = psdNextCfgForm(subpic);
+    }
+
+    /* Get Class config */
+    subpic = psdFindCfgForm(pic, IFFFORM_USBCLASS);
+    while(subpic) {
+        chnk = pFindCfgChunk(ps, subpic, IFFCHNK_NAME);
+        if(chnk) {
+            name = (STRPTR) &chnk[2];
+            puc = (struct PsdUsbClass *) pFindName(ps, &ps->ps_Classes, name);
+            XPRINTF(5, ("Have configuration for class 0x%p (%s)\n", puc, name));
+            if(puc) {
+                puc->puc_RemoveMe = FALSE;
+            }
+        }
+        subpic = psdNextCfgForm(subpic);
+    }
+
+    // unlock config while removing to avoid deadlocks.
+    pUnlockSem(ps, &ps->ps_ConfigLock);
+
+    struct Node *nodetmp;
+    /* now remove remaining classes not found in the config */
+    ForeachNodeSafe(&ps->ps_Classes, puc, nodetmp) {
+        if(puc->puc_RemoveMe) {
+            XPRINTF(5, ("Removing class %s\n", puc->puc_ClassName));
+            psdRemClass(puc);
+        }
+    }
+
+    /* now remove all remaining hardware not found in the config */
+    ForeachNodeSafe(&ps->ps_Hardware, phw, nodetmp) {
+        if(phw->phw_RemoveMe) {
+            XPRINTF(5, ("Removing device %s unit %u\n", phw->phw_DevName, phw->phw_Unit));
+            psdRemHardware(phw);
+        }
+    }
+
+    pLockSemShared(ps, &ps->ps_ConfigLock);
+    pic = psdFindCfgForm(NULL, IFFFORM_STACKCFG);
+    if(!pic) {
+        pUnlockSem(ps, &ps->ps_ConfigLock);
+        // oops!
+        return;
+    }
+
+    /* Add missing Classes */
+    subpic = psdFindCfgForm(pic, IFFFORM_USBCLASS);
+    while(subpic) {
+        chnk = pFindCfgChunk(ps, subpic, IFFCHNK_NAME);
+        if(chnk) {
+            /* *** FIXME *** POSSIBLE DEADLOCK WHEN CLASS TRIES TO DO CONFIG STUFF IN
+               AN EXTERNAL TASK INSIDE LIBOPEN CODE */
+            name = (STRPTR) &chnk[2];
+            puc = (struct PsdUsbClass *) pFindName(ps, &ps->ps_Classes, name);
+            if(!puc) {
+                psdAddClass(name, 0);
+            }
+        }
+        subpic = psdNextCfgForm(subpic);
+    }
+
+    /* Now really mount Hardware found in config */
+    subpic = psdFindCfgForm(pic, IFFFORM_UHWDEVICE);
+    while(subpic) {
+        chnk = pFindCfgChunk(ps, subpic, IFFCHNK_NAME);
+        if(chnk) {
+            name = (STRPTR) &chnk[2];
+            unit = 0;
+            chnk = pFindCfgChunk(ps, subpic, IFFCHNK_UNIT);
+            if(chnk) {
+                unit = chnk[2];
+            }
+            if(!pFindCfgChunk(ps, subpic, IFFCHNK_OFFLINE)) {
+                phw = pFindHardware(ps, name, unit);
+                if(!phw) {
+                    phw = psdAddHardware(name, unit);
+                    if(phw) {
+                        if(psdEnumerateHardware(phw) == NULL) {
+                            psdRemHardware(phw);
+                        }
+                    }
+                }
+            }
+        }
+        subpic = psdNextCfgForm(subpic);
+    }
+    pUnlockSem(ps, &ps->ps_ConfigLock);
+
+    /* Devices claimed by the boot classes before DOS was available are handed
+       over to the full classes by psdClassScan() below. */
+
+    if(nodos && (!ps->ps_ConfigRead)) {
+        // it's the first time we were reading the config and DOS was not available
+        ps->ps_StartedAsTask = TRUE;
+    }
+    ps->ps_ConfigRead = TRUE;
+    ps->ps_SavedConfigHash = ps->ps_ConfigHash; // update saved hash
+
+    /* do a class scan */
+    psdClassScan();
+
+    if(nodos && ps->ps_GlobalCfg->pgc_BootDelay) {
+        // wait for hubs to settle
+        psdDelayMS(1000);
+        puc = (struct PsdUsbClass *) FindName(&ps->ps_Classes, "massstorage.class");
+        if(puc && puc->puc_UseCnt) {
+            psdAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname),
+                           "Delaying further execution by %ld second(s) (boot delay).",
+                           ps->ps_GlobalCfg->pgc_BootDelay);
+            if(ps->ps_GlobalCfg->pgc_BootDelay >= 1) {
+                psdDelayMS((ps->ps_GlobalCfg->pgc_BootDelay-1)*1000);
+            }
+        } else {
+            psdAddErrorMsg0(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname), "Boot delay skipped, no mass storage devices found.");
+        }
+    }
+    AROS_LIBFUNC_EXIT
+}
+/* \\\ */
+
+/* /// "psdSetClsCfg()" */
+/****** poseidon.library/psdSetClsCfg **************************************
+
+    NAME */
+        AROS_LH2(BOOL, psdSetClsCfg,
+/*  SYNOPSIS */
+         AROS_LHA(STRPTR, owner, A0),
+         AROS_LHA(APTR, form, A1),
+/*  LOCATION */
+         LIBBASETYPEPTR, ps, 62, psd)
+/*  FUNCTION
+        Store or clear class-specific configuration under an owner name.
+
+    INPUTS
+        owner - Valid class or owner identifier string.
+        form  - Serialized IFFFORM_CLASSDATA, or NULL to clear its contents.
+
+    RESULT
+        TRUE on successful creation or update, otherwise FALSE.
+
+    NOTES
+        Finds the matching class configuration by its owner chunk, or
+        creates one if none exists. The function updates configuration
+        change bookkeeping after its write-lock-protected operation.
+        A NULL form creates or preserves an empty CLASSDATA context rather
+        than removing the owning class entry itself. If replacement of
+        an existing CLASSDATA form fails, the routine also attempts the
+        new-entry path. A failed update may therefore leave an additional
+        class configuration entry rather than retaining a unique key.
+
+    SEE ALSO
+        psdGetClsCfg(), psdReadCfg(), psdSetUsbDevCfg()
+
+******************************************************************************/
+{
+    AROS_LIBFUNC_INIT
+    struct PsdIFFContext *pic;
+    BOOL result = FALSE;
+
+    KPRINTF(10, ("psdSetClsCfg(%s, %p)\n", owner, form));
+    pLockSemExcl(ps, &ps->ps_ConfigLock);
+    pic = psdFindCfgForm(NULL, IFFFORM_CLASSCFG);
+    while(pic) {
+        if(pMatchStringChunk(ps, pic, IFFCHNK_OWNER, owner)) {
+            pic = psdFindCfgForm(pic, IFFFORM_CLASSDATA);
+            if(pic) {
+                if(form) {
+                    result = psdReadCfg(pic, form);
+                } else {
+                    psdRemCfgChunk(pic, 0);
+                    result = TRUE;
+                }
+                break;
+            } else {
+                break;
+            }
+        }
+        pic = psdNextCfgForm(pic);
+    }
+    if(result) {
+        pUnlockSem(ps, &ps->ps_ConfigLock);
+        pCheckCfgChanged(ps);
+        return(result);
+    }
+    pic = (struct PsdIFFContext *) ps->ps_ConfigRoot.lh_Head;
+    if(pic->pic_Node.ln_Succ) {
+        pic = pAllocForm(ps, pic, IFFFORM_CLASSCFG);
+        if(pic) {
+            if(pAddStringChunk(ps, pic, IFFCHNK_OWNER, owner)) {
+                if(form) {
+                    if(pAddCfgChunk(ps, pic, form)) {
+                        pUnlockSem(ps, &ps->ps_ConfigLock);
+                        pCheckCfgChanged(ps);
+                        return(TRUE);
+                    }
+                } else {
+                    ULONG buf[3];
+                    buf[0] = AROS_LONG2BE(ID_FORM);
+                    buf[1] = AROS_LONG2BE(4);
+                    buf[2] = AROS_LONG2BE(IFFFORM_CLASSDATA);
+                    if(pAddCfgChunk(ps, pic, buf)) {
+                        pUnlockSem(ps, &ps->ps_ConfigLock);
+                        pCheckCfgChanged(ps);
+                        return(TRUE);
+                    }
+                }
+            }
+        }
+    }
+    pUnlockSem(ps, &ps->ps_ConfigLock);
+    pCheckCfgChanged(ps);
+    return(FALSE);
+    AROS_LIBFUNC_EXIT
+}
+/* \\\ */
+
+/* /// "psdGetClsCfg()" */
+/****** poseidon.library/psdGetClsCfg **************************************
+
+    NAME */
+        AROS_LH1(struct PsdIFFContext *, psdGetClsCfg,
+/*  SYNOPSIS */
+         AROS_LHA(STRPTR, owner, A0),
+/*  LOCATION */
+         LIBBASETYPEPTR, ps, 63, psd)
+/*  FUNCTION
+        Find the stored configuration context for a class owner.
+
+    INPUTS
+        owner - Valid class or owner identifier string.
+
+    RESULT
+        Internal CLASSDATA context for the matching owner, or NULL if
+        none is present.
+
+    NOTES
+        The returned pointer refers to live configuration storage, not
+        a serialized IFF buffer. It is not caller-owned and should not
+        outlive changes that remove or replace its containing form.
+
+    SEE ALSO
+        psdSetClsCfg(), psdFindCfgForm(), psdWriteCfg()
+
+******************************************************************************/
+{
+    AROS_LIBFUNC_INIT
+    struct PsdIFFContext *pic;
+
+    KPRINTF(10, ("psdGetClsCfg(%s)\n", owner));
+    pic = psdFindCfgForm(NULL, IFFFORM_CLASSCFG);
+    while(pic) {
+        if(pMatchStringChunk(ps, pic, IFFCHNK_OWNER, owner)) {
+            return(psdFindCfgForm(pic, IFFFORM_CLASSDATA));
+        }
+        pic = psdNextCfgForm(pic);
+    }
+    return(NULL);
+    AROS_LIBFUNC_EXIT
+}
+/* \\\ */
+
+/* /// "psdSetUsbDevCfg()" */
+/****** poseidon.library/psdSetUsbDevCfg ***********************************
+
+    NAME */
+        AROS_LH4(BOOL, psdSetUsbDevCfg,
+/*  SYNOPSIS */
+         AROS_LHA(STRPTR, owner, A0),
+         AROS_LHA(STRPTR, devid, A2),
+         AROS_LHA(STRPTR, ifid, A3),
+         AROS_LHA(APTR, form, A1),
+/*  LOCATION */
+         LIBBASETYPEPTR, ps, 64, psd)
+/*  FUNCTION
+        Save device- or interface-specific class configuration.
+
+    INPUTS
+        owner - Class or owner identifier.
+        devid - Required USB device identification string.
+        ifid  - Optional interface identification string; NULL selects
+                device-level configuration.
+        form  - Serialized class-data IFF FORM, or NULL to clear data.
+
+    RESULT
+        TRUE when the matching configuration was created or updated,
+        otherwise FALSE.
+
+    NOTES
+        Locates or creates the device configuration and optional interface
+        subform, then associates the owner with its class-data context.
+        Updates take the configuration write lock. The identifiers are
+        used as configuration keys; this call does not modify a live USB
+        device or immediately rebind its interfaces. If updating an
+        existing class-data form fails, the routine falls back to
+        creating a new device configuration entry. Duplicate keys and
+        partially created forms are possible on failure paths.
+
+    SEE ALSO
+        psdGetUsbDevCfg(), psdSetClsCfg(), psdReadCfg()
+
+******************************************************************************/
+{
+    AROS_LIBFUNC_INIT
+    struct PsdIFFContext *pic;
+    struct PsdIFFContext *cpic = NULL;
+    struct PsdIFFContext *mpic = NULL;
+    BOOL result = FALSE;
+
+    KPRINTF(10, ("psdSetUsbDevCfg(%s, %s, %s, %p)\n", owner, devid, ifid, form));
+    pLockSemExcl(ps, &ps->ps_ConfigLock);
+    /* Find device config form. It contains all device config data */
+    pic = psdFindCfgForm(NULL, IFFFORM_DEVICECFG);
+    while(pic) {
+        /* Find DEVID-Chunk. Check if it matches our device id */
+        if(pMatchStringChunk(ps, pic, IFFCHNK_DEVID, devid)) {
+            cpic = NULL;
+            /* We found the correct device. Now if we need to store interface data, find the interface first */
+            if(ifid) {
+                /* Search interface config form */
+                mpic = psdFindCfgForm(pic, IFFFORM_IFCFGDATA);
+                while(mpic) {
+                    /* Found the form. Find the the ID String for the interface */
+                    if(pMatchStringChunk(ps, mpic, IFFCHNK_IFID, ifid)) {
+                        /* ID did match, now check for owner */
+                        if(pMatchStringChunk(ps, mpic, IFFCHNK_OWNER, owner)) {
+                            /* found it! So there is already a config saved in there. Search for dev config data form */
+                            cpic = psdFindCfgForm(mpic, IFFFORM_IFCLSDATA);
+                            if(!cpic) {
+                                /* not found, generate it */
+                                cpic = pAllocForm(ps, mpic, IFFFORM_IFCLSDATA);
+                            }
+                            break;
+                        }
+                    }
+                    mpic = psdNextCfgForm(mpic);
+                }
+                if(!cpic) {
+                    if((mpic = pAllocForm(ps, pic, IFFFORM_IFCFGDATA))) {
+                        if(pAddStringChunk(ps, mpic, IFFCHNK_OWNER, owner)) {
+                            if(pAddStringChunk(ps, mpic, IFFCHNK_IFID, ifid)) {
+                                cpic = pAllocForm(ps, mpic, IFFFORM_IFCLSDATA);
+                            }
+                        }
+                    }
+                }
+            } else {
+                /* Search for device config */
+                mpic = psdFindCfgForm(pic, IFFFORM_DEVCFGDATA);
+                while(mpic) {
+                    /* search for the right owner */
+                    if(pMatchStringChunk(ps, mpic, IFFCHNK_OWNER, owner)) {
+                        /* found it! So there is already a config saved in there. Search for dev config data form */
+                        cpic = psdFindCfgForm(mpic, IFFFORM_DEVCLSDATA);
+                        if(!cpic) {
+                            /* not found, generate it */
+                            cpic = pAllocForm(ps, mpic, IFFFORM_DEVCLSDATA);
+                        }
+                        break;
+                    }
+                    mpic = psdNextCfgForm(mpic);
+                }
+                if(!cpic) { /* no device config form */
+                    if((mpic = pAllocForm(ps, pic, IFFFORM_DEVCFGDATA))) {
+                        if(pAddStringChunk(ps, mpic, IFFCHNK_OWNER, owner)) {
+                            cpic = pAllocForm(ps, mpic, IFFFORM_DEVCLSDATA);
+                        }
+                    }
+                }
+            }
+            if(cpic) {
+                if(form) {
+                    result = psdReadCfg(cpic, form);
+                } else {
+                    psdRemCfgChunk(cpic, 0);
+                    result = TRUE;
+                }
+                break;
+            }
+        }
+        pic = psdNextCfgForm(pic);
+    }
+    if(result) {
+        pUnlockSem(ps, &ps->ps_ConfigLock);
+        pCheckCfgChanged(ps);
+        return(result);
+    }
+    cpic = NULL;
+    pic = (struct PsdIFFContext *) ps->ps_ConfigRoot.lh_Head;
+    if(pic->pic_Node.ln_Succ) {
+        pic = pAllocForm(ps, pic, IFFFORM_DEVICECFG);
+        if(pic) {
+            if(pAddStringChunk(ps, pic, IFFCHNK_DEVID, devid)) {
+                if(ifid) {
+                    if((mpic = pAllocForm(ps, pic, IFFFORM_IFCFGDATA))) {
+                        if(pAddStringChunk(ps, mpic, IFFCHNK_OWNER, owner)) {
+                            if(pAddStringChunk(ps, mpic, IFFCHNK_IFID, ifid)) {
+                                cpic = pAllocForm(ps, mpic, IFFFORM_IFCLSDATA);
+                            }
+                        }
+                    }
+                } else {
+                    if((mpic = pAllocForm(ps, pic, IFFFORM_DEVCFGDATA))) {
+                        if(pAddStringChunk(ps, mpic, IFFCHNK_OWNER, owner)) {
+                            cpic = pAllocForm(ps, mpic, IFFFORM_DEVCLSDATA);
+                        }
+                    }
+                }
+                if(cpic) {
+                    if(form) {
+                        result = psdReadCfg(cpic, form);
+                    } else {
+                        psdRemCfgChunk(cpic, 0);
+                        result = TRUE;
+                    }
+                }
+            }
+        }
+    }
+    pUnlockSem(ps, &ps->ps_ConfigLock);
+    pCheckCfgChanged(ps);
+    return(result);
+    AROS_LIBFUNC_EXIT
+}
+/* \\\ */
+
+/* /// "psdGetUsbDevCfg()" */
+/****** poseidon.library/psdGetUsbDevCfg ***********************************
+
+    NAME */
+        AROS_LH3(struct PsdIFFContext *, psdGetUsbDevCfg,
+/*  SYNOPSIS */
+         AROS_LHA(STRPTR, owner, A0),
+         AROS_LHA(STRPTR, devid, A2),
+         AROS_LHA(STRPTR, ifid, A3),
+/*  LOCATION */
+         LIBBASETYPEPTR, ps, 65, psd)
+/*  FUNCTION
+        Find stored class configuration for a device or interface.
+
+    INPUTS
+        owner - Class or owner identifier.
+        devid - Required USB device identification string.
+        ifid  - Optional interface identification string; NULL selects
+                device-level configuration.
+
+    RESULT
+        Internal class-data IFF context, or NULL if no matching entry
+        exists.
+
+    NOTES
+        Searches the device, optional interface and owner configuration
+        forms under the shared configuration lock. The returned pointer
+        refers to mutable internal storage rather than a copied IFF buffer.
+        Call psdWriteCfg() to obtain an independently allocated snapshot.
+
+    SEE ALSO
+        psdSetUsbDevCfg(), psdGetClsCfg(), psdWriteCfg()
+
+******************************************************************************/
+{
+    AROS_LIBFUNC_INIT
+    struct PsdIFFContext *pic;
+    struct PsdIFFContext *cpic = NULL;
+    struct PsdIFFContext *mpic = NULL;
+
+    KPRINTF(10, ("psdGetUsbDevCfg(%s, %s, %s)\n", owner, devid, ifid));
+    pLockSemShared(ps, &ps->ps_ConfigLock);
+    /* Find device config form. It contains all device config data */
+    pic = psdFindCfgForm(NULL, IFFFORM_DEVICECFG);
+    while(pic) {
+        /* Find DEVID-Chunk. Check if it matches our device id */
+        if(pMatchStringChunk(ps, pic, IFFCHNK_DEVID, devid)) {
+            cpic = NULL;
+            /* We found the correct device. Now if we need to store interface data, find the interface first */
+            if(ifid) {
+                /* Search interface config form */
+                mpic = psdFindCfgForm(pic, IFFFORM_IFCFGDATA);
+                while(mpic) {
+                    /* Found the form. Find the the ID String for the interface */
+                    if(pMatchStringChunk(ps, mpic, IFFCHNK_IFID, ifid)) {
+                        /* ID did match, now check for owner */
+                        if(pMatchStringChunk(ps, mpic, IFFCHNK_OWNER, owner)) {
+                            /* found it! So there is already a config saved in there. Search for dev config data form */
+                            cpic = psdFindCfgForm(mpic, IFFFORM_IFCLSDATA);
+                            break;
+                        }
+                    }
+                    mpic = psdNextCfgForm(mpic);
+                }
+            } else {
+                /* Search for device config */
+                mpic = psdFindCfgForm(pic, IFFFORM_DEVCFGDATA);
+                while(mpic) {
+                    /* search for the right owner */
+                    if(pMatchStringChunk(ps, mpic, IFFCHNK_OWNER, owner)) {
+                        /* found it! So there is already a config saved in there. Search for dev config data form */
+                        cpic = psdFindCfgForm(mpic, IFFFORM_DEVCLSDATA);
+                        break;
+                    }
+                    mpic = psdNextCfgForm(mpic);
+                }
+            }
+            break;
+        }
+        pic = psdNextCfgForm(pic);
+    }
+    pUnlockSem(ps, &ps->ps_ConfigLock);
+    KPRINTF(1, ("Result %p\n", cpic));
+    return(cpic);
+    AROS_LIBFUNC_EXIT
+}
+/* \\\ */
+
+/* /// "psdSetForcedBinding()" */
+/*****************************************************************************
+    NAME
+        BOOL psdSetForcedBinding(
+
+    SYNOPSIS
+        STRPTR owner, STRPTR devid, STRPTR ifid)
+
+    FUNCTION
+        Store or remove the preferred USB class for a device or interface in
+        the in-memory configuration.
+
+    INPUTS
+        owner - NUL-terminated class name to store. NULL or an empty string
+            removes the forced binding.
+        devid - Non-NULL, NUL-terminated device ID string.
+        ifid - NUL-terminated interface ID string, or NULL for a device binding.
+            Strings must remain valid until return; stored values are copied.
+
+    RESULT
+        TRUE if the binding was stored, or if removal was requested, including
+        when no matching binding existed. FALSE if storing could not complete.
+        Failure can leave configuration changes in place.
+
+    NOTES
+        May wait for the configuration write lock. Searches the first matching
+        device form. Interface removal affects all matching interface forms
+        within that device; device removal leaves interface bindings intact.
+
+        Does not load the named class, verify that it accepts the target, or
+        release and rebind an existing device. Changes remain in memory until
+        saved. A changed configuration hash triggers a configuration-change
+        event; storing a name does not establish a live binding.
+
+    BUGS
+        Updates are not transactional. Allocation failure can remove a previous
+        value or leave incomplete or duplicate configuration forms. FALSE does
+        not guarantee that the previous binding remains available.
+
+    SEE ALSO
+        psdGetForcedBinding(), psdClassScan(), psdSaveCfgToDisk()
+
+*****************************************************************************/
+        AROS_LH3(BOOL, psdSetForcedBinding,
+         AROS_LHA(STRPTR, owner, A2),
+         AROS_LHA(STRPTR, devid, A0),
+         AROS_LHA(STRPTR, ifid, A1),
+         LIBBASETYPEPTR, ps, 69, psd)
+{
+    AROS_LIBFUNC_INIT
+    struct PsdIFFContext *pic;
+    struct PsdIFFContext *mpic = NULL;
+    ULONG olen = 0;
+    BOOL result = FALSE;
+
+    if(owner) {
+        olen = strlen(owner);
+    }
+    pLockSemExcl(ps, &ps->ps_ConfigLock);
+    /* Find device config form. It contains all device config data */
+    pic = psdFindCfgForm(NULL, IFFFORM_DEVICECFG);
+    while(pic) {
+        /* Find DEVID-Chunk. Check if it matches our device id */
+        if(pMatchStringChunk(ps, pic, IFFCHNK_DEVID, devid)) {
+            /* We found the correct device. Now if we need to store interface data, find the interface first */
+            if(ifid) {
+                /* Search interface config form */
+                mpic = psdFindCfgForm(pic, IFFFORM_IFCFGDATA);
+                while(mpic) {
+                    /* Found the form. Find the the ID String for the interface */
+                    if(pMatchStringChunk(ps, mpic, IFFCHNK_IFID, ifid)) {
+                        /* ID did match, insert/replace forced binding */
+                        if(olen) {
+                            if(pAddStringChunk(ps, mpic, IFFCHNK_FORCEDBIND, owner)) {
+                                result = TRUE;
+                            }
+                        } else {
+                            pRemCfgChunk(ps, mpic, IFFCHNK_FORCEDBIND);
+                            result = TRUE;
+                        }
+                    }
+                    mpic = psdNextCfgForm(mpic);
+                }
+                if(!olen) {
+                    result = TRUE;
+                }
+                if((!result) && olen) {
+                    if((mpic = pAllocForm(ps, pic, IFFFORM_IFCFGDATA))) {
+                        if(pAddStringChunk(ps, mpic, IFFCHNK_OWNER, owner)) {
+                            if(pAddStringChunk(ps, mpic, IFFCHNK_FORCEDBIND, owner)) {
+                                if(pAddStringChunk(ps, mpic, IFFCHNK_IFID, ifid)) {
+                                    result = TRUE;
+                                }
+                            }
+                        }
+                    }
+                }
+            } else {
+                /* Add FBND chunk */
+                if(olen) {
+                    if(pAddStringChunk(ps, pic, IFFCHNK_FORCEDBIND, owner)) {
+                        result = TRUE;
+                    }
+                } else {
+                    pRemCfgChunk(ps, pic, IFFCHNK_FORCEDBIND);
+                    result = TRUE;
+                }
+            }
+            break;
+        }
+        pic = psdNextCfgForm(pic);
+    }
+    if(!olen) {
+        result = TRUE;
+    }
+    if(result) {
+        pUnlockSem(ps, &ps->ps_ConfigLock);
+        pCheckCfgChanged(ps);
+        return(result);
+    }
+    pic = (struct PsdIFFContext *) ps->ps_ConfigRoot.lh_Head;
+    if(pic->pic_Node.ln_Succ) {
+        pic = pAllocForm(ps, pic, IFFFORM_DEVICECFG);
+        if(pic) {
+            if(pAddStringChunk(ps, pic, IFFCHNK_DEVID, devid)) {
+                if(ifid) {
+                    if((mpic = pAllocForm(ps, pic, IFFFORM_IFCFGDATA))) {
+                        if(pAddStringChunk(ps, mpic, IFFCHNK_OWNER, owner)) {
+                            if(pAddStringChunk(ps, mpic, IFFCHNK_FORCEDBIND, owner)) {
+                                if(pAddStringChunk(ps, mpic, IFFCHNK_IFID, ifid)) {
+                                    result = TRUE;
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    /* Add FBND chunk */
+                    if(pAddStringChunk(ps, pic, IFFCHNK_FORCEDBIND, owner)) {
+                        result = TRUE;
+                    }
+                }
+            }
+        }
+    }
+    pUnlockSem(ps, &ps->ps_ConfigLock);
+    pCheckCfgChanged(ps);
+    return(result);
+    AROS_LIBFUNC_EXIT
+}
+/* \\\ */
+
+/* /// "psdGetForcedBinding()" */
+/*****************************************************************************
+    NAME
+        STRPTR psdGetForcedBinding(
+
+    SYNOPSIS
+        STRPTR devid, STRPTR ifid)
+
+    FUNCTION
+        Look up the configured forced class binding for a device or interface.
+
+    INPUTS
+        devid - Non-NULL, NUL-terminated device ID string.
+        ifid - NUL-terminated interface ID string, or NULL for a device binding.
+            Both strings must remain valid until return.
+
+    RESULT
+        A borrowed pointer to the stored class name, or NULL if no matching
+        binding is found. Do not modify or free the returned string.
+
+    NOTES
+        May wait for the configuration read lock. Searches only the first
+        matching device form. An interface lookup does not fall back to the
+        device binding. The result describes configuration, not a live binding
+        or proof that the named class is available.
+
+        The read lock is released before return. Configuration replacement,
+        removal, or buffer reallocation can invalidate the pointer. Exclude
+        concurrent configuration mutation for the lookup and the entire use
+        of the result; copy it while that exclusion remains in effect if a
+        longer-lived value is required.
+
+    SEE ALSO
+        psdSetForcedBinding(), psdGetStringChunk()
+
+*****************************************************************************/
+        AROS_LH2(STRPTR, psdGetForcedBinding,
+         AROS_LHA(STRPTR, devid, A0),
+         AROS_LHA(STRPTR, ifid, A1),
+         LIBBASETYPEPTR, ps, 70, psd)
+{
+    AROS_LIBFUNC_INIT
+    struct PsdIFFContext *pic;
+    struct PsdIFFContext *mpic = NULL;
+    ULONG *chunk;
+    STRPTR owner = NULL;
+
+    pLockSemShared(ps, &ps->ps_ConfigLock);
+    /* Find device config form. It contains all device config data */
+    pic = psdFindCfgForm(NULL, IFFFORM_DEVICECFG);
+    while(pic) {
+        /* Find DEVID-Chunk. Check if it matches our device id */
+        if(pMatchStringChunk(ps, pic, IFFCHNK_DEVID, devid)) {
+            /* We found the correct device. Now if we need to store interface data, find the interface first */
+            if(ifid) {
+                /* Search interface config form */
+                mpic = psdFindCfgForm(pic, IFFFORM_IFCFGDATA);
+                while(mpic) {
+                    /* Found the form. Find the the ID String for the interface */
+                    if(pMatchStringChunk(ps, mpic, IFFCHNK_IFID, ifid)) {
+                        /* ID did match, now check for forced binding */
+                        chunk = pFindCfgChunk(ps, mpic, IFFCHNK_FORCEDBIND);
+                        if(chunk) {
+                            owner = (STRPTR) &chunk[2];
+                            break;
+                        }
+                    }
+                    mpic = psdNextCfgForm(mpic);
+                }
+            } else {
+                /* Search for device forced binding */
+                chunk = pFindCfgChunk(ps, pic, IFFCHNK_FORCEDBIND);
+                if(chunk) {
+                    owner = (STRPTR) &chunk[2];
+                    break;
+                }
+            }
+            break;
+        }
+        pic = psdNextCfgForm(pic);
+    }
+    pUnlockSem(ps, &ps->ps_ConfigLock);
+    return(owner);
+    AROS_LIBFUNC_EXIT
+}
+/* \\\ */
+
+/* /// "psdAddStringChunk()" */
+/*****************************************************************************
+    NAME
+        BOOL psdAddStringChunk(
+
+    SYNOPSIS
+        APTR pic, ULONG chunkid, CONST_STRPTR contents)
+
+    FUNCTION
+        Store a string chunk in a configuration form.
+
+    INPUTS
+        pic - Valid, non-NULL form handle.
+        chunkid - Numeric chunk identifier in host byte order; must not be FORM.
+        contents - Non-NULL, NUL-terminated string. Keep it valid until return.
+            Its length and allocation overhead must fit in ULONG.
+
+    RESULT
+        TRUE if the string was stored; FALSE if allocation fails. Failure
+        while expanding the form buffer can leave the previous chunk removed.
+
+    NOTES
+        Copies the string, including its terminator, into the form. Replaces
+        the first existing chunk with the same identifier. The source is not
+        retained. Uses the configuration write lock and may wait; call in task
+        context. Coordinate form lifetime separately.
+
+        Does not save preferences, apply configuration or set the configuration
+        recheck request. Use the appropriate configuration operation afterward.
+
+    BUGS
+        Replacement removes the old chunk before securing expansion memory.
+        Input sizes and the reserved FORM identifier are not validated.
+
+    SEE ALSO
+        psdAllocCfgForm(), psdGetStringChunk(), psdMatchStringChunk(),
+        psdRemCfgChunk(), psdAddCfgEntry()
+
+*****************************************************************************/
+        AROS_LH3(BOOL, psdAddStringChunk,
+         AROS_LHA(struct PsdIFFContext *, pic, A0),
+         AROS_LHA(ULONG, chunkid, D0),
+         AROS_LHA(CONST_STRPTR, str, A1),
+         LIBBASETYPEPTR, ps, 87, psd)
+{
+    AROS_LIBFUNC_INIT
+    BOOL res;
+    KPRINTF(10, ("psdAddStringChunk(%p, %p, %s)\n", pic, chunkid, str));
+    pLockSemExcl(ps, &ps->ps_ConfigLock);
+    res = pAddStringChunk(ps, pic, chunkid, str);
+    pUnlockSem(ps, &ps->ps_ConfigLock);
+    return(res);
+    AROS_LIBFUNC_EXIT
+}
+/* \\\ */
+
+/* /// "psdMatchStringChunk()" */
+/*****************************************************************************
+    NAME
+        BOOL psdMatchStringChunk(
+
+    SYNOPSIS
+        APTR pic, ULONG chunkid, CONST_STRPTR contents)
+
+    FUNCTION
+        Compare a string with the first matching configuration chunk.
+
+    INPUTS
+        pic - Valid, non-NULL form handle.
+        chunkid - Numeric chunk identifier in host byte order.
+        contents - Non-NULL, NUL-terminated string to compare.
+
+    RESULT
+        TRUE for a byte-for-byte, case-sensitive match; FALSE if the chunk
+        is absent or differs. Comparison stops at its first NUL or declared
+        length, and the supplied string must end at that point.
+
+    NOTES
+        Uses the configuration read lock and may wait; call in task context.
+        Retains neither the string nor a chunk pointer. Coordinate form
+        lifetime separately. This is not validation of serialized IFF data;
+        the form must already contain structurally valid chunks.
+
+    SEE ALSO
+        psdAddStringChunk(), psdGetStringChunk(), psdGetCfgChunk()
+
+*****************************************************************************/
+        AROS_LH3(BOOL, psdMatchStringChunk,
+         AROS_LHA(struct PsdIFFContext *, pic, A0),
+         AROS_LHA(ULONG, chunkid, D0),
+         AROS_LHA(CONST_STRPTR, str, A1),
+         LIBBASETYPEPTR, ps, 88, psd)
+{
+    AROS_LIBFUNC_INIT
+    BOOL res;
+    KPRINTF(10, ("psdMatchStringChunk(%p, %p, %s)\n", pic, chunkid, str));
+    pLockSemShared(ps, &ps->ps_ConfigLock);
+    res = pMatchStringChunk(ps, pic, chunkid, str);
+    pUnlockSem(ps, &ps->ps_ConfigLock);
+    return(res);
+    AROS_LIBFUNC_EXIT
+}
+/* \\\ */
+
+/* /// "psdGetStringChunk()" */
+/*****************************************************************************
+    NAME
+        STRPTR psdGetStringChunk(
+
+    SYNOPSIS
+        APTR pic, ULONG chunkid)
+
+    FUNCTION
+        Copy the first matching configuration chunk into a string buffer.
+
+    INPUTS
+        pic - Valid, non-NULL form handle.
+        chunkid - Numeric chunk identifier in host byte order.
+
+    RESULT
+        An allocated copy of the chunk payload, followed by a zero byte.
+        Returns NULL if the chunk is absent or allocation fails. Release the
+        result with psdFreeVec(). An empty stored string returns a non-NULL
+        empty string when allocation succeeds.
+
+    NOTES
+        Copies the declared payload length, including any embedded NULs.
+        The extra zero byte comes from the cleared allocation. The result
+        remains valid after the form changes or is removed.
+
+        Uses the configuration read lock and may wait; call in task context.
+        Coordinate form lifetime separately. The form must contain structurally
+        valid chunks; this operation does not validate imported IFF data.
+
+    SEE ALSO
+        psdAddStringChunk(), psdMatchStringChunk(), psdFreeVec(),
+        psdGetCfgChunk()
+
+*****************************************************************************/
+        AROS_LH2(STRPTR, psdGetStringChunk,
+         AROS_LHA(struct PsdIFFContext *, pic, A0),
+         AROS_LHA(ULONG, chunkid, D0),
+         LIBBASETYPEPTR, ps, 89, psd)
+{
+    AROS_LIBFUNC_INIT
+    STRPTR str;
+    KPRINTF(10, ("psdGetStringChunk(%p, %p)\n", pic, chunkid));
+    pLockSemShared(ps, &ps->ps_ConfigLock);
+    str = pGetStringChunk(ps, pic, chunkid);
+    pUnlockSem(ps, &ps->ps_ConfigLock);
+    return(str);
+    AROS_LIBFUNC_EXIT
+}
+/* \\\ */
+
+/* *** (non-library subroutines) *** */
+
+/* *** USB3 support functions *** */
+
+/* Build route string from Poseidon's hub chain.
+ *
+ * RouteString is 20 bits, 4 bits per hub level, with:
+ *   nibble 0 = port on FIRST hub below root
+ *   nibble 1 = port on SECOND hub below root
+ *   ...
+ *
+ * IMPORTANT:
+ *   - Root port is NOT encoded here (that is iouh_RootPort).
+ *   - Only the ports on hubs *below* root are encoded.
+ */
+ULONG pBuildRouteString(struct PsdDevice *pd)
+{
+    UWORD ports[5];
+    ULONG route = 0;
+    int   depth = 0;
+    int   nib;
+
+    if (!pd)
+        return 0;
+
+    /*
+     * Walk from the leaf device upwards.
+     *
+     * At each step, pd->pd_HubPort is the port on the *parent hub*
+     * where this pd is attached.
+     *
+     * We want to encode the ports on hubs that themselves have a parent
+     * (i.e. hubs below root). The hub that is directly attached to the
+     * root has pd_Hub != NULL but pd_Hub->pd_Hub == NULL.
+     *
+     * Therefore, we stop when pd->pd_Hub->pd_Hub becomes NULL.
+     */
+    while (pd && pd->pd_Hub && pd->pd_Hub->pd_Hub && depth < 5) {
+        ports[depth++] = pd->pd_HubPort & 0x0F;
+
+        /* Move up one level: this hub becomes the new device */
+        pd = pd->pd_Hub;
+    }
+
+    /*
+     * The walk collected the ports leaf-first, but the route string is
+     * root-first: nibble 0 is the port on the first hub below root, and
+     * the leaf's port lands in the highest used nibble.
+     */
+    for (nib = 0; nib < depth; nib++)
+        route |= ((ULONG)ports[depth - 1 - nib]) << (nib * 4);
+
+    return route;
+}
+
+/* Compute the physical root-hub port number for the device.
+ *
+ * For a leaf device, pd->pd_HubPort is the port on its parent hub.
+ * We walk up until the parent hub has no parent (root), and return
+ * the last child->pd_HubPort we saw - that is the physical root port.
+ */
+UWORD pGetRootPort(struct PsdDevice *pd)
+{
+    struct PsdDevice *child;
+    struct PsdDevice *hub;
+    UWORD rootPort = 0;
+
+    if (!pd)
+        return 0;
+
+    child = pd;
+    hub   = pd->pd_Hub;
+
+    /* If there is no hub at all, pd is itself the root device; its
+       pd_HubPort should already reflect the root port, if used. */
+    if (!hub)
+        return pd->pd_HubPort;
+
+    while (hub) {
+        /* child is connected to 'hub' on child->pd_HubPort */
+        rootPort = child->pd_HubPort;
+
+        child = hub;
+        hub   = hub->pd_Hub;
+    }
+
+    return rootPort;
+}
+
+/* Determine split-transaction/TT information for FS/LS devices behind HS hubs.
+ *
+ * On success:
+ *   *ttHubAddr = address of the high-speed hub owning the TT
+ *   *ttHubPort = port on that hub to which the FS/LS device (or its parent hub) is attached
+ *   *thinkTime = hub->pd_HubThinkTime of the TT hub
+ *   *isMultiTT = TRUE if PDFF_MULTITT set on that hub
+ *
+ * On failure or "not needed" (e.g. HS/SS devices), fields are set to 0/FALSE.
+ */
+void pGetTTInfo(struct PsdDevice *pd,
+                UWORD *ttHubAddr,
+                UWORD *ttHubPort,
+                UWORD *thinkTime,
+                BOOL  *isMultiTT)
+{
+    struct PsdDevice *dev;
+    struct PsdDevice *hub;
+
+    if (ttHubAddr) *ttHubAddr = 0;
+    if (ttHubPort) *ttHubPort = 0;
+    if (thinkTime) *thinkTime = 0;
+    if (isMultiTT) *isMultiTT = FALSE;
+
+    if (!pd)
+        return;
+
+    /* Only FS/LS devices behind HS hubs need a TT; PDFF_NEEDSSPLIT already encodes this
+       in Poseidon's logic, but this helper intentionally does not rely on that flag. */
+    dev = pd;
+    hub = pd->pd_Hub;
+
+    while (dev && hub) {
+        if (hub->pd_Flags & PDFF_HIGHSPEED) {
+            /* 'hub' is the HS hub owning the TT, 'dev' is the child of that hub */
+            if (ttHubAddr) *ttHubAddr = hub->pd_DevAddr;
+            if (ttHubPort) *ttHubPort = dev->pd_HubPort;
+            if (thinkTime) *thinkTime = hub->pd_HubThinkTime;
+            if (isMultiTT) *isMultiTT = ((hub->pd_Flags & PDFF_MULTITT) != 0);
+            return;
+        }
+
+        dev = hub;
+        hub = hub->pd_Hub;
+    }
+}
+
+/* *** Configuration *** */
+
+/* /// "pAllocForm()" */
+/* Allocate an IFF FORM context and attach it to its parent context. */
+struct PsdIFFContext * pAllocForm(LIBBASETYPEPTR ps, struct PsdIFFContext *parent, ULONG formid)
+{
+    struct PsdIFFContext *pic;
+    KPRINTF(10, ("pAllocForm(%p, %p)\n", parent, formid));
+    if((pic = psdAllocVec(sizeof(struct PsdIFFContext)))) {
+        NewList(&pic->pic_SubForms);
+        //pic->pic_Parent = parent;
+        pic->pic_FormID = formid;
+        pic->pic_FormLength = 4;
+        pic->pic_Chunks = NULL;
+        pic->pic_ChunksLen = 0;
+        pic->pic_BufferLen = 0;
+        Forbid();
+        if(parent) {
+            AddTail(&parent->pic_SubForms, &pic->pic_Node);
+        } else {
+            AddTail(&ps->ps_ConfigRoot, &pic->pic_Node);
+        }
+        Permit();
+    }
+    return(pic);
+}
+/* \\\ */
+
+/* /// "pFreeForm()" */
+/* Recursively release an IFF FORM context, its chunks and all nested forms. */
+void pFreeForm(LIBBASETYPEPTR ps, struct PsdIFFContext *pic)
+{
+    struct PsdIFFContext *subpic = (struct PsdIFFContext *) pic->pic_SubForms.lh_Head;
+    KPRINTF(10, ("pFreeForm(%p)\n", pic));
+    Remove(&pic->pic_Node);
+    while(subpic->pic_Node.ln_Succ) {
+        pFreeForm(ps, subpic);
+        subpic = (struct PsdIFFContext *) pic->pic_SubForms.lh_Head;
+    }
+    psdFreeVec(pic->pic_Chunks);
+    psdFreeVec(pic);
+}
+/* \\\ */
+
+/* /// "pGetFormLength()" */
+/*
+ * Recalculate and store pic_FormLength for this FORM, recursively adding
+ * each child FORM's serialized size to the padded local chunk length.
+ * Return the resulting size plus the eight-byte outer FORM header.
+ */
+ULONG pGetFormLength(struct PsdIFFContext *pic)
+{
+    ULONG len = (5 + pic->pic_ChunksLen) & ~1UL;
+    struct PsdIFFContext *subpic = (struct PsdIFFContext *) pic->pic_SubForms.lh_Head;
+    //KPRINTF(10, ("pGetFormLength(%p)\n", pic));
+    while(subpic->pic_Node.ln_Succ) {
+        len += pGetFormLength(subpic);
+        subpic = (struct PsdIFFContext *) subpic->pic_Node.ln_Succ;
+    }
+    pic->pic_FormLength = len;
+    //KPRINTF(10, ("FormLen=%ld\n", len+8));
+    return(len + 8);
+}
+/* \\\ */
+
+/* /// "pFindCfgChunk()" */
+/*
+ * Locate the first IFF chunk matching an identifier within one configuration
+ * context.
+ */
+APTR pFindCfgChunk(LIBBASETYPEPTR ps, struct PsdIFFContext *pic, ULONG chnkid)
+{
+    ULONG *buf = pic->pic_Chunks;
+    ULONG len = pic->pic_ChunksLen;
+    ULONG chlen;
+    KPRINTF(10, ("pFindCfgChunk(%p, %p)\n", pic, chnkid));
+
+    while(len) {
+        if(pRdBE32(buf) == chnkid) {
+            KPRINTF(10, ("Found at %p\n", buf));
+            return(buf);
+        }
+        chlen = (pRdBE32(&buf[1]) + 9) & ~1UL;
+        len -= chlen;
+        buf = (ULONG *) (((UBYTE *) buf) + chlen);
+    }
+    KPRINTF(10, ("Not found!\n"));
+    return(NULL);
+}
+/* \\\ */
+
+/* /// "pRemCfgChunk()" */
+/* Remove a stored IFF chunk by identifier from a configuration context. */
+BOOL pRemCfgChunk(LIBBASETYPEPTR ps, struct PsdIFFContext *pic, ULONG chnkid)
+{
+    ULONG *buf = pic->pic_Chunks;
+    ULONG len = pic->pic_ChunksLen;
+    ULONG chlen;
+    KPRINTF(10, ("pRemCfgChunk(%p, %p)\n", pic, chnkid));
+
+    while(len) {
+        chlen = (pRdBE32(&buf[1]) + 9) & ~1UL;
+        if(pRdBE32(buf) == chnkid) {
+            len -= chlen;
+            if(len) {
+                memcpy(buf, &((UBYTE *) buf)[chlen], (size_t) len);
+            }
+            pic->pic_ChunksLen -= chlen;
+            KPRINTF(10, ("Deleted %ld bytes to %ld chunk len\n", chlen, pic->pic_ChunksLen));
+            return(TRUE);
+        }
+        len -= chlen;
+        buf = (ULONG *) (((UBYTE *) buf) + chlen);
+    }
+    KPRINTF(10, ("Not found!\n"));
+    return(FALSE);
+}
+/* \\\ */
+
+/* /// "pAddCfgChunk()" */
+/*
+ * Read an IFF chunk or nested FORM into a configuration context. Process
+ * child chunks recursively; a failure can leave previously added forms or
+ * chunks attached. The function does not establish that all advertised
+ * chunk lengths are within the caller's input buffer.
+ */
+struct PsdIFFContext * pAddCfgChunk(LIBBASETYPEPTR ps, struct PsdIFFContext *pic, APTR chunk)
+{
+    LONG len;
+    LONG chlen;
+    ULONG *buf = chunk;
+    ULONG *newbuf;
+    struct PsdIFFContext *subpic;
+    KPRINTF(10, ("pAddCfgChunk(%p, %p)\n", pic, chunk));
+    if(pRdBE32(buf) == ID_FORM) {
+        buf++;
+        len = (pRdBE32(buf) - 3) & ~1UL;
+        buf++;
+        if((subpic = pAllocForm(ps, pic, pRdBE32(buf)))) {
+            buf++;
+            while(len >= 8) {
+                if(!(pAddCfgChunk(ps, subpic, buf))) {
+                    break;
+                }
+                chlen = (pRdBE32(&buf[1]) + 9) & ~1UL;
+                len -= chlen;
+                buf = (ULONG *) (((UBYTE *) buf) + chlen);
+            }
+            if(len) {
+                psdAddErrorMsg0(RETURN_FAIL, (STRPTR) GM_UNIQUENAME(libname), "Tried to add a nasty corrupted FORM chunk! Configuration is probably b0rken!");
+                return(NULL);
+            }
+        } else {
+            return(NULL);
+        }
+        return(subpic);
+    } else {
+        pRemCfgChunk(ps, pic, pRdBE32(buf));
+        len = (pRdBE32(&buf[1]) + 9) & ~1UL;
+        if(pic->pic_ChunksLen+len > pic->pic_BufferLen) {
+            KPRINTF(10, ("expanding buffer from %ld to %ld to fit %ld bytes\n", pic->pic_BufferLen, (pic->pic_ChunksLen+len)<<1, pic->pic_ChunksLen+len));
+
+            /* Expand buffer */
+            if((newbuf = psdAllocVec((pic->pic_ChunksLen+len)<<1))) {
+                if(pic->pic_ChunksLen) {
+                    memcpy(newbuf, pic->pic_Chunks, (size_t) pic->pic_ChunksLen);
+                    psdFreeVec(pic->pic_Chunks);
+                }
+                pic->pic_Chunks = newbuf;
+                pic->pic_BufferLen = (pic->pic_ChunksLen+len)<<1;
+            } else {
+                return(NULL);
+            }
+        }
+        memcpy(&(((UBYTE *) pic->pic_Chunks)[pic->pic_ChunksLen]), chunk, (size_t) len);
+        pic->pic_ChunksLen += len;
+        return(pic);
+    }
+}
+/* \\\ */
+
+/* /// "pInternalWriteForm()" */
+/*
+ * Serialize an IFF FORM header, its chunks and nested forms into a
+ * caller-supplied buffer.
+ */
+ULONG * pInternalWriteForm(struct PsdIFFContext *pic, ULONG *buf)
+{
+    struct PsdIFFContext *subpic = (struct PsdIFFContext *) pic->pic_SubForms.lh_Head;
+    //KPRINTF(10, ("pInternalWriteForm(%p, %p)", pic, buf));
+    pWrBE32(buf++, ID_FORM);
+    pWrBE32(buf++, pic->pic_FormLength);
+    pWrBE32(buf++, pic->pic_FormID);
+    if(pic->pic_ChunksLen) {
+        memcpy(buf, pic->pic_Chunks, (size_t) pic->pic_ChunksLen);
+        buf = (ULONG *) (((UBYTE *) buf) + pic->pic_ChunksLen);
+    }
+    while(subpic->pic_Node.ln_Succ) {
+        buf = pInternalWriteForm(subpic, buf);
+        subpic = (struct PsdIFFContext *) subpic->pic_Node.ln_Succ;
+    }
+    return(buf);
+}
+/* \\\ */
+
+/* /// "pCalcCfgCRC()" */
+/*
+ * Compute the configuration-change checksum recursively over a form and its
+ * descendants.
+ */
+ULONG pCalcCfgCRC(struct PsdIFFContext *pic)
+{
+    struct PsdIFFContext *subpic = (struct PsdIFFContext *) pic->pic_SubForms.lh_Head;
+    ULONG len;
+    ULONG crc = pic->pic_FormID;
+    UWORD *ptr;
+
+    //KPRINTF(10, ("pInternalWriteForm(%p, %p)", pic, buf));
+    if(pic->pic_ChunksLen) {
+        len = pic->pic_ChunksLen>>1;
+        if(len) {
+            ptr = (UWORD *) pic->pic_Chunks;
+            do {
+                crc = ((crc<<1)|(crc>>31))^(*ptr++);
+            } while(--len);
+        }
+    }
+    while(subpic->pic_Node.ln_Succ) {
+        crc ^= pCalcCfgCRC(subpic);
+        subpic = (struct PsdIFFContext *) subpic->pic_Node.ln_Succ;
+    }
+    return(crc);
+}
+/* \\\ */
+
+/* /// "pCheckCfgChanged()" */
+/*
+ * Compare current configuration contents with the recorded state and update
+ * change notification.
+ */
+BOOL pCheckCfgChanged(LIBBASETYPEPTR ps)
+{
+    ULONG crc;
+    struct PsdIFFContext *pic;
+    struct PsdIFFContext *subpic;
+    STRPTR tmpstr;
+
+    pLockSemShared(ps, &ps->ps_ConfigLock);
+    ps->ps_CheckConfigReq = FALSE;
+    pic = (struct PsdIFFContext *) ps->ps_ConfigRoot.lh_Head;
+    if(!(pic->pic_Node.ln_Succ)) {
+        pUnlockSem(ps, &ps->ps_ConfigLock);
+        return(FALSE);
+    }
+    crc = pCalcCfgCRC(pic);
+    if(crc != ps->ps_ConfigHash) {
+        ULONG *chnk;
+        ps->ps_ConfigHash = crc;
+        /* Get Global config */
+        if((subpic = psdFindCfgForm(pic, IFFFORM_STACKCFG))) {
+            if((chnk = pFindCfgChunk(ps, subpic, IFFCHNK_GLOBALCFG))) {
+                CopyMem(&chnk[2], ((UBYTE *) ps->ps_GlobalCfg) + 8, min(pRdBE32(&chnk[1]), AROS_LONG2BE(ps->ps_GlobalCfg->pgc_Length)));
+            }
+            if(!pMatchStringChunk(ps, subpic, IFFCHNK_INSERTSND, ps->ps_PoPo.po_InsertSndFile)) {
+                if((tmpstr = pGetStringChunk(ps, subpic, IFFCHNK_INSERTSND))) {
+                    psdFreeVec(ps->ps_PoPo.po_InsertSndFile);
+                    ps->ps_PoPo.po_InsertSndFile = tmpstr;
+                }
+            }
+            if(!pMatchStringChunk(ps, subpic, IFFCHNK_REMOVESND, ps->ps_PoPo.po_RemoveSndFile)) {
+                if((tmpstr = pGetStringChunk(ps, subpic, IFFCHNK_REMOVESND))) {
+                    psdFreeVec(ps->ps_PoPo.po_RemoveSndFile);
+                    ps->ps_PoPo.po_RemoveSndFile = tmpstr;
+                }
+            }
+        }
+        pUnlockSem(ps, &ps->ps_ConfigLock);
+        psdSendEvent(EHMB_CONFIGCHG, NULL, NULL);
+        return(TRUE);
+    }
+    pUnlockSem(ps, &ps->ps_ConfigLock);
+    return(FALSE);
+}
+/* \\\ */
+
+/* /// "pAddStringChunk()" */
+/*
+ * Encode a NUL-terminated string in an IFF chunk and add it to a
+ * configuration form.
+ */
+BOOL pAddStringChunk(LIBBASETYPEPTR ps, struct PsdIFFContext *pic, ULONG chunkid, CONST_STRPTR str)
+{
+    BOOL res = FALSE;
+    ULONG len = strlen(str);
+    ULONG *chnk = (ULONG *) psdAllocVec((ULONG) len+8+2);
+    if(chnk) {
+        chnk[0] = AROS_LONG2BE(chunkid);
+        chnk[1] = AROS_LONG2BE(len+1);
+        strcpy((STRPTR) &chnk[2], str);
+        if(pAddCfgChunk(ps, pic, chnk)) {
+            res = TRUE;
+        }
+        psdFreeVec(chnk);
+    }
+    return(res);
+}
+/* \\\ */
+
+/* /// "pMatchStringChunk()" */
+/* Compare a stored IFF string chunk with a supplied NUL-terminated string. */
+BOOL pMatchStringChunk(LIBBASETYPEPTR ps, struct PsdIFFContext *pic, ULONG chunkid, CONST_STRPTR str)
+{
+    ULONG *chunk;
+    ULONG len;
+    STRPTR srcptr;
+    if((chunk = pFindCfgChunk(ps, pic, chunkid))) {
+        srcptr = (STRPTR) &chunk[2];
+        len = pRdBE32(&chunk[1]);
+        while(len-- && *srcptr) {
+            if(*str++ != *srcptr++) {
+                return(FALSE);
+            }
+        }
+        if(!*str) {
+            return(TRUE);
+        }
+    }
+    return(FALSE);
+}
+/* \\\ */
+
+/* /// "pGetStringChunk()" */
+/*
+ * Allocate and copy the payload of a stored configuration string chunk.
+ * The copy does not explicitly append a NUL terminator; callers must not
+ * assume it is a terminated C string without checking the stored data.
+ */
+STRPTR pGetStringChunk(LIBBASETYPEPTR ps, struct PsdIFFContext *pic, ULONG chunkid)
+{
+    ULONG *chunk;
+    STRPTR str;
+    if((chunk = pFindCfgChunk(ps, pic, chunkid))) {
+        ULONG len = pRdBE32(&chunk[1]);
+
+        if((str = (STRPTR) psdAllocVec(len + 1))) {
+            memcpy(str, &chunk[2], (size_t) len);
+            return(str);
+        }
+    }
+    return(NULL);
+}
+/* \\\ */
+
+/* /// "pUpdateGlobalCfg()" */
+/*
+ * Copy active global preferences and popup sound paths into the root stack
+ * configuration form.
+ */
+void pUpdateGlobalCfg(LIBBASETYPEPTR ps, struct PsdIFFContext *pic)
+{
+    struct PsdIFFContext *tmppic;
+    /* Set Global config */
+    if(pic == (struct PsdIFFContext *) ps->ps_ConfigRoot.lh_Head) {
+        if((tmppic = psdFindCfgForm(NULL, IFFFORM_STACKCFG))) {
+            pAddCfgChunk(ps, tmppic, ps->ps_GlobalCfg);
+            pAddStringChunk(ps, tmppic, IFFCHNK_INSERTSND, ps->ps_PoPo.po_InsertSndFile);
+            pAddStringChunk(ps, tmppic, IFFCHNK_REMOVESND, ps->ps_PoPo.po_RemoveSndFile);
+        }
+    }
+}
+/* \\\ */
+
+/* *** Misc (non library functions) ***/
+
+/* /// "pGetDevConfig()" */
+/*
+ * Read and parse each device configuration through the control pipe,
+ * including alternate settings. A failed transfer or transfer-buffer
+ * allocation returns FALSE without undoing previously parsed configurations.
+ * Failures to allocate individual parsed objects can still return TRUE.
+ * An overlong descriptor is logged but not rejected before processing;
+ * malformed descriptor bounds remain unsafe.
+ */
+BOOL pGetDevConfig(struct PsdPipe *pp)
+{
+    struct PsdDevice *pd = pp->pp_Device;
+    LIBBASETYPEPTR ps = pd->pd_Hardware->phw_Base;
+    UBYTE *tempbuf;
+    struct UsbStdCfgDesc uscd;
+    ULONG len;
+    LONG ioerr;
+    STRPTR classname;
+    UWORD curcfg = 0;
+
+    KPRINTF(1, ("Getting configuration descriptor...\n"));
+    psdLockWriteDevice(pd);
+    while(curcfg < pd->pd_NumCfgs) {
+        psdPipeSetup(pp, URTF_IN|URTF_STANDARD|URTF_DEVICE,
+                     USR_GET_DESCRIPTOR, (UDT_CONFIGURATION<<8)|curcfg, 0);
+
+        /*tempbuf = psdAllocVec(256);
+        ioerr = psdDoPipe(pp, tempbuf, 34);
+        if(ioerr == UHIOERR_RUNTPACKET)
+        {
+            ioerr = 0;
+        }
+        memcpy(&uscd, tempbuf, 9);*/
+        ioerr = psdDoPipe(pp, &uscd, 9);//sizeof(struct UsbStdCfgDesc));
+        if(!ioerr) {
+            KPRINTF(1, ("Config type: %ld\n", (ULONG) uscd.bDescriptorType));
+            len = (ULONG) AROS_LE2WORD(uscd.wTotalLength);
+            KPRINTF(1, ("Configsize %ld, total size %ld\n", (ULONG) uscd.bLength, len));
+            if((tempbuf = psdAllocVec(len)))
+                //if(1)
+            {
+                KPRINTF(1, ("Getting whole configuration descriptor...\n"));
+                ioerr = psdDoPipe(pp, tempbuf, len);
+                if(!ioerr) {
+                    struct PsdConfig *pc = NULL;
+                    struct PsdInterface *pif = NULL;
+                    struct PsdInterface *altif = NULL;
+                    struct PsdEndpoint *pep = NULL;
+                    struct PsdDescriptor *pdd = NULL;
+                    UBYTE *dbuf = tempbuf;
+                    UBYTE *bufend;
+                    ULONG dlen;
+                    bufend = &dbuf[len];
+                    while(dbuf < bufend) {
+                        dlen = dbuf[0]; /* bLength */
+                        if(dlen < 2) {
+                            break;
+                        }
+                        if(&dbuf[dlen] > bufend) {
+                            psdAddErrorMsg0(RETURN_ERROR, (STRPTR) GM_UNIQUENAME(libname), "End of descriptor past buffer!");
+                        }
+                        switch(dbuf[1]) { /* bDescriptorType */
+                        case UDT_CONFIGURATION: {
+                            struct UsbStdCfgDesc *usc = (struct UsbStdCfgDesc *) dbuf;
+                            pif = NULL;
+                            altif = NULL;
+                            pep = NULL;
+                            if((pc = pAllocConfig(pd))) {
+                                pd->pd_Flags |= PDFF_CONFIGURED;
+                                pc->pc_NumIfs = usc->bNumInterfaces;
+                                pc->pc_CfgNum = usc->bConfigurationValue;
+                                pc->pc_Attr   = usc->bmAttributes;
+                                pc->pc_MaxPower = usc->bMaxPower<<1;
+                                pc->pc_CfgStr = 0;
+                                KPRINTF(1, ("  Config %ld\n", pc->pc_CfgNum));
+                                if(usc->iConfiguration) {
+                                    pc->pc_CfgStr = psdGetStringDescriptor(pp, usc->iConfiguration);
+                                }
+                                if(!pc->pc_CfgStr) {
+                                    pc->pc_CfgStr = psdCopyStrFmt("Configuration %ld", pc->pc_CfgNum);
+                                }
+                            } else {
+                                KPRINTF(20, ("  Config allocation failed\n"));
+                            }
+                            break;
+                        }
+
+                        case UDT_INTERFACE: {
+                            struct UsbStdIfDesc *usif = (struct UsbStdIfDesc *) dbuf;
+                            pep = NULL;
+                            if(pc) {
+                                if((altif = pAllocInterface(pc))) {
+                                    altif->pif_IfNum = usif->bInterfaceNumber;
+                                    altif->pif_Alternate = usif->bAlternateSetting;
+                                    altif->pif_NumEPs = usif->bNumEndpoints;
+                                    altif->pif_IfClass = usif->bInterfaceClass;
+                                    altif->pif_IfSubClass = usif->bInterfaceSubClass;
+                                    altif->pif_IfProto = usif->bInterfaceProtocol;
+                                    KPRINTF(2, ("    Interface %ld\n", altif->pif_IfNum));
+                                    if(usif->iInterface) {
+                                        altif->pif_IfStr = psdGetStringDescriptor(pp, usif->iInterface);
+                                    }
+                                    if(!altif->pif_IfStr) {
+                                        classname = psdNumToStr(NTS_CLASSCODE, (LONG) altif->pif_IfClass, NULL);
+                                        if(classname) {
+                                            altif->pif_IfStr = psdCopyStrFmt("%s interface (%ld)", classname, altif->pif_IfNum);
+                                        } else {
+                                            altif->pif_IfStr = psdCopyStrFmt("Interface %ld", altif->pif_IfNum);
+                                        }
+                                    }
+                                    KPRINTF(2, ("      IfName    : %s\n"
+                                                "      Alternate : %ld\n"
+                                                "      NumEPs    : %ld\n"
+                                                "      IfClass   : %ld\n"
+                                                "      IfSubClass: %ld\n"
+                                                "      IfProto   : %ld\n",
+                                                altif->pif_IfStr, altif->pif_Alternate,
+                                                altif->pif_NumEPs,
+                                                altif->pif_IfClass,
+                                                altif->pif_IfSubClass, altif->pif_IfProto));
+                                    if(pc->pc_CfgNum == 1) {
+                                        altif->pif_IDString = psdCopyStrFmt("%02lx-%02lx-%02lx-%02lx-%02lx",
+                                                                            altif->pif_IfNum, altif->pif_Alternate,
+                                                                            altif->pif_IfClass, altif->pif_IfSubClass,
+                                                                            altif->pif_IfProto);
+                                    } else {
+                                        // for more than one config, add config number (retain backwards compatibility with most devices)
+                                        altif->pif_IDString = psdCopyStrFmt("%02lx-%02lx-%02lx-%02lx-%02lx-%02lx",
+                                                                            pc->pc_CfgNum,
+                                                                            altif->pif_IfNum, altif->pif_Alternate,
+                                                                            altif->pif_IfClass, altif->pif_IfSubClass,
+                                                                            altif->pif_IfProto);
+                                    }
+
+                                    /* Move the interface to the alternatives if possible */
+                                    if(altif->pif_Alternate) {
+                                        if(!pif) {
+                                            psdAddErrorMsg0(RETURN_ERROR, (STRPTR) GM_UNIQUENAME(libname), "Alternate interface without prior main interface!");
+                                            KPRINTF(20, ("    Alternate interface without prior main interface\n"));
+                                            pif = altif;
+                                        } else {
+                                            Remove(&altif->pif_Node);
+                                            AddTail(&pif->pif_AlterIfs, &altif->pif_Node);
+                                            altif->pif_ParentIf = pif;
+                                        }
+                                    } else {
+                                        altif->pif_ParentIf = NULL;
+                                        pif = altif;
+                                    }
+                                } else {
+                                    KPRINTF(20, ("    Interface allocation failed\n"));
+                                }
+                            } else {
+                                psdAddErrorMsg0(RETURN_ERROR, (STRPTR) GM_UNIQUENAME(libname), "Interface without prior config descriptor!");
+                                KPRINTF(20, ("    Interface descriptor without Config\n"));
+                            }
+                            break;
+                        }
+
+                        case UDT_ENDPOINT: {
+                            struct UsbStdEPDesc *usep = (struct UsbStdEPDesc *) dbuf;
+                            if(altif) {
+                                if((pep = pAllocEndpoint(altif))) {
+                                    STRPTR eptype;
+                                    pep->pep_EPNum = usep->bEndpointAddress & 0x0f;
+                                    pep->pep_Direction = usep->bEndpointAddress>>7;
+                                    pep->pep_TransType = usep->bmAttributes & 0x03;
+                                    pep->pep_SyncType = (usep->bmAttributes>>2) & 0x03;
+                                    pep->pep_UsageType = (usep->bmAttributes>>4) & 0x03;
+                                    eptype = (pep->pep_TransType == USEAF_INTERRUPT) ? "int" : "iso";
+
+                                    pep->pep_MaxPktSize = AROS_LE2WORD(usep->wMaxPacketSize) & 0x07ff;
+                                    pep->pep_NumTransMuFr = ((AROS_LE2WORD(usep->wMaxPacketSize)>>11) & 3) + 1;
+                                    if(pep->pep_NumTransMuFr == 4) {
+                                        psdAddErrorMsg0(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname), "Endpoint contains illegal Num Trans ï¿½Frame value!");
+                                        pep->pep_NumTransMuFr = 1;
+                                    }
+
+                                    pep->pep_Interval = usep->bInterval;
+                                    pep->pep_MaxBurst = 1;
+                                    pep->pep_CompAttributes = 0;
+                                    pep->pep_BytesPerInterval = pep->pep_MaxPktSize;
+                                    if(pd->pd_Flags & PDFF_SUPERSPEED) {
+                                        switch(pep->pep_TransType) {
+                                        case USEAF_CONTROL:
+                                        case USEAF_BULK:
+                                            pep->pep_Interval = 0; // not used for superspeed control/bulk
+                                            break;
+
+                                        case USEAF_ISOCHRONOUS:
+                                            if(pep->pep_MaxPktSize > 1024) {
+                                                psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
+                                                               "Endpoint contains %s (%ld) MaxPktSize value!",
+                                                               (STRPTR) "too high", pep->pep_MaxPktSize);
+                                                pep->pep_MaxPktSize = 1024;
+                                            }
+                                            if(!pep->pep_Interval) {
+                                                psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
+                                                               "%sspeed %s endpoint contains %s interval value! Fixing.",
+                                                               (STRPTR) "Super", eptype, (STRPTR) "zero");
+                                                pep->pep_Interval = 1;
+                                            } else if(pep->pep_Interval > 16) {
+                                                psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
+                                                               "%sspeed %s endpoint contains %s interval value! Fixing.",
+                                                               (STRPTR) "Super", eptype, (STRPTR) "too high");
+                                                pep->pep_Interval = 16;
+                                            }
+                                            pep->pep_Interval = 1<<(pep->pep_Interval-1);
+                                            break;
+
+                                        case USEAF_INTERRUPT:
+                                            if(!pep->pep_Interval) {
+                                                psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
+                                                               "%sspeed %s endpoint contains %s interval value! Fixing.",
+                                                               (STRPTR) "Super", eptype, (STRPTR) "zero");
+                                                pep->pep_Interval = 1;
+                                            }
+                                            pep->pep_Interval = 1<<(pep->pep_Interval-1);
+                                            break;
+                                        }
+                                    } else if(pd->pd_Flags & PDFF_HIGHSPEED) {
+                                        switch(pep->pep_TransType) {
+                                        case USEAF_CONTROL:
+                                        case USEAF_BULK:
+                                            //pep->pep_Interval = 0; // no use here, NAK rate not of interest
+                                            break;
+
+                                        case USEAF_ISOCHRONOUS:
+                                            if(pep->pep_MaxPktSize > 1024) {
+                                                psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
+                                                               "Endpoint contains %s (%ld) MaxPktSize value!",
+                                                               (STRPTR) "too high", pep->pep_MaxPktSize);
+                                                pep->pep_MaxPktSize = 1024;
+                                            }
+                                        // fall through
+                                        case USEAF_INTERRUPT:
+                                            if(!pep->pep_Interval) {
+                                                psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
+                                                               "%sspeed %s endpoint contains %s interval value! Fixing.",
+                                                               (STRPTR) "High", eptype, (STRPTR) "zero");
+                                                pep->pep_Interval = 1;
+                                            } else if(pep->pep_Interval > 16) {
+                                                psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
+                                                               "%sspeed %s endpoint contains %s interval value! Fixing.",
+                                                               (STRPTR) "High", eptype, (STRPTR) "too high");
+                                                pep->pep_Interval = 16;
+                                            }
+                                            pep->pep_Interval = 1<<(pep->pep_Interval-1);
+                                            break;
+                                        }
+                                    } else if(pd->pd_Flags & PDFF_LOWSPEED) {
+                                        switch(pep->pep_TransType) {
+                                        case USEAF_INTERRUPT:
+                                            if(pep->pep_Interval < 8) {
+                                                psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname), "%sspeed %s endpoint contains %s interval value! Fixing.",
+                                                               (STRPTR) "Low", eptype, (STRPTR) "too low");
+                                                pep->pep_Interval = 8;
+                                            }
+                                            break;
+
+                                        case USEAF_CONTROL:
+                                        case USEAF_BULK:
+                                            pep->pep_Interval = 0; // no use here
+                                            break;
+
+                                        case USEAF_ISOCHRONOUS:
+                                            psdAddErrorMsg0(RETURN_ERROR, (STRPTR) GM_UNIQUENAME(libname), "Lowspeed devices cannot have isochronous endpoints!");
+                                            break;
+                                        }
+                                    } else {
+                                        switch(pep->pep_TransType) {
+                                        case USEAF_INTERRUPT:
+                                            if(!pep->pep_Interval) {
+                                                psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname), "%sspeed %s endpoint contains %s interval value! Fixing.",
+                                                               (STRPTR) "Full", eptype, (STRPTR) "zero");
+                                                pep->pep_Interval = 1;
+                                            }
+                                            break;
+
+                                        case USEAF_CONTROL:
+                                        case USEAF_BULK:
+                                            pep->pep_Interval = 0; // no use here
+                                            break;
+
+                                        case USEAF_ISOCHRONOUS:
+                                            if(pep->pep_MaxPktSize > 1023) {
+                                                psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname), "Endpoint contains too high (%ld) MaxPktSize value! Fixing.", pep->pep_MaxPktSize);
+                                                pep->pep_MaxPktSize = 1023;
+                                            }
+                                            if(!pep->pep_Interval) {
+                                                psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname), "%sspeed %s endpoint contains %s interval value! Fixing.",
+                                                               (STRPTR) "Full", eptype, (STRPTR) "zero");
+                                                pep->pep_Interval = 1;
+                                            } else if(pep->pep_Interval > 16) {
+                                                psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname), "%sspeed %s endpoint contains %s interval value! Fixing.",
+                                                               (STRPTR) "Full", eptype, (STRPTR) "too high");
+                                                pep->pep_Interval = 16;
+                                            }
+                                            pep->pep_Interval = 1<<(pep->pep_Interval-1);
+                                            break;
+                                        }
+                                    }
+
+                                    KPRINTF(2, ("      Endpoint %ld\n", pep->pep_EPNum));
+                                    KPRINTF(2, ("        Direction : %s\n"
+                                                "        TransType : %ld\n"
+                                                "        MaxPktSize: %ld\n"
+                                                "        Interval  : %ld\n",
+                                                (pep->pep_Direction ? "IN" : "OUT"),
+                                                pep->pep_TransType, pep->pep_MaxPktSize,
+                                                pep->pep_Interval));
+
+                                } else {
+                                    KPRINTF(20, ("      Endpoint allocation failed\n"));
+                                }
+                            } else {
+                                psdAddErrorMsg0(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname), "Endpoint without prior interface descriptor!");
+                                KPRINTF(20, ("      Endpoint descriptor without Interface\n"));
+                            }
+                            break;
+                        }
+
+                        case UDT_SUPERSPEED_EP_COMP: {
+                            struct UsbSSEndpointCompDesc *comp = (struct UsbSSEndpointCompDesc *) dbuf;
+                            if(pep) {
+                                pep->pep_MaxBurst = comp->bMaxBurst + 1;
+                                pep->pep_CompAttributes = comp->bmAttributes;
+                                pep->pep_BytesPerInterval = AROS_LE2WORD(comp->wBytesPerInterval);
+                                pep->pep_MaxStreams = pGetMaxStreamsForEndpoint(pep);
+                                if((pd->pd_Flags & PDFF_SUPERSPEED) && (pep->pep_TransType == USEAF_ISOCHRONOUS)) {
+                                    pep->pep_NumTransMuFr = (comp->bmAttributes & 0x03) + 1;
+                                }
+                            } else {
+                                psdAddErrorMsg0(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname), "Superspeed companion without prior endpoint descriptor!");
+                            }
+                            break;
+                        }
+
+                        case UDT_SUPERSPEED_ISO_COMP: {
+                            struct UsbSSPIsochEndpointCompDesc *comp = (struct UsbSSPIsochEndpointCompDesc *) dbuf;
+                            if(pep) {
+                                pep->pep_BytesPerInterval = AROS_LE2LONG(comp->dwBytesPerInterval);
+                            } else {
+                                psdAddErrorMsg0(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname), "Superspeed isoch companion without prior endpoint descriptor!");
+                            }
+                            break;
+                        }
+
+                        case UDT_DEVICE:
+                        case UDT_SSHUB:
+                        case UDT_HUB:
+                        case UDT_HID:
+                        case UDT_REPORT:
+                        case UDT_PHYSICAL:
+                        case UDT_CS_INTERFACE:
+                        case UDT_CS_ENDPOINT:
+                        case UDT_DEVICE_QUALIFIER:
+                        case UDT_OTHERSPEED_QUALIFIER:
+                        case UDT_INTERFACE_POWER:
+                        case UDT_OTG:
+                            //psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname), "Skipping descriptor %02lx (pc=%p, pif=%p altpif=%p).", dbuf[1], pc, pif, altif);
+                            KPRINTF(1, ("Skipping unknown descriptor %ld.\n", dbuf[1]));
+                            break;
+
+                        default:
+                            psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname), "Skipping unknown descriptor %02lx.", dbuf[1]);
+                            KPRINTF(1, ("Skipping unknown descriptor %ld.\n", dbuf[1]));
+                            break;
+                        }
+                        // add descriptor to device
+                        pdd = pAllocDescriptor(pd, dbuf);
+                        if(pdd) {
+                            STRPTR descname = NULL;
+
+                            pdd->pdd_Config = pc;
+                            pdd->pdd_Interface = altif;
+                            pdd->pdd_Endpoint = pep;
+                            if(pdd->pdd_Interface) {
+                                if((pdd->pdd_Type >= UDT_CS_UNDEFINED) && (pdd->pdd_Type <= UDT_CS_ENDPOINT)) {
+                                    descname = psdNumToStr(NTS_DESCRIPTOR, (LONG) (pdd->pdd_CSSubType<<24)|(pif->pif_IfSubClass<<16)|(pif->pif_IfClass<<8)|pdd->pdd_Type, NULL);
+                                    if(!descname) {
+                                        descname = psdNumToStr(NTS_DESCRIPTOR, (LONG) (pdd->pdd_CSSubType<<24)|(pif->pif_IfClass<<8)|pdd->pdd_Type, NULL);
+                                    }
+                                }
+                                if(!descname) {
+                                    descname = psdNumToStr(NTS_DESCRIPTOR, (LONG) (pif->pif_IfSubClass<<16)|(pif->pif_IfClass<<8)|pdd->pdd_Type, NULL);
+                                }
+                                if(!descname) {
+                                    descname = psdNumToStr(NTS_DESCRIPTOR, (LONG) (pif->pif_IfClass<<8)|pdd->pdd_Type, NULL);
+                                }
+                            }
+                            if(descname) {
+                                pdd->pdd_Name = descname;
+                            }
+                        }
+                        dbuf += dlen;
+                    }
+                    KPRINTF(1, ("Configuration acquired!\n"));
+                    psdFreeVec(tempbuf);
+                    curcfg++;
+                    continue;
+                    //psdUnlockDevice(pd);
+                    //return(TRUE);
+                } else {
+                    psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
+                                   "GET_DESCRIPTOR (len %ld) failed: %s (%ld)",
+                                   len, psdNumToStr(NTS_IOERR, ioerr, "unknown"), ioerr);
+                    KPRINTF(15, ("GET_DESCRIPTOR failed %ld!\n", ioerr));
+                }
+                psdFreeVec(tempbuf);
+            } else {
+                KPRINTF(20, ("No memory for %ld bytes config temp buffer!\n", len));
+            }
+        } else {
+            psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
+                           "GET_DESCRIPTOR (len %ld) failed: %s (%ld)",
+                           9, psdNumToStr(NTS_IOERR, ioerr, "unknown"), ioerr);
+            KPRINTF(15, ("GET_DESCRIPTOR (9) failed %ld!\n", ioerr));
+        }
+        psdUnlockDevice(pd);
+        return(FALSE);
+    }
+    psdUnlockDevice(pd);
+    return(TRUE);
+}
+/* \\\ */
+
+/* /// "pPowerRecurseDrain()" */
+/* Recalculate the device's power demand from its active configuration
+ * and downstream devices. Suspended devices return a reduced budget;
+ * child demand is capped by the selected power-source limit before it
+ * is added to the parent's accumulated drain. */
+ULONG pPowerRecurseDrain(LIBBASETYPEPTR ps, struct PsdDevice *pd)
+{
+    struct PsdDevice *nextpd;
+    struct PsdConfig *pc;
+    UWORD maxdrain = 666;
+    UWORD childdrain;
+    BOOL selfpwd = TRUE;
+    pd->pd_PowerDrain = 0;
+
+    /* look at config */
+    if((pc = pd->pd_CurrentConfig)) {
+
+        /* if suspended, no more than 500 microamps are drained */
+        if(pd->pd_Flags & PDFF_SUSPENDED) {
+            pd->pd_PowerDrain = (pc->pc_MaxPower >= 100) ? 3 : 1;
+            return(pd->pd_PowerDrain);
+        }
+        selfpwd = ((pc->pc_Attr & USCAF_SELF_POWERED) && (pd->pd_PoPoCfg.poc_OverridePowerInfo != POCP_BUS_POWERED)) ||
+                  (pd->pd_PoPoCfg.poc_OverridePowerInfo == POCP_SELF_POWERED);
+        maxdrain = selfpwd ? 500 : 100;
+    }
+
+    /* examine children */
+    nextpd = (struct PsdDevice *) pd->pd_Hardware->phw_Devices.lh_Head;
+    while(nextpd->pd_Node.ln_Succ) {
+        if(nextpd->pd_Hub == pd) {
+            childdrain = pPowerRecurseDrain(ps, nextpd);
+            // limit the drain to the maximum power suckage
+            pd->pd_PowerDrain += (childdrain > maxdrain) ? maxdrain : childdrain;
+        }
+        nextpd = (struct PsdDevice *) nextpd->pd_Node.ln_Succ;
+    }
+
+    /* look at config */
+    if(selfpwd) {
+        pd->pd_PowerDrain = 0;
+    } else {
+        pd->pd_PowerDrain += pc->pc_MaxPower;
+    }
+    return(pd->pd_PowerDrain);
+}
+/* \\\ */
+
+/* /// "pPowerRecurseSupply()" */
+/*
+ * Propagate bus-power estimates to downstream devices and update each
+ * device's low-power flag. Emit EHMB_DEVICELOWPW when the condition first
+ * appears; clearing the condition does not emit the corresponding event.
+ */
+void pPowerRecurseSupply(LIBBASETYPEPTR ps, struct PsdDevice *pd)
+{
+    struct PsdDevice *nextpd;
+    struct PsdConfig *pc;
+    UWORD ports = 0;
+    UWORD supply = 666;
+    BOOL selfpwd = TRUE;
+
+    /* look at config */
+    if((pc = pd->pd_CurrentConfig)) {
+        selfpwd = ((pc->pc_Attr & USCAF_SELF_POWERED) && (pd->pd_PoPoCfg.poc_OverridePowerInfo != POCP_BUS_POWERED)) ||
+                  (pd->pd_PoPoCfg.poc_OverridePowerInfo == POCP_SELF_POWERED);
+    }
+
+    /* count children */
+    nextpd = (struct PsdDevice *) pd->pd_Hardware->phw_Devices.lh_Head;
+    while(nextpd->pd_Node.ln_Succ) {
+        if(nextpd->pd_Hub == pd) { // this device is a child of us (we're a hub!)
+            ports++;
+        }
+        nextpd = (struct PsdDevice *) nextpd->pd_Node.ln_Succ;
+    }
+
+    /* look at config */
+    if(selfpwd) {
+        if(pc) {
+            pd->pd_PowerSupply = ports ? 500*ports + pc->pc_MaxPower : pc->pc_MaxPower;
+        }
+        supply = 500; // each downstream port gets the full monty
+    } else {
+        // the parent hub has already set the amount of supply for this port
+        if(pd->pd_PowerSupply >= pc->pc_MaxPower) {
+            // the downstream ports get the remaining divided attention
+            if(ports) {
+                // avoid division by zero
+                supply = (pd->pd_PowerSupply - pc->pc_MaxPower) / ports;
+                if(supply > 100) {
+                    // limit to 100 mA per port
+                    supply = 100;
+                }
+            }
+        } else {
+            supply = 1; // bad luck, out of power
+        }
+    }
+
+    /* set supply */
+    if(ports) { /* needs to be a hub */
+        // propagate supply down to the children
+        nextpd = (struct PsdDevice *) pd->pd_Hardware->phw_Devices.lh_Head;
+        while(nextpd->pd_Node.ln_Succ) {
+            if(nextpd->pd_Hub == pd) {
+                nextpd->pd_PowerSupply = supply;
+                pPowerRecurseSupply(ps, nextpd);
+            }
+            nextpd = (struct PsdDevice *) nextpd->pd_Node.ln_Succ;
+        }
+    }
+    if(pd->pd_PowerDrain > pd->pd_PowerSupply) {
+        if(!(pd->pd_Flags & PDFF_LOWPOWER)) {
+            psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
+                           "Detected low power condition for '%s'.", pd->pd_ProductStr);
+            pd->pd_Flags |= PDFF_LOWPOWER;
+            psdSendEvent(EHMB_DEVICELOWPW, pd, NULL);
+        }
+    } else {
+        if(pd->pd_Flags & PDFF_LOWPOWER) {
+            psdAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname),
+                           "Low power condition resolved for '%s'.", pd->pd_ProductStr);
+            pd->pd_Flags &= ~PDFF_LOWPOWER;
+        }
+    }
+}
+/* \\\ */
+
+/* /// "pGarbageCollectEvents()" */
+/* Drain the event reply port and free completed event-notification records. */
+void pGarbageCollectEvents(LIBBASETYPEPTR ps)
+{
+    struct PsdEventNote *pen;
+    while((pen = (struct PsdEventNote *) GetMsg(&ps->ps_EventReplyPort))) {
+        psdFreeVec(pen);
+    }
+}
+/* \\\ */
+
+/* /// "pFindName()" */
+/*
+ * Find a named list node, retrying with shortened path components when
+ * necessary.
+ */
+struct Node * pFindName(LIBBASETYPEPTR ps, struct List *list, STRPTR name)
+{
+    struct Node *res = NULL;
+
+    Forbid();
+    while(*name) {
+        res = FindName(list, name);
+        if(res) {
+            break;
+        }
+        do {
+            if((*name == '/') || (*name == ':')) {
+                ++name;
+                break;
+            }
+        } while(*(++name));
+    }
+    Permit();
+    return(res);
+}
+/* \\\ */
+
+/* /// "pStripString()" */
+/*
+ * Trim leading and trailing ASCII spaces in place; replace a long empty
+ * string with <empty>.
+ */
+void pStripString(LIBBASETYPEPTR ps, STRPTR str)
+{
+    STRPTR srcptr = str;
+    STRPTR tarptr = str;
+    STRPTR lastgoodchar = str;
+    BOOL leadingspaces = TRUE;
+    UBYTE ch;
+    ULONG len = 0;
+
+    while((ch = *srcptr++)) {
+        len++;
+        if(ch == ' ') {
+            if(!leadingspaces) {
+                *tarptr++ = ch;
+            }
+        } else {
+            *tarptr++ = ch;
+            lastgoodchar = tarptr;
+            leadingspaces = FALSE;
+        }
+    }
+    *lastgoodchar = 0;
+    // empty string?
+    if((str == lastgoodchar) && (len > 6)) {
+        strcpy(str, "<empty>");
+    }
+}
+/* \\\ */
+
+/* /// "pFixBrokenConfig()" */
+/*
+ * Apply known vendor/product-specific descriptor and configuration repairs
+ * during enumeration.
+ */
+BOOL pFixBrokenConfig(struct PsdPipe *pp)
+{
+    struct PsdDevice *pd = pp->pp_Device;
+    LIBBASETYPEPTR ps = pd->pd_Hardware->phw_Base;
+    struct PsdConfig *pc;
+    struct PsdInterface *pif;
+    BOOL fixed = FALSE;
+
+    switch(pd->pd_VendorID) {
+    case 0x03eb: /* Atmel */
+        if(pd->pd_ProductID == 0x3312) {
+            psdFreeVec(pd->pd_ProductStr);
+            pd->pd_ProductStr = psdCopyStr("Highway/Subway Root Hub");
+        }
+        break;
+
+    case 0x04e6: /* E-Shuttle */
+        if(pd->pd_ProductID == 0x0001) { /* LS120 */
+            pc = (struct PsdConfig *) pd->pd_Configs.lh_Head;
+            /* Get msd interface and fix it */
+            pif = (struct PsdInterface *) pc->pc_Interfaces.lh_Head;
+            if(pif->pif_IfClass != MASSSTORE_CLASSCODE) {
+                fixed = TRUE;
+                psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname), "Fixing broken %s interface descriptor!", (STRPTR) "E-Shuttle LS120");
+                pif->pif_IfClass = MASSSTORE_CLASSCODE;
+                pif->pif_IfSubClass = MS_ATAPI_SUBCLASS;
+                pif->pif_IfProto = MS_PROTO_CB;
+            }
+        }
+        break;
+
+    case 0x054C: /* Sony */
+        if((pd->pd_ProductID == 0x002E) || (pd->pd_ProductID == 0x0010)) { /* Handycam */
+            fixed = TRUE;
+            psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname), "Fixing broken %s interface descriptor!", (STRPTR) "Sony MSD");
+            pc = (struct PsdConfig *) pd->pd_Configs.lh_Head;
+            /* Get msd interface and fix it */
+            pif = (struct PsdInterface *) pc->pc_Interfaces.lh_Head;
+            pif->pif_IfSubClass = MS_RBC_SUBCLASS;
+        }
+        break;
+
+    case 0x057b: /* Y-E Data */
+        if(pd->pd_ProductID == 0x0000) { /* Flashbuster U */
+            pc = (struct PsdConfig *) pd->pd_Configs.lh_Head;
+            /* Get msd interface and fix it */
+            pif = (struct PsdInterface *) pc->pc_Interfaces.lh_Head;
+            if(pif->pif_IfClass != MASSSTORE_CLASSCODE) {
+                fixed = TRUE;
+                psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname), "Fixing broken %s interface descriptor!", (STRPTR) "Y-E Data USB Floppy");
+                pif->pif_IfClass = MASSSTORE_CLASSCODE;
+                pif->pif_IfSubClass = MS_UFI_SUBCLASS;
+                pif->pif_IfProto = (pd->pd_DevVers < 0x0300) ? MS_PROTO_CB : MS_PROTO_CBI;
+            }
+        }
+        break;
+
+    case 0x04ce: /* ScanLogic */
+        if(pd->pd_ProductID == 0x0002) {
+            psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname), "Fixing broken %s interface descriptor!", (STRPTR) "ScanLogic");
+            pc = (struct PsdConfig *) pd->pd_Configs.lh_Head;
+            /* Get msd interface and fix it */
+            pif = (struct PsdInterface *) pc->pc_Interfaces.lh_Head;
+            fixed = TRUE;
+            pif->pif_IfSubClass = MS_SCSI_SUBCLASS;
+        }
+        break;
+
+    case 0x0584: /* Ratoc cardreader */
+        if(pd->pd_ProductID == 0x0008) {
+            psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname), "Fixing broken %s interface descriptor!", (STRPTR) "RATOC");
+            pc = (struct PsdConfig *) pd->pd_Configs.lh_Head;
+            /* Get msd interface and fix it */
+            pif = (struct PsdInterface *) pc->pc_Interfaces.lh_Head;
+            fixed = TRUE;
+            pif->pif_IfClass = MASSSTORE_CLASSCODE;
+            pif->pif_IfSubClass = MS_SCSI_SUBCLASS;
+            pif->pif_IfProto = MS_PROTO_BULK;
+        }
+        break;
+
+    case 0x04b8: /* Epson */
+        if(pd->pd_ProductID == 0x0602) { /* EPX Storage device (Card slot in Printer) */
+            psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname), "Fixing broken %s interface descriptor!", (STRPTR) "Epson storage");
+            pc = (struct PsdConfig *) pd->pd_Configs.lh_Head;
+            /* Get msd interface and fix it */
+            pif = (struct PsdInterface *) pc->pc_Interfaces.lh_Head;
+            fixed = TRUE;
+            pif->pif_IfClass = MASSSTORE_CLASSCODE;
+            pif->pif_IfSubClass = MS_SCSI_SUBCLASS;
+            pif->pif_IfProto = MS_PROTO_BULK;
+        }
+        break;
+
+    default:
+        break;
+    }
+    return(fixed);
+}
+/* \\\ */
+
+/* /// "pHaveDOS()" */
+/* Report whether the DOS library base is available to this library instance. */
+BOOL pHaveDOS(LIBBASETYPEPTR ps)
+{
+    if(DOSBase) {
+        return TRUE;
+    }
+    return FALSE;
+}
+
+
+/* /// "pOpenDOS()" */
+/*
+ * Reuse an existing DOS library base or attempt to open dos.library version
+ * 39.
+ */
+BOOL pOpenDOS(LIBBASETYPEPTR ps)
+{
+    if(DOSBase) {
+        return TRUE;
+    }
+    if((DOSBase = OpenLibrary("dos.library", 39))) {
+        return TRUE;
+    }
+    return FALSE;
+}
+/* \\\ */
+
+/* *** Class Scan Task *** */
+
+/* /// "pStartEventHandler()" */
+/*
+ * Start the event broadcaster if needed and wait for its initialization
+ * handshake.
+ */
+BOOL pStartEventHandler(LIBBASETYPEPTR ps)
+{
+    struct PsdHandlerTask *ph = &ps->ps_EventHandler;
+
+    ObtainSemaphore(&ps->ps_PoPoLock);
+    if(ph->ph_Task) {
+        ReleaseSemaphore(&ps->ps_PoPoLock);
+        return(TRUE);
+    }
+    ph->ph_ReadySignal = SIGB_SINGLE;
+    ph->ph_ReadySigTask = FindTask(NULL);
+    SetSignal(0, SIGF_SINGLE); // clear single bit
+    if(psdSpawnSubTask("Poseidon Event Broadcast", pEventHandlerTask, ps)) {
+        Wait(1UL<<ph->ph_ReadySignal);
+    }
+    ph->ph_ReadySigTask = NULL;
+    //FreeSignal(ph->ph_ReadySignal);
+    if(ph->ph_Task) {
+        ReleaseSemaphore(&ps->ps_PoPoLock);
+        psdAddErrorMsg0(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname), "Event broadcaster started.");
+        return(TRUE);
+    }
+    ReleaseSemaphore(&ps->ps_PoPoLock);
+    return(FALSE);
+}
+/* \\\ */
+
+/* *** Hardware Driver Task *** */
+
+/* /// "pQuickForwardRequest()" */
+/*
+ * Forward queued transfer requests to the hardware driver or submit
+ * cancellation to AbortIO().
+ */
+AROS_UFH1(void, pQuickForwardRequest,
+          AROS_UFHA(struct MsgPort *, msgport, A1))
+{
+    AROS_USERFUNC_INIT
+    struct PsdHardware *phw = (struct PsdHardware *) msgport->mp_Node.ln_Name;
+    struct PsdPipe *pp;
+
+    while((pp = (struct PsdPipe *) RemHead(&msgport->mp_MsgList))) {
+        if(pp->pp_AbortPipe) {
+            KPRINTF(2, ("Abort pipe %p\n", pp->pp_AbortPipe));
+            AbortIO((struct IORequest *) &pp->pp_AbortPipe->pp_IOReq);
+            ReplyMsg(&pp->pp_Msg);
+            KPRINTF(2, ("Replying evil pipe %p\n", pp));
+        } else {
+            KPRINTF(1, ("Forwarding pipe %p\n", pp));
+            pp->pp_IOReq.iouh_UserData = pp;
+            SendIO((struct IORequest *) &pp->pp_IOReq);
+            ++phw->phw_MsgCount;
+        }
+    }
+    AROS_USERFUNC_EXIT
+}
+/* \\\ */
+
+/* /// "pQuickReplyRequest()" */
+/*
+ * Convert hardware I/O completions into pipe reply messages and update
+ * pending-request count.
+ */
+AROS_UFH1(void, pQuickReplyRequest,
+          AROS_UFHA(struct MsgPort *, msgport, A1))
+{
+    AROS_USERFUNC_INIT
+    struct PsdHardware *phw = (struct PsdHardware *) msgport->mp_Node.ln_Name;
+    struct IOUsbHWReq *ioreq;
+
+    while((ioreq = (struct IOUsbHWReq *) RemHead(&msgport->mp_MsgList))) {
+        KPRINTF(1, ("Replying pipe %p\n", ioreq->iouh_UserData));
+        ReplyMsg(&((struct PsdPipe *) ioreq->iouh_UserData)->pp_Msg);
+        --phw->phw_MsgCount;
+    }
+    AROS_USERFUNC_EXIT
+}
+/* \\\ */
+
+/* /// "pDeviceTask()" */
+/*
+ * Open and initialize the controller driver, establish its I/O resources,
+ * and dispatch queued USB requests and completions. The task also handles
+ * abort and shutdown signals, replies to pending operations, and releases
+ * its controller-owned resources before exit.
+ */
+AROS_UFH0(void, pDeviceTask)
+{
+    AROS_USERFUNC_INIT
+    LIBBASETYPEPTR ps;
+    struct PsdHardware *phw;
+    struct Task *thistask;
+    ULONG sigs;
+    ULONG sigmask;
+    LONG ioerr;
+    struct TagItem taglist[13];
+    struct TagItem *tag;
+    struct PsdPipe *pp;
+    struct IOUsbHWReq *ioreq;
+
+    STRPTR prodname = NULL;
+    STRPTR manufacturer = NULL;
+    STRPTR description = NULL;
+    STRPTR copyright = NULL;
+    ULONG  version = 0;
+    ULONG  revision = 0;
+    ULONG  driververs = 0x0100;
+    ULONG  caps = UHCF_ISO;
+    PsdPrepareEndpointFunc prepareEndpoint = NULL;
+    PsdDestroyEndpointFunc destroyEndpoint = NULL;
+    STRPTR devname;
+    ULONG cnt;
+
+    if(!(ps = (LIBBASETYPEPTR) OpenLibrary("poseidon.library", 4))) {
+        Alert(AG_OpenLib);
+        return;
+    }
+
+//    KPrintF("[poseidon] %s: poseidon @ 0x%p\n", __func__, ps);
+
+    thistask = FindTask(NULL);
+    SetTaskPri(thistask, 21);
+    phw = thistask->tc_UserData;
+
+#ifndef PA_CALLBACK // undocumented exec feature
+#define PA_CALLBACK 3
+#endif
+
+    memset(&phw->phw_TaskMsgPort, 0, sizeof(phw->phw_TaskMsgPort));
+    phw->phw_TaskMsgPort.mp_Node.ln_Type = NT_MSGPORT;
+    phw->phw_TaskMsgPort.mp_Node.ln_Name = (APTR) phw;
+    phw->phw_TaskMsgPort.mp_Flags = PA_SIGNAL;
+    phw->phw_TaskMsgPort.mp_SigTask = thistask;
+    phw->phw_TaskMsgPort.mp_SigBit = AllocSignal(-1L);
+    NewList(&phw->phw_TaskMsgPort.mp_MsgList);
+
+//    KPrintF("[poseidon] %s: Task port @ 0x%p\n ", __func__, &phw->phw_TaskMsgPort);
+
+    memset(&phw->phw_DevMsgPort, 0, sizeof(phw->phw_DevMsgPort));
+    phw->phw_DevMsgPort.mp_Node.ln_Type = NT_MSGPORT;
+    phw->phw_DevMsgPort.mp_Node.ln_Name = (APTR) phw;
+    phw->phw_DevMsgPort.mp_Flags = PA_SIGNAL;
+    phw->phw_DevMsgPort.mp_SigTask = thistask;
+    phw->phw_DevMsgPort.mp_SigBit = AllocSignal(-1L);
+    NewList(&phw->phw_DevMsgPort.mp_MsgList);
+
+//    KPrintF("[poseidon] %s: Task port @ 0x%p\n", __func__, &phw->phw_DevMsgPort);
+
+    if((phw->phw_RootIOReq = (struct IOUsbHWReq *) CreateIORequest(&phw->phw_DevMsgPort, sizeof(struct IOUsbHWReq)))) {
+//        KPrintF("[poseidon] %s: ioreq @ 0x%p\n", __func__, phw->phw_RootIOReq);
+        devname = phw->phw_DevName;
+        ioerr = -1;
+        while(*devname) {
+            if(!(ioerr = OpenDevice(devname, phw->phw_Unit, (struct IORequest *) phw->phw_RootIOReq, 0))) {
+//                KPrintF("[poseidon] %s: opened %s/%u\n", __func__, devname, phw->phw_Unit);
+                break;
+            }
+            do {
+                if((*devname == '/') || (*devname == ':')) {
+                    ++devname;
+                    break;
+                }
+            } while(*(++devname));
+        }
+
+//        KPrintF("[poseidon] %s: device @ 0x%p\n", __func__, phw->phw_RootIOReq->iouh_Req.io_Device);
+
+        if(!ioerr) {
+            phw->phw_Node.ln_Name = phw->phw_RootIOReq->iouh_Req.io_Device->dd_Library.lib_Node.ln_Name;
+            tag = taglist;
+            tag->ti_Tag = UHA_ProductName;
+            tag->ti_Data = (IPTR) &prodname;
+            ++tag;
+            tag->ti_Tag = UHA_Manufacturer;
+            tag->ti_Data = (IPTR) &manufacturer;
+            ++tag;
+            tag->ti_Tag = UHA_Description;
+            tag->ti_Data = (IPTR) &description;
+            ++tag;
+            tag->ti_Tag = UHA_Version;
+            tag->ti_Data = (IPTR) &version;
+            ++tag;
+            tag->ti_Tag = UHA_Revision;
+            tag->ti_Data = (IPTR) &revision;
+            ++tag;
+            tag->ti_Tag = UHA_Copyright;
+            tag->ti_Data = (IPTR) &copyright;
+            ++tag;
+            tag->ti_Tag = UHA_DriverVersion;
+            tag->ti_Data = (IPTR) &driververs;
+            ++tag;
+            tag->ti_Tag = UHA_Capabilities;
+            tag->ti_Data = (IPTR) &caps;
+            ++tag;
+            tag->ti_Tag = UHA_PrepareEndpoint;
+            tag->ti_Data = (IPTR) &prepareEndpoint;
+            ++tag;
+            tag->ti_Tag = UHA_DestroyEndpoint;
+            tag->ti_Data = (IPTR) &destroyEndpoint;
+            ++tag;
+            tag->ti_Tag = TAG_END;
+            phw->phw_RootIOReq->iouh_Data = taglist;
+            phw->phw_RootIOReq->iouh_Req.io_Command = UHCMD_QUERYDEVICE;
+            DoIO((struct IORequest *) phw->phw_RootIOReq);
+
+//            KPrintF("[poseidon] %s: device queried\n", __func__);
+
+            phw->phw_ProductName = psdCopyStr(prodname ? prodname : (STRPTR) "n/a");
+            phw->phw_Manufacturer = psdCopyStr(manufacturer ? manufacturer : (STRPTR) "n/a");
+            phw->phw_Description = psdCopyStr(description ? description : (STRPTR) "n/a");
+            phw->phw_Copyright = psdCopyStr(copyright ? copyright : (STRPTR) "n/a");
+            phw->phw_Version = version;
+            phw->phw_Revision = revision;
+            phw->phw_DriverVers = driververs;
+            phw->phw_Capabilities = caps;
+            phw->phw_PrepareEndpoint = prepareEndpoint;
+            phw->phw_DestroyEndpoint = destroyEndpoint;
+
+            sigmask = SIGBREAKF_CTRL_C;
+            if(caps & UHCF_QUICKIO) {
+                psdAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname), "Enabling QuickIO for %s.", prodname);
+                phw->phw_TaskMsgPort.mp_Flags = PA_CALLBACK;
+                phw->phw_TaskMsgPort.mp_SigTask = (APTR) pQuickForwardRequest;
+
+                phw->phw_DevMsgPort.mp_Flags = PA_CALLBACK;
+                phw->phw_DevMsgPort.mp_SigTask = (APTR) pQuickReplyRequest;
+            } else {
+                sigmask |= (1UL<<phw->phw_DevMsgPort.mp_SigBit)|(1UL<<phw->phw_TaskMsgPort.mp_SigBit);
+            }
+
+            KPRINTF(10, ("%s ready!\n", thistask->tc_Node.ln_Name));
+            phw->phw_Task = thistask;
+
+//            KPrintF("[poseidon] %s: registering in posedion..\n", __func__);
+
+            psdLockWritePBase();
+            AddTail(&ps->ps_Hardware, &phw->phw_Node);
+            psdUnlockPBase();
+
+//            KPrintF("[poseidon] %s: sending ready signal\n", __func__);
+
+            Forbid();
+            if(phw->phw_ReadySigTask) {
+                Signal(phw->phw_ReadySigTask, 1L<<phw->phw_ReadySignal);
+            }
+            Permit();
+            do {
+                KPRINTF(1, ("Main loop wait.\n"));
+                while((pp = (struct PsdPipe *) GetMsg(&phw->phw_TaskMsgPort))) {
+                    if(pp->pp_AbortPipe) {
+                        KPRINTF(2, ("Abort pipe %p\n", pp->pp_AbortPipe));
+                        AbortIO((struct IORequest *) &pp->pp_AbortPipe->pp_IOReq);
+                        ReplyMsg(&pp->pp_Msg);
+                        KPRINTF(2, ("Replying evil pipe %p\n", pp));
+                    } else {
+                        KPRINTF(1, ("Forwarding pipe %p\n", pp));
+                        pp->pp_IOReq.iouh_UserData = pp;
+                        SendIO((struct IORequest *) &pp->pp_IOReq);
+                        ++phw->phw_MsgCount;
+                    }
+                }
+                while((ioreq = (struct IOUsbHWReq *) GetMsg(&phw->phw_DevMsgPort))) {
+                    KPRINTF(1, ("Replying pipe %p\n", ioreq->iouh_UserData));
+                    ReplyMsg(&((struct PsdPipe *) ioreq->iouh_UserData)->pp_Msg);
+                    --phw->phw_MsgCount;
+                }
+                sigs = Wait(sigmask);
+            } while(!(sigs & SIGBREAKF_CTRL_C));
+
+            /* Flush all pending IO Requests */
+            phw->phw_RootIOReq->iouh_Req.io_Command = CMD_FLUSH;
+            DoIO((struct IORequest *) phw->phw_RootIOReq);
+            cnt = 0;
+            while(phw->phw_MsgCount) {
+                KPRINTF(20, ("Still %ld iorequests pending!\n", phw->phw_MsgCount));
+                psdDelayMS(100);
+                if(++cnt == 50) {
+                    psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
+                                   "There are still %ld IORequests pending, before unit can go down. Driver buggy?",
+                                   phw->phw_MsgCount);
+                }
+                if(cnt == 300) {
+                    psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
+                                   "Okay, I've waited long enough, sod these %ld IORequests.",
+                                   phw->phw_MsgCount);
+                    phw->phw_MsgCount = 0;
+                    break;
+                }
+                while((ioreq = (struct IOUsbHWReq *) GetMsg(&phw->phw_DevMsgPort))) {
+                    KPRINTF(1, ("Replying pipe %p\n", ioreq->iouh_UserData));
+                    ReplyMsg(&((struct PsdPipe *) ioreq->iouh_UserData)->pp_Msg);
+                    --phw->phw_MsgCount;
+                }
+            }
+            psdLockWritePBase();
+            Remove(&phw->phw_Node);
+            psdUnlockPBase();
+            CloseDevice((struct IORequest *) phw->phw_RootIOReq);
+        } else {
+            psdAddErrorMsg(RETURN_FAIL, (STRPTR) GM_UNIQUENAME(libname),
+                           "Opening %s unit %ld failed %s (%ld).",
+                           phw->phw_DevName, phw->phw_Unit, psdNumToStr(NTS_IOERR, ioerr, "unknown"), ioerr);
+        }
+        DeleteIORequest((struct IORequest *) phw->phw_RootIOReq);
+        phw->phw_RootIOReq = NULL;
+    }
+    FreeSignal((LONG) phw->phw_TaskMsgPort.mp_SigBit);
+    FreeSignal((LONG) phw->phw_DevMsgPort.mp_SigBit);
+
+    CloseLibrary((struct Library *) ps);
+    phw->phw_Task = NULL;
+
+    Forbid();
+    if(phw->phw_ReadySigTask) {
+        Signal(phw->phw_ReadySigTask, 1L<<phw->phw_ReadySignal);
+    }
+    AROS_USERFUNC_EXIT
+}
+/* \\\ */
+
+/* /// "pEventHandlerTask()" */
+/*
+ * Initialize the event port and timer request, forward queued events to
+ * registered listeners, process replies and periodic timer work, and
+ * service configuration-change notifications. On shutdown, abort any
+ * pending timer I/O and release its ports and I/O resources.
+ */
+AROS_UFH0(void, pEventHandlerTask)
+{
+    AROS_USERFUNC_INIT
+    LIBBASETYPEPTR ps;
+    struct Task *thistask;
+    struct timeval currtime;
+    ULONG sigs;
+    ULONG sigmask;
+    struct PsdUsbClass *puc;
+    struct PsdHandlerTask *ph;
+    struct PsdEventNote *pen;
+    ULONG counter;
+    ULONG cfgchanged;
+
+    thistask = FindTask(NULL);
+    ps = thistask->tc_UserData;
+    ph = &ps->ps_EventHandler;
+    SetTaskPri(thistask, 0);
+
+    if((ph->ph_MsgPort = CreateMsgPort())) {
+        if((ph->ph_TimerMsgPort = CreateMsgPort())) {
+            if((ph->ph_TimerIOReq = (struct timerequest *) CreateIORequest(ph->ph_TimerMsgPort, sizeof(struct timerequest)))) {
+                if(!(OpenDevice("timer.device", UNIT_VBLANK, (struct IORequest *) ph->ph_TimerIOReq, 0))) {
+                    ph->ph_TimerIOReq->tr_node.io_Message.mn_Node.ln_Type = NT_REPLYMSG;
+                    ph->ph_TimerIOReq->tr_node.io_Message.mn_Node.ln_Name = "EventHandler";
+                    ph->ph_TimerIOReq->tr_node.io_Command = TR_ADDREQUEST;
+
+                    ph->ph_EventHandler = psdAddEventHandler(ph->ph_MsgPort, EHMF_CONFIGCHG);
+                    if(ph->ph_EventHandler) {
+                        ph->ph_Task = thistask;
+                        Forbid();
+                        if(ph->ph_ReadySigTask) {
+                            Signal(ph->ph_ReadySigTask, 1L<<ph->ph_ReadySignal);
+                        }
+                        Permit();
+
+                        ph->ph_TimerIOReq->tr_time.tv_micro = 500*1000;
+                        SendIO(&ph->ph_TimerIOReq->tr_node);
+                        sigmask = (1UL<<ph->ph_MsgPort->mp_SigBit)|(1UL<<ph->ph_TimerMsgPort->mp_SigBit)|SIGBREAKF_CTRL_C;
+                        counter = 0;
+                        cfgchanged = 0;
+                        do {
+                            if(ps->ps_CheckConfigReq) {
+                                pCheckCfgChanged(ps);
+                            }
+                            while((pen = (struct PsdEventNote *) GetMsg(ph->ph_MsgPort))) {
+                                switch(pen->pen_Event) {
+                                case EHMB_CONFIGCHG:
+                                    if(!cfgchanged) {
+                                        cfgchanged = counter;
+                                    }
+                                    break;
+
+                                }
+                                ReplyMsg(&pen->pen_Msg);
+                            }
+                            if(CheckIO(&ph->ph_TimerIOReq->tr_node)) {
+                                BOOL startpopo;
+                                WaitIO(&ph->ph_TimerIOReq->tr_node);
+                                ph->ph_TimerIOReq->tr_time.tv_micro = 500*1000;
+                                SendIO(&ph->ph_TimerIOReq->tr_node);
+                                counter++;
+                                startpopo = !((counter & 3) || ps->ps_PoPo.po_Task);
+                                if((ps->ps_GlobalCfg->pgc_PopupDeviceNew == PGCP_NEVER) &&
+                                        (!ps->ps_GlobalCfg->pgc_PopupDeviceDeath) &&
+                                        (!ps->ps_GlobalCfg->pgc_PopupDeviceGone)) {
+                                    startpopo = FALSE; // no need to start popo, no windows wanted
+                                }
+                                if(startpopo) {
+                                    struct PsdPoPo *po = &ps->ps_PoPo;
+
+                                    po->po_ReadySignal = SIGB_SINGLE;
+                                    po->po_ReadySigTask = FindTask(NULL);
+                                    SetSignal(0, SIGF_SINGLE); // clear single bit
+                                    if(psdSpawnSubTask("PoPo (Poseidon Popups)", pPoPoGUITask, ps)) {
+                                        Wait(1UL<<po->po_ReadySignal);
+                                    }
+                                    po->po_ReadySigTask = NULL;
+                                    //FreeSignal(po->po_ReadySignal);
+                                    if(po->po_Task) {
+                                        psdAddErrorMsg0(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname), "PoPo kicks ass.");
+                                    }
+                                }
+                                if((cfgchanged + 2) == counter) {
+                                    KPRINTF(10, ("Sending information about config changed to all classes.\n"));
+                                    /* Inform all classes */
+                                    psdLockReadPBase();
+                                    puc = (struct PsdUsbClass *) ps->ps_Classes.lh_Head;
+                                    while(puc->puc_Node.ln_Succ) {
+                                        usbDoMethod(UCM_ConfigChangedEvent);
+                                        puc = (struct PsdUsbClass *) puc->puc_Node.ln_Succ;
+                                    }
+                                    psdUnlockPBase();
+                                    cfgchanged = 0;
+                                }
+                                // power saving stuff, check every second
+                                if((counter & 1) && ps->ps_GlobalCfg->pgc_PowerSaving) {
+                                    struct PsdDevice *pd = NULL;
+                                    struct PsdInterface *pif;
+                                    GetSysTime((APTR) &currtime);
+                                    while((pd = psdGetNextDevice(pd))) {
+                                        if((pd->pd_DevClass != HUB_CLASSCODE) &&
+                                                ((pd->pd_Flags & (PDFF_CONFIGURED|PDFF_DEAD|PDFF_SUSPENDED|PDFF_APPBINDING|PDFF_DELEXPUNGE)) == PDFF_CONFIGURED)) {
+                                            if(pd->pd_LastActivity.tv_secs && ((currtime.tv_secs - pd->pd_LastActivity.tv_secs) > ps->ps_GlobalCfg->pgc_SuspendTimeout)) {
+                                                BOOL doit = TRUE;
+                                                IPTR suspendable;
+                                                if(!((pd->pd_CurrentConfig->pc_Attr & USCAF_REMOTE_WAKEUP) && ps->ps_GlobalCfg->pgc_ForceSuspend)) {
+                                                    if(pd->pd_DevBinding && ((puc = pd->pd_ClsBinding))) {
+                                                        suspendable = 0;
+                                                        usbGetAttrs(UGA_CLASS, NULL, UCCA_SupportsSuspend, &suspendable, TAG_END);
+                                                        if(!suspendable) {
+                                                            doit = FALSE;
+                                                        }
+                                                    }
+                                                    pif = (struct PsdInterface *) pd->pd_CurrentConfig->pc_Interfaces.lh_Head;
+                                                    while(pif->pif_Node.ln_Succ) {
+                                                        if(pif->pif_IfBinding && ((puc = pif->pif_ClsBinding))) {
+                                                            suspendable = 0;
+                                                            usbGetAttrs(UGA_CLASS, NULL, UCCA_SupportsSuspend, &suspendable, TAG_END);
+                                                            if(!suspendable) {
+                                                                doit = FALSE;
+                                                                break;
+                                                            }
+                                                        }
+                                                        pif = (struct PsdInterface *) pif->pif_Node.ln_Succ;
+                                                    }
+                                                }
+                                                if(doit) {
+                                                    psdAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname), "Suspending '%s'.", pd->pd_ProductStr);
+                                                    psdSuspendDevice(pd);
+                                                }
+                                                pd->pd_LastActivity.tv_secs = 0;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            sigs = Wait(sigmask);
+                        } while(!(sigs & SIGBREAKF_CTRL_C));
+                        psdRemEventHandler(ph->ph_EventHandler);
+                        ph->ph_EventHandler = NULL;
+                        AbortIO(&ph->ph_TimerIOReq->tr_node);
+                        WaitIO(&ph->ph_TimerIOReq->tr_node);
+                    }
+                    CloseDevice((struct IORequest *) ph->ph_TimerIOReq);
+                }
+                DeleteIORequest((struct IORequest *) ph->ph_TimerIOReq);
+            }
+            DeleteMsgPort(ph->ph_TimerMsgPort);
+        }
+        DeleteMsgPort(ph->ph_MsgPort);
+        ph->ph_MsgPort = NULL;
+    }
+    Forbid();
+    ph->ph_Task = NULL;
+    if(ph->ph_ReadySigTask) {
+        Signal(ph->ph_ReadySigTask, 1L<<ph->ph_ReadySignal);
+    }
+    AROS_USERFUNC_EXIT
+}
+/* \\\ */
+
+/*****************************************************************/
+
+/* /// "Packtables for psdGetAttrs() and psdSetAttrs() " */
+/* Pack table for PsdBase */
+static const ULONG PsdBasePT[] = {
+    PACK_STARTTABLE(PA_Dummy),
+    PACK_ENTRY(PA_Dummy, PA_ConfigRead, PsdBase, ps_ConfigRead, PKCTRL_UWORD|PKCTRL_PACKUNPACK),
+    PACK_ENTRY(PA_Dummy, PA_GlobalConfig, PsdBase, ps_GlobalCfg, PKCTRL_IPTR|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(PA_Dummy, PA_MemPoolUsage, PsdBase, ps_MemAllocated, PKCTRL_ULONG|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(PA_Dummy, PA_CurrConfigHash, PsdBase, ps_ConfigHash, PKCTRL_ULONG|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(PA_Dummy, PA_SavedConfigHash, PsdBase, ps_SavedConfigHash, PKCTRL_ULONG|PKCTRL_PACKUNPACK),
+    PACK_ENTRY(PA_Dummy, PA_ReleaseVersion, PsdBase, ps_ReleaseVersion, PKCTRL_ULONG|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(PA_Dummy, PA_OSVersion, PsdBase, ps_OSVersion, PKCTRL_ULONG|PKCTRL_UNPACKONLY),
+    PACK_ENDTABLE
+};
+
+/* Pack table for PsdErrorMsg */
+static const ULONG PsdErrorMsgPT[] = {
+    PACK_STARTTABLE(EMA_Dummy),
+    PACK_ENTRY(EMA_Dummy, EMA_Level, PsdErrorMsg, pem_Level, PKCTRL_UWORD|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(EMA_Dummy, EMA_Origin, PsdErrorMsg, pem_Origin, PKCTRL_IPTR|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(EMA_Dummy, EMA_Msg, PsdErrorMsg, pem_Msg, PKCTRL_IPTR|PKCTRL_UNPACKONLY),
+    PACK_ENDTABLE
+};
+
+/* Pack table for PsdUsbClass */
+static const ULONG PsdUsbClassPT[] = {
+    PACK_STARTTABLE(UCA_Dummy),
+    PACK_ENTRY(UCA_Dummy, UCA_ClassBase, PsdUsbClass, puc_ClassBase, PKCTRL_IPTR|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(UCA_Dummy, UCA_ClassName, PsdUsbClass, puc_ClassName, PKCTRL_IPTR|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(UCA_Dummy, UCA_FullPath, PsdUsbClass, puc_FullPath, PKCTRL_IPTR|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(UCA_Dummy, UCA_UseCount, PsdUsbClass, puc_UseCnt, PKCTRL_UWORD|PKCTRL_UNPACKONLY),
+    PACK_ENDTABLE
+};
+
+/* Pack table for PsdHardware */
+static const ULONG PsdHardwarePT[] = {
+    PACK_STARTTABLE(HA_Dummy),
+    PACK_ENTRY(HA_Dummy, HA_DeviceName, PsdHardware, phw_DevName, PKCTRL_IPTR|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(HA_Dummy, HA_DeviceUnit, PsdHardware, phw_Unit, PKCTRL_ULONG|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(HA_Dummy, HA_ProductName, PsdHardware, phw_ProductName, PKCTRL_IPTR|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(HA_Dummy, HA_Manufacturer, PsdHardware, phw_Manufacturer, PKCTRL_IPTR|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(HA_Dummy, HA_Description, PsdHardware, phw_Description, PKCTRL_IPTR|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(HA_Dummy, HA_Copyright, PsdHardware, phw_Copyright, PKCTRL_IPTR|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(HA_Dummy, HA_Version, PsdHardware, phw_Version, PKCTRL_UWORD|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(HA_Dummy, HA_Revision, PsdHardware, phw_Revision, PKCTRL_UWORD|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(HA_Dummy, HA_DriverVersion, PsdHardware, phw_DriverVers, PKCTRL_UWORD|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(HA_Dummy, HA_NumRootHubs, PsdHardware, phw_NumRootHubs, PKCTRL_UWORD|PKCTRL_PACKUNPACK),
+    PACK_ENDTABLE
+};
+
+/* Pack table for PsdDevice */
+static const ULONG PsdDevicePT[] = {
+    PACK_STARTTABLE(DA_Dummy),
+    PACK_ENTRY(DA_Dummy, DA_Address, PsdDevice, pd_DevAddr, PKCTRL_UWORD|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(DA_Dummy, DA_NumConfigs, PsdDevice, pd_NumCfgs, PKCTRL_UWORD|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(DA_Dummy, DA_CurrConfig, PsdDevice, pd_CurrCfg, PKCTRL_UWORD|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(DA_Dummy, DA_Config, PsdDevice, pd_CurrentConfig, PKCTRL_IPTR|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(DA_Dummy, DA_HubDevice, PsdDevice, pd_Hub, PKCTRL_IPTR|PKCTRL_PACKUNPACK),
+    PACK_ENTRY(DA_Dummy, DA_UsbVersion, PsdDevice, pd_USBVers, PKCTRL_UWORD|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(DA_Dummy, DA_Class, PsdDevice, pd_DevClass, PKCTRL_WORD|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(DA_Dummy, DA_SubClass, PsdDevice, pd_DevSubClass, PKCTRL_WORD|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(DA_Dummy, DA_Protocol, PsdDevice, pd_DevProto, PKCTRL_UWORD|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(DA_Dummy, DA_VendorID, PsdDevice, pd_VendorID, PKCTRL_UWORD|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(DA_Dummy, DA_MaxPktSize0, PsdDevice, pd_MaxPktSize0, PKCTRL_UWORD|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(DA_Dummy, DA_ProductID, PsdDevice, pd_ProductID, PKCTRL_UWORD|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(DA_Dummy, DA_Version, PsdDevice, pd_DevVers, PKCTRL_UWORD|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(DA_Dummy, DA_Manufacturer, PsdDevice, pd_MnfctrStr, PKCTRL_IPTR|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(DA_Dummy, DA_ProductName, PsdDevice, pd_ProductStr, PKCTRL_IPTR|PKCTRL_PACKUNPACK),
+    PACK_ENTRY(DA_Dummy, DA_OrigProductName, PsdDevice, pd_OldProductStr, PKCTRL_IPTR|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(DA_Dummy, DA_SerialNumber, PsdDevice, pd_SerNumStr, PKCTRL_IPTR|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(DA_Dummy, DA_Hardware, PsdDevice, pd_Hardware, PKCTRL_IPTR|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(DA_Dummy, DA_Binding, PsdDevice, pd_DevBinding, PKCTRL_IPTR|PKCTRL_PACKUNPACK),
+    PACK_ENTRY(DA_Dummy, DA_BindingClass, PsdDevice, pd_ClsBinding, PKCTRL_IPTR|PKCTRL_PACKUNPACK),
+    PACK_ENTRY(DA_Dummy, DA_LangIDArray, PsdDevice, pd_LangIDArray, PKCTRL_IPTR|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(DA_Dummy, DA_CurrLangID, PsdDevice, pd_CurrLangID, PKCTRL_UWORD|PKCTRL_PACKUNPACK),
+    PACK_ENTRY(DA_Dummy, DA_IDString, PsdDevice, pd_IDString, PKCTRL_IPTR|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(DA_Dummy, DA_CloneCount, PsdDevice, pd_CloneCount, PKCTRL_UWORD|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(DA_Dummy, DA_AtHubPortNumber, PsdDevice, pd_HubPort, PKCTRL_UWORD|PKCTRL_PACKUNPACK),
+    PACK_ENTRY(DA_Dummy, DA_PowerDrained, PsdDevice, pd_PowerDrain, PKCTRL_UWORD|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(DA_Dummy, DA_PowerSupply, PsdDevice, pd_PowerSupply, PKCTRL_UWORD|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(DA_Dummy, DA_IsNewToMe, PsdDevice, pd_IsNewToMe, PKCTRL_UWORD|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(DA_Dummy, DA_InhibitPopup, PsdDevice, pd_PoPoCfg.poc_InhibitPopup, PKCTRL_UWORD|PKCTRL_PACKUNPACK),
+    PACK_ENTRY(DA_Dummy, DA_InhibitClassBind, PsdDevice, pd_PoPoCfg.poc_NoClassBind, PKCTRL_UWORD|PKCTRL_PACKUNPACK),
+    PACK_ENTRY(DA_Dummy, DA_OverridePowerInfo, PsdDevice, pd_PoPoCfg.poc_OverridePowerInfo, PKCTRL_UWORD|PKCTRL_PACKUNPACK),
+    PACK_ENTRY(DA_Dummy, DA_HubThinkTime, PsdDevice, pd_HubThinkTime, PKCTRL_UWORD|PKCTRL_PACKUNPACK),
+    PACK_WORDBIT(DA_Dummy, DA_IsLowspeed, PsdDevice, pd_Flags, PKCTRL_BIT|PKCTRL_PACKUNPACK, PDFF_LOWSPEED),
+    PACK_WORDBIT(DA_Dummy, DA_IsHighspeed, PsdDevice, pd_Flags, PKCTRL_BIT|PKCTRL_PACKUNPACK, PDFF_HIGHSPEED),
+    PACK_WORDBIT(DA_Dummy, DA_IsConnected, PsdDevice, pd_Flags, PKCTRL_BIT|PKCTRL_PACKUNPACK, PDFF_CONNECTED),
+    PACK_WORDBIT(DA_Dummy, DA_HasAddress, PsdDevice, pd_Flags, PKCTRL_BIT|PKCTRL_PACKUNPACK, PDFF_HASDEVADDR),
+    PACK_WORDBIT(DA_Dummy, DA_HasDevDesc, PsdDevice, pd_Flags, PKCTRL_BIT|PKCTRL_PACKUNPACK, PDFF_HASDEVDESC),
+    PACK_WORDBIT(DA_Dummy, DA_IsConfigured, PsdDevice, pd_Flags, PKCTRL_BIT|PKCTRL_PACKUNPACK, PDFF_CONFIGURED),
+    PACK_WORDBIT(DA_Dummy, DA_IsDead, PsdDevice, pd_Flags, PKCTRL_BIT|PKCTRL_UNPACKONLY, PDFF_DEAD),
+    PACK_WORDBIT(DA_Dummy, DA_IsSuspended, PsdDevice, pd_Flags, PKCTRL_BIT|PKCTRL_PACKUNPACK, PDFF_SUSPENDED),
+    PACK_WORDBIT(DA_Dummy, DA_HasAppBinding, PsdDevice, pd_Flags, PKCTRL_BIT|PKCTRL_UNPACKONLY, PDFF_APPBINDING),
+    PACK_WORDBIT(DA_Dummy, DA_NeedsSplitTrans, PsdDevice, pd_Flags, PKCTRL_BIT|PKCTRL_PACKUNPACK, PDFF_NEEDSSPLIT),
+    PACK_WORDBIT(DA_Dummy, DA_LowPower, PsdDevice, pd_Flags, PKCTRL_BIT|PKCTRL_UNPACKONLY, PDFF_LOWPOWER),
+    PACK_WORDBIT(DA_Dummy, DA_IsSuperspeed, PsdDevice, pd_Flags, PKCTRL_BIT|PKCTRL_PACKUNPACK, PDFF_SUPERSPEED),
+    PACK_WORDBIT(DA_Dummy, DA_IsMultiTT, PsdDevice, pd_Flags, PKCTRL_BIT|PKCTRL_PACKUNPACK, PDFF_MULTITT),
+    PACK_ENDTABLE
+};
+
+/* Pack table for PsdConfig */
+static const ULONG PsdConfigPT[] = {
+    PACK_STARTTABLE(CA_Dummy),
+    PACK_ENTRY(CA_Dummy, CA_ConfigNum, PsdConfig, pc_CfgNum, PKCTRL_UWORD|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(CA_Dummy, CA_MaxPower, PsdConfig, pc_MaxPower, PKCTRL_UWORD|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(CA_Dummy, CA_ConfigName, PsdConfig, pc_CfgStr, PKCTRL_IPTR|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(CA_Dummy, CA_NumInterfaces, PsdConfig, pc_NumIfs, PKCTRL_UWORD|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(CA_Dummy, CA_Attrs, PsdConfig, pc_Attr, PKCTRL_UWORD|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(CA_Dummy, CA_Device, PsdConfig, pc_Device, PKCTRL_IPTR|PKCTRL_UNPACKONLY),
+    PACK_WORDBIT(CA_Dummy, CA_SelfPowered, PsdConfig, pc_Attr, PKCTRL_BIT|PKCTRL_PACKUNPACK, USCAF_SELF_POWERED),
+    PACK_WORDBIT(CA_Dummy, CA_RemoteWakeup, PsdConfig, pc_Attr, PKCTRL_BIT|PKCTRL_UNPACKONLY, USCAF_REMOTE_WAKEUP),
+    PACK_ENDTABLE
+};
+
+/* Pack table for PsdDescriptor */
+static const ULONG PsdDescriptorPT[] = {
+    PACK_STARTTABLE(DDA_Dummy),
+    PACK_ENTRY(DDA_Dummy, DDA_Device, PsdDescriptor, pdd_Device, PKCTRL_IPTR|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(DDA_Dummy, DDA_Config, PsdDescriptor, pdd_Config, PKCTRL_IPTR|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(DDA_Dummy, DDA_Interface, PsdDescriptor, pdd_Interface, PKCTRL_IPTR|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(DDA_Dummy, DDA_Endpoint, PsdDescriptor, pdd_Endpoint, PKCTRL_IPTR|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(DDA_Dummy, DDA_Name, PsdDescriptor, pdd_Name, PKCTRL_IPTR|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(DDA_Dummy, DDA_DescriptorType, PsdDescriptor, pdd_Type, PKCTRL_UWORD|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(DDA_Dummy, DDA_CS_SubType, PsdDescriptor, pdd_CSSubType, PKCTRL_UWORD|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(DDA_Dummy, DDA_DescriptorData, PsdDescriptor, pdd_Data, PKCTRL_IPTR|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(DDA_Dummy, DDA_DescriptorLength, PsdDescriptor, pdd_Length, PKCTRL_UWORD|PKCTRL_UNPACKONLY),
+    PACK_ENDTABLE
+};
+
+/* Pack table for PsdInterface */
+static const ULONG PsdInterfacePT[] = {
+    PACK_STARTTABLE(IFA_Dummy),
+    PACK_ENTRY(IFA_Dummy, IFA_InterfaceNum, PsdInterface, pif_IfNum, PKCTRL_UWORD|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(IFA_Dummy, IFA_AlternateNum, PsdInterface, pif_Alternate, PKCTRL_UWORD|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(IFA_Dummy, IFA_NumEndpoints, PsdInterface, pif_NumEPs, PKCTRL_UWORD|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(IFA_Dummy, IFA_Class, PsdInterface, pif_IfClass, PKCTRL_UWORD|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(IFA_Dummy, IFA_SubClass, PsdInterface, pif_IfSubClass, PKCTRL_UWORD|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(IFA_Dummy, IFA_Protocol, PsdInterface, pif_IfProto, PKCTRL_UWORD|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(IFA_Dummy, IFA_InterfaceName, PsdInterface, pif_IfStr, PKCTRL_IPTR|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(IFA_Dummy, IFA_Config, PsdInterface, pif_Config, PKCTRL_IPTR|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(IFA_Dummy, IFA_Binding, PsdInterface, pif_IfBinding, PKCTRL_IPTR|PKCTRL_PACKUNPACK),
+    PACK_ENTRY(IFA_Dummy, IFA_BindingClass, PsdInterface, pif_ClsBinding, PKCTRL_IPTR|PKCTRL_PACKUNPACK),
+    PACK_ENTRY(IFA_Dummy, IFA_IDString, PsdInterface, pif_IDString, PKCTRL_IPTR|PKCTRL_UNPACKONLY),
+    PACK_ENDTABLE
+};
+
+/* Pack table for PsdEndpoint */
+static const ULONG PsdEndpointPT[] = {
+    PACK_STARTTABLE(EA_Dummy),
+    PACK_ENTRY(EA_Dummy, EA_EndpointNum, PsdEndpoint, pep_EPNum, PKCTRL_UWORD|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(EA_Dummy, EA_TransferType, PsdEndpoint, pep_TransType, PKCTRL_UWORD|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(EA_Dummy, EA_MaxPktSize, PsdEndpoint, pep_MaxPktSize, PKCTRL_UWORD|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(EA_Dummy, EA_Interval, PsdEndpoint, pep_Interval, PKCTRL_UWORD|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(EA_Dummy, EA_NumTransMuFrame, PsdEndpoint, pep_NumTransMuFr, PKCTRL_UWORD|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(EA_Dummy, EA_SyncType, PsdEndpoint, pep_SyncType, PKCTRL_UWORD|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(EA_Dummy, EA_UsageType, PsdEndpoint, pep_UsageType, PKCTRL_UWORD|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(EA_Dummy, EA_MaxBurst, PsdEndpoint, pep_MaxBurst, PKCTRL_UWORD|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(EA_Dummy, EA_CompAttributes, PsdEndpoint, pep_CompAttributes, PKCTRL_UWORD|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(EA_Dummy, EA_BytesPerInterval, PsdEndpoint, pep_BytesPerInterval, PKCTRL_ULONG|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(EA_Dummy, EA_StreamBase, PsdEndpoint, pep_StreamBase, PKCTRL_UWORD|PKCTRL_PACKUNPACK),
+    PACK_ENTRY(EA_Dummy, EA_MaxStreams, PsdEndpoint, pep_MaxStreams, PKCTRL_UWORD|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(EA_Dummy, EA_Interface, PsdEndpoint, pep_Interface, PKCTRL_IPTR|PKCTRL_UNPACKONLY),
+    PACK_WORDBIT(EA_Dummy, EA_IsIn, PsdEndpoint, pep_Direction, PKCTRL_BIT|PKCTRL_UNPACKONLY, 1),
+    PACK_ENDTABLE
+};
+
+/* Pack table for PsdPipe */
+static const ULONG PsdPipePT[] = {
+    PACK_STARTTABLE(PPA_Dummy),
+    PACK_ENTRY(PPA_Dummy, PPA_Endpoint, PsdPipe, pp_Endpoint, PKCTRL_IPTR|PKCTRL_PACKUNPACK),
+    PACK_ENTRY(PPA_Dummy, PPA_Error, PsdPipe, pp_IOReq.iouh_Req.io_Error, PKCTRL_BYTE|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(PPA_Dummy, PPA_Actual, PsdPipe, pp_IOReq.iouh_Actual, PKCTRL_ULONG|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(PPA_Dummy, PPA_EndpointNum, PsdPipe, pp_IOReq.iouh_Endpoint, PKCTRL_UWORD|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(PPA_Dummy, PPA_DeviceAddress, PsdPipe, pp_IOReq.iouh_DevAddr, PKCTRL_UWORD|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(PPA_Dummy, PPA_MaxPktSize, PsdPipe, pp_IOReq.iouh_MaxPktSize, PKCTRL_UWORD|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(PPA_Dummy, PPA_NakTimeoutTime, PsdPipe, pp_IOReq.iouh_NakTimeout, PKCTRL_ULONG|PKCTRL_PACKUNPACK),
+    PACK_ENTRY(PPA_Dummy, PPA_Interval, PsdPipe, pp_IOReq.iouh_Interval, PKCTRL_UWORD|PKCTRL_PACKUNPACK),
+    PACK_WORDBIT(PPA_Dummy, PPA_NoShortPackets, PsdPipe, pp_IOReq.iouh_Flags, PKCTRL_BIT|PKCTRL_PACKUNPACK, UHFF_NOSHORTPKT),
+    PACK_WORDBIT(PPA_Dummy, PPA_NakTimeout, PsdPipe, pp_IOReq.iouh_Flags, PKCTRL_BIT|PKCTRL_PACKUNPACK, UHFF_NAKTIMEOUT),
+    PACK_WORDBIT(PPA_Dummy, PPA_AllowRuntPackets, PsdPipe, pp_IOReq.iouh_Flags, PKCTRL_BIT|PKCTRL_PACKUNPACK, UHFF_ALLOWRUNTPKTS),
+    PACK_ENDTABLE
+};
+
+/* Pack table for PsdAppBinding */
+static const ULONG PsdAppBindingPT[] = {
+    PACK_STARTTABLE(ABA_Dummy),
+    PACK_ENTRY(ABA_Dummy, ABA_ReleaseHook, PsdAppBinding, pab_ReleaseHook, PKCTRL_IPTR|PKCTRL_PACKUNPACK),
+    PACK_ENTRY(ABA_Dummy, ABA_Device, PsdAppBinding, pab_Device, PKCTRL_IPTR|PKCTRL_PACKUNPACK),
+    PACK_ENTRY(ABA_Dummy, ABA_UserData, PsdAppBinding, pab_UserData, PKCTRL_IPTR|PKCTRL_PACKUNPACK),
+    PACK_ENTRY(ABA_Dummy, ABA_Task, PsdAppBinding, pab_Task, PKCTRL_IPTR|PKCTRL_PACKUNPACK),
+    PACK_ENTRY(ABA_Dummy, ABA_ForceRelease, PsdAppBinding, pab_ForceRelease, PKCTRL_UWORD|PKCTRL_PACKUNPACK),
+    PACK_ENDTABLE
+};
+
+/* Pack table for PsdAppBinding */
+static const ULONG PsdEventNotePT[] = {
+    PACK_STARTTABLE(ENA_Dummy),
+    PACK_ENTRY(ENA_Dummy, ENA_EventID, PsdEventNote, pen_Event, PKCTRL_UWORD|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(ENA_Dummy, ENA_Param1, PsdEventNote, pen_Param1, PKCTRL_IPTR|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(ENA_Dummy, ENA_Param2, PsdEventNote, pen_Param2, PKCTRL_IPTR|PKCTRL_UNPACKONLY),
+    PACK_ENDTABLE
+};
+
+/* Pack table for PsdGlobalCfg */
+static const ULONG PsdGlobalCfgPT[] = {
+    PACK_STARTTABLE(GCA_Dummy),
+    PACK_ENTRY(GCA_Dummy, GCA_LogInfo, PsdGlobalCfg, pgc_LogInfo, PKCTRL_UWORD|PKCTRL_PACKUNPACK),
+    PACK_ENTRY(GCA_Dummy, GCA_LogWarning, PsdGlobalCfg, pgc_LogWarning, PKCTRL_UWORD|PKCTRL_PACKUNPACK),
+    PACK_ENTRY(GCA_Dummy, GCA_LogError, PsdGlobalCfg, pgc_LogError, PKCTRL_UWORD|PKCTRL_PACKUNPACK),
+    PACK_ENTRY(GCA_Dummy, GCA_LogFailure, PsdGlobalCfg, pgc_LogFailure, PKCTRL_UWORD|PKCTRL_PACKUNPACK),
+    PACK_ENTRY(GCA_Dummy, GCA_BootDelay, PsdGlobalCfg, pgc_BootDelay, PKCTRL_ULONG|PKCTRL_PACKUNPACK),
+    PACK_ENTRY(GCA_Dummy, GCA_SubTaskPri, PsdGlobalCfg, pgc_SubTaskPri, PKCTRL_WORD|PKCTRL_PACKUNPACK),
+    PACK_ENTRY(GCA_Dummy, GCA_PopupDeviceNew, PsdGlobalCfg, pgc_PopupDeviceNew, PKCTRL_UWORD|PKCTRL_PACKUNPACK),
+    PACK_ENTRY(GCA_Dummy, GCA_PopupDeviceGone, PsdGlobalCfg, pgc_PopupDeviceGone, PKCTRL_UWORD|PKCTRL_PACKUNPACK),
+    PACK_ENTRY(GCA_Dummy, GCA_PopupDeviceDeath, PsdGlobalCfg, pgc_PopupDeviceDeath, PKCTRL_UWORD|PKCTRL_PACKUNPACK),
+    PACK_ENTRY(GCA_Dummy, GCA_PopupCloseDelay, PsdGlobalCfg, pgc_PopupCloseDelay, PKCTRL_ULONG|PKCTRL_PACKUNPACK),
+    PACK_ENTRY(GCA_Dummy, GCA_PopupActivateWin, PsdGlobalCfg, pgc_PopupActivateWin, PKCTRL_UWORD|PKCTRL_PACKUNPACK),
+    PACK_ENTRY(GCA_Dummy, GCA_PopupWinToFront, PsdGlobalCfg, pgc_PopupWinToFront, PKCTRL_UWORD|PKCTRL_PACKUNPACK),
+    PACK_ENTRY(GCA_Dummy, GCA_AutoDisableLP, PsdGlobalCfg, pgc_AutoDisableLP, PKCTRL_UWORD|PKCTRL_PACKUNPACK),
+    PACK_ENTRY(GCA_Dummy, GCA_AutoDisableDead, PsdGlobalCfg, pgc_AutoDisableDead, PKCTRL_UWORD|PKCTRL_PACKUNPACK),
+    PACK_ENTRY(GCA_Dummy, GCA_AutoRestartDead, PsdGlobalCfg, pgc_AutoRestartDead, PKCTRL_UWORD|PKCTRL_PACKUNPACK),
+    PACK_ENTRY(GCA_Dummy, GCA_PowerSaving, PsdGlobalCfg, pgc_PowerSaving, PKCTRL_UWORD|PKCTRL_PACKUNPACK),
+    PACK_ENTRY(GCA_Dummy, GCA_ForceSuspend, PsdGlobalCfg, pgc_ForceSuspend, PKCTRL_UWORD|PKCTRL_PACKUNPACK),
+    PACK_ENTRY(GCA_Dummy, GCA_SuspendTimeout, PsdGlobalCfg, pgc_SuspendTimeout, PKCTRL_ULONG|PKCTRL_PACKUNPACK),
+    PACK_ENTRY(GCA_Dummy, GCA_PrefsVersion, PsdGlobalCfg, pgc_PrefsVersion, PKCTRL_ULONG|PKCTRL_PACKUNPACK),
+    PACK_ENDTABLE
+};
+
+/* Pack table for PsdPipeStream */
+static const ULONG PsdPipeStreamPT[] = {
+    PACK_STARTTABLE(PSA_Dummy),
+    PACK_ENTRY(PSA_Dummy, PSA_MessagePort, PsdPipeStream, pps_MsgPort, PKCTRL_IPTR|PKCTRL_PACKUNPACK),
+    PACK_ENTRY(PSA_Dummy, PSA_NumPipes, PsdPipeStream, pps_NumPipes, PKCTRL_ULONG|PKCTRL_PACKUNPACK),
+    PACK_ENTRY(PSA_Dummy, PSA_BufferSize, PsdPipeStream, pps_BufferSize, PKCTRL_ULONG|PKCTRL_PACKUNPACK),
+    PACK_ENTRY(PSA_Dummy, PSA_NakTimeoutTime, PsdPipeStream, pps_NakTimeoutTime, PKCTRL_ULONG|PKCTRL_PACKUNPACK),
+    PACK_ENTRY(PSA_Dummy, PSA_BytesPending, PsdPipeStream, pps_BytesPending, PKCTRL_ULONG|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(PSA_Dummy, PSA_Error, PsdPipeStream, pps_Error, PKCTRL_LONG|PKCTRL_PACKUNPACK),
+    PACK_ENTRY(PSA_Dummy, PSA_TermArray, PsdPipeStream, pps_TermArray, PKCTRL_IPTR|PKCTRL_PACKUNPACK),
+    PACK_ENTRY(PSA_Dummy, PSA_AbortSigMask, PsdPipeStream, pps_AbortSigMask, PKCTRL_ULONG|PKCTRL_PACKUNPACK),
+    PACK_ENTRY(PSA_Dummy, PSA_ActivePipe, PsdPipeStream, pps_ActivePipe, PKCTRL_IPTR|PKCTRL_UNPACKONLY),
+    PACK_WORDBIT(PSA_Dummy, PSA_AsyncIO, PsdPipeStream, pps_Flags, PKCTRL_BIT|PKCTRL_PACKUNPACK, PSFF_ASYNCIO),
+    PACK_WORDBIT(PSA_Dummy, PSA_ShortPktTerm, PsdPipeStream, pps_Flags, PKCTRL_BIT|PKCTRL_PACKUNPACK, PSFF_SHORTTERM),
+    PACK_WORDBIT(PSA_Dummy, PSA_ReadAhead, PsdPipeStream, pps_Flags, PKCTRL_BIT|PKCTRL_PACKUNPACK, PSFF_READAHEAD),
+    PACK_WORDBIT(PSA_Dummy, PSA_BufferedRead, PsdPipeStream, pps_Flags, PKCTRL_BIT|PKCTRL_PACKUNPACK, PSFF_BUFFERREAD),
+    PACK_WORDBIT(PSA_Dummy, PSA_BufferedWrite, PsdPipeStream, pps_Flags, PKCTRL_BIT|PKCTRL_PACKUNPACK, PSFF_BUFFERWRITE),
+    PACK_WORDBIT(PSA_Dummy, PSA_NoZeroPktTerm, PsdPipeStream, pps_Flags, PKCTRL_BIT|PKCTRL_PACKUNPACK, PSFF_NOSHORTPKT),
+    PACK_WORDBIT(PSA_Dummy, PSA_NakTimeout, PsdPipeStream, pps_Flags, PKCTRL_BIT|PKCTRL_PACKUNPACK, PSFF_NAKTIMEOUT),
+    PACK_WORDBIT(PSA_Dummy, PSA_AllowRuntPackets, PsdPipeStream, pps_Flags, PKCTRL_BIT|PKCTRL_PACKUNPACK, PSFF_ALLOWRUNT),
+    PACK_WORDBIT(PSA_Dummy, PSA_DoNotWait, PsdPipeStream, pps_Flags, PKCTRL_BIT|PKCTRL_PACKUNPACK, PSFF_DONOTWAIT),
+    PACK_ENDTABLE
+};
+
+/* Pack table for PsdRTIsoHandler */
+static const ULONG PsdRTIsoHandlerPT[] = {
+    PACK_STARTTABLE(RTA_Dummy),
+    PACK_ENTRY(RTA_Dummy, RTA_InRequestHook, PsdRTIsoHandler, prt_RTIso.urti_InReqHook, PKCTRL_IPTR|PKCTRL_PACKUNPACK),
+    PACK_ENTRY(RTA_Dummy, RTA_OutRequestHook, PsdRTIsoHandler, prt_RTIso.urti_OutReqHook, PKCTRL_IPTR|PKCTRL_PACKUNPACK),
+    PACK_ENTRY(RTA_Dummy, RTA_InDoneHook, PsdRTIsoHandler, prt_RTIso.urti_InDoneHook, PKCTRL_IPTR|PKCTRL_PACKUNPACK),
+    PACK_ENTRY(RTA_Dummy, RTA_OutDoneHook, PsdRTIsoHandler, prt_RTIso.urti_OutDoneHook, PKCTRL_IPTR|PKCTRL_PACKUNPACK),
+    PACK_ENTRY(RTA_Dummy, RTA_ReleaseHook, PsdRTIsoHandler, prt_ReleaseHook, PKCTRL_IPTR|PKCTRL_PACKUNPACK),
+    PACK_ENTRY(RTA_Dummy, RTA_OutPrefetchSize, PsdRTIsoHandler, prt_RTIso.urti_OutPrefetch, PKCTRL_ULONG|PKCTRL_PACKUNPACK),
+    PACK_ENDTABLE
+};
+
+/* PGA assignment table */
+static const ULONG *PsdPTArray[] = {
+    NULL,
+    PsdBasePT,
+    PsdUsbClassPT,
+    PsdHardwarePT,
+    PsdDevicePT,
+    PsdConfigPT,
+    PsdInterfacePT,
+    PsdEndpointPT,
+    PsdErrorMsgPT,
+    PsdPipePT,
+    PsdAppBindingPT,
+    PsdEventNotePT,
+    PsdGlobalCfgPT,
+    PsdPipeStreamPT,
+    PsdDescriptorPT,
+    PsdRTIsoHandlerPT
+};
+/* \\\ */

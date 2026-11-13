@@ -1,0 +1,276 @@
+/*
+    Copyright (C) 2009-2026, The AROS Development Team. All rights reserved.
+*/
+
+#include <aros/debug.h>
+
+#include <proto/dos.h>
+#include <proto/exec.h>
+#include <proto/timer.h>
+
+#include <errno.h>
+#include <string.h>
+#include <stdint.h>
+#include <stdlib.h>
+#include <unistd.h>
+
+#define IMPLEMENT()  bug("------IMPLEMENT(%s)\n", __func__)
+
+/*
+ * malloc/free/calloc/realloc overrides via Exec AllocMem/FreeMem.
+ *
+ * Each module has its own StdCBase mempool, so a ralloc object allocated
+ * in one module and freed in another corrupts the wrong pool's freelist.
+ * Going straight to AllocMem/FreeMem makes the allocator pool-independent;
+ * the magic cookie lets free() safely no-op a foreign pointer (e.g. one
+ * libc allocated before this override took effect).
+ *
+ * Since the vc4gallium refactor the vc4 driver lives in mesa3dgl.library,
+ * so this is only needed mesa-side; vc4gallium.hidd uses AllocMem directly.
+ */
+#define AROSC_MALLOC_MAGIC  0xCA113EDCu
+
+struct aros_malloc_hdr
+{
+    ULONG  magic;
+    ULONG  total;     /* allocation size including header */
+    size_t user_size; /* size requested by caller */
+    void  *raw;       /* start of the allocation: before the header when aligned */
+};
+
+#define HDR_BYTES AROS_ALIGN(sizeof(struct aros_malloc_hdr))
+
+void *malloc(size_t size)
+{
+    ULONG total = HDR_BYTES + size;
+    UBYTE *raw = (UBYTE *)AllocMem(total, MEMF_ANY);
+    if (!raw)
+    {
+        errno = ENOMEM;
+        return NULL;
+    }
+    struct aros_malloc_hdr *h = (struct aros_malloc_hdr *)raw;
+    h->magic = AROSC_MALLOC_MAGIC;
+    h->total = total;
+    h->user_size = size;
+    h->raw = raw;
+    return raw + HDR_BYTES;
+}
+
+void free(void *ptr)
+{
+    if (!ptr)
+        return;
+    struct aros_malloc_hdr *h = (struct aros_malloc_hdr *)((UBYTE *)ptr - HDR_BYTES);
+    if (h->magic != AROSC_MALLOC_MAGIC)
+        return;
+    h->magic = 0;
+    FreeMem(h->raw, h->total);
+}
+
+void *calloc(size_t nmemb, size_t size)
+{
+    size_t user = nmemb * size;
+    ULONG total = HDR_BYTES + user;
+    UBYTE *raw = (UBYTE *)AllocMem(total, MEMF_ANY | MEMF_CLEAR);
+    if (!raw)
+    {
+        errno = ENOMEM;
+        return NULL;
+    }
+    struct aros_malloc_hdr *h = (struct aros_malloc_hdr *)raw;
+    h->magic = AROSC_MALLOC_MAGIC;
+    h->total = total;
+    h->user_size = user;
+    h->raw = raw;
+    return raw + HDR_BYTES;
+}
+
+void *realloc(void *ptr, size_t size)
+{
+    if (!ptr)
+        return malloc(size);
+    if (size == 0)
+    {
+        free(ptr);
+        return NULL;
+    }
+    struct aros_malloc_hdr *h = (struct aros_malloc_hdr *)((UBYTE *)ptr - HDR_BYTES);
+    if (h->magic != AROSC_MALLOC_MAGIC)
+        return NULL;
+    size_t old = h->user_size;
+    void *np = malloc(size);
+    if (np)
+    {
+        memcpy(np, ptr, old < size ? old : size);
+        free(ptr);
+    }
+    return np;
+}
+
+/*
+ * The other C library allocators would come from stdc.library, whose blocks
+ * free() above does not recognise and drops: LLVM's aligned operator new and
+ * every strdup would leak. They allocate here too.
+ */
+void *aligned_alloc(size_t alignment, size_t size)
+{
+    ULONG total;
+    UBYTE *raw, *user;
+    struct aros_malloc_hdr *h;
+
+    if (alignment < AROS_WORSTALIGN)
+        alignment = AROS_WORSTALIGN;
+    total = HDR_BYTES + size + alignment;
+    raw = (UBYTE *)AllocMem(total, MEMF_ANY);
+    if (!raw)
+    {
+        errno = ENOMEM;
+        return NULL;
+    }
+    user = (UBYTE *)(((IPTR)raw + HDR_BYTES + alignment - 1) & ~(IPTR)(alignment - 1));
+    h = (struct aros_malloc_hdr *)(user - HDR_BYTES);
+    h->magic = AROSC_MALLOC_MAGIC;
+    h->total = total;
+    h->user_size = size;
+    h->raw = raw;
+    return user;
+}
+
+int posix_memalign(void **memptr, size_t alignment, size_t size)
+{
+    void *p = aligned_alloc(alignment, size);
+
+    if (!p)
+        return ENOMEM;
+    *memptr = p;
+    return 0;
+}
+
+char *strndup(const char *s, size_t n)
+{
+    size_t len = strnlen(s, n);
+    char *copy = (char *)malloc(len + 1);
+
+    if (copy)
+    {
+        memcpy(copy, s, len);
+        copy[len] = 0;
+    }
+    return copy;
+}
+
+char *strdup(const char *s)
+{
+    /* strdup() has no caller bound; PTRDIFF_MAX is the largest object
+     * size there can be, so it bounds the scan without exceeding it
+     * (a SIZE_MAX bound trips -Wstringop-overread once inlined). */
+    return strndup(s, PTRDIFF_MAX);
+}
+
+/*
+    The purpose of this file is to provide implementation for C functions part
+    of arosnixc.library in code where one does not want to use this library.
+*/
+
+struct timezone;
+
+int gettimeofday (struct timeval * tv,struct timezone * tz)
+{
+    struct MsgPort * timerport = CreateMsgPort();
+    struct timerequest * timereq = (struct timerequest *)CreateIORequest(timerport, sizeof(*timereq));
+
+
+    if (timereq)
+    {
+        if (OpenDevice("timer.device", UNIT_VBLANK, (struct IORequest *)timereq, 0) == 0)
+        {
+            #define TimerBase ((struct Device *)timereq->tr_node.io_Device)
+
+            GetSysTime(tv);
+            
+            #undef TimerBase
+            
+            CloseDevice((struct IORequest *)timereq);
+        }
+    }
+    
+    DeleteIORequest((struct IORequest *)timereq);
+    DeleteMsgPort(timerport);
+
+    return 0;
+}
+
+int usleep (useconds_t usec)
+{
+    struct MsgPort * timerport;
+    struct timerequest * timereq;
+    int ret = -1;
+
+    if (usec == 0)
+        return 0;
+
+    timerport = CreateMsgPort();
+    timereq = (struct timerequest *)CreateIORequest(timerport, sizeof(*timereq));
+    if (timereq)
+    {
+        if (OpenDevice("timer.device", UNIT_MICROHZ, (struct IORequest *)timereq, 0) == 0)
+        {
+            timereq->tr_node.io_Command = TR_ADDREQUEST;
+            timereq->tr_time.tv_secs = usec / 1000000;
+            timereq->tr_time.tv_micro = usec % 1000000;
+            DoIO((struct IORequest *)timereq);
+            CloseDevice((struct IORequest *)timereq);
+            ret = 0;
+        }
+        DeleteIORequest((struct IORequest *)timereq);
+    }
+    DeleteMsgPort(timerport);
+
+    if (ret)
+        errno = EINTR;
+    return ret;
+}
+
+/*
+    atexit differs from the standard definition because AROS .library code
+    AND data is shared across processes (unlike a shared object on a paging
+    OS, whose data is per-process). Running atexit handlers at CloseLibrary
+    would free shared data and crash other users, so we defer them to
+    library expunge/exit.
+
+    TODO: Check atexit() usage and determine best time to call the handlers.
+*/
+
+static struct exit_list {
+    struct exit_list *next;
+    void (*func)(void);
+} *exit_list = NULL;
+
+int atexit(void (*function)(void))
+{
+    struct exit_list *el;
+
+    el = malloc(sizeof(*el));
+    if (el == NULL)
+        return -1;
+
+    el->next = exit_list;
+    el->func = function;
+    exit_list = el;
+
+    return 0;
+}
+
+void __exit_emul(void)
+{
+    while (exit_list) {
+        struct exit_list *el = exit_list->next;
+
+        exit_list->func();
+        free(exit_list);
+        exit_list = el;
+    }
+}
+
+ADD2EXIT(__exit_emul, 0);

@@ -1,0 +1,24 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+# The Cocoa display backend is Objective-C, which %build_archspecific cannot
+# compile, so build it by hand with the host (kernel) compiler. The object is
+# placed in AROSBootstrap's arch object directory, which %build_prog links.
+
+COCOA_OBJDIR := $(GENDIR)/arch/all-hosted/bootstrap/arch
+COCOA_OBJ    := $(COCOA_OBJDIR)/cocoa_display.o
+
+#MM
+kernel-bootstrap-hosted-darwin : $(COCOA_OBJ)
+
+#MM
+kernel-bootstrap-hosted-darwin-quick : $(COCOA_OBJ)
+
+$(COCOA_OBJ) : $(SRCDIR)/$(CURDIR)/cocoa_display.m
+	%fileactionmsg msg="Compiling" file="$<"
+	$(Q)$(KERNEL_CC) $(KERNEL_ISA_CFLAGS) $(KERNEL_CFLAGS) $(HOST_DEBUG) -fobjc-arc \
+	    -I$(SRCDIR)/arch/all-unix/kernel -c $< -o $@
+
+%rule_makedirs dirs=$(COCOA_OBJDIR) setuptarget=$(COCOA_OBJ)
+
+%common

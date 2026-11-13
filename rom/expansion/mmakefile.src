@@ -1,0 +1,39 @@
+#
+#   Generate expansion.library
+#
+include $(SRCDIR)/config/aros.cfg
+
+#MM- core-linklibs : linklibs-expansion
+
+FUNCS :=    addbootnode addconfigdev adddosnode allocboardmem \
+	    allocconfigdev allocexpansionmem configboard configchain \
+	    findconfigdev freeboardmem freeconfigdev freeexpansionmem \
+	    getcurrentbinding makedosnode obtainconfigbinding \
+	    readexpansionbyte readexpansionrom releaseconfigbinding \
+	    remconfigdev setcurrentbinding writeexpansionbyte \
+	    writeexpansionword
+
+#MM- kernel-expansion : linklibs
+
+#MM- kernel-expansion-includes : \
+#MM      kernel-exec-includes \
+#MM      kernel-dos-includes
+
+ifeq ($(ARCH),amiga)
+# Non-Amiga expansion.library is actually a half-functional stub. Since the primary purpose
+# of this library is to handle Zorro bus, we tag only Amiga version of this library as architecture-specific
+VERSION := $(ARCH)-$(CPU)
+endif
+
+USER_CPPFLAGS := \
+               -DUSE_EXEC_DEBUG
+USER_LDFLAGS := -static
+
+ifneq ($(ROM_OPTIMIZATION_CFLAGS),)
+OPTIMIZATION_CFLAGS := $(ROM_OPTIMIZATION_CFLAGS)
+endif
+
+%build_module mmake=kernel-expansion \
+  modname=expansion modtype=library version=$(VERSION) \
+  files="expansion_init $(FUNCS)" archspecific=yes
+

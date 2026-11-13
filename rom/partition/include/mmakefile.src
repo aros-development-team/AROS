@@ -1,0 +1,7 @@
+include $(SRCDIR)/config/aros.cfg
+
+INCLUDE_FILES := $(call WILDCARD, libraries/*.h)
+
+%copy_includes
+
+%common

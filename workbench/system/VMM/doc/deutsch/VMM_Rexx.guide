@@ -1,0 +1,235 @@
+@database doc/VMM_Rexx.guide
+
+@Width 72
+
+@Node Main "doc/VMM_Rexx.guide"
+Dieses Dokument beschreibt VMM's Arexx-Funktionen.  VMM unterstützt 18
+Funktionen,  die  in  ARexx-Skripts  verwendet  werden  können.   Jede
+Funktion   wird  mit  ihren  Parametern  und  den  möglichen  Ergebnis
+aufgelistet.
+
+Unterstützte Kommandos:
+  @{"ADD_PROG   "   Link "Add_Prog"}
+  @{"DISABLE    "   Link "Disable"}
+  @{"ENABLE     "   Link "Enable"}
+  @{"HELP       "   Link "Help"}
+  @{"HIDE       "   Link "Hide"}
+  @{"INFO       "   Link "Info"}
+  @{"MEM        "   Link "Mem"}
+  @{"MEMTRACK   "   Link "MemTrack"}
+  @{"MEMTYPE    "   Link "MemType"}
+  @{"MINVMALLOC "   Link "MinVMAlloc"}
+  @{"PATCHWB    "   Link "PatchWB"}
+  @{"REM_PROG   "   Link "Rem_Prog"}
+  @{"SHOW       "   Link "Show"}
+  @{"STAT       "   Link "Stat"}
+  @{"VMPRIORITY "   Link "VMPriority"}
+  @{"WRITEBUFFER"   Link "WriteBuffer"}
+  @{"QUIT       "   Link "Quit"}
+  @{"ZOOM       "   Link "Zoom"}
+
+Die  zurückgelieferten  Codes  sind  die selben, die auch vom Standard
+MUI-Arexx-Interface geliefert werden.  Dies sind:
+
+
+  -2     Nicht genug Speicher
+
+  -3     Unbekanntes Arexx-Kommando
+
+  -4     Syntax-Fehler in Kommandoparametern
+
+@EndNode
+
+@Node Add_Prog "doc/VMM_Rexx.guide"
+
+Kommando: ADD_PROG "task name" <MinPublic> <MinNonPublic> "ON" | "OFF"
+
+Das Kommando "ADD_PROG" fügt eine Task zu VMM's Liste der gesondert zu
+behandelnden  Task  hinzu.   Die  MinPublic und MinNonPublic-Parameter
+entsprechen den gleichnamigen Einträgen in der Oberfläche.
+"VM  benutzen" entspricht einer Einstellung von -1 für MinPublic und 0
+für  MinNonPublic, "VM nicht benutzen" entspricht -1 für MinPublic und
+-1  für  MinNonPublic.   "ON"  oder "OFF" schaltet das Code-Paging ein
+oder aus.
+
+@EndNode
+
+@Node Disable "doc/VMM_Rexx.guide"
+
+Command: DISABLE
+
+Dieses  Kommando  verbietet die Allokation von virtuellem Speicher bis
+dies  entweder  durch  das  "ENABLE"-Kommando  oder  per Hotkey wieder
+erlaubt wird.
+
+@EndNode
+
+@Node Enable "doc/VMM_Rexx.guide"
+
+Command: ENABLE
+
+Dieses  Kommando  erlaubt  die  Allokation von virtuellem Speicher bis
+dies  entweder  durch  das "DISABLE"-Kommando oder per Hotkey verboten
+wird.
+
+@EndNode
+
+@Node Help "doc/VMM_Rexx.guide"
+
+Command: HELP "file"
+
+Dieses  Kommando  gibt eine Liste aller verfügbaren ARexx-Kommandos in
+die Datei "file" aus.  Diese Datei sollte mit einem vollständigen Pfad
+spezifiziert   werden,  da  sonst  die  Datei  in  einem  unerwarteten
+Verzeichnis landen könnte.
+
+@EndNode
+
+@Node Hide "doc/VMM_Rexx.guide"
+
+Command: HIDE
+
+Dies Kommando macht die VMM-Benutzeroberfläche unsichtbar.
+
+@EndNode
+
+@Node Info "doc/VMM_Rexx.guide"
+
+Command: INFO "title" | "author" | "copyright" | "description" | 
+              "version" | "base" | "screen"
+
+Dies  ist  ein  Standard  MUI-ARexx-Kommando.  Je nach Argument werden
+verschiedene Ergebnisse geliefert:
+
+           "title"            Name des Programms (VMM)
+
+           "author"           Autor des Programms
+
+           "copyright"        Copyright Status
+
+           "description"      Kurzbeschreibung
+
+           "version"          Versionsnummer
+
+           "base"             Name des ARexx-Ports
+
+           "screen"           Name des verwendeten Public-Screens
+
+@EndNode
+
+@Node Mem "doc/VMM_Rexx.guide"
+
+Command: MEM ("FIXED" <size>) | "DYNAMIC" | ("RESTRICTED" <min> <max>)
+
+Dieses  Kommando  verändert  die Art, wie und wieviel Speicher von VMM
+verwendet  wird,  um  darin den virtuellen Speicher abzubilden.  size,
+min und max werden in Bytes angegeben.  Diese Werte werden automatisch
+auf  Vielfache  der  aktuellen  Seitengröße  gerundet.  Wenn einer der
+Werte zu klein ist, wird dieser angepaßt.
+
+@EndNode
+
+@Node MemTrack "doc/VMM_Rexx.guide"
+
+Command: MEMTRACK "ON" | "OFF"
+
+Dieses Kommando schaltet das Speicherprotokoll an oder aus.
+
+@EndNode
+
+@Node MemType "doc/VMM_Rexx.guide"
+
+Command: MEMTYPE "FAST" | "CHIP" | "ANY"
+
+Dieses  Kommando  legt  die  Speicherart  fest, die für den virtuellen
+Speicher  verwendet  wird.   Dies  betrifft aber nur Kacheln, die nach
+diesem Kommando allokiert werden.
+
+@EndNode
+
+@Node MinVMAlloc "doc/VMM_Rexx.guide"
+
+Command: MINVMALLOC <num_bytes>
+
+Dieses  Kommando spezifiziert die minimale Größe einer Allokation, die
+in  den  virtuellen  Speicher  gelegt wird.  Allokationen, die kleiner
+sind als dieser Wert, werden in den Public-Speicher gelegt.
+
+@EndNode
+
+@Node PatchWB "doc/VMM_Rexx.guide"
+
+Command: PATCHWB "ON" | "OFF"
+
+Dieses Kommando schaltet das Patchen der Workbench-Titelleiste an oder
+aus, um darin den verfügbaren virtuellen Speicher anzuzeigen.
+
+@EndNode
+
+@Node Rem_Prog "doc/VMM_Rexx.guide"
+
+Command: REM_PROG "taskname"
+
+Dieses Kommando entfernt einen Eintrag aus VMM's Taskliste.  Falls der
+Eintrag nicht gefunden wird, passiert nichts.
+
+@EndNode
+
+@Node Show "doc/VMM_Rexx.guide"
+
+Command: SHOW
+
+Hierdurch wird die VMM-Benutzeroberfläche sichtbar gemacht.
+
+@EndNode
+
+@Node Stat "doc/VMM_Rexx.guide"
+
+Command: STAT "ON" | "OFF"
+
+Hiermit kann man das Statistikfenster ein- oder ausschalten.
+
+@EndNode
+
+@Node VMPriority "doc/VMM_Rexx.guide"
+
+Command: VMPRIORITY <prio>
+
+Mit  diesem  Kommando  kann man die Priorität des virtuellen Speichers
+verändern.    Damit   wird   festgelegt,  ob  zuerst  virtueller  oder
+physikalischer belegt wird.
+
+@EndNode
+
+@Node WriteBuffer "doc/VMM_Rexx.guide"
+
+Command: WRITEBUFFER <size>
+
+Mit  diesem  Kommando kann man die Größe des Schreibpuffers festlegen,
+den  VMM verwendet, um Seiten auf die Platte zu schreiben.  Diese wird
+automatisch auf ein Vielfaches der aktuellen Seitengröße gerundet.
+
+@EndNode
+
+@Node Quit "doc/VMM_Rexx.guide"
+
+Command: QUIT
+
+Dieses  Kommando  instruiert  VMM, sich selbst zu beenden, sofern dies
+möglich  ist.   Falls  zu  viel  virtueller Speicher belegt ist, sodaß
+dieser  nicht  in  den physikalischer Speicher paßt, weigert sich VMM,
+sich zu beenden.
+
+@EndNode
+
+@Node Zoom "doc/VMM_Rexx.guide"
+
+Command: ZOOM "ON" | "OFF"
+
+Dieses Kommando setzt den Zoom-Status des Statistikfenster.  Falls das
+Fenster  nicht  offen  ist,  wird  der Zustand für ein späteres Öffnen
+gespeichert.   Um  das  Statistikfenster  also in gezoomtem Zustand zu
+öffnen, muß man erst "ZOOM ON", und dann "STAT ON" aufrufen.
+
+@EndNode
+

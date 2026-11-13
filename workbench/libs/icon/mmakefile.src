@@ -1,0 +1,71 @@
+# Copyright © The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+
+USER_CFLAGS :=  $(AROSROM_MODULE_CFLAGS)
+USER_CPPFLAGS := -D__NOLIBBASE__
+ifneq ($(AROS_SECTION_COMMENT),)
+USER_CPPFLAGS += -DSECTIONCOMMENT=\"$(AROS_SECTION_COMMENT)\"
+endif
+
+USER_LDFLAGS := -static
+
+FILES := support 	 \
+	 support_builtin \
+	 diskobjio 	 \
+	 diskobj35io 	 \
+	 diskobjNIio 	 \
+	 diskobjPNGio 	 \
+	 identify
+
+FUNCS := \
+    addfreelist \
+    bumprevision \
+    changetoselectediconcolor \
+    deletediskobject \
+    dupdiskobject \
+    drawiconstate \
+    findtooltype \
+    freediskobject \
+    freefreelist \
+    getdefdiskobject \
+    getdiskobject \
+    getdiskobjectnew \
+    geticonrectangle \
+    geticontaglist \
+    iconcontrol \
+    layouticon \
+    matchtoolvalue \
+    newdiskobject \
+    putdefdiskobject \
+    putdiskobject \
+    puticontaglist
+
+#MM workbench-libs-icon-includes : \
+#MM     kernel-exec-includes \
+#MM     kernel-dos-includes \
+#MM     kernel-intuition-includes \
+#MM     kernel-graphics-includes \
+#MM     kernel-utility-includes \
+#MM     kernel-cfgx-includes \
+#MM     workbench-libs-iffparse-includes \
+#MM	workbench-datatypes-png-includes \
+#MM     includes-copy
+#MM workbench-libs-icon-module : \
+#MM     workbench-libs-datatypes-includes \
+#MM	workbench-datatypes-png-includes
+#MM- workbench-libs-icon : linklibs
+#MM- core-linklibs: linklibs-icon
+
+ifneq ($(ROM_OPTIMIZATION_CFLAGS),)
+OPTIMIZATION_CFLAGS := $(ROM_OPTIMIZATION_CFLAGS)
+# write ARGB icon chunks as stored zlib blocks: keeps deflate out of the ROM
+USER_CPPFLAGS += -DICON_ZLIB_STORED
+endif
+
+%build_module mmake=workbench-libs-icon \
+    modname=icon modtype=library \
+    files="icon_init $(FUNCS) $(FILES)" \
+    uselibs="z-nogzip.static"
+
+%common

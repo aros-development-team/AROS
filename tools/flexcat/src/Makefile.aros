@@ -1,0 +1,61 @@
+#   Copyright © 1995-2014, The AROS Development Team. All rights reserved.
+#   $Id: Makefile 44507 2012-04-03 16:09:41Z mazze $
+#
+#   Desc: Makefile for FlexCat
+#
+
+include $(TOP)/config/make.cfg
+
+USER_CFLAGS := -Wall -Werror -Wunused -O2
+FLEXCAT_CFLAGS := $(HOST_CFLAGS)
+
+ifeq ($(AROS_HOST_ARCH),linux)
+FLEXCAT_CFLAGS += -D_XOPEN_SOURCE=500
+endif
+
+OBJS := main.o \
+        asprintf.o \
+        strptime.o \
+        createcat.o \
+        createcatsrc.o \
+        createct.o \
+        globals.o \
+        readprefs.o \
+        scancd.o \
+        scanct.o \
+        scanpo.o \
+        showfuncs.o \
+        swapfuncs.o \
+        utils.o \
+        translators.o \
+        locale_other.o
+
+OBJDIR := $(HOSTGENDIR)/tools/flexcat
+
+SDFILES	:=  C_h_aros.sd C_c_orig.sd C_h_orig.sd gcccatcomp.sd
+SD_OUT	:=  $(foreach f,$(SDFILES),$(TOOLDIR)/$(f))
+
+.PHONY: all
+all: $(OBJDIR) $(FLEXCAT) $(SD_OUT)
+
+$(FLEXCAT) : $(addprefix $(OBJDIR)/,$(OBJS))
+	@$(ECHO) "Linking $(notdir $@)..."
+	@$(HOST_CC)  $(HOST_LDFLAGS) $^ -o $@
+#	@$(HOST_STRIP) $@
+
+$(OBJDIR)/%.o : %.c
+	@$(ECHO) "Compiling flexcat/src/$(notdir $@)..."
+	@$(HOST_CC) -MM -MP -MT '$@' -MF $(OBJDIR)/$(subst .c,.d,$<) $(FLEXCAT_CFLAGS) $<
+	@$(HOST_CC) -DNOERRORONWARN $(FLEXCAT_CFLAGS) -o $@ -c $<
+
+$(TOOLDIR)/%.sd : sd/%.sd
+	@$(CP) $< $@
+
+$(OBJDIR) :
+	@$(MKDIR) -p $(OBJDIR)
+
+.PHONY: clean
+clean:
+	@$(RM) -rf $(OBJDIR) $(FLEXCAT)
+
+-include $(OBJS:%.o=$(OBJDIR)/%.d)

@@ -1,0 +1,3552 @@
+/*
+    Copyright (C) 2026, The AROS Development Team. All rights reserved.
+
+    Portions ported from OpenBSD's sys/dev/ic/bwfm.c and
+    sys/dev/sdmmc/if_bwfm_sdio.c, which carry the ISC licence:
+
+      Copyright (c) 2010-2016 Broadcom Corporation
+      Copyright (c) 2016,2017 Patrick Wildt <patrick@blueri.se>
+
+      Permission to use, copy, modify, and/or distribute this software for any
+      purpose with or without fee is hereby granted, provided that the above
+      copyright notice and this permission notice appear in all copies.
+
+      THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+      WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+      MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+      ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+      WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+      ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+      OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+
+    bwfm.resource - Broadcom FullMAC WiFi chip bring-up over SDIO.
+
+    Phase 2: chip bring-up - identify the chip (ChipCommon CHIPID over the
+    silicon backplane), enumerate the backplane cores from the EROM, halt
+    them (set_passive) and size the chip RAM. Ported from OpenBSD's bwfm.c /
+    if_bwfm_sdio.c (see the ISC notice above), reworked to drive the chip
+    through sdio.resource (CMD52/CMD53) instead of the OpenBSD sdmmc layer;
+    AI interconnect only.
+
+    Firmware download (needs DOS/filesystem) and the SANA-II network device
+    (bwfm.device) sit on top of this chip layer in later phases.
+*/
+
+#define DEBUG 0
+
+#include <aros/macros.h>
+#include <aros/debug.h>
+#include <aros/symbolsets.h>
+#include <aros/libcall.h>
+#include <devices/timer.h>
+#include <proto/exec.h>
+#include <proto/kernel.h>
+#include <proto/sdio.h>
+
+#include "bwfmreg.h"
+#include "bwfm_sdio.h"
+#include "bwfm_scan.h"
+#include "bwfm_private.h"
+
+APTR SDIOBase __attribute__((used)) = NULL;     /* sdio.resource (proto/sdio.h base) */
+APTR KernelBase __attribute__((used)) = NULL;
+
+/* Busy-wait microseconds off the BCM2835 1 MHz system timer (CLO). */
+static void bwfm_udelay(struct BWFMBase *BWFMBase, ULONG us)
+{
+    volatile ULONG *clo = (volatile ULONG *)(BWFMBase->bwfm_periiobase + 0x3004);
+    ULONG start = AROS_LE2LONG(*clo);
+
+    while ((AROS_LE2LONG(*clo) - start) < us)
+        ;
+}
+
+/*
+ * Zero a buffer of run-time length. The volatile store stops gcc from
+ * synthesising a memset() call out of the loop - this resource is resident
+ * in the kickstart where stdc.library cannot be opened, so any implicit
+ * memset/memcpy reference makes the module's autoinit fail at boot.
+ */
+static void bwfm_zero(UBYTE *p, ULONG n)
+{
+    volatile UBYTE *d = p;
+
+    while (n--)
+        *d++ = 0;
+}
+
+/* Compare, for the same reason: no memcmp()/bcmp() out of the loop. */
+static int bwfm_memeq(const UBYTE *a, const UBYTE *b, ULONG n)
+{
+    const volatile UBYTE *x = a;
+
+    while (n--)
+        if (*x++ != *b++)
+            return 0;
+    return 1;
+}
+
+/* ----------------------------------------------------------------------- */
+/* SDIO register access (ported from if_bwfm_sdio.c)                       */
+
+/*
+ * Address-range based function selection:
+ *   0x00000-0x007FF : function 0 (CCCR / FBR)
+ *   0x10000-0x1FFFF : function 1 miscellaneous registers
+ *   otherwise       : function 1 silicon-backplane window
+ */
+static inline uint32_t bwfm_func(uint32_t addr)
+{
+    return ((addr & ~0x7ff) == 0) ? 0 : 1;
+}
+
+static uint8_t bwfm_read_1(uint32_t addr)
+{
+    return SDIOReadByte(bwfm_func(addr), addr);
+}
+
+static void bwfm_write_1(uint32_t addr, uint8_t val)
+{
+    SDIOWriteByte(bwfm_func(addr), addr, val);
+}
+
+static void bwfm_backplane(struct BWFMBase *BWFMBase, uint32_t bar0)
+{
+    if (BWFMBase->bwfm_bar0 == bar0)
+        return;
+
+    bwfm_write_1(BWFM_SDIO_FUNC1_SBADDRLOW,  (bar0 >> 8) & 0x80);
+    bwfm_write_1(BWFM_SDIO_FUNC1_SBADDRMID,  (bar0 >> 16) & 0xff);
+    bwfm_write_1(BWFM_SDIO_FUNC1_SBADDRHIGH, (bar0 >> 24) & 0xff);
+    BWFMBase->bwfm_bar0 = bar0;
+}
+
+static uint32_t bwfm_read_4(struct BWFMBase *BWFMBase, uint32_t addr)
+{
+    uint32_t bar0 = addr & ~BWFM_SDIO_SB_OFT_ADDR_MASK;
+    uint32_t val = 0xffffffff;
+
+    bwfm_backplane(BWFMBase, bar0);
+
+    addr &= BWFM_SDIO_SB_OFT_ADDR_MASK;
+    addr |= BWFM_SDIO_SB_ACCESS_2_4B_FLAG;
+
+    if (SDIOReadExt(bwfm_func(addr), addr, &val, 4, 1))
+        return 0xffffffff;
+    return val;
+}
+
+static void bwfm_write_4(struct BWFMBase *BWFMBase, uint32_t addr, uint32_t val)
+{
+    uint32_t bar0 = addr & ~BWFM_SDIO_SB_OFT_ADDR_MASK;
+
+    bwfm_backplane(BWFMBase, bar0);
+
+    addr &= BWFM_SDIO_SB_OFT_ADDR_MASK;
+    addr |= BWFM_SDIO_SB_ACCESS_2_4B_FLAG;
+
+    SDIOWriteExt(bwfm_func(addr), addr, &val, 4, 1);
+}
+
+/*
+ * Bring up the ALP clock so the backplane is accessible (ported from
+ * bwfm_sdio_buscore_prepare).
+ */
+static int bwfm_buscore_prepare(struct BWFMBase *BWFMBase)
+{
+    uint8_t clkset, clkmask, clkval;
+    int i;
+
+    clkset = BWFM_SDIO_FUNC1_CHIPCLKCSR_ALP_AVAIL_REQ |
+             BWFM_SDIO_FUNC1_CHIPCLKCSR_FORCE_HW_CLKREQ_OFF;
+    bwfm_write_1(BWFM_SDIO_FUNC1_CHIPCLKCSR, clkset);
+
+    clkmask = BWFM_SDIO_FUNC1_CHIPCLKCSR_ALP_AVAIL |
+              BWFM_SDIO_FUNC1_CHIPCLKCSR_HT_AVAIL;
+    clkval = bwfm_read_1(BWFM_SDIO_FUNC1_CHIPCLKCSR);
+
+    if ((clkval & ~clkmask) != clkset)
+    {
+        D(bug("[bwfm] CHIPCLKCSR wrote 0x%02x read 0x%02x\n", clkset, clkval));
+        return 1;
+    }
+
+    for (i = 1000; i > 0; i--)
+    {
+        clkval = bwfm_read_1(BWFM_SDIO_FUNC1_CHIPCLKCSR);
+        if (clkval & clkmask)
+            break;
+        bwfm_udelay(BWFMBase, 1);       /* bound the wait in time, not read count */
+    }
+    if (i == 0)
+    {
+        D(bug("[bwfm] timeout waiting for ALP, clkval 0x%02x\n", clkval));
+        return 1;
+    }
+
+    clkset = BWFM_SDIO_FUNC1_CHIPCLKCSR_FORCE_HW_CLKREQ_OFF |
+             BWFM_SDIO_FUNC1_CHIPCLKCSR_FORCE_ALP;
+    bwfm_write_1(BWFM_SDIO_FUNC1_CHIPCLKCSR, clkset);
+    bwfm_udelay(BWFMBase, 65);          /* let ALP settle (matches reference) */
+
+    bwfm_write_1(BWFM_SDIO_FUNC1_SDIOPULLUP, 0);
+
+    return 0;
+}
+
+/* ----------------------------------------------------------------------- */
+/* Core enumeration and reset (ported from bwfm.c, AI interconnect only)   */
+
+static struct bwfm_core *bwfm_get_core_idx(struct BWFMBase *BWFMBase, int id, int idx)
+{
+    int i;
+
+    for (i = 0; i < BWFMBase->bwfm_ncores; i++)
+        if (BWFMBase->bwfm_cores[i].co_id == id && idx-- == 0)
+            return &BWFMBase->bwfm_cores[i];
+    return NULL;
+}
+
+static struct bwfm_core *bwfm_get_core(struct BWFMBase *BWFMBase, int id)
+{
+    return bwfm_get_core_idx(BWFMBase, id, 0);
+}
+
+static struct bwfm_core *bwfm_get_pmu(struct BWFMBase *BWFMBase)
+{
+    struct bwfm_core *cc, *pmu;
+
+    cc = bwfm_get_core(BWFMBase, BWFM_AGENT_CORE_CHIPCOMMON);
+    if (cc->co_rev >= 35 &&
+        (BWFMBase->bwfm_cc_caps_ext & BWFM_CHIP_REG_CAPABILITIES_EXT_AOB_PRESENT))
+    {
+        pmu = bwfm_get_core(BWFMBase, BWFM_AGENT_CORE_PMU);
+        if (pmu)
+            return pmu;
+    }
+    return cc;
+}
+
+static int bwfm_ai_isup(struct BWFMBase *BWFMBase, struct bwfm_core *core)
+{
+    uint32_t ioctl, reset;
+
+    ioctl = bwfm_read_4(BWFMBase, core->co_wrapbase + BWFM_AGENT_IOCTL);
+    reset = bwfm_read_4(BWFMBase, core->co_wrapbase + BWFM_AGENT_RESET_CTL);
+
+    if (((ioctl & (BWFM_AGENT_IOCTL_FGC | BWFM_AGENT_IOCTL_CLK)) == BWFM_AGENT_IOCTL_CLK) &&
+        ((reset & BWFM_AGENT_RESET_CTL_RESET) == 0))
+        return 1;
+    return 0;
+}
+
+static void bwfm_ai_disable(struct BWFMBase *BWFMBase, struct bwfm_core *core,
+                            uint32_t prereset, uint32_t reset)
+{
+    uint32_t val;
+    int i;
+
+    val = bwfm_read_4(BWFMBase, core->co_wrapbase + BWFM_AGENT_RESET_CTL);
+    if ((val & BWFM_AGENT_RESET_CTL_RESET) == 0)
+    {
+        bwfm_write_4(BWFMBase, core->co_wrapbase + BWFM_AGENT_IOCTL,
+                     prereset | BWFM_AGENT_IOCTL_FGC | BWFM_AGENT_IOCTL_CLK);
+        bwfm_read_4(BWFMBase, core->co_wrapbase + BWFM_AGENT_IOCTL);
+
+        bwfm_write_4(BWFMBase, core->co_wrapbase + BWFM_AGENT_RESET_CTL,
+                     BWFM_AGENT_RESET_CTL_RESET);
+        bwfm_udelay(BWFMBase, 20);
+
+        for (i = 300; i > 0; i--)
+            if (bwfm_read_4(BWFMBase, core->co_wrapbase + BWFM_AGENT_RESET_CTL) ==
+                BWFM_AGENT_RESET_CTL_RESET)
+                break;
+        if (i == 0)
+            D(bug("[bwfm] timeout on core disable\n"));
+    }
+
+    bwfm_write_4(BWFMBase, core->co_wrapbase + BWFM_AGENT_IOCTL,
+                 reset | BWFM_AGENT_IOCTL_FGC | BWFM_AGENT_IOCTL_CLK);
+    bwfm_read_4(BWFMBase, core->co_wrapbase + BWFM_AGENT_IOCTL);
+}
+
+static void bwfm_ai_reset(struct BWFMBase *BWFMBase, struct bwfm_core *core,
+                          uint32_t prereset, uint32_t reset, uint32_t postreset)
+{
+    int i;
+
+    bwfm_ai_disable(BWFMBase, core, prereset, reset);
+
+    for (i = 50; i > 0; i--)
+    {
+        if ((bwfm_read_4(BWFMBase, core->co_wrapbase + BWFM_AGENT_RESET_CTL) &
+             BWFM_AGENT_RESET_CTL_RESET) == 0)
+            break;
+        bwfm_write_4(BWFMBase, core->co_wrapbase + BWFM_AGENT_RESET_CTL, 0);
+        bwfm_udelay(BWFMBase, 60);
+    }
+    if (i == 0)
+        D(bug("[bwfm] timeout on core reset\n"));
+
+    bwfm_write_4(BWFMBase, core->co_wrapbase + BWFM_AGENT_IOCTL,
+                 postreset | BWFM_AGENT_IOCTL_CLK);
+    bwfm_read_4(BWFMBase, core->co_wrapbase + BWFM_AGENT_IOCTL);
+}
+
+static int bwfm_dmp_get_regaddr(struct BWFMBase *BWFMBase, uint32_t *erom,
+                                uint32_t *base, uint32_t *wrap)
+{
+    uint8_t type = 0, stype, wraptype;
+    uint32_t val;
+
+    *base = 0;
+    *wrap = 0;
+
+    val = bwfm_read_4(BWFMBase, *erom);
+    type = val & BWFM_DMP_DESC_MASK;
+    if (type == BWFM_DMP_DESC_MASTER_PORT)
+    {
+        wraptype = BWFM_DMP_SLAVE_TYPE_MWRAP;
+        *erom += 4;
+    }
+    else if ((type & ~BWFM_DMP_DESC_ADDRSIZE_GT32) == BWFM_DMP_DESC_ADDRESS)
+        wraptype = BWFM_DMP_SLAVE_TYPE_SWRAP;
+    else
+        return 1;
+
+    do
+    {
+        uint8_t sztype;
+
+        do
+        {
+            val = bwfm_read_4(BWFMBase, *erom);
+            type = val & BWFM_DMP_DESC_MASK;
+            if (type == BWFM_DMP_DESC_COMPONENT)
+                return 0;
+            if (type == BWFM_DMP_DESC_EOT)
+                return 1;
+            *erom += 4;
+        }
+        while ((type & ~BWFM_DMP_DESC_ADDRSIZE_GT32) != BWFM_DMP_DESC_ADDRESS);
+
+        if (type & BWFM_DMP_DESC_ADDRSIZE_GT32)
+            *erom += 4;
+
+        sztype = (val & BWFM_DMP_SLAVE_SIZE_TYPE) >> BWFM_DMP_SLAVE_SIZE_TYPE_S;
+        if (sztype == BWFM_DMP_SLAVE_SIZE_DESC)
+        {
+            uint32_t v2 = bwfm_read_4(BWFMBase, *erom);
+            if ((v2 & BWFM_DMP_DESC_MASK) & BWFM_DMP_DESC_ADDRSIZE_GT32)
+                *erom += 8;
+            else
+                *erom += 4;
+        }
+        if (sztype != BWFM_DMP_SLAVE_SIZE_4K && sztype != BWFM_DMP_SLAVE_SIZE_8K)
+            continue;
+
+        stype = (val & BWFM_DMP_SLAVE_TYPE) >> BWFM_DMP_SLAVE_TYPE_S;
+        if (*base == 0 && stype == BWFM_DMP_SLAVE_TYPE_SLAVE)
+            *base = val & BWFM_DMP_SLAVE_ADDR_BASE;
+        if (*wrap == 0 && stype == wraptype)
+            *wrap = val & BWFM_DMP_SLAVE_ADDR_BASE;
+    }
+    while (*base == 0 || *wrap == 0);
+
+    return 0;
+}
+
+static void bwfm_erom_scan(struct BWFMBase *BWFMBase)
+{
+    uint32_t erom, val, base, wrap;
+    uint8_t type = 0, nmw, nsw, rev;
+    uint16_t id;
+
+    BWFMBase->bwfm_ncores = 0;
+
+    erom = bwfm_read_4(BWFMBase, BWFM_CHIP_BASE + BWFM_CHIP_REG_EROMPTR);
+    while (type != BWFM_DMP_DESC_EOT)
+    {
+        val = bwfm_read_4(BWFMBase, erom);
+        type = val & BWFM_DMP_DESC_MASK;
+        erom += 4;
+
+        if (type != BWFM_DMP_DESC_COMPONENT)
+            continue;
+
+        id = (val & BWFM_DMP_COMP_PARTNUM) >> BWFM_DMP_COMP_PARTNUM_S;
+
+        val = bwfm_read_4(BWFMBase, erom);
+        type = val & BWFM_DMP_DESC_MASK;
+        erom += 4;
+        if (type != BWFM_DMP_DESC_COMPONENT)
+        {
+            D(bug("[bwfm] EROM: not a component descriptor\n"));
+            return;
+        }
+
+        nmw = (val & BWFM_DMP_COMP_NUM_MWRAP) >> BWFM_DMP_COMP_NUM_MWRAP_S;
+        nsw = (val & BWFM_DMP_COMP_NUM_SWRAP) >> BWFM_DMP_COMP_NUM_SWRAP_S;
+        rev = (val & BWFM_DMP_COMP_REVISION) >> BWFM_DMP_COMP_REVISION_S;
+
+        if (nmw + nsw == 0 && id != BWFM_AGENT_CORE_PMU && id != BWFM_AGENT_CORE_GCI)
+            continue;
+
+        if (bwfm_dmp_get_regaddr(BWFMBase, &erom, &base, &wrap))
+            continue;
+
+        if (BWFMBase->bwfm_ncores >= BWFM_MAX_CORES)
+        {
+            D(bug("[bwfm] EROM: core table full\n"));
+            return;
+        }
+        BWFMBase->bwfm_cores[BWFMBase->bwfm_ncores].co_id = id;
+        BWFMBase->bwfm_cores[BWFMBase->bwfm_ncores].co_rev = rev;
+        BWFMBase->bwfm_cores[BWFMBase->bwfm_ncores].co_base = base;
+        BWFMBase->bwfm_cores[BWFMBase->bwfm_ncores].co_wrapbase = wrap;
+        BWFMBase->bwfm_ncores++;
+    }
+}
+
+/* Put the CPU/802.11/memory cores into a known halted (passive) state. */
+static void bwfm_set_passive(struct BWFMBase *BWFMBase)
+{
+    struct bwfm_core *core;
+
+    if ((core = bwfm_get_core(BWFMBase, BWFM_AGENT_CORE_ARM_CR4)) != NULL)
+    {
+        uint32_t val = bwfm_read_4(BWFMBase, core->co_wrapbase + BWFM_AGENT_IOCTL);
+        int i = 0;
+
+        bwfm_ai_reset(BWFMBase, core, val & BWFM_AGENT_IOCTL_ARMCR4_CPUHALT,
+                      BWFM_AGENT_IOCTL_ARMCR4_CPUHALT, BWFM_AGENT_IOCTL_ARMCR4_CPUHALT);
+        while ((core = bwfm_get_core_idx(BWFMBase, BWFM_AGENT_CORE_80211, i++)))
+            bwfm_ai_disable(BWFMBase, core,
+                            BWFM_AGENT_D11_IOCTL_PHYRESET | BWFM_AGENT_D11_IOCTL_PHYCLOCKEN,
+                            BWFM_AGENT_D11_IOCTL_PHYCLOCKEN);
+        return;
+    }
+
+    if ((core = bwfm_get_core(BWFMBase, BWFM_AGENT_CORE_ARM_CM3)) != NULL)
+    {
+        bwfm_ai_disable(BWFMBase, core, 0, 0);
+        core = bwfm_get_core(BWFMBase, BWFM_AGENT_CORE_80211);
+        bwfm_ai_reset(BWFMBase, core,
+                      BWFM_AGENT_D11_IOCTL_PHYRESET | BWFM_AGENT_D11_IOCTL_PHYCLOCKEN,
+                      BWFM_AGENT_D11_IOCTL_PHYCLOCKEN, BWFM_AGENT_D11_IOCTL_PHYCLOCKEN);
+        core = bwfm_get_core(BWFMBase, BWFM_AGENT_INTERNAL_MEM);
+        bwfm_ai_reset(BWFMBase, core, 0, 0, 0);
+
+        if (BWFMBase->bwfm_chip == BRCM_CC_43430_CHIP_ID)
+        {
+            bwfm_write_4(BWFMBase, core->co_base + BWFM_SOCRAM_BANKIDX, 3);
+            bwfm_write_4(BWFMBase, core->co_base + BWFM_SOCRAM_BANKPDA, 0);
+        }
+        return;
+    }
+}
+
+static void bwfm_socram_ramsize(struct BWFMBase *BWFMBase, struct bwfm_core *core)
+{
+    uint32_t coreinfo, nb, lss, banksize, bankinfo;
+    uint32_t ramsize = 0, srsize = 0;
+    int i;
+
+    if (!bwfm_ai_isup(BWFMBase, core))
+        bwfm_ai_reset(BWFMBase, core, 0, 0, 0);
+
+    coreinfo = bwfm_read_4(BWFMBase, core->co_base + BWFM_SOCRAM_COREINFO);
+    nb = (coreinfo & BWFM_SOCRAM_COREINFO_SRNB_MASK) >> BWFM_SOCRAM_COREINFO_SRNB_SHIFT;
+
+    if (core->co_rev <= 7 || core->co_rev == 12)
+    {
+        banksize = coreinfo & BWFM_SOCRAM_COREINFO_SRBSZ_MASK;
+        lss = (coreinfo & BWFM_SOCRAM_COREINFO_LSS_MASK) >> BWFM_SOCRAM_COREINFO_LSS_SHIFT;
+        if (lss != 0)
+            nb--;
+        ramsize = nb * (1 << (banksize + BWFM_SOCRAM_COREINFO_SRBSZ_BASE));
+        if (lss != 0)
+            ramsize += (1 << ((lss - 1) + BWFM_SOCRAM_COREINFO_SRBSZ_BASE));
+    }
+    else
+    {
+        for (i = 0; i < nb; i++)
+        {
+            bwfm_write_4(BWFMBase, core->co_base + BWFM_SOCRAM_BANKIDX,
+                         (BWFM_SOCRAM_BANKIDX_MEMTYPE_RAM << BWFM_SOCRAM_BANKIDX_MEMTYPE_SHIFT) | i);
+            bankinfo = bwfm_read_4(BWFMBase, core->co_base + BWFM_SOCRAM_BANKINFO);
+            banksize = ((bankinfo & BWFM_SOCRAM_BANKINFO_SZMASK) + 1) * BWFM_SOCRAM_BANKINFO_SZBASE;
+            ramsize += banksize;
+            if (bankinfo & BWFM_SOCRAM_BANKINFO_RETNTRAM_MASK)
+                srsize += banksize;
+        }
+    }
+
+    if (BWFMBase->bwfm_chip == BRCM_CC_43430_CHIP_ID)
+        srsize = 64 * 1024;
+
+    BWFMBase->bwfm_ramsize = ramsize;
+    BWFMBase->bwfm_srsize = srsize;
+}
+
+static void bwfm_tcm_ramsize(struct BWFMBase *BWFMBase, struct bwfm_core *core)
+{
+    uint32_t cap, nab, nbb, totb, bxinfo, blksize, ramsize = 0;
+    int i;
+
+    cap = bwfm_read_4(BWFMBase, core->co_base + BWFM_ARMCR4_CAP);
+    nab = (cap & BWFM_ARMCR4_CAP_TCBANB_MASK) >> BWFM_ARMCR4_CAP_TCBANB_SHIFT;
+    nbb = (cap & BWFM_ARMCR4_CAP_TCBBNB_MASK) >> BWFM_ARMCR4_CAP_TCBBNB_SHIFT;
+    totb = nab + nbb;
+
+    for (i = 0; i < totb; i++)
+    {
+        bwfm_write_4(BWFMBase, core->co_base + BWFM_ARMCR4_BANKIDX, i);
+        bxinfo = bwfm_read_4(BWFMBase, core->co_base + BWFM_ARMCR4_BANKINFO);
+        blksize = (bxinfo & BWFM_ARMCR4_BANKINFO_BLK_1K_MASK) ? 1024 : 8192;
+        ramsize += ((bxinfo & BWFM_ARMCR4_BANKINFO_BSZ_MASK) + 1) * blksize;
+    }
+
+    BWFMBase->bwfm_ramsize = ramsize;
+}
+
+static void bwfm_tcm_rambase(struct BWFMBase *BWFMBase)
+{
+    switch (BWFMBase->bwfm_chip)
+    {
+    case BRCM_CC_4345_CHIP_ID:          /* Pi 3B+ / Pi 4 (BCM43455) */
+        BWFMBase->bwfm_rambase = 0x198000;
+        break;
+    case BRCM_CC_4339_CHIP_ID:
+        BWFMBase->bwfm_rambase = 0x180000;
+        break;
+    default:
+        D(bug("[bwfm] unknown TCM rambase for chip %x\n", BWFMBase->bwfm_chip));
+        break;
+    }
+}
+
+/* ----------------------------------------------------------------------- */
+/* Chip identification                                                     */
+
+static int bwfm_do_attach(struct BWFMBase *BWFMBase)
+{
+    uint32_t val;
+    int type;
+
+    BWFMBase->bwfm_attached = FALSE;
+    BWFMBase->bwfm_bar0 = ~0u;          /* force first backplane write */
+
+    if (!SDIOBase)
+        return FALSE;
+
+    /* Drive the lazy SDIO bring-up: the first SDIOProbe() powers the WiFi chip
+     * and runs CMD5/CMD3/CMD7; later calls return the cached result (it is
+     * idempotent on sdio_Present), so this is safe to call on every attach. */
+    if (!SDIOProbe())
+    {
+        D(bug("[bwfm] no SDIO device present\n"));
+        return FALSE;
+    }
+
+    /* Block sizes: F1 (backplane) 64, F2 (data) 512; enable F1 */
+    SDIOSetBlockSize(1, 64);
+    SDIOSetBlockSize(2, 512);
+    if (SDIOEnableFunction(1))
+    {
+        D(bug("[bwfm] cannot enable function 1\n"));
+        return FALSE;
+    }
+
+    if (bwfm_buscore_prepare(BWFMBase))
+        return FALSE;
+
+    val = bwfm_read_4(BWFMBase, BWFM_CHIP_BASE + BWFM_CHIP_REG_CHIPID);
+    BWFMBase->bwfm_chip = BWFM_CHIP_CHIPID_ID(val);
+    BWFMBase->bwfm_chiprev = BWFM_CHIP_CHIPID_REV(val);
+    type = BWFM_CHIP_CHIPID_TYPE(val);
+
+    /* Print like OpenBSD: decimal for "43xxx" parts, hex for "0x4xxx" parts */
+    if (BWFMBase->bwfm_chip > 0xa000 || BWFMBase->bwfm_chip < 0x4000)
+        D(bug("[bwfm] CHIPID 0x%08x -> BCM%u rev %d (type %d)\n",
+              val, BWFMBase->bwfm_chip, BWFMBase->bwfm_chiprev, type));
+    else
+        D(bug("[bwfm] CHIPID 0x%08x -> BCM%x rev %d (type %d)\n",
+              val, BWFMBase->bwfm_chip, BWFMBase->bwfm_chiprev, type));
+
+    if (type != BWFM_CHIP_CHIPID_TYPE_SOCI_AI)
+    {
+        D(bug("[bwfm] unsupported SoC interconnect type %d\n", type));
+        return FALSE;
+    }
+
+    /* Enumerate the silicon-backplane cores from the EROM */
+    bwfm_erom_scan(BWFMBase);
+    {
+        int i, cpu_found = 0, need_socram = 0, has_socram = 0;
+        int cc_found = 0, d11_found = 0, sdiodev_found = 0;
+
+        for (i = 0; i < BWFMBase->bwfm_ncores; i++)
+        {
+            struct bwfm_core *core = &BWFMBase->bwfm_cores[i];
+
+            D(bug("[bwfm]   core 0x%03x rev %d base 0x%08x wrap 0x%08x\n",
+                  core->co_id, core->co_rev, core->co_base, core->co_wrapbase));
+
+            switch (core->co_id)
+            {
+            case BWFM_AGENT_CORE_ARM_CM3:
+                need_socram = 1;
+                /* fallthrough */
+            case BWFM_AGENT_CORE_ARM_CR4:
+            case BWFM_AGENT_CORE_ARM_CA7:
+                cpu_found = 1;
+                break;
+            case BWFM_AGENT_INTERNAL_MEM:
+                has_socram = 1;
+                break;
+            case BWFM_AGENT_CORE_CHIPCOMMON:
+                cc_found = 1;
+                break;
+            case BWFM_AGENT_CORE_80211:
+                d11_found = 1;
+                break;
+            case BWFM_AGENT_CORE_SDIO_DEV:
+                sdiodev_found = 1;
+                break;
+            }
+        }
+
+        if (!cpu_found)
+        {
+            D(bug("[bwfm] no CPU core detected\n"));
+            return FALSE;
+        }
+        if (need_socram && !has_socram)
+        {
+            D(bug("[bwfm] RAM core not provided\n"));
+            return FALSE;
+        }
+        /* ChipCommon, the 802.11 MAC and the SDIO device core are dereferenced
+         * unconditionally below (bwfm_set_passive / bwfm_get_pmu / bwfm_dev_* /
+         * bwfm_frame_rw); a malformed EROM that omits any of them would fault,
+         * so bail here instead. The datapath only runs once bwfm_attached, so
+         * this one check makes every later bwfm_get_core() of these safe. */
+        if (!cc_found || !d11_found || !sdiodev_found)
+        {
+            D(bug("[bwfm] required core missing (cc %d d11 %d sdiodev %d)\n",
+                  cc_found, d11_found, sdiodev_found));
+            return FALSE;
+        }
+    }
+
+    /* Halt the cores, then size the chip RAM */
+    bwfm_set_passive(BWFMBase);
+
+    {
+        struct bwfm_core *core, *cc, *pmu;
+
+        if ((core = bwfm_get_core(BWFMBase, BWFM_AGENT_CORE_ARM_CR4)) != NULL)
+        {
+            bwfm_tcm_ramsize(BWFMBase, core);
+            bwfm_tcm_rambase(BWFMBase);
+        }
+        else if ((core = bwfm_get_core(BWFMBase, BWFM_AGENT_INTERNAL_MEM)) != NULL)
+        {
+            bwfm_socram_ramsize(BWFMBase, core);
+        }
+
+        cc = bwfm_get_core(BWFMBase, BWFM_AGENT_CORE_CHIPCOMMON);
+        BWFMBase->bwfm_cc_caps = bwfm_read_4(BWFMBase,
+            cc->co_base + BWFM_CHIP_REG_CAPABILITIES);
+        BWFMBase->bwfm_cc_caps_ext = bwfm_read_4(BWFMBase,
+            cc->co_base + BWFM_CHIP_REG_CAPABILITIES_EXT);
+
+        pmu = bwfm_get_pmu(BWFMBase);
+        if (BWFMBase->bwfm_cc_caps & BWFM_CHIP_REG_CAPABILITIES_PMU)
+            BWFMBase->bwfm_pmurev = bwfm_read_4(BWFMBase,
+                pmu->co_base + BWFM_CHIP_REG_PMUCAPABILITIES) &
+                BWFM_CHIP_REG_PMUCAPABILITIES_REV_MASK;
+    }
+
+    D(bug("[bwfm] %d cores, RAM base 0x%06x size %d KB (sr %d KB), PMU rev %d\n",
+          BWFMBase->bwfm_ncores, BWFMBase->bwfm_rambase,
+          BWFMBase->bwfm_ramsize / 1024, BWFMBase->bwfm_srsize / 1024,
+          BWFMBase->bwfm_pmurev));
+
+    /*
+     * Post-enumeration chip setup (from bwfm_sdio_attach):
+     *  - KSO ("keep SDIO on") for SDIO_DEV core rev >= 12 (BCM43455/3B+/4):
+     *    without it the chip may drop the SDIO clock and go silent;
+     *  - assert the WLAN reset bit in the Broadcom CARDCTRL CCCR register;
+     *  - trigger a PMU resource reload.
+     */
+    {
+        struct bwfm_core *sdiodev = bwfm_get_core(BWFMBase, BWFM_AGENT_CORE_SDIO_DEV);
+        struct bwfm_core *pmu = bwfm_get_pmu(BWFMBase);
+
+        if (sdiodev && sdiodev->co_rev >= 12)
+        {
+            uint8_t cs = bwfm_read_1(BWFM_SDIO_FUNC1_SLEEPCSR);
+            if (!(cs & BWFM_SDIO_FUNC1_SLEEPCSR_KSO))
+                bwfm_write_1(BWFM_SDIO_FUNC1_SLEEPCSR,
+                             cs | BWFM_SDIO_FUNC1_SLEEPCSR_KSO);
+        }
+
+        bwfm_write_1(BWFM_SDIO_CCCR_CARDCTRL,
+                     bwfm_read_1(BWFM_SDIO_CCCR_CARDCTRL) |
+                     BWFM_SDIO_CCCR_CARDCTRL_WLANRESET);
+
+        if (pmu)
+            bwfm_write_4(BWFMBase, pmu->co_base + BWFM_CHIP_REG_PMUCONTROL,
+                         bwfm_read_4(BWFMBase, pmu->co_base + BWFM_CHIP_REG_PMUCONTROL) |
+                         (BWFM_CHIP_REG_PMUCONTROL_RES_RELOAD <<
+                          BWFM_CHIP_REG_PMUCONTROL_RES_SHIFT));
+    }
+
+    BWFMBase->bwfm_attached = TRUE;
+    return TRUE;
+}
+
+/* ----------------------------------------------------------------------- */
+/* Firmware download (ported from if_bwfm_sdio.c bwfm_sdio_load_microcode)  */
+
+/* Write a buffer into chip RAM through the backplane, paging at 32 KB
+ * windows and chunking each window into <=512-byte CMD53 byte-mode writes
+ * (sdio.resource's extended transfer limit). Lengths are rounded up to 4. */
+static int bwfm_ram_write(struct BWFMBase *BWFMBase, uint32_t ramaddr,
+                          const UBYTE *data, ULONG len)
+{
+    UBYTE bounce[512];
+    ULONG off = 0;
+
+    while (len > 0)
+    {
+        uint32_t sbaddr = ramaddr + off;
+        uint32_t sdoff = sbaddr & BWFM_SDIO_SB_OFT_ADDR_MASK;
+        ULONG winleft = BWFM_SDIO_SB_OFT_ADDR_PAGE - sdoff;
+        ULONG n = (len < winleft) ? len : winleft;
+        ULONG done = 0;
+
+        bwfm_backplane(BWFMBase, sbaddr & ~BWFM_SDIO_SB_OFT_ADDR_MASK);
+
+        while (done < n)
+        {
+            ULONG chunk = (n - done < 512) ? (n - done) : 512;
+            /* Round up to the func1 block size (64) so sdio.resource uses
+             * block-mode CMD53 (a large byte-mode access returns OUT_OF_RANGE).
+             * The few pad bytes land in chip RAM beyond the image - harmless. */
+            ULONG wlen = (chunk + 63) & ~63UL;
+            const UBYTE *src = data + off + done;
+
+            if (wlen != chunk)
+            {
+                CopyMem((APTR)src, bounce, chunk);
+                bwfm_zero(bounce + chunk, wlen - chunk);
+                src = bounce;
+            }
+
+            if (SDIOWriteExt(1, (sdoff + done) | BWFM_SDIO_SB_ACCESS_2_4B_FLAG,
+                             (APTR)src, wlen, 1))
+                return -1;
+            done += chunk;
+        }
+
+        off += n;
+        len -= n;
+    }
+    return 0;
+}
+
+/*
+ * Request and wait for the ALP clock. Firmware is uploaded on ALP - the
+ * HT/PLL clock is not available until the firmware configures the PMU, so
+ * waiting for HT here would just time out. HT is forced only after the
+ * firmware signals ready (see BWFMStartFirmware). Matches OpenBSD/brcmfmac.
+ */
+static int bwfm_alpclk_on(struct BWFMBase *BWFMBase)
+{
+    uint8_t clk = 0;
+    int i;
+
+    bwfm_write_1(BWFM_SDIO_FUNC1_CHIPCLKCSR, BWFM_SDIO_FUNC1_CHIPCLKCSR_ALP_AVAIL_REQ);
+    for (i = 0; i < 5000; i++)
+    {
+        clk = bwfm_read_1(BWFM_SDIO_FUNC1_CHIPCLKCSR);
+        if (clk & (BWFM_SDIO_FUNC1_CHIPCLKCSR_ALP_AVAIL |
+                   BWFM_SDIO_FUNC1_CHIPCLKCSR_HT_AVAIL))
+            return 0;
+        bwfm_udelay(BWFMBase, 1000);
+    }
+    D(bug("[bwfm] ALP clock timeout (csr 0x%02x)\n", clk));
+    return -1;
+}
+
+/* SDPCM (SDIO_DEV core) register access */
+static uint32_t bwfm_dev_read(struct BWFMBase *BWFMBase, uint32_t reg)
+{
+    struct bwfm_core *core = bwfm_get_core(BWFMBase, BWFM_AGENT_CORE_SDIO_DEV);
+    return bwfm_read_4(BWFMBase, core->co_base + reg);
+}
+
+static void bwfm_dev_write(struct BWFMBase *BWFMBase, uint32_t reg, uint32_t val)
+{
+    struct bwfm_core *core = bwfm_get_core(BWFMBase, BWFM_AGENT_CORE_SDIO_DEV);
+    bwfm_write_4(BWFMBase, core->co_base + reg, val);
+}
+
+static void bwfm_buscore_activate(struct BWFMBase *BWFMBase, uint32_t rstvec)
+{
+    bwfm_dev_write(BWFMBase, SDPCMD_INTSTATUS, 0xFFFFFFFF);
+    if (rstvec)
+        bwfm_write_4(BWFMBase, 0, rstvec);      /* exactly 4 bytes, like OpenBSD;
+                                                 * bwfm_ram_write would block-mode
+                                                 * pad this to 64 and clobber RAM
+                                                 * at backplane addr 4..63 */
+}
+
+/* Kick the CPU core out of reset to run the just-loaded firmware. */
+static int bwfm_set_active(struct BWFMBase *BWFMBase, uint32_t rstvec)
+{
+    struct bwfm_core *core, *mem;
+
+    if ((core = bwfm_get_core(BWFMBase, BWFM_AGENT_CORE_ARM_CR4)) != NULL)
+    {
+        bwfm_buscore_activate(BWFMBase, rstvec);
+        bwfm_ai_reset(BWFMBase, core, BWFM_AGENT_IOCTL_ARMCR4_CPUHALT, 0, 0);
+        return 0;
+    }
+
+    if ((core = bwfm_get_core(BWFMBase, BWFM_AGENT_CORE_ARM_CM3)) != NULL)
+    {
+        mem = bwfm_get_core(BWFMBase, BWFM_AGENT_INTERNAL_MEM);
+        if (!bwfm_ai_isup(BWFMBase, mem))
+            return -1;
+        bwfm_buscore_activate(BWFMBase, 0);
+        bwfm_ai_reset(BWFMBase, core, 0, 0, 0);
+        return 0;
+    }
+
+    return -1;
+}
+
+/* ----------------------------------------------------------------------- */
+/* SDPCM control channel + BCDC commands                                    */
+
+/* Read/write one SDPCM frame through function 2 at the ChipCommon window.
+ * Control frames are small, so a single (<=512 byte) CMD53 suffices. */
+static int bwfm_frame_rw(struct BWFMBase *BWFMBase, APTR buf, ULONG len, int write)
+{
+    struct bwfm_core *cc = bwfm_get_core(BWFMBase, BWFM_AGENT_CORE_CHIPCOMMON);
+    uint32_t addr = cc->co_base;
+
+    bwfm_backplane(BWFMBase, addr & ~BWFM_SDIO_SB_OFT_ADDR_MASK);
+    addr = (addr & BWFM_SDIO_SB_OFT_ADDR_MASK) | BWFM_SDIO_SB_ACCESS_2_4B_FLAG;
+
+    /* Function 2 is the frame FIFO: writes increment the address, but reads
+     * use a FIXED address (incr=0) so successive header/body reads pull from
+     * the FIFO - matching OpenBSD's read_multi_1 vs write_region_1 split. */
+    if (write)
+        return SDIOWriteExt(2, addr, buf, len, 1);
+    return SDIOReadExt(2, addr, buf, len, 0);
+}
+
+/* Forward decls: bwfm_dcmd salvages frames that arrive while it polls (below). */
+static int bwfm_frame_eth(UBYTE *frame, ULONG flen, ULONG *ehoff, ULONG *ethlen);
+static void bwfm_glom_salvage(struct BWFMBase *BWFMBase, UBYTE *desc, ULONG flen);
+static void bwfm_glom_append(struct BWFMBase *BWFMBase, int chan,
+                             const UBYTE *eth, ULONG ethlen);
+
+/*
+ * Push one already-extracted 802.3 event frame into the hand-off ring for an
+ * in-progress join/scan. Caller holds bwfm_Sem. Factored out of BWFMEventPost
+ * so bwfm_dcmd can reuse it from its event-salvage path.
+ */
+static void bwfm_event_push(struct BWFMBase *BWFMBase, const UBYTE *ev, ULONG len)
+{
+    struct bwfm_evslot *s;
+
+    if (!BWFMBase->bwfm_evlisten || ev == NULL || len == 0)
+        return;
+    if (len > BWFM_EVSLOT_SIZE)
+        len = BWFM_EVSLOT_SIZE;
+    if ((UWORD)(BWFMBase->bwfm_evhead - BWFMBase->bwfm_evtail) >= BWFM_EVRING_SLOTS)
+        BWFMBase->bwfm_evtail++;             /* ring full: drop the oldest */
+    s = &BWFMBase->bwfm_evring[BWFMBase->bwfm_evhead % BWFM_EVRING_SLOTS];
+    s->ev_len = (UWORD)len;
+    CopyMem((APTR)ev, s->ev_data, len);
+    BWFMBase->bwfm_evhead++;
+}
+
+/*
+ * Issue one BCDC command over the SDPCM control channel and wait for the
+ * matching response (synchronous, polled - no glomming/flow-control, which
+ * is fine for control transactions). For GET, the response payload is
+ * copied back into data. Returns 0 on success, firmware status on error,
+ * -1 on transport failure/timeout.
+ */
+static int bwfm_dcmd(struct BWFMBase *BWFMBase, int cmd, int set, void *data, ULONG dlen)
+{
+    UBYTE frame[512];
+    struct bwfm_sdio_hwhdr *hw = (struct bwfm_sdio_hwhdr *)frame;
+    struct bwfm_sdio_swhdr *sw = (struct bwfm_sdio_swhdr *)(frame + 4);
+    struct bwfm_bcdc_dcmd_hdr *dc = (struct bwfm_bcdc_dcmd_hdr *)(frame + 12);
+    ULONG total, padded;
+    int reqid = (++BWFMBase->bwfm_reqid) & 0xffff;
+    int tries;
+
+    if (dlen > sizeof(frame) - (12 + 16))
+        return -1;
+
+    dc->cmd = AROS_LONG2LE(cmd);
+    dc->len = AROS_LONG2LE(dlen);
+    dc->flags = AROS_LONG2LE((set ? BWFM_BCDC_DCMD_SET : 0) | BWFM_BCDC_DCMD_ID_SET(reqid));
+    dc->status = 0;
+    if (dlen)
+        CopyMem(data, frame + 12 + 16, dlen);
+
+    total = 12 + 16 + dlen;
+    hw->frmlen = AROS_WORD2LE(total);
+    hw->cksum = AROS_WORD2LE((UWORD)~total);
+    sw->seqnr = BWFMBase->bwfm_txseq++;
+    sw->chanflag = BWFM_SDIO_SWHDR_CHANNEL_CONTROL;
+    sw->nextlen = 0;
+    sw->dataoff = 12;
+    sw->flowctl = 0;
+    sw->maxseqnr = 0;
+    sw->res0 = 0;
+
+    padded = (total + 3) & ~3UL;
+    bwfm_zero(frame + total, padded - total);
+
+    if (bwfm_frame_rw(BWFMBase, frame, padded, 1))
+        return -1;
+
+    for (tries = 0; tries < 1000; tries++)
+    {
+        UWORD frmlen, cksum;
+        ULONG flen, rlen;
+
+        if (bwfm_frame_rw(BWFMBase, frame, 12, 0))
+        {
+            bwfm_udelay(BWFMBase, 1000);
+            continue;
+        }
+        frmlen = AROS_LE2WORD(hw->frmlen);
+        cksum = AROS_LE2WORD(hw->cksum);
+        if (frmlen == 0 && cksum == 0)
+        {
+            bwfm_udelay(BWFMBase, 1000);
+            continue;
+        }
+        if ((UWORD)(frmlen ^ cksum) != 0xffff || frmlen < 12)
+            return -1;
+
+        flen = frmlen - 12;
+        rlen = (flen + 3) & ~3UL;
+        if (12 + rlen > sizeof(frame))
+            return -1;          /* oversized frame - cannot buffer (rare) */
+        if (flen && bwfm_frame_rw(BWFMBase, frame + 12, rlen, 0))
+            return -1;
+
+        BWFMBase->bwfm_txmax = sw->maxseqnr;    /* update the tx-credit window */
+
+        if ((sw->chanflag & BWFM_SDIO_SWHDR_CHANNEL_MASK) == BWFM_SDIO_SWHDR_CHANNEL_CONTROL)
+        {
+            struct bwfm_bcdc_dcmd_hdr *rdc;
+            ULONG rflags;
+
+            /* Validate dataoff before dereferencing - a malformed frame
+             * must not push the BCDC header past the bounce buffer. */
+            if (sw->dataoff < 12 || (ULONG)sw->dataoff + sizeof(*rdc) > 12 + flen)
+                return -1;
+
+            rdc = (struct bwfm_bcdc_dcmd_hdr *)(frame + sw->dataoff);
+            rflags = AROS_LE2LONG(rdc->flags);
+
+            if (BWFM_BCDC_DCMD_ID_GET(rflags) != (ULONG)reqid)
+                continue;       /* not our response */
+            if (rflags & BWFM_BCDC_DCMD_ERROR)
+                return (int)AROS_LE2LONG(rdc->status);
+            if (data && dlen)
+            {
+                ULONG rdlen = AROS_LE2LONG(rdc->len);
+                ULONG avail = (12 + flen) - ((ULONG)sw->dataoff + 16);
+                ULONG n = (rdlen < dlen) ? rdlen : dlen;
+                if (n > avail)          /* never read past the received payload */
+                    n = avail;
+                CopyMem((UBYTE *)rdc + 16, data, n);
+            }
+            return 0;
+        }
+        /* Non-control frame arriving while we poll for our control reply. */
+        {
+            int ch = sw->chanflag & BWFM_SDIO_SWHDR_CHANNEL_MASK;
+            ULONG ehoff, ethlen;
+
+            if (ch == BWFM_SDIO_SWHDR_CHANNEL_GLOM)
+            {
+                /* A GLOM superframe leaves its sub-frames sitting in F2 after
+                 * the descriptor we just read - they MUST be deaggregated even
+                 * if no one is listening, or every later read desyncs. Salvage
+                 * any events to the ring (no-op when not listening), drop data. */
+                bwfm_glom_salvage(BWFMBase, frame, flen);
+            }
+            else if ((ch == BWFM_SDIO_SWHDR_CHANNEL_EVENT ||
+                      ch == BWFM_SDIO_SWHDR_CHANNEL_DATA) &&
+                     bwfm_frame_eth(frame, flen, &ehoff, &ethlen))
+            {
+                /* Don't lose what lands while we poll: a firmware event
+                 * (LINK_CTL) goes to the ring so the join/scan still sees it -
+                 * a swallowed E_LINK/E_SET_SSID here made join flaky - and a
+                 * data frame is queued for the pump, because with the host-side
+                 * handshake that is where EAPOL arrives. The frame was already
+                 * read in full, so F2 is not left desynced either way. */
+                struct bwfm_event *e = (struct bwfm_event *)(frame + ehoff);
+
+                if (ethlen >= sizeof(*e) &&
+                    AROS_BE2WORD(e->ehdr.ether_type) == BWFM_ETHERTYPE_LINK_CTL)
+                    bwfm_event_push(BWFMBase, frame + ehoff, ethlen);
+                else
+                    bwfm_glom_append(BWFMBase, ch, frame + ehoff, ethlen);
+            }
+            if (BWFMBase->bwfm_evlisten)
+                D(bug("[bwfm] dcmd salvaged chan %d frame (len %u) while polling reply\n",
+                      ch, (unsigned)flen));
+        }
+    }
+    return -1;
+}
+
+/* Set a named firmware variable (iovar). Caller holds bwfm_Sem. */
+static int bwfm_iovar_set(struct BWFMBase *BWFMBase, const char *name,
+                          const void *data, ULONG len)
+{
+    UBYTE tmp[300];
+    ULONG nlen = 0;
+
+    while (name[nlen])
+        nlen++;
+    if (nlen + 1 + len > sizeof(tmp))
+        return -1;
+
+    CopyMem((APTR)name, tmp, nlen + 1);
+    if (len)
+        CopyMem((APTR)data, tmp + nlen + 1, len);
+
+    return bwfm_dcmd(BWFMBase, BWFM_C_SET_VAR, 1, tmp, nlen + 1 + len);
+}
+
+/* Get a named firmware variable (iovar). Caller holds bwfm_Sem. */
+static int bwfm_iovar_get(struct BWFMBase *BWFMBase, const char *name,
+                          void *data, ULONG len)
+{
+    UBYTE tmp[300];
+    ULONG nlen = 0;
+    int err;
+
+    while (name[nlen])
+        nlen++;
+    if (nlen + 1 + len > sizeof(tmp))
+        return -1;
+
+    CopyMem((APTR)name, tmp, nlen + 1);
+    if (len)
+        bwfm_zero(tmp + nlen + 1, len);
+
+    err = bwfm_dcmd(BWFMBase, BWFM_C_GET_VAR, 0, tmp, nlen + 1 + len);
+    if (!err && len)
+        CopyMem(tmp, data, len);
+    return err;
+}
+
+/* Issue an integer firmware ioctl (the payload is a single little-endian u32). */
+static int bwfm_set_int(struct BWFMBase *BWFMBase, int cmd, uint32_t val)
+{
+    uint32_t le = AROS_LONG2LE(val);
+
+    return bwfm_dcmd(BWFMBase, cmd, 1, &le, sizeof(le));
+}
+
+/* Set a named firmware variable to a little-endian u32. */
+static int bwfm_iovar_set_int(struct BWFMBase *BWFMBase, const char *name, uint32_t val)
+{
+    uint32_t le = AROS_LONG2LE(val);
+
+    return bwfm_iovar_set(BWFMBase, name, &le, sizeof(le));
+}
+
+/*
+ * Read one raw SDPCM frame off the func2 FIFO into `frame` (max framesz bytes).
+ * On success returns 1, sets *flenp to the payload length after the 12-byte
+ * SDPCM hw/sw header and *chanp to the SDPCM channel. Returns 0 if nothing is
+ * pending or the frame is malformed. Caller holds bwfm_Sem.
+ */
+static int bwfm_rx_read(struct BWFMBase *BWFMBase, UBYTE *frame, ULONG framesz,
+                        ULONG *flenp, int *chanp)
+{
+    struct bwfm_sdio_hwhdr *hw = (struct bwfm_sdio_hwhdr *)frame;
+    struct bwfm_sdio_swhdr *sw = (struct bwfm_sdio_swhdr *)(frame + 4);
+    UWORD frmlen, cksum;
+    ULONG flen, rlen;
+
+    if (bwfm_frame_rw(BWFMBase, frame, 12, 0))
+        return 0;
+    frmlen = AROS_LE2WORD(hw->frmlen);
+    cksum = AROS_LE2WORD(hw->cksum);
+    if (frmlen == 0 && cksum == 0)
+        return 0;
+    if ((UWORD)(frmlen ^ cksum) != 0xffff || frmlen < 12)
+        return 0;
+
+    flen = frmlen - 12;
+    rlen = (flen + 3) & ~3UL;
+    if (12 + rlen > framesz)
+        return 0;
+    if (flen && bwfm_frame_rw(BWFMBase, frame + 12, rlen, 0))
+        return 0;
+
+    /* tx-credit window from every frame, header-only credit updates too */
+    BWFMBase->bwfm_txmax = sw->maxseqnr;
+    *flenp = flen;
+    *chanp = sw->chanflag & BWFM_SDIO_SWHDR_CHANNEL_MASK;
+    return 1;
+}
+
+/*
+ * Locate the 802.3 ethernet frame inside an already-read SDPCM EVENT/DATA frame
+ * (`frame` = 12-byte hw/sw header + flen payload). Sets *ehoff (offset within
+ * frame, past the SDPCM headers and the BCDC/BDC data header) and *ethlen.
+ * Returns 1 on a well-formed EVENT/DATA frame, 0 otherwise.
+ */
+static int bwfm_frame_eth(UBYTE *frame, ULONG flen, ULONG *ehoff, ULONG *ethlen)
+{
+    struct bwfm_sdio_swhdr *sw = (struct bwfm_sdio_swhdr *)(frame + 4);
+    struct bwfm_bcdc_data_hdr *bcdc;
+    ULONG off, eo;
+
+    if (sw->dataoff < 12)
+        return 0;
+    off = sw->dataoff;
+    if (off + sizeof(*bcdc) > 12 + flen)
+        return 0;
+    bcdc = (struct bwfm_bcdc_data_hdr *)(frame + off);
+    eo = off + sizeof(*bcdc) + (ULONG)bcdc->data_offset * 4;
+    if (eo > 12 + flen)
+        return 0;
+    *ehoff = eo;
+    *ethlen = (12 + flen) - eo;
+    return 1;
+}
+
+/*
+ * Encode the *info word BWFMRxFrame hands the pump: SDPCM channel in the low
+ * byte, BWFM_RX_EVENT if the 802.3 frame is a firmware event (LINK_CTL
+ * ethertype), and the event type in the high half.
+ */
+static ULONG bwfm_rx_info(UBYTE *eth, ULONG ethlen, int chan)
+{
+    struct bwfm_event *e = (struct bwfm_event *)eth;
+    int is_event = (ethlen >= sizeof(*e) &&
+                    AROS_BE2WORD(e->ehdr.ether_type) == BWFM_ETHERTYPE_LINK_CTL);
+    ULONG etype = is_event ? (AROS_BE2LONG(e->msg.event_type) & 0xffff) : 0;
+    ULONG eflags = is_event ? (AROS_BE2WORD(e->msg.flags) & 1) : 0;
+
+    /* Only the type survives into *info, but status/reason are what tell a
+     * completed handshake from a looping one (E_PSK_SUP 46, E_DEAUTH 5, or an
+     * E_LINK that keeps going down), so log them where they still exist. */
+    D(if (is_event)
+        bug("[bwfm] event %u status %u reason %u flags 0x%04x\n",
+            (unsigned)etype, (unsigned)AROS_BE2LONG(e->msg.status),
+            (unsigned)AROS_BE2LONG(e->msg.reason),
+            (unsigned)AROS_BE2WORD(e->msg.flags)));
+
+    return ((ULONG)chan & 0xff) | (is_event ? BWFM_RX_EVENT : 0) |
+           (eflags ? BWFM_RX_EVENT_LINKUP : 0) | (etype << 16);
+}
+
+/* ----------------------------------------------------------------------- */
+/* GLOM (aggregated RX) deaggregation                                       */
+
+#define BWFM_GLOM_MAXSUB        16
+#define BWFM_GLOM_BUFSZ         (BWFM_GLOM_MAXSUB * 2048)   /* 32 KB: hold a full
+                                * data glom (was 8 KB - too small once rxglom is
+                                * on, dropped sub-frames past ~5 full data frames) */
+
+/* Sub-frames split out of the last GLOM superframe, awaiting delivery. Only the
+ * pump's BWFMRxFrame touches these, serialized by bwfm_Sem. */
+static UBYTE bwfm_glom_buf[BWFM_GLOM_BUFSZ];
+static struct
+{
+    UWORD   ehoff;          /* 802.3 frame offset within bwfm_glom_buf */
+    UWORD   ethlen;
+    UBYTE   chan;
+} bwfm_glom_q[BWFM_GLOM_MAXSUB];
+static int bwfm_glom_n, bwfm_glom_i;
+static ULONG bwfm_glom_used;            /* bytes of bwfm_glom_buf in use */
+
+/*
+ * Queue an already-parsed 802.3 frame for the pump to pick up. Used for data
+ * frames that arrive while a control op (join) holds the bus: the EAPOL
+ * handshake now runs on the host, so dropping those means the supplicant never
+ * sees M1 and the AP retries it forever. Caller holds bwfm_Sem.
+ */
+static void bwfm_glom_append(struct BWFMBase *BWFMBase, int chan,
+                             const UBYTE *eth, ULONG ethlen)
+{
+    if (bwfm_glom_n >= BWFM_GLOM_MAXSUB ||
+        bwfm_glom_used + ethlen > sizeof(bwfm_glom_buf))
+    {
+        D(bug("[bwfm] no room to queue chan %d frame (len %u)\n",
+              chan, (unsigned)ethlen));
+        return;
+    }
+
+    CopyMem((APTR)eth, bwfm_glom_buf + bwfm_glom_used, ethlen);
+    bwfm_glom_q[bwfm_glom_n].ehoff = (UWORD)bwfm_glom_used;
+    bwfm_glom_q[bwfm_glom_n].ethlen = (UWORD)ethlen;
+    bwfm_glom_q[bwfm_glom_n].chan = (UBYTE)chan;
+    bwfm_glom_n++;
+    bwfm_glom_used = (bwfm_glom_used + ethlen + 3) & ~3UL;
+}
+
+/*
+ * Deaggregate a GLOM superframe. `desc` is the just-read GLOM-channel descriptor
+ * frame; right after its 12-byte SDPCM header it carries an array of uint16
+ * sub-frame lengths (flen bytes => nsub = flen/2). The nsub sub-frames follow
+ * back-to-back on F2; the first carries an extra 12-byte superframe header, the
+ * rest are plain SDPCM frames. Each EVENT/DATA sub-frame is parsed to its 802.3
+ * frame and queued in bwfm_glom_q for BWFMRxFrame to return one at a time.
+ *
+ * CRITICAL: every announced sub-frame MUST be read off F2, in order, with its
+ * announced length - even one we cannot buffer or do not want - or the F2 FIFO
+ * desyncs and every later read returns garbage (RX dies; e.g. a bulk transfer
+ * stalls partway). So surplus/oversize sub-frames are drained into a throwaway
+ * and dropped (a dropped frame is recoverable via TCP; a desync is not).
+ * Ported from OpenBSD bwfm_sdio_rx_glom(). Caller holds bwfm_Sem.
+ */
+static void bwfm_rx_glom(struct BWFMBase *BWFMBase, UBYTE *desc, ULONG flen)
+{
+    static UBYTE discard[2048];
+    ULONG nsub = flen / 2, i, off, dropped = 0;
+    int bail = 0;
+
+    /* Only start over once the pump has taken everything: a join can leave
+     * data frames queued here, and a second glom must not wipe them. */
+    if (bwfm_glom_i >= bwfm_glom_n)
+        bwfm_glom_n = bwfm_glom_i = bwfm_glom_used = 0;
+    off = bwfm_glom_used;
+    if (nsub == 0)
+        return;
+
+    if (BWFMBase->bwfm_evlisten)
+        D(bug("[bwfm] glom: %u sub-frame(s)\n", (unsigned)nsub));
+
+    for (i = 0; i < nsub; i++)
+    {
+        UBYTE *sp = desc + 12 + i * 2;          /* byte-wise: avoid an unaligned */
+        ULONG sl = (ULONG)(sp[0] | (sp[1] << 8));    /* 16-bit load (gcc->memcpy) */
+        ULONG rl = (sl + 3) & ~3UL;
+        ULONG subtot, subflen, ehoff, ethlen;
+        struct bwfm_sdio_hwhdr *hw;
+        struct bwfm_sdio_swhdr *sw;
+        UBYTE *sub;
+        UWORD frmlen, cksum;
+        int ch, keep;
+
+        if (rl == 0 || rl > sizeof(discard))    /* nonsense length: cannot resync */
+        {
+            bail = 1;
+            break;
+        }
+
+        /* Keep it in the glom buffer only if it fits alongside what is already
+         * queued AND the queue has room; otherwise drain it off F2 and drop. */
+        keep = (off + rl <= sizeof(bwfm_glom_buf)) && (bwfm_glom_n < BWFM_GLOM_MAXSUB);
+        if (bwfm_frame_rw(BWFMBase, keep ? (bwfm_glom_buf + off) : discard, rl, 0))
+        {
+            bail = 1;
+            break;
+        }
+        if (!keep)
+        {
+            dropped++;
+            continue;
+        }
+
+        sub = bwfm_glom_buf + off;
+        subtot = sl;
+
+        /* The first sub-frame is prefixed with a 12-byte superframe header. */
+        if (i == 0)
+        {
+            sub += 12;
+            subtot -= 12;
+        }
+        if (subtot < 12)
+            continue;
+
+        hw = (struct bwfm_sdio_hwhdr *)sub;
+        sw = (struct bwfm_sdio_swhdr *)(sub + 4);
+        frmlen = AROS_LE2WORD(hw->frmlen);
+        cksum = AROS_LE2WORD(hw->cksum);
+        if ((UWORD)(frmlen ^ cksum) != 0xffff || frmlen < 12)
+        {
+            if (BWFMBase->bwfm_evlisten)
+                D(bug("[bwfm] glom sub %u bad hdr (frmlen %u)\n", (unsigned)i, frmlen));
+            continue;
+        }
+        BWFMBase->bwfm_txmax = sw->maxseqnr;     /* refresh the tx-credit window
+                                                  * from EVERY glommed sub-frame,
+                                                  * not just the descriptor - under a
+                                                  * bulk RX glom the descriptor's
+                                                  * maxseqnr lags and TX stalls at
+                                                  * seq==max (matches OpenBSD) */
+        ch = sw->chanflag & BWFM_SDIO_SWHDR_CHANNEL_MASK;
+        subflen = frmlen - 12;
+        if (BWFMBase->bwfm_evlisten)
+            D(bug("[bwfm] glom sub %u chan %d flen %u\n", (unsigned)i, ch, (unsigned)subflen));
+        if (ch != BWFM_SDIO_SWHDR_CHANNEL_EVENT && ch != BWFM_SDIO_SWHDR_CHANNEL_DATA)
+            continue;
+        if (12 + subflen > subtot)
+            continue;
+        if (!bwfm_frame_eth(sub, subflen, &ehoff, &ethlen))
+            continue;
+
+        bwfm_glom_q[bwfm_glom_n].ehoff = (UWORD)((sub - bwfm_glom_buf) + ehoff);
+        bwfm_glom_q[bwfm_glom_n].ethlen = (UWORD)ethlen;
+        bwfm_glom_q[bwfm_glom_n].chan = (UBYTE)ch;
+        bwfm_glom_n++;
+        off += rl;          /* keep this sub-frame; next reads land after it */
+    }
+
+    /* Rare-path diagnostic (un-gated): a glom we could not fully buffer, or an
+     * F2 read failure mid-superframe, is the prime suspect for a bulk-transfer
+     * stall - surface it. bail => F2 is likely now desynced (read nothing more). */
+    bwfm_glom_used = off;
+    if (bail || dropped)
+        D(bug("[bwfm] glom: %u subs, %d queued, %u dropped%s\n", (unsigned)nsub,
+              bwfm_glom_n, (unsigned)dropped, bail ? ", BAILED (F2 desync risk)" : ""));
+}
+
+/* Pop the next deaggregated glom sub-frame into buf; returns its length (0 if
+ * the queue is empty). Caller holds bwfm_Sem. */
+static int bwfm_glom_pop(UBYTE *buf, ULONG bufsize, uint32_t *info)
+{
+    ULONG ehoff, ethlen;
+    int chan;
+
+    if (bwfm_glom_i >= bwfm_glom_n)
+        return 0;
+    ehoff = bwfm_glom_q[bwfm_glom_i].ehoff;
+    ethlen = bwfm_glom_q[bwfm_glom_i].ethlen;
+    chan = bwfm_glom_q[bwfm_glom_i].chan;
+    bwfm_glom_i++;
+    if (ethlen > bufsize)
+        ethlen = bufsize;
+    CopyMem(bwfm_glom_buf + ehoff, buf, ethlen);
+    if (info)
+        *info = bwfm_rx_info(bwfm_glom_buf + ehoff, ethlen, chan);
+    return (int)ethlen;
+}
+
+/*
+ * Deaggregate a GLOM superframe that landed inside a synchronous bwfm_dcmd
+ * (i.e. while polling for a control reply) and salvage its firmware events to
+ * the hand-off ring. bwfm_rx_glom reads the sub-frames off F2 - the essential
+ * part, so the control read does not desync - then we push any event (LINK_CTL)
+ * sub-frame to the ring (bwfm_event_push is a no-op when nobody is listening).
+ * Data sub-frames are dropped: the datapath is the pump's job, and the unit is
+ * not online during the control ops (join) where this fires. Caller holds
+ * bwfm_Sem. Shares the global glom queue with the pump, which is safe because
+ * the pump blocks on bwfm_Sem while we hold it.
+ */
+static void bwfm_glom_salvage(struct BWFMBase *BWFMBase, UBYTE *desc, ULONG flen)
+{
+    int i, keep;
+
+    bwfm_rx_glom(BWFMBase, desc, flen);         /* fills bwfm_glom_q from F2 */
+
+    /* Events go to the ring for the waiting join/scan; anything else stays
+     * queued for the pump. Compacting in place keeps the buffer offsets valid. */
+    for (i = 0, keep = 0; i < bwfm_glom_n; i++)
+    {
+        UBYTE *eth = bwfm_glom_buf + bwfm_glom_q[i].ehoff;
+        struct bwfm_event *e = (struct bwfm_event *)eth;
+        ULONG ethlen = bwfm_glom_q[i].ethlen;
+
+        if (ethlen >= sizeof(*e) &&
+            AROS_BE2WORD(e->ehdr.ether_type) == BWFM_ETHERTYPE_LINK_CTL)
+            bwfm_event_push(BWFMBase, eth, ethlen);
+        else
+            bwfm_glom_q[keep++] = bwfm_glom_q[i];
+    }
+    bwfm_glom_n = keep;
+    bwfm_glom_i = 0;
+}
+
+/* ----------------------------------------------------------------------- */
+/* Firmware-event hand-off ring (single FIFO reader = the device RX pump)    */
+
+/*
+ * Enable or disable event capture for a control op (join/scan). Enabling
+ * discards any events left over from a previous op. Safe to call while
+ * already holding bwfm_Sem - the semaphore nests.
+ */
+static void bwfm_event_listen(struct BWFMBase *BWFMBase, int on)
+{
+    ObtainSemaphore(&BWFMBase->bwfm_Sem);
+    BWFMBase->bwfm_evlisten = on;
+    if (on)
+        BWFMBase->bwfm_evtail = BWFMBase->bwfm_evhead;
+    ReleaseSemaphore(&BWFMBase->bwfm_Sem);
+}
+
+/* Pop the oldest queued event frame into buf; returns its length (0 if none). */
+static ULONG bwfm_event_pop(struct BWFMBase *BWFMBase, UBYTE *buf, ULONG bufsize)
+{
+    ULONG n = 0;
+
+    ObtainSemaphore(&BWFMBase->bwfm_Sem);
+    if (BWFMBase->bwfm_evhead != BWFMBase->bwfm_evtail)
+    {
+        struct bwfm_evslot *s =
+            &BWFMBase->bwfm_evring[BWFMBase->bwfm_evtail % BWFM_EVRING_SLOTS];
+
+        n = s->ev_len;
+        if (n > bufsize)
+            n = bufsize;
+        CopyMem(s->ev_data, buf, n);
+        BWFMBase->bwfm_evtail++;
+    }
+    ReleaseSemaphore(&BWFMBase->bwfm_Sem);
+    return n;
+}
+
+/*
+ * A timer.device handle a control op uses to sleep (and bound its wait) while
+ * the RX pump runs. Opened on demand at runtime - never at kickstart init.
+ */
+struct bwfm_timer
+{
+    struct MsgPort     *bt_port;
+    struct timerequest *bt_req;
+    int                 bt_ok;
+};
+
+static void bwfm_timer_open(struct bwfm_timer *t)
+{
+    t->bt_ok = 0;
+    t->bt_req = NULL;
+    t->bt_port = CreateMsgPort();
+    if (t->bt_port == NULL)
+        return;
+    t->bt_req = (struct timerequest *)CreateIORequest(t->bt_port,
+                                                      sizeof(struct timerequest));
+    if (t->bt_req != NULL &&
+        OpenDevice((CONST_STRPTR)"timer.device", UNIT_MICROHZ,
+                   (struct IORequest *)t->bt_req, 0) == 0)
+        t->bt_ok = 1;
+}
+
+static void bwfm_timer_close(struct bwfm_timer *t)
+{
+    if (t->bt_ok)
+        CloseDevice((struct IORequest *)t->bt_req);
+    if (t->bt_req)
+        DeleteIORequest((struct IORequest *)t->bt_req);
+    if (t->bt_port)
+        DeleteMsgPort(t->bt_port);
+}
+
+/*
+ * Sleep ~micros, yielding the CPU so the RX pump can read the FIFO and post
+ * events. Falls back to a busy-wait only if the timer could not be opened
+ * (which would re-starve the pump, but should never happen post-DOS).
+ */
+static void bwfm_timer_wait(struct BWFMBase *BWFMBase, struct bwfm_timer *t, ULONG micros)
+{
+    if (!t->bt_ok)
+    {
+        bwfm_udelay(BWFMBase, micros);
+        return;
+    }
+    t->bt_req->tr_node.io_Command = TR_ADDREQUEST;
+    t->bt_req->tr_time.tv_secs = micros / 1000000;
+    t->bt_req->tr_time.tv_micro = micros % 1000000;
+    DoIO((struct IORequest *)t->bt_req);
+}
+
+/* ----------------------------------------------------------------------- */
+/* Resource init                                                           */
+
+static int bwfm_init(struct BWFMBase *BWFMBase)
+{
+    D(bug("[bwfm] %s()\n", __PRETTY_FUNCTION__));
+
+    InitSemaphore(&BWFMBase->bwfm_Sem);
+    BWFMBase->bwfm_bar0 = ~0u;
+
+    KernelBase = OpenResource("kernel.resource");
+    if (KernelBase)
+        BWFMBase->bwfm_periiobase = KrnGetSystemAttr(KATTR_PeripheralBase);
+
+    SDIOBase = OpenResource("sdio.resource");
+    if (!SDIOBase)
+    {
+        D(bug("[bwfm] sdio.resource not available\n"));
+        return FALSE;
+    }
+
+    /* Chip bring-up (power + enumeration) is deferred to the first BWFMAttach(),
+     * which bwfm.device calls when it is opened - so the WiFi chip stays
+     * unpowered until something actually uses it. */
+    return TRUE;
+}
+
+ADD2INITLIB(bwfm_init, 0)
+
+/* ----------------------------------------------------------------------- */
+/* Public API                                                              */
+
+/*****************************************************************************
+    NAME
+        int BWFMAttach(
+
+    SYNOPSIS
+        )
+
+    FUNCTION
+        Probe and initialize the Broadcom FullMAC chip on the SDIO bus.
+
+    RESULT
+        TRUE if attachment completes or the chip is already marked attached;
+        FALSE if probing, clock setup, interconnect checks or required-core
+        discovery fails. Success does not mean firmware is running.
+
+    NOTES
+        Call in task context before accessing the chip. The operation holds
+        the resource semaphore, powers and probes SDIO as needed, enables
+        function 1, enumerates cores, halts the chip CPU and sizes RAM. It
+        uses busy waits and can block on bus access.
+
+        After successful attachment, later calls return the cached state
+        without probing again. Failure can leave hardware partially configured;
+        there is no rollback or detach operation.
+
+    BUGS
+        Some register-transfer and core-reset failures are not propagated.
+        Attachment can succeed without a usable RAM layout. Check firmware
+        startup separately; this call is not a hardware health check.
+
+    SEE ALSO
+        BWFMChipID(), BWFMChipRev(), BWFMStartFirmware()
+
+*****************************************************************************/
+AROS_LH0(int, BWFMAttach,
+                struct BWFMBase *, BWFMBase, 1, Bwfm)
+{
+    AROS_LIBFUNC_INIT
+
+    int ok;
+
+    ObtainSemaphore(&BWFMBase->bwfm_Sem);
+    ok = BWFMBase->bwfm_attached ? TRUE : bwfm_do_attach(BWFMBase);
+    ReleaseSemaphore(&BWFMBase->bwfm_Sem);
+
+    return ok;
+
+    AROS_LIBFUNC_EXIT
+}
+
+/*****************************************************************************
+    NAME
+        uint32_t BWFMChipID(
+
+    SYNOPSIS
+        )
+
+    FUNCTION
+        Return the cached Broadcom chip identifier.
+
+    RESULT
+        The identifier obtained during successful attachment, or zero if the
+        resource has not attached to a chip.
+
+    NOTES
+        This call does not probe hardware. Call BWFMAttach() first. Use the
+        revision as well as the identifier when selecting firmware; different
+        revisions of one identifier can require different images.
+
+    SEE ALSO
+        BWFMChipRev(), BWFMAttach()
+
+*****************************************************************************/
+AROS_LH0(uint32_t, BWFMChipID,
+                struct BWFMBase *, BWFMBase, 2, Bwfm)
+{
+    AROS_LIBFUNC_INIT
+
+    return BWFMBase->bwfm_attached ? BWFMBase->bwfm_chip : 0;
+
+    AROS_LIBFUNC_EXIT
+}
+
+/* The chip id alone does not name a firmware image: BCM4345 covers both the
+ * CYW43455 and (revision 9) the CYW43456, which need different blobs. */
+/*****************************************************************************
+    NAME
+        uint32_t BWFMChipRev(
+
+    SYNOPSIS
+        )
+
+    FUNCTION
+        Return the cached chip revision.
+
+    RESULT
+        The revision obtained during attachment. Zero is also returned when
+        the resource is not attached, so it does not establish attachment.
+
+    NOTES
+        This call does not probe hardware. Check BWFMAttach() before using
+        the revision to select firmware.
+
+    SEE ALSO
+        BWFMChipID(), BWFMAttach()
+
+*****************************************************************************/
+AROS_LH0(uint32_t, BWFMChipRev,
+                struct BWFMBase *, BWFMBase, 17, Bwfm)
+{
+    AROS_LIBFUNC_INIT
+
+    return BWFMBase->bwfm_attached ? BWFMBase->bwfm_chiprev : 0;
+
+    AROS_LIBFUNC_EXIT
+}
+
+/*
+ * Load firmware + nvram into chip RAM and start the CPU. The caller
+ * (bwfm.device) supplies the blobs read from disk; nvram must already be
+ * in the converted binary form (with its trailing size token). Returns 0
+ * once the firmware signals ready. The upload is NOT read back for verification:
+ * large block-mode reads of the backplane RAM are unreliable on this chip (the
+ * nvram region's non-64-aligned address returned a data CRC), while the writes
+ * themselves are reliable.
+ */
+/*****************************************************************************
+    NAME
+        int BWFMStartFirmware(
+
+    SYNOPSIS
+        void * fw, uint32_t fwlen, void * nvram, uint32_t nvlen)
+
+    FUNCTION
+        Upload firmware and optional board configuration, then start the chip CPU.
+
+    INPUTS
+        fw - Readable firmware image selected for the chip and revision. Must
+            be aligned for a uint32_t load; its first word supplies the reset
+            vector for a CR4 CPU.
+        fwlen - Image length, at least four bytes and no greater than chip RAM.
+        nvram - Optional readable configuration in firmware binary format:
+            NUL-separated records, zero padding to a four-byte boundary and
+            a trailing little-endian size token. NULL skips this upload.
+        nvlen - Configuration length including its token. Zero skips the
+            upload; otherwise it must be smaller than chip RAM.
+
+    RESULT
+        Zero after a firmware-ready or device-ready mailbox indication; -1
+        for rejected inputs or RAM size, clock timeout, upload failure, CPU
+        activation failure or exhausted readiness polling. Post-start setup
+        failures are not included in this result.
+
+    NOTES
+        Call in task context after BWFMAttach(), before starting other chip
+        operations. Keep both buffers valid until return; neither is retained.
+        The call holds the resource semaphore throughout. Clock and readiness
+        polling can busy-wait for approximately five and two seconds,
+        respectively, in addition to transfers and scheduling delays.
+
+        The image is written at the RAM base and configuration at its upper
+        end. Supply nonoverlapping images suitable for the board. The token
+        contains the configuration word count, excluding the token, in its
+        low 16 bits and the complemented count in its high 16 bits. The call
+        does not convert text configuration or validate the token.
+
+        Uploads overwrite chip memory and are not read back. Failure does
+        not restore memory, clocks or the previous CPU state. Do not use this
+        as a concurrent reload or recovery operation.
+
+    BUGS
+        Firmware/configuration overlap is not checked. Transfer padding to
+        64-byte boundaries is not included in the RAM-bound checks and can
+        write beyond the intended image or RAM end.
+
+        A failed mailbox read can appear as an all-bits-set ready indication.
+        Errors enabling SDIO function 2 and configuring the post-start bus
+        are ignored, so zero does not establish a working data path.
+
+    SEE ALSO
+        BWFMAttach(), BWFMChipID(), BWFMChipRev(), BWFMLoadCLM()
+
+*****************************************************************************/
+AROS_LH4(int, BWFMStartFirmware,
+                AROS_LHA(APTR, fw, A0),
+                AROS_LHA(uint32_t, fwlen, D0),
+                AROS_LHA(APTR, nvram, A1),
+                AROS_LHA(uint32_t, nvlen, D1),
+                struct BWFMBase *, BWFMBase, 3, Bwfm)
+{
+    AROS_LIBFUNC_INIT
+
+    int err = -1, i;
+    uint32_t rstvec;
+
+    ObtainSemaphore(&BWFMBase->bwfm_Sem);
+
+    if (!BWFMBase->bwfm_attached || fw == NULL || fwlen < 4)
+        goto done;
+
+    /* Guard the RAM layout: a zero ramsize (unsized chip) or an over-large
+     * firmware would make the nvram address underflow (rambase+ramsize-nvlen)
+     * and scribble a wild backplane window. rambase==0 is valid (SOCRAM). */
+    if (BWFMBase->bwfm_ramsize == 0 || fwlen > BWFMBase->bwfm_ramsize)
+    {
+        D(bug("[bwfm] bad RAM layout (size %u, fw %u) - refusing upload\n",
+              BWFMBase->bwfm_ramsize, fwlen));
+        goto done;
+    }
+
+    if (bwfm_alpclk_on(BWFMBase))   /* upload on ALP; HT forced after FWREADY */
+        goto done;
+
+    rstvec = *(uint32_t *)fw;       /* reset vector = first firmware word */
+
+    D(bug("[bwfm] uploading firmware (%u bytes) to RAM 0x%06x\n",
+          fwlen, BWFMBase->bwfm_rambase));
+    if (bwfm_ram_write(BWFMBase, BWFMBase->bwfm_rambase, fw, fwlen))
+        goto done;
+
+    if (nvram && nvlen)
+    {
+        uint32_t nvaddr;
+
+        if (nvlen >= BWFMBase->bwfm_ramsize)
+        {
+            D(bug("[bwfm] nvram (%u bytes) too large for RAM (%u)\n",
+                  nvlen, BWFMBase->bwfm_ramsize));
+            goto done;
+        }
+        nvaddr = BWFMBase->bwfm_rambase + BWFMBase->bwfm_ramsize - nvlen;
+        D(bug("[bwfm] uploading nvram (%u bytes) to RAM 0x%06x\n", nvlen, nvaddr));
+        if (bwfm_ram_write(BWFMBase, nvaddr, nvram, nvlen))
+            goto done;
+    }
+
+    if (bwfm_set_active(BWFMBase, rstvec))
+    {
+        D(bug("[bwfm] failed to start CPU core\n"));
+        goto done;
+    }
+
+    for (i = 0; i < 2000; i++)
+    {
+        uint32_t mb = bwfm_dev_read(BWFMBase, SDPCMD_TOHOSTMAILBOXDATA);
+        if (mb & (SDPCMD_TOHOSTMAILBOXDATA_FWREADY | SDPCMD_TOHOSTMAILBOXDATA_DEVREADY))
+        {
+            bwfm_dev_write(BWFMBase, SDPCMD_TOSBMAILBOX, SDPCMD_TOSBMAILBOX_INT_ACK);
+            err = 0;
+            break;
+        }
+        bwfm_udelay(BWFMBase, 1000);
+    }
+
+    D(bug("[bwfm] firmware %s\n", err ? "ready timeout" : "ready"));
+
+#if DEBUG
+    /* A timeout leaves no clue on its own: the chip either never got its clocks,
+     * never came out of reset, or is running code that never landed in RAM.
+     * Dump the three, so one capture tells them apart. */
+    if (err)
+    {
+        struct bwfm_core *cr4 = bwfm_get_core(BWFMBase, BWFM_AGENT_CORE_ARM_CR4);
+
+        bug("[bwfm] timeout state: CHIPCLKCSR=0x%02x mbox=0x%08x INTSTATUS=0x%08x\n",
+            bwfm_read_1(BWFM_SDIO_FUNC1_CHIPCLKCSR),
+            bwfm_dev_read(BWFMBase, SDPCMD_TOHOSTMAILBOXDATA),
+            bwfm_dev_read(BWFMBase, SDPCMD_INTSTATUS));
+        if (cr4)
+            bug("[bwfm] timeout state: CR4 ioctl=0x%08x resetctl=0x%08x (isup %d)\n",
+                bwfm_read_4(BWFMBase, cr4->co_wrapbase + BWFM_AGENT_IOCTL),
+                bwfm_read_4(BWFMBase, cr4->co_wrapbase + BWFM_AGENT_RESET_CTL),
+                bwfm_ai_isup(BWFMBase, cr4));
+        /* Read the first firmware words back through the 4-byte window (block
+         * mode is what is unreliable here) and hold them against the image. */
+        bug("[bwfm] timeout state: RAM 0x%06x = %08x %08x, image = %08x %08x\n",
+            BWFMBase->bwfm_rambase,
+            bwfm_read_4(BWFMBase, BWFMBase->bwfm_rambase),
+            bwfm_read_4(BWFMBase, BWFMBase->bwfm_rambase + 4),
+            ((uint32_t *)fw)[0], ((uint32_t *)fw)[1]);
+    }
+#endif
+
+    if (!err)
+    {
+        /* Post-firmware bus bring-up: force HT, advertise the SDPCM
+         * protocol version, enable the data function and set up the
+         * host interrupt mask + FIFO watermark. */
+        uint8_t clk = bwfm_read_1(BWFM_SDIO_FUNC1_CHIPCLKCSR);
+        bwfm_write_1(BWFM_SDIO_FUNC1_CHIPCLKCSR,
+                     clk | BWFM_SDIO_FUNC1_CHIPCLKCSR_FORCE_HT);
+        bwfm_dev_write(BWFMBase, SDPCMD_TOSBMAILBOXDATA,
+                       SDPCM_PROT_VERSION << SDPCM_PROT_VERSION_SHIFT);
+        SDIOEnableFunction(2);
+        bwfm_dev_write(BWFMBase, SDPCMD_HOSTINTMASK,
+                       SDPCMD_INTSTATUS_HMB_SW_MASK | SDPCMD_INTSTATUS_CHIPACTIVE);
+        bwfm_write_1(BWFM_SDIO_WATERMARK, 8);
+        BWFMBase->bwfm_txseq = 0xff;     /* matches OpenBSD; firmware grants */
+        BWFMBase->bwfm_txmax = 1;        /* credit from RX maxseqnr; seed 1 */
+        BWFMBase->bwfm_reqid = 0;
+
+        /* Keep RX frame glomming OFF. Turning it on (rxglom=1) broke the
+         * synchronous control channel on this firmware: every dcmd right after
+         * firmware-ready (GetMAC, clmload, C_UP, join) timed out -1. With glom on
+         * the firmware also aggregates the BCDC control *responses* onto the GLOM
+         * channel (chan 3), and our deaggregation drops control sub-frames
+         * (bwfm_rx_glom keeps only EVENT/DATA), so the polled dcmd never sees its
+         * reply. rxglom=0 keeps control replies on their own channel. The firmware
+         * still glomms EVENT/DATA under load regardless - that is handled by the
+         * pump (bwfm_rx_glom) and by bwfm_dcmd's glom drain, so those paths stay
+         * robust; we just must not ask for glom on the control path. */
+        bwfm_iovar_set_int(BWFMBase, "bus:rxglom", 0);
+    }
+
+done:
+    ReleaseSemaphore(&BWFMBase->bwfm_Sem);
+    return err;
+
+    AROS_LIBFUNC_EXIT
+}
+
+/*
+ * Read the chip's current MAC address via the BCDC "cur_etheraddr" iovar.
+ * Valid only after BWFMStartFirmware has succeeded. mac must hold 6 bytes.
+ */
+/*****************************************************************************
+    NAME
+        int BWFMGetMAC(
+
+    SYNOPSIS
+        uint8_t * mac)
+
+    FUNCTION
+        Read the current Ethernet address from the firmware.
+
+    INPUTS
+        mac - Writable storage for six address bytes. Must not be NULL.
+
+    RESULT
+        Zero on a successful firmware response; a firmware error status or
+        -1 on a transport, framing or polling failure. mac is unchanged on
+        reported failure.
+
+    NOTES
+        Call in task context after successful attachment and firmware startup.
+        The call serializes firmware access and may block. The buffer is not
+        retained.
+
+    BUGS
+        A successful response shorter than six bytes is not rejected. Bytes
+        missing from that response are copied from the request buffer.
+
+    SEE ALSO
+        BWFMStartFirmware(), BWFMIovar()
+
+*****************************************************************************/
+AROS_LH1(int, BWFMGetMAC,
+                AROS_LHA(UBYTE *, mac, A0),
+                struct BWFMBase *, BWFMBase, 4, Bwfm)
+{
+    AROS_LIBFUNC_INIT
+
+    static const char var[] = "cur_etheraddr";
+    UBYTE buf[16];
+    int err, i;
+
+    ObtainSemaphore(&BWFMBase->bwfm_Sem);
+
+    for (i = 0; var[i]; i++)
+        buf[i] = var[i];
+    buf[i++] = '\0';            /* name + NUL = 14 bytes (>= 6 result bytes) */
+
+    err = bwfm_dcmd(BWFMBase, BWFM_C_GET_VAR, 0, buf, i);
+    if (!err)
+        CopyMem(buf, mac, 6);
+
+    ReleaseSemaphore(&BWFMBase->bwfm_Sem);
+    return err;
+
+    AROS_LIBFUNC_EXIT
+}
+
+/*
+ * Raw firmware ioctl. For GET, the response is copied back into buf; for
+ * SET, buf holds the argument (may be NULL/0). Returns 0 / firmware status.
+ */
+/*****************************************************************************
+    NAME
+        int BWFMIoctl(
+
+    SYNOPSIS
+        uint32_t cmd, int set, void * buf, uint32_t len)
+
+    FUNCTION
+        Issue a synchronous firmware command.
+
+    INPUTS
+        cmd - Firmware command number.
+        set - Zero for a query; nonzero for a set operation.
+        buf - Readable and writable storage for len bytes. Its initial contents
+            are sent for both queries and set operations. May be NULL only
+            when len is zero.
+        len - Request length and response capacity, from zero to 484 bytes.
+
+    RESULT
+        Zero on a successful firmware response; a firmware error status or
+        -1 for an oversized request, transport error, malformed frame or
+        exhausted response polling. No response length is returned.
+
+    NOTES
+        Call in task context after successful attachment and firmware startup.
+        Access is serialized with other firmware operations. Payload layout
+        and byte order depend on cmd; the payload is not converted. buf is
+        not retained.
+
+        A successful response overwrites up to len bytes, including for set
+        operations. Any unused tail retains its request contents. Responses
+        longer than len are truncated. Polling makes at most 1000 attempts;
+        this is not a fixed wall-clock timeout.
+
+    BUGS
+        Short responses are accepted without reporting their length. The
+        caller cannot distinguish a complete result from retained request
+        bytes. Oversized incoming frames can leave unread FIFO data.
+
+    SEE ALSO
+        BWFMIovar(), BWFMGetMAC()
+
+*****************************************************************************/
+AROS_LH4(int, BWFMIoctl,
+                AROS_LHA(uint32_t, cmd, D0),
+                AROS_LHA(int, set, D1),
+                AROS_LHA(void *, buf, A0),
+                AROS_LHA(uint32_t, len, D2),
+                struct BWFMBase *, BWFMBase, 5, Bwfm)
+{
+    AROS_LIBFUNC_INIT
+
+    int err;
+
+    ObtainSemaphore(&BWFMBase->bwfm_Sem);
+    err = bwfm_dcmd(BWFMBase, cmd, set, buf, len);
+    ReleaseSemaphore(&BWFMBase->bwfm_Sem);
+    return err;
+
+    AROS_LIBFUNC_EXIT
+}
+
+/*
+ * Named firmware variable (iovar) access. Encodes "name\0" + payload and
+ * issues GET_VAR/SET_VAR. For GET, the value is copied back into buf.
+ */
+/*****************************************************************************
+    NAME
+        int BWFMIovar(
+
+    SYNOPSIS
+        uint8_t * name, int set, void * buf, uint32_t len)
+
+    FUNCTION
+        Read or write a named firmware variable.
+
+    INPUTS
+        name - NUL-terminated firmware variable name. Must not be NULL.
+        set - Zero to read; nonzero to write.
+        buf - Readable storage for len request bytes, also writable when
+            reading a variable. May be NULL only when len is zero.
+        len - Payload length. The name, its terminating NUL and the payload
+            together must fit in 256 bytes.
+
+    RESULT
+        Zero on a successful firmware response; a firmware error status or
+        -1 if the request does not fit or firmware communication fails.
+        A successful read copies len bytes into buf. Writes and reported
+        failures leave buf unchanged.
+
+    NOTES
+        Call in task context after successful attachment and firmware startup.
+        Access is serialized. Both read and write requests send the initial
+        contents of buf after the name. Supply any query parameters required
+        by the variable, and initialize unused request bytes. Payload byte
+        order is defined by the firmware. Neither pointer is retained.
+
+    BUGS
+        The response length is not returned or checked against len. A short
+        read response can leave bytes from the encoded request in the result.
+        The size calculation does not detect unsigned overflow; callers must
+        respect the 256-byte limit before calling.
+
+    SEE ALSO
+        BWFMIoctl(), BWFMGetMAC()
+
+*****************************************************************************/
+AROS_LH4(int, BWFMIovar,
+                AROS_LHA(uint8_t *, name, A0),
+                AROS_LHA(int, set, D0),
+                AROS_LHA(void *, buf, A1),
+                AROS_LHA(uint32_t, len, D1),
+                struct BWFMBase *, BWFMBase, 6, Bwfm)
+{
+    UBYTE tmp[256];
+    ULONG nlen = 0;
+    int err;
+
+    AROS_LIBFUNC_INIT
+
+    while (name[nlen])
+        nlen++;
+    if (nlen + 1 + len > sizeof(tmp))
+        return -1;
+
+    ObtainSemaphore(&BWFMBase->bwfm_Sem);
+
+    CopyMem(name, tmp, nlen + 1);               /* name + NUL */
+    if (len)
+        CopyMem(buf, tmp + nlen + 1, len);
+
+    err = bwfm_dcmd(BWFMBase, set ? BWFM_C_SET_VAR : BWFM_C_GET_VAR, set,
+                    tmp, nlen + 1 + len);
+    if (!err && !set && len)
+        CopyMem(tmp, buf, len);
+
+    ReleaseSemaphore(&BWFMBase->bwfm_Sem);
+    return err;
+
+    AROS_LIBFUNC_EXIT
+}
+
+/*
+ * Per-result beacon IEs captured by the last BWFMScan, fetched afterwards via
+ * BWFMScanIE() (parallel to the scanresult array). Kept out of struct
+ * bwfm_scanresult so the device/test don't have to mirror a variable-size blob.
+ */
+#define BWFM_SCAN_IE_MAX        32      /* results we keep IEs for */
+#define BWFM_SCAN_IE_SIZE       256     /* IE bytes captured per result */
+static UBYTE bwfm_scan_ie[BWFM_SCAN_IE_MAX][BWFM_SCAN_IE_SIZE];
+static UWORD bwfm_scan_ie_len[BWFM_SCAN_IE_MAX];
+
+/*
+ * Run a broadcast escan and collect results. `outp` is an array of
+ * struct bwfm_scanresult (max entries); returns the number filled. Triggers
+ * an escan, then polls the SDPCM event channel for ESCAN_RESULT events,
+ * parsing each bss_info, until the firmware reports scan complete or ~5s pass.
+ */
+/*****************************************************************************
+    NAME
+        int BWFMScan(
+
+    SYNOPSIS
+        void * out, int max)
+
+    FUNCTION
+        Collect nearby wireless networks with a passive broadcast scan.
+
+    INPUTS
+        out - Writable array of max struct bwfm_scanresult records.
+        max - Positive array capacity. No pointer is retained.
+
+    RESULT
+        The number of records written, from zero to max. Zero also covers
+        invalid inputs, no attachment and failure to start the scan. A
+        positive count can be partial; completion, timeout and dropped
+        results are not distinguished.
+
+    NOTES
+        Call in task context after firmware startup. Serialize this operation
+        with joins and other scans. A separate receive task must keep calling
+        BWFMRxFrame() and forward events with BWFMEventPost().
+
+        Each result has bssid[6], ssid_len, ssid[32], signed 16-bit rssi and
+        16-bit chanspec fields, as defined in bwfm_scan.h. RSSI and chanspec
+        are converted to host byte order. SSIDs are length-delimited, not
+        NUL-terminated; unused array elements and SSID tail bytes are unchanged.
+
+        Results retain first-seen BSSID order. Repeated sightings update the
+        strongest RSSI, fill an initially empty SSID and replace chanspec.
+        Extra BSSIDs are discarded when the array is full. BWFMScanIE() can
+        retrieve cached information elements for the first 32 results.
+
+        The scan uses up to 100 polling iterations with 50-millisecond waits.
+        Firmware setup and event processing add time. Radio mode, power
+        settings and the event mask are changed and are not restored.
+
+    BUGS
+        Only version-zero scan requests are generated. Setup failures are
+        not consistently propagated, and completion events are not matched
+        to a unique scan generation.
+
+        The IE cache is not cleared as a whole between scans. Only indices
+        assigned to new results are reset; duplicate sightings do not refresh
+        their IEs. Bounds checking of firmware IE lengths can overflow.
+
+    SEE ALSO
+        BWFMScanIE(), BWFMRxFrame(), BWFMEventPost(), BWFMJoin()
+
+*****************************************************************************/
+AROS_LH2(int, BWFMScan,
+                AROS_LHA(void *, outp, A0),
+                AROS_LHA(int, max, D0),
+                struct BWFMBase *, BWFMBase, 7, Bwfm)
+{
+    AROS_LIBFUNC_INIT
+
+    static UBYTE frame[2048];
+    struct bwfm_scanresult *out = (struct bwfm_scanresult *)outp;
+    struct bwfm_escan_params_v0 p;
+    struct bwfm_timer tmr;
+    UBYTE evmask[BWFM_EVENT_MASK_LEN];
+    int count = 0, done = 0, tries, i;
+
+    if (!BWFMBase->bwfm_attached || out == NULL || max <= 0)
+        return 0;
+
+    ObtainSemaphore(&BWFMBase->bwfm_Sem);
+
+    /*
+     * The escan request layout depends on the firmware's scan version.
+     * OpenBSD queries "scan_ver" (default 0 = v0 if the iovar is absent).
+     * We only build v0 params; warn if the firmware expects a newer version
+     * so a wrong-layout escan is diagnosable rather than silently failing.
+     */
+    {
+        uint32_t scan_ver = 0;
+        if (bwfm_iovar_get(BWFMBase, "scan_ver", &scan_ver, sizeof(scan_ver)) == 0)
+        {
+            scan_ver = AROS_LE2LONG(scan_ver);
+            D(bug("[bwfm] scan_ver = %u\n", scan_ver));
+            if (scan_ver != 0)
+                D(bug("[bwfm] WARNING: firmware escan v%u, we send v0\n", scan_ver));
+        }
+        else
+            D(bug("[bwfm] scan_ver iovar absent (escan v0)\n"));
+    }
+
+    /* Enable the events we care about (STA mode set) */
+    bwfm_zero(evmask, sizeof(evmask));
+#define EV(e) (evmask[(e) / 8] |= (1 << ((e) % 8)))
+    EV(BWFM_E_IF); EV(BWFM_E_LINK); EV(BWFM_E_AUTH); EV(BWFM_E_ASSOC);
+    EV(BWFM_E_EAPOL_MSG); EV(BWFM_E_DEAUTH); EV(BWFM_E_DISASSOC);
+    EV(BWFM_E_REASSOC); EV(BWFM_E_ROAM);
+    EV(BWFM_E_ESCAN_RESULT);
+#undef EV
+    bwfm_iovar_set(BWFMBase, "event_msgs", evmask, sizeof(evmask));
+
+    /*
+     * Bring the STA interface up the way the reference does before scanning.
+     * A bare C_UP returns success but escan still fails with NOTUP (-4): the
+     * firmware needs the operating mode configured (infra STA, not AP) and the
+     * scan timing / power-management set first. Mirror OpenBSD bwfm_init()'s
+     * order: scan times, PM, C_UP, then INFRA/AP. mpc=0 keeps the radio awake.
+     */
+    {
+        int e;
+        bwfm_set_int(BWFMBase, BWFM_C_SET_SCAN_CHANNEL_TIME, 40);
+        bwfm_set_int(BWFMBase, BWFM_C_SET_SCAN_UNASSOC_TIME, 40);
+        bwfm_set_int(BWFMBase, BWFM_C_SET_SCAN_PASSIVE_TIME, 120);
+        bwfm_set_int(BWFMBase, BWFM_C_SET_PM, BWFM_PM_FAST_PS);
+        {
+            uint32_t mpc = 0;
+            bwfm_iovar_set(BWFMBase, "mpc", &mpc, sizeof(mpc));
+        }
+        e = bwfm_dcmd(BWFMBase, BWFM_C_UP, 1, NULL, 0);
+        bwfm_set_int(BWFMBase, BWFM_C_SET_INFRA, 1);
+        bwfm_set_int(BWFMBase, BWFM_C_SET_AP, 0);
+        bwfm_udelay(BWFMBase, 50000);
+        D(bug("[bwfm] pre-scan: interface up (C_UP err %d)\n", e));
+    }
+
+    /* Broadcast passive escan, all channels */
+    bwfm_zero((UBYTE *)&p, sizeof(p));
+    for (i = 0; i < ETHER_ADDR_LEN; i++)
+        p.scan_params.bssid[i] = 0xff;
+    p.scan_params.bss_type = DOT11_BSSTYPE_ANY;
+    p.scan_params.scan_type = BWFM_SCANTYPE_PASSIVE;
+    p.scan_params.nprobes = AROS_LONG2LE(0xffffffff);
+    p.scan_params.active_time = AROS_LONG2LE(0xffffffff);
+    p.scan_params.passive_time = AROS_LONG2LE(0xffffffff);
+    p.scan_params.home_time = AROS_LONG2LE(0xffffffff);
+    p.scan_params.channel_num = 0;
+    p.version = AROS_LONG2LE(BWFM_ESCAN_REQ_VERSION);
+    p.action = AROS_WORD2LE(WL_ESCAN_ACTION_START);
+    p.sync_id = AROS_WORD2LE(0x1234);
+
+    /* Match OpenBSD's size exactly: the trailing channel_list[] is empty
+     * for an all-channel scan (channel_num == 0), so exclude it. */
+    {
+        ULONG psize = sizeof(p) - sizeof(p.scan_params.channel_list);
+        int err;
+
+        /* Collect events from here on, then release the bus: the RX pump (the
+         * single FIFO reader) reads the escan results and posts them to us. */
+        bwfm_event_listen(BWFMBase, 1);
+        err = bwfm_iovar_set(BWFMBase, "escan", &p, psize);
+        ReleaseSemaphore(&BWFMBase->bwfm_Sem);
+        if (err)
+        {
+            D(bug("[bwfm] escan trigger failed (err %d, size %u)\n", err, psize));
+            bwfm_event_listen(BWFMBase, 0);
+            return 0;
+        }
+    }
+
+    bwfm_timer_open(&tmr);
+
+    /* ~5s window: 100 ticks of 50ms, yielding so the pump keeps reading. */
+    for (tries = 0; tries < 100 && !done; tries++)
+    {
+        ULONG n;
+
+        while ((n = bwfm_event_pop(BWFMBase, frame, sizeof(frame))) > 0)
+        {
+            struct bwfm_event *e = (struct bwfm_event *)frame;
+            struct bwfm_escan_results *res;
+            ULONG evlen, status, remain;
+            UBYTE *bp;
+            UWORD bcount;
+
+            if (n < sizeof(*e))
+                continue;
+            evlen = n - sizeof(*e);
+            if (AROS_BE2LONG(e->msg.event_type) != BWFM_E_ESCAN_RESULT)
+                continue;
+
+            status = AROS_BE2LONG(e->msg.status);
+            if (status == BWFM_E_STATUS_SUCCESS)
+            {
+                done = 1;
+                continue;
+            }
+            if (status != BWFM_E_STATUS_PARTIAL || evlen < 12)
+                continue;
+
+            /* escan_results header is 12 bytes; bss_info[] follows */
+            res = (struct bwfm_escan_results *)(e + 1);
+            bcount = AROS_LE2WORD(res->bss_count);
+            bp = (UBYTE *)&res->bss_info[0];
+            remain = evlen - 12;
+
+            for (i = 0; i < bcount; i++)
+            {
+                struct bwfm_bss_info *bi = (struct bwfm_bss_info *)bp;
+                ULONG bilen, sl;
+                int16_t rssi;
+                int j, dup = -1;
+
+                if (remain < sizeof(struct bwfm_bss_info))
+                    break;
+                bilen = AROS_LE2LONG(bi->length);
+                if (bilen < sizeof(struct bwfm_bss_info) || bilen > remain)
+                    break;
+
+                rssi = (int16_t)AROS_LE2WORD(bi->rssi);
+                sl = bi->ssid_len;
+                if (sl > BWFM_MAX_SSID_LEN)
+                    sl = BWFM_MAX_SSID_LEN;
+
+                /*
+                 * Dedupe by BSSID: escan emits a PARTIAL event per beacon
+                 * heard, so the same BSS recurs across the scan window. Keep
+                 * one entry per BSSID with the strongest RSSI; fill in the
+                 * SSID if an earlier (hidden) sighting had none.
+                 */
+                for (j = 0; j < count; j++)
+                {
+                    UBYTE *a = out[j].bssid;
+                    UBYTE *b = bi->bssid;
+
+                    if (a[0] == b[0] && a[1] == b[1] && a[2] == b[2] &&
+                        a[3] == b[3] && a[4] == b[4] && a[5] == b[5])
+                    {
+                        dup = j;
+                        break;
+                    }
+                }
+
+                if (dup >= 0)
+                {
+                    if (rssi > out[dup].rssi)
+                        out[dup].rssi = rssi;
+                    if (out[dup].ssid_len == 0 && sl > 0)
+                    {
+                        out[dup].ssid_len = sl;
+                        CopyMem(bi->ssid, out[dup].ssid, sl);
+                    }
+                    out[dup].chanspec = AROS_LE2WORD(bi->chanspec);
+                }
+                else if (count < max)
+                {
+                    CopyMem(bi->bssid, out[count].bssid, ETHER_ADDR_LEN);
+                    out[count].ssid_len = sl;
+                    CopyMem(bi->ssid, out[count].ssid, sl);
+                    out[count].rssi = rssi;
+                    out[count].chanspec = AROS_LE2WORD(bi->chanspec);
+
+                    /* Capture this BSS's beacon IEs (SSID, rates, RSN/WPA, ...)
+                     * so the SANA-II scan can hand them to wpa_supplicant, which
+                     * needs the RSN/WPA element to match a WPA2 network. */
+                    if (count < BWFM_SCAN_IE_MAX)
+                    {
+                        ULONG ieoff = AROS_LE2WORD(bi->ie_offset);
+                        ULONG ielen = AROS_LE2LONG(bi->ie_length);
+                        UBYTE *ies = (UBYTE *)bi + ieoff;
+
+                        bwfm_scan_ie_len[count] = 0;
+                        /* Validate the bss_info layout before trusting ie_offset:
+                         * the first beacon IE is always the SSID element (id 0,
+                         * length == ssid_len). If that doesn't hold, ie_offset is
+                         * wrong for this firmware - skip rather than feed
+                         * wpa_supplicant garbage (which crashed it). */
+                        if (ielen && ieoff + 2 <= bilen && ieoff + ielen <= bilen &&
+                            ies[0] == 0 && ies[1] == bi->ssid_len)
+                        {
+                            if (ielen > BWFM_SCAN_IE_SIZE)
+                                ielen = BWFM_SCAN_IE_SIZE;
+                            CopyMem(ies, bwfm_scan_ie[count], ielen);
+                            bwfm_scan_ie_len[count] = (UWORD)ielen;
+                        }
+                        else
+                            D(bug("[bwfm] scan IE skip: off=%u len=%u first=%02x/%02x"
+                                  " ssidlen=%u bilen=%u\n", (unsigned)ieoff,
+                                  (unsigned)ielen, ies[0], ies[1],
+                                  (unsigned)bi->ssid_len, (unsigned)bilen));
+                    }
+                    count++;
+                }
+
+                bp += bilen;
+                remain -= bilen;
+            }
+        }
+
+        if (!done)
+            bwfm_timer_wait(BWFMBase, &tmr, 50000);
+    }
+
+    bwfm_timer_close(&tmr);
+    bwfm_event_listen(BWFMBase, 0);
+
+    D(bug("[bwfm] scan done: %d result(s)\n", count));
+    return count;
+
+    AROS_LIBFUNC_EXIT
+}
+
+/*
+ * Upload the regulatory CLM (Country Locale Matrix) blob to the running
+ * firmware via the "clmload" iovar. The firmware for this chip ships without
+ * built-in regulatory data, so without the blob the radio has no valid
+ * channels and "wl up" leaves the interface NOTUP (escan fails). The blob is
+ * sent in chunks small enough to fit the synchronous BCDC control frame, the
+ * first marked BEGIN and the last END. Ported from OpenBSD bwfm_process_blob().
+ * A NULL/empty blob is a no-op (firmware falls back to its built-in regulatory).
+ */
+#define BWFM_CLM_CHUNK  256
+
+/*****************************************************************************
+    NAME
+        int BWFMLoadCLM(
+
+    SYNOPSIS
+        void * clm, uint32_t clmlen)
+
+    FUNCTION
+        Upload a Country Locale Matrix blob to the firmware.
+
+    INPUTS
+        clm - Readable blob supplied for the chip and firmware in use.
+        clmlen - Blob size in bytes.
+
+    RESULT
+        Zero if every chunk is accepted. Zero is also returned without an
+        upload when clm is NULL, clmlen is zero or the chip is not attached.
+        Otherwise, the first firmware error status or -1 for a communication
+        failure is returned.
+
+    NOTES
+        Call in task context after firmware startup. The call holds the
+        resource semaphore throughout the upload and sends at most 256 blob
+        bytes per command. clm is borrowed until return.
+
+        Failure stops the upload without rolling back accepted chunks. The
+        call does not validate the blob or query the final CLM load status;
+        command acceptance alone does not establish regulatory readiness.
+
+    SEE ALSO
+        BWFMStartFirmware(), BWFMIovar()
+
+*****************************************************************************/
+AROS_LH2(int, BWFMLoadCLM,
+                AROS_LHA(void *, clm, A0),
+                AROS_LHA(uint32_t, clmlen, D0),
+                struct BWFMBase *, BWFMBase, 8, Bwfm)
+{
+    AROS_LIBFUNC_INIT
+
+    UBYTE buf[sizeof(struct bwfm_dload_data) + BWFM_CLM_CHUNK];
+    struct bwfm_dload_data *d = (struct bwfm_dload_data *)buf;
+    UBYTE *src = (UBYTE *)clm;
+    ULONG off = 0, remain = clmlen;
+    int err = 0;
+
+    if (!BWFMBase->bwfm_attached || clm == NULL || clmlen == 0)
+        return 0;
+
+    ObtainSemaphore(&BWFMBase->bwfm_Sem);
+
+    while (remain)
+    {
+        ULONG len = (remain < BWFM_CLM_CHUNK) ? remain : BWFM_CLM_CHUNK;
+        UWORD flag = BWFM_DLOAD_FLAG_HANDLER_VER_1;
+
+        if (off == 0)
+            flag |= BWFM_DLOAD_FLAG_BEGIN;
+        if (remain <= BWFM_CLM_CHUNK)
+            flag |= BWFM_DLOAD_FLAG_END;
+
+        d->flag = AROS_WORD2LE(flag);
+        d->type = AROS_WORD2LE(BWFM_DLOAD_TYPE_CLM);
+        d->len = AROS_LONG2LE(len);
+        d->crc = 0;
+        CopyMem(src + off, buf + sizeof(*d), len);
+
+        err = bwfm_iovar_set(BWFMBase, "clmload", buf, sizeof(*d) + len);
+        if (err)
+        {
+            D(bug("[bwfm] clmload failed at %u/%u (err %d)\n", off, clmlen, err));
+            break;
+        }
+
+        off += len;
+        remain -= len;
+    }
+
+    if (!err)
+        D(bug("[bwfm] CLM loaded (%u bytes)\n", clmlen));
+
+    ReleaseSemaphore(&BWFMBase->bwfm_Sem);
+    return err;
+
+    AROS_LIBFUNC_EXIT
+}
+
+/*
+ * Send one 802.3 data frame to the firmware: wrap it in an SDPCM hw/sw header
+ * (DATA channel) plus a BCDC/BDC data header, zero-pad to 4 bytes (or the
+ * block size for >512B frames) and write it to the func2 FIFO. Mirrors
+ * OpenBSD bwfm_sdio_tx_dataframe(). Called from the device's CMD_WRITE path.
+ */
+/*****************************************************************************
+    NAME
+        int BWFMTxData(
+
+    SYNOPSIS
+        void * eth, uint32_t ethlen)
+
+    FUNCTION
+        Submit an Ethernet frame to the firmware transmit FIFO.
+
+    INPUTS
+        eth - Readable Ethernet frame, including its destination, source and
+            type or length fields. The pointer is borrowed until return.
+        ethlen - Frame length in bytes, from 1 to 2032. The caller is
+            responsible for supplying a valid Ethernet frame.
+
+    RESULT
+        Zero if the SDIO write succeeds; -1 if attachment or arguments are
+        invalid, the frame does not fit, transmit credits remain unavailable
+        or the transfer fails. Success does not confirm radio transmission
+        or delivery to the peer.
+
+    NOTES
+        Call in task context after firmware startup and association. The
+        call copies the frame and does not retain eth. It may wait for
+        transmit credits, releasing the resource semaphore between waits
+        so the receive task can update the credit window.
+
+        Credit waiting uses up to 200 one-millisecond waits, in addition to
+        scheduling and semaphore delays. Failure to open timer.device uses
+        busy waits instead. The caller must keep the receive task running.
+
+    BUGS
+        Frame-size arithmetic does not detect unsigned overflow. Do not
+        pass lengths above 2032, even to test whether they are rejected.
+
+    SEE ALSO
+        BWFMRxFrame(), BWFMJoin()
+
+*****************************************************************************/
+AROS_LH2(int, BWFMTxData,
+                AROS_LHA(void *, eth, A0),
+                AROS_LHA(uint32_t, ethlen, D0),
+                struct BWFMBase *, BWFMBase, 9, Bwfm)
+{
+    AROS_LIBFUNC_INIT
+
+    static UBYTE frame[2048];
+    struct bwfm_sdio_hwhdr *hw = (struct bwfm_sdio_hwhdr *)frame;
+    struct bwfm_sdio_swhdr *sw = (struct bwfm_sdio_swhdr *)(frame + 4);
+    struct bwfm_bcdc_data_hdr *bcdc = (struct bwfm_bcdc_data_hdr *)(frame + 12);
+    ULONG total, padded;
+    int err;
+
+    if (!BWFMBase->bwfm_attached || eth == NULL || ethlen == 0)
+        return -1;
+
+    total = 12 + sizeof(*bcdc) + ethlen;        /* hw+sw = 12, bcdc = 4 */
+    padded = (total > 512 && (total % 512)) ? ((total + 511) & ~511UL)
+                                            : ((total + 3) & ~3UL);
+    if (padded > sizeof(frame))
+        return -1;
+
+    /*
+     * Data frames are gated by the firmware's tx-credit window: we may only
+     * send while (txmax - txseq) is non-zero with its top bit clear (OpenBSD
+     * bwfm_sdio_tx_ok). Control frames are exempt. The window is refreshed from
+     * every received frame's maxseqnr, so wait (releasing the bus so the RX
+     * pump can run and update it) until a credit appears or we give up.
+     */
+    {
+        int waited = 0;
+        struct bwfm_timer tmr;
+        int have_timer = 0;
+
+        ObtainSemaphore(&BWFMBase->bwfm_Sem);
+        while (1)
+        {
+            uint8_t space = (uint8_t)(BWFMBase->bwfm_txmax - BWFMBase->bwfm_txseq);
+
+            if (space != 0 && (space & 0x80) == 0)
+                break;
+            ReleaseSemaphore(&BWFMBase->bwfm_Sem);
+            if (++waited > 200)         /* ~200ms - the window should be open */
+            {
+                D(bug("[bwfm] TxData: no tx credit (seq %u max %u)\n",
+                      BWFMBase->bwfm_txseq, BWFMBase->bwfm_txmax));
+                if (have_timer)
+                    bwfm_timer_close(&tmr);
+                return -1;
+            }
+            /* Yield via timer.device rather than busy-spinning so the RX pump
+             * can run and refresh the credit window. The timer is opened lazily
+             * - the common path has credit at once and never reaches here. */
+            if (!have_timer)
+            {
+                bwfm_timer_open(&tmr);
+                have_timer = 1;
+            }
+            bwfm_timer_wait(BWFMBase, &tmr, 1000);
+            ObtainSemaphore(&BWFMBase->bwfm_Sem);
+        }
+        if (have_timer)
+            bwfm_timer_close(&tmr);
+    }
+
+    hw->frmlen = AROS_WORD2LE((UWORD)total);
+    hw->cksum = AROS_WORD2LE((UWORD)~total);
+    sw->seqnr = BWFMBase->bwfm_txseq++;
+    sw->chanflag = BWFM_SDIO_SWHDR_CHANNEL_DATA;
+    sw->nextlen = 0;
+    sw->dataoff = 12;
+    sw->flowctl = 0;
+    sw->maxseqnr = 0;
+    sw->res0 = 0;
+
+    bcdc->flags = BWFM_BCDC_FLAG_VER(BWFM_BCDC_FLAG_PROTO_VER);
+    bcdc->priority = 0;
+    bcdc->flags2 = 0;
+    bcdc->data_offset = 0;
+
+    CopyMem(eth, frame + 12 + sizeof(*bcdc), ethlen);
+    bwfm_zero(frame + total, padded - total);
+
+    err = bwfm_frame_rw(BWFMBase, frame, padded, 1);
+
+    ReleaseSemaphore(&BWFMBase->bwfm_Sem);
+    return err;
+
+    AROS_LIBFUNC_EXIT
+}
+
+/*
+ * Read one pending SDPCM frame for the device's RX pump. Copies the 802.3
+ * ethernet frame into `buf` and returns its length (0 if nothing pending).
+ * *info gets the SDPCM channel in the low byte plus BWFM_RX_EVENT if the
+ * frame is a firmware event (LINK_CTL ethertype) rather than network data.
+ */
+/*****************************************************************************
+    NAME
+        int BWFMRxFrame(
+
+    SYNOPSIS
+        void * buf, uint32_t bufsize, uint32_t * info)
+
+    FUNCTION
+        Copy the next queued or received Ethernet frame into a caller buffer.
+
+    INPUTS
+        buf - Writable storage for bufsize bytes. Must not be NULL.
+        bufsize - Positive buffer capacity. Use at least 2048 bytes to avoid
+            truncation of frames accepted by the current receive path.
+        info - Optional writable uint32_t result slot; may be NULL.
+
+    RESULT
+        The number of bytes copied. Zero means no frame was delivered; it
+        also covers no attachment, transport errors, malformed input and
+        consumed frames on unsupported channels. It does not prove that the
+        receive FIFO is empty.
+
+    NOTES
+        Call in task context after firmware startup, from the designated
+        receive task. Access is serialized by the resource semaphore. The
+        call services queued aggregate subframes before reading more SDIO
+        data and returns at most one delivered frame. No pointer is retained.
+
+        A delivered frame includes its Ethernet header, without SDPCM/BDC
+        headers. If info is supplied, bits 0 to 7 contain the SDPCM channel,
+        bit 8 marks a firmware event, bit 9 copies bit 0 of its event flags,
+        and bits 16 to 31 contain the low 16 bits of the firmware event type.
+        Interpret bit 9 as link-up only for an event whose type defines it.
+        Use info only after a positive return.
+
+        Forward complete firmware event frames through BWFMEventPost() for
+        waiting joins or scans. Chip interrupt acknowledgement and re-arming
+        remain separate operations.
+
+    BUGS
+        A frame larger than bufsize is consumed and silently truncated; its
+        original size is not returned. Event classification uses the truncated
+        length, so a short buffer can hide the event flag.
+
+        Malformed or oversized input can leave unread FIFO data. Control-path
+        aggregate processing can requeue already delivered frames. Zero is
+        therefore neither an error code nor a reliable drain-completion test.
+
+    SEE ALSO
+        BWFMEventPost(), BWFMClearInt(), BWFMAckRx()
+
+*****************************************************************************/
+AROS_LH3(int, BWFMRxFrame,
+                AROS_LHA(void *, buf, A0),
+                AROS_LHA(uint32_t, bufsize, D0),
+                AROS_LHA(uint32_t *, info, A1),
+                struct BWFMBase *, BWFMBase, 10, Bwfm)
+{
+    AROS_LIBFUNC_INIT
+
+    static UBYTE frame[2048];
+    ULONG flen = 0, ehoff = 0, ethlen = 0;
+    int chan = 0, ret = 0, skipped = 0;
+
+    if (!BWFMBase->bwfm_attached)
+        return 0;
+
+    ObtainSemaphore(&BWFMBase->bwfm_Sem);
+
+    /* Deliver any queued GLOM sub-frames before pulling more off F2. Skip
+     * frames with nothing to deliver, so a drained F2 is what ends the
+     * pump's loop - with the card interrupt nothing else would fetch them. */
+    ret = bwfm_glom_pop(buf, bufsize, info);
+    while (ret == 0 && skipped++ < 16 &&
+           bwfm_rx_read(BWFMBase, frame, sizeof(frame), &flen, &chan))
+    {
+        if (BWFMBase->bwfm_evlisten)
+            D(bug("[bwfm] rx frame chan %d len %u\n", chan, (unsigned)flen));
+
+        if (chan == BWFM_SDIO_SWHDR_CHANNEL_GLOM)
+        {
+            bwfm_rx_glom(BWFMBase, frame, flen);
+            ret = bwfm_glom_pop(buf, bufsize, info);
+        }
+        else if (chan == BWFM_SDIO_SWHDR_CHANNEL_EVENT ||
+                 chan == BWFM_SDIO_SWHDR_CHANNEL_DATA)
+        {
+            if (bwfm_frame_eth(frame, flen, &ehoff, &ethlen))
+            {
+                if (ethlen > bufsize)
+                    ethlen = bufsize;
+                CopyMem(frame + ehoff, buf, ethlen);
+                if (info)
+                    *info = bwfm_rx_info(frame + ehoff, ethlen, chan);
+                ret = (int)ethlen;
+            }
+        }
+        /* CONTROL or malformed: nothing to deliver */
+    }
+
+    ReleaseSemaphore(&BWFMBase->bwfm_Sem);
+    return ret;
+
+    AROS_LIBFUNC_EXIT
+}
+
+/*
+ * Associate to an access point by SSID. With no passphrase this is an OPEN
+ * join; with one, WPA2-PSK is configured and the passphrase is handed to the
+ * firmware's internal supplicant (sup_wpa=1), which runs the 4-way handshake
+ * for us - we have no host supplicant (OpenBSD relies on net80211 for this and
+ * keeps sup_wpa=0; we do the opposite). Sets the security iovars + the "join"
+ * iovar (ext_join_params, any BSSID/any channel), then polls the event channel
+ * for the result. Returns 0 when linked, <0 on failure/timeout. Caller (the
+ * device) must NOT hold an open CMD_READ on the bus; the RX pump waits on
+ * bwfm_Sem while we run.
+ */
+/*
+ * Cipher + AKM the caller's WPA/RSN IE asks for, so the firmware's wsec and
+ * wpa_auth agree with the IE we put in the assoc request. Same mapping as
+ * OpenBSD's bwfm_connect(), except that it reads the suite selectors straight
+ * out of the IE instead of net80211's parsed view of them.
+ *
+ * RSN (id 48):  version[2] group[4] pcount[2] pairwise[4*n] acount[2] akm[4*n]
+ * WPA (id 221): oui[3] type[1] version[2] group[4] pcount[2] ... same tail
+ * A suite selector is OUI[3] + type[1]; only the type matters here.
+ */
+static void bwfm_ie_security(const UBYTE *ie, ULONG ielen, ULONG *wsecp,
+                             ULONG *authp)
+{
+    ULONG wsec = 0, auth = 0, off, n;
+    int rsn;
+
+    if (ie == NULL || ielen < 2 || (ULONG)ie[1] + 2 > ielen)
+        return;
+
+    rsn = (ie[0] == 48);
+    off = rsn ? 4 : 8;                  /* past version, at the group cipher */
+    if (off + 4 > ielen)
+        return;
+
+#define SUITE_CIPHER(t) do {                                    \
+        if ((t) == 2) wsec |= BWFM_WSEC_TKIP;                   \
+        else if ((t) == 4) wsec |= BWFM_WSEC_AES;               \
+        else if ((t) == 1) wsec |= BWFM_WSEC_WEP;               \
+    } while (0)
+
+    SUITE_CIPHER(ie[off + 3]);          /* group cipher */
+    off += 4;
+
+    if (off + 2 > ielen)
+        goto out;
+    n = ie[off] | ((ULONG)ie[off + 1] << 8);
+    off += 2;
+    if (n > 8 || off + n * 4 > ielen)
+        goto out;
+    while (n--)
+    {
+        SUITE_CIPHER(ie[off + 3]);      /* pairwise ciphers */
+        off += 4;
+    }
+
+    if (off + 2 > ielen)
+        goto out;
+    n = ie[off] | ((ULONG)ie[off + 1] << 8);
+    off += 2;
+    if (n > 8 || off + n * 4 > ielen)
+        goto out;
+    while (n--)
+    {
+        switch (ie[off + 3])            /* AKM suites */
+        {
+        case 1: auth |= rsn ? BWFM_WPA_AUTH_WPA2_UNSPECIFIED
+                            : BWFM_WPA_AUTH_WPA_UNSPECIFIED; break;
+        case 2: auth |= rsn ? BWFM_WPA_AUTH_WPA2_PSK
+                            : BWFM_WPA_AUTH_WPA_PSK; break;
+        case 5: auth |= BWFM_WPA_AUTH_WPA2_1X_SHA256; break;
+        case 6: auth |= BWFM_WPA_AUTH_WPA2_PSK_SHA256; break;
+        }
+        off += 4;
+    }
+#undef SUITE_CIPHER
+
+out:
+    /* An IE we could not make sense of still means "encrypted": fall back to
+     * the WPA2-PSK/CCMP pair rather than associating in the clear. */
+    if (wsec == 0)
+        wsec = BWFM_WSEC_AES;
+    if (auth == 0)
+        auth = rsn ? BWFM_WPA_AUTH_WPA2_PSK : BWFM_WPA_AUTH_WPA_PSK;
+    *wsecp = wsec;
+    *authp = auth;
+}
+
+/*****************************************************************************
+    NAME
+        int BWFMJoin(
+
+    SYNOPSIS
+        uint8_t * ssid, uint32_t ssidlen, uint8_t * pass, uint32_t passlen, uint8_t * ie, uint32_t ielen, uint8_t * bssid)
+
+    FUNCTION
+        Request association with a wireless network.
+
+    INPUTS
+        ssid - Readable SSID bytes. Must not be NULL.
+        ssidlen - SSID length, from 1 to 32 bytes; no NUL is required.
+        pass - Passphrase bytes for the firmware supplicant. May be NULL
+            when passlen is zero or ielen is nonzero.
+        passlen - Passphrase length. With no IE, a nonzero value selects
+            firmware WPA2-PSK; only the first 65 bytes are copied.
+        ie - Complete WPA or RSN information element, including its element
+            identifier and length. Required when ielen is nonzero.
+        ielen - IE size. A nonzero value selects host-managed authentication
+            and takes precedence over pass. The IE must fit within 294 bytes.
+        bssid - Optional six-byte BSSID of the selected access point. When
+            NULL, the join request permits any BSSID. Borrowed until return.
+
+    RESULT
+        Zero when a link-up event is observed or an acceptable associated
+        BSSID is returned by the firmware. If bssid is provided, the fallback
+        requires an exact six-byte BSSID match.
+        Negative results are -1 for invalid attachment or SSID, or no decisive
+        result; -2 for link down; -3 for association rejection; and -4 for
+        deauthentication or disassociation. Later events and retries can
+        replace an earlier result.
+
+    NOTES
+        Call in task context after firmware startup. Serialize join and scan
+        requests externally. A separate receive task must continue reading
+        frames and forwarding firmware events through BWFMEventPost().
+        Do not call from that receive task. Input buffers must remain valid
+        until return; they are not retained afterwards.
+
+        A non-NULL bssid is included in both the preferred firmware join
+        request and the older SET_SSID fallback. This selects the requested
+        node when multiple access points share one SSID; it does not verify
+        the SSID or bind link events to a particular join request.
+
+        With an IE, the host supplicant must complete authentication and
+        install keys through BWFMSetKey(). With a passphrase and no IE, the
+        firmware must support an internal supplicant. With neither, the
+        function requests an open network.
+
+        Up to three attempts each perform 200 polling iterations with
+        50-millisecond waits. Firmware commands and scheduling add time.
+        Failure does not restore the previous radio or security settings.
+
+    BUGS
+        Success does not establish that the requested SSID was joined or
+        that authentication completed. With bssid NULL, the BSSID fallback
+        accepts any existing nonzero BSSID. With a selected bssid, the
+        fallback compares that address, but link-up events are still not
+        correlated with this request.
+
+        Security-configuration failures do not abort association. IE parsing
+        does not fully validate element types, versions or suite OUIs; some
+        malformed IEs leave the selected security settings zero. Passphrases
+        are truncated without reporting an error. Validate inputs before
+        calling and verify the resulting connection independently.
+
+    SEE ALSO
+        BWFMRxFrame(), BWFMEventPost(), BWFMSetKey(), BWFMScan()
+
+*****************************************************************************/
+AROS_LH7(int, BWFMJoin,
+                AROS_LHA(uint8_t *, ssid, A0),
+                AROS_LHA(uint32_t, ssidlen, D0),
+                AROS_LHA(uint8_t *, pass, A1),
+                AROS_LHA(uint32_t, passlen, D1),
+                AROS_LHA(uint8_t *, ie, A2),
+                AROS_LHA(uint32_t, ielen, D2),
+                AROS_LHA(uint8_t *, bssid, A3),
+                struct BWFMBase *, BWFMBase, 11, Bwfm)
+{
+    AROS_LIBFUNC_INIT
+
+    static UBYTE frame[2048];
+    struct bwfm_ext_join_params jp;
+    struct bwfm_timer tmr;
+    UBYTE evmask[BWFM_EVENT_MASK_LEN];
+    ULONG psize;
+    int i, tries, attempt, result = -1;
+    int e_sup = 0, e_wsec = 0, e_auth = 0, e_pmk = 0;
+
+    if (!BWFMBase->bwfm_attached || ssid == NULL || ssidlen == 0 ||
+        ssidlen > BWFM_MAX_SSID_LEN)
+        return -1;
+
+    ObtainSemaphore(&BWFMBase->bwfm_Sem);
+
+    /*
+     * Enable the association events we wait on. The firmware's default event
+     * mask delivers E_IF but NOT the assoc events (E_LINK/E_SET_SSID/E_AUTH/...),
+     * so without this the join would never see a link-up event and always time
+     * out. (BWFMScan sets the same mask; join must not depend on a prior scan
+     * having run.) Mirrors OpenBSD's pre-join event_msgs setup.
+     */
+    bwfm_zero(evmask, sizeof(evmask));
+#define EV(e) (evmask[(e) / 8] |= (1 << ((e) % 8)))
+    EV(BWFM_E_IF); EV(BWFM_E_LINK); EV(BWFM_E_AUTH); EV(BWFM_E_ASSOC);
+    EV(BWFM_E_EAPOL_MSG); EV(BWFM_E_DEAUTH); EV(BWFM_E_DISASSOC);
+    EV(BWFM_E_REASSOC); EV(BWFM_E_ROAM);
+    EV(BWFM_E_SET_SSID);
+#undef EV
+    bwfm_iovar_set(BWFMBase, "event_msgs", evmask, sizeof(evmask));
+
+    /*
+     * Put the interface in infrastructure-STA mode and keep the radio powered.
+     * BWFMScan sets these as part of its pre-scan bwfm_init() sequence; doing
+     * them here makes a join self-contained so the datapath works without a
+     * prior scan. mpc=0 is the key one: with the default (mpc on) the firmware
+     * powers the MAC down when briefly idle and drops unsolicited RX like the
+     * DHCP offer, so association succeeds but no IP ever arrives.
+     */
+    bwfm_set_int(BWFMBase, BWFM_C_SET_INFRA, 1);
+    bwfm_set_int(BWFMBase, BWFM_C_SET_AP, 0);
+    bwfm_iovar_set_int(BWFMBase, "mpc", 0);
+    bwfm_set_int(BWFMBase, BWFM_C_SET_PM, BWFM_PM_FAST_PS);
+    /*
+     * Leave the firmware's roam engine alone and it re-associates on its own,
+     * which throws the keys away: with the handshake on the host, only the
+     * supplicant can put them back, and it is not part of the conversation.
+     * The AP then drops us, the firmware roams again, and it never settles.
+     */
+    bwfm_iovar_set_int(BWFMBase, "roam_off", 1);
+
+    if (ielen > 0)
+    {
+        /*
+         * Host-driven WPA: the caller (wpa_supplicant) runs the 4-way
+         * handshake and installs the keys through BWFMSetKey, so the firmware
+         * only needs the IE to put in the (re)assoc request plus the cipher
+         * and AKM it implies. Ported from OpenBSD's bwfm_connect(). Do NOT set
+         * sup_wpa here: newer firmware (CYW43456) has no internal supplicant
+         * at all, and on the chips that do, having both run fights.
+         */
+        ULONG wsec = 0, wpa_auth = 0;
+
+        bwfm_iovar_set(BWFMBase, "wpaie", ie, ielen);
+        bwfm_ie_security(ie, ielen, &wsec, &wpa_auth);
+
+        e_wsec = bwfm_iovar_set_int(BWFMBase, "sup_wpa", 0);
+        e_auth = bwfm_iovar_set_int(BWFMBase, "wpa_auth", wpa_auth);
+        e_pmk  = bwfm_iovar_set_int(BWFMBase, "wsec", wsec);
+        D(bug("[bwfm] security: host handshake, ie %u bytes ->"
+              " wsec 0x%lx wpa_auth 0x%lx (sup_wpa=%d wpa_auth=%d wsec=%d)\n",
+              (unsigned)ielen, (unsigned long)wsec, (unsigned long)wpa_auth,
+              e_wsec, e_auth, e_pmk));
+    }
+    else if (passlen > 0)
+    {
+        /*
+         * No IE, but a passphrase: the caller has no supplicant of its own
+         * (the DEVS:bwfm.prefs auto-join), so ask the firmware to be one.
+         * Only the older chips can - a refusal shows up in the log below.
+         */
+        struct bwfm_wsec_pmk pmk;
+
+        bwfm_zero((UBYTE *)&pmk, sizeof(pmk));
+        if (passlen > sizeof(pmk.key))
+            passlen = sizeof(pmk.key);
+        pmk.key_len = AROS_WORD2LE((UWORD)passlen);
+        pmk.flags = AROS_WORD2LE(BWFM_WSEC_PASSPHRASE);
+        CopyMem(pass, pmk.key, passlen);
+
+        e_sup  = bwfm_iovar_set_int(BWFMBase, "sup_wpa", 1);
+        e_wsec = bwfm_iovar_set_int(BWFMBase, "wsec", BWFM_WSEC_AES);
+        e_auth = bwfm_iovar_set_int(BWFMBase, "wpa_auth", BWFM_WPA_AUTH_WPA2_PSK);
+        e_pmk  = bwfm_dcmd(BWFMBase, BWFM_C_SET_WSEC_PMK, 1, &pmk, sizeof(pmk));
+        D(bug("[bwfm] security: firmware supplicant, sup_wpa=%d wsec=%d"
+              " wpa_auth=%d pmk=%d (passlen %u)\n",
+              e_sup, e_wsec, e_auth, e_pmk, (unsigned)passlen));
+    }
+    else
+    {
+        bwfm_iovar_set_int(BWFMBase, "sup_wpa", 0);
+        bwfm_iovar_set_int(BWFMBase, "wpa_auth", BWFM_WPA_AUTH_DISABLED);
+        bwfm_iovar_set_int(BWFMBase, "wsec", BWFM_WSEC_NONE);
+    }
+    bwfm_iovar_set_int(BWFMBase, "auth", BWFM_AUTH_OPEN);
+    bwfm_iovar_set_int(BWFMBase, "mfp", BWFM_MFP_NONE);
+
+    /*
+     * Build the join request: SSID, any channel, and the BSSID the supplicant
+     * picked if it named one. In a mesh every node shares the SSID, and the
+     * supplicant checks the handshake against the IEs of the node it chose.
+     */
+    bwfm_zero((UBYTE *)&jp, sizeof(jp));
+    jp.ssid.len = AROS_LONG2LE(ssidlen);
+    CopyMem(ssid, jp.ssid.ssid, ssidlen);
+    for (i = 0; i < ETHER_ADDR_LEN; i++)
+        jp.assoc.bssid[i] = bssid ? bssid[i] : 0xff;
+    jp.assoc.chanspec_num = 0;
+    jp.scan.scan_type = 0xff;                   /* default scan */
+    jp.scan.nprobes = AROS_LONG2LE(0xffffffff);
+    jp.scan.active_time = AROS_LONG2LE(0xffffffff);
+    jp.scan.passive_time = AROS_LONG2LE(0xffffffff);
+    jp.scan.home_time = AROS_LONG2LE(0xffffffff);
+
+    psize = sizeof(jp) - sizeof(jp.assoc.chanspec_list);
+
+    /* Collect events from here on, then release the bus so the RX pump (the
+     * single FIFO reader) can deliver the association events to us. */
+    bwfm_event_listen(BWFMBase, 1);
+    ReleaseSemaphore(&BWFMBase->bwfm_Sem);
+
+    bwfm_timer_open(&tmr);
+
+    /*
+     * Issue the join and wait for the link. The first association attempt
+     * often returns E_AUTH timeout (status 2) on this firmware, so retry a
+     * couple of times before giving up.
+     */
+    for (attempt = 0; attempt < 3 && result != 0; attempt++)
+    {
+        result = -1;
+
+        ObtainSemaphore(&BWFMBase->bwfm_Sem);
+        {
+            int jerr = bwfm_iovar_set(BWFMBase, "join", &jp, psize);
+
+            if (jerr)
+            {
+                /* Older firmware: fall back to BWFM_C_SET_SSID with join_params. */
+                struct bwfm_join_params jpp;
+                int serr;
+
+                bwfm_zero((UBYTE *)&jpp, sizeof(jpp));
+                jpp.ssid.len = AROS_LONG2LE(ssidlen);
+                CopyMem(ssid, jpp.ssid.ssid, ssidlen);
+                for (i = 0; i < ETHER_ADDR_LEN; i++)
+                    jpp.assoc.bssid[i] = jp.assoc.bssid[i];
+                serr = bwfm_dcmd(BWFMBase, BWFM_C_SET_SSID, 1, &jpp,
+                                 sizeof(jpp) - sizeof(jpp.assoc.chanspec_list));
+                D(bug("[bwfm] join iovar err %d, SET_SSID fallback err %d\n", jerr, serr));
+            }
+            else
+                D(bug("[bwfm] join iovar accepted\n"));
+        }
+        ReleaseSemaphore(&BWFMBase->bwfm_Sem);
+
+        D(bug("[bwfm] join \"%s\" (%s) attempt %d - waiting for link\n", ssid,
+              ielen ? "WPA, host handshake"
+                    : (passlen ? "WPA2-PSK, firmware supplicant" : "open"),
+              attempt + 1));
+
+        /* Consume association events from the pump (~10s, 50ms ticks). */
+        for (tries = 0; tries < 200 && result < 0; tries++)
+        {
+            ULONG etype, status, flags, n;
+
+            while ((n = bwfm_event_pop(BWFMBase, frame, sizeof(frame))) > 0)
+            {
+                struct bwfm_event *e = (struct bwfm_event *)frame;
+
+                if (n < sizeof(*e))
+                    continue;
+
+                etype = AROS_BE2LONG(e->msg.event_type);
+                status = AROS_BE2LONG(e->msg.status);
+                flags = AROS_BE2WORD(e->msg.flags);
+                D(bug("[bwfm] join event type %u status %u flags 0x%x\n",
+                      etype, status, flags));
+
+                if (etype == BWFM_E_LINK)
+                    result = (flags & BWFM_EVENT_FLAG_LINK_UP) ? 0 : -2;
+                else if (etype == BWFM_E_SET_SSID)
+                {
+                    if (status != BWFM_E_STATUS_SUCCESS)
+                        result = -3;            /* association rejected */
+                    /* success: keep polling for the E_LINK up that follows */
+                }
+                else if (etype == BWFM_E_DEAUTH || etype == BWFM_E_DISASSOC)
+                    result = -4;                /* kicked off (e.g. wrong passphrase) */
+            }
+
+            /*
+             * The E_LINK up event is sometimes glommed (SDPCM channel 3) and
+             * dropped by our one-frame-at-a-time RX path, so confirm the link
+             * directly every few ticks: GET_BSSID returns the AP's BSSID once
+             * associated. This also makes re-joining an already-connected
+             * network succeed immediately (idempotent).
+             */
+            if (result < 0 && (tries % 4) == 3)
+            {
+                uint8_t cur[ETHER_ADDR_LEN];
+
+                /* Still on the old node is not the join we asked for. */
+                bwfm_zero(cur, sizeof(cur));
+                ObtainSemaphore(&BWFMBase->bwfm_Sem);
+                if (bwfm_dcmd(BWFMBase, BWFM_C_GET_BSSID, 0, cur, sizeof(cur)) == 0 &&
+                    (cur[0] | cur[1] | cur[2] | cur[3] | cur[4] | cur[5]) != 0 &&
+                    (bssid == NULL || bwfm_memeq(cur, bssid, ETHER_ADDR_LEN)))
+                    result = 0;
+                ReleaseSemaphore(&BWFMBase->bwfm_Sem);
+            }
+
+            if (result < 0)
+                bwfm_timer_wait(BWFMBase, &tmr, 50000);
+        }
+
+        D(bug("[bwfm] join attempt %d %s (result %d)\n", attempt + 1,
+              result == 0 ? "OK" : "FAILED", result));
+    }
+
+    bwfm_timer_close(&tmr);
+    bwfm_event_listen(BWFMBase, 0);
+    return result;
+
+    AROS_LIBFUNC_EXIT
+}
+
+/*
+ * Route the SDIO card interrupt to the device's RX pump: `task` is signalled
+ * with `sigmask` when the chip has a frame. Thin wrapper over sdio.resource so
+ * the device never touches the SDIO layer directly.
+ */
+/*
+ * Install one key slot (PTK, GTK or WEP) that the host-side supplicant just
+ * negotiated. Ported from OpenBSD's bwfm_set_key_cb(): a pairwise key carries
+ * the peer address and no primary flag, a group or WEP key is the reverse, and
+ * afterwards wsec gets the cipher's bit added without disturbing the others.
+ * len == 0 clears the slot.
+ */
+/*****************************************************************************
+    NAME
+        int BWFMSetKey(
+
+    SYNOPSIS
+        uint32_t index, uint32_t algo, uint8_t * mac, uint8_t * key, uint32_t keylen)
+
+    FUNCTION
+        Install or remove a firmware encryption key.
+
+    INPUTS
+        index - Firmware key-slot index, passed through without range checks.
+        algo - BWFM_CRYPTO_ALGO_OFF (0), WEP1 (1), TKIP (2), WEP128 (3),
+            or AES_CCM (4). The prefix BWFM_CRYPTO_ALGO_ applies to each name.
+        mac - Optional six-byte peer address. A nonzero unicast address
+            selects a pairwise key except for WEP. NULL, an all-zero address,
+            a multicast address or a WEP algorithm selects a primary key.
+        key - Readable key bytes in firmware order. May be NULL if keylen
+            is zero.
+        keylen - Number of key bytes, at most 32. Zero removes the selected
+            key by sending algorithm OFF. algo must still be a supported value.
+
+    RESULT
+        Zero if the firmware accepts the key command; a firmware status or
+        -1 on invalid attachment, unsupported algorithm, excessive length
+        or communication failure. Failure of the subsequent cipher-setting
+        update is not reported.
+
+    NOTES
+        Call in task context after firmware startup, with the key negotiated
+        for the current connection. Access is serialized. Key and address
+        bytes are copied; neither pointer is retained.
+
+        The caller must supply an algorithm-appropriate length and firmware
+        key layout. This function neither derives keys nor completes the
+        authentication handshake. It sends no receive sequence counter; the
+        corresponding firmware fields are zero. Removing a key does not
+        clear the interface cipher-enable bits.
+
+    BUGS
+        Installing a nonempty key clears all WEP, TKIP and AES enable bits
+        before setting the new cipher bit, losing other active cipher modes.
+        The key command is not rolled back if the later update fails.
+        Algorithm-specific lengths and slot ranges are not validated, and
+        temporary key copies are not explicitly erased before return.
+
+    SEE ALSO
+        BWFMJoin(), BWFMIovar()
+
+*****************************************************************************/
+AROS_LH5(int, BWFMSetKey,
+                AROS_LHA(uint32_t, index, D0),
+                AROS_LHA(uint32_t, algo, D1),
+                AROS_LHA(uint8_t *, mac, A0),
+                AROS_LHA(uint8_t *, key, A1),
+                AROS_LHA(uint32_t, keylen, D2),
+                struct BWFMBase *, BWFMBase, 18, Bwfm)
+{
+    AROS_LIBFUNC_INIT
+
+    struct bwfm_wsec_key k;
+    ULONG wsec_enable = 0, wsec = 0;
+    int pairwise, err;
+
+    if (!BWFMBase->bwfm_attached || keylen > sizeof(k.data))
+        return -1;
+
+    switch (algo)
+    {
+    case BWFM_CRYPTO_ALGO_WEP1:
+    case BWFM_CRYPTO_ALGO_WEP128:   wsec_enable = BWFM_WSEC_WEP; break;
+    case BWFM_CRYPTO_ALGO_TKIP:     wsec_enable = BWFM_WSEC_TKIP; break;
+    case BWFM_CRYPTO_ALGO_AES_CCM:  wsec_enable = BWFM_WSEC_AES; break;
+    case BWFM_CRYPTO_ALGO_OFF:      break;
+    default:
+        D(bug("[bwfm] SetKey: algo %u not supported\n", (unsigned)algo));
+        return -1;
+    }
+
+    /* A unicast address means this is the pairwise key. WEP is never pairwise
+     * even when the supplicant hands us a peer address for it. */
+    pairwise = (mac != NULL && (mac[0] & 1) == 0 &&
+                (mac[0] | mac[1] | mac[2] | mac[3] | mac[4] | mac[5]) != 0 &&
+                wsec_enable != BWFM_WSEC_WEP);
+
+    ObtainSemaphore(&BWFMBase->bwfm_Sem);
+
+    bwfm_zero((UBYTE *)&k, sizeof(k));
+    k.index = AROS_LONG2LE(index);
+    k.len = AROS_LONG2LE(keylen);
+    if (keylen)
+        CopyMem(key, k.data, keylen);
+    k.algo = AROS_LONG2LE(keylen ? algo : BWFM_CRYPTO_ALGO_OFF);
+    if (pairwise)
+        CopyMem(mac, k.ea, ETHER_ADDR_LEN);
+    else
+        k.flags = AROS_LONG2LE(BWFM_WSEC_PRIMARY_KEY);
+
+    err = bwfm_iovar_set(BWFMBase, "wsec_key", &k, sizeof(k));
+    D(bug("[bwfm] SetKey: index %u algo %u len %u %s -> %d\n",
+          (unsigned)index, (unsigned)algo, (unsigned)keylen,
+          pairwise ? "pairwise" : "primary", err));
+
+    /* Read-modify-write: the pairwise and group keys arrive separately and
+     * each has to keep the other's cipher bit. */
+    if (err == 0 && keylen && wsec_enable)
+    {
+        uint32_t cur = 0;
+
+        if (bwfm_iovar_get(BWFMBase, "wsec", &cur, sizeof(cur)) == 0)
+        {
+            wsec = AROS_LE2LONG(cur);
+            wsec &= ~(BWFM_WSEC_WEP | BWFM_WSEC_TKIP | BWFM_WSEC_AES);
+            wsec |= wsec_enable;
+            bwfm_iovar_set_int(BWFMBase, "wsec", wsec);
+        }
+    }
+
+    ReleaseSemaphore(&BWFMBase->bwfm_Sem);
+
+    return err;
+
+    AROS_LIBFUNC_EXIT
+}
+
+/*****************************************************************************
+    NAME
+        int BWFMSetRxSignal(
+
+    SYNOPSIS
+        struct Task * task, uint32_t sigmask)
+
+    FUNCTION
+        Route SDIO card interrupts to an Exec task signal.
+
+    INPUTS
+        task - Live task to notify. The pointer is retained while interrupt
+            delivery is enabled. NULL disarms the card interrupt.
+        sigmask - Mask of signals allocated to task, not a signal-bit number.
+
+    RESULT
+        Zero if the card interrupt-enable write succeeds; -1 if it fails.
+        The task and mask are replaced and host signalling is enabled even
+        when the card write fails.
+
+    NOTES
+        Call in task context after attachment has registered the SDIO
+        interrupt handler. Coordinate changes with the existing consumer;
+        there is one shared task/mask registration.
+
+        The handler masks host signalling before notifying the task. Call
+        BWFMClearInt(), drain received frames, then BWFMAckRx() to re-enable
+        signalling. Signals can coalesce and do not count frames.
+
+    BUGS
+        Registration is not synchronized with the handler and provides no
+        safe unregister-and-drain operation. A successful return does not check
+        whether the SDIO handler was registered successfully.
+
+    SEE ALSO
+        BWFMRxFrame(), BWFMClearInt(), BWFMAckRx(), SDIOSetInterrupt()
+
+*****************************************************************************/
+AROS_LH2(int, BWFMSetRxSignal,
+                AROS_LHA(struct Task *, task, A0),
+                AROS_LHA(uint32_t, sigmask, D0),
+                struct BWFMBase *, BWFMBase, 12, Bwfm)
+{
+    AROS_LIBFUNC_INIT
+
+    return SDIOSetInterrupt(task, sigmask);
+
+    AROS_LIBFUNC_EXIT
+}
+
+/* Re-arm the card interrupt after the pump has drained pending frames. */
+/*****************************************************************************
+    NAME
+        void BWFMAckRx(
+
+    SYNOPSIS
+        )
+
+    FUNCTION
+        Re-enable host signalling for the SDIO card interrupt.
+
+    NOTES
+        Use after BWFMSetRxSignal() has installed a consumer. Drain pending
+        frames and call BWFMClearInt() before re-arming. An asserted source
+        can trigger another notification immediately.
+
+        This call does not drain data, clear chip interrupt status or clear
+        the task signal. It takes no semaphore and returns no status.
+        Coordinate it with registration and shutdown.
+
+    SEE ALSO
+        BWFMSetRxSignal(), BWFMClearInt(), BWFMRxFrame()
+
+*****************************************************************************/
+AROS_LH0(void, BWFMAckRx,
+                struct BWFMBase *, BWFMBase, 13, Bwfm)
+{
+    AROS_LIBFUNC_INIT
+
+    SDIOAckInterrupt();
+
+    AROS_LIBFUNC_EXIT
+}
+
+/*
+ * Clear the chip's SDPCM interrupt status (the func1/card-interrupt source) so
+ * DAT1 deasserts. The RX pump calls this before draining + re-arming.
+ * Mirrors OpenBSD bwfm_sdio_task()'s INTSTATUS read + W1C.
+ */
+/*****************************************************************************
+    NAME
+        void BWFMClearInt(
+
+    SYNOPSIS
+        )
+
+    FUNCTION
+        Acknowledge pending chip mailbox and frame interrupt status.
+
+    NOTES
+        Call in task context before draining received frames, then
+        BWFMAckRx() once they are drained. A frame arriving after the clear
+        raises the status again, so the re-armed interrupt cannot miss it.
+        The call takes the resource semaphore, requests the
+        high-throughput clock when needed, acknowledges a pending host
+        mailbox notification and clears the selected latched status bits.
+        It does nothing if the resource is not attached.
+
+        The call does not drain the receive FIFO, clear the task signal or
+        re-enable host signalling. Clock waiting can busy-wait for about
+        10 milliseconds, in addition to register-transfer delays.
+
+    BUGS
+        Clock timeout and register-transfer failures are not reported.
+        Returning does not establish that the interrupt source was cleared.
+
+    SEE ALSO
+        BWFMRxFrame(), BWFMAckRx(), BWFMSetRxSignal()
+
+*****************************************************************************/
+AROS_LH0(void, BWFMClearInt,
+                struct BWFMBase *, BWFMBase, 14, Bwfm)
+{
+    AROS_LIBFUNC_INIT
+
+    uint32_t ist, raw;
+    uint8_t clk, devctl;
+    int i;
+
+    if (!BWFMBase->bwfm_attached)
+        return;
+
+    ObtainSemaphore(&BWFMBase->bwfm_Sem);
+
+    /*
+     * Make the chip clock available before touching frames. When the card
+     * interrupt is enabled the chip may doze and only wake the host via the
+     * interrupt with DEVICE_CTL_CA_INT_ONLY set - in that state it signals
+     * HMB_FRAME_IND but does NOT DMA the frame into the F2 FIFO until the host
+     * requests HT and clears CA_INT_ONLY. This explains the symptom: FRAME_IND
+     * set but F2 empty. Mirrors OpenBSD bwfm_sdio_clkctl(CLK_AVAIL).
+     */
+    clk = bwfm_read_1(BWFM_SDIO_FUNC1_CHIPCLKCSR);
+    if (!(clk & BWFM_SDIO_FUNC1_CHIPCLKCSR_HT_AVAIL))
+    {
+        bwfm_write_1(BWFM_SDIO_FUNC1_CHIPCLKCSR,
+                     clk | BWFM_SDIO_FUNC1_CHIPCLKCSR_FORCE_HT);
+        for (i = 0; i < 100; i++)
+        {
+            clk = bwfm_read_1(BWFM_SDIO_FUNC1_CHIPCLKCSR);
+            if (clk & BWFM_SDIO_FUNC1_CHIPCLKCSR_HT_AVAIL)
+                break;
+            bwfm_udelay(BWFMBase, 100);
+        }
+    }
+    devctl = bwfm_read_1(BWFM_SDIO_DEVICE_CTL);
+    if (devctl & BWFM_SDIO_DEVICE_CTL_CA_INT_ONLY)
+        bwfm_write_1(BWFM_SDIO_DEVICE_CTL,
+                     devctl & ~BWFM_SDIO_DEVICE_CTL_CA_INT_ONLY);
+
+    raw = bwfm_dev_read(BWFMBase, SDPCMD_INTSTATUS);
+    ist = raw & (SDPCMD_INTSTATUS_HMB_SW_MASK | SDPCMD_INTSTATUS_CHIPACTIVE);
+
+    /* Diagnostic: dump interrupt + clock state during a join/scan. */
+    if (BWFMBase->bwfm_evlisten)
+        D(bug("[bwfm] clrint INTSTATUS 0x%08x clk 0x%02x devctl 0x%02x\n",
+              raw, clk, devctl));
+
+    /* The host-mailbox interrupt needs the SDPCM handshake before its status
+     * bit may be cleared - read the mailbox data and ACK it, or the chip's
+     * mailbox protocol wedges and it stops delivering events/frames (this
+     * broke join when the pump cleared it bare). Mirrors OpenBSD. */
+    if (ist & SDPCMD_INTSTATUS_HMB_HOST_INT)
+    {
+        bwfm_dev_read(BWFMBase, SDPCMD_TOHOSTMAILBOXDATA);
+        bwfm_dev_write(BWFMBase, SDPCMD_TOSBMAILBOX, SDPCMD_TOSBMAILBOX_INT_ACK);
+    }
+
+    /* W1C the latched status bits (incl. HMB_FRAME_IND). The pump drains F2
+     * after this, so a frame landing meanwhile sets the bit again. */
+    if (ist)
+        bwfm_dev_write(BWFMBase, SDPCMD_INTSTATUS, ist);
+    ReleaseSemaphore(&BWFMBase->bwfm_Sem);
+
+    AROS_LIBFUNC_EXIT
+}
+
+/*
+ * Queue a firmware event frame for an in-progress control op (join/scan). The
+ * device's RX pump - the single SDPCM FIFO reader - calls this for every event
+ * frame it reads. If no control op is listening the frame is dropped (events
+ * outside join/scan are not acted on yet). On overflow the oldest entry is
+ * dropped so the pump never blocks.
+ */
+/*****************************************************************************
+    NAME
+        void BWFMEventPost(
+
+    SYNOPSIS
+        void * ev, uint32_t len)
+
+    FUNCTION
+        Copy a firmware event into the queue for a waiting join or scan.
+
+    INPUTS
+        ev - Readable Ethernet event frame, including its Ethernet and
+            firmware event headers. NULL discards the request.
+        len - Frame length. Zero discards the request; at most 2048 bytes
+            are copied.
+
+    NOTES
+        Call in task context from the receive task after BWFMRxFrame() marks
+        a complete firmware event. The call acquires the resource semaphore,
+        copies the bytes and does not retain ev. It does not validate the
+        event headers or report acceptance.
+
+        Events are discarded when no join or scan is listening. The queue
+        holds eight events; inserting into a full queue drops the oldest.
+        Frames longer than 2048 bytes are truncated. Starting a new listener
+        discards previously queued events. No task signal is sent; the
+        control operation polls the queue.
+
+    SEE ALSO
+        BWFMRxFrame(), BWFMJoin(), BWFMScan()
+
+*****************************************************************************/
+AROS_LH2(void, BWFMEventPost,
+                AROS_LHA(void *, ev, A0),
+                AROS_LHA(uint32_t, len, D0),
+                struct BWFMBase *, BWFMBase, 15, Bwfm)
+{
+    AROS_LIBFUNC_INIT
+
+    ObtainSemaphore(&BWFMBase->bwfm_Sem);
+    bwfm_event_push(BWFMBase, ev, len);
+    ReleaseSemaphore(&BWFMBase->bwfm_Sem);
+
+    AROS_LIBFUNC_EXIT
+}
+
+/*
+ * Copy the beacon IEs captured for scan result `idx` (by the last BWFMScan)
+ * into buf; returns the length (0 if none / out of range). The SANA-II device's
+ * S2_GETNETWORKS hands these to wpa_supplicant as S2INFO_InfoElements.
+ */
+/*****************************************************************************
+    NAME
+        int BWFMScanIE(
+
+    SYNOPSIS
+        int idx, void * buf, uint32_t bufsize)
+
+    FUNCTION
+        Copy cached information elements for a scan-result index.
+
+    INPUTS
+        idx - Result index, from zero to 31 and below the count returned by
+            the corresponding BWFMScan().
+        buf - Writable storage for bufsize bytes. NULL returns zero.
+        bufsize - Copy capacity; zero copies nothing.
+
+    RESULT
+        The number of bytes copied, up to bufsize and the 256-byte cache
+        limit. Zero also means no cached bytes or an invalid index or buffer.
+        The full original IE length is not returned.
+
+    NOTES
+        Read the cache after BWFMScan() returns and before another scan
+        starts. Coordinate this externally: this call takes no semaphore.
+        The buffer is not retained.
+
+        The bytes are a prefix of the first captured IE sequence for that
+        result. Neither cache truncation nor caller-buffer truncation respects
+        IE boundaries. Validate each element length before using the data.
+
+    BUGS
+        Only the physical index range is checked; the current scan-result
+        count is not. Unused slots can retain earlier scans, and duplicate
+        BSSID sightings do not refresh cached IEs.
+
+    SEE ALSO
+        BWFMScan()
+
+*****************************************************************************/
+AROS_LH3(int, BWFMScanIE,
+                AROS_LHA(int, idx, D0),
+                AROS_LHA(void *, buf, A0),
+                AROS_LHA(uint32_t, bufsize, D1),
+                struct BWFMBase *, BWFMBase, 16, Bwfm)
+{
+    AROS_LIBFUNC_INIT
+
+    ULONG n;
+
+    if (idx < 0 || idx >= BWFM_SCAN_IE_MAX || buf == NULL)
+        return 0;
+    n = bwfm_scan_ie_len[idx];
+    if (n > bufsize)
+        n = bufsize;
+    if (n)
+        CopyMem(bwfm_scan_ie[idx], buf, n);
+    return (int)n;
+
+    AROS_LIBFUNC_EXIT
+}

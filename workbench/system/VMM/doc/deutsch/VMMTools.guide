@@ -1,0 +1,118 @@
+@database doc/VMMTools.guide
+
+@Node Main "VMM/doc/VMMTools.guide"
+@Next "VMMUsage"
+
+Die folgenden Hilfsprogramme stehen zur Verfügung:
+
+  @{"  VMMUsage       " Link "VMMUsage"}
+  @{"  VMMUsageCLI    " Link "VMMUsageCLI"}
+  @{"  VMMStat        " Link "VMMStat"}
+  @{"  ReadMMUConfig  " Link "ReadMMUConfig"}
+  @{"  ConvVMMCfg     " Link "ConvVMMCfg"}
+  @{"  ShowPageSize   " Link "ShowPageSize"}
+
+@EndNode
+
+@Node "VMMUsage" "VMM/doc/VMMTools.guide/VMMUsage"
+@Prev "Main"
+@Next "VMMUsageCLI"
+@Toc "Main"
+
+VMMUsage
+
+VMMUsage  zeigt  alle  Prozesse  in  einem  Fenster an, die virtuellen
+Speicher  verwenden.   Dies  funktioniert  nur, wenn in VMM die Option
+"Speicher  protokollieren"  eingeschaltet  ist.  Wenn Sie diese Option
+ausschalten,  während VMMUsage läuft, verbleiben die Tasks, die vorher
+virtuellen Speicher allokiert hatten, auf der Liste.  Zusätzlich zeigt
+VMMUsage die Menge des belegten virtuellen Speichers an, der von jeder
+Task  benutzt  wird.   Der  Slider  bestimmt  den Abstand zwischen den
+Aktualisierungen der Liste.
+
+@EndNode
+
+@Node "VMMUsageCLI" "VMM/doc/VMMTools.guide/VMMUsageCLI"
+@Prev "VMMUsage"
+@Next "VMMStat"
+@Toc "Main"
+
+VMMUsageCLI
+
+VMMUsageCLI hat die gleiche Aufgabe wie @{"VMMUsage" Link "VMMUsage"} außer daß die
+Ausgabe einmalig auf ein CLI-Fenster erfolgt.
+
+@EndNode
+
+@Node "VMMStat" "VMM/doc/VMMTools.guide/VMMStat"
+@Prev "VMMUsageCLI"
+@Next "ReadMMUConfig"
+@Toc "Main"
+
+VMMStat
+
+VMMStat gibt die aktuellen Statistikparameter von VMM einmalig aus.
+
+@EndNode
+
+@Node "ReadMMUConfig" "VMM/doc/VMMTools.guide/ReadMMUConfig"
+@Prev "VMMStat"
+@Next "ConvVMMCfg"
+@Toc "Main"
+
+ReadMMUConfig
+
+Dieses  Programm  sollten  Sie nur verwenden, wenn Sie Schwierigkeiten
+haben,  VMM  zum  laufen zu bekommen.  Sie sollten es NICHT verwenden,
+wenn  VMM  einwandfrei  läuft.   Falls  Sie  es doch einmal versuchen,
+müssen Sie anschließend die Datei VMM_MMU.config aus ENV:  und ENVARC:
+löschen,   um   nicht   Speicher  für  eine  unnötige  MMU-Tabelle  zu
+verschwenden.
+Der  Programmlauf dauert je nach Rechner zwischen einigen Sekunden und
+einer  Minute.   Anschließend  wird eine Datei namens "VMM_MMU.config"
+nach  ENV:   und  ENVARC:  geschrieben.  Diese Datei wird von VMM beim
+Start gelesen, um die MMU-Tabelle korrekt zu initialisieren.  Wenn Sie
+als  Parameter  "VERBOSE"  angeben,  wird  die in der Datei enthaltene
+Information  im  Klartext  ausgegeben.   Weitere Details finden Sie im
+Abschnitt "MMU-Einstellung" in VMM.guide.
+Bei  Angeben  der "DEBUG" option wird der Seitendeskriptor jeder Seite
+ausgegeben.   Dies  erzeugt eine große Menge an Daten und ist wohl nur
+sinnvoll einsetzbar, um das Verhalten der MMU zu verstehen.
+Wenn  die  VMM_MMU.config-Datei von VMM verwendet wird, gibt es einige
+Einschränkungen:
+
+- Enforcer  arbeitet  nicht,  d.h. er kann installiert werden, aber er 
+  wird nie Enforcer-Hits ausgeben.
+- Die "FAST ROM"-Option wird ignoriert. Sie können dies umgehen, indem
+  Sie  ReadMMUConfig  laufen  lassen,  nachdem CPU FastROM installiert 
+  wurde.
+- Die  Option  "Zorro  II-RAM  cachen"  wird ignoriert. Sie wird nicht 
+  benötigt, wenn Sie ReadMMUConfig verwenden.
+
+@EndNode
+
+@Node "ConvVMMCfg" "VMM/doc/VMMTools.guide/ConvVMMCfg"
+@Prev "ReadMMUConfig"
+@Next "ShowPageSize"
+@Toc "Main"
+
+ConvVMMCfg
+
+Dieses  Programm  wird im allgemeinen nur von der Installationprozedur
+verwendet, um eine alte (vor V3.0) VMM-Konfigurationsdatei in das neue
+Format  zu  verwandeln.   Es  liest die aktuelle "VMM.prefs"-Datei und
+ersetzt sie durch die konvertierte.
+
+@EndNode
+
+@Node "ShowPageSize" "VMM/doc/VMMTools.guide/ShowPageSize"
+@Prev "ConvVMMCfg"
+@Toc "Main"
+
+ShowPageSize
+
+ShowPageSie  wird nur während des Installationprozesses verwendet.  Es
+liest die aktuelle MMU-Einstellung und gibt die möglichen Seitengrößen
+aus.
+
+@EndNode

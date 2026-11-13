@@ -1,0 +1,59 @@
+.\" $Header$
+.\"
+.\"  C Cross Referencing & Documenting tool - Version 1.5g
+.\"
+.\"  Manual page for cxref-cpp
+.\"
+.\"  Written by Andrew M. Bishop
+.\"
+.\"  This file Copyright 1996,1997,2004 Andrew M. Bishop
+.\"  It may be distributed under the GNU Public License, version 2, or
+.\"  any higher version.  See section COPYING of the GNU Public license
+.\"  for conditions under which this file may be redistributed.
+.\"
+.TH cxref-cpp 1 "May 9, 2004"
+.SH NAME
+cxref-cpp - A modified C preprocessor to use with cxref.
+
+.SH SYNOPSIS
+.B cxref-cpp
+.I ...
+
+.SH DESCRIPTION
+
+To improve the output that is available for the source code for
+cross-referencing a modified version of the GNU CPP v2.7.2 is supplied (named
+cxref-cpp).
+
+This modified C preprocessor allows for a finer control over some features of
+the preprocessing that are not important for a compiler.  In a standard
+preprocessor, the preprocessor directives are intended for use only by the
+preprocessor, so passing the information through is not important.
+
+With cxref-cpp, there are some features that are different to the standard GNU
+CPP:
+
+.IP
+Compared to gcc versions earlier than version 2.8.0 there is an extra option
+that will output the #include lines from the source file.  In version 2.8.0 and
+later this option is present.
+.IP
+Comments trailing a #include or a #define are not preserved by all versions of
+gcc even if the -C option is used.  This is not important while compiling, but
+is useful for documenting.
+.IP
+The cxref-cpp program will take on the personality of the installed version of
+gcc so that the gcc header files can be parsed.  This means that it includes the
+same default include directory paths and macro definitions.  The file that
+contains these definitions is called cxref-cpp.defines and is installed by the
+cxref-cpp-configure program or specified by the -cxref-cpp-defines command line
+option.
+.LP
+
+.SH OPTIONS
+
+The same as for gcc, apart from '-cxref-cpp-defines' described above.
+
+.SH SEE ALSO
+
+cxref(1), cxref-cpp-configure(1), gcc(1)

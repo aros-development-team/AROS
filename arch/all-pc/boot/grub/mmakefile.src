@@ -1,0 +1,56 @@
+# Copyright (C) 2004-2023, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+
+ifneq ($(AROS_TARGET_VARIANT),tiny)
+GRUBOPTS += --enable-affs
+else
+GRUBOPTS += --enable-affs --disable-fat --disable-ffs --disable-minix --disable-reiserfs \
+            --disable-vstafs --disable-jfs --disable-xfs --disable-md5-password \
+            --disable-packet-retransmission --disable-ext2fs --disable-serial \
+            --disable-hercules
+endif
+GRUBCFLAGS := $(OPTIMIZATION_CFLAGS) -Wl,--build-id=none
+
+#MM grub : grub-fetch
+
+#MM
+grub-copy-stages : $(AROS_BOOT)/grub/stage1 $(AROS_BOOT)/grub/stage2 $(AROS_BOOT)/grub/stage2_hdisk $(AROS_BOOT)/grub/iso9660_stage1_5
+
+# DO NOT DECLARE CFLAGS HERE
+# OR MAKE SURE -fno-stack-protector IS DETECTED IF COMPILER SUPPORTS IT
+
+GRUBVERSION=0.97
+REPOSITORIES =  ftp://alpha.gnu.org/gnu/grub
+ARCHBASE     := grub-$(GRUBVERSION)
+ARCHSUFFIX := "tar.gz"
+PATCHSPEC := $(ARCHBASE)-aros.diff:$(ARCHBASE):-f,-p1
+ARCHSRCDIR := $(PORTSDIR)/grub/$(ARCHBASE)
+
+%fetch mmake=grub-fetch archive=$(ARCHBASE) destination=$(PORTSDIR)/grub \
+    location=$(PORTSSOURCEDIR) archive_origins=$(REPOSITORIES) suffixes=$(ARCHSUFFIX) \
+    patches_specs=$(PATCHSPEC)
+
+%create_patch mmake=grub-create-patch \
+    archive=$(ARCHBASE) suffixes=$(ARCHSUFFIX) \
+    destination=$(PORTSDIR)/grub
+
+%build_with_configure mmake=grub compiler=kernel install_target= \
+    srcdir=$(ARCHSRCDIR) \
+    extraoptions="$(GRUBOPTS)" extracflags="$(GRUBCFLAGS)"
+
+$(AROS_BOOT)/grub/stage1: $(GENDIR)/$(CURDIR)/stage1/stage1
+	%mkdirs_q $(dir $@)
+	@$(CP) $< $@
+
+$(AROS_BOOT)/grub/stage2: $(GENDIR)/$(CURDIR)/stage2/stage2_eltorito
+	%mkdirs_q $(dir $@)
+	@$(CP) $< $@
+
+$(AROS_BOOT)/grub/stage2_hdisk: $(GENDIR)/$(CURDIR)/stage2/stage2
+	%mkdirs_q $(dir $@)
+	@$(CP) $< $@
+
+$(AROS_BOOT)/grub/iso9660_stage1_5: $(GENDIR)/$(CURDIR)/stage2/iso9660_stage1_5
+	%mkdirs_q $(dir $@)
+	@$(CP) $< $@

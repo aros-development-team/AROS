@@ -1,0 +1,14 @@
+#
+#  Makefile.in for RPiPWM AHI audio driver
+#
+
+VPATH		= @srcdir@
+
+srcdir		= @srcdir@
+
+DRIVER		= rpipwm.audio
+MODEFILE	= RPIPWM
+
+OBJECTS		= rpipwm-init.o rpipwm-main.o rpipwm-playslave.o rpipwm-accel.o rpipwm-hwaccess.o
+
+include ../Common/Makefile.common

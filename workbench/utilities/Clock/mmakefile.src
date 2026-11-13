@@ -1,0 +1,18 @@
+# Copyright (C) 1995-2003, The AROS Development Team. All rights reserved.
+#
+# Makefile to make Clock.
+
+include $(SRCDIR)/config/aros.cfg
+
+FILES := main locale
+
+EXEDIR := $(AROSDIR)/Utilities
+
+#MM- workbench-utilities : workbench-utilities-clock 
+#MM workbench-utilities-clock : includes linklibs workbench-utilities-clock-catalogs
+
+%build_prog mmake=workbench-utilities-clock \
+    progname=Clock targetdir=$(EXEDIR) \
+    files=$(FILES)
+
+%common

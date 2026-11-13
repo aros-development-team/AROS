@@ -1,0 +1,18 @@
+# Copyright (C) 1995-2003, The AROS Development Team. All rights reserved.
+#
+# Makefile to make More.
+
+include $(SRCDIR)/config/aros.cfg
+
+FILES := more req locale misc
+
+EXEDIR := $(AROSDIR)/Utilities
+
+#MM- workbench-utilities : workbench-utilities-more 
+#MM workbench-utilities-more : includes linklibs workbench-utilities-more-catalogs
+
+%build_prog mmake=workbench-utilities-more \
+    progname=More targetdir=$(EXEDIR) \
+    files=$(FILES)
+
+%common

@@ -1,0 +1,16 @@
+include $(SRCDIR)/config/aros.cfg
+
+#MM workbench-storage: workbench-storage-dosdrivers
+
+workbench-storage:
+	$(MKDIR) $(AROSDIR)/Storage/DataTypes
+	$(MKDIR) $(AROSDIR)/Storage/DOSDrivers
+	$(MKDIR) $(AROSDIR)/Storage/Keymaps
+	$(MKDIR) $(AROSDIR)/Storage/Monitors
+
+#MM workbench-storage-dosdrivers
+workbench-storage-dosdrivers :
+	@if [ -d $(SRCDIR)/$(CURDIR)/DOSDrivers ] ; then \
+	    $(MKDIR) $(AROSDIR)/Storage/DOSDrivers ; \
+	    $(CP) $(SRCDIR)/$(CURDIR)/DOSDrivers/* $(AROSDIR)/Storage/DOSDrivers ; \
+	fi

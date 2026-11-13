@@ -1,0 +1,43 @@
+# Copyright (C) 2004-2026, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+
+BASEICONS := About FixFonts Format FTManager WorkBook Shell
+ADDITIONALICONS := SysMon Snoopy Find VMM Notifications
+
+DISKIMAGESRCS := DiskImageGUI-1.png DiskImageGUI-2.png
+DISKIMAGEICON := DiskImageGUI
+
+#MM- iconset-Gorilla-wbench-icons-aros-clean : iconset-Gorilla-wbench-icons-aros-system-clean
+#MM- iconset-Gorilla-additional-icons-aros-clean : iconset-Gorilla-additional-icons-aros-system-clean
+#MM- iconset-Gorilla-wbench-icons-aros : iconset-Gorilla-wbench-icons-aros-system
+#MM- iconset-Gorilla-additional-icons-aros : iconset-Gorilla-additional-icons-aros-system
+#MM  iconset-Gorilla-additional-icons-aros-system : iconset-Gorilla-additional-icons-aros-system-diskimage
+
+%build_icons mmake=iconset-Gorilla-wbench-icons-aros-system icons=$(BASEICONS) \
+             dir=$(AROS_SYSTEM)
+
+%build_icons mmake=iconset-Gorilla-additional-icons-aros-system icons=$(ADDITIONALICONS) \
+             dir=$(AROS_SYSTEM)
+
+%build_icons mmake=iconset-Gorilla-additional-icons-aros-system-logview icons="LogView" \
+             dir=$(AROS_SYSTEM)
+
+%build_icons mmake=iconset-Gorilla-additional-icons-aros-system-diskimage icons=$(DISKIMAGEICON) \
+             dir=$(AROS_SYSTEM) image=$(DISKIMAGESRCS)
+
+#MM- icons-wbench-system : gorilla-icons-wbench-system
+%build_icons mmake=gorilla-icons-wbench-system icons=$(BASEICONS) \
+             dir=$(AROS_PRESETS)/Icons/Gorilla/Default/$(AROS_DIR_AROS)/$(AROS_DIR_SYSTEM)
+
+#MM- icons-additional-wbench-system : gorilla-icons-additional-wbench-system
+%build_icons mmake=gorilla-icons-additional-wbench-system icons=$(ADDITIONALICONS) \
+             dir=$(AROS_PRESETS)/Icons/Gorilla/Default/$(AROS_DIR_AROS)/$(AROS_DIR_SYSTEM)
+
+#MM- icons-additional-wbench-system-logview : gorilla-icons-additional-wbench-system-logview
+%build_icons mmake=gorilla-icons-additional-wbench-system-logview icons="LogView" \
+             dir=$(AROS_PRESETS)/Icons/Gorilla/Default/$(AROS_DIR_AROS)/$(AROS_DIR_SYSTEM)
+
+#MM- icons-additional-wbench-system-diskimage : gorilla-icons-additional-wbench-system-diskimage
+%build_icons mmake=gorilla-icons-additional-wbench-system-diskimage icons=$(DISKIMAGEICON) \
+             dir=$(AROS_PRESETS)/Icons/Gorilla/Default/$(AROS_DIR_AROS)/$(AROS_DIR_SYSTEM) image=$(DISKIMAGESRCS)

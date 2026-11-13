@@ -1,0 +1,58 @@
+#!/usr/bin/env python3
+
+import argparse
+import re
+from jinja2 import Template
+
+def main():
+    parser = argparse.ArgumentParser(description="Update htmlfile with new unittest list")
+    parser.add_argument('--filelist', required=True, help='Path to file containing unittest file list')
+    parser.add_argument('--htmlfile', required=True, help='Path to the unittests.html file to update')
+
+    args = parser.parse_args()
+
+    # Read unittest filenames from the filelist
+    with open(args.filelist, 'r', encoding='utf-8') as f:
+        results = [line.strip() for line in f if line.strip()]
+
+    activepage = '/unittests/' + results[0] if results else ''
+
+    html_template = """
+<h1>Unit Test Results<br><img style="width: 238px; height: 2px;" alt="spacer" src="/images/sidespacer.png"></h1>
+
+<select name="unittests" id="unittests" onchange="show_unittests(this.value)">
+{% for result in results %}
+    <option value="{{ result }}">{{ result[:-15] }}</option>
+{% endfor %}
+</select>
+
+<object style="float:left;height:100%;" width="100%" height="95vh" id="displayedtest" data="{{ activepage }}" type="text/html"></object>
+
+<script type="text/javascript">
+  function show_unittests(unittest) {
+    document.getElementById("displayedtest").data = "/unittests/" + unittest;
+  }
+</script>
+"""
+
+    # Render the new content
+    template = Template(html_template)
+    new_content = template.render(results=results, activepage=activepage)
+
+    # Read the existing HTML file
+    with open(args.htmlfile, 'r', encoding='utf-8') as f:
+        html_text = f.read()
+
+    # Replace content inside <main> ... <!-- before CONTENT --> ... <!-- after CONTENT --> ... </main>
+    pattern = re.compile(
+        r'(<main>.*?<!-- before CONTENT -->)(.*?)(<!-- after CONTENT -->.*?</main>)',
+        re.DOTALL | re.IGNORECASE
+    )
+    updated_html = pattern.sub(r'\1\n\n' + new_content + r'\n\n\3', html_text)
+
+    # Write back the updated HTML
+    with open(args.htmlfile, 'w', encoding='utf-8') as f:
+        f.write(updated_html)
+
+if __name__ == '__main__':
+    main()

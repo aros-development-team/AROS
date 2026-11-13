@@ -1,0 +1,208 @@
+/*
+    Copyright (C) 2013-2026, The AROS Development Team. All rights reserved.
+
+    Desc: VideoCore framebuffer routines
+*/
+
+#include <aros/macros.h>
+
+#include <hardware/bcm2708.h>
+#include <stdint.h>
+#undef ARM_PERIIOBASE
+
+#include <hardware/videocore.h>
+
+#include "bootconsole.h"
+#include "bcm2708_boot.h"
+#include "vc_mb.h"
+#include "vc_fb.h"
+#include "boot.h"
+
+#undef ARM_PERIIOBASE
+#define ARM_PERIIOBASE (__arm_periiobase)
+extern uintptr_t __arm_periiobase;
+extern uintptr_t __vcmb_base;
+
+#define D(x) /* x */
+
+/* Framebuffer base and geometry, published for the kernel boot taglist. */
+void *vcfb_base;
+unsigned int vcfb_width, vcfb_height, vcfb_depth, vcfb_pitch;
+
+int vcfb_init(int emulated)
+{
+    unsigned int fb_width, fb_height, fb_depth, fb_pitch;
+    unsigned int count;
+    volatile unsigned int *vcmb_msg = (unsigned int *)BOOTMEMADDR(bm_mboxmsg);
+    scr_FrameBuffer = 0;
+
+    D(kprintf("[VCFB] vcfb_init()\n"));
+
+    scr_Type = SCR_UNKNOWN;
+
+    /* query the display dimensions */
+    {
+        vcmb_msg[0] = AROS_LONG2LE(8 * 4);
+        vcmb_msg[1] = AROS_LONG2LE(VCTAG_REQ);
+        vcmb_msg[2] = AROS_LONG2LE(VCTAG_GETRES);
+        vcmb_msg[3] = AROS_LONG2LE(8);
+        vcmb_msg[4] = 0;
+        vcmb_msg[5] = 0;
+        vcmb_msg[6] = 0;
+        vcmb_msg[7] = 0;                        // terminate tag
+
+        vcmb_write(__vcmb_base, VCMB_PROPCHAN, (void *)vcmb_msg);
+        vcmb_msg = vcmb_read(__vcmb_base, VCMB_PROPCHAN);
+
+        if (!vcmb_msg || (vcmb_msg[1] != AROS_LONG2LE(VCTAG_RESP)))
+            return 0;
+
+        if (((fb_width = AROS_LE2LONG(vcmb_msg[5])) == 0) || ((fb_height = AROS_LE2LONG(vcmb_msg[6])) == 0))
+        {
+            fb_width = 1024;
+            fb_height = 768;
+        }
+
+        /* An emulator reports its model's default mode; unlike the Pi 5 it
+         * honours SETRES, so ask for 1024x768 there. */
+        if (emulated)
+        {
+            fb_width = 1024;
+            fb_height = 768;
+        }
+
+        D(kprintf("[VCFB] fb_width=%d, fb_height=%d\n", fb_width, fb_height));
+    }
+
+    /* fill in our framebuffer configuration/allocation request */
+    {
+        unsigned int c = 1;
+        vcmb_msg[c++] = AROS_LONG2LE(VCTAG_REQ);
+
+        vcmb_msg[c++] = AROS_LONG2LE(VCTAG_SETRES);
+        vcmb_msg[c++] = AROS_LONG2LE(8);
+        vcmb_msg[c++] = AROS_LONG2LE(0);
+        vcmb_msg[c++] = AROS_LONG2LE(fb_width);
+        vcmb_msg[c++] = AROS_LONG2LE(fb_height);
+
+        vcmb_msg[c++] = AROS_LONG2LE(VCTAG_SETVRES);          // duplicate physical size...
+        vcmb_msg[c++] = AROS_LONG2LE(8);
+        vcmb_msg[c++] = AROS_LONG2LE(0);
+        vcmb_msg[c++] = AROS_LONG2LE(fb_width);
+        vcmb_msg[c++] = AROS_LONG2LE(fb_height);
+
+        vcmb_msg[c++] = AROS_LONG2LE(VCTAG_SETDEPTH);
+        vcmb_msg[c++] = AROS_LONG2LE(4);
+        vcmb_msg[c++] = AROS_LONG2LE(0);
+
+        fb_depth = 32;
+
+        vcmb_msg[c++] = AROS_LONG2LE(fb_depth);
+
+        vcmb_msg[c++] = AROS_LONG2LE(VCTAG_SETPIXFMT);        // channel order: RGB
+        vcmb_msg[c++] = AROS_LONG2LE(4);
+        vcmb_msg[c++] = AROS_LONG2LE(0);
+        vcmb_msg[c++] = AROS_LONG2LE(1);
+
+        vcmb_msg[c++] = AROS_LONG2LE(VCTAG_FBALLOC);
+        vcmb_msg[c++] = AROS_LONG2LE(8);
+        vcmb_msg[c++] = AROS_LONG2LE(0);
+        vcmb_msg[c++] = AROS_LONG2LE(64);
+        vcmb_msg[c++] = AROS_LONG2LE(0);
+
+        vcmb_msg[c++] = AROS_LONG2LE(0);                      // terminate tags
+
+        vcmb_msg[0] = AROS_LONG2LE((c << 2));                 // fill in request size
+
+        vcmb_write(__vcmb_base, VCMB_PROPCHAN, (void *)vcmb_msg);
+        vcmb_msg = vcmb_read(__vcmb_base, VCMB_PROPCHAN);
+
+        if (!vcmb_msg || (vcmb_msg[1] != AROS_LONG2LE(VCTAG_RESP)))
+            return 0;
+
+        count = 2;                              // locate the allocation request
+        while((AROS_LE2LONG(vcmb_msg[count])))
+        {
+            if (vcmb_msg[count] == AROS_LONG2LE(VCTAG_FBALLOC))
+                break;
+
+            count += 3 + (AROS_LE2LONG(vcmb_msg[count + 1]) >> 2);
+
+            if (count > c)
+                return 0;
+        }
+
+        if (AROS_LE2LONG(vcmb_msg[count + 2]) != (VCTAG_RESP + 8))
+            return 0;
+
+        D(kprintf("%p, %p, %p, %p, %p\n", AROS_LE2LONG(vcmb_msg[count]), AROS_LE2LONG(vcmb_msg[count+1]), AROS_LE2LONG(vcmb_msg[count+2]),
+        AROS_LE2LONG(vcmb_msg[count+3]),AROS_LE2LONG(vcmb_msg[count+4])));
+
+        if (((scr_FrameBuffer = (void *)(uintptr_t)AROS_LE2LONG(vcmb_msg[count + 3])) == 0) || (AROS_LE2LONG(vcmb_msg[count + 4]) == 0))
+            return 0;
+
+        D(kprintf("[VCFB] scr_Framebuffer=%p, %p\n", scr_FrameBuffer, (intptr_t)scr_FrameBuffer & 0xc0000000));
+
+        if (((intptr_t)scr_FrameBuffer & 0xc0000000) == 0x40000000)
+        {
+            D(kprintf("[VCFB] Buffer in L2 cache\n"));
+        }
+        else if (((intptr_t)scr_FrameBuffer & 0xc0000000) == 0xc0000000)
+        {
+            D(kprintf("[VCFB] Buffer uncached\n"));
+        }
+        scr_FrameBuffer = (void*)((intptr_t)scr_FrameBuffer & ~0xc0000000);
+
+        /* The firmware echoes back what it actually configured, in place.
+         * Never trust the values we asked for: on the Pi 5 the surface is
+         * locked to the firmware's mode and SETRES acknowledges without
+         * reprogramming. TESTRES echoes the current mode, TESTVRES refuses
+         * a taller virtual surface and GETEDID is unimplemented. */
+        if (AROS_LE2LONG(vcmb_msg[5]))
+            fb_width  = AROS_LE2LONG(vcmb_msg[5]);
+        if (AROS_LE2LONG(vcmb_msg[6]))
+            fb_height = AROS_LE2LONG(vcmb_msg[6]);
+        if (AROS_LE2LONG(vcmb_msg[15]))
+            fb_depth  = AROS_LE2LONG(vcmb_msg[15]);
+    }
+
+    /* query the framebuffer pitch */
+    {
+        vcmb_msg[0] = AROS_LONG2LE(7 * 4);
+        vcmb_msg[1] = AROS_LONG2LE(VCTAG_REQ);
+        vcmb_msg[2] = AROS_LONG2LE(VCTAG_GETPITCH);
+        vcmb_msg[3] = AROS_LONG2LE(4);
+        vcmb_msg[4] = 0;
+        vcmb_msg[5] = 0;
+        vcmb_msg[6] = 0;                        // terminate tag
+
+        vcmb_write(__vcmb_base, VCMB_PROPCHAN, (void *)vcmb_msg);
+        vcmb_msg = vcmb_read(__vcmb_base, VCMB_PROPCHAN);
+
+        if (!vcmb_msg || (vcmb_msg[4] != AROS_LONG2LE(VCTAG_RESP + 4)))
+            return 0;
+
+        if ((fb_pitch = AROS_LE2LONG(vcmb_msg[5])) == 0)
+            return 0;
+
+        D(kprintf("[VCFB] fb_pitch=%d\n", fb_pitch));
+    }
+
+    scr_Type = SCR_GFX;
+
+    vcfb_base   = scr_FrameBuffer;
+    vcfb_width  = fb_width;
+    vcfb_height = fb_height;
+    vcfb_depth  = fb_depth;
+    vcfb_pitch  = fb_pitch;
+
+    /* The firmware may place the fb outside both the reported VC region
+     * and the RAM ranges (Pi 5: carveout at 0x3f800000) - map it
+     * explicitly instead of relying on query_vmem()'s coverage.
+     * Normal-NC: framebuffer wants write-combining, not Device. */
+    mmu_map_section(vcfb_base, vcfb_base, vcfb_pitch * vcfb_height, 1, 0, 3, 0);
+
+    fb_Init(fb_width, fb_height, fb_depth, fb_pitch);
+
+    return 1;
+}

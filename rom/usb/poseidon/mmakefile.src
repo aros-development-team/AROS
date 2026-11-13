@@ -1,0 +1,43 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+INCLUDE_FILES := $(call WILDCARD, include/hidd/*.h)
+%copy_includes path=hidd dir=include/hidd
+
+FILES :=    \
+    poseidon.library \
+    popo.gui \
+    numtostr \
+    debug
+HIDDFILES := \
+    usb_controllerclass \
+    usb_deviceclass
+
+FUNCS :=
+
+#MM kernel-usb-poseidon-includes :                              \
+#MM     kernel-exec-includes                                    \
+#MM     kernel-dos-includes                                     \
+#MM     kernel-utility-includes                                 \
+#MM     kernel-usb-usbclass-includes                            \
+#MM     includes-copy
+#MM- kernel-usb-poseidon : linklibs
+
+#MM- kernel-usb-usbromstartup : kernel-usb-poseidon
+
+USER_CPPFLAGS := \
+    -DMUIMASTER_YES_INLINE_STDARG \
+    -D__POSEIDON_NOLIBBASE__
+#USER_CPPFLAGS += -DDEBUG=1
+USER_LDFLAGS := -static
+
+%build_module mmake=kernel-usb-poseidon                         \
+    modname=poseidon modtype=library                            \
+    files="$(FUNCS) $(FILES) $(HIDDFILES)"                      \
+    uselibs="debug"
+
+%build_module_simple mmake=kernel-usb-usbromstartup             \
+  modname=usbromstartup modtype=resource                        \
+  files="usbromearlystartup usbromlatestartup" uselibs="amiga"
+
+%common

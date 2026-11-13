@@ -1,0 +1,154 @@
+###############################################################################\
+################################################################################
+###
+###	$Source$
+###	$Revision: 2 $
+###	$Date: 2004-07-10 22:31:44 +0200 (Sa, 10. Jul 2004) $
+###
+###	$Id: SMakefile 2 2004-07-10 20:31:44Z damato $
+###
+###	$Author: damato $
+###
+###
+###
+###	UNLESS OTHERWISE NOTED, ALL FILES ARE
+###	COPYRIGHT (C) 1998 BY "APOCALYPSE HARD- UND SOFTWARE CARSTEN SCHOLLING".
+###	ALL RIGHTS RESERVED.
+###
+###	NO PART OF THIS SOFTWARE MAY BE COPIED, REPRODUCED, TRANSMITTED, REDIST-
+###	RIBUTED,  DISCLOSED OR DUPLICATED  IN ANY FORM OR BY ANY MEANS,  WITHOUT
+###	THE PRIOR WRITTEN PERMISSION OF "APOCALYPSE HARD- UND SOFTWARE".
+###
+###
+###	DISCLAIMER
+###
+###	THIS SOFTWARE AND INFORMATION IS PROVIDED "AS IS". NO REPRESENTATIONS OR
+###	WARRANTIES ARE MADE WITH RESPECT TO THE ACCURACY,  RELIABILITY,  PERFOR-
+###	MANCE,  CURRENTNESS OR  OPERATION OF THIS SOFTWARE AND INFORMATION,  AND
+###	ALL USE IS AT YOUR OWN RISK. NEITHER "APOCALYPSE HARD- UND SOFTWARE" NOR
+###	THE AUTHORS  ITSELF ASSUME  ANY RESPONSIBILITY  OR LIABILITY  WHATSOEVER
+###	WITH RESPECT TO YOUR  USE OF THIS SOFTWARE AND INFORMATION.
+###
+###
+###
+###
+###	$Log$
+###	Revision 1.1  2004/07/10 20:31:44  damato
+###	- inital checkin
+###
+###
+###
+################################################################################
+###############################################################################/
+
+
+#############################################################################
+##	Configurable Parameters
+
+PROJECT		= NListtree
+VERSION		= 18.7
+
+BASEDIR		= Src:NListtree
+
+CLASS		= ClosedNodeWin98.image
+CLASSOBJ	= ClosedNodeWin98.o
+
+#
+
+GSTFILE		= //$(PROJECT).gst
+
+CC			= sc
+AC			= asm
+LD			= slink
+BRUSH2C		= brush2c
+REVB		= Revisor
+
+#
+
+#CFLAGS		= GST=$(GSTFILE) IDLEN=65
+CFLAGS		= GST=$(GSTFILE) IDLEN=65 OPTMIZE
+
+AFLAGS		= -d
+
+#LDFLAGS		= SC SD BATCH NOICONS
+LDFLAGS		= SC SD BATCH NOICONS NODEBUG
+
+#DEBUGFLAGS	= DEBUG=FULL DEFINE MYDEBUG
+#DEBUGFLAGS	= DEBUG=FULL
+#DEBUGFLAGS	= DEFINE MYDEBUG
+DEBUGFLAGS	=
+
+#
+
+STARTUP		= LIB:c.o
+LIB			= LIB:sc.lib LIB:small.lib
+DEBUG_LIB	= LIB:debug.lib
+
+
+#############################################################################
+##	RULEZ
+
+.c.o:
+		@echo "*e[32m*e[1m$(CLASS): *e[22m*e[33mCompiling *e[32m$@*e[0m"
+		@$(CC) $(CFLAGS) $(DEBUGFLAGS) $*.c
+
+.cpp.o:
+		@echo "*e[32m*e[1m$(CLASS): *e[22m*e[33mCompiling *e[32m$@*e[0m"
+		@$(CC) $(CFLAGS) $(DEBUGFLAGS) $*.cpp
+
+.s.o:
+		@echo "*e[32m*e[1m$(CLASS): *e[22m*e[33mCompiling *e[32m$@*e[0m"
+		@$(AC) $(AFLAGS) $*.s
+
+.ilbm.c:
+		@echo "*e[32m*e[1m$(CLASS): *e[22m*e[33mCreating image source *e[32m$@*e[0m"
+		@$(BRUSH2C) $*.ilbm > $*.c
+
+
+#############################################################################
+##	COMMAND LINE OPTIONS
+
+
+#############################################################################
+##	Main program
+
+
+all: $(CLASS)
+
+$(CLASS): $(CLASSOBJ)
+	@echo "*e[32m*e[1m$(CLASS): *e[22m*e[33mLinking *e[32m$@*e[0m"
+	$(LD) FROM $(CLASSOBJ) TO $@ LIB $(LIB) $(DEBUG_LIB) $(LDFLAGS)
+
+
+#############################################################################
+##
+##
+
+#Revisor FILE "ClosedNodeWin98" APPL $(CLASS) PRO $(PROJECT) VER 1 REV 1 DESC "MUI list tree class image" AUT "Carsten Scholling" COPY "Copyright ©1999-2001 Apocalypse Hard- und Software" C NOCPPC
+
+bump:
+		@echo "*e[32m*e[1m$(CLASS).mcc: *e[22m*e[33mBumping revision*e[0m"
+		$(REVB) FILE "ClosedNodeWin98" BUMPREV
+
+
+install:
+	@echo "*e[32mInstalling class $(CLASS) locally...*e[0m"
+	@copy clone $(CLASS) MUI:Images/aphaso
+	#@avail flush
+
+
+installdist:
+	@echo "*e[32mInstalling class $(CLASS)...*e[0m"
+	@copy clone $(CLASS) $(BASEDIR)/MCC_$(PROJECT)/Images/aphaso
+
+installcat:
+	@echo "*e[32mInstalling catalog files for class $(CLASS)...*e[0m"
+	#@copy clone all catalogs $(BASEDIR)/MCC_$(PROJECT)/locale
+
+
+clean:
+	@echo "*e[32m*e[1m$(CLASS): *e[22m*e[33mDeleting trash of $(CLASS)...*e[0m"
+	@echo "Trash" >Trash.o
+	@list pat (\#?.o|\#?oPPC|\#?.obj|\#?.bak|\#?.lnk|\#?.mcc|\#?.mcp|\#?.0?0|\#?.elf) lformat "delete %p%n" >pipe:$(PROJECT)_delete
+	@execute pipe:$(PROJECT)_delete
+

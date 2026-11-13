@@ -1,0 +1,67 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+.PHONY: $(DISTDIR)/aros$(AROS_TARGET_SUFFIX)-pc-i386.iso
+
+TARGET_ISO := $(DISTDIR)/aros$(AROS_TARGET_SUFFIX)-pc-i386.iso
+
+#MM bootiso-pc-i386 : \
+#MM                              bootiso-native \
+#MM                              kernel-link-pc-i386 \
+#MM                              AROS-pc-drivers
+
+#MM
+bootiso-pc-i386: $(TARGET_ISO)
+
+#MM- bootiso-pc-i386-quick: \
+#MM                              bootiso-pc-i386
+
+#MM- bootiso-pc-i386 : workbench-backdrop
+
+
+ifeq ($(AROS_TARGET_BOOTLOADER),grub)
+BOOTLOADER_ELTORITO_REL := $(AROS_DIR_BOOT)/grub/iso9660_stage1_5
+endif
+
+ifeq ($(AROS_TARGET_BOOTLOADER),grub2)
+BOOTLOADER_ELTORITO_REL := $(AROS_DIR_BOOT)/grub/i386-pc/grub2_eltorito
+endif
+
+ifeq ($(AROS_TARGET_BOOTLOADER),grub2gfx)
+BOOTLOADER_ELTORITO_REL := $(AROS_DIR_BOOT)/grub/i386-pc/grub2_eltorito
+endif
+
+MODULES_DEFAULT := $(SRCDIR)/$(CURDIR)/../modules.default
+BOOTSTRAP_BOOT_FILES := bootstrap.$(AROS_PACKAGE_FMT)
+DEFAULT_BOOT_FILES := $(shell \
+  sed \
+    -e 's#@arch.dir@#$(AROS_DIR_ARCH)#g' \
+    -e 's#@pkg.fmt@#$(AROS_PACKAGE_FMT)#g' \
+    -e 's#@module.bootstrap@#$(MODULE_BOOTSTRAP)#g' \
+    $(MODULES_DEFAULT))
+ISO_DEPS := $(addprefix $(AROSARCHDIR)/, $(BOOTSTRAP_BOOT_FILES)) \
+    $(addprefix $(AROSDIR),$(DEFAULT_BOOT_FILES))
+
+$(warning BOOTLOADER_ELTORITO_REL = $(BOOTLOADER_ELTORITO_REL))
+$(warning LANG = $(LANG))
+
+$(TARGET_ISO): $(ISO_DEPS)
+	%mkdirs_q $(AROSDIR)/S
+	@$(CP) $(SRCDIR)/workbench/s/Startup-Sequence $(AROSDIR)/S/Startup-Sequence
+	@$(MKDIR) -p "$(DISTDIR)"
+	@mkisofs -f \
+		-o $@ \
+		-b $(BOOTLOADER_ELTORITO_REL) \
+		-c $(AROS_DIR_BOOTARCH)/boot.catalog \
+                -no-emul-boot \
+                -boot-load-size 4 \
+                -boot-info-table \
+		-allow-leading-dots \
+		-iso-level 4 \
+                -V "AROS Live CD" \
+                -publisher "The AROS Dev Team" \
+		-p "The AROS Dev Team (www.aros.org)" \
+		-sysid "AROS-$(AROS_TARGET_CPU)-$(AROS_TARGET_ARCH)" \
+                -l -J -r \
+		$(AROSDIR)
+

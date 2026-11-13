@@ -1,0 +1,24 @@
+/*
+    Copyright (C) 2013-2026, The AROS Development Team. All rights reserved.
+*/
+
+#ifndef VC_FB_H
+#define VC_FB_H
+
+#include <inttypes.h>
+
+extern int vcfb_init(int emulated);
+extern void fb_Putc(char chr);
+
+/* Framebuffer base and geometry set by vcfb_init(), consumed by the kernel taglist. */
+extern void *vcfb_base;
+extern unsigned int vcfb_width, vcfb_height, vcfb_depth, vcfb_pitch;
+
+#if !defined(KRN_Dummy)
+#define KRN_Dummy               (TAG_USER + 0x03d00000)
+#endif
+#if !defined(KRN_FuncPutC)
+#define KRN_FuncPutC      (KRN_Dummy + 99) /* RAW FrameBuffer descriptor */
+#endif
+
+#endif	/* VC_FB_H */

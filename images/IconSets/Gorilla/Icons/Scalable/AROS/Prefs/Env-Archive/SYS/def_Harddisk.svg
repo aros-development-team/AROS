@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!-- Generator: Adobe Illustrator 9.0, SVG Export Plug-In  -->
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 20000303 Stylable//EN"   "http://www.w3.org/TR/2000/03/WD-SVG-20000303/DTD/svg-20000303-stylable.dtd" [
+	<!ENTITY st0 "fill:url(#aigrd1);stroke:none;">
+	<!ENTITY st1 "fill:#535445;stroke:none;">
+	<!ENTITY st2 "fill:#848484;stroke:none;">
+	<!ENTITY st3 "fill:#CAD071;stroke:none;">
+	<!ENTITY st4 "fill:url(#aigrd3);stroke:none;">
+	<!ENTITY st5 "fill:#545454;stroke:none;">
+	<!ENTITY st6 "fill:#A3A76A;stroke:none;">
+	<!ENTITY st7 "fill:#FFFFFF;stroke:none;">
+	<!ENTITY st8 "fill:url(#aigrd2);stroke:none;">
+	<!ENTITY st9 "opacity:0.25;stroke:none;">
+	<!ENTITY st10 "fill:none;stroke:none;">
+	<!ENTITY st11 "fill:#F0F970;stroke:none;">
+	<!ENTITY st12 "fill-rule:nonzero;clip-rule:nonzero;stroke:#000000;stroke-miterlimit:4;">
+	<!ENTITY st13 "stroke:none;">
+	<!ENTITY st14 "fill:#2A2A26;stroke:none;">
+	<!ENTITY st15 "fill:#7B7D5B;stroke:none;">
+]>
+<svg  width="70.2pt" height="48pt" viewBox="0 0 70.2 48" xml:space="preserve">
+	<g id="Layer_x0020_3" style="&st12;">
+		<path style="&st10;" d="M70.2,48H0V0h70.2v48z"/>
+	</g>
+	<g id="Layer_x0020_4" style="&st12;">
+		<path style="&st9;" d="M65.2,21.5c2,0.5,3.8,3.5,1,5.4L37.6,43.9L26.7,11.4l38.5,10.1z"/>
+		<path style="&st13;" d="M26.9,8c0,0,0,0-0.1,0C26.7,8.1,6.5,19.7,6.5,19.7l0,0c-1.4,0.9-2.6,2.2-2.8,4.1c0,0.2,0,0.5,0,0.8l0,0l0.3,5.6c0.1,1.9,1.3,2.8,2,3.1c0,0,0,0,0.1,0c0,0,27.8,10.7,27.8,10.7c1.8,0.7,3.8,0.3,5.1-0.9L58.8,28c1.2-1.1,1.3-2.2,1.4-2.6l0-0.2
+			l0.3-4.5c0-0.6,0.1-1.7-0.2-2.8c-0.4-1.4-1.4-2.3-2.8-2.7L31.2,7.8c-1.1-0.3-2.3-0.6-4.3,0.2z"/>
+		<linearGradient id="aigrd1" gradientUnits="userSpaceOnUse" x1="7.1138" y1="22.4355" x2="57.4043" y2="22.4355" gradientTransform="matrix(0.997 7.730000e-002 -7.730000e-002 0.997 1.2368 -3.8625)">
+			<stop  offset="0" style="stop-color:#CFCFCF"/>
+			<stop  offset="1" style="stop-color:#EAEAEA"/>
+		</linearGradient>
+		<path style="&st0;" d="M30.9,9.8c-1.1-0.4-2.5-0.4-3.2-0.2C27.1,9.8,8.2,20.7,7.2,21.3c-1,0.6-1.2,1.8,0.1,2.2c1.3,0.5,25.9,8.4,27,8.7c1.1,0.3,2.7,0.3,3.3-0.2c0.6-0.5,18.9-13.3,19.5-13.8c0.6-0.5-0.5-1.4-1.4-1.6c-0.9-0.3-23.7-6.5-24.8-6.9z"/>
+		<linearGradient id="aigrd2" gradientUnits="userSpaceOnUse" x1="9.1348" y1="33.8545" x2="35.3524" y2="35.7428" gradientTransform="matrix(0.997 7.730000e-002 -7.730000e-002 0.997 1.2368 -3.8625)">
+			<stop  offset="0" style="stop-color:#F8F8F8"/>
+			<stop  offset="1" style="stop-color:#B5B5B5"/>
+		</linearGradient>
+		<path style="&st8;" d="M5.5,24.6c-0.1-0.9,0.6-1.4,1.3-1.2c0.6,0.2,27.1,8.9,28.1,9.5c1,0.6,1.6,0.9,1.5,1.7s-0.4,5.2-0.5,5.8c-0.1,0.7-0.6,1.4-1.6,1.2C31.3,40.9,6.8,31.2,6.8,31.2c-0.8-0.3-1-0.8-1-1.7l-0.3-4.9z"/>
+		<linearGradient id="aigrd3" gradientUnits="userSpaceOnUse" x1="40.2617" y1="38.7744" x2="56.6496" y2="19.4815" gradientTransform="matrix(0.997 7.730000e-002 -7.730000e-002 0.997 1.2368 -3.8625)">
+			<stop  offset="0" style="stop-color:#9F9F9F"/>
+			<stop  offset="1" style="stop-color:#828282"/>
+		</linearGradient>
+		<path style="&st4;" d="M37,41.2c-0.5,0.4-1.4-0.1-1.3-1c0.1-0.9,0.4-5,0.5-5.8c0.1-0.8,0.4-1.5,1-2c0.6-0.5,19-13.3,19.7-13.9c0.7-0.6,1.1,0.5,1,1.1s-0.3,4.5-0.4,5c0,0.6-0.1,0.9-0.7,1.4C56.3,26.5,37.5,40.8,37,41.2z"/>
+		<g style="&st7;">
+			<path d="M35.5,32.2C33.8,32,6.8,23,6.5,22.9c-0.2-0.1,0-1,0.6-1.6c-1.7,1.1-1.7,3.1-1.7,3.1s0.2-0.9,1-1c3.3,1.2,26.7,9.3,27.6,9.6c1,0.3,1.3,1.5,1.3,2.4l0.3,5.4l0.6-5.4c0.1-0.9,0.5-2.5,1.5-3.2c0.5-0.3,12.5-9,17-12.2c-4.6,3.3-17.3,12.3-19.4,12.1z"/>
+			<path d="M54.8,20c1-0.7,1.6-1.2,1.6-1.2s-0.6,0.4-1.6,1.2z"/>
+		</g>
+		<path style="&st2;" d="M36.8,41.3c-0.6,0.5-1,0.6-2.3,0.4c0.9-0.3,1.2-0.9,1.2-0.9s0.2,0.5,1,0.5z"/>
+		<g>
+			<g>
+				<path style="&st13;" d="M11.9,27l-0.1,1.9l-4.7-1.9l0-1.8l4.8,1.7z"/>
+				<path style="&st14;" d="M11.8,26.9l-0.1,1.7L7.5,27l0-1.6l4.3,1.5z"/>
+				<path style="&st1;" d="M11.7,26.9l-0.1,1.5L7.8,27l0-1.4l3.8,1.3z"/>
+				<path style="&st15;" d="M11.6,26.9l-0.1,1.3l-3.3-1.3l0-1.2l3.3,1.2z"/>
+				<path style="&st6;" d="M11.5,26.9L11.4,28l-2.8-1.1l0-1l2.9,1z"/>
+				<path style="&st3;" d="M11.4,26.8l0,0.9L9,26.9L9,26l2.4,0.8z"/>
+				<path style="&st11;" d="M11.3,26.8l0,0.7l-1.9-0.7l0-0.7l1.9,0.6z"/>
+			</g>
+		</g>
+		<path style="&st5;" d="M55.9,16.8c1.1,0.5,1.5,1.2,1,1.7c0.6-0.4,1,1,1,1c0.1-0.8,0.1-2.2-2-2.7z"/>
+	</g>
+</svg>

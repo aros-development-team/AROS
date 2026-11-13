@@ -1,0 +1,34 @@
+#
+#   Generate the bootconsole link library
+#
+
+include $(SRCDIR)/config/aros.cfg
+
+# Font. Can be different, if someone wants to.
+FONT   := font8x14
+
+# This can be hardware-specific.
+ifneq ($(AROS_TARGET_CPU),arm)
+    SERIAL := serial_16450
+endif
+
+FILES := common clear init_multiboot init_multiboot2 init_taglist \
+	 screen_text screen_fb util_fb vars $(FONT) $(SERIAL)
+
+ifeq ($(AROS_TARGET_CPU),x86_64)
+    USER_CFLAGS := $(CFLAGS_GENERAL_REGS_ONLY)
+endif
+
+USER_INCLUDES := -isystem $(SRCDIR)/$(CURDIR)/include
+
+%build_linklib mmake=linklibs-bootconsole libname=bootconsole files="$(FILES)" libdir=$(GENDIR)/lib
+
+# pc-x86_64 needs a 32bit version of bootconsole.a
+ifneq ($(AROS_TARGET_CPU32),)
+    ISA_FLAGS := $(ISA_32_FLAGS)
+endif
+
+%build_linklib mmake=linklibs-bootconsole32 libname=bootconsole files="$(FILES)" \
+	       objdir=$(GENDIR)/$(CURDIR)/32bit libdir=$(GENDIR)/lib32
+
+%common

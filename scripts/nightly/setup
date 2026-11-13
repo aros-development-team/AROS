@@ -1,0 +1,98 @@
+# Import configuration
+source $SP/cfg/defaults
+source $SP/cfg/$CFG_NAME
+
+# Determine version
+VERSION=$(date -u +"%Y%m%d")
+BASENAME=AROS-$VERSION
+
+# Setup important paths
+ROOT=$(pwd)
+
+SOURCE_ROOT=$ROOT/Source
+SOURCE_AROS=$SOURCE_ROOT/AROS
+SOURCE_CONTRIB=$SOURCE_ROOT/Contrib
+SOURCE_DOCS=$SOURCE_ROOT/Documentation
+
+BUILD_ROOT=$ROOT/Build
+BUILD_BASE=$BUILD_ROOT/$VERSION
+
+ARCHIVE_ROOT=$ROOT/Archive
+ARCHIVE_BASE=$ARCHIVE_ROOT/$VERSION
+
+PORTSSOURCES_ROOT=$ROOT/PortsSources
+TOOLCHAIN_BASE=$BUILD_BASE/Toolchain
+
+# Setup log paths
+LOG_BASE=$ARCHIVE_BASE/logs/$CFG_NAME
+LOG_ALL=$LOG_BASE/all.log
+LOG_THIS=/dev/null
+
+# Figure out the host platform
+HOST_OS=$(uname)
+case $HOST_OS in
+    Linux)
+        HOST_OS=linux
+        ;;
+    FreeBSD)
+        HOST_OS=freebsd
+        ;;
+esac
+        
+HOST_CPU=$(uname -m)
+case $HOST_CPU in
+    i?86)
+        HOST_CPU=i386
+        ;;
+    ppc)
+        HOST_CPU=ppc
+        ;;
+esac
+
+
+# Figure out the build tools
+if [[ $HOST_OS == "freebsd" ]]; then
+    alias make='execute gmake'
+else
+    alias make='execute make'
+fi
+
+alias makedir='execute mkdir -p'
+alias  delete='execute rm -rf'
+alias    copy='execute cp -pRL'
+alias    move='execute mv -f'
+
+export CC=$CFG_CC
+export PYTHON=$CFG_PYTHON
+MAKE_JOBS=$CFG_MAKE_JOBS
+PORTSSOURCESOPT=""
+AROSTOOLCHAININSTALLOPT=""
+AROSTOOLCHAINOPT=""
+
+# Enable --with-portssources ?
+if [[ "$CFG_PORTSSOURCES_ENABLE" == "yes" ]]; then
+    PORTSSOURCESOPT="--with-portssources=$PORTSSOURCES_ROOT"
+fi
+
+# Enable --with-aros-toolchain ?
+if [[ "$CFG_PREBUILD_TOOLCHAIN_PACKAGE" != "none" ]]; then
+    AROSTOOLCHAININSTALLOPT="--with-aros-toolchain-install=$TOOLCHAIN_BASE"
+    AROSTOOLCHAINOPT="--with-aros-toolchain=yes"
+fi
+
+
+# Initial setup, if requested
+if [[ $1 == "initial" ]]; then
+    # Setup directories if needed
+    rm -rf $BUILD_BASE $ARCHIVE_BASE
+    mkdir -p $BUILD_ROOT $BUILD_BASE
+    mkdir -p $ARCHIVE_BASE
+    mkdir -p $LOG_BASE
+    
+    if [ ! -f $LOG_ALL ]; then
+        touch $LOG_ALL
+    fi
+fi
+
+# Import functions
+source $SP/functions

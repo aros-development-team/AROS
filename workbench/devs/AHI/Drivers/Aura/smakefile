@@ -1,0 +1,44 @@
+DEST	   = AHI:User/Devs/ahi/aura.audio
+DEST000    = AHI:User/Devs/ahi/aura.audio.000
+PDEST	   = AHI:User/Devs/AudioModes/AURA
+OBJECTS	   = aura.o asmfuncs.o
+OBJECTS000 = aura.000.o asmfuncs.o
+
+AFLAGS     = SYMDEBUG LINEDEBUG QUIET NOEXE OPT NRQBPSMD
+
+CFLAGS     = \
+PARAMS=REGISTER LIBCODE NOSTACKCHECK DEBUG=FULL STRINGMERGE \
+DATA=NEAR NOVERSION UTILITYLIB NOSTANDARDIO #OPTIMIZE OPTTIME OPTSCHED
+
+LFLAGS     = \
+LIBPREFIX _int LIBFD FD:ahi_sub_lib.fd NOICONS SMALLDATA SMALLCODE \
+LIBID "aura.audio 2.0 (17.9.96)" LIBVERSION 2 LIBREVISION 0 #STRIPDEBUG
+
+all: $(DEST) $(DEST000) $(PDEST)
+
+$(DEST): $(OBJECTS)
+      slink $(LFLAGS) TO aura.audio FROM lib:libent.o lib:libinit.o $(OBJECTS) \
+            LIB LIB:sc.lib LIB:debug.lib LIB:amiga.lib
+      --move aura.audio $(DEST)
+      --flushlib aura.audio
+
+$(DEST000): $(OBJECTS000)
+      slink $(LFLAGS) TO aura.audio FROM lib:libent.o lib:libinit.o $(OBJECTS000) \
+            LIB LIB:sc.lib LIB:debug.lib LIB:amiga.lib
+      --move aura.audio $(DEST000)
+
+aura.o: aura.c aura.h
+      sc CPU=68030 $(CFLAGS) aura.c
+
+aura.000.o: aura.c aura.h
+      sc CPU=68000 $(CFLAGS) OBJNAME aura.000.o aura.c
+
+asmfuncs.o: asmfuncs.a aura.i
+      phxass $(AFLAGS) asmfuncs.a
+
+$(PDEST): prefsfile.a aura.i
+      basm -ua+ -o$(PDEST) prefsfile.a
+      AHI:User/C/AddAudioModes $(PDEST)
+
+clean:
+      --delete \#?.o \#?.tmp \#?.info >NIL:

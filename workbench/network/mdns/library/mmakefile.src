@@ -1,0 +1,22 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+# mdns_ipc.h, the messages the library and mdnsd exchange, is the daemon's
+USER_INCLUDES := -I$(SRCDIR)/$(CURDIR)/..
+
+#MM- workbench-network-mdns : workbench-network-mdns-bonami
+
+#MM workbench-network-mdns-bonami : \
+#MM      includes linklibs \
+#MM      workbench-network-mdns-includes
+
+# the generated clib/bonami_protos.h includes <bonami/mdns.h>: whoever
+# wants the library's includes needs the public headers copied first
+#MM- workbench-network-mdns-bonami-includes : workbench-network-mdns-includes
+
+%build_module mmake=workbench-network-mdns-bonami \
+    modname=bonami modtype=library \
+    files="bonami_init bonami_api bonami_ipc bonami_stubs bonami_discovery \
+           bonami_query"
+
+%common

@@ -1,0 +1,391 @@
+#ifndef _VIDEOCOREGFX_CLASS_H
+#define _VIDEOCOREGFX_CLASS_H
+/*
+    Copyright � 2013-2026, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
+#include <exec/semaphores.h>
+#include <exec/memory.h>
+#include <exec/memheaderext.h>
+#include <exec/nodes.h>
+#include <exec/types.h>
+#include <proto/exec.h>
+
+#include <hardware/bcm2708_dma.h>
+
+#include "vcgfx_hardware.h"
+#include "vcgfx_hvs.h"
+#include "vcgfx_hvs5state.h"
+#include "vcgfx_hvs6state.h"
+#include "vcgfx_edid.h"
+#include "vcgfx_bitmap.h"
+
+/* vcsd_MBoxMessage is one shared buffer for every mailbox round-trip;
+ * take vcsd_GPUMemLock around each pack-write-read sequence. */
+#define VC4_MBOX_LOCK(xsd)   ObtainSemaphore(&(xsd)->vcsd_GPUMemLock)
+#define VC4_MBOX_UNLOCK(xsd) ReleaseSemaphore(&(xsd)->vcsd_GPUMemLock)
+
+#define DEBUGMODEARRAY
+//#define DEBUGPIXFMT
+//#define DEBUGDISPLAY
+
+#define VC_FMT_32
+//#define VC_FMT_24
+//#define VC_FMT_16
+//#define VC_FMT_15
+//#define VC_FMT_8
+
+#define IID_Hidd_Gfx_VideoCore4  "hidd.gfx.bcmvc4"
+#define CLID_Hidd_Gfx_VideoCore4 "hidd.gfx.bcmvc4"
+#define CLID_Hidd_Display_VideoCore4 "hidd.display.bcmvc4"
+
+#define MAX_TAGS        256
+#define ATTRBASES_NUM   11
+
+struct VideoCoreGfxDisplayData
+{
+};
+
+/* Bitmaps shown as HVS planes: the primary (Show) and the overlay planes
+ * of the plane API (CommitPlanes). Rectangles are in display pixels, the
+ * primary's mode (vcsd_DispW x vcsd_DispH); only 32-bit bitmaps in
+ * scanout memory get a plane, front first while the HVS budget lasts. */
+#define VCGFX_MAX_PLANES        16
+#define VCGFX_OVL_PLANES        8       /* overlay planes offered, above or below the primary;
+                                         * the compositor's test commit keeps to the budget */
+#define VCGFX_PRIMARY_Z         VCGFX_OVL_PLANES    /* overlays take z 0 .. 2x this, all but it */
+
+struct vcgfx_plane
+{
+    OOP_Object          *pl_BM;
+    struct BitmapData   *pl_Data;       /* VideoData = page on scanout */
+    LONG                 pl_X, pl_Y;    /* where on the display */
+    ULONG                pl_W, pl_H;    /* and how large */
+    ULONG                pl_SrcX, pl_SrcY, pl_SrcW, pl_SrcH;
+    ULONG                pl_Pxf, pl_Bpp;    /* HVS format (0 = 32bpp) and bytes per pixel */
+    ULONG                pl_Yuv;        /* HVS YUV format (luma 1 byte per pixel), 0 = RGB */
+    ULONG                pl_Z;          /* z order; the primary's is VCGFX_PRIMARY_Z */
+    BOOL                 pl_Alpha;      /* blended by its own (straight) alpha, else opaque */
+    ULONG                pl_PtrWord;    /* VC4: its PTR0 in the newest list, 0 = none */
+    ULONG                pl_PtrSkip;    /* and the bytes clipped off in front */
+    BOOL                 pl_Shown;      /* the last list built had room for it */
+};
+
+/* Normal-NC arena the screen bitmaps are carved from. */
+struct vcgfx_arena
+{
+    struct MinNode       ar_Node;
+    APTR                 ar_Raw;
+    ULONG                ar_RawSize;
+    APTR                 ar_Base;       /* 2MB aligned, remapped */
+    ULONG                ar_Size;
+    struct MemHeader     ar_MH;
+};
+
+struct VideoCoreGfx_staticdata {
+        APTR                    vcsd_MBoxBase;
+        unsigned int            *vcsd_MBoxMessage;
+        IPTR                    vcsd_MBoxBuff;
+
+        struct SignalSemaphore  vcsd_GPUMemLock;
+        struct MemHeaderExt     vcsd_GPUMemManage;
+
+        OOP_Class 	    	*vcsd_basebm;            /* baseclass for CreateObject */
+        OOP_Class               *vcsd_basegallium;       /* baseclass for CreateObject */
+        struct Library          *vcsd_GalliumLib;        /* keeps the SoC's gallium hidd loaded */
+
+        OOP_Class               *vcsd_VideoCoreGfxClass;
+	OOP_Object              *vcsd_VideoCoreGfxInstance;
+        OOP_Class               *vcsd_VideoCoreGfxDisplayClass;
+        OOP_Object              *vcsd_VideoCoreGfxDisplay;
+        OOP_Object              *vcsd_DMEnum;
+	OOP_Class               *vcsd_VideoCoreGfxOnBMClass;
+	OOP_Class               *vcsd_VideoCoreGfxOffBMClass;
+
+        OOP_AttrBase	        vcsd_attrBases[ATTRBASES_NUM];
+
+	APTR                    data;
+
+        /* HW cursor state. cur_buf == NULL means cursor unavailable. */
+        ULONG                   vcsd_CurBufHandle;
+        APTR                    vcsd_CurBuf;        /* CPU-physical, ARGB pixels */
+        ULONG                   vcsd_CurBufBus;     /* GPU bus address */
+        ULONG                   vcsd_CurWidth;
+        ULONG                   vcsd_CurHeight;
+        ULONG                   vcsd_CurHotX;
+        ULONG                   vcsd_CurHotY;
+        LONG                    vcsd_CurX;
+        LONG                    vcsd_CurY;
+        BOOL                    vcsd_CurVisible;
+
+        /* Firmware-reported native HDMI resolution (set by HDMI_SyncGen),
+         * used as the NominalDimensions default so a fresh boot lands on
+         * the panel's native mode rather than 800x600.
+         */
+        ULONG                   vcsd_NativeWidth;
+        ULONG                   vcsd_NativeHeight;
+
+        /* DMA-accelerated 2D state. Channel from dma.resource
+         * (DMACHF_TDMODE); -1 means no DMA (fall back to NEON). The shared
+         * CB and bounce buffer are serialized by vcsd_DMALock.
+         */
+        LONG                    vcsd_DMAChannel;
+        APTR                    vcsd_DMACBRaw;
+        struct BCM2708DMACB     *vcsd_DMACB;
+        ULONG                   *vcsd_DMAFillPx;    /* Fill source word */
+        APTR                    vcsd_DMABounceRaw;
+        UBYTE                   *vcsd_DMABounce;    /* 32-byte aligned */
+        ULONG                   vcsd_DMABouncePhys;
+        struct SignalSemaphore  vcsd_DMALock;
+
+        OOP_Object              *vcsd_FBObj;        /* The framebuffer bitmap */
+
+        /* HVS display-list ownership (vcgfx_hvs.c). While hvs_Active,
+         * cursor updates go through our own display list and the
+         * firmware display mailbox tags must not be used. */
+        struct vc4_hvs_state    vcsd_HVS;
+
+        /* Keeps every HVS path off; see vcgfx_hvs.c. */
+        BOOL                    vcsd_IsBCM2711;
+
+        UBYTE                   vcsd_HVSGen;
+
+        /* Boot framebuffer; BCM2712 cannot allocate another. */
+        ULONG                   vcsd_BootFB;
+        ULONG                   vcsd_BootFBPitch;
+        ULONG                   vcsd_BootFBWidth;
+        ULONG                   vcsd_BootFBHeight;
+
+        /* BCM2711 HDMI0 mode setting (vcgfx_hvs5_mode.c). */
+        struct vc4_hvs5_mode    vcsd_HVS5M;
+
+        /* HVS6 display-list ownership (vcgfx_hvs6.c). */
+        struct vc4_hvs6_state   vcsd_HVS6;
+
+        /* The sink's EDID, read once by HDMI_SyncGen (vcgfx_edid.c). */
+        struct vcgfx_edid       vcsd_EDID;
+
+        /* No framebuffer for graphics.library: Show() puts the bitmap it
+         * is given on the primary plane, and the fb is only the backdrop -
+         * or holds a copy of a bitmap no plane can show (vcsd_Mirror).
+         * The overlay planes come from CommitPlanes(); vcsd_Plane[] is
+         * what the list builders read, stacked from both. Guarded by the
+         * mailbox lock, like the display list; vcsd_ShowLock keeps the fb
+         * and the mirror in step. */
+        BOOL                    vcsd_NoFB;
+        BOOL                    vcsd_PlanesMode;    /* the display list is ours */
+        struct SignalSemaphore  vcsd_ShowLock;
+        OOP_Object             *vcsd_Mirror;
+        ULONG                   vcsd_DispW, vcsd_DispH;
+        struct vcgfx_plane      vcsd_Primary;       /* pl_BM NULL: none */
+        struct vcgfx_plane      vcsd_OvlPlane[VCGFX_OVL_PLANES];
+        ULONG                   vcsd_NumPlanes;
+        struct vcgfx_plane      vcsd_Plane[VCGFX_MAX_PLANES];   /* back to front */
+        LONG                    vcsd_PrimaryAt;     /* the primary's index there, -1 = none */
+        ULONG                   vcsd_PrimaryParts;  /* entries it takes: 1, or up to 5 when
+                                                     * only the part over planes below blends */
+        UBYTE                  *vcsd_Backdrop;      /* fb page known to be black */
+
+        struct SignalSemaphore  vcsd_ScanoutLock;
+        struct MinList          vcsd_Arenas;
+        BYTE                    vcsd_ScanoutOK;     /* 0 untried, 1 mappable, -1 not */
+
+        /* The fb object's pixels when the firmware's framebuffer is a
+         * token one (HVS5 with screens as planes). */
+        struct vcgfx_scanbuf    vcsd_FBBuf;
+        ULONG                   vcsd_FBBufSize;
+};
+
+#define VCGFX_HVS_VC4   0       /* BCM283x, VideoCore IV */
+#define VCGFX_HVS_HVS5  1       /* BCM2711 */
+#define VCGFX_HVS_HVS6  2       /* BCM2712 */
+
+/* DMA has a per-call setup + poll cost; below these sizes NEON wins.
+ * Uncached reads are ~10x slower than writes, hence the lower thresholds
+ * for read-heavy operations.
+ */
+#define VC4_DMA_FILL_THRESHOLD  16384   /* bytes (e.g. 64x64 px) */
+#define VC4_DMA_PUT_THRESHOLD   16384   /* cached source, writes only */
+#define VC4_DMA_GET_THRESHOLD   4096    /* uncached source reads */
+
+/* Bounce buffer for DMA reads into cached memory. */
+#define VC4_DMA_BOUNCE_SIZE     65536
+
+/* Offscreen 32bpp bitmaps at least this large go in GPU memory so blits
+ * can use the DMA engine without cache maintenance; smaller ones stay in
+ * (cached) system RAM.
+ */
+#define VC4_GPUBM_THRESHOLD     65536
+
+/* Maximum HW cursor size supported by VideoCore firmware. */
+#define VC4_CURSOR_MAX_W 64
+#define VC4_CURSOR_MAX_H 64
+#define VC4_CURSOR_BUF_BYTES (VC4_CURSOR_MAX_W * VC4_CURSOR_MAX_H * 4)
+
+struct VideoCoreGfxBase
+{
+    struct Library library;
+
+    struct VideoCoreGfx_staticdata vsd;
+};
+
+struct DisplayMode
+{
+    struct Node dm_Node;
+    ULONG       dm_clock;
+    ULONG       dm_hdisp;
+    ULONG       dm_hstart;
+    ULONG       dm_hend;
+    ULONG       dm_htotal;
+    ULONG       dm_vdisp;
+    ULONG       dm_vstart;
+    ULONG       dm_vend;
+    ULONG       dm_vtotal;
+    STRPTR      dm_descr;
+};
+
+#define XSD(cl) (&((struct VideoCoreGfxBase *)cl->UserData)->vsd)
+
+#undef HiddVideoCoreGfxAttrBase
+#undef HiddVideoCoreGfxBitMapAttrBase
+#undef HiddChunkyBMAttrBase
+#undef HiddBitMapAttrBase
+#undef HiddPixFmtAttrBase
+#undef HiddSyncAttrBase
+#undef HiddGfxAttrBase
+#undef HiddDisplayAttrBase
+#undef HiddDMEnumAttrBase
+#undef HiddAttrBase
+#undef HiddCompositorAttrBase
+
+/* These must stay in the same order as interfaces[] array in vcgfx_init.c */
+#define HiddVideoCoreGfxAttrBase         XSD(cl)->vcsd_attrBases[0]
+#define HiddVideoCoreGfxBitMapAttrBase   XSD(cl)->vcsd_attrBases[1]
+#define HiddChunkyBMAttrBase             XSD(cl)->vcsd_attrBases[2]
+#define HiddBitMapAttrBase               XSD(cl)->vcsd_attrBases[3]
+#define HiddPixFmtAttrBase               XSD(cl)->vcsd_attrBases[4]
+#define HiddSyncAttrBase                 XSD(cl)->vcsd_attrBases[5]
+#define HiddGfxAttrBase                  XSD(cl)->vcsd_attrBases[6]
+#define HiddDisplayAttrBase              XSD(cl)->vcsd_attrBases[7]
+#define HiddDMEnumAttrBase               XSD(cl)->vcsd_attrBases[8]
+#define HiddAttrBase                     XSD(cl)->vcsd_attrBases[9]
+#define HiddCompositorAttrBase           XSD(cl)->vcsd_attrBases[10]
+
+#define FNAME_SUPPORT(x) VideoCoreGfx__Support__ ## x
+
+int     FNAME_SUPPORT(InitMem)(void *, int, struct VideoCoreGfxBase *);
+int     FNAME_SUPPORT(InitCursor)(struct VideoCoreGfx_staticdata *);
+int     FNAME_SUPPORT(InitDMA)(struct VideoCoreGfx_staticdata *);
+int     FNAME_SUPPORT(SDTV_SyncGen)(struct List *, OOP_Class *);
+int     FNAME_SUPPORT(HDMI_SyncGen)(struct List *, OOP_Class *);
+APTR    FNAME_SUPPORT(GenPixFmts)(OOP_Class *);
+
+BOOL    vc4_dma_fill(struct VideoCoreGfx_staticdata *xsd,
+                     ULONG dst_phys, ULONG dst_pitch,
+                     ULONG width_bytes, ULONG height, ULONG pixel);
+BOOL    vc4_dma_put(struct VideoCoreGfx_staticdata *xsd,
+                    const UBYTE *src, ULONG src_modulo,
+                    ULONG dst_phys, ULONG dst_pitch,
+                    ULONG width_bytes, ULONG height);
+BOOL    vc4_dma_get(struct VideoCoreGfx_staticdata *xsd,
+                    ULONG src_phys, ULONG src_pitch,
+                    UBYTE *dst, ULONG dst_modulo,
+                    ULONG width_bytes, ULONG height);
+
+/* A scan-out bitmap's HVS pixel format, 0 = the plane template's 32bpp one */
+static inline ULONG vcgfx_px_pxf(ULONG flags)
+{
+    return (flags & VCGFX_PX_RGB565) ? HVS_PXF_RGB565
+         : (flags & VCGFX_PX_RGB555) ? HVS_PXF_RGB555 : 0;
+}
+
+static inline ULONG vcgfx_px_bpp(ULONG flags)
+{
+    return (flags & (VCGFX_PX_RGB565 | VCGFX_PX_RGB555)) ? 2 : 4;
+}
+
+/* A PPF word: scale src/dst at 24:8, initial phase in 1/64 pixel at 6:0 */
+static inline ULONG vcgfx_ppf(ULONG src, ULONG dst, LONG phase)
+{
+    return (1UL << 30) | ((((ULONG)src << 16) / dst) << 8) | ((ULONG)phase & 0x7f);
+}
+
+/* The first sample of a channel subsampled by sub, sited siting64/64 of a
+ * luma pixel from the luma sample: half a destination pixel in, as the
+ * PPF centres on it. */
+static inline LONG vcgfx_ppf_phase(ULONG src, ULONG dst, ULONG siting64, ULONG sub)
+{
+    return -(LONG)(32 + siting64) / (LONG)sub + (LONG)((((ULONG)src << 16) / dst) >> 11);
+}
+
+/* The 32bpp format of screens: the HVS6 boot surface is R,G,B,X */
+static inline ULONG vcgfx_native32(struct VideoCoreGfx_staticdata *xsd)
+{
+    return (xsd->vcsd_HVSGen == VCGFX_HVS_HVS6) ? vHidd_StdPixFmt_RGB032
+                                               : vHidd_StdPixFmt_BGR032;
+}
+
+/* The RGB formats a scan-out bitmap can have, as plane flags: the screens'
+ * own, GL's B,G,R,A/X, and RGB15/16. FALSE for any other. */
+static inline BOOL vcgfx_scanout_rgb(struct VideoCoreGfx_staticdata *xsd, ULONG stdpf,
+                                     ULONG *pxflags)
+{
+    if ((stdpf == vcgfx_native32(xsd))
+        || ((xsd->vcsd_HVSGen == VCGFX_HVS_HVS6) && (stdpf == vHidd_StdPixFmt_RGBA32)))
+        *pxflags = 0;
+    else if ((stdpf == vHidd_StdPixFmt_BGRA32) || (stdpf == vHidd_StdPixFmt_BGR032))
+        *pxflags = (xsd->vcsd_HVSGen == VCGFX_HVS_HVS6) ? VCGFX_PX_BGRA : 0;
+    else if (stdpf == vHidd_StdPixFmt_RGB16_LE)
+        *pxflags = VCGFX_PX_RGB565;
+    else if (stdpf == vHidd_StdPixFmt_RGB15_LE)
+        *pxflags = VCGFX_PX_RGB555;
+    else
+        return FALSE;
+    return TRUE;
+}
+
+/* vcgfx_planes.c */
+BOOL    vcgfx_planes_supported(struct VideoCoreGfx_staticdata *xsd);
+
+/* The HEVC block: BCM2711 and BCM2712 */
+static inline BOOL vcgfx_has_hevc(struct VideoCoreGfx_staticdata *xsd)
+{
+    return xsd->vcsd_IsBCM2711 || (xsd->vcsd_HVSGen == VCGFX_HVS_HVS6);
+}
+
+/* Planes that scan its SAND128 output out */
+BOOL    vcgfx_sand_scanout(struct VideoCoreGfx_staticdata *xsd);
+LONG    vcgfx_plane_occlude(LONG px, LONG py, ULONG pw, ULONG ph,
+                            LONG left, LONG top, LONG right, LONG bottom);
+BOOL    vcgfx_scanout_ok(struct VideoCoreGfx_staticdata *xsd);
+BOOL    vcgfx_scanout_alloc(struct VideoCoreGfx_staticdata *xsd,
+                            struct vcgfx_scanbuf *sb, ULONG size);
+void    vcgfx_scanout_free(struct VideoCoreGfx_staticdata *xsd,
+                           struct vcgfx_scanbuf *sb);
+BOOL    vcgfx_show(struct VideoCoreGfx_staticdata *xsd, OOP_Object *bm,
+                   IPTR scalemode, ULONG scalew, ULONG scaleh);
+void    vcgfx_mirror_rect(struct VideoCoreGfx_staticdata *xsd, OOP_Object *bm,
+                          LONG x, LONG y, LONG w, LONG h);
+BOOL    vcgfx_planes_commit(struct VideoCoreGfx_staticdata *xsd,
+                            struct HIDD_PlaneState *states, ULONG count, ULONG flags);
+void    vcgfx_plane_moved(struct VideoCoreGfx_staticdata *xsd, OOP_Object *bm);
+void    vcgfx_plane_restyle(struct VideoCoreGfx_staticdata *xsd, OOP_Object *bm);
+void    vcgfx_plane_forget(struct VideoCoreGfx_staticdata *xsd, OOP_Object *bm);
+BOOL    vcgfx_plane_page(OOP_Class *cl, OOP_Object *bm, ULONG page, BOOL wait);
+void    vcgfx_plane_page_free(OOP_Class *cl, OOP_Object *bm, ULONG page);
+BOOL    vcgfx_plane_flip_pending(OOP_Class *cl, OOP_Object *bm);
+BOOL    vcgfx_plane_shows(struct VideoCoreGfx_staticdata *xsd, OOP_Object *bm);
+/* YCbCr to RGB in 8-bit units, factors in Q22 (1.0 = 1 << 22):
+ * R = ky*(Y-y0) + rcr*Cr, G = ky*(Y-y0) + gcb*Cb + gcr*Cr, B = ky*(Y-y0) + bcb*Cb,
+ * Cb and Cr centred on 128. */
+struct vcgfx_yuvm
+{
+    LONG ky, rcr, gcb, gcr, bcb;
+    LONG y0;
+};
+void    vcgfx_yuv_matrix(ULONG colorspace, ULONG range, struct vcgfx_yuvm *m);
+void    vcgfx_yuv_csc(ULONG colorspace, ULONG range, ULONG csc[3]);
+BOOL    vcgfx_yuv_ok(struct VideoCoreGfx_staticdata *xsd, ULONG videofmt);
+
+#endif /* _VIDEOCOREGFX_CLASS_H */

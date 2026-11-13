@@ -1,0 +1,14 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+MODNAME	:=  i2c
+MODTYPE	:=  hidd
+
+USER_CFLAGS :=	-I.
+
+FILES       :=
+STUBS	    := $(MODNAME)_stubs
+
+%make_hidd_stubs hidd=i2c
+
+%common

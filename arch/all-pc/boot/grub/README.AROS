@@ -1,0 +1,43 @@
+This File Lists specific patches/changes made to support AROS.
+
+Changes
+-------
+
+18/07/2006 - Disabled building of host support software because it causes
+             problems when cross compiling and is unused by AROS.
+
+24/12/2005 - Merged SVN codebase with Grub 0.97 tree.  Replaced old setvbe patch with newer version.
+             (vbeset/vbematch - setvbe patch no longer functioned).
+
+26/03/2004 - Merged CVS codebase with Grub 0.94 tree.
+
+Support Files
+-------------
+
+stage2/disk_io.c
+	include affs support
+
+stage2/filesys.h
+	include affs support
+
+stage2/shared.h
+   added affs support
+
+stage2/fsys_affs.c
+	Code implementing AFFS support for grub
+
+stage2/Makefile.am
+	added various *fsys_affs* + -DFSYS_AFFS=1
+
+stage2/boot.c
+stage2/builtins.c
+stage2/common.c
+	VBESET/MATCH patches to support setting VESA modes,
+	and passing info on them to the kernel
+
+stage2/shared.h
+	include vbe + affs support
+
+configure.in
+	added AFFS enable/disable support
+

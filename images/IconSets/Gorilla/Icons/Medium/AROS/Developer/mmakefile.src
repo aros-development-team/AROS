@@ -1,0 +1,25 @@
+# Copyright (C) 2004-2023, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+
+BASEICONS := Debug
+ADDITIONALICONS := Include Lib
+
+#MM- iconset-Gorilla-wbench-icons-aros-clean : iconset-Gorilla-wbench-icons-aros-developer-clean
+#MM- iconset-Gorilla-additional-icons-aros-clean : iconset-Gorilla-additional-icons-aros-developer-clean
+#MM- iconset-Gorilla-wbench-icons-aros : iconset-Gorilla-wbench-icons-aros-developer
+#MM- iconset-Gorilla-additional-icons-aros : iconset-Gorilla-additional-icons-aros-developer
+
+%build_icons mmake=iconset-Gorilla-wbench-icons-aros-developer icons=$(BASEICONS) \
+             dir=$(AROS_DEVELOPER)
+
+%build_icons mmake=iconset-Gorilla-additional-icons-aros-developer icons=$(ADDITIONALICONS) \
+             dir=$(AROS_DEVELOPER)
+
+#MM- icons-developer : gorilla-icons-developer
+%build_icons mmake=gorilla-icons-developer icons=$(BASEICONS) \
+             dir=$(AROS_PRESETS)/Icons/Gorilla/Default/$(AROS_DIR_AROS)/$(AROS_DIR_DEVELOPER)
+
+#MM- icons-additional-developer : gorilla-icons-additional-developer
+%build_icons mmake=gorilla-icons-additional-developer icons=$(ADDITIONALICONS) \
+             dir=$(AROS_PRESETS)/Icons/Gorilla/Default/$(AROS_DIR_AROS)/$(AROS_DIR_DEVELOPER)

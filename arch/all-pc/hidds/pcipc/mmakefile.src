@@ -1,0 +1,20 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+FILES := pcipc_init pcipc_driverclass pcipc_deviceclass pciconf1 pciconf2
+
+USER_CPPFLAGS := \
+               -D__OOP_NOLIBBASE__ \
+               -D__OOP_NOATTRBASES__ \
+               -D__OOP_NOMETHODBASES__ \
+               -D__INLINE_ACPICA_STACKCALL__ 
+
+# Link statically so libc references resolve from stdc.static - this is a
+# kickstart module and cannot auto-open stdc.library
+USER_LDFLAGS := -static
+
+%build_module mmake=kernel-hidd-pci-pcipc \
+    modname=pcipc modtype=hidd \
+    files=$(FILES)
+
+%common

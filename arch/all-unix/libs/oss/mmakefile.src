@@ -1,0 +1,37 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+FILES := funcs
+
+#MM- workbench-libs-oss-unix : \
+#MM      workbench-libs-oss-unix-module \
+#MM      test-playoss
+
+#MM- test-playoss : workbench-libs-oss-unix-module
+
+#MM workbench-libs-oss-unix-module-includes : \
+#MM     includes-copy \
+#MM     kernel-exec-includes \
+#MM     kernel-oop-includes
+
+#MM workbench-libs-oss-unix-module : \
+#MM     hidd-unixio-stubs \
+#MM     linklibs-amiga \
+#MM     linklibs-arossupport \
+#MM     linklibs-libinit \
+#MM     linklibs-startup
+
+# If an arch specific oss is made also test-playoss will be made
+%build_prog mmake=test-playoss \
+    progname=playossunix targetdir=$(AROS_TESTS) uselibs="ossshared"
+
+USER_CPPFLAGS := -DAROS_ARCHITECTURE="\"$(AROS_TARGET_PLATFORM)\""
+
+# If we are not on UNIX, we're just building the linklib for the SDK. We don't need
+# $(KERNEL_INCLUDES) in such a case. This fixes build under 64-bit Windows.
+ifeq ($(FAMILY),unix)
+    USER_INCLUDES := -isystem $(GENINCDIR) $(KERNEL_INCLUDES)
+endif
+
+%build_module mmake=workbench-libs-oss-unix-module modname=oss \
+    modtype=library version=$(AROS_TARGET_PLATFORM) files="$(FILES) oss_init" linklibname=ossshared

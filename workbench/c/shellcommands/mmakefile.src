@@ -1,0 +1,111 @@
+#
+#   Makefile for shell commands
+
+include $(SRCDIR)/config/aros.cfg
+
+FILES	:= \
+    Alias \
+    Ask \
+    CD \
+    Clip \
+    Cut \
+    Echo \
+    Else \
+    EndCLI \
+    EndIf \
+    EndSkip \
+    EndShell \
+    Execute \
+    FailAt \
+    Fault \
+    Get \
+    Getenv \
+    If \
+    Lab \
+    NewCLI \
+    NewShell \
+    Path \
+    PathPart \
+    Pipe \
+    Prompt \
+    Quit \
+    Resident \
+    Run \
+    Set \
+    Setenv \
+    Skip \
+    Stack \
+    Status \
+    Unalias \
+    Unset \
+    Unsetenv \
+    Why
+
+USER_INCLUDES := -I$(GENDIR)/workbench/c/shellcommands/shellsegs.h
+USER_CPPFLAGS := -DADATE="\"$(shell date "+%d.%m.%Y")\""
+USER_LDFLAGS := -static
+
+#MM- workbench-c : workbench-c-shellcommands
+#MM- workbench-c-quick : workbench-c-shellcommands-quick
+#MM- workbench-c-shellcommands : includes linklibs workbench-libs-dos-catalogs
+
+%build_progs mmake=workbench-c-shellcommands \
+    files=$(FILES) targetdir=$(AROS_C) \
+    usestartup=no
+
+
+# Embedded side of the world
+
+
+USER_CPPFLAGS := \
+               -DUSE_EXEC_DEBUG \
+               -D__NOLIBBASE__ \
+               -DADATE="\"$(shell date "+%d.%m.%Y")\""
+USER_CPPFLAGS += -DUSE_EMBEDDED_COMMANDS
+ifeq ($(AROS_TARGET_CPU),m68k)
+USER_CPPFLAGS   += -D__DOS_NOLIBINLINE__ 
+# One shared Printf() for all commands, to save ROM space
+USER_CPPFLAGS   += -DSHCOMMANDS_SHARED_PRINTF
+endif
+ifneq ($(ROM_OPTIMIZATION_CFLAGS),)
+OPTIMIZATION_CFLAGS := $(ROM_OPTIMIZATION_CFLAGS)
+endif
+
+OBJDIR := $(OBJDIR).kernel
+
+# These are the built-ins for AmigaOS 3.x and above
+FILES := \
+	 Alias \
+	 Ask \
+	 CD \
+	 Echo \
+	 Else \
+	 EndCLI \
+	 EndIf \
+	 EndShell \
+	 EndSkip \
+	 Execute \
+	 FailAt \
+	 Fault \
+	 If \
+	 Lab \
+	 NewShell \
+	 Path \
+	 Prompt \
+	 Quit \
+	 Resident \
+	 Run \
+	 Set \
+	 Setenv \
+	 Skip \
+	 Stack \
+	 Unset \
+	 Unsetenv \
+	 Why \
+	# End of list
+
+%build_module mmake=kernel-shellcommands \
+  modname=shellcommands modtype=resource \
+  files="shellcommands_init $(FILES)"
+
+%common

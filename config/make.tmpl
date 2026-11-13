@@ -1,0 +1,4175 @@
+#############################################################################
+#############################################################################
+##                                                                         ##
+## Here are the mmakefile macros that are used as commands in the body     ##
+## of a make rule.                                                         ##
+## They are used to help the portability of mmakefiles to different        ##
+## platforms and also will handle the error handling in a standard way.    ##
+##                                                                         ##
+#############################################################################
+#############################################################################
+
+#------------------------------------------------------------------------------
+# Convert the ISO-8859-1 string in %(string) to the host's locale (if necessary)
+%define localisestr string= var=
+ifeq (,$(findstring "ISO-8859-1",$(LOCALE)))
+    %(var) := $(shell $(ECHO) %(string) | iconv -f iso-8859-1 )
+else
+    %(var) := %(string)
+endif
+%end
+
+%define fileactionmsg msg= file= elipses=
+	$(Q)$(ECHO) "%(msg)  $(if $(filter /%,%(file)),$(if $(filter $(SRCDIR)/%,$(abspath %(file))),$(patsubst $(SRCDIR)/%,%,$(abspath %(file))),$(patsubst $(TOP)/%,%,$(abspath %(file)))),$(patsubst $(SRCDIR)/%,%,$(abspath $(SRCDIR)/$(CURDIR)/%(file)))) %(elipses)"
+%end
+
+#------------------------------------------------------------------------------
+# Compile the file %(from) to %(to) with %(cmd). Write any errors to %(err)
+# and use the options in %(opt). Use %(iquote) and %(iquote_end) for supplying -iquote or -I- flags
+%define compile_q cmd="$(strip $(TARGET_CC) $(TARGET_SYSROOT))" opt="$(strip $(CFLAGS) $(CPPFLAGS))" from="$<" to="$@" incextra="$(TOP)/$(CURDIR)" iquote="$(CFLAGS_IQUOTE)" iquote_end="$(CFLAGS_IQUOTE_END)"
+	%fileactionmsg msg="Compiling" file="%(from)"
+	$(Q)$(IF) %(cmd) %(iquote) $(dir %(from)) %(iquote) %(incextra) %(iquote) $(SRCDIR)/$(CURDIR) %(iquote) . %(iquote_end) %(opt) -D__SRCFILENAME__="\"$(subst $(TOP)/,,$(subst $(SRCDIR)/,,$(abspath %(from))))"\" -c %(from) -o %(to) > $(GENDIR)/cerrors 2>&1 ; then \
+		$(IF) $(TEST) -s $(GENDIR)/cerrors ; then \
+			$(ECHO) "%(from): %(cmd) %(iquote) $(dir %(from)) %(iquote) %(incextra) %(iquote) $(SRCDIR)/$(CURDIR) %(iquote) . %(iquote_end) %(opt) -D__SRCFILENAME__=\"$(subst $(TOP)/,,$(subst $(SRCDIR)/,,$(abspath %(from))))\" -c %(from) -o %(to)" >> $(GENDIR)/errors ; \
+			tee < $(GENDIR)/cerrors -a $(GENDIR)/errors ; \
+		else \
+			$(NOP) ; \
+		fi ; \
+	else \
+		$(ECHO) "Compile failed: %(cmd) %(iquote) $(dir %(from)) %(iquote) %(incextra) %(iquote) $(SRCDIR)/$(CURDIR) %(iquote) . %(iquote_end) %(opt) -D__SRCFILENAME__=\"$(subst $(TOP)/,,$(subst $(SRCDIR)/,,$(abspath %(from))))\" -c %(from) -o %(to)" 1>&2 ; \
+		tee < $(GENDIR)/cerrors -a $(GENDIR)/errors 1>&2 ; \
+		exit 1 ; \
+	fi
+%end
+#------------------------------------------------------------------------------
+
+
+#------------------------------------------------------------------------------
+# Assemble the file %(from) to %(to) with %(cmd) with the options in %(opt).
+%define assemble_q cmd="$(strip $(CC) $(TARGET_SYSROOT))" opt="$(strip $(AFLAGS) $(CPPFLAGS))" from="$<" to="$@"
+	$(Q)$(ECHO) "Assembling $(notdir %(from))..."
+	$(Q)$(IF) %(cmd) %(opt) %(from) -o %(to) > $(GENDIR)/cerrors 2>&1 ; then \
+		$(IF) $(TEST) -s $(GENDIR)/cerrors ; then \
+			$(ECHO) "$(notdir %(from)): %(cmd) %(opt) %(from) -o %(to)" >> $(GENDIR)/errors ; \
+			$(CAT) $(GENDIR)/cerrors >> $(GENDIR)/errors ; \
+		else \
+			$(NOP) ; \
+		fi ; \
+	else \
+		$(ECHO) "Assemble failed: %(cmd) %(opt) %(from) -o %(to)" 1>&2 ; \
+		tee < $(GENDIR)/cerrors -a $(GENDIR)/errors 1>&2 ; \
+		exit 1 ; \
+	fi
+%end
+#-------------------------------------------------------------------------
+
+
+#------------------------------------------------------------------------------
+# Strip symbols from the specified file
+%define strip_q stripdebug="$(DEBUG)" strip="$(STRIP)" file=
+	$(Q)$(IF) $(TEST) "%(strip)" != ""; then \
+		$(eval DBGTARGET=$(subst $(AROSDIR),$(DBGDIR),%(file))) \
+		$(IF) $(TEST) "%(stripdebug)" = "yes"; then \
+			$(MKDIR) "$(dir $(DBGTARGET))" && \
+			%(strip) %(file) --only-keep-debug -o $(DBGTARGET).dbg ; \
+		fi ; \
+		%(strip) %(file) ; \
+		$(IF) $(TEST) "%(stripdebug)" = "yes"; then \
+			$(IF) $(TEST) -s $(DBGTARGET).dbg ; then \
+				$(OBJCOPY) --add-gnu-debuglink=$(DBGTARGET).dbg %(file) ; \
+			fi ; \
+		fi ; \
+	fi
+%end
+#------------------------------------------------------------------------------
+
+#------------------------------------------------------------------------------
+# Link a specified number of objects to an executable
+%define link_q cmd="$(strip $(AROS_CC) $(TARGET_SYSROOT))" ldopts="$(strip $(TARGET_ISA_LDFLAGS))" ldflags="$(strip $(LDFLAGS))" from="$<" to="$@" libs="$(LIBS)" archlibs= strip="$(STRIP)" stripdebug="$(DEBUG)" objdir="$(GENDIR)/$(CURDIR)" coverageinstr=
+	$(Q)$(eval LINKTARGET=%(to))
+	$(Q)$(ECHO) "Linking    $(subst $(TARGETDIR)/,,$(LINKTARGET))..."
+	$(Q)$(eval LINKTMPFILE=%(objdir)/$(notdir $(LINKTARGET)))
+	$(Q)$(eval LINKRSPFILE=$(LINKTMPFILE).rsp)
+	$(file >$(LINKRSPFILE),%(from))
+	$(Q)$(IF) %(cmd) %(ldopts) -Wl,@$(LINKRSPFILE) -o $(LINKTMPFILE) %(ldflags) $(strip %(libs) %(archlibs)) 2>&1 > $(GENDIR)/cerrors 2>&1 ; then \
+		$(IF) $(TEST) -s $(GENDIR)/cerrors ; then \
+				$(ECHO) "$(LINKTARGET): %(cmd) %(ldopts) -Wl,@$(LINKRSPFILE) -o $(LINKTARGET) %(ldflags) $(strip %(libs) %(archlibs))" >> $(GENDIR)/errors ; \
+				$(CAT) $(GENDIR)/cerrors >> $(GENDIR)/errors ; \
+		else \
+			$(NOP) ; \
+		fi ; \
+		$(CP) $(LINKTMPFILE) $(LINKTARGET) && $(RM) $(LINKRSPFILE) ; \
+	else \
+		$(ECHO) "Link failed: %(cmd) %(ldopts) -Wl,@$(LINKRSPFILE) -o $(LINKTARGET) %(ldflags) $(strip %(libs) %(archlibs))" 1>&2 ; \
+		tee < $(GENDIR)/cerrors -a $(GENDIR)/errors 1>&2 ; \
+		exit 1 ; \
+	fi
+	%strip_q stripdebug="%(stripdebug)" strip="%(strip)" file="$(LINKTARGET)"
+	$(Q)$(IF) $(TEST) "%(coverageinstr)" = "yes"; then \
+		LINKBASEFILES="$(strip $(notdir $(basename %(from))))" ; \
+		$(FOR) covext in $(TARGET_COVERAGEINSTR_EXTS) ; do \
+			$(FOR) file in $$LINKBASEFILES ; do \
+				COVERAGEFILE=`$(ECHO) $$file$$covext` ; \
+				$(IF) $(TEST) -s %(objdir)/$$COVERAGEFILE ; then \
+					$(CP) %(objdir)/$$COVERAGEFILE $(dir $(LINKTARGET))$$COVERAGEFILE ; \
+				fi ; \
+			done ; \
+		done ; \
+	fi
+%end
+#------------------------------------------------------------------------------
+
+
+#-------------------------------------------------------------------------
+# Link a module based upon a number of arguments and the standard $(LIBS)
+# and $(DEPLIBS) make variables.
+#
+%define link_module_q cmd="$(strip $(AROS_CC) $(TARGET_SYSROOT))" ldopts="$(strip $(TARGET_ISA_LDFLAGS) $(NOSTARTUP_LDFLAGS))" err="$(notdir $@).err" strip="$(STRIP)" stripdebug="$(DEBUG)" objs=/A endtag= module="$(MODULE)" ldflags="$(LDFLAGS)" libs="$(LIBS)" archlibs= objdir="$(OBJDIR)"
+	$(Q)$(ECHO) "Building Module  $(subst $(TARGETDIR)/,,$@) ..."
+	$(Q)$(eval LINKRSPFILE=%(objdir)/%(module).link.rsp)
+	$(file >$(LINKRSPFILE),%(objs))
+	$(Q)$(IF) %(cmd) %(ldopts) $(NOSTARTUP_OBJECTS) \
+		$(GENMAP) %(objdir)/%(module).map \
+		-Wl,@$(LINKRSPFILE) %(endtag) -o $@ %(ldflags) -Wl,--start-group $(strip %(libs) %(archlibs)) -Wl,--end-group 2>&1 > %(objdir)/%(err) 2>&1 ; \
+	then \
+		cat %(objdir)/%(err) && $(RM) $(LINKRSPFILE); \
+	else \
+		$(ECHO) "%(cmd) $(strip %(ldopts) $(GENMAP) %(objdir)/%(module).map -Wl,@$(LINKRSPFILE) %(endtag) -o $@ %(ldflags) -Wl,--start-group $(strip %(libs) %(archlibs)) -Wl,--end-group)"; \
+		cat %(objdir)/%(err); \
+		exit 1; \
+	fi
+	$(Q)$(IF) $(TEST) ! -s %(objdir)/%(err) ; then $(RM) %(objdir)/%(err) ; fi
+        %strip_q strip=%(strip) stripdebug="%(stripdebug)" file=$@
+%end
+#------------------------------------------------------------------------------
+
+
+#------------------------------------------------------------------------------
+# Create the library
+%define mklib_q ar=$(AR) ranlib=$(RANLIB) to=$@ from=$(OBJS)
+	$(Q)$(ECHO) "Creating   $(subst $(TARGETDIR)/,,%(to))..."
+	$(file >%(to).ar.rsp,%(from))
+	$(Q)%(ar) %(to) @%(to).ar.rsp
+	$(Q)%(ranlib) %(to)
+	$(Q)$(RM) %(to).ar.rsp
+%end
+#------------------------------------------------------------------------------
+
+
+#------------------------------------------------------------------------------
+# Create the dependency file %(to) for %(from)
+%define mkdepend_q flags="$(strip $(CFLAGS) $(CPPFLAGS))" from=$< to=$@ cc="$(strip $(AROS_CC) $(TARGET_SYSROOT))"
+	%mkdir_q dir="$(dir %(to))"
+	%fileactionmsg msg="Makedepend" file="%(from)" elipses="..."
+	$(Q)AROS_CC="%(cc)" $(MKDEPEND) %(flags) -I$(TOP)/$(CURDIR) -I$(SRCDIR)/$(CURDIR) %(from) -o %(to)
+%end
+#------------------------------------------------------------------------------
+
+
+#------------------------------------------------------------------------------
+# Create one directory without any output
+%define mkdir_q dir=.
+	$(Q)$(IF) $(TEST) ! -d %(dir) ; then $(MKDIR) %(dir) ; else $(NOP) ; fi
+%end
+#------------------------------------------------------------------------------
+
+
+#------------------------------------------------------------------------------
+# Create several directories without any output
+%define mkdirs_q dirs=/M
+	$(Q)$(FOR) dir in %(dirs) ; do \
+		$(IF) $(TEST) ! -d $$dir ; then $(MKDIR) $$dir ; else $(NOP) ; fi ; \
+	done
+%end
+#------------------------------------------------------------------------------
+
+
+#############################################################################
+#############################################################################
+##                                                                         ##
+## Here are the mmakefile macros that are used to do certain tasks in a    ##
+## mmakefile. They consist of one or more full makefile rules.             ##
+## In general the files generated in these macros are also defined as      ##
+## make targets so that they can be used as a dependency in other rules    ##
+##                                                                         ##
+#############################################################################
+#############################################################################
+
+#------------------------------------------------------------------------------
+# Generate a unique id for each of the %build... rules
+%define buildid targets=/A
+BDID := $(BDID)_
+ifneq ($(filter $(TARGET),%(targets)),)
+    BDTARGETID := $(BDID)
+endif
+%end
+#------------------------------------------------------------------------------
+
+
+#------------------------------------------------------------------------------
+# Copy file %(from) to %(to) in a makefile rule
+%define rule_copy from=/A to=/A
+%(to) : %(from)
+	$(Q)$(CP) $< $@
+%end
+#------------------------------------------------------------------------------
+
+
+#------------------------------------------------------------------------------
+# Copy the files %(files) to %(targetdir). For each file in %(files),
+# %(srcdir)/file is copied to %(targetdir)/file. The targetdir and the
+# appropriate subdirs are not generated by this rule so they have to be
+# present.
+%define rule_copy_multi files=/A targetdir=/A srcdir=.
+
+$(addprefix %(targetdir)/,%(files)) : %(targetdir)/% : %(srcdir)/%
+	$(Q)$(CP) $< $@
+%end
+#------------------------------------------------------------------------------
+
+
+#------------------------------------------------------------------------------
+# Copy the files %(files) to %(targetdir). For each file in %(files),
+# %(srcdir)/file is copied to %(targetdir)/file if these files are different.
+# %(stampfile) is used to keep track of when the last time the comparison has
+# been done. The targetdir and the appropriate subdirs are not generated by 
+# this rule so they have to be present.
+%define rule_copy_diff_multi files=/A targetdir=/A srcdir=. \
+    stampfile=$(TMP_SRCDIR)/.copy_stamp
+
+TMP_SRCDIR := %(srcdir)
+
+$(addprefix %(targetdir)/,%(files)) : | %(stampfile)
+
+%(stampfile) : COPYSRCDIR := %(srcdir)
+%(stampfile) : TGTDIR := %(targetdir)
+%(stampfile) : FILES := %(files)
+%(stampfile) : $(addprefix %(srcdir)/,%(files))
+	$(Q)for f in $(FILES); do \
+		$(IF) ! $(CMP) -s $(COPYSRCDIR)/$$f $(TGTDIR)/$$f ; then \
+			$(CP) $(COPYSRCDIR)/$$f $(TGTDIR)/$$f ; \
+		fi ; \
+	done
+	$(Q)$(TOUCH) $@
+%end
+#------------------------------------------------------------------------------
+
+
+#------------------------------------------------------------------------------
+# Will join all the files in %(from) to %(to). When text is specified it will
+# be displayed.
+# Restriction: at the moment when using a non-empty target dir %(from) may
+# not have 
+%define rule_join to=/A from=/A text=
+
+%(to) : %(from)
+	$(Q)$(IF) $(TEST) "%(text)" != "" ; then \
+		$(Q)$(ECHO) %(text) ; \
+	fi
+	$(Q)$(CAT) $^ >$@
+%end
+#------------------------------------------------------------------------------
+
+
+#------------------------------------------------------------------------------
+# Include the dependency files and add some internal rules
+# When depstargets is provided the depencies will only be included when one of
+# these targets is the $(TARGET). Otherwise the dependencies will only be
+# included when the $(TARGET) is not for setup or clean 
+%define include_deps deps=$(DEPS)/M  depstargets=
+ifneq (%(deps),)
+  ifneq (%(depstargets),)
+    ifneq ($(findstring $(TARGET),%(depstargets)),)
+      -include %(deps)
+    endif
+  else
+    ifeq (,$(filter clean% %clean %clean% setup% includes% %setup,$(TARGET)))
+      -include %(deps)
+    endif
+  endif
+endif
+%end
+#------------------------------------------------------------------------------
+
+
+#------------------------------------------------------------------------------
+# Create the directories %(dirs). The creation will be done by adding rules to
+# the %(setuptarget) make target with setup as the default. 
+%define rule_makedirs dirs=/A setuptarget=setup
+
+ifneq (%(setuptarget),)
+%(setuptarget) : | %(dirs)
+else
+%(setuptarget) :: %(dirs)
+endif
+
+GLOB_MKDIRS += %(dirs)
+
+%end
+#------------------------------------------------------------------------------
+
+
+#------------------------------------------------------------------------------
+# Generate a rule to compile a C source file to an object file and generate
+# the dependency file. Basename may contain a directory part, then the source
+# file has to be in that directory. The generated file will be put in the
+# object directory without the directory.
+# options
+# - basename: the basename of the file to compile. Use % for a wildcard rule
+# - cflags (default $(CFLAGS)): the C flags to use for compilation
+# - dflags: the flags used during creation of dependency file. If not specified
+#   the same value as cflags will be used
+# - targetdir: the directory to put the .o file and the .d file. By default
+#   it is put in the same directory as the .c file
+%define rule_compile mmake=TMP basename=/A cppflags=$(CPPFLAGS) cflags=$(CFLAGS) incextra="$(TOP)/$(CURDIR)" dflags= targetdir= compiler=target
+
+%(mmake)_NIXFLAG ?= -nix
+
+ifeq (%(targetdir),)
+  %(mmake)_TARGETBASE := %(basename)
+else
+  %(mmake)_TARGETBASE := %(targetdir)/$(notdir %(basename))
+endif
+
+# Adjust compiler flags to suit C
+%(mmake)_C_CPPFLAGS := %(cppflags)
+%(mmake)_CFLAGS := %(cflags)
+%(mmake)_CFLAGS := $(subst -fpermissive,, $(%(mmake)_CFLAGS))
+ifeq (%(dflags),)
+  %(mmake)_DFLAGS := $(%(mmake)_CFLAGS)
+else
+  %(mmake)_DFLAGS := %(dflags)
+endif
+ 
+ifeq ($(findstring %(compiler),host kernel target),)
+  $(error unknown compiler %(compiler))
+endif
+ifeq (%(compiler),target)
+%(mmake)_LINK ?= $(strip $(TARGET_CC) $(TARGET_SYSROOT))
+%(mmake)_LD_OPTS ?= $(TARGET_ISA_LDFLAGS)
+%(mmake)_LDFLAGS ?= $(strip $(LDFLAGS))
+%(mmake)_STRIP ?= $(TARGET_STRIP)
+$(%(mmake)_TARGETBASE).o : %(mmake)_CMD:=$(strip $(TARGET_CC) $(TARGET_SYSROOT))
+$(%(mmake)_TARGETBASE).d : %(mmake)_CMD:=$(strip $(TARGET_CC) $(TARGET_SYSROOT))
+$(%(mmake)_TARGETBASE).o : %(mmake)_C_CPPFLAGS:=$(strip $(%(mmake)_C_CPPFLAGS) $(%(mmake)_C_EXTRA_CPPFLAGS))
+$(%(mmake)_TARGETBASE).d : %(mmake)_C_CPPFLAGS:=$(strip $(%(mmake)_C_CPPFLAGS) $(%(mmake)_C_EXTRA_CPPFLAGS))
+$(%(mmake)_TARGETBASE).o : %(mmake)_CFLAGS:=$(strip $(%(mmake)_CFLAGS) $(SAFETY_CFLAGS))
+$(%(mmake)_TARGETBASE).d : %(mmake)_DFLAGS:=$(%(mmake)_DFLAGS)
+$(%(mmake)_TARGETBASE).o : %(mmake)_IQUOTE:=$(CFLAGS_IQUOTE)
+$(%(mmake)_TARGETBASE).d : %(mmake)_IQUOTE:=$(CFLAGS_IQUOTE)
+$(%(mmake)_TARGETBASE).o : %(mmake)_IQUOTE_END:=$(CFLAGS_IQUOTE_END)
+$(%(mmake)_TARGETBASE).d : %(mmake)_IQUOTE_END:=$(CFLAGS_IQUOTE_END)
+endif
+ifeq (%(compiler),host)
+%(mmake)_LINK ?= $(strip $(HOST_CC))
+%(mmake)_LD_OPTS ?= $(HOST_ISA_LDFLAGS)
+%(mmake)_LDFLAGS ?= $(strip $(HOST_LDFLAGS))
+%(mmake)_STRIP ?= $(HOST_STRIP)
+$(%(mmake)_TARGETBASE).o : %(mmake)_CMD:=$(HOST_CC)
+$(%(mmake)_TARGETBASE).d : %(mmake)_CMD:=$(HOST_CC)
+$(%(mmake)_TARGETBASE).o : %(mmake)_C_CPPFLAGS:=$(strip $(HOST_C_CPPFLAGS) $(%(mmake)_C_CPPFLAGS) $(%(mmake)_C_EXTRA_CPPFLAGS))
+$(%(mmake)_TARGETBASE).d : %(mmake)_C_CPPFLAGS:=$(strip $(HOST_C_CPPFLAGS) $(%(mmake)_C_CPPFLAGS) $(%(mmake)_C_EXTRA_CPPFLAGS))
+$(%(mmake)_TARGETBASE).o : %(mmake)_CFLAGS:=$(strip $(HOST_CFLAGS) $(%(mmake)_CFLAGS))
+$(%(mmake)_TARGETBASE).d : %(mmake)_DFLAGS:=$(strip $(HOST_CFLAGS) $(%(mmake)_DFLAGS))
+$(%(mmake)_TARGETBASE).o : %(mmake)_IQUOTE:=$(HOST_IQUOTE)
+$(%(mmake)_TARGETBASE).d : %(mmake)_IQUOTE:=$(HOST_IQUOTE)
+$(%(mmake)_TARGETBASE).o : %(mmake)_IQUOTE_END:=$(HOST_IQUOTE_END)
+$(%(mmake)_TARGETBASE).d : %(mmake)_IQUOTE_END:=$(HOST_IQUOTE_END)
+endif
+ifeq (%(compiler),kernel)
+%(mmake)_LINK ?= $(strip $(KERNEL_CC) $(KERNEL_SYSROOT) $(KERNEL_ISA_LDFLAGS))
+%(mmake)_LD_OPTS ?= $(KERNEL_ISA_LDFLAGS)
+%(mmake)_LDFLAGS ?= $(strip $(USER_LDFLAGS) $(KERNEL_LDFLAGS))
+%(mmake)_STRIP ?= $(ECHO) >/dev/null
+$(%(mmake)_TARGETBASE).o : %(mmake)_CMD:=$(strip $(KERNEL_CC) $(KERNEL_SYSROOT))
+$(%(mmake)_TARGETBASE).d : %(mmake)_CMD:=$(strip $(KERNEL_CC) $(KERNEL_SYSROOT))
+$(%(mmake)_TARGETBASE).o : %(mmake)_C_CPPFLAGS:=$(strip $(KERNEL_C_CPPFLAGS) $(%(mmake)_C_CPPFLAGS) $(%(mmake)_C_EXTRA_CPPFLAGS))
+$(%(mmake)_TARGETBASE).d : %(mmake)_C_CPPFLAGS:=$(strip $(KERNEL_C_CPPFLAGS) $(%(mmake)_C_CPPFLAGS) $(%(mmake)_C_EXTRA_CPPFLAGS))
+$(%(mmake)_TARGETBASE).o : %(mmake)_CFLAGS:=$(strip $(KERNEL_ISA_CFLAGS) $(KERNEL_CFLAGS) $(%(mmake)_CFLAGS))
+$(%(mmake)_TARGETBASE).d : %(mmake)_DFLAGS:=$(strip $(KERNEL_ISA_CFLAGS) $(KERNEL_CFLAGS) $(%(mmake)_DFLAGS))
+$(%(mmake)_TARGETBASE).o : %(mmake)_IQUOTE:=$(KERNEL_IQUOTE)
+$(%(mmake)_TARGETBASE).d : %(mmake)_IQUOTE:=$(KERNEL_IQUOTE)
+$(%(mmake)_TARGETBASE).o : %(mmake)_IQUOTE_END:=$(KERNEL_IQUOTE_END)
+$(%(mmake)_TARGETBASE).d : %(mmake)_IQUOTE_END:=$(KERNEL_IQUOTE_END)
+endif
+
+$(%(mmake)_TARGETBASE).o : CPPFLAGS := $(%(mmake)_C_CPPFLAGS)
+$(%(mmake)_TARGETBASE).o : CFLAGS := $(%(mmake)_CFLAGS)
+$(%(mmake)_TARGETBASE).o : %(basename).c
+	%compile_q cmd="$(%(mmake)_CMD)" iquote="$(%(mmake)_IQUOTE)" iquote_end="$(%(mmake)_IQUOTE_END)" incextra="%(incextra)"
+
+ifeq (%(nix),yes)
+  $(%(mmake)_TARGETBASE).d : %(mmake)_DFLAGS:=$(strip $(%(mmake)_NIXFLAG) $(%(mmake)_DFLAGS))
+endif
+$(%(mmake)_TARGETBASE).d : %(basename).c
+	%mkdepend_q cc="$(%(mmake)_CMD)" flags="$(strip $(%(mmake)_DFLAGS) $(%(mmake)_C_CPPFLAGS))"
+%end
+#------------------------------------------------------------------------------
+
+
+#------------------------------------------------------------------------------
+# Generate a rule to compile a C++ source file to an object file and generate
+# the dependency file. Basename may contain a directory part, then the source
+# file has to be in that directory. The generated file will be put in the
+# object directory without the directory.
+# options
+# - basename: the basename of the file to compile. Use % for a wildcard rule
+# - cflags (default $(CFLAGS)): the C flags to use for compilation
+# - dflags: the flags used during creation of dependency file. If not specified
+#   the same value as cflags will be used
+# - targetdir: the directory to put the .o file and the .d file. By default
+#   it is put in the same directory as the .c file
+%define rule_compile_cxx mmake=TMP basename=/A cppflags=$(CPPFLAGS) cxxflags=$(CXXFLAGS) dxxflags= targetdir= compiler=target incextra="$(TOP)/$(CURDIR)"
+
+ifneq (%(basename),)
+%(mmake)_NIXFLAG ?= -nix
+ifeq (%(targetdir),)
+  %(mmake)_TARGETBASE := %(basename)
+else
+  %(mmake)_TARGETBASE := %(targetdir)/$(notdir %(basename))
+endif
+
+# Adjust compiler flags to suit C++
+%(mmake)_CXX_CPPFLAGS := %(cppflags)
+%(mmake)_CXXFLAGS := %(cxxflags) 
+ifeq (%(dxxflags),)
+  %(mmake)_DXXFLAGS := %(cxxflags)
+else
+  %(mmake)_DXXFLAGS := %(dxxflags)
+endif
+
+ifeq ($(findstring %(compiler),host kernel target),)
+  $(error unknown compiler %(compiler))
+endif
+ifeq (%(compiler),target)
+%(mmake)_LINK ?= $(strip $(AROS_CXX) $(TARGET_SYSROOT))
+%(mmake)_LD_OPTS ?= $(TARGET_ISA_LDFLAGS)
+%(mmake)_LDFLAGS ?= $(strip $(TARGET_LDFLAGS))
+%(mmake)_STRIP ?= $(TARGET_STRIP)
+$(%(mmake)_TARGETBASE).o : %(mmake)_CMD:=$(strip $(AROS_CXX) $(TARGET_SYSROOT))
+$(%(mmake)_TARGETBASE).d : %(mmake)_CMD:=$(strip $(AROS_CXX) $(TARGET_SYSROOT))
+$(%(mmake)_TARGETBASE).o : %(mmake)_CXX_CPPFLAGS:=$(strip $(%(mmake)_CXX_CPPFLAGS) $(%(mmake)_CXX_EXTRA_CPPFLAGS))
+$(%(mmake)_TARGETBASE).d : %(mmake)_CXX_CPPFLAGS:=$(strip $(%(mmake)_CXX_CPPFLAGS) $(%(mmake)_CXX_EXTRA_CPPFLAGS))
+$(%(mmake)_TARGETBASE).o : %(mmake)_CXXFLAGS:=$(strip $(%(mmake)_CXXFLAGS) $(SAFETY_CFLAGS))
+$(%(mmake)_TARGETBASE).d : %(mmake)_DXXFLAGS:=$(%(mmake)_DXXFLAGS)
+$(%(mmake)_TARGETBASE).o : %(mmake)_IQUOTE:=$(CFLAGS_IQUOTE)
+$(%(mmake)_TARGETBASE).d : %(mmake)_IQUOTE:=$(CFLAGS_IQUOTE)
+$(%(mmake)_TARGETBASE).o : %(mmake)_IQUOTE_END:=$(CFLAGS_IQUOTE_END)
+$(%(mmake)_TARGETBASE).d : %(mmake)_IQUOTE_END:=$(CFLAGS_IQUOTE_END)
+endif
+ifeq (%(compiler),host)
+%(mmake)_LINK ?= $(strip $(HOST_CXX) $(HOST_ISA_LDFLAGS))
+%(mmake)_LD_OPTS := $(HOST_ISA_LDFLAGS)
+%(mmake)_LDFLAGS ?= $(strip $(HOST_LDFLAGS))
+%(mmake)_STRIP ?= $(HOST_STRIP)
+$(%(mmake)_TARGETBASE).o : %(mmake)_CMD:=$(HOST_CXX)
+$(%(mmake)_TARGETBASE).d : %(mmake)_CMD:=$(HOST_CXX)
+$(%(mmake)_TARGETBASE).o : %(mmake)_CXX_CPPFLAGS:=$(strip $(HOST_CXX_CPPFLAGS) $(%(mmake)_CXX_CPPFLAGS) $(%(mmake)_CXX_EXTRA_CPPFLAGS))
+$(%(mmake)_TARGETBASE).d : %(mmake)_CXX_CPPFLAGS:=$(strip $(HOST_CXX_CPPFLAGS) $(%(mmake)_CXX_CPPFLAGS) $(%(mmake)_CXX_EXTRA_CPPFLAGS))
+$(%(mmake)_TARGETBASE).o : %(mmake)_CXXFLAGS:=$(strip $(HOST_CXXFLAGS) $(%(mmake)_CXXFLAGS))
+$(%(mmake)_TARGETBASE).d : %(mmake)_DXXFLAGS:=$(strip $(HOST_CXXFLAGS) $(%(mmake)_DXXFLAGS))
+$(%(mmake)_TARGETBASE).o : %(mmake)_IQUOTE:=$(HOST_IQUOTE)
+$(%(mmake)_TARGETBASE).d : %(mmake)_IQUOTE:=$(HOST_IQUOTE)
+$(%(mmake)_TARGETBASE).o : %(mmake)_IQUOTE_END:=$(HOST_IQUOTE_END)
+$(%(mmake)_TARGETBASE).d : %(mmake)_IQUOTE_END:=$(HOST_IQUOTE_END)
+endif
+ifeq (%(compiler),kernel)
+KERNEL_CXX ?= $(KERNEL_CC)
+%(mmake)_LINK ?= $(strip $(KERNEL_CXX) $(KERNEL_SYSROOT) $(KERNEL_ISA_LDFLAGS))
+%(mmake)_LD_OPTS ?= $(KERNEL_ISA_LDFLAGS)
+%(mmake)_LDFLAGS ?= $(strip $(USER_LDFLAGS) $(KERNEL_LDFLAGS))
+%(mmake)_STRIP ?= $(ECHO) >/dev/null
+$(%(mmake)_TARGETBASE).o : %(mmake)_CMD:=$(strip $(KERNEL_CXX) $(KERNEL_SYSROOT))
+$(%(mmake)_TARGETBASE).d : %(mmake)_CMD:=$(strip $(KERNEL_CXX) $(KERNEL_SYSROOT))
+$(%(mmake)_TARGETBASE).o : %(mmake)_CXX_CPPFLAGS:=$(strip $(KERNEL_CXX_CPPFLAGS) $(%(mmake)_CXX_CPPFLAGS) $(%(mmake)_CXX_EXTRA_CPPFLAGS))
+$(%(mmake)_TARGETBASE).d : %(mmake)_CXX_CPPFLAGS:=$(strip $(KERNEL_CXX_CPPFLAGS) $(%(mmake)_CXX_CPPFLAGS) $(%(mmake)_CXX_EXTRA_CPPFLAGS))
+$(%(mmake)_TARGETBASE).o : %(mmake)_CXXFLAGS:=$(strip $(KERNEL_CXXFLAGS) $(%(mmake)_CXXFLAGS))
+$(%(mmake)_TARGETBASE).d : %(mmake)_DXXFLAGS:=$(strip $(KERNEL_CXXFLAGS) $(%(mmake)_DXXFLAGS))
+$(%(mmake)_TARGETBASE).o : %(mmake)_IQUOTE:=$(KERNEL_IQUOTE)
+$(%(mmake)_TARGETBASE).d : %(mmake)_IQUOTE:=$(KERNEL_IQUOTE)
+$(%(mmake)_TARGETBASE).o : %(mmake)_IQUOTE_END:=$(KERNEL_IQUOTE_END)
+$(%(mmake)_TARGETBASE).d : %(mmake)_IQUOTE_END:=$(KERNEL_IQUOTE_END)
+endif
+
+$(%(mmake)_TARGETBASE).o : CPPFLAGS := $(%(mmake)_CXX_CPPFLAGS)
+$(%(mmake)_TARGETBASE).o : CXXFLAGS := $(%(mmake)_CXXFLAGS)
+$(%(mmake)_TARGETBASE).o : %(basename).cpp
+	%compile_q cmd="$(%(mmake)_CMD)" opt="$(strip $(CXXFLAGS) $(CPPFLAGS))" iquote="$(%(mmake)_IQUOTE)" iquote_end="$(%(mmake)_IQUOTE_END)" incextra="%(incextra)"
+
+ifeq (%(nix),yes)
+  $(%(mmake)_TARGETBASE).d : %(mmake)_DXXFLAGS:=$(strip $(%(mmake)_NIXFLAG) $(%(mmake)_DXXFLAGS))
+endif
+$(%(mmake)_TARGETBASE).d : %(basename).cpp
+	%mkdepend_q cc=$(%(mmake)_CMD) flags="$(strip $(%(mmake)_DXXFLAGS) $(%(mmake)_CXX_CPPFLAGS))"
+
+endif
+
+%end
+#------------------------------------------------------------------------------
+
+
+#------------------------------------------------------------------------------
+# Generate a rule to compile an ObjC source file to an object file and generate
+# the dependency file. Basename may contain a directory part, then the source
+# file has to be in that directory. The generated file will be put in the
+# object directory without the directory.
+# options
+# - basename: the basename of the file to compile. Use % for a wildcard rule
+# - cflags (default $(CFLAGS)): the C flags to use for compilation
+# - dflags: the flags used during creation of dependency file. If not specified
+#   the same value as cflags will be used
+# - targetdir: the directory to put the .o file and the .d file. By default
+#   it is put in the same directory as the .m file
+%define rule_compile_objc mmake=TMP basename=/A cppflags=$(CPPFLAGS) cflags=$(CFLAGS) dflags= targetdir= compiler=target incextra="$(TOP)/$(CURDIR)"
+
+ifneq (%(basename),)
+%(mmake)_NIXFLAG ?= -nix
+ifeq (%(targetdir),)
+  %(mmake)_TARGETBASE := %(basename)
+else
+  %(mmake)_TARGETBASE := %(targetdir)/$(notdir %(basename))
+endif
+
+# Adjust compiler flags to suit ObjC
+%(mmake)_OBJC_CPPFLAGS :=  %(cppflags)
+%(mmake)_OBJCFLAGS := %(cflags)
+%(mmake)_OBJCFLAGS := $(%(mmake)_OBJCFLAGS) -isystem $(AROS_DEVELOPER)/include
+%(mmake)_OBJCFLAGS := $(subst -Wno-pointer-sign,, $(subst -Werror-implicit-function-declaration,, $(%(mmake)_OBJCFLAGS)))
+ifeq (%(dflags),)
+  %(mmake)_OBJCDFLAGS := %(cflags)
+else
+  %(mmake)_OBJCDFLAGS := %(dflags)
+endif
+
+# Define the use of cross compiler
+ifeq ($(TARGET_OBJC),)
+  %(mmake)_CC := $(TARGET_CC)
+else
+  %(mmake)_CC := $(TARGET_OBJC)
+endif
+
+ifeq ($(findstring %(compiler),host kernel target),)
+  $(error unknown compiler %(compiler))
+endif
+ifeq (%(compiler),target)
+%(mmake)_LINK ?= $(strip $(%(mmake)_CC) $(TARGET_SYSROOT))
+%(mmake)_LD_OPTS ?= $(TARGET_ISA_LDFLAGS)
+%(mmake)_LDFLAGS ?= $(strip $(TARGET_LDFLAGS))
+%(mmake)_STRIP ?= $(TARGET_STRIP)
+$(%(mmake)_TARGETBASE).o : %(mmake)_CMD:=$(strip $(%(mmake)_CC) $(TARGET_SYSROOT))
+$(%(mmake)_TARGETBASE).d : %(mmake)_CMD:=$(strip $(%(mmake)_CC) $(TARGET_SYSROOT))
+$(%(mmake)_TARGETBASE).o : %(mmake)_OBJC_CPPFLAGS:=$(strip $(%(mmake)_OBJC_CPPFLAGS) $(%(mmake)_OBJC_EXTRA_CPPFLAGS))
+$(%(mmake)_TARGETBASE).d : %(mmake)_OBJC_CPPFLAGS:=$(strip $(%(mmake)_OBJC_CPPFLAGS) $(%(mmake)_OBJC_EXTRA_CPPFLAGS))
+$(%(mmake)_TARGETBASE).o : %(mmake)_OBJCFLAGS:=$(strip $(%(mmake)_OBJCFLAGS) $(SAFETY_CFLAGS))
+$(%(mmake)_TARGETBASE).d : %(mmake)_OBJCDFLAGS:=$(%(mmake)_OBJCDFLAGS)
+$(%(mmake)_TARGETBASE).o : %(mmake)_IQUOTE:=$(CFLAGS_IQUOTE)
+$(%(mmake)_TARGETBASE).d : %(mmake)_IQUOTE:=$(CFLAGS_IQUOTE)
+$(%(mmake)_TARGETBASE).o : %(mmake)_IQUOTE_END:=$(CFLAGS_IQUOTE_END)
+$(%(mmake)_TARGETBASE).d : %(mmake)_IQUOTE_END:=$(CFLAGS_IQUOTE_END)
+endif
+ifeq (%(compiler),host)
+%(mmake)_LINK ?= $(strip $(HOST_CC) $(HOST_ISA_LDFLAGS))
+%(mmake)_LD_OPTS ?= $(HOST_ISA_LDFLAGS)
+%(mmake)_LDFLAGS ?= $(strip $(HOST_LDFLAGS))
+%(mmake)_STRIP ?= $(HOST_STRIP)
+$(%(mmake)_TARGETBASE).o : %(mmake)_CMD:=$(HOST_CC)
+$(%(mmake)_TARGETBASE).d : %(mmake)_CMD:=$(HOST_CC)
+$(%(mmake)_TARGETBASE).o : %(mmake)_OBJC_CPPFLAGS:=$(strip $(HOST_OBJC_CPPFLAGS) $(%(mmake)_OBJC_CPPFLAGS) $(%(mmake)_OBJC_EXTRA_CPPFLAGS))
+$(%(mmake)_TARGETBASE).d : %(mmake)_OBJC_CPPFLAGS:=$(strip $(HOST_OBJC_CPPFLAGS) $(%(mmake)_OBJC_CPPFLAGS) $(%(mmake)_OBJC_EXTRA_CPPFLAGS))
+$(%(mmake)_TARGETBASE).o : %(mmake)_OBJCFLAGS:=$(strip $(HOST_CFLAGS) $(%(mmake)_OBJCFLAGS))
+$(%(mmake)_TARGETBASE).d : %(mmake)_OBJCDFLAGS:=$(strip $(HOST_CFLAGS) $(%(mmake)_OBJCDFLAGS))
+$(%(mmake)_TARGETBASE).o : %(mmake)_IQUOTE:=$(HOST_IQUOTE)
+$(%(mmake)_TARGETBASE).d : %(mmake)_IQUOTE:=$(HOST_IQUOTE)
+$(%(mmake)_TARGETBASE).o : %(mmake)_IQUOTE_END:=$(HOST_IQUOTE_END)
+$(%(mmake)_TARGETBASE).d : %(mmake)_IQUOTE_END:=$(HOST_IQUOTE_END)
+endif
+ifeq (%(compiler),kernel)
+%(mmake)_LINK ?= $(strip $(KERNEL_CC) $(KERNEL_SYSROOT) $(KERNEL_ISA_LDFLAGS))
+%(mmake)_LD_OPTS ?= $(KERNEL_ISA_LDFLAGS)
+%(mmake)_LDFLAGS ?= $(strip $(USER_LDFLAGS) $(KERNEL_LDFLAGS))
+%(mmake)_STRIP ?= $(ECHO) >/dev/null
+$(%(mmake)_TARGETBASE).o : %(mmake)_CMD:=$(strip $(KERNEL_CC) $(KERNEL_SYSROOT))
+$(%(mmake)_TARGETBASE).d : %(mmake)_CMD:=$(strip $(KERNEL_CC) $(KERNEL_SYSROOT))
+$(%(mmake)_TARGETBASE).o : %(mmake)_OBJC_CPPFLAGS:=$(strip $(KERNEL_OBJC_CPPFLAGS) $(%(mmake)_OBJC_CPPFLAGS) $(%(mmake)_OBJC_EXTRA_CPPFLAGS))
+$(%(mmake)_TARGETBASE).d : %(mmake)_OBJC_CPPFLAGS:=$(strip $(KERNEL_OBJC_CPPFLAGS) $(%(mmake)_OBJC_CPPFLAGS) $(%(mmake)_OBJC_EXTRA_CPPFLAGS))
+$(%(mmake)_TARGETBASE).o : %(mmake)_OBJCFLAGS:=$(strip $(KERNEL_ISA_CFLAGS) $(KERNEL_CFLAGS) $(%(mmake)_OBJCFLAGS))
+$(%(mmake)_TARGETBASE).d : %(mmake)_OBJCDFLAGS:=$(strip $(KERNEL_ISA_CFLAGS) $(KERNEL_CFLAGS) $(%(mmake)_OBJCDFLAGS))
+$(%(mmake)_TARGETBASE).o : %(mmake)_IQUOTE:=$(KERNEL_IQUOTE)
+$(%(mmake)_TARGETBASE).d : %(mmake)_IQUOTE:=$(KERNEL_IQUOTE)
+$(%(mmake)_TARGETBASE).o : %(mmake)_IQUOTE_END:=$(KERNEL_IQUOTE_END)
+$(%(mmake)_TARGETBASE).d : %(mmake)_IQUOTE_END:=$(KERNEL_IQUOTE_END)
+endif
+
+$(%(mmake)_TARGETBASE).o : CPPFLAGS := $(%(mmake)_OBJC_CPPFLAGS)
+$(%(mmake)_TARGETBASE).o : CFLAGS := $(%(mmake)_OBJCFLAGS)
+$(%(mmake)_TARGETBASE).o : %(basename).m
+	%compile_q cmd="$(%(mmake)_CMD)" iquote="$(%(mmake)_IQUOTE)" iquote_end="$(%(mmake)_IQUOTE_END)" incextra="%(incextra)"
+
+ifeq (%(nix),yes)
+  $(%(mmake)_TARGETBASE).d : %(mmake)_OBJCDFLAGS:=$(strip $(%(mmake)_NIXFLAG) $(%(mmake)_OBJCDFLAGS))
+endif
+$(%(mmake)_TARGETBASE).d : %(basename).m
+	%mkdepend_q cc=$(%(mmake)_CMD) flags="$(strip $(%(mmake)_OBJCDFLAGS) $(%(mmake)_OBJC_CPPFLAGS))"
+
+endif
+
+%end
+#------------------------------------------------------------------------------
+
+
+#------------------------------------------------------------------------------
+# Generate a rule to compile multiple C source files to an object file and
+# generate the corresponding dependency files. The generated file will be put
+# in the object directory without the directory part of the source file.
+# options
+# - basenames: the basenames of the files to compile. The names may include
+#   relative or absolute path names. No wildcard is allowed
+# - cflags (default $(CFLAGS)): the C flags to use for compilation
+# - dflags: the flags used during creation of dependency file. If not specified
+#   the same value as cflags will be used
+# - targetdir: the directory to put the .o file and the .d file. By default
+#   it is put in the same directory as the .c file. When targetdir is not
+#   empty, path names will be stripped from the file names so that all files
+#   are in that dir and not in subdirectories.
+# - compiler (default target): compiler to use, target, kernel or host
+%define rule_compile_multi mmake=TMP basenames=/A cppflags=$(CPPFLAGS) cflags=$(CFLAGS) dflags= srcdir= targetdir= \
+    compiler=target usetree=no incextra="$(TOP)/$(CURDIR)"
+
+ifeq (%(srcdir),)
+%(mmake)_MC_SRCWILDCARD := %
+else
+%(mmake)_MC_SRCWILDCARD := %(srcdir)/%
+endif
+
+ifeq (%(targetdir),)
+%(mmake)_MC_TARGETS := $(addsuffix .o,%(basenames))
+%(mmake)_MC_DTARGETS := $(addsuffix .d,%(basenames))
+%(mmake)_MC_TGTWILDCARD := %
+else
+ifeq (%(usetree),no)
+    %(mmake)_MC_TARGETS := $(addsuffix .o,$(addprefix %(targetdir)/,$(notdir %(basenames))))
+    %(mmake)_MC_DTARGETS := $(addsuffix .d,$(addprefix %(targetdir)/,$(notdir %(basenames))))
+else
+ifeq (%(srcdir),)
+    %(mmake)_MC_TARGETS := $(addsuffix .o,$(addprefix %(targetdir)/,%(basenames)))
+    %(mmake)_MC_DTARGETS := $(addsuffix .d,$(addprefix %(targetdir)/,%(basenames)))
+else
+    %(mmake)_MC_TARGETS := $(addsuffix .o,$(addprefix %(targetdir)/,$(patsubst %(srcdir)/%,%,%(basenames))))
+    %(mmake)_MC_DTARGETS := $(addsuffix .d,$(addprefix %(targetdir)/,$(patsubst %(srcdir)/%,%,%(basenames))))
+endif
+endif
+%(mmake)_MC_TGTWILDCARD := %(targetdir)/%
+
+# Be sure that all .c files are generated
+$(%(mmake)_MC_TARGETS) $(%(mmake)_MC_DTARGETS) : | $(addsuffix .c,%(basenames))
+
+# Be sure that all .c files are found
+%(mmake)_MC_SRCDIR := $(shell $(ECHO) $(SRCDIR) | sed 's/^\(.\):\//\/\1\//')
+%(mmake)_MC_BASEDIRS := $(shell $(ECHO) $(sort $(dir %(basenames))) | sed 's/\(.\):\//\/\1\//g')
+%(mmake)_MC_DIRS := $(foreach dir, $(%(mmake)_MC_BASEDIRS), $(if $(filter /%,$(dir)),$(dir),$(%(mmake)_MC_SRCDIR)/$(CURDIR)/$(dir)))
+ifneq ($(%(mmake)_MC_DIRS),)
+    %(mmake)_MC_DIRS := $(shell $(ECHO) $(%(mmake)_MC_DIRS) | sed 's/\(.\):\//\/\1\//g')
+    vpath %.c $(%(mmake)_MC_DIRS)
+endif
+
+endif
+
+%(mmake)_MC_CPPFLAGS := %(cppflags)
+%(mmake)_CFLAGS := %(cflags)
+ifeq (%(dflags),)
+  %(mmake)_DFLAGS := %(cflags)
+else
+  %(mmake)_DFLAGS := %(dflags)
+endif
+
+ifeq ($(findstring %(compiler),host kernel target),)
+  $(error unknown compiler %(compiler))
+endif
+ifeq (%(compiler),target)
+%(mmake)_LINK ?= $(strip $(TARGET_CC) $(TARGET_SYSROOT))
+%(mmake)_LD_OPTS ?= $(TARGET_ISA_LDFLAGS)
+%(mmake)_LDFLAGS ?= $(strip $(TARGET_LDFLAGS))
+%(mmake)_STRIP ?= $(TARGET_STRIP)
+%(mmake)_ASSEMBLER ?= $(strip $(TARGET_CC) $(TARGET_SYSROOT))
+$(%(mmake)_MC_TARGETS) $(%(mmake)_MC_DTARGETS) : CMD:=$(strip $(TARGET_CC) $(TARGET_SYSROOT))
+$(%(mmake)_MC_TARGETS) $(%(mmake)_MC_DTARGETS) : %(mmake)_MC_CPPFLAGS:=$(strip $(%(mmake)_MC_CPPFLAGS) $(%(mmake)_MC_EXTRA_CPPFLAGS))
+$(%(mmake)_MC_TARGETS) $(%(mmake)_MC_DTARGETS) : %(mmake)_CFLAGS:=$(strip $(%(mmake)_CFLAGS) $(SAFETY_CFLAGS))
+$(%(mmake)_MC_TARGETS) $(%(mmake)_MC_DTARGETS) : %(mmake)_DFLAGS:=$(%(mmake)_DFLAGS)
+$(%(mmake)_MC_TARGETS) $(%(mmake)_MC_DTARGETS) : %(mmake)_IQUOTE:=$(CFLAGS_IQUOTE)
+$(%(mmake)_MC_TARGETS) $(%(mmake)_MC_DTARGETS) : %(mmake)_IQUOTE_END:=$(CFLAGS_IQUOTE_END)
+endif
+ifeq (%(compiler),host)
+%(mmake)_LINK ?= $(strip $(HOST_CC))
+%(mmake)_LD_OPTS ?= $(HOST_ISA_LDFLAGS)
+%(mmake)_LDFLAGS ?= $(strip $(HOST_LDFLAGS))
+%(mmake)_STRIP ?= $(HOST_STRIP)
+%(mmake)_ASSEMBLER ?= $(strip $HOST_CC) $(HOST_SYSROOT))
+$(%(mmake)_MC_TARGETS) $(%(mmake)_MC_DTARGETS) : CMD:=$(HOST_CC)
+$(%(mmake)_MC_TARGETS) $(%(mmake)_MC_DTARGETS) : %(mmake)_MC_CPPFLAGS:=$(strip $(HOST_MC_CPPFLAGS) $(%(mmake)_MC_CPPFLAGS) $(%(mmake)_MC_EXTRA_CPPFLAGS))
+$(%(mmake)_MC_TARGETS) $(%(mmake)_MC_DTARGETS) : %(mmake)_CFLAGS:=$(strip $(HOST_CFLAGS) $(%(mmake)_CFLAGS))
+$(%(mmake)_MC_TARGETS) $(%(mmake)_MC_DTARGETS) : %(mmake)_DFLAGS:=$(strip $(HOST_CFLAGS) $(%(mmake)_DFLAGS))
+$(%(mmake)_MC_TARGETS) $(%(mmake)_MC_DTARGETS) : %(mmake)_IQUOTE:=$(HOST_IQUOTE)
+$(%(mmake)_MC_TARGETS) $(%(mmake)_MC_DTARGETS) : %(mmake)_IQUOTE_END:=$(HOST_IQUOTE_END)
+endif
+ifeq (%(compiler),kernel)
+%(mmake)_LINK ?= $(strip $(KERNEL_CC) $(KERNEL_SYSROOT) $(KERNEL_ISA_LDFLAGS))
+%(mmake)_LD_OPTS ?= $(KERNEL_ISA_LDFLAGS)
+%(mmake)_LDFLAGS ?= $(strip $(USER_LDFLAGS) $(KERNEL_LDFLAGS))
+%(mmake)_STRIP ?= $(ECHO) >/dev/null
+%(mmake)_ASSEMBLER ?= $(strip $(KERNEL_CC) $(KERNEL_SYSROOT))
+$(%(mmake)_MC_TARGETS) $(%(mmake)_MC_DTARGETS) : CMD:=$(strip $(KERNEL_CC) $(KERNEL_SYSROOT))
+$(%(mmake)_MC_TARGETS) $(%(mmake)_MC_DTARGETS) : %(mmake)_MC_CPPFLAGS:=$(strip $(KERNEL_MC_CPPFLAGS) $(%(mmake)_MC_CPPFLAGS) $(%(mmake)_MC_EXTRA_CPPFLAGS))
+$(%(mmake)_MC_TARGETS) $(%(mmake)_MC_DTARGETS) : %(mmake)_CFLAGS:=$(strip $(KERNEL_ISA_CFLAGS) $(KERNEL_CFLAGS) $(%(mmake)_CFLAGS))
+$(%(mmake)_MC_TARGETS) $(%(mmake)_MC_DTARGETS) : %(mmake)_DFLAGS:=$(strip $(KERNEL_ISA_CFLAGS) $(KERNEL_CFLAGS) $(%(mmake)_DFLAGS))
+$(%(mmake)_MC_TARGETS) $(%(mmake)_MC_DTARGETS) : %(mmake)_IQUOTE:=$(KERNEL_IQUOTE)
+$(%(mmake)_MC_TARGETS) $(%(mmake)_MC_DTARGETS) : %(mmake)_IQUOTE_END:=$(KERNEL_IQUOTE_END)
+endif
+
+$(%(mmake)_MC_TARGETS) : CPPFLAGS := $(%(mmake)_MC_CPPFLAGS)
+$(%(mmake)_MC_TARGETS) : CFLAGS := $(%(mmake)_CFLAGS)
+$(%(mmake)_MC_TARGETS) : $(%(mmake)_MC_TGTWILDCARD).o : $(%(mmake)_MC_SRCWILDCARD).c
+	%compile_q cmd="$(CMD)" iquote="$(%(mmake)_IQUOTE)" iquote_end="$(%(mmake)_IQUOTE_END)" incextra="%(incextra)"
+
+$(%(mmake)_MC_DTARGETS) : $(%(mmake)_MC_TGTWILDCARD).d : $(%(mmake)_MC_SRCWILDCARD).c
+	%mkdepend_q cc="$(CMD)" flags="$(strip $(%(mmake)_DFLAGS) $(%(mmake)_MC_CPPFLAGS))"
+%end
+#------------------------------------------------------------------------------
+
+
+#------------------------------------------------------------------------------
+# Generate a rule to compile multiple C++ source files to an object file and
+# generate the corresponding dependency files. The generated file will be put
+# in the object directory without the directory part of the source file.
+# options
+# - basenames: the basenames of the files to compile. The names may include
+#   relative or absolute path names. No wildcard is allowed. basenames will be 
+#   matched to supported AROS_CXXEXTS.
+# - cflags (default $(CFLAGS)): the C flags to use for compilation
+# - dflags: the flags used during creation of dependency file. If not specified
+#   the same value as cflags will be used
+# - targetdir: the directory to put the .o file and the .d file. By default
+#   it is put in the same directory as the .c file. When targetdir is not
+#   empty, path names will be stripped from the file names so that all files
+#   are in that dir and not in subdirectories.
+# - compiler (default target): compiler to use, target, kernel or host
+%define rule_compile_cxx_multi mmake=TMP basenames=/A cppflags=$(CPPFLAGS) cxxflags=$(CXXFLAGS) dxxflags= \
+    targetdir= compiler=target srcdir= incextra="$(TOP)/$(CURDIR)" usetree=no
+
+%(mmake)_CXXABSBASENAMES := $(foreach %(mmake)_CXXBASE,%(basenames),$(if $(filter /%,$(%(mmake)_CXXBASE)),$(%(mmake)_CXXBASE),$(abspath $(SRCDIR)/$(CURDIR)/$(%(mmake)_CXXBASE))))
+
+ifneq ($(%(mmake)_CXXABSBASENAMES),)
+
+%(mmake)_CXXBASENAMES := $(basename $(%(mmake)_CXXABSBASENAMES))
+
+# Identify the "real" c++ files from the passed in basenames
+%(mmake)_MCXX_FILES  := $(strip $(foreach %(mmake)_CXXBASE,$(%(mmake)_CXXABSBASENAMES), $(firstword $(wildcard $(foreach %(mmake)_EXT, $(AROS_CXXEXTS),$(addsuffix .$(%(mmake)_EXT),$(%(mmake)_CXXBASE)))))))
+
+ifeq (%(srcdir),)
+%(mmake)_MCXX_SRCWILDCARD := %
+else
+%(mmake)_MCXX_SRCWILDCARD := %(srcdir)/%
+endif
+
+ifeq (%(targetdir),)
+  %(mmake)_CXXTARGETS := $(notdir $(%(mmake)_CXXBASENAMES:=.o))
+  %(mmake)_CXXDTARGETS := $(notdir $(%(mmake)_CXXBASENAMES:=.d))
+  %(mmake)_MCXX_WILDCARD := %
+else
+ifeq (%(usetree),no)
+  %(mmake)_CXXTARGETS := $(addprefix %(targetdir)/,$(notdir $(%(mmake)_CXXBASENAMES:=.o)))
+  %(mmake)_CXXDTARGETS := $(addprefix %(targetdir)/,$(notdir $(%(mmake)_CXXBASENAMES:=.d)))
+  %(mmake)_MCXX_WILDCARD := %(targetdir)/%
+else
+  %(mmake)_CXXTARGETS := $(addprefix %(targetdir)/,$(%(mmake)_CXXBASENAMES:=.o))
+  %(mmake)_CXXDTARGETS := $(addprefix %(targetdir)/,$(%(mmake)_CXXBASENAMES:=.d))
+  %(mmake)_MCXX_WILDCARD := %(targetdir)/%
+endif
+
+  # Be sure that all source files are generated
+  $(%(mmake)_CXXTARGETS) $(%(mmake)_CXXDTARGETS) : | $(%(mmake)_MCXX_FILES)
+endif
+
+# Adjust compiler flags to suit C++
+%(mmake)_MCXX_CPPFLAGS := %(cppflags)
+%(mmake)_CXXFLAGS := %(cxxflags)
+ifeq (%(dxxflags),)
+  %(mmake)_DXXFLAGS := %(cxxflags)
+else
+  %(mmake)_DXXFLAGS := %(dxxflags)
+endif
+
+ifeq ($(findstring %(compiler),host kernel target),)
+  $(error unknown compiler %(compiler))
+endif
+ifeq (%(compiler),host)
+  %(mmake)_LINK ?= $(strip $(HOST_CXX) $(HOST_ISA_LDFLAGS))
+  %(mmake)_LD_OPTS ?= $(HOST_ISA_LDFLAGS)
+  %(mmake)_LDFLAGS ?= $(strip $(HOST_LDFLAGS))
+  %(mmake)_STRIP ?= $(HOST_STRIP)
+  %(mmake)_ASSEMBLER ?= $(strip $(HOST_CC) $(HOST_SYSROOT))
+  %(mmake)_CXXCMD:=$(HOST_CXX)
+  %(mmake)_MCXX_CPPFLAGS := $(strip $(HOST_MCXX_CPPFLAGS) $(%(mmake)_MCXX_CPPFLAGS) $(%(mmake)_MCXX_EXTRA_CPPFLAGS))
+  %(mmake)_CXXFLAGS := $(strip $(HOST_CXXFLAGS) $(%(mmake)_CXXFLAGS))
+  %(mmake)_DXXFLAGS := $(strip $(HOST_CXXFLAGS) $(%(mmake)_DXXFLAGS))
+  %(mmake)_CXXIQUOTE:=$(HOST_IQUOTE)
+  %(mmake)_CXXIQUOTE_END:=$(HOST_IQUOTE_END)
+endif
+ifeq (%(compiler),target)
+  %(mmake)_LINK ?= $(strip $(AROS_CXX) $(TARGET_SYSROOT))
+  %(mmake)_LD_OPTS ?= $(TARGET_ISA_LDFLAGS)
+  %(mmake)_CXXLDFLAGS = $(strip $(USER_LDFLAGS) $(TARGET_LDFLAGS))
+ifneq ($(TARGET_CXX_LIBS),)
+  %(mmake)_ARCHLIBS += $(TARGET_CXX_LIBS)
+endif
+  %(mmake)_LDFLAGS ?= $(%(mmake)_CXXLDFLAGS)
+  %(mmake)_STRIP ?= $(TARGET_STRIP)
+  %(mmake)_ASSEMBLER ?= $(strip $(TARGET_CC) $(TARGET_SYSROOT))
+  %(mmake)_CXXCMD:=$(strip $(AROS_CXX) $(TARGET_SYSROOT))
+  %(mmake)_MCXX_CPPFLAGS := $(strip $(%(mmake)_MCXX_CPPFLAGS) $(%(mmake)_MCXX_EXTRA_CPPFLAGS))
+  %(mmake)_CXXFLAGS := $(strip $(%(mmake)_CXXFLAGS) $(SAFETY_CFLAGS))
+  %(mmake)_DXXFLAGS := $(%(mmake)_DXXFLAGS)
+  %(mmake)_CXXIQUOTE:=$(CFLAGS_IQUOTE)
+  %(mmake)_CXXIQUOTE_END:=$(CFLAGS_IQUOTE_END)
+endif
+ifeq (%(compiler),kernel)
+  KERNEL_CXX ?= $(KERNEL_CC)
+  %(mmake)_LINK ?= $(strip $(KERNEL_CXX) $(KERNEL_SYSROOT) $(KERNEL_ISA_LDFLAGS))
+  %(mmake)_LD_OPTS ?= $(KERNEL_ISA_LDFLAGS)
+  %(mmake)_CXXLDFLAGS = $(strip $(USER_LDFLAGS) $(KERNEL_LDFLAGS))
+ifneq ($(TARGET_CXX_LIBS),)
+  %(mmake)_ARCHLIBS += $(KERNEL_CXX_LIBS)
+endif
+  %(mmake)_LDFLAGS ?= $(%(mmake)_CXXLDFLAGS)
+  %(mmake)_STRIP ?= $(ECHO) >/dev/null
+  %(mmake)_ASSEMBLER ?= $(strip $(KERNEL_CC) $(KERNEL_SYSROOT))
+  %(mmake)_CXXCMD:=$(strip $(KERNEL_CXX) $(KERNEL_SYSROOT))
+  %(mmake)_CXXFLAGS := $(strip $(KERNEL_MCXX_CPPFLAGS) $(%(mmake)_MCXX_CPPFLAGS) $(%(mmake)_MCXX_EXTRA_CPPFLAGS))
+  %(mmake)_CXXFLAGS := $(strip $(KERNEL_CXXFLAGS) $(%(mmake)_CXXFLAGS))
+  %(mmake)_DXXFLAGS := $(strip $(KERNEL_CXXFLAGS) $(%(mmake)_DXXFLAGS))
+  %(mmake)_CXXIQUOTE:=$(KERNEL_IQUOTE)
+  %(mmake)_CXXIQUOTE_END:=$(KERNEL_IQUOTE_END)
+endif
+
+define cxx_multi_recipe_template
+ $(1).o : $(2)
+ 	%compile_q cmd="$(%(mmake)_CXXCMD)" opt="$(strip $(%(mmake)_CXXFLAGS) $(%(mmake)_MCXX_CPPFLAGS))" iquote="$(%(mmake)_CXXIQUOTE)" iquote_end="$(%(mmake)_CXXIQUOTE_END)" from="$(2)" to="$(1).o" incextra="%(incextra)"
+
+ $(1).d : $(2)
+ 	%mkdepend_q cc="$(%(mmake)_CXXCMD)" flags="$(strip $(%(mmake)_DXXFLAGS) $(%(mmake)_MCXX_CPPFLAGS))" from="$(2)" to="$(1).d"
+endef
+ifeq (%(targetdir),)
+  $(foreach %(mmake)_CXXFILE,$(%(mmake)_MCXX_FILES),$(eval $(call cxx_multi_recipe_template,$(notdir $(basename $(%(mmake)_CXXFILE))),$(%(mmake)_CXXFILE))))
+else
+  $(foreach %(mmake)_CXXFILE,$(%(mmake)_MCXX_FILES),$(eval $(call cxx_multi_recipe_template,$(addprefix %(targetdir)/,$(notdir $(basename $(%(mmake)_CXXFILE)))),$(%(mmake)_CXXFILE))))
+endif
+
+endif
+
+%end
+#------------------------------------------------------------------------------
+
+
+#------------------------------------------------------------------------------
+# Generate a rule to compile multiple ObjC source files to an object file and
+# generate the corresponding dependency files. The generated file will be put
+# in the object directory without the directory part of the source file.
+# options
+# - basenames: the basenames of the files to compile. The names may include
+#   relative or absolute path names. No wildcard is allowed
+# - cflags (default $(CFLAGS)): the C flags to use for compilation
+# - dflags: the flags used during creation of dependency file. If not specified
+#   the same value as cflags will be used
+# - targetdir: the directory to put the .o file and the .d file. By default
+#   it is put in the same directory as the .m file. When targetdir is not
+#   empty, path names will be stripped from the file names so that all files
+#   are in that dir and not in subdirectories.
+# - compiler (default target): compiler to use, target, kernel or host
+%define rule_compile_objc_multi mmake=TMP basenames=/A cppflags=$(CPPFLAGS) cflags=$(CFLAGS) dflags= \
+    targetdir= compiler=target srcdir= incextra="$(TOP)/$(CURDIR)"
+
+ifneq (%(basenames),)
+
+ifeq (%(srcdir),)
+%(mmake)_MOBJC_SRCWILDCARD := %
+else
+%(mmake)_MOBJC_SRCWILDCARD := %(srcdir)/%
+endif
+
+ifeq (%(targetdir),)
+  %(mmake)_MOBJC_TARGETS := $(addsuffix .o,%(basenames))
+  %(mmake)_MOBJC_DTARGETS := $(addsuffix .d,%(basenames))
+  %(mmake)_MOBJC_WILDCARD := %
+else
+  %(mmake)_MOBJC_TARGETS := $(addsuffix .o,$(addprefix %(targetdir)/,%(basenames)))
+  %(mmake)_MOBJC_DTARGETS := $(addsuffix .d,$(addprefix %(targetdir)/,%(basenames)))
+  %(mmake)_MOBJC_WILDCARD := %(targetdir)/%
+
+  # Be sure that all .m files are generated
+  $(%(mmake)_MOBJC_TARGETS) $(%(mmake)_MOBJC_DTARGETS) : | $(addsuffix .m,%(basenames))
+
+  # Be sure that all .m files are found
+  %(mmake)_MOBJC_SRCDIR := $(shell $(ECHO) $(SRCDIR) | sed 's/^\(.\):\//\/\1\//')
+  %(mmake)_MOBJC_BASEDIRS := $(shell $(ECHO) $(sort $(dir %(basenames))) | sed 's/\(.\):\//\/\1\//g')
+  %(mmake)_MOBJC_DIRS := $(foreach dir, $(%(mmake)_MOBJC_BASEDIRS), $(if $(filter /%,$(dir)),$(dir),$(%(mmake)_MOBJC_SRCDIR)/$(CURDIR)/$(dir)))
+  ifneq ($(%(mmake)_MOBJC_DIRS),)
+    %(mmake)_MOBJC_DIRS := $(shell $(ECHO) $(%(mmake)_MOBJC_DIRS) | sed 's/\(.\):\//\/\1\//g')
+    vpath %.m $(%(mmake)_MOBJC_DIRS)
+  endif
+endif
+
+# Define the use of cross compiler
+ifeq ($(TARGET_OBJC),)
+  %(mmake)_CC := $(TARGET_CC)
+else
+  %(mmake)_CC := $(TARGET_OBJC)
+endif
+
+# Adjust compiler flags to suit ObjC
+%(mmake)_MOBJC_CPPFLAGS := %(cppflags)
+%(mmake)_OBJCFLAGS := %(cflags)
+%(mmake)_OBJCFLAGS := $(%(mmake)_OBJCFLAGS) -isystem $(AROS_DEVELOPER)/include
+%(mmake)_OBJCFLAGS := $(subst -Wno-pointer-sign,, $(subst -Werror-implicit-function-declaration,, $(%(mmake)_OBJCFLAGS)))
+ifeq (%(dflags),)
+  %(mmake)_OBJCDFLAGS := %(cflags)
+else
+  %(mmake)_OBJCDFLAGS := %(dflags)
+endif
+
+ifeq ($(findstring %(compiler),host kernel target),)
+  $(error unknown compiler %(compiler))
+endif
+ifeq (%(compiler),target)
+  %(mmake)_LINK ?= $(strip $(%(mmake)_CC) $(TARGET_SYSROOT))
+  %(mmake)_LD_OPTS ?= $(TARGET_ISA_LDFLAGS)
+  %(mmake)_LDFLAGS ?= $(strip $(TARGET_LDFLAGS))
+  %(mmake)_STRIP ?= $(TARGET_STRIP)
+  %(mmake)_ASSEMBLER ?= $(strip $(TARGET_CC) $(TARGET_SYSROOT))
+  $(%(mmake)_MOBJC_TARGETS) $(%(mmake)_MOBJC_DTARGETS) : CMD:=$(strip $(%(mmake)_CC) $(TARGET_SYSROOT))
+  $(%(mmake)_MOBJC_TARGETS) $(%(mmake)_MOBJC_DTARGETS) : %(mmake)_MOBJC_CPPFLAGS:=$(strip $(%(mmake)_MOBJC_CPPFLAGS) $(%(mmake)_MOBJC_EXTRA_CPPFLAGS))
+  $(%(mmake)_MOBJC_TARGETS) $(%(mmake)_MOBJC_DTARGETS) : %(mmake)_OBJCFLAGS:=$(strip $(%(mmake)_OBJCFLAGS) $(SAFETY_CFLAGS))
+  $(%(mmake)_MOBJC_TARGETS) $(%(mmake)_MOBJC_DTARGETS) : %(mmake)_OBJCDFLAGS:=$(%(mmake)_OBJCDFLAGS)
+  $(%(mmake)_MOBJC_TARGETS) $(%(mmake)_MOBJC_DTARGETS) : %(mmake)_IQUOTE:=$(CFLAGS_IQUOTE)
+  $(%(mmake)_MOBJC_TARGETS) $(%(mmake)_MOBJC_DTARGETS) : %(mmake)_IQUOTE_END:=$(CFLAGS_IQUOTE_END)
+endif
+ifeq (%(compiler),host)
+  %(mmake)_LINK ?= $(strip $(HOST_OBJC))
+  %(mmake)_LD_OPTS ?= $(HOST_ISA_LDFLAGS)
+  %(mmake)_LDFLAGS ?= $(strip $(HOST_LDFLAGS))
+  %(mmake)_STRIP ?= $(HOST_STRIP)
+  %(mmake)_ASSEMBLER ?= $(strip $(HOST_CC) $(HOST_SYSROOT))
+  $(%(mmake)_MOBJC_TARGETS) $(%(mmake)_MOBJC_DTARGETS) : CMD:=$(HOST_OBJC)
+  $(%(mmake)_MOBJC_TARGETS) $(%(mmake)_MOBJC_DTARGETS) : %(mmake)_MOBJC_CPPFLAGS:=$(strip $(HOST_MOBJC_CPPFLAGS) $(%(mmake)_MOBJC_CPPFLAGS) $(%(mmake)_MOBJC_EXTRA_CPPFLAGS))
+  $(%(mmake)_MOBJC_TARGETS) $(%(mmake)_MOBJC_DTARGETS) : %(mmake)_OBJCFLAGS:=$(strip $(HOST_CFLAGS) $(%(mmake)_OBJCFLAGS))
+  $(%(mmake)_MOBJC_TARGETS) $(%(mmake)_MOBJC_DTARGETS) : %(mmake)_OBJCDFLAGS:=$(strip $(HOST_CFLAGS) $(%(mmake)_OBJCDFLAGS))
+  $(%(mmake)_MOBJC_TARGETS) $(%(mmake)_MOBJC_DTARGETS) : %(mmake)_IQUOTE:=$(HOST_IQUOTE)
+  $(%(mmake)_MOBJC_TARGETS) $(%(mmake)_MOBJC_DTARGETS) : %(mmake)_IQUOTE_END:=$(HOST_IQUOTE_END)
+endif
+ifeq (%(compiler),kernel)
+  KERNEL_OBJC ?= $(KERNEL_CC)
+  %(mmake)_LINK ?= $(strip $(KERNEL_OBJC) $(KERNEL_SYSROOT))
+  %(mmake)_LD_OPTS ?= $(KERNEL_ISA_LDFLAGS)
+  %(mmake)_LDFLAGS ?= $(strip $(USER_LDFLAGS) $(KERNEL_LDFLAGS))
+  %(mmake)_STRIP ?= $(ECHO) >/dev/null
+  %(mmake)_ASSEMBLER ?= $(strip $(KERNEL_CC) $(KERNEL_SYSROOT))
+  $(%(mmake)_MOBJC_TARGETS) $(%(mmake)_MOBJC_DTARGETS) : CMD:=$(strip $(KERNEL_OBJC) $(KERNEL_SYSROOT))
+  $(%(mmake)_MOBJC_TARGETS) $(%(mmake)_MOBJC_DTARGETS) : %(mmake)_MOBJC_CPPFLAGS:=$(strip $(KERNEL_MOBJC_CPPFLAGS) $(%(mmake)_MOBJC_CPPFLAGS) $(%(mmake)_MOBJC_EXTRA_CPPFLAGS))
+  $(%(mmake)_MOBJC_TARGETS) $(%(mmake)_MOBJC_DTARGETS) : %(mmake)_OBJCFLAGS:=$(strip $(KERNEL_ISA_CFLAGS) $(KERNEL_CFLAGS) $(%(mmake)_OBJCFLAGS))
+  $(%(mmake)_MOBJC_TARGETS) $(%(mmake)_MOBJC_DTARGETS) : %(mmake)_OBJCDFLAGS:=$(strip $(KERNEL_ISA_CFLAGS) $(KERNEL_CFLAGS) $(%(mmake)_OBJCDFLAGS))
+  $(%(mmake)_MOBJC_TARGETS) $(%(mmake)_MOBJC_DTARGETS) : %(mmake)_IQUOTE:=$(KERNEL_IQUOTE)
+  $(%(mmake)_MOBJC_TARGETS) $(%(mmake)_MOBJC_DTARGETS) : %(mmake)_IQUOTE_END:=$(KERNEL_IQUOTE_END)
+endif
+
+$(%(mmake)_MOBJC_TARGETS) : CPPFLAGS := $(%(mmake)_MOBJC_CPPFLAGS)
+$(%(mmake)_MOBJC_TARGETS) : CFLAGS := $(%(mmake)_OBJCFLAGS)
+$(%(mmake)_MOBJC_TARGETS) : $(%(mmake)_MOBJC_WILDCARD).o : $(%(mmake)_MOBJC_SRCWILDCARD).m
+	%compile_q cmd="$(CMD)" iquote="$(%(mmake)_IQUOTE)" iquote_end="$(%(mmake)_IQUOTE_END)" incextra="%(incextra)"
+
+$(%(mmake)_MOBJC_DTARGETS) : $(%(mmake)_MOBJC_WILDCARD).d : $(%(mmake)_MOBJC_SRCWILDCARD).m
+	%mkdepend_q cc="$(CMD)" flags="$(strip $(%(mmake)_OBJCDFLAGS) $(%(mmake)_MOBJC_CPPFLAGS))"
+
+endif
+
+%end
+#------------------------------------------------------------------------------
+
+
+#------------------------------------------------------------------------------
+# Generate a rule to assemble a source file to an object file. Basename may
+# contain a directory part, then the source file has to be in that directory.
+# The generated file will be put in the object directory without the directory.
+# options
+# - basename: the basename of the file to compile. Use % for a wildcard rule
+# - flags (default $(AFLAGS)): the asm flags to use for assembling
+# - targetdir: the directory to put the .o file in. By default it is put in the
+#   same directory as the .s file
+%define rule_assemble basename=/A cppflags=$(CPPFLAGS) aflags=$(AFLAGS) targetdir=
+
+ifeq (%(targetdir),)
+%(basename).o : CPPFLAGS := %(cppflags)
+%(basename).o : AFLAGS := %(aflags)
+%(basename).o : %(basename).s
+	%assemble_q
+%(basename).o : %(basename).S
+	%assemble_q
+
+else
+%(targetdir)/$(notdir %(basename)).o : CPPFLAGS := %(cppflags)
+%(targetdir)/$(notdir %(basename)).o : AFLAGS := %(aflags)
+%(targetdir)/$(notdir %(basename)).o : %(basename).s
+	%assemble_q
+%(targetdir)/$(notdir %(basename)).o : %(basename).S
+	%assemble_q
+
+endif
+%end
+#------------------------------------------------------------------------------
+
+
+#------------------------------------------------------------------------------
+# Generate a rule to assemble multiple source files to an object file. The
+# generated file will be put in the object directory with the directory part
+# of the source file stripped off.
+# options
+# - basenames: the basenames of the files to compile. The names may include
+#   relative or absolute path names. No wildcard is allowed
+# - aflags (default $(AFLAGS)): the flags to use for assembly
+# - targetdir: the directory to put the .o file and the .d file. By default
+#   it is put in the same directory as the .c file. When targetdir is not
+#   empty, path names will be stripped from the file names so that all files
+#   are in that dir and not in subdirectories.
+%define rule_assemble_multi mmake=TMP cmd="$(strip $(CC) $(TARGET_SYSROOT))"  basenames=/A cppflags=$(CPPFLAGS) aflags=$(AFLAGS) targetdir= suffix=.s
+
+ifeq (%(targetdir),)
+%(mmake)-MA_TARGETS := $(addsuffix .o,%(basenames))
+%(mmake)-MA_WILDCARD := %
+else
+%(mmake)-MA_TARGETS := $(addsuffix .o,$(addprefix %(targetdir)/,$(notdir %(basenames))))
+%(mmake)-MA_WILDCARD := %(targetdir)/%
+
+# Be sure that all .s files are generated
+$(%(mmake)-MA_TARGETS) : | $(addsuffix %(suffix),%(basenames))
+
+# Be sure that all .c files are found
+%(mmake)-MA_SRCDIR := $(shell $(ECHO) $(SRCDIR) | sed 's/^\(.\):\//\/\1\//')
+%(mmake)-MA_BASEDIRS := $(shell $(ECHO) $(sort $(dir %(basenames))) | sed 's/\(.\):\//\/\1\//g')
+%(mmake)-MA_DIRS := $(foreach dir, $(%(mmake)-MA_BASEDIRS), $(if $(filter /%,$(dir)),$(dir),$(%(mmake)-MA_SRCDIR)/$(CURDIR)/$(dir)))
+ifneq ($(%(mmake)-MA_DIRS),)
+    %(mmake)-MA_DIRS := $(shell $(ECHO) $(%(mmake)-MA_DIRS) | sed 's/\(.\):\//\/\1\//g')
+    vpath %%(suffix) $(%(mmake)-MA_DIRS)
+endif
+
+endif
+
+%(mmake)-MA_ASSEMBLER ?= %(cmd)
+
+$(%(mmake)-MA_TARGETS) : %(mmake)-MA_CMD:= $(%(mmake)-MA_ASSEMBLER)
+
+$(%(mmake)-MA_TARGETS) : CPPFLAGS := %(cppflags)
+$(%(mmake)-MA_TARGETS) : AFLAGS := %(aflags)
+$(%(mmake)-MA_TARGETS) : $(%(mmake)-MA_WILDCARD).o : %%(suffix)
+	%assemble_q cmd="$(%(mmake)-MA_CMD)"
+%end
+#------------------------------------------------------------------------------
+
+
+#------------------------------------------------------------------------------
+# Link %(objs) to %(prog) using the libraries in %(uselibs)
+%define rule_link_prog mmake=TMP prog=/A objs=/A ldflags="$(LDFLAGS)" \
+    uselibs= usehostlibs= archlibs= usestartup=yes detach=no nix=no  \
+    cmd="$(strip $(AROS_CC) $(TARGET_SYSROOT))" ldopts="$(TARGET_ISA_LDFLAGS)" \
+    strip="$(TARGET_STRIP)" stripdebug="$(DEBUG)" objdir="$(GENDIR)/$(CURDIR)" \
+    coverageinstr="$(TARGET_COVERAGEINSTR)"
+
+%(mmake)-link_LD_OPTS := 
+%(mmake)-link_EXTRA_LIBS :=
+ifeq (%(nix),yes)
+    %(mmake)-link_LD_OPTS += $(NIX_LDFLAGS)
+endif
+ifeq (%(usestartup),no)
+    %(mmake)-link_LD_OPTS += $(NOSTARTUP_LDFLAGS)
+endif
+ifeq (%(detach),yes)
+    %(mmake)-link_LD_OPTS += $(DETACH_LDFLAGS)
+endif
+
+# Make a list of the lib files this program depends on.
+# In LDFLAGS remove white space between -L and directory
+%(mmake)-link_DIRS := $(subst -L ,-L,$(strip %(ldflags)))
+# Filter out only the libdirs and remove -L
+%(mmake)-link_DIRS := $(patsubst -L%,%,$(filter -L%,$(%(mmake)-link_DIRS)))
+# Add trailing /
+%(mmake)-link_DIRS := $(subst //,/,$(addsuffix /,$(%(mmake)-link_DIRS)))
+# Add normal linklib path
+%(mmake)-link_DIRS += $(AROS_LIB)/
+# add lib and .a to static linklib names
+%(mmake)-link_LIBS := $(addprefix lib,$(addsuffix .a,%(uselibs) $(%(mmake)-link_EXTRA_LIBS)))
+ifeq (%(usestartup),yes)
+    %(mmake)-link_LIBS += startup.o
+endif
+ifeq (%(detach),yes)
+    %(mmake)-link_LIBS += detach.o
+endif
+# search for the linklibs in the given path, ignore ones not found
+%(mmake)-link_DEPLIBS := $(foreach lib,$(%(mmake)-link_LIBS), \
+    $(firstword $(wildcard $(addsuffix $(lib),$(%(mmake)-link_DIRS)))) \
+)
+
+%(prog) : OBJDIR := %(objdir)
+%(prog) : OBJS := $(strip %(objs))
+%(prog) : LDFLAGS := $(strip %(ldflags))
+%(prog) : LIBS := $(strip $(addprefix -l,%(uselibs) $(%(mmake)-link_EXTRA_LIBS)))
+%(prog) : ARCHLIBS := $(strip $(addprefix -l,%(usehostlibs)) %(archlibs))
+%(prog) : %(objs) $(%(mmake)-link_DEPLIBS)
+	%link_q cmd="%(cmd)" ldopts="$(strip %(ldopts) $(%(mmake)-link_LD_OPTS))" strip="%(strip)" stripdebug="%(stripdebug)" from="$(OBJS)" ldflags="$(LDFLAGS)" libs="$(LIBS)" archlibs="$(ARCHLIBS)" objdir="$(OBJDIR)" coverageinstr="%(coverageinstr)"
+%end
+#------------------------------------------------------------------------------
+
+
+#------------------------------------------------------------------------------
+# Link %(progs) from object in %(objdir) to executables in %(targetdir) using
+# the AROS libraries in %(uselibs) and the host libraries in %(usehostlibs)
+%define rule_link_progs mmake=TMP progs=/A targetdir="$(AROSDIR)/$(CURDIR)" nix="%(nix)" \
+    objdir="$(GENDIR)/$(CURDIR)" ldflags="$(LDFLAGS)" uselibs= usehostlibs= archlibs= \
+    cmd="$(strip $(AROS_CC) $(TARGET_SYSROOT))" ldopts="$(strip $(TARGET_ISA_LDFLAGS))" \
+    strip="$(TARGET_STRIP)" stripdebug="$(DEBUG)" coverageinstr="$(TARGET_COVERAGEINSTR)" \
+    usestartup=yes detach=no 
+
+%(mmake)-link_LD_OPTS := 
+%(mmake)-link_EXTRA_LIBS :=
+ifeq (%(nix),yes)
+    %(mmake)-link_LD_OPTS += $(NIX_LDFLAGS)
+endif
+ifeq (%(usestartup),no)
+    %(mmake)-link_LD_OPTS += $(NOSTARTUP_LDFLAGS)
+endif
+ifeq (%(detach),yes)
+    %(mmake)-link_LD_OPTS += $(DETACH_LDFLAGS)
+endif
+
+# Make a list of the lib files the programs depend on.
+# In LDFLAGS remove white space between -L and directory
+%(mmake)-link_DIRS := $(subst -L ,-L,$(strip %(ldflags)))
+# Filter out only the libdirs and remove -L
+%(mmake)-link_DIRS := $(patsubst -L%,%,$(filter -L%,$(%(mmake)-link_DIRS)))
+# Add trailing /
+%(mmake)-link_DIRS := $(subst //,/,$(addsuffix /,$(%(mmake)-link_DIRS)))
+# Add normal linklib path
+%(mmake)-link_DIRS += $(AROS_LIB)/
+# add lib and .a to static linklib names
+%(mmake)-link_LIBS := $(addprefix lib,$(addsuffix .a,%(uselibs) $(%(mmake)-link_EXTRA_LIBS)))
+ifeq (%(usestartup),yes)
+    %(mmake)-link_LIBS += startup.o
+endif
+ifeq (%(detach),yes)
+    %(mmake)-link_LIBS += detach.o
+endif
+# search for the linklibs in the given path, ignore ones not found
+%(mmake)-link_DEPLIBS := $(foreach lib,$(%(mmake)-link_LIBS), \
+    $(firstword $(wildcard $(addsuffix $(lib),$(%(mmake)-link_DIRS)))) \
+)
+%(mmake)-link_PROGS := $(addprefix %(targetdir)/,%(progs))
+
+$(%(mmake)-link_PROGS) : OBJDIR := %(objdir)
+$(%(mmake)-link_PROGS) : LDFLAGS := $(strip %(ldflags))
+$(%(mmake)-link_PROGS) : LIBS := $(strip $(addprefix -l,%(uselibs) $(%(mmake)-link_EXTRA_LIBS)))
+$(%(mmake)-link_PROGS) : ARCHLIBS := $(strip $(addprefix -l,%(usehostlibs)) %(archlibs))
+$(%(mmake)-link_PROGS) : %(targetdir)/% : %(objdir)/%.o $(%(mmake)-link_DEPLIBS)
+	%link_q cmd="%(cmd)" ldopts="$(strip %(ldopts) $(%(mmake)-link_LD_OPTS))" strip="%(strip)" stripdebug="%(stripdebug)" from="$<" ldflags="$(LDFLAGS)" libs="$(LIBS)" archlibs="$(ARCHLIBS)" objdir="$(OBJDIR)" coverageinstr="%(coverageinstr)"
+%end
+#------------------------------------------------------------------------------
+
+
+#------------------------------------------------------------------------------
+# Link the %(objs) to the library %(libdir)/lib%(libname).a
+%define rule_link_linklib mmake=TMP libname=/A objs=/A libdir="$(AROS_LIB)" linker=target
+
+ifeq (%(linker),target)
+%(libdir)/lib%(libname).a : %(mmake)_AR:=$(AR)
+%(libdir)/lib%(libname).a : %(mmake)_RANLIB:=$(RANLIB)
+endif
+ifeq (%(linker),host)
+%(libdir)/lib%(libname).a : %(mmake)_AR:=$(HOST_AR)
+%(libdir)/lib%(libname).a : %(mmake)_RANLIB:=$(HOST_RANLIB)
+endif
+ifeq (%(linker),kernel)
+%(libdir)/lib%(libname).a : %(mmake)_AR:=$(KERNEL_AR)
+%(libdir)/lib%(libname).a : %(mmake)_RANLIB:=$(KERNEL_RANLIB)
+endif
+
+%(libdir)/lib%(libname).a : %(objs)
+	%mklib_q from="$^" ar="$(%(mmake)_AR)" ranlib="$(%(mmake)_RANLIB)"
+%end
+#------------------------------------------------------------------------------
+
+#------------------------------------------------------------------------------
+# Link the %(objs) and %(endobj) to %(module) with errors in %(err) and using
+# the libraries in %(uselibs) and the host libraries in %(usehostlibs)
+%define rule_linkmodule mmake=TMP module=/A objs=/A endobj=/A err=/A objdir="$(OBJDIR)" \
+    cmd="$(strip $(AROS_CC) $(TARGET_SYSROOT))" stripdebug="$(DEBUG)" \
+    ldopts="$(strip $(TARGET_ISA_LDFLAGS) $(NOSTARTUP_LDFLAGS))" ldflags="$(LDFLAGS)" \
+    uselibs= usehostlibs= archlibs=
+
+%(mmake)_LDFLAGS  := %(ldflags)
+# Make a list of the lib files the programs depend on.
+# In LDFLAGS remove white space between -L and directory
+%(mmake)_DIRS := $(subst -L ,-L,$(strip $(%(mmake)_LDFLAGS)))
+# Filter out only the libdirs and remove -L
+%(mmake)_DIRS := $(patsubst -L%,%,$(filter -L%,$(%(mmake)_DIRS)))
+# Add trailing /
+%(mmake)_DIRS := $(subst //,/,$(addsuffix /,$(%(mmake)_DIRS)))
+# Add normal linklib path
+%(mmake)_DIRS += $(AROS_LIB)/
+# add lib and .a to static linklib names
+%(mmake)_LIBS := $(addprefix lib,$(addsuffix .a,%(uselibs)))
+# search for the linklibs in the given path, ignore ones not found
+%(mmake)_DEPLIBS := $(foreach lib,$(%(mmake)_LIBS), \
+    $(firstword $(wildcard $(addsuffix $(lib),$(%(mmake)_DIRS)))) \
+)
+
+%(module) : LIB_NAMES := %(uselibs)
+%(module) : OBJS := %(objs)
+%(module) : ENDTAG := %(endobj)
+%(module) : ERR := %(err)
+%(module) : OBJDIR := %(objdir)
+%(module) : LDFLAGS := $(%(mmake)_LDFLAGS)
+ifeq (%(usehostlibs),)
+%(module) : LIBS := $(addprefix -l,$(LIB_NAMES))
+else
+# Warning: the -L/usr/lib here can result in modules
+# linking against host libs instead of AROS libs (e.g stdc++) !!
+%(module) : LIBS := $(addprefix -l,$(LIB_NAMES)) \
+                    -L/usr/lib $(addprefix -l,%(usehostlibs))
+endif 
+%(module) : %(objs) %(endobj) $(%(mmake)_DEPLIBS) $(USER_DEPLIBS)
+	%link_module_q cmd="%(cmd)" ldopts="%(ldopts)" err="$(ERR)" endtag="$(ENDTAG)" objs="$(OBJS)" libs="$(LIBS)" archlibs="%(archlibs)" objdir="$(OBJDIR)" ldflags="$(LDFLAGS)" stripdebug="%(stripdebug)"
+
+%end
+#------------------------------------------------------------------------------
+
+
+#------------------------------------------------------------------------------
+# Generate the libdefs.h include file for a module.
+%define rule_genmodule_genlibdefs mmake=TMP modname=/A version= flavour= modtype=/A modsuffix= conffile= confoverride= targetdir=
+
+%(mmake)_OPTS := 
+ifneq (%(flavour),)
+    %(mmake)_OPTS += -f %(flavour)
+    %(mmake)_MODNAME := %(modname)_%(flavour)
+else
+    %(mmake)_MODNAME := %(modname)
+endif
+%(mmake)_TARGET := $(%(mmake)_MODNAME)_libdefs.h
+%(mmake)_DEPS := $(GENMODULE)
+ifneq (%(conffile),)
+    ifeq ($(dir %(conffile)),./)
+        %(mmake)_OPTS += -c $(SRCDIR)/$(CURDIR)/%(conffile)
+        %(mmake)_DEPS += $(SRCDIR)/$(CURDIR)/%(conffile)
+    else
+        %(mmake)_OPTS += -c %(conffile)
+        %(mmake)_DEPS += %(conffile)
+    endif 
+else
+    %(mmake)_OPTS += -c $(SRCDIR)/$(CURDIR)/%(modname).conf
+    %(mmake)_DEPS += $(SRCDIR)/$(CURDIR)/%(modname).conf
+endif
+ifneq (%(confoverride),)
+    ifeq ($(dir %(confoverride)),./)
+        %(mmake)_OPTS += -o $(SRCDIR)/$(CURDIR)/%(confoverride)
+        %(mmake)_DEPS += $(SRCDIR)/$(CURDIR)/%(confoverride)
+    else
+        %(mmake)_OPTS += -o %(confoverride)
+        %(mmake)_DEPS += %(confoverride)
+    endif 
+endif
+ifneq (%(modsuffix),)
+    %(mmake)_OPTS += -s %(modsuffix)
+endif
+ifneq (%(targetdir),)
+    %(mmake)_OPTS += -d %(targetdir)
+    %(mmake)_TARGET := %(targetdir)/$(%(mmake)_TARGET)
+endif
+ifneq (%(version),)
+    %(mmake)_OPTS += -v %(version)
+endif
+
+$(%(mmake)_TARGET) : OPTS := $(%(mmake)_OPTS)
+$(%(mmake)_TARGET) : MODNAME := %(modname)
+$(%(mmake)_TARGET) : MODTYPE := %(modtype)
+$(%(mmake)_TARGET) : $(%(mmake)_DEPS)
+	$(Q)$(ECHO) "Generating $(subst $(TARGETDIR)/,,$@)"
+	$(Q)$(GENMODULE) $(OPTS) writelibdefs $(MODNAME) $(MODTYPE)
+%end
+#------------------------------------------------------------------------------
+
+#------------------------------------------------------------------------------
+# Generate the _lib.fd file for a module.
+%define rule_genmodule_fd mmake=TMP modname=/A modtype=/A modsuffix= conffile= confoverride= targetdir=
+
+%(mmake)_TARGET := %(modname)_lib.fd
+%(mmake)_DEPS := $(GENMODULE)
+%(mmake)_OPTS := 
+ifneq (%(conffile),)
+    ifeq ($(dir %(conffile)),./)
+        %(mmake)_OPTS += -c $(SRCDIR)/$(CURDIR)/%(conffile)
+        %(mmake)_DEPS += $(SRCDIR)/$(CURDIR)/%(conffile)
+    else
+        %(mmake)_OPTS += -c %(conffile)
+        %(mmake)_DEPS += %(conffile)
+    endif 
+else
+    %(mmake)_OPTS += -c $(SRCDIR)/$(CURDIR)/%(modname).conf
+    %(mmake)_DEPS += $(SRCDIR)/$(CURDIR)/%(modname).conf
+endif
+ifneq (%(confoverride),)
+    ifeq ($(dir %(confoverride)),./)
+        %(mmake)_OPTS += -o $(SRCDIR)/$(CURDIR)/%(confoverride)
+        %(mmake)_DEPS += $(SRCDIR)/$(CURDIR)/%(confoverride)
+    else
+        %(mmake)_OPTS += -o %(confoverride)
+        %(mmake)_DEPS += %(confoverride)
+    endif 
+endif
+ifneq (%(modsuffix),)
+    %(mmake)_OPTS += -s %(modsuffix)
+endif
+ifneq (%(targetdir),)
+    %(mmake)_OPTS += -d %(targetdir)
+    %(mmake)_TARGET := %(targetdir)/$(%(mmake)_TARGET)
+endif
+
+$(%(mmake)_TARGET) : OPTS := $(%(mmake)_OPTS)
+$(%(mmake)_TARGET) : MODNAME := %(modname)
+$(%(mmake)_TARGET) : MODTYPE := %(modtype)
+$(%(mmake)_TARGET) : $(%(mmake)_DEPS)
+	$(Q)$(ECHO) "Generating $(subst $(TARGETDIR)/,,$@)"
+	$(Q)$(GENMODULE) $(OPTS) writefd $(MODNAME) $(MODTYPE)
+%end
+#------------------------------------------------------------------------------
+
+#------------------------------------------------------------------------------
+# Generate a Makefile.%(modname)%(modtype) with the genmodule program and include this
+# generated file in this Makefile
+%define rule_genmodule_makefile mmake=TMP modname=/A flavour= modtype=/A modsuffix= conffile= confoverride= \
+    targetdir=
+
+%(mmake)_OPTS := 
+ifneq (%(flavour),)
+    %(mmake)_OPTS += -f %(flavour)
+    %(mmake)_MODNAME := %(modname)_%(flavour)
+else
+    %(mmake)_MODNAME := %(modname)
+endif
+%(mmake)_TARGET := Makefile.$(%(mmake)_MODNAME)%(modtype)
+%(mmake)_DEPS := $(GENMODULE)
+ifneq (%(conffile),)
+    ifeq ($(dir %(conffile)),./)
+        %(mmake)_OPTS += -c $(SRCDIR)/$(CURDIR)/%(conffile)
+        %(mmake)_DEPS += $(SRCDIR)/$(CURDIR)/%(conffile)
+    else
+        %(mmake)_OPTS += -c %(conffile)
+        %(mmake)_DEPS += %(conffile)
+    endif 
+else
+    %(mmake)_OPTS += -c $(SRCDIR)/$(CURDIR)/%(modname).conf
+    %(mmake)_DEPS += $(SRCDIR)/$(CURDIR)/%(modname).conf
+endif
+ifneq (%(confoverride),)
+    ifeq ($(dir %(confoverride)),./)
+        %(mmake)_OPTS += -o $(SRCDIR)/$(CURDIR)/%(confoverride)
+        %(mmake)_DEPS += $(SRCDIR)/$(CURDIR)/%(confoverride)
+    else
+        %(mmake)_OPTS += -o %(confoverride)
+        %(mmake)_DEPS += %(confoverride)
+    endif 
+endif
+ifneq (%(modsuffix),)
+    %(mmake)_OPTS += -s %(modsuffix)
+endif
+ifneq (%(targetdir),)
+    %(mmake)_OPTS += -d %(targetdir)
+    %(mmake)_TARGET := %(targetdir)/$(%(mmake)_TARGET)
+endif
+
+$(%(mmake)_TARGET) : OPTS := $(%(mmake)_OPTS)
+$(%(mmake)_TARGET) : MODNAME := %(modname)
+$(%(mmake)_TARGET) : MODTYPE := %(modtype)
+$(%(mmake)_TARGET) : $(%(mmake)_DEPS)
+	$(Q)$(GENMODULE) $(OPTS) writemakefile $(MODNAME) $(MODTYPE)
+%end
+#------------------------------------------------------------------------------
+
+
+#------------------------------------------------------------------------------
+# Generate the support files for compiling a module. This includes include
+# files and source files. This rule has to be preceeded by
+# %rule_genmodule_makefile
+%define rule_genmodule_files mmake=TMP modname=/A flavour= modtype=/A modsuffix= targetdir= stubdir= \
+    conffile= confoverride=
+
+%(mmake)_OPTS :=
+ifneq (%(flavour),)
+    %(mmake)_OPTS += -f %(flavour)
+    %(mmake)_MODNAME := %(modname)_%(flavour)
+else
+    %(mmake)_MODNAME := %(modname)
+endif
+%(mmake)_GENTARGETS := $($(%(mmake)_MODNAME)_STARTFILES) $($(%(mmake)_MODNAME)_ENDFILES)
+%(mmake)_STUBTARGETS := $($(%(mmake)_MODNAME)_LINKLIBFILES) $($(%(mmake)_MODNAME)_RELLINKLIBFILES)
+%(mmake)_GENTARGETS := $(addsuffix .c,$(%(mmake)_GENTARGETS))
+%(mmake)_STUBTARGETS := $(addsuffix .c,$(%(mmake)_STUBTARGETS)) \
+               $(addsuffix .S, $($(%(mmake)_MODNAME)_LINKLIBAFILES) $($(%(mmake)_MODNAME)_RELLINKLIBAFILES))
+
+%(mmake)_DEPS := $(GENMODULE)
+ifneq (%(conffile),)
+    ifeq ($(dir %(conffile)),./)
+        %(mmake)_OPTS += -c $(SRCDIR)/$(CURDIR)/%(conffile)
+        %(mmake)_DEPS += $(SRCDIR)/$(CURDIR)/%(conffile)
+    else
+        %(mmake)_OPTS += -c %(conffile)
+        %(mmake)_DEPS += %(conffile)
+    endif 
+else
+    %(mmake)_OPTS += -c $(SRCDIR)/$(CURDIR)/%(modname).conf
+    %(mmake)_DEPS += $(SRCDIR)/$(CURDIR)/%(modname).conf
+endif
+ifneq (%(confoverride),)
+    ifeq ($(dir %(confoverride)),./)
+        %(mmake)_OPTS += -o $(SRCDIR)/$(CURDIR)/%(confoverride)
+        %(mmake)_DEPS += $(SRCDIR)/$(CURDIR)/%(confoverride)
+    else
+        %(mmake)_OPTS += -o %(confoverride)
+        %(mmake)_DEPS += %(confoverride)
+    endif 
+endif
+ifneq (%(modsuffix),)
+    %(mmake)_OPTS += -s %(modsuffix)
+endif
+ifneq (%(targetdir),)
+    %(mmake)_OPTS += -d %(targetdir)
+    %(mmake)_TARGETDIR := $(shell $(ECHO) %(targetdir) | sed 's/^\(.\):\//\/\1\//')
+    %(mmake)_GENTARGETS := $(addprefix $(%(mmake)_TARGETDIR)/,$(%(mmake)_GENTARGETS))
+    %(mmake)_GENFILEFLAG=$(%(mmake)_TARGETDIR)/.%(modname).%(modtype)-genfiles
+else
+    %(mmake)_GENFILEFLAG=$(GENDIR)/$(CURDIR)/.%(modname).%(modtype)-genfiles
+endif
+ifneq (%(stubdir),)
+    %(mmake)_OPTS += -l %(stubdir)
+    %(mmake)_STUBTARGETDIR := $(shell $(ECHO) %(stubdir) | sed 's/^\(.\):\//\/\1\//')
+    %(mmake)_STUBTARGETS := $(addprefix $(%(mmake)_STUBTARGETDIR)/,$(%(mmake)_STUBTARGETS))
+    %(mmake)_TARGETDIRS += %(stubdir)
+else
+ifneq (%(targetdir),)
+    %(mmake)_STUBTARGETS := $(addprefix $(%(mmake)_TARGETDIR)/,$(%(mmake)_STUBTARGETS))
+endif
+endif
+
+%(mmake)_TARGETS := $(%(mmake)_GENTARGETS) $(%(mmake)_STUBTARGETS)
+ifneq ($(%(mmake)_TARGETDIRS),)
+$(%(mmake)_TARGETS) : | $(%(mmake)_TARGETDIRS)
+endif
+
+# The generated files get an (empty) recipe so make re-reads their time stamps
+# after the flag rule above has rewritten them: without one, make keeps the
+# times it saw before generation, and rules that copy or compile them (such as
+# the copy of the includes to $(GENINCDIR)) see nothing new.
+$(%(mmake)_TARGETS) : $(%(mmake)_DEPS) $(%(mmake)_GENFILEFLAG)
+	$(Q)$(NOP)
+
+$(%(mmake)_GENFILEFLAG) : OPTS := $(%(mmake)_OPTS)
+$(%(mmake)_GENFILEFLAG) : MODNAME := %(modname)
+$(%(mmake)_GENFILEFLAG) : MODTYPE := %(modtype)
+$(%(mmake)_GENFILEFLAG) : $(%(mmake)_DEPS)
+	$(Q)$(ECHO) "Generating $(MODTYPE) support files for $(MODNAME$(BDID)) module"
+	$(Q)$(IF) $(TEST) "%(conffile)" = "lib.conf" && $(TEST) -f lib.conf; then \
+		$(ECHO) "WARNING !!! $(CURDIR)/lib.conf may probably be removed"; \
+	fi
+	$(Q)$(IF) $(TEST) -f libdefs.h; then \
+		$(ECHO) "WARNING !!! $(CURDIR)/libdefs.h may probably be removed"; \
+	fi
+	$(Q)$(GENMODULE) $(OPTS) writefiles $(MODNAME) $(MODTYPE)
+	$(Q)$(TOUCH) $@
+%end
+#------------------------------------------------------------------------------
+
+
+#------------------------------------------------------------------------------
+# Generate the support files for compiling a module. This includes include
+# files and source files.
+%define rule_genmodule_includes mmake=TMP modname=/A flavour= modtype=/A modsuffix= \
+    targetdir= conffile= confoverride=
+
+ifneq (%(flavour),)
+    %(mmake)_MODNAME := %(modname)_%(flavour)
+else
+    %(mmake)_MODNAME := %(modname)
+endif
+
+ifneq ($($(%(mmake)_MODNAME)_INCLUDES),)
+
+%(mmake)_TARGETS := $($(%(mmake)_MODNAME)_INCLUDES)
+
+%(mmake)_DEPS := $(GENMODULE)
+%(mmake)_OPTS :=
+
+ifneq (%(conffile),)
+    ifeq ($(dir %(conffile)),./)
+        %(mmake)_OPTS += -c $(SRCDIR)/$(CURDIR)/%(conffile)
+        %(mmake)_DEPS += $(SRCDIR)/$(CURDIR)/%(conffile)
+    else
+        %(mmake)_OPTS += -c %(conffile)
+        %(mmake)_DEPS += %(conffile)
+    endif 
+else
+    %(mmake)_OPTS += -c $(SRCDIR)/$(CURDIR)/%(modname).conf
+    %(mmake)_DEPS += $(SRCDIR)/$(CURDIR)/%(modname).conf
+endif
+ifneq (%(confoverride),)
+    ifeq ($(dir %(confoverride)),./)
+        %(mmake)_OPTS += -o $(SRCDIR)/$(CURDIR)/%(confoverride)
+        %(mmake)_DEPS += $(SRCDIR)/$(CURDIR)/%(confoverride)
+    else
+        %(mmake)_OPTS += -o %(confoverride)
+        %(mmake)_DEPS += %(confoverride)
+    endif 
+endif
+ifneq (%(modsuffix),)
+    %(mmake)_OPTS += -s %(modsuffix)
+endif
+ifneq (%(targetdir),)
+    %(mmake)_OPTS += -d %(targetdir)
+    %(mmake)_TARGETS := $(addprefix %(targetdir)/,$(%(mmake)_TARGETS))
+    %(mmake)_GENINCFLAG=%(targetdir)/.%(modname).%(modtype)-includes
+else
+    %(mmake)_GENINCFLAG=$(GENDIR)/$(CURDIR)/.%(modname).%(modtype)-includes
+endif
+
+# Empty recipe: make must re-read the includes' time stamps after generation,
+# or the copy to $(GENINCDIR) below sees nothing new (see rule_genmodule_files).
+$(%(mmake)_TARGETS) : $(%(mmake)_DEPS) $(%(mmake)_GENINCFLAG)
+	$(Q)$(NOP)
+
+$(%(mmake)_GENINCFLAG) : OPTS := $(%(mmake)_OPTS)
+$(%(mmake)_GENINCFLAG) : MODNAME := %(modname)
+$(%(mmake)_GENINCFLAG) : MODTYPE := %(modtype)
+$(%(mmake)_GENINCFLAG) : $(%(mmake)_DEPS)
+	$(Q)$(ECHO) "Generating $(MODNAME).$(MODTYPE) includes"
+	$(Q)$(GENMODULE) $(OPTS) writeincludes $(MODNAME) $(MODTYPE)
+	$(Q)$(TOUCH) $@
+endif
+%end
+#------------------------------------------------------------------------------
+
+#------------------------------------------------------------------------------
+# Link %(objs) to binary blob in %(file) using %(name) as name of embedded binary object
+# 'start' is an optional starting address
+# 'ldflags' is optional additional flags for the linker
+%define rule_link_binary mmake=BD file=/A name=/A objs= files= asmfiles= start=0 ldflags=
+
+%(mmake)_OUTDIR := $(dir %(file))
+# This trick removes the trailing '/', otherwise findstring below fails, causing a warning
+%(mmake)_OUTDIR := $(subst /*,,$(addsuffix *,$(%(mmake)_OUTDIR)))
+%(mmake)_TMPDIR := $(GENDIR)/$(CURDIR)
+%(mmake)_OBJS := $(addsuffix .o,$(addprefix $(%(mmake)_OBJDIR)/,$(notdir %(files) %(asmfiles))))
+%(mmake)_DEPS := $(addsuffix .d,$(addprefix $(%(mmake)_OBJDIR)/,$(notdir %(files))))
+%(mmake)_OBJS += %(objs)
+
+%rule_compile_multi basenames="%(files)" targetdir="$(%(mmake)_OBJDIR)"
+%rule_assemble_multi basenames="%(asmfiles)" targetdir="$(%(mmake)_OBJDIR)"
+
+%(file) : $(%(mmake)_OBJS) $(%(mmake)_DEPS)
+	$(Q)$(ECHO) "Linking    $(subst $(TARGETDIR)/,,$@)..."
+	$(Q)$(KERNEL_LD) %(ldflags) --entry=%(start) $(FMTBINARY_LDFLAGS) $(if $(IMAGEBASE_LDFLAGS),$(IMAGEBASE_LDFLAGS) %(start)) -Ttext=%(start) -o $(%(mmake)_TMPDIR)/%(name) $(%(mmake)_OBJS)
+	$(Q)cd $(%(mmake)_TMPDIR) && $(AROS_LD) %(ldflags) -r --format binary %(name) -o $@
+
+ifeq ($(findstring $(%(mmake)_OUTDIR),$(GLOB_MKDIRS)),)
+    %rule_makedirs dirs="$(%(mmake)_OUTDIR)" setuptarget=%(file)
+endif
+
+%end
+
+#------------------------------------------------------------------------------
+# Common rules for all makefiles
+%define common
+# Delete generated makefiles
+#MM
+clean ::
+	$(Q)$(RM) $(TOP)/$(CURDIR)/mmakefile $(TOP)/$(CURDIR)/mmakefile.bak
+
+include $(SRCDIR)/config/make.tail
+
+BDID := $(BDTARGETID)
+%end
+#------------------------------------------------------------------------------
+
+#############################################################################
+#############################################################################
+##                                                                         ##
+## This macro is used when the compiler is used for linking, to make sure  ##
+## needed flags propegate to the linker flags                              ##
+##                                                                         ##
+#############################################################################
+#############################################################################
+
+%define add_compilerlinkflags mmake=/A cflags=
+%(mmake)_CSTATICFLAGS   := `echo "%(cflags)" | grep -o '\-static[^[:blank:]]*'`
+%(mmake)_CSTDCFLAGS   :=  `echo "%(cflags)" | grep -o '\-nostdc[^[:blank:]]*'`
+%(mmake)_CPOSIXCFLAGS   :=  `echo "%(cflags)" | grep -o '\-noposixc[^[:blank:]]*'`
+%(mmake)_LDFLAGS          += $(strip $(%(mmake)_CSTATICFLAGS) $(%(mmake)_CSTDCFLAGS) $(%(mmake)_CPOSIXCFLAGS))
+%end
+
+#############################################################################
+#############################################################################
+##                                                                         ##
+## Here are the mmakefile build macros. These are macros that takes care   ##
+## of everything to go from the sources to the generated target. Also all  ##
+## intermediate files and directories that are needed are created by these ##
+## rules.                                                                  ##
+##                                                                         ##
+#############################################################################
+#############################################################################
+
+#------------------------------------------------------------------------------
+# Build a program
+%define build_prog mmake=/A progname=/A \
+    files= objcfiles= cxxfiles= alwayscxxlink=no \
+    asmfiles= objs= objdir="$(GENDIR)/$(CURDIR)" targetdir="$(AROSDIR)/$(CURDIR)" \
+    cppflags="$(CPPFLAGS)" cflags= dflags= cxxflags= dxxflags= ldflags= \
+    aflags="$(AFLAGS)" uselibs= usehostlibs= usestartup=yes detach=no nix=no \
+    includedir= libdir= usetree=no \
+    compiler=target linker= \
+    coverageinstr="$(TARGET_COVERAGEINSTR)" funcinstr="$(TARGET_FUNCINSTR)" lto="$(TARGET_LTO)"
+
+.PHONY : %(mmake)
+
+%gen_archspecificrules mainmmake=%(mmake)
+%gen_archspecificrules mainmmake=%(mmake) target=-quick
+
+%(mmake)_PROGNAME  := %(progname)
+%(mmake)_OBJDIR    := %(objdir)
+%(mmake)_TARGETDIR := %(targetdir)
+%(mmake)_LINKER    := %(linker)
+%(mmake)_LIBS := %(uselibs)
+# If not supplied, linker is equal to compiler
+ifeq ($(%(mmake)_LINKER),)
+    %(mmake)_LINKER := %(compiler)
+endif
+
+ifneq ("$(strip %(files) %(cxxfiles) %(objcfiles) %(asmfiles))","")
+    %(mmake)_FILES     := %(files)
+    %(mmake)_OBJCFILES := %(objcfiles)
+    %(mmake)_ASMFILES  := %(asmfiles)
+    %(mmake)_CXXFILES := %(cxxfiles)
+else
+    %(mmake)_FILES     := $(%(mmake)_PROGNAME)
+    %(mmake)_OBJCFILES :=
+    %(mmake)_ASMFILES  :=
+    %(mmake)_CXXFILES :=
+endif
+
+%(mmake)_ARCHOBJS   := $(wildcard $(%(mmake)_OBJDIR)/arch/*.o)
+ifeq (%(usetree),no)
+    %(mmake)_ARCHFILES     := $(basename $(notdir $(%(mmake)_ARCHOBJS)))
+else
+    %(mmake)_ARCHFILES     := $(basename $(patsubst $(%(mmake)_OBJDIR)/%,%,$(%(mmake)_ARCHOBJS)))
+endif
+%(mmake)_C_NARCHFILES := $(filter-out $(%(mmake)_ARCHFILES),$(%(mmake)_FILES))
+%(mmake)_CXX_NARCHFILES := $(filter-out $(%(mmake)_ARCHFILES),$(%(mmake)_CXXFILES))
+%(mmake)_OBJC_NARCHFILES := $(filter-out $(%(mmake)_ARCHFILES),$(%(mmake)_OBJCFILES))
+
+TMP_FILES := $(%(mmake)_C_NARCHFILES) $(%(mmake)_CXX_NARCHFILES) $(%(mmake)_ASMFILES) $(%(mmake)_OBJC_NARCHFILES)
+ifeq (%(usetree),no)
+    %(mmake)_OBJS     ?= $(strip $(addsuffix .o,$(addprefix $(%(mmake)_OBJDIR)/,$(notdir $(TMP_FILES)))) %(objs))
+    %(mmake)_DEPS := $(strip $(addsuffix .d,$(addprefix $(%(mmake)_OBJDIR)/,$(notdir $(TMP_FILES)))))
+else
+    %(mmake)_OBJS     ?= $(strip $(addsuffix .o,$(addprefix $(%(mmake)_OBJDIR)/,$(TMP_FILES))) %(objs))
+    %(mmake)_DEPS := $(strip $(addsuffix .d,$(addprefix $(%(mmake)_OBJDIR)/,$(TMP_FILES))))
+endif
+
+%(mmake)_CPPFLAGS :=  %(cppflags)
+ifneq (%(includedir),)
+%(mmake)_CPPFLAGS    += -I%(includedir)
+endif
+
+ifeq ("%(cflags)","")
+ifeq (%(compiler),target)
+%(mmake)_CFLAGS            := $(strip $(CFLAGS) $(USER_INCLUDES))
+endif
+ifeq (%(compiler),host)
+%(mmake)_CFLAGS            := $(strip $(HOST_CFLAGS) $(USER_INCLUDES))
+endif
+ifeq (%(compiler),kernel)
+%(mmake)_CFLAGS            := $(strip $(KERNEL_ISA_CFLAGS) $(KERNEL_CFLAGS) $(USER_INCLUDES))
+endif
+else
+%(mmake)_CFLAGS            := $(strip %(cflags) $(USER_INCLUDES))
+endif
+
+ifeq ("%(cxxflags)","")
+ifeq (%(compiler),target)
+%(mmake)_CXXFLAGS            := $(strip $(CXXFLAGS) $(USER_INCLUDES))
+endif
+ifeq (%(compiler),host)
+%(mmake)_CXXFLAGS            := $(strip $(HOST_CXXFLAGS) $(USER_INCLUDES))
+endif
+ifeq (%(compiler),kernel)
+%(mmake)_CXXFLAGS            := $(strip $(KERNEL_ISA_CXXFLAGS) $(KERNEL_CXXFLAGS))
+endif
+else
+%(mmake)_CXXFLAGS          := $(strip %(cxxflags) $(USER_INCLUDES))
+endif
+
+ifeq ("%(ldflags)","")
+ifeq (%(compiler),target)
+%(mmake)_LDFLAGS            := $(LDFLAGS)
+ifeq (%(usestartup),no)
+%(mmake)_LDFLAGS            += $(NOSTARTUP_OBJECTS)
+endif
+endif
+ifeq (%(compiler),host)
+%(mmake)_LDFLAGS            := $(HOST_LDFLAGS)
+endif
+ifeq (%(compiler),kernel)
+%(mmake)_LDFLAGS            := $(strip $(KERNEL_LDFLAGS) $(USER_LDFLAGS))
+endif
+else
+%(mmake)_LDFLAGS          := %(ldflags)
+endif
+
+%add_compilerlinkflags mmake=%(mmake) cflags=$(%(mmake)_CFLAGS)
+
+%(mmake)_COVERAGE := no
+ifeq (%(compiler),target)
+ifeq (%(usestartup),yes)
+ifeq (%(coverageinstr),yes)
+%(mmake)_COVERAGE := yes
+%(mmake)_COVERAGEFLAGS   ?= $(COVERAGEINSTR_FLAGS)
+%(mmake)_COVERAGELIBS    ?= $(COVERAGEINSTR_LIBS)
+%(mmake)_CFLAGS    := $(strip $(%(mmake)_COVERAGEFLAGS) $(%(mmake)_CFLAGS))
+%(mmake)_CXXFLAGS := $(strip $(%(mmake)_COVERAGEFLAGS) $(%(mmake)_CXXFLAGS))
+%(mmake)_LIBS += $(%(mmake)_COVERAGELIBS)
+endif
+ifeq (%(funcinstr),yes)
+%(mmake)_FUNCINSTR := yes
+%(mmake)_INSTRFUNCFLAGS   ?= $(FUNCINSTR_FLAGS)
+%(mmake)_INSTRFUNCLIBS    ?= $(FUNCINSTR_LIBS)
+%(mmake)_CFLAGS    := $(strip $(%(mmake)_INSTRFUNCFLAGS) $(%(mmake)_CFLAGS))
+%(mmake)_CXXFLAGS := $(strip $(%(mmake)_INSTRFUNCFLAGS) $(%(mmake)_CXXFLAGS))
+%(mmake)_LIBS += $(%(mmake)_INSTRFUNCLIBS)
+endif
+endif
+ifeq (%(lto),yes)
+%(mmake)_CFLAGS    := $(strip $(LTO_BINARY_CFLAGS) $(%(mmake)_CFLAGS))
+%(mmake)_CXXFLAGS := $(strip $(LTO_BINARY_CFLAGS) $(%(mmake)_CXXFLAGS))
+endif
+endif
+%(mmake)_AFLAGS    := %(aflags)
+ifneq (%(dflags),)
+    %(mmake)_DFLAGS     := %(dflags)
+else
+    %(mmake)_DFLAGS     := $(%(mmake)_CFLAGS)
+endif
+ifneq (%(dxxflags),)
+    %(mmake)_DXXFLAGS     := %(dxxflags)
+else
+    %(mmake)_DXXFLAGS     := $(%(mmake)_CXXFLAGS)
+endif
+ifeq (%(compiler),target)
+%(mmake)_LDFLAGS           := $(%(mmake)_LDFLAGS)
+%(mmake)_LD_OPTS           := $(TARGET_ISA_LDFLAGS)
+endif
+ifeq (%(compiler),host)
+%(mmake)_LDFLAGS           := $(%(mmake)_LDFLAGS)
+%(mmake)_LD_OPTS           := $(HOST_ISA_LDFLAGS)
+endif
+ifeq (%(compiler),kernel)
+%(mmake)_LDFLAGS           := $(%(mmake)_LDFLAGS)
+%(mmake)_LD_OPTS           := $(KERNEL_ISA_LDFLAGS)
+endif
+ifneq (%(libdir),)
+%(mmake)_LDFLAGS   += -L%(libdir)
+endif
+
+#MM
+%(mmake)-quick : %(mmake)
+
+#MM %(mmake) : includes-generate-deps core-linklibs
+%(mmake) : $(%(mmake)_TARGETDIR)/$(%(mmake)_PROGNAME)
+
+ifeq (%(alwayscxxlink),yes)
+ifeq (%(compiler),host)
+%(mmake)_LINK= $(strip $(HOST_CXX) $(HOST_LDFLAGS))
+endif
+ifeq (%(compiler),target)
+%(mmake)_LINK= $(strip $(AROS_CXX) $(TARGET_SYSROOT))
+endif
+ifeq (%(compiler),kernel)
+KERNEL_CXX ?= $(strip $(KERNEL_CC) $(KERNEL_SYSROOT))
+%(mmake)_LINK= $(strip $(KERNEL_CXX) $(KERNEL_SYSROOT))
+endif
+endif
+
+ifeq (%(compiler),target)
+%(mmake)_ARCHLIBS += $(TARGET_C_LIBS)
+endif
+ifeq (%(compiler),kernel)
+%(mmake)_ARCHLIBS += $(KERNEL_C_LIBS)
+endif
+
+%(mmake)_STRIPDEBUG ?= $(DEBUG)
+
+ifneq ($(filter $(TARGET),%(mmake) %(mmake)-quick %(mmake)-compress-quick),)
+%rule_compile_cxx_multi mmake=%(mmake) \
+    basenames="$(%(mmake)_CXX_NARCHFILES)" targetdir="$(%(mmake)_OBJDIR)" \
+    cppflags="$(%(mmake)_CPPFLAGS)" cxxflags="$(%(mmake)_CXXFLAGS)" dxxflags="$(%(mmake)_DXXFLAGS)" \
+    compiler="%(compiler)" usetree=%(usetree)
+%rule_compile_objc_multi mmake=%(mmake) \
+    basenames="$(%(mmake)_OBJC_NARCHFILES)" targetdir="$(%(mmake)_OBJDIR)" \
+    cppflags="$(%(mmake)_CPPFLAGS)" cflags="$(%(mmake)_CFLAGS)" dflags="$(%(mmake)_DFLAGS)" \
+    compiler="%(compiler)"
+%rule_compile_multi mmake=%(mmake) \
+    basenames="$(%(mmake)_C_NARCHFILES)" targetdir="$(%(mmake)_OBJDIR)" \
+    cppflags="$(%(mmake)_CPPFLAGS)" cflags="$(%(mmake)_CFLAGS)" dflags="$(%(mmake)_DFLAGS)" \
+    compiler="%(compiler)" usetree=%(usetree)
+%rule_assemble_multi mmake=%(mmake) \
+    cmd="$(%(mmake)_ASSEMBLER)" basenames="$(%(mmake)_ASMFILES)" targetdir="$(%(mmake)_OBJDIR)" \
+    cppflags="$(%(mmake)_CPPFLAGS)" aflags="$(%(mmake)_AFLAGS)"
+
+%rule_link_prog mmake=%(mmake) prog="$(%(mmake)_TARGETDIR)/$(%(mmake)_PROGNAME)" \
+    objs="$(%(mmake)_OBJS) $(%(mmake)_ARCHOBJS) $(USER_OBJS)" ldflags="$(%(mmake)_LDFLAGS)" \
+    uselibs="$(%(mmake)_LIBS)" usehostlibs="%(usehostlibs)" archlibs="$(%(mmake)_ARCHLIBS)"\
+    usestartup="%(usestartup)" detach="%(detach)" nix="%(nix)" \
+    cmd="$(%(mmake)_LINK)" ldopts="$(%(mmake)_LD_OPTS)" \
+    strip="$(%(mmake)_STRIP)" stripdebug="$(%(mmake)_STRIPDEBUG)" \
+    objdir="$(%(mmake)_OBJDIR)" coverageinstr="$(%(mmake)_COVERAGE)"
+
+endif
+
+%include_deps depstargets="%(mmake) %(mmake)-quick" deps="$(%(mmake)_DEPS)"
+
+%rule_makedirs dirs="$(%(mmake)_OBJDIR) $(%(mmake)_TARGETDIR)" setuptarget="$(%(mmake)_OBJS) $(%(mmake)_DEPS) $(%(mmake)_TARGETDIR)/$(%(mmake)_PROGNAME)"
+
+%(mmake)-clean : FILES := $(%(mmake)_OBJS) $(%(mmake)_TARGETDIR)/$(%(mmake)_PROGNAME) $(%(mmake)_DEPS)
+#MM
+%(mmake)-clean ::
+	$(Q)$(ECHO) "Cleaning up for metatarget %(mmake)"
+	$(Q)$(RM) $(FILES)
+
+%end
+#------------------------------------------------------------------------------
+
+
+#------------------------------------------------------------------------------
+# Build programs, for every C file an executable will be built with the same
+# name as the C file
+%define build_progs mmake=/A files=/A nix=no \
+    objdir="$(GENDIR)/$(CURDIR)" srcdir= \
+    targetdir="$(AROSDIR)/$(CURDIR)" \
+    cppflags="$(CPPFLAGS)" cflags="$(CFLAGS)" dflags= ldflags= \
+    includedir= libdir= compiler=target usetree=no \
+    uselibs= usehostlibs= usestartup=yes detach=no \
+    coverageinstr="$(TARGET_COVERAGEINSTR)" funcinstr="$(TARGET_FUNCINSTR)" lto="$(TARGET_LTO)"
+
+.PHONY : %(mmake)
+
+%gen_archspecificrules mainmmake=%(mmake)
+%gen_archspecificrules mainmmake=%(mmake) target=-quick
+
+%(mmake)_OBJDIR     := %(objdir)
+%(mmake)_TARGETDIR  := %(targetdir)
+%(mmake)_LIBS := %(uselibs)
+
+%(mmake)_FILES      := %(files)
+ifeq (%(usetree),no)
+    %(mmake)_OBJS   ?= $(strip $(addsuffix .o,$(addprefix $(%(mmake)_OBJDIR)/,$(notdir $(%(mmake)_FILES)))))
+    %(mmake)_DEPS   := $(strip $(addsuffix .d,$(addprefix $(%(mmake)_OBJDIR)/,$(notdir $(%(mmake)_FILES)))))
+else
+    %(mmake)_OBJS   ?= $(strip $(addsuffix .o,$(addprefix $(%(mmake)_OBJDIR)/,$(%(mmake)_FILES))))
+    %(mmake)_DEPS   := $(strip $(addsuffix .d,$(addprefix $(%(mmake)_OBJDIR)/,$(%(mmake)_FILES))))
+endif
+%(mmake)_EXES       := $(addprefix $(%(mmake)_TARGETDIR)/,$(notdir $(%(mmake)_FILES)))
+
+%(mmake)_CPPFLAGS   := %(cppflags)
+ifneq (%(includedir),)
+    %(mmake)_CPPFLAGS += -I%(includedir)
+endif
+%(mmake)_CFLAGS     := %(cflags)
+%(mmake)_COVERAGE   := no
+
+ifeq (%(compiler),target)
+%(mmake)_ARCHLIBS := $(TARGET_C_LIBS)
+ifeq (%(usestartup),yes)
+ifeq (%(coverageinstr),yes)
+%(mmake)_COVERAGE := yes
+%(mmake)_COVERAGEFLAGS   ?= $(COVERAGEINSTR_FLAGS)
+%(mmake)_COVERAGELIBS    ?= $(COVERAGEINSTR_LIBS)
+%(mmake)_CFLAGS    := $(strip $(%(mmake)_COVERAGEFLAGS) $(%(mmake)_CFLAGS))
+%(mmake)_LIBS += $(%(mmake)_COVERAGELIBS)
+endif
+ifeq (%(funcinstr),yes)
+%(mmake)_FUNCINSTR := yes
+%(mmake)_INSTRFUNCFLAGS   ?= $(FUNCINSTR_FLAGS)
+%(mmake)_INSTRFUNCLIBS    ?= $(FUNCINSTR_LIBS)
+%(mmake)_CFLAGS    := $(strip $(%(mmake)_INSTRFUNCFLAGS) $(%(mmake)_CFLAGS))
+%(mmake)_LIBS += $(%(mmake)_INSTRFUNCLIBS)
+endif
+endif
+ifeq (%(lto),yes)
+%(mmake)_CFLAGS    := $(strip $(LTO_BINARY_CFLAGS) $(%(mmake)_CFLAGS))
+endif
+endif
+ifneq (%(dflags),)
+    %(mmake)_DFLAGS := %(dflags)
+else
+    %(mmake)_DFLAGS := $(%(mmake)_CFLAGS)
+endif
+ifeq (%(ldflags),)
+ifeq (%(compiler),target)
+%(mmake)_LDFLAGS           = $(strip $(LDFLAGS))
+%(mmake)_LD_OPTS           := $(strip $(TARGET_ISA_LDFLAGS))
+endif
+ifeq (%(compiler),host)
+%(mmake)_LDFLAGS           = $(strip $(HOST_LDFLAGS))
+%(mmake)_LD_OPTS           := $(strip $(HOST_ISA_LDFLAGS))
+endif
+ifeq (%(compiler),kernel)
+%(mmake)_LDFLAGS           = $(strip $(KERNEL_LDFLAGS))
+%(mmake)_LD_OPTS           := $(strip $(KERNEL_ISA_LDFLAGS))
+endif
+else
+%(mmake)_LDFLAGS           = %(ldflags)
+endif
+
+ifneq (%(libdir),)
+    %(mmake)_LDFLAGS += -L%(libdir)
+endif
+
+%add_compilerlinkflags mmake=%(mmake) cflags=$(%(mmake)_CFLAGS)
+
+#MM
+%(mmake)-quick : %(mmake)
+
+#MM %(mmake) : includes-generate-deps core-linklibs
+%(mmake) : $(%(mmake)_EXES)
+
+ifneq ($(filter $(TARGET),%(mmake) %(mmake)-quick),)
+%rule_compile_multi mmake=%(mmake) \
+    basenames="$(%(mmake)_FILES)" targetdir="$(%(mmake)_OBJDIR)" \
+    cflags="$(%(mmake)_CFLAGS)" cppflags="$(%(mmake)_CPPFLAGS)" dflags="$(%(mmake)_DFLAGS)" \
+    compiler="%(compiler)" usetree=%(usetree) srcdir=%(srcdir)
+
+%rule_link_progs mmake=%(mmake) \
+    progs="$(notdir $(%(mmake)_FILES))" targetdir="$(%(mmake)_TARGETDIR)" \
+    objdir="$(%(mmake)_OBJDIR)" ldflags="$(%(mmake)_LDFLAGS)" nix="%(nix)" \
+    uselibs="$(%(mmake)_LIBS)" usehostlibs="%(usehostlibs)" archlibs="$(%(mmake)_ARCHLIBS)" \
+    cmd="$(%(mmake)_LINK)" ldopts="$(%(mmake)_LD_OPTS)" strip="$(%(mmake)_STRIP)" \
+    coverageinstr="$(%(mmake)_COVERAGE)" usestartup="%(usestartup)" detach="%(detach)"
+
+endif
+
+%include_deps depstargets="%(mmake) %(mmake)-quick" deps="$(%(mmake)_DEPS)"
+
+%rule_makedirs dirs="$(%(mmake)_TARGETDIR) $(%(mmake)_OBJDIR)" setuptarget="$(%(mmake)_DEPS) $(%(mmake)_OBJS) $(addprefix $(%(mmake)_TARGETDIR)/,$(%(mmake)_FILES))"
+
+%(mmake)-clean : FILES := $(%(mmake)_OBJS) $(%(mmake)_EXES) $(%(mmake)_DEPS)
+#MM
+%(mmake)-clean ::
+	$(Q)$(ECHO) "Cleaning up for metatarget %(mmake)"
+	$(Q)$(RM) $(FILES)
+
+%end
+#------------------------------------------------------------------------------
+
+
+#------------------------------------------------------------------------------
+# Build a module.
+# This is a bare version: It just compiles and links the given files. It is
+# assumed that all needed boiler plate code is in the files. This should only
+# be used for compiling external code. For AROS code use %build_module
+%define build_module_simple mmake=/A modname=/A modtype=/A \
+    files="$(basename $(call WILDCARD, *.c))" objcfiles= \
+    cxxfiles="$(basename $(call WILDCARD $(foreach CXX_EXT, $(AROS_CXXEXTS), *.$(CXX_EXT))))" \
+    alwayscxxlink=no \
+    cppflags="$(CPPFLAGS)" \
+    cflags="$(CFLAGS)" dflags= \
+    cxxflags="$(CXXFLAGS)" dxxflags= \
+    objdir="$(OBJDIR)" moduledir= stripdebug="$(DEBUG)" \
+    uselibs= usehostlibs= compiler=target funcinstr="$(TARGET_FUNCINSTR)" lto="$(TARGET_LTO)"
+
+# Define metamake targets and their dependencies
+#MM %(mmake) : core-linklibs includes-generate-deps
+#MM %(mmake)-kobj : core-linklibs includes-generate-deps
+#MM %(mmake)-kobj-quick
+#MM %(mmake)-quick
+#MM %(mmake)-clean
+
+%(mmake)_ALLTARGETS := %(mmake) %(mmake)-clean %(mmake)-quick %(mmake)-kobj
+
+.PHONY : $(%(mmake)_ALLTARGETS)
+
+ifeq (%(modname),)
+$(error using %build_module_simple: modname may not be empty)
+endif
+ifeq (%(modtype),)
+$(error using %build_module_simple: $(MODTYPE) has to be defined with the type of the module)
+endif
+
+ifeq (%(compiler),host)
+ifeq (%(alwayscxxlink),yes)
+%(mmake)_LINK= $(strip $(HOST_CXX) $(HOST_ISA_OBJCFLAGS) $(HOST_LDFLAGS))
+endif
+%(mmake)_LD_OPTS := $(strip $(HOST_ISA_LDFLAGS) $(NOSTARTUP_LDFLAGS))
+%(mmake)_LDFLAGS += $(strip $(HOST_LDFLAGS))
+endif
+ifeq (%(compiler),target)
+%(mmake)_ARCHLIBS := $(TARGET_C_LIBS)
+ifeq (%(alwayscxxlink),yes)
+%(mmake)_LINK= $(strip $(AROS_CXX) $(TARGET_ISA_LDFLAGS) $(TARGET_SYSROOT))
+endif
+%(mmake)_LD_OPTS := $(strip $(TARGET_ISA_LDFLAGS) $(NOSTARTUP_LDFLAGS))
+%(mmake)_LDFLAGS += $(strip $(LDFLAGS))
+endif
+ifeq (%(compiler),kernel)
+ifeq (%(alwayscxxlink),yes)
+KERNEL_CXX ?= $(strip $(KERNEL_CC) $(KERNEL_ISA_LDFLAGS) $(KERNEL_SYSROOT))
+%(mmake)_LINK= $(strip $(KERNEL_CXX) $(KERNEL_ISA_OBJCFLAGS) $(KERNEL_SYSROOT))
+endif
+%(mmake)_LD_OPTS := $(strip $(KERNEL_ISA_LDFLAGS) $(NOSTARTUP_LDFLAGS))
+%(mmake)_LDFLAGS += $(strip $(USER_LDFLAGS) $(KERNEL_LDFLAGS))
+endif
+
+# Default values for variables and arguments
+%(mmake)_DEFLINKLIBNAME := %(modname)
+%(mmake)_CFLAGS := %(cflags)
+%(mmake)_CXXFLAGS := %(cxxflags)
+ifeq (%(compiler),target)
+ifeq (%(lto),yes)
+%(mmake)_CFLAGS    := $(strip $(LTO_BINARY_CFLAGS) $(CFLAGS_NO_STRICT_ALIASING) $(%(mmake)_CFLAGS))
+endif
+ifeq (%(funcinstr),yes)
+%(mmake)_FUNCINSTR := yes
+%(mmake)_CFLAGS    := $(strip $(FUNCINSTR_FLAGS) $(%(mmake)_CFLAGS))
+endif
+endif
+ifneq (%(dflags),)
+    %(mmake)_DFLAGS := %(dflags)
+else
+    %(mmake)_DFLAGS := $(%(mmake)_CFLAGS)
+endif
+%(mmake)_DEFDXXFLAGS := %(dxxflags)
+OBJDIR ?= $(GENDIR)/$(CURDIR)
+%(mmake)_MODDIR := %(moduledir)
+ifeq ($(%(mmake)_MODDIR),)
+  ifeq (%(modtype),library)
+    %(mmake)_MODDIR  := $(AROS_LIBRARIES)
+  endif
+  ifeq (%(modtype),gadget)
+    %(mmake)_MODDIR  := $(AROS_GADGETS)
+  endif
+  ifeq (%(modtype),image)
+    %(mmake)_MODDIR  := $(AROS_CLASSIMAGES)
+  endif
+  ifeq (%(modtype),datatype)
+    %(mmake)_MODDIR  := $(AROS_DATATYPES)
+  endif
+  ifeq (%(modtype),handler)
+    %(mmake)_MODDIR  := $(AROS_FS)
+  endif
+  ifeq (%(modtype),device)
+    %(mmake)_MODDIR  := $(AROS_DEVS)
+  endif
+  ifeq (%(modtype),resource)
+    %(mmake)_MODDIR  := $(AROS_RESOURCES)
+  endif
+  ifeq (%(modtype),hook)
+    %(mmake)_MODDIR  := $(AROS_RESOURCES)
+  endif
+  ifeq (%(modtype),mui)
+    %(mmake)_MODDIR  := $(AROS_CLASSES)/Zune
+  endif
+  ifeq (%(modtype),mcc)
+    %(mmake)_MODDIR  := $(AROS_CLASSES)/Zune
+  endif
+  ifeq (%(modtype),mcp)
+    %(mmake)_MODDIR  := $(AROS_CLASSES)/Zune
+  endif
+  ifeq (%(modtype),usbclass)
+    %(mmake)_MODDIR  := $(AROS_CLASSES)/USB
+  endif
+  ifeq (%(modtype),btclass)
+    %(mmake)_MODDIR  := $(AROS_CLASSES)/Bluetooth
+  endif
+  ifeq (%(modtype),hidd)
+    %(mmake)_MODDIR  := $(AROS_DRIVERS)
+  endif
+  ifeq (%(modtype),printer)
+    %(mmake)_MODDIR  := $(AROS_PRINTERS)
+  endif
+endif
+ifeq ($(%(mmake)_MODDIR),)
+  $(error Don't know where to put the file for modtype %(modtype). Specify moduledir=)
+endif
+
+%add_compilerlinkflags mmake=%(mmake) cflags=$(%(mmake)_CFLAGS)
+
+%(mmake)_ARCHOBJS   := $(wildcard %(objdir)/arch/*.o)
+%(mmake)_ARCHFILES  := $(basename $(notdir $(%(mmake)_ARCHOBJS)))
+%(mmake)_C_NARCHFILES := $(filter-out $(%(mmake)_ARCHFILES),%(files))
+%(mmake)_CXX_NARCHFILES := $(filter-out $(%(mmake)_ARCHFILES),%(cxxfiles))
+%(mmake)_OBJC_NARCHFILES := $(filter-out $(%(mmake)_ARCHFILES),%(objcfiles))
+
+%rule_compile_cxx_multi mmake=%(mmake) \
+    basenames="$(%(mmake)_CXX_NARCHFILES)" targetdir="%(objdir)" \
+    cppflags="%(cppflags)" cxxflags="$(%(mmake)_CXXFLAGS)" dxxflags="$(%(mmake)_DXXFLAGS)" \
+    compiler="%(compiler)"
+%rule_compile_objc_multi mmake=%(mmake) \
+    basenames="$(%(mmake)_OBJC_NARCHFILES)" targetdir="%(objdir)" \
+    cppflags="%(cppflags)" cflags="$(%(mmake)_CFLAGS)" dflags="$(%(mmake)_DFLAGS)" \
+    compiler="%(compiler)"
+%rule_compile_multi mmake=%(mmake) \
+    basenames="$(%(mmake)_C_NARCHFILES)" targetdir="%(objdir)" \
+    cppflags="%(cppflags)" cflags="$(%(mmake)_CFLAGS)" dflags="$(%(mmake)_DFLAGS)" \
+    compiler="%(compiler)"
+
+# Handlers use dash instead of dot in their names
+ifeq (%(modtype),handler)
+%(mmake)_MODULE := $(%(mmake)_MODDIR)/%(modname)-%(modtype)
+else
+ifeq (%(modtype),printer)
+%(mmake)_MODULE := $(%(mmake)_MODDIR)/%(modname)
+else
+%(mmake)_MODULE := $(%(mmake)_MODDIR)/%(modname).%(modtype)
+endif
+endif
+%(mmake)_KOBJ   := $(KOBJSDIR)/%(modname)_%(modtype).o
+
+%(mmake)-quick : %(mmake)
+%(mmake)-kobj-quick : $(%(mmake)_KOBJ)
+%(mmake)       : $(%(mmake)_MODULE)
+%(mmake)-kobj  : $(%(mmake)_KOBJ)
+
+# The module is linked from all the compiled .o files
+%(mmake)_OBJS       := $(%(mmake)_ARCHOBJS) $(addprefix %(objdir)/, $(addsuffix .o,$(notdir $(%(mmake)_C_NARCHFILES))))
+
+# Under Windows con* is a reserved name, it refers to console. Files with such names can't be created.
+# This breaks con-handler build. Here we work around this
+ifeq (%(modname),con)
+    %(mmake)_ERR := $(notdir $(%(mmake)_MODULE)).err
+else
+    %(mmake)_ERR := %(modname).err
+endif
+
+%rule_linkmodule module="$(%(mmake)_MODULE)" objs="$(%(mmake)_OBJS)" \
+    endobj= err="$(%(mmake)_ERR)" objdir="%(objdir)" \
+    cmd="$(%(mmake)_LINK)" ldopts="$(%(mmake)_LD_OPTS)" ldflags="$(strip $(LDFLAGS) $(%(mmake)_LDFLAGS) $(%(modname)_LDFLAGS))" \
+    uselibs="%(uselibs) $(%(modname)_LIBS)" usehostlibs="%(usehostlibs)" archlibs="$(%(mmake)_ARCHLIBS)" stripdebug="%(stripdebug)"
+
+# Link kernel object file
+%(mmake)_KAUTOLIB := dos intuition layers graphics oop utility expansion keymap
+
+# Make these symbols local
+%(mmake)_KBASE := DOSBase IntuitionBase LayersBase GfxBase OOPBase \
+    UtilityBase ExpansionBase KeymapBase KernelBase
+
+%(mmake)_SYMBOLS := $(%(mmake)_KBASE)
+
+%(mmake)_KLIB := hiddstubs amiga arossupport autoinit libinit
+%(mmake)_KOBJ_LIBS := $(filter-out $(%(mmake)_KLIB),%(uselibs)) $(%(mmake)_KAUTOLIB)
+$(%(mmake)_KOBJ) : LINKLIBS:=$(%(mmake)_KOBJ_LIBS)
+$(%(mmake)_KOBJ) : FILTBASES:=$(addprefix -L ,$(%(mmake)_SYMBOLS))
+$(%(mmake)_KOBJ) : USER_LDFLAGS := $(USER_LDFLAGS)
+$(%(mmake)_KOBJ) : $(%(mmake)_OBJS) $(%(mmake)_ENDOBJS)
+	$(Q)$(ECHO) "Linking    $(subst $(TARGETDIR)/,,$@)"
+	$(file >$@.rsp,$^)
+	$(Q)$(AROS_LD) -Ur $(KOBJ_LDFLAGS) $(KERNEL_KOBJ_LDSCRIPT) -o $@ @$@.rsp $(USER_LDFLAGS) -L$(AROS_LIB) $(addprefix -l,$(LINKLIBS)) && $(RM) $@.rsp
+	$(Q)$(OBJCOPY) $@ $(FILTBASES) `$(NM_PLAIN) $@ | $(AWK) '($$3 ~ /^__.*_(LIST|END)__\r?$$/) || ($$3 ~ /^__aros_lib.*\r?$$/) {print "-L " $$3;}'`
+
+## Dependency fine-tuning
+##
+%(mmake)_DEPS       := $(addprefix %(objdir)/, $(addsuffix .d,%(files)))
+%include_deps depstargets="%(mmake) %(mmake)-quick %(mmake)-kobj" deps="$(%(mmake)_DEPS)"
+
+%rule_makedirs dirs="%(objdir) $(%(mmake)_MODDIR) $(KOBJSDIR)" setuptarget="$(%(mmake)_OBJS) $(%(mmake)_DEPS) $(%(mmake)_MODULE) $(%(mmake)_KOBJ) "
+
+%(mmake)-clean : FILES := $(%(mmake)_OBJS) $(%(mmake)_MODULE) $(%(mmake)_KOBJ) $(%(mmake)_DEPS)
+%(mmake)-clean ::
+	$(Q)$(ECHO) "Cleaning up for module %(modname)"
+	$(Q)$(RM) $(FILES)
+%end
+#------------------------------------------------------------------------------
+
+
+#------------------------------------------------------------------------------
+# Build a module - core routine
+# Explanation of this macro is done in the developer's manual
+%define build_module_core mmake=/A modname=/A modtype=/A modsuffix= version= flavour= \
+    conffile=  confoverride= \
+    asmfiles= usetree=no \
+    files="$(basename $(call WILDCARD, *.c))" \
+    objcfiles= \
+    cxxfiles="$(basename $(call WILDCARD $(foreach CXX_EXT, $(AROS_CXXEXTS), *.$(CXX_EXT))))" \
+    alwayscxxlink=no \
+    linklibfiles= linklibobjs= \
+    cppflags="$(CPPFLAGS)" dflags= \
+    aflags="$(AFLAGS)" cflags="$(CFLAGS)" \
+    cxxflags="$(CXXFLAGS)" dxxflags= \
+    objdir= moduledir= prefix="$(AROSDIR)" \
+    linklibname= uselibs= usehostlibs= \
+    compiler=target funcinstr="$(TARGET_FUNCINSTR)" lto="$(TARGET_LTO)" nostartup=yes archspecific=no \
+    include_set=includes-all includedir= incextra= libdir= \
+    build_abi= build_library= stripdebug="$(DEBUG)"
+
+# We will employ a terrifying, but unavoidable, hack here.
+# genmf has no concept of conditionals (ie %ifeq), and MetaMake
+# ignores GNU Make ifeq() statements, but will process any #MM
+# headed lines in the file.
+# 
+# So, to make the following #MM lines conditional on whether we want
+# to build the ABI, Library, or both, we define build_abi= and 
+# build_library as 'M' to enable, or '' to disable, which allows genmf
+# to do the following conversions:
+# 
+#  #%(build_abi)M includes-foo: foo-include
+#    becomes, when build_abi=M
+#  #MM includes-foo: foo-include   <= Processed by MetaMake
+#    but, when build_abi= ...
+#  #M includes-foo: foo-includes   <= ignored by MetaMake! Yes!
+# 
+# Taking full blame for this: Jason S. McMullan <jason.mcmullan@gmail.com>
+
+# Define metamake targets and their dependencies
+#MM %(mmake)
+#MM %(mmake)-quick
+#MM %(mmake)-makefile
+#MM %(mmake)-clean
+
+# ABI targets:
+#M%(build_abi)- %(include_set) : %(mmake)-includes
+#M%(build_abi)- linklibs-%(modname): %(mmake)-linklib
+#M%(build_abi)- linklibs-%(modname)_rel : %(mmake)-linklib
+#M%(build_abi)- includes-%(modname): %(mmake)-includes
+#M%(build_abi)- includes-%(modname)_rel : %(mmake)-includes
+#M%(build_abi)- %(mmake) : %(mmake)-includes core-linklibs linklibs-%(uselibs)
+#M%(build_abi) %(mmake)-linklib : %(mmake)-includes includes-%(uselibs)
+#M%(build_abi)- %(mmake)-quick : %(mmake)-includes-quick
+#M%(build_abi) %(mmake)-includes : %(mmake)-makefile %(mmake)-includes-dirs %(mmake)-set-archincludes \
+#M%(build_abi)     includes-generate-deps %(mmake)-fd
+#M%(build_abi) %(mmake)-includes-quick
+#M%(build_abi) %(mmake)-includes-dirs
+#M%(build_abi) %(mmake)-fd
+
+# Library targets
+#%(build_library)M %(mmake)-kobj : core-linklibs linklibs-%(uselibs)
+#%(build_library)M %(mmake)-kobj-quick : 
+
+# Library with ABI targets:
+#%(build_library)%(build_abi) %(mmake)-kobj : %(mmake)-includes core-linklibs linklibs-%(uselibs)
+#%(build_library)%(build_abi) %(mmake)-kobj-quick : %(mmake)-includes-quick
+
+%gen_archspecificrules mainmmake=%(mmake)
+%gen_archspecificrules mainmmake=%(mmake) target=-set-archincludes
+%gen_archspecificrules mainmmake=%(mmake) target=-linklib
+# The arch-specific linklib objects are pulled in through the -linklib arch
+# chain generated above (%(mmake)-linklib : %(mmake)-$(CPU)-linklib), whose leaf
+# is the %(mainmmake)-%(arch)-linklib target emitted by build_archspecific. We
+# deliberately do NOT depend on the bare %(mmake)-$(CPU) (the full arch module
+# build) here: that target can carry cross-module dependencies (e.g. a native
+# driver that links the module's own linklib), which would create a build cycle
+# linklib -> arch-module -> core-linklibs -> linklib.
+%gen_archspecificrules mainmmake=%(mmake) target=-kobj
+#MM- %(mmake)-kobj : %(mmake)-$(CPU)
+%gen_archspecificrules mainmmake=%(mmake) target=-kobj-quick
+%gen_archspecificrules mainmmake=%(mmake) target=-quick
+#MM- %(mmake)-kobj-quick : %(mmake)-$(CPU)-quick
+
+# All MetaMake targets defined by this macro
+%(mmake)%(flavour)_ALLTARGETS       := %(mmake) %(mmake)-quick %(mmake)-clean
+
+ifeq (%(build_library),M)
+%(mmake)%(flavour)_ALLTARGETS       += %(mmake)-kobj %(mmake)-kobj-quick
+endif
+
+ifeq (%(build_abi),M)
+%(mmake)%(flavour)_ALLTARGETS += %(mmake)-includes \
+                 %(mmake)-set-archincludes \
+                 %(mmake)-includes-quick %(mmake)-includes-dirs  \
+                 %(mmake)-linklib %(mmake)-fd
+endif
+
+.PHONY : $(%(mmake)%(flavour)_ALLTARGETS) %(mmake)-makefile
+
+ifeq (%(modname),)
+$(error using %build_module: modname may not be empty)
+endif
+ifeq (%(modtype),)
+$(error using %build_module: $(MODTYPE) has to be defined with the type of the module)
+endif
+ifneq (%(incextra),)
+%(mmake)_INCEXTRA  := %(incextra)
+else
+%(mmake)_INCEXTRA  := $(TOP)/$(CURDIR)/..
+endif
+
+ifeq (%(compiler),host)
+ifeq (%(alwayscxxlink),yes)
+%(mmake)_LINK= $(strip $(HOST_CXX) $(HOST_LDFLAGS))
+endif
+%(mmake)_LD_OPTS := $(strip $(HOST_ISA_LDFLAGS) $(NOSTARTUP_LDFLAGS))
+%(mmake)_LDFLAGS += $(strip $(HOST_LDFLAGS))
+endif
+
+ifeq (%(compiler),target)
+%(mmake)_LDFLAGS = $(strip $(LDFLAGS))
+ifeq (%(alwayscxxlink),yes)
+%(mmake)_LINK= $(strip $(AROS_CXX) $(TARGET_SYSROOT))
+ifneq ($(TARGET_CXX_LIBS),)
+%(mmake)_ARCHLIBS := $(TARGET_CXX_LIBS)
+endif
+endif
+%(mmake)_LD_OPTS := $(strip $(TARGET_ISA_LDFLAGS) $(NOSTARTUP_LDFLAGS))
+endif
+
+ifeq (%(compiler),kernel)
+%(mmake)_LDFLAGS := $(strip $(USER_LDFLAGS) $(KERNEL_LDFLAGS))
+ifeq (%(alwayscxxlink),yes)
+KERNEL_CXX ?= $(strip $(KERNEL_CC))
+%(mmake)_LINK= $(strip $(KERNEL_CXX) $(KERNEL_SYSROOT))
+ifneq ($(TARGET_LIBATOMIC),)
+%(mmake)_ARCHLIBS := $(KERNEL_CXX_LIBS)
+endif
+endif
+%(mmake)_LD_OPTS := $(strip $(KERNEL_ISA_LDFLAGS) $(NOSTARTUP_LDFLAGS))
+endif
+
+# Default values for variables and arguments
+ifneq (%(flavour),)
+    %(mmake)%(flavour)_DEFNAME      := %(modname)_%(flavour)
+else
+    %(mmake)%(flavour)_DEFNAME      := %(modname)
+endif
+%(mmake)%(flavour)_DEFLINKLIBNAME   := $(%(mmake)%(flavour)_DEFNAME)
+ifneq (%(linklibname),)
+    %(mmake)%(flavour)_LINKLIBNAME  := %(linklibname)
+else
+    %(mmake)%(flavour)_LINKLIBNAME  = $(%(mmake)%(flavour)_DEFLINKLIBNAME)
+endif
+%(mmake)%(flavour)_DEFCPPFLAGS      := %(cppflags)
+ifneq (%(includedir),)
+    %(mmake)%(flavour)_DEFCPPFLAGS  += -I%(includedir)
+endif
+%(mmake)%(flavour)_DEFDFLAGS        := %(cflags)
+ifneq (%(dflags),)
+    %(mmake)%(flavour)_DFLAGS       := %(dflags)
+else
+    %(mmake)%(flavour)_DFLAGS       = $(%(mmake)%(flavour)_DEFDFLAGS)
+endif
+%(mmake)%(flavour)_DEFDXXFLAGS      := %(cxxflags)
+ifneq (%(dxxflags),)
+    %(mmake)%(flavour)_DXXFLAGS     := %(dxxflags)
+else
+    %(mmake)%(flavour)_DXXFLAGS     = $(%(mmake)%(flavour)_DEFDXXFLAGS)
+endif
+
+ifeq (%(compiler),target)
+ifeq (%(lto),yes)
+%(mmake)%(flavour)_DEFDFLAGS        := $(strip $(LTO_BINARY_CFLAGS) $(CFLAGS_NO_STRICT_ALIASING) $(NOWARN_LTO_TYPE_MISMATCH) $(%(mmake)%(flavour)_DEFDFLAGS))
+%(mmake)%(flavour)_DEFDXXFLAGS      := $(strip $(LTO_BINARY_CFLAGS) $(CFLAGS_NO_STRICT_ALIASING) $(NOWARN_LTO_TYPE_MISMATCH) $(%(mmake)%(flavour)_DEFDXXFLAGS))
+endif
+ifeq (%(funcinstr),yes)
+%(mmake)_FUNCINSTR := yes
+%(mmake)%(flavour)_DEFDFLAGS        := $(strip $(FUNCINSTR_FLAGS) $(%(mmake)%(flavour)_DEFDFLAGS))
+%(mmake)%(flavour)_DEFDXXFLAGS      := $(strip $(FUNCINSTR_FLAGS) $(%(mmake)%(flavour)_DEFDXXFLAGS))
+endif
+endif
+
+OBJDIR                              ?= $(GENDIR)/$(CURDIR)
+ifneq (%(objdir),)
+%(mmake)_OBJDIR                     := %(objdir)
+else
+%(mmake)_OBJDIR                     := $(OBJDIR)/$(%(mmake)%(flavour)_DEFNAME)
+endif
+ifneq (%(flavour),)
+%(mmake)%(flavour)_OBJDIR           := $(%(mmake)_OBJDIR)
+endif
+
+## Create genmodule include Makefile for the module
+##
+%(mmake)%(flavour)-makefile         := $(%(mmake)%(flavour)_OBJDIR)/Makefile.$(%(mmake)%(flavour)_DEFNAME)%(modtype)
+#MM
+%(mmake)%(flavour)-genmakefile : $(%(mmake)%(flavour)-makefile)
+
+%rule_genmodule_makefile \
+    mmake=%(mmake)-genmakefile modname="%(modname)" flavour="%(flavour)" modtype="%(modtype)" \
+    modsuffix="%(modsuffix)" targetdir="$(%(mmake)%(flavour)_OBJDIR)" \
+    conffile="%(conffile)" confoverride="%(confoverride)"
+
+%rule_makedirs dirs="$(%(mmake)%(flavour)_OBJDIR)" setuptarget="$(%(mmake)%(flavour)-makefile)"
+
+# Do not parse these statements if metatarget is not appropriate
+ifneq ($(filter $(TARGET),$(%(mmake)%(flavour)_ALLTARGETS)),)
+
+# suppress makes warning that the Makefile doesnt yet exist
+# on early passes (it will generate the file as needed though)
+# when we include it.
+-include $(%(mmake)%(flavour)-makefile)
+
+%(mmake)%(flavour)_DEFMODDIR        := $($(%(mmake)%(flavour)_DEFNAME)_MODDIR)
+ifeq (%(archspecific),yes)
+%(mmake)%(flavour)_DEFMODDIR        := $(AROS_DIR_BOOTARCH)/$(%(mmake)%(flavour)_DEFMODDIR)
+endif
+ifneq (%(moduledir),)
+    %(mmake)%(flavour)_MODDIR       := %(moduledir)
+else
+    %(mmake)%(flavour)_MODDIR       := $(%(mmake)%(flavour)_DEFMODDIR)
+endif
+
+## include files generation
+##
+ifneq (%(includedir),)
+%(mmake)%(flavour)_INCDIR           := %(includedir)
+else
+%(mmake)%(flavour)_INCDIR           := %(prefix)/$(AROS_DIR_DEVELOPER)/$(AROS_DIR_INCLUDE)
+endif
+%(mmake)%(flavour)_LIBDEFSINC       := $(%(mmake)%(flavour)_OBJDIR)/include/$(%(mmake)%(flavour)_DEFNAME)_libdefs.h
+%(mmake)%(flavour)_DEFLIBDEFSINC    := $(%(mmake)%(flavour)_OBJDIR)/include/$(%(mmake)%(flavour)_DEFNAME)_deflibdefs.h
+
+ifeq (%(build_abi),M)
+%(mmake)-includes-quick : %(mmake)-includes
+%(mmake)-includes : $(addprefix $(GENINCDIR)/,$($(%(mmake)%(flavour)_DEFNAME)_INCLUDES)) \
+    $(addprefix $(%(mmake)%(flavour)_INCDIR)/,$($(%(mmake)%(flavour)_DEFNAME)_INCLUDES)) \
+    $(%(mmake)%(flavour)_LIBDEFSINC) $(%(mmake)%(flavour)_DEFLIBDEFSINC)
+
+ifneq ($($(%(mmake)%(flavour)_DEFNAME)_INCLUDES),)
+%rule_genmodule_includes mmake=%(mmake)-includes modname="%(modname)" modtype="%(modtype)" \
+    modsuffix="%(modsuffix)" targetdir="$(%(mmake)_OBJDIR)/include" \
+    conffile="%(conffile)" confoverride="%(confoverride)" flavour="%(flavour)"
+
+%rule_copy_diff_multi \
+    files="$($(%(mmake)%(flavour)_DEFNAME)_INCLUDES)" srcdir="$(%(mmake)_OBJDIR)/include" targetdir="$(GENINCDIR)" \
+    stampfile="$(%(mmake)_OBJDIR)/%(modname)_geninc"
+
+%rule_copy_diff_multi \
+    files="$($(%(mmake)%(flavour)_DEFNAME)_INCLUDES)" srcdir="$(%(mmake)_OBJDIR)/include" targetdir="$(%(mmake)%(flavour)_INCDIR)" \
+    stampfile="$(%(mmake)_OBJDIR)/%(modname)_incs"
+
+%(mmake)%(flavour)_INCDIRS := $(filter-out ./,$(sort $(dir $($(%(mmake)%(flavour)_DEFNAME)_INCLUDES))))
+
+TMP%(modname)_INCDIRS := \
+    $(%(mmake)_OBJDIR)/include $(addprefix $(%(mmake)_OBJDIR)/include/,$(%(mmake)%(flavour)_INCDIRS)) \
+    $(GENINCDIR) $(addprefix $(GENINCDIR)/,$(%(mmake)%(flavour)_INCDIRS)) \
+    $(%(mmake)%(flavour)_INCDIR) $(addprefix $(%(mmake)%(flavour)_INCDIR)/,$(%(mmake)%(flavour)_INCDIRS))
+%rule_makedirs dirs="$(TMP%(modname)_INCDIRS)" setuptarget="%(mmake)-includes-dirs"
+
+endif
+
+endif
+
+%rule_genmodule_genlibdefs mmake=%(mmake)-genlibdefs modname="%(modname)" flavour="%(flavour)" modtype="%(modtype)" \
+    modsuffix="%(modsuffix)" targetdir="$(%(mmake)%(flavour)_OBJDIR)/include" \
+    conffile="%(conffile)" confoverride="%(confoverride)" version="%(version)"
+
+$(%(mmake)%(flavour)_DEFLIBDEFSINC) : FILENAME := $(%(mmake)%(flavour)_LIBDEFSINC)
+$(%(mmake)%(flavour)_DEFLIBDEFSINC) : $(%(mmake)%(flavour)_LIBDEFSINC)
+	$(Q)$(ECHO) "Generating $(subst $(TARGETDIR)/,,$@)"
+	$(Q)$(ECHO) "#define LC_LIBDEFS_FILE \"$(FILENAME)\"" >$@
+
+$(%(mmake)%(flavour)_LIBDEFSINC) $(%(mmake)%(flavour)_DEFLIBDEFSINC) : | $(%(mmake)%(flavour)_OBJDIR)/include
+%rule_makedirs dirs="$(%(mmake)%(flavour)_OBJDIR)/include" setuptarget=%(mmake)%(flavour)-includes-dirs
+
+#MM- %(mmake)-genmodfiles : %(mmake)%(flavour)-genmakefile
+
+## Extra genmodule src files generation
+## 
+%rule_genmodule_files mmake=%(mmake)-genmodfiles modname="%(modname)" modtype="%(modtype)" \
+    modsuffix="%(modsuffix)" targetdir="$(%(mmake)%(flavour)_OBJDIR)" stubdir="$(%(mmake)%(flavour)_OBJDIR)/linklib" \
+    conffile="%(conffile)" confoverride="%(confoverride)" flavour="%(flavour)"
+
+$(%(mmake)-genmodfiles_GENFILEFLAG) : $(%(mmake)%(flavour)_DEFLIBDEFSINC) $(%(mmake)%(flavour)-makefile)
+
+%rule_makedirs dirs="$(%(mmake)%(flavour)_OBJDIR)/linklib" setuptarget="$(%(mmake)-genmodfiles_GENFILEFLAG)"
+
+ifeq (%(build_abi),M)
+## Create FD file
+ifeq (%(includedir),)
+%(mmake)%(flavour)_FDDIR            := %(prefix)/$(AROS_DIR_DEVELOPER)/$(AROS_DIR_SDK)/$(AROS_DIR_FD)
+else
+%(mmake)%(flavour)_FDDIR            := %(includedir)/../$(AROS_DIR_FD)
+endif
+%(mmake)-fd : $(%(mmake)%(flavour)_FDDIR)/%(modname)_lib.fd
+
+%rule_genmodule_fd modname="%(modname)" modtype="%(modtype)" \
+    modsuffix="%(modsuffix)" targetdir="$(%(mmake)%(flavour)_FDDIR)" conffile="%(conffile)" confoverride="%(confoverride)"
+
+$(%(mmake)%(flavour)_FDDIR)/%(modname)_lib.fd : | $(%(mmake)%(flavour)_FDDIR)
+
+%rule_makedirs dirs="$(%(mmake)%(flavour)_FDDIR)" setuptarget=%(mmake)%(flavour)-fd-setup
+endif
+
+## Compilation
+##
+%(mmake)%(flavour)_ASMFILES         := %(asmfiles)
+%(mmake)%(flavour)_FILES            := %(files)
+%(mmake)%(flavour)_OBJCFILES        := %(objcfiles)
+%(mmake)%(flavour)_CXXFILES         := %(cxxfiles)
+
+%(mmake)%(flavour)_LIBFILES         := %(linklibfiles)
+%(mmake)%(flavour)_LIBS             := %(uselibs)
+
+%(mmake)%(flavour)_FDIRS            := $(sort $(dir $(%(mmake)%(flavour)_FILES)))
+
+%(mmake)%(flavour)_FILEMATCH        = $(and $(findstring $(1),$(2)),$(findstring $(2),$(1)))
+%(mmake)%(flavour)_MATCHARCH        = $(foreach matchfile,$(2),$(foreach archfile,$(1),$(if $(call %(mmake)%(flavour)_FILEMATCH,$(archfile),$(notdir $(matchfile))),$(matchfile),)))
+%(mmake)%(flavour)_FILTERARCH       = $(filter-out $(call %(mmake)%(flavour)_MATCHARCH,$(1),$(2)),$(2))
+%(mmake)%(flavour)_STARTFILES       := $(addprefix $(%(mmake)%(flavour)_OBJDIR)/,$($(%(mmake)%(flavour)_DEFNAME)_STARTFILES))
+%(mmake)%(flavour)_ENDFILES         := $(addprefix $(%(mmake)%(flavour)_OBJDIR)/,$($(%(mmake)%(flavour)_DEFNAME)_ENDFILES))
+
+%(mmake)%(flavour)_ARCHOBJS         := $(wildcard $(%(mmake)%(flavour)_OBJDIR)/arch/*.o)
+%(mmake)%(flavour)_LIBARCHOBJS      := $(wildcard $(%(mmake)%(flavour)_OBJDIR)/linklib/arch/*.o)
+%(mmake)%(flavour)_ARCHFILES        := $(basename $(notdir $(%(mmake)%(flavour)_ARCHOBJS)))
+%(mmake)%(flavour)_LIBARCHFILES     := $(basename $(notdir $(%(mmake)%(flavour)_LIBARCHOBJS)))
+%(mmake)%(flavour)_C_NARCHFILES     := $(call %(mmake)%(flavour)_FILTERARCH,$(%(mmake)%(flavour)_ARCHFILES),$(%(mmake)%(flavour)_FILES))
+%(mmake)%(flavour)_CXX_NARCHFILES   := $(call %(mmake)%(flavour)_FILTERARCH,$(%(mmake)%(flavour)_ARCHFILES),$(%(mmake)%(flavour)_CXXFILES))
+%(mmake)%(flavour)_OBJC_NARCHFILES  := $(call %(mmake)%(flavour)_FILTERARCH,$(%(mmake)%(flavour)_ARCHFILES),$(%(mmake)%(flavour)_OBJCFILES))
+%(mmake)%(flavour)_NLIBARCHFILES    := $(call %(mmake)%(flavour)_FILTERARCH,$(%(mmake)%(flavour)_LIBARCHFILES),$(%(mmake)%(flavour)_LIBFILES))
+# All arch-specific linklib objects are linked (from linklib/arch/). This
+# covers both arch-only files and arch overrides of a generic file; the
+# generic counterpart of an overridden file is dropped by NLIBARCHFILES above.
+%(mmake)%(flavour)_ARCHNLIBFILES    := $(%(mmake)%(flavour)_LIBARCHFILES)
+
+%(mmake)%(flavour)_CPPFLAGS         := $(strip %(cppflags) -I$(%(mmake)%(flavour)_OBJDIR)/include -include $(%(mmake)%(flavour)_DEFLIBDEFSINC))
+ifneq (%(includedir),)
+%(mmake)%(flavour)_CPPFLAGS         += -I%(includedir)
+endif
+%(mmake)%(flavour)_LINKLIBCPPFLAGS  := $(%(mmake)%(flavour)_CPPFLAGS)
+%(mmake)%(flavour)_CPPFLAGS         += $(strip $($(%(mmake)%(flavour)_DEFNAME)_CPPFLAGS))
+%(mmake)%(flavour)_LINKLIBCPPFLAGS  += $(strip $($(%(mmake)%(flavour)_DEFNAME)_LINKLIBCPPFLAGS))
+%(mmake)%(flavour)_CFLAGS           := $(strip %(cflags) $($(%(mmake)%(flavour)_DEFNAME)_CFLAGS))
+%(mmake)%(flavour)_LINKLIBCFLAGS    := $(strip %(cflags) $($(%(mmake)%(flavour)_DEFNAME)_LINKLIBCFLAGS))
+%(mmake)%(flavour)_CXXFLAGS         := $(strip %(cxxflags) $($(%(mmake)%(flavour)_DEFNAME)_CXXFLAGS))
+ifeq (%(compiler),target)
+ifeq (%(lto),yes)
+%(mmake)%(flavour)_LTOFLAGS         ?= $(strip $(LTO_BINARY_CFLAGS) $(CFLAGS_NO_STRICT_ALIASING) $(NOWARN_LTO_TYPE_MISMATCH))
+%(mmake)%(flavour)_CFLAGS           := $(strip $(%(mmake)%(flavour)_LTOFLAGS) $(%(mmake)%(flavour)_CFLAGS))
+%(mmake)%(flavour)_LINKLIBCFLAGS    := $(strip $(%(mmake)%(flavour)_LTOFLAGS) $(%(mmake)%(flavour)_LINKLIBCFLAGS))
+%(mmake)%(flavour)_CXXFLAGS         := $(strip $(%(mmake)%(flavour)_LTOFLAGS) $(%(mmake)%(flavour)_CXXFLAGS))
+endif
+ifeq (%(funcinstr),yes)
+%(mmake)%(flavour)_SUBSTNULL        :=
+%(mmake)%(flavour)_SUBSTSPACE       := $(%(mmake)%(flavour)_SUBSTNULL) #
+%(mmake)%(flavour)_SUBSTCOMMA       := ,
+%(mmake)%(flavour)_INSTRFUNCFLAGS   ?= $(strip $(FUNCINSTR_FLAGS) -finstrument-functions-exclude-file-list=$(subst $(%(mmake)%(flavour)_SUBSTSPACE),$(%(mmake)%(flavour)_SUBSTCOMMA),$(strip $($(%(mmake)%(flavour)_DEFNAME)_STARTFILES))))
+%(mmake)%(flavour)_INSTRFUNCLIBS    ?= $(FUNCINSTR_LIBS)
+%(mmake)%(flavour)_CFLAGS           := $(strip $(%(mmake)%(flavour)_INSTRFUNCFLAGS) $(%(mmake)%(flavour)_CFLAGS))
+%(mmake)%(flavour)_CXXFLAGS         := $(strip $(%(mmake)%(flavour)_INSTRFUNCFLAGS) $(%(mmake)%(flavour)_CXXFLAGS))
+%(mmake)%(flavour)_LIBS             += $(%(mmake)%(flavour)_INSTRFUNCLIBS)
+endif
+endif
+%(mmake)%(flavour)_AFLAGS           := %(aflags)
+%(mmake)%(flavour)_DFLAGS           := $(strip $(%(mmake)%(flavour)_DFLAGS) $($(%(mmake)%(flavour)_DEFNAME)_DFLAGS))
+%(mmake)%(flavour)_LINKLIBDFLAGS    := $(strip $(%(mmake)%(flavour)_DFLAGS) $($(%(mmake)%(flavour)_DEFNAME)_LINKLIBDFLAGS))
+%(mmake)%(flavour)_DXXFLAGS         := $(strip $(%(mmake)%(flavour)_DXXFLAGS) $($(%(mmake)%(flavour)_DEFNAME)_DXXFLAGS))
+
+ifeq (%(modtype),library)
+    %(mmake)%(flavour)_LIBSUFFIX    := 
+else
+    %(mmake)%(flavour)_LIBSUFFIX    := .%(modtype)
+endif
+
+ifeq (%(libdir),)
+ifneq (%(modsuffix),)
+%(mmake)%(flavour)_LIBDIR           := $(GENDIR)/$(CURDIR)
+else
+ifeq (%(modtype),library)
+%(mmake)%(flavour)_LIBDIR           := %(prefix)/$(AROS_DIR_DEVELOPER)/$(AROS_DIR_LIB)
+else
+%(mmake)%(flavour)_LIBDIR           := $(GENDIR)/$(CURDIR)
+endif
+endif
+else
+%(mmake)%(flavour)_LIBDIR           := %(libdir)
+endif
+
+ifeq (%(build_abi),M)
+%(mmake)%(flavour)_LINKLIBCFILES    := $(addprefix $(%(mmake)%(flavour)_OBJDIR)/linklib/,$($(%(mmake)%(flavour)_DEFNAME)_LINKLIBFILES))
+%(mmake)%(flavour)_LINKLIBAFILES    := $(addprefix $(%(mmake)%(flavour)_OBJDIR)/linklib/,$($(%(mmake)%(flavour)_DEFNAME)_LINKLIBAFILES))
+ifeq ($(strip $($(%(mmake)%(flavour)_DEFNAME)_LINKLIBFILES) $($(%(mmake)%(flavour)_DEFNAME)_LINKLIBAFILES) %(linklibfiles) $(%(mmake)%(flavour)_ARCHNLIBFILES)),)
+    %(mmake)%(flavour)_LINKLIB      :=
+else
+    %(mmake)%(flavour)_LINKLIB      := $(%(mmake)%(flavour)_LIBDIR)/lib%(modname)$(%(mmake)%(flavour)_LIBSUFFIX).a
+    ifneq (%(modname),$(%(mmake)%(flavour)_LINKLIBNAME))
+        %(mmake)%(flavour)_LINKLIB  += $(%(mmake)%(flavour)_LIBDIR)/lib$(%(mmake)%(flavour)_LINKLIBNAME)$(%(mmake)%(flavour)_LIBSUFFIX).a
+    endif
+endif
+%(mmake)%(flavour)_LINKLIBFILES     := $(%(mmake)%(flavour)_LINKLIBCFILES) $(%(mmake)%(flavour)_LINKLIBAFILES)
+
+%(mmake)%(flavour)_RELLINKLIBCFILES := $(addprefix $(%(mmake)%(flavour)_OBJDIR)/linklib/,$($(%(mmake)%(flavour)_DEFNAME)_RELLINKLIBFILES))
+%(mmake)%(flavour)_RELLINKLIBAFILES := $(addprefix $(%(mmake)%(flavour)_OBJDIR)/linklib/,$($(%(mmake)%(flavour)_DEFNAME)_RELLINKLIBAFILES))
+ifeq ($(strip $($(%(mmake)%(flavour)_DEFNAME)_RELLINKLIBFILES) $($(%(mmake)%(flavour)_DEFNAME)_RELLINKLIBAFILES) %(linklibfiles) $(%(mmake)%(flavour)_ARCHNLIBFILES)),)
+    %(mmake)%(flavour)_RELLINKLIB   :=
+else
+    %(mmake)%(flavour)_RELLINKLIB   := $(%(mmake)%(flavour)_LIBDIR)/lib$(%(mmake)%(flavour)_DEFNAME)_rel$(%(mmake)%(flavour)_LIBSUFFIX).a
+    ifneq (%(modname),$(%(mmake)%(flavour)_LINKLIBNAME))
+        %(mmake)%(flavour)_RELLINKLIB += $(%(mmake)%(flavour)_LIBDIR)/lib$(%(mmake)%(flavour)_LINKLIBNAME)_rel$(%(mmake)%(flavour)_LIBSUFFIX).a
+    endif
+endif
+%(mmake)%(flavour)_RELLINKLIBFILES  := $(%(mmake)%(flavour)_RELLINKLIBCFILES) $(%(mmake)%(flavour)_RELLINKLIBAFILES)
+endif
+
+%(mmake)%(flavour)_ENDOBJS          := $(addsuffix .o,$(%(mmake)%(flavour)_ENDFILES))
+%(mmake)%(flavour)_LINKLIBOBJS      := $(addsuffix .o,$(addprefix $(%(mmake)%(flavour)_OBJDIR)/linklib/,$(notdir $(%(mmake)%(flavour)_NLIBARCHFILES))) $(addprefix $(%(mmake)%(flavour)_OBJDIR)/linklib/arch/,$(notdir $(%(mmake)%(flavour)_ARCHNLIBFILES))) $(%(mmake)%(flavour)_LINKLIBFILES)) \
+                 %(linklibobjs)
+%(mmake)%(flavour)_RELLINKLIBOBJS   := $(addsuffix .o,$(addprefix $(%(mmake)%(flavour)_OBJDIR)/linklib/,$(notdir $(%(mmake)%(flavour)_NLIBARCHFILES))) $(addprefix $(%(mmake)%(flavour)_OBJDIR)/linklib/arch/,$(notdir $(%(mmake)%(flavour)_ARCHNLIBFILES))) $(%(mmake)%(flavour)_RELLINKLIBFILES)) \
+                 %(linklibobjs)
+$(%(mmake)%(flavour)_LINKLIBFILES) $(%(mmake)%(flavour)_RELLINKLIBFILES) : | $(%(mmake)%(flavour)_OBJDIR)/linklib
+$(%(mmake)%(flavour)_LINKLIBOBJS) $(%(mmake)%(flavour)_RELLINKLIBOBJS) : | $(%(mmake)%(flavour)_OBJDIR)/linklib
+
+%(mmake)%(flavour)_CCFILES := $(%(mmake)%(flavour)_C_NARCHFILES)
+%(mmake)%(flavour)_TARGETCCFILES    := $(strip $(%(mmake)%(flavour)_STARTFILES) $(%(mmake)%(flavour)_ENDFILES))
+%(mmake)%(flavour)_LINKLIBCCFILES   := $(strip $(%(mmake)%(flavour)_NLIBARCHFILES) $(%(mmake)%(flavour)_LINKLIBCFILES) $(%(mmake)%(flavour)_RELLINKLIBCFILES))
+%(mmake)%(flavour)_LINKLIBCCGENFILES := $(strip $(%(mmake)%(flavour)_LINKLIBCFILES) $(%(mmake)%(flavour)_RELLINKLIBCFILES))
+
+%add_compilerlinkflags mmake="%(mmake)%(flavour)" cflags=$(%(mmake)_CFLAGS)
+
+%rule_compile_cxx_multi mmake=%(mmake)%(flavour) \
+    basenames="$(%(mmake)%(flavour)_CXX_NARCHFILES)" targetdir="$(%(mmake)%(flavour)_OBJDIR)" \
+    cppflags="$(%(mmake)%(flavour)_CPPFLAGS)" cxxflags="$(%(mmake)%(flavour)_CXXFLAGS)" dxxflags="$(%(mmake)%(flavour)_DXXFLAGS)" \
+    compiler="%(compiler)" incextra="$(%(mmake)_INCEXTRA)" usetree=%(usetree)
+%rule_compile_objc_multi mmake=%(mmake)%(flavour) \
+    basenames="$(%(mmake)%(flavour)_OBJC_NARCHFILES)" targetdir="$(%(mmake)%(flavour)_OBJDIR)" \
+    cppflags="$(%(mmake)%(flavour)_CPPFLAGS)" cflags="$(%(mmake)%(flavour)_CFLAGS)" dflags="$(%(mmake)%(flavour)_DFLAGS)" \
+    compiler="%(compiler)" incextra="$(%(mmake)_INCEXTRA)"
+%rule_compile_multi mmake=%(mmake)%(flavour) \
+    basenames="$(%(mmake)%(flavour)_CCFILES)" targetdir="$(%(mmake)%(flavour)_OBJDIR)" \
+    cppflags="$(%(mmake)%(flavour)_CPPFLAGS)" cflags="$(%(mmake)%(flavour)_CFLAGS)" dflags="$(%(mmake)%(flavour)_DFLAGS)" \
+    compiler="%(compiler)" incextra="$(%(mmake)_INCEXTRA)" usetree=%(usetree)
+%rule_compile_multi mmake=%(mmake)%(flavour) \
+    basenames="$(%(mmake)%(flavour)_TARGETCCFILES)" targetdir="$(%(mmake)%(flavour)_OBJDIR)" \
+    cppflags="$(%(mmake)%(flavour)_CPPFLAGS) -D__AROS__" cflags="$(%(mmake)%(flavour)_CFLAGS)" dflags="$(%(mmake)%(flavour)_DFLAGS)" \
+    compiler="%(compiler)" incextra="$(%(mmake)_INCEXTRA)" usetree=%(usetree)
+%rule_compile_multi mmake=%(mmake)%(flavour) \
+    basenames="$(%(mmake)%(flavour)_NLIBARCHFILES)" targetdir="$(%(mmake)%(flavour)_OBJDIR)/linklib" \
+    cppflags="$(%(mmake)%(flavour)_LINKLIBCPPFLAGS) -D__AROS__" cflags="$(%(mmake)%(flavour)_LINKLIBCFLAGS)" dflags="$(%(mmake)%(flavour)_LINKLIBDFLAGS)" \
+    compiler="%(compiler)" incextra="$(%(mmake)_INCEXTRA)" usetree=%(usetree)
+%rule_compile_multi mmake=%(mmake)%(flavour) \
+    basenames="$(%(mmake)%(flavour)_LINKLIBCCGENFILES)" srcdir="$(%(mmake)%(flavour)_OBJDIR)/linklib" targetdir="$(%(mmake)%(flavour)_OBJDIR)/linklib" \
+    cppflags="$(%(mmake)%(flavour)_LINKLIBCPPFLAGS) -D__AROS__" cflags="$(%(mmake)%(flavour)_LINKLIBCFLAGS)" dflags="$(%(mmake)%(flavour)_LINKLIBDFLAGS)" \
+    compiler="%(compiler)" incextra="$(%(mmake)_INCEXTRA)" usetree=%(usetree)
+%rule_assemble_multi mmake=%(mmake)%(flavour) \
+    cmd="$(%(mmake)%(flavour)_ASSEMBLER)" basenames="$(%(mmake)%(flavour)_ASMFILES)" targetdir="$(%(mmake)%(flavour)_OBJDIR)" \
+    cppflags="$(%(mmake)%(flavour)_CPPFLAGS)" aflags="$(%(mmake)%(flavour)_AFLAGS)"
+
+ifneq ($(%(mmake)%(flavour)_LINKLIBAFILES),)
+%rule_assemble_multi  mmake=%(mmake)%(flavour) \
+    cmd="$(%(mmake)%(flavour)_ASSEMBLER)" basenames="$(%(mmake)%(flavour)_LINKLIBAFILES) $(%(mmake)%(flavour)_RELLINKLIBAFILES)" targetdir="$(%(mmake)%(flavour)_OBJDIR)/linklib" suffix=".S"
+endif
+
+## Linking
+##
+ifeq (%(modsuffix),)
+%(mmake)%(flavour)_SUFFIX           := %(modtype)
+else
+%(mmake)%(flavour)_SUFFIX           := %(modsuffix)
+endif
+
+ifeq (%(build_library),M)
+# Handlers use dash instead of dot in their names
+ifeq ($(%(mmake)%(flavour)_SUFFIX),handler)
+%(mmake)%(flavour)_MODULE           := %(prefix)/$(%(mmake)%(flavour)_MODDIR)/$(%(mmake)%(flavour)_DEFNAME)-$(%(mmake)%(flavour)_SUFFIX)
+else
+%(mmake)%(flavour)_MODULE           := %(prefix)/$(%(mmake)%(flavour)_MODDIR)/$(%(mmake)%(flavour)_DEFNAME).$(%(mmake)%(flavour)_SUFFIX)
+endif
+%(mmake)%(flavour)_KOBJ             := $(KOBJSDIR)/$(%(mmake)%(flavour)_DEFNAME)_$(%(mmake)%(flavour)_SUFFIX).o
+else
+%(mmake)%(flavour)_MODULE           :=
+%(mmake)%(flavour)_KOBJ             :=
+endif
+
+%(mmake)-quick      : %(mmake)
+%(mmake)            : $(%(mmake)%(flavour)_MODULE) $(%(mmake)%(flavour)_LINKLIB) $(%(mmake)%(flavour)_RELLINKLIB)
+ifeq (%(build_library),M)
+%(mmake)-kobj       : $(%(mmake)%(flavour)_KOBJ) $(%(mmake)%(flavour)_LINKLIB) $(%(mmake)%(flavour)_RELLINKLIB)
+%(mmake)-kobj-quick : $(%(mmake)%(flavour)_KOBJ) $(%(mmake)%(flavour)_LINKLIB) $(%(mmake)%(flavour)_RELLINKLIB)
+endif
+ifeq (%(build_abi),M)
+%(mmake)-linklib    : $(%(mmake)%(flavour)_LINKLIB) $(%(mmake)%(flavour)_RELLINKLIB)
+endif
+
+%(mmake)%(flavour)_OBJS := $(addsuffix .o,$(%(mmake)%(flavour)_STARTFILES)) $(%(mmake)%(flavour)_ARCHOBJS) \
+           $(addprefix $(%(mmake)%(flavour)_OBJDIR)/,$(notdir $(%(mmake)%(flavour)_ASMFILES:=.o) $(%(mmake)%(flavour)_C_NARCHFILES:=.o) $(%(mmake)%(flavour)_CXXFILES:=.o)))
+
+ifeq (%(nostartup),yes)
+# Handlers always have entry point
+ifneq (%(modtype),handler)
+%(mmake)%(flavour)_STARTOBJS        := $(addsuffix .o,$(addprefix $(GENDIR)/,$(RESIDENT_BEGIN)))
+endif
+endif
+
+# Under Windows con* is a reserved name, it refers to console. Files with such names can't be created.
+# This breaks con-handler build. Here we work around this
+ifeq (%(modname),con)
+    %(mmake)%(flavour)_ERR          := $(notdir $(%(mmake)%(flavour)_MODULE)).err
+else
+    %(mmake)%(flavour)_ERR          := %(modname).err
+endif
+
+$(%(mmake)%(flavour)_DEFNAME)_LDFLAGS = $(%(mmake)_LDFLAGS)
+
+$(%(mmake)%(flavour)_DEFNAME)_STRIPDEBUG ?= %(stripdebug)
+
+ifeq (%(build_library),M)
+
+ifeq (%(compiler),target)
+%(mmake)_ARCHLIBS += $(TARGET_C_LIBS)
+endif
+ifeq (%(compiler),kernel)
+%(mmake)_ARCHLIBS += $(KERNEL_C_LIBS)
+endif
+# The module is linked from all the compiled .o files
+%rule_linkmodule module="$(%(mmake)%(flavour)_MODULE)" objs="$(%(mmake)%(flavour)_STARTOBJS) $(%(mmake)%(flavour)_OBJS) $(USER_OBJS)" \
+		 endobj="$(%(mmake)%(flavour)_ENDOBJS)" err="$(%(mmake)%(flavour)_ERR)" objdir="$(%(mmake)%(flavour)_OBJDIR)" \
+		 cmd="$(%(mmake)%(flavour)_LINK)" ldopts="$(%(mmake)_LD_OPTS)" ldflags="$($(%(mmake)%(flavour)_DEFNAME)_LDFLAGS)" \
+		 uselibs="$(%(mmake)%(flavour)_LIBS) $($(%(mmake)%(flavour)_DEFNAME)_LIBS)" usehostlibs="%(usehostlibs)" archlibs="$(%(mmake)_ARCHLIBS)" stripdebug="$($(%(mmake)%(flavour)_DEFNAME)_STRIPDEBUG)"
+endif
+
+ifeq (%(build_abi),M)
+# Link static lib
+%(mmake)%(flavour)_LC_LINKLIBNAME   := $(shell $(ECHO) $(%(mmake)%(flavour)_LINKLIBNAME) | tr A-Z a-z)
+%(mmake)%(flavour)_LC_MODNAME       := $(shell $(ECHO) %(modname) | tr A-Z a-z)
+ifneq ($(%(mmake)%(flavour)_LINKLIB),)
+%rule_link_linklib mmake=%(mmake) libname="$(%(mmake)%(flavour)_LINKLIBNAME)$(%(mmake)%(flavour)_LIBSUFFIX)" objs="$(%(mmake)%(flavour)_LINKLIBOBJS)" libdir="$(%(mmake)%(flavour)_LIBDIR)"
+ifneq ($(%(mmake)%(flavour)_LC_MODNAME),$(%(mmake)%(flavour)_LC_LINKLIBNAME))
+%rule_link_linklib mmake=%(mmake) libname="%(modname)$(%(mmake)%(flavour)_LIBSUFFIX)" objs="$(%(mmake)%(flavour)_LINKLIBOBJS)" libdir="$(%(mmake)%(flavour)_LIBDIR)"
+endif
+
+%rule_makedirs dirs="$(%(mmake)%(flavour)_LIBDIR)" setuptarget="$(%(mmake)%(flavour)_LINKLIB)"
+endif
+
+ifneq ($(%(mmake)%(flavour)_RELLINKLIB),)
+%rule_link_linklib mmake=%(mmake) libname="$(%(mmake)%(flavour)_LINKLIBNAME)_rel$(%(mmake)%(flavour)_LIBSUFFIX)" objs="$(%(mmake)%(flavour)_RELLINKLIBOBJS)" libdir="$(%(mmake)%(flavour)_LIBDIR)"
+ifneq ($(%(mmake)%(flavour)_LC_MODNAME),$(%(mmake)%(flavour)_LC_LINKLIBNAME))
+%rule_link_linklib mmake=%(mmake) libname="$(%(mmake)%(flavour)_DEFNAME)_rel$(%(mmake)%(flavour)_LIBSUFFIX)" objs="$(%(mmake)%(flavour)_RELLINKLIBOBJS)" libdir="$(%(mmake)%(flavour)_LIBDIR)"
+endif
+
+%rule_makedirs dirs="$(%(mmake)%(flavour)_LIBDIR)" setuptarget="$(%(mmake)%(flavour)_RELLINKLIB)"
+endif
+endif
+
+ifeq (%(build_library),M)
+# Link kernel object file
+%(mmake)%(flavour)_KAUTOLIB         := dos intuition layers graphics oop utility expansion keymap
+
+# Make these symbols local
+%(mmake)%(flavour)_KBASE            := DOSBase IntuitionBase LayersBase GfxBase OOPBase \
+	    UtilityBase ExpansionBase KeymapBase KernelBase
+
+%(mmake)%(flavour)_SYMBOLS := $(%(mmake)%(flavour)_KBASE)
+
+%(mmake)%(flavour)_KLIB             := hiddstubs amiga arossupport autoinit libinit
+%(mmake)%(flavour)_KOBJ_LIBS        := $(filter-out $(%(mmake)%(flavour)_KLIB),$(%(mmake)%(flavour)_LIBS)) $(%(mmake)%(flavour)_KAUTOLIB)
+$(%(mmake)%(flavour)_KOBJ) : LINKLIBS:=$(%(mmake)%(flavour)_KOBJ_LIBS) $($(%(mmake)%(flavour)_DEFNAME)_LIBS)
+$(%(mmake)%(flavour)_KOBJ) : FILTBASES:=$(addprefix -L ,$(%(mmake)%(flavour)_SYMBOLS))
+$(%(mmake)%(flavour)_KOBJ) : USER_LDFLAGS:=$(USER_LDFLAGS)
+$(%(mmake)%(flavour)_KOBJ) : $(%(mmake)%(flavour)_OBJS) $(USER_OBJS) $(%(mmake)%(flavour)_ENDOBJS)
+	$(Q)$(ECHO) "Linking    $(subst $(TARGETDIR)/,,$@)"
+	$(file >$@.rsp,$^)
+	$(Q)$(AROS_LD) -Ur $(KOBJ_LDFLAGS) $(KERNEL_KOBJ_LDSCRIPT) -o $@ @$@.rsp $(USER_LDFLAGS) -L$(AROS_LIB) $(addprefix -l,$(LINKLIBS)) && $(RM) $@.rsp
+	$(Q)$(OBJCOPY) $@ $(FILTBASES) `$(NM_PLAIN) $@ | $(AWK) '($$3 ~ /^__.*_(LIST|END)__\r?$$/) || ($$3 ~ /^__aros_lib.*\r?$$/) {print "-L " $$3;}'`
+endif
+
+## Dependency fine-tuning
+##
+%(mmake)%(flavour)_DEPS             := $(addprefix $(%(mmake)%(flavour)_OBJDIR)/,$(notdir $(%(mmake)%(flavour)_CCFILES:=.d) $(%(mmake)%(flavour)_TARGETCCFILES:=.d) $(%(mmake)%(flavour)_CXXFILES:=.d))) $(addprefix $(%(mmake)%(flavour)_OBJDIR)/linklib/,$(notdir $(%(mmake)%(flavour)_LINKLIBCCFILES:=.d)))
+
+%include_deps depstargets="%(mmake) %(mmake)-quick %(mmake)-kobj %(mmake)-kobj-quick" deps="$(%(mmake)%(flavour)_DEPS)"
+
+$(%(mmake)%(flavour)_OBJS) $(%(mmake)%(flavour)_DEPS) : | $(%(mmake)%(flavour)_OBJDIR)/linklib
+%rule_makedirs dirs="$(%(mmake)%(flavour)_OBJDIR) %(prefix)/$(%(mmake)%(flavour)_MODDIR) $(KOBJSDIR)" setuptarget="$(%(mmake)%(flavour)_OBJS) $(%(mmake)%(flavour)_DEPS) $(%(mmake)%(flavour)_MODULE) $(%(mmake)%(flavour)_KOBJ)"
+
+# Some include files need to be generated before the .c can be parsed.
+ifneq ($(filter $(TARGET),%(mmake) %(mmake)-includes %(mmake)-quick %(mmake)-kobj %(mmake)-kobj-quick),) # Only for this target these deps are wanted
+
+%(mmake)%(flavour)_DFILE_DEPS := $(%(mmake)%(flavour)_LIBDEFSINC) $(%(mmake)%(flavour)_DEFLIBDEFSINC) \
+    $(addprefix $(%(mmake)%(flavour)_INCDIR)/,$($(%(mmake)%(flavour)_DEFNAME)_INCLUDES))
+$(%(mmake)%(flavour)_DEPS) : $(%(mmake)%(flavour)_DFILE_DEPS)
+endif
+
+%(mmake)%(flavour)_TOCLEAN := $(%(mmake)%(flavour)_OBJS) $(%(mmake)%(flavour)_DEPS) \
+    $(%(mmake)%(flavour)_MODULE) $(%(mmake)%(flavour)_LINKLIB) $(%(mmake)%(flavour)_KOBJ) \
+    $(%(mmake)%(flavour)_OBJDIR)/Makefile.%(modname)%(modtype) \
+    $(addprefix $(%(mmake)%(flavour)_OBJDIR)/include/,$($(%(mmake)%(flavour)_DEFNAME)_INCLUDES)) \
+    $(addprefix $(GENINCDIR)/,$($(%(mmake)%(flavour)_DEFNAME)_INCLUDES)) \
+    $(addprefix $(%(mmake)%(flavour)_INCDIR)/,$($(%(mmake)%(flavour)_DEFNAME)_INCLUDES)) \
+    $(%(mmake)_OBJDIR)/%(modname)_geninc $(%(mmake)_OBJDIR)/%(modname)_incs \
+    $(addsuffix .c,$(%(mmake)%(flavour)_LINKLIBFILES)) $(%(mmake)%(flavour)_LINKLIBOBJS) $(%(mmake)%(flavour)_LIBDEFSINC) \
+    $(%(mmake)%(flavour)_DEFLIBDEFSINC) $(addsuffix .c,$(%(mmake)%(flavour)_STARTFILES) $(%(mmake)%(flavour)_ENDFILES)) \
+    $(%(mmake)%(flavour)_ENDOBJS)
+%(mmake)-clean : FILES              := $(%(mmake)%(flavour)_TOCLEAN)
+%(mmake)-clean ::
+	$(Q)$(ECHO) "Cleaning up for module %(modname)"
+	$(Q)$(RM) $(FILES)
+
+endif # $(TARGET) in $(%(mmake)%(flavour)_ALLTARGETS)
+%end
+#------------------------------------------------------------------------------
+
+#------------------------------------------------------------------------------
+# Build a module - ABI and library
+# Explanation of this macro is done in the developer's manual
+%define build_module mmake=/A modname=/A modtype=/A modsuffix= version= flavour= conffile= confoverride= \
+  files="$(basename $(call WILDCARD, *.c))" \
+  objcfiles= asmfiles= usetree=no \
+  cxxfiles="$(basename $(call WILDCARD $(foreach CXX_EXT, $(AROS_CXXEXTS), *.$(CXX_EXT))))" \
+  alwayscxxlink=no \
+  linklibfiles= linklibobjs= aflags="$(AFLAGS)" cflags="$(CFLAGS)" cppflags="$(CPPFLAGS)" dflags= cxxflags="$(CXXFLAGS)" dxxflags= \
+  objdir= moduledir= prefix="$(AROSDIR)" \
+  linklibname= uselibs= usehostlibs= \
+  compiler=target funcinstr="$(TARGET_FUNCINSTR)" lto="$(TARGET_LTO)" nostartup=yes archspecific=no \
+  include_set=includes-all includedir= libdir= stripdebug="$(DEBUG)" incextra=
+
+%build_module_core mmake="%(mmake)" modname="%(modname)" modtype="%(modtype)" \
+   modsuffix="%(modsuffix)" version="%(version)" flavour="%(flavour)" conffile="%(conffile)" confoverride="%(confoverride)" \
+   files="%(files)" asmfiles="%(asmfiles)" objcfiles="%(objcfiles)" cxxfiles="%(cxxfiles)" alwayscxxlink=%(alwayscxxlink) \
+   linklibname="%(linklibname)" linklibfiles="%(linklibfiles)" linklibobjs="%(linklibobjs)" \
+   cflags="%(cflags)" cppflags="%(cppflags)" aflags="%(aflags)" dflags="%(dflags)" cxxflags="%(cxxflags)" dxxflags="%(dxxflags)" \
+   objdir="%(objdir)" moduledir="%(moduledir)" prefix="%(prefix)" \
+   uselibs="%(uselibs)" usehostlibs="%(usehostlibs)" compiler="%(compiler)" funcinstr=%(funcinstr) lto=%(lto) \
+   nostartup="%(nostartup)" archspecific="%(archspecific)" usetree=%(usetree) \
+   include_set=%(include_set) includedir="%(includedir)" libdir="%(libdir)" \
+   build_abi=M build_library=M stripdebug="%(stripdebug)" incextra="%(incextra)"
+
+%end
+#------------------------------------------------------------------------------
+
+
+#------------------------------------------------------------------------------
+# Build a module skeleton ABI
+# This is a stripped-down version of build_module, it only creates include
+# files and the linklibs.
+# This is used when for plugins or classes with the same API, but no actual
+# implementation here.
+%define build_module_abi mmake=/A modname=/A modtype=/A modsuffix= version= flavour= conffile= confoverride= \
+  linklibfiles= linklibobjs= cflags="$(CFLAGS)" cppflags="$(CPPFLAGS)" dflags= cxxflags="$(CXXFLAGS)" dxxflags= \
+  objdir= moduledir= prefix="$(AROSDIR)" \
+  linklibname= uselibs= usehostlibs= \
+  compiler=target nostartup=yes archspecific=no \
+  include_set=includes-all includedir= libdir= stripdebug="$(DEBUG)" incextra=
+
+%build_module_core mmake="%(mmake)" modname="%(modname)" modtype="%(modtype)" \
+  modsuffix="%(modsuffix)" version="%(version)" flavour="%(flavour)" conffile="%(conffile)" confoverride="%(confoverride)" \
+  linklibname="%(linklibname)" \
+  linklibfiles="%(linklibfiles)" linklibobjs="%(linklibobjs)" \
+  cflags="%(cflags)" cppflags="%(cppflags)" dflags="%(dflags)" cxxflags="%(cxxflags)" dxxflags="%(dxxflags)" \
+  objdir="%(objdir)" moduledir="%(moduledir)" prefix="%(prefix)" \
+  uselibs="%(uselibs)" usehostlibs="%(usehostlibs)" compiler="%(compiler)" lto=%(lto) \
+  nostartup="%(nostartup)" archspecific="%(archspecific)" \
+  include_set=%(include_set) includedir="%(includedir)" libdir="%(libdir)" \
+  build_abi=M build_library= stripdebug="%(stripdebug)" incextra="%(incextra)"
+
+%end
+#------------------------------------------------------------------------------
+
+#------------------------------------------------------------------------------
+# Build a module library - no includes nor linklibs
+# Explanation of this macro is done in the developer's manual
+%define build_module_library mmake=/A modname=/A modtype=/A modsuffix= version= flavour= \
+  conffile= confoverride= \
+  files="$(basename $(call WILDCARD, *.c))" \
+  objcfiles= \
+  cxxfiles="$(basename $(call WILDCARD $(foreach CXX_EXT, $(AROS_CXXEXTS), *.$(CXX_EXT))))"  \
+  alwayscxxlink=no \
+  cflags="$(CFLAGS)" cppflags="$(CPPFLAGS)" dflags= cxxflags="$(CXXFLAGS)" dxxflags= \
+  objdir= moduledir= prefix="$(AROSDIR)" \
+  uselibs= usehostlibs= \
+  compiler=target lto="$(TARGET_LTO)" nostartup=yes archspecific=no \
+  include_set=includes-all includedir= libdir= stripdebug="$(DEBUG)" incextra=
+
+%build_module_core mmake="%(mmake)" modname="%(modname)" modtype="%(modtype)" \
+   modsuffix="%(modsuffix)" version="%(version)" flavour="%(flavour)" \
+   conffile="%(conffile)" confoverride="%(confoverride)" \
+   files="%(files)" objcfiles="%(objcfiles)" cxxfiles="%(cxxfiles)" alwayscxxlink=%(alwayscxxlink) \
+   cflags="%(cflags)" cppflags="%(cppflags)" dflags="%(dflags)" cxxflags="%(cxxflags)" dxxflags="%(dxxflags)" \
+   objdir="%(objdir)" moduledir="%(moduledir)" prefix="%(prefix)" \
+   uselibs="%(uselibs)" usehostlibs="%(usehostlibs)" compiler="%(compiler)" lto=%(lto) \
+   nostartup="%(nostartup)" archspecific="%(archspecific)" \
+   include_set=%(include_set) includedir="%(includedir)" libdir="%(libdir)" \
+   build_abi= build_library=M stripdebug="%(stripdebug)" incextra="%(incextra)"
+
+%end
+#------------------------------------------------------------------------------
+
+
+
+#------------------------------------------------------------------------------
+# Build a linklib.
+# - mmake is the mmaketarget
+# - libname is the baselibname e.g. lib%(libname).a will be created
+# - files are the C source files to include in the lib. The list of files
+#   has to be given without the .c suffix
+# - cxxfiles are C++ source files without suffix.
+#   NB: files will be matched in the order .cpp > .cxx > .cc
+# - asmfiles are the asm files to include in the lib. The list of files has to
+#   be given without the .s suffix
+# - objs additional object to link into the linklib. The objects have to be
+#   given with full absolute path and the .o suffix.
+# - objdir is where the .o are generated. Defaults to $(GENDIR)/$(CURDIR)
+# - libdir is the directory where the linklib will be placed (default $(AROS_LIB))
+# - cflags are the flags to compile the source. if none are specified the defaults
+#   for the chosen (host/kernel/target) compiler are used.
+# - dflags are the flags used during makedepend (default equal to cflags)
+# - aflags are the flags used during assembling (default $(AFLAGS))
+%define build_linklib mmake=/A libname=/A files= objcfiles= cxxfiles= \
+  asmfiles= objs= objdir="$(GENDIR)/$(CURDIR)" libdir="$(AROS_LIB)" \
+  includedir= srcdir= \
+  cppflags="$(CPPFLAGS)" cflags= dflags= cxxflags= dxxflags= \
+  aflags="$(AFLAGS)" compiler=target lto="$(TARGET_LTO)" usetree=no
+
+%gen_archspecificrules mainmmake=%(mmake)
+
+# assign and generate the local variables used in this macro
+%(mmake)_LIBNAME           := %(libname)
+%(mmake)_LINKLIB           := %(libdir)/lib%(libname).a
+
+%(mmake)_FILES             ?= %(files)
+%(mmake)_ASMFILES          := %(asmfiles)
+%(mmake)_OBJCFILES         := %(objcfiles)
+%(mmake)_CXXFILES          := %(cxxfiles)
+
+%(mmake)_OBJDIR            ?= %(objdir)
+%(mmake)_ARCHOBJS          := $(wildcard $(%(mmake)_OBJDIR)/arch/*.o)
+ifeq (%(usetree),no)
+    %(mmake)_ARCHFILES     := $(basename $(notdir $(%(mmake)_ARCHOBJS)))
+else
+    %(mmake)_ARCHFILES     := $(basename $(patsubst $(%(mmake)_OBJDIR)/%,%,$(%(mmake)_ARCHOBJS)))
+endif
+%(mmake)_C_NARCHFILES      := $(filter-out $(%(mmake)_ARCHFILES),$(%(mmake)_FILES))
+%(mmake)_C_FILES           ?= $(%(mmake)_C_NARCHFILES)
+%(mmake)_CXX_NARCHFILES    := $(filter-out $(%(mmake)_ARCHFILES),$(%(mmake)_CXXFILES))
+%(mmake)_CXX_FILES         ?= $(%(mmake)_CXX_NARCHFILES)
+%(mmake)_OBJC_NARCHFILES   := $(filter-out $(%(mmake)_ARCHFILES),$(%(mmake)_OBJCFILES))
+%(mmake)_OBJC_FILES        ?= $(%(mmake)_OBJC_NARCHFILES)
+
+ifeq (%(usetree),no)
+    %(mmake)_OBJ_FILES     ?= $(addprefix $(%(mmake)_OBJDIR)/,$(notdir $(%(mmake)_C_NARCHFILES:=.o) $(%(mmake)_CXX_NARCHFILES:=.o) $(%(mmake)_ASMFILES:=.o) $(%(mmake)_OBJC_NARCHFILES:=.o)))
+else
+    %(mmake)_OBJ_FILES     ?= $(addprefix $(%(mmake)_OBJDIR)/,$(%(mmake)_C_NARCHFILES:=.o) $(%(mmake)_CXX_NARCHFILES:=.o) $(%(mmake)_ASMFILES:=.o) $(%(mmake)_OBJC_NARCHFILES:=.o))
+endif
+%(mmake)_OBJS              ?= $(%(mmake)_ARCHOBJS) $(%(mmake)_OBJ_FILES) %(objs)
+%(mmake)_DEPS              := $(patsubst %.o,%.d,$(%(mmake)_OBJS))
+
+%(mmake)_CPPFLAGS          := %(cppflags)
+ifneq (%(includedir),)
+    %(mmake)_CPPFLAGS      += -I%(includedir)
+endif
+
+ifeq ("%(cflags)","")
+ifeq (%(compiler),target)
+%(mmake)_CFLAGS            := $(CFLAGS)
+endif
+ifeq (%(compiler),host)
+%(mmake)_CFLAGS            := $(HOST_CFLAGS)
+endif
+ifeq (%(compiler),kernel)
+%(mmake)_CFLAGS            := $(strip $(KERNEL_ISA_CFLAGS) $(KERNEL_CFLAGS))
+endif
+else
+%(mmake)_CFLAGS            := %(cflags)
+endif
+
+ifeq ("%(cxxflags)","")
+ifeq (%(compiler),target)
+%(mmake)_CXXFLAGS            := $(CXXFLAGS)
+endif
+ifeq (%(compiler),host)
+%(mmake)_CXXFLAGS            := $(HOST_CXXFLAGS)
+endif
+ifeq (%(compiler),kernel)
+%(mmake)_CXXFLAGS            := $(strip $(KERNEL_ISA_CXXFLAGS) $(KERNEL_CXXFLAGS))
+endif
+else
+%(mmake)_CXXFLAGS          := %(cxxflags)
+endif
+
+ifeq (%(lto),yes)
+ifeq (%(compiler),target)
+        %(mmake)_CFLAGS    := $(strip $(LTO_CFLAGS) $(%(mmake)_CFLAGS))
+        %(mmake)_CXXFLAGS  := $(strip $(LTO_CFLAGS) $(%(mmake)_CXXFLAGS))
+endif
+endif
+%(mmake)_AFLAGS            := %(aflags)
+%(mmake)_DFLAGS            := %(dflags)
+ifneq (%(dflags),)
+    %(mmake)_DFLAGS        := %(dflags)
+else
+    %(mmake)_DFLAGS        := $(%(mmake)_CFLAGS)
+endif
+%(mmake)_DXXFLAGS          := %(dxxflags)
+ifneq (%(dxxflags),)
+    %(mmake)_DXXFLAGS      := %(dxxflags)
+else
+    %(mmake)_DXXFLAGS      := $(%(mmake)_CXXFLAGS)
+endif
+
+.PHONY : %(mmake) %(mmake)-clean %(mmake)-quick
+
+#MM
+%(mmake)-quick : %(mmake)
+
+#MM %(mmake) : includes-generate-deps
+%(mmake) : $(%(mmake)_LINKLIB)
+
+ifneq ($(filter $(TARGET),%(mmake) %(mmake)-quick),)
+
+%rule_compile_cxx_multi mmake=%(mmake) \
+    basenames="$(%(mmake)_CXX_FILES)" targetdir="$(%(mmake)_OBJDIR)" \
+    cppflags="$(%(mmake)_CPPFLAGS)" cxxflags="$(%(mmake)_CXXFLAGS)" dxxflags="$(%(mmake)_DXXFLAGS)" \
+    compiler="%(compiler)" srcdir="%(srcdir)" usetree="%(usetree)"
+%rule_compile_objc_multi mmake=%(mmake) \
+    basenames="$(%(mmake)_OBJC_FILES)" targetdir="$(%(mmake)_OBJDIR)" \
+    cppflags="$(%(mmake)_CPPFLAGS)" cflags="$(%(mmake)_CFLAGS)" dflags="$(%(mmake)_DFLAGS)" \
+    compiler="%(compiler)" srcdir="%(srcdir)"
+%rule_compile_multi mmake=%(mmake) \
+    basenames="$(%(mmake)_C_FILES)" targetdir="$(%(mmake)_OBJDIR)" \
+    cppflags="$(%(mmake)_CPPFLAGS)" cflags="$(%(mmake)_CFLAGS)" dflags="$(%(mmake)_DFLAGS)" \
+    compiler="%(compiler)" srcdir="%(srcdir)" usetree="%(usetree)"
+%rule_assemble_multi mmake=%(mmake) \
+    cmd="$(%(mmake)_ASSEMBLER)" basenames="$(%(mmake)_ASMFILES)" targetdir="$(%(mmake)_OBJDIR)" \
+    cppflags="$(%(mmake)_CPPFLAGS)" aflags="$(%(mmake)_AFLAGS)"
+
+%rule_link_linklib mmake=%(mmake) libname="%(libname)" objs="$(%(mmake)_OBJS)" libdir="%(libdir)" linker="%(compiler)"
+endif
+
+%include_deps depstargets="%(mmake) %(mmake)-quick" deps="$(%(mmake)_DEPS)"
+
+
+%rule_makedirs dirs="$(%(mmake)_OBJDIR) %(libdir)" setuptarget="$(%(mmake)_OBJS) $(%(mmake)_DEPS) $(%(mmake)_LINKLIB)"
+
+%(mmake)-clean : FILES := $(%(mmake)_OBJS) $(%(mmake)_LINKLIB) $(%(mmake)_DEPS)
+#MM
+%(mmake)-clean ::
+	$(Q)$(ECHO) "Cleaning up for metatarget %(mmake)"
+	$(Q)$(RM) $(FILES)
+
+%end
+#------------------------------------------------------------------------------
+
+
+#------------------------------------------------------------------------------
+# Build catalogs.
+# - mmake is the mmaketarget
+# - catalogs is the list of catalogs, without the .ct suffix (default *.ct)
+# - description is the catalog description file (.cd), without the .cd suffix (default *.cd)
+# - subdir is the destination subdirectory of the catalogs
+# - name is the name of the destination catalog, without the .catalog suffix
+# - source is the path to the generated source code file
+# - dir is the base destination directory (default $(AROS_CATALOGS))
+# - sourcedescription is the path to the FlexCat's source description file, without the .sd suffix
+# - srcdir is the directory in which the *.cd and *.ct files are searched
+
+%define build_catalogs mmake=/A name=/A subdir=/A \
+ catalogs= source="../strings.h" description= dir="$(AROS_CATALOGS)" \
+ sourcedescription="$(TOOLDIR)/C_h_aros" srcdir="$(SRCDIR)/$(CURDIR)"
+
+ifeq (%(description),)
+%(mmake)_DESC := $(basename $(wildcard %(srcdir)/*.cd))
+else
+%(mmake)_DESC := %(description)
+endif
+
+%(mmake)_SRC := $(shell $(ECHO) %(sourcedescription) | sed 's/^\(.\):\//\/\1\//')
+
+ifeq (%(catalogs),)
+%(mmake)_LNGS := $(basename $(notdir $(call WILDCARD, %(srcdir)/*.ct)))
+else
+%(mmake)_LNGS := %(catalogs)
+endif
+
+%(mmake)_OBJS := $(addsuffix /%(subdir)/%(name).catalog, $(addprefix %(dir)/, $(%(mmake)_LNGS)))
+%(mmake)_DIRS := $(addsuffix /%(subdir), $(addprefix %(dir)/, $(%(mmake)_LNGS))) $(dir %(source))
+
+#MM- %(mmake)-quick : %(mmake)
+
+#MM
+%(mmake) : $(%(mmake)_OBJS) %(source)
+
+%rule_makedirs dirs="$(%(mmake)_DIRS)" setuptarget="$(%(mmake)_OBJS)"
+
+%(dir)/%/%(subdir)/%(name).catalog : %(srcdir)/%.ct $(%(mmake)_DESC).cd
+	$(Q)$(ECHO) "Creating   %(name) catalog for language $*."
+	$(Q)$(IF) $(TEST) "$*" = "russian"; then \
+	    $(FLEXCAT) win1251toamiga1251 $(%(mmake)_DESC).cd $< CATALOG="%(dir)/$*/%(subdir)/%(name).catalog" || [ $$? -lt 10 ] ; \
+	else \
+	    $(FLEXCAT) $(%(mmake)_DESC).cd $< CATALOG="%(dir)/$*/%(subdir)/%(name).catalog" || [ $$? -lt 10 ] ; \
+	fi
+
+ifneq (%(source),)
+%(source) : %(mmake)_DESC := $(%(mmake)_DESC)
+%(source) : %(mmake)_SRC := $(%(mmake)_SRC)
+%(source) : $(%(mmake)_DESC).cd $(%(mmake)_SRC).sd | $(dir %(source))
+	$(Q)$(ECHO) "Creating   %(name) catalog source file $@"
+	$(Q)$(FLEXCAT) $(%(mmake)_DESC).cd "$@"="$(%(mmake)_SRC).sd"
+endif
+
+%(mmake)-clean : FILES := $(%(mmake)_OBJS) %(source)
+#MM
+%(mmake)-clean ::
+	$(Q)$(ECHO) "Cleaning up for metatarget %(mmake)"
+	$(Q)$(RM) $(FILES)
+
+.PHONY: %(mmake) %(mmake)-clean
+
+%end
+#-----------------------------------------------------------------------------
+
+
+#-----------------------------------------------------------------------------
+# Build icons.
+# - mmake is the mmaketarget
+# - icons is a list of icon base names (i.e. without the .info suffix)
+# - dir is the destination directory
+# - srcdir is where *.png and *.info.src are sought
+#-----------------------------------------------------------------------------
+
+%define build_icons mmake=/A icons=/A fmt=png dir=/A srcdir="$(SRCDIR)/$(CURDIR)" image=
+
+BD_OBJS := $(addprefix  %(dir)/, $(addsuffix .info,%(icons)))
+
+#MM
+%(mmake) : $(BD_OBJS)
+
+ifeq (%(image),)
+
+%(dir)/%.info : %(srcdir)/%.info.src %(srcdir)/%.%(fmt)
+	$(Q)$(ECHO) "Creating   $(subst $(TARGETDIR)/,,$@)..."
+	$(Q)$(ILBMTOICON) $+ $@
+
+else
+
+%(dir)/%.info : %(srcdir)/%.info.src %(srcdir)/%(image)
+	$(Q)$(ECHO) "Creating   $(subst $(TARGETDIR)/,,$@)..."
+	$(Q)$(ILBMTOICON) $+ $@
+
+endif
+
+%rule_makedirs dirs="%(dir)" setuptarget="$(BD_OBJS)"
+
+%(mmake)-clean : FILES := $(BD_OBJS)
+#MM
+%(mmake)-clean ::
+	$(Q)$(RM) $(FILES)
+
+.PHONY: %(mmake) %(mmake)-clean
+
+%end
+#-----------------------------------------------------------------------------
+
+
+#-----------------------------------------------------------------------------
+# Build dual state icon.
+# - mmake is the mmaketarget
+# - icon is the icon base name (i.e. without the .info suffix)
+# - normal is the unselected state image name (i.e. without the .png suffix)
+# - selected is the selected state image name (i.e. without the .png suffix)
+# - dir is the destination directory
+# - srcdir is where *.png and *.info.src are sought
+#-----------------------------------------------------------------------------
+
+%define build_dualicon mmake=/A icon=/A normal=/A selected=/A fmt=png dir=/A srcdir="$(SRCDIR)/$(CURDIR)"
+
+BD_OBJ := $(addprefix  %(dir)/, $(addsuffix .info,%(icon)))
+
+#MM
+%(mmake) : $(BD_OBJ)
+
+%(dir)/%(icon).info : %(srcdir)/%(icon).info.src %(srcdir)/%(normal).%(fmt) %(srcdir)/%(selected).%(fmt)
+	$(Q)$(ECHO) "Creating   $(subst $(TARGETDIR)/,,$@)..."
+	$(Q)$(ILBMTOICON) $+ $@
+
+%rule_makedirs dirs="%(dir)" setuptarget="$(BD_OBJ)"
+
+%(mmake)-clean : FILES := $(BD_OBJ)
+#MM
+%(mmake)-clean ::
+	$(Q)$(RM) $(FILES)
+
+.PHONY: %(mmake) %(mmake)-clean
+
+%end
+#-----------------------------------------------------------------------------
+
+#------------------------------------------------------------------------------
+# Make an alias from one arch specific build to another arch.
+# arguments:
+# - mainmmake: the mmake of the module in the main tree
+# - arch: the current arch
+# - alias: the alias to which this should point
+%define rule_archalias mainmmake=\A arch=\A alias=\A
+
+#MM- %(mainmmake)-%(arch) : %(mainmmake)-%(alias)
+%end
+
+#------------------------------------------------------------------------------
+
+%define gen_archfamilyrules mainmmake=/A family=/A arch=/A
+%rule_archalias mainmmake=%(mainmmake) arch=%(arch) alias=%(family)
+%rule_archalias mainmmake=%(mainmmake) arch=%(arch)-quick alias=%(family)-quick
+%rule_archalias mainmmake=%(mainmmake) arch=%(arch)-includes alias=%(family)-includes
+%rule_archalias mainmmake=%(mainmmake) arch=%(arch)-linklib alias=%(family)-linklib
+%rule_archalias mainmmake=%(mainmmake) arch=%(arch)-kobj alias=%(family)-kobj
+%rule_archalias mainmmake=%(mainmmake) arch=%(arch)-kobj-quick alias=%(family)-kobj-quick
+%end
+
+%define set_archincludes mainmmake=/A maindir=/A modname=/A pri=/A arch=/A includes= genincdir=yes
+ifeq ("%(genincdir)","yes")
+$(GENDIR)/%(maindir)/%(modname)/include:
+	%mkdir_q dir="$@"
+endif
+
+#MM
+%(mainmmake)-%(arch)-set-archincludes: | $(GENDIR)/%(maindir)/%(modname)/include
+	$(Q)$(ECHO)  "%(includes) " > $(GENDIR)/%(maindir)/%(modname)/include/.%(modname).includeflag.%(pri).%(arch)
+
+%end
+
+%define get_archincludes includeflag=USER_INCLUDES maindir=/A modname=/A
+%(includeflag)_INCFFILES:=$(call WILDCARD, $(GENDIR)/%(maindir)/%(modname)/include/.%(modname).includeflag.*)
+ifneq ($(%(includeflag)_INCFFILES),)
+%(includeflag)+=$(shell cat $(%(includeflag)_INCFFILES))
+endif
+%end
+
+#------------------------------------------------------------------------------
+
+%define gen_archspecificrules mainmmake=/A target= subtarget=
+#MM- %(mainmmake)%(target)%(subtarget) : \
+#MM             %(mainmmake)-$(CPU)%(target)%(subtarget)
+
+#MM- %(mainmmake)-$(ARCH)-$(CPU)%(target)%(subtarget) : \
+#MM             %(mainmmake)-$(ARCH)-$(CPU)-$(AROS_TARGET_VARIANT)%(target)%(subtarget)
+
+#MM- %(mainmmake)-$(ARCH)-$(AROS_TARGET_VARIANT)%(target)%(subtarget) : \
+#MM             %(mainmmake)-$(ARCH)-$(CPU)%(target)%(subtarget)
+
+#MM- %(mainmmake)-$(ARCH)%(target)%(subtarget) : \
+#MM             %(mainmmake)-$(ARCH)-$(AROS_TARGET_VARIANT)%(target)%(subtarget)
+
+#MM- %(mainmmake)-$(FAMILY)%(target)%(subtarget) : \
+#MM             %(mainmmake)-$(ARCH)%(target)%(subtarget)
+
+#MM- %(mainmmake)-$(CPU)%(target)%(subtarget) : \
+#MM             %(mainmmake)-$(FAMILY)%(target)%(subtarget)
+%end
+
+#------------------------------------------------------------------------------
+# Compile files for an arch-specific replacement of code for a module
+# - files: the basenames of the C files to compile.
+# - asmfiles: the basenames of the asm files to assemble.
+# - mainmmake: the mmake of the module in the main directory to compile these
+#   arch specific files for.
+# - maindir: the object directory for the main module
+# - arch: the arch for which to compile these files. It can have the form
+#   of ARCH, CPU or ARCH-CPU, e.g. linux, i386 or linux-i386
+# - cflags (default $(CFLAGS)): the C flags to use for compilation
+# - dflags: the flags used during creation of dependency file. If not specified
+#   the same value as cflags will be used
+# - aflags: the flags used during assembling
+# - compiler: (host, kernel or target) specifies which compiler to use. By default
+#   the target compiler is used
+# - modname: arch_specific builds of modules (built using build_module) MUST
+#   specify the name here matching the original module. this insures multiple modules
+#   built from the same makefile will not pollute each other.
+%define build_archspecific files= cxxfiles= asmfiles= linklibfiles= linklibobjs= mainmmake=/A maindir=/A arch=/A \
+ cppflags="$(CPPFLAGS)" cflags= dflags= aflags="$(AFLAGS)" compiler=target objdir= modname= incextra=
+
+ifeq (%(files) %(linklibfiles) %(linklibobjs) %(asmfiles),)
+    $(error no files or asmfiles given)
+endif
+
+ifneq (%(cxxfiles),)
+    $(error cxx support is TODO)
+endif
+
+%buildid targets="%(mainmmake)-%(arch) %(mainmmake)-%(arch)-quick %(mainmmake)-%(arch)-linklib"
+
+#MM %(mainmmake)-%(arch) : %(mainmmake)-%(arch)-includes
+#MM %(mainmmake)-%(arch)-linklib : %(mainmmake)-%(arch)-includes
+#MM- %(mainmmake)-%(arch)-includes : %(mainmmake)-includes
+
+ifneq (%(incextra),)
+    BD_INCEXTRA$(BDID)  := "%(incextra)"
+else
+    BD_INCEXTRA$(BDID)  :=  "$(TOP)/%(maindir)"
+endif
+ifneq (%(objdir),)
+    BD_OBJROOT$(BDID)  := %(objdir)
+else
+ifneq (%(modname),)
+    BD_OBJROOT$(BDID)  := $(GENDIR)/%(maindir)/%(modname)
+else
+    BD_OBJROOT$(BDID)  := $(GENDIR)/%(maindir)
+endif
+endif
+BD_OBJDIR$(BDID)  := $(BD_OBJROOT$(BDID))/arch
+BD_LIBOBJDIR$(BDID)  := $(BD_OBJROOT$(BDID))/linklib/arch
+BD_FILEOBJS$(BDID)   := $(addsuffix .o,$(addprefix $(BD_OBJDIR$(BDID))/,$(notdir %(files)))) $(addsuffix .o,$(addprefix $(BD_OBJDIR$(BDID))/,$(notdir %(cxxfiles))))
+BD_LINKLIBOBJS$(BDID)   := $(addsuffix .o,$(addprefix $(BD_LIBOBJDIR$(BDID))/,$(notdir %(linklibfiles))))
+BD_LINKLIBARCHOBJS$(BDID)   := $(addprefix $(BD_LIBOBJDIR$(BDID))/,$(notdir %(linklibobjs)))
+BD_ASMOBJS$(BDID) := $(addsuffix .o,$(addprefix $(BD_OBJDIR$(BDID))/,$(notdir %(asmfiles))))
+BD_OBJS$(BDID)    := $(BD_FILEOBJS$(BDID)) $(BD_LINKLIBOBJS$(BDID)) $(BD_ASMOBJS$(BDID))
+BD_DEPS$(BDID)    := $(addsuffix .d,$(addprefix $(BD_OBJDIR$(BDID))/,$(notdir %(files)))) $(addsuffix .d,$(addprefix $(BD_LIBOBJDIR$(BDID))/,$(notdir %(linklibfiles))))
+
+ifneq (%(modname),)
+BD_DEFLIBDEFSINC$(BDID) := -include $(BD_OBJROOT$(BDID))/include/%(modname)_deflibdefs.h
+endif
+
+ifeq ($(TARGET),%(mainmmake)-%(arch)-quick)
+    BD_TARGET := %(mainmmake)-%(arch)-quick
+else
+ifeq ($(TARGET),%(mainmmake)-%(arch)-linklib)
+    BD_TARGET := %(mainmmake)-%(arch)-linklib
+else
+    BD_TARGET := %(mainmmake)-%(arch)
+endif
+endif
+
+ifeq ($(TARGET),$(BD_TARGET))
+TMP_SRCDIR := $(shell $(ECHO) $(SRCDIR) | sed 's/^\(.\):\//\/\1\//')
+vpath %.c $(addprefix $(TMP_SRCDIR)/$(CURDIR)/,$(dir %(files)))
+vpath %.c $(addprefix $(TMP_SRCDIR)/$(CURDIR)/,$(dir %(linklibfiles)))
+vpath %.s $(addprefix $(TMP_SRCDIR)/$(CURDIR)/,$(dir %(asmfiles)))
+vpath %.S $(addprefix $(TMP_SRCDIR)/$(CURDIR)/,$(dir %(asmfiles)))
+endif
+
+ifneq ($(BD_LINKLIBARCHOBJS$(BDID))$(BD_LINKLIBOBJS$(BDID)),)
+BD_GENDIR$(BDID) := $(BD_OBJDIR$(BDID)) $(BD_LIBOBJDIR$(BDID))
+else
+BD_GENDIR$(BDID) := $(BD_OBJDIR$(BDID))
+endif
+
+%rule_makedirs dirs="$(BD_GENDIR$(BDID))" setuptarget="$(BD_OBJS$(BDID))"
+
+#MM
+%(mainmmake)-%(arch) :: $(BD_OBJS$(BDID))
+
+#MM
+%(mainmmake)-%(arch)-quick :: $(BD_OBJS$(BDID))
+
+# Build ONLY the arch-specific linklib objects (no file/asm module objects and no
+# cross-module deps of the bare arch target). This is the leaf of the -linklib
+# arch chain, so building %(mainmmake)-linklib produces these objects (into
+# linklib/arch/) before the main module archives them, without dragging in the
+# full arch module build.
+#MM
+%(mainmmake)-%(arch)-linklib :: $(BD_LINKLIBOBJS$(BDID)) $(BD_LINKLIBARCHOBJS$(BDID))
+
+ifeq ($(findstring %(compiler),host kernel target),)
+    $(error unknown compiler %(compiler))
+endif
+
+ifneq (%(modname),)
+$(BD_FILEOBJS$(BDID)) $(BD_LINKLIBOBJS$(BDID)) : TMP_CPPFLAGS:=$(strip %(cppflags) -I$(BD_OBJROOT$(BDID)) $(BD_DEFLIBDEFSINC$(BDID)))
+else
+$(BD_FILEOBJS$(BDID)) $(BD_LINKLIBOBJS$(BDID)) : TMP_CPPFLAGS:=%(cppflags)
+endif
+
+ifeq (%(compiler),target)
+$(BD_FILEOBJS$(BDID)) $(BD_DEPS$(BDID)) $(BD_LINKLIBOBJS$(BDID)) : TMP_CMD:=$(strip $(TARGET_CC) $(TARGET_SYSROOT))
+$(BD_FILEOBJS$(BDID)) $(BD_DEPS$(BDID)) $(BD_LINKLIBOBJS$(BDID)) : TMP_CPPFLAGS:=$(TMP_CPPFLAGS)
+ifeq ("%(cflags)","")
+$(BD_FILEOBJS$(BDID)) $(BD_DEPS$(BDID)) $(BD_LINKLIBOBJS$(BDID)) : TMP_CFLAGS:=$(strip $(CFLAGS) $(SAFETY_CFLAGS))
+else
+$(BD_FILEOBJS$(BDID)) $(BD_DEPS$(BDID)) $(BD_LINKLIBOBJS$(BDID)) : TMP_CFLAGS:=$(strip %(cflags) $(SAFETY_CFLAGS))
+endif
+$(BD_FILEOBJS$(BDID)) $(BD_DEPS$(BDID)) $(BD_LINKLIBOBJS$(BDID)) : TMP_IQUOTE:=$(CFLAGS_IQUOTE)
+$(BD_FILEOBJS$(BDID)) $(BD_DEPS$(BDID)) $(BD_LINKLIBOBJS$(BDID)) : TMP_IQUOTE_END:=$(CFLAGS_IQUOTE_END)
+endif
+ifeq (%(compiler),host)
+$(BD_FILEOBJS$(BDID)) $(BD_DEPS$(BDID)) $(BD_LINKLIBOBJS$(BDID)) : TMP_CMD:=$(HOST_CC)
+ifeq ("%(cflags)","")
+$(BD_FILEOBJS$(BDID)) $(BD_DEPS$(BDID)) $(BD_LINKLIBOBJS$(BDID)) : TMP_CFLAGS:=$(strip $(HOST_CFLAGS))
+else
+$(BD_FILEOBJS$(BDID)) $(BD_DEPS$(BDID)) $(BD_LINKLIBOBJS$(BDID)) : TMP_CFLAGS:=$(strip %(cflags))
+endif
+$(BD_FILEOBJS$(BDID)) $(BD_DEPS$(BDID)) $(BD_LINKLIBOBJS$(BDID)) : TMP_IQUOTE:=$(HOST_IQUOTE)
+$(BD_FILEOBJS$(BDID)) $(BD_DEPS$(BDID)) $(BD_LINKLIBOBJS$(BDID)) : TMP_IQUOTE_END:=$(HOST_IQUOTE_END)
+endif
+ifeq (%(compiler),kernel)
+$(BD_FILEOBJS$(BDID)) $(BD_DEPS$(BDID)) $(BD_LINKLIBOBJS$(BDID)) : TMP_CMD:=$(strip $(KERNEL_CC) $(KERNEL_SYSROOT))
+$(BD_FILEOBJS$(BDID)) $(BD_DEPS$(BDID)) $(BD_LINKLIBOBJS$(BDID)) : TMP_CPPFLAGS:=$(strip $(KERNEL_CPPFLAGS) $(TMP_CPPFLAGS))
+ifeq ("%(cflags)","")
+$(BD_FILEOBJS$(BDID)) $(BD_DEPS$(BDID)) $(BD_LINKLIBOBJS$(BDID)) : TMP_CFLAGS:=$(strip $(KERNEL_ISA_CFLAGS) $(KERNEL_CFLAGS))
+else
+$(BD_FILEOBJS$(BDID)) $(BD_DEPS$(BDID)) $(BD_LINKLIBOBJS$(BDID)) : TMP_CFLAGS:=$(strip %(cflags))
+endif
+$(BD_FILEOBJS$(BDID)) $(BD_DEPS$(BDID)) $(BD_LINKLIBOBJS$(BDID)) : TMP_IQUOTE:=$(KERNEL_IQUOTE)
+$(BD_FILEOBJS$(BDID)) $(BD_DEPS$(BDID)) $(BD_LINKLIBOBJS$(BDID)) : TMP_IQUOTE_END:=$(KERNEL_IQUOTE_END)
+endif
+
+ifeq ($(TARGET),$(BD_TARGET))
+$(BD_LIBOBJDIR$(BDID))/%.o : $(SRCDIR)/$(CURDIR)/%.c
+	%compile_q cmd="$(TMP_CMD)" opt="$(strip $(TMP_CFLAGS) $(TMP_CPPFLAGS))" iquote="$(TMP_IQUOTE)" iquote_end="$(TMP_IQUOTE_END)" incextra="$(BD_INCEXTRA$(BDID))"
+$(BD_OBJDIR$(BDID))/%.o : $(SRCDIR)/$(CURDIR)/%.c
+	%compile_q cmd="$(TMP_CMD)" opt="$(strip $(TMP_CFLAGS) $(TMP_CPPFLAGS))" iquote="$(TMP_IQUOTE)" iquote_end="$(TMP_IQUOTE_END)" incextra="$(BD_INCEXTRA$(BDID))"
+endif
+
+ifeq (%(dflags),)
+$(BD_DEPS$(BDID)) : TMP_CPPFLAGS:=$(strip %(cppflags) $(BD_DEFLIBDEFSINC$(BDID)))
+ifeq ("%(cflags)","")
+ifeq (%(compiler),host)
+$(BD_DEPS$(BDID)) : TMP_DFLAGS:=$(strip $(HOST_CFLAGS))
+endif
+ifeq (%(compiler),kernel)
+$(BD_DEPS$(BDID)) : TMP_DFLAGS:=$(strip $(KERNEL_ISA_CFLAGS) $(KERNEL_CFLAGS))
+endif
+ifeq (%(compiler),target)
+$(BD_DEPS$(BDID)) : TMP_DFLAGS:=$(strip $(CFLAGS) $(SAFETY_CFLAGS))
+endif
+else
+$(BD_DEPS$(BDID)) : TMP_DFLAGS:=%(cflags)
+endif
+else
+$(BD_DEPS$(BDID)) : TMP_CPPFLAGS:=%(cppflags)
+$(BD_DEPS$(BDID)) : TMP_DFLAGS:=%(dflags)
+endif
+ifeq ($(TARGET),$(BD_TARGET))
+$(BD_LIBOBJDIR$(BDID))/%.d : $(SRCDIR)/$(CURDIR)/%.c
+	%mkdepend_q cc="$(TMP_CMD)" flags="$(strip $(TMP_DFLAGS) $(TMP_CPPFLAGS))"
+
+$(BD_OBJDIR$(BDID))/%.d : $(SRCDIR)/$(CURDIR)/%.c
+	%mkdepend_q cc="$(TMP_CMD)" flags="$(strip $(TMP_DFLAGS) $(TMP_CPPFLAGS))"
+endif
+
+$(BD_ASMOBJS$(BDID)) : CPPFLAGS:=%(cppflags)
+$(BD_ASMOBJS$(BDID)) : AFLAGS:=%(aflags)
+
+ifeq ($(TARGET),$(BD_TARGET))
+$(BD_OBJDIR$(BDID))/%.o : %.s
+	%assemble_q
+$(BD_OBJDIR$(BDID))/%.o : %.S
+	%assemble_q
+endif
+
+%include_deps depstargets="%(mainmmake)-%(arch) %(mainmmake)-%(arch)-quick %(mainmmake)-%(arch)-linklib" deps="$(BD_DEPS$(BDID))"
+
+%end
+#------------------------------------------------------------------------------
+
+
+#------------------------------------------------------------------------------
+# generate asm files from c files (for debugging purposes)
+%define ctoasm_q
+%.s : %.c
+	$(Q)$(ECHO) "Generating $(CURDIR)/$(notdir $@)..."
+	$(Q)$(TARGET_CC) $(TARGET_SYSROOT) -S $(CFLAGS) $(CPPFLAGS) $< -c -o $@
+%end
+#------------------------------------------------------------------------------
+
+
+#------------------------------------------------------------------------------
+# Copy files from one directory to another.
+
+%define copy_files_q mmake=/A files="$(FILES)" src=. dst=/A
+
+%(mmake)_SRC := $(shell $(ECHO) %(src) | sed 's/^\(.\):\//\/\1\//')
+
+%rule_makedirs dirs="%(dst)"
+
+.PHONY : %(mmake)
+
+#MM
+%(mmake) : | %(dst) 
+	$(foreach file, %(files), $(shell $(CP) $(addprefix $(if $(filter /%,$(%(mmake)_SRC)),$(%(mmake)_SRC),$(SRCDIR)/$(CURDIR)/$(%(mmake)_SRC))/, $(file)) $(addprefix %(dst)/, $(file))))
+
+%end
+#------------------------------------------------------------------------------
+
+
+#------------------------------------------------------------------------------
+# Copy a directory recursively to another place, preserving the original 
+# hierarchical structure
+#
+# src: the source directory whose content will be copied.
+# dst: the directories where to copy src's content. If not existing, they will be made.
+# excludefiles: files which must not be copied. Path must be relative to src.
+
+%define copy_dir_recursive mmake=/A src=. dst=/A excludefiles=
+
+.PHONY : %(mmake)
+
+#MM
+%(mmake) :
+	$(Q)$(ECHO) "Copying    directory '$(if $(filter /%,%(src)),$(if $(filter $(SRCDIR)/%,$(abspath %(src))),$(patsubst $(SRCDIR)/%,%,$(abspath %(src))),$(patsubst $(TOP)/%,%,$(abspath %(src)))),$(patsubst $(SRCDIR)/%,%,$(abspath $(SRCDIR)/$(CURDIR)/%(src))))' to '$(if $(filter /%,%(dst)),$(if $(filter $(SRCDIR)/%,$(abspath %(dst))),$(patsubst $(SRCDIR)/%,%,$(abspath %(dst))),$(patsubst $(TOP)/%,%,$(abspath %(dst)))),$(patsubst $(SRCDIR)/%,%,$(abspath $(SRCDIR)/$(CURDIR)/%(dst))))'"
+	$(Q)cd $(SRCDIR)/$(CURDIR) && $(CPYDIRREC) -q -s %(src) -d %(dst) -e %(excludefiles)
+
+%end
+#------------------------------------------------------------------------------
+
+
+#------------------------------------------------------------------------------
+#   Copy include files into the includes directories. There are currently
+#   two include directories. One for building AROS $(AROS_INCLUDES) and one
+#   for building tools that need to run on the host system $(GENINCDIR). The
+#   $(GENINCDIR) path must not contain any references to the C runtime
+#   library header files.
+#
+%define copy_includes mmake=includes-copy includes="$(INCLUDE_FILES)" path=. \
+    dir= compiler=target includedir="$(AROS_INCLUDES)"
+
+ifeq ($(findstring %(compiler),host kernel target),)
+$(error %copy_includes: compiler argument (%(compiler)) has to be host, kernel or target)
+endif
+
+ifneq (%(dir),)
+TMP_DIR                := %(dir)
+$(eval TMP_DIRREMAIN   := $$$(TMP_DIR))
+TMP_DIRFIRST           := $(subst $(TMP_DIRREMAIN),,$(TMP_DIR))
+BD_INCL_FILES          := $(subst %(dir),$(GENINCDIR)/%(path),$(dir %(includes)))
+BD_INCL_FILES          := $(addprefix $(GENINCDIR)/%(path)/,$(notdir %(includes)))
+ifeq ($(TMP_DIRFIRST),/)
+BD_INC_PATH            := %(dir)/
+else
+BD_INC_PATH            := $(SRCDIR)/$(CURDIR)/%(dir)/
+endif
+else
+BD_INCL_FILES          := $(addprefix $(GENINCDIR)/%(path)/,%(includes))
+BD_INC_PATH            := $(SRCDIR)/$(CURDIR)/
+endif
+
+$(BD_INCL_FILES) : $(GENINCDIR)/%(path)/% : $(BD_INC_PATH)%
+	$(Q)$(CP) $< $@
+
+ifeq (%(compiler),target)
+
+ifneq (%(dir),)
+BD_INCL_FILES2         := $(subst %(dir),%(includedir)/%(path),$(dir %(includes)))
+BD_INCL_FILES2         := $(addprefix %(includedir)/%(path)/,$(notdir %(includes)))
+else
+BD_INCL_FILES2         := $(addprefix %(includedir)/%(path)/,%(includes))
+endif
+
+BD_INCL_FILES          += $(BD_INCL_FILES2)
+
+$(BD_INCL_FILES2) : %(includedir)/%(path)/% : $(BD_INC_PATH)%
+	$(Q)$(CP) $< $@
+endif
+
+#MM
+%(mmake) : $(BD_INCL_FILES)
+
+.PHONY: %(mmake)
+
+%rule_makedirs dirs="$(dir $(BD_INCL_FILES))" setuptarget="$(BD_INCL_FILES)"
+%end
+#------------------------------------------------------------------------------
+
+
+#------------------------------------------------------------------------------
+%define make_hidd_stubs hidd=/A cppflags="$(CPPFLAGS)" cflags="$(CFLAGS)" dflags="$(CFLAGS)" parenttarget=linklibs-hidd-stubs
+STUBS_SRC := $(addprefix $(SRCDIR)/$(CURDIR)/,$(addsuffix .c,$(STUBS)))
+STUBS_MEM := $(addsuffix .o,$(STUBS))
+STUBS_OBJ := $(addprefix $(GENDIR)/lib/hidd/,$(STUBS_MEM))
+STUBS_DEP := $(addprefix $(OBJDIR)/,$(addsuffix .d,$(STUBS)))
+
+#MM- %(parenttarget): hidd-%(hidd)-stubs
+#MM hidd-%(hidd)-stubs : includes includes-copy
+hidd-%(hidd)-stubs : setup $(STUBS_OBJ)
+
+$(STUBS_OBJ) : $(STUBS_SRC) 
+	%compile_q cmd="$(strip $(TARGET_CC) $(TARGET_SYSROOT))" opt="$(strip %(cflags) %(cppflags))" iquote="$(CFLAGS_IQUOTE)" iquote_end="$(CFLAGS_IQUOTE_END)"
+
+$(STUBS_DEP) : $(STUBS_SRC)
+	%mkdepend_q flags="$(strip %(dflags) %(cppflags))"
+
+setup ::
+	%mkdirs_q $(OBJDIR) $(GENDIR)/lib/hidd
+
+#MM
+clean ::
+	-@$(RM) $(OBJDIR)
+
+DEPS := $(DEPS) $(STUBS_DEP)
+
+%end
+#------------------------------------------------------------------------------
+
+
+
+
+
+
+#------------------------------------------------------------------------------
+# Given an archive name, patches names and locations where to find them, fetch
+# the archive and the patches from any of those locations, unpack the archive
+# and then apply the patches.
+#
+# Locations currently supported are http and ftp sites, plus local filesystem
+# directories. Supported archives are .tar.bz2 and .tar.gz. To modify this,
+# the fetch.sh script needs to be modified, since this macro relies on that script.
+#
+# Arguments:
+#
+#     - mmake           = mmaketarget
+#     - archive_origins = list of locations where to find the archive. They are tried
+#                         in sequence, until the archive is found and fetching it 
+#                         succeeded. If not specified, the current directory is assumed.
+#     - archive         = the archive name. Mandatory.
+#     - suffixes        = a list of suffixes to append to the package name plus the
+#                         version. Each one of them is tried until a matching archive is
+#                         found. They are appended to patches and these are tried the
+#                         same way as packages are.
+#     - location        = the local directory where to put the fetched archive and patches.
+#                         If not specified, the directory specified by destination is used.
+#     - base     = the directory normally used to extract into.
+#                         If not specified, the destination directory is assumed.
+#     - destination     = the directory to unpack the archive to.
+#                         If not specified, the current directory is assumed.
+#     - patches_origins = list of locations where to find the patches. They are tried
+#                         in sequence, until a patch is found and fetching it 
+#                         succeeded. If not specified, the current directory is assumed.
+#     - patches_specs   = list of "patch specs". A patch spec is of the form
+#                         patch_name[:[patch_subdir][:patch_opt]].
+#
+#			      - patch_name   = the name of the patch file
+#			      - patch_subdir = the directory within \destination\ where to
+#			                       apply the patch.
+#			      - patch_opt    = any options to pass to the `patch' command
+#			                       when applying the patch.
+#                         
+#                         The patch_subdir and patch_opt fields are optional.
+
+%define fetch mmake=/A archive_origins=. archive=/A suffixes= location= base= destination=. \
+    patches_origins="$(SRCDIR)/$(CURDIR)" patches_specs=::
+
+.PHONY: %(mmake)
+
+ifneq (%(location),)
+    %(mmake)-location := %(location)
+else
+    %(mmake)-location := %(destination)
+endif
+
+ifneq (%(base),)
+    %(mmake)-baseflag := -b %(base)
+else
+    %(mmake)-baseflag :=
+endif
+
+%(mmake)-fetchedflag := $(%(mmake)-location)/.%(archive)-fetched
+
+#MM
+%(mmake) :
+	$(Q)$(ECHO) "Fetching   %(archive) ..."
+	$(Q)$(FETCH) -ao "%(archive_origins)" -a %(archive) -s "%(suffixes)" -l $(%(mmake)-location) \
+	-d %(destination) $(%(mmake)-baseflag) -po "%(patches_origins)" -p "%(patches_specs)"
+	$(Q)$(IF) ! $(TEST) -f $(%(mmake)-fetchedflag) ; then \
+		 $(TOUCH) $(%(mmake)-fetchedflag) ; \
+	fi
+%end
+#------------------------------------------------------------------------------
+
+
+#------------------------------------------------------------------------------
+# Fetch a crates.io crate into the shared Rust crate store ($(RUST_CRATESDIR),
+# see tools/crosstools/rust.cfg), patched for AROS when a patch is given. The
+# archive is kept in $(RUST_CRATES_SOURCEDIR); the patch is looked for next to
+# the mmakefile and applied with -p1 inside the unpacked crate.
+#
+# Arguments:
+#
+#     - mmake       = mmaketarget
+#     - crate       = the crate's name on crates.io
+#     - version     = its version
+#     - patch       = the patch file (default: none)
+#
+%define rust_crate mmake=/A crate=/A version=/A patch=
+
+ifneq (%(patch),)
+    %(mmake)-patchspec := %(patch):%(crate)-%(version):-p1
+else
+    %(mmake)-patchspec :=
+endif
+
+%fetch mmake=%(mmake) archive=%(crate)-%(version) suffixes="crate" \
+    archive_origins="$(CRATES_IO)/%(crate)" location=$(RUST_CRATES_SOURCEDIR) \
+    destination=$(RUST_CRATESDIR) patches_specs=$(%(mmake)-patchspec)
+%end
+#------------------------------------------------------------------------------
+
+
+#------------------------------------------------------------------------------
+# Generate a cargo config file with a [patch.crates-io] table (and nothing
+# else), as the crate stores do. Cargo merges the tables of all the files
+# given with --config, so a program's cargo run takes the stores' files and
+# its own.
+#
+# Arguments:
+#
+#     - mmake       = mmaketarget
+#     - file        = the file to write
+#     - patches     = the entries, "name=path" or "alias:package=path"
+#                     (the second form for a renamed dependency, as in
+#                     "getrandom03:getrandom=...")
+#     - deps        = extra prerequisites of the file
+#
+%define rust_patches_config mmake=/A file=/A patches= deps=
+
+#MM
+%(mmake) : %(file)
+
+%(file) : $(TOP)/$(CURDIR)/mmakefile $(SRCDIR)/tools/crosstools/rust.cfg %(deps)
+	%mkdirs_q $(dir %(file))
+	@$(ECHO) "Writing    $(subst $(TOP)/,,$@)"
+	@( \
+	    $(ECHO) '# Generated by $(CURDIR) for $(RUST_TARGET_TRIPLE)' ; \
+	    $(ECHO) '[patch.crates-io]' ; \
+	    for p in x %(patches) ; do if [ "$$p" != x ] ; then \
+	        n="$${p%%=*}" ; d="$${p#*=}" ; \
+	        case "$$n" in \
+	            *:*) $(ECHO) "$${n%%:*} = { package = \"$${n#*:}\", path = \"$$d\" }" ;; \
+	            *) $(ECHO) "$$n = { path = \"$$d\" }" ;; \
+	        esac ; \
+	    fi ; done ; \
+	) > $@
+%end
+#------------------------------------------------------------------------------
+
+
+#------------------------------------------------------------------------------
+# Generate the cargo config of a program built for the target: its own
+# [patch.crates-io] entries (the stores' come from their own files), the
+# target linker, the path remapping of $(RUST_REMAP_FLAGS), the build
+# directory, and the AROS_CC/AROS_AR environment build scripts compile C
+# files with.
+#
+# Arguments:
+#
+#     - mmake       = mmaketarget
+#     - file        = the file to write
+#     - targetdir   = cargo's target directory for the program
+#     - patches     = the program's own entries, as for %rust_patches_config
+#     - deps        = extra prerequisites of the file
+#
+%define rust_cargo_config mmake=/A file=/A targetdir=/A patches= deps=
+
+#MM
+%(mmake) : %(file)
+
+%(file) : $(TOP)/$(CURDIR)/mmakefile $(SRCDIR)/tools/crosstools/rust.cfg %(deps)
+	%mkdirs_q $(dir %(file))
+	@$(ECHO) "Writing    $(subst $(TOP)/,,$@)"
+	@( \
+	    $(ECHO) '# Generated by $(CURDIR) for $(RUST_TARGET_TRIPLE)' ; \
+	    $(ECHO) '[patch.crates-io]' ; \
+	    for p in x %(patches) ; do if [ "$$p" != x ] ; then \
+	        n="$${p%%=*}" ; d="$${p#*=}" ; \
+	        case "$$n" in \
+	            *:*) $(ECHO) "$${n%%:*} = { package = \"$${n#*:}\", path = \"$$d\" }" ;; \
+	            *) $(ECHO) "$$n = { path = \"$$d\" }" ;; \
+	        esac ; \
+	    fi ; done ; \
+	    $(ECHO) '' ; \
+	    $(ECHO) '[target.$(RUST_TARGET_TRIPLE)]' ; \
+	    $(ECHO) 'linker = "$(TARGET_RUST_LINKER)"' ; \
+	    $(ECHO) 'rustflags = [' ; \
+	    for f in $(RUST_REMAP_FLAGS) ; do $(ECHO) "    \"$$f\"," ; done ; \
+	    $(ECHO) ']' ; \
+	    $(ECHO) '' ; \
+	    $(ECHO) '[build]' ; \
+	    $(ECHO) 'target-dir = "%(targetdir)"' ; \
+	    $(ECHO) '' ; \
+	    $(ECHO) '[env]' ; \
+	    $(ECHO) 'AROS_CC = "$(TARGET_RUST_LINKER)"' ; \
+	    $(ECHO) 'AROS_AR = "$(RUST_TARGET_AR)"' ; \
+	) > $@
+%end
+#------------------------------------------------------------------------------
+
+
+#------------------------------------------------------------------------------
+# Resolve and download a Rust program's dependencies into the shared cargo
+# home ($(RUST_CARGO_HOME)) - the one step of a Rust build that needs network
+# access - once per snapshot (a stamp file records it). Before that, the
+# program's Cargo.lock is moved to the crate stores' versions: cargo only
+# takes a [patch] entry whose version is the locked one. Builds then run
+# with --offline.
+#
+# Arguments:
+#
+#     - mmake       = mmaketarget
+#     - cargo       = the cargo command line to use (with its --config options)
+#     - manifest    = the --manifest-path option
+#     - stamp       = the stamp file
+#     - locks       = "<name>@<locked prefix>:<version>" entries, usually
+#                     $(RUST_CRATES_LOCK) $(CONTRIB_RUST_CRATES_LOCK)
+#     - name        = what to call the program in messages
+#
+%define rust_cargo_fetch mmake=/A cargo=/A manifest=/A stamp=/A locks= name=
+
+#MM
+%(mmake) :
+	@$(IF) ! $(TEST) -f %(stamp) ; then \
+	    $(ECHO) "Fetching   %(name) crates into $(RUST_CARGO_HOME)" ; \
+	    $(MKDIR) -p $(RUST_CARGO_HOME) ; \
+	    for c in x %(locks) ; do if [ "$$c" != x ] ; then \
+	        %(cargo) update %(manifest) -p "$${c%%:*}" --precise "$${c#*:}" >/dev/null 2>&1 || true ; \
+	    fi ; done ; \
+	    %(cargo) fetch %(manifest) \
+	    && $(TOUCH) %(stamp) ; \
+	fi
+%end
+#------------------------------------------------------------------------------
+
+
+#------------------------------------------------------------------------------
+# This macro can aid in patch creation for fetched ports. It temporarily creates another
+# unpatched source tree and runs diff against this and a previously fetched and possibly
+# patched tree. Depending on what happens after patching during a normal build it might
+# give best results if the new patch is created directly after fetch.
+#
+# Arguments:
+#
+#     - mmake       = mmaketarget
+#     - archive     = archive base name
+#     - srcdir      = the top level directory the package is unpacked to, useful if
+#                     an archive unpacks to a directory other than its name suggests.
+#                     this should not be deeper than a single path element.
+#     - suffixes    = a list of suffixes to append to the the package name plus the
+#                     version. Each one of them is tried until a matching archive is
+#                     found.
+#     - destination = the directory to unpack the archive to.
+#     - excludes    = diff patterns to exclude files or directories from the patch
+
+%define create_patch mmake=/A archive=/A srcdir= suffixes="tar.bz2 tar.gz" location= base= destination=/A excludes= ignorecr=no prediff= postdiff=
+
+.PHONY: %(mmake)
+
+ifneq (%(location),)
+    %(mmake)-location := %(location)
+else
+    %(mmake)-location := $(PORTSSOURCEDIR)
+endif
+
+ifneq (%(excludes),)
+    %(mmake)-exclude := -X ./exclude.patterns
+endif
+
+ifneq (%(srcdir),)
+    %(mmake)-srcdir   := %(srcdir)
+else
+    %(mmake)-srcdir   := %(archive)
+endif
+
+ifeq (%(ignorecr),yes)
+    %(mmake)-diffflag   := --strip-trailing-cr
+else
+    %(mmake)-diffflag   :=
+endif
+
+ifneq (%(base),)
+    %(mmake)-baseflag := -b %(base)/tmp
+    %(mmake)-base := %(base)
+else
+    %(mmake)-baseflag :=
+    %(mmake)-base := %(destination)
+endif
+
+#MM- %(mmake) : %(prediff) %(mmake)-diff %(postdiff)
+#MM- %(mmake)-quick : %(prediff) %(mmake)-diff %(postdiff)
+
+#MM
+%(mmake)-diff:
+	%mkdirs_q $(%(mmake)-base)/tmp
+	$(Q)$(MV) $(%(mmake)-base)/$(%(mmake)-srcdir) $(%(mmake)-base)/tmp/$(%(mmake)-srcdir).aros ; \
+	$(FETCH) -a %(archive) -s "%(suffixes)" -f -l $(%(mmake)-location) -d %(destination) $(%(mmake)-baseflag); \
+	$(MV) $(%(mmake)-base)/$(%(mmake)-srcdir) $(%(mmake)-base)/tmp/$(%(mmake)-srcdir) ; \
+	cd $(%(mmake)-base)/tmp ; \
+	$(FOR) f in %(excludes) ; do \
+	    $(ECHO) $$f >> ./exclude.patterns ; \
+	done ; \
+	$(ECHO) "Creating   \`%(archive)-aros-new.diff'" ; \
+	TZ="UTC" diff -ruN $(%(mmake)-diffflag) $(%(mmake)-exclude) \
+	    $(%(mmake)-srcdir) \
+	    $(%(mmake)-srcdir).aros \
+	    >$(SRCDIR)/$(CURDIR)/%(archive)-aros-new.diff ; \
+	$(MV) $(%(mmake)-base)/tmp/$(%(mmake)-srcdir).aros $(%(mmake)-base)/$(%(mmake)-srcdir) ; \
+	$(RM) $(%(mmake)-base)/tmp
+%end
+#------------------------------------------------------------------------------
+
+
+
+# Builds a kickstart package in PKG format
+#
+# Arguments:
+#
+#    - mmake   = target name
+#    - file    = destination file name with path
+#
+# Other arguments are self-explanatory
+
+%define make_package mmake=/A file=/A classes= devs= handlers= hidds= libs= res= \
+    arch_classes= arch_devs= arch_handlers= arch_hidds= arch_libs= arch_res= misc= packfmt= prune=yes
+
+PKG_CLASSES        := $(addprefix $(AROS_CLASSES)/,$(addsuffix .class, %(classes)))
+PKG_DEVICES        := $(addprefix $(AROS_DEVS)/,$(addsuffix .device, %(devs)))
+PKG_HANDLERS       := $(addprefix $(AROS_FS)/,$(addsuffix -handler, %(handlers)))
+PKG_HIDD           := $(addprefix $(AROS_DEVS)/Drivers/,$(addsuffix .hidd, %(hidds)))
+PKG_LIBS           := $(addprefix $(AROS_LIBRARIES)/,$(addsuffix .library, %(libs)))
+PKG_RESOURCES      := $(addprefix $(AROS_DEVS)/,$(addsuffix .resource, %(res)))
+
+PKG_CLASSES_ARCH   := $(addprefix $(AROS_CLASSES_ARCH)/,$(addsuffix .class, %(arch_classes)))
+PKG_DEVICES_ARCH   := $(addprefix $(AROS_DEVS_ARCH)/,$(addsuffix .device, %(arch_devs)))
+PKG_HANDLERS_ARCH  := $(addprefix $(AROS_FS_ARCH)/,$(addsuffix -handler, %(arch_handlers)))
+PKG_HIDD_ARCH      := $(addprefix $(AROS_DEVS_ARCH)/Drivers/,$(addsuffix .hidd, %(arch_hidds)))
+PKG_LIBRARIES_ARCH := $(addprefix $(AROS_LIBRARIES_ARCH)/,$(addsuffix .library, %(arch_libs)))
+PKG_RESOURCES_ARCH := $(addprefix $(AROS_DEVS_ARCH)/,$(addsuffix .resource, %(arch_res)))
+
+PKG_FILES          := $(PKG_CLASSES) $(PKG_DEVICES) $(PKG_HANDLERS) $(PKG_HIDD) $(PKG_LIBS) $(PKG_RESOURCES) \
+    $(PKG_CLASSES_ARCH) $(PKG_DEVICES_ARCH) $(PKG_HANDLERS_ARCH) $(PKG_HIDD_ARCH) $(PKG_LIBRARIES_ARCH) $(PKG_RESOURCES_ARCH) %(misc)
+PKG_DIR            := $(dir %(file))
+
+# The package is built from the modules' files in the AROS tree, so those
+# files are also shipped by anything that packages the whole tree - duplicates
+# of what the kickstart already carries. Record their tree-relative paths so
+# the distfiles stage can drop them (%prune_kickstart_modules). A package that
+# is only loaded optionally (an alternative boot menu entry) passes prune=no,
+# since its modules must stay on disk for the boot paths that don't load it.
+ifeq (%(prune),yes)
+%(mmake)_PRUNELIST := $(PRUNELISTDIR)/$(notdir %(file)).prune
+$(%(mmake)_PRUNELIST) : PRUNEFILES := $(subst $(AROSDIR)/,,$(PKG_FILES))
+$(%(mmake)_PRUNELIST) : $(SRCDIR)/$(CURDIR)/mmakefile.src
+	$(Q)$(RM) $@
+	$(Q){ $(FOR) f in $(PRUNEFILES) ; do $(ECHO) $$f ; done ; } > $@
+
+%rule_makedirs dirs="$(PRUNELISTDIR)" setuptarget="$(%(mmake)_PRUNELIST)"
+else
+%(mmake)_PRUNELIST :=
+endif
+
+#MM
+%(mmake) : %(file) $(%(mmake)_PRUNELIST)
+
+#MM
+%(mmake)-quick : %(file) $(%(mmake)_PRUNELIST)
+
+%(file): $(PKG_FILES) | $(PKG_DIR)
+	$(Q)$(ECHO) Packaging $@...
+	$(Q)$(SRCDIR)/tools/package/pkg c $@ $^
+
+%compress_file mmake=%(mmake) file="%(file)" fmt=%(packfmt)
+
+%rule_makedirs dirs="$(PKG_DIR)"
+
+%end
+
+#------------------------------------------------------------------------------
+# Remove the kickstart-resident modules recorded in $(PRUNELISTDIR) (by
+# %make_package and the ROM link rules) from a distribution tree.
+#
+# %(dir) is the root of the tree being packaged for distribution. It must be
+# a copy, never $(AROSDIR) itself: the files there are build outputs (and the
+# inputs of the packages), and make would only regenerate them. Only paths
+# that exist are removed, so a list may name the arch-specific location of a
+# module as well as the generic one.
+#
+# Used as a recipe line, e.g.
+#	%prune_kickstart_modules dir="$(AROSDIR).HUNK"
+
+%define prune_kickstart_modules dir=/A lists="$(PRUNELISTDIR)/*.prune"
+	$(Q)$(ECHO) "Pruning kickstart-resident modules from $(subst $(TARGETDIR)/,,%(dir))..."
+	$(Q)$(FOR) l in %(lists) ; do \
+	    $(IF) $(TEST) -f "$$l" ; then \
+	        while read -r f ; do \
+	            $(IF) $(TEST) -n "$$f" -a -e "%(dir)/$$f" ; then $(RM) "%(dir)/$$f" ; else $(NOP) ; fi ; \
+	        done < "$$l" ; \
+	    else $(NOP) ; fi ; \
+	done
+%end
+
+#------------------------------------------------------------------------------
+# Compresses %(file) with a gzip.
+# Good in conjunction with for example %build_prog
+
+%define compress_file mmake=/A file=/A target=$(AROS_TARGET_CPU) fmt=
+
+ifeq (%(fmt),)
+%(mmake)-PACK_FMT = gz
+else
+%(mmake)-PACK_FMT = %(fmt)
+endif
+
+ifeq ($(%(mmake)-PACK_FMT),gz)
+%(mmake)-PACK_OPTS=
+%(mmake)-PACK_FLAGS=-f
+%(mmake)-PACK_LVL=-9
+else
+ifeq ($(%(mmake)-PACK_FMT),xz)
+%(mmake)-PACK_OPTS=--check=crc32
+ifeq (%(target),x86_64)
+%(mmake)-PACK_OPTS+=--x86
+else
+ifeq (%(target),i386)
+%(mmake)-PACK_OPTS+=--x86
+endif
+endif
+%(mmake)-PACK_FLAGS=-f
+%(mmake)-PACK_LVL=-9e
+endif
+endif
+
+#MM- %(mmake)-compress : %(mmake) %(mmake)-compress-genbin
+#MM- %(mmake)-compress-quick : %(mmake)-quick %(mmake)-compress-genbin
+
+#MM
+%(mmake)-compress-genbin : %(file).$(%(mmake)-PACK_FMT)
+
+%(file).gz: %(file)
+	$(Q)$(ECHO) Compressing $(subst $(TARGETDIR)/,,$^)...
+	$(Q){ \
+		orig_size=$$(stat -c%s "$^"); \
+		gzip $(%(mmake)-PACK_OPTS) $(%(mmake)-PACK_LVL) $(%(mmake)-PACK_FLAGS) "$^"; \
+		comp_size=$$(stat -c%s "$@"); \
+		if [ "$$orig_size" -eq 0 ]; then \
+			ratio="-"; \
+		else \
+			ratio=$$(awk -v o=$$orig_size -v c=$$comp_size 'BEGIN { printf "-%.0f%%", 100 - (100 * c / o) }'); \
+		fi; \
+		echo ">> $(subst $(TARGETDIR)/,,$@) ($$ratio)"; \
+	}
+
+%(file).xz: %(file)
+	$(Q)$(ECHO) Compressing $(subst $(TARGETDIR)/,,$^)...
+	$(Q){ \
+		orig_size=$$(stat -c%s "$^"); \
+		xz $(%(mmake)-PACK_OPTS) $(%(mmake)-PACK_LVL) $(%(mmake)-PACK_FLAGS) "$^"; \
+		comp_size=$$(stat -c%s "$@"); \
+		if [ "$$orig_size" -eq 0 ]; then \
+			ratio="-"; \
+		else \
+			ratio=$$(awk -v o=$$orig_size -v c=$$comp_size 'BEGIN { printf "-%.0f%%", 100 - (100 * c / o) }'); \
+		fi; \
+		echo ">> $(subst $(TARGETDIR)/,,$@) ($$ratio)"; \
+	}
+
+%end
+
+#------------------------------------------------------------------------------
+# Links a kickstart module in ELF format
+# Arguments are similar to make_package
+
+%define link_kickstart mmake=/A file=/A classes= devs= handlers= hidds= libs= res= \
+    startup= uselibs= ldflags="$(LDFLAGS)" map= deps= strip="$(STRIP)" packfmt=
+
+KOBJ_CLASSES     := $(addprefix $(KOBJSDIR)/, $(addsuffix _class.o, %(classes)))
+KOBJ_DEVICES     := $(addprefix $(KOBJSDIR)/, $(addsuffix _device.o, %(devs)))
+KOBJ_HANDLERS    := $(addprefix $(KOBJSDIR)/, $(addsuffix _handler.o, %(handlers)))
+KOBJ_HIDD        := $(addprefix $(KOBJSDIR)/, $(addsuffix _hidd.o, %(hidds)))
+KOBJ_LIBS        := $(addprefix $(KOBJSDIR)/, $(addsuffix _library.o, %(libs)))
+KOBJ_RES         := $(addprefix $(KOBJSDIR)/, $(addsuffix _resource.o, %(res)))
+
+ifeq (%(startup),)
+    KOBJ_STARTUP := $(GENDIR)/$(RESIDENT_BEGIN).o
+else
+    KOBJ_STARTUP := %(startup)
+endif
+
+KOBJS            := $(KOBJ_STARTUP) $(KOBJ_CLASSES) $(KOBJ_HANDLERS) $(KOBJ_LIBS) $(KOBJ_DEVICES) $(KOBJ_HIDD) $(KOBJ_RES)
+
+TMP_LDFLAGS      := %(ldflags)
+
+# Make a list of the lib files this program depends on.
+# In LDFLAGS remove white space between -L and directory
+TMP_DIRS         := $(subst -L ,-L,$(strip $(TMP_LDFLAGS)))
+# Filter out only the libdirs and remove -L
+TMP_DIRS         := $(patsubst -L%,%,$(filter -L%,$(TMP_DIRS)))
+# Add trailing /
+TMP_DIRS         := $(subst //,/,$(addsuffix /,$(TMP_DIRS)))
+# Add normal linklib path
+TMP_DIRS         += $(AROS_LIB)/
+# add lib and .a to static linklib names
+TMP_LIBS         := $(addprefix lib,$(addsuffix .a,%(uselibs)))
+# search for the linklibs in the given path, ignore ones not found
+TMP_DEPLIBS      := $(foreach lib,$(TMP_LIBS),$(firstword $(wildcard $(addsuffix $(lib),$(TMP_DIRS)))))
+
+TMP_DIRS += $(dir %(file))
+ifneq (%(map),)
+    TMP_LDFLAGS  += $(GENMAP) %(map)
+    TMP_DIRS     += $(dir %(map))
+endif
+
+#MM %(mmake) : %(deps)
+
+#MM
+%(mmake) : %(file)
+
+#MM
+%(mmake)-quick : %(file)
+
+%(file): KOBJS    := $(KOBJS)
+%(file): LDFLAGS  := $(strip $(TMP_LDFLAGS) $(NOSTARTUP_LDFLAGS) \
+                    -static -nosysbase -Wl,-Ur)
+%(file): LDLIBS   := $(addprefix -l, %(uselibs))
+%(file): $(KOBJS) $(DEPLIBS) | $(TMP_DIRS)
+	$(Q)$(ECHO) "Kickstart  $(subst $(TARGETDIR)/,,$@)..."
+	$(Q)$(TARGET_CC) $(TARGET_SYSROOT) -o $@ $(KOBJS) $(LDFLAGS) $(LDLIBS)
+	%strip_q strip="%(strip)" file="$@"
+
+%compress_file mmake="%(mmake)" file="%(file)" fmt=%(packfmt)
+
+%rule_makedirs dirs="$(TMP_DIRS)"
+
+%end
+
+# When we are cross compiling, we need to set the KERNEL flags to those
+# for the host AROS system, and clear the TARGET flags.
+%define init_crosscompile_flags compiler=target
+ifeq (%(compiler),target)
+KERNEL_CC:=$(TARGET_CC)
+KERNEL_SYSROOT:=$(TARGET_SYSROOT)
+KERNEL_ISA_CFLAGS:=$(TARGET_ISA_CFLAGS)
+KERNEL_CFLAGS:=$(TARGET_CFLAGS)
+KERNEL_CXX:=$(TARGET_CXX)
+KERNEL_ISA_CXXFLAGS:=$(TARGET_ISA_CXXFLAGS)
+KERNEL_CXXFLAGS:=$(TARGET_CXXFLAGS)
+KERNEL_LD:=:=$(TARGET_LD)
+KERNEL_ISA_LDFLAGS:=$(TARGET_ISA_LDFLAGS)
+KERNEL_LDFLAGS:=:=$(TARGET_LDFLAGS)
+TARGET_CFLAGS:=
+TARGET_CXXFLAGS:=
+TARGET_LDFLAGS:=
+TARGET_ISA_LDFLAGS:=
+TARGET_ISA_CFLAGS:=
+TARGET_ISA_CXXFLAGS:=
+USER_LDFLAGS:=
+CFLAGS:=
+CXXFLAGS:=
+LDFLAGS:=
+endif
+%end
+
+
+#------------------------------------------------------------------------------
+# Generate generic rules for a subtarget
+
+%define subtarget parentmmake= mmake=/A mmbase=MM-
+#%(mmbase) %(parentmmake) : %(mmake)
+#%(mmbase) %(parentmmake)-includes : %(mmake)-includes
+#%(mmbase) %(parentmmake)-quick : %(mmake)-quick
+%end
+
+#------------------------------------------------------------------------------
+# Create a target directory
+
+%define directorytarget mmake=/A directory=  icontarget= mmbase=MM-
+#MM
+%(mmake)-makedir ::
+    %mkdirs_q %(directory)
+
+#%(mmbase) %(mmake) : %(mmake)-makedir
+%end
+
+#------------------------------------------------------------------------------
+# Build-system specific macros for imported source trees.
+#------------------------------------------------------------------------------
+
+%include make-autotools.tmpl
+%include make-cmake.tmpl
+%include make-meson.tmpl

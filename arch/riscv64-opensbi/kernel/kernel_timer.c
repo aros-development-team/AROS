@@ -1,0 +1,525 @@
+/*
+    Copyright (c) 2026, The AROS Development Team. All rights reserved.
+
+    Desc: SBI timer tick for the opensbi-riscv64 target.
+
+    Programs a periodic S-mode timer interrupt through the SBI TIME
+    extension. The tick counter is the future scheduler heartbeat; for
+    now it just counts.
+*/
+
+#include <inttypes.h>
+
+#include <aros/platformtimer.h>
+#include <exec/execbase.h>
+#include <hardware/intbits.h>
+#include <proto/exec.h>
+
+#include <asm/cpu.h>
+
+#define __KERNEL_NOLIBBASE__
+
+#include <kernel_base.h>
+#include <kernel_globals.h>
+#include <kernel_interrupts.h>
+#include <kernel_intr.h>
+
+#include <proto/kernel.h>
+
+#include "etask.h"
+
+#include "kernel_sbi.h"
+#include "kernel_intern.h"
+
+#if defined(__AROSEXEC_SMP__)
+#include <aros/types/spinlock_s.h>
+
+#define AROS_NO_ATOMIC_OPERATIONS
+#include <exec_platform.h>
+
+#define __AROS_KERNEL__
+#include "exec_intern.h"
+
+extern spinlock_t *Kernel_52_KrnSpinLock(spinlock_t *, struct Hook *, ULONG, void *);
+extern void Kernel_53_KrnSpinUnLock(spinlock_t *, void *);
+
+/*
+ * The secondary harts' own ticks. Each hart has its own S-mode timer
+ * (SBI set_timer is per hart), and uses it only to count its running
+ * task's quantum down: VERTB, timer.device's deadline and the load and
+ * usage accounting all stay with the boot CPU (as on aarch64-native).
+ */
+static uint64_t hart_nexttick[RISCV_MAXCPUS];
+/* Their load samples: when, and the idle time then */
+static uint64_t hart_lastload[RISCV_MAXCPUS];
+static uint64_t hart_lastidle[RISCV_MAXCPUS];
+#endif
+
+/*
+ * Answering a keypress on the serial console costs a read of the console
+ * on every tick, and pulls the task lists and backtrace printing in with
+ * it. Off unless asked for.
+ */
+//#define KRNDEBUG_POKE
+
+volatile uint64_t __timer_ticks;
+
+/*
+ * CPU load accounting, after the model the x86 APIC heartbeat uses:
+ * the dispatcher accumulates the time spent in wfi into
+ * __cpu_sleeptime, and once a second of timebase the load becomes the
+ * busy fraction of the elapsed window, scaled to 0..0xffffffff.
+ */
+volatile uint64_t __cpu_sleeptime;
+volatile uint32_t __cpu_load;
+uint64_t __timebase_freq;
+
+static uint64_t tick_interval;
+static uint64_t last_load_time;
+/* The boot CPU's idle-task time at the last load sample */
+static uint64_t last_idle_time;
+
+/*
+ * The timer as seen by timer.device (KATTR_PlatformTimer): the tick
+ * lives here, timer.device adds one earlier deadline of its own and
+ * takes over INTB_VERTB once it has claimed the timer.
+ */
+struct KrnPlatformTimer __platform_timer;
+
+/*
+ * Close a task's accounting window: its share of the elapsed second,
+ * scaled to 0..0xffffffff (the same scale the per-CPU load uses).
+ * cpu_Switch() accumulated the task's run segments into iet_private2.
+ */
+static void krnTaskUsage(struct Task *t, uint64_t window)
+{
+    struct IntETask *iet;
+
+    if (!(t->tc_Flags & TF_ETASK) || !t->tc_UnionETask.tc_ETask)
+        return;
+
+    iet = IntETask(t->tc_UnionETask.tc_ETask);
+    if (iet->iet_private2 >= window)
+        iet->iet_CpuUsage = 0xffffffff;
+    else
+        iet->iet_CpuUsage = (ULONG)((iet->iet_private2 << 32) / window);
+    iet->iet_private2 = 0;
+}
+
+#if defined(KRNDEBUG_POKE)
+
+static struct ExceptionContext *dbgTaskCtx(struct Task *t)
+{
+    if (!t || !(t->tc_Flags & TF_ETASK) || !t->tc_UnionETask.tc_ETask)
+        return NULL;
+
+    return (struct ExceptionContext *)t->tc_UnionETask.tc_ETask->et_RegFrame;
+}
+
+static APTR dbgTaskPC(struct Task *t)
+{
+    struct ExceptionContext *c = dbgTaskCtx(t);
+
+    return c ? (APTR)c->pc : NULL;
+}
+
+static void dbgPokeTask(struct Task *t, char tag)
+{
+    LONG pri = t->tc_Node.ln_Pri;
+
+    krnSBIPutStr("[dbg]  ");
+    krnSBIPutC(tag);
+    krnSBIPutStr(" '");
+    krnSBIPutStr(t->tc_Node.ln_Name ? t->tc_Node.ln_Name : "<unnamed>");
+    krnSBIPutStr("' pri ");
+    if (pri < 0)
+    {
+        krnSBIPutC('-');
+        pri = -pri;
+    }
+    krnSBIPutDec(pri);
+    if ((t->tc_Flags & TF_ETASK) && t->tc_UnionETask.tc_ETask)
+    {
+        ULONG u = IntETask(t->tc_UnionETask.tc_ETask)->iet_CpuUsage;
+
+        krnSBIPutStr(" cpu ");
+        krnSBIPutDec(((u >> 16) * 1000) >> 16);
+        krnSBIPutStr("/1000 sig 0x");
+        krnSBIPutHex32(t->tc_SigWait);
+    }
+    krnSBIPutStr(" pc 0x");
+    krnSBIPutHex((uint64_t)(IPTR)dbgTaskPC(t));
+    krnSBIPutStr("\n");
+}
+
+/*
+ * Backtrace a task that is not the one we interrupted.
+ *
+ * A task gives up the CPU through cpu_Switch(), which leaves its whole
+ * register frame in the ETask, so a waiting task can be unwound exactly
+ * like the running one. Without this the only task that can ever be
+ * backtraced is whichever one the timer happened to interrupt - on an
+ * idle machine, the idle loop - which says nothing about the task that
+ * is actually stuck.
+ */
+static void dbgPokeBacktrace(struct Task *t)
+{
+    struct ExceptionContext *c = dbgTaskCtx(t);
+    APTR pcs[34];
+    ULONG n = 0;
+
+    krnSBIPutStr("[dbg] --- '");
+    krnSBIPutStr(t->tc_Node.ln_Name ? t->tc_Node.ln_Name : "<unnamed>");
+    krnSBIPutStr("'\n");
+
+    if (!c)
+    {
+        krnSBIPutStr("[dbg] (no saved context)\n");
+        return;
+    }
+
+    pcs[n++] = (APTR)c->pc;
+    if (c->x[0] && c->x[0] != c->pc)
+        pcs[n++] = (APTR)c->x[0];
+    n += KrnBacktraceFromFrame((APTR)c->x[1], &pcs[n], 32 - n);
+    KrnPrintBacktrace("[dbg] ", pcs, n);
+}
+
+/*
+ * A keypress on the serial console proves the kernel is alive and shows
+ * what the machine is doing - the question a frozen VNC screen cannot
+ * answer. Serves from the timer tick, so it works whenever interrupts do.
+ */
+static void krnDebugPoke(int ch, struct ExceptionContext *ctx)
+{
+    struct Task *t;
+
+    switch (ch)
+    {
+    case 't':                   /* every task, by list */
+        if (!SysBase)
+            break;
+        if (SysBase->ThisTask)
+            dbgPokeTask(SysBase->ThisTask, 'R');
+        ForeachNode(&SysBase->TaskReady, t)
+            dbgPokeTask(t, 'r');
+        ForeachNode(&SysBase->TaskWait, t)
+            dbgPokeTask(t, 'w');
+        break;
+
+    case 'B':                   /* where every task is */
+        if (!SysBase)
+            break;
+        if (SysBase->ThisTask)
+            dbgPokeBacktrace(SysBase->ThisTask);
+        ForeachNode(&SysBase->TaskReady, t)
+            dbgPokeBacktrace(t);
+        ForeachNode(&SysBase->TaskWait, t)
+            dbgPokeBacktrace(t);
+        break;
+
+    case 'i':                   /* interrupt delivery counts */
+    {
+        unsigned int n;
+
+        krnSBIPutStr("[dbg] ticks ");
+        krnSBIPutDec(__timer_ticks);
+        krnSBIPutStr(", irqs:");
+        for (n = 1; n < KRN_MAX_IRQ_SOURCES; n++)
+        {
+            if (__irq_counts[n])
+            {
+                krnSBIPutStr(" ");
+                krnSBIPutDec(n);
+                krnSBIPutStr("=");
+                krnSBIPutDec(__irq_counts[n]);
+            }
+        }
+        krnSBIPutStr("\n");
+        break;
+    }
+
+    case 'b':                   /* where the interrupted task is */
+        if (getKernelBase() && ctx)
+        {
+            APTR pcs[34];
+            ULONG n = 0;
+
+            pcs[n++] = (APTR)ctx->pc;
+            if (ctx->x[0] && ctx->x[0] != ctx->pc)
+                pcs[n++] = (APTR)ctx->x[0];
+            n += KrnBacktraceFromFrame((APTR)ctx->x[1], &pcs[n], 32 - n);
+            KrnPrintBacktrace("[dbg] ", pcs, n);
+        }
+        else
+            krnSBIPutStr("[dbg] (idle)\n");
+        break;
+
+    default:                    /* one-line liveness status */
+        krnSBIPutStr("[dbg] up ");
+        krnSBIPutDec(__timer_ticks / 100);
+        krnSBIPutStr("s load ");
+        krnSBIPutDec(((__cpu_load >> 16) * 100) >> 16);
+        krnSBIPutStr("% task '");
+        krnSBIPutStr((SysBase && SysBase->ThisTask &&
+                      SysBase->ThisTask->tc_Node.ln_Name)
+                     ? SysBase->ThisTask->tc_Node.ln_Name : "<none>");
+        krnSBIPutStr("' ('t' tasks, 'b' backtrace, 'B' all blocked, 'i' irqs)\n");
+        break;
+    }
+}
+
+#endif /* KRNDEBUG_POKE */
+
+void krnTimerInit(uint32_t timebase_hz, uint32_t tick_hz)
+{
+    tick_interval = timebase_hz / tick_hz;
+    __timebase_freq = timebase_hz;
+    last_load_time = krnReadTime();
+
+    __platform_timer.kpt_Frequency = timebase_hz;
+    __platform_timer.kpt_Deadline = 0;
+    __platform_timer.kpt_IRQ = krnAllocVirtualIRQ(1);
+    __platform_timer.kpt_NextTick = krnReadTime() + tick_interval;
+
+    sbi_set_timer(__platform_timer.kpt_NextTick);
+    csr_set(sie, SIE_STIE);
+}
+
+#if defined(__AROSEXEC_SMP__)
+/* Start the calling secondary hart's tick (RVI_InitTimerCore) */
+void krnTimerInitCore(void)
+{
+    uint32_t cpu = krnRVCPUNumber();
+
+    if (!tick_interval || cpu >= RISCV_MAXCPUS)
+        return;
+
+    hart_lastload[cpu] = krnReadTime();
+    hart_lastidle[cpu] = __riscv_cpu_idletime[cpu];
+    hart_nexttick[cpu] = hart_lastload[cpu] + tick_interval;
+#if defined(RISCV_KRNWATCHDOG)
+    /* The watchdog runs on the last CPU to start (kernel_watchdog.c) */
+    if (cpu > __krn_wdcpu)
+        __krn_wdcpu = cpu;
+#endif
+    sbi_set_timer(hart_nexttick[cpu]);
+    csr_set(sie, SIE_STIE);
+}
+
+/*
+ * A secondary hart's tick: what exec's VBlank server does for the boot
+ * CPU (intserver_vblank.c), counting the running task's quantum down
+ * and asking for a switch once it is used up.
+ */
+static void krnTimerTickCore(uint32_t cpu)
+{
+    uint64_t now = krnReadTime();
+    uint64_t next = hart_nexttick[cpu] + tick_interval;
+    UWORD current;
+
+    if ((int64_t)(next - now) <= 0)
+        next = now + tick_interval;
+    hart_nexttick[cpu] = next;
+    sbi_set_timer(next);
+
+    current = SCHEDELAPSED_GET;
+    if (current)
+        SCHEDELAPSED_SET(--current);
+    if (current == 0)
+    {
+        FLAG_SCHEDQUANTUM_SET;
+        FLAG_SCHEDSWITCH_SET;
+    }
+
+    /* This hart's load, once a second, as the boot CPU does its own */
+    if (__timebase_freq && (now - hart_lastload[cpu]) >= __timebase_freq)
+    {
+        struct HartData *hd = (struct HartData *)TLS_GET(Platform);
+        uint64_t window = now - hart_lastload[cpu];
+        uint64_t idle = __riscv_cpu_idletime[cpu];
+        uint64_t slept = idle - hart_lastidle[cpu];
+
+        if (slept > window)
+            slept = window;
+        if (hd)
+        {
+            hd->hd_Load = (uint32_t)(((window - slept) << 32) / window);
+            hd->hd_SleepTime = slept;
+            hd->hd_LastLoadTime = now;
+        }
+        hart_lastidle[cpu] = idle;
+        hart_lastload[cpu] = now;
+    }
+}
+
+/* Every task's share of the window, with the scheduler lists locked */
+static void krnTaskUsageAll(uint64_t now, uint64_t window)
+{
+    struct IntExecBase *pe = PrivExecBase(SysBase);
+    struct Task *t;
+
+    Kernel_52_KrnSpinLock(&pe->TaskReadySpinLock, NULL, SPINLOCK_MODE_READ, NULL);
+    ForeachNode(&SysBase->TaskReady, t)
+        krnTaskUsage(t, window);
+    Kernel_53_KrnSpinUnLock(&pe->TaskReadySpinLock, NULL);
+
+    Kernel_52_KrnSpinLock(&pe->TaskWaitSpinLock, NULL, SPINLOCK_MODE_READ, NULL);
+    ForeachNode(&SysBase->TaskWait, t)
+        krnTaskUsage(t, window);
+    Kernel_53_KrnSpinUnLock(&pe->TaskWaitSpinLock, NULL);
+
+    /* Running tasks, on every CPU: fold in the segment still running */
+    Kernel_52_KrnSpinLock(&pe->TaskRunningSpinLock, NULL, SPINLOCK_MODE_READ, NULL);
+    ForeachNode(&pe->TaskRunning, t)
+    {
+        if ((t->tc_Flags & TF_ETASK) && t->tc_UnionETask.tc_ETask)
+        {
+            struct IntETask *iet = IntETask(t->tc_UnionETask.tc_ETask);
+
+            iet->iet_private2 += now - iet->iet_private1;
+            iet->iet_private1 = now;
+            krnTaskUsage(t, window);
+        }
+    }
+    Kernel_53_KrnSpinUnLock(&pe->TaskRunningSpinLock, NULL);
+}
+#endif /* __AROSEXEC_SMP__ */
+
+/*
+ * The one S-mode timer serves the periodic tick and timer.device's
+ * next deadline: whichever is due is handled, then the hardware is
+ * armed for the earlier of the two again.
+ */
+void krnTimerTick(struct ExceptionContext *ctx)
+{
+    struct KrnPlatformTimer *kpt = &__platform_timer;
+    uint64_t now;
+    uint64_t next;
+
+#if defined(__AROSEXEC_SMP__)
+    {
+        uint32_t cpu = krnRVCPUNumber();
+
+#if defined(RISCV_KRNWATCHDOG)
+        /* The trail the lock-up watchdog reads */
+        krnWatchRecord(ctx);
+#endif
+
+        if (cpu != 0)
+        {
+            (void)ctx;
+            krnTimerTickCore(cpu);
+#if defined(RISCV_KRNWATCHDOG)
+            if (__krn_watchdog && cpu == __krn_wdcpu)
+                krnWatchdogService(cpu);
+#endif
+            return;
+        }
+    }
+#endif
+
+    now = krnReadTime();
+
+    if (kpt->kpt_Deadline && (int64_t)(now - kpt->kpt_Deadline) >= 0)
+    {
+        struct KernelBase *kbase = getKernelBase();
+
+        kpt->kpt_Deadline = 0;
+        if (kbase && kpt->kpt_IRQ != (ULONG)-1)
+            krnRunIRQHandlers(kbase, (irqid_t)kpt->kpt_IRQ);
+        now = krnReadTime();
+    }
+
+    if ((int64_t)(now - kpt->kpt_NextTick) < 0)
+    {
+        KrnPlatformTimerArm(kpt);
+        return;
+    }
+
+    __timer_ticks++;
+    /* A device line throttled for storming gets another chance */
+    krnIRQUnthrottle();
+    next = kpt->kpt_NextTick + tick_interval;
+    if ((int64_t)(next - now) <= 0)
+        next = now + tick_interval;
+    kpt->kpt_NextTick = next;
+    KrnPlatformTimerArm(kpt);
+
+#if defined(KRNDEBUG_POKE)
+    {
+        /* Serial debug poke - see krnDebugPoke() */
+        int ch;
+
+        if ((ch = krnSBIGetC()) > 0)
+            krnDebugPoke(ch, ctx);
+    }
+#else
+    (void)ctx;
+#endif
+
+    if (__timebase_freq && (now - last_load_time) >= __timebase_freq)
+    {
+        uint64_t window = now - last_load_time;
+        uint64_t idle = __riscv_cpu_idletime[0];
+        /* Asleep in the dispatcher, and in the idle task */
+        uint64_t slept = __cpu_sleeptime + (idle - last_idle_time);
+        struct KernelBase *kbase = getKernelBase();
+
+        if (slept > window)
+            slept = window;
+        __cpu_load = (uint32_t)(((window - slept) << 32) / window);
+        __cpu_sleeptime = 0;
+        last_idle_time = idle;
+        last_load_time = now;
+
+        /* Record the result in the boot hart's entry; the accumulator
+           moves into HartData when the other harts start running */
+        if (kbase && kbase->kb_PlatformData)
+        {
+            struct HartData *hd =
+                &kbase->kb_PlatformData->kb_Harts[kbase->kb_PlatformData->kb_BootHart];
+
+            hd->hd_Load = __cpu_load;
+            hd->hd_SleepTime = slept;
+            hd->hd_LastLoadTime = now;
+        }
+
+        /* And every task's share of the window */
+#if defined(__AROSEXEC_SMP__)
+        if (SysBase)
+            krnTaskUsageAll(now, window);
+#else
+        if (SysBase)
+        {
+            struct Task *t;
+
+            ForeachNode(&SysBase->TaskReady, t)
+                krnTaskUsage(t, window);
+            ForeachNode(&SysBase->TaskWait, t)
+                krnTaskUsage(t, window);
+
+            t = SysBase->ThisTask;
+            if (t && t->tc_State == TS_RUN && (t->tc_Flags & TF_ETASK) &&
+                t->tc_UnionETask.tc_ETask)
+            {
+                /* Fold in the segment it is still running */
+                struct IntETask *iet = IntETask(t->tc_UnionETask.tc_ETask);
+
+                iet->iet_private2 += now - iet->iet_private1;
+                iet->iet_private1 = now;
+                krnTaskUsage(t, window);
+            }
+        }
+#endif
+    }
+
+    /*
+     * Drive exec's periodic interrupt. timer.device hangs its request
+     * queues off this, so without it nothing that waits on a timeout
+     * ever wakes - the tick alone only serves the scheduler, which is
+     * driven straight from the trap handler.
+     */
+    if (SysBase && !(kpt->kpt_Flags & KPTF_CLAIMED))
+        core_Cause(INTB_VERTB, 1L << INTB_VERTB);
+}

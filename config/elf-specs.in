@@ -1,0 +1,37 @@
+*cpp:
+%(cpp_cpu) %{fPIC:-D__PIC__ -D__pic__} %{fpic:-D__PIC__ -D__pic__} %{posix:-D_POSIX_SOURCE} %{pthread:-D_REENTRANT} %{nix:-D__NIX__} %(aros_predefines) %(aros_include) -Uunix -U__unix__ -U__unix -U@aros_host_arch@ -U__@aros_host_arch@ -U__@aros_host_arch@__ 
+
+*ssp_default:
+
+
+*aros_include:
+%{!nostdinc:%{!nostdc:%{!noposixc:-isystem @AROS_BUILDDIR@/bin/@aros_target_arch@-@aros_target_cpu@@aros_target_suffix@/AROS/Developer/include/aros/posixc} -isystem @AROS_BUILDDIR@/bin/@aros_target_arch@-@aros_target_cpu@@aros_target_suffix@/AROS/Developer/include/aros/stdc} -isystem @AROS_BUILDDIR@/bin/@aros_target_arch@-@aros_target_cpu@@aros_target_suffix@/AROS/Developer/include}
+
+*endfile:
+
+
+*link:
+@spec_obj_format@ -L@AROS_BUILDDIR@/bin/@aros_target_arch@-@aros_target_cpu@@aros_target_suffix@/AROS/Developer/lib
+
+%include_noerr <@AROS_BUILDDIR@/bin/@aros_target_arch@-@aros_target_cpu@@aros_target_suffix@/AROS/Developer/lib/auto>
+
+*lib:
+%(autolib) %{!nostdc:%{!noposixc:-lposixc} -lstdcio -lstdc} %{!nosysbase:-lexec} %{nostdc:-lstdc.static}
+
+*libgcc:
+@aros_c_libs@ -lgcc
+
+*startfile:
+@AROS_BUILDDIR@/bin/@aros_target_arch@-@aros_target_cpu@@aros_target_suffix@/AROS/Developer/lib/elf-startup.o
+
+*aros_predefines:
+-D__ELF__ @gcc_target_cpu@ -A-system -Asystem(posix)
+
+*predefines:
+%(aros_predefines)
+
+*cross_compile:
+1
+
+*linker:
+@AROS_BUILDDIR@/bin/@aros_host_arch@-@aros_host_cpu@/tools/@aros_target_cpu@-@aros_target_arch@@aros_target_suffix@-elf-ld

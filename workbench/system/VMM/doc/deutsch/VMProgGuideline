@@ -1,0 +1,89 @@
+                             $Date: 96/07/24 20:29:28 $
+
+Falls  Sie Programme schreiben, die viel Speicher benötigen (z.B.  Ray
+Tracer,      Compiler,...),     helfen     Ihnen     die     folgenden
+Programmierrichtlinien dabei von virtuellem Speicher zu profitieren:
+
+*********************************************************************
+
+Greifen  Sie innerhalb eines Forbid/Permit bzw.  Disable/Enable-Paares
+nicht auf virtuellen Speicher zu.  Das folgende Beispiel zeigt, warum:
+
+/* Dieses Beispielprogramm liest die Namen der gerade im Wartezustand
+ * befindlichen Tasks aus.
+ */
+
+UBYTE *buffer;
+UBYTE *buffer_ptr;
+struct Task *tmpTask;
+
+/* Dieser Puffer wird im virtuellen Speicher angelegt, wenn VMM läuft. */
+if ((buffer = AllocMem (SOME_SIZE, MEMF_ANY)) == NULL)      
+  return (FALSE);
+
+buffer_ptr = buffer;
+
+Forbid ();
+for (tmpTask = (struct Task*)SysBase->TaskWait.lh_Head;
+     tmpTask->tc_Node.ln_Succ != NULL;
+     tmpTask = tmpTask->tc_Node.ln_Succ)
+  {
+  strcpy (buffer_ptr, tmpTask->tc_Node.ln_Name);  /* dies kann einen Seitenfehler */
+                                                  /* verursachen. */
+  buffer_ptr += strlen (tmpTask->tc_Node.ln_Name) + 1);
+  }
+Permit ();
+
+Dieses  Beispiel  kann  einen  Seitenfehler  produzieren,  während ein
+Taskname  in  den  internen  Puffer kopiert wird.  Da ein Seitenfehler
+eine  Taskumschaltung hervorruft, wird anschließend der ln_Next-Zeiger
+ungültig sein.  Dies kann einen Absturz hervorrufen.
+
+*********************************************************************
+
+Man  sollte  keine Messages, IORequests, Task-Struktures usw.  auf dem
+Stack  anlegen,  wenn man nicht absolut sicher ist, daß dieser sich in
+Public-Speicher befindet.
+Wenn  Sie  trotzdem  beispielsweise  einen  IORequest  auf  dem  Stack
+anlegen,  der  in  virtuellem  Speicher  sein  könnte,  und Sie diesen
+Request an das timer.device senden, kann der Rechner abstürzen, da das
+timer.device  auf den IORequest aus einem Interrupt zugreift.  Während
+sich  der  Prozessor  im  Supervisor-Modus befindet, sind Seitenfehler
+absolut tödlich.
+
+*********************************************************************
+
+Greifen  Sie  nicht  innerhalb  vom  Supervisor-Modus  auf  virtuellen
+Speicher zu.  Dies beinhaltet Interrupt- und Traphandler-Routinen.  Da
+die  Task,  die  den  Seitenfehler  verursacht,  in  den  Wartezustand
+versetzt  wird,  darf  ein  Seitenfehler nur von einer Task verursacht
+werden,   die   ihren   normalen   Stack   verwendet   und  nicht  den
+(systemglobalen) Supervisor-Stack.
+
+*********************************************************************
+
+Sie  sollten innerhalb eines Forbid/Permit bzw.  Disable/Enable-Paares
+weder  virtuellen  Speicher  allokieren  noch freigeben.  Allokationen
+innerhalb  solch  eines  Paares  erhalten  aus  Sicherheitsgründen nie
+virtuellen  Speicher,  das  Freigeben  wird  bis  nach  dem  Ende  des
+kritischen Abschnitts verschoben.
+
+*********************************************************************
+
+Speicher,  der ohne das MEMF_PUBLIC-Flag allokiert wurde, sollte nicht
+von anderen Tasks verwendet werden.  Z.B.  sollten Sie nicht aus einer
+Datei  lesen,  wenn  Sie  dafür  einen  Puffer  im virtuellen Speicher
+verwenden.
+
+*********************************************************************
+
+Legen Sie Daten, die meist zusammen gebraucht werden möglichst auch in
+benachbarte  Speicherbereiche.  Wenn Sie z.B.  ein Programm schreiben,
+das  aus  mehreren  Durchläufen  besteht, allokieren Sie die Daten für
+jeden  Durchlauf  zusammen.   Das  kann die Seitenfehlerrate drastisch
+reduzieren.
+
+*********************************************************************
+
+Zusätzlich   zu  den  obigen  Regeln  sollten  Sie  immer  Commodore's
+Programmierrichtlinien befolgen.

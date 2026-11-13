@@ -1,0 +1,78 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM- workbench-complete : \
+#MM    workbench-devs
+
+#MM- workbench-devs : \
+#MM    includes \
+#MM    linklibs \
+#MM    workbench-devs-common \
+#MM    workbench-devs-$(AROS_TARGET_ARCH) \
+#MM    workbench-devs-$(AROS_TARGET_CPU) \
+#MM    workbench-devs-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)
+
+#MM- workbench-devs-quick : \
+#MM    workbench-devs-common-quick \
+#MM    workbench-devs-$(AROS_TARGET_ARCH)-quick \
+#MM    workbench-devs-$(AROS_TARGET_CPU)-quick \
+#MM    workbench-devs-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)-quick
+
+#MM- workbench-devs-common : \
+#MM    workbench-devs-fdsk \
+#MM    workbench-devs-ramdrive \
+#MM    workbench-devs-monitors \
+#MM    workbench-devs-mountlist \
+#MM    workbench-devs-networks \
+#MM    workbench-devs-AHI
+
+#MM- workbench-devs-common-quick : \
+#MM    workbench-devs-fdsk-quick \
+#MM    workbench-devs-ramdrive-quick \
+#MM    workbench-devs-monitors \
+#MM    workbench-devs-mountlist \
+#MM    workbench-devs-networks \
+#MM    workbench-devs-AHI-quick
+
+#MM- includes-generate : \
+#MM      workbench-devs-input-includes
+
+#MM
+workbench-devs-mountlist : $(AROS_DEVS)/Mountlist workbench-devs-dosdrivers
+
+$(AROS_DEVS)/Mountlist : Mountlist
+	@$(CP) $< $@
+
+DOSDRIVERFILES := DEBUG PAR PIPE PRT SER SER0 SER1 SPEAK
+
+%copy_files_q mmake=workbench-devs-dosdrivers files="$(DOSDRIVERFILES)" \
+    src=DOSDrivers dst=$(AROS_DEVS)/DOSDrivers
+
+# AUX is generated rather than kept in the source tree, because it is an
+# illegal filename on Windows hosts.
+workbench-devs-dosdrivers : $(AROS_DEVS)/DOSDrivers/AUX
+
+$(AROS_DEVS)/DOSDrivers/AUX : | $(AROS_DEVS)/DOSDrivers
+	@$(ECHO) "Generating $@..."
+	@$(ECHO) '/* AUX: -- a shell over a serial line.' > $@
+	@$(ECHO) ' *' >> $@
+	@$(ECHO) ' * The handler hands the stream to the console handler, so this behaves like' >> $@
+	@$(ECHO) ' * CON: rather than like SER:: reads return on a line instead of waiting for' >> $@
+	@$(ECHO) ' * the buffer to fill, and Ctrl-C reaches the running command.' >> $@
+	@$(ECHO) ' *' >> $@
+	@$(ECHO) ' * Startup is left empty, so the handler falls back to serial.device unit 0.' >> $@
+	@$(ECHO) ' * To drive a different device or unit, or to set the line parameters, use the' >> $@
+	@$(ECHO) ' * EHandler form instead:' >> $@
+	@$(ECHO) ' *' >> $@
+	@$(ECHO) ' *   EHandler  = L:aux-handler' >> $@
+	@$(ECHO) ' *   Device    = serial.device' >> $@
+	@$(ECHO) ' *   Unit      = 0' >> $@
+	@$(ECHO) ' *   Baud      = 115200' >> $@
+	@$(ECHO) ' *   Control   = "8N1"' >> $@
+	@$(ECHO) ' */' >> $@
+	@$(ECHO) '' >> $@
+	@$(ECHO) 'Handler   = L:aux-handler' >> $@
+	@$(ECHO) 'Priority  = 5' >> $@
+	@$(ECHO) 'StackSize = 8192' >> $@
+	@$(ECHO) 'GlobVec   = -1' >> $@
+	@$(ECHO) 'Startup   = 0' >> $@

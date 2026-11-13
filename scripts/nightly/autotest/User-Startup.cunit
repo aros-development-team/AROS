@@ -1,0 +1,100 @@
+Assign EXISTS "DEBUG:" >NIL:
+If NOT WARN
+    Echo "## Unit Test Output is redirected to DEBUG:" >DEBUG:
+
+    ; Perform basic "Exec" type unit tests...
+    Execute S/Test cunit/exec/cunit-exec-types
+
+    ; Perform entropy.resource stress/behaviour unit tests...
+    Execute S/Test cunit/entropy/cunit-entropy
+
+    ; Perform PFS3 on-disk endian conversion unit tests...
+    Execute S/Test cunit/filesys/pfs3/cunit-pfs3-endian
+
+    ; Perform FAT BIOS Parameter Block parsing unit tests...
+    Execute S/Test cunit/filesys/fat/cunit-fat-bpb
+
+    ; Peform basic 'C' type unit tests..
+    Execute S/Test cunit/crt/stdc/cunit-crt-types
+
+    ; Peform basic 'genmodule' unit tests..
+    If EXISTS "SYS:Developer/Debug/Tests/Library/Libs"
+        Assign "LIBS:" "SYS:Developer/Debug/Tests/Library/Libs" ADD
+        Execute S/Test cunit/genmodule/library/cunit-genmodule-autoopen
+        Execute S/Test cunit/genmodule/library/cunit-genmodule-library
+        Execute S/Test cunit/genmodule/library/cunit-genmodule-relbase
+    EndIf
+
+    ; Perform basic "exec.library" unit tests...
+
+    ; Perform basic "utility.library" unit tests...
+
+    ; Perform basic "dos.library" unit tests...
+    Execute S/Test cunit/dos/cunit-dos-fileseek
+    Execute S/Test cunit/dos/cunit-dos-readargs
+
+    ; Perform basic "locale.library" unit tests...
+    Execute S/Test cunit/locale/cunit-locale-formatstring
+
+    ; Perform basic "gfx.hidd" unit tests...
+    Execute S/Test cunit/hidds/gfx/cunit-convertpixels
+
+    ; Perform "stdc.library" unit tests...
+    Execute S/Test cunit/crt/stdc/cunit-crt-ctype
+    Execute S/Test cunit/crt/stdc/cunit-crt-string-c89
+    Execute S/Test cunit/crt/stdc/cunit-crt-string-posix
+    Execute S/Test cunit/crt/stdc/cunit-crt-strto-c89
+    Execute S/Test cunit/crt/stdc/cunit-crt-strto-c99
+    Execute S/Test cunit/crt/stdc/cunit-crt-stdlib-c89
+    Execute S/Test cunit/crt/stdc/cunit-crt-stdlib-c99
+    Execute S/Test cunit/crt/stdc/cunit-crt-stdlib-c11
+    Execute S/Test cunit/crt/stdc/cunit-crt-stdlib-ext
+
+    ; Perform C11 <uchar.h> Unicode conversion unit tests...
+    Execute S/Test cunit/crt/stdc/cunit-crt-uchar-c11
+
+    ; Perform <time.h> unit tests...
+    Execute S/Test cunit/crt/stdc/cunit-crt-time-c89
+
+    ; Perform strftime() unit tests...
+    Execute S/Test cunit/crt/stdc/cunit-crt-strftime-c89
+
+    ; Perform formatted-input (scanf) unit tests...
+    Execute S/Test cunit/crt/stdc/cunit-crt-scanf-c89
+
+    ; Perform formatted-output (printf/swprintf) unit tests...
+    Execute S/Test cunit/crt/stdc/cunit-crt-printf-c99
+
+    ; Perform math error-handling (pole/domain/overflow) unit tests...
+    Execute S/Test cunit/crt/stdc/cunit-crt-matherr-c99
+
+    ; Perform basic math unit tests...
+    Execute S/Test cunit/crt/stdc/math/cunit-crt-math
+
+    ; Perform complex math unit tests...
+    Execute S/Test cunit/crt/stdc/math/cunit-crt-complexmath
+
+    ; Perform long double math unit tests...
+    Execute S/Test cunit/crt/stdc/math/cunit-crt-ldmath
+
+    ; Perform wchar/multibyte unit tests...
+    Execute S/Test cunit/crt/stdc/cunit-crt-wchar
+
+    ; Perform wctype unit tests...
+    Execute S/Test cunit/crt/stdc/cunit-crt-wctype
+
+    ; Perform basic "stdcio.library" unit tests...
+    Execute S/Test cunit/crt/stdc/cunit-crt-fileseek
+
+    ; Perform basic "posixc.library" unit tests...
+    Execute S/Test cunit/crt/posixc/cunit-crt-realpath
+    Execute S/Test cunit/crt/posixc/cunit-crt-tmpfile
+    Execute S/Test cunit/crt/posixc/cunit-crt-ext
+
+    ; Perform posixc wcwidth/wcswidth unit tests...
+    Execute S/Test cunit/crt/posixc/cunit-crt-wcwidth
+
+Endif
+
+; All done!
+Shutdown

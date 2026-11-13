@@ -1,0 +1,23 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+USER_CPPFLAGS := \
+               -D__OOP_NOLIBBASE__ \
+               -D__OOP_NOATTRBASES__ \
+               -D__OOP_NOMETHODBASES__ \
+               -D__UTILITY_NOLIBBASE__ \
+               -D__INLINE_ACPICA_STACKCALL__ 
+#USER_CPPFLAGS += -DDEBUG=1
+
+FILES := \
+          i8042_init \
+          i8042_classinit \
+          i8042_acpi \
+          i8042_kbdclass \
+          i8042_mouseclass \
+          i8042_common \
+          i8042_mouseps2
+
+%build_module mmake=kernel-hidd-i8042 \
+    modname=i8042 modtype=hidd \
+    files="$(FILES)" uselibs="hiddstubs"

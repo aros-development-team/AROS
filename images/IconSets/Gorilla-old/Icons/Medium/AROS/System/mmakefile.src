@@ -1,0 +1,10 @@
+# Copyright (C) 2004, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+
+ICONS := About FixFonts FTManager Themes
+
+#MM- iconset-Gorilla-old-icons-aros-clean : iconset-Gorilla-old-icons-aros-system-clean
+#MM- iconset-Gorilla-old-icons-aros : iconset-Gorilla-old-icons-aros-system
+%build_icons mmake=iconset-Gorilla-old-icons-aros-system icons=$(ICONS) \
+             dir=$(AROS_SYSTEM)

@@ -1,0 +1,34 @@
+LIBOBJS = libfunc.o pictureclass.o colorhandling.o prefs.o
+
+picture.datatype: ${LIBOBJS}
+   slink with <<
+LIBFD FD:dtclass_lib.fd
+to $@
+FROM lib:libent.o lib:libinit.o $(LIBOBJS)
+lib lib:sc.lib
+lib lib:debug.lib
+lib lib:amiga.lib
+NOICONS
+SD
+SC
+libversion 41 librevision 0 libid "picture.datatype 41.0 (03-Oct-2000)"
+<
+   avail flush
+
+libfunc.o: libfunc.c
+   sc nostackcheck optimize libcode define=MYDEBUG libfunc.c
+
+pictureclass.o: pictureclass.c
+   sc nostackcheck optimize define=MYDEBUG pictureclass.c
+
+colorhandling.o: colorhandling.c
+   sc nostackcheck optimize define=MYDEBUG colorhandling.c
+
+prefs.o: prefs.c
+   sc nostackcheck optimize define=MYDEBUG prefs.c
+
+clean:
+    delete FORCE libfunc.o
+    delete FORCE pictureclass.o
+    delete FORCE picture.datatype
+

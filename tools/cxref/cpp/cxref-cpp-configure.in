@@ -1,0 +1,97 @@
+#!/bin/sh
+#
+# $Header$
+#
+# C Cross Referencing & Documentation tool. Version 1.5g.
+#
+# A script to generate the runtime configuration information for
+# cxref-cpp so that it can imitate gcc.
+#
+# Written by Andrew M. Bishop
+#
+# This file Copyright 2004 Andrew M. Bishop
+# It may be distributed under the GNU Public License, version 2, or
+# any higher version.  See section COPYING of the GNU Public license
+# for conditions under which this file may be redistributed.
+#
+
+# Programs and paths
+# (Default to the ones from the configure script).
+
+EGREP="@EGREP@"
+
+prefix="@prefix@"
+cxref_cpp_defines="@datadir@/cxref/cxref-cpp.defines"
+
+# Chose the C compiler and output file to use if not specified.
+# (Defaults to compiler found by configure script).
+
+while [ ! $# = 0 ]; do
+
+    case $1 in
+        -o)
+            shift
+            cxref_cpp_defines=$1
+            ;;
+        *)
+            CC=$1
+            ;;
+    esac
+    shift
+
+done
+
+if [ "$CC" = "" ]; then
+    CC=@CC@
+fi
+
+# Check if this is gcc or not.
+# (Defaults to check made by configure script)
+
+GCC=@GCC@
+
+if [ "$GCC" = "" ]; then
+
+    # Some default paths if not gcc
+
+    PREDEFINES=""
+
+    INCLUDE_DIR1=/usr/local/include
+    INCLUDE_DIR2=/usr/include
+    INCLUDE_DIR3=/usr/local/include
+
+    # Write the predefines and include path to the file.
+
+    echo $PREDEFINES    > $cxref_cpp_defines
+    echo $INCLUDE_DIR1 >> $cxref_cpp_defines
+    echo $INCLUDE_DIR2 >> $cxref_cpp_defines
+    echo $INCLUDE_DIR3 >> $cxref_cpp_defines
+
+    # Write the built-in #defines to the file.
+
+    echo "" >> $cxref_cpp_defines
+
+else
+
+    # Run the compiler to work out the paths if gcc
+
+    $CC -E -v - < /dev/null > $cxref_cpp_defines 2>&1
+
+    PREDEFINES=`$EGREP -e -D__GNUC $cxref_cpp_defines | tr ' ' '\012' | $EGREP -e '^-[AD]' | tr '\012' ' '`
+
+    INCLUDE_DIR1=`awk '/include <.+> search/,/End of search/ {if(i==1)print $1;i++}' $cxref_cpp_defines`
+    INCLUDE_DIR2=`awk '/include <.+> search/,/End of search/ {if(i==2)print $1;i++}' $cxref_cpp_defines`
+    INCLUDE_DIR3=`awk '/include <.+> search/,/End of search/ {if(i==3)print $1;i++}' $cxref_cpp_defines`
+
+    # Write the predefines and include path to the file.
+
+    echo $PREDEFINES    > $cxref_cpp_defines
+    echo $INCLUDE_DIR1 >> $cxref_cpp_defines
+    echo $INCLUDE_DIR2 >> $cxref_cpp_defines
+    echo $INCLUDE_DIR3 >> $cxref_cpp_defines
+
+    # Write the built-in #defines to the file.
+
+    $CC -E -dM - < /dev/null >> $cxref_cpp_defines 2>/dev/null
+
+fi

@@ -1,0 +1,2 @@
+#! /bin/sh
+#  Just to fool the build system into using build_with_configure

@@ -1,0 +1,126 @@
+diff -ru cxref-1.5c/cxref.c cxref-1.5cu1/cxref.c
+--- cxref-1.5c/cxref.c	Sat Jan  6 14:05:12 2001
++++ cxref-1.5cu1/cxref.c	Mon Feb 18 17:41:20 2002
+@@ -57,6 +57,7 @@
+     option_xref=0,                      /*+ do cross referencing. +*/
+     option_warn=0,                      /*+ produce warnings. +*/
+     option_index=0,                     /*+ produce an index. +*/
++    option_webcpp=0,                    /*+ use webcpp for sources +*/
+     option_raw=0,                       /*+ produce raw output. +*/
+     option_latex=0,                     /*+ produce LaTeX output. +*/
+     option_html=0,                      /*+ produce HTML output. +*/
+@@ -379,6 +380,7 @@
+        "             [-warn[-all][-comment][-xref]]\n"
+        "             [-index[-all][-file][-func][-var][-type]]\n"
+        "             [-latex209|-latex2e] [-html20|-html32] [-rtf] [-sgml] [-raw]\n"
++       "             [-webcpp]\n"
+        "             [-Idirname] [-Ddefine] [-Udefine]\n"
+        "             [-CPP cpp_program] [-- cpp_arg [ ... cpp_arg]]\n"
+        "\n"
+@@ -407,6 +409,7 @@
+           "\n"
+           "-latex209 | -latex2e   : Produce LaTeX output (version 2.09 or 2e - default=2e).\n"
+           "-html20 | -html32      : Produce HTML output (version 2.0 or 3.2 - default=3.2).\n"
++	  "  -webcpp              : use webcpp to colorize sources.\n"
+           "-rtf                   : Produce RTF output (version 1.x).\n"
+           "-sgml                  : Produce SGML output (for SGML tools version 1.0.x).\n"
+           "-raw                   : Produce raw output .\n"
+@@ -678,6 +681,9 @@
+ 
+     if(!strcmp(args[i],"-no-comments"))
+       {option_no_comments=1; run_command=ConcatStrings(3,run_command," ",args[i]); continue;}
++
++    if(!strcmp(args[i],"-webcpp"))
++      {option_webcpp=1; run_command=ConcatStrings(3,run_command," ",args[i]); continue;}
+ 
+     if(!strncmp(args[i],"-xref",5))
+       {
+diff -ru cxref-1.5c/html.c cxref-1.5cu1/html.c
+--- cxref-1.5c/html.c	Sat Jan  6 14:05:12 2001
++++ cxref-1.5cu1/html.c	Fri Feb 15 18:18:06 2002
+@@ -42,6 +42,9 @@
+ /*+ The comments are to be inserted verbatim. +*/
+ extern int option_verbatim_comments;
+ 
++/*+ wether to use webcpp for source highlighting +*/
++extern int option_webcpp;
++
+ /*+ The type of HTML output to produce. +*/
+ extern int option_html;
+ 
+@@ -1426,38 +1429,43 @@
+  ifile=name;
+  ofile=ConcatStrings(4,option_odir,"/",name,HTML_SRC_FILE);
+ 
+- in =fopen(ifile,"r");
+- if(!in)
+-   {fprintf(stderr,"cxref: Failed to open the source file '%s'\n",ifile);exit(1);}
+-
+- out=fopen(ofile,"w");
+- if(!out)
+-   {fprintf(stderr,"cxref: Failed to open the HTML output source file '%s'\n",ofile);exit(1);}
+-
+- WriteHTMLPreamble(out,ConcatStrings(2,"Source File ",name),0);
+- fputs("<pre>\n",out);
+-
+- strcpy(pad,"    ");
+-
+- while(fgets(line,256,in))
+-   {
+-    lineno++;
+-    if(lineno==10)
+-       pad[3]=0;
+-    else if(lineno==100)
+-       pad[2]=0;
+-    else if(lineno==1000)
+-       pad[1]=0;
+-    else if(lineno==10000)
+-       pad[0]=0;
+-    fprintf(out,"<a name=\"line%d\">%d%s|</a> %s",lineno,lineno,pad,html(line,1));
+-   }
+-
+- fputs("</pre>\n",out);
+- WriteHTMLPostamble(out,0);
+-
+- fclose(in);
+- fclose(out);
++ if(option_webcpp) {
++   snprintf(line, 256, "webcpp %s %s -l -x", ifile, ofile);
++   system (line);
++ } else {
++   in =fopen(ifile,"r");
++   if(!in)
++     {fprintf(stderr,"cxref: Failed to open the source file '%s'\n",ifile);exit(1);}
++   
++   out=fopen(ofile,"w");
++   if(!out)
++     {fprintf(stderr,"cxref: Failed to open the HTML output source file '%s'\n",ofile);exit(1);}
++   
++   WriteHTMLPreamble(out,ConcatStrings(2,"Source File ",name),0);
++   fputs("<pre>\n",out);
++   
++   strcpy(pad,"    ");
++   
++   while(fgets(line,256,in))
++     {
++       lineno++;
++       if(lineno==10)
++	 pad[3]=0;
++       else if(lineno==100)
++	 pad[2]=0;
++       else if(lineno==1000)
++	 pad[1]=0;
++       else if(lineno==10000)
++	 pad[0]=0;
++       fprintf(out,"<a name=\"line%d\">%d%s|</a> %s",lineno,lineno,pad,html(line,1));
++     }
++   
++   fputs("</pre>\n",out);
++   WriteHTMLPostamble(out,0);
++   
++   fclose(in);
++   fclose(out);
++ }
+ }
+ 
+ 

@@ -1,0 +1,187 @@
+<HTML>
+<HEAD><TITLE> Environment </TITLE></HEAD>
+
+<BODY>
+
+<H1 ALIGN=CENTER>the Environment API</H1>
+
+
+<HR>
+<H1>Typical usage</H1>
+
+
+<PRE>
+#include"adflib.h"
+
+
+void MyVer(char *msg)
+{
+    fprintf(stderr,"Verbose [%s]\n",msg);
+}
+
+
+int main()
+{
+    BOOL boolPr = TRUE;
+
+    adfEnvInitDefault();
+
+    /* to use the dir cache blocks, default is FALSE */
+    adfChgEnvProp(PR_USEDIRC, (void*)&boolPr);      // optional
+	
+    /* to override the verbose callback */
+    adfChgEnvProp(PR_VFCT, MyVer);                  // optional
+
+    adfEnvCleanUp();
+}
+</PRE>
+
+
+
+<HR>
+
+<P ALIGN=CENTER><FONT SIZE=+2> adfEnvInitDefault() </FONT></P>
+
+<H2>Syntax</H2>
+
+<B>void</B> adfEnvInitDefault()
+
+<H2>Description</H2>
+
+Initialise the library data structures and default values.
+Must be done before any other call to the library.
+<P>
+There is 4 callback functions which can be (and must be) overridden,
+the library must not write anything to the console.
+<UL>
+<LI>The verbose messages redirection,
+<LI>the warning messages redirection,
+<LI>the error messages redirection (must stop the library)
+<LI>The notification callback : when the current directory has changed.
+<LI>The progress bar : this function is called with an int first set to 0.
+ Then the value increases up to 100. It can be used to display a progress bar.
+</UL>
+By default, those functions write a message to stderr.
+<P>
+Another environment property is the ability to use or not the dir cache
+blocks to get the content of a directory. By default, it is not used.
+<P>
+See <B>adfChgEnvProp()</B> to learn how to change those properties.
+
+
+<H2>Internals</H2>
+
+<OL>
+<LI>Set the default values
+<LI>Prints the library version with the verbose callback.
+<LI>Allocate the native functions structure
+<LI>Calls adfInitNativeFct()
+</OL>
+
+<HR>
+<P ALIGN=CENTER><FONT SIZE=+2> adfChgEnvProp() </FONT></P>
+
+<H2>Syntax</H2>
+
+<B>void</B> adfChgEnvProp(<B>int</B> propertyName, <B>void*</B> new value)
+
+
+<H2>Description</H2>
+
+Change the default or lastest value of one of the environment property.
+The new value has the <B>void*</B>, this is the only way to transmit it
+for several types. A cast is made depending of the property name inside 
+adfChgEnvProp().
+<P>
+Here's the list of the properties, and their types :
+<UL>
+<LI>PR_VFCT, displays verbose messages, (void(*)(char*))
+<LI>PR_WFCT, displays warning messages, (void(*)(char*))
+<LI>PR_EFCT, displays error messages, (void(*)(char*))
+</UL>
+<UL>
+<LI>PR_NOTFCT, directory object change notification, (void(*)(SECTNUM,int))
+<LI>PR_USE_NOTFCT, toggle on/off (default=off=false), BOOL
+</UL>
+<UL>
+<LI>PR_PROGBAR, progress bar, (void(*)(int))
+<LI>PR_USE_PROGBAR, use progress bar (default=off), BOOL<BR>
+The functions that support 'progress bar' are : adfCreateFlop(),
+adfCreateHd(), adfCreateHdFile().
+</UL>
+<UL>
+<LI>PR_RWACCESS, read (BOOL=false) or write (BOOL=true) operation, logical block and physical sector accessed, (void(*)(SECTNUM,SECTNUM,BOOL))
+<LI>PR_USE_RWACCESS, use rwaccess (default=off), BOOL
+</UL>
+
+<UL>
+<LI>PR_USEDIRC, use dircache blocks, BOOL (default=off).
+</UL>
+
+For the non pointer types (int with PR_USEDIRC), you have to use a temporary variable.
+
+To override successfully a function, the easiest is to reuse the default function
+located in adf_env.c, and to change it for your needs.
+
+<P>
+
+<HR>
+<P ALIGN=CENTER><FONT SIZE=+2> adfEnvCleanUp() </FONT></P>
+
+<H2>Syntax</H2>
+
+<B>void</B> adfEnvCleanUp()
+
+
+<H2>Description</H2>
+
+Cleans up the environment.
+
+<H2>Internals</H2>
+
+Frees the native functions structure.
+
+<HR>
+
+<P ALIGN=CENTER><FONT SIZE=+2> adfEnvCleanUp()  : Obsolete </FONT></P>
+
+<H2>Syntax</H2>
+<B>void</B> adfSetEnvFct( <B>void(*eFct)(char*)</B> error, <B>void(*wFct)(char*)</B> warning, <B>void(*vFct)(char*)</B> verbose, <B>void(*notFct)(SECTNUM,int)</B> notify )
+
+<P>
+Obsolete : use adfChgEnvProp() instead.
+<P>
+
+<HR>
+
+<P ALIGN=CENTER><FONT SIZE=+2> adfGetVersionNumber() </FONT></P>
+
+<H2>Syntax</H2>
+
+<B>char*</B> adfGetVersionNumber()
+
+<H2>Description</H2>
+
+Returns the current numeric ADFlib version.
+
+<P>
+
+
+<HR>
+
+<P ALIGN=CENTER><FONT SIZE=+2> adfGetVersionDate() </FONT></P>
+
+<H2>Syntax</H2>
+
+<B>char*</B> adfGetVersionDate()
+
+<H2>Description</H2>
+
+Returns the date of the ADFlib current version.
+
+<P>
+
+
+</BODY>
+
+</HTML>

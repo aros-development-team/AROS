@@ -1,0 +1,14 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+MODNAME :=  usb
+MODTYPE :=  hidd
+
+USER_CFLAGS :=  -I$(SRCDIR)/$(CURDIR)
+
+FILES       :=
+STUBS       := $(MODNAME)_stubs
+
+%make_hidd_stubs hidd=usb
+
+%common

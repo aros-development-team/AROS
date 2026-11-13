@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!-- Generator: Adobe Illustrator 9.0, SVG Export Plug-In  -->
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 20000303 Stylable//EN"   "http://www.w3.org/TR/2000/03/WD-SVG-20000303/DTD/svg-20000303-stylable.dtd" [
+	<!ENTITY st0 "fill:#AFAFAF;stroke:none;">
+	<!ENTITY st1 "fill:url(#aigrd1);stroke:none;">
+	<!ENTITY st2 "opacity:0.35;stroke:none;">
+	<!ENTITY st3 "opacity:0.79;fill:url(#aigrd3);stroke:none;">
+	<!ENTITY st4 "fill:#FFFFFF;stroke:none;">
+	<!ENTITY st5 "fill:url(#aigrd2);stroke:none;">
+	<!ENTITY st6 "fill:none;stroke:none;">
+	<!ENTITY st7 "fill-rule:nonzero;clip-rule:nonzero;stroke:#000000;stroke-miterlimit:4;">
+	<!ENTITY st8 "stroke:none;">
+]>
+<svg  width="52pt" height="48pt" viewBox="0 0 52 48" xml:space="preserve">
+	<g id="Layer_x0020_5" style="&st7;">
+		<path style="&st2;" d="M50.5,35.7c0,4.8-9.8,8.7-21.8,8.7c-12,0-21.8-3.9-21.8-8.7c0-4.8,9.8-8.7,21.8-8.7c12,0,21.8,3.9,21.8,8.7z"/>
+		<path style="&st8;" d="M9.9,10c-4.3,3.6-6.6,8.5-6.6,13.8c0,5.3,2.4,10.1,6.6,13.8c4.1,3.5,9.6,5.5,15.4,5.5c5.8,0,11.3-1.9,15.4-5.5c4.3-3.6,6.6-8.5,6.6-13.8c0-5.3-2.4-10.2-6.6-13.8c-4.1-3.5-9.6-5.5-15.4-5.5c-5.8,0-11.3,1.9-15.4,5.5z M20.6,23.8
+			c0-1.9,2.2-3.6,4.8-3.6s4.8,1.6,4.8,3.6s-2.2,3.6-4.8,3.6s-4.8-1.6-4.8-3.6z"/>
+		<linearGradient id="aigrd1" gradientUnits="userSpaceOnUse" x1="20.8701" y1="11.8774" x2="28.9663" y2="33.3499">
+			<stop  offset="0" style="stop-color:#FFFFFF"/>
+			<stop  offset="1" style="stop-color:#9B9B9B"/>
+		</linearGradient>
+		<path style="&st1;" d="M10.8,10.9c-3.9,3.4-6.1,7.8-6.1,12.6c0,4.8,2.2,9.3,6.1,12.6c3.9,3.3,9,5.1,14.5,5.1c5.5,0,10.6-1.8,14.5-5.1c3.9-3.4,6.1-7.8,6.1-12.6c0-4.8-2.2-9.3-6.1-12.6c-3.9-3.3-9-5.1-14.5-5.1c-5.5,0-10.6,1.8-14.5,5.1z M19.8,23.6
+			c0-2.5,2.5-4.4,5.5-4.4c3,0,5.5,2,5.5,4.4S28.3,28,25.3,28c-3,0-5.5-2-5.5-4.4z"/>
+		<linearGradient id="aigrd2" gradientUnits="userSpaceOnUse" x1="28.8613" y1="43.1025" x2="21.4782" y2="4.0152">
+			<stop  offset="0" style="stop-color:#FFFFFF"/>
+			<stop  offset="0.4944" style="stop-color:#858585"/>
+			<stop  offset="0.5225" style="stop-color:#FFFFFF"/>
+			<stop  offset="1" style="stop-color:#C2C2C2"/>
+		</linearGradient>
+		<path style="&st5;" d="M25.1,6.4C14.2,6.4,5.4,14,5.4,23.2c0,9.3,8.8,16.8,19.7,16.8s19.7-7.5,19.7-16.8C44.8,14,36,6.4,25.1,6.4z M25.3,29c-3.5,0-6.4-2.4-6.4-5.4c0-3,2.9-5.4,6.4-5.4c3.5,0,6.4,2.4,6.4,5.4c0,3-2.8,5.4-6.4,5.4z"/>
+		<linearGradient id="aigrd3" gradientUnits="userSpaceOnUse" x1="23.2783" y1="16.6826" x2="27.3448" y2="30.2374">
+			<stop  offset="0" style="stop-color:#FFFFFF"/>
+			<stop  offset="1" style="stop-color:#C2C2C2"/>
+		</linearGradient>
+		<path style="&st3;" d="M25.3,14.8c-5.7,0-10.4,3.8-10.4,8.6c0,4.7,4.6,8.6,10.4,8.6c5.7,0,10.4-3.8,10.4-8.6c0-4.7-4.6-8.6-10.4-8.6z M25.3,27.9c-3.3,0-5.9-2-5.9-4.5c0-2.5,2.6-4.5,5.9-4.5c3.3,0,5.9,2,5.9,4.5c0,2.5-2.6,4.5-5.9,4.5z"/>
+		<path style="&st0;" d="M29.2,20.4c-3.2-2.3-7.3-0.5-8.2,0.4s-1.4,2.7-0.6,4.7c-1.7-2.4-0.8-4.2,0.1-5.2c1.8-1.8,6.2-2.5,8.7,0z"/>
+		<path style="&st4;" d="M21.5,26.8c3.2,2.3,7.2,0.6,8.2-0.7c0.8-1,1.4-2.5,0.5-4.5c1.7,2.4,0.6,4.1-0.3,4.9c-1.2,1.2-5.4,2.7-8.5,0.2z"/>
+		<path style="&st6;" d="M2.8,1h48.6v47H2.8V1z"/>
+	</g>
+	<g id="Layer_x0020_3" style="&st7;">
+	</g>
+	<g id="Layer_x0020_2" style="&st7;">
+		<path style="&st6;" d="M0,0h52v48H0V0z"/>
+	</g>
+</svg>

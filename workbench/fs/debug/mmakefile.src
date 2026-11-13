@@ -1,0 +1,13 @@
+include $(SRCDIR)/config/aros.cfg
+
+#MM- workbench-fs-complete : workbench-fs-debug
+
+USER_LDFLAGS := -static
+
+FILES=debug-handler
+
+%build_module mmake=workbench-fs-debug \
+    modname=debug modtype=handler \
+    files="$(FILES)"
+
+%common

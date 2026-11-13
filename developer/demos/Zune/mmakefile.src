@@ -1,0 +1,18 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+FILES := \
+    mui_layout1 \
+    mui_slider \
+    mui_pages \
+    mui_notify1 \
+    mui_notify2 \
+    mui_input1
+
+#MM workbench-demos-zune : includes linklibs  
+
+%build_progs mmake=workbench-demos-zune \
+    files=$(FILES) targetdir=$(AROSDIR)/Demos/Zune
+
+%common
+

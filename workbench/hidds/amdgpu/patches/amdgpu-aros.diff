@@ -1,0 +1,91 @@
+Changes to the Linux 6.18 amdgpu sources carried in this tree.
+
+Not carried, being GPL-only:
+  drivers/gpu/drm/amd/amdgpu/amdgpu_vkms.c       (GPL-2.0+, removed)
+  drivers/gpu/drm/amd/amdgpu/amdgpu_vkms.h       (GPL-2.0+, replaced by an AROS header)
+  drivers/gpu/drm/amd/amdgpu/amdgpu_atpx_handler.c (GPL-2.0-only, removed)
+
+--- a/drivers/gpu/drm/amd/amdgpu/amdgpu_drv.c
++++ b/drivers/gpu/drm/amd/amdgpu/amdgpu_drv.c
+@@ -3162,6 +3162,22 @@
+ 	NULL,
+ };
+ 
++#ifdef __AROS__
++int amdgpu_aros_probe(struct pci_dev *pdev)
++{
++	const struct pci_device_id *ent = pci_match_id(pciidlist, pdev);
++
++	if (!ent)
++		return -ENODEV;
++	return amdgpu_pci_probe(pdev, ent);
++}
++
++void amdgpu_aros_remove(struct pci_dev *pdev)
++{
++	amdgpu_pci_remove(pdev);
++}
++#endif
++
+ static struct pci_driver amdgpu_kms_pci_driver = {
+ 	.name = DRIVER_NAME,
+ 	.id_table = pciidlist,
+--- a/drivers/gpu/drm/amd/amdgpu/amdgpu_gart.c
++++ b/drivers/gpu/drm/amd/amdgpu/amdgpu_gart.c
+@@ -135,8 +135,10 @@
+ 		return -ENOMEM;
+ 
+ 	/* assign pages to this device */
++#ifndef __AROS__
+ 	for (x = 0; x < (1UL << order); x++)
+ 		p[x].mapping = adev->mman.bdev.dev_mapping;
++#endif
+ 
+ 	/* If the hardware does not support UTCL2 snooping of the CPU caches
+ 	 * then set_memory_wc() could be used as a workaround to mark the pages
+@@ -243,8 +245,10 @@
+ 	sg_free_table(sg);
+ 	kfree(sg);
+ 	p = virt_to_page(adev->gart.ptr);
++#ifndef __AROS__
+ 	for (x = 0; x < (1UL << order); x++)
+ 		p[x].mapping = NULL;
++#endif
+ 	__free_pages(p, order);
+ 
+ 	adev->gart.ptr = NULL;
+--- a/drivers/gpu/drm/amd/amdgpu/amdgpu_ttm.c
++++ b/drivers/gpu/drm/amd/amdgpu/amdgpu_ttm.c
+@@ -1200,8 +1200,10 @@
+ 	if (ret)
+ 		return ret;
+ 
++#ifndef __AROS__
+ 	for (i = 0; i < ttm->num_pages; ++i)
+ 		ttm->pages[i]->mapping = bdev->dev_mapping;
++#endif
+ 
+ 	return 0;
+ }
+@@ -1232,8 +1234,10 @@
+ 	if (ttm->page_flags & TTM_TT_FLAG_EXTERNAL)
+ 		return;
+ 
++#ifndef __AROS__
+ 	for (i = 0; i < ttm->num_pages; ++i)
+ 		ttm->pages[i]->mapping = NULL;
++#endif
+ 
+ 	adev = amdgpu_ttm_adev(bdev);
+ 
+--- a/drivers/gpu/drm/amd/pm/powerplay/hwmgr/common_baco.h
++++ b/drivers/gpu/drm/amd/pm/powerplay/hwmgr/common_baco.h
+@@ -25,6 +25,8 @@
+ #include "hwmgr.h"
+ 
+ 
++#undef CMD_WRITE
++
+ enum baco_cmd_type {
+ 	CMD_WRITE = 0,
+ 	CMD_READMODIFYWRITE,

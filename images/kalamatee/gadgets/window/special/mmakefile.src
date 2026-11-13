@@ -1,0 +1,8 @@
+include $(SRCDIR)/config/aros.cfg
+
+FILES := win_close win_depth win_size win_zoom \
+        win_close_N win_depth_N win_size_N win_zoom_N
+
+%copy_files_q mmake=themes-kalamatee-images-gadgets-window-special files=$(FILES) dst=$(AROS_IMAGES)/Gadgets/Window
+
+%common

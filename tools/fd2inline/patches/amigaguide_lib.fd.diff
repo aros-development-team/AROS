@@ -1,0 +1,11 @@
+--- amigaguide_lib.fd.orig	Sun Feb 18 16:31:35 1996
++++ amigaguide_lib.fd	Sun Feb 18 16:31:35 1996
+@@ -13,7 +13,7 @@
+ ##private
+ amigaguidePrivate2()()
+ ##public
+-OpenAmigaGuideA(nag,*)(a0/a1)
++OpenAmigaGuideA(nag,attrs)(a0/a1)
+ OpenAmigaGuideAsyncA(nag,attrs)(a0,d0)
+ CloseAmigaGuide(cl)(a0)
+ AmigaGuideSignal(cl)(a0)

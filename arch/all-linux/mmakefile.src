@@ -1,0 +1,22 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+# Note ending dash - we build these only for variant-less (desktop) Linux
+#MM- kernel-linux- :              \
+#MM    kernel-hidd-linuxfb        \
+#MM    kernel-hidd-linuxinput
+
+#MM- workbench-linux-$(CPU) : \
+#MM      workbench-hosted \
+#MM      workbench-unix \
+#MM      workbench-devs-tap-unix \
+#MM      workbench-devs-eth-unix \
+#MM	 kernel-hidd-pci \
+#MM	 $(PCI_HIDD_TARGET)
+
+#MM- includes-linux: includes-unix
+#MM- linklibs-linux: linklibs-unix
+
+#MM- test-linux: test-unix
+
+%common

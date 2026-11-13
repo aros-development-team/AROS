@@ -1,0 +1,102 @@
+# steps-darwin-hosttoolchain.yml
+#
+# Builds the native host GCC used to compile the cross toolchain and AROS on
+# macOS. Verbatim from the original single-job pipeline, gated by the same
+# condition. On Linux this is a no-op (the condition is false).
+#
+# NOTE: in the staged model each stage runs on a fresh agent, so on macOS this
+# host compiler would be rebuilt per stage. macOS native-toolchain flavours are
+# therefore better served by the original single-job scripts/azure pipeline;
+# this template exists only so a Darwin flavour pointed at the staged pipeline
+# still produces a correct (if slower) result. See README.md.
+
+steps:
+- script: |
+    cd ~/
+    MACOSHOMEDIR=`pwd`
+    mkdir -p '$(AZBUILDPATH)/host/x86'
+    echo 'Building darwin x86 toolchain'
+    DARWINBUILDXCODEVERS=$(sudo xcode-select --print-path)
+    echo "Initial Darwin XCode version : $DARWINBUILDXCODEVERS"
+    MACOSDEFSDK=$(sudo xcrun --show-sdk-version)
+    echo "Initial MacOS Deployment Target: $MACOSX_DEPLOYMENT_TARGET"
+    echo "MacOS SDK : $SDK (Def: $MACOSDEFSDK)"
+    echo "MacOS 10.5 SDK path: $(xcrun --sdk macosx10.5 --show-sdk-path)"
+    echo "MacOS 10.12 SDK path: $(xcrun --sdk macosx10.12 --show-sdk-path)"
+    echo "MacOS 10.14 SDK path: $(xcrun --sdk macosx10.14 --show-sdk-path)"
+    wget https://ftp.gnu.org/gnu/gcc/gcc-8.3.0/gcc-8.3.0.tar.gz -P $(AZBUILDPATH)/host
+    wget https://ftp.gnu.org/gnu/gmp/gmp-4.2.4.tar.gz -P $(AZBUILDPATH)/host
+    wget https://ftp.gnu.org/gnu/mpc/mpc-1.1.0.tar.gz -P $(AZBUILDPATH)/host
+    wget https://ftp.gnu.org/gnu/mpfr/mpfr-4.0.1.tar.gz -P $(AZBUILDPATH)/host
+    cd $(AZBUILDPATH)/host
+    tar xzf gcc-8.3.0.tar.gz
+    tar xzf gmp-4.2.4.tar.gz
+    tar xzf mpc-1.1.0.tar.gz
+    tar xzf mpfr-4.0.1.tar.gz
+    echo '** prerequisite gmp'
+    mkdir -p '$MACOSHOMEDIR/opt/gcc/x86'
+    mkdir -p '$(AZBUILDPATH)/host/x86/gmp'
+    cd $(AZBUILDPATH)/host/x86/gmp
+    $(AZBUILDPATH)/host/gmp-4.2.4/configure --disable-shared --enable-static --prefix=$MACOSHOMEDIR/opt/gcc/x86
+    make -j $(BUILDTHREADS)
+    sudo make install
+    echo '** prerequisite mpfr'
+    mkdir -p '$(AZBUILDPATH)/host/x86/mpfr'
+    cd $(AZBUILDPATH)/host/x86/mpfr
+    $(AZBUILDPATH)/host/mpfr-4.0.1/configure --disable-shared --enable-static --prefix=$MACOSHOMEDIR/opt/gcc/x86 --with-gmp=$MACOSHOMEDIR/opt/gcc/x86
+    make -j $(BUILDTHREADS)
+    sudo make install
+    echo '** prerequisite mpc'
+    mkdir -p '$(AZBUILDPATH)/host/x86/mpc'
+    cd $(AZBUILDPATH)/host/x86/mpc
+    $(AZBUILDPATH)/host/mpc-1.1.0/configure --disable-shared --enable-static --prefix=$MACOSHOMEDIR/opt/gcc/x86 --with-gmp=$MACOSHOMEDIR/opt/gcc/x86 --with-mpfr=$MACOSHOMEDIR/opt/gcc/x86
+    make -j $(BUILDTHREADS)
+    sudo make install
+    echo '** building gcc'
+    if [ ! -d "/usr/include" ]; then
+      DARWINCONFIGEXTRA="--with-native-system-header-dir=$DARWINBUILDXCODEVERS/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/"
+      DARWINBOOTCFLAGS="-mmacosx-version-min=10.12 -Wa,-mmacos-version-min=10.5 -iframework .../SDKs/MacOSX.sdk/System/Library/Frameworks"
+      DARWINTARGETCFLAGS="-mmacosx-version-min=10.12 -Wa,-mmacos-version-min=10.5 -iframework .../SDKs/MacOSX.sdk/System/Library/Frameworks"
+      DARWINTARGETCXXFLAGS="-mmacosx-version-min=10.12 -Wa,-mmacos-version-min=10.5 -iframework .../SDKs/MacOSX.sdk/System/Library/Frameworks"
+      echo "header config  : $DARWINCONFIGEXTRA"
+    else
+      DARWINCONFIGEXTRA=
+      DARWINBOOTCFLAGS=
+      DARWINTARGETCFLAGS=
+      DARWINTARGETCXXFLAGS=
+    fi
+    mkdir -p '$(AZBUILDPATH)/host/x86/gcc'
+    cd $(AZBUILDPATH)/host/x86/gcc
+    BOOT_CFLAGS=$DARWINBOOTCFLAGS  CFLAGS_FOR_TARGET=$DARWINTARGETCFLAGS CXXFLAGS_FOR_TARGET=$DARWINTARGETCXXFLAGS  $(AZBUILDPATH)/host/gcc-8.3.0/configure --prefix=$MACOSHOMEDIR/opt/gcc/x86/8 --disable-nls --enable-languages=c,c++,objc,obj-c++,lto --with-dwarf2 --with-gmp=$MACOSHOMEDIR/opt/gcc/x86 --with-mpfr=/opt/gcc/x8 --with-mpc=$MACOSHOMEDIR/opt/gcc/x86 $DARWINCONFIGEXTRA
+    BOOT_CFLAGS=$DARWINBOOTCFLAGS  CFLAGS_FOR_TARGET=$DARWINTARGETCFLAGS CXXFLAGS_FOR_TARGET=$DARWINTARGETCXXFLAGS make -j $(BUILDTHREADS)
+    sudo make install
+    sudo find $MACOSHOMEDIR/opt/gcc/x86/8/lib/gcc -name '*.h' -exec grep -q 'It has been auto-edited by fixincludes from' {} \; -delete
+    if [ ! "$AROSBUILD_XCODE" = "" ]; then
+      DARWINBUILDXCODEVERS="/Applications/Xcode_$AROSBUILD_XCODE.app/Contents/Developer"
+      echo "switching XCode to version : $DARWINBUILDXCODEVERS"
+      sudo xcode-select -s $DARWINBUILDXCODEVERS
+    fi
+    echo "##vso[task.setvariable variable=CC;]$MACOSHOMEDIR/opt/gcc/x86/8/bin/gcc"
+    echo "##vso[task.setvariable variable=CXX;]$MACOSHOMEDIR/opt/gcc/x86/8/bin/g++"
+    echo "LIBRARY_PATH = '$LIBRARY_PATH'"
+    if [ "$AROSBUILD_TARGET" = "darwin-ppc" ]; then
+      echo 'Building darwin PPC toolchain'
+      mkdir -p '$(AZBUILDPATH)/host/ppc/gcc'
+      cd $(AZBUILDPATH)/host/ppc/gcc
+      PATH="/dir/containing/dsymutil/from/xcode6:$PATH"
+      export MACOSX_PPC_DEPLOYMENT_TARGET=10.4
+      CC=$MACOSHOMEDIR/opt/gcc/x86/8/bin/gcc CXX=$MACOSHOMEDIR/opt/gcc/x86/8/bin/g++ $(AZBUILDPATH)/host/gcc-8.3.0/configure \
+        --prefix=$MACOSHOMEDIR/opt/gcc/ppc/8 --disable-nls --disable-multilib --enable-languages=c,c++,objc,obj-c++,lto --with-dwarf2 \
+        --target=powerpc-apple-darwin10.8.0 --with-sysroot=/Developer/SDKs/MacOSX10.4u.sdk \
+        CFLAGS_FOR_TARGET="-isysroot /Developer/SDKs/MacOSX10.4u.sdk -mmacosx-version-min=10.4 -g -O2" \
+        LDFLAGS_FOR_TARGET="-isysroot /Developer/SDKs/MacOSX10.4u.sdk -mmacosx-version-min=10.4" \
+        CXXFLAGS_FOR_TARGET="-isysroot /Developer/SDKs/MacOSX10.4u.sdk -mmacosx-version-min=10.4 -g -O2"
+      make -j $(BUILDTHREADS)
+      sudo make install
+      sudo find $MACOSHOMEDIR/opt/gcc/ppc/8/lib/gcc -name '*.h' -exec grep -q 'It has been auto-edited by fixincludes from' {} \; -delete
+      echo "##vso[task.setvariable variable=MACOSX_PPC_DEPLOYMENT_TARGET;]$MACOSX_PPC_DEPLOYMENT_TARGET"
+      CONFIGOPTS="$(AROSCONFIGOPTIONS) --with-kernel-toolchain-prefix=powerpc-apple-darwin10.8.0-"
+      echo "##vso[task.setvariable variable=AROSCONFIGOPTIONS]$CONFIGOPTS"
+    fi
+  condition: and(eq( variables['Agent.OS'], 'Darwin' ), and(eq( variables['arosbuild.nativetoolchain'],'yes'), ne( variables['arosbuild.target'], 'darwin-x86_64' )))
+  displayName: 'Build native toolchains for MacOS'

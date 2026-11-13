@@ -1,0 +1,13 @@
+# Copyright (C) 2012-2025, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM- iconset-Gorilla-wbench-icons-aros-tools-clean : iconset-Gorilla-wbench-icons-aros-tools-quickpart-clean
+#MM- iconset-Gorilla-wbench-icons-aros-tools : iconset-Gorilla-wbench-icons-aros-tools-quickpart
+
+%build_icons mmake=iconset-Gorilla-wbench-icons-aros-tools-quickpart icons=QuickPart \
+             dir=$(AROS_TOOLS)/QuickPart
+
+#MM- icons-wbench-tools : gorilla-icons-wbench-tools-quickpart
+%build_icons mmake=gorilla-icons-wbench-tools-quickpart icons=QuickPart \
+             dir=$(AROS_PRESETS)/Icons/Gorilla/Default/$(AROS_DIR_AROS)/$(AROS_DIR_TOOLS)/QuickPart

@@ -1,0 +1,605 @@
+/*
+    Copyright (C) 2002-2026, The AROS Development Team. All rights reserved.
+*/
+
+#define MUIMASTER_YES_INLINE_STDARG
+
+#include <exec/memory.h>
+#include <clib/alib_protos.h>
+#include <proto/exec.h>
+#include <proto/dos.h>
+#include <proto/intuition.h>
+#include <proto/graphics.h>
+#include <proto/utility.h>
+#include <proto/muimaster.h>
+
+#include <string.h>
+#include <stdio.h>
+#include <math.h>
+
+#include "mui.h"
+#include "muimaster_intern.h"
+#include "support.h"
+#include "support_classes.h"
+#include "prefs.h"
+#include "debug.h"
+#include "knob_private.h"
+
+/****** Knob.mui/MUIC_Knob ************
+*
+*   NAME
+*       MUIC_Knob
+*
+*   SUPERCLASS
+*       Numeric.mui
+*
+*   DESCRIPTION
+*       Show Numeric Value as a marker on a rotary control. There are no
+*       class-specific public attributes or methods. ValueToScale maps the
+*       current value to zero through 270 degrees; Numeric_Reverse reverses this
+*       mapping. The artwork is a built-in 25 by 25 pixel pattern. A framed
+*       label area is painted, but no numeric text is drawn there;
+*       Numeric_Format does not change that rendering.
+*       Construction prepends FillArea FALSE. Setup calls Numeric then registers
+*       a separate mouse handler; Cleanup removes it before Numeric Cleanup. No
+*       separately allocated knob image or native gadget is owned.
+*
+*   METHODS
+*       AskMinMax adds 33 pixels in width and 47 pixels in height to all
+*       superclass size fields and returns TRUE. Full Draw paints frame,
+*       background and marker; update Draw erases the old marker and draws the
+*       new one. Draw returns FALSE without full/update flags, otherwise TRUE;
+*       drawing statuses are ignored.
+*       SELECTDOWN inside the object enables mouse-move events. Any other button
+*       code disables them. A delivered mouse move calculates an absolute angle
+*       from the pointer around the knob center, clamps it to 0..270 and sets
+*       Numeric_Value through ScaleToValue. It is not a relative drag
+*       accumulator. The handler returns zero and does not delegate; Numeric
+*       separately handles raw keys. There is no local pressed/drag flag check
+*       on mouse moves, so callers must preserve the normal event-registration
+*       lifecycle.
+*
+*   NOTES
+*       Use valid Numeric bounds and normal Setup/Show/Hide/Cleanup ordering.
+*       Hit testing uses current geometry and WORD intermediates. Formatting,
+*       export/import and numeric methods remain inherited even though the class
+*       does not draw a value string. Reverse changes alone inherit Numeric's
+*       lack of an automatic redraw request.
+*
+*/
+
+extern struct Library *MUIMasterBase;
+
+#define OUTERFRAME_X 2
+#define OUTERFRAME_Y 2
+#define OUTERFRAME_W (OUTERFRAME_X * 2)
+#define OUTERFRAME_H (OUTERFRAME_Y * 2)
+
+#define INNERFRAME_X 2
+#define INNERFRAME_Y 2
+#define INNERFRAME_W (INNERFRAME_X * 2)
+#define INNERFRAME_H (INNERFRAME_Y * 2)
+
+#define BORDERSIZE_X 2
+#define BORDERSIZE_Y 2
+#define BORDERSIZE_W (BORDERSIZE_X * 2)
+#define BORDERSIZE_H (BORDERSIZE_Y * 2)
+
+#define KNOB_LABEL_SPACING 2
+
+#define KNOB_WIDTH 25
+#define KNOB_HEIGHT 25
+
+#define LABEL_HEIGHT 8
+
+#define TOTAL_WIDTH OUTERFRAME_W + BORDERSIZE_W + KNOB_WIDTH
+#define TOTAL_HEIGHT OUTERFRAME_H + BORDERSIZE_H + INNERFRAME_H \
++ KNOB_HEIGHT + KNOB_LABEL_SPACING + LABEL_HEIGHT
+
+
+/* 0 halfshine */
+/* 1 halfshadow */
+/* 2 shadow */
+/* 3 shine */
+
+#define RLE_REP(count, val) (((count - 1) << 4) | val)
+
+static const UBYTE knob_rle[] =  /* hand-encoded, BTW ;-) */
+{
+    RLE_REP(8,0), RLE_REP(9,1), RLE_REP(8,0),
+    RLE_REP(6,0), RLE_REP(2,1), RLE_REP(9,2), RLE_REP(2,1), RLE_REP(6,0),
+    RLE_REP(5,0), 1, RLE_REP(2,2), RLE_REP(9,3), RLE_REP(2,2), 1, RLE_REP(5,0),
+    RLE_REP(4,0), 1, 2, RLE_REP(13,3), 2, 1, RLE_REP(4,0),
+    RLE_REP(3,0), 1, 2, RLE_REP(3,3), RLE_REP(9,0), RLE_REP(3,3), 2, 3, RLE_REP(3,0),
+    RLE_REP(2,0), 1, 2, RLE_REP(2,3), RLE_REP(13,0), 3, 1, 2, 3, RLE_REP(2,0),
+    0, 1, 2, RLE_REP(2,3), RLE_REP(15,0), RLE_REP(2,1), 2, 3, 0,
+    0, 1, 2, RLE_REP(2,3), RLE_REP(15,0), RLE_REP(2,1), 2, 3, 0,
+    1, 2, RLE_REP(2,3), 0, RLE_REP(16,0), RLE_REP(2,1), 2, 3,
+    1, 2, RLE_REP(2,3), 0, RLE_REP(16,0), RLE_REP(2,1), 2, 3,
+    1, 2, RLE_REP(2,3), 0, RLE_REP(16,0), RLE_REP(2,1), 2, 3,
+    1, 2, RLE_REP(2,3), 0, RLE_REP(16,0), RLE_REP(2,1), 2, 3,
+    1, 2, RLE_REP(2,3), 0, RLE_REP(16,0), RLE_REP(2,1), 2, 3,
+    1, 2, RLE_REP(2,3), 0, RLE_REP(16,0), RLE_REP(2,1), 2, 3,
+    1, 2, RLE_REP(2,3), 0, RLE_REP(16,0), RLE_REP(2,1), 2, 3,
+    1, 2, RLE_REP(2,3), 0, RLE_REP(16,0), RLE_REP(2,1), 2, 3,
+    1, 2, RLE_REP(2,3), 0, RLE_REP(16,0), RLE_REP(2,1), 2, 3,
+    0, 1, 2, RLE_REP(2,3), RLE_REP(15,0), RLE_REP(2,1), 2, 3, 0,
+    0, 1, 2, RLE_REP(2,3), RLE_REP(15,0), RLE_REP(2,1), 2, 3, 0,
+    RLE_REP(2,0), 1, 2, RLE_REP(2,3), RLE_REP(13,0), RLE_REP(2,1), 2, 3, RLE_REP(2,0),
+    RLE_REP(3,0), 1, 2, RLE_REP(3,1), RLE_REP(9,0), RLE_REP(3,1), 2, 3, RLE_REP(3,0),
+    RLE_REP(4,0), 3, 2, RLE_REP(13,1), 2, 3, RLE_REP(4,0),
+    RLE_REP(5,0), 3, RLE_REP(2,2), RLE_REP(9,1), RLE_REP(2,2), 3, RLE_REP(5,0),
+    RLE_REP(6,0), RLE_REP(2,3), RLE_REP(9,2), RLE_REP(2,3), RLE_REP(6,0),
+    RLE_REP(8,0), RLE_REP(9,3), RLE_REP(8,0),
+    
+};
+
+/*
+ * Construct Numeric with FillArea FALSE before caller tags, then initialize
+ * mouse descriptor. Return object or NULL. No image allocation or
+ * additional public state.
+ */
+IPTR Knob__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
+{
+    obj = (Object *) DoSuperNewTags
+        (cl, obj, NULL,
+        MUIA_FillArea, FALSE, TAG_MORE, (IPTR) msg->ops_AttrList);
+
+    if (obj)
+    {
+        struct Knob_DATA *data = INST_DATA(cl, obj);
+
+        data->ehn.ehn_Events = IDCMP_MOUSEBUTTONS;
+        data->ehn.ehn_Priority = 0;
+        data->ehn.ehn_Flags = MUI_EHF_GUIMODE;
+        data->ehn.ehn_Object = obj;
+        data->ehn.ehn_Class = cl;
+
+    }
+
+    return (IPTR) obj;
+}
+
+/*
+ * Set up Numeric and register Knob mouse handler on success. Return
+ * superclass result, ignoring registration status. Requires live window and
+ * paired Cleanup.
+ */
+IPTR Knob__MUIM_Setup(struct IClass *cl, Object *obj,
+    struct MUIP_Setup *msg)
+{
+    //struct RastPort          rp;
+    IPTR retval;
+
+    retval = DoSuperMethodA(cl, obj, (Msg) msg);
+    if (retval)
+    {
+        struct Knob_DATA *data = INST_DATA(cl, obj);
+#if 0
+        InitRastPort(&rp);
+        SetFont(&rp, _font(obj));
+
+        DeinitRastPort(&rp);
+#endif
+
+        DoMethod(_win(obj), MUIM_Window_AddEventHandler,
+            (IPTR) & data->ehn);
+
+    }
+
+    return retval;
+}
+
+/*
+ * Remove Knob mouse handler then return Numeric Cleanup result. Requires
+ * live window and matching Setup; no separately allocated artwork to
+ * release.
+ */
+IPTR Knob__MUIM_Cleanup(struct IClass *cl, Object *obj,
+    struct MUIP_Cleanup *msg)
+{
+    struct Knob_DATA *data = INST_DATA(cl, obj);
+
+    DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR) & data->ehn);
+
+    return DoSuperMethodA(cl, obj, (Msg) msg);
+}
+
+/**************************************************************************
+ MUIM_AskMinMax
+**************************************************************************/
+/*
+ * Ask Numeric/Area then add fixed 33 by 47 content requirements to every
+ * corresponding size field. Return TRUE ignoring superclass result.
+ * Requires writable MinMaxInfo; does not measure Format or font.
+ */
+IPTR Knob__MUIM_AskMinMax(struct IClass *cl, Object *obj,
+    struct MUIP_AskMinMax *msg)
+{
+    //struct Knob_DATA *data = INST_DATA(cl, obj);
+
+    DoSuperMethodA(cl, obj, (Msg) msg);
+
+    msg->MinMaxInfo->MinWidth += TOTAL_WIDTH;
+    msg->MinMaxInfo->MinHeight += TOTAL_HEIGHT;
+    msg->MinMaxInfo->DefWidth += TOTAL_WIDTH;
+    msg->MinMaxInfo->DefHeight += TOTAL_HEIGHT;
+    msg->MinMaxInfo->MaxWidth += TOTAL_WIDTH;
+    msg->MinMaxInfo->MaxHeight += TOTAL_HEIGHT;
+
+    return TRUE;
+}
+
+/*
+ * Draw or erase the small Knob marker using object pens on the supplied
+ * RastPort. Angles outside 0..270 become zero before conversion to drawing
+ * angle. Requires adequate rectangle and live pens; no resource ownership
+ * or result.
+ */
+static void DrawNeedle(Object *obj, struct RastPort *rp, LONG x1, LONG y1,
+    LONG x2, LONG y2, double angle, BOOL clear)
+{
+    LONG cx = (x1 + x2) / 2;
+    LONG cy = (y1 + y2) / 2;
+    LONG rx = cx - x1 - 4;
+    LONG ry = cy - y1 - 4;
+    LONG a, b;
+
+    SetDrMd(rp, JAM1);
+
+    if ((angle < 0.0) | (angle > 270.0))
+        angle = 0.0;
+    angle = 270.0 - 45.0 - angle;
+
+    a = cx + (LONG) (cos(angle * 3.14159265358979323846 / 180.0) * rx);
+    b = cy - (LONG) (sin(angle * 3.14159265358979323846 / 180.0) * ry);
+
+    if (clear)
+    {
+        SetAPen(rp, _pens(obj)[MPEN_HALFSHINE]);
+        RectFill(rp, a - 1, b - 1, a + 1, b + 1);
+    }
+    else
+    {
+        SetAPen(rp, _pens(obj)[MPEN_SHADOW]);
+        Move(rp, a, b - 1);
+        Draw(rp, a - 1, b);
+        SetAPen(rp, _pens(obj)[MPEN_HALFSHADOW]);
+        Move(rp, a - 1, b - 1);
+        Draw(rp, a, b);
+        SetAPen(rp, _pens(obj)[MPEN_SHINE]);
+        Move(rp, a + 1, b);
+        Draw(rp, a, b + 1);
+        SetAPen(rp, _pens(obj)[MPEN_HALFSHINE]);
+        WritePixel(rp, a + 1, b - 1);
+        WritePixel(rp, a + 1, b + 1);
+        WritePixel(rp, a - 1, b + 1);
+    }
+
+}
+
+
+/**************************************************************************
+ MUIM_Draw
+**************************************************************************/
+/*
+ * Draw full built-in frame/pattern or erase previous marker, then map Value
+ * to 0..270 and draw marker. Return FALSE without full/update flags,
+ * otherwise TRUE. Requires valid render context and geometry; no numeric
+ * text is drawn. Save prevangle for later update; rendering results
+ * ignored.
+ */
+IPTR Knob__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
+{
+    struct Knob_DATA *data = INST_DATA(cl, obj);
+    struct RastPort *rp;
+    WORD x1, y1, x2, y2;
+
+    DoSuperMethodA(cl, obj, (Msg) msg);
+
+    if (!(msg->flags & (MADF_DRAWOBJECT | MADF_DRAWUPDATE)))
+        return FALSE;
+
+    x1 = _mleft(obj);
+    y1 = _mtop(obj);
+    x2 = _mright(obj);
+    y2 = _mbottom(obj);
+
+    rp = _rp(obj);
+
+    if (msg->flags & MADF_DRAWOBJECT)
+    {
+        /* Transparent edges */
+
+        DoMethod(obj, MUIM_DrawParentBackground, x1, y1, 2, 1, x1, y1, 0);
+        DoMethod(obj, MUIM_DrawParentBackground, x1, y1 + 1, 1, 1, x1,
+            y1 + 1, 0);
+
+        DoMethod(obj, MUIM_DrawParentBackground, x2 - 1, y1, 2, 1, x2 - 1,
+            y1, 0);
+        DoMethod(obj, MUIM_DrawParentBackground, x2, y1 + 1, 1, 1, x2,
+            y1 + 1, 0);
+
+        DoMethod(obj, MUIM_DrawParentBackground, x1, y2, 2, 1, x1, y2, 0);
+        DoMethod(obj, MUIM_DrawParentBackground, x1, y2 - 1, 1, 1, x1,
+            y2 - 1, 0);
+
+        DoMethod(obj, MUIM_DrawParentBackground, x2 - 1, y2, 2, 1, x2 - 1,
+            y2, 0);
+        DoMethod(obj, MUIM_DrawParentBackground, x2, y2 - 1, 1, 1, x2,
+            y2 - 1, 0);
+
+        /* Outer frame */
+
+        SetABPenDrMd(rp, _pens(obj)[MPEN_SHINE], 0, JAM1);
+        Move(rp, x1 + 1, y2 - 1);
+        Draw(rp, x1, y2 - 2);
+        Draw(rp, x1, y1 + 2);
+        Draw(rp, x1 + 2, y1);
+        Draw(rp, x2 - 2, y1);
+        Draw(rp, x2 - 1, y1 + 1);
+
+        SetAPen(rp, _pens(obj)[MPEN_SHADOW]);
+        Move(rp, x2, y1 + 2);
+        Draw(rp, x2, y2 - 2);
+        Draw(rp, x2 - 2, y2);
+        Draw(rp, x1 + 2, y2);
+
+        SetAPen(rp, _pens(obj)[MPEN_HALFSHINE]);
+        Move(rp, x1 + 1, y2 - 2);
+        Draw(rp, x1 + 1, y1 + 2);
+        Draw(rp, x1 + 2, y1 + 1);
+        Draw(rp, x2 - 2, y1 + 1);
+
+        SetAPen(rp, _pens(obj)[MPEN_HALFSHADOW]);
+        Move(rp, x2 - 1, y1 + 2);
+        Draw(rp, x2 - 1, y2 - 2);
+        Draw(rp, x2 - 2, y2 - 1);
+        Draw(rp, x1 + 2, y2 - 1);
+
+        /* Border */
+
+        x1 += OUTERFRAME_X;
+        x2 -= OUTERFRAME_X;
+        y1 += OUTERFRAME_X;
+        y2 -= OUTERFRAME_Y;
+
+        SetAPen(rp, _pens(obj)[MPEN_HALFSHINE]);
+        RectFill(rp, x1, y1, x2, y1 + BORDERSIZE_Y - 1);
+        RectFill(rp, x1, y1 + BORDERSIZE_Y, x1 + BORDERSIZE_X - 1, y2);
+        RectFill(rp, x1 + BORDERSIZE_X - 1, y2 - BORDERSIZE_Y + 1, x2, y2);
+        RectFill(rp, x2 - BORDERSIZE_X + 1, y1 + BORDERSIZE_Y, x2,
+            y2 - BORDERSIZE_Y);
+
+        /* Inner Frame */
+
+        x1 += BORDERSIZE_X;
+        x2 -= BORDERSIZE_X;
+        y1 += BORDERSIZE_Y;
+        y2 = y1 + KNOB_HEIGHT - 1;
+
+        /* Knob bg */
+
+        {
+            static const UBYTE pen_mapping[] = {
+                MPEN_HALFSHINE, MPEN_HALFSHADOW, MPEN_SHADOW, MPEN_SHINE
+            };
+            const UBYTE *rleptr;
+            UBYTE rle;
+            WORD x = 0, y = 0, count;
+
+            for (rleptr = knob_rle;;)
+            {
+                rle = *rleptr++;
+                count = (rle >> 4) + 1;
+                SetAPen(_rp(obj), _pens(obj)[pen_mapping[rle & 15]]);
+                RectFill(_rp(obj), x1 + x, y1 + y, x1 + x + count - 1,
+                    y1 + y);
+                x += count;
+                if (x >= KNOB_WIDTH)
+                {
+                    x = 0;
+                    y++;
+                    if (y >= KNOB_HEIGHT)
+                        break;
+                }
+            }
+        }
+
+        /* Knob-Label spacing */
+
+        y1 = y2 + 1;
+
+        SetAPen(rp, _pens(obj)[MPEN_HALFSHINE]);
+        RectFill(rp, x1, y1, x2, y1 + KNOB_LABEL_SPACING - 1);
+
+        /* Label Frame */
+
+        y1 += KNOB_LABEL_SPACING;
+        y2 = _mbottom(obj) - OUTERFRAME_Y - BORDERSIZE_Y;
+
+        SetAPen(rp, _pens(obj)[MPEN_HALFSHINE]);
+        Move(rp, x1, y1);
+        Draw(rp, x1 + 1, y1);
+        Draw(rp, x1, y1 + 1);
+        Move(rp, x2, y1);
+        Draw(rp, x2 - 1, y1);
+        Draw(rp, x2, y1 + 1);
+        Move(rp, x1, y2);
+        Draw(rp, x1 + 1, y2);
+        Draw(rp, x1, y2 - 1);
+        Move(rp, x2, y2);
+        Draw(rp, x2 - 1, y2);
+        Draw(rp, x2, y2 - 1);
+
+        SetAPen(rp, _pens(obj)[MPEN_HALFSHADOW]);
+        Move(rp, x1 + 1, y2 - 1);
+        Draw(rp, x1, y2 - 2);
+        Draw(rp, x1, y1 + 2);
+        Draw(rp, x1 + 2, y1);
+        Draw(rp, x2 - 2, y1);
+        Draw(rp, x2 - 1, y1 + 1);
+
+        SetAPen(rp, _pens(obj)[MPEN_SHINE]);
+        Move(rp, x2, y1 + 2);
+        Draw(rp, x2, y2 - 2);
+        Draw(rp, x2 - 2, y2);
+        Draw(rp, x1 + 2, y2);
+
+        SetAPen(rp, _pens(obj)[MPEN_SHADOW]);
+        RectFill(rp, x1 + 1, y1 + 2, x1 + 1, y2 - 2);
+        RectFill(rp, x2 - 1, y1 + 2, x2 - 1, y2 - 2);
+        RectFill(rp, x1 + 2, y1 + 1, x2 - 2, y1 + 1);
+        RectFill(rp, x1 + 2, y2 - 1, x2 - 2, y2 - 1);
+
+        /* Label Bg */
+
+        RectFill(rp, x1 + 2, y1 + 2, x2 - 2, y2 - 2);
+
+    }
+
+    x1 = _mleft(obj) + OUTERFRAME_X + BORDERSIZE_X;
+    x2 = _mright(obj) - OUTERFRAME_X - BORDERSIZE_X;
+    y1 = _mtop(obj) + OUTERFRAME_Y + BORDERSIZE_Y;
+    y2 = y1 + KNOB_HEIGHT - 1;
+
+    if (msg->flags & MADF_DRAWUPDATE)
+    {
+        DrawNeedle(obj, rp, x1, y1, x2, y2, data->prevangle, TRUE);
+    }
+
+    data->prevangle =
+        (double)DoMethod(obj, MUIM_Numeric_ValueToScale, 0, 270);
+
+    DrawNeedle(obj, rp, x1, y1, x2, y2, data->prevangle, FALSE);
+
+    return TRUE;
+}
+
+/**************************************************************************
+ MUIM_HandleEvent
+**************************************************************************/
+/*
+ * Enable moves for SELECTDOWN inside; disable them for other button codes.
+ * Map each delivered move to absolute clamped angle and set Numeric Value
+ * normally. NULL imsg returns zero; all paths return zero without
+ * superclass delegation. No local drag flag protects injected moves;
+ * requires valid geometry and window.
+ */
+IPTR Knob__MUIM_HandleEvent(struct IClass *cl, Object *obj,
+    struct MUIP_HandleEvent *msg)
+{
+    struct Knob_DATA *data = INST_DATA(cl, obj);
+
+    if (!msg->imsg)
+    {
+        return 0;
+    }
+
+    switch (msg->imsg->Class)
+    {
+    case IDCMP_MOUSEBUTTONS:
+        switch (msg->imsg->Code)
+        {
+        case SELECTDOWN:
+            if (_between(_left(obj), msg->imsg->MouseX, _right(obj)) &&
+                _between(_top(obj), msg->imsg->MouseY, _bottom(obj)))
+            {
+                DoMethod(_win(obj), MUIM_Window_RemEventHandler,
+                    (IPTR) & data->ehn);
+                data->ehn.ehn_Events |= IDCMP_MOUSEMOVE;
+                DoMethod(_win(obj), MUIM_Window_AddEventHandler,
+                    (IPTR) & data->ehn);
+
+            }
+            break;
+
+        case SELECTUP:
+        case MENUUP:
+        case MIDDLEUP:
+        default:
+            DoMethod(_win(obj), MUIM_Window_RemEventHandler,
+                (IPTR) & data->ehn);
+            data->ehn.ehn_Events &= ~IDCMP_MOUSEMOVE;
+            DoMethod(_win(obj), MUIM_Window_AddEventHandler,
+                (IPTR) & data->ehn);
+            break;
+
+
+        }                       /* switch(msg->imsg->Code) */
+        break;
+
+    case IDCMP_MOUSEMOVE:
+        {
+            double angle;
+            WORD x1, y1, x2, y2, cx, cy, dx, dy;
+            IPTR val;
+
+            x1 = _mleft(obj) + OUTERFRAME_X + BORDERSIZE_X;
+            x2 = _mright(obj) - OUTERFRAME_X - BORDERSIZE_X;
+            y1 = _mtop(obj) + OUTERFRAME_Y + BORDERSIZE_Y;
+            y2 = y1 + KNOB_HEIGHT - 1;
+            cx = (x1 + x2) / 2;
+            cy = (y1 + y2) / 2;
+            dx = msg->imsg->MouseX - cx;
+            dy = cy - msg->imsg->MouseY;
+
+            angle =
+                180.0 - 45.0 + 180.0 * atan2((double)dx,
+                (double)dy) / 3.14159265358979323846;
+            if (angle < 0.0)
+                angle = 0.0;
+            else if (angle > 270.0)
+                angle = 270.0;
+
+            val =
+                DoMethod(obj, MUIM_Numeric_ScaleToValue, 0, 270,
+                (LONG) angle);
+            set(obj, MUIA_Numeric_Value, val);
+
+        }
+        break;
+
+    }                           /* switch(msg->imsg->Class) */
+
+    return 0;
+}
+
+#if ZUNE_BUILTIN_KNOB
+/*
+ * When built in, route local overrides and delegate other messages to
+ * Numeric. Return the selected handler result. Requires ABI-correct message
+ * and live object except construction; resource ownership follows the class
+ * lifecycle contract.
+ */
+BOOPSI_DISPATCHER(IPTR, Knob_Dispatcher, cl, obj, msg)
+{
+    switch (msg->MethodID)
+    {
+    case OM_NEW:
+        return Knob__OM_NEW(cl, obj, (struct opSet *)msg);
+    case MUIM_Setup:
+        return Knob__MUIM_Setup(cl, obj, (struct MUIP_Setup *)msg);
+    case MUIM_Cleanup:
+        return Knob__MUIM_Cleanup(cl, obj, (struct MUIP_Cleanup *)msg);
+    case MUIM_AskMinMax:
+        return Knob__MUIM_AskMinMax(cl, obj, (struct MUIP_AskMinMax *)msg);
+    case MUIM_Draw:
+        return Knob__MUIM_Draw(cl, obj, (struct MUIP_Draw *)msg);
+    case MUIM_HandleEvent:
+        return Knob__MUIM_HandleEvent(cl, obj,
+            (struct MUIP_HandleEvent *)msg);
+    default:
+        return DoSuperMethodA(cl, obj, msg);
+    }
+}
+BOOPSI_DISPATCHER_END
+
+const struct __MUIBuiltinClass _MUI_Knob_desc =
+{
+    MUIC_Knob,
+    MUIC_Numeric,
+    sizeof(struct Knob_DATA),
+    (void *) Knob_Dispatcher
+};
+#endif /* ZUNE_BUILTIN_KNOB */

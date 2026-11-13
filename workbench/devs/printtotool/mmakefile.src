@@ -1,0 +1,14 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM- workbench-devs-common: workbench-devs-printtotool
+
+#MM- workbench-devs-quick: workbench-devs-printtotool-quick
+
+USER_LDFLAGS := -static
+
+%build_module mmake=workbench-devs-printtotool \
+  modname=printtotool modtype=device \
+  files=printtotool
+
+%common

@@ -1,0 +1,10 @@
+# SDL3 backend scenario (ds4 profile): hat and a face button
+wait 3000
+hat 0 1
+wait 300
+hat 0 8
+wait 300
+btn 1 1
+wait 300
+btn 1 0
+wait 500

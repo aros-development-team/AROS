@@ -1,0 +1,15 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM kernel-dbus : includes
+#MM kernel-dbus-linklib : includes
+
+USER_CPPFLAGS := -DDBUS_API_SUBJECT_TO_CHANGE
+
+%build_module mmake=kernel-dbus \
+  modname=dbus modtype=library \
+  files=amiga_threads
+
+INCLUDE_FILES := $(wildcard include/*.h)
+
+%copy_includes dir=include path=dbus

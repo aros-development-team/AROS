@@ -1,0 +1,17 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM- contrib-development : tools-setrev
+#MM tools-setrev : includes linklibs
+
+FILES  := setrev
+EXEDIR := $(AROS_CONTRIB)/$(AROS_DIR_DEVELOPER)/Build
+USER_CFLAGS :=
+
+%build_prog mmake=tools-setrev progname=setrev \
+    targetdir=$(EXEDIR) files=$(FILES)
+
+FILES := setrev.readme
+%copy_files_q mmake=tools-setrev dst=$(EXEDIR)/Docs
+
+%common

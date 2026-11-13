@@ -1,0 +1,29 @@
+#
+#   Makefile for the Workbench:Tools/Commodities directory.
+
+include $(SRCDIR)/config/aros.cfg
+
+FILES	:= \
+    AutoPoint \
+    Blanker \
+    ClickToFront \
+    DepthMenu \
+    Exchange \
+    FKey \
+    NoCapsLock \
+    Opaque \
+    AltKeyQ \
+    ASCIITable
+
+USER_CFLAGS := -I$(SRCDIR)/workbench/libs/commodities
+
+#MM- workbench-tools : workbench-tools-commodities
+#MM workbench-tools-commodities : includes linklibs workbench-tools-commodities-catalogs
+
+%build_progs mmake=workbench-tools-commodities \
+    files=$(FILES) targetdir=$(AROSDIR)/Tools/Commodities uselibs=rexxsyslib
+
+# FIXME: rexxsyslib is only needed by FKey
+
+%common
+

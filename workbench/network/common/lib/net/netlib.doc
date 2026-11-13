@@ -1,0 +1,1919 @@
+TABLE OF CONTENTS
+
+net.lib/charRead
+net.lib/chmod
+net.lib/chown
+net.lib/dup
+net.lib/dup2
+net.lib/fstat
+net.lib/getpid
+met.lib/getppid
+net.lib/gettimeofday
+net.lib/herror
+net.lib/init_inet_daemon
+net.lib/kill
+net.lib/lineRead
+net.lib/lstat
+net.lib/perror
+net.lib/popen
+net.lib/PrintNetFault
+net.lib/PrintUserFault
+net.lib/random
+net.lib/rcmd
+net.lib/select
+net.lib/serveraccept
+net.lib/set_socket_stdio
+net.lib/sleep
+net.lib/SPrintf
+net.lib/srandom
+net.lib/stat
+net.lib/strerror
+net.lib/syslog
+net.lib/usleep
+net.lib/utime
+net.lib/writev
+net.lib/charRead                                             net.lib/charRead
+
+   NAME
+       charRead -- read characters from socket one by one.
+
+   SYNOPSIS
+       initCharRead(rc, fd)
+
+       void initCharRead(struct CharRead *, int);
+
+
+       character = charRead(rc)
+
+       int charRead(struct CharRead *);
+
+
+   DESCRIPTION
+       charRead is a macro package which return characters one by one 
+       from given socket input stream. The socket where data is to be read
+       is set by calling initCharRead(): rc is the pointer to charread
+       structure previously allocated. fd is the (socket) descriptor where
+       reading is to be done.
+
+       charRead() returns the next character from input stream or one of
+       the following:
+
+       RC_DO_SELECT    (-3)    - read input buffer is returned. Do select
+                                 before next call if you don't want charread
+                                 to block.
+
+       RC_EOF          (-2)    - end-of-file condition has occurred.
+
+       RC_ERROR        (-1)    - there has been an error while filling new
+                                 charread buffer. Check the value of Errno()
+
+   NOTE
+       Always use variable of type int to store return value from charRead()
+       since the numeric value of characters returned may vary between
+       0 -255 (or even greater). As you may know, -3 equals 253 if of type
+       unsigned char.
+
+   EXAMPLE
+       /*
+        * This piece of code shows how to use charread with select()
+        */
+       #include <sys/types.h>
+       #include <sys/socket.h>
+       #include <charread.h>
+
+       main_loop(int sock)
+       {
+         struct CharRead rc;
+         fd_set readfds;
+         int c;
+
+         initCharRead(&rc, sock);
+
+         FD_ZERO(&readfds);
+
+         while(1) {
+           FD_SET(sock, &readfds);     
+
+           if (select(sock + 1. &readfds, NULL, NULL, NULL)) < 0) {
+             perror("select");
+             break;
+           }
+           if (FD_ISSET(sock, &readfds)) {
+             while((c = charRead(&rc)) >= 0)
+               handle_next_input_character(c);
+             if (c == RC_EOF)
+               break;
+             if (c == RC_ERROR) {
+               perror("charRead");
+               break;
+             }
+           }
+         }
+       }
+
+    PORTABILITY
+       The source file charread.h should be able to be used in 
+       UNIX programs as is.
+
+    SEE ALSO
+       lineRead(), bsdsocket.library/recv()
+net.lib/chmod                                                   net.lib/chmod
+
+   NAME
+       chmod, fchmod - change mode of file
+
+   SYNOPSIS
+       #include <sys/stat.h>
+
+       int chmod(const char *path, mode_t mode);
+
+       int fchmod(int fd, mode_t mode);
+
+   DESCRIPTION
+       The function chmod() sets the file permission bits of the file
+       specified by the pathname path to mode. Fchmod() sets the permission
+       bits of the specified file descriptor fd. Chmod() verifies that the
+       process owner (user) either owns the file specified by path (or fd),
+       or is the super-user.  A mode is created from or'd permission bit
+       masks defined in <sys/stat.h>:
+
+             #define S_IRWXU 0000700    /* RWX mask for owner */
+             #define S_IRUSR 0000400    /* R for owner */
+             #define S_IWUSR 0000200    /* W for owner */
+             #define S_IXUSR 0000100    /* X for owner */
+
+             #define S_IRWXG 0000070    /* RWX mask for group */
+             #define S_IRGRP 0000040    /* R for group */
+             #define S_IWGRP 0000020    /* W for group */
+             #define S_IXGRP 0000010    /* X for group */
+
+             #define S_IRWXO 0000007    /* RWX mask for other */
+             #define S_IROTH 0000004    /* R for other */
+             #define S_IWOTH 0000002    /* W for other */
+             #define S_IXOTH 0000001    /* X for other */
+
+             #define S_ISUID 0004000    /* set user id on execution */
+             #define S_ISGID 0002000    /* set group id on execution */
+             #define S_ISVTX 0001000    /* save swapped text even after use *
+/
+
+       The ISVTX (the sticky bit) indicates to the system which executable
+       files are shareable (pure).
+
+       Writing or changing the owner of a file turns off the set-user-id
+       and set-group-id bits unless the user is the super-user.  This makes
+       the system somewhat more secure by protecting set-user-id
+       (set-group-id) files from remaining set-user-id (set-group-id) if
+       they are modified.
+
+   RETURN VALUES
+       Upon successful completion, a value of 0 is returned.  Otherwise, a
+       value of -1 is returned and errno is set to indicate the error.
+
+   ERRORS
+       Chmod() will fail and the file mode will be unchanged if:
+
+       [ENOTDIR]     A component of the path prefix is not a directory.
+
+       [ENAMETOOLONG]
+                     A component of a pathname exceeded 255 characters, or
+                     an entire path name exceeded 1023 characters.
+
+       [ENOENT]      The named file does not exist.
+
+       [EACCES]      Search permission is denied for a component of the
+                     path prefix.
+
+       [EPERM]       The effective user ID does not match the owner of the
+                     file and the effective user ID is not the super-user.
+
+       [EROFS]       The named file resides on a read-only file system.
+
+       [EFAULT]      Path points outside the process's allocated address
+                     space.
+
+       [EIO]         An I/O error occurred while reading from or writing to
+                     the file system.
+
+       Fchmod() will fail if:
+
+       [EBADF]       The descriptor is not valid.
+
+       [EINVAL]      Fd refers to a socket, not to a file.
+
+       [EROFS]       The file resides on a read-only file system.
+
+       [EIO]         An I/O error occurred while reading from or writing to
+                     the file system.
+
+   NOTES
+       This call is provided for Unix compatibility.  It does not know all
+       Amiga protection bits (Delete, Archive, Script).  The archive and
+       script bits are cleared, Delete set according the Write bit.
+
+   SEE ALSO
+       open(),  chown(),  stat()
+
+net.lib/chown                                                   net.lib/chown
+
+   NAME
+       chown - change owner and group of a file
+
+   SYNOPSIS
+       #include <unistd.h>
+
+       success = chown(path, owner, group)
+
+       int chown(const char *, uid_t, gid_t);
+
+   DESCRIPTION
+       The owner ID and group ID of the file named by path or referenced by
+       fd is changed as specified by the arguments owner and group.  The
+       owner of a file may change the group to a group of which he or she is
+       a member, but the change owner capability is restricted to the
+       super-user.
+
+       Chown() clears the set-user-id and set-group-id bits on the file to
+       prevent accidental or mischievious creation of set-user-id and
+       set-group-id programs.
+
+       One of the owner or group id's may be left unchanged by specifying it
+       as -1.
+
+       If the final component of path is a symbolic link, the ownership and
+       group of the symbolic link is changed, not the ownership and group of
+       the file or directory to which it points.
+
+   RETURN VALUES
+       Zero is returned if the operation was successful; -1 is returned if an
+       error occurs, with a more specific error code being placed in the
+       global variable errno.
+
+   ERRORS
+       Chown() will fail and the file will be unchanged if:
+
+       [ENOTDIR]     A component of the path prefix is not a directory.
+
+       [EINVAL]      The pathname contains a character with the high-order
+                     bit set.
+
+       [ENAMETOOLONG]
+                     A component of a pathname exceeded 80 characters, or an
+                     entire path name exceeded 1023 characters.
+
+       [ENOENT]      The named file does not exist.
+
+       [EACCES]      Search permission is denied for a component of the path
+                     prefix.
+
+       [ELOOP]       Too many symbolic links were encountered in translating
+                     the pathname.
+
+       [EPERM]       The effective user ID is not the super-user.
+
+       [EROFS]       The named file resides on a read-only file system.
+
+       [EFAULT]      Path points outside the process's allocated address
+                     space.
+
+       [EIO]         An I/O error occurred while reading from or writing to
+                     the file system.
+
+   SEE ALSO
+       chmod(2)
+
+net.lib/dup                                                       net.lib/dup
+
+   NAME
+       dup, dup2 - duplicate an existing file descriptor
+
+   SYNOPSIS
+       #include <unistd.h>
+
+       int dup(int oldd)
+
+       int dup2(int oldd, int newd)
+
+   FUNCTION
+       Dup() duplicates an existing object descriptor and returns its value
+       to the calling program (newd = dup(oldd)). The argument oldd is a
+       small nonnegative integer index in the program's descriptor table.
+       The value must be less than the size of the table, which is returned
+       by getdtablesize().  The new descriptor returned by the call is the
+       lowest numbered descriptor currently not in use by the program.
+
+       The object referenced by the descriptor does not distinguish between
+       oldd and newd in any way.  Thus if newd and oldd are duplicate
+       references to an open file, read() and write() calls all move a single
+       pointer into the file, and append mode, non-blocking I/O and
+       asynchronous I/O options are shared between the references.  If a
+       separate pointer into the file is desired, a different object
+       reference to the file must be obtained by issuing an additional open()
+       call.  The close-on-exec flag on the new file descriptor is unset.
+
+       In dup2(), the value of the new descriptor newd is specified.  If this
+       descriptor is already in use, the descriptor is first deallocated as
+       if a close() call had been done first.
+
+   RETURN VALUES
+       The value -1 is returned if an error occurs in either call.  The
+       external variable errno indicates the cause of the error.
+
+   BUGS
+       The current UFB implementation for SAS C allows only sockets to be
+       duplicated.
+
+   ERRORS
+       Dup() and dup2() fail if:
+
+       [EBADF]       Oldd or newd is not a valid active descriptor
+
+       [EMFILE]      Too many descriptors are active.
+
+   SEE ALSO
+       accept(),  open(),  close(),  socket(),  getdtablesize()
+
+   STANDARDS
+       Dup() and dup2() are expected to conform to IEEE Std 1003.1-1988
+       (``POSIX'').
+
+   COPYRIGHT
+       This manual page is copyright © 1980, 1991 Regents of the
+       University of California.  All rights reserved.
+
+net.lib/dup2                                                     net.lib/dup2
+   SEE ALSO
+       dup()
+net.lib/fstat                                                   net.lib/fstat
+
+   SEE ALSO
+       stat()
+
+net.lib/getpid                                                 net.lib/getpid
+
+   NAME
+       getpid - get calling process identification
+
+   SYNOPSIS
+       pid_t getpid(void);
+
+   DESCRIPTION
+       Getpid() returns the process ID of the calling process.  The
+       ID is guaranteed to be unique and is useful for constructing temporary
+       file names.
+
+   NOTES
+       In AmigaOS process ID is the same as pointer to its context descriptor
+       returned by FindTask(NULL). This function is provided for direct POSIX
+       compatibility.
+
+   SEE ALSO
+       getppid(), kill(), bsdsocket.library/gethostid(),
+       exec.library/FindTask()
+
+net.lib/getppid                                               net.lib/getppid
+
+   NAME
+       getppid - get parent process identification
+
+   SYNOPSIS
+       pid_t getppid(void);
+
+   DESCRIPTION
+       Getppid() returns the process ID of the parent of the calling process.
+
+   NOTES
+       This function is availible only in MorphOS and AROS operating systems.
+       m68k AmigaOS 3.x does not have a meaning of parent process.
+
+   SEE ALSO
+       getpid(), kill(), bsdsocket.library/gethostid(),
+       exec.library/FindTask()
+
+net.lib/gettimeofday                                     net.lib/gettimeofday
+
+   NAME   
+       gettimeofday - get date and time 
+
+   SYNOPSIS
+       #include <sys/time.h>
+
+       error = gettimeofday(tp, tzp)
+
+       int gettimeofday(struct timeval *, struct timezone *)
+
+   FUNCTION
+       The system's notion of the current Greenwich time and the
+       current time zone is obtained with the gettimeofday() call.
+       The time is expressed in seconds and microseconds since
+       midnight (0 hour), January 1, 1970.  The resolution of the
+       system clock is hardware dependent. If tzp is zero, the time
+       zone information will not be returned. Also, if your system
+       software is unable to provide time zone information, the
+       structure pointed by tzp will be filled with zeroes.
+  
+   PORTABILITY
+       UNIX
+
+   INPUTS
+       The structures pointed to by tp and tzp are defined in
+       <sys/time.h> as:
+  
+            struct timeval {
+                 long tv_sec;      /* seconds since Jan. 1, 1970 */
+                 long tv_usec;     /* and microseconds */
+            };
+  
+            struct timezone {
+                 int  tz_minuteswest;   /* of Greenwich */
+                 int  tz_dsttime;  /* type of dst correction to apply */
+            };
+  
+       The timezone structure indicates the local time zone (meas-
+       ured in minutes of time westward from Greenwich), and a flag
+       that, if nonzero, indicates that Daylight Saving time
+       applies locally during the appropriate part of the year.
+
+   RESULT
+       Returns 0 when successful and -1 with specific error code in 
+       errno in case of an error. No error codes are specified,
+       however.
+       
+   NOTES
+       gettimeofday() uses GetSysTime() function of the timer.device,
+       which is new to V36 of the device.
+
+       Time zone information is taken from the locale.library, if it
+       is available (it is included in all Amiga systems from 2.1 and
+       up). Otherwise the environment variable "TZ" is consulted. If
+       it fails, the time zone is initialized to the GMT.
+
+       Global variable TimerBase _must_ be initialized before
+       gettimeofday() is called. This is normally done automatically
+       by the autoinit module (timerinit.c) included in the net.lib.
+
+   SEE ALSO
+       timer.device/GetSysTime()
+net.lib/herror                                                 net.lib/herror
+
+   NAME
+       herror - print name resolver error message to stderr.
+
+   SYNOPSIS
+       #include <clib/netlib_protos.h>
+
+       herror(banner)
+       void herror(const char *)
+
+   FUNCTION
+       The herror() function finds the error message corresponding to the
+       current value of host error using the SocketBaseTags() and writes
+       it, followed by a newline, to the stderr. If the argument string
+       is non-NULL it is used as a prefix to the message string and
+       separated from it by a colon and space (`: '). If the argument is
+       NULL only the error message string is printed.
+
+   NOTES
+       The herror() function requires the stdio functions to be linked.
+
+   SEE ALSO
+       <netinclude:netdb.h>, SocketBaseTagList(), perror()
+
+net.lib/init_inet_daemon                             net.lib/init_inet_daemon
+
+   NAME
+       init_inet_daemon - obtain socket accepted by the inetd
+
+   SYNOPSIS
+       int init_inet_daemon(void);
+
+   FUNCTION
+       Obtain the server socket accepted by the inetd, the Internet
+       super-server.
+
+   RETURN VALUES
+       socket descriptor if successful, -1 with specific error code
+       on errno otherwise.
+
+   ERRORS
+       ENXIO     - The process was not started by the inetd.
+
+   NOTES
+       If the process was started by the inetd, but the ObtainSocket()
+       call fails, then this function exit()s with some specific exit
+       code, so that inetd can clean up the unobtained socket.
+
+       Use the net.lib function set_socket_stdio() to redirect stdio,
+       stdout and stderr to the returned socket, if necessary.
+
+   SEE ALSO
+       serveraccept(), set_socket_stdio(), bsdsocket/ObtainSocket(),
+       netutil/inetd
+
+net.lib/kill                                                     net.lib/kill
+
+   NAME
+       kill - send signal to a process
+
+   SYNOPSIS
+       int kill(pid_t pid, int sig);
+
+   FUNCTION
+       The kill() function sends the signal given by sig to pid, a
+       process or a group of processes. Sig may be one of the signals
+       specified in <signal.h> or it may be 0, in which case error
+       checking is performed but no signal is actually sent. This can
+       be used to check the validity of pid.
+
+   INPUTS
+       'pid' - a process ID to perform action on.
+       'sig' - can be 0 of one of the following values defined in the include
+               file <signal.h>:
+
+       NAME            Action in AmigaOS       UNIX functionality
+       SIGHUP          not implemented         terminal line hangup
+       SIGINT          not implemented         interrupt program
+       SIGQUIT         not implemented         quit program
+       SIGILL          not implemented         illegal instruction
+       SIGTRAP         not implemented         trace trap
+       SIGABRT         not implemented         abort() call (formerly SIGIOT)
+       SIGEMT          not implemented         emulate instruction executed
+       SIGFPE          not implemented         floating-point exception
+       SIGKILL         not implemented         kill program
+       SIGBUS          not implemented         bus error
+       SIGSEGV         not implemented         segmentation violation
+       SIGSYS          not implemented         system call given invalid
+					       argument
+       SIGPIPE         not implemented         write on a pipe with no reader
+       SIGALRM         not implemented         real-time timer expired
+       SIGTERM         send CTRL-C to the      software termination signal
+		       process
+       SIGURG          not implemented         urgent condition present on
+					       socket
+       SIGSTOP         not implemented         stop (cannot be caught or
+                                               ignored)
+       SIGTSTP         not implemented         stop signal generated from
+					       keyboard
+       SIGCONT         not implemented         continue after stop
+       SIGCHLD         not implemented         child status has changed
+       SIGTTIN         not implemented         background read attempted from
+					       control terminal
+       SIGTTOU         not implemented         background write attempted to
+					       control terminal
+       SIGIO           not implemented         I/O is possible on a descriptor
+       SIGXCPU         not implemented         cpu time limit exceeded
+       SIGXFSZ         not implemented         file size limit exceeded
+       SIGVTALRM       not implemented         virtual  time  alarm
+       SIGPROF         not implemented         profiling timer alarm
+       SIGWINCH        not implemented         Window size change
+       SIGINFO         not implemented         status request from keyboard
+       SIGUSR1         not implemented         User defined signal 1
+       SIGUSR2         not implemented         User defined signal 2
+
+   RETURN VALUES
+       Upon successful completion, a value of 0 is returned.
+       Otherwise, a value of -1 is returned and errno is set to
+       indicate the error.
+
+   BUGS
+       Only SIGTERM is currently supported. Other signals will give
+       EINVAL error. 
+
+   ERRORS
+       Kill() will fail and no signal will be sent if:
+
+       [EINVAL]      Sig is not a valid signal number.
+
+       [ESRCH]       No process can be found corresponding to that
+		     specified by pid.
+
+SEE ALSO
+     getpid()
+
+net.lib/lineRead                                             net.lib/lineRead
+
+   NAME
+       lineRead -- read newline terminated strings from socket
+
+   SYNOPSIS
+       initLineRead(rl, fd, lftype, bufsize)
+
+       void initLineRead(struct LineRead *, int, int, int);
+
+
+       length = lineRead(rl)
+
+       int lineread(struct LineRead *);
+
+
+   FUNCTION
+       lineRead() reads newline terminated strings from given descriptor
+       very efficiently. All the options needed are set by calling
+       initLineRead(): rl is the pointer to lineread structure previously
+       allocated. fd is the (socket) descriptor where reading is to be
+       done. lftype can have following 3 values:
+
+           RL_LFNOTREQ - Newline terminated strings are returned unless
+                         there is no newlines left in currently buffered
+                         input. In this case remaining buffer is returned.
+
+           RL_LFREQLF  - If there is no newlines left in currently buffered
+                         input the remaining input data is copied at the
+                         start of buffer. Caller is informed that next
+                         call will fill the buffer (and it may block).
+                         Lines are always returned with newline at the end
+                         unless the string is longer than whole buffer.
+
+           RL_LFREQNUL  - Like LF_REQLF, but remaining newline is removed.
+                         Note here that lenght is one longer that actual
+                         string length since line that has only one
+                         newline at the end would return length as 0
+                         which indigate string incomplete condition.
+
+       bufsize is used to tell lineread how big the receive buffer is.
+       always put RL_BUFSIZE here since that value is used to determine
+       the memory allocated for the buffer. This option is given to you
+       so you may decide to use different buffer size than the default
+       1024.
+
+       lineRead() returns the newline terminated string in rl_line field
+       of lineread structure. Return values of lineRead() are:
+
+            1 - RL_BUFSIZE     - normal length of returned string.
+
+            0                  - If zero is returned just after select(),
+                                 end-of-file condition has occurred.
+                                 Otherwise string is not completed yet.
+                                 Make sure you call select() (or use non-
+                                 blocking IO) if you don't want next call
+                                 to block.
+
+           -1                  - if rl_Line field of lineread structure
+                                 is NULL, it indicates error condition.
+                                 If rl_Line points to start of string
+                                 buffer, input string has been longer
+                                 than buffer. In this case rl_Line points
+                                 to zero terminated string of length
+                                 RL_BUFSIZE.
+
+       You may modify the zero terminated string returned by lineRead() in
+       any way, but memory around the string is private lineread memory.
+
+   EXAMPLE
+       /*
+        * The following code shows how to use lineread with select()
+        */
+       #ifdef USE_LOW_MEMORY_BUFFER
+       #define RL_BUFSIZE 256
+       #endif
+
+       #include <sys/types.h>
+       #ifdef AMIGA
+       #include <bsdsocket.h>
+       #endif
+       #include <lineread.h>
+
+       #define NULL 0
+
+       ...
+
+       main_loop(int sock)
+       {
+         struct LineRead * rl;
+         int length;
+         fd_set reafdfs;
+
+         if (rl = (struct LineRead *)AllocMem(sizeof (*rl), 0)) {
+
+           initLineRead(rl, sock, LF_REQLF, RL_BUFSIZE);
+
+           FD_ZERO(&readfds);
+
+           while(1) {
+             FD_SET(sock, &readfds);
+
+             if (select(sock + 1, &readfds, NULL, NULL, NULL)) < 0) {
+               perror("select");
+               break;
+             }
+             if (FD_ISSET(sock, &readfds))
+               if ((length = lineRead(rl)) == 0) /* EOF */
+                 break;
+               do {
+                 if (length > 0)
+                   write(1, rl->rl_Line, length); /* stdout. write() for */
+                                                  /* speed demonstration */
+                 else { /* length == -1 */
+                   if (rl->rl_Line == NULL); {
+                     perror("lineRead");
+                     break;
+                   }
+                   else {
+                     fprintf(stderr, "lineread input buffer overflow!\n");
+                     write(1, rl->rl_Line, RL_BUFSIZE);
+                     write(1, "\n", 1);
+                   }
+                 }
+               } while ((length = lineRead(rl)) != 0); /* 0 -> do select() */
+           }
+         FreeMem(rl, sizeof (*rl);
+         }
+         else
+           fprintf("AllocMem: Out Of memory\n");
+       }
+
+    PORTABILITY
+       The source modules lineread.c and lineread.h should compile
+       in UNIX machines as is.
+
+    SEE ALSO
+       charRead(), bsdsocket.library/recv()
+
+net.lib/lstat                                                   net.lib/lstat
+
+   SEE ALSO
+       stat()
+
+net.lib/perror                                                 net.lib/perror
+
+   NAME
+       perror - socket error messages
+
+   SYNOPSIS
+       extern int errno;
+
+       #include <stdio.h>
+
+       perror(banner)
+       void perror(const char *)
+
+   FUNCTION
+       The perror() function finds the error message corresponding to the
+       current value of the global variable errno and writes it, followed
+       by a newline, to the stderr. If the argument string is non-NULL it
+       is preappended to the message string and separated from it by a
+       colon and space (`: '). If string is NULL only the error message
+       string is printed.
+
+   NOTES
+       The perror() function requires the stdio functions to be linked.
+
+   SEE ALSO
+       strerror(), PrintNetFault(), <netinclude:sys/errno.h>
+
+net.lib/popen                                                   net.lib/popen
+   NAME
+       popen, pclose - initiate I/O to/from a process
+
+   SYNOPSIS
+       #include <stdio.h>
+
+       FILE *popen(command, type)
+       char *command, *type;
+
+       pclose(stream)
+       FILE *stream;
+
+   DESCRIPTION
+       The arguments to popen are pointers to null-terminated
+       strings containing respectively a command line and an
+       I/O mode, either "r" for reading or "w" for writing.  It
+       creates a pipe between the calling process and the command
+       to be executed.  The value returned is a stream pointer that
+       can be used (as appropriate) to write to the standard input
+       of the command or read from its standard output.
+
+       A stream opened by popen **MUST** be closed by pclose, which
+       waits for the associated process to terminate and returns
+       the exit status of the command.
+
+       Because stdio files are shared, a type "r" command may be
+       used as an input filter, and a type "w" as an output filter.
+
+   DIAGNOSTICS
+       Popen returns a null pointer if files or processes cannot be
+       created.
+
+       Pclose returns -1 if stream is not associated with a
+       `popened' command.
+
+   AUTHOR
+       Original version by Rick Schaeffer <ricks@isc-br.isc-br.com>
+/
+
+include <stdio.h>
+include <stdlib.h>
+include <string.h>
+include <stdarg.h>
+
+include <exec/types.h>
+include <exec/memory.h>
+include <dos/dos.h>
+include <dos/dosextens.h>
+include <dos/record.h>
+include <dos/dostags.h>
+
+include <proto/exec.h>
+include <proto/dos.h>
+include <clib/alib_protos.h>
+
+include <errno.h>
+
+define NOTDEF
+
+xtern char *mktemp(char *);
+
+truct POmsg {
+   struct Message  POm;
+   int     rc;
+   char        *cmd;
+   struct Library  *DOSBase;
+   };
+
+
+truct pstruct {
+   FILE    *fptr;
+   struct POmsg    childmsg;
+   };
+
+define MAXPIPES    6
+tatic struct pstruct poarray[MAXPIPES] = { 0 };
+
+tatic int childprocess(void);
+
+ILE *popen(const char *cmd, const char *mode)
+
+   static char tempname[] = "pipe:pXXX.XXX";
+   char        *pname,redir[20];
+   short       i;
+   int         pmode;
+   struct pstruct  *poptr;
+   struct Process  *child;
+   struct CommandLineInterface *cli;
+   ULONG stacksize;
+   struct Process *thistask;
+   FILE            *fptr;
+
+   /* First, get pointers to our process and cli structs */
+   thistask = (struct Process *) FindTask(NULL);
+   cli = Cli();
+   poptr = NULL;
+
+   /* now find an open pipe (we currently only allow 6 simultaneously
+      open pipes) */
+   for (i=0; i<MAXPIPES; i++) {
+       if (poarray[i].fptr == NULL) {
+           poptr = &poarray[i];
+           break;
+           }
+       }
+   if (poptr == NULL) {
+       fprintf(stderr,"popen: Unable to find an open pipe\n");
+       errno = EMFILE;
+       return(NULL);
+       }
+   if (strcmp(mode,"r") == 0)
+       pmode = MODE_NEWFILE;
+   else if (strcmp(mode,"w") == 0)
+       pmode = MODE_OLDFILE;
+   else {
+       fprintf(stderr,"popen: Mode must be 'r' or 'w'\n");
+       errno = EINVAL;
+       return(NULL);
+       }
+
+   /* Try to make a guaranteed unique file name for the pipe */
+   strcpy(redir,tempname);
+   redir[5] = 'a' + i;
+
+   pname = mktemp(redir);            /* set up a pipe: file name */
+
+   /* Now get the child's stack and priority set up */
+   if (cli)
+       stacksize = cli->cli_DefaultStack << 2;
+   else
+       stacksize = thistask->pr_StackSize;
+
+   /* Now open our side of the pipe */
+   fptr = fopen(pname,mode);
+   if (fptr == NULL) {
+       fprintf(stderr,"popen: Unable to open pipe file %s\n",pname);
+       return(NULL);
+       }
+
+   /* create the command.  since the "System" function runs through
+      the default shell, we need to tell it not to fail so that we
+      ALWAYS get back the exit status.  This wouldn't be necessary
+      if the CLI created by the System function inherited the parent's
+      FAILAT level.
+      The pipe file is passed as redirection to shell, which the 
+      SystemTags() will parse. For some reason the default "more"
+      could not get it's input properly if redirection was not used.
+   */
+   poptr->childmsg.cmd = malloc(strlen(cmd) + 15 + 20);
+   sprintf(poptr->childmsg.cmd, "failat 9999\n%s %c%s\n",
+           cmd, (pmode == MODE_NEWFILE) ? '>' : '<', pname);
+
+   /* Create a port that we can get the child's exit status through */
+   poptr->childmsg.POm.mn_ReplyPort = CreateMsgPort();
+   poptr->childmsg.POm.mn_Node.ln_Type = NT_MESSAGE;
+   poptr->childmsg.POm.mn_Node.ln_Pri = 0;
+   if (poptr->childmsg.POm.mn_ReplyPort == 0) {
+       fclose(fptr);
+       fprintf(stderr,"popen: Couldn't create message port\n");
+       errno = ENOMEM;
+       return(NULL);
+       }
+
+   /* Now we can start the new process.  NOTE: this is actually going
+      to create a process consisting ONLY of the function "childprocess"
+      which can be seen below.  childprocess() then runs the command
+      passed in the startup message.
+   */
+   child = CreateNewProcTags(
+       NP_Entry,   (Tag) childprocess,
+       NP_Input,   Input(),
+       NP_Output,  Output(),
+       NP_CloseInput,  FALSE,
+       NP_CloseOutput, FALSE,
+       NP_StackSize,   stacksize,
+       NP_Cli,     TRUE,
+       TAG_DONE
+       );
+
+   poptr->childmsg.DOSBase = (struct Library *)DOSBase;
+
+   /* now pass the child the startup message */
+   PutMsg(&child->pr_MsgPort,(struct Message *) &poptr->childmsg);
+
+   return(poptr->fptr = fptr);
+
+
+ILE *popenl(const char *arg0, ...)
+
+   va_list ap;
+   char argbuf[512], *mode;
+
+   strcpy(argbuf, arg0);
+   va_start(ap, arg0);
+   while(1)
+   {
+       char *s = va_arg(ap, char *);
+
+       if(s == NULL)
+       {
+       strcat(argbuf, "\n");
+       break;
+       } /* if */
+
+       strcat(argbuf, " ");
+
+       if(strchr(s, ' '))
+       {
+       strcat(argbuf, "\"");
+       strcat(argbuf, s);
+       strcat(argbuf, "\"");
+       }
+       else
+       {
+       strcat(argbuf, s);
+       } /* if */
+   }
+   mode = va_arg(ap, char *);
+   va_end(ap);
+
+   return(popen(argbuf, mode));
+
+ /* popenl */
+
+nt pclose(FILE *fptr)
+
+   short       i;
+
+   /* Figure out which pipe we used for this file */
+   for (i=0; i<MAXPIPES; i++)
+       if (poarray[i].fptr == fptr)
+           break;
+   if (i >= MAXPIPES) {
+       fprintf(stderr,"popen: DISASTER...couldn't find file pointer in pclose
+\n");
+       exit(1);
+       }
+
+   /* close the file */
+   fclose(fptr);
+
+   /* now wait for the exit status */
+   WaitPort(poarray[i].childmsg.POm.mn_ReplyPort);
+   poarray[i].fptr = NULL;
+
+   /* clean things up */
+   DeletePort(poarray[i].childmsg.POm.mn_ReplyPort);
+   free(poarray[i].childmsg.cmd);
+   return(poarray[i].childmsg.rc);
+
+
+* SAS/C autoinitialization for cleanup! */
+oid __stdargs _STD_4000_popen(void)
+
+   short i;
+
+   /* Close all the open pipes! */
+   for(i=0; i<MAXPIPES; i++)
+   {
+       if(poarray[i].fptr)
+       {
+           pclose(poarray[i].fptr);
+       } /* if */
+   } /* for */
+
+ /* _STD_4000_popen */
+
+ifdef NOTDEF
+
+har *mktemp(char * template)
+
+   register char *cp;
+   register unsigned long val;
+
+   cp = template;
+   cp += strlen(cp);
+   for (val = (unsigned long) FindTask(0L) ; ; )
+       if (*--cp == 'X') {
+           *cp = val%10 + '0';
+           val /= 10;
+       } else if (*cp != '.')
+           break;
+
+   if (*++cp != 0) {
+       *cp = 'A';
+       while (access(template, 0) == 0) {
+           if (*cp == 'Z') {
+               *template = 0;
+               break;
+           }
+           ++*cp;
+       }
+   } else {
+       if (access(template, 0) == 0)
+           *template = 0;
+   }
+   return template;
+
+
+endif
+
+* WATCH OUT! This only works without __saveds because of the special
+  SAS/C 6.1 tricks I use! Check the output with omd! */
+tatic int __interrupt childprocess(void)
+
+   struct ExecBase *SysBase = *((struct ExecBase **)4);
+   struct Library *DOSBase;
+   struct Process  *me;
+   struct POmsg    *startupmsg;
+   int             i = RETURN_FAIL;
+
+   /* find our process structure */
+   me = (struct Process *) FindTask(NULL);
+
+   /* Wait for the parent to kick us off */
+   WaitPort(&me->pr_MsgPort);
+
+   /* Get the command to execute */
+   startupmsg = (struct POmsg *) GetMsg(&me->pr_MsgPort);
+
+   DOSBase = startupmsg->DOSBase;
+
+   if(DOSBase)
+   {
+       /* Now run the command.  stdin and stdout are already set up */
+       i = SystemTags(startupmsg->cmd,
+              SYS_UserShell, 1,
+              TAG_DONE);
+   } /* if */
+
+   if(i > 0)
+   {
+       /* UNIX compatibility ... */
+       i <<= 8;
+   } /* if */
+
+   startupmsg->rc = i;
+   /* pass the exit code back to the parent */
+   ReplyMsg((struct Message *) startupmsg);
+   return(0);
+
+net.lib/PrintNetFault                                   net.lib/PrintNetFault
+
+   NAME
+       PrintNetFault - socket error messages
+
+   SYNOPSIS
+       PrintNetFault(code, banner)
+       void PrintNetFault(LONG, const UBYTE *)
+
+   FUNCTION
+       The PrintNetFault() function finds the error message corresponding
+       to the code and writes it, followed by a newline, to the standard
+       error or Output() filehandle. If the argument string is non-NULL it
+       is preappended to the message string and separated from it by a
+       colon and space (`: '). If string is NULL only the error message
+       string is printed.
+
+   NOTES
+       The PrintNetFault() function uses the DOS IO functions.
+
+   SEE ALSO
+       strerror(), perror(), <netinclude:sys/errno.h>
+
+net.lib/PrintUserFault                                 net.lib/PrintUserFault
+
+   NAME
+       PrintUserFault - socket error messages
+
+   SYNOPSIS
+       PrintUserFault(code, banner)
+       void PrintUserFault(LONG, const UBYTE *)
+
+   FUNCTION
+       The PrintUserFault() function finds the error message corresponding to
+       the code and writes it, followed by a newline, to the standard error
+       or Output() filehandle. If the argument string is non-NULL it is
+       preappended to the message string and separated from it by a colon and
+       space (`: '). If string is NULL only the error message string is
+       printed.
+
+   NOTES
+       The PrintUserFault() function used the DOS io functions.  It is
+       recommended to use PrintUserFault() when the standard C IO functions
+       are not otherwise in use.
+
+   SEE ALSO
+       strerror(), perror(), <netinclude:sys/errno.h>
+
+net.lib/random                                                 net.lib/random
+
+   NAME
+       random - random  number generator;
+
+   SYNOPSIS
+       long random(void);
+
+   DESCRIPTION
+       The random() function uses a non-linear additive feedback random number
+       generator employing a default table of size 31 long integers to return
+       successive pseudo-random numbers in the range from 0 to (2**31)-1.  The
+       period of this random number generator is very large, approximately
+       16*((2**31)-1).
+
+       All the bits generated by random() are usable. For example,
+       `random()&01' will produce a random binary value.
+
+   RESULT
+       A long integer random value.
+
+SEE ALSO
+     srandom()
+
+
+net.lib/rcmd                                                     net.lib/rcmd
+
+   NAME
+       rcmd, rresvport - routines for returning a stream to a remote command
+
+   SYNOPSIS
+       #include <clib/socket_protos.h>
+
+       int rcmd(char **ahost, int inport, const char *locuser, 
+                const char *remuser, const char *cmd, int *fd2p);
+
+       int rresvport(int *port);
+
+   FUNCTION
+       The rcmd() function is used by the super-user to execute a command on
+       a remote machine using an authentication scheme based on reserved port
+       numbers.  The rresvport() function returns a descriptor to a socket
+       with an address in the privileged port space.  Both functions are
+       present in the same file and are used by the rsh command (among
+       others).
+
+       The rcmd() function looks up the host *ahost using gethostbyname(),
+       returning -1 if the host does not exist.  Otherwise *ahost is set to
+       the standard name of the host and a connection is established to a
+       server residing at the well-known Internet port inport.
+
+       If the connection succeeds, a socket in the Internet domain of type
+       SOCK_STREAM is returned to the caller, and given to the remote command
+       as stdin and stdout. If fd2p is non-zero, then an auxiliary channel to
+       a control process will be set up, and a descriptor for it will be
+       placed in *fd2p. The control process will return diagnostic output
+       from the command (unit 2) on this channel, and will also accept bytes
+       on this channel as being UNIX signal numbers, to be forwarded to the
+       process group of the command.  If fd2p is 0, then the stderr (unit 2
+       of the remote command) will be made the same as the stdout and no
+       provision is made for sending arbitrary signals to the remote process,
+       although you may be able to get its attention by using out-of-band
+       data.
+
+       The protocol is described in detail in netutil/rshd.
+
+       The rresvport() function is used to obtain a socket with a privileged
+       address bound to it.  This socket is suitable for use by rcmd() and
+       several other functions.  Privileged Internet ports are those in the
+       range 0 to 1023.  Only the super-user is allowed to bind an address of
+       this sort to a socket.
+
+   DIAGNOSTICS
+       The rcmd() function returns a valid socket descriptor on success.  It
+       returns -1 on error and prints a diagnostic message on the standard
+       error.
+
+       The rresvport() function returns a valid, bound socket descriptor on
+       success.  It returns -1 on error with the global value errno set
+       according to the reason for failure.  The error code EAGAIN is
+       overloaded to mean `All network ports in use.'
+
+   SEE ALSO
+       netutil/rlogin,  netutil/rsh,  rexec(),  netutil/rexecd,
+       netutil/rlogind, netutil/rshd
+
+net.lib/select			                            net.library/select
+
+   NAME
+	select -- synchronous I/O multiplexing
+
+   SYNOPSIS
+	n  = select( nfds, readfds, writefds, exceptfds, timeout );
+
+	long select( long nfds, fd_set *readfds, fd_set *writefds, fd_set
+	    *exceptfds, struct timeval *timeout );
+
+   FUNCTION
+	select() examines the I/O descriptor sets whose addresses are
+	passed in readfds, writefds, and exceptfds to see if some of their
+	descriptors are ready for reading, are ready for writing, or have an
+	exceptional condition pending, respectively.  The first nfds
+	descriptors are checked in each set; i.e., the descriptors from 0
+	through nfds-1 in the descriptor sets are examined.  On return,
+	select() replaces the given descriptor sets with subsets consisting
+	of those descriptors that are ready for the requested operation.
+	Select() returns the total number of ready descriptors in all the
+	sets.
+
+	The descriptor sets are stored as bit fields in arrays of integers.
+	The following macros are provided for manipulating such descriptor
+	sets: FD_ZERO(&fdsetx) initializes a descriptor set fdset to the null
+	set.  FD_SET(fd, &fdset) includes a particular descriptor fd in
+	fdset.	FD_CLR(fd, &fdset) removes fd from fdset.  FD_ISSET(fd,
+	&fdset) is non-zero if fd is a member of fdset, zero otherwise.  The
+	behavior of these macros is undefined if a descriptor value is less
+	than zero or greater than or equal to FD_SETSIZE, which is normally
+	at least equal to the maximum number of descriptors supported by the
+	system.
+
+	If timeout is a non-nil pointer, it specifies a maximum interval to
+	wait for the selection to complete.  If timeout is a nil pointer, the
+	select blocks indefinitely.  To affect a poll, the timeout argument
+	should be non-nil, pointing to a zero-valued timeval structure.
+
+	Any of readfds, writefds, and exceptfds may be given as nil pointers
+	if no descriptors are of interest.
+
+	select() returns the number of ready descriptors that are contained
+	in the descriptor sets, or -1 if an error occurred.  If the time
+	limit expires, select() returns 0.  If select() returns with an
+	error, the descriptor sets will be unmodified.
+
+	An error return from select() indicates:
+
+	[EBADF] One of the descriptor sets specified an invalid descriptor.
+
+	[EINTR] select() was interrupted, usually by Ctrl-C.
+
+	[EINVAL] The specified time limit is invalid.  One of its components
+	is negative or too large.
+
+   INPUTS
+	nfds - number of I/O descriptors
+
+	readfds - read fd set
+
+	writefds - write fd set
+
+	exceptfds - exception fd set
+
+	timeout - timeout
+
+   RESULT
+	n (D0) - number of I/O descriptors
+
+   BUGS
+	In current netlib version this function can be used only on network
+	sockets. In fact it is the same as
+	WaitSelect(nfds, readfds, writefds, exceptfds, timeout, NULL).
+
+   SEE ALSO
+	bsdsocket.library/WaitSelect()
+
+net.lib/serveraccept                                     net.lib/serveraccept
+
+   NAME
+       serveraccept - Accept a server connection on named port
+
+   SYNOPSIS
+       socket = serveraccept(name, peer);
+
+       long serveraccept(char *, struct sockaddr_in *);
+
+   DESCRIPTION
+       The serveraccept() library call binds a socket to the named Internet
+       TCP port. Then it listens the socket and accepts the connection to
+       the port. The peer's socket address is returned in sockaddr pointed
+       by sockaddr argument.
+
+       The port name is resolved by getservbyname() call. A numeric value
+       for port name is also accepted.
+ 
+       This module is meant for daemon developing.
+
+   INPUTS
+       name   - port name or numeric string.
+       peer   - pointer to struct sockaddr_in
+
+   RESULT
+       socket - positive socket id for success or -1 for failure.
+
+       peer   - sockaddr_in structure containing peer's internet address.
+                Note that on error, the structure containing peer address
+                is not necessarily updated.
+
+   SEE ALSO
+       bsdsocket/accept, bsdsocket/getservbyname
+
+net.lib/set_socket_stdio                             net.lib/set_socket_stdio
+
+   NAME
+       set_socket_stdio - redirect stdio to/from a socket
+
+   SYNOPSIS
+       int set_socket_stdio(int sock);
+
+   FUNCTION
+       Redirect stdio (stdin, stdout and stderr) to/from socket 'sock'.
+       This is done by dup2()'ing 'sock' to the level 1 files underneath
+       the stdin, stdout and stderr.
+
+       The original 'sock' reference is closed on successful return, so
+       the socket descriptor given as argument should not be used after
+       this function returns (successfully).
+
+   RETURN VALUES
+       0 if successful, -1 on error. Global variable 'errno' contains
+       the specific error code set by the failing function.
+
+   NOTES
+       This module pulls in the link library stdio modules.
+
+   SEE ALSO
+       dup2()
+net.lib/sleep                                                   net.lib/sleep
+
+   NAME
+       sleep - suspend process execution for the specified time
+
+   SYNOPSIS
+       void sleep(unsigned int seconds);
+
+   FUNCTION
+       Process execution is suspended for number of seconds specified in 
+       'seconds'. The sleep will be aborted if any of the break signals
+       specified for the process is received (only CTRL-C by default).
+
+   PORTABILITY
+       UNIX
+
+   INPUTS
+       'seconds' - number of seconds to sleep.
+
+   RESULT
+       Does not return a value.
+
+   NOTES
+       The sleep is implemented as a single select() call with all other
+       than time out argument as NULL.
+
+   SEE ALSO
+       bsdsocket.library/select()
+
+net.lib/SPrintf                                               net.lib/SPrintf
+
+   NAME        
+       SPrintf -- formatted print to a buffer
+
+   SYNOPSIS
+       len = SPrintf(Buffer, FormatString, Arguments...)
+       len = VSPrintf(Buffer, FormatString, ap)
+
+       ULONG SPrintf(STRPTR, const char *, ...)
+       ULONG VSPrintf(STRPTR, const char *,  va_list)
+
+   FUNCTION
+       Prints to a simple buffer or to a CSource buffer. These functions
+       are similar to C-library sprintf() with RawDoFmt() formatting.
+
+   INPUTS
+       Buffer - Pointer to buffer.
+       FormatString - This is a printf()-style format string as defined
+           in exec.library/RawDoFmt().
+       Arguments - as in printf() .
+
+       Result - Pointer to CSource structure.
+
+   RESULT
+       Number of characters printed.
+
+   EXAMPLE
+       SPrintf(mybuf, "line=%ld, val=%lx\n", 
+               __LINE__, very.interesting->value);
+
+   BUGS
+       Function SPrintf() assumes that no print is longer than 1024 chars.
+       It does not check for buffer owerflow (there no way to check, the
+       definition of sprintf misses it).
+
+       SPrintf strings are truncated to maximum of 1024 chars (including
+       final NUL)
+
+   SEE ALSO
+       exec.library/RawDoFmt()
+
+net.lib/srandom                                              net.lib/srandom
+
+   NAME
+       srandom - initialize a seed value for the random number generator
+
+   SYNOPSIS
+       void srandom(unsigned seed)
+
+   DESCRIPTION
+       The srandom() function sets a seed value used by random() function
+       to produce random numbers.
+
+       srandom() does not return the old seed; the reason for this is that
+       the amount of state information used is much more than a single
+       word. However, random() by defalut will produce a sequence of
+       numbers that can be duplicated by calling srandom() with `1' as the
+       seed.
+ 
+   SEE ALSO
+       random()
+
+net.lib/stat                                                     net.lib/stat
+
+   NAME
+       stat, lstat, fstat - get file status
+
+   SYNOPSIS
+       #include <sys/types.h>
+       #include <sys/stat.h>
+
+       success = stat(path, buf)
+
+       int stat(const char *, struct stat *);
+
+       success =  lstat(path, buf);
+
+       int lstat(const char *, struct stat *);
+
+       success = fstat(fd, buf);
+
+       int fstat(int, struct stat *);
+
+   DESCRIPTION
+       The stat() function obtains information about the file pointed to by
+       path. Read, write or execute permission of the named file is not
+       required, but all directories listed in the path name leading to the
+       file must be seachable.
+
+       Lstat() is like stat() except in the case where the named file is a
+       symbolic link, in which case lstat() returns information about the
+       link, while stat() returns information about the file the link
+       references.
+
+       The fstat() obtains the same information about an open file known by
+       the file descriptor fd, such as would be obtained by an open call.
+
+       Buf is a pointer to a stat() structure as defined by <sys/stat.h>
+       (shown below) and into which information is placed concerning the
+       file.
+
+          struct  stat
+          {
+            dev_t   st_dev;         /* unique device id */ 
+            ino_t   st_ino;         /* inode of file (key block) */ 
+            mode_t  st_mode;        /* Unix style mode */ 
+            ushort  st_nlink;       /* number of links (unimplemented) */ 
+            uid_t   st_uid;         /* owner's user ID */ 
+            gid_t   st_gid;         /* owner's group ID */ 
+            dev_t   st_rdev;        /* special file ID (unimplemented) */ 
+            off_t   st_size;        /* file size */ 
+            time_t  st_atime;       /* Time of last access */ 
+            time_t  st_mtime;       /* Last modification time */ 
+            time_t  st_ctime;       /* Last file status change time */ 
+            long    st_blksize;     /* Size of disk block */ 
+            long    st_blocks;      /* Size in blocks */ 
+            long    st_dosmode;     /* DOS protection bits */ 
+            short   st_type;        /* DOS file type */ 
+            char   *st_comment;     /* DOS file comment */ 
+          };
+
+       The time-related fields of struct stat have same contents, time when
+       file data last modified.
+
+       The status information word st_mode has bits as follows:
+
+         #define S_ISUID  0004000    /* set user id on execution */ 
+         #define S_ISGID  0002000    /* set group id on execution */ 
+         #define S_ISVTX  0001000    /* save swapped text even after use */ 
+         #define S_IRUSR  0000400    /* read permission for owner */ 
+         #define S_IWUSR  0000200    /* write permission for owner */ 
+         #define S_IXUSR  0000100    /* execute permission for owner */ 
+         #define S_IRGRP  0000040    /* read permission for group */ 
+         #define S_IWGRP  0000020    /* write permission for group */ 
+         #define S_IXGRP  0000010    /* execute permission for group */ 
+         #define S_IROTH  0000004    /* read permission for other */ 
+         #define S_IWOTH  0000002    /* write permission for other */ 
+         #define S_IXOTH  0000001    /* execute permission for other */ 
+         #define S_IFCHR  0020000    /* character special */ 
+         #define S_IFDIR  0040000    /* directory */ 
+         #define S_IFBLK  0060000    /* block special */ 
+         #define S_IFREG  0100000    /* regular */ 
+         #define S_IFLNK  0120000    /* symbolic link */ 
+         #define S_IFSOCK 0140000    /* socket */ 
+         #define S_IFIFO  0010000    /* named pipe (fifo) */ 
+
+       For a list of access modes, see <sys/stat.h>, access(2) and chmod(2).
+
+   RETURN VALUES
+       Upon successful completion a value of 0 is returned.  Otherwise, a
+       value of -1 is returned and errno is set to indicate the error.
+
+   ERRORS
+       The functions stat() and lstat() will fail if:
+
+       [ENOTDIR]       A component of the path prefix is not a directory.
+
+       [ENAMETOOLONG]  A component of a pathname exceeded 255 characters,
+                       or an entire path name exceeded 1023 characters.
+
+       [ENOENT]        The named file does not exist.
+
+       [ELOOP]         Too many symbolic links were encountered in
+                       translating the pathname.
+
+       [EACCES]        Search permission is denied for a component of the
+                       path prefix.
+
+       [EFAULT]        Buf or name points to an invalid address.
+
+       [EIO]           An I/O error occurred while reading from or writing
+                       to the file system.
+
+       The function fstat() will fail if:
+
+       [EBADF]   fd is not a valid open file descriptor.
+
+       [EFAULT]  Buf points to an invalid address.
+
+       [EIO]     An I/O error occurred while reading from or writing to the
+                 file system.
+
+   SEE ALSO
+       chmod(),  chown()
+
+   BUGS 
+       Applying fstat to a socket returns a zero'd buffer.
+
+net.lib/strerror                                             net.lib/strerror
+
+   NAME
+       strerror -- return the text for given error number
+
+   SYNOPSIS
+       string = strerror(error);
+
+       char * strerror(int);
+
+   FUNCTION
+       This function returns pointer to the (English) string describing the
+       error code given as argument. The error strings are defined for the
+       error codes defined in <sys/errno.h>.
+
+   NOTES
+       The string pointed to by the return value should not be modified by
+       the program, but may be overwritten by a subsequent call to this
+       function.
+
+   BUGS
+       The strerror() prototype should be 
+       const char *strerror(unsigned int); 
+       However, the SAS C includes define it differently.
+
+   SEE ALSO
+       <netinclude:sys/errno.h>, perror(), PrintNetFault()
+net.lib/syslog                                                 net.lib/syslog
+
+   NAME   
+       openlog(), closelog(), setlogmask() -- syslog utility functions
+
+   SYNOPSIS
+       #include <syslog.h>
+       
+       openlog(ident, logopt, facility);
+
+       void openlog(const char *, int, int);
+
+       closelog();
+
+       void closelog(void);
+
+       oldmask = setlogmask(maskpri);
+       
+       int setlogmask(int);
+       
+   FUNCTION
+       openlog() can be called to initialize the log file, if special
+       processing is needed.  ident is a string that precedes every
+       message.  logopt is a mask of bits, logically OR'ed together,
+       indicating logging options.  The values for logopt are:
+       
+            LOG_PID             Log the process ID with each message;
+                                useful for identifying instantiations
+                                of daemons.
+
+            LOG_CONS            Force writing messages to the console
+                                if unable to send it to syslogd.
+                                This option is safe to use in daemon
+                                processes that have no controlling
+                                terminal because syslog() forks
+                                before opening the console.
+
+            LOG_NDELAY          Open the connection to syslogd
+                                immediately.  Normally, the open is
+                                delayed until the first message is
+                                logged.  This is useful for programs
+                                that need to manage the order in
+                                which file descriptors are allocated.
+
+            LOG_NOWAIT          Do not wait for children forked to
+                                log messages on the console. Obsolete
+                                in AmiTCP/IP, since AmiTCP/IP does
+                                not fork.
+
+       facility encodes a default facility to be assigned to all
+       messages written subsequently by syslog() with no explicit
+       facility encoded. The facility codes are:
+
+            LOG_KERN            Messages generated by the kernel.
+                                These cannot be generated by any user
+                                processes.
+
+            LOG_USER            Messages generated by random user
+                                processes.  This is the default
+                                facility identifier if none is
+                                specified.
+
+            LOG_MAIL            The mail system.
+
+            LOG_DAEMON          System daemons, such as inetd, ftpd,
+                                etc.
+
+            LOG_AUTH            The authorization system: login, su,
+                                getty, etc.
+
+            LOG_LPR             The line printer spooling system: lp,
+                                lpsched, etc.
+
+            LOG_LOCAL0          Reserved for local use. Similarly for
+                                LOG_LOCAL1 through LOG_LOCAL7.
+
+
+       closelog() closes the log file.
+
+       setlogmask() sets the log priority mask to maskpri and returns
+       the previous mask.  Calls to syslog() with a priority not set
+       in maskpri are rejected.  The mask for an individual priority
+       pri is calculated by the macro LOG_MASK(pri); the mask for all
+       priorities up to and including toppri is given by the macro
+       LOG_UPTO(toppri).  By default, all priorities are logged.
+
+   EXAMPLES
+       who logs a message regarding some sort of unexpected and
+       serious error:
+
+           syslog(LOG_ALERT, "who: internal error 23");
+
+       ftpd uses openlog() to arrange to log its process ID, to log
+       to the console if necessary, and to log in the name of the
+       daemon facility:
+
+           openlog("ftpd", LOG_PID|LOG_CONS, LOG_DAEMON);
+
+       Arrange to log messages only at levels LOG_ERR and lower:
+
+           setlogmask(LOG_UPTO(LOG_ERR));
+
+       Typical usage of syslog() to log a connection:
+
+           syslog(LOG_INFO, "Connection from host %d", CallingHost);
+
+       If the facility has not been set with openlog(), it defaults
+       to LOG_USER.
+
+       Explicitly set the facility for this message:
+
+           syslog(LOG_INFO|LOG_LOCAL2, "foobar error: %m");
+       
+   NOTES
+       openlog() does not copy and store the ident string internally;
+       it stores only the character pointer.  Therefore it is the
+       responsibility of the programmer to make sure that the ident
+       argument points to the correct string while syslog() is being
+       called. 
+
+   BUGS
+       Most of the logopt and facility codes are currently being
+       ignored by AmiTCP/IP, but they should be used for future
+       compatibility.
+
+       The autoinit module of the net.lib tells the program name 
+       to the AmiTCP/IP at program startup, so use of the openlog()
+       for that purpose only is not necessary.
+
+   AUTHOR
+       syslog() was developed by the University of California,
+       Berkeley.
+
+   SEE ALSO
+       bsdsocket.library/syslog(), bsdsocket.library/SocketBaseTagList()
+net.lib/usleep                                                 net.lib/usleep
+
+   NAME
+       usleep - suspend process execution for the specified time
+
+   SYNOPSIS
+       void usleep(unsigned int microseconds);
+
+   FUNCTION
+       Process execution is suspended for number of microseconds
+       specified in 'microseconds'. The sleep will be aborted if any
+       of the break signals specified for the process is received
+       (only CTRL-C by default).
+
+   PORTABILITY
+       UNIX
+
+   INPUTS
+       'microseconds' - number of microseconds to sleep.
+
+   RESULT
+       Does not return a value.
+
+   NOTES
+       The sleep is implemented as a single select() call with all other
+       than time out argument as NULL.
+
+   SEE ALSO
+       bsdsocket.library/select()
+
+net.lib/utime                                                   net.lib/utime
+
+   NAME
+       utime - set file access and modification times
+
+   SYNOPSIS
+       #include <utime.h>
+
+       int error = utime(const char *name, const struct utimbuf *times)
+
+   FUNCTION
+       The access and modification times for the file 'name' are modified
+       according to the 'times'. If 'times' is NULL, the times are set to
+       systems current time.
+
+   PORTABILITY
+       UNIX
+
+   INPUTS
+       'name'  - the name of the file to be affected.
+
+       'times' - pointer to a structure containing the time values,
+                 defined in <utime.h> as:
+
+                     struct utimbuf {
+                         time_t actime;        /* Access time */
+                         time_t modtime;        /* Modification time */
+                     };
+
+                 Both times are in units of seconds since Jan. 1, 1970,
+                 Greenwich Mean Time.
+
+                 If the 'times' is given as the NULL pointer, the current
+                 time is used.
+
+   RESULT
+       Returns 0 when successful and -1 with specific error code in errno in
+       case of an error.
+
+   NOTES
+       Since AmigaDOS files have only one time stamp, both access and
+       modification times cannot be supported. Since the AmigaDOS file date
+       is the modification time, only the 'modtime' field of the 'times' is
+       used.
+
+       The conversion from 1.1.1970 based GMT to 1.1.1978 based local time is
+       done with external long __local_to_GMT, which is defined and
+       initialized by the timerinit.c module included in the net.lib.
+
+   SEE ALSO
+       dos.library/DateStamp(), dos.library/SetFileDate(), net.lib/timerinit
+
+net.lib/writev                                                 net.lib/writev
+
+   NAME
+       writev - write output
+
+   SYNOPSIS
+       ssize_t writev(int d, const struct iovec *iov, int iovcnt)
+
+   DESCRIPTION
+       writev() attempts to write nbytes of data to the object referenced by
+       the descriptor d from the iovcnt buffers specified by the members of
+       the iov array: iov[0], iov[1], ..., iov[iovcnt-1].
+
+       The iovec structure is defined as:
+
+           struct iovec {
+                   void *iov_base;
+                   size_t iov_len;
+           };
+
+       Each iovec entry specifies the base address and length of an area in
+       memory from which data should be written. writev() will always write
+       a complete area before proceeding to the next.
+
+       On objects capable of seeking, the writev() starts at a position
+       given by the pointer associated with d (set using libc function
+       lseek()). Upon return from writev(), the pointer is incremented by the
+       number of bytes which were written.
+
+       Objects that are not capable of seeking always write from the current
+       position. The value of the pointer associated with such an object is
+       undefined.
+
+       When using non-blocking I/O on objects such as sockets that are subject
+       to flow control, writev() may write fewer bytes than requested; the
+       return value must be noted, and the remainder of the operation should
+       be retried when possible.
+
+   RETURN VALUES
+       Upon successful completion  the number of bytes which were written is
+       returned. Otherwise a -1 is returned and the global variable errno is
+       set to indicate the error.
+
+   ERRORS
+       writev() will fail and the file pointer will remain unchanged if:
+
+       [EBADF]       D is not a valid descriptor open for writing.
+
+       [EPIPE]       An attempt is made to write to a socket of type that is
+		     not connected to a peer socket.
+
+       [EFBIG]       An attempt was made to write a file that exceeds the
+		     maximum file size.
+
+       [EINVAL]      The pointer associated with d was negative.
+
+       [EINVAL]      Iovcnt was less than or equal to 0, or greater than
+		     {UIO_MAXIOV}.
+
+       [EINVAL]      One of the iov_len values in the iov array was negative.
+
+       [EINVAL]      The sum of the iov_len values in the iov array overflowed
+		     a 32-bit integer.
+
+       [ENOSPC]      There is no free space remaining on  the  file system
+		     containing the file.
+
+       [EIO]         An I/O error occurred while reading from or writing to
+		     the file system.
+
+       [EAGAIN]      The file was marked for non-blocking I/O, and no data
+		     could be written immediately.
+
+   BUGS
+       In this netlib version Level-1 I/O on sockets is not implemented, use
+       these function only on regular files created by libc functions like
+       open() etc.
+
+

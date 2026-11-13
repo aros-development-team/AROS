@@ -1,0 +1,21 @@
+# Copyright (C) 2004, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+
+USER_LDFLAGS := -static
+
+FILES         := loginwindow
+INCLUDE_FILES := loginwindow.h
+
+#MM- workbench-classes-zune : workbench-classes-zune-loginwindow
+
+#MM workbench-classes-zune-loginwindow : includes
+%build_module \
+    mmake=workbench-classes-zune-loginwindow \
+    modname=LoginWindow modtype=mcc \
+    conffile=loginwindow.conf
+    
+%copy_includes path=zune
+    
+%common
+%include_deps

@@ -1,0 +1,132 @@
+Fileformat of a dtd-file
+
+createdtdesc uses an ASCII-file to obtain the description
+for a DataType-descriptor.
+examinedtdesc creates one out of a DataType-descriptor.
+These ASCII-files are the DataTypeDescriptions (*.dtd) .
+*.dtd files consist of Keyword=Data pairs in separate lines.
+Lines starting with a '#' or empty lines are ignored.
+In fact, my parser is so dumb, that it ignores anything
+but the keywords. But this may change in future!
+Currently you can feed this file FORMAT to createdtdesc and
+it will produce a valid DataType descriptor.
+Comments in lines are not allowed, even when they start with a '#'!
+The Keyword must be followed immediatly by a '=' .
+The whole rest of a line after the '=' is handled as the Data-part.
+So be carefull with whitespace.
+Keywords are case-sensitive.
+Currently the following 9 Keywords are defined:
+
+1)  Name        Name of the DataType. Used in the NAME-chunk and
+                as the dth_Name component in the struct DataTypeHeader
+                in the DTHD-chunk. The name is also used for default icons
+                (def_Name.info).
+
+2)  Version     A standard Amiga-version-string. Used in the FVER-chunk.
+                This Keyword is optional. When it is missing no FVER-chunk
+                is written. Hint: use 4 digit years to avoid wrong interpretation.
+
+3)  BaseName    BaseName of the DataType as it resides in
+                Sys:Classes/DataTypes . No ".datatype" must be appended.
+
+4)  Pattern     FileNamePattern, an standard Amiga-pattern.
+                I suggest not to use FileNamePatterns to recognice
+                a filetype. Please use the fit-all-pattern "#?" .
+                createdtdesc does this too, if Pattern is ommited.
+
+5)  Mask        Comparison mask to identify a file by its constant parts.
+                To be specified as white space separated list of any
+                of the following items:
+                
+                - specific char (ASCII)     : 'A' 'B' '1' '2'
+                
+                - specific char (numeric)   : 10 100 12 0xd8 
+                
+                - wildcard matching any char: ANY
+                
+6)  GroupID     GroupID of the DataTypes group. This ID must comply to the rules.
+                createdtdesc doesn't check the validity. See <datatypes/datatypes.h>
+                for details.
+
+                syst : System file, such as; directory, executable, library, device, font, etc.
+                text : Formatted or unformatted text
+                docu : Formatted text with graphics or other DataTypes
+                soun : Sound
+                inst : Musical instruments used for musical scores
+                musi : Musical score
+                pict : Still picture
+                anim : Animated picture
+                movi : Animation with audio track
+
+7)  ID          The ID of this DataType. This ID must complain to the rules.
+                createdtdesc doesn't check the validity. See <datatypes/datatypes.h>
+                for details.
+
+                For IFF types it is the Form type, for other files it's the first
+                four characters of the name of the file type.
+
+8)  Flags       Flags as defined in <datatypes/datatypes.h> The following
+                flags are supported:
+
+                DTF_BINARY
+                DTF_ASCII
+                DTF_IFF
+                DTF_MISC
+                DTF_CASE         (AROS uses this for comparing the Mask)
+                DTF_SYSTEM1
+
+                Multiple flags must be separated by ',' without spaces between.
+
+9)  Priority    In most cases priority is 0. When this Keyword
+                is missing 0 is assumed.
+
+Example:
+
+---schnipp---
+# This is a comment.
+# The following blank line is ignored, too.
+
+# Name - name of the DataType
+# Used in the NAME-chunk and
+# in DataTypeHeader->dth_Name .
+Name=ILBM
+
+# Version - Amiga-version-string
+# Used in a FVER-chunk.
+# This is optional.
+Version=$VER: ILBM 44.5 (03-Nov-2000)
+
+# BaseName - name of the DataType-class
+# Used in DataTypeHeader->dth_BaseName .
+BaseName=ilbm
+
+# Pattern - filenamepattern
+# Hey, this is not MSDOS, you shouldn't use filenamepatterns.
+# When this is missing '#?' is assumed.
+# Used in DataTypeHeader->dth_Pattern .
+Pattern=#?
+
+# Mask - the recognition-mask
+# Used in DataTypeHeader->dth_Mask .
+# DataTypeHeader->dth_MaskLen is counted from this string.
+Mask='F' 'O' 'R' 'M' ANY ANY ANY ANY 'I' 'L' 'B' 'M'
+
+# GroupID - GroupID as descriped in <datatypes/datatypes.h>
+# Used in DataTypeHeader->dth_GroupID .
+GroupID=pict
+
+# ID - ID of the DataType
+# Used in DataTypeHeader->dth_ID .
+ID=ilbm
+
+# Flags - flags as descriped in <datatypes/datatypes.h>
+# Used in DataTypeHeader->dth_Flags .
+Flags=DTF_IFF,DTF_CASE
+
+# Priority - priority of the Datatype
+# In most cases this is 0.
+# When this is missing 0 is assumed.
+# Used in DataTypeHeader->dth_Priority .
+Priority=0
+---schnapp---
+

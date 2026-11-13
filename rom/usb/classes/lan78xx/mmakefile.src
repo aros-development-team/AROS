@@ -1,0 +1,16 @@
+include $(SRCDIR)/config/aros.cfg
+
+USER_CPPFLAGS := -DMUIMASTER_YES_INLINE_STDARG
+USER_CPPFLAGS += -DDEBUG=0
+USER_LDFLAGS := -static
+
+FILES :=    lan78xx.class dev debug
+
+#MM- kernel-usb-classes-lan78xx : kernel-usb-usbclass kernel-usb-poseidon-includes
+
+%build_module_library mmake=kernel-usb-classes-lan78xx \
+    modname=lan78xx modtype=usbclass modsuffix="class" \
+    files="$(FILES)" \
+    uselibs="debug"
+
+%common

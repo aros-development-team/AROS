@@ -1,0 +1,14 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+USER_LDFLAGS := -static
+
+NOWARN_FLAGS := $(NOWARN_UNINITIALIZED) $(NOWARN_PARENTHESES)
+USER_CFLAGS := $(NOWARN_FLAGS)
+
+%build_prog mmake=workbench-datatypes-gemimage \
+    progname="gemimage.datatype" \
+    files="startup aros_datatype datatype gemimage" \
+    targetdir=$(AROSDIR)/Classes/DataTypes coverageinstr=no
+
+%common

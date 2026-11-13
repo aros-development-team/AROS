@@ -1,0 +1,31 @@
+# Copyright (C) 2026, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+
+EXEDIR := $(AROS_TESTS)/security
+
+FILES   := sectest fsformat authtest
+UGFILES := ugtest uatest
+PAMFILES := pamtest
+
+#MM- test : test-security
+#MM test-security : includes linklibs kernel-security-includes kernel-log-includes test-security-usergroup test-security-pam test-security-fidosim
+#MM test-security-pam : includes linklibs kernel-security-includes workbench-libs-pam-includes workbench-libs-pam-linklib
+#MM test-security-usergroup : includes linklibs kernel-security-includes \
+#MM     workbench-libs-usergroup-includes workbench-libs-usergroup-linklib
+
+# AuthTest makes Yubico OTPs with the yubikey plugin's header
+USER_INCLUDES := -I$(SRCDIR)/workbench/libs/security-plugins/yubikey
+
+%build_progs mmake=test-security \
+    files=$(FILES) targetdir=$(EXEDIR)
+
+# UGTest needs the usergroup.library link library (per-task base)
+%build_progs mmake=test-security-usergroup \
+    files=$(UGFILES) targetdir=$(EXEDIR) uselibs="usergroup"
+
+# PamTest needs the pam.library link library
+%build_progs mmake=test-security-pam \
+    files=$(PAMFILES) targetdir=$(EXEDIR) uselibs="pam"
+
+%common

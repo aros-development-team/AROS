@@ -1,0 +1,322 @@
+/* $Id$ */
+/* $Log: access.c $
+ * Revision 2.6  1999/09/11  16:45:50  Michiel
+ * Bug (1024 byte blok supprort) in AccessTest fixed
+ *
+ * Revision 2.5  1999/07/28  09:24:56  Michiel
+ * Unneeded anodeblock searches removed
+ *
+ * Revision 2.4  1999/05/07  16:49:00  Michiel
+ * bugfixes etc
+ *
+ * Revision 2.3  1999/05/07  09:31:31  Michiel
+ * bugfix
+ *
+ * Revision 2.2  1999/05/04  04:27:13  Michiel
+ * debugged upto buildrext
+ *
+ * Revision 2.1  1999/04/30  12:17:58  Michiel
+ * Accepts OK disks, bitmapfix and hardlink fix works
+ *
+ * Revision 1.2  1999/04/22  15:26:49  Michiel
+ * compiled
+ * */
+
+#include <exec/ports.h>
+#include <stdlib.h>
+#include "pfs3.h"
+#include "doctor.h"
+#include <string.h>
+
+/**************************************
+ * Non-checking functions for access to structures on PFS3 disks
+ **************************************/
+
+/* get a buildblock from the buildblock cache
+ */
+cachedblock_t *GetBuildBlock(uint16 bloktype, uint32 seqnr)
+{
+	struct buildblock *bbl;
+	
+	for (bbl = HeadOf(&volume.buildblocks); bbl->next; bbl = bbl->next)
+	{
+		if (bbl->b.data->id == bloktype &&
+			(bloktype == EXTENSIONID || bbl->b.data->indexblock.seqnr == seqnr))
+		{
+			return &bbl->b;
+		}
+	}
+
+	return NULL;
+}
+
+/* get reserved block
+ * anything, except deldir, root, boot, dir and rext
+ */
+error_t GetResBlock(cachedblock_t *blok, uint16 bloktype, uint32 seqnr, bool fix)
+{
+	cachedblock_t blk, *t;
+	uint32 blknr, *bp = NULL, index, offset;
+	error_t error = e_none;
+
+	// controleer build block lijst
+	t = GetBuildBlock(bloktype, seqnr);
+	if (t)
+	{
+		blok->blocknr = t->blocknr;
+		blok->mode = t->mode;
+		memcpy(blok->data, t->data, SIZEOF_RESBLOCK);
+		return e_none;
+	}
+
+	blk.data = calloc(1, SIZEOF_RESBLOCK);
+	if (!blk.data)
+		return e_out_of_memory;
+	index = seqnr/INDEX_PER_BLOCK;
+	offset = seqnr%INDEX_PER_BLOCK;
+	switch(bloktype)
+	{
+		case SBLKID:
+
+			if (seqnr > MAXSUPER)
+			{
+				free (blk.data);
+				return e_number_error;
+			}
+			
+			bp = &rext.data->superindex[seqnr];
+			if (!*bp)
+			{
+				if (fix)
+				{
+					adderror("superindex block not found");
+					error = RepairSuperIndex(bp, seqnr);
+					if (error)
+						*bp = 0;
+					else
+					{
+						error = volume.writeblock((cachedblock_t *)&rext);
+						KillAnodeBitmap();
+					}
+				}
+			}
+			break;
+
+		case BMIBLKID:
+
+			bp = &rbl->idx.large.bitmapindex[seqnr];
+			if (!*bp)
+			{
+				if (fix)
+				{
+					adderror("bitmapindex block not found");
+					error = RepairBitmapIndex(bp, seqnr);
+					if (error)
+						*bp = 0;
+					else
+						error = WritePFS3Metadata((uint8 *)rbl,
+							ROOTBLOCK + volume.firstblock,
+							volume.blocksize, PFS3_METADATA_ROOT);
+				}
+			}
+			break;
+
+		case IBLKID:
+
+			if (rbl->options & MODE_SUPERINDEX)
+			{
+				error = GetResBlock(&blk, SBLKID, index, fix);
+				if (error)
+				{
+					free (blk.data);
+					return error;
+				}
+
+				bp = &blk.data->indexblock.index[offset];
+			}
+			else
+			{
+				if (seqnr > MAXSMALLINDEXNR) {
+					free(blk.data);
+					return e_number_error;
+				}
+				bp = &rbl->idx.small.indexblocks[seqnr];
+			}
+			if (!*bp)
+			{
+				if (fix)
+				{
+					adderror("anodeindex block not found");
+					error = RepairAnodeIndex(bp, seqnr);
+					if (error)
+						*bp = 0;
+					else
+					{
+						/* the anodebitmap, which is made per aib, 
+						 * could be too small
+						 */
+						KillAnodeBitmap();
+						if (rbl->options & MODE_SUPERINDEX)
+							error = volume.writeblock((cachedblock_t *)&blk);
+						else
+							error = WritePFS3Metadata((uint8 *)rbl,
+								ROOTBLOCK + volume.firstblock,
+								volume.blocksize,
+								PFS3_METADATA_ROOT);
+					}
+				}
+			}
+			break;
+			
+		case ABLKID:
+		
+			error = GetResBlock(&blk, IBLKID, index, fix);
+			if (error)
+			{
+				free (blk.data);
+				return error;
+			}
+			
+			bp = &blk.data->indexblock.index[offset];
+			if (!*bp)
+			{
+				if (fix)
+				{
+					adderror("anode block not found");
+					// RepairAnodeBlock already called from RepairAnodeTree
+					// Pointless to call it again here.
+					//if (error = RepairAnodeBlock(bp, seqnr))
+					//	*bp = 0;
+					//else
+					//	volume.writeblock((cachedblock_t *)&blk);
+				}
+			}
+			break;
+
+		case BMBLKID:
+
+			error = GetResBlock(&blk, BMIBLKID, index, fix);
+			if (error)
+			{
+				free (blk.data);
+				return error;
+			}
+
+			bp = &blk.data->indexblock.index[offset];
+			if (!*bp)
+			{
+				if (fix)
+				{
+					adderror("bitmap block not found");
+					error = RepairBitmapBlock(bp, seqnr);
+					if (error)
+						*bp = 0;
+					else
+						error = volume.writeblock((cachedblock_t *)&blk);
+				}
+			}
+			break;
+	}
+
+	if (error) {
+		free(blk.data);
+		return error;
+	}
+	blknr = *bp;
+
+	free (blk.data);
+	if (!blknr) {
+		/* Repair may have rebuilt this block without allocating it yet. */
+		if (fix && GetBuildBlock(bloktype, seqnr))
+			return GetResBlock(blok, bloktype, seqnr, false);
+		return e_not_found;
+	}
+
+	error = volume.getblock(blok, blknr);
+	if (error)
+		return error;
+
+	return e_none;
+}
+
+static c_anodeblock_t tablk = { 0 };
+static ULONG tanodedata[MAXRESBLOCKSIZE / 4];
+static anodeblock_t *tanodeblk = (anodeblock_t*)tanodedata;
+
+error_t ReadAnode(canode_t *anode, uint32 anodenr, bool fix)
+{
+	error_t error;
+	uint16 seqnr = anodenr >> 16;
+	uint16 offset = anodenr;
+
+	if (offset >= ANODES_PER_BLOCK)
+		return e_number_error;
+
+	if (!(tablk.data && tanodeblk->seqnr == seqnr))
+	{
+		tablk.data = tanodeblk;
+		if ((error = GetResBlock((cachedblock_t *)&tablk, ABLKID, seqnr, fix)))
+		{
+			tablk.data = NULL;
+			return error;
+		}
+	}
+
+	anode->nr = anodenr;
+	anode->clustersize = tablk.data->nodes[offset].clustersize;
+	anode->blocknr     = tablk.data->nodes[offset].blocknr;
+	anode->next        = tablk.data->nodes[offset].next;
+	return e_none;
+}
+
+bool GetAnode(canode_t *anode, uint32 anodenr, bool fix)
+{
+	return ReadAnode(anode, anodenr, fix) == e_none;
+}
+
+error_t WriteAnode(canode_t *anode, uint32 nr)
+{
+	error_t error;
+	uint16 seqnr = nr >> 16;
+	uint16 offset = nr;
+	c_anodeblock_t ablk;
+	uint32 buffer[MAXRESBLOCKSIZE/4];
+
+	if (offset >= ANODES_PER_BLOCK)
+		return e_number_error;
+
+	tablk.data = NULL;			/* kill anode read cache */
+	ablk.data = (anodeblock_t *)buffer;
+	if ((error = GetResBlock((cachedblock_t *)&ablk, ABLKID, seqnr, false)))
+		return error;
+
+	ablk.data->nodes[offset].clustersize = anode->clustersize;
+	ablk.data->nodes[offset].blocknr     = anode->blocknr;
+	ablk.data->nodes[offset].next        = anode->next;
+	return volume.writeblock((cachedblock_t *)&ablk);
+}
+
+bool SaveAnode(canode_t *anode, uint32 nr)
+{
+	return WriteAnode(anode, nr) == e_none;
+}
+
+ULONG GetDEFileSize(struct direntry *direntry, struct extrafields *extra, ULONG *high)
+{
+	*high = 0;
+	if (rbl->options & MODE_LARGEFILE) {
+		*high = extra->fsizex;
+		return direntry->fsize;
+	}
+	return direntry->fsize;
+}
+
+ULONG GetDDFileSize(struct deldirentry *dde, ULONG *high)
+{
+	*high = 0;
+	if ((rbl->options & MODE_LARGEFILE) && dde->filename[0] <= DELENTRYFNSIZE) {
+		*high = dde->fsizex;
+		return dde->fsize;
+	}
+	return dde->fsize;
+}

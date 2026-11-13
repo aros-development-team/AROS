@@ -1,0 +1,380 @@
+include $(SRCDIR)/config/aros.cfg
+
+#MM- AROS : compiler-posixc
+#MM compiler-posixc : includes linklibs kernel-entropy-includes workbench-libs-fd-includes
+
+POSIXC := \
+    __dos64 \
+    _exit \
+    __exec \
+    __at \
+    __fdesc \
+    __fopen \
+    __fseeko \
+    __ftello \
+    __assert \
+    __optionallibs \
+    __posixc_env \
+    __posixc_init \
+    __posixc_nixmain \
+    __posixc_timer \
+    __stdio \
+    __get_default_file \
+    __rand48 \
+    __stat \
+    __threadhook \
+    __usergrp \
+    __upath \
+    __vfork \
+    access \
+    alphasort \
+    alphasort64 \
+    asctime_r \
+    basename \
+    cfgetispeed \
+    cfgetospeed \
+    cfsetispeed \
+    cfsetospeed \
+    chdir \
+    chmod \
+    chown \
+    clearerr \
+    clock_gettime \
+    close \
+    closedir \
+    creat \
+    creat64 \
+    ctime_r \
+    dirfd \
+    dirname \
+    drand48 \
+    dprintf \
+    dup \
+    dup2 \
+    endgrent \
+    endpwent \
+    erand48 \
+    execl \
+    execlp \
+    execv \
+    execve \
+    execvp \
+    fchdir \
+    fchmod \
+    fchmodat \
+    fchown \
+    fclose \
+    fcntl \
+    fdopen \
+    fdopendir \
+    feof \
+    ferror \
+    fflush \
+    fgetc \
+    fgetpos \
+    fgetpos64 \
+    fgets \
+    fileno \
+    flock \
+    flockfile \
+    fopen \
+    fopen64 \
+    fprintf \
+    fputc \
+    fputs \
+    fread \
+    freopen \
+    fscanf \
+    fseek \
+    fseeko \
+    fseeko64 \
+    fsetpos \
+    fsetpos64 \
+    fstat \
+    fstatat \
+    fstatvfs \
+    fstat64 \
+    fsync \
+    ftell \
+    ftello \
+    ftello64 \
+    ftruncate \
+    ftruncate64 \
+    funlockfile \
+    fwrite \
+    getc_unlocked \
+    getchar \
+    getcwd \
+    getdelim \
+    getegid \
+    getentropy \
+    geteuid \
+    getenv \
+    getfsstat \
+    getgid \
+    getgrent \
+    getgrgid \
+    getgrgid_r \
+    getgrnam \
+    getgrnam_r \
+    getgroups \
+    getloadavg \
+    getline \
+    getlogin \
+    getpass \
+    getpgid \
+    getpgrp \
+    getpid \
+    getppid \
+    getpwent \
+    getpwnam \
+    getpwnam_r \
+    getpwuid \
+    getpwuid_r \
+    getrlimit \
+    getrusage \
+    gets \
+    gettimeofday \
+    getuid \
+    gmtime_r \
+    ioctl \
+    isatty \
+    jrand48 \
+    kill \
+    lcong48 \
+    link \
+    localtime_r \
+    lrand48 \
+    lseek \
+    lseek64 \
+    lstat \
+    lstat64 \
+    mkdir \
+    mknod \
+    mkstemp \
+    mktemp \
+    mrand48 \
+    nanosleep \
+    nl_langinfo \
+    nl_langinfo_l \
+    nrand48 \
+    open \
+    openat \
+    opendir \
+    pathconf \
+    pclose \
+    perror \
+    pipe \
+    pread \
+    pread64 \
+    popen \
+    posix_fadvise \
+    posix_memalign \
+    printf \
+    pselect \
+    putchar \
+    putenv \
+    puts \
+    random \
+    rand_r \
+    read \
+    readdir \
+    readdir64 \
+    readlink \
+    realpath \
+    regex/regerror \
+    regex/regexec \
+    regex/regcomp \
+    regex/regfree \
+    remove \
+    rename \
+    rewind \
+    rewinddir \
+    rmdir \
+    scandir \
+    scandir64 \
+    scanf \
+    seed48 \
+    seekdir \
+    select \
+    setbuf \
+    setegid \
+    setenv \
+    seteuid \
+    setgid \
+    setgrent \
+    setpwent \
+    setrlimit \
+    setsid \
+    setuid \
+    setvbuf \
+    sigaction \
+    sigaddset \
+    sigdelset \
+    sigemptyset \
+    sigfillset \
+    sigismember \
+    siglongjmp \
+    sigpending \
+    sigprocmask \
+    sigsetjmp \
+    sigsuspend \
+    sleep \
+    srand48 \
+    stat \
+    stat64 \
+    statfs \
+    statvfs \
+    strerror \
+    strptime \
+    strtok_r \
+    swab \
+    symlink \
+    sync \
+    sysconf \
+    system \
+    tcgetattr \
+    tcgetpgrp \
+    tcsetattr \
+    telldir \
+    tempnam \
+    times \
+    tmpfile \
+    tmpnam \
+    truncate \
+    ttyname \
+    umask \
+    uname \
+    ungetc \
+    unlinkat \
+    unsetenv \
+    updatestdio \
+    usleep \
+    utime \
+    utimes \
+    vdprintf \
+    vfprintf \
+    vfscanf \
+    vprintf \
+    vscanf \
+    wait \
+    waitpid \
+    write
+
+POSIXC_LOCALE := \
+    freelocale \
+    localeconv_l \
+    newlocale \
+    strftime_l \
+    strcoll_l \
+    strtol_l \
+    strtof_l \
+    strtod_l \
+    strtold_l \
+    strtoul_l \
+    strtoll_l \
+    strtoull_l \
+    strxfrm_l \
+    uselocale
+
+POSIXC_WCHAR := \
+    mbsnrtowcs \
+    wcsnrtombs \
+    wcswcs \
+    wcwidth \
+    wcswidth
+
+POSIXC_WCHAR_LOCALE := \
+    iswalnum_l \
+    iswalpha_l \
+    iswblank_l \
+    iswcntrl_l \
+    iswdigit_l \
+    iswgraph_l \
+    iswlower_l \
+    iswprint_l \
+    iswpunct_l \
+    iswspace_l \
+    iswupper_l \
+    iswxdigit_l \
+    towlower_l \
+    towupper_l \
+    wcscoll_l \
+    wcsxfrm_l
+
+# The following files don't have source code here but have a CPU
+# specific version in arch directory hierarchy
+POSIXC_ARCH := \
+    vfork \
+    vfork_longjmp
+
+POSIXC_LINKLIB := \
+    ctype \
+    fnmatch \
+    ftime \
+    gcvt \
+    getopt \
+    getopt_long \
+    setlinebuf \
+    tzset
+
+# Both in linklib and shared library
+POSIXC_COMMON := \
+    __posixc_stdstreams
+
+#MM- core-linklibs : compiler-posixc-linklib compiler-posixc-lfa-linklib compiler-posixc-lfa-linklib-rel
+
+NOWARN_FLAGS := $(NOWARN_NONNULL_COMPARE)
+USER_CFLAGS += $(NOWARN_FLAGS) $(CFLAGS_MERGE_CONSTANTS)
+USER_INCLUDES += -iquote $(SRCDIR)/compiler/crt/stdc -iquote $(SRCDIR)/compiler/crt/common
+
+USER_CPPFLAGS := \
+        -DAROS_POSIXC_BUILD \
+        -D__TIMER_NOLIBBASE__
+
+# Make sure all needed symbols/definitions for extensions are exposed...
+USER_CPPFLAGS += \
+        -D_GNU_SOURCE \
+        -D_LARGEFILE64_SOURCE
+
+#USER_CPPFLAGS += -DDEBUG=1
+
+USER_LDFLAGS := -noposixc
+
+POSIXC_LINKOBJS := $(addsuffix .o,$(addprefix $(GENDIR)/$(CURDIR)/posixc/,$(notdir $(POSIXC_COMMON))))
+
+%build_module mmake=compiler-posixc \
+    modname=posixc modtype=library \
+    files="$(POSIXC) $(POSIXC_LOCALE) $(POSIXC_WCHAR) $(POSIXC_WCHAR_LOCALE) $(POSIXC_COMMON) $(POSIXC_ARCH)" \
+    linklibfiles="$(POSIXC_LINKLIB) $(POSIXC_COMMON)" linklibobjs=$(POSIXC_LINKOBJS) \
+    uselibs="stdc_rel stdcio_rel"
+
+
+#
+# build the Large File Access support libs using genmodule generated API stubs
+#
+
+#MM compiler-posixc-lfa-linklib : compiler-posixc-includes posixc-lfa-gen-stubs
+#MM compiler-posixc-lfa-linklib-rel : compiler-posixc-includes posixc-lfa-gen-stubs
+
+LFA_LIB_SOURCES := \
+         $(wildcard $(GENDIR)/$(CURDIR)/lfa/*_stub.c) \
+         $(wildcard $(GENDIR)/$(CURDIR)/lfa/*_stubs.c)
+
+%build_linklib mmake=compiler-posixc-lfa-linklib libname=posixc_lfa files=$(LFA_LIB_SOURCES:.c=) objdir="$(GENDIR)/$(CURDIR)/lfa"
+
+LFA_RELLIB_SOURCES := \
+         $(wildcard $(GENDIR)/$(CURDIR)/lfa/*_relstub.c) \
+         $(wildcard $(GENDIR)/$(CURDIR)/lfa/*_relstubs.c)
+
+%build_linklib mmake=compiler-posixc-lfa-linklib-rel libname=posixc_lfa_rel files=$(LFA_RELLIB_SOURCES:.c=) objdir="$(GENDIR)/$(CURDIR)/lfa"
+
+#MM
+posixc-lfa-gen-stubs: $(GENDIR)/$(CURDIR)/lfa/.stubs-generated
+
+$(GENDIR)/$(CURDIR)/lfa/.stubs-generated : | $(GENDIR)/$(CURDIR)/lfa
+	@$(ECHO) "Generating Large File Access stubs..."
+	@$(GENMODULE) -c $(SRCDIR)/$(CURDIR)/posixc_lfa.conf -d $(GENDIR)/$(CURDIR)/lfa writefiles posixc library
+	@$(TOUCH) $@
+
+#MM- compiler-posixc-linklib-quick : compiler-posixc-linklib

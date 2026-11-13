@@ -1,0 +1,51 @@
+#
+#   Makefile for the shell
+
+include $(SRCDIR)/config/aros.cfg
+
+FILES := \
+	Shell \
+	buffer \
+	cliEcho \
+	cliLen \
+	cliNan \
+	cliPrompt \
+	cliVarNum \
+	convertArg \
+	convertBackTicks \
+	convertLineDot \
+	convertRedir \
+	convertVar \
+	convertLine \
+	interpreter \
+	redirection \
+	readLine
+
+USER_CPPFLAGS += -DADATE="\"$(shell date "+%d.%m.%Y")\"" \
+	       -D__DOS_NOLIBBASE__
+USER_LDFLAGS := -static
+
+#MM- workbench-c : workbench-c-shell
+
+#MM- workbench-c-quick : workbench-c-shell-quick
+
+#MM  workbench-c-shell : includes linklibs workbench-libs-dos-catalogs
+
+%build_prog mmake=workbench-c-shell	progname=UserShell-Seg \
+    files=$(FILES) targetdir=$(AROS_FS)	\
+    usestartup="no"
+
+USER_CPPFLAGS += -DUSE_EMBEDDED_COMMANDS
+ifeq ($(AROS_TARGET_CPU),m68k)
+USER_CPPFLAGS   += -D__DOS_NOLIBINLINE__ 
+endif
+ifneq ($(ROM_OPTIMIZATION_CFLAGS),)
+OPTIMIZATION_CFLAGS := $(ROM_OPTIMIZATION_CFLAGS)
+endif
+OBJDIR := $(OBJDIR).kernel
+
+%build_module mmake=kernel-shell \
+  modname=shell modtype=resource \
+  files="shell_init $(FILES)"
+
+%common

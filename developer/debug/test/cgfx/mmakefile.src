@@ -1,0 +1,33 @@
+# Copyright (C) 2003-2026, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+
+FILES := \
+    blttemplatealpha \
+    CGXTest \
+    getcybermapattr \
+    readpixelarray \
+    scalepixelarray \
+    wpaaglobal \
+    writepixelarray \
+    writepixelarrayalpha
+
+EXEDIR := $(AROS_TESTS)/cgfx
+
+#MM- test : test-cgfx
+#MM- test-quick : test-cgfx-quick
+
+#MM test-cgfx : includes linklibs test-cgfx-testarrayops
+
+%build_progs mmake=test-cgfx \
+    files=$(FILES) targetdir=$(EXEDIR)
+
+# testarrayops compiles cybergraphics' generic ProcessPixelArray() operations in
+#MM test-cgfx-testarrayops : includes linklibs
+
+USER_INCLUDES := -iquote $(SRCDIR)/workbench/libs/cgfx
+
+%build_prog mmake=test-cgfx-testarrayops progname=testarrayops \
+    files=testarrayops targetdir=$(EXEDIR)
+
+%common

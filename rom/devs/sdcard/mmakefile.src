@@ -1,0 +1,20 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+USER_INCLUDES := -I $(SRCDIR)/$(CURDIR)
+USER_CPPFLAGS := -D__TIMER_NOLIBBASE__
+USER_LDFLAGS := -static
+
+SDCARDFILES = \
+    bootwait \
+    sdcard_init \
+    sdcard_device \
+    sdcard_bus \
+    sdcard_mmcunit \
+    sdcard_sdscunit \
+    sdcard_ioops \
+    timer
+
+%build_module mmake=kernel-sdcard \
+  modname=sdcard modtype=device version=$(AROS_TARGET_PLATFORM) \
+  files="$(SDCARDFILES)"

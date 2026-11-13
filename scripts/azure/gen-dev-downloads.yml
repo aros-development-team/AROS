@@ -1,0 +1,50 @@
+trigger: none  # don't trigger on any repo pushes by default
+pr: none       # disable PR triggers (optional)
+
+resources:
+  pipelines:
+
+  - pipeline: websiteBuild
+    project: Website
+    source: "aros-development-team.documentation"
+    trigger: true
+
+  - pipeline: devdldBuild
+    project: AROS
+    source: "Update Developer Nightlies"
+    trigger: true
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+steps:
+
+- task: UsePythonVersion@0
+  inputs:
+    versionSpec: '3.x'      # Use Python 3.x
+  displayName: 'Use Python 3'
+
+- template: templates/setup-sf-ssh.yml
+  parameters:
+    keyscanHosts: 'shell.sourceforge.net web.sourceforge.net'
+
+- template: templates/install-deps.yml
+  parameters:
+    pipPackages: 'requests beautifulsoup4'
+    displayName: 'Install dependencies'
+
+- script: |
+    echo "Run download scraper script..."
+    python3 $(Build.SourcesDirectory)/scripts/azure/gen-downloads.py > downloads.html
+  displayName: 'Generate downloads.html'
+
+- template: templates/rsync-upload.yml
+  parameters:
+    source: 'downloads.html'
+    destination: '$(SF_RSYNC_USER),arosdev@web.sourceforge.net:/home/project-web/arosdev/htdocs/downloads.html'
+    displayName: 'Upload generated downloads.html'
+  
+- publish: downloads.html
+  artifact: downloads-html
+  displayName: 'Publish downloads HTML artifact'
+  

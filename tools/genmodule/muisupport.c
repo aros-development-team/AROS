@@ -1,0 +1,258 @@
+/*
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
+
+    Support functions for MUI classes. Part of genmodule.
+*/
+#include "genmodule.h"
+#include "boopsisupport.h"
+
+void writemuiincludes(FILE *out)
+{
+    fprintf
+    (
+        out,
+        "#include <proto/muimaster.h>\n"
+        "\n"
+    );
+}
+
+void writemccinit(struct config *cfg, FILE *out, int inclass, struct classinfo *cl)
+{
+    struct functionhead *methlistit;
+    struct functionarg *arglistit;
+    unsigned int lvo;
+    const char *disp;
+    char *generated_disp = NULL;
+
+    fprintf
+    (
+        out,
+        "/* Initialisation routines of a MUI class */\n"
+        "/* =======================================*/\n"
+        "\n"
+    );
+
+    if (cl->classdatatype == NULL)
+        fprintf(out, "#   define %s_DATA_SIZE (0)\n", cl->basename);
+    else
+        fprintf
+        (
+             out,
+             "#   define %s_DATA_SIZE (sizeof(%s))\n",
+             cl->basename, cl->classdatatype
+        );
+
+    writeboopsidispatcher(cfg, out, cl);
+
+    fprintf
+    (
+        out,
+        "\n"
+        "\n"
+        "/*** Library startup and shutdown *******************************************/\n"
+        "static int MCC_%s_Startup(LIBBASETYPEPTR LIBBASE)\n"
+        "{\n",
+        cl->basename
+    );
+
+    /* Has the class a provided dispatcher function ? */
+    if (cl->dispatcher == NULL)
+    {
+        /* Class base names come from NUL-terminated duplicated config strings. */
+        size_t size = strlen(cl->basename) + sizeof("_Dispatcher"); /* Flawfinder: ignore */
+
+        generated_disp = malloc(size);
+        if (generated_disp == NULL)
+        {
+            fprintf(stderr, "Out of memory\n");
+            exit(20);
+        }
+        snprintf(generated_disp, size, "%s_Dispatcher", cl->basename);
+        disp = generated_disp;
+    }
+    else
+        disp = cl->dispatcher;
+
+    /* When classid is specified MakeClass will be used to make the class
+     * otherwise MUI_CreateCustomClass. The former use is only needed for internal
+     * muimaster use. Other use is deprecated.
+     */
+    if (cl->classid == NULL)
+    {
+        char *base;
+
+        /* Is this class the main class then pass the libbase to MUI_CreateCustomClass
+         * otherwise pass NULL
+         */
+        if (!inclass)
+            base = "(struct Library *)LIBBASE";
+        else
+            base = "NULL";
+
+        if (cl->superclass != NULL)
+            fprintf
+            (
+                out,
+                "    %s_CLASSPTR_FIELD(LIBBASE) = MUI_CreateCustomClass(%s, %s, NULL, %s_DATA_SIZE, %s);\n",
+                cl->basename, base, cl->superclass, cl->basename, disp
+            );
+        else if (cl->superclass_field != NULL)
+            fprintf
+            (
+                out,
+                "    %s_CLASSPTR_FIELD(LIBBASE) = MUI_CreateCustomClass(%s, NULL, LIBBASE->%s, %s_DATA_SIZE, %s);\n",
+                cl->basename, base, cl->superclass_field, cl->basename, disp
+            );
+        else
+        {
+            fprintf(out, "Internal error: both superclass and superclass_field are NULL\n");
+            exit(20);
+        }
+    }
+    else
+    {
+        if (cl->superclass != NULL)
+            fprintf
+            (
+                out,
+                "    Class *superclass = MUI_GetClass(%s),\n",
+                cl->superclass
+            );
+        else if (cl->superclass_field != NULL)
+            fprintf
+            (
+                out,
+                "    Class *superclass = LIBBASE->%s,\n",
+                cl->superclass_field
+            );
+        else
+        {
+            fprintf(stderr, "Internal error: both superclass and superclass_field are NULL\n");
+            exit(20);
+        }
+
+        fprintf
+        (
+            out,
+            "          *cl = NULL;\n"
+            "\n"
+            "    if (superclass)\n"
+            "        cl = MakeClass(%s, NULL, superclass, %s_DATA_SIZE, 0);\n"
+            "    if (cl)\n"
+            "        cl->cl_Dispatcher.h_Entry = %s;\n"
+            "    %s_CLASSPTR_FIELD(LIBBASE) = cl;\n",
+            cl->classid, cl->basename,
+            disp,
+            cl->basename
+        );
+    }
+
+    free(generated_disp);
+
+    fprintf
+    (
+        out,
+        "    \n"
+        "    return %s_CLASSPTR_FIELD(LIBBASE) != NULL;\n"
+        "}\n"
+        "\n"
+        "static void MCC_%s_Shutdown(LIBBASETYPEPTR LIBBASE)\n"
+        "{\n",
+        cl->basename,
+        cl->basename
+    );
+    if (cl->classid == NULL)
+    {
+        fprintf
+        (
+             out,
+             "    MUI_DeleteCustomClass(%s_CLASSPTR_FIELD(LIBBASE));\n",
+             cl->basename
+        );
+    }
+    else
+    {
+        fprintf
+        (
+            out,
+            "    Class *cl = %s_CLASSPTR_FIELD(LIBBASE);\n"
+            "\n"
+            "    if (cl != NULL)\n"
+            "    {\n"
+            "        MUI_FreeClass(cl->cl_Super);\n"
+            "        FreeClass(cl);\n"
+            "    }\n",
+            cl->basename
+        );
+    }
+    fprintf
+    (
+        out,
+//        "    return TRUE;\n"
+        "}\n"
+        "\n"
+        "ADD2INITCLASSES(MCC_%s_Startup, %d)\n"
+        "ADD2EXPUNGECLASSES(MCC_%s_Shutdown, %d)\n",
+        cl->basename, -cl->initpri,
+        cl->basename, -cl->initpri
+    );
+}
+
+void writemccquery(FILE *out, struct config *cfg)
+{
+    char *ctype;
+    if (cfg->modtype == MCC) 
+        ctype = "MCC";
+    else
+        ctype = "MCP";
+    fprintf
+    (
+        out,
+        "\n"
+        "/* %s_Query function */\n"
+        "/* ================== */\n"
+        "\n"
+        "#include <libraries/mui.h>\n"
+        "#include <aros/libcall.h>\n"
+        "\n"
+        "#define MCC_CLASS  0\n"
+        "#define MCP_CLASS  1\n"
+        "\n"
+        "AROS_LH1(IPTR, %s_Query,\n"
+        "         AROS_LHA(LONG, what, D0),\n"
+        "         LIBBASETYPEPTR, LIBBASE, 5, %s\n"
+        ")\n"
+        "{\n"
+        "    AROS_LIBFUNC_INIT\n"
+        "\n"
+        "    switch( what )\n"
+        "    {\n"
+        , ctype
+        , ctype
+        , cfg->basename
+    );
+
+    switch(cfg->modtype)
+    {
+    case MCC:
+    case MUI:
+        fprintf(out, "        case MCC_CLASS:          return (IPTR)GM_CLASSPTR_FIELD(LIBBASE);\n");
+        break;
+    case MCP:
+        fprintf(out, "        case MCP_CLASS:           return (IPTR)GM_CLASSPTR_FIELD(LIBBASE);\n");
+        break;
+    }
+
+    /* FIXME: handle "ONLY_GLOBAL" ?? */
+
+    fprintf
+    (
+        out,
+        "    }\n"
+        "\n"
+        "    return 0;\n"
+        "\n"
+        "    AROS_LIBFUNC_EXIT\n"
+        "}\n"
+    );
+}

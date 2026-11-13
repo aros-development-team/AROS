@@ -1,0 +1,82 @@
+/*
+    Copyright (C) 1995-2015, The AROS Development Team. All rights reserved.
+
+    Desc:
+*/
+
+/******************************************************************************
+
+    NAME
+
+        Quit
+
+    SYNOPSIS
+
+        RC/N
+
+    LOCATION
+
+        C:
+
+    FUNCTION
+
+        Exits a script with the given return code. It's recommended that you
+        use the standard return codes 5, 10 and 20.
+
+    INPUTS
+
+        RC   --  the return code. Defaults to 0.
+
+    RESULT
+
+    NOTES
+        If this command is called in a script that is executed from another
+        script, the entire series of nested scripts will stop.
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+******************************************************************************/
+
+#include <proto/dos.h>
+#include <dos/dos.h>
+#include <dos/dosextens.h>
+#include <dos/rdargs.h>
+#include "dos_commanderrors.h"
+
+#include <aros/shcommands.h>
+
+AROS_SH1(Quit, 41.1,
+AROS_SHA(LONG *, ,RC,/N,NULL))
+{
+    AROS_SHCOMMAND_INIT
+
+    struct CommandLineInterface *cli = Cli();
+    int retval = RETURN_OK;
+
+
+    if(cli && !cli->cli_Interactive)
+    {
+        struct FileHandle *fh = BADDR(cli->cli_CurrentInput);
+
+        fh->fh_Pos = fh->fh_End + 1; /* Simulate an EOF */
+
+        if(SHArg(RC) != NULL)
+            retval = (int)*SHArg(RC);
+
+    }
+    else
+    {
+        PrintFault(ERROR_SCRIPT_ONLY, "Quit");
+        retval = RETURN_FAIL;
+    }
+
+    return retval;
+
+    AROS_SHCOMMAND_EXIT
+}

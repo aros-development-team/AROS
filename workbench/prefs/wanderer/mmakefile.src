@@ -1,0 +1,15 @@
+# Copyright (C) 2004, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+
+FILES 	    := main locale wpeditor entryelements
+EXEDIR      := $(AROS_PREFS)
+
+#MM- workbench-prefs : workbench-prefs-wanderer
+#MM workbench-prefs-wanderer : includes linklibs workbench-prefs-wanderer-catalogs 
+
+%build_prog mmake=workbench-prefs-wanderer \
+    progname=Wanderer targetdir=$(EXEDIR) \
+    files=$(FILES)
+
+%common

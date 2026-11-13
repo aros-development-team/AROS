@@ -1,0 +1,10 @@
+BOING_PREFS
+;Tools
+Sys:Utilities/Multiview
+SYS:System/Shell
+SYS:System/SysMon
+;Utils
+SYS:Tools/ScreenGrabber
+SYS:Tools/Commodities/Exchange
+Sys:Prefs/ScreenMode
+SYS:Prefs/Zune

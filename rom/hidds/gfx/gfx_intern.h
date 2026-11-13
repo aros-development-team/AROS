@@ -1,0 +1,725 @@
+/*
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
+*/
+
+#ifndef GFX_HIDD_INTERN_H
+#define GFX_HIDD_INTERN_H
+
+/* Include files */
+
+#include <aros/debug.h>
+#include <exec/libraries.h>
+#include <exec/semaphores.h>
+#include <oop/oop.h>
+#include <hidd/gfx.h>
+#include <dos/dos.h>
+#include <graphics/gfxbase.h>
+#include <graphics/monitor.h>
+
+#define USE_FAST_GETPIXEL		1
+#define USE_FAST_PUTPIXEL		1
+#define OPTIMIZE_DRAWPIXEL_FOR_COPY	1
+#define USE_FAST_DRAWPIXEL		1
+#define USE_FAST_DRAWLINE               1
+#define USE_FAST_GETIMAGE               1
+#define USE_FAST_PUTIMAGE               1
+#define USE_FAST_CONVERTPIXELS          1
+#define USE_FAST_UNMAPPIXEL             1
+#define USE_FAST_MAPCOLOR               1
+#define COPYBOX_CHECK_FOR_ALIKE_PIXFMT	1
+
+#define USE_FAST_BMHGETPIXEL            1
+#define USE_FAST_BMHUNMAPPIXEL          1
+#define USE_FAST_BMHFINDCOLOR           1
+#define USE_FAST_BMHADDCOLOR            1
+
+struct HWGfxData
+{
+};
+
+#define HBM(x) ((struct HIDDBitMapData *)x)
+#define HBMH(x) ((struct HiddBMHistogramData *)x)
+
+#define GOT_PF_ATTR(code)	GOT_ATTR(code, aoHidd_PixFmt, pixfmt)
+#define FOUND_PF_ATTR(code)	FOUND_ATTR(code, aoHidd_PixFmt, pixfmt);
+
+#define GOT_SYNC_ATTR(code)	GOT_ATTR(code, aoHidd_Sync, sync)
+#define FOUND_SYNC_ATTR(code)	FOUND_ATTR(code, aoHidd_Sync, sync);
+
+#define GOT_BM_ATTR(code)	GOT_ATTR(code, aoHidd_BitMap, bitmap)
+#define FOUND_BM_ATTR(code)	FOUND_ATTR(code, aoHidd_BitMap, bitmap);
+
+#define SWAPBYTES_WORD(x) ((((x) >> 8) & 0x00FF) | (((x) & 0x00FF) << 8))
+
+/*
+ * Storage class for static helpers shared by several code paths. On m68k
+ * the module lives in the Kickstart ROM, so keep one out of line copy;
+ * elsewhere inline them into every caller as the open coded original was.
+ */
+#if defined(__mc68000__)
+#define GFX_SHARED static __attribute__((noinline))
+#else
+#define GFX_SHARED static inline __attribute__((always_inline))
+#endif
+
+/*
+ * The per pixel size variants of the bitmap memory methods (CopyMemBox8,
+ * CopyMemBox16, ...) have consecutive IDs and, except for FillMemRect, the
+ * same message, so callers dispatch them with a method ID computed from the
+ * bytes per pixel. Check that a variant directly follows the previous one.
+ */
+#define GFX_ASSERT_NEXT_ID(prev, next)                                          \
+    _Static_assert(moHidd_BitMap_##next == moHidd_BitMap_##prev + 1,            \
+                   "moHidd_BitMap_" #next " must follow " #prev)
+#define GFX_ASSERT_NEXT_METHOD(prev, next)                                      \
+    GFX_ASSERT_NEXT_ID(prev, next);                                             \
+    _Static_assert(sizeof(struct pHidd_BitMap_##next) ==                        \
+                   sizeof(struct pHidd_BitMap_##prev),                          \
+                   "pHidd_BitMap_" #next " must match " #prev)
+#define GFX_ASSERT_BPP_METHODS(name)                                            \
+    GFX_ASSERT_NEXT_METHOD(name##8, name##16);                                  \
+    GFX_ASSERT_NEXT_METHOD(name##16, name##24);                                 \
+    GFX_ASSERT_NEXT_METHOD(name##24, name##32)
+
+struct colormap_data
+{
+    HIDDT_ColorLUT clut;
+    struct SignalSemaphore palette_lock;
+};
+
+struct pixfmt_data
+{
+     HIDDT_PixelFormat pf; /* Public portion in the beginning    */
+
+     struct MinNode node;  /* Node for linking into the database */
+     ULONG refcount;	   /* Reference count			 */
+};
+
+/* Use this macro in order to transform node pointer to pixfmt pointer */
+#define PIXFMT_OBJ(n) ((HIDDT_PixelFormat *)((char *)(n) - offsetof(struct pixfmt_data, node)))
+
+struct planarbm_data
+{
+    struct BitMap *bitmap;		/* Associated BitMap structure		  */
+    BOOL	   planes_alloced;	/* Whether the BitMap was allocated by us */
+    UWORD      cached_depth_plus_one; /* Held pixel format's depth, 0 if none */
+    UWORD      cache_pixfmt;          /* Initially detached graphics wrapper */
+};
+
+struct chunkybm_data
+{
+    OOP_Object *display;       	/* Owning display				*/
+    OOP_Object *dmenum;        	/* Owning display's mode enumerator		*/
+    UBYTE      *buffer;		/* Pixelbuffer		  			*/
+    ULONG	bytesperrow;	/* Cached for faster access 			*/
+    UWORD	bytesperpixel;
+    BOOL	own_buffer;	/* Whether the buffer was allocated by us	*/
+    ULONG	bufsize;	/* Size of an owned buffer, in bytes		*/
+};
+
+struct sync_data
+{
+    struct MonitorSpec *mspc;	/* Associated MonitorSpec */
+
+    ULONG pixelclock;		/* pixel time in Hz */
+
+    ULONG hdispmax;
+    ULONG vdispmax;
+    ULONG hdisp;		/* Data missing from MonitorSpec */
+    ULONG htotal;
+    ULONG vdisp;
+
+    ULONG flags;		/* Flags */
+
+    UBYTE description[32];
+    
+    ULONG hmin;			/* Minimum and maximum allowed bitmap size */
+    ULONG hmax;
+    ULONG vmin;
+    ULONG vmax;
+
+    OOP_Object	 *dmenum;	 /* DMEnum that owns this sync			*/
+    ULONG InternalFlags;	 /* Internal flags, see below			*/
+};
+
+/* Sync internal flags */
+#define SYNC_FREE_MONITORSPEC    0x0001 /* Allocated own MonitorSpec 				*/
+#define SYNC_FREE_SPECIALMONITOR 0x0002 /* Allocated own SpecialMonitor				*/
+#define SYNC_VARIABLE		 0x0004 /* Signal timings can be changed			*/
+
+struct gc_data
+{
+    HIDDT_GC_Intern  prot;
+    struct Rectangle cr;
+};
+
+struct mode_bm {
+    UBYTE *bm;
+    UWORD bpr;
+};
+struct mode_db {
+    /* Array of all available gfxmode PixFmts that are part of 
+       gfxmodes
+     */
+    struct SignalSemaphore sema;
+    OOP_Object **pixfmts;
+    /* Number of pixfmts in the above array */
+    ULONG num_pixfmts;
+    
+    /* All the sync times that are part of any gfxmode */
+    OOP_Object **syncs;
+    /* Number of syncs in the above array */
+    ULONG num_syncs;
+    
+    /* A bitmap of size (num_pixfmts * num_syncs), that tells if the
+       mode is displayable or not. If a particular (x, y) coordinate
+       of the bitmap is 1, it means that the pixfmt and sync objects
+       you get by indexing pixfmts[x] and syncs[y] are a valid mode.
+       If not, the mode is considered invalid
+    */
+    
+    struct mode_bm orig_mode_bm;	/* Original as supplied by subclass */
+    struct mode_bm checked_mode_bm;	/* After applying monitor refresh rate checks etc. */
+    struct mode_bm soft_mode_bm;       /* Software-only modes; never native scanout. */
+    
+};
+
+struct HiddGfxData
+{
+	IPTR        fbmode;         /* cached framebuffer type */
+};
+
+struct HIDDDMEnumData
+{
+	OOP_Object *display;        /* The display object this enumerator belongs to */
+	LONG        pri;            /* Mode enumeration priority of the display      */
+
+	/* Gfx mode "database" */
+	struct mode_db mdb;
+};
+
+/* Private dmenum methods */
+OOP_Object *DMEnum__Internal__GetPixFmt(OOP_Class *cl, HIDDT_StdPixFmt pixFmt);
+OOP_Object *DMEnum__Internal__RegisterPixFmt(OOP_Class *cl, struct TagItem *pixFmtTags);
+VOID DMEnum__Internal__ReleasePixFmt(OOP_Class *cl, OOP_Object *pf);
+
+
+/* Private bitmap methods */
+void BM__Hidd_BitMap__SetBitMapTags(OOP_Class *cl, OOP_Object *o, struct TagItem *bitMapTags);
+void BM__Hidd_BitMap__SetPixFmt(OOP_Class *cl, OOP_Object *o, OOP_Object *pf);
+void BM__Hidd_BitMap__SetVisible(OOP_Class *cl, OOP_Object *o, BOOL val);
+
+/*
+ * One decode interface instance (moHidd_Display_GetDecodeInterface): the
+ * vector table sits right before the driver's data, which is what the
+ * caller gets; the HIDD_Decode_*() stubs find the table at iface - sizeof.
+ */
+struct DecodeInstance
+{
+    struct MinNode              node;       /* in HIDDDisplayData.decodes */
+    IPTR                        allocsize;
+    struct HIDD_DecodeInterface vec;
+    /* driver data follows */
+};
+
+#define DECODEINST_DATA(inst)   ((APTR)(&(inst)->vec + 1))
+#define DECODEINST_FROM(iface)  ((struct DecodeInstance *)((UBYTE *)(iface) - offsetof(struct DecodeInstance, vec) - sizeof(struct HIDD_DecodeInterface)))
+
+/* A {func, Class} pair of struct HIDDBitMapData's direct method calls */
+struct BMFastMethod
+{
+    OOP_MethodFunc         func;
+    OOP_Class             *Class;
+};
+
+struct HIDDBitMapData
+{
+    struct _hidd_bitmap_protected prot;
+
+    struct BitMap          *bmstruct;
+    UWORD                  width;         /* width of the bitmap in pixel                  */
+    UWORD                  height;        /* height of the bitmap in pixel                 */
+    UWORD                  align;         /* Default alignment                             */
+    IPTR                   displayWidth;  /* Display size                                  */
+    IPTR                   displayHeight;
+    struct Rectangle       display;       /* Display rectangle (in bitmap's coordinates !) */
+    struct SignalSemaphore lock;          /* Scroll/update semaphore                       */
+    BOOL                   visible;       /* bitmap visible ?                              */
+    BOOL                   displayable;   /* bitmap directly displayable?                  */
+    BOOL                   compositable;  /* bitmap displayable via compositor             */
+    BOOL                   framebuffer;	  /* is a framebuffer ?		                   */
+    BOOL                   pf_registered; /* Registered own pixelformat ?	           */
+    BOOL                   scanout;       /* aHidd_BitMap_Scanout                          */
+    ULONG                  buffers;       /* aHidd_BitMap_Buffers (>= 1)                   */
+    ULONG                  videoformat;   /* aHidd_BitMap_VideoFormat, 0 = RGB/palette     */
+    ULONG                  colorspace;    /* aHidd_BitMap_ColorSpace                       */
+    ULONG                  colorrange;    /* aHidd_BitMap_ColorRange                       */
+    BOOL                   decodetarget;  /* aHidd_BitMap_DecodeTarget                     */
+    ULONG                  videolayout;   /* aHidd_BitMap_VideoLayout                      */
+    ULONG                  flags;         /* see hidd/graphic.h 'flags for                 */
+    ULONG                  bytesPerRow;   /* bytes per row                                 */
+    OOP_Object            *friend;        /* Friend bitmap		                   */
+    OOP_Object            *display_obj;   /* Owning display                                */
+    OOP_Object            *dmenum;        /* Owning display's mode enumerator             */
+    OOP_Object            *colmap;        /* Colormap                                      */
+    UWORD                 *invlut;        /* RGB555 to pen cache for truecolor sources     */
+    OOP_Object            *gc;            /* Shared GC for copy operations                 */
+    HIDDT_ModeID           modeid;        /* Display mode ID		                   */
+
+    /* Optimize these method calls. BM__Root__New() sets them up as an array of
+       struct BMFastMethod, from putpixel on, keep them consecutive. */
+#if USE_FAST_PUTPIXEL
+    OOP_MethodFunc         putpixel;
+    OOP_Class 	          *putpixel_Class;
+#endif
+#if USE_FAST_GETPIXEL
+    OOP_MethodFunc         getpixel;
+    OOP_Class	          *getpixel_Class;
+#endif
+#if USE_FAST_DRAWPIXEL
+    OOP_MethodFunc         drawpixel;
+    OOP_Class             *drawpixel_Class;
+#endif
+#if USE_FAST_DRAWLINE
+    OOP_MethodFunc         drawline;
+    OOP_Class             *drawline_Class;
+#endif
+#if USE_FAST_GETIMAGE
+    OOP_MethodFunc         getimage;
+    OOP_Class             *getimage_Class;
+#endif
+#if USE_FAST_PUTIMAGE
+    OOP_MethodFunc         putimage;
+    OOP_Class             *putimage_Class;
+#endif
+#if USE_FAST_CONVERTPIXELS
+    OOP_MethodFunc         convertpixels;
+    OOP_Class             *convertpixels_Class;
+#endif
+#if USE_FAST_UNMAPPIXEL
+    OOP_MethodFunc         unmappixel;
+    OOP_Class             *unmappixel_Class;
+#endif
+#if USE_FAST_MAPCOLOR
+    OOP_MethodFunc         mapcolor;
+    OOP_Class             *mapcolor_Class;
+#endif
+};
+
+struct BMHistEntry
+{
+    struct BMHistEntry  *next;
+    HIDDT_Color         color;
+    ULONG               count;
+};
+
+struct HiddBMHistogramData
+{
+    struct SignalSemaphore sema;
+    APTR                hpool;
+    ULONG               size;
+    struct BMHistEntry  *hist;
+
+    /* Optimize these method calls */
+#if USE_FAST_BMHGETPIXEL
+    OOP_MethodFunc         getpixel;
+    OOP_Class 	          *getpixel_Class;
+#endif
+#if USE_FAST_BMHUNMAPPIXEL
+    OOP_MethodFunc         unmappixel;
+    OOP_Class	          *unmappixel_Class;
+#endif
+#if USE_FAST_BMHFINDCOLOR
+    OOP_MethodFunc         findcolorentry;
+    OOP_Class             *findcolorentry_Class;
+#endif
+#if USE_FAST_BMHADDCOLOR
+    OOP_MethodFunc         addcolorentry;
+    OOP_Class             *addcolorentry_Class;
+#endif
+};
+
+#define NUM_ATTRBASES   14
+#define NUM_METHODBASES 10
+
+struct class_static_data
+{
+    struct GfxBase	 *cs_GfxBase;
+    struct Library	 *cs_UtilityBase;
+    struct Library	 *cs_OOPBase;
+    BPTR                  cs_SegList;
+
+    struct SignalSemaphore sema;
+
+    OOP_AttrBase	 attrBases[NUM_ATTRBASES];
+    OOP_MethodID	 methodBases[NUM_METHODBASES];
+
+    OOP_Class            *gfxhwclass;                   /* graphics hw enumerator class         */
+    OOP_Class            *gfxhiddclass; /* graphics hidd class    */
+    OOP_Class            *dmenumclass;  /* display mode enumerator class */
+    OOP_Class            *displayclass; /* display class          */
+    OOP_Class            *compositorclass; /* display compositor class */
+    OOP_Class            *bitmapclass;  /* bitmap class           */
+    OOP_Class            *cursorfbclass;        /* software-cursor framebuffer wrapper bitmap class */
+    OOP_Class            *bmhistogramclass;
+    OOP_Class            *gcclass;      /* graphics context class */
+    OOP_Class		 *colormapclass; /* colormap class	  */
+    
+    OOP_Class		 *pixfmtclass;	/* describing bitmap pixel formats */
+    OOP_Class		 *syncclass;	/* describing gfxmode sync times */
+    
+    OOP_Class		 *planarbmclass;
+    OOP_Class		 *chunkybmclass;
+
+    OOP_Object           *gfxhwinstance;
+
+    /*
+       Pixel format "database". This is a list
+       of all pixelformats currently used by some bitmap.
+       The point of having this as a central db in the gfx hidd is
+       that if several bitmaps are of the same pixel format
+       they may point to the same PixFmt object instead
+       of allocating their own instance. Thus we are saving mem
+     */
+    struct SignalSemaphore pfsema;
+    struct MinList pflist;
+    /* Index of standard pixelformats for quick access */
+    HIDDT_PixelFormat	 *std_pixfmts[num_Hidd_StdPixFmt];
+
+    HIDDT_RGBConversionFunction rgbconvertfuncs[NUM_RGB_STDPIXFMT][NUM_RGB_STDPIXFMT];
+    struct SignalSemaphore rgbconvertfuncs_sem;
+};
+
+#define __IHidd_BitMap	    (csd->attrBases[0])
+#define __IHidd_BMHistogram (csd->attrBases[1])
+#define __IHidd_Gfx 	    (csd->attrBases[2])
+#define __IHidd_Display	    (csd->attrBases[3])
+#define __IHidd_DMEnum	    (csd->attrBases[4])
+#define __IHidd_GC  	    (csd->attrBases[5])
+#define __IHidd_ColorMap    (csd->attrBases[6])
+#define __IHW 	            (csd->attrBases[7])
+#define __IHidd_Compositor  (csd->attrBases[8])
+#define __IHidd             (csd->attrBases[9])
+#define __IHidd_Sync	    (csd->attrBases[10])
+#define __IHidd_PixFmt      (csd->attrBases[11])
+#define __IHidd_PlanarBM    (csd->attrBases[12])
+#define __IHidd_ChunkyBM    (csd->attrBases[13])
+
+#undef HiddBitMapBase
+#undef HiddBMHistogramBase
+#undef HiddGfxBase
+#undef HiddDisplayBase
+#undef HiddDMEnumBase
+#undef HiddGCBase
+#undef HiddColorMapBase
+#undef HWBase
+#undef HiddCompositorBase
+#undef HiddBase
+#define HiddBitMapBase	    (csd->methodBases[0])
+#define HiddBMHistogramBase (csd->methodBases[1])
+#define HiddGfxBase	    (csd->methodBases[2])
+#define HiddDisplayBase	    (csd->methodBases[3])
+#define HiddDMEnumBase	    (csd->methodBases[4])
+#define HiddGCBase	    (csd->methodBases[5])
+#define HiddColorMapBase    (csd->methodBases[6])
+#define HWBase              (csd->methodBases[7])
+#define HiddCompositorBase  (csd->methodBases[8])
+#define HiddBase            (csd->methodBases[9])
+
+/* Library base */
+
+struct IntHIDDGraphicsBase
+{
+    struct Library            hdg_LibNode;
+
+    struct class_static_data  hdg_csd;
+};
+
+
+/* pre declarations */
+
+BOOL parse_pixfmt_tags(struct TagItem *tags, HIDDT_PixelFormat *pf, ULONG attrcheck, struct class_static_data *csd);
+
+/*
+ * Software cursor framebuffer wrapper (CursorFB) support.
+ *
+ * The Display class renders the mouse pointer in software for drivers that have
+ * no hardware sprite. To keep the pointer from corrupting the display when the
+ * desktop is drawn underneath it, displayable/framebuffer bitmaps are wrapped in
+ * a CursorFB bitmap that brackets every pixel-writing operation with a
+ * hide/show of the pointer. These helpers (implemented in the Display class) are
+ * called by the CursorFB wrapper and by the gfx CopyBox de-masquerade.
+ */
+OOP_Class *init_cursorfbclass(struct class_static_data *csd);
+OOP_Object *create_cursorfb(struct class_static_data *csd, OOP_Object *display, OOP_Object *realbm);
+OOP_Object *cursorfb_realbitmap(struct class_static_data *csd, OOP_Object *bm);
+OOP_Object *cursorfb_display(struct class_static_data *csd, OOP_Object *bm);
+
+/* Display cursor primitives, called by the CursorFB wrapper while bracketing */
+struct SignalSemaphore *GfxDisplay_CursorSem(struct class_static_data *csd, OOP_Object *display);
+BOOL GfxDisplay_CursorIntersects(struct class_static_data *csd, OOP_Object *display, OOP_Object *bm, WORD x1, WORD y1, WORD x2, WORD y2);
+void GfxDisplay_CursorRemove(struct class_static_data *csd, OOP_Object *display);
+void GfxDisplay_CursorRender(struct class_static_data *csd, OOP_Object *display);
+void GfxDisplay_CursorSetTarget(struct class_static_data *csd, OOP_Object *display, OOP_Object *bm);
+void GfxDisplay_CursorUntarget(struct class_static_data *csd, OOP_Object *display, OOP_Object *bm);
+
+
+static inline ULONG color_distance(UWORD a1, UWORD r1, UWORD g1, UWORD b1, UWORD a2, UWORD r2, UWORD g2, UWORD b2)
+{
+    /* NOTE: The use of 'WORD' here and the 'UWORD' casts below are
+     *       important hints to GCC to generate better code on m68k
+     */
+    WORD da = (a1 >> 8) - (a2 >> 8);
+    WORD dr = (r1 >> 8) - (r2 >> 8);
+    WORD dg = (g1 >> 8) - (g2 >> 8);
+    WORD db = (b1 >> 8) - (b2 >> 8);
+
+    DB2(bug("[color_distance] a1 = 0x%04X a2 = 0x%04X da = %d\n", a1, a2, da));
+    DB2(bug("[color_distance] r1 = 0x%04X r2 = 0x%04X dr = %d\n", r1, r2, dr));
+    DB2(bug("[color_distance] g1 = 0x%04X g2 = 0x%04X dg = %d\n", g1, g2, dg));
+    DB2(bug("[color_distance] b1 = 0x%04X b2 = 0x%04X db = %d\n", b1, b2, db));
+
+    /* '4' here is a result of trial and error. The idea behind this is to increase
+       the weight of alpha difference in order to make the function prefer colors with
+       the same alpha value. This is important for correct mouse pointer remapping. */
+    return (UWORD)(da*da)*4 + (UWORD)(dr*dr) + (UWORD)(dg*dg) + (UWORD)(db*db);
+}
+
+#define CSD(x) (&((struct IntHIDDGraphicsBase *)x->UserData)->hdg_csd)
+#define csd CSD(cl)
+
+#define SD(x)                       ((struct sync_data *)x)
+#define PF(x)                       ((HIDDT_PixelFormat *)x)
+
+#define XCOORD_TO_BYTEIDX(x)        ( (x) >> 3)
+#define COORD_TO_BYTEIDX(x, y, bpr) ( ( (y) * bpr ) + XCOORD_TO_BYTEIDX(x) )
+#define XCOORD_TO_MASK(x)           (1L << (7 - ((x) & 0x07) ))
+#define WIDTH_TO_BYTES(width)       ( (( (width) - 1) >> 3) + 1)
+
+/* The following calls are optimized by calling the method functions directly */
+
+#if USE_FAST_GETPIXEL
+static inline HIDDT_Pixel GETPIXEL(OOP_Class *cl, OOP_Object *o, WORD x, WORD y)
+{
+    struct pHidd_BitMap_GetPixel getp_p;
+
+    getp_p.mID = HiddBitMapBase + moHidd_BitMap_GetPixel;
+    getp_p.x   = x;
+    getp_p.y   = y;
+
+    return HBM(o)->getpixel(HBM(o)->getpixel_Class, o, &getp_p.mID);
+}
+#else
+#define GETPIXEL(cl, obj, x, y) HIDD_BM_GetPixel(obj, x, y)
+#endif
+
+#if USE_FAST_PUTPIXEL
+static inline void PUTPIXEL(OOP_Class *cl, OOP_Object *o, WORD x, WORD y, HIDDT_Pixel val)
+{
+    struct pHidd_BitMap_PutPixel putp_p;
+
+    putp_p.mID   = HiddBitMapBase + moHidd_BitMap_PutPixel;
+    putp_p.x     = x;
+    putp_p.y     = y;
+    putp_p.pixel = val;
+
+    HBM(o)->putpixel(HBM(o)->putpixel_Class, o, &putp_p.mID);
+}
+#else
+#define PUTPIXEL(cl, obj, x, y, val) HIDD_BM_PutPixel(obj, x, y, val)
+#endif
+
+#if USE_FAST_DRAWPIXEL
+static inline void DRAWPIXEL(OOP_Class *cl, OOP_Object *o, OOP_Object *gc, WORD x, WORD y)
+{
+    struct pHidd_BitMap_DrawPixel drawp_p;
+
+    drawp_p.mID = HiddBitMapBase + moHidd_BitMap_DrawPixel;
+    drawp_p.gc  = gc;
+    drawp_p.x   = x;
+    drawp_p.y   = y;
+
+    HBM(o)->drawpixel(HBM(o)->drawpixel_Class, o, &drawp_p.mID);
+}
+#else
+#define DRAWPIXEL(cl, obj, gc, x, y) HIDD_BM_PutPixel(obj, gc, x, y)
+#endif
+
+#if USE_FAST_DRAWLINE
+static inline void DRAWLINE(OOP_Class *cl, OOP_Object *o, OOP_Object *gc, WORD x1, WORD y1, WORD x2, WORD y2)
+{
+    struct pHidd_BitMap_DrawLine drawl_p;
+
+    drawl_p.mID = HiddBitMapBase + moHidd_BitMap_DrawLine;
+    drawl_p.gc   = gc;
+    drawl_p.x1   = x1;
+    drawl_p.y1   = y1;
+    drawl_p.x2   = x2;
+    drawl_p.y2   = y2;
+
+    HBM(o)->drawline(HBM(o)->drawline_Class, o, &drawl_p.mID);
+}
+#else
+#define DRAWLINE(cl, obj, gc, x1, y1, x2, y2) HIDD_BM_DrawLine(obj, gc, x1, y1, x2, y2)
+#endif
+
+#if USE_FAST_GETIMAGE
+static inline void GETIMAGE(OOP_Class *cl, OOP_Object *o, UBYTE *pixels, ULONG modulo, WORD x, WORD y,
+                               WORD width, WORD height, HIDDT_StdPixFmt pixFmt)
+{
+    struct pHidd_BitMap_GetImage geti_p;
+
+    geti_p.mID = HiddBitMapBase + moHidd_BitMap_GetImage;
+    geti_p.pixels       = pixels;
+    geti_p.modulo       = modulo;
+    geti_p.x            = x;
+    geti_p.y            = y;
+    geti_p.width        = width;
+    geti_p.height       = height;
+    geti_p.pixFmt       = pixFmt;
+
+    HBM(o)->getimage(HBM(o)->getimage_Class, o, &geti_p.mID);
+}
+#else
+#define GETIMAGE(cl, o, obj, pixels, modulo, x, y, width, height, pixFmt) HIDD_BM_GetImage(o, obj, pixels, modulo, x, y, width, height, pixFmt)
+#endif
+
+#if USE_FAST_PUTIMAGE
+static inline void PUTIMAGE(OOP_Class *cl, OOP_Object *o, OOP_Object *gc, UBYTE *pixels, ULONG modulo,
+                               WORD x, WORD y, WORD width, WORD height, HIDDT_StdPixFmt pixFmt)
+{
+    struct pHidd_BitMap_PutImage puti_p;
+
+    puti_p.mID = HiddBitMapBase + moHidd_BitMap_PutImage;
+    puti_p.gc           = gc;
+    puti_p.pixels       = pixels;
+    puti_p.modulo       = modulo;
+    puti_p.x            = x;
+    puti_p.y            = y;
+    puti_p.width        = width;
+    puti_p.height       = height;
+    puti_p.pixFmt       = pixFmt;
+
+    HBM(o)->putimage(HBM(o)->putimage_Class, o, &puti_p.mID);
+}
+#else
+#define PUTIMAGE(cl, obj, gc, pixels, modulo, x, y, width, height, pixFmt) HIDD_BM_PutImage(obj, gc, pixels, modulo, x, y, width, height, pixFmt)
+#endif
+
+#if USE_FAST_CONVERTPIXELS
+static inline void CONVERTPIXELS(OOP_Class *cl, OOP_Object *o, APTR *srcPixels, HIDDT_PixelFormat *srcPixFmt, ULONG srcMod, APTR *dstBuf, HIDDT_PixelFormat *dstPixFmt, ULONG dstMod, UWORD width, UWORD height, HIDDT_PixelLUT *pixlut)
+{
+    struct pHidd_BitMap_ConvertPixels convp_p;
+
+    convp_p.mID = HiddBitMapBase + moHidd_BitMap_ConvertPixels;
+    convp_p.srcPixels   = srcPixels;
+    convp_p.srcPixFmt   = srcPixFmt;
+    convp_p.srcMod      = srcMod;
+    convp_p.dstBuf      = dstBuf;
+    convp_p.dstPixFmt   = dstPixFmt;
+    convp_p.dstMod      = dstMod;
+    convp_p.width       = width;
+    convp_p.height      = height;
+    convp_p.pixlut      = pixlut;
+
+    HBM(o)->convertpixels(HBM(o)->convertpixels_Class, o, &convp_p.mID);
+}
+#else
+#define CONVERTPIXELS(cl, obj, srcPixels, srcPixFmt, srcMod, dstBuf, dstPixFmt, dstMod, width, height, pixlut) HIDD_BM_ConvertPixels(obj, srcPixels, srcPixFmt, srcMod, dstBuf, dstPixFmt, dstMod, width, height, pixlut)
+#endif
+
+#if USE_FAST_UNMAPPIXEL
+static inline void UNMAPPIXEL(OOP_Class *cl, OOP_Object *o, HIDDT_Pixel pixel, HIDDT_Color *color)
+{
+    struct pHidd_BitMap_UnmapPixel unmpp_p;
+
+    unmpp_p.mID = HiddBitMapBase + moHidd_BitMap_UnmapPixel;
+    unmpp_p.pixel   = pixel;
+    unmpp_p.color   = color;
+
+    HBM(o)->unmappixel(HBM(o)->unmappixel_Class, o, &unmpp_p.mID);
+}
+#else
+#define UNMAPPIXEL(cl, obj, pixel, color) HIDD_BM_UnmapPixel(obj, pixel, color)
+#endif
+
+//HIDD_BM_MapColor(o, &col)
+#if USE_FAST_MAPCOLOR
+static inline HIDDT_Pixel MAPCOLOR(OOP_Class *cl, OOP_Object *o, HIDDT_Color *color)
+{
+    struct pHidd_BitMap_MapColor mapc_p;
+
+    mapc_p.mID = HiddBitMapBase + moHidd_BitMap_MapColor;
+    mapc_p.color   = color;
+
+    return HBM(o)->mapcolor(HBM(o)->mapcolor_Class, o, &mapc_p.mID);
+}
+#else
+#define MAPCOLOR(cl, obj, color) HIDD_BM_MapColor(obj, color)
+#endif
+
+/* BMHistograms operations ... */
+#if USE_FAST_BMHGETPIXEL
+static inline HIDDT_Pixel BMHGETPIXEL(OOP_Class *cl, OOP_Object *o, WORD x, WORD y)
+{
+    struct pHidd_BitMap_GetPixel getp_p;
+
+    getp_p.mID          = HiddBitMapBase + moHidd_BitMap_GetPixel;
+    getp_p.x            = x;
+    getp_p.y            = y;
+
+    return (HIDDT_Pixel)HBM(o)->getpixel(HBM(o)->getpixel_Class, o, &getp_p.mID);
+}
+#else
+#define BMHGETPIXEL(cl, obj, x, y) HIDD_BM_GetPixel(obj, x, y)
+#endif
+
+#if USE_FAST_BMHUNMAPPIXEL
+static inline void BMHUNMAPPIXEL(OOP_Class *cl, OOP_Object *o, HIDDT_Pixel pixel, HIDDT_Color *color)
+{
+    struct pHidd_BitMap_UnmapPixel ump_p;
+
+    ump_p.mID           = HiddBitMapBase + moHidd_BitMap_UnmapPixel;
+    ump_p.pixel         = pixel;
+    ump_p.color         = color;
+
+    HBM(o)->unmappixel(HBM(o)->unmappixel_Class, o, &ump_p.mID);
+}
+#else
+#define BMHUNMAPPIXEL(cl, obj, pixel, color) HIDD_BM_UnmapPixel(obj, pixel, color)
+#endif
+
+#if USE_FAST_BMHFINDCOLOR
+static inline IPTR BMHFINDCOLOR(OOP_Class *cl, OOP_Object *o, HIDDT_Color *color, APTR *colentry)
+{
+    struct pHidd_BMHistogram_FindColorEntry fce_p;
+
+    fce_p.mID           = HiddBMHistogramBase + moHidd_BMHistogram_FindColorEntry;
+    fce_p.color         = color;
+    fce_p.colentry      = colentry;
+
+    return (IPTR)HBMH(o)->findcolorentry(HBMH(o)->findcolorentry_Class, o, &fce_p.mID);
+}
+#else
+#define BMHFINDCOLOR(cl, obj, color, colentry) HIDD_BMHISTOGRAM_FindColorEntry(obj, color, colentry)
+#endif
+
+#if USE_FAST_BMHADDCOLOR
+static inline APTR BMHADDCOLOR(OOP_Class *cl, OOP_Object *o, HIDDT_Color *color, ULONG count)
+{
+    struct pHidd_BMHistogram_AddColorEntry ace_p;
+
+    ace_p.mID           = HiddBMHistogramBase + moHidd_BMHistogram_AddColorEntry;
+    ace_p.color         = color;
+    ace_p.count         = count;
+
+    return (APTR)HBMH(o)->addcolorentry(HBMH(o)->addcolorentry_Class, o, &ace_p.mID);
+}
+#else
+#define BMHADDCOLOR(cl, obj, color, count) HIDD_BMHISTOGRAM_AddColorEntry(obj, color, count)
+#endif
+
+#include "gfx_palette.h"
+#include "gfx_softmodes.h"
+
+#endif /* GFX_HIDD_INTERN_H */

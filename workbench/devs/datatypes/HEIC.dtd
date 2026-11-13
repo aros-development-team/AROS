@@ -1,0 +1,11 @@
+# DataType Description for HEIC
+Name=HEIC
+Version=$VER: HEIC 45.1 (04.06.2025)
+BaseName=heic
+Pattern=#?.(heic|heif)
+Mask= ANY ANY ANY ANY 'f' 't' 'y' 'p'
+GroupID=pict
+ID=heic
+Flags=DTF_BINARY,DTF_CASE
+Priority=0
+

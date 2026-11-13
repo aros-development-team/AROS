@@ -1,0 +1,18 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+ARCHFILES := pciusb_init
+PCIUSBDIR := rom/usb/pciusb
+
+-include $(SRCDIR)/$(CURDIR)/make.opts
+-include $(SRCDIR)/$(PCIUSBDIR)/make.opts
+
+USER_LDFLAGS := -static
+USER_INCLUDES := -I$(SRCDIR)/$(CURDIR) -I$(SRCDIR)/$(PCIUSBDIR)
+
+#MM kernel-usb-pciusb-pc : kernel-acpica-sharedlib-includes
+
+%build_archspecific \
+  mainmmake=kernel-usb-pciusb maindir=$(PCIUSBDIR) \
+  arch=pc modname=pciusb \
+  files="$(ARCHFILES)"

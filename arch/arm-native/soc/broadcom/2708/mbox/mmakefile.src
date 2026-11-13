@@ -1,0 +1,6 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+%build_module mmake=kernel-mbox-bcm2708 	\
+  modname=mbox modtype=resource		\
+  files="mbox_init"

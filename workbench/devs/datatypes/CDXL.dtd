@@ -1,0 +1,10 @@
+# DataType Description for CDXL
+Name=CDXL
+Version=$VER: CDXL 1.0 (23.01.2011)
+BaseName=cdxl
+Pattern=#?
+Mask=0x01 0x01 0x00 0x00 ANY ANY 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x01 0x00
+GroupID=movi
+ID=cdxl
+Flags=DTF_BINARY,DTF_CASE
+Priority=0

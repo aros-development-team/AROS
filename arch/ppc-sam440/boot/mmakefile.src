@@ -1,0 +1,121 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM- AROS-sam440-ppc: \
+#MM     kernel-sam440-ppc \
+#MM     kernel-modules-sam440-ppc \
+#MM     workbench-complete \
+#MM     workbench-devs-networks-emac-powerpc \
+#MM     aros-tcpip-apps
+
+#MM bootiso-sam440-ppc: \
+#MM     boot \
+#MM     parthenope-sam440 \
+#MM     AROS-sam440-ppc
+
+#MM- kernel-modules-sam440-ppc: \
+#MM     linklibs-rom \
+#MM     kernel-expansion \
+#MM     kernel-utility \
+#MM     kernel-oop \
+#MM     kernel-battclock \
+#MM     kernel-hidd \
+#MM     kernel-aros \
+#MM     kernel-misc \
+#MM     kernel-task \
+#MM     kernel-timer \
+#MM     kernel-hidd-pci \
+#MM     kernel-hidd-pci-amcc440 \
+#MM     kernel-hidd-pci-amcc460 \
+#MM     kernel-graphics \
+#MM     kernel-layers \
+#MM     kernel-keymap \
+#MM     kernel-intuition \
+#MM     kernel-input \
+#MM     kernel-gameport \
+#MM     kernel-keyboard \
+#MM     kernel-console \
+#MM     kernel-filesystem \
+#MM     kernel-fs-con \
+#MM     kernel-fs-afs \
+#MM     kernel-bootloader \
+#MM     kernel-dos \
+#MM     kernel-lddemon \
+#MM     kernel-dosboot \
+#MM     kernel-debug \
+#MM     kernel-ata \
+#MM     kernel-hidd-pciata \
+#MM     hidd-i2c \
+#MM     hidd-i2c-amcc440 \
+#MM     hidd-radeon \
+#MM     hidd-usb \
+#MM     kernel-partition \
+#MM     workbench-libs-workbench \
+#MM     kernel-fs-cdvdfs \
+#MM     kernel-fs-fat \
+#MM     kernel-fs-sfs \
+#MM     kernel-fs-ram \
+#MM     kernel-hidd-gfx \
+#MM     kernel-hidd-input \
+#MM     kernel-hidd-kbd \
+#MM     kernel-hidd-mouse \
+#MM     kernel-hidd-bus \
+#MM     kernel-hidd-storage \
+#MM     kernel-hidd-system \
+#MM     hidd-sm502gfx \
+#MM     kernel-usb-sam440-ppc \
+#MM     kernel-usb-usbromstartup \
+#MM     kernel-processor \
+#MM     kernel-shell \
+#MM     kernel-shellcommands
+
+#MM- kernel-link-sam440-ppc: setup-sam440-ppc kernel-kernel-kobj kernel-exec-kobj kernel-task-kobj kernel-sam440-ppc-quick
+
+#MM
+kernel-link-sam440-ppc: $(AROSARCHDIR)/kernel
+
+#MM
+kernel-link-sam440-ppc-quick: $(AROSARCHDIR)/kernel
+
+$(AROSARCHDIR)/kernel: $(KOBJSDIR)/kernel_resource.o $(KOBJSDIR)/exec_library.o $(KOBJSDIR)/task_resource.o
+	@$(ECHO) "Linking    $(AROS_DIR_BOOTARCH)/kernel"
+	$(TARGET_CC) -nostartfiles -Wl,-Map -Wl,$(OSGENDIR)/boot/kernel.map -Wl,-T -Wl,$(SRCDIR)/$(CURDIR)/ldscript.lds \
+        -o $@ $(KOBJSDIR)/kernel_resource.o $(KOBJSDIR)/exec_library.o $(KOBJSDIR)/task_resource.o \
+        -L$(AROS_LIB) -larossupport -lamiga -lautoinit -llibinit -lstdc.static -lgcc
+
+TARGET_ISO := $(DISTDIR)/aros$(AROS_TARGET_SUFFIX)-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU).iso
+
+.PHONY: $(DISTDIR)/aros$(AROS_TARGET_SUFFIX)-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU).iso
+	
+#MM- bootiso-sam440-ppc : workbench-backdrop
+
+bootiso-sam440-ppc: $(TARGET_ISO)
+
+
+#MM
+bootiso-sam440-ppc-quick: $(TARGET_ISO)
+
+.PHONY: bootiso-sam440-ppc-quick
+
+$(TARGET_ISO):
+	%mkdirs_q $(AROSDIR)/S
+	@$(CP) $(SRCDIR)/workbench/s/Startup-Sequence $(AROSDIR)/S/Startup-Sequence
+	@$(MKDIR) -p "$(AROSDIR)/Tools/Boot Disks"
+	@$(MKDIR) -p "$(DISTDIR)"
+	@mkisofs -f \
+		-o $@ \
+		-b Parthenope \
+		-no-emul-boot \
+		-allow-leading-dots \
+		-iso-level 4 \
+		-V "AROS Live CD" \
+		-publisher "AROS Development Team" \
+		-sysid "AROS-$(AROS_TARGET_CPU)-$(AROS_TARGET_ARCH)" \
+		-l -J -r \
+		$(AROSDIR)
+
+#MM setup-sam440-ppc
+setup-sam440-ppc : $(SRCDIR)/$(CURDIR)/menu.lst
+	%mkdirs_q $(AROSARCHDIR) $(OSGENDIR)/boot $(TARGETDIR)
+	$(CP) $(SRCDIR)/$(CURDIR)/menu.lst $(AROSDIR)/boot/
+#	$(CP) $(SRCDIR)/$(CURDIR)/menu.lst.DH0 $(AROSARCHDIR)/

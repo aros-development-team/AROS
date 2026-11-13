@@ -1,0 +1,54 @@
+This script generates graphivz dot files from a cxref function 
+cross reference.
+
+Graphviz is a graph drawing tool from AT&T. You can get more information
+on graphviz from http://www.research.att.com/sw/tools/graphviz/
+
+This script  works in a similar manner to the xrefgraph.py script. It has 
+some extra functionality, viz ; the ability to draw just part of a call 
+tree, and extra parameters for controlling the final layout.
+
+To see the full description of the program, run
+
+        xrgr.pl --help
+
+Some examples:
+
+If you just wanted to show the call trees for functions in a 
+file func.c, you would invoke
+       
+        xrgr.pl -n func.c -o outfile.dot cxref.function
+
+You then produce a call graph by running e.g.
+
+        dot -o graph.out -Tps outfile.dot
+
+Sometimes it is useful to cluster functions in a file. This can
+show things like inappropriate modularity (functions that really belong
+somewhere else). The -c option clusters functions in a file.
+
+        xrgr.pl -n func.c -c func.c -o outfile.dot cxref.function
+
+One of the difficulties with graphviz diagrams is that they can be quite
+large. If you try to put them on a single sheet, they can be illegible.
+The alternative is to use multiple sheets, or A3 size paper if you are
+lucky enough to have an A3 printer.
+
+-t multi : multiple pages
+
+-t compress : squishes things up but can look really squashed
+
+-k deletes calls to functions that are not defined in your code. This will 
+eliminate showing calls to standard library functions.
+
+You can also draw the call tree for a single function. This will also
+help in fitting information onto a single sheet.
+
+The following shows the call tree for function CheckFunctionVariableRef,
+eliminating calls to standard library functions.
+
+        xrgr.pl -k -f CheckFunctionVariableRef -o xx cxref.function
+
+
+Jamie Honan
+jhonan@optushome.com.au

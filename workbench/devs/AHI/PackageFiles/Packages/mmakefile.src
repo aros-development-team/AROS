@@ -1,0 +1,8 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+FILES := AHI
+
+##MM- workbench-devs-AHI : ahi-package-startup
+
+%copy_files_q mmake=ahi-package-startup dst=$(AROS_ENVARC)/SYS/Packages

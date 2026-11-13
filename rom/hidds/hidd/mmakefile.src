@@ -1,0 +1,36 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+CLASSES := hiddclass hiddrelation hwclass hwroot
+
+USER_CPPFLAGS := -D__OOP_NOLIBBASE__ \
+               -D__UTILITY_NOLIBBASE__
+USER_LDFLAGS := -static
+
+# Allow to override private headers
+USER_INCLUDES := -I$(SRCDIR)/arch/$(CPU)-$(ARCH)/hidds/hidd	\
+	         -I$(SRCDIR)/arch/all-$(ARCH)/hidds/hidd
+ifneq ($(FAMILY),)
+USER_INCLUDES += -I$(SRCDIR)/arch/all-$(FAMILY)/hidds/hidd
+endif
+USER_INCLUDES += -I$(SRCDIR)/rom/hidds/hidd
+
+# Allow to add architecture-specific options
+-include $(SRCDIR)/arch/all-$(ARCH)/hidds/hidd/make.opts
+-include $(SRCDIR)/arch/$(CPU)-$(ARCH)/hidds/hidd/make.opts
+ifneq ($(AROS_TARGET_VARIANT),)
+-include $(SRCDIR)/arch/$(CPU)-$(ARCH)/$(AROS_TARGET_VARIANT)/hidds/hidd/make.opts
+endif
+
+
+ifneq ($(ROM_OPTIMIZATION_CFLAGS),)
+OPTIMIZATION_CFLAGS := $(ROM_OPTIMIZATION_CFLAGS)
+endif
+
+%build_module mmake=kernel-hidd \
+  modname=hiddclass modtype=hidd \
+  files="initcode $(CLASSES)"
+
+INCLUDE_FILES   :=  $(call WILDCARD, include/*.h)
+%copy_includes path=hidd dir=include
+

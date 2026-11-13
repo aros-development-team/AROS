@@ -1,0 +1,19 @@
+# Copyright (C) 2006-2019, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+
+FILES       := main support locale diskinfo
+EXEDIR      := $(AROS_WANDERER)/Tools
+
+#MM- workbench-system-wanderer : workbench-system-wanderer-tools-diskinfo
+#MM  workbench-system-wanderer-tools-diskinfo : \
+#MM  workbench-system-wanderer-tools-diskinfo-catalogs \
+#MM  workbench-system-wanderer-tools-diskinfo-icons
+
+USER_CPPFLAGS := -DADATE="\"$(shell date '+%d.%m.%Y')\""
+
+%build_prog mmake=workbench-system-wanderer-tools-diskinfo \
+    progname=DiskInfo targetdir=$(EXEDIR) \
+    files=$(FILES)
+
+%common

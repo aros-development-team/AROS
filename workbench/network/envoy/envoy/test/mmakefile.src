@@ -1,0 +1,18 @@
+# Copyright (C) 2026, The AROS Development Team. All rights reserved.
+#
+# envoy.library test programs: ReqTest opens the requesters, ScreenShot
+# saves the front screen as a PPM file so a test run can be looked at.
+
+include $(SRCDIR)/config/aros.cfg
+
+EXEDIR := $(AROS_TESTS)/envoy
+FILES  := reqtest screenshot
+
+USER_INCLUDES := -I$(SRCDIR)/workbench/network/envoy/include
+
+#MM- test : test-envoy-envoy
+#MM test-envoy-envoy : includes linklibs includes-copy-envoy workbench-network-envoy-envoy-includes workbench-network-envoy-envoy-linklib
+
+%build_progs mmake=test-envoy-envoy files=$(FILES) targetdir=$(EXEDIR) uselibs="envoy"
+
+%common

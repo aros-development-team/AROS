@@ -1,0 +1,39 @@
+# Copyright (C) 2003-2026, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+
+FILES := screenppm \
+    allocbitmap \
+    alphascreen \
+    areafill_range \
+    areatest2 \
+    bltbitmapalpha \
+    bltbitmap_count \
+    copper \
+    gfx \
+    gfxinfo \
+    gfxtest \
+    obtainpentest \
+    planescreens \
+    showvisregion \
+    showvisshape \
+    textbug \
+    truecolorpens \
+    weightamatch
+
+EXEDIR := $(AROS_TESTS)/graphics
+
+#MM- test : test-graphics
+#MM- test-quick : test-graphics-quick
+
+#MM test-graphics : includes linklibs test-graphics-classicsprites test-graphics-planarfillmask test-graphics-ucopperlist test-graphics-bitmapfriend test-graphics-axisline
+#MM- test-graphics-quick : test-graphics-classicsprites-quick test-graphics-planarfillmask-quick test-graphics-ucopperlist-quick test-graphics-bitmapfriend-quick test-graphics-axisline-quick
+
+# The classic viewport regression inspects native Amiga copper lists.
+#MM- test-graphics-amiga-m68k : test-graphics-classicviewport test-graphics-planarmask
+#MM- test-graphics-amiga-m68k-quick : test-graphics-classicviewport-quick test-graphics-planarmask-quick
+
+%build_progs mmake=test-graphics \
+    files=$(FILES) targetdir=$(EXEDIR)
+
+%common

@@ -1,0 +1,69 @@
+/*
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
+
+    C99 function calloc().
+*/
+
+#include <exec/types.h>
+#include <errno.h>
+#include <stdint.h>
+#include <string.h>
+
+/*****************************************************************************
+
+    NAME */
+#include <stdlib.h>
+
+        void * calloc (
+
+/*  SYNOPSIS */
+        size_t count,
+        size_t size)
+
+/*  FUNCTION
+        Allocate size bytes of memory, clears the memory (sets all bytes to
+        0) and returns the address of the first byte.
+
+    INPUTS
+        count - How many time size
+        size - How much memory to allocate.
+
+    RESULT
+        A pointer to the allocated memory or NULL. If you don't need the
+        memory anymore, you can pass this pointer to free(). If you don't,
+        the memory will be freed for you when the application exits.
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+        free(), malloc()
+
+    INTERNALS
+
+******************************************************************************/
+{
+    ULONG * mem;
+
+    /* Guard against count * size overflowing size_t, which would otherwise
+       under-allocate the buffer and let the caller write past its end. */
+    if (count != 0 && size > SIZE_MAX / count)
+    {
+        errno = ENOMEM;
+        return NULL;
+    }
+
+    size *= count;
+
+    /* Allocate the memory */
+    mem = malloc (size);
+
+    if (mem)
+        memset (mem, 0, size);
+
+    return mem;
+} /* calloc */
+

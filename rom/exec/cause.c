@@ -1,0 +1,254 @@
+/*
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
+
+    Desc: Cause() - Cause a software interrupt.
+*/
+
+#include <aros/asmcall.h>
+#include <aros/atomic.h>
+#include <exec/execbase.h>
+#include <hardware/intbits.h>
+
+#include "chipset.h"
+#include "exec_intern.h"
+
+/*****************************************************************************
+
+    NAME */
+#include <exec/interrupts.h>
+#include <proto/exec.h>
+
+        AROS_LH1(void, Cause,
+
+/*  SYNOPSIS */
+        AROS_LHA(struct Interrupt *, softint, A1),
+
+/*  LOCATION */
+        struct ExecBase *, SysBase, 30, Exec)
+
+/*  FUNCTION
+        Schedule a software interrupt to occur. If the processor is
+        currently running a user task, then the software interrupt will
+        pre-empt the current task and run itself. From a real interrupt, it
+        will queue the software interrupt for a later time.
+
+        Software interrupts are useful from hardware interrupts if you
+        wish to defer your processing down to a lower level. They can
+        also be used in some special cases of device I/O. The timer.device
+        and audio.device allow software interrupt driven timing and
+        audio output respectively.
+
+        Software interrupts are restricted to 5 different priority levels,
+        +32, +16, 0, -16, -32.
+
+        Software interrupts can only be scheduled once.
+
+        The software interrupt is called with the following prototype:
+
+    AROS_INTC1(YourIntCode, APTR, interruptData)
+
+        The interruptData is the value of the is_Data field.
+
+    INPUTS
+        softint     -   The interrupt you wish to schedule. When setting up
+                        you should set the type of the interrupt to either
+                        NT_INTERRUPT or NT_UNKNOWN.
+
+    RESULT
+        The software interrupt will be delivered, or queued for later
+        delivery.
+
+    NOTES
+        No bounds checking on the software interrupt priority is done.
+        Passing a bad priority to the system can have a strange effect.
+
+    EXAMPLE
+
+    BUGS
+        Older versions of the Amiga operating system require that the
+        software interrupts preserve the A6 register.
+
+        Software interrupts which are added from a software interrupt of
+        lower priority may not be called immediately.
+
+    SEE ALSO
+
+    INTERNALS
+
+******************************************************************************/
+{
+    AROS_LIBFUNC_INIT
+
+    UBYTE pri;
+
+    Disable();
+
+    /* Scale the priority down to a number between 0 and 4 inclusive
+    We can use that to index into exec's software interrupt lists. */
+    pri = (softint->is_Node.ln_Pri + 0x20)>>4;
+
+    /* We are accessing an Exec list, protect ourselves. */
+#if defined(__AROSEXEC_SMP__)
+    EXEC_SPINLOCK_LOCK(&SysBase->SoftInts[pri].sh_SpinLock, NULL, SPINLOCK_MODE_WRITE);
+#endif
+    switch (softint->is_Node.ln_Type)
+    {
+    case NT_SOFTINT:            /* already queued */
+    case NT_SOFTINT_PENDING:    /* running, and already asked to run again */
+        break;
+
+    case NT_SOFTINT_RUNNING:
+        /*
+         * Running on some CPU right now. A soft interrupt is never
+         * re-entered: SoftIntDispatch() queues it again when this
+         * instance returns, so what was Caused now is still served.
+         */
+        softint->is_Node.ln_Type = NT_SOFTINT_PENDING;
+        break;
+
+    default:
+        ADDTAIL(&SysBase->SoftInts[pri].sh_List, &softint->is_Node);
+        softint->is_Node.ln_Type = NT_SOFTINT;
+        break;
+    }
+#if defined(__AROSEXEC_SMP__)
+    EXEC_SPINLOCK_UNLOCK(&SysBase->SoftInts[pri].sh_SpinLock);
+#endif
+
+    /* Signal pending software interrupt condition */
+#ifndef AROS_NO_ATOMIC_OPERATIONS
+    __AROS_ATOMIC_OR_W(SysBase->SysFlags, SFF_SoftInt);
+#else
+    SysBase->SysFlags |= SFF_SoftInt;
+#endif
+
+    /*
+     * Quick soft int request. For optimal performance m68k-amiga
+     * Enable() does not do any extra SFF_SoftInt checks
+     */
+    CUSTOM_CAUSE(INTF_SOFTINT);
+    /*
+     * If we are in usermode the software interrupt will end up being triggered
+     * in Enable(). On Amiga hardware this happens because a hardware interrupt
+     * was queued. On other machines Enable() will simulate this behavior,
+     * looking at SFF_SoftInt flag.
+     */
+    Enable();
+
+    AROS_LIBFUNC_EXIT
+} /* Cause() */
+
+/*
+    This is the dispatcher for software interrupts. We go through the
+    lists and remove the interrupts before calling them. Because we
+    can be interrupted we should not cache the next pointer, but
+    retreive it from ExecBase each time.
+
+    Note: All these arguments are passed to the function, so you must
+    at least declare all of them. You do not however have to use any
+    of them (although that is recommended).
+
+    This procedure could be more efficient.
+*/
+
+AROS_INTH0(SoftIntDispatch)
+{
+    AROS_INTFUNC_INIT
+
+    struct Interrupt *intr = NULL;
+    BYTE i;
+
+    /* disable soft ints temporarily */
+    CUSTOM_ACK(INTF_SOFTINT);
+
+    /* Don't bother if there are no software ints queued. */
+    if( SysBase->SysFlags & SFF_SoftInt )
+    {
+        /* Clear Software interrupt pending flag. The scheduler's attention
+         * flags share this word and can be set from higher interrupt levels,
+         * so the update should not be a load/modify/store sequence. */
+#ifndef AROS_NO_ATOMIC_OPERATIONS
+        __AROS_ATOMIC_AND_W(SysBase->SysFlags, ~SFF_SoftInt);
+#else
+        SysBase->SysFlags &= ~(SFF_SoftInt);
+#endif
+
+        for(;;)
+        {
+            for(i=4; i>=0; i--)
+            {
+                /*
+                 * This KrnCli() is needed because we could re-enter here after one handler has already
+                 * been executed. In this case interrupts have been enabled before calling the handler.
+                 */
+                KrnCli();
+#if defined(__AROSEXEC_SMP__)
+                EXEC_SPINLOCK_LOCK(&SysBase->SoftInts[i].sh_SpinLock, NULL, SPINLOCK_MODE_WRITE);
+#endif
+                intr = (struct Interrupt *)RemHead(&SysBase->SoftInts[i].sh_List);
+                if (intr)
+                    intr->is_Node.ln_Type = NT_SOFTINT_RUNNING;
+#if defined(__AROSEXEC_SMP__)
+                EXEC_SPINLOCK_UNLOCK(&SysBase->SoftInts[i].sh_SpinLock);
+#endif
+
+                if (intr)
+                {
+                    /*
+                     * SoftInt handlers are called with interrupts enabled,
+                     * this is how original AmigaOS(tm) works
+                     */
+                    KrnSti();
+
+                    /* Call the software interrupt. */
+                    AROS_INTC1(intr->is_Code, intr->is_Data);
+
+                    /*
+                     * Done running. Cause() leaves a request made meanwhile
+                     * as NT_SOFTINT_PENDING rather than queueing the node
+                     * (another CPU would have run a second instance of the
+                     * handler concurrently with this one); queue it now, so
+                     * the scan below finds it. Otherwise it is free again.
+                     */
+                    KrnCli();
+#if defined(__AROSEXEC_SMP__)
+                    EXEC_SPINLOCK_LOCK(&SysBase->SoftInts[i].sh_SpinLock, NULL, SPINLOCK_MODE_WRITE);
+#endif
+                    if (intr->is_Node.ln_Type == NT_SOFTINT_PENDING)
+                    {
+                        ADDTAIL(&SysBase->SoftInts[i].sh_List, &intr->is_Node);
+                        intr->is_Node.ln_Type = NT_SOFTINT;
+                    }
+                    else
+                        intr->is_Node.ln_Type = NT_INTERRUPT;
+#if defined(__AROSEXEC_SMP__)
+                    EXEC_SPINLOCK_UNLOCK(&SysBase->SoftInts[i].sh_SpinLock);
+#endif
+                    KrnSti();
+
+                    /* Get out and start loop *all* over again *from scratch*! */
+                    break;
+                }
+            }
+            if (!intr)
+            {
+                /*
+                 * We executed KrnCli() and attempted to fetch a request from the list,
+                 * but the list was empty.
+                 * We are going to exit, but before this we need to re-enable
+                 * interrupts. Otherwise we exit this vector with disabled interrupts,
+                 * screwing things up.
+                 */
+                KrnSti();
+                break;
+            }
+        }
+    }
+
+    /* re-enable soft ints */
+    CUSTOM_ENABLE(INTB_SOFTINT);
+
+    return FALSE;
+
+    AROS_INTFUNC_EXIT
+}

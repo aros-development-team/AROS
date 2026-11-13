@@ -1,0 +1,56 @@
+ANSI2KNR = @ANSI2KNR@
+MKDIR_P = @MKDIR_P@
+CC = @CC@
+CCLD = $(CC)
+CFLAGS = @CFLAGS@
+CPPFLAGS = @CPPFLAGS@
+DEFS = @DEFS@
+EXEEXT = @EXEEXT@
+LDFLAGS = @LDFLAGS@
+LIBS = @LIBS@
+bindir = @bindir@
+mmake_srcdir = @METAMAKE_SRCDIR@
+mmake_blddir = @METAMAKE_BUILDDIR@
+mmake_objdir = @mmake_objdir@
+mmake_LDADD = $(LDADD)
+OS=@host_os@
+DEPDIR = $(mmake_objdir)/.deps
+mmake_OBJECTS =  $(mmake_objdir)/mmake.o $(mmake_objdir)/mem.o $(mmake_objdir)/list.o $(mmake_objdir)/var.o $(mmake_objdir)/dirnode.o $(mmake_objdir)/dep.o $(mmake_objdir)/project.o $(mmake_objdir)/cache.o $(mmake_objdir)/io.o
+DEFAULT_INCLUDES = -I$(mmake_blddir) -I$(mmake_srcdir) 
+LINK = $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
+COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
+	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
+
+ifeq ($(OS),mingw32)
+LIBS += -liberty -lws2_32
+endif
+
+all: makedirs $(mmake_objdir)/mmake$(EXEEXT)
+
+makedirs: $(mmake_objdir) $(DEPDIR)
+
+$(DEPDIR):
+	@$(MKDIR_P) "$(DEPDIR)"
+
+$(mmake_objdir):
+	@$(MKDIR_P) "$(mmake_objdir)"
+	
+$(mmake_objdir)/%.o: $(mmake_srcdir)/%.c | $(mmake_objdir) $(DEPDIR)
+	@echo "Compiling  $(patsubst $(mmake_srcdir)/%,%,$<)"
+	@$(COMPILE) -MT $(mmake_objdir)/$*.o -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $(mmake_objdir)/$*.o $(mmake_srcdir)/$*.c
+	@mv -f $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
+
+$(mmake_objdir)/mmake$(EXEEXT): $(mmake_OBJECTS) | $(mmake_objdir)
+	@echo "Linking  $(patsubst $(mmake_objdir)/%,%,$@)"
+	@rm -f $(mmake_objdir)/mmake$(EXEEXT)
+	@$(LINK) $(mmake_OBJECTS) $(mmake_LDADD) $(LIBS)
+
+# Clean the sources
+clean:
+	-@rm -rf $(mmake_objdir) Makefile config.cache config.status config.log config.h
+
+# Clean the sources and tools
+arch-clean: clean
+
+install :  makedirs $(mmake_objdir)/mmake$(EXEEXT)
+	cp $(mmake_objdir)/mmake$(EXEEXT) $(bindir)

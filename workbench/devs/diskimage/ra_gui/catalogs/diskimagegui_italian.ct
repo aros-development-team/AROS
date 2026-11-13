@@ -1,0 +1,236 @@
+## version $VER: diskimagegui.catalog 1.18 (21.02.2012)
+## codeset 0
+## language italiano
+## chunk AUTH Translated by Samir Hawamdeh (http://www.betatesting.it/backforthefuture)
+;
+; Compiled with FlexCat 2.9 PPC (AmigaOS4)
+;
+; *********************
+; ** Unit/drive list **
+; *********************
+;
+MSG_UNIT_LBL
+Unità
+; Unit
+;
+MSG_DEVICE_LBL
+Disp.
+; Device
+;
+MSG_FILENAME_LBL
+Immagine Disco
+; Disk Image
+;
+MSG_WRITEPROTECT_LBL
+P.d.S.
+; WP
+;
+MSG_NO_DISK
+Nessun disco presente
+; No disk present
+;
+MSG_APPDESCRIPTION
+Interfaccia di gestione grafica per diskimage.device
+; Control GUI for diskimage.device
+;
+; ******************
+; ** Plugins list **
+; ******************
+;
+MSG_PRIORITY_LBL
+Pri.
+; Pri
+;
+MSG_PLUGIN_LBL
+Plugin
+; Plugin
+;
+MSG_PLUGIN_GAD
+Usa plugin
+; Use plugin
+;
+MSG_AUTO_LBL
+(Automatico)
+; (Auto)
+;
+MSG_WRITESUPPORT_LBL
+Prot.
+; W
+;
+; *****************
+; ** Menu labels **
+; *****************
+;
+MSG_PROJECT_ABOUT
+Informazioni...
+; About...
+;
+MSG_PROJECT_HIDE
+Nascondi
+; Hide
+;
+MSG_PROJECT_ICONIFY
+Iconifica
+; Iconify
+;
+MSG_PROJECT_SNAPSHOT
+Fissa
+; Snapshot
+;
+MSG_PROJECT_QUIT
+Esci
+; Quit
+;
+MSG_SETTINGS_MENU
+Modifica
+; Settings
+;
+MSG_SETTINGS_CHANGETEMPDIR
+Cambia directory temporanea...
+; Change temp directory...
+;
+MSG_SETTINGS_SAVE
+Salva
+; Save settings
+;
+MSG_SETTINGS_PLUGINS
+Plugin...
+; Plugins...
+;
+MSG_PROJECT_CLOSE
+Chiudi
+; Close
+;
+; ****************
+; ** Requesters **
+; ****************
+;
+MSG_OK_GAD
+_Ok
+; _Ok
+;
+MSG_ABOUT_REQ
+\33c%s versione %ld.%ld\n\
+%s versione %ld.%ld\n\n\
+Copyright (C) 2007-2012 Fredrik Wikstrom\n\
+Sito web: http://a500.org\n\
+E-Mail: fredrik@a500.org\n\n\
+Traduzione italiana a cura di\nSamir Hawamdeh
+; %s version %ld.%ld\n\
+; %s version %ld.%ld\n\n\
+; Copyright © 2007-2012 Fredrik Wikstrom\n\
+; Website: http://a500.org\n\
+; E-mail: fredrik@a500.org
+;
+MSG_ERROR
+Errore
+; Error
+;
+MSG_NOAISS_REQ
+Attenzione, l'assign di AISS non è stato trovato.\n\n\
+Scarica ed installa l'ultima versione di AISS dal\n\
+sito internet: http://masonicons.de
+; AISS assign not found.\n\n\
+; Download and install the latest version\n\
+; from here: http://masonicons.de
+;
+MSG_OLDAISS_REQ
+E' richiesta l'installazione di AISS v%ld.%ld o superiore.\n\n\
+Per favore scarica ed installa l'ultima versione di AISS\n\
+dal sito internet: http://masonicons.de
+; AISS v%ld.%ld or newer required.\n\n\
+; Download and install the latest version\n\
+; from here: http://masonicons.de
+;
+MSG_IMAGENOTFOUND_REQ
+Immagine del file '%s' non trovata.
+; Image file '%s' not found.
+;
+MSG_CANCEL_GAD 
+_Annulla
+; _Cancel
+;
+MSG_SAVE_GAD
+_Salva
+; _Save
+;
+MSG_USE_GAD
+_Usa
+; _Use
+;
+; *******************
+; ** Speedbar help **
+; *******************
+;
+MSG_INSERT_GAD
+Inserisci
+; Insert
+;
+MSG_EJECT_GAD
+Rimuovi
+; Eject
+;
+MSG_WRITEPROTECT_GAD
+Proteggi da scrittura
+; Write Protect
+;
+MSG_REFRESH_GAD
+Aggiorna
+; Refresh
+;
+; *******************
+; ** Window titles **
+; *******************
+;
+MSG_PLUGINS_WND
+Plugin
+; Plugins
+;
+MSG_MAIN_WND
+%s: Tasti scelta rapida = <%s>
+; %s: Hot Key = <%s>
+;
+MSG_ABOUT_WND
+Informazioni su %s
+; About - %s
+;
+MSG_ERROR_WND
+Errore in %s
+; Error - %s
+;
+MSG_SETDEVICETYPE_GAD
+Imposta il tipo di dispositivo
+; Set Device Type
+;
+MSG_SETDEVICETYPE_WND
+Unità: %ld - Tipo di Dispositivo
+; Unit: %ld - Device Type
+;
+MSG_DEVICETYPE_GAD
+Tipo di Dispositivo
+; Device Type
+;
+MSG_DEVICETYPE_DIRECT_ACCESS
+Accesso diretto (Predefinito)
+; Direct Access (Default setting)
+;
+MSG_DEVICETYPE_CDROM
+CD-ROM
+; CD-ROM
+;
+MSG_DEVICETYPE_OPTICAL_DISK
+Disco ottico
+; Optical Disk
+;
+MSG_REMOVABLE_GAD
+_Rimuovibile
+; _Removable
+;
+MSG_REQUIRED_REQ
+%s richiesto
+; %s required
+;
+MSG_REQUIREDVERSION_REQ
+%s v%ld o superiore richiesto
+; %s v%ld or newer required
+;

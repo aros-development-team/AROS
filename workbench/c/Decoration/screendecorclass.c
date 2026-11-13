@@ -1,0 +1,724 @@
+/*
+    Copyright (C)  2011-2026, The AROS Development Team.
+*/
+
+#define DEBUG 0
+#include <aros/debug.h>
+
+#include <clib/alib_protos.h>
+
+#include <graphics/rpattr.h>
+#include <proto/utility.h>
+#include <proto/intuition.h>
+#include <proto/graphics.h>
+#include <proto/exec.h>
+#include <string.h>
+
+#include <intuition/cghooks.h>
+
+#include <libraries/decorator.h>
+#include <proto/decorator.h>
+#include <proto/decortheme.h>
+
+#include "screendecorclass.h"
+
+struct IClass *screenchildgclass = NULL;
+
+/* Padding around the title child, as a fraction of the bar height (the bar is
+   BarHeight + 1 rows tall) so the child scales with the screen font */
+#define SCRBAR_CHILDPAD(barh) ((((barh) / 20) > 0) ? ((barh) / 20) : 1)
+
+#define TITLE_DEFCOLORTEXT     0x00CCCCCC
+#define TITLE_DEFCOLORSHADOW   0x00444444
+
+struct scrdecor_data
+{
+    struct Screen *Screen;
+    /* The theme this decorator instance renders */
+    struct DecorTheme * theme;
+    /* These are original images loaded from disk */
+    struct DecorImages * di;
+    struct DecorConfig * dc;
+    Object *FirstChild;
+    BOOL ChildLayoutPending;
+};
+
+/*
+ * The screen title child is registered once, through the MAGIC_PRIVATE_TITLECHILD
+ * message, but intuition creates a new decorator object for every screen it
+ * opens. Keep the child at decorator level so the default public (Workbench)
+ * screen picks it up again whenever it is reopened, e.g. by IPrefs applying
+ * a new screen font after the tray has attached.
+ */
+static Object *scrdecor_TitleChild = NULL;
+
+struct scrdecorchildg_data
+{
+};
+
+static void DisposeScreenSkinning(struct scrdecor_data *data)
+{
+}
+
+static BOOL InitScreenSkinning(struct scrdecor_data *data, struct DecorImages * di, struct DecorConfig * dc)
+{
+    if ((!dc) || (!di))
+        return FALSE;
+
+    data->dc = dc;
+    data->di = di;
+
+    if (data->di->img_sdepth) return TRUE;
+
+    DisposeScreenSkinning(data);
+    return FALSE;
+}
+
+
+
+
+
+static IPTR scrdecor_new(Class *cl, Object *obj, struct opSet *msg)
+{
+    struct scrdecor_data   *data;
+    UWORD                   barh;
+
+    D(bug("scrdecor_new(tags @ 0x%p)\n", msg->ops_AttrList));
+    
+    obj = (Object *)DoSuperMethodA(cl, obj, (Msg)msg);
+
+    if (obj)
+    {
+        data = INST_DATA(cl, obj);
+
+        struct DecorConfig * dc = (struct DecorConfig *) GetTagData(SDA_DecorConfig, (IPTR) NULL, msg->ops_AttrList);
+        struct DecorImages * di = (struct DecorImages *) GetTagData(SDA_DecorImages, (IPTR) NULL, msg->ops_AttrList);
+
+        data->theme = (struct DecorTheme *) GetTagData(SDA_DecorTheme, (IPTR) NULL, msg->ops_AttrList);
+
+        D(bug("scrdecor_new: DecorImages @ 0x%p\n", di));
+        D(bug("scrdecor_new: DecorConfig @ 0x%p\n", dc));
+        D(bug("scrdecor_new: DecorTheme @ 0x%p\n", data->theme));
+
+        data->FirstChild = NULL;
+
+        if (!InitScreenSkinning(data, di, dc))
+        {
+            CoerceMethod(cl,obj,OM_DISPOSE);
+            obj = NULL;
+        }
+        else
+        {
+            barh = data->dc->SBarHeight;
+
+            if (data->di->img_sbarlogo) if (data->di->img_sbarlogo->h > barh) barh = data->di->img_sbarlogo->h;
+            if (data->di->img_stitlebar) if (data->di->img_stitlebar->h > barh) barh = data->di->img_stitlebar->h;
+        }
+    }
+    return (IPTR)obj;
+}
+
+static IPTR scrdecor_dispose(Class *cl, Object *obj, struct opSet *msg)
+{
+    struct scrdecor_data *data = INST_DATA(cl, obj);
+
+    DisposeScreenSkinning(data);
+
+    return 1;
+}
+
+/**************************************************************************************************/
+
+static IPTR scrdecor_get(Class *cl, Object *obj, struct opGet *msg)
+{
+    struct scrdecor_data *data = INST_DATA(cl, obj);
+
+    switch(msg->opg_AttrID)
+    {
+        case SA_ScreenbarTextColor:
+            *msg->opg_Storage = data->dc->STitleColorText;
+            break;
+
+        case SDA_TrueColorOnly:
+            *msg->opg_Storage = TRUE;
+            break;
+
+        default:
+            return DoSuperMethodA(cl, obj, (Msg)msg);
+    }
+    return 1;
+}
+
+/**************************************************************************************************/
+
+static void scr_findtitlearea(struct scrdecor_data *data, struct Screen *scr, LONG *left, LONG *right)
+{
+    struct Gadget *g;
+
+    LONG minx = 0, maxx = scr->Width - 1;
+
+    for (g = scr->FirstGadget; g; g = g->NextGadget)
+    {
+        if (!(g->Flags & GFLG_RELRIGHT))
+        {
+            if (g->LeftEdge + g->Width > minx) minx = g->LeftEdge + g->Width;
+        }
+        else
+        {
+            if (g->LeftEdge + scr->Width - 1 - 1 < maxx) maxx = g->LeftEdge + scr->Width - 1 - 1;
+        }
+    }
+    if (maxx != scr->Width - 1)
+        maxx = maxx - (data->dc->SBarGadPre_s + data->dc->SBarGadPost_s);
+    
+    *left = minx;
+    *right = maxx;
+}
+
+static void scrdecor_layoutchild(struct scrdecor_data *data, struct Screen *scr, struct RastPort *rp, struct DrawInfo *dri)
+{
+    struct Gadget *child = (struct Gadget *)data->FirstChild;
+    struct GadgetInfo childgadinf;
+    struct gpLayout childlayoutmsg;
+    LONG left, right = 0;
+    LONG barh = scr->BarHeight + 1;
+    LONG cpad = SCRBAR_CHILDPAD(barh);
+
+    memset(&childgadinf, 0, sizeof(childgadinf));
+    childgadinf.gi_Screen = scr;
+    childgadinf.gi_RastPort = rp;
+    childgadinf.gi_DrInfo = dri;
+    if (dri)
+    {
+        childgadinf.gi_Pens.DetailPen = dri->dri_Pens[DETAILPEN];
+        childgadinf.gi_Pens.BlockPen = dri->dri_Pens[BLOCKPEN];
+    }
+
+    child->SpecialInfo = scr;
+    child->TopEdge = cpad;
+    child->Height = barh - (cpad << 1);
+
+    D(bug("[screendecor] %s: child @ 0x%p on screen 0x%p: top %u, height %u\n", __func__, child, scr, child->TopEdge, child->Height));
+
+    childlayoutmsg.MethodID = GM_LAYOUT;
+    childlayoutmsg.gpl_GInfo = &childgadinf;
+    childlayoutmsg.gpl_Initial = 0;
+    DoMethodA(data->FirstChild, (Msg)&childlayoutmsg);
+
+    scr_findtitlearea(data, scr, &left, &right);
+    child->LeftEdge = right - (child->Width + data->dc->SBarGadPost_s + 1);
+
+    D(bug("[screendecor] %s: screen %ux%u BarHeight %u (theme SBarHeight %u), title area %d..%d, child width %u -> LeftEdge %d\n", __func__,
+        scr->Width, scr->Height, scr->BarHeight, data->dc->SBarHeight, left, right, child->Width, child->LeftEdge));
+
+    childlayoutmsg.MethodID = GM_GOACTIVE;
+    DoMethodA(data->FirstChild, (Msg)&childlayoutmsg);
+
+    data->ChildLayoutPending = FALSE;
+}
+
+static IPTR scrdecor_set(Class *cl, Object *obj, struct opSet *msg)
+{
+    struct scrdecor_data *data = INST_DATA(cl, obj);
+    struct TagItem *tags = msg->ops_AttrList;
+    struct TagItem *tstate;
+    struct TagItem *tag;
+
+    tstate = tags;
+    while ((tag = NextTagItem(&tstate)))
+    {
+        switch (tag->ti_Tag)
+        {
+            case SDA_TitleChild:
+                scrdecor_TitleChild = (Object *)tag->ti_Data;
+                if (!tag->ti_Data)
+                {
+                    data->FirstChild = NULL;
+                    data->ChildLayoutPending = FALSE;
+                }
+                else if (!(data->FirstChild))
+                {
+                    struct Screen *pubscr;
+
+                    D(bug("[screendecor] SDA_TitleChild: 0x%p\n", tag->ti_Data));
+
+                    /* The child only ever lives on the default public screen */
+                    if ((pubscr = LockPubScreen(NULL)) != NULL)
+                    {
+                        UnlockPubScreen(NULL, pubscr);
+                        data->FirstChild = (Object *)tag->ti_Data;
+                        D(bug("[screendecor] %s: FirstChild @ 0x%p\n", __func__, data->FirstChild));
+                        scrdecor_layoutchild(data, pubscr, pubscr->BarLayer ? pubscr->BarLayer->rp : NULL, GetScreenDrawInfo(pubscr));
+                    }
+                }
+                break;
+            default:
+                return DoSuperMethodA(cl, obj, (Msg)msg);
+        }
+    }
+    return 1;
+}
+
+static IPTR scrdecor_draw_screenbar(Class *cl, Object *obj, struct sdpDrawScreenBar *msg)
+{
+    struct scrdecor_data   *data = INST_DATA(cl, obj);
+    struct ScreenData      *sd = (struct ScreenData *) msg->sdp_UserBuffer;
+    struct RastPort        *rp = msg->sdp_RPort;
+    struct Screen          *scr = msg->sdp_Screen;
+    struct DrawInfo        *dri = msg->sdp_Dri;
+    UWORD                  *pens = dri->dri_Pens;
+    struct DecoratorElement *screlems = sd->dts->dts_Elements;
+    LONG                    left, right = 0, len;
+    BOOL                    beeping = scr->Flags & BEEPING;
+
+    if (data->FirstChild && data->ChildLayoutPending)
+        scrdecor_layoutchild(data, scr, rp, dri);
+
+    scr_findtitlearea(data, scr, &left, &right);
+
+    D(bug("[screendecor] draw_screenbar: flags 0x%lx%s\n", (unsigned long)msg->sdp_Flags, (msg->sdp_Flags & SDF_DSB_TITLEONLY) ? " (title only)" : ""));
+
+    if (beeping)
+    {
+        SetAPen(rp, pens[BARDETAILPEN]);
+        RectFill(rp, 0, 0, scr->Width, sd->img_stitlebar->h);
+    }
+    else
+    {
+        /*
+         * A title-only redraw (SetWindowTitles() on the screen title) does
+         * not get its system gadgets refreshed by intuition afterwards, so
+         * the gadget area to the right of the title must be left alone or
+         * the depth gadget is painted over and disappears until the next
+         * full redraw.
+         */
+        if (sd->img_stitlebar->ok && !(msg->sdp_Flags & SDF_DSB_TITLEONLY))
+        {
+            if (data->dc->SBarGadPre_s > 0)
+            {
+                DRenderElement(&screlems[DECOR_ELEM_ScrBarGadPre], rp, 0,
+                    right + 1, 0,
+                    data->dc->SBarGadPre_o, scr->BarHeight + 1, 0);
+            }
+            if (data->dc->SBarGadFill_s > 0)
+            {
+                DRenderElement(&screlems[DECOR_ELEM_ScrBarGadFill], rp, 0,
+                    right + data->dc->SBarGadPre_s + 1, 0,
+                    scr->Width - (right + data->dc->SBarGadPre_s + data->dc->SBarGadPost_s), scr->BarHeight + 1, 0);
+            }
+            if (data->dc->SBarGadPost_s > 0)
+            {
+                DRenderElement(&screlems[DECOR_ELEM_ScrBarGadPost], rp, 0,
+                    scr->Width - data->dc->SBarGadPost_s, 0,
+                    data->dc->SBarGadPost_s, scr->BarHeight + 1, 0);
+            }
+        }
+
+        D(bug("[screendecor] draw_screenbar: screen %ux%u BarHeight %u, bar image h %u, title area %d..%d, child @ 0x%p width %d\n",
+            scr->Width, scr->Height, scr->BarHeight, sd->img_stitlebar->h, left, right,
+            data->FirstChild, data->FirstChild ? ((struct Gadget *)(data->FirstChild))->Width : -1));
+        if ((data->FirstChild) && (((struct Gadget *)(data->FirstChild))->Width > 2)) {
+            D(bug("[screendecor] draw_screenbar: titlechild width = %d\n", ((struct Gadget *)(data->FirstChild))->Width));
+            right = right - (((struct Gadget *)(data->FirstChild))->Width + data->dc->SBarChildPre_s + data->dc->SBarChildPost_s);
+            D(bug("[screendecor] draw_screenbar: child area right edge now %d (pre %u fill %u post %u)\n", right,
+                data->dc->SBarChildPre_s, data->dc->SBarChildFill_s, data->dc->SBarChildPost_s));
+            if (sd->img_stitlebar->ok)
+            {
+                if (data->dc->SBarChildPre_s > 0)
+                {
+                    DRenderElement(&screlems[DECOR_ELEM_ScrBarChildPre], rp, 0,
+                        right + 1, 0,
+                        data->dc->SBarChildPre_s, scr->BarHeight + 1, 0);
+                }
+                if (data->dc->SBarChildFill_s > 0)
+                {
+                    DRenderElement(&screlems[DECOR_ELEM_ScrBarChildFill], rp, 0,
+                        right + data->dc->SBarChildPre_s + 1, 0,
+                        ((struct Gadget *)(data->FirstChild))->Width, scr->BarHeight + 1, 0);
+                }
+                else
+                {
+                    DRenderElement(&screlems[DECOR_ELEM_ScrBarFill], rp, 0,
+                        right + data->dc->SBarChildPre_s + 1, 0,
+                        right + 1, scr->BarHeight + 1, 0);
+                }
+                if (data->dc->SBarChildPost_s > 0)
+                {
+                    DRenderElement(&screlems[DECOR_ELEM_ScrBarChildPost], rp, 0,
+                        right + data->dc->SBarChildPre_s + ((struct Gadget *)(data->FirstChild))->Width + 1, 0,
+                        data->dc->SBarChildPost_s, scr->BarHeight + 1, 0);
+                }
+            }
+        }
+
+        if (sd->img_stitlebar->ok)
+        {
+            DRenderElement(&screlems[DECOR_ELEM_ScrBarFill], rp, 0,
+                0, 0,
+                right + 1, scr->BarHeight + 1, 0);
+        }
+    }
+
+    if (sd->img_sbarlogo->ok)
+    {
+        DRenderElement(&screlems[DECOR_ELEM_ScrBarLogo], rp, 0,
+            data->dc->SLogoOffset,
+            (scr->BarHeight + 1 - sd->img_sbarlogo->h) / 2,
+            sd->img_sbarlogo->w, sd->img_sbarlogo->h, 0);
+    }
+
+    if (scr->Title != NULL)
+    {
+        struct TextExtent te;
+
+        len = strlen(scr->Title);
+
+        if ((len = TextFit(rp, scr->Title, len, &te, NULL, 1, right - data->dc->STitleOffset, scr->BarHeight)) != 0)
+        {
+            UWORD tx = data->dc->STitleOffset;
+            UWORD tymax = scr->BarHeight - (dri->dri_Font->tf_YSize - dri->dri_Font->tf_Baseline) - 1;
+            UWORD ty = ((scr->BarHeight + dri->dri_Font->tf_Baseline - 1) >> 1);
+            if (ty > tymax) ty = tymax;
+
+            SetFont(rp, msg->sdp_Dri->dri_Font);
+            SetDrMd(rp, JAM1);
+
+            if (!(sd->truecolor) || ((data->dc->STitleOutline == FALSE) && (data->dc->STitleShadow == FALSE)))
+            {
+                if ((data->dc->STitleColorText != 0xFFFFFFFF) && !beeping) {
+                    SetRPAttrs(rp, RPTAG_PenMode, FALSE, RPTAG_FgColor, data->dc->STitleColorText, TAG_DONE);
+                } else if ((data->dc->STitleColorShadow != 0xFFFFFFFF) && beeping) {
+                    SetRPAttrs(rp, RPTAG_PenMode, FALSE, RPTAG_FgColor, data->dc->STitleColorShadow, TAG_DONE);
+                } else {
+                    SetAPen(rp, pens[beeping ? BARBLOCKPEN : BARDETAILPEN]);
+                }
+                Move(rp, tx, ty);
+                Text(rp, scr->Title, len);
+            }
+            else if (data->dc->STitleOutline)
+            {
+                SetSoftStyle(rp, FSF_BOLD, AskSoftStyle(rp));
+                SetRPAttrs(rp,
+                            RPTAG_PenMode, FALSE,
+                            RPTAG_FgColor, (data->dc->STitleColorShadow != 0xFFFFFFFF) ? data->dc->STitleColorShadow : TITLE_DEFCOLORSHADOW,
+                            TAG_DONE);
+
+                Move(rp, tx + 1, ty ); Text(rp, scr->Title, len);
+                Move(rp, tx + 2, ty ); Text(rp, scr->Title, len);
+                Move(rp, tx , ty ); Text(rp, scr->Title, len);
+                Move(rp, tx, ty + 1);  Text(rp, scr->Title, len);
+                Move(rp, tx, ty + 2);  Text(rp, scr->Title, len);
+                Move(rp, tx + 1, ty + 2);  Text(rp, scr->Title, len);
+                Move(rp, tx + 2, ty + 1);  Text(rp, scr->Title, len);
+                Move(rp, tx + 2, ty + 2);  Text(rp, scr->Title, len);
+
+                SetRPAttrs(rp,
+                            RPTAG_PenMode, FALSE,
+                            RPTAG_FgColor, (data->dc->STitleColorText != 0xFFFFFFFF) ? data->dc->STitleColorText : TITLE_DEFCOLORTEXT,
+                            TAG_DONE);
+                Move(rp, tx + 1, ty + 1);
+                Text(rp, scr->Title, len);
+                SetSoftStyle(rp, FS_NORMAL, AskSoftStyle(rp));
+            }
+            else
+            {
+                SetRPAttrs(rp, RPTAG_PenMode, FALSE, RPTAG_FgColor, data->dc->STitleColorShadow, TAG_DONE);
+                Move(rp, tx + 1, ty + 1 );
+                Text(rp, scr->Title, len);
+
+                SetRPAttrs(rp, RPTAG_PenMode, FALSE, RPTAG_FgColor, data->dc->STitleColorText, TAG_DONE);
+                Move(rp, tx, ty);
+                Text(rp, scr->Title, len);
+            }
+        }
+    }
+
+    if (data->FirstChild && (((struct Gadget *)(data->FirstChild))->Width > 0)) {
+        struct GadgetInfo childgadinf;
+        struct gpRender childrendermsg =
+        {
+            GM_RENDER,
+            &childgadinf,
+            rp,
+            GREDRAW_REDRAW
+        };
+
+        /* The bar is BarHeight + 1 rows tall (see the element heights above) */
+        ULONG barheight = scr->BarHeight + 1;
+        LONG cpad = SCRBAR_CHILDPAD(barheight);
+        childgadinf.gi_Screen = ((struct Gadget *)(data->FirstChild))->SpecialInfo = scr;
+        D(bug("[screendecor] %s: bar height %u child pad %d, child gadget LeftEdge %d Top %d %ux%u\n", __func__,
+            barheight, cpad,
+            ((struct Gadget *)(data->FirstChild))->LeftEdge, ((struct Gadget *)(data->FirstChild))->TopEdge,
+            ((struct Gadget *)(data->FirstChild))->Width, ((struct Gadget *)(data->FirstChild))->Height));
+        childgadinf.gi_RastPort = rp;
+        childgadinf.gi_Pens.DetailPen = pens[BARDETAILPEN];
+        childgadinf.gi_Pens.BlockPen = pens[BARBLOCKPEN];
+        childgadinf.gi_DrInfo = dri;
+        // TODO: Query the real area padding from the theme..
+        childgadinf.gi_Domain.Left = right + data->dc->SBarChildPre_s + 1;
+        childgadinf.gi_Domain.Width = ((struct Gadget *)(data->FirstChild))->Width;
+        childgadinf.gi_Domain.Top = cpad;
+        childgadinf.gi_Domain.Height = barheight - (cpad << 1);
+        D(
+            bug("[screendecor] %s: rendering titlechild @ 0x%p, msg @ 0x%p, info @ 0x%p\n", __func__, data->FirstChild, &childrendermsg, &childgadinf);
+            bug("[screendecor] %s: %u,%u->%u,%u\n", __func__, childgadinf.gi_Domain.Left, childgadinf.gi_Domain.Top, childgadinf.gi_Domain.Left + childgadinf.gi_Domain.Width - 1, childgadinf.gi_Domain.Top + childgadinf.gi_Domain.Height - 1);
+        )
+        DoMethodA(data->FirstChild, &childrendermsg);
+
+    }
+    return TRUE;
+}
+
+static IPTR scrdecor_getdefsize_sysimage(Class *cl, Object *obj, struct sdpGetDefSizeSysImage *msg)
+{
+    struct scrdecor_data *data = INST_DATA(cl, obj);
+
+    if (msg->sdp_Which == SDEPTHIMAGE)
+    {
+        if (data->di && data->di->img_sdepth)
+        {
+            *msg->sdp_Height = data->di->img_sdepth->h;
+            *msg->sdp_Width = data->di->img_sdepth->w >> 1;
+        }
+        else return DoSuperMethodA(cl, obj, (Msg) msg);
+    }
+    else return DoSuperMethodA(cl, obj, (Msg) msg);
+
+    return TRUE;
+}
+
+static IPTR scrdecor_draw_sysimage(Class *cl, Object *obj, struct sdpDrawSysImage *msg)
+{
+    struct ScreenData      *sd = (struct ScreenData *) msg->sdp_UserBuffer;
+
+    struct RastPort        *rp = msg->sdp_RPort;
+    LONG                    left = msg->sdp_X;
+    LONG                    top = msg->sdp_Y;
+    LONG                    width = msg->sdp_Width;
+    LONG                    height = msg->sdp_Height;
+    LONG                    state = msg->sdp_State;
+
+    if (msg->sdp_Which == SDEPTHIMAGE)
+    {
+        D(bug("[screendecor] draw_sysimage: SDEPTHIMAGE @ %d,%d %dx%d state %d (image %s, rp bitmap %ux%u)\n", left, top, width, height, state,
+            sd->img_sdepth ? "themed" : "default", rp->BitMap ? GetBitMapAttr(rp->BitMap, BMA_WIDTH) : 0, rp->BitMap ? GetBitMapAttr(rp->BitMap, BMA_HEIGHT) : 0));
+        if (sd->img_sdepth)
+        {
+            DRenderElement(&sd->dts->dts_Elements[DECOR_ELEM_ScrDepth], rp, state, left, top, width, height, 0);
+        }
+        else return DoSuperMethodA(cl, obj, (Msg) msg);
+    }
+    else return DoSuperMethodA(cl, obj, (Msg) msg);
+
+    return TRUE;
+}
+
+static IPTR scrdecor_layoutscrgadgets(Class *cl, Object *obj, struct sdpLayoutScreenGadgets *msg)
+{
+    struct Gadget          *gadget = msg->sdp_Gadgets;
+    struct ScreenData      *sd = (struct ScreenData *) msg->sdp_UserBuffer;
+
+    struct scrdecor_data   *data = INST_DATA(cl, obj);
+
+    while(gadget)
+    {
+        switch(gadget->GadgetType & GTYP_SYSTYPEMASK)
+        {
+            case GTYP_SDEPTH:
+                gadget->LeftEdge = -(gadget->Width + data->dc->SBarGadPost_s);
+                gadget->TopEdge = (data->dc->SBarHeight - sd->img_sdepth->h) >> 1;
+                gadget->Flags &= ~GFLG_RELWIDTH;
+                gadget->Flags |= GFLG_RELRIGHT;
+                D(bug("[screendecor] layoutscrgadgets: depth gadget %ux%u -> LeftEdge %d (rel right, GadPost %u) TopEdge %d (SBarHeight %u, image h %u)\n",
+                    gadget->Width, gadget->Height, gadget->LeftEdge, data->dc->SBarGadPost_s, gadget->TopEdge, data->dc->SBarHeight, sd->img_sdepth->h));
+                break;
+        }
+
+        if (msg->sdp_Flags & SDF_LSG_MULTIPLE)
+        {
+            gadget = gadget->NextGadget;
+        }
+        else
+        {
+            gadget = NULL;
+        }
+    }
+
+    return TRUE;
+}
+
+static IPTR scrdecor_initscreen(Class *cl, Object *obj, struct sdpInitScreen *msg)
+{
+    struct scrdecor_data *data = INST_DATA(cl, obj);
+    struct ScreenData *sd = (struct ScreenData *)msg->sdp_UserBuffer;
+    struct Screen *screen = msg->sdp_Screen;
+
+    sd->truecolor = msg->sdp_TrueColor;
+
+    BOOL truecolor = sd->truecolor;
+
+    /*
+     * This depends on openwindow.c adding font height to w->BorderTop.
+     * It allows the window title bar to grow when font is bigger than decoration defined height
+     */
+    if ((msg->sdp_FontHeight + 2) > data->dc->BarHeight)
+        msg->sdp_WBorTop = 1;
+    else
+        msg->sdp_WBorTop = data->dc->BarHeight - 1 - msg->sdp_FontHeight;
+
+    /* Allow scaling title bar above decoration defined height */
+    msg->sdp_BarHeight = msg->sdp_FontHeight > (data->dc->SBarHeight - 1) ? msg->sdp_FontHeight : (data->dc->SBarHeight - 1);
+
+    msg->sdp_BarHBorder = 1;
+    msg->sdp_WBorLeft = data->dc->LeftBorder;
+    msg->sdp_WBorRight = data->dc->RightBorder;
+    msg->sdp_WBorBottom = data->dc->BottomBorder;
+
+    sd->ActivePen = -1;
+    sd->DeactivePen = -1;
+#if 0 // Omitting this gives better colours on low-color screens
+    if (!truecolor) {
+        sd->ActivePen = ObtainPen(screen->ViewPort.ColorMap, -1, (data->dc->LUTBaseColors_a << 8) & 0xff000000, (data->dc->LUTBaseColors_a << 16) & 0xff000000, (data->dc->LUTBaseColors_a << 24) & 0xff000000, PEN_EXCLUSIVE);
+        sd->DeactivePen = ObtainPen(screen->ViewPort.ColorMap, -1, (data->dc->LUTBaseColors_d << 8) & 0xff000000, (data->dc->LUTBaseColors_d << 16) & 0xff000000, (data->dc->LUTBaseColors_d << 24) & 0xff000000, PEN_EXCLUSIVE);
+    }
+#endif
+
+    /* Instantiate the theme for this screen - creates image copies
+       matching the screen's depth/attributes and element descriptors
+       over them */
+    sd->dts = DTObtainScreenTheme(data->theme, screen, truecolor);
+    if (!sd->dts)
+        return FALSE;
+
+    sd->di = sd->dts->dts_Images;
+
+    /* Set pointers to converted images */
+    sd->img_sdepth      = sd->di->img_sdepth;
+    sd->img_sbarlogo    = sd->di->img_sbarlogo;
+    sd->img_stitlebar   = sd->di->img_stitlebar;
+    
+    sd->img_amigakey    = sd->di->img_amigakey;
+    sd->img_menucheck   = sd->di->img_menucheck;
+    sd->img_submenu     = sd->di->img_submenu;
+
+    /*
+     * The Workbench screen is the default public screen: if a title child is
+     * registered it belongs on this screen. The bar layer does not exist yet,
+     * so the layout is completed on the first bar draw.
+     */
+    if (scrdecor_TitleChild && ((screen->Flags & SCREENTYPE) == WBENCHSCREEN))
+    {
+        D(bug("[screendecor] %s: adopting title child 0x%p for screen 0x%p\n", __func__, scrdecor_TitleChild, screen));
+        data->FirstChild = scrdecor_TitleChild;
+        ((struct Gadget *)data->FirstChild)->SpecialInfo = screen;
+        data->ChildLayoutPending = TRUE;
+    }
+
+    return TRUE;
+}
+
+static IPTR scrdecor_exitscreen(Class *cl, Object *obj, struct sdpExitScreen *msg)
+{
+    struct scrdecor_data *data = INST_DATA(cl, obj);
+    struct ScreenData *sd = (struct ScreenData *)msg->sdp_UserBuffer;
+
+    /* The title child is owned by whoever registered it and stays registered */
+    data->FirstChild = NULL;
+    data->ChildLayoutPending = FALSE;
+
+    DTReleaseScreenTheme(sd->dts);
+
+    return TRUE;
+}
+
+/**************************************************************************************************/
+
+static IPTR scrdecor_dispatcher(struct IClass *cl, Object *obj, Msg msg)
+{
+    IPTR retval;
+  
+    switch(msg->MethodID)
+    {
+        case OM_NEW:
+            retval = scrdecor_new(cl, obj, (struct opSet *)msg);
+            break;
+
+        case OM_DISPOSE:
+            retval = scrdecor_dispose(cl, obj, (struct opSet *)msg);
+            break;
+
+        case OM_GET:
+            retval = scrdecor_get(cl, obj, (struct opGet *)msg);
+            break;
+
+        case OM_SET:
+            retval = scrdecor_set(cl, obj, (struct opSet *)msg);
+            break;
+
+        case SDM_GETDEFSIZE_SYSIMAGE:
+            retval = scrdecor_getdefsize_sysimage(cl, obj, (struct sdpGetDefSizeSysImage *)msg);
+            break;
+
+        case SDM_DRAW_SCREENBAR:
+            retval = scrdecor_draw_screenbar(cl, obj, (struct sdpDrawScreenBar *)msg);
+            break;
+
+        case SDM_DRAW_SYSIMAGE:
+            retval = scrdecor_draw_sysimage(cl, obj, (struct sdpDrawSysImage *)msg);
+            break;
+
+        case SDM_LAYOUT_SCREENGADGETS:
+            retval = scrdecor_layoutscrgadgets(cl, obj, (struct sdpLayoutScreenGadgets *)msg);
+            break;
+
+        case SDM_INITSCREEN:
+            retval = scrdecor_initscreen(cl, obj, (struct sdpInitScreen *)msg);
+            break;
+
+       case SDM_EXITSCREEN:
+            retval = scrdecor_exitscreen(cl, obj, (struct sdpExitScreen *)msg);
+            break;
+
+        default:
+            retval = DoSuperMethodA(cl, obj, msg);
+            break;
+    }
+
+    return retval;
+}
+
+
+static IPTR scrdecorchildg_dispatcher(struct IClass *cl, Object *obj, Msg msg)
+{
+    IPTR retval;
+
+    retval = DoSuperMethodA(cl, obj, msg);
+
+    return retval;
+}
+
+
+struct IClass * MakeScreenDecorClass()
+{
+    struct IClass * cl = MakeClass(NULL, SCRDECORCLASS, NULL, sizeof(struct scrdecor_data), 0);
+    if (cl)
+    {
+        cl->cl_Dispatcher.h_Entry    = HookEntry;
+        cl->cl_Dispatcher.h_SubEntry = (HOOKFUNC)scrdecor_dispatcher;
+
+        screenchildgclass = MakeClass(NULL, "gadgetclass", NULL, sizeof(struct scrdecorchildg_data), 0);
+        if (screenchildgclass)
+        {
+            screenchildgclass->cl_Dispatcher.h_Entry    = HookEntry;
+            screenchildgclass->cl_Dispatcher.h_SubEntry = (HOOKFUNC)scrdecorchildg_dispatcher;
+        }
+    }
+    
+    return cl;
+}
+
+struct IClass * GetScreenChildGClass()
+{
+    return screenchildgclass;
+}

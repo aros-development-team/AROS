@@ -1,0 +1,73 @@
+include $(SRCDIR)/config/aros.cfg
+
+#MM workbench-libs-bsdsocket-mingw32: bsdsocket-mingw32-native
+
+FUNCS := \
+    accept \
+    bind \
+    closesocket \
+    connect \
+    dup2socket \
+    errno \
+    getdtablesize \
+    gethostbyaddr \
+    gethostbyname \
+    gethostid \
+    gethostname \
+    getnetbyaddr \
+    getnetbyname \
+    getpeername \
+    getprotobyname \
+    getprotobynumber \
+    getservbyname \
+    getservbyport \
+    getsocketevents \
+    getsockname \
+    getsockopt \
+    inet_addr \
+    inet_lnaof \
+    inet_makeaddr \
+    inet_netof \
+    inet_network \
+    inet_ntoa \
+    ioctlsocket \
+    listen \
+    obtainsocket \
+    recv \
+    recvfrom \
+    recvmsg \
+    releasecopyofsocket \
+    releasesocket \
+    send \
+    sendmsg \
+    sendto \
+    seterrnoptr \
+    setsocketsignals \
+    setsockopt \
+    shutdown \
+    socket \
+    socketbasetaglist \
+    vsyslog \
+    waitselect
+
+FILES := bsdsocket_init bsdsocket_open bsdsocket_util netdb_util
+    
+%build_module_library mmake=workbench-libs-bsdsocket-mingw32 \
+    modname=bsdsocket modtype=library \
+    files="$(FILES) $(FUNCS)"
+
+NATIVE_BINDIR := $(AROSDIR)/Libs/Host
+NATIVE_LIBDIR := $(AROS_DEVELOPER)/$(CPU)-mingw32/lib
+
+NATIVE_FILES  := host_socket
+
+NATIVE_LDFLAGS := -shared -L$(NATIVE_LIBDIR)
+
+USER_INCLUDES := -I$(AROS_DEVELOPER)/$(CPU)-mingw32/include
+
+%build_prog mmake=bsdsocket-mingw32-native \
+    progname=bsdsocket.dll targetdir=$(NATIVE_BINDIR) \
+    files=$(NATIVE_FILES) compiler=kernel uselibs="aroskernel Ws2_32" \
+    ldflags=$(NATIVE_LDFLAGS)
+
+%common

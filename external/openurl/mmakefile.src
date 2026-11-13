@@ -1,0 +1,11 @@
+#   $Id$
+#
+#   Makefile for OpenURL
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM- external : external-openurl
+
+#MM- external-openurl : external-openurl-lib external-openurl-prefs external-openurl-cmd
+
+%common

@@ -1,0 +1,30 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+CUNITEXEDIR := $(AROS_TESTS)/cunit/entropy
+
+CUNITENTROPYTESTFILES := \
+    cunit-entropy
+
+#MM- test : test-entropy
+#MM- test-quick : test-entropy-quick
+
+#MM- test-cunit : test-entropy-cunit
+#MM- test-cunit-quick : test-entropy-cunit-quick
+
+#MM- test-entropy : test-entropy-cunit
+#MM- test-entropy-quick : test-entropy-cunit-quick
+
+#MM- test-entropy-cunit : test-entropy-$(TARGET_UNITTESTS)-cunit
+#MM- test-entropy-cunit-quick : test-entropy-$(TARGET_UNITTESTS)-cunit-quick
+
+#MM test-entropy-yes-cunit : includes includes-copy linklibs linklibs-cunit
+
+USER_INCLUDES := -I$(AROS_CONTRIB_INCLUDES)
+USER_LDFLAGS := -L$(AROS_CONTRIB_LIB)
+
+%build_progs mmake=test-entropy-yes-cunit \
+    files=$(CUNITENTROPYTESTFILES) targetdir=$(CUNITEXEDIR) \
+    uselibs="cunit posixc"
+
+%common

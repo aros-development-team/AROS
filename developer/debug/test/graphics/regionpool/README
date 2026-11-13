@@ -1,0 +1,18 @@
+Region pool fragmented-memory regression
+=======================================
+
+Run regionpool after a DOS boot on a Chip-RAM-only Amiga, such as the stock
+2 MiB CD32 fixture. Machines with Fast RAM return a skip result. The test
+temporarily reserves its own memory to leave separated 16 KiB free ranges;
+it releases every reservation before exiting.
+
+Expected: REGION POOL TEST: 0 failures and return code 0.
+
+The test checks observable region geometry in 32 simultaneously live
+regions, growth beyond one rectangle chunk, and complete pool-memory return
+after ClearRegion. Optional reservations must not invoke the counting
+low-memory handler. Genuine exhaustion must still invoke normal reclamation
+for the minimum allocation and report failure cleanly.
+
+The original fixed-size pool cannot allocate even the first region rectangle
+in this fixture and invokes low-memory handlers during the first phase.

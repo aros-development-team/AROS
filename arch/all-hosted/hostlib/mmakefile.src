@@ -1,0 +1,15 @@
+include $(SRCDIR)/config/aros.cfg
+
+USER_CPPFLAGS := -DHOST_OS_$(ARCH)
+USER_INCLUDES := -I$(SRCDIR)/arch/all-$(ARCH)/kernel
+ifneq ($(FAMILY),)
+    USER_INCLUDES += -I$(SRCDIR)/arch/all-$(FAMILY)/kernel
+endif
+
+FUNCS := open close getpointer freeerrorstr getinterface dropinterface lock unlock
+
+%build_module mmake=kernel-hostlib \
+    modname=hostlib modtype=resource version=$(AROS_TARGET_PLATFORM) \
+    files="hostlib_init $(FUNCS)" archspecific=yes
+
+%common

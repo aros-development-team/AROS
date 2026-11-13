@@ -1,0 +1,6 @@
+[package]
+name = "aros-mui-sys"
+version = "0.1.0"
+edition = "2021"
+description = "MUI/Zune bindings for Rust"
+license = "Apache-2.0 OR MIT"

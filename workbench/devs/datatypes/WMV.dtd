@@ -1,0 +1,9 @@
+# DataType Description for WMV
+Name=WMV
+Version=$VER: WMV 1.0 (23.02.2009)
+BaseName=wmv
+Pattern=#?.wmv
+GroupID=movi
+ID=wmv
+Flags=DTF_BINARY,DTF_CASE
+Priority=0

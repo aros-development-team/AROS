@@ -1,0 +1,34 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+FILES := main bootstrap elf_io filesystem hostinterface kickstart log memory support shutdown runtime ui
+PROG  := AROSBootstrap
+
+## The '-Wno-attributes' is here due to a gcc 4.5.x bug
+## where its strcmp() builtin generates a number of spurious
+## complaints with -O1 or higher optimizations enabled.
+USER_CFLAGS   := -Wno-attributes
+USER_CPPFLAGS := -DADATE="\"$(shell date '+%d.%m.%Y')\"" \
+    -DARCH=\"$(AROS_DIR_BOOTARCH)\"
+USER_LDFLAGS  := -L$(GENDIR)/lib
+USER_INCLUDES := -I$(SRCDIR)/arch/all-$(ARCH)/kernel -I$(GENINCDIR) -isystem $(SRCDIR)/bootstrap/include
+
+# Make sure the debug info is always present since we need it for
+# gdb to work,
+ifneq ($(DEBUG),yes)
+USER_CFLAGS+=$(HOST_DEBUG)
+USER_LDFLAGS+=$(HOST_DEBUG)
+endif
+
+# Allow to add host-specific options
+-include $(SRCDIR)/arch/all-$(FAMILY)/bootstrap/make.opts
+-include $(SRCDIR)/arch/all-$(ARCH)/bootstrap/make.opts
+-include $(SRCDIR)/arch/all-$(AROS_TARGET_VARIANT)/bootstrap/make.opts
+
+#MM kernel-bootstrap-hosted: linklibs-bootstrap linklibs-arossupport
+
+%build_prog mmake=kernel-bootstrap-hosted \
+    progname=$(PROG)$(EXE_SUFFIX) targetdir=$(AROSARCHDIR) \
+    files=$(FILES) compiler=kernel uselibs="bootstrap"
+
+%common

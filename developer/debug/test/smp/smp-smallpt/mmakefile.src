@@ -1,0 +1,32 @@
+#   $Id: mmakefile.src 53238 2017-01-19 01:46:57Z NicJA $
+#
+
+include $(SRCDIR)/config/aros.cfg
+
+FILES   := main renderer
+CXXFILES := smallpt
+EXEDIR  := $(AROS_TESTS)/smp
+
+#MM- test-smp : test-smp-smp-smallpt
+#MM- test-smp-quick : test-smp-smp-smallpt-quick
+
+#USER_CFLAGS := $(PARANOIA_CFLAGS)
+
+NOWARN_FLAGS  := $(NOWARN_VOLATILE_REGISTER_VAR)
+SMALLPT_FLAGS := $(CFLAGS_NO_RED_ZONE)
+USER_CXXFLAGS := $(NOWARN_FLAGS) $(SMALLPT_FLAGS)
+USER_CFLAGS   := -std=gnu99 $(SMALLPT_FLAGS)
+USER_LDFLAGS  := $(TARGET_CXX_LDFLAGS)
+ifeq ($(AROS_TARGET_CPU),x86_64)
+OPTIMIZATION_CFLAGS := -O3
+TARGET_ISA_CFLAGS += -msse
+TARGET_ISA_CXXFLAGS += -msse
+endif
+
+USER_CPPFLAGS := -D_GNU_SOURCE
+
+%build_prog mmake=test-smp-smp-smallpt \
+    files=$(FILES) cxxfiles=$(CXXFILES) targetdir=$(EXEDIR) \
+    uselibs="" progname=SMP-SmallPT
+
+%common

@@ -1,0 +1,5 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+INCLUDE_FILES := $(call WILDCARD, aros/*.h)
+%copy_includes mmake=compiler-includes path=aros/morphos dir=aros

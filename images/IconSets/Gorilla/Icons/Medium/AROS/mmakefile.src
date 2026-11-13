@@ -1,0 +1,29 @@
+# Copyright (C) 2004-2023, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+
+BASEICONS := Developer Devs Fonts \
+         Locale Prefs System \
+         Tools Utilities
+ADDITIONALICONS := Demos \
+         Libs Storage \
+         WBStartup \
+         Rexxc
+
+#MM- iconset-Gorilla-wbench-icons-clean : iconset-Gorilla-wbench-icons-aros-clean iconset-Gorilla-additional-icons-aros-clean
+#MM- iconset-Gorilla-wbench-icons : iconset-Gorilla-wbench-icons-aros
+#MM- iconset-Gorilla-wbench-icons : iconset-Gorilla-additional-icons-aros
+
+%build_icons mmake=iconset-Gorilla-wbench-icons-aros icons=$(BASEICONS) dir=$(AROSDIR)
+
+%build_icons mmake=iconset-Gorilla-additional-icons-aros icons=$(ADDITIONALICONS) dir=$(AROSDIR)
+
+#MM- icons-wbench : gorilla-icons-wbench
+%build_icons mmake=gorilla-icons-wbench icons=$(BASEICONS) dir=$(AROS_PRESETS)/Icons/Gorilla/Default/$(AROS_DIR_AROS)
+
+#MM- icons-additional-wbench : gorilla-icons-additional-wbench
+%build_icons mmake=gorilla-icons-additional-wbench icons=$(ADDITIONALICONS) dir=$(AROS_PRESETS)/Icons/Gorilla/Default/$(AROS_DIR_AROS)
+
+#MM
+iconset-Gorilla-wbench-icons-aros-livecd :  
+	@$(ILBMTOICON) $(SRCDIR)/$(CURDIR)/LiveCD.info.src $(SRCDIR)/$(CURDIR)/LiveCD.png $(AROSDIR)/disk.info

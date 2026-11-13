@@ -1,0 +1,538 @@
+# Translation catalog description file (pot-style)
+# $Id$
+# 
+# version 7
+# language english
+# 
+# Translators:
+# Niels Bache <nbache2@mail.dk>, 2015
+msgid ""
+msgstr ""
+"Project-Id-Version: OpenURL\n"
+"Report-Msgid-Bugs-To: http://sf.net/p/openurllib/\n"
+"POT-Creation-Date: 2014-02-23 12:01+0100\n"
+"PO-Revision-Date: 2015-02-03 22:55+0000\n"
+"Last-Translator: Niels Bache <nbache2@mail.dk>\n"
+"Language-Team: Danish (http://www.transifex.com/ato/openurllib/language/da/)\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Catalog-Name: OpenURL\n"
+"Language: da\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+msgctxt "MSG_ErrReqTitle (1//)"
+msgid "OpenURL Error"
+msgstr "Fejl i OpenURL"
+
+msgctxt "MSG_ErrReqGadget (//)"
+msgid "_Abort"
+msgstr "_Afbryde"
+
+msgctxt "MSG_Err_NoMem (//)"
+msgid "Out of memory"
+msgstr "Løbet tør for hukommelse"
+
+msgctxt "MSG_Err_NoMUI (//)"
+msgid "Can't open muimaster.library %ld.%ld or higher"
+msgstr "Fejl ved forsøg på åbning af muimaster.library %ld.%ld eller nyere"
+
+msgctxt "MSG_Err_NoIntuition (//)"
+msgid "Can't open intuition.library %ld.%ld or higher"
+msgstr "Fejl ved forsøg på åbning af intuition.library %ld.%ld eller nyere"
+
+msgctxt "MSG_Err_NoUtility (//)"
+msgid "Can't open utility.library %ld.%ld or higher"
+msgstr "Fejl ved forsøg på åbning af utility.library %ld.%ld eller nyere"
+
+msgctxt "MSG_Err_NoGfx (//)"
+msgid "Can't open graphics.library %ld.%ld or higher"
+msgstr "Fejl ved forsøg på åbning af graphics.library %ld.%ld eller nyere"
+
+msgctxt "MSG_Err_NoIcon (//)"
+msgid "Can't open icon.library %ld.%ld or higher"
+msgstr "Fejl ved forsøg på åbning af icon.library %ld.%ld eller nyere"
+
+msgctxt "MSG_Err_NoOpenURL (//)"
+msgid "Can't open openurl.library %ld.%ld or higher"
+msgstr "Fejl ved forsøg på åbning af openurl.library %ld.%ld eller nyere"
+
+msgctxt "MSG_Err_NoAppClass (//)"
+msgid "Can't create AppClass"
+msgstr "Fejl ved forsøg på oprettelse af AppClass"
+
+msgctxt "MSG_Err_NoWinClass (11//)"
+msgid "Can't create WinClass"
+msgstr "Fejl ved forsøg på oprettelse af WinClass"
+
+msgctxt "MSG_Err_NoAppListClass (13//)"
+msgid "Can't create AppListClass"
+msgstr "Fejl ved forsøg på oprettelse af AppListClass"
+
+msgctxt "MSG_Err_NoBrowserEditWinClass (//)"
+msgid "Can't create BrowserEditWinClass"
+msgstr "Fejl ved forsøg på oprettelse af BrowserEditWinClass"
+
+msgctxt "MSG_Err_NoMailerEditWinClass (//)"
+msgid "Can't create MailerEditWinClass"
+msgstr "Fejl ved forsøg på oprettelse af MailerEditWinClass"
+
+msgctxt "MSG_Err_NoFTPEditWinClass (//)"
+msgid "Can't create FTPEditWinClass"
+msgstr "Fejl ved forsøg på oprettelse af FTPEditWinClass"
+
+msgctxt "MSG_Err_PopupPortClass (//)"
+msgid "Can't create PopupPortClass"
+msgstr "Fejl ved forsøg på oprettelse af PopupPortClass"
+
+msgctxt "MSG_Err_PopphClass (//)"
+msgid "Can't create PopphClass"
+msgstr "Fejl ved forsøg på oprettelse af PopphClass"
+
+msgctxt "MSG_Err_NoApp (//)"
+msgid "Can't create application object"
+msgstr "Fejl ved forsøg på oprettelse af applikationsobjekt"
+
+msgctxt "MSG_Err_NoPrefs (//)"
+msgid "Can't obtain prefs from openurl.library"
+msgstr "Fejl ved forsøg på at hente indstilliinger fra openurl.library"
+
+msgctxt "MSG_Err_BadPrefs (//)"
+msgid ""
+"This version of this program doesn't know how\n"
+"to handle openurl.library prefs version %ld"
+msgstr "Denne version af programmet kan ikke håndtere\nindstillinger fra openurl.library version %ld"
+
+msgctxt "MSG_Err_FailedSave (//)"
+msgid "Can't save prefs"
+msgstr "Fejl ved forsøg på gemning af indstillinger"
+
+msgctxt "MSG_App_Description (100//)"
+msgid "OpenURL preferences application."
+msgstr "Indstillingsprogram for OpenURL."
+
+msgctxt "MSG_App_Copyright (//)"
+msgid "Public Domain Software"
+msgstr "Public Domain-software"
+
+msgctxt "MSG_App_ScreenTitle (//)"
+msgid "OpenURL"
+msgstr "OpenURL"
+
+msgctxt "MSG_Menu_Project (200//)"
+msgid "Project"
+msgstr "Projekt"
+
+msgctxt "MSG_Menu_About (//)"
+msgid "?\\0About..."
+msgstr "?\\0Om..."
+
+msgctxt "MSG_Menu_AboutMUI (//)"
+msgid "!\\0About MUI..."
+msgstr "!\\0Om MUI..."
+
+msgctxt "MSG_Menu_Hide (//)"
+msgid "H\\0Hide"
+msgstr "H\\0Skjule"
+
+msgctxt "MSG_Menu_Quit (//)"
+msgid "Q\\0Quit"
+msgstr "Q\\0Afslutte"
+
+msgctxt "MSG_Menu_Prefs (//)"
+msgid "Preferences"
+msgstr "Indstillinger"
+
+msgctxt "MSG_Menu_Save (//)"
+msgid "S\\0Save"
+msgstr "S\\0Gemme"
+
+msgctxt "MSG_Menu_Use (//)"
+msgid "U\\0Use"
+msgstr "U\\0Benytte"
+
+msgctxt "MSG_Menu_LastSaved (//)"
+msgid "L\\0Last saved"
+msgstr "L\\0Sidst gemte"
+
+msgctxt "MSG_Menu_Restore (//)"
+msgid "R\\0Restore"
+msgstr "R\\0Gendanne"
+
+msgctxt "MSG_Menu_Defaults (210//)"
+msgid "D\\0Default settings"
+msgstr "D\\0Nulstille til standard"
+
+msgctxt "MSG_Menu_MUI (212//)"
+msgid "M\\0MUI Setting..."
+msgstr "M\\0MUI-indstillinger..."
+
+msgctxt "MSG_Win_WinTitle (300//)"
+msgid "OpenURL"
+msgstr "OpenURL"
+
+msgctxt "MSG_Win_Labels_Browsers (//)"
+msgid "Browsers"
+msgstr "Browsere"
+
+msgctxt "MSG_Win_Labels_Mailers (//)"
+msgid "Mailers"
+msgstr "E-postprogrammer"
+
+msgctxt "MSG_Win_Labels_FTPs (//)"
+msgid "FTPs"
+msgstr "FTP-klienter"
+
+msgctxt "MSG_Win_Labels_Misc (//)"
+msgid "Misc"
+msgstr "Diverse"
+
+msgctxt "MSG_Win_Save (//)"
+msgid "_Save"
+msgstr "_Gemme"
+
+msgctxt "MSG_Win_Save_Help (//)"
+msgid "Save preferences."
+msgstr "Gemmer indstillingerne."
+
+msgctxt "MSG_Win_Use (//)"
+msgid "_Use"
+msgstr "_Benytte"
+
+msgctxt "MSG_Win_Use_Help (//)"
+msgid "Use preferences."
+msgstr "Benytter indstillingerne."
+
+msgctxt "MSG_Win_Apply (//)"
+msgid "_Apply"
+msgstr "_Afprøve"
+
+msgctxt "MSG_Win_Apply_Help (//)"
+msgid "Use preferences without closing window."
+msgstr "Benytter indstillingerne uden at lukke vinduet."
+
+msgctxt "MSG_Win_Cancel (//)"
+msgid "_Cancel"
+msgstr "_Fortryde"
+
+msgctxt "MSG_Win_Cancel_Help (//)"
+msgid "Close window, without using preferences."
+msgstr "Lukker vinduet uden at benytte indstillingsændringerne."
+
+msgctxt "MSG_AppList_Add (400//)"
+msgid "A_dd"
+msgstr "_Tilføje"
+
+msgctxt "MSG_AppList_Add_Help (//)"
+msgid "Add a new entry."
+msgstr "Tilføjer en ny post."
+
+msgctxt "MSG_AppList_Edit (//)"
+msgid "_Edit"
+msgstr "_Redigere"
+
+msgctxt "MSG_AppList_Edit_Help (//)"
+msgid "Edit active entry."
+msgstr "Redigerer den markerede post."
+
+msgctxt "MSG_AppList_Clone (//)"
+msgid "C_lone"
+msgstr "_Kopiere"
+
+msgctxt "MSG_AppList_Clone_Help (//)"
+msgid "Clone active entry."
+msgstr "Laver en kopi af den markerede post."
+
+msgctxt "MSG_AppList_Delete (//)"
+msgid "Dele_te"
+msgstr "_Slette"
+
+msgctxt "MSG_AppList_Delete_Help (//)"
+msgid "Delete active entry."
+msgstr "Sletter den markerede post."
+
+msgctxt "MSG_AppList_Disable (//)"
+msgid "D_isable"
+msgstr "_Deaktivere"
+
+msgctxt "MSG_AppList_Disable_Help (//)"
+msgid "Disable active entry."
+msgstr "Deaktiverer den markerede post."
+
+msgctxt "MSG_AppList_MoveUp_Help (//)"
+msgid "Move active entry up."
+msgstr "Flytter den markerede post opad."
+
+msgctxt "MSG_AppList_MoveDown_Help (//)"
+msgid "Move active entry down."
+msgstr "Flytter den markerede post nedad."
+
+msgctxt "MSG_Edit_Use (500//)"
+msgid "_Use"
+msgstr "_Benytte"
+
+msgctxt "MSG_Edit_Use_Help (//)"
+msgid "Apply changes."
+msgstr "Benytter ændringerne."
+
+msgctxt "MSG_Edit_Cancel (//)"
+msgid "_Cancel"
+msgstr "_Fortryde"
+
+msgctxt "MSG_Edit_Cancel_Help (//)"
+msgid "Close window."
+msgstr "Lukker vinduet."
+
+msgctxt "MSG_Edit_ListName (//)"
+msgid "Name"
+msgstr "Navn"
+
+msgctxt "MSG_Edit_ListPath (//)"
+msgid "Path"
+msgstr "Sti"
+
+msgctxt "MSG_Edit_Definitions (//)"
+msgid "Definitions"
+msgstr "Definitioner"
+
+msgctxt "MSG_Edit_ARexx (//)"
+msgid "ARexx commands"
+msgstr "ARexx-kommandoer"
+
+msgctxt "MSG_Edit_PopURL (//)"
+msgid "URL"
+msgstr "URL"
+
+msgctxt "MSG_Edit_PopScreen (//)"
+msgid "Public screen name"
+msgstr "Navn på offentlig skærm"
+
+msgctxt "MSG_Edit_Name (//)"
+msgid "_Name"
+msgstr "_Navn"
+
+msgctxt "MSG_Edit_Name_Help (//)"
+msgid "Name of entry."
+msgstr "Postens navn."
+
+msgctxt "MSG_Edit_Path (//)"
+msgid "_Path"
+msgstr "_Sti"
+
+msgctxt "MSG_Edit_Path_Help (//)"
+msgid "Complete path to the application."
+msgstr "Fuld sti til applikationen."
+
+msgctxt "MSG_Edit_Port (//)"
+msgid "_ARexx port"
+msgstr "A_Rexx-port"
+
+msgctxt "MSG_Edit_Port_Help (//)"
+msgid ""
+"Name of the application ARexx port\n"
+"to send commands to."
+msgstr "Navn på applikationens ARexx-port\nsom kommandoer skal sendes til."
+
+msgctxt "MSG_Edit_Show (//)"
+msgid "_Show"
+msgstr "_Afikonificere"
+
+msgctxt "MSG_Edit_Show_Help (//)"
+msgid "ARexx command to uniconify the application."
+msgstr "ARexx-kommando til at afikonificere applikationen."
+
+msgctxt "MSG_Edit_Screen (//)"
+msgid "_To front"
+msgstr "_Lægge forrest"
+
+msgctxt "MSG_Edit_Screen_Help (//)"
+msgid ""
+"ARexx command to move the application\n"
+"screen to front."
+msgstr "ARexx-kommando til at flytte applikationens\nskærm til at ligge forrest."
+
+msgctxt "MSG_Edit_OpenURL (//)"
+msgid "_Open URL"
+msgstr "_Åbne URL"
+
+msgctxt "MSG_Edit_OpenURL_Help (//)"
+msgid "ARexx command to reach an URL."
+msgstr "ARexx-kommando til at koble op til en URL."
+
+msgctxt "MSG_Edit_NewWin (//)"
+msgid "N_ew window"
+msgstr "Nyt _vindue"
+
+msgctxt "MSG_Edit_NewWin_Help (//)"
+msgid ""
+"ARexx command to reach an URL\n"
+"in a new window (or tab)."
+msgstr "ARexx-kommando til at koble op til\nen URL i et nyt vindue (eller faneblad)."
+
+msgctxt "MSG_Browser_List_Help (600//)"
+msgid "List of browsers."
+msgstr "Liste over browsere."
+
+msgctxt "MSG_Browser_WinTitle (//)"
+msgid "Edit Browser"
+msgstr "Redigering af browser"
+
+msgctxt "MSG_Browser_NewBrowser (//)"
+msgid "New browser"
+msgstr "Ny browser"
+
+msgctxt "MSG_Mailer_List_Help (700//)"
+msgid "List of Mailers."
+msgstr "Liste over e-postprogrammer."
+
+msgctxt "MSG_Mailer_WinTitle (//)"
+msgid "Edit Mailer"
+msgstr "Redigere e-postprogram"
+
+msgctxt "MSG_Mailer_NewMailer (//)"
+msgid "New mailer"
+msgstr "Nyt e-postprogram"
+
+msgctxt "MSG_Mailer_Write (//)"
+msgid "_Write mail"
+msgstr "Skrive _e-post"
+
+msgctxt "MSG_Mailer_Write_Help (//)"
+msgid ""
+"ARexx command to open a\n"
+"\"write a new EMail window\"."
+msgstr "ARexx-kommando til at åbne et\n\"Skrive ny e-post\"-vindue."
+
+msgctxt "MSG_Mailer_PopAddress (//)"
+msgid "Address"
+msgstr "Adresse"
+
+msgctxt "MSG_Mailer_Popsubject (//)"
+msgid "Subject"
+msgstr "Emne"
+
+msgctxt "MSG_Mailer_PopBodyText (//)"
+msgid "Body text"
+msgstr "Brødtekst"
+
+msgctxt "MSG_Mailer_PopBodyFile (//)"
+msgid "Body file"
+msgstr "Brødtekstfil"
+
+msgctxt "MSG_FTP_List_Help (800//)"
+msgid "List of FTP clients."
+msgstr "Liste over FTP-klienter."
+
+msgctxt "MSG_FTP_WinTitle (//)"
+msgid "Edit FTP client"
+msgstr "Redigere FTP-klient"
+
+msgctxt "MSG_FTP_NewFTP (//)"
+msgid "New FTP client"
+msgstr "Ny FTP-klient"
+
+msgctxt "MSG_FTP_RemoveURLQualifier (//)"
+msgid "Re_move 'ftp://'"
+msgstr "F_jerne 'ftp://'"
+
+msgctxt "MSG_FTP_RemoveURLQualifier_Help (//)"
+msgid ""
+"If selected, \"ftp://\" is removed\n"
+"from the URL."
+msgstr "Sættes der hak her, vil \"ftp://\"\nblive fjernet fra URL'en."
+
+msgctxt "MSG_Misc_Options (900//)"
+msgid "Options"
+msgstr "Tilvalg"
+
+msgctxt "MSG_Misc_Defaults (//)"
+msgid "Defaults"
+msgstr "Standardindstillinger"
+
+msgctxt "MSG_Misc_Prepend (//)"
+msgid "_Prepend \"http://\" to URLs without a scheme"
+msgstr "F_oranstille \"http://\" på URL'er uden protokol"
+
+msgctxt "MSG_Misc_Prepend_Help (//)"
+msgid ""
+"If selected, \"http://\" is added to any URL\n"
+"without a scheme, so that it is opened in the\n"
+"browser."
+msgstr "Sættes hak her, bliver der sat \"http://\" foran enhver URL\nsom ikke i forvejen har en protokol angivet, så den åbnes\ni browseren."
+
+msgctxt "MSG_Misc_UseMailer (//)"
+msgid "S_end mailto: URLs to email application"
+msgstr "S_ende \"mailto:\"-URL'er til e-postprogrammet"
+
+msgctxt "MSG_Misc_UseMailer_Help (//)"
+msgid ""
+"If selected, \"mailto:\" URLs are sent to\n"
+"the mailer, otherwise they are sent to the\n"
+"browser."
+msgstr "Sættes hak her, bliver \"mailto:\"-URL'er sendt\ntil e-postprogrammet, ellers sendes de til\nbrowseren."
+
+msgctxt "MSG_Misc_UseFTP (//)"
+msgid "Se_nd \"ftp://\" URLs to FTP application"
+msgstr "Se_nde \"ftp://\"-URL'er til FTP-klienten"
+
+msgctxt "MSG_Misc_UseFTP_Help (//)"
+msgid ""
+"If selected, \"ftp://\" URLs are sent to\n"
+"the FTP client, otherwise they are sent to\n"
+"the browser."
+msgstr "Sættes hak her, blvier \"ftp://\"-URL'er\nsendt til FTP-klienten, ellers sendes de\ntil browseren."
+
+msgctxt "MSG_Misc_Show (//)"
+msgid "Un_iconify application"
+msgstr "Af_ikonificere applikationen"
+
+msgctxt "MSG_Misc_Show_Help (//)"
+msgid ""
+"If selected, the application is uniconified,\n"
+"before sending the URL to it."
+msgstr "Sættes hak her, bliver applikationen\nafikonificeret før URL'en sendes til den."
+
+msgctxt "MSG_Misc_Bring (//)"
+msgid "_Bring browser screen to front"
+msgstr "_Lægge browserens skærm i forgrunden"
+
+msgctxt "MSG_Misc_Bring_Help (//)"
+msgid ""
+"If selected, the application screen is moved\n"
+"to front, before sending the URL."
+msgstr "Sættes hak her, vil applikationens skærm blive\nflyttet så den ligger forrest, før URL'en sendes til den."
+
+msgctxt "MSG_Misc_Open (//)"
+msgid "_Open URL in new client window (or tab)"
+msgstr "_Åbne URL i nyt klientvindue (eller faneblad)"
+
+msgctxt "MSG_Misc_Open_Help (//)"
+msgid ""
+"If selected, a new application window (or tab)\n"
+"is opened, before sending the URL."
+msgstr "Sætets hak her, vil der blive åbnet et nyt vindue\n(eller faneblad) i klienten, før URL'en sendes."
+
+msgctxt "MSG_Misc_Launch (//)"
+msgid "_Launch browser if one isn't running"
+msgstr "S_tarte browser hvis den ikke kører"
+
+msgctxt "MSG_Misc_Launch_Help (//)"
+msgid "If selected, a new application is run, if none is found."
+msgstr "Sættes hak her, vil applikationen blive startet\nhvis den ikke findes kørende."
+
+msgctxt "MSG_About_WinTitle (1100//)"
+msgid "About OpenURL"
+msgstr "Om OpenURL"
+
+msgctxt "MSG_About_OK (1111//)"
+msgid "_OK"
+msgstr "_OK"
+
+msgctxt "MSG_About_Descr (1112//)"
+msgid ""
+"\\33bOpenURL\\33n is a shared library for easily sending\n"
+"URLs from applications to browsers, mailers\n"
+"and FTP clients.\n"
+"\n"
+"\\33cOpenURL is a Public Domain Software."
+msgstr "\\33bOpenURL\\33n er et systembibliotek til enkelt at\nsende URL'er fra applikationer til browsere, e-postprogrammer\nog FTP-klienter.\n\n\\33cOpenURL er Public Domain-software."

@@ -1,0 +1,34 @@
+/***************************************************************************
+
+ TextEditor.mcc - Textediting MUI Custom Class
+ Copyright (C) 1997-2000 Allan Odgaard
+ Copyright (C) 2005-2014 TextEditor.mcc Open Source Team
+
+ This library is free software; you can redistribute it and/or
+ modify it under the terms of the GNU Lesser General Public
+ License as published by the Free Software Foundation; either
+ version 2.1 of the License, or (at your option) any later version.
+
+ This library is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ Lesser General Public License for more details.
+
+ TextEditor class Support Site:  http://www.sf.net/projects/texteditor-mcc
+
+ $Id: TODO 945 2014-01-26 09:03:06Z damato $
+
+***************************************************************************/
+
+Items that ought to be implemented in future TextEditor.mcc releases:
+--------------------------------------------------------------------
+
+* Fix the problem that parts of italic letters are erased (happens only
+  if fonts are anti aliased)
+* Implement more different Import/Export hooks.
+* Inline image display
+* Fix background rendering when certain types of gradients are used.
+
+
+Items that ought to be fixed in future TextEditor.mcc releases:
+--------------------------------------------------------------------

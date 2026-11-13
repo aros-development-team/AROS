@@ -1,0 +1,15 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+USER_CPPFLAGS := -DMUIMASTER_YES_INLINE_STDARG
+USER_LDFLAGS := -static
+
+FILES :=    egalaxtouch.class debug
+
+#MM- kernel-usb-classes-egalaxtouch : kernel-usb-usbclass kernel-usb-poseidon-includes
+
+%build_module_library mmake=kernel-usb-classes-egalaxtouch \
+    modname=egalaxtouch modtype=usbclass modsuffix="class" \
+    files="$(FILES)"
+
+%common

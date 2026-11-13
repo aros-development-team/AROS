@@ -1,0 +1,16 @@
+# Copyright (C) 2023, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+
+$(AROS_PRESETS)/Icons/Mason/Default/Images/CDROM : $(SRCDIR)/$(CURDIR)/CD.png
+	@$(MKDIR) -p "$(dir $@)"
+	$(CP) $< $@
+
+$(AROS_PRESETS)/Icons/Mason/Default/Images/Floppy : $(SRCDIR)/$(CURDIR)/Disk.png
+	@$(MKDIR) -p "$(dir $@)"
+	$(CP) $< $@
+
+#MM
+mason-icon-drive-images : $(AROS_PRESETS)/Icons/Mason/Default/Images/Floppy $(AROS_PRESETS)/Icons/Mason/Default/Images/CDROM
+
+#MM- icon-images : mason-icon-drive-images

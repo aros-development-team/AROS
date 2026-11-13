@@ -1,0 +1,4 @@
+USER_CPPFLAGS +=  \
+        -D__OOP_NOLIBBASE__ \
+        -D__OOP_NOMETHODBASES__ \
+        -D__OOP_NOATTRBASES__

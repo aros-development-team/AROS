@@ -1,0 +1,44 @@
+
+DEST= HardDiskRecord
+CFLAGS= GST=Include:all.gst UtilityLibrary NoStackCheck CommentNest NoIcons MemorySize=Huge Parameters=Register Debug=Full
+DEBUG= LIB:debug.lib LIB:amiga.lib 
+LFLAGS= LIB LIB:sc.lib $(DEBUG) noicons smalldata smallcode #stripdebug
+
+OBJS= GUI.o HardDiskRecord.o recordfunc.o
+
+$(DEST): $(OBJS)
+   slink $(LFLAGS) TO $(DEST) FROM LIB:c.o $(OBJS)
+
+GUI.c: GUI.des
+   CProducer GUI.des
+
+GUI.h: GUI.des
+
+GUI.o: GUI.c GUI.extras.h smakefile
+   sc $(CFLAGS) GUI.c
+
+HardDiskRecord.o: HardDiskRecord.c GUI.h GUI.extras.h smakefile
+   sc $(CFLAGS) HardDiskRecord.c
+
+recordfunc.o: recordfunc.a smakefile
+   asm recordfunc.a
+
+
+dist:	
+	smake allclean
+	smake $(DEST)
+	--delete Projekt:AHI/HardDiskRecord.lha t:HardDiskRecord all
+	--makedir t:HardDiskRecord
+	slink from $(DEST) ND NOICONS to $(DEST)
+	copy HardDiskRecord.readme $(DEST) t:HardDiskRecord
+	copy Catalog? t:HardDiskRecord ALL
+	lha -r a Projekt:AHI/HardDiskRecord.lha T:HardDiskRecord
+	delete t:HardDiskRecord all
+	smake clean
+
+clean:
+	--delete \#?.(map|o|lnk|info) QUIET
+
+allclean:
+	smake clean
+	--delete $(DEST)

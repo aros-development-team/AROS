@@ -1,0 +1,15 @@
+
+Principle of operation:
+
+Public Semaphore 'CDFS':
+    * Alias of (struct CDFS *)
+    * Present while at least one CDFS device is running, or at least one
+      volume is still in the DOS Volume list.
+
+On inital call to the CDFS handler, CDFS will search for a 
+semaphore named 'CDFS'. If not present, it will create one.
+
+A new CDFSDevice is then created, and a BCache on that device is opened.
+
+When the handler exits, if there are no volumes with outstanding locks,
+the CDFS semaphore is disposed of.

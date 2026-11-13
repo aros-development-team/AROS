@@ -1,0 +1,97 @@
+/*
+    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
+
+    Desc:
+*/
+#define USE_BOOPSI_STUBS
+#include <proto/utility.h>
+#include <proto/intuition.h>
+#include <clib/boopsistubs.h>
+#include "datatypes_intern.h"
+
+/*****************************************************************************
+
+    NAME */
+#include <proto/datatypes.h>
+
+        AROS_LH2(ULONG, GetDTAttrsA,
+
+/*  SYNOPSIS */
+        AROS_LHA(Object         *, o    , A0),
+        AROS_LHA(struct TagItem *, attrs, A2),
+
+/*  LOCATION */
+        struct Library *, DataTypesBase, 11, DataTypes)
+
+/*  FUNCTION
+
+    Get the attributes of a specific data type object.
+
+    INPUTS
+
+    o      --  pointer to a data type object; may be NULL
+    attrs  --  the attributes to get terminated with TAG_DONE; each Tag's
+               data element should contain the address of the respective
+               storage element; may be NULL
+               
+               <base attribs>
+               
+               DTA_DataType (#1)
+               DTA_ObjName
+               DTA_ObjAuthor
+               DTA_ObjAnnotation
+               DTA_ObjCopyright
+               DTA_ObjVersion
+               DTA_ObjectID
+
+    RESULT
+
+    The number of attributes obtained.
+
+    NOTES
+
+    (#1) - On AROS, the "DataType" an object returns may be a clone of
+           the real entry, so that the subclass can override
+           subformat information.
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    SetDTAttrsA(), intuition.library/GetAttr()
+
+    INTERNALS
+
+    HISTORY
+
+*****************************************************************************/
+{
+    AROS_LIBFUNC_INIT
+
+    ULONG                 result = 0;
+    struct TagItem       *tstate = attrs;
+    struct TagItem       *tag;
+    struct opGet          opGet;
+
+    if(o == NULL || attrs == NULL)
+        return 0;
+   
+    opGet.MethodID = OM_GET;
+   
+    while ((tag = NextTagItem(&tstate)) != NULL)
+    {
+        opGet.opg_AttrID  = tag->ti_Tag;
+        opGet.opg_Storage = (IPTR *)tag->ti_Data;
+        
+        if(DoMethodA(o, (Msg)&opGet))
+            result++;
+        else
+            *(opGet.opg_Storage) = 0;
+    }
+
+    return(result);
+
+    AROS_LIBFUNC_EXIT
+} /* GetDTAttrsA */

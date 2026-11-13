@@ -1,0 +1,35 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+#
+# Rule to create AROS for PReP powerpc
+#   
+
+#MM- AROS-prep-ppc : AROS-ppc general-setup-prep-ppc kernel-prep-ppc
+
+#MM- general-setup-prep-ppc: setup-ppc includes
+
+#MM- setup-ppc: setup-prep-ppc
+
+#MM- kernel-prep-ppc : 			\
+#MM	kernel-bootstrap-prep-ppc	\
+#MM	kernel-resource-prep-ppc	\
+#MM	kernel-ppc			\
+#MM	kernel-link-prep-ppc
+
+## #MM- kernel-ppc :		\
+## #MM	kernel-exec-linklib
+
+#
+# Setup
+#
+
+#MM create-mf-inc-again
+create-mf-inc-again ::
+	@$(MAKE) -f $(TOP)/config/mmakefile setup
+
+#MM
+clean ::
+	-$(RM) $(TESTS)
+
+%common

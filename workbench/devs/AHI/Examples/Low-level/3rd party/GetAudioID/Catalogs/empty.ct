@@ -1,0 +1,61 @@
+## version 
+## language 
+## codeset 0
+;
+;INFORMATION:
+;
+;Catalog description file for GetAudioID
+;
+;
+; (C) Copyright Tomi Blinnikka 1996
+;
+;
+;
+;HELP & EXPLANATIONS:
+;
+; (//)		= Next free ID, No minimum length, No maximum length
+;
+; (/1/1)	= Next free ID, min. length = 1, max. length = 1
+;
+;
+;
+;
+;START OF STRINGS:
+;
+;Strings, error & other info
+;
+;Keep the lengths of these short. They are used for the window title and
+;gadget texts
+;
+AHIReqTitle1
+
+;Please select audio mode:
+;
+PositiveText2
+
+;OK
+;
+NegativeText2
+
+;Cancel
+;
+;
+;Strings, error etc.
+;Error texts should be under 60 according to dos.i
+;
+NoAHIText1
+
+;ERROR: Couldn't open ahi.device.\r\n
+;
+NoIconText1
+
+;ERROR: Couldn't open icon.library.\r\n
+;
+NoAHIReqText1
+
+;ERROR: Couldn't open allocate audio mode requester.\r\n
+;
+BadFormatText1
+
+;ERROR: Invalid formatting string.\r\n
+;

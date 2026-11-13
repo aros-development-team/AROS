@@ -1,0 +1,26 @@
+# 
+#  Copyright (C) 2013, The AROS Development Team
+#  All right reserved.
+#  Author: Jason S. McMullan <jason.mcmullan@gmail.com>
+# 
+#  Licensed under the AROS PUBLIC LICENSE (APL) Version 1.1
+# 
+include $(SRCDIR)/config/aros.cfg
+
+EXEDIR := $(AROS_TESTS)/objc
+
+# gcc 4.6.2 can't build arm Objective C support without
+# a compiler error.
+#MM- test : test-$(OBJC_TARGET)-$(CPU)
+#MM- test-objc-i386 : test-objc
+#MM- test-objc-x86_64 : test-objc
+#MM- test-objc-ppc : test-objc
+##MM- test-quick : test-objc-quick
+
+#MM- test-objc: test-objc-hello
+#MM- test-objc-quick: test-objc-hello-quick
+
+%build_prog mmake=test-objc-hello progname=hello \
+    files= objcfiles=hello targetdir=$(EXEDIR)
+
+%common

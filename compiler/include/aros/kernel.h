@@ -1,0 +1,153 @@
+#ifndef AROS_KERNEL_H
+#define AROS_KERNEL_H
+
+/*
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
+    $Id$
+
+    Desc: TagItems for the kernel.resource
+    Lang: english
+*/
+
+#ifndef AROS_MACROS_H
+#include <aros/macros.h>
+#endif
+#ifndef UTILITY_TAGITEM_H
+#include <utility/tagitem.h>
+#endif
+#ifndef DOS_BPTR_H
+#include <dos/bptr.h>
+#endif
+
+/* Type of scheduler. See KrnGetScheduler()/KrnSetScheduler() functions. */
+typedef enum
+{
+    SCHED_RR = 1	/* Old good round robin scheduler */
+} KRN_SchedType;
+
+/* Flags for KrnMapGlobal */
+typedef enum
+{
+	MAP_CacheInhibit 	= 0x0001,
+	MAP_WriteThrough	= 0x0002,
+	MAP_Guarded 		= 0x0004,
+	MAP_WriteCombine	= 0x0008,	/* write-combining, not with MAP_CacheInhibit */
+
+	MAP_Readable		= 0x0100,
+	MAP_Writable		= 0x0200,
+	MAP_Executable		= 0x0400,
+	MAP_Supervisor		= 0x0800
+} KRN_MapAttr;
+
+/* Tags for kernel boot message */
+#define KRN_Dummy               (TAG_USER + 0x03d00000)
+#define KRN_KernelBase          (KRN_Dummy + 1)	 /* Kickstart base address (start of code section)	*/
+#define KRN_KernelLowest        (KRN_Dummy + 2)	 /* Lowest kickstart address 				*/
+#define KRN_KernelHighest       (KRN_Dummy + 3)	 /* Highest kickstart address			  	*/
+#define KRN_KernelBss           (KRN_Dummy + 4)	 /* (struct KernelBSS *) - BSS sections list	  	*/
+#define KRN_GDT                 (KRN_Dummy + 5)	 /* Boot-time GDT address (x86-specific)	  	*/
+#define KRN_IDT                 (KRN_Dummy + 6)	 /* Boot-time IDT address (x86-specific)	  	*/
+#define KRN_PL4                 (KRN_Dummy + 7)	 /* Base address of MMU control data		  	*/
+#define KRN_VBEModeInfo         (KRN_Dummy + 8)	 /* VBE mode information structure			*/
+#define KRN_VBEControllerInfo   (KRN_Dummy + 9)  /* VBE controller information structure		*/
+#define KRN_MMAPAddress         (KRN_Dummy + 10) /* Address of memory map in multiboot format		*/
+#define KRN_MMAPLength          (KRN_Dummy + 11) /* Lenght of memory map				*/
+#define KRN_CmdLine             (KRN_Dummy + 12) /* Address of command line arguments			*/
+#define KRN_ProtAreaStart       (KRN_Dummy + 13) /* Start address of preallocated area			*/
+#define KRN_ProtAreaEnd         (KRN_Dummy + 14) /* End address of preallocated area			*/
+#define KRN_VBEMode             (KRN_Dummy + 15) /* Current VBE mode number				*/
+#define KRN_VBEPaletteWidth     (KRN_Dummy + 16) /* Current VBE palette width				*/
+#define KRN_MEMLower         	(KRN_Dummy + 17) /* Amount of low memory in bytes (PC-specific)		*/
+#define KRN_MEMUpper          	(KRN_Dummy + 18) /* Amount of upper memory in bytes (PC-specific)	*/
+#define KRN_OpenFirmwareTree	(KRN_Dummy + 19) /* Pointer to OpenFirmware device tree structure	*/
+#define KRN_HostInterface	(KRN_Dummy + 20) /* Pointer to host OS interface structure (hosted)	*/
+#define KRN_DebugInfo		(KRN_Dummy + 21) /* Kicksrart debug information, see debug.library	*/
+#define KRN_BootLoader          (KRN_Dummy + 22) /* Pointer to bootloader name string			*/
+#define KRN_EFISystemTable	(KRN_Dummy + 23) /* Pointer to EFI system table				*/
+#define KRN_KernelStackBase     (KRN_Dummy + 26) /* Kickstart Boot Task stack base address */
+#define KRN_KernelStackSize     (KRN_Dummy + 27) /* Kickstart Boot Task stack size */
+#define KRN_VMEMLower           (KRN_Dummy + 28) /* Lowest address of framebuffer, e.g. on embedded systems */
+#define KRN_VMEMUpper           (KRN_Dummy + 29) /* Highest address of framebuffer, e.g. on embedded systems */
+#define KRN_KernelPhysLowest    (KRN_Dummy + 30) /* Lowest *PHYSICAL* address occupied by Kernel */
+#define KRN_Platform            (KRN_Dummy + 31) /* Arch specifc platform ID provided */
+#define KRN_FlattenedDeviceTree (KRN_Dummy + 32) /* Flattened device tree as used e.g. by linux kernels */
+#define KRN_FBAddr              (KRN_Dummy + 33) /* 64-bit framebuffer base address (GOP/MB2/VideoCore)	*/
+#define KRN_FrameBufferWidth    (KRN_Dummy + 34) /* Framebuffer width in pixels			*/
+#define KRN_FrameBufferHeight   (KRN_Dummy + 35) /* Framebuffer height in pixels			*/
+#define KRN_FrameBufferDepth    (KRN_Dummy + 36) /* Framebuffer bits per pixel			*/
+#define KRN_FrameBufferPitch    (KRN_Dummy + 37) /* Framebuffer bytes per line			*/
+#define KRN_PeripheralBase      (KRN_Dummy + 38) /* SoC peripheral IO physical base address */
+#define KRN_DebugUartBase       (KRN_Dummy + 39) /* CPU address of the boot debug UART */
+/*
+ * KRN_MEMLower/KRN_MEMUpper may appear more than once, one pair per physical
+ * memory range the bootstrap found, lower first. The first pair describes the
+ * range the kernel itself was loaded into.
+ */
+#define KRN_MAXMEMRANGES        8
+
+/* Magic value passed by the bootstrap as second parameter */
+#define AROS_BOOT_MAGIC AROS_MAKE_ID('A', 'R', 'O', 'S')
+
+/* BSS segments descriptor */
+struct KernelBSS
+{
+    void *addr;
+    IPTR len;
+};
+
+/* Exception and IRQ handler types */
+typedef int (*exhandler_t)(void *ctx, void *data, void *data2);
+typedef void (*irqhandler_t)(void *data, void *data2);
+
+/* System attributes */
+#define KATTR_Architecture	(TAG_USER + 0x03F00000) /* [.G] (char *)  - Name of architecture, like "i386-pc"                        */
+#define KATTR_PeripheralBase	(TAG_USER + 0x03F00001) /* [.G] (IPTR)    - SoC Peripheral IO base address (on relevant hardware)       */
+#define KATTR_AffinityMask	(TAG_USER + 0x03F00002) /* [.G] (IPTR)    - */
+#define KATTR_SystemLoad        (TAG_USER + 0x03F00003)
+/*
+ * KATTR_CPULoad names the attribute for KrnGetCPUAttr(), which takes
+ * the CPU number as its own argument. The KATTR_CPULoad + n range for
+ * KrnGetSystemAttr() is the legacy form, capped at 32 CPUs - new code
+ * should use KrnGetCPUAttr().
+ */
+#define KATTR_CPULoad           (TAG_USER + 0x03F00004)
+#define KATTR_CPULoad_END       (KATTR_CPULoad + 32)
+#define KATTR_ClockSource	(KATTR_CPULoad_END + 1) /* [.G] (APTR)    - Kernel ClockSource resource                                  */
+#define KATTR_CPUFrequencyKHz   (KATTR_ClockSource + 1) /* [.G] (IPTR)    - Current core clock in kHz, per CPU via KrnGetCPUAttr()       */
+#define KATTR_FrameBuffer       (KATTR_CPULoad_END + 3) /* [.G] (APTR)    - Linear framebuffer base address (embedded targets)          */
+#define KATTR_FrameBufferWidth  (KATTR_CPULoad_END + 4) /* [.G] (IPTR)    - Framebuffer width in pixels                                 */
+#define KATTR_FrameBufferHeight (KATTR_CPULoad_END + 5) /* [.G] (IPTR)    - Framebuffer height in pixels                                */
+#define KATTR_FrameBufferDepth  (KATTR_CPULoad_END + 6) /* [.G] (IPTR)    - Framebuffer bits per pixel                                  */
+#define KATTR_FrameBufferPitch  (KATTR_CPULoad_END + 7) /* [.G] (IPTR)    - Framebuffer bytes per line                                  */
+#define KATTR_PlatformTimer     (KATTR_CPULoad_END + 8) /* [.G] (APTR)    - Kernel tick timer shared with timer.device (platform specific) */
+#define KATTR_CPUHardwareID     (KATTR_CPULoad_END + 9) /* [.G] (IPTR)    - Hardware id of a CPU (e.g. RISC-V hart id), per CPU via KrnGetCPUAttr() */
+
+/* Tag IDs for KrnStatMemory() */
+#define KMS_Free		(TAG_USER + 0x04000000)
+#define KMS_Total		(TAG_USER + 0x04000001)
+#define KMS_LargestAlloc	(TAG_USER + 0x04000002)
+#define KMS_SmallestAlloc	(TAG_USER + 0x04000003)
+#define KMS_LargestFree		(TAG_USER + 0x04000004)
+#define KMS_SmallestFree	(TAG_USER + 0x04000005)
+#define KMS_NumAlloc		(TAG_USER + 0x04000006)
+#define KMS_NumFree		(TAG_USER + 0x04000007)
+#define KMS_PageSize		(TAG_USER + 0x04000008)
+
+/* Public symbol info returned by resolver */
+struct KrnSymInfo
+{
+    STRPTR      mod_name;       /* May be NULL */
+    STRPTR      seg_name;       /* May be NULL */
+    STRPTR      sym_name;       /* May be NULL */
+    APTR        seg_start;      /* May be NULL */
+    APTR        seg_end;        /* May be NULL */
+    APTR        sym_start;      /* May be NULL */
+    APTR        sym_end;        /* May be NULL */
+    BPTR        seg_bptr;       /* Optional */
+    ULONG       seg_num;        /* Optional */
+};
+
+/* Single-address resolver callback type (must be trap-safe, non-blocking). */
+typedef LONG (*KrnSymResolver_t)(APTR priv, APTR addr, struct KrnSymInfo *out);
+
+#endif /* AROS_KERNEL_H */

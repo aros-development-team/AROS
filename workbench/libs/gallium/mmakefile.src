@@ -1,0 +1,40 @@
+#
+
+include $(SRCDIR)/config/aros.cfg
+include $(SRCDIR)/workbench/libs/mesa/mesa.cfg
+
+GALLIUM_PATH = $(top_srcdir)/src/gallium
+
+#MM workbench-libs-gallium : includes hidd-gallium linklibs-surfacetrack
+
+USER_INCLUDES += \
+            -I$(AROS_INCLUDES)/gallium \
+            -iquote $(top_builddir)/src \
+            -iquote $(GALLIUM_PATH)/include \
+            -iquote $(GALLIUM_PATH)/auxiliary
+#USER_CPPFLAGS +=-DDEBUG=1
+
+LIB_GALLIUM_SOURCES = \
+            gallium_init \
+            gallium_debugdescribe \
+            createpipe \
+            destroypipe \
+            createpipescreen \
+            destroypipescreen \
+            bltpiperesourcerastport \
+            scanoutframebuffer
+
+##MM- core-linklibs : linklibs-gallium
+
+%build_module mmake=workbench-libs-gallium \
+   modname=gallium modtype=library \
+   libdir=$(top_libdir) linklibname=gallium \
+   files="$(LIB_GALLIUM_SOURCES)" \
+   uselibs="surfacetrack stdc"
+
+INCLUDE_FILES := $(call WILDCARD, include/*.h)
+
+#MM includes-copy
+%copy_includes path=gallium dir=include
+
+%common

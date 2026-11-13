@@ -1,0 +1,8 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM kernel-rtas-chrp-ppc: kernel-openfirmware includes
+
+%build_module mmake=kernel-rtas-chrp-ppc 	\
+  modname=rtas modtype=resource		\
+  files="rtas_init"

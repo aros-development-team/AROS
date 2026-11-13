@@ -1,0 +1,16 @@
+# Copyright (C) 2003, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+
+FILES  := newobject domethod
+EXEDIR := $(AROS_TESTS)/benchmarks/boopsi
+
+#MM- test-benchmarks : test-benchmarks-boopsi
+#MM- test-benchmarks-quick : test-benchmarks-boopsi-quick
+
+#MM test-benchmarks-boopsi : includes linklibs 
+
+%build_progs mmake=test-benchmarks-boopsi \
+    files=$(FILES) targetdir=$(EXEDIR)
+
+%common

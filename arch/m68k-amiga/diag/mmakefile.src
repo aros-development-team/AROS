@@ -1,0 +1,10 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+USER_CPPFLAGS := -DADATE="\"$(shell date '+%d.%m.%Y')\""
+
+%build_module_simple mmake=kernel-diag \
+  modname=diag modtype=hook \
+  files="diag resident_end" compiler=target
+
+%common

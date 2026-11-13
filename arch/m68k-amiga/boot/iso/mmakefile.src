@@ -1,0 +1,122 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+TARGET_ISO := $(DISTDIR)/aros$(AROS_TARGET_SUFFIX)-amiga-m68k.iso
+DEVEL_ISO  := $(DISTDIR)/aros$(AROS_TARGET_SUFFIX)-amiga-m68k-devel.iso
+
+.PHONY: $(TARGET_ISO) $(DEVEL_ISO)
+
+#MM bootiso-amiga-m68k : \
+#MM                              bootiso-native \
+#MM                              kernel-aros \
+#MM                              kernel-oop  \
+#MM                              kernel-package-amiga-m68k \
+#MM                              kernel-bootstrap-amiga-m68k \
+#MM                              kernel-fs-xtra  \
+#MM                              AROS-amiga-m68k-drivers \
+#MM                              bootdisk-amiga-m68k-gen
+
+#MM deviso-amiga-m68k : \
+#MM                              bootiso-native \
+#MM                              kernel-aros \
+#MM                              kernel-oop  \
+#MM                              kernel-package-amiga-m68k \
+#MM                              kernel-bootstrap-amiga-m68k \
+#MM                              AROS-amiga-m68k-drivers \
+#MM                              bootdisk-amiga-m68k-gen
+
+#MM- bootiso-amiga-m68k : workbench-backdrop
+#MM- deviso-amiga-m68k : workbench-backdrop
+
+TAR ?= tar
+Q ?= @
+#QE2H ?= -v
+
+
+$(AROSDIR)/Emergency-Boot.adf: $(GENDIR)/boot/bootdisk-amiga-m68k.adf
+		@$(CP) $< $@
+
+$(AROSDIR)/Sources: FORCE $(AROSDIR)/Sources.info $(AROSDIR)/Sources/README.txt.info
+	$(Q)$(MKDIR) $(AROSDIR)/Sources
+	$(Q)$(CP) -a $(SRCDIR)/arch/m68k-amiga/doc/. $(AROSDIR)/Sources/.
+	$(Q)$(TAR) -C $(SRCDIR) --exclude=.svn --exclude=linux-x86_64 --exclude=amiga-m68k -czf $(AROSDIR)/Sources/AROS.tar.$(AROS_PACKAGE_FMT) .
+	$(Q)(cd $(AROSDIR)/Sources; ./build-toolchain.sh --fetch-only)
+
+$(AROSDIR)/Sources.info: Sources.info.src Sources.png
+	@$(MKDIR) $(AROSDIR)/Sources
+	@$(ILBMTOICON) $^ $@
+
+$(AROSDIR)/Sources/README.txt.info: Sources-README.txt.info.src \
+		         Sources-README.txt.png
+	@$(MKDIR) $(AROSDIR)/Sources
+	@$(ILBMTOICON) $^ $@
+
+$(AROSDIR)/README.txt.info: README.txt.info.src \
+		            README.txt.png
+	@$(MKDIR) $(AROSDIR)
+	@$(ILBMTOICON) $^ $@
+
+$(AROSDIR)/README.txt: README.txt
+	@$(MKDIR) $(AROSDIR)
+	@$(CP) $^ $@
+
+#MM
+bootiso-amiga-m68k: $(TARGET_ISO)
+
+#MM
+bootiso-amiga-m68k-quick: $(TARGET_ISO)
+
+#MM
+deviso-amiga-m68k: $(DEVEL_ISO)
+
+#MM
+deviso-amiga-m68k-quick: $(DEVEL_ISO)
+
+.PHONY: bootiso-amiga-m68k-quick deviso-amiga-m68k-quick
+
+$(warning LANG = $(LANG))
+
+$(TARGET_ISO): $(AROSDIR)/Emergency-Boot.adf \
+		$(AROSDIR)/README.txt.info  \
+		$(AROSDIR)/README.txt
+	%mkdirs_q $(AROSDIR)/S
+	@$(MKDIR) -p "$(DISTDIR)"
+	@$(MKDIR) -p "$(AROSDIR).HUNK"
+	@$(ECHO) "Converting $(subst $(TARGETDIR)/,,$(AROSDIR)) -> $(subst $(TARGETDIR)/,,$(AROSDIR).HUNK)"
+	@$(ELF2HUNK) $(QE2H) "$(AROSDIR)" "$(AROSDIR).HUNK"
+	%prune_kickstart_modules dir="$(AROSDIR).HUNK"
+	@$(RM) -rf "$(AROSDIR).HUNK/Sources"*
+	@$(RM) -rf "$(AROSDIR).HUNK/$(AROS_DIR_BOOTARCH)/aros.elf"
+	@$(CP) "$(AROSDIR)/Emergency-Boot/$(AROS_DIR_BOOTARCH)/aros.rom.$(AROS_PACKAGE_FMT)" "$(AROSDIR).HUNK/$(AROS_DIR_BOOTARCH)"
+	@$(CP) $(SRCDIR)/arch/m68k-amiga/boot/iso/Wanderer-global.prefs "$(AROSDIR).HUNK/Prefs/Env-Archive/SYS/Wanderer/global.prefs"
+	@mkisofs -f \
+		-o $@ \
+		-allow-leading-dots \
+		-iso-level 4 \
+                -V "AROS Live CD" \
+                -publisher "The AROS Dev Team" \
+		-p "The AROS Dev Team (www.aros.org)" \
+		-sysid "AROS-$(AROS_TARGET_CPU)-$(AROS_TARGET_ARCH)" \
+                -l -J -r \
+		"$(AROSDIR).HUNK"
+
+$(DEVEL_ISO):   $(AROSDIR)/Emergency-Boot.adf \
+		$(AROSDIR)/Sources \
+		$(AROSDIR)/README.txt.info  \
+		$(AROSDIR)/README.txt
+	@$(CP) $(SRCDIR)/arch/m68k-amiga/boot/iso/Wanderer-global.prefs $(AROSDIR).iso/Prefs/Env-Archive/SYS/Wanderer/global.prefs
+	@mkisofs -f \
+		-o $@ \
+		-allow-leading-dots \
+		-iso-level 4 \
+                -V "AROS Development CD" \
+                -publisher "The AROS Dev Team" \
+		-p "The AROS Dev Team (www.aros.org)" \
+		-sysid "AROS-$(AROS_TARGET_CPU)-$(AROS_TARGET_ARCH)" \
+                -l -J -r \
+		"$(AROSDIR)"
+
+
+FORCE:
+
+%common

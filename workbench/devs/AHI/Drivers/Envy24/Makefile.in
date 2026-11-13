@@ -1,0 +1,15 @@
+#  $Id $
+#
+#  Makefile.in for Envy24 AHI driver
+#
+
+VPATH		= @srcdir@
+srcdir		= @srcdir@
+
+DRIVER		= envy24.audio
+MODEFILE	= ENVY24
+
+OBJECTS		= driver-init.o main.o accel.o misc.o interrupt.o\
+ ak_codec.o pci_wrapper.o I2C.o Phase88.o
+
+include ../Common/Makefile.common

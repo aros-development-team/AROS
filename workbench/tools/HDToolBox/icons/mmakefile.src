@@ -1,0 +1,9 @@
+# Copyright (C) 2004-2011, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+
+ICONS := def_Mountlist
+
+#MM- iconset-Gorilla-icons-aros-prefs-envarc : iconset-Gorilla-icons-aros-prefs-envarc-mountlist
+%build_icons mmake=iconset-Gorilla-icons-aros-prefs-envarc-mountlist icons=$(ICONS) \
+             dir=$(AROS_ENVARC)/SYS

@@ -1,0 +1,121 @@
+# Copyright (C) 2003-2026, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+
+DTDIR 		:= $(AROS_DEVS)/DataTypes
+DTSTORAGEDIR 	:= $(AROS_STORAGE)/DataTypes
+
+BASEAUDIODESCRIPTORS  := 8SVX AIFF
+BASEPICDESCRIPTORS    := ILBM PNG BMP GIF JPEG
+BASEANIMDESCRIPTORS   := ANIM
+BASEMOVIEDESCRIPTORS   := CDXL
+BASEBINARYDESCRIPTORS := ELF A68K
+BASEMISCDESCRIPTORS   := FTXT AmigaGuide
+
+AUDIODESCRIPTORS  := \
+			 AAC AACM2 ADIF \
+			 M4A \
+			 AMR \
+			 FLAC \
+			 M3U MID MP1 MP3 \
+			 OGG RM WAVE WMA
+PICDESCRIPTORS    := \
+			 AVIF \
+			 Degas \
+			 GEMImage \
+			 HEIC \
+			 JXL JXLBox \
+			 Lunapaint \
+			 PCX \
+			 SVG \
+			 Targa TIFF \
+			 WebP
+ANIMDESCRIPTORS   := \
+			 MPEGVideo
+MOVIEDESCRIPTORS   := \
+			 AVI \
+			 FLV \
+			 MOV MP4 \
+			 VOB \
+			 WebM WMV
+BINARYDESCRIPTORS := \
+			 ELF_EXE ELF64_EXE ELF64_EXE_BE ELF_EXE_BE ELF_EXE_Linux
+ARCHIVEDESCRIPTORS   := \
+			 LHA \
+			 ZIP
+FSDESCRIPTORS   := \
+			 FAT \
+			 KickROM KickDisk \
+			 PFS \
+			 SFS
+MISCDESCRIPTORS   := \
+			 ADF AmigaGuideNode AmigaGuideMOS AmiLua \
+		     Archive ASF AudioMode \
+			 CAT Catalog Country \
+			 DataType DT64 \
+			 Bitmap_Font \
+			 Outline_Font \
+			 HTML \
+			 LIST Lua \
+			 AACID3 \
+			 MP3ID3 MSD MSI \
+		     Otag \
+			 PDF PLS \
+			 PNMP1 PNMP2 PNMP3 PNMP4 PNMP5 PNMP6 \
+			 PostScript PREF Python \
+			 REXX \
+			 Trashcan TrueType \
+			 WinURL \
+			 XM
+
+FILES             := $(BASEAUDIODESCRIPTORS) \
+                     $(BASEPICDESCRIPTORS) \
+                     $(BASEANIMDESCRIPTORS) \
+                     $(BASEMOVIEDESCRIPTORS) \
+                     $(BASEBINARYDESCRIPTORS) \
+                     $(BASEMISCDESCRIPTORS)
+
+ifneq ($(AROS_PREFS_SET),classic)
+FILES += $(AUDIODESCRIPTORS) \
+                     $(PICDESCRIPTORS) \
+                     $(ANIMDESCRIPTORS) \
+                     $(MOVIEDESCRIPTORS) \
+                     $(BINARYDESCRIPTORS) \
+                     $(ARCHIVEDESCRIPTORS) \
+                     $(FSDESCRIPTORS) \
+                     $(MISCDESCRIPTORS)
+else
+STORAGEFILES = $(AUDIODESCRIPTORS) \
+                     $(PICDESCRIPTORS) \
+                     $(ANIMDESCRIPTORS) \
+                     $(MOVIEDESCRIPTORS) \
+                     $(BINARYDESCRIPTORS) \
+                     $(ARCHIVEDESCRIPTORS) \
+                     $(FSDESCRIPTORS) \
+                     $(MISCDESCRIPTORS)
+endif
+
+DTFILES		:= $(foreach f, $(FILES), $(DTDIR)/$(f))
+DTSTORAGEFILES	:= $(foreach f, $(STORAGEFILES), $(DTSTORAGEDIR)/$(f))
+
+#MM- workbench-devs-complete : workbench-devs-datatypes
+#MM workbench-devs-datatypes : workbench-devs-datatypes-setup
+
+#MM
+workbench-devs-datatypes : $(DTFILES) $(DTSTORAGEFILES)
+
+#MM
+workbench-devs-datatypes-quick : workbench-devs-datatypes
+
+#MM workbench-devs-datatypes-setup :
+%rule_makedirs dirs="$(DTDIR) $(DTSTORAGEDIR)" setuptarget=workbench-devs-datatypes-setup
+
+$(DTDIR)/% : $(SRCDIR)/$(CURDIR)/%.dtd $(CREATEDTDESC)
+	$(Q)$(ECHO) "Generating  $(if $(filter /%,$@),$(if $(filter $(SRCDIR)/%,$(abspath $@)),$(patsubst $(SRCDIR)/%,%,$(abspath $@)),$(patsubst $(TOP)/%,%,$(abspath $@))),$(patsubst $(SRCDIR)/%,%,$(abspath $(SRCDIR)/$(CURDIR)/$@)))"
+	$(Q)cd $(DTDIR) && $(CREATEDTDESC) $<
+
+$(DTSTORAGEDIR)/% : $(SRCDIR)/$(CURDIR)/%.dtd $(CREATEDTDESC)
+	$(Q)$(ECHO) "Generating $(if $(filter /%,$@),$(if $(filter $(SRCDIR)/%,$(abspath $@)),$(patsubst $(SRCDIR)/%,%,$(abspath $@)),$(patsubst $(TOP)/%,%,$(abspath $@))),$(patsubst $(SRCDIR)/%,%,$(abspath $(SRCDIR)/$(CURDIR)/$@)))"
+	$(Q)cd $(DTSTORAGEDIR) && $(CREATEDTDESC) $<
+
+%common

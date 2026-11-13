@@ -1,0 +1,7 @@
+# Copyright (C) 2003, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM- workbench-locale-help : workbench-locale-help-english
+
+%copy_files_q mmake=workbench-locale-help-english files=LICENSE src=$(SRCDIR) dst=$(AROS_HELP)/English

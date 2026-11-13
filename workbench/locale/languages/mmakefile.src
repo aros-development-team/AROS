@@ -1,0 +1,27 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+LANGUAGES := $(basename $(call WILDCARD, *.c))
+
+MODDIR  := $(AROS_LOCALE)/Languages
+OBJDIR  := $(GENDIR)/$(CURDIR)
+MODULES := $(addprefix $(MODDIR)/,$(addsuffix .language,$(LANGUAGES)))
+OBJS    := $(addprefix $(OBJDIR)/,$(addsuffix .o,$(LANGUAGES)))
+DEPS    := $(addprefix $(OBJDIR)/,$(addsuffix .d,$(LANGUAGES)))
+
+#MM- workbench-locale : workbench-locale-languages
+#MM workbench-locale-languages : includes linklibs
+
+workbench-locale-languages : $(MODULES)
+
+$(MODULES) : | $(MODDIR)
+$(MODDIR)/%.language : $(OBJDIR)/%.o
+	%link_module_q err="$(notdir $(basename $<)).err" objs=$< module="$(notdir $@)"
+
+%rule_compile_multi basenames=$(LANGUAGES) targetdir=$(OBJDIR)
+
+%include_deps deps=$(DEPS)
+
+$(OBJS) $(DEPS) : | $(OBJDIR)
+
+%rule_makedirs dirs="$(OBJDIR) $(MODDIR)"

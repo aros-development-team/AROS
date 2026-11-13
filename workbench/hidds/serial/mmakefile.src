@@ -1,0 +1,23 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+MODNAME	:=  serial
+MODTYPE	:=  hidd
+
+USER_INCLUDES := -I$(SRCDIR)/$(CURDIR)
+
+FILES       :=
+STUBS	    := $(MODNAME)_stubs
+
+INCLUDE_FILES := $(call WILDCARD, include/*.h)
+
+# When there is actually a hidd.serial class for here, generate the whole
+# lot.
+
+%make_hidd_stubs hidd=serial
+
+#MM includes-copy
+%copy_includes path=hidd dir=include
+
+%include_deps
+%common

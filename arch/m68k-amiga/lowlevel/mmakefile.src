@@ -1,0 +1,23 @@
+
+include $(SRCDIR)/config/aros.cfg
+include $(SRCDIR)/$(CURDIR)/make.opts
+
+FILES := \
+	addtimerint \
+	readjoyport \
+	remtimerint \
+	setjoyportattrsa \
+	starttimerint \
+	stoptimerint \
+	lowlevel_amiga
+
+USER_INCLUDES += -I$(SRCDIR)/workbench/libs/lowlevel -I$(SRCDIR)/$(CURDIR)/../cia
+
+#MM- workbench-libs-lowlevel-amiga-m68k: kernel-potgo-includes
+
+%build_archspecific \
+  mainmmake=workbench-libs-lowlevel modname=lowlevel maindir=workbench/libs/lowlevel \
+  arch=amiga-m68k \
+  files="$(FILES)"
+
+%common

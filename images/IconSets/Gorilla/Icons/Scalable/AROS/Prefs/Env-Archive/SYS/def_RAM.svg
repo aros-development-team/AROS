@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 20010904//EN"
+"http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd">
+<!-- Created with Sodipodi ("http://www.sodipodi.com/") -->
+<svg
+   width="59.1pt"
+   height="34.1pt"
+   viewBox="0 0 59.1 34.1"
+   xml:space="preserve"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:xml="http://www.w3.org/XML/1998/namespace"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:xlink="http://www.w3.org/1999/xlink"
+   id="svg548"
+   sodipodi:version="0.32"
+   sodipodi:docname="/home/adam/Projekt/AROS/images/Gorilla/Icons/AROS/def_RAM.svg"
+   sodipodi:docbase="/home/adam/Projekt/AROS/images/Gorilla/Icons/AROS/">
+  <defs
+     id="defs581">
+    <linearGradient
+       id="aigrd1"
+       gradientUnits="userSpaceOnUse"
+       x1="3.2344"
+       y1="12.8438"
+       x2="45.2803"
+       y2="12.8438"
+       gradientTransform="matrix(0.997 7.730000e-002 -7.730000e-002 0.997 0.4889 -3.5008)">
+      <stop
+         offset="0"
+         style="stop-color:#676767"
+         id="stop553" />
+      <stop
+         offset="1"
+         style="stop-color:#7F7F7F"
+         id="stop554" />
+    </linearGradient>
+    <linearGradient
+       id="aigrd2"
+       gradientUnits="userSpaceOnUse"
+       x1="4.9238"
+       y1="22.3906"
+       x2="26.8436"
+       y2="23.9694"
+       gradientTransform="matrix(0.997 7.730000e-002 -7.730000e-002 0.997 0.4889 -3.5008)">
+      <stop
+         offset="0"
+         style="stop-color:#B3B3B3"
+         id="stop557" />
+      <stop
+         offset="1"
+         style="stop-color:#797979"
+         id="stop558" />
+    </linearGradient>
+    <linearGradient
+       id="aigrd3"
+       gradientUnits="userSpaceOnUse"
+       x1="31.1406"
+       y1="26.2764"
+       x2="44.6592"
+       y2="10.3614"
+       gradientTransform="matrix(0.997 7.730000e-002 -7.730000e-002 0.997 0.4889 -3.5008)">
+      <stop
+         offset="0"
+         style="stop-color:#5F5F5F"
+         id="stop561" />
+      <stop
+         offset="1"
+         style="stop-color:#363636"
+         id="stop562" />
+    </linearGradient>
+  </defs>
+  <sodipodi:namedview
+     id="base" />
+  <g
+     id="g612">
+    <path
+       style="font-size:12;stroke:#000000;"
+       d="M20.4,0.6c-0.9,0.3-17.3,9.8-17.5,9.9c0,0-0.1,0.1-0.1,0.1c-1.4,1-1.8,2.6-1.8,3.5c0,0,0,0.1,0,0.1l0-0.1l0,0.2l0.3,4.1l0-0.1c0,0.1,0,0.1,0,0.2c0,0-0.7,0.4-0.7,0.4L1,24.8l21.3,8.3c0,0-0.1-3.4-0.2-4.7c2.9,1.1,3.5,1.2,3.7,1.3    c0.2,0,0.3,0.1,0.5,0.1l-0.2,0c1.1,0.2,1.9,0.2,2.8-0.4c0.1-0.1,0.2-0.1,0.3-0.2c0.2-0.2,2.8-2.2,4.3-3.3c0.3,0.1,0.3,0.1,0.6,0.2c0,1.3-0.2,7.1-0.2,7.1l15.7-12.2l0.2-6.5c0,0-2.1-0.6-3-0.9c0.1-1.2,0.3-3.3,0.3-3.3c0,0,0-0.1,0-0.2c0-0.1,0-0.3,0-0.4    c0-2-1.6-2.8-2.5-3c-0.1,0-0.2-0.1-0.2-0.1l-3.8-1C35,3.9,24.4,1,23.7,0.8c-1-0.3-2.5-0.5-3.4-0.2z M45.4,10.4h0l0,0l0,0l0,0z M28.5,27.2l0.1,0.1c0,0-0.4,0.2-0.7,0.3c0.3-0.2,0.7-0.4,0.7-0.4z"
+       id="path550" />
+    <path
+       style="font-size:12;opacity:0.25;"
+       d="M58.3,19.8l-5.4-2.3l5.6-2.8c0.4-0.2,0.7-0.7,0.6-1.1c0-0.5-0.4-0.9-0.8-1L43.5,8.4c-0.5-0.1-3.9,2.3-4.2,2.7L28.7,25.8h-6.8c-0.3,0-0.7,0.1-0.9,0.4c-0.2,0.3-0.3,0.6-0.3,0.9l1.6,6L33,30.9c0.4-0.1,0.7-0.4,0.8-0.8s0-0.8-0.2-1.1l-1.1-1.4    l11.2-5.6L34,33l11.2-1.5c0.2,0,0.3-0.1,0.5-0.2l12.8-9.5c0.3-0.2,0.5-0.7,0.5-1.1c0-0.4-0.3-0.8-0.7-0.9z"
+       id="path551" />
+    <path
+       style="font-size:12;fill:url(#aigrd1);"
+       d="M23,1.9c-1-0.3-2.1-0.4-2.6-0.2c-0.5,0.2-16.3,9.2-17.2,9.8c-0.8,0.5-1,1.5,0.1,1.9c1.1,0.4,21.7,7,22.6,7.3s2.3,0.3,2.8-0.1C29.1,20.1,44.5,9.4,44.9,9c0.5-0.4-0.4-1.1-1.2-1.4C43,7.4,24,2.2,23,1.9z"
+       id="path555" />
+    <path
+       style="font-size:12;fill:url(#aigrd2);"
+       d="M1.8,14.2c-0.1-0.8,0.5-1.2,1.1-1c0.5,0.2,22.6,7.5,23.5,8c0.8,0.5,1.3,0.8,1.3,1.4c-0.1,0.7-0.3,4.3-0.4,4.9c0,0.6-0.5,1.2-1.4,1c-2.4-0.6-22.9-8.7-22.9-8.7c-0.7-0.3-0.9-0.6-0.9-1.4l-0.3-4.1z"
+       id="path559" />
+    <path
+       style="font-size:12;fill:url(#aigrd3);"
+       d="M28.2,28.1c-0.4,0.3-1.2-0.1-1.1-0.9c0.1-0.8,0.3-4.2,0.4-4.9c0.1-0.7,0.4-1.3,0.8-1.6c0.5-0.4,15.9-11.1,16.5-11.6s0.9,0.4,0.8,0.9c0,0.5-0.3,3.7-0.3,4.2c0,0.5-0.1,0.8-0.6,1.2c-0.5,0.4-16.2,12.4-16.6,12.7z"
+       id="path563" />
+    <g
+       style="font-size:12;fill:#ffffff;"
+       id="g564">
+      <path
+         d="M26.9,20.5c-1.4-0.1-24-7.7-24.2-7.7c-0.2-0.1,0-0.9,0.5-1.3c-1.5,0.9-1.4,2.6-1.4,2.6s0.2-0.7,0.9-0.9c2.8,1,22.3,7.7,23.1,8c0.8,0.3,1.1,1.2,1.1,2l0.3,4.5l0.5-4.5c0.1-0.7,0.4-2.1,1.2-2.7C29.3,20.3,39.3,13,43,10.3c-3.8,2.7-14.5,10.3-16.2,10.2z"
+         id="path565" />
+      <path
+         d="M43,10.3c0.8-0.6,1.4-1,1.4-1s-0.5,0.4-1.4,1z"
+         id="path566" />
+    </g>
+    <path
+       style="font-size:12;fill:#848484;"
+       d="M28,28.2c-0.5,0.4-0.8,0.5-1.9,0.3c0.7-0.2,1-0.7,1-0.7s0.2,0.5,0.9,0.5z"
+       id="path567" />
+    <path
+       style="font-size:12;fill:#545454;"
+       d="M43.9,7.7c0.9,0.4,1.3,1,0.8,1.4c0.5-0.3,0.8,0.8,0.8,0.8c0.1-0.7,0.1-1.8-1.7-2.3z"
+       id="path568" />
+    <path
+       style="font-size:12;fill:#ccdc96;"
+       d="M23.6,24.4L4.7,17.7l-3.3,1.9l0.4,4.3l19,7.4l-0.2-4.6l3-2.3z"
+       id="path569" />
+    <path
+       style="font-size:12;fill:#ccdc96;"
+       d="M30,23.6l14-9.6l4.3,1.3l-0.1,5L34.9,30.6L35,25l-5-1.4z"
+       id="path570" />
+    <path
+       style="font-size:12;fill:#acbb80;"
+       d="M48.3,15.2L35,25l-0.1,5.5l13.3-10.3l0.1-5z"
+       id="path571" />
+    <path
+       style="font-size:12;fill:#f0f6d4;"
+       d="M23.6,24.4l-3,2.3L1.4,19.5l3.3-1.9l18.9,6.7z"
+       id="path572" />
+  </g>
+</svg>

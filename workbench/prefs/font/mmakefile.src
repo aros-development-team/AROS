@@ -1,0 +1,18 @@
+#
+# Makefile to build Font Prefs program.
+
+include $(SRCDIR)/config/aros.cfg
+
+FILES       := main args prefs locale misc fpeditor
+EXEDIR      := $(AROS_PREFS)
+
+#MM- workbench-prefs : workbench-prefs-font
+#MM workbench-prefs-font : workbench-prefs-font-catalogs
+
+USER_CFLAGS := -DADATE="\"$(shell date '+%d.%m.%Y')\""
+
+%build_prog mmake=workbench-prefs-font \
+    progname=Font targetdir=$(EXEDIR) \
+    files=$(FILES)
+
+%common

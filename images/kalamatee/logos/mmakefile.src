@@ -1,0 +1,9 @@
+include $(SRCDIR)/config/aros.cfg
+
+FILES := install.logo login.logo FloppyWriter.logo
+
+#MM- themes-kalamatee-images : themes-kalamatee-images-logos 
+
+%copy_files_q mmake=themes-kalamatee-images-logos files=$(FILES) dst=$(AROS_IMAGES)/Logos/
+
+%common

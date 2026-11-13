@@ -1,0 +1,56 @@
+include $(SRCDIR)/config/aros.cfg
+
+QE2H ?=
+
+DEPACKERFILES := \
+		depacker_main \
+		depacker_entry \
+		depacker_packed
+
+USER_CPPFLAGS := -D__ASSEMBLY__
+USER_CFLAGS := $(CFLAGS_OMIT_FP) $(CFLAGS_NO_EXCEPTIONS) $(CFLAGS_NO_ASYNCHRONOUS_UNWIND_TABLES) $(CFLAGS_NO_UNWIND_TABLES)
+USER_AFLAGS := $(USER_CFLAGS) -Wa,--register-prefix-optional
+USER_AFLAGS += -Wa,-l -Wa,--bitwise-or -Wa,--base-size-default-16
+USER_AFLAGS += -Wa,--disp-size-default-16 -Wa,--pcrel
+USER_LDFLAGS := -nostdlib -s 
+
+#MM
+inflate-exe-m68k-gendirs:
+	%mkdirs_q dirs="$(GENDIR)/$(CURDIR)/depacker $(TOOLDIR)/pack_exe"
+
+%rule_assemble_multi mmake=inflate-exe-m68k \
+    basenames="$(DEPACKERFILES)" targetdir="$(GENDIR)/$(CURDIR)/depacker"
+
+%rule_link_progs mmake=inflate-exe-m68k progs="$(DEPACKERFILES)" \
+    targetdir="$(GENDIR)/$(CURDIR)" objdir="$(GENDIR)/$(CURDIR)/depacker" \
+    usestartup=no detach=no
+
+inflate-exe-m68k_ELFEXES      := $(addprefix $(GENDIR)/$(CURDIR)/,$(DEPACKERFILES))
+
+$(inflate-exe-m68k_ELFEXES) : $(inflate-exe-m68k-MA_TARGETS)
+
+ELF2HUNK_DEST_FILES := $(addprefix $(TOOLDIR)/pack_exe/,$(DEPACKERFILES))
+$(ELF2HUNK_DEST_FILES) : $(TOOLDIR)/pack_exe/% : $(GENDIR)/$(CURDIR)/% | $(TOOLDIR)/pack_exe
+	%fileactionmsg msg="ELFtoHunk" file="$@"
+	$(Q)$(TARGET_OBJCOPY) --remove-section=.eh_frame $< $<.tmp
+	$(Q)$(ELF2HUNK) $(QE2H) $<.tmp $@
+
+#MM
+ inflate-exe-m68k : inflate-exe-m68k-gendirs $(ELF2HUNK_DEST_FILES)
+	@$(NOP)
+
+#MM- inflate-exe-m68k-quick : inflate-exe-m68k
+
+USER_CPPFLAGS :=
+USER_AFLAGS :=
+USER_LDFLAGS :=
+
+%build_prog mmake=host-degzip \
+    progname=degzip targetdir=$(TOOLDIR) \
+    objdir="$(HOSTGENDIR)/$(CURDIR)" files="degzip" compiler=host
+
+#MM- host-inflate-exe-m68k : host-degzip host-zopfli inflate-exe-m68k
+#MM- host-inflate-exe-m68k-quick : host-degzip-quick host-zopfli-quick inflate-exe-m68k-quick
+
+%common
+

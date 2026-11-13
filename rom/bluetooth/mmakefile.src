@@ -1,0 +1,37 @@
+include $(SRCDIR)/config/aros.cfg
+
+# --- Main metatargets ---
+
+# Build the complete disk-based Bluetooth stack
+#MM- kernel-bluetooth : \
+#MM      kernel-bluetooth-library \
+#MM      kernel-bluetooth-classes \
+#MM      kernel-bluetooth-firmware \
+#MM      bluetooth-shellcommands \
+#MM      kernel-bluetooth-hardware \
+#MM      kernel-bluetooth-prefs
+
+#MM- kernel-bluetooth-clean : \
+#MM      kernel-bluetooth-library-clean \
+#MM      kernel-bluetooth-classes-clean \
+#MM      kernel-bluetooth-firmware-clean \
+#MM      bluetooth-shellcommands-clean \
+#MM      kernel-bluetooth-hardware-clean \
+#MM      kernel-bluetooth-prefs-clean
+
+# Build SDK
+#MM- kernel-bluetooth-includes : \
+#MM      kernel-bluetooth-library-includes \
+#MM      kernel-bluetooth-btclass-includes
+
+# Platform bindings
+#MM- kernel-bluetooth-opensbi-riscv64 : kernel-bluetooth
+#MM- kernel-bluetooth-pc-x86_64 : kernel-bluetooth
+#MM- kernel-bluetooth-pc-i386 : kernel-bluetooth
+#MM- kernel-bluetooth-linux-x86_64 : kernel-bluetooth
+#MM- kernel-bluetooth-linux-i386 : kernel-bluetooth
+#MM- kernel-bluetooth-raspi-arm : kernel-bluetooth
+#MM- kernel-bluetooth-raspi-aarch64 : kernel-bluetooth
+#MM- kernel-bluetooth-amiga-m68k : kernel-bluetooth
+
+%common

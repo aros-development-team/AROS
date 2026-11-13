@@ -1,0 +1,11 @@
+# Copyright (C) 2026, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+USER_LDFLAGS := -static
+
+#MM test-graphics-spriteviewport : includes linklibs
+
+%build_progs mmake=test-graphics-spriteviewport \
+    files=spriteviewport targetdir=$(AROS_TESTS)/graphics/spriteviewport
+
+%common

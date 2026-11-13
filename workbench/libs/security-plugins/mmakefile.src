@@ -1,0 +1,13 @@
+# Copyright (C) 2026, The AROS Development Team. All rights reserved.
+#
+# security.library plugins (SYS:Libs/Security/<name>.secplugin): one metatarget gathers them,
+# listed in workbench-libs-complete (workbench/libs/mmakefile). Each plugin's own mmakefile
+# defines its target.
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM- workbench-libs-security-plugins : \
+#MM     workbench-libs-security-plugins-yubikey \
+#MM     workbench-libs-security-plugins-fido
+
+%common

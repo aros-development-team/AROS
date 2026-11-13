@@ -1,0 +1,87 @@
+#   Copyright © 1995-2026, The AROS Development Team. All rights reserved.
+#   $Id$
+#
+#   Desc: host.cfg - an autoconf output file for make variables.
+#
+
+# -------------------------------------------------------------------------- 
+# HOST SECTION
+# --------------------------------------------------------------------------
+AROS_HOST_ARCH           := @aros_host_arch@
+AROS_HOST_CPU            := @aros_host_cpu@
+
+# The used host toolchain family
+HOST_TOOLCHAIN           := @HOST_TOOLCHAIN_FAMILY@
+
+HOST_CPP                 := @aros_host_cpp@
+HOST_CPPFLAGS            := @aros_host_cppflags@
+HOST_DEF_CC              := $(CC_PREFIX)@aros_host_def_cc@
+HOST_CC                  := $(CC_PREFIX)@aros_host_cc@
+# autoconf's AC_PROG_CC defaults CFLAGS to "-g -O2" when the user supplies
+# none, so every host tool - and the whole LLVM crosstools build - was compiled
+# with full debug info nobody asked for. Debugging host code is served by
+# HOST_DEBUG below and by DEBUG=yes (which appends DEBUG_CFLAGS), so drop the
+# stray -g here rather than carrying it into every object.
+HOST_CFLAGS              := $(filter-out -g,@aros_host_cflags@)
+HOST_CXX                 := $(CC_PREFIX)@aros_host_cxx@
+HOST_CXXFLAGS            := $(filter-out -g,@aros_host_cxxflags@)
+HOST_LD                  := @aros_host_ld@
+HOST_MAKE                := @aros_host_make@
+HOST_LDFLAGS             := @aros_host_ldflags@
+HOST_DEBUG               := @aros_host_debug@
+HOST_MKDEP               := @aros_host_mkdep@
+MKARGS                   := @aros_host_mkargs@
+
+HOST_ISA_FLAGS           :=
+HOST_ISA_CFLAGS          := $(HOST_ISA_FLAGS)
+HOST_ISA_CXXFLAGS        := $(HOST_ISA_FLAGS)
+HOST_ISA_OBJCFLAGS       := $(HOST_ISA_FLAGS)
+HOST_ISA_AFLAGS          := $(HOST_ISA_FLAGS)
+HOST_ISA_LDFLAGS         := $(HOST_ISA_FLAGS)
+
+HOST_IQUOTE              := @host_cflags_iquote@
+HOST_IQUOTE_END          := @host_cflags_iquote_end@
+
+HOST_GNU89_INLINE        := @gnu89_inline@
+
+HOST_AR                  := @aros_host_ar@
+HOST_RANLIB              := @aros_host_ranlib@
+HOST_DEF_STRIP           := @aros_host_strip@
+HOST_EXE_SUFFIX          := @aros_host_exe_suffix@
+HOST_LIB_SUFFIX          := @aros_host_lib_suffix@
+
+MMAKE                    := @MMAKE@
+CMAKE                    := @CMAKE@
+MESON                    := @MESON@
+NINJA                    := @NINJA@
+AWK                      := @AWK@
+RM                       := @RM@
+CP                       := @CP@
+MV                       := @MV@
+ECHO                     := @ECHO@
+MKDIR                    := @MKDIR@
+TOUCH                    := @TOUCH@
+PYTHON                   := @PYTHON@
+NOP                      := @NOP@
+FOR                      := @FOR@
+IF                       := @IF@
+TEST                     := @TEST@
+CMP                      := @CMP@
+CAT                      := @CAT@
+BISON                    := @BISON@
+PNGTOPNM                 := @PNGTOPNM@
+PPMTOILBM                := @PPMTOILBM@
+SED                      := @SED@
+CHMOD                    := @CHMOD@
+XORRISO                  := @XORRISO@
+
+HOST_FLEX_VERSION        := @ax_cv_flex_version@
+
+# host libpng for ilbmtoicon
+HOST_LIBPNG              := @libpng@
+HOST_LIBPNG_INCLUDES     := @libpng_incdir@
+HOST_LIBPNG_LIBEXTRA     := @libpng_libextra@
+
+HOST_STAT_H_FIXUP        := @host_stat_h__unused_used@
+@host_extra_cfg@
+# --------------------------------------------------------------------------

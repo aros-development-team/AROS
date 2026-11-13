@@ -1,0 +1,304 @@
+
+#include <aros/debug.h>
+#include <proto/graphics.h>
+
+//#define NOMEDIA_OLDSTYLE
+
+#include "nomedia_image.h"
+#include "nomedia_anim.h"
+
+#include "bootanim.h"
+
+// use bits free to this code...
+#define STATEF_WINK             (1 << STATEFLAG_CORE + 0)
+#define STATEF_AROSLOGO         (1 << STATEFLAG_CORE + 1)
+
+#if !defined(NOMEDIA_PLANAR) || (NOMEDIA_PACKED == 1)
+static const UBYTE *unpack_byterun1(const UBYTE *source, UBYTE *dest, LONG unpackedsize)
+{
+    BYTE c;
+
+    /*
+     * byterun1 (ILBM/PackBits): most of this image's output (~88%) comes from
+     * replicate runs (avg ~30 bytes each), so fill those with long-word stores
+     * instead of one byte per loop. dest may be odd after a literal run and the
+     * 68000 faults on odd-address long access, so align to a longword first.
+     */
+    while (unpackedsize > 0)
+    {
+        LONG n;
+
+        c = (BYTE)(*source++);
+        if (c >= 0)
+        {
+            n = (LONG)c + 1;
+            if (n > unpackedsize) n = unpackedsize;
+            unpackedsize -= n;
+            do { *dest++ = *source++; } while (--n);
+        }
+        else if (c != -128)
+        {
+            UBYTE r = *source++;
+
+            n = (LONG)(-c) + 1;
+            if (n > unpackedsize) n = unpackedsize;
+            unpackedsize -= n;
+
+            if (n >= 8)
+            {
+                ULONG rr = r;
+                rr |= rr << 8;
+                rr |= rr << 16;
+                while (((IPTR)dest & 3) && n) { *dest++ = r; n--; }
+                while (n >= 4) { *(ULONG *)dest = rr; dest += 4; n -= 4; }
+            }
+            while (n--) *dest++ = r;
+        }
+    }
+    return source;
+}
+#endif
+
+#if NOMEDIA_PACKED == 2
+/*
+ * The LZ stream written by ilbmtoc -pz (see pack_lz() there): a token with
+ * the literal count and match length - 4 in its nibbles, 15 meaning "add the
+ * following bytes while they are 255"; the literals; a big endian match
+ * offset. The literals of the last token end the image. Runs are offset 1
+ * matches, filled with long-word stores like the byterun1 runs above.
+ */
+static ULONG unpack_lzlen(const UBYTE **source, ULONG n)
+{
+    if (n == 15)
+    {
+        UBYTE b;
+
+        do
+        {
+            b = *(*source)++;
+            n += b;
+        } while (b == 255);
+    }
+    return n;
+}
+
+static void unpack_lz(const UBYTE *source, UBYTE *dest, LONG unpackedsize)
+{
+    UBYTE *end = dest + unpackedsize;
+
+    for (;;)
+    {
+        UBYTE token = *source++;
+        const UBYTE *match;
+        ULONG n;
+
+        n = unpack_lzlen(&source, token >> 4);
+        while (n--)
+            *dest++ = *source++;
+        if (dest >= end)
+            break;
+
+        match = dest - ((source[0] << 8) | source[1]);
+        source += 2;
+        n = unpack_lzlen(&source, token & 15) + 4;
+
+        if ((match == dest - 1) && (n >= 8))
+        {
+            UBYTE r = *match;
+            ULONG rr = r;
+
+            rr |= rr << 8;
+            rr |= rr << 16;
+            while (((IPTR)dest & 3) && n) { *dest++ = r; n--; }
+            while (n >= 4) { *(ULONG *)dest = rr; dest += 4; n -= 4; }
+        }
+        while (n--)
+            *dest++ = *match++;
+    }
+}
+#endif
+
+struct AnimData *banm_Init(struct Screen *scr, struct DOSBootBase *DOSBootBase)
+{
+    struct AnimData *ad = NULL;
+
+    D(
+        bug("%s(0x%p, 0x%p)\n", __func__, scr, DOSBootBase);
+        bug("%s:%dx%dx%d Image\n", __func__, NOMEDIA_WIDTH, NOMEDIA_HEIGHT, NOMEDIA_PLANES);
+    )
+
+    if ((scr->Width >= NOMEDIA_WIDTH) && (scr->Height >= NOMEDIA_HEIGHT) &&
+        (scr->RastPort.BitMap->Depth >= NOMEDIA_PLANES))
+    {
+        ULONG size = NOMEDIA_WIDTH * NOMEDIA_HEIGHT;
+
+        ad = AllocMem(sizeof(struct AnimData) + (sizeof(struct picture *) *ANIMFRAME_COUNT), MEMF_ANY);
+        if (ad)
+        {
+            ad->x = (scr->Width  - NOMEDIA_WIDTH ) >> 1;
+            ad->y = (scr->Height - NOMEDIA_HEIGHT) >> 1;
+            ad->framecnt = ANIMFRAME_COUNT;
+            ad->tick = 0;
+            ad->frame = 0;
+            ad->ad_State = 0;
+
+            /* set up the date for the frames of the animation ..*/
+            ad->framedata = (APTR)(IPTR)ad + sizeof(struct AnimData);
+#if defined(NOMEDIA_PLANAR)
+            /*
+             * Native planar: build a struct BitMap over the image bitplanes and
+             * let WriteChunkRegion() blit regions from it with the hardware
+             * blitter (BltBitMap -> amigavideo CopyBox -> blit_copybox), avoiding
+             * per-pixel chunky->planar conversion entirely. The planes must live
+             * in Chip RAM so the blitter can read them.
+             */
+            {
+                ULONG i;
+                UBYTE *planebuf = AllocMem(NOMEDIA_PLANESIZE * NOMEDIA_PLANES,
+                                           MEMF_CHIP);
+
+                ad->srcbm = AllocMem(sizeof(struct BitMap), MEMF_ANY | MEMF_CLEAR);
+                /* planebuf is reachable via srcbm->Planes[0]; keep framedata as
+                 * sentinels so banm_Dispose's FreeVec loop skips them. */
+                ad->framedata[0] = (APTR)(IPTR)-1;
+                ad->framedata[1] = (APTR)(IPTR)-1;
+
+                if (ad->srcbm && planebuf)
+                {
+                    /* Unpack the RLE planar blob ONCE (linear decode, not C2P). */
+#if NOMEDIA_PACKED == 2
+                    unpack_lz(nomedia_data, planebuf,
+                              NOMEDIA_PLANESIZE * NOMEDIA_PLANES);
+#elif NOMEDIA_PACKED
+                    unpack_byterun1(nomedia_data, planebuf,
+                                    NOMEDIA_PLANESIZE * NOMEDIA_PLANES);
+#else
+                    CopyMem((APTR)nomedia_data, planebuf,
+                            NOMEDIA_PLANESIZE * NOMEDIA_PLANES);
+#endif
+                    InitBitMap(ad->srcbm, NOMEDIA_PLANES, NOMEDIA_WIDTH, NOMEDIA_HEIGHT);
+                    for (i = 0; i < NOMEDIA_PLANES; i++)
+                        ad->srcbm->Planes[i] = (PLANEPTR)(planebuf + i * NOMEDIA_PLANESIZE);
+                }
+
+                for (i = 0; i < NOMEDIA_COLORS; i++)
+                    SetRGB32(&scr->ViewPort, i, (nomedia_pal[i] << 8) & 0xFF000000,
+                                                (nomedia_pal[i] << 16) & 0xFF000000, (nomedia_pal[i] << 24) & 0xFF000000);
+            }
+#else
+            ad->srcbm = NULL;
+            ad->framedata[0] = AllocVec(size, MEMF_ANY);
+
+            if (ad->framedata[0])
+            {
+                ULONG i;
+
+                ad->framedata[1] = (APTR)(IPTR)-1; // We just repeat the same frame...
+
+                unpack_byterun1(nomedia_data, ad->framedata[0], size);
+
+                for (i = 0; i < NOMEDIA_COLORS; i++)
+                    SetRGB32(&scr->ViewPort, i, (nomedia_pal[i] << 8) & 0xFF000000,
+                                                (nomedia_pal[i] << 16) & 0xFF000000, (nomedia_pal[i] << 24) & 0xFF000000);
+            }
+#endif
+        }
+    }
+    return ad;
+}
+
+void banm_Dispose(struct DOSBootBase *DOSBootBase)
+{
+    struct AnimData *ad = DOSBootBase->animData;
+
+    D(bug("%s()\n", __func__));
+
+    if (ad)
+    {
+        int frame;
+        DOSBootBase->animData = NULL;
+#if defined(NOMEDIA_PLANAR)
+        if (ad->srcbm)
+        {
+            if (ad->srcbm->Planes[0])
+                FreeMem(ad->srcbm->Planes[0], NOMEDIA_PLANESIZE * NOMEDIA_PLANES);
+            FreeMem(ad->srcbm, sizeof(struct BitMap));
+        }
+#endif
+        for (frame = 0; frame < ad->framecnt; frame ++)
+        {
+            if (ad->framedata[frame] != (APTR)(IPTR)-1)
+                FreeVec(ad->framedata[frame]);
+        }
+        FreeMem(ad, sizeof(struct AnimData) + (sizeof(struct framedata *) * ad->framecnt));
+    }
+}
+
+void banm_ShowFrame(struct Screen *scr, BOOL init, struct DOSBootBase *DOSBootBase)
+{
+    struct AnimData *ad = DOSBootBase->animData;
+    if (init)
+    {
+        D(bug("%s(init)\n", __func__);)
+ #if defined(NOMEDIA_OLDSTYLE)
+        WriteChunkyPixels(&scr->RastPort, ad->x, ad->y, ad->x + NOMEDIA_WIDTH - 1, ad->y + NOMEDIA_HEIGHT - 1,
+                          ad->framedata[0], NOMEDIA_WIDTH);
+#else
+        WriteChunkRegion(DOSBootBase, &scr->RastPort, ad->x, ad->y, NOMEDIA_WIDTH,
+                                    ad->framedata[0], BOOTLOGO_X, BOOTLOGO_Y, BOOTLOGO_WIDTH, BOOTLOGO_HEIGHT);
+#endif
+    }
+    else
+    {
+        D(
+            bug("%s(0x%p, 0x%p)\n", __func__, scr, DOSBootBase);
+            bug("%s: frame %u, tick %u\n", __func__, ad->frame, ad->tick);
+        )
+        /* Animate Wink */
+        if (ad->tick < 2)
+        {
+            RectFill(&scr->RastPort, ad->x + BOOTLOGO_X + (BOOTLOGO_WIDTH >> 1), ad->y + BOOTLOGO_Y,
+                     ad->x + BOOTLOGO_X + BOOTLOGO_WIDTH - 1, ad->y + BOOTLOGO_Y + BOOTLOGO_HEIGHT - 1);
+        }
+        else
+        {
+            if (!(ad->ad_State & STATEF_WINK))
+            {
+                ad->ad_State |= STATEF_WINK;    
+                WriteChunkRegion(DOSBootBase, &scr->RastPort, ad->x, ad->y, NOMEDIA_WIDTH,
+                                    ad->framedata[0], BOOTLOGO_X + (BOOTLOGO_WIDTH >> 1), BOOTLOGO_Y, (BOOTLOGO_WIDTH >> 1), BOOTLOGO_HEIGHT);
+            }
+            /* Show Logo */
+            if ((ad->tick > 3) && !(ad->ad_State & STATEF_AROSLOGO))
+            {
+                ad->ad_State |= STATEF_AROSLOGO;
+                WriteChunkRegion(DOSBootBase, &scr->RastPort, ad->x, ad->y, NOMEDIA_WIDTH,
+                                    ad->framedata[0], AROSLOGO_X, AROSLOGO_Y, AROSLOGO_WIDTH, AROSLOGO_HEIGHT);
+            }
+        }
+
+        /* Animate media region */
+        if (ad->frame)
+        {
+            RectFill(&scr->RastPort, ad->x + FLASH_X, ad->y + FLASH_Y,
+                     ad->x + FLASH_X + FLASH_WIDTH - 1, ad->y + FLASH_Y + FLASH_HEIGHT - 1);
+        }
+        else
+        {
+            UBYTE *source;
+            if (ad->framedata[ad->frame] == (APTR)(IPTR)-1)
+                source = ad->framedata[0];
+            else
+                source = ad->framedata[ad->frame];
+
+#if defined(NOMEDIA_OLDSTYLE)
+            WriteChunkyPixels(&scr->RastPort, ad->x + FLASH_X, ad->y + FLASH_Y,
+                              ad->x + FLASH_X + FLASH_WIDTH - 1, ad->y + FLASH_Y + FLASH_HEIGHT - 1,
+                              source + FLASH_X, NOMEDIA_WIDTH);
+#else
+            WriteChunkRegion(DOSBootBase, &scr->RastPort, ad->x, ad->y, NOMEDIA_WIDTH,
+                                        source, FLASH_X, FLASH_Y, FLASH_WIDTH, FLASH_HEIGHT);
+#endif
+        }
+    }
+}

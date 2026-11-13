@@ -1,0 +1,16 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM- workbench-devs-networks-rtl8029 : workbench-libs-prometheus
+
+NOWARN_FLAGS := $(NOWARN_UNINITIALIZED) $(NOWARN_PARENTHESES) $(NOWARN_IMPLICIT_FUNCTION_DECL)
+USER_CFLAGS := $(NOWARN_FLAGS)
+USER_LDFLAGS := -static
+
+%build_prog mmake=workbench-devs-networks-rtl8029 \
+    progname=prm-rtl8029.device \
+    files="header driver" \
+    targetdir=$(AROSDIR)/Devs/Networks coverageinstr=no
+
+%common
+

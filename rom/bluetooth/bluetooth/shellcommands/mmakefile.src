@@ -1,0 +1,19 @@
+include $(SRCDIR)/config/aros.cfg
+
+SHELLFILES := \
+    BTDevLister \
+    BTErrorLog \
+    BTCtrl \
+    AddBTClasses \
+    AddBTHardware \
+    BTStackLoader
+
+USER_CPPFLAGS := -D__BLUETOOTH_NOLIBBASE__
+#USER_CPPFLAGS += -DDEBUG=1
+
+#MM bluetooth-shellcommands : kernel-bluetooth-library-includes
+
+%build_progs mmake=bluetooth-shellcommands \
+    files=$(SHELLFILES) targetdir=$(AROS_C)
+
+%common

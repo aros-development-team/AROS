@@ -1,0 +1,15 @@
+include $(SRCDIR)/config/aros.cfg
+
+NOWARN_FLAGS := $(NOWARN_PARENTHESES)
+USER_CFLAGS := $(NOWARN_FLAGS)
+    
+FILES := ModemManager misc  
+EXEDIR := $(AROS_C)
+
+#MM workbench-devs-networks-ppp-mm : includes linklibs
+
+%build_prog mmake=workbench-devs-networks-ppp-mm \
+    progname=ModemManager targetdir=$(EXEDIR) \
+    files=$(FILES)
+
+%common

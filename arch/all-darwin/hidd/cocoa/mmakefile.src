@@ -1,0 +1,16 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+FILES := startup cocoagfx_hiddclass cocoagfx_bitmapclass cocoagfx_inputclass
+
+USER_INCLUDES := -I$(SRCDIR)/arch/all-unix/kernel
+USER_CPPFLAGS := -D__OOP_NOMETHODBASES__ -D__OOP_NOATTRBASES__
+USER_LDFLAGS := -nostartfiles
+
+#MM kernel-hidd-cocoa : kernel-hidd-gfx-includes includes-copy
+
+%build_prog mmake=kernel-hidd-cocoa \
+    progname=CocoaGfx targetdir=$(AROS_DEVS)/Monitors \
+    files="$(FILES)" uselibs="hiddstubs oop"
+
+%common

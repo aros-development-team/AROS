@@ -1,0 +1,137 @@
+/*
+    This file has been released into the Public Domain.
+    $Id$
+
+    POSIX.1-2008 function tmpfile().
+*/
+
+#include <aros/debug.h>
+
+#include <proto/dos.h>
+
+#include <sys/param.h>
+#include <stdlib.h>
+#include <string.h>
+#include <errno.h>
+#include <fcntl.h>
+#include <unistd.h>
+
+/*****************************************************************************
+
+    NAME */
+#include <stdio.h>
+
+        FILE * tmpfile(
+
+/*  SYNOPSIS */
+	void)
+
+/*  FUNCTION 
+        The tmpfile() function returns a pointer to a stream
+        associated with a file descriptor returned by the routine
+        mkstemp(3).  The created file is unlinked before tmpfile()
+        returns, causing the file to be automatically deleted when the
+        last reference to it is closed.  The file is opened with the
+        access value `w+'.  The file is created in the T: directory,
+        which is the standard AROS temp directory.
+
+
+    INPUTS
+  
+        
+    RESULT
+        The tmpfile() function returns a pointer to an open file stream on 
+	success. On error, a NULL pointer is returned and errno is set 
+	appropriately.
+
+    ERRORS 
+        The tmpfile() function may fail and set the global variable
+        errno for any of the errors specified for the library functions
+        fdopen() or mkstemp().
+
+    NOTES
+
+    EXAMPLE
+        #include <errno.h>
+	#include <stdio.h>
+	#include <string.h>
+
+	main()
+	{
+	  FILE * fp;
+
+	  fp = tmpfile();
+	  if ( fp == NULL)
+	  {
+	    perror(strerror(errno));
+	    return;
+	  }
+
+	  fprintf(fp, "do a bit of writing to the temp file");
+	}
+
+    BUGS
+        BUG1: The temporary file is neither closed nor deleted. Ideally,
+        unlink() could be used to mark the temp file for removal (see
+        BUG1 in the source code) - but I suspect a bug in unlink() itself,
+        whereby it tries to remove the file straight away, rather than
+        waiting for all references to it to be closed. The bug is not too
+        serious, because all temp files are written to the T: directory,
+        which get zapped when AROS is closed down. However, problems may
+        exist when you start creating over 26 temp files with the same PID.
+
+
+    SEE ALSO
+        fopen(), mkstemp()
+
+    INTERNALS
+
+******************************************************************************/
+{
+  #define TEMPLATE "T:temp.XXXXXX"
+  char *filename;
+  FILE *fp;
+  int fd;
+
+  /* Allocate buffer on heap to save stack space */
+  filename = (char *)malloc(MAXPATHLEN);
+  if (!filename)
+  {
+    errno = ENOMEM;
+    return NULL;
+  }
+
+  /* Use mkstemp() instead of deprecated mktemp() to avoid race conditions */
+  if (strlcpy(filename, TEMPLATE, MAXPATHLEN) >= MAXPATHLEN)
+  {
+    free(filename);
+    errno = ENAMETOOLONG;
+    return NULL;
+  }
+
+  fd = mkstemp(filename);
+  if (fd == -1)
+  {
+    /* errno already set by mkstemp() */
+    free(filename);
+    return NULL;
+  }
+
+  D(bug("[posixc/tmpfile()] filename: %s\n", filename));
+
+  /* unlink(filename); -- see BUG1 in BUGS section */
+
+  /* Convert file descriptor to FILE stream */
+  fp = fdopen(fd, "w+");
+  if (fp == NULL)
+  {
+    /* errno already set by fdopen() */
+    close(fd);
+    free(filename);
+    return NULL;
+  }
+
+  free(filename);
+  return fp;
+ 
+} /* tmpfile() */

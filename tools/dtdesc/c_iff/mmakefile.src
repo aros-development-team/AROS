@@ -1,0 +1,31 @@
+include $(SRCDIR)/config/aros.cfg
+
+CFLAGS := $(subst -O2,,$(CFLAGS))
+
+FILES := \
+	checkiff \
+	closeiff \
+	endchunk \
+	example \
+	filesize \
+	fixiffsize \
+	newchunk \
+	newiff \
+	newsubform \
+	openiff \
+	readchunkdata \
+	readchunkheader \
+	skipchunkdata \
+	writechunkdata
+
+#MM- linklibs : linklibs-c_iff
+
+%build_linklib mmake=linklibs-c_iff libname=c_iff files=$(FILES)
+
+#MM
+includes-copy : $(AROS_INCLUDES)/c_iff.h
+
+$(AROS_INCLUDES)/%.h : %.h
+	$(CP) $< $(AROS_INCLUDES)
+
+%common

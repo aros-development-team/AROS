@@ -1,0 +1,13 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM kernel-bootstrap-pc-i386: linklibs-bootconsole linklibs-bootstrap
+
+USER_INCLUDES := -I $(SRCDIR)/arch/all-pc/bootstrap -isystem $(SRCDIR)/bootstrap/include \
+                 -I$(GENDIR)/include
+
+%build_archspecific \
+	mainmmake=kernel-bootstrap-pc maindir=arch/all-pc/bootstrap arch=i386 \
+	files=cpu compiler=kernel
+
+%common

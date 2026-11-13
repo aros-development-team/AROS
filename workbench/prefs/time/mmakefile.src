@@ -1,0 +1,16 @@
+#
+#   Makefile to make time prefs program.
+
+include $(SRCDIR)/config/aros.cfg
+
+FILES 	    := main vars locale misc prefs
+EXEDIR      := $(AROSDIR)/Prefs
+
+#MM- workbench-prefs : workbench-prefs-time
+#MM workbench-prefs-time : includes linklibs workbench-prefs-time-catalogs
+
+%build_prog mmake=workbench-prefs-time \
+    progname=Time targetdir=$(EXEDIR) \
+    files=$(FILES)
+
+%common

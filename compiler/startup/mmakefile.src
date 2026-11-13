@@ -1,0 +1,95 @@
+#   $Id: mmakefile.src 55239 2018-06-05 18:50:10Z NicJA $
+#
+#   Generate the startup code.
+#
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM- core-linklibs : linklibs-startup linklibs-startup-$(AROS_TARGET_CPU)
+#MM- linklibs: linklibs-startup
+#MM linklibs-startup : linklibs-startup-setup includes includes-copy \
+#MM     compiler-stdc-includes compiler-posixc-includes kernel-task-includes
+
+STARTUP_DIRS := $(GENDIR)/$(CURDIR) $(GENDIR)/$(CURDIR)/nix $(GENDIR)/$(CURDIR)/cxx $(AROS_LIB)
+
+NIXFILES := \
+	nixmain
+
+FILES := \
+	startup \
+	cxx-startup \
+	detach  \
+	elf-startup \
+	relbases
+ifneq (,$(findstring arm,$(AROS_TARGET_CPU)))
+FILES += arm-exidx-unwind
+endif
+
+CXXFILES := \
+        static-cxx-ops \
+        static-cxx-personality \
+        static-cxx-cxa-pure-virtual \
+
+NIXOBJS  := $(addprefix $(GENDIR)/$(CURDIR)/nix/,$(addsuffix .o,$(NIXFILES)))
+CXXOBJS  := $(addprefix $(GENDIR)/$(CURDIR)/cxx/,$(addsuffix .o,$(CXXFILES)))
+OBJS  := $(addprefix $(AROS_LIB)/,$(addsuffix .o,$(FILES) $(NIXFILES) $(CXXFILES)))
+
+NIXDEPS  := $(addprefix $(GENDIR)/$(CURDIR)/nix/,$(addsuffix .d,$(NIXFILES)))
+CXXDEPS  := $(addprefix $(GENDIR)/$(CURDIR)/cxx/,$(addsuffix .d,$(CXXFILES)))
+DEPS  := $(addprefix $(GENDIR)/$(CURDIR)/,$(addsuffix .d,$(FILES)))
+
+ifneq ($(AROS_TARGET_CPU32),)
+OBJS    += $(addprefix $(AROS_LIB32)/,$(addsuffix .o,$(FILES)))
+DEPS  += $(addprefix $(GENDIR)/$(CURDIR)/32bit,$(addsuffix .d,$(FILES)))
+STARTUP_DIRS += $(GENDIR)/$(CURDIR)/32bit $(AROS_LIB32)
+endif
+
+linklibs-startup: $(NIXOBJS) $(CXXOBJS) $(OBJS)
+
+#MM
+linklibs-startup-quick: $(NIXOBJS) $(CXXOBJS) $(OBJS)
+
+# standard startup object rules ...
+
+$(AROS_LIB)/%.o : $(GENDIR)/$(CURDIR)/%.o
+	@$(CP) $< $@
+
+%rule_compile basename=% targetdir=$(GENDIR)/$(CURDIR)
+
+ifneq ($(AROS_TARGET_CPU32),)
+# 32biit startup files
+
+$(AROS_LIB32)/%.o : $(GENDIR)/$(CURDIR)/32bit/%.o
+	@$(CP) $< $@
+
+%rule_compile mmake=startup-32 basename=% targetdir=$(GENDIR)/$(CURDIR)/32bit cflags="$(strip $(TARGET_ISA_32_CFLAGS) $(TARGET_CFLAGS))"
+endif
+
+# Posix/*nix startup object rules ...
+
+$(AROS_LIB)/%.o : $(GENDIR)/$(CURDIR)/nix/%.o
+	@$(CP) $< $@
+
+USER_CPPFLAGS += -D_XOPEN_SOURCE=700
+
+%rule_compile basename=% targetdir=$(GENDIR)/$(CURDIR)/nix
+
+# CXX support ...
+
+$(AROS_LIB)/%.o : $(GENDIR)/$(CURDIR)/cxx/%.o
+	@$(CP) $< $@
+
+%rule_compile_cxx basename=% targetdir=$(GENDIR)/$(CURDIR)/cxx
+
+# Generic rules ...
+
+#MM linklibs-startup-setup
+%rule_makedirs dirs="$(STARTUP_DIRS)" setuptarget=linklibs-startup-setup
+
+%copy_includes includes=startup.h path=aros
+
+.PHONY: linklibs-startup linklibs-startup-setup
+
+%include_deps depstargets="linklibs-startup" deps="$(DEPS) $(CXXDEPS) $(NIXDEPS)"
+
+%common

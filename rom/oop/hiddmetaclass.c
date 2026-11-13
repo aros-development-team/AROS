@@ -1,0 +1,640 @@
+/*
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
+
+    Desc: OOP HIDD metaclass
+*/
+
+#include <string.h>
+
+#include <proto/exec.h>
+#include <proto/utility.h>
+#include <exec/memory.h>
+
+#include <proto/oop.h>
+
+#include "intern.h"
+
+#undef SDEBUG
+#undef DEBUG
+#define SDEBUG 0
+#define DEBUG 0
+#include <aros/debug.h>
+#include <exec/alerts.h>
+#include <proto/exec.h>
+
+#define UB(x) ((UBYTE *)x)
+
+/*
+ * A method ID past the end of the class' table, or a slot nobody
+ * implemented, used to be called anyway: the CPU ended up executing
+ * whatever followed the table. That happens whenever a caller was built
+ * against an interface with more methods than the class (or its
+ * superclass) was built with. Report it and fail the call instead.
+ */
+static IPTR hiddmeta_unimplemented(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
+{
+    bug("[OOP hiddmetaclass] Unimplemented method 0x%08X called on class 0x%p (%s), object 0x%p\n",
+        (unsigned)*msg, cl, cl->ClassNode.ln_Name, o);
+    Alert(AN_OOP);
+    return 0;
+}
+
+#define IntCallMethod(cl, o, msg)                                   \
+{                                                                   \
+    OOP_MethodFunc callfunc;                                        \
+    register struct IFMethod *ifm;                                  \
+    D(bug("mid=%ld\n", *msg));                                      \
+    if (*msg >= ((struct hiddmeta_inst *)cl)->data.num_methods)     \
+        return hiddmeta_unimplemented((OOP_Class *)cl, o, msg);     \
+    ifm = &((struct hiddmeta_inst *)cl)->data.methodtable[*msg];    \
+    D(bug("ifm: func %p, cl %p\n", ifm->MethodFunc, ifm->mClass));  \
+    callfunc = (OOP_MethodFunc)ifm->MethodFunc;                     \
+    if (!callfunc)                                                  \
+        return hiddmeta_unimplemented((OOP_Class *)cl, o, msg);     \
+    return (callfunc(ifm->mClass, o, msg));                         \
+}
+
+static VOID get_info_on_ifs(OOP_Class *super, const struct OOP_InterfaceDescr *ifdescr,
+                            ULONG *total_num_methods_ptr, ULONG *total_num_ifs_ptr, struct IntOOPBase *OOPBase);
+
+static IPTR HIDD_DoMethod(OOP_Object *o, OOP_Msg msg);
+static IPTR HIDD_CoerceMethod(OOP_Class *cl, OOP_Object *o, OOP_Msg msg);
+static IPTR HIDD_DoSuperMethod(OOP_Class *cl, OOP_Object *o, OOP_Msg msg);
+static inline ULONG get_max_midx(const struct OOP_MethodDescr *md);
+
+/*
+   The metaclass is used to create class. That means,
+   classes are instances of the meta class.
+   The meta class is itself both a class (you can
+   create instances of it), and an object (you can invoke
+   methods on it.
+*/
+
+struct hiddmeta_inst
+{
+    struct metadata base;
+    struct hiddmeta_data
+    {
+        struct if_info
+        {
+            /* The globally unique ID of the interface */
+            CONST_STRPTR interface_id;
+            UWORD num_methods;
+            UWORD mtab_offset;
+            
+        } *ifinfo;
+        struct IFMethod *methodtable;
+        ULONG num_methods;      /* entries in methodtable, all interfaces */
+    } data;
+};
+
+/**********************
+**  HIDDMeta::New()  **
+**********************/
+static OOP_Object *hiddmeta_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
+{
+    struct IntOOPBase *OOPBase = (struct IntOOPBase *)cl->OOPBasePtr;
+    struct Library *UtilityBase = OOPBase->ob_UtilityBase;
+    IPTR (*domethod)(OOP_Object *, OOP_Msg)                     = NULL;
+    IPTR (*coercemethod)(OOP_Class *, OOP_Object *, OOP_Msg)    = NULL;
+    IPTR (*dosupermethod)(OOP_Class *, OOP_Object *, OOP_Msg)   = NULL;
+
+    
+    EnterFunc(bug("HIDDMeta::New(cl=%s, msg = %p)\n",
+        cl->ClassNode.ln_Name, msg));
+
+    if (!UtilityBase)
+        ReturnPtr ("HIDDMeta::New", OOP_Object *, NULL);
+
+    /* Analyze the taglist before object is allocated,
+    ** so we can easily exit cleanly if some info is missing
+    */
+    
+    domethod      = (IPTR (*)(OOP_Object *, OOP_MethodID *))GetTagData(aMeta_DoMethod,      0, msg->attrList);
+    coercemethod  = (IPTR (*)(OOP_Class *, OOP_Object *, OOP_MethodID *))GetTagData(aMeta_CoerceMethod,  0, msg->attrList);
+    dosupermethod = (IPTR (*)(OOP_Class *, OOP_Object *, OOP_MethodID *))GetTagData(aMeta_DoSuperMethod, 0, msg->attrList);
+
+    
+    /* We are sure we have enough args, and can let rootclass alloc the instance data */
+    o = (OOP_Object *)OOP_DoSuperMethod((OOP_Class *)cl, o, (OOP_Msg)msg);
+    if (o)
+    {
+
+        D(bug("Instance allocated\n"));
+        
+            
+        /* Initialize class fields */
+                    
+        if (!domethod)
+            domethod = HIDD_DoMethod;
+                    
+        if (!coercemethod)
+            coercemethod = HIDD_CoerceMethod;
+                    
+        if (!dosupermethod)
+        {
+                    
+            /* Use superclass' DoSupermethod call if superclass isn't
+               an instance of the HIDDMetaClass
+            */
+            if (OOP_OCLASS(MD(o)->public.superclass) != (OOP_Class *)cl)
+                dosupermethod = MD(o)->public.superclass->cl_DoSuperMethod;
+            else
+                dosupermethod = HIDD_DoSuperMethod;
+        }
+        
+        ((OOP_Class *)o)->cl_DoMethod   = domethod;
+        ((OOP_Class *)o)->cl_CoerceMethod       = coercemethod;
+        ((OOP_Class *)o)->cl_DoSuperMethod      = dosupermethod;
+                  
+    }
+   
+    ReturnPtr ("HIDDMeta::New", OOP_Object *, o);
+}
+
+/********************************
+**  HIDDMeta::allocdisptabs()  **
+********************************/
+static BOOL hiddmeta_allocdisptabs(OOP_Class *cl, OOP_Object *o, struct P_meta_allocdisptabs *msg)
+{
+    struct IntOOPBase *OOPBase = (struct IntOOPBase *)cl->OOPBasePtr;
+    ULONG disptab_size, total_num_methods = 0UL, total_num_ifs = 0UL;
+    
+    struct hiddmeta_data *data = OOP_INST_DATA(cl, o);
+    struct IFMethod *mtab = NULL;
+    
+    EnterFunc(bug("HIDDMeta::allocdisptabs(cl=%p, ifDescr=%p)\n", cl, msg->ifdescr));
+    
+    /* Find the total number of methods in the superclass */
+    get_info_on_ifs(msg->superclass
+                                ,msg->ifdescr
+                                ,&total_num_methods
+                                ,&total_num_ifs
+                                ,(struct IntOOPBase *)OOPBase);
+
+    /* Set number of interfaces */
+    MD(o)->numinterfaces = total_num_ifs;
+    
+    D(bug("Number of  interfaces: %ld, methods %ld\n",
+        total_num_ifs, total_num_methods));
+    
+    /* Allocate the dispatch and interface tables together. */
+    disptab_size = UB(&mtab[total_num_methods]) - UB(&mtab[0]);
+    if (total_num_methods > 0xffff)
+        ReturnBool("HIIDMeta::allocdisptabs", FALSE);
+
+    {
+        struct if_info *ifinfo = NULL;
+        ULONG ifinfo_size = UB(&ifinfo[total_num_ifs]) - UB(&ifinfo[0]);
+
+        data->methodtable = AllocVec(disptab_size + ifinfo_size,
+            MEMF_ANY | MEMF_CLEAR);
+        if (data->methodtable)
+        {
+            data->ifinfo = (struct if_info *)
+                (UB(data->methodtable) + disptab_size);
+            data->num_methods = total_num_methods;
+        }
+    }
+    if (data->methodtable)
+    {
+        struct if_info *ifinfo = NULL;
+        
+        mtab = data->methodtable;
+
+        if (data->ifinfo)
+        {
+            /* Iterate through all parent interfaces, copying relevant info
+               into our own dispatch tables.
+            */
+            CONST_STRPTR interface_id;
+            ULONG num_methods;
+            IPTR iterval = 0UL;
+            struct IFMethod *ifm;
+            ULONG mtab_offset = 0;
+            const struct OOP_InterfaceDescr *ifdescr = msg->ifdescr;
+
+            ifinfo = data->ifinfo;
+            
+            while ((ifm = meta_iterateifs((OOP_Object *)msg->superclass, &iterval, &interface_id, &num_methods)))
+            {
+                ULONG copy_size;
+                const struct OOP_InterfaceDescr *ifd;
+                
+                /* Copy interface into dispatch tables */
+                copy_size = UB(&mtab[num_methods]) - UB(&mtab[0]);
+                
+                D(bug("Copying mtab (%p to %p) , size: %ld\n", ifm, mtab, copy_size));
+                CopyMem(ifm, mtab, copy_size);
+                
+                D(bug("mtab copied, mtab=%p\n", mtab));
+                /* store interface info */
+                
+                /* allready copied by superclass, no need to recopy it */
+                ifinfo->interface_id    = interface_id;
+                D(bug("interfaceID for ifinfo %p set to %s\n", ifinfo, ifinfo->interface_id));
+                
+                /* See if this class supplies more methods for the interace */
+                for (ifd = msg->ifdescr; ifd->MethodTable != 0; ifd ++)
+                {
+                    if (0 == strcmp(ifd->InterfaceID, interface_id))
+                    {
+                        ULONG max_midx;
+                        
+                        max_midx = get_max_midx(ifd->MethodTable);
+                        if (max_midx >= num_methods)
+                                num_methods = max_midx + 1;
+                    }
+                }
+                ifinfo->num_methods     = num_methods;
+                D(bug("numemthods set to %ld\n", num_methods));
+                ifinfo->mtab_offset     = mtab_offset;
+                D(bug("mtab_offset set to %ld\n", mtab_offset));
+                
+                mtab_offset += num_methods;
+                mtab += num_methods;
+            {
+                ULONG idx;
+                D(bug("\n"));
+                for (idx = 0; idx < total_num_ifs; idx ++)
+                {
+                    D(bug("ifinfo: (%p, %s), idx: %ld\n"
+                        ,&(data->ifinfo[idx])
+                        ,data->ifinfo[idx].interface_id
+                        ,idx ));
+                
+                }
+                D(bug("\n"));
+            }
+
+                ifinfo ++;
+            }
+            
+            D(bug("Finished copying super IFs\n\n"));
+            
+            {
+                ULONG idx;
+                for (idx = 0; idx < total_num_ifs; idx ++)
+                {
+                    D(bug(" ifinfo: (%p, %s), idx: %ld\n"
+                        ,&(data->ifinfo[idx])
+                        ,data->ifinfo[idx].interface_id
+                        ,idx ));
+                
+                }
+            }
+                
+            
+            
+            /* Now find the interface (max one) that is new for this class,
+               and at the same time override all methods for all interfaces
+            */
+            
+            D(bug("Find new interface\n"));
+            for (; ifdescr->MethodTable != NULL; ifdescr ++)
+            {
+                const struct OOP_MethodDescr *mdescr;
+                ULONG current_idx;
+                
+                ifm = meta_getifinfo((OOP_Object *)msg->superclass, ifdescr->InterfaceID, &num_methods);
+                if (!ifm)
+                {
+                    ULONG mbase = 0UL;
+                    
+                    D(bug("Found new interface %s\n", ifdescr->InterfaceID));
+                    /* Interface is new to this class */
+
+                    
+                    /* Do NOT copy interfaceID */
+                    ifinfo->interface_id = ifdescr->InterfaceID;
+                    ifinfo->num_methods  = get_max_midx(ifdescr->MethodTable) + 1;
+                    ifinfo->mtab_offset  = mtab_offset;
+                    
+                    /* Install methodbase for this interface */
+                    if (!init_methodbase( ifdescr->InterfaceID
+                                         ,mtab_offset
+                                         ,&mbase
+                                         ,(struct IntOOPBase *)OOPBase))
+                    {
+                        goto init_err;
+                    }
+                                         
+                    
+                    
+                    /* The below is not necessary, since we never have more than one
+                       new interface
+                    
+                    ifinfo ++;
+                    mtab_offset += ifdescr->NumMethods;
+                    mtab = &mtab[mtab_offset];
+                                    
+                    */
+                }
+                
+                /* Find the index into the ifinfo table for the current entry */
+                D(bug("Finding current idx\n"));
+                for (current_idx = 0; ; current_idx ++)
+                {
+                    D(bug("ifdecr: %s, ifinfo: (%p, %s), idx: %ld\n", ifdescr->InterfaceID, &(data->ifinfo[current_idx]), data->ifinfo[current_idx].interface_id, current_idx ));
+                    
+                    if (!strcmp(ifdescr->InterfaceID, data->ifinfo[current_idx].interface_id))
+                        break;
+                }
+                
+                D(bug("Overriding methods\n"));
+
+
+                for (mdescr = ifdescr->MethodTable; mdescr->MethodFunc != NULL; mdescr ++)
+                {
+                    ULONG mtab_idx;
+                    
+                    mtab_idx = mdescr->MethodIdx + data->ifinfo[current_idx].mtab_offset;
+                    D(bug("Initing of if %s methods at %ld\n", ifdescr->InterfaceID, mtab_idx));
+                    
+                    data->methodtable[mtab_idx].MethodFunc = (IFMethodFunc_t)mdescr->MethodFunc;
+                    data->methodtable[mtab_idx].mClass = (OOP_Class *)o;
+                
+                } /* for (each method in current interface) */
+            
+                
+            } /* for (each interface in this class' interface description) */
+            
+            ReturnBool("HIIDMeta::allocdisptabs", TRUE);
+init_err:
+            ;
+        } /* if (interface info table allocated) */
+        
+        FreeVec(data->methodtable);
+        data->methodtable = NULL;
+        data->ifinfo = NULL;
+        data->num_methods = 0;
+    
+    } /* if (methodtable allocated) */
+    
+    ReturnBool("HIDDMeta::allocdisptabs", FALSE);
+}
+
+/*******************************
+**  HIDDMeta::freedisptabs()  **
+********************************/
+static VOID hiddmeta_freedisptabs(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
+{
+    struct hiddmeta_inst *inst = (struct hiddmeta_inst *)o;
+    
+    FreeVec(inst->data.methodtable);
+    return;
+}
+
+
+
+/*****************************
+**  HIDDMeta::iterateifs()  **
+*****************************/
+static struct IFMethod *hiddmeta_iterateifs(OOP_Class *cl, OOP_Object *o, struct P_meta_iterateifs *msg)
+{
+    struct hiddmeta_inst *inst = (struct hiddmeta_inst *)o;
+    ULONG idx = *msg->iterval_ptr;
+    struct IFMethod *mtab;
+    
+    EnterFunc(bug("HIDDMeta::iterateifs(cl=%p, o=%p, iterval=%p)\n",
+        cl, o, *msg->iterval_ptr));
+    if (idx >= inst->base.numinterfaces)
+        mtab = NULL;
+    else
+    {
+        /* First iteration */
+        struct if_info *ifinfo;
+        ifinfo = &(inst->data.ifinfo[idx]);
+        
+        *msg->interface_id_ptr  = ifinfo->interface_id;
+        *msg->num_methods_ptr   = ifinfo->num_methods;
+
+        mtab = &(inst->data.methodtable[ifinfo->mtab_offset]);
+        
+        (*msg->iterval_ptr) ++;
+        
+    }
+    ReturnPtr("HIDDMeta::iterateifs", struct IFMethod *, mtab);
+}
+
+/****************************
+**  HIDDMeta::getifinfo()  **
+****************************/
+static struct IFMethod *hiddmeta_getifinfo(OOP_Class *cl, OOP_Object *o, struct P_meta_getifinfo *msg)
+{
+
+    struct hiddmeta_inst *inst = (struct hiddmeta_inst *)o;
+    ULONG current_idx;
+    struct IFMethod *mtab = NULL;
+    
+    EnterFunc(bug("HIDDMeta::getifinfo(cl=%p, o=%p, ifID=%s)\n",
+        cl, o, msg->interface_id));
+        
+    /* Look up the interface */
+
+    for (current_idx = 0; current_idx < inst->base.numinterfaces; current_idx ++)
+    {
+        struct if_info *ifinfo;
+        
+        ifinfo = &(inst->data.ifinfo[current_idx]);
+        if (!strcmp(msg->interface_id, ifinfo->interface_id))
+        {
+            *(msg->num_methods_ptr) = ifinfo->num_methods;
+            mtab = &(inst->data.methodtable[ifinfo->mtab_offset]);
+            break;
+        }
+    }
+    ReturnPtr("HIDDMeta::getifinfo", struct IFMethod *, mtab);
+}
+
+
+/*****************************
+**  HIDDMeta::findmethod()  **
+*****************************/
+struct IFMethod *hiddmeta_findmethod(OOP_Class *cl, OOP_Object *o, struct P_meta_findmethod *msg)
+{
+    struct hiddmeta_inst *inst = (struct hiddmeta_inst *)o;
+    struct IFMethod *m;
+    
+    EnterFunc(bug("HIDDMeta::findmethod(cl=%p, o=%p, mID=%ld)\n",
+        cl, o, msg->method_to_find));
+        
+    m = &(inst->data.methodtable[msg->method_to_find]);
+        
+
+    ReturnPtr("HIDDMeta::findmethod", struct IFMethod *, m);
+    
+}
+
+#define NUM_ROOT_METHODS 1
+#define NUM_META_METHODS 5
+
+/************************
+**  Support functions  **
+************************/
+OOP_Class *init_hiddmetaclass(struct IntOOPBase *OOPBase)
+{
+    struct OOP_MethodDescr root_mdescr[NUM_ROOT_METHODS + 1] =
+    {
+        { (IPTR (*)(OOP_Class *, OOP_Object *, OOP_MethodID *))hiddmeta_new,             moRoot_New              },
+        {  NULL, 0UL }
+    };
+    
+    struct OOP_MethodDescr meta_mdescr[NUM_META_METHODS + 1] =
+    {
+        { (IPTR (*)(OOP_Class *, OOP_Object *, OOP_MethodID *))hiddmeta_allocdisptabs,   MO_meta_allocdisptabs   },
+        { (IPTR (*)(OOP_Class *, OOP_Object *, OOP_MethodID *))hiddmeta_freedisptabs,    MO_meta_freedisptabs    },
+        { (IPTR (*)(OOP_Class *, OOP_Object *, OOP_MethodID *))hiddmeta_getifinfo,       MO_meta_getifinfo       },
+        { (IPTR (*)(OOP_Class *, OOP_Object *, OOP_MethodID *))hiddmeta_iterateifs,      MO_meta_iterateifs      },
+        { (IPTR (*)(OOP_Class *, OOP_Object *, OOP_MethodID *))hiddmeta_findmethod,      MO_meta_findmethod      },
+        {  NULL, 0UL }
+    };
+    
+
+    struct OOP_InterfaceDescr ifdescr[] =
+    {
+        {root_mdescr, IID_Root, NUM_ROOT_METHODS},
+        {meta_mdescr, IID_Meta, NUM_META_METHODS},
+        {NULL, NULL, 0UL}
+    };
+    
+    struct TagItem tags[] =
+    {
+        {aMeta_SuperPtr,                (IPTR)BASEMETAPTR},
+        {aMeta_InterfaceDescr,          (IPTR)ifdescr},
+        {aMeta_ID,                      (IPTR)CLID_SIMeta},
+        {aMeta_InstSize,                (IPTR)sizeof (struct hiddmeta_data) },
+        {TAG_DONE, 0UL}
+    };
+    
+    OOP_Class *cl;
+    EnterFunc(bug("init_hiddmetaclass()\n"));
+
+    cl = (OOP_Class *)OOP_NewObject(NULL, CLID_MIMeta, tags);
+    if (cl)
+    {
+        cl->UserData = OOPBase;
+        OOP_AddClass(cl);
+    }
+    D(bug("HIDD_CoerceMethod=%p\n", HIDD_CoerceMethod));
+    
+    ReturnPtr ("init_hiddmetaclass()", OOP_Class *, cl);
+
+}
+
+static inline ULONG get_max_midx(const struct OOP_MethodDescr *md)
+{
+    ULONG max_midx = 0;
+            
+    for (; md->MethodFunc != NULL; md ++)
+    {
+        if (md->MethodIdx > max_midx)
+        {
+            max_midx = md->MethodIdx;
+        }
+    }
+    return max_midx;
+}
+
+/************************
+**  get_info_on_ifs()  **
+************************/
+static VOID get_info_on_ifs(OOP_Class *super, const struct OOP_InterfaceDescr *ifdescr,
+                            ULONG *total_num_methods_ptr, ULONG *total_num_ifs_ptr, struct IntOOPBase *OOPBase)
+{
+    ULONG num_methods;
+    CONST_STRPTR interface_id;
+    IPTR iterval = 0UL;
+    EnterFunc(bug("get_info_on_ifs(super=%s, ifdescr=%p, OOPBase=%p\n",
+        super->ClassNode.ln_Name, ifdescr, OOPBase));
+    
+    *total_num_methods_ptr = 0UL;
+    *total_num_ifs_ptr = 0UL;
+    
+    /* Iterate all parent interfaces, counting methods and interfaces */
+    while (meta_iterateifs((OOP_Object *)super, &iterval, &interface_id, &num_methods))
+    {
+        const struct OOP_InterfaceDescr *ifd;
+
+        D(bug("if %s has %ld methods\n", interface_id, num_methods));
+        /* Check whether current class also supplies methods for this interface */
+        
+        for (ifd = ifdescr; ifd->MethodTable != NULL; ifd ++)
+        {
+            if (0 == strcmp(ifd->InterfaceID, interface_id))
+            {
+                /* Interface also supplied here */
+                ULONG max_midx;
+                
+                max_midx = get_max_midx(ifd->MethodTable);
+                if (max_midx >= num_methods)
+                        num_methods = max_midx + 1;
+                
+            }
+        }
+        *total_num_methods_ptr += num_methods;
+        (*total_num_ifs_ptr) ++;
+    }
+    D(bug("Finished counting methods\n"));
+
+    /* Go through all interface descrs for this class, and find evt. new ones */
+    for (; ifdescr->MethodTable != NULL; ifdescr ++)
+    {
+        if (!meta_getifinfo((OOP_Object *)super, ifdescr->InterfaceID, &num_methods))
+        {
+            /* The interface is new for this class.
+               For HIDDMeta class max. one interface can be new for a class
+            */
+            ULONG max_midx = 0;
+            max_midx = get_max_midx(ifdescr->MethodTable);
+            
+            /* Get the largest method idx */
+            
+            (*total_num_methods_ptr) += (max_midx + 1);
+            (*total_num_ifs_ptr) ++;
+        }
+    }
+    
+    ReturnVoid("get_info_on_ifs");
+}
+
+/**********************
+**  HIDD_DoMethod()  **
+**********************/
+static IPTR HIDD_DoMethod(OOP_Object *o, OOP_Msg msg)
+{
+    register struct hiddmeta_inst *cl = (struct hiddmeta_inst *)OOP_OCLASS(o);
+    D(bug("HIDD_DoMethod(o=%p. msg=%p)\n", o, msg));
+    
+    IntCallMethod(cl, o, msg);
+    
+}
+
+/************************
+**  HIDD_CoerceMethod  **
+************************/
+static IPTR HIDD_CoerceMethod(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
+{
+    OOP_MethodFunc coercefunc;
+    register struct IFMethod *ifm;
+    D(bug("HIDD_CoerceMethod()\n"));
+    D(bug("cl=%s, mid=%ld\n", cl->ClassNode.ln_Name, *msg));
+    if (*msg >= ((struct hiddmeta_inst *)cl)->data.num_methods)
+        return hiddmeta_unimplemented(cl, o, msg);
+    ifm = &((struct hiddmeta_inst *)cl)->data.methodtable[*msg];
+    D(bug("ifm %p func %p, cl %p\n", ifm, ifm->MethodFunc, ifm->mClass));
+    coercefunc = (OOP_MethodFunc)ifm->MethodFunc;
+    if (!coercefunc)
+        return hiddmeta_unimplemented(cl, o, msg);
+    return (coercefunc(ifm->mClass, o, msg));
+}
+
+/************************
+**  HIDD_DoSuperMethod  **
+************************/
+static IPTR HIDD_DoSuperMethod(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
+{
+    D(bug("HIDD_DoSuperMethod()\n"));
+    cl = MD(cl)->public.superclass;
+    IntCallMethod(cl, o, msg);
+}

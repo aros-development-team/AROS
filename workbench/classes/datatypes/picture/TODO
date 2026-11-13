@@ -1,0 +1,62 @@
+Last status update: 6th Apr 2011
+
+The following items must be implemented:
+
+library-framework               100% done
+documentation                   Hey, I am a programmer, not an author ;)
+dispatcher-function             100% done
+
+methods:                        
+    OM_NEW			OK
+    OM_DISPOSE			OK
+    OM_UPDATE			part of OM_SET
+    OM_SET			OK, see below
+    OM_GET			OK, see below
+    GM_RENDER                   OK
+    GM_LAYOUT                   uses DTM_ASYNCLAYOUT
+    GM_GOACTIVE                 superclass
+    GM_HANDLEINPUT              superclass
+    GM_HITTEST                  superclass
+    DTM_PROCLAYOUT              uses DTM_ASYNCLAYOUT
+    DTM_ASYNCLAYOUT             OK, improvements in speed and quality possible
+    DTM_FRAMEBOX                superclass
+    DTM_SELECT                  ?
+    DTM_CLEARSELECTED           ?
+    DTM_COPY                    OK, the whole picture as ILBM
+    DTM_PRINT                   missing
+    DTM_WRITE                   missing
+    PDTM_WRITEPIXELARRAY        OK
+    PDTM_READPIXELARRAY         mostly done
+    PDTM_SCALE                  in progress
+
+The following attributes must be supported:
+    OBP_Precision         (I)   OK
+    DTA_Methods           (G)   OK
+    PDTA_ModeID           (ISG) OK, but not used internally
+    PDTA_BitMapHeader     (G)   OK
+    PDTA_BitMap           (ISG) OK
+    PDTA_DestBitMap       (G)   OK, with limitations
+    PDTA_ClassBitMap      (ISG) OK, can't be used in parallel with PDTA_BitMap
+    PDTA_Screen           (ISG) OK, alternate mapping dest ? (additional Get)
+    PDTA_ColorRegisters   (G)   OK, but not used internally
+    PDTA_CRegs            (G)   OK
+    PDTA_GRegs            (G)   OK
+    PDTA_ColorTable       (G)   OK ? private
+    PDTA_ColorTable2      (G)   OK ? private
+    PDTA_NumColors        (ISG) OK
+    PDTA_NumAlloc         (G)   OK
+    PDTA_Allocated        (G)   not implemented, obsolete (wasn't clearly defined)
+    PDTA_SparseTable      (I)   OK
+    PDTA_NumSparse        (I)   OK
+    PDTA_Grab             (ISG) OK ?
+    PDTA_FreeSourceBitMap (ISG) OK (additional Get)
+    PDTA_Remap            (I)   OK, set get ?
+    PDTA_UseFriendBitMap  (ISG) OK, but not used internally
+    PDTA_SourceMode       (ISG) OK, but ignored internally
+    PDTA_DestMode         (ISG) OK, but ignored internally
+    PDTA_MaxDitherPens    (ISG) OK ?
+    PDTA_DitherQuality    (ISG) OK ?
+    PDTA_AllocatedPens    (G)   OK ?
+    PDTA_ScaleQuality     (ISG) OK, but not used internally
+    PDTA_DelayRead        (I)   OK ?
+    PDTA_DelayedRead      (SG)  OK ? (Set only by subclass)

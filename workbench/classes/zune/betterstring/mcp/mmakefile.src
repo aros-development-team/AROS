@@ -1,0 +1,47 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM workbench-classes-zune-betterstring-mcp : includes \
+#MM 					    linklibs \
+#MM					    workbench-classes-zune-betterstring-class \
+#MM					    workbench-classes-zune-betterstring-mcp-locale
+
+USER_INCLUDES := -I$(TOP)/$(CURDIR) -idirafter $(SRCDIR)/$(CURDIR)/../include -I$(SRCDIR)/$(CURDIR)/../mcc
+USER_CPPFLAGS := -DAROS_ABI_V1
+USER_LDFLAGS := -static
+
+FILES := library \
+        locale \
+        CreatePrefsGroup \
+        Dispatcher \
+        icon \
+        Debug
+	 
+%build_module_simple mmake=workbench-classes-zune-betterstring-mcp \
+  modname=BetterString modtype=mcp \
+  files=$(FILES)
+
+
+#MM includes-copy
+
+INCLUDE_FILES := ../include/mui/BetterString_mcc.h
+%copy_includes path=mui dir=../include/mui
+
+
+TARGETDIR := $(AROS_CATALOGS)
+LANGUAGES := $(basename $(notdir $(call WILDCARD,$(SRCDIR)/$(CURDIR)/locale/*.po)))
+CATALOGS := $(addprefix $(TARGETDIR)/,$(addsuffix /BetterString_mcp.catalog,$(LANGUAGES)))
+
+#MM
+workbench-classes-zune-betterstring-mcp-locale : locale.h locale.c $(CATALOGS)
+
+locale.h: locale.c
+locale.c: $(SRCDIR)/$(CURDIR)/locale/BetterString_mcp.pot $(SRCDIR)/$(CURDIR)/C_h.sd $(SRCDIR)/$(CURDIR)/C_c.sd
+	$(FLEXCAT) $(SRCDIR)/$(CURDIR)/locale/BetterString_mcp.pot locale.h=$(SRCDIR)/$(CURDIR)/C_h.sd locale.c=$(SRCDIR)/$(CURDIR)/C_c.sd
+
+$(TARGETDIR)/%/BetterString_mcp.catalog: $(SRCDIR)/$(CURDIR)/locale/%.po
+	$(ECHO) "Building catalog $@"
+	$(MKDIR) $(dir $@)
+	$(FLEXCAT) POFILE $< CATALOG $@
+
+%common

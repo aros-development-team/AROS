@@ -1,0 +1,18 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+FILES = main pciids support locale saveinfo
+
+EXEDIR = $(AROS_DEBUG)/Hardware
+
+#MM- debug-tools : debug-tools-pcitool
+#MM debug-tools-pcitool : includes symlinks \
+#MM debug-tools-pcitool-catalogs
+
+
+%build_prog mmake=debug-tools-pcitool \
+    progname=PCITool targetdir=$(EXEDIR) \
+    files=$(FILES) uselibs="hiddstubs"
+
+%common
+

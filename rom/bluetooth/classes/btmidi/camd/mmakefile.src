@@ -1,0 +1,45 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+OBJDIR := $(GENDIR)/$(CURDIR)
+CAMDOBJDIR := $(OBJDIR)/../btmidi/arch
+
+SRCFILE := btmididriver
+
+USER_INCLUDES := -I$(OBJDIR)/../include -iquote $(SRCDIR)/$(CURDIR)/..
+
+#MM kernel-bluetooth-classes-btmidi-camddriver : kernel-bluetooth-classes-btmidi-includes
+#MM- kernel-bluetooth-classes-btmidi-camddriver-quick : kernel-bluetooth-classes-btmidi-camddriver
+
+# The adapter's layout is in the class's header: a change there has to reach
+# the driver, which checks BTMIDI_ADAPTER_VERSION when it opens a port.
+$(OBJDIR)/%.o : $(SRCDIR)/$(CURDIR)/%.c $(SRCDIR)/$(CURDIR)/../btmidi_camd.h | $(OBJDIR)
+	%compile_q
+
+# The class writes this blob to DEVS:Midi/ and camd.library LoadSeg()s it, so
+# it has to stay a relocatable ELF: OpenMidiDevice() only accepts the driver
+# if MidiDeviceData.Init points inside the loaded seglist, which needs the
+# relocations intact.
+#
+# It is embedded as a C byte array, compiled like any other source, rather
+# than with "ld -r --format binary": the m68k ld of binutils 2.32 refuses
+# that ("failed to merge target specific data"), and an array asks nothing
+# of the toolchain.
+$(OBJDIR)/$(SRCFILE)_blob.c : $(OBJDIR)/$(SRCFILE).o | $(OBJDIR)
+	$(Q)$(ECHO) "Embedding  $(SRCFILE)..."
+	$(Q)( $(ECHO) "/* Generated from $(SRCFILE).o: the CAMD driver as bytes */"; \
+	      $(ECHO) "#include <exec/types.h>"; \
+	      $(ECHO) "const UBYTE btmididriver_blob[] = {"; \
+	      od -An -v -tx1 $< | $(SED) -e 's/ *\([0-9a-f][0-9a-f]\)/0x\1,/g'; \
+	      $(ECHO) "};"; \
+	      $(ECHO) "const ULONG btmididriver_blob_size = sizeof(btmididriver_blob);" ) > $@
+
+$(CAMDOBJDIR)/$(SRCFILE).bin.o : $(OBJDIR)/$(SRCFILE)_blob.c | $(CAMDOBJDIR)
+	%compile_q
+
+#MM
+kernel-bluetooth-classes-btmidi-camddriver : $(CAMDOBJDIR)/$(SRCFILE).bin.o
+
+GLOB_MKDIRS += $(OBJDIR) $(CAMDOBJDIR)
+
+%common

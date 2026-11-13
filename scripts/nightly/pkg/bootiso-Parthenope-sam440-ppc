@@ -1,0 +1,8 @@
+#!/bin/zsh
+# Creates AROS/sam440-ppc bootiso binary packages.
+
+BUILDCPU=ppc
+BUILDTARGET=sam440-$BUILDCPU
+BOOTLOADER=Parthenope
+
+source $SP/pkg/bootiso $BOOTLOADER yes

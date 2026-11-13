@@ -1,0 +1,92 @@
+/*-
+ * Copyright (c) 2004 David Schultz <das@FreeBSD.ORG>
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
+ */
+
+__FBSDID("$FreeBSD: src/lib/msun/src/s_fmaxl.c,v 1.1 2004/06/30 07:04:01 das Exp $");
+
+#include <math.h>
+
+#include "fpmath.h"
+
+#if LDBL_MANT_DIG != DBL_MANT_DIG
+/****************************************************************************
+    NAME */
+        long double fmaxl(
+
+/*  SYNOPSIS */
+        long double x,
+        long double y)
+
+/*  FUNCTION
+        Return the larger numeric operand, ignoring a lone NaN.
+
+    INPUTS
+        x - First long double operand.
+        y - Second long double operand.
+
+    RESULT
+        The larger value for numeric operands. For opposite-signed
+        zeros, return +0. If one operand is NaN, return the other.
+        If both are NaNs, return a NaN.
+
+    NOTES
+        Include <math.h>. For two NaNs, this implementation evaluates x + y, which may raise
+        FE_INVALID.
+
+        The sign of zero and NaN handling differ from a simple conditional
+        comparison. NaN payloads are not guaranteed.
+        Where long double has double precision, the double implementation
+        supplies the long double symbol.
+
+    SEE ALSO
+        fminl(), fmax(), fmaxf()
+
+*****************************************************************************/
+{
+	union IEEEl2bits u[2];
+	int x_is_nan, y_is_nan;
+
+	u[0].e = x;
+	mask_nbit_l(u[0]);
+	u[1].e = y;
+	mask_nbit_l(u[1]);
+
+    x_is_nan = (u[0].bits.exp == 32767 && (u[0].bits.manh | u[0].bits.manl) != 0);
+    y_is_nan = (u[1].bits.exp == 32767 && (u[1].bits.manh | u[1].bits.manl) != 0);
+
+    if (x_is_nan && y_is_nan)
+        return (x + y);  // returns NaN while potentially raising invalid exception
+    if (x_is_nan)
+        return y;
+    if (y_is_nan)
+        return x;
+
+	/* Handle comparisons of signed zeroes. */
+	if (u[0].bits.sign != u[1].bits.sign)
+		return (u[0].bits.sign ? y : x);
+
+	return (x > y ? x : y);
+}
+#endif

@@ -1,0 +1,6 @@
+#!/bin/zsh
+# Creates AROS/sam440-ppc contrib package.
+
+BUILDTARGET=sam440-ppc
+
+source $SP/pkg/contrib

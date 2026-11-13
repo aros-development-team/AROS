@@ -1,0 +1,13 @@
+#
+# Makefile to copy Prefs/Presets.
+
+include $(SRCDIR)/config/aros.cfg
+
+TARGETDIR := $(AROS_PREFS)/Presets
+
+#MM- kernel-usb : \
+#MM      kernel-usb-presets
+
+%copy_dir_recursive mmake=kernel-usb-presets dst=$(TARGETDIR)
+
+%common

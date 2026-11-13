@@ -1,0 +1,1009 @@
+? MORPHOS_CVS_LOG
+
+RCS file: /home/cvs/morphos/diskfont/Makefile,v
+Working file: Makefile
+head: 1.9
+branch:
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	morphos: 1.1.1
+keyword substitution: kv
+total revisions: 10;	selected revisions: 10
+description:
+----------------------------
+revision 1.9
+date: 2002/12/16 19:32:14;  author: piru;  state: Exp;  lines: +2 -1
+added mkdir -p for install target. Added missing stuff to .PHONY.
+----------------------------
+revision 1.8
+date: 2002/12/16 19:30:26;  author: piru;  state: Exp;  lines: +3 -3
+added -Wall and fixed warnings.
+----------------------------
+revision 1.7
+date: 2002/09/24 15:42:49;  author: zuikkis;  state: Exp;  lines: +3 -0
+
+AvailFonts finds memory fonts again.. :)
+----------------------------
+revision 1.6
+date: 2002/09/20 01:28:48;  author: zuikkis;  state: Exp;  lines: +1 -1
+
+added dependency to diskfont_intern.h ..
+----------------------------
+revision 1.5
+date: 2002/09/20 00:19:03;  author: zuikkis;  state: Exp;  lines: +0 -1
+
+OpenDiskFont calls OpenFont() now, instead of scanning gfxbase fontlist
+directly.. Much cleaner and shorter and equivalent to 68k diskfont.library.
+----------------------------
+revision 1.4
+date: 2002/08/16 17:33:16;  author: zapek;  state: Exp;  lines: +5 -5
+stop relinking when nothing changed
+----------------------------
+revision 1.3
+date: 2002/06/01 21:21:37;  author: laire;  state: Exp;  lines: +2 -1
+os-include fixes..doesn't fully link yet(sigh)
+----------------------------
+revision 1.2
+date: 2002/05/08 22:43:26;  author: laire;  state: Exp;  lines: +2 -1
+strip added
+----------------------------
+revision 1.1
+date: 2002/05/08 16:31:28;  author: laire;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2002/05/08 16:31:28;  author: laire;  state: Exp;  lines: +0 -0
+Imported src..morphos version from steger`s version..temporary measurement
+=============================================================================
+
+RCS file: /home/cvs/morphos/diskfont/af_copyfontstobuffer.c,v
+Working file: af_copyfontstobuffer.c
+head: 1.1
+branch: 1.1.1
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	morphos: 1.1.1
+keyword substitution: kv
+total revisions: 2;	selected revisions: 2
+description:
+----------------------------
+revision 1.1
+date: 2002/05/08 16:31:30;  author: laire;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2002/05/08 16:31:30;  author: laire;  state: Exp;  lines: +0 -0
+Imported src..morphos version from steger`s version..temporary measurement
+=============================================================================
+
+RCS file: /home/cvs/morphos/diskfont/af_fontcache_io.c,v
+Working file: af_fontcache_io.c
+head: 1.1
+branch: 1.1.1
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	morphos: 1.1.1
+keyword substitution: kv
+total revisions: 2;	selected revisions: 2
+description:
+----------------------------
+revision 1.1
+date: 2002/05/08 16:31:30;  author: laire;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2002/05/08 16:31:30;  author: laire;  state: Exp;  lines: +0 -0
+Imported src..morphos version from steger`s version..temporary measurement
+=============================================================================
+
+RCS file: /home/cvs/morphos/diskfont/af_fontdescr_io.c,v
+Working file: af_fontdescr_io.c
+head: 1.1
+branch: 1.1.1
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	morphos: 1.1.1
+keyword substitution: kv
+total revisions: 2;	selected revisions: 2
+description:
+----------------------------
+revision 1.1
+date: 2002/05/08 16:31:30;  author: laire;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2002/05/08 16:31:30;  author: laire;  state: Exp;  lines: +0 -0
+Imported src..morphos version from steger`s version..temporary measurement
+=============================================================================
+
+RCS file: /home/cvs/morphos/diskfont/af_helpfuncs.c,v
+Working file: af_helpfuncs.c
+head: 1.1
+branch: 1.1.1
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	morphos: 1.1.1
+keyword substitution: kv
+total revisions: 2;	selected revisions: 2
+description:
+----------------------------
+revision 1.1
+date: 2002/05/08 16:31:30;  author: laire;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2002/05/08 16:31:30;  author: laire;  state: Exp;  lines: +0 -0
+Imported src..morphos version from steger`s version..temporary measurement
+=============================================================================
+
+RCS file: /home/cvs/morphos/diskfont/af_scanfontinfo.c,v
+Working file: af_scanfontinfo.c
+head: 1.1
+branch: 1.1.1
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	morphos: 1.1.1
+keyword substitution: kv
+total revisions: 2;	selected revisions: 2
+description:
+----------------------------
+revision 1.1
+date: 2002/05/08 16:31:31;  author: laire;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2002/05/08 16:31:31;  author: laire;  state: Exp;  lines: +0 -0
+Imported src..morphos version from steger`s version..temporary measurement
+=============================================================================
+
+RCS file: /home/cvs/morphos/diskfont/availfonts.c,v
+Working file: availfonts.c
+head: 1.1
+branch: 1.1.1
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	morphos: 1.1.1
+keyword substitution: kv
+total revisions: 2;	selected revisions: 2
+description:
+----------------------------
+revision 1.1
+date: 2002/05/08 16:31:41;  author: laire;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2002/05/08 16:31:41;  author: laire;  state: Exp;  lines: +0 -0
+Imported src..morphos version from steger`s version..temporary measurement
+=============================================================================
+
+RCS file: /home/cvs/morphos/diskfont/basicfuncs.c,v
+Working file: basicfuncs.c
+head: 1.1
+branch: 1.1.1
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	morphos: 1.1.1
+keyword substitution: kv
+total revisions: 2;	selected revisions: 2
+description:
+----------------------------
+revision 1.1
+date: 2002/05/08 16:31:41;  author: laire;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2002/05/08 16:31:41;  author: laire;  state: Exp;  lines: +0 -0
+Imported src..morphos version from steger`s version..temporary measurement
+=============================================================================
+
+RCS file: /home/cvs/morphos/diskfont/bullet.c,v
+Working file: bullet.c
+head: 1.4
+branch:
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	morphos: 1.1.1
+keyword substitution: kv
+total revisions: 5;	selected revisions: 5
+description:
+----------------------------
+revision 1.4
+date: 2002/12/16 19:30:26;  author: piru;  state: Exp;  lines: +2 -2
+added -Wall and fixed warnings.
+----------------------------
+revision 1.3
+date: 2002/12/13 18:27:54;  author: emm;  state: Exp;  lines: +466 -285
+Create a ColorTextFont with anti-aliasing data from engines supporting OTAG_GlyphMap8Bits.
+----------------------------
+revision 1.2
+date: 2002/11/16 11:59:51;  author: steger;  state: Exp;  lines: +24 -10
+optimized glyphmap-bitmap-to-fontchar-data blit routine a bit.
+----------------------------
+revision 1.1
+date: 2002/05/08 16:31:49;  author: laire;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2002/05/08 16:31:49;  author: laire;  state: Exp;  lines: +0 -0
+Imported src..morphos version from steger`s version..temporary measurement
+=============================================================================
+
+RCS file: /home/cvs/morphos/diskfont/Attic/diskfont.library.elf,v
+Working file: diskfont.library.elf
+head: 1.3
+branch:
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	morphos: 1.1.1
+keyword substitution: kv
+total revisions: 4;	selected revisions: 4
+description:
+----------------------------
+revision 1.3
+date: 2002/05/08 22:50:08;  author: emm;  state: dead;  lines: +0 -0
+Removed binary.
+----------------------------
+revision 1.2
+date: 2002/05/08 22:43:26;  author: laire;  state: Exp;  lines: +17 -19
+strip added
+----------------------------
+revision 1.1
+date: 2002/05/08 16:32:09;  author: laire;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2002/05/08 16:32:09;  author: laire;  state: Exp;  lines: +0 -0
+Imported src..morphos version from steger`s version..temporary measurement
+=============================================================================
+
+RCS file: /home/cvs/morphos/diskfont/diskfont_init.c,v
+Working file: diskfont_init.c
+head: 1.6
+branch:
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	morphos: 1.1.1
+keyword substitution: kv
+total revisions: 7;	selected revisions: 7
+description:
+----------------------------
+revision 1.6
+date: 2002/12/16 19:30:26;  author: piru;  state: Exp;  lines: +2 -2
+added -Wall and fixed warnings.
+----------------------------
+revision 1.5
+date: 2002/12/13 18:27:54;  author: emm;  state: Exp;  lines: +21 -19
+Create a ColorTextFont with anti-aliasing data from engines supporting OTAG_GlyphMap8Bits.
+----------------------------
+revision 1.4
+date: 2002/09/24 15:42:49;  author: zuikkis;  state: Exp;  lines: +1 -0
+
+AvailFonts finds memory fonts again.. :)
+----------------------------
+revision 1.3
+date: 2002/09/20 00:19:03;  author: zuikkis;  state: Exp;  lines: +1 -2
+
+OpenDiskFont calls OpenFont() now, instead of scanning gfxbase fontlist
+directly.. Much cleaner and shorter and equivalent to 68k diskfont.library.
+----------------------------
+revision 1.2
+date: 2002/05/10 10:38:08;  author: laire;  state: Exp;  lines: +8 -4
+resident extension
+----------------------------
+revision 1.1
+date: 2002/05/08 16:32:03;  author: laire;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2002/05/08 16:32:03;  author: laire;  state: Exp;  lines: +0 -0
+Imported src..morphos version from steger`s version..temporary measurement
+=============================================================================
+
+RCS file: /home/cvs/morphos/diskfont/Attic/diskfont_init.e,v
+Working file: diskfont_init.e
+head: 1.2
+branch:
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	morphos: 1.1.1
+keyword substitution: kv
+total revisions: 3;	selected revisions: 3
+description:
+----------------------------
+revision 1.2
+date: 2002/05/11 01:10:05;  author: henes;  state: dead;  lines: +0 -0
+cleanup
+----------------------------
+revision 1.1
+date: 2002/05/08 16:32:07;  author: laire;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2002/05/08 16:32:07;  author: laire;  state: Exp;  lines: +0 -0
+Imported src..morphos version from steger`s version..temporary measurement
+=============================================================================
+
+RCS file: /home/cvs/morphos/diskfont/diskfont_intern.h,v
+Working file: diskfont_intern.h
+head: 1.5
+branch:
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	morphos: 1.1.1
+keyword substitution: kv
+total revisions: 6;	selected revisions: 6
+description:
+----------------------------
+revision 1.5
+date: 2002/12/13 18:27:54;  author: emm;  state: Exp;  lines: +30 -20
+Create a ColorTextFont with anti-aliasing data from engines supporting OTAG_GlyphMap8Bits.
+----------------------------
+revision 1.4
+date: 2002/09/24 15:42:49;  author: zuikkis;  state: Exp;  lines: +2 -2
+
+AvailFonts finds memory fonts again.. :)
+----------------------------
+revision 1.3
+date: 2002/09/20 00:19:03;  author: zuikkis;  state: Exp;  lines: +2 -2
+
+OpenDiskFont calls OpenFont() now, instead of scanning gfxbase fontlist
+directly.. Much cleaner and shorter and equivalent to 68k diskfont.library.
+----------------------------
+revision 1.2
+date: 2002/06/01 21:21:37;  author: laire;  state: Exp;  lines: +4 -1
+os-include fixes..doesn't fully link yet(sigh)
+----------------------------
+revision 1.1
+date: 2002/05/08 16:31:50;  author: laire;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2002/05/08 16:31:50;  author: laire;  state: Exp;  lines: +0 -0
+Imported src..morphos version from steger`s version..temporary measurement
+=============================================================================
+
+RCS file: /home/cvs/morphos/diskfont/diskfont_io.c,v
+Working file: diskfont_io.c
+head: 1.1
+branch: 1.1.1
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	morphos: 1.1.1
+keyword substitution: kv
+total revisions: 2;	selected revisions: 2
+description:
+----------------------------
+revision 1.1
+date: 2002/05/08 16:31:57;  author: laire;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2002/05/08 16:31:57;  author: laire;  state: Exp;  lines: +0 -0
+Imported src..morphos version from steger`s version..temporary measurement
+=============================================================================
+
+RCS file: /home/cvs/morphos/diskfont/diskfontfunc.c,v
+Working file: diskfontfunc.c
+head: 1.3
+branch:
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	morphos: 1.1.1
+keyword substitution: kv
+total revisions: 4;	selected revisions: 4
+description:
+----------------------------
+revision 1.3
+date: 2002/12/16 19:30:26;  author: piru;  state: Exp;  lines: +5 -3
+added -Wall and fixed warnings.
+----------------------------
+revision 1.2
+date: 2002/12/09 09:55:05;  author: laire;  state: Exp;  lines: +10 -3
+reworked screen_global into get_screen but this isn't the real deal.
+we need to lock the screen during icon drawing...
+this fixes some "simple" problems(opening about)..but when i wanna open a
+window it crashes.
+another problem is that ambient doesn't refresh the volume/device icons on
+a screenchange.
+----------------------------
+revision 1.1
+date: 2002/05/08 16:31:28;  author: laire;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2002/05/08 16:31:28;  author: laire;  state: Exp;  lines: +0 -0
+Imported src..morphos version from steger`s version..temporary measurement
+=============================================================================
+
+RCS file: /home/cvs/morphos/diskfont/disposefontcontents.c,v
+Working file: disposefontcontents.c
+head: 1.2
+branch:
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	morphos: 1.1.1
+keyword substitution: kv
+total revisions: 3;	selected revisions: 3
+description:
+----------------------------
+revision 1.2
+date: 2002/12/16 19:30:26;  author: piru;  state: Exp;  lines: +3 -1
+added -Wall and fixed warnings.
+----------------------------
+revision 1.1
+date: 2002/05/08 16:31:57;  author: laire;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2002/05/08 16:31:57;  author: laire;  state: Exp;  lines: +0 -0
+Imported src..morphos version from steger`s version..temporary measurement
+=============================================================================
+
+RCS file: /home/cvs/morphos/diskfont/dosstreamhook.c,v
+Working file: dosstreamhook.c
+head: 1.1
+branch: 1.1.1
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	morphos: 1.1.1
+keyword substitution: kv
+total revisions: 2;	selected revisions: 2
+description:
+----------------------------
+revision 1.1
+date: 2002/05/08 16:31:59;  author: laire;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2002/05/08 16:31:59;  author: laire;  state: Exp;  lines: +0 -0
+Imported src..morphos version from steger`s version..temporary measurement
+=============================================================================
+
+RCS file: /home/cvs/morphos/diskfont/endtag.c,v
+Working file: endtag.c
+head: 1.1
+branch: 1.1.1
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	morphos: 1.1.1
+keyword substitution: kv
+total revisions: 2;	selected revisions: 2
+description:
+----------------------------
+revision 1.1
+date: 2002/05/08 16:31:59;  author: laire;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2002/05/08 16:31:59;  author: laire;  state: Exp;  lines: +0 -0
+Imported src..morphos version from steger`s version..temporary measurement
+=============================================================================
+
+RCS file: /home/cvs/morphos/diskfont/functable.c,v
+Working file: functable.c
+head: 1.1
+branch: 1.1.1
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	morphos: 1.1.1
+keyword substitution: kv
+total revisions: 2;	selected revisions: 2
+description:
+----------------------------
+revision 1.1
+date: 2002/05/08 16:31:59;  author: laire;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2002/05/08 16:31:59;  author: laire;  state: Exp;  lines: +0 -0
+Imported src..morphos version from steger`s version..temporary measurement
+=============================================================================
+
+RCS file: /home/cvs/morphos/diskfont/initstruct.h,v
+Working file: initstruct.h
+head: 1.1
+branch: 1.1.1
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	morphos: 1.1.1
+keyword substitution: kv
+total revisions: 2;	selected revisions: 2
+description:
+----------------------------
+revision 1.1
+date: 2002/05/08 16:31:59;  author: laire;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2002/05/08 16:31:59;  author: laire;  state: Exp;  lines: +0 -0
+Imported src..morphos version from steger`s version..temporary measurement
+=============================================================================
+
+RCS file: /home/cvs/morphos/diskfont/libdefs.h,v
+Working file: libdefs.h
+head: 1.2
+branch:
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	morphos: 1.1.1
+keyword substitution: kv
+total revisions: 3;	selected revisions: 3
+description:
+----------------------------
+revision 1.2
+date: 2002/12/16 21:37:14;  author: piru;  state: Exp;  lines: +1 -1
+fixed $VER tag
+----------------------------
+revision 1.1
+date: 2002/05/08 16:31:59;  author: laire;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2002/05/08 16:31:59;  author: laire;  state: Exp;  lines: +0 -0
+Imported src..morphos version from steger`s version..temporary measurement
+=============================================================================
+
+RCS file: /home/cvs/morphos/diskfont/memoryfontfunc.c,v
+Working file: memoryfontfunc.c
+head: 1.4
+branch:
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	morphos: 1.1.1
+keyword substitution: kv
+total revisions: 5;	selected revisions: 5
+description:
+----------------------------
+revision 1.4
+date: 2002/12/16 19:30:26;  author: piru;  state: Exp;  lines: +6 -2
+added -Wall and fixed warnings.
+----------------------------
+revision 1.3
+date: 2002/09/24 15:42:49;  author: zuikkis;  state: Exp;  lines: +0 -0
+
+AvailFonts finds memory fonts again.. :)
+----------------------------
+revision 1.2
+date: 2002/09/20 00:19:03;  author: zuikkis;  state: dead;  lines: +1 -1
+
+OpenDiskFont calls OpenFont() now, instead of scanning gfxbase fontlist
+directly.. Much cleaner and shorter and equivalent to 68k diskfont.library.
+----------------------------
+revision 1.1
+date: 2002/05/08 16:32:03;  author: laire;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2002/05/08 16:32:03;  author: laire;  state: Exp;  lines: +0 -0
+Imported src..morphos version from steger`s version..temporary measurement
+=============================================================================
+
+RCS file: /home/cvs/morphos/diskfont/newfontcontents.c,v
+Working file: newfontcontents.c
+head: 1.2
+branch:
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	morphos: 1.1.1
+keyword substitution: kv
+total revisions: 3;	selected revisions: 3
+description:
+----------------------------
+revision 1.2
+date: 2002/12/16 19:30:26;  author: piru;  state: Exp;  lines: +4 -2
+added -Wall and fixed warnings.
+----------------------------
+revision 1.1
+date: 2002/05/08 16:32:04;  author: laire;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2002/05/08 16:32:04;  author: laire;  state: Exp;  lines: +0 -0
+Imported src..morphos version from steger`s version..temporary measurement
+=============================================================================
+
+RCS file: /home/cvs/morphos/diskfont/newscaleddiskfont.c,v
+Working file: newscaleddiskfont.c
+head: 1.2
+branch:
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	morphos: 1.1.1
+keyword substitution: kv
+total revisions: 3;	selected revisions: 3
+description:
+----------------------------
+revision 1.2
+date: 2002/12/16 19:30:26;  author: piru;  state: Exp;  lines: +6 -2
+added -Wall and fixed warnings.
+----------------------------
+revision 1.1
+date: 2002/05/08 16:32:04;  author: laire;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2002/05/08 16:32:04;  author: laire;  state: Exp;  lines: +0 -0
+Imported src..morphos version from steger`s version..temporary measurement
+=============================================================================
+
+RCS file: /home/cvs/morphos/diskfont/opendiskfont.c,v
+Working file: opendiskfont.c
+head: 1.7
+branch:
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	morphos: 1.1.1
+keyword substitution: kv
+total revisions: 8;	selected revisions: 8
+description:
+----------------------------
+revision 1.7
+date: 2002/12/16 19:30:26;  author: piru;  state: Exp;  lines: +3 -3
+added -Wall and fixed warnings.
+----------------------------
+revision 1.6
+date: 2002/09/24 15:42:49;  author: zuikkis;  state: Exp;  lines: +2 -2
+
+AvailFonts finds memory fonts again.. :)
+----------------------------
+revision 1.5
+date: 2002/09/23 16:02:59;  author: zuikkis;  state: Exp;  lines: +10 -1
+
+Oops, OpenFont needs WeighTAMatch so only exact matches are accepted.
+Otherwise load disk font..
+----------------------------
+revision 1.4
+date: 2002/09/20 00:19:03;  author: zuikkis;  state: Exp;  lines: +135 -131
+
+OpenDiskFont calls OpenFont() now, instead of scanning gfxbase fontlist
+directly.. Much cleaner and shorter and equivalent to 68k diskfont.library.
+----------------------------
+revision 1.3
+date: 2002/06/01 22:01:58;  author: zapek;  state: Exp;  lines: +54 -60
+and removed the change since the function is public now
+----------------------------
+revision 1.2
+date: 2002/06/01 21:55:33;  author: zapek;  state: Exp;  lines: +60 -54
+added WeighTAMatch
+----------------------------
+revision 1.1
+date: 2002/05/08 16:32:04;  author: laire;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2002/05/08 16:32:04;  author: laire;  state: Exp;  lines: +0 -0
+Imported src..morphos version from steger`s version..temporary measurement
+=============================================================================
+
+RCS file: /home/cvs/morphos/diskfont/todo.txt,v
+Working file: todo.txt
+head: 1.2
+branch:
+locks: strict
+access list:
+symbolic names:
+keyword substitution: kv
+total revisions: 2;	selected revisions: 2
+description:
+----------------------------
+revision 1.2
+date: 2002/12/17 16:38:04;  author: piru;  state: Exp;  lines: +0 -1
+font spacing issue solved, it's ftmanager.
+----------------------------
+revision 1.1
+date: 2002/12/16 22:01:51;  author: piru;  state: Exp;
+stuff to do.
+=============================================================================
+
+RCS file: /home/cvs/morphos/diskfont/arosemu/arossupport.c,v
+Working file: arosemu/arossupport.c
+head: 1.1
+branch: 1.1.1
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	morphos: 1.1.1
+keyword substitution: kv
+total revisions: 2;	selected revisions: 2
+description:
+----------------------------
+revision 1.1
+date: 2002/05/08 16:32:09;  author: laire;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2002/05/08 16:32:09;  author: laire;  state: Exp;  lines: +0 -0
+Imported src..morphos version from steger`s version..temporary measurement
+=============================================================================
+
+RCS file: /home/cvs/morphos/diskfont/arosemu/include/aros/amiga.h,v
+Working file: arosemu/include/aros/amiga.h
+head: 1.1
+branch: 1.1.1
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	morphos: 1.1.1
+keyword substitution: kv
+total revisions: 2;	selected revisions: 2
+description:
+----------------------------
+revision 1.1
+date: 2002/05/08 16:32:10;  author: laire;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2002/05/08 16:32:10;  author: laire;  state: Exp;  lines: +0 -0
+Imported src..morphos version from steger`s version..temporary measurement
+=============================================================================
+
+RCS file: /home/cvs/morphos/diskfont/arosemu/include/aros/asmcall.h,v
+Working file: arosemu/include/aros/asmcall.h
+head: 1.1
+branch: 1.1.1
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	morphos: 1.1.1
+keyword substitution: kv
+total revisions: 2;	selected revisions: 2
+description:
+----------------------------
+revision 1.1
+date: 2002/05/08 16:32:10;  author: laire;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2002/05/08 16:32:10;  author: laire;  state: Exp;  lines: +0 -0
+Imported src..morphos version from steger`s version..temporary measurement
+=============================================================================
+
+RCS file: /home/cvs/morphos/diskfont/arosemu/include/aros/bigendianio.h,v
+Working file: arosemu/include/aros/bigendianio.h
+head: 1.1
+branch: 1.1.1
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	morphos: 1.1.1
+keyword substitution: kv
+total revisions: 2;	selected revisions: 2
+description:
+----------------------------
+revision 1.1
+date: 2002/05/08 16:32:10;  author: laire;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2002/05/08 16:32:10;  author: laire;  state: Exp;  lines: +0 -0
+Imported src..morphos version from steger`s version..temporary measurement
+=============================================================================
+
+RCS file: /home/cvs/morphos/diskfont/arosemu/include/aros/debug.h,v
+Working file: arosemu/include/aros/debug.h
+head: 1.1
+branch: 1.1.1
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	morphos: 1.1.1
+keyword substitution: kv
+total revisions: 2;	selected revisions: 2
+description:
+----------------------------
+revision 1.1
+date: 2002/05/08 16:32:10;  author: laire;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2002/05/08 16:32:10;  author: laire;  state: Exp;  lines: +0 -0
+Imported src..morphos version from steger`s version..temporary measurement
+=============================================================================
+
+RCS file: /home/cvs/morphos/diskfont/arosemu/include/aros/libcall.h,v
+Working file: arosemu/include/aros/libcall.h
+head: 1.1
+branch: 1.1.1
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	morphos: 1.1.1
+keyword substitution: kv
+total revisions: 2;	selected revisions: 2
+description:
+----------------------------
+revision 1.1
+date: 2002/05/08 16:32:22;  author: laire;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2002/05/08 16:32:22;  author: laire;  state: Exp;  lines: +0 -0
+Imported src..morphos version from steger`s version..temporary measurement
+=============================================================================
+
+RCS file: /home/cvs/morphos/diskfont/arosemu/include/aros/machine.h,v
+Working file: arosemu/include/aros/machine.h
+head: 1.3
+branch:
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	morphos: 1.1.1
+keyword substitution: kv
+total revisions: 4;	selected revisions: 4
+description:
+----------------------------
+revision 1.3
+date: 2002/12/16 19:03:39;  author: piru;  state: Exp;  lines: +8 -3
+disabled list macros that are in morphos exec/lists.h now.
+----------------------------
+revision 1.2
+date: 2002/06/01 21:21:37;  author: laire;  state: Exp;  lines: +3 -3
+os-include fixes..doesn't fully link yet(sigh)
+----------------------------
+revision 1.1
+date: 2002/05/08 16:32:17;  author: laire;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2002/05/08 16:32:17;  author: laire;  state: Exp;  lines: +0 -0
+Imported src..morphos version from steger`s version..temporary measurement
+=============================================================================
+
+RCS file: /home/cvs/morphos/diskfont/arosemu/include/aros/macros.h,v
+Working file: arosemu/include/aros/macros.h
+head: 1.1
+branch: 1.1.1
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	morphos: 1.1.1
+keyword substitution: kv
+total revisions: 2;	selected revisions: 2
+description:
+----------------------------
+revision 1.1
+date: 2002/05/08 16:32:09;  author: laire;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2002/05/08 16:32:09;  author: laire;  state: Exp;  lines: +0 -0
+Imported src..morphos version from steger`s version..temporary measurement
+=============================================================================
+
+RCS file: /home/cvs/morphos/diskfont/arosemu/include/aros/system.h,v
+Working file: arosemu/include/aros/system.h
+head: 1.1
+branch: 1.1.1
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	morphos: 1.1.1
+keyword substitution: kv
+total revisions: 2;	selected revisions: 2
+description:
+----------------------------
+revision 1.1
+date: 2002/05/08 16:32:09;  author: laire;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2002/05/08 16:32:09;  author: laire;  state: Exp;  lines: +0 -0
+Imported src..morphos version from steger`s version..temporary measurement
+=============================================================================
+
+RCS file: /home/cvs/morphos/diskfont/arosemu/include/proto/arossupport.h,v
+Working file: arosemu/include/proto/arossupport.h
+head: 1.1
+branch: 1.1.1
+locks: strict
+access list:
+symbolic names:
+	start: 1.1.1.1
+	morphos: 1.1.1
+keyword substitution: kv
+total revisions: 2;	selected revisions: 2
+description:
+----------------------------
+revision 1.1
+date: 2002/05/08 16:32:09;  author: laire;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2002/05/08 16:32:09;  author: laire;  state: Exp;  lines: +0 -0
+Imported src..morphos version from steger`s version..temporary measurement
+=============================================================================

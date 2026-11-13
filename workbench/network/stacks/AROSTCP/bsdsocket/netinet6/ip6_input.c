@@ -1,0 +1,941 @@
+/*
+ * Copyright (C) 2020-2026 The AROS Development Team.  All rights reserved.
+ *
+ * Based on KAME IPv6 implementation:
+ * Copyright (C) 1995, 1996, 1997, and 1998 WIDE Project. All rights reserved.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ */
+
+/*
+ * ip6_input.c - IPv6 input processing.
+ *
+ * Handles inbound IPv6 packets: basic header validation, hop-limit
+ * decrement (when forwarding), extension-header parsing, reassembly
+ * dispatch, and demultiplexing to the correct upper-layer protocol.
+ */
+
+#include <conf.h>
+
+#if INET6
+
+#include <sys/param.h>
+#include <sys/systm.h>
+#include <sys/malloc.h>
+#include <sys/mbuf.h>
+#include <sys/domain.h>
+#include <sys/protosw.h>
+#include <sys/socket.h>
+#include <sys/errno.h>
+#include <sys/kernel.h>
+#include <sys/synch.h>
+
+#include <net/if.h>
+#include <net/netisr.h>
+#include <net/netmodule.h>
+#include <netinet/inetfamily.h>
+#include <net/route.h>
+#include <net/pfil.h>
+
+#include <netinet/in.h>
+#include <netinet/in_systm.h>
+#include <netinet/ip.h>
+#include <netinet/in_var.h>
+#include <netinet/in_pcb.h>
+#include <netinet/ip6.h>
+#include <netinet/icmp6.h>
+#include <netinet6/in6_var.h>
+#include <netinet6/nd6.h>
+#include <net/if_sana.h>
+
+#include <kern/uipc_domain_protos.h>
+#include <aros/debug.h>
+#include <netinet/inet_transport.h>
+#include <protos/net/route_protos.h>	/* rt_flushfamily() */
+#include <net/netcore_map.h>        /* always the last include */
+
+/* IPv6's packet hook point (netinet6/in6_proto.c) */
+extern struct pfil_point in6_pfil;
+
+/* ------------------------------------------------------------------
+ * Globals
+ * ------------------------------------------------------------------ */
+struct ip6stat ip6stat = {0};
+
+extern struct domain inet6domain;
+extern struct protosw inet6sw[];
+void ip6intr(void);
+struct protodispatch ip6_protos;    /* which protocol takes which next-header value */
+
+/*
+ * forward declarations (defined in icmp6.c).
+ */
+void icmp6_error(struct mbuf *, int, int, int);
+void ip6_input(struct mbuf *m);
+
+/* ------------------------------------------------------------------
+ * IPv6 fragment reassembly (RFC 8200 §4.5).
+ * ------------------------------------------------------------------ */
+#define IP6_MAXFRAGS      64   /* max fragments held system-wide */
+#define IP6_FRAGTTL       60   /* fragment lifetime (slow ticks = 30s) */
+#define IP6_MAXFRAGPACKETS 16  /* max concurrent reassembly queues */
+
+struct ip6q {
+    struct ip6q  *next;
+    struct ip6q  *prev;
+    struct ip6asfrag *ip6q_down;  /* fragment chain */
+    u_int32_t     ip6q_ident;     /* fragment identification */
+    u_int8_t      ip6q_nxt;       /* next header of original */
+    struct in6_addr ip6q_src;
+    struct in6_addr ip6q_dst;
+    int           ip6q_ttl;       /* time to live (ticks) */
+    int           ip6q_nfrag;     /* # fragments received */
+    int           ip6q_unfrglen;  /* unfragmentable part length */
+};
+
+struct ip6asfrag {
+    struct ip6asfrag *next;
+    struct ip6asfrag *prev;
+    struct mbuf      *m;
+    int               off;       /* offset in original datagram */
+    int               frglen;    /* fragment payload length */
+    int               mff;       /* more fragments flag */
+};
+
+static struct ip6q ip6q = { &ip6q, &ip6q, NULL, 0, 0, {{0}}, {{0}}, 0, 0, 0 };
+static int ip6q_nfragpackets = 0;
+static int ip6_nfrags = 0;
+
+static void frag6_freef(struct ip6q *);
+static struct mbuf *frag6_input(struct mbuf *, int);
+
+/*
+ * frag6_freef - free an entire reassembly queue.
+ */
+static void
+frag6_freef(struct ip6q *q6)
+{
+    struct ip6asfrag *af6, *naf6;
+
+    for(af6 = q6->ip6q_down; af6; af6 = naf6) {
+        naf6 = af6->next;
+        m_freem(af6->m);
+        bsd_free(af6, M_FTABLE);
+        ip6_nfrags--;
+    }
+    q6->prev->next = q6->next;
+    q6->next->prev = q6->prev;
+    ip6q_nfragpackets--;
+    bsd_free(q6, M_FTABLE);
+}
+
+/*
+ * frag6_input - process an IPv6 fragment.
+ *
+ * m contains the full packet with ip6 header.
+ * off is the offset to the Fragment header within the mbuf.
+ * Returns a reassembled mbuf or NULL if reassembly is not yet complete.
+ */
+static struct mbuf *
+frag6_input(struct mbuf *m, int off)
+{
+    struct ip6_hdr  *ip6;
+    struct ip6_frag *fh;
+    struct ip6q     *q6;
+    struct ip6asfrag *af6, *naf6;
+    int fragoff, frglen, mff;
+    spl_t s;
+
+    /* pull up fragment header (m_pullup may reallocate) */
+    if(m->m_len < off + sizeof(struct ip6_frag) &&
+       (m = m_pullup(m, off + sizeof(struct ip6_frag))) == NULL) {
+        ip6stat.ip6s_toosmall++;
+        return NULL;
+    }
+    ip6 = mtod(m, struct ip6_hdr *);
+    fh  = (struct ip6_frag *)(mtod(m, u_int8_t *) + off);
+
+    fragoff = ntohs(fh->ip6f_offlg & IP6F_OFF_MASK);
+    mff     = fh->ip6f_offlg & IP6F_MORE_FRAG;
+    frglen  = m->m_pkthdr.len - off - sizeof(struct ip6_frag);
+
+    /* fragment length must be multiple of 8, except for last fragment */
+    if(mff && (frglen & 7)) {
+        icmp6_error(m, ICMP6_PARAM_PROB,
+                    ICMP6_PARAMPROB_HEADER,
+                    offsetof(struct ip6_hdr, ip6_plen));
+        return NULL;
+    }
+
+    /* limit total fragments in system */
+    if(ip6_nfrags >= IP6_MAXFRAGS) {
+        ip6stat.ip6s_fragoverflow++;
+        m_freem(m);
+        return NULL;
+    }
+
+    s = splimp();
+
+    /* find existing reassembly queue */
+    for(q6 = ip6q.next; q6 != &ip6q; q6 = q6->next) {
+        if(q6->ip6q_ident == fh->ip6f_ident &&
+           IN6_ARE_ADDR_EQUAL(&q6->ip6q_src, &ip6->ip6_src) &&
+           IN6_ARE_ADDR_EQUAL(&q6->ip6q_dst, &ip6->ip6_dst))
+            break;
+    }
+
+    if(q6 == &ip6q) {
+        /* new reassembly queue */
+        if(ip6q_nfragpackets >= IP6_MAXFRAGPACKETS) {
+            /* drop oldest */
+            struct ip6q *oldest = ip6q.prev;
+            if(oldest != &ip6q)
+                frag6_freef(oldest);
+        }
+
+        q6 = (struct ip6q *)bsd_malloc(sizeof(*q6), M_FTABLE, M_NOWAIT);
+        if(q6 == NULL) {
+            splx(s);
+            m_freem(m);
+            return NULL;
+        }
+        bzero(q6, sizeof(*q6));
+
+        q6->ip6q_ident = fh->ip6f_ident;
+        q6->ip6q_src   = ip6->ip6_src;
+        q6->ip6q_dst   = ip6->ip6_dst;
+        q6->ip6q_nxt   = fh->ip6f_nxt;
+        q6->ip6q_ttl   = IP6_FRAGTTL;
+        q6->ip6q_unfrglen = off - sizeof(struct ip6_hdr);
+
+        /* insert at head of queue list */
+        q6->next = ip6q.next;
+        q6->prev = &ip6q;
+        ip6q.next->prev = q6;
+        ip6q.next = q6;
+        ip6q_nfragpackets++;
+    }
+
+    /* allocate fragment descriptor */
+    af6 = (struct ip6asfrag *)bsd_malloc(sizeof(*af6), M_FTABLE, M_NOWAIT);
+    if(af6 == NULL) {
+        splx(s);
+        m_freem(m);
+        return NULL;
+    }
+    af6->m      = m;
+    af6->off    = fragoff;
+    af6->frglen = frglen;
+    af6->mff    = mff ? 1 : 0;
+
+    /* insert in offset-sorted order */
+    {
+        struct ip6asfrag *prev_af = NULL;
+        struct ip6asfrag *cur;
+        for(cur = q6->ip6q_down; cur; cur = cur->next) {
+            if(cur->off > af6->off)
+                break;
+            prev_af = cur;
+        }
+        af6->next = cur;
+        af6->prev = prev_af;
+        if(prev_af)
+            prev_af->next = af6;
+        else
+            q6->ip6q_down = af6;
+        if(cur)
+            cur->prev = af6;
+    }
+
+    q6->ip6q_nfrag++;
+    ip6_nfrags++;
+
+    /* check if reassembly is complete */
+    {
+        int next_expected = 0;
+        int have_last = 0;
+        for(af6 = q6->ip6q_down; af6; af6 = af6->next) {
+            if(af6->off != next_expected) {
+                splx(s);
+                return NULL;  /* gap - not yet complete */
+            }
+            next_expected = af6->off + af6->frglen;
+            if(!af6->mff)
+                have_last = 1;
+        }
+        if(!have_last) {
+            splx(s);
+            return NULL;  /* haven't seen last fragment */
+        }
+    }
+
+    /* reassembly complete - concatenate fragments */
+    {
+        struct mbuf *result;
+        struct ip6_hdr *rip6;
+
+        /* take first fragment's mbuf as the base */
+        af6 = q6->ip6q_down;
+        result = af6->m;
+
+        /* Remove the fragment header from the first mbuf:
+         * shift data after frag hdr back over the frag hdr */
+        {
+            int fhoff = sizeof(struct ip6_hdr) + q6->ip6q_unfrglen;
+            int fhsize = sizeof(struct ip6_frag);
+            if(result->m_len > fhoff + fhsize) {
+                ovbcopy(mtod(result, caddr_t) + fhoff + fhsize,
+                        mtod(result, caddr_t) + fhoff,
+                        result->m_len - fhoff - fhsize);
+            }
+            result->m_len -= fhsize;
+            result->m_pkthdr.len = af6->frglen + sizeof(struct ip6_hdr)
+                                   + q6->ip6q_unfrglen;
+        }
+
+        /* append remaining fragments' data */
+        {
+            struct mbuf *tail = result;
+            while(tail->m_next)
+                tail = tail->m_next;
+
+            naf6 = af6->next;
+            while(naf6) {
+                struct ip6asfrag *next = naf6->next;
+                struct mbuf *fm = naf6->m;
+                int strip = sizeof(struct ip6_hdr) + q6->ip6q_unfrglen
+                            + sizeof(struct ip6_frag);
+                m_adj(fm, strip);
+                result->m_pkthdr.len += fm->m_pkthdr.len;
+                tail->m_next = fm;
+                while(tail->m_next)
+                    tail = tail->m_next;
+                bsd_free(naf6, M_FTABLE);
+                ip6_nfrags--;
+                naf6 = next;
+            }
+        }
+
+        /* fix up the IPv6 header */
+        rip6 = mtod(result, struct ip6_hdr *);
+        rip6->ip6_plen = htons(result->m_pkthdr.len - sizeof(struct ip6_hdr));
+        rip6->ip6_nxt  = q6->ip6q_nxt;
+
+        /* free the first fragment descriptor (mbuf is now result) */
+        bsd_free(af6, M_FTABLE);
+        ip6_nfrags--;
+
+        /* unlink and free queue header */
+        q6->prev->next = q6->next;
+        q6->next->prev = q6->prev;
+        ip6q_nfragpackets--;
+        bsd_free(q6, M_FTABLE);
+
+        ip6stat.ip6s_reassembled++;
+        splx(s);
+        return result;
+    }
+}
+
+/*
+ * frag6_slowtimo - age out fragment reassembly queues.
+ *
+ * Called from icmp6_slowtimo() (once per slow timeout tick).
+ */
+void
+frag6_slowtimo(void)
+{
+    struct ip6q *q6, *nq6;
+    spl_t s = splimp();
+
+    for(q6 = ip6q.next; q6 != &ip6q; q6 = nq6) {
+        nq6 = q6->next;
+        if(--q6->ip6q_ttl <= 0) {
+            ip6stat.ip6s_fragtimeout++;
+            /* send ICMPv6 Time Exceeded if we have the first fragment */
+            if(q6->ip6q_down && q6->ip6q_down->off == 0) {
+                icmp6_error(q6->ip6q_down->m, ICMP6_TIME_EXCEEDED,
+                            ICMP6_TIME_EXCEED_REASSEMBLY, 0);
+                q6->ip6q_down->m = NULL; /* consumed by icmp6_error */
+            }
+            frag6_freef(q6);
+        }
+    }
+    splx(s);
+}
+
+/*
+ * ip6_forward - forward an IPv6 packet to its destination.
+ *
+ * Performs route lookup, scope checks, and hands off to the
+ * outgoing interface. Generates ICMPv6 errors as needed.
+ */
+static void
+ip6_forward(struct mbuf *m, struct ifnet *srcifp)
+{
+    struct ip6_hdr *ip6 = mtod(m, struct ip6_hdr *);
+    struct route_in6 ip6route;
+    struct route *ro;
+    struct sockaddr_in6 *dst;
+    struct rtentry *rt;
+    struct ifnet *ifp;
+    int error;
+    spl_t s;
+
+    bzero(&ip6route, sizeof(ip6route));
+    ro = (struct route *)&ip6route;
+    dst = (struct sockaddr_in6 *)&ro->ro_dst;
+    dst->sin6_family = AF_INET6;
+    dst->sin6_len    = sizeof(*dst);
+    dst->sin6_addr   = ip6->ip6_dst;
+
+    rtalloc(ro);
+    if(ro->ro_rt == NULL) {
+        icmp6_error(m, ICMP6_DST_UNREACH,
+                    ICMP6_DST_UNREACH_NOROUTE, 0);
+        ip6stat.ip6s_noroute++;
+        return;
+    }
+    rt  = ro->ro_rt;
+    ifp = rt->rt_ifp;
+
+    /* Packet too big? Send ICMPv6 Packet Too Big */
+    if(m->m_pkthdr.len > ifp->if_mtu) {
+        icmp6_error(m, ICMP6_PACKET_TOO_BIG, 0,
+                    ifp->if_mtu);
+        RTFREE(rt);
+        ip6stat.ip6s_cantfrag++;
+        return;
+    }
+
+    /* Update the payload length (trimming was done in ip6_input) */
+    ip6->ip6_plen = htons((u_int16_t)(m->m_pkthdr.len
+                                       - sizeof(struct ip6_hdr)));
+
+    /* send redirect if forwarding on same interface */
+    if(ifp == srcifp) {
+        /* TODO: send ICMPv6 redirect */
+        ip6stat.ip6s_redirectsent++;
+    }
+
+    /*
+     * The packet hooks, with the route and the outgoing interface known:
+     * the forwarding hooks, then the output hooks - this path does not go
+     * through ip6_output(), and a forwarded packet passes the same points
+     * as in IPv4 (in, forward, out). A dropped packet is freed already.
+     */
+    if(PFIL_HOOKED(&in6_pfil, PFIL_FWD | PFIL_OUT)) {
+        struct mbuf *hm = m;
+
+        if(((in6_pfil.pp_active & PFIL_FWD) &&
+                pfil_run(&in6_pfil, &hm, ifp, PFIL_FWD) != 0) ||
+                ((in6_pfil.pp_active & PFIL_OUT) &&
+                pfil_run(&in6_pfil, &hm, ifp, PFIL_OUT) != 0)) {
+            ip6stat.ip6s_cantforward++;
+            RTFREE(rt);
+            return;
+        }
+        m = hm;
+    }
+
+    /* output via the outgoing interface */
+    s = splimp();
+    error = (*ifp->if_output)(ifp, m,
+                              (rt->rt_flags & RTF_GATEWAY)
+                              ? rt->rt_gateway
+                              : (struct sockaddr *)dst,
+                              rt);
+    splx(s);
+
+    if(error)
+        ip6stat.ip6s_odropped++;
+    else
+        ip6stat.ip6s_forward++;
+
+    RTFREE(rt);
+}
+
+/*
+ * IPv6's statistics, found by name by programs that look the stack's
+ * symbols up (netstat; net/netmodule.h). Registered from ip6_init().
+ */
+static const struct netvar ip6_netvars[] = {
+    { "ip6stat",   &ip6stat,   sizeof(ip6stat),   NVT_STATS },
+    { "icmp6stat", &icmp6stat, sizeof(icmp6stat), NVT_STATS },
+};
+
+/* ------------------------------------------------------------------
+ * ip6_init - called once during domain initialisation.
+ *
+ * Called by domain_attach() from IPv6's module start (inet6_start(),
+ * netinet6/in6_proto.c), after the registered transports were given their
+ * entries of inet6sw[]: the table is complete when this reads it. Every
+ * registration IPv6 makes with the core and with the transports' common
+ * part is made here or in inet6_start().
+ * ------------------------------------------------------------------ */
+void
+ip6_init(void)
+{
+    /* the raw protocol's entry, there whether raw sockets are or not */
+    extern struct protosw *const in6_defaultproto;  /* netinet6/in6_proto.c */
+    struct protosw *pr;
+    int i;
+
+    /* build protocol dispatch table */
+    if(protodispatch_init(&ip6_protos, in6_defaultproto) != 0)
+        panic("ip6_init");
+
+    for(pr = inet6domain.dom_protosw;
+            pr < inet6domain.dom_protoswNPROTOSW;
+            pr++) {
+        if(pr->pr_protocol && pr->pr_protocol != IPPROTO_RAW)
+            (void)protodispatch_set(&ip6_protos, pr->pr_protocol, pr);
+    }
+    /* a protocol of another module takes a next-header value here */
+    (void)protodispatch_publish(AF_INET6, &ip6_protos);
+
+    nd6_init();
+
+    ip6intrq.ifq_maxlen = IFQ_MAXLEN;
+    {
+        static const struct netinput ip6_input_queue = {
+            AF_INET6, NETISR_IPV6, &ip6intrq, ip6intr
+        };
+
+        (void)netinput_register(&ip6_input_queue);
+    }
+    {
+        extern const struct netfamily_ifops in6_ifops;
+
+        (void)netfamily_ifops_register(&in6_ifops);
+    }
+    {
+        extern const struct inetfamily in6_family;
+        extern const struct inet_transport_if *in6_transports; /* netinet6/in6_proto.c */
+
+        /* the transports may serve IPv6 sockets */
+        (void)(*in6_transports->ti_family_register)(&in6_family);
+    }
+    /* neighbour discovery finds link addresses for the SANA-II interfaces */
+    (void)sana_linktype_resolver(AF_INET6, nd6_resolve);
+    /* what netstat finds by name */
+    (void)netvar_register(ip6_netvars, sizeof(ip6_netvars) / sizeof(ip6_netvars[0]));
+}
+
+/* ------------------------------------------------------------------
+ * IPv6 STOPS (inet6_stop(), netinet6/in6_proto.c), in three steps of this
+ * file's, each the reverse of a part of ip6_init().
+ *
+ * ip6_input_stop(): no packet reaches IPv6 any more. The caller has taken
+ * the read requests of IPv6's link type back from the drivers; here the
+ * input queue is unregistered - the loopback, a tunnel and the SANA-II
+ * read path find no queue for the family from then on - and what was
+ * waiting on it is dropped.
+ * ------------------------------------------------------------------ */
+void
+ip6_input_stop(void)
+{
+    struct mbuf *m;
+    spl_t s;
+
+    (void)netinput_unregister(AF_INET6);
+    s = splimp();
+    for(;;) {
+        IF_DEQUEUE(&ip6intrq, m);
+        if(m == NULL)
+            break;
+        m_freem(m);
+    }
+    splx(s);
+}
+
+/* ------------------------------------------------------------------
+ * ip6_flush(): what is global to IPv6 and has no interface to go with,
+ * after the interfaces' addresses and their routes are gone: every route
+ * still in IPv6's table and the path MTU slots that hold one
+ * (rt_flushfamily(): the table is the core's and stays, empty) - the
+ * neighbour cache goes with the routes it hangs on - and the reassembly
+ * queues with the fragments they hold. No error is sent for those.
+ * ------------------------------------------------------------------ */
+void
+ip6_flush(void)
+{
+    spl_t s = splimp();
+
+    rt_flushfamily(AF_INET6);
+    while(ip6q.next != &ip6q)
+        frag6_freef(ip6q.next);
+    splx(s);
+}
+
+/* ------------------------------------------------------------------
+ * ip6_deinit(): the registrations ip6_init() made that are not the
+ * transports' are taken back, the dispatch table's memory is freed, and
+ * this file's variables are what the file gives them. The caller has
+ * taken the transports' entries out of the table before (they clear their
+ * next-header values in it), and unregisters IPv6's instance of the
+ * family interface itself.
+ * ------------------------------------------------------------------ */
+void
+ip6_deinit(void)
+{
+    extern const struct netfamily_ifops in6_ifops;
+
+    /* neighbour discovery no longer resolves for the SANA-II interfaces */
+    (void)sana_linktype_resolver(AF_INET6, NULL);
+    (void)netfamily_ifops_unregister(&in6_ifops);
+    (void)netvar_unregister(ip6_netvars);
+    (void)protodispatch_publish(AF_INET6, (struct protodispatch *)NULL);
+    protodispatch_done(&ip6_protos);
+
+    bzero((caddr_t)&ip6stat, sizeof(ip6stat));
+    ip6q.next = ip6q.prev = &ip6q;
+    ip6q_nfragpackets = 0;
+    ip6_nfrags = 0;
+    bzero((caddr_t)&ip6intrq, sizeof(ip6intrq));
+}
+
+/* ------------------------------------------------------------------
+ * ip6intr - software interrupt: drain ip6intrq.
+ * ------------------------------------------------------------------ */
+void
+ip6intr(void)
+{
+    struct mbuf *m;
+    spl_t s;
+
+    for(;;) {
+        s = splimp();
+        IF_DEQUEUE(&ip6intrq, m);
+        splx(s);
+        if(m == NULL)
+            break;
+        ip6_input(m);
+    }
+}
+
+/* ------------------------------------------------------------------
+ * ip6_input - process a single inbound IPv6 packet.
+ *
+ * m->m_pkthdr.rcvif must be set to the receiving interface.
+ * ------------------------------------------------------------------ */
+void
+ip6_input(struct mbuf *m)
+{
+    struct ip6_hdr *ip6;
+    struct ifnet   *ifp = m->m_pkthdr.rcvif;
+    struct protosw *pr;
+    u_int8_t nxt;
+    int off, plen;
+    int nexthdrs = 0;
+
+    ip6stat.ip6s_total++;
+
+    D({
+        struct ip6_hdr *_ip6 = mtod(m, struct ip6_hdr *);
+        u_int8_t *s = (u_int8_t *)&_ip6->ip6_src;
+        u_int8_t *d = (u_int8_t *)&_ip6->ip6_dst;
+        bug("[AROSTCP:IP6] %s: pktlen=%d nxt=%d\n"
+            "  src=%02x%02x:%02x%02x:%02x%02x:%02x%02x:"
+            "%02x%02x:%02x%02x:%02x%02x:%02x%02x\n"
+            "  dst=%02x%02x:%02x%02x:%02x%02x:%02x%02x:"
+            "%02x%02x:%02x%02x:%02x%02x:%02x%02x\n",
+            __func__, m->m_pkthdr.len, _ip6->ip6_nxt,
+            s[0], s[1], s[2], s[3], s[4], s[5], s[6], s[7],
+            s[8], s[9], s[10], s[11], s[12], s[13], s[14], s[15],
+            d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7],
+            d[8], d[9], d[10], d[11], d[12], d[13], d[14], d[15]);
+    });
+
+    /* pull up to minimum header size */
+    if(m->m_len < sizeof(struct ip6_hdr) &&
+            (m = m_pullup(m, sizeof(struct ip6_hdr))) == NULL) {
+        ip6stat.ip6s_toosmall++;
+        return;
+    }
+    ip6 = mtod(m, struct ip6_hdr *);
+
+    /* version check */
+    if((ip6->ip6_vfc & IPV6_VERSION_MASK) != IPV6_VERSION) {
+        ip6stat.ip6s_badvers++;
+        goto bad;
+    }
+
+    plen = ntohs(ip6->ip6_plen);
+    if(m->m_pkthdr.len < sizeof(struct ip6_hdr) + plen) {
+        ip6stat.ip6s_tooshort++;
+        goto bad;
+    }
+    /* trim any trailing junk */
+    if(m->m_pkthdr.len > sizeof(struct ip6_hdr) + plen)
+        m_adj(m, sizeof(struct ip6_hdr) + plen - m->m_pkthdr.len);
+
+    /*
+     * The packet hooks (the filter engine, Miami hooks that asked for
+     * IPv6): one word tested while nothing is hooked (net/pfil.h). They
+     * see the packet whole, before its scope and its destination are
+     * looked at - fragments before reassembly, as IPv4's do. A dropped
+     * packet is freed already; a hook may have replaced the chain.
+     */
+    if(PFIL_HOOKED(&in6_pfil, PFIL_IN)) {
+        struct mbuf *hm = m;
+
+        if(pfil_run(&in6_pfil, &hm, ifp, PFIL_IN) != 0)
+            return;
+        m = hm;
+        ip6 = mtod(m, struct ip6_hdr *);
+    }
+
+    /* discard unspecified source except when link-local */
+    if(IN6_IS_ADDR_UNSPECIFIED(&ip6->ip6_src) &&
+            !IN6_IS_ADDR_MULTICAST(&ip6->ip6_dst)) {
+        D(bug("[AROSTCP:IP6] %s: drop unspecified source (nxt=%d)\n",
+              __func__, ip6->ip6_nxt));
+        ip6stat.ip6s_badscope++;
+        goto bad;
+    }
+
+    /*
+     * A group is ours if the interface the packet arrived on is a member:
+     * a socket joined it there, or it is the interface's all-nodes group or
+     * the solicited-node group of one of its addresses (in6_join_allnodes(),
+     * in6_ifinit()). This host does not forward multicast.
+     */
+    if(IN6_IS_ADDR_MULTICAST(&ip6->ip6_dst)) {
+        struct in6_addr grp = ip6->ip6_dst;     /* the header is packed */
+        struct in6_multi *in6m;
+
+        IN6_LOOKUP_MULTI(grp, ifp, in6m);
+        if(in6m == NULL) {
+            ip6stat.ip6s_notmember++;
+            goto bad;
+        }
+        goto ours;
+    }
+
+    /* check if destination is one of our addresses */
+    for(struct in6_ifaddr *ia = in6_ifaddr; ia; ia = ia->ia_next) {
+        if(IN6_ARE_ADDR_EQUAL(&ip6->ip6_dst, &ia->ia_addr.sin6_addr))
+            goto ours;
+    }
+
+    /* forwarding */
+    if(ip6_forwarding) {
+        /* Don't forward link-local scope */
+        if(IN6_IS_ADDR_LINKLOCAL(&ip6->ip6_src) ||
+           IN6_IS_ADDR_LINKLOCAL(&ip6->ip6_dst)) {
+            ip6stat.ip6s_cantforward++;
+            goto bad;
+        }
+
+        if(ip6->ip6_hlim <= 1) {
+            icmp6_error(m, ICMP6_TIME_EXCEEDED,
+                        ICMP6_TIME_EXCEED_TRANSIT, 0);
+            return;
+        }
+        ip6->ip6_hlim--;
+
+        ip6_forward(m, ifp);
+        return;
+    } else {
+        ip6stat.ip6s_cantforward++;
+    }
+    m_freem(m);
+    return;
+
+ours:
+    ip6stat.ip6s_delivered++;
+
+    /* walk extension headers and dispatch */
+    off = sizeof(struct ip6_hdr);
+    nxt = ip6->ip6_nxt;
+
+    /* simple extension header skip loop */
+    while(1) {
+        /* bound the number of extension headers we will process */
+        if(++nexthdrs > 32) {
+            ip6stat.ip6s_toomanyhdr++;
+            goto bad;
+        }
+
+        switch(nxt) {
+        case IPPROTO_HOPOPTS:
+        case IPPROTO_DSTOPTS:
+        {
+            /*
+             * Hop-by-Hop / Destination Options header.  Walk the
+             * contained TLV options and act on any option we do not
+             * recognise according to its high-order two type bits
+             * (RFC 8200 §4.2):
+             *   00 - skip the option and continue
+             *   01 - silently discard the packet
+             *   10 - discard and send ICMPv6 Parameter Problem (code 2)
+             *   11 - as 10, but only if the destination is not multicast
+             * Pad1/PadN are recognised and skipped.  We deliberately do
+             * not attempt to process any specific known option here.
+             */
+            struct ip6_ext *ext;
+            int hdrlen, optoff, optend;
+
+            /* need the fixed 2-byte header to read the length field */
+            if(m->m_len < off + (int)sizeof(struct ip6_ext) &&
+                    (m = m_pullup(m, off + sizeof(struct ip6_ext))) == NULL) {
+                ip6stat.ip6s_tooshort++;
+                return;
+            }
+            ext = (struct ip6_ext *)(mtod(m, u_int8_t *) + off);
+            hdrlen = (ext->ip6e_len + 1) * 8;
+
+            /* the whole options header must lie within the packet */
+            if(off + hdrlen > m->m_pkthdr.len) {
+                ip6stat.ip6s_toosmall++;
+                goto bad;
+            }
+
+            /* pull the entire options header up so we can walk it */
+            if(m->m_len < off + hdrlen &&
+                    (m = m_pullup(m, off + hdrlen)) == NULL) {
+                ip6stat.ip6s_tooshort++;
+                return;
+            }
+            /* m_pullup may have moved the data - refresh pointers */
+            ip6 = mtod(m, struct ip6_hdr *);
+            ext = (struct ip6_ext *)(mtod(m, u_int8_t *) + off);
+
+            optoff = off + sizeof(struct ip6_ext);
+            optend = off + hdrlen;
+            while(optoff < optend) {
+                u_int8_t otype = *(mtod(m, u_int8_t *) + optoff);
+                int olen;
+
+                if(otype == IP6OPT_PAD1) {
+                    /* single Pad1 byte */
+                    optoff++;
+                    continue;
+                }
+                /* every other option carries a length octet */
+                if(optoff + 2 > optend) {
+                    ip6stat.ip6s_badoptions++;
+                    goto bad;
+                }
+                olen = 2 + *(mtod(m, u_int8_t *) + optoff + 1);
+                if(optoff + olen > optend) {
+                    ip6stat.ip6s_badoptions++;
+                    goto bad;
+                }
+                if(otype == IP6OPT_PADN) {
+                    optoff += olen;
+                    continue;
+                }
+
+                /* unrecognised option: act on the high-order 2 bits */
+                switch(IP6OPT_TYPE(otype)) {
+                case IP6OPT_TYPE_SKIP:      /* 00 - skip */
+                    break;
+                case IP6OPT_TYPE_DISCARD:   /* 01 - discard packet */
+                    ip6stat.ip6s_badoptions++;
+                    goto bad;
+                case IP6OPT_TYPE_FORCEICMP: /* 10 - discard + Param Problem */
+                    ip6stat.ip6s_badoptions++;
+                    icmp6_error(m, ICMP6_PARAM_PROB,
+                                ICMP6_PARAMPROB_OPTION, optoff);
+                    return;     /* m consumed by icmp6_error */
+                case IP6OPT_TYPE_ICMP:      /* 11 - as above unless mcast dst */
+                    ip6stat.ip6s_badoptions++;
+                    if(IN6_IS_ADDR_MULTICAST(&ip6->ip6_dst))
+                        goto bad;
+                    icmp6_error(m, ICMP6_PARAM_PROB,
+                                ICMP6_PARAMPROB_OPTION, optoff);
+                    return;     /* m consumed by icmp6_error */
+                }
+                optoff += olen;
+            }
+
+            /* advance to the next header */
+            nxt = ext->ip6e_nxt;
+            off += hdrlen;
+            break;
+        }
+
+        case IPPROTO_ROUTING:
+        {
+            /*
+             * Routing header (RFC 8200 §4.4).  We implement no routing
+             * type.  If Segments Left is zero the header is simply
+             * skipped (accept and continue to the next header).  If
+             * Segments Left is non-zero the routing type is, by
+             * definition, unrecognised: discard the packet and send
+             * ICMPv6 Parameter Problem (code 0) pointing at the
+             * Routing Type field.
+             */
+            struct ip6_rthdr *rth;
+            int rhlen;
+
+            if(m->m_len < off + (int)sizeof(struct ip6_rthdr) &&
+                    (m = m_pullup(m, off + sizeof(struct ip6_rthdr))) == NULL) {
+                ip6stat.ip6s_tooshort++;
+                return;
+            }
+            ip6 = mtod(m, struct ip6_hdr *);
+            rth = (struct ip6_rthdr *)(mtod(m, u_int8_t *) + off);
+            rhlen = (rth->ip6r_len + 1) * 8;
+
+            if(off + rhlen > m->m_pkthdr.len) {
+                ip6stat.ip6s_toosmall++;
+                goto bad;
+            }
+
+            if(rth->ip6r_segleft == 0) {
+                nxt = rth->ip6r_nxt;
+                off += rhlen;
+                break;
+            }
+
+            /* Segments Left != 0 with an unrecognised routing type */
+            ip6stat.ip6s_badoptions++;
+            icmp6_error(m, ICMP6_PARAM_PROB, ICMP6_PARAMPROB_HEADER,
+                        off + offsetof(struct ip6_rthdr, ip6r_type));
+            return;     /* m consumed by icmp6_error */
+        }
+
+        case IPPROTO_FRAGMENT:
+        {
+            struct mbuf *reasm;
+            ip6stat.ip6s_fragments++;
+            reasm = frag6_input(m, off);
+            if(reasm == NULL)
+                return;  /* not yet complete or error */
+            /* reassembly complete, process the full packet */
+            m = reasm;
+            ip6 = mtod(m, struct ip6_hdr *);
+            nxt = ip6->ip6_nxt;
+            off = sizeof(struct ip6_hdr);
+            /* continue extension header processing with reassembled packet */
+            break;
+        }
+
+        case IPPROTO_NONE:
+            m_freem(m);
+            return;
+
+        default:
+            goto deliver;
+        }
+    }
+
+deliver:
+    /* dispatch to upper-layer protocol */
+    pr = PROTODISPATCH(&ip6_protos, nxt);
+    if(pr->pr_input)
+        (*pr->pr_input)(m, off, nxt);
+    else
+        m_freem(m);
+    return;
+
+bad:
+    m_freem(m);
+}
+
+#endif /* INET6 */

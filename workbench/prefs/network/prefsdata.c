@@ -1,0 +1,2541 @@
+/*
+    Copyright (C) 2009-2026, The AROS Development Team. All rights reserved.
+*/
+
+#include <proto/dos.h>
+#include <proto/exec.h>
+#include <proto/intuition.h>
+#include <dos/dosextens.h>
+#include <exec/ports.h>
+#include <bsdsocket/socketbasetags.h>
+#include <bsdsocket/netcontrol.h>
+#include <intuition/intuition.h>
+#include <stdlib.h>
+#include <string.h>
+#include <stdio.h>
+#include "prefsdata.h"
+#include "protocols.h"
+#include "netprefs_intern.h"
+
+#include <aros/debug.h>
+
+/* The in-process protocol-plugin registry (created by main.c). */
+extern struct NetPrefsBase *NetPrefs_GetBase(void);
+
+#define EX_BUF_SIZE 256
+
+enum
+{
+    ARG_HANDLER,
+    ARG_EHANDLER,
+    ARG_FILESYSTEM,
+    ARG_DEVICE,
+    ARG_UNIT,
+    ARG_FLAGS,
+    ARG_BLOCKSIZE,
+    ARG_SURFACES,
+    ARG_BLOCKSPERTRACK,
+    ARG_SECTORSPERBLOCK,
+    ARG_RESERVED,
+    ARG_PREALLOC,
+    ARG_INTERLEAVE,
+    ARG_LOWCYL,
+    ARG_HIGHCYL,
+    ARG_BUFFERS,
+    ARG_BUFMEMTYPE,
+    ARG_MAXTRANSFER,
+    ARG_MASK,
+    ARG_BOOTPRI,
+    ARG_DOSTYPE,
+    ARG_BAUD,
+    ARG_CONTROL,
+    ARG_STACKSIZE,
+    ARG_PRIORITY,
+    ARG_GLOBVEC,
+    ARG_STARTUP,
+    ARG_ACTIVATE,
+    ARG_FORCELOAD,
+    NUM_MOUNTARGS
+};
+
+static const TEXT mount_template[] =
+    "HANDLER/K,"
+    "EHANDLER/K,"
+    "FILESYSTEM/K,"
+    "DEVICE/K,"
+    "UNIT/K,"
+    "FLAGS/K,"
+    "SECTORSIZE=BLOCKSIZE/K,"
+    "SURFACES/K,"
+    "SECTORSPERTRACK=BLOCKSPERTRACK/K,"
+    "SECTORSPERBLOCK/K,"
+    "RESERVED/K,"
+    "PREALLOC/K,"
+    "INTERLEAVE/K,"
+    "LOWCYL/K,"
+    "HIGHCYL/K,"
+    "BUFFERS/K,"
+    "BUFMEMTYPE/K,"
+    "MAXTRANSFER/K,"
+    "MASK/K,"
+    "BOOTPRI/K,"
+    "DOSTYPE/K,"
+    "BAUD/K,"
+    "CONTROL/K,"
+    "STACKSIZE/K,"
+    "PRIORITY/K,"
+    "GLOBVEC/K,"
+    "STARTUP/K,"
+    "MOUNT=ACTIVATE/K,"
+    "FORCELOAD/K";
+
+static struct TCPPrefs prefs;
+
+struct Tokenizer
+{
+    STRPTR tokenizerLine;
+    STRPTR token;
+    FILE * tokenizedFile;
+    BOOL newline;
+    BOOL fend;
+};
+
+/* List of devices that require NOTRACKING option */
+static STRPTR notrackingdevices[] = {"prm-rtl8029.device", NULL};
+
+static struct FSHandlerNode *ClaimMount(CONST_STRPTR name, BPTR file,
+                                        LONG size, struct MountedShare *ms);
+static BOOL ShareIsActive(CONST_STRPTR activelist, CONST_STRPTR name);
+static void DeleteStaleMounts(CONST_STRPTR destdir);
+
+void OpenTokenFile(struct Tokenizer * tok, STRPTR FileName)
+{
+    tok->tokenizedFile = fopen(FileName, "r");
+    tok->token = NULL;
+    tok->newline = TRUE;
+    if (!tok->tokenizedFile)
+        tok->fend = TRUE;
+    else
+    {
+        tok->tokenizerLine = malloc(8192);
+        tok->fend = FALSE;
+        tok->newline = TRUE;
+    }
+}
+
+void CloseTokenFile(struct Tokenizer * tok)
+{
+    if (tok->tokenizedFile)
+    {
+        fclose(tok->tokenizedFile);
+        free(tok->tokenizerLine);
+        tok->fend = TRUE;
+        tok->token = NULL;
+    }
+}
+
+void GetNextToken(struct Tokenizer * tok, STRPTR tk)
+{
+    tok->newline = FALSE;
+    if (tok->token != NULL)
+    {
+        tok->token = strtok(NULL, tk);
+        if (!tok->token)
+            GetNextToken(tok, tk);
+    }
+    else
+    {
+        tok->newline = TRUE;
+        if (!feof(tok->tokenizedFile))
+        {
+            tok->tokenizerLine[0] = 0;
+            fgets(tok->tokenizerLine, 8192, tok->tokenizedFile);
+            if (tok->tokenizerLine == NULL)
+            {
+                tok->token = NULL;
+                GetNextToken(tok, tk);
+            }
+            else
+                tok->token = strtok(tok->tokenizerLine, tk);
+        }
+        else
+            tok->fend = TRUE;
+    }
+}
+
+void SetDefaultNetworkPrefsValues()
+{
+    LONG i;
+    for (i = 0; i < MAXINTERFACES; i++)
+    {
+        InitInterface(GetInterface(i));
+    }
+    SetInterfaceCount(0);
+    SetDomain(DEFAULTDOMAIN);
+    SetHostname(DEFAULTHOST);
+    SetDNS(0, DEFAULTDNS);
+    SetDNS(1, DEFAULTDNS);
+    SetDHCP(FALSE);
+
+    SetAutostart(FALSE);
+
+    for (i = 0; i < MAXHOSTS; i++)
+    {
+        InitHost(GetHost(i));
+    }
+    SetHostCount(0);
+
+    /* The mounted-share list: initialise once (prefs is static, so the
+     * embedded list header starts zeroed), empty it on later re-inits. */
+    {
+        static BOOL sharesInited = FALSE;
+
+        if (!sharesInited)
+        {
+            NEWLIST(&prefs.mountedShares);
+            sharesInited = TRUE;
+        }
+        else
+            FreeShares(&prefs.mountedShares);
+    }
+}
+
+void SetDefaultWirelessPrefsValues()
+{
+    LONG i;
+    for (i = 0; i < MAXNETWORKS; i++)
+    {
+        InitNetwork(GetNetwork(i));
+    }
+    SetNetworkCount(0);
+
+    SetWirelessDevice(NULL);
+}
+
+void SetDefaultMobilePrefsValues()
+{
+    LONG i;
+    for (i = 0; i < MAXATCOMMANDS; i++)
+    {
+        prefs.mobile.atcommand[i][0] = 0;
+    }
+    SetMobile_atcommand(0,"AT+CGDCONT=1,\"IP\",\"insert.your.apn.here\"");
+    SetMobile_atcommand(1,"ATDT*99***1#");
+    SetMobile_timeout( 10 );
+    SetMobile_Autostart(FALSE);
+    SetMobile_devicename( "usbmodem.device" );
+    SetMobile_unit( 0 );
+    SetMobile_username("");
+    SetMobile_password("");
+}
+
+void InitInterface(struct Interface *iface)
+{
+    /* Start the interface with an empty protocol-object list.  The core never
+     * adds protocol objects itself - the loader (via the plugins' ReadTokens)
+     * and the editor do.
+     *
+     * Treat the struct as raw, uninitialised storage: NEWLIST unconditionally
+     * and never inspect the incoming header.  The editor passes fresh stack
+     * locals (Add Interface / Add Tunnel) whose list header is stack garbage -
+     * testing lh_Head there and freeing would walk wild pointers and crash.  A
+     * list an interface already owned must be released by its owner (the MUI
+     * destruct hook / Gadgets2NetworkPrefs), not here where validity is
+     * unknowable. */
+    NEWLIST(&iface->protoAddrs);
+
+    SetName(iface, DEFAULTNAME);
+    SetDevice(iface, DEFAULTDEVICE);
+    SetUnit(iface, 0);
+    SetUp(iface, FALSE);
+    SetDefer(iface, FALSE);
+    SetIsTunnel(iface, FALSE);
+    SetTunnelRemote(iface, "");
+    SetTunnelLocal(iface, "");
+    SetTunnelTTL(iface, 0);
+}
+
+/* Initialise an interface as a 6in4 (SIT) tunnel pseudo-interface.  Its inner
+ * IPv6 is a protocol object like any other and is added by the editor/loader. */
+void InitTunnel(struct Interface *iface)
+{
+    InitInterface(iface);
+    SetName(iface, DEFAULTTUNNELNAME);
+    SetIsTunnel(iface, TRUE);
+    iface->device[0] = '\0';    /* a tunnel has no SANA-II device */
+    SetTunnelTTL(iface, 64);
+    SetUp(iface, TRUE);
+}
+
+/* Returns TRUE if directory has been created or already existed */
+BOOL RecursiveCreateDir(CONST_STRPTR dirpath)
+{
+    /* Will create directory even if top level directory does not exist */
+
+    BPTR lock = BNULL;
+    ULONG lastdirseparator = 0;
+    ULONG dirpathlen = strlen(dirpath);
+    STRPTR tmpdirpath = AllocVec(dirpathlen + 2, MEMF_CLEAR | MEMF_PUBLIC);
+
+    CopyMem(dirpath, tmpdirpath, dirpathlen);
+
+    /* Recurvice directory creation */
+    while (TRUE)
+    {
+        if (lastdirseparator >= dirpathlen) break;
+
+        for (; lastdirseparator < dirpathlen; lastdirseparator++)
+            if (tmpdirpath[lastdirseparator] == '/') break;
+
+        tmpdirpath[lastdirseparator] = '\0'; /* cut */
+
+        /* Unlock any lock from previous interation. Last iteration lock will be returned. */
+        if (lock != BNULL)
+        {
+            UnLock(lock);
+            lock = BNULL;
+        }
+
+        /* Check if directory exists */
+        lock = Lock(tmpdirpath, SHARED_LOCK);
+        if (lock == BNULL)
+        {
+            lock = CreateDir(tmpdirpath);
+            if (lock == BNULL)
+                break; /* Error with creation */
+        }
+
+        tmpdirpath[lastdirseparator] = '/'; /* restore */
+        lastdirseparator++;
+    }
+
+    FreeVec(tmpdirpath);
+
+    if (lock == BNULL)
+        return FALSE;
+    else
+    {
+        UnLock(lock);
+        lock = BNULL;
+        return TRUE;
+    }
+}
+
+/* Returns TRUE if selected device needs to use NOTRACKING option */
+BOOL GetNoTracking(struct Interface *iface)
+{
+    STRPTR devicename = NULL;
+    LONG pos = 0;
+    TEXT devicepath[strlen(GetDevice(iface)) + 1];
+    strcpy(devicepath, GetDevice(iface));
+    strupr(devicepath);
+
+    while ((devicename = notrackingdevices[pos++]) != NULL)
+    {
+        /* Comparison is done on upper case string so it is case insensitive */
+        strupr(devicename);
+        if (strstr(devicepath, devicename) != NULL)
+            return TRUE;
+    }
+
+    return FALSE;
+}
+
+/* Puts part 1 into empty buffer */
+VOID CombinePath1P(STRPTR dstbuffer, ULONG dstbufferlen, CONST_STRPTR part1)
+{
+    dstbuffer[0] = '\0'; /* Make sure buffer is treated as empty */
+    AddPart(dstbuffer, part1, dstbufferlen);
+}
+
+/* Combines part1 with part2 into an empty buffer */
+VOID CombinePath2P(STRPTR dstbuffer, ULONG dstbufferlen, CONST_STRPTR part1, CONST_STRPTR part2)
+{
+    CombinePath1P(dstbuffer, dstbufferlen, part1);
+    AddPart(dstbuffer, part2, dstbufferlen);
+}
+
+/* Combines part1 with part2 with part3 into an empty buffer */
+VOID CombinePath3P(STRPTR dstbuffer, ULONG dstbufferlen, CONST_STRPTR part1, CONST_STRPTR part2, CONST_STRPTR part3)
+{
+    CombinePath2P(dstbuffer, dstbufferlen, part1, part2);
+    AddPart(dstbuffer, part3, dstbufferlen);
+}
+
+BOOL WriteNetworkPrefs(CONST_STRPTR  destdir)
+{
+    FILE *ConfFile;
+    LONG i;
+    struct Interface *iface;
+    struct Host *host;
+    ULONG filenamelen = strlen(destdir) + 4 + 20;
+    TEXT filename[filenamelen];
+    ULONG destdbdirlen = strlen(destdir) + 3 + 1;
+    TEXT destdbdir[destdbdirlen];
+    LONG interfacecount = GetInterfaceCount();
+    LONG hostcount = GetHostCount();
+
+    CombinePath2P(destdbdir, destdbdirlen, destdir, "db");
+
+    /* Create necessary directories */
+    if (!RecursiveCreateDir(destdir)) return FALSE;
+    if (!RecursiveCreateDir(destdbdir)) return FALSE;
+
+    /* Write configuration files */
+    CombinePath2P(filename, filenamelen, destdbdir, "general.config");
+    ConfFile = fopen(filename, "w");
+    if (!ConfFile) return FALSE;
+    fprintf(ConfFile, "USELOOPBACK=YES\n");
+    fprintf(ConfFile, "DEBUGSANA=NO\n");
+    fprintf(ConfFile, "USENS=SECOND\n");
+    fprintf(ConfFile, "GATEWAY=NO\n");
+    fprintf(ConfFile, "HOSTNAME=%s.%s\n", GetHostname(), GetDomain());
+    fprintf(ConfFile, "LOG FILTERFILE=5\n");
+    fprintf(ConfFile, "GUI PANEL=MUI\n");
+    fprintf(ConfFile, "OPENGUI=YES\n");
+    fclose(ConfFile);
+
+    CombinePath2P(filename, filenamelen, destdbdir, "interfaces");
+    ConfFile = fopen(filename, "w");
+    if (!ConfFile) return FALSE;
+    for (i = 0; i < interfacecount; i++)
+    {
+        struct ProtocolAddress *pa;
+        CONST_STRPTR upstr;
+
+        iface = GetInterface(i);
+        upstr = GetUp(iface) ? "UP" : "";
+
+        /* The line prefix differs for a device interface vs a tunnel; the rest
+         * - the protocol tokens - is written the same way for both, by asking
+         * each protocol object's plugin to emit its own tokens. */
+        if (GetIsTunnel(iface))
+        {
+            fprintf(ConfFile, "%s TUNNEL", GetName(iface));
+            if (GetTunnelRemote(iface)[0] != '\0')
+                fprintf(ConfFile, " TDST=%s", GetTunnelRemote(iface));
+            if (GetTunnelLocal(iface)[0] != '\0')
+                fprintf(ConfFile, " TSRC=%s", GetTunnelLocal(iface));
+            if (GetTunnelTTL(iface) > 0)
+                fprintf(ConfFile, " TTL=%d", (int)GetTunnelTTL(iface));
+            fprintf(ConfFile, " ");
+        }
+        else
+        {
+            CONST_STRPTR notrack = GetNoTracking(iface) ? "NOTRACKING" : "";
+            fprintf(ConfFile, "%s DEV=%s UNIT=%d %s ",
+                GetName(iface), GetDevice(iface), (int)GetUnit(iface), notrack);
+        }
+
+        ForeachNode(GetProtoAddrs(iface), pa)
+        {
+            struct ProtoHandlerNode *ph = ProtoHandler_ByID(pa->pa_node.ln_Type);
+            if (ph && ph->ph_WriteTokens)
+                ph->ph_WriteTokens(ConfFile, pa);
+        }
+
+        /* "Connect once available" in the interface window */
+        fprintf(ConfFile, "%s%s\n", GetDefer(iface) ? "DEFER " : "", upstr);
+
+        if (!GetIsTunnel(iface))
+        {
+            if (strstr(GetDevice(iface), "atheros5000.device") != NULL
+                || strstr(GetDevice(iface), "prism2.device") != NULL
+                || strstr(GetDevice(iface), "realtek8180.device") != NULL
+                || strstr(GetDevice(iface), "bwfm.device") != NULL)
+            {
+                SetWirelessDevice(GetDevice(iface));
+                SetWirelessUnit(GetUnit(iface));
+            }
+            else if (strstr(GetDevice(iface), "ppp.device") != NULL)
+                SetMobile_Autostart(TRUE);
+        }
+    }
+
+    fclose(ConfFile);
+
+    CombinePath2P(filename, filenamelen, destdbdir, "netdb-myhost");
+    ConfFile = fopen(filename, "w");
+    if (!ConfFile) return FALSE;
+
+    for (i = 0; i < interfacecount; i++)
+    {
+        struct ProtocolAddress *pa;
+
+        iface = GetInterface(i);
+        /* Map each statically-configured address to the host name.  Any
+         * protocol object in Manual mode with an address qualifies; the core
+         * does not care which protocol it is. */
+        ForeachNode(GetProtoAddrs(iface), pa)
+        {
+            if (pa->pa_mode == IP_MODE_MANUAL && pa->pa_addr[0] != '\0')
+                fprintf(ConfFile, "HOST %s %s.%s %s\n",
+                    pa->pa_addr, GetHostname(), GetDomain(), GetHostname());
+        }
+    }
+
+    /* DNS is written per interface, per protocol by the net4/net6 plugins
+     * (DNS=/DNS6= tokens on each interface line); there is no global
+     * NAMESERVER block any more. */
+    fclose(ConfFile);
+
+    CombinePath2P(filename, filenamelen, destdbdir, "static-routes");
+    ConfFile = fopen(filename, "w");
+    if (!ConfFile) return FALSE;
+    /* Per-interface gateways are now written as GW= tokens in the interfaces file */
+    fclose(ConfFile);
+
+    /* Write variables */
+    CombinePath2P(filename, filenamelen, destdir, "Config");
+    ConfFile = fopen(filename, "w");
+    if (!ConfFile) return FALSE;
+    fprintf(ConfFile, "%s/db", PREFS_PATH_ENV);
+    fclose(ConfFile);
+
+    CombinePath2P(filename, filenamelen, destdir, "AutoRun");
+    ConfFile = fopen(filename, "w");
+    if (!ConfFile) return FALSE;
+    fprintf(ConfFile, "%s", (GetAutostart()) ? "True" : "False");
+    fclose(ConfFile);
+
+    CombinePath2P(filename, filenamelen, destdir, "MobileAutorun");
+    ConfFile = fopen(filename, "w");
+    if (!ConfFile) return FALSE;
+    fprintf(ConfFile, "%s", (GetMobile_Autostart()) ? "True" : "False");
+    fclose(ConfFile);
+
+    CombinePath2P(filename, filenamelen, destdir, "WirelessAutoRun");
+    ConfFile = fopen(filename, "w");
+    if (!ConfFile) return FALSE;
+    fprintf(ConfFile, "%s", (GetWirelessDevice() != NULL) ? "True" : "False");
+    fclose(ConfFile);
+
+    if (GetWirelessDevice() != NULL)
+    {
+        CombinePath2P(filename, filenamelen, destdir, "WirelessDevice");
+        ConfFile = fopen(filename, "w");
+        if (!ConfFile) return FALSE;
+        fprintf(ConfFile, "%s UNIT %ld", GetWirelessDevice(),
+            (long int)GetWirelessUnit());
+        fclose(ConfFile);
+    }
+
+    CombinePath2P(filename, filenamelen, destdbdir, "hosts");
+    ConfFile = fopen(filename, "w");
+    if (!ConfFile) return FALSE;
+    for (i = 0; i < hostcount; i++)
+    {
+        host = GetHost(i);
+        fprintf
+        (
+            ConfFile, "%s %s\n",
+            GetHostAddress(host), GetHostNames(host)
+        );
+    }
+    fclose(ConfFile);
+
+    return TRUE;
+}
+
+BOOL WriteWirelessPrefs(CONST_STRPTR destdir)
+{
+    FILE *ConfFile;
+    LONG i;
+    struct Network *net;
+    ULONG filenamelen = strlen(destdir) + 4 + 20;
+    TEXT filename[filenamelen];
+
+    /* Write wireless config */
+    CombinePath2P(filename, filenamelen, destdir, "Wireless.prefs");
+    if (prefs.networkCount > 0)
+    {
+        ConfFile = fopen(filename, "w");
+        if (!ConfFile) return FALSE;
+
+        for (i = 0; i < prefs.networkCount; i++)
+        {
+            net = &prefs.networks[i];
+            fprintf(ConfFile, "network={\n");
+            if (net->name[0] != '\0')
+                fprintf(ConfFile, "\tssid=\"%s\"\n", net->name);
+            switch (net->encType)
+            {
+                case 2:
+                    if (net->keyIsHex)
+                        fprintf(ConfFile, "\tpsk=%s\n", net->key);
+                    else
+                        fprintf(ConfFile, "\tpsk=\"%s\"\n", net->key);
+                    fprintf(ConfFile, "\tkey_mgmt=WPA-PSK\n");
+                    break;
+                case 1:
+                    if (net->keyIsHex)
+                        fprintf(ConfFile, "\twep_key0=%s\n", net->key);
+                    else
+                        fprintf(ConfFile, "\twep_key0=\"%s\"\n", net->key);
+                    fprintf(ConfFile, "\twep_tx_keyidx=0\n");
+                default:
+                    fprintf(ConfFile, "\tkey_mgmt=NONE\n");
+            }
+            if (net->hidden)
+                fprintf(ConfFile, "\tscan_ssid=1\n");
+            if (net->adHoc)
+                fprintf(ConfFile, "\tmode=1\n");
+            fprintf(ConfFile, "}\n\n");
+        }
+
+        fclose(ConfFile);
+    }
+    else
+        DeleteFile(filename);
+
+    return TRUE;
+}
+
+
+BOOL WriteMobilePrefs(CONST_STRPTR destdir)
+{
+    FILE *ConfFile;
+    LONG i;
+    ULONG filenamelen = strlen(destdir) + 4 + 30;
+    TEXT filename[filenamelen];
+
+    CombinePath2P(filename, filenamelen, destdir, "MobileBroadband.prefs");
+    ConfFile = fopen(filename, "w");
+    if (!ConfFile) return FALSE;
+
+    if (strlen(GetMobile_devicename()) > 0)
+        fprintf(ConfFile, "DEVICE %s\n", GetMobile_devicename());
+    fprintf(ConfFile, "UNIT %d\n" , (int)GetMobile_unit() );
+    if (strlen(GetMobile_username()) > 0)
+        fprintf(ConfFile, "USERNAME %s\n", GetMobile_username());
+    if (strlen(GetMobile_password()) > 0)
+        fprintf(ConfFile, "PASSWORD %s\n", GetMobile_password());
+
+    for (i = 0; i < MAXATCOMMANDS; i++)
+    {
+        if (strlen( GetMobile_atcommand(i) ) > 0)
+            fprintf(ConfFile, "SEND %s\n", GetMobile_atcommand(i));
+    }
+
+    fclose(ConfFile);
+
+    return TRUE;
+}
+
+
+/*
+ * Write every mounted share back out: one Mountfile per share (written by
+ * its owning filesystem module) plus the automount variable listing the
+ * active devices.  Afterwards, mountfiles in destdir that belong to a
+ * registered handler but are no longer in the share list are deleted, so
+ * removed shares stay removed.  Files no handler claims are never touched.
+ */
+BOOL WriteMounts(CONST_STRPTR destdir, CONST_STRPTR envdir)
+{
+    FILE *mount_file, *env_file;
+    struct MountedShare *share;
+    ULONG destlen = strlen(destdir), envlen = strlen(envdir);
+    ULONG filenamelen =
+        (destlen > envlen ? destlen : envlen) + MOUNT_DEVBUFLEN + 24;
+    TEXT filename[filenamelen];
+
+    CombinePath2P(filename, filenamelen, envdir, "ServerAutoMounts");
+    env_file = fopen(filename, "w");
+    if (!env_file) return FALSE;
+
+    ForeachNode(&prefs.mountedShares, share)
+    {
+        struct FSHandlerNode *fsh = FSHandler_ByID(share->ms_node.ln_Type);
+
+        if (fsh == NULL || fsh->fsh_WriteMount == NULL)
+            continue;
+
+        CombinePath2P(filename, filenamelen, destdir, share->ms_device);
+        mount_file = fopen(filename, "w");
+        if (!mount_file)
+        {
+            fclose(env_file);
+            return FALSE;
+        }
+        fsh->fsh_WriteMount(mount_file, share);
+        fclose(mount_file);
+
+        if (share->ms_active)
+            fprintf(env_file, "%s: ", share->ms_device);
+    }
+
+    fclose(env_file);
+
+    DeleteStaleMounts(destdir);
+
+    return TRUE;
+}
+
+/* Delete handler-claimed mountfiles in destdir whose share was removed. */
+static void DeleteStaleMounts(CONST_STRPTR destdir)
+{
+    BPTR dir, old, file;
+    APTR ex_buffer;
+    struct ExAllControl *ex_control;
+    struct ExAllData *entry;
+    BOOL more = TRUE;
+
+    dir = Lock(destdir, SHARED_LOCK);
+    if (dir == BNULL)
+        return;
+
+    ex_buffer = AllocVec(EX_BUF_SIZE, MEMF_PUBLIC);
+    ex_control = AllocDosObject(DOS_EXALLCONTROL, NULL);
+    if (ex_buffer == NULL || ex_control == NULL)
+    {
+        FreeVec(ex_buffer);
+        if (ex_control) FreeDosObject(DOS_EXALLCONTROL, ex_control);
+        UnLock(dir);
+        return;
+    }
+
+    {
+        /* Two phases: collect stale names during the scan, delete after -
+         * removing entries mid-ExAll would disturb the iteration. */
+        struct List stale;
+        struct Node *node;
+
+        NEWLIST(&stale);
+
+        old = CurrentDir(dir);
+        ex_control->eac_LastKey = 0;
+        while (more)
+        {
+            more = ExAll(dir, ex_buffer, EX_BUF_SIZE, ED_SIZE, ex_control);
+            if (!more && (IoErr() != ERROR_NO_MORE_ENTRIES))
+                break;
+            if (ex_control->eac_Entries == 0)
+                continue;
+
+            for (entry = ex_buffer; entry != NULL; entry = entry->ed_Next)
+            {
+                struct MountedShare ms, *share;
+                BOOL known = FALSE;
+
+                if (entry->ed_Type >= 0)
+                    continue;
+
+                /* Still in the share list? Then it was just rewritten. */
+                ForeachNode(&prefs.mountedShares, share)
+                {
+                    if (strcasecmp(share->ms_device,
+                                   (char *)entry->ed_Name) == 0)
+                    {
+                        known = TRUE;
+                        break;
+                    }
+                }
+                if (known)
+                    continue;
+
+                /* Only files one of OUR handlers claims may be deleted. */
+                file = Open(entry->ed_Name, MODE_OLDFILE);
+                if (file == BNULL)
+                    continue;
+                if (ClaimMount((CONST_STRPTR)entry->ed_Name, file,
+                               entry->ed_Size, &ms) != NULL)
+                {
+                    ULONG len = strlen((char *)entry->ed_Name) + 1;
+                    node = AllocVec(sizeof(struct Node) + len, MEMF_CLEAR);
+                    if (node)
+                    {
+                        node->ln_Name = (char *)(node + 1);
+                        CopyMem(entry->ed_Name, node->ln_Name, len);
+                        AddTail(&stale, node);
+                    }
+                }
+                Close(file);
+            }
+        }
+
+        while ((node = RemHead(&stale)) != NULL)
+        {
+            TEXT info[MOUNT_DEVBUFLEN + 8];
+
+            DeleteFile(node->ln_Name);
+            snprintf(info, sizeof(info), "%s.info", node->ln_Name);
+            DeleteFile((STRPTR)info);
+            FreeVec(node);
+        }
+
+        CurrentDir(old);
+    }
+
+    FreeDosObject(DOS_EXALLCONTROL, ex_control);
+    FreeVec(ex_buffer);
+    UnLock(dir);
+}
+
+
+#define BUFSIZE 2048
+BOOL CopyFile(CONST_STRPTR srcfile, CONST_STRPTR dstfile)
+{
+    BPTR from = BNULL, to = BNULL;
+    TEXT buffer[BUFSIZE];
+
+    if ((from = Open(srcfile, MODE_OLDFILE)))
+    {
+        if ((to = Open(dstfile, MODE_NEWFILE)))
+        {
+            LONG s = 0;
+
+            do
+            {
+                if ((s = Read(from, buffer, BUFSIZE)) == -1)
+                {
+                    Close(to);
+                    Close(from);
+                    return FALSE;
+                }
+
+                if (Write(to, buffer, s) == -1)
+                {
+                    Close(to);
+                    Close(from);
+                    return FALSE;
+                }
+            } while (s == BUFSIZE);
+
+            Close(to);
+            Close(from);
+            return TRUE;
+        }
+
+        Close(from);
+    }
+
+    return FALSE;
+}
+
+CONST_STRPTR GetDefaultStackLocation()
+{
+    /* Use static variable so that it is initialized only once (and can be returned) */
+    static TEXT path [1024] = {0};
+
+    /* Load path if needed - this will happen only once */
+    if (path[0] == '\0')
+    {
+        GetVar(AROSTCP_PACKAGE_VARIABLE, path, 1024, LV_VAR);
+    }
+
+    return path;
+}
+
+BOOL IsStackRunning()
+{
+    return FindTask("bsdsocket.library") != NULL;
+}
+
+/* Outcome of an in-place reload attempt. */
+enum
+{
+    RELOAD_NO_PORT = 0,   /* no control port: older stack, no reload capability */
+    RELOAD_OK,            /* stack reconfigured in place                        */
+    RELOAD_FAILED         /* control port present but the reload reported error */
+};
+
+/*
+ * Ask the running stack to reconfigure in place via its control port.
+ * Distinguishes "no port" (older stack - caller should fall back silently)
+ * from "port present but the reload failed" (caller should ask the user before
+ * the disruptive full restart).  RELOAD_OK means the bsdsocket.library task
+ * stayed alive and consumers holding the library open are undisturbed.
+ */
+static int TryReloadStack(void)
+{
+    struct MsgPort *reply, *ctrl;
+    struct NetControlMsg msg;
+    int result = RELOAD_NO_PORT;
+
+    reply = CreateMsgPort();
+    if (reply == NULL)
+        return RELOAD_NO_PORT;   /* cannot even try; fall back silently */
+
+    Forbid();
+    ctrl = FindPort(AROSTCP_CTRLPORT_NAME);
+    if (ctrl != NULL)
+    {
+        memset(&msg, 0, sizeof(msg));
+        msg.ncm_Msg.mn_Node.ln_Type = NT_MESSAGE;
+        msg.ncm_Msg.mn_ReplyPort    = reply;
+        msg.ncm_Msg.mn_Length       = sizeof(msg);
+        msg.ncm_Command             = NCMD_RELOAD;
+        PutMsg(ctrl, (struct Message *)&msg);
+    }
+    Permit();
+
+    if (ctrl != NULL)
+    {
+        /* reply arrives once the stack has finished reconfiguring */
+        WaitPort(reply);
+        GetMsg(reply);
+        result = (msg.ncm_Result == 0) ? RELOAD_OK : RELOAD_FAILED;
+    }
+
+    DeleteMsgPort(reply);
+    return result;
+}
+
+/*
+ * Ask whether to force a full stack restart after an in-place reload failed.
+ * Returns TRUE if the user chose "Force Restart", FALSE for "Cancel".  Uses a
+ * plain intuition requester (no MUI app/window pointer available here).
+ */
+static BOOL ForceRestartRequester(void)
+{
+    struct EasyStruct es =
+    {
+        sizeof(struct EasyStruct), 0,
+        "Network",
+        "In-place reload failed. Force a full stack restart?\n"
+        "This stops and relaunches AROSTCP and will disconnect\n"
+        "programs currently using the network.",
+        "Force Restart|Cancel"
+    };
+
+    /* EasyRequest: 1 = first gadget (Force Restart), 0 = last (Cancel). */
+    return (EasyRequestArgs(NULL, &es, NULL, NULL) == 1);
+}
+
+BOOL RestartStack()
+{
+    ULONG trycount = 0;
+
+    /*
+     * Prefer an in-place reload.  If the running stack reconfigures itself
+     * through its control port, the bsdsocket.library task stays alive and no
+     * kill+relaunch is needed.
+     *   - no control port (older stack): fall back silently to kill+relaunch;
+     *   - reload succeeded: done, nothing else to do;
+     *   - reload failed: ask before the disruptive full restart.
+     */
+    if (IsStackRunning())
+    {
+        switch (TryReloadStack())
+        {
+        case RELOAD_OK:
+            return TRUE;
+        case RELOAD_FAILED:
+            if (!ForceRestartRequester())
+                return FALSE;   /* user cancelled: leave the stack as-is */
+            break;              /* otherwise fall through to kill+relaunch */
+        case RELOAD_NO_PORT:
+        default:
+            break;              /* older stack: silent kill+relaunch */
+        }
+    }
+
+    /* Shutdown */
+    if (IsStackRunning())
+    {
+        struct Task * arostcptask = FindTask("bsdsocket.library");
+        if (arostcptask != NULL)
+            Signal(arostcptask, SIGBREAKF_CTRL_C);
+    }
+
+    /* Check if shutdown successful */
+    trycount = 0;
+    while (IsStackRunning())
+    {
+        if (trycount > 4) return FALSE;
+        Delay(50);
+        trycount++;
+    }
+
+    /* Startup */
+    {
+        CONST_STRPTR srcdir = GetDefaultStackLocation();
+        ULONG arostcppathlen = strlen(srcdir) + 3 + 20;
+        TEXT arostcppath[arostcppathlen];
+        struct TagItem tags[] =
+        {
+            { SYS_Input,        (IPTR)NULL          },
+            { SYS_Output,       (IPTR)NULL          },
+            { SYS_Error,        (IPTR)NULL          },
+            { SYS_Asynch,       (IPTR)TRUE          },
+            { TAG_DONE,         0                   }
+        };
+
+        CombinePath3P(arostcppath, arostcppathlen, srcdir, "C", "AROSTCP");
+
+        SystemTagList(arostcppath, tags);
+    }
+
+    /* Check if startup successful */
+    trycount = 0;
+    while (!IsStackRunning())
+    {
+        if (trycount > 9) return FALSE;
+        Delay(50);
+        trycount++;
+    }
+
+    /* All ok */
+    return TRUE;
+}
+
+BOOL StopWireless()
+{
+    ULONG trycount = 0;
+
+    /* Shutdown */
+    {
+        struct Task *task = FindTask("C:WirelessManager");
+        if (task != NULL)
+            Signal(task, SIGBREAKF_CTRL_C);
+    }
+
+    /* Check if shutdown successful */
+    trycount = 0;
+    while (FindTask("C:WirelessManager") != NULL)
+    {
+        if (trycount > 4) return FALSE;
+        Delay(50);
+        trycount++;
+    }
+
+    /* All ok */
+    return TRUE;
+}
+
+BOOL StartWireless()
+{
+    ULONG trycount = 0;
+    TEXT command[80];
+
+    /* Startup */
+    {
+        struct TagItem tags[] =
+        {
+            { SYS_Input,        (IPTR)NULL          },
+            { SYS_Output,       (IPTR)NULL          },
+            { SYS_Error,        (IPTR)NULL          },
+            { SYS_Asynch,       (IPTR)TRUE          },
+            { TAG_DONE,         0                   }
+        };
+
+        snprintf(command, 80, "C:WirelessManager \"%s\" UNIT %ld\n",
+            GetWirelessDevice(), (long int)GetWirelessUnit());
+        SystemTagList(command, tags);
+    }
+
+    /* Check if startup successful */
+    trycount = 0;
+    while (FindTask("C:WirelessManager") == NULL)
+    {
+        if (trycount > 9) return FALSE;
+        Delay(50);
+        trycount++;
+    }
+
+    /* All ok */
+    return TRUE;
+}
+
+BOOL StopMobile()
+{
+    ULONG trycount = 0;
+
+    /* Shutdown */
+    {
+        struct Task *task = FindTask("C:ModemManager");
+        if (task != NULL)
+            Signal(task, SIGBREAKF_CTRL_C);
+    }
+
+    /* Check if shutdown successful */
+    trycount = 0;
+    while (FindTask("C:ModemManager") != NULL)
+    {
+        if (trycount > 4) return FALSE;
+        Delay(50);
+        trycount++;
+    }
+
+    /* All ok */
+    return TRUE;
+}
+
+BOOL StartMobile()
+{
+    ULONG trycount = 0;
+
+    /* Startup */
+    {
+        struct TagItem tags[] =
+        {
+            { SYS_Input,        (IPTR)NULL          },
+            { SYS_Output,       (IPTR)NULL          },
+            { SYS_Error,        (IPTR)NULL          },
+            { SYS_Asynch,       (IPTR)TRUE          },
+            { TAG_DONE,         0                   }
+        };
+
+        SystemTagList("C:ModemManager", tags);
+    }
+
+    /* Check if startup successful */
+    trycount = 0;
+    while (FindTask("C:ModemManager") == NULL)
+    {
+        if (trycount > 9) return FALSE;
+        Delay(50);
+        trycount++;
+    }
+
+    /* All ok */
+    return TRUE;
+}
+
+/*
+ * Exact-token membership test against the automount variable's contents
+ * ("SMB0: fileserver-work: ..."): whitespace-separated tokens, compared
+ * minus any trailing ':' - so "SMB1" no longer matches "SMB10".
+ */
+static BOOL ShareIsActive(CONST_STRPTR activelist, CONST_STRPTR name)
+{
+    CONST_STRPTR p = activelist;
+    ULONG nlen = strlen(name);
+
+    while (p != NULL && *p != '\0')
+    {
+        CONST_STRPTR t;
+        ULONG tlen;
+
+        while (*p == ' ' || *p == '\t')
+            p++;
+        t = p;
+        while (*p != '\0' && *p != ' ' && *p != '\t')
+            p++;
+        tlen = p - t;
+        if (tlen > 0 && t[tlen - 1] == ':')
+            tlen--;
+        if (tlen == nlen && strncasecmp((const char *)t, name, tlen) == 0)
+            return TRUE;
+    }
+    return FALSE;
+}
+
+BOOL MountShares(void)
+{
+    BPTR dir;
+
+    dir = Lock(MOUNT_PATH_ENV, SHARED_LOCK);
+    if (dir == BNULL)
+        return FALSE;
+
+    /* Startup */
+    if (GetShareCount() > 0)
+    {
+        struct TagItem tags[] =
+        {
+            { SYS_Input,        (IPTR)NULL          },
+            { SYS_Output,       (IPTR)NULL          },
+            { SYS_Error,        (IPTR)NULL          },
+            { SYS_Asynch,       (IPTR)TRUE          },
+            { NP_CurrentDir,    (IPTR)dir           },
+            { TAG_DONE,         0                   }
+        };
+
+        /* the asynchronous Mount inherits (and releases) dir */
+        SystemTagList("C:Mount ${AROSTCP/ServerAutoMounts}\n", tags);
+    }
+    else
+        UnLock(dir);
+
+    /* All ok */
+    return TRUE;
+}
+
+/* This is not a general use function! It assumes destinations directory exists */
+BOOL AddFileFromDefaultStackLocation(CONST_STRPTR filename, CONST_STRPTR dstdir)
+{
+    /* Build paths */
+    CONST_STRPTR srcdir = GetDefaultStackLocation();
+    ULONG srcfilelen = strlen(srcdir) + 4 + strlen(filename) + 1;
+    TEXT srcfile[srcfilelen];
+    ULONG dstfilelen = strlen(dstdir) + 4 + strlen(filename) + 1;
+    TEXT dstfile[dstfilelen];
+    BPTR dstlock = BNULL;
+
+    CombinePath3P(srcfile, srcfilelen, srcdir, "db", filename);
+    CombinePath3P(dstfile, dstfilelen, dstdir, "db", filename);
+
+    /* Check if the destination file already exists. If yes, do not copy */
+    dstlock = Lock(dstfile, SHARED_LOCK);
+    if (dstlock != BNULL)
+    {
+        UnLock(dstlock);
+        return TRUE;
+    }
+
+    return CopyFile(srcfile, dstfile);
+}
+
+/* Copies files not created by prefs but needed to start stack */
+BOOL CopyDefaultConfiguration(CONST_STRPTR destdir)
+{
+    ULONG destdbdirlen = strlen(destdir) + 3 + 1;
+    TEXT destdbdir[destdbdirlen];
+    CombinePath2P(destdbdir, destdbdirlen, destdir, "db");
+
+    /* Create necessary directories */
+    if (!RecursiveCreateDir(destdir)) return FALSE;
+    if (!RecursiveCreateDir(destdbdir)) return FALSE;
+
+    /* Copy files */
+    if (!AddFileFromDefaultStackLocation("inet.access", destdir)) return FALSE;
+    if (!AddFileFromDefaultStackLocation("netdb", destdir)) return FALSE;
+    if (!AddFileFromDefaultStackLocation("networks", destdir)) return FALSE;
+    if (!AddFileFromDefaultStackLocation("protocols", destdir)) return FALSE;
+    if (!AddFileFromDefaultStackLocation("services", destdir)) return FALSE;
+
+    return TRUE;
+}
+
+enum ErrorCode SaveNetworkPrefs()
+{
+    if (!CopyDefaultConfiguration(PREFS_PATH_ENVARC)) return NOT_COPIED_FILES_ENVARC;
+    if (!WriteNetworkPrefs(PREFS_PATH_ENVARC)) return NOT_SAVED_PREFS_ENVARC;
+    if (!WriteWirelessPrefs(WIRELESS_PATH_ENVARC)) return NOT_SAVED_PREFS_ENVARC;
+    if (!WriteMobilePrefs(MOBILEBB_PATH_ENVARC)) return NOT_SAVED_PREFS_ENVARC;
+    if (!WriteMounts(MOUNT_PATH_STORAGE, PREFS_PATH_ENVARC))
+        return NOT_SAVED_PREFS_ENVARC;
+    WriteNetServices(PREFS_PATH_ENVARC);
+
+    return UseNetworkPrefs();
+}
+
+enum ErrorCode UseNetworkPrefs()
+{
+    if (!CopyDefaultConfiguration(PREFS_PATH_ENV)) return NOT_COPIED_FILES_ENV;
+    if (!WriteNetworkPrefs(PREFS_PATH_ENV)) return NOT_SAVED_PREFS_ENV;
+    if (!WriteWirelessPrefs(WIRELESS_PATH_ENV)) return NOT_SAVED_PREFS_ENV;
+    if (!WriteMobilePrefs(MOBILEBB_PATH_ENV)) return NOT_SAVED_PREFS_ENV;
+    if (!RecursiveCreateDir(MOUNT_PATH_ENV)) return NOT_SAVED_PREFS_ENV;
+    if (!WriteMounts(MOUNT_PATH_ENV, PREFS_PATH_ENV))
+        return NOT_SAVED_PREFS_ENV;
+    WriteNetServices(PREFS_PATH_ENV);
+
+    if (StopWireless())
+        if (GetWirelessDevice() != NULL)
+            if (!StartWireless()) return NOT_RESTARTED_WIRELESS;
+    if (!RestartStack()) return NOT_RESTARTED_STACK;
+    if (StopMobile())
+        if (GetMobile_Autostart())
+            if (!StartMobile()) return NOT_RESTARTED_MOBILE;
+    MountShares();
+
+    return ALL_OK;
+}
+
+/* Directory points to top of config, so to AAA/AROSTCP not to AAA/AROSTCP/db */
+void ReadNetworkPrefs(CONST_STRPTR directory)
+{
+    ULONG filenamelen = strlen(directory) + 4 + 20;
+    TEXT filename[filenamelen];
+    BOOL comment = FALSE;
+    STRPTR tstring;
+    struct Tokenizer tok;
+    LONG interfacecount, hostcount;
+    struct Interface *iface = NULL;
+    struct Host *host = NULL;
+
+    /* This function will not fail. It will load as much data as possible. Rest will be default values */
+
+    SetDHCP(FALSE);
+
+    CombinePath3P(filename, filenamelen, directory, "db", "general.config");
+    OpenTokenFile(&tok, filename);
+    while (!tok.fend)
+    {
+        if (tok.newline)
+        { // read tokens from the beginning of line
+            if (tok.token)
+            {
+                if (strcmp(tok.token, "HOSTNAME") == 0)
+                {
+                    GetNextToken(&tok, "=\n");
+                    tstring = strchr(tok.token, '.');
+                    SetDomain(tstring + 1);
+                    tstring[0] = 0;
+                    SetHostname(tok.token);
+                }
+            }
+        }
+        GetNextToken(&tok, "=\n");
+    }
+    CloseTokenFile(&tok);
+
+    CombinePath3P(filename, filenamelen, directory, "db", "interfaces");
+    OpenTokenFile(&tok, filename);
+
+    SetInterfaceCount(0);
+    interfacecount = 0;
+
+    while (!tok.fend && (interfacecount < MAXINTERFACES))
+    {
+        GetNextToken(&tok, " \n");
+        if (tok.token)
+        {
+            if (tok.newline) comment = FALSE;
+            if (strncmp(tok.token, "#", 1) == 0) comment = TRUE;
+
+            if (!comment)
+            {
+                if (tok.newline)
+                {
+                    iface = GetInterface(interfacecount);
+                    SetName(iface, tok.token);
+                    interfacecount++;
+                    SetInterfaceCount(interfacecount);
+                }
+                else if (strncmp(tok.token, "DEV=", 4) == 0)
+                {
+                    tstring = strchr(tok.token, '=');
+                    SetDevice(iface, tstring + 1);
+                }
+                else if (strncmp(tok.token, "UNIT=", 5) == 0)
+                {
+                    tstring = strchr(tok.token, '=');
+                    SetUnit(iface, atol(tstring + 1));
+                }
+                else if (strncmp(tok.token, "TUNNEL", 6) == 0)
+                {
+                    /* 6in4 (SIT) tunnel pseudo-interface flag */
+                    SetIsTunnel(iface, TRUE);
+                    iface->device[0] = '\0';   /* a tunnel has no device */
+                }
+                else if (strncmp(tok.token, "TDST=", 5) == 0)
+                {
+                    tstring = strchr(tok.token, '=');
+                    SetTunnelRemote(iface, tstring + 1);
+                }
+                else if (strncmp(tok.token, "TSRC=", 5) == 0)
+                {
+                    tstring = strchr(tok.token, '=');
+                    SetTunnelLocal(iface, tstring + 1);
+                }
+                else if (strncmp(tok.token, "TTL=", 4) == 0)
+                {
+                    tstring = strchr(tok.token, '=');
+                    SetTunnelTTL(iface, atol(tstring + 1));
+                }
+                else if (strcmp(tok.token, "DEFER") == 0)
+                {
+                    SetDefer(iface, TRUE);
+                }
+                else if (strncmp(tok.token, "UP", 2) == 0)
+                {
+                    SetUp(iface, TRUE);
+                }
+                else
+                {
+                    /* Not a core token: offer it to each protocol plugin.  The
+                     * first that recognises it parses it into (creating if
+                     * needed) its address node on the interface's list. */
+                    struct NetPrefsBase *npb = NetPrefs_GetBase();
+                    if (npb)
+                    {
+                        struct ProtoHandlerNode *ph;
+                        ForeachNode(&npb->npb_ProtoHandlers, ph)
+                        {
+                            if (ph->ph_ReadTokens &&
+                                ph->ph_ReadTokens(&iface->protoAddrs,
+                                                  (CONST_STRPTR)tok.token,
+                                                  ph->ph_ID) != NULL)
+                                break;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    CloseTokenFile(&tok);
+
+    CombinePath3P(filename, filenamelen, directory, "db", "netdb-myhost");
+    OpenTokenFile(&tok, filename);
+    int dnsc = 0;
+    while (!tok.fend)
+    {
+        GetNextToken(&tok, " \n");
+        if (tok.token)
+        {
+            // Host and Domain are already read from general.config
+            if (strncmp(tok.token, "NAMESERVER", 10) == 0)
+            {
+                GetNextToken(&tok, " \n");
+                SetDNS(dnsc, tok.token);
+                dnsc++;
+                if (dnsc > 1) dnsc = 1;
+            }
+        }
+    }
+    // Assume DHCP if there is no nameserver
+    if (dnsc == 0)
+    {
+        SetDHCP(TRUE);
+    }
+    CloseTokenFile(&tok);
+
+    /* static-routes is no longer used for gateway; gateways are per-interface in interfaces file */
+
+    /* Must match the "AutoRun" filename written by SaveNetworkPrefs - on a
+     * case-sensitive host FS "Autorun" would never be found, so the autostart
+     * flag would silently read back as unset (boot autostart appears broken). */
+    CombinePath2P(filename, filenamelen, directory, "AutoRun");
+    OpenTokenFile(&tok, filename);
+    while (!tok.fend)
+    {
+        GetNextToken(&tok, " \n");
+        if (tok.token)
+        {
+            if (strncmp(tok.token, "True", 4) == 0)
+            {
+                SetAutostart(TRUE);
+                break;
+            }
+            else
+            {
+                SetAutostart(FALSE);
+                break;
+            }
+        }
+    }
+    CloseTokenFile(&tok);
+
+    CombinePath3P(filename, filenamelen, directory, "db", "hosts");
+    OpenTokenFile(&tok, filename);
+
+    SetHostCount(0);
+    hostcount = 0;
+
+    while (!tok.fend && (hostcount < MAXHOSTS))
+    {
+        GetNextToken(&tok, " \n");
+        if (tok.token)
+        {
+            if (tok.newline) comment = FALSE;
+            if (strncmp(tok.token, "#", 1) == 0) comment = TRUE;
+
+            if (!comment)
+            {
+                if (tok.newline)
+                {
+                    host = GetHost(hostcount);
+                    SetHostAddress(host, tok.token);
+                    hostcount++;
+                    SetHostCount(hostcount);
+                }
+                else
+                {
+                    AddHostName(host, tok.token);
+                }
+            }
+        }
+    }
+    CloseTokenFile(&tok);
+}
+
+void ReadWirelessPrefs(CONST_STRPTR directory)
+{
+    ULONG filenamelen = strlen(directory) + 4 + 20;
+    TEXT filename[filenamelen];
+    BOOL comment = FALSE;
+    STRPTR tstring;
+    struct Tokenizer tok;
+    LONG networkCount;
+    struct Network *net = NULL;
+    BOOL keyIsHex;
+
+    CombinePath2P(filename, filenamelen, directory, "Wireless.prefs");
+    OpenTokenFile(&tok, filename);
+
+    SetNetworkCount(0);
+    networkCount = 0;
+
+    while (!tok.fend && (networkCount < MAXNETWORKS))
+    {
+        GetNextToken(&tok, "\n\t");
+        if (tok.token)
+        {
+            if (tok.newline) comment = FALSE;
+            if (strncmp(tok.token, "#", 1) == 0) comment = TRUE;
+
+            if (!comment)
+            {
+                if (strncmp(tok.token, "network=", 8) == 0)
+                {
+                    net = GetNetwork(networkCount);
+                    net->adHoc = FALSE;
+                    net->hidden = FALSE;
+                    networkCount++;
+                    SetNetworkCount(networkCount);
+                }
+                else if (strncmp(tok.token, "ssid=", 5) == 0)
+                {
+                    tstring = strchr(tok.token, '=') + 2;
+                    *strchr(tstring, '\"') = '\0';
+                    SetNetworkName(net, tstring);
+                }
+                else if (strncmp(tok.token, "psk=", 4) == 0
+                    || strncmp(tok.token, "wep_key0=", 9) == 0)
+                {
+                    tstring = strchr(tok.token, '=') + 1;
+                    if (*tstring == '\"')
+                    {
+                        keyIsHex = FALSE;
+                        tstring++;
+                        *strchr(tstring, '\"') = '\0';
+                    }
+                    else
+                        keyIsHex = TRUE;
+                    SetKey(net, tstring, keyIsHex);
+                    SetEncType(net, (*tok.token == 'p') ? 2 : 1);
+                }
+                else if (strncmp(tok.token, "scan_ssid=", 10) == 0)
+                {
+                    tstring = strchr(tok.token, '=') + 1;
+                    SetHidden(net, *tstring == '1');
+                }
+                else if (strncmp(tok.token, "mode=", 5) == 0)
+                {
+                    tstring = strchr(tok.token, '=') + 1;
+                    SetAdHoc(net, *tstring == '1');
+                }
+            }
+        }
+    }
+    CloseTokenFile(&tok);
+}
+
+
+void ReadMobilePrefs(CONST_STRPTR directory)
+{
+    ULONG filenamelen = strlen(directory) + 4 + 30;
+    TEXT filename[filenamelen];
+    struct Tokenizer tok;
+    LONG command=0;
+
+    CombinePath2P(filename, filenamelen, directory, "MobileBroadband.prefs");
+    OpenTokenFile(&tok, filename);
+    while (!tok.fend)
+    {
+        GetNextToken(&tok, " \n");
+        if (tok.token)
+        {
+            if ( tok.newline && tok.token[0] == '#' ) continue;
+
+            if (tok.newline)
+            {
+                if (strcasecmp( tok.token, "SEND" ) == 0)
+                {
+                    GetNextToken(&tok, "\n");
+                    if ( tok.token && ! tok.newline )
+                    {
+                        SetMobile_atcommand( command++ , tok.token );
+                    }
+                }
+                else if (strcasecmp( tok.token, "DEVICE" ) == 0)
+                {
+                    GetNextToken(&tok, " \n");
+                    if ( tok.token && ! tok.newline )
+                    {
+                        SetMobile_devicename( tok.token );
+                    }
+                }
+                else if (strcasecmp( tok.token, "USERNAME" ) == 0)
+                {
+                    GetNextToken(&tok, " \n");
+                    if ( tok.token && ! tok.newline )
+                    {
+                        SetMobile_username( tok.token );
+                    }
+                }
+                else if (strcasecmp( tok.token, "PASSWORD" ) == 0)
+                {
+                    GetNextToken(&tok, " \n");
+                    if ( tok.token && ! tok.newline )
+                    {
+                        SetMobile_password( tok.token );
+                    }
+                }
+                else if (strcasecmp( tok.token, "UNIT" ) == 0)
+                {
+                    GetNextToken(&tok, " \n");
+                    if ( tok.token && ! tok.newline )
+                    {
+                        SetMobile_unit( atoi( tok.token ) );
+                    }
+                }
+            }
+        }
+    }
+    CloseTokenFile(&tok);
+}
+
+
+/* ------------------------------------------------------------------------
+ * Managed network services (db/services.d/<name>) - the Services tab.
+ * ------------------------------------------------------------------------ */
+
+struct NetSvcEntry netservices[MAX_NETSERVICES];
+int netserviceCount = 0;
+
+/* Split "KEY = VALUE" in place (trims surrounding whitespace).  FALSE for
+ * blank / comment lines. */
+static BOOL svc_kv(char *line, char **key, char **val)
+{
+    char *p = line, *eq, *e;
+
+    while (*p == ' ' || *p == '\t') p++;
+    if (*p == '\0' || *p == '\n' || *p == '\r' || *p == '#' || *p == ';')
+        return FALSE;
+    eq = p;
+    while (*eq && *eq != '=' && *eq != '\n') eq++;
+    if (*eq != '=') return FALSE;
+    *key = p;
+    e = eq; *eq = '\0';
+    while (e > p && (e[-1] == ' ' || e[-1] == '\t')) *--e = '\0';
+    p = eq + 1;
+    while (*p == ' ' || *p == '\t') p++;
+    *val = p;
+    e = p; while (*e && *e != '\n' && *e != '\r') e++;
+    while (e > p && (e[-1] == ' ' || e[-1] == '\t')) e--;
+    *e = '\0';
+    return TRUE;
+}
+
+static BOOL svc_keyeq(const char *k, const char *lit)
+{
+    while (*k && *lit)
+    {
+        char a = *k, b = *lit;
+        if (a >= 'a' && a <= 'z') a -= 32;
+        if (b >= 'a' && b <= 'z') b -= 32;
+        if (a != b) return FALSE;
+        k++; lit++;
+    }
+    return *k == '\0' && *lit == '\0';
+}
+
+static BOOL svc_bool(const char *v)   /* default enabled; false for no/false/0/off */
+{
+    char c = v ? v[0] : 0;
+    if (c == 'n' || c == 'N' || c == 'f' || c == 'F' || c == '0') return FALSE;
+    if ((c == 'o' || c == 'O') && (v[1] == 'f' || v[1] == 'F')) return FALSE;
+    return TRUE;
+}
+
+static void svc_copy(char *dst, ULONG size, const char *src)
+{
+    ULONG i;
+    for (i = 0; i + 1 < size && src[i]; i++) dst[i] = src[i];
+    dst[i] = '\0';
+}
+
+/* Scan the first existing db/services.d/ (ENV: then ENVARC: then install
+ * default) and fill netservices[].  Returns FALSE if none is found. */
+BOOL ReadNetServices(void)
+{
+    static const char * const roots[] = {
+        PREFS_PATH_ENV    "/db/services.d",
+        PREFS_PATH_ENVARC "/db/services.d",
+        "SYS:System/Network/AROSTCP/db/services.d",
+        NULL
+    };
+    BPTR dir = BNULL, old, file;
+    struct FileInfoBlock *fib;
+    int r;
+
+    netserviceCount = 0;
+    for (r = 0; roots[r] != NULL && dir == BNULL; r++)
+        dir = Lock((STRPTR)roots[r], SHARED_LOCK);
+    if (dir == BNULL)
+        return FALSE;
+
+    fib = AllocDosObject(DOS_FIB, NULL);
+    if (fib == NULL) { UnLock(dir); return FALSE; }
+
+    old = CurrentDir(dir);
+    if (Examine(dir, fib))
+    {
+        while (ExNext(dir, fib) && netserviceCount < MAX_NETSERVICES)
+        {
+            struct NetSvcEntry *e;
+            char line[256], *key, *val;
+
+            if (fib->fib_DirEntryType > 0) continue;        /* skip subdirs */
+            if (fib->fib_FileName[0] == '.') continue;
+            file = Open(fib->fib_FileName, MODE_OLDFILE);
+            if (file == BNULL) continue;
+
+            e = &netservices[netserviceCount];
+            svc_copy(e->nse_Name, sizeof(e->nse_Name), fib->fib_FileName);
+            e->nse_FriendlyName[0] = e->nse_Path[0] = e->nse_Order[0] = '\0';
+            e->nse_StopSig[0] = e->nse_Policy[0] = e->nse_ConfigTool[0] = '\0';
+            e->nse_Enabled = TRUE;
+            while (FGets(file, (STRPTR)line, sizeof(line)))
+            {
+                if (!svc_kv(line, &key, &val)) continue;
+                if (svc_keyeq(key, "Path"))            svc_copy(e->nse_Path, sizeof(e->nse_Path), val);
+                else if (svc_keyeq(key, "Name"))       svc_copy(e->nse_FriendlyName, sizeof(e->nse_FriendlyName), val);
+                else if (svc_keyeq(key, "Order"))      svc_copy(e->nse_Order, sizeof(e->nse_Order), val);
+                else if (svc_keyeq(key, "StopSig"))    svc_copy(e->nse_StopSig, sizeof(e->nse_StopSig), val);
+                else if (svc_keyeq(key, "Policy"))     svc_copy(e->nse_Policy, sizeof(e->nse_Policy), val);
+                else if (svc_keyeq(key, "ConfigTool")) svc_copy(e->nse_ConfigTool, sizeof(e->nse_ConfigTool), val);
+                else if (svc_keyeq(key, "Enabled"))    e->nse_Enabled = svc_bool(val);
+            }
+            Close(file);
+            if (e->nse_Path[0] != '\0')
+                netserviceCount++;
+        }
+    }
+    CurrentDir(old);
+    FreeDosObject(DOS_FIB, fib);
+    UnLock(dir);
+    return TRUE;
+}
+
+/* Write each service back to <prefspath>/db/services.d/<name> with the
+ * tab's Enabled flag.  Rewrites the file from the parsed fields (the service
+ * manager only reads the key=value settings). */
+BOOL WriteNetServices(CONST_STRPTR prefspath)
+{
+    char dirpath[300];
+    int i;
+    BPTR lock;
+
+    if (netserviceCount == 0)
+        return TRUE;
+
+    snprintf(dirpath, sizeof(dirpath), "%s/db/services.d", prefspath);
+    lock = Lock((STRPTR)dirpath, SHARED_LOCK);
+    if (lock != BNULL)
+        UnLock(lock);
+    else if (!RecursiveCreateDir(dirpath))
+        return FALSE;
+
+    for (i = 0; i < netserviceCount; i++)
+    {
+        struct NetSvcEntry *e = &netservices[i];
+        char path[400];
+        BPTR fh;
+
+        snprintf(path, sizeof(path), "%s/%s", dirpath, e->nse_Name);
+        fh = Open((STRPTR)path, MODE_NEWFILE);
+        if (fh == BNULL)
+            continue;
+        FPuts(fh, (STRPTR)"# AROSTCP network service (managed by Network prefs)\n");
+        if (e->nse_FriendlyName[0]) { FPuts(fh, (STRPTR)"Name=");  FPuts(fh, (STRPTR)e->nse_FriendlyName); FPutC(fh, '\n'); }
+        if (e->nse_Path[0])    { FPuts(fh, (STRPTR)"Path=");    FPuts(fh, (STRPTR)e->nse_Path);    FPutC(fh, '\n'); }
+        if (e->nse_Order[0])   { FPuts(fh, (STRPTR)"Order=");   FPuts(fh, (STRPTR)e->nse_Order);   FPutC(fh, '\n'); }
+        if (e->nse_StopSig[0]) { FPuts(fh, (STRPTR)"StopSig="); FPuts(fh, (STRPTR)e->nse_StopSig); FPutC(fh, '\n'); }
+        if (e->nse_Policy[0])  { FPuts(fh, (STRPTR)"Policy=");  FPuts(fh, (STRPTR)e->nse_Policy);  FPutC(fh, '\n'); }
+        if (e->nse_ConfigTool[0]) { FPuts(fh, (STRPTR)"ConfigTool="); FPuts(fh, (STRPTR)e->nse_ConfigTool); FPutC(fh, '\n'); }
+        FPuts(fh, (STRPTR)(e->nse_Enabled ? "Enabled=yes\n" : "Enabled=no\n"));
+        Close(fh);
+    }
+    return TRUE;
+}
+
+
+/*
+ * Scan the mounts directory (session copy in ENV:, else the saved copies in
+ * storage) and rebuild the mounted-share list.  Each Mountfile is pre-parsed
+ * with the generic Mountfile template and offered to the registered
+ * filesystem handlers in priority order; the first to claim it owns it.
+ * Files no handler recognises (ordinary user DOSDrivers) are left alone.
+ */
+BOOL ReadMounts(void)
+{
+    BPTR dir, old, file;
+    APTR ex_buffer = NULL;
+    struct ExAllControl *ex_control = NULL;
+    struct ExAllData *entry;
+    BOOL success = TRUE, more = TRUE;
+    TEXT active[256];
+
+    FreeShares(&prefs.mountedShares);
+
+    dir = Lock(MOUNT_PATH_ENV, SHARED_LOCK);
+    if (dir == BNULL)
+    {
+        dir = Lock(MOUNT_PATH_STORAGE, SHARED_LOCK);
+        if (dir == BNULL)
+            return FALSE;
+        D(bug("[Network Prefs/ReadMounts] scan directory " MOUNT_PATH_STORAGE "\n"));
+    }
+    else
+    {
+        D(bug("[Network Prefs/ReadMounts] scan directory " MOUNT_PATH_ENV "\n"));
+    }
+
+    /* Re-read the automount variable on every scan (no stale cache). */
+    active[0] = '\0';
+    GetVar(AUTOMOUNT_VARIABLE, active, sizeof(active), LV_VAR);
+
+    ex_buffer = AllocVec(EX_BUF_SIZE, MEMF_PUBLIC);
+    if (ex_buffer == NULL)
+        success = FALSE;
+
+    ex_control = AllocDosObject(DOS_EXALLCONTROL, NULL);
+    if (ex_control == NULL)
+        success = FALSE;
+
+    if (success)
+    {
+        old = CurrentDir(dir);
+        ex_control->eac_LastKey = 0;
+        while (more)
+        {
+            more = ExAll(dir, ex_buffer, EX_BUF_SIZE, ED_SIZE, ex_control);
+
+            if (!more && (IoErr() != ERROR_NO_MORE_ENTRIES))
+                break;
+            if (ex_control->eac_Entries == 0)
+                continue;
+
+            for (entry = ex_buffer; entry != NULL; entry = entry->ed_Next)
+            {
+                struct MountedShare ms;
+                struct FSHandlerNode *fsh;
+                struct MountedShare *share;
+
+                if (entry->ed_Type >= 0)
+                    continue;
+
+                D(bug("[Network Prefs/ReadMounts] filename %s\n", entry->ed_Name));
+                file = Open(entry->ed_Name, MODE_OLDFILE);
+                if (file == BNULL)
+                    continue;
+                fsh = ClaimMount((CONST_STRPTR)entry->ed_Name, file,
+                                 entry->ed_Size, &ms);
+                Close(file);
+                if (fsh == NULL)
+                    continue;       /* not one of ours */
+
+                share = AddShare(fsh->fsh_ID);
+                if (share == NULL)
+                    continue;
+                strlcpy(share->ms_host,   ms.ms_host,   sizeof(share->ms_host));
+                strlcpy(share->ms_volume, ms.ms_volume, sizeof(share->ms_volume));
+                strlcpy(share->ms_user,   ms.ms_user,   sizeof(share->ms_user));
+                strlcpy(share->ms_secret, ms.ms_secret, sizeof(share->ms_secret));
+                strlcpy(share->ms_extra,  ms.ms_extra,  sizeof(share->ms_extra));
+                /* the core owns the device name and the active flag */
+                strlcpy(share->ms_device, (char *)entry->ed_Name,
+                        sizeof(share->ms_device));
+                share->ms_active =
+                    ShareIsActive((CONST_STRPTR)active, share->ms_device);
+            }
+        }
+        CurrentDir(old);
+    }
+
+    if (ex_control != NULL)
+        FreeDosObject(DOS_EXALLCONTROL, ex_control);
+    FreeVec(ex_buffer);
+    UnLock(dir);
+
+    return success;
+}
+
+
+/*
+ * Read one Mountfile, pre-parse the generic Mountfile keywords, and offer it
+ * to each registered filesystem handler.  Returns the claiming handler with
+ * *ms filled in (its payload fields only), or NULL.
+ */
+static struct FSHandlerNode *ClaimMount(CONST_STRPTR name, BPTR file,
+                                        LONG size, struct MountedShare *ms)
+{
+    struct NetPrefsBase *npb = NetPrefs_GetBase();
+    struct FSHandlerNode *fsh, *claimed = NULL;
+    UBYTE *mount_buffer;
+    IPTR mount_args[NUM_MOUNTARGS] = {0};
+    struct RDArgs *mount_rdargs;
+    struct NetPrefsMountInfo mi;
+    LONG i;
+
+    if (npb == NULL || IsListEmpty(&npb->npb_FSHandlers))
+        return NULL;
+
+    mount_buffer = AllocVec(size + 100, MEMF_ANY | MEMF_CLEAR);
+    if (mount_buffer == NULL)
+        return NULL;
+
+    if (FRead(file, mount_buffer, size, 1) != 1)
+    {
+        FreeVec(mount_buffer);
+        return NULL;
+    }
+
+    for (i = 0; i < size; i++)
+        if (mount_buffer[i] == '\n')
+            mount_buffer[i] = ' ';
+
+    mount_rdargs = AllocDosObject(DOS_RDARGS, NULL);
+    if (mount_rdargs != NULL)
+    {
+        mount_rdargs->RDA_Source.CS_Buffer = mount_buffer;
+        mount_rdargs->RDA_Source.CS_Length = size + 1;
+        mount_rdargs->RDA_Flags = RDAF_NOPROMPT;
+        if (ReadArgs(mount_template, (IPTR *)&mount_args, mount_rdargs) != NULL)
+        {
+            memset(&mi, 0, sizeof(mi));
+            mi.nmi_FileName   = name;
+            mi.nmi_Handler    = (CONST_STRPTR)mount_args[ARG_HANDLER];
+            mi.nmi_EHandler   = (CONST_STRPTR)mount_args[ARG_EHANDLER];
+            mi.nmi_Filesystem = (CONST_STRPTR)mount_args[ARG_FILESYSTEM];
+            mi.nmi_Control    = (CONST_STRPTR)mount_args[ARG_CONTROL];
+            mi.nmi_Unit       = (CONST_STRPTR)mount_args[ARG_UNIT];
+            mi.nmi_Device     = (CONST_STRPTR)mount_args[ARG_DEVICE];
+
+            ForeachNode(&npb->npb_FSHandlers, fsh)
+            {
+                memset(ms, 0, sizeof(*ms));
+                if (fsh->fsh_ReadMount != NULL && fsh->fsh_ReadMount(&mi, ms))
+                {
+                    claimed = fsh;
+                    break;
+                }
+            }
+            FreeArgs(mount_rdargs);
+        }
+        FreeDosObject(DOS_RDARGS, mount_rdargs);
+    }
+
+    FreeVec(mount_buffer);
+    return claimed;
+}
+
+
+/* TRUE if <root>/db/interfaces exists. */
+static BOOL InterfacesExistUnder(CONST_STRPTR root)
+{
+    ULONG len = strlen(root) + 4 + 20;
+    TEXT filename[len];
+    BPTR lock;
+
+    CombinePath3P(filename, len, root, "db", "interfaces");
+    if ((lock = Lock(filename, SHARED_LOCK)))
+    {
+        UnLock(lock);
+        return TRUE;
+    }
+    return FALSE;
+}
+
+/* Resolve which directory to read the configuration from, mirroring how the
+ * AROSTCP stack itself locates its prefs (see bsdsocket/kern/amiga_main.c):
+ *
+ *   1. ENV:AROSTCP - the live/edited config, once it has been populated (by a
+ *      previous Save, or by the boot copy of ENVARC:->ENV:).
+ *   2. ENV:AROSTCP/Config - an explicit db-directory override, the same env var
+ *      the stack honours.  Its contents name the db dir, so the reader (which
+ *      appends "/db") is given the parent.
+ *   3. The install location named by SYS/Packages/AROSTCP (e.g.
+ *      SYS:System/Network/AROSTCP), whose db/ holds the shipped config - this
+ *      is the stack's default when no override is set, and the case that was
+ *      leaving the editor's interface list empty (nothing populates ENV:AROSTCP
+ *      on a freshly installed system).
+ *   4. ENV:AROSTCP as a last resort.
+ *
+ * The returned string is valid for the life of the program. */
+static CONST_STRPTR ResolveReadRoot(void)
+{
+    static TEXT root[1024];
+    TEXT cfg[1024];
+
+    /* 1. Live config already present in ENV: */
+    if (InterfacesExistUnder(PREFS_PATH_ENV))
+        return PREFS_PATH_ENV;
+
+    /* 2. Stack's AROSTCP/Config override (names the db dir directly). */
+    if (GetVar("AROSTCP/Config", cfg, sizeof(cfg), GVF_GLOBAL_ONLY) > 0 && cfg[0])
+    {
+        BPTR lock = Lock(cfg, SHARED_LOCK);
+        if (lock)
+        {
+            STRPTR pp;
+            UnLock(lock);
+            /* cfg is "<root>/db"; hand back <root> so the reader's "/db" append
+             * reconstructs it. */
+            strlcpy(root, cfg, sizeof(root));
+            pp = PathPart(root);
+            pp[0] = '\0';
+            if (root[0])
+                return root;
+        }
+    }
+
+    /* 3. Stack default: the package install location; its db/ holds the config. */
+    {
+        CONST_STRPTR loc = GetDefaultStackLocation();
+        if (loc && loc[0] && InterfacesExistUnder(loc))
+        {
+            strlcpy(root, loc, sizeof(root));
+            return root;
+        }
+    }
+
+    /* 4. Nothing found - fall back to ENV:AROSTCP (list may be empty). */
+    return PREFS_PATH_ENV;
+}
+
+void InitNetworkPrefs(CONST_STRPTR directory, BOOL use, BOOL save)
+{
+    SetDefaultNetworkPrefsValues();
+    SetDefaultWirelessPrefsValues();
+    SetDefaultMobilePrefsValues();
+
+    /* When no explicit source was requested, locate the config the same way the
+     * stack does, so the editor shows the configuration actually in use. */
+    if (directory == NULL)
+        directory = ResolveReadRoot();
+
+    ReadNetworkPrefs(directory);
+    ReadWirelessPrefs(WIRELESS_PATH_ENV);
+    ReadMobilePrefs(MOBILEBB_PATH_ENV);
+    ReadMounts();
+    ReadNetServices();
+
+    if (save)
+    {
+        SaveNetworkPrefs();
+        return; /* save equals to use */
+    }
+
+    if (use)
+    {
+        UseNetworkPrefs();
+    }
+}
+
+// check if 'str' contains only characters from 'accept'
+BOOL IsLegal(STRPTR str, STRPTR accept)
+{
+    int i, len;
+
+    if ((str == NULL) || (accept == NULL) || (str[0] == '\0'))
+    {
+        return FALSE;
+    }
+
+    len = strlen(str);
+    for (i = 0; i < len; i++)
+    {
+        if (strchr(accept, str[i]) == NULL)
+        {
+            return FALSE;
+        }
+    }
+    return TRUE;
+}
+
+
+/* Getters */
+
+struct Interface * GetInterface(LONG index)
+{
+    return &prefs.interface[index];
+}
+
+STRPTR GetName(struct Interface *iface)
+{
+    return iface->name;
+}
+
+/* The interface's protocol objects live on iface->protoAddrs; the core reaches
+ * them only through the protocols.c helpers, never through per-family getters. */
+struct List *GetProtoAddrs(struct Interface *iface)
+{
+    return &iface->protoAddrs;
+}
+
+STRPTR GetDevice(struct Interface *iface)
+{
+    return iface->device;
+}
+
+LONG GetUnit(struct Interface *iface)
+{
+    return iface->unit;
+}
+
+BOOL GetUp(struct Interface *iface)
+{
+    return iface->up;
+}
+
+BOOL GetDefer(struct Interface *iface)
+{
+    return iface->defer;
+}
+
+BOOL GetIsTunnel(struct Interface *iface)
+{
+    return iface->isTunnel;
+}
+
+STRPTR GetTunnelRemote(struct Interface *iface)
+{
+    return iface->tunnelRemote;
+}
+
+STRPTR GetTunnelLocal(struct Interface *iface)
+{
+    return iface->tunnelLocal;
+}
+
+LONG GetTunnelTTL(struct Interface *iface)
+{
+    return iface->tunnelTTL;
+}
+
+STRPTR GetDNS(LONG m)
+{
+    return prefs.DNS[m];
+}
+
+STRPTR GetHostname(void)
+{
+    return prefs.host;
+}
+
+STRPTR GetDomain(void)
+{
+    return prefs.domain;
+}
+
+LONG GetInterfaceCount(void)
+{
+    return prefs.interfacecount;
+}
+
+BOOL GetAutostart(void)
+{
+    return prefs.autostart;
+}
+
+BOOL GetDHCP(void)
+{
+    return prefs.DHCP;
+}
+
+
+/* Setters */
+
+void SetName(struct Interface *iface, STRPTR w)
+{
+    if (!IsLegal(w, NAMECHARS))
+    {
+        w = DEFAULTNAME;
+    }
+    strlcpy(iface->name, w, NAMEBUFLEN);
+}
+
+void SetDevice(struct Interface *iface, STRPTR w)
+{
+    if (w == NULL || w[0] == '\0')
+    {
+        w = DEFAULTDEVICE;
+    }
+    strlcpy(iface->device, w, NAMEBUFLEN);
+}
+
+void SetUnit(struct Interface *iface, LONG w)
+{
+    iface->unit = w;
+}
+
+void SetUp(struct Interface *iface, BOOL w)
+{
+    iface->up = w;
+}
+
+void SetDefer(struct Interface *iface, BOOL w)
+{
+    iface->defer = w;
+}
+
+void SetIsTunnel(struct Interface *iface, BOOL w)
+{
+    iface->isTunnel = w;
+}
+
+void SetTunnelRemote(struct Interface *iface, STRPTR w)
+{
+    if (w == NULL)
+        w = "";
+    strlcpy(iface->tunnelRemote, w, IPBUFLEN);
+}
+
+void SetTunnelLocal(struct Interface *iface, STRPTR w)
+{
+    if (w == NULL)
+        w = "";
+    strlcpy(iface->tunnelLocal, w, IPBUFLEN);
+}
+
+void SetTunnelTTL(struct Interface *iface, LONG w)
+{
+    iface->tunnelTTL = w;
+}
+
+void SetDNS(LONG m, STRPTR w)
+{
+    if (!IsLegal(w, IPCHARS))
+    {
+        w = DEFAULTDNS;
+    }
+    strlcpy(prefs.DNS[m], w, IPBUFLEN);
+}
+
+void SetHostname(STRPTR w)
+{
+    if (!IsLegal(w, NAMECHARS))
+    {
+        w = DEFAULTHOST;
+    }
+    strlcpy(prefs.host, w, NAMEBUFLEN);
+}
+
+void SetDomain(STRPTR w)
+{
+    if (!IsLegal(w, NAMECHARS))
+    {
+        w = DEFAULTDOMAIN;
+    }
+    strlcpy(prefs.domain, w, NAMEBUFLEN);
+}
+
+void SetInterfaceCount(LONG w)
+{
+    prefs.interfacecount = w;
+}
+
+void SetAutostart(BOOL w)
+{
+    prefs.autostart = w;
+}
+
+void SetDHCP(BOOL w)
+{
+    prefs.DHCP = w;
+}
+
+void InitHost(struct Host *host)
+{
+    SetHostNames(host, "");
+    SetHostAddress(host, "");
+}
+
+void InitNetwork(struct Network *net)
+{
+    SetNetworkName(net, "");
+    SetKey(net, "", FALSE);
+    SetEncType(net, 0);
+    SetAdHoc(net, FALSE);
+}
+
+
+
+/* Getters */
+
+struct Host *GetHost(LONG index)
+{
+    return &prefs.hosts[index];
+}
+
+STRPTR GetHostNames(struct Host *host)
+{
+    return host->names;
+}
+
+STRPTR GetHostAddress(struct Host *host)
+{
+    return host->address;
+}
+
+LONG GetHostCount(void)
+{
+    return prefs.hostCount;
+}
+
+struct Network *GetNetwork(LONG index)
+{
+    return &prefs.networks[index];
+}
+
+STRPTR GetNetworkName(struct Network *net)
+{
+    return net->name;
+}
+
+UWORD GetEncType(struct Network *net)
+{
+    return net->encType;
+}
+
+STRPTR GetKey(struct Network *net)
+{
+    return net->key;
+}
+
+BOOL GetHidden(struct Network *net)
+{
+    return net->hidden;
+}
+
+BOOL GetAdHoc(struct Network *net)
+{
+    return net->adHoc;
+}
+
+LONG GetNetworkCount(void)
+{
+    return prefs.networkCount;
+}
+
+STRPTR GetWirelessDevice(void)
+{
+    return prefs.wirelessDevice;
+}
+
+LONG GetWirelessUnit(void)
+{
+    return prefs.wirelessUnit;
+}
+
+BOOL GetMobile_Autostart(void)
+{
+    return prefs.mobile.autostart;
+}
+
+STRPTR GetMobile_atcommand(ULONG i)
+{
+    if (i < MAXATCOMMANDS)
+        return prefs.mobile.atcommand[i];
+    else return "";
+}
+
+LONG GetMobile_atcommandcount(void)
+{
+    ULONG count=0;
+    ULONG i;
+    for (i = 0; i < MAXATCOMMANDS; i++)
+    {
+        if (prefs.mobile.atcommand[i][0] != 0) count++;
+    }
+    return count;
+}
+
+STRPTR GetMobile_devicename(void)
+{
+    return prefs.mobile.devicename;
+}
+
+STRPTR GetMobile_username(void)
+{
+    return prefs.mobile.username;
+}
+
+STRPTR GetMobile_password(void)
+{
+    return prefs.mobile.password;
+}
+
+LONG GetMobile_unit(void)
+{
+    return prefs.mobile.unit;
+}
+
+LONG GetMobile_timeout(void)
+{
+    return prefs.mobile.timeout;
+}
+
+/* ------------------------------------------------------------------------
+ * Mounted shares - list access.
+ * ------------------------------------------------------------------------ */
+
+struct MountedShare *GetShare(LONG index)
+{
+    struct MountedShare *share;
+
+    ForeachNode(&prefs.mountedShares, share)
+        if (index-- == 0)
+            return share;
+    return NULL;
+}
+
+LONG GetShareCount(void)
+{
+    struct MountedShare *share;
+    LONG n = 0;
+
+    ForeachNode(&prefs.mountedShares, share)
+        n++;
+    return n;
+}
+
+struct MountedShare *AddShare(UBYTE fshID)
+{
+    struct MountedShare *share = AllocVec(sizeof(*share), MEMF_CLEAR);
+
+    if (share)
+    {
+        share->ms_node.ln_Type = fshID;
+        share->ms_node.ln_Name = share->ms_device;
+        AddTail(&prefs.mountedShares, &share->ms_node);
+    }
+    return share;
+}
+
+void ClearShares(void)
+{
+    FreeShares(&prefs.mountedShares);
+}
+
+void FreeShares(struct List *list)
+{
+    struct Node *node;
+
+    while ((node = RemHead(list)) != NULL)
+        FreeVec(node);
+}
+
+/* Setters */
+
+void SetHost
+(
+    struct Host *host, STRPTR name, STRPTR address
+)
+{
+    SetHostNames(host, name);
+    SetHostAddress(host, address);
+}
+
+void SetHostNames(struct Host *host, STRPTR w)
+{
+    strlcpy(host->names, w, NAMEBUFLEN);
+}
+
+void AddHostName(struct Host *host, STRPTR w)
+{
+    if (host->names[0] != '\0')
+        strlcat(host->names, " ", NAMEBUFLEN);
+    strlcat(host->names, w, NAMEBUFLEN);
+}
+
+void SetHostAddress(struct Host *host, STRPTR w)
+{
+    strlcpy(host->address, w, IPBUFLEN);
+}
+
+void SetHostCount(LONG w)
+{
+    prefs.hostCount = w;
+}
+
+void SetNetwork
+(
+    struct Network *net, STRPTR name, UWORD encType, STRPTR key,
+    BOOL keyIsHex, BOOL hidden, BOOL adHoc
+)
+{
+    SetNetworkName(net, name);
+    SetEncType(net, encType);
+    SetKey(net, key, keyIsHex);
+    SetHidden(net, hidden);
+    SetAdHoc(net, adHoc);
+}
+
+void SetNetworkName(struct Network *net, STRPTR w)
+{
+    strlcpy(net->name, w, SSIDBUFLEN);
+}
+
+void SetEncType(struct Network *net, UWORD w)
+{
+    net->encType = w;
+}
+
+void SetKey(struct Network *net, STRPTR w, BOOL keyIsHex)
+{
+    strlcpy(net->key, w, KEYBUFLEN);
+    net->keyIsHex = keyIsHex;
+}
+
+void SetHidden(struct Network *net, BOOL w)
+{
+    net->hidden = w;
+}
+
+void SetAdHoc(struct Network *net, BOOL w)
+{
+    net->adHoc = w;
+}
+
+void SetNetworkCount(LONG w)
+{
+    prefs.networkCount = w;
+}
+
+void SetWirelessDevice(STRPTR w)
+{
+    prefs.wirelessDevice = w;
+}
+
+void SetWirelessUnit(LONG w)
+{
+    prefs.wirelessUnit = w;
+}
+
+void SetMobile_Autostart(BOOL w)
+{
+    prefs.mobile.autostart = w;
+}
+
+void SetMobile_atcommand(ULONG i,STRPTR w)
+{
+    if (strlen(w) < NAMEBUFLEN && i >= 0 && i < MAXATCOMMANDS)
+        strcpy(prefs.mobile.atcommand[i], w);
+}
+
+void SetMobile_devicename(STRPTR w)
+{
+    if (strlen(w) < NAMEBUFLEN)
+        strcpy(prefs.mobile.devicename, w);
+}
+
+void SetMobile_username(STRPTR w)
+{
+    if (strlen(w) < NAMEBUFLEN)
+        strcpy(prefs.mobile.username, w);
+}
+
+void SetMobile_password(STRPTR w)
+{
+    if (strlen(w) < NAMEBUFLEN)
+        strcpy(prefs.mobile.password, w);
+}
+
+void SetMobile_unit(LONG w)
+{
+    prefs.mobile.unit = w;
+}
+
+void SetMobile_timeout(LONG w)
+{
+    prefs.mobile.timeout = w;
+}
+
+

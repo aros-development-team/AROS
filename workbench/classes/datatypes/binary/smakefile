@@ -1,0 +1,23 @@
+LIBOBJS = libfunc.o binaryclass.o
+
+binary.datatype: ${LIBOBJS}
+   slink with <<
+LIBFD FD:dtclass_lib.fd
+to binary.datatype
+FROM lib:libent.o lib:libinit.o $(LIBOBJS)
+lib lib:sc.lib
+lib lib:debug.lib
+lib lib:amiga.lib
+NOICONS
+SD
+SC
+libversion 41 librevision 0 libid "binary.datatype 41.0 (07-Nov-2000)"
+<
+   avail flush
+
+libfunc.o: libfunc.c
+   sc nostackcheck libcode libfunc.c OBJNAME=$@
+
+binaryclass.o: binaryclass.c
+   sc nostackcheck binaryclass.c OBJNAME=$@
+

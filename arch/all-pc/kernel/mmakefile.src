@@ -1,0 +1,96 @@
+
+include $(SRCDIR)/config/aros.cfg
+include $(SRCDIR)/$(CURDIR)/make.opts
+
+%set_archincludes mainmmake=kernel-kernel maindir=rom/kernel \
+  modname=kernel pri=7 arch=pc \
+  includes="-I$(SRCDIR)/$(CURDIR)"
+
+%get_archincludes modname=kernel \
+    includeflag=TARGET_KERNEL_INCLUDES maindir=rom/kernel
+
+%get_archincludes modname=exec \
+    includeflag=TARGET_EXEC_INCLUDES maindir=rom/exec
+
+PRIV_KERNEL_INCLUDES = \
+    $(TARGET_KERNEL_INCLUDES) \
+	-I$(SRCDIR)/rom/kernel \
+	$(TARGET_EXEC_INCLUDES) \
+	-I$(SRCDIR)/rom/exec
+
+FUNCS	 := \
+             bug \
+             maygetchar \
+             allocirq \
+             addirqhandler \
+             getirq \
+             modifyirq \
+             exitinterrupt \
+             displayalert \
+             fmtalertinfo \
+             getcpucount \
+             getcpunumber \
+             alloccpumask \
+             clearcpumask \
+             freecpumask \
+             getcpumask \
+             cpuinmask \
+             spininit \
+             spinislocked \
+             spintrylock \
+             spinlock \
+             spinunlock \
+             schedulecpu \
+             getsystemattr \
+             getcpuattr \
+             timestamp \
+             obtaininput
+
+ASMFILES := \
+             cli \
+             sti \
+             issuper
+
+FILES    := \
+             apic \
+             apic_ia32 \
+             apic_msi \
+             apic_heartbeat \
+             apic_error \
+             cpu_freq \
+             acpi \
+             acpi_pm \
+             acpi_apic \
+             acpi_ioapic \
+             acpi_set \
+             smp \
+             syscall \
+             cpu_intr \
+             cpu_traps \
+             pic_i8259a \
+             ictl \
+             smp_exec \
+             kernel_mmap \
+             kernel_scheduler \
+             kernel_timer \
+             _displayalert \
+             _bug \
+             platform_post \
+             kernel_ipi
+
+MAINDIR	      := rom/kernel
+USER_INCLUDES  := $(PRIV_KERNEL_INCLUDES) \
+		  -isystem $(SRCDIR)/arch/all-native/bootconsole/include -DAROS_ARCHITECTURE="\"$(AROS_TARGET_PLATFORM)\""
+USER_CFLAGS   += $(CFLAGS_GENERAL_REGS_ONLY)
+
+#MM- kernel-kernel-pc-common : kernel-acpica-sharedlib-linklib linklibs-bootconsole \
+#MM  kernel-kernel-native kernel-acpica-sharedlib-includes
+#MM- kernel-kernel-pc : kernel-kernel-pc-common
+#MM- kernel-kernel-pc-kobj : kernel-kernel-pc-common
+#MM- kernel-kernel-pc-quick : kernel-kernel-native-quick
+
+%build_archspecific \
+  mainmmake=kernel-kernel modname=kernel maindir=$(MAINDIR) \
+  arch=pc files="$(FILES) $(FUNCS)" compiler=kernel asmfiles=$(ASMFILES)
+
+%common

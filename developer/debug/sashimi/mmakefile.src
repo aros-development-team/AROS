@@ -1,0 +1,13 @@
+#
+#   Makefile for the Workbench:Tools/Debug directory.
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM- debug-tools : debug-tools-sasimi
+#MM debug-tools-sasimi : includes linklibs
+
+%build_prog mmake=debug-tools-sasimi \
+    progname=sashimi targetdir=$(AROS_DEBUG) \
+    files=sashimi
+
+%common

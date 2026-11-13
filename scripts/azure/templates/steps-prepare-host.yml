@@ -1,0 +1,192 @@
+# steps-prepare-host.yml
+#
+# Common host preparation shared by every build stage (Sources, Toolchain,
+# Core, Contrib). Run once at the top of each job because each stage executes
+# on a fresh agent.
+#
+# Produces the following job-scoped variables:
+#   TOOLCHAIN            - "gnu" | "llvm"
+#   TOOLCHAINOPTS        - "--with-toolchain=<family>" or empty
+#   AROSCONFIGOPTIONS    - assembled ./configure options (minus toolchain dir)
+#   AROSBUILDENVPATH     - (Darwin) PATH override for the build
+#   BUILDTHREADS         - parallel make jobs
+#
+# This is a faithful split of the original single-job steps in
+# scripts/azure/azure-pipelines.yml; the package lists and flag assembly are
+# unchanged.
+
+steps:
+# SSH key + config for SourceForge (used by every stage that uploads);
+# shared with the aux pipelines in scripts/azure.
+- template: setup-sf-ssh.yml
+  parameters:
+    keyscanHosts: 'shell.sourceforge.net web.sourceforge.net'
+
+- script: |
+    if [ "$AROSBUILD_TOOLCHAIN_FAMILY" != "" ]; then
+      export TARGETTOOLCHAINOPTS="$TARGETTOOLCHAINOPTS --with-toolchain=$(arosbuild.toolchain.family)"
+      export TARGETTOOLCHAIN="$(arosbuild.toolchain.family)"
+    else
+      export TARGETTOOLCHAIN="gnu"
+    fi
+    echo "Preparing environment for build with $TARGETTOOLCHAIN toolchain"
+    df -H
+    echo "##vso[task.setvariable variable=TOOLCHAIN;]$TARGETTOOLCHAIN"
+    echo "##vso[task.setvariable variable=TOOLCHAINOPTS;]$TARGETTOOLCHAINOPTS"
+  displayName: 'Preparing common environment...'
+
+- script: |
+    if [ "$AROSBUILD_CONFIG_EXTRA" != "" ]; then
+      CONFIGOPTS="$CONFIGOPTS $(arosbuild.config.extra)"
+    fi
+    CONFIGOPTS="$CONFIGOPTS --target=$(arosbuild.target)"
+    if [ "$AROSBUILD_VARIANT" != "" ]; then
+      CONFIGOPTS="$CONFIGOPTS --enable-target-variant=$(arosbuild.variant)"
+    fi
+    CONFIGOPTS="$CONFIGOPTS $TOOLCHAINOPTS"
+    if [ "$AROSBUILD_GCC_VERSION" != "" ]; then
+      CONFIGOPTS="$CONFIGOPTS --with-gcc-version=$(arosbuild.gcc.version)"
+    fi
+    if [ "$AROSBUILD_LLVM_VERSION" != "" ]; then
+      CONFIGOPTS="$CONFIGOPTS --with-llvm-version=$(arosbuild.llvm.version)"
+    fi
+    if [ "$AROSBUILD_RUST_VERSION" != "" ]; then
+      CONFIGOPTS="$CONFIGOPTS --enable-rust --with-rust-version=$(arosbuild.rust.version)"
+    fi
+    if [ "$AROSBUILD_WITHUNITTESTS" != "" ]; then
+      export CONFIGOPTS="$CONFIGOPTS --enable-unit-tests=$(arosbuild.withunittests)"
+    fi
+    sudo apt-get update -y
+    if [ "$AROSBUILD_AGENT_UPGRADE" != "" ]; then
+      sudo ACCEPT_EULA=Y apt-get upgrade -y
+    fi
+    sudo apt-get install -y libpng-dev zlib1g-dev libxcursor-dev libgl1-mesa-dev libasound2-dev
+    sudo apt-get install -y gawk bison flex netpbm automake cmake genisoimage sshpass
+    sudo apt-get install -y meson ninja-build
+    sudo apt-get install -y python3-mako python3-yaml python3-distutils-extra
+    sudo apt-get install -y libswitch-perl gperf gcc-multilib g++ ccache libclang-dev
+    sudo apt-get install -y jlha-utils wget liblzma-dev mtools xorriso nasm
+    if [ "$AROSBUILD_TARGET" = "amiga-m68k" ]; then
+      sudo apt-get install -y python3-crcmod
+    fi
+    if [ "$AROSBUILD_TARGET" = "linux-arm" ]; then
+      sudo dpkg --add-architecture armel
+      sudo apt-get update
+      sudo apt-get install -y libc6-armel-cross libc6-dev-armel-cross binutils-arm-linux-gnueabi libncurses5-dev build-essential libssl-dev bc gcc-arm-linux-gnueabi g++-arm-linux-gnueabi linux-libc-dev-armel-cross
+      sudo apt-get install -y libasound2-dev:armel
+    fi
+    if [ "$AROSBUILD_TARGET" = "linux-armhf" ]; then
+      sudo dpkg --add-architecture armhf
+      sudo apt-get update
+      sudo apt-get install -y libc6-armhf-cross libc6-dev-armhf-cross binutils-arm-linux-gnueabihf libncurses5-dev build-essential libssl-dev bc gcc-arm-linux-gnueabihf g++-arm-linux-gnueabihf linux-libc-dev-armhf-cross
+      sudo apt-get install -y libasound2-dev:armhf
+    fi
+    if [ "$AROSBUILD_TARGET" = "mingw32-i386" ]; then
+      sudo apt-get install -y mingw-w64-i686-dev gcc-mingw-w64-i686 g++-mingw-w64-i686 mingw-w64-tools
+      CONFIGOPTS="$CONFIGOPTS --with-kernel-toolchain-prefix=i686-w64-mingw32-"
+    fi
+    if [ "$AROSBUILD_TARGET" = "mingw32-x86_64" ]; then
+      sudo apt-get install -y mingw-w64-x86-64-dev gcc-mingw-w64-x86-64 g++-mingw-w64-x86-64 mingw-w64-tools
+      CONFIGOPTS="$CONFIGOPTS --with-kernel-toolchain-prefix=x86_64-w64-mingw32-"
+    fi
+    CONFIGOPTS="$CONFIGOPTS --enable-ccache --enable-build-type=nightly --with-portssources=$(AROSPORTSSRCSDIR)"
+    echo "##vso[task.setvariable variable=AROSCONFIGOPTIONS;]$CONFIGOPTS"
+  condition: eq( variables['Agent.OS'], 'Linux' )
+  displayName: 'Installing AROS build dependencies for Ubuntu'
+
+- script: |
+    set -euo pipefail
+
+    CONFIGOPTS="${CONFIGOPTS:-}"
+    if [ -n "${AROSBUILD_CONFIG_EXTRA:-}" ]; then
+      CONFIGOPTS="$CONFIGOPTS $(arosbuild.config.extra)"
+    fi
+    CONFIGOPTS="$CONFIGOPTS --target=$(arosbuild.target)"
+    if [ -n "${AROSBUILD_VARIANT:-}" ]; then
+      CONFIGOPTS="$CONFIGOPTS --enable-target-variant=$(arosbuild.variant)"
+    fi
+    CONFIGOPTS="$CONFIGOPTS ${TOOLCHAINOPTS:-}"
+    if [ -n "${AROSBUILD_GCC_VERSION:-}" ]; then
+      CONFIGOPTS="$CONFIGOPTS --with-gcc-version=$(arosbuild.gcc.version)"
+    fi
+    if [ -n "${AROSBUILD_LLVM_VERSION:-}" ]; then
+      CONFIGOPTS="$CONFIGOPTS --with-llvm-version=$(arosbuild.llvm.version)"
+    fi
+    if [ -n "${AROSBUILD_RUST_VERSION:-}" ]; then
+      CONFIGOPTS="$CONFIGOPTS --enable-rust --with-rust-version=$(arosbuild.rust.version)"
+    fi
+
+    # Homebrew is expected to be present on Microsoft-hosted macOS agents.
+    # Do not dynamically execute a remote installer in the build.
+    if ! command -v brew >/dev/null 2>&1; then
+      echo "ERROR: Homebrew is required on the macOS build agent."
+      exit 1
+    fi
+
+    # Install formulae idempotently. sshpass is available from Homebrew core,
+    # so no third-party tap is required.
+    for formula in gawk gnu-sed autoconf automake wget ccache cmake meson ninja netpbm md5sha1sum bison sshpass; do
+      brew list "$formula" >/dev/null 2>&1 || brew install "$formula"
+    done
+
+    # XQuartz is a system-level cask and may require a logout/restart.
+    # Prefer preinstalling it on self-hosted agents.
+    brew list --cask xquartz >/dev/null 2>&1 || brew install --cask xquartz
+
+    # Use the explicitly installed Python and isolate Mako in a venv to comply
+    # with PEP 668 (Homebrew's Python is externally managed).
+    brew list python@3.9 >/dev/null 2>&1 || brew install python@3.9
+    DARWINPYTHONDIR="$(brew --prefix python@3.9)"
+    PYTHONBIN="$DARWINPYTHONDIR/bin/python3.9"
+    PYTHONVENV="${HOME}/.aros-python-venv"
+
+    if [ ! -x "$PYTHONVENV/bin/python" ]; then
+      "$PYTHONBIN" -m venv "$PYTHONVENV"
+    fi
+    "$PYTHONVENV/bin/python" -m pip install --upgrade pip
+    "$PYTHONVENV/bin/python" -m pip install Mako PyYAML
+
+    DARWINBISONDIR="$(brew --prefix bison)"
+    DARWINGAWDIR="$(brew --prefix gawk)"
+    DARWINGNUSEDDIR="$(brew --prefix gnu-sed)"
+    DARWINMD5SHA1SUMDIR="$(brew --prefix md5sha1sum)"
+
+    # Homebrew installs these tools under alternate names or as keg-only
+    # formulae. Add compatibility directories for the AROS build.
+    CONFIGPATH="$DARWINBISONDIR/bin:$DARWINGAWDIR/libexec/gnubin:$DARWINGNUSEDDIR/libexec/gnubin:$DARWINMD5SHA1SUMDIR/bin:$PYTHONVENV/bin:$PATH"
+
+    CONFIGOPTS="$CONFIGOPTS --enable-ccache --enable-build-type=nightly --with-portssources=$(AROSPORTSSRCSDIR)"
+
+    # Make the PATH available to later Azure Pipeline tasks.
+    echo "##vso[task.setvariable variable=AROSBUILDENVPATH;]$CONFIGPATH"
+    echo "##vso[task.prependpath]$DARWINBISONDIR/bin"
+    echo "##vso[task.prependpath]$DARWINGAWDIR/libexec/gnubin"
+    echo "##vso[task.prependpath]$DARWINGNUSEDDIR/libexec/gnubin"
+    echo "##vso[task.prependpath]$DARWINMD5SHA1SUMDIR/bin"
+    echo "##vso[task.prependpath]$PYTHONVENV/bin"
+    echo "##vso[task.setvariable variable=AROSCONFIGOPTIONS;]$CONFIGOPTS"
+  condition: eq( variables['Agent.OS'], 'Darwin' )
+  displayName: 'Installing AROS build dependencies for MacOS'
+
+- script: |
+    brew list gcc@10 &>/dev/null || brew install gcc@10
+    echo "##vso[task.setvariable variable=CC;]gcc-10"
+    echo "##vso[task.setvariable variable=CXX;]g++-10"
+  condition: and( eq( variables['arosbuild.usegcc'], 'yes' ), and( eq( variables['Agent.OS'], 'Darwin' ), eq( variables['arosbuild.target'], 'darwin-x86_64' )))
+  displayName: 'Install GCC10 toolchain for MacOS'
+
+- script: |
+    echo "PATH=${PATH}"
+    export ncpu=
+    case '$(Agent.OS)' in
+    'Linux')
+      ncpu=$(nproc)
+      ;;
+    'Darwin')
+      ncpu=$(sysctl -n hw.ncpu)
+      ;;
+    esac
+    [[ -z "$ncpu" || $ncpu -le 0 ]] && ncpu=1
+    echo "Found ${ncpu} cores"
+    echo "##vso[task.setvariable variable=BUILDTHREADS;]$ncpu"
+  displayName: 'Detecting number of build threads'

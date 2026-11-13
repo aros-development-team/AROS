@@ -1,0 +1,93 @@
+/*
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
+
+    Desc: Graphics function FreeVPortCopLists()
+*/
+
+#include <aros/debug.h>
+#include <graphics/copper.h>
+#include <graphics/view.h>
+#include <hidd/gfx.h>
+#include <proto/exec.h>
+#include <proto/oop.h>
+
+#include "graphics_intern.h"
+#include "gfxfuncsupport.h"
+
+/*****************************************************************************
+
+    NAME */
+#include <proto/graphics.h>
+
+        AROS_LH1(void, FreeVPortCopLists,
+
+/*  SYNOPSIS */
+        AROS_LHA(struct ViewPort *, vp, A0),
+
+/*  LOCATION */
+        struct GfxBase *, GfxBase, 90, Graphics)
+
+/*  FUNCTION
+        Deallocate all memory associated with the CopList structures
+        for display, color, sprite and the user copper list. The
+        corresponding fields in this structure will be set to NULL.
+
+    INPUTS
+        vp - pointer to a ViewPort structure
+
+    RESULT
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+        graphics/view.h
+
+    INTERNALS
+
+    HISTORY
+
+*****************************************************************************/
+{
+    AROS_LIBFUNC_INIT
+
+    struct ViewPortExtra *vpe;
+
+    vpe = (struct ViewPortExtra *)GfxLookUp(vp);
+    D(bug("[FreeVPortCopLists] ViewPort 0x%p, ViewPortExtra 0x%p\n", vp, vpe));
+    if(vpe) {
+        /* Free the associated DriverData */
+        struct HIDD_ViewPortData *vpd = VPE_DATA(vpe);
+
+        if(vpd) {
+            /* Do driver-specific cleanup */
+            HIDD_Display_DeinitViewPort(VPE_DRIVER(vpe)->display_obj, vpd);
+
+            if(vpe->Flags & VPXF_WRAPPED_BITMAP) {
+                OOP_DisposeObject(vpd->Bitmap);
+                vpe->Flags &= ~VPXF_WRAPPED_BITMAP;
+            }
+
+            if(vpd->PreviousBitmap) {
+                if(vpd->Flags & HIDD_VPDF_PREVIOUS_BITMAP_OWNED)
+                    OOP_DisposeObject(vpd->PreviousBitmap);
+                vpd->PreviousBitmap = NULL;
+                vpd->Flags &= ~HIDD_VPDF_PREVIOUS_BITMAP_OWNED;
+            }
+
+            FreeMem(vpd, sizeof(struct HIDD_ViewPortData));
+
+            vpe->DriverData[0] = NULL;
+        }
+
+        if(vpe->Flags & VPXF_FREE_ME) {
+            D(bug("[FreeVPortCopLists] Freeing temporary ViewPortExtra\n"));
+            GfxFree(&vpe->n);
+        }
+    }
+
+    AROS_LIBFUNC_EXIT
+} /* FreeVPortCopLists */

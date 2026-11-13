@@ -1,0 +1,46 @@
+/*
+    Copyright (C) 2014, The AROS Development Team. All rights reserved.
+
+    Desc:
+*/
+
+#ifdef DEBUG
+#undef DEBUG
+#endif
+#define DEBUG 0
+
+#include "felsunxi_intern.h"
+
+/*****************************************************************************
+
+    NAME */
+
+        AROS_LH3(ULONG, SetAttrsA,
+
+/*  SYNOPSIS */
+        AROS_LHA(ULONG,            type,      D0),
+        AROS_LHA(APTR,             usbstruct, A0),
+        AROS_LHA(struct TagItem *, taglist,   A1),
+        
+/*  LOCATION */
+        LIBBASETYPEPTR, FELSunxiBase, 6, FELSunxi)
+
+/*  FUNCTION
+        Set attributes on the FELSunxi USB class.
+
+    INPUTS
+        type      - Attribute scope; currently ignored.
+        usbstruct - USB object; currently ignored.
+        taglist   - Requested attributes; currently ignored.
+
+    RESULT
+        Always 0. No attributes are changed.
+
+******************************************************************************/
+{
+    AROS_LIBFUNC_INIT
+
+    return(0);
+    AROS_LIBFUNC_EXIT
+
+} /* SetAttrsA */

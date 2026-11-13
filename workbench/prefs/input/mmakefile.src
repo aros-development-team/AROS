@@ -1,0 +1,18 @@
+#
+# Makefile to build Input Prefs program.
+
+include $(SRCDIR)/config/aros.cfg
+
+FILES       := main args keymap locale misc ipeditor prefs stringify
+EXEDIR      := $(AROS_PREFS)
+
+#MM- workbench-prefs : workbench-prefs-input
+#MM workbench-prefs-input : workbench-prefs-input-catalogs
+
+USER_CFLAGS := -DADATE="\"$(shell date '+%d.%m.%Y')\""
+
+%build_prog mmake=workbench-prefs-input \
+    progname=Input targetdir=$(EXEDIR) \
+    files=$(FILES)
+
+%common

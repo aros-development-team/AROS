@@ -1,0 +1,88 @@
+/*
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
+
+    Desc: Graphics function AndRectRegion()
+*/
+
+#include <graphics/regions.h>
+#include <proto/exec.h>
+#include <clib/macros.h>
+
+#include "graphics_intern.h"
+#include "intregions.h"
+
+/*****************************************************************************
+
+    NAME */
+#include <proto/graphics.h>
+
+        AROS_LH2(struct Region *, AndRectRegionND,
+
+/*  SYNOPSIS */
+        AROS_LHA(struct Region    *, Reg, A0),
+        AROS_LHA(struct Rectangle *, Rect, A1),
+
+/*  LOCATION */
+        struct GfxBase *, GfxBase, 186, Graphics)
+
+/*  FUNCTION
+        Remove everything inside 'region' that is outside 'rectangle'
+
+    INPUTS
+        region - pointer to Region structure
+        rectangle - pointer to Rectangle structure
+
+    RESULT
+        The resulting region or NULL in case there's no enough free memory
+
+    NOTES
+
+    BUGS
+
+    SEE ALSO
+        AndRegionRegion(), OrRectRegion(), XorRectRegion(), ClearRectRegion()
+        NewRegion()
+
+    INTERNALS
+
+    HISTORY
+        27-11-96    digulla automatically created from
+                            graphics_lib.fd and clib/graphics_protos.h
+        16-01-97    mreckt  initial version
+
+*****************************************************************************/
+{
+    AROS_LIBFUNC_INIT
+
+    struct Region *Res = NewRegion();
+
+    if(IS_RECT_EVIL(Rect)) {
+        return Res;
+    }
+
+    if(!Reg->RegionRectangle) {
+        /* The region is already empty, return empty copy */
+        return Res;
+    }
+
+    if(Res) {
+        if(Rect->MinX <= MinX(Reg) &&
+                Rect->MinY <= MinY(Reg) &&
+                Rect->MaxX >= MaxX(Reg) &&
+                Rect->MaxY >= MaxY(Reg)) {
+            /* The rectangle completely covers the region. Make a plain copy. */
+            return _CopyRegionND(Reg, Res, GfxBase);
+        } else {
+            struct Region R;
+            struct RegionRectangle rr;
+
+            _RectToRegion(Rect, &R, &rr);
+            return _RegionOpND(_AndBandBand, Reg, &R, Res, GfxBase);
+        }
+    }
+
+    return NULL;
+
+    AROS_LIBFUNC_EXIT
+} /* AndRectRegion */
+

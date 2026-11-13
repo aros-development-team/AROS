@@ -1,0 +1,10 @@
+# DataType Description for Internet Location files
+Name=WinURL
+Version=$VER: WinURL 1.0 (13.8.2009)
+BaseName=winurl
+Pattern=#?.URL
+Mask='[' 'I' 'n' 't' 'e' 'r' 'n' 'e' 't' 'S' 'h' 'o' 'r' 't' 'c' 'u' 't' ']'
+GroupID=text
+ID=winu
+Flags=DTF_ASCII,DTF_CASE
+Priority=0

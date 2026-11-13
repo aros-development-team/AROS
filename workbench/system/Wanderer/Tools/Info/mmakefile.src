@@ -1,0 +1,20 @@
+# Copyright (C) 2003, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+
+FILES       := main locale
+EXEDIR      := $(AROS_WANDERER)/Tools
+
+#MM- workbench-system-wanderer-tools : workbench-system-wanderer-tools-info
+#MM  workbench-system-wanderer-tools-info : \
+#MM  workbench-system-wanderer-tools-info-icons \
+#MM  workbench-system-wanderer-tools-info-catalogs \
+#MM  workbench-classes-zune-texteditor
+
+USER_CFLAGS := -DADATE="\"$(shell date '+%d.%m.%Y')\""
+
+%build_prog mmake=workbench-system-wanderer-tools-info \
+    progname=Info targetdir=$(EXEDIR) \
+    files=$(FILES)
+
+%rule_makedirs dirs=$(EXEDIR)

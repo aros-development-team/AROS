@@ -1,0 +1,10 @@
+# DataType Description for VOB
+Name=VOB
+Version=$VER: VOB 1.2 (4.1.2017)
+BaseName=vob
+Pattern=#?
+Mask=0x00 0x00 0x01 0xBA
+GroupID=movi
+ID=vob
+Flags=DTF_BINARY,DTF_CASE
+Priority=0

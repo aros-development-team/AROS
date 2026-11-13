@@ -1,0 +1,14 @@
+all:	DetectPaulaAudio.exe
+
+DetectPaulaAudio.exe:			DetectPaulaAudio.o
+DetectPaulaAudio.o:	DetectPaulaAudio.c
+
+.o.exe:
+	SC LINK $< TO $@
+
+.s.o:
+	PhxAss NOEXE $< TO $@ QUIET
+
+.c.o:
+	SC NOLINK $< OBJNAME $@
+

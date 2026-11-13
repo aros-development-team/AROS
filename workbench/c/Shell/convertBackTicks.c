@@ -1,0 +1,131 @@
+/*
+    Copyright (C) 1995-2021, The AROS Development Team. All rights reserved.
+ */
+
+#include <aros/debug.h>
+
+#include <proto/dos.h>
+
+#include <stdio.h>
+
+#include "Shell.h"
+
+// TODO:  remove these comments when fixed and validated
+// TODO:  C++ style comments should be avoided
+// FIXME: why use a $ in a filename ? just to try the resistance of bad FS
+// TODO:  use pipes instead of plain file ?
+
+#define SHELL_EMBED "T:Shell$embed"
+
+/* BackTicks handling... like V45, we allow several embedded
+ * commands, while V40 only allows one per line.
+ */
+LONG convertBackTicks(ShellState *ss, Buffer *in, Buffer *out, BOOL *quoted)
+{
+    Buffer embedIn = {0}, embedOut = {0}; /* TODO pre-alloc */
+    LONG c = 0, error = 0, n = in->len, p = 0;
+    TEXT buf[512];
+    TEXT tempName[sizeof(SHELL_EMBED) + 11] = SHELL_EMBED;
+    BOOL tempCreated = FALSE;
+    ShellState ess = {0};
+
+    ess.ss_DOSBase = DOSBase;
+    ess.ss_SysBase = SysBase;
+    ess.cliNumber = ss->cliNumber;
+
+    for (++in->cur; in->cur < n; p = c)
+    {
+        c = in->buf[in->cur];
+
+        if (p == '*')
+        {
+            c = 0;
+            if ((error = bufferCopy(in, &embedIn, 1, ss)))
+                goto freebufs;
+        }
+        else if (c == '`')
+            break;
+        else if ((error = bufferCopy(in, &embedIn, 1, ss)))
+            goto freebufs;
+    }
+
+    if (c != '`')
+    {
+        error = bufferCopy(&embedIn, out, embedIn.len, ss);
+        goto freebufs;
+    }
+
+    ++in->cur; /* last backtick */
+
+    if (embedIn.len <= 0) /* `` empty command, no output */
+        goto freebufs;
+
+    initDefaultInterpreterState(&ess);
+
+    /* The Amiga shell has severe problems when using
+     * redirections in embedded commands so here, the
+     * semantics differ somewhat. Unix shells seems to be
+     * a little bit sloppy with this, too.
+     * If you really wanted to, you could track down
+     * uses of > and >> and make them work inside ` `, too,
+     * but this seems to be rather much work for little gain.
+     */
+    if ((error = Redirection_init(&ess)))
+        goto cleanup;
+
+    /* Construct temporary output filename */
+    l2a(ss->cliNumber, tempName + sizeof(SHELL_EMBED) - 1);
+
+    if (!(ess.newOut = Open(tempName, MODE_NEWFILE)))
+    {
+        error = IoErr();
+        goto cleanup;
+    }
+
+    tempCreated = TRUE;
+    ess.oldOut = SelectOutput(ess.newOut);
+    
+    /* Embedded command isn't echo'ed, but its result will be integrated
+       in final command line, which will be echo'ed if the var is set. */
+    D(bug("[Shell] embedded command: %s\n", embedIn.buf));
+    if ((error = checkLine(&ess, &embedIn, &embedOut, FALSE)) == 0)
+    {
+        LONG i, len = -1, size;
+
+        /* copy result to output */
+        if ((size = Seek(ess.newOut, 0, OFFSET_BEGINNING)) >= 0)
+        {
+            while ((len = Read(ess.newOut, buf, 512)) > 0)
+            {
+                for (i = 0; i < len - 1; ++i) /* replace all \n but last */
+                    if (buf[i] == '\n')
+                        buf[i] = ' ';
+
+                size -= len;
+
+                if (size <= 0 && buf[i] == '\n')
+                    --len;
+
+                if ((error = bufferAppend(buf, len, out, ss)))
+                    goto cleanup;
+            }
+        }
+
+        if (len == -1)
+            error = IoErr();
+    }
+
+cleanup:
+    Redirection_release(&ess);
+    if (tempCreated)
+        DeleteFile(tempName);
+    while (ess.stack)
+        popInterpreterState(&ess);
+    popInterpreterState(&ess);
+freebufs:
+    bufferFree(&embedIn, ss);
+    bufferFree(&embedOut, ss);
+
+    D(bug("[Shell] embedded command done, error = %d\n", error));
+    return error;
+}

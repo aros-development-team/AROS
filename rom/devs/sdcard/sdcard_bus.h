@@ -1,0 +1,192 @@
+#ifndef _SDCARD_BUS_H
+#define _SDCARD_BUS_H
+/*
+    Copyright � 2013, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
+#include <exec/types.h>
+#include <exec/devices.h>
+#include <exec/semaphores.h>
+#include <exec/ports.h>
+#include <exec/io.h>
+
+#include <aros/config.h>
+#if defined(__AROSEXEC_SMP__)
+#include <aros/types/spinlock_s.h>
+#endif
+
+#define FNAME_SDCBUS(x)                 SDCARD__SDBus__ ## x
+
+struct sdcard_BusUnits
+{
+    /* Unit Management */
+    ULONG                               sdcbu_UnitBase;
+    ULONG                               sdcbu_UnitMax;
+    ULONG                               sdcbu_UnitCnt;
+    struct sdcard_Unit                  *sdcbu_Units;      /* Units on the bus ( x sdcbu_UnitMax) */
+};
+
+struct sdcard_Bus
+{
+    struct Node                         sdcb_Node;
+    struct SDCardBase                   *sdcb_DeviceBase;    /* Device self */
+
+    ULONG                               sdcb_Quirks;
+
+    APTR                                sdcb_IOBase;
+    ULONG                               sdcb_BusIRQ;
+    ULONG                               sdcb_BusNum;
+
+    ULONG                               sdcb_BusFlags;       /* Bus flags similar to unit flags */
+    volatile ULONG                      sdcb_BusStatus;      /* copy of the status register */
+    volatile ULONG                      sdcb_CmdError;       /* error bits latched for the command in flight */
+    BYTE                                sdcb_TaskSig;        /* Signal used to wake task, -1 if none */
+    BYTE                                sdcb_MediaSig;       /* Insert/Eject notification, -1 if none */
+    BYTE                                sdcb_CommandSig;     /* Command completed signal, -1 if none */
+    UBYTE                               sdcb_SectorShift;    /* (1 << sdcb_SectorShift) == sector size in bytes */
+
+    struct TagItem                      *sdcb_RespListener;  /* Current TagList waiting for Response */
+    struct TagItem                      *sdcb_DataListener;  /* Current TagList waiting for Data */
+    
+    struct Task                         *sdcb_Task;
+    struct MsgPort                      *sdcb_MsgPort;
+    struct IORequest                    *sdcb_Timer;         /* timer stuff */
+
+    APTR                                sdcb_IRQHandle;
+
+    /* Chipset .. */
+    ULONG                               sdcb_Capabilities;
+    ULONG                               sdcb_Version;
+    ULONG                               sdcb_ClockMax;
+    ULONG                               sdcb_ClockMin;
+    ULONG                               sdcb_Power;          /* Supported Voltages */
+
+    ULONG                               sdcb_IntrMask;
+
+    /* Unit Management */
+    struct sdcard_BusUnits              *sdcb_BusUnits;         /* Units on the bus */
+
+    /* */
+    BYTE                                (*sdcb_LEDCtrl)(int);
+    UBYTE                               (*sdcb_IOReadByte)(ULONG, struct sdcard_Bus *);
+    UWORD                               (*sdcb_IOReadWord)(ULONG, struct sdcard_Bus *);
+    ULONG                               (*sdcb_IOReadLong)(ULONG, struct sdcard_Bus *);
+    /* Optional: read count longs from one register. NULL = loop on
+     * sdcb_IOReadLong. */
+    void                                (*sdcb_IOReadLongs)(ULONG, ULONG *, ULONG, struct sdcard_Bus *);
+
+    void                                (*sdcb_IOWriteByte)(ULONG, UBYTE, struct sdcard_Bus *);
+    void                                (*sdcb_IOWriteWord)(ULONG, UWORD, struct sdcard_Bus *);
+    void                                (*sdcb_IOWriteLong)(ULONG, ULONG, struct sdcard_Bus *);
+
+    /* Controller-specific operations vtable */
+    void                                (*sdcb_SoftReset)(UBYTE, struct sdcard_Bus *);
+    void                                (*sdcb_SetClock)(ULONG, struct sdcard_Bus *);
+    void                                (*sdcb_SetPowerLevel)(ULONG, BOOL, struct sdcard_Bus *);
+    ULONG                               (*sdcb_SendCmd)(struct TagItem *, struct sdcard_Bus *);
+    ULONG                               (*sdcb_WaitCmd)(ULONG, ULONG, struct sdcard_Bus *);
+    ULONG                               (*sdcb_FinishCmd)(struct TagItem *, struct sdcard_Bus *);
+    ULONG                               (*sdcb_FinishData)(struct TagItem *, struct sdcard_Bus *);
+    void                                (*sdcb_BusIRQHandler)(struct sdcard_Bus *, void *);  /* IRQ handler */
+    void                                (*sdcb_SetBusWidth)(UBYTE, struct sdcard_Bus *);  /* Set bus width (1 or 4) */
+    void                                (*sdcb_BusInit)(struct sdcard_Bus *);  /* Scan-time HW init (clock, power, bus width) */
+    void                                (*sdcb_BusPostIRQInit)(struct sdcard_Bus *);  /* Post-IRQ init (enable interrupts, card detect) */
+    /*
+     * Bus address for a DMA buffer, 0 if the controller cannot reach it.
+     * NULL: plain physical, and anything below 4GB is reachable.
+     */
+    IPTR                                (*sdcb_DMAPhys)(APTR, ULONG, struct sdcard_Bus *);
+    /*
+     * Memory the controller can reach (size, MEMF_ flags), released with
+     * FreeMem(). NULL: AllocMem() below 2GB.
+     */
+    APTR                                (*sdcb_DMAAlloc)(ULONG, ULONG, struct sdcard_Bus *);
+
+    /*
+     * ADMA2 scatter/gather. The controller masters the transfer itself, so
+     * the descriptor table and any bounce buffer have to live where it can
+     * reach them: the capabilities register says whether it can address more
+     * than 32 bits, and on the BCM2711 it cannot.
+     */
+    APTR                                sdcb_ADMADesc;       /* descriptor table */
+    APTR                                sdcb_ADMABounce;     /* used when the caller's buffer will not do */
+    ULONG                               sdcb_ADMABounceSize;
+    APTR                                sdcb_ADMAData;       /* caller's buffer, for the copy back */
+    ULONG                               sdcb_ADMALen;
+
+    /* Bus Instance Private/Internal */
+    IPTR                                sdcb_Private;
+
+#if defined(__AROSEXEC_SMP__)
+    spinlock_t                          sdcb_Lock;       /* SMP: protects BusFlags, listeners, BusStatus */
+#endif
+};
+
+/* Bus Flags .. */
+#define AB_Bus_MediaPresent             30     /* media available */
+#define AB_Bus_MediaChanged             29     /* media changed */
+#define AB_Bus_SPI                      28
+#define AB_Bus_IRQSeen                  27     /* controller has delivered an interrupt */
+#define AB_Bus_DMA                      26     /* ADMA2 is available and trusted */
+#define AB_Bus_DMAActive                25     /* the transfer in flight is being done by ADMA2 */
+#define AB_Bus_DMABounced               24     /* that transfer went through the bounce buffer */
+#define AB_Bus_Active                   1
+
+#define AF_Bus_MediaPresent             (1 << AB_Bus_MediaPresent)
+#define AF_Bus_MediaChanged             (1 << AB_Bus_MediaChanged)
+#define AF_Bus_SPI                      (1 << AB_Bus_SPI)
+#define AF_Bus_IRQSeen                  (1 << AB_Bus_IRQSeen)
+#define AF_Bus_DMA                      (1 << AB_Bus_DMA)
+#define AF_Bus_DMAActive                (1 << AB_Bus_DMAActive)
+#define AF_Bus_DMABounced               (1 << AB_Bus_DMABounced)
+#define AF_Bus_Active                   (1 << AB_Bus_Active)
+
+/*
+ * ADMA2 descriptor. Two byte attribute and length fields followed by a 32bit
+ * address; a length of zero means the maximum, 65536 bytes.
+ */
+struct sdcard_ADMADesc
+{
+    UWORD                               ad_Attr;
+    UWORD                               ad_Length;
+    ULONG                               ad_Address;
+};
+
+#define ADMA2_ATTR_VALID                (1 << 0)
+#define ADMA2_ATTR_END                  (1 << 1)
+#define ADMA2_ATTR_INT                  (1 << 2)
+#define ADMA2_ATTR_ACT_TRAN             (2 << 4)
+
+/* Kept well under the 65536 a descriptor can hold, and a multiple of any sector size */
+#define ADMA2_MAX_XFER                  32768
+#define ADMA2_MAX_DESC                  32
+#define ADMA2_BOUNCE_SIZE               (512 * 1024)    /* one DMA chunk */
+
+BOOL FNAME_SDCBUS(RegisterUnit)(struct sdcard_Bus *);
+BOOL FNAME_SDCBUS(StartUnit)(struct sdcard_Unit *);
+
+void FNAME_SDCBUS(SoftReset)(UBYTE, struct sdcard_Bus *);
+ULONG FNAME_SDCBUS(GetClockDiv)(ULONG, struct sdcard_Bus *);
+void FNAME_SDCBUS(SetClock)(ULONG, struct sdcard_Bus *);
+void FNAME_SDCBUS(SetPowerLevel)(ULONG, BOOL, struct sdcard_Bus *);
+ULONG FNAME_SDCBUS(SendCmd)(struct TagItem *, struct sdcard_Bus *);
+ULONG FNAME_SDCBUS(WaitCmd)(ULONG, ULONG, struct sdcard_Bus *);
+ULONG FNAME_SDCBUS(FinishCmd)(struct TagItem *, struct sdcard_Bus *);
+ULONG FNAME_SDCBUS(FinishData)(struct TagItem *, struct sdcard_Bus *);
+ULONG FNAME_SDCBUS(Rsp136Unpack)(ULONG *, ULONG, const ULONG);
+
+BOOL FNAME_SDCBUS(ADMAAlloc)(struct sdcard_Bus *);
+void FNAME_SDCBUS(ADMAVerify)(struct sdcard_Unit *);
+
+void FNAME_SDCBUS(BusIRQ)(struct sdcard_Bus *, void *);
+void FNAME_SDCBUS(BusTask)(struct sdcard_Bus *);
+
+/* Dispatch macros: call through controller-specific vtable */
+#define SDCBUS_SendCmd(tags, bus)                ((bus)->sdcb_SendCmd((tags), (bus)))
+#define SDCBUS_WaitCmd(mask, timeout, bus)       ((bus)->sdcb_WaitCmd((mask), (timeout), (bus)))
+#define SDCBUS_SetClock(speed, bus)              ((bus)->sdcb_SetClock((speed), (bus)))
+#define SDCBUS_SetPowerLevel(lvls, lowest, bus)  ((bus)->sdcb_SetPowerLevel((lvls), (lowest), (bus)))
+#define SDCBUS_SoftReset(mask, bus)              ((bus)->sdcb_SoftReset((mask), (bus)))
+
+#endif /* _SDCARD_BUS_H */

@@ -1,0 +1,41 @@
+-include $(SRCDIR)/config/aros.cfg
+
+#MM- development : development-collect-aros
+#MM- development-collect-aros : development-binutils  development-collect-aros-quick
+
+#MM
+development-collect-aros-quick :
+	$(MAKE) HOST_CC="$(TARGET_CC) $(TARGET_SYSROOT)" HOST_CFLAGS="$(CFLAGS)" \
+	COLLECTAROSBIN=$(AROS_DEVELOPER)/bin/collect-aros \
+	COLLECT-AROS-BACKEND=backend-bfd.c \
+	CAGENDIR=$(GENDIR)/tools/collect-aros \
+	USER_CFLAGS="-nix -D_HAVE_LIBIBERTY_ -D_NATIVE_" HOST_LDFLAGS="-L$(GENDIR)/contrib/gnu/binutils/binutils/libiberty -lbfd -liberty -lz"
+	$(STRIP) $(AROS_DEVELOPER)/bin/collect-aros
+
+collect-aros-installflag := $(CROSSTOOLSDIR)/.installflag-collect-aros
+
+# The flag records which sources the installed binary was built from, so
+# that editing one rebuilds it. Testing only for the flag's presence left
+# an installed toolchain - a cached one above all - with a stale tool.
+collect-aros-sources := $(wildcard $(SRCDIR)/$(CURDIR)/*.c $(SRCDIR)/$(CURDIR)/*.h $(SRCDIR)/$(CURDIR)/Makefile)
+
+#MM tools-crosstools-collect-aros : tools-crosstools-binutils
+.PHONY : tools-crosstools-collect-aros
+tools-crosstools-collect-aros : tools-crosstools-collect-aros-quick
+
+#MM
+tools-crosstools-collect-aros-quick : $(collect-aros-installflag)
+
+$(collect-aros-installflag) : $(collect-aros-sources)
+	$(MAKE) COLLECTAROSBIN=$(CROSSTOOLSDIR)/$(AROS_TARGET_CPU)-aros/bin/collect-aros USER_CFLAGS="-D_CROSS_ -DOBJLIBDIR=\"$(AROS_LIB)\""  CAGENDIR=$(HOSTGENDIR)/tools/collect-aros
+	$(HOST_STRIP) $(CROSSTOOLSDIR)/$(AROS_TARGET_CPU)-aros/bin/collect-aros
+	$(CP) $(CROSSTOOLSDIR)/$(AROS_TARGET_CPU)-aros/bin/collect-aros $(CROSSTOOLSDIR)/$(AROS_TARGET_CPU)-aros-collect-aros
+	$(TOUCH) $(CROSSTOOLSDIR) $@
+
+#MM
+standalone-collect-aros :
+	@$(ECHO) Bulding $(TOOLDIR)/standalone/collect-aros$(HOST_EXE_SUFFIX)...
+	@$(MKDIR) $(TOOLDIR)/standalone
+	@$(MAKE) HOST_CC="$(HOST_CC)" HOST_CFLAGS="$(HOST_CFLAGS) -D_STANDALONE_ -DOBJLIBDIR=\"$(AROS_LIB)\"" AROS_HOST_ARCH=$(AROS_HOST_ARCH)  CAGENDIR=$(HOSTGENDIR)/tools/collect-aros \
+	COLLECTAROSBIN=$(TOOLDIR)/standalone/collect-aros
+	@$(HOST_STRIP) $(TOOLDIR)/standalone/collect-aros$(HOST_EXE_SUFFIX)

@@ -1,0 +1,15 @@
+*** Purify: IWR: Write to illegal memory ***
+at /home/digulla/AROS/compiler/purify/test3.c:27 in main()
+called by :0 in _start()
+Write of 1 bytes at 0xbffff3fd. This is 1 bytes into the block
+"argument string" at 0xbffff3fc with the size of 4 bytes (type=1)
+***
+Purify active
+Hello world.
+&argc=0xbffff268
+argv=0xbffff284
+Arg 0: test3
+Arg 1: xxx
+Arg 2: yyy
+Arg 3: zzz
+Purify finished

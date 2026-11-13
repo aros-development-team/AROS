@@ -1,0 +1,51 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+%set_archincludes mainmmake=kernel-exec maindir=rom/exec \
+  modname=exec pri=5 arch=i386 \
+  includes="-I$(SRCDIR)/$(CURDIR)"
+
+%get_archincludes modname=kernel \
+    includeflag=TARGET_KERNEL_INCLUDES maindir=rom/kernel
+
+%get_archincludes modname=exec \
+    includeflag=TARGET_EXEC_INCLUDES maindir=rom/exec
+
+PRIV_EXEC_INCLUDES = \
+    $(TARGET_EXEC_INCLUDES) \
+    -I$(SRCDIR)/rom/exec \
+    $(TARGET_KERNEL_INCLUDES) \
+    -I$(SRCDIR)/rom/kernel
+
+FILES  := \
+        alert_cpu \
+        cpu_init \
+        newstackswap \
+        preparecontext
+
+AFILES := \
+        execstubs \
+        stackswap \
+        copymem_SSE
+
+USER_AFLAGS   := -I$(GENINCDIR)
+USER_INCLUDES := $(PRIV_EXEC_INCLUDES)
+OPTIMIZATION_CFLAGS := -O0
+
+# Allow to add architecture-specific options
+-include $(SRCDIR)/arch/all-$(FAMILY)/exec/make.opts
+-include $(SRCDIR)/arch/all-$(ARCH)/exec/make.opts
+-include $(SRCDIR)/arch/$(CPU)-$(ARCH)/exec/make.opts
+ifneq ($(AROS_TARGET_VARIANT),)
+-include $(SRCDIR)/arch/all-$(ARCH)/$(AROS_TARGET_VARIANT)/exec/make.opts
+-include $(SRCDIR)/arch/$(CPU)-$(ARCH)/$(AROS_TARGET_VARIANT)/exec/make.opts
+endif
+
+%build_archspecific \
+  mainmmake=kernel-exec modname=exec maindir=rom/exec \
+  asmfiles=$(AFILES) files=$(FILES) \
+  arch=i386
+
+#MM kernel-exec-i386 : includes-asm_h kernel-kernel-includes
+
+%common

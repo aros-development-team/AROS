@@ -1,0 +1,142 @@
+## version $VER: diskimagegui.catalog 1.38 (8.09.2008)
+## codeset 0
+## language spanish
+;
+;
+; *********************
+; ** Unit/drive list **
+; *********************
+;
+MSG_UNIT_LBL
+U.
+; U
+;
+MSG_DEVICE_LBL
+Disp.
+; Dev
+;
+MSG_FILENAME_LBL
+Imagen Cargada
+; Disk Image
+;
+MSG_WRITEPROTECT_LBL
+Modo
+; W
+;
+MSG_NO_DISK
+Ninguna
+;No hay medio presente
+; No disk present
+;
+; ******************
+; ** Plugins list **
+; ******************
+;
+MSG_PRIORITY_LBL
+Pri.
+; Pri
+;
+MSG_PLUGIN_LBL
+Complemento
+; Plugin
+;
+MSG_PLUGIN_GAD
+Usar complemento
+; Use plugin
+;
+MSG_AUTO_LBL
+(automático)
+; (Auto)
+;
+; *****************
+; ** Menu labels **
+; *****************
+;
+MSG_PROJECT_ABOUT
+Acerca de...
+; About...
+;
+MSG_PROJECT_HIDE
+Ocultar
+; Hide
+;
+MSG_PROJECT_ICONIFY
+Iconificar
+; Iconify
+;
+;MSG_PROJECT_SNAPSHOT
+;Congelar
+; Snapshot
+;
+MSG_PROJECT_QUIT
+Salir
+; Quit
+;
+MSG_SETTINGS_MENU
+Ajustes
+; Settings
+;
+MSG_SETTINGS_CHANGETEMPDIR
+Cambiar dir. temporal...
+; Change temp directory...
+;
+MSG_SETTINGS_SAVE
+Guardar ajustes
+; Save settings
+;
+MSG_SETTINGS_PLUGINS
+Complementos...
+; Plugins...
+;
+MSG_PROJECT_CLOSE
+Cerrar
+; Close
+;
+; ****************
+; ** Requesters **
+; ****************
+;
+MSG_REQ_OK
+_Aceptar
+; _Ok
+;
+MSG_REQ_ABOUT
+%s versión %ld.%ld\n\
+%s versión %ld.%ld\n\n\
+Copyright (C) 2007\n\
+Fredrik Wikstrom\n\
+http://a500.org
+; %s version %ld.%ld\n%s version %ld.%ld\n\nCopyright (c) 2007\nFredrik Wikstrom\n\nhttp://a500.org
+;
+MSG_REQ_ERROR
+ERROR
+; Error
+;
+; *******************
+; ** Speedbar help **
+; *******************
+;
+MSG_INSERT_GAD
+Insertar
+; Insert
+;
+MSG_EJECT_GAD
+Expulsar
+; Eject
+;
+MSG_WRITEPROTECT_GAD
+(Des)Proteger
+; Write Protect
+;
+MSG_REFRESH_GAD
+Refrescar
+; Refresh
+;
+; *******************
+; ** Window titles **
+; *******************
+;
+MSG_PLUGINS_WND
+Complementos
+; Plugins
+;

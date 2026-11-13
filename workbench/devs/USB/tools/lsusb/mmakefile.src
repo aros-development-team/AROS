@@ -1,0 +1,10 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+FILES := main
+
+%build_prog mmake=hidd-usb-tools-lsusb \
+    progname=lsusb targetdir=$(AROS_C) \
+    files=$(FILES) uselibs="hiddstubs"
+
+%common

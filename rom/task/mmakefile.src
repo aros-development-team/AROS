@@ -1,0 +1,72 @@
+# Copyright (C) 2015-2026, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM kernel-task-kobj: includes
+#MM kernel-task: includes
+
+%get_archincludes modname=kernel \
+    includeflag=TARGET_KERNEL_INCLUDES maindir=rom/kernel
+
+%get_archincludes modname=exec \
+    includeflag=TARGET_EXEC_INCLUDES maindir=rom/exec
+
+PRIV_EXEC_INCLUDES = \
+    $(TARGET_EXEC_INCLUDES) \
+    -I$(SRCDIR)/rom/exec \
+    $(TARGET_KERNEL_INCLUDES) \
+    -I$(SRCDIR)/rom/kernel
+
+INCLUDE_FILES := task.h
+
+USER_CPPFLAGS := \
+               -DUSE_EXEC_DEBUG
+#USER_CPPFLAGS += -DDEBUG=1
+USER_LDFLAGS := -static
+USER_INCLUDES += $(PRIV_EXEC_INCLUDES)
+ifeq ($(AROS_TARGET_CPU),x86_64)
+USER_CFLAGS += $(CFLAGS_GENERAL_REGS_ONLY)
+endif
+
+# Allow to add architecture-specific options
+-include $(SRCDIR)/arch/all-$(FAMILY)/exec/make.opts
+-include $(SRCDIR)/arch/all-$(ARCH)/exec/make.opts
+-include $(SRCDIR)/arch/$(CPU)-$(ARCH)/exec/make.opts
+ifneq ($(AROS_TARGET_VARIANT),)
+-include $(SRCDIR)/arch/all-$(ARCH)/$(AROS_TARGET_VARIANT)/exec/make.opts
+-include $(SRCDIR)/arch/$(CPU)-$(ARCH)/$(AROS_TARGET_VARIANT)/exec/make.opts
+endif
+
+TASKRES_FUNCS :=             \
+        LockTaskList         \
+        UnLockTaskList       \
+        NextTaskEntry        \
+        QueryTaskTagList     \
+        InitTaskHooks        \
+        AddTaskHook          \
+        RunTaskHooks         \
+        AllocTaskStorageSlot \
+        FreeTaskStorageSlot  \
+        SaveTaskStorage      \
+        RestoreTaskStorage   \
+        SetTaskStorageSlot   \
+        GetTaskStorageSlot   \
+        GetParentTaskStorageSlot \
+        AddTaskNotifyHook    \
+        RemTaskNotifyHook    \
+        SetTaskAffinity
+
+TASKRES_FILES :=             \
+        task_init            \
+        task_execfuncs       \
+        task_support         \
+        $(TASKRES_FUNCS)
+
+ifneq ($(ROM_OPTIMIZATION_CFLAGS),)
+OPTIMIZATION_CFLAGS := $(ROM_OPTIMIZATION_CFLAGS)
+endif
+
+%build_module mmake=kernel-task modname=task modtype=resource \
+    files="$(TASKRES_FILES)"
+
+%copy_includes path=resources

@@ -1,0 +1,16 @@
+
+This is an example code how to use C++ for automatic endian conversion.
+The basic idea is this:
+
+- We create types which mimick big endian (BE) data types.
+
+- We use this base types to access data thus gaining automatic
+conversion.
+
+The big plus is here that the C++ compiler can optimize
+
+- assignments between similar types (eg. BE to BE)
+
+- Omit all special code if the CPU is BE
+
+Have a look at types.h for a deeper intoduction.

@@ -1,0 +1,246 @@
+<HTML>
+<HEAD>
+<TITLE>File</TITLE>
+</HEAD>
+
+
+<BODY>
+
+<H1 ALIGN=CENTER>the File API</H1>
+
+
+<H1>Data structures</H1>
+
+<P>
+<B>
+Warning ! None of the fields of the structure below must be modified directly. In this case,
+i can not tell how will behave the library. Unless specified, read access
+is of course allowed.
+</B>
+<P>
+The dynamic memory allocation/releasing is done by the library (i hope :). 
+<P>
+
+<PRE>
+struct File {
+    struct Volume *volume;            // pointer to the volume
+
+    struct bFileHeaderBlock* fileHdr; // the header block
+    void *currentData;                // current data block
+    struct bFileExtBlock* currentExt; // current data extension block
+
+    long nDataBlock;                  // number of current data blocks
+    SECTNUM curDataPtr;               // pointer to the current data block
+    unsigned long pos;                // file pos
+
+    int posInDataBlk;                 // index in a datablock
+    int posInExtBlk;                  // index in a file header or file extension block
+    BOOL eof;                         // TRUE is the last byte has been read, use adfendOfFile() 
+    BOOL writeMode;                   // if the adfOpenFile() mode is "w"
+    };
+
+</PRE>
+
+
+<HR>
+
+
+<P ALIGN=CENTER><FONT SIZE=+2> adfOpenFile() </FONT></P>
+
+<H2>Syntax</H2>
+
+<B>struct File*</B> adfOpenFile(<B>struct Volume*</B> vol, <B>char*</B> name, <B>char*</B> mode);
+
+<H2>Description</H2>
+
+Opens the file with the name <I>name</I> which is located in the current
+working directory of the <I>vol</I> volume.<BR>
+The allowed <I>mode</I> are <I>"r"</I> and <I>"w"</I>. If the mode is <I>"w"</I>, the file
+mustn't already exists, otherwise an error occurs.
+<P>
+Some basic access permissions are just checked for now.
+
+<H2>Return values</H2>
+
+The File structure, ready to be read or wrote.<BR>
+NULL if an error occurs : file not found with "r", or file already exists with "w".
+
+<H2>Internals</H2>
+<P>
+<HR>
+<P ALIGN=CENTER><FONT SIZE=+2> adfFlushFile() </FONT></P>
+
+<H2>Syntax</H2>
+
+<B>void</B> adfFlushFile(<B>struct File*</B> file);
+
+<H2>Description</H2>
+
+Flushes the datablocks on disk.
+<P>
+
+<HR>
+
+<P ALIGN=CENTER><FONT SIZE=+2> adfCloseFile() </FONT></P>
+
+<H2>Syntax</H2>
+
+<B>void</B> adfCloseFile(<B>struct File*</B> file)
+
+<H2>Description</H2>
+
+Calls adfFlushFile() and frees the file structure.
+<P>
+
+<HR>
+
+<P ALIGN=CENTER><FONT SIZE=+2> adfFileRealSize() </FONT></P>
+
+<H2>Syntax</H2>
+
+<B>long</B> adfFileRealSize(<B>unsigned long</B> size, <B>int</B> blockSize, <B>long*</B> dataN, <B>long*</B> extN);
+
+<H2>Description</H2>
+
+Returns the real size in blocks of a file which the given size. It does not
+taking into account the new dircache that -may- be allocated.
+<P>
+The <I>blockSize</I> must be 488 or 512. This information is located in the
+ <B>datablockSize</B> of the Volume structure.
+<P>
+If the pointers <I>dataN</I> and <I>extN</I> aren't NULL, the number of
+data blocks and file extension blocks are returned.
+<P>
+
+<HR>
+
+<P ALIGN=CENTER><FONT SIZE=+2> adfReadFile() </FONT></P>
+
+<H2>Syntax</H2>
+
+<B>long</B> adfReadFile(<B>struct File*</B> file, <B>long</B> n, <B>unsigned char*</B> buffer)
+
+<H2>Description</H2>
+
+Read <I>n</I> bytes from the given <I>file</I> into the buffer <I>buffer</I>.
+<P>
+Use adfEndOfFile() to check if the end of the file is reached or not.
+
+<H2>Example</H2>
+
+
+<PRE>
+
+#include"adflib.h"
+
+
+struct File* file;
+FILE* out;
+long n;
+unsigned char buf[600];
+
+/* a device and a volume 'vol' has been successfully mounted */
+
+
+/* opens the Amiga file */
+file = adfOpenFile(vol, "mod.and.distantcall","r");
+if (!file) { /* frees resources and exits */  };
+
+/* opens the output classic file */
+out = fopen("mod.distant","wb");
+if (!out) { adfCloseFile(file); /* ... */ };
+    
+/* copy the Amiga file into the standard file, 600 bytes per 600 bytes */
+len = 600;
+n = adfReadFile(file, len, buf);
+while(!adfEndOfFile(file)) {
+    fwrite(buf, sizeof(unsigned char), n, out);
+    n = adfReadFile(file, len, buf);
+}
+/* even if the EOF is reached, some bytes may need to be written */
+if (n>0)
+    fwrite(buf, sizeof(unsigned char), n, out);
+
+/* closes the standard file */
+fclose(out);
+
+/* closes the Amiga file */
+adfCloseFile(file);
+
+</PRE>
+
+<H2>Returned values</H2>
+
+The number of bytes really read.
+<P>
+
+<HR>
+
+<P ALIGN=CENTER><FONT SIZE=+2> adfEndOfFile() </FONT></P>
+
+<H2>Syntax</H2>
+
+<B>BOOL</B> adfEndOfFile(<B>struct File*</B> file)
+
+<H2>Description</H2>
+
+TRUE if the end of the file <I>file</I> is reached.
+<P>
+
+<HR>
+
+<P ALIGN=CENTER><FONT SIZE=+2> adfWriteFile() </FONT></P>
+
+<H2>Syntax</H2>
+
+<B>long</B> adfWriteFile(<B>struct File*</B> file, <B>long</B> n, <B>unsigned char*</B> buffer)
+
+<H2>Description</H2>
+
+Writes <I>n</I> bytes from the given <I>buffer</I> into the file <I>file</I>.
+<P>
+
+<H2>Example</H2>
+
+
+<PRE>
+
+#include"adflib.h"
+
+struct File* file;
+FILE* in;
+
+/* a device and a volume 'vol' has been successfully mounted */
+
+
+file = adfOpenFile(vol, "moon_gif", "w");
+if (!file) { /* error handling */ };
+
+in = fopen( argv[2],"rb");
+if (!out) { adfCloseFile(file); /* error handling */ };
+    
+len = 600;
+n = fread(buf,sizeof(unsigned char),len,out);
+while(!feof(out)) {
+    adfWriteFile(file, n, buf);
+    n = fread(buf,sizeof(unsigned char),len,out);
+}
+if (n>0)
+    adfWriteFile(file, n, buf);
+
+fclose(out);
+
+adfCloseFile(file);
+
+</PRE>
+
+<H2>Returned values</H2>
+
+The number of bytes really wrote.
+<P>
+
+<HR>
+
+</BODY>
+
+</HTML>

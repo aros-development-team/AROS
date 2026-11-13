@@ -1,0 +1,10 @@
+# Copyright (C) 2003, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+    
+USER_CFLAGS     := -DADATE="\"$(shell date '+%d.%m.%Y')\""
+
+%build_prog mmake=workbench-devs-sfs-c-sfsformat \
+    files=SFSformat progname=SFSformat targetdir=$(AROS_C)
+
+%common

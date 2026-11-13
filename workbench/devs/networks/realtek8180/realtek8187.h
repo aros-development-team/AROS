@@ -1,0 +1,299 @@
+/*
+
+Copyright (C) 2011 Neil Cafferkey
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but
+WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 59 Temple Place - Suite 330, Boston,
+MA 02111-1307, USA.
+
+*/
+
+#ifndef REALTEK8187_H
+#define REALTEK8187_H
+
+
+/* General */
+/* ======= */
+
+#define R8180_MAXDESCSIZE 0x20
+
+
+/* Registers */
+/* ========= */
+
+#define R8180REG_ADDRESS           0x00
+#define R8180REG_MAR               0x08
+#define R8180REG_RXFIFOCOUNT       0x10
+#define R8180REG_TXFIFOCOUNT       0x12
+#define R8180REG_BQREQ             0x13
+#define R8180REG_TSFT              0x18
+#define R8180REG_TLPDA             0x20
+#define R8180REG_TNPDA             0x24
+#define R8180REG_THPDA             0x28
+#define R8180REG_BRSR              0x2c
+#define R8180REG_BSSID             0x2e
+#define R8180REG_RESPRATE          0x34
+#define R8180REG_EIFS              0x35
+#define R8180REG_COMMAND           0x37
+#define R8180REG_INTMASK           0x3c
+#define R8180REG_INTSTATUS         0x3e
+#define R8180REG_TXCONF            0x40
+#define R8180REG_RXCONF            0x44
+#define R8180REG_INTTIMEOUT        0x48
+#define R8180REG_TBDA              0x4c
+#define R8180REG_EEPROM            0x50
+#define R8180REG_CONFIG0           0x51
+#define R8180REG_CONFIG1           0x52
+#define R8180REG_CONFIG2           0x53
+#define R8180REG_ANAPARAM1         0x54
+#define R8180REG_MSR               0x58
+#define R8180REG_CONFIG3           0x59
+#define R8180REG_CONFIG4           0x5a
+#define R8180REG_TESTR             0x5b
+#define R8180REG_PGSELECT          0x5e
+#define R8180REG_SECURITY          0x5f
+#define R8180REG_ANAPARAM2         0x60
+#define R8180REG_BEACONINTERVAL    0x70
+#define R8180REG_ATIMWINDOW        0x72
+#define R8180REG_BEACONINTERVAL2   0x74
+#define R8180REG_ATIMTRINTERVAL    0x76
+#define R8180REG_PHYDELAY          0x78
+#define R8180REG_SENSECOUNT        0x79
+#define R8180REG_PHY               0x7c
+#define R8180REG_RFPINSOUTPUT      0x80
+#define R8180REG_RFPINSENABLE      0x82
+#define R8180REG_RFPINSSELECT      0x84
+#define R8180REG_RFPINSINPUT       0x86
+#define R8180REG_RFPARA            0x88
+#define R8180REG_RFTIMING          0x8c
+#define R8180REG_GPENABLE          0x90
+#define R8180REG_GPIO0             0x91
+#define R8180REG_GPIO1             0x92
+#define R8180REG_HSSIPARA          0x94
+#define R8180REG_TXAGCCTL          0x9c
+#define R8180REG_TXGAINCCK         0x9d
+#define R8180REG_TXGAINOFDM        0x9e
+#define R8180REG_TXANTENNA         0x9f
+#define R8180REG_WPACONF           0xb0
+#define R8180REG_SIFS              0xb4
+#define R8180REG_DIFS              0xb5
+#define R8180REG_SLOT              0xb6
+#define R8180REG_CWCONF            0xbc
+#define R8180REG_CWVAL             0xbd
+#define R8180REG_RATEFALLBACK      0xbe
+#define R8180REG_ACMCONTROL        0xbf
+#define R8180REG_CONFIG5           0xd8
+#define R8180REG_TXDMAPOLLING      0xd9
+#define R8180REG_CWR               0xdc
+#define R8180REG_RETRYCOUNT        0xde
+#define R8180REG_INTMIG            0xe2
+#define R8180REG_RDSAR             0xe4
+#define R8180REG_TIDACMAP          0xe8
+#define R8180REG_ANAPARAM3         0xee
+#define R8180REG_FEMR              0xf4
+#define R8180REG_TALLYCOUNT        0xfa
+#define R8180REG_TALLYSELECT       0xfc
+#define R8180REG_REVISION          0xfe   /* Page 1 */
+
+/* RTL8187B */
+
+#define R8180REG_ACVO              0xf0
+#define R8180REG_ACVI              0xf4
+#define R8180REG_ACBE              0xf8
+#define R8180REG_ACBK              0xfc
+
+
+/* EEPROM Data Offsets */
+/* =================== */
+
+#define R8180ROM_BASEPOWER  0x5
+#define R8180ROM_RFCHIPID   0x6
+#define R8180ROM_ADDRESS0   0x7
+#define R8180ROM_ADDRESS1   0x8
+#define R8180ROM_ADDRESS2   0x9
+#define R8180ROM_POWER0    0x16
+#define R8180ROM_POWER2    0x1b
+#define R8180ROM_POWER1    0x3d
+#define R8180ROM_SWREV     0x3f
+
+
+/* Commands */
+/* ======== */
+
+/* USB Control Pipe Commands */
+
+#define R8180UCMD_REG 0x5
+
+/* EEPROM Commands */
+
+#define R8180ECMD_LOAD    (1 << 6)
+#define R8180ECMD_PROGRAM (2 << 6)
+#define R8180ECMD_CONFIG  (3 << 6)
+
+
+/* Register Details */
+/* ================ */
+
+/* Command Register */
+
+#define R8180REG_COMMANDB_RESET    4
+#define R8180REG_COMMANDB_RXENABLE 3
+#define R8180REG_COMMANDB_TXENABLE 2
+
+#define R8180REG_COMMANDF_RESET    (1 << R8180REG_COMMANDB_RESET)
+#define R8180REG_COMMANDF_RXENABLE (1 << R8180REG_COMMANDB_RXENABLE)
+#define R8180REG_COMMANDF_TXENABLE (1 << R8180REG_COMMANDB_TXENABLE)
+
+/* TX Configuration Register */
+
+#define R8180REG_TXCONFB_HWSEQNUM    30
+#define R8180REG_TXCONFB_DISREQQSIZE 28
+#define R8180REG_TXCONFB_HWVER       25
+#define R8180REG_TXCONFB_MAXDMA      21
+#define R8180REG_TXCONFB_LOOPBACK    17
+#define R8180REG_TXCONFB_HWCRC       16
+#define R8180REG_TXCONFB_SHORTTRIES   8
+#define R8180REG_TXCONFB_LONGTRIES    0
+
+#define R8180REG_TXCONFF_HWSEQNUM    (1 << R8180REG_TXCONFB_HWSEQNUM)
+#define R8180REG_TXCONFF_DISREQQSIZE (1 << R8180REG_TXCONFB_DISREQQSIZE)
+#define R8180REG_TXCONFF_HWVER       (7 << R8180REG_TXCONFB_HWVER)
+#define R8180REG_TXCONFF_MAXDMA      (7 << R8180REG_TXCONFB_MAXDMA)
+#define R8180REG_TXCONFF_LOOPBACK    (3 << R8180REG_TXCONFB_LOOPBACK)
+#define R8180REG_TXCONFF_SHORTTRIES  (0xff << R8180REG_TXCONFB_SHORTTRIES)
+#define R8180REG_TXCONFF_LONGTRIES   (0xff << R8180REG_TXCONFB_LONGTRIES)
+
+/* RX Configuration Register */
+
+#define R8180REG_RXCONFB_EARLYTHRESH  31
+#define R8180REG_RXCONFB_AUTORESETPHY 28
+#define R8180REG_RXCONFB_CHECKBSSID   23
+#define R8180REG_RXCONFB_MGMT         20
+#define R8180REG_RXCONFB_CTRL         19
+#define R8180REG_RXCONFB_DATA         18
+#define R8180REG_RXCONFB_FIFOTHRESH   13
+#define R8180REG_RXCONFB_MAXDMA        8
+#define R8180REG_RXCONFB_BCAST         3
+#define R8180REG_RXCONFB_MCAST         2
+#define R8180REG_RXCONFB_UCAST         1
+
+#define R8180REG_RXCONFF_EARLYTHRESH  (1 << R8180REG_RXCONFB_EARLYTHRESH)
+#define R8180REG_RXCONFF_AUTORESETPHY (1 << R8180REG_RXCONFB_AUTORESETPHY)
+#define R8180REG_RXCONFF_CHECKBSSID   (1 << R8180REG_RXCONFB_CHECKBSSID)
+#define R8180REG_RXCONFF_MGMT         (1 << R8180REG_RXCONFB_MGMT)
+#define R8180REG_RXCONFF_CTRL         (1 << R8180REG_RXCONFB_CTRL)
+#define R8180REG_RXCONFF_DATA         (1 << R8180REG_RXCONFB_DATA)
+#define R8180REG_RXCONFF_FIFOTHRESH   (7 << R8180REG_RXCONFB_FIFOTHRESH)
+#define R8180REG_RXCONFF_MAXDMA       (7 << R8180REG_RXCONFB_MAXDMA)
+#define R8180REG_RXCONFF_BCAST        (1 << R8180REG_RXCONFB_BCAST)
+#define R8180REG_RXCONFF_MCAST        (1 << R8180REG_RXCONFB_MCAST)
+#define R8180REG_RXCONFF_UCAST        (1 << R8180REG_RXCONFB_UCAST)
+
+/* EEPROM Command Register */
+
+#define R8180REG_EEPROMB_COMMAND 6
+#define R8180REG_EEPROMB_SELECT  3
+#define R8180REG_EEPROMB_CLK     2
+#define R8180REG_EEPROMB_DATAOUT 1
+#define R8180REG_EEPROMB_DATAIN  0
+
+#define R8180REG_EEPROMF_COMMAND (0x3 << R8180REG_EEPROMB_COMMAND)
+#define R8180REG_EEPROMF_SELECT  (1 << R8180REG_EEPROMB_SELECT)
+#define R8180REG_EEPROMF_CLK     (1 << R8180REG_EEPROMB_CLK)
+#define R8180REG_EEPROMF_DATAOUT (1 << R8180REG_EEPROMB_DATAOUT)
+#define R8180REG_EEPROMF_DATAIN  (1 << R8180REG_EEPROMB_DATAIN)
+
+/* MSR Register */
+
+#define R8180REG_MSRB_ENEDCA     4
+#define R8180REG_MSRB_LINK       2
+
+#define R8180REG_MSRF_ENEDCA     (1 << R8180REG_MSRB_ENEDCA)
+#define R8180REG_MSRF_LINK       (0x3 << R8180REG_MSRB_LINK)
+
+/* Configuration Register 3 */
+
+#define R8180REG_CONFIG3B_GNTSELECT     7
+#define R8180REG_CONFIG3B_ANAPARAMWRITE 6
+
+#define R8180REG_CONFIG3F_GNTSELECT     (1 << R8180REG_CONFIG3B_GNTSELECT)
+#define R8180REG_CONFIG3F_ANAPARAMWRITE (1 << R8180REG_CONFIG3B_ANAPARAMWRITE)
+
+/* TX AGC Control Register */
+
+#define R8180REG_TXAGCCTLB_PPGAINSHIFT   0
+#define R8180REG_TXAGCCTLB_PPANTSELSHIFT 1
+#define R8180REG_TXAGCCTLB_FEEDBACKANT   2
+
+#define R8180REG_TXAGCCTLF_PPGAINSHIFT   (1 << R8180REG_TXAGCCTLB_PPGAINSHIFT)
+#define R8180REG_TXAGCCTLF_PPANTSELSHIFT (1 << R8180REG_TXAGCCTLB_PPANTSELSHIFT)
+#define R8180REG_TXAGCCTLF_FEEDBACKANT   (1 << R8180REG_TXAGCCTLB_FEEDBACKANT)
+
+/* CW Configuration Register */
+
+#define R8180REG_CWCONFB_PPRETRYSHIFT 1
+#define R8180REG_CWCONFB_PPCWSHIFT    0
+
+#define R8180REG_CWCONFF_PPRETRYSHIFT (1 << R8180REG_CWCONFB_PPRETRYSHIFT)
+#define R8180REG_CWCONFF_PPCWSHIFT    (1 << R8180REG_CWCONFB_PPCWSHIFT)
+
+/* Rate Fallback Register */
+
+#define R8180REG_RATEFALLBACKB_ENABLE 7
+
+#define R8180REG_RATEFALLBACKF_ENABLE (1 << R8180REG_RATEFALLBACKB_ENABLE)
+
+
+/* Frame descriptor */
+/* ================ */
+
+#define R8180FRM_TXCONTROL 0x0
+#define R8180FRM_RTSDUR    0x4
+#define R8180FRM_TXDUR     0xe
+#define R8180FRM_RETRY     0x14
+#define R8180FRM_HEADER    0x20
+
+#define R8180FRM_RXSTATUS  0x0
+
+/* TX Control field */
+
+#define R8180FRM_TXCONTROLB_FIRSTFRAG 29
+#define R8180FRM_TXCONTROLB_LASTFRAG  28
+#define R8180FRM_TXCONTROLB_RATE      24
+#define R8180FRM_TXCONTROLB_RTSRATE   19
+#define R8180FRM_TXCONTROLB_NOENC     15
+
+#define R8180FRM_TXCONTROLF_FIRSTFRAG (1 << R8180FRM_TXCONTROLB_FIRSTFRAG)
+#define R8180FRM_TXCONTROLF_LASTFRAG  (1 << R8180FRM_TXCONTROLB_LASTFRAG)
+#define R8180FRM_TXCONTROLF_RATE      (0xf << R8180FRM_TXCONTROLB_RATE)
+#define R8180FRM_TXCONTROLF_RTSRATE   (0xf << R8180FRM_TXCONTROLB_RTSRATE)
+#define R8180FRM_TXCONTROLF_NOENC     (1 << R8180FRM_TXCONTROLB_NOENC)
+
+/* RX Status field */
+
+#define R8180FRM_RXSTATUSB_DMAERR   27
+#define R8180FRM_RXSTATUSB_OVERFLOW 26
+#define R8180FRM_RXSTATUSB_RXERR    15
+#define R8180FRM_RXSTATUSB_BADCRC   13
+#define R8180FRM_RXSTATUSB_BADICV   12
+#define R8180FRM_RXSTATUSB_LENGTH    0
+
+#define R8180FRM_RXSTATUSF_DMAERR   (1 << R8180FRM_RXSTATUSB_DMAERR)
+#define R8180FRM_RXSTATUSF_OVERFLOW (1 << R8180FRM_RXSTATUSB_OVERFLOW)
+#define R8180FRM_RXSTATUSF_RXERR    (1 << R8180FRM_RXSTATUSB_RXERR)
+#define R8180FRM_RXSTATUSF_BADCRC   (1 << R8180FRM_RXSTATUSB_BADCRC)
+#define R8180FRM_RXSTATUSF_BADICV   (1 << R8180FRM_RXSTATUSB_BADICV)
+#define R8180FRM_RXSTATUSF_LENGTH   (0xfff << R8180FRM_RXSTATUSB_LENGTH)
+
+#endif

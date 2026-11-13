@@ -1,0 +1,32 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+NOWARN_FLAGS := $(NOWARN_UNINITIALIZED) $(NOWARN_PARENTHESES)
+USER_CFLAGS := $(NOWARN_FLAGS)
+USER_CPPFLAGS := \
+    -D_GNU_SOURCE=1 \
+    -D__BSD_VISIBLE=1 \
+    -DHAVE_IOCTL \
+    -DBSDSOCKET_ROADSHOW_ROUTING \
+    -DINET6=1
+
+#MM workbench-network-common-c-ip : \
+#MM     network-includes \
+#MM     arostcp-linklibs-netlib \
+#MM     arostcp-linklibs-miami
+
+IP_FILES := \
+    ip \
+    ip_util \
+    ip_link \
+    ip_addr \
+    ip_route \
+    ip_neigh \
+    ip_maddr \
+    ip_stub
+
+%build_prog mmake=workbench-network-common-c-ip \
+    files="$(IP_FILES)" progname=ip \
+    targetdir=$(AROS_C) uselibs="miami net"
+
+%common

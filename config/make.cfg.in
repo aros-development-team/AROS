@@ -1,0 +1,358 @@
+# Copyright © 1995-2026, The AROS Development Team. All rights reserved.
+# $Id$
+#
+# Static makefile rule file for AROS.
+
+AROS_TARGET_SUFFIX        = @aros_target_suffix@
+
+# All files corresponding to a specific host go here.
+DIR_HOST                      := bin/$(AROS_HOST_ARCH)-$(AROS_HOST_CPU)
+HOSTDIR                       := $(TOP)/$(DIR_HOST)
+DIR_TOOLS                     := tools
+TOOLDIR                       := $(HOSTDIR)/$(DIR_TOOLS)
+
+HOSTGENDIR                    := $(HOSTDIR)/gen/host
+
+# All files corresponding to a specific target go here.
+TARGETDIR                     := $(TOP)/bin/$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)$(AROS_TARGET_SUFFIX)
+
+GENDIR                        := $(TARGETDIR)/gen
+
+CC_PREFIX                     := @aros_cc_pre@
+
+-include $(GENDIR)/config/make.defaults
+-include $(GENDIR)/config/make.opts
+
+# target.cfg *must* come before host.cfg,
+# and both must come before build.cfg
+include $(GENDIR)/config/target.cfg
+include $(HOSTGENDIR)/config/host.cfg
+include $(GENDIR)/config/build.cfg
+
+# Bootstrap ELF relocators cannot allocate SHN_COMMON symbols. Append the
+# feature-detected flag after USER_CFLAGS so -fcommon cannot leak into kernels.
+KERNEL_CFLAGS                += $(CFLAGS_NO_COMMON)
+
+# Cross tools installation directory.
+CROSSTOOLSDIR                 := @AROS_CROSSTOOLSDIR@
+
+# Files downloaded from the net are put here
+PORTSSOURCEDIR                := @AROS_PORTSSRCDIR@
+PORTSDIR                      := $(TARGETDIR)/Ports
+
+# Distributable Files we generate are put here
+DISTDIR                       := @AROS_BUILDDIR_UNIX@/distfiles
+
+# File for AROS gcc cross compiler spec file
+SPECS                         := $(GENDIR)/config/specs
+
+# Standard directory names (case sensitive) used to build
+# both relative and absolute paths.
+AROS_DIR_AROS                 := AROS
+ifeq ($(AROS_TARGET_SUFFIX),)
+    AROS_DIR_ARCH             := $(AROS_TARGET_ARCH)
+else
+    AROS_DIR_ARCH             := $(AROS_TARGET_ARCH)$(AROS_TARGET_SUFFIX)
+endif
+AROS_DIR_BOOT                 := boot
+AROS_DIR_BOOTARCH             := $(AROS_DIR_BOOT)/$(AROS_DIR_ARCH)
+AROS_DIR_C                    := C
+AROS_DIR_CLASSES              := Classes
+AROS_DIR_CATALOGS             := Catalogs
+AROS_DIR_COMMODITIES          := Commodities
+AROS_DIR_DATATYPES            := $(AROS_DIR_CLASSES)/Datatypes
+AROS_DIR_GADGETS              := $(AROS_DIR_CLASSES)/Gadgets
+AROS_DIR_CLASSIMAGES          := $(AROS_DIR_CLASSES)/Images
+AROS_DIR_DEVS                 := Devs
+AROS_DIR_DRIVERS              := Drivers
+AROS_DIR_ENVARC               := Env-Archive
+AROS_DIR_EXPANSION            := Expansion
+AROS_DIR_FS                   := L
+AROS_DIR_HELP                 := Help
+AROS_DIR_LIBRARIES            := Libs
+AROS_DIR_LOCALE               := Locale
+AROS_DIR_PACKAGES             := Packages
+AROS_DIR_PREFS                := Prefs
+AROS_DIR_PRESETS              := Presets
+AROS_DIR_PRINTERS             := Printers
+AROS_DIR_S                    := S
+AROS_DIR_STORAGE              := Storage
+AROS_DIR_SYSTEM               := System
+AROS_DIR_THEMES               := Themes
+AROS_DIR_TOOLS                := Tools
+AROS_DIR_UTILITIES            := Utilities
+AROS_DIR_WALLPAPERS           := Wallpapers
+
+AROS_DIR_DEVELOPER            := Developer
+AROS_DIR_BIN                  := bin
+AROS_DIR_SDK                  := SDK
+AROS_DIR_FD                   := fd
+AROS_DIR_INCLUDE              := include
+AROS_DIR_LIB                  := lib
+
+AROS_DIR_CONTRIB              := Extras
+
+# This is the directory structure for an AROS system.
+# Absolute paths for standard directories
+AROSDIR                       := $(TARGETDIR)/$(AROS_DIR_AROS)
+AROSARCHDIR                   := $(AROSDIR)/$(AROS_DIR_BOOTARCH)
+AROS_BOOT                     := $(AROSDIR)/$(AROS_DIR_BOOT)
+AROS_C                        := $(AROSDIR)/$(AROS_DIR_C)
+AROS_CLASSES                  := $(AROSDIR)/$(AROS_DIR_CLASSES)
+AROS_CLASSES_ARCH             := $(AROSARCHDIR)/$(AROS_DIR_CLASSES)
+AROS_DATATYPES                := $(AROSDIR)/$(AROS_DIR_DATATYPES)
+AROS_GADGETS                  := $(AROSDIR)/$(AROS_DIR_GADGETS)
+AROS_CLASSIMAGES              := $(AROSDIR)/$(AROS_DIR_CLASSIMAGES)
+AROS_DEVS                     := $(AROSDIR)/$(AROS_DIR_DEVS)
+AROS_DEVS_ARCH                := $(AROSARCHDIR)/$(AROS_DIR_DEVS)
+AROS_EXPANSION                := $(AROSDIR)/$(AROS_DIR_EXPANSION)
+AROS_FS	                      := $(AROSDIR)/$(AROS_DIR_FS)
+AROS_FS_ARCH                  := $(AROSARCHDIR)/$(AROS_DIR_FS)
+AROS_RESOURCES                := $(AROS_DEVS)
+AROS_DRIVERS                  := $(AROS_DEVS)/$(AROS_DIR_DRIVERS)
+AROS_LIBRARIES                := $(AROSDIR)/$(AROS_DIR_LIBRARIES)
+AROS_LIBRARIES_ARCH           := $(AROSARCHDIR)/$(AROS_DIR_LIBRARIES)
+AROS_LOCALE                   := $(AROSDIR)/$(AROS_DIR_LOCALE)
+AROS_CATALOGS                 := $(AROS_LOCALE)/$(AROS_DIR_CATALOGS)
+AROS_HELP                     := $(AROS_LOCALE)/$(AROS_DIR_HELP)
+AROS_PREFS                    := $(AROSDIR)/$(AROS_DIR_PREFS)
+AROS_ENVARC                   := $(AROS_PREFS)/$(AROS_DIR_ENVARC)
+AROS_PACKAGES                 := $(AROS_ENVARC)/SYS/$(AROS_DIR_PACKAGES)
+AROS_PRESETS                  := $(AROS_PREFS)/$(AROS_DIR_PRESETS)
+AROS_PRINTERS                 := $(AROS_DEVS)/$(AROS_DIR_PRINTERS)
+AROS_S                        := $(AROSDIR)/$(AROS_DIR_S)
+AROS_STORAGE                  := $(AROSDIR)/$(AROS_DIR_STORAGE)
+AROS_SYSTEM                   := $(AROSDIR)/$(AROS_DIR_SYSTEM)
+AROS_WALLPAPERS               := $(AROS_PRESETS)/$(AROS_DIR_WALLPAPERS)
+AROS_THEMES                   := $(AROS_PRESETS)/$(AROS_DIR_THEMES)
+AROS_IMAGES                   := $(AROS_SYSTEM)/Images
+AROS_TOOLS                    := $(AROSDIR)/$(AROS_DIR_TOOLS)
+AROS_UTILITIES                := $(AROSDIR)/$(AROS_DIR_UTILITIES)
+
+AROS_WANDERER                 := $(AROS_SYSTEM)/Wanderer
+AROS_CONTRIB                  := $(AROSDIR)/$(AROS_DIR_CONTRIB)
+
+# Absolute paths for developer directories
+AROS_DEVELOPER                := $(AROSDIR)/$(AROS_DIR_DEVELOPER)
+AROS_SDK                      ?= $(AROS_DEVELOPER)/$(AROS_DIR_SDK)
+AROS_ARCH_SDK                 ?= $(AROS_SDK)/$(AROS_TARGET_CPU)-$(AROS_TARGET_ARCH)$(AROS_TARGET_SUFFIX)-aros
+AROS_DEV_ARCH_BINS            := $(AROS_DEVELOPER)/$(AROS_TARGET_CPU)-aros/$(AROS_DIR_BIN)
+AROS_DEV_BINS                 := $(AROS_DEVELOPER)/$(AROS_DIR_BIN)
+AROS_DEBUG                    := $(AROS_DEVELOPER)/Debug
+AROS_SDK_FD                   := $(AROS_SDK)/$(AROS_DIR_FD)
+AROS_TESTS                    := $(AROS_DEBUG)/Tests
+AROS_ARCH_INCLUDES            = $(AROS_ARCH_SDK)/$(AROS_DIR_INCLUDE)
+AROS_INCLUDES                 := $(AROS_DEVELOPER)/$(AROS_DIR_INCLUDE)
+#AROS_INCLUDES                := $(AROS_SDK)/$(AROS_DIR_INCLUDE)
+AROS_ARCH_LIB                 = $(AROS_ARCH_SDK)/$(AROS_DIR_LIB)
+AROS_LIB                      := $(AROS_DEVELOPER)/$(AROS_DIR_LIB)
+ifneq ($(AROS_TARGET_CPU32),)
+AROS_LIB32                    := $(AROS_DEVELOPER)/$(AROS_DIR_LIB)32
+endif
+#AROS_LIB                     := $(AROS_SDK)/$(AROS_DIR_LIB)
+
+#DBGDIR                        := $(AROS_DEBUG)/dbg
+DBGDIR                        := $(AROSDIR)
+
+AROS_CONTRIB_DEVELOPER        := $(AROS_CONTRIB)/$(AROS_DIR_DEVELOPER)
+AROS_CONTRIB_SDK              := $(AROS_SDK)/$(AROS_DIR_CONTRIB)
+AROS_CONTRIB_ARCH_INCLUDES    := $(AROS_ARCH_SDK)/$(AROS_DIR_CONTRIB)/$(AROS_DIR_INCLUDE)
+AROS_CONTRIB_INCLUDES         := $(AROS_CONTRIB_SDK)/$(AROS_DIR_INCLUDE)
+AROS_CONTRIB_ARCH_LIB         := $(AROS_ARCH_SDK)/$(AROS_DIR_CONTRIB)/$(AROS_DIR_LIB)
+AROS_CONTRIB_LIB              := $(AROS_CONTRIB_SDK)/$(AROS_DIR_LIB)
+
+# The generated files all go under the GENDIR path
+SCRIPTDIR                     := $(GENDIR)/scripts
+
+MKDEPEND                      := $(SRCDIR)/scripts/mkdep
+FETCH                         := $(SRCDIR)/scripts/fetch.sh
+CPYDIRREC                     := $(PYTHON) $(SRCDIR)/scripts/cpy-dir-rec.py
+
+# The paths to the generated tools
+TOOLLIB                       := $(TOOLDIR)/libtool.a
+MMAKE                         := $(TOOLDIR)/mmake$(HOST_EXE_SUFFIX)
+ARCHTOOL                      := $(TOOLDIR)/archtool$(HOST_EXE_SUFFIX)
+GENMFSCRIPT                   := $(TOOLDIR)/genmf.py
+GENMF                         := $(PYTHON) $(GENMFSCRIPT)
+FLEXCAT                       := $(TOOLDIR)/flexcat$(HOST_EXE_SUFFIX)
+FD2INLINE                     := $(TOOLDIR)/fd2inline$(HOST_EXE_SUFFIX)
+FD2PRAGMA                     := $(TOOLDIR)/fd2pragma$(HOST_EXE_SUFFIX)
+SFDC                          := $(TOOLDIR)/sfdc
+MODTOOL                       := $(TOOLDIR)/modtool$(HOST_EXE_SUFFIX)
+CREATEDTDESC                  := $(TOOLDIR)/createdtdesc$(HOST_EXE_SUFFIX)
+AFSLIB                        := $(TOOLDIR)/libafs.a
+COPYTOAFS                     := $(TOOLDIR)/copytoafs$(HOST_EXE_SUFFIX)
+ILBMTOC                       := $(TOOLDIR)/ilbmtoc$(HOST_EXE_SUFFIX)
+ILBMTOICON                    := $(TOOLDIR)/ilbmtoicon$(HOST_EXE_SUFFIX)
+INFOINFO                      := $(TOOLDIR)/infoinfo$(HOST_EXE_SUFFIX)
+GENSETS                       := $(TOOLDIR)/gensets$(HOST_EXE_SUFFIX)
+COLLECT-AROS                  := $(TOOLDIR)/collect-aros$(HOST_EXE_SUFFIX)
+COLLECT-AROS32                := $(TOOLDIR)/collect-aros32$(HOST_EXE_SUFFIX)
+GENMODULE                     := $(TOOLDIR)/genmodule$(HOST_EXE_SUFFIX)
+MKAMIKEYMAP                   := $(TOOLDIR)/mkamikeymap$(HOST_EXE_SUFFIX)
+SETREV                        := $(TOOLDIR)/setrev$(HOST_EXE_SUFFIX)
+@make_extra_commands@
+RESIDENT_BEGIN                := compiler/libinit/libentry
+KICKSTART_BEGIN               := compiler/libinit/kickentry
+
+HOST_MTOOLS                   := @have_mtools@
+
+AROS_CC                       := $(TARGET_CC)
+# Use a wrapper if a real c++ compiler isnt available.
+ifneq ($(TARGET_CXX),)
+    AROS_CXX                  := $(TARGET_CXX)
+else
+    AROS_CXX                  := $(CROSSTOOLSDIR)/$(AROS_TARGET_CPU)-aros-g++
+endif
+AROS_CXXEXTS                  := cpp cxx cc c++
+AROS_AS                       := $(TARGET_AS)
+AROS_LD                       := $(TARGET_LD)
+
+# Optional -T linker script for the kernel-module partial link (AROS_LD -Ur), used
+# to order each module's sections so its Resident romtag lands at the module head
+# (see arch/m68k-amiga/boot/kobj-romtag.ld). Empty for every target except
+# amiga-m68k, so all other builds pass the identical -Ur command as before.
+KERNEL_KOBJ_LDSCRIPT          :=
+ifeq ($(AROS_TARGET_ARCH),amiga)
+ifeq ($(AROS_TARGET_CPU),m68k)
+KERNEL_KOBJ_LDSCRIPT          := -T $(SRCDIR)/arch/m68k-amiga/boot/kobj-romtag.ld
+endif
+endif
+
+STRIP                         := $(TARGET_STRIP)
+
+CALL                          := env AROS_HOST_ARCH=$(AROS_HOST_ARCH) \
+                                     AROS_HOST_CPU=$(AROS_HOST_CPU) \
+                                     AROS_TARGET_ARCH=$(AROS_TARGET_ARCH) \
+                                     AROS_TARGET_CPU=$(AROS_TARGET_CPU) \
+                                     AROS_TARGET_CPU32=$(AROS_TARGET_CPU32) \
+                                     AROS_TARGET_CPU_TYPE=$(AROS_TARGET_CPU_TYPE) \
+                                     AROS_TARGET_CPU_MODE=$(AROS_TARGET_CPU_MODE) \
+                                     AROS_TARGET_VARIANT=$(AROS_TARGET_VARIANT) \
+                                     AROS_TARGET_SUFFIX=$(AROS_TARGET_SUFFIX)
+
+# At the moment we have two copies of the includes...
+# This is the AROS includes, minus clib/mlib.
+GENINCDIR                     := $(GENDIR)/include
+
+# Special testing tools..
+PARSEOFFSETS                  := $(TOOLDIR)/parseoffsets$(HOST_EXE_SUFFIX)
+
+# Basic make configuration. No need to edit anything else under here.
+
+.SUFFIXES :
+.SUFFIXES : .c .h .d .s .S
+
+.PHONY : all clean setup subdirs
+
+BASE_CFLAGS                   = $(CONFIG_BASE_CFLAGS)
+BASE_CXXFLAGS                 = $(CONFIG_BASE_CXXFLAGS)
+BASE_CPPFLAGS                 = $(CONFIG_BASE_CPPFLAGS)
+
+# Was debugging enabled? Better set up the options.
+ifeq ($(DEBUG),yes)
+    BASE_CFLAGS               += $(DEBUG_CFLAGS)
+    BASE_CXXFLAGS             += $(DEBUG_CXXFLAGS)
+    BASE_CPPFLAGS             += $(DEBUG_CPPFLAGS)
+    CONFIG_CFLAGS             += $(DEBUG_CFLAGS)
+    CONFIG_CXXFLAGS           += $(DEBUG_CXXFLAGS)
+    CONFIG_CPPFLAGS           += $(DEBUG_CPPFLAGS)
+    CONFIG_AFLAGS             += $(DEBUG_AFLAGS)
+    CONFIG_LDFLAGS            += $(DEBUG_LDFLAGS)
+    KERNEL_CFLAGS             += $(DEBUG_CFLAGS)
+    KERNEL_CXXFLAGS           += $(DEBUG_CXXFLAGS)
+    KERNEL_CPPFLAGS           += $(DEBUG_CPPFLAGS)
+    KERNEL_LDFLAGS            += $(DEBUG_LDFLAGS)
+    HOST_CFLAGS               += $(DEBUG_CFLAGS)
+    HOST_CXXFLAGS             += $(DEBUG_CXXFLAGS)
+    HOST_CPPFLAGS             += $(DEBUG_CPPFLAGS)
+    HOST_AFLAGS               += $(DEBUG_AFLAGS)
+    HOST_LDFLAGS              += $(DEBUG_LDFLAGS)
+    MECHO                     := $(ECHO)
+else
+    MECHO                     := $(NOP)
+endif
+
+# compiler and assembler flags are set depending upon the directory
+# clang 16+ promotes these legacy-C diagnostics to hard errors by default;
+# demote them back to warnings for the pre-C99 parts of the tree. Only
+# needed for the llvm toolchain - the NOWARN_ variables come from
+# compiler.cfg (probed by config/features).
+ifeq ($(AROS_TOOLCHAIN),llvm)
+LLVM_NOWARN                   = $(NOWARN_INT_CONVERSION) $(NOWARN_IMPLICIT_INT) $(NOWARN_IMPLICIT_FUNCTION_DECL) $(NOWARN_INCOMPAT_POINTER_TYPES) $(NOWARN_INCOMPAT_FUNC_POINTER_TYPES)
+endif
+CFLAGS                        = $(strip $(TARGET_ISA_CFLAGS) $(TARGET_CFLAGS) $(LLVM_NOWARN))
+CXXFLAGS                      = $(strip $(TARGET_ISA_CXXFLAGS) $(TARGET_CXXFLAGS))
+CPPFLAGS                      = $(strip $(TARGET_CPPFLAGS))
+AFLAGS                        = $(strip $(TARGET_ISA_AFLAGS) $(USER_AFLAGS) $(CONFIG_AFLAGS))
+LDFLAGS                       = $(strip $(USER_LDFLAGS) $(TARGET_LDFLAGS))
+
+ifeq ($(AROS_TARGET_CPU),aarch64)
+# clang emits the weak __aros_libreq_<base> version marker as a non-weak
+# block-scope static; the identical copies collide across a module's objects.
+# The kickstart kobj link is a raw '$(AROS_LD) -Ur' that bypasses LDFLAGS,
+# so the flag is needed on both link paths.
+LDFLAGS                       += -Wl,--allow-multiple-definition
+KOBJ_LDFLAGS                  += --allow-multiple-definition
+endif
+
+# Target arch/CPU-specific options that we can't set in 'configure'
+# (these could be added to CFLAGS instead of using a new variable, except
+# that CFLAGS is unfortunately also passed to host and kernel compilers,
+# which might not recognise the same options)
+ifeq ($(AROS_TARGET_CPU),i386)
+    SAFETY_CFLAGS             += $(CFLAGS_NO_IPA_CP)
+else
+    ifeq ($(AROS_TARGET_CPU),m68k)
+        SAFETY_CFLAGS         += $(CFLAGS_NO_IPA_CP)
+    endif
+endif
+
+# if LTO is desired use these flags ...
+# NB: make.tmpl builds the objects individually
+#     so we don't include -fwhole-program for
+#     binaries by default.
+LTO_CFLAGS                    = $(CFLAGS_LTO)
+LTO_ARCHIVE_CFLAGS            = $(CFLAGS_ARCHIVE_LTO)
+LTO_BINARY_CFLAGS             = $(LTO_CFLAGS)
+LTO_BINARYWHOLE_CFLAGS        = $(LTO_BINARY_CFLAGS) $(CFLAGS_WHOLE_PROGRAM)
+@make_extra_targetcfg@
+# Compatibility with old variables
+OBJDIR                        := $(GENDIR)/$(CURDIR)
+LIBDIR                        := $(AROS_LIB)
+OSGENDIR                      := $(GENDIR)/rom
+KOBJSDIR                      := $(GENDIR)/kobjs
+# Lists of kickstart-resident modules the distfiles stage drops from what it
+# ships (written by %make_package and the ROM link rules, see make.tmpl).
+PRUNELISTDIR                  := $(GENDIR)/prunelists
+
+# 
+# Add necessary directories to the system PATH, so that the build system can
+# find the toolchain and related build tools.
+# NB: wrappers are generally stored under $(TOOLDIR), with native build tools
+# under $(CROSSTOOLSDIR), so make sure they are in the correct order
+ifeq ($(AROS_PATH_SET),)
+    AROS_BUILD_TOOLDIR        := $(shell echo $(TOOLDIR) | sed 's/^\(.\):\//\/\1\//')
+    AROS_BUILD_CROSSTOOLSDIR  := $(shell echo $(CROSSTOOLSDIR) | sed 's/^\(.\):\//\/\1\//')
+    AROS_BUILD_ARCHTOOLDIR    := $(AROS_BUILD_TOOLDIR)/$(AROS_TARGET_CPU)-$(AROS_TARGET_ARCH)$(AROS_TARGET_SUFFIX)
+    PATH                      := $(AROS_BUILD_TOOLDIR):$(AROS_BUILD_CROSSTOOLSDIR):$(AROS_BUILD_ARCHTOOLDIR):$(PATH)
+    AROS_PATH_SET             := yes
+    export PATH AROS_PATH_SET
+endif
+
+# Here follow some global variables that can get values through the makefile
+# and will be handled in make.tail
+
+# Dirs to create a makedir rule for
+GLOB_MKDIRS                   :=
+
+# Source directory is added to the target search path
+VPATH                         := $(shell echo $(SRCDIR)/$(CURDIR) | sed 's/^\(.\):\//\/\1\//')
+
+# Macro for expanding wildcards in source directory
+# We use shell script here in order to avoid Unicode file names that are listed by pattern expansion but can't be accessed
+# because of failing Unicode->ACP conversion under Windows
+WILDCARD                      = $(shell cd $(SRCDIR)/$(CURDIR); for file in $(1); do if [ -f $$file ]; then printf "%s" "$$file "; fi; done)
+
+# Defined to quieten output..
+Q                             ?= @

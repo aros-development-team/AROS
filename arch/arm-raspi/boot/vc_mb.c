@@ -1,0 +1,76 @@
+/*
+    Copyright (C) 2013-2026, The AROS Development Team. All rights reserved.
+
+    Desc: VideoCore mailbox support routines
+*/
+
+#include <exec/types.h>
+#include <aros/macros.h>
+#include <hardware/bcm2708.h>
+
+#undef ARM_PERIIOBASE
+
+#include <hardware/videocore.h>
+#include <stdint.h>
+
+#include "boot.h"
+#include "io.h"
+
+#define D(x) /* */
+
+#define ARM_PERIIOBASE (__arm_periiobase)
+extern uint32_t __arm_periiobase;
+
+volatile unsigned int *vcmb_read(uintptr_t mb, unsigned int chan)
+{
+    unsigned int try = 0x20000000;
+    unsigned int msg;
+
+    D(kprintf("[VCMB] vcmb_read(%p, %p)\n", mb, chan));
+
+    if (chan <= VCMB_CHAN_MAX)
+    {
+        while(1)
+        {
+            while ((rd32le(mb + VCMB_STATUS) & VCMB_STATUS_READREADY) != 0)
+            {
+                /* Data synchronization barrier */
+                asm volatile ("dsb" ::: "memory");
+
+                if(try-- == 0)
+                {
+                    break;
+                }
+            }
+
+            asm volatile ("dmb" ::: "memory");
+
+            msg = rd32le(mb + VCMB_READ);
+            D(kprintf("[VCMB] -> %p\n", msg));
+
+            asm volatile ("dmb" ::: "memory");
+
+            if ((msg & VCMB_CHAN_MASK) == chan)
+                return (volatile unsigned int *)(msg & ~VCMB_CHAN_MASK);
+        }
+    }
+    return (volatile unsigned int *)-1;
+}
+
+void vcmb_write(uintptr_t mb, unsigned int chan, void *msg)
+{
+    D(kprintf("[VCMB] vcmb_write(%p, %p, %p)\n", mb, chan, msg));
+
+    if ((((unsigned int)msg & VCMB_CHAN_MASK) == 0) && (chan <= VCMB_CHAN_MAX))
+    {
+        while ((rd32le(mb + VCMB_STATUS) & VCMB_STATUS_WRITEREADY) != 0)
+        {
+                /* Data synchronization barrier */
+                asm volatile ("dsb" ::: "memory");
+        }
+
+        asm volatile ("dmb" ::: "memory");
+
+        wr32le(mb + VCMB_WRITE, (uintptr_t)msg | chan);
+    }
+}

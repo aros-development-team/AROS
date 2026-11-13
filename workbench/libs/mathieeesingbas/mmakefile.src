@@ -1,0 +1,27 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+USER_CFLAGS :=  $(AROSROM_MODULE_CFLAGS)
+USER_LDFLAGS := -static
+
+FUNCS := \
+    ieeespabs \
+    ieeespadd \
+    ieeespceil \
+    ieeespcmp \
+    ieeespdiv \
+    ieeespfix \
+    ieeespfloor \
+    ieeespflt \
+    ieeespmul \
+    ieeespneg \
+    ieeespsub \
+    ieeesptst
+
+ifneq ($(ROM_OPTIMIZATION_CFLAGS),)
+OPTIMIZATION_CFLAGS := $(ROM_OPTIMIZATION_CFLAGS)
+endif
+
+%build_module mmake=workbench-libs-mathieeesingbas \
+  modname=mathieeesingbas modtype=library \
+  files=$(FUNCS)

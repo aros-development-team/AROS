@@ -1,0 +1,16 @@
+# Copyright (C) 2003, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+
+FILES           := allocvec allocpooled copymem taskswitch2
+EXEDIR          := $(AROS_TESTS)/benchmarks/exec
+
+#MM- test-benchmarks : test-benchmarks-exec
+#MM- test-benchmarks-quick : test-benchmarks-exec-quick
+
+#MM test-benchmarks-exec : includes linklibs 
+
+%build_progs mmake=test-benchmarks-exec \
+    files=$(FILES) targetdir=$(EXEDIR)
+
+%common

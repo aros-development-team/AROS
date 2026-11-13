@@ -1,0 +1,12 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+USER_LDFLAGS := -static
+
+FILES := gradientsliderclass support
+
+#MM workbench-gadgets-gradientslider : includes linklibs
+
+%build_module mmake=workbench-gadgets-gradientslider \
+  modname=gradientslider modtype=gadget \
+  files=$(FILES)

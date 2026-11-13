@@ -1,0 +1,60 @@
+/*
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
+
+    Desc: Set the name of the current directory.
+*/
+#include <proto/exec.h>
+#include <proto/dos.h>
+#include <dos/dos.h>
+#include <dos/dosextens.h>
+#include "dos_intern.h"
+
+/*****************************************************************************
+
+    NAME */
+#include <proto/dos.h>
+
+        AROS_LH1(BOOL, SetCurrentDirName,
+
+/*  SYNOPSIS */
+        AROS_LHA(CONST_STRPTR, name, D1),
+
+/*  LOCATION */
+        struct DosLibrary *, DOSBase, 93, Dos)
+
+/*  FUNCTION
+        Sets the name of the current directory in the CLI structure.
+        If the name doesn't fit the old name is kept and a failure
+        returned. If the current process doesn't have a CLI structure
+        this function does nothing.
+
+    INPUTS
+        name - Name for the current directory.
+
+    RESULT
+        !=0 on success, 0 on failure.
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+        Never copies more than 255 bytes.
+
+    SEE ALSO
+        GetCurrentDirName()
+
+    INTERNALS
+
+*****************************************************************************/
+{
+    AROS_LIBFUNC_INIT
+
+    struct CommandLineInterface *cli = NULL;
+
+    if ((cli = Cli()) == NULL)
+        return DOSFALSE;
+
+    return internal_SetCliString(cli->cli_SetName, name) ? DOSTRUE : DOSFALSE;
+    AROS_LIBFUNC_EXIT
+} /* SetCurrentDirName */

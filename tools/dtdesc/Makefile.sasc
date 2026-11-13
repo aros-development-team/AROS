@@ -1,0 +1,55 @@
+# Makefile for dtdesc
+
+.SUFFIXES: .c.o
+
+CC = sc
+
+CFLAGS = \
+	 IDIR=c_iff \
+	 DEFINE=amiga \
+	 DATA=FAR \
+	 SMALLCODE \
+	 STRIPDEBUG \
+	 CPU=68020 \
+	 OPTIMIZE \
+	 OPTSCHED \
+	 OPTINLINE \
+	 OPTALIAS \
+	 OPTTIME \
+	 OPTINLOCAL \
+	 NOICONS \
+	 NOSTACKCHECK
+
+LD = $(CC)
+
+LDFLAGS = $(CFLAGS) LINK
+
+C_FLAG =
+
+O_FLAG = TO
+
+AR = oml
+
+RM = delete force
+
+.c.o:
+	$(CC) $(CFLAGS) $(C_FLAG) $*.c
+
+all: createdtdesc examinedtdesc
+
+createdtdesc: createdtdesc.o c_iff/c_iff.lib
+	$(LD) $(LDFLAGS) $< $(O_FLAG) $@ LIB c_iff/c_iff.lib
+
+examinedtdesc: examinedtdesc.o
+	$(LD) $(LDFLAGS) $< $(O_FLAG) $@ LIB c_iff/c_iff.lib
+
+c_iff/c_iff.lib:
+	cd c_iff
+	make -f Makefile.sasc
+
+clean:
+	$(RM) #?.o
+	$(RM) #?.lnk
+	$(RM) examinedtdesc
+	$(RM) createdtdesc
+

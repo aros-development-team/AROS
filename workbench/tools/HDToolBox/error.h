@@ -1,0 +1,24 @@
+/*
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
+*/
+
+#ifndef ERROR_H
+#define ERROR_H
+
+enum
+{
+	ERR_NONE,
+	ERR_INTUI,
+	ERR_GFX,
+	ERR_MUIMASTER,
+	ERR_PARTITION,
+	ERR_SCREEN,
+	ERR_VISUAL,
+	ERR_GADGETS,
+	ERR_WINDOW,
+	ERR_MEMORY,
+	ERR_PTEDIT
+};
+
+#endif
+

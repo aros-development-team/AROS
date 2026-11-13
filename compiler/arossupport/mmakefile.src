@@ -1,0 +1,62 @@
+#
+#   Generate the AROS support library, libarossupport.a
+#
+
+include $(SRCDIR)/config/aros.cfg
+
+FILES	:= \
+    _vkprintf \
+    calcchecksum \
+    clonerastport \
+    createbstr \
+    createrastport \
+    createseglist \
+    debugmem \
+    deinitrastport \
+    freerastport \
+    freestruct \
+    hexdmp \
+    isdosentrya \
+    kprintf \
+    rkprintf \
+    nastyfreemem \
+    purify \
+    libfindtagitem \
+    libgettagdata \
+    libnexttagitem \
+    rawputchars \
+    readbyte \
+    readdouble \
+    readfloat \
+    readlong \
+    readstring \
+    readstruct \
+    readword \
+    removeslist \
+    vkprintf \
+    writebyte \
+    writedouble \
+    writefloat \
+    writelong \
+    writestring \
+    writestruct \
+    writeword
+
+#MM- core-linklibs : linklibs-arossupport
+#MM- linklibs: linklibs-arossupport
+#MM linklibs-arossupport : includes
+
+FMTPRINTFDIR := $(SRCDIR)/compiler/fmtprintf
+USER_INCLUDES := -I$(SRCDIR)/rom/exec -iquote $(FMTPRINTFDIR)
+USER_CFLAGS := -noposixc $(CFLAGS_NO_BUILTIN)
+
+%build_linklib mmake=linklibs-arossupport libname=arossupport files=$(FILES)
+
+INCLUDE_FILES	    := $(call WILDCARD, include/*.h)
+%copy_includes mmake=compiler-includes path=aros dir=include
+
+ifneq ($(AROS_TARGET_CPU32),)
+%build_linklib mmake=linklibs-arossupport32 libname=arossupport files=$(FILES) libdir="$(AROS_LIB32)" objdir="$(GENDIR)/$(CURDIR)/32bit" cflags="$(strip $(TARGET_ISA_32_CFLAGS) $(TARGET_CFLAGS))"
+endif
+
+%common

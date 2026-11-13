@@ -1,0 +1,520 @@
+/*
+ *  AHI driver for Raspberry Pi PWM audio output.
+ *
+ *  Uses the BCM2835 PWM peripheral with DMA-based double buffering
+ *  to play audio through the 3.5mm headphone jack (GPIO 40/45).
+ */
+
+#include <config.h>
+
+#define DEBUG 0
+#include <aros/debug.h>
+
+#include <devices/ahi.h>
+#include <dos/dostags.h>
+#include <exec/memory.h>
+#include <libraries/ahi_sub.h>
+#include <proto/ahi_sub.h>
+#include <proto/exec.h>
+#include <proto/dos.h>
+#include <proto/utility.h>
+#include <proto/kernel.h>
+#include <proto/dma.h>
+
+#include <stddef.h>
+#include <string.h>
+
+#include "library.h"
+#include "DriverData.h"
+#include "rpipwm-hwaccess.h"
+
+#define dd ((struct RPiPWMData *) AudioCtrl->ahiac_DriverData)
+
+void SlaveEntry(void);
+
+#ifdef PROCGW
+PROCGW(static, void, slaveentry, SlaveEntry);
+#else
+#define slaveentry SlaveEntry
+#endif
+
+extern APTR KernelBase;
+
+/*
+ * Supported sample rates.
+ * We support a small set of common rates that work well with
+ * the PWM clock divisor from PLLD (500 MHz).
+ */
+static const LONG frequencies[] = {
+    8000,
+    11025,
+    22050,
+    44100,
+    48000,
+};
+
+#define FREQUENCIES (sizeof frequencies / sizeof frequencies[0])
+
+
+/******************************************************************************
+** AHIsub_AllocAudio **********************************************************
+******************************************************************************/
+
+ULONG
+_AHIsub_AllocAudio(struct TagItem *taglist, struct AHIAudioCtrlDrv *AudioCtrl, struct DriverBase *AHIsubBase)
+{
+    struct RPiPWMBase *RPiPWMBase = (struct RPiPWMBase *) AHIsubBase;
+
+    AudioCtrl->ahiac_DriverData = AllocVec(sizeof(struct RPiPWMData), MEMF_CLEAR | MEMF_PUBLIC);
+
+    if (dd != NULL) {
+        dd->slavesignal = -1;
+        dd->mastersignal = AllocSignal(-1);
+        dd->mastertask = (struct Process *) FindTask(NULL);
+        dd->ahisubbase = RPiPWMBase;
+        dd->periiobase = RPiPWMBase->periiobase;
+        dd->dma_channel = DMAAllocChannel(0);
+        dd->pwm_range = PWM_AUDIO_RANGE;
+    } else {
+        return AHISF_ERROR;
+    }
+
+    if (dd->mastersignal == -1 || dd->dma_channel < 0) {
+        return AHISF_ERROR;
+    }
+
+    return (AHISF_KNOWSTEREO | AHISF_MIXING | AHISF_TIMING);
+}
+
+
+/******************************************************************************
+** AHIsub_FreeAudio ***********************************************************
+******************************************************************************/
+
+void _AHIsub_FreeAudio(struct AHIAudioCtrlDrv *AudioCtrl, struct DriverBase *AHIsubBase)
+{
+    struct RPiPWMBase *RPiPWMBase = (struct RPiPWMBase *) AHIsubBase;
+
+    /*
+     * Where the bias finally comes down - AHIsub_Stop leaves it standing so
+     * start/stop costs no PWEN edges. Ramp to an idle pin's level first, or
+     * the disable is heard.
+     */
+    if (RPiPWMBase->bias_up) {
+        pwm_ramp_dc(RPiPWMBase->periiobase, RPiPWMBase->bias_range / 2, 0);
+        pwm_stop(RPiPWMBase->periiobase);
+        pwm_clock_stop(AHIsubBase, RPiPWMBase->periiobase);
+        RPiPWMBase->bias_up = FALSE;
+    }
+
+    if (AudioCtrl->ahiac_DriverData != NULL) {
+        if (dd->dma_channel >= 0)
+            DMAFreeChannel(dd->dma_channel);
+        FreeSignal(dd->mastersignal);
+        FreeVec(AudioCtrl->ahiac_DriverData);
+        AudioCtrl->ahiac_DriverData = NULL;
+    }
+}
+
+
+/******************************************************************************
+** AHIsub_Disable *************************************************************
+******************************************************************************/
+
+void _AHIsub_Disable(struct AHIAudioCtrlDrv *AudioCtrl, struct DriverBase *AHIsubBase)
+{
+    Disable();
+}
+
+
+/******************************************************************************
+** AHIsub_Enable **************************************************************
+******************************************************************************/
+
+void _AHIsub_Enable(struct AHIAudioCtrlDrv *AudioCtrl, struct DriverBase *AHIsubBase)
+{
+    Enable();
+}
+
+
+/******************************************************************************
+** AHIsub_Start ***************************************************************
+******************************************************************************/
+
+ULONG
+_AHIsub_Start(ULONG flags, struct AHIAudioCtrlDrv *AudioCtrl, struct DriverBase *AHIsubBase)
+{
+    struct RPiPWMBase *RPiPWMBase = (struct RPiPWMBase *) AHIsubBase;
+
+    AHIsub_Stop(flags, AudioCtrl);
+
+    if (flags & AHISF_PLAY) {
+        struct TagItem proctags[] = {
+            {NP_Entry, (IPTR) &slaveentry}, {NP_Name, (IPTR) LibName}, {NP_Priority, 50}, {TAG_DONE, 0}};
+
+        ULONG buf_frames;
+        ULONG buf_bytes;
+        ULONG cb_alloc_size;
+        UBYTE *cb_raw;
+        int i;
+
+        dd->samplerate = AudioCtrl->ahiac_MixFreq;
+
+        /*
+         * Pick a PWM range near PWM_AUDIO_RANGE so samplerate * range
+         * lands close to an integer division of PLLD — the firmware
+         * programs the clock with MASH off, so PLLD/divi are the only
+         * rates it can hit (e.g. 48000: range 1042 is -0.03% off vs
+         * 1024 at +1.7%).
+         */
+        {
+            ULONG best_ppm = ~0U;
+            ULONG R;
+
+            dd->pwm_range = PWM_AUDIO_RANGE;
+            for (R = PWM_AUDIO_RANGE - 64; R <= PWM_AUDIO_RANGE + 64; R++) {
+                ULONG clk = dd->samplerate * R;
+                ULONG d = (PLLD_FREQ + clk / 2) / clk;
+                ULONG actual, err, ppm;
+
+                if (d == 0)
+                    continue;
+                actual = PLLD_FREQ / d;
+                err = (actual > clk) ? actual - clk : clk - actual;
+                ppm = (ULONG) (((unsigned long long) err * 1000000ULL) / clk);
+                if (ppm < best_ppm) {
+                    best_ppm = ppm;
+                    dd->pwm_range = R;
+                }
+            }
+        }
+
+        /*
+         * Calculate DMA buffer size.
+         * Use the AHI-requested buffer size in sample frames.
+         * Each frame = 2 channels * 4 bytes (32-bit PWM words) = 8 bytes.
+         */
+        buf_frames = AudioCtrl->ahiac_MaxBuffSamples;
+        if (buf_frames < 256)
+            buf_frames = 256;
+        buf_bytes = buf_frames * 2 * sizeof(ULONG); /* stereo, 32-bit per sample */
+
+        dd->dmabuf_samples = buf_frames;
+        dd->dmabuf_size = buf_bytes;
+
+        /* Allocate AHI mix buffer */
+        dd->mixbuffer = AllocVec(AudioCtrl->ahiac_BuffSize, MEMF_ANY | MEMF_PUBLIC);
+        if (dd->mixbuffer == NULL)
+            return AHIE_NOMEM;
+
+        /*
+         * DMA buffers. The engine reaches system RAM through the uncached
+         * bus alias, which only covers the first gigabyte, so ask for memory
+         * the alias can express: MEMF_31BIT keeps this out of the high range
+         * a 2GB-or-larger board contributes above 0x40000000.
+         */
+        for (i = 0; i < 2; i++) {
+            dd->dmabuf[i] = AllocVec(buf_bytes, MEMF_CLEAR | MEMF_PUBLIC | MEMF_31BIT);
+            if (dd->dmabuf[i] == NULL)
+                return AHIE_NOMEM;
+            if (!BCM2708_DMA_ADDRESSABLE(dd->dmabuf[i])) {
+                bug("[RPiPWM] DMA buffer at 0x%p is beyond the engine's reach\n",
+                    dd->dmabuf[i]);
+                return AHIE_NOMEM;
+            }
+        }
+
+        /*
+         * Allocate DMA control blocks.
+         * Each CB is 32 bytes and must be 32-byte aligned.
+         * Allocate enough for 2 CBs + alignment padding.
+         */
+        cb_alloc_size = sizeof(struct BCM2708DMACB) * 2 + 32;
+        cb_raw = AllocVec(cb_alloc_size, MEMF_CLEAR | MEMF_PUBLIC | MEMF_31BIT);
+        if (cb_raw == NULL)
+            return AHIE_NOMEM;
+        if (!BCM2708_DMA_ADDRESSABLE(cb_raw)) {
+            bug("[RPiPWM] DMA control blocks at 0x%p are beyond the engine's reach\n",
+                cb_raw);
+            return AHIE_NOMEM;
+        }
+
+        dd->cb_base = (struct BCM2708DMACB *) cb_raw;
+
+        /* Align to 32 bytes */
+        cb_raw = (UBYTE *) (((IPTR) cb_raw + 31) & ~(IPTR)31);
+        dd->cb[0] = (struct BCM2708DMACB *) cb_raw;
+        dd->cb[1] = (struct BCM2708DMACB *) (cb_raw + sizeof(struct BCM2708DMACB));
+
+        /* Build the DMA control block chain */
+        dma_build_control_blocks(dd, dd->periiobase);
+
+        /*
+         * Flush DMA control blocks and buffers from ARM data cache
+         * to physical RAM. The DMA engine reads via the GPU bus
+         * (uncached alias 0xC0000000) and won't see cached data.
+         */
+        CacheClearE(dd->cb[0], sizeof(struct BCM2708DMACB) * 2, CACRF_ClearD);
+        CacheClearE(dd->dmabuf[0], buf_bytes, CACRF_ClearD);
+        CacheClearE(dd->dmabuf[1], buf_bytes, CACRF_ClearD);
+
+        /*
+         * Configure hardware (but don't start DMA yet). Enabling or disabling
+         * the channels moves the pin whatever the duty - both clicks this
+         * driver used to make - so PWEN is touched once, on the first session,
+         * and the bias stands until AHIsub_FreeAudio. Stopping the clock
+         * freezes the pin too, so an unchanged rate keeps it running.
+         */
+        {
+            ULONG target = dd->samplerate * dd->pwm_range;
+
+            if (RPiPWMBase->bias_up && RPiPWMBase->bias_target != target) {
+                /* A rate change needs the clock stopped, so drop the bias and
+                 * bring it back - the ramps are inaudible, PWEN is not. */
+                pwm_ramp_dc(dd->periiobase, RPiPWMBase->bias_range / 2, 0);
+                pwm_stop(dd->periiobase);
+                RPiPWMBase->bias_up = FALSE;
+            }
+
+            if (!RPiPWMBase->bias_up) {
+                pwm_clock_setup(AHIsubBase, dd->periiobase, dd->samplerate,
+                                dd->pwm_range);
+                pwm_init(dd->periiobase, dd->pwm_range);
+                pwm_gpio_setup(AHIsubBase, dd->periiobase);
+                pwm_ramp_dc(dd->periiobase, 0, dd->pwm_range / 2);
+
+                RPiPWMBase->bias_up = TRUE;
+                RPiPWMBase->bias_target = target;
+            } else
+                pwm_rearm(dd->periiobase, dd->pwm_range);
+
+            RPiPWMBase->bias_range = dd->pwm_range;
+        }
+
+        /*
+         * Start slave task.
+         *
+         * The slave runs at higher priority than the caller and busy-waits
+         * for tc_UserData. Forbid()/Permit() guarantees we set tc_UserData
+         * before the slave can be scheduled — required on UP, where the
+         * slave would otherwise preempt us mid-CreateNewProc and spin
+         * forever.
+         */
+        Forbid();
+        dd->slavetask = CreateNewProc(proctags);
+
+        if (dd->slavetask != NULL) {
+            dd->slavetask->pr_Task.tc_UserData = AudioCtrl;
+            __sync_synchronize();
+        }
+        Permit();
+
+        if (dd->slavetask != NULL) {
+            /* Wait for slave to allocate its signal and pre-fill buffers */
+            Wait(1L << dd->mastersignal);
+
+            if (dd->slavetask == NULL) {
+                return AHIE_UNKNOWN;
+            }
+        } else {
+            return AHIE_NOMEM;
+        }
+
+        /*
+         * Register IRQ and start DMA AFTER the slave is ready.
+         * The slave has allocated slavesignal and pre-filled both
+         * DMA buffers, so IRQ signals won't be lost.
+         */
+        dd->irq_handle = KrnAddIRQHandler(
+                             BCM2708_DMA_IRQ(dd->periiobase, dd->dma_channel),
+                             dma_irq_handler, dd, SysBase);
+        D(bug("[RPiPWM] DMA channel %u, irq %u, handler %p\n",
+            dd->dma_channel, BCM2708_DMA_IRQ(dd->periiobase, dd->dma_channel),
+            dd->irq_handle));
+
+#if 0   /* Re-measure the PWM DREQ on a new SoC - see dma_probe_dreq(). */
+        dd->dreq = dma_probe_dreq(AHIsubBase, dd, AudioCtrl->ahiac_MixFreq * 2 / 100);
+        dma_build_control_blocks(dd, dd->periiobase);
+        CacheClearE(dd->cb[0], sizeof(struct BCM2708DMACB) * 2, CACRF_ClearD);
+#endif
+
+        dma_setup(dd->periiobase, dd->dma_channel, GPU_BUS_ADDR(dd->cb[0]));
+
+        /* The FIFO now holds the same level the data register is transmitting,
+         * so switching the channels over to it is not a step. */
+        pwm_fifo_enable(dd->periiobase);
+    }
+
+    if (flags & AHISF_RECORD) {
+        return AHIE_UNKNOWN; /* Recording not supported */
+    }
+
+    return AHIE_OK;
+}
+
+
+/******************************************************************************
+** AHIsub_Update **************************************************************
+******************************************************************************/
+
+void _AHIsub_Update(ULONG flags, struct AHIAudioCtrlDrv *AudioCtrl, struct DriverBase *AHIsubBase)
+{
+    /* Nothing to do — buffer parameters don't change dynamically */
+}
+
+
+/******************************************************************************
+** AHIsub_Stop ****************************************************************
+******************************************************************************/
+
+void _AHIsub_Stop(ULONG flags, struct AHIAudioCtrlDrv *AudioCtrl, struct DriverBase *AHIsubBase)
+{
+    if (flags & AHISF_PLAY) {
+        int i;
+
+        /*
+         * Nothing set up: AHIsub_Start calls us defensively on entry and AHI
+         * adds its own call after the application stops. Neither has hardware
+         * to release, and the teardown ramp would spend 64 ms going nowhere.
+         */
+        if (dd->dmabuf[0] == NULL)
+            return;
+
+        /* Signal slave task to exit */
+        if (dd->slavetask != NULL) {
+            Signal((struct Task *) dd->slavetask, SIGBREAKF_CTRL_C);
+            Wait(1L << dd->mastersignal);
+        }
+
+        /* Remove IRQ handler first so no callbacks fire during teardown */
+        if (dd->irq_handle != NULL) {
+            KrnRemIRQHandler(dd->irq_handle);
+            dd->irq_handle = NULL;
+        }
+
+        /*
+         * Teardown mirrors startup: take over at the level actually being
+         * transmitted - jumping from a loud sample to anywhere else is itself
+         * the click you hear closing a player mid-note - then walk it down.
+         */
+        {
+            ULONG level = dma_current_level(dd);
+
+            /*
+             * Off the FIFO *before* stopping the DMA: the other way round,
+             * dma_stop()'s settling delays outlast the ~180us the FIFO holds,
+             * so the channels read it empty and the output drops out - GAPO1/2
+             * in STA, and a click. pwm_rearm() empties the FIFO next session.
+             * The block stays enabled and clocked; PWEN is a click of its own.
+             */
+            pwm_dat_hold(dd->periiobase, level);
+            dma_stop(dd->periiobase, dd->dma_channel);
+            pwm_ramp_dc(dd->periiobase, level, dd->pwm_range / 2);
+        }
+
+        dd->slavesignal = -1;
+
+        /* Free buffers */
+        for (i = 0; i < 2; i++) {
+            FreeVec(dd->dmabuf[i]);
+            dd->dmabuf[i] = NULL;
+        }
+
+        FreeVec(dd->cb_base);
+        dd->cb_base = NULL;
+        dd->cb[0] = NULL;
+        dd->cb[1] = NULL;
+
+        FreeVec(dd->mixbuffer);
+        dd->mixbuffer = NULL;
+    }
+
+    if (flags & AHISF_RECORD) {
+        /* Nothing */
+    }
+}
+
+
+/******************************************************************************
+** AHIsub_GetAttr *************************************************************
+******************************************************************************/
+
+IPTR _AHIsub_GetAttr(ULONG attribute,
+                     LONG argument,
+                     IPTR def,
+                     struct TagItem *taglist,
+                     struct AHIAudioCtrlDrv *AudioCtrl,
+                     struct DriverBase *AHIsubBase)
+{
+    size_t i;
+
+    switch (attribute) {
+    case AHIDB_Bits:
+        return 16;
+
+    case AHIDB_Frequencies:
+        return FREQUENCIES;
+
+    case AHIDB_Frequency:
+        return (LONG) frequencies[argument];
+
+    case AHIDB_Index:
+        if (argument <= frequencies[0]) {
+            return 0;
+        }
+
+        if (argument >= frequencies[FREQUENCIES - 1]) {
+            return FREQUENCIES - 1;
+        }
+
+        for (i = 1; i < FREQUENCIES; i++) {
+            if (frequencies[i] > argument) {
+                if ((argument - frequencies[i - 1]) < (frequencies[i] - argument)) {
+                    return i - 1;
+                } else {
+                    return i;
+                }
+            }
+        }
+
+        return 0;
+
+    case AHIDB_Author:
+        return (IPTR) "AROS Development Team";
+
+    case AHIDB_Copyright:
+        return (IPTR) "AROS Public License";
+
+    case AHIDB_Version:
+        return (IPTR) LibIDString;
+
+    case AHIDB_Record:
+        return FALSE;
+
+    case AHIDB_Realtime:
+        return TRUE;
+
+    case AHIDB_Outputs:
+        return 1;
+
+    case AHIDB_Output:
+        return (IPTR) "3.5mm Headphone Jack";
+
+    default:
+        return def;
+    }
+}
+
+
+/******************************************************************************
+** AHIsub_HardwareControl *****************************************************
+******************************************************************************/
+
+ULONG
+_AHIsub_HardwareControl(ULONG attribute,
+                        LONG argument,
+                        struct AHIAudioCtrlDrv *AudioCtrl,
+                        struct DriverBase *AHIsubBase)
+{
+    return 0;
+}

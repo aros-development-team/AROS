@@ -1,0 +1,17 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+%build_with_configure mmake=host-adflib compiler=host  \
+    prefix="$(CROSSTOOLSDIR)"
+
+NOWARN_FLAGS := $(NOWARN_STRINGOP_TRUNCATION)
+USER_CFLAGS := $(NOWARN_FLAGS)
+
+AROSADFLIB_ENV=ac_cv_func_malloc_0_nonnull=yes ac_cv_func_realloc_0_nonnull=yes
+AROSADFLIB_OPTS=--with-test-DIR=$(AROS_TESTS)/ADFlib --with-example-DIR=$(AROS_C)
+
+%build_with_configure mmake=linklib-adflib \
+    prefix="$(AROS_DEVELOPER)" \
+    extraoptions="$(AROSADFLIB_OPTS)" \
+    config_env_extra="$(AROSADFLIB_ENV)" \
+    use_build_env=yes nlsflag=no xflag=no

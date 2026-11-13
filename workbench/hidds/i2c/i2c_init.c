@@ -1,0 +1,35 @@
+/*
+    Copyright (C) 2003-2026, The AROS Development Team. All rights reserved.
+*/
+
+#include <aros/symbolsets.h>
+
+#include <exec/execbase.h>
+#include <exec/types.h>
+#include <exec/resident.h>
+#include <exec/libraries.h>
+#include <exec/memory.h>
+#include <exec/lists.h>
+#include <exec/semaphores.h>
+#include <exec/ports.h>
+#include <dos/bptr.h>
+
+#include <utility/utility.h>
+
+#define DEBUG 0
+
+#include <proto/exec.h>
+#include <proto/oop.h>
+#include <aros/debug.h>
+
+#include "i2c.h"
+#include LC_LIBDEFS_FILE
+
+static int I2C_Init(LIBBASETYPEPTR LIBBASE)
+{
+    D(bug("[I2C] Init\n"));
+
+    return TRUE;
+}
+
+ADD2INITLIB(I2C_Init, 0)

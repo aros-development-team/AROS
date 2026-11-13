@@ -1,0 +1,398 @@
+/*
+    Copyright (C) 2013-2026, The AROS Development Team. All rights reserved.
+
+    AArch64 exception handlers.
+    Called from vectors.S with a pointer to the exception frame in x0.
+*/
+
+#include <inttypes.h>
+#include <aros/kernel.h>
+#include <aros/libcall.h>
+#include <hardware/intbits.h>
+#include <stddef.h>
+#include <string.h>
+
+#include <proto/exec.h>
+#include <proto/kernel.h>
+
+#include "kernel_cpu.h"
+#include "kernel_intern.h"
+#include "kernel_debug.h"
+#include "kernel_interrupts.h"
+#include "kernel_intr.h"
+
+#define DREGS(x)
+#define DIRQ(x)
+#define D(x)
+
+/* Linker exports from vectors.S */
+extern void *__aarch64_vectors;
+extern void __aarch64_halt(void);
+
+/* External handler from syscall.c */
+extern void handle_syscall(void *regs);
+
+/* Forward declarations */
+void handle_undef(regs_t *regs, uint64_t esr);
+void krnCheckExcStack(regs_t *regs);
+void handle_dataabort(regs_t *regs, uint64_t esr);
+void handle_prefetchabort(regs_t *regs, uint64_t esr);
+
+void ictl_enable_irq(irqid_t irq, struct KernelBase *KernelBase)
+{
+    if (__arm_arosintern.ARMI_IRQEnable)
+        __arm_arosintern.ARMI_IRQEnable(irq);
+}
+
+void ictl_disable_irq(irqid_t irq, struct KernelBase *KernelBase)
+{
+    if (__arm_arosintern.ARMI_IRQDisable)
+        __arm_arosintern.ARMI_IRQDisable(irq);
+}
+
+/* AArch64 ESR_EL1 Exception Class values */
+#define ESR_EC_SVC_AARCH64      0x15    /* SVC from AArch64 */
+#define ESR_EC_IABT_LOWER       0x20    /* Instruction Abort from lower EL */
+#define ESR_EC_IABT_CURRENT     0x21    /* Instruction Abort from current EL */
+#define ESR_EC_PC_ALIGN         0x22    /* PC alignment fault */
+#define ESR_EC_DABT_LOWER       0x24    /* Data Abort from lower EL */
+#define ESR_EC_DABT_CURRENT     0x25    /* Data Abort from current EL */
+#define ESR_EC_SP_ALIGN         0x26    /* SP alignment fault */
+#define ESR_EC_UNKNOWN          0x00    /* Unknown reason */
+
+/*
+ * handle_sync: Synchronous exception handler.
+ * Dispatches based on ESR_EL1 Exception Class.
+ */
+void handle_sync(regs_t *regs)
+{
+    uint64_t esr;
+    uint32_t ec;
+
+    krnCheckExcStack(regs);
+
+    asm volatile("mrs %0, esr_el1" : "=r"(esr));
+    ec = (esr >> 26) & 0x3f;
+
+    switch (ec)
+    {
+    case ESR_EC_SVC_AARCH64:
+        handle_syscall(regs);
+        break;
+
+    case ESR_EC_DABT_LOWER:
+    case ESR_EC_DABT_CURRENT:
+        handle_dataabort(regs, esr);
+        break;
+
+    case ESR_EC_IABT_LOWER:
+    case ESR_EC_IABT_CURRENT:
+        handle_prefetchabort(regs, esr);
+        break;
+
+    default:
+        handle_undef(regs, esr);
+        break;
+    }
+}
+
+/*
+ * SP_EL1 watchdog (real-Pi bring-up): exception frames only ever nest
+ * DOWNWARD from the first frame's ceiling, so a frame whose top lies
+ * ABOVE the recorded ceiling means somebody moved SP_EL1 up -- report
+ * the interrupted context the FIRST time it happens, at the moment of
+ * corruption, instead of crashing much later on garbage stack data.
+ */
+void krnCheckExcStack(regs_t *regs)
+{
+    static uintptr_t sp_ceiling = 0;
+    uintptr_t top = (uintptr_t)regs + AARCH64_FRAME_SIZE;
+
+    if (!sp_ceiling)
+    {
+        sp_ceiling = top;
+    }
+    else if (top > sp_ceiling)
+    {
+        bug("[Kernel] !!! SP_EL1 ABOVE CEILING: frame top %p > %p\n",
+            (void *)top, (void *)sp_ceiling);
+        bug("[Kernel] !!! interrupted ctx: pc=%p lr=%p sp=%p spsr=%p\n",
+            (void *)regs->pc, (void *)regs->lr, (void *)regs->sp,
+            (void *)regs->cpsr);
+        sp_ceiling = top;   /* re-arm at new level to avoid log floods */
+    }
+}
+
+/*
+ * handle_irq: IRQ exception handler.
+ */
+void handle_irq(regs_t *regs)
+{
+    DIRQ(bug("[Kernel] ## IRQ ##\n"));
+    krnCheckExcStack(regs);
+
+    DREGS(cpu_DumpRegs(regs));
+
+    if (__arm_arosintern.ARMI_IRQProcess)
+        __arm_arosintern.ARMI_IRQProcess();
+
+    DIRQ(bug("[Kernel] IRQ processing finished\n"));
+}
+
+/*
+ * handle_fiq: FIQ exception handler.
+ */
+void handle_fiq(regs_t *regs)
+{
+    DIRQ(bug("[Kernel] ## FIQ ##\n"));
+
+    if (__arm_arosintern.ARMI_FIQProcess)
+        __arm_arosintern.ARMI_FIQProcess();
+
+    DIRQ(bug("[Kernel] FIQ processing finished\n"));
+}
+
+/*
+ * handle_serror: SError (asynchronous abort) handler.
+ */
+void handle_serror(regs_t *regs)
+{
+    uint64_t esr;
+    asm volatile("mrs %0, esr_el1" : "=r"(esr));
+
+    bug("[Kernel] SError (Asynchronous Abort)\n");
+    bug("[Kernel]    ESR_EL1=0x%016lx PC=0x%016lx\n", esr, regs->pc);
+
+    cpu_DumpRegs(regs);
+    __aarch64_halt();
+}
+
+/*
+ * Dump the instruction stream around a faulting PC, and a few stack
+ * words.
+ *
+ * The usual reason we get here is a branch through a stale or unrelocated
+ * function pointer, so pc can be any value at all. The naive version
+ * indexed pc[-4] and faulted in the handler itself when pc was a small
+ * integer - the nested Data Abort then replaced the very diagnostic it
+ * was printing. Stay inside pc's own page: the instruction fetch at pc
+ * succeeded (otherwise this would be an instruction abort), so that page
+ * is mapped, while the one below or above need not be.
+ */
+static void dump_code_around(uint64_t pc, uint64_t lr, uint64_t sp)
+{
+    uint64_t page = pc & ~0xfffULL;
+    uint64_t a, e;
+
+    if (pc & 3)
+    {
+        bug("[Kernel]    pc 0x%016lx is unaligned, no code dump\n", pc);
+    }
+    else
+    {
+        a = (pc - page >= 16) ? pc - 16 : page;
+        e = (page + 0x1000 - pc > 16) ? pc + 16 : page + 0x1000;
+
+        bug("[Kernel]    code @ 0x%016lx:", a);
+        for (; a < e; a += 4)
+            bug("%s %08x", (a == pc) ? " >" : "", *(uint32_t *)a);
+        bug("   (> = pc)\n");
+    }
+
+    bug("[Kernel]    lr=0x%016lx sp=0x%016lx\n", lr, sp);
+
+    if (sp & 7)
+    {
+        bug("[Kernel]    sp is unaligned, no stack dump\n");
+    }
+    else
+    {
+        uint64_t stop = (sp & ~0xfffULL) + 0x1000;
+        int i;
+
+        bug("[Kernel]    stack:");
+        for (i = 0; i < 8 && sp + 8 <= stop; i++, sp += 8)
+            bug(" %016lx", *(uint64_t *)sp);
+        bug("\n");
+    }
+}
+
+/*
+ * handle_undef: Unknown/undefined instruction handler.
+ */
+void handle_undef(regs_t *regs, uint64_t esr)
+{
+    bug("[Kernel] Trap AArch64 Undefined/Unknown Exception\n");
+    bug("[Kernel]    exception #4 (Illegal instruction)\n");
+    bug("[Kernel]    ESR_EL1=0x%016lx EC=0x%02x at 0x%016lx\n",
+        esr, (uint32_t)((esr >> 26) & 0x3f), regs->pc);
+
+    /*
+     * Bring-up diagnostic: the byte pattern around PC distinguishes a
+     * jump into non-code (zeroes/data) from a mis-relocated or genuinely
+     * unsupported instruction, and lr plus the top stack words locate
+     * the caller within the seglist.
+     */
+    dump_code_around(regs->pc, regs->lr, regs->sp);
+
+    if (krnRunExceptionHandlers(KernelBase, 4, regs))
+        return;
+
+    D(bug("[Kernel] exception handler(s) returned\n"));
+
+    if (core_Trap(4, regs))
+    {
+        D(bug("[Kernel] trap handler(s) returned\n"));
+        return;
+    }
+
+    bug("[Kernel] UNHANDLED EXCEPTION #4\n");
+    cpu_DumpRegs(regs);
+    __aarch64_halt();
+}
+
+/*
+ * handle_dataabort: Data abort handler.
+ */
+void handle_dataabort(regs_t *regs, uint64_t esr)
+{
+    uint64_t far;
+
+    asm volatile("mrs %0, far_el1" : "=r"(far));
+
+    bug("[Kernel] Trap AArch64 Data Abort Exception\n");
+    bug("[Kernel]    exception #2 (Bus Error)\n");
+    bug("[Kernel]    ESR_EL1=0x%016lx FAR_EL1=0x%016lx PC=0x%016lx\n", esr, far, regs->pc);
+
+    /* Dump faulting instruction context (page-clamped: a data abort can
+     * also be taken with a wild pc, e.g. when the stack was corrupted). */
+    dump_code_around(regs->pc, regs->lr, regs->sp);
+
+    cpu_DumpRegs(regs);
+
+    /* Diagnostic: dump crashed task info */
+    {
+        tls_t *__tls = TLS_PTR_GET();
+        struct Task *task = __tls ? __tls->ThisTask : NULL;
+
+        bug("[Kernel] SysBase=0x%p\n", SysBase);
+
+        if (task) {
+            struct ETask *et;
+            bug("[Kernel] Current task: '%s' @ 0x%p\n",
+                task->tc_Node.ln_Name ? task->tc_Node.ln_Name : "<NULL>", task);
+            et = task->tc_UnionETask.tc_ETask;
+            if (et && et->et_RegFrame) {
+                regs_t *ctx = (regs_t *)et->et_RegFrame;
+                bug("[Kernel] ExceptionContext @ 0x%p (et_RegFrame):\n", ctx);
+                bug("[Kernel]   x0-x3:  %016lx %016lx %016lx %016lx\n",
+                    ctx->x[0], ctx->x[1], ctx->x[2], ctx->x[3]);
+                bug("[Kernel]   fp=%016lx sp=%016lx lr=%016lx pc=%016lx cpsr=%08x\n",
+                    ctx->fp, ctx->sp, ctx->lr, ctx->pc, ctx->cpsr);
+            } else {
+                bug("[Kernel] No ExceptionContext (et=0x%p)\n", et);
+            }
+        } else {
+            bug("[Kernel] No current task (tls=0x%p)\n", __tls);
+        }
+    }
+
+    if (krnRunExceptionHandlers(KernelBase, 2, regs))
+        return;
+
+    D(bug("[Kernel] exception handler(s) returned\n"));
+
+    if (core_Trap(2, regs))
+    {
+        D(bug("[Kernel] trap handler(s) returned\n"));
+        return;
+    }
+
+    bug("[Kernel] UNHANDLED EXCEPTION #2\n");
+    cpu_DumpRegs(regs);
+    __aarch64_halt();
+}
+
+/*
+ * handle_prefetchabort: Instruction abort handler.
+ */
+void handle_prefetchabort(regs_t *regs, uint64_t esr)
+{
+    uint64_t far;
+
+    asm volatile("mrs %0, far_el1" : "=r"(far));
+
+    bug("[Kernel] Trap AArch64 Instruction Abort Exception\n");
+    bug("[Kernel]    exception #3 (Address Error)\n");
+    bug("[Kernel]    ESR_EL1=0x%016lx FAR_EL1=0x%016lx at 0x%016lx\n", esr, far, regs->pc);
+
+    cpu_DumpRegs(regs);
+
+    if (krnRunExceptionHandlers(KernelBase, 3, regs))
+        return;
+
+    D(bug("[Kernel] exception handler(s) returned\n"));
+
+    if (core_Trap(3, regs))
+    {
+        D(bug("[Kernel] trap handler(s) returned\n"));
+        return;
+    }
+
+    bug("[Kernel] UNHANDLED EXCEPTION #3\n");
+    cpu_DumpRegs(regs);
+    __aarch64_halt();
+}
+
+
+/* ================================================================== */
+/*  Cache maintenance                                                 */
+/* ================================================================== */
+
+void aarch64_flush_cache(uintptr_t addr, uint32_t length)
+{
+    while (length)
+    {
+        asm volatile("dc civac, %0" :: "r"(addr));
+        addr += 64;
+        length = (length > 64) ? length - 64 : 0;
+    }
+    asm volatile("dsb sy" ::: "memory");
+}
+
+void aarch64_icache_invalidate(uintptr_t addr, uint32_t length)
+{
+    while (length)
+    {
+        asm volatile("ic ivau, %0" :: "r"(addr));
+        addr += 64;
+        length = (length > 64) ? length - 64 : 0;
+    }
+    asm volatile("dsb sy" ::: "memory");
+    asm volatile("isb" ::: "memory");
+}
+
+
+/* ================================================================== */
+/*  Interrupt setup                                                   */
+/* ================================================================== */
+
+/* VBAR_EL1 is per-core and resets UNKNOWN, so every core sets it. The
+ * interrupt controller behind core_SetupIntr is global - hence split. */
+void core_SetupIntrCore(void)
+{
+    asm volatile("msr vbar_el1, %0" :: "r"(&__aarch64_vectors));
+    asm volatile("isb" ::: "memory");
+}
+
+void core_SetupIntr(void)
+{
+    D(bug("[Kernel] Initializing AArch64 exception vectors\n"));
+
+    core_SetupIntrCore();
+
+    D(bug("[Kernel] VBAR_EL1 set to 0x%p\n", &__aarch64_vectors));
+
+    if (__arm_arosintern.ARMI_IRQInit)
+        __arm_arosintern.ARMI_IRQInit();
+}

@@ -1,0 +1,466 @@
+/*
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
+
+    Desc: GetDeviceProc() - Find the filesystem for a path.
+*/
+
+#include <aros/debug.h>
+
+#include <proto/exec.h>
+#include <proto/utility.h>
+
+#include "dos_intern.h"
+
+#include <string.h>
+
+/* room for a per-user assign's target once its tokens are expanded */
+#define USERPATH_MAX    512
+
+extern struct Process *r(struct DeviceNode *dn, struct DosLibrary *DOSBase);
+static struct DevProc *deviceproc_internal(struct DosLibrary *DOSBase, CONST_STRPTR name, struct DevProc *dp);
+
+/*****************************************************************************
+
+    NAME */
+#include <proto/dos.h>
+
+        AROS_LH2(struct DevProc *, GetDeviceProc,
+
+/*  SYNOPSIS */
+        AROS_LHA(CONST_STRPTR, name, D1),
+        AROS_LHA(struct DevProc *, dp, D2),
+
+/*  LOCATION */
+        struct DosLibrary *, DOSBase, 107, Dos)
+
+/*  FUNCTION
+        GetDeviceProc() will search for the filesystem handler which
+        you should send a command to for a specific path.
+
+        By calling GetDeviceProc() multiple times, the caller will
+        be able to handle multi-assign paths.
+
+        The first call to GetDeviceProc() should have the |dp| parameter
+        as NULL.
+
+    INPUTS
+        name - Name of the object to find.
+        dp   - Previous result of GetDeviceProc() or NULL.
+
+    RESULT
+        A pointer to a DevProc structure containing the information
+        required to send a command to a filesystem.
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+        Currently doesn't return dvp_DevNode for locks which are
+        relative to "PROGDIR:", ":", or the current directory.
+
+    SEE ALSO
+        FreeDeviceProc()
+
+    INTERNALS
+
+*****************************************************************************/
+{
+    AROS_LIBFUNC_INIT
+
+    struct DevProc *dp2;
+    
+    D(bug("[GetDeviceProc] '%s':0x%p\n", name, dp));
+    dp2 = deviceproc_internal(DOSBase, name, dp);
+
+#if DEBUG
+    bug("[GetDeviceProc] = 0x%p", dp2);
+    if (dp2)
+        bug(", port=0x%p lock=0x%p dv=0x%p\n", dp2->dvp_Port, dp2->dvp_Lock, dp2->dvp_DevNode);
+    RawPutChar('\n');
+#endif
+
+    return dp2;
+
+    AROS_LIBFUNC_EXIT
+
+} /* GetDeviceProc */
+
+/* skip past *all consecutive entries* with the same lock */
+static struct AssignList *deviceproc_nextassignlock(struct AssignList *al, BPTR lock) {
+    while (al != NULL && al->al_Lock == lock) {
+        al = al->al_Next;
+    }
+    return al;
+}
+
+/* Describe the filesystem a lock (or, without one, the boot volume) is on */
+static void deviceproc_fromlock(struct DosLibrary *DOSBase, struct DevProc *dp, BPTR lock)
+{
+    if (lock) {
+        struct FileLock *fl = BADDR(lock);
+        dp->dvp_Port = fl->fl_Task;
+        dp->dvp_Lock = lock;
+        dp->dvp_DevNode = BADDR(fl->fl_Volume);
+    } else {
+        dp->dvp_Port = DOSBase->dl_Root->rn_BootProc;
+        dp->dvp_Lock = BNULL;
+        dp->dvp_DevNode = NULL;
+    }
+    dp->dvp_Flags = 0;
+}
+
+static struct DevProc *deviceproc_internal(struct DosLibrary *DOSBase, CONST_STRPTR name, struct DevProc *dp)
+{
+    LONG err = 0;
+    struct Process *pr = (struct Process *)FindTask(NULL);
+    struct DosList *dl = NULL;
+    char vol[32];
+    LONG len;
+    BPTR lock = BNULL;
+    BOOL res;
+    CONST_STRPTR origname = name;
+
+    ASSERT_VALID_PROCESS(pr);
+
+    /* if they passed us the result of a previous call, then they want to
+     * loop over the targets of a multidirectory assign */
+    if (dp != NULL) {
+
+        /* if what they passed us is not a multidirectory assign, then there's
+         * nothing for us to do */
+        if (dp->dvp_DevNode != NULL &&
+            (dp->dvp_DevNode->dol_Type != DLT_DIRECTORY || !(dp->dvp_Flags & DVPF_ASSIGN))) {
+
+            /* cleanup */
+            if (dp->dvp_Flags & DVPF_UNLOCK)
+                UnLock(dp->dvp_Lock);
+
+            goto no_more_entries;
+        }
+
+        /* it's fine, we'll start from here */
+        dl = dp->dvp_DevNode;
+
+        /* lock the dos list here, to match the result of the next block */
+        LockDosList(LDF_ALL | LDF_READ);
+    }
+
+    /* otherwise we need to find a place to start in the doslist based on the
+     * name they passed in */
+    else {
+        if (name == NULL || Strnicmp(name, "NIL:", 4) == 0) {
+            SetIoErr(ERROR_DEVICE_NOT_MOUNTED);
+            return NULL;
+        }
+
+         /* allocate structure for return */
+        if ((dp = AllocMem(sizeof(struct DevProc), MEMF_ANY | MEMF_CLEAR)) == NULL) {
+            SetIoErr(ERROR_NO_FREE_STORE);
+            return NULL;
+        }
+
+        /* something real, work out what it's relative to */
+        if (Strnicmp(name, "PROGDIR:", 8) == 0) {
+            lock = pr->pr_HomeDir;
+            /* I am not sure if these are correct but AOS does return
+             * non-NULL PROGDIR: handle even if pr_HomeDir is cleared */
+            if (!lock)
+                lock = pr->pr_CurrentDir;
+            deviceproc_fromlock(DOSBase, dp, lock);
+            return dp;
+        }
+
+        /* extract the volume name */
+        len = SplitName(name, ':', vol, 0, sizeof(vol) - 1);
+
+        /* if there wasn't one (or we found a lone ':') -> current dir */
+        if (len <= 1) {
+            lock = pr->pr_CurrentDir;
+            /* if we got NULL, then it's relative to the system root lock */
+            deviceproc_fromlock(DOSBase, dp, lock);
+
+            /* Jump to the root directory if name[0] == ':' */
+            if (name[0] == ':')
+                dp->dvp_Lock = (dp->dvp_DevNode) ? dp->dvp_DevNode->dol_Lock : BNULL;
+
+            return dp;
+        }
+ 
+        do {
+            /* now find the doslist entry for the named volume */
+            dl = LockDosList(LDF_ALL | LDF_READ);
+            dl = FindDosEntry(dl, vol, LDF_ALL);
+
+            /* not found, bail out */
+            if (dl == NULL) {
+                UnLockDosList(LDF_ALL | LDF_READ);
+
+                if (ErrorReport(ERROR_DEVICE_NOT_MOUNTED, REPORT_INSERT, (IPTR)vol, NULL) == DOSTRUE)
+                    goto fail;
+            }
+        } while(dl == NULL);
+    }
+
+    /* at this point, we have an allocated devproc in dp, the doslist is
+     * locked for read, and we have the entry for the named "volume"
+     * (device, assign, etc) in dl and a filename relative to that in name */
+
+    /* late assign. we resolve the target and then promote the doslist entry
+     * to full assign */
+    if (dl->dol_Type == DLT_LATE) {
+        /* AssignAddToList() (Assign PREPEND on a deferred assign) may
+         * already have given the entry its primary lock and left the type
+         * alone; only lock the target name when it has none yet */
+        lock = dl->dol_Lock ? BNULL : Lock(dl->dol_misc.dol_assign.dol_AssignName, SHARED_LOCK);
+
+        /* didn't find the target */
+        if (lock == BNULL && dl->dol_Lock == BNULL)
+            goto fail_unlock;
+
+        /* Directly change assign type without calling AssignXXX(),
+         * mimics AOS behavior, AOS programs assume it is safe to
+         * keep LDF_WRITE lock while calling Lock("late assign:");
+         *
+         * The DosList is only held with a READ lock here, and the Lock()
+         * above blocks on a handler, so several tasks can race this
+         * promotion for the same entry - and each of them used to
+         * FreeVec() the same assign name, corrupting the allocator (the
+         * adjacent DosList nodes were absorbed into the free list while
+         * still linked). Claim the promotion atomically: the first task
+         * performs it, later ones discard their duplicate target lock
+         * and use the promoted entry. The name string must not be freed
+         * here - a racing task may still be inside Lock() on it - so it
+         * stays attached to the node: every path that frees or replaces
+         * dol_AssignName (AssignLock/AssignPath/AssignLate removal,
+         * AssignAddToList) runs under the WRITE lock, which cannot be
+         * acquired while any promoter still holds READ, so the normal
+         * assign teardown releases it at a safe time.
+         */
+        Forbid();
+        if (dl->dol_Type == DLT_LATE) {
+            if (dl->dol_Lock == BNULL)
+                dl->dol_Lock = lock;
+            else if (lock != BNULL)
+                UnLock(lock);
+            dl->dol_Task = ((struct FileLock*)BADDR(dl->dol_Lock))->fl_Task;
+            dl->dol_Type = DLT_DIRECTORY;
+            Permit();
+        } else {
+            Permit();
+            if (lock != BNULL)
+                UnLock(lock);
+        }
+
+        /* the entry is a plain assign now - possibly a multi-directory one
+         * when directories were added before its first use - so it is
+         * handled below like any other DLT_DIRECTORY: the caller must learn
+         * about the list (DVPF_ASSIGN), or objects in the added directories
+         * are not found on the first access through the assign */
+    }
+
+    /* nonbinding assign. like a late assign, but with no doslist promotion */
+    if (dl->dol_Type == DLT_NONBINDING) {
+        CONST_STRPTR target = dl->dol_misc.dol_assign.dol_AssignName;
+
+        /*
+         * Multi-user: a per-user assign ("Assign T: RAM:T/%u USER") holds
+         * user tokens, which security.library expands for the owner of
+         * this task - each time, so every user gets their own directory. Its
+         * last directory is created on first use, here in the user's
+         * task, so it is theirs. Without security.library (or on a system
+         * that is not multi-user) the target is used as it is written.
+         */
+        if (SECURITY_ACTIVE && strchr((const char *)target, '%')) {
+            ULONG tlen = strlen((const char *)target) + 1;
+            STRPTR copy = AllocVec(tlen + USERPATH_MAX, MEMF_ANY);
+            STRPTR path = copy ? copy + tlen : NULL;
+            struct TagItem tags[] = { { secT_BufferSize, USERPATH_MAX }, { TAG_DONE, 0 } };
+
+            if (copy == NULL) {
+                err = ERROR_NO_FREE_STORE;
+                goto fail_unlock;
+            }
+            /* the expansion asks the security server: not with the list held */
+            CopyMem((APTR)target, copy, tlen);
+            UnLockDosList(LDF_ALL | LDF_READ);
+
+            if (secExpandPathA(copy, path, tags)) {
+                lock = Lock(path, SHARED_LOCK);
+                if (lock == BNULL && IoErr() == ERROR_OBJECT_NOT_FOUND) {
+                    BPTR dir = CreateDir(path);
+
+                    if (dir != BNULL) {
+                        UnLock(dir);
+                        lock = Lock(path, SHARED_LOCK);
+                    }
+                }
+            } else if (IoErr() == ERROR_NOT_IMPLEMENTED)
+                lock = Lock(copy, SHARED_LOCK);
+            else
+                lock = BNULL;
+            FreeVec(copy);
+
+            if (lock == BNULL)
+                goto fail;
+            goto nonbinding_done;
+        }
+
+        lock = Lock(dl->dol_misc.dol_assign.dol_AssignName, SHARED_LOCK);
+
+        /* didn't find the target; Lock() has set IoErr() */
+        if (lock == BNULL)
+            goto fail_unlock;
+
+        UnLockDosList(LDF_ALL | LDF_READ);
+
+nonbinding_done:
+        /* just fill out the dp and return */
+        dp->dvp_Port = ((struct FileLock *) BADDR(lock))->fl_Task;
+        dp->dvp_Lock = lock;
+        dp->dvp_Flags = DVPF_UNLOCK;   /* remember to unlock in FreeDeviceNode() */
+        dp->dvp_DevNode = dl;
+
+        return dp;
+    }
+
+    /* devices and volumes are easy */
+    if (dl->dol_Type == DLT_DEVICE || dl->dol_Type == DLT_VOLUME)
+    {
+        struct MsgPort *newhandler = NULL;
+
+        if (dl->dol_Type == DLT_DEVICE)
+        {
+            /* Check if the handler is not started */
+            newhandler = dl->dol_Task;
+            if (!newhandler)
+            {
+                D(bug("[GetDeviceProc] Accessing device '%b', path='%s'\n", dl->dol_Name, origname));
+
+                /*
+                 * Unlock before starting handler, handler may internally
+                 * require dos list locks, for example to add volume node.
+                 */
+                UnLockDosList(LDF_ALL | LDF_READ);
+
+                newhandler = RunHandler((struct DeviceNode *)dl, origname, DOSBase);
+                if (!newhandler)
+                {
+                    err = ERROR_DEVICE_NOT_MOUNTED;
+                    goto fail;
+                }
+
+                LockDosList(LDF_ALL | LDF_READ);
+            }
+        }
+        else
+        {
+            res = TRUE;
+
+            while (res && !dl->dol_Task)
+            {
+                D(bug("[GetDeviceProc] Accessing offline volume '%b'\n", dl->dol_Name));
+                res = !ErrorReport(ERROR_DEVICE_NOT_MOUNTED, REPORT_VOLUME, (IPTR)dl, NULL);
+            }
+
+            if (!res)
+            {
+                err = ERROR_DEVICE_NOT_MOUNTED;
+                goto fail_unlock;
+            }
+        }
+
+        /*
+         * A handler theoretically may choose to use custom MsgPort for communications.
+         * Pick up its preference if specified.
+         */
+        dp->dvp_Port = dl->dol_Task ? dl->dol_Task : newhandler;
+        dp->dvp_Lock = BNULL;
+        dp->dvp_Flags = 0;
+        dp->dvp_DevNode = dl;
+
+        UnLockDosList(LDF_ALL | LDF_READ);
+
+        return dp;
+    }
+
+    /* sanity check */
+    if (dl->dol_Type != DLT_DIRECTORY) {
+        UnLockDosList(LDF_ALL | LDF_READ);
+        FreeMem(dp, sizeof(struct DevProc));
+        kprintf("%s:%d: DosList entry 0x%p has unknown type %d. Probably a bug, report it!\n"
+                "    GetDeviceProc() called for '%s'\n",
+                __SRCFILENAME__, __LINE__, dl, dl->dol_Type, name);
+        SetIoErr(ERROR_BAD_NUMBER);
+        return NULL;
+    }
+
+    /* real assigns. first, see if it's just pointing to a single dir */
+    if (dp->dvp_Flags != DVPF_ASSIGN) {
+        /* just a plain assign, easy */
+        dp->dvp_Port = dl->dol_Task;
+        dp->dvp_Lock = dl->dol_Lock;
+        dp->dvp_DevNode = dl;
+        
+        /* note multidirectory assigns so the caller knows to loop */
+        dp->dvp_Flags = dl->dol_misc.dol_assign.dol_List != NULL ? DVPF_ASSIGN : 0;
+
+        UnLockDosList(LDF_ALL | LDF_READ);
+        return dp;
+    }
+
+    /* finally the tricky bit - multidirectory assigns */
+
+    /* if we're pointing at the "primary" lock, then we just take the first
+     * different one in the list */
+    if (dp->dvp_Lock == dl->dol_Lock) {
+        struct AssignList *al = dl->dol_misc.dol_assign.dol_List;
+        al = deviceproc_nextassignlock(al, dp->dvp_Lock);
+        if (al == NULL)
+            goto no_more_entries_unlock;
+        dp->dvp_Lock = al->al_Lock;
+    /* otherwise we're finding the next */
+    } else {
+        struct AssignList *al = dl->dol_misc.dol_assign.dol_List;
+
+        /* Find the first occurrence *after* the current lock */
+        if (dp->dvp_Lock != BNULL) {
+            /* Skip over entries until we find the current lock */
+            for (; al != NULL && al->al_Lock != dp->dvp_Lock; al = al->al_Next)
+                ;
+            al = deviceproc_nextassignlock(al, dp->dvp_Lock);
+        }
+
+        /* Check if we reached the end */
+        if (al == NULL)
+            goto no_more_entries_unlock;
+
+        /* fill out the lock from the new entry */
+        dp->dvp_Lock = al->al_Lock;
+    }
+
+    /* final pieces */
+    dp->dvp_Port = ((struct FileLock *) BADDR(dp->dvp_Lock))->fl_Task;
+    dp->dvp_Flags = DVPF_ASSIGN;
+    dp->dvp_DevNode = dl;
+
+    UnLockDosList(LDF_READ|LDF_ALL);
+    /* phew */
+    SetIoErr(0);
+    return dp;
+
+no_more_entries_unlock:
+    UnLockDosList(LDF_ALL | LDF_READ);
+no_more_entries:
+    err = ERROR_NO_MORE_ENTRIES;
+    goto fail;
+
+fail_unlock:
+    UnLockDosList(LDF_ALL | LDF_READ);
+fail:
+    FreeMem(dp, sizeof(struct DevProc));
+    /* without an error of our own, IoErr() is what the failed call left */
+    if (err)
+        SetIoErr(err);
+    return NULL;
+}

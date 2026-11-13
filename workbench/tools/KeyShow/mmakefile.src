@@ -1,0 +1,16 @@
+# Makefile to make KeyShow tool.
+
+include $(SRCDIR)/config/aros.cfg
+
+FILES := main locale keyboardgroup_class
+
+EXEDIR := $(AROS_TOOLS)
+
+#MM- workbench-tools : workbench-tools-keyshow
+#MM  workbench-tools-keyshow : includes linklibs workbench-tools-keyshow-catalogs
+
+%build_prog mmake=workbench-tools-keyshow \
+    progname=KeyShow targetdir=$(EXEDIR) \
+    files=$(FILES)
+
+%common

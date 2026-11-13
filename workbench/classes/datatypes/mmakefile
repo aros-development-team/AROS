@@ -1,0 +1,21 @@
+
+# A general catch-all target. You can use this if everything compiles on your
+# machine, and you want to save yourself some typing.
+#MM- workbench-datatypes-complete : \
+#MM	    workbench-datatypes-text \
+#MM	    workbench-datatypes-ascii \
+#MM	    workbench-datatypes-binary \
+#MM	    workbench-datatypes-gif \
+#MM	    workbench-datatypes-bmp \
+#MM	    workbench-datatypes-picture \
+#MM	    workbench-datatypes-ilbm \
+#MM	    workbench-datatypes-font \
+#MM	    workbench-datatypes-sound \
+#MM	    workbench-datatypes-8svx \
+#MM	    workbench-datatypes-wave \
+#MM	    workbench-datatypes-animation \
+#MM	    workbench-datatypes-html \
+#MM	    workbench-datatypes-amigaguide \
+#MM	    workbench-datatypes-pnm \
+#MM	    workbench-datatypes-gemimage \
+#MM	    workbench-datatypes-degas

@@ -1,0 +1,21 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+EXEDIR  := $(AROSDIR)/boot
+
+FILES         := hostinterface hostlib kickstart kputc memory preboot shutdown support
+USER_INCLUDES := \
+		 -I$(SRCDIR)/arch/all-hosted/bootstrap \
+		 -I$(SRCDIR)/arch/all-unix/kernel   \
+		 -I$(GENINCDIR) \
+		 -isystem $(SRCDIR)/bootstrap/include \
+		 $(KERNEL_INCLUDES)
+USER_CPPFLAGS   := \
+		 -DAROS_ARCHITECTURE="\"$(AROS_TARGET_PLATFORM)\"" \
+		 -DARCH=\"$(AROS_DIR_BOOTARCH)\"
+
+%build_archspecific \
+	mainmmake=kernel-bootstrap-hosted maindir=arch/all-hosted/bootstrap arch=unix \
+	files=$(FILES) compiler=kernel
+
+%common

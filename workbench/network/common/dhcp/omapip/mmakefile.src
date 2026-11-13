@@ -1,0 +1,17 @@
+include $(SRCDIR)/config/aros.cfg
+
+USER_INCLUDES := -I$(SRCDIR)/$(CURDIR)/.. \
+     -I$(SRCDIR)/$(CURDIR)/../includes
+NOWARN_FLAGS := $(NOWARN_OLD_STYLE_DEFINITION)
+USER_CFLAGS := $(NOWARN_FLAGS)
+USER_CPPFLAGS := \
+        -D_XOPEN_SOURCE=600 \
+        -D__BSD_VISIBLE=1
+
+FILES :=	alloc array auth buffer connection convert dispatch	\
+		errwarn generic handle hash inet_addr isclib_aros iscprint listener	\
+		message protocol result support test toisc trace
+
+%build_linklib mmake=network-dhcp-libomapip	\
+	libname=omapip				\
+	files="$(FILES)"

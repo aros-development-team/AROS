@@ -1,0 +1,10 @@
+# Copyright (C) 2010, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+
+CONFIG_FILE := hdaudio.config
+
+#MM- workbench-devs-AHI : copy-HDAudio-config
+
+%copy_files_q mmake=copy-HDAudio-config files=$(CONFIG_FILE) dst=$(AROS_ENVARC)
+

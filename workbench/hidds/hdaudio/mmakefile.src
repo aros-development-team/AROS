@@ -1,0 +1,16 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM- workbench-hidds : hidd-hdaudio
+#MM hidd-hdaudio : kernel-hidd-pci-includes
+
+INCLUDE_FILES := $(call WILDCARD, include/*.h)
+%copy_includes path=hidd dir=include
+
+USER_INCLUDES := -I.
+
+FILES := hda_init hdaclass
+
+%build_module mmake=hidd-hdaudio \
+    modname=hdaudio modtype=hidd conffile=hda.conf \
+    files="$(FILES)"

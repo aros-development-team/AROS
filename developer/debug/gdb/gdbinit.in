@@ -1,0 +1,628 @@
+
+source .gdb_ignore_errors.py
+
+set debug-file-directory %AROSDBGDIR%
+
+handle SIGALRM pass noprint nostop
+handle SIGUSR1 pass noprint nostop
+handle SIGUSR2 pass noprint nostop
+set follow-fork-mode child
+set max-value-size unlimited
+
+define log_to_file
+  set logging file $arg0
+  set logging redirect on
+  set logging overwrite $arg1
+  set logging enabled on
+end
+
+define end_log
+  set logging enabled off
+end
+
+# Define $symbol = (type)addr if it exists,  undefined if not
+define symbol_check
+  log_to_file symbol.tmp on
+  ignore-errors p $arg0
+  end_log
+
+  # Turns $1 = (type)addr into $symbol = (type)addr
+  shell sed -i -e '/^[^\$]/d' -e 's/^\$[0-9]* =/set $'$arg0' =/' symbol.tmp
+
+  # Hack. In case of C++, type is displayed without struct keyword and loading fails.
+  # Add struct keyword uncoditionally to any type after first removing it if it was there
+  shell sed -i -e 's/(APTR)//' -e 's/= (struct /= (/' -e 's/= (/= (struct /' symbol.tmp
+
+  source symbol.tmp
+end
+
+# This is a bit tricky, because we have several cases,
+# and gdb has no easy 'is this symbol defined' tests.
+#
+# Case 1: Hosted AROSBootstrap (ie linux-i386)
+#         Provides SysBase, Debug_ModList, and Debug_KickList
+# Case 2: ROM (ie amiga-m68k)
+#         Provides AbsExecBase and SysBase
+#
+# AROSBootstrap does not define 'struct IntExecBase', so we
+# can't use it.
+#
+define _sysbase_init
+    init-if-undefined $AbsExecBase = 0
+    init-if-undefined $SysBase = 0
+    symbol_check AbsExecBase
+    symbol_check SysBase
+    if $SysBase != 0 && $AbsExecBase == 0
+        set $AbsExecBase = $SysBase
+    end
+    if $SysBase == 0 && $AbsExecBase != 0
+        set $SysBase = $AbsExecBase
+    end
+end
+document _sysbase_init
+Initialize $AbsExecBase convenience variables
+end
+
+define _debug_init
+    _sysbase_init
+    symbol_check Debug_ModList
+
+    init-if-undefined $Debug_ModList = 0
+    init-if-undefined $_debug_DebugBase = 0
+
+    if $_debug_DebugBase == 0
+        if $Debug_ModList == 0
+            set $_debug_DebugBase = ((struct IntExecBase *)$AbsExecBase)->DebugBase
+            # This is the case for debugging a ROM
+            set $_debug_ModList = &($_debug_DebugBase->db_Modules)
+        else
+           set $_debug_ModList = $Debug_ModList
+        end
+    end
+end
+document _debug_init
+Initialize debugging convenience variables
+end
+
+define liblist
+    _sysbase_init
+    set $lib = ((struct ExecBase *)$AbsExecBase)->LibList.lh_Head
+
+    printf "Base     OpenC   Name\n"
+    printf "---------------------------------------------------------------\n"
+    while ($lib->ln_Succ != 0)
+    printf "%p %5d   %s\n", \
+        $lib, \
+        ((struct Library *)$lib)->lib_OpenCnt, \
+        $lib->ln_Name
+    set $lib = $lib->ln_Succ
+    end
+end
+document liblist
+List the current libraries in the system
+end
+
+define devlist
+    _debug_init
+    set $dev = ((struct ExecBase *)$AbsExecBase)->DeviceList.lh_Head
+    printf "Base     OpenC   Name\n"
+    printf "---------------------------------------------------------------\n"
+    while ($dev->ln_Succ != 0)
+    printf "%p %5d   %s\n", \
+        $dev, \
+        ((struct Library *)$dev)->lib_OpenCnt, \
+        $dev->ln_Name
+    set $dev = $dev->ln_Succ
+    end
+end
+document devlist
+List the current devices in the system
+end
+
+define resourcelist
+    _debug_init
+    set $res = ((struct ExecBase *)$AbsExecBase)->ResourceList.lh_Head
+    printf "Base     Name\n"
+    printf "---------------------------------------------------------------\n"
+    while ($res->ln_Succ != 0)
+    printf "%p %s\n", $res, $res->ln_Name
+    set $res = $res->ln_Succ
+    end
+end
+document resourcelist
+List the current resources in the system
+end
+
+define residentlist
+    _debug_init
+    set $resp = (struct Resident **)((struct ExecBase *)$AbsExecBase)->ResModules
+    set $i = 0
+
+    printf "Address    Pri Flags Vers Type  Name\n"
+    printf "--------------------------------------------------------------\n"
+    while (($resp)[$i] != 0)
+    set $res = ($resp)[$i]
+    printf "%p  %4d    %02x  %3d  %3d  %s\n", \
+        $res, \
+        ((struct Resident *)$res)->rt_Pri, \
+        ((struct Resident *)$res)->rt_Flags, \
+        ((struct Resident *)$res)->rt_Version, \
+        ((struct Resident *)$res)->rt_Type, \
+        ((struct Resident *)$res)->rt_Name
+    set $i = $i + 1
+    end
+end
+document residentlist
+List the system resident list
+end
+
+define taskready
+    _debug_init
+    set $task = (struct Task *)((struct ExecBase *)$AbsExecBase)->TaskReady.lh_Head
+
+    printf "Task     SigWait  SigRecvd StkSize   StkUsed Pri Type Name\n"
+    printf "-----------------------------------------------------------------------------\n"
+    while ($task->tc_Node.ln_Succ != 0)
+    printf "%p %p %p %8d %8d %3d  %3ld %s\n", \
+        $task, \
+        $task->tc_SigWait, \
+        $task->tc_SigRecvd, \
+        $task->tc_SPUpper - $task->tc_SPLower, \
+        $task->tc_SPUpper - $task->tc_SPReg, \
+        $task->tc_Node.ln_Pri, \
+        $task->tc_Node.ln_Type, \
+        $task->tc_Node.ln_Name
+    set $task = (struct Task *)$task->tc_Node.ln_Succ
+    end
+end
+document taskready
+List of tasks currently ready to run
+end
+
+define taskwait
+    _debug_init
+    set $task = (struct Task *)((struct ExecBase *)$AbsExecBase)->TaskWait.lh_Head
+
+    printf "Task     SigWait  SigRecvd StkSize   StkUsed Pri Type Name\n"
+    printf "-----------------------------------------------------------------------------\n"
+    while ($task->tc_Node.ln_Succ != 0)
+    printf "%p %p %p %8d %8d %3d  %3ld %s\n", \
+        $task, \
+        $task->tc_SigWait, \
+        $task->tc_SigRecvd, \
+        $task->tc_SPUpper - $task->tc_SPLower, \
+        $task->tc_SPUpper - $task->tc_SPReg, \
+        $task->tc_Node.ln_Pri, \
+        $task->tc_Node.ln_Type, \
+        $task->tc_Node.ln_Name
+    set $task = (struct Task *)$task->tc_Node.ln_Succ
+    end
+end
+document taskwait
+List of tasks currently waiting for an event
+end
+
+define thistask
+    _debug_init
+    set $task = (struct Task *)((struct ExecBase *)$AbsExecBase)->ThisTask
+    printf "Task     SigWait  SigRecvd StkSize   StkUsed Pri Type Name\n"
+    printf "-----------------------------------------------------------------------------\n"
+    printf "%p %p %p %8d %8d %3d  %3ld %s\n", \
+    $task, \
+    $task->tc_SigWait, \
+    $task->tc_SigRecvd, \
+    $task->tc_SPUpper - $task->tc_SPLower, \
+    $task->tc_SPUpper - $task->tc_SPReg, \
+    $task->tc_Node.ln_Pri, \
+    $task->tc_Node.ln_Type, \
+    $task->tc_Node.ln_Name
+end
+document thistask
+Print out information about the currently running task.
+end
+
+define modlist
+    _debug_init
+    printf "Segment                                   Module\n"
+
+    if $_debug_ModList
+        printf "---------------------------------------------------------------------\n"
+        set $modnode = (module_t *)$_debug_ModList->mlh_Head
+
+        while ($modnode->m_node.mln_Succ != 0)
+            set $segidx = 0
+            while ($segidx < $modnode->m_segcnt)
+                set $segnode = $modnode->m_segments[$segidx]
+                printf "%p %12s %2u %42s\n", $segnode->s_lowest, $segnode->s_name, $segnode->s_num, (char *)$segnode->s_mod->m_name
+                set $segidx = $segidx + 1
+            end
+
+            set $modnode = (module_t *)$modnode->m_node.mln_Succ
+        end
+    end
+end
+document modlist
+List of all the modules currently loaded in memory
+end
+
+# Execute a binary search over sorter array of segments
+# Keep this function synchronized with decodelocation.c, FindSegmentInModule
+define find_segment_in_module
+    set $arg_address = $arg0
+    set $arg_mod = $arg1
+    set $find_segment_in_module_result = 0
+    set $local_minsegidx = 0
+    set $local_maxsegidx = $arg_mod->m_segcnt - 1
+    set $_again = 1
+
+    while ($_again == 1)
+        set $local_segidx = ($local_maxsegidx + $local_minsegidx) / 2
+
+        if $arg_mod->m_segments[$local_segidx]->s_lowest <= $arg_address
+            if $arg_mod->m_segments[$local_segidx]->s_highest >= $arg_address
+                set $find_segment_in_module_result = $arg_mod->m_segments[$local_segidx]
+                loop_break
+            else
+                set $local_minsegidx = $local_segidx + 1
+            end
+        else
+            set $local_maxsegidx = $local_segidx - 1
+        end
+
+        if $local_maxsegidx < $local_minsegidx
+            # Not found, aborting
+            loop_break
+        end
+    end
+end
+
+# Keep this function synchronized with decodelocation.c, FindSegment
+define find_segment
+    _debug_init
+    set $find_segment_result = 0
+
+    if $_debug_ModList
+        set $modnode = (module_t *)$_debug_ModList->mlh_Head
+
+        while ($modnode->m_node.mln_Succ != 0)
+            if !($modnode->m_gaplowest <= $arg0 && $modnode->m_gaphighest >= $arg0)
+                if $modnode->m_lowest <= $arg0 && $modnode->m_highest >= $arg0
+
+                    find_segment_in_module $arg0 $modnode
+
+                    if $find_segment_in_module_result
+                        set $find_segment_result = $find_segment_in_module_result
+                        loop_break
+                    end
+                end
+            end
+            set $modnode = (module_t *)$modnode->m_node.mln_Succ
+        end
+    end
+end
+
+define findaddr
+    _debug_init
+    set $cont = 1
+
+    #first search in modules loaded from disk
+    printf "Searching in the loaded modules...\n"
+
+    find_segment $arg0
+
+    if $find_segment_result
+        set $segnode = $find_segment_result
+        printf "Address found in %s, in segment %p.\nIf this is an executable, its .text section starts at %p.\n", (char *)$segnode->s_mod->m_name, $segnode->s_seg, $segnode->s_lowest
+        set $cont = 0
+    end
+
+    #then in the resident list
+    if $cont
+        printf "Searching in the resident list...\n"
+    end
+
+    set $resp = (struct Resident **)((struct ExecBase *)$AbsExecBase)->ResModules
+    set $i = 0
+
+    while (($resp)[$i] != 0) && $cont
+    set $res = ($resp)[$i]
+
+        if ($arg0 >= $res) && ($arg0 <= $res->rt_EndSkip)
+            printf "Address found in %s, which resides at %p\n", $res->rt_Name, $res
+            set $cont = 0
+        end
+
+        set $i = $i + 1
+    end
+
+    if $cont
+        printf "No matching module for this address\n"
+    end
+end
+document findaddr
+-Shows the module that contains the given address
+-
+-To debug a problem in AROS, do the following:
+-
+-1. Get a stacktrace with bt or similar.
+-2. Use findaddr with such an address to find out in which
+-   module it is:
+-3. Use add-symbol-file to load that modules symbols.
+-4. Now you can run bt (or similar) again and you should see the
+-   addresses resolved as symbols.
+-
+-Example:
+-
+-0x4058d45b in ?? ()
+-
+-(gdb) findaddr 0x4058d45b
+-
+-Searching in the loaded modules...
+-Address found in Workbench:contrib/Zune/Libs/muimaster.library, which is loaded at 0x405379a4.
+-If this is an executable, its .text section starts at 0x405379b0.
+-(gdb) add-symbol-file contrib/Zune/Libs/muimaster.library.dbg 0x405379b0
+-add symbol table from file "contrib/Zune/Libs/muimaster.library.dbg" at
+-        .text_addr = 0x405379b0
+-(y or n) y
+-Reading symbols from contrib/Zune/Libs/muimaster.library.dbg...done.
+-(gdb) bt
+-#0  0x4058d45b in strlen (ptr=0x80 <Address 0x80 out of bounds>) at strlen.c:45
+-#1  0x00000000 in lastx.78 ()
+end
+
+define printtaglist
+    set $list = (struct TagItem *)$arg0
+
+    printf "Tag         Data (Hex)     Data (Dec)\n"
+    printf "--------------------------------------\n"
+
+    while $list->ti_Tag != 0
+    # Handle the possible control tag...
+    if $list->ti_Tag == 1
+        printf "TAG_IGNORE\n"
+    else if $list->ti_Tag == 2
+        printf "TAG_MORE    %p\n", $list->ti_Data
+        set $list = (struct TagItem *)$list->ti_Data
+    else if $list->ti_Tag == 3
+        printf "TAG_SKIP    %d\n", $list->ti_Data
+        set $list = $list + $list->ti_Tag + 1
+    else
+        printf "%p  %p      %9lu\n", $list->ti_Tag, $list->ti_Data, $list->ti_Data
+        set $list = $list + 1
+    end
+    end
+    printf "TAG_DONE\n"
+end
+document printtaglist
+end
+
+define loadmod
+    set pagination off
+    set $this_mod = $arg0
+
+    log_to_file segname.tmp on
+    printf "%s", (char *)$this_mod->m_name
+    end_log
+    shell sed -i 's/.*:\(.*\)/\1/' segname.tmp
+    log_to_file loadseg.tmp on
+    printf "add-symbol-file \""
+    end_log
+    shell head -n1 segname.tmp >>loadseg.tmp
+    log_to_file loadseg.tmp off
+    printf "\" %s", $this_mod->m_seggdbhlp
+    end_log
+
+    source loadseg.tmp
+    set pagination on
+end
+
+define loadseg
+    _debug_init
+    dont-repeat
+    if $_debug_ModList
+        set $step = 1
+
+        find_segment $arg0
+
+        if $find_segment_result
+            # This is workaround for some flushing problem when loadseg.tmp had module name before command
+            printf "\n"
+
+            loadmod $find_segment_result->s_mod
+
+            set $step = 2
+        end
+
+        if $step < 2
+            printf "No matching module for this address\n"
+        end
+
+    end
+end
+document loadseg
+Loads the module that contains the given address
+end
+
+define loadmods
+    _debug_init
+
+    if $_debug_ModList
+        set $loadmods_modnode = (module_t *)$_debug_ModList->mlh_Head
+
+        while ($loadmods_modnode->m_node.mln_Succ != 0)
+            loadmod $loadmods_modnode
+            set $loadmods_modnode = (module_t *)$loadmods_modnode->m_node.mln_Succ
+        end
+    end
+end
+document loadmods
+Loads all the modules (symbols)
+end
+
+define loadframe
+    log_to_file frameinfo.tmp on
+    info frame $arg0
+    end_log
+    
+    shell grep -E "(e|r)ip =" frameinfo.tmp >loadseg.tmp
+    shell sed -E -e "s/(e|r)ip = (0x[0-9,a-f]*).*/loadseg \2/" loadseg.tmp >frameinfo.tmp
+    
+    source frameinfo.tmp
+end
+document loadframe
+Loads the symbols for the given stack frame number
+end
+
+define loadframes
+    set $_again = 1
+    printf "\n\n"
+    
+    while ($_again == 1)
+        bt
+        printf "\nEnter stack frame number to resolve or RETURN to stop: \n\n"
+
+        set $_answer = 1000
+
+        shell read _gdb_answer && echo $_gdb_answer | grep -E "[0-9]+" | sed "s/\(.*\)/set \$_answer=\1/" >frameinfo.tmp
+
+        source frameinfo.tmp
+        printf "\n\n"
+
+        if $_answer == 1000
+            set $_again = 0
+        else
+            loadframe $_answer
+        end
+    end
+end
+document loadframes
+Interactive multiple loading of symbols for given stack frame numbers
+end
+
+define loadbt
+    set $_frame_counter = 0
+
+    set $_again = 1
+    while ($_again == 1)
+        printf "Checking frame #%d\n", $_frame_counter
+
+        set $_again = 0
+
+        log_to_file loadseg.tmp on
+        set pagination off
+        bt
+        end_log
+
+        # Check if frame exists
+
+        log_to_file frameinfo.tmp on
+        printf "shell grep \"#%d .*\" loadseg.tmp | sed \"s/#.*/set \\$_again = 1/\" >loadbt.tmp\n", $_frame_counter
+        end_log
+
+        source frameinfo.tmp
+        source loadbt.tmp
+
+        if $_again == 1
+
+            # If frame is unresolved ("in ??") transform to "loadseg address"
+            
+            log_to_file frameinfo.tmp on
+            printf "shell grep \"#%d .* in ??\" loadseg.tmp | sed \"s/#.*\\(0x[0-9,a-f]*\\) .*/loadseg \\1/\" >loadbt.tmp\n", $_frame_counter
+            end_log
+
+            source frameinfo.tmp
+            source loadbt.tmp
+
+            set $_frame_counter = $_frame_counter + 1
+            if ($_frame_counter == 1000)
+                set $_again = 0
+            end
+        end
+    end
+
+    set pagination on
+end
+document loadbt
+Tries to automatically load the symbols for all unresolved stack frames
+end
+
+define seglistdump
+    _debug_init
+    set $nextseg = $arg0
+    set $count   = 1
+
+    printf "Hunk num. | Start addr | Size       \n"
+    printf "----------+------------+------------\n"
+    while $nextseg
+        printf "%9d | %p | %10d\n", $count, $nextseg + sizeof(BPTR), *((ULONG *)$nextseg - 1) - sizeof(BPTR)
+
+        set $nextseg = *(BPTR *)$nextseg
+        set $count = $count+1
+    end
+end
+document seglistdump
+Shows the segments chain of the given seglist
+end
+
+define bttask
+    set $task = (struct Task *)$arg0
+    if ($task->tc_Node.ln_Type != 1) && ($task->tc_Node.ln_Type != 13)
+        printf "ERROR: Given address does not look like a task or process!\n"
+    else
+        #FIXME: The following assumes Linux x86_64
+        set $old_esp = $rsp
+        set $old_eip = $rip
+        
+        if $task->tc_State == 2
+            printf "WARNING: TS_RUN Task. Showing normal backtrace!\n"
+        else
+            set $rsp = $task->tc_SPReg
+            set $taskcontext = (struct AROSCPUContext *)$task->tc_UnionETask.tc_ETask.et_RegFrame
+            set $rip = $taskcontext.regs.rip
+        end
+        
+        bt
+ 
+        set $rsp = $old_esp
+        set $rip = $old_eip
+    end
+end
+document bttask
+Shows the backtrace of the given TS_READY/TS_WAIT task
+end
+
+define semowner
+    set $sem = (struct SignalSemaphore *)$arg0
+    if $sem->ss_Link.ln_Type != 15
+        printf "ERROR: Given address does not look like a semaphore!\n"
+    else
+        if $sem->ss_QueueCount == -1
+            printf "The semaphore is free\n"
+        else
+            if $sem->ss_Owner == 0
+                printf "The semaphore is locked in shared mode by one or more tasks\n"
+            else
+                    printf "The semaphore is owned by task %p (%s)\n", $sem->ss_Owner, $sem->ss_Owner->tc_Node.ln_Name
+            end
+
+            printf "\nWait Queue:\n\n"
+
+            set $waitnode = (struct SemaphoreRequest *)$sem->ss_WaitQueue.mlh_Head
+
+            while ($waitnode->sr_Link.mln_Succ != 0)
+                set $waitertask = $waitnode->sr_Waiter
+                if (int)$waitertask & 1
+                    set $waitertask = $waitertask & ~1
+                    printf " SHARED    "
+                else
+                    printf " EXCLUSIVE "
+                end
+                printf"%p %s\n", $waitertask, $waitertask->tc_Node.ln_Name
+                set $waitnode = (struct SemaphoreRequest *)$waitnode->sr_Link.mln_Succ
+            end
+        end
+    end
+end
+document semowner
+Shows the owner of the given Exec Semaphore and the Wait Queue
+end

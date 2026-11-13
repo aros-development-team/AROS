@@ -1,0 +1,129 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+# The workbench-libs target points back to config/$(ARCH)/mmakefile:
+#MM- workbench-libs : workbench-libs-$(ARCH)-$(CPU)
+
+# A general catch-all target. You can use this if everything compiles on your
+# machine, and you want to save yourself some typing.
+#MM- workbench-libs-complete : \
+#MM     workbench-libs-amigaguide \
+#MM     workbench-libs-asl \
+#MM     workbench-libs-asyncio \
+#MM     workbench-libs-camd \
+#MM     workbench-libs-cgfx \
+#MM     workbench-libs-codesets \
+#MM     workbench-libs-commodities \
+#MM     workbench-libs-coolimages \
+#MM     workbench-libs-datatypes \
+#MM     workbench-libs-decorator \
+#MM     workbench-libs-decortheme \
+#MM     workbench-libs-diskfont \
+#MM     workbench-libs-dosrelative \
+#MM     workbench-libs-egl \
+#MM     workbench-libs-expat \
+#MM     workbench-libs-freetype-complete \
+#MM     workbench-libs-gadtools \
+#MM     workbench-libs-gallium \
+#MM     workbench-libs-icon \
+#MM     workbench-libs-identify \
+#MM     workbench-libs-iffparse \
+#MM     workbench-libs-jpeg \
+#MM     workbench-libs-kms \
+#MM     workbench-libs-lcms2 \
+#MM     workbench-libs-locale \
+#MM     workbench-libs-lowlevel \
+#MM     workbench-libs-lzma \
+#MM     workbench-libs-mathffp \
+#MM     workbench-libs-mbedtls \
+#MM     workbench-libs-mathieeesingbas \
+#MM     workbench-libs-mathieeesingtrans \
+#MM     workbench-libs-mathtrans \
+#MM     workbench-libs-mathieeedoubbas \
+#MM     workbench-libs-mathieeedoubtrans \
+#MM     workbench-libs-muimaster \
+#MM     workbench-libs-muiscreen \
+#MM     workbench-libs-nonvolatile \
+#MM     workbench-libs-nvdisk \
+#MM     workbench-libs-pam \
+#MM     workbench-libs-pci \
+#MM     workbench-libs-png \
+#MM     workbench-libs-popupmenu \
+#MM     workbench-libs-prometheus \
+#MM     workbench-libs-reaction \
+#MM     workbench-libs-realtime \
+#MM     workbench-libs-reqtools \
+#MM     workbench-libs-rexxsupport \
+#MM     workbench-libs-rexxsyslib \
+#MM     workbench-libs-security-plugins \
+#MM     workbench-libs-tiff \
+#MM     workbench-libs-usergroup \
+#MM     workbench-libs-utf8proc \
+#MM     workbench-libs-vega \
+#MM     workbench-libs-version \
+#MM     workbench-libs-workbench \
+#MM     workbench-libs-z \
+#MM     workbench-libs-zstd
+
+##MM- workbench-libs-complete : \
+##MM     workbench-libs-fd
+
+#MM- includes-generate : \
+#MM     workbench-libs-amigaguide-includes \
+#MM     workbench-libs-asl-includes \
+#MM     workbench-libs-asyncio-includes \
+#MM     workbench-libs-bullet-includes \
+#MM     workbench-libs-commodities-includes \
+#MM     workbench-libs-camd-includes \
+#MM     workbench-libs-codesets-lib-includes \
+#MM     workbench-libs-coolimages-includes \
+#MM     workbench-libs-cgfx-includes \
+#MM     workbench-libs-datatypes-includes \
+#MM     workbench-libs-decorator-includes \
+#MM     workbench-libs-decortheme-includes \
+#MM     workbench-libs-diskfont-includes \
+#MM     workbench-libs-dosrelative-includes \
+#MM     workbench-libs-egl-includes \
+#MM     workbench-libs-expat-includes \
+#MM     workbench-libs-gadtools-includes \
+#MM     workbench-libs-gallium-includes \
+#MM     workbench-libs-glu-includes \
+#MM     workbench-libs-icon-includes \
+#MM     workbench-libs-identify-includes \
+#MM     workbench-libs-iffparse-includes \
+#MM     workbench-libs-jpeg-includes \
+#MM     workbench-libs-kms-includes \
+#MM     workbench-libs-lcms2-includes \
+#MM     workbench-libs-locale-includes \
+#MM     workbench-libs-lowlevel-includes \
+#MM     workbench-libs-lzma-includes \
+#MM     workbench-libs-mathffp-includes \
+#MM     workbench-libs-mathieeesingbas-includes \
+#MM     workbench-libs-mathieeesingtrans-includes \
+#MM     workbench-libs-mathtrans-includes \
+#MM     workbench-libs-mathieeedoubbas-includes \
+#MM     workbench-libs-mathieeedoubtrans-includes \
+#MM     workbench-libs-mesa-includes \
+#MM     workbench-libs-muimaster-includes \
+#MM     workbench-libs-muiscreen-includes \
+#MM     workbench-libs-nonvolatile-includes \
+#MM     workbench-libs-nvdisk-includes \
+#MM     workbench-libs-png-includes \
+#MM     workbench-libs-popupmenu-includes \
+#MM     workbench-libs-prometheus-includes \
+#MM     workbench-libs-reaction-includes \
+#MM     workbench-libs-realtime-includes \
+#MM     workbench-libs-reqtools-includes \
+#MM     workbench-libs-rexxsupport-includes \
+#MM     workbench-libs-rexxsyslib-includes \
+#MM     workbench-libs-tiff-includes \
+#MM     workbench-libs-usergroup-includes \
+#MM     workbench-libs-utf8proc-includes \
+#MM     workbench-libs-vega-includes \
+#MM     workbench-libs-vhi-includes \
+#MM     workbench-libs-workbench-includes \
+#MM     workbench-libs-z-includes \
+#MM     workbench-libs-zstd-includes
+
+##MM- includes-generate : \
+##MM     workbench-libs-fd-includes

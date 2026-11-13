@@ -1,0 +1,10 @@
+# DataType Description for CAT
+Name=CAT
+Version=$VER: CAT 1.0 (14.11.2011)
+BaseName=cat
+Pattern=#?
+Mask='C' 'A' 'T' 0x20 ANY ANY ANY ANY ANY ANY ANY ANY 'F' 'O' 'R' 'M'
+GroupID=docu
+ID=iff
+Flags=DTF_IFF
+Priority=0

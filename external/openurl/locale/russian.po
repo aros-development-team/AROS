@@ -1,0 +1,539 @@
+# Translation catalog description file (pot-style)
+# $Id$
+# 
+# version 7
+# language english
+# 
+# Translators:
+# Michael Malyshev, 2014
+# Michael Malyshev, 2014-2015
+msgid ""
+msgstr ""
+"Project-Id-Version: OpenURL\n"
+"Report-Msgid-Bugs-To: http://sf.net/p/openurllib/\n"
+"POT-Creation-Date: 2014-02-23 12:01+0100\n"
+"PO-Revision-Date: 2015-03-22 12:30+0000\n"
+"Last-Translator: Michael Malyshev\n"
+"Language-Team: Russian (http://www.transifex.com/ato/openurllib/language/ru/)\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Catalog-Name: OpenURL\n"
+"Language: ru\n"
+"Plural-Forms: nplurals=4; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<12 || n%100>14) ? 1 : n%10==0 || (n%10>=5 && n%10<=9) || (n%100>=11 && n%100<=14)? 2 : 3);\n"
+
+msgctxt "MSG_ErrReqTitle (1//)"
+msgid "OpenURL Error"
+msgstr "Ошибка OpenURL"
+
+msgctxt "MSG_ErrReqGadget (//)"
+msgid "_Abort"
+msgstr "П_рервать"
+
+msgctxt "MSG_Err_NoMem (//)"
+msgid "Out of memory"
+msgstr "Мало памяти"
+
+msgctxt "MSG_Err_NoMUI (//)"
+msgid "Can't open muimaster.library %ld.%ld or higher"
+msgstr "Невозможно открыть muimaster.library %ld.%ld или выше"
+
+msgctxt "MSG_Err_NoIntuition (//)"
+msgid "Can't open intuition.library %ld.%ld or higher"
+msgstr "Невозможно открыть intuition.library %ld.%ld или выше"
+
+msgctxt "MSG_Err_NoUtility (//)"
+msgid "Can't open utility.library %ld.%ld or higher"
+msgstr "Невозможно открыть utility.library %ld.%ld или выше"
+
+msgctxt "MSG_Err_NoGfx (//)"
+msgid "Can't open graphics.library %ld.%ld or higher"
+msgstr "Невозможно открыть graphics.library %ld.%ld или выше"
+
+msgctxt "MSG_Err_NoIcon (//)"
+msgid "Can't open icon.library %ld.%ld or higher"
+msgstr "Невозможно открыть icon.library %ld.%ld или выше"
+
+msgctxt "MSG_Err_NoOpenURL (//)"
+msgid "Can't open openurl.library %ld.%ld or higher"
+msgstr "Невозможно открыть openurl.library %ld.%ld или выше"
+
+msgctxt "MSG_Err_NoAppClass (//)"
+msgid "Can't create AppClass"
+msgstr "Невозможно создать AppClass"
+
+msgctxt "MSG_Err_NoWinClass (11//)"
+msgid "Can't create WinClass"
+msgstr "Невозможно создать WinClass"
+
+msgctxt "MSG_Err_NoAppListClass (13//)"
+msgid "Can't create AppListClass"
+msgstr "Невозможно создать AppListClass"
+
+msgctxt "MSG_Err_NoBrowserEditWinClass (//)"
+msgid "Can't create BrowserEditWinClass"
+msgstr "Невозможно создать BrowserEditWinClass"
+
+msgctxt "MSG_Err_NoMailerEditWinClass (//)"
+msgid "Can't create MailerEditWinClass"
+msgstr "Невозможно создать MailerEditWinClass"
+
+msgctxt "MSG_Err_NoFTPEditWinClass (//)"
+msgid "Can't create FTPEditWinClass"
+msgstr "Невозможно создать FTPEditWinClass"
+
+msgctxt "MSG_Err_PopupPortClass (//)"
+msgid "Can't create PopupPortClass"
+msgstr "Невозможно создать PopupPortClass"
+
+msgctxt "MSG_Err_PopphClass (//)"
+msgid "Can't create PopphClass"
+msgstr "Невозможно создать PopphClass"
+
+msgctxt "MSG_Err_NoApp (//)"
+msgid "Can't create application object"
+msgstr "Невозможно создать объект приложения"
+
+msgctxt "MSG_Err_NoPrefs (//)"
+msgid "Can't obtain prefs from openurl.library"
+msgstr "Невозможно получить настройки от openurl.library"
+
+msgctxt "MSG_Err_BadPrefs (//)"
+msgid ""
+"This version of this program doesn't know how\n"
+"to handle openurl.library prefs version %ld"
+msgstr "Эта версия программы не знает как обрабатывать\nнастройки openurl.library версии %ld"
+
+msgctxt "MSG_Err_FailedSave (//)"
+msgid "Can't save prefs"
+msgstr "Невозможно сохранить настройки"
+
+msgctxt "MSG_App_Description (100//)"
+msgid "OpenURL preferences application."
+msgstr "Программа настройки OpenURL"
+
+msgctxt "MSG_App_Copyright (//)"
+msgid "Public Domain Software"
+msgstr "Свободное программное обеспечение"
+
+msgctxt "MSG_App_ScreenTitle (//)"
+msgid "OpenURL"
+msgstr "OpenURL"
+
+msgctxt "MSG_Menu_Project (200//)"
+msgid "Project"
+msgstr "Проект"
+
+msgctxt "MSG_Menu_About (//)"
+msgid "?\\0About..."
+msgstr "?\\0О программе..."
+
+msgctxt "MSG_Menu_AboutMUI (//)"
+msgid "!\\0About MUI..."
+msgstr "!\\0О MUI..."
+
+msgctxt "MSG_Menu_Hide (//)"
+msgid "H\\0Hide"
+msgstr "H\\0Спрятать"
+
+msgctxt "MSG_Menu_Quit (//)"
+msgid "Q\\0Quit"
+msgstr "Q\\0Выход"
+
+msgctxt "MSG_Menu_Prefs (//)"
+msgid "Preferences"
+msgstr "Настройки"
+
+msgctxt "MSG_Menu_Save (//)"
+msgid "S\\0Save"
+msgstr "S\\0Сохранить"
+
+msgctxt "MSG_Menu_Use (//)"
+msgid "U\\0Use"
+msgstr "U\\0Принять"
+
+msgctxt "MSG_Menu_LastSaved (//)"
+msgid "L\\0Last saved"
+msgstr "L\\0Последняя сохранённая"
+
+msgctxt "MSG_Menu_Restore (//)"
+msgid "R\\0Restore"
+msgstr "R\\0Восстановить"
+
+msgctxt "MSG_Menu_Defaults (210//)"
+msgid "D\\0Default settings"
+msgstr "D\\0Настройки по умолчанию"
+
+msgctxt "MSG_Menu_MUI (212//)"
+msgid "M\\0MUI Setting..."
+msgstr "M\\0Настройки MUI..."
+
+msgctxt "MSG_Win_WinTitle (300//)"
+msgid "OpenURL"
+msgstr "OpenURL"
+
+msgctxt "MSG_Win_Labels_Browsers (//)"
+msgid "Browsers"
+msgstr "Браузеры"
+
+msgctxt "MSG_Win_Labels_Mailers (//)"
+msgid "Mailers"
+msgstr "Почтовики"
+
+msgctxt "MSG_Win_Labels_FTPs (//)"
+msgid "FTPs"
+msgstr "FTP-шки"
+
+msgctxt "MSG_Win_Labels_Misc (//)"
+msgid "Misc"
+msgstr "Разное"
+
+msgctxt "MSG_Win_Save (//)"
+msgid "_Save"
+msgstr "_Сохранить"
+
+msgctxt "MSG_Win_Save_Help (//)"
+msgid "Save preferences."
+msgstr "Сохранить настройки."
+
+msgctxt "MSG_Win_Use (//)"
+msgid "_Use"
+msgstr "Пр_инять"
+
+msgctxt "MSG_Win_Use_Help (//)"
+msgid "Use preferences."
+msgstr "Принять настройки пользователя."
+
+msgctxt "MSG_Win_Apply (//)"
+msgid "_Apply"
+msgstr "Применить"
+
+msgctxt "MSG_Win_Apply_Help (//)"
+msgid "Use preferences without closing window."
+msgstr "Применить настройки без закрытия окна."
+
+msgctxt "MSG_Win_Cancel (//)"
+msgid "_Cancel"
+msgstr "_Отменить"
+
+msgctxt "MSG_Win_Cancel_Help (//)"
+msgid "Close window, without using preferences."
+msgstr "Закрыть окно, без применения новых настроек."
+
+msgctxt "MSG_AppList_Add (400//)"
+msgid "A_dd"
+msgstr "_Добавить"
+
+msgctxt "MSG_AppList_Add_Help (//)"
+msgid "Add a new entry."
+msgstr "Добавить новый пункт."
+
+msgctxt "MSG_AppList_Edit (//)"
+msgid "_Edit"
+msgstr "П_равка"
+
+msgctxt "MSG_AppList_Edit_Help (//)"
+msgid "Edit active entry."
+msgstr "Редактировать выбранный пункт."
+
+msgctxt "MSG_AppList_Clone (//)"
+msgid "C_lone"
+msgstr "_Клонировать"
+
+msgctxt "MSG_AppList_Clone_Help (//)"
+msgid "Clone active entry."
+msgstr "Клонировать выбранный пункт."
+
+msgctxt "MSG_AppList_Delete (//)"
+msgid "Dele_te"
+msgstr "Удалит_ь"
+
+msgctxt "MSG_AppList_Delete_Help (//)"
+msgid "Delete active entry."
+msgstr "Удалить выбранный пункт."
+
+msgctxt "MSG_AppList_Disable (//)"
+msgid "D_isable"
+msgstr "О_тключить"
+
+msgctxt "MSG_AppList_Disable_Help (//)"
+msgid "Disable active entry."
+msgstr "Отключить выбранный пункт."
+
+msgctxt "MSG_AppList_MoveUp_Help (//)"
+msgid "Move active entry up."
+msgstr "Переместить выбранный пункт вверх."
+
+msgctxt "MSG_AppList_MoveDown_Help (//)"
+msgid "Move active entry down."
+msgstr "Переместить выбранный пункт вниз."
+
+msgctxt "MSG_Edit_Use (500//)"
+msgid "_Use"
+msgstr "Пр_инять"
+
+msgctxt "MSG_Edit_Use_Help (//)"
+msgid "Apply changes."
+msgstr "Применить изменения."
+
+msgctxt "MSG_Edit_Cancel (//)"
+msgid "_Cancel"
+msgstr "_Отменить"
+
+msgctxt "MSG_Edit_Cancel_Help (//)"
+msgid "Close window."
+msgstr "Закрыть окно."
+
+msgctxt "MSG_Edit_ListName (//)"
+msgid "Name"
+msgstr "Имя"
+
+msgctxt "MSG_Edit_ListPath (//)"
+msgid "Path"
+msgstr "Путь"
+
+msgctxt "MSG_Edit_Definitions (//)"
+msgid "Definitions"
+msgstr "Определения"
+
+msgctxt "MSG_Edit_ARexx (//)"
+msgid "ARexx commands"
+msgstr "Команды ARexx"
+
+msgctxt "MSG_Edit_PopURL (//)"
+msgid "URL"
+msgstr "URL"
+
+msgctxt "MSG_Edit_PopScreen (//)"
+msgid "Public screen name"
+msgstr "Имя общего экрана"
+
+msgctxt "MSG_Edit_Name (//)"
+msgid "_Name"
+msgstr "_Имя"
+
+msgctxt "MSG_Edit_Name_Help (//)"
+msgid "Name of entry."
+msgstr "Наименование пункта."
+
+msgctxt "MSG_Edit_Path (//)"
+msgid "_Path"
+msgstr "П_уть"
+
+msgctxt "MSG_Edit_Path_Help (//)"
+msgid "Complete path to the application."
+msgstr "Полный путь к приложению."
+
+msgctxt "MSG_Edit_Port (//)"
+msgid "_ARexx port"
+msgstr "Порт _ARexx"
+
+msgctxt "MSG_Edit_Port_Help (//)"
+msgid ""
+"Name of the application ARexx port\n"
+"to send commands to."
+msgstr "Имя ARexx порта приложения\nкуда отправлять команду."
+
+msgctxt "MSG_Edit_Show (//)"
+msgid "_Show"
+msgstr "Пока_зать"
+
+msgctxt "MSG_Edit_Show_Help (//)"
+msgid "ARexx command to uniconify the application."
+msgstr "ARexx команда для развертывания\nприложения из иконки."
+
+msgctxt "MSG_Edit_Screen (//)"
+msgid "_To front"
+msgstr "_На передний план"
+
+msgctxt "MSG_Edit_Screen_Help (//)"
+msgid ""
+"ARexx command to move the application\n"
+"screen to front."
+msgstr "ARexx команда для перевода экрана\nприложения на передний план."
+
+msgctxt "MSG_Edit_OpenURL (//)"
+msgid "_Open URL"
+msgstr "_Открыть URL"
+
+msgctxt "MSG_Edit_OpenURL_Help (//)"
+msgid "ARexx command to reach an URL."
+msgstr "ARexx команда для перехода на URL."
+
+msgctxt "MSG_Edit_NewWin (//)"
+msgid "N_ew window"
+msgstr "_Новое окно"
+
+msgctxt "MSG_Edit_NewWin_Help (//)"
+msgid ""
+"ARexx command to reach an URL\n"
+"in a new window (or tab)."
+msgstr "ARexx команда для перехода на URL\nв новом окне (или вкладке)."
+
+msgctxt "MSG_Browser_List_Help (600//)"
+msgid "List of browsers."
+msgstr "Список браузеров."
+
+msgctxt "MSG_Browser_WinTitle (//)"
+msgid "Edit Browser"
+msgstr "Редактировать браузер"
+
+msgctxt "MSG_Browser_NewBrowser (//)"
+msgid "New browser"
+msgstr "Новый браузер"
+
+msgctxt "MSG_Mailer_List_Help (700//)"
+msgid "List of Mailers."
+msgstr "Список почтовиков."
+
+msgctxt "MSG_Mailer_WinTitle (//)"
+msgid "Edit Mailer"
+msgstr "Редактировать почтовики"
+
+msgctxt "MSG_Mailer_NewMailer (//)"
+msgid "New mailer"
+msgstr "Новый почтовик"
+
+msgctxt "MSG_Mailer_Write (//)"
+msgid "_Write mail"
+msgstr "Написать _письмо"
+
+msgctxt "MSG_Mailer_Write_Help (//)"
+msgid ""
+"ARexx command to open a\n"
+"\"write a new EMail window\"."
+msgstr "ARexx команда для открытия окна\n\"написать новое письмо\"."
+
+msgctxt "MSG_Mailer_PopAddress (//)"
+msgid "Address"
+msgstr "Адрес"
+
+msgctxt "MSG_Mailer_Popsubject (//)"
+msgid "Subject"
+msgstr "Тема"
+
+msgctxt "MSG_Mailer_PopBodyText (//)"
+msgid "Body text"
+msgstr "Основной текст"
+
+msgctxt "MSG_Mailer_PopBodyFile (//)"
+msgid "Body file"
+msgstr "Основной файл"
+
+msgctxt "MSG_FTP_List_Help (800//)"
+msgid "List of FTP clients."
+msgstr "Список FTP клиентов."
+
+msgctxt "MSG_FTP_WinTitle (//)"
+msgid "Edit FTP client"
+msgstr "Редактировать FTP клиент."
+
+msgctxt "MSG_FTP_NewFTP (//)"
+msgid "New FTP client"
+msgstr "Новый FTP клиент."
+
+msgctxt "MSG_FTP_RemoveURLQualifier (//)"
+msgid "Re_move 'ftp://'"
+msgstr "_Удалить 'ftp://'"
+
+msgctxt "MSG_FTP_RemoveURLQualifier_Help (//)"
+msgid ""
+"If selected, \"ftp://\" is removed\n"
+"from the URL."
+msgstr "Если выбрано 'ftp://' \nудаляется из адреса URL"
+
+msgctxt "MSG_Misc_Options (900//)"
+msgid "Options"
+msgstr "Опции"
+
+msgctxt "MSG_Misc_Defaults (//)"
+msgid "Defaults"
+msgstr "По умолчанию"
+
+msgctxt "MSG_Misc_Prepend (//)"
+msgid "_Prepend \"http://\" to URLs without a scheme"
+msgstr "_Добавить \"http://\" к URL-ам без определённой темы"
+
+msgctxt "MSG_Misc_Prepend_Help (//)"
+msgid ""
+"If selected, \"http://\" is added to any URL\n"
+"without a scheme, so that it is opened in the\n"
+"browser."
+msgstr "Если выбрано, то \"http://\" добавляется ко всем URL-ам без\nопределённой темы, так, чтобы они открывались в браузере."
+
+msgctxt "MSG_Misc_UseMailer (//)"
+msgid "S_end mailto: URLs to email application"
+msgstr "_Отправлять mailto: URL-ы на почтовую программу"
+
+msgctxt "MSG_Misc_UseMailer_Help (//)"
+msgid ""
+"If selected, \"mailto:\" URLs are sent to\n"
+"the mailer, otherwise they are sent to the\n"
+"browser."
+msgstr "Если выбрано, то \"mailto:\" URL-ы\nотправляются на почтовую программу,\nиначе они отправляются на браузер."
+
+msgctxt "MSG_Misc_UseFTP (//)"
+msgid "Se_nd \"ftp://\" URLs to FTP application"
+msgstr "_Отправлять \"ftp://\" URL-ы на FTP программу"
+
+msgctxt "MSG_Misc_UseFTP_Help (//)"
+msgid ""
+"If selected, \"ftp://\" URLs are sent to\n"
+"the FTP client, otherwise they are sent to\n"
+"the browser."
+msgstr "Если выбрано, то \"ftp://\" URL-ы\nотправляются на FTP программу,\nиначе они отправляются на браузер."
+
+msgctxt "MSG_Misc_Show (//)"
+msgid "Un_iconify application"
+msgstr "_Развернуть приложение"
+
+msgctxt "MSG_Misc_Show_Help (//)"
+msgid ""
+"If selected, the application is uniconified,\n"
+"before sending the URL to it."
+msgstr "Если выбрано, то приложение развёртывается\nдо пересылки на него адреса URL."
+
+msgctxt "MSG_Misc_Bring (//)"
+msgid "_Bring browser screen to front"
+msgstr "_Вывести экран браузера на передний план"
+
+msgctxt "MSG_Misc_Bring_Help (//)"
+msgid ""
+"If selected, the application screen is moved\n"
+"to front, before sending the URL."
+msgstr "Если выбрано, то экран приложения выводиться\nна передний план до пересылки адреса URL."
+
+msgctxt "MSG_Misc_Open (//)"
+msgid "_Open URL in new client window (or tab)"
+msgstr "_Открыть URL в новом клиентском окне (или вкладке)"
+
+msgctxt "MSG_Misc_Open_Help (//)"
+msgid ""
+"If selected, a new application window (or tab)\n"
+"is opened, before sending the URL."
+msgstr "Если выбрано, то новое клиентское окно (или вкладка)\nоткрывается до пересылки адреса URL."
+
+msgctxt "MSG_Misc_Launch (//)"
+msgid "_Launch browser if one isn't running"
+msgstr "_Запустить браузер, если он ещё не запущен"
+
+msgctxt "MSG_Misc_Launch_Help (//)"
+msgid "If selected, a new application is run, if none is found."
+msgstr "Если выбрано, то запускается новое приложение, если нет активного."
+
+msgctxt "MSG_About_WinTitle (1100//)"
+msgid "About OpenURL"
+msgstr "О программе OpenURL"
+
+msgctxt "MSG_About_OK (1111//)"
+msgid "_OK"
+msgstr "_Принять"
+
+msgctxt "MSG_About_Descr (1112//)"
+msgid ""
+"\\33bOpenURL\\33n is a shared library for easily sending\n"
+"URLs from applications to browsers, mailers\n"
+"and FTP clients.\n"
+"\n"
+"\\33cOpenURL is a Public Domain Software."
+msgstr "\\33bOpenURL\\33n это библиотека для удобства\nпередачи URL-ов между приложениями, браузерами,\nпочтовыми программами и FTP клиентами.\n\n\\33cOpenURL - свободное программное обеспечение."

@@ -1,0 +1,14 @@
+#
+#   Makefile to make test boot module.
+
+include $(SRCDIR)/config/aros.cfg
+
+FILES  := testboot
+EXEDIR := $(AROSDIR)/boot
+
+%build_prog mmake=test-mingw32-boot \
+    progname=testboot targetdir=$(EXEDIR) \
+    files=$(FILES) \
+    usestartup=no
+
+%common

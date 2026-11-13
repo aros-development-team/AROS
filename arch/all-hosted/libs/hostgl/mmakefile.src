@@ -1,0 +1,60 @@
+#
+#   Generate hostgl.library
+#
+
+include $(SRCDIR)/config/aros.cfg
+MESA3DGL_DIRECTORY :=$(SRCDIR)/workbench/libs/mesa
+include $(MESA3DGL_DIRECTORY)/mesa.cfg
+
+#MM- workbench-libs-complete : hosted-libs-hostgl-$(OPT_HOST_X11_HOSTGL)
+
+#MM- hosted-libs-hostgl-yes : hosted-libs-hostgl
+
+#MM hosted-libs-hostgl : includes
+
+MESA_DIRECTORY := $(top_srcdir)/src/mesa
+MESA_GALLIUM_DIRECTORY := $(top_srcdir)/src/gallium
+MESA_ST_DIRECTORY := $(MESA_GALLIUM_DIRECTORY)/state_trackers/arosmesa
+MESA_MAPI_DIRECTORY := $(top_srcdir)/src/mapi
+
+LIBRARY_SOURCES = \
+                $(MESA3DGL_DIRECTORY)/tls \
+                hostgl_funcs \
+                hostgl_gl_api \
+                hostgl_support \
+                hostgl_ctx_manager \
+                hostgl_glacreatecontext \
+                hostgl_gladestroycontext \
+                hostgl_glagetconfig \
+                hostgl_glagetcurrentcontext \
+                hostgl_glagetopenglstatetrackerapi \
+                hostgl_glagetprocaddress \
+                hostgl_glamakecurrent \
+                hostgl_glasetrast \
+                hostgl_glaswapbuffers \
+                hostgl_glaswapinterval \
+                x11_hostlib \
+                glx_hostlib
+
+USER_INCLUDES +=  \
+    -I$(SRCDIR)/$(CURDIR)/../../hidd/x11 \
+    -I$(MESA_DIRECTORY) \
+    -I$(MESA_GALLIUM_DIRECTORY)/include \
+    -I$(MESA_MAPI_DIRECTORY) \
+    -I$(MESA3DGL_DIRECTORY) \
+    -isystem $(GENINCDIR) \
+     $(KERNEL_INCLUDES)
+
+USER_CPPFLAGS := \
+        -D__HOSTLIB_NOLIBBASE__ \
+        -DHOST_OS_$(ARCH) \
+        -DAROSMESA_TYPES='"hostgl_types.h"'
+USER_CFLAGS := $(HOST_X11_CFLAGS)
+#USER_CPPFLAGS := -DDEBUG=1
+
+%build_module_library mmake=hosted-libs-hostgl \
+    modname=hostgl modtype=library conffile=$(SRCDIR)/workbench/libs/gl/gl.conf \
+    files="$(LIBRARY_SOURCES)" \
+    uselibs="stdcio stdc"
+
+%common

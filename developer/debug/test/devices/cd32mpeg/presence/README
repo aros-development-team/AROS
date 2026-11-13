@@ -1,0 +1,15 @@
+CD32 MPEG device presence regression
+===================================
+
+Build with test-devices-cd32mpeg-presence or its -quick target. The native
+Amiga MPEG component group selects both normal and quick targets.
+
+Run mpegpresence on a stock CD32 with 2 MiB Chip RAM, then with an FMV
+cartridge fitted. It checks FindResident(), the initialized device list,
+and the return code of the actual Version command used by game scripts.
+The first argument optionally supplies a Version executable path instead
+of C:Version, for minimal test boot volumes.
+
+Expected: 4/4 checks pass in each configuration. Without a cartridge the
+resident and device are absent, and Version returns WARN or greater. With
+a cartridge both are present, and Version succeeds.

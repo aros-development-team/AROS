@@ -1,0 +1,56 @@
+/*
+ * Copyright (C) 2011, The AROS Development Team.  All rights reserved.
+ * Author: Jason S. McMullan <jason.mcmullan@gmail.com>
+ *
+ * Licensed under the AROS PUBLIC LICENSE (APL) Version 1.1
+ */
+
+#ifndef LIBCALL_CC_H
+#define LIBCALL_CC_H
+
+/* Abuse the d7 register to return condition codes */
+register UWORD AROS_LIBFUNC_cc asm ("d7");
+
+/* This ensures that 'SetSR' and friends actually work */
+#undef SetSR
+#define SetSR(v,m) \
+    do { AROS_LIBFUNC_cc = (v) | (AROS_LIBFUNC_cc & ~(m)); } while (0)
+
+#define _S(x)   #x
+
+#define AROS_CCWRAP(t,func, subfunc) \
+    asm ( ".global " _S(func) "\n" _S(func) ":\n" \
+          "subq.l #2,%sp\n" \
+          "movem.l %d7/%a0-%a1,%sp@-\n" \
+          "clr.w  %d7\n" \
+          "jsr " _S(subfunc) "\n" \
+          "move.w %d7,%sp@(3*4)\n" \
+          "movem.l %sp@+,%d7/%a0-%a1\n" \
+          "rtr\n" ); \
+
+#undef AROS_LH2
+#define AROS_LH2(t,n,a1,a2,bt,bn,o,s) \
+    AROS_CCWRAP(t, AROS_SLIB_ENTRY(n,s,o), AROS_SLIB_ENTRY(n##_cc,s,o)) \
+    __AROS_LH2(t, n##_cc, AROS_LHA(a1), AROS_LHA(a2), bt, bn, o, s)
+
+#undef AROS_LH1
+#define AROS_LH1(t,n,a1,bt,bn,o,s) \
+    AROS_CCWRAP(t, AROS_SLIB_ENTRY(n,s,o), AROS_SLIB_ENTRY(n##_cc,s,o)) \
+    __AROS_LH1(t, n##_cc, AROS_LHA(a1), bt, bn, o, s)
+
+#undef AROS_LH1DOUBLE1
+#define AROS_LH1DOUBLE1(t,n,a1,a2,bt,bn,o,s) \
+    AROS_CCWRAP(t, AROS_SLIB_ENTRY(n,s,o), AROS_SLIB_ENTRY(n##_cc,s,o)) \
+    __AROS_LH1DOUBLE1(t, n##_cc, AROS_LHA(a1), AROS_LHA2(a2), bt, bn, o, s)
+
+#undef AROS_LHDOUBLE1
+#define AROS_LHDOUBLE1(t,n,a1,bt,bn,o,s) \
+    AROS_CCWRAP(t, AROS_SLIB_ENTRY(n,s,o), AROS_SLIB_ENTRY(n##_cc,s,o)) \
+    __AROS_LHDOUBLE1(t, n##_cc, AROS_LHA2(a1), bt, bn, o, s)
+
+#undef AROS_LHDOUBLE2
+#define AROS_LHDOUBLE2(t,n,a1,a2,bt,bn,o,s) \
+    AROS_CCWRAP(t, AROS_SLIB_ENTRY(n,s,o), AROS_SLIB_ENTRY(n##_cc,s,o)) \
+    __AROS_LHDOUBLE2(t, n##_cc, AROS_LHA2(a1), AROS_LHA2(a2), bt, bn, o, s)
+
+#endif /* LIBCALL_CC_H */

@@ -1,0 +1,18 @@
+# Copyright (C) 2006, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+
+FILES := main locale
+
+EXEDIR := $(AROS_WANDERER)/Tools
+
+#MM- workbench-system-wanderer-tools : workbench-system-wanderer-tools-wbrename 
+#MM workbench-system-wanderer-tools-wbrename : \
+#MM workbench-system-wanderer-tools-wbrename-icons \
+#MM workbench-system-wanderer-tools-wbrename-catalogs
+
+%build_prog mmake=workbench-system-wanderer-tools-wbrename \
+    progname=WBRename targetdir=$(EXEDIR) \
+    files=$(FILES)
+
+%common

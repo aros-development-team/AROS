@@ -1,0 +1,92 @@
+# Packages to build, as an array. 
+# ## DO NOT USE THESE PACKAGES!
+#          bootiso            (only to be called from arch specific packages)
+# ## Allowed Common Packages:
+#          sources.svn.all,
+#          documentation.svn.all,
+#          changelogs.svn.all
+# ## Allowed Arch Specific Targets:
+#          sdk.svn.pc-i386,
+#          contrib.svn.pc-i386,
+#          bootiso-grub.svn.pc-i386,
+#          bootiso-grub2.svn.pc-i386,
+#          bootfloppy.svn.pc-i386,
+#          hosted.svn.linux-i386,
+#          sdk.svn.pc-x86_64,
+#          contrib.svn.pc-x86_64,
+#          bootiso-grub2.svn.pc-x86_64
+
+CFG_PACKAGES=( sources.svn.all )
+
+# C compiler to use
+CFG_CC=gcc
+
+#-----------------------------------------------------------------------------
+#-- Mail ---------------------------------------------------------------------
+# Whether to send a mail when build finishes
+# Allowed: yes, no
+CFG_MAIL_ENABLE=no
+
+# Addresses
+CFG_MAIL_TO=aros-dev@aros.org
+CFG_MAIL_CC=MUST_BE_SET
+
+#=============================================================================
+#== File Transfers ===========================================================
+# Whether to upload archives to distribution and backup servers
+# Allowed: yes, no
+CFG_UPLOAD_ENABLE=no
+
+# Whether to upload archives to backup server. Has no effect if
+# CFG_UPLOAD_ENABLE is disabled.
+# Allowed: yes, no
+CFG_BACKUP_ENABLE=yes
+
+# Whether to remove the archives after having uploaded them.
+# Allowed: yes, no
+CFG_UPLOAD_PRUNE=yes
+
+#-- Distribution Server ------------------------------------------------------
+# Hostname
+CFG_DS=web.sourceforge.net
+
+# User to log in as
+CFG_DS_USER=MUST_BE_SET
+
+# Private key to use to login
+CFG_DS_KEY=.ssh/id_dsa.aros-nightly-upload
+
+# Destination directory
+CFG_DS_DIRECTORY=uploads/nightly/
+
+#-- Backup Server ------------------------------------------------------------
+# Hostname
+CFG_BS=thenostromo.com
+
+# User to log in as
+CFG_BS_USER=aroskity
+
+# Private key to use to login
+CFG_BS_KEY=.ssh/id_dsa.aros-nightly-backup
+
+# Destination directory
+CFG_BS_DIRECTORY=nightly/
+
+#-- Parallel execution -------------------------------------------------------
+CFG_MAKE_JOBS=1
+
+# Whether to use common ports sources directory
+CFG_PORTSSOURCES_ENABLE=no
+
+# Which package to use to build toolchain that will be used for other builds in this configuration
+# Allowed: none (disable), <crosstools package name> (enable)
+CFG_PREBUILD_TOOLCHAIN_PACKAGE=none
+
+# Select which toolchain a server will use for its builds
+CFG_TOOLCHAIN_FAMILY=`cat $SOURCE_AROS/config/toolchain_def`
+
+# Import the gnu component versions
+CFG_GNU_GCC_DEFAULT=`cat $SOURCE_AROS/config/gcc_def`
+CFG_GNU_BINUTILS_DEFAULT=`cat $SOURCE_AROS/config/binutils_def`
+CFG_GNU_GCC_EXP=`cat $SOURCE_AROS/config/gcc_exp`
+CFG_GNU_BINUTILS_EXP=`cat $SOURCE_AROS/config/binutils_exp`

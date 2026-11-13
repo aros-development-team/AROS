@@ -1,0 +1,14 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+FILES := startup mouseclass drv_serial
+
+USER_LDFLAGS := -static
+
+USER_CPPFLAGS := \
+               -D__OOP_NOATTRBASES__
+
+%build_module mmake=kernel-hidd-serialmouse \
+  modname=serialmouse modtype=hidd \
+  files=$(FILES) \
+  uselibs="hiddstubs"

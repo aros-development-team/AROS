@@ -1,0 +1,11 @@
+# Copyright (C) 2026, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+USER_LDFLAGS := -static
+
+#MM test-graphics-ucopperlist : includes linklibs
+
+%build_progs mmake=test-graphics-ucopperlist \
+    files=ucopperlist targetdir=$(AROS_TESTS)/graphics/ucopperlist
+
+%common

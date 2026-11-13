@@ -1,0 +1,23 @@
+#
+#   Makefile for AROS task.resource tests
+
+include $(SRCDIR)/config/aros.cfg
+
+EXEDIR := $(AROS_TESTS)/taskres
+
+TESTPUBLICFILES :=		\
+    taskstorage
+
+#MM- test : test-taskres
+#MM- test-quick : test-taskres-quick
+
+#MM- test-taskres : test-taskres-public
+#MM- test-taskres-quick : test-taskres-public-quick
+
+#MM- test-taskres-deps : includes includes-copy linklibs kernel
+#MM test-taskres-public : test-taskres-deps
+
+%build_progs mmake=test-taskres-public \
+    files=$(TESTPUBLICFILES) targetdir=$(EXEDIR)
+
+%common

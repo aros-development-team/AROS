@@ -1,0 +1,48 @@
+#
+#   Makefile for the game controller subsystem tests:
+#   virtualpad.hidd (simulated controllers), ControllerSim, ControllerInfo
+
+include $(SRCDIR)/config/aros.cfg
+
+TARGETDIR := $(AROS_TESTS)/controller
+
+#MM- test : test-controller
+#MM- test-controller : test-controller-virtualpad test-controller-sim test-controller-info test-controller-hidmap test-controller-xinput test-controller-scripts
+#MM- test-controller-quick : test-controller-virtualpad-quick test-controller-sim-quick test-controller-info-quick
+
+#MM test-controller-virtualpad : workbench-hidds-controller-includes kernel-hidd-includes kernel-hidd-input-includes
+#MM test-controller-sim : test-controller-virtualpad-includes workbench-hidds-controller-includes
+#MM test-controller-info : workbench-hidds-controller-includes
+#MM test-controller-hidmap : workbench-hidds-controller-includes kernel-usb-poseidon-includes
+#MM test-controller-xinput : workbench-hidds-controller-includes
+
+USER_INCLUDES := -I$(SRCDIR)/$(CURDIR)/include -I$(TARGETDIR)/$(AROS_DIR_DEVELOPER)/$(AROS_DIR_INCLUDE) -I$(SRCDIR)/rom/usb/classes/hid -I$(SRCDIR)/rom/usb/classes/arosx
+
+# The simulated controller driver: a public class derived from CLID_Hidd_Controller
+VPAD_FILES := virtualpad_init virtualpad virtualpad_profiles
+
+%build_module mmake=test-controller-virtualpad \
+    modname=virtualpad modtype=hidd \
+    files="$(VPAD_FILES)" \
+    cppflags="$(CPPFLAGS) -D__OOP_NOLIBBASE__ -D__OOP_NOATTRBASES__ -D__UTILITY_NOLIBBASE__" \
+    moduledir=. prefix=$(TARGETDIR)
+
+%build_prog mmake=test-controller-sim \
+    progname=ControllerSim targetdir=$(TARGETDIR) \
+    files=ControllerSim
+
+%build_prog mmake=test-controller-info \
+    progname=ControllerInfo targetdir=$(TARGETDIR) \
+    files=ControllerInfo
+
+%build_prog mmake=test-controller-hidmap \
+    progname=hidmap_test targetdir=$(TARGETDIR) \
+    files=hidmap_test
+
+%build_prog mmake=test-controller-xinput \
+    progname=xinput_test targetdir=$(TARGETDIR) \
+    files=xinput_test
+
+%copy_files_q mmake=test-controller-scripts files="$(notdir $(call WILDCARD, scripts/*.sim))" src=scripts dst=$(TARGETDIR)/scripts
+
+%common

@@ -1,0 +1,20 @@
+#
+# Makefile to make JanoEditor.
+
+include $(SRCDIR)/config/aros.cfg
+
+FILES := ClipLoc Cursor DiskIO Edit Events Gui Jed \
+    	 Macros Memory Prefs Print Project Search UndoRedo \
+	 Utility
+
+EXEDIR := $(AROS_TOOLS)
+
+#MM- workbench-tools : workbench-tools-editor
+#MM workbench-tools-editor : includes linklibs workbench-tools-editor-catalogs
+
+%build_prog mmake=workbench-tools-editor \
+    progname=Editor targetdir=$(EXEDIR) \
+    files=$(FILES)
+
+%common
+

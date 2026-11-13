@@ -1,0 +1,19 @@
+Copyright (C) 2026, The AROS Development Team. All rights reserved.
+
+Classic screen bitmap layout regression
+======================================
+
+Build test-intuition-screenbitmap or test-intuition-screenbitmap-quick.
+The native Amiga Intuition component selects normal and quick targets.
+Run on an AGA machine with at least 2 MiB Chip RAM.
+
+Open eight-plane screens with caller-owned separate and interleaved planes.
+Check the drawing/display headers, original header preservation, and a
+physical pixel write on a later row. ChangeScreenBuffer must also preserve
+the complete layout when refreshing Screen.BitMap_OBSOLETE. In particular,
+an interleaved bitmap advances by 320 bytes per row, not the 40 bytes derived
+from its 320-pixel width.
+
+Preloaded pixels must also survive opening a screen with LAYERS_NOBACKFILL
+or a custom no-op SA_BackFill hook, as used by PicBoot. The normal default
+background clearing path is exercised separately.

@@ -1,0 +1,41 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+# Do not remove this! It allows to override battclock_intern.h in arch-specific
+# directory (currently used by Windows-hosted port and m68k-amiga)
+# Note that overrideable files must be included using #include <name>, not #include "name"
+# for this to work
+USER_INCLUDES := -I$(SRCDIR)/arch/$(CPU)-$(ARCH)/battclock \
+		 -I$(SRCDIR)/arch/all-$(ARCH)/battclock
+ifneq ($(FAMILY),)
+    USER_INCLUDES += -I$(SRCDIR)/arch/all-$(FAMILY)/battclock
+endif
+USER_INCLUDES += -I$(SRCDIR)/rom/battclock
+# uselibs parameter from %build_module is not fit (yet) for optional libs
+# use good old USER_LDFLAGS instead for the moment
+ifeq ($(ARCH),pc)
+    USER_LDFLAGS := -lacpica
+endif
+ifeq ($(ARCH),opensbi)
+    # the RTC is described by the device tree, so the tree parser has to
+    # be linked in; it pulls in string functions, which a kickstart
+    # module must take from stdc.static. The bus itself is reached
+    # through the i2c HIDD, which needs nothing at link time.
+    USER_LDFLAGS := -static -lfdt
+endif
+
+#MM kernel-battclock : includes kernel-battclock-$(ARCH)-$(CPU)
+#MM kernel-battclock-linklib : includes kernel-battclock-$(ARCH)-$(CPU)
+
+FUNCTIONS := readbattclock resetbattclock writebattclock \
+	     readbattclockmem writebattclockmem
+
+ifneq ($(ROM_OPTIMIZATION_CFLAGS),)
+OPTIMIZATION_CFLAGS := $(ROM_OPTIMIZATION_CFLAGS)
+endif
+
+%build_module mmake=kernel-battclock \
+    modname=battclock modtype=resource version=$(AROS_TARGET_PLATFORM) \
+    files="$(FUNCTIONS)" archspecific=yes
+
+%common

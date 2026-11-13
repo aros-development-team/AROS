@@ -1,0 +1,54 @@
+#!/bin/sh
+
+while [ $# != 0 ]; do
+    case "$1" in
+	-o)
+	    dest="$2"
+	    shift
+	    ;;
+	-o*)
+	    dest="`echo $1 | cut -c3-`"
+	    ;;
+	-g|-Wall|-O*)
+	    ;;
+	-D|-I)
+	    args="$args '$1' '$2'"
+	    shift
+	    ;;
+	*.c)
+	    files="$files '$1'"
+	    ;;
+	*.cc)
+	    files="$files '$1'"
+	    ;;
+        *.cpp)
+            files="$files '$1'"
+            ;;
+	*.m)
+	    files="$files '$1'"
+	    ;;
+	*)
+	    args="$args '$1'"
+	    ;;
+    esac
+    shift
+done
+
+if [ "x$files" = x ]; then
+    exit 0
+fi
+
+if [ "x$dest" = x ]; then
+    echo "$0: Error: -o missing"
+    exit 1
+fi
+
+if [ "x$AROS_CC" = x ]; then
+    echo "$0: Error: AROS_CC not defined"
+    exit 1
+fi
+
+CMD="$AROS_CC -M $args $files | sed 's#^.*\.o:#`dirname $dest`/&#'"
+#echo $CMD
+
+eval $CMD > $dest

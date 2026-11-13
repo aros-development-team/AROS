@@ -1,0 +1,20 @@
+# Copyright (C) 2004, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+
+USER_LDFLAGS := -static
+
+FILES         := prefswindow
+INCLUDE_FILES := prefswindow.h
+
+#MM- workbench-classes-zune : workbench-classes-zune-prefswindow
+#MM workbench-classes-zune-prefswindow : workbench-classes-zune-prefswindow-catalogs includes
+%build_module \
+    mmake=workbench-classes-zune-prefswindow \
+    modname=PrefsWindow modtype=mcc \
+    conffile=prefswindow.conf
+    
+%copy_includes path=zune
+    
+%common
+%include_deps

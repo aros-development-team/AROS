@@ -1,0 +1,15 @@
+# Copyright (C) 2009, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+
+FILES   := main
+EXEDIR  := $(AROS_TOOLS)
+
+#MM- workbench-tools : workbench-tools-injecticon
+
+%build_prog mmake=workbench-tools-injecticon \
+    progname=InjectIcon targetdir=$(EXEDIR) \
+    files=$(FILES)
+
+%common
+

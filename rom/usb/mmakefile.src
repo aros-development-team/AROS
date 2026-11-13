@@ -1,0 +1,74 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+# --- Main metatargets ---
+
+# Build a complete disk-based Poseidon
+#MM- kernel-usb : \
+#MM      kernel-usb-poseidon \
+#MM      poseidon-usb-shellcommands \
+#MM      kernel-usb-classes \
+#MM      kernel-usb-shellapps \
+#MM      kernel-usb-trident \
+#MM      kernel-usb-pciusb \
+#MM      kernel-usb-pcixhci \
+#MM      kernel-usb-usbromstartup
+
+#MM- kernel-usb-nopci : \
+#MM      kernel-usb-poseidon \
+#MM      poseidon-usb-shellcommands \
+#MM      kernel-usb-classes \
+#MM      kernel-usb-shellapps \
+#MM      kernel-usb-trident
+
+#MM- kernel-usb-amiga-m68k : kernel-usb-amiga-m68k-$(AROS_TARGET_VARIANT)
+
+#MM- kernel-usb-amiga-m68k- : kernel-usb-nopci usb-poseidon-deneb
+
+# Clean up
+#MM- kernel-usb-clean : \
+#MM      kernel-usb-poseidon-clean \
+#MM      poseidon-usb-shellcommands-clean \
+#MM      kernel-usb-classes-clean \
+#MM      kernel-usb-shellapps-clean \
+#MM      kernel-usb-trident-clean \
+#MM      kernel-usb-pciusb-clean \
+#MM      kernel-usb-pcixhci-clean \
+#MM      kernel-usb-usbclass-clean \
+#MM      kernel-usb-usbromstartup-clean 
+
+#MM- kernel-usb-nopci-clean : \
+#MM      kernel-usb-poseidon-clean \
+#MM      poseidon-usb-shellcommands-clean \
+#MM      kernel-usb-classes-clean \
+#MM      kernel-usb-shellapps-clean \
+#MM      kernel-usb-trident-clean
+
+# Build SDK
+#MM- kernel-usb-includes : \
+#MM      kernel-usb-poseidon-includes \
+#MM      kernel-usb-usbclass-includes
+
+# Platform bindings follow (obsolete)
+#MM- kernel-usb-sam440-ppc : \
+#MM         kernel-usb
+
+#MM- kernel-usb-opensbi-riscv64 : \
+#MM         kernel-usb-trident \
+#MM         kernel-usb-classes-common \
+#MM         poseidon-usb-shellcommands
+
+# This is kickstart package contents
+USB_CLASSES := USB/bootkeyboard USB/bootmouse USB/hubss USB/hub USB/hid USB/massstorage
+USB_DEVS    := USBHardware/pciusb USBHardware/pcixhci
+USB_LIBS    := poseidon
+USB_RES     := usbromstartup
+
+# --- PKG kickstart package ---
+
+#MM kernel-package-usb : kernel-usb
+
+%make_package mmake=kernel-package-usb file=$(AROS_BOOT)/poseidon.pkg packfmt=$(AROS_PACKAGE_FMT) \
+	classes=$(USB_CLASSES) devs=$(USB_DEVS) libs=$(USB_LIBS) res=$(USB_RES)
+
+%common

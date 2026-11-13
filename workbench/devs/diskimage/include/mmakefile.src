@@ -1,0 +1,11 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM- workbench-devs-diskimage : includes-copy 
+
+#MM- includes-copy : workbench-devs-diskimage-includes-devices
+
+FILES2 := diskimage.h
+%copy_files_q mmake=workbench-devs-diskimage-includes-devices files=$(FILES2) src=devices dst=$(AROS_INCLUDES)/devices
+
+%common

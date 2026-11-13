@@ -1,0 +1,46 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM kernel-hidd-uikit: kernel-hidd-uikit-native
+#MM kernel-hidd-uikit-quick: kernel-hidd-uikit-native
+#MM kernel-hidd-uikit-kobj: kernel-hidd-uikit-native
+#MM kernel-hidd-uikit-kobj-quick: kernel-hidd-uikit-native
+
+FILES := uikit_hiddclass uikit_bitmapclass eventtask startup
+
+%build_module mmake=kernel-hidd-uikit \
+  modname=uikit modtype=hidd \
+  files=$(FILES) uselibs="hiddstubs"
+
+NATIVE_BINDIR := $(AROSDIR)/Libs/Host
+NATIVE_OBJDIR := $(GENDIR)/$(CURDIR)
+
+NATIVE_FILES   := native_api alertdelegate displaycontroller displaywindow
+NATIVE_LIBNAME := uikit_hidd.dylib
+
+NATIVE_LDFLAGS := $(IOS_LDFLAGS) -framework CoreGraphics -framework Foundation -framework UIKit -shared
+
+OBJS := $(addsuffix .o,$(addprefix $(NATIVE_OBJDIR)/,$(notdir $(NATIVE_FILES))))
+DEPS := $(addsuffix .d,$(addprefix $(NATIVE_OBJDIR)/,$(notdir $(NATIVE_FILES))))
+
+#MM
+kernel-hidd-uikit-native : $(NATIVE_BINDIR) $(NATIVE_BINDIR)/$(NATIVE_LIBNAME)
+
+$(NATIVE_BINDIR):
+	@$(MKDIR) $(NATIVE_BINDIR)
+
+$(OBJDIR$)/%.o : %.m
+	%compile_q cmd=$(KERNEL_CC) opt="$(CFLAGS) $(KERNEL_CFLAGS) $(KERNEL_OBJCFLAGS) $(IOS_CFLAGS)"
+
+$(OBJDIR)/%.d : %.m
+	%mkdepend_q cc=$(KERNEL_CC) flags="$(CFLAGS) $(IOS_CFLAGS)"
+
+BD_STRIP := $(ECHO) >/dev/null
+
+%rule_link_prog prog=$(NATIVE_BINDIR)/$(NATIVE_LIBNAME) \
+    objs="$(OBJS)" ldflags="$(LDFLAGS) $(NATIVE_LDFLAGS)" \
+    cmd=$(KERNEL_CC) strip="$(BD_STRIP)"
+
+%include_deps depstargets="kernel-hidd-uikit-native" deps=$(DEPS)
+
+%common

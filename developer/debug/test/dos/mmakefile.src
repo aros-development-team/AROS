@@ -1,0 +1,103 @@
+# Copyright (C) 2003-2026, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+
+USER_CPPFLAGS = -DADATE="\"$(shell date '+%d.%m.%Y')\""
+CUNITEXEDIR := $(AROS_TESTS)/cunit/dos
+
+EXEDIR          := $(AROS_TESTS)/dos
+
+FILES := \
+    addpart \
+    assignlocks \
+    auxstartup \
+    clicreatenewproc \
+    consolemodes \
+    doslist \
+    dosvartest \
+    examine \
+    examinefh \
+    exnext \
+    exnextdelete \
+    filetest \
+    fread \
+    fstest \
+    getenv \
+    inhibit \
+    isinteractive \
+    lockrelative \
+    match \
+    matchtest \
+    minicat \
+    mountcarry \
+    mountlist \
+    namefromfh \
+    nil \
+    notify \
+    openfromlock \
+    output \
+    r \
+    rawtest \
+    readargs \
+    readitem \
+    readitemloop \
+    runcommand \
+    run_redirection \
+    rwverify \
+    scantest \
+    scanvarstest \
+    seektest \
+    seglistrelocs \
+    sfs_seek \
+    setfiledate \
+    setenv \
+    setfilesize \
+    strtodate \
+    strtolong \
+    systemtags \
+    systemtags_slave \
+    systemtags2 \
+    systemtags2_slave \
+    typeretry \
+    waitforchar
+
+PURE_FILES := \
+    exit \
+    isfilesystem
+
+CUNITSTDCTESTFILES := \
+    cunit-dos-fileseek \
+    cunit-dos-readargs
+
+#MM- test : test-dos
+#MM- test-quick : test-dos-quick
+
+#MM- test-dos : test-dos-common test-dos-pure test-dos-cunit test-dos-resident test-dos-runcommandredir test-dos-systemconsole
+#MM- test-dos-quick : test-dos-common-quick test-dos-pure-quick test-dos-cunit-quick test-dos-resident-quick test-dos-runcommandredir-quick test-dos-systemconsole-quick
+
+#MM- test-cunit : test-dos-cunit
+#MM- test-cunit-quick : test-dos-cunit-quick
+
+#MM- test-dos-cunit : test-dos-$(TARGET_UNITTESTS)-cunit
+#MM- test-dos-cunit-quick : test-dos-$(TARGET_UNITTESTS)-cunit-quick
+
+#MM test-dos-yes-cunit : includes includes-copy linklibs linklibs-cunit
+
+#MM test-dos-common : includes linklibs
+
+%build_progs mmake=test-dos-common \
+    files=$(FILES) targetdir=$(EXEDIR)
+
+%build_progs mmake=test-dos-pure \
+    files=$(PURE_FILES) targetdir=$(EXEDIR) \
+    usestartup="no"
+
+USER_INCLUDES := -I$(AROS_CONTRIB_INCLUDES)
+USER_CFLAGS := $(CFLAGS_NO_BUILTIN) 
+USER_LDFLAGS := -L$(AROS_CONTRIB_LIB)
+
+%build_progs mmake=test-dos-yes-cunit \
+    files=$(CUNITSTDCTESTFILES) targetdir=$(CUNITEXEDIR) \
+    uselibs="cunit posixc"
+
+%common

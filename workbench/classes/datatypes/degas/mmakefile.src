@@ -1,0 +1,14 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+USER_LDFLAGS := -static
+
+NOWARN_FLAGS := $(NOWARN_UNINITIALIZED) $(NOWARN_PARENTHESES)
+USER_CFLAGS := $(NOWARN_FLAGS)
+
+%build_prog mmake=workbench-datatypes-degas \
+    progname="degas.datatype" \
+    files="startup aros_datatype datatype degas" \
+    targetdir=$(AROSDIR)/Classes/DataTypes coverageinstr=no
+
+%common

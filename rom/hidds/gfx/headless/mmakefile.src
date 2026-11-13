@@ -1,0 +1,25 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM kernel-hidd-gfx-headlessgfx : kernel-hidd-gfx-includes \
+#MM     kernel-hidd-gfx-headlessgfx-monitor
+
+#MM kernel-hidd-gfx-headlessgfx-monitor : kernel-hidd-gfx-includes
+
+DRIVERDIR := Storage/Drivers
+MONITORDIR := $(AROSDIR)/Storage/Monitors
+
+%build_prog mmake=kernel-hidd-gfx-headlessgfx-monitor \
+    progname=Headless targetdir=$(MONITORDIR) \
+    files=disk_startup
+
+FILES	:=	\
+	headlessgfx_init \
+	headlessgfx_hiddclass \
+	headlessgfx_bitmapclass
+
+#USER_CPPFLAGS += -DDEBUG=1
+
+%build_module mmake=kernel-hidd-gfx-headlessgfx \
+  modname=headlessgfx modtype=hidd \
+  files=$(FILES) moduledir=$(DRIVERDIR)

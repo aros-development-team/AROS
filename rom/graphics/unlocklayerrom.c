@@ -1,0 +1,58 @@
+/*
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
+
+    Desc: Graphics function UnlockLayerRom()
+*/
+#include <proto/exec.h>
+#include <graphics/layers.h>
+
+#include "graphics_intern.h"
+
+/*****************************************************************************
+
+    NAME */
+#include <proto/graphics.h>
+
+        AROS_LH1(void, UnlockLayerRom,
+
+/*  SYNOPSIS */
+        AROS_LHA(struct Layer *, l,   A5),
+
+/*  LOCATION */
+        struct GfxBase *, GfxBase, 73, Graphics)
+
+/*  FUNCTION
+        Unlocks a previously locked layer for access by other applications
+        or intuition itself.
+        If a task has locked a layer multiple times it must unlock it
+        as many times as well as locks nest.
+        This functions does the same as layers/UnlockLayerRom()
+
+    INPUTS
+        l - pointer to layer structure
+
+    RESULT
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+        Does not save all registers.
+
+    SEE ALSO
+        LockLayerRom(), hyperlayers.library/LockLayer()
+        hyperlayers.library/UnLockLayer()
+
+    INTERNALS
+
+    HISTORY
+
+*****************************************************************************/
+{
+    AROS_LIBFUNC_INIT
+
+    ReleaseSemaphore(&l->Lock);
+
+    AROS_LIBFUNC_EXIT
+} /* UnlockLayerRom */

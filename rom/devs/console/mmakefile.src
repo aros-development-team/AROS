@@ -1,0 +1,31 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+FILES	:=  support consoleclass stdconclass charmapconclass rendezvous charmap snipmapconclass consoletask
+FUNCS	:=  cdinputhandler rawkeyconvert setconsnip getconsnip addconsniphook remconsniphook
+
+#MM- kernel-console : includes linklibs
+
+USER_CPPFLAGS := \
+               -DUSE_EXEC_DEBUG \
+               -D__GRAPHICS_NOLIBBASE__ \
+               -D__INTUITION_NOLIBBASE__ \
+               -D__KEYMAP_NOLIBBASE__ \
+               -D__UTILITY_NOLIBBASE__
+USER_CPPFLAGS += \
+               -DINTUITION_INLINE_NEWOBJECT
+USER_LDFLAGS := -static
+
+ifneq ($(ROM_OPTIMIZATION_CFLAGS),)
+OPTIMIZATION_CFLAGS := $(ROM_OPTIMIZATION_CFLAGS)
+endif
+
+%build_module mmake=kernel-console \
+  modname=console modtype=device \
+  files="console $(FUNCS) $(FILES)"
+
+#MM includes-copy
+
+INCLUDE_FILES := $(call WILDCARD, include/*.h)
+%copy_includes path=devices dir=include
+

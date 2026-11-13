@@ -1,0 +1,3 @@
+#MM- compiler-posixc-riscv64 : compiler-posixc-riscv
+#MM- compiler-posixc-riscv64-quick : compiler-posixc-riscv-quick
+#MM- compiler-posixc-riscv64-linklib : compiler-posixc-riscv-linklib

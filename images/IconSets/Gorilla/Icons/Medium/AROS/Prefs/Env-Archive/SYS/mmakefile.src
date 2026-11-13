@@ -1,0 +1,82 @@
+# Copyright (C) 2004-2023, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+
+# Device/Filesystem Icons
+ICONS := \
+    def_CDROM def_BusyCDROM def_NDOSCDROM def_DVD \
+    def_Disk def_BusyDisk def_FATDisk def_FFSDisk def_KickDisk def_PFSDisk def_SFSDisk def_NDOSDisk \
+    def_Harddisk def_BusyHarddisk def_FATHarddisk def_FFSHarddisk def_NDOSHarddisk \
+    def_RAM def_RAD def_USB def_UnknownDevice
+
+# File Icons
+ICONS += \
+    def_Drawer def_Project \
+    def_Picture def_Text def_Document def_Tool def_Authors \
+    def_CSS def_HTML def_Legal def_Movie def_Music def_Instrument def_PDF def_Patch \
+    def_Postscript def_Presentation def_Printer def_ReadMe def_Spreadsheet \
+    def_XCF def_Sound def_Keymap def_DataType def_Installer \
+    def_AudioMode def_Zune def_TrueType def_Otag def_A68K def_Catalog \
+    def_Country def_Home def_MP3ID3 def_MP3  def_Lua def_AmiLua \
+    def_Archive def_Python def_REXX def_NetworkHost def_UserHome def_Trashcan \
+    def_PLS def_M3U def_DT64 def_Pref def_MSD def_MSI def_CDXL def_FLAC \
+    def_ELF_EXE_Linux def_KickROM def_Wireless def_LHA \
+    def_ANIM def_GIFAnim
+
+ICONS += \
+    def_Bitmap_Font \
+    def_Outline_Font
+
+IMGS := def_AppIcon1.png def_AppIcon2.png
+APPI := def_AppIcon
+
+#MM- iconset-Gorilla-wbench-icons-aros-clean : iconset-Gorilla-wbench-icons-aros-prefs-envarc-clean
+#MM- iconset-Gorilla-wbench-icons-aros : iconset-Gorilla-wbench-icons-aros-prefs-envarc \
+#MM  iconset-Gorilla-wbench-icons-aros-prefs-envarc-appicon
+
+%build_icons mmake=iconset-Gorilla-wbench-icons-aros-prefs-envarc icons=$(ICONS) \
+             dir=$(AROS_ENVARC)/SYS
+
+%build_icons mmake=iconset-Gorilla-wbench-icons-aros-prefs-envarc-appicon icons=$(APPI) \
+             dir=$(AROS_ENVARC)/SYS  image=$(IMGS)
+
+#MM- icons-wbench-prefs-envarc : gorilla-icons-wbench-prefs-envarc
+%build_icons mmake=gorilla-icons-wbench-prefs-envarc icons=$(ICONS) \
+             dir=$(AROS_PRESETS)/Icons/Gorilla/Default/$(AROS_DIR_AROS)/$(AROS_DIR_PREFS)/$(AROS_DIR_ENVARC)/SYS
+
+#MM- icons-wbench-prefs-envarc-appicon : gorilla-icons-wbench-prefs-envarc-appicon
+%build_icons mmake=gorilla-icons-wbench-prefs-envarc-appicon icons=$(APPI) \
+             dir=$(AROS_PRESETS)/Icons/Gorilla/Default/$(AROS_DIR_AROS)/$(AROS_DIR_PREFS)/$(AROS_DIR_ENVARC)/SYS  image=$(IMGS)
+
+# Special rules
+
+$(AROS_PRESETS)/Icons/Gorilla/Default/Images/Drawer : $(SRCDIR)/$(CURDIR)/def_Drawer.png
+	@$(MKDIR) -p "$(dir $@)"
+	$(CP) $< $@
+
+$(AROS_PRESETS)/Icons/Gorilla/Default/Images/Floppy : $(SRCDIR)/$(CURDIR)/def_Disk.png
+	@$(MKDIR) -p "$(dir $@)"
+	$(CP) $< $@
+
+$(AROS_PRESETS)/Icons/Gorilla/Default/Images/CDROM : $(SRCDIR)/$(CURDIR)/def_Harddisk.png
+	@$(MKDIR) -p "$(dir $@)"
+	$(CP) $< $@
+
+$(AROS_PRESETS)/Icons/Gorilla/Default/Images/Harddisk : $(SRCDIR)/$(CURDIR)/def_Harddisk.png
+	@$(MKDIR) -p "$(dir $@)"
+	$(CP) $< $@
+
+$(AROS_PRESETS)/Icons/Gorilla/Default/Images/USBdisk : $(SRCDIR)/$(CURDIR)/def_USB.png
+	@$(MKDIR) -p "$(dir $@)"
+	$(CP) $< $@
+
+#MM
+gorilla-icon-images : $(AROS_PRESETS)/Icons/Gorilla/Default/Images/Drawer $(AROS_PRESETS)/Icons/Gorilla/Default/Images/Floppy $(AROS_PRESETS)/Icons/Gorilla/Default/Images/CDROM $(AROS_PRESETS)/Icons/Gorilla/Default/Images/Harddisk $(AROS_PRESETS)/Icons/Gorilla/Default/Images/USBdisk
+
+#MM- icon-images : gorilla-icon-images
+
+# "Hosted" Boot drives.
+
+#MM
+iconset-Gorilla-icons-aros-windows-system :
+	@$(ILBMTOICON) $(SRCDIR)/$(CURDIR)/def_FATHarddisk.info.src $(SRCDIR)/$(CURDIR)/def_FATHarddisk.png $(AROSDIR)/disk.info

@@ -1,0 +1,1012 @@
+/*
+ * Copyright (C) 1993 AmiTCP/IP Group, <amitcp-group@hut.fi>
+ *                    Helsinki University of Technology, Finland.
+ *                    All rights reserved.
+ * Copyright (C) 2005-2026 The AROS Dev Team
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place - Suite 330, Boston,
+ * MA 02111-1307, USA.
+ *
+ */
+
+/*
+ * Mach Operating System
+ * Copyright (C) 1992 Carnegie Mellon University
+ * All Rights Reserved.
+ *
+ * Permission to use, copy, modify and distribute this software and its
+ * documentation is hereby granted, provided that both the copyright
+ * notice and this permission notice appear in all copies of the
+ * software, derivative works or modified versions, and any portions
+ * thereof, and that both notices appear in supporting documentation.
+ *
+ * CARNEGIE MELLON ALLOWS FREE USE OF THIS SOFTWARE IN ITS "AS IS"
+ * CONDITION.  CARNEGIE MELLON DISCLAIMS ANY LIABILITY OF ANY KIND FOR
+ * ANY DAMAGES WHATSOEVER RESULTING FROM THE USE OF THIS SOFTWARE.
+ *
+ * Carnegie Mellon requests users of this software to return to
+ *
+ *  Software Distribution Coordinator  or  Software.Distribution@CS.CMU.EDU
+ *  School of Computer Science
+ *  Carnegie Mellon University
+ *  Pittsburgh PA 15213-3890
+ *
+ * any improvements or extensions that they make and grant Carnegie Mellon
+ * the rights to redistribute these changes.
+ */
+
+/*
+ * Copyright (C) 1980, 1986, 1991 Regents of the University of California.
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ * 3. All advertising materials mentioning features or use of this software
+ *    must display the following acknowledgement:
+ *	This product includes software developed by the University of
+ *	California, Berkeley and its contributors.
+ * 4. Neither the name of the University nor the names of its contributors
+ *    may be used to endorse or promote products derived from this software
+ *    without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
+ *
+ *	@(#)route.c	7.22 (Berkeley) 6/27/91
+ */
+
+#include <conf.h>
+
+#include <sys/param.h>
+#include <sys/systm.h>
+#include <sys/malloc.h>
+#include <sys/mbuf.h>
+#include <sys/socket.h>
+#include <sys/socketvar.h>
+#include <sys/domain.h>
+#include <sys/protosw.h>
+#include <sys/ioctl.h>
+#include <sys/synch.h>
+
+#include <net/if.h>
+#include <net/if_protos.h>
+#include <net/route.h>
+#include <net/raw_cb.h>
+
+#include <netinet/in.h>
+#include <netinet/in_var.h>
+#if INET6
+#include <netinet6/in6_var.h>
+#endif
+
+#if NS
+#include <netns/ns.h>
+#endif
+#include <net/netisr.h>
+#include <net/netmodule.h>
+
+#include <net/rtsock_protos.h>
+#include <net/radix_protos.h>
+#include <net/route_protos.h>
+#include <netinet/in_protos.h>
+
+#include <time.h>               /* timespec_get() */
+
+#define	SA(p) ((struct sockaddr *)(p))
+
+extern struct	rtstat	rtstat;
+
+
+/* --- commons from route.h --- */
+struct route_cb route_cb = {0};
+#if 0 /* obsolete */
+struct	mbuf *rthost[RTHASHSIZ] = {NULL};
+struct	mbuf *rtnet[RTHASHSIZ] = {NULL};
+#endif
+struct	rtstat	rtstat = {0};
+/* --- commons from route.h --- */
+
+int    rttrash = 0;		/* routes not in table but not freed */
+struct sockaddr wildcard = {0};	/* zero valued cookie for wildcard searches */
+#if 0 /* obsolete */
+int    rthashsize = RTHASHSIZ;	/* for netstat, etc. */
+#endif
+
+static int rtinits_done = 0;
+struct radix_node_head *ns_rnhead = 0, *in_rnhead = 0;
+#if INET6
+struct radix_node_head *in6_rnhead = 0;
+extern struct ifnet *ifnet;     /* net/if.c */
+#endif
+struct radix_node *rn_match(), *rn_delete(), *rn_addroute();
+
+void
+rtinitheads()
+{
+    if(rtinits_done == 0) {
+#if NS
+        rn_inithead(&ns_rnhead, 16, AF_NS);
+#endif
+#if INET6
+        rn_inithead(&in6_rnhead, 64, AF_INET6);
+#endif
+        if(rn_inithead(&in_rnhead, 32, AF_INET))
+            rtinits_done = 1;
+    }
+}
+
+/*
+ * Packet routing routines.
+ */
+void
+rtalloc(ro)
+register struct route *ro;
+{
+    if(ro->ro_rt && ro->ro_rt->rt_ifp && (ro->ro_rt->rt_flags & RTF_UP))
+        return;				 /* XXX */
+    ro->ro_rt = rtalloc1(&ro->ro_dst, 1);
+}
+
+struct rtentry *
+rtalloc1(dst, report)
+register struct sockaddr *dst;
+int  report;
+{
+    register struct radix_node_head *rnh;
+    register struct rtentry *rt;
+    register struct radix_node *rn;
+    struct rtentry *newrt = 0;
+    int err = 0, msgtype = RTM_MISS;
+    spl_t s = splnet();
+
+    for(rnh = radix_node_head; rnh && (dst->sa_family != rnh->rnh_af);)
+        rnh = rnh->rnh_next;
+    DROUTE(log(LOG_DEBUG, "Found radix node head: 0x%p", rnh);)
+    DROUTE(log(LOG_DEBUG, "rnh_treetop = 0x%p", rnh->rnh_treetop);)
+    if(rnh && rnh->rnh_treetop &&
+            (rn = rn_match((caddr_t)dst, rnh->rnh_treetop)) &&
+            ((rn->rn_flags & RNF_ROOT) == 0)) {
+        newrt = rt = (struct rtentry *)rn;
+        if(report && (rt->rt_flags & RTF_CLONING)) {
+            if((err = rtrequest(RTM_RESOLVE, dst, SA(0),
+                                SA(0), 0, &newrt)) ||
+                    ((rt->rt_flags & RTF_XRESOLVE)
+                     && (msgtype = RTM_RESOLVE))) /* intended! */
+                goto miss;
+        } else
+            rt->rt_refcnt++;
+    } else {
+        DROUTE(log(LOG_DEBUG, "Route lookup failure, rn = 0x%p", rn);)
+        rtstat.rts_unreach++;
+miss:
+        if(report)
+            rt_missmsg(msgtype, dst, SA(0), SA(0), SA(0), 0, err);
+    }
+    splx(s);
+    return (newrt);
+}
+
+void
+rtfree(rt)
+register struct rtentry *rt;
+{
+    if(rt == 0)
+        panic("rtfree");
+    rt->rt_refcnt--;
+    if(rt->rt_refcnt <= 0 && (rt->rt_flags & RTF_UP) == 0) {
+        rttrash--;
+        if(rt->rt_nodes->rn_flags & (RNF_ACTIVE | RNF_ROOT))
+            panic("rtfree 2");
+        Free(rt);
+    }
+}
+
+/*
+ * Force a routing table entry to the specified
+ * destination to go through the given gateway.
+ * Normally called as a result of a routing redirect
+ * message from the network layer.
+ *
+ * N.B.: must be called at splnet
+ *
+ */
+void
+rtredirect(dst, gateway, netmask, flags, src, rtp)
+struct sockaddr *dst, *gateway, *netmask, *src;
+int flags;
+struct rtentry **rtp;
+{
+    register struct rtentry *rt = NULL;
+    int error = 0;
+    short *stat = 0;
+
+    /* verify the gateway is directly reachable */
+    if(ifa_ifwithnet(gateway) == 0) {
+        error = ENETUNREACH;
+        goto done;
+    }
+    rt = rtalloc1(dst, 0);
+    /*
+     * If the redirect isn't from our current router for this dst,
+     * it's either old or wrong.  If it redirects us to ourselves,
+     * we have a routing loop, perhaps as a result of an interface
+     * going down recently.
+     */
+#define	equal(a1, a2) (bcmp((caddr_t)(a1), (caddr_t)(a2), (a1)->sa_len) == 0)
+    if(!(flags & RTF_DONE) && rt && !equal(src, rt->rt_gateway))
+        error = EINVAL;
+    else if(ifa_ifwithaddr(gateway))
+        error = EHOSTUNREACH;
+    if(error)
+        goto done;
+    /*
+     * Create a new entry if we just got back a wildcard entry
+     * or the the lookup failed.  This is necessary for hosts
+     * which use routing redirects generated by smart gateways
+     * to dynamically build the routing tables.
+     */
+    if((rt == 0) || (rt_mask(rt) && rt_mask(rt)->sa_len < 2))
+        goto create;
+    /*
+     * Don't listen to the redirect if it's
+     * for a route to an interface.
+     */
+    if(rt->rt_flags & RTF_GATEWAY) {
+        if(((rt->rt_flags & RTF_HOST) == 0) && (flags & RTF_HOST)) {
+            /*
+             * Changing from route to net => route to host.
+             * Create new route, rather than smashing route to net.
+             */
+create:
+            flags |=  RTF_GATEWAY | RTF_DYNAMIC;
+            error = rtrequest((int)RTM_ADD, dst, gateway,
+                              SA(0), flags,
+                              (struct rtentry **)0);
+            stat = &rtstat.rts_dynamic;
+        } else {
+            /*
+             * Smash the current notion of the gateway to
+             * this destination.  Should check about netmask!!!
+             */
+            if(gateway->sa_len <= rt->rt_gateway->sa_len) {
+                Bcopy(gateway, rt->rt_gateway, gateway->sa_len);
+                rt->rt_flags |= RTF_MODIFIED;
+                flags |= RTF_MODIFIED;
+                stat = &rtstat.rts_newgateway;
+            } else
+                error = ENOSPC;
+        }
+    } else
+        error = EHOSTUNREACH;
+done:
+    if(rt) {
+        if(rtp && !error)
+            *rtp = rt;
+        else
+            rtfree(rt);
+    }
+    if(error)
+        rtstat.rts_badredirect++;
+    else {
+        if(stat)
+            (*stat)++;
+    }
+    rt_missmsg(RTM_REDIRECT, dst, gateway, netmask, src, flags, error);
+}
+
+/*
+* Routing table ioctl interface.
+*/
+int
+rtioctl(req, data)
+int req;
+caddr_t data;
+{
+#if !defined(COMPAT_43) && !defined(AMITCP)
+    return (EOPNOTSUPP);
+#else
+    register struct ortentry *entry = (struct ortentry *)data;
+    int error;
+    struct sockaddr netmask;
+
+    if(req == SIOCADDRT)
+        req = RTM_ADD;
+    else if(req == SIOCDELRT)
+        req = RTM_DELETE;
+    else
+        return (EINVAL);
+
+#ifndef AMITCP /* no protection on AmigaOS */
+    if(error = suser(p->p_ucred, &p->p_acflag))
+        return (error);
+#endif /* AMITCP */
+
+#if BYTE_ORDER != BIG_ENDIAN
+    if(entry->rt_dst.sa_family == 0 && entry->rt_dst.sa_len < 16) {
+        entry->rt_dst.sa_family = entry->rt_dst.sa_len;
+        entry->rt_dst.sa_len = 16;
+    }
+    if(entry->rt_gateway.sa_family == 0 && entry->rt_gateway.sa_len < 16) {
+        entry->rt_gateway.sa_family = entry->rt_gateway.sa_len;
+        entry->rt_gateway.sa_len = 16;
+    }
+#else
+    if(entry->rt_dst.sa_len == 0)
+        entry->rt_dst.sa_len = 16;
+    if(entry->rt_gateway.sa_len == 0)
+        entry->rt_gateway.sa_len = 16;
+#endif
+    /*
+     * The legacy ortentry embeds rt_dst and rt_gateway as fixed
+     * sizeof(struct sockaddr) storage.  A caller-supplied sa_len larger
+     * than that would let rtrequest() copy past the embedded sockaddr,
+     * so clamp each length to the size that is actually present.
+     */
+    if(entry->rt_dst.sa_len > sizeof(struct sockaddr))
+        entry->rt_dst.sa_len = sizeof(struct sockaddr);
+    if(entry->rt_gateway.sa_len > sizeof(struct sockaddr))
+        entry->rt_gateway.sa_len = sizeof(struct sockaddr);
+    if((entry->rt_flags & RTF_HOST) == 0)
+        switch(entry->rt_dst.sa_family) {
+        default:
+            /*
+             * This old request names no mask: the destination's family
+             * gives the one of its network (IPv4: by address class and the
+             * subnets of the interfaces). A family that is not part of the
+             * running stack, or has no such rule, cannot have the route.
+             */
+            if(netfamily_addrquery(entry->rt_dst.sa_family, NFQ_NETMASK,
+                                   &entry->rt_dst, &netmask) <= 0)
+                return (EAFNOSUPPORT);
+            break;
+#if NS
+        case AF_NS: {
+            extern struct sockaddr_ns ns_netmask;
+            netmask = (struct sockaddr)ns_netmask;
+        }
+#endif
+        }
+    error = rtrequest(req, &(entry->rt_dst), &(entry->rt_gateway),
+                      (entry->rt_flags & RTF_HOST) ? NULL : &netmask,
+                      entry->rt_flags, (struct rtentry **)0);
+    rt_missmsg((req == RTM_ADD ? RTM_OLDADD : RTM_OLDDEL),
+               &(entry->rt_dst), &(entry->rt_gateway),
+               (entry->rt_flags & RTF_HOST) ? NULL : &netmask,
+               SA(0), entry->rt_flags, error);
+    return (error);
+#endif
+}
+
+struct ifaddr *
+ifa_ifwithroute(flags, dst, gateway)
+int	flags;
+struct sockaddr	*dst, *gateway;
+{
+    register struct ifaddr *ifa;
+
+    /* A route always names a gateway; refuse quietly rather than
+       dereferencing a hole where one should have been */
+    if(gateway == NULL)
+        return ((struct ifaddr *)0);
+
+    /*
+     * A gateway address that names its link itself (an IPv6 link-local
+     * address with a zone, RFC 4007 section 6) is on that link: the route
+     * takes that interface and the address this host has on it - not
+     * whichever interface's network the address happens to match first
+     * (ifa_ifwithnet()), which sent the traffic of a route through
+     * fe80::1%eth1 out by eth0, to another neighbour. Which addresses do
+     * so is the family's to say (NFQ_GATEWAYLINK).
+     */
+    if(gateway->sa_family == dst->sa_family) {
+        struct sockaddr_storage own;
+        int idx;
+
+        idx = netfamily_addrquery(gateway->sa_family, NFQ_GATEWAYLINK, gateway,
+                                  (struct sockaddr *)&own);
+        if(idx > 0) {
+            struct ifnet *ifp;
+
+            for(ifp = ifnet; ifp; ifp = ifp->if_next)
+                if(ifp->if_index == idx)
+                    break;
+            if(ifp == NULL || own.ss_len == 0)
+                return ((struct ifaddr *)0);
+            for(ifa = ifp->if_addrlist; ifa; ifa = ifa->ifa_next)
+                if(ifa->ifa_addr->sa_family == own.ss_family &&
+                        ifa->ifa_addr->sa_len == own.ss_len &&
+                        bcmp((caddr_t)ifa->ifa_addr, (caddr_t)&own, own.ss_len) == 0)
+                    return (ifa);
+            return ((struct ifaddr *)0);
+        }
+    }
+
+    if((flags & RTF_GATEWAY) == 0) {
+        /*
+         * If we are adding a route to an interface,
+         * and the interface is a pt to pt link
+         * we should search for the destination
+         * as our clue to the interface.  Otherwise
+         * we can use the local address.
+         */
+        ifa = 0;
+        if(flags & RTF_HOST)
+            ifa = ifa_ifwithdstaddr(dst);
+        if(ifa == 0)
+            ifa = ifa_ifwithaddr(gateway);
+    } else {
+        /*
+         * If we are adding a route to a remote net
+         * or host, the gateway may still be on the
+         * other end of a pt to pt link.
+         */
+        ifa = ifa_ifwithdstaddr(gateway);
+    }
+    if(ifa == 0)
+        ifa = ifa_ifwithnet(gateway);
+    if(ifa == 0) {
+        struct rtentry *rt = rtalloc1(dst, 0);
+        if(rt == 0)
+            return (0);
+        rt->rt_refcnt--;
+        if((ifa = rt->rt_ifa) == 0)
+            return (0);
+    }
+    if(ifa->ifa_addr->sa_family != dst->sa_family) {
+        struct ifaddr *oifa = ifa, *ifaof_ifpforaddr();
+        ifa = ifaof_ifpforaddr(dst, ifa->ifa_ifp);
+        if(ifa == 0)
+            ifa = oifa;
+    }
+    return (ifa);
+}
+
+#define ROUNDUP(a) (a>0 ? (1 + (((a) - 1) | (sizeof(long) - 1))) : sizeof(long))
+
+int
+rtrequest(req, dst, gateway, netmask, flags, ret_nrt)
+int req, flags;
+struct sockaddr *dst, *gateway, *netmask;
+struct rtentry **ret_nrt;
+{
+    int len, error = 0;
+    spl_t s = splnet();
+    register struct rtentry *rt;
+    register struct radix_node *rn;
+    register struct radix_node_head *rnh;
+    struct ifaddr *ifa, *ifa_ifwithdstaddr();
+    struct sockaddr *ndst;
+    u_char af = dst->sa_family;
+#define senderr(x) { error = x ; goto bad; }
+
+    if(rtinits_done == 0)
+        rtinitheads();
+    for(rnh = radix_node_head; rnh && (af != rnh->rnh_af);)
+        rnh = rnh->rnh_next;
+    if(rnh == 0)
+        senderr(ESRCH);
+    if(flags & RTF_HOST)
+        netmask = 0;
+    switch(req) {
+    case RTM_DELETE:
+        if(ret_nrt && (rt = *ret_nrt)) {
+            RTFREE(rt);
+            *ret_nrt = 0;
+        }
+        if((rn = rn_delete((caddr_t)dst, (caddr_t)netmask,
+                           rnh->rnh_treetop)) == 0)
+            senderr(ESRCH);
+        if(rn->rn_flags & (RNF_ACTIVE | RNF_ROOT))
+            panic("rtrequest delete");
+        rt = (struct rtentry *)rn;
+        rt->rt_flags &= ~RTF_UP;
+        if((ifa = rt->rt_ifa) && ifa->ifa_rtrequest)
+            ifa->ifa_rtrequest(RTM_DELETE, rt, SA(0));
+        rttrash++;
+        if(rt->rt_refcnt <= 0)
+            rtfree(rt);
+        break;
+
+    case RTM_RESOLVE:
+        if(ret_nrt == 0 || (rt = *ret_nrt) == 0)
+            senderr(EINVAL);
+        ifa = rt->rt_ifa;
+        flags = rt->rt_flags & ~RTF_CLONING;
+        gateway = rt->rt_gateway;
+        if((netmask = rt->rt_genmask) == 0)
+            flags |= RTF_HOST;
+        goto makeroute;
+
+    case RTM_ADD:
+        if((ifa = ifa_ifwithroute(flags, dst, gateway)) == 0)
+            senderr(ENETUNREACH);
+makeroute:
+        len = sizeof(*rt) + ROUNDUP(gateway->sa_len)
+              + ROUNDUP(dst->sa_len);
+        R_Malloc(rt, struct rtentry *, len);
+        if(rt == 0)
+            senderr(ENOBUFS);
+        Bzero(rt, len);
+        ndst = (struct sockaddr *)(rt + 1);
+        if(netmask) {
+            rt_maskedcopy(dst, ndst, netmask);
+        } else
+            Bcopy(dst, ndst, dst->sa_len);
+        rn = rn_addroute((caddr_t)ndst, (caddr_t)netmask,
+                         rnh->rnh_treetop, rt->rt_nodes);
+        if(rn == 0) {
+            Free(rt);
+            senderr(EEXIST);
+        }
+        rt->rt_ifa = ifa;
+        rt->rt_ifp = ifa->ifa_ifp;
+        rt->rt_flags = RTF_UP | flags;
+        rt->rt_gateway = (struct sockaddr *)
+                         (rn->rn_key + ROUNDUP(dst->sa_len));
+        Bcopy(gateway, rt->rt_gateway, gateway->sa_len);
+        if(req == RTM_RESOLVE)
+            rt->rt_rmx = (*ret_nrt)->rt_rmx; /* copy metrics */
+        if(ifa->ifa_rtrequest)
+            ifa->ifa_rtrequest(req, rt, SA(ret_nrt ? *ret_nrt : 0));
+        if(ret_nrt) {
+            *ret_nrt = rt;
+            rt->rt_refcnt++;
+        }
+        break;
+    }
+bad:
+    splx(s);
+    return (error);
+}
+
+void
+rt_maskedcopy(src, dst, netmask)
+struct sockaddr *src, *dst, *netmask;
+{
+    register u_char *cp1 = (u_char *)src;
+    register u_char *cp2 = (u_char *)dst;
+    register u_char *cp3 = (u_char *)netmask;
+    u_char *cplim = cp2 + *cp3;
+    u_char *cplim2 = cp2 + *cp1;
+
+    *cp2++ = *cp1++;
+    *cp2++ = *cp1++; /* copies sa_len & sa_family */
+    cp3 += 2;
+    if(cplim > cplim2)
+        cplim = cplim2;
+    while(cp2 < cplim)
+        *cp2++ = *cp1++ & *cp3++;
+    if(cp2 < cplim2)
+        bzero((caddr_t)cp2, (unsigned)(cplim2 - cp2));
+}
+/*
+ * Set up a routing table entry, normally
+ * for an interface.
+ */
+int
+rtinit(ifa, cmd, flags)
+register struct ifaddr *ifa;
+int cmd, flags;
+{
+    register struct rtentry *rt;
+    register struct sockaddr *dst;
+    struct mbuf *m = 0;
+    int error;
+
+    dst = flags & RTF_HOST ? ifa->ifa_dstaddr : ifa->ifa_addr;
+    if(ifa->ifa_flags & IFA_ROUTE) {
+        if((rt = ifa->ifa_rt) && (rt->rt_flags & RTF_UP) == 0) {
+            RTFREE(rt);
+            ifa->ifa_rt = 0;
+        }
+    }
+    if(cmd == RTM_DELETE) {
+        if((flags & RTF_HOST) == 0 && ifa->ifa_netmask) {
+            register struct sockaddr *deldst;
+
+            m = m_get(M_WAIT, MT_SONAME);
+            if(m == NULL)
+                return (ENOBUFS);
+            deldst = mtod(m, struct sockaddr *);
+            rt_maskedcopy(dst, deldst, ifa->ifa_netmask);
+            dst = deldst;
+        }
+        if(rt = rtalloc1(dst, 0)) {
+            rt->rt_refcnt--;
+            if(rt->rt_ifa != ifa) {
+                if(m)
+                    (void) m_free(m);
+                return (flags & RTF_HOST ? EHOSTUNREACH
+                        : ENETUNREACH);
+            }
+        }
+    }
+    error = rtrequest(cmd, dst, ifa->ifa_addr, ifa->ifa_netmask,
+                      flags | ifa->ifa_flags, &ifa->ifa_rt);
+    if(m)
+        (void) m_free(m);
+    if(cmd == RTM_ADD && error == 0 && (rt = ifa->ifa_rt)
+            && rt->rt_ifa != ifa) {
+        rt->rt_ifa = ifa;
+        rt->rt_ifp = ifa->ifa_ifp;
+    }
+    return (error);
+}
+
+/*
+ * rt_find_ifroute - return the first route in this radix tree (descending
+ * through its subtrees and each leaf's duplicate-key chain) that resolves
+ * through ifp, or, with ifp NULL, that uses the address ifa.  Pure lookup: it
+ * never mutates the tree, so rt_purgeif() can find a route, delete it, then
+ * rescan from the top.
+ *
+ * Every non-ROOT leaf's radix node is rtentry.rt_nodes[0] (rn_addroute() is
+ * handed rt->rt_nodes and rn_match() results are cast straight to rtentry *
+ * elsewhere in this file), so the cast below is the same idiom.
+ */
+static struct rtentry *
+rt_find_ifroute(rn, ifp, ifa)
+register struct radix_node *rn;
+struct ifnet *ifp;
+struct ifaddr *ifa;
+{
+    struct rtentry *rt;
+
+    if(rn == 0)
+        return (0);
+    if(rn->rn_b >= 0) {
+        /* interior node: descend both progeny */
+        if((rt = rt_find_ifroute(rn->rn_l, ifp, ifa)))
+            return (rt);
+        return (rt_find_ifroute(rn->rn_r, ifp, ifa));
+    }
+    /* leaf: scan this key's duplicate chain */
+    for(; rn; rn = rn->rn_dupedkey) {
+        if(rn->rn_flags & RNF_ROOT)
+            continue;
+        rt = (struct rtentry *)rn;
+        if(ifp ? rt->rt_ifp == ifp : rt->rt_ifa == ifa)
+            return (rt);
+    }
+    return (0);
+}
+
+/*
+ * rt_purgeif - delete every route that resolves through ifp, in family af
+ * (AF_UNSPEC: all families).  Because it matches on rt_ifp it catches cloning
+ * prefix routes, their cloned host children and ARP/NDP llinfo entries alike -
+ * each carries rt_ifp == ifp - so no stale route is left pointing at an
+ * interface whose addresses are about to be removed (such a dangling route
+ * otherwise makes re-adding the prefix fail EEXIST, or leaves rt_ifa pointing
+ * at freed ifaddr storage).
+ *
+ * One route is removed per radix-tree scan and the tree is then rescanned, so
+ * it is never walked while rtrequest()/rn_delete() is mutating it.  The work
+ * is bounded by the number of routes on the interface; the last-pointer guard
+ * stops the loop if a route cannot be removed rather than spinning on it.
+ */
+static void
+rt_purge(ifp, ifa, af)
+struct ifnet *ifp;
+struct ifaddr *ifa;
+int af;
+{
+    register struct radix_node_head *rnh;
+    spl_t s = splnet();
+
+    if(rtinits_done == 0)
+        rtinitheads();
+    for(rnh = radix_node_head; rnh; rnh = rnh->rnh_next) {
+        struct rtentry *rt, *last = 0;
+
+        if(af != AF_UNSPEC && rnh->rnh_af != af)
+            continue;
+        while((rt = rt_find_ifroute(rnh->rnh_treetop, ifp, ifa)) != 0
+                && rt != last) {
+            last = rt;
+            /*
+             * Snapshot nothing: rtrequest(RTM_DELETE) reads dst/netmask from
+             * rt (to drive rn_delete) before it frees rt, and performs no
+             * allocation in between, so the key pointers stay valid for the
+             * call.
+             */
+            (void)rtrequest(RTM_DELETE, rt_key(rt), rt->rt_gateway,
+                            rt_mask(rt), (int)rt->rt_flags,
+                            (struct rtentry **)0);
+        }
+    }
+    splx(s);
+}
+
+void
+rt_purgeif(ifp, af)
+struct ifnet *ifp;
+int af;
+{
+    rt_purge(ifp, (struct ifaddr *)0, af);
+}
+
+/*
+ * rt_purgeifa - delete every route that uses ifa, which is about to be freed.
+ * Routes hold no reference on their rt_ifa: a gateway route or ARP entry left
+ * behind would call ifa_rtrequest on freed memory when it is deleted.
+ */
+void
+rt_purgeifa(ifa)
+struct ifaddr *ifa;
+{
+    rt_purge((struct ifnet *)0, ifa, AF_UNSPEC);
+}
+
+/* ------------------------------------------------------------------
+ * Path MTU (RFC 1191 for IPv4, RFC 8201 for IPv6).
+ *
+ * An ICMP "fragmentation needed" or ICMPv6 Packet Too Big lowers the MTU
+ * of the route to the destination of the packet it quotes, and ip_output()
+ * / ip6_output() then size what they send there to fit.
+ * That route must be the destination's own: on the link it is the
+ * neighbour's host route, which neighbour discovery clones; through a
+ * router the table only has the router's route (a prefix, or the default
+ * one), so - as in KAME (icmp6_mtudisc_clone()) - a host route through the
+ * same router is added for the destination, and the MTU put on it, so it
+ * does not apply to every other destination behind that router.
+ *
+ * A lowered MTU is kept PMTU_EXPIRE seconds, then the larger one is tried
+ * again (RFC 8201 section 4: no sooner than 5 minutes, 10 recommended): a
+ * host route added for it is deleted, another one gets its MTU back. The
+ * routes are kept, with a reference, in pmtu_routes[]; with the table full,
+ * the entry closest to expiring gives way.
+ * ------------------------------------------------------------------ */
+#define PMTU_EXPIRE     600     /* seconds */
+#define PMTU_ROUTES     32
+
+static struct {
+    struct rtentry *rt;         /* NULL: free */
+    u_long expire;              /* seconds (GetUpTime()) */
+    u_long old_mtu;             /* the route's MTU before */
+    int added;                  /* the host route was added for the MTU */
+} pmtu_routes[PMTU_ROUTES];
+
+static u_long
+pmtu_now(void)
+{
+    struct timeval tv;
+
+    GetUpTime(&tv);
+    return tv.tv_sec;
+}
+
+/*
+ * A route's rmx_expire is kept on the monotonic clock, GetUpTime(), so
+ * that setting the system time does not end it early or keep it longer,
+ * as FreeBSD keeps it on time_uptime. Applications see and give it as in
+ * BSD, as a time of day: seconds since 1970 in UTC, what time() returns.
+ * rt_expire_out() and rt_expire_in() convert at the routing socket and
+ * GetRouteInfo(); 0, no expiry, stays 0.
+ */
+static long
+rt_clock_offset(void)           /* time of day minus uptime, in seconds */
+{
+    struct timespec ts;
+    struct timeval up;
+
+    GetUpTime(&up);
+    if(timespec_get(&ts, TIME_UTC) != TIME_UTC)
+        return 0;
+    return (long)ts.tv_sec - (long)up.tv_sec;
+}
+
+u_long
+rt_expire_out(u_long expire)
+{
+    return expire ? expire + rt_clock_offset() : 0;
+}
+
+u_long
+rt_expire_in(u_long expire)
+{
+    long up;
+
+    if(expire == 0)
+        return 0;
+    up = (long)expire - rt_clock_offset();
+    return up > 0 ? (u_long)up : 1;     /* already past: expired */
+}
+
+/* Give the route back its MTU, or delete it if it was added for it. */
+static void
+pmtu_restore(int i)
+{
+    struct rtentry *rt = pmtu_routes[i].rt;
+
+    if(rt->rt_flags & RTF_UP) {
+        if(pmtu_routes[i].added)
+            rtrequest(RTM_DELETE, rt_key(rt), rt->rt_gateway, rt_mask(rt),
+                      rt->rt_flags, NULL);
+        else {
+            rt->rt_rmx.rmx_mtu = pmtu_routes[i].old_mtu;
+            rt->rt_rmx.rmx_expire = 0;
+        }
+    }
+    rtfree(rt);
+    pmtu_routes[i].rt = NULL;
+}
+
+/* Keep rt (whose reference this takes) for PMTU_EXPIRE seconds. */
+static void
+pmtu_keep(struct rtentry *rt, u_long old_mtu, int added)
+{
+    int i, slot = -1;
+
+    for(i = 0; i < PMTU_ROUTES; i++) {
+        if(pmtu_routes[i].rt == rt) {
+            rtfree(rt);                 /* kept already: the new reference goes */
+            slot = i;
+            break;
+        }
+        if(pmtu_routes[i].rt == NULL && slot < 0)
+            slot = i;
+    }
+    if(slot < 0) {
+        slot = 0;
+        for(i = 1; i < PMTU_ROUTES; i++)
+            if(pmtu_routes[i].expire < pmtu_routes[slot].expire)
+                slot = i;
+        pmtu_restore(slot);
+    }
+    if(pmtu_routes[slot].rt == NULL) {
+        pmtu_routes[slot].rt = rt;
+        pmtu_routes[slot].old_mtu = old_mtu;
+        pmtu_routes[slot].added = added;
+    }
+    pmtu_routes[slot].expire = pmtu_now() + PMTU_EXPIRE;
+    rt->rt_rmx.rmx_expire = pmtu_routes[slot].expire;
+}
+
+/*
+ * rt_flushfamily - address family af is leaving the running stack: every
+ * route of its table goes, and the path MTU slots that hold one of them.
+ *
+ * The family has taken its addresses off the interfaces before (each with
+ * the routes that used it: rt_purgeifa()); what is left are routes that
+ * name no address of the family's own - through the loopback, through a
+ * gateway on an interface whose address is another family's, added by an
+ * application - and the PMTU slots, each of which holds a reference.
+ * Deleting a route calls its address's ifa_rtrequest one last time, which
+ * frees the link information the family hung on it (rt_llinfo); a route
+ * somebody still holds a reference to leaves the table now and is freed by
+ * the last rtfree(), which calls nothing. So when this returns, no route of
+ * the table can lead back into the family's code.
+ *
+ * The table itself (its radix head) stays: the core made it and the core
+ * keeps it, empty, for the next start of the family. One route for each
+ * scan, as rt_purge() does; a route that will not go ends the loop.
+ */
+static struct rtentry *
+rt_find_first(struct radix_node *rn)
+{
+    struct rtentry *rt;
+
+    if(rn == 0)
+        return (0);
+    if(rn->rn_b >= 0) {
+        if((rt = rt_find_first(rn->rn_l)))
+            return (rt);
+        return (rt_find_first(rn->rn_r));
+    }
+    for(; rn; rn = rn->rn_dupedkey)
+        if(!(rn->rn_flags & RNF_ROOT))
+            return ((struct rtentry *)rn);
+    return (0);
+}
+
+void
+rt_flushfamily(int af)
+{
+    register struct radix_node_head *rnh;
+    spl_t s;
+    int i;
+
+    if(af == AF_UNSPEC)
+        return;
+    s = splnet();
+    for(i = 0; i < PMTU_ROUTES; i++)
+        if(pmtu_routes[i].rt != NULL &&
+                rt_key(pmtu_routes[i].rt)->sa_family == af)
+            pmtu_restore(i);
+    for(rnh = radix_node_head; rnh; rnh = rnh->rnh_next) {
+        struct rtentry *rt, *last = 0;
+
+        if(rnh->rnh_af != af)
+            continue;
+        while((rt = rt_find_first(rnh->rnh_treetop)) != 0 && rt != last) {
+            last = rt;
+            (void)rtrequest(RTM_DELETE, rt_key(rt), rt->rt_gateway,
+                            rt_mask(rt), (int)rt->rt_flags,
+                            (struct rtentry **)0);
+        }
+        if(rt != 0)
+            log(LOG_ERR, "rt_flushfamily: a route of family %ld could not be deleted\n",
+                (long)af);
+    }
+    splx(s);
+}
+
+/* From ip_slowtimo(): give back the path MTUs whose time is up. */
+void
+rt_pmtu_timer(void)
+{
+    u_long now = pmtu_now();
+    int i;
+
+    for(i = 0; i < PMTU_ROUTES; i++)
+        if(pmtu_routes[i].rt != NULL &&
+                (pmtu_routes[i].expire <= now || !(pmtu_routes[i].rt->rt_flags & RTF_UP)))
+            pmtu_restore(i);
+}
+
+/*
+ * rt_pmtu_update - the path to dst takes packets of at most mtu bytes (the
+ * caller has clamped it): put that on dst's own route, only ever lowered.
+ */
+void
+rt_pmtu_update(struct sockaddr *dst, u_long mtu)
+{
+    struct rtentry *rt;
+    u_long old_mtu;
+    int added = 0;
+
+    rt = rtalloc1(dst, 0);
+    if(rt == NULL)
+        return;
+    if(rt->rt_rmx.rmx_mtu != 0 && mtu >= rt->rt_rmx.rmx_mtu) {
+        rtfree(rt);                     /* not lower: nothing to do */
+        return;
+    }
+    if(!(rt->rt_flags & RTF_HOST)) {
+        struct rtentry *nrt = NULL;
+
+        /* an on-link destination with no host route of its own: leave the
+         * prefix, which the whole link shares, alone */
+        if(!(rt->rt_flags & RTF_GATEWAY) ||
+                rtrequest(RTM_ADD, dst, rt->rt_gateway, NULL,
+                          RTF_HOST | RTF_GATEWAY | RTF_DYNAMIC, &nrt) != 0 ||
+                nrt == NULL) {
+            rtfree(rt);
+            return;
+        }
+        nrt->rt_rmx = rt->rt_rmx;       /* the router's route's metrics */
+        rtfree(rt);
+        rt = nrt;
+        added = 1;
+    }
+    old_mtu = rt->rt_rmx.rmx_mtu;
+    rt->rt_rmx.rmx_mtu = mtu;
+    pmtu_keep(rt, old_mtu, added);
+}

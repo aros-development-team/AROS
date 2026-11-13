@@ -1,0 +1,45 @@
+include $(SRCDIR)/config/aros.cfg
+
+#
+# libmmal: raspberrypi/userland's MMAL client API on libvcmmal, for
+# FFmpeg's h264_mmal decoder and other MMAL users. Split like userland
+# (mmal_core, mmal_util, mmal_vc_client, bcm_host) because that is what
+# FFmpeg's configure links. mmal_vc_client carries libvcmmal as well.
+#
+#MM- workbench-raspi-aarch64 : linklibs-mmal
+#MM- linklibs-mmal : linklibs-mmal_core linklibs-mmal_util \
+#MM     linklibs-mmal_vc_client linklibs-bcm_host
+#MM linklibs-mmal_core : includes workbench-libs-vchiq-bcm2708-includes includes-mmal-copy
+#MM linklibs-mmal_util : includes workbench-libs-vchiq-bcm2708-includes includes-mmal-copy
+#MM linklibs-mmal_vc_client : includes workbench-libs-vchiq-bcm2708-includes includes-mmal-copy
+#MM linklibs-bcm_host : includes workbench-libs-vchiq-bcm2708-includes includes-mmal-copy
+
+USER_INCLUDES := -I$(SRCDIR)/$(CURDIR)/include
+
+%build_linklib mmake=linklibs-mmal_core libname=mmal_core files="mmal_core"
+%build_linklib mmake=linklibs-mmal_util libname=mmal_util files="mmal_util_params"
+%build_linklib mmake=linklibs-mmal_vc_client libname=mmal_vc_client files="mmal_vc vcmmal_link"
+%build_linklib mmake=linklibs-bcm_host libname=bcm_host files="bcm_host"
+
+#MM- includes-mmal-copy : includes-mmal-copy-mmal includes-mmal-copy-util \
+#MM     includes-mmal-copy-vc includes-mmal-copy-vcos includes-mmal-copy-bcmhost
+
+MMAL_INCLUDES := mmal.h mmal_common.h mmal_types.h mmal_port.h mmal_component.h \
+    mmal_buffer.h mmal_format.h mmal_encodings.h mmal_events.h mmal_parameters.h \
+    mmal_parameters_common.h mmal_parameters_video.h mmal_parameters_audio.h \
+    mmal_parameters_camera.h mmal_parameters_clock.h mmal_pool.h mmal_queue.h \
+    mmal_clock.h
+
+%copy_includes mmake=includes-mmal-copy-mmal includes="$(MMAL_INCLUDES)" \
+    path=interface/mmal dir=include/interface/mmal
+%copy_includes mmake=includes-mmal-copy-util \
+    includes="mmal_util.h mmal_util_params.h mmal_default_components.h" \
+    path=interface/mmal/util dir=include/interface/mmal/util
+%copy_includes mmake=includes-mmal-copy-vc includes="mmal_vc_api.h" \
+    path=interface/mmal/vc dir=include/interface/mmal/vc
+%copy_includes mmake=includes-mmal-copy-vcos includes="vcos.h" \
+    path=interface/vcos dir=include/interface/vcos
+%copy_includes mmake=includes-mmal-copy-bcmhost includes="bcm_host.h" \
+    path=. dir=include
+
+%common

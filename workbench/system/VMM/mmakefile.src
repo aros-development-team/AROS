@@ -1,0 +1,54 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+FILES := \
+        pagehandler \
+        globals \
+        pageio \
+        find_dev_params \
+        debug \
+        prepager \
+        forbidden_tasks \
+        timer \
+        fault \
+        config \
+        VM_Manager \
+        stat \
+        mmu_table \
+        bitmap \
+        reset_handler \
+        ffs \
+        cache \
+        mem_tracking \
+        VM_Manager_Init \
+        patches_aros \
+        rexx \
+        version \
+        locale
+
+ifeq ($(AROS_TARGET_CPU),i386)
+FILES += x86/traphandler_x86
+endif
+ifeq ($(AROS_TARGET_CPU),x86_64)
+FILES += x86/traphandler_x86
+endif
+ifeq ($(AROS_TARGET_CPU),m68k)
+FILES += m68k/traphandler_m68k
+endif
+
+USER_CPPFLAGS := \
+               -D__NOLIBBASE__ \
+               -DPAGE4K -DDEBUG
+
+USER_LDFLAGS := -static
+
+#MM workbench-system-vmm-handler : includes linklibs workbench-system-vmm-handler-catalogs
+
+#MM- workbench-system-vmm : workbench-system-vmm-handler
+#MM- workbench-system-vmm-quick : workbench-system-vmm-handler-quick
+
+%build_module mmake=workbench-system-vmm-handler \
+    conffile=VMM_Handler.conf modname=VMM modtype=handler \
+    files="$(FILES)" uselibs=amiga
+
+%common

@@ -1,0 +1,12 @@
+# Copyright (C) 2026, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+USER_LDFLAGS := -static
+
+# Selected by arch/m68k-amiga/dos beneath the native DOS test group.
+#MM test-dos-hunkplacement : includes linklibs
+
+%build_progs mmake=test-dos-hunkplacement \
+    files=hunkplacement targetdir=$(AROS_TESTS)/dos/hunkplacement
+
+%common

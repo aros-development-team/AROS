@@ -1,0 +1,327 @@
+# Copyright (C) 2003, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+
+USER_CFLAGS := -I$(SRCDIR)/$(CURDIR)/.. -I$(TOP)/$(CURDIR)/..
+USER_CFLAGS += $(PARANOIA_CFLAGS)
+USER_LIBS   := mui
+USER_LDFLAGS := -static
+
+#MM- workbench-libs-muimaster : \
+#MM     workbench-classes-zune-aboutmui \
+#MM     workbench-classes-zune-balance \
+#MM     workbench-classes-zune-boopsi \
+#MM     workbench-classes-zune-coloradjust \
+#MM     workbench-classes-zune-colorfield \
+#MM	workbench-classes-zune-floattext \
+#MM     workbench-classes-zune-popasl \
+#MM     workbench-classes-zune-popframe \
+#MM     workbench-classes-zune-popimage \
+#MM     workbench-classes-zune-poppen \
+#MM     workbench-classes-zune-radio \
+#MM     workbench-classes-zune-scrollgroup \
+#MM     workbench-classes-zune-settingsgroup \
+#MM     workbench-classes-zune-virtgroup \
+#MM     workbench-classes-zune-volumelist \
+#MM     workbench-classes-zune-dirlist \
+#MM 	workbench-classes-zune-poplist \
+#MM 	workbench-classes-zune-popscreen \
+#MM 	workbench-classes-zune-crawling \
+#MM	workbench-classes-zune-levelmeter \
+#MM	workbench-classes-zune-knob \
+#MM	workbench-classes-zune-dtpic \
+#MM	workbench-classes-zune-palette \
+#MM	workbench-classes-zune-title \
+#MM	workbench-classes-zune-process \
+#MM	workbench-classes-zune-pixmap
+
+
+#MM- workbench-libs-muimaster-clean : \
+#MM     workbench-classes-zune-aboutmui-clean \
+#MM     workbench-classes-zune-balance-clean \
+#MM     workbench-classes-zune-boopsi-clean \
+#MM     workbench-classes-zune-coloradjust-clean \
+#MM     workbench-classes-zune-colorfield-clean \
+#MM     workbench-classes-zune-frameadjust-clean \
+#MM     workbench-classes-zune-framedisplay-clean \
+#MM     workbench-classes-zune-gauge-clean \
+#MM     workbench-classes-zune-imageadjust-clean \
+#MM     workbench-classes-zune-imagedisplay-clean \
+#MM     workbench-classes-zune-penadjust-clean \
+#MM     workbench-classes-zune-pendisplay-clean \
+#MM     workbench-classes-zune-popasl-clean \
+#MM     workbench-classes-zune-popframe-clean \
+#MM     workbench-classes-zune-popimage-clean \
+#MM     workbench-classes-zune-poppen-clean \
+#MM     workbench-classes-zune-radion-clean \
+#MM     workbench-classes-zune-scale-clean \
+#MM     workbench-classes-zune-scrollgroup-clean \
+#MM     workbench-classes-zune-settingsgroup-clean \
+#MM     workbench-classes-zune-virtgroup-clean \
+#MM     workbench-classes-zune-volumelist-clean \
+#MM     workbench-classes-zune-dirlist-clean \
+#MM     workbench-classes-zune-numericbutton-clean \
+#MM 	workbench-classes-zune-poplist-clean \
+#MM 	workbench-classes-zune-popscreen-clean \
+#MM 	workbench-classes-zune-crawling-clean \
+#MM	workbench-classes-zune-levelmeter-clean \
+#MM	workbench-classes-zune-knob-clean \
+#MM	workbench-classes-zune-dtpic-clean \
+#MM	workbench-classes-zune-palette-clean \
+#MM	workbench-classes-zune-title-clean \
+#MM	workbench-classes-zune-process-clean \
+#MM	workbench-classes-zune-pixmap-clean
+
+#MM workbench-classes-zune-aboutmui : includes workbench-libs-muimaster-catalogs
+%build_module \
+    mmake=workbench-classes-zune-aboutmui \
+    modname=Aboutmui modtype=mui files="aboutmui ../locale" \
+    conffile=aboutmui.conf \
+    cflags="$(CFLAGS) -DZUNE_BUILTIN_ABOUTMUI=0"
+
+#MM workbench-classes-zune-boopsi : includes
+%build_module \
+    mmake=workbench-classes-zune-boopsi \
+    modname=Boopsi modtype=mui files=boopsi \
+    conffile=boopsi.conf \
+    cflags="$(CFLAGS) -DZUNE_BUILTIN_BOOPSI=0"
+
+#MM workbench-classes-zune-balance : includes
+%build_module \
+    mmake=workbench-classes-zune-balance \
+    modname=Balance modtype=mui files=balance \
+    conffile=balance.conf \
+    cflags="$(CFLAGS) -DZUNE_BUILTIN_BALANCE=0" \
+    uselibs="stdc"
+# stdc for rand()
+
+#MM workbench-classes-zune-coloradjust : includes workbench-libs-muimaster-catalogs
+%build_module \
+    mmake=workbench-classes-zune-coloradjust \
+    modname=Coloradjust modtype=mui files="coloradjust ../locale" \
+    conffile=coloradjust.conf \
+    cflags="$(CFLAGS) -DZUNE_BUILTIN_COLORADJUST=0"
+
+#MM workbench-classes-zune-colorfield : includes
+%build_module \
+    mmake=workbench-classes-zune-colorfield \
+    modname=Colorfield modtype=mui files=colorfield \
+    conffile=colorfield.conf \
+    cflags="$(CFLAGS) -DZUNE_BUILTIN_COLORFIELD=0"
+
+#MM workbench-classes-zune-frameadjust : includes workbench-libs-muimaster-catalogs
+%build_module \
+    mmake=workbench-classes-zune-frameadjust \
+    modname=Frameadjust modtype=mui files="frameadjust ../locale" \
+    conffile=frameadjust.conf \
+    cflags="$(CFLAGS) -DZUNE_BUILTIN_FRAMEADJUST=0"
+
+#MM workbench-classes-zune-framedisplay : includes
+%build_module \
+    mmake=workbench-classes-zune-framedisplay \
+    modname=Framedisplay modtype=mui files=framedisplay \
+    conffile=framedisplay.conf \
+    cflags="$(CFLAGS) -DZUNE_BUILTIN_FRAMEDISPLAY=0"
+
+#MM workbench-classes-zune-gauge : includes
+%build_module \
+    mmake=workbench-classes-zune-gauge \
+    modname=Gauge modtype=mui files=gauge \
+    conffile=gauge.conf \
+    cflags="$(CFLAGS) -DZUNE_BUILTIN_GAUGE=0"
+    
+#MM workbench-classes-zune-imageadjust : includes workbench-libs-muimaster-catalogs
+%build_module \
+    mmake=workbench-classes-zune-imageadjust \
+    modname=Imageadjust modtype=mui files="imageadjust ../locale" \
+    conffile=imageadjust.conf \
+    cflags="$(CFLAGS) -DZUNE_BUILTIN_IMAGEADJUST=0"
+    
+#MM workbench-classes-zune-imagedisplay : includes
+%build_module \
+    mmake=workbench-classes-zune-imagedisplay \
+    modname=Imagedisplay modtype=mui files=imagedisplay \
+    conffile=imagedisplay.conf \
+    cflags="$(CFLAGS) -DZUNE_BUILTIN_IMAGEDISPLAY=0"
+    
+#MM workbench-classes-zune-penadjust : includes workbench-libs-muimaster-catalogs
+%build_module \
+    mmake=workbench-classes-zune-penadjust \
+    modname=Penadjust modtype=mui files="penadjust ../locale" \
+    conffile=penadjust.conf \
+    cflags="$(CFLAGS) -DZUNE_BUILTIN_PENADJUST=0"
+    
+#MM workbench-classes-zune-pendisplay : includes
+%build_module \
+    mmake=workbench-classes-zune-pendisplay \
+    modname=Pendisplay modtype=mui files=pendisplay \
+    conffile=pendisplay.conf \
+    cflags="$(CFLAGS) -DZUNE_BUILTIN_PENDISPLAY=0"
+    
+#MM workbench-classes-zune-popasl : includes
+%build_module \
+    mmake=workbench-classes-zune-popasl \
+    modname=Popasl modtype=mui files=popasl \
+    conffile=popasl.conf \
+    cflags="$(CFLAGS) -DZUNE_BUILTIN_POPASL=0"
+    
+#MM workbench-classes-zune-popframe : includes workbench-libs-muimaster-catalogs
+%build_module \
+    mmake=workbench-classes-zune-popframe \
+    modname=Popframe modtype=mui files="popframe ../locale" \
+    conffile=popframe.conf \
+    cflags="$(CFLAGS) -DZUNE_BUILTIN_POPFRAME=0"
+    
+#MM workbench-classes-zune-popimage : includes
+%build_module \
+    mmake=workbench-classes-zune-popimage \
+    modname=Popimage modtype=mui files=popimage \
+    conffile=popimage.conf \
+    cflags="$(CFLAGS) -DZUNE_BUILTIN_POPIMAGE=0"
+    
+#MM workbench-classes-zune-poppen : includes workbench-libs-muimaster-catalogs
+%build_module \
+    mmake=workbench-classes-zune-poppen \
+    modname=Poppen modtype=mui files="poppen ../locale" \
+    conffile=poppen.conf \
+    cflags="$(CFLAGS) -DZUNE_BUILTIN_POPPEN=0"
+
+#MM workbench-classes-zune-radio : includes
+%build_module \
+    mmake=workbench-classes-zune-radio \
+    modname=Radio modtype=mui files=radio \
+    conffile=radio.conf \
+    cflags="$(CFLAGS) -DZUNE_BUILTIN_RADIO=0"
+    
+#MM workbench-classes-zune-scale : includes
+%build_module \
+    mmake=workbench-classes-zune-scale \
+    modname=Scale modtype=mui files=scale \
+    conffile=scale.conf \
+    cflags="$(CFLAGS) -DZUNE_BUILTIN_SCALE=0"
+    
+#MM workbench-classes-zune-scrollgroup : includes
+%build_module \
+    mmake=workbench-classes-zune-scrollgroup \
+    modname=Scrollgroup modtype=mui files=scrollgroup \
+    conffile=scrollgroup.conf \
+    cflags="$(CFLAGS) -DZUNE_BUILTIN_SCROLLGROUP=0"
+    
+#MM workbench-classes-zune-settingsgroup : includes
+%build_module \
+    mmake=workbench-classes-zune-settingsgroup \
+    modname=Settingsgroup modtype=mui files=settingsgroup \
+    conffile=settingsgroup.conf \
+    cflags="$(CFLAGS) -DZUNE_BUILTIN_SETTINGSGROUP=0"
+    
+#MM workbench-classes-zune-virtgroup : includes
+%build_module \
+    mmake=workbench-classes-zune-virtgroup \
+    modname=Virtgroup modtype=mui files=virtgroup \
+    conffile=virtgroup.conf \
+    cflags="$(CFLAGS) -DZUNE_BUILTIN_VIRTGROUP=0"
+
+#MM workbench-classes-zune-floattext : includes
+%build_module \
+    mmake=workbench-classes-zune-floattext \
+    modname=Floattext modtype=mui files=floattext \
+    conffile=floattext.conf \
+    cflags="$(CFLAGS) -DZUNE_BUILTIN_FLOATTEXT=0"
+
+#MM workbench-classes-zune-volumelist : includes workbench-libs-muimaster-catalogs
+%build_module \
+    mmake=workbench-classes-zune-volumelist \
+    modname=Volumelist modtype=mui files="volumelist ../locale" \
+    conffile=volumelist.conf \
+    cflags="$(CFLAGS) -DZUNE_BUILTIN_VOLUMELIST=0"
+
+#MM workbench-classes-zune-dirlist : includes workbench-libs-muimaster-catalogs
+%build_module \
+    mmake=workbench-classes-zune-dirlist \
+    modname=Dirlist modtype=mui files="dirlist ../locale" \
+    conffile=dirlist.conf \
+    cflags="$(CFLAGS) -DZUNE_BUILTIN_DIRLIST=0"
+
+#MM workbench-classes-zune-numericbutton : includes
+%build_module \
+    mmake=workbench-classes-zune-numericbutton \
+    modname=Numericbutton modtype=mui files=numericbutton \
+    conffile=numericbutton.conf \
+    cflags="$(CFLAGS) -DZUNE_BUILTIN_NUMERICBUTTON=0"
+
+#MM workbench-classes-zune-poplist : includes
+%build_module \
+    mmake=workbench-classes-zune-poplist \
+    modname=Poplist modtype=mui files=poplist \
+    conffile=poplist.conf \
+    cflags="$(CFLAGS) -DZUNE_BUILTIN_POPLIST=0"
+
+#MM workbench-classes-zune-popscreen : includes
+%build_module \
+    mmake=workbench-classes-zune-popscreen \
+    modname=Popscreen modtype=mui files=popscreen \
+    conffile=popscreen.conf \
+    cflags="$(CFLAGS) -DZUNE_BUILTIN_POPSCREEN=0"
+
+
+#MM workbench-classes-zune-crawling : includes
+%build_module \
+    mmake=workbench-classes-zune-crawling \
+    modname=Crawling modtype=mui modsuffix=mcc files=crawling \
+    conffile=crawling.conf \
+    cflags="$(CFLAGS) -DZUNE_BUILTIN_CRAWLING=0"
+
+#MM workbench-classes-zune-levelmeter : includes
+%build_module \
+    mmake=workbench-classes-zune-levelmeter \
+    modname=Levelmeter modtype=mui files=levelmeter \
+    conffile=levelmeter.conf \
+    cflags="$(CFLAGS) -DZUNE_BUILTIN_LEVELMETER=0" \
+    uselibs="stdc"
+
+#MM workbench-classes-zune-knob : includes
+%build_module \
+    mmake=workbench-classes-zune-knob \
+    modname=Knob modtype=mui files=knob \
+    conffile=knob.conf \
+    cflags="$(CFLAGS) -DZUNE_BUILTIN_KNOB=0" \
+    uselibs="stdc"
+
+#MM workbench-classes-zune-dtpic : includes
+%build_module \
+    mmake=workbench-classes-zune-dtpic \
+    modname=Dtpic modtype=mui files=dtpic \
+    conffile=dtpic.conf \
+    cflags="$(CFLAGS) -DZUNE_BUILTIN_DTPIC=0"
+
+#MM workbench-classes-zune-palette : includes workbench-libs-muimaster-catalogs
+%build_module \
+    mmake=workbench-classes-zune-palette \
+    modname=Palette modtype=mui files="palette ../locale" \
+    conffile=palette.conf \
+    cflags="$(CFLAGS) -DZUNE_BUILTIN_PALETTE=0"
+
+#MM workbench-classes-zune-title : includes
+%build_module \
+    mmake=workbench-classes-zune-title \
+    modname=Title modtype=mui files=title \
+    conffile=title.conf \
+    cflags="$(CFLAGS) -DZUNE_BUILTIN_TITLE=0"
+
+#MM workbench-classes-zune-process : includes
+%build_module \
+    mmake=workbench-classes-zune-process \
+    modname=Process modtype=mui files=process \
+    conffile=process.conf \
+    cflags="$(CFLAGS) -DZUNE_BUILTIN_PROCESS=0"
+
+#MM workbench-classes-zune-pixmap : includes
+%build_module \
+    mmake=workbench-classes-zune-pixmap \
+    modname=Pixmap modtype=mui files=pixmap \
+    conffile=pixmap.conf \
+    cflags="$(CFLAGS) -DZUNE_BUILTIN_PIXMAP=0" \
+    uselibs="bz2_nostdio"
+
+%common
+%include_deps

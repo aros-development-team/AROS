@@ -1,0 +1,18 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+FILES = main support locale
+
+EXEDIR = $(AROSDIR)/Tools
+
+USER_CFLAGS := -I $(SRCDIR)/$(CURDIR)/../FS
+
+#MM workbench-devs-sfs-c-sfsdefrag : includes symlinks \
+#MM workbench-devs-sfs-c-sfsdefrag-catalogs \
+#MM workbench-devs-sfs-c-sfsdefrag-icons
+
+%build_prog mmake=workbench-devs-sfs-c-sfsdefrag \
+    progname=SFSdefrag targetdir=$(EXEDIR) \
+    files=$(FILES)
+
+%common

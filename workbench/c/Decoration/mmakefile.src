@@ -1,0 +1,22 @@
+#
+#   Makefile to make Decoration.
+
+include $(SRCDIR)/config/aros.cfg
+
+FILES := \
+            decoration \
+            screendecorclass \
+            windowdecorclass \
+            menudecorclass
+
+EXEDIR := $(AROS_C)
+
+#MM workbench-c-decoration : includes linklibs workbench-libs-decorator-includes workbench-libs-decortheme-includes
+
+#MM- workbench-c : workbench-c-decoration
+
+%build_prog mmake=workbench-c-decoration \
+    progname=Decoration targetdir=$(EXEDIR) \
+    files=$(FILES) detach=yes
+
+%common

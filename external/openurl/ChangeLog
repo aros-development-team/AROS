@@ -1,0 +1,480 @@
+---------------------------
+openurl.library - ChangeLog
+---------------------------
+
+#### v7.18 RELEASE #############################################################
+
+2016-09-07 Thore Böckelmann <tboeckel@gmx.de>
+
+  * libinit.c: moved the system and CPU description behind the copyright part.
+
+2016-08-12 Thore Böckelmann <tboeckel@gmx.de>
+
+  * prefs/Makefile: generate ISO8859-1 encoded catalogs instead of UTF8 encoded
+    ones.
+
+2016-08-06  Jens Maus <mail@jens-maus.de>
+
+  * include: updated SDI headers to latest versions available.
+  * include: removed obsolete msprintf() and msnprintf() prototypes.
+
+#### v7.17 RELEASE #############################################################
+
+2016-08-04  Jens Maus <mail@jens-maus.de>
+
+  * misc: final 7.17 release preparations
+
+2015-03-22  Jens Maus <mail@jens-maus.de>
+
+  * tools/mkrelease.sh: fixed copy of ReAction-based prefs program which failed
+    due to incorrect path in mkrelease.sh. This fixes bug #13.
+
+#### v7.16 RELEASE #############################################################
+
+2015-03-21  Jens Maus <mail@jens-maus.de>
+
+  * misc: final 7.16 release preparations
+
+2014-08-27 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcp/locale: added dutch, russian, spanish and turkish translations and
+    updated all other translations.
+
+2014-04-17 Thore Böckelmann <tboeckel@gmx.de>
+
+  * tools/mkrelease.sh, dist/Install: for AmigaOS4 the ReAction version of the
+    preferences application is now included, too. Additionally the Installer
+    script lets the user choose between MUI and ReAction GUI to be installed.
+
+#### v7.15 RELEASE #############################################################
+
+2014-04-05  Jens Maus <mail@jens-maus.de>
+
+  * misc: final 7.15 release preparations
+
+2014-04-01 Thore Böckelmann <tboeckel@gmx.de>
+
+  * library/misc: updated to the most recent SDI header files. This makes it
+    possible to remove the stub functions for AmigaOS4.
+  * locale: added a new header line to the .po files to specify a correct name
+    for the generated .catalog file.
+
+2014-03-28 Thore Böckelmann <tboeckel@gmx.de>
+
+  * cmd/SmartReadArgs.c: fixed the broken AmigaOS4 build due to recent SDK
+    changes by including dos/obsolete.h.
+
+2014-01-23  Jens Maus <mail@jens-maus.de>
+
+  * locale: all catalog translations have now been moved to use the free
+    services of transifex (http://www.transifex.com/projects/p/openurllib/)
+
+#### v7.14 RELEASE #############################################################
+
+2013-12-13  Jens Maus <mail@jens-maus.de>
+
+  * misc: final 7.14 release preparations
+
+2013-10-15 Thore Böckelmann <tboeckel@gmx.de>
+
+  * library/lib.h: updated the AmigaOS4 build for the latest SDK.
+
+2013-04-30 Thore Böckelmann <tboeckel@gmx.de>
+
+  * locale/greek.ct: updated greek translation kindly provided by Antonis
+    Iliakis.
+
+#### v7.13 RELEASE #############################################################
+
+2013-04-25  Jens Langner <Jens.Langner@light-speed.de>
+
+  * misc: final 7.13 release preparations
+
+2013-04-24 Thore Böckelmann <tboeckel@gmx.de>
+
+  * locale/greek.ct: updated greek translation kindly provided by Antonis
+    Iliakis.
+
+2013-03-06 Thore Böckelmann <tboeckel@gmx.de>
+
+  * src/libinit.c: rearranged the code to ensure that trying to start the final
+    library from a shell does not crash.
+
+2013-01-04 Thore Böckelmann <tboeckel@gmx.de>
+
+  * library/prefs.c: simplified the default configuration setup and added some
+    default settings for MUIOWB.
+
+2013-01-04 Thore Böckelmann <tboeckel@gmx.de>
+
+  * library/utils.c: return immediate failure for empty ARexx port names.
+
+#### v7.12 RELEASE #############################################################
+
+2012-12-20  Jens Langner <Jens.Langner@light-speed.de>
+
+  * misc: final 7.12 release preparations
+
+2012-11-06 Thore Böckelmann <tboeckel@gmx.de>
+
+  * library/api.c: changed the name of the prefs program to the currently used
+    scheme.
+  * locale/italian.ct: removed lots of unused strings.
+
+2012-08-07 Thore Böckelmann <tboeckel@gmx.de>
+
+  * misc: replaced all deprecated function call by appropriate replacements for
+    the AmigaOS4 build.
+
+#### v7.11 RELEASE #############################################################
+
+2012-08-05  Jens Langner <Jens.Langner@light-speed.de>
+
+  * misc: final 7.11 release preparations
+
+2012-06-19 Thore Böckelmann <tboeckel@gmx.de>
+
+  * library/init.c: don't allocate locked memory.
+
+2012-04-25 Thore Böckelmann <tboeckel@gmx.de>
+
+  * locale/german.ct: replaced some "ss" by "ß". This closes bug #3364499.
+
+2012-04-07  Jens Langner <Jens.Langner@light-speed.de>
+
+  * Makefile: removed -funroll-loops as this is potentially dangerous.
+
+2012-03-04 Thore Böckelmann <tboeckel@gmx.de>
+
+  * src/libinit.c: fixed the broken build for all non-AROS platforms.
+
+2012-01-29 Matthias Rustler <mrustler@gmx.de>
+
+  * misc: backport of AROS fixes.
+
+2011-12-25  Pär Boberg <pbobbenb@spray.se>
+
+  * locale/swedish.ct: updated to the latest changes.
+
+#### v7.10 RELEASE #############################################################
+
+2011-11-26  Jens Langner <Jens.Langner@light-speed.de>
+
+  * misc: final 7.10 release preparations
+
+2011-04-19 Matthias Rustler <mrustler@gmx.de>
+
+  * misc: backport of AROS fixes.
+
+#### v7.9 RELEASE ##############################################################
+
+2011-04-17  Jens Langner <Jens.Langner@light-speed.de>
+
+  * misc: final 7.9 release preparations
+
+2011-04-10 Thore Böckelmann <tboeckel@gmx.de>
+
+  * libraries/openurl.h: fixed wrong mask value to mask out invalid flags. This
+    closes #3283034.
+
+2011-01-04 Thore Böckelmann <tboeckel@gmx.de>
+
+  * all/Makefile: fixed the dependency generation to respect the system specific
+    object file path.
+
+2010-10-06 Thore Böckelmann <tboeckel@gmx.de>
+
+  * dist/Install: adapted the Installer script to respect MorphOS' default
+    location for 3rd party libraries.
+
+2010-10-05 Thore Böckelmann <tboeckel@gmx.de>
+
+  * libinit.c: make sure that removing the library during LibClose() really
+    operates on the correct base. Calling LibExpunge() on MorphOS is wrong,
+    since that takes no parameter but expects the base to be in A6. We work
+    around this by using an additional function which gets called from
+    LibClose() and LibExpunge() with the correct base pointer.
+
+#### v7.8 RELEASE ##############################################################
+
+2009-09-23  Jens Langner <Jens.Langner@light-speed.de>
+
+  * misc: final 7.8 release preparations
+
+2010-09-22 Thore Böckelmann <tboeckel@gmx.de>
+
+  * library/utils.c: added a missing ENTER() statement and let the debug build
+    output which command is sent to which ARexx port.
+
+2010-09-08 Mariusz Danilewicz <mandi@interia.pl>
+
+  * AUTHORS: added translators section (please check and update missing persons).
+
+2010-09-06 Thore Böckelmann <tboeckel@gmx.de>
+
+  * library/init.c: create the pool with MEMF_CLEAR set to avoid unnecessary
+    junk to be saved in the prefs file.
+  * library/prefs.c: saving the prefs will now also mask out invalid flags.
+  * library/prefs.c: upon loading the prefs file all invalid flags are now
+    masked out. This fixed bug #3059088 where the split off MorphOS V8 version
+    incorrectly saved some internal flags which then lead to a memory block
+    being freed twice when being read again by the V7 library and used by the
+    MUI prefs application. The ReAction prefs application was not affected due
+    to its different handling of the prefs.
+
+2010-09-03 Thore Böckelmann <tboeckel@gmx.de>
+
+  * libinit.c: clear all semaphore structures before calling InitSemaphore().
+
+#### v7.7 RELEASE ##############################################################
+
+2009-09-01  Jens Langner <Jens.Langner@light-speed.de>
+
+  * misc: final 7.7 release preparations
+
+2010-08-22 Thore Böckelmann <tboeckel@gmx.de>
+
+  * library/init.c: lowered the required version of rexxsys.library to V36. This
+    fixes bug #3050895.
+
+2010-08-16 Thore Böckelmann <tboeckel@gmx.de>
+
+  * libinit.c: the library init code now ensures that the entry code is really
+    the first code to be executed in case the .library is executed like a
+    regular command by accident.
+  * include/SDI_compiler.h: updated to latest version.
+
+2010-06-30 Thore Böckelmann <tboeckel@gmx.de>
+
+  * prefs/Makefile, raPrefs/Makefile: added the .cd file to the dependency list
+    of each .catalog file.
+
+2010-06-10 Thore Böckelmann <tboeckel@gmx.de>
+
+  * library/libinit.c: fixed a warning for the OS3 build.
+
+2010-06-07 Thore Böckelmann <tboeckel@gmx.de>
+
+  * include/SDI_compiler.h: updated to latest version.
+  * include/clib/openurl_protos.h: added IPTR definition.
+
+2010-06-03 Matthias Rustler <mrustler@gmx.de>
+
+  * Fixes for 64-bit AROS: changes from ULONG to IPTR to get rid of
+    warnings about conversion from/to pointer to/from integer with different size.
+    Prototype of URL_GetAttr changed. I hope this doesn't cause any trouble.
+
+2010-05-27 Thore Böckelmann <tboeckel@gmx.de>
+
+  * locale/#?.ct: set some properties.
+  * raPrefs/Makefile: added polish catalog generation.
+
+2010-05-27 Mariusz Danilewicz <mandi@interia.pl>
+
+  * locale/polish.ct: fixed MSG_About_Descr
+
+2010-05-27 Mariusz Danilewicz <mandi@interia.pl>
+
+  * locale/polish.ct: added Polish translation
+  * prefs/makefile: added generating Polish catalog
+
+2010-04-24 Thore Böckelmann <tboeckel@gmx.de>
+
+  * library/libinit.c: use NewStackSwap() under AROS, re-enabled stack swapping
+    under MorphOS
+
+2010-04-23 Thore Böckelmann <tboeckel@gmx.de>
+
+  * library/libinit.c: replaced some #ifdef's by macros.
+
+#### v7.6 RELEASE ##############################################################
+
+2009-10-24  Jens Langner <Jens.Langner@light-speed.de>
+
+  * misc: final 7.6 release preparations
+
+2009-09-19 Thore Böckelmann <tboeckel@gmx.de>
+
+  * misc: added a name to all memory pools for OS4.
+
+2009-09-16 Thore Böckelmann <tboeckel@gmx.de>
+
+  * prefs/applist.c: integrated the hook structures into the instance data and
+    set these after creating the object instead of using global hooks. Thus
+    multiple instances of the prefs program will use the correct hook data. This
+    fixes bug #2859339.
+
+2009-08-14 Thore Böckelmann <tboeckel@gmx.de>
+
+  * Makefiles: added "-g" to the debug flags. It seems the OS3 GCC 2.95.3 cross
+    compiler needs this to generate debug infos at all.
+
+2009-07-21 Thore Böckelmann <tboeckel@gmx.de>
+
+  * library/libinit.c: in case something in the LibInit() call fails everything
+    set up before will now correctly be freed again to avoid memory leaks.
+
+2009-06-16  Thore Böckelmann <tboeckel@gmx.de>
+
+  * library/prefs.c: changed OWB's port name to "OWB" instead of "OWB.1" because
+    openurl.library takes care of additional numbers itself. This fixes bug
+    #2801806.
+
+2009-06-07  Matthias Rustler <mrustler@gmx.de>
+
+  * libinit.c: Merged Staf's fixes from codesets.library
+
+2009-06-07  Matthias Rustler <mrustler@gmx.de>
+
+  * Makefile fix for linker library
+
+2009-06-02  Matthias Rustler <mrustler@gmx.de>
+
+  * Fixes for the AROS metamakefiles
+  * linkerlib for auto-opening (like it was done for codesets.library)
+
+2009-06-02  Thore Böckelmann <tboeckel@gmx.de>
+
+  * raPrefs/OpenURL.c: restored accidently removed sections.
+
+2009-06-01  Thore Böckelmann <tboeckel@gmx.de>
+
+  * raPrefs/#?.c: added the two new macros iset() and gadset() to replace the
+    quite long SetAttrs() and SetGadgetAttrs() calls.
+
+2009-05-31  Thore Böckelmann <tboeckel@gmx.de>
+
+  * raPrefs/#?.c: fixed all warnings and replaced GetAttr() call by the iget()
+    macro.
+
+2009-05-24  Alexandre Balaban <alexandre@balaban.fr>
+
+  * raPrefs/misc: made node edition and save/use/apply of prefs functionnal
+
+#### v7.5 RELEASE ##############################################################
+
+2009-05-30  Jens Langner <Jens.Langner@light-speed.de>
+
+  * misc: final 7.5 release preparations
+
+2009-05-28  Jens Langner <Jens.Langner@light-speed.de>
+
+  * prefs/app.c: removed the not required AboutMUI method as calling
+    MUIM_Application_AboutMUI should really be enough. This should also solve
+    the previously existing problems with the AROS compiles.
+  * library/applist.c: instead of always returning 0 in mListCheckSave() for
+    AROS we now check if the returned pointer of xget(MUIA_List_Format) is
+    NULL or not and thus perform the string compare operation or not. This
+    should also catch the case where AROS is failing for the MUIA_List_Format
+    get operation.
+
+2009-05-28  Matthias Rustler <mrustler@gmx.de>
+
+  * German catalog sync'd with "FlexCat .. newctfile ..." and updated.
+  * Build German catalog with AROS metamakefile.
+  * Copying of icon with AROS metamakefiles
+  * Metamakefiles cleaned up
+  * Overloading of MUIM_Application_AboutMUI disabled on AROS
+    because it crashes when closing the about window.
+  * Remaining warnings under AROS removed
+
+2009-05-27  Matthias Rustler <mrustler@gmx.de>
+
+  * AROS metamakefiles added
+  * applist.c: fix for a segfault on AROS because MUIA_List_Format
+    isn't get-able in Zune.
+  * 64-bit fixes (IPTR, STACKED, UL)
+
+2009-05-26  Jens Langner <Jens.Langner@light-speed.de>
+
+  * include: updated the mui includes to use "muiaros.h" instead of "mui.h"
+    for an AROS compile. Otherwise the binaries won't work, I am afraid.
+    In addition a little cleanup in the include directory has been performed.
+
+2009-05-25  Jens Langner <Jens.Langner@light-speed.de>
+
+  * misc: fixed all remaining compiler warnings when compiling for AROS.
+
+2009-05-24  Alexandre Balaban <alexandre@balaban.fr>
+
+  * locale/french.ct: updated to latest catalog changes
+
+2009-05-24  Jens Langner <Jens.Langner@light-speed.de>
+
+  * prefs: slightly updated the About window to match the latest changes and
+    to output the correct version string of the preference application.
+  * library/prefs.c: added some default settings for OWB, NetSurf, AmiFTP,
+    AmiTradeCenter and pftp. If users reset to the default settings of OpenURL
+    they should receive a more complete and working set of settings now.
+
+2009-05-20  Thore Böckelmann <tboeckel@gmx.de>
+
+  * library/api.c: using/applying the prefs always failed due to a missing
+    assignment.
+  * prefs/*.c: replaced all handcrafted flag checks by macro calls.
+  * prefs/popport.c: replaced the clumsy port scanning by a hopefully bullet
+    proof version. This new version does not break any Forbid() while scanning
+    the public port list.
+  * library/utils.c, library/handler.c: replaced the handcrafted message and
+    port creation by proper allocations to get rid of the stack based stuff.
+    Also shrunk the asynchronous startup message to what is really needed.
+
+2009-05-19  Jens Langner <Jens.Langner@light-speed.de>
+
+  * raPrefs: updated the build system of the OS4 reaction preferences to match
+    that of our other sub projects. Now the Reaction preferences should work
+    as expected on OS4.
+  * cmd: updated the sources to be compile/linkable for AROS.
+  * include/macros.h: updated to be the global header file for the macro
+    definitions of all our subprojects.
+  * prefs, misc: now the preference application also properly compiles and
+    links for AROS. If it works have to be seen. But it looks quite promising.
+  * prefs: fixed MOS compilation by updating the ppcinline header files
+  * prefs: converted the build system of the MUI preferences application to
+    use the generic Makefile we use with every application. Also converted
+    everything to use the SDI headers. OS4 compilation seems to work fine and
+    the app seems also to work properly. However, further testing and
+    especially work into getting it compiled/linked for OS3 and MOS have to
+    be done.
+
+2009-05-19  Thore Böckelmann <tboeckel@gmx.de>
+
+  * raPrefs/locale.c: fixed possible crash upon program termination.
+  * raPrefs: fixed all warnings.
+  * Cmd: converted the build system to the usual standard. The commandline tool
+    now builds for at least OS3, OS4 and MOS.
+  * prefs/OpenURL.c: added debugging initialization.
+  * prefs: fixed all remaining issues with the OS3 build. Now the preferences
+    program compiles perfectly for OS3 and OS4.
+  * prefs: replaced all stccpy() calls by strlcpy().
+  * prefs/*.c fixed tons of warnings. At least the OS4 build is done without a
+    single warning.
+  * library/*.c: replaced all handcrafted flag checks by macro calls.
+  * library/api.c, library/utils.c: replace the separate BOOL parameters by a
+    combined flags variable.
+
+2009-05-18  Thore Böckelmann <tboeckel@gmx.de>
+
+  * prefs/popport.c: added a comment about the unsafe Forbid() situation while
+    adding items to an MUI list. Just to make sure this is not forgotten.
+  * library/handler.c, library/utils.c: replaced the Forbid()/Permit() pair to
+    protect access
+    to the rexx_use var by usage of the library base semaphore.
+  * misc: replaced almost all strcpy() calls by strlcpy(). Also removed the
+    custom msnprintf() function as they are longer used.
+  * library/api.c: lots of code clean up to make things more readable.
+  * misc: replaced several ULONG results by proper BOOL types.
+  * misc: added the usual ENTER()/LEAVE()/RETURN() macro calls to all functions.
+
+2009-05-18  Jens Langner <Jens.Langner@light-speed.de>
+
+  * library: completely reworked the build system of openurl.library. Now the SDI
+    headers are used and a generic libinit.c. All this has been transferred
+    from the codesets.library project and should make future improvements more
+    easy. Please note, however, that the library needs a lot of testing now
+    until we consider a new official release. So please go and see if it works
+    with all kind of platforms and applications you have.
+
+2009-05-11  Thore Böckelmann <tboeckel@gmx.de>
+
+  * misc: lots of type changes to make the source compilable for OS4.

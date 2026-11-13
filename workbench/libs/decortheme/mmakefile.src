@@ -1,0 +1,26 @@
+#
+#   Makefile to build decortheme.library
+#
+
+include $(SRCDIR)/config/aros.cfg
+
+FILES := \
+        decortheme_library \
+        themeconfig \
+        themeimages \
+        themeelements \
+        themescreen \
+        theme
+
+#MM workbench-libs-decortheme : includes linklibs workbench-libs-decorator-includes
+#MM workbench-libs-decortheme-includes : workbench-libs-decorator-includes
+
+%build_module mmake=workbench-libs-decortheme \
+    modname=decortheme modtype=library \
+    files="$(FILES)"
+
+INCLUDE_FILES := decortheme.h
+
+%copy_includes path=libraries
+
+%common

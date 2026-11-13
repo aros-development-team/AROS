@@ -1,0 +1,39 @@
+Documentation for ArchTool
+--------------------------
+
+The name ArchTool comes from "archive".
+Archives are no longer used in AROS, so this part has been removed from
+archtool.
+
+[Note: All names are case-sensitive.]
+
+
+Integrated programs
+-------------------
+
+Usage: archtool [-h|-t|-c|-R] <parameter>
+
+  -h help
+
+  -t genfunctable
+     Usage: archtool -t <archfile>
+     for HIDDs with 'type hidd' in lib.conf: archtool -t
+  -c genlibdefs
+     Usage: archtool -c [-o libdefs.h] [lib.conf]
+  -R genarossource
+     Usage: archtool -R  <source pragma file> <source c file> <dest c file> <output defines file>
+
+ 1) Generate functable.c
+This module generates functable.c in the current dir from the <archfile>
+archive. It reads in lib.conf and if type==hidd archfile is not needed.
+[Note: By now no(!) aliases for function names are allowed! However,
+ aliases are only used in rom/dos. Therefore this lib can't be converted
+ by now.]
+
+ 2) Generate libdefs.h
+This module generates "libdefs.h" file out of "lib.conf" file.
+The name of the output include file can be given with the -o switch.
+Any other argument is taken as the name of the config file.
+By default a libdefs.h file will be generated and the config file is
+lib.conf.
+

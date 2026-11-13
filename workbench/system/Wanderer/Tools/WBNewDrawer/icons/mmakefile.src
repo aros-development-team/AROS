@@ -1,0 +1,13 @@
+# Copyright (C) 2006, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+
+EXEDIR := \
+    $(AROS_WANDERER)/Tools
+
+ICONS := WBNewDrawer
+
+%build_icons mmake=workbench-system-wanderer-tools-wbnewdrawer-icons icons=$(ICONS) \
+             dir=$(EXEDIR)
+
+%common

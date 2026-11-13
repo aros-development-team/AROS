@@ -1,0 +1,10 @@
+Step-by-Step installation:
+
+1. Run ./configure. If you don't want to install mmake in /usr/local/bin,
+Run configure with --prefix=<dir>. The default is "/usr/local".
+
+2. Run make. This will build MetaMake.
+
+3. Run make install. This will install MetaMake in <dir>/bin or
+/usr/local/bin.
+

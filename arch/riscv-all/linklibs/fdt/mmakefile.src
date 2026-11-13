@@ -1,0 +1,24 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+#
+# Reading the flattened device tree, as a static link library.
+#
+# On a device-tree machine this is the only description of the hardware
+# there is, so several drivers need it (the PCIe host bridge, the UART,
+# the i2c controllers). Keeping it here means one copy of the parser
+# rather than one per driver.
+#
+
+FILES := fdt
+
+USER_INCLUDES := -I$(SRCDIR)/$(CURDIR)/include
+
+#MM- core-linklibs : linklibs-fdt
+#MM- includes : linklibs-fdt-includes
+
+%build_linklib mmake=linklibs-fdt libname=fdt files=$(FILES)
+
+%copy_includes path=. dir=include
+
+%common

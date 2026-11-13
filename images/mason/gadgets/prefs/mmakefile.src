@@ -1,0 +1,10 @@
+include $(SRCDIR)/config/aros.cfg
+
+FILES := Test Revert Save Use Cancel
+
+#MM- themes-mason-images-gadgets : themes-mason-images-gadgets-prefs
+
+%copy_files_q mmake=themes-mason-images-gadgets-prefs files=$(FILES) \
+    dst=$(AROS_THEMES)/Mason/Images/Gadgets/Prefs
+
+%common

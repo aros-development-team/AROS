@@ -1,0 +1,17 @@
+SYS:C/Unpack SYS:AROS.pkg RAM:
+
+RAM:
+C/Copy SYS:L/UserShell-Seg RAM:L QUIET
+C/Copy SYS:Libs RAM:Libs QUIET
+
+C/Assign SYS:  RAM:
+C/Assign C:    SYS:C
+
+Assign DEVS: SYS:Devs
+Assign LIBS: SYS:LIBS
+Assign S:    SYS:S
+
+Makedir T Devs/Printers Locale/Help/English Utilities ALL
+Assign T: RAM:T
+
+Execute S:Startup-Sequence

@@ -1,0 +1,60 @@
+SetCache is a little tool to set the read-ahead cache of a
+Smart Filesystem drive.  This is not the same as the buffers
+you can add using the AddBuffers command.
+
+The read-ahead cache is used to prefetch information which
+may be needed later on.  Because most harddisks don't suffer
+a speed penalty when reading a bit more data this can
+increase performance drastically.
+
+It's command line syntax is:
+
+ DEVICE/A,LINES/N,READAHEAD/N,NOCOPYBACK/S
+
+
+DEVICE
+
+The name of the device which you want to set the read-ahead
+cache for.  Donot include a colon (":") after the device
+name.  This only works for Smart Filesystem drives, and
+won't do anything with the FastFilesystem.
+
+
+LINES
+
+Controls the number of read-ahead buffers.  Each buffer is a
+specific bytes in size, which you can control using the
+READAHEAD parameter.  It is a good idea to set this to
+atleast 8 buffers or more.
+
+
+READAHEAD
+
+The number of bytes which the filesystem will read ahead.
+This controls the size of the buffers you specified with the
+LINES parameter.
+
+The READAHEAD parameter will be rounded to a power of 2
+automatically (for example, 5000 becomes 4096 (2^12)).
+
+
+NOCOPYBACK
+
+Turns off copyback mode.  There shouldn't be any reason why
+you want to do this, short of testing purposes.  The
+copyback mode is implemented in such a way that it can't
+leave your disk in an incorrect state (just like the rest of
+SFS).
+
+
+If the SetCache command was succesful it will print the new
+buffer size.
+
+
+
+Example
+--------
+
+SetCache SFS Lines=10 ReadAhead=8192
+
+-> Set the read-ahead cache to 10 buffers of 8192 bytes each.

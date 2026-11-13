@@ -1,0 +1,71 @@
+include $(TOP)/config/make.cfg
+
+SILENT := yes
+
+DEBUG_OPTS := -g -DDEBUG=0
+
+FILES := \
+	bitmap \
+	cache \
+	checksums \
+	extstrings \
+	filehandles1 \
+	filehandles2 \
+	filehandles3 \
+	hashing \
+	misc \
+	os_unix_support \
+	volumes \
+	validator
+
+ifeq ($(AROS_HOST_ARCH),aros)
+FILES := error $(subst os_unix_support,os_aros_support,$(FILES))
+endif
+
+AFSSRCDIR := $(SRCDIR)/rom/filesys/afs
+ifneq ($(HOSTGENDIR),)
+OBJDIR := $(HOSTGENDIR)/tools/host_afs
+else
+OBJDIR := ./tools/host_afs
+endif
+OBJS   := $(patsubst %, $(OBJDIR)/%.o, $(FILES))
+DEPS   := $(patsubst %, $(OBJDIR)/%.d, $(FILES))
+
+INCLUDES := -I$(AFSSRCDIR) -I$(OBJDIR)
+HOST_CFLAGS := $(HOST_CFLAGS) $(DEBUG_OPTS) -Wall -Werror-implicit-function-declaration -O2
+HOST_CPPFLAGS := $(INCLUDES)
+
+ifeq ($(SILENT),yes)
+	ECHO := true
+endif
+
+.PHONY: all depend clean
+
+all: $(OBJDIR) depend $(AFSLIB)
+
+$(AFSLIB): $(OBJS)
+	@$(ECHO) "Creating $@..."
+	@$(HOST_AR) $@ $?
+	@$(HOST_RANLIB) $@
+
+$(OBJDIR)/config.h: $(OBJDIR) myconf.aros
+	@./myconf.aros $(TOP) >> $@
+
+$(OBJDIR)/%.o: $(AFSSRCDIR)/%.c $(OBJDIR)/config.h
+	@$(ECHO) "Compiling $(notdir $@)..."
+	@$(HOST_CC) $(HOST_CFLAGS) $(HOST_CPPFLAGS) -o $@ -c $<
+
+$(OBJDIR)/%.d: $(AFSSRCDIR)/%.c $(OBJDIR)/config.h
+	@$(ECHO) "Finding dependencies for $<..."
+	@$(HOST_CC) $(HOST_CFLAGS) $(HOST_CPPFLAGS) -M -MT '$(patsubst %.d,%.o,$@)' $< > $@
+
+$(OBJDIR):
+	@$(MKDIR) $(OBJDIR)
+
+clean:
+	@$(RM) -f $(AFSLIB) $(OBJDIR)
+
+depend: $(DEPS)
+
+-include $(DEPS)
+

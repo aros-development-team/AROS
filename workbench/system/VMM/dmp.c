@@ -1,0 +1,37 @@
+static char rcsid [] = "$Id: dmp.c,v 3.1 95/03/08 19:51:49 Martin_Apel Rel $";
+
+#include <exec/types.h>
+#include <exec/nodes.h>
+#include <exec/ports.h>
+#include <exec/lists.h>
+#include <exec/memory.h>
+#include <exec/execbase.h>
+#include <exec/devices.h>
+#include <exec/errors.h>
+#include <devices/timer.h>
+#include <dos/dos.h>
+#include <dos/dosextens.h>
+#include <dos/dostags.h>
+#include <dos/filehandler.h>
+#include <libraries/configvars.h>
+#include <libraries/commodities.h>
+#include <utility/tagitem.h>
+#include <graphics/gfxbase.h>
+#include <intuition/intuition.h>
+#include <rexx/storage.h>
+#include <clib/exec_protos.h>
+#include <clib/dos_protos.h>
+#include <clib/graphics_protos.h>
+#include <clib/intuition_protos.h>
+#include <clib/utility_protos.h>
+#include <clib/expansion_protos.h>
+#include <clib/commodities_protos.h>
+#include <clib/rexxsyslib_protos.h>
+#include <clib/alib_protos.h>
+#include <string.h>
+#include <pragmas/exec_pragmas.h>
+#include <pragmas/dos_pragmas.h>
+#include <pragmas/graphics_pragmas.h>
+#include <pragmas/intuition_pragmas.h>
+#include <pragmas/utility_pragmas.h>
+#include <pragmas/expansion_pragmas.h>

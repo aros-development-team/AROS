@@ -1,0 +1,56 @@
+#ifndef _NETPEDITOR_H_
+#define _NETPEDITOR_H_
+
+/*
+    Copyright © 2009-2026, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
+#include <exec/types.h>
+#include <libraries/mui.h>
+
+/*** Identifier base ********************************************************/
+#define MUIB_NetPEditor                  (TAG_USER | 0x10000000)
+
+/*** Variables **************************************************************/
+extern struct MUI_CustomClass *NetPEditor_CLASS;
+
+/*** Macros *****************************************************************/
+#define NetPEditorObject BOOPSIOBJMACRO_START(NetPEditor_CLASS->mcc_Class)
+
+/* 0x00000001 was MUIM_NetPEditor_IPModeChanged (removed; mode is now per-protocol) */
+#define MUIM_NetPEditor_ShowEntry       (MUIB_NetPEditor | 0x00000002)
+#define MUIM_NetPEditor_EditEntry       (MUIB_NetPEditor | 0x00000003)
+#define MUIM_NetPEditor_ApplyEntry      (MUIB_NetPEditor | 0x00000004)
+#define MUIM_NetPEditor_ShowHostEntry   (MUIB_NetPEditor | 0x00000005)
+#define MUIM_NetPEditor_EditHostEntry   (MUIB_NetPEditor | 0x00000006)
+#define MUIM_NetPEditor_ApplyHostEntry  (MUIB_NetPEditor | 0x00000007)
+#define MUIM_NetPEditor_ShowNetEntry    (MUIB_NetPEditor | 0x00000008)
+#define MUIM_NetPEditor_EditNetEntry    (MUIB_NetPEditor | 0x00000009)
+#define MUIM_NetPEditor_ApplyNetEntry   (MUIB_NetPEditor | 0x0000000A)
+#define MUIM_NetPEditor_ShowShareEntry   (MUIB_NetPEditor | 0x0000000B)
+#define MUIM_NetPEditor_EditShareEntry   (MUIB_NetPEditor | 0x0000000C)
+#define MUIM_NetPEditor_ApplyShareEntry  (MUIB_NetPEditor | 0x0000000D)
+#define MUIM_NetPEditor_AddTetheringEntry (MUIB_NetPEditor | 0x0000000E)
+
+/* Protocol address list methods (plugin-based protocol modules) */
+#define MUIM_NetPEditor_EditProtoEntry   (MUIB_NetPEditor | 0x00000010)
+#define MUIM_NetPEditor_ApplyProtoEntry  (MUIB_NetPEditor | 0x00000011)
+
+/* Add-connection dispatch + 6in4 tunnel editor methods */
+#define MUIM_NetPEditor_AddConnection    (MUIB_NetPEditor | 0x00000012)
+#define MUIM_NetPEditor_EditTunnelEntry  (MUIB_NetPEditor | 0x00000013)
+#define MUIM_NetPEditor_ApplyTunnelEntry (MUIB_NetPEditor | 0x00000014)
+#define MUIM_NetPEditor_ShowServiceEntry (MUIB_NetPEditor | 0x00000015)
+#define MUIM_NetPEditor_ToggleService    (MUIB_NetPEditor | 0x00000016)
+#define MUIM_NetPEditor_SetServicePri    (MUIB_NetPEditor | 0x00000017)
+#define MUIM_NetPEditor_ConfigureService (MUIB_NetPEditor | 0x00000018)
+
+struct MUIP_NetPEditor_EditEntry    {STACKED ULONG MethodID; STACKED ULONG addEntry;};
+struct MUIP_NetPEditor_AddConnection {STACKED ULONG MethodID; STACKED LONG type;};
+struct MUIP_NetPEditor_EditTunnelEntry {STACKED ULONG MethodID; STACKED ULONG addEntry;};
+struct MUIP_NetPEditor_EditNetEntry {STACKED ULONG MethodID; STACKED ULONG addEntry;};
+struct MUIP_NetPEditor_ApplyProtoEntry {STACKED ULONG MethodID; STACKED ULONG family;};
+struct MUIP_NetPEditor_ApplyShareEntry {STACKED ULONG MethodID; STACKED ULONG fshID;};
+
+#endif /* _NETPEDITOR_H_ */

@@ -1,0 +1,17 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+# FIXME: This file was converted to the %build_module_macro without testing
+# on the build on a real PPC/prep system. Other directories in the arch/ppc
+# directory will also need to be converted before the build will work.
+
+USER_CPPFLAGS := -D__KERNEL__ -D__ROM__
+
+%build_module_macro mmake=kernel-resource-prep-ppc \
+    modname=kernel modtype=resource \
+    funcs=io files="functable functions" \
+    conffile=lib.conf \
+    genfunctable=no genincludes=yes
+
+%common
+

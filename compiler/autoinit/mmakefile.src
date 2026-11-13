@@ -1,0 +1,49 @@
+#
+#   Generate the libautoinit.a
+#
+
+include $(SRCDIR)/config/aros.cfg
+
+# list of automatically linked libs - included by the gcc spec file.
+AUTOFILE := \
+	auto
+
+# libraries_nolibs must come BEFORE libraries
+LIBHANDLINGFILES := \
+	functions \
+	classes \
+	dso_handle \
+	libraries_nolibs \
+	libraries
+
+STARTUPFILES := \
+	__showerror \
+	commandline \
+	commandname \
+	__stdiowin \
+	_programname \
+        stdiowin \
+        fromwb \
+        initexitsets \
+        startupvars \
+        programentries
+
+MISCFILES := \
+	detach
+
+FILES := $(LIBBASEFILES) $(LIBHANDLINGFILES) $(STARTUPFILES) $(MISCFILES)
+
+#MM- core-linklibs : linklibs-autoinit
+#MM- linklibs: linklibs-autoinit
+#MM linklibs-autoinit : includes includes-copy kernel-expansion-includes kernel-oop-includes linklibs-autoinit-autofile
+
+%copy_includes includes="autoinit.h detach.h" path=aros
+
+%copy_files_q mmake=linklibs-autoinit-autofile files=$(AUTOFILE) dst=$(AROS_LIB)
+
+%build_linklib mmake=linklibs-autoinit libname=autoinit files=$(FILES)
+
+ifneq ($(AROS_TARGET_CPU32),)
+%build_linklib mmake=linklibs-autoinit32 libname=autoinit files=$(FILES) libdir="$(AROS_LIB32)" objdir="$(GENDIR)/$(CURDIR)/32bit" cflags="$(strip $(TARGET_ISA_32_CFLAGS) $(TARGET_CFLAGS))"
+endif
+%common

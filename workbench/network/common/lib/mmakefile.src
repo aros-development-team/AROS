@@ -1,0 +1,6 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM- linklibs: network-linklibs
+
+#%common

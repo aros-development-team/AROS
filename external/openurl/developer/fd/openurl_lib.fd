@@ -1,0 +1,22 @@
+*
+* FD file for openurl.library
+*
+##base _OpenURLBase
+##bias 30
+##public
+URL_OpenA(url,tags)(a0,a1)
+URL_OldGetPrefs()()
+URL_OldFreePrefs(up)(a0)
+URL_OldSetPrefs(up, permanent)(a0,d0)
+*--- functions in V2 or higher ---
+URL_OldGetDefaultPrefs()()
+*--- functions in V3 or higher ---
+URL_OldLaunchPrefsApp()()
+DoFunction(rxmsg)(a0)
+*--- functions in V4 or higher ---
+URL_GetPrefsA(tags)(a0)
+URL_FreePrefsA(prefs,tags)(a0,a1)
+URL_SetPrefsA(up,tags)(a0,a1)
+URL_LaunchPrefsAppA(tags)(a0)
+URL_GetAttr(attr,storage)(d0,a0)
+##end

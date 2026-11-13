@@ -1,0 +1,108 @@
+/*
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
+
+    Desc: Internal defs for trackdisk
+*/
+#ifndef TRACKDISK_DEVICE_H
+#define TRACKDISK_DEVICE_H
+
+#include <exec/types.h>
+#include <exec/devices.h>
+#include <exec/semaphores.h>
+#include <exec/interrupts.h>
+#include <exec/tasks.h>
+
+#include <devices/trackdisk.h>
+#include <resources/disk.h>
+
+/* Stack size - 4096 longwords should be enough */
+#define STACK_SIZE      16384
+
+/* Maximum number of units */
+#define TD_NUMUNITS 4
+
+/* something */
+#define TDUF_WRITE      (1<<0)
+
+#define TDU_NODISK	0x00
+#define TDU_DISK	0x01
+
+#define TDU_READONLY	0x01
+#define TDU_WRITABLE	0x00
+
+#define DT_UNDETECTED 0
+#define DT_ADOS 1
+#define DT_PCDOS 2
+
+struct TDU
+{
+    struct	TDU_PublicUnit pub;
+    struct List	tdu_Listeners;
+    UBYTE	tdu_UnitNum;		/* Unit number */
+    UBYTE	tdu_DiskIn;			/* Disk in drive? */
+    UBYTE	tdu_MotorOn;		/* Motor on? */
+    UBYTE	tdu_ProtStatus;
+    UBYTE	tdu_flags;
+    BOOL    tdu_hddisk;			/* HD disk inserted */
+    BOOL    tdu_broken;			/* recalibrate didn't find TRACK0, drive ignored */
+    UBYTE	tdu_sectors;		/* number of sectors per track */
+    BOOL    tdu_selected;
+    UBYTE   tdu_disktype;
+};
+
+struct TrackDiskBase
+{
+    struct Device           td_device;          /* 0x00 */
+    /*
+     * Compatibility: some old bootblocks/loaders written for Kickstart 1.x take
+     * the exec, graphics and disk.resource bases straight out of the
+     * trackdisk.device base (offsets 0x34, 0x38 and 0x3C) instead of opening
+     * them. Keep these three pointers at those offsets; the other fields fill
+     * the space before them.
+     */
+    UWORD                   td_pad0;            /* 0x22 */
+    struct TaskData			*td_TaskData;       /* 0x24 */
+    struct timerequest  	*td_TimerIO;        /* 0x28 */
+    struct timerequest  	*td_TimerIO2;       /* 0x2C */
+    struct MsgPort      	*td_TimerMP;        /* 0x30 */
+    struct ExecBase         *td_SysBase;        /* 0x34 */
+    struct GfxBase          *td_GfxBase;        /* 0x38 */
+    struct DiskBase 		*td_DiskBase;       /* 0x3C */
+    struct MsgPort      	*td_TimerMP2;
+    struct TDU				*td_Units[TD_NUMUNITS];
+    struct DiscResourceUnit td_dru;
+    struct MsgPort			td_druport;
+    struct MsgPort		    td_Port;			// MessagePort
+    struct Task				*td_task;
+    APTR					td_DMABuffer;		/* Buffer for DMA accesses */
+    UBYTE					*td_DataBuffer;
+    ULONG					td_sectorbits;
+    volatile struct Custom 	*custom;
+    volatile struct CIA 	*ciaa;
+    volatile struct CIA 	*ciab;
+    ULONG					td_IntBit;
+    BOOL					td_nomount;
+    BOOL					td_supportHD;
+    WORD					td_buffer_track;
+    BYTE					td_buffer_unit;		/* buffer contains this unit's track */
+    UBYTE					td_lastdir;		/* last step direction */
+    BOOL					td_dirty;
+    UWORD					*crc_table16;		/* PCDOS checksum table */
+
+    /* Read-only decoded-track cache. The single td_DataBuffer holds only the
+     * last-decoded track, so a filesystem that interleaves reads across tracks
+     * (directory block on one track, file header on another) keeps evicting and
+     * re-reading the same tracks - each re-read is a full disk revolution plus a
+     * seek. These slots keep the last TD_TRACKCACHE_SLOTS decoded tracks so
+     * such re-reads become memory copies. Writes/format invalidate the cache. */
+#define TD_TRACKCACHE_SLOTS 4
+    UBYTE					*td_tcData[TD_TRACKCACHE_SLOTS];	/* 11*512 (or 22*512 HD) each */
+    WORD					td_tcTrack[TD_TRACKCACHE_SLOTS];	/* -1 = empty */
+    BYTE					td_tcUnit[TD_TRACKCACHE_SLOTS];
+    ULONG					td_tcSectorbits[TD_TRACKCACHE_SLOTS];
+    ULONG					td_tcLRU[TD_TRACKCACHE_SLOTS];	/* higher = more recently used */
+    ULONG					td_tcClock;
+    ULONG					td_tcSlotSize;			/* bytes per slot currently allocated */
+};
+
+#endif /* TRACKDISK_DEVICE_H */

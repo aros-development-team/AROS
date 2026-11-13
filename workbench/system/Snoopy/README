@@ -1,0 +1,34 @@
+Snoopy
+======
+
+Simple system monitor. It patches nearly the same functions as the famous
+SnoopDos. It prints the parameters of several library functions with the
+kprintf function. You can see the output either in the Shell from which
+you have started AROS or in Sashimi.
+
+Usage
+=====
+
+Select the functions you want to monitor and press the 'Save' or 'Use' button.
+Press 'Undo' to revert to the state before your latest 'Save' or 'Use' click.
+'Reset' resets to some default settings.
+'Save' stores the settings in envarc:snoopy.prefs.
+You should normally not use the 'Cancel' button. It can lead to
+problems when another program patches the functions which have
+already been patched by Snoopy.
+
+Option "Breakpoint" sets debug interrupt on i386 and x86-64. This option is
+connected to the output, i.e. interrupt happens after "SNOOP" output.
+Only enable this when you know what you are doing.
+
+Option "Match name". Filters with AmigaDOS pattern (e.g. #?foobar#?)
+
+TODO
+====
+
+NameFromLock crashes. Therefore the CurrentDir patch doesn't print
+the full path name of the directory and the option ShowFullPath doesn't work.
+
+Implement missing settings.
+
+Load/Save match pattern

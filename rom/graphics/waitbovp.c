@@ -1,0 +1,53 @@
+/*
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
+
+    Desc: Graphics function WaitBOVP()
+*/
+#include <aros/debug.h>
+#include <graphics/view.h>
+
+#include "graphics_intern.h"
+
+/*****************************************************************************
+
+    NAME */
+#include <proto/graphics.h>
+
+        AROS_LH1(void, WaitBOVP,
+
+/*  SYNOPSIS */
+        AROS_LHA(struct ViewPort *, vp, A0),
+
+/*  LOCATION */
+        struct GfxBase *, GfxBase, 67, Graphics)
+
+/*  FUNCTION
+
+    INPUTS
+        vp - pointer to ViewPort structure
+
+    RESULT
+        None.
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+        This function is unimplemented.
+
+    SEE ALSO
+
+    INTERNALS
+
+    HISTORY
+
+*****************************************************************************/
+{
+    AROS_LIBFUNC_INIT
+
+    /* TODO: Write graphics/WaitBOVP() */
+    gfx_NotImplemented("WaitBOVP", GfxBase);
+
+    AROS_LIBFUNC_EXIT
+} /* WaitBOVP */

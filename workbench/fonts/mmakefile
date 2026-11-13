@@ -1,0 +1,24 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+FONTSDIR    := $(AROSDIR)/Fonts
+
+FONTS       := fixed arial stop ttcourier XEN
+FONTFILES   := $(foreach f, $(FONTS), $(foreach s, $(filter-out $(f)/CVS, $(call WILDCARD, $(f)/*)), $(FONTSDIR)/$(s)))
+
+DIRS        := $(FONTSDIR) $(addprefix $(FONTSDIR)/,$(FONTS))
+
+#MM workbench-fonts : workbench-fonts-setup
+workbench-fonts: $(FONTFILES)
+
+#MM
+workbench-fonts-quick: $(FONTFILES)
+
+$(FONTSDIR)/% : %
+	@$(CP) $< $@
+
+#MM
+workbench-fonts-setup : $(DIRS)
+
+$(DIRS):
+	@$(IF) $(TEST) ! -d $@ ; then $(MKDIR) $@ ; else $(NOP) ; fi

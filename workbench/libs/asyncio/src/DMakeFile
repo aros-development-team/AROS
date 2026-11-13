@@ -1,0 +1,169 @@
+#
+# DMakeFile for asyncio library. Both shared library and normal library models.
+#
+#
+# Does not generate all flavors; only the basic ones:
+#   Normal arguments, smalldata
+#   Registered arguments, smalldata
+#
+# Should be easy to modify below to generate other flavors, if needed.
+#
+
+SRC = CloseAsync.c OpenAsync.c OpenAsyncFH.c OpenAsyncFromFH.c PeekAsync.c \
+      ReadAsync.c ReadCharAsync.c ReadLineAsync.c RecordAsyncFailure.c     \
+      RequeuePacket.c SeekAsync.c SendPacket.c WaitPacket.c WriteAsync.c   \
+      WriteCharAsync.c WriteLineAsync.c FGetsLenAsync.c
+
+OBJ = $(SRC:*.?:o/*.o)
+
+PRAGMA = /include/pragmas/asyncio_pragmas.h
+FD     = /include/fd/asyncio_lib.fd
+
+# Generate all "normal" flavors
+
+All : /libs/asyncio.library $(PRAGMA) \
+      /dlib/asynciolibs.lib /dlib/asynciolibsr.lib /dlib/asyncios.lib /dlib/asynciosr.lib \
+      /lib/asyncio.lib /lib/asyncior.lib
+
+asio : /libs/asyncio.library
+
+Rev.h :
+	Rev -s -i -p -t -b
+
+Lib.c : Rev.h
+
+# The only difference when making the shared library is that Lib.c is included
+# (MUST be first), and that ASIO_SHARED_LIB is defined. It only affects another
+# define in the (private) include file async.h
+
+/libs/asyncio.library : Lib.o $(OBJ)
+	Sc LINK TO %(left) %(right)
+
+Lib.o $(OBJ) : Lib.c $(SRC)
+	Sc DEF ASIO_SHARED_LIB UTILLIB OBJNAME %(left) %(right)
+
+
+# Normal link libraries
+
+/lib/asyncio.lib : $(SRC:*.c:ol/*.o) AsyncLib.o AsyncLibVer.o
+	Sc OBJLIB %(left) %(right)
+
+$(SRC:*.c:ol/*.o) : $(SRC)
+	Sc PARAMS STACK OBJNAME %(left) %(right)
+
+/lib/asyncior.lib : $(SRC:*.c:olr/*.o) AsyncLib.o AsyncLibVer.o
+	Sc OBJLIB %(left) %(right)
+
+$(SRC:*.c:olr/*.o) AsyncLib.o AsyncLibVer.o : $(SRC) AsyncLib.c AsyncLibVer.c
+	Sc DEF ASIO_REGARGS OBJNAME %(left) %(right)
+
+$(OBJ) : async.h
+
+
+# Keep the pragma file up to date
+
+$(PRAGMA) : $(FD)
+	FDTOPragma -o%(left) %(right)
+
+
+# Link libraries for use with the shared version of the library. Only needed if
+# the -mi option isn't used, or you use the autoinit stuff.
+
+/dlib/asynciolibs.lib : $(FD)
+	FDToLib -o%(left) %(right) -auto asyncio.library
+
+/dlib/asynciolibsr.lib : $(FD)
+	FDToLib -o%(left) %(right) -mr -hasynciolibsr.h -auto asyncio.library
+
+# Large data models of the above two libraries. Not generated per default.
+
+/dlib/asynciolibs.lib : $(FD)
+	FDToLib -o%(left) %(right) -auto asyncio.library -md
+
+/dlib/asynciolibsr.lib : $(FD)
+	FDToLib -o%(left) %(right) -mr -hasynciolibsr.h -auto asyncio.library -md
+
+
+# Here the normal link library versions are generated. See lib.def for more information.
+
+/dlib/asyncios.lib :
+	LbMake asyncio s
+
+/dlib/asynciosr.lib :
+	LbMake asyncio s r
+
+# Other flavours, not generated per default
+
+/dlib/asynciol.lib :
+	LbMake asyncio l
+
+/dlib/asynciorl.lib :
+	LbMake asyncio l r
+
+/dlib/asyncioes.lib :
+	LbMake asyncio s e
+
+/dlib/asyncioesr.lib :
+	LbMake asyncio s r e
+
+/dlib/asyncioel.lib :
+	LbMake asyncio l e
+
+/dlib/asyncioelr.lib :
+	LbMake asyncio l r e
+
+/dlib/asynciolp.lib :
+	LbMake asyncio l p
+
+/dlib/asynciolrp.lib :
+	LbMake asyncio l r p
+
+/dlib/asyncioesp.lib :
+	LbMake asyncio s p e
+
+/dlib/asyncioesrp.lib :
+	LbMake asyncio s r p e
+
+/dlib/asyncioelp.lib :
+	LbMake asyncio l p e
+
+/dlib/asyncioelrp.lib :
+	LbMake asyncio l r p e
+
+/dlib/asynciosp.lib :
+	LbMake asyncio s p
+
+/dlib/asynciosrp.lib :
+	LbMake asyncio s r p
+
+
+# SAS versions of some of the above
+
+/lib/asyncioer.lib : $(SRC:*.c:oler/*.o) AsyncLib.o
+	Sc OBJLIB %(left) %(right)
+
+$(SRC:*.c:oler/*.o) : $(SRC)
+	Sc DEF ASIO_NOEXTERNALS DEF ASIO_REGARGS OBJNAME %(left) %(right)
+
+/lib/asyncioe.lib : $(SRC:*.c:ole/*.o) AsyncLib.o
+	Sc OBJLIB %(left) %(right)
+
+$(SRC:*.c:ole/*.o) : $(SRC)
+	Sc PARAMS STACK DEF ASIO_NOEXTERNALS OBJNAME %(left) %(right)
+
+
+# Some other "odd" SAS/C link library versions. "u" means that UtilityBase
+# is needed, and "2" means 020+ compiled.
+
+/lib/asyncioru.lib : $(SRC:*.c:olru/*.o) AsyncLib.o
+	Sc OBJLIB %(left) %(right)
+
+$(SRC:*.c:olru/*.o) : $(SRC)
+	Sc UTILLIB DEF ASIO_REGARGS OBJNAME %(left) %(right)
+
+/lib/asyncioru2.lib : $(SRC:*.c:olru2/*.o) AsyncLib.o
+	Sc DEF ASIO_REGARGS OBJLIB %(left) %(right)
+
+$(SRC:*.c:olru2/*.o) : $(SRC)
+	Sc UTILLIB CPU 68020 DEF ASIO_REGARGS OBJNAME %(left) %(right)
+

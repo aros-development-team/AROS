@@ -1,0 +1,35 @@
+#
+
+include $(SRCDIR)/config/aros.cfg
+-include $(SRCDIR)/arch/$(CPU)-$(ARCH)/utility/make.opts
+-include $(SRCDIR)/arch/$(CPU)-all/utility/make.opts
+
+USER_INCLUDES := -I$(SRCDIR)/rom/utility
+
+FILES := \
+    setmem_sse
+
+#MM- kernel-utility-pc : kernel-utility-pc-avx includes
+
+%build_archspecific mainmmake=kernel-utility modname=utility maindir=rom/utility \
+    arch=pc files=$(FILES)
+
+ISA_FLAGS += -mavx
+
+GENDIR_UTILITY_ARCH := $(GENDIR)/rom/utility/utility/arch
+
+AVX_FILES := \
+    setmem_avx
+
+AVX_OBJS := $(addprefix $(GENDIR_UTILITY_ARCH)/, $(addsuffix .o, $(AVX_FILES)))
+AVX_DEPS := $(addprefix $(GENDIR_UTILITY_ARCH)/, $(addsuffix .d, $(AVX_FILES)))
+
+#MM
+kernel-utility-pc-avx : $(AVX_OBJS)
+
+%rule_compile_multi mmake=kernel-utility-pc-avx \
+    basenames=$(AVX_FILES) targetdir=$(GENDIR_UTILITY_ARCH)
+
+%include_deps depstargets=kernel-utility-pc-avx deps=$(AVX_DEPS)
+
+%common

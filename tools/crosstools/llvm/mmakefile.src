@@ -1,0 +1,932 @@
+include $(SRCDIR)/config/aros.cfg
+-include $(SRCDIR)/tools/crosstools/$(AROS_TOOLCHAIN).cfg
+
+#
+# LLVM toolchain
+#
+
+#MM tools-crosstools-llvm-setup : crosstools-llvm-fetch
+#MM tools-crosstools-llvm-lld-setup : crosstools-llvm-lld-fetch
+#MM tools-crosstools-clang-setup : crosstools-clang-fetch
+#MM tools-crosstools-compiler_rt-setup  : crosstools-compiler-rt-fetch
+#MM tools-crosstools-llvm-libcxx-setup : crosstools-llvm-libcxx-fetch
+#MM tools-crosstools-llvm-libcxxabi-setup : crosstools-llvm-libcxxabi-fetch
+#MM tools-crosstools-libunwind-setup : crosstools-libunwind-fetch
+
+#MM crosstools-llvm-cmakefiles-yes-setup : crosstools-llvm-cmakefiles-fetch
+#MM crosstools-llvm-fetch : crosstools-llvm-cmakefiles-$(LLVM_CMAKE_FILES)-setup
+
+#MM crosstools-llvm-create-patch : tools-crosstools-llvm-cleanup
+#MM crosstools-llvm-lld-create-patch : tools-crosstools-llvm-lld-cleanup
+#MM crosstools-clang-create-patch :  tools-crosstools-clang-cleanup
+#MM crosstools-compiler-rt-create-patch : tools-crosstools-compiler_rt-cleanup
+#MM crosstools-llvm-libcxx-create-patch : tools-crosstools-llvm-libcxx-cleanup
+#MM crosstools-llvm-libcxxabi-create-patch : tools-crosstools-llvm-libcxxabi-cleanup
+#MM crosstools-libunwind-create-patch : tools-crosstools-libunwind-cleanup
+
+# The toolchain linklibs are target components. Up to llvm 22 they are built
+# from the host monotree; from 23 (the umbrella runtimes build) they take their
+# sources from their own fetches into the target ports directory, and need only
+# the installed toolchain - which the top level make builds before AROS - rather
+# than the host sources and cmake configuration tools-crosstools-llvm-toolchain
+# carries with it.
+#MM- crosstools-compiler-rt-setup : crosstools-compiler-rt-source-$(TARGET_LLVM_RUNTIMES_STYLE)
+#MM- crosstools-compiler-rt-source-separate : tools-crosstools-llvm-setup tools-crosstools-compiler_rt-setup
+#MM- crosstools-compiler-rt-source-umbrella : crosstools-compiler-rt-target-fetch
+#MM- crosstools-linklibs-toolchain-separate : tools-crosstools-llvm-toolchain
+#MM- crosstools-linklibs-toolchain-umbrella :
+#MM crosstools-compiler-rt : crosstools-compiler-rt-setup crosstools-linklibs-toolchain-$(TARGET_LLVM_RUNTIMES_STYLE) tools-crosstools-autolibs
+#MM crosstools-compiler-rt-cmake : crosstools-compiler-rt-setup tools-crosstools-autolibs
+#MM- crosstools-compiler-rt-quick : crosstools-compiler-rt-setup tools-crosstools-llvm-toolchain-quick
+
+#MM crosstools-compiler-rt32 : crosstools-compiler-rt-setup crosstools-linklibs-toolchain-$(TARGET_LLVM_RUNTIMES_STYLE) tools-crosstools-autolibs32
+#MM crosstools-compiler-rt32-cmake : crosstools-compiler-rt-setup tools-crosstools-autolibs32
+#MM- crosstools-compiler-rt32-quick : crosstools-compiler-rt-setup tools-crosstools-llvm-toolchain-quick
+
+#MM- crosstools-llvm-libcxx-setup : tools-crosstools-llvm-libcxx-setup tools-crosstools-llvm-libcxxabi-setup
+#MM crosstools-llvm-libcxx : crosstools-llvm-libcxx-setup tools-crosstools-llvm-toolchain
+#MM- crosstools-llvm-libcxx-quick : \
+#MM           crosstools-llvm-libcxx-setup crosstools-llvm-libcxxabi-setup tools-crosstools-llvm-toolchain-quick
+
+#MM- crosstools-libunwind-setup : tools-crosstools-libunwind-setup
+#MM crosstools-libunwind : crosstools-libunwind-setup tools-crosstools-llvm-toolchain tools-crosstools-llvm-libcxx tools-crosstools-llvm-libcxxabi
+#MM crosstools-libunwind-cmake : tools-crosstools-libunwind-setup
+#MM- crosstools-libunwind-quick : crosstools-libunwind-setup tools-crosstools-llvm-toolchain-quick
+
+#MM- crosstools-llvm : \
+#MM           tools-crosstools-llvm-toolchain crosstools-compiler-rt-fixup \
+#MM           crosstools-llvm-runtimes-$(TARGET_LLVM_RUNTIMES_STYLE)
+
+# Up to llvm 22 libcxx, libcxxabi and libunwind each get their own cmake pass;
+# from 23 none of them will configure alone and they come out of a single
+# runtimes/ build. Both shapes stay defined and the dependency selects one, so
+# no rule is ever guarded out. TARGET_LLVM_RUNTIMES_STYLE comes from target.cfg
+# because that is one of the few files metamake reads when resolving these.
+#MM- crosstools-llvm-runtimes-separate : \
+#MM           crosstools-libunwind tools-crosstools-llvm-libcxx tools-crosstools-llvm-libcxxabi
+# The umbrella build takes libcxx, libcxxabi and libunwind from its own fetch of
+# the target sources; compiler-rt still has to be in place first (the separate
+# libcxx/libcxxabi targets carried that dependency).
+#MM- crosstools-llvm-runtimes-umbrella : \
+#MM           crosstools-llvm-runtimes-target-fetch \
+#MM           crosstools-compiler-rt-fixup crosstools-llvm-runtimes
+#MM crosstools-llvm-runtimes-cmake : crosstools-llvm-runtimes-target-fetch
+#MM- crosstools-llvm-quick : \
+#MM           tools-crosstools-llvm-toolchain-quick \
+#MM           crosstools-compiler-rt-quick \
+#MM           crosstools-libunwind-quick \
+#MM           tools-crosstools-llvm-libcxx-quick \
+#MM           tools-crosstools-llvm-libcxxabi-quick
+#MM crosstools-llvm-toolchain : setup tools-crosstools-llvm-setup tools-crosstools-llvm-lld-setup tools-crosstools-clang-setup
+#MM- crosstools-llvm-toolchain-quick : setup tools-crosstools-llvm-setup tools-crosstools-llvm-lld-setup tools-crosstools-clang-setup
+
+# Build for supported targets -:
+
+#MM- tools-crosstools-llvm-i386     : tools-crosstools-llvm-toolchain
+#MM- tools-crosstools-llvm-x86_64   : tools-crosstools-llvm-toolchain
+#MM- toolchain-linklibs-llvm-x86_64 : crosstools-compiler-rt32
+#MM- tools-crosstools-llvm-ppc      : tools-crosstools-llvm-toolchain
+#MM- tools-crosstools-llvm-arm      : tools-crosstools-llvm-toolchain
+#MM- toolchain-linklibs-llvm-arm    : linklibs-arm
+#MM- toolchain-linklibs-llvm-armeb  : linklibs-armeb
+#MM- tools-crosstools-llvm-aarch64  : tools-crosstools-llvm-toolchain
+#MM- tools-crosstools-llvm-riscv    : tools-crosstools-llvm-toolchain
+#MM- tools-crosstools-llvm-riscv64  : tools-crosstools-llvm-toolchain
+#MM- tools-crosstools-llvm-m68k    : tools-crosstools-llvm-toolchain
+
+# Flags used for stages of the build
+
+llvm-cmake-setupflag := $(HOSTGENDIR)/$(CURDIR)/.setupflag-llvmcmake-$(LLVM_VERSION)-$(AROS_TARGET_CPU)
+llvm-runtimes-setupflag := $(HOSTGENDIR)/$(CURDIR)/.setupflag-llvm-runtimes-$(LLVM_VERSION)-$(AROS_TARGET_CPU)
+llvm-setupflag := $(HOSTGENDIR)/$(CURDIR)/.setupflag-llvm-$(LLVM_VERSION)-$(AROS_TARGET_CPU)
+llvm-lld-setupflag := $(HOSTGENDIR)/$(CURDIR)/.setupflag-llvm-lld-$(LLVM_VERSION)-$(AROS_TARGET_CPU)
+clang-setupflag := $(HOSTGENDIR)/$(CURDIR)/.setupflag-clang-$(LLVM_VERSION)-$(AROS_TARGET_CPU)
+compiler-rt-setupflag := $(HOSTGENDIR)/$(CURDIR)/.setupflag-compiler_rt-$(LLVM_VERSION)-$(AROS_TARGET_CPU)
+llvm-libcxx-setupflag := $(HOSTGENDIR)/$(CURDIR)/.setupflag-llvm-libcxx-$(LLVM_VERSION)-$(AROS_TARGET_CPU)
+llvm-libcxxabi-setupflag := $(HOSTGENDIR)/$(CURDIR)/.setupflag-llvm-libcxxabi-$(LLVM_VERSION)-$(AROS_TARGET_CPU)
+libunwind-setupflag := $(HOSTGENDIR)/$(CURDIR)/.setupflag-libunwind-$(LLVM_VERSION)-$(AROS_TARGET_CPU)
+
+llvm-installflag := $(CROSSTOOLSDIR)/.installflag-llvm-$(LLVM_VERSION)-$(AROS_TARGET_CPU)
+llvm-libcxx-installflag := $(CROSSTOOLSDIR)/.installflag-llvm-libcxx-$(LLVM_VERSION)-$(AROS_TARGET_CPU)
+llvm-libcxxabi-installflag := $(CROSSTOOLSDIR)/.installflag-llvm-libcxxabi-$(LLVM_VERSION)-$(AROS_TARGET_CPU)
+crosstools-compiler-rt-installflag := $(CROSSTOOLSDIR)/.installflag-compiler_rt-$(LLVM_VERSION)-$(AROS_TARGET_CPU)
+crosstools-compiler-rt32-installflag := $(CROSSTOOLSDIR)/.installflag-compiler_rt32-$(LLVM_VERSION)-$(AROS_TARGET_CPU)
+crosstools-libunwind-installflag := $(CROSSTOOLSDIR)/.installflag-libunwind-$(LLVM_VERSION)-$(AROS_TARGET_CPU)
+
+# Variables used to configure/build Clang and co.
+
+LLVM_BUILD_BINDIR:=$(CROSSTOOLSDIR)/bin
+
+LLVM_REPOSITORY         :=https://github.com/llvm/llvm-project/releases/download/llvmorg-$(LLVM_VERSION)$(LLVM_REPO)
+
+LLVM_CMAKE_ARCHBASE     :=cmake-$(LLVM_VERSION)$(LLVM_RELEASE).src
+LLVM_RUNTIME_ARCHBASE   :=runtimes-$(LLVM_VERSION)$(LLVM_RELEASE).src
+LLVM_ARCHBASE           :=llvm-$(LLVM_VERSION)$(LLVM_RELEASE).src
+LLVMLLD_ARCHBASE        :=lld-$(LLVM_VERSION)$(LLVM_RELEASE).src
+CLANG_ARCHBASE          :=$(CLANG_NAME)-$(LLVM_VERSION)$(LLVM_RELEASE).src
+LIBCXX_ARCHBASE         :=libcxx-$(LLVM_VERSION)$(LLVM_RELEASE).src
+LIBCXXABI_ARCHBASE      :=libcxxabi-$(LLVM_VERSION)$(LLVM_RELEASE).src
+COMPILER_RT_ARCHBASE    :=compiler-rt-$(LLVM_VERSION)$(LLVM_RELEASE).src
+LIBUNWIND_ARCHBASE      :=libunwind-$(LLVM_VERSION)$(LLVM_RELEASE).src
+
+MONOTREE_BUILDBASE      := $(HOSTGENDIR)/$(CURDIR)/tree
+LLVM_BUILDBASE          := $(MONOTREE_BUILDBASE)/llvm
+LLVMLLD_BUILDBASE       := $(MONOTREE_BUILDBASE)/llvm-lld
+CLANG_BUILDBASE         := $(MONOTREE_BUILDBASE)/clang
+COMPILER_RT_BUILDBASE   := $(MONOTREE_BUILDBASE)/compiler_rt
+LIBCXX_BUILDBASE        := $(MONOTREE_BUILDBASE)/libcxx
+LIBCXXABI_BUILDBASE     := $(MONOTREE_BUILDBASE)/libcxxabi
+LIBUNWIND_BUILDBASE     := $(MONOTREE_BUILDBASE)/libunwind
+
+# Where each component's sources are found before they are moved into the
+# monotree. Up to llvm 21 every component had its own release archive; from
+# llvm 22 upstream only publishes the monorepo, which already has exactly the
+# layout the monotree wants - so the components are taken from inside it.
+LLVM_PROJECT_ARCHBASE   :=llvm-project-$(LLVM_VERSION)$(LLVM_RELEASE).src
+ifeq ($(LLVM_MONOREPO),yes)
+LLVM_PROJECT_SRCDIR     := $(HOSTDIR)/Ports/host/llvm-project/$(LLVM_PROJECT_ARCHBASE)
+LLVM_SRCDIR             := $(LLVM_PROJECT_SRCDIR)/llvm
+LLVMLLD_SRCDIR          := $(LLVM_PROJECT_SRCDIR)/lld
+CLANG_SRCDIR            := $(LLVM_PROJECT_SRCDIR)/clang
+COMPILER_RT_SRCDIR      := $(LLVM_PROJECT_SRCDIR)/compiler-rt
+LIBCXX_SRCDIR           := $(LLVM_PROJECT_SRCDIR)/libcxx
+LIBCXXABI_SRCDIR        := $(LLVM_PROJECT_SRCDIR)/libcxxabi
+LIBUNWIND_SRCDIR        := $(LLVM_PROJECT_SRCDIR)/libunwind
+LLVM_CMAKE_SRCDIR       := $(LLVM_PROJECT_SRCDIR)/cmake
+LLVM_RUNTIMES_SRCDIR    := $(LLVM_PROJECT_SRCDIR)/runtimes
+
+# One spec per AROS component patch, all applied inside the extracted monorepo.
+LLVM_PROJECT_PATCHES_SPECS := $(LLVM_ARCHBASE)-aros.diff:$(LLVM_PROJECT_ARCHBASE):-p1 \
+                              $(CLANG_ARCHBASE)-aros.diff:$(LLVM_PROJECT_ARCHBASE):-p1 \
+                              $(COMPILER_RT_ARCHBASE)-aros.diff:$(LLVM_PROJECT_ARCHBASE):-p1 \
+                              $(LIBCXX_ARCHBASE)-aros.diff:$(LLVM_PROJECT_ARCHBASE):-p1 \
+                              $(LIBCXXABI_ARCHBASE)-aros.diff:$(LLVM_PROJECT_ARCHBASE):-p1 \
+                              $(LIBUNWIND_ARCHBASE)-aros.diff:$(LLVM_PROJECT_ARCHBASE):-p1
+else
+LLVM_SRCDIR             := $(HOSTDIR)/Ports/host/llvm/$(LLVM_ARCHBASE)
+LLVMLLD_SRCDIR          := $(HOSTDIR)/Ports/host/llvm-lld/$(LLVMLLD_ARCHBASE)
+CLANG_SRCDIR            := $(HOSTDIR)/Ports/host/clang/$(CLANG_ARCHBASE)
+COMPILER_RT_SRCDIR      := $(HOSTDIR)/Ports/host/compiler-rt/$(COMPILER_RT_ARCHBASE)
+LIBCXX_SRCDIR           := $(HOSTDIR)/Ports/host/libcxx/$(LIBCXX_ARCHBASE)
+LIBCXXABI_SRCDIR        := $(HOSTDIR)/Ports/host/libcxxabi/$(LIBCXXABI_ARCHBASE)
+LIBUNWIND_SRCDIR        := $(HOSTDIR)/Ports/host/libunwind/$(LIBUNWIND_ARCHBASE)
+LLVM_CMAKE_SRCDIR       := $(HOSTDIR)/Ports/host/llvm-cmake/$(LLVM_CMAKE_ARCHBASE)
+LLVM_RUNTIMES_SRCDIR    := $(HOSTDIR)/Ports/host/llvm-runtimes/$(LLVM_RUNTIME_ARCHBASE)
+endif
+
+# Some monorepo directories are not components in their own right but still
+# have to sit beside llvm/ in the monotree - see LLVM_MONOTREE_SIBLINGS in
+# llvm.cfg for what each is for and which versions need them. This is a plain
+# variable spliced into the setup recipe below, so it declares no metatarget.
+llvm-setup-extras := $(foreach d,$(LLVM_MONOTREE_SIBLINGS),&& mv $(LLVM_PROJECT_SRCDIR)/$(d) $(MONOTREE_BUILDBASE)/$(d))
+
+# Where the toolchain linklibs are built from - see crosstools-compiler-rt-setup.
+LLVM_TARGET_PROJECT_SRCDIR := $(PORTSDIR)/llvm/llvm-project/$(LLVM_PROJECT_ARCHBASE)
+ifeq ($(TARGET_LLVM_RUNTIMES_STYLE),umbrella)
+COMPILER_RT_LINKLIB_SRCDIR   := $(LLVM_TARGET_PROJECT_SRCDIR)/compiler-rt
+LLVM_RUNTIMES_LINKLIB_SRCDIR := $(LLVM_TARGET_PROJECT_SRCDIR)/runtimes
+else
+COMPILER_RT_LINKLIB_SRCDIR   := $(COMPILER_RT_BUILDBASE)
+LLVM_RUNTIMES_LINKLIB_SRCDIR := $(MONOTREE_BUILDBASE)/runtimes
+endif
+
+#LLVM_ALL_TARGETS        := yes
+
+ifeq ($(LLVM_ALL_TARGETS),yes)
+LLVM_TARGETS            := "X86;ARM;AArch64;PowerPC;RISCV"
+ifeq ($(shell test $(LLVM_VERSION_MAJOR) -gt 19; echo $$?),0)
+LLVM_TARGETS            := "M68k;$(LLVM_TARGETS)"
+endif
+else
+LLVM_TARGETS            := $(LLVM_TARGET_CPU)
+endif
+
+ifneq ($(AROS_TARGET_CPU32),)
+LLVM_TARGET32           ?= $(LLVM_TARGET_CPU)
+LLVM_CRT_TARGET32       := $(AROS_TARGET_CPU32)
+endif
+
+LLVM_HOST               := "$(AROS_TARGET_CPU)"
+
+# for version >= 20 of llvm, the install behaviour changes
+ifeq ($(shell test $(LLVM_VERSION_MAJOR) -gt 19; echo $$?),0)
+LLVM_BIN_DIR            :=$(LLVM_BUILD_BINDIR)
+LLVM_CONFIG_OPT         :=-DLLVM_CMAKE_DIR=$(CROSSTOOLSDIR)/lib/cmake/llvm
+else
+LLVM_BIN_DIR            :=$(CROSSTOOLSDIR)
+LLVM_CONFIG_OPT         :=-DLLVM_CONFIG_PATH=$(LLVM_BUILD_BINDIR)/llvm-config
+endif
+LLVM_CONFIG_OPT         += -Wno-dev
+# The linklib builds only read LLVMConfig's variables. Skip its imported
+# targets: a toolchain-only install ships no libraries for them to point at,
+# and LLVMExports hard-errors on the first file it cannot find.
+# LLVMConfig only grew the switch in llvm 23. Before that it skips the
+# exports once LLVMSupport is a target, so for llvm 20 to 22
+# skip-llvm-exports.cmake defines it: a shared-library build exports SHARED
+# imports, and the exports CMake >= 4.0 writes enable CMP0164, which rejects
+# those on Generic. llvm 11 doesn't configure with CMake >= 4.0 at all.
+ifeq ($(TARGET_LLVM_RUNTIMES_STYLE),umbrella)
+LLVM_CONFIG_OPT         += -DLLVM_OMIT_EXPORTS_FROM_CONFIG=ON
+else ifeq ($(shell test $(LLVM_VERSION_MAJOR) -gt 19; echo $$?),0)
+LLVM_CONFIG_OPT         += -DCMAKE_PROJECT_INCLUDE=$(SRCDIR)/$(CURDIR)/skip-llvm-exports.cmake
+endif
+
+LLVM_CMAKEOPTIONS       := -Wno-dev                                                                                                     \
+    -DDEFAULT_SYSROOT="$(AROS_DEVELOPER)"                                                                                               \
+    -DCMAKE_INSTALL_BINDIR="$(LLVM_BIN_DIR)"                                                                                           \
+    -DLLVM_TARGETS_TO_BUILD=$(LLVM_TARGETS)                                                                                             \
+    -DLLVM_DEFAULT_TARGET_TRIPLE=$(AROS_TARGET_CPU)-unknown-aros                                                                        \
+    -DLLVM_ENABLE_PROJECTS=""                                                                                                           \
+    -DLLVM_EXTERNAL_PROJECTS="clang;lld"                                                                                                \
+    -DLLVM_BUILD_TOOLS=ON                                                                                                               \
+    -DLLVM_ENABLE_RUNTIMES=""                                                                                                           \
+    -DLLVM_ENABLE_DOXYGEN=OFF                                                                                                           \
+    -DLLVM_ENABLE_ASSERTIONS=OFF                                                                                                        \
+    -DLLVM_ENABLE_BINDINGS=OFF                                                                                                          \
+    -DLLVM_INCLUDE_DOCS=OFF                                                                                                             \
+    -DLLVM_INCLUDE_TESTS=OFF                                                                                                            \
+    -DLLVM_INCLUDE_EXAMPLES=OFF                                                                                                         \
+    -DLLVM_INCLUDE_BENCHMARKS=OFF                                                                                                       \
+    -DLLVM_INCLUDE_UTILS=OFF                                                                                                            \
+    -DLLVM_ENABLE_ZSTD=OFF                                                                                                              \
+    -DLLVM_ENABLE_LIBXML2=OFF                                                                                                           \
+    -DCLANG_ENABLE_STATIC_ANALYZER=OFF                                                                                                  \
+    -DCLANG_ENABLE_ARCMT=OFF
+ifeq ($(shell test $(LLVM_VERSION_MAJOR) -lt 20; echo $$?),0)
+LLVM_CMAKEOPTIONS       +=                                                                                                              \
+    -DLLVM_ENABLE_TERMINFO=OFF
+endif
+
+# Only perform a MinSizeRel build on Nightly builds,
+# otherwise use the default (Release)
+ifneq (,$(findstring AROS_BUILD_TYPE_NIGHTLY,$(CONFIG_BASE_CPPFLAGS)))
+LLVM_RELEASE=MinSizeRel
+LLVM_CMAKEOPTIONS +=                                                                                                                    \
+    -DCMAKE_BUILD_TYPE=$(LLVM_RELEASE)
+else
+LLVM_RELEASE=Release
+endif
+
+# If we arent compiling for AROS, use shared libraries -
+# but if it is the nightly build, use llvm dylib to save space.
+ifneq (aros,$(AROS_HOST_ARCH))
+ifneq (,$(findstring MinSizeRel,$(LLVM_CMAKEOPTIONS)))
+LLVM_CMAKEOPTIONS +=                                                                                                                    \
+    -DLLVM_INSTALL_TOOLCHAIN_ONLY=ON                                                                                                    \
+    -DLLVM_BUILD_LLVM_DYLIB=ON                                                                                                          \
+    -DLLVM_LINK_LLVM_DYLIB=ON                                                                                                           \
+    -DBUILD_SHARED_LIBS=OFF
+else
+LLVM_CMAKEOPTIONS +=                                                                                                                    \
+    -DLLVM_BUILD_LLVM_DYLIB=ON                                                                                                          \
+    -DBUILD_SHARED_LIBS=ON                                                                                                              \
+    -DLLVM_ENABLE_LTO=ON
+endif
+endif
+
+# Enable ccache if it is in use, to aid in recompilation times
+ifneq (,$(findstring ccache,$(CC_PREFIX)))
+LLVM_CMAKEOPTIONS       += -DLLVM_CCACHE_BUILD=ON
+endif
+
+LLVM_CMAKEOPTIONS       +=-DLLVM_EXTERNAL_LLD_SOURCE_DIR="$(LLVMLLD_BUILDBASE)"
+LLVM_CMAKEOPTIONS       +=-DLLVM_EXTERNAL_CLANG_SOURCE_DIR="$(CLANG_BUILDBASE)"
+
+#LLVM_CMAKEOPTIONS      +=-DCMAKE_VERBOSE_MAKEFILE:BOOL=ON
+
+LLVM_TARGET_FLAGS       :=--target=$(AROS_TARGET_CPU)-unknown-aros $(ISA_FLAGS)
+
+# N.B.: -fno-plt must not be used here. With clang it stops external function
+# declarations being treated as dso-local, so taking their address (e.g. libcxx
+# registering static-local destructors via __cxa_atexit) is lowered to a GOT
+# load; on 32-bit x86 with -fno-pic the GOT base register is never materialised
+# and the LLVM backend crashes (MachineCSE segfault building future.cpp).
+# AROS links statically, so dso-local symbols already give direct calls.
+LLVM_CXX_CFLAGS         :=$(LLVM_TARGET_FLAGS) -fno-PIC -fno-pic -fno-PIE -fno-pie
+LLVM_CXX_CXXFLAGS       :=$(LLVM_CXX_CFLAGS) -nostdinc++ $(NOWARN_MISSING_FIELD_INITIALIZERS)
+LLVM_CXX_EXEFLAGS       :=$(LLVM_TARGET_FLAGS) -fno-pie -fno-pic -no-pie -static
+LLVM_CXX_CPPFLAGS       :=-D_GNU_SOURCE
+ifeq ($(shell test $(LLVM_VERSION_MAJOR) -gt 19; echo $$?),0)
+LLVM_LIBCXX_INCLUDES     :=-I$(LIBCXXABI_BUILDBASE)/include
+LLVM_LIBCXXABI_FLAG      :=-nostdlib++ -I$(CROSSTOOLSDIR)/include/c++/v1
+endif
+
+LLVM_LIBCXXABI_CMAKEOPTIONS :=                                                                                                          \
+  $(LLVM_CONFIG_OPT)                                                                                                                    \
+  -DCMAKE_C_COMPILER=$(LLVM_BUILD_BINDIR)/clang                                                                                         \
+  -DCMAKE_CXX_COMPILER=$(LLVM_BUILD_BINDIR)/clang++                                                                                     \
+  -DCMAKE_SYSROOT=$(AROS_DEVELOPER)                                                                                                     \
+  -DCMAKE_INSTALL_PREFIX=$(CROSSTOOLSDIR)                                                                                               \
+  -DCMAKE_C_FLAGS="$(LLVM_CXX_CFLAGS)"                                                                                                  \
+  -DCMAKE_CXX_FLAGS="$(LLVM_CXX_CXXFLAGS) $(LLVM_LIBCXXABI_FLAG)"                                                                      \
+  -DCMAKE_EXE_LINKER_FLAGS="$(LLVM_CXX_EXEFLAGS) -nostdlib++ -L$(CROSSTOOLSDIR)/lib -lc++ -Wl,--allow-multiple-definition"              \
+  -DCMAKE_SHARED_LINKER_FLAGS="-Wl,--allow-multiple-definition"                                                                         \
+  -DLIBCXXABI_LIBCXX_INCLUDES=$(LIBCXX_BUILDBASE)/include                                                                               \
+  -DLIBCXXABI_ENABLE_SHARED=OFF                                                                                                         \
+  -DLIBCXXABI_ENABLE_STATIC=ON                                                                                                          \
+  -DLIBCXXABI_USE_LLVM_UNWINDER=ON                                                                                                      \
+  -DLIBCXXABI_ENABLE_THREADS=ON                                                                                                         \
+  -DLIBCXXABI_HAS_PTHREAD_API=ON                                                                                                        \
+  -DLIBCXXABI_ENABLE_PIC=OFF                                                                                                            \
+  -DCMAKE_POSITION_INDEPENDENT_CODE=OFF
+
+#LLVM_LIBCXXABI_CMAKEOPTIONS      +=-DCMAKE_VERBOSE_MAKEFILE:BOOL=ON
+
+LLVM_LIBCXX_CMAKEOPTIONS :=                                                                                                             \
+  $(LLVM_CONFIG_OPT)                                                                                                                    \
+  -DCMAKE_C_COMPILER=$(LLVM_BUILD_BINDIR)/clang                                                                                         \
+  -DCMAKE_CXX_COMPILER=$(LLVM_BUILD_BINDIR)/clang++                                                                                     \
+  -DCMAKE_SYSROOT=$(AROS_DEVELOPER)                                                                                                     \
+  -DCMAKE_INSTALL_PREFIX=$(CROSSTOOLSDIR)                                                                                               \
+  -DCMAKE_TRY_COMPILE_TARGET_TYPE=STATIC_LIBRARY                                                                                        \
+  -DCMAKE_C_FLAGS="$(LLVM_CXX_CFLAGS) -nodefaultlibs $(LLVM_CXX_CPPFLAGS) $(LLVM_LIBCXX_INCLUDES)"                                      \
+  -DCMAKE_CXX_FLAGS="$(LLVM_CXX_CXXFLAGS) -nodefaultlibs $(LLVM_CXX_CPPFLAGS) $(LLVM_LIBCXX_INCLUDES)"                                  \
+  -DCMAKE_EXE_LINKER_FLAGS="$(LLVM_CXX_EXEFLAGS) -nodefaultlibs  -L$(AROS_LIB) -larossupport -lamiga -lautoinit"                        \
+  -DLIBCXX_CXX_ABI=libcxxabi                                                                                                            \
+  -DLIBCXX_CXX_ABI_INCLUDE_PATHS=$(LIBCXXABI_BUILDBASE)/include                                                                         \
+  -DLIBCXX_USE_COMPILER_RT=ON                                                                                                           \
+  -DLIBCXX_ENABLE_STATIC=ON                                                                                                             \
+  -DLIBCXX_INCLUDE_BENCHMARKS=OFF                                                                                                       \
+  -DLIBCXX_ENABLE_SHARED=OFF                                                                                                            \
+  -DLIBCXX_ENABLE_THREADS=ON                                                                                                            \
+  -DLIBCXX_HAS_PTHREAD_API=ON                                                                                                           \
+  -DCMAKE_POSITION_INDEPENDENT_CODE=OFF
+
+#LLVM_LIBCXX_CMAKEOPTIONS      +=-DCMAKE_VERBOSE_MAKEFILE:BOOL=ON
+
+ifeq ($(shell test $(LLVM_VERSION_MAJOR) -gt 19; echo $$?),0)
+LLVM_LIBCXXABI_CMAKEOPTIONS +=                                                                                                          \
+  -DLIBCXXABI_ENABLE_STATIC_UNWINDER=ON                                                                                                 \
+  -DLIBCXXABI_LIBUNWIND_PATH=$(LIBUNWIND_BUILDBASE)                                                                                     \
+  -DLIBCXXABI_LIBUNWIND_INCLUDES=$(LIBUNWIND_BUILDBASE)/include                                                                         \
+  -DLIBCXXABI_STATICALLY_LINK_UNWINDER_IN_STATIC_LIBRARY=OFF                                                                            \
+  -DLIBCXXABI_STATICALLY_LINK_UNWINDER_IN_SHARED_LIBRARY=OFF \
+  -DLLVM_ENABLE_RUNTIMES="libunwind"                                                                                                    \
+
+LLVM_LIBCXX_CMAKEOPTIONS +=                                                                                                             \
+  -DLIBCXX_ENABLE_LOCALIZATION=ON                                                                                                       \
+  -DLIBCXX_ENABLE_WIDE_CHARACTERS=ON                                                                                                    \
+  -D_LIBCPP_HAS_NO_GLOBAL_FILESYSTEM_NAMESPACE=ON                                                                                       \
+  -DLIBCXX_STATICALLY_LINK_ABI_IN_STATIC_LIBRARY=ON                                                                                     \
+  -DLIBCXX_ENABLE_STATIC_ABI_LIBRARY=ON                                                                                                 \
+  -DLIBCXX_ENABLE_FILESYSTEM=ON
+
+endif
+
+#LLVM_LIBCXX_UNUSED_CMAKEOPTIONS :=                                                                                                     \
+#    -DLIBCXX_ENABLE_ASSERTIONS=OFF                                                                                                     \
+#    -DLIBCXX_INCLUDE_TESTS=OFF
+
+$(HOSTGENDIR)/$(CURDIR)/libcxx:
+	%mkdir_q dir="$@"
+
+#MM
+tools-crosstools-llvm-libcxx : | $(HOSTGENDIR)/$(CURDIR)/libcxx
+	$(Q)$(IF) ! $(TEST) -f $(llvm-libcxx-installflag) ; then                                                                            \
+        cd $(HOSTGENDIR)/$(CURDIR)/libcxx                                                                                               \
+        && $(CMAKE)                                                                                                                        \
+            -DCMAKE_TOOLCHAIN_FILE=$(GENDIR)/config/conf.cmake                                                                          \
+            -DCMAKE_BUILD_TYPE=$(LLVM_RELEASE)                                                                                          \
+            -DCMAKE_INSTALL_PREFIX=$(CROSSTOOLSDIR)                                                                                     \
+            $(LLVM_LIBCXX_CMAKEOPTIONS)                                                                                                 \
+            -S $(LIBCXX_BUILDBASE)                                                                                                      \
+        && $(CMAKE) --build   .                                                                                                         \
+        && $(CMAKE) --install . --strip                                                                                                 \
+        && $(TOUCH) $(llvm-libcxx-installflag) ;                                                                                        \
+	fi
+
+$(HOSTGENDIR)/$(CURDIR)/libcxxabi:
+	%mkdir_q dir="$@"
+
+#MM
+tools-crosstools-llvm-libcxxabi : | $(HOSTGENDIR)/$(CURDIR)/libcxxabi
+	$(Q)$(IF) ! $(TEST) -f $(llvm-libcxxabi-installflag) ; then                                                                         \
+        cd $(HOSTGENDIR)/$(CURDIR)/libcxxabi                                                                                            \
+        && $(CMAKE)                                                                                                                        \
+            -DCMAKE_TOOLCHAIN_FILE=$(GENDIR)/config/conf.cmake                                                                          \
+            -DCMAKE_BUILD_TYPE=$(LLVM_RELEASE)                                                                                          \
+            -DCMAKE_INSTALL_PREFIX=$(CROSSTOOLSDIR)                                                                                     \
+            $(LLVM_LIBCXXABI_CMAKEOPTIONS)                                                                                              \
+            -S $(LIBCXXABI_BUILDBASE)                                                                                                   \
+        && $(CMAKE) --build   .                                                                                                         \
+        && $(CMAKE) --install . --strip                                                                                                 \
+        && $(TOUCH) $(llvm-libcxxabi-installflag) ;                                                                                     \
+	fi
+
+LLVM_LIBUNWIND_CMAKEOPTIONS :=                                                                                                          \
+  $(LLVM_CONFIG_OPT)                                                                                                                    \
+  -DCMAKE_SYSTEM_NAME=Generic                                                                                                           \
+  -DCMAKE_C_COMPILER=$(LLVM_BUILD_BINDIR)/clang                                                                                         \
+  -DCMAKE_CXX_COMPILER=$(LLVM_BUILD_BINDIR)/clang++                                                                                     \
+  -DCMAKE_SYSROOT=$(AROS_DEVELOPER)                                                                                                     \
+  -DCMAKE_INSTALL_PREFIX=$(CROSSTOOLSDIR)                                                                                               \
+  -DCMAKE_BUILD_TYPE=$(LLVM_RELEASE)                                                                                                    \
+  -DCMAKE_TRY_COMPILE_TARGET_TYPE=STATIC_LIBRARY                                                                                        \
+  -DUNIX=ON                                                                                                                             \
+  -DLIBUNWIND_ENABLE_SHARED=OFF                                                                                                         \
+  -DLIBUNWIND_ENABLE_STATIC=ON                                                                                                          \
+  -DLIBUNWIND_HAS_DL_LIB=OFF                                                                                                            \
+  -DCMAKE_C_FLAGS="$(LLVM_TARGET_FLAGS) -D_GNU_SOURCE -D_LIBUNWIND_USE_DLADDR=0"                                                       \
+  -DCMAKE_CXX_FLAGS="$(LLVM_TARGET_FLAGS) -nostdlib++ -D_GNU_SOURCE -D_LIBUNWIND_USE_DLADDR=0"                                         \
+  -DCMAKE_EXE_LINKER_FLAGS="$(LLVM_TARGET_FLAGS) -nostdlib++ -L$(CROSSTOOLSDIR)/lib -lc++ -Wl,--allow-multiple-definition"              \
+  -DCMAKE_SHARED_LINKER_FLAGS="-Wl,--allow-multiple-definition"
+
+#LLVM_LIBUNWIND_CMAKEOPTIONS      +=-DCMAKE_VERBOSE_MAKEFILE:BOOL=ON
+
+%build_with_cmake mmake=crosstools-libunwind package=libunwind srcdir=$(LIBUNWIND_BUILDBASE)                                            \
+    prefix="$(CROSSTOOLSDIR)" extraoptions="$(LLVM_LIBUNWIND_CMAKEOPTIONS)" compiler=host usecppflags=no
+
+# llvm 23+ builds libcxx, libcxxabi and libunwind together through runtimes/,
+# because each of them now refuses to configure on its own. The options are the
+# union of the three separate sets above, minus the cross-wiring they needed to
+# find each other - the umbrella does that itself.
+#   TIME_ZONE_DATABASE is off because tzdb.cpp hard-errors on any target it has
+#   no IANA database path for; the separate llvm 20 build settled on the same.
+LLVM_RUNTIMES_CMAKEOPTIONS :=                                                                                                           \
+  $(LLVM_CONFIG_OPT)                                                                                                                    \
+  -DCMAKE_C_COMPILER=$(LLVM_BUILD_BINDIR)/clang                                                                                         \
+  -DCMAKE_CXX_COMPILER=$(LLVM_BUILD_BINDIR)/clang++                                                                                     \
+  -DCMAKE_SYSROOT=$(AROS_DEVELOPER)                                                                                                     \
+  -DCMAKE_INSTALL_PREFIX=$(CROSSTOOLSDIR)                                                                                               \
+  -DCMAKE_BUILD_TYPE=$(LLVM_RELEASE)                                                                                                    \
+  -DCMAKE_TRY_COMPILE_TARGET_TYPE=STATIC_LIBRARY                                                                                        \
+  -DCMAKE_POSITION_INDEPENDENT_CODE=OFF                                                                                                 \
+  -DCMAKE_C_FLAGS="$(LLVM_CXX_CFLAGS) $(LLVM_CXX_CPPFLAGS) -D_LIBUNWIND_USE_DLADDR=0"                                                    \
+  -DCMAKE_CXX_FLAGS="$(LLVM_CXX_CFLAGS) $(LLVM_CXX_CPPFLAGS) -D_LIBUNWIND_USE_DLADDR=0"                                                  \
+  -DLLVM_ENABLE_RUNTIMES="libunwind;libcxxabi;libcxx"                                                                                   \
+  -DLIBUNWIND_ENABLE_SHARED=OFF                                                                                                         \
+  -DLIBUNWIND_ENABLE_STATIC=ON                                                                                                          \
+  -DLIBUNWIND_HAS_DL_LIB=OFF                                                                                                            \
+  -DLIBCXXABI_ENABLE_SHARED=OFF                                                                                                         \
+  -DLIBCXXABI_ENABLE_STATIC=ON                                                                                                          \
+  -DLIBCXXABI_USE_LLVM_UNWINDER=ON                                                                                                      \
+  -DLIBCXXABI_ENABLE_THREADS=ON                                                                                                         \
+  -DLIBCXXABI_HAS_PTHREAD_API=ON                                                                                                        \
+  -DLIBCXXABI_ENABLE_PIC=OFF                                                                                                            \
+  -DLIBCXX_ENABLE_SHARED=OFF                                                                                                            \
+  -DLIBCXX_ENABLE_STATIC=ON                                                                                                             \
+  -DLIBCXX_USE_COMPILER_RT=ON                                                                                                           \
+  -DLIBCXX_ENABLE_THREADS=ON                                                                                                            \
+  -DLIBCXX_HAS_PTHREAD_API=ON                                                                                                           \
+  -DLIBCXX_INCLUDE_BENCHMARKS=OFF                                                                                                       \
+  -DLIBCXX_ENABLE_LOCALIZATION=ON                                                                                                       \
+  -DLIBCXX_ENABLE_WIDE_CHARACTERS=ON                                                                                                    \
+  -DLIBCXX_ENABLE_FILESYSTEM=ON                                                                                                         \
+  -DLIBCXX_ENABLE_TIME_ZONE_DATABASE=OFF                                                                                                \
+  -D_LIBCPP_HAS_NO_GLOBAL_FILESYSTEM_NAMESPACE=ON                                                                                       \
+  -DLIBCXX_STATICALLY_LINK_ABI_IN_STATIC_LIBRARY=ON                                                                                     \
+  -DLIBCXX_ENABLE_STATIC_ABI_LIBRARY=ON
+
+%build_with_cmake mmake=crosstools-llvm-runtimes package=runtimes srcdir=$(LLVM_RUNTIMES_LINKLIB_SRCDIR)                                 \
+    prefix="$(CROSSTOOLSDIR)" extraoptions="$(LLVM_RUNTIMES_CMAKEOPTIONS)" compiler=host usecppflags=no
+
+LLVM_COMPILER_RT_CMAKEBASE :=                                                                                                           \
+  $(LLVM_CONFIG_OPT)                                                                                                                    \
+  -DCMAKE_SYSTEM_NAME=Generic                                                                                                           \
+  -DCMAKE_TRY_COMPILE_TARGET_TYPE=STATIC_LIBRARY                                                                                        \
+  -DCMAKE_C_COMPILER=$(LLVM_BUILD_BINDIR)/clang                                                                                         \
+  -DCMAKE_CXX_COMPILER=$(LLVM_BUILD_BINDIR)/clang++                                                                                     \
+  -DCMAKE_SYSROOT=$(AROS_DEVELOPER)                                                                                                     \
+  -DCMAKE_INSTALL_PREFIX=$(CROSSTOOLSDIR)                                                                                               \
+  -DCMAKE_BUILD_TYPE=$(LLVM_RELEASE)                                                                                                    \
+  -DCOMPILER_RT_BUILD_BUILTINS=ON                                                                                                       \
+  -DCOMPILER_RT_BUILD_XRAY=OFF                                                                                                          \
+  -DCOMPILER_RT_BUILD_MEMPROF=OFF                                                                                                       \
+  -DCOMPILER_RT_BUILD_PROFILE=OFF                                                                                                       \
+  -DCOMPILER_RT_BUILD_SANITIZERS=OFF                                                                                                    \
+  -DCOMPILER_RT_BUILD_LIBFUZZER=OFF                                                                                                     \
+  -DCOMPILER_RT_DEFAULT_TARGET_ONLY=ON                                                                                                  \
+  -DCOMPILER_RT_USE_BUILTINS_LIBRARY=ON                                                                                                 \
+  -DCOMPILER_RT_EXCLUDE_ATOMIC_BUILTIN=OFF                                                                                              \
+  -DBUILD_SHARED_LIBS=OFF                                                                                                               \
+  -DAROS_BUILD=ON \
+  -DCOMPILER_RT_INSTALL_PATH="$(CROSSTOOLSDIR)/lib/clang/$(LLVM_VERSION)" \
+  -DCOMPILER_RT_OS_DIR="aros" \
+  -DCOMPILER_RT_BUILTINS_ENABLE_PIC=OFF
+
+# The builtins are linked into AROS modules, whose ELF loader does not
+# handle PIC (GOT-based) relocations - large-model PIC in particular
+# emits R_X86_64_GOTPC64. Build them as non-PIC.
+LLVM_COMPILER_RT_EXTRA_CFLAGS := -fno-PIC -fno-pic -fno-PIE -fno-pie
+
+# ARM-specific compiler-rt build options
+ifneq (,$(findstring arm,$(AROS_TARGET_CPU)))
+# Without COMPILER_RT_ARMHF_TARGET, compiler-rt tags its builtins with
+# __pcs__("aapcs"), forcing the soft-float return ABI even under
+# -mfloat-abi=hard, so hard-float callers read garbage from e.g. __floatundidf.
+ifneq (,$(findstring -mfloat-abi=hard,$(ISA_FLAGS)))
+LLVM_COMPILER_RT_EXTRA_CFLAGS += -DCOMPILER_RT_ARMHF_TARGET
+endif
+endif
+
+LLVM_COMPILER_RT_CMAKEOPTIONS :=                                                                                                        \
+  $(LLVM_COMPILER_RT_CMAKEBASE)                                                                                                         \
+  -DCMAKE_C_COMPILER_TARGET=$(AROS_TARGET_CPU)-unknown-aros                                                                             \
+  -DCMAKE_C_FLAGS="$(LLVM_TARGET_FLAGS) $(LLVM_COMPILER_RT_EXTRA_CFLAGS)"                                                               \
+  -DCMAKE_CXX_FLAGS="$(LLVM_TARGET_FLAGS) $(LLVM_COMPILER_RT_EXTRA_CFLAGS)"                                                             \
+  -DCMAKE_ASM_FLAGS="$(LLVM_TARGET_FLAGS) $(LLVM_COMPILER_RT_EXTRA_CFLAGS)"                                                             \
+  -DCMAKE_EXE_LINKER_FLAGS="-nodefaultlibs -nostartfiles $(AROS_LIB)/startup.o -L$(AROS_LIB) -lexec -larossupport -lamiga -lautoinit -Wl,--allow-multiple-definition" \
+  -DLLVM_TARGETS_TO_BUILD=$(LLVM_TARGETS)
+
+#LLVM_COMPILER_RT_CMAKEOPTIONS      +=-DCMAKE_VERBOSE_MAKEFILE:BOOL=ON
+
+%build_with_cmake mmake=crosstools-compiler-rt package=compiler-rt srcdir=$(COMPILER_RT_LINKLIB_SRCDIR)                                 \
+    prefix="$(CROSSTOOLSDIR)" extraoptions="$(LLVM_COMPILER_RT_CMAKEOPTIONS)" compiler=host usecppflags=no
+
+# Clang's driver looks for libclang_rt.builtins-armhf.a on hard-float targets,
+# but compiler-rt builds it as builtins-arm.a. Provide it under both names
+# (copied, not symlinked, as AROS' build tools define no $(LN)).
+COMPILER_RT_CLANG_LIBDIR := $(CROSSTOOLSDIR)/lib/clang/$(LLVM_VERSION)/lib/aros
+
+# compiler-rt installs under the full LLVM version, but from clang 16 the
+# driver's resource directory is the major version only, so AddRunTimeLibs()
+# never finds the builtins there. Mirror them into the directory clang
+# actually searches.
+COMPILER_RT_RESOURCE_LIBDIR := $(CROSSTOOLSDIR)/lib/clang/$(LLVM_VERSION_MAJOR)/lib/aros
+
+#MM crosstools-compiler-rt-fixup : crosstools-compiler-rt
+crosstools-compiler-rt-fixup :
+	$(Q)$(IF) $(TEST) -f $(COMPILER_RT_CLANG_LIBDIR)/libclang_rt.builtins-arm.a -a \
+	    ! -e $(COMPILER_RT_CLANG_LIBDIR)/libclang_rt.builtins-armhf.a ; then \
+	    $(CP) $(COMPILER_RT_CLANG_LIBDIR)/libclang_rt.builtins-arm.a $(COMPILER_RT_CLANG_LIBDIR)/libclang_rt.builtins-armhf.a ; \
+	fi
+	$(Q)$(IF) $(TEST) -d $(COMPILER_RT_CLANG_LIBDIR) -a \
+	    "$(COMPILER_RT_CLANG_LIBDIR)" != "$(COMPILER_RT_RESOURCE_LIBDIR)" ; then \
+	    $(MKDIR) $(COMPILER_RT_RESOURCE_LIBDIR) ; \
+	    $(CP) $(COMPILER_RT_CLANG_LIBDIR)/libclang_rt.*.a $(COMPILER_RT_RESOURCE_LIBDIR)/ ; \
+	fi
+
+ifneq ($(AROS_TARGET_CPU32),)
+LLVM_COMPILER_RT32_CMAKEOPTIONS :=                                                                                                      \
+  $(LLVM_COMPILER_RT_CMAKEBASE)                                                                                                         \
+  -DCMAKE_C_COMPILER_TARGET=$(AROS_TARGET_CPU32)-unknown-aros                                                                           \
+  -DCMAKE_CXX_COMPILER=$(LLVM_BUILD_BINDIR)/clang++                                                                                     \
+  -DCMAKE_C_FLAGS="--target=$(AROS_TARGET_CPU32)-unknown-aros -B$(AROS_LIB32)"                                                          \
+  -DCMAKE_CXX_FLAGS="--target=$(AROS_TARGET_CPU32)-unknown-aros -B$(AROS_LIB32)"                                                        \
+  -DCMAKE_EXE_LINKER_FLAGS="-nodefaultlibs -nostartfiles $(AROS_LIB32)/startup.o -L$(AROS_LIB32) -larossupport -lamiga -lautoinit -Wl,--allow-multiple-definition" \
+  -DLLVM_TARGETS_TO_BUILD=$(LLVM_TARGET32)                                                                                              \
+  -DCOMPILER_RT_TARGETS_TO_BUILD=$(LLVM_CRT_TARGET32)
+
+#LLVM_COMPILER_RT32_CMAKEOPTIONS      +=-DCMAKE_VERBOSE_MAKEFILE:BOOL=ON
+
+%build_with_cmake mmake=crosstools-compiler-rt32 package=compiler-rt32 srcdir=$(COMPILER_RT_LINKLIB_SRCDIR)                             \
+    prefix="$(CROSSTOOLSDIR)" extraoptions="$(LLVM_COMPILER_RT32_CMAKEOPTIONS)" compiler=host usecppflags=no
+endif
+
+# Up to llvm 21 each component had its own release archive. From llvm 22
+# upstream publishes only the monorepo, so a single fetch replaces the nine
+# below and the AROS patches are applied to it in one go.
+ifeq ($(LLVM_MONOREPO),yes)
+
+%fetch mmake=crosstools-llvm-project-fetch archive=$(LLVM_PROJECT_ARCHBASE)                                                             \
+    archive_origins=$(LLVM_REPOSITORY) suffixes="tar.xz"                                                                                \
+    location=$(PORTSSOURCEDIR) destination=$(HOSTDIR)/Ports/host/llvm-project                                                           \
+    patches_specs=$(LLVM_PROJECT_PATCHES_SPECS)
+
+%create_patch mmake=crosstools-llvm-project-create-patch                                                                                \
+    archive=$(LLVM_PROJECT_ARCHBASE) suffixes="tar.xz"                                                                                  \
+    destination=$(HOSTDIR)/Ports/host/llvm-project
+
+# The toolchain linklibs fetch the same monorepo into the target ports
+# directory, beside workbench/libs/llvm's copy. fetch.sh unpacks an archive once
+# per destination and records each patch separately, so every fetch there
+# applies only its own components' patches to the one tree.
+LLVM_RUNTIMES_TARGET_PATCHES_SPECS := $(LIBCXX_ARCHBASE)-aros.diff:$(LLVM_PROJECT_ARCHBASE):-p1 \
+                                      $(LIBCXXABI_ARCHBASE)-aros.diff:$(LLVM_PROJECT_ARCHBASE):-p1 \
+                                      $(LIBUNWIND_ARCHBASE)-aros.diff:$(LLVM_PROJECT_ARCHBASE):-p1
+
+%fetch mmake=crosstools-compiler-rt-target-fetch archive=$(LLVM_PROJECT_ARCHBASE)                                                       \
+    archive_origins=$(LLVM_REPOSITORY) suffixes="tar.xz"                                                                                \
+    location=$(PORTSSOURCEDIR) destination=$(PORTSDIR)/llvm/llvm-project                                                                \
+    patches_specs=$(COMPILER_RT_ARCHBASE)-aros.diff:$(LLVM_PROJECT_ARCHBASE):-p1
+
+%fetch mmake=crosstools-llvm-runtimes-target-fetch archive=$(LLVM_PROJECT_ARCHBASE)                                                     \
+    archive_origins=$(LLVM_REPOSITORY) suffixes="tar.xz"                                                                                \
+    location=$(PORTSSOURCEDIR) destination=$(PORTSDIR)/llvm/llvm-project                                                                \
+    patches_specs=$(LLVM_RUNTIMES_TARGET_PATCHES_SPECS)
+
+# The per-component fetch targets the setup rules depend on are satisfied by
+# the single monorepo fetch above.
+crosstools-llvm-fetch crosstools-llvm-lld-fetch crosstools-clang-fetch                                                                  \
+crosstools-compiler-rt-fetch crosstools-llvm-libcxx-fetch crosstools-llvm-libcxxabi-fetch                                               \
+crosstools-libunwind-fetch crosstools-llvm-cmakefiles-fetch crosstools-llvm-runtimes-fetch : crosstools-llvm-project-fetch
+	$(Q)$(NOP)
+
+else
+
+%fetch mmake=crosstools-clang-fetch archive=$(CLANG_ARCHBASE)                                                                           \
+    archive_origins=$(LLVM_REPOSITORY) suffixes="tar.xz"                                                                                \
+    location=$(PORTSSOURCEDIR) destination=$(HOSTDIR)/Ports/host/clang                                                                  \
+    patches_specs=$(CLANG_ARCHBASE)-aros.diff:$(CLANG_ARCHBASE):-p1
+
+%create_patch mmake=crosstools-clang-create-patch                                                                                       \
+    archive=$(CLANG_ARCHBASE) suffixes="tar.xz"                                                                                         \
+    destination=$(HOSTDIR)/Ports/host/clang
+
+%fetch mmake=crosstools-compiler-rt-fetch archive=$(COMPILER_RT_ARCHBASE)                                                               \
+    archive_origins=$(LLVM_REPOSITORY) suffixes="tar.xz"                                                                                \
+    location=$(PORTSSOURCEDIR) destination=$(HOSTDIR)/Ports/host/compiler-rt                                                            \
+    patches_specs=$(COMPILER_RT_ARCHBASE)-aros.diff:$(COMPILER_RT_ARCHBASE):-p1
+
+%create_patch mmake=crosstools-compiler-rt-create-patch                                                                                 \
+    archive=$(COMPILER_RT_ARCHBASE) suffixes="tar.xz"                                                                                   \
+    destination=$(HOSTDIR)/Ports/host/compiler-rt
+
+%fetch mmake=crosstools-llvm-libcxx-fetch archive=$(LIBCXX_ARCHBASE)                                                                    \
+    archive_origins=$(LLVM_REPOSITORY) suffixes="tar.xz"                                                                                \
+    location=$(PORTSSOURCEDIR) destination=$(HOSTDIR)/Ports/host/libcxx                                                                 \
+    patches_specs=$(LIBCXX_ARCHBASE)-aros.diff:$(LIBCXX_ARCHBASE):-p1
+
+%create_patch mmake=crosstools-llvm-libcxx-create-patch                                                                                 \
+    archive=$(LIBCXX_ARCHBASE) suffixes="tar.xz"                                                                                        \
+    destination=$(HOSTDIR)/Ports/host/libcxx
+
+%fetch mmake=crosstools-llvm-libcxxabi-fetch archive=$(LIBCXXABI_ARCHBASE)                                                              \
+    archive_origins=$(LLVM_REPOSITORY) suffixes="tar.xz"                                                                                \
+    location=$(PORTSSOURCEDIR) destination=$(HOSTDIR)/Ports/host/libcxxabi                                                              \
+    patches_specs=$(LIBCXXABI_ARCHBASE)-aros.diff:$(LIBCXXABI_ARCHBASE):-p1
+
+%create_patch mmake=crosstools-llvm-libcxxabi-create-patch                                                                              \
+    archive=$(LIBCXXABI_ARCHBASE) suffixes="tar.xz"                                                                                     \
+    destination=$(HOSTDIR)/Ports/host/libcxxabi
+
+%fetch mmake=crosstools-libunwind-fetch archive=$(LIBUNWIND_ARCHBASE)                                                                   \
+    archive_origins=$(LLVM_REPOSITORY) suffixes="tar.xz"                                                                                \
+    location=$(PORTSSOURCEDIR) destination=$(HOSTDIR)/Ports/host/libunwind                                                              \
+    patches_specs=$(LIBUNWIND_ARCHBASE)-aros.diff:$(LIBUNWIND_ARCHBASE):-p1
+
+#MM- crosstools-libunwind-fetch-quick : crosstools-libunwind-fetch
+
+%create_patch mmake=crosstools-libunwind-create-patch                                                                                   \
+    archive=$(LIBUNWIND_ARCHBASE) suffixes="tar.xz"                                                                                     \
+    destination=$(HOSTDIR)/Ports/host/libunwind
+
+# The AROS lld patch only exists for the v11 toolchain; v20+ builds stock lld.
+# Only armeb still needs it - collect-aros asks for the upstream emulation
+# names on every other CPU when the toolchain is llvm.
+ifeq ($(shell test $(LLVM_VERSION_MAJOR) -lt 20; echo $$?),0)
+LLVMLLD_PATCHES_SPECS   := $(LLVMLLD_ARCHBASE)-aros.diff:$(LLVMLLD_ARCHBASE):-p1
+else
+LLVMLLD_PATCHES_SPECS   :=
+endif
+
+%fetch mmake=crosstools-llvm-lld-fetch archive=$(LLVMLLD_ARCHBASE)                                                                      \
+    archive_origins=$(LLVM_REPOSITORY) suffixes="tar.xz"                                                                                \
+    location=$(PORTSSOURCEDIR) destination=$(HOSTDIR)/Ports/host/llvm-lld                                                              \
+    patches_specs=$(LLVMLLD_PATCHES_SPECS)
+
+%create_patch mmake=crosstools-llvm-lld-create-patch                                                                                    \
+    archive=$(LLVMLLD_ARCHBASE) suffixes="tar.xz"                                                                                       \
+    destination=$(HOSTDIR)/Ports/host/llvm-lld
+
+%fetch mmake=crosstools-llvm-cmakefiles-fetch archive=$(LLVM_CMAKE_ARCHBASE)                                                            \
+    archive_origins=$(LLVM_REPOSITORY) suffixes="tar.xz"                                                                                \
+    location=$(PORTSSOURCEDIR) destination=$(HOSTDIR)/Ports/host/llvm-cmake
+
+%create_patch mmake=crosstools-llvm-cmakefiles-create-patch                                                                             \
+    archive=$(LLVM_CMAKE_ARCHBASE) suffixes="tar.xz"                                                                                    \
+    destination=$(HOSTDIR)/Ports/host/llvm-cmake
+
+%fetch mmake=crosstools-llvm-runtimes-fetch archive=$(LLVM_RUNTIME_ARCHBASE)                                                            \
+    archive_origins=$(LLVM_REPOSITORY) suffixes="tar.xz"                                                                                \
+    location=$(PORTSSOURCEDIR) destination=$(HOSTDIR)/Ports/host/llvm-runtimes
+
+%create_patch mmake=crosstools-llvm-runtimes-create-patch                                                                               \
+    archive=$(LLVM_RUNTIME_ARCHBASE) suffixes="tar.xz"                                                                                  \
+    destination=$(HOSTDIR)/Ports/host/llvm-runtimes
+
+%fetch mmake=crosstools-llvm-fetch archive=$(LLVM_ARCHBASE)                                                                             \
+    archive_origins=$(LLVM_REPOSITORY) suffixes="tar.xz"                                                                                \
+    location=$(PORTSSOURCEDIR) destination=$(HOSTDIR)/Ports/host/llvm                                                                   \
+    patches_specs=$(LLVM_ARCHBASE)-aros.diff:$(LLVM_ARCHBASE):-p1
+
+%create_patch mmake=crosstools-llvm-create-patch                                                                                        \
+    archive=$(LLVM_ARCHBASE) suffixes="tar.xz"                                                                                          \
+    destination=$(HOSTDIR)/Ports/host/llvm
+
+
+# metamake collects mmake= targets from both branches above, so these need a
+# rule here as well - a guard alone does not remove them from the target list.
+crosstools-llvm-project-fetch crosstools-compiler-rt-target-fetch crosstools-llvm-runtimes-target-fetch :
+	$(Q)$(NOP)
+
+endif  # LLVM_MONOREPO
+
+
+#MM
+tools-crosstools-llvm-toolchain: $(llvm-installflag)
+
+# LLVM_INSTALL_TOOLCHAIN_ONLY=ON excludes llvm-config, llvm-as and the
+# lib/cmake/llvm export files from the install target, but the standalone
+# compiler-rt/libunwind configure steps need them - so install them by hand
+# from the build tree, before it is cleaned. The cmake package has to be the
+# installed one: the build tree's copy points LLVM_CMAKE_DIR back at the llvm
+# source modules, which a restored toolchain no longer has beside it. The
+# export install rules are guarded out at configure time by
+# LLVM_INSTALL_TOOLCHAIN_ONLY, so lift it for the component install and put it
+# back - regenerating the build files costs seconds and rebuilds nothing.
+ifeq ($(TARGET_LLVM_RUNTIMES_STYLE),umbrella)
+llvm-install-cmakepkg :=                                                        \
+	$(CMAKE) -S $(LLVM_BUILDBASE) -B $(HOSTGENDIR)/$(CURDIR)/llvm -DLLVM_INSTALL_TOOLCHAIN_ONLY=OFF && \
+	$(CMAKE) --install $(HOSTGENDIR)/$(CURDIR)/llvm --component cmake-exports && \
+	$(CMAKE) -S $(LLVM_BUILDBASE) -B $(HOSTGENDIR)/$(CURDIR)/llvm -DLLVM_INSTALL_TOOLCHAIN_ONLY=ON
+else
+# Up to llvm 22 the build tree is still present when the linklibs configure,
+# and LLVMConfig cannot be told to skip its exports - so keep taking the cmake
+# files from the build tree, as those versions have always done.
+llvm-install-cmakepkg :=                                                        \
+	$(MKDIR) $(CROSSTOOLSDIR)/lib/cmake/llvm &&                                 \
+	cp $(HOSTGENDIR)/$(CURDIR)/llvm/lib/cmake/llvm/*.cmake $(CROSSTOOLSDIR)/lib/cmake/llvm/
+endif
+
+ifneq (,$(findstring LLVM_INSTALL_TOOLCHAIN_ONLY=ON,$(LLVM_CMAKEOPTIONS)))
+llvm-install-extras :=                                                          \
+	cp $(HOSTGENDIR)/$(CURDIR)/llvm/bin/llvm-config $(LLVM_BUILD_BINDIR)/ &&    \
+	cp $(HOSTGENDIR)/$(CURDIR)/llvm/bin/llvm-as $(LLVM_BUILD_BINDIR)/ &&        \
+	$(HOST_STRIP) $(LLVM_BUILD_BINDIR)/llvm-config $(LLVM_BUILD_BINDIR)/llvm-as && \
+	$(llvm-install-cmakepkg)
+else
+llvm-install-extras := true
+endif
+
+$(llvm-installflag): $(LLLVM_EXTRA_DEPS)
+	$(Q)$(IF) ! $(TEST) -f $(llvm-installflag); then                        \
+	$(ECHO) "Building LLVM" &&                                              \
+	$(CMAKE) --build   $(HOSTGENDIR)/$(CURDIR)/llvm &&                      \
+	$(CMAKE) --install $(HOSTGENDIR)/$(CURDIR)/llvm --strip &&              \
+	$(llvm-install-extras) &&                                               \
+	$(CMAKE) --build   $(HOSTGENDIR)/$(CURDIR)/llvm --target clean &&       \
+	$(TOUCH) $(llvm-installflag);                                           \
+	fi
+
+%build_with_cmake mmake=crosstools-llvm-toolchain package=llvm srcdir=$(LLVM_BUILDBASE)                                                 \
+    prefix="$(CROSSTOOLSDIR)" extraoptions="$(LLVM_CMAKEOPTIONS)" compiler=host usecppflags=no usecrosstoolsdir=no
+
+#
+# Rules to setup the monotree
+#
+
+$(MONOTREE_BUILDBASE):
+	%mkdir_q dir="$@"
+
+$(MONOTREE_BUILDBASE)/cmake: | $(MONOTREE_BUILDBASE)
+	%mkdir_q dir="$@"
+
+crosstools-llvm-runtimes--setup crosstools-llvm-cmakefiles--setup:
+	$(Q)$(NOP)
+
+#MM
+crosstools-llvm-cmakefiles-yes-setup : crosstools-llvm-cmakefiles-fetch | $(MONOTREE_BUILDBASE)/cmake
+	$(Q)$(IF) ! $(TEST) -f $(llvm-cmake-setupflag) ; then                                                                               \
+        cp -Rf $(LLVM_CMAKE_SRCDIR)/* $(MONOTREE_BUILDBASE)/cmake/                                   \
+	    && $(TOUCH) $(llvm-cmake-setupflag) ;                                                                                           \
+	fi
+
+#MM
+crosstools-llvm-runtimes-yes-setup : crosstools-llvm-runtimes-fetch | $(MONOTREE_BUILDBASE)/cmake
+	$(Q)$(IF) ! $(TEST) -f $(llvm-runtimes-setupflag) ; then                                                                            \
+        cp -Rf $(LLVM_RUNTIMES_SRCDIR)/cmake/* $(MONOTREE_BUILDBASE)/cmake/                        \
+	    && $(TOUCH) $(llvm-runtimes-setupflag) ;                                                                                        \
+	fi
+
+#MM
+tools-crosstools-llvm-setup : crosstools-llvm-cmakefiles-$(LLVM_CMAKE_FILES)-setup | $(MONOTREE_BUILDBASE)
+	$(Q)$(IF) ! $(TEST) -f $(llvm-setupflag) ; then                                                                                     \
+        mv $(LLVM_SRCDIR) $(LLVM_BUILDBASE) $(llvm-setup-extras)                                               \
+	    && $(TOUCH) $(llvm-setupflag) ;                                                                                                 \
+	fi
+
+#MM- tools-crosstools-llvm-setup-quick : tools-crosstools-llvm-setup
+
+#MM
+tools-crosstools-llvm-lld-setup : | $(MONOTREE_BUILDBASE)
+	$(Q)$(IF) ! $(TEST) -f $(llvm-lld-setupflag) ; then                                                                                 \
+        mv $(LLVMLLD_SRCDIR) $(LLVMLLD_BUILDBASE)                                                      \
+	    && $(TOUCH) $(llvm-lld-setupflag) ;                                                                                             \
+	fi
+
+#MM- tools-crosstools-llvm-lld-setup-quick : tools-crosstools-llvm-lld-setup
+
+#MM
+tools-crosstools-clang-setup : | $(MONOTREE_BUILDBASE)
+	$(Q)$(IF) ! $(TEST) -f $(clang-setupflag) ; then                                                                                    \
+        mv $(CLANG_SRCDIR) $(CLANG_BUILDBASE)                                                             \
+	    && $(TOUCH) $(clang-setupflag) ;                                                                                                \
+	fi
+
+#MM- tools-crosstools-clang-setup-quick : tools-crosstools-clang-setup
+
+#MM
+tools-crosstools-compiler_rt-setup : | $(MONOTREE_BUILDBASE)
+	$(Q)$(IF) ! $(TEST) -f $(compiler-rt-setupflag) ; then                                                                              \
+        mv $(COMPILER_RT_SRCDIR) $(COMPILER_RT_BUILDBASE)                                           \
+	    && $(TOUCH) $(compiler-rt-setupflag) ;                                                                                          \
+	fi
+
+#MM- tools-crosstools-compiler_rt-setup-quick : tools-crosstools-compiler_rt-setup
+
+#MM
+tools-crosstools-llvm-libcxx-setup : crosstools-llvm-runtimes-$(LLVM_RUNTIMES_FILES)-setup | $(MONOTREE_BUILDBASE)
+	$(Q)$(IF) ! $(TEST) -f $(llvm-libcxx-setupflag) ; then                                                                              \
+        mv $(LIBCXX_SRCDIR) $(LIBCXX_BUILDBASE)                                                          \
+	    && $(TOUCH) $(llvm-libcxx-setupflag) ;                                                                                          \
+	fi
+
+#MM- tools-crosstools-llvm-libcxx-setup-quick : tools-crosstools-llvm-libcxx-setup
+
+#MM
+tools-crosstools-llvm-libcxxabi-setup : crosstools-llvm-runtimes-$(LLVM_RUNTIMES_FILES)-setup | $(MONOTREE_BUILDBASE)
+	$(Q)$(IF) ! $(TEST) -f $(llvm-libcxxabi-setupflag) ; then                                                                           \
+        mv $(LIBCXXABI_SRCDIR) $(LIBCXXABI_BUILDBASE)                                                 \
+	    && $(TOUCH) $(llvm-libcxxabi-setupflag) ;                                                                                       \
+	fi
+
+#MM- tools-crosstools-llvm-libcxxabi-setup-quick : tools-crosstools-llvm-libcxxabi-setup
+
+#MM
+tools-crosstools-libunwind-setup : crosstools-libunwind-fetch | $(MONOTREE_BUILDBASE)
+	$(Q)$(IF) ! $(TEST) -f $(libunwind-setupflag) ; then                                                                                \
+        mv $(LIBUNWIND_SRCDIR) $(LIBUNWIND_BUILDBASE)                                                 \
+	    && $(TOUCH) $(libunwind-setupflag) ;                                                                                            \
+	fi
+
+#MM- tools-crosstools-libunwind-setup-quick : tools-crosstools-libunwind-setup
+
+#
+# Rules to teardown the monotree
+#
+
+#MM
+tools-crosstools-llvm-cleanup :
+	$(Q)$(IF) $(TEST) -d $(LLVM_BUILDBASE) ; then                                                                                       \
+        mv $(LLVM_BUILDBASE) $(LLVM_SRCDIR)                                                                \
+	    && $(RM) $(llvm-setupflag) ;                                                                                                    \
+	fi
+
+#MM- tools-crosstools-llvm-cleanup-quick : tools-crosstools-llvm-cleanup
+
+#MM
+tools-crosstools-llvm-lld-cleanup :
+	$(Q)$(IF) $(TEST) -d $(LLVMLLD_BUILDBASE) ; then                                                                                    \
+        mv $(LLVMLLD_BUILDBASE) $(LLVMLLD_SRCDIR)                                                      \
+	    && $(RM) $(llvm-lld-setupflag) ;                                                                                                \
+	fi
+
+#MM- tools-crosstools-llvm-lld-cleanup-quick : tools-crosstools-llvm-lld-cleanup
+
+#MM
+tools-crosstools-clang-cleanup :
+	$(Q)$(IF) $(TEST) -d $(CLANG_BUILDBASE) ; then                                                                                      \
+        mv $(CLANG_BUILDBASE) $(CLANG_SRCDIR)                                                             \
+	    && $(RM) $(clang-setupflag) ;                                                                                                   \
+	fi
+
+#MM- tools-crosstools-clang-cleanup-quick : tools-crosstools-clang-cleanup
+
+#MM
+tools-crosstools-compiler_rt-cleanup :
+	$(Q)$(IF) $(TEST) -d $(COMPILER_RT_BUILDBASE) ; then                                                                                \
+        mv $(COMPILER_RT_BUILDBASE) $(COMPILER_RT_SRCDIR)                                           \
+	    && $(RM) $(compiler-rt-setupflag) ;                                                                                             \
+	fi
+
+#MM- tools-crosstools-compiler_rt-cleanup-quick : tools-crosstools-compiler_rt-cleanup
+
+#MM
+tools-crosstools-llvm-libcxx-cleanup :
+	$(Q)$(IF) $(TEST) -d $(LIBCXX_BUILDBASE) ; then                                                                                     \
+        mv $(LIBCXX_BUILDBASE) $(LIBCXX_SRCDIR)                                                          \
+	    && $(RM) $(llvm-libcxx-setupflag) ;                                                                                             \
+	fi
+
+#MM- tools-crosstools-llvm-libcxx-cleanup-quick : tools-crosstools-llvm-libcxx-cleanup
+
+#MM
+tools-crosstools-llvm-libcxxabi-cleanup :
+	$(Q)$(IF) $(TEST) -d $(LIBCXXABI_BUILDBASE) ; then                                                                                  \
+        mv $(LIBCXXABI_BUILDBASE) $(LIBCXXABI_SRCDIR)                                                 \
+	    && $(RM) $(llvm-libcxxabi-setupflag) ;                                                                                          \
+	fi
+
+#MM- tools-crosstools-llvm-libcxxabi-cleanup-quick : tools-crosstools-llvm-libcxxabi-cleanup
+
+#MM
+tools-crosstools-libunwind-cleanup :
+	$(Q)$(IF) $(TEST) -d $(LIBUNWIND_BUILDBASE) ; then                                                                                  \
+        mv $(LIBUNWIND_BUILDBASE) $(LIBUNWIND_SRCDIR)                                                 \
+	    && $(RM) $(libunwind-setupflag) ;                                                                                               \
+	fi
+
+#MM- tools-crosstools-libunwind-cleanup-quick : tools-crosstools-libunwind-cleanup
+
+# real llvm/clang toolchain rules.
+
+#MM tools-crosstools-llvm-toolchain : includes-copy
+#MM tools-crosstools-llvm-toolchain : crosstools-llvm-toolchain-cmake
+#MM crosstools-llvm-toolchain-cmake : tools-crosstools-llvm-setup tools-crosstools-llvm-lld-setup tools-crosstools-clang-setup
+#MM tools-crosstools-llvm-libcxx : tools-crosstools-llvm-setup tools-crosstools-llvm-libcxx-setup tools-crosstools-llvm-libcxxabi-setup \
+#MM           crosstools-compiler-rt-fixup
+#MM tools-crosstools-llvm-libcxxabi : tools-crosstools-llvm-setup crosstools-compiler-rt-fixup tools-crosstools-llvm-libcxx
+#MM crosstools-libunwind : tools-crosstools-llvm-libcxxabi
+
+#MM- toolchain-linklibs-llvm : crosstools-llvm-runtimes-$(TARGET_LLVM_RUNTIMES_STYLE)

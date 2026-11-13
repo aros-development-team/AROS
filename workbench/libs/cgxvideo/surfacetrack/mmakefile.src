@@ -1,0 +1,19 @@
+#
+#   Surface tracking helper, linked by cgxvideo.library (and gallium.library)
+#
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM- linklibs : linklibs-surfacetrack
+#MM linklibs-surfacetrack : includes includes-copy
+
+%build_linklib mmake=linklibs-surfacetrack libname=surfacetrack \
+    files="surfacetrack"
+
+#MM includes-copy
+
+INCLUDE_FILES := surfacetrack.h
+
+%copy_includes path=aros dir=.
+
+%common

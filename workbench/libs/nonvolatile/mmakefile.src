@@ -1,0 +1,25 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+USER_LDFLAGS := -static
+
+FUNCS := deletenv \
+	 freenvdata \
+	 getcopynv \
+	 getnvinfo \
+	 getnvlist \
+	 setnvprotection \
+	 storenv	     
+
+#MM workbench-libs-nonvolatile-includes : \
+#MM     kernel-exec-includes \
+#MM     workbench-libs-nvdisk-includes \
+#MM     includes-copy
+#MM workbench-libs-nonvolatile : \
+#MM     workbench-libs-nvdisk-linklib linklibs
+
+%build_module mmake=workbench-libs-nonvolatile \
+    modname=nonvolatile modtype=library \
+    files="nonvolatile_init $(FUNCS)" \
+    uselibs="nvdisk"
+

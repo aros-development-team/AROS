@@ -1,0 +1,12 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+USER_LDFLAGS := -static
+
+FILES := pnmclass
+
+#MM workbench-datatypes-pnm : includes linklibs
+
+%build_module mmake=workbench-datatypes-pnm \
+    modname=pnm modtype=datatype \
+    files=$(FILES)

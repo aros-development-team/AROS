@@ -1,0 +1,6 @@
+#!/bin/zsh
+# Creates AROS/linux-arm contrib package.
+
+BUILDTARGET=linux-arm
+
+source $SP/pkg/contrib

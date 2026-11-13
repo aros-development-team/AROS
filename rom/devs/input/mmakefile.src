@@ -1,0 +1,24 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM- kernel-input : includes linklibs
+
+#MM- includes-generate : \
+#MM      kernel-input-includes
+
+FUNCS := peekqualifier
+FILES := processevents support
+
+USER_CPPFLAGS := \
+               -DUSE_EXEC_DEBUG \
+               -D__GRAPHICS_NOLIBBASE__
+USER_LDFLAGS := -static
+
+ifneq ($(ROM_OPTIMIZATION_CFLAGS),)
+OPTIMIZATION_CFLAGS := $(ROM_OPTIMIZATION_CFLAGS)
+endif
+
+%build_module mmake=kernel-input \
+  modname=input modtype=device \
+  files="input $(FUNCS) $(FILES)"
+

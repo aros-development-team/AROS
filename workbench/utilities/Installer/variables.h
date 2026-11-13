@@ -1,0 +1,22 @@
+/*
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
+*/
+
+/* variables.h -- Prototypes to all functions related to variables */
+#ifndef _VARIABLES_H
+#define _VARIABLES_H
+
+/* Internal function prototypes */
+extern struct VariableList *find_var(char *);
+extern void *get_variable(char *);
+extern char *get_var_arg(char *);
+extern long int get_var_int(char *);
+extern void set_variable(char *, char *, long int);
+extern void set_preset_variables(int);
+#ifdef DEBUG
+extern void dump_varlist();
+#endif /* DEBUG */
+extern void free_varlist();
+
+#endif /* _VARIABLES_H */
+

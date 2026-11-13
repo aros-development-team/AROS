@@ -1,0 +1,198 @@
+
+
+
+	MACHINE	68010
+
+	incdir	include:
+	include devices/ahi.i
+	include exec/execbase.i
+	include hardware/all.i
+	include libraries/ahi_sub.i
+	include	utility/hooks.i
+
+	include	lvo/exec_lib.i
+	include	aura.i
+	include	macros.i
+
+	XDEF	_intAHIsub_Disable
+	XDEF	_intAHIsub_Enable
+	XDEF	_intAHIsub_SetVol
+	XDEF	_intAHIsub_SetFreq
+	XDEF	_intAHIsub_SetSound
+	XDEF	_intAHIsub_SetEffect
+	XDEF	_intAHIsub_LoadSound
+	XDEF	_intAHIsub_UnloadSound
+
+	XDEF	_InstallUglyInterruptHack
+	XDEF	_UninstallUglyInterruptHack
+
+	XDEF	_DummyFunc
+	XDEF	_DummyInt
+	XDEF	_PlayIntMono
+	XDEF	_RecordIntMono
+	XDEF	_PlayAndRecordIntMono
+	XDEF	_PlayIntStereo
+	XDEF	_RecordIntStereo
+	XDEF	_PlayAndRecordIntStereo
+
+	XDEF	_SoftFunc
+
+CIAB	EQU	$bfd000
+
+AURAL	EQU	$a20000			; Left DA/AD
+AURAR	EQU	$a20002			; Right DA/AD
+
+*******************************************************************************
+
+;in:
+* a2	struct AHI_AudioCtrl
+_intAHIsub_Disable:
+	push	a6
+	move.l	4.w,a6
+	call	Disable
+	pop	a6
+	rts
+
+;in:
+* a2	struct AHI_AudioCtrl
+_intAHIsub_Enable:
+	push	a6
+	move.l	4.w,a6
+	call	Enable
+	pop	a6
+	rts
+
+_intAHIsub_SetVol:
+_intAHIsub_SetFreq:
+_intAHIsub_SetSound:
+_intAHIsub_SetEffect:
+_intAHIsub_LoadSound:
+_intAHIsub_UnloadSound:
+	moveq	#AHIS_UNKNOWN,d0
+	rts
+
+
+*******************************************************************************
+
+;in:
+* a1	Interrupt code to install
+* a2	struct aura *
+_InstallUglyInterruptHack:
+	pushm	a5/a6
+	move.l	a2,Aura1+2
+;	move.l	a2,Aura2+2
+;	move.l	a2,Aura3+2
+;	move.l	a2,Aura4+2
+;	move.l	a2,Aura5+2
+;	move.l	a2,Aura6+2
+
+	lea	a_IntLocalData(a2),a0
+	move.l	a0,Local1+2
+;	move.l	a0,Local2+2
+;	move.l	a0,Local3+2
+;	move.l	a0,Local4+2
+;	move.l	a0,Local5+2
+;	move.l	a0,Local6+2
+
+	suba.l	a0,a0
+	move.l	4.w,a6
+	move.w	AttnFlags(a6),d0
+	btst	#AFB_68010,d0
+	beq	.gotVBR
+	lea	GerVBR(pc),a5
+	call	Supervisor
+.gotVBR
+	tst.l	a_OldLevel6Int(a2)
+	bne	.dontsave
+	move.l	$78(a0),a_OldLevel6Int(a2)
+.dontsave
+	move.l	a1,$78(a0)
+
+	call	CacheClearU			; Flush all caches	
+	popm	a5/a6
+	rts
+
+;in:
+* a2	struct aura *
+_UninstallUglyInterruptHack:
+	push	a5
+	tst.l	a_OldLevel6Int(a2)
+	beq	.dontrestore
+	suba.l	a0,a0
+	move.l	4.w,a6
+	move.w	AttnFlags(a6),d0
+	btst	#AFB_68010,d0
+	beq	.gotVBR
+	lea	GerVBR(pc),a5
+	call	Supervisor
+.gotVBR
+	move.l	a_OldLevel6Int(a2),$78(a0)
+.dontrestore
+	pop	a5
+	rts
+
+GerVBR:
+	movec.l	VBR,a0
+	rte
+
+_DummyFunc:
+	moveq	#1,d0
+	rts
+
+; These functions are optimized for speed, not compability.
+
+_DummyInt:
+	move.w	#INTF_EXTER,CUSTOM+INTREQ	;Clear interrupt flag
+	tst.b	CIAB+ciaicr			;Clear
+	rte
+
+_PlayIntMono:
+	pushm	a0-a1
+	move.w	#INTF_EXTER,CUSTOM+INTREQ	;Clear interrupt flag
+	tst.b	CIAB+ciaicr			;Clear
+Local1:
+	move.l	#$C0DECAFE,a0			;Modified by InstallUglyInterruptHack()
+	move.l	(a0),a1				;MixBufferPtr
+	move.w	(a1),AURAL
+	move.w	(a1)+,AURAR
+	move.l	a1,(a0)+			;Update pointer
+	subq.l	#1,(a0)+
+	beq	.endofbuffer
+	popm	a0-a1
+	rte
+
+* Our mixing buffer is now empty, switch to the new one and Cause() 
+
+.endofbuffer
+	push	a6
+Aura1:
+	move.l	#$ABADC0DE,a0			;Modified by InstallUglyInterruptHack()
+	move.l	a_MixBuffer2(a0),a1
+	move.l	a_MixBuffer1(a0),a_MixBuffer2(a0)
+	move.l	a1,a_MixBuffer1(a0)
+	move.l	a1,a_MixBufferPtr(a0)
+	move.l	4.w,a6
+	move.l	a_SoftInt(a0),a1
+	call	Cause
+	pop	a6
+	popm	a0-a1
+	rte
+
+_RecordIntMono:
+_PlayAndRecordIntMono:
+_PlayIntStereo:
+_RecordIntStereo:
+_PlayAndRecordIntStereo:
+	pushm	d0-d7/a0-a6
+	move.w	#INTF_EXTER,CUSTOM+INTREQ	;Clear interrupt flag
+*	btst	#CIAICRB_TA,CIAB+ciaicr		;Check if Timer A is the source, clear
+*	beq	1$
+	tst.b	CIAB+ciaicr			;Clear
+
+	move.w	$dff006,$dff180
+	popm	d0-d7/a0-a6
+	rte
+
+_SoftFunc:
+	move.w	$dff006,$dff182
+	rts

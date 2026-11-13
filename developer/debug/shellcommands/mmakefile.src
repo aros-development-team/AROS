@@ -1,0 +1,17 @@
+#
+#   Makefile for TaskTrace.
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM- debug-tools : debug-tools-shellcommands
+#MM debug-tools-shellcommands : includes linklibs
+
+FILES := \
+    FindAddr \
+    TaskTrace
+
+%build_progs mmake=debug-tools-shellcommands \
+    files="$(FILES)" targetdir=$(AROS_DEBUG) \
+    uselibs="debug" coverageinstr=no
+
+%common

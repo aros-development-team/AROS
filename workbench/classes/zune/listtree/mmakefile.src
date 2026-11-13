@@ -1,0 +1,22 @@
+# Copyright (C) 2012, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+
+USER_CFLAGS := $(PARANOIA_CFLAGS)
+USER_LDFLAGS := -static
+
+FILES         := listtree support
+INCLUDE_FILES := Listtree_mcc.h
+
+#MM- workbench-classes-zune : workbench-classes-zune-listtree
+
+#MM workbench-classes-zune-listtree : includes
+
+%build_module \
+    mmake=workbench-classes-zune-listtree \
+    modname=Listtree modtype=mcc \
+    conffile=listtree.conf
+
+%copy_includes path=mui
+
+%common

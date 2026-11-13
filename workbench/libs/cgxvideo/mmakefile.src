@@ -1,0 +1,39 @@
+#
+#   Generate cgxvideo
+#
+
+include $(SRCDIR)/config/aros.cfg
+
+USER_LDFLAGS := -static
+
+FUNCS := \
+	CreateVLayerHandleTagList \
+	DeleteVLayerHandle \
+	AttachVLayerTagList \
+	DetachVLayer \
+	GetVLayerAttr \
+	LockVLayer \
+	UnLockVLayer \
+	SetVLayerAttrTagList \
+	SwapVLayerBuffer \
+	WriteSPLine \
+	QueryVLayerAttr
+
+#MM- workbench-libs-complete : workbench-libs-cgxvideo
+#MM- workbench-libs-cgxvideo : linklibs linklibs-surfacetrack
+#MM- workbench-libs-cgxvideo-kobj : linklibs linklibs-surfacetrack
+
+#MM- workbench-libs-cgxvideo-includes : \
+#MM      kernel-exec-includes \
+#MM      includes-copy
+
+%build_module mmake=workbench-libs-cgxvideo \
+  modname=cgxvideo modtype=library \
+  files="cgxvideo_init nullbackend backend $(FUNCS)" \
+  uselibs="surfacetrack"
+
+#MM includes-copy
+
+INCLUDE_FILES := $(call WILDCARD, include/*.h)
+
+%copy_includes path=cybergraphx dir=include

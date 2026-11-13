@@ -1,0 +1,75 @@
+dnl Process this file with autoconf to produce a configure script.
+AC_INIT(fd2inline.c)
+
+AC_PROG_CC
+AC_PROG_INSTALL
+AC_PROG_RANLIB
+AC_PROG_AWK
+
+AC_MSG_CHECKING(for AmigaOS FD files)
+amigaos_inlines=amigaos_inlines
+amigaos_fd_path='not found'
+if test -d $prefix/os-lib/fd/amigaos; then
+  amigaos_fd_path=$prefix/os-lib/fd/amigaos
+elif test -f $prefix/os-lib/fd/exec_lib.fd; then
+  amigaos_fd_path=$prefix/os-lib/fd
+elif test -d /FD; then
+  amigaos_fd_path=/FD
+else
+  amigaos_inlines=nop
+fi
+AC_MSG_RESULT($amigaos_fd_path)
+
+amigaos_header_path='not found'
+if test $amigaos_inlines != nop; then
+  AC_MSG_CHECKING(for AmigaOS headers)
+  if test -d $prefix/os-include/amigaos; then
+    amigaos_header_path=$prefix/os-include/amigaos
+  elif test -d $prefix/os-include/exec; then
+    amigaos_header_path=$prefix/os-include
+  else
+    AC_MSG_ERROR(not found)
+  fi
+  AC_MSG_RESULT($amigaos_header_path)
+else
+  true
+fi
+
+AC_MSG_CHECKING(for p.OS FD files)
+pos_inlines=pos_inlines
+pos_fd_path='not found'
+if test -d $prefix/os-lib/fd/pos; then
+  pos_fd_path=$prefix/os-lib/fd/pos
+elif test -d /p/../pOS_FD; then
+  pos_fd_path=/p/../pOS_FD
+else
+  pos_inlines=nop
+fi
+AC_MSG_RESULT($pos_fd_path)
+
+pos_header_path='not found'
+if test $pos_inlines != nop; then
+  AC_MSG_CHECKING(for p.OS headers)
+  if test -d $prefix/os-include/pos; then
+    pos_header_path=$prefix/os-include/pos
+  elif test -d $prefix/os-include/pExec; then
+    pos_header_path=$prefix/os-include
+  elif test -d /p; then
+    pos_header_path=/p
+  else
+    AC_MSG_ERROR(not found)
+  fi
+  AC_MSG_RESULT($pos_header_path)
+else
+  true
+fi
+
+AC_SUBST(amigaos_inlines)
+AC_SUBST(amigaos_fd_path)
+AC_SUBST(amigaos_header_path)
+AC_SUBST(pos_inlines)
+AC_SUBST(pos_fd_path)
+AC_SUBST(pos_header_path)
+
+mkdir cross
+AC_OUTPUT(Makefile Makefile.cross cross/bin/gg-fix-includes lib/Makefile)

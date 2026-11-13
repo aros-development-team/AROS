@@ -1,0 +1,19 @@
+# Copyright (C) 2006, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+
+FILES := main locale
+
+EXEDIR := \
+    $(AROS_WANDERER)/Tools
+
+#MM- workbench-system-wanderer-tools : workbench-system-wanderer-tools-wbnewdrawer 
+#MM workbench-system-wanderer-tools-wbnewdrawer : \
+#MM workbench-system-wanderer-tools-wbnewdrawer-icons \
+#MM workbench-system-wanderer-tools-wbnewdrawer-catalogs
+
+%build_prog mmake=workbench-system-wanderer-tools-wbnewdrawer \
+    progname=WBNewDrawer targetdir=$(EXEDIR) \
+    files=$(FILES)
+
+%common

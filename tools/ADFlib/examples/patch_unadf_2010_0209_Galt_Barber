@@ -1,0 +1,472 @@
+--- unadf.c	2013-02-22 09:16:21.585508471 +0100
++++ /var/tmp/unadf_2010_0209.c	2013-03-13 15:26:48.915232398 +0100
+@@ -29,6 +29,11 @@
+ #include<errno.h>
+ #include<string.h>
+ 
++#include <sys/types.h>
++#include <utime.h>
++#include <sys/time.h>
++
++
+ #include "adflib.h"
+ 
+ /* The portable way used to create a directory is to call the MKDIR command via the
+@@ -65,6 +70,62 @@
+     puts("    -d dir : extract to 'dir' directory");
+ }
+ 
++int nukeIllegalWindowsTrailingChars(char *filename, char *endMem)
++{
++    int l = strlen(filename);
++    int i = l - 1;
++    char *j;
++    int count = 0;
++    while (filename[i] == ' ' || filename[i] == '.') {
++        for(j=filename+i; j < endMem; ++j)
++	    *j = *(j+1);
++	--endMem;
++	++count;
++	--i;
++	if (i == 0) {
++	    fprintf(stderr, "unexpected error trimming illegal trailing chars \".\" and space from filename left nothing.\n");
++	    exit(1);
++	}
++    }
++    return count;
++    
++}
++
++void setFileDateTime(char *filename, struct Entry* entry)
++{
++
++    struct tm t;
++    time_t t_of_day;
++    struct utimbuf tb;
++
++    /* 
++       Floor the year for windows to 1980.
++       This is because some users did not set their clock right 
++       and the first possible Amiga year 1978 would appear frequently making 
++       the file dates on early Amiga computers potentially less useful.
++       Windows (although not NTFS itself) barfs on dates with year less than 1980.
++    */
++    if (entry->year < 1980)
++	entry->year = 1980;
++
++    t.tm_year = entry->year - 1900;
++    t.tm_mon = entry->month - 1;
++    t.tm_mday = entry->days;
++    t.tm_hour = entry->hour;
++    t.tm_min = entry->mins;
++    t.tm_sec = entry->secs;
++    t.tm_isdst = -1;
++
++    t_of_day = mktime(&t);
++
++    memcpy (&tb.actime, &t_of_day, sizeof (time_t));
++    memcpy (&tb.modtime, &t_of_day, sizeof (time_t));
++
++    if (utime(filename, &tb) != 0)
++	fprintf(stderr, "error calling utime on %s\n", filename);
++
++}
++
+ void printEnt(struct Volume *vol, struct Entry* entry, char *path, BOOL sect)
+ {
+     /* do not print the links entries, ADFlib do not support them yet properly */
+@@ -97,21 +158,26 @@
+ 
+ 
+ void extractFile(struct Volume *vol, char* name, char* path, unsigned char *extbuf,
+-    BOOL pflag, BOOL qflag)
++    BOOL pflag, BOOL qflag, struct Entry * entry)
+ {
+     struct File *file;
+     FILE* out;
+     long n;
+     char *filename;
++    char *fixedFileName = malloc(strlen(name)+1);
++
++    strcpy(fixedFileName, name);
++
++    nukeIllegalWindowsTrailingChars(fixedFileName, fixedFileName+strlen(fixedFileName));
+ 
+     filename = NULL;
+     if (pflag)
+         out = stdout;
+     else {
+         if (strlen(path)>0) {
+-            filename=(char*)malloc(sizeof(char)* (strlen(path)+1+strlen(name)+1) );
++            filename=(char*)malloc(sizeof(char)* (strlen(path)+1+strlen(fixedFileName)+1) );
+             if (!filename) return;
+-            sprintf(filename,"%s%c%s",path,DIRSEP,name);
++            sprintf(filename,"%s%c%s",path,DIRSEP,fixedFileName);
+             out = fopen(filename, "wb");
+         }
+         else
+@@ -130,16 +196,27 @@
+     if (n>0)
+         fwrite(extbuf, sizeof(unsigned char), n, out);
+ 
+-    if (!pflag)
++    adfCloseFile(file);
++
++    if (!pflag) {
++
+         fclose(out);
+ 
+-    adfCloseFile(file);
++	printf("%4d/%02d/%02d  %2d:%02d:%02d ",entry->year, entry->month, entry->days,
++        entry->hour, entry->mins, entry->secs);
++
++	setFileDateTime(filename, entry);
++
++    }
++
+ 
+     if (!qflag) {
+         if (filename!=NULL)
+             printf("x - %s\n", filename);
+         else
+             printf("x - %s\n", name);
++
++
+     }
+ 	
+     if (filename!=NULL)
+@@ -150,34 +227,47 @@
+ void extractTree(struct Volume *vol, struct List* tree, char *path, unsigned char *extbuf,
+     BOOL pflag, BOOL qflag)
+ {
+-	struct Entry* entry;
++    struct Entry* entry;
+     char *buf;
+     char sysbuf[200];
+ 
+     while(tree) {
+         entry = (struct Entry*)tree->content;
+         if (entry->type==ST_DIR) {
++	    char mysep[2]; 
+             buf = NULL;
++	    if (!qflag && !pflag) {
++		printf("%4d/%02d/%02d  %2d:%02d:%02d ",
++		    entry->year, entry->month, entry->days,
++		    entry->hour, entry->mins, entry->secs);
++            }
+             if (strlen(path)>0) {
+-                buf=(char*)malloc(strlen(path)+1+strlen(entry->name)+1);
+-                if (!buf) return;
+-                sprintf(buf,"%s%c%s",path,DIRSEP,entry->name);
+-                sprintf(sysbuf,"%s %s",MKDIR,buf);
+-                if (!qflag) printf("x - %s%c\n",buf,DIRSEP);
++		mysep[0] = DIRSEP;
++		mysep[1] = 0;
+             }
+             else {
+-                sprintf(sysbuf,"%s %s",MKDIR,entry->name);
+-                if (!qflag) printf("x - %s%c\n",entry->name,DIRSEP);
++		mysep[0] = 0;
+             }
+ 
+-            if (!pflag) system(sysbuf);
++	    buf=(char*)malloc(strlen(path)+strlen(mysep)+strlen(entry->name)+1);
++	    if (!buf) return;
++	    sprintf(buf,"%s%s%s",path,mysep,entry->name);
++
++
++	    nukeIllegalWindowsTrailingChars(buf, buf+strlen(buf));
+ 
+-	        if (tree->subdir!=NULL) {
++
++	    /* use double quotes around argument for paths with embedded spaces */
++	    sprintf(sysbuf,"%s \"%s\"",MKDIR,buf);  
++	    if (!qflag) printf("x - %s%s\n",buf,mysep);
++
++	    if (!pflag)
++		system(sysbuf);
++
++
++	    if (tree->subdir!=NULL) {
+                 if (adfChangeDir(vol,entry->name)==RC_OK) {
+-                    if (buf!=NULL)
+-                        extractTree(vol,tree->subdir,buf,extbuf, pflag, qflag);
+-                    else
+-                        extractTree(vol,tree->subdir,entry->name,extbuf, pflag, qflag);
++		    extractTree(vol,tree->subdir,buf,extbuf, pflag, qflag);
+                     adfParentDir(vol);
+                 }
+                 else {
+@@ -188,17 +278,22 @@
+                 }
+             }
+ 
++	    if (!pflag) {
++		setFileDateTime(buf, entry);
++	    }
++
+             if (buf!=NULL)
+                 free(buf);
+         }
+         else if (entry->type==ST_FILE) {
+-            extractFile(vol,entry->name,path,extbuf, pflag, qflag);
++            extractFile(vol,entry->name,path,extbuf, pflag, qflag, entry);
+         }
+         tree = tree->next;
+     }
+ }
+ 
+ 
++
+ void printTree(struct Volume *vol, struct List* tree, char* path, BOOL sect)
+ {
+     char *buf;
+@@ -286,83 +381,166 @@
+ 
+ }
+ 
++struct Entry* findEntryInDir(struct Volume *vol, char *filename, struct List** plist) {
++    struct List *list, *cell;
++    cell = list = adfGetDirEnt(vol,vol->curDirPtr);
++    *plist = list;    
++    while(cell) {
++        struct Entry *entry = (struct Entry*)cell->content;
++        if (strcmp(entry->name, filename)==0)
++	    return entry;
++	cell = cell->next;
++    }
++    return NULL;
++}
++
++struct saveParentDir {
++    struct saveParentDir *next;
++    char *fullname;
++    struct Entry* entry;
++    struct List* list;
++};
++
+ 
+ void processFile(struct Volume *vol, char* name, char* path, unsigned char *extbuf,
+     BOOL pflag, BOOL qflag)
+ {
+-	char *sepptr, *cdstr, *fullname, *filename;
+-	char *bigstr;
++    char *sepptr, *cdstr, *fullname, *filename;
++    char *bigstr = NULL;
+     FILE *tfile;
++    struct List *list;
++    struct Entry* entry;
++    struct saveParentDir* spdhead = NULL, *n;
++    char mysep[2];
++    int bigsize;
++    char *endMem;
++    int trimCount;
+ 
+     adfToRootDir(vol);
+ 
+     sepptr = strchr(name, '/');
+     if (sepptr==NULL) {
+-        extractFile(vol, name, path, extbuf, pflag, qflag);
++        filename = name;
++	fullname = path;
+     }
+     else {
+         /* the all-in-one string : to call system(), to find the filename, the convert dir sep char ... */
+-        bigstr=(char*)malloc(strlen(MKDIR)+1+strlen(path)+1+strlen(name)+1);
++        bigsize=strlen(MKDIR)+1+1+strlen(path)+1+strlen(name)+1+1; // includes double-quotes around MKDIR arg
++        bigstr=(char*)malloc(bigsize);
+         if (!bigstr) { fprintf(stderr,"processFile : malloc"); return; }
+ 
++	if (strlen(path)>0) {
++	    mysep[0] = DIRSEP;
++	    mysep[1] = 0;
++	}
++	else {
++	    mysep[0] = 0;
++	}
++
+         /* to build to extract path */
+-        if (strlen(path)>0) {
+-            sprintf(bigstr,"%s %s%c%s",MKDIR,path,DIRSEP,name);
+-            cdstr = bigstr+strlen(MKDIR)+1+strlen(path)+1;
+-        }
+-        else {
+-            sprintf(bigstr,"%s %s",MKDIR,name);
+-            cdstr = bigstr+strlen(MKDIR)+1;
+-        }
++	/* use double quotes around argument for paths with embedded spaces */
++	sprintf(bigstr,"%s \"%s%s%s",MKDIR,path,mysep,name);
++        bigsize = strlen(bigstr);
++        endMem = bigstr+bigsize;
++	cdstr = bigstr+strlen(MKDIR)+1+strlen(path)+strlen(mysep)+1;
++
+         /* the directory in which the file will be extracted */
+-        fullname =  bigstr+strlen(MKDIR)+1;
++        fullname = bigstr+strlen(MKDIR)+1+1;
+ 
+         /* finds the filename, and separates it from the path */
+         filename = strrchr(bigstr,'/')+1;
+         filename[-1]='\0';
+ 
+         sepptr = cdstr;
+-        /* find the end of the first dir to create */
+-        while(sepptr[0]!='/' && sepptr[0]!='\0')
+-            sepptr++;
+ 
+-        while(strlen(cdstr)>0) {
++	BOOL found = TRUE;
++        while(found) {
++	    /* find the end of the first dir to create */
++	    while(sepptr[0]!='/' && sepptr[0]!='\0')
++		sepptr++;
+             if (sepptr[0]=='/') { /* not the last one */
+                 sepptr[0]='\0';
+-                if (adfChangeDir(vol,cdstr)!=RC_OK)
+-                    return;
+-                tfile = fopen(fullname,"r"); /* the only portable way to test if the dir exists */
+-                if (tfile==NULL) { /* does't exist : create it */
+-                    if (!pflag) system(bigstr);
+-                    if (!qflag) printf("x - %s%c\n",fullname,DIRSEP);
+-                }
+-                else
+-                    fclose(tfile);
+-                sepptr[0] = DIRSEP; /* converts the '/' to '/' or '\' */
+-                cdstr = sepptr+1; /* next beginning of the next dir to create */
+-                /* to find the end of the next dir */
+-                sepptr++;
+-                while(sepptr[0]!='/' && sepptr[0]!='\0')
+-                    sepptr++;
+-            }
+-            else { /* the last one */
+-                if (adfChangeDir(vol,cdstr)!=RC_OK)
+-                    return;
+-                tfile = fopen(fullname,"r");
+-                if (tfile==NULL) {
+-                    if (!pflag) system(bigstr);
+-                    if (!qflag) printf("x - %s%c\n",fullname,DIRSEP);
+-                }
+-                else
+-                    fclose(tfile);
+-                cdstr = cdstr+strlen(cdstr); /* at the end, ends the while loop */
+-            }
++	    }
++	    else
++		found = FALSE;
++
++
++	    entry = findEntryInDir(vol, cdstr, &list);
++	    if (!entry) {
++		fprintf(stderr, " subdir %s not found in dir list findEntryInDir\n", cdstr);
++		return;
++	    }
++
++	    printf("%4d/%02d/%02d  %2d:%02d:%02d ",entry->year, entry->month, entry->days,
++	    entry->hour, entry->mins, entry->secs);
++
++	    if (adfChangeDir(vol,cdstr)!=RC_OK)
++		{
++		fprintf(stderr, " adfChangDir to subdir %s failed.\n", cdstr);
++		return;
++		}
++
++	    trimCount = nukeIllegalWindowsTrailingChars(cdstr, endMem);
++	    endMem -= trimCount;
++
++	    n = spdhead;
++	    spdhead = malloc(sizeof(struct saveParentDir));
++	    spdhead->next = n;
++	    spdhead->fullname = malloc(strlen(fullname)+1);
++	    strcpy(spdhead->fullname, fullname); 
++	    spdhead->entry = entry;
++	    spdhead->list = list;
++
++	    tfile = fopen(fullname,"r"); /* the only portable way to test if the dir exists */
++	    if (tfile==NULL) { /* does't exist : create it */
++		if (!pflag) {
++		    int bsl = strlen(bigstr);
++                    char saveEos = bigstr[bsl+1];
++		    /* compensate for middle-string parsing */
++                    bigstr[bsl] = '"';
++                    bigstr[bsl+1] = 0;
++		    system(bigstr);
++                    bigstr[bsl] = 0;
++                    bigstr[bsl+1] = saveEos;
++		}
++		if (!qflag) 
++		    printf("x - %s%c\n",fullname,DIRSEP);
++	    }
++	    else
++		fclose(tfile);
++
++	    if (found) {
++		sepptr[0] = DIRSEP; /* converts the '/' to '/' or '\' */
++		cdstr = ++sepptr; /* next beginning of the next dir to create */
++	    }
+         }
+-        extractFile(vol, filename, fullname, extbuf, pflag, qflag);
++    }
++    entry = findEntryInDir(vol, filename, &list);
++    if (entry) {
++	if (entry->type==ST_FILE)
++	    extractFile(vol, filename, fullname, extbuf, pflag, qflag, entry);
++	else
++	    fprintf(stderr, "file %s found but type not ST_FILE.\n", filename);
++    }
++    else {
++	fprintf(stderr, "file %s not found.\n", filename);
++    }
++	
++    adfFreeDirList(list);
+ 
+-        free(bigstr);
++    while(spdhead) {
++	n = spdhead;
++	if (n->entry->type==ST_DIR)
++	    setFileDateTime(n->fullname, n->entry);
++	free(n->fullname);
++	adfFreeDirList(n->list);
++        spdhead = spdhead->next;
++	free(n);
+     }
+ 
++    if (bigstr)
++	free(bigstr);
++
+ 
+ }
+ 
+@@ -397,9 +575,12 @@
+     files = rtfiles = NULL;
+     volNum = 0;
+ 
+-    fprintf(stderr,"unADF v%s : a unzip like for .ADF files, powered by ADFlib (v%s - %s)\n\n",
++    fprintf(stderr,"\n\nunADF v%s : a unzip like for .ADF files, powered by ADFlib (v%s - %s)\n\n",
+         UNADF_VERSION, adfGetVersionNumber(),adfGetVersionDate());
+ 
++    fprintf(stderr,"Note: for windows compatibility, during extraction, dates with years before 1980 are set to 1980,\n");
++    fprintf(stderr,"  and directory and file names ending in \" \" or \".\" are trimmed.\n\n");
++
+     /* parse options */
+     i=1;
+     while(i<argc) {
+@@ -438,13 +619,19 @@
+                     break;
+                 case 'd':
+                     if (devname!=NULL && xflag && (i+1)==(argc-1)) {
++			char sysbuf[200];
+                         i++;
+                         dirname = argv[i];
+                         if (dirname[strlen(dirname)-1]==DIRSEP)
+                             dirname[strlen(dirname)-1]='\0';
+                         nextArg = TRUE;
+                         dflag = TRUE;
+-                    }
++			/* as a convenience to the user, create the -d output dir if it doesn't exist */
++			/* use double quotes around argument for paths with embedded spaces */
++			sprintf(sysbuf,"%s \"%s\"",MKDIR,dirname);  
++			if (!pflag)
++			    system(sysbuf);
++		    }
+                     break;
+                 case 'p':
+                     if (xflag) {

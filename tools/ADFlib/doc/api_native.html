@@ -1,0 +1,231 @@
+<HTML>
+<HEAD><TITLE> Native </TITLE></HEAD>
+
+<BODY>
+
+<H1 ALIGN=CENTER>the Native API</H1>
+
+<HR>
+
+<H1>Introduction</H1>
+
+By default, the library is compiled to manage .ADF files (dump files) and
+plateform specific real devices like harddisk or removable disks 
+(called native devices).<BR>
+At compile time, you can choose between available platforms like Win32/Intel
+ for example. At run-time, it is possible to mount a dump device or a real device,
+several times.
+<P>
+To add a new plateform support into ADFlib, you must write your
+own files adf_nativ.h and adf_nativ.c for that platform. This driver is the link
+between the native API of the library and the platform specific functions to
+access the hardware.
+<P>
+The templates for those files are in Generic/.
+<P>
+The native API consists of :
+<P>
+1. The natives functions :
+
+<UL>
+<LI><B>RETCODE</B> adfInitDevice(<B>struct Device*</B>, <B>char*</B>)
+<LI><B>RETCODE</B> adfReleaseDevice(<B>struct Device*</B>)
+<LI><B>RETCODE</B> adfNativeReadSector(<B>struct Device*</B>, <B>long</B>, <B>int</B>, <B>unsigned char*</B>)
+<LI><B>RETCODE</B> adfNativeWriteSector(<B>struct Device*</B>, <B>long</B>, <B>int</B>, <B>unsigned char*</B>)
+<LI><B>BOOL</B> adfIsDevNative(<B>char*</B>)
+<LI><B>void</B> adfInitNativeFct()
+</UL>
+
+2. And two data structures devoted to native devices management :
+
+<UL>
+<LI><B>struct nativeFunctions</B> stored in the library environment,
+<LI><B>struct nativeDevice</B> stored in the <B>struct Device</B> structure.
+</UL>
+
+The author of the driver defines the <B>nativeDevice</B> structure 
+and writes the expected functions below, with the expected parameters and the expected behaviours.
+<P>
+At the environment initialisation, a pointer of each function is stored in the
+<B>nativeFunctions</B> structure with adfInitNativeFct().
+<P>
+Here's how, for example, adfMountDev() call a native function : adfInitDevice() :
+<PRE>
+
+struct Device* adfMountDev(char* filename)
+{
+struct nativeFunctions *nFct;
+struct Device* dev;
+  
+/* 'dev' memory allocation */
+
+/* gets the native function pointers */
+nFct = (struct nativeFunctions*)adfEnv.nativeFct; /* was of type void* */
+
+/* only once ! */
+dev->isNativeDev = (*nFct->adfIsDevNative)(filename);
+
+/* choose dump or a real device initialisation */
+if (dev->isNativeDev)
+    (*nFct->adfInitDevice)(dev, filename);
+else
+    adfInitDumpDevice(dev, filename);
+
+...
+
+
+</PRE>
+
+<HR>
+
+<H1>Data structures</H1>
+
+<PRE>
+struct nativeFunctions{
+    /* function pointers */
+    RETCODE (*adfInitDevice)(struct Device*, char*);
+    RETCODE (*adfNativeReadSector)(struct Device*, long, int, unsigned char*);
+    RETCODE (*adfNativeWriteSector)(struct Device*, long, int, unsigned char*);
+    BOOL (*adfIsDevNative)(char*);
+    RETCODE (*adfReleaseDevice)();
+};
+
+Those functions are detailed above.
+
+struct nativeDevice{
+    /* private to native functions, never used in the library, only in native functions */
+    /* for the dump devices, this structure contains one field : FILE *fd */
+};
+
+</PRE>
+
+<HR>
+
+<P ALIGN=CENTER><FONT SIZE=+2>  adfInitDevice() </FONT></P>
+
+<H2>Syntax</H2>
+
+<B>RETCODE</B> adfInitDevice(<B>struct Device*</B> device, <B>char*</B> name)
+<P>
+You can choose another name, but the same parameters types and number, and
+the same return type.
+
+<H2>Description</H2>
+
+Initialise the native device.
+
+<H2>Return values</H2>
+
+RC_OK if everything went allright, something else otherwise.
+
+<H2>Template</H2>
+
+<PRE>
+RETCODE adfInitDevice(struct Device* dev, char* name)
+{
+    struct nativeDevice* nDev;
+
+    /* the type was 'void*' */
+    nDev = (struct nativeDevice*)dev->nativeDev;
+
+    nDev = (struct nativeDevice*)malloc(sizeof(struct nativeDevice));
+    if (!nDev) {
+        (*adfEnv.eFct)("myInitDevice : malloc");
+        return RC_ERROR;
+    }
+    dev->nativeDev = nDev;
+
+/*
+ * specific device operations
+ *
+ * you MUST set the 'dev->size' field with the length in bytes of the physical media
+ */
+
+    return RC_OK;
+}
+</PRE>
+
+<HR>
+
+<P ALIGN=CENTER><FONT SIZE=+2>  adfNativeReadSector() </FONT></P>
+
+<H2>Syntax</H2>
+
+<B>RETCODE</B> adfNativeReadSector(<B>struct Device*</B> device,  <B>long</B> n, <B>int</B> size, <B>unsigned char*</B> buf)
+<P>
+You can choose another name, but the same parameters types and number, and
+the same return type.
+
+<H2>Description</H2>
+
+Move to 512*<I>n</I> bytes from the beginning of the media, 
+and read <I>size</I> bytes into the <I>buf</I> buffer.
+<P>
+
+<HR>
+
+<P ALIGN=CENTER><FONT SIZE=+2>  adfNativeWriteSector() </FONT></P>
+
+<H2>Syntax</H2>
+
+<B>RETCODE</B> adfNativeWriteSector(<B>struct Device*</B> device, <B>long</B> n, <B>int</B> size, <B>unsigned char*</B> buf)
+<P>
+You can choose another name, but the same parameters types and number, and
+the same return type.
+
+<H2>Description</H2>
+
+Move to 512*<I>n</I> bytes from the beginning of the media, 
+and write <I>size</I> bytes into the <I>buf</I> buffer.
+<P>
+
+<HR>
+
+<P ALIGN=CENTER><FONT SIZE=+2>  adfReleaseDevice() </FONT></P>
+
+<H2>Syntax</H2>
+
+<B>RETCODE</B> adfReleaseDevice(<B>struct Device*</B> device)
+<P>
+You can choose another name, but the same parameters types and number, and
+the same return type.
+
+<H2>Description</H2>
+
+Release the device.
+
+<HR>
+
+<P ALIGN=CENTER><FONT SIZE=+2>  adfIsDevNative() </FONT></P>
+
+<H2>Syntax</H2>
+
+<B>RETCODE</B> adfIsDevNative(<B>char*</B> name)
+<P>
+You can choose another name, but the same parameters types and number, and
+the same return type.
+
+<H2>Description</H2>
+
+TRUE is the name points out a native device, FALSE otherwise.
+
+<HR>
+
+<P ALIGN=CENTER><FONT SIZE=+2>  adfInitDevice() </FONT></P>
+
+<H2>Syntax</H2>
+
+<B>RETCODE</B> adfInitDevice(<B>struct Device*</B> device, <B>char*</B> name)
+<P>
+You can choose another name, but the same parameters types and number, and
+the same return type.
+
+<H2>Description</H2>
+
+Initialise the nativeFunctions structure with the native functions addresses.
+
+<HR>
+
+</BODY>
+
+</HTML>

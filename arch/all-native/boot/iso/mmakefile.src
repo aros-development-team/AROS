@@ -1,0 +1,6 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM- bootiso-native : \
+#MM                              AROS-complete \
+#MM                              iconset-$(AROS_TARGET_ICONSET)-icons-aros-livecd

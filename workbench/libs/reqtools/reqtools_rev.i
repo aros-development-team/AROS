@@ -1,0 +1,14 @@
+VERSION		EQU	38
+REVISION	EQU	1436
+DATE	MACRO
+		dc.b	'20.2.97'
+	ENDM
+VERS	MACRO
+		dc.b	'reqtools 38.1436'
+	ENDM
+VSTRING	MACRO
+		dc.b	'reqtools 38.1436 (20.2.97)',13,10,0
+	ENDM
+VERSTAG	MACRO
+		dc.b	0,'$VER: reqtools 38.1436 (20.2.97)',0
+	ENDM

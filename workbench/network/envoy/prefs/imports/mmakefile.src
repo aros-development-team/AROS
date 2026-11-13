@@ -1,0 +1,25 @@
+#
+#   Filesystem Imports: lists the exports of an Envoy host and mounts one,
+#   writing the same text mount file as the original program. Installed in
+#   SYS:Prefs/Envoy/.
+
+include $(SRCDIR)/config/aros.cfg
+
+FILES := main locale imports gui
+
+EXEDIR := $(AROSDIR)/Prefs/Envoy
+
+USER_INCLUDES := -I$(SRCDIR)/workbench/network/envoy/include
+#USER_CPPFLAGS := -DDEBUG=1
+
+#MM- workbench-network-envoy : workbench-network-envoy-prefs-imports
+#MM workbench-network-envoy-prefs-imports : includes linklibs includes-copy-envoy \
+#MM     workbench-network-envoy-nipc-includes workbench-network-envoy-services-includes \
+#MM     workbench-network-envoy-accounts-includes workbench-network-envoy-envoy-includes \
+#MM     workbench-libs-muimaster-includes
+
+%build_prog mmake=workbench-network-envoy-prefs-imports \
+    progname=FilesystemImports targetdir=$(EXEDIR) \
+    files=$(FILES)
+
+%common

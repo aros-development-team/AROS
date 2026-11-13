@@ -1,0 +1,14 @@
+include $(SRCDIR)/config/aros.cfg
+
+USER_LDFLAGS := -static
+USER_CPPFLAGS := -DMUIMASTER_YES_INLINE_STDARG
+
+FILES := btgatt.class debug
+
+#MM- kernel-bluetooth-classes-btgatt : kernel-bluetooth-btclass kernel-bluetooth-library-includes
+
+%build_module_library mmake=kernel-bluetooth-classes-btgatt \
+    modname=btgatt modtype=btclass modsuffix="class" \
+    files="$(FILES)"
+
+%common

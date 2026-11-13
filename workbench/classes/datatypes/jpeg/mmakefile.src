@@ -1,0 +1,19 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+FILES := jpegclass stubs memory
+
+#MM- workbench-datatypes-complete: workbench-datatypes-jpeg
+#MM workbench-datatypes-jpeg : includes linklibs workbench-libs-jpeg-linklib
+
+USER_CPPFLAGS   := -DMYDEBUG
+USER_CPPFLAGS += -DAROS_LC_SETFUNCS
+USER_CFLAGS := -noposixc
+USER_LDFLAGS := -static
+
+%build_module mmake=workbench-datatypes-jpeg \
+    modname=jpeg modtype=datatype \
+    files=$(FILES)
+
+$(MOD_DIR)/jpeg.readme : jpeg.readme
+	@$(CP) $< $@

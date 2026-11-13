@@ -1,0 +1,43 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+ifneq ($(AROS_TARGET_VARIANT),)
+#MM- kernel-exec-$(ARCH)-$(CPU) : \
+#MM     kernel-exec-includes-$(ARCH)-$(CPU)-$(AROS_TARGET_VARIANT) \
+#MM     kernel-kernel-includes-$(ARCH)-$(CPU)-$(AROS_TARGET_VARIANT) \
+#MM     kernel-rtas-$(ARCH)-$(CPU) \
+#MM     includes-$(ARCH)-$(CPU)-$(AROS_TARGET_VARIANT)
+endif
+
+%set_archincludes mainmmake=kernel-exec maindir=rom/exec \
+  modname=exec pri=0 arch=chrp-ppc \
+  includes="-I$(SRCDIR)/$(CURDIR)"
+
+%get_archincludes modname=kernel \
+    includeflag=TARGET_KERNEL_INCLUDES maindir=rom/kernel
+
+%get_archincludes modname=exec \
+    includeflag=TARGET_EXEC_INCLUDES maindir=rom/exec
+
+PRIV_EXEC_INCLUDES = \
+    $(TARGET_EXEC_INCLUDES) \
+    -I$(SRCDIR)/rom/exec \
+    $(TARGET_KERNEL_INCLUDES) \
+    -I$(SRCDIR)/rom/kernel
+
+CFILES          := \
+        exec_init preparecontext rawputchar coldreboot prepareexecbase \
+        cachepostdma cachepredma supervisor superstate userstate \
+        shutdowna
+
+#MM kernel-exec-chrp-ppc : kernel-kernel-ppc-includes kernel-exec-includes 
+
+USER_INCLUDES     := $(PRIV_EXEC_INCLUDES)
+USER_AFLAGS     := $(PRIV_EXEC_INCLUDES) -I$(GENINCDIR)
+OPTIMIZATION_CFLAGS := -Os
+
+%build_archspecific \
+  mainmmake=kernel-exec maindir=rom/exec arch=chrp-ppc \
+  files=$(CFILES) modname=exec
+
+TARGETDIR = $(BD_OBJDIR$(BDID))

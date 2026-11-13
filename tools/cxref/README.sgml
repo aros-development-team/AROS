@@ -1,0 +1,410 @@
+<!DOCTYPE LINUXDOC SYSTEM>
+
+<!-- cxref program (c) Andrew M. Bishop 1995,96,97,98,99. -->
+
+<article>
+
+<title>C Cross Referencing &amp; Documenting tool. Version 1.5.
+<author>Andrew M. Bishop
+
+<sect>C Cross Referencing &amp; Documenting tool. Version 1.5 - cxref
+
+<p>
+A program that can automatically generate documentation and cross references for
+a C program.
+<newline>
+The input is any C program with appropriate comments and the output is LaTeX,
+HTML, RTF or SGML files.
+
+<sect1>Program Options
+
+<p>
+The name of the program is cxref.
+
+<tscreen><verb>
+Usage: cxref filename [ ... filename]
+             [-Odirname] [-Nbasename] [-Rdirname]
+             [-all-comments] [-no-comments]
+             [-verbatim-comments] [-block-comments]
+             [-xref[-all][-file][-func][-var][-type]]
+             [-warn[-all][-comment][-xref]]
+             [-index[-all][-file][-func][-var][-type]]
+             [-raw]
+             [-latex209|-latex2e]
+             [-html20|-html32][-src]
+             [-rtf]
+             [-sgml]
+             [-Idirname] [-Ddefine] [-Udefine]
+             [-CPP cpp_program] [-- cpp_arg [ ... cpp_arg]]
+
+Usage: cxref filename [ ... filename] -delete
+             [-Odirname] [-Nbasename] [-Rdirname]
+</verb></tscreen>
+
+<descrip>
+<tag><tt>filename</tt></tag>
+The name of the file to document, any number of files may be
+documented at a time.
+<tag><tt>-delete</tt></tag>
+The files named are to be deleted from the output directory and
+their entries in the cross reference database and main output
+files are to be removed.
+<tag><tt>-Odirname</tt></tag>
+The name of a directory to use for the output latex files and
+the location of the cross reference files that are created.
+<tag><tt>-Nbasename</tt></tag>
+The name to use for the first part of the output and cross
+reference files instead of cxref, the file extensions remain
+the same.
+<tag><tt>-Rdirname</tt></tag>
+When the source files are in more than one directory, set
+dirname to the name of the root directory of the source tree
+(use relative path if easier e.g. `-R../..').  This will then
+run cxref from that root directory and the `-Odirname' must be
+relative to that directory.
+<tag><tt>-all-comments</tt></tag>
+In case you think that the existing comments might work,
+(see below for description of special comments).
+<newline><it>[Danger! This option can produce weird results.]</it>
+<tag><tt>-no-comments</tt></tag>
+Ignores all comments, useful if you just want the cross
+references and not the documentation.
+<tag><tt>-verbatim-comments</tt></tag>
+When the comments that you have in the code are formatted
+in a predetermined style that you want to preserve on the
+output, this option will force them not to be reformatted.
+<newline><it>[Note, this is for file and function comments only.]</it>
+<tag><tt>-block-comments</tt></tag>
+When the comments in the program are formatted in the `block'
+style (with a leading `*' character on every line), this option
+will remove that character from the output.
+<newline><it>[Works for a single `*', `+', `|' or `:' on each line.]</it>
+<tag><tt>-xref</tt></tag>
+Produce cross referencing information (see below).
+<descrip>
+<tag><tt>-all</tt></tag> All cross references.
+<tag><tt>-file</tt></tag>Cross references for files.
+<tag><tt>-func</tt></tag>Cross references for functions.
+<tag><tt>-var</tt></tag> Cross references for variables.
+<tag><tt>-type</tt></tag>Cross references for types.
+</descrip>
+<tag><tt>-warn</tt></tag>
+Produce warnings, the options must be concatenated together:
+<descrip>
+<tag><tt>-all</tt></tag>    All warnings.
+<tag><tt>-comment</tt></tag>Warn of missing comments.
+<tag><tt>-xref</tt></tag>   Warn of missing cross references.
+</descrip>
+<tag><tt>-index</tt></tag>
+Produce a cross reference index, the options must be
+concatenated together:
+<descrip>
+<tag><tt>-all</tt></tag> All indexes.
+<tag><tt>-file</tt></tag>Index of files.
+<tag><tt>-func</tt></tag>Index of functions.
+<tag><tt>-var</tt></tag> Index of variables.
+<tag><tt>-type</tt></tag>Index of types.
+</descrip>
+<tag><tt>-raw</tt></tag>
+Produce a raw form of output, not really of much use except
+with -warn.
+<tag><tt>-latex209</tt></tag>
+Produce a LaTeX file to document each of the source files and
+also an extra file that includes each of these files.  (Using
+the LaTeX version 2.09 format.)
+<tag><tt>-latex2e</tt></tag>
+Produce the LaTeX file described above for use with the
+LaTeX2e version of LaTeX.
+<tag><tt>-html20</tt></tag>
+Produce an HTML file to document each of the source files and
+a main file to reference each of these files.  (using the HTML
+2.0 standard, no tables).
+<tag><tt>-html32</tt></tag>
+Produce the HTML file described above but using HTML 3.2.
+<tag><tt>-rtf</tt></tag>
+Produce a Rich Text Format (RTF) file to document the source
+file.
+<tag><tt>-html20-src</tt></tag>
+Produce the HTML v2.0 output and a HTML version of the source
+file with links into it.
+<tag><tt>-html32-src</tt></tag>
+Produce the HTML v3.2 output and a HTML version of the source
+file with links into it.
+<tag><tt>-sgml</tt></tag>
+Produce an SGML file to document the source file.  (Using the
+LinuxDoc DTD).
+<tag><tt>-Idirname</tt></tag>
+GCC option to specify the path for include files.
+<tag><tt>-Ddefine</tt></tag>
+GCC option to define a pre-processor symbol.
+<tag><tt>-Udefine</tt></tag>
+GCC option to undefine a pre-processor symbol.
+<tag><tt>-CPP program</tt></tag>
+The name of the program to use instead of the compile time
+default.  The program must be able to perform all of the actions
+that `gcc -E -C -dD' does to work. If the program takes
+arguments then the whole thing needs to be in quotes so that it
+is interpreted as a single argument to cxref.
+<tag><tt>-- arg ... arg</tt></tag>
+Extra arguments to be passed to the pre-processor can be placed
+after the `--' separator.
+</descrip>
+
+<sect1>C Compiler Replacement cxref-cc
+
+<p>
+To simplify using cxref on existing source code, there is now a shell script
+that will call the C compiler and then call cxref to process the source file.
+This means that it can be used as a drop in replacement for CC in Makefiles and
+the like.
+
+<tscreen><verb>
+Usage: cxref-cc [usual cc options]
+</verb></tscreen>
+
+The name of the source file is extracted from the list of options as well as the
+`-D*', `-I*', `-U*' flags and when the C compiler exits succesfully cxref will
+be called.  The name of the C compiler to use is controlled by the CXREFCC
+environment variable, or if this is not set then the CC environment variable, or
+failing this just gcc.
+
+Using this script requires the use of a `.cxref' configuration file to contain
+the options since there is nowhere to put the options on the command line for
+the C compiler.
+
+This will only cross-reference and document the C source files since they are
+the only ones that are compiled, but it will make sure that they are
+cross-referenced with the correct options etc.
+
+<sect1>Cxref configuration File
+
+<p>
+These command line arguments can also be put into a file named `.cxref' instead
+of on the command line.  When cxref is run the arguments to the program are
+interpreted in the following order.
+
+<enum>
+<item>Those on the command line.
+<item>Those in the `.cxref' file in the current directory.
+<item>Those in the `.cxref' file in the source tree root specified by `-R'.
+</enum>
+
+This means that in a multi-directory source tree, each sub-directory can have a
+`.cxref' file containing just the line `-R..' or appropriate.  The main
+directory can have a `.cxref' file containing the remainder of the options.
+This removes completely the need to have any options on the command line apart
+from the source file names.
+
+The format of the `.cxref' file is any number of lines, each one containing a
+single command line argument (equivalent to one of the argv).  The only options
+that cannot be used are the names of source files themselves and the `-delete'
+option.  Blank lines are ignored and lines starting with a '#' are comments.
+
+<sect1>Program Documentation Comments
+
+<p>
+The documentation for the program is produced from comments in the code that are
+appropriately formatted.  The cross referencing comes from the code itself and
+requires no extra work.
+<newline>
+The special comments are `/**** ****/' (for a file) and `/*++++ ++++*/' (for a
+data object) any number of `*' or `+' can be used inside of the standard `/*'
+and `*/' comment delimiters in the comments, they are ignored.
+<newline>
+If a comment line starts with whitespace and is followed by `+html+' then the
+rest of the line is included only in the HTML output, and is not processed so it
+can include HTML markup, `-html-' means that the rest of the line is included in
+all except the HTML output.  The same also applies to the other output formats,
+`+none+' can be used for lines not to appear in any output.  The exception to
+this is that the raw output does not do any checking and will output all lines.
+<newline>
+In any situation where a comment follows a `,', `;' or `)' separated only by
+spaces and tabs, the comment is pushed to before the punctuation to apply to
+object there.
+<newline>
+The program is implemented using a full ANSI C grammar parser with some GCC
+extensions, this means that the style of the code is unimportant, only the
+content and comments.
+
+<sect1>Automated Comment Insertion
+
+<p>
+To simplify the insertion of comments that will be parsed by cxref, the file
+<tt>cxref.el</tt> provides a number of Emacs lisp functions.  To use them add the line
+<tt>(load "cxref")</tt> to your `.emacs' file or type <tt>M-x load-file cxref.el</tt> from
+within Emacs.
+<p>
+The functions and key bindings are:
+<descrip>
+<tag><it>Control-C Control-F</it></tag>
+Adds file comments, a /** **/ header at the top of the
+file and if it is a .h file then it also adds a #ifndef,
+#define at the beginning and #endif at the end to stop
+multiple inclusions.
+<tag><it>Control-C f</it></tag>
+Adds comments to a function, the cursor must be on the
+line containing the start of the function definition when
+this function is called.  The /*+ ... +*/ comment that is
+added is of the header type (see the examples) not inline.
+<tag><it>Control-C v</it></tag>
+Adds a leading comment to the variable or other definition
+on the current line.
+<tag><it>Control-C e</it></tag>
+Adds a trailing comment at the end of the line.
+<tag><it>Control-C i</it></tag>
+Adds an inline comment that is ignored by cxref.
+</descrip>
+
+<sect1>C Preprocessor
+
+<p>
+To improve the output that is available a modified version of the GNU CPP V2.7.2
+is supplied (named cxref-cpp).
+<newline>
+This modified C preprocessor allows for a finer control over some features of
+the preprocessing that are not important for a compiler.  In a standard
+preprocessor, the preprocessor directives are intended for use only by the
+preprocessor, so passing the information through is not important.
+<newline>
+With cxref-cpp, there are two features that are different to the standard GNU
+CPP:
+<enum>
+<item>The #include directives from the file are output in the same way as the
+#defines are output.  An extra flag has been added to cpp to do this, '-dI',
+it works in the same way as the existing '-dD' flag for #defines.
+<item>Comments trailing a #include or a #define are dropped with GNU CPP even if -C
+is used. This is not important while compiling but is useful for documenting.
+</enum>
+
+<sect1>Cross Referencing
+
+<p>
+The cross referencing is performed for the following items
+<descrip>
+<tag>Files</tag>
+<itemize>
+<item>The files that the current file is included in
+<it>(even when included via other files).</it>
+</itemize>
+<tag>#includes</tag>
+<itemize>
+<item>Files included in the current file.
+<item>Files included by these files etc.
+</itemize>
+<tag>Variables</tag>
+<itemize>
+<item>The location of the definition of external variables.
+<item>The files that have visibility of global variables.
+<item>The files / functions that use the variable.
+</itemize>
+<tag>Functions</tag>
+<itemize>
+<item>The file that the function is prototyped in.
+<item>The functions that the function calls.
+<item>The functions that call the function.
+<item>The files and functions that reference the function.
+<item>The variables that are used in the function.
+</itemize>
+</descrip>
+Each of these items is cross referenced in the output.
+<newline>
+The cross referencing uses files `cxref.variable', `cxref.function',
+`cxref.include' and `cxref.typedef' in the output directory.<newline>
+These are a complete list of the function and variable usage in the program and
+could be used to generate a function call hierarchy or variable usage diagram
+for example.<newline>
+Two cxref passes of each file is needed, the first to build up the cross
+referencing files and the second to use them.
+<newline>
+<it>(The file names are different if the `-N' option is used.)</it>
+
+<sect1>LaTeX Output
+
+<p>
+The default LaTeX output is a file for each of the source files with one extra
+file `cxref.tex' that includes each of the other files.  This is to allow a
+makefile to only update the changed files (although the references may require
+all of the files to be checked again).  When the cxref.tex file has been written
+it can be modified by the user, any new files that are added are added at the
+end of the source code section, the rest of the file being unchanged.
+<newline>
+The index is written to a file called `cxref.apdx.tex' and cxref.tex is updated
+to refer to it.
+<newline>
+Also written out are three LaTeX style files `page.sty', `fonts.sty' and
+`cxref.sty'.  These set up the page to use a smaller margin and smaller fonts to
+allow more to appear on a page and also define the new commands for typesetting
+the cxref output.
+<newline>
+<it>(The file names `cxref.tex' and `cxref.apdx.tex' are different if the `-N'
+option is used.)</it>
+<newline>
+The two different forms of LaTeX output are selected by using the <it>-latex209</it> or
+the <it>-latex2e</it> options.  These select between two sets of output that can be used
+with those two different versions of LaTeX.
+
+<sect1>HTML Output
+
+<p>
+The default HTML output is a file for each of the source files with one extra
+file `cxref.html' that includes each of the other files.  This is to allow a
+makefile to only update the changed files (although the references may require
+all of the files to be checked again).  When the cxref.html file has been
+written it can be modified by the user, any new files that are added are added
+at the end before the table of contents, the rest of the file being unchanged.
+<newline>
+The index is written to a file called `cxref.apdx.html' and cxref.html is
+updated to refer to it.
+<newline>
+<it>(The file names `cxref.html' and `cxref.apdx.html' are different if the `-N'
+option is used.)</it>
+<newline>
+The two different forms of HTML output are selected by using the <it>-html20</it> or the
+<it>-html32</it> options.  These select between two sets of output that comply with the
+HTML 2.0 and 3.2 definitions, they differ in their use of tables.
+
+<sect1>RTF Output
+
+<p>
+Rich Text Format is a fairly low level page description format devised by
+Microsoft.  It is not a well defined and easy to understand standard as are the
+other formats, but it is popular for document exchange.
+<newline>
+There is a single output file for each of the source files and an index file.
+
+<sect1>SGML Output
+
+<p>
+Since SGML is a meta-language it is necessary to define the layout elements as
+well as provide the information.  The cxref output uses the LinuxDoc document
+format and is designed for use with the SGMLtools programs
+(http://www.sgmltools.org/).
+<newline>
+There is a single output file for each of the source files and an index file.
+
+<sect1>Further Information
+
+<p>
+There is a list of frequently asked questions and their answers for the cxref
+program in the FAQ file.  A list of improvements planned for future versions of
+the program are listed in the file TODO.
+
+More up-to-date information can be found on the World Wide Web at the cxref
+homepage, reached via the author's homepage http://www.gedanken.demon.co.uk/.
+
+If you wish to submit bug reports or other comments about the program then email
+the author amb@gedanken.demon.co.uk and put cxref in the subject line.
+
+<sect1>Author and Copyright
+
+<p>
+The cxref program was written by Andrew M. Bishop in 1995,96,97,98,99.
+<newline>
+The cxref program is copyright Andrew M. Bishop 1995,96,97,98,99.
+<newline>
+The cxref-cpp program is copyright Free Software Foundation, Inc.
+<newline>
+The cxref and cxref-cpp programs can be freely distributed according to the
+terms of the GNU General Public License (see the file `COPYING').
+
+</article>

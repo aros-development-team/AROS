@@ -1,0 +1,17 @@
+# Copyright (C) 2003, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+
+FILES       := main support locale executecommand
+EXEDIR      := $(AROS_WANDERER)/Tools
+
+#MM- workbench-system-wanderer-tools : workbench-system-wanderer-tools-executecommand
+#MM  workbench-system-wanderer-tools-executecommand : \
+#MM  workbench-system-wanderer-tools-executecommand-catalogs \
+#MM  workbench-system-wanderer-tools-executecommand-icons
+
+%build_prog mmake=workbench-system-wanderer-tools-executecommand \
+    progname=ExecuteCommand targetdir=$(EXEDIR) \
+    files=$(FILES)
+
+%common

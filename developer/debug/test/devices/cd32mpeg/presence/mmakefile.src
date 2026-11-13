@@ -1,0 +1,12 @@
+# Copyright (C) 2026, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+USER_LDFLAGS := -static
+
+# Selected by the native Amiga MPEG device component test group.
+#MM test-devices-cd32mpeg-presence : includes linklibs
+
+%build_progs mmake=test-devices-cd32mpeg-presence \
+    files=mpegpresence targetdir=$(AROS_TESTS)/devices/cd32mpeg
+
+%common

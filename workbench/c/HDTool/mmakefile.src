@@ -1,0 +1,21 @@
+#
+#   Makefile to make HDTool
+
+include $(SRCDIR)/config/aros.cfg
+
+FILES := \
+	main \
+	deviceio \
+	install \
+	list \
+	setup
+
+EXEDIR := $(AROS_C)
+
+#MM workbench-c : includes linklibs
+
+%build_prog mmake=workbench-c \
+    progname=HDTool targetdir=$(EXEDIR) \
+    files=$(FILES)
+
+%common

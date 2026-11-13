@@ -1,0 +1,12 @@
+include $(SRCDIR)/config/aros.cfg
+
+USER_LDFLAGS := -static
+
+#MM- workbench-libs-complete : workbench-libs-translator
+#MM workbench-libs-translator : includes linklibs-speechcore workbench-devs-speech-resource
+
+%build_module mmake=workbench-libs-translator \
+    modname=translator modtype=library files="translate" \
+    uselibs="speechcore"
+
+%common

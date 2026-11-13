@@ -1,0 +1,26 @@
+# Copyright (C) 2004-2023, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+
+BASEICONS := Sashimi
+ADDITIONALICONS := Bifteck Hardware Tests 
+
+#MM- iconset-Gorilla-wbench-icons-aros-clean : iconset-Gorilla-wbench-icons-aros-debug-clean
+#MM- iconset-Gorilla-additional-icons-aros : iconset-Gorilla-additional-icons-aros-debug-clean
+
+#MM- iconset-Gorilla-wbench-icons-aros : iconset-Gorilla-wbench-icons-aros-debug
+#MM- iconset-Gorilla-additional-icons-aros : iconset-Gorilla-additional-icons-aros-debug
+
+%build_icons mmake=iconset-Gorilla-wbench-icons-aros-debug icons=$(BASEICONS) \
+             dir=$(AROS_DEBUG)
+
+%build_icons mmake=iconset-Gorilla-additional-icons-aros-debug icons=$(ADDITIONALICONS) \
+             dir=$(AROS_DEBUG)
+
+#MM- icons-developer-debug : gorilla-icons-developer-developer-debug
+%build_icons mmake=gorilla-icons-developer-developer-debug icons=$(BASEICONS) \
+             dir=$(AROS_PRESETS)/Icons/Gorilla/Default/$(AROS_DIR_AROS)/$(AROS_DIR_DEVELOPER)/Debug
+
+#MM- icons-additional-developer-debug : gorilla-icons-additional-developer-debug
+%build_icons mmake=gorilla-icons-additional-developer-debug icons=$(ADDITIONALICONS) \
+             dir=$(AROS_PRESETS)/Icons/Gorilla/Default/$(AROS_DIR_AROS)/$(AROS_DIR_DEVELOPER)/Debug

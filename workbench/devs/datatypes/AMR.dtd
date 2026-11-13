@@ -1,0 +1,10 @@
+# DataType Description for AMR
+Name=AMR
+Version=$VER: AMR 1.0 (06.02.2017)
+BaseName=amr
+Pattern=#?
+Mask='#' '!' 'A' 'M' 'R' 0x0a
+GroupID=soun
+ID=amr
+Flags=DTF_BINARY,DTF_CASE
+Priority=0

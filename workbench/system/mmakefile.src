@@ -1,0 +1,16 @@
+#
+#   Makefile for the Workbench:System directory.
+
+include $(SRCDIR)/config/aros.cfg
+
+FILES	:= \
+    FixFonts \
+    CLI
+
+#MM- workbench : workbench-system
+#MM workbench-system : includes linklibs
+
+%build_progs mmake=workbench-system \
+    files=$(FILES) targetdir=$(AROSDIR)/System
+
+%common

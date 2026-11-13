@@ -1,0 +1,111 @@
+@database doc/VMMTools.guide
+
+@Node Main "VMM/doc/VMMTools.guide"
+@Next "VMMUsage"
+
+The following tools are available for use with VMM:
+
+  @{"  VMMUsage       " Link "VMMUsage"}
+  @{"  VMMUsageCLI    " Link "VMMUsageCLI"}
+  @{"  VMMStat        " Link "VMMStat"}
+  @{"  ReadMMUConfig  " Link "ReadMMUConfig"}
+  @{"  ConvVMMCfg     " Link "ConvVMMCfg"}
+  @{"  ShowPageSize   " Link "ShowPageSize"}
+
+@EndNode
+
+@Node "VMMUsage" "VMM/doc/VMMTools.guide/VMMUsage"
+@Prev "Main"
+@Next "VMMUsageCLI"
+@Toc "Main"
+
+VMMUsage
+
+VMMUsage  opens a window to display the name of those tasks which have
+currently  allocated  any  virtual memory.  This only works if VMM has
+been configured to enable 'memory tracking'.  If you change the status
+of this option old entries will remain in the list.
+VMMUsage also displays the amount of virtual memory used by each task.
+The slider gadget determines the update interval for this information.
+@EndNode
+
+@Node "VMMUsageCLI" "VMM/doc/VMMTools.guide/VMMUsageCLI"
+@Prev "VMMUsage"
+@Next "VMMStat"
+@Toc "Main"
+
+VMMUsageCLI
+
+VMMUsageCLI does the same as @{"VMMUsage" Link "VMMUsage"} except that it does not open
+a window but displays it to the console a single time.
+@EndNode
+
+@Node "VMMStat" "VMM/doc/VMMTools.guide/VMMStat"
+@Prev "VMMUsageCLI"
+@Next "ReadMMUConfig"
+@Toc "Main"
+
+VMMStat
+
+VMMStat prints the statistics parameters of VMM to the console once.
+
+@EndNode
+
+@Node "ReadMMUConfig" "VMM/doc/VMMTools.guide/ReadMMUConfig"
+@Prev "VMMStat"
+@Next "ConvVMMCfg"
+@Toc "Main"
+
+ReadMMUConfig
+
+This  tool is used only if you have difficulties in getting VMM to run
+on  your  system.  You should NOT run this if VMM works perfectly.  If
+you  do  so  anyway,  you have to delete the generated files from your
+ENV:   and  ENVARC:   drawers  in  order  not  to  waste memory for an
+unnecessary MMU table.
+Running  it will take between 10 seconds and 1 minute.  It then writes
+a  file  called  'VMM_MMU.config'  to ENV:  and ENVARC:.  This file is
+read  by  VMM  upon startup to correctly initialize its MMU table.  If
+you specify 'VERBOSE' as an option it will also print this information
+in  a  more readable form to the console.  See the 'MMU setup' section
+for further details.
+Specifying  the 'DEBUG' option will print the page descriptor of every
+logical  page.   This results in a huge amount of data and is probably
+only  of  use  for  debugging  problems  in conjunction with VMM's MMU
+setup.
+If  the VMM_MMU.config file is used by VMM there are some
+things which do not work as usual as there are:
+
+- Enforcer  does  not work, i.e. it can be installed but it never will
+  report any hits.
+- The 'FAST ROM' option is ignored. You can circumvent this by running
+  ReadMMUConfig with CPU FastROM running.
+- The  'Cache Zorro II RAM' option is ignored. It is not needed if you 
+  use ReadMMUConfig.
+
+@EndNode
+
+@Node "ConvVMMCfg" "VMM/doc/VMMTools.guide/ConvVMMCfg"
+@Prev "ReadMMUConfig"
+@Next "ShowPageSize"
+@Toc "Main"
+
+ConvVMMCfg
+
+This  tool  can  be  used  to  convert  an  old  style  (pre-3.0)  VMM
+configuration  file  to  the  new  format.   It  reads 'VMM.prefs' and
+replaces  it  with  the  new style configuration file.  Normally it is
+automatically called during the installation process.
+
+@EndNode
+
+@Node "ShowPageSize" "VMM/doc/VMMTools.guide/ShowPageSize"
+@Prev "ConvVMMCfg"
+@Toc "Main"
+
+ShowPageSize
+
+ShowPageSize  is  only used during the installation process.  It reads
+the current MMU configuration and returns the possible pagesizes.
+
+@EndNode

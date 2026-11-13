@@ -1,0 +1,101 @@
+/*
+    Copyright (C) 2012-2026, The AROS Development Team. All rights reserved.
+
+    This file defines the private part of StdCBase.
+    This should only be used internally in stdc.library code so
+    changes can be made to this structure without breaking backwards
+    compatibility.
+*/
+#ifndef __STDC_INTBASE_H
+#define __STDC_INTBASE_H
+
+#include <libraries/stdc.h>
+#include <libraries/locale.h>
+#include <intuition/intuitionbase.h>
+#include <devices/timer.h>
+#include <dos/bptr.h>
+#include <dos/dos.h>
+
+#include <aros/types/wchar_t.h>
+#include <aros/types/wctype_t.h>
+#include <aros/types/locale_s.h>
+
+#include <time.h>
+
+/* Some structs that are defined privately */
+struct signal_func_data;
+struct __stdc_memctx;
+
+struct StdCIntBase
+{
+    struct StdCBase             StdCBase;
+    struct StdCIntBase          *StdCRootBase;
+    BPTR                        StdCSegList;
+
+    struct DosLibrary           *StdCDOSBase;           // Needed for strerror->Fault
+    /* optional libs */
+    struct LocaleBase           *StdCLocaleBase;
+    struct IntuitionBase        *StdCIntuitionBase;
+    struct Device               *StdCTimerBase;
+    struct Library              *StdCEntropyBase;       // entropy.resource, for arc4random()
+
+    /* common */
+    int                         flags;
+
+    /* stdlib.h */
+    APTR                        mempool;
+    unsigned int                srand_seed;
+    unsigned int                arc4_fallbackctr;       // arc4random() fallback when entropy.resource is absent
+
+    /* time.h and it's functions */
+    struct timerequest          timereq;
+    struct MsgPort              timeport;
+    char                        timebuffer[26];
+    struct tm                   tmbuffer;
+    struct DateStamp            starttime;
+
+    /* __stdc_startup.c */
+    int                         *startup_errorptr;
+    jmp_buf                     exit_jmpbuf;
+
+    /* atexit.c */
+    struct MinList              atexit_list;
+
+    /* at_quick_exit.c / quick_exit.c */
+    struct MinList              quick_exit_list;
+
+    /* signal.c & co. */
+    struct signal_func_data     *sigfunc_array;
+
+    /* strerror.c */
+    char                        *fault_buf;
+
+    /* strtok.c */
+    char                        *last;
+
+    /* private for fenv.c/softfloat implementations */
+    APTR                        __fe_private;
+    APTR                        __fe_dfl_env;
+    APTR                        __fe_nomask_env;
+    int                         __fe_round;
+    
+    /* locale */
+    struct __locale             *__locale_cur;
+
+    /* malloc.c: pool shared per program */
+    struct __stdc_memctx        *memctx;
+
+    /* __stdc_startup.c: the task whose stack exit_jmpbuf belongs to, and
+       how exit() ends any other task (__stdc_set_taskexit()) */
+    struct Task                 *startup_task;
+    void                        (*taskexit)(int);
+
+    /* __stdc_threaderrno.c: the task that opened this base (NULL for the
+       root base) */
+    struct Task                 *opener_task;
+};
+
+/* Make a distinction between exit() and abort() */
+#define ABNORMAL_EXIT 0x00000001
+
+#endif //__STDC_INTBASE_H

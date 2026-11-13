@@ -1,0 +1,19 @@
+#
+#   Makefile for the ata.device ATAPI transport test
+
+include $(SRCDIR)/config/aros.cfg
+
+EXEDIR := $(AROS_TESTS)/devices/ata
+
+FILES := \
+    atapitest
+
+#MM- test : test-devices-ata
+#MM- test-quick : test-devices-ata-quick
+
+#MM test-devices-ata : includes linklibs
+
+%build_progs mmake=test-devices-ata \
+    files=$(FILES) targetdir=$(EXEDIR)
+
+%common

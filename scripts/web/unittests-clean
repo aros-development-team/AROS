@@ -1,0 +1,56 @@
+#!/bin/bash
+
+##############################################################################
+# Removes old unit test result files from the unittests output directory.
+# For each unique file prefix (matching the pattern <prefix>-<date>-unittests.html),
+# this script deletes all versions that are 30 days or more older than the
+# most recent one.
+
+#-- Configuration & Setup ----------------------------------------------------
+ROOT=/home/project-web/arosdev
+SRC=$ROOT/htdocs/unittests
+LOCK=$SRC.lock
+DAYS_KEEP=30
+
+umask 0002
+
+#-- Acquire Lock -------------------------------------------------------------
+aros/bin/lockfile -r 0 "$LOCK"
+if [[ $? != 0 ]]; then
+    echo Could not acquire lock. Aborting...
+    exit 1
+fi
+
+#-- Change to Source Directory ------------------------------------------------
+cd "$SRC" || { echo "Could not cd to $SRC. Aborting..."; rm -f "$LOCK"; exit 1; }
+
+#-- Process Files ------------------------------------------------------------
+for prefix in $(ls *-????????-unittests.html 2>/dev/null | sed -E 's/-[0-9]{8}-unittests\.html$//' | sort -u); do
+    echo "Processing prefix: $prefix"
+
+    # Find newest date for this prefix
+    newest_date=$(ls ${prefix}-????????-unittests.html | sed -E 's/.*-([0-9]{8})-unittests\.html/\1/' | sort -r | head -n1)
+    newest_epoch=$(date -d "$newest_date" +%s)
+
+    for file in ${prefix}-????????-unittests.html; do
+        file_date=$(echo "$file" | sed -E 's/.*-([0-9]{8})-unittests\.html/\1/')
+        file_epoch=$(date -d "$file_date" +%s)
+
+        if [[ -z "$file_epoch" || -z "$newest_epoch" ]]; then
+            echo "Skipping file with invalid date: $file"
+            continue
+        fi
+
+        age_days=$(( (newest_epoch - file_epoch) / 86400 ))
+
+        if [[ $age_days -gt $DAYS_KEEP ]]; then
+            echo "Deleting old file: $file (age: $age_days days from latest)"
+            rm -f "$file"
+        else
+            echo "Keeping recent file: $file (age: $age_days days from latest)"
+        fi
+    done
+done
+
+#-- Release Lock -------------------------------------------------------------
+rm -f "$LOCK"

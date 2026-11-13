@@ -1,0 +1,77 @@
+Short:        TextEditor custom class for MUI, V15.45
+Author:       TextEditor.mcc Open Source Team
+Uploader:     Jens Maus <mail@jens-maus.de>
+Type:         dev/mui
+Version:      15.45
+Replaces:     dev/mui/MCC_TextEditor-15.44.lha
+Requires:     AmigaOS 3.0+, MorphOS or AROS, MUI 3.8+, 68020+/PPC604e+
+Architecture: ppc-amigaos >= 4.0.0; m68k-amigaos >= 3.0; ppc-morphos >= 1.4.2; i386-aros; ppc-aros; x86_64-aros
+
+ABOUT TextEditor.mcc
+********************
+
+TextEditor.mcc is a multiline string gadget which offers most of the common
+features you can find in a typical text editor, but embedded in a MUI custom
+class. It is used by a wide range of well-known MUI based applications like
+YAM or SimpleMail as the main text editing gadget. Its main features are:
+
+- Text can be colored (limited syntax highlighting)
+- WYSIWYG for bold, italic and underline soft styles
+- Multi-level undo & redo
+- Lines with different alignments (left, right, centered)
+- Ability to insert thick or thin separators with an optional title
+- Easy marking either using the mouse or keyboard
+- Full clipboard support, offering very fast cut & paste routines
+- Light text highlighting for e-mail based on an opening ">" character
+- Support for external spellcheckers, including type'n'spell and word
+  guessing
+- Configurable keys, colors, cursor types, blink speed, and much more
+- Ability to have a bitmap as a background
+- Support for proportional fonts with floating word wrap, as well as
+  antialiased fonts
+- Pixel smooth scrolling
+- AREXX interface for scripted programming
+
+TextEditor is available for AmigaOS3, AmigaOS4, MorphOS and AROS.
+
+Manual Installation
+~~~~~~~~~~~~~~~~~~~
+1) Extract the archive to a temporary directory.
+
+   > cd RAM:
+   > lha x MCC_TextEditor.lha
+
+2) Go to the "MCC_TextEditor/Libs/MUI/<OS>" directory where <OS> is the directory
+   matching the operating system you want to install TextEditor.mcc for:
+
+   > cd MCC_TextEditor/Libs/MUI/AmigaOS4
+
+3) copy all #?.mcc and #?.mcp files found in that <OS> directory to the
+   global "MUI:libs/mui/" directory on your system partition:
+
+   > copy #?.mcc MUI:Libs/mui/
+   > copy #?.mcp MUI:Libs/mui/
+
+4) reboot and enjoy the new version ;)
+
+LEGALESE
+********
+
+TextEditor.mcc was originally written in 1997 and is Copyright (C) 1997-2000
+by Allan Odgaard. As of version 15.10, released in April 2005, the gadget is
+maintained and Copyright (C) 2005-2014 TextEditor.mcc Open Source Team.
+
+TextEditor.mcc is distributed under the GNU Lesser General Public License
+(LGPL) and the development is hosted at SourceForge.net:
+
+            http://sf.net/p/texteditor-mcc/
+
+Please consult the included "COPYING" file for more detailed information
+about the licensing of the gadget and its source code.
+
+
+CHANGES SINCE THE LAST RELEASE
+******************************
+
+Please refer to the included ChangeLog in the archive for a detailed information
+on the changes since the last public release.

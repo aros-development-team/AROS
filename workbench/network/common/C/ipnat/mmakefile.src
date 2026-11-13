@@ -1,0 +1,22 @@
+#
+# Makefile for ipnat (NAT rule management)
+
+include $(SRCDIR)/config/aros.cfg
+
+NOWARN_FLAGS := $(NOWARN_UNINITIALIZED) $(NOWARN_PARENTHESES)
+USER_CFLAGS := $(NOWARN_FLAGS)
+USER_CPPFLAGS := \
+    -D_GNU_SOURCE=1 \
+    -D__BSD_VISIBLE=1
+
+#MM- workbench-network-common-c : workbench-network-common-c-ipnat
+#MM workbench-network-common-c-ipnat : \
+#MM     network-includes \
+#MM     arostcp-linklibs-netlib \
+#MM     arostcp-linklibs-miami
+
+%build_prog mmake=workbench-network-common-c-ipnat \
+    progname=ipnat targetdir=$(AROS_C) \
+    files=ipnat uselibs="miami net"
+
+%common

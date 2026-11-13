@@ -1,0 +1,2 @@
+#!/bin/sh
+exec @cc@ -specs=@aros_sdk_path@/@cc_cpu@-aros/lib/gcc-lib/specs "$@" -static

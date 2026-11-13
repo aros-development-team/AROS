@@ -1,0 +1,12 @@
+include $(SRCDIR)/config/aros.cfg
+
+FILES := skeleton
+
+USER_CFLAGS := -DDEBUG=1
+
+##MM- workbench-printers: workbench-printers-skeleton
+
+%build_module_simple mmake=workbench-printers-skeleton modname=Skeleton \
+                     modtype=printer files="$(FILES)"
+
+%common

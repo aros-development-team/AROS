@@ -1,0 +1,8 @@
+include $(SRCDIR)/config/aros.cfg
+
+%build_archspecific \
+  mainmmake=kernel-partition modname=partition maindir=rom/partition \
+  arch=amiga-m68k incextra="$(SRCDIR)/rom/partition" \
+  files="partition_platform"
+
+%common

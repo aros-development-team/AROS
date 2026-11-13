@@ -1,0 +1,16 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+USER_LDFLAGS := -static
+
+FILES := storage_init storageclass storage_task storage_device storage_volumes
+STUBS := storage_stubs
+
+%build_module mmake=hidd-usb-classes-mstorage	\
+	modname=mstorage modtype=hidd		\
+	files="$(FILES)" moduledir=Classes/USB	\
+	uselibs="hiddstubs"
+
+%make_hidd_stubs hidd=mstorage
+
+%common

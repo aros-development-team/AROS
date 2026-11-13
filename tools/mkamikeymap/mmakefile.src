@@ -1,0 +1,27 @@
+include $(SRCDIR)/config/aros.cfg
+
+## Host build
+
+#MM- tools-mkkeymap: includes
+
+USER_INCLUDES := -I$(GENINCDIR)
+EXEDIR := $(dir $(MKAMIKEYMAP))
+FILES := mkamikeymap config parsedescriptor writekeymap
+
+# Workaround - in debug build, TARGET objcopy is used to add debug link, however mkamikeymap is a host-side program.
+# Triggered when cross-compiling armhf on x86_64
+tools-mkkeymap_STRIPDEBUG := no
+
+%build_prog mmake=tools-mkkeymap \
+    progname="$(notdir $(MKAMIKEYMAP))" targetdir=$(EXEDIR) \
+    files="$(FILES)" objdir="$(GENDIR)/$(CURDIR)/host" compiler=host
+
+#MM- contrib-development : tools-mkamikeymap
+#MM tools-mkamikeymap : includes linklibs
+
+EXEDIR := $(AROS_CONTRIB)/$(AROS_DIR_DEVELOPER)/Build
+
+%build_prog mmake=tools-mkamikeymap \
+    files="$(FILES)" progname="$(notdir $(MKAMIKEYMAP))" targetdir=$(EXEDIR)
+
+%common

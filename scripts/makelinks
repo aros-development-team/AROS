@@ -1,0 +1,45 @@
+#!/bin/sh
+# $0 from to filter
+
+scriptdir="`dirname $0`"
+
+from="$1"
+to="$2"
+if [ -z "$3" ]; then
+    tfilter="*"
+else
+    tfilter="$3"
+fi
+
+filter="`gawk 'BEGIN { \
+	str=ARGV[1]; \
+	gsub (/\\./, "\\\\.", str); \
+	gsub(/\\*/,".*",str); \
+	print str; \
+}' $tfilter`"
+
+echo -n "Creating links from $from/ to $to/ "
+
+noglob=1
+echo "$tfilter"
+unset noglob
+
+for direntry in $from/* ; do
+    entry="`basename $direntry`"
+    if [ -d $direntry ]; then
+	if [ "$entry" != "CVS" ]; then
+	    if [ ! -d "$to/$entry" ]; then
+		mkdir "$to/$entry"
+	    fi
+	    $0 "$direntry" "$to/$entry" "$tfilter"
+	fi
+    else
+	if echo "$entry" | egrep -q -e "$filter"; then
+	    rp="`$scriptdir/relpath $to $from`"
+	    #echo "Link $from/$entry to $to/$entry"
+	    #echo "Link $rp/$entry to $entry"
+	    ( cd $to ; rm -f $entry ; ln -s $rp/$entry $entry )
+	fi
+    fi
+done
+

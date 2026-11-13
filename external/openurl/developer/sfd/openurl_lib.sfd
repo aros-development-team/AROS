@@ -1,0 +1,30 @@
+==id $Id: openurl_lib.sfd,v 1.0 2009/05/16 21:13:59 noname Exp $
+==base _OpenURLBase
+==basetype struct Library *
+==libname openurl.library
+==bias 30
+==public
+==include <exec/types.h>
+ULONG URL_OpenA(STRPTR url, struct TagItem * tags) (a0,a1)
+==varargs
+ULONG URL_Open(STRPTR url, Tag last, ...) (a0,a1)
+struct URL_Prefs * URL_OldGetPrefs() ()
+void URL_OldFreePrefs(struct URL_Prefs * up) (a0)
+ULONG URL_OldSetPrefs(struct URL_Prefs * up, BOOL permanent) (a0,d0)
+struct URL_Prefs * URL_OldGetDefaultPrefs() ()
+ULONG URL_OldLaunchPrefsApp() ()
+==reserve 1
+struct URL_Prefs * URL_GetPrefsA(struct TagItem * tags) (a0)
+==varargs
+struct URL_Prefs * URL_GetPrefs(Tag last, ...) (a0)
+void URL_FreePrefsA(struct URL_Prefs * prefs, struct TagItem * tags) (a0,a1)
+==varargs
+void URL_FreePrefs(struct URL_Prefs * prefs, Tag last, ...) (a0,a1)
+ULONG URL_SetPrefsA(struct URL_Prefs * up, struct TagItem * tags) (a0,a1)
+==varargs
+ULONG URL_SetPrefs(struct URL_Prefs * up, Tag last, ...) (a0,a1)
+ULONG URL_LaunchPrefsAppA(struct TagItem * tags) (a0)
+==varargs
+ULONG URL_LaunchPrefsApp(Tag last, ...) (a0)
+ULONG URL_GetAttr(ULONG attr, ULONG * storage) (d0,a0)
+==end

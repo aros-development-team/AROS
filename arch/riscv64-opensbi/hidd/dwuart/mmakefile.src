@@ -1,0 +1,32 @@
+include $(SRCDIR)/config/aros.cfg
+
+#
+# Serial driver for a DesignWare APB UART.
+#
+# It is a 16550 with the registers spread out, so the class code is the
+# PC driver's with the port's layout - where it lives, how far apart its
+# registers sit, how wide an access has to be, what clocks it and which
+# interrupt source it raises - taken from the device tree instead of
+# being fixed.
+#
+
+FILES := dwuart_init SerialClass SerialUnitClass
+
+# The attribute bases live in the class's static data, so the ones
+# genmodule would otherwise declare are not wanted
+USER_CPPFLAGS := \
+               -D__OOP_NOATTRBASES__
+
+USER_INCLUDES := -I$(SRCDIR)/arch/riscv-all/linklibs/fdt/include
+
+# A kickstart module cannot auto-open stdc.library, so anything it needs
+# from libc has to come from the static one at link time
+USER_LDFLAGS := -static
+
+#MM kernel-hidd-dwuart : linklibs-fdt
+
+%build_module mmake=kernel-hidd-dwuart \
+    modname=dwuart modtype=hidd conffile=serial.conf \
+    files=$(FILES) uselibs="fdt hiddstubs"
+
+%common

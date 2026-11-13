@@ -1,0 +1,6 @@
+/boot/@arch.dir@/kernel.@pkg.fmt@
+/boot/@arch.dir@/aros-bsp.pkg.@pkg.fmt@
+/boot/@arch.dir@/aros-acpi.pkg.@pkg.fmt@
+/boot/aros-base.pkg.@pkg.fmt@
+/boot/aros-fs.pkg.@pkg.fmt@
+/boot/poseidon.pkg.@pkg.fmt@

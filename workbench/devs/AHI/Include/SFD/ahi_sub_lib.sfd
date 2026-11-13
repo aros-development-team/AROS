@@ -1,0 +1,39 @@
+==copyright Copyright © 1994-2005 Martin Blom
+==id $Id$
+==base _AHIsubBase
+==basetype struct Library *
+==libname ahi_sub.library
+==include <exec/types.h>
+==include <exec/libraries.h>
+==include <utility/tagitem.h>
+==include <libraries/ahi_sub.h>
+==bias 30
+==public
+
+* Functions for basic audio input and output
+ULONG AHIsub_AllocAudio(struct TagItem * tagList, struct AHIAudioCtrlDrv * AudioCtrl) (a1,a2)
+void AHIsub_FreeAudio(struct AHIAudioCtrlDrv * AudioCtrl) (a2)
+void AHIsub_Disable(struct AHIAudioCtrlDrv * AudioCtrl) (a2)
+void AHIsub_Enable(struct AHIAudioCtrlDrv * AudioCtrl) (a2)
+ULONG AHIsub_Start(ULONG Flags, struct AHIAudioCtrlDrv * AudioCtrl) (d0,a2)
+ULONG AHIsub_Update(ULONG Flags, struct AHIAudioCtrlDrv * AudioCtrl) (d0,a2)
+ULONG AHIsub_Stop(ULONG Flags, struct AHIAudioCtrlDrv * AudioCtrl) (d0,a2)
+
+* Functions for hardware acceleration
+ULONG AHIsub_SetVol(UWORD Channel, Fixed Volume, sposition Pan,
+	struct AHIAudioCtrlDrv * AudioCtrl, ULONG Flags) (d0,d1,d2,a2,d3)
+ULONG AHIsub_SetFreq(UWORD Channel, ULONG Freq, struct AHIAudioCtrlDrv * AudioCtrl,
+	ULONG Flags) (d0,d1,a2,d2)
+ULONG AHIsub_SetSound(UWORD Channel, UWORD Sound, ULONG Offset, LONG Length,
+	struct AHIAudioCtrlDrv * AudioCtrl, ULONG Flags) (d0,d1,d2,d3,a2,d4)
+ULONG AHIsub_SetEffect(APTR Effect, struct AHIAudioCtrlDrv * AudioCtrl) (a0,a2)
+ULONG AHIsub_LoadSound(UWORD Sound, ULONG Type, APTR Info, struct AHIAudioCtrlDrv * AudioCtrl) (d0,d1,a0,a2)
+ULONG AHIsub_UnloadSound(UWORD Sound, struct AHIAudioCtrlDrv * Audioctrl) (d0,a2)
+
+* Functions for driver queries
+IPTR AHIsub_GetAttr(ULONG Attribute, LONG Argument, IPTR DefValue, struct TagItem * tagList,
+	struct AHIAudioCtrlDrv * AudioCtrl) (d0,d1,d2,a1,a2)
+
+* Functions for controlling the analog mixer etc.
+LONG AHIsub_HardwareControl(ULONG Attribute, LONG Argument, struct AHIAudioCtrlDrv * AudioCtrl) (d0,d1,a2)
+==end

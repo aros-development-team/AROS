@@ -1,0 +1,26 @@
+# Copyright (C) 2004-2023, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+
+BASEICONS := Calculator HDToolBox InstallAROS Editor Commodities \
+         ShowConfig KeyShow InitPrinter PrintFiles GraphicDump
+ADDITIONALICONS := WiMP ScreenGrabber SysExplorer BoingIconBar
+
+#MM- iconset-GorillaSmall-wbench-icons-aros-clean : iconset-GorillaSmall-wbench-icons-aros-tools-clean
+#MM- iconset-GorillaSmall-additional-icons-aros-clean : iconset-GorillaSmall-additional-icons-aros-tools-clean
+#MM- iconset-GorillaSmall-wbench-icons-aros : iconset-GorillaSmall-wbench-icons-aros-tools
+#MM- iconset-GorillaSmall-additional-icons-aros : iconset-GorillaSmall-additional-icons-aros-tools
+
+%build_icons mmake=iconset-GorillaSmall-wbench-icons-aros-tools icons=$(BASEICONS) \
+             dir=$(AROS_TOOLS)
+
+%build_icons mmake=iconset-GorillaSmall-additional-icons-aros-tools icons=$(ADDITIONALICONS) \
+             dir=$(AROS_TOOLS)
+
+#MM- icons-wbench-tools : gorillasmall-icons-wbench-tools
+%build_icons mmake=gorillasmall-icons-wbench-tools icons=$(BASEICONS) \
+             dir=$(AROS_PRESETS)/Icons/Gorilla/Small/$(AROS_DIR_AROS)/$(AROS_DIR_TOOLS)
+
+#MM- icons-additional-wbench-tools : gorillasmall-icons-additional-wbench-tools
+%build_icons mmake=gorillasmall-icons-additional-wbench-tools icons=$(ADDITIONALICONS) \
+             dir=$(AROS_PRESETS)/Icons/Gorilla/Small/$(AROS_DIR_AROS)/$(AROS_DIR__TOOLS)

@@ -1,0 +1,122 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+FILES := \
+	directory \
+	dostohandlerinterface \
+	disk \
+	endian \
+	init \
+	diskchange \
+	volume \
+	allocation \
+	lock \
+	anodes \
+	format \
+	lru \
+	update \
+	CheckAccess \
+	messages \
+	boot \
+	assroutines \
+	resethandler \
+	fsresource
+
+PFS3_CFLAGS := \
+	-DEXTRAPACKETS=1 \
+	-DSIZEFIELD \
+	-DDELDIR=1 \
+	-DMAX_BUFFERS=600 \
+	-DMIN_BUFFERS=10 \
+	-DMULTIUSER=1 \
+	-DMU_CHECKDIR=1 \
+	-DPROTECTION=0 \
+	-DVERSION23=1 \
+	-DROLLOVER=1 \
+	-DTD64=1 \
+	-DNSD=1 \
+	-DSCSIDIRECT=1 \
+	-DTRACKDISK=1 \
+	-DUNSAFEQUIT=1 \
+	-DLARGE_FILE_SIZE=1 \
+	-DEXTENDED_PACKETS_MORPHOS=1 \
+	-DEXTENDED_PACKETS_OS4=1 \
+	-DLIMIT_MAXTRANSFER=0x1fe00
+
+PFS3DS_CFLAGS := \
+	-DEXTRAPACKETS=1 \
+	-DSIZEFIELD \
+	-DDELDIR=1 \
+	-DMAX_BUFFERS=600 \
+	-DMIN_BUFFERS=10 \
+	-DMULTIUSER=1 \
+	-DMU_CHECKDIR=1 \
+	-DPROTECTION=0 \
+	-DVERSION23=1 \
+	-DROLLOVER=1 \
+	-DTD64=0 \
+	-DNSD=0 \
+	-DSCSIDIRECT=1 \
+	-DTRACKDISK=1 \
+	-DUNSAFEQUIT=1 \
+	-DLARGE_FILE_SIZE=1 \
+	-DEXTENDED_PACKETS_MORPHOS=1 \
+	-DEXTENDED_PACKETS_OS4=1 \
+	-DLIMIT_MAXTRANSFER=0x1fe00
+
+USER_INCLUDES := \
+    -I$(SRCDIR)/rom/devs/filesys/pfs3/fs
+# The pfs3 sources predate C23 (e.g. they typedef their own bool) and
+# rely on int/pointer conversions that GCC 14 rejects by default.
+USER_CFLAGS := $(CFLAGS_GNU11) $(NOERROR_INT_CONVERSION) $(NOERROR_INCOMPAT_POINTER_TYPES)
+USER_CPPFLAGS := \
+    -DAROS_KERNEL $(PFS3_CFLAGS) -DMIN_LIB_VERSION=36 \
+	-DREVDATE="\"$(shell date '+%d.%m.%Y')\""
+
+USER_LDFLAGS += --static
+
+#MM- kernel-fs-pfs3 : kernel-security-includes
+#MM- kernel-fs-pfs3ds : kernel-security-includes
+
+%build_module mmake=kernel-fs-pfs3 \
+    modname=pfs3 modtype=handler \
+    files="$(FILES)" objdir=$(OBJDIR)/pfs3
+
+USER_CPPFLAGS := \
+    -DAROS_KERNEL $(PFS3DS_CFLAGS) -DMIN_LIB_VERSION=36 \
+	-DREVDATE="\"$(shell date '+%d.%m.%Y')\""
+
+%build_module mmake=kernel-fs-pfs3ds \
+    modname=pfs3ds modtype=handler \
+    files="$(FILES)" objdir=$(OBJDIR)/pfs3ds
+
+
+
+KS13STUFF := \
+    -DKS13WRAPPER \
+    -DMIN_LIB_VERSION=0 \
+	-D__DOS_LIBAPI__=34 \
+	-D__EXEC_LIBAPI__=34 \
+	-D__UTILITY_LIBAPI__=34 \
+	-D__INTUITION_LIBAPI__=34 \
+	-D__GRAPHICS_LIBAPI__=34 \
+	-DDISK_BASED_FILESYSTEM=1
+
+USER_CPPFLAGS := \
+	-DAROS_NOLIBREQ \
+    -DAROS_KERNEL $(PFS3_CFLAGS) $(KS13STUFF) \
+	-DREVDATE="\"$(shell date '+%d.%m.%Y')\""
+
+USER_AFLAGS := \
+	-I$(GENDIR)/include
+
+%build_archspecific mainmmake=kernel-fs-pfs3-aio \
+    maindir=$(CURDIR)/pfs3-aio arch=$(AROS_TARGET_CPU) \
+    asmfiles="$(AROS_TARGET_CPU)/stackswap"
+
+%build_module mmake=kernel-fs-pfs3-aio \
+    modname=pfs3_aio modtype=handler \
+    files="$(FILES) ks13wrapper" \
+    objdir=$(OBJDIR)/pfs3-aio
+
+%common

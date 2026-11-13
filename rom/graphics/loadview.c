@@ -1,0 +1,69 @@
+/*
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
+
+    Desc: Graphics function LoadView()
+*/
+
+#include <aros/debug.h>
+#include <graphics/view.h>
+
+#include "graphics_intern.h"
+#include "graphics_driver.h"
+#include "graphics_display.h"
+#include "gfxfuncsupport.h"
+/*****************************************************************************
+
+    NAME */
+#include <proto/graphics.h>
+
+        AROS_LH1(void, LoadView,
+
+/*  SYNOPSIS */
+        AROS_LHA(struct View *, view, A1),
+
+/*  LOCATION */
+        struct GfxBase *, GfxBase, 37, Graphics)
+
+/*  FUNCTION
+        Display a new view
+
+    INPUTS
+        view - pointer to the View structure which contains the pointer to the
+               constructed coprocessor instructions list, or NULL
+
+    RESULT
+        None.
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+    HISTORY
+
+
+******************************************************************************/
+{
+    AROS_LIBFUNC_INIT
+
+    ObtainSemaphore(GfxBase->ActiViewCprSemaphore);
+
+    if(GfxBase->ActiView != view || view != NULL) {
+        GfxBase->ActiView = view;
+        /*
+         * Reload an active View after MakeVPort(), but preserve the classic
+         * no-op behavior of repeated LoadView(NULL) calls used by programs
+         * which take over the chipset directly.
+         */
+        DoViewFunction(view, display_LoadViewPorts, GfxBase);
+    }
+
+    ReleaseSemaphore(GfxBase->ActiViewCprSemaphore);
+
+    AROS_LIBFUNC_EXIT
+} /* LoadView */

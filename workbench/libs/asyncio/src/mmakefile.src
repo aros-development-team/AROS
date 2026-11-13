@@ -1,0 +1,32 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+FUNCS := \
+    CloseAsync \
+    OpenAsync \
+    OpenAsyncFH \
+    OpenAsyncFromFH \
+    PeekAsync \
+    ReadAsync \
+    ReadCharAsync \
+    ReadLineAsync \
+    RecordAsyncFailure \
+    RequeuePacket \
+    SeekAsync \
+    SendPacket \
+    WaitPacket \
+    WriteAsync \
+    WriteCharAsync \
+    WriteLineAsync \
+    FGetsLenAsync
+
+#MM workbench-libs-asyncio-includes : \
+#MM    kernel-exec-includes \
+#MM    includes-copy
+#MM workbench-libs-asyncio : linklibs
+
+%build_module mmake=workbench-libs-asyncio \
+    modname=asyncio modtype=library \
+    files="$(FUNCS)" uselibs=stdc
+
+%common

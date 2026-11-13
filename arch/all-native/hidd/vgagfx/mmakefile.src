@@ -1,0 +1,19 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM kernel-hidd-vgagfx : kernel-hidd-gfx-includes
+
+FILES := \
+        vgagfx_init \
+        vgagfx_hiddclass \
+        vgagfx_displayclass \
+        vgagfx_support \
+        vgagfx_bitmapclass
+
+USER_LDFLAGS := -static
+
+%build_module mmake=kernel-hidd-vgagfx \
+  modname=vgagfx modtype=hidd \
+  files=$(FILES) uselibs=acpica
+
+%common

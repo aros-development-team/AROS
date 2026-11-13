@@ -1,0 +1,48 @@
+/*
+    Copyright (C) 2026, The AROS Development Team. All rights reserved.
+
+    Desc: Reaction fuelgauge.gadget - Internal definitions
+*/
+
+#ifndef FUELGAUGE_INTERN_H
+#define FUELGAUGE_INTERN_H
+
+#include <exec/types.h>
+#include <intuition/intuition.h>
+#include <intuition/classes.h>
+#include <intuition/gadgetclass.h>
+#include <gadgets/fuelgauge.h>
+
+#ifdef __AROS__
+#include <aros/debug.h>
+#endif
+
+#include LC_LIBDEFS_FILE
+
+#include <exec/libraries.h>
+
+/* Module library base with stored class pointer */
+struct FuelGaugeBase_intern
+{
+    struct Library lib;
+    Class *rc_Class;
+    struct Library *rc_BevelBase;
+};
+
+#define G(obj)  ((struct Gadget *)(obj))
+
+struct FuelGaugeData
+{
+    LONG            fgd_Level;          /* Current level value */
+    LONG            fgd_Min;            /* Minimum value */
+    LONG            fgd_Max;            /* Maximum value */
+    ULONG           fgd_Orientation;    /* Horizontal or vertical */
+    UWORD           fgd_Ticks;          /* Number of major tick marks */
+    UWORD           fgd_ShortTicks;     /* Number of minor tick marks */
+    BOOL            fgd_Percent;        /* Show percentage text */
+    ULONG           fgd_Justification;  /* Text justification */
+    BOOL            fgd_3DProp;         /* cap_3DProp snapshot */
+    Object         *fgd_BevelImage;     /* Cached recessed bevel */
+};
+
+#endif /* FUELGAUGE_INTERN_H */

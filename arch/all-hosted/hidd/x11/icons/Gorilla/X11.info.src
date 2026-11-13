@@ -1,0 +1,4 @@
+TYPE  = TOOL
+STACK = 8192
+TOOLTYPE = "STARTPRI=128"
+TOOLTYPE = "(KEYMAP=<your-keymap-file>)"

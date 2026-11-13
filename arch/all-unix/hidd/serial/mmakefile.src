@@ -1,0 +1,14 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+FILES       := SerialClass SerialUnitClass #unix_funcs
+
+USER_CPPFLAGS := -DAROS_ARCHITECTURE="\"$(AROS_TARGET_PLATFORM)\""
+USER_INCLUDES := -isystem $(GENINCDIR) $(KERNEL_INCLUDES)
+
+%build_module mmake=workbench-hidd-unix-serial \
+  modname=serial modtype=hidd \
+  files=$(FILES)
+
+
+#MM workbench-hidd-unix-serial : kernel-unixio

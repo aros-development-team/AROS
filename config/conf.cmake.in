@@ -1,0 +1,41 @@
+#
+# The Following Flags are handled in make-cmake.tmpl's build_with_cmake macros.
+#
+# CMAKE_C_FLAGS
+# CMAKE_CXX_FLAGS
+# CMAKE_EXE_LINKER_FLAGS
+#
+# AROS configuration...
+#
+SET(CMAKE_SYSTEM_NAME AROS)
+SET(CMAKE_SYSTEM_VERSION 1)
+SET(CMAKE_SYSTEM_PROCESSOR @aros_target_cpu@)
+SET(BUILD_SHARED_LIBS OFF)
+SET(LIBTYPE STATIC)
+IF(NOT DEFINED CMAKE_BUILD_TYPE)
+  SET(CMAKE_BUILD_TYPE Release CACHE STRING "Debug|Release|RelWithDebInfo|MinSizeRel")
+ENDIF()
+SET(CMAKE_FIND_ROOT_PATH @AROS_BUILDDIR@/bin/@aros_target_arch@-@aros_target_cpu@@aros_target_suffix@/AROS/Developer)
+SET(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
+SET(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
+SET(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
+SET(CMAKE_SYSTEM_PROCESSOR @aros_target_cpu@)
+SET(CMAKE_AR @aros_plain_ar@ CACHE FILEPATH "Archiver")
+
+# CMAKE_SYSROOT works only from CMake 3.0, hack below for older versions
+SET(CMAKE_SYSROOT @AROS_BUILDDIR@/bin/@aros_target_arch@-@aros_target_cpu@@aros_target_suffix@/AROS/Developer)
+SET(CMAKE_C_FLAGS "--sysroot ${CMAKE_SYSROOT} ${CMAKE_C_FLAGS}" CACHE STRING "" FORCE)
+SET(CMAKE_CXX_FLAGS "--sysroot ${CMAKE_SYSROOT} ${CMAKE_CXX_FLAGS}" CACHE STRING "" FORCE)
+
+IF(NOT CMAKE_C_COMPILER)
+  SET(CMAKE_C_COMPILER @aros_target_cc@)
+  SET(CMAKE_C_COMPILER_WORKS:INTERNAL TRUE)
+ENDIF()
+IF(NOT CMAKE_CXX_COMPILER)
+  SET(CMAKE_CXX_COMPILER @aros_target_cxx@)
+  SET(CMAKE_CXX_COMPILER_WORKS:INTERNAL TRUE)
+ENDIF()
+SET(CMAKE_MODULE_PATH "@SRCDIR@/config/cmake" ${CMAKE_MODULE_PATH}) # For AROS FindPackage scripts
+SET(CMAKE_CROSS_COMPILING ON) # Workaround for http://www.cmake.org/Bug/view.php?id=14075
+SET(CMAKE_CROSSCOMPILING ON)
+# SET(PKG_CONFIG_EXECUTABLE )

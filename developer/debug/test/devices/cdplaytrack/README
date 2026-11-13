@@ -1,0 +1,24 @@
+Copyright (C) 2026, The AROS Development Team. All rights reserved.
+
+Build test-devices-cdplaytrack or test-devices-cdplaytrack-quick. The native Amiga CD
+device test group selects this regression. Run devices/cdplaytrack/cdplaytracktest
+with an audio track numbered 2 present. The test checks ordinary and
+upper-word-contaminated track/count fields, asynchronous playback, CD_INFO,
+and rejection of counts whose low word is zero.
+
+A disposable fixture can be generated from the repository root:
+
+    python3 developer/debug/test/devices/cd/readahead/make_disc.py /tmp/cd-word-data.iso
+    python3 - <<'PYTHON'
+    from pathlib import Path
+    Path('/tmp/cd-word-audio.bin').write_bytes(bytes(2352 * 75 * 20))
+    Path('/tmp/cd-word.cue').write_text(
+        'FILE "cd-word-data.iso" BINARY\n'
+        '  TRACK 01 MODE1/2048\n    INDEX 01 00:00:00\n'
+        'FILE "cd-word-audio.bin" BINARY\n'
+        '  TRACK 02 AUDIO\n    INDEX 01 00:00:00\n')
+    PYTHON
+
+Mount /tmp/cd-word.cue in a stock CD32. Its silent audio track is sufficient:
+the assertions inspect public playback state, not subjective sound output.
+No game image is required. Exit 0 means all checks passed; failures return 20.

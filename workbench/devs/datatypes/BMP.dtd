@@ -1,0 +1,10 @@
+# DataType Description for BMP
+Name=BMP
+Version=$VER: BMP 41.1 (29.1.2015)
+BaseName=bmp
+Pattern=#?
+Mask='B' 'M' ANY ANY ANY ANY ANY ANY ANY ANY ANY ANY ANY ANY ANY 0x00 0x00 0x00
+GroupID=pict
+ID=_bmp
+Flags=DTF_BINARY,DTF_CASE
+Priority=0

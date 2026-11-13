@@ -1,0 +1,62 @@
+/*
+    Copyright (C) 2025, The AROS Development Team. All rights reserved.
+
+    Desc: C99 function sqrt
+*/
+
+#include <math.h>
+#include <errno.h>
+#include <fenv.h>
+
+#include <math_private.h>
+
+/*****************************************************************************
+
+    NAME */
+#include <math.h>
+
+        double sqrt(
+
+/*  SYNOPSIS */
+        double x)
+
+/*  FUNCTION
+        Computes the square root of x.
+
+    INPUTS
+        x - input value (must be non-negative).
+
+    RESULT
+        Returns vx.
+        Returns NaN and sets errno to EDOM if x < 0.
+
+    NOTES
+        Uses IEEE 754 semantics.
+
+    EXAMPLE
+        double val = sqrt(4.0);  // returns 2.0
+
+    BUGS
+        None known.
+
+    SEE ALSO
+        cbrt(), hypot()
+
+    INTERNALS
+        Forwards to __ieee754_sqrt() with domain and error handling.
+
+******************************************************************************/
+{
+    FORWARD_IF_NAN_OR_INF(sqrt, x);
+    if (x < 0.0) {
+        STDC_SETMATHERRNO(EDOM)
+        STDC_RAISEMATHEXCPT(FE_INVALID)
+        return NAN;
+    }
+    return __ieee754_sqrt(x);
+}
+
+#if LDBL_MANT_DIG == DBL_MANT_DIG
+AROS_MAKE_ASM_SYM(typeof(sqrtl), sqrtl, AROS_CSYM_FROM_ASM_NAME(sqrtl), AROS_CSYM_FROM_ASM_NAME(sqrt));
+AROS_EXPORT_ASM_SYM(AROS_CSYM_FROM_ASM_NAME(sqrtl));
+#endif

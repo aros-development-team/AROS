@@ -1,0 +1,743 @@
+# Translation catalog description file (pot-style)
+# $Id: swedish.po 954 2014-04-05 11:31:14Z damato $
+# 
+# version 2
+# Translators:
+msgid ""
+msgstr ""
+"Project-Id-Version: MCC TextEditor\n"
+"Report-Msgid-Bugs-To: http://sf.net/p/texteditor-mcc/\n"
+"POT-Creation-Date: 2014-02-23 12:29+0100\n"
+"PO-Revision-Date: 2014-04-02 14:52+0000\n"
+"Last-Translator: tboeckel <tboeckel@gmx.de>\n"
+"Language-Team: Swedish (http://www.transifex.com/projects/p/texteditor-mcc/language/sv/)\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Catalog-Name: TextEditor_mcp\n"
+"Language: sv\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+msgctxt "MSG_HelpBubble_BlockQual (0//)"
+msgid ""
+"Move the cursor key and hold down the qualifier\n"
+"that you set here to mark text."
+msgstr "Håll nere tangenten som du har valt här\noch flytta markören för att markera text."
+
+msgctxt "MSG_HelpBubble_CheckWord (1//)"
+msgid ""
+"If enabled, then the editor will lookup the word,\n"
+"and only show suggestions if the word is misspelled."
+msgstr "Om denna funktion är påslagen, kommer editorn att\nkontrollera ordet och visa förslag men endast\nom ordet är felstavat."
+
+msgctxt "MSG_HelpBubble_Smooth (2//)"
+msgid "This enables pixel smooth scrolling."
+msgstr "Detta aktiverar bildpunktsjämn rullning."
+
+msgctxt "MSG_HelpBubble_TypeNSpell (3//)"
+msgid ""
+"Enable this to let the editor\n"
+"lookup the words while you type them."
+msgstr "Aktivera detta, för att låta editorn\nkontrollera orden medan du skriver dem."
+
+msgctxt "MSG_HelpBubble_UndoLevel (4//)"
+msgid ""
+"Each undo level eats up 10 bytes of memory.\n"
+"Cut and copy will take a little more,\n"
+"depending on the size of the block you\n"
+"are cutting or copying."
+msgstr "Varje ångernivå kräver 10 byte minne.\nKlipp ut och Kopiera kräver lite mera,\nberoende på storleken på den markerade\ntexten som du klipper ut eller kopierar."
+
+msgctxt "MSG_Button_DefaultKeys (5//)"
+msgid "Default _keys"
+msgstr "_Standardknappar"
+
+msgctxt "MSG_Button_Delete (6//)"
+msgid "_Delete"
+msgstr "_Ta bort"
+
+msgctxt "MSG_Button_Insert (7//)"
+msgid "_Insert"
+msgstr "_Lägg till"
+
+msgctxt "MSG_ConfigMenu_CheckWord (8//)"
+msgid "Check word"
+msgstr "Kontrollera ord"
+
+msgctxt "MSG_ConfigMenu_TypeNSpell (9//)"
+msgid "Type'n'spell"
+msgstr "Skriv och kontrollera"
+
+msgctxt "MSG_CycleItem_Alt (10//)"
+msgid "Alt"
+msgstr "Alt"
+
+msgctxt "MSG_CycleItem_Ctrl (11//)"
+msgid "Control"
+msgstr "Kontroll"
+
+msgctxt "MSG_CycleItem_Mouse (12//)"
+msgid "(mouse only)"
+msgstr "(endast mus)"
+
+msgctxt "MSG_CycleItem_Shift (13//)"
+msgid "Shift"
+msgstr "Shift"
+
+msgctxt "MSG_Execution_ARexx (14//)"
+msgid "ARexx"
+msgstr "ARexx"
+
+msgctxt "MSG_Execution_CLI (15//)"
+msgid "CLI"
+msgstr "CLI"
+
+msgctxt "MSG_Function_BOL (16//)"
+msgid "Beginning of line"
+msgstr "Början av rad"
+
+msgctxt "MSG_Function_Backspace (17//)"
+msgid "Backspace"
+msgstr "Baksteg"
+
+msgctxt "MSG_Function_Bottom (18//)"
+msgid "Bottom"
+msgstr "Nederst"
+
+msgctxt "MSG_Function_Copy (19//)"
+msgid "Copy"
+msgstr "Kopiera"
+
+msgctxt "MSG_Function_Cut (20//)"
+msgid "Cut"
+msgstr "Klipp ut"
+
+msgctxt "MSG_Function_DelBOL (21//)"
+msgid "Delete to BOL"
+msgstr "Radera till början av raden"
+
+msgctxt "MSG_Function_DelBOW (22//)"
+msgid "Delete to BOW"
+msgstr "Radera till början av ordet"
+
+msgctxt "MSG_Function_DelEOL (23//)"
+msgid "Delete to EOL"
+msgstr "Radera till slutet av raden"
+
+msgctxt "MSG_Function_DelEOW (24//)"
+msgid "Delete to EOW"
+msgstr "Radera till slutet av ordet"
+
+msgctxt "MSG_Function_Delete (25//)"
+msgid "Delete"
+msgstr "Radera"
+
+msgctxt "MSG_Function_Down (26//)"
+msgid "Down"
+msgstr "Ner"
+
+msgctxt "MSG_Function_EOL (27//)"
+msgid "End of line"
+msgstr "Slutet av raden"
+
+msgctxt "MSG_Function_Left (28//)"
+msgid "Left"
+msgstr "Vänster"
+
+msgctxt "MSG_Function_NextGadget (29//)"
+msgid "Next gadget"
+msgstr "Nästa knapp"
+
+msgctxt "MSG_Function_NxtPage (30//)"
+msgid "Next page"
+msgstr "Nästa sida"
+
+msgctxt "MSG_Function_NxtPara (31//)"
+msgid "Next paragraph"
+msgstr "Nästa paragraf"
+
+msgctxt "MSG_Function_NxtSent (32//)"
+msgid "Next sentence"
+msgstr "Nästa mening"
+
+msgctxt "MSG_Function_NxtWord (33//)"
+msgid "Next word"
+msgstr "Nästa ord"
+
+msgctxt "MSG_Function_Paste (34//)"
+msgid "Paste"
+msgstr "Klistra in"
+
+msgctxt "MSG_Function_PrvPage (35//)"
+msgid "Prev page"
+msgstr "Föregående sida"
+
+msgctxt "MSG_Function_PrvPara (36//)"
+msgid "Prev paragraph"
+msgstr "Föregående paragraf"
+
+msgctxt "MSG_Function_PrvSent (37//)"
+msgid "Prev sentence"
+msgstr "Föregående mening"
+
+msgctxt "MSG_Function_PrvWord (38//)"
+msgid "Prev word"
+msgstr "Föregående ord"
+
+msgctxt "MSG_Function_Redo (39//)"
+msgid "Redo"
+msgstr "Gör om"
+
+msgctxt "MSG_Function_Return (40//)"
+msgid "Return"
+msgstr "Retur"
+
+msgctxt "MSG_Function_Right (41//)"
+msgid "Right"
+msgstr "Höger"
+
+msgctxt "MSG_Function_SuggestSpelling (42//)"
+msgid "Suggest spelling"
+msgstr "Föreslå stavning"
+
+msgctxt "MSG_Function_Tab (43//)"
+msgid "Tab"
+msgstr "Tab"
+
+msgctxt "MSG_Function_Top (44//)"
+msgid "Top"
+msgstr "Överst"
+
+msgctxt "MSG_Function_Undo (45//)"
+msgid "Undo"
+msgstr "Ångra"
+
+msgctxt "MSG_Function_Up (46//)"
+msgid "Up"
+msgstr "Upp"
+
+msgctxt "MSG_GroupTitle_Control (47//)"
+msgid "Control"
+msgstr "Kontroll"
+
+msgctxt "MSG_GroupTitle_Cursor (48//)"
+msgid "Cursor"
+msgstr "Markör"
+
+msgctxt "MSG_GroupTitle_Design (49//)"
+msgid "Design"
+msgstr "Design"
+
+msgctxt "MSG_GroupTitle_Fonts (50//)"
+msgid "Fonts"
+msgstr "Typsnitt"
+
+msgctxt "MSG_GroupTitle_Separator (51//)"
+msgid "Separator"
+msgstr "Skiljelinje"
+
+msgctxt "MSG_HelpTxt_SpellChecker (52//)"
+msgid ""
+" \\33u Intro \\33n\n"
+"\n"
+"The TextEditor gadget allows for easy integration of external spell checkers, making it possible to have both type'n'spell and also normal word guessing.\n"
+"\n"
+" \\33u Lookup command \\33n\n"
+"\n"
+"For the type'n'spell you'll have to set the lookup command to a script that will lookup the word and set the environment variable \"Found\" to either 0 (for not found) or 1 (for a match). This matches the default behaviour of AlphaSpell.\n"
+"\n"
+"You write %s where you want the word. If you use AlphaSpell, then you can use:\n"
+"\n"
+"\\33bARexx:\\33n \"Options Results;Address ALPHASPELL Search For '%s' Path 'T:' Danish.ald\"\n"
+"\n"
+"You \\33bmust\\33n remember the quotes, this will let ARexx execute it as a command instead of a script.\n"
+"\n"
+" \\33u Suggest command \\33n\n"
+"\n"
+"If you press <HELP> over a word, then the editor will launch this command, again with %s substituted with the current word.\n"
+"Your script should produce a file in T: named \"Matches\". This file is then read by the gadget, and the contents are listed in a popup listview, from where you can choose a word which will replace the misspelled one. Again, AlphaSpell users can use:\n"
+"\n"
+"\\33bARexx:\\33n \"Options Results;Address ALPHASPELL Match '%s' To 'T:Matches' Path 'T:' Danish.ald\"\n"
+"\n"
+"If you use the methods described above, then you must start AlphaSpell with the \"ARexx\" switch.\n"
+"\n"
+"It is advised to keep your dictionary in RAM if you enable the type'n'spell feature."
+msgstr " \\33u Inledning \\33n\n\nTextEditor-funktionen erbjuder en enkel integration med externa stavningskontroller, vilket tillåter dig att använda både kontrollera-medan-du-skriver funktionen samt normal ordgissning.\n\n \\33u Kontrollera kommandot \\33n\n\nFör att använda kontrollera-medan-du-skriver funktionen, måste du ställa in kontrollera-kommandot att peka på ett skript som kontrollerar ordet och ställer in den globala variabeln \"Found\" till endera 0 (för inte funnen) eller 1 (för funnen). Detta matchar förfarandet i AlphaSpell.\n\nDu skriver %s där du vill ha ordet. Om du använder AlphaSpell kan du skriva:\n\n\\33bARexx:\\33n \"Options Results;Address ALPHASPELL Search For '%s' Path 'T:' Danish.ald\"\n\nDu \\33bmåste\\33n komma ihåg citationstecknen. De säger till ARexx att exekvera raden som ett kommando istället för som ett skript.\n\n \\33u Föreslå-kommandot \\33n\n\nOm du trycker på HELP-tangenten när du står på ett ord, kommer editorn att exekvera detta kommando, återigen med %s ersatt med det aktuella ordet.\nDitt skript kommer att skapa en fil i T: med namnet \"Matches\". Denna fil läses sedan och innehållet visas i en popup-listvy, varifrån du kan välja det ord som ska ersätta det felstavade ordet. AlphaSpell-användare kan skriva:\n\n\\33bARexx:\\33n \"Options Results;Address ALPHASPELL Match '%s' To 'T:Matches' Path 'T:' Danish.ald\"\n\nOm du använder dig av metoderna beskrivna ovan, måste du starta AlphaSpell med \"ARexx\"-parametern.\n\nDet är rekommenderat att du placerar ordlistan i RAM: om du har kontrollera-medan-du-skriver funktionen påslagen."
+
+msgctxt "MSG_LVLabel_Action (53//)"
+msgid "\\33c\\0333Action:"
+msgstr "\\33c\\0333Kommando:"
+
+msgctxt "MSG_LVLabel_Key (54//)"
+msgid "\\33c\\0333Key:"
+msgstr "\\33c\\0333Tangent:"
+
+msgctxt "MSG_Label_Background (55//)"
+msgid "Background"
+msgstr "Bakgrund"
+
+msgctxt "MSG_Label_BlinkSpeed (56//)"
+msgid "Blinkspeed"
+msgstr "Blinkhastighet"
+
+msgctxt "MSG_Label_BlkQual (57//)"
+msgid "Block qualifier"
+msgstr "Markeringskombination"
+
+msgctxt "MSG_Label_Cursor (58//)"
+msgid "Normal"
+msgstr "Normal"
+
+msgctxt "MSG_Label_Fixed (59//)"
+msgid "Fixed"
+msgstr "Bestämt"
+
+msgctxt "MSG_Label_Frame (60//)"
+msgid "Frame"
+msgstr "Ram"
+
+msgctxt "MSG_Label_Highlight (61//)"
+msgid "Highlight"
+msgstr "Markera"
+
+msgctxt "MSG_Label_LookupCmd (62//)"
+msgid "Lookup command"
+msgstr "Kontrollera-kommando"
+
+msgctxt "MSG_Label_LookupWords (63//)"
+msgid "Lookup word before suggesting?"
+msgstr "Kontrollera ordet innan förslag på andra ord ges?"
+
+msgctxt "MSG_Label_Normal (64//)"
+msgid "Normal"
+msgstr "Normalt"
+
+msgctxt "MSG_Label_Selected (65//)"
+msgid "Selected"
+msgstr "Markerad"
+
+msgctxt "MSG_Label_SeparatorShadow (66//)"
+msgid "Shadow"
+msgstr "Skugga"
+
+msgctxt "MSG_Label_SeparatorShine (67//)"
+msgid "Shine"
+msgstr "Sken"
+
+msgctxt "MSG_Label_Smooth (68//)"
+msgid "Smooth"
+msgstr "Utjämna"
+
+msgctxt "MSG_Label_SpellNType (69//)"
+msgid "Spell check as you type?"
+msgstr "Kontrollera stavning medan du skriver?"
+
+msgctxt "MSG_Label_SuggestCmd (70//)"
+msgid "Suggest command"
+msgstr "Föreslå-kommando"
+
+msgctxt "MSG_Label_TabSize (71//)"
+msgid "Tab size"
+msgstr "Tab-storlek"
+
+msgctxt "MSG_Label_Text (72//)"
+msgid "Text"
+msgstr "Text"
+
+msgctxt "MSG_Label_UndoLevel (73//)"
+msgid "Undo levels"
+msgstr "Ångernivåer"
+
+msgctxt "MSG_Label_Width (74//)"
+msgid "Width"
+msgstr "Bredd"
+
+msgctxt "MSG_MenuItem_Background (75//)"
+msgid "Background"
+msgstr "Bakgrund"
+
+msgctxt "MSG_MenuItem_Bold (76//)"
+msgid "Bold"
+msgstr "Fet"
+
+msgctxt "MSG_MenuItem_Center (77//)"
+msgid "Center"
+msgstr "Mitten"
+
+msgctxt "MSG_MenuItem_Copy (78//)"
+msgid "Copy"
+msgstr "Kopiera"
+
+msgctxt "MSG_MenuItem_Cut (79//)"
+msgid "Cut"
+msgstr "Klipp ut"
+
+msgctxt "MSG_MenuItem_Delete (80//)"
+msgid "Delete"
+msgstr "Radera"
+
+msgctxt "MSG_MenuItem_Fill (81//)"
+msgid "Fill"
+msgstr "Fyll"
+
+msgctxt "MSG_MenuItem_Halfshadow (82//)"
+msgid "Halfshadow"
+msgstr "Halvskugga"
+
+msgctxt "MSG_MenuItem_Halfshine (83//)"
+msgid "Halfshine"
+msgstr "Halvsken"
+
+msgctxt "MSG_MenuItem_Italic (84//)"
+msgid "Italic"
+msgstr "Kursiv"
+
+msgctxt "MSG_MenuItem_Left (85//)"
+msgid "Left"
+msgstr "Vänster"
+
+msgctxt "MSG_MenuItem_Mark (86//)"
+msgid "Mark"
+msgstr "Markera"
+
+msgctxt "MSG_MenuItem_Normal (87//)"
+msgid "Normal"
+msgstr "Normal"
+
+msgctxt "MSG_MenuItem_Paste (88//)"
+msgid "Paste"
+msgstr "Klistra in"
+
+msgctxt "MSG_MenuItem_Redo (89//)"
+msgid "Redo"
+msgstr "Gör om"
+
+msgctxt "MSG_MenuItem_Right (90//)"
+msgid "Right"
+msgstr "Höger"
+
+msgctxt "MSG_MenuItem_Shadow (91//)"
+msgid "Shadow"
+msgstr "Skugga"
+
+msgctxt "MSG_MenuItem_Shine (92//)"
+msgid "Shine"
+msgstr "Sken"
+
+msgctxt "MSG_MenuItem_Text (93//)"
+msgid "Text"
+msgstr "Text"
+
+msgctxt "MSG_MenuItem_Underline (94//)"
+msgid "Underline"
+msgstr "Understruken"
+
+msgctxt "MSG_MenuItem_Undo (95//)"
+msgid "Undo"
+msgstr "Ångra"
+
+msgctxt "MSG_MenuSubTitle_Alignment (96//)"
+msgid "Alignment"
+msgstr "Justering"
+
+msgctxt "MSG_MenuSubTitle_Color (97//)"
+msgid "Color"
+msgstr "Färg"
+
+msgctxt "MSG_MenuTitle_Edit (98//)"
+msgid "Edit"
+msgstr "Redigera"
+
+msgctxt "MSG_Page_Keybindings (99//)"
+msgid "Keybindings"
+msgstr "Tangentkombinationer"
+
+msgctxt "MSG_Page_Sample (100//)"
+msgid "Sample"
+msgstr "Exempel"
+
+msgctxt "MSG_Page_Settings (101//)"
+msgid "Settings"
+msgstr "Inställningar"
+
+msgctxt "MSG_Page_SpellChecker (102//)"
+msgid "Spell checker"
+msgstr "Stavningskontroll"
+
+msgctxt "MSG_PopWinTitle_Background (103//)"
+msgid "Select background"
+msgstr "Välj bakgrund"
+
+msgctxt "MSG_PopWinTitle_Cursor (104//)"
+msgid "Select cursor color"
+msgstr "Välj markörfärg"
+
+msgctxt "MSG_PopWinTitle_Frame (105//)"
+msgid "Adjust frame"
+msgstr "Justera ram"
+
+msgctxt "MSG_PopWinTitle_Highlight (106//)"
+msgid "Select highlight color"
+msgstr "Välj markeringsfärg"
+
+msgctxt "MSG_PopWinTitle_Selected (107//)"
+msgid "Select block color"
+msgstr "Välj markeringsfärg"
+
+msgctxt "MSG_PopWinTitle_SeparatorShadow (108//)"
+msgid "Select separators shadow color"
+msgstr "Välj skiljelinjens skuggfärg"
+
+msgctxt "MSG_PopWinTitle_SeparatorShine (109//)"
+msgid "Select separators shine color"
+msgstr "Välj skiljelinjens skenfärg"
+
+msgctxt "MSG_PopWinTitle_Text (110//)"
+msgid "Select text color"
+msgstr "Välj textfärg"
+
+msgctxt "MSG_SliderText_MaxWidth (111//)"
+msgid "Same as char"
+msgstr "Samma som bokstav"
+
+msgctxt "MSG_SliderText_MinSpeed (112//)"
+msgid "Off"
+msgstr "Av"
+
+msgctxt "MSG_SliderText_MinWidth (113//)"
+msgid "1 pixel"
+msgstr "1 bildpunkt"
+
+msgctxt "MSG_SliderText_StdSpeed (114//)"
+msgid "\\33r%ld ms"
+msgstr "\\33r%ld ms"
+
+msgctxt "MSG_SliderText_StdWidth (115//)"
+msgid "%ld pixels"
+msgstr "%ld bildpunkter"
+
+msgctxt "MSG_SliderText_TabSize (116//)"
+msgid "%ld spaces"
+msgstr "%ld mellanslag"
+
+msgctxt "MSG_Function_GotoBookmark1 (117//)"
+msgid "Goto bookmark 1"
+msgstr "Gå till bokmärke 1"
+
+msgctxt "MSG_Function_GotoBookmark2 (118//)"
+msgid "Goto bookmark 2"
+msgstr "Gå till bokmärke 2"
+
+msgctxt "MSG_Function_GotoBookmark3 (119//)"
+msgid "Goto bookmark 3"
+msgstr "Gå till bokmärke 3"
+
+msgctxt "MSG_Function_SetBookmark1 (120//)"
+msgid "Set bookmark 1"
+msgstr "Välj bokmärke 1"
+
+msgctxt "MSG_Function_SetBookmark2 (121//)"
+msgid "Set bookmark 2"
+msgstr "Välj bokmärke 2"
+
+msgctxt "MSG_Function_SetBookmark3 (122//)"
+msgid "Set bookmark 3"
+msgstr "Välj bokmärke 3"
+
+msgctxt "MSG_Button_Snoop (123//)"
+msgid "Snoop"
+msgstr "Avläs"
+
+msgctxt "MSG_Function_DelLine (124//)"
+msgid "Delete line"
+msgstr "Radera rad"
+
+msgctxt "MSG_Function_SelectAll (125//)"
+msgid "Select all"
+msgstr "Välj alla"
+
+msgctxt "MSG_Function_SelectNone (126//)"
+msgid "Select none"
+msgstr "Välj inga"
+
+msgctxt "MSG_WarnConfigVersion_Title (127//)"
+msgid "TextEditor.mcp warning"
+msgstr "TextEditor.mcp varning"
+
+msgctxt "MSG_WarnConfigVersion (128//)"
+msgid ""
+"Your currently saved keybindings setup is incompatible\n"
+"with the version of TextEditor.mcc you have installed.\n"
+"\n"
+"It is suggested that you reset the current keybindings\n"
+"to their defaults and edit them manually afterwards."
+msgstr "Din nuvarande sparade tangent-uppsättning är inkompatibel\nmed den version av TextEditor.mcc du har installerad.\n\nDet är rekommenderat att du återställer tangent-uppsättningen\ntill dess förval och redigerar dem manuellt efteråt."
+
+msgctxt "MSG_ResetAbort (129//)"
+msgid "Reset|Abort"
+msgstr "Återställ|Avbryt"
+
+msgctxt "MSG_WarnHotkeyString_Title (130//)"
+msgid "TextEditor.mcp warning"
+msgstr "TextEditor.mcp varning"
+
+msgctxt "MSG_WarnHotkeyString (131//)"
+msgid ""
+"TextEditor.mcp couldn't open the minimum required\n"
+"version of the HotkeyString.mcc custom class and\n"
+"therefore failed during initialization.\n"
+"\n"
+"Please make sure you have the latest Hotkeystring.mcc\n"
+"class from http://www.sf.net/projects/bstring-mcc/\n"
+"installed and try again."
+msgstr "TextEditor.mcp kunde inte öppna den minst krävda\nversionen av HotkeyString.mcc klassen och\nmisslyckades därför under uppstart.\n\nVar god kontrollera att du har den senaste HotkeyString.mcc\nklassen från http://www.sf.net/projects/bstring-mcc/\ninstallerad och pröva igen."
+
+msgctxt "MSG_Ok (132//)"
+msgid "Ok"
+msgstr "Ok"
+
+msgctxt "MSG_Label_InactiveCursor (133//)"
+msgid "Inactive cursor"
+msgstr "Inaktiv markör"
+
+msgctxt "MSG_HELP_InactiveCursor (134//)"
+msgid ""
+"If enabled, a custom cursor will be used\n"
+"whenever the editor doesn't have the focus."
+msgstr "Om vald, så visas en speciell markör\nnär texteditorn är i inaktivt tillstånd."
+
+msgctxt "MSG_Label_SelectPointer (135//)"
+msgid "Selection pointer"
+msgstr "Väljpekare"
+
+msgctxt "MSG_HELP_SelectPointer (136//)"
+msgid ""
+"If enabled, a custom selection pointer will appear\n"
+"when the mouse pointer is above the texteditor gadget."
+msgstr "Om vald, kommer en speciell pekare att visas\nnär muspekaren är ovanför texteditorn."
+
+msgctxt "MSG_Label_InactiveColor (137//)"
+msgid "Inactive"
+msgstr "Inaktiv"
+
+msgctxt "MSG_PopWinTitle_InactiveColor (138//)"
+msgid "Select inactive color"
+msgstr "Välj inaktiv färg"
+
+msgctxt "MSG_HELP_TABSIZE (139//)"
+msgid "How many spaces hitting the <TAB> key will jump."
+msgstr "Hur många teckenrutor markören hoppar vid användning av TAB-tangenten."
+
+msgctxt "MSG_HELP_DESIGN_FRAME (140//)"
+msgid ""
+"This is a button to adjust a frame.\n"
+"Click it to open an adjust window or\n"
+"use the drag&drop facilities to copy\n"
+"from or to another frame adjust button."
+msgstr "Detta är en knapp för att justera en ram.\nKlicka på den för att öppna ett justeringsfönster\neller använd dra&släpp för att kopiera\nfrån eller till en annan ramjusteringsknapp."
+
+msgctxt "MSG_HELP_DESIGN_BACKGROUND (141//)"
+msgid ""
+"This is a button to adjust a background\n"
+"color or pattern. Click it to open an\n"
+"adjust window or use the drag&drop facilities\n"
+"to copy from or to another background adjust button."
+msgstr "Detta är en knapp för att justera en bakgrundsfärg\neller mönster. Klicka på den för att öppna ett\njusteringsfönster eller använd dra&släpp från\neller till en annan bakgrundsjusteringsknapp."
+
+msgctxt "MSG_HELP_DESIGN_TEXT (142//)"
+msgid "This is the color used to print the text."
+msgstr "Detta är färgen som används för texten."
+
+msgctxt "MSG_HELP_DESIGN_HIGHLIGHT (143//)"
+msgid ""
+"This is the color used to\n"
+"print highlighted text."
+msgstr "Detta är färgen som används\nför markerad text."
+
+msgctxt "MSG_HELP_SEPARATOR_SHINE (144//)"
+msgid ""
+"This is the color used to\n"
+"print separator bars."
+msgstr "Detta är färgen som används\nför avdelningsrader."
+
+msgctxt "MSG_HELP_SEPARATOR_SHADOW (145//)"
+msgid ""
+"This is the color used to print\n"
+"separator bars in shadow mode."
+msgstr "Detta är färgen som används för\navdelningsrader i skugg läge."
+
+msgctxt "MSG_HELP_FONTS_NORMAL (146//)"
+msgid "Default font to be used by the editor."
+msgstr "Förvalt typsnitt som används av redigeraren."
+
+msgctxt "MSG_HELP_FONTS_FIXED (147//)"
+msgid ""
+"Default font to be used by the editor\n"
+"whenever a fixed width font is requested."
+msgstr "Förvalt typsnitt som används av redigeraren\nnär typsnitt av fast bredd efterfrågas."
+
+msgctxt "MSG_HELP_CURSOR_NORMAL (148//)"
+msgid "Default color to be used for the cursor."
+msgstr "Förvald färg att använda för markören."
+
+msgctxt "MSG_HELP_CURSOR_SELECTED (149//)"
+msgid ""
+"Color to be used for the cursor\n"
+"in selected text."
+msgstr "Färg att använda för markerad text."
+
+msgctxt "MSG_HELP_CURSOR_INACTIVE (150//)"
+msgid ""
+"Color to use to print selected text\n"
+"when the editor doesn't have the focus."
+msgstr "Färg att använda för markerad text\nnär redigeraren inte har fokus."
+
+msgctxt "MSG_HELP_CURSOR_WIDTH (151//)"
+msgid "This is the width the cursor should have."
+msgstr "Detta är bredden som markören skall ha."
+
+msgctxt "MSG_HELP_CURSOR_BLINKSPEED (152//)"
+msgid ""
+"You may want the cursor to blink to make\n"
+"it easier to find. Select 'Off' to disable\n"
+"this feature."
+msgstr "Du kanske vill att markören skall blinka\nför att lättare hitta den. Välj 'av' för att\nstänga av denna funktion."
+
+msgctxt "MSG_HELP_BUTTON_DEFAULTKEYS (153//)"
+msgid ""
+"Restore all keybindings\n"
+"to the built-in defaults."
+msgstr "Återställ alla tangentbindningar\ntill de inbyggda förvalda."
+
+msgctxt "MSG_HELP_BUTTON_SNOOP (154//)"
+msgid ""
+"Use this field to set a keybinding for this action.\n"
+"You can either edit the string gadget directly or press\n"
+"the 'Snoop' button to make the gadget monitor keypresses\n"
+"until you press it again to confirm."
+msgstr "Använd detta fält för att ställa in en tangentbindning\nför denna handling. Du kan antingen redigera direkt eller\nanvända 'Avläs' knappen så att tangenttryckningar avläses\ntills du använder knappen igen för att bekräfta."
+
+msgctxt "MSG_HELP_BUTTON_INSERT (155//)"
+msgid "Add a new keybinding to the list."
+msgstr "Lägg till en ny tangentbindning till listan."
+
+msgctxt "MSG_HELP_BUTTON_DELETE (156//)"
+msgid "Delete this keybinding from the list."
+msgstr "Radera denna tangentbindning från listan."
+
+msgctxt "MSG_HELP_SPELLCHECKER_LOOKUP_CMD (157//)"
+msgid ""
+"Specify here the lookup command you want to use, or\n"
+"leave this empty to disable the type'n'spell feature."
+msgstr "Specifiera här 'slå-upp' kommandot du vill använda\neller lämna detta tomt för att stänga av\nkontrollera-medan-du-skriver funktionen."
+
+msgctxt "MSG_HELP_SPELLCHECKER_SUGGEST_CMD (158//)"
+msgid ""
+"Specify here the command that will be used\n"
+"to suggest an alternate word. As explained above,\n"
+"usually you should specify a script here."
+msgstr "Specifiera här kommandot som kommer att\nanvändas för att föreslå ett alternativt ord.\nSom förklarat ovan, vanligtvis så bör du\nspecifiera ett skript här."
+
+msgctxt "MSG_UNDO_SLIDER_FORMAT (159//)"
+msgid "%ld (+/- 5)"
+msgstr "%ld (+/- 5)"

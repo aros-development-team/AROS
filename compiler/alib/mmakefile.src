@@ -1,0 +1,140 @@
+#
+#   Generate the amiga.lib library (normally called libamiga.a).
+#
+
+include $(SRCDIR)/config/aros.cfg
+
+FILES	:= \
+    acrypt \
+    addamigaguidehost \
+    addappicon \
+    addappmenuitem \
+    addappwindow \
+    addappwindowdropzone \
+    alib_util \
+    allocaslrequesttags \
+    allocdosobjecttags \
+    allocnamedobject \
+    allocspritedata \
+    andrectrect \
+    argarraydone \
+    argarrayinit \
+    argint \
+    argstring \
+    arosinquire \
+    aslrequesttags \
+    asmallocpooled \
+    asmcreatepool \
+    asmdeletepool \
+    asmfreepooled \
+    beginio \
+    bestcmodeidtags \
+    bestmodeid \
+    buildeasyrequest \
+    callhook \
+    changeextsprite \
+    checkrexxmsg \
+    coercemethod \
+    copyregion \
+    closeworkbenchobject \
+    createextio \
+    creategadget \
+    createmenus \
+    createnewproctags \
+    createport \
+    createstdio \
+    createtask \
+    deleteextio \
+    deleteport \
+    deletestdio \
+    deletetask \
+    dodtmethod \
+    dogadgetmethod \
+    domethod \
+    dosupermethod \
+    dosupernew \
+    drawbevelbox \
+    easyrequest \
+    erroroutput \
+    extendfonttags \
+    fastrand \
+    fprintf \
+    freeievents \
+    getdatastreamfromformat \
+    getdtattrs \
+    getextsprite \
+    getrexxvar \
+    getrpattrs \
+    getseglistinfotags \
+    getvisualinfo \
+    gt_getgadgetattrs \
+    gt_setgadgetattrs \
+    hookentry \
+    hotkey \
+    invertstring \
+    invertstringforward \
+    layoutmenuitems \
+    layoutmenus \
+    liballocaligned \
+    liballocpooled \
+    libcreatepool \
+    libdeletepool \
+    libfreepooled \
+    lockbitmaptags \
+    makeworkbenchobjectvisible \
+    mergesortlist \
+    newdtobject \
+    newlist \
+    newloadsegtags \
+    newobject \
+    newrawdofmt \
+    newrectregion \
+    obtainbestpen \
+    obtaininfo \
+    openamigaguide \
+    openamigaguideasync \
+    opencatalog \
+    openscreentags \
+    openwindowtags \
+    openworkbenchobject \
+    printf \
+    rangerand \
+    refreshdtobject \
+    refreshdtobjects \
+    releaseinfo \
+    removeamigaguidehost \
+    selecterroroutput \
+    sendamigaguidecmd \
+    sendamigaguidecontext \
+    setamigaguideattrs \
+    setamigaguidecontext \
+    setattrs \
+    setdtattrs \
+    setgadgetattrs \
+    setinfo \
+    setrexxvar \
+    setrpattrs \
+    setsuperattrs \
+    setwindowpointer \
+    snprintf \
+    sprintf \
+    strdup \
+    systemtags \
+    timedelay \
+    unlockbitmaptags \
+    videocontroltags \
+    workbenchcontrol
+
+#MM- core-linklibs : linklibs-amiga
+#MM- linklibs: linklibs-amiga 
+#MM linklibs-amiga : includes includes-copy kernel-aros-includes
+
+USER_CFLAGS := -noposixc
+
+%build_linklib mmake=linklibs-amiga libname=amiga files="$(FILES)"
+
+ifneq ($(AROS_TARGET_CPU32),)
+%build_linklib mmake=linklibs-amiga32 libname=amiga files=$(FILES) libdir="$(AROS_LIB32)" objdir="$(GENDIR)/$(CURDIR)/32bit" cflags="$(strip $(TARGET_ISA_32_CFLAGS) $(TARGET_CFLAGS))"
+endif
+
+%common

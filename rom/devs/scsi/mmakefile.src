@@ -1,0 +1,35 @@
+# $Id: mmakefile.src 55802 2019-03-08 21:47:59Z wawa $
+
+include $(SRCDIR)/config/aros.cfg
+
+USER_CPPFLAGS := -D__OOP_NOMETHODBASES__ -D__OOP_NOATTRBASES__
+USER_CPPFLAGS += -DDEBUG=1
+
+INCLUDE_FILES := $(call WILDCARD, include/devices/*.h)
+%copy_includes path=devices dir=include/devices
+
+INCLUDE_FILES := $(call WILDCARD, include/hardware/*.h)
+%copy_includes path=hardware dir=include/hardware
+
+INCLUDE_FILES := $(call WILDCARD, include/hidd/*.h)
+%copy_includes path=hidd dir=include/hidd
+
+USER_LDFLAGS := -static
+
+SCSI_DEVICEFILES :=             \
+    scsi_init                   \
+    scsi                        \
+    lowlevel                    \
+    timer                       \
+    bootwait                    \
+    waitnano                    \
+    waitto
+
+SCSI_CLASSFILES :=              \
+    scsi_controllerclass        \
+    scsi_busclass               \
+    scsi_unitclass
+
+%build_module mmake=kernel-scsi \
+  modname=scsi modtype=device version=$(AROS_TARGET_PLATFORM) \
+  files="$(SCSI_DEVICEFILES) $(SCSI_CLASSFILES)"

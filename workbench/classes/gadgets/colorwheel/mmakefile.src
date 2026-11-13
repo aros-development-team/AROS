@@ -1,0 +1,22 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+USER_LDFLAGS := -static
+
+FILES := colorwheelclass support fixmathtrans
+
+FUNCS := \
+	converthsbtorgb \
+	convertrgbtohsb
+
+#MM workbench-gadgets-colorwheel-includes : \
+#MM     kernel-exec-includes \
+#MM     kernel-graphics-includes \
+#MM     kernel-cybergraphics-includes \
+#MM     kernel-intuition-includes \
+#MM     kernel-dos-includes \
+#MM     kernel-layers-includes
+
+%build_module mmake=workbench-gadgets-colorwheel \
+    modname=colorwheel modtype=gadget \
+    files="$(FUNCS) $(FILES)" uselibs=stdc

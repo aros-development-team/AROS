@@ -1,0 +1,2 @@
+# This version needs VBlank emulator
+USER_CFLAGS += -DUSE_VBLANK_EMU

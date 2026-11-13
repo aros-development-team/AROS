@@ -1,0 +1,34 @@
+# Copyright (C) 2003-2022, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM- workbench-locale : workbench-locale-help workbench-locale-help-cpy1 workbench-locale-help-cpy2 \
+#MM	workbench-locale-help-gendoc
+
+%copy_files_q mmake=workbench-locale-help-cpy1 files=LICENSE src=$(SRCDIR) dst=$(AROS_HELP)
+
+%copy_files_q mmake=workbench-locale-help-cpy2 files="$(call WILDCARD, *.txt) $(call WILDCARD, *.htm)" \
+    src=$(SRCDIR)/workbench/locale/help dst=$(AROS_HELP)
+
+%copy_dir_recursive mmake=workbench-locale-help src=$(SRCDIR)/workbench/locale/help dst=$(AROS_HELP) \
+    excludefiles="$(call WILDCARD, *.py)"
+
+#MM- workbench-locale-help-gendoc : help-gendoc workbench-locale-help-genindex
+
+#MM
+workbench-locale-help-docgen :
+	@$(ECHO) "Generating Help for C: Commands ..."
+	@$(PYTHON) $(SRCDIR)/$(CURDIR)/gendoc.py $(SRCDIR)/workbench/c $(AROS_HELP)/English/Commands
+	@$(ECHO) "Generating Help for Tools ..."
+	@$(PYTHON) $(SRCDIR)/$(CURDIR)/gendoc.py $(SRCDIR)/workbench/tools $(AROS_HELP)/English/System
+	@$(ECHO) "Generating Help for Utilities ..."
+	@$(PYTHON) $(SRCDIR)/$(CURDIR)/gendoc.py $(SRCDIR)/workbench/utilities $(AROS_HELP)/English/System
+
+#MM- help-gendoc : workbench-locale-help-docgen
+#MM workbench-locale-help-genindex : help-gendoc
+
+#MM
+workbench-locale-help-genindex :
+	@$(ECHO) "Generating Help Index Page ..."
+	#FIXME: the index page should be generated at the end of the build process
+	@$(PYTHON) $(SRCDIR)/$(CURDIR)/genindex.py $(AROS_HELP)/English

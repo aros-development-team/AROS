@@ -1,0 +1,89 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+%set_archincludes mainmmake=kernel-kernel maindir=rom/kernel \
+  modname=kernel pri=0 arch=raspi-aarch64 \
+  includes="-I$(SRCDIR)/$(CURDIR)"
+
+%get_archincludes modname=kernel \
+    includeflag=TARGET_KERNEL_INCLUDES maindir=rom/kernel
+
+%get_archincludes modname=exec \
+    includeflag=TARGET_EXEC_INCLUDES maindir=rom/exec
+
+PRIV_KERNEL_INCLUDES = \
+    $(TARGET_KERNEL_INCLUDES) \
+	-I$(SRCDIR)/rom/kernel \
+	$(TARGET_EXEC_INCLUDES) \
+	-I$(SRCDIR)/rom/exec
+
+CFILES := \
+        kernel_startup \
+        kernel_execsmp \
+        kernel_cpu \
+        cpu_init \
+        createcontext \
+        kernel_ipi \
+        kernel_scheduler \
+        spininit \
+        spinislocked \
+        spintrylock \
+        spinlock \
+        spinunlock \
+        platform_init \
+        platform_post \
+        kernel_debug \
+        getsystemattr \
+        getcpuattr \
+        timestamp \
+        getcpucount \
+        alloccpumask \
+        clearcpumask \
+        cpuinmask \
+        freecpumask \
+        getcpumask \
+        getcpunumber \
+        schedulecpu \
+        maygetchar \
+        tags \
+        intr \
+        kernel_systimer \
+        syscall \
+        mmu \
+        issuper \
+        cli \
+        sti \
+        virtualtophysical \
+        setprotection \
+        mapglobal \
+        unmapglobal \
+        vars \
+        screen_fb \
+        kernel_fb \
+        font8x14 \
+        devicetree
+
+PLATFILES := platform_bcm27xx platform_bcm2708 platform_bcm2711 platform_bcm2712 gic400
+
+AFILES := vectors
+
+#MM kernel-raspi-aarch64: setup-raspi-aarch64 kernel-kernel-kobj kernel-exec-kobj kernel-task-kobj
+kernel-raspi-aarch64: $(OSGENDIR)/boot/core.elf
+
+#MM kernel-raspi-aarch64-quick: setup-raspi-aarch64-quick kernel-kernel-kobj-quick kernel-exec-kobj-quick kernel-task-kobj-quick
+kernel-raspi-aarch64-quick: $(OSGENDIR)/boot/core.elf
+
+$(OSGENDIR)/boot/core.elf: $(KOBJSDIR)/kernel_resource.o $(KOBJSDIR)/exec_library.o  $(KOBJSDIR)/task_resource.o
+		@$(ECHO) "Creating   $@"
+		%mkdirs_q $(OSGENDIR)/boot
+		@$(TARGET_LD) --emit-relocs -Map $(OSGENDIR)/boot/core.map -T $(SRCDIR)/$(CURDIR)/ldscript.lds -o $@ $^ -L$(AROS_LIB) -larossupport -lautoinit -lamiga -llibinit -lstdc.static $(TARGET_C_LIBS)
+		@$(TARGET_STRIP) --strip-debug -R .note -R .comment $@
+
+#MM kernel-kernel-raspi-aarch64 : includes
+
+USER_INCLUDES := $(PRIV_KERNEL_INCLUDES) -I$(GENINCDIR) -I$(AROS_DEVELOPER)/include -I$(SRCDIR)/rom/openfirmware
+%build_archspecific \
+  mainmmake=kernel-kernel modname=kernel maindir=rom/kernel arch=raspi-aarch64 \
+  files="$(CFILES) $(PLATFILES)" asmfiles="$(AFILES)" compiler=kernel
+
+%common

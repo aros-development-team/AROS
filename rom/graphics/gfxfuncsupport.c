@@ -1,0 +1,1349 @@
+/*
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
+*/
+
+/****************************************************************************************/
+/* Compile the out-of-line m68k helpers of graphics_inline.h here */
+#define GFX_GETDRIVERDATA_IMPL
+
+#include <aros/debug.h>
+
+#include <cybergraphx/cybergraphics.h>
+#include <graphics/rpattr.h>
+#include <proto/layers.h>
+#include <proto/exec.h>
+#include <proto/graphics.h>
+#include <proto/oop.h>
+#include <clib/macros.h>
+
+#include "graphics_intern.h"
+#include "objcache.h"
+#include "intregions.h"
+#include "gfxfuncsupport.h"
+#include "graphics_driver.h"
+
+#define DEBUG_PLANARBM(x) DB2(x)
+
+#define LayersBase (struct LayersBase *)(GfxBase->gb_LayersBase)
+
+/****************************************************************************************/
+
+OOP_Object *get_planarbm_object(struct BitMap *bitmap, struct GfxBase *GfxBase)
+{
+    OOP_Object *pbm_obj;
+
+    DEBUG_PLANARBM(bug("%s: bitmap=%p\n", __func__, bitmap));
+    pbm_obj = obtain_cache_object(CDD(GfxBase)->planarbm_cache, GfxBase);
+
+    if(NULL != pbm_obj) {
+
+        DEBUG_PLANARBM(bug("%s: cache object %p, class=%s, instoffset=%d\n"
+                           , __func__
+                           , pbm_obj
+                           , OOP_OCLASS(pbm_obj)->ClassNode.ln_Name
+                           , OOP_OCLASS(pbm_obj)->InstOffset
+                          ));
+
+        if(!HIDD_PlanarBM_SetBitMap(pbm_obj, bitmap)) {
+            DEBUG_PLANARBM(bug("!!! get_planarbm_object: HIDD_PlanarBM_SetBitMap FAILED !!!\n"));
+            release_planarbm_object(pbm_obj, GfxBase);
+            pbm_obj = NULL;
+        }
+
+    } else {
+        DEBUG_PLANARBM(bug("!!! get_planarbm_object: obtain_cache_object FAILED !!!\n"));
+    }
+
+    return pbm_obj;
+}
+
+/****************************************************************************************/
+
+VOID release_planarbm_object(OOP_Object *pbm_obj, struct GfxBase *GfxBase)
+{
+    HIDD_PlanarBM_SetBitMap(pbm_obj, NULL);
+    release_cache_object(CDD(GfxBase)->planarbm_cache, pbm_obj, GfxBase);
+}
+
+/****************************************************************************************/
+
+/*
+ * A layer's ClipRect bitmap may render pens from a colormap of its own
+ * (HIDD_BMF_OWN_PIXTAB: a bitmap in another pixel layout than the screen,
+ * such as a composited layer's alpha surface on a screen without an alpha
+ * channel, see AllocBitMap()). The GC was prepared with the
+ * RastPort bitmap's pixel values, which carry no alpha, so for such a
+ * destination the GC colours are mapped again for the destination: pens
+ * through its colormap, explicit RPTAG_FgColor/RPTAG_BgColor colours
+ * (RPF_NO_PENS) from the ARGB values kept in the RastPort's driver data.
+ */
+static inline BOOL alpha_pixtab_dest(struct RastPort *rp, struct BitMap *bm)
+{
+    return rp && rp->BitMap && bm != rp->BitMap && IS_HIDD_BM(rp->BitMap) && IS_HIDD_BM(bm) &&
+           (HIDD_BM_FLAGS(bm) & HIDD_BMF_OWN_PIXTAB);
+}
+
+static HIDDT_Pixel pen_pixel_for(struct RastPort *rp, struct BitMap *bm, HIDDT_Pixel pix, struct GfxBase *GfxBase)
+{
+    UBYTE pens[3] = { rp->FgPen & PEN_MASK, rp->BgPen & PEN_MASK, rp->AOlPen & PEN_MASK };
+    ULONG i;
+
+    for (i = 0; i < 3; i++)
+    {
+        if (pix == BM_PIXEL(rp->BitMap, pens[i]))
+            return BM_PIXEL(bm, pens[i]);
+    }
+    return pix;
+}
+
+HIDDT_Pixel argb_pixel_for(OOP_Object *bm_obj, ULONG argb, struct GfxBase *GfxBase)
+{
+    HIDDT_Color col;
+
+    /* HIDDT_ColComp are 16 Bit, as SetRPAttrsA() maps them */
+    col.alpha = (HIDDT_ColComp)((argb >> 16) & 0x0000FF00);
+    col.red   = (HIDDT_ColComp)((argb >> 8) & 0x0000FF00);
+    col.green = (HIDDT_ColComp)(argb & 0x0000FF00);
+    col.blue  = (HIDDT_ColComp)((argb << 8) & 0x0000FF00);
+
+    return HIDD_BM_MapColor(bm_obj, &col);
+}
+
+static inline BOOL remap_gc_pens(struct RastPort *rp, struct BitMap *bm, OOP_Object *bm_obj, OOP_Object *gc,
+                                 HIDDT_Pixel saved[2], struct GfxBase *GfxBase)
+{
+    if (!gc || !alpha_pixtab_dest(rp, bm))
+        return FALSE;
+
+    saved[0] = GC_FG(gc);
+    saved[1] = GC_BG(gc);
+
+    if (!(rp->Flags & RPF_NO_PENS))
+    {
+        GC_FG(gc) = pen_pixel_for(rp, bm, saved[0], GfxBase);
+        GC_BG(gc) = pen_pixel_for(rp, bm, saved[1], GfxBase);
+    }
+    else
+    {
+        struct gfx_driverdata *dd = ObtainDriverData(rp);
+
+        /* Only colours still in the GC as set: a caller may have put its own pixel there */
+        if (!dd || !(dd->dd_ColorFlags & (DDCF_FGCOLOR | DDCF_BGCOLOR)))
+            return FALSE;
+        if ((dd->dd_ColorFlags & DDCF_FGCOLOR) && (saved[0] == dd->dd_FgPixel))
+            GC_FG(gc) = argb_pixel_for(bm_obj, dd->dd_FgColor, GfxBase);
+        if ((dd->dd_ColorFlags & DDCF_BGCOLOR) && (saved[1] == dd->dd_BgPixel))
+            GC_BG(gc) = argb_pixel_for(bm_obj, dd->dd_BgColor, GfxBase);
+    }
+    return TRUE;
+}
+
+/*
+ * The pixel table for a LUT render (WritePixelArray8(), Text(), BltPattern())
+ * into the HIDD bitmap dstbm_obj: the destination's own table when the
+ * destination renders pens from a colormap of its own and lut is the RastPort
+ * bitmap's table, otherwise lut itself.
+ */
+HIDDT_PixelLUT *alpha_pixtab_lut(OOP_Object *dstbm_obj, struct RastPort *rp, HIDDT_PixelLUT *lut,
+                                 HIDDT_PixelLUT *store, struct GfxBase *GfxBase)
+{
+    struct BitMap *bm = NULL;
+
+    if (!lut || !rp || !rp->BitMap || !IS_HIDD_BM(rp->BitMap) || lut->pixels != HIDD_BM_PIXTAB(rp->BitMap))
+        return lut;
+
+    OOP_GetAttr(dstbm_obj, aHidd_BitMap_BMStruct, (IPTR *)&bm);
+    if (!bm || bm == rp->BitMap || !IS_HIDD_BM(bm) || !(HIDD_BM_FLAGS(bm) & HIDD_BMF_OWN_PIXTAB) ||
+        !HIDD_BM_PIXTAB(bm))
+        return lut;
+
+    store->entries = lut->entries;
+    store->pixels  = HIDD_BM_PIXTAB(bm);
+    return store;
+}
+
+/* What stays the same for every piece of one render operation */
+struct render_call {
+    struct RastPort *rp;            /* NULL: no pen remapping (outside a superbitmap layer) */
+    RENDERFUNC       render_func;
+    APTR             funcdata;
+    OOP_Object      *gc;
+    struct GfxBase  *GfxBase;
+    BOOL             do_update;
+    BOOL             get_special_info;
+};
+
+static ULONG CallRenderFunc(struct render_call *rc, WORD srcx, WORD srcy,
+                            struct BitMap *bm, struct Rectangle *rect)
+{
+    struct GfxBase *GfxBase = rc->GfxBase;
+    OOP_Object *gc = rc->gc;
+    OOP_Object *bm_obj;
+    HIDDT_Pixel saved[2];
+    BOOL remapped;
+    ULONG pixwritten;
+
+    if(rc->get_special_info) {
+        RSI(rc->funcdata)->curbm = bm;
+    }
+
+    bm_obj = OBTAIN_HIDD_BM(bm);
+    if(!bm_obj)
+        return 0;
+
+    remapped = remap_gc_pens(rc->rp, bm, bm_obj, gc, saved, GfxBase);
+
+    pixwritten = rc->render_func(rc->funcdata, srcx, srcy, bm_obj, gc, rect, GfxBase);
+
+    if(remapped) {
+        GC_FG(gc) = saved[0];
+        GC_BG(gc) = saved[1];
+    }
+
+    if(rc->do_update)
+        update_bitmap(bm, bm_obj, rect->MinX, rect->MinY,
+                      rect->MaxX - rect->MinX + 1, rect->MaxY - rect->MinY + 1,
+                      GfxBase);
+
+    RELEASE_HIDD_BM(bm_obj, bm);
+    return pixwritten;
+}
+
+ULONG do_render_func(struct RastPort *rp, Point *src, struct Rectangle *rr,
+                     RENDERFUNC render_func, APTR funcdata,
+                     BOOL do_update, BOOL get_special_info, struct GfxBase *GfxBase)
+{
+    OOP_Object *gc = GetDriverData(rp, GfxBase);
+
+    return do_render_with_gc(rp, src, rr, render_func, funcdata, gc, do_update, get_special_info, GfxBase);
+}
+
+/*
+ * GetDriverData() resets the GC to RastPort's values.
+ * This is another entry point which avoids that. Use it if you have already set up GC.
+ */
+/*
+ * Documented AmigaOS behaviour for superbitmap layers: rendering that
+ * falls outside the layer goes into the superbitmap. 'torender' is the
+ * area in screen coordinates; the parts of it outside the layer's bounds
+ * are rendered at superbitmap coordinates (rastport coordinates).
+ */
+static ULONG render_outside_super(struct Layer *L, struct Rectangle *torender, struct Rectangle *rpclip,
+                                  struct render_call *rc, WORD srcx, WORD srcy)
+{
+    struct GfxBase *GfxBase = rc->GfxBase;
+    struct Rectangle parts[4];
+    ULONG pixwritten = 0, n = 0, i;
+    LONG  sbw = GetBitMapAttr(L->SuperBitMap, BMA_WIDTH);
+    LONG  sbh = GetBitMapAttr(L->SuperBitMap, BMA_HEIGHT);
+
+    /* the strips above and below the layer, then those left and right of it
+       (between the layer's rows); each clipped to the area itself */
+    if(torender->MinY < L->bounds.MinY) {
+        parts[n] = *torender;
+        if(parts[n].MaxY > L->bounds.MinY - 1) parts[n].MaxY = L->bounds.MinY - 1;
+        n++;
+    }
+    if(torender->MaxY > L->bounds.MaxY) {
+        parts[n] = *torender;
+        if(parts[n].MinY < L->bounds.MaxY + 1) parts[n].MinY = L->bounds.MaxY + 1;
+        n++;
+    }
+    if(torender->MinX < L->bounds.MinX) {
+        parts[n] = *torender;
+        if(parts[n].MaxX > L->bounds.MinX - 1) parts[n].MaxX = L->bounds.MinX - 1;
+        if(parts[n].MinY < L->bounds.MinY) parts[n].MinY = L->bounds.MinY;
+        if(parts[n].MaxY > L->bounds.MaxY) parts[n].MaxY = L->bounds.MaxY;
+        n++;
+    }
+    if(torender->MaxX > L->bounds.MaxX) {
+        parts[n] = *torender;
+        if(parts[n].MinX < L->bounds.MaxX + 1) parts[n].MinX = L->bounds.MaxX + 1;
+        if(parts[n].MinY < L->bounds.MinY) parts[n].MinY = L->bounds.MinY;
+        if(parts[n].MaxY > L->bounds.MaxY) parts[n].MaxY = L->bounds.MaxY;
+        n++;
+    }
+
+    for(i = 0; i < n; i++) {
+        struct Rectangle part = parts[i], sb;
+        WORD xoffset, yoffset;
+
+        if(part.MinX > part.MaxX || part.MinY > part.MaxY)
+            continue;
+        if(rpclip && !_AndRectRect(rpclip, &part, &part))
+            continue;
+
+        /* to superbitmap coordinates, clipped to the superbitmap */
+        sb.MinX = part.MinX - L->bounds.MinX + L->Scroll_X;
+        sb.MinY = part.MinY - L->bounds.MinY + L->Scroll_Y;
+        sb.MaxX = part.MaxX - L->bounds.MinX + L->Scroll_X;
+        sb.MaxY = part.MaxY - L->bounds.MinY + L->Scroll_Y;
+        if(sb.MinX < 0) sb.MinX = 0;
+        if(sb.MinY < 0) sb.MinY = 0;
+        if(sb.MaxX > sbw - 1) sb.MaxX = sbw - 1;
+        if(sb.MaxY > sbh - 1) sb.MaxY = sbh - 1;
+        if(sb.MinX > sb.MaxX || sb.MinY > sb.MaxY)
+            continue;
+
+        /* source offset of the clipped part within the whole area */
+        xoffset = (sb.MinX - L->Scroll_X + L->bounds.MinX) - torender->MinX;
+        yoffset = (sb.MinY - L->Scroll_Y + L->bounds.MinY) - torender->MinY;
+
+        pixwritten += CallRenderFunc(rc, srcx + xoffset, srcy + yoffset, L->SuperBitMap, &sb);
+    }
+
+    return pixwritten;
+}
+
+ULONG do_render_with_gc(struct RastPort *rp, Point *src, struct Rectangle *rr,
+                        RENDERFUNC render_func, APTR funcdata, OOP_Object *gc,
+                        BOOL do_update, BOOL get_special_info, struct GfxBase *GfxBase)
+{
+
+    struct BitMap       *bm = rp->BitMap;
+    struct Layer        *L = rp->Layer;
+    struct Rectangle     rp_clip_rectangle;
+    BOOL                 have_rp_cliprectangle;
+    WORD                 srcx, srcy;
+    LONG                 pixwritten = 0;
+    struct render_call   rc;
+
+    if((rr->MaxX < rr->MinX) || (rr->MaxY < rr->MinY)) return 0;
+
+    rc.rp               = rp;
+    rc.render_func      = render_func;
+    rc.funcdata         = funcdata;
+    rc.gc               = gc;
+    rc.GfxBase          = GfxBase;
+    rc.do_update        = do_update;
+    rc.get_special_info = get_special_info;
+
+    if(NULL != src) {
+        srcx = src->x;
+        srcy = src->y;
+    } else {
+        srcx = 0;
+        srcy = 0;
+    }
+
+    if(NULL == L) {
+        /* No layer, probably a screen, but may be a user inited bitmap */
+        struct Rectangle torender = *rr;
+
+        have_rp_cliprectangle = GetRPClipRectangleForBitMap(rp, bm, &rp_clip_rectangle, GfxBase);
+        if(have_rp_cliprectangle && !(_AndRectRect(rr, &rp_clip_rectangle, &torender))) {
+            return 0;
+        }
+
+        srcx += (torender.MinX - rr->MinX);
+        srcy += (torender.MinY - rr->MinY);
+
+        pixwritten = CallRenderFunc(&rc, srcx, srcy, bm, &torender);
+    } else {
+        struct ClipRect *CR;
+        WORD xrel;
+        WORD yrel;
+        struct Rectangle torender, intersect;
+
+        LockLayerRom(L);
+        /* the RastPort's BitMap is read under the layer lock, nothing may change it now */
+        bm = rp->BitMap;
+
+        have_rp_cliprectangle = GetRPClipRectangleForLayer(rp, L, &rp_clip_rectangle, GfxBase);
+
+        xrel = L->bounds.MinX;
+        yrel = L->bounds.MinY;
+
+        torender.MinX = rr->MinX + xrel - L->Scroll_X;
+        torender.MinY = rr->MinY + yrel - L->Scroll_Y;
+        torender.MaxX = rr->MaxX + xrel - L->Scroll_X;
+        torender.MaxY = rr->MaxY + yrel - L->Scroll_Y;
+
+        CR = L->ClipRect;
+
+        for(; NULL != CR; CR = CR->Next) {
+            D(bug("Cliprect (%d, %d, %d, %d), lobs=%p\n",
+                  CR->bounds.MinX, CR->bounds.MinY, CR->bounds.MaxX, CR->bounds.MaxY,
+                  CR->lobs));
+
+            /* Does this cliprect intersect with area to rectfill ? */
+            if(_AndRectRect(&CR->bounds, &torender, &intersect)) {
+                if(!have_rp_cliprectangle || _AndRectRect(&rp_clip_rectangle, &intersect, &intersect)) {
+                    WORD xoffset, yoffset;
+
+                    xoffset = intersect.MinX - torender.MinX;
+                    yoffset = intersect.MinY - torender.MinY;
+
+                    if(NULL == CR->lobs) {
+                        pixwritten += CallRenderFunc(&rc, srcx + xoffset, srcy + yoffset, bm, &intersect);
+                    } else {
+                        /* Render into offscreen cliprect bitmap */
+                        if(L->Flags & LAYERSIMPLE)
+                            continue;
+                        else if(L->Flags & LAYERSUPER) {
+                            /* Render into the superbitmap. RastPort coordinates are
+                               superbitmap coordinates; the layer shows the superbitmap
+                               from (Scroll_X, Scroll_Y). */
+                            intersect.MinX = intersect.MinX - L->bounds.MinX + L->Scroll_X;
+                            intersect.MinY = intersect.MinY - L->bounds.MinY + L->Scroll_Y;
+                            intersect.MaxX = intersect.MaxX - L->bounds.MinX + L->Scroll_X;
+                            intersect.MaxY = intersect.MaxY - L->bounds.MinY + L->Scroll_Y;
+                            pixwritten += CallRenderFunc(&rc, srcx + xoffset, srcy + yoffset, L->SuperBitMap, &intersect);
+                        } else {
+
+                            intersect.MinX = intersect.MinX - CR->bounds.MinX + CR_BMOFFX(CR);
+                            intersect.MinY = intersect.MinY - CR->bounds.MinY + CR_BMOFFY(CR);
+                            intersect.MaxX = intersect.MaxX - CR->bounds.MinX + CR_BMOFFX(CR);
+                            intersect.MaxY = intersect.MaxY - CR->bounds.MinY + CR_BMOFFY(CR);
+
+                            pixwritten += CallRenderFunc(&rc, srcx + xoffset, srcy + yoffset, CR->BitMap, &intersect);
+                        }
+
+                    } /* if (CR->lobs == NULL) */
+
+                } /* if it also intersects with possible rastport clip rectangle */
+
+            } /* if (cliprect intersects with area to render into) */
+
+        } /* for (each cliprect in the layer) */
+
+        if(L->Flags & LAYERSUPER) {
+            rc.rp = NULL;
+            pixwritten += render_outside_super(L, &torender, have_rp_cliprectangle ? &rp_clip_rectangle : NULL,
+                                               &rc, srcx, srcy);
+        }
+
+        UnlockLayerRom(L);
+    } /* if (rp->Layer) */
+
+    return pixwritten;
+}
+
+/****************************************************************************************/
+
+static LONG CallPixelFunc(struct RastPort *rp, PIXELFUNC render_func, APTR funcdata, struct BitMap *bm,
+                          OOP_Object *gc, WORD x, WORD y, BOOL do_update, struct GfxBase *GfxBase)
+{
+    OOP_Object *bm_obj = OBTAIN_HIDD_BM(bm);
+    HIDDT_Pixel saved[2];
+    BOOL remapped;
+    LONG retval;
+
+    if(!bm_obj)
+        return -1;
+
+    remapped = remap_gc_pens(rp, bm, bm_obj, gc, saved, GfxBase);
+
+    retval = render_func(funcdata, bm_obj, gc, x, y, GfxBase);
+
+    if(remapped) {
+        GC_FG(gc) = saved[0];
+        GC_BG(gc) = saved[1];
+    }
+
+    if(do_update)
+        update_bitmap(bm, bm_obj, x, y, 1, 1, GfxBase);
+
+    RELEASE_HIDD_BM(bm_obj, bm);
+    return retval;
+}
+
+ULONG do_pixel_func(struct RastPort *rp
+                    , WORD x, WORD y
+                    , PIXELFUNC render_func
+                    , APTR funcdata
+                    , BOOL do_update
+                    , struct GfxBase *GfxBase)
+{
+    struct BitMap       *bm = rp->BitMap;
+    struct Layer        *L = rp->Layer;
+    OOP_Object          *gc;
+    struct Rectangle     rp_clip_rectangle;
+    BOOL                 have_rp_cliprectangle;
+    ULONG                retval = -1;
+
+    gc = GetDriverData(rp, GfxBase);
+
+    if(NULL == L) {
+        have_rp_cliprectangle = GetRPClipRectangleForBitMap(rp, bm, &rp_clip_rectangle, GfxBase);
+        if(have_rp_cliprectangle && !_IsPointInRect(&rp_clip_rectangle, x, y)) {
+            return -1;
+        }
+
+#if 0 /* With enabled BITMAP_CLIPPING this will be done automatically */
+        OOP_GetAttr(bm_obj, aHidd_BitMap_Width,  &width);
+        OOP_GetAttr(bm_obj, aHidd_BitMap_Height, &height);
+
+        /* Check whether we it is inside the rastport */
+        if(x <  0
+                || x >= width
+                || y <  0
+                || y >= height) {
+            return -1;
+        }
+#endif
+
+        /* This is a screen */
+        retval = CallPixelFunc(rp, render_func, funcdata, bm, gc, x, y, do_update, GfxBase);
+    } else {
+        struct ClipRect *CR;
+        WORD absx, absy;
+        BOOL found = FALSE;
+
+        LockLayerRom(L);
+        bm = rp->BitMap;
+
+        have_rp_cliprectangle = GetRPClipRectangleForLayer(rp, L, &rp_clip_rectangle, GfxBase);
+
+        CR = L->ClipRect;
+
+        absx = x + L->bounds.MinX - L->Scroll_X;
+        absy = y + L->bounds.MinY - L->Scroll_Y;
+
+        for(; NULL != CR; CR = CR->Next) {
+
+            if(absx >= CR->bounds.MinX
+                    && absy >= CR->bounds.MinY
+                    && absx <= CR->bounds.MaxX
+                    && absy <= CR->bounds.MaxY) {
+
+                if(!have_rp_cliprectangle || _IsPointInRect(&rp_clip_rectangle, absx, absy)) {
+                    if(NULL == CR->lobs) {
+                        retval = CallPixelFunc(rp, render_func, funcdata, bm, gc,
+                                               absx, absy, do_update, GfxBase);
+                    } else {
+                        /* This is the tricky one: render into offscreen cliprect bitmap */
+                        if(L->Flags & LAYERSIMPLE) {
+                            /* We cannot do anything */
+                            retval =  0;
+
+                        } else if(L->Flags & LAYERSUPER) {
+                            /* Into the superbitmap, at rastport coordinates */
+                            retval = CallPixelFunc(rp, render_func, funcdata, L->SuperBitMap, gc,
+                                                   absx - L->bounds.MinX + L->Scroll_X,
+                                                   absy - L->bounds.MinY + L->Scroll_Y,
+                                                   do_update, GfxBase);
+                        } else {
+                            retval = CallPixelFunc(rp, render_func, funcdata, CR->BitMap, gc,
+                                                   absx - CR->bounds.MinX + CR_BMOFFX(CR),
+                                                   absy - CR->bounds.MinY + CR_BMOFFY(CR),
+                                                   do_update, GfxBase);
+                        } /* If (SMARTREFRESH cliprect) */
+
+                    }   /* if (intersecton inside hidden cliprect) */
+
+                } /* if point is also inside possible rastport clip rectangle */
+
+                /* The pixel was found and put inside one of the cliprects, just exit */
+                found = TRUE;
+                break;
+
+            } /* if (cliprect intersects with area we want to draw to) */
+
+        } /* while (cliprects to examine) */
+
+        if(!found && (L->Flags & LAYERSUPER) &&
+           (absx < L->bounds.MinX || absx > L->bounds.MaxX || absy < L->bounds.MinY || absy > L->bounds.MaxY) &&
+           (!have_rp_cliprectangle || _IsPointInRect(&rp_clip_rectangle, absx, absy))) {
+            /* Outside the layer: documented AmigaOS behaviour is that this
+               goes into the superbitmap (at rastport coordinates) */
+            LONG sx = absx - L->bounds.MinX + L->Scroll_X;
+            LONG sy = absy - L->bounds.MinY + L->Scroll_Y;
+
+            if(sx >= 0 && sy >= 0 &&
+               sx < GetBitMapAttr(L->SuperBitMap, BMA_WIDTH) &&
+               sy < GetBitMapAttr(L->SuperBitMap, BMA_HEIGHT)) {
+                retval = CallPixelFunc(rp, render_func, funcdata, L->SuperBitMap, gc, sx, sy, do_update, GfxBase);
+            }
+        }
+
+        UnlockLayerRom(L);
+    }
+
+    return retval;
+}
+
+/****************************************************************************************/
+
+ULONG fillrect_render(APTR funcdata, WORD srcx, WORD srcy,
+                      OOP_Object *dstbm_obj, OOP_Object *dst_gc,
+                      struct Rectangle *rect, struct GfxBase *GfxBase)
+{
+    HIDD_BM_FillRect(dstbm_obj, dst_gc, rect->MinX, rect->MinY, rect->MaxX, rect->MaxY);
+
+    return (rect->MaxX - rect->MinX + 1) * (rect->MaxY - rect->MinY + 1);
+}
+
+/****************************************************************************************/
+
+LONG fillrect_pendrmd(struct RastPort *rp, WORD x1, WORD y1, WORD x2, WORD y2,
+                      HIDDT_Pixel pix, HIDDT_DrawMode drmd, BOOL do_update, struct GfxBase *GfxBase)
+{
+    OOP_Object      *gc;
+    struct Rectangle rr;
+
+    gc = GetDriverData(rp, GfxBase);
+    GC_FG(gc)   = pix;
+    GC_DRMD(gc) = drmd;
+
+    rr.MinX = x1;
+    rr.MinY = y1;
+    rr.MaxX = x2;
+    rr.MaxY = y2;
+
+    return do_render_with_gc(rp, NULL, &rr, fillrect_render, NULL, gc, do_update, FALSE, GfxBase);
+}
+
+/****************************************************************************************/
+
+/*
+ * A minterm over pens, for a source that carries them and a destination that
+ * does not.
+ *
+ * The pens are what the operation is defined over: it is applied to the
+ * source's index and to the index the destination's colour stands for, and
+ * the pen that comes out is then resolved through the palette. Combining the
+ * resolved colours instead gives a different answer for anything that
+ * inverts, because a palette holds nowhere near every colour its entries can
+ * make between them.
+ *
+ * A destination colour the palette does not name has no index to offer, and
+ * pen 0 is what stands in.
+ */
+static UBYTE pen_from_pixel(HIDDT_Pixel *pixtab, HIDDT_Pixel pixel)
+{
+    ULONG i;
+
+    /* The whole palette: the source's depth bounds the pen it can carry,
+     * but says nothing about the one the destination is showing.
+     */
+    for (i = 0; i < AROS_PALETTE_SIZE; i++) {
+        if (pixtab[i] == pixel)
+            return i;
+    }
+
+    return 0;
+}
+
+static UBYTE pen_minterm(ULONG minterm, UBYTE src, UBYTE dst)
+{
+    UBYTE res = 0;
+    UBYTE bit;
+
+    for (bit = 0; bit < 8; bit++) {
+        UBYTE s = (src >> bit) & 1;
+        UBYTE d = (dst >> bit) & 1;
+
+        if (minterm & (0x10 << ((s << 1) | d)))
+            res |= 1 << bit;
+    }
+
+    return res;
+}
+
+static BOOL bltbitmap_pens(struct BitMap *dstBitMap, OOP_Object *srcbm_obj,
+                           WORD xSrc, WORD ySrc, OOP_Object *dstbm_obj,
+                           WORD xDest, WORD yDest, WORD xSize, WORD ySize,
+                           ULONG minterm, UBYTE mask, ULONG srcdepth,
+                           OOP_Object *gc, struct GfxBase *GfxBase)
+{
+    HIDDT_Pixel     *pixtab = HIDD_BM_PIXTAB(dstBitMap);
+    HIDDT_PixelLUT   pixlut;
+    UBYTE           *srcpens;
+    HIDDT_Pixel     *dstpix;
+    ULONG            pens = (srcdepth >= 8) ? 256 : (1UL << srcdepth);
+    WORD             x, y;
+
+    if (!pixtab)
+        return FALSE;
+
+    srcpens = AllocVec((ULONG)xSize * ySize, MEMF_ANY);
+    if (!srcpens)
+        return FALSE;
+
+    dstpix = AllocVec((ULONG)xSize * ySize * sizeof(HIDDT_Pixel), MEMF_ANY);
+    if (!dstpix) {
+        FreeVec(srcpens);
+        return FALSE;
+    }
+
+    pixlut.entries = pens;
+    pixlut.pixels  = pixtab;
+
+    HIDD_BM_GetImageLUT(srcbm_obj, srcpens, xSize, xSrc, ySrc, xSize, ySize,
+                        &pixlut);
+    HIDD_BM_GetImage(dstbm_obj, (UBYTE *)dstpix, xSize * sizeof(HIDDT_Pixel),
+                     xDest, yDest, xSize, ySize, vHidd_StdPixFmt_Native32);
+
+    for (y = 0; y < ySize; y++) {
+        UBYTE       *srow = srcpens + (ULONG)y * xSize;
+        HIDDT_Pixel *drow = dstpix  + (ULONG)y * xSize;
+
+        for (x = 0; x < xSize; x++) {
+            UBYTE dpen = pen_from_pixel(pixtab, drow[x]);
+
+            /* The mask deselects planes of the source, before the minterm.
+             * It does not protect planes of the destination: the result is
+             * written whole. That is the write mask's job, and a blit can
+             * carry one of each.
+             *
+             * A pen is a byte and the table holds one entry for each, so
+             * an inverted result needs no folding to stay in range.
+             */
+            drow[x] = pixtab[pen_minterm(minterm, srow[x] & mask, dpen)];
+        }
+    }
+
+    HIDD_BM_PutImage(dstbm_obj, gc, (UBYTE *)dstpix,
+                     xSize * sizeof(HIDDT_Pixel), xDest, yDest, xSize, ySize,
+                     vHidd_StdPixFmt_Native32);
+
+    FreeVec(dstpix);
+    FreeVec(srcpens);
+
+    return TRUE;
+}
+
+BOOL int_bltbitmap(struct BitMap *srcBitMap, OOP_Object *srcbm_obj, WORD xSrc, WORD ySrc,
+                   struct BitMap *dstBitMap, OOP_Object *dstbm_obj, WORD xDest, WORD yDest,
+                   WORD xSize, WORD ySize, ULONG minterm, UBYTE mask, OOP_Object *gfxhidd,
+                   OOP_Object *gc, struct GfxBase *GfxBase)
+{
+    HIDDT_DrawMode drmd;
+
+    ULONG srcflags = 0;
+    ULONG dstflags = 0;
+
+    BOOL src_colmap_set = FALSE;
+    BOOL dst_colmap_set = FALSE;
+    BOOL success = TRUE;
+    BOOL colmaps_ok = TRUE;
+    ULONG old_colmask = GC_COLMASK(gc);
+    ULONG srcdepth = GetBitMapAttr(srcBitMap, BMA_DEPTH);
+
+    drmd = MINTERM_TO_GCDRMD(minterm);
+
+    /* We must lock any HIDD_BM_SetColorMap calls */
+    LOCK_BLIT
+
+    /* Try to get a CLUT for the bitmaps */
+    if(IS_HIDD_BM(srcBitMap)) {
+        //bug("driver_intbltbitmap: source is hidd bitmap\n");
+        if(NULL != HIDD_BM_COLMAP(srcBitMap)) {
+            //bug("driver_intbltbitmap: source has colormap\n");
+            srcflags |= FLG_HASCOLMAP;
+        }
+        srcflags |= GET_COLMOD_FLAGS(srcBitMap);
+    } else {
+        //bug("driver_intbltbitmap: source is amiga bitmap\n");
+        /* Amiga BM */
+        srcflags |= FLG_PALETTE;
+    }
+
+    if(IS_HIDD_BM(dstBitMap)) {
+        //bug("driver_intbltbitmap: dest is hidd bitmap\n");
+        if(NULL != HIDD_BM_COLMAP(dstBitMap)) {
+            //bug("driver_intbltbitmap: dest has colormap\n");
+            dstflags |= FLG_HASCOLMAP;
+        }
+        dstflags |= GET_COLMOD_FLAGS(dstBitMap);
+    } else {
+        //bug("driver_intbltbitmap: dest is amiga bitmap\n");
+        /* Amiga BM */
+        dstflags |= FLG_PALETTE;
+    }
+
+    /*
+     * Only pens have planes, so neither rule below reaches a truecolor
+     * destination through the GC, which writes whole pixels. A pen-carrying
+     * source still has planes to mask there, and bltbitmap_pens() does that
+     * itself.
+     */
+    if(!(dstflags & FLG_TRUECOLOR)) {
+        /*
+         * A blit covers min(src, dst) planes, so a source shallower than the
+         * destination leaves the planes above its own depth alone.
+         */
+        if(srcdepth < GetBitMapAttr(dstBitMap, BMA_DEPTH))
+            GC_COLMASK(gc) &= (1UL << srcdepth) - 1;
+
+        /* Likewise for the planes mask deselects. */
+        if(mask != 0xFF)
+            GC_COLMASK(gc) &= mask;
+    }
+
+    if((srcflags == FLG_PALETTE || srcflags == FLG_STATICPALETTE)) {
+        /* palettized with no colmap. Need to get a colmap from dest */
+        if(dstflags == FLG_TRUECOLOR) {
+
+            D(bug("!!! NO WAY GETTING PALETTE FOR src IN BltBitMap\n"));
+            colmaps_ok = FALSE;
+            success = FALSE;
+
+        } else if(dstflags == (FLG_TRUECOLOR | FLG_HASCOLMAP)) {
+
+            /* Use the dest colmap for src */
+            HIDD_BM_SetColorMap(srcbm_obj, HIDD_BM_COLMAP(dstBitMap));
+
+            src_colmap_set = TRUE;
+
+            /*
+            bug("Colormap:\n");
+            {
+            ULONG idx;
+            for (idx = 0; idx < 256; idx ++)
+                    bug("[%d]=%d ", idx, HIDD_CM_GetPixel(HIDD_BM_COLMAP(dstBitMap), idx));
+            }
+            */
+        }
+    }
+
+    if((dstflags == FLG_PALETTE || dstflags == FLG_STATICPALETTE)) {
+        /* palettized with no pixtab. Nees to get a pixtab from dest*/
+        if(srcflags == FLG_TRUECOLOR) {
+            D(bug("!!! NO WAY GETTING PALETTE FOR dst IN BltBitMap\n"));
+            colmaps_ok = FALSE;
+            success = FALSE;
+
+        } else if(srcflags == (FLG_TRUECOLOR | FLG_HASCOLMAP)) {
+
+            /* Use the src colmap for dst */
+            HIDD_BM_SetColorMap(dstbm_obj, HIDD_BM_COLMAP(srcBitMap));
+
+            dst_colmap_set = TRUE;
+        }
+    }
+
+    if(colmaps_ok) {
+        /* We need special treatment with drawmode Clear and
+           truecolor bitmaps, in order to set it to
+           colormap[0] instead of just 0
+        */
+        if((drmd == vHidd_GC_DrawMode_Clear)
+                && ((dstflags & (FLG_TRUECOLOR | FLG_HASCOLMAP)) == (FLG_TRUECOLOR | FLG_HASCOLMAP))) {
+
+            HIDDT_DrawMode old_drmd;
+            IPTR old_fg;
+
+            struct TagItem frtags[] = {
+                { aHidd_GC_Foreground, 0                         },
+                { aHidd_GC_DrawMode, vHidd_GC_DrawMode_Copy    },
+                { TAG_DONE                                         }
+            };
+
+            OOP_GetAttr(gc, aHidd_GC_DrawMode, &old_drmd);
+            OOP_GetAttr(gc, aHidd_GC_Foreground, &old_fg);
+
+            /*
+             * An alpha-channel bitmap allocated with a friend (a composited
+             * layer's surface, see AllocBitMap()) clears to transparent: pen 0
+             * is opaque there, so a plain 0 pixel is written instead. Any
+             * other bitmap clears to pen 0 in its own pixel values.
+             */
+            if (HIDD_BM_FLAGS(dstBitMap) & HIDD_BMF_CLEAR_ALPHA)
+                frtags[0].ti_Data = 0;
+            else
+                frtags[0].ti_Data = HIDD_BM_PIXTAB(dstBitMap)[0];
+            frtags[1].ti_Data = vHidd_GC_DrawMode_Copy;
+
+            OOP_SetAttrs(gc, frtags);
+
+            HIDD_BM_FillRect(dstbm_obj, gc
+                             , xDest, yDest
+                             , xDest + xSize - 1
+                             , yDest + ySize - 1
+                            );
+
+            frtags[0].ti_Data = old_fg;
+            frtags[1].ti_Data = old_drmd;
+
+        } else if ((srcflags & FLG_TRUECOLOR) == 0
+                   && (dstflags & (FLG_TRUECOLOR | FLG_HASCOLMAP))
+                       == (FLG_TRUECOLOR | FLG_HASCOLMAP)
+                   && drmd != vHidd_GC_DrawMode_NoOp
+                   && drmd != vHidd_GC_DrawMode_Invert
+                   && (drmd != vHidd_GC_DrawMode_Copy || mask != 0xFF)
+                   && bltbitmap_pens(dstBitMap, srcbm_obj, xSrc, ySrc,
+                                     dstbm_obj, xDest, yDest, xSize, ySize,
+                                     minterm, mask, srcdepth, gc, GfxBase)) {
+            /*
+             * Done over pens. The two modes that leave the source out - dst
+             * untouched, and dst inverted - are about the destination's
+             * colour rather than the pen behind it, and a mask cannot change
+             * that when there is no source to deselect planes of. Copy needs
+             * no help either until a mask gives it a pen to alter.
+             */
+        } else {
+            HIDDT_DrawMode old_drmd;
+
+            struct TagItem cbtags[] = {
+                { aHidd_GC_DrawMode,        0 },
+                { TAG_DONE                    }
+            };
+
+            OOP_GetAttr(gc, aHidd_GC_DrawMode, &old_drmd);
+
+            cbtags[0].ti_Data = drmd;
+
+            OOP_SetAttrs(gc, cbtags);
+            HIDD_Gfx_CopyBox(gfxhidd
+                             , srcbm_obj
+                             , xSrc, ySrc
+                             , dstbm_obj
+                             , xDest, yDest
+                             , xSize, ySize
+                             , gc
+                            );
+
+            cbtags[0].ti_Data = drmd;
+            OOP_SetAttrs(gc, cbtags);
+        }
+
+    } /* if (colmaps_ok) */
+
+    if(src_colmap_set)
+        HIDD_BM_SetColorMap(srcbm_obj, NULL);
+
+    if(dst_colmap_set)
+        HIDD_BM_SetColorMap(dstbm_obj, NULL);
+
+    /* The GC can be a cached one, so do not leave the mask behind in it. */
+    GC_COLMASK(gc) = old_colmask;
+
+    ULOCK_BLIT
+
+    return success;
+
+}
+
+/****************************************************************************************/
+
+struct wp8_render_data {
+    UBYTE          *array;
+    ULONG           modulo;
+    HIDDT_PixelLUT *pixlut;
+    struct RastPort *rp;
+    WORD            transparent;    /* pen left out, or -1 for none */
+};
+
+static ULONG wp8_render(APTR wp8r_data, WORD srcx, WORD srcy, OOP_Object *dstbm_obj,
+                        OOP_Object *dst_gc, struct Rectangle *rect, struct GfxBase *GfxBase)
+{
+    struct wp8_render_data *wp8rd = wp8r_data;
+    WORD                    width  = rect->MaxX - rect->MinX + 1;
+    WORD                    height = rect->MaxY - rect->MinY + 1;
+    UBYTE                  *pixels = wp8rd->array + CHUNKY8_COORD_TO_BYTEIDX(srcx, srcy, wp8rd->modulo);
+    HIDDT_PixelLUT          lut, *uselut;
+
+    uselut = alpha_pixtab_lut(dstbm_obj, wp8rd->rp, wp8rd->pixlut, &lut, GfxBase);
+
+    if(wp8rd->transparent < 0)
+        HIDD_BM_PutImageLUT(dstbm_obj, dst_gc, pixels, wp8rd->modulo,
+                            rect->MinX, rect->MinY, width, height, uselut);
+    else
+        HIDD_BM_PutTranspImageLUT(dstbm_obj, dst_gc, pixels, wp8rd->modulo,
+                                  rect->MinX, rect->MinY, width, height, uselut,
+                                  wp8rd->transparent);
+
+    return width * height;
+}
+
+/****************************************************************************************/
+
+static LONG write_pixels_8_common(struct RastPort *rp, UBYTE *array, ULONG modulo,
+                                  WORD xstart, WORD ystart, WORD xstop, WORD ystop,
+                                  HIDDT_PixelLUT *pixlut, WORD transparent,
+                                  BOOL do_update, struct GfxBase *GfxBase)
+{
+    struct wp8_render_data wp8rd;
+    struct Rectangle rr;
+    OOP_Object *gc;
+
+    gc = GetDriverData(rp, GfxBase);
+    GC_DRMD(gc) = vHidd_GC_DrawMode_Copy;
+
+    wp8rd.modulo      = modulo;
+    wp8rd.array       = array;
+    wp8rd.pixlut      = pixlut;
+    wp8rd.rp          = rp;
+    wp8rd.transparent = transparent;
+
+    rr.MinX = xstart;
+    rr.MinY = ystart;
+    rr.MaxX = xstop;
+    rr.MaxY = ystop;
+
+    return do_render_with_gc(rp, NULL, &rr, wp8_render, &wp8rd, gc, do_update, FALSE, GfxBase);
+}
+
+LONG write_pixels_8(struct RastPort *rp, UBYTE *array, ULONG modulo,
+                    WORD xstart, WORD ystart, WORD xstop, WORD ystop,
+                    HIDDT_PixelLUT *pixlut, BOOL do_update, struct GfxBase *GfxBase)
+{
+    HIDDT_PixelLUT bm_lut;
+
+    /* If we haven't got a LUT, we obtain it from the bitmap */
+    if((!pixlut) && IS_HIDD_BM(rp->BitMap)) {
+        bm_lut.entries = AROS_PALETTE_SIZE;
+        bm_lut.pixels  = HIDD_BM_PIXTAB(rp->BitMap);
+        pixlut = &bm_lut;
+
+#ifdef RTG_SANITY_CHECK
+        if((!bm_lut.pixels) && (HIDD_BM_REALDEPTH(rp->BitMap) > 8)) {
+            D(bug("write_pixels_8: can't work on hicolor/truecolor screen without LUT"));
+            return 0;
+        }
+#endif
+    }
+
+    return write_pixels_8_common(rp, array, modulo, xstart, ystart, xstop, ystop,
+                                 pixlut, -1, do_update, GfxBase);
+}
+
+/****************************************************************************************/
+
+LONG write_transp_pixels_8(struct RastPort *rp, UBYTE *array, ULONG modulo,
+                           WORD xstart, WORD ystart, WORD xstop, WORD ystop,
+                           HIDDT_PixelLUT *pixlut, UBYTE transparent,
+                           BOOL do_update, struct GfxBase *GfxBase)
+{
+    return write_pixels_8_common(rp, array, modulo, xstart, ystart, xstop, ystop,
+                                 pixlut, transparent, do_update, GfxBase);
+}
+
+/****************************************************************************************/
+
+/*
+** General functions for moving blocks of data to or from HIDDs, be it pixelarrays
+** or bitmaps. They use a callback-function to get data from amiga/put data to amiga
+** bitmaps/pixelarrays
+*/
+
+/****************************************************************************************/
+
+/****************************************************************************************/
+
+#define ENABLE_PROFILING   0
+
+#define rdtscll(val) \
+     __asm__ __volatile__("rdtsc" : "=A" (val))
+
+#if ENABLE_PROFILING && defined(__i386__)
+
+
+#define AROS_BEGIN_PROFILING(context)  \
+{                                      \
+    unsigned long long _time1, _time2; \
+    char *_text = #context;            \
+    rdtscll(_time1);                   \
+    {
+
+#define AROS_END_PROFILING                                                     \
+    }                                                                          \
+    rdtscll(_time2);                                                           \
+    kprintf("%s: Ticks count: %u\n", _text, (unsigned long)(_time2 - _time1)); \
+}
+
+#else
+
+#define AROS_BEGIN_PROFILING(context)
+#define AROS_END_PROFILING
+
+#endif
+
+BOOL MoveRaster(struct RastPort *rp, WORD dx, WORD dy, WORD x1, WORD y1,
+                WORD x2, WORD y2, BOOL UpdateDamageList, struct GfxBase *GfxBase)
+{
+    struct Layer     *L       = rp->Layer;
+    struct Rectangle  ScrollRect;
+    struct Rectangle  Rect;
+
+    if(0 == dx && 0 == dy)
+        return TRUE;
+
+    ScrollRect.MinX = x1;
+    ScrollRect.MinY = y1;
+    ScrollRect.MaxX = x2;
+    ScrollRect.MaxY = y2;
+
+    if(!L) {
+        Rect = ScrollRect;
+        TranslateRect(&Rect, -dx, -dy);
+        if(_AndRectRect(&ScrollRect, &Rect, &Rect)) {
+            BltBitMap(rp->BitMap,
+                      Rect.MinX + dx,
+                      Rect.MinY + dy,
+                      rp->BitMap,
+                      Rect.MinX,
+                      Rect.MinY,
+                      Rect.MaxX - Rect.MinX + 1,
+                      Rect.MaxY - Rect.MinY + 1,
+                      0xc0, /* copy */
+                      0xff,
+                      NULL);
+        }
+    } else {
+        struct ClipRect *SrcCR;
+
+        LockLayerRom(L);
+
+        if(L->Flags & LAYERSIMPLE && UpdateDamageList) {
+            /* Scroll the old damagelist within the scroll area */
+            ScrollRegion(L->DamageList, &ScrollRect, -dx, -dy);
+        }
+
+        /* The scrolling area is relative to the Layer, so make it relative to the screen */
+        TranslateRect(&ScrollRect, MinX(L), MinY(L));
+
+        /* The damage list will be formed by the now hidden layer's parts that will become visible due
+           to the scrolling procedure, thus we procede this way:
+
+           1) Calculate the invisible region out of the visible one, subtracting it from the
+              scrolling area
+
+           2) Scroll the invisible region by (-dx, -dy) and then subtract from it the not scrolled equivalent
+
+           The regions that we obtain after (2) is the new damage list
+        */
+
+        if(L->Flags & LAYERSIMPLE && UpdateDamageList) {
+            Rect = ScrollRect;
+
+            TranslateRect(&Rect, dx, dy);
+
+            if(_AndRectRect(&ScrollRect, &Rect, &Rect)) {
+                struct Region *Damage = NewRegion();
+
+                if(Damage) {
+#if 1
+                    BOOL res = OrRectRegion(Damage, &ScrollRect);
+#else
+                    BOOL res = OrRectRegion(Damage, &Rect);
+#endif
+                    if(!res) {
+                        DisposeRegion(Damage);
+                        Damage = NULL;
+                    }
+                }
+
+                if(Damage) {
+                    if
+                    (
+                        ClearRegionRegion(L->VisibleRegion, Damage)
+                        &&
+                        Damage->RegionRectangle
+                    ) {
+                        struct Region Tmp;
+                        /*
+                           We play sort of dirty here, by making assumptions about the internals of the
+                           Region structure and the region handling functions, but we are allowed to do that,
+                           aren't we? ;-)
+                        */
+
+                        Tmp = *Damage;
+
+                        TranslateRect(Bounds(Damage), -dx, -dy);
+
+                        if
+                        (
+                            ClearRegionRegion(&Tmp, Damage)
+                            &&
+                            Damage->RegionRectangle
+                        ) {
+#if 1
+                            AndRectRegion(Damage, &ScrollRect);
+                            if(Damage->RegionRectangle)
+#else
+#endif
+                            {
+                                /* Join the new damage list with the old one */
+                                TranslateRect(Bounds(Damage), -MinX(L), -MinY(L));
+                                OrRegionRegion(Damage, L->DamageList);
+
+                                L->Flags |= LAYERREFRESH;
+                            }
+                        }
+                    }
+
+                    DisposeRegion(Damage);
+                }
+            }
+        }
+
+        AROS_BEGIN_PROFILING(SortLayerCR)
+
+        if(LayersBase)
+            SortLayerCR(L, dx, dy);
+
+        AROS_END_PROFILING
+
+        AROS_BEGIN_PROFILING(Blitting loop)
+
+        for(SrcCR = L->ClipRect; SrcCR; SrcCR = SrcCR->Next) {
+            if(_AndRectRect(&ScrollRect, Bounds(SrcCR), &Rect)) {
+                TranslateRect(&Rect, -dx, -dy);
+
+                if(_AndRectRect(&ScrollRect, &Rect, &Rect)) {
+                    struct BitMap   *srcbm;
+                    struct ClipRect *DstCR;
+                    WORD             corrsrcx, corrsrcy;
+                    ULONG            area;
+
+                    if(SrcCR->lobs) {
+                        if(L->Flags & LAYERSIMPLE) continue;
+
+                        if(L->Flags & LAYERSUPER) {
+                            corrsrcx = - MinX(L) + L->Scroll_X;
+                            corrsrcy = - MinY(L) + L->Scroll_Y;
+                            srcbm = L->SuperBitMap;
+                        } else {
+                            corrsrcx = - MinX(SrcCR) + CR_BMOFFX(SrcCR);
+                            corrsrcy = - MinY(SrcCR) + CR_BMOFFY(SrcCR);
+                            srcbm = SrcCR->BitMap;
+                        }
+                    } else {
+                        corrsrcx  = 0;
+                        corrsrcy  = 0;
+                        srcbm = rp->BitMap;
+                    }
+
+                    area = (Rect.MaxX - Rect.MinX + 1) * (Rect.MaxY - Rect.MinY + 1);
+
+                    for(DstCR = L->ClipRect ; area && DstCR; DstCR = DstCR->Next) {
+                        struct Rectangle Rect2;
+
+                        if(_AndRectRect(Bounds(DstCR), &Rect, &Rect2)) {
+                            struct BitMap   *dstbm;
+                            WORD             corrdstx, corrdsty;
+
+                            area -= (Rect2.MaxX - Rect2.MinX + 1) * (Rect2.MaxY - Rect2.MinY + 1);
+
+                            if(DstCR->lobs) {
+                                if(L->Flags & LAYERSIMPLE) continue;
+
+                                if(L->Flags & LAYERSUPER) {
+                                    corrdstx = - MinX(L) + L->Scroll_X;
+                                    corrdsty = - MinY(L) + L->Scroll_Y;
+                                    dstbm = L->SuperBitMap;
+                                } else {
+                                    corrdstx = - MinX(DstCR) + CR_BMOFFX(DstCR);
+                                    corrdsty = - MinY(DstCR) + CR_BMOFFY(DstCR);
+                                    dstbm = DstCR->BitMap;
+                                }
+                            } else {
+                                corrdstx  = 0;
+                                corrdsty  = 0;
+                                dstbm = rp->BitMap;
+                            }
+
+                            BltBitMap
+                            (
+                                srcbm,
+                                Rect2.MinX + corrsrcx + dx,
+                                Rect2.MinY + corrsrcy + dy,
+                                dstbm,
+                                Rect2.MinX + corrdstx,
+                                Rect2.MinY + corrdsty,
+                                Rect2.MaxX - Rect2.MinX + 1,
+                                Rect2.MaxY - Rect2.MinY + 1,
+                                0xC0,
+                                0xFF,
+                                NULL
+                            );
+                        }
+                    }
+                }
+            }
+        }
+
+        AROS_END_PROFILING
+
+        UnlockLayerRom(L);
+    }
+
+    return TRUE;
+}
+
+/****************************************************************************************/
+
+BOOL GetRPClipRectangleForRect(struct RastPort *rp, struct Rectangle *rect, struct Rectangle *r)
+{
+    struct gfx_driverdata *dd = ObtainDriverData(rp);
+
+    if(dd && dd->dd_ClipRectangleFlags & RPCRF_VALID) {
+        *r = dd->dd_ClipRectangle;
+
+        if(dd->dd_ClipRectangleFlags & RPCRF_RELRIGHT) {
+            r->MaxX += rect->MaxX - rect->MinX;
+        }
+
+        if(dd->dd_ClipRectangleFlags & RPCRF_RELBOTTOM) {
+            r->MaxY += rect->MaxY - rect->MinY;
+        }
+
+        r->MinX += rect->MinX;
+        r->MinY += rect->MinY;
+        r->MaxX += rect->MinX;
+        r->MaxY += rect->MinY;
+
+        return TRUE;
+    }
+
+    return FALSE;
+}
+
+/****************************************************************************************/
+
+BOOL GetRPClipRectangleForBitMap(struct RastPort *rp, struct BitMap *bm,
+                                 struct Rectangle *r, struct GfxBase *GfxBase)
+{
+    struct Rectangle bm_rect;
+    BOOL res;
+
+    bm_rect.MinX = 0;
+    bm_rect.MinY = 0;
+    bm_rect.MaxX = GetBitMapAttr(bm, BMA_WIDTH)  - 1;
+    bm_rect.MaxY = GetBitMapAttr(bm, BMA_HEIGHT) - 1;
+
+    res = GetRPClipRectangleForRect(rp, &bm_rect, r);
+
+#if BITMAP_CLIPPING
+    if(!res) {
+        /*
+         * Set the rectangle to total bitmap size. This prevents trashing memory
+         * by hitting unallocated memory in HIDDs. They don't check bitmap bounds.
+         */
+        *r = bm_rect;
+        res = TRUE;
+    }
+#endif
+
+    return res;
+}
+
+/****************************************************************************************/
+
+void GenMinterms(struct RastPort *rp)
+{
+    int i;
+    UBYTE minA, minB;
+
+    // COMPLEMENT
+    if(rp->DrawMode & COMPLEMENT) {
+        minA = (rp->DrawMode & INVERSVID) ? 0x6a : 0x9a;
+        for(i = 0; i < 8; i++)
+            rp->minterms[i] = minA;
+    } else {
+        for(i = 0 ; i < 8 ; i++) {
+            minA = ((rp->FgPen >> i) & 1) * 3;
+            minB = (rp->DrawMode & JAM2) ? ((rp->BgPen >> i) & 1) * 3 : 2;
+            if(rp->DrawMode & INVERSVID)
+                minA = (minB << 2) | minA;
+            else minA = (minA << 2) | minB;
+
+            rp->minterms[i] = (minA << 4) | 0x0a;
+        }
+    }
+}
+
+/****************************************************************************************/

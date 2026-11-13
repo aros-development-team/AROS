@@ -1,0 +1,19 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+FILES:= uuid_compare uuid_namespace uuid_parse uuid_pack uuid_clear \
+	uuid_copy uuid_generate
+
+USER_CPPFLAGS := -DADEBUG=1
+USER_LDFLAGS := -static
+
+#MM- workbench-libs : workbench-libs-uuid
+%build_module mmake=workbench-libs-uuid \
+    modname=uuid modtype=library \
+    files="uuid_init $(FILES)"
+
+#MM includes-copy
+INCLUDE_FILES := $(call WILDCARD, include/*.h)
+%copy_includes path=libraries dir=include
+
+%common

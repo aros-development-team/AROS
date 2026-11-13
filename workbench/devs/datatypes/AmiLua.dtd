@@ -1,0 +1,9 @@
+# DataType Description for AmiLua scripts
+Name=AmiLua
+Version=$VER: AmiLua 1.0 (14.11.2006)
+BaseName=alua
+Pattern=#?.alua
+GroupID=text
+ID=alua
+Flags=DTF_ASCII
+Priority=1

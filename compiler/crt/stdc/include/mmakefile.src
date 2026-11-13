@@ -1,0 +1,9 @@
+include $(SRCDIR)/config/aros.cfg
+
+INCLUDES := $(call WILDCARD, aros/*.h aros/stdc/*.h aros/types/*.h libraries/*.h)
+
+#MM- compiler-stdc-includes : compiler-stdc-includes-extra
+#MM- includes-copy : compiler-stdc-includes-extra
+
+%copy_includes mmake=compiler-stdc-includes-extra \
+    includes=$(INCLUDES)

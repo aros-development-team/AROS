@@ -1,0 +1,129 @@
+/*
+    Copyright (C) 2020-2026, The AROS Development Team. All rights reserved.
+
+    Desc:
+*/
+
+#include <aros/debug.h>
+
+#include <proto/exec.h>
+
+#include <dos/dos.h>
+#include <dos/dostags.h>
+#include <exec/types.h>
+#include <exec/lists.h>
+
+#include "dos_intern.h"
+#include "internalloadseg.h"
+
+/*****************************************************************************
+
+    NAME */
+#include <proto/dos.h>
+
+        AROS_LH2(ULONG, GetSegListInfo,
+
+/*  SYNOPSIS */
+        AROS_LHA(BPTR, seglist, D0),
+        AROS_LHA(const struct TagItem *, taglist, A0),
+
+/*  LOCATION */
+        struct DosLibrary *, DOSBase, 196, Dos)
+
+/*  FUNCTION
+        returns information about a loaded seglist.
+
+    INPUTS
+        seglist - The segment list.
+        taglist - What to return; each ti_Data points to the storage for it:
+            GSLI_ElfHandle (APTR *) - the ELF handle of an ELF seglist.
+            GSLI_68KHUNK (APTR *) - the first hunk of a hunk seglist.
+            GSLI_68KRELOCS (struct HunkRelocTable **) - the 32-bit
+                relocations LoadSeg() applied to a hunk seglist, grouped as
+                dos/doshunks.h describes, for an emulator that copies the
+                segments and relocates them again. The table lives as long
+                as the seglist. Not answered on 68k, where the segments run
+                where they were loaded.
+
+    RESULT
+        returns number of tags acknowledged.
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+        LoadSeg()
+
+    INTERNALS
+
+*****************************************************************************/
+{
+    AROS_LIBFUNC_INIT
+    struct Node *segfound = NULL;
+    ULONG count = 0;
+
+    if ((seglist) && (taglist))
+    {
+        struct Node *segnode;
+
+        ObtainSemaphoreShared(&((struct IntDosBase *)DOSBase)->segsem);
+        ForeachNode(&((struct IntDosBase *)DOSBase)->segdata, segnode)
+        {
+            if ((BPTR)segnode->ln_Name == seglist)
+            {
+                segfound = segnode;
+                break;
+            }
+        }
+        if (segfound)
+        {
+            struct TagItem *tags  = (struct TagItem *)taglist;
+            struct TagItem  *tag;
+
+            D(bug("[DOS] %s: seglist info @ 0x%p\n", __func__, segfound);)
+            while ((tag = NextTagItem(&tags)) != NULL)
+            {
+                switch(tag->ti_Tag)
+                {
+                    case GSLI_ElfHandle:
+                        if ((tag->ti_Data) && (segfound->ln_Type == SEGTYPE_ELF))
+                        {
+                            IPTR *storage = (IPTR *)tag->ti_Data;
+                            *storage = (IPTR)segfound->ln_Name;
+                            count++;
+                        }
+                        break;
+
+                    case GSLI_68KHUNK:
+                        if ((tag->ti_Data) && (segfound->ln_Type == SEGTYPE_HUNK))
+                        {
+                            IPTR *storage = (IPTR *)tag->ti_Data;
+                            *storage = (IPTR)segfound->ln_Name;
+                            count++;
+                        }
+                        break;
+
+#ifndef __mc68000
+                    case GSLI_68KRELOCS:
+                        if ((tag->ti_Data) && (segfound->ln_Type == SEGTYPE_HUNK))
+                        {
+                            IPTR *storage = (IPTR *)tag->ti_Data;
+                            *storage = (IPTR)&((struct HunkSegNode *)segfound)->hsn_Relocs;
+                            count++;
+                        }
+                        break;
+#endif
+                }
+            }
+
+        }
+        ReleaseSemaphore(&((struct IntDosBase *)DOSBase)->segsem);
+    }
+
+    return count;
+
+    AROS_LIBFUNC_EXIT
+} /* GetSegListInfo */

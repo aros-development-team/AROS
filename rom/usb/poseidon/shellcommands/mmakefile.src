@@ -1,0 +1,21 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+SHELLFILES := \
+    PsdDevLister \
+    PsdErrorlog \
+    AddUSBClasses \
+    AddUSBHardware \
+    PsdStackLoader 
+
+USER_CPPFLAGS := \
+    -DMUIMASTER_YES_INLINE_STDARG \
+    -D__POSEIDON_NOLIBBASE__
+#USER_CPPFLAGS += -DDEBUG=1
+
+#MM poseidon-usb-shellcommands : kernel-usb-poseidon-includes
+
+%build_progs mmake=poseidon-usb-shellcommands \
+    files=$(SHELLFILES) targetdir=$(AROS_C)
+
+%common

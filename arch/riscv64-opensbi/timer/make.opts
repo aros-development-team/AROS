@@ -1,0 +1,2 @@
+# The S-mode timer is one-shot: VBlank is emulated on top of the MICROHZ unit
+USER_CFLAGS += -DUSE_VBLANK_EMU

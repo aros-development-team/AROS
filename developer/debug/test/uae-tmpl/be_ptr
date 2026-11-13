@@ -1,0 +1,192 @@
+
+#include "be_val"
+
+typedef long uae_ptr;
+
+template<class T> // big endian pointer
+class be_ptr
+{
+  public:
+    typedef be_ptr<T> my_type;
+    typedef T value_type;
+    typedef T* pointer_type;
+
+#ifdef DEBUG
+    /* Debugging */
+    inline void print ()
+    {
+      unsigned long *lp = (unsigned long *)((void *) &ptr);
+      printf ("%08lx", *lp);
+    }
+#endif
+
+    be_ptr () {}
+
+    // constructor element template: constructs be_ptr from any other be_ptr
+    //   Bug: too few warnings when incompatible be_ptrs are assigned
+    template<class C>
+    explicit be_ptr (const be_ptr<C> &p) : ptr (p.ptr) {}
+
+    // explicit: this constructor is not used
+    //           for automatic type promotion
+    // reinterpret_cast: required to cast pointer_type to uae_ptr,
+    //                   which is actually a long.
+    explicit be_ptr (const pointer_type p) : ptr (reinterpret_cast<uae_ptr> (p)) {}
+
+    // reinterpret_cast: required to cast void * to uae_ptr,
+    //                   which is actually a long.
+    be_ptr (void *p) : ptr (reinterpret_cast<uae_ptr> (p)) {}
+
+    // static_cast returns a native endian uae_ptr (long) and
+    // reinterpret_cast is required to cast it into a void *.
+    inline operator void * ()
+    {
+      return reinterpret_cast<void *> (static_cast<uae_ptr> (ptr));
+    }
+
+    // same as above for C*
+    //   Bug: too few warnings when incompatible be_ptrs are assigned
+    template<class C>
+    operator C* ()
+    {
+      return reinterpret_cast<C*> (static_cast<uae_ptr> (ptr));
+    }
+
+    // same as above for const C*
+    //   Bug: too few warnings when incompatible be_ptrs are assigned
+    template<class C>
+    operator const C* () const
+    {
+      return reinterpret_cast<const C*> (static_cast<uae_ptr> (ptr));
+    }
+
+    // cast the object itself into a native endian pointer
+    // using the pointer_type method above.
+    value_type& operator* ()
+    {
+      return *(static_cast<pointer_type> (*this));
+    }
+
+    // same as above but without indirection
+    pointer_type operator-> ()
+    {
+      return static_cast<pointer_type> (*this);
+    }
+
+    // assigns a native endian pointer (of pointer_type)
+    // to this object
+    const my_type& operator= (const pointer_type p)
+    {
+      *this = my_type (p);
+      return *this;
+    }
+
+    // assigns another big endian pointer of any type
+    // to this object
+    template<class C>
+    const my_type& operator= (const be_ptr<C>& other)
+    {
+      ptr=other.ptr;
+      return *this;
+    }
+    
+    value_type& operator[] (size_t dist) // index operator
+    {
+      return *(*this + dist);
+    }
+
+    const my_type& operator++ () // pre increment operator
+    {
+      ptr ++;
+      return *this;
+    }
+    const my_type operator++ (int) // post increment operator
+    {
+      my_type tmp = *this;
+      (*this)++;
+      return tmp;
+    }
+    const my_type& operator-- () // pre increment operator
+    {
+      ptr --;
+      return *this;
+    }
+    const my_type operator-- (int) // post increment operator
+    {
+      my_type tmp = *this;
+      (*this)--;
+      return tmp;
+    }
+    const my_type& operator+= (const size_t dist)
+    {
+      ptr += dist;
+    }
+    const my_type& operator-= (const size_t dist)
+    {
+      ptr -= dist;
+    }
+    my_type operator+ (const size_t dist)
+    {
+      my_type tmp = *this;
+      tmp += dist;
+      return tmp;
+    }
+    my_type operator- (const size_t dist)
+    {
+      my_type tmp = *this;
+      tmp -= dist;
+      return tmp;
+    }
+
+  protected:
+    be_val<uae_ptr> ptr;
+
+  // required for the constructor element template
+  template<class C>
+  friend be_ptr<C>;
+};
+
+template<> // specialization for void pointer
+class be_ptr<void>
+{
+  public:
+    typedef be_ptr<void> my_type;
+    typedef void* pointer_type;
+    typedef const void* const_pointer_type;
+
+#ifdef DEBUG
+    /* Debugging */
+    inline void print ()
+    {
+      unsigned long *lp = (unsigned long *)((void *) &ptr);
+      printf ("%08lx", *lp);
+    }
+#endif
+
+    be_ptr () {}
+
+    be_ptr (const pointer_type p) : ptr (reinterpret_cast<uae_ptr> (p)) {}
+
+    operator const_pointer_type () const
+    {
+      return reinterpret_cast<pointer_type> (static_cast<uae_ptr> (ptr));
+    }
+    operator pointer_type ()
+    {
+      return reinterpret_cast<pointer_type> (static_cast<uae_ptr> (ptr));
+    }
+    const my_type& operator= (const pointer_type p)
+    {
+      *this = my_type (p);
+      return *this;
+    }
+
+  protected:
+    be_val<uae_ptr> ptr;
+};
+
+template<class T>
+inline size_t operator- (const be_ptr<T>& a, const be_ptr<T>& b)
+{
+  return static_cast<T*> (a) - static_cast<T*> (b);
+}

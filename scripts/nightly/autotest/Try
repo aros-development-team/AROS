@@ -1,0 +1,9 @@
+.Key PROG/A,ARGS/F
+Echo "TRY: <PROG> <ARGS>*N" >> Test_Report.txt
+<PROG> <ARGS> >> Test_Report.txt
+If WARN
+    Skip failure
+Else
+    Echo "================================================================================" >> Test_Report.txt
+    Echo >> Test_Report.txt
+Endif

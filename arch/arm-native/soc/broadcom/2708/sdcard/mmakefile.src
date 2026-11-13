@@ -1,0 +1,42 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM- kernel-sdcard : kernel-dma-bcm2708-includes kernel-openfirmware-includes
+
+USER_INCLUDES := -I$(SRCDIR)/$(CURDIR) -I$(SRCDIR)/rom/devs/sdcard
+
+BCM2708COMMONFILES = \
+    sdcard_bcm2708time
+
+# Standard SDHCI controller: Arasan on the BCM2835/6/7, EMMC2 on the BCM2711
+BCM2708SDHCIFILES = \
+    sdcard_bcm2708init \
+    sdcard_bcm2708bus
+
+# BCM2835 SDHOST controller (frees Arasan for WiFi)
+BCM2708SDHOSTFILES = \
+    sdcard_sdhost_init \
+    sdcard_sdhost_bus
+
+BCM2708BUILDFILES := $(BCM2708SDHOSTFILES) $(BCM2708COMMONFILES)
+
+# The aarch64 target covers both the Pi 2/3 and the Pi 4, so it carries both
+# controllers and picks one at run time from the peripheral base.
+BCM2708BUILDFILES64 := $(BCM2708SDHOSTFILES) $(BCM2708SDHCIFILES) $(BCM2708COMMONFILES)
+
+%build_archspecific \
+  mainmmake=kernel-sdcard maindir=rom/devs/sdcard \
+  arch=raspi-arm modname=sdcard \
+  files="$(BCM2708BUILDFILES)"
+
+%build_archspecific \
+  mainmmake=kernel-sdcard maindir=rom/devs/sdcard \
+  arch=raspi-armeb modname=sdcard \
+  files="$(BCM2708BUILDFILES)"
+
+%build_archspecific \
+  mainmmake=kernel-sdcard maindir=rom/devs/sdcard \
+  arch=raspi-aarch64 modname=sdcard \
+  files="$(BCM2708BUILDFILES64)"
+
+%common

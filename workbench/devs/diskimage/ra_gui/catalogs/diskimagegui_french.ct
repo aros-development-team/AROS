@@ -1,0 +1,164 @@
+## version $VER: xxxxxx.catalog 1.00 (11.05.2010)
+## codeset 0
+## language français
+;
+; *********************
+; ** Unit/drive list **
+; *********************
+;
+MSG_UNIT_LBL
+Unité
+; Unité
+;
+MSG_DEVICE_LBL
+Périphérique
+; Périphérique
+;
+MSG_FILENAME_LBL
+Image disque
+; Image disque
+;
+MSG_WRITEPROTECT_LBL
+Protection
+; Protection
+;
+MSG_NO_DISK
+Aucun disque détecté
+; Aucun disque détecté
+;
+MSG_APPDESCRIPTION
+Interface graphique pour diskimage.device
+; Interface graphique pour diskimage.device
+;
+; ******************
+; ** Plugins list **
+; ******************
+;
+MSG_PRIORITY_LBL
+Priorité
+; Priorité
+;
+MSG_PLUGIN_LBL
+Greffon
+; Greffon
+;
+MSG_PLUGIN_GAD
+Utiliser greffon
+; Utiliser greffon
+;
+MSG_AUTO_LBL
+(Auto)
+; (Auto)
+;
+MSG_WRITESUPPORT_LBL
+W
+; W
+;
+; *****************
+; ** Menu labels **
+; *****************
+;
+MSG_PROJECT_ABOUT
+À propos...
+; À propos...
+;
+MSG_PROJECT_HIDE
+Cacher
+; Cacher
+;
+MSG_PROJECT_ICONIFY
+Iconifier
+; Iconifier
+;
+MSG_PROJECT_QUIT
+Quitter
+; Quitter
+;
+MSG_SETTINGS_MENU
+Réglages
+; Réglages
+;
+MSG_SETTINGS_CHANGETEMPDIR
+Changer le répertoire temporaire...
+; Changer le répertoire temporaire...
+;
+MSG_SETTINGS_SAVE
+Enregistrer les réglages
+; Enregistrer les réglages
+;
+MSG_SETTINGS_PLUGINS
+Greffons...
+; Greffons...
+;
+MSG_PROJECT_CLOSE
+Fermer
+; Fermer
+;
+; ****************
+; ** Requesters **
+; ****************
+;
+MSG_OK_GAD
+D'acc_ord
+; D'acc_ord
+;
+MSG_ABOUT_REQ
+%s version %ld.%ld\n%s version %ld.%ld\n\nCopyright © 2007-2010 Fredrik Wikstrom\nSite web: http://a500.org\nE-mail: fredrik@a500.org\nTraduction française par Murakami
+; %s version %ld.%ld\n%s version %ld.%ld\n\nCopyright © 2007-2010 Fredrik Wikstrom\nSite web: http://a500.org\nE-mail: fredrik@a500.org\nTraduction française par Murakami
+;
+MSG_ERROR
+Erreur
+; Erreur
+;
+MSG_NOAISS_REQ
+AISS n'est pas installé.\n\nTéléchargez et installez la dernière version\nsur ce site : http://masonicons.de
+; AISS n'est pas installé.\n\nTéléchargez et installez la dernière version\nsur ce site : http://masonicons.de
+;
+MSG_OLDAISS_REQ
+AISS v%ld.%ld ou plus récent indispensable.\n\nTéléchargez et installez la dernière version\nsur ce site : http://masonicons.de
+; AISS v%ld.%ld ou plus récent indispensable.\n\nTéléchargez et installez la dernière version\nsur ce site : http://masonicons.de
+;
+MSG_IMAGENOTFOUND_REQ
+Fichier image '%s' introuvable.
+; Fichier image '%s' introuvable.
+;
+; *******************
+; ** Speedbar help **
+; *******************
+;
+MSG_INSERT_GAD
+Insérer
+; Insérer
+;
+MSG_EJECT_GAD
+Éjecter
+; Éjecter
+;
+MSG_WRITEPROTECT_GAD
+Protéger en écriture
+; Protéger en écriture
+;
+MSG_REFRESH_GAD
+Actualiser
+; Actualiser
+;
+; *******************
+; ** Window titles **
+; *******************
+;
+MSG_PLUGINS_WND
+Greffons
+; Greffons
+;
+MSG_MAIN_WND
+%s: Raccourci = <%s>
+; %s: Raccourci = <%s>
+;
+MSG_ABOUT_WND
+À propos - %s
+; À propos - %s
+;
+MSG_ERROR_WND
+Erreur - %s
+; Erreur - %s
+;

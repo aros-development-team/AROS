@@ -1,0 +1,17 @@
+#
+#  Makefile.in for Filesave sound card driver
+#
+
+VPATH		= @srcdir@
+
+srcdir		= @srcdir@
+
+DRIVER		= filesave.audio
+MODEFILE	= FILESAVE
+
+OBJECTS		= filesave-init.o filesave-main.o filesave-accel.o \
+		  filesave-playslave.o filesave-recslave.o
+
+DEST		= Storage
+
+include ../Common/Makefile.common

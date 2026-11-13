@@ -1,0 +1,743 @@
+# Translation catalog description file (pot-style)
+# $Id: russian.po 954 2014-04-05 11:31:14Z damato $
+# 
+# version 2
+# Translators:
+msgid ""
+msgstr ""
+"Project-Id-Version: MCC TextEditor\n"
+"Report-Msgid-Bugs-To: http://sf.net/p/texteditor-mcc/\n"
+"POT-Creation-Date: 2014-02-23 12:29+0100\n"
+"PO-Revision-Date: 2014-04-02 09:12+0000\n"
+"Last-Translator: damato <mail@jens-maus.de>\n"
+"Language-Team: Russian (http://www.transifex.com/projects/p/texteditor-mcc/language/ru/)\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Catalog-Name: TextEditor_mcp\n"
+"Language: ru\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+
+msgctxt "MSG_HelpBubble_BlockQual (0//)"
+msgid ""
+"Move the cursor key and hold down the qualifier\n"
+"that you set here to mark text."
+msgstr ""
+
+msgctxt "MSG_HelpBubble_CheckWord (1//)"
+msgid ""
+"If enabled, then the editor will lookup the word,\n"
+"and only show suggestions if the word is misspelled."
+msgstr ""
+
+msgctxt "MSG_HelpBubble_Smooth (2//)"
+msgid "This enables pixel smooth scrolling."
+msgstr ""
+
+msgctxt "MSG_HelpBubble_TypeNSpell (3//)"
+msgid ""
+"Enable this to let the editor\n"
+"lookup the words while you type them."
+msgstr ""
+
+msgctxt "MSG_HelpBubble_UndoLevel (4//)"
+msgid ""
+"Each undo level eats up 10 bytes of memory.\n"
+"Cut and copy will take a little more,\n"
+"depending on the size of the block you\n"
+"are cutting or copying."
+msgstr ""
+
+msgctxt "MSG_Button_DefaultKeys (5//)"
+msgid "Default _keys"
+msgstr "_Клавиши по умолчанию"
+
+msgctxt "MSG_Button_Delete (6//)"
+msgid "_Delete"
+msgstr "_Удалить"
+
+msgctxt "MSG_Button_Insert (7//)"
+msgid "_Insert"
+msgstr "_Вставить"
+
+msgctxt "MSG_ConfigMenu_CheckWord (8//)"
+msgid "Check word"
+msgstr "Проверка слова"
+
+msgctxt "MSG_ConfigMenu_TypeNSpell (9//)"
+msgid "Type'n'spell"
+msgstr "Набор-и-проверка"
+
+msgctxt "MSG_CycleItem_Alt (10//)"
+msgid "Alt"
+msgstr "Alt"
+
+msgctxt "MSG_CycleItem_Ctrl (11//)"
+msgid "Control"
+msgstr "Control"
+
+msgctxt "MSG_CycleItem_Mouse (12//)"
+msgid "(mouse only)"
+msgstr "(только мышь)"
+
+msgctxt "MSG_CycleItem_Shift (13//)"
+msgid "Shift"
+msgstr "Shift"
+
+msgctxt "MSG_Execution_ARexx (14//)"
+msgid "ARexx"
+msgstr "ARexx"
+
+msgctxt "MSG_Execution_CLI (15//)"
+msgid "CLI"
+msgstr "CLI"
+
+msgctxt "MSG_Function_BOL (16//)"
+msgid "Beginning of line"
+msgstr "Начало строки"
+
+msgctxt "MSG_Function_Backspace (17//)"
+msgid "Backspace"
+msgstr "Забой"
+
+msgctxt "MSG_Function_Bottom (18//)"
+msgid "Bottom"
+msgstr "Конец"
+
+msgctxt "MSG_Function_Copy (19//)"
+msgid "Copy"
+msgstr "Копировать"
+
+msgctxt "MSG_Function_Cut (20//)"
+msgid "Cut"
+msgstr "Вырезать"
+
+msgctxt "MSG_Function_DelBOL (21//)"
+msgid "Delete to BOL"
+msgstr "Удалить до начала строки"
+
+msgctxt "MSG_Function_DelBOW (22//)"
+msgid "Delete to BOW"
+msgstr "Удалить до начала слова"
+
+msgctxt "MSG_Function_DelEOL (23//)"
+msgid "Delete to EOL"
+msgstr "Удалить до конца строки"
+
+msgctxt "MSG_Function_DelEOW (24//)"
+msgid "Delete to EOW"
+msgstr "Удалить до конца слова"
+
+msgctxt "MSG_Function_Delete (25//)"
+msgid "Delete"
+msgstr "Удалить"
+
+msgctxt "MSG_Function_Down (26//)"
+msgid "Down"
+msgstr "Вниз"
+
+msgctxt "MSG_Function_EOL (27//)"
+msgid "End of line"
+msgstr "Конец строки"
+
+msgctxt "MSG_Function_Left (28//)"
+msgid "Left"
+msgstr "Влево"
+
+msgctxt "MSG_Function_NextGadget (29//)"
+msgid "Next gadget"
+msgstr "Следующее поле"
+
+msgctxt "MSG_Function_NxtPage (30//)"
+msgid "Next page"
+msgstr "Следующая страница"
+
+msgctxt "MSG_Function_NxtPara (31//)"
+msgid "Next paragraph"
+msgstr "Следующий абзац"
+
+msgctxt "MSG_Function_NxtSent (32//)"
+msgid "Next sentence"
+msgstr "Следующее предложение"
+
+msgctxt "MSG_Function_NxtWord (33//)"
+msgid "Next word"
+msgstr "Следующее слово"
+
+msgctxt "MSG_Function_Paste (34//)"
+msgid "Paste"
+msgstr "Вставить"
+
+msgctxt "MSG_Function_PrvPage (35//)"
+msgid "Prev page"
+msgstr "Предыдущая страница"
+
+msgctxt "MSG_Function_PrvPara (36//)"
+msgid "Prev paragraph"
+msgstr "Предыдущий абзац"
+
+msgctxt "MSG_Function_PrvSent (37//)"
+msgid "Prev sentence"
+msgstr "Предыдущее предложение"
+
+msgctxt "MSG_Function_PrvWord (38//)"
+msgid "Prev word"
+msgstr "Предыдущее слово"
+
+msgctxt "MSG_Function_Redo (39//)"
+msgid "Redo"
+msgstr "Вернуть"
+
+msgctxt "MSG_Function_Return (40//)"
+msgid "Return"
+msgstr "Ввод"
+
+msgctxt "MSG_Function_Right (41//)"
+msgid "Right"
+msgstr "Вправо"
+
+msgctxt "MSG_Function_SuggestSpelling (42//)"
+msgid "Suggest spelling"
+msgstr "Подсказать правописание"
+
+msgctxt "MSG_Function_Tab (43//)"
+msgid "Tab"
+msgstr "Табуляция"
+
+msgctxt "MSG_Function_Top (44//)"
+msgid "Top"
+msgstr "Начало"
+
+msgctxt "MSG_Function_Undo (45//)"
+msgid "Undo"
+msgstr "Отменить"
+
+msgctxt "MSG_Function_Up (46//)"
+msgid "Up"
+msgstr "Вверх"
+
+msgctxt "MSG_GroupTitle_Control (47//)"
+msgid "Control"
+msgstr "Управление"
+
+msgctxt "MSG_GroupTitle_Cursor (48//)"
+msgid "Cursor"
+msgstr "Курсор"
+
+msgctxt "MSG_GroupTitle_Design (49//)"
+msgid "Design"
+msgstr "Дизайн"
+
+msgctxt "MSG_GroupTitle_Fonts (50//)"
+msgid "Fonts"
+msgstr "Шрифты"
+
+msgctxt "MSG_GroupTitle_Separator (51//)"
+msgid "Separator"
+msgstr "Разделитель"
+
+msgctxt "MSG_HelpTxt_SpellChecker (52//)"
+msgid ""
+" \\33u Intro \\33n\n"
+"\n"
+"The TextEditor gadget allows for easy integration of external spell checkers, making it possible to have both type'n'spell and also normal word guessing.\n"
+"\n"
+" \\33u Lookup command \\33n\n"
+"\n"
+"For the type'n'spell you'll have to set the lookup command to a script that will lookup the word and set the environment variable \"Found\" to either 0 (for not found) or 1 (for a match). This matches the default behaviour of AlphaSpell.\n"
+"\n"
+"You write %s where you want the word. If you use AlphaSpell, then you can use:\n"
+"\n"
+"\\33bARexx:\\33n \"Options Results;Address ALPHASPELL Search For '%s' Path 'T:' Danish.ald\"\n"
+"\n"
+"You \\33bmust\\33n remember the quotes, this will let ARexx execute it as a command instead of a script.\n"
+"\n"
+" \\33u Suggest command \\33n\n"
+"\n"
+"If you press <HELP> over a word, then the editor will launch this command, again with %s substituted with the current word.\n"
+"Your script should produce a file in T: named \"Matches\". This file is then read by the gadget, and the contents are listed in a popup listview, from where you can choose a word which will replace the misspelled one. Again, AlphaSpell users can use:\n"
+"\n"
+"\\33bARexx:\\33n \"Options Results;Address ALPHASPELL Match '%s' To 'T:Matches' Path 'T:' Danish.ald\"\n"
+"\n"
+"If you use the methods described above, then you must start AlphaSpell with the \"ARexx\" switch.\n"
+"\n"
+"It is advised to keep your dictionary in RAM if you enable the type'n'spell feature."
+msgstr "\\33u Информация \\33n\n\nКласс TextEditor предлагает Вам простой путь интегрирования внешних корректоров орфографии, что позволяет использовать как метод набор'и'проверка, так и обычный слово-предлагающий метод.\n\n\\33u Команда Поиска \\33n\n\nМетод набор'и'проверка предполагает наличие команды поиска, запускающей средство для поиска слова и для установки переменной окружающей среды \"Found\", имеющей два значения: 0 (не найдено) или 1 (найдено).\nЭто предпочитаемый алгоритм, он является основным в AlphaSpell.\nВ месте подстановки слова необходимо написать %s.\nЕсли Вы используете AlphaSpell, то Вы можете написать:\n\\33bARexx:\\33n \"Options Results;Address ALPHASPELL Search For '%s' Path 'T:' Danish.ald\"\n\n\\33bНе забывайте\\33n о кавычках, это позволит запустить ARexx на работу со строкой как с командой, а не как со скриптом.\n\n\\33u Команда Совета \\33n\n\nЭта команда вызывается на исполнение, если Вы нажмёте HELP над словом. Последовательность %s подменяется на текущее слово.\nВаша процедура должна создать файл \"Matches\" в каталоге T:. Этот файл затем будет считан классом, и содержимое файла будет показано во всплывающем списке просмотра, из которого Вы сможете выбрать слово для замены не прошедшего проверку.\nОпять же, пользователи AlphaSpell могут написать:\n\\33bARexx:\\33n \"Options Results;Address ALPHASPELL Match '%s' To 'T:Matches' Path 'T:' Danish.ald\"\n\nЕсли Вы пользуетесь вышеописанными методами, то Вам необходимо запустить AlphaSpell с ключом \"ARexx\".\n\nРекомендуется хранить Ваш словарь в памяти, если Вы используете метод набор'и'проверка."
+
+msgctxt "MSG_LVLabel_Action (53//)"
+msgid "\\33c\\0333Action:"
+msgstr "\\33c\\0333Действие:"
+
+msgctxt "MSG_LVLabel_Key (54//)"
+msgid "\\33c\\0333Key:"
+msgstr "\\33c\\0333Клавиша:"
+
+msgctxt "MSG_Label_Background (55//)"
+msgid "Background"
+msgstr "Фон"
+
+msgctxt "MSG_Label_BlinkSpeed (56//)"
+msgid "Blinkspeed"
+msgstr "Частота мигания"
+
+msgctxt "MSG_Label_BlkQual (57//)"
+msgid "Block qualifier"
+msgstr "Спецификатор"
+
+msgctxt "MSG_Label_Cursor (58//)"
+msgid "Normal"
+msgstr "Курсор"
+
+msgctxt "MSG_Label_Fixed (59//)"
+msgid "Fixed"
+msgstr "Фиксированный"
+
+msgctxt "MSG_Label_Frame (60//)"
+msgid "Frame"
+msgstr "Рамка"
+
+msgctxt "MSG_Label_Highlight (61//)"
+msgid "Highlight"
+msgstr "Выделение"
+
+msgctxt "MSG_Label_LookupCmd (62//)"
+msgid "Lookup command"
+msgstr "Команда поиска"
+
+msgctxt "MSG_Label_LookupWords (63//)"
+msgid "Lookup word before suggesting?"
+msgstr "Искать слово перед советом?"
+
+msgctxt "MSG_Label_Normal (64//)"
+msgid "Normal"
+msgstr "Нормальный"
+
+msgctxt "MSG_Label_Selected (65//)"
+msgid "Selected"
+msgstr "Выбранный"
+
+msgctxt "MSG_Label_SeparatorShadow (66//)"
+msgid "Shadow"
+msgstr "Тёмный"
+
+msgctxt "MSG_Label_SeparatorShine (67//)"
+msgid "Shine"
+msgstr "Светлый"
+
+msgctxt "MSG_Label_Smooth (68//)"
+msgid "Smooth"
+msgstr "Плавность"
+
+msgctxt "MSG_Label_SpellNType (69//)"
+msgid "Spell check as you type?"
+msgstr "Проверять орфографию набора?"
+
+msgctxt "MSG_Label_SuggestCmd (70//)"
+msgid "Suggest command"
+msgstr "Команда совета"
+
+msgctxt "MSG_Label_TabSize (71//)"
+msgid "Tab size"
+msgstr "Табуляция"
+
+msgctxt "MSG_Label_Text (72//)"
+msgid "Text"
+msgstr "Текст"
+
+msgctxt "MSG_Label_UndoLevel (73//)"
+msgid "Undo levels"
+msgstr "Уровень отмены"
+
+msgctxt "MSG_Label_Width (74//)"
+msgid "Width"
+msgstr "Ширина"
+
+msgctxt "MSG_MenuItem_Background (75//)"
+msgid "Background"
+msgstr "Фон"
+
+msgctxt "MSG_MenuItem_Bold (76//)"
+msgid "Bold"
+msgstr "Жирно"
+
+msgctxt "MSG_MenuItem_Center (77//)"
+msgid "Center"
+msgstr "По центру"
+
+msgctxt "MSG_MenuItem_Copy (78//)"
+msgid "Copy"
+msgstr "Копировать"
+
+msgctxt "MSG_MenuItem_Cut (79//)"
+msgid "Cut"
+msgstr "Вырезать"
+
+msgctxt "MSG_MenuItem_Delete (80//)"
+msgid "Delete"
+msgstr "Удалить"
+
+msgctxt "MSG_MenuItem_Fill (81//)"
+msgid "Fill"
+msgstr "Заполнение"
+
+msgctxt "MSG_MenuItem_Halfshadow (82//)"
+msgid "Halfshadow"
+msgstr "Полутень"
+
+msgctxt "MSG_MenuItem_Halfshine (83//)"
+msgid "Halfshine"
+msgstr "Подсветка"
+
+msgctxt "MSG_MenuItem_Italic (84//)"
+msgid "Italic"
+msgstr "Курсив"
+
+msgctxt "MSG_MenuItem_Left (85//)"
+msgid "Left"
+msgstr "Левое"
+
+msgctxt "MSG_MenuItem_Mark (86//)"
+msgid "Mark"
+msgstr "Метка"
+
+msgctxt "MSG_MenuItem_Normal (87//)"
+msgid "Normal"
+msgstr "Стандартно"
+
+msgctxt "MSG_MenuItem_Paste (88//)"
+msgid "Paste"
+msgstr "Вставить"
+
+msgctxt "MSG_MenuItem_Redo (89//)"
+msgid "Redo"
+msgstr "Вернуть"
+
+msgctxt "MSG_MenuItem_Right (90//)"
+msgid "Right"
+msgstr "Правое"
+
+msgctxt "MSG_MenuItem_Shadow (91//)"
+msgid "Shadow"
+msgstr "Тень"
+
+msgctxt "MSG_MenuItem_Shine (92//)"
+msgid "Shine"
+msgstr "Подсветка"
+
+msgctxt "MSG_MenuItem_Text (93//)"
+msgid "Text"
+msgstr "Текст"
+
+msgctxt "MSG_MenuItem_Underline (94//)"
+msgid "Underline"
+msgstr "Подчёркивание"
+
+msgctxt "MSG_MenuItem_Undo (95//)"
+msgid "Undo"
+msgstr "Отменить"
+
+msgctxt "MSG_MenuSubTitle_Alignment (96//)"
+msgid "Alignment"
+msgstr "Выравнивание"
+
+msgctxt "MSG_MenuSubTitle_Color (97//)"
+msgid "Color"
+msgstr "Цвет"
+
+msgctxt "MSG_MenuTitle_Edit (98//)"
+msgid "Edit"
+msgstr "Редактор"
+
+msgctxt "MSG_Page_Keybindings (99//)"
+msgid "Keybindings"
+msgstr "Клавиатура"
+
+msgctxt "MSG_Page_Sample (100//)"
+msgid "Sample"
+msgstr "Пример"
+
+msgctxt "MSG_Page_Settings (101//)"
+msgid "Settings"
+msgstr "Настройки"
+
+msgctxt "MSG_Page_SpellChecker (102//)"
+msgid "Spell checker"
+msgstr "Орфография"
+
+msgctxt "MSG_PopWinTitle_Background (103//)"
+msgid "Select background"
+msgstr "Выбор фона"
+
+msgctxt "MSG_PopWinTitle_Cursor (104//)"
+msgid "Select cursor color"
+msgstr "Выбор цвета курсора"
+
+msgctxt "MSG_PopWinTitle_Frame (105//)"
+msgid "Adjust frame"
+msgstr "Выбор рамки"
+
+msgctxt "MSG_PopWinTitle_Highlight (106//)"
+msgid "Select highlight color"
+msgstr "Выбор цвета выделения"
+
+msgctxt "MSG_PopWinTitle_Selected (107//)"
+msgid "Select block color"
+msgstr "Выбор цвета блока"
+
+msgctxt "MSG_PopWinTitle_SeparatorShadow (108//)"
+msgid "Select separators shadow color"
+msgstr "Выбор тёмного цвета разделителей"
+
+msgctxt "MSG_PopWinTitle_SeparatorShine (109//)"
+msgid "Select separators shine color"
+msgstr "Выбор светлого цвета разделителей"
+
+msgctxt "MSG_PopWinTitle_Text (110//)"
+msgid "Select text color"
+msgstr "Выбор цвета текста"
+
+msgctxt "MSG_SliderText_MaxWidth (111//)"
+msgid "Same as char"
+msgstr "Как символ"
+
+msgctxt "MSG_SliderText_MinSpeed (112//)"
+msgid "Off"
+msgstr "Выкл."
+
+msgctxt "MSG_SliderText_MinWidth (113//)"
+msgid "1 pixel"
+msgstr "1 точка"
+
+msgctxt "MSG_SliderText_StdSpeed (114//)"
+msgid "\\33r%ld ms"
+msgstr "\\33r%ld мс"
+
+msgctxt "MSG_SliderText_StdWidth (115//)"
+msgid "%ld pixels"
+msgstr "%ld точки"
+
+msgctxt "MSG_SliderText_TabSize (116//)"
+msgid "%ld spaces"
+msgstr "%ld пробела"
+
+msgctxt "MSG_Function_GotoBookmark1 (117//)"
+msgid "Goto bookmark 1"
+msgstr "Перейти на закладку 1"
+
+msgctxt "MSG_Function_GotoBookmark2 (118//)"
+msgid "Goto bookmark 2"
+msgstr "Перейти на закладку 2"
+
+msgctxt "MSG_Function_GotoBookmark3 (119//)"
+msgid "Goto bookmark 3"
+msgstr "Перейти на закладку 3"
+
+msgctxt "MSG_Function_SetBookmark1 (120//)"
+msgid "Set bookmark 1"
+msgstr "Установить закладку 1"
+
+msgctxt "MSG_Function_SetBookmark2 (121//)"
+msgid "Set bookmark 2"
+msgstr "Установить закладку 2"
+
+msgctxt "MSG_Function_SetBookmark3 (122//)"
+msgid "Set bookmark 3"
+msgstr "Установить закладку 3"
+
+msgctxt "MSG_Button_Snoop (123//)"
+msgid "Snoop"
+msgstr "Определить"
+
+msgctxt "MSG_Function_DelLine (124//)"
+msgid "Delete line"
+msgstr "Удалить строку"
+
+msgctxt "MSG_Function_SelectAll (125//)"
+msgid "Select all"
+msgstr "Выделить всё"
+
+msgctxt "MSG_Function_SelectNone (126//)"
+msgid "Select none"
+msgstr "Снять выделение"
+
+msgctxt "MSG_WarnConfigVersion_Title (127//)"
+msgid "TextEditor.mcp warning"
+msgstr "TextEditor.mcp Внимание"
+
+msgctxt "MSG_WarnConfigVersion (128//)"
+msgid ""
+"Your currently saved keybindings setup is incompatible\n"
+"with the version of TextEditor.mcc you have installed.\n"
+"\n"
+"It is suggested that you reset the current keybindings\n"
+"to their defaults and edit them manually afterwards."
+msgstr "Ваша текущая сохранённая настройка горячих клавиш\nнесовместима с установленной версией TextEditor.mcc.\n\nВы можете сбросить настройку в исходное значение\nи изменить потом горячие клавиши вручную."
+
+msgctxt "MSG_ResetAbort (129//)"
+msgid "Reset|Abort"
+msgstr "Сбросить|Отмена"
+
+msgctxt "MSG_WarnHotkeyString_Title (130//)"
+msgid "TextEditor.mcp warning"
+msgstr "TextEditor.mcp Внимание"
+
+msgctxt "MSG_WarnHotkeyString (131//)"
+msgid ""
+"TextEditor.mcp couldn't open the minimum required\n"
+"version of the HotkeyString.mcc custom class and\n"
+"therefore failed during initialization.\n"
+"\n"
+"Please make sure you have the latest Hotkeystring.mcc\n"
+"class from http://www.sf.net/projects/bstring-mcc/\n"
+"installed and try again."
+msgstr "TextEditor.mcp не может открыть минимально требуюмую\nверсию MUI-класса HotkeyString.mcc, что вызвало\nошибку во время инициализации.\n\nПожалуйста, скачайте свежую версию Hotkeystring.mcc\nс сайта http://www.sf.net/projects/bstring-mcc/,\nустановите её и попробуйте снова."
+
+msgctxt "MSG_Ok (132//)"
+msgid "Ok"
+msgstr "Далее"
+
+msgctxt "MSG_Label_InactiveCursor (133//)"
+msgid "Inactive cursor"
+msgstr "Неактивный курсор"
+
+msgctxt "MSG_HELP_InactiveCursor (134//)"
+msgid ""
+"If enabled, a custom cursor will be used\n"
+"whenever the editor doesn't have the focus."
+msgstr "Показывать специальный курсор, когда поле редактирования\nтекста находится к неактивном состоянии."
+
+msgctxt "MSG_Label_SelectPointer (135//)"
+msgid "Selection pointer"
+msgstr "Смена курсора"
+
+msgctxt "MSG_HELP_SelectPointer (136//)"
+msgid ""
+"If enabled, a custom selection pointer will appear\n"
+"when the mouse pointer is above the texteditor gadget."
+msgstr "Подменять курсор на специальный, когда он\nнаходится над полем редактирования текста."
+
+msgctxt "MSG_Label_InactiveColor (137//)"
+msgid "Inactive"
+msgstr "Неактивный"
+
+msgctxt "MSG_PopWinTitle_InactiveColor (138//)"
+msgid "Select inactive color"
+msgstr "Выбор цвета для неактивного выделенного текста"
+
+msgctxt "MSG_HELP_TABSIZE (139//)"
+msgid "How many spaces hitting the <TAB> key will jump."
+msgstr ""
+
+msgctxt "MSG_HELP_DESIGN_FRAME (140//)"
+msgid ""
+"This is a button to adjust a frame.\n"
+"Click it to open an adjust window or\n"
+"use the drag&drop facilities to copy\n"
+"from or to another frame adjust button."
+msgstr ""
+
+msgctxt "MSG_HELP_DESIGN_BACKGROUND (141//)"
+msgid ""
+"This is a button to adjust a background\n"
+"color or pattern. Click it to open an\n"
+"adjust window or use the drag&drop facilities\n"
+"to copy from or to another background adjust button."
+msgstr ""
+
+msgctxt "MSG_HELP_DESIGN_TEXT (142//)"
+msgid "This is the color used to print the text."
+msgstr ""
+
+msgctxt "MSG_HELP_DESIGN_HIGHLIGHT (143//)"
+msgid ""
+"This is the color used to\n"
+"print highlighted text."
+msgstr ""
+
+msgctxt "MSG_HELP_SEPARATOR_SHINE (144//)"
+msgid ""
+"This is the color used to\n"
+"print separator bars."
+msgstr ""
+
+msgctxt "MSG_HELP_SEPARATOR_SHADOW (145//)"
+msgid ""
+"This is the color used to print\n"
+"separator bars in shadow mode."
+msgstr ""
+
+msgctxt "MSG_HELP_FONTS_NORMAL (146//)"
+msgid "Default font to be used by the editor."
+msgstr ""
+
+msgctxt "MSG_HELP_FONTS_FIXED (147//)"
+msgid ""
+"Default font to be used by the editor\n"
+"whenever a fixed width font is requested."
+msgstr ""
+
+msgctxt "MSG_HELP_CURSOR_NORMAL (148//)"
+msgid "Default color to be used for the cursor."
+msgstr ""
+
+msgctxt "MSG_HELP_CURSOR_SELECTED (149//)"
+msgid ""
+"Color to be used for the cursor\n"
+"in selected text."
+msgstr ""
+
+msgctxt "MSG_HELP_CURSOR_INACTIVE (150//)"
+msgid ""
+"Color to use to print selected text\n"
+"when the editor doesn't have the focus."
+msgstr ""
+
+msgctxt "MSG_HELP_CURSOR_WIDTH (151//)"
+msgid "This is the width the cursor should have."
+msgstr ""
+
+msgctxt "MSG_HELP_CURSOR_BLINKSPEED (152//)"
+msgid ""
+"You may want the cursor to blink to make\n"
+"it easier to find. Select 'Off' to disable\n"
+"this feature."
+msgstr ""
+
+msgctxt "MSG_HELP_BUTTON_DEFAULTKEYS (153//)"
+msgid ""
+"Restore all keybindings\n"
+"to the built-in defaults."
+msgstr ""
+
+msgctxt "MSG_HELP_BUTTON_SNOOP (154//)"
+msgid ""
+"Use this field to set a keybinding for this action.\n"
+"You can either edit the string gadget directly or press\n"
+"the 'Snoop' button to make the gadget monitor keypresses\n"
+"until you press it again to confirm."
+msgstr ""
+
+msgctxt "MSG_HELP_BUTTON_INSERT (155//)"
+msgid "Add a new keybinding to the list."
+msgstr ""
+
+msgctxt "MSG_HELP_BUTTON_DELETE (156//)"
+msgid "Delete this keybinding from the list."
+msgstr ""
+
+msgctxt "MSG_HELP_SPELLCHECKER_LOOKUP_CMD (157//)"
+msgid ""
+"Specify here the lookup command you want to use, or\n"
+"leave this empty to disable the type'n'spell feature."
+msgstr ""
+
+msgctxt "MSG_HELP_SPELLCHECKER_SUGGEST_CMD (158//)"
+msgid ""
+"Specify here the command that will be used\n"
+"to suggest an alternate word. As explained above,\n"
+"usually you should specify a script here."
+msgstr ""
+
+msgctxt "MSG_UNDO_SLIDER_FORMAT (159//)"
+msgid "%ld (+/- 5)"
+msgstr ""

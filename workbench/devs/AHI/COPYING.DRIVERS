@@ -1,0 +1,8 @@
+
+As a special exception of the LGPL, AHI sound card drivers do not
+need to be GPL or LGPL compatible. Any license is acceptable, and the
+source code does not have to be provided.
+
+That being said, driver authors are strongly encouraged to release
+their drivers as open source software, for the benefit of the whole
+Amiga community.

@@ -1,0 +1,7 @@
+#!/bin/sh
+
+# This is wrapper around AROS-targetted compiler needed to create non-relocatable ELF files.
+# It is required to build bootstraps for native AROS.
+# The difference is that it uses different spec file, with different linker.
+
+exec @orig_target_cc@ -specs=@AROS_BUILDDIR@/bin/@aros_target_arch@-@aros_target_cpu@@aros_target_suffix@/gen/config/elf-specs "$@" -static

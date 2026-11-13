@@ -1,0 +1,10 @@
+astyle \
+  --style=kr \
+  --indent=spaces=4 \
+  --attach-closing-while \
+  --pad-oper \
+  --unpad-paren \
+  --align-pointer=name \
+  --max-code-length=120 \
+  --lineend=linux \
+  --recursive "src/*.c" "src/*.h"

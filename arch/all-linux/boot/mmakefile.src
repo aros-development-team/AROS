@@ -1,0 +1,5 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM- distfiles-linux-$(AROS_TARGET_CPU) : distfiles-system
+#MM- distfiles-linux-$(AROS_TARGET_CPU)-quick : distfiles-system

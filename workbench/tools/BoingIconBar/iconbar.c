@@ -1,0 +1,2266 @@
+// News: Labeling Icons
+// Version of BiB based on 1.0.2 68K 26.10.2013 source
+// New features added by Phibrizzo 
+
+//////////////////////////////////////////////////////////////
+//                                                          //
+// AROS PORT by LuKeJerry (at) gmail.com                    //
+//   -- translated to ENG from 26-09-2011                   //
+//                                                          //
+//////////////////////////////////////////////////////////////
+
+/******************************************************************************
+
+    NAME
+
+        BoingIconBar
+
+    SYNOPSIS
+
+        SPACE/N/K, STATIC/N/K, ALIGN/K, AUTOREMAP/S/K, NAMES/S/K, SYSFONT/K, LABELFONT/K, FONTSIZE/N/K, FAKEALPHA/S
+
+    LOCATION
+
+        SYS:Tools
+
+    FUNCTION
+
+        Display a toolbar at the screen's bottom for starting of applications. There's a
+        preferences editor for configuring.
+
+    INPUTS
+
+        SPACE       -- the number of pixels between the icons
+        STATIC      -- set this to 1 to let the toolbar stay permanently on screen
+        AUTOREMAP   --
+        NAMES       -- show icon labels
+        SYSFONT     -- font for the menu
+        LABELFONT   -- font for the labels
+        FONTSIZE    -- size of the label font
+        ALIGN       -- LEFT, RIGHT or CENTER (default) alignment of the toolbar
+        FAKEALPHA   -- draw the toolbar over a copy of the wallpaper taken when it
+                       opens, instead of as a window with a per pixel alpha channel
+                       composed over the live wallpaper (the default on screens
+                       that support it)
+
+    RESULT
+
+    NOTES
+
+    EXAMPLE
+
+        BoingIconBar NAMES FONTSIZE 20
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+    HISTORY
+
+******************************************************************************/
+
+//#define DEBUG 1
+#include <aros/debug.h>
+
+#include <proto/workbench.h>
+#include <proto/icon.h>
+#include <proto/exec.h>
+#include <proto/intuition.h>
+#include <proto/graphics.h>
+#include <proto/gadtools.h>
+#include <proto/dos.h>
+#include <proto/datatypes.h>
+#include <proto/diskfont.h> 
+#include <proto/cybergraphics.h>
+
+#include <exec/types.h>
+#include <exec/libraries.h>
+#include <exec/exec.h>
+#include <workbench/icon.h>
+#include <workbench/startup.h>
+#include <intuition/intuition.h>
+#include <intuition/imageclass.h>
+#include <graphics/clip.h>
+#include <cybergraphx/cybergraphics.h>
+#include <datatypes/datatypes.h>
+#include <datatypes/pictureclass.h>
+#include <dos/dos.h>
+#include <devices/rawkeycodes.h>
+#include <devices/timer.h>
+#include <aros/detach.h>
+
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+
+#include "locale.h"
+#include "iconbar.h"
+
+// ------------------------------
+// Forward declarations ....
+static BOOL ReadPrefs(void);                                            // load prefs
+static void LoadBackground(void);                                       //load background pictures
+static BOOL SetWindowParameters(void);                                  // check window sizes
+static void Decode_Toolbar_IDCMP(struct IntuiMessage *KomIDCMP);        // decode IDCMP main signals
+static void Change_State(LONG Mode);                                    // change icon state
+static void Insert_Icon(LONG Tryb, LONG NrIcon);                        // draw icon
+static void Blink_Icon(LONG NrIcon);                                    // blink the icon
+static BOOL OpenMainWindow(void);                                       // open main window
+static void CloseMainWindow(void);                                      // close main window
+static void CheckMousePosition(void);                                   // check mouse position
+static void Show_Selected_Level(void);                                  // change the submenu
+static void OpenMenuWindow(void);                                       // open menu window
+static void CloseMenuWindow(void);                                      // close menu window
+static void Decode_Menu_IDCMP(struct IntuiMessage *KomIDCMP);           // decode IDCMP menu signals
+static void Launch_Program(STRPTR Program);                             // start the chosed program
+static void Settings(void);                                             // open the prefs program
+static void Reload(void);                                               // reload the BiB
+static void HandleScreenNotify(void);                                   // handle Workbench screen reset
+static BOOL DrainAndReplyPort(struct MsgPort *port);                    // drain port, replying every message
+static BOOL NoIconBouncing(void);                                       // check if no icon is bouncing
+static BOOL MouseOverToolbar(void);                                     // check if mouse is over the toolbar
+static void HandleFocus(void);                                          // focus follows the mouse
+static void ToolbarToFront(void);                                       // alpha toolbar in front of other windows
+static BOOL ToolbarAreaBlocked(LONG left, LONG top, LONG right, LONG bottom); // check if another window covers the toolbar area
+static void ParseAlign(STRPTR str);                                     // parse ALIGN parameter
+static void ComputeWindowPosition(void);                                // set toolbar position from Align
+static void RefreshBackground(void);                                    // refresh toolbar background
+static void IconLabel(struct RastPort *rp);                             // add label to icon
+static void DrawTiles(struct RastPort *rp);                             // draw the bar background tiles
+static BOOL AllocWallpaperBuffer(void);                                 // buffer for the wallpaper capture
+static void FreeBuffers(void);                                          // free all render buffers
+
+// ------------------------------
+// App data...
+ 
+#define SUM_ICON  200
+#define SUM_LEVELS 11
+#define ICON_ACTIVE (1<<7)
+#define SELECTED_ICON (1<<6)
+
+#define TEMPLATE        "SPACE/N/K,STATIC/N/K,ALIGN/K,AUTOREMAP/S/K,NAMES/S/K,SYSFONT/K,LABELFONT/K,FONTSIZE/N/K,FAKEALPHA/S"
+
+// ------------------------------
+
+enum {
+    ARG_SPACE = 0,
+    ARG_STATIC,
+    ARG_ALIGN,
+    ARG_AUTOREMAP,
+    ARG_NAMES,
+    ARG_SYSFONT,
+    ARG_LABELFONT,
+    ARG_FONTSIZE,
+    ARG_FAKEALPHA,
+    ARG_TOTAL
+};
+
+#define BIB_PREFS "ENV:Iconbar.prefs"
+
+const TEXT version[]="$VER: BoingIconBar 1.14 (27.10.2026) by Robert 'Phibrizzo' Krajcarz - AROS port by LuKeJerry";
+
+static BOOL                                     BiB_Exit=FALSE, Icon_Remap=FALSE, PositionMenuOK=FALSE; 
+static BOOL                                     Window_Active=FALSE, Window_Open=FALSE, MenuWindow_Open=FALSE, FirstOpening=TRUE;
+
+static BOOL                                     B_Labels=FALSE;
+static TEXT                                     IT_Labels[100];  // buffer for label
+
+// -----------
+static char                                     *argSysFont = NULL, *argLabelFont = NULL, *argAlign = NULL;
+
+static IPTR                                     Spacing=5, Static=0, FontSize = 0;
+static LONG                                     Align = 0;             // 0=center, 1=left, 2=right
+static LONG                                     Position, OldPosition; 
+static LONG                                     WindowHeight, WindowWidth, ScreenHeight, ScreenWidth, IconWidth;
+static LONG                                     IconCounter, LevelCounter, CurrentLevel=0, lbm=0, rbm=0, MouseIcon;
+static LONG                                     Length, BeginningWindow, EndingWindow, Window_Max_X, Window_Max_Y;
+static LONG                                     CacheRelX, CacheRelY;    // window offset within the screen-anchored wallpaper cache
+static BYTE                                     MovingTable[8]={0, 4, 7, 9, 10, 9, 7, 4};
+static TEXT                                     BufferList[20]; 
+static ULONG                                    WindowMask=0, MenuMask=0, WindowSignal;
+
+static struct MsgPort                           *ScreenNotifyPort = NULL;
+static ULONG                                    ScreenNotifyMask = 0;
+static APTR                                     ScreenNotifyHandle = NULL;
+static BOOL                                     ScreenResetInProgress = FALSE;
+
+static struct Window                            *PrevActiveWindow = NULL;
+static BOOL                                     FocusOver = FALSE;
+static LONG                                     FocusStableTicks = 0;
+
+static struct MsgPort                           *FocusPort = NULL;
+static struct timerequest                       *FocusTimer = NULL;
+static ULONG                                    FocusMask = 0;
+
+static struct MsgPort                           *WallpaperPort = NULL;
+static ULONG                                    WallpaperMask = 0;
+static struct NotifyRequest                     *WallpaperNotRequest = NULL;
+static BOOL                                     WallpaperPending = FALSE;
+
+/* Transparency: by default the toolbar is a composited window with a per
+   pixel alpha surface (WA_AlphaSurface) that the display blends over the
+   live wallpaper; the toolbar is rendered into an ARGB buffer (transparent
+   where nothing is drawn) and blitted into the window. FAKEALPHA (or a
+   screen without source alpha support) selects the old method: the
+   wallpaper under the toolbar is copied from the screen when the window
+   opens and the toolbar is drawn over the copy. */
+static BOOL                                     FakeAlpha = FALSE;      // FAKEALPHA option
+static BOOL                                     AlphaWindow = FALSE;    // the toolbar window has an alpha surface
+
+static IPTR                                     args[ARG_TOTAL] = {
+                        (IPTR)&Spacing,
+                        (IPTR)&Static,
+                        (IPTR)&argAlign,
+                        0,
+                        0,
+                        0,
+                        0,
+                        (IPTR)&FontSize,
+                        0
+};
+
+static struct DiskObject                        *Icon[SUM_ICON]; 
+
+static struct Window                            *MainWindow = NULL, *MenuWindow = NULL; 
+static struct Screen                            *MyScreen = NULL;
+
+static struct BitMap                            *BMP_Buffer, *BMP_DoubleBuffer, *BMP_Wallpaper;
+static struct RastPort                          RP_Buffer, RP_DoubleBuffer, RP_Wallpaper;
+
+// struct of  icons
+static struct Icon_Struct                       Icons[SUM_ICON] = { 0 };
+
+// struct of submenu
+static struct Level_Struct                      Levels[11] = { 0 };
+
+// ---  Define used fonts
+static struct TextFont                          *TF_LabelFont   = NULL, *TF_SysFont = NULL;
+static const char                               labelfontName[] = "arial.font";
+static const char                               sysfontName[]   = "topaz.font";
+static struct TextAttr                          LabelFont       = { (STRPTR)labelfontName,      9, 0, FPF_DISKFONT };
+static struct TextAttr                          SysFont         = { (STRPTR)sysfontName,        8, 0, FPF_ROMFONT };
+
+static struct IntuiText                         Names  = { 1, 0, JAM1, 0, 0, &SysFont,   BufferList, NULL };
+static struct IntuiText                         Labels = { 1, 0, JAM1, 0, 0, &LabelFont, IT_Labels,  NULL };
+
+//  background pictures
+static Object *picture[3];
+static struct BitMap                            *bm[3];
+
+static struct Struct_BackgroundData             BackgroundData[3];
+
+// -------------
+
+int main(int argc, char *argv[])
+{
+    LONG retval = RETURN_OK;
+
+    LONG x;
+
+    struct IntuiMessage *KomIDCMP,CopyIDCMP;
+    struct RDArgs *rda=NULL;
+    struct DiskObject *dob=NULL;
+    struct NotifyRequest *NotRequest = NULL;
+    struct MsgPort *BIBport = NULL;
+
+    if (argc) // reading command line parameters 
+    {
+        if (!(rda = ReadArgs(TEMPLATE, args, NULL)))
+        {
+            PrintFault(IoErr(), argv[0]);
+            retval = RETURN_ERROR;
+            goto bailout;
+        }
+
+        if (args[ARG_AUTOREMAP])
+        {
+            Icon_Remap = TRUE;
+        }
+
+        if (args[ARG_NAMES])
+        {
+            B_Labels = TRUE;
+        }
+
+        if (args[ARG_SPACE])
+        {
+            Spacing = *(LONG*)args[ARG_SPACE];
+        }
+
+        if (args[ARG_STATIC])
+        {
+            Static = *(LONG*)args[ARG_STATIC];
+        }
+
+        if (args[ARG_ALIGN])
+        {
+            ParseAlign((STRPTR)args[ARG_ALIGN]);
+        }
+
+        if (args[ARG_SYSFONT])
+        {
+            argSysFont = AllocVec(strlen((char *)args[ARG_SYSFONT]) + 1, MEMF_CLEAR);
+            CopyMem((APTR)args[ARG_SYSFONT], argSysFont, strlen((char *)args[ARG_SYSFONT]));
+        }
+
+        if (args[ARG_LABELFONT])
+        {
+            argLabelFont = AllocVec(strlen((char *)args[ARG_LABELFONT]) + 1, MEMF_CLEAR);
+            CopyMem((APTR)args[ARG_LABELFONT], argLabelFont, strlen((char *)args[ARG_LABELFONT]));
+        }
+
+        if (args[ARG_FONTSIZE])
+        {
+            FontSize = *(LONG*)args[ARG_FONTSIZE];
+        }
+
+        if (args[ARG_FAKEALPHA])
+        {
+            FakeAlpha = TRUE;
+        }
+    }
+    else
+    {   //reading ToolTypes parameters 
+        struct WBArg *wba;
+        struct WBStartup *wbs=(struct WBStartup*)argv;
+        BPTR oldcd;
+
+        if (wbs && wbs->sm_NumArgs > 0)
+        {
+            wba = &wbs->sm_ArgList[0];
+            if (wba && wba->wa_Lock && wba->wa_Name)
+            {
+                oldcd=CurrentDir(wba->wa_Lock);
+                if ((dob=GetDiskObjectNew(wba->wa_Name)))
+                {
+                    TEXT *str;
+
+                    if ((str = FindToolType(dob->do_ToolTypes, "SPACE")))
+                        Spacing = atoi(str);
+
+                    if ((str = FindToolType(dob->do_ToolTypes, "STATIC")))
+                        Static = atoi(str);
+
+                    if ((str = FindToolType(dob->do_ToolTypes, "ALIGN")))
+                        ParseAlign(str);
+
+                    if ((str = FindToolType(dob->do_ToolTypes, "AUTOREMAP")))
+                        Icon_Remap = TRUE;
+
+                    if ((str = FindToolType(dob->do_ToolTypes, "NAMES")))
+                        B_Labels = TRUE;
+
+                    if ((str = FindToolType(dob->do_ToolTypes, "SYSFONT")))
+                    {
+                        argSysFont = AllocVec(strlen(str) + 1, MEMF_CLEAR);
+                        CopyMem(str, argSysFont, strlen(str));
+                    }
+
+                    if ((str = FindToolType(dob->do_ToolTypes, "LABELFONT")))
+                    {
+                        argLabelFont = AllocVec(strlen(str) + 1, MEMF_CLEAR);
+                        CopyMem(str, argLabelFont, strlen(str));
+                    }
+
+                    if ((str = FindToolType(dob->do_ToolTypes, "FONTSIZE")))
+                        FontSize = atoi(str);
+
+                    if ((str = FindToolType(dob->do_ToolTypes, "FAKEALPHA")))
+                        FakeAlpha = TRUE;
+                }
+                CurrentDir(oldcd);
+            }
+        }
+    }
+
+    if (rda)
+    {
+        FreeArgs(rda);
+        rda = NULL;
+    }
+    if (dob)
+    {
+        FreeDiskObject(dob);
+        dob = NULL;
+    }
+
+    Detach(); // must be done after ReadArgs()
+
+    D(
+        bug("[IconBar] space %d\n", Spacing);
+        bug("[IconBar] static %d\n", Static);
+        bug("[IconBar] autoremap %d\n", Icon_Remap);
+        bug("[IconBar] names %d\n", B_Labels);
+        bug("[IconBar] sysfont 0x%p\n", argSysFont);
+        bug("[IconBar] labelfont 0x%p\n", argLabelFont);
+        bug("[IconBar] fontsizes %d\n", FontSize);
+    )
+
+    // start notification on prefs file
+    BIBport = CreateMsgPort();
+    if (BIBport)
+    {
+        NotRequest = AllocVec(sizeof(struct NotifyRequest), MEMF_CLEAR);
+        if (NotRequest)
+        {
+            NotRequest->nr_Name = BIB_PREFS;
+            NotRequest->nr_Flags = NRF_SEND_MESSAGE;
+            NotRequest->nr_stuff.nr_Msg.nr_Port = BIBport;
+
+            if (StartNotify(NotRequest) == DOSFALSE)
+            {
+                printf("StartNotify failed: %ld\n", IoErr());
+                NotRequest->nr_Name = NULL;
+                retval = RETURN_ERROR;
+                goto bailout;
+            }
+        }
+        else
+        {
+            puts("Can't allocate NotifyRequest");
+            retval = RETURN_ERROR;
+            goto bailout;
+        }
+    }
+    else
+    {
+        puts("Can't create MsgPort for notification");
+        retval = RETURN_ERROR;
+        goto bailout;
+    }
+
+    // start notification on the wallpaper prefs file
+    WallpaperPort = CreateMsgPort();
+    if (WallpaperPort)
+    {
+        WallpaperNotRequest = AllocVec(sizeof(struct NotifyRequest), MEMF_CLEAR);
+        if (WallpaperNotRequest)
+        {
+            WallpaperNotRequest->nr_Name = "ENV:SYS/Wanderer/global.prefs";
+            WallpaperNotRequest->nr_Flags = NRF_SEND_MESSAGE;
+            WallpaperNotRequest->nr_stuff.nr_Msg.nr_Port = WallpaperPort;
+
+            if (StartNotify(WallpaperNotRequest) != DOSFALSE)
+            {
+                WallpaperMask = 1 << WallpaperPort->mp_SigBit;
+            }
+            else
+            {
+                WallpaperNotRequest->nr_Name = NULL;
+            }
+        }
+    }
+
+    // periodic timer for focus-follows-mouse (works even when the window is inactive)
+    FocusPort = CreateMsgPort();
+    if (FocusPort)
+    {
+        FocusTimer = (struct timerequest *)CreateIORequest(FocusPort, sizeof(struct timerequest));
+        if (FocusTimer)
+        {
+            if (OpenDevice("timer.device", UNIT_MICROHZ, (struct IORequest *)FocusTimer, 0) == 0)
+            {
+                FocusTimer->tr_node.io_Command = TR_ADDREQUEST;
+                FocusTimer->tr_time.tv_secs = 0;
+                FocusTimer->tr_time.tv_micro = 100000;   /* 100 ms */
+                SendIO((struct IORequest *)FocusTimer);
+                FocusMask = 1 << FocusPort->mp_SigBit;
+            }
+            else
+            {
+                DeleteIORequest((struct IORequest *)FocusTimer);
+                FocusTimer = NULL;
+            }
+        }
+    }
+
+    // ------ Opening font if parameter NAMES is active
+
+    if (FontSize)
+    {
+        LabelFont.ta_YSize = FontSize;
+#if (0)
+        SysFont.ta_YSize = FontSize - 1;
+#endif
+    }
+
+    if (argLabelFont)
+    {
+        LabelFont.ta_Name = argLabelFont;
+    }
+
+    if (argSysFont)
+    {
+        SysFont.ta_Name = argSysFont;
+        SysFont.ta_Flags = FPF_DISKFONT;
+        if((TF_SysFont = OpenDiskFont(&SysFont)) == NULL)
+        {
+            printf("Failed to open %s:%u font - Resorting to %s:%u\n", SysFont.ta_Name, SysFont.ta_YSize, sysfontName, 8);
+            SysFont.ta_Name = (char *)sysfontName;
+            SysFont.ta_Flags = FPF_ROMFONT;
+        }
+    }
+
+    if(B_Labels == TRUE)
+    {
+        if((TF_LabelFont = OpenDiskFont(&LabelFont)) == NULL)
+        {
+            B_Labels = FALSE;
+            printf("Failed to open %s:%u - Labelling disabled\n", LabelFont.ta_Name, LabelFont.ta_YSize);
+        }
+    }
+
+    // ------------------------------
+
+    if(ReadPrefs())
+    {
+        LoadBackground();
+        if(Static)
+        {
+            Delay(Static * 50);
+            OpenMainWindow();
+            FirstOpening = FALSE;
+        }
+
+        /* Subscribe to Workbench screen notifications only after the startup
+           delay. StartScreenNotifyTags with SNOTIFY_WAIT_REPLY makes the
+           Workbench wait for our reply to SNOTIFY_AFTER_OPENWB; subscribing
+           before the delay would block the Workbench's initial wallpaper
+           render while we sleep (gray screen during the whole delay). */
+        ScreenNotifyPort = CreateMsgPort();
+        if (ScreenNotifyPort)
+        {
+            ScreenNotifyHandle = StartScreenNotifyTags(
+                SNA_Notify,   SNOTIFY_WAIT_REPLY | SNOTIFY_BEFORE_CLOSEWB | SNOTIFY_AFTER_OPENWB,
+                SNA_MsgPort,  ScreenNotifyPort,
+                SNA_Priority, 0,
+                TAG_END);
+
+            if (ScreenNotifyHandle)
+            {
+                ScreenNotifyMask = 1 << ScreenNotifyPort->mp_SigBit;
+            }
+        }
+
+        // ---- main loop
+
+        while (BiB_Exit==FALSE)
+        {
+
+            if (DrainAndReplyPort(BIBport))
+            {
+                if (!ScreenResetInProgress)
+                    Reload();
+            }
+
+            if(Window_Open || MenuWindow_Open)
+            {
+                WindowSignal = Wait(WindowMask | MenuMask | ScreenNotifyMask | WallpaperMask | FocusMask | SIGBREAKF_CTRL_C);
+
+                if(WindowSignal & WindowMask)
+                {
+                    while((KomIDCMP=GT_GetIMsg(MainWindow->UserPort)))
+                    {
+                        CopyMem(KomIDCMP,&CopyIDCMP,sizeof(struct IntuiMessage));
+                        GT_ReplyIMsg(KomIDCMP);
+                        Decode_Toolbar_IDCMP(&CopyIDCMP);
+                    }
+
+                    if(!(Static) && Window_Active == FALSE)
+                        CloseMainWindow();
+                }
+
+                if(WindowSignal & MenuMask)
+                {
+                    while((KomIDCMP=GT_GetIMsg(MenuWindow->UserPort)))
+                    {
+                        CopyMem(KomIDCMP,&CopyIDCMP,sizeof(struct IntuiMessage));
+                        GT_ReplyIMsg(KomIDCMP);
+                        Decode_Menu_IDCMP(&CopyIDCMP);
+                    }
+
+                    if(MenuWindow_Open == FALSE)
+                        CloseMenuWindow();
+                }
+
+                if(WindowSignal & ScreenNotifyMask)
+                {
+                    HandleScreenNotify();
+                }
+
+                if(WindowSignal & WallpaperMask)
+                {
+                    DrainAndReplyPort(WallpaperPort);
+                    /* An alpha window is composed over the live wallpaper:
+                       there is nothing to recapture. */
+                    if (!AlphaWindow)
+                        WallpaperPending = TRUE;
+                }
+
+                if(WindowSignal & FocusMask)
+                {
+                    BOOL fired = FALSE;
+                    while(GetMsg(FocusPort) != NULL)
+                        fired = TRUE;
+                    if (fired)
+                    {
+                        /* timer.device zeroes tr_time when the request completes,
+                           so it must be re-armed with the delay re-set. */
+                        FocusTimer->tr_time.tv_secs = 0;
+                        FocusTimer->tr_time.tv_micro = 100000;
+                        SendIO((struct IORequest *)FocusTimer);
+                    }
+                    HandleFocus();
+                }
+
+                if(WindowSignal & SIGBREAKF_CTRL_C)
+                {
+                    D(bug("CTRL-C reveived\n"));
+                    BiB_Exit=TRUE;
+                }
+
+                if(WallpaperPending && Window_Open && NoIconBouncing() &&
+                    MainWindow &&
+                    !ToolbarAreaBlocked(MainWindow->LeftEdge,
+                        MainWindow->TopEdge,
+                        MainWindow->LeftEdge + MainWindow->Width - 1,
+                        MainWindow->TopEdge + MainWindow->Height - 1))
+                {
+                    /* Let Wanderer repaint the new wallpaper before recapturing */
+                    Delay(20);
+                    RefreshBackground();
+                    WallpaperPending = FALSE;
+                }
+
+            }
+            else
+            {
+                Delay(50);
+                D(bug("Check for CTRL-C\n"));
+                if (SetSignal(0, 0) & SIGBREAKF_CTRL_C)
+                {
+                    D(bug("CTRL-C reveived\n"));
+                    SetSignal(0, SIGBREAKF_CTRL_C);
+                    BiB_Exit=TRUE;
+                }
+
+                if (ScreenNotifyMask)
+                {
+                    HandleScreenNotify();
+                }
+
+                if (WallpaperMask)
+                {
+                    if (DrainAndReplyPort(WallpaperPort))
+                        WallpaperPending = FALSE;
+                }
+
+                if (FocusMask)
+                {
+                    BOOL fired = FALSE;
+                    while(GetMsg(FocusPort) != NULL)
+                        fired = TRUE;
+                    if (fired)
+                    {
+                        FocusTimer->tr_time.tv_secs = 0;
+                        FocusTimer->tr_time.tv_micro = 100000;
+                        SendIO((struct IORequest *)FocusTimer);
+                    }
+                }
+
+                CheckMousePosition();
+            }
+        }
+        // ---- end of main loop
+    }
+    else
+    {
+        printf("No prefs\n");
+        retval = RETURN_ERROR;
+    }
+    
+bailout:
+    CloseMainWindow();
+
+    if (NotRequest)
+    {
+        if (NotRequest->nr_Name)
+            EndNotify(NotRequest); // replies all pending messages
+        FreeVec(NotRequest);
+    }
+
+    if (BIBport)
+        DeleteMsgPort(BIBport);
+
+    if (ScreenNotifyHandle)
+        EndScreenNotify(ScreenNotifyHandle);
+
+    if (ScreenNotifyPort)
+        DeleteMsgPort(ScreenNotifyPort);
+
+    if (WallpaperNotRequest)
+    {
+        if (WallpaperNotRequest->nr_Name)
+EndNotify(WallpaperNotRequest);
+        FreeVec(WallpaperNotRequest);
+    }
+
+    if (WallpaperPort)
+        DeleteMsgPort(WallpaperPort);
+
+    if (FocusTimer)
+    {
+        if (FocusTimer->tr_node.io_Device)
+        {
+            AbortIO((struct IORequest *)FocusTimer);
+            WaitIO((struct IORequest *)FocusTimer);
+        }
+        DeleteIORequest((struct IORequest *)FocusTimer);
+    }
+
+    if (FocusPort)
+        DeleteMsgPort(FocusPort);
+    
+    for(x=0; x<SUM_ICON; x++)
+    {
+        if(Icon[x] != NULL)
+        {
+            FreeDiskObject(Icon[x]);
+        }
+    }
+
+    FreeBuffers();
+
+    for(x=0; x<3; x++)
+    {
+        if(picture[x])
+            DisposeDTObject(picture[x]);
+    }
+
+    if (TF_SysFont)
+        CloseFont(TF_SysFont);
+    if(TF_LabelFont)
+        CloseFont(TF_LabelFont);
+    if (rda)
+        FreeArgs(rda);
+    if (dob)
+        FreeDiskObject(dob);
+
+    FreeVec(argSysFont);
+    FreeVec(argLabelFont);
+
+    return retval;
+}
+
+
+static STRPTR TrimStr(STRPTR s)
+{
+    STRPTR end;
+
+    while (*s == ' ' || *s == '\t')
+        s++;
+
+    if (*s == '\0')
+        return s;
+
+    end = s + strlen(s) - 1;
+    while (end > s && (*end == ' ' || *end == '\t'))
+        *end-- = '\0';
+
+    return s;
+}
+
+
+static BOOL ReadPrefs(void)
+{
+    BPTR Prefs;
+    LONG x, LengthText, NumberCharacters;
+
+    Icons[0].Icon_OK = FALSE;
+    IconCounter = 0;
+    LevelCounter = 0;
+    Length = 0;
+
+    if((Prefs = Open(BIB_PREFS, MODE_OLDFILE)))
+    {
+        FGets(Prefs, Icons[0].Icon_Path, 255);
+
+        if(strncmp(Icons[0].Icon_Path, "BOING_PREFS", 11) != 0)
+        {
+            Close(Prefs);
+            puts("Prefs error\n");
+            return FALSE;
+        }
+
+        if((MyScreen=LockPubScreen(NULL)))
+        {
+            while(FGets(Prefs, Icons[IconCounter].Icon_Path, 255) && IconCounter < SUM_ICON)
+            {
+                NumberCharacters = strlen(Icons[IconCounter].Icon_Path);
+                Icons[IconCounter].Icon_Path[NumberCharacters-1] = '\0';
+                if(Icons[IconCounter].Icon_Path[0] == ';')
+                {
+                    if(NumberCharacters > 20)
+                        NumberCharacters = 20;
+                    Icons[IconCounter].Icon_Path[19] = '\0';
+
+                    /* Keep the number of submenus within Levels[SUM_LEVELS];
+                       two slots are reserved for Settings and Quit. */
+                    if(LevelCounter < SUM_LEVELS - 2)
+                    {
+                        for(x=1; x<NumberCharacters; x++)
+                        {
+                            Levels[LevelCounter].Level_Name[x-1] = Icons[IconCounter].Icon_Path[x];
+                        }
+
+                        strcpy(BufferList, Levels[LevelCounter].Level_Name);
+                        LengthText = IntuiTextLength(&Names);
+                        if(LengthText > Length)
+                            Length = LengthText;
+
+                        Levels[LevelCounter].Beginning = IconCounter;
+                        LevelCounter++;
+                    }
+                    else
+                    {
+                        printf("BoingIconBar: too many submenus, ignoring '%s'\n", Icons[IconCounter].Icon_Path);
+                    }
+                }
+                else
+                {
+                    STRPTR custom = NULL;
+                    char *semi;
+
+                    // Optional ";CustomName" suffix: use it as the icon label
+                    // and strip it from the path before loading the icon.
+                    semi = strchr(Icons[IconCounter].Icon_Path, ';');
+                    if (semi)
+                    {
+                        if (semi[1] != '\0')
+                            custom = TrimStr(semi + 1);
+                        *semi = '\0';
+                    }
+
+                    if((Icon[IconCounter] = GetIconTags(Icons[IconCounter].Icon_Path,
+                        ICONGETA_RemapIcon, FALSE,
+                        TAG_DONE)))
+                    {
+                        IconControl(Icon[IconCounter],
+                            ICONCTRLA_GetWidth, &Icons[IconCounter].Icon_Width,
+                            ICONCTRLA_GetHeight, &Icons[IconCounter].Icon_Height,
+                            ICONCTRLA_SetNewIconsSupport, TRUE,
+                            TAG_END);
+
+                        if(Icons[IconCounter].Icon_Width == 0)
+                        {
+                            Icons[IconCounter].Icon_Width = Icon[IconCounter]->do_Gadget.Width;
+                        }
+
+                        if(Icons[IconCounter].Icon_Height == 0)
+                        {
+                            Icons[IconCounter].Icon_Height = Icon[IconCounter]->do_Gadget.Height;
+                        }
+
+                        LayoutIcon(Icon[IconCounter], MyScreen, NULL);
+
+                        // ---------------------- Extract Label from path to icon
+
+                        if (custom && *custom != '\0')
+                        {
+                            strncpy(Icons[IconCounter].IK_LabelBuf, custom, 63);
+                            Icons[IconCounter].IK_LabelBuf[63] = '\0';
+                            Icons[IconCounter].IK_Label = Icons[IconCounter].IK_LabelBuf;
+                        }
+                        else
+                            Icons[IconCounter].IK_Label = FilePart((Icons[IconCounter].Icon_Path));
+
+                        // --------------------------------------------------
+
+                        Icons[IconCounter].Icon_OK = TRUE;
+                        IconCounter++;
+
+                        if(IconCounter == SUM_ICON)
+                            break;
+                    }
+                    else
+                        printf("No icon %s.\n", Icons[IconCounter].Icon_Path);
+                }
+            }
+            Close(Prefs);
+
+            ScreenWidth = MyScreen->Width;
+            ScreenHeight  = MyScreen->Height;
+
+            UnlockPubScreen(NULL, MyScreen);
+
+            Levels[LevelCounter].Beginning = IconCounter;
+            if (SetWindowParameters() == FALSE)
+            {
+                puts("Failed to set window parameters");
+                return FALSE;
+            }
+
+            IconCounter = Levels[1].Beginning;
+            WindowWidth = Levels[0].WindowPos_X;
+            WindowHeight = Levels[0].WindowPos_Y;
+            ComputeWindowPosition();
+            CurrentLevel= 0;
+
+            // add Settings menu entry
+            sprintf(Levels[LevelCounter].Level_Name, "%s", _(MSG_MENU_SETTINGS));
+            sprintf(Names.IText, "%s", Levels[LevelCounter].Level_Name);
+            LengthText = IntuiTextLength(&Names);
+            if(LengthText > Length)
+                Length = LengthText;
+            LevelCounter++;
+
+            // add Quit menu entry
+            sprintf(Levels[LevelCounter].Level_Name, "%s", _(MSG_MENU_QUIT));
+            sprintf(Names.IText, "%s", Levels[LevelCounter].Level_Name);
+            LengthText = IntuiTextLength(&Names);
+            if(LengthText > Length)
+                Length = LengthText;
+            LevelCounter++;
+
+            Length += 10;
+        }
+        else
+            puts("Can't lock public screen");
+    }
+    return Icons[0].Icon_OK;
+}
+
+
+static void LoadBackground(void)
+{
+    LONG x;
+    IPTR iw, ih;
+
+    STRPTR names[3] = {"Images:bibgfx/left",
+        "Images:bibgfx/middle",
+        "Images:bibgfx/right"};
+
+    for(x=0; x<3; x++)
+    {
+        picture[x] = NewDTObject (names[x],
+            DTA_GroupID, GID_PICTURE,
+            PDTA_Remap, TRUE,
+            PDTA_DestMode, PMODE_V43,
+            OBP_Precision, PRECISION_IMAGE,
+            PDTA_Screen, (IPTR)MyScreen,
+            TAG_END);
+
+        if(picture[x])
+        {
+            DoDTMethod (picture[x], NULL, NULL, DTM_PROCLAYOUT, NULL, DTSIF_NEWSIZE);
+
+            iw = 0;
+            ih = 0;
+            GetDTAttrs (picture[x],
+                PDTA_DestBitMap,  (IPTR)&bm[x],
+                DTA_NominalHoriz, (IPTR)&iw,
+                DTA_NominalVert,  (IPTR)&ih,
+                TAG_END);
+
+            BackgroundData[x].Width  = (LONG)iw;
+            BackgroundData[x].Height = (LONG)ih;
+        }
+    }
+}
+
+
+/* A screen friend bitmap of the given size with an unlayered RastPort on
+   it, in the screen's format or, for the alpha window, ARGB32 (pens and
+   opaque blits render opaque into it, alpha blits keep their alpha).
+   MyScreen must be locked. */
+static struct BitMap *AllocBuffer(LONG w, LONG h, struct RastPort *rp, BOOL alpha)
+{
+    struct BitMap *bitmap;
+
+    if (alpha)
+        bitmap = AllocBitMap(w, h, 32,
+            BMF_SPECIALFMT | SHIFT_PIXFMT(PIXFMT_ARGB32) | BMF_CLEAR,
+            MyScreen->RastPort.BitMap);
+    else
+        bitmap = AllocBitMap(w, h,
+            GetBitMapAttr(MyScreen->RastPort.BitMap, BMA_DEPTH),
+            BMF_MINPLANES|BMF_CLEAR,
+            MyScreen->RastPort.BitMap);
+
+    if (bitmap)
+    {
+        InitRastPort(rp);
+        rp->BitMap = bitmap;
+        rp->Layer = NULL;
+    }
+    return bitmap;
+}
+
+
+static BOOL AllocWallpaperBuffer(void)
+{
+    if (BMP_Wallpaper)
+        return TRUE;
+
+    if((MyScreen=LockPubScreen(NULL)))
+    {
+        BMP_Wallpaper = AllocBuffer(Window_Max_X, Window_Max_Y, &RP_Wallpaper, FALSE);
+        UnlockPubScreen(NULL,MyScreen);
+    }
+    return BMP_Wallpaper ? TRUE : FALSE;
+}
+
+
+static void FreeBuffers(void)
+{
+    if(BMP_Buffer)
+        FreeBitMap(BMP_Buffer);
+    if(BMP_DoubleBuffer)
+        FreeBitMap(BMP_DoubleBuffer);
+    if(BMP_Wallpaper)
+        FreeBitMap(BMP_Wallpaper);
+    BMP_Buffer = BMP_DoubleBuffer = BMP_Wallpaper = NULL;
+    RP_Buffer.BitMap = NULL;
+    RP_DoubleBuffer.BitMap = NULL;
+    RP_Wallpaper.BitMap = NULL;
+}
+
+
+static void DrawBarTile(struct RastPort *rp, Object *obj, struct BitMap *bm, LONG x, LONG y, LONG w, LONG h)
+{
+    APTR dti;
+
+    dti = ObtainDTDrawInfoA(obj, NULL);
+    if (dti)
+    {
+        if (DrawDTObjectA(rp, obj, x, y, w, h, 0, 0, NULL) == FALSE)
+            BltBitMapRastPort(bm, 0, 0, rp, x, y, w, h, 0xC0);
+        ReleaseDTDrawInfo(obj, dti);
+    }
+    else
+        BltBitMapRastPort(bm, 0, 0, rp, x, y, w, h, 0xC0);
+}
+
+
+/* The bar background (left, middle tiles, right) along the bottom of the
+   cache area, at the current window's offset within it. */
+static void DrawTiles(struct RastPort *rp)
+{
+    LONG x, y, a;
+
+    if(picture[0] && picture[1] && picture[2])
+    {
+        y = WindowWidth - BackgroundData[0].Width - BackgroundData[2].Width;
+        a = y / BackgroundData[1].Width;
+
+        DrawBarTile(rp, picture[0], bm[0],
+            CacheRelX + 0,
+            Window_Max_Y - BackgroundData[0].Height,
+            BackgroundData[0].Width,
+            BackgroundData[0].Height);
+
+        for(x=0; x<a; x++)
+        {
+            DrawBarTile(rp, picture[1], bm[1],
+                CacheRelX + BackgroundData[0].Width + x * BackgroundData[1].Width,
+                Window_Max_Y - BackgroundData[1].Height,
+                BackgroundData[1].Width,
+                BackgroundData[1].Height);
+        }
+
+        DrawBarTile(rp, picture[1], bm[1],
+            CacheRelX + BackgroundData[0].Width + x * BackgroundData[1].Width,
+            Window_Max_Y - BackgroundData[1].Height,
+            y - BackgroundData[1].Width * a,
+            BackgroundData[1].Height);
+
+        DrawBarTile(rp, picture[2], bm[2],
+            CacheRelX + WindowWidth - BackgroundData[2].Width,
+            Window_Max_Y - BackgroundData[2].Height,
+            BackgroundData[2].Width,
+            BackgroundData[2].Height);
+    }
+    else if(picture[1])
+    {
+        for(x=0; x<WindowWidth; x=x+BackgroundData[1].Width)
+        {
+            DrawBarTile(rp, picture[1], bm[1],
+                CacheRelX + x,
+                Window_Max_Y - BackgroundData[1].Height,
+                BackgroundData[1].Width,
+                BackgroundData[1].Height);
+        }
+    }
+}
+
+
+static BOOL SetWindowParameters(void)
+{
+    LONG x, y, z;
+
+    Window_Max_X=0;
+    Window_Max_Y=0;
+
+    Icons[0].Icon_PositionX = 0;
+
+    for(y=0; y<(LevelCounter); y++)
+    {
+        WindowHeight  = 0;
+        WindowWidth = 0;
+
+        IconCounter = Levels[y+1].Beginning;
+
+        for(x=Levels[y].Beginning; x<IconCounter; x++)
+        {
+            if(Icons[x].Icon_OK)
+            {
+                if(Icons[x].Icon_Height > WindowHeight)
+                {
+                    WindowHeight = Icons[x].Icon_Height;
+                }
+
+                if(Icons[x].Icon_Width > IconWidth)
+                {
+                    IconWidth = Icons[x].Icon_Width;
+                }
+
+                // ------------- Calculate lenght of Label
+
+                strncpy(IT_Labels, Icons[x].IK_Label, sizeof(IT_Labels) - 1);
+                IT_Labels[sizeof(IT_Labels) - 1] = '\0';
+
+                for(z=strlen(IT_Labels); z>1; z--)
+                {
+                    IT_Labels[z - 1] = '\0';
+
+                    if(IntuiTextLength(&Labels) < Icons[x].Icon_Width + Spacing)
+                    {
+                        Icons[x].IK_Label_Length = z;
+                        break;
+                    }
+                }
+
+                // ----------------------------------------
+
+                if((WindowWidth + Icons[x].Icon_Width + 35) > ScreenWidth)
+                {
+                    IconCounter = x;
+                    Levels[y+1].Beginning = x;
+                    break;
+                }
+
+                WindowWidth = WindowWidth + Icons[x].Icon_Width + Spacing;
+                Icons[x].Icon_PositionY = LabelFont.ta_YSize + 1;
+
+                if((x+1) != IconCounter)
+                {
+                    Icons[x+1].Icon_PositionX = WindowWidth;
+                }
+            }
+            else
+                break;
+        }
+
+        for(x=Levels[y].Beginning; x<IconCounter; x++)
+        {
+            if(Icons[x].Icon_OK)
+            {
+                Icons[x].Icon_PositionX = Icons[x].Icon_PositionX + 15; 
+                Icons[x].Icon_PositionY = WindowHeight / 2 - Icons[x].Icon_Height / 2 + 15;
+            }
+        }
+
+        Levels[y].WindowPos_X = WindowWidth + 30;
+        Levels[y].WindowPos_Y = WindowHeight  + 20;
+
+        // ------------- Up the icon if labeling is ON
+
+        if(B_Labels == TRUE)
+        {
+            Levels[y].WindowPos_Y =  Levels[y].WindowPos_Y + LabelFont.ta_YSize + 1;
+        }
+
+        // ----------------------------------
+
+        if(Levels[y].WindowPos_X > ScreenWidth)
+            Levels[y].WindowPos_X = WindowWidth;
+
+        if(Window_Max_X < Levels[y].WindowPos_X)
+            Window_Max_X = Levels[y].WindowPos_X;
+
+        if(Window_Max_Y < Levels[y].WindowPos_Y)
+            Window_Max_Y = Levels[y].WindowPos_Y;
+    }
+
+    if((MyScreen=LockPubScreen(NULL)))
+    {
+        IPTR srcalpha = 0;
+
+        /* Per pixel alpha window (the default) only where the screen composes
+           layers with a source alpha channel: a 32 bit screen on a composing
+           display. Otherwise, and with FAKEALPHA, use the wallpaper capture. */
+        AlphaWindow = FALSE;
+        if (!FakeAlpha)
+        {
+            GetAttr(SA_SourceAlphaSupport, (Object *)MyScreen, &srcalpha);
+            AlphaWindow = srcalpha ? TRUE : FALSE;
+        }
+        D(bug("[IconBar] alpha window %d (SA_SourceAlphaSupport %d, FAKEALPHA %d)\n",
+            AlphaWindow, (int)srcalpha, FakeAlpha));
+
+        if (!(BMP_Buffer = AllocBuffer(Window_Max_X, Window_Max_Y, &RP_Buffer, AlphaWindow)))
+            goto fail;
+
+        if (!(BMP_DoubleBuffer = AllocBuffer(IconWidth + 8, Window_Max_Y, &RP_DoubleBuffer, AlphaWindow)))
+            goto fail;
+
+        if (!AlphaWindow && !(BMP_Wallpaper = AllocBuffer(Window_Max_X, Window_Max_Y, &RP_Wallpaper, FALSE)))
+            goto fail;
+
+        UnlockPubScreen(NULL,MyScreen);
+    }
+    return TRUE;
+
+fail:
+    UnlockPubScreen(NULL,MyScreen);
+    return FALSE;
+}
+
+
+static void Decode_Toolbar_IDCMP(struct IntuiMessage *KomIDCMP)
+{
+    LONG x;
+
+    switch(KomIDCMP->Class)
+    {
+        case IDCMP_CLOSEWINDOW:
+            BiB_Exit = TRUE;
+            break;
+
+        case IDCMP_MOUSEMOVE:
+            if(KomIDCMP->MouseX < 0 ||
+                KomIDCMP->MouseX >= WindowWidth ||
+                KomIDCMP->MouseY < 0 ||
+                KomIDCMP->MouseY >= WindowHeight)
+            {
+                /* Not over the toolbar - nothing to update. */
+                break;
+            }
+
+            for(MouseIcon=Levels[CurrentLevel].Beginning; MouseIcon<IconCounter; MouseIcon++)
+            {
+                if(Icons[MouseIcon].Icon_OK)
+                {
+
+                    if((ScreenHeight - MyScreen->MouseY) > WindowHeight)
+                    {
+                        Window_Active = FALSE;
+                    }
+
+                    if(KomIDCMP->MouseX > Icons[MouseIcon].Icon_PositionX &&
+                        KomIDCMP->MouseX < Icons[MouseIcon].Icon_PositionX + Icons[MouseIcon].Icon_Width &&
+                        KomIDCMP->MouseY > 0 &&
+                        KomIDCMP->MouseY < WindowHeight - 5)
+                    {
+                        if((Icons[MouseIcon].Icon_Status & ICON_ACTIVE) != ICON_ACTIVE)
+                        {
+                            for(x=Levels[CurrentLevel].Beginning; x<IconCounter; x++)
+                            {
+                                Icons[x].Icon_Status = Icons[x].Icon_Status & 0x07;
+                            }
+
+                            Icons[MouseIcon].Icon_Status = ICON_ACTIVE | (SELECTED_ICON * lbm);
+                        }
+                        break;
+                    }
+                    Icons[MouseIcon].Icon_Status = Icons[MouseIcon].Icon_Status & 0x07;
+                }
+            }
+            break;
+
+
+        case IDCMP_MOUSEBUTTONS:
+            switch (KomIDCMP->Code)
+            {
+                case SELECTDOWN:
+                    Icons[MouseIcon].Icon_Status = Icons[MouseIcon].Icon_Status | SELECTED_ICON;
+                    lbm = 1;
+
+                    break;
+
+                case SELECTUP:
+                    lbm = 0;
+
+                    if((Icons[MouseIcon].Icon_Status & (SELECTED_ICON | ICON_ACTIVE)) == (SELECTED_ICON | ICON_ACTIVE))
+                    {
+                        Blink_Icon(MouseIcon);
+                        Launch_Program(Icons[MouseIcon].Icon_Path);
+                    }
+
+                    Icons[MouseIcon].Icon_Status = Icons[MouseIcon].Icon_Status & 0xBF; //10001111b
+
+                    break;
+
+                case MENUDOWN:
+                    rbm = 1;
+                    OpenMenuWindow();
+                    break;
+
+            }
+            break;
+
+        case IDCMP_RAWKEY:
+            switch(KomIDCMP->Code)
+            {
+                case RAWKEY_ESCAPE:
+                    if((KomIDCMP->Qualifier) & IEQUALIFIER_LSHIFT)
+                    {
+                        BiB_Exit = TRUE;
+                    }
+                    break;
+
+                case RAWKEY_F1:
+                    for(x=0; x<SUM_ICON; x++)
+                    {
+                        if(Icon[x] != NULL)
+                        {
+                            LayoutIcon(Icon[x],
+                                MyScreen,
+                                NULL);
+                        }
+                    }
+
+                    for(x=Levels[CurrentLevel].Beginning; x<IconCounter; x++)
+                    {
+                        if(Icon[x] != NULL)
+                        {
+                            Insert_Icon((Icons[x].Icon_Status & SELECTED_ICON) ? IDS_SELECTED : IDS_NORMAL, x);
+                        }
+                    }
+                    break;
+
+                case RAWKEY_F2:
+                case RAWKEY_NM_WHEEL_DOWN:
+                    CurrentLevel++;
+                    if(CurrentLevel == (LevelCounter - 2 ))
+                        CurrentLevel = 0;
+                    Show_Selected_Level();
+                    break;
+
+                case RAWKEY_F3:
+                case RAWKEY_NM_WHEEL_UP:
+                    CurrentLevel--;
+                    if(CurrentLevel < 0)
+                        CurrentLevel = LevelCounter - 3;
+                    Show_Selected_Level();
+                    break; 
+
+                case RAWKEY_F4:
+                    Settings();
+                    break;
+            }
+            break;
+
+        case IDCMP_INACTIVEWINDOW:
+            if(rbm == 0)
+                Window_Active = FALSE;
+            lbm = 0;
+
+            if(Static)
+            {
+                for(x=Levels[CurrentLevel].Beginning; x<IconCounter; x++)
+                {
+                    if(Icons[x].Icon_Status != 0)
+                    {
+                        Icons[x].Icon_Status = 0;
+                        Insert_Icon(IDS_NORMAL, x);
+                    }
+                }
+            }
+            break;
+
+        case IDCMP_INTUITICKS:
+            Change_State(0);
+            break;
+    }
+}
+
+
+static void Change_State(LONG Mode)
+{
+    LONG x;
+
+    for(x=Levels[CurrentLevel].Beginning; x<IconCounter; x++)
+    {
+        if(Icons[x].Icon_OK)
+        {
+            /* Stop the hover bounce as soon as the mouse leaves the icon,
+               even if no MOUSEMOVE message was delivered for it. */
+            if(Icons[x].Icon_Status & ICON_ACTIVE)
+            {
+                LONG mx = MainWindow->MouseX;
+                LONG my = MainWindow->MouseY;
+
+                if(!(mx >= Icons[x].Icon_PositionX &&
+                        mx < Icons[x].Icon_PositionX + Icons[x].Icon_Width &&
+                        my > 0 &&
+                        my < WindowHeight - 5))
+                {
+                    Icons[x].Icon_Status = Icons[x].Icon_Status & 0x07;
+                }
+            }
+
+            if(Icons[x].Icon_Status != 0)
+            {
+                if(Mode == 0)
+                {
+                    if((Icons[x].Icon_Status & ICON_ACTIVE) == 0 && Icons[x].Icon_Status < 4)
+                    {
+                        Icons[x].Icon_Status = (Icons[x].Icon_Status - 1) & 0xC7; // 11000111b
+                    }
+                    else
+                    {
+                        Icons[x].Icon_Status = (Icons[x].Icon_Status + 1) & 0xC7;
+                    }
+                }
+                else
+                {
+                    Icons[x].Icon_Status = 0;
+                }
+
+                Insert_Icon((Icons[x].Icon_Status & SELECTED_ICON) ? IDS_SELECTED : IDS_NORMAL, x);
+            }
+        }
+    }
+}
+
+
+static void Insert_Icon(LONG Mode, LONG NrIcon)
+{
+    LONG y = Icons[NrIcon].Icon_PositionY - MovingTable[(Icons[NrIcon].Icon_Status & 0x07)];
+
+    /* the icon's column of the background, with the icon drawn at its
+       current bounce offset */
+    BltBitMapRastPort(BMP_Buffer,
+        CacheRelX + Icons[NrIcon].Icon_PositionX,
+        CacheRelY,
+        &RP_DoubleBuffer,
+        0,
+        0,
+        Icons[NrIcon].Icon_Width + 1,
+        WindowHeight,
+        0xC0);
+
+    DrawIconState(&RP_DoubleBuffer,
+        Icon[NrIcon],
+        NULL,
+        0,
+        y,
+        Mode,
+        ICONDRAWA_Frameless, TRUE,
+        ICONDRAWA_Borderless, TRUE,
+        ICONDRAWA_EraseBackground, FALSE,
+        TAG_DONE);
+
+    BltBitMapRastPort(BMP_DoubleBuffer,
+        0,
+        0,
+        MainWindow->RPort,
+        Icons[NrIcon].Icon_PositionX,
+        0,
+        Icons[NrIcon].Icon_Width + 1,
+        WindowHeight,
+        0xC0);
+}
+
+
+static void Blink_Icon(LONG NrIcon)
+{
+    LONG x, Mode=IDS_SELECTED;
+
+    for(x=0; x<8; x++)
+    {
+        Insert_Icon(Mode, NrIcon);
+        Delay(3);
+
+        if(Mode == IDS_NORMAL)
+            Mode = IDS_SELECTED;
+        else
+            Mode = IDS_NORMAL;
+    }
+}
+
+
+static BOOL OpenMainWindow(void)
+{
+    LONG x;
+    LONG cacheX;
+    struct Region *inputregion = NULL;
+
+    PrevActiveWindow = NULL;
+    FocusOver = FALSE;
+    FocusStableTicks = 0;
+
+    /* The render buffers are anchored to a fixed screen region so that a
+       stale wallpaper capture (used while a window covers the toolbar) still
+       lines up with the current window. Vertically it covers the bottom
+       Window_Max_Y screen rows; horizontally it depends on the alignment. */
+    if (Align == 1)                          /* LEFT */
+        cacheX = 0;
+    else if (Align == 2)                     /* RIGHT */
+        cacheX = ScreenWidth - Window_Max_X;
+    else                                     /* CENTER */
+        cacheX = ScreenWidth / 2 - Window_Max_X / 2;
+
+    CacheRelX = BeginningWindow - cacheX;
+    CacheRelY = Window_Max_Y - WindowHeight;
+
+    if((MyScreen=LockPubScreen(NULL)))
+    {
+        if (AlphaWindow)
+        {
+            /* The display composes the window over the live wallpaper, so
+               nothing is captured: start from a fully transparent buffer
+               (alpha 0 everywhere). */
+            BltBitMap(BMP_Buffer, 0, 0, BMP_Buffer, 0, 0, Window_Max_X, Window_Max_Y, 0x00, 0xFF, NULL);
+        }
+        else if (!ToolbarAreaBlocked(BeginningWindow,
+                ScreenHeight - WindowHeight,
+                BeginningWindow + Window_Max_X - 1,
+                ScreenHeight - 1))
+        {
+            BltBitMapRastPort(MyScreen->RastPort.BitMap,
+                BeginningWindow - CacheRelX,
+                ScreenHeight - Window_Max_Y,
+                &RP_Buffer,
+                0, 0,
+                Window_Max_X,
+                Window_Max_Y,
+                0xC0);
+
+            /* Keep a copy of the pure wallpaper for the case when a later
+               capture has to be skipped because a window covers the toolbar. */
+            BltBitMapRastPort(BMP_Buffer,
+                0, 0,
+                &RP_Wallpaper,
+                0, 0,
+                Window_Max_X,
+                Window_Max_Y,
+                0xC0);
+        }
+        else
+        {
+            /* A window covers the toolbar area: don't capture a window
+               fragment. Restore the last known good wallpaper instead, so
+               the old bar/labels are wiped before the new ones are drawn. */
+            BltBitMapRastPort(BMP_Wallpaper,
+                0, 0,
+                &RP_Buffer,
+                0, 0,
+                Window_Max_X,
+                Window_Max_Y,
+                0xC0);
+            WallpaperPending = TRUE;
+        }
+
+        UnlockPubScreen(NULL,MyScreen);
+    }
+
+    DrawTiles(&RP_Buffer);
+
+    // ---------- Labeling icon if NAMES is ON
+    if(B_Labels == TRUE)
+        IconLabel(&RP_Buffer);
+
+    if(Icon_Remap == TRUE)
+    {
+        for(x=Levels[CurrentLevel].Beginning; x<IconCounter; x++)
+        {
+            if(Icon[x]!=NULL)
+            {
+                LayoutIcon(Icon[x], MyScreen, NULL);
+            }
+        }
+    }
+
+    if (AlphaWindow)
+    {
+        /* Take input over the whole window, as an opaque window does, not
+           only where the surface has visible pixels. */
+        if ((inputregion = NewRegion()))
+        {
+            struct Rectangle rect = { 0, 0, WindowWidth - 1, WindowHeight - 1 };
+            OrRectRegion(inputregion, &rect);
+        }
+    }
+
+    MainWindow = OpenWindowTags(NULL,
+        WA_Left, BeginningWindow,
+        WA_Top, ScreenHeight - WindowHeight,
+        WA_InnerWidth,  WindowWidth,
+        WA_InnerHeight, WindowHeight,
+        WA_ReportMouse, TRUE,
+        WA_MouseQueue, 3,
+        WA_Borderless, TRUE,
+        WA_SizeGadget, FALSE,
+        WA_Activate, FALSE,
+        WA_PubScreenName, NULL,
+        WA_BackFill, LAYERS_NOBACKFILL,
+        WA_Flags, WFLG_NOCAREREFRESH|
+        WFLG_SMART_REFRESH|
+        WFLG_RMBTRAP,
+        WA_IDCMP, IDCMP_NEWSIZE|
+        IDCMP_RAWKEY|
+        IDCMP_INACTIVEWINDOW|
+        IDCMP_MOUSEMOVE|
+        IDCMP_INTUITICKS|
+        IDCMP_MOUSEBUTTONS,
+        AlphaWindow ? WA_AlphaSurface : TAG_IGNORE, TRUE,
+        inputregion ? WA_InputRegion : TAG_IGNORE, (IPTR)inputregion,
+        TAG_END);
+
+    if (inputregion)
+        DisposeRegion(inputregion);      /* layers.library keeps a copy */
+
+    if (!MainWindow)
+    {
+        printf("Can't open main toolbar window\n");
+        return FALSE;
+    }
+
+    if (AlphaWindow && !(MainWindow->WLayer->Flags & LAYERCOMPOSITED))
+    {
+        /* layers.library could not give the window a surface (surface memory
+           budget): it is an ordinary window and would show the transparent
+           parts black. Use the wallpaper capture until the next reload. */
+        D(bug("[IconBar] window not composited, using the wallpaper capture\n"));
+        CloseWindow(MainWindow);
+        MainWindow = NULL;
+        AlphaWindow = FALSE;
+        if (!AllocWallpaperBuffer())
+            return FALSE;
+        return OpenMainWindow();
+    }
+
+    WindowMask = 1 << MainWindow->UserPort->mp_SigBit;
+
+    /* the alpha window's surface takes the buffer's alpha with it */
+    BltBitMapRastPort(BMP_Buffer,
+        CacheRelX, CacheRelY,
+        MainWindow->RPort,
+        0, 0,
+        WindowWidth,
+        WindowHeight,
+        0xC0);
+
+    for(x=Levels[CurrentLevel].Beginning; x<IconCounter; x++)
+    {
+        if(Icon[x] != NULL)
+        {
+            Insert_Icon(IDS_NORMAL, x);
+        }
+    }
+
+    Window_Open = TRUE;
+    Window_Active = TRUE;
+
+    /* With the wallpaper capture the toolbar is a background element and
+       goes behind all other windows (it would hide them otherwise). The
+       alpha window is composed over whatever is behind it, so it stays in
+       front. */
+    if (AlphaWindow)
+        ToolbarToFront();
+    else
+        WindowToBack(MainWindow);
+
+    return TRUE;
+}
+
+
+static void CloseMainWindow(void)
+{
+    LONG x;
+    if(MainWindow)
+        CloseWindow(MainWindow);
+    MainWindow = NULL;
+    for(x=Levels[CurrentLevel].Beginning; x<IconCounter; x++)
+    {
+        Icons[x].Icon_Status = 0;
+    }
+
+    Window_Open = FALSE;
+    WindowMask = 0;
+}
+
+
+static void CheckMousePosition(void)
+{
+    if (ScreenResetInProgress)
+        return;
+
+    if((MyScreen->MouseY > ScreenHeight - 8) &&
+        Window_Open == FALSE &&
+        MyScreen->MouseX > BeginningWindow &&
+        MyScreen->MouseX < EndingWindow)
+    {
+        if(OpenMainWindow() == FALSE)
+        {
+            BiB_Exit = TRUE;
+        }
+    }
+
+    // LJ: trying to make window active when going to very bottom of the screen
+    //     even in static mode  - but it doesn't work because this code is checked 
+    //     only in static=0 mode 
+
+    else
+        if ((MyScreen->MouseY > ScreenHeight - 8) &&
+            Window_Open == TRUE &&
+            MyScreen->MouseX > BeginningWindow &&
+            MyScreen->MouseX < EndingWindow)
+    {
+            printf("LJ: You're at the very bottom! I should make this window active!\n"); 
+            Window_Active = TRUE;
+    }
+}
+
+
+static void Show_Selected_Level(void)
+{
+    CloseMainWindow();
+
+    IconCounter   = Levels[CurrentLevel+1].Beginning;
+    WindowWidth = Levels[CurrentLevel].WindowPos_X;
+    WindowHeight  = Levels[CurrentLevel].WindowPos_Y;
+    ComputeWindowPosition();
+
+    //LJ: delay needed for AROS, otherwise garbage from old icons remains
+    Delay(10); // 200 ms seems to be enough
+
+    if(OpenMainWindow() == FALSE)
+    {
+        BiB_Exit = TRUE;
+    }
+}
+
+
+static void OpenMenuWindow(void)
+{
+    LONG x;
+
+    if((MenuWindow = OpenWindowTags(NULL,
+                            WA_Left, MyScreen->MouseX,
+                            WA_Top, MyScreen->MouseY,
+                            WA_InnerWidth, Length + 1,
+                            WA_InnerHeight, LevelCounter * 16,
+                            WA_AutoAdjust, TRUE,
+                            WA_ReportMouse, TRUE,
+                            WA_Borderless, TRUE,
+                            WA_IDCMP,IDCMP_MOUSEBUTTONS|
+                            IDCMP_MOUSEMOVE|
+                            IDCMP_INACTIVEWINDOW,
+                            WA_Flags,WFLG_ACTIVATE|
+                            WFLG_RMBTRAP|
+                            WFLG_SMART_REFRESH,
+                            TAG_END)))
+    {
+        MenuMask = 1 << MenuWindow->UserPort->mp_SigBit;
+
+        SetAPen(MenuWindow->RPort, 1);
+        Move(MenuWindow->RPort, Length, 0);
+        Draw(MenuWindow->RPort, Length, LevelCounter * 16);
+        Draw(MenuWindow->RPort, 0, LevelCounter * 16);
+        SetAPen(MenuWindow->RPort, 2);
+        Draw(MenuWindow->RPort, 0, 0);
+        Draw(MenuWindow->RPort, Length, 0);
+
+        // draw bar
+        SetAPen(MenuWindow->RPort, 1);
+        Move(MenuWindow->RPort, 0, (LevelCounter - 2) * 16);
+        Draw(MenuWindow->RPort, Length - 1, (LevelCounter - 2) * 16);
+
+        SetAPen(MenuWindow->RPort, 2);
+        Move(MenuWindow->RPort, 0, ((LevelCounter - 2) * 16) + 1);
+        Draw(MenuWindow->RPort, Length - 1, ((LevelCounter - 2) * 16) + 1);
+
+        for(x=0; x<LevelCounter; x++)
+        {
+            if(x == CurrentLevel)
+                Names.FrontPen = 2;
+            else
+                Names.FrontPen = 1;
+
+            strcpy(BufferList, Levels[x].Level_Name);
+
+            PrintIText(MenuWindow->RPort,
+                &Names,
+                5,
+                (x * 16) + 5);
+        }
+        MenuWindow_Open = TRUE;
+    }
+    else
+        printf("Can't open menu\n");
+}
+
+
+static void CloseMenuWindow(void)
+{
+    if (MenuWindow)
+        CloseWindow(MenuWindow);
+    MenuMask = 0;
+    MenuWindow = NULL;
+
+    if(PositionMenuOK == TRUE)
+    {
+        if(Position == (LevelCounter - 1))
+        {
+            BiB_Exit = TRUE;
+        }
+        else if(Position == (LevelCounter - 2))
+        {
+            Settings();
+        }
+        else
+        {
+            CurrentLevel = Position;
+            Show_Selected_Level();
+        }
+    }
+}
+
+
+static void Decode_Menu_IDCMP(struct IntuiMessage *KomIDCMP)
+{
+    LONG x, kolA, kolB, dluG, x4;
+
+    dluG = Length - 2;
+
+    switch(KomIDCMP->Class)
+    {
+        case IDCMP_MOUSEMOVE:
+            if(MenuWindow->MouseX > 0 &&
+                MenuWindow->MouseX < Length &&
+                MenuWindow->MouseY >0)
+            {
+                Position = MenuWindow->MouseY / 16;
+            }
+            else
+            {
+                Position = 100;
+            }
+
+            if(Position != OldPosition)
+            {
+                for(x=0; x<LevelCounter; x++)
+                {
+                    x4 = (x * 16) + 2;
+
+                    if(x == Position)
+                    {
+                        kolA = 2;
+                        kolB = 1;
+                    }
+                    else
+                    {
+                        kolA = 0;
+                        kolB = 0;
+                    }
+
+                    SetAPen(MenuWindow->RPort, kolA);
+                    Move(MenuWindow->RPort, dluG, x4);
+                    Draw(MenuWindow->RPort, dluG, x4 + 13);
+                    Draw(MenuWindow->RPort, 2, x4 + 13);
+                    SetAPen(MenuWindow->RPort, kolB);
+                    Draw(MenuWindow->RPort, 2, x4);
+                    Draw(MenuWindow->RPort, dluG, x4);
+                }
+
+                if(Position != CurrentLevel && Position != 100)
+                    PositionMenuOK = TRUE;
+                else
+                    PositionMenuOK = FALSE;
+
+                OldPosition = Position;
+
+            }
+            break;
+
+        case IDCMP_MOUSEBUTTONS:
+            switch (KomIDCMP->Code)
+            {
+                case MENUUP:
+                    MenuWindow_Open = FALSE;
+                    rbm = 0;
+                    break;
+            }
+            break;
+
+        case IDCMP_INACTIVEWINDOW:
+            MenuWindow_Open = FALSE;
+            break;
+    }
+}
+
+
+static void Launch_Program(STRPTR Program)
+{
+    BPTR oldlock;
+
+    // Get current directory lock
+    oldlock = CurrentDir(NULL);
+
+    OpenWorkbenchObject(Program, TAG_DONE);
+
+    // Go back to old directory
+    CurrentDir(oldlock);
+}
+
+
+static void Settings(void)
+{
+    OpenWorkbenchObject("SYS:Prefs/BoingIconBar", TAG_DONE);
+}
+
+
+static void ScreenResetCleanup(void)
+{
+    LONG x;
+
+    if (MenuWindow_Open)
+    {
+        MenuWindow_Open = FALSE;
+        if (MenuWindow)
+            CloseWindow(MenuWindow);
+        MenuWindow = NULL;
+        MenuMask = 0;
+    }
+
+    if (Window_Open == TRUE)
+    {
+        CloseMainWindow();
+    }
+
+    for(x=0; x<SUM_ICON; x++)
+    {
+        if(Icon[x] != NULL)
+        {
+            FreeDiskObject(Icon[x]);
+            Icon[x]=NULL;
+        }
+        Icons[x].Icon_OK          = FALSE;
+        Icons[x].Icon_Height      = 0;
+        Icons[x].Icon_Width       = 0;
+        Icons[x].Icon_PositionX   = 0;
+        Icons[x].Icon_PositionY   = 0;
+        Icons[x].IK_Label_Length  = 0;
+    }
+
+    FreeBuffers();
+
+    for(x=0; x<3; x++)
+    {
+        if(picture[x])
+            DisposeDTObject(picture[x]);
+        picture[x] = NULL;
+        bm[x] = NULL;
+    }
+}
+
+
+static void ScreenResetRestore(void)
+{
+    if(ReadPrefs() == FALSE)
+    {
+        puts("Prefs error\n");
+        return;
+    }
+
+    LoadBackground();
+
+    if(Static)
+    {
+        Delay(Static * 50);
+        OpenMainWindow();
+        FirstOpening = FALSE;
+    }
+}
+
+
+static void HandleScreenNotify(void)
+{
+    struct ScreenNotifyMessage *msg;
+
+    while((msg = (struct ScreenNotifyMessage *)GetMsg(ScreenNotifyPort)))
+    {
+        switch(msg->snm_Class)
+        {
+            case SNOTIFY_BEFORE_CLOSEWB:
+                D(bug("[IconBar] screen reset: closing toolbar\n"));
+                ScreenResetInProgress = TRUE;
+                ScreenResetCleanup();
+                break;
+
+            case SNOTIFY_AFTER_OPENWB:
+                D(bug("[IconBar] screen reset: reopening toolbar\n"));
+                ScreenResetInProgress = FALSE;
+                ScreenResetRestore();
+                break;
+
+            default:
+                break;
+        }
+
+        ReplyMsg((struct Message *)msg);
+    }
+}
+
+
+static BOOL DrainAndReplyPort(struct MsgPort *port)
+{
+    struct Message *msg;
+    BOOL got = FALSE;
+
+    while ((msg = GetMsg(port)))
+    {
+        got = TRUE;
+        ReplyMsg(msg);
+    }
+    return got;
+}
+
+
+static BOOL NoIconBouncing(void)
+{
+    LONG x;
+
+    for(x=Levels[CurrentLevel].Beginning; x<IconCounter; x++)
+    {
+        if(Icons[x].Icon_OK && Icons[x].Icon_Status != 0)
+            return FALSE;
+    }
+    return TRUE;
+}
+
+
+static BOOL MouseOverToolbar(void)
+{
+    LONG mx = MyScreen->MouseX;
+    LONG my = MyScreen->MouseY;
+
+    return (mx >= BeginningWindow &&
+            mx < BeginningWindow + WindowWidth &&
+            my >= ScreenHeight - WindowHeight &&
+            my < ScreenHeight);
+}
+
+
+/* Bring the alpha toolbar to the front, only when it is not there already:
+   a depth change refreshes every window it uncovers. */
+static void ToolbarToFront(void)
+{
+    if (MainWindow && MyScreen && MyScreen->FirstWindow != MainWindow)
+        WindowToFront(MainWindow);
+}
+
+
+static void HandleFocus(void)
+{
+    BOOL over;
+
+    if (ScreenResetInProgress || !Window_Open || MenuWindow_Open)
+        return;
+
+    /* Don't steal focus from an application running on another screen. */
+    if (IntuitionBase->ActiveScreen != MyScreen)
+        return;
+
+    over = MouseOverToolbar();
+
+    /* Debounce: only act when the mouse-over state is stable for two
+       consecutive timer ticks, to avoid flapping activation when the
+       pointer crosses the toolbar border. */
+    if (over == FocusOver)
+        FocusStableTicks++;
+    else
+    {
+        FocusOver = over;
+        FocusStableTicks = 0;
+    }
+
+    if (FocusStableTicks < 2)
+        return;
+
+    if (over)
+    {
+        if (IntuitionBase->ActiveWindow != MainWindow)
+        {
+            if (PrevActiveWindow == NULL)
+                PrevActiveWindow = IntuitionBase->ActiveWindow;
+            ActivateWindow(MainWindow);
+            /* another window may have opened over the alpha toolbar */
+            if (AlphaWindow)
+                ToolbarToFront();
+        }
+    }
+    else if (PrevActiveWindow != NULL)
+    {
+        ActivateWindow(PrevActiveWindow);
+        PrevActiveWindow = NULL;
+    }
+}
+
+
+static BOOL ToolbarAreaBlocked(LONG left, LONG top, LONG right, LONG bottom)
+{
+    struct Window *w;
+
+    if (!MyScreen)
+        return FALSE;
+
+    for (w = MyScreen->FirstWindow; w; w = w->NextWindow)
+    {
+        if (w == MainWindow)
+            continue;
+        /* Backdrop/desktop windows are the wallpaper below the toolbar */
+        if (w->Flags & WFLG_BACKDROP)
+            continue;
+        if (w->LeftEdge <= right && w->LeftEdge + w->Width - 1 >= left &&
+            w->TopEdge <= bottom && w->TopEdge + w->Height - 1 >= top)
+            return TRUE;
+    }
+    return FALSE;
+}
+
+
+static void ParseAlign(STRPTR str)
+{
+    if (str)
+    {
+        if (stricmp(str, "LEFT") == 0)
+            Align = 1;
+        else if (stricmp(str, "RIGHT") == 0)
+            Align = 2;
+        else
+            Align = 0;
+    }
+}
+
+
+static void ComputeWindowPosition(void)
+{
+    if (Align == 1)                      /* LEFT */
+    {
+        BeginningWindow = 0;
+        EndingWindow = WindowWidth;
+    }
+    else if (Align == 2)                 /* RIGHT */
+    {
+        BeginningWindow = ScreenWidth - WindowWidth;
+        EndingWindow = ScreenWidth;
+    }
+    else                                 /* CENTER (default) */
+    {
+        BeginningWindow = ScreenWidth / 2 - WindowWidth / 2;
+        EndingWindow = ScreenWidth / 2 + WindowWidth / 2;
+    }
+}
+
+
+static void RefreshBackground(void)
+{
+    if(ScreenResetInProgress)
+        return;
+
+    CloseMainWindow();
+
+    /* Let the layers/Wanderer repaint the revealed wallpaper before we
+       recapture it, otherwise we would just grab the old cached pixels. */
+    Delay(2);
+
+    if(OpenMainWindow() == FALSE)
+    {
+        BiB_Exit = TRUE;
+    }
+}
+
+
+static void Reload(void)
+{
+    LONG x;
+
+    if (Window_Open == TRUE)
+    {
+        CloseMainWindow();
+    }
+
+    for(x=0; x<SUM_ICON; x++)
+    {
+        if(Icon[x] != NULL)
+        {
+            FreeDiskObject(Icon[x]);
+            Icon[x]=NULL;
+        }
+        Icons[x].Icon_OK          = FALSE;
+        Icons[x].Icon_Height      = 0;
+        Icons[x].Icon_Width       = 0;
+        Icons[x].Icon_PositionX   = 0;
+        Icons[x].Icon_PositionY   = 0;
+        Icons[x].IK_Label_Length  = 0;
+    }
+
+    FreeBuffers();
+
+    if(ReadPrefs() == FALSE)
+    {
+        puts("Prefs error\n");
+        return;
+    }
+
+    if(Static)
+    {
+        Delay(Static * 50);
+        OpenMainWindow();
+        FirstOpening = FALSE;
+    }
+}
+
+
+static void IconLabel(struct RastPort *rp)
+{
+    LONG x, y, pos_x;
+
+    for(x=Levels[CurrentLevel].Beginning; x<IconCounter; x++)
+    {
+        LONG labelLen = Icons[x].IK_Label_Length;
+
+        if (labelLen > (LONG)(sizeof(IT_Labels) - 1))
+            labelLen = (LONG)(sizeof(IT_Labels) - 1);
+
+        for(y=0; y<labelLen; y++)
+        {
+            IT_Labels[y] = Icons[x].IK_Label[y];
+        }
+
+        IT_Labels[y] = '\0';
+
+        pos_x = Icons[x].Icon_PositionX + Icons[x].Icon_Width / 2 - IntuiTextLength(&Labels) / 2;
+
+        Labels.FrontPen = 1;
+
+        PrintIText(rp,
+            &Labels,
+            CacheRelX + pos_x,
+            Window_Max_Y - (LabelFont.ta_YSize + 3));
+
+        Labels.FrontPen = 2;
+
+        PrintIText(rp,
+            &Labels,
+            CacheRelX + pos_x + 1,
+            Window_Max_Y - (LabelFont.ta_YSize + 4));
+
+    }
+}

@@ -1,0 +1,31 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+USER_CFLAGS :=  $(AROSROM_MODULE_CFLAGS)
+USER_LDFLAGS := -static
+
+FUNCS   := \
+    spabs \
+    spadd \
+    spceil \
+    spcmp \
+    spdiv \
+    spfix \
+    spfloor \
+    spflt \
+    spmul \
+    spneg \
+    spsub \
+    sptst
+
+#MM workbench-libs-mathffp-includes : \
+#MM     kernel-exec-includes \
+#MM     includes-copy
+
+ifneq ($(ROM_OPTIMIZATION_CFLAGS),)
+OPTIMIZATION_CFLAGS := $(ROM_OPTIMIZATION_CFLAGS)
+endif
+
+%build_module mmake=workbench-libs-mathffp \
+  modname=mathffp modtype=library \
+  files=$(FUNCS)

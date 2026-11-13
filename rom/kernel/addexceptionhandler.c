@@ -1,0 +1,190 @@
+/*
+    Copyright (C) 1995-2023, The AROS Development Team. All rights reserved.
+
+    Desc:
+*/
+
+#include <aros/kernel.h>
+#include <proto/exec.h>
+
+#include <inttypes.h>
+
+#include <kernel_base.h>
+#include <kernel_cpu.h>
+#include <kernel_debug.h>
+#include <kernel_interrupts.h>
+#include <kernel_objects.h>
+
+/* We use own implementation of bug(), so we don't need aros/debug.h */
+#define D(x)
+
+/*****************************************************************************
+
+    NAME */
+#include <proto/kernel.h>
+
+        AROS_LH4(void *, KrnAddExceptionHandler,
+
+/*  SYNOPSIS */
+        AROS_LHA(uint8_t, num, D0),
+        AROS_LHA(exhandler_t *, handler, A0),
+        AROS_LHA(void *, handlerData, A1),
+        AROS_LHA(void *, handlerData2, A2),
+
+/*  LOCATION */
+        struct KernelBase *, KernelBase, 14, Kernel)
+
+/*  FUNCTION
+        Register a CPU exception handler.
+
+    INPUTS
+        num          - CPU-specific exception number.
+        handler      - Exception callback with the signature:
+                       int ExceptionHandler(void *ctx, void *handlerData,
+                                            void *handlerData2);
+        handlerData  - First user-defined callback argument.
+        handlerData2 - Second user-defined callback argument.
+
+    RESULT
+        Opaque handler handle, or NULL if registration fails.
+
+    NOTES
+        The ctx callback argument is an opaque CPU context handle.
+        Return a nonzero value from the callback to handle the exception and
+        continue execution. If every handler returns zero, the exception is
+        passed to the task's tc_TrapCode handler.
+
+        This interface is preliminary and should be treated as private.
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+        KrnRemExceptionHandler()
+
+    INTERNALS
+
+******************************************************************************/
+{
+    AROS_LIBFUNC_INIT
+
+    struct IntrNode *handle;
+    D(bug("[KRN] KrnAddExceptionHandler(%02x, %012p, %012p, %012p):\n", num, handler, handlerData, handlerData2));
+
+    goSuper();
+
+    handle = krnAddExceptionHandler(num, handler,  handlerData, handlerData2, KernelBase);
+    
+    goUser();
+
+    return handle;
+
+    AROS_LIBFUNC_EXIT
+}
+
+/* Add a handler to the kernel exception chain. Return NULL if the
+ * exception number is unsupported or allocation fails.
+ */
+void *krnAddExceptionHandler(UBYTE num, APTR handler,  APTR handlerData, APTR handlerData2, struct KernelBase *KernelBase)
+{
+    struct IntrNode *handle = NULL;
+
+    if (num < EXCEPTIONS_COUNT)
+    {
+        /* Allocate protected memory, accessible only in supervisor mode */
+        handle = krnAllocIntrNode();
+        D(bug("[KRN] handle=%012p\n", handle));
+
+        if (handle)
+        {
+            handle->in_Handler = handler;
+            handle->in_HandlerData = handlerData;
+            handle->in_HandlerData2 = handlerData2;
+            handle->in_type = it_exception;
+            handle->in_nr = num;
+
+            Disable();
+#if defined(__AROSEXEC_SMP__)
+            KrnSpinLock(&KernelBase->kb_IntrSpinLock, NULL, SPINLOCK_MODE_WRITE);
+#endif
+            ADDHEAD(KERNEL_EXCEPTION_LIST(num), &handle->in_Node);
+#if defined(__AROSEXEC_SMP__)
+            KrnSpinUnLock(&KernelBase->kb_IntrSpinLock);
+#endif
+            Enable();
+        }
+    }
+
+    return handle;
+}
+
+/* Invoke matching exception callbacks and return their combined result. */
+int krnRunExceptionHandlers(struct KernelBase *KernelBase, uint8_t exception, void *ctx)
+{
+    struct IntrNode *in, *in2;
+    int ret = 0;
+
+    /* We can be called really early. Protect against this. */
+    if (!KernelBase)
+        return 0;
+#if EXCEPTIONS_COUNT < 256
+    if (exception >= EXCEPTIONS_COUNT)
+        return 0;
+#endif
+
+#if defined(__AROSEXEC_SMP__)
+    /*
+     * Snapshot the chain under the lock and call the handlers OUTSIDE it.
+     * On x86-64 the syscall vector is dispatched through here
+     * (core_SysCallHandler), and a scheduling syscall ends in
+     * cpu_Dispatch, which never returns to this frame: holding the read
+     * lock across the call leaked one hold per task switch, so the
+     * count could never drain and the next KrnAddIRQHandler (WRITE
+     * acquire on the same lock) spun forever. The walk itself stays
+     * protected against concurrent Add/Rem; a handler torn down between
+     * snapshot and call is the remover's lifetime problem, exactly as
+     * it already was with the lock held across the call.
+     */
+    {
+        struct
+        {
+            exhandler_t h;
+            void *d1, *d2;
+        } snap[8];
+        unsigned int n = 0, i;
+
+        KrnSpinLock(&KernelBase->kb_IntrSpinLock, NULL, SPINLOCK_MODE_READ);
+        ForeachNodeSafe(KERNEL_EXCEPTION_LIST(exception), in, in2)
+        {
+            if (KERNEL_EXCEPTION_MATCH(in, exception) && in->in_Handler)
+            {
+                if (n < sizeof(snap) / sizeof(snap[0]))
+                {
+                    snap[n].h  = in->in_Handler;
+                    snap[n].d1 = in->in_HandlerData;
+                    snap[n].d2 = in->in_HandlerData2;
+                    n++;
+                }
+                else
+                    bug("[KRN] %s: exception #%u handler chain exceeds snapshot (%u), handler dropped!\n",
+                        __func__, exception, n);
+            }
+        }
+        KrnSpinUnLock(&KernelBase->kb_IntrSpinLock);
+
+        for (i = 0; i < n; i++)
+            ret |= snap[i].h(ctx, snap[i].d1, snap[i].d2);
+    }
+#else
+    ForeachNodeSafe(KERNEL_EXCEPTION_LIST(exception), in, in2)
+    {
+        exhandler_t h = in->in_Handler;
+
+        if (KERNEL_EXCEPTION_MATCH(in, exception) && h)
+            ret |= h(ctx, in->in_HandlerData, in->in_HandlerData2);
+    }
+#endif
+
+    return ret;
+}

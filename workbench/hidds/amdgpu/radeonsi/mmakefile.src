@@ -1,0 +1,151 @@
+include $(SRCDIR)/config/aros.cfg
+include $(SRCDIR)/workbench/libs/mesa/mesa.cfg
+
+# radeonsi.amdd: the amdgpu driver's gallium part (Mesa's radeonsi driver
+# over its amdgpu winsys) as a disk library, opened by the driver the first
+# time its display is asked for a gallium object, or a scan-out bitmap for an
+# operation the GPU does (include/amdd/amdd.h). It carries its own copy of
+# libdrm_amdgpu (libdrm/amdgpu) over the driver's DRM entry table
+# (amdd_drm.c): a DRM client of its own per screen.
+
+GALLIUM_PATH = $(top_srcdir)/src/gallium
+AMDGPU_DIR   = $(SRCDIR)/workbench/hidds/amdgpu
+
+include $(SRCDIR)/$(CURDIR)/sources.radeonsi.mak
+
+#MM- hidd-amdgpu : hidd-amdgpu-radeonsi
+#MM hidd-amdgpu-radeonsi : includes hidd-amdgpu-gallium hidd-amdgpu-libdrm-amdgpu hidd-gallium mesa3dgl-linklibs linklibs-libatomic workbench-libs-z-linklib
+#MM hidd-amdgpu-gallium : hidd-amdgpu-gallium-gen mesa3dgl-linklibs mesa3d-linklib-aco mesa3d-linklib-amd-common
+
+MESA_INCLUDES := \
+            -I$(top_srcdir)/include \
+            -I$(top_srcdir)/include/GL \
+            -I$(top_srcdir)/src \
+            -iquote $(GALLIUM_PATH)/drivers \
+            -iquote $(GALLIUM_PATH)/include \
+            -iquote $(GALLIUM_PATH)/auxiliary \
+            -iquote $(GENDIR)/workbench/libs/mesa/$(MESAGLVERSION)/src/mesa/main \
+            -iquote $(top_builddir)/src \
+            -iquote $(top_builddir)/src/util \
+            -iquote $(top_builddir)/src/util/format
+
+NOWARN_FLAGS := $(NOWARN_UNUSED_VALUE) $(NOWARN_UNUSED_VARIABLE) $(NOWARN_STRICT_ALIASING)
+
+###############################################
+# RadeonSI + amdgpu winsys -> libgallium_radeonsi.a
+###############################################
+
+RADEONSI_PATH := $(GALLIUM_PATH)/drivers/radeonsi
+WINSYS_PATH := $(GALLIUM_PATH)/winsys/amdgpu/drm
+RADEONSI_GENDIR := $(GENDIR)/$(CURDIR)/$(MESAGLVERSION)/gen
+
+RADEONSI_GENERATED := $(RADEONSI_GENDIR)/si_tracepoints.c $(RADEONSI_GENDIR)/si_tracepoints.h \
+                      $(RADEONSI_GENDIR)/si_tracepoints_perfetto.h $(RADEONSI_GENDIR)/driconf_static.h
+
+#MM
+hidd-amdgpu-gallium-gen : $(RADEONSI_GENERATED)
+
+$(filter-out %/driconf_static.h,$(RADEONSI_GENERATED)) : $(RADEONSI_PATH)/si_tracepoints.py $(top_srcdir)/src/util/perf/u_trace.py
+	@$(IF) $(TEST) ! -d $(RADEONSI_GENDIR) ; then $(MKDIR) $(RADEONSI_GENDIR) ; else $(NOP) ; fi
+	$(Q)$(PYTHON) $(PYTHON_FLAGS) $< -p $(top_srcdir)/src/util/perf/ -C $(RADEONSI_GENDIR)/si_tracepoints.c \
+	    --perfetto-hdr $(RADEONSI_GENDIR)/si_tracepoints_perfetto.h -H $(RADEONSI_GENDIR)/si_tracepoints.h
+
+# driconf's built-in defaults, for xmlconfig.c without expat
+$(RADEONSI_GENDIR)/driconf_static.h : $(top_srcdir)/src/util/driconf_static.py $(top_srcdir)/src/util/00-mesa-defaults.conf
+	@$(IF) $(TEST) ! -d $(RADEONSI_GENDIR) ; then $(MKDIR) $(RADEONSI_GENDIR) ; else $(NOP) ; fi
+	$(Q)$(PYTHON) $(PYTHON_FLAGS) $^ $@
+
+USER_INCLUDES := \
+            -I$(top_srcdir)/include \
+            -I$(top_srcdir)/include/GL \
+            -I$(top_srcdir)/src \
+            -iquote $(RADEONSI_PATH) \
+            -iquote $(RADEONSI_PATH)/gfx \
+            -iquote $(RADEONSI_PATH)/mm \
+            -I$(RADEONSI_PATH) \
+            -I$(GALLIUM_PATH)/include \
+            -iquote $(GALLIUM_PATH)/drivers \
+            -iquote $(GALLIUM_PATH)/include \
+            -iquote $(GALLIUM_PATH)/auxiliary \
+            -iquote $(GENDIR)/workbench/libs/mesa/$(MESAGLVERSION)/src/mesa/main \
+            -iquote $(top_builddir)/src \
+            -iquote $(top_builddir)/src/compiler \
+            -iquote $(top_builddir)/src/compiler/glsl \
+            -iquote $(top_builddir)/src/compiler/nir \
+            -iquote $(top_builddir)/src/util \
+            -iquote $(top_builddir)/src/util/format \
+            -iquote $(top_srcdir)/src/compiler \
+            -iquote $(top_srcdir)/src/compiler/nir \
+            -iquote $(GENDIR)/workbench/libs/mesa/src/compiler/nir \
+            -iquote $(top_builddir)/src/gallium/auxiliary \
+            -iquote $(top_builddir)/src/gallium/auxiliary/util \
+            -I$(top_srcdir)/src/amd \
+            -I$(top_srcdir)/src/amd/common \
+            -I$(top_srcdir)/src/amd/compiler \
+            -I$(top_srcdir)/src/amd/common/nir \
+            -I$(top_builddir)/src/amd/common \
+            -I$(WINSYS_PATH) \
+            -I$(top_srcdir)/src/virtio \
+            -I$(top_srcdir)/src/amd/vpelib/inc \
+            -I$(RADEONSI_GENDIR) \
+            -I$(AMDGPU_DIR)/libdrm/amdgpu \
+            -I$(AMDGPU_DIR)/libdrm \
+            -I$(AMDGPU_DIR)/include \
+            -I$(AMDGPU_DIR)/include/uapi/drm \
+            -I$(SRCDIR)/workbench/libs/mesa/aros_compat
+
+USER_CPPFLAGS := $(MESA_COMPILEFLAGS) $(MESA_DEBUG) \
+                -DPACKAGE_VERSION=\"$(MESAGLVERSION)\" \
+                -DAMD_LLVM_AVAILABLE=0 \
+                -DWITH_XMLCONFIG=0 -DNO_REGEX -DHAVE_LIBDRM=1 \
+                -Damdgpu_bo_create=amdgpu_winsys_bo_create \
+                -include $(AMDGPU_DIR)/include/uapi/drm/drm.h \
+                -include $(SRCDIR)/workbench/libs/mesa/aros_compat/aros_mesa_compat.h
+USER_CFLAGS := $(MESA_STD) $(MESA_COMPILEOPTIONS) $(CFLAGS_NO_STRICT_ALIASING) $(NOWARN_FLAGS)
+
+# Per Mesa version: the port's sources carry the tarball's timestamps, so an
+# object left from an older Mesa in a shared objdir would pass as up to date.
+%build_linklib mmake=hidd-amdgpu-gallium libname=gallium_radeonsi libdir=$(top_libdir) objdir=$(GENDIR)/$(CURDIR)/$(MESAGLVERSION)/gallium \
+    files="$(addprefix $(RADEONSI_PATH)/,$(AROS_AMDGPU_RADEONSI_C_SOURCES) $(AROS_AMDGPU_RADEONSI_VIDEO_SOURCES)) $(addprefix $(WINSYS_PATH)/,$(AROS_AMDGPU_WINSYS_C_SOURCES)) $(RADEONSI_GENDIR)/si_tracepoints $(top_srcdir)/src/util/xmlconfig $(top_srcdir)/src/util/u_sync_provider $(SRCDIR)/$(CURDIR)/radeonsi_aros" \
+    cxxfiles="$(addprefix $(RADEONSI_PATH)/,$(AROS_AMDGPU_RADEONSI_CXX_SOURCES)) $(addprefix $(WINSYS_PATH)/,$(AROS_AMDGPU_WINSYS_CXX_SOURCES)) $(addprefix $(SRCDIR)/$(CURDIR)/,$(AROS_AMDGPU_RADEONSI_DRAW_SOURCES))"
+
+#################################################
+# the library -> radeonsi.amdd
+#################################################
+
+AMDD_SOURCES := \
+	radeonsi_gallium \
+	amdd_posix \
+	amdd_drm \
+	amdgpu_pthread \
+	amdgpu_util \
+	$(AMDGPU_DIR)/amdgpu_stdio \
+	$(SRCDIR)/workbench/libs/mesa/emul_arosc
+
+USER_INCLUDES := \
+            -I$(AMDGPU_DIR)/include \
+            $(MESA_INCLUDES) \
+            -I$(AMDGPU_DIR)/include/uapi \
+            -I$(AMDGPU_DIR)/include/uapi/drm
+
+USER_CPPFLAGS := $(MESA_COMPILEFLAGS) $(MESA_DEBUG) \
+                -DPACKAGE_VERSION=\"$(MESAGLVERSION)\" \
+                -DEMBEDDED_DEVICE
+USER_CFLAGS := $(MESA_STD) $(MESA_COMPILEOPTIONS) $(CFLAGS_NO_STRICT_ALIASING) $(NOWARN_FLAGS)
+
+USER_LDFLAGS := -noposixc \
+  -L$(top_libdir) -L$(AROS_LIB) \
+  -Wl,--wrap=pthread_create \
+  -Wl,--start-group -lgallium_radeonsi -llibdrm_amdgpu -laco -lamd_common -laddrlib -lcompiler \
+  -lgalliumauxiliary -lmesautil \
+  -loop -lhiddstubs -lpthread -lstdcio -lstdc
+ifneq ($(TARGET_LIBATOMIC),)
+USER_LDFLAGS += $(TARGET_CXX_LIBS)
+endif
+USER_LDFLAGS += -Wl,--end-group
+
+%build_module mmake=hidd-amdgpu-radeonsi modname=radeonsi modtype=library modsuffix=amdd \
+    moduledir=Devs/Drivers conffile=radeonsi.conf \
+    files="$(AMDD_SOURCES)" uselibs="" alwayscxxlink=yes objdir="$(OBJDIR)/$(MESAGLVERSION)"
+
+%common

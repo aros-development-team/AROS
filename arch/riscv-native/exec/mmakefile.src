@@ -1,0 +1,36 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+#
+# Native (supervisor-mode) RISC-V exec code shared by the platforms:
+# exec_platform.h (per-hart TLS scheduler state on SMP), the idle task
+# and exec's SMP support. See ../kernel/mmakefile.src for the layering.
+#
+
+CFILES := \
+        exec_idle \
+        exec_smp
+
+%set_archincludes mainmmake=kernel-exec maindir=rom/exec \
+  modname=exec pri=4 arch=opensbi \
+  includes="-I$(SRCDIR)/$(CURDIR)"
+
+%get_archincludes modname=kernel \
+    includeflag=TARGET_KERNEL_INCLUDES maindir=rom/kernel
+
+%get_archincludes modname=exec \
+    includeflag=TARGET_EXEC_INCLUDES maindir=rom/exec
+
+PRIV_EXEC_INCLUDES = \
+    $(TARGET_EXEC_INCLUDES) \
+    -I$(SRCDIR)/rom/exec \
+    $(TARGET_KERNEL_INCLUDES) \
+    -I$(SRCDIR)/rom/kernel
+
+USER_INCLUDES := $(PRIV_EXEC_INCLUDES)
+
+%build_archspecific \
+  mainmmake=kernel-exec maindir=rom/exec arch=opensbi \
+  files="$(CFILES)" modname=exec
+
+%common

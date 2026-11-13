@@ -1,0 +1,8 @@
+# Copyright (C) 2004, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+
+ICONS := Info
+
+%build_icons mmake=workbench-system-wanderer-tools-info-icons \
+             icons=$(ICONS) dir=$(AROS_WANDERER)/Tools

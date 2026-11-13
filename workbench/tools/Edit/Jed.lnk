@@ -1,0 +1,5 @@
+FROM LIB:c.o "Jed.o"+"UndoRedo.o"+"Gui.o"+"Macros.o"+"Edit.o"+"Events.o"+"Cursor.o"+"ClipLoc.o"+"Memory.o"+"Prefs.o"+"Project.o"+"Utility.o"+"Search.o"+"DiskIO.o"
+TO "jed"
+LIB LIB:sc.lib LIB:amiga.lib
+NOICONS
+

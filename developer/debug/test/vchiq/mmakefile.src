@@ -1,0 +1,15 @@
+# Copyright (C) 2026, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+
+EXEDIR := $(AROS_TESTS)/vchiq
+
+# Raspberry Pi 1-4 only, so not part of "test"
+#MM test-vchiq : includes linklibs workbench-libs-vchiq-bcm2708-includes linklibs-vcmmal \
+#MM     linklibs-mmal
+
+%build_progs mmake=test-vchiq \
+    files="vchiqtest mmaltest mmaldectest" targetdir=$(EXEDIR) \
+    uselibs="mmal_core mmal_util mmal_vc_client bcm_host vcmmal"
+
+%common

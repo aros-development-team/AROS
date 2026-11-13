@@ -1,0 +1,63 @@
+TARGETS = VMMStat ShowPagesize ConvVMMCfg ReadMMUConfig VMMUsage VMMUsageCLI
+
+AFLAGS = SET "PAGE4K=1" NOEXE QUIET LARGE I "/"
+CFLAGS = -O2 -m68020 -IINCLUDE_H: -IMUI:developer/C/include -noixemul
+LFLAGS = -noixemul
+
+.c.o:
+  gcc $(CFLAGS) -c -o $*.o $*.c
+
+all : $(TARGETS)
+
+VMMStat : VMMStat.c /shared_defs.h
+  gcc $(CFLAGS) -o VMMStat VMMStat.c
+
+VMMUsageCLI : VMMUsageCLI.c
+  gcc $(CFLAGS) -o VMMUsageCLI VMMUsageCLI.c
+
+ShowPageSize : ShowPageSize.o sv_regs30.o sv_regs40.o sv_regs60.o sv_regs851.o
+  gcc $(LFLAGS) -o ShowPageSize ShowPageSize.o sv_regs30.o sv_regs40.o sv_regs60.o sv_regs851.o
+
+ReadMMUConfig : ReadMMUConfig.o sv_regs30.o sv_regs40.o sv_regs60.o sv_regs851.o
+  gcc $(LFLAGS) -o ReadMMUConfig ReadMMUConfig.o sv_regs30.o sv_regs40.o sv_regs60.o sv_regs851.o
+
+ConvVMMCfg : ConvVMMCfg.c
+  gcc $(CFLAGS) -o ConvVMMCfg ConvVMMCfg.c
+
+VMMUsage : VMMUsage.o /timer.o
+  gcc $(LFLAGS) -o VMMUsage VMMUsage.o ../timer.o ../lib/hook.o
+
+sv_regs30.o : /sv_regs30.asm
+  phxass $(AFLAGS) /sv_regs30.asm to sv_regs30.o
+  hunk2gcc $*.o
+  rm $*.o
+  sksh -n -c "mv obj.* $*.o"
+
+sv_regs40.o : /sv_regs40.asm
+  phxass $(AFLAGS) /sv_regs40.asm to sv_regs40.o
+  hunk2gcc $*.o
+  rm $*.o
+  sksh -n -c "mv obj.* $*.o"
+
+sv_regs60.o : /sv_regs60.asm
+  phxass $(AFLAGS) /sv_regs60.asm to sv_regs60.o
+  hunk2gcc $*.o
+  rm $*.o
+  sksh -n -c "mv obj.* $*.o"
+
+sv_regs851.o : /sv_regs851.asm
+  phxass $(AFLAGS) /sv_regs851.asm to sv_regs851.o
+  hunk2gcc $*.o
+  rm $*.o
+  sksh -n -c "mv obj.* $*.o"
+
+/timer.o : /timer.c
+  cd / 
+  make -f makefile.gcc timer.o
+  cd tools
+
+ReadMMUConfig.o : /protos.h
+
+clean :
+  rm -f $(TARGETS)
+  rm -f *.o *.lnk

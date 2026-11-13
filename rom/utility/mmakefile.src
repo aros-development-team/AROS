@@ -1,0 +1,70 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+FILES	  := getnamespace intfindnamedobj
+FUNCTIONS := \
+	addnamedobject \
+	allocatetagitems \
+	allocnamedobjecta \
+	amiga2date \
+	applytagchanges \
+	attemptremnamedobject \
+	callhookpkt \
+	checkdate \
+	clearmem \
+	clonetagitems \
+	date2amiga \
+	filtertagchanges \
+	filtertagitems \
+	findnamedobject \
+	findtagitem \
+	freenamedobject \
+	freetagitems \
+	gettagdata \
+	getuniqueid \
+	maptags \
+	movemem \
+	namedobjectname \
+	nexttagitem \
+	packbooltags \
+	packstructuretags \
+	refreshtagitemclones \
+	releasenamedobject \
+	remnamedobject \
+	sdivmod32 \
+	setmem \
+	smult32 \
+	smult64 \
+	stricmp \
+	strlcat \
+	strlcpy \
+	strnicmp \
+	taginarray \
+	tolower \
+	toupper \
+	udivmod32 \
+	umult32 \
+	umult64 \
+	unpackstructuretags \
+	vsnprintf
+
+USER_CPPFLAGS := \
+               -DNO_INLINE_STDARG \
+               -DUSE_EXEC_DEBUG
+USER_LDFLAGS := -static
+
+#MM kernel-utility : kernel-utility-$(ARCH)-$(CPU)
+#MM kernel-utility-linklib : kernel-utility-$(ARCH)-$(CPU)
+
+#MM kernel-utility-includes : \
+#MM     kernel-exec-includes
+
+#MM- core-linklibs : linklibs-utility
+
+ifneq ($(ROM_OPTIMIZATION_CFLAGS),)
+OPTIMIZATION_CFLAGS := $(ROM_OPTIMIZATION_CFLAGS)
+endif
+
+%build_module mmake=kernel-utility \
+  modname=utility modtype=library \
+  files="utility_init $(FUNCTIONS) $(FILES)"

@@ -1,0 +1,127 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM- AROS-chrp-ppc-efika: \
+#MM     kernel-chrp-ppc-efika \
+#MM     kernel-package-chrp-ppc-generic \
+#MM     kernel-package-chrp-ppc-efika \
+#MM     kernel-package-chrp-ppc-usb \
+#MM	kernel-package-fs \
+#MM     kernel-misc \
+#MM     ub2lb-chrp-ppc-efika \
+#MM     workbench-complete \
+#MM     workbench-devs-networks-fec-powerpc
+
+#MM bootiso-chrp-ppc-efika: \
+#MM     boot \
+#MM     AROS-chrp-ppc-efika
+
+
+#MM kernel-package-chrp-ppc-generic: \
+#MM     kernel-aros \
+#MM     kernel-expansion \
+#MM     kernel-utility \
+#MM     kernel-oop \
+#MM     kernel-graphics \
+#MM     kernel-layers \
+#MM     kernel-intuition \
+#MM     kernel-task \
+#MM     kernel-keymap \
+#MM     workbench-libs-workbench \
+#MM     kernel-dos \
+#MM     kernel-dosboot \
+#MM     kernel-bestcomm-chrp-ppc-efika \
+#MM	kernel-lddemon \
+#MM     kernel-input \
+#MM     kernel-gameport \
+#MM     kernel-keyboard \
+#MM     kernel-console \
+#MM     kernel-fs-con \
+#MM     kernel-fs-ram \
+#MM     kernel-hidd-gfx \
+#MM     kernel-hidd-input \
+#MM     kernel-hidd-kbd \
+#MM     kernel-hidd-mouse \
+#MM     kernel-hidd \
+#MM     hidd-i2c \
+#MM     kernel-hidd-pci
+
+PKG_GEN_DEVS 	:=  console input gameport keyboard
+PKG_GEN_HANDLERS:= ram con
+PKG_GEN_HIDDS	:= hiddclass gfx inputclass keyboard mouse i2c pci
+PKG_GEN_LIBS 	:= aros expansion utility oop graphics layers intuition keymap workbench dos
+PKG_GEN_RSRC 	:= dosboot bestcomm lddemon task
+
+%make_package mmake=kernel-package-chrp-ppc-generic \
+    file=$(AROSDIR)/boot/modules/aros-ppc-generic.pkg \
+    libs=$(PKG_GEN_LIBS) res=$(PKG_GEN_RSRC) devs=$(PKG_GEN_DEVS) \
+    handlers=$(PKG_GEN_HANDLERS) hidds=$(PKG_GEN_HIDDS)
+
+
+#MM kernel-package-chrp-ppc-efika: \
+#MM     kernel-battclock \
+#MM     kernel-bootloader \
+#MM     kernel-openfirmware \
+#MM     kernel-processor \
+#MM     kernel-timer \
+#MM     kernel-ata \
+#MM     hidd-radeon \
+#MM     kernel-hidd-pci-efika
+
+PKG_EFI_LIBS 	:= 
+PKG_EFI_RSRC 	:= battclock bootloader openfirmware processor
+PKG_EFI_DEVS 	:= timer ata
+PKG_EFI_HANDLERS:= 
+PKG_EFI_HIDDS	:= radeon pci-efika
+
+%make_package mmake=kernel-package-chrp-ppc-efika \
+    file=$(AROSDIR)/boot/modules/aros-ppc-efika.pkg \
+    libs=$(PKG_GEN_LIBS) res=$(PKG_GEN_RSRC) devs=$(PKG_GEN_DEVS) \
+    handlers=$(PKG_GEN_HANDLERS) hidds=$(PKG_GEN_HIDDS)
+
+
+#MM kernel-package-chrp-ppc-usb: \
+#MM     hidd-usb
+
+PKG_USB_HIDDS 	:= usb ohci
+PKG_USB_CLASSES	:= USB/hid USB/storage
+
+%make_package mmake=kernel-package-chrp-ppc-usb \
+    file=$(AROSARCHDIR)/modules/aros-ppc-usb.pkg \
+    hidds=$(PKG_USB_HIDDS) classes=$(PKG_USB_CLASSES)
+
+
+
+.PHONY: $(PORTSDIR)/aros-efika.iso
+
+TARGET_ISO := $(DISTDIR)/aros$(AROS_TARGET_SUFFIX)-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU).iso
+
+.PHONY: $(DISTDIR)/aros$(AROS_TARGET_SUFFIX)-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU).iso
+
+#MM- bootiso-chrp-ppc-efika : workbench-backdrop
+
+bootiso-chrp-ppc-efika: $(TARGET_ISO)
+
+
+$(TARGET_ISO):
+		%mkdirs_q $(AROSDIR)/S
+		@$(CP) $(SRCDIR)/workbench/s/Startup-Sequence $(AROSDIR)/S/Startup-Sequence
+		@$(MKDIR) -p "$(AROSDIR)/Tools/Boot Disks"
+		@$(MKDIR) -p "$(DISTDIR)"
+		@mkisofs -f \
+                -o $@ \
+                -allow-leading-dots \
+                -iso-level 4 \
+                -V "AROS Live CD" \
+                -publisher "AROS Development Team" \
+                -sysid "AROS-$(AROS_TARGET_CPU)-$(AROS_TARGET_ARCH)" \
+                -l -J -r \
+                $(AROSDIR)
+
+#                -no-emul-boot \
+#                -b bootloader \
+                
+#MM setup-chrp-ppc-efika
+setup-chrp-ppc-efika :
+	%mkdirs_q $(AROSARCHDIR) $(OSGENDIR)/boot $(TARGETDIR)
+	$(CP) $(SRCDIR)/$(CURDIR)/menu.lst $(AROSARCHDIR)/

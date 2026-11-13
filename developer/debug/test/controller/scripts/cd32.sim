@@ -1,0 +1,18 @@
+# CD32 pad: direction hat pushed as a bitmask, Amiga labels
+expect reading mapped 1
+hat 0 1
+expect reading hat 0 1
+expect reading gp dpup 1
+hat 0 9
+expect reading gp dpup 1
+expect reading gp dpleft 1
+hat 0 0
+btn 0 1
+expect reading gp south 1
+btn 0 0
+btn 6 1
+expect reading gp start 1
+btn 6 0
+btn 4 1
+expect reading gp rightshoulder 1
+btn 4 0

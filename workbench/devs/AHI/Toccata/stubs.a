@@ -1,0 +1,462 @@
+*
+*    toccata.library - AHI-based Toccata emulation library
+*    Copyright (C) 1997-2005 Martin Blom <martin@blom.org> and Teemu Suikki.
+*
+*    This library is free software; you can redistribute it and/or
+*    modify it under the terms of the GNU Library General Public
+*    License as published by the Free Software Foundation; either
+*    version 2 of the License, or (at your option) any later version.
+*
+*    This library is distributed in the hope that it will be useful,
+*    but WITHOUT ANY WARRANTY; without even the implied warranty of
+*    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+*    Library General Public License for more details.
+*
+*    You should have received a copy of the GNU Library General Public
+*    License along with this library; if not, write to the
+*    Free Software Foundation, Inc., 59 Temple Place - Suite 330, Cambridge,
+*    MA 02139, USA.
+*
+
+
+	include	exec/tasks.i
+	include	utility/hooks.i
+	include lvo/ahi_lib.i
+
+pushm	macro
+	movem.l	\1,-(a7)
+	endm
+
+popm	macro
+	movem.l	(a7)+,\1
+	endm
+
+push	macro
+	move.l	\1,-(a7)
+	endm
+
+pop		macro
+	move.l	(a7)+,\1
+	endm
+
+call	macro
+	xref	_LVO\1
+	jsr		_LVO\1(a6)
+	endm
+
+
+	XREF	_ToccataBase
+	XREF	_SlaveTask
+	XREF	_IOTask
+	XdEF	_RawReply
+
+	xref	_NextBufferOK
+	XREF	_t_NextFrequency
+	XREF	_t_FindFrequency
+	XREF	_t_SetPart
+	XREF	_t_GetPart
+	XREF	_t_Capture
+	XREF	_t_Playback
+	XREF	_t_Pause
+	XREF	_t_Stop
+	XREF	_t_StartLevel
+	XREF	_t_StopLevel
+	XREF	_t_Expand
+	XREF	_t_SaveSettings
+	XREF	_t_LoadSettings
+	XREF	_t_RawPlayback
+	XREF	_t_IoErr
+	XREF	_t_Open
+	XREF	_t_Close
+	XREF	_t_Record
+	XREF	_t_Play
+	XREF	_t_Convert
+	XREF	_t_BytesPerSample
+	XREF	_t_OpenFile
+	XREF	_t_CloseFile
+	XREF	_t_ReadFile
+	XREF	_t_WriteSmpte
+	XREF	_t_StopSmpte
+	XREF	_t_Reserved1
+	XREF	_t_Reserved2
+	XREF	_t_Reserved3
+	XREF	_t_Reserved4
+	XREF	_t_Own
+	XREF	_t_Disown
+	XREF	_t_SetReg
+	XREF	_t_GetReg
+
+
+
+	XDEF	_GetRawReply
+	XDEF	_HookLoad
+	XDEF	_SlaveTaskEntry
+	XDEF	_IOTaskEntry
+
+	XDEF	_T_NextFrequency
+	XDEF	_T_FindFrequency
+	XDEF	_T_SetPart
+	XDEF	_T_GetPart
+	XDEF	_T_Capture
+	XDEF	_T_Playback
+	XDEF	_T_Pause
+	XDEF	_T_Stop
+	XDEF	_T_StartLevel
+	XDEF	_T_StopLevel
+	XDEF	_T_Expand
+	XDEF	_T_SaveSettings
+	XDEF	_T_LoadSettings
+	XDEF	_T_RawPlayback
+	XDEF	_T_IoErr
+	XDEF	_T_Open
+	XDEF	_T_Close
+	XDEF	_T_Record
+	XDEF	_T_Play
+	XDEF	_T_Convert
+	XDEF	_T_BytesPerSample
+	XDEF	_T_OpenFile
+	XDEF	_T_CloseFile
+	XDEF	_T_ReadFile
+	XDEF	_T_WriteSmpte
+	XDEF	_T_StopSmpte
+	XDEF	_T_Reserved1
+	XDEF	_T_Reserved2
+	XDEF	_T_Reserved3
+	XDEF	_T_Reserved4
+	XDEF	_T_Own
+	XDEF	_T_Disown
+	XDEF	_T_SetReg
+	XDEF	_T_GetReg
+
+	xdef	_puta4
+	xref	_ToccataBase
+
+_puta4
+	move.l	a4,varbase
+	rts
+
+_GetRawReply:
+	move.l	#_RawReply,d0
+	rts
+
+_RawReply:
+	move.l	a0,-(a7)
+	move.l	varbase,a0
+	move.l	#1,_NextBufferOK(a0)
+	move.l	(a7)+,a0
+	rts
+
+_HookLoad:
+	pushm	a5/a6
+	move.l	h_Data(a0),a6
+	move.l	h_SubEntry(a0),a5
+	jsr	(a5)
+	popm	a5/a6
+	rts
+
+_SlaveTaskEntry:
+	move.l	varbase,a4
+	move.l	_ToccataBase(a4),a6
+	jmp	_SlaveTask
+
+_IOTaskEntry:
+	move.l	varbase,a4
+	move.l	_ToccataBase(a4),a6
+	jmp	_IOTask
+
+
+* T_NextFrequency(freq)(d0)
+
+_T_NextFrequency:
+	pushm	d1/a0-a1
+	jsr	_t_NextFrequency
+	popm	d1/a0-a1
+	rts
+
+* T_FindFrequency(freq)(d0)
+
+_T_FindFrequency:
+	pushm	d1/a0-a1
+	jsr	_t_FindFrequency
+	popm	d1/a0-a1
+	rts
+
+* T_SetPart(tags)(a0)
+
+_T_SetPart:
+	pushm	d0-d1/a0-a1
+	jsr	_t_SetPart
+	popm	d0-d1/a0-a1
+	rts
+
+* T_GetPart(num)(a0)
+
+_T_GetPart:
+	pushm	d0-d1/a0-a1
+	jsr	_t_GetPart
+	popm	d0-d1/a0-a1
+	rts
+
+* T_Capture(tags)(a0)
+
+_T_Capture:
+	pushm	d1/a0-a1
+	jsr	_t_Capture
+	popm	d1/a0-a1
+	rts
+
+* T_Playback(tags)(a0)
+
+_T_Playback:
+	pushm	d1/a0-a1
+	jsr	_t_Playback
+	popm	d1/a0-a1
+	rts
+
+* T_Pause(pause)(d0)
+
+_T_Pause:
+	pushm	d0-d1/a0-a1
+	jsr	_t_Pause
+	popm	d0-d1/a0-a1
+	rts
+
+* T_Stop(flags)(d0)
+
+_T_Stop:
+	pushm	d0-d1/a0-a1
+	jsr	_t_Stop
+	popm	d0-d1/a0-a1
+	rts
+
+* T_StartLevel(tags)(a0)
+
+_T_StartLevel:
+	pushm	d1/a0-a1
+	jsr	_t_StartLevel
+	popm	d1/a0-a1
+	rts
+
+* T_StopLevel()()
+
+_T_StopLevel:
+	pushm	d0-d1/a0-a1
+	jsr	_t_StopLevel
+	popm	d0-d1/a0-a1
+	rts
+
+* T_Expand(value,mode)(d0,d1)
+
+_T_Expand:
+	pushm	d1/a0-a1
+	jsr	_t_Expand
+	popm	d1/a0-a1
+	rts
+
+* T_SaveSettings(flags)(d0)
+
+_T_SaveSettings:
+	pushm	d1/a0-a1
+	jsr	_t_SaveSettings
+	popm	d1/a0-a1
+	rts
+
+* T_LoadSettings(flags)(d0)
+
+_T_LoadSettings:
+	pushm	d1/a0-a1
+	jsr	_t_LoadSettings
+	popm	d1/a0-a1
+	rts
+
+* T_RawPlayback(tags)(a0)
+_T_RawPlayback:
+	pushm	d1/a0-a1
+	jsr	_t_RawPlayback
+	popm	d1/a0-a1
+	rts
+*
+* functions added in v2:
+*
+
+* T_IoErr()()
+
+_T_IoErr:
+	pushm	d1/a0-a1
+	jsr	_t_IoErr
+	popm	d1/a0-a1
+	rts
+*
+* functions added in v4:
+*
+
+* T_Open(name,tags)(a0,a1)
+
+_T_Open:
+	pushm	d1/a0-a1
+	jsr	_t_Open
+	popm	d1/a0-a1
+	rts
+
+* T_Close(handle)(a0)
+
+_T_Close:
+	pushm	d0-d1/a0-a1
+	jsr	_t_Close
+	popm	d0-d1/a0-a1
+	rts
+
+* T_Record(handle,tags)(a0,a1)
+
+_T_Record:
+	pushm	d1/a0-a1
+	jsr	_t_Record
+	popm	d1/a0-a1
+	rts
+
+* T_Play(handle,tags)(a0,a1)
+
+_T_Play:
+	pushm	d1/a0-a1
+	jsr	_t_Play
+	popm	d1/a0-a1
+	rts
+
+* T_Convert(src,dest,samples,srcMode,destMode)(a0,a1,d0,d1,d2)
+
+_T_Convert:
+	pushm	d0-d1/a0-a1
+	jsr	_t_Convert
+	popm	d0-d1/a0-a1
+	rts
+
+* T_BytesPerSample(mode)(d0)
+
+_T_BytesPerSample:
+	pushm	d1/a0-a1
+	jsr	_t_BytesPerSample
+	popm	d1/a0-a1
+	rts
+
+* T_OpenFile(name,flags)(a0,d0)
+_T_OpenFile:
+	pushm	d1/a0-a1
+	jsr	_t_OpenFile
+	popm	d1/a0-a1
+	rts
+
+* T_CloseFile(msh)(a0)
+
+_T_CloseFile:
+	pushm	d0-d1/a0-a1
+	jsr	_t_CloseFile
+	popm	d0-d1/a0-a1
+	rts
+
+* T_ReadFile(msh,buffer,size)(a0,a1,d0)
+
+_T_ReadFile:
+	pushm	d1/a0-a1
+	jsr	_t_ReadFile
+	popm	d1/a0-a1
+	rts
+*
+* functions added in v5:
+*
+
+* T_WriteSmpte(startVal,fps,task,mask)(d0,d1,a0,d2)
+
+_T_WriteSmpte:
+	pushm	d1/a0-a1
+	jsr	_t_WriteSmpte
+	popm	d1/a0-a1
+	rts
+
+* T_StopSmpte(sh)(a0)
+
+_T_StopSmpte:
+	pushm	d1/a0-a1
+	jsr	_t_StopSmpte
+	popm	d1/a0-a1
+	rts
+
+*
+* functions added in v6:
+*
+*
+*---------- End of public part.
+*---------- Private part is subject to change!
+*
+*
+
+* T_Reserved1()()
+
+_T_Reserved1:
+	pushm	d1/a0-a1
+	jsr	_t_Reserved1
+	popm	d1/a0-a1
+	rts
+
+* T_Reserved2()()
+
+_T_Reserved2:
+	pushm	d1/a0-a1
+	jsr	_t_Reserved2
+	popm	d1/a0-a1
+	rts
+
+* T_Reserved3()()
+
+_T_Reserved3:
+	pushm	d1/a0-a1
+	jsr	_t_Reserved3
+	popm	d1/a0-a1
+	rts
+
+* T_Reserved4()()
+
+_T_Reserved4:
+	pushm	d1/a0-a1
+	jsr	_t_Reserved4
+	popm	d1/a0-a1
+	rts
+
+* T_Own()()
+
+_T_Own:
+	pushm	d0-d1/a0-a1
+	jsr	_t_Own
+	popm	d0-d1/a0-a1
+	rts
+
+* T_Disown()()
+
+_T_Disown:
+	pushm	d0-d1/a0-a1
+	jsr	_t_Disown
+	popm	d0-d1/a0-a1
+	rts
+
+* T_SetReg(reg,val)(d0,d1)
+
+_T_SetReg:
+	pushm	d0-d1/a0-a1
+	jsr	_t_SetReg
+	popm	d0-d1/a0-a1
+	rts
+
+* T_GetReg(reg)(d0)
+
+_T_GetReg:
+	pushm	d1/a0-a1
+	jsr	_t_GetReg
+	popm	d1/a0-a1
+	rts
+
+*****************************************************
+
+
+	xdef	varbase
+
+	section	data,data
+varbase	dc.l	$BADC0DED

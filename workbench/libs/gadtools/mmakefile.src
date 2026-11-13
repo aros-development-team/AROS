@@ -1,0 +1,67 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+USER_CFLAGS :=  $(AROSROM_MODULE_CFLAGS)
+USER_CPPFLAGS := \
+               -DUSE_EXEC_DEBUG \
+	       -D__NOLIBBASE__
+USER_LDFLAGS := -static
+
+CLASSES	:=  buttonclass textclass sliderclass arrowclass scrollerclass \
+	    stringclass listviewclass checkboxclass cycleclass mxclass \
+	    paletteclass
+		   
+FILES	:=  basicfuncs gadgets menus $(CLASSES)
+FUNCS	:=  createcontext \
+	    creategadgeta \
+	    createmenusa \
+	    drawbevelboxa \
+	    freegadgets \
+	    freemenus \
+	    freevisualinfo \
+	    getvisualinfoa \
+	    gt_beginrefresh \
+	    gt_endrefresh \
+	    gt_filterimsg \
+	    gt_getgadgetattrsa \
+	    gt_getimsg \
+	    gt_postfilterimsg \
+	    gt_refreshwindow \
+	    gt_replyimsg \
+	    gt_setgadgetattrsa \
+	    layoutmenuitemsa \
+	    layoutmenusa
+
+#MM workbench-libs-gadtools-includes : \
+#MM     kernel-exec-includes \
+#MM     kernel-dos-includes \
+#MM     kernel-utility-includes \
+#MM     kernel-graphics-includes \
+#MM     kernel-intuition-includes \
+#MM     kernel-layers-includes \
+#MM     includes-copy
+#MM- workbench-libs-gadtools : linklibs
+#MM- core-linklibs : linklibs-gadtools
+
+ifneq ($(ROM_OPTIMIZATION_CFLAGS),)
+OPTIMIZATION_CFLAGS := $(ROM_OPTIMIZATION_CFLAGS)
+endif
+
+%build_module mmake=workbench-libs-gadtools \
+    modname=gadtools modtype=library \
+    files="gadtools_init $(FUNCS) $(FILES)"
+
+# (bernie) this hack disables optimization on classes.c to fix a problem in the
+# current Amiga version of gcc and egcs. Using inline asm macros to perform
+# shared library calls sometimes leads the optimizer to a dead-end situation
+# where one of the registers involved in the inline asm macro gets spilled on
+# the frame.
+#
+# stegerg: classes.c file was split into one c file per class. sorry :(
+#
+#ifeq ($(ARCH),amiga)
+#$(OBJDIR)/classes.o : classes.c
+#	%compile_q opt="$(filter-out -O%,$(CFLAGS)) -O0"
+#endif
+
+%common

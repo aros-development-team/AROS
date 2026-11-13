@@ -1,0 +1,21 @@
+CD32 read-ahead regression
+=========================
+
+Build with test-devices-cd-readahead or test-devices-cd-readahead-quick.
+The native Amiga CD component test group selects this test.
+
+Generate a disposable data disc on the host:
+
+    python3 make_disc.py /tmp/cd-readahead.iso
+
+Mount it as CD unit 0 and run devices/cd/cdreadahead. Use a stock PAL CD32
+with 2 MiB Chip RAM. The test selects 150 sectors/second and alternates
+between distant two-sector reads, checking the exact data and surrounding
+buffer guards. Between reads it leaves the read-ahead stream running and
+issues the change-number/change-state queries used by filesystems.
+
+Each generated data sector contains its sector number and inverse, followed
+by a predictable byte pattern. No commercial game or ROM is required to
+construct the disc. An unrelated disc will fail the data checks.
+
+Success: 32 reads, 0 failures, exit status 0.

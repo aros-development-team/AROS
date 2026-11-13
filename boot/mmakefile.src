@@ -1,0 +1,54 @@
+# Copyright (C) 2004-2021, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM- bootdisk : \
+#MM                              boot \
+#MM                              bootdisk-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)
+
+#MM- bootdisk-quick : \
+#MM                              bootdisk-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)-quick
+
+#MM- systemdisk : \
+#MM                              systemdisk-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)
+
+#MM- systemdisk-quick : \
+#MM                              systemdisk-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)-quick
+
+#MM- bootiso : \
+#MM                              boot \
+#MM                              bootiso-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)-$(AROS_TARGET_VARIANT) \
+#MM                              bootiso-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)
+
+#MM- bootiso-quick : \
+#MM                              bootiso-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)-$(AROS_TARGET_VARIANT)-quick \
+#MM                              bootiso-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)-quick
+
+#MM boot : \
+#MM                              boot-$(ARCH)-$(CPU)-$(AROS_TARGET_VARIANT) \
+#MM                              boot-$(ARCH)-$(CPU) \
+#MM                              boot-$(ARCH) \
+#MM                              boot-$(FAMILY) \
+#MM                              test
+
+#MM distfiles-system : \
+#MM                              distfiles-system-$(ARCH)-$(CPU)-$(AROS_TARGET_VARIANT) \
+#MM                              distfiles-system-$(ARCH)-$(CPU) \
+#MM                              distfiles-system-$(ARCH) \
+#MM                              distfiles-system-$(FAMILY) \
+#MM                              iconset-$(AROS_TARGET_ICONSET)-icons-aros-$(AROS_TARGET_ARCH)-system
+
+#MM
+distfiles-system:
+	%mkdir_q dir="$(DISTDIR)"
+	@$(ECHO) Copying system distfiles...
+	@$(CP) -R $(AROSDIR)/* $(DISTDIR)/
+
+AROSBOOTSIGFILE := AROS.boot
+
+#MM
+boot : $(AROSDIR)/$(AROSBOOTSIGFILE)
+
+$(AROSDIR)/$(AROSBOOTSIGFILE) :
+	@$(ECHO) Writing $@...
+	@$(ECHO) "$(CPU)" > $(AROSDIR)/$(AROSBOOTSIGFILE)

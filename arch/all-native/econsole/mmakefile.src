@@ -1,0 +1,19 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+USER_LDFLAGS := -static
+
+FILES := econsole
+
+# Emergency CON: device, operating over the Exec Raw*() interace
+# Enabled with the bootarg of 'econsole'
+#
+# Also supplies a minimal boot disk at priority -127.
+
+USER_CPPFLAGS += -DAROS_CPU="\"$(AROS_TARGET_CPU)\""
+
+%build_module mmake=kernel-econsole \
+  modname=econsole modtype=handler \
+  files="$(FILES)"
+
+%common

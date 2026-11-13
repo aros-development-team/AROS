@@ -1,0 +1,40 @@
+# Copyright (C) 2003, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+
+USER_CFLAGS :=  $(AROSROM_MODULE_CFLAGS)
+USER_LDFLAGS := -static
+
+FILES := \
+    intern_ieeespisodd \
+    intern_ieeespld
+
+FUNCS := \
+    ieeespacos \
+    ieeespasin \
+    ieeespatan \
+    ieeespcos \
+    ieeespcosh \
+    ieeespexp \
+    ieeespfieee \
+    ieeesplog10 \
+    ieeesplog \
+    ieeesppow \
+    ieeespsin \
+    ieeespsincos \
+    ieeespsinh \
+    ieeespsqrt \
+    ieeesptan \
+    ieeesptanh \
+    ieeesptieee
+
+#MM workbench-libs-mathieeesingtrans-includes : \
+#MM    kernel-exec-includes \
+#MM    workbench-libs-mathieeesingbas-includes \
+#MM    includes-copy
+
+%build_module mmake=workbench-libs-mathieeesingtrans \
+    modname=mathieeesingtrans modtype=library \
+    files="mathieeesingtrans_init $(FILES) $(FUNCS)"
+
+%common

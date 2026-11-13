@@ -1,0 +1,10 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+FILES	:=	serial_init SerialClass SerialUnitClass
+
+%build_module mmake=kernel-sam440-ppc-serial \
+  modname=serial modtype=hidd \
+  files=$(FILES) \
+  uselibs="hiddstubs"
+  

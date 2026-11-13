@@ -1,0 +1,268 @@
+diff -ruN libcodesets-6.22/developer/examples/b64d.c libcodesets-6.22.aros/developer/examples/b64d.c
+--- libcodesets-6.22/developer/examples/b64d.c	2024-02-26 07:56:38.000000000 +0000
++++ libcodesets-6.22.aros/developer/examples/b64d.c	2025-06-19 22:12:06.491709503 +0000
+@@ -55,8 +55,8 @@
+         {
+             ULONG r;
+ 
+-            r = CodesetsDecodeB64(CSA_B64SourceFile, (Tag)argv[1],
+-                                  CSA_B64DestFile,   (Tag)argv[2],
++            r = CodesetsDecodeB64(CSA_B64SourceFile, (IPTR)argv[1],
++                                  CSA_B64DestFile,   (IPTR)argv[2],
+                                   TAG_DONE);
+             printf("Res %d\n", (int)r);
+ 
+diff -ruN libcodesets-6.22/developer/examples/b64e.c libcodesets-6.22.aros/developer/examples/b64e.c
+--- libcodesets-6.22/developer/examples/b64e.c	2024-02-26 07:56:38.000000000 +0000
++++ libcodesets-6.22.aros/developer/examples/b64e.c	2025-06-19 22:12:24.447588886 +0000
+@@ -53,8 +53,8 @@
+         {
+             ULONG r;
+ 
+-            r = CodesetsEncodeB64(CSA_B64SourceFile, (Tag)argv[1],
+-                                  CSA_B64DestFile,   (Tag)argv[2],
++            r = CodesetsEncodeB64(CSA_B64SourceFile, (IPTR)argv[1],
++                                  CSA_B64DestFile,   (IPTR)argv[2],
+                                   TAG_DONE);
+             printf("Res %d\n", (int)r);
+ 
+diff -ruN libcodesets-6.22/developer/examples/Convert.c libcodesets-6.22.aros/developer/examples/Convert.c
+--- libcodesets-6.22/developer/examples/Convert.c	2024-02-26 07:56:38.000000000 +0000
++++ libcodesets-6.22.aros/developer/examples/Convert.c	2025-06-19 22:13:19.047310037 +0000
+@@ -79,10 +79,10 @@
+           {
+             fread(buf, BUF_SIZE-1, 1, f);
+             fclose(f);
+-            destbuf = CodesetsConvertStr(CSA_SourceCodeset, (Tag)srcCodeset,
+-                                         CSA_DestCodeset, (Tag)destCodeset,
+-                                         CSA_Source, (Tag)buf,
+-                                         CSA_DestLenPtr, (Tag)&destlen,
++            destbuf = CodesetsConvertStr(CSA_SourceCodeset, (IPTR)srcCodeset,
++                                         CSA_DestCodeset, (IPTR)destCodeset,
++                                         CSA_Source, (IPTR)buf,
++                                         CSA_DestLenPtr, (IPTR)&destlen,
+                                          TAG_DONE);
+             if (destbuf)
+             {
+diff -ruN libcodesets-6.22/developer/examples/demo1.c libcodesets-6.22.aros/developer/examples/demo1.c
+--- libcodesets-6.22/developer/examples/demo1.c	2024-02-26 07:56:38.000000000 +0000
++++ libcodesets-6.22.aros/developer/examples/demo1.c	2025-06-19 22:18:59.929442305 +0000
+@@ -427,8 +427,8 @@
+                                     codeset = CodesetsFindA(cname,NULL);
+ 
+                                     /* Convert */
+-                                    str = CodesetsUTF8ToStr(CSA_Source,        (Tag)buf,
+-                                                            CSA_SourceCodeset, (Tag)codeset,
++                                    str = CodesetsUTF8ToStr(CSA_Source,        (IPTR)buf,
++                                                            CSA_SourceCodeset, (IPTR)codeset,
+                                                             TAG_DONE);
+                                     if (str)
+                                     {
+@@ -477,16 +477,16 @@
+         struct codeset *codeset;
+         UTF8           *utf8;
+         STRPTR                  cname = NULL;
+-        ULONG                   dlen;
++        IPTR                   dlen;
+ 
+         /* Get current user codeset */
+         get(data->codesetsObj, MUIA_Text_Contents, (IPTR *)&cname);
+         codeset = CodesetsFindA(cname,NULL);
+ 
+         /* Convert text as utf8 */
+-        if((utf8 = CodesetsUTF8Create(CSA_Source,         (Tag)text,
+-                                      CSA_SourceCodeset,  (Tag)codeset,
+-                                      CSA_DestLenPtr,     (Tag)&dlen,
++        if((utf8 = CodesetsUTF8Create(CSA_Source,         (IPTR)text,
++                                      CSA_SourceCodeset,  (IPTR)codeset,
++                                      CSA_DestLenPtr,     (IPTR)&dlen,
+                                       TAG_DONE)))
+         {
+             /* Save converted text to a file */
+diff -ruN libcodesets-6.22/developer/examples/DetectCodeset.c libcodesets-6.22.aros/developer/examples/DetectCodeset.c
+--- libcodesets-6.22/developer/examples/DetectCodeset.c	2024-02-26 07:56:38.000000000 +0000
++++ libcodesets-6.22.aros/developer/examples/DetectCodeset.c	2025-06-19 22:19:23.169314044 +0000
+@@ -54,11 +54,11 @@
+   if((CodesetsBase = OpenLibrary(CODESETSNAME,CODESETSVER)) &&
+       GETINTERFACE(ICodesets, CodesetsBase))
+   {
+-    ULONG errNum = 0;
++    IPTR errNum = 0;
+     struct codeset *cs;
+ 
+-    if((cs = CodesetsFindBest(CSA_Source, (Tag)ISO8859_1_STR,
+-                              CSA_ErrPtr, (Tag)&errNum,
++    if((cs = CodesetsFindBest(CSA_Source, (IPTR)ISO8859_1_STR,
++                              CSA_ErrPtr, (IPTR)&errNum,
+                               TAG_DONE)))
+     {
+       printf("Identified ISO8859_1_STR as %s with %d of %d errors\n", cs->name, (int)errNum, (int)strlen(ISO8859_1_STR));
+@@ -66,8 +66,8 @@
+     else
+       printf("couldn't identify ISO8859_1_STR!\n");
+ 
+-    if((cs = CodesetsFindBest(CSA_Source, (Tag)CP1251_STR,
+-                              CSA_ErrPtr, (Tag)&errNum,
++    if((cs = CodesetsFindBest(CSA_Source, (IPTR)CP1251_STR,
++                              CSA_ErrPtr, (IPTR)&errNum,
+                               CSA_CodesetFamily, CSV_CodesetFamily_Cyrillic,
+                               TAG_DONE)))
+     {
+@@ -76,8 +76,8 @@
+     else
+       printf("couldn't identify CP1251_STR!\n");
+ 
+-    if((cs = CodesetsFindBest(CSA_Source, (Tag)ASCII_STR,
+-                              CSA_ErrPtr, (Tag)&errNum,
++    if((cs = CodesetsFindBest(CSA_Source, (IPTR)ASCII_STR,
++                              CSA_ErrPtr, (IPTR)&errNum,
+                               CSA_CodesetFamily, CSV_CodesetFamily_Cyrillic,
+                               TAG_DONE)))
+     {
+@@ -86,8 +86,8 @@
+     else
+       printf("couldn't identify ASCII_STR!\n");
+ 
+-    if((cs = CodesetsFindBest(CSA_Source, (Tag)KOI8R_STR,
+-                              CSA_ErrPtr, (Tag)&errNum,
++    if((cs = CodesetsFindBest(CSA_Source, (IPTR)KOI8R_STR,
++                              CSA_ErrPtr, (IPTR)&errNum,
+                               CSA_CodesetFamily, CSV_CodesetFamily_Cyrillic,
+                               TAG_DONE)))
+     {
+diff -ruN libcodesets-6.22/developer/examples/UTF8ToStrHook.c libcodesets-6.22.aros/developer/examples/UTF8ToStrHook.c
+--- libcodesets-6.22/developer/examples/UTF8ToStrHook.c	2024-02-26 07:56:38.000000000 +0000
++++ libcodesets-6.22.aros/developer/examples/UTF8ToStrHook.c	2025-06-19 22:13:06.387377649 +0000
+@@ -81,9 +81,9 @@
+         // sequences.
+         if(CodesetsIsValidUTF8(str))
+         {
+-          CodesetsUTF8ToStr(CSA_Source,   (Tag)str,
++          CodesetsUTF8ToStr(CSA_Source,   (IPTR)str,
+                             CSA_DestLen,  32,
+-                            CSA_DestHook, (Tag)&destHook,
++                            CSA_DestHook, (IPTR)&destHook,
+                             TAG_DONE);
+         }
+         else
+diff -ruN libcodesets-6.22/developer/include/defines/codesets.h libcodesets-6.22.aros/developer/include/defines/codesets.h
+--- libcodesets-6.22/developer/include/defines/codesets.h	2024-02-26 07:56:38.000000000 +0000
++++ libcodesets-6.22.aros/developer/include/defines/codesets.h	2025-06-19 22:22:32.540272380 +0000
+@@ -8,7 +8,11 @@
+ #ifdef __HAVE_IPTR_ATTR__
+ typedef APTR _sfdc_vararg __attribute__((iptr));
+ #else
++#ifdef __AROS__
++typedef IPTR _sfdc_vararg;
++#else
+ typedef ULONG _sfdc_vararg;
++#endif
+ #endif /* __HAVE_IPTR_ATTR__ */
+ #endif /* _SFDC_VARARG_DEFINED */
+ 
+diff -ruN libcodesets-6.22/developer/include/libraries/codesets.h libcodesets-6.22.aros/developer/include/libraries/codesets.h
+--- libcodesets-6.22/developer/include/libraries/codesets.h	2024-02-26 07:56:38.000000000 +0000
++++ libcodesets-6.22.aros/developer/include/libraries/codesets.h	2025-09-03 10:13:09.471684948 +0000
+@@ -58,17 +58,17 @@
+ 
+ #ifndef UTF32_TYPEDEF
+ #define UTF32_TYPEDEF
+-typedef unsigned long  UTF32;   /* at least 32 bits */
++typedef ULONG UTF32;   /* at least 32 bits */
+ #endif
+ 
+ #ifndef UTF16_TYPEDEF
+ #define UTF16_TYPEDEF
+-typedef unsigned short UTF16;   /* at least 16 bits */
++typedef UWORD UTF16;   /* at least 16 bits */
+ #endif
+ 
+ #ifndef UTF8_TYPEDEF
+ #define UTF8_TYPEDEF
+-typedef unsigned char  UTF8;    /* typically 8 bits */
++typedef UBYTE UTF8;    /* typically 8 bits */
+ #endif
+ 
+ /***********************************************************************/
+diff -ruN libcodesets-6.22/include/libraries/codesets.h libcodesets-6.22.aros/include/libraries/codesets.h
+--- libcodesets-6.22/include/libraries/codesets.h	2024-02-26 07:56:38.000000000 +0000
++++ libcodesets-6.22.aros/include/libraries/codesets.h	2025-09-03 10:13:04.062684690 +0000
+@@ -58,17 +58,17 @@
+ 
+ #ifndef UTF32_TYPEDEF
+ #define UTF32_TYPEDEF
+-typedef unsigned long  UTF32;   /* at least 32 bits */
++typedef ULONG UTF32;   /* at least 32 bits */
+ #endif
+ 
+ #ifndef UTF16_TYPEDEF
+ #define UTF16_TYPEDEF
+-typedef unsigned short UTF16;   /* at least 16 bits */
++typedef UWORD UTF16;   /* at least 16 bits */
+ #endif
+ 
+ #ifndef UTF8_TYPEDEF
+ #define UTF8_TYPEDEF
+-typedef unsigned char  UTF8;    /* typically 8 bits */
++typedef UBYTE UTF8;    /* typically 8 bits */
+ #endif
+ 
+ /***********************************************************************/
+diff -ruN libcodesets-6.22/include/SDI_lib.h libcodesets-6.22.aros/include/SDI_lib.h
+--- libcodesets-6.22/include/SDI_lib.h	2024-02-26 07:56:38.000000000 +0000
++++ libcodesets-6.22.aros/include/SDI_lib.h	2025-07-06 01:20:40.200402289 +0000
+@@ -41,6 +41,7 @@
+                   version (Thore Böckelmann)
+  1.12  01.04.14 : removed the necessity of stub functions for AmigaOS4 (Thore
+                   Böckelmann)
++ WIP   21.08.14 : fix for AROS
+  1.13  28.09.15 : removed the exclusion of C++ (Thore Böckelmann)
+  1.14  18.02.16 : added LFUNC_NULL (Jens Maus)
+ 
+@@ -167,6 +168,25 @@
+   #define LFUNC_VA_(name)
+   #define LFUNC_NULL      ,NULL
+   #define LFUNC(name)     LIBSTUB_##name
++#elif defined(__AROS__)
++  #define LIBFUNC
++  #if !defined(__cplusplus) &&                                        \
++    (__STDC_VERSION__ >= 199901L || __GNUC__ >= 3 ||                  \
++    (__GNUC__ == 2 && __GNUC_MINOR__ >= 95))
++    #define LIBPROTO(name, ret, ...)                                  \
++      LIBFUNC ret LIB_##name(__VA_ARGS__)
++    #define LIBPROTOVA(name, ret, ...)
++    #define LIBSTUB(name, ret, ...)                                   \
++      LIBFUNC ret LIBSTUB_0_##name(void)
++    #define CALL_LFUNC_NP(name, ...) LIB_##name(__BASE_OR_IFACE_VAR)
++    #define CALL_LFUNC(name, ...) LIB_##name(__BASE_OR_IFACE_VAR, __VA_ARGS__)
++  #endif
++  #define LFUNC_FAS(name) LIBSTUB_0_##name
++  #define LFUNC_VAS(name)
++  #define LFUNC_FA_(name) ,LIBSTUB_0_##name
++  #define LFUNC_VA_(name)
++  #define LFUNC_NULL      ,NULL
++  #define LFUNC(name)     LIBSTUB_0_##name
+ #else
+   #define LIBFUNC SAVEDS ASM
+   #if (__STDC_VERSION__ >= 199901L || __GNUC__ >= 3 || (__GNUC__ == 2 && __GNUC_MINOR__ >= 95))
+diff -ruN libcodesets-6.22/src/version.h libcodesets-6.22.aros/src/version.h
+--- libcodesets-6.22/src/version.h	2024-02-26 07:56:38.000000000 +0000
++++ libcodesets-6.22.aros/src/version.h	2025-06-19 22:25:27.179309835 +0000
+@@ -74,8 +74,16 @@
+   #define CPU "x86"
+ #elif defined(__x86_64__)
+   #define CPU "x86_64"
+-#elif defined(__arm__)
++#elif defined(__arm__) || defined(__arm) || defined(_M_ARM)
+   #define CPU "ARM"
++#elif defined(__aarch64__) || defined(_M_ARM64)
++  #define CPU "AArch64"
++#elif defined(__riscv)
++# if (__riscv_xlen == 64)
++  #define CPU "riscv64"
++# else
++  #define CPU "riscv"
++# endif
+ #else
+   #warning "Unsupported CPU model - check CPU define"
+   #define CPU "???"

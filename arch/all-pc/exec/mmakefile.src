@@ -1,0 +1,32 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM kernel-exec-pc : kernel-kernel-includes
+
+%set_archincludes mainmmake=kernel-exec maindir=rom/exec \
+  modname=exec pri=7 arch=pc \
+  includes="-I$(SRCDIR)/$(CURDIR)"
+
+%get_archincludes modname=kernel \
+    includeflag=TARGET_KERNEL_INCLUDES maindir=rom/kernel
+
+%get_archincludes modname=exec \
+    includeflag=TARGET_EXEC_INCLUDES maindir=rom/exec
+
+PRIV_EXEC_INCLUDES = \
+    $(TARGET_EXEC_INCLUDES) \
+    -I$(SRCDIR)/rom/exec \
+    $(TARGET_KERNEL_INCLUDES) \
+    -I$(SRCDIR)/rom/kernel
+
+FILES := platform_init powerstate_handlers supervisor exec_idle intserver_vblank exec_vlog
+
+# From kernel.resource we need only kernel_syscalls.h
+USER_INCLUDES := $(PRIV_EXEC_INCLUDES)
+USER_CFLAGS   += $(CFLAGS_GENERAL_REGS_ONLY)
+
+%build_archspecific \
+  mainmmake=kernel-exec maindir=rom/exec arch=pc \
+  files=$(FILES) modname=exec
+
+%common

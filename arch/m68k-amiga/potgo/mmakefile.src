@@ -1,0 +1,14 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM kernel-potgo : includes kernel-potgo-$(ARCH)-$(CPU)
+
+FUNCTIONS := allocpotbits freepotbits writepotgo
+
+OPTIMIZATION_CFLAGS := $(ROM_OPTIMIZATION_CFLAGS)
+
+%build_module mmake=kernel-potgo \
+    modname=potgo modtype=resource \
+    files="$(FUNCTIONS)"
+
+%common

@@ -1,0 +1,15 @@
+# Copyright (C) 2004, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+
+STORAGEICONS := DataTypes DOSDrivers Drivers Keymaps
+DEVSICONS := $(STORAGEICONS) Midi
+
+#MM- iconset-Gorilla-old-icons-aros-clean : iconset-Gorilla-old-icons-aros-devs-clean iconset-Gorilla-old-icons-aros-storage-clean
+#MM- iconset-Gorilla-old-icons-aros : iconset-Gorilla-old-icons-aros-devs iconset-Gorilla-old-icons-aros-storage
+
+%build_icons mmake=iconset-Gorilla-old-icons-aros-devs icons=$(DEVSICONS) \
+             dir=$(AROS_DEVS)
+
+%build_icons mmake=iconset-Gorilla-old-icons-aros-storage icons=$(STORAGEICONS) \
+             dir=$(AROSDIR)/Storage

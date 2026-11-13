@@ -1,0 +1,648 @@
+/*
+  Copyright (C) 2014 Szilard Biro
+  Copyright (C) 2018 Harry Sintonen
+
+  This software is provided 'as-is', without any express or implied
+  warranty.  In no event will the authors be held liable for any damages
+  arising from the use of this software.
+
+  Permission is granted to anyone to use this software for any purpose,
+  including commercial applications, and to alter it and redistribute it
+  freely, subject to the following restrictions:
+
+  1. The origin of this software must not be misrepresented; you must not
+     claim that you wrote the original software. If you use this software
+     in a product, an acknowledgment in the product documentation would be
+     appreciated but is not required.
+  2. Altered source versions must be plainly marked as such, and must not be
+     misrepresented as being the original software.
+  3. This notice may not be removed or altered from any source distribution.
+*/
+
+#ifndef PTHREAD_H
+#define PTHREAD_H
+
+#if defined(__AROS__)
+#include <aros/posixc/sys/types.h>
+#include <aros/posixc/sys/time.h>
+#include <aros/posixc/errno.h>
+#include <aros/posixc/signal.h>
+#include <aros/posixc/time.h>
+#else
+#include <sys/types.h>
+#include <sys/time.h>
+#include <errno.h>
+#include <signal.h>
+#endif
+#include <exec/types.h>
+
+#ifdef __cplusplus
+/*
+ * This header is pulled into every C++ translation unit through libstdc++'s
+ * <thread>/<mutex> support.  The exec structures embedded in the pthread
+ * types below drag exec/nodes.h, lists.h, ports.h and tasks.h along, whose
+ * global struct names (Node, List, Task, Message, ...) collide with common
+ * C++ class names as soon as a "using namespace" directive is in effect.
+ *
+ * For C++, the exec headers that have not been included yet are therefore
+ * pulled in under private struct names, and their include guards are reset
+ * afterwards so that a later explicit include still declares the real
+ * types.  The private structs have the exact same layout, so the pthread
+ * types stay ABI compatible with the (C) pthread library.
+ */
+/*
+ * push_macro/pop_macro (rather than a plain #undef at the end) so that a
+ * caller-supplied command-line definition of any of these names - e.g. a C++
+ * port built with -DMessage=SomethingElse to dodge the very same collision -
+ * survives this header instead of being silently dropped.
+ */
+#ifndef EXEC_NODES_H
+#pragma push_macro("Node")
+#pragma push_macro("MinNode")
+#define Node                __pthread_exec_Node
+#define MinNode             __pthread_exec_MinNode
+#define __PTHREAD_PRIVATE_NODES
+#endif
+#ifndef EXEC_LISTS_H
+#pragma push_macro("List")
+#pragma push_macro("MinList")
+#define List                __pthread_exec_List
+#define MinList             __pthread_exec_MinList
+#define __PTHREAD_PRIVATE_LISTS
+#endif
+#ifndef EXEC_PORTS_H
+#pragma push_macro("Message")
+#pragma push_macro("MsgPort")
+#define Message             __pthread_exec_Message
+#define MsgPort             __pthread_exec_MsgPort
+#define __PTHREAD_PRIVATE_PORTS
+#endif
+#ifndef EXEC_TASKS_H
+#pragma push_macro("Task")
+#pragma push_macro("ETask")
+#pragma push_macro("StackSwapStruct")
+#pragma push_macro("StackSwapArgs")
+#define Task                __pthread_exec_Task
+#define ETask               __pthread_exec_ETask
+#define StackSwapStruct     __pthread_exec_StackSwapStruct
+#define StackSwapArgs       __pthread_exec_StackSwapArgs
+#define __PTHREAD_PRIVATE_TASKS
+#endif
+#ifndef EXEC_SEMAPHORES_H
+#pragma push_macro("SignalSemaphore")
+#pragma push_macro("SemaphoreRequest")
+#pragma push_macro("SemaphoreMessage")
+#define SignalSemaphore     __pthread_exec_SignalSemaphore
+#define SemaphoreRequest    __pthread_exec_SemaphoreRequest
+#define SemaphoreMessage    __pthread_exec_SemaphoreMessage
+#define __PTHREAD_PRIVATE_SEMAPHORES
+#endif
+
+#include <exec/semaphores.h>
+
+#ifdef __PTHREAD_PRIVATE_NODES
+#pragma pop_macro("Node")
+#pragma pop_macro("MinNode")
+#undef EXEC_NODES_H
+#undef __PTHREAD_PRIVATE_NODES
+typedef struct __pthread_exec_Node __pthread_exec_node_t;
+#else
+typedef struct Node __pthread_exec_node_t;
+#endif
+#ifdef __PTHREAD_PRIVATE_LISTS
+#pragma pop_macro("List")
+#pragma pop_macro("MinList")
+#undef EXEC_LISTS_H
+#undef __PTHREAD_PRIVATE_LISTS
+typedef struct __pthread_exec_MinList __pthread_exec_minlist_t;
+#else
+typedef struct MinList __pthread_exec_minlist_t;
+#endif
+#ifdef __PTHREAD_PRIVATE_PORTS
+#pragma pop_macro("Message")
+#pragma pop_macro("MsgPort")
+#undef EXEC_PORTS_H
+#undef __PTHREAD_PRIVATE_PORTS
+#endif
+#ifdef __PTHREAD_PRIVATE_TASKS
+#pragma pop_macro("Task")
+#pragma pop_macro("ETask")
+#pragma pop_macro("StackSwapStruct")
+#pragma pop_macro("StackSwapArgs")
+#undef EXEC_TASKS_H
+#undef __PTHREAD_PRIVATE_TASKS
+#endif
+#ifdef __PTHREAD_PRIVATE_SEMAPHORES
+#pragma pop_macro("SignalSemaphore")
+#pragma pop_macro("SemaphoreRequest")
+#pragma pop_macro("SemaphoreMessage")
+#undef EXEC_SEMAPHORES_H
+#undef __PTHREAD_PRIVATE_SEMAPHORES
+typedef struct __pthread_exec_SignalSemaphore __pthread_exec_sigsem_t;
+#else
+typedef struct SignalSemaphore __pthread_exec_sigsem_t;
+#endif
+
+/*
+ * exec/types.h also defines bare storage-class helper macros (STATIC, CONST,
+ * GLOBAL, ...) which routinely appear as enumerators and identifiers in C++
+ * code, so drop them again here.  Its include guard is reset as well, so a
+ * later explicit include of an AROS header brings them back for the AROS
+ * API declarations that rely on them.
+ */
+#undef GLOBAL
+#undef IMPORT
+#undef STATIC
+#undef REGISTER
+#undef CONST
+#undef VOLATILE
+#undef RESTRICT
+#undef EXEC_TYPES_H
+#else
+#include <exec/semaphores.h>
+typedef struct Node __pthread_exec_node_t;
+typedef struct SignalSemaphore __pthread_exec_sigsem_t;
+typedef struct MinList __pthread_exec_minlist_t;
+#endif
+
+#include <sched.h>
+
+//
+// POSIX options
+//
+
+#undef _POSIX_THREADS
+#define _POSIX_THREADS
+#undef _POSIX_READER_WRITER_LOCKS
+#define _POSIX_READER_WRITER_LOCKS
+#undef _POSIX_SPIN_LOCKS
+#define _POSIX_SPIN_LOCKS
+#undef _POSIX_THREAD_ATTR_STACKSIZE
+#define _POSIX_THREAD_ATTR_STACKSIZE
+#undef _POSIX_THREAD_PRIORITY_SCHEDULING
+#define _POSIX_THREAD_PRIORITY_SCHEDULING
+
+//
+// POSIX limits
+//
+
+#define PTHREAD_KEYS_MAX                      64
+#define PTHREAD_STACK_MIN                     40960
+#define PTHREAD_THREADS_MAX                   2019
+#define PTHREAD_DESTRUCTOR_ITERATIONS         4
+
+//
+// POSIX pthread types
+//
+
+typedef unsigned int pthread_t;
+typedef unsigned int pthread_key_t;
+
+//
+// POSIX thread attribute values
+//
+#ifndef PTHREAD_CREATE_JOINABLE
+#define PTHREAD_CREATE_JOINABLE       0
+#endif
+
+#ifndef PTHREAD_CREATE_DETACHED
+#define PTHREAD_CREATE_DETACHED       1
+#endif
+
+#ifndef PTHREAD_INHERIT_SCHED
+#define PTHREAD_INHERIT_SCHED         0
+#endif
+
+#ifndef PTHREAD_EXPLICIT_SCHED
+#define PTHREAD_EXPLICIT_SCHED        1
+#endif
+
+#define PTHREAD_SCOPE_PROCESS         0
+#define PTHREAD_SCOPE_SYSTEM          1
+
+#define PTHREAD_CANCEL_ENABLE         0
+#define PTHREAD_CANCEL_DISABLE        1
+
+#define PTHREAD_CANCEL_ASYNCHRONOUS   0
+#define PTHREAD_CANCEL_DEFERRED       1
+
+#define PTHREAD_PROCESS_PRIVATE       0
+#define PTHREAD_PROCESS_SHARED        1
+
+//
+// Threads
+//
+
+struct pthread_attr
+{
+    void *stackaddr;
+    size_t stacksize;
+#ifdef __MORPHOS__
+    size_t stacksize68k;
+#endif
+    int detachstate;
+    struct sched_param param;
+    int inheritsched;
+    int contentionscope;
+#ifdef __AROS__
+    int affinityset;            /* pthread_attr_setaffinity_np() was called */
+    cpu_set_t affinity;
+#endif
+};
+
+typedef struct pthread_attr pthread_attr_t;
+
+#define PTHREAD_CANCELED              ((void *)-1)
+
+//
+// Once key
+//
+
+struct pthread_once
+{
+    volatile int done;
+    int started;
+    int lock;
+};
+
+typedef struct pthread_once pthread_once_t;
+
+#define PTHREAD_ONCE_INIT       {0, -1, 0}
+
+//
+// Mutex
+//
+
+#define PTHREAD_MUTEX_NORMAL     0
+#define PTHREAD_MUTEX_RECURSIVE  1
+#define PTHREAD_MUTEX_ERRORCHECK 2
+#define PTHREAD_MUTEX_DEFAULT    PTHREAD_MUTEX_NORMAL
+
+struct pthread_mutexattr
+{
+    int pshared;
+    int kind;
+};
+
+typedef struct pthread_mutexattr pthread_mutexattr_t;
+
+struct pthread_mutex
+{
+    int kind;
+    __pthread_exec_sigsem_t semaphore;
+    int incond;
+};
+
+typedef struct pthread_mutex pthread_mutex_t;
+
+#ifndef __AROS__
+#define NULL_MINLIST {0, 0, 0}
+#else
+#define NULL_MINLIST {0, 0, {0}}
+#endif
+#define NULL_MINNODE {0, 0}
+#define NULL_NODE {0, 0, 0, 0, 0}
+#define NULL_SEMAPHOREREQUEST {NULL_MINNODE, 0}
+#define NULL_SEMAPHORE {NULL_NODE, 0, NULL_MINLIST, NULL_SEMAPHOREREQUEST, 0, 0}
+
+#define PTHREAD_MUTEX_INITIALIZER {PTHREAD_MUTEX_NORMAL, NULL_SEMAPHORE, 0}
+#define PTHREAD_RECURSIVE_MUTEX_INITIALIZER {PTHREAD_MUTEX_RECURSIVE, NULL_SEMAPHORE, 0}
+#define PTHREAD_ERRORCHECK_MUTEX_INITIALIZER {PTHREAD_MUTEX_ERRORCHECK, NULL_SEMAPHORE, 0}
+
+//
+// Condition variables
+//
+
+struct pthread_condattr
+{
+    int pshared;
+    /* Clock an absolute pthread_cond_timedwait() deadline is read against
+     * (CLOCK_REALTIME default per POSIX; CLOCK_MONOTONIC for Mesa's
+     * u_cnd_monotonic_*). Set with pthread_condattr_setclock(); always set
+     * by pthread_condattr_init(). A manually-zeroed attr reads 0, which is
+     * CLOCK_MONOTONIC on AROS - use pthread_condattr_init(). */
+    clockid_t cond_clock;
+};
+
+typedef struct pthread_condattr pthread_condattr_t;
+
+struct pthread_cond
+{
+    /* Copied from the attr by pthread_cond_init(); REALTIME when the cond
+     * was created with a NULL attr, a static initializer, or lazy init.
+     * Lives in the slot that was the unused `int pad1` so that
+     * sizeof(pthread_cond_t) is UNCHANGED: std::condition_variable embeds
+     * this struct, and libc++.a (toolchain, prebuilt) plus every object
+     * compiled before the field appeared lay out std::__assoc_sub_state
+     * (mutex, condition_variable, __state_) from that size. Appending a
+     * member instead moved __state_ for newly compiled code only, and
+     * std::future::get() (libc++.a's __sub_wait) then waited forever on a
+     * ready future - the LLVM MCJIT resolveExternalSymbols() stall. */
+    clockid_t cond_clock;
+    __pthread_exec_sigsem_t semaphore;
+    __pthread_exec_minlist_t waiters;
+};
+
+typedef struct pthread_cond pthread_cond_t;
+
+#ifdef CLOCK_REALTIME
+#define PTHREAD_COND_INITIALIZER {CLOCK_REALTIME, NULL_SEMAPHORE, NULL_MINLIST}
+#else
+#define PTHREAD_COND_INITIALIZER {0, NULL_SEMAPHORE, NULL_MINLIST}
+#endif
+
+//
+// Barriers
+//
+
+#define PTHREAD_BARRIER_SERIAL_THREAD 1
+
+struct pthread_barrierattr
+{
+    int pshared;
+};
+
+typedef struct pthread_barrierattr pthread_barrierattr_t;
+
+struct pthread_barrier
+{
+    unsigned int curr_height;
+    unsigned int total_height;
+    pthread_cond_t breeched;
+    pthread_mutex_t lock;
+};
+
+typedef struct pthread_barrier pthread_barrier_t;
+
+//
+// Read-write locks
+//
+
+struct pthread_rwlockattr
+{
+    int pshared;
+};
+
+typedef struct pthread_rwlockattr pthread_rwlockattr_t;
+
+struct pthread_rwlock
+{
+    __pthread_exec_sigsem_t semaphore;
+};
+
+typedef struct pthread_rwlock pthread_rwlock_t;
+
+#define PTHREAD_RWLOCK_INITIALIZER {NULL_SEMAPHORE}
+
+//
+// Spinlocks
+//
+
+typedef int pthread_spinlock_t;
+
+#define PTHREAD_SPINLOCK_INITIALIZER 0
+
+//
+// POSIX thread routines
+//
+
+#ifdef  __cplusplus
+extern "C" {
+#endif
+
+//
+// Thread attribute functions
+//
+
+int pthread_attr_init(pthread_attr_t *attr);
+int pthread_attr_destroy(pthread_attr_t *attr);
+int pthread_attr_getdetachstate(const pthread_attr_t *attr, int *detachstate);
+int pthread_attr_setdetachstate(pthread_attr_t *attr, int detachstate);
+int pthread_attr_getstack(const pthread_attr_t *attr, void **stackaddr, size_t *stacksize);
+int pthread_attr_setstack(pthread_attr_t *attr, void *stackaddr, size_t stacksize);
+int pthread_attr_getstacksize(const pthread_attr_t *attr, size_t *stacksize);
+int pthread_attr_setstacksize(pthread_attr_t *attr, size_t stacksize);
+int pthread_attr_getschedparam(const pthread_attr_t *attr, struct sched_param *param);
+int pthread_attr_setschedparam(pthread_attr_t *attr, const struct sched_param *param);
+int pthread_attr_getschedpolicy(pthread_attr_t *attr, int *policy);
+int pthread_attr_setschedpolicy(pthread_attr_t *attr, int policy);
+int pthread_attr_getinheritsched(pthread_attr_t *attr, int *inheritsched);
+int pthread_attr_setinheritsched(pthread_attr_t *attr, int inheritsched);
+int pthread_attr_getscope(const pthread_attr_t *attr, int *contentionscope);
+int pthread_attr_setscope(pthread_attr_t *attr, int contentionscope);
+
+//
+// Thread functions
+//
+
+int pthread_create(pthread_t *thread, const pthread_attr_t *attr, void *(*start)(void *), void *arg);
+int pthread_detach(pthread_t thread);
+int pthread_equal(pthread_t t1, pthread_t t2);
+void pthread_exit(void *value_ptr);
+int pthread_join(pthread_t thread, void **value_ptr);
+pthread_t pthread_self(void);
+int pthread_cancel(pthread_t thread);
+int pthread_setcancelstate(int state, int *oldstate);
+int pthread_setcanceltype(int type, int *oldtype);
+void pthread_testcancel(void);
+int pthread_once(pthread_once_t *once_control, void (*init_routine)(void));
+int pthread_sigmask(int how, const sigset_t *set, sigset_t *oldset);
+
+//
+// Scheduling functions
+//
+
+int pthread_setschedprio(pthread_t thread, int prio);
+int pthread_setschedparam(pthread_t thread, int policy, const struct sched_param *param);
+int pthread_getschedparam(pthread_t thread, int *policy, struct sched_param *param);
+int pthread_setconcurrency(int level);
+int pthread_getconcurrency(void);
+
+//
+// Thread specific data functions
+//
+
+int pthread_key_create(pthread_key_t *key, void (*destructor)(void *));
+int pthread_key_delete(pthread_key_t key);
+int pthread_setspecific(pthread_key_t key, const void *value);
+void *pthread_getspecific(pthread_key_t key);
+
+//
+// Mutex attribute functions
+//
+
+int pthread_mutexattr_init(pthread_mutexattr_t *attr);
+int pthread_mutexattr_destroy(pthread_mutexattr_t *attr);
+int pthread_mutexattr_getpshared(const pthread_mutexattr_t *attr, int *pshared);
+int pthread_mutexattr_setpshared(pthread_mutexattr_t *attr, int pshared);
+int pthread_mutexattr_gettype(pthread_mutexattr_t *attr, int *kind);
+int pthread_mutexattr_settype(pthread_mutexattr_t *attr, int kind);
+
+//
+// Mutex functions
+//
+
+int pthread_mutex_init(pthread_mutex_t *mutex, const pthread_mutexattr_t *attr);
+int pthread_mutex_destroy(pthread_mutex_t *mutex);
+int pthread_mutex_lock(pthread_mutex_t *mutex);
+int pthread_mutex_timedlock(pthread_mutex_t *mutex, const struct timespec *abstime);
+int pthread_mutex_trylock(pthread_mutex_t *mutex);
+int pthread_mutex_unlock(pthread_mutex_t *mutex);
+
+//
+// Condition variable attribute functions
+//
+
+int pthread_condattr_init(pthread_condattr_t *attr);
+int pthread_condattr_destroy(pthread_condattr_t *attr);
+int pthread_condattr_getpshared(const pthread_condattr_t *attr, int *pshared);
+int pthread_condattr_setpshared(pthread_condattr_t *attr, int pshared);
+int pthread_condattr_setclock(pthread_condattr_t *attr, clockid_t clock_id);
+int pthread_condattr_getclock(const pthread_condattr_t *attr, clockid_t *clock_id);
+
+//
+// Condition variable functions
+//
+
+int pthread_cond_init(pthread_cond_t *cond, const pthread_condattr_t *attr);
+int pthread_cond_destroy(pthread_cond_t *cond);
+int pthread_cond_wait(pthread_cond_t *cond, pthread_mutex_t *mutex);
+int pthread_cond_timedwait(pthread_cond_t *cond, pthread_mutex_t *mutex, const struct timespec *abstime);
+int pthread_cond_signal(pthread_cond_t *cond);
+int pthread_cond_broadcast(pthread_cond_t *cond);
+
+//
+// Barrier attribute functions
+//
+
+int pthread_barrierattr_init(pthread_barrierattr_t *attr);
+int pthread_barrierattr_destroy(pthread_barrierattr_t *attr);
+int pthread_barrierattr_getpshared(const pthread_barrierattr_t *attr, int *pshared);
+int pthread_barrierattr_setpshared(pthread_barrierattr_t *attr, int pshared);
+
+//
+// Barrier functions
+//
+
+int pthread_barrier_init(pthread_barrier_t *barrier, const pthread_barrierattr_t *attr, unsigned int count);
+int pthread_barrier_destroy(pthread_barrier_t *barrier);
+int pthread_barrier_wait(pthread_barrier_t *barrier);
+
+//
+// Read-write lock attribute functions
+//
+
+int pthread_rwlockattr_init(pthread_rwlockattr_t *attr);
+int pthread_rwlockattr_destroy(pthread_rwlockattr_t *attr);
+int pthread_rwlockattr_getpshared(const pthread_rwlockattr_t *attr, int *pshared);
+int pthread_rwlockattr_setpshared(pthread_rwlockattr_t *attr, int pshared);
+
+//
+// Read-write lock functions
+//
+
+int pthread_rwlock_init(pthread_rwlock_t *lock, const pthread_rwlockattr_t *attr);
+int pthread_rwlock_destroy(pthread_rwlock_t *lock);
+int pthread_rwlock_tryrdlock(pthread_rwlock_t *lock);
+int pthread_rwlock_trywrlock(pthread_rwlock_t *lock);
+int pthread_rwlock_rdlock(pthread_rwlock_t *lock);
+int pthread_rwlock_timedrdlock(pthread_rwlock_t *lock, const struct timespec *abstime);
+int pthread_rwlock_wrlock(pthread_rwlock_t *lock);
+int pthread_rwlock_timedwrlock(pthread_rwlock_t *lock, const struct timespec *abstime);
+int pthread_rwlock_unlock(pthread_rwlock_t *lock);
+
+//
+// Spinlock functions
+//
+
+int pthread_spin_init(pthread_spinlock_t *lock, int pshared);
+int pthread_spin_destroy(pthread_spinlock_t *lock);
+int pthread_spin_lock(pthread_spinlock_t *lock);
+int pthread_spin_trylock(pthread_spinlock_t *lock);
+int pthread_spin_unlock(pthread_spinlock_t *lock);
+
+//
+// Non-portable functions
+//
+
+#ifdef __AROS__
+int pthread_attr_setaffinity_np(pthread_attr_t *attr, size_t cpusetsize, const cpu_set_t *cpuset);
+int pthread_attr_getaffinity_np(const pthread_attr_t *attr, size_t cpusetsize, cpu_set_t *cpuset);
+int pthread_setaffinity_np(pthread_t thread, size_t cpusetsize, const cpu_set_t *cpuset);
+int pthread_getaffinity_np(pthread_t thread, size_t cpusetsize, cpu_set_t *cpuset);
+#endif
+int pthread_setname_np(pthread_t thread, const char *name);
+int pthread_getname_np(pthread_t thread, char *name, size_t len);
+int pthread_cond_timedwait_relative_np(pthread_cond_t *cond, pthread_mutex_t *mutex, const struct timespec *reltime);
+int pthread_getattr_np(pthread_t thread, pthread_attr_t *attr);
+
+//
+// Cancellation cleanup
+//
+
+void pthread_cleanup_push(void (*routine)(void *), void *arg);
+void pthread_cleanup_pop(int execute);
+
+//
+// Signalling
+//
+
+int pthread_kill(pthread_t thread, int sig);
+
+//
+// Wrap cancellation points
+//
+
+#ifdef _UNISTD_H_
+#define close(...) (pthread_testcancel(), close(__VA_ARGS__))
+#define fsync(...) (pthread_testcancel(), fsync(__VA_ARGS__))
+#define read(...) (pthread_testcancel(), read(__VA_ARGS__))
+#ifdef __MORPHOS__
+#define select(...) (pthread_testcancel(), select(__VA_ARGS__))
+#endif
+#define sleep(...) (pthread_testcancel(), sleep(__VA_ARGS__))
+#define usleep(...) (pthread_testcancel(), usleep(__VA_ARGS__))
+#endif
+
+#ifdef _FCNTL_H_
+#define creat(...) (pthread_testcancel(), creat(__VA_ARGS__))
+#define fcntl(...) (pthread_testcancel(), fcntl(__VA_ARGS__))
+#define open(...) (pthread_testcancel(), open(__VA_ARGS__))
+#endif
+
+#ifdef _TIME_H_
+#define nanosleep(...) (pthread_testcancel(), nanosleep(__VA_ARGS__))
+#endif
+
+#ifdef _SYS_UIO_H_
+#define readv(...) (pthread_testcancel(), readv(__VA_ARGS__))
+#endif
+
+#ifdef _STDLIB_H_
+#define system(...) (pthread_testcancel(), system(__VA_ARGS__))
+#endif
+
+#if defined(CLIB_BSDSOCKET_PROTOS_H) || defined(CLIB_SOCKET_PROTOS_H)
+#if defined(DEFINES_BSDSOCKET_PROTOS_H) || defined(DEFINES_SOCKET_PROTOS_H)
+#include <defines/pthreadsocket.h>
+#else /* !DEFINES_BSDSOCKET_PROTOS_H && !DEFINES_SOCKET_PROTOS_H */
+#define accept(...) (pthread_testcancel(), accept(__VA_ARGS__))
+#define connect(...) (pthread_testcancel(), connect(__VA_ARGS__))
+#define CloseSocket(...) (pthread_testcancel(), CloseSocket(__VA_ARGS__))
+#define recv(...) (pthread_testcancel(), recv(__VA_ARGS__))
+#define recvfrom(...) (pthread_testcancel(), recvfrom(__VA_ARGS__))
+#define recvmsg(...) (pthread_testcancel(), recvmsg(__VA_ARGS__))
+#ifdef __AROS__
+#define select(...) (pthread_testcancel(), select(__VA_ARGS__))
+#endif
+#define send(...) (pthread_testcancel(), send(__VA_ARGS__))
+#define sendmsg(...) (pthread_testcancel(), sendmsg(__VA_ARGS__))
+#define sendto(...) (pthread_testcancel(), sendto(__VA_ARGS__))
+#endif /* !DEFINES_BSDSOCKET_PROTOS_H && !DEFINES_SOCKET_PROTOS_H */
+#endif
+
+#ifdef  __cplusplus
+}
+#endif
+
+#endif

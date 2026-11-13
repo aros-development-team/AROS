@@ -1,0 +1,57 @@
+#   Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+#   $Id$
+#
+#   Makefile for dtdesc
+
+SRC := createdtdesc.c examinedtdesc.c
+
+-include $(TOP)/config/make.cfg
+
+# These are the compatibility variables. They will only be defined
+# if including $(TOP)/config/make.cfg fails (since they will then
+# be undefined.
+
+HOST_CC	    ?= $(CC)
+HOST_CFLAGS ?= -Wall -g -O
+TOOLDIR     ?= .
+ifneq ($(HOSTGENDIR),)
+OBJDIR := $(HOSTGENDIR)/$(subst $(SRCDIR)/,,$(CURDIR))
+CIFFSRCDIR := $(SRCDIR)/tools/dtdesc/c_iff
+CIFFLIBDIR := $(TOOLDIR)
+else
+OBJDIR := $(TOOLDIR)/obj
+CIFFSRCDIR := $(TOOLDIR)/c_iff
+CIFFLIBDIR := $(TOOLDIR)/c_iff
+endif
+MKDIR	    ?= mkdir
+
+INCL	    := -I. -I $(CIFFSRCDIR)
+
+RM	    ?= rm -f
+AR	    ?= ar rv
+RANLIB	    ?= ranlib
+
+CREATEDTDESC ?= $(TOOLDIR)/createdtdesc
+
+all: $(OBJDIR) $(CREATEDTDESC) $(TOOLDIR)/examinedtdesc
+
+$(CREATEDTDESC): $(OBJDIR)/createdtdesc.o $(CIFFLIBDIR)/libc_iff.a
+	@$(HOST_CC) $(HOST_LDFLAGS) -o $(CREATEDTDESC) $(OBJDIR)/createdtdesc.o -L$(CIFFLIBDIR)/ -lc_iff
+
+$(TOOLDIR)/examinedtdesc: $(OBJDIR)/examinedtdesc.o $(CIFFLIBDIR)/libc_iff.a
+	@$(HOST_CC) -o $(TOOLDIR)/examinedtdesc $(OBJDIR)/examinedtdesc.o -L$(CIFFLIBDIR)/ -lc_iff
+
+$(OBJDIR)/%.o : %.c
+	@$(HOST_CC) $(HOST_CFLAGS) $(INCL) -c $< -o $@
+
+$(CIFFLIBDIR)/libc_iff.a:
+	@$(ECHO) Building libc_iff.a...
+	@$(CALL) $(MAKE) $(MKARGS) -C $(CIFFSRCDIR) -f Makefile.aros SRCDIR=$(SRCDIR) TOP=$(TOP)
+
+$(OBJDIR):
+	@$(MKDIR) $(OBJDIR)
+
+clean:
+	@$(MAKE) $(MKARGS) -C $(CIFFSRCDIR) -f Makefile.aros SRCDIR=$(SRCDIR) TOP=$(TOP) clean
+	@$(RM) -f *.o examinedtdesc $(CREATEDTDESC) $(OBJDIR)
+

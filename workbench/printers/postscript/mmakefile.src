@@ -1,0 +1,13 @@
+include $(SRCDIR)/config/aros.cfg
+
+FILES := postscript
+
+USER_CFLAGS := -D__GRAPHICS_NOLIBBASE__
+USER_LDFLAGS := -static
+
+#MM- workbench-printers: workbench-printers-postscript
+
+%build_module_simple mmake=workbench-printers-postscript modname=PostScript \
+                     modtype=printer files="$(FILES)"
+
+%common

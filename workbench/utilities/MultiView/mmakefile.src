@@ -1,0 +1,18 @@
+# Copyright (C) 1995-2003, The AROS Development Team. All rights reserved.
+#
+# Makefile to make MultiView.
+
+include $(SRCDIR)/config/aros.cfg
+
+FILES := main misc aboutclass vars locale
+
+EXEDIR := $(AROSDIR)/Utilities
+
+#MM- workbench-utilities : workbench-utilities-multiview
+#MM workbench-utilities-multiview : includes linklibs workbench-utilities-multiview-catalogs
+
+%build_prog mmake=workbench-utilities-multiview \
+    progname=MultiView targetdir=$(EXEDIR) \
+    files=$(FILES)
+
+%common

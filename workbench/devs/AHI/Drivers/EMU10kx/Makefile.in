@@ -1,0 +1,47 @@
+#
+#  Makefile.in for EMU10kx sound card driver
+#
+
+VPATH		= @srcdir@
+
+srcdir		= @srcdir@
+
+DRIVER		= emu10kx.audio
+MODEFILE	= EMU10KX
+
+OBJECTS		= emu10kx-init.o emu10kx-main.o emu10kx-accel.o \
+		  emu10kx-misc.o emu10kx-interrupt.o emu10kx-camd.o \
+		  emu10kx-ac97.o \
+		  main.o hwaccess.o emuadxmg.o efxmgr.o voicemgr.o \
+		  linuxsupport.o pci_wrapper.o
+
+include ../Common/Makefile.common
+CPPFLAGS	+= -DAHI
+
+# CAMD driver
+
+host_cpu	= @host_cpu@
+CAMDDIR		= ${DISTDIR}/User/Devs/MIDI
+
+ifeq ($(host_cpu),m68k)
+all:		CAMD/emu10kx
+clean:		camd-clean
+bindist:	camd-bindist
+endif
+
+camd-clean:
+	$(RM) camdstubs.c camdstubs.h CAMD/emu10kx CAMD/emu10kx.o CAMD.stamp
+
+camd-bindist:	all
+	$(INSTALL) -d $(CAMDDIR)
+	$(INSTALL_PROGRAM) CAMD/emu10kx $(CAMDDIR)
+	$(STRIP) $(CAMDDIR)/emu10kx
+
+CAMD/emu10kx:	CAMD/emu10kx.o camdstubs.o
+	$(CC) $(LDFLAGS) $^ -o $@
+
+CAMD.stamp:
+	test -e CAMD || mkdir CAMD
+	touch $@
+
+CAMD/emu10kx.o:	CAMD.stamp CAMD/emu10kx.c camdstubs.h emu10kx-camd.h version.h

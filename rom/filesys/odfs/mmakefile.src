@@ -1,0 +1,41 @@
+# Copyright (C) 2026, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+
+ODFS_DIR := $(SRCDIR)/$(CURDIR)/source
+include $(ODFS_DIR)/sources.mk
+
+FILES := $(addprefix source/,$(basename $(ODFS_CORE_SRCS))) \
+    source/platform/amiga/handler_main \
+    source/platform/amiga/printf_local \
+    source/platform/amiga/common/freestanding \
+    source/platform/amiga/aros/start \
+    source/platform/amiga/aros/sys_compat
+
+USER_CPPFLAGS := -DAMIGA -DODFS_AROS_RESIDENT \
+    -DODFS_SERIAL_DEBUG=0 -DODFS_FEATURE_LOG=0 \
+    -DODFS_AMIGA_DATE=\"$(shell date '+%d.%m.%Y')\" \
+    -DODFS_GIT_VERSION=\"AROS\" \
+    -DODFS_VERSION_MAJOR=1 -DODFS_VERSION_MINOR=0 \
+    -I$(ODFS_DIR)/include -I$(ODFS_DIR)/backends \
+    -I$(ODFS_DIR)/platform/amiga \
+    -I$(ODFS_DIR)/platform/amiga/common \
+    -I$(ODFS_DIR)/platform/amiga/aros
+USER_CFLAGS := -fno-common $(CFLAGS_NO_BUILTIN) $(CFLAGS_NO_TREE_LOOP_DISTRIBUTE_PATTERNS)
+USER_LDFLAGS := -static
+
+ifneq ($(ROM_OPTIMIZATION_CFLAGS),)
+OPTIMIZATION_CFLAGS := $(ROM_OPTIMIZATION_CFLAGS)
+endif
+
+%build_module mmake=kernel-fs-odfs \
+    modname=ODFileSystem modtype=handler \
+    files="$(FILES)"
+
+# Kernel objects share a link with other modules. Keep this handler's
+# Exec base, freestanding libc and standalone process glue private.
+$(KOBJSDIR)/ODFileSystem_handler.o: FILTBASES += $(addprefix -L , \
+    SysBase memcpy memmove memset memcmp strlen strcmp strchr strncpy \
+    handler_main handler_main_startup version_string)
+
+%common

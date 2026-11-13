@@ -1,0 +1,34 @@
+include $(SRCDIR)/config/aros.cfg
+
+#MM- test-host : test-host-speech
+#MM- test-host-speech : test-host-speechcore test-host-say-args
+#MM test-host-speechcore
+#MM test-host-say-args
+
+.PHONY: test-host-speechcore test-host-say-args
+
+SPEECHCORE_TEST := $(HOSTGENDIR)/developer/debug/test/speech/speechcore_test
+SAY_ARGS_TEST := $(HOSTGENDIR)/developer/debug/test/speech/say_args_test
+SPEECHCORE_SOURCES := core.c speech_pitch.c translate.c synth.c \
+    synth_front.c synth_prosody.c synth_frames.c synth_contour.c \
+    synth_interpolate.c synth_render.c resource.c speech_data.c speech_voice.c
+
+test-host-speechcore: $(SPEECHCORE_TEST)
+	$(SPEECHCORE_TEST) $(SRCDIR)/workbench/devs/speech/speech.iff
+
+test-host-say-args: $(SAY_ARGS_TEST)
+	$(SAY_ARGS_TEST)
+
+$(SPEECHCORE_TEST): $(SRCDIR)/$(CURDIR)/speechcore_test.c \
+        $(addprefix $(SRCDIR)/workbench/libs/speechcore/,$(SPEECHCORE_SOURCES))
+	@$(MKDIR) -p $(dir $@)
+	$(HOST_CC) $(HOST_CFLAGS) $(HOST_LDFLAGS) -std=c99 -Wall -Wextra \
+	    -I$(SRCDIR)/workbench/libs/speechcore $^ -o $@
+
+$(SAY_ARGS_TEST): $(SRCDIR)/workbench/c/SayArgs.c \
+        $(SRCDIR)/$(CURDIR)/say_args_test.c
+	@$(MKDIR) -p $(dir $@)
+	$(HOST_CC) $(HOST_CFLAGS) $(HOST_LDFLAGS) -std=c99 -Wall -Wextra \
+	    -I$(SRCDIR)/workbench/c $^ -o $@
+
+%common

@@ -1,0 +1,158 @@
+#!/bin/sh
+
+# $Header$
+#
+# C Cross Referencing & Documentation tool. Version 1.5d.
+#
+# C compiler replacement to compile program and cross reference it.
+#
+# Written by Andrew M. Bishop
+#
+# This file Copyright 1997,98,2002 Andrew M. Bishop
+# It may be distributed under the GNU Public License, version 2, or
+# any higher version.  See section COPYING of the GNU Public license
+# for conditions under which this file may be redistributed.
+#
+
+# Print a usage statement.
+
+if [ $# = 0 ]; then
+
+    echo 'Usage: cxref-cc filename [CC-arguments]' 1>&2
+    echo '' 1>&2
+    echo 'filename        : The name of the file to compile and cross reference.' 1>&2
+    echo 'CC-arguments    : Any number of arguments to the C compiler.' 1>&2
+    echo '' 1>&2
+    echo 'The C compiler is called first, and if this succeeds then cxref is called.' 1>&2
+    echo 'You require a .cxref file to contain the cxref options.' 1>&2
+    exit 1
+
+fi
+
+# Check for a .cxref file.
+
+if [ ! -r .cxref ]; then
+
+    echo 'cxref-cc: Error a .cxref file is required to use cxref-cc.' 1>&2
+    echo '          If you do not need any arguments an empty file will work.' 1>&2
+    exit 1
+
+fi
+
+# The variables that we are going to use.
+
+if [ "x$CXREFCC" = x ]; then
+    if [ "x$CC" = x ]; then
+        CXREFCC=gcc
+    else
+        CXREFCC=`echo $CC | cut -d' ' -f1`
+        if [ `basename $CXREFCC` = cxref-cc ]; then
+            echo 'cxref-cc: Warning the CC variable points to cxref-cc, set CXREFCC instead.' 1>&2
+            CXREFCC=gcc
+        fi
+    fi
+fi
+
+CXREF=cxref
+
+FILE=
+FILESTDIN=
+
+CXREFFLAGS=
+
+# Call the C compiler
+
+$CXREFCC "$@"
+
+if [ ! $? = 0 ]; then
+
+    echo 'cxref-cc: The C compiler failed with an error status.' 1>&2
+    exit 1
+
+fi
+
+# Loop over the arguments and sort them out.
+
+# Note: Need to be careful because "-DFOO=BAR BAR" loses its quotes on parameter
+#       expansion, but must be passed to cxref as a single word.  We need to use
+#       a word separator since there are no arrays, so we use ^M.
+
+while [ ! $# = 0 ]; do
+
+    case $1 in
+
+        # The arguments to keep
+
+        -D)
+            CXREFFLAGS="$CXREFFLAGS
+$1
+$2"; shift;;
+        -D*)
+            CXREFFLAGS="$CXREFFLAGS
+$1";;
+
+        -U)
+            CXREFFLAGS="$CXREFFLAGS
+$1
+$2"; shift;;
+        -U*)
+            CXREFFLAGS="$CXREFFLAGS
+$1";;
+
+        -I)
+            CXREFFLAGS="$CXREFFLAGS
+$1
+$2"; shift;;
+        -I*)
+            CXREFFLAGS="$CXREFFLAGS
+$1";;
+
+        # The filename (perhaps)
+
+        *.c)
+            if [ "x$FILE" = x -a -r $1 ]; then
+                FILE="
+$1";
+            fi;;
+
+        -)
+            FILESTDIN=yes;;
+
+        # The arguments to throw away
+
+        *)
+            ;;
+
+    esac
+    shift
+
+done
+
+# Check that a real file was specified
+
+if [ "x$FILE" = x ]; then
+
+    if [ "x$FILESTDIN" = xyes ]; then
+        echo 'cxref-cc: Cannot use stdin "-" as a filename with cxref-cc' 1>&2
+    else
+        echo 'cxref-cc: Warning no file specified on the command line' 1>&2
+    fi
+    exit 0
+
+fi
+
+# Call cxref
+
+# Note: We are using ^M as the word separator, as detailed above.
+
+IFS=
+export IFS
+
+$CXREF$FILE$CXREFFLAGS
+
+if [ ! $? = 0 ]; then
+
+    echo 'cxref-cc: Cxref exited with error status' 1>&2
+    exit 1
+
+fi

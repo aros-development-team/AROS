@@ -1,0 +1,60 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+USER_LDFLAGS := -static
+
+FILES :=    drivers clusters init camdwait mididistr midifromdriver \
+	    midimsgtype2 miditodriver receiverproc strings sysexdistr \
+	    unlinkmidilink getmidilinkfromownernode
+
+FUNCS := \
+    lockcamd \
+    unlockcamd \
+    createmidia \
+    deletemidi \
+    setmidiattrsa \
+    getmidiattrsa \
+    nextmidi \
+    findmidi  \
+    flushmidi \
+    addmidilinka \
+    removemidilink \
+    setmidilinkattrsa \
+    getmidilinkattrsa \
+    nextclusterlink \
+    nextmidilink \
+    midilinkconnected \
+    nextcluster \
+    findcluster \
+    putmidi \
+    getmidi \
+    waitmidi \
+    putsysex \
+    getsysex \
+    querysysex \
+    skipsysex \
+    getmidierr \
+    midimsgtype \
+    midimsglen \
+    parsemidi \
+    openmididevice \
+    closemididevice \
+    rethinkcamd \
+    startclusternotify \
+    endclusternotify \
+    goodputmidi \
+    midi2driver
+
+#MM workbench-libs-camd-includes : \
+#MM     kernel-exec-includes \
+#MM     kernel-dos-includes \
+#MM     kernel-utility-includes \
+#MM     includes-copy
+
+#MM- workbench-libs-camd : linklibs
+
+%build_module mmake=workbench-libs-camd \
+    modname=camd modtype=library \
+    files="$(FUNCS) $(FILES) camd_init"
+
+%common

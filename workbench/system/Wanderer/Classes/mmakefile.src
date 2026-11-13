@@ -1,0 +1,48 @@
+# Copyright (C) 2008-2023, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM-  workbench-system-wanderer-classes : \
+#MM  wanderer-classes-iconlist \
+#MM  wanderer-classes-icondrawerlist \
+#MM  wanderer-classes-iconvolumelist \
+#MM  wanderer-classes-iconlistview
+
+#MM-  workbench-system-wanderer-classes-quick : \
+#MM  wanderer-classes-iconlist-quick \
+#MM  wanderer-classes-icondrawerlist-quick \
+#MM  wanderer-classes-iconvolumelist-quick \
+#MM  wanderer-classes-iconlistview-quick
+
+#MM wanderer-classes-icon : includes workbench-libs-muimaster
+#MM wanderer-classes-iconlist : includes workbench-libs-muimaster
+#MM wanderer-classes-icondrawerlist : includes workbench-libs-muimaster
+#MM wanderer-classes-iconvolumelist : includes workbench-libs-muimaster
+#MM wanderer-classes-iconlistview : includes workbench-libs-muimaster
+
+USER_LDFLAGS := -static
+
+%build_module \
+    mmake=wanderer-classes-icon \
+    modname=Icon modtype=mui files=icon \
+    conffile=icon.conf
+
+%build_module \
+    mmake=wanderer-classes-iconlist \
+    modname=IconList modtype=mui files=iconlist \
+    conffile=iconlist.conf
+
+%build_module \
+    mmake=wanderer-classes-icondrawerlist \
+    modname=IconDrawerList modtype=mui files=icondrawerlist \
+    conffile=icondrawerlist.conf
+
+%build_module \
+    mmake=wanderer-classes-iconvolumelist \
+    modname=IconVolumeList modtype=mui files=iconvolumelist \
+    conffile=iconvolumelist.conf
+
+%build_module \
+    mmake=wanderer-classes-iconlistview \
+    modname=IconListview modtype=mui files=iconlistview \
+    conffile=iconlistview.conf

@@ -1,0 +1,252 @@
+/*
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
+
+    Desc:
+*/
+
+#include <exec/types.h>
+#include <graphics/clip.h>
+#include <proto/graphics.h>
+#include <proto/layers.h>
+#include "basicfuncs.h"
+#include "layers_intern.h"
+
+/*
+ * Layer _l gets 'hide' in front of it: back up what it loses of it, or
+ * just take it out of its VisibleRegion.
+ */
+static void _HideFromLayer(struct Layer *_l, struct Region *hide, LIBBASETYPEPTR LayersBase)
+{
+  if (IS_VISIBLE(_l) && DO_OVERLAP(&_l->visibleshape->bounds, &hide->bounds))
+    _BackupPartsOfLayer(_l, hide, 0, FALSE, LayersBase);
+  else
+    ClearRegionRegion(hide, _l->VisibleRegion);
+}
+
+/*
+ * Hand the VisibleRegion 'show' down the layers from 'first' back to
+ * 'last', showing what they gain of it.
+ */
+static void _ShowLayerRange(struct Layer *_l, struct Layer *last, struct Region *show, LIBBASETYPEPTR LayersBase)
+{
+  while (1)
+  {
+    if (IS_VISIBLE(_l) && DO_OVERLAP(&_l->visibleshape->bounds, &show->bounds))
+    {
+      ClearRegion(_l->VisibleRegion);
+      _ShowPartsOfLayer(_l, show, LayersBase);
+    }
+    else
+      SetRegion(show, _l->VisibleRegion);
+
+    if (_l == last)
+      break;
+
+    if (IS_VISIBLE(_l))
+      ClearRegionRegion(OCCLUDESHAPE(_l), show);
+
+    _l = _l->back;
+  }
+}
+
+int _MoveLayerBehind(struct Layer *l,
+                     struct Layer *lfront,
+                     LIBBASETYPEPTR LayersBase)
+{
+  struct Layer * lbackold, *_l, *first;
+  struct Region * hide = NewRegion(), show;
+  InitRegion(&show);
+
+  first = GetFirstFamilyMember(l);
+
+  lbackold = l->back;
+
+  /*
+   * Take the family out of its old place.
+   */
+  if (NULL != first->front)
+    first->front->back = lbackold;
+  else
+    l->LayerInfo->top_layer = lbackold;
+    
+  lbackold->front = first->front;
+
+  _l = lbackold;
+  /*
+   * Collect the additional parts that have to be hidden
+   * on the layers that are to be moved. I need only
+   * collect those parts of layers that have the same
+   * parent as the layer l. Stop when I found lfront.
+   */
+  while (1)
+  {
+    /*
+     * Must not add my own shape to the hide region...
+     */
+    if (_l == l)
+      break;
+    
+    /*
+     * Must add EVERY shape since it will be subtracted from
+     * the visible region
+     */
+    if (l->parent == _l->parent && IS_VISIBLE(_l))
+      OrRegionRegion(OCCLUDESHAPE(_l), hide);
+
+    if (_l == lfront)
+      break;
+      
+    _l = _l->back;
+  }
+
+  SetRegion(first->VisibleRegion, &show);
+
+  /*
+   * First back up the family ... this is like moving them behind the
+   * other layers.
+   */
+  
+  _l = first;
+  while (1)
+  {
+    _HideFromLayer(_l, hide, LayersBase);
+    
+    if (_l == l)
+      break;
+  
+    _l = _l->back;
+  }
+  DisposeRegion(hide);
+
+  /*
+   * Show the layers that appear now.
+   * Start with the layer that is behind the layer l.
+   */
+  _ShowLayerRange(lbackold, lfront, &show, LayersBase);
+
+  ClearRegion(&show);
+
+  /*
+   * Link the family into its new place.
+   */
+  if (lfront->back)
+    lfront->back->front = l;
+  l->back = lfront->back;
+
+  first->front = lfront;
+  lfront->back = first;
+
+  UPDATE_SURFACES(l->LayerInfo);
+
+  return TRUE;
+}
+
+int _MoveLayerToFront(struct Layer * l,
+                      struct Layer * lbehind,
+                      LIBBASETYPEPTR LayersBase)
+{
+  struct Layer * lfront, * first, * _l;
+  struct Region r, * backupr = NULL;
+  int backupr_allocated = FALSE;
+
+  InitRegion(&r);
+    
+  first = GetFirstFamilyMember(l);
+
+  lfront = lbehind->front;
+
+  /*
+   * Unlink the family of layers from its old place.
+   */
+  first->front->back = l->back;
+  l->back->front = first->front;
+
+  /*
+   * I need exactly that layers visible region later on.
+   */
+
+  SetRegion(lbehind->VisibleRegion,&r);
+    
+  /*
+   * if the layer l is visible then I will have to backup
+   * its visible region in all layers behind it. Otherwise
+   * I will have to collect the visible shape of its whole
+   * family.
+   */
+  if (IS_VISIBLE(l))
+    backupr = OCCLUDESHAPE(l);
+  else
+  {
+    _l = l;
+    while (1)
+    {
+      if (IS_VISIBLE(_l))
+      {
+        if (NULL == backupr)
+        {
+          backupr = NewRegion();
+          backupr_allocated = TRUE;
+        }
+        if (backupr)
+          OrRegionRegion(OCCLUDESHAPE(_l), backupr);
+      }
+      if (_l == first)
+        break;
+        
+      _l = _l->front;
+    }
+  }
+
+  _l = lbehind;
+
+
+  if (backupr)
+  {
+    /*
+     * Now I have to move the layer family in front of layer lbehind.
+     * Nothing changes for the layers in front of layer lbehind, but on
+     * the layers behind (including first->front) I must back up some of
+     * their parts that the new family might be hiding no.
+     * Once I step on the layer that was behind the layer l
+     * I can stop because those layers are already hidden well
+     * enough.
+     */
+    do
+    {
+      _HideFromLayer(_l, backupr, LayersBase);
+
+      _l = _l->back;
+    }
+    while (_l != l->back /* this is l->back now since the family has
+                          been unlinked already!*/ );
+
+    if (TRUE == backupr_allocated)
+      DisposeRegion(backupr);
+
+    /*
+     * Now I must make the layer family of l visible
+     * (lfirst to and including l)
+     */
+    _ShowLayerRange(first, l, &r, LayersBase);
+  }
+  ClearRegion(&r);
+
+  /*
+   * Link the family into its new place.
+   * First the frontmost kid and then l.
+   */
+  if (NULL != lfront)
+    lfront->back = first;
+  else
+    l->LayerInfo->top_layer = first;
+    
+  first->front = lfront;
+
+  l->back = lbehind;
+  lbehind->front = l;
+
+  UPDATE_SURFACES(l->LayerInfo);
+
+  return TRUE;
+}
+

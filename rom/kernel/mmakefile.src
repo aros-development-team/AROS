@@ -1,0 +1,106 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+#
+# Allow to override include files by placing them in arch-specific directories
+# Note that kernel_#?.h files must be included using #include <name>, not #include "name"
+# for this to work.
+# __AROS_EXEC_LIBRARY__ definition is needed for UNIX-hosted builds. kernel_base.h includes
+# kernel_cpu.h, which needs host OS includes for some CPU-specific defintions (host OS CPU context).
+# The code in rom/kernel is plain AROS code, it must not depend on host includes in any way, in order
+# not to overcomplicate the build. This definition prevents kernel_cpu.h from including host-specific
+# stuff. The name of this definition is legacy, in ancient times exec.library included some private
+# kernel's stuff and needed this.
+
+%get_archincludes modname=kernel \
+    includeflag=TARGET_KERNEL_INCLUDES maindir=$(CURDIR)
+
+%get_archincludes modname=exec \
+    includeflag=TARGET_EXEC_INCLUDES maindir=rom/exec
+
+PRIV_KERNEL_INCLUDES = \
+    $(TARGET_KERNEL_INCLUDES) \
+	-I$(SRCDIR)/rom/kernel \
+	$(TARGET_EXEC_INCLUDES) \
+	-I$(SRCDIR)/rom/exec
+
+#MM- kernel-print-includes : kernel-kernel-includes
+#MM kernel-kernel : kernel-print-includes
+
+USER_INCLUDES := $(PRIV_KERNEL_INCLUDES)
+USER_CPPFLAGS := -D__AROS_EXEC_LIBRARY__ \
+	        -DAROS_ARCHITECTURE="\"$(AROS_TARGET_PLATFORM)\""
+ifeq ($(AROS_TARGET_CPU),x86_64)
+USER_CFLAGS += $(CFLAGS_GENERAL_REGS_ONLY)
+endif
+
+# Allow to add architecture-specific options
+-include $(SRCDIR)/arch/all-$(FAMILY)/kernel/make.opts
+-include $(SRCDIR)/arch/all-$(ARCH)/kernel/make.opts
+-include $(SRCDIR)/arch/$(CPU)-$(ARCH)/kernel/make.opts
+ifneq ($(AROS_TARGET_VARIANT),)
+-include $(SRCDIR)/arch/$(CPU)-$(ARCH)/$(AROS_TARGET_VARIANT)/kernel/make.opts
+endif
+
+FUNCS := spininit spinislocked spintrylock spinlock spinunlock addexceptionhandler              \
+	     allocirq freeirq getirq modifyirq addirqhandler modifyirqhandler exitinterrupt cause cli sti   \
+         bug createcontext deletecontext displayalert dispatch getbootinfo issuper mapglobal    \
+	     remexceptionhandler remirqhandler schedule setprotection getscheduler setscheduler     \
+	     switch unmapglobal virtualtophysical obtaininput releaseinput 		                    \
+	     putchar maygetchar allocpages freepages getsystemattr getcpuattr formatstr	                \
+	     initmemory statmemory _bug _displayalert 	                                            \
+	     getcpucount getcpunumber alloccpumask clearcpumask getcpumask cpuinmask                \
+         freecpumask schedulecpu allockernelbase prepareexecbase registerclocksource            \
+		 timestamp fmtalertinfo
+
+FUNCS += \
+         registersymresolver unregistersymresolver backtracefromframe printbacktrace
+
+# The TLSF allocator is entered only through krnCreateTLSFMemHeader() and
+# krnConvertMemHeaderToTLSF(). A platform whose startup code calls neither
+# can set KERNEL_ALLOCATOR_FILES to nothing in its kernel/make.opts.
+KERNEL_ALLOCATOR_FILES ?= tlsf
+
+FILES := kernel_init cpu_init kernel_debug kernel_panic                                         \
+	     kernel_cpu kernel_intr kernel_interruptcontroller                                      \
+	     kernel_memory kernel_romtags kernel_scheduler kernel_globals $(KERNEL_ALLOCATOR_FILES)
+
+MMU_FILES := kernel_mm
+# You can replace this with own algorithm
+ALLOCATOR := mm_linear
+
+ifeq ($(USE_MMU),1)
+    FILES += $(MMU_FILES) $(ALLOCATOR)
+endif
+
+ifneq ($(ROM_OPTIMIZATION_CFLAGS),)
+OPTIMIZATION_CFLAGS := $(ROM_OPTIMIZATION_CFLAGS)
+endif
+
+%build_module mmake=kernel-kernel \
+  modname=kernel modtype=resource version=$(AROS_TARGET_PLATFORM) \
+  files="$(FILES) $(FUNCS)" nostartup=no archspecific=yes
+
+#
+# use genmodule to generate the clocksource resource API headers
+#
+
+#MM kernel-clocksource-gen-includes : kernel-clocksource-gen-setup
+#MM kernel-kernel-includes : kernel-clocksource-gen-includes
+
+#MM
+kernel-clocksource-gen-includes: $(GENDIR)/$(CURDIR)/.includes-generated
+
+$(GENDIR)/$(CURDIR)/.includes-generated : $(GENMODULE)
+	@$(ECHO) "Generating ClockSource API headers..."
+	@$(GENMODULE) -c $(SRCDIR)/$(CURDIR)/clocksource.conf -d $(GENDIR)/$(CURDIR)/include writeincludes clocksource resource
+	@$(GENMODULE) -c $(SRCDIR)/$(CURDIR)/clocksource.conf -d $(GENDIR)/$(CURDIR)/include writelibdefs clocksource resource
+	@$(GENMODULE) -c $(SRCDIR)/$(CURDIR)/clocksource.conf -d $(GENDIR)/include writeincludes clocksource resource
+	@$(GENMODULE) -c $(SRCDIR)/$(CURDIR)/clocksource.conf -d $(AROS_INCLUDES) writeincludes clocksource resource
+	@$(TOUCH) $@
+
+#MM
+kernel-clocksource-gen-setup:
+	%mkdirs_q $(GENDIR)/$(CURDIR)/include/clib $(GENDIR)/$(CURDIR)/include/defines $(GENDIR)/$(CURDIR)/include/inline $(GENDIR)/$(CURDIR)/include/proto
+
+%common

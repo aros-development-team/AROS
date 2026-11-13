@@ -1,0 +1,14 @@
+Native Amiga audio.device DMA regression
+=======================================
+
+Run audioflush on native Amiga hardware or an emulator implementing Paula.
+The normal and quick audio device test groups select it only for Amiga m68k.
+
+A silent, repeating Chip RAM sample keeps channel 0 busy. CMD_FLUSH must
+disable its DMA and abort both the active request and any pending write.
+Aborting only a pending write must leave the current sample's DMA running.
+The test checks DMACONR and I/O completion, independently of driver internals.
+It explicitly disables channel DMA before freeing sample memory, including
+when the unchanged driver fails. No audible sound or copyrighted data needed.
+
+Build: test-devices-audio or test-devices-audio-quick

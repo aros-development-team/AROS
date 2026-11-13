@@ -1,0 +1,545 @@
+/*
+ * Copyright (C) 2005 Neil Cafferkey
+ * Copyright (C) 2005-2026 The AROS Development Team.  All rights reserved.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU Library General Public License
+ * version 2 as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * Library General Public License for more details.
+ *
+ * You should have received a copy of the GNU Library General Public
+ * License along with this file; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place - Suite 330, Boston,
+ * MA 02111-1307, USA.
+ *
+ */
+
+/*
+ * Copyright (C) 1982, 1986, 1990 Regents of the University of California.
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ * 3. All advertising materials mentioning features or use of this software
+ *    must display the following acknowledgement:
+ *	This product includes software developed by the University of
+ *	California, Berkeley and its contributors.
+ * 4. Neither the name of the University nor the names of its contributors
+ *    may be used to endorse or promote products derived from this software
+ *    without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
+ *
+ *	@(#)in.h	7.11 (Berkeley) 4/20/91
+ */
+
+#ifndef IN_H
+#define IN_H
+
+#include <bsdsocket/types.h>
+#include <stdint.h>
+#include <endian.h>
+
+/*
+ * Endianness conversion macros
+ */
+#define FlipWord(A) \
+   ({ \
+      uint16_t _FlipWord_A = (A); \
+      _FlipWord_A = (_FlipWord_A << 8) | (_FlipWord_A >> 8); \
+   })
+
+#define FlipLong(A) \
+   ({ \
+      uint32_t _FlipLong_A = (A); \
+      _FlipLong_A = \
+         (FlipWord(_FlipLong_A) << 16) | FlipWord(_FlipLong_A >> 16); \
+   })
+
+#define FlipQuad(A) \
+   ({ \
+      uint64_t _FlipQuad_A = (A); \
+      uint32_t _lo = (uint32_t)(_FlipQuad_A & 0xFFFFFFFFULL); \
+      uint32_t _hi = (uint32_t)(_FlipQuad_A >> 32); \
+      ((uint64_t)FlipLong(_lo) << 32) | (uint64_t)FlipLong(_hi); \
+   })
+
+#if _BYTE_ORDER == _BIG_ENDIAN
+
+#define BEWord(A) \
+   (A)
+
+#define BELong(A) \
+   (A)
+
+#define BEQuad(A) \
+   (A)
+
+#define LEWord(A) \
+   FlipWord(A)
+
+#define LELong(A) \
+   FlipLong(A)
+
+#define LEQuad(A) \
+   FlipQuad(A)
+
+#elif _BYTE_ORDER == _LITTLE_ENDIAN
+
+#define BEWord(A) \
+   FlipWord(A)
+
+#define BELong(A) \
+   FlipLong(A)
+
+#define BEQuad(A) \
+   FlipQuad(A)
+
+#define LEWord(A) \
+   (A)
+
+#define LELong(A) \
+   (A)
+
+#define LEQuad(A) \
+   (A)
+
+#else
+
+#error <netinet/in.h> - Byte order for this architecture is unsupported!
+
+#endif
+
+#define MakeBEWord(A) \
+   BEWord(A)
+
+#define MakeBELong(A) \
+   BELong(A)
+
+#define MakeBEQuad(A) \
+   BEQuad(A)
+
+#define MakeLEWord(A) \
+   LEWord(A)
+
+#define MakeLELong(A) \
+   LELong(A)
+
+#define MakeLEQuad(A) \
+   LEQuad(A)
+
+/*
+ * Macros for network/external number representation conversion.
+ */
+ 
+#ifndef ntohl
+#define	ntohl(x)	BELong(x)
+#define	ntohs(x)	BEWord(x)
+#define	htonl(x)	MakeBELong(x)
+#define	htons(x)	MakeBEWord(x)
+
+#define	NTOHL(x)	((x) = ntohl(x))
+#define	NTOHS(x)	((x) = ntohs(x))
+#define	HTONL(x)	((x) = htonl(x))
+#define	HTONS(x)	((x) = htons(x))
+#endif
+
+#ifndef ntohll
+#define ntohll(x) BEQuad(x)
+#endif
+
+#ifndef htonll
+#define htonll(x) MakeBEQuad(x)
+#endif
+
+/*
+ * Constants and structures defined by the internet system,
+ * Per RFC 790, September 1981.
+ */
+
+/*
+ * Protocols
+ */
+#define	IPPROTO_IP		0		/* dummy for IP */
+#define	IPPROTO_ICMP		1		/* control message protocol */
+#define	IPPROTO_GGP		3		/* gateway^2 (deprecated) */
+#define	IPPROTO_TCP		6		/* tcp */
+#define	IPPROTO_EGP		8		/* exterior gateway protocol */
+#define	IPPROTO_PUP		12		/* pup */
+#define	IPPROTO_UDP		17		/* user datagram protocol */
+#define	IPPROTO_IDP		22		/* xns idp */
+#define	IPPROTO_TP		29 		/* tp-4 w/ class negotiation */
+#define	IPPROTO_IPV6		41		/* IPv6 protocol */
+#define	IPPROTO_EON		80		/* ISO cnlp */
+#define	IPPROTO_UDPLITE		136		/* UDP Lite */
+
+#define	IPPROTO_HOPOPTS		0		/* IPv6 hop-by-hop options */
+#define	IPPROTO_ROUTING		43		/* IPv6 routing header */
+#define	IPPROTO_FRAGMENT	44		/* IPv6 fragmentation header */
+#define	IPPROTO_RSVP		46		/* RSVP */
+#define	IPPROTO_GRE		47		/* GRE encap */
+#define	IPPROTO_ESP		50		/* IPsec ESP */
+#define	IPPROTO_AH		51		/* IPsec AH */
+#define	IPPROTO_ICMPV6		58		/* ICMPv6 */
+#define	IPPROTO_NONE		59		/* IPv6 no next header */
+#define	IPPROTO_DSTOPTS		60		/* IPv6 destination options */
+#define	IPPROTO_SCTP		132		/* SCTP */
+
+#define	IPPROTO_RAW		255		/* raw IP packet */
+#define	IPPROTO_MAX		256
+
+
+/*
+ * Local port number conventions:
+ * Ports < IPPORT_RESERVED are reserved for
+ * privileged processes (e.g. root).
+ * Ports > IPPORT_USERRESERVED are reserved
+ * for servers, not necessarily privileged.
+ */
+#define	IPPORT_RESERVED		1024
+#define	IPPORT_USERRESERVED	5000
+
+/*
+ * Internet address (a structure for historical reasons)
+ */
+#ifndef _IN_ADDR_T_DECLARED
+typedef	uint32_t		in_addr_t;
+#define	_IN_ADDR_T_DECLARED
+#endif
+
+#ifndef _IN_PORT_T_DECLARED
+typedef	uint16_t		in_port_t;
+#define	_IN_PORT_T_DECLARED
+#endif
+
+#ifndef _SA_FAMILY_T_DECLARED
+#if defined(__AROS__)
+#include <aros/types/sa_family_t.h>
+#else
+typedef	__sa_family_t		sa_family_t;
+#endif
+#define	_SA_FAMILY_T_DECLARED
+#endif
+
+/* Internet address (a structure for historical reasons). */
+#ifndef	_STRUCT_IN_ADDR_DECLARED
+struct in_addr {
+	in_addr_t s_addr;
+};
+#define	_STRUCT_IN_ADDR_DECLARED
+#endif
+
+#ifndef	_SOCKLEN_T_DECLARED
+#if defined(__AROS__)
+#include <aros/types/socklen_t.h>
+#else
+typedef	__socklen_t	socklen_t;
+#endif
+#define	_SOCKLEN_T_DECLARED
+#endif
+
+/*
+ * Definitions of bits in internet address integers.
+ * On subnets, the decomposition of addresses to host and net parts
+ * is done according to subnet mask, not the masks here.
+ */
+#define	IN_CLASSA(i)		(((long)(i) & 0x80000000) == 0)
+#define	IN_CLASSA_NET		0xff000000
+#define	IN_CLASSA_NSHIFT	24
+#define	IN_CLASSA_HOST		0x00ffffff
+#define	IN_CLASSA_MAX		128
+
+#define	IN_CLASSB(i)		(((long)(i) & 0xc0000000) == 0x80000000)
+#define	IN_CLASSB_NET		0xffff0000
+#define	IN_CLASSB_NSHIFT	16
+#define	IN_CLASSB_HOST		0x0000ffff
+#define	IN_CLASSB_MAX		65536
+
+#define	IN_CLASSC(i)		(((long)(i) & 0xe0000000) == 0xc0000000)
+#define	IN_CLASSC_NET		0xffffff00
+#define	IN_CLASSC_NSHIFT	8
+#define	IN_CLASSC_HOST		0x000000ff
+
+#define	IN_CLASSD(i)		(((long)(i) & 0xf0000000) == 0xe0000000)
+#define	IN_MULTICAST(i)		IN_CLASSD(i)
+
+#define	IN_EXPERIMENTAL(i)	(((long)(i) & 0xe0000000) == 0xe0000000)
+#define	IN_BADCLASS(i)		(((long)(i) & 0xf0000000) == 0xf0000000)
+
+#define	INADDR_ANY		(u_long)0x00000000
+#define	INADDR_BROADCAST	(u_long)0xffffffff	/* must be masked */
+#define	INADDR_LOOPBACK		(u_long)0x7f000001	/* loopback address */
+#if !defined(KERNEL) || defined(AMITCP)
+#define	INADDR_NONE		0xffffffff		/* -1 return */
+#endif
+
+#define	IN_LOOPBACKNET		127			/* official! */
+
+/* Socket address, internet style. */
+struct sockaddr_in {
+	uint8_t	sin_len;
+	sa_family_t	sin_family;
+	in_port_t	sin_port;
+	struct	in_addr sin_addr;
+	char	sin_zero[8];
+};
+
+/*
+ * Structure used to describe IP options.
+ * Used to store options internally, to pass them to a process,
+ * or to restore options retrieved earlier.
+ * The ip_dst is used for the first-hop gateway when using a source route
+ * (this gets put into the header proper).
+ */
+struct ip_opts {
+	struct	in_addr ip_dst;		/* first hop, 0 w/o src rt */
+	char	ip_opts[40];		/* actually variable in size */
+};
+
+/*
+ * Options for use with [gs]etsockopt at the IP level.
+ * First word of comment is data type; bool is stored in int.
+ */
+#define	IP_OPTIONS	1	/* buf/ip_opts; set/get IP per-packet options */
+#define	IP_HDRINCL	2	/* int; header is included with data (raw) */
+#define	IP_TOS		3	/* int; IP type of service and precedence */
+#define	IP_TTL		4	/* int; IP time to live */
+#define	IP_RECVOPTS	5	/* bool; receive all IP options w/datagram */
+#define	IP_RECVRETOPTS	6	/* bool; receive IP options for response */
+#define	IP_RECVDSTADDR	7	/* bool; receive IP dst addr w/datagram */
+#define	IP_RETOPTS	8	/* ip_opts; set/get IP per-packet options */
+#define	IP_MULTICAST_IF		9	/* set/get IP multicast interface */
+#define	IP_MULTICAST_TTL	10	/* set/get IP multicast TTL */
+#define	IP_MULTICAST_LOOP	11	/* set/get IP multicast loopback */
+#define	IP_ADD_MEMBERSHIP	12	/* add an IP group membership */
+#define	IP_DROP_MEMBERSHIP	13	/* drop an IP group membership */
+#define	IP_ADD_SOURCE_MEMBERSHIP 25	/* add source-specific multicast */
+#define	IP_DROP_SOURCE_MEMBERSHIP 26	/* drop source-specific multicast */
+#define	IP_RECVTTL		65	/* bool; receive the TTL w/datagram */
+#define	IP_DONTFRAG		67	/* bool; send datagrams with DF, never fragmented */
+#define	IP_RECVTOS		68	/* bool; receive the TOS byte (ECN) w/datagram */
+
+/*
+ * Argument structure for IP_ADD_MEMBERSHIP and IP_DROP_MEMBERSHIP.
+ */
+struct ip_mreq {
+	struct in_addr	imr_multiaddr;	/* IP multicast address of group */
+	struct in_addr	imr_interface;	/* local IP address of interface */
+};
+
+/*
+ * Argument structure for IP_ADD_SOURCE_MEMBERSHIP et al.
+ */
+struct ip_mreq_source {
+	struct in_addr	imr_multiaddr;	/* IP multicast address of group */
+	struct in_addr	imr_sourceaddr;	/* IP address of source */
+	struct in_addr	imr_interface;	/* local IP address of interface */
+};
+
+/*
+ * Protocol-independent multicast (RFC 3678).
+ */
+#include <sys/_sockaddr_storage.h>
+
+struct group_req {
+	uint32_t		gr_interface;	/* interface index */
+	struct sockaddr_storage	gr_group;	/* group address */
+};
+
+struct group_source_req {
+	uint32_t		gsr_interface;	/* interface index */
+	struct sockaddr_storage	gsr_group;	/* group address */
+	struct sockaddr_storage	gsr_source;	/* source address */
+};
+
+#define	MCAST_JOIN_GROUP	42	/* join any-source group */
+#define	MCAST_LEAVE_GROUP	43	/* leave all-source group */
+#define	MCAST_JOIN_SOURCE_GROUP	46	/* join source-specific group */
+#define	MCAST_LEAVE_SOURCE_GROUP 47	/* leave source-specific group */
+
+#ifdef KERNEL
+struct in_addr in_makeaddr(u_long net,
+                           u_long host);
+u_long in_netof(struct in_addr in);
+u_long in_lnaof(struct in_addr in);
+#endif
+
+/* IPv6 structures */
+struct in6_addr {
+    union {
+        uint8_t         u8_addr[16];
+        uint16_t        u16_addr[8];
+        uint32_t        u32_addr[4];
+    } un;
+#define s6_addr un.u8_addr
+};
+
+#define IN6ADDR_ANY_INIT {{{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}}}          /* :: */
+#define IN6ADDR_LOOPBACK_INIT {{{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1}}}     /* ::1 */
+
+extern const struct in6_addr in6addr_any;
+extern const struct in6_addr in6addr_loopback;
+
+/*
+ * IPv6 address classification macros (RFC 2553 / POSIX.1-2008).
+ * These use the portable s6_addr[] byte-array accessor so they work
+ * regardless of host byte order or struct in6_addr union layout.
+ */
+
+/* :: (all zeros) */
+#define IN6_IS_ADDR_UNSPECIFIED(a)					\
+	(((a)->s6_addr[0] == 0) && ((a)->s6_addr[1] == 0) &&		\
+	 ((a)->s6_addr[2] == 0) && ((a)->s6_addr[3] == 0) &&		\
+	 ((a)->s6_addr[4] == 0) && ((a)->s6_addr[5] == 0) &&		\
+	 ((a)->s6_addr[6] == 0) && ((a)->s6_addr[7] == 0) &&		\
+	 ((a)->s6_addr[8] == 0) && ((a)->s6_addr[9] == 0) &&		\
+	 ((a)->s6_addr[10] == 0) && ((a)->s6_addr[11] == 0) &&		\
+	 ((a)->s6_addr[12] == 0) && ((a)->s6_addr[13] == 0) &&		\
+	 ((a)->s6_addr[14] == 0) && ((a)->s6_addr[15] == 0))
+
+/* ::1 */
+#define IN6_IS_ADDR_LOOPBACK(a)						\
+	(((a)->s6_addr[0] == 0) && ((a)->s6_addr[1] == 0) &&		\
+	 ((a)->s6_addr[2] == 0) && ((a)->s6_addr[3] == 0) &&		\
+	 ((a)->s6_addr[4] == 0) && ((a)->s6_addr[5] == 0) &&		\
+	 ((a)->s6_addr[6] == 0) && ((a)->s6_addr[7] == 0) &&		\
+	 ((a)->s6_addr[8] == 0) && ((a)->s6_addr[9] == 0) &&		\
+	 ((a)->s6_addr[10] == 0) && ((a)->s6_addr[11] == 0) &&		\
+	 ((a)->s6_addr[12] == 0) && ((a)->s6_addr[13] == 0) &&		\
+	 ((a)->s6_addr[14] == 0) && ((a)->s6_addr[15] == 1))
+
+/* ff00::/8 */
+#define IN6_IS_ADDR_MULTICAST(a)	((a)->s6_addr[0] == 0xff)
+
+/* fe80::/10 */
+#define IN6_IS_ADDR_LINKLOCAL(a)					\
+	(((a)->s6_addr[0] == 0xfe) && (((a)->s6_addr[1] & 0xc0) == 0x80))
+
+/* fec0::/10 (deprecated per RFC 3879, still in API) */
+#define IN6_IS_ADDR_SITELOCAL(a)					\
+	(((a)->s6_addr[0] == 0xfe) && (((a)->s6_addr[1] & 0xc0) == 0xc0))
+
+/* ::ffff:0:0/96 — IPv4-mapped IPv6 address */
+#define IN6_IS_ADDR_V4MAPPED(a)						\
+	(((a)->s6_addr[0] == 0) && ((a)->s6_addr[1] == 0) &&		\
+	 ((a)->s6_addr[2] == 0) && ((a)->s6_addr[3] == 0) &&		\
+	 ((a)->s6_addr[4] == 0) && ((a)->s6_addr[5] == 0) &&		\
+	 ((a)->s6_addr[6] == 0) && ((a)->s6_addr[7] == 0) &&		\
+	 ((a)->s6_addr[8] == 0) && ((a)->s6_addr[9] == 0) &&		\
+	 ((a)->s6_addr[10] == 0xff) && ((a)->s6_addr[11] == 0xff))
+
+/* ::/96 — IPv4-compatible IPv6 address (deprecated) */
+#define IN6_IS_ADDR_V4COMPAT(a)						\
+	(((a)->s6_addr[0] == 0) && ((a)->s6_addr[1] == 0) &&		\
+	 ((a)->s6_addr[2] == 0) && ((a)->s6_addr[3] == 0) &&		\
+	 ((a)->s6_addr[4] == 0) && ((a)->s6_addr[5] == 0) &&		\
+	 ((a)->s6_addr[6] == 0) && ((a)->s6_addr[7] == 0) &&		\
+	 ((a)->s6_addr[8] == 0) && ((a)->s6_addr[9] == 0) &&		\
+	 ((a)->s6_addr[10] == 0) && ((a)->s6_addr[11] == 0) &&		\
+	 !(((a)->s6_addr[12] == 0) && ((a)->s6_addr[13] == 0) &&	\
+	   ((a)->s6_addr[14] == 0) &&					\
+	   (((a)->s6_addr[15] == 0) || ((a)->s6_addr[15] == 1))))
+
+/* Multicast scope tests (RFC 7346) */
+#define IN6_IS_ADDR_MC_NODELOCAL(a)					\
+	(IN6_IS_ADDR_MULTICAST(a) && (((a)->s6_addr[1] & 0x0f) == 0x01))
+#define IN6_IS_ADDR_MC_LINKLOCAL(a)					\
+	(IN6_IS_ADDR_MULTICAST(a) && (((a)->s6_addr[1] & 0x0f) == 0x02))
+#define IN6_IS_ADDR_MC_SITELOCAL(a)					\
+	(IN6_IS_ADDR_MULTICAST(a) && (((a)->s6_addr[1] & 0x0f) == 0x05))
+#define IN6_IS_ADDR_MC_ORGLOCAL(a)					\
+	(IN6_IS_ADDR_MULTICAST(a) && (((a)->s6_addr[1] & 0x0f) == 0x08))
+#define IN6_IS_ADDR_MC_GLOBAL(a)					\
+	(IN6_IS_ADDR_MULTICAST(a) && (((a)->s6_addr[1] & 0x0f) == 0x0e))
+
+/* Address comparison */
+#define IN6_ARE_ADDR_EQUAL(a, b)					\
+	((a)->s6_addr[0] == (b)->s6_addr[0]				\
+	 && (a)->s6_addr[1] == (b)->s6_addr[1]				\
+	 && (a)->s6_addr[2] == (b)->s6_addr[2]				\
+	 && (a)->s6_addr[3] == (b)->s6_addr[3]				\
+	 && (a)->s6_addr[4] == (b)->s6_addr[4]				\
+	 && (a)->s6_addr[5] == (b)->s6_addr[5]				\
+	 && (a)->s6_addr[6] == (b)->s6_addr[6]				\
+	 && (a)->s6_addr[7] == (b)->s6_addr[7]				\
+	 && (a)->s6_addr[8] == (b)->s6_addr[8]				\
+	 && (a)->s6_addr[9] == (b)->s6_addr[9]				\
+	 && (a)->s6_addr[10] == (b)->s6_addr[10]			\
+	 && (a)->s6_addr[11] == (b)->s6_addr[11]			\
+	 && (a)->s6_addr[12] == (b)->s6_addr[12]			\
+	 && (a)->s6_addr[13] == (b)->s6_addr[13]			\
+	 && (a)->s6_addr[14] == (b)->s6_addr[14]			\
+	 && (a)->s6_addr[15] == (b)->s6_addr[15])
+
+struct sockaddr_in6 {
+    uint8_t     sin6_len;
+    uint8_t     sin6_family;
+    uint16_t    sin6_port;
+    uint32_t    sin6_flowinfo;
+    struct in6_addr sin6_addr;
+    uint32_t    sin6_scope_id;
+};
+
+/* IPv6 socket options */
+#define IPV6_V6ONLY		26	/* Restrict AF_INET6 sockets to IPv6 only. */
+#define IPV6_UNICAST_HOPS	4	/* int; IP6 hops */
+#define IPV6_MULTICAST_IF	9	/* u_int; set/get IP6 multicast i/f  */
+#define IPV6_MULTICAST_HOPS	10	/* int; set/get IP6 multicast hops */
+#define IPV6_MULTICAST_LOOP	11	/* u_int; set/get IP6 multicast loopback */
+#define IPV6_JOIN_GROUP		12	/* ipv6_mreq; join a group membership */
+#define IPV6_LEAVE_GROUP	13	/* ipv6_mreq; leave a group membership */
+#define IPV6_PKTINFO		46	/* get/set IPv6 packet info */
+#define IPV6_HOPLIMIT		47	/* int; get/set IPv6 hop limit */
+#define IPV6_HOPOPTS		49	/* get/set IPv6 hop-by-hop options */
+#define IPV6_DSTOPTS		50	/* get/set IPv6 dest options after rt hdr */
+#define IPV6_RTHDR		51	/* get/set IPv6 routing header */
+#define IPV6_RECVPKTINFO	61	/* bool; recv if, dst addr */
+#define IPV6_RECVHOPLIMIT	37	/* bool; recv hop limit */
+#define IPV6_CHECKSUM		7	/* int; checksum offset for raw socket (Linux's number; 26 is IPV6_V6ONLY) */
+#define IPV6_TCLASS		36	/* int; traffic class */
+/* path MTU (RFC 3542 section 11), numbered as in FreeBSD */
+#define IPV6_USE_MIN_MTU	42	/* int; -1: 1280 for multicast, 0: path MTU, 1: 1280 */
+#define IPV6_RECVPATHMTU	43	/* bool; IPV6_PATHMTU message when the path MTU falls */
+#define IPV6_PATHMTU		44	/* ip6_mtuinfo; get: the path MTU to the peer */
+#define IPV6_DONTFRAG		62	/* bool; never fragment, EMSGSIZE above the link MTU */
+#define IPV6_RECVTCLASS		57	/* bool; receive the traffic class (RFC 3542 6.5) */
+
+/* IPv6 multicast request */
+struct ipv6_mreq {
+	struct in6_addr ipv6mr_multiaddr;
+	unsigned int    ipv6mr_interface;
+};
+
+/* IPV6_PATHMTU ancillary data and option (RFC 3542 section 11.3) */
+struct ip6_mtuinfo {
+	struct sockaddr_in6 ip6m_addr;	/* the destination */
+	uint32_t	ip6m_mtu;	/* its path MTU, host byte order */
+};
+
+/* IPV6_PKTINFO ancillary data and option (RFC 3542 section 6.1) */
+struct in6_pktinfo {
+	struct in6_addr	ipi6_addr;	/* src/dst IPv6 address */
+	unsigned int	ipi6_ifindex;	/* send/recv interface index */
+};
+
+#endif /* !IN_H */

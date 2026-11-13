@@ -1,0 +1,10 @@
+# Copyright (C) 2004, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+
+ICONS := Sashimi
+
+#MM- iconset-Gorilla-old-icons-aros-clean : iconset-Gorilla-old-icons-aros-tools-debug-clean
+#MM- iconset-Gorilla-old-icons-aros : iconset-Gorilla-old-icons-aros-tools-debug
+%build_icons mmake=iconset-Gorilla-old-icons-aros-tools-debug icons=$(ICONS) \
+             dir=$(AROS_TOOLS)/Debug

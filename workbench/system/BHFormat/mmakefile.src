@@ -1,0 +1,18 @@
+# Copyright (C) 2003, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+
+FILES	:= main cli gui locale
+
+EXEDIR  := $(AROS_SYSTEM)
+
+USER_CFLAGS := -DADATE="\"$(shell date '+%d.%m.%Y')\""
+
+#MM- workbench-system : workbench-system-format
+#MM workbench-system-format : includes linklibs workbench-system-format-catalogs
+
+%build_prog mmake=workbench-system-format \
+    progname=Format targetdir=$(EXEDIR) \
+    files=$(FILES)
+
+%common

@@ -1,0 +1,212 @@
+# Translation catalog description file (pot-style)
+# $Id$
+# 
+# version 2
+# Translators:
+msgid ""
+msgstr ""
+"Project-Id-Version: MCC BetterString\n"
+"Report-Msgid-Bugs-To: http://sf.net/p/bstring-mcc/\n"
+"POT-Creation-Date: 2014-02-18 15:35+0100\n"
+"PO-Revision-Date: 2014-02-18 14:47+0000\n"
+"Last-Translator: damato <mail@jens-maus.de>\n"
+"Language-Team: Slovak (http://www.transifex.com/ato/bstring-mcc/language/sk/)\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Catalog-Name: BetterString_mcp\n"
+"Language: sk\n"
+"Plural-Forms: nplurals=3; plural=(n==1) ? 0 : (n>=2 && n<=4) ? 1 : 2;\n"
+
+msgctxt "MSG_Label_Active (0//)"
+msgid "Active:"
+msgstr ""
+
+msgctxt "MSG_Label_Background (1//)"
+msgid "Background"
+msgstr ""
+
+msgctxt "MSG_Label_Cursor (2//)"
+msgid "Cursor:"
+msgstr ""
+
+msgctxt "MSG_Label_Inactive (5//)"
+msgid "Inactive:"
+msgstr ""
+
+msgctxt "MSG_Label_Marked (6//)"
+msgid "Marked:"
+msgstr ""
+
+msgctxt "MSG_Label_Text (7//)"
+msgid "Text"
+msgstr ""
+
+msgctxt "MSG_String_TestString (8//)"
+msgid "Test the power of BetterString here!"
+msgstr ""
+
+msgctxt "MSG_Help_Copy (9//)"
+msgid "Copy all or marked text"
+msgstr ""
+
+msgctxt "MSG_Help_Copy_Shortcut (10//)"
+msgid "Amiga + c"
+msgstr ""
+
+msgctxt "MSG_Help_Cut (11//)"
+msgid "Cut all or marked text"
+msgstr ""
+
+msgctxt "MSG_Help_Cut_Shortcut (12//)"
+msgid "Amiga + x"
+msgstr ""
+
+msgctxt "MSG_Help_Paste (13//)"
+msgid "Paste"
+msgstr ""
+
+msgctxt "MSG_Help_Paste_Shortcut (14//)"
+msgid "Amiga + v"
+msgstr ""
+
+msgctxt "MSG_Help_Undo (15//)"
+msgid "Undo last deletion"
+msgstr ""
+
+msgctxt "MSG_Help_Undo_Shortcut (16//)"
+msgid "Amiga + z"
+msgstr ""
+
+msgctxt "MSG_Help_Redo (17//)"
+msgid "Redo last deletion"
+msgstr ""
+
+msgctxt "MSG_Help_Redo_Shortcut (18//)"
+msgid "Amiga + Z"
+msgstr ""
+
+msgctxt "MSG_Help_ToggleBuffer (19//)"
+msgid "Toggle between original and modified buffer"
+msgstr ""
+
+msgctxt "MSG_Help_ToggleBuffer_Shortcut (20//)"
+msgid "Amiga + q"
+msgstr ""
+
+msgctxt "MSG_Help_ToggleCaseChar (21//)"
+msgid "Toggle case on character"
+msgstr ""
+
+msgctxt "MSG_Help_ToggleCaseChar_Shortcut (22//)"
+msgid "Amiga + g"
+msgstr ""
+
+msgctxt "MSG_Help_ToggleCaseWord (23//)"
+msgid "Toggle case on word"
+msgstr ""
+
+msgctxt "MSG_Help_ToggleCaseWord_Shortcut (24//)"
+msgid "Amiga + G"
+msgstr ""
+
+msgctxt "MSG_Help_IncreaseNumber (25//)"
+msgid "Increase number"
+msgstr ""
+
+msgctxt "MSG_Help_IncreaseNumber_Shortcut (26//)"
+msgid "Amiga + i"
+msgstr ""
+
+msgctxt "MSG_Help_DecreaseNumber (27//)"
+msgid "Decrease number"
+msgstr ""
+
+msgctxt "MSG_Help_DecreaseNumber_Shortcut (28//)"
+msgid "Amiga + d"
+msgstr ""
+
+msgctxt "MSG_Help_HexToDecimal (29//)"
+msgid "Hex to Decimal"
+msgstr ""
+
+msgctxt "MSG_Help_HexToDecimal_Shortcut (30//)"
+msgid "Amiga + #"
+msgstr ""
+
+msgctxt "MSG_Help_DecimalToHex (31//)"
+msgid "Decimal to Hex"
+msgstr ""
+
+msgctxt "MSG_Help_DecimalToHex_Shortcut (32//)"
+msgid "Amiga + $"
+msgstr ""
+
+msgctxt "MSG_Help_FilenameCompletition (33//)"
+msgid "Filenamecompletion (use SHIFT to cycle back)"
+msgstr ""
+
+msgctxt "MSG_Help_FilenameCompletition_Shortcut (34//)"
+msgid "Amiga + TAB"
+msgstr ""
+
+msgctxt "MSG_Help_Mark (35//)"
+msgid "Mark"
+msgstr ""
+
+msgctxt "MSG_Help_Mark_Shortcut (36//)"
+msgid "CTRL + cursor"
+msgstr ""
+
+msgctxt "MSG_Help_GotoToStartEndOfLine (37//)"
+msgid "Goto to start/end of line"
+msgstr ""
+
+msgctxt "MSG_Help_GotoToStartEndOfLine_Shortcut (38//)"
+msgid "SHIFT + cursor"
+msgstr ""
+
+msgctxt "MSG_Help_DeleteToStartEndOfLine (39//)"
+msgid "Delete to start/end of line"
+msgstr ""
+
+msgctxt "MSG_Help_DeleteToStartEndOfLine_Shortcut (40//)"
+msgid "SHIFT + BACKSPACE/DELETE"
+msgstr ""
+
+msgctxt "MSG_Help_GotoToPrevNextWord (41//)"
+msgid "Goto to previous/next word"
+msgstr ""
+
+msgctxt "MSG_Help_GotoToPrevNextWord_Shortcut (42//)"
+msgid "ALT + cursor"
+msgstr ""
+
+msgctxt "MSG_Help_DeleteToPrevNextWord (43//)"
+msgid "Delete previous/next word"
+msgstr ""
+
+msgctxt "MSG_Help_DeleteToPrevNextWord_Shortcut (44//)"
+msgid "ALT + BACKSPACE/DELETE"
+msgstr ""
+
+msgctxt "MSG_SelectOnActive (45//)"
+msgid "Select on Active"
+msgstr ""
+
+msgctxt "MSG_HELP_SelectOnActive (46//)"
+msgid ""
+"Automatically select all text when a\n"
+"BetterString object gets activated\n"
+"via TAB cycling or mouse activation."
+msgstr ""
+
+msgctxt "MSG_SelectPointer (47//)"
+msgid "Selection Pointer"
+msgstr ""
+
+msgctxt "MSG_HELP_SelectPointer (48//)"
+msgid ""
+"If enabled, a custom selection pointer will appear\n"
+"when the mouse pointer is above a betterstring gadget."
+msgstr ""

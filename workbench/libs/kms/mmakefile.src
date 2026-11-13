@@ -1,0 +1,13 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+USER_LDFLAGS := -static
+
+FILES := kms_library parsekeymapseg
+FUNCS := openkeymap
+
+%build_module mmake=workbench-libs-kms \
+    modname=kms modtype=library \
+    files="$(FILES) $(FUNCS)"
+
+%common

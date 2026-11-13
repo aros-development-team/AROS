@@ -1,0 +1,24 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM- workbench-network : workbench-network-stacks-arostcp
+
+#MM- linklibs: network-linklibs
+
+#MM- workbench-network-stacks-arostcp : workbench-network-stacks-arostcp-bsdsocket
+#MM- workbench-network-stacks-arostcp : network-linklibs
+#MM- workbench-network-stacks-arostcp : workbench-network-stacks-arostcp-services
+#MM- workbench-network-stacks-arostcp : workbench-network-stacks-arostcp-modules
+# the stack program holds no protocol: without the protocol libraries of
+# the same build (they share one table layout) it starts no family
+#MM- workbench-network-stacks-arostcp-bsdsocket : workbench-network-stacks-arostcp-modules
+
+#MM- workbench-network-stacks-arostcp-services : workbench-network-stacks-arostcp-services-example
+#MM- workbench-network-stacks-arostcp-services : workbench-network-stacks-arostcp-services-dhcp
+#MM- workbench-network-stacks-arostcp-services : workbench-network-stacks-arostcp-services-firewall
+#MM- workbench-network-stacks-arostcp-services : workbench-network-stacks-arostcp-services-firewall-svccfg
+
+%copy_files_q mmake=workbench-network-stacks-arostcp files="README" \
+    dst=$(AROS_SYSTEM)/Network/AROSTCP
+
+#%common

@@ -1,0 +1,199 @@
+                         $Date: 96/07/24 20:29:26 $
+
+Die folgenden Programme sind mit VMM getestet worden.  Ich würde diese
+Liste gern mit den Daten vervollständigen, die ich von Ihnen erhalte.
+
+**************************************************************************
+
+Programme, die mit virtuellem Speicher arbeiten:
+
+Alle Systemprogramme, die im AmigaOS 3.0 enthalten sind
+        (s. Kommentar bzgl. input.device unten)
+ABackup V4.08
+ADPro 2.5
+Amiga TeX 3.14
+Amiga MetaFont 2.7a
+AMosaic 1.2
+April 0.994
+ArtExpression
+AutoPilot 1.80
+BAsm
+BoardMaster 1.0
+Brilliance V2
+CygnusEd 3.5
+DaggeX V1.0b and X clients
+DICE
+DigitalImage
+Directory Opus
+DpaintV 5.0
+dsound
+Excellence 3.0
+Executive 
+FinalWriter V4.0
+FinalCalc 1.0
+FishCat
+fMSX 0.3/0.4
+Garshneblanker 38.6
+GCC 2.6.3                               (GCC funktioniert nicht prinzipiell mit virt.
+                                         Speicher, aber solange nicht sehr wenig
+                                         physikalischer Speicher vorhanden ist,
+                                         läuft er recht zuverlässig)
+ghostscript
+GoldEd Pro 1.1
+GPFax 2.347
+HWGPost Beta 7
+ImageFX V2.1
+ImageMaster R/t V1.50c
+Imagine 3.0
+ISpell 3.3LJR
+KingCON 1.3
+less 1.5 Z                              (Ray Zarling's port)
+Lha                                     (copyright Stefan Boberg)
+Lightwave V3.5
+Macro68
+Magic File Requester 2.0d
+MagicMenu 1.29
+Magic WB 2.0
+MainActor 1.53
+Maple V R3
+MLink
+Morph
+MorphPlus
+MUI 2.2
+PageStream 3.0e
+PasTeX V3.14 (with MetaFont)            (port by Georg Hessmann)
+Phasar 4.09
+PixelPr 1.04
+Platinum Works! 1.50
+Powersnap V2.2a                         (copyright Nico François)
+Postview
+Quarterback 5.04
+rayshade
+Real3D V2.49
+Reflections V2.5
+Reflections Animator V2.0
+Reorg 3.11
+SAS/C 6.51
+Scala MM300
+SetMan1.0g                              (copyright Nicola Salmoria)
+SKsh V2.1                               (copyright Steve Koren)
+Spot 1.3
+stevie
+StudioPrint 2.07
+Term 4.5
+Terminus 2.0e
+TexPlusPro 5.01
+Toolmanager 2.1
+TurboPrint 3.0
+TurboText 2.0
+TypeSmith
+Uchess
+UnixDirsII                              (muß nach VMM gestartet werden)
+vim
+VistaPro 3.0
+vltjr
+WCS
+WordPerfect 4.1.12                      (Task "kashmir" nur mit Zusatzoptionen, 
+                                         Code-Paging funktioniert)
+WordsWorth V2AGA
+Workbench
+XFH V1.34                               (by Kristian Nielsen)
+XiPaint
+XPK                                     (by Urban Dominik Mueller)
+set040 FastROM
+
+**************************************************************************
+
+Programme,  die  funktionieren,  wenn  sie  keinen virtuellen Speicher
+erhalten:
+
+CycleToMenu
+
+DynamiCache  1.02 die  Dateisysteme der gecachten Partitionen dürfen
+                  keinen virtuellen Speicher erhalten, s.
+                  VMM.guide, Kapitel 8)
+
+Distant Suns 5.0
+Enforcer V37.42:  Sollte vor VMM gestartet werden (nur 68040). Wenn Sie
+                  das ReadMMUConfig-Programm verwenden, s. dessen 
+                  Dokumentation.
+
+FastCache V1.1 (copyright Philip D'Ath): (s. Kommentar zu PowerCache)
+FracBlank
+
+GNU Emacs 18.58:  Emacs funktioniert nicht mit virtuellem Speicher, da
+                  es die Speicheradressen auf 26 Bit beschränkt. Dies
+                  ist auf dem Amiga verboten und funktioniert nur zu-
+                  fällig. Ich werde VMM nicht ändern, um dies zu
+                  unterstützen
+
+input.device:     Hier bin ich nicht sicher. Ich hatte einige uner-
+                  klärliche Abstürze, als das input.device VM benutzen
+                  durfte. Da es nicht viel Speicher benötigt, macht
+                  es nichts aus, VM zu verbieten.
+
+Magic File Requester 2.0d
+
+MCP
+
+PowerCache V37.115 (copyright Michael Berg):
+                  Es ist nicht besonders sinnvoll, daß ein Cache-Programm
+                  virtuellen Speicher benutzt. Siehe auch das Kapitel
+                  "Bekannte Fehler" in VMM.guide wegen eines Fehler
+                  bzgl. des Copyback-Caches von Powercache.
+
+PFS:              PFS hat anscheined Probleme mit VMM. Ich konnte diese
+                  nicht genau lokalisieren, aber solange Sie die Auslagerungs-
+                  datei nicht auf eine PFS-Partition legen, arbeiten beide
+                  zusammen.
+
+ReqServer
+
+UChess 2.89
+
+Video Toaster 3.1 Hierfür muß die Standardeinstellung von VMM virtuellen
+                  Speicher generell verbieten.
+
+xData:            Wenn xData vor VMM gestartet wird, dürfen alle xpk-Libraries
+                  keinen virtuellen Speicher erhalten. Ich weiß nicht, woran
+                  das liegt, aber so funktioniert es.
+
+
+**************************************************************************
+
+Programs, die gar nicht mit VMM zusammenarbeiten:
+
+
+MungWall  V37.64:   Mungwall verursacht eine Endlosschleife in einem von
+                    VMMs Prozessen. Dies liegt daran, daß Mungwall wie VMM
+                    auch FreeMem verändert. Wenn Sie Mungwall zur Programm-
+                    entwicklung benötigen, müssen Sie VMM abschalten.
+
+CacheX 2.0
+
+CPU                 Dieses Programm verursacht Probleme, wenn damit das ROM
+                    in das Fast-RAM umkopiert wird. Verwenden Sie ein anderes
+                    Programm, z.B. SetCPU.
+
+Emplant
+
+ForceNewLook 1.3
+
+SaferPatches 2.0    Wegen eines Fehlers in SaferPatches wird vergessen, die
+                    CPU-Caches ungültig zu machen.
+Enforcer            nur 68030
+
+TVPaint Junior 1.1
+
+Migraph OCR V1.0
+
+Verte V1.78a
+
+**************************************************************************
+
+Programme, die den gesamten Rechner übernehmen, wie Spiele, Emulatoren
+usw.  sollten ohne VMM gestartet werden.
+
+Es  gibt  eine  Menge  Programme,  die  sehr wenig Speicher verwenden.
+Diese  arbeiten  meist  mit  VMM  zusammen und werden daher nicht hier
+aufgeführt.

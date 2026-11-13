@@ -1,0 +1,117 @@
+--- lowlevel_old.doc	1993-10-15 12:04:14.000000000 +0200
++++ lowlevel_new.doc	2009-07-14 18:56:28.000000000 +0200
+@@ -369,8 +369,40 @@
+ 	value other than JP_TYPE_NOTAVAIL) this function may be used in
+ 	interrupts.
+ 
++	*** NEW ***
++	As an extension to the former available data, analogue joystick data
++	may be returned. This is currently only supported by the Poseidon USB
++	HID class, however, in future other devices may also add support for
++	it.
++	
++	The user may specify the analogue data override option in the HID
++	class and the data returned by ReadJoyPort() will be of type
++	JP_TYPE_ANALOGUE, which contains two eight bit counters holding the
++	absolute position of two joystick axis. An application can also
++	take control and can explicitly demand JP_TYPE_ANALOGUE data by
++	either adding JP_ANALOGUE_PORT_MAGIC to the portNumber or setting
++	SJA_TYPE to SJA_TYPE_ANALOGUE in SetJoyPortAttrs().
++
++	The analogue axis information is an unsigned integer from 0 to 255
++	and has not necessarily been calibrated to be centered at 128.
++
++	Compatibility issues:
++	- If the HID class is not loaded, use of SJA_TYPE_ANALOGUE will have
++	  no effect and JP_TYPE_NOTAVAIL will be returned on ReadJoyPort().
++	- If the HID class is not loaded, and JP_ANALOGUE_PORT_MAGIC is used,
++	  JP_TYPE_NOTAVAIL will be returned on ReadJoyPort().
++	- If SetJoyPortAttrs() has been set to SJA_TYPE_JOYSTK or
++	  SJA_TYPE_GAMECTRL, using portNumbers from 0 to 3 still will return
++	  digitally interpreted data, whereas using portNumbers from
++	  JP_ANALOGUE_PORT_MAGIC to JP_ANALOGUE_PORT_MAGIC+3 will return
++	  the analogue data from the ports.
++
+    INPUTS
+ 	portNumber - port to read, in the range 0 to 3.
++                 If the JP_ANALOGUE_PORT_MAGIC bit is set additionally,
++                 the returned bitmask will be of JP_TYPE_ANALOGUE, even
++                 if the port was set to JP_TYPE_GAMECTRL or JP_TYPE_JOYSTK
++                 before.
+ 
+    RESULT
+ 	portState - bit map that identifies the device and the current
+@@ -389,6 +421,7 @@
+ 	                JP_TYPE_GAMECTLR        game controller
+ 	                JP_TYPE_MOUSE           mouse
+ 	                JP_TYPE_JOYSTK          joystick
++                    JP_TYPE_ANALOGUE        analogue stick (EXT)
+ 	                JP_TYPE_UNKNOWN         unknown device
+ 
+ 	            If type = JP_TYPE_GAMECTLR the bit map of portState is:
+@@ -419,6 +452,18 @@
+ 	                JP_MVERT_MASK           Mask for vertical counter
+ 	                JP_MHORZ_MASK           Mask for horizontal counter
+ 
++                If type = JP_TYPE_ANALOGUE the bit map of portState is:
++	                JPF_BUTTON_RED          Button 1 (standard fire)
++	                JPF_BUTTON_BLUE         Button 2
++	                JPF_BUTTON_GREEN        Button 3
++	                JPF_BUTTON_YELLOW       Button 4
++	                JPF_BUTTON_FORWARD      Button 5
++	                JPF_BUTTON_REVERSE      Button 6
++	                JPF_BUTTON_PLAY         Button 7
++	                JP_XAXIS_MASK           Mask for horizontal position
++	                JP_YAXIS_MASK           Mask for vertical position
++
++
+    SEE ALSO
+ 	SetJoyPortAttrs()
+ 
+@@ -524,6 +569,11 @@
+ 	time attempting to sense which type of controller is in use -- and,
+ 	optionally, to force ReadJoyPort() into utilizing a certain
+ 	controller type.
++	
++	*** NEW ***
++	SetJoyPortAttrs() adds three options for force feedback and rumble
++	pack support. These are currently very basic controls of two
++	motors found in the joypad.
+ 
+    INPUTS
+ 	portNumber - the joyport in question (0-3).
+@@ -535,7 +585,8 @@
+ 	SJA_Type (ULONG) - Sets the current controller type to the mouse,
+ 			joystick, or game controller. Supply one of
+ 			SJA_TYPE_GAMECTLR, SJA_TYPE_MOUSE, SJA_TYPE_JOYSTK,
+-			or SJA_TYPE_AUTOSENSE. If SJA_TYPE_AUTOSENSE is used,
++			SJA_TYPE_ANALOGUE, or SJA_TYPE_AUTOSENSE.
++			If SJA_TYPE_AUTOSENSE is used,
+ 			ReadJoyPort() will attempt to determine the type of
+ 			controller plugged into the given port automatically.
+ 			If one of the other types is used, ReadJoyPort() will
+@@ -551,6 +602,17 @@
+ 		     	forcing a port to deallocate any allocated resources;
+ 	             	return the implied type to SJA_TYPE_AUTOSENSE.
+ 
++	SJA_RumbleSetSlowMotor (UBYTE) - If a rumble pack is available,
++			using this tag will set the speed of the slow motor
++			to the given value (0 - 255).
++
++	SJA_RumbleSetFastMotor (UBYTE) - If a rumble pack is available,
++			using this tag will set the speed of the fast motor
++			to the given value (0 - 255).
++
++	SJA_RumbleOff (BOOL) - If set, this will turn the rumble pack
++			motors off.
++
+    RESULT
+ 	success - TRUE if everything went according to plan, or FALSE upon
+ 		  failure
+@@ -766,4 +828,4 @@
+    SEE ALSO
+ 	<libraries/lowlevel.h>
+ 
+-
+\ No newline at end of file
++

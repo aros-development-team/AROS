@@ -1,0 +1,10 @@
+# DataType Description for AAC (MPEG-4 ADTS stream)
+Name=AAC
+Version=$VER: AAC 41.0 (21.7.2026)
+BaseName=aac
+Pattern=#?
+Mask=0xff 0xf1
+GroupID=soun
+ID=_aac
+Flags=DTF_BINARY,DTF_CASE
+Priority=1

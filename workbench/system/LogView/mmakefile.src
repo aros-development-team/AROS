@@ -1,0 +1,15 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+FILES :=    logview logclass
+
+#MM workbench-system-logview : kernel-log-includes linklibs iconset-$(AROS_TARGET_ICONSET)-additional-icons-aros-system-logview
+#MM- workbench-system : workbench-system-$(TARGET_USELOGRES)-logview
+#MM- workbench-system-yes-logview : workbench-system-logview
+
+%build_prog progname="LogView" mmake=workbench-system-logview \
+    files=$(FILES) targetdir=$(AROS_SYSTEM) \
+    uselibs="debug"
+
+
+%common

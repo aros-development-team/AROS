@@ -1,0 +1,30 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+FUNCS := \
+	addamigaguidehosta \
+	amigaguidesignal \
+	closeamigaguide \
+	expungexref \
+	getamigaguideattr \
+	getamigaguidemsg \
+	getamigaguidestring \
+	loadxref \
+	lockamigaguidebase \
+	openamigaguidea \
+	openamigaguideasynca \
+	removeamigaguidehosta \
+	replyamigaguidemsg \
+	sendamigaguidecmda \
+	sendamigaguidecontexta \
+	setamigaguideattrsa \
+	setamigaguidecontexta \
+	unlockamigaguidebase 
+
+#MM workbench-libs-amigaguide-includes : \
+#MM     kernel-exec-includes includes-copy
+#MM- workbench-libs-amigaguide : linklibs
+
+%build_module mmake=workbench-libs-amigaguide \
+    modname=amigaguide modtype=library \
+    files=$(FUNCS)

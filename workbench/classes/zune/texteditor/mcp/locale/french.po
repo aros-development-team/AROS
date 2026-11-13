@@ -1,0 +1,743 @@
+# Translation catalog description file (pot-style)
+# $Id: french.po 954 2014-04-05 11:31:14Z damato $
+# 
+# version 2
+# Translators:
+msgid ""
+msgstr ""
+"Project-Id-Version: MCC TextEditor\n"
+"Report-Msgid-Bugs-To: http://sf.net/p/texteditor-mcc/\n"
+"POT-Creation-Date: 2014-02-23 12:29+0100\n"
+"PO-Revision-Date: 2014-04-02 14:52+0000\n"
+"Last-Translator: tboeckel <tboeckel@gmx.de>\n"
+"Language-Team: French (http://www.transifex.com/projects/p/texteditor-mcc/language/fr/)\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Catalog-Name: TextEditor_mcp\n"
+"Language: fr\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+
+msgctxt "MSG_HelpBubble_BlockQual (0//)"
+msgid ""
+"Move the cursor key and hold down the qualifier\n"
+"that you set here to mark text."
+msgstr "Déplacer le curseur en maintenant appuyée la\ntouche définie ici vous permet de marquer le texte."
+
+msgctxt "MSG_HelpBubble_CheckWord (1//)"
+msgid ""
+"If enabled, then the editor will lookup the word,\n"
+"and only show suggestions if the word is misspelled."
+msgstr "Cette option active, l'éditeur cherchera le mot\net affichera des suggestions s'il est mal orthographié."
+
+msgctxt "MSG_HelpBubble_Smooth (2//)"
+msgid "This enables pixel smooth scrolling."
+msgstr "Activer le défilement fluide du texte."
+
+msgctxt "MSG_HelpBubble_TypeNSpell (3//)"
+msgid ""
+"Enable this to let the editor\n"
+"lookup the words while you type them."
+msgstr "Activer la recherche des mots\nen cours de frappe."
+
+msgctxt "MSG_HelpBubble_UndoLevel (4//)"
+msgid ""
+"Each undo level eats up 10 bytes of memory.\n"
+"Cut and copy will take a little more,\n"
+"depending on the size of the block you\n"
+"are cutting or copying."
+msgstr "Chaque option « annuler » utilise 10 octets de mémoire.\nLes options « couper » et « copier » prennent un peu plus,\nselon la taille du bloc !"
+
+msgctxt "MSG_Button_DefaultKeys (5//)"
+msgid "Default _keys"
+msgstr "_Touches par défaut"
+
+msgctxt "MSG_Button_Delete (6//)"
+msgid "_Delete"
+msgstr "_Effacer"
+
+msgctxt "MSG_Button_Insert (7//)"
+msgid "_Insert"
+msgstr "_Insérer"
+
+msgctxt "MSG_ConfigMenu_CheckWord (8//)"
+msgid "Check word"
+msgstr "Vérifier le mot"
+
+msgctxt "MSG_ConfigMenu_TypeNSpell (9//)"
+msgid "Type'n'spell"
+msgstr "Orthographe temps réel"
+
+msgctxt "MSG_CycleItem_Alt (10//)"
+msgid "Alt"
+msgstr "Alt"
+
+msgctxt "MSG_CycleItem_Ctrl (11//)"
+msgid "Control"
+msgstr "Contrôle"
+
+msgctxt "MSG_CycleItem_Mouse (12//)"
+msgid "(mouse only)"
+msgstr "(souris uniquement)"
+
+msgctxt "MSG_CycleItem_Shift (13//)"
+msgid "Shift"
+msgstr "Shift"
+
+msgctxt "MSG_Execution_ARexx (14//)"
+msgid "ARexx"
+msgstr "ARexx"
+
+msgctxt "MSG_Execution_CLI (15//)"
+msgid "CLI"
+msgstr "CLI"
+
+msgctxt "MSG_Function_BOL (16//)"
+msgid "Beginning of line"
+msgstr "Début de ligne"
+
+msgctxt "MSG_Function_Backspace (17//)"
+msgid "Backspace"
+msgstr "Retour arrière"
+
+msgctxt "MSG_Function_Bottom (18//)"
+msgid "Bottom"
+msgstr "Fin du texte"
+
+msgctxt "MSG_Function_Copy (19//)"
+msgid "Copy"
+msgstr "Copier"
+
+msgctxt "MSG_Function_Cut (20//)"
+msgid "Cut"
+msgstr "Couper"
+
+msgctxt "MSG_Function_DelBOL (21//)"
+msgid "Delete to BOL"
+msgstr "Effacer jusqu'au début de la ligne"
+
+msgctxt "MSG_Function_DelBOW (22//)"
+msgid "Delete to BOW"
+msgstr "Effacer jusqu'au début du mot"
+
+msgctxt "MSG_Function_DelEOL (23//)"
+msgid "Delete to EOL"
+msgstr "Effacer jusqu'à la fin de la ligne"
+
+msgctxt "MSG_Function_DelEOW (24//)"
+msgid "Delete to EOW"
+msgstr "Effacer jusqu'à la fin du mot"
+
+msgctxt "MSG_Function_Delete (25//)"
+msgid "Delete"
+msgstr "Effacer"
+
+msgctxt "MSG_Function_Down (26//)"
+msgid "Down"
+msgstr "Bas"
+
+msgctxt "MSG_Function_EOL (27//)"
+msgid "End of line"
+msgstr "Fin de ligne"
+
+msgctxt "MSG_Function_Left (28//)"
+msgid "Left"
+msgstr "Gauche"
+
+msgctxt "MSG_Function_NextGadget (29//)"
+msgid "Next gadget"
+msgstr "Gadget suivant"
+
+msgctxt "MSG_Function_NxtPage (30//)"
+msgid "Next page"
+msgstr "Page suivante"
+
+msgctxt "MSG_Function_NxtPara (31//)"
+msgid "Next paragraph"
+msgstr "Paragraphe suivant"
+
+msgctxt "MSG_Function_NxtSent (32//)"
+msgid "Next sentence"
+msgstr "Phrase suivante"
+
+msgctxt "MSG_Function_NxtWord (33//)"
+msgid "Next word"
+msgstr "Mot suivant"
+
+msgctxt "MSG_Function_Paste (34//)"
+msgid "Paste"
+msgstr "Coller"
+
+msgctxt "MSG_Function_PrvPage (35//)"
+msgid "Prev page"
+msgstr "Page précédente"
+
+msgctxt "MSG_Function_PrvPara (36//)"
+msgid "Prev paragraph"
+msgstr "Paragraphe précédent"
+
+msgctxt "MSG_Function_PrvSent (37//)"
+msgid "Prev sentence"
+msgstr "Phrase précédente"
+
+msgctxt "MSG_Function_PrvWord (38//)"
+msgid "Prev word"
+msgstr "Mot précédent"
+
+msgctxt "MSG_Function_Redo (39//)"
+msgid "Redo"
+msgstr "Rétablir"
+
+msgctxt "MSG_Function_Return (40//)"
+msgid "Return"
+msgstr "Retour chariot"
+
+msgctxt "MSG_Function_Right (41//)"
+msgid "Right"
+msgstr "Droite"
+
+msgctxt "MSG_Function_SuggestSpelling (42//)"
+msgid "Suggest spelling"
+msgstr "Suggérer une orthographe"
+
+msgctxt "MSG_Function_Tab (43//)"
+msgid "Tab"
+msgstr "Tabulation"
+
+msgctxt "MSG_Function_Top (44//)"
+msgid "Top"
+msgstr "Début du texte"
+
+msgctxt "MSG_Function_Undo (45//)"
+msgid "Undo"
+msgstr "Annuler"
+
+msgctxt "MSG_Function_Up (46//)"
+msgid "Up"
+msgstr "Haut"
+
+msgctxt "MSG_GroupTitle_Control (47//)"
+msgid "Control"
+msgstr "Contrôle"
+
+msgctxt "MSG_GroupTitle_Cursor (48//)"
+msgid "Cursor"
+msgstr "Curseur"
+
+msgctxt "MSG_GroupTitle_Design (49//)"
+msgid "Design"
+msgstr "Apparence"
+
+msgctxt "MSG_GroupTitle_Fonts (50//)"
+msgid "Fonts"
+msgstr "Polices"
+
+msgctxt "MSG_GroupTitle_Separator (51//)"
+msgid "Separator"
+msgstr "Séparateur"
+
+msgctxt "MSG_HelpTxt_SpellChecker (52//)"
+msgid ""
+" \\33u Intro \\33n\n"
+"\n"
+"The TextEditor gadget allows for easy integration of external spell checkers, making it possible to have both type'n'spell and also normal word guessing.\n"
+"\n"
+" \\33u Lookup command \\33n\n"
+"\n"
+"For the type'n'spell you'll have to set the lookup command to a script that will lookup the word and set the environment variable \"Found\" to either 0 (for not found) or 1 (for a match). This matches the default behaviour of AlphaSpell.\n"
+"\n"
+"You write %s where you want the word. If you use AlphaSpell, then you can use:\n"
+"\n"
+"\\33bARexx:\\33n \"Options Results;Address ALPHASPELL Search For '%s' Path 'T:' Danish.ald\"\n"
+"\n"
+"You \\33bmust\\33n remember the quotes, this will let ARexx execute it as a command instead of a script.\n"
+"\n"
+" \\33u Suggest command \\33n\n"
+"\n"
+"If you press <HELP> over a word, then the editor will launch this command, again with %s substituted with the current word.\n"
+"Your script should produce a file in T: named \"Matches\". This file is then read by the gadget, and the contents are listed in a popup listview, from where you can choose a word which will replace the misspelled one. Again, AlphaSpell users can use:\n"
+"\n"
+"\\33bARexx:\\33n \"Options Results;Address ALPHASPELL Match '%s' To 'T:Matches' Path 'T:' Danish.ald\"\n"
+"\n"
+"If you use the methods described above, then you must start AlphaSpell with the \"ARexx\" switch.\n"
+"\n"
+"It is advised to keep your dictionary in RAM if you enable the type'n'spell feature."
+msgstr " \\33u Introduction \\33n\nLa classe TextEditor permet l'intégration d'un correcteur orthographique externe, qui permet de corriger votre texte lors de la frappe ou en mode suggestion.\n\n \\33uCommande pour vérification \\33n\nPour utiliser la correction automatique, vous devez inscrire dans le champ : Commande pour vérification, le nom d'un script qui sera en mesure de vérifier un mot et d'inscrire dans la variable d'environnement \"Found\", soit la valeur 0 (lorsque le mot est inconnu) ou la valeur 1 (lorsque mot a été trouvé).\nCe schéma a été retenu car c'est le comportement par défaut du logiciel AlphaSpell.\nVous inscrivez %s là ou vous souhaitez insérer le mot.\n\nLes utilisateurs d'AlphaSpell doivent inscrire ici:\n\n\\33bARexx :\\33n \"Options Results;Address ALPHASPELL Search For '%s' Path 'T:' French.ald\"\n\nVous \\33bdevez\\33n ajouter les guillemets, qui permettent à ARexx d'exécuter le champ entier comme une commande plutôt qu'un script.\n\n\\33u Commande pour suggestion \\33n\nSi vous pressez la touche Help sur un mot, l'éditeur démarre cette commande, avec %s substitué au mot sous le curseur.\nCe script doit produire un fichier dans T: nommé \"Matches\". Ce fichier est alors lu par le gadget, et son contenu sera affiché dans une liste contextuelle, à partir de laquelle vous pourrez choisir un mot qui remplacera le mot mal orthographié.\n\nLes utilisateurs d'AlphaSpell doivent inscrire ici:\n\n\\33bARexx :\\33n \"Options Results;Address ALPHASPELL Match '%s' To 'T:Matches' Path 'T:' French.ald\"\n\nSi vous utilisez les méthodes décrites ci-dessus, vous devez démarrer AlphaSpell avec le paramètre \"ARexx\".\n\nIl est aussi préférable de conserver votre dictionnaire en mémoire si vous souhaitez activer l'option de correction automatique."
+
+msgctxt "MSG_LVLabel_Action (53//)"
+msgid "\\33c\\0333Action:"
+msgstr "\\33c\\0333Action :"
+
+msgctxt "MSG_LVLabel_Key (54//)"
+msgid "\\33c\\0333Key:"
+msgstr "\\33c\\0333Touche :"
+
+msgctxt "MSG_Label_Background (55//)"
+msgid "Background"
+msgstr "Arrière-plan"
+
+msgctxt "MSG_Label_BlinkSpeed (56//)"
+msgid "Blinkspeed"
+msgstr "Vitesse de clignotement"
+
+msgctxt "MSG_Label_BlkQual (57//)"
+msgid "Block qualifier"
+msgstr "Touche de sélection"
+
+msgctxt "MSG_Label_Cursor (58//)"
+msgid "Normal"
+msgstr "Curseur"
+
+msgctxt "MSG_Label_Fixed (59//)"
+msgid "Fixed"
+msgstr "Fixe"
+
+msgctxt "MSG_Label_Frame (60//)"
+msgid "Frame"
+msgstr "Cadre"
+
+msgctxt "MSG_Label_Highlight (61//)"
+msgid "Highlight"
+msgstr "Surlignage"
+
+msgctxt "MSG_Label_LookupCmd (62//)"
+msgid "Lookup command"
+msgstr "Commande de vérification"
+
+msgctxt "MSG_Label_LookupWords (63//)"
+msgid "Lookup word before suggesting?"
+msgstr "Vérification du mot avant de suggérer ?"
+
+msgctxt "MSG_Label_Normal (64//)"
+msgid "Normal"
+msgstr "Normal"
+
+msgctxt "MSG_Label_Selected (65//)"
+msgid "Selected"
+msgstr "Sélectionné"
+
+msgctxt "MSG_Label_SeparatorShadow (66//)"
+msgid "Shadow"
+msgstr "Ombre"
+
+msgctxt "MSG_Label_SeparatorShine (67//)"
+msgid "Shine"
+msgstr "Brillant"
+
+msgctxt "MSG_Label_Smooth (68//)"
+msgid "Smooth"
+msgstr "Défilement fluide"
+
+msgctxt "MSG_Label_SpellNType (69//)"
+msgid "Spell check as you type?"
+msgstr "Vérification de l'orthographe lors de la frappe ?"
+
+msgctxt "MSG_Label_SuggestCmd (70//)"
+msgid "Suggest command"
+msgstr "Commande pour suggestion"
+
+msgctxt "MSG_Label_TabSize (71//)"
+msgid "Tab size"
+msgstr "Taille tabulation"
+
+msgctxt "MSG_Label_Text (72//)"
+msgid "Text"
+msgstr "Texte"
+
+msgctxt "MSG_Label_UndoLevel (73//)"
+msgid "Undo levels"
+msgstr "Niveaux d'annulation"
+
+msgctxt "MSG_Label_Width (74//)"
+msgid "Width"
+msgstr "Largeur"
+
+msgctxt "MSG_MenuItem_Background (75//)"
+msgid "Background"
+msgstr "Arrière-plan"
+
+msgctxt "MSG_MenuItem_Bold (76//)"
+msgid "Bold"
+msgstr "Gras"
+
+msgctxt "MSG_MenuItem_Center (77//)"
+msgid "Center"
+msgstr "Centré"
+
+msgctxt "MSG_MenuItem_Copy (78//)"
+msgid "Copy"
+msgstr "Copie"
+
+msgctxt "MSG_MenuItem_Cut (79//)"
+msgid "Cut"
+msgstr "Couper"
+
+msgctxt "MSG_MenuItem_Delete (80//)"
+msgid "Delete"
+msgstr "Effacer"
+
+msgctxt "MSG_MenuItem_Fill (81//)"
+msgid "Fill"
+msgstr "Remplissage"
+
+msgctxt "MSG_MenuItem_Halfshadow (82//)"
+msgid "Halfshadow"
+msgstr "Semi-ombrée"
+
+msgctxt "MSG_MenuItem_Halfshine (83//)"
+msgid "Halfshine"
+msgstr "Semi-brillant"
+
+msgctxt "MSG_MenuItem_Italic (84//)"
+msgid "Italic"
+msgstr "Italique"
+
+msgctxt "MSG_MenuItem_Left (85//)"
+msgid "Left"
+msgstr "Gauche"
+
+msgctxt "MSG_MenuItem_Mark (86//)"
+msgid "Mark"
+msgstr "Sélection"
+
+msgctxt "MSG_MenuItem_Normal (87//)"
+msgid "Normal"
+msgstr "Normal"
+
+msgctxt "MSG_MenuItem_Paste (88//)"
+msgid "Paste"
+msgstr "Coller"
+
+msgctxt "MSG_MenuItem_Redo (89//)"
+msgid "Redo"
+msgstr "Rétablir"
+
+msgctxt "MSG_MenuItem_Right (90//)"
+msgid "Right"
+msgstr "Droite"
+
+msgctxt "MSG_MenuItem_Shadow (91//)"
+msgid "Shadow"
+msgstr "Ombrée"
+
+msgctxt "MSG_MenuItem_Shine (92//)"
+msgid "Shine"
+msgstr "Brillante"
+
+msgctxt "MSG_MenuItem_Text (93//)"
+msgid "Text"
+msgstr "Texte"
+
+msgctxt "MSG_MenuItem_Underline (94//)"
+msgid "Underline"
+msgstr "Souligné"
+
+msgctxt "MSG_MenuItem_Undo (95//)"
+msgid "Undo"
+msgstr "Annuler"
+
+msgctxt "MSG_MenuSubTitle_Alignment (96//)"
+msgid "Alignment"
+msgstr "Justification"
+
+msgctxt "MSG_MenuSubTitle_Color (97//)"
+msgid "Color"
+msgstr "Couleur"
+
+msgctxt "MSG_MenuTitle_Edit (98//)"
+msgid "Edit"
+msgstr "Éditer"
+
+msgctxt "MSG_Page_Keybindings (99//)"
+msgid "Keybindings"
+msgstr "Touches"
+
+msgctxt "MSG_Page_Sample (100//)"
+msgid "Sample"
+msgstr "Exemple"
+
+msgctxt "MSG_Page_Settings (101//)"
+msgid "Settings"
+msgstr "Réglages"
+
+msgctxt "MSG_Page_SpellChecker (102//)"
+msgid "Spell checker"
+msgstr "Correcteur"
+
+msgctxt "MSG_PopWinTitle_Background (103//)"
+msgid "Select background"
+msgstr "Choisir arrière-plan"
+
+msgctxt "MSG_PopWinTitle_Cursor (104//)"
+msgid "Select cursor color"
+msgstr "Choisir la couleur du curseur"
+
+msgctxt "MSG_PopWinTitle_Frame (105//)"
+msgid "Adjust frame"
+msgstr "Choisir un cadre"
+
+msgctxt "MSG_PopWinTitle_Highlight (106//)"
+msgid "Select highlight color"
+msgstr "Choisir la couleur de surlignage"
+
+msgctxt "MSG_PopWinTitle_Selected (107//)"
+msgid "Select block color"
+msgstr "Choisir la couleur de sélection"
+
+msgctxt "MSG_PopWinTitle_SeparatorShadow (108//)"
+msgid "Select separators shadow color"
+msgstr "Choisir la couleur d'ombre pour le séparateur"
+
+msgctxt "MSG_PopWinTitle_SeparatorShine (109//)"
+msgid "Select separators shine color"
+msgstr "Choisir la couleur brillante pour le séparateur"
+
+msgctxt "MSG_PopWinTitle_Text (110//)"
+msgid "Select text color"
+msgstr "Choisir la couleur du texte"
+
+msgctxt "MSG_SliderText_MaxWidth (111//)"
+msgid "Same as char"
+msgstr "Même que caractère"
+
+msgctxt "MSG_SliderText_MinSpeed (112//)"
+msgid "Off"
+msgstr "Aucun"
+
+msgctxt "MSG_SliderText_MinWidth (113//)"
+msgid "1 pixel"
+msgstr "1 pixel"
+
+msgctxt "MSG_SliderText_StdSpeed (114//)"
+msgid "\\33r%ld ms"
+msgstr "\\33r%ld ms"
+
+msgctxt "MSG_SliderText_StdWidth (115//)"
+msgid "%ld pixels"
+msgstr "%ld pixels"
+
+msgctxt "MSG_SliderText_TabSize (116//)"
+msgid "%ld spaces"
+msgstr "%ld espaces"
+
+msgctxt "MSG_Function_GotoBookmark1 (117//)"
+msgid "Goto bookmark 1"
+msgstr "Aller au signet 1"
+
+msgctxt "MSG_Function_GotoBookmark2 (118//)"
+msgid "Goto bookmark 2"
+msgstr "Aller au signet 2"
+
+msgctxt "MSG_Function_GotoBookmark3 (119//)"
+msgid "Goto bookmark 3"
+msgstr "Aller au signet 3"
+
+msgctxt "MSG_Function_SetBookmark1 (120//)"
+msgid "Set bookmark 1"
+msgstr "Marquer le signet 1"
+
+msgctxt "MSG_Function_SetBookmark2 (121//)"
+msgid "Set bookmark 2"
+msgstr "Marquer le signet 2"
+
+msgctxt "MSG_Function_SetBookmark3 (122//)"
+msgid "Set bookmark 3"
+msgstr "Marquer le signet 3"
+
+msgctxt "MSG_Button_Snoop (123//)"
+msgid "Snoop"
+msgstr "Apprendre"
+
+msgctxt "MSG_Function_DelLine (124//)"
+msgid "Delete line"
+msgstr "Effacer la ligne"
+
+msgctxt "MSG_Function_SelectAll (125//)"
+msgid "Select all"
+msgstr "Tout sélectionner"
+
+msgctxt "MSG_Function_SelectNone (126//)"
+msgid "Select none"
+msgstr "Tout déselectionner"
+
+msgctxt "MSG_WarnConfigVersion_Title (127//)"
+msgid "TextEditor.mcp warning"
+msgstr "Avertissement TextEditor.mcp"
+
+msgctxt "MSG_WarnConfigVersion (128//)"
+msgid ""
+"Your currently saved keybindings setup is incompatible\n"
+"with the version of TextEditor.mcc you have installed.\n"
+"\n"
+"It is suggested that you reset the current keybindings\n"
+"to their defaults and edit them manually afterwards."
+msgstr "Votre configuration de touches actuelle est incompatible\navec la version de TextEditor.mcc que vous possédez.\n\nIl est recommandé de réinitialiser cette configuration\nde touches à leur valeurs initiales et de les éditer manuellement\nultérieurement."
+
+msgctxt "MSG_ResetAbort (129//)"
+msgid "Reset|Abort"
+msgstr "Réinitialiser|Annuler"
+
+msgctxt "MSG_WarnHotkeyString_Title (130//)"
+msgid "TextEditor.mcp warning"
+msgstr "Avertissement TextEditor.mcp"
+
+msgctxt "MSG_WarnHotkeyString (131//)"
+msgid ""
+"TextEditor.mcp couldn't open the minimum required\n"
+"version of the HotkeyString.mcc custom class and\n"
+"therefore failed during initialization.\n"
+"\n"
+"Please make sure you have the latest Hotkeystring.mcc\n"
+"class from http://www.sf.net/projects/bstring-mcc/\n"
+"installed and try again."
+msgstr "TextEditor.mcpo ne peut pas ouvrir la version minimale requise\nde la classe MUI HotkeyString.mcc et n'a donc pas pu se lancer.\n\nVeuillez vous assurer que vous disposez bien de la dernière\nversion de la classe Hotkeystring.mcc disponible depuis le\nsite http://www.sf.net/projects/bstring-mcc/."
+
+msgctxt "MSG_Ok (132//)"
+msgid "Ok"
+msgstr "Ok"
+
+msgctxt "MSG_Label_InactiveCursor (133//)"
+msgid "Inactive cursor"
+msgstr "Curseur inactif"
+
+msgctxt "MSG_HELP_InactiveCursor (134//)"
+msgid ""
+"If enabled, a custom cursor will be used\n"
+"whenever the editor doesn't have the focus."
+msgstr "Si activé, un curseur personalisé sera utilisé\nlorsque l'éditeur n'aura pas le focus."
+
+msgctxt "MSG_Label_SelectPointer (135//)"
+msgid "Selection pointer"
+msgstr "Pointer de sélection"
+
+msgctxt "MSG_HELP_SelectPointer (136//)"
+msgid ""
+"If enabled, a custom selection pointer will appear\n"
+"when the mouse pointer is above the texteditor gadget."
+msgstr "Si activé, un pointer de sélection personalisé apparaîtra\nlorsque la souris sera au-dessus d'un objet TextEditor."
+
+msgctxt "MSG_Label_InactiveColor (137//)"
+msgid "Inactive"
+msgstr "Inactif"
+
+msgctxt "MSG_PopWinTitle_InactiveColor (138//)"
+msgid "Select inactive color"
+msgstr "Choisir la couleur lorsque l'objet est inactif"
+
+msgctxt "MSG_HELP_TABSIZE (139//)"
+msgid "How many spaces hitting the <TAB> key will jump."
+msgstr "Espaces insérés lors de l'utilisation de la touche <TAB>."
+
+msgctxt "MSG_HELP_DESIGN_FRAME (140//)"
+msgid ""
+"This is a button to adjust a frame.\n"
+"Click it to open an adjust window or\n"
+"use the drag&drop facilities to copy\n"
+"from or to another frame adjust button."
+msgstr "Bouton servant à ajuster un cadre.\nCliquez dessus pour ouvrir une fenêtre d'ajustement\nou utilisez les fonctions de glisser-déposer\npour copier d'un bouton à l'autre."
+
+msgctxt "MSG_HELP_DESIGN_BACKGROUND (141//)"
+msgid ""
+"This is a button to adjust a background\n"
+"color or pattern. Click it to open an\n"
+"adjust window or use the drag&drop facilities\n"
+"to copy from or to another background adjust button."
+msgstr "Bouton servant à ajuster la couleur ou la trame\nd'un arrière plan. Cliquez dessus pour ouvrir\nune fenêtre d'ajustement ou utilisez les fonctions\nde glisser-déposer pour copier d'un bouton à l'autre."
+
+msgctxt "MSG_HELP_DESIGN_TEXT (142//)"
+msgid "This is the color used to print the text."
+msgstr "Couleur utilisée pour afficher le texte."
+
+msgctxt "MSG_HELP_DESIGN_HIGHLIGHT (143//)"
+msgid ""
+"This is the color used to\n"
+"print highlighted text."
+msgstr "Couleur utilisée pour afficher le texte sélectionné."
+
+msgctxt "MSG_HELP_SEPARATOR_SHINE (144//)"
+msgid ""
+"This is the color used to\n"
+"print separator bars."
+msgstr "Couleur utilisée pour afficher les barres de séparations."
+
+msgctxt "MSG_HELP_SEPARATOR_SHADOW (145//)"
+msgid ""
+"This is the color used to print\n"
+"separator bars in shadow mode."
+msgstr "Couleur utilisée pour afficher les barres de séparations ombrées."
+
+msgctxt "MSG_HELP_FONTS_NORMAL (146//)"
+msgid "Default font to be used by the editor."
+msgstr "Police de caractère utilisée par l'éditeur."
+
+msgctxt "MSG_HELP_FONTS_FIXED (147//)"
+msgid ""
+"Default font to be used by the editor\n"
+"whenever a fixed width font is requested."
+msgstr "Police de caractère utilisée par l'éditeur\nlorsqu'une police de caractères fixes est nécessaire."
+
+msgctxt "MSG_HELP_CURSOR_NORMAL (148//)"
+msgid "Default color to be used for the cursor."
+msgstr "Couleur utilisée pour afficher le curseur."
+
+msgctxt "MSG_HELP_CURSOR_SELECTED (149//)"
+msgid ""
+"Color to be used for the cursor\n"
+"in selected text."
+msgstr "Couleur utilisée pour afficher le curseur dans un texte sélectionné."
+
+msgctxt "MSG_HELP_CURSOR_INACTIVE (150//)"
+msgid ""
+"Color to use to print selected text\n"
+"when the editor doesn't have the focus."
+msgstr "Couleur utilisée pour afficher le texte sélectionné\nlorsque l'éditeur ne possède pas le focus."
+
+msgctxt "MSG_HELP_CURSOR_WIDTH (151//)"
+msgid "This is the width the cursor should have."
+msgstr "Largeur idéal du curseur."
+
+msgctxt "MSG_HELP_CURSOR_BLINKSPEED (152//)"
+msgid ""
+"You may want the cursor to blink to make\n"
+"it easier to find. Select 'Off' to disable\n"
+"this feature."
+msgstr "Utiliser un curseur clignotant permet de le localiser plus facilement.\nSélectionner 'Aucun' pour désactiver cette possibilité."
+
+msgctxt "MSG_HELP_BUTTON_DEFAULTKEYS (153//)"
+msgid ""
+"Restore all keybindings\n"
+"to the built-in defaults."
+msgstr "Restaurer tous les raccourcis clavier à leurs valeurs originelles."
+
+msgctxt "MSG_HELP_BUTTON_SNOOP (154//)"
+msgid ""
+"Use this field to set a keybinding for this action.\n"
+"You can either edit the string gadget directly or press\n"
+"the 'Snoop' button to make the gadget monitor keypresses\n"
+"until you press it again to confirm."
+msgstr "Ce champ permet de définir un raccourci clavier pour cette action.\nVous pouvez directement éditer le contenu de l'objet ou bien\npresser le bouton 'Apprendre' afin de permettre à l'objet d'enregistrer\nles pressions des touches du clavier jusqu'a ce que vous utilisiez le bouton\nune nouvelle fois pour valider la saisie."
+
+msgctxt "MSG_HELP_BUTTON_INSERT (155//)"
+msgid "Add a new keybinding to the list."
+msgstr "Ajouter un nouveau raccourci clavier à la liste."
+
+msgctxt "MSG_HELP_BUTTON_DELETE (156//)"
+msgid "Delete this keybinding from the list."
+msgstr "Retirer ce raccourci de la liste."
+
+msgctxt "MSG_HELP_SPELLCHECKER_LOOKUP_CMD (157//)"
+msgid ""
+"Specify here the lookup command you want to use, or\n"
+"leave this empty to disable the type'n'spell feature."
+msgstr "Spécifiez ici le script de commande que vous désirez utiliser\nou bien laisser ce champ vide afin de désactiver l'option 'type'n'spell'."
+
+msgctxt "MSG_HELP_SPELLCHECKER_SUGGEST_CMD (158//)"
+msgid ""
+"Specify here the command that will be used\n"
+"to suggest an alternate word. As explained above,\n"
+"usually you should specify a script here."
+msgstr "Spécifiez ici le script de commande que vous désirez utiliser\nafin de suggérer une alternative au mot."
+
+msgctxt "MSG_UNDO_SLIDER_FORMAT (159//)"
+msgid "%ld (+/- 5)"
+msgstr "%ld (± 5)"

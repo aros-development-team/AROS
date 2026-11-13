@@ -1,0 +1,43 @@
+#
+#
+
+include $(SRCDIR)/config/aros.cfg
+
+ZOPFLILIB_SRC = \
+			blocksplitter \
+			cache \
+			deflate \
+			gzip_container \
+			hash \
+			katajainen \
+			lz77 \
+			squeeze \
+			tree \
+			util \
+			zlib_container \
+			zopfli_lib
+
+USER_LDFLAGS := 
+
+%build_linklib mmake=linklibs-zopfli \
+    libname=zopfli files="$(ZOPFLILIB_SRC)"
+
+#MM- workbench-c : workbench-c-zopfli
+#MM workbench-c-zopfli : includes linklibs linklibs-zopfli
+
+%build_prog mmake=workbench-c-zopfli \
+    progname=zopfli targetdir=$(AROS_C) \
+    files="zopfli_bin" uselibs="zopfli"
+
+%build_linklib mmake=host-linklibs-zopfli \
+    libname=zopfli files="$(ZOPFLILIB_SRC)" compiler=host \
+    cflags=$(HOST_CFLAGS) objdir="$(HOSTGENDIR)/$(CURDIR)/lib" \
+    libdir="$(CROSSTOOLSDIR)/lib"
+
+HOST_LDFLAGS += -L$(CROSSTOOLSDIR)/lib -lzopfli -lm
+
+%build_prog mmake=host-zopfli \
+    progname=zopfli targetdir=$(TOOLDIR) \
+    objdir="$(HOSTGENDIR)/$(CURDIR)" files="zopfli_bin" compiler=host
+
+#MM host-zopfli : host-linklibs-zopfli

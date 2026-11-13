@@ -1,0 +1,58 @@
+/*
+    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 2001-2003, The MorphOS Development Team. All Rights Reserved.
+*/
+
+#include "intuition_intern.h"
+
+/*****************************************************************************
+
+    NAME */
+#include <proto/intuition.h>
+
+        AROS_LH1(void, InitRequester,
+
+/*  SYNOPSIS */
+        AROS_LHA(struct Requester *, requester, A0),
+
+/*  LOCATION */
+        struct IntuitionBase *, IntuitionBase, 23, Intuition)
+
+/*  FUNCTION
+        This function is OBSOLETE and should not be called. To preserve
+        compatibility with old programs, calling this function is a no-op.
+
+    INPUTS
+        requester - The struct Requester to be initialized
+
+    RESULT
+        None.
+
+    NOTES
+        This function is obsolete.
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+        Request(), EndRequest()
+
+    INTERNALS
+
+*****************************************************************************/
+{
+    AROS_LIBFUNC_INIT
+
+    struct Library *UtilityBase = GetPrivIBase(IntuitionBase)->UtilityBase;
+    IntuitionBase = IntuitionBase;  /* shut up the compiler */
+
+    DEBUG_REQUEST(dprintf("InitRequester: req 0x%lx\n", requester));
+
+
+    SANITY_CHECK(requester)
+
+    SetMem(requester, 0, sizeof(struct Requester));
+
+    AROS_LIBFUNC_EXIT
+} /* InitRequester */

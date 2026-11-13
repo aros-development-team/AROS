@@ -1,0 +1,50 @@
+.\" $Header$
+.\"
+.\"  C Cross Referencing & Documenting tool - Version 1.4
+.\"
+.\"  Manual page for cxref-cpp
+.\"
+.\"  Written by Andrew M. Bishop
+.\"
+.\"  This file Copyright 1996,1997 Andrew M. Bishop
+.\"  It may be distributed under the GNU Public License, version 2, or
+.\"  any higher version.  See section COPYING of the GNU Public license
+.\"  for conditions under which this file may be redistributed.
+.\"
+.TH cxref-cpp 1 "April 27, 1997"
+.SH NAME
+cxref-cpp - A modified C preprocessor to use with cxref.
+
+.SH SYNOPSIS
+.B cxref-cpp
+.I ...
+
+.SH DESCRIPTION
+
+To improve the output that is available a modified version of the GNU CPP V2.7.2
+is supplied (named cxref-cpp).
+
+This modified C preprocessor allows for a finer control over some features of
+the preprocessing that are not important for a compiler.  In a standard
+preprocessor, the preprocessor directives are intended for use only by the
+preprocessor, so passing the information through is not important.
+
+With cxref-cpp, there are two features that are different to the standard GNU
+CPP:
+
+.IP
+The #include directives from the file are output in the same way as the #defines
+are output.  An extra flag has been added to cpp to do this, '-dI', it works in
+the same way as the existing '-dD' flag for #defines.
+.IP
+Comments trailing a #include or a #define are dropped with GNU CPP even if -C is
+used. This is not important while compiling, but is useful for documenting.
+.LP
+
+.SH OPTIONS
+
+The same as for gcc, apart from '-dI' described above.
+
+.SH SEE ALSO
+
+cxref(1), gcc(1)

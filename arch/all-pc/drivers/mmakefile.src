@@ -1,0 +1,14 @@
+
+#
+# Rules to create Support drivers for pc
+# These are not needed as part of the kernel - and so get created seperately
+#
+
+#MM- AROS-pci-gfx-drivers : \
+#MM    workbench-hidds-vmwaresvga \
+#MM    workbench-hidds-amdgpu \
+#MM    workbench-hidds-radeon \
+#MM    workbench-hidds-nvgfx \
+#MM    devs-monitors-intelgma
+
+#MM- AROS-pc-drivers : AROS-pci-gfx-drivers

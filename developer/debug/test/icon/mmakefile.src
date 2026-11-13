@@ -1,0 +1,15 @@
+# Copyright (C) 2003, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+
+FILES  := examine writetooltypes diskobj render
+EXEDIR := $(AROS_TESTS)/Icon
+
+#MM- test : test-icon
+#MM test-icon:
+#MM test-icon-quick:
+
+%build_progs mmake=test-icon \
+    files=$(FILES) targetdir=$(EXEDIR)
+
+%common

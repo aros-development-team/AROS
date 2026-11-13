@@ -1,0 +1,743 @@
+# Translation catalog description file (pot-style)
+# $Id: danish.po 954 2014-04-05 11:31:14Z damato $
+# 
+# version 2
+# Translators:
+msgid ""
+msgstr ""
+"Project-Id-Version: MCC TextEditor\n"
+"Report-Msgid-Bugs-To: http://sf.net/p/texteditor-mcc/\n"
+"POT-Creation-Date: 2014-02-23 12:29+0100\n"
+"PO-Revision-Date: 2014-04-02 14:52+0000\n"
+"Last-Translator: tboeckel <tboeckel@gmx.de>\n"
+"Language-Team: Danish (http://www.transifex.com/projects/p/texteditor-mcc/language/da/)\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Catalog-Name: TextEditor_mcp\n"
+"Language: da\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+msgctxt "MSG_HelpBubble_BlockQual (0//)"
+msgid ""
+"Move the cursor key and hold down the qualifier\n"
+"that you set here to mark text."
+msgstr "Angiver hvilken tast du kan\nholde nede for at markere\ntekst med piletasterne."
+
+msgctxt "MSG_HelpBubble_CheckWord (1//)"
+msgid ""
+"If enabled, then the editor will lookup the word,\n"
+"and only show suggestions if the word is misspelled."
+msgstr "Angiver om ordet skal tjekkes, og staveforslag\nfremvises hvis det er stavet forkert."
+
+msgctxt "MSG_HelpBubble_Smooth (2//)"
+msgid "This enables pixel smooth scrolling."
+msgstr "Giver en mere glidende\nrulning af teksten."
+
+msgctxt "MSG_HelpBubble_TypeNSpell (3//)"
+msgid ""
+"Enable this to let the editor\n"
+"lookup the words while you type them."
+msgstr "Angiver om der skal tjekkes for\nretstavning mens du skriver."
+
+msgctxt "MSG_HelpBubble_UndoLevel (4//)"
+msgid ""
+"Each undo level eats up 10 bytes of memory.\n"
+"Cut and copy will take a little more,\n"
+"depending on the size of the block you\n"
+"are cutting or copying."
+msgstr "Hver mulig fortrydelse koster 10 bytes hukommelse.\nDet koster lidt mere at klippe og kopiere, afhængigt\naf størrelsen på det der klippes eller kopieres."
+
+msgctxt "MSG_Button_DefaultKeys (5//)"
+msgid "Default _keys"
+msgstr "_Nulstille taster"
+
+msgctxt "MSG_Button_Delete (6//)"
+msgid "_Delete"
+msgstr "_Slette"
+
+msgctxt "MSG_Button_Insert (7//)"
+msgid "_Insert"
+msgstr "_Tilføje"
+
+msgctxt "MSG_ConfigMenu_CheckWord (8//)"
+msgid "Check word"
+msgstr "Tjekke ord"
+
+msgctxt "MSG_ConfigMenu_TypeNSpell (9//)"
+msgid "Type'n'spell"
+msgstr "Skriv-og-ret"
+
+msgctxt "MSG_CycleItem_Alt (10//)"
+msgid "Alt"
+msgstr "Alt"
+
+msgctxt "MSG_CycleItem_Ctrl (11//)"
+msgid "Control"
+msgstr "Ctrl"
+
+msgctxt "MSG_CycleItem_Mouse (12//)"
+msgid "(mouse only)"
+msgstr "(kun via mus)"
+
+msgctxt "MSG_CycleItem_Shift (13//)"
+msgid "Shift"
+msgstr "Skift"
+
+msgctxt "MSG_Execution_ARexx (14//)"
+msgid "ARexx"
+msgstr "ARexx"
+
+msgctxt "MSG_Execution_CLI (15//)"
+msgid "CLI"
+msgstr "CLI"
+
+msgctxt "MSG_Function_BOL (16//)"
+msgid "Beginning of line"
+msgstr "Start af linje"
+
+msgctxt "MSG_Function_Backspace (17//)"
+msgid "Backspace"
+msgstr "Slette bogstav til venstre"
+
+msgctxt "MSG_Function_Bottom (18//)"
+msgid "Bottom"
+msgstr "Gå til bunden"
+
+msgctxt "MSG_Function_Copy (19//)"
+msgid "Copy"
+msgstr "Kopiere"
+
+msgctxt "MSG_Function_Cut (20//)"
+msgid "Cut"
+msgstr "Klippe"
+
+msgctxt "MSG_Function_DelBOL (21//)"
+msgid "Delete to BOL"
+msgstr "Slette til start af linje"
+
+msgctxt "MSG_Function_DelBOW (22//)"
+msgid "Delete to BOW"
+msgstr "Slette til start af ord"
+
+msgctxt "MSG_Function_DelEOL (23//)"
+msgid "Delete to EOL"
+msgstr "Slette til slutning af linje"
+
+msgctxt "MSG_Function_DelEOW (24//)"
+msgid "Delete to EOW"
+msgstr "Slette til næste ord"
+
+msgctxt "MSG_Function_Delete (25//)"
+msgid "Delete"
+msgstr "Slette bogstav til højre"
+
+msgctxt "MSG_Function_Down (26//)"
+msgid "Down"
+msgstr "Gå ned"
+
+msgctxt "MSG_Function_EOL (27//)"
+msgid "End of line"
+msgstr "Slutning af linje"
+
+msgctxt "MSG_Function_Left (28//)"
+msgid "Left"
+msgstr "Venstre"
+
+msgctxt "MSG_Function_NextGadget (29//)"
+msgid "Next gadget"
+msgstr "Gå til næste knap"
+
+msgctxt "MSG_Function_NxtPage (30//)"
+msgid "Next page"
+msgstr "Næste side"
+
+msgctxt "MSG_Function_NxtPara (31//)"
+msgid "Next paragraph"
+msgstr "Næste afsnit"
+
+msgctxt "MSG_Function_NxtSent (32//)"
+msgid "Next sentence"
+msgstr "Næste sætning"
+
+msgctxt "MSG_Function_NxtWord (33//)"
+msgid "Next word"
+msgstr "Næste ord"
+
+msgctxt "MSG_Function_Paste (34//)"
+msgid "Paste"
+msgstr "Sætte ind"
+
+msgctxt "MSG_Function_PrvPage (35//)"
+msgid "Prev page"
+msgstr "Forrige side"
+
+msgctxt "MSG_Function_PrvPara (36//)"
+msgid "Prev paragraph"
+msgstr "Forrige afsnit"
+
+msgctxt "MSG_Function_PrvSent (37//)"
+msgid "Prev sentence"
+msgstr "Forrige sætning"
+
+msgctxt "MSG_Function_PrvWord (38//)"
+msgid "Prev word"
+msgstr "Forrige ord"
+
+msgctxt "MSG_Function_Redo (39//)"
+msgid "Redo"
+msgstr "Gendanne"
+
+msgctxt "MSG_Function_Return (40//)"
+msgid "Return"
+msgstr "Linjeskift"
+
+msgctxt "MSG_Function_Right (41//)"
+msgid "Right"
+msgstr "Højre"
+
+msgctxt "MSG_Function_SuggestSpelling (42//)"
+msgid "Suggest spelling"
+msgstr "Foreslå stavning"
+
+msgctxt "MSG_Function_Tab (43//)"
+msgid "Tab"
+msgstr "Tabulator"
+
+msgctxt "MSG_Function_Top (44//)"
+msgid "Top"
+msgstr "Gå til toppen"
+
+msgctxt "MSG_Function_Undo (45//)"
+msgid "Undo"
+msgstr "Fortryde"
+
+msgctxt "MSG_Function_Up (46//)"
+msgid "Up"
+msgstr "Gå op"
+
+msgctxt "MSG_GroupTitle_Control (47//)"
+msgid "Control"
+msgstr "Styring"
+
+msgctxt "MSG_GroupTitle_Cursor (48//)"
+msgid "Cursor"
+msgstr "Markør"
+
+msgctxt "MSG_GroupTitle_Design (49//)"
+msgid "Design"
+msgstr "Udseende"
+
+msgctxt "MSG_GroupTitle_Fonts (50//)"
+msgid "Fonts"
+msgstr "Skrifttyper"
+
+msgctxt "MSG_GroupTitle_Separator (51//)"
+msgid "Separator"
+msgstr "Skillelinje"
+
+msgctxt "MSG_HelpTxt_SpellChecker (52//)"
+msgid ""
+" \\33u Intro \\33n\n"
+"\n"
+"The TextEditor gadget allows for easy integration of external spell checkers, making it possible to have both type'n'spell and also normal word guessing.\n"
+"\n"
+" \\33u Lookup command \\33n\n"
+"\n"
+"For the type'n'spell you'll have to set the lookup command to a script that will lookup the word and set the environment variable \"Found\" to either 0 (for not found) or 1 (for a match). This matches the default behaviour of AlphaSpell.\n"
+"\n"
+"You write %s where you want the word. If you use AlphaSpell, then you can use:\n"
+"\n"
+"\\33bARexx:\\33n \"Options Results;Address ALPHASPELL Search For '%s' Path 'T:' Danish.ald\"\n"
+"\n"
+"You \\33bmust\\33n remember the quotes, this will let ARexx execute it as a command instead of a script.\n"
+"\n"
+" \\33u Suggest command \\33n\n"
+"\n"
+"If you press <HELP> over a word, then the editor will launch this command, again with %s substituted with the current word.\n"
+"Your script should produce a file in T: named \"Matches\". This file is then read by the gadget, and the contents are listed in a popup listview, from where you can choose a word which will replace the misspelled one. Again, AlphaSpell users can use:\n"
+"\n"
+"\\33bARexx:\\33n \"Options Results;Address ALPHASPELL Match '%s' To 'T:Matches' Path 'T:' Danish.ald\"\n"
+"\n"
+"If you use the methods described above, then you must start AlphaSpell with the \"ARexx\" switch.\n"
+"\n"
+"It is advised to keep your dictionary in RAM if you enable the type'n'spell feature."
+msgstr " \\033u Forklaring \\033n\n\n\"TextEditor.mcc\" giver dig mulighed for nemt at integrere en ekstern stavekontrol. Dette giver dig mulighed for at have \"skriv og ret\" samt normal ordgætning.\n\n \\033u Opslagskommando \\033n\n\nFor \"skriv og ret\" skal du sætte opslagskommandoen til en kommando der slår ordet op og sætter variablen \"Found\" til enten 0 (hvis ordet er stavet forkert) eller 1 (hvis ordet er stavet rigtigt).\nJeg har valgt denne adfærd da den passer til AlphaSpell.\nDu skriver et %s hvor du ønsker ordet indsat.\nHvis du bruger AlphaSpell, kan du skrive:\n\\033bARexx:\\033n \"Options Results;Address ALPHASPELL Search For '%s' Path 'T:' Danish.ald\"\n\nDu skal huske anførselstegnene da disse fortæller ARexx at det er en kommando og ikke et program.\n\n \\033u Forslagskommando \\033n\n\nHvis du trykker HELP over et ord, vil redigeringspanelet starte forslagskommandoen, igen med %s erstattet af det ord markøren er over.\nDin kommando skal producere en fil i T: med navnet \"Matches\". Denne fil bliver så indlæst af redigeringspanelet, og indholdet bliver vist i en liste hvorfra man kan vælge det ord som skal erstatte det fejlstavede.\nIgen kan AlphaSpell-brugere skrive:\n\\033bARexx:\\033n \"Options Results;Address ALPHASPELL Match '%s' To 'T:Matches' Path 'T:' Danish.ald\"\n\nHvis du bruger metoderne som er beskrevet ovenfor, skal du have startet AlphaSpell med \"ARexx\" som argument.\n\nDet anbefales at have sine ordbøger liggende i RAM: hvis man gør brug af \"skriv og ret\"."
+
+msgctxt "MSG_LVLabel_Action (53//)"
+msgid "\\33c\\0333Action:"
+msgstr "\\033c\\0333Handling:"
+
+msgctxt "MSG_LVLabel_Key (54//)"
+msgid "\\33c\\0333Key:"
+msgstr "\\033c\\0333Tastekombination:"
+
+msgctxt "MSG_Label_Background (55//)"
+msgid "Background"
+msgstr "Baggrund"
+
+msgctxt "MSG_Label_BlinkSpeed (56//)"
+msgid "Blinkspeed"
+msgstr "Blink"
+
+msgctxt "MSG_Label_BlkQual (57//)"
+msgid "Block qualifier"
+msgstr "Afmærkningstast"
+
+msgctxt "MSG_Label_Cursor (58//)"
+msgid "Normal"
+msgstr "Markør"
+
+msgctxt "MSG_Label_Fixed (59//)"
+msgid "Fixed"
+msgstr "Fast bredde"
+
+msgctxt "MSG_Label_Frame (60//)"
+msgid "Frame"
+msgstr "Ramme"
+
+msgctxt "MSG_Label_Highlight (61//)"
+msgid "Highlight"
+msgstr "Oplyst"
+
+msgctxt "MSG_Label_LookupCmd (62//)"
+msgid "Lookup command"
+msgstr "Opslagskommando"
+
+msgctxt "MSG_Label_LookupWords (63//)"
+msgid "Lookup word before suggesting?"
+msgstr "Slå ord op før forslag"
+
+msgctxt "MSG_Label_Normal (64//)"
+msgid "Normal"
+msgstr "Normal"
+
+msgctxt "MSG_Label_Selected (65//)"
+msgid "Selected"
+msgstr "Markeret"
+
+msgctxt "MSG_Label_SeparatorShadow (66//)"
+msgid "Shadow"
+msgstr "Skygge"
+
+msgctxt "MSG_Label_SeparatorShine (67//)"
+msgid "Shine"
+msgstr "Højlys"
+
+msgctxt "MSG_Label_Smooth (68//)"
+msgid "Smooth"
+msgstr "Jævn rulning"
+
+msgctxt "MSG_Label_SpellNType (69//)"
+msgid "Spell check as you type?"
+msgstr "Tjekke stavning mens du skriver"
+
+msgctxt "MSG_Label_SuggestCmd (70//)"
+msgid "Suggest command"
+msgstr "Forslagskommando"
+
+msgctxt "MSG_Label_TabSize (71//)"
+msgid "Tab size"
+msgstr "Tabulatorlgd."
+
+msgctxt "MSG_Label_Text (72//)"
+msgid "Text"
+msgstr "Tekst"
+
+msgctxt "MSG_Label_UndoLevel (73//)"
+msgid "Undo levels"
+msgstr "Fortrydelseslag"
+
+msgctxt "MSG_Label_Width (74//)"
+msgid "Width"
+msgstr "Bredde"
+
+msgctxt "MSG_MenuItem_Background (75//)"
+msgid "Background"
+msgstr "Baggrund"
+
+msgctxt "MSG_MenuItem_Bold (76//)"
+msgid "Bold"
+msgstr "Fed"
+
+msgctxt "MSG_MenuItem_Center (77//)"
+msgid "Center"
+msgstr "Centreret"
+
+msgctxt "MSG_MenuItem_Copy (78//)"
+msgid "Copy"
+msgstr "Kopiere"
+
+msgctxt "MSG_MenuItem_Cut (79//)"
+msgid "Cut"
+msgstr "Klippe"
+
+msgctxt "MSG_MenuItem_Delete (80//)"
+msgid "Delete"
+msgstr "Slette alt"
+
+msgctxt "MSG_MenuItem_Fill (81//)"
+msgid "Fill"
+msgstr "Udfyldning"
+
+msgctxt "MSG_MenuItem_Halfshadow (82//)"
+msgid "Halfshadow"
+msgstr "Halvmørk"
+
+msgctxt "MSG_MenuItem_Halfshine (83//)"
+msgid "Halfshine"
+msgstr "Halvlys"
+
+msgctxt "MSG_MenuItem_Italic (84//)"
+msgid "Italic"
+msgstr "Kursiv"
+
+msgctxt "MSG_MenuItem_Left (85//)"
+msgid "Left"
+msgstr "Venstre"
+
+msgctxt "MSG_MenuItem_Mark (86//)"
+msgid "Mark"
+msgstr "Markering"
+
+msgctxt "MSG_MenuItem_Normal (87//)"
+msgid "Normal"
+msgstr "Normal"
+
+msgctxt "MSG_MenuItem_Paste (88//)"
+msgid "Paste"
+msgstr "Sætte ind"
+
+msgctxt "MSG_MenuItem_Redo (89//)"
+msgid "Redo"
+msgstr "Gendanne"
+
+msgctxt "MSG_MenuItem_Right (90//)"
+msgid "Right"
+msgstr "Højre"
+
+msgctxt "MSG_MenuItem_Shadow (91//)"
+msgid "Shadow"
+msgstr "Skygge"
+
+msgctxt "MSG_MenuItem_Shine (92//)"
+msgid "Shine"
+msgstr "Højlys"
+
+msgctxt "MSG_MenuItem_Text (93//)"
+msgid "Text"
+msgstr "Tekst"
+
+msgctxt "MSG_MenuItem_Underline (94//)"
+msgid "Underline"
+msgstr "Understreget"
+
+msgctxt "MSG_MenuItem_Undo (95//)"
+msgid "Undo"
+msgstr "Fortryde"
+
+msgctxt "MSG_MenuSubTitle_Alignment (96//)"
+msgid "Alignment"
+msgstr "Udslutning"
+
+msgctxt "MSG_MenuSubTitle_Color (97//)"
+msgid "Color"
+msgstr "Farve"
+
+msgctxt "MSG_MenuTitle_Edit (98//)"
+msgid "Edit"
+msgstr "Redigering"
+
+msgctxt "MSG_Page_Keybindings (99//)"
+msgid "Keybindings"
+msgstr "Tastebindinger"
+
+msgctxt "MSG_Page_Sample (100//)"
+msgid "Sample"
+msgstr "Eksempel"
+
+msgctxt "MSG_Page_Settings (101//)"
+msgid "Settings"
+msgstr "Indstillinger"
+
+msgctxt "MSG_Page_SpellChecker (102//)"
+msgid "Spell checker"
+msgstr "Stavekontrol"
+
+msgctxt "MSG_PopWinTitle_Background (103//)"
+msgid "Select background"
+msgstr "Vælg baggrund"
+
+msgctxt "MSG_PopWinTitle_Cursor (104//)"
+msgid "Select cursor color"
+msgstr "Vælg markørens farve"
+
+msgctxt "MSG_PopWinTitle_Frame (105//)"
+msgid "Adjust frame"
+msgstr "Vælg ramme"
+
+msgctxt "MSG_PopWinTitle_Highlight (106//)"
+msgid "Select highlight color"
+msgstr "Vælg oplyst farve"
+
+msgctxt "MSG_PopWinTitle_Selected (107//)"
+msgid "Select block color"
+msgstr "Vælg markeringsfarve"
+
+msgctxt "MSG_PopWinTitle_SeparatorShadow (108//)"
+msgid "Select separators shadow color"
+msgstr "Vælg skillelinjens skyggefarve"
+
+msgctxt "MSG_PopWinTitle_SeparatorShine (109//)"
+msgid "Select separators shine color"
+msgstr "Vælg skillelinjens højlys-farve"
+
+msgctxt "MSG_PopWinTitle_Text (110//)"
+msgid "Select text color"
+msgstr "Vælg tekstfarve"
+
+msgctxt "MSG_SliderText_MaxWidth (111//)"
+msgid "Same as char"
+msgstr "Samme som tegn"
+
+msgctxt "MSG_SliderText_MinSpeed (112//)"
+msgid "Off"
+msgstr "Ingen"
+
+msgctxt "MSG_SliderText_MinWidth (113//)"
+msgid "1 pixel"
+msgstr "1 pixel"
+
+msgctxt "MSG_SliderText_StdSpeed (114//)"
+msgid "\\33r%ld ms"
+msgstr "\\33r%ld ms"
+
+msgctxt "MSG_SliderText_StdWidth (115//)"
+msgid "%ld pixels"
+msgstr "%ld pixels"
+
+msgctxt "MSG_SliderText_TabSize (116//)"
+msgid "%ld spaces"
+msgstr "%ld mellemrum"
+
+msgctxt "MSG_Function_GotoBookmark1 (117//)"
+msgid "Goto bookmark 1"
+msgstr "Hoppe til bogmærke 1"
+
+msgctxt "MSG_Function_GotoBookmark2 (118//)"
+msgid "Goto bookmark 2"
+msgstr "Hoppe til bogmærke 2"
+
+msgctxt "MSG_Function_GotoBookmark3 (119//)"
+msgid "Goto bookmark 3"
+msgstr "Hoppe til bogmærke 3"
+
+msgctxt "MSG_Function_SetBookmark1 (120//)"
+msgid "Set bookmark 1"
+msgstr "Anbringe bogmærke 1"
+
+msgctxt "MSG_Function_SetBookmark2 (121//)"
+msgid "Set bookmark 2"
+msgstr "Anbringe bogmærke 2"
+
+msgctxt "MSG_Function_SetBookmark3 (122//)"
+msgid "Set bookmark 3"
+msgstr "Anbringe bogmærke 3"
+
+msgctxt "MSG_Button_Snoop (123//)"
+msgid "Snoop"
+msgstr "Opsnappe"
+
+msgctxt "MSG_Function_DelLine (124//)"
+msgid "Delete line"
+msgstr "Slette linje"
+
+msgctxt "MSG_Function_SelectAll (125//)"
+msgid "Select all"
+msgstr "Markere alt"
+
+msgctxt "MSG_Function_SelectNone (126//)"
+msgid "Select none"
+msgstr "Afmarkere alt"
+
+msgctxt "MSG_WarnConfigVersion_Title (127//)"
+msgid "TextEditor.mcp warning"
+msgstr "Advarsel fra TextEditor.mcp"
+
+msgctxt "MSG_WarnConfigVersion (128//)"
+msgid ""
+"Your currently saved keybindings setup is incompatible\n"
+"with the version of TextEditor.mcc you have installed.\n"
+"\n"
+"It is suggested that you reset the current keybindings\n"
+"to their defaults and edit them manually afterwards."
+msgstr "Den tidligere gemte opsætning af tastebindinger er ikke\nkompatibel med den nu installerede version af TextEditor.mcc.\n\nDet anbefales at nulstille de aktuelle tastebindinger og\nredigere dem manuelt igen bagefter."
+
+msgctxt "MSG_ResetAbort (129//)"
+msgid "Reset|Abort"
+msgstr "Nulstille|Afbryde"
+
+msgctxt "MSG_WarnHotkeyString_Title (130//)"
+msgid "TextEditor.mcp warning"
+msgstr "Advarsel fra TextEditor.mcp"
+
+msgctxt "MSG_WarnHotkeyString (131//)"
+msgid ""
+"TextEditor.mcp couldn't open the minimum required\n"
+"version of the HotkeyString.mcc custom class and\n"
+"therefore failed during initialization.\n"
+"\n"
+"Please make sure you have the latest Hotkeystring.mcc\n"
+"class from http://www.sf.net/projects/bstring-mcc/\n"
+"installed and try again."
+msgstr "TextEditor.mcp kunne ikke åbne den krævede eller\nhøjere version af specialklassen HotkeyString.mcc\nog måtte derfor opgive initialisering.\n\nTjek at du har den seneste HotkeyString.mcc-klasse\nfra http://www.sf.net/projects/bstring-mcc/\ninstalleret og prøv igen."
+
+msgctxt "MSG_Ok (132//)"
+msgid "Ok"
+msgstr "OK"
+
+msgctxt "MSG_Label_InactiveCursor (133//)"
+msgid "Inactive cursor"
+msgstr "Musepil ved inaktivitet"
+
+msgctxt "MSG_HELP_InactiveCursor (134//)"
+msgid ""
+"If enabled, a custom cursor will be used\n"
+"whenever the editor doesn't have the focus."
+msgstr "Ved hak her vil en speciel musepil blive anvendt\nnår fokus ikke er på redigeringspanelet."
+
+msgctxt "MSG_Label_SelectPointer (135//)"
+msgid "Selection pointer"
+msgstr "Musepil over panelet"
+
+msgctxt "MSG_HELP_SelectPointer (136//)"
+msgid ""
+"If enabled, a custom selection pointer will appear\n"
+"when the mouse pointer is above the texteditor gadget."
+msgstr "Ved hak her vil en speciel musepil blive vist når\nmusen er over redigeringspanelet."
+
+msgctxt "MSG_Label_InactiveColor (137//)"
+msgid "Inactive"
+msgstr "Inaktiv"
+
+msgctxt "MSG_PopWinTitle_InactiveColor (138//)"
+msgid "Select inactive color"
+msgstr "Vælg farven for inaktivitet"
+
+msgctxt "MSG_HELP_TABSIZE (139//)"
+msgid "How many spaces hitting the <TAB> key will jump."
+msgstr "Antal tegn der flyttes ved brug af <TAB>-tasten."
+
+msgctxt "MSG_HELP_DESIGN_FRAME (140//)"
+msgid ""
+"This is a button to adjust a frame.\n"
+"Click it to open an adjust window or\n"
+"use the drag&drop facilities to copy\n"
+"from or to another frame adjust button."
+msgstr "Denne knap anvendes til indstilling af en ramme.\nVed klik på den åbnes et vindue til indstilling.\nMan kan også bruge træk & slip til at kopiere\nfra og til en anden rammeindstillingsknap."
+
+msgctxt "MSG_HELP_DESIGN_BACKGROUND (141//)"
+msgid ""
+"This is a button to adjust a background\n"
+"color or pattern. Click it to open an\n"
+"adjust window or use the drag&drop facilities\n"
+"to copy from or to another background adjust button."
+msgstr "Denne knap anvendes til indstilling af en\nbaggrundsfarve eller et baggrundsmønster.\nVed klik på den åbner et indstillingsvindue.\nMan kan også bruge træk & slip til at kopiere\nfra og til en anden baggrundsindstillingsknap."
+
+msgctxt "MSG_HELP_DESIGN_TEXT (142//)"
+msgid "This is the color used to print the text."
+msgstr "Denne farve benyttes til at skrive teksten."
+
+msgctxt "MSG_HELP_DESIGN_HIGHLIGHT (143//)"
+msgid ""
+"This is the color used to\n"
+"print highlighted text."
+msgstr "Denne farve benyttes til\nat skrive fremhævet tekt."
+
+msgctxt "MSG_HELP_SEPARATOR_SHINE (144//)"
+msgid ""
+"This is the color used to\n"
+"print separator bars."
+msgstr "Denne farve benyttes til\nat tegne skillelinjers højlys."
+
+msgctxt "MSG_HELP_SEPARATOR_SHADOW (145//)"
+msgid ""
+"This is the color used to print\n"
+"separator bars in shadow mode."
+msgstr "Denne farve benyttes til at tegne\nskillelinjers skygger."
+
+msgctxt "MSG_HELP_FONTS_NORMAL (146//)"
+msgid "Default font to be used by the editor."
+msgstr "Skriftsnittet som benyttes som\nstandard i redigeringspanelet."
+
+msgctxt "MSG_HELP_FONTS_FIXED (147//)"
+msgid ""
+"Default font to be used by the editor\n"
+"whenever a fixed width font is requested."
+msgstr "Skriftsnittet som benyttes i redigeringspanelet\nnår der kræves et skriftsnit med fast bredde."
+
+msgctxt "MSG_HELP_CURSOR_NORMAL (148//)"
+msgid "Default color to be used for the cursor."
+msgstr "Farven som benyttes som standard til markøren."
+
+msgctxt "MSG_HELP_CURSOR_SELECTED (149//)"
+msgid ""
+"Color to be used for the cursor\n"
+"in selected text."
+msgstr "Farven som benyttes til markøren\ni markeret tekst."
+
+msgctxt "MSG_HELP_CURSOR_INACTIVE (150//)"
+msgid ""
+"Color to use to print selected text\n"
+"when the editor doesn't have the focus."
+msgstr "Farven som benyttes til at skrive markeret\ntekst når fokus ikke er på redigeringspanelet."
+
+msgctxt "MSG_HELP_CURSOR_WIDTH (151//)"
+msgid "This is the width the cursor should have."
+msgstr "Bredden som markøren skal have."
+
+msgctxt "MSG_HELP_CURSOR_BLINKSPEED (152//)"
+msgid ""
+"You may want the cursor to blink to make\n"
+"it easier to find. Select 'Off' to disable\n"
+"this feature."
+msgstr "Måske foretrækker du at markøren blinker for at\ngøre den lettere at få øje på. Man slår blinket\nfra ved at vælge 'Ingen'."
+
+msgctxt "MSG_HELP_BUTTON_DEFAULTKEYS (153//)"
+msgid ""
+"Restore all keybindings\n"
+"to the built-in defaults."
+msgstr "Nulstiller alle tastebindinger til\nde indbyggede standardbindinger."
+
+msgctxt "MSG_HELP_BUTTON_SNOOP (154//)"
+msgid ""
+"Use this field to set a keybinding for this action.\n"
+"You can either edit the string gadget directly or press\n"
+"the 'Snoop' button to make the gadget monitor keypresses\n"
+"until you press it again to confirm."
+msgstr "Dette felt benyttes til at opsætte en tastebinding\nfor den tilhørende handling. Man kan enten redigere\nteksten i feltet direkte, eller man kan klikke på knappen\n'Opsnappe' og få optaget sine tastetryk indtil man bekræfter\nved at klikke på knappen igen."
+
+msgctxt "MSG_HELP_BUTTON_INSERT (155//)"
+msgid "Add a new keybinding to the list."
+msgstr "Tilføjer en ny tastebinding til listen."
+
+msgctxt "MSG_HELP_BUTTON_DELETE (156//)"
+msgid "Delete this keybinding from the list."
+msgstr "Sletter den aktuelle tastebinding fra listen."
+
+msgctxt "MSG_HELP_SPELLCHECKER_LOOKUP_CMD (157//)"
+msgid ""
+"Specify here the lookup command you want to use, or\n"
+"leave this empty to disable the type'n'spell feature."
+msgstr "Her angiver man den opslagskommando man vil anvende, eller lader\nfeltet står tomt hvis man vil slå \"skriv og ret\" funktionen fra."
+
+msgctxt "MSG_HELP_SPELLCHECKER_SUGGEST_CMD (158//)"
+msgid ""
+"Specify here the command that will be used\n"
+"to suggest an alternate word. As explained above,\n"
+"usually you should specify a script here."
+msgstr "Her angiver man den kommando som skal benyttes\ntil at foreslå et alternativt ord. Som forklaret\novenfor skal man normalt angive et script her."
+
+msgctxt "MSG_UNDO_SLIDER_FORMAT (159//)"
+msgid "%ld (+/- 5)"
+msgstr "%ld (+/- 5)"

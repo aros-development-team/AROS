@@ -1,0 +1,26 @@
+# Publishes verified dev nightly build uploads and cleans up the uploads
+# area on the arosdev project web space.
+# Requires secrets:
+# - SF_RSYNC_USER
+#
+# The verify/publish/cleanup logic lives in templates/nightlies-update.yml
+# (shared with update-nightlies.yml); this pipeline just points it at the
+# arosdev project directories.
+
+trigger:
+- master
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+steps:
+- template: templates/setup-sf-ssh.yml
+  parameters:
+    displayName: 'Setup SSH Key for SourceForge'
+
+- template: templates/nightlies-update.yml
+  parameters:
+    uploadsDir: '/home/project-web/arosdev/uploads/nightly2'
+    frsDir: '/home/project-web/arosdev/frs/nightly2'
+    downloadsDir: '/home/project-web/arosdev/htdocs/downloads/nightly2'
+    displayName: 'Run Dev Nightly Build Update'

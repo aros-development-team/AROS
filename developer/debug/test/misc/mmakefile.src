@@ -1,0 +1,61 @@
+# Copyright (C) 2016-2026, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+
+EXEDIR := $(AROS_TESTS)/misc
+CUNITEXEDIR := $(AROS_TESTS)/cunit/misc
+
+FILES := \
+    aslhook \
+    busyloop \
+    camdtree \
+    cctest \
+    frequencies \
+    fsresource \
+    getcpuinfo \
+    helloworld \
+    hostcb \
+    hostlib \
+    iffparsewrite \
+    ilbmtoc \
+    inquire \
+    joystick \
+    mathtest \
+    partition \
+    pthreadspintest \
+    pthreadtest \
+    simplepng \
+    versionlib
+
+UNIXFILES := \
+    unixio
+
+SHTESTFILES=\
+    pcilist \
+    true
+
+#MM- test : test-misc
+#MM- test-quick : test-misc-quick
+
+#MM- test-unix : test-misc-unix
+#MM- test-unix-quick : test-misc-unix-quick
+
+#MM  test-misc-common : includes linklibs workbench-libs-version-includes
+#MM  test-misc-sh : includes linklibs
+
+#MM- test-misc : test-misc-common test-misc-sh
+#MM- test-misc-quick : test-misc-common-quick test-misc-sh-quick
+
+%build_progs mmake=test-misc-common \
+    files=$(FILES) targetdir=$(EXEDIR) uselibs="pthread"
+
+%build_progs mmake=test-misc-unix \
+    files=$(UNIXFILES) targetdir=$(EXEDIR) uselibs="pthread"
+
+USER_CPPFLAGS += -DADATE="\"$(shell date '+%d.%m.%Y')\""
+
+%build_progs mmake=test-misc-sh \
+    files=$(SHTESTFILES) targetdir=$(EXEDIR) \
+    usestartup=no
+
+%common

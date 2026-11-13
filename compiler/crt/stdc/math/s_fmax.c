@@ -1,0 +1,92 @@
+/*-
+ * Copyright (c) 2004 David Schultz <das@FreeBSD.ORG>
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
+ */
+
+__FBSDID("$FreeBSD: src/lib/msun/src/s_fmax.c,v 1.1 2004/06/30 07:04:01 das Exp $");
+
+#include <math.h>
+
+#include "fpmath.h"
+
+/****************************************************************************
+    NAME */
+        double fmax(
+
+/*  SYNOPSIS */
+        double x,
+        double y)
+
+/*  FUNCTION
+        Return the larger numeric operand, ignoring a lone NaN.
+
+    INPUTS
+        x - First double operand.
+        y - Second double operand.
+
+    RESULT
+        The larger value for numeric operands. For opposite-signed
+        zeros, return +0. If one operand is NaN, return the other.
+        If both are NaNs, return a NaN.
+
+    NOTES
+        Include <math.h>. For two NaNs, this implementation evaluates x + y, which may raise
+        FE_INVALID.
+
+        The sign of zero and NaN handling differ from a simple conditional
+        comparison. NaN payloads are not guaranteed.
+
+    SEE ALSO
+        fmin(), fmaxf(), fmaxl()
+
+*****************************************************************************/
+{
+	union IEEEd2bits u[2];
+	int x_is_nan, y_is_nan;
+ 
+	u[0].d = x;
+	u[1].d = y;
+
+	x_is_nan = (u[0].bits.exp == 2047 && (u[0].bits.manh | u[0].bits.manl) != 0);
+	y_is_nan = (u[1].bits.exp == 2047 && (u[1].bits.manh | u[1].bits.manl) != 0);
+
+	if (x_is_nan && y_is_nan)
+		return x + y;  // Return NaN, possibly raise invalid exception
+	if (x_is_nan)
+		return y;
+	if (y_is_nan)
+		return x;
+
+	/* Handle comparisons of signed zeroes. */
+	if (u[0].bits.sign != u[1].bits.sign)
+		return (u[u[0].bits.sign].d);
+
+	return (x > y ? x : y);
+}
+
+#if LDBL_MANT_DIG == DBL_MANT_DIG
+/* Alias fmax -> fmaxl */
+AROS_MAKE_ASM_SYM(typeof(fmaxl), fmaxl, AROS_CSYM_FROM_ASM_NAME(fmaxl), AROS_CSYM_FROM_ASM_NAME(fmax));
+AROS_EXPORT_ASM_SYM(AROS_CSYM_FROM_ASM_NAME(fmaxl));
+#endif

@@ -1,0 +1,83 @@
+/*
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
+
+    C99 function ungetc().
+*/
+#include <dos/dos.h>
+#include <dos/dosextens.h>
+#include <proto/exec.h>
+#include <proto/dos.h>
+#include <errno.h>
+
+#include "__stdio.h"
+
+/*****************************************************************************
+
+    NAME */
+#include <stdio.h>
+
+        int ungetc (
+
+/*  SYNOPSIS */
+        int    c,
+        FILE * stream)
+
+/*  FUNCTION
+        Puch the character c character back into the stream.
+
+    INPUTS
+        c - Put this character back into the stream. The next read will
+                return this character. If you push back more than one
+                character, then they will be returned in reverse order.
+                The function guarantees that one character can be
+                pushed back but no more. It is possible to push the EOF
+                character back into the stream.
+        stream - Read from this stream
+
+    RESULT
+        c or EOF on error.
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+        fgetc(), getc(), fputc(), putc()
+
+    INTERNALS
+
+******************************************************************************/
+{
+    /* Note: changes here might require changes in vfscanf.c!! */
+
+    /* If c equals EOF the operation fails and the stream is unchanged. */
+    if (c == EOF)
+        return EOF;
+
+    if (c < -1)
+        c = (unsigned int)c;
+
+    if (!UnGetC (stream->fh, c))
+    {
+        LONG ioerr = IoErr();
+
+        if (ioerr)
+        {
+            errno = __stdc_ioerr2errno(ioerr);
+            stream->flags |= __STDCIO_STDIO_ERROR;
+        }
+        else
+            stream->flags |= __STDCIO_STDIO_EOF;
+
+        c = EOF;
+    }
+    else
+    {
+        /* A successful ungetc clears the end-of-file indicator (C99 7.21.7.10) */
+        stream->flags &= ~__STDCIO_STDIO_EOF;
+    }
+
+    return c;
+} /* ungetc */

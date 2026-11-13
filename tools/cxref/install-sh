@@ -1,0 +1,79 @@
+#!/bin/sh
+#
+# Installation script for Unices without a BSD style install (e.g. HP-UX).
+#
+# Written by Andrew M. Bishop
+#
+# This file Copyright 1995,96,97,98 Andrew M. Bishop
+# It may be distributed under the GNU Public License, version 2, or
+# any higher version.  See section COPYING of the GNU Public license
+# for conditions under which this file may be redistributed.
+#
+
+if [ $# = "0" ]; then
+    echo "A simple installation script"
+    echo "usage: install.sh [-c] -d dir"
+    echo "       install.sh [-c] [-m mode] [-g group] [-o owner] file destination"
+    exit 1
+fi
+
+if [ $1 = "-c" ]; then
+    shift
+fi
+
+if [ $1 = "-d" ]; then
+
+    if [ "x$2" = "x" ]; then
+        echo "Directory not specified"
+        exit 1
+    fi
+
+    dir=''
+    dirs=`echo $2 | sed 's%/% %g'`
+    for d in $dirs; do
+        dir="$dir/$d";
+        [ -d $dir ] || mkdir $dir
+    done
+
+else
+
+    mode=
+    owner=
+    group=
+
+    while [ ! $# = 0 ]; do
+
+        case $1 in
+
+            -m) shift; mode=$1;;
+            -o) shift; owner=$1;;
+            -g) shift; group=$1;;
+            -*) echo "Unrecognised option $1"; exit 1;;
+
+            *)  src=$1; shift; dst=$1;;
+
+        esac
+        shift
+    done
+
+    if [ "x$src" = "x" -o "x$dst" = "x" ]; then
+        echo "Source and destination not specified"
+        exit 1
+    fi
+
+    if [ -d $dst ]; then
+        dst=$dst/`basename $src`
+    fi
+
+    if cp $src $dst; then
+        [ $mode  ] && chmod $mode  $dst
+        [ $group ] && chgrp $group $dst
+        [ $owner ] && chown $owner $dst
+    else
+        echo Copy of $src to $dst failed
+        exit 1
+    fi
+
+fi
+
+exit 0

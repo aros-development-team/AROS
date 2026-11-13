@@ -1,0 +1,13 @@
+#
+
+include $(SRCDIR)/config/aros.cfg
+
+USER_CPPFLAGS := -DHOST_OS_$(AROS_TARGET_VARIANT)
+USER_INCLUDES := -I$(SRCDIR)/rom/processor
+
+FILES := arch_init getcpuinfo
+
+%build_archspecific mainmmake=kernel-processor maindir=rom/processor \
+    arch=linux-arm files=$(FILES) modname=processor
+
+%common

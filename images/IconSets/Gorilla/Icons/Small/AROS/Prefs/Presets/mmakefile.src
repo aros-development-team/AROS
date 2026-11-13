@@ -1,0 +1,15 @@
+# Copyright (C) 2004-2023, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+
+ICONS := Patterns Themes
+
+#MM- iconset-GorillaSmall-wbench-icons-aros-clean : iconset-GorillaSmall-wbench-icons-aros-prefs-presets-clean
+#MM- iconset-GorillaSmall-wbench-icons-aros : iconset-GorillaSmall-wbench-icons-aros-prefs-presets
+
+%build_icons mmake=iconset-GorillaSmall-wbench-icons-aros-prefs-presets icons=$(ICONS) \
+             dir=$(AROS_PREFS)/Presets
+			 
+#MM- icons-wbench-prefs-presets : gorillasmall-icons-wbench-prefs-presets
+%build_icons mmake=gorillasmall-icons-wbench-prefs-presets icons=$(ICONS) \
+             dir=$(AROS_PRESETS)/Icons/Gorilla/Small/$(AROS_DIR_AROS)/$(AROS_DIR_PREFS)/$(AROS_DIR_PRESETS)

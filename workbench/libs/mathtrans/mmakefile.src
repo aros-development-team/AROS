@@ -1,0 +1,38 @@
+# Copyright (C) 2003, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+
+USER_LDFLAGS := -static
+
+FILES := intern_spisodd intern_spld 
+
+FUNCS := \
+    spacos \
+    spasin \
+    spatan \
+    spcos \
+    spcosh \
+    spexp \
+    spfieee \
+    splog10 \
+    splog \
+    sppow \
+    spsin \
+    spsincos \
+    spsinh \
+    spsqrt \
+    sptan \
+    sptanh \
+    sptieee
+
+#MM workbench-libs-mathtrans-includes : \
+#MM    kernel-exec-includes \
+#MM    workbench-libs-mathffp-includes \
+#MM    includes-copy
+#MM- workbench-libs-mathtrans : linklibs
+
+%build_module mmake=workbench-libs-mathtrans \
+    modname=mathtrans modtype=library \
+    files="mathtrans_init $(FILES) $(FUNCS)"
+
+%common

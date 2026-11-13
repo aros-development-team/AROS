@@ -1,0 +1,845 @@
+Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
+
+Command line
+------------
+	SCRIPT,APPNAME,MINUSER,DEFUSER,LOGFILE,NOLOG/S,NOPRETEND/S,
+	NOPRINT/S,LANGUAGE,APPBANNER/K,DRYRUN/S
+
+	The standard Installer arguments. NOLOG/S (also a tooltype) means no
+	log file at all: none is opened, and the "log to file" page is not
+	offered. Without it LOGFILE names the log (default "install_log_file"
+	in the current directory - which is the script's drawer when run from
+	Workbench, so a script on a CD-ROM or other read-only volume needs
+	NOLOG or an absolute LOGFILE); a novice is not asked and gets the log
+	unless the icon says LOG=FALSE.
+
+	APPBANNER/K (also a tooltype) names a picture, shown through datatypes
+	above the pages - the application's own banner; the same argument
+	InstallerLG takes, so one icon serves both. Without it the window is
+	unchanged.
+
+	DRYRUN/S runs the script as a dry run without asking: the "Install
+	for real / pretend" page is skipped and nothing is written (what
+	NOPRETEND/S forbids, this forces) - for previewing a package and for
+	running scripts under test. Scripts cannot tell it from a pretend run
+	chosen on the page.
+
+Parsing the script
+------------------
+	Read in 'tokens' and braces and save into tree structure.
+	Actually there is no "pre-compiling" done as stated in the
+	original Installer docs.
+
+
+Data Types
+----------
+<int>
+	is an integer of type (long int)
+	Its representation is a decimal number or
+	$xxx will be considered as HEX and
+	%xxxx as binary numbers.
+	Boolean arguments are 0 for FALSE and non-0 for TRUE.
+	Boolean functions return 1 as TRUE.
+
+<string>
+	is a quoted ("..." or '...') string
+
+Arguments without quotes are considered to be variables
+	Variables are typeless and converted to the functions needs
+	(exception is ( <format-string> <arguments>... ) where the variable
+	  is checked for a non-NULL string or the integer value will be
+	  used which will be 0 for unset variables
+	)
+	and therefore being exchanged by their values at runtime
+	( <string> is converted via atol( <string> );
+	  <int> is converted via sprintf( string, "%ld", <int> );
+	)
+	Unset variables are NULL in string and 0 in integer value.
+	Commands can be used as arguments, too, as the return value
+	will be taken.
+	Example: ( set sum ( + a b ) )
+
+
+Executing the script
+--------------------
+Arguments in [...] are optional.
+
+( (...)... )
+  Blocks. If the first argument in brackets is a command (...) all
+  others have to be commands, too.
+  The return value is the return value of the last command in the block.
+  Empty blocks are not allowed.
+
+  If a command is not recognized an error SCRIPTERROR is produced.
+
+
+( abort [<string>...] )
+  Shows strings and executes trap or onerror statements if present and
+  exits abnormally.
+  This function never returns.
+
+
+( and	<int> <int> )
+( or	<int> <int> )
+( xor	<int> <int> )
+( bitand <int> <int> )
+( bitor  <int> <int> )
+( bitxor <int> <int> )
+( <>	<int> <int> )
+( <	<int> <int> )
+( <=	<int> <int> )
+( =	<int> <int> )
+( >	<int> <int> )
+( >=	<int> <int> )
+( -	<int> <int> )
+( /	<int> <int> )
+( shiftleft <int> <int> )
+( shiftrght <int> <int> )
+( shiftright <int> <int> )
+  These functions return the result of the operations on the two integers.
+  shiftrght is the spelling of the Commodore Installer, shiftright the one
+  of the Installer.guide and of scripts written for V44; both are accepted.
+  For logical operations 1 is returned as TRUE and 0 as FALSE.
+  ( / <int> <int> ) checks 2nd arg == zero and produces an error BADPARAMETER.
+
+
+( cat <any>... )
+  Concatenates all args as strings. This function was intended to be the only
+  valid function for converting <int> to <string>
+  (Well, except ( "..." ... ), too )
+  The return value is the quoted string.
+
+
+( complete <int> )
+  Tells the user how much ( in percent ) is already done.
+  The return value is the percentage.
+  NOTE: We do not check for percentage < 0 or > 100 !!!
+
+
+( debug <any>... )
+  If run from Shell and DEBUG was specified in the command line
+  the arguments (strings, integers, variables) will be printf()'ed
+  to the shell separated by spaces.
+  The return value is the quoted string of all concatenated arguments.
+
+
+( back <statement>... )
+  V44 parameter of (askbool), (asknumber), (askstring), (askchoice),
+  (askoptions), (askdir), (askdisk), (askfile), (message), and of
+  (copyfiles), (copylib), (delete), (makedir), (rename), (startup),
+  (textfile) and (tooltype) when they are shown to the user by (confirm).
+  While such a page is up the Abort button reads "Back". Pressing it
+  leaves the page without performing the action; the statements of
+  (back) are run instead and the value of the last one becomes the value
+  of the function. The (back) statements usually (retrace) to a (trace)
+  mark before the page. A page that is not shown, because the user level
+  is below the (confirm) level, never goes back.
+
+
+( effect <position> <type> <color> <color> )
+  V44. Puts a colour gradient behind the Installer window. <type> is
+  "horizontal" or "radial" (any other type is a BADPARAMETER error); the
+  colours are $RRGGBB integers, the first at the bottom, the second at
+  the top. A radial effect is drawn as the same top-to-bottom fade.
+  <position> ("center", "upper", "lower", "left", "right") placed the
+  window on the screen the original Installer opened for the effect; we
+  do not open a screen of our own, so it is accepted and ignored.
+  The return value is 1.
+
+
+( openwbobject <name>...
+      [(prompt <string>... )]
+      [(help <string>... )]
+      [(confirm)]
+      [(safe)]
+)
+  V44. Opens the Workbench object <name>: a disk, a drawer, a trashcan,
+  a tool or a project, as a double-click on its icon would. Returns 1
+  when the object was opened, 0 when it was not or the user declined
+  the confirmation. When pretending it is not opened and 1 is returned
+  unless (safe) is given.
+
+
+( showwbobject <name> )
+  V44. Scrolls the open drawer window holding <name> so that the icon
+  is visible. Returns 1 on success, 0 when workbench.library could not
+  do it.
+
+
+( closewbobject <name> )
+  V44. Closes the window of the disk, drawer or trashcan <name>. Returns
+  1 on success, 0 when workbench.library could not do it.
+
+
+( showmedia <var-name> <file> <position> <size> <border> [<flag>...] )
+  V44. Shows <file> in a window of its own beside the Installer's and
+  sets <var-name> to the media id for (setmedia) and (closemedia).
+  <position> is "upper_left", "upper_center", "upper_right",
+  "center_left", "center", "center_right", "lower_left", "lower_center"
+  or "lower_right"; <size> "small", "medium" or "large" (1/8, 1/4, 1/2
+  of the screen, a "_small", "_medium" or "_large" suffix giving the
+  height its own class) or "none" for the size of the picture; <border>
+  is 1 for a window with a border. The flags "wordwrap", "panel",
+  "play" and "repeat" are accepted. Only pictures (datatypes) are
+  shown; the value is 1 when the media is up and 0 otherwise, when
+  <var-name> is left alone.
+
+
+( setmedia <media> <action> [<parameter>] )
+  V44. <action> is "pause", "play", "contents", "index", "retrace",
+  "browser_prev", "browser_next", "command", "rewind", "fastforward",
+  "stop" or "locate" (the last two take the <parameter>). A picture
+  has nothing to do with them, so the value is 1 when <media> is up
+  and 0 otherwise.
+
+
+( closemedia <media> )
+  V44. Closes the window of <media>. Returns 1, or 0 when there is no
+  such media.
+
+
+( querydisplay <object> <option> )
+  V44. A measure of the display, for choosing the media to show: for
+  the object "screen" the options are "width", "height", "depth" and
+  "colors"; for "window" they are "width", "height" and "upper",
+  "lower", "left", "right", the distances from the window to the edges
+  of the screen. Any other object or option gives 0.
+
+
+( exit [(quiet)] [<string>...] )
+  Shows the strings separated by a linefeed and exits normally.
+  A summarizing message with information on where the app was installed
+  and the log-file can be found will be displayed unless (quiet) is
+  specified as a parameter.
+  This function never returns.
+
+
+( if <int> <then> [<else>] )
+  <int> is checked for !=0 and returns <then> otherwise <else> or 0 if
+  <else> is left out. If <then> is a string and <else> is omitted this
+  function returns an empty string as the false value.
+  <int>, <then> and <else> may be functions, too.
+
+
+( in <base-int> <bit-int>... )
+  This function returns <base-int>'s bits given in <bit-int>... (mask).
+
+
+( not <int> )
+( bitnot <int> )
+  Returns logical/bitwise negation of argument.
+
+
+( + <int>... )
+  Returns the sum of all integers, 0 for no arguments.
+
+
+( * <int>[...] )
+  Returns the product of all integers. Needs at least one <int>
+
+
+( procedure <name> [<arg>...] (...) )
+  Procedures are defined during parsing. The name has to be a non-quoted
+  string which must not begin with digits; it is not case sensitive.
+  Consider using a prefix like "P_" for your procedures to avoid a
+  conflict with future extensions of Installer.
+  <arg>... is an optional list of variables which will be set when calling
+  the procedure. However, you can call the procedure with less than the
+  specified arguments; in this case the unset variables retain their old
+  values (example from original Installer docs):
+  ( procedure P_ADDMUL arg1 arg2 arg3
+      ( * ( + arg1 arg2 ) arg3 )
+  )
+  ( message ( P_ADDMUL 1 2 3 ) )	; shows 9
+  ( message ( P_ADDMUL 4 5 ) )		; shows 27, arg3 stays the same
+
+  Note that there are no local variables, so that a call
+  ( P_ADDMUL 1 2 3 )
+  is the same as
+  ( set arg1 1 arg2 2 arg3 3 )
+  ( P_ADDMUL )
+
+  Though the ( procedure ... ) command is ignored at run-time it returns 0.
+
+
+( select <int> [<any>...] )
+  Returns the value of the <int>th <any>-item or 0 if <int> < 1 or
+  <int> > number of <any>.
+
+
+( strlen <string> )
+  Returns the length of <string> or 0 if argument is an integer.
+
+
+( until <int> (...) )
+  Executes the block (post-checked) until <int> statement is TRUE.
+  Returns the (last) value of the executed block.
+
+
+( while <int> (...) )
+  Executes the block (pre-checked) while <int> statement is TRUE.
+  Returns the (last) value of the executed block or 0 if block has
+  not been executed.
+
+
+( set <var-name> <value> ... )
+  Use (set ...) to set variables.
+  Variable names have to be unquoted strings -- commands are not accepted
+  Names are not case sensitive: #Name and #name are the same variable.
+  Values can be anything.
+  Consider using a prefix like '#' to avoid conflicts with future versions
+  of Installer. The prefix '@' is reserved for internal variables. They
+  can be set to other values, too.
+
+
+( symbolset <var-name> <value> ... )
+  With this functions you can use quoted strings as varnames (quotes will be
+  stripped). This allows to have "dynamic" variables like ( "var%ld" n )
+  Therefore commands as varnames will be executed.
+  NOTE: sole integers as variables are not allowed, though ( "1" ) will
+  work, but is not recommended to use.
+
+
+( symbolval <var-name> )
+  Use this functions to have access to "dynamic" variables set with
+  ( symbolset ... )
+  Same naming conventions as in symbolset apply here.
+
+
+( askbool [( help <string>... )]
+          [( prompt <string>... )]
+          [( default <int> )]
+          [( choices <yesstring> [<nostring>] )]
+)
+  Asks the user to select yes or no unless user is NOVICE
+  (ie. @user-level = 0 ). Returns 0 for "No" and 1 for "Yes".
+  Defaults to 0 = "No".
+
+
+( asknumber [( help <string>... )]
+            [( prompt <string>... )]
+            [( default <int> )]
+            [( range <min-int> <maxint>] )]
+)
+  Asks the user for a number unless user is NOVICE (ie. @user-level = 0 ).
+  defaults to 0
+  range defaults to non-negative numbers, unless default is negative which
+  causes range to be extended to include the default number.
+
+
+( askstring [( help <string>... )]
+            [( prompt <string>... )]
+            [( default <int> )]
+)
+  Asks the user for a string unless user is NOVICE (ie. @user-level = 0 ).
+  defaults to ""
+
+
+( askchoice [( help <string>... )]
+            [( prompt <string>... )]
+            [( default <int> )]
+            ( choices <string>... )
+)
+  Asks the user to select one item out of N unless user is NOVICE
+  (ie. @user-level = 0 ).
+  defaults to 0
+  choices is list of strings listed as items of the requester
+  NULL strings will not be displayed.
+  The Return value is the number of the selected item, starting with 0 as
+  the first item.
+
+  NOTE: Original Installer docs read:
+  >>  return value is a bitmask [...] maximum of 32 items.
+  Tests showed that the number is passed - not a bitmask, but choices are
+  nevertheless limited to 32!
+
+  >>  NOTE: "<ESC>[2p" sequence at beginning of one item leads to
+  >>  proportional rendering (>V42)
+  This is not implemented now!
+
+
+( <format-string> <argument>... )
+  This construct works like C printf() and returns the resulting string
+  after substituting '%d' and '%s'. An 'sprintf(var,"format", args... )'
+  can be achieved by '( set var ( "format" <args>... ) )'
+  Installer uses RawDoFmt() and does not check correctness of arguments.
+
+
+( substr <string> <start> [<count>] )
+  Returns the substring of <string>, beginning with offset <start>
+  (offset 0 is the first character) and including <count> characters.
+  If <count> is omitted, then the rest of the string is returned.
+
+
+( transcript [<string>...] )
+  Concatenates all strings writes them to the logfile and appends a
+  newline character.
+  Returns the concatenated strings.
+
+
+( user <int>|<"novice"|"average"|"expert"> )
+  Changes the user level (@user-level) to the given value.
+  Specify an integer 0 = novice 1 = average 2 = expert or the (quoted)
+  strings "novice" "average" or "expert"
+  Use this function only to debug your own scripts. In official releases
+  this function shouldn't appear.
+  Returns the new user-level.
+
+
+( welcome <string>... )
+  Displays the strings instead of
+  "Welcome to <APPNAME> App installation utility."
+  and asks for the user level.
+  Without this function appearing in the script the user level is requested
+  straight at the beginning.
+
+
+( message <string>...
+          [(help <string>... )]
+          [(all)]
+)
+  Displays the strings and offers "Proceed", "Abort" and "Help" buttons.
+  The message is not displayed in NOVICE mode unless (all) is specified.
+  Please, do not confuse the novice user.
+
+
+( working <string>... )
+  Displays the concatenated strings under a standard line reading
+  "Working on Installation". This can be used to tell the user what's
+  going on when doing long operations except copying which has its own
+  status display.
+
+
+( execute <file>
+      [(prompt <string>... )]
+      [(help <string>... )]
+      [(confirm)]
+      [(safe)]
+)
+  Executes an AmigaDOS script. With (confirm) the user is asked first at
+  and above the confirm level. Returns 1 when the script ran.
+
+
+( run <string>...
+      [(prompt <string>... )]
+      [(help <string>... )]
+      [(confirm)]
+      [(safe)]
+)
+  This function returns the primary result of the called program and
+  the secondary is passed in '@ioerr'. With (confirm) the user is asked
+  first at and above the confirm level.
+
+
+( textfile (dest <file>)
+      [(append <string>...)]...
+      [(include <file>)]...
+      [(prompt <string>... )]
+      [(help <string>... )]
+      [(confirm)]
+      [(safe)]
+)
+  Creates <file> from the (append) strings and the contents of the
+  (include) files, written in the order they appear in the script.
+  NOTE: an old comment in this file claimed the original Installer
+  collected all (append)s first and then wrote only the last (include).
+  Scripts on Aminet write (include "README") (append "\n...") and expect
+  that order, so script order is what is implemented; if a script
+  depends on the other behaviour, report it.
+
+
+( askdir (prompt <string>...)
+      (help <string>...)
+      (default <string>)
+      [(newpath)]
+      [(disk)]
+      [(assigns)]
+)
+  Asks for a directory with an ASL requester (drawers only) and returns
+  the chosen path. Novice users get the default without being asked.
+
+
+( askdisk (prompt <string>...)
+      (help <string>...)
+      (dest <volume>)
+      [(newname <assign>)]
+)
+  Waits until <volume>: can be locked, re-asking with Proceed (retry),
+  Skip and Abort. With (newname) an assign of that name is made to the
+  volume. Returns the volume name.
+
+
+( askfile (prompt <string>...)
+      (help <string>...)
+      (default <string>)
+      [(newpath)]
+      [(disk)]
+)
+  Like askdir, but for a file.
+
+
+( askoptions )
+ /* Ask user to choose multiple items */
+
+
+( database <feature> )
+ /* Return information on the hardware Installer is running on */
+ <feature> is one of:
+ "vblank"
+ "cpu"
+   -> "68000" "68010" "68020" "68030" "68040" "68060" on m68k;
+      "X86" "X86_64" "PowerPC" "ARM" "RISCV" elsewhere (the architecture
+      the Installer was built for, named as InstallerLG names it)
+ "graphics-mem"
+   -> Size of free CHIP RAM (via AvailMem(MEMF_CHIP))
+ "total-mem"
+   -> Total size of free RAM (via AvailMem(MEMF_TOTAL))
+ "fpu"
+   -> "68881" "68882" "FPU40" "NOFPU" on m68k; "Unknown" elsewhere
+ "chiprev"
+   -> "Unknown" (no custom chip set)
+ Return-type is always a string except for free RAM size.
+
+
+( onerror (...) )
+  Use this function to define code to be executed after an error occurred.
+  This can be used to delete installed stuff if an error occurs or user
+  aborted installation. This function is mutually exclusive with trap command.
+
+
+( trap <trapflag> (...) )
+  Use this function to set an error handling routine.
+  When an error occurs and ( trap ... ) has been set before, the statements
+  of the trap command are executed. Use this to clean up if an abnormal
+  termination of the script occurs. If no trap is set for a specific errorcode
+  the more general ( onerror ... ) statements are executed if declared before.
+  Error codes:
+    1 := User aborted
+    2 := Ran out of memory
+    3 := Error in script
+    4 := DOS error (more infos in @ioerr , see below )
+    5 := Bad parameter data
+
+
+( startup <name-string>
+      [(prompt <string>... )]
+      [(help <string>... )]
+      [(confirm)]
+      (command <string>... )
+)
+  Inserts a section
+
+;BEGIN <name-string>
+...
+;END <name-string>
+
+  into S:User-Startup. <name-string> may follow the parameters. If a
+  section with this name already exists it is replaced by this new one.
+  The commands between the markers are given in (command ...).
+  The user will only be prompted to confirm this action if in Expert mode.
+
+
+( delete <filename>
+      [(prompt <string>... )]
+      [(help <string>... )]
+      [(confirm)]
+      [(optional <option>... )]
+      [(delopts <option>... )]
+      [(delopts)]
+      [(safe)]
+)
+  Delete a file. (only plain deletion is implemented by now!)
+  options are:
+    force   - unprotect file
+    askuser - ask user if file should be unprotected,
+              in novice the automatic answer is "no"
+
+
+( exists <name>
+      [(noreq)]
+)
+  Checks if a <name> exists.
+  Returns 0 if non-existent, 1 for a file or 2 for a directory.
+  If (noreq) is specified, then no requester will pop up if
+  <name> should be on a not-mounted volume.
+
+
+( makedir <name>
+      [(prompt <string>... )]
+      [(help <string>... )]
+      [(infos)]
+      [(confirm)]
+      [(safe)]
+)
+  Create a directory.
+  (infos) creates also an icon for the new directory (not yet implemented).
+
+
+( rename <oldname> <newname>
+      [(prompt <string>... )]
+      [(help <string>... )]
+      [(confirm)]
+      [(disk)]
+      [(safe)]
+)
+  Renames the file "oldname" to "newname". If the parameter (disk) is
+  passed, then this command relabels the disk "oldname" to "newname".
+  When relabeling disks *only* include a colon ":" in the oldname.
+  The function proceeds silently unless (confirm) is passed where the
+  (prompt) is shown and (help) is available. If (safe) is passed then
+  the renaming will be done even when in PRETEND mode.
+  This function returns 1 on success and 0 on failure.
+
+
+( fileonly <pathname> )
+  Returns the file part of <pathname>.
+  Example:
+    (fileonly "A:BC/def/gh") -> "gh"
+
+
+( pathonly <pathname> )
+  Returns the path part of <pathname>.
+  Example:
+    (pathonly "A:BC/def/gh") -> "A:BC/def"
+
+
+( earlier <file1> <file2> )
+  Returns TRUE if file1 is older (earlier) than file2.
+
+
+( getdiskspace <pathname> )
+  Returns the number free bytes on the device.  If the pathname is bad or
+  no info could not be obtained, -1 is returned.
+
+
+( getenv <name> )
+  Returns the value of an ENV: variable (through DOS/GetVar(name,...))
+
+
+( getsize <name> )
+  Returns the size of file <name> in bytes or 0 if file does not exist.
+
+
+( makeassign <assign> [<path>]
+      [(safe)]
+)
+  Assigns assign to path. If path is not specified, the assign is removed.
+  If (safe) is passed then the assign will be done even when in PRETEND mode.
+  Returns 1 on success and 0 on failure.
+
+
+( getassign <name> [<option>])
+  Returns the path of <name>. The default is to return the logical assignments.
+  <Option> can be one of:
+	'a': match logical assignments only (default)
+	'v': match volumes only
+	'd': match devices only
+
+  If <name> does not exist as the specified type, an empty string is returned.
+
+  Note that you must specify the device/volume/assign without the trailing
+  colon. The return value will be a true path, ie. with the colon.
+  If <option> is device and <name> is a device, its volume name is reported,
+  unless it doesn't exist in which case the device name is returned.
+
+
+( getdevice <path> )
+  Returns the volume name on which <path> exists or an empty string if
+  <path> does not exist.
+
+
+( tackon <path> <file> )
+  Returns the combined pathname of <path>+<file>.
+
+  NOTE: Currently DOS.library/AddPart() cannot cope with a leading '/' in the
+  <file> parameter.
+
+
+( expandpath <path> )
+  Expands the <path>. For example "C:Mount" will become "System:C/Mount"
+
+
+( copyfiles (source <path>) (dest <path>)
+      [(prompt <string>...)]
+      [(help <string>...)]
+      [(all) | (pattern <pattern>) | (choices <name>...) | (files)]
+      [(infos)]
+      [(newname <name>)]
+      [(nogauge)]
+      [(confirm)]
+      [(safe)]
+      [(optional ...) | (delopts ...)]
+      [(compression)]
+)
+  Copies a file, or the contents of a directory with (all), (pattern)
+  or (choices). (files) copies files only, no subdirectories. (infos)
+  copies the .info companions too (and never the dest.info of the
+  copied directory itself). Above the (confirm) level the user gets a
+  multi-select list of the entries to copy. Returns 1 on success.
+  V44: (compression) is accepted and ignored, here and in (copylib).
+
+
+( copylib (source <file>) (dest <path>)
+      [(prompt <string>...)]
+      [(help <string>...)]
+      [(newname <name>)]
+      [(infos)]
+      [(confirm)]
+      [(safe)]
+      [(optional ...) | (delopts ...)]
+)
+  Like copyfiles for one file, but compares $VER: strings first: an
+  existing newer (or equal) version is kept, an older one replaced;
+  above the (confirm) level the user is asked. Returns 1 on success.
+
+
+( foreach <dir> <pattern> <command>... )
+  Runs the commands once per matching entry in <dir> with @each-name
+  set to the entry name and @each-type to its type (negative for a
+  file, positive for a directory). Returns the number of matches.
+
+
+( getsum <file> )
+  Returns a checksum of <file> (0 if it cannot be read).
+
+
+( getversion [<file> [(resident)]] )
+  Returns (version << 16) + revision, from the $VER: string of <file>,
+  with (resident) from the loaded library/device of that name, and
+  without arguments from the Installer itself. 0 if not found.
+
+
+( patmatch <pattern> <string> )
+  Returns 1 if <string> matches the AmigaDOS <pattern> (case
+  insensitive).
+
+
+( protect <file> [<flags> | <int>] [(override <int>)] [(safe)] )
+  Without a second argument returns the protection bits of <file>.
+  With a flag string such as "+s-e" or "rwed" (the latter clears
+  everything not named) or an integer, sets them and returns the new
+  value. V44: (override <int>) starts from these bits instead of
+  reading the ones of <file>, so "+e" with (override $0f) gives 13
+  whatever the file has.
+
+
+( reboot )
+  V44. Restarts the machine (exec.library/ColdReboot) after the usual
+  clean-up; nothing happens and 0 is returned when the Installer is
+  pretending. There is no confirmation requester, scripts ask with
+  (askbool) before.
+
+
+( trace )
+( retrace )
+  V44. (trace) marks a place in the script and returns 1. (retrace)
+  goes back to the next to last (trace) - the marks are looked for
+  among the statements before, in the same list first, then in the
+  enclosing lists, never outside the procedure the (retrace) is in -
+  and runs the statements from there to the end of that list again;
+  its value is the value of the last one. Without two marks to go back
+  to the script ends. Together with (back) this lets the user step
+  back to the previous page: (trace) (askchoice ...) (trace)
+  (askstring ... (back (retrace))).
+
+
+( tooltype (dest <file>)
+      [(settooltype <name> [<value>])]...
+      [(setdefaulttool <string>)]
+      [(setstack <int>)]
+      [(setposition <x> <y>)]
+      [(noposition)]
+      [(swapcolors)]
+      [(prompt <string>...)]
+      [(help <string>...)]
+      [(confirm)]
+      [(safe)]
+)
+  Edits the icon of <file> (the .info suffix may be given or not).
+  (settooltype) without a value removes the tool type; with one it is
+  set as NAME=value, replacing an existing NAME=. (swapcolors) is
+  accepted and ignored.
+
+
+( iconinfo (dest <file>)
+      [(getdefaulttool <var-name>)]
+      [(getstack <var-name>)]
+      [(getposition <var-name> <var-name>)]
+      [(gettooltype <name> <var-name>)]...
+)
+  V42.12. Reads the icon of <file> (the .info suffix may be given or not)
+  into variables: the default tool and the value of tool type <name> as
+  strings (empty when the icon has none), the stack size and the x and y
+  position as integers. Returns 1, or 0 with @ioerr set when there is no
+  icon. (prompt), (help), (confirm) and (safe) are accepted and ignored.
+
+
+( rexx <string>...
+      [(prompt <string>... )]
+      [(help <string>... )]
+      [(confirm)]
+      [(safe)]
+)
+  Runs an ARexx script through the rx command; the strings are the
+  script name and its arguments, separated by spaces. Its output goes
+  to the log file. The return value is the return code of the script,
+  0 when it succeeded, with the secondary result in @ioerr.
+
+/* Here are all tags, first the ones which have to be executed */
+ 
+( delopts )
+ /* unset copying/deleting options if we are called global */
+ /* as parameter to a function we have got an ignore=1 before */
+ "fail"
+ "nofail"
+ "oknodelete"
+ /* These may be combined in any way */
+ "force"
+ "askuser"
+
+( optional )
+ /* set copying/deleting options if we are called global */
+ /* as parameter to a function we have got an ignore=1 before */
+ "fail"
+ "nofail"
+ "oknodelete"
+ /* These may be combined in any way */
+ "force"
+ "askuser"
+
+
+( all )
+( append )
+( assigns )
+( choices )
+( command )
+( compression )
+( confirm )
+( default )
+( dest )
+( disk )
+( files )
+( fonts )
+( help )
+( include )
+( infos )
+( newname )
+( newpath )
+( nogauge )
+( noposition )
+( override )
+( pattern )
+( prompt )
+( range )
+( safe )
+( getdefaulttool )
+( getposition )
+( getstack )
+( gettooltype )
+( setdefaulttool )
+( setstack )
+( settooltype )
+( source )
+( swapcolors )
+( quiet )
+

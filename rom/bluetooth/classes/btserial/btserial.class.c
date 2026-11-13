@@ -1,0 +1,1034 @@
+/*
+ *----------------------------------------------------------------------------
+ *                   btserial class for bluetooth.library
+ *----------------------------------------------------------------------------
+ *
+ * Serial Port Profile: binds to RFCOMM services (0x1101 Serial Port and
+ * friends) of registered Bluetooth devices and exposes each as a unit of
+ * btserial.device with the serial.device command set - the counterpart of
+ * Poseidon's USB serial classes (cdcacm etc.). The RFCOMM multiplexer lives
+ * in bluetooth.library; this class only reads and writes its endpoint
+ * channels, buffering input in a ring so SDCMD_QUERY and partial CMD_READs
+ * behave like a real serial port.
+ *
+ * Low Energy devices have no Serial Port Profile; boards and sensors use a
+ * handful of vendor GATT services with one characteristic to write to and
+ * one that notifies (bLEProfiles). Those are bound the same way and look
+ * the same to the user of btserial.device: writes go out as characteristic
+ * writes of at most 20 bytes, notifications fill the ring.
+ */
+
+#include "debug.h"
+
+#include "btserial.h"
+
+static const STRPTR libname = MOD_NAME_STRING;
+
+/* /// "Lib Stuff" */
+static
+const APTR DevFuncTable[] =
+{
+    &AROS_SLIB_ENTRY(devOpen, dev, 1),
+    &AROS_SLIB_ENTRY(devClose, dev, 2),
+    &AROS_SLIB_ENTRY(devExpunge, dev, 3),
+    &AROS_SLIB_ENTRY(devReserved, dev, 4),
+    &AROS_SLIB_ENTRY(devBeginIO, dev, 5),
+    &AROS_SLIB_ENTRY(devAbortIO, dev, 6),
+    (APTR) -1,
+};
+
+static int GM_UNIQUENAME(libInit)(LIBBASETYPEPTR nh)
+{
+    struct BTSerialBase *ret = NULL;
+
+    KPRINTF(10, ("libInit nh: 0x%08lx SysBase: 0x%08lx\n", nh, SysBase));
+
+    nh->nh_UtilityBase = OpenLibrary("utility.library", 39);
+
+#define UtilityBase nh->nh_UtilityBase
+
+    if(UtilityBase)
+    {
+        NewList(&nh->nh_Units);
+
+        if((nh->nh_DevBase = (struct BTSerDevBase *) MakeLibrary((APTR) DevFuncTable, NULL, (APTR) devInit,
+           sizeof(struct BTSerDevBase), NULL)))
+        {
+            struct Library *BluetoothBase;
+            nh->nh_DevBase->nsd_ClsBase = nh;
+            Forbid();
+            AddDevice((struct Device *) nh->nh_DevBase);
+            nh->nh_DevBase->nsd_Library.lib_OpenCnt++;
+            Permit();
+            /* be a serial port for peers too: they connect to channel 1 and
+               show up as incoming SPP services, bound like the outgoing ones */
+            if((BluetoothBase = OpenLibrary("bluetooth.library", 1)))
+            {
+                nh->nh_Record = btAddServiceRecord(BSRA_UUID16, 0x1101, BSRA_Protocol, BSVP_RFCOMM,
+                                                   BSRA_RFCOMMChannel, 1, BSRA_Name, (IPTR) "Serial Port",
+                                                   BSRA_Owner, (IPTR) libname, TAG_END);
+                CloseLibrary(BluetoothBase);
+            }
+            ret = nh;
+        } else {
+            KPRINTF(20, ("failed to create btserial.device\n"));
+        }
+        if(!ret)
+        {
+            CloseLibrary(UtilityBase);
+        }
+    } else {
+        KPRINTF(20, ("libInit: OpenLibrary(\"utility.library\", 39) failed!\n"));
+    }
+    return(ret ? TRUE : FALSE);
+}
+
+static int GM_UNIQUENAME(libExpunge)(LIBBASETYPEPTR nh)
+{
+    struct BTSerialUnit *nsu;
+
+    KPRINTF(10, ("libExpunge nh: 0x%08lx\n", nh));
+
+    if(nh->nh_DevBase->nsd_Library.lib_OpenCnt == 1)
+    {
+        struct Library *BluetoothBase;
+        if(nh->nh_Record && (BluetoothBase = OpenLibrary("bluetooth.library", 1)))
+        {
+            btRemServiceRecord(nh->nh_Record);
+            nh->nh_Record = NULL;
+            CloseLibrary(BluetoothBase);
+        }
+        CloseLibrary((struct Library *) UtilityBase);
+
+        nsu = (struct BTSerialUnit *) nh->nh_Units.lh_Head;
+        while(nsu->nsu_Unit.unit_MsgPort.mp_Node.ln_Succ)
+        {
+            Remove((struct Node *) nsu);
+            FreeVec(nsu);
+            nsu = (struct BTSerialUnit *) nh->nh_Units.lh_Head;
+        }
+
+        nh->nh_DevBase->nsd_Library.lib_OpenCnt--;
+        RemDevice((struct Device *) nh->nh_DevBase);
+
+        KPRINTF(5, ("libExpunge: Unloading done! btserial.class expunged!\n\n"));
+    } else {
+        KPRINTF(5, ("libExpunge: Could not expunge, LIBF_DELEXP set!\n"));
+        return(FALSE);
+    }
+    return(TRUE);
+}
+
+ADD2INITLIB(GM_UNIQUENAME(libInit), 0)
+ADD2EXPUNGELIB(GM_UNIQUENAME(libExpunge), 0)
+/* \\\ */
+
+/* /// "bLEProfiles" */
+#define UUID128(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p) \
+    { 0x##a,0x##b,0x##c,0x##d,0x##e,0x##f,0x##g,0x##h,0x##i,0x##j,0x##k,0x##l,0x##m,0x##n,0x##o,0x##p }
+
+static const struct BTSerLEProfile bLEProfiles[] =
+{
+    {   /* Nordic UART Service */
+        UUID128(6e,40,00,01,b5,a3,f3,93,e0,a9,e5,0e,24,dc,ca,9e),
+        UUID128(6e,40,00,03,b5,a3,f3,93,e0,a9,e5,0e,24,dc,ca,9e),
+        UUID128(6e,40,00,02,b5,a3,f3,93,e0,a9,e5,0e,24,dc,ca,9e),
+        "Nordic UART"
+    },
+    {   /* Microchip (ISSC) Transparent UART */
+        UUID128(49,53,53,43,fe,7d,4a,e5,8f,a9,9f,af,d2,05,e4,55),
+        UUID128(49,53,53,43,1e,4d,4b,d9,ba,61,23,c6,47,24,96,16),
+        UUID128(49,53,53,43,88,41,43,f4,a8,d4,ec,be,34,72,9b,b3),
+        "Microchip Transparent UART"
+    },
+    {   /* HM-10 and its many relatives: one characteristic for both ways */
+        UUID128(00,00,ff,e0,00,00,10,00,80,00,00,80,5f,9b,34,fb),
+        UUID128(00,00,ff,e1,00,00,10,00,80,00,00,80,5f,9b,34,fb),
+        UUID128(00,00,ff,e1,00,00,10,00,80,00,00,80,5f,9b,34,fb),
+        "HM-10 serial"
+    }
+};
+#define NUM_LEPROFILES (sizeof(bLEProfiles) / sizeof(bLEProfiles[0]))
+
+/* the index of the profile a GATT service belongs to, or -1 */
+static LONG bFindLEProfile(const UBYTE *uuid)
+{
+    ULONG n;
+
+    for(n = 0; uuid && (n < NUM_LEPROFILES); n++)
+    {
+        if(!memcmp(bLEProfiles[n].lp_Service, uuid, 16))
+        {
+            return((LONG) n);
+        }
+    }
+    return(-1);
+}
+/* \\\ */
+
+/* /// "bAttemptServiceBinding()" */
+struct BTSerialUnit * GM_UNIQUENAME(bAttemptServiceBinding)(struct BTSerialBase *nh, struct BtService *bsv)
+{
+    struct Library *BluetoothBase;
+    IPTR uuid16 = 0;
+    IPTR proto = 0;
+    UBYTE *uuid = NULL;
+    BOOL isser = FALSE;
+
+    KPRINTF(1, ("bAttemptServiceBinding(%08lx)\n", bsv));
+    if((BluetoothBase = OpenLibrary("bluetooth.library", 1)))
+    {
+        btGetAttrs(BGA_SERVICE, bsv,
+                   BSVA_UUID16, &uuid16,
+                   BSVA_UUID, &uuid,
+                   BSVA_Protocol, &proto,
+                   TAG_END);
+        /* 0x1101 Serial Port; 0x1103 Dialup Networking is a modem behind
+           the same profile and works the same way. On LE: the vendor
+           services that carry a serial stream. */
+        isser = ((proto == BSVP_RFCOMM) && ((uuid16 == 0x1101) || (uuid16 == 0x1103))) ||
+                ((proto == BSVP_ATT) && (bFindLEProfile(uuid) >= 0));
+        CloseLibrary(BluetoothBase);
+    }
+    return(isser ? GM_UNIQUENAME(bForceServiceBinding)(nh, bsv) : NULL);
+}
+/* \\\ */
+
+/* /// "bForceServiceBinding()" */
+struct BTSerialUnit * GM_UNIQUENAME(bForceServiceBinding)(struct BTSerialBase *nh, struct BtService *bsv)
+{
+    struct Library *BluetoothBase;
+    struct BTSerialUnit *nsu;
+    struct BtDevice *bd = NULL;
+    struct BtEndpoint *bep;
+    struct BtEndpoint *wep;
+    UBYTE *addr = NULL;
+    UBYTE *uuid = NULL;
+    IPTR channel = 0;
+    IPTR proto = 0;
+    IPTR whandle = 0, wprops = 0;
+    LONG leprofile = -1;
+    STRPTR devname = NULL;
+    ULONG unitno;
+    BOOL unitfound;
+    UBYTE buf[64];
+    struct Task *tmptask;
+
+    KPRINTF(1, ("bForceServiceBinding(%08lx)\n", bsv));
+    if(!(BluetoothBase = OpenLibrary("bluetooth.library", 1)))
+    {
+        return(NULL);
+    }
+    btGetAttrs(BGA_SERVICE, bsv, BSVA_Device, &bd, BSVA_Protocol, &proto, BSVA_UUID, &uuid, TAG_END);
+    btGetAttrs(BGA_DEVICE, bd, BDA_Name, &devname, BDA_Address, &addr, TAG_END);
+    if(proto == BSVP_ATT)
+    {
+        /* a serial service over GATT: one characteristic notifies what the
+           device sends, one takes what we send */
+        if((leprofile = bFindLEProfile(uuid)) < 0)
+        {
+            CloseLibrary(BluetoothBase);
+            return(NULL);
+        }
+        bep = btFindEndpoint(bsv, NULL, BEA_UUID, (IPTR) bLEProfiles[leprofile].lp_Notify, TAG_END);
+        wep = btFindEndpoint(bsv, NULL, BEA_UUID, (IPTR) bLEProfiles[leprofile].lp_Write, TAG_END);
+        if(wep)
+        {
+            btGetAttrs(BGA_ENDPOINT, wep, BEA_Handle, &whandle, BEA_Properties, &wprops, TAG_END);
+        }
+        channel = BTSER_LECHANNEL + leprofile;
+    } else {
+        bep = wep = btFindEndpoint(bsv, NULL, BEA_Type, BEPT_RFCOMM, TAG_END);
+        if(bep)
+        {
+            btGetAttrs(BGA_ENDPOINT, bep, BEA_RFCOMMChannel, &channel, TAG_END);
+        }
+    }
+    if(!bep || !wep)
+    {
+        CloseLibrary(BluetoothBase);
+        return(NULL);
+    }
+
+    Forbid();
+    /* Find next free unit number */
+    unitno = 0;
+    nsu = (struct BTSerialUnit *) nh->nh_Units.lh_Head;
+    while(nsu->nsu_Unit.unit_MsgPort.mp_Node.ln_Succ)
+    {
+        if(nsu->nsu_UnitNo == unitno)
+        {
+            unitno++;
+            nsu = (struct BTSerialUnit *) nh->nh_Units.lh_Head;
+        } else {
+            nsu = (struct BTSerialUnit *) nsu->nsu_Unit.unit_MsgPort.mp_Node.ln_Succ;
+        }
+    }
+    /* the same remote serial port keeps its unit number across rebinds */
+    unitfound = FALSE;
+    nsu = (struct BTSerialUnit *) nh->nh_Units.lh_Head;
+    while(nsu->nsu_Unit.unit_MsgPort.mp_Node.ln_Succ)
+    {
+        if(addr && !memcmp(nsu->nsu_UnitAddr, addr, 6) && (nsu->nsu_UnitChannel == channel))
+        {
+            if(nsu->nsu_Task)
+            {
+                /* already bound (a second record for the same port):
+                   one unit, one task */
+                Permit();
+                KPRINTF(10, ("unit %ld already bound\n", nsu->nsu_UnitNo));
+                CloseLibrary(BluetoothBase);
+                return(NULL);
+            }
+            unitno = nsu->nsu_UnitNo;
+            unitfound = TRUE;
+            break;
+        }
+        nsu = (struct BTSerialUnit *) nsu->nsu_Unit.unit_MsgPort.mp_Node.ln_Succ;
+    }
+    if(!unitfound)
+    {
+        /* as units are freed in the expunge vector, the memory is outside
+           the scope of bluetooth.library */
+        if(!(nsu = AllocVec(sizeof(struct BTSerialUnit), MEMF_PUBLIC|MEMF_CLEAR)))
+        {
+            Permit();
+            CloseLibrary(BluetoothBase);
+            return(NULL);
+        }
+        /* IORequests may be queued even if the task is gone. */
+        NewList(&nsu->nsu_Unit.unit_MsgPort.mp_MsgList);
+        NewList(&nsu->nsu_ReadQueue);
+        NewList(&nsu->nsu_WriteQueue);
+        AddTail(&nh->nh_Units, &nsu->nsu_Unit.unit_MsgPort.mp_Node);
+        nsu->nsu_DenyRequests = TRUE;
+    }
+    nsu->nsu_UnitNo = unitno;
+    nsu->nsu_Device = bd;
+    nsu->nsu_Service = bsv;
+    nsu->nsu_Endpoint = bep;
+    nsu->nsu_WriteEndpoint = wep;
+    nsu->nsu_LE = (leprofile >= 0) ? TRUE : FALSE;
+    /* with a response where the device offers it: that is the only flow
+       control there is */
+    nsu->nsu_WriteReq = (wprops & 0x08) ? BTPR_GATTWRITE : BTPR_GATTWRITENORSP;
+    nsu->nsu_WriteHandle = whandle;
+    if(addr)
+    {
+        CopyMem(addr, nsu->nsu_UnitAddr, 6);
+    }
+    nsu->nsu_UnitChannel = channel;
+    Permit();
+
+    btSafeRawDoFmt(buf, 64, "btserial.class<%08lx>", (IPTR) nsu);
+    nsu->nsu_ReadySignal = SIGB_SINGLE;
+    nsu->nsu_ReadySigTask = FindTask(NULL);
+    SetSignal(0, SIGF_SINGLE);
+    if((tmptask = btSpawnSubTask(buf, (APTR) GM_UNIQUENAME(bSerialTask), nsu)))
+    {
+        btBorrowLocksWait(tmptask, 1UL<<nsu->nsu_ReadySignal);
+        if(nsu->nsu_Task)
+        {
+            nsu->nsu_ReadySigTask = NULL;
+            if(leprofile >= 0)
+            {
+                btAddErrorMsg(RETURN_OK, (STRPTR) libname,
+                               "Serial port on '%s' (LE, %s) at btserial.device unit %ld.",
+                               devname ? devname : (STRPTR) "device", bLEProfiles[leprofile].lp_Name,
+                               nsu->nsu_UnitNo);
+            } else {
+                btAddErrorMsg(RETURN_OK, (STRPTR) libname,
+                               "Serial port on '%s' (channel %ld) at btserial.device unit %ld.",
+                               devname ? devname : (STRPTR) "device", channel, nsu->nsu_UnitNo);
+            }
+            CloseLibrary(BluetoothBase);
+            return(nsu);
+        }
+    }
+    nsu->nsu_ReadySigTask = NULL;
+    /* the unit stays in the list for a later rebind */
+    CloseLibrary(BluetoothBase);
+    return(NULL);
+}
+/* \\\ */
+
+/* /// "bReleaseServiceBinding()" */
+void GM_UNIQUENAME(bReleaseServiceBinding)(struct BTSerialBase *nh, struct BTSerialUnit *nsu)
+{
+    struct Library *BluetoothBase;
+    STRPTR devname = NULL;
+
+    KPRINTF(1, ("bReleaseServiceBinding(%08lx)\n", nsu));
+    if(!(BluetoothBase = OpenLibrary("bluetooth.library", 1)))
+    {
+        return;
+    }
+    Forbid();
+    nsu->nsu_ReadySignal = SIGB_SINGLE;
+    nsu->nsu_ReadySigTask = FindTask(NULL);
+    if(nsu->nsu_Task)
+    {
+        Signal(nsu->nsu_Task, SIGBREAKF_CTRL_C);
+    }
+    Permit();
+    while(nsu->nsu_Task)
+    {
+        Wait(1UL<<nsu->nsu_ReadySignal);
+    }
+    nsu->nsu_ReadySigTask = NULL;
+    btGetAttrs(BGA_DEVICE, nsu->nsu_Device, BDA_Name, &devname, TAG_END);
+    btAddErrorMsg(RETURN_OK, (STRPTR) libname,
+                   "Serial port on '%s' released (unit %ld stays reserved).",
+                   devname ? devname : (STRPTR) "device", nsu->nsu_UnitNo);
+    CloseLibrary(BluetoothBase);
+}
+/* \\\ */
+
+#undef UtilityBase
+#define UtilityBase nh->nh_UtilityBase
+
+/* /// "btcGetAttrsA()" */
+/*****************************************************************************
+    NAME
+        LONG btcGetAttrsA(
+
+    SYNOPSIS
+        ULONG type, APTR btstruct, struct TagItem * tags)
+
+    FUNCTION
+        Read attributes of btserial.class or one of its bindings.
+
+    INPUTS
+        type - BCGA_CLASS or BCGA_BINDING.
+        btstruct - Live binding returned by this class for BCGA_BINDING;
+            ignored for BCGA_CLASS.
+        tags - Terminated query tag list, or NULL. Each supported tag
+            supplies the address of writable storage of the stated type.
+
+    TAGS
+        For BCGA_CLASS:
+        BCCA_Priority (SIPTR *) - Binding priority; 0.
+        BCCA_Description (STRPTR *) - Borrowed description string.
+        BCCA_HasClassCfgGUI (IPTR *) - FALSE.
+        BCCA_HasBindingCfgGUI (IPTR *) - FALSE.
+        BCCA_AfterDOSRestart (IPTR *) - FALSE.
+        BCCA_UsingDefaultCfg (IPTR *) - TRUE.
+
+        For BCGA_BINDING:
+        BCBA_UsingDefaultCfg (IPTR *) - TRUE.
+        BCBA_Device (struct BtDevice **) - Borrowed device pointer.
+        BCBA_Service (struct BtService **) - Borrowed service pointer.
+        BCBA_Task (struct Task **) - Current binding task; may be NULL.
+
+    RESULT
+        Number of supported attributes written. Only the first occurrence
+        of each supported tag is used. Unknown tags and unsupported types,
+        including BCGA_CONFIG, leave destinations unchanged and add nothing
+        to the count.
+
+    NOTES
+        Boolean attributes require IPTR storage, not BOOL storage. The tag
+        list and output addresses are not retained. Do not modify or free
+        the description; its lifetime ends when the class is unloaded.
+
+        Queries do not retain returned objects or prevent binding teardown.
+        Serialize queries with release and keep the binding alive while
+        using its borrowed device, service or task pointers.
+
+    SEE ALSO
+        btcDoMethodA(), btcSetAttrsA()
+
+*****************************************************************************/
+AROS_LH3(LONG, btcGetAttrsA,
+         AROS_LHA(ULONG, type, D0),
+         AROS_LHA(APTR, btstruct, A0),
+         AROS_LHA(struct TagItem *, tags, A1),
+         LIBBASETYPEPTR, nh, 5, btserial)
+{
+    AROS_LIBFUNC_INIT
+    struct TagItem *ti;
+    LONG count = 0;
+
+    switch(type)
+    {
+        case BCGA_CLASS:
+            if((ti = FindTagItem(BCCA_Priority, tags)))
+            {
+                *((SIPTR *) ti->ti_Data) = 0;
+                count++;
+            }
+            if((ti = FindTagItem(BCCA_Description, tags)))
+            {
+                *((STRPTR *) ti->ti_Data) = "Serial ports (SPP) via btserial.device";
+                count++;
+            }
+            if((ti = FindTagItem(BCCA_HasClassCfgGUI, tags)))
+            {
+                *((IPTR *) ti->ti_Data) = FALSE;
+                count++;
+            }
+            if((ti = FindTagItem(BCCA_HasBindingCfgGUI, tags)))
+            {
+                *((IPTR *) ti->ti_Data) = FALSE;
+                count++;
+            }
+            if((ti = FindTagItem(BCCA_AfterDOSRestart, tags)))
+            {
+                *((IPTR *) ti->ti_Data) = FALSE;
+                count++;
+            }
+            if((ti = FindTagItem(BCCA_UsingDefaultCfg, tags)))
+            {
+                *((IPTR *) ti->ti_Data) = TRUE;
+                count++;
+            }
+            break;
+
+        case BCGA_BINDING:
+        {
+            struct BTSerialUnit *nsu = (struct BTSerialUnit *) btstruct;
+            if((ti = FindTagItem(BCBA_UsingDefaultCfg, tags)))
+            {
+                *((IPTR *) ti->ti_Data) = TRUE;
+                count++;
+            }
+            if((ti = FindTagItem(BCBA_Device, tags)))
+            {
+                *((struct BtDevice **) ti->ti_Data) = nsu->nsu_Device;
+                count++;
+            }
+            if((ti = FindTagItem(BCBA_Service, tags)))
+            {
+                *((struct BtService **) ti->ti_Data) = nsu->nsu_Service;
+                count++;
+            }
+            if((ti = FindTagItem(BCBA_Task, tags)))
+            {
+                *((struct Task **) ti->ti_Data) = nsu->nsu_Task;
+                count++;
+            }
+            break;
+        }
+    }
+    return(count);
+    AROS_LIBFUNC_EXIT
+}
+/* \\\ */
+
+/* /// "btcSetAttrsA()" */
+/*****************************************************************************
+    NAME
+        LONG btcSetAttrsA(
+
+    SYNOPSIS
+        ULONG type, APTR btstruct, struct TagItem * tags)
+
+    FUNCTION
+        No attributes can be set through this entry point in btserial.class.
+
+    INPUTS
+        type, btstruct, tags - Ignored. Pointer arguments may be NULL.
+
+    RESULT
+        Always zero. No attributes are changed.
+
+    SEE ALSO
+        btcGetAttrsA()
+
+*****************************************************************************/
+AROS_LH3(LONG, btcSetAttrsA,
+         AROS_LHA(ULONG, type, D0),
+         AROS_LHA(APTR, btstruct, A0),
+         AROS_LHA(struct TagItem *, tags, A1),
+         LIBBASETYPEPTR, nh, 6, btserial)
+{
+    AROS_LIBFUNC_INIT
+    return(0);
+    AROS_LIBFUNC_EXIT
+}
+/* \\\ */
+
+/* /// "btcDoMethodA()" */
+/*****************************************************************************
+    NAME
+        SIPTR btcDoMethodA(
+
+    SYNOPSIS
+        ULONG methodid, IPTR * methoddata)
+
+    FUNCTION
+        Dispatch service-binding methods to btserial.class.
+
+    INPUTS
+        methodid - One of the methods below.
+        methoddata - IPTR array with the payload required by the method.
+            Cast object pointers to IPTR. For methods without a payload,
+            this argument may be NULL.
+
+        BCM_AttemptServiceBinding - methoddata[0] is a live BtService *.
+            Accept RFCOMM Serial Port (0x1101), Dialup Networking (0x1103),
+            or a supported ATT serial service: Nordic UART, Microchip or
+            HM-10.
+            A match proceeds through BCM_ForceServiceBinding.
+        BCM_ForceServiceBinding - methoddata[0] is a live BtService *.
+            For ATT, require a supported serial profile and its notification
+            and write endpoints. Otherwise require an RFCOMM endpoint.
+            Reuse an inactive unit for the same address and serial port, or
+            allocate a new unit. Reject an already active matching unit.
+            Return an opaque binding pointer cast to SIPTR after worker
+            initialization, or zero if binding cannot be established.
+        BCM_ReleaseServiceBinding - methoddata[0] is a live binding returned
+            by this class. Stop the serial task and wait for it to exit. Keep
+            the device
+            unit reserved for a later binding.
+            Return TRUE.
+        BCM_AttemptDeviceBinding, BCM_ForceDeviceBinding - Unsupported;
+            return zero without reading the payload.
+        BCM_DeviceDisconnected - Return TRUE without reading the payload.
+            Retain the binding; its worker handles failed channels and
+            reconnection.
+
+    RESULT
+        Method-specific result described above. Unsupported methods return
+        zero, including explicit close-window methods.
+
+    NOTES
+        Binding creation and release run in task context and may wait without
+        an application-selected timeout. They use SIGB_SINGLE in the calling
+        task; do not use that signal concurrently for another operation.
+        Keep the class open and the service, device and endpoints alive for
+        the binding lifetime. Serialize binding operations and queries.
+        The payload array is borrowed only for the duration of the call.
+        Release bindings through this class, never with FreeVec().
+        A failed worker startup can leave an inactive unit reserved.
+        A retained unit does not authorize use of a released binding.
+
+    SEE ALSO
+        btcGetAttrsA()
+
+    BUGS
+        BCM_ReleaseServiceBinding returns TRUE even when bluetooth.library
+        cannot be opened and the binding has not been released.
+
+*****************************************************************************/
+AROS_LH2(SIPTR, btcDoMethodA,
+         AROS_LHA(ULONG, methodid, D0),
+         AROS_LHA(IPTR *, methoddata, A1),
+         LIBBASETYPEPTR, nh, 7, btserial)
+{
+    AROS_LIBFUNC_INIT
+
+    switch(methodid)
+    {
+        case BCM_AttemptServiceBinding:
+            return((SIPTR) GM_UNIQUENAME(bAttemptServiceBinding)(nh, (struct BtService *) methoddata[0]));
+
+        case BCM_ForceServiceBinding:
+            return((SIPTR) GM_UNIQUENAME(bForceServiceBinding)(nh, (struct BtService *) methoddata[0]));
+
+        case BCM_ReleaseServiceBinding:
+            GM_UNIQUENAME(bReleaseServiceBinding)(nh, (struct BTSerialUnit *) methoddata[0]);
+            return(TRUE);
+
+        case BCM_AttemptDeviceBinding:
+        case BCM_ForceDeviceBinding:
+            return(0); /* only service bindings */
+
+        case BCM_DeviceDisconnected:
+            /* the unit stays; its channels fail and are re-issued when the
+               device reconnects (BCHA_AutoConnect) */
+            return(TRUE);
+
+        default:
+            break;
+    }
+    return(0);
+    AROS_LIBFUNC_EXIT
+}
+/* \\\ */
+
+#undef UtilityBase
+
+/*
+ * ***********************************************************************
+ * * The unit task                                                       *
+ * ***********************************************************************
+ */
+
+#define RINGBYTES(nsu) ((nsu->nsu_RingHead - nsu->nsu_RingTail + BTSER_RINGSIZE) % BTSER_RINGSIZE)
+#define RINGFREE(nsu)  (BTSER_RINGSIZE - 1 - RINGBYTES(nsu))
+
+/* /// "bRingPut()" */
+static void bRingPut(struct BTSerialUnit *nsu, const UBYTE *data, ULONG len)
+{
+    while(len--)
+    {
+        ULONG next = (nsu->nsu_RingHead + 1) % BTSER_RINGSIZE;
+        if(next == nsu->nsu_RingTail)
+        {
+            break;   /* overrun: oldest data wins, rest is dropped */
+        }
+        nsu->nsu_Ring[nsu->nsu_RingHead] = *data++;
+        nsu->nsu_RingHead = next;
+    }
+}
+/* \\\ */
+
+/* /// "bRingGet()" */
+static ULONG bRingGet(struct BTSerialUnit *nsu, UBYTE *data, ULONG len)
+{
+    ULONG done = 0;
+    while(len-- && (nsu->nsu_RingTail != nsu->nsu_RingHead))
+    {
+        *data++ = nsu->nsu_Ring[nsu->nsu_RingTail];
+        nsu->nsu_RingTail = (nsu->nsu_RingTail + 1) % BTSER_RINGSIZE;
+        done++;
+    }
+    return(done);
+}
+/* \\\ */
+
+/* /// "bServeReads()" */
+static void bServeReads(struct BTSerialUnit *nsu)
+{
+    struct IOExtSer *ioreq;
+
+    Forbid();
+    ioreq = (struct IOExtSer *) nsu->nsu_ReadQueue.lh_Head;
+    while(ioreq->IOSer.io_Message.mn_Node.ln_Succ && RINGBYTES(nsu))
+    {
+        ioreq->IOSer.io_Actual += bRingGet(nsu, ((UBYTE *) ioreq->IOSer.io_Data) + ioreq->IOSer.io_Actual,
+                                           ioreq->IOSer.io_Length - ioreq->IOSer.io_Actual);
+        if(ioreq->IOSer.io_Actual >= ioreq->IOSer.io_Length)
+        {
+            Remove((struct Node *) ioreq);
+            Permit();
+            ReplyMsg((struct Message *) ioreq);
+            Forbid();
+            ioreq = (struct IOExtSer *) nsu->nsu_ReadQueue.lh_Head;
+        } else {
+            break;   /* out of buffered data, stays queued */
+        }
+    }
+    Permit();
+}
+/* \\\ */
+
+/* /// "bServeWrites()" */
+static void bServeWrites(struct BTSerialUnit *nsu)
+{
+    struct Library *BluetoothBase = nsu->nsu_Base;
+    struct IOExtSer *ioreq;
+    IPTR mtu = 0;
+    ULONG chunk;
+
+    if(nsu->nsu_WriteBusy)
+    {
+        return;
+    }
+    if(!(ioreq = nsu->nsu_WritePending))
+    {
+        Forbid();
+        ioreq = (struct IOExtSer *) RemHead(&nsu->nsu_WriteQueue);
+        Permit();
+        if(!ioreq)
+        {
+            return;
+        }
+        nsu->nsu_WritePending = ioreq;
+        nsu->nsu_WriteOffset = 0;
+    }
+    btGetAttrs(BGA_ENDPOINT, nsu->nsu_WriteEndpoint, BEA_MaxPktSize, &mtu, TAG_END);
+    if(!mtu)
+    {
+        mtu = BTSER_CHUNK;
+    }
+    chunk = ioreq->IOSer.io_Length - nsu->nsu_WriteOffset;
+    if(chunk > mtu)
+    {
+        chunk = mtu;
+    }
+    nsu->nsu_WriteChunk = chunk;
+    btSendChannel(nsu->nsu_WriteCh, ((UBYTE *) ioreq->IOSer.io_Data) + nsu->nsu_WriteOffset, chunk);
+    nsu->nsu_WriteBusy = TRUE;
+}
+/* \\\ */
+
+/* /// "bSerialTask()" */
+AROS_UFH0(void, GM_UNIQUENAME(bSerialTask))
+{
+    AROS_USERFUNC_INIT
+
+    struct Task *thistask = FindTask(NULL);
+    struct BTSerialUnit *nsu = thistask->tc_UserData;
+    struct Library *BluetoothBase;
+    ULONG sigmask, sigs;
+    struct IOExtSer *ioreq;
+    struct IOExtSer *ioreq2;
+    BOOL running = TRUE;
+
+    if(!(BluetoothBase = OpenLibrary("bluetooth.library", 1)))
+    {
+        Forbid();
+        if(nsu->nsu_ReadySigTask)
+        {
+            Signal(nsu->nsu_ReadySigTask, 1UL<<nsu->nsu_ReadySignal);
+        }
+        return;
+    }
+    nsu->nsu_Base = BluetoothBase;
+
+    do
+    {
+        if(!(nsu->nsu_TaskMsgPort = CreateMsgPort()))
+        {
+            break;
+        }
+        nsu->nsu_Unit.unit_MsgPort.mp_SigBit = AllocSignal(-1);
+        if(nsu->nsu_Unit.unit_MsgPort.mp_SigBit == (UBYTE) -1)
+        {
+            break;
+        }
+        nsu->nsu_Unit.unit_MsgPort.mp_SigTask = thistask;
+        nsu->nsu_Unit.unit_MsgPort.mp_Node.ln_Type = NT_MSGPORT;
+        nsu->nsu_Unit.unit_MsgPort.mp_Flags = PA_SIGNAL;
+
+        if(!(nsu->nsu_ReadCh = btAllocChannel(nsu->nsu_Device, nsu->nsu_TaskMsgPort, nsu->nsu_Endpoint)))
+        {
+            break;
+        }
+        /* an LE serial service is written to by handle, on the device: that
+           lets us pick the kind of write its characteristic takes */
+        if(!(nsu->nsu_WriteCh = btAllocChannel(nsu->nsu_Device, nsu->nsu_TaskMsgPort,
+                                                nsu->nsu_LE ? NULL : nsu->nsu_Endpoint)))
+        {
+            break;
+        }
+        btSetAttrs(BGA_CHANNEL, nsu->nsu_ReadCh, BCHA_AutoConnect, TRUE, TAG_END);
+        btSetAttrs(BGA_CHANNEL, nsu->nsu_WriteCh, BCHA_AutoConnect, TRUE, TAG_END);
+        btChannelSetup(nsu->nsu_ReadCh, BTPR_READ, 0, 0);
+        if(nsu->nsu_LE)
+        {
+            btChannelSetup(nsu->nsu_WriteCh, nsu->nsu_WriteReq, nsu->nsu_WriteHandle, 0);
+        } else {
+            btChannelSetup(nsu->nsu_WriteCh, BTPR_WRITE, 0, 0);
+        }
+        nsu->nsu_BusyRetries = 0;
+        btSendChannel(nsu->nsu_ReadCh, nsu->nsu_ReadBuf, sizeof(nsu->nsu_ReadBuf));
+        nsu->nsu_ReadPosted = TRUE;
+        nsu->nsu_RingHead = nsu->nsu_RingTail = 0;
+        nsu->nsu_Task = thistask;
+    } while(FALSE);
+
+    Forbid();
+    if(nsu->nsu_ReadySigTask)
+    {
+        Signal(nsu->nsu_ReadySigTask, 1UL<<nsu->nsu_ReadySignal);
+    }
+    Permit();
+
+    if(nsu->nsu_Task)
+    {
+        sigmask = (1UL<<nsu->nsu_Unit.unit_MsgPort.mp_SigBit) |
+                  (1UL<<nsu->nsu_TaskMsgPort->mp_SigBit) | SIGBREAKF_CTRL_C;
+        while(running)
+        {
+            APTR ch;
+            sigs = Wait(sigmask);
+            while((ch = (APTR) GetMsg(nsu->nsu_TaskMsgPort)))
+            {
+                if(ch == nsu->nsu_ReadCh)
+                {
+                    LONG err = btGetChannelError(ch);
+                    nsu->nsu_ReadPosted = FALSE;
+                    if(!err)
+                    {
+                        bRingPut(nsu, nsu->nsu_ReadBuf, btGetChannelActual(ch));
+                    }
+                    else if((err == IOERR_ABORTED) || (err == BTIOERR_NOTCONNECTED) || (err == BTIOERR_DISCONNECTED))
+                    {
+                        btDelayMS(1000);   /* link down; auto connect brings it back */
+                    } else {
+                        btDelayMS(250);
+                    }
+                    if(!(SetSignal(0, 0) & SIGBREAKF_CTRL_C))
+                    {
+                        btSendChannel(nsu->nsu_ReadCh, nsu->nsu_ReadBuf, sizeof(nsu->nsu_ReadBuf));
+                        nsu->nsu_ReadPosted = TRUE;
+                    }
+                }
+                else if(ch == nsu->nsu_WriteCh)
+                {
+                    LONG err = btGetChannelError(ch);
+                    nsu->nsu_WriteBusy = FALSE;
+                    if(nsu->nsu_LE && (err == IOERR_UNITBUSY) && nsu->nsu_WritePending &&
+                       (++nsu->nsu_BusyRetries < BTSER_BUSYRETRIES))
+                    {
+                        /* an LE link serves one GATT request at a time, and
+                           another class had it: the same bytes go out again */
+                        btDelayMS(25);
+                    }
+                    else if((ioreq = nsu->nsu_WritePending))
+                    {
+                        nsu->nsu_BusyRetries = 0;
+                        if(err)
+                        {
+                            ioreq->IOSer.io_Error = SerErr_LineErr;
+                            ioreq->IOSer.io_Actual = nsu->nsu_WriteOffset;
+                            nsu->nsu_WritePending = NULL;
+                            ReplyMsg((struct Message *) ioreq);
+                        } else {
+                            /* a characteristic write reports no length */
+                            nsu->nsu_WriteOffset += nsu->nsu_LE ? nsu->nsu_WriteChunk : btGetChannelActual(ch);
+                            if(nsu->nsu_WriteAbort)
+                            {
+                                nsu->nsu_WriteAbort = FALSE;
+                                ioreq->IOSer.io_Error = IOERR_ABORTED;
+                                ioreq->IOSer.io_Actual = nsu->nsu_WriteOffset;
+                                nsu->nsu_WritePending = NULL;
+                                ReplyMsg((struct Message *) ioreq);
+                            }
+                            else if(nsu->nsu_WriteOffset >= ioreq->IOSer.io_Length)
+                            {
+                                ioreq->IOSer.io_Actual = nsu->nsu_WriteOffset;
+                                nsu->nsu_WritePending = NULL;
+                                ReplyMsg((struct Message *) ioreq);
+                            }
+                        }
+                    }
+                }
+            }
+            while((ioreq = (struct IOExtSer *) GetMsg(&nsu->nsu_Unit.unit_MsgPort)))
+            {
+                switch(ioreq->IOSer.io_Command)
+                {
+                    case CMD_CLEAR:
+                        nsu->nsu_RingHead = nsu->nsu_RingTail = 0;
+                        ReplyMsg((struct Message *) ioreq);
+                        break;
+
+                    case CMD_RESET:
+                    case CMD_FLUSH:
+                        Forbid();
+                        ioreq2 = (struct IOExtSer *) nsu->nsu_WriteQueue.lh_Head;
+                        while(ioreq2->IOSer.io_Message.mn_Node.ln_Succ)
+                        {
+                            Remove((struct Node *) ioreq2);
+                            ioreq2->IOSer.io_Error = IOERR_ABORTED;
+                            ReplyMsg((struct Message *) ioreq2);
+                            ioreq2 = (struct IOExtSer *) nsu->nsu_WriteQueue.lh_Head;
+                        }
+                        ioreq2 = (struct IOExtSer *) nsu->nsu_ReadQueue.lh_Head;
+                        while(ioreq2->IOSer.io_Message.mn_Node.ln_Succ)
+                        {
+                            Remove((struct Node *) ioreq2);
+                            ioreq2->IOSer.io_Error = IOERR_ABORTED;
+                            ReplyMsg((struct Message *) ioreq2);
+                            ioreq2 = (struct IOExtSer *) nsu->nsu_ReadQueue.lh_Head;
+                        }
+                        Permit();
+                        ReplyMsg((struct Message *) ioreq);
+                        break;
+
+                    case SDCMD_QUERY:
+                        ioreq->io_Status = 0;   /* carrier present, all clear */
+                        ioreq->IOSer.io_Actual = RINGBYTES(nsu);
+                        ReplyMsg((struct Message *) ioreq);
+                        break;
+
+                    case SDCMD_SETPARAMS:
+                        /* baud rate and friends have no meaning on RFCOMM */
+                        ReplyMsg((struct Message *) ioreq);
+                        break;
+
+                    case SDCMD_BREAK:
+                        ReplyMsg((struct Message *) ioreq);
+                        break;
+
+                    default:
+                        ioreq->IOSer.io_Error = IOERR_NOCMD;
+                        ReplyMsg((struct Message *) ioreq);
+                        break;
+                }
+            }
+            if(!nsu->nsu_DevSuspend)
+            {
+                bServeReads(nsu);
+                bServeWrites(nsu);
+            }
+            if(sigs & SIGBREAKF_CTRL_C)
+            {
+                running = FALSE;
+            }
+        }
+    }
+
+    /* going down: deny and flush everything */
+    nsu->nsu_DenyRequests = TRUE;
+    if(nsu->nsu_ReadCh)
+    {
+        btAbortChannel(nsu->nsu_ReadCh);
+        btWaitChannel(nsu->nsu_ReadCh);
+        btFreeChannel(nsu->nsu_ReadCh);
+        nsu->nsu_ReadCh = NULL;
+    }
+    if(nsu->nsu_WriteCh)
+    {
+        btAbortChannel(nsu->nsu_WriteCh);
+        btWaitChannel(nsu->nsu_WriteCh);
+        btFreeChannel(nsu->nsu_WriteCh);
+        nsu->nsu_WriteCh = NULL;
+    }
+    Forbid();
+    if((ioreq = nsu->nsu_WritePending))
+    {
+        nsu->nsu_WritePending = NULL;
+        ioreq->IOSer.io_Error = IOERR_ABORTED;
+        ReplyMsg((struct Message *) ioreq);
+    }
+    ioreq = (struct IOExtSer *) nsu->nsu_WriteQueue.lh_Head;
+    while(ioreq->IOSer.io_Message.mn_Node.ln_Succ)
+    {
+        Remove((struct Node *) ioreq);
+        ioreq->IOSer.io_Error = IOERR_ABORTED;
+        ReplyMsg((struct Message *) ioreq);
+        ioreq = (struct IOExtSer *) nsu->nsu_WriteQueue.lh_Head;
+    }
+    ioreq = (struct IOExtSer *) nsu->nsu_ReadQueue.lh_Head;
+    while(ioreq->IOSer.io_Message.mn_Node.ln_Succ)
+    {
+        Remove((struct Node *) ioreq);
+        ioreq->IOSer.io_Error = IOERR_ABORTED;
+        ReplyMsg((struct Message *) ioreq);
+        ioreq = (struct IOExtSer *) nsu->nsu_ReadQueue.lh_Head;
+    }
+    /* Disable the message port, messages may still be queued */
+    nsu->nsu_Unit.unit_MsgPort.mp_SigTask = NULL;
+    nsu->nsu_Unit.unit_MsgPort.mp_Flags = PA_IGNORE;
+    if(nsu->nsu_Unit.unit_MsgPort.mp_SigBit != (UBYTE) -1)
+    {
+        FreeSignal((LONG) nsu->nsu_Unit.unit_MsgPort.mp_SigBit);
+        nsu->nsu_Unit.unit_MsgPort.mp_SigBit = (UBYTE) -1;
+    }
+    while((ioreq = (struct IOExtSer *) GetMsg(&nsu->nsu_Unit.unit_MsgPort)))
+    {
+        ioreq->IOSer.io_Error = IOERR_ABORTED;
+        ReplyMsg((struct Message *) ioreq);
+    }
+    Permit();
+    if(nsu->nsu_TaskMsgPort)
+    {
+        DeleteMsgPort(nsu->nsu_TaskMsgPort);
+        nsu->nsu_TaskMsgPort = NULL;
+    }
+    CloseLibrary(BluetoothBase);
+    nsu->nsu_Base = NULL;
+    Forbid();
+    nsu->nsu_Task = NULL;
+    if(nsu->nsu_ReadySigTask)
+    {
+        Signal(nsu->nsu_ReadySigTask, 1UL<<nsu->nsu_ReadySignal);
+    }
+    AROS_USERFUNC_EXIT
+}
+/* \\\ */

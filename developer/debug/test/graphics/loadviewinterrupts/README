@@ -1,0 +1,18 @@
+Copyright (C) 2026, The AROS Development Team. All rights reserved.
+
+Native Amiga LoadView interrupt regression
+=========================================
+
+Selected by test-graphics-amiga-m68k and its quick target. Build independently
+with test-graphics-loadviewinterrupts or test-graphics-loadviewinterrupts-quick.
+
+After blanking the OS view, simulate a hardware takeover by clearing VERTB,
+then clearing all interrupt enables. A repeated LoadView(NULL) must restore
+VERTB and the master enable without altering other interrupt or DMA enables.
+With an outer Disable(), VERTB must be restored while the master stays off.
+Restore hardware interrupts before WaitTOF even on failure, so the old ROM
+reports its failures rather than hanging the test. Confirm the frame counter
+advances after each case and restore the caller's view on exit.
+
+The old implementation fails four of fifteen checks. No emulator-only
+register reads or production library-vector patches are used.

@@ -1,0 +1,27 @@
+LIBOBJS = libfunc.o ilbmclass.o
+
+ilbm.datatype: ${LIBOBJS}
+   slink with <<
+LIBFD FD:dtclass_lib.fd
+to ilbm.datatype
+FROM lib:libent.o lib:libinit.o $(LIBOBJS)
+lib lib:sc.lib
+lib lib:debug.lib
+lib lib:amiga.lib
+NOICONS
+SD
+SC
+libversion 41 librevision 0 libid "ilbm.datatype 41.0 (13-Nov-2000)"
+<
+   avail flush
+
+libfunc.o: libfunc.c
+   sc nostackcheck cpu=68020 libcode define=MYDEBUG libfunc.c OBJNAME=$@
+
+#   sc nostackcheck cpu=68020 optimize nodebug libcode libfunc.c OBJNAME=$@
+
+ilbmclass.o: ilbmclass.c
+   sc nostackcheck cpu=68020 ilbmclass.c define=MYDEBUG OBJNAME=$@
+
+#   sc nostackcheck cpu=68020 optimize nodebug ilbmclass.c OBJNAME=$@
+

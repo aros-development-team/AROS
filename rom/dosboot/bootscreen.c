@@ -1,0 +1,168 @@
+/*
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
+*/
+
+#include <aros/debug.h>
+#include <exec/alerts.h>
+#include <exec/libraries.h>
+#include <graphics/gfxbase.h>
+#include <graphics/modeid.h>
+#include <intuition/intuition.h>
+#include <intuition/screens.h>
+#include <proto/exec.h>
+#include <proto/graphics.h>
+#include <proto/intuition.h>
+
+#include "bootanim.h"
+
+/*
+ * 'quiet' asks for NULL rather than an alert when the display database
+ * has nothing to offer. AN_SysScrnType carries AT_DeadEnd, so a caller
+ * that can carry on without a screen has to be able to opt out of it.
+ */
+static struct Screen *OpenBootScreenType(struct DOSBootBase *DOSBootBase, BYTE MinDepth, BYTE SquarePixels, BOOL quiet)
+{
+    UWORD height;
+    ULONG mode;
+
+    GfxBase = (void *)TaggedOpenLibrary(TAGGEDOPEN_GRAPHICS);
+    IntuitionBase = (void *)TaggedOpenLibrary(TAGGEDOPEN_INTUITION);
+
+    if ((!IntuitionBase) || (!GfxBase))
+        /* We failed to open one of system libraries. AROS is in utterly broken state */
+        Alert(AT_DeadEnd|AN_BootStrap|AG_OpenLib);
+
+    height = 480;
+    mode = BestModeID(BIDTAG_DesiredWidth, 640, BIDTAG_DesiredHeight, height,
+        BIDTAG_Depth, MinDepth, TAG_DONE);
+    if (mode == INVALID_ID)
+        /* An NTSC-only display database (Amiga chipset without a PAL
+           monitor) has no 480-line mode, so probe again with the smallest
+           standard height. The result is only used to detect the monitor
+           type; the real height is picked below. */
+        mode = BestModeID(BIDTAG_DesiredWidth, 640, BIDTAG_DesiredHeight, 200,
+            BIDTAG_Depth, MinDepth, TAG_DONE);
+    if (mode == INVALID_ID)
+    {
+        if (quiet)
+            return NULL;
+        Alert(AN_SysScrnType);
+    }
+
+    /* Set PAL or NTSC default height if we are running on Amiga(tm) hardware.
+     * We also need to check if this is really PAL or NTSC mode because we have to
+     * use PC 640x480 mode if user has Amiga hardware + RTG board.
+     * Check DisplayFlags first because non-Amiga modeIDs use different format.
+     */
+    if (GfxBase->DisplayFlags & (NTSC | PAL)) {
+        if ((mode & MONITOR_ID_MASK) == NTSC_MONITOR_ID)
+            height = SquarePixels ? 400 : 200;
+        else if ((mode & MONITOR_ID_MASK) == PAL_MONITOR_ID)
+            height = SquarePixels ? 512 : 256;
+    }
+
+    /* We want the screen to occupy the whole display, so we find best maching
+       mode ID and then open a screen with that mode */
+    mode = BestModeID(BIDTAG_DesiredWidth, 640, BIDTAG_DesiredHeight, height,
+        BIDTAG_Depth, MinDepth, TAG_DONE);
+
+    if (mode != INVALID_ID)
+    {
+        struct Screen *scr = OpenScreenTags(NULL, SA_DisplayID, mode, SA_Draggable, FALSE,
+                                            SA_Quiet, TRUE, SA_ShowTitle, FALSE,
+                                            SA_Depth, MinDepth, TAG_DONE);
+
+        if (scr)
+            return scr;
+    }
+    /* We can't open a screen. Likely there are no display modes in the database at all */
+    if (!quiet)
+        Alert(AN_SysScrnType);
+    return NULL;
+}
+
+struct Screen *OpenBootScreen(struct DOSBootBase *DOSBootBase)
+{
+    /* Boot menu requires basic 4+ color screen */
+    return OpenBootScreenType(DOSBootBase, 2, FALSE, FALSE);
+}
+
+struct Screen *NoBootMediaScreen(struct DOSBootBase *DOSBootBase)
+{
+    /*
+     * Quiet: dosboot_Init() calls this on every pass of its retry loop,
+     * and a machine with no display driver must still keep retrying -
+     * the medium it is waiting for may not have enumerated yet.
+     */
+    struct Screen *scr = OpenBootScreenType(DOSBootBase, 4, TRUE, TRUE);
+
+    if (scr)
+    {
+        /* Having a window allows us to control the shape of the mouse cursor
+           through Intuition functions. */
+        struct NewWindow nw =
+        {
+            0, 0,
+            scr->Width, scr->Height,
+            0, 0,
+            0,
+            WFLG_ACTIVATE | WFLG_BORDERLESS | WFLG_BACKDROP,
+            NULL,
+            NULL,
+            NULL,
+            scr,
+            NULL,
+            0, 0,
+            scr->Width, scr->Height,
+            CUSTOMSCREEN
+        };
+
+        DOSBootBase->bm_Window = OpenWindow(&nw);
+
+        /* Hide the mouse pointer immediately, before the (slower) animation
+           setup runs, so the default arrow doesn't linger over the screen. */
+        if (DOSBootBase->bm_Window)
+        {
+            DOSBootBase->blank_pointer = AllocMem(BOOT_POINTER_SIZE,
+                                                   MEMF_CHIP | MEMF_CLEAR);
+            if (DOSBootBase->blank_pointer)
+                SetPointer(DOSBootBase->bm_Window, DOSBootBase->blank_pointer,
+                           BOOT_POINTER_HEIGHT, 16, 0, 0);
+        }
+
+        if (!anim_Init(scr, DOSBootBase))
+        {
+            SetAPen(&scr->RastPort, 1);
+            Move(&scr->RastPort, 215, 120);
+            Text(&scr->RastPort, "No bootable media found...", 26);
+        }
+    }
+
+    return scr;
+}
+
+void CloseBootScreen(struct Screen *scr, struct DOSBootBase *DOSBootBase)
+{
+    /* Close the window if it was created */
+    if (DOSBootBase->bm_Window)
+    {
+        CloseWindow(DOSBootBase->bm_Window);
+        DOSBootBase->bm_Window = NULL;
+    }
+
+    CloseScreen(scr);
+
+    CloseLibrary(&IntuitionBase->LibNode);
+    CloseLibrary(&GfxBase->LibNode);
+}
+
+void CloseNoBootMediaScreen(struct DOSBootBase *DOSBootBase)
+{
+    if (DOSBootBase->bm_Screen)
+    {
+        CloseBootScreen(DOSBootBase->bm_Screen, DOSBootBase);
+        DOSBootBase->bm_Screen = NULL;
+    }
+
+    anim_Stop(DOSBootBase);
+}

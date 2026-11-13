@@ -1,0 +1,119 @@
+#ifndef _POSIXC_STDIO_H_
+#define _POSIXC_STDIO_H_
+
+/*
+    Copyright © 1995-2026, The AROS Development Team. All rights reserved.
+    $Id$
+
+    POSIX.1-2008 header file stdio.h
+*/
+
+#include <aros/system.h>
+
+#include <aros/features.h>
+#include <aros/stdc/stdio.h>
+
+#include <aros/types/off_t.h>
+#include <aros/types/ssize_t.h>
+
+#define L_ctermid	FILENAME_MAX
+#define P_tmpdir	"T:"
+
+__BEGIN_DECLS
+
+/* Core POSIX */
+POSIXCFUNC(FILE *, fopen, (const char * __restrict filename, const char * __restrict mode));
+POSIXCFUNC(int, fclose, (FILE *stream));
+POSIXCFUNC(int, fflush, (FILE *stream));
+POSIXCFUNC(int, fgetpos, (FILE * __restrict stream, fpos_t * __restrict pos));
+POSIXCFUNC(int, fsetpos, (FILE *stream, const fpos_t *pos));
+POSIXCFUNC(int, feof, (FILE *stream));
+POSIXCFUNC(int, ferror, (FILE *stream));
+POSIXCFUNC(int, ungetc, (int c, FILE *stream));
+POSIXCFUNC(FILE *, tmpfile, (void));
+POSIXCFUNC(char *, tmpnam, (char *s));
+POSIXCFUNC(int, setvbuf, (FILE * __restrict stream, char * __restrict buf, int mode, size_t size));
+POSIXCFUNC(void, setbuf, (FILE * __restrict stream, char * __restrict buf));
+POSIXCFUNC(int, scanf, (const char * __restrict format, ...));
+POSIXCFUNC(void, rewind, (FILE *stream));
+POSIXCFUNC(int, puts, (const char *s));
+POSIXCFUNC(int, putchar, (int c));
+POSIXCFUNC(int, printf, (const char * __restrict format, ...));
+POSIXCFUNC(char *, gets, (char *s));  /* Legacy */
+POSIXCFUNC(int, getchar, (void));
+POSIXCFUNC(size_t, fwrite, (const void * __restrict ptr, size_t size, size_t nmemb, FILE * __restrict stream));
+POSIXCFUNC(long int, ftell, (FILE *stream));
+POSIXCFUNC(int, fseek, (FILE *stream, long int offset, int whence));
+POSIXCFUNC(int, fscanf, (FILE * __restrict stream, const char * __restrict format, ...));
+POSIXCFUNC(FILE *, freopen, (const char * __restrict filename, const char * __restrict mode, FILE * __restrict stream));
+POSIXCFUNC(size_t, fread, (void * __restrict ptr, size_t size, size_t nmemb, FILE * __restrict stream));
+POSIXCFUNC(int, fputs, (const char * __restrict s, FILE * __restrict stream));
+POSIXCFUNC(int, fputc, (int c, FILE *stream));
+POSIXCFUNC(int, fprintf, (FILE * __restrict stream, const char * __restrict format, ...));
+POSIXCFUNC(char *, fgets, (char * __restrict s, int n, FILE * __restrict stream));
+POSIXCFUNC(int, fgetc, (FILE *stream));
+POSIXCFUNC(int, vscanf, (const char * __restrict format, va_list arg));
+POSIXCFUNC(int, vprintf, (const char * __restrict format, va_list arg));
+POSIXCFUNC(int, vfscanf, (FILE * __restrict stream, const char * __restrict format, va_list arg));
+POSIXCFUNC(int, vfprintf, (FILE * __restrict stream, const char * __restrict format, va_list arg));
+
+int fileno(FILE *);
+void flockfile(FILE *);
+int getc_unlocked(FILE *);
+void funlockfile(FILE *);
+
+/* Extensions requiring feature guards */
+
+/* GNU or XSI */
+#if defined(_GNU_SOURCE) || defined(_XOPEN_SOURCE)
+FILE *fdopen(int filedes, const char *mode);
+int pclose(FILE *);
+FILE *popen(const char *, const char *);
+char *tempnam(const char *dir, const char *pfx);
+#endif
+
+/* GNU extensions */
+#if defined(_GNU_SOURCE)
+/* NOTIMPL char *ctermid(char *); */
+int dprintf(int, const char *__restrict, ...);
+/* NOTIMPL FILE *fmemopen(void *restrict, size_t, const char *restrict); */
+/* NOTIMPL int ftrylockfile(FILE *); */
+/* NOTIMPL int getchar_unlocked(void); */
+ssize_t getdelim(char **__restrict, size_t *__restrict, int, FILE *__restrict);
+ssize_t getline(char **__restrict, size_t *__restrict, FILE *__restrict);
+/* NOTIMPL FILE *open_memstream(char **, size_t *); */
+/* NOTIMPL int putc_unlocked(int, FILE *); */
+/* NOTIMPL int putchar_unlocked(int); */
+/* NOTIMPL int renameat(int, const char *, int, const char *); */
+int vdprintf(int, const char *__restrict, va_list);
+#endif
+
+/* Large file support (non-standard) */
+FILE *fopen64(const char * __restrict filename, const char * __restrict mode);
+int fgetpos64(FILE * __restrict stream, __fpos64_t * __restrict pos);
+int fsetpos64(FILE *stream, const __fpos64_t *pos);
+int fseeko(FILE *stream, off_t offset, int whence);
+off_t ftello(FILE *stream);
+#if defined(__off64_t_defined)
+int fseeko64(FILE *stream, off64_t offset, int whence);
+off64_t ftello64(FILE *stream);
+#endif
+
+/* clib2 compatibility */
+int __get_default_file(int file_descriptor, long *file_handle);
+
+/* Deprecated POSIX functions */
+__header_inline int getw(FILE *stream)
+{
+    int word;
+    return (fread(&word, sizeof(word), 1, stream) > 0) ? word : EOF;
+}
+
+__header_inline int putw(int word, FILE *stream)
+{
+    return (fwrite(&word, sizeof(word), 1, stream) > 0) ? 0 : EOF;
+}
+
+__END_DECLS
+
+#endif /* _POSIXC_STDIO_H_ */

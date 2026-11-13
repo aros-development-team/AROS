@@ -1,0 +1,10 @@
+# Copyright (C) 2004, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+
+ICONS := AutoPoint Blanker ClickToFront Exchange FKey NoCapsLock Opaque DepthMenu
+
+#MM- iconset-Gorilla-old-icons-aros-clean : iconset-Gorilla-old-icons-aros-tools-commodities-clean
+#MM- iconset-Gorilla-old-icons-aros : iconset-Gorilla-old-icons-aros-tools-commodities
+%build_icons mmake=iconset-Gorilla-old-icons-aros-tools-commodities icons=$(ICONS) \
+             dir=$(AROS_TOOLS)/Commodities

@@ -1,0 +1,70 @@
+#   Generate libvulkan_wsi.a
+#
+
+include $(SRCDIR)/config/aros.cfg
+
+CUR_MESADIR := src/vulkan/wsi
+include $(SRCDIR)/$(CURDIR)/../mesa.cfg
+
+WSI_GENDIR := $(top_builddir)/$(CUR_MESADIR)
+
+VULKAN_WSI_SOURCES_C := \
+            $(top_srcdir)/$(CUR_MESADIR)/wsi_common \
+            $(top_srcdir)/$(CUR_MESADIR)/wsi_common_headless
+
+VULKAN_WSI_GEN_SOURCES := \
+            $(WSI_GENDIR)/wsi_common_entrypoints
+
+#MM mesa3d-linklib-vulkan-wsi : mesa3d-generate-vulkan-wsi mesa3d-linklib-vulkan-runtime mesa3d-linklib-mesautil mesa3d-linklib-compiler linklibs-galliumauxiliary
+#MM mesa3d-generate-vulkan-wsi : mesa3d-generate-vulkan-runtime
+
+USER_INCLUDES += \
+            -iquote $(SRCDIR)/$(CURDIR)/../aros_compat \
+            -iquote $(top_srcdir)/$(CUR_MESADIR) \
+            -iquote $(top_srcdir)/src \
+            -iquote $(top_srcdir)/src/util \
+            -iquote $(top_srcdir)/src/compiler \
+            -iquote $(top_srcdir)/src/compiler/nir \
+            -iquote $(top_srcdir)/src/gallium/include \
+            -iquote $(top_srcdir)/src/gallium/auxiliary \
+            -iquote $(top_srcdir)/src/vulkan/runtime \
+            -iquote $(top_srcdir)/src/vulkan/util \
+            -iquote $(top_srcdir)/include \
+            -iquote $(top_builddir)/src \
+            -iquote $(top_builddir)/src/compiler \
+            -iquote $(top_builddir)/src/compiler/nir \
+            -iquote $(top_builddir)/src/vulkan/runtime \
+            -iquote $(top_builddir)/src/vulkan/util \
+            -iquote $(WSI_GENDIR) \
+            -I$(SRCDIR)/$(CURDIR)/../aros_compat \
+            -I$(top_srcdir)/include \
+            -I$(top_srcdir)/src \
+            -I$(top_builddir)/src \
+            -I$(top_builddir)/src/vulkan/runtime \
+            -I$(top_builddir)/src/vulkan/util \
+            -I$(WSI_GENDIR)
+
+USER_CPPFLAGS += \
+            -DNO_AMIGA_LINKAGE_TYPES \
+            -DPACKAGE_VERSION=\"$(MESAGLVERSION)\" \
+            -DNDEBUG
+
+USER_CFLAGS += $(MESA_NOWARNFLAGS)
+
+%build_linklib mmake=mesa3d-linklib-vulkan-wsi libname=vulkan_wsi \
+    libdir=$(top_libdir) objdir=$(top_builddir)/$(CUR_MESADIR) \
+    files="$(VULKAN_WSI_SOURCES_C) $(VULKAN_WSI_GEN_SOURCES)"
+
+#MM
+mesa3d-generate-vulkan-wsi :
+	@$(ECHO) "Generating Vulkan WSI entrypoints..."
+	@$(MKDIR) -p $(WSI_GENDIR)
+	@VK_XML=$(top_srcdir)/src/vulkan/registry/vk.xml && \
+	PYTHONPATH="$(top_srcdir)/src/vulkan/util:$(top_srcdir)/src/util:$(top_srcdir)/src:$$PYTHONPATH" && \
+	export PYTHONPATH && \
+	python3 $(top_srcdir)/src/vulkan/util/vk_entrypoints_gen.py \
+	  --xml "$$VK_XML" --proto --weak --prefix wsi --beta false \
+	  --out-c "$(WSI_GENDIR)/wsi_common_entrypoints.c" \
+	  --out-h "$(WSI_GENDIR)/wsi_common_entrypoints.h"
+
+%common

@@ -1,0 +1,17 @@
+include $(SRCDIR)/config/aros.cfg
+
+USER_LDFLAGS := -static
+USER_CPPFLAGS := -DMUIMASTER_YES_INLINE_STDARG
+
+FILES := btmidi btmidi_central btmidi_camd btmidi_gui blemidi
+
+#MM kernel-bluetooth-classes-btmidi : kernel-bluetooth-btclass kernel-bluetooth-library-includes \
+#MM				kernel-bluetooth-classes-btmidi-camddriver
+
+# The class's own functions, which only its CAMD driver calls, get private
+# includes; the driver is built in camd/ and linked in from arch/.
+%build_module mmake=kernel-bluetooth-classes-btmidi \
+    modname=btmidi modtype=btclass modsuffix="class" \
+    files="$(FILES)" includedir="$(GENDIR)/$(CURDIR)/include"
+
+%common

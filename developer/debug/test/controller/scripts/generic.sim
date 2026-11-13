@@ -1,0 +1,15 @@
+# No-name USB pad: no binding table, mapping synthesised from HID usages
+expect reading mapped 1
+axis 0 255
+expect reading gpaxis 0 32767
+axis 0 128
+expect reading gpaxis 0 0
+btn 0 1
+expect reading gp south 1
+btn 0 0
+btn 1 1
+expect reading gp east 1
+btn 1 0
+btn 6 1
+expect reading gp back 1
+btn 6 0

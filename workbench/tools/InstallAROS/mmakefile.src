@@ -1,0 +1,48 @@
+# Copyright (C) 2009-2026, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+
+FILES   := \
+        ia_main \
+        ia_installclass \
+        ia_stageclass \
+        ia_optionclass \
+        ia_driveselectclass \
+        ia_volumeclass \
+        ia_bootloader \
+        ia_packages \
+        ia_diskio \
+        ia_log \
+        ia_env \
+        ia_locale
+
+EXEDIR  := $(AROS_TOOLS)
+
+#MM- workbench-tools : workbench-tools-installaros
+#MM workbench-tools-installaros : kernel-hidd-storage-includes workbench-tools-installaros-catalogs workbench-tools-installaros-diskicons
+#MM- workbench-tools-installaros-quick : workbench-tools-installaros-diskicons workbench-tools-installaros-catalogs
+
+USER_CPPFLAGS := -DARCHBOOTDIR=\"$(AROS_DIR_BOOTARCH)\"
+ifeq ($(strip $(AROS_TARGET_BOOTLOADER)),grub)
+USER_CPPFLAGS += -DGRUB=1
+endif
+ifeq ($(strip $(AROS_TARGET_BOOTLOADER)),grub2)
+USER_CPPFLAGS += -DGRUB=2
+endif
+# grub2gfx (the pc target's bootloader) is GRUB2 with a gfx splash: select the
+# GRUB2 InstallAROS backend too. Without this, GRUB stays undefined on the
+# grub2gfx build and InstallAROS only picks GRUB2 via the lastmatch fallback;
+# worse, a build that ships only the 0.97 stages would silently default to the
+# legacy backend, whose multiboot1 stages cannot boot a multiboot2 bootstrap
+# ("No kickstart modules found").
+ifeq ($(strip $(AROS_TARGET_BOOTLOADER)),grub2gfx)
+USER_CPPFLAGS += -DGRUB=2
+endif
+USER_CPPFLAGS += -DDEBUG=0
+
+%build_prog mmake=workbench-tools-installaros \
+    progname=InstallAROS targetdir=$(EXEDIR) \
+    files=$(FILES)
+
+%common
+

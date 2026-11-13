@@ -1,0 +1,22 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+FILES :=    seriallogger
+FUNCS :=
+
+USER_CPPFLAGS := \
+        -DMUIMASTER_YES_INLINE_STDARG \
+        -DSTRUCT_RESIDENT_PLAIN
+
+USER_CFLAGS := -Wall -Wextra
+#USER_CPPFLAGS += -DDEBUG=1
+
+#MM kernel-log-serial : linklibs includes kernel-log-includes
+
+USER_LDFLAGS := -static
+
+%build_module mmake=kernel-log-serial \
+    modname=serial modtype=resource \
+    includedir=$(GENDIR)/$(CURDIR)/include files="$(FUNCS) $(FILES)" modsuffix=logger
+
+%common

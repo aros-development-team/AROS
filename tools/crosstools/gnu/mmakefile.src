@@ -1,0 +1,361 @@
+include $(SRCDIR)/config/aros.cfg
+-include $(SRCDIR)/tools/crosstools/$(AROS_TOOLCHAIN).cfg
+
+LN ?= ln
+
+BINUTILS_EXTRA_OPTS := --target=$(AROS_TARGET_CPU)-aros
+BINUTILS_EXTRA_OPTS += --bindir=$(CROSSTOOLSDIR)
+BINUTILS_EXTRA_OPTS += --libdir=$(CROSSTOOLSDIR)/lib
+BINUTILS_EXTRA_OPTS += --with-sysroot=$(AROS_DEVELOPER)
+BINUTILS_EXTRA_OPTS += --disable-werror
+BINUTILS_EXTRA_OPTS += --disable-nls
+ifeq (yes, $(TARGET_LTO))
+BINUTILS_EXTRA_OPTS += --enable-plugins --enable-lto
+endif
+
+# Binutils 2.31 enables separate code for x86 by default
+# however we do not handle it.
+BINUTILS_NOSEPCODE=no
+ifeq ($(shell test $(BINUTILS_VERSION_MAJOR) -gt 2; echo $$?),0)
+BINUTILS_NOSEPCODE=yes
+else
+ifeq ($(shell test $(BINUTILS_VERSION_MAJOR) -gt 1; echo $$?),0)
+ifeq ($(shell test $(BINUTILS_VERSION_MINOR) -gt 30; echo $$?),0)
+BINUTILS_NOSEPCODE=yes
+endif
+endif
+endif
+ifneq ($(BINUTILS_NOSEPCODE),no)
+ifeq ($(AROS_TARGET_CPU),i386)
+BINUTILS_EXTRA_OPTS += --enable-separate-code=no
+endif
+ifeq ($(AROS_TARGET_CPU),x86_64)
+BINUTILS_EXTRA_OPTS += --enable-separate-code=no
+endif
+endif
+
+GCC_LANGUAGES:=c,c++
+ifneq (no-objc,$(OBJC_TARGET))
+GCC_LANGUAGES:=$(GCC_LANGUAGES),objc
+endif
+ifneq (no-java,$(JAVA_TARGET))
+GCC_LANGUAGES:=$(GCC_LANGUAGES),java
+endif
+GCC_COMMON_OPTS := --target=$(AROS_TARGET_CPU)-aros
+
+# ARM requires additional flags to determine CPU type and FP model
+ifneq (,$(findstring arm,$(AROS_TARGET_CPU)))
+#GCC_COMMON_OPTS += --with-arch=$(GCC_DEFAULT_CPU)
+#GCC_COMMON_OPTS += --with-mode=$(GCC_DEFAULT_MODE)
+GCC_COMMON_OPTS += --disable-libunwind-exceptions
+GCC_COMMON_OPTS += --disable-libstdcxx-verbose
+GCC_COMMON_OPTS += --enable-multilib
+LIBATOMIC_OPTS += --disable-multilib
+
+## NB: for ARM, multilibs are disabled in libatomic, otherwise we need to build aeabi, etc, for all the targets. E.g.
+## arm/eb/vfpv3-d16/v7-a/softfp
+## arm/eb/vfpv3-d16/v7-a/hard
+## arm/eb/neon/v7-a/softfp
+## arm/eb/neon/v7-a/hard
+
+## arm/el/vfpv3-d16/v7-a/softfp
+## arm/el/vfpv3-d16/v7-a/hard
+## arm/el/neon/v7-a/softfp
+## arm/el/neon/v7-a/hard
+
+ifneq (,$(GCC_DEFAULT_FPU))
+ifneq (,$(findstring big-endian,$(ISA_ARM_FLAGS)))
+LIBATOMIC_ENV=GCC_LIBATOMIC_MULTILIB_TARGETS="arm/eb/$(GCC_DEFAULT_FPU)/v7-a/$(GCC_DEFAULT_FLOAT_ABI);@marm@mbig-endian@mfpu=$(GCC_DEFAULT_FPU)@march=$(GCC_DEFAULT_CPU)@mfloat-abi=$(GCC_DEFAULT_FLOAT_ABI)"
+else
+LIBATOMIC_ENV=GCC_LIBATOMIC_MULTILIB_TARGETS="arm/el/$(GCC_DEFAULT_FPU)/v7-a/$(GCC_DEFAULT_FLOAT_ABI);@marm@mlittle-endian@mfpu=$(GCC_DEFAULT_FPU)@march=$(GCC_DEFAULT_CPU)@mfloat-abi=$(GCC_DEFAULT_FLOAT_ABI)"
+endif
+endif
+else
+# If we are building GCC >= 5, for x86 targets, enable libmpx
+# ifeq ($(shell test $(GCC_VERSION_MAJOR) -gt 4; echo $$?),0)
+# ifeq ($(AROS_TARGET_CPU),i386)
+# GCC_COMMON_OPTS += --enable-libmpx
+# endif
+# ifeq ($(AROS_TARGET_CPU),x86_64)
+# GCC_COMMON_OPTS += --enable-libmpx
+# endif
+# endif
+GCC_COMMON_OPTS += --with-dwarf2
+endif
+ifneq (,$(findstring riscv,$(AROS_TARGET_CPU)))
+# medany is mandatory for the target libraries: RAM on riscv platforms sits
+# above 2GB, out of reach of medlow's lui-materialised absolute addresses
+GCC_COMMON_OPTS += --with-arch=$(GCC_DEFAULT_CPU) --with-abi=$(GCC_DEFAULT_MODE) --with-cmodel=medany
+endif
+
+GCC_COMMON_OPTS += --with-sysroot=$(AROS_DEVELOPER)
+GCC_COMMON_OPTS += --with-native-system-header-dir=/include
+GCC_COMMON_OPTS += --bindir=$(CROSSTOOLSDIR)
+GCC_COMMON_OPTS += --libdir=$(CROSSTOOLSDIR)/lib
+GCC_COMMON_OPTS += --enable-languages=$(strip $(GCC_LANGUAGES))
+GCC_COMMON_OPTS += --enable-long-long
+GCC_COMMON_OPTS += --enable-version-specific-runtime-libs
+GCC_COMMON_OPTS += --enable-frame-pointer
+GCC_COMMON_OPTS += --with-isl=$(CROSSTOOLSDIR)
+GCC_COMMON_OPTS += --disable-isl-version-check
+GCC_COMMON_OPTS += --disable-bootstrap 
+GCC_COMMON_OPTS += --disable-sjlj-exceptions
+GCC_COMMON_OPTS += --disable-tls
+ifneq (yes,$(TARGET_LTO))
+GCC_COMMON_OPTS += --disable-plugins
+endif
+GCC_COMMON_OPTS += --disable-nls
+GCC_COMMON_OPTS += --disable-libssp
+GCC_COMMON_OPTS += --disable-libstdcxx-pch
+GCC_COMMON_OPTS += --disable-build-with-cxx
+GCC_COMMON_OPTS += --disable-build-poststage1-with-cxx
+
+# Disable libatomic - we build it manually later...
+gcc_build_libatomic?=enable_libatomic=no
+GCC_ENV+=$(gcc_build_libatomic)
+
+# Make sure necessary target build flags propagate to the gcc target binaries...
+GCC_TARGET_CFLAGS:=
+GCC_TARGET_CXXFLAGS:=
+ifneq (,$(findstring mcmodel=large,$(ISA_FLAGS)))
+GCC_TARGET_CFLAGS += -mcmodel=large
+GCC_TARGET_CXXFLAGS += -mcmodel=large
+endif
+
+ifneq (,$(GCC_TARGET_CFLAGS))
+GCC_COMMON_OPTS += --with-target-cflags="$(GCC_TARGET_CFLAGS)"
+GCC_ENV += CFLAGS_FOR_TARGET="$(GCC_TARGET_CFLAGS)"
+endif
+ifneq (,$(GCC_TARGET_CXXFLAGS))
+GCC_COMMON_OPTS += --with-target-cxxflags="$(GCC_TARGET_CXXFLAGS)"
+GCC_ENV += CXXFLAGS_FOR_TARGET="$(GCC_TARGET_CXXFLAGS)"
+endif
+
+ifeq (,$(GCC_EXTRA_OPTS))
+GCC_EXTRA_OPTS += $(GCC_COMMON_OPTS)
+endif
+
+GCC_PATH = `LANG=en_US $(CROSSTOOLSDIR)/$(AROS_TARGET_CPU)-aros-gcc -print-search-dirs | grep "programs: =" | cut -c 12-`
+
+GDB_VERSION=7.9
+
+GDB_EXTRA_OPTS := --target=$(AROS_TARGET_CPU)-aros
+GDB_EXTRA_OPTS += --bindir=$(CROSSTOOLSDIR)
+GDB_EXTRA_OPTS += --libdir=$(CROSSTOOLSDIR)/lib
+
+# Use the correct GCC repository depending if it is a release or snapshot build...
+GNU_REPOSITORY := gnu://
+ifeq (,$(findstring -,$(GCC_VERSION)))
+GCC_REPOSITORY := $(GNU_REPOSITORY)/gcc/gcc-$(GCC_VERSION) ftp://ftp.mirrorservice.org/sites/sourceware.org/pub/gcc/releases/gcc-$(GCC_VERSION)
+else
+GCC_REPOSITORY := ftp://ftp.mirrorservice.org/sites/sourceware.org/pub/gcc/snapshots/$(GCC_VERSION)
+endif
+ISL_REPOSITORY := \
+    cache:// \
+    https://libisl.sourceforge.io/ ftp://gcc.gnu.org/pub/gcc/infrastructure
+MPC_REPOSITORY := \
+    cache:// \
+    ftp://ftp.gnu.org/gnu/mpc http://ftp.vim.org/ftp/gnu/mpc
+
+binutils-installflag := $(CROSSTOOLSDIR)/.installflag-binutils-$(BINUTILS_VERSION)-$(AROS_TARGET_CPU)
+gmp-installflag := $(CROSSTOOLSDIR)/.installflag-gmp-$(GMP_VERSION)
+isl-installflag := $(CROSSTOOLSDIR)/.installflag-isl-$(ISL_VERSION)
+mpfr-installflag := $(CROSSTOOLSDIR)/.installflag-mpfr-$(MPFR_VERSION)
+mpc-installflag := $(CROSSTOOLSDIR)/.installflag-mpc-$(MPC_VERSION)
+gcc-installflag := $(CROSSTOOLSDIR)/.installflag-gcc-$(GCC_VERSION)-$(AROS_TARGET_CPU)
+libatomic-installflag := $(CROSSTOOLSDIR)/.installflag-libatomic-$(GCC_VERSION)-$(AROS_TARGET_CPU)
+gdb-installflag := $(CROSSTOOLSDIR)/.installflag-gdb-$(GDB_VERSION)
+
+#MM- tools-crosstools-gnu-m68k     : tools-crosstools-gcc crosstools-gcc
+#MM- tools-crosstools-gnu-i386     : tools-crosstools-gcc crosstools-gcc
+#MM- tools-crosstools-gnu-x86_64   : tools-crosstools-gcc crosstools-gcc
+#MM- tools-crosstools-gnu-ppc      : tools-crosstools-gcc crosstools-gcc
+#MM- tools-crosstools-gnu-arm      : tools-crosstools-gcc crosstools-gcc
+#MM- tools-crosstools-gnu-armeb    : tools-crosstools-gcc crosstools-gcc
+#MM- tools-crosstools-gnu-aarch64  : tools-crosstools-gcc crosstools-gcc
+#MM- tools-crosstools-gnu-riscv    : tools-crosstools-gcc crosstools-gcc
+#MM- tools-crosstools-gnu-riscv64  : tools-crosstools-gcc crosstools-gcc
+
+#MM tools-crosstools-gcc : tools-crosstools-binutils tools-crosstools-collect-aros \
+#MM                        tools-crosstools-gmp \
+#MM                        tools-crosstools-isl \
+#MM                        tools-crosstools-mpfr \
+#MM                        tools-crosstools-mpc
+
+# We intentionally bypass the usual fetch_and_build macro below and call mmakefile and gcc makefile
+# targets directly. This is in order to not build the core-linklibs target during binutils and gcc
+# builds because we want these static linker libraries be generated by the cross tool chain we are building
+# right here. Additionally, we also want to maintain our own install flag files inside the directory
+# specified by --with-aros-toolchain-install. This directory may even reside outside of the usual aros
+# build directory and can be reused between complete rebuilds.
+
+## GMP ###
+
+#MM
+tools-crosstools-gmp :
+	@$(IF) ! $(TEST) -d $(CROSSTOOLSDIR) \
+	    || ! $(TEST) -f $(gmp-installflag) ; then \
+	       $(RM) $(HOSTGENDIR)/$(CURDIR)/gmp/.files-touched \
+	    && $(MAKE) -f ./mmakefile crosstools-gmp--fetch \
+	    && $(MAKE) -f ./mmakefile crosstools-gmp--build_and_install-quick \
+	    && $(TOUCH) $(gmp-installflag) ; \
+	fi
+
+%fetch_and_build mmake=crosstools-gmp package=gmp version=$(GMP_VERSION) compiler=host \
+	package_repo="cache:// $(GNU_REPOSITORY)/gmp" \
+	patch=yes \
+	prefix="$(CROSSTOOLSDIR)" usecppflags=no \
+	extraoptions="--bindir=$(CROSSTOOLSDIR) --libdir=$(CROSSTOOLSDIR)/lib --disable-shared"
+
+## ISL ###
+
+#MM
+tools-crosstools-isl :
+	@$(IF) ! $(TEST) -d $(CROSSTOOLSDIR) \
+	    || ! $(TEST) -f $(isl-installflag) ; then \
+	       $(RM) $(HOSTGENDIR)/$(CURDIR)/isl/.files-touched \
+	    && $(MAKE) -f ./mmakefile crosstools-isl--fetch \
+	    && $(MAKE) -f ./mmakefile crosstools-isl--build_and_install-quick \
+	    && $(TOUCH) $(isl-installflag) ; \
+	fi
+
+%fetch_and_build mmake=crosstools-isl package=isl version=$(ISL_VERSION) compiler=host \
+	package_repo="$(ISL_REPOSITORY)" \
+	patch=no \
+	prefix="$(CROSSTOOLSDIR)" usecppflags=no \
+	extraoptions="--bindir=$(CROSSTOOLSDIR) --libdir=$(CROSSTOOLSDIR)/lib --without-piplib --disable-shared"
+
+## MPFR ###
+
+#MM
+tools-crosstools-mpfr :
+	@$(IF) ! $(TEST) -d $(CROSSTOOLSDIR) \
+	    || ! $(TEST) -f $(mpfr-installflag) ; then \
+	       $(RM) $(HOSTGENDIR)/$(CURDIR)/mpfr/.files-touched \
+	    && $(MAKE) -f ./mmakefile crosstools-mpfr--fetch \
+	    && $(MAKE) -f ./mmakefile crosstools-mpfr--build_and_install-quick \
+	    && $(TOUCH) $(mpfr-installflag) ; \
+	fi
+
+%fetch_and_build mmake=crosstools-mpfr package=mpfr version=$(MPFR_VERSION) compiler=host \
+	package_repo="cache:// $(GNU_REPOSITORY)/mpfr" \
+	patch=no \
+	prefix="$(CROSSTOOLSDIR)" usecppflags=no \
+	extraoptions="--bindir=$(CROSSTOOLSDIR) --libdir=$(CROSSTOOLSDIR)/lib --disable-shared"
+
+## MPC ###
+
+#MM
+tools-crosstools-mpc :
+	@$(IF) ! $(TEST) -d $(CROSSTOOLSDIR) \
+	    || ! $(TEST) -f $(mpc-installflag) ; then \
+	       $(RM) $(HOSTGENDIR)/$(CURDIR)/mpc/.files-touched \
+	    && $(MAKE) -f ./mmakefile crosstools-mpc--fetch \
+	    && $(MAKE) -f ./mmakefile crosstools-mpc--build_and_install-quick \
+	    && $(TOUCH) $(mpc-installflag) ; \
+	fi
+
+%fetch_and_build mmake=crosstools-mpc package=mpc version=$(MPC_VERSION) compiler=host \
+	package_repo="$(MPC_REPOSITORY)" suffixes="tar.xz tar.gz" \
+	patch=no \
+	prefix="$(CROSSTOOLSDIR)" usecppflags=no \
+	extraoptions="--bindir=$(CROSSTOOLSDIR) --libdir=$(CROSSTOOLSDIR)/lib --disable-shared"
+
+## Binutils ###
+
+BINUTILS_MAINPATCHSPECS = $(crosstools-binutils--archbase)-aros.diff:$(crosstools-binutils--srcdir):-f,-p1
+ifeq ($(AROS_TARGET_CPU),m68k)
+AMIGAHUNKPATCH := $(call WILDCARD, binutils-$(BINUTILS_VERSION)-amigaoshunk.diff)
+APOLLOPATCH := $(call WILDCARD, binutils-$(BINUTILS_VERSION)-68080.diff)
+ifneq ($(AMIGAHUNKPATCH),)
+BINUTILS_AMIGAHUNKPATCHSPECS = $(crosstools-binutils--archbase)-amigaoshunk.diff:$(crosstools-binutils--srcdir):-f,-p1
+endif
+ifneq ($(APOLLOPATCH),)
+BINUTILS_APOLLOPATCHSPECS = $(crosstools-binutils--archbase)-68080.diff:$(crosstools-binutils--srcdir):-f,-p1
+endif
+BINUTILS_EXTRAPATCHSPECS = $(BINUTILS_AMIGAHUNKPATCHSPECS) $(BINUTILS_APOLLOPATCHSPECS)
+endif
+BINUTILS_PATCHSPECS = $(strip $(BINUTILS_MAINPATCHSPECS) $(BINUTILS_EXTRAPATCHSPECS))
+
+# 	    $(find $(HOSTDIR)/Ports/host/binutils/binutils-$(BINUTILS_VERSION)/ -name *.info -print -exec touch {};)
+#MM
+tools-crosstools-binutils :
+	@$(IF) ! $(TEST) -d $(CROSSTOOLSDIR) \
+	    || ! $(TEST) -f $(binutils-installflag) ; then \
+	       $(RM) $(HOSTGENDIR)/$(CURDIR)/binutils/.files-touched \
+	    && $(MAKE) -f ./mmakefile crosstools-binutils--fetch \
+	    && $(MAKE) -f ./mmakefile crosstools-binutils--build_and_install-quick \
+		&& $(TOUCH) $(binutils-installflag) ; \
+	fi
+
+%fetch_and_build mmake=crosstools-binutils package=binutils version=$(BINUTILS_VERSION) compiler=host \
+	package_repo="$(GNU_REPOSITORY)/binutils" \
+	patch=yes patches_specs=$(BINUTILS_PATCHSPECS) \
+	prefix="$(CROSSTOOLSDIR)" usecppflags=no \
+	extraoptions="$(BINUTILS_EXTRA_OPTS)"
+
+## GCC ###
+
+HOST_CFLAGS := $(HOST_CFLAGS) $(HOST_GNU89_INLINE)
+crosstools-gcc-KERNEL_CFLAGS := $(CFLAGS_FOR_TARGET) $(TARGET_ISA_CFLAGS)
+
+#MM
+tools-crosstools-gcc :
+	$(IF) ! $(TEST) -f $(gcc-installflag) ; then \
+	    $(MAKE) -C $(HOSTGENDIR)/$(CURDIR)/gcc all-gcc $(crosstools-gcc-make-env) \
+	    && $(MAKE) -j1 -C $(HOSTGENDIR)/$(CURDIR)/gcc install-gcc $(crosstools-gcc-install-env) \
+	    && $(TOUCH) $(gcc-installflag) ; \
+	fi
+	@$(IF) $(TEST) -f $(gcc-installflag); then \
+	    $(SED) -i -e "s|@aros_target_cc_path@|$(GCC_PATH)|g" $(TOOLDIR)/$(AROS_TARGET_CPU)-$(AROS_TARGET_ARCH)$(AROS_TARGET_SUFFIX)-aros-ld ; \
+	fi
+
+
+#MM tools-crosstools-gcc : includes-copy
+#MM crosstools-gcc : includes-copy
+
+#MM tools-crosstools-gcc : crosstools-gcc--fetch crosstools-gcc--configure
+
+#MM tools-crosstools-gcc-libatomic : crosstools-gcc--fetch tools-crosstools-autolibs linklibs-$(AROS_TARGET_CPU)
+#MM- linklibs-gnu-libatomic : tools-crosstools-gcc-libatomic
+
+%fetch_and_build mmake=crosstools-gcc package=gcc version=$(GCC_VERSION) compiler=host \
+	package_repo="$(GCC_REPOSITORY)" suffixes="tar.xz tar.bz2 tar.gz" \
+	patch=yes prefix="$(CROSSTOOLSDIR)" \
+	usecppflags=no usecflags=no usecxxflags=no \
+	extraoptions="$(GCC_EXTRA_OPTS)" config_env_extra="$(GCC_ENV)"
+
+## GDB ###
+
+#MM
+tools-crosstools-gdb :
+	@$(IF) ! $(TEST) -d $(CROSSTOOLSDIR) \
+	    || ! $(TEST) -f $(gdb-installflag) ; then \
+	       $(RM) $(HOSTGENDIR)/$(CURDIR)/gdb/.files-touched \
+	    && $(MAKE) -f ./mmakefile crosstools-gdb--fetch \
+	    && $(MAKE) -f ./mmakefile crosstools-gdb--build_and_install-quick \
+	    && $(TOUCH) $(gdb-installflag) ; \
+	fi
+
+%fetch_and_build mmake=crosstools-gdb package=gdb version=$(GDB_VERSION) compiler=host \
+	package_repo="$(GNU_REPOSITORY)/gdb" \
+	patch=yes \
+	prefix="$(CROSSTOOLSDIR)" \
+	extraoptions="$(GDB_EXTRA_OPTS)"
+
+# libatomic
+
+LIBATOMIC_OBJDIR := $(HOSTGENDIR)/$(CURDIR)/gcc/$(AROS_TARGET_CPU)-aros/libatomic
+LIBATOMIC_SRCDIR := $(HOSTDIR)/Ports/host/gcc/gcc-$(GCC_VERSION)/libatomic
+ifeq ($(AROS_TARGET_CPU),m68k)
+ISA_FLAGS:=$(ISA_FLOAT_FLAGS)
+endif
+%build_with_configure mmake=tools-crosstools-gcc-libatomic srcdir="$(LIBATOMIC_SRCDIR)" \
+	basedir= gendir="$(LIBATOMIC_OBJDIR)" extraoptions="$(LIBATOMIC_OPTS)" install_env="$(LIBATOMIC_ENV)"
+
+LIBATOMIC_GCCOBJDIR := $(HOSTGENDIR)/$(CURDIR)/gcc/gcc
+
+$(tools-crosstools-gcc-libatomic-installflag) : | $(LIBATOMIC_GCCOBJDIR)
+
+$(LIBATOMIC_GCCOBJDIR) :
+	%mkdirs_q $(LIBATOMIC_GCCOBJDIR)

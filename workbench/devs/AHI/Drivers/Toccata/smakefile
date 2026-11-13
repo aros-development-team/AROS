@@ -1,0 +1,53 @@
+DEST	= AHI:User/Devs/ahi/toccata.audio
+DEST000	= AHI:User/Devs/ahi/toccata.audio.000
+PDEST	= AHI:User/Devs/AudioModes/TOCCATA
+OBJECTS	= toccata.o asmfuncs.o
+OBJECTS000 = toccata.000.o asmfuncs.o
+
+CFLAGS	= \
+PARAMS=REGISTER LIBCODE NOSTACKCHECK DEBUG=FULL STRINGMERGE\
+DATA=NEAR NOVERSION UTILITYLIB NOSTANDARDIO OPTIMIZE OPTTIME OPTSCHED
+
+AFLAGS  = SYMDEBUG LINEDEBUG QUIET NOEXE OPT NRQBPSMD
+
+LFLAGS	= \
+LIBPREFIX _int LIBFD FD:ahi_sub_lib.fd NOICONS SMALLDATA SMALLCODE \
+LIBID "toccata.audio 4.7 (19.06.2005)"  LIBVERSION 4 LIBREVISION 7 STRIPDEBUG
+
+all:		$(DEST) $(DEST000) $(PDEST)
+
+$(DEST):	$(OBJECTS)
+	slink $(LFLAGS) TO toccata.audio FROM lib:libent.o lib:libinit.o $(OBJECTS) \
+		LIB LIB:sc.lib LIB:debug.lib LIB:amiga.lib
+	move toccata.audio $(DEST)
+	--flushlib toccata.audio
+
+$(DEST000):	$(OBJECTS000)
+	slink $(LFLAGS) TO toccata.audio FROM lib:libent.o lib:libinit.o $(OBJECTS000) \
+	      LIB LIB:sc.lib LIB:debug.lib LIB:amiga.lib
+	move toccata.audio $(DEST000)
+
+toccata.o:	toccata.c toccata.h
+	sc CPU=68030 $(CFLAGS) toccata.c
+
+toccata.000.o:	toccata.c toccata.h
+	sc CPU=68000 $(CFLAGS) OBJNAME toccata.000.o toccata.c
+
+asmfuncs.o:	asmfuncs.a toccata.i
+	phxass $(AFLAGS) asmfuncs.a
+
+$(PDEST):	prefsfile.a toccata.i
+	basm -ua+ -o$(PDEST) prefsfile.a
+	AHI:User/C/AddAudioModes $(PDEST)
+
+dist:
+	smake allclean
+	smake all
+	smake clean
+
+clean:
+	--delete \#?.o \#?.tmp \#?.info QUIET
+
+allclean:
+	smake clean
+	--delete $(DEST) $(DEST000) $(PDEST)

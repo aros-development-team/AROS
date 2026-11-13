@@ -1,0 +1,9 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM workbench-libs-version : includes linklibs
+
+%build_module mmake=workbench-libs-version modname=version \
+  modtype=library files=""
+
+%common

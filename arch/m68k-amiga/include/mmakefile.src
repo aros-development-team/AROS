@@ -1,0 +1,11 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+INCLUDE_FILES := $(call WILDCARD, *.[hi] aros/*.[hi] aros/m68k/*.[hi] asm/*.[hi] exec/*.[hi] hardware/*.[hi])
+
+#MM- includes-copy-amiga-m68k : includes-common-m68k
+
+%copy_includes mmake=includes-copy-amiga-m68k
+
+#MM- kernel-exec-includes-amiga-m68k : includes-copy-amiga-m68k
+

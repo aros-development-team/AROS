@@ -1,0 +1,45 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+%set_archincludes mainmmake=kernel-exec maindir=rom/exec \
+  modname=exec pri=7 arch=unix \
+  includes="-I$(SRCDIR)/$(CURDIR)"
+
+%get_archincludes modname=kernel \
+    includeflag=TARGET_KERNEL_INCLUDES maindir=rom/kernel
+
+%get_archincludes modname=exec \
+    includeflag=TARGET_EXEC_INCLUDES maindir=rom/exec
+
+PRIV_EXEC_INCLUDES = \
+    $(TARGET_EXEC_INCLUDES) \
+    -I$(SRCDIR)/rom/exec \
+    $(TARGET_KERNEL_INCLUDES) \
+    -I$(SRCDIR)/rom/kernel
+
+FILES := platform_init coldreboot shutdowna
+
+USER_INCLUDES := $(PRIV_EXEC_INCLUDES) \
+		 -isystem $(GENINCDIR) $(KERNEL_INCLUDES)
+USER_CPPFLAGS += -DHOST_OS_$(ARCH)
+
+ifneq ($(AROS_TARGET_VARIANT),)
+USER_CPPFLAGS += -DHOST_OS_$(AROS_TARGET_VARIANT)
+endif
+
+# Allow to add architecture-specific options
+-include $(SRCDIR)/arch/all-$(FAMILY)/exec/make.opts
+-include $(SRCDIR)/arch/all-$(ARCH)/exec/make.opts
+-include $(SRCDIR)/arch/$(CPU)-$(ARCH)/exec/make.opts
+ifneq ($(AROS_TARGET_VARIANT),)
+-include $(SRCDIR)/arch/all-$(ARCH)/$(AROS_TARGET_VARIANT)/exec/make.opts
+-include $(SRCDIR)/arch/$(CPU)-$(ARCH)/$(AROS_TARGET_VARIANT)/exec/make.opts
+endif
+
+%build_archspecific \
+  mainmmake=kernel-exec modname=exec maindir=rom/exec \
+  arch=unix files=$(FILES)
+
+#MM kernel-exec-unix: kernel-kernel-includes kernel-hostlib-includes
+
+%common

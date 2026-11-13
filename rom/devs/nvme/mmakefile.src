@@ -1,0 +1,44 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM kernel-nvme : kernel-timer-includes
+#MM kernel-nvme-includes : kernel-hidd-bus-includes kernel-hidd-storage-includes
+
+INCLUDE_FILES := $(call WILDCARD, include/hardware/*.h)
+%copy_includes path=hardware dir=include/hardware
+
+INCLUDE_FILES := $(call WILDCARD, include/hidd/*.h)
+%copy_includes path=hidd dir=include/hidd
+
+NVMEDEVICEFILES :=  \
+        nvme_init \
+        nvme_timer \
+        nvme_io \
+        nvme_hw \
+        nvme_prp \
+        nvme_queue \
+        nvme_queue_admin \
+        nvme_queue_io \
+        nvme_sgl
+
+NVMECLASSFILES :=  \
+        nvme_controllerclass \
+        nvme_busclass \
+        nvme_unitclass
+
+USER_CPPFLAGS := \
+               -D__OOP_NOLIBBASE__ \
+               -D__OOP_NOATTRBASES__ \
+               -D__OOP_NOMETHODBASES__
+
+# Enable AROS debugging
+#USER_CPPFLAGS += -DDEBUG=1
+
+USER_LDFLAGS := -static
+
+%build_module mmake=kernel-nvme \
+  modname=nvme modtype=device \
+  files="$(NVMEDEVICEFILES) $(NVMECLASSFILES)" \
+  uselibs="hiddstubs"
+
+%common

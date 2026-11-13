@@ -1,0 +1,19 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+USER_LDFLAGS := -static
+
+FILES         := iconimage
+INCLUDE_FILES := iconimage.h
+
+#MM- workbench-classes-zune : workbench-classes-zune-iconimage
+#MM workbench-classes-zune-iconimage
+%build_module \
+    mmake=workbench-classes-zune-iconimage \
+    modname=IconImage modtype=mcc \
+    conffile=iconimage.conf
+    
+%copy_includes path=zune
+    
+%common
+%include_deps

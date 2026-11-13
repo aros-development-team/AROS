@@ -1,0 +1,13 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+NOWARN_FLAGS := $(NOWARN_UNINITIALIZED) $(NOWARN_PARENTHESES)
+USER_CFLAGS := $(NOWARN_FLAGS)
+USER_LDFLAGS := -static
+
+%build_prog mmake=workbench-devs-networks-rhine \
+    progname="rhine.device" \
+    files="startup aros_device device request unit pci timer" \
+    targetdir="$(AROSDIR)/Devs/Networks" coverageinstr=no
+
+%common

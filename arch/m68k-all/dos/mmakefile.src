@@ -1,0 +1,32 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+BCPL_CFILES  := bcpl_patches bcpl_support bcpl_readargs bcpl_putpkt
+BCPL_AFILES  := bcpl bcpl_writef
+
+CFILES  := bstr_helper exit callglobvec \
+	   $(BCPL_CFILES)
+
+AFILES := callentry \
+	  $(BCPL_AFILES)
+
+#MM kernel-dos-m68k : kernel-dos-includes includes-asm_h
+
+USER_INCLUDES := -I$(SRCDIR)/arch/$(CPU)-$(ARCH)/dos \
+               -I$(SRCDIR)/rom/dos
+USER_CPPFLAGS := -D__DOS_NOLIBBASE__
+
+USER_AFLAGS := -I$(GENINCDIR)
+
+# SysBase is the absolute address 4 in the amiga-m68k ROM link (see
+# rom/dos/mmakefile.src)
+ifeq ($(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU),amiga-m68k)
+USER_CFLAGS += -Wa,--defsym,SysBase=4
+USER_AFLAGS += -Wa,--defsym,SysBase=4
+endif
+
+%build_archspecific \
+  mainmmake=kernel-dos maindir=rom/dos arch=m68k \
+  files="$(CFILES)" asmfiles="$(AFILES)" modname=dos
+
+%common

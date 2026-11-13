@@ -1,0 +1,22 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+USER_LDFLAGS := -static
+
+FILES := sliderclass
+
+FUNCS := \
+	getclass
+
+#MM workbench-classes-reaction-slider : includes linklibs
+#MM workbench-classes-reaction-slider-includes : \
+#MM     kernel-exec-includes \
+#MM     kernel-graphics-includes \
+#MM     kernel-intuition-includes \
+#MM     kernel-utility-includes
+
+%build_module mmake=workbench-classes-reaction-slider \
+    modname=slider modtype=gadget \
+    files="$(FUNCS) $(FILES)"
+
+%common

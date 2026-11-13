@@ -1,0 +1,99 @@
+/*
+    Copyright (C) 2010-2026, The AROS Development Team. All rights reserved.
+
+    Desc: BCPL support
+*/
+
+#include <aros/debug.h>
+#include <aros/asmcall.h>
+
+#include <exec/memory.h>
+#include <proto/exec.h>
+#include <dos/rdargs.h>
+#include <dos/dosextens.h>
+#include <proto/dos.h>
+
+/*****************************************************************************
+
+    NAME */
+
+        AROS_UFH2(ULONG, Dos_BCPL_putpkt,
+/*  SYNOPSIS */
+        AROS_UFHA(BSTR, bdospacket, D1),
+        AROS_UFHA(struct DosLibrary *, DOSBase, A6))
+
+/*  LOCATION
+        BCPL Vector offset 0xa8
+
+    FUNCTION
+        Send a DOS packet to the message port specified in the packet's
+        dp_Port field without waiting for a reply. The sending process's
+        pr_MsgPort becomes the reply destination.
+
+    INPUTS
+        bdospacket - BCPL pointer to an initialized DosPacket. Its dp_Port
+                     identifies the destination, and dp_Link points to a
+                     valid message. The caller must be a process.
+        DOSBase    - DOS library base supplied by the BCPL calling convention.
+
+    RESULT
+        DOSTRUE after the packet has been submitted. This does not indicate
+        that the destination has processed it.
+
+    NOTES
+        The function sets dp_Link->mn_Node.ln_Name to the packet address
+        and dp_Link->mn_Length to the message size before calling SendPkt().
+        SendPkt() replaces dp_Port with the sender's reply port.
+
+    SEE ALSO
+        dos.library/SendPkt(), dos.library/WaitPkt()
+
+*****************************************************************************/
+{
+    AROS_USERFUNC_INIT
+
+    struct Process *me = (struct Process *)FindTask(NULL);
+    struct DosPacket *dp = BADDR(bdospacket);
+    struct MsgPort *port = dp->dp_Port;
+
+    D(bug("BCPL putPkt: me->pr_MsgPort        = %p\n", &me->pr_MsgPort));
+    D(bug("BCPL putPkt: me->pr_FileSystemTask = %p\n", me->pr_FileSystemTask));
+    D(bug("BCPL putPkt: me->pr_ConsoleTask    = %p\n", me->pr_ConsoleTask));
+#define DMP(x)  D(bug("BCPL putPkt: dp->dp_%s = %p\n", #x, dp->dp_##x))
+    DMP(Link);
+    DMP(Port);
+    DMP(Type);
+    DMP(Res1);
+    DMP(Res2);
+    DMP(Arg1);
+    DMP(Arg2);
+    DMP(Arg3);
+    DMP(Arg4);
+    DMP(Arg5);
+    DMP(Arg6);
+    DMP(Arg7);
+#define MMP(x)  D(bug("BCPL putPkt: mn->mn_%s = %p\n", #x, dp->dp_Link->mn_##x))
+    MMP(Node.ln_Succ);
+    MMP(Node.ln_Pred);
+    MMP(Node.ln_Type);
+    MMP(Node.ln_Pri);
+    MMP(Node.ln_Name);
+    MMP(ReplyPort);
+    MMP(Length);
+
+    dp->dp_Link->mn_Node.ln_Name = (char *)dp;
+    dp->dp_Link->mn_Length = sizeof(*dp->dp_Link);
+
+    D(bug("BCPL putPkt: Send to port %p, reply on port %p, DosPacket %p\n",
+        dp->dp_Port, &me->pr_MsgPort, dp));
+
+    /* BCPL putPkt uses dp_Port as the destination on entry. Replace it
+     * with the sender's port so the receiver can return the packet, and
+     * the sender can reuse the returned packet for its next request.
+     */
+    SendPkt(dp, port, &me->pr_MsgPort);
+    return DOSTRUE;
+
+    AROS_USERFUNC_EXIT
+}
+

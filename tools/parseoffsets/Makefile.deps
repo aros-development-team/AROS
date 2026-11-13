@@ -1,0 +1,7 @@
+PARSEOFFSETS_SRCS := \
+    main.c \
+    header.c \
+    parsendkoffsets.c
+
+PARSEOFFSETS_INCS := header.h parsendkoffsets.h
+PARSEOFFSETS_DEPS := $(addprefix $(SRCDIR)/tools/parseoffsets/,$(PARSEOFFSETS_SRCS) $(PARSEOFFSETS_INCS))

@@ -1,0 +1,166 @@
+TABLE OF CONTENTS
+
+vmm.library/AllocVMem
+vmm.library/FreeVMem
+vmm.library/AvailVMem
+vmm.library/AllocVVec
+vmm.library/FreeVVec
+vmm.library/AllocVMem                                     vmm.library/AllocVMem
+
+   NAME
+       AllocVMem - Allocate virtual memory
+
+   SYNOPSIS
+       memoryblock = AllocVMem (bytesize, attributes)
+       D0                       D0        D1
+
+       void *AllocVMem (ULONG,ULONG)
+
+   FUNCTION
+       AllocVMem allocates virtual memory just the way AllocMem allocates
+       normal memory. 
+
+   INPUTS
+	byteSize - the size of the desired block in bytes.  (The operating
+		system will automatically round this number to a multiple of
+		the system memory chunk size)
+
+	attributes -
+	    requirements
+
+		MEMF_CLEAR:	The memory will be initialized to all
+     				zeros. This is the only attribute supported.
+
+   RESULT
+	memoryBlock - a pointer to the newly allocated memory block.
+		If there are no free memory regions large enough to satisfy
+		the request, zero will be returned.  The pointer must be
+		checked for zero before the memory block may be used!
+		The memory block returned is long word aligned.
+
+   WARNING
+	The result of any memory allocation MUST be checked, and a viable
+	error handling path taken.  ANY allocation may fail if memory has
+	been filled.
+
+   NOTE
+	If the free list is corrupt, the system will panic with alert
+	AN_MemCorrupt, $01000005.
+
+	This function may not be called from interrupts.
+
+   SEE ALSO
+	FreeVMem
+
+vmm.library/FreeVMem                                       vmm.library/FreeVMem
+
+   NAME
+	FreeVMem -- deallocate virtual memory with knowledge
+
+   SYNOPSIS
+	FreeVMem(memoryBlock, byteSize)
+              A1           D0
+
+	void FreeVMem(void *,ULONG);
+
+   FUNCTION
+	Free a region of virtual memory, returning it to the pool from which
+	it came.  Freeing partial blocks back into the pool is unwise.
+
+   NOTE
+	If a block of memory is freed twice, the system will Guru. The
+	Alert is AN_FreeTwice ($01000009).   If you pass the wrong pointer,
+	you will probably see AN_MemCorrupt $01000005.
+
+   INPUTS
+	memoryBlock - pointer to the memory block to free
+	byteSize - the size of the desired block in bytes.  (The operating
+		system will automatically round this number to a multiple of
+		the system memory chunk size)
+
+   SEE ALSO
+	AllocVMem
+
+vmm.library/AvailVMem                                    vmm.library/AvailVMem
+
+   NAME
+	AvailVMem -- virtual memory available given certain requirements
+
+   SYNOPSIS
+	size = AvailVMem(attributes)
+	D0               D1
+
+	ULONG AvailVMem(ULONG);
+
+   FUNCTION
+	This function returns the amount of free virtual memory given 
+     certain attributes.
+
+	To find out what the largest block of a particular type is, add
+	MEMF_LARGEST into the requirements argument.  Returning the largest
+	block is a slow operation.
+
+   WARNING
+	Due to the effect of multitasking, the value returned may not
+	actually be the amount of free memory available at that instant.
+
+   INPUTS
+	requirements - The only valid flag is MEMF_LARGEST, which returns 
+                    the size of the largest block matching the 
+                    requirements.
+
+   RESULT
+	size - total free space remaining (or the largest free block).
+vmm.library/AllocVVec                                  vmm.library/AllocVVec
+
+   NAME
+	AllocVVec -- allocate virtual memory and keep track of the size
+
+   SYNOPSIS
+	memoryBlock = AllocVVec(byteSize, attributes)
+	D0                      D0        D1
+
+	void *AllocVVec(ULONG, ULONG);
+
+   FUNCTION
+	This function works identically to AllocVMem(), but tracks the size
+	of the allocation.
+
+	See the AllocVMem() documentation for details.
+
+   WARNING
+	The result of any memory allocation MUST be checked, and a viable
+	error handling path taken.  ANY allocation may fail if memory has
+	been filled.
+
+   SEE ALSO
+	FreeVVec, AllocVMem
+
+vmm.library/FreeVVec                                     vmm.library/FreeVVec
+
+   NAME
+	FreeVVec -- return AllocVVec() memory to the system  (V36)
+
+   SYNOPSIS
+	FreeVVec(memoryBlock)
+              A1
+
+	void FreeVVec(void *);
+
+   FUNCTION
+	Free an allocation made by the AllocVVec() call.  The memory will
+	be returned to the system pool from which it came.
+
+   NOTE
+	If a block of memory is freed twice, the system will Guru. The
+	Alert is AN_FreeTwice ($01000009).   If you pass the wrong pointer,
+	you will probably see AN_MemCorrupt $01000005.  Future versions may
+	add more sanity checks to the memory lists.
+
+   INPUTS
+	memoryBlock - pointer to the memory block to free, or NULL.
+
+   SEE ALSO
+	AllocVVec
+
+

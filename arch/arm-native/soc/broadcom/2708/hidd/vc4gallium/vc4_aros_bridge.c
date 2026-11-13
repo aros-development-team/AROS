@@ -1,0 +1,106 @@
+/*
+    Copyright 2026, The AROS Development Team. All rights reserved.
+
+    VC4 Gallium 3D - Bridge implementation.
+
+    Populates struct vc4_aros_bridge with thin wrappers forwarding into
+    the fd-based vc4_drm_aros.c / vc4_galliumclass.c helpers. The bridge
+    takes an opaque ctx; we synthesise a stack-local vc4_aros_fd per call
+    to reuse the existing fd-based handlers untouched.
+*/
+
+#define DEBUG 0
+#include <aros/debug.h>
+
+#include "vc4gallium_intern.h"
+#include "vc4_drm_aros.h"
+#include "vc4_aros_bridge.h"
+
+/* Stack-local fake fd wrapping the ctx (the hidd's staticdata) and the
+ * session the screen's fd names. Valid only for the helper call — no
+ * helper stores it past return. */
+#define BRIDGE_FD(ctx, sid)                                         \
+    struct vc4_aros_fd _bfd = { VC4_AROS_FD_MAGIC,                  \
+                                (struct vc4galliumstaticdata *)(ctx), \
+                                (sid) };                            \
+    int _fd = (int)(IPTR)&_bfd
+
+static int bridge_ioctl(void *ctx, int fd, unsigned long request, void *arg)
+{
+    BRIDGE_FD(ctx, vc4_fd_session(fd));
+    return vc4_aros_ioctl(_fd, request, arg);
+}
+
+static void *bridge_mmap(void *ctx, ULONG handle)
+{
+    BRIDGE_FD(ctx, 0);
+    return vc4_aros_mmap(_fd, handle);
+}
+
+static int bridge_munmap(void *ctx, void *addr, unsigned long length)
+{
+    /* Identity mapping (CPU == physical) and BO lifetime is governed by
+     * GEM_CLOSE, so munmap is a no-op. */
+    (void)ctx;
+    (void)addr;
+    (void)length;
+    return 0;
+}
+
+static int bridge_close(void *ctx)
+{
+    /* Per-fd state is only the stack-local fake fd; nothing to release.
+     * Hidd teardown happens via release_all_bos + ExpungeLib. */
+    (void)ctx;
+    return 0;
+}
+
+static void bridge_release_all_bos(void *ctx)
+{
+    vc4_aros_release_all_bos((struct vc4galliumstaticdata *)ctx);
+}
+
+/* Implemented in vc4_galliumclass.c — resolved fields only, no Mesa
+ * types cross the API boundary. */
+extern void vc4_aros_display_blit(struct vc4galliumstaticdata *sd,
+                                  ULONG src_bo_handle,
+                                  ULONG src_stride,
+                                  ULONG src_offset,
+                                  ULONG cpp,
+                                  OOP_Object *bm_obj,
+                                  LONG dst_x, LONG dst_y,
+                                  ULONG width, ULONG height);
+extern void vc4_aros_wait_idle(struct vc4galliumstaticdata *sd);
+
+static void bridge_display_blit(void *ctx,
+    ULONG src_bo_handle, ULONG src_stride, ULONG src_offset, ULONG cpp,
+    OOP_Object *dest_bitmap,
+    LONG dst_x, LONG dst_y,
+    ULONG width, ULONG height)
+{
+    vc4_aros_display_blit((struct vc4galliumstaticdata *)ctx,
+                          src_bo_handle, src_stride, src_offset, cpp,
+                          dest_bitmap, dst_x, dst_y, width, height);
+}
+
+static void bridge_wait_idle(void *ctx)
+{
+    vc4_aros_wait_idle((struct vc4galliumstaticdata *)ctx);
+}
+
+/* Populate a bridge struct for the given hidd staticdata. The struct
+ * lives in caller storage (typically mesa3dgl's screen->priv slot). */
+void vc4_aros_bridge_init(struct vc4_aros_bridge *bridge,
+                          struct vc4galliumstaticdata *sd)
+{
+    bridge->version         = VC4_AROS_BRIDGE_VERSION;
+    bridge->driver_id       = AROS_GALLIUM_DRIVER_VC4;
+    bridge->ctx             = sd;
+    bridge->ioctl           = bridge_ioctl;
+    bridge->mmap            = bridge_mmap;
+    bridge->munmap          = bridge_munmap;
+    bridge->close           = bridge_close;
+    bridge->display_blit    = bridge_display_blit;
+    bridge->wait_idle       = bridge_wait_idle;
+    bridge->release_all_bos = bridge_release_all_bos;
+}

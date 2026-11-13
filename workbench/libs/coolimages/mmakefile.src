@@ -1,0 +1,18 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM workbench-libs-coolimages : \
+#MM     kernel-exec-includes \
+#MM     kernel-intuition-includes \
+#MM     kernel-cybergraphics-includes \
+#MM     includes-copy
+#MM- workbench-libs-coolimages : linklibs
+
+USER_LDFLAGS := -static
+
+%build_module mmake=workbench-libs-coolimages \
+    modname=coolimages modtype=library \
+    files="coolimages_init cool_obtainimagea" \
+    uselibs="coolimagesstatic"
+
+%common

@@ -1,0 +1,34 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM classes-zune-nlisttree-mcp : includes linklibs classes-zune-nlisttree-mcp-catalogs
+
+USER_INCLUDES = -idirafter $(SRCDIR)/$(CURDIR)/../include
+USER_CPPFLAGS := -DNO_INLINE_STDARG -DAROS_ABI_V1
+USER_CFLAGS += $(PARANOIA_CFLAGS)
+USER_LDFLAGS := -static
+
+FILES := library NListtree icon locale
+
+%build_module_simple mmake=classes-zune-nlisttree-mcp \
+  modname=NListtree modtype=mcp \
+  files=$(FILES)
+
+TARGETDIR := $(AROS_CATALOGS)
+LANGUAGES := $(basename $(notdir $(call WILDCARD,$(SRCDIR)/$(CURDIR)/locale/*.po)))
+CATALOGS := $(addprefix $(TARGETDIR)/,$(addsuffix /NListtree_mcp.catalog,$(LANGUAGES)))
+
+
+#MM
+classes-zune-nlisttree-mcp-catalogs : locale.h locale.c $(CATALOGS)
+
+locale.h: locale.c
+locale.c: $(SRCDIR)/$(CURDIR)/locale/NListtree_mcp.pot $(SRCDIR)/$(CURDIR)/C_h.sd $(SRCDIR)/$(CURDIR)/C_c.sd
+	$(FLEXCAT) $(SRCDIR)/$(CURDIR)/locale/NListtree_mcp.pot locale.h=$(SRCDIR)/$(CURDIR)/C_h.sd locale.c=$(SRCDIR)/$(CURDIR)/C_c.sd
+
+$(TARGETDIR)/%/NListtree_mcp.catalog : $(SRCDIR)/$(CURDIR)/locale/%.po
+	$(ECHO) "Building catalog $@"
+	$(MKDIR) $(dir $@)
+	$(FLEXCAT) POFILE $< CATALOG $@
+
+%common

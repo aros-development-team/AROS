@@ -1,0 +1,53 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+USER_LDFLAGS := -static
+
+FILES := basicfuncs specialreq \
+	 filereqhooks filereqsupport \
+	 modereqhooks modereqsupport \
+         fontreqhooks fontreqsupport \
+	 propclass arrowclass listviewclass \
+	 buttonclass stringclass cycleclass \
+	 fontpreviewclass fontstyleclass \
+	 colorpickerclass eraserclass \
+	 gadgets coolimagedata locale \
+	 asl_init
+
+FUNCS := allocfilerequest	\
+	 allocaslrequest 	\
+	 aslrequest		\
+	 freeaslrequest		\
+	 freefilerequest 	\
+	 requestfile 	    	\
+	 abortaslrequest    	\
+	 activateaslrequest 	\
+
+#MM workbench-libs-asl-includes : \
+#MM     kernel-exec-includes \
+#MM     kernel-dos-includes \
+#MM     kernel-graphics-includes \
+#MM     kernel-utility-includes \
+#MM     kernel-intuition-includes \
+#MM     workbench-libs-cgfx-includes \
+#MM     kernel-layers-includes \
+#MM     workbench-libs-locale-includes \
+#MM     workbench-libs-iffparse-includes \
+#MM     workbench-libs-diskfont-includes \
+#MM     workbench-libs-gadtools-includes \
+#MM     workbench-libs-coolimages-includes \
+#MM     includes-copy
+
+#MM workbench-libs-asl : \
+#MM     linklibs \
+#MM     workbench-libs-asl-catalogs \
+#MM     workbench-libs-coolimages
+
+#MM- core-linklibs: linklibs-asl
+
+%build_module mmake=workbench-libs-asl \
+    modname=asl modtype=library \
+    files="$(FUNCS) $(FILES)" \
+    uselibs="coolimages"
+
+%common

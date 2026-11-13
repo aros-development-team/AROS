@@ -1,0 +1,457 @@
+A SMB file system wrapper for AmigaOS, using the AmiTCP V3 API
+==============================================================
+
+1. What is it?
+
+This document briefly describes the SMBFS program, which implements an SMB
+file system for AmigaOS. This file system can be used to access files made
+available by file servers which implement the SMB protocol, such as 'Microsoft
+Windows' or any other platform which supports the free 'Samba' product. These
+files can be accessed using shell commands such as 'List', the Workbench or
+utilities such as 'Directory Opus' as if the file server were a local disk
+drive.
+
+
+2. What do you need to get started?
+
+You need a TCP/IP stack that supports the AmiTCP V3 API, such as 'Miami', the
+original free 'AmiTCP 3.0' release, 'AmiTCP 4.x', 'Miami Deluxe', 'AmiTCP
+Genesis' or 'Roadshow' and the obligatory networking gear. All these items
+need to be in good shape and properly configured.
+
+Most important, you need a computer which exports file sharing services using
+the SMB protocol.
+
+It often helps to have 'Samba' installed on your Amiga, too, as this can aid
+in tracking down bugs and obtaining information which SMBFS cannot obtain all
+by itself.
+
+Last but not least, you need to be proficient in configuring and using the
+TCP/IP stack; networking knowledge is definitely assumed.
+
+SMBFS requires AmigaOS 2.04 or higher to work.
+
+
+3. Preparations
+
+You need to know which computer's files you want to share using the SMBFS file
+system. That computer must be known by name, it is not sufficient just to know
+its IP address. If you know the IP address but cannot refer to the host by its
+name then SMBFS will not work. In that case, make sure that you add a host
+name entry referring to the IP address to your TCP/IP stack's host database
+(e.g. the "AmiTCP:bin/hosts" file or the corresponding page in the stack's
+configuration user interface).
+
+The name of the computer to connect to must not be too long. If it is longer
+than 16 characters, SMBFS will not work properly.
+
+You need to know which service you want to connect to on the target computer.
+You can find out which services are available on a certain computer by using
+the Samba 'smbclient' program. For example, if you were to query the services
+offered by a machine called 'sourcery' you could enter the following:
+
+   samba:bin/smbclient -L sourcery
+
+And you might get the following information:
+
+   added interface ip=192.168.0.1 bcast=192.168.0.255 nmask=255.255.255.0
+   Password: Domain=[ARBEITSGRUPPE] OS=[AmigaOS] Server=[Samba 2.0.7]
+
+           Sharename      Type      Comment
+           ---------      ----      -------
+           All            Disk      All volumes in the system
+           IPC$           IPC       IPC Service (Amiga 3000UX)
+           olsen          Disk      Home Directories
+
+           Server               Comment
+           ---------            -------
+           SOURCERY             Amiga 3000UX
+
+           Workgroup            Master
+           ---------            -------
+           ARBEITSGRUPPE        SOURCERY
+   
+The share name to connect to would be "ALL" in this case.
+
+You need to know which login name and which password are required to connect
+to the shared resource, and you need to know the name of the workgroup or
+domain the file server is a member of.
+
+
+4. Starting and stopping the file system
+
+SMBFS is an uncommon kind of file system in that you do not use the 'Mount'
+command to mount it. In fact, SMBFS is a shell program which can be launched
+from the shell, using command line parameters to tell it which resources
+should be used. But you can also start it from Workbench: in this case you
+would have to put the program's command line options into icon tool types.
+
+By now you should have assembled the following information:
+
+   - Name of the computer to connect to; this would be the
+     file server
+   - Name of the shared SMB resource to connect to
+   - Login name and password
+
+That's basically everything you need to know to continue -- unless something
+goes wrong, but more on that lateron.
+
+Now you can start the file system. For example, to connect to the file server
+called 'sourcery' and the shared 'all' resource it exports, with that computer
+being a member of the workgroup 'Arbeitsgruppe', using the login name
+'PCGuest' and not providing any password you would enter the following:
+
+   Run >NIL: SMBFS Workgroup=Arbeitsgruppe User=PCGuest Service=//sourcery/all
+
+This would cause a new device by the name of "SMBFS:" to be mounted, showing
+all files and directories the 'sourcery' server makes available for sharing.
+
+How do you 'unmount' the file system? That's very easy, just check the output
+of the 'Status' shell command. You might get the following output:
+
+   Process  1: Loaded as command: TURBOTEXT
+   Process  2: Loaded as command: Work:Tools/Blowup
+   Process  3: Loaded as command: Work:Tools/Sashimi
+   Process  4: Loaded as command: Work:CyberTools/CyberGuard
+   Process  5: Loaded as command: Work:Tools/OpenDevicePatch
+   Process  6: Loaded as command: CED
+   Process  7: Loaded as command: Workbench
+   Process  8: Loaded as command: Status
+   Process  9: No command loaded
+   Process 10: Loaded as command: SMBFS '//sourcery/all'
+
+Look at the last line describing process number 10: it shows the name of the
+file system program SMBFS and the name of the SMB share it is connected to. To
+stop this file system and effectively unmount it, use the shell 'Break'
+command; in this case you would enter "Break 10" to stop the file system. Note
+that the program may not terminate immediately; it may have to wait until the
+last client has released all resources referring to the file system. You may
+have to send more than one "Break" command to stop the program.
+
+
+5. Startup options
+
+The SMBFS program supports a number of command line options, as will be
+described below. The command template looks like this:
+
+   DOMAIN=WORKGROUP/K,USER=USERNAME/K,PASSWORD/K,CHANGECASE/S,
+   CASE=CASESENSITIVE/S,OMITHIDDEN/S,QUIET/S,CLIENT=CLIENTNAME/K,
+   SERVER=SERVERNAME/K,DEVICE=DEVICENAME/K,VOLUME=VOLUMENAME/K,
+   CACHE=CACHESIZE/N/K,DEBUGLEVEL=DEBUG/N/K,TZ=TIMEZONEOFFSET/N/K,
+   DST=DSTOFFSET/N/K,TRANSLATE=TRANSLATIONFILE/K,SERVICE/A
+
+The individual options serve the following purposes:
+
+   DOMAIN=WORKGROUP/K
+
+      You must specify the name of the work group or domain which the file server
+      to connect to is a member of. The name of this workgroup or domain must not
+      be longer than 16 characters. The name you provide will be translated to
+      all upper case characters.
+
+      You need not provide for a work group or domain name on the command line.
+      Alternatively, you may configure an environment variable whose contents
+      will be used instead. The variable could be set up like this:
+
+         SetEnv smbfs_workgroup <name of domain or workgroup>
+         Copy ENV:smbfs_workgroup ENVARC:
+
+      You may also use the 'smbfs_domain' environment varilable in place of the
+      'smbfs_workgroup' variable. The two are aliases for one another, but
+      smbfs will read only one of the two.
+
+   USER=USERNAME/K
+
+      To connect to an SMB share you must authenticate yourself by providing a
+      user name. With this program the user name is optional; if you do not
+      provide one, SMBFS will use the default, which is "GUEST". The user name
+      must not be longer than 64 characters. The name you provide will be
+      translated to all upper case characters.
+
+      You need not provide for a user name on the command line. Alternatively,
+      you may configure an environment variable whose contents will be used
+      instead. The variable could be set up like this:
+
+         SetEnv smbfs_username <your user name>
+         Copy ENV:smbfs_username ENVARC:
+
+      You may also use the 'smbfs_user' environment varilable in place of the
+      'smbfs_username' variable. The two are aliases for one another, but
+      smbfs will read only one of the two.
+
+   PASSWORD/K
+
+      As part of the authentication process required to make the connection to
+      an SMB share, you must provide for a user name and a password. The
+      password is optional; if you do not provide one, an empty password will
+      be transmitted. The password must not be longer than 64 characters.
+
+      You need not provide for a password on the command line. Alternatively,
+      you may configure an environment variable whose contents will be used
+      instead. The variable could be set up like this:
+
+         SetEnv smbfs_password <your password>
+         Copy ENV:smbfs_password ENVARC:
+
+      Keep in mind that passwords like these really should not be exposed by
+      storing them in environment variables. But then the protocol smbfs uses
+      is almost as insecure as it gets anyway.
+
+      The authentication process only works if the machine you are connecting
+      to knows about the user name and password you want to use. As of this
+      writing, smbfs cannot be used for authenticating against a password
+      server that is not the same machine as the one from which you wish to
+      import a share.
+
+   CHANGECASE/S
+
+      By default the password will not be changed to all upper case characters.
+      If this is required, you should either provide the password in this
+      form or resort to this option, which will cause it to be translated
+      to all upper case characters.
+
+   CASE=CASESENSITIVE/S
+
+      Some file servers treat file and directory names differently which
+      differ only in whether they are written using upper/lower case
+      characters. For these servers you should activate the CASESENSITIVE
+      switch to treat those files properly. There is a catch though: the
+      AmigaDOS file naming scheme does not follow this model and you may
+      run into problems when you are trying to use it. By default, the
+      file system does not treat file and directory names differently
+      which only differ with respect to the case of letters.
+
+   OMITHIDDEN/S
+
+      When requesting a directory listing, the server may return some files
+      and directories tagged as being hidden. By default this file system
+      will report these 'hidden' entries anyway, but you can request
+      specifically that what is intended to be hidden should be omitted
+      from directory listings, too. Note that even though a file may be
+      hidden you should still be able to open and examine it.
+
+   QUIET/S
+
+      When started from Shell, SMBFS will print a message as soon as the
+      connection to the file server has been established. If you do not
+      want to see that message displayed, use the QUIET parameter. Also,
+      no such message will appear if the program has been started to run
+      in the background.
+
+   CLIENT=CLIENTNAME/K
+
+      SMBFS will attempt to connect to the file server by providing the name
+      of the computer you connect from. In some cases this may be undesirable
+      as the computer's name differs from what the file server expects. You
+      can use the CLIENT parameter to tell SMBFS under which name it should
+      announce itself to the server. This parameter is optional and will be
+      translated to all upper case characters; it cannot be longer than 16
+      characters.
+
+   SERVER=SERVERNAME/K
+
+      SMBFS will attempt to connect to the file server by providing the name
+      you specified using the SERVICE command line parameter. In some cases
+      this may be undesirable as the server's name differs from what you
+      specified as the share name. You can use the SERVER parameter to tell
+      SMBFS under which name it should contact the server. This parameter is
+      optional and will be translated to all upper case characters; it cannot
+      be longer than 16 characters.
+
+   DEVICE=DEVICENAME/K
+   VOLUME=VOLUMENAME/K
+
+      The SMBFS program can announce itself as an AmigaDOS file system by
+      using one of two different methods.
+
+      The first method involves announcing itself only as a file system
+      device. This should be sufficient in most cases but has a drawback in
+      that the device will not be usable from Workbench since the file system
+      will not appear as a disk icon. You tell SMBFS to use a specific device
+      name by using the DEVICE command line parameter, e.g. "DEVICE=SMBFS:".
+      Note that device names must be unique, i.e. there must be no other
+      device by the same name in the system; SMBFS will report an error and
+      exit if it finds one.
+
+      The second method involves announcing itself as a volume. This has the
+      benefit of making the file system usable from Workbench since a disk
+      icon will appear for it. You tell SMBFS to use a specific volume name by
+      using the VOLUME command line parameter, e.g. "VOLUME=Sourcery:".
+
+      Both methods have advantages and drawbacks. The drawback of the VOLUME
+      method is that it may deadlock the native Amiga Samba port as soon as
+      the file system is mounted. The drawback of the DEVICE method is that
+      the file system will not be usable from Workbench.
+
+      If you wish, you can combine both methods; this is the approach most
+      other file systems use. And in fact, when you tell SMBFS to add a
+      volume it will also add a device to go along with it.
+
+      The VOLUME and DEVICE keywords are optional; if you omit both, SMBFS
+      will pretend that you had used the "DEVICE=SMBFS:" parameter.
+
+   CACHE=CACHESIZE/N/K
+
+      The file system attempts to optimize accesses to the file server when
+      directory contents are being scanned. These contents are buffered in
+      a directory cache which by default will hold 170 entries. Since each
+      entry will require about 255 bytes of storage, the entire 170 entry
+      cache will occupy more than 40K bytes of memory. You may want to change
+      this requirement, by making the cache smaller or larger using the
+      CACHESIZE parameter. The size of the directory cache cannot be smaller
+      than 10 entries.
+
+   DEBUGLEVEL=DEBUG/N/K
+
+      By default SMBFS operates in silent mode. It does not report what it is
+      doing, it just tries to respond to file system requests. To obtain
+      debugging output you may want to use the DEBUG option and specify a
+      debug level greater than 0. The larger the number you specify the more
+      debugging output will be created. Note that all debugging output will be
+      produced using the operating system's debug output functionality which
+      requires that you have a capturing program like 'Sashimi' running in the
+      background.
+
+   TZ=TIMEZONEOFFSET/N/K
+
+      By default the file system will use the current Locale settings to
+      translate between the local time and the time used by the SMB
+      server. For some configurations, however, this is impractical since
+      the server's time zone is not configured properly. For these
+      rare cases you may want to hard code a certain time zone offset
+      using the 'TIMEZONEOFFSET' options. The number you provide must
+      be the number of minutes to add to the local time in order to
+      translate it into the corresponding GMT value. For example, in
+      central Europe using CET, you would use "TZ=-60" since CET is
+      one hour ahead of GMT.
+
+   DST=DSTOFFSET/N/K
+
+      This option can be used to adjust the file date stamps to take
+      local daylight savings time into account. The number to specify here
+      is by how many minutes local time has been moved ahead, which is
+      typically 60. Note that smbfs does not know when daylight savings
+      time begins and ends. It is up to you to select the correct value
+      when appropriate.
+
+   TRANSLATE=TRANSLATIONFILE/K
+
+      The Amiga and the file server SMBFS connects to may not share the same
+      character set. International characters used in file names on either
+      side may not come out correctly on the other side. To remedy this
+      problem, you can resort to file name translation. How the individual
+      names are to be translated is determined by the contents of a file
+      name translation table file such as the ones that ship with Workbench
+      in the "L:FileSystem_Trans" drawer. The first 256 bytes of each such
+      file must consist of the mapping of Amiga characters to the different
+      character set, and the second 256 characters must describe a mapping
+      back from the different character set to the Amiga. In most cases the
+      "L:FileSystem_Trans/INTL.crossdos" translation table file should be
+      sufficient. To specify which file contains the translation tables to
+      use you would use the TRANSLATIONFILE parameter.
+
+   SERVICE/A
+
+      This is the last parameter to be specified on the command line. It
+      should refer to the file server you want to connect to and the resource
+      it exports, e.g. a file system. This parameter must start with two
+      slashes which must be immediately followed by the file server's name,
+      which must be followed by the resource to connect to.
+
+      For now no special characters are allowed in the name of the service
+      as no translation is performed like would be the case for file names
+      on the volume.
+
+The same parameters are also used when starting SMBFS from Workbench. SMBFS
+will examine its icon tool types and use these in place of the shell command
+line.
+
+
+6. Known problems
+
+The design of smbfs follows the original file system concept behind the
+code which the 'Sharity-Light' file system is based upon. And that is a
+Unix file system which differs from Amiga specific file systems in many
+ways which can lead to problems which are discussed briefly below:
+
+   - Single threaded design
+
+     This means that it is not possible for several programs to fairly
+     share the use of the file system. For example, a program that posts
+     a long read request can tie up the file system almost exclusively
+     for itself, and while it is busy all other clients will have to
+     wait. Same goes for directory scanning.
+
+   - Poor scalability
+
+     This is associated with the single threaded design. When several
+     programs are accessing the file system at the same time, overhead
+     and unfair sharing of resources will drastically reduce the
+     performance of the file system.
+
+   - Separation of file data and metadata
+
+     This means that the core of the file system treats the contents of
+     a directory and the data attached to each file inside that
+     directory as something different. This is a common concept with
+     Unix file systems, but it is very different with Amiga file systems.
+     In smbfs this data separation can cause problems when deleting
+     files from a directory while that directory is being scanned,
+     such as how this is being done by the 'Delete' shell command. The
+     effects of these problems are that a directory may not be deleted
+     even though it is empty or that for the same directory the same
+     file may be reported twice in the listing.
+
+While there are no easy solutions for any of these problems, it does not
+mean that smbfs is unusable. You just have to be more careful when you
+use the file system. For example, if a directory's contents cannot be
+deleted due to one of the problems mentioned above, you might want to
+retry later.
+
+It should be noted that the problems described above are not inherent
+to the original file system design. It's just that transferring that
+design to an Amiga file system created the problems.
+
+
+7. Credits
+
+This file system is based upon prior work by Paal-Kr. Engstad, Volker
+Lendecke, Mark A. Shand, Donald J. Becker, Rick Sladkey, Fred N. van Kempen,
+Eric Kasten and Rudolf Koenig. It is a direct descendant of the
+'Sharity-Light' file system written by Christian Starkjohann.
+
+The password encryption code was lifted from the Samba package. It was
+written by Andrew Tridgell and the Samba Team.
+
+
+8. Author
+
+The 'Sharity-Light' source code was adapted and wrapped into an AmigaOS layer
+by Olaf `Olsen' Barthel. If you wish to contact me, please send e-mail to the
+following address:
+
+   obarthel -at- gmx -dot- net
+
+Or, alternatively, you might want to contact me via my postal address:
+
+   Olaf Barthel
+   Gneisenaustr. 43
+   D-31275 Lehrte
+   Federal Republic of Germany
+
+If you want to submit a bug report or an enhancement request, please enclose
+sufficient information to allow me to make sense of the problem. That includes
+debugging logs produced using the DEBUG option. If possible, use the
+facilities for bug reporting and tracking on the sourceforge.net web site
+at <http://sourceforge.net/projects/amiga-smbfs>, which is the new home for
+this file system.
+
+
+9. Source code
+
+SMBFS is distributed under the terms of the GNU General Public License
+(version 2). The source code should have accompanied this program; if it
+hasn't, please contact the author for a copy.
+
+The program was compiled using the SAS/C 6.58 compiler, with the Roadshow SDK
+providing for the TCP/IP stack API header files.

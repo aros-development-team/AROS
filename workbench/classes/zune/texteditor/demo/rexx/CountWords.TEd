@@ -1,0 +1,24 @@
+/* Count words in the current document */
+
+Address 'TEXTEDITOR-DEMO.1'
+Options Results
+
+Words = 0
+GotoLine '-1'
+GetCursor Line
+Lines = RESULT
+GotoLine 0
+
+Say "Contents:"
+
+Do While(Lines >= 0)
+ GetLine
+ Contents = RESULT
+ Contents = Left(Contents, Length(contents)-1)
+ Words = Words+Words(Contents)
+ Say Contents
+ Lines = Lines-1
+ Line 1
+End
+
+Say "Number of words: " || Words

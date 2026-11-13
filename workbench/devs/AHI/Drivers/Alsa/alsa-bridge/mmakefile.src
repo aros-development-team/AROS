@@ -1,0 +1,18 @@
+# Copyright (C) 2015-2025, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM- AHI-alsa-bridge-linux : linklibs-alsa-bridge-$(OPT_HOST_ALSA)
+#MM- linklibs-alsa-bridge-yes : AHI-linklibs-alsa-bridge
+
+USER_CFLAGS =  $(KERNEL_INCLUDES) -isystem $(GENINCDIR)
+
+ALSA_BRIDGE_FILES = \
+    alsa \
+    alsa_hostlib
+
+%build_linklib mmake=AHI-linklibs-alsa-bridge \
+  libname=alsa-bridge \
+  files="$(ALSA_BRIDGE_FILES)"
+
+

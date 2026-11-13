@@ -1,0 +1,195 @@
+#
+#  Makefile.in for the user and developer documentation
+#
+
+#
+# Autoconfig stuff
+########################################
+
+@SET_MAKE@
+
+top_srcdir	= @top_srcdir@
+srcdir		= @srcdir@
+PREFIX		= @prefix@
+DISTDIR		= @DISTDIR@
+
+DEVDIR		= ${DISTDIR}/Developer
+USRDIR		= ${DISTDIR}/User
+
+DEVDOCDIR	= ${DEVDIR}/Docs
+USRDOCDIR	= ${USRDIR}/Docs
+
+build_os	= @build_os@
+
+INSTALL		= @INSTALL@
+INSTALL_DATA	= @INSTALL_DATA@
+ROBODOC		= @ROBODOC@
+
+VPATH		= @srcdir@
+
+
+#
+# Files
+########################################
+
+TARGET_DEVDOCS	= ahidev.guide ahidev.dvi ahidev.ps ahidev.pdf ahidev.html \
+		  ahi.doc ahi.guide ahi.html \
+		  ahi_sub.doc ahi_sub.guide ahi_sub.html
+TARGET_USRDOCS	= ahiusr.guide ahiusr.dvi ahiusr.ps ahiusr.pdf ahiusr.html
+
+TARGETS		= ahidev.readme ahiusr.readme \
+		  $(TARGET_DEVDOCS) $(TARGET_USRDOCS)
+
+#
+# Targets
+########################################
+
+.PHONY:		all clean distclean maintainer-clean bindist changes
+
+all:		$(TARGETS)
+
+clean:
+	$(RM) $(TARGETS) ahidev.ver ahiusr.ver device.all-c \
+	      ahidev.texinfo-exp ahiusr.texinfo-exp tmp-iso.sty\
+	      *.cps *.fns *.tps *.vrs *.ky *.pg *.log *.aux *.cp *.fn *.vr *.tp *.toc
+
+distclean:	clean
+	$(RM) Makefile
+
+maintainer-clean: distclean
+
+install:	all
+	$(INSTALL) -d $(PREFIX)/Help
+	$(INSTALL_DATA) ahiusr.guide $(PREFIX)/Help/ahi.guide
+
+bindist:	$(TARGETS)
+	$(INSTALL) -d $(USRDOCDIR) $(DEVDOCDIR)
+	$(INSTALL_DATA) ahidev.readme $(DISTDIR)
+	$(INSTALL_DATA) $(srcdir)/ahidev.readme.info $(DISTDIR)
+	$(INSTALL_DATA) ahiusr.readme $(DISTDIR)
+	$(INSTALL_DATA) $(srcdir)/ahiusr.readme.info $(DISTDIR)
+	for i in $(TARGET_DEVDOCS); do \
+	  $(INSTALL_DATA) $$i $(DEVDOCDIR); \
+	done
+	for i in $(TARGET_USRDOCS); do \
+	  $(INSTALL_DATA) $$i $(USRDOCDIR); \
+	done
+
+changes:
+	$(EDITOR) $(srcdir)/readme.changes
+
+#
+# Auto-remake autoconf stuff
+########################################
+
+Makefile: Makefile.in ../config.status
+	(cd .. && ./config.status)
+
+
+#
+# Rules
+########################################
+
+tmp-iso.sty:	iso.sty
+	cp $< $@
+
+# readme files
+
+ahidev.readme:	readme.dev readme.changes readme.main \
+		$(top_srcdir)/version.ver $(top_srcdir)/version.rev
+	ver="`cat $(top_srcdir)/version.ver`.`cat $(top_srcdir)/version.rev`" &&\
+	cat $(srcdir)/readme.dev $(srcdir)/readme.changes $(srcdir)/readme.main | sed -e "s/AHIVERSION/$$ver/" > $@
+
+ahiusr.readme:	readme.usr readme.changes readme.main $(top_srcdir)/version.rev
+	ver="`cat $(top_srcdir)/version.ver`.`cat $(top_srcdir)/version.rev`" &&\
+	cat $(srcdir)/readme.usr $(srcdir)/readme.changes $(srcdir)/readme.main | sed -e "s/AHIVERSION/$$ver/" > $@
+
+
+# AmigaGuide® files
+
+ahidev.guide:	ahidev.texinfo ahidev.ver
+	makeinfo --amiga --output ahidev.guide $<
+
+ahiusr.guide:	ahiusr.texinfo ahiusr.ver
+	makeinfo --amiga --output ahiusr.guide $<
+
+
+# DVI files
+
+ahidev.dvi:	ahidev.texinfo-exp tmp-iso.sty
+	texi2dvi $<
+
+ahiusr.dvi:	ahiusr.texinfo-exp tmp-iso.sty
+	texi2dvi $<
+
+
+# PS files
+
+ahidev.ps:	ahidev.dvi
+	dvips -o $@ $<
+
+ahiusr.ps:	ahiusr.dvi
+	dvips -o $@ $<
+
+
+# PDF files
+
+ahidev.pdf:	ahidev.texinfo-exp tmp-iso.sty
+	texi2pdf $<
+
+ahiusr.pdf:	ahiusr.texinfo-exp tmp-iso.sty
+	texi2pdf $<
+
+
+# HTML files
+
+ahidev.html:	ahidev.texinfo ahidev.ver
+	texi2html -monolithic -verbose $<
+
+ahiusr.html:	ahiusr.texinfo ahiusr.ver
+	texi2html -monolithic -verbose $<
+
+
+# Macro-expanded files
+
+ahidev.texinfo-exp:	ahidev.texinfo ahidev.ver
+	makeinfo -E $@ --output /dev/null $<
+
+ahiusr.texinfo-exp:	ahiusr.texinfo ahiusr.ver
+	makeinfo -E $@ --output /dev/null $<
+
+
+# Auto-generated version files
+
+ahidev.ver:	ahidev.texinfo $(top_srcdir)/version.ver $(top_srcdir)/version.rev
+	echo "@set ahiver `cat $(top_srcdir)/version.ver`.`cat $(top_srcdir)/version.rev`" > $@
+	grep '$$Id' $< | sed -e 's/^.*Id: .* \(.*\)\.\(.*\) \(....\)\/\(..\)\/\(..\).*/@set docver \1.\2 (\3-\4-\5)/' >> $@
+
+ahiusr.ver:	ahiusr.texinfo $(top_srcdir)/version.ver $(top_srcdir)/version.rev
+	echo "@set ahiver `cat $(top_srcdir)/version.ver`.`cat $(top_srcdir)/version.rev`" > $@
+	grep '$$Id' $< | sed -e 's/^.*Id: .* \(.*\)\.\(.*\) \(....\)\/\(..\)\/\(..\).*/@set docver \1.\2 (\3-\4-\5)/' >> $@
+
+
+# Autodocs
+
+device.all-c:	$(top_srcdir)/Device/*.c
+	@cat $^ > $@
+
+ahi.doc:	device.all-c
+	$(ROBODOC) $< $@ TOC SORT
+
+ahi.guide:	device.all-c
+	$(ROBODOC) $< $@ GUIDE SORT
+
+ahi.html:	device.all-c
+	$(ROBODOC) $< $@ HTML SORT
+
+
+ahi_sub.doc:	$(top_srcdir)/Drivers/Paula/paula_audio.a
+	$(ROBODOC) $< $@ TOC SORT
+
+ahi_sub.guide:	$(top_srcdir)/Drivers/Paula/paula_audio.a
+	$(ROBODOC) $< $@ GUIDE SORT
+
+ahi_sub.html:	$(top_srcdir)/Drivers/Paula/paula_audio.a
+	$(ROBODOC) $< $@ HTML SORT

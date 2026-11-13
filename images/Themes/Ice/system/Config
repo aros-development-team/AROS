@@ -1,0 +1,77 @@
+/* ===================== dAmir - Glasstic theme =============================== */
+CloseRight = No    /* put the Close image to the right */
+
+BaseColors = 0x00eeeeee 0x00dddddd  /* base color fore activated and deactivated borderlines ARGB format */
+
+RightBorderGads = 21  /* width of the right border when gadgets are used */
+BottomBorderGads = 21 /* height of the bottom border when gadgets are used */
+
+/* the following configuration values are double ints, the first is an offset, the 2nd a width/hight */
+
+ContainerTop = 0 3           /* top part of the propotional container */
+ContainerVertTile = 4 100    /* the tileable part of the container */
+ContainerBottom = 193 3      /* the bottom part of the container */
+
+ContainerLeft = 0 3          /* as above but for the vertical bars */
+ContainerHorTile = 4 100
+ContainerRight = 193 3
+
+/* knobs consist of a top/left, a upper/left tileable part, a gripper, a bottom/right tileable part and a bottom/right part */
+KnobTop = 0 3                /* upper part of the knob */
+KnobTileTop = 10 40          /* the upper tileable part */
+KnobVertGripper = 62 12      /* the gripper */
+KnobTileBottom = 80 40       /* the bottom tileable part */
+KnobBottom = 137 3           /* the bottom part */
+
+KnobLeft = 0 3               /* as above but for horizontal knob */
+KnobTileLeft = 10 40
+KnobHorGripper = 66 12
+KnobTileRight = 80 40
+KnobRight = 137 3 
+
+/* =================================================================== */
+
+UseGradients = Yes           /* use gradients instead of the default image in Borders */
+ActivatedGradient = 0xf3f3f3 0xf1f1f1 0     /* top bottom and arc for the Activated Gradient (ARGB Format) maybe arc does not work */
+DeactivatedGradient = 0xf2f2f2 0xf2f2f2 0   /* same but for deactivated windows */
+
+NoInactiveSelected = No   /* Window border gadgets have only 3 states? */
+
+/* =================================================================== */
+
+SBarHeight = 18           /* height of the Screentitlebar */
+LogoOffset = 0            /* put the Screenlogo at this offset (horizontal position) */
+TitleOffset = 20          /* offset for the Title of a Screen */
+
+/* =================================================================== */
+
+BarHeight    = 25        /* Height of window titlebar */
+
+BarLayout    = Vertical  /* Horizontal (default) or Vertical, should be Vertical */
+BarRounded   = No        /* Titlebar top corners should be rounded? (BETA maybe it will not work 100%) */
+BarMasking   = No        /* Picture mask defines titlebar shape? */
+
+/* =================================================================== */
+
+BarPre         =   0  5  /*   Left end of titlebar if no gadgets follow */
+BarPreGadget   =   0  5  /* Left end of titlebar if some gadgets follow */
+BarLGadgetFill =   10 60 /*  Tileable background for left-side gadgets */
+BarJoinGB      =   100 5 /* Join between gadgets and left part of dragbar */
+BarLFill       =   10  60 /*  Tileable background for left part of dragbar */
+BarJoinBT      =   70 10  /* Join between left part of dragbar and title */
+BarTitleFill   =   10 60 /* Tileable background for title */
+BarJoinTB      =   70 10  /*  Join between title and right part of dragbar */
+BarRFill       =  100 100  /* Tileable background for right part of dragbar */
+BarJoinBG      =  210 10  /* Join between right part of dragbar and gadgets */
+BarRGadgetFill =  10 60 /* Tileable background for right-side gadgets */
+BarPostGadget  =  295  5  /* Right end of titlebar if some gadgets precede */
+BarPost        =  295  5  /* Right end of titlebar if no gadgets precede */
+
+/* =================================================================== */
+
+
+/* sizes of borders when no gadgets are alive */
+
+LeftBorder = 10
+RightBorder = 10
+BottomBorder = 10

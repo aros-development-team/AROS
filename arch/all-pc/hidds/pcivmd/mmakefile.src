@@ -1,0 +1,22 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+FILES := pcivmd_init pcivmd_hw pcivmd_driverclass pcivmd_deviceclass
+
+USER_CPPFLAGS := \
+               -D__OOP_NOLIBBASE__ \
+               -D__OOP_NOATTRBASES__ \
+               -D__OOP_NOMETHODBASES__
+
+# Enable AROS debugging
+#USER_CPPFLAGS += -DDEBUG=1
+
+# Link statically so libc references resolve from stdc.static - this is a
+# kickstart module and cannot auto-open stdc.library
+USER_LDFLAGS := -static
+
+%build_module mmake=kernel-hidd-pci-pcivmd \
+    modname=pcivmd modtype=hidd \
+    files=$(FILES)
+
+%common

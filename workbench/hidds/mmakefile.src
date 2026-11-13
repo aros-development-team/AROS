@@ -1,0 +1,6 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM- workbench-hidds : workbench-hidds-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)
+#MM- workbench-hidds : workbench-hidds-$(AROS_TARGET_ARCH)
+#MM- workbench-hidds : workbench-hidds-$(AROS_TARGET_CPU)

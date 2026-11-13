@@ -1,0 +1,117 @@
+/*
+    Copyright  1995-2026, The AROS Development Team. All rights reserved.
+
+    Desc: Backwards compatibility display driver loader.
+*/
+
+#include <aros/debug.h>
+#include <dos/dosextens.h>
+#include <oop/oop.h>
+#include <workbench/startup.h>
+#include <workbench/workbench.h>
+#include <proto/dos.h>
+#include <proto/exec.h>
+#include <proto/graphics.h>
+#include <proto/oop.h>
+#include <proto/icon.h>
+
+/************************************************************************/
+
+struct MyArgs
+{
+    STRPTR hidd;
+    STRPTR lib;
+};
+
+extern struct WBStartup *WBenchMsg;
+
+int __nocommandline = 1;
+
+int main(void)
+{
+    BPTR olddir = BNULL;
+    STRPTR myname;
+    struct DiskObject *icon;
+    struct RDArgs *rdargs = NULL;
+    int res = RETURN_OK;
+    struct MyArgs args = {NULL};
+
+    if (WBenchMsg) {
+        olddir = CurrentDir(WBenchMsg->sm_ArgList[0].wa_Lock);
+        myname = WBenchMsg->sm_ArgList[0].wa_Name;
+    } else {
+        struct Process *me = (struct Process *)FindTask(NULL);
+    
+        if (me->pr_CLI) {
+            struct CommandLineInterface *cli = BADDR(me->pr_CLI);
+        
+            myname = AROS_BSTR_ADDR(cli->cli_CommandName);
+        } else
+            myname = me->pr_Task.tc_Node.ln_Name;
+    }
+    D(bug("[MonWrapper] Command name: %s\n", myname));
+
+    icon = GetDiskObject(myname);
+    D(bug("[MonWrapper] Icon 0x%p\n", icon));
+
+    if (icon) {
+        args.hidd = FindToolType(icon->do_ToolTypes, "CLASS");
+        args.lib = FindToolType(icon->do_ToolTypes, "LIBRARY");
+    }
+
+    if (!WBenchMsg) {
+        rdargs = ReadArgs("CLASS=HIDD/A,LIBRARY=LIB", (IPTR *)&args, NULL);
+        D(bug("[MonWrapper] RDArgs 0x%p\n", rdargs));
+    }
+
+    D(bug("[MonWrapper] CLASS=%s, LIBRARY=%s\n", args.hidd ? (char *)args.hidd : "<none>",
+             args.lib ? (char *)args.lib : "<none>"));
+ 
+    if (args.hidd)
+    {
+        OOP_Class *cl;
+        struct Library *gfxlib = NULL;
+
+        cl = OOP_FindClass(args.hidd);
+        if (!cl)
+        {
+            if (args.lib)
+            {
+                gfxlib = OpenLibrary(args.lib, 0);
+                D(bug("[MonWrapper] OpenLibrary('%s') = 0x%p, IoErr %ld\n", args.lib, gfxlib, (long)IoErr()));
+                if (!gfxlib)
+                    res = RETURN_ERROR;
+            }
+
+            if (res == RETURN_OK)
+            {
+                cl = OOP_FindClass(args.hidd);
+                D(bug("[MonWrapper] OOP_FindClass('%s') = 0x%p\n", args.hidd, cl));
+                if (cl)
+                {
+                    ULONG adderr = AddDisplayDriverA(cl, NULL, NULL);
+                    D(bug("[MonWrapper] AddDisplayDriverA() = %lu\n", (unsigned long)adderr));
+                    if (adderr)
+                    {
+                        res = RETURN_FAIL;
+                    }
+                }
+                else
+                    res = RETURN_ERROR;
+                
+                if ((res != RETURN_OK) && gfxlib)
+                    CloseLibrary(gfxlib);
+            }
+        }
+    } else
+        res = RETURN_ERROR;
+
+    if (rdargs)
+        FreeArgs(rdargs);
+    if (icon)
+        FreeDiskObject(icon);
+    if (olddir)
+        CurrentDir(olddir);
+
+    return res;
+}

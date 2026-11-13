@@ -1,0 +1,39 @@
+# Copyright (C) 2011-2026, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+
+USER_CPPFLAGS := \
+	       -D__NOLIBBASE__
+
+FILES := workbook workbook_intern \
+	 wbapp \
+	 wbwindow \
+	 wbvirtual \
+	 wbset \
+	 wbicon
+
+#MM- workbench-system : workbench-system-workbook
+
+%build_prog mmake=workbench-system-workbook \
+    progname=Workbook targetdir=$(AROS_SYSTEM) \
+    files="main $(FILES)" \
+    detach=no
+
+## For the 'workbook.resource' embedded commands
+USER_CPPFLAGS += \
+               -DUSE_EXEC_DEBUG \
+               -DAROS_ROM
+USER_CPPFLAGS += \
+               -DINTUITION_INLINE_NEWOBJECT
+
+OBJDIR := $(OBJDIR).kernel
+
+ifneq ($(ROM_OPTIMIZATION_CFLAGS),)
+OPTIMIZATION_CFLAGS := $(ROM_OPTIMIZATION_CFLAGS)
+endif
+
+%build_module mmake=kernel-workbook \
+  modname=workbook modtype=resource \
+  files="workbook_init $(FILES)"
+
+%common

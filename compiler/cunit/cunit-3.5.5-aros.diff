@@ -1,0 +1,76 @@
+diff -ruN cunit-3.5.5/CUnit/Sources/Automated/AutomatedJUnitXml.c cunit-3.5.5.aros/CUnit/Sources/Automated/AutomatedJUnitXml.c
+--- cunit-3.5.5/CUnit/Sources/Automated/AutomatedJUnitXml.c	2026-07-23 13:20:34.163185006 +0000
++++ cunit-3.5.5.aros/CUnit/Sources/Automated/AutomatedJUnitXml.c	2026-07-23 13:20:05.512598652 +0000
+@@ -70,13 +70,14 @@
+   return n;
+ }
+ 
+-static void format_testcase(CU_dstr *dst, const char *esc_name, CU_pSuite suite, CU_pTest test) {
++static void format_testcase(CU_dstr *dst, unsigned int testno, const char *esc_name, CU_pSuite suite, CU_pTest test) {
+   char *esc_test_name = CU_escape_string(test->pName);
+   CU_pFailureRecord failure = NULL;
+   CU_dstr_putf(dst,
+-             "    <testcase classname=\"%s.%s\" name=\"%s\" time=\"%f\">\n",
++             "    <testcase id=\"%s.%s.%u\" name=\"%s\" time=\"%f\">\n",
+              CU_automated_package_name_get(),
+              esc_name,
++             testno,
+              esc_test_name,
+              CU_get_test_duration(test)
+   );
+@@ -168,13 +169,14 @@
+     int all_tests = CU_count_all_tests(registry) + count_all_init_funcs(registry);
+ 
+     CU_dstr_init(&dst, _DEFAULT_REPORT_SIZE);
+-    CU_dstr_puts(&dst, "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
++    CU_dstr_puts(&dst, "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n");
+     CU_dstr_putf(&dst,
+-            "<testsuites errors=\"%d\" failures=\"%d\" tests=\"%d\" name=\"%s\" time=\"%f\">\n",
++            "<testsuites id=\"%s\" name=\"%s\" errors=\"%d\" failures=\"%d\" tests=\"%d\" time=\"%f\">\n",
++            CU_automated_package_name_get(),
++            esc_name,
+             all_errors,
+             all_failures,
+             all_tests,
+-            esc_name,
+             summary->ElapsedTime
+             );
+     free(esc_name);
+@@ -186,29 +188,32 @@
+         int errors = count_suite_init_errors(suite);
+         int test_count = CU_count_suite_tests(suite) + count_suite_init_funcs(suite);
+         int test_failures = errors + CU_count_suite_failures(suite);
++        unsigned int testno = 0;
+         esc_name = CU_escape_string(suite->pName);
+         CU_dstr_putf(&dst,
+-                   "  <testsuite errors=\"%d\" failures=\"%d\" tests=\"%d\" name=\"%s\" time=\"%f\">\n",
++                   "  <testsuite id=\"%s.%s\" name=\"%s\" errors=\"%d\" failures=\"%d\" tests=\"%d\" time=\"%f\">\n",
++                   CU_automated_package_name_get(),
++                   esc_name,
++                   suite->pName,
+                    errors,
+                    test_failures,
+                    test_count,
+-                   esc_name,
+                    CU_get_suite_duration(suite)
+         );
+ 
+         /* record suite setup */
+-        if (suite->pInitializeFuncTest) format_testcase(&dst, esc_name, suite, suite->pInitializeFuncTest);
++        if (suite->pInitializeFuncTest) format_testcase(&dst, testno++, esc_name, suite, suite->pInitializeFuncTest);
+ 
+         /* iterate through all the tests */
+         while (test) {
+           if (!CU_is_test_filtered(test)) {
+-            format_testcase(&dst, esc_name, suite, test);
++            format_testcase(&dst, testno++, esc_name, suite, test);
+           }
+           test = test->pNext;
+         }
+ 
+         /* record suite cleanup */
+-        if (suite->pCleanupFuncTest) format_testcase(&dst, esc_name, suite, suite->pCleanupFuncTest);
++        if (suite->pCleanupFuncTest) format_testcase(&dst, testno++, esc_name, suite, suite->pCleanupFuncTest);
+ 
+         CU_dstr_puts(&dst, "  </testsuite>\n");
+         free(esc_name);

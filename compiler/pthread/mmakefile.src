@@ -1,0 +1,58 @@
+include $(SRCDIR)/config/aros.cfg
+
+#MM- core-linklibs : linklibs-pthread
+#MM linklibs-pthread : includes kernel-task-includes
+
+#MM- includes-copy : pthread-includes-copy
+#MM- compiler-includes : pthread-includes-copy
+
+%copy_includes mmake=pthread-includes-copy includes="pthread.h sched.h semaphore.h"
+
+LINKLIBFILES := pthread sched semaphore pthread_affinity
+LIBRARYFILES := 
+
+PTHREADFUNCS :=  \
+    pthread_create \
+    pthread_sigmask \
+    pthread_cancel \
+    pthread_equal \
+    pthread_join \
+    pthread_self \
+    pthread_suspend_np \
+    pthread_continue_np \
+    pthread_setcancelstate \
+    pthread_setcanceltype \
+    pthread_attr_destroy \
+    pthread_attr_init \
+    pthread_attr_setstacksize \
+    pthread_attr_setaffinity_np \
+    pthread_attr_getaffinity_np \
+    pthread_setaffinity_np \
+    pthread_getaffinity_np \
+    pthread_cond_destroy \
+    pthread_cond_init \
+    pthread_cond_signal \
+    pthread_cond_timedwait \
+    pthread_mutex_init \
+    pthread_mutex_destroy \
+    pthread_mutex_lock \
+    pthread_mutex_unlock \
+    pthread_mutexattr_destroy \
+    pthread_mutexattr_init \
+    pthread_mutexattr_settype \
+    pthread_exit \
+    pthread_getspecific \
+    pthread_setspecific \
+    pthread_key_create \
+    pthread_cond_broadcast \
+    pthread_cond_wait \
+    pthread_mutex_trylock
+
+#%build_module mmake=compiler-pthread \
+#    modname=pthread modtype=library \
+#    files="$(LIBRARYFILES) $(PTHREADFUNCS)" \
+#    linklibfiles=$(LINKLIBFILES)
+
+%build_linklib mmake=linklibs-pthread \
+    libname=pthread \
+    files="$(LINKLIBFILES) $(PTHREADFUNCS)"

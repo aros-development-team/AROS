@@ -1,0 +1,9 @@
+Name=MP3ID3
+Version=$VER: MP3ID3 41.2 (14.05.2026)
+BaseName=mp3
+Pattern=#?
+Mask='I' 'D' '3'
+GroupID=soun
+ID=mp3i
+Flags=DTF_BINARY,DTF_CASE
+Priority=1

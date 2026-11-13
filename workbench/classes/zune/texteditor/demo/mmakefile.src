@@ -1,0 +1,23 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM workbench-classes-zune-texteditor-demo : includes linklibs \
+#MM workbench-classes-zune-texteditor \
+#MM workbench-classes-zune-texteditor-rexx
+
+FILES := TextEditor-Demo vastubs
+TARGETDIR := $(AROS_TESTS)/Zune/TextEditor
+
+# We need to use -idirafter, so that we
+# *don't* pick up the project's local MUI headers.
+USER_INCLUDES := -idirafter $(SRCDIR)/$(CURDIR)/../include
+USER_CFLAGS := -DNO_INLINE_STDARG -DAROS_ABI_V1
+
+%build_prog mmake=workbench-classes-zune-texteditor-demo progname=TextEditor-Demo \
+    files=$(FILES) targetdir=$(TARGETDIR)
+
+#MM workbench-classes-zune-texteditor-rexx
+%copy_dir_recursive mmake=workbench-classes-zune-texteditor-rexx src=rexx \
+    dst=$(AROS_TESTS)/Zune/TextEditor/rexx
+
+%common

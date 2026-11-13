@@ -1,0 +1,37 @@
+DEMOS=\
+  mui_input1 \
+  mui_layout1 \
+  mui_notify1 \
+  mui_notify2 \
+  mui_pages \
+  mui_slider
+
+all: $(DEMOS)
+
+mui_input1: mui_input1.c
+  sc $? link IDIR=/libs/muimaster /libs/muimaster/muimaster.lib lib:debug.lib
+
+mui_layout1: mui_layout1.c
+  sc $? link IDIR=/libs/muimaster /libs/muimaster/muimaster.lib lib:debug.lib
+
+mui_notify1: mui_notify1.c
+  sc $? link IDIR=/libs/muimaster /libs/muimaster/muimaster.lib lib:debug.lib
+
+mui_notify2: mui_notify2.c
+  sc $? link IDIR=/libs/muimaster /libs/muimaster/muimaster.lib lib:debug.lib
+
+mui_pages: mui_pages.c
+  sc $? link IDIR=/libs/muimaster /libs/muimaster/muimaster.lib lib:debug.lib
+
+mui_slider: mui_slider.c
+  sc $? link IDIR=/libs/muimaster /libs/muimaster/muimaster.lib lib:debug.lib
+
+clean:
+  -delete mui_input1
+  -delete mui_layout1
+  -delete mui_notify1
+  -delete mui_notify2
+  -delete mui_pages
+  -delete mui_slider
+  -delete \#?.o
+

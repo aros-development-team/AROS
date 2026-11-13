@@ -1,0 +1,59 @@
+#
+#	$Id: makefile.os4,v 1.2 2005/06/08 06:54:25 damato Exp $
+#
+#	:ts=4
+#
+
+CC	= ppc-amigaos-gcc
+
+.c.o:
+	@echo "Compiling $<"
+	@$(CC) -c $(CFLAGS) -o $*.o $<
+
+###########################################################################
+
+NAME	= example.library
+VERSION	= 51
+
+###########################################################################
+
+WARNINGS = \
+	-Wall -W -Wshadow -Wpointer-arith -Wsign-compare -Wmissing-prototypes \
+	-Wundef -Wbad-function-cast -Wmissing-declarations
+
+CPU = -mcpu=604e -mmultiple
+OPTIONS = -DNDEBUG -D__USE_INLINE__
+OPTIMIZE = -O3 -fomit-frame-pointer -fstrength-reduce -finline-functions
+DEBUG = -g
+
+###########################################################################
+
+CFLAGS = $(WARNINGS) $(OPTIMIZE) $(DEBUG) $(CPU) $(OPTIONS) -I. \
+         -I../../includes
+LFLAGS = -L.
+
+###########################################################################
+
+OBJS = \
+	example_lib.o \
+
+LIBS = \
+	-lc
+
+###########################################################################
+
+all: $(NAME)
+
+$(NAME): $(OBJS)
+	@echo "Linking $@"
+	@$(CC) -o $@.debug $(CFLAGS) $(LFLAGS) -nostdlib -nostartfiles $(OBJS) $(LIBS)
+	@ppc-amigaos-strip -R.comment -o $@ $@.debug
+
+###########################################################################
+
+example_lib.o : example_lib.c
+
+###########################################################################
+
+clean:
+	-rm *.o *.debug *.library

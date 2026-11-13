@@ -1,0 +1,18 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+FILES = SFScheck ../FS/asmsupport ../FS/cachedio ../FS/deviceio ../FS/globals ../FS/req
+
+EXEDIR = $(AROSDIR)/C
+
+USER_CFLAGS := -I $(SRCDIR)/$(CURDIR)/../FS
+USER_CFLAGS += $(PARANOIA_CFLAGS)
+USER_CFLAGS += -DSFS_BE -DADATE="\"$(shell date '+%d.%m.%Y')\""
+
+#MM workbench-devs-sfs-c-sfscheck : kernel-fs-sfs-deps symlinks
+
+%build_prog mmake=workbench-devs-sfs-c-sfscheck \
+    progname=SFSCheck targetdir=$(EXEDIR) \
+    files=$(FILES)
+
+%common

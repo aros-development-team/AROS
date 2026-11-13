@@ -1,0 +1,205 @@
+# Copyright (C) 2026, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+
+INTUITION_BUILDDIR := $(GENDIR)/$(CURDIR)/intuition
+USER_INCLUDES := -I$(INTUITION_BUILDDIR)
+USER_CFLAGS :=  $(AROSROM_MODULE_CFLAGS)
+USER_CPPFLAGS := \
+               -DUSE_EXEC_DEBUG \
+               -DINTUITION_INLINE_NEWOBJECT \
+               -D__DOS_NOLIBBASE__ \
+               -D__INTUITION_NOLIBBASE__ \
+               -D__LAYERS_NOLIBBASE__ \
+               -D__UTILITY_NOLIBBASE__ \
+               -D__INPUT_NOLIBBASE__ \
+               -D__TIMER_NOLIBBASE__ \
+               -D__OOP_NOLIBBASE__ \
+               -D__OOP_NOMETHODBASES__ \
+               -D__OOP_NOATTRBASES__ \
+               -D__GRAPHICS_NOLIBBASE__ \
+               -D__KEYMAP_NOLIBBASE__
+USER_LDFLAGS := -static
+
+FILES := boolgadgets boopsigadgets buttongclass frameiclass frbuttonclass \
+         gadgetclass gadgets imageclass inputhandler propgadgets propgclass \
+         requesters strgadgets strgclass  pointerclass windowclasses \
+         intuition_misc inputhandler_support inputhandler_actions \
+         menus barlabelclass fillrectclass groupgclass wbtasktalk \
+         rootclass icclass modelclass itexticlass misc sysiclass menutask \
+	 windecorclass scrdecorclass menudecorclass decorsupport monitorclass screennotifytask \
+	 screenclass decoration sysrequest_intern shutdownscreen intuition_arch
+
+FUNCS := \
+	activategadget \
+	activatewindow \
+	addclass \
+	addgadget \
+	addglist \
+	allocintuimessage \
+	allocremember \
+	allocscreenbuffer \
+	alohaworkbench \
+	autorequest \
+	beginrefresh \
+	buildeasyrequestargs \
+	buildsysrequest \
+	changedecorationa \
+	changescreenbuffer \
+	changewindowbox \
+	changewindowshape \
+	cleardmrequest \
+	clearmenustrip \
+	clearpointer \
+	closescreen \
+	closewindow \
+	closeworkbench \
+	currenttime \
+	displayalert \
+	displaybeep \
+	disposeobject \
+	dogadgetmethoda \
+	donotify \
+	doubleclick \
+	drawborder \
+	drawimage \
+	drawimagestate \
+	easyrequestargs \
+	endrefresh \
+	endrequest \
+        endscreennotify \
+	eraseimage \
+	findclass \
+	findmonitor \
+	freeclass \
+	freeicdata \
+	freeintuimessage \
+	freemonitorlist \
+	freeremember \
+	freescreenbuffer \
+	freescreendrawinfo \
+	freesysrequest \
+	gadgetmouse \
+	getattr \
+	getdefaultpubscreen \
+	getdefprefs \
+        getdrawinfoattr \
+	getmonitorlist \
+	getprefs \
+	getscreendata \
+	getscreendrawinfo \
+	helpcontrol \
+	hidewindow \
+	initrequester \
+	intuitextlength \
+	iswindowvisible \
+	itemaddress \
+	lendmenus \
+	lockibase \
+	lockpubscreen \
+	lockpubscreenlist \
+	makeclass \
+	makescreen \
+	modifyidcmp \
+	modifyprop \
+	movescreen \
+	movewindow \
+	movewindowinfrontof \
+	newmodifyprop \
+	newobjecta \
+	nextobject \
+	nextpubscreen \
+	obtaingirport \
+	offgadget \
+	offmenu \
+	ongadget \
+	onmenu \
+	openscreen \
+	openscreentaglist \
+	openwindow \
+	openwindowtaglist \
+	openworkbench \
+	pointinimage \
+	printitext \
+	pubscreenstatus \
+	queryoverscan \
+	refreshgadgets \
+	refreshglist \
+	refreshwindowframe \
+	releasegirport \
+	remakedisplay \
+	removeclass \
+	removegadget \
+	removeglist \
+	reportmouse \
+	request \
+	resetmenustrip \
+	rethinkdisplay \
+	screendepth \
+	screenposition \
+	screentoback \
+	screentofront \
+	scrollwindowraster \
+	sendintuimessage \
+	setattrsa \
+	setdefaultpubscreen \
+	setdefaultscreenfont \
+	setdmrequest \
+	setedithook \
+	setgadgetattrsa \
+	setiprefs \
+	setmenustrip \
+	setmousequeue \
+	setpointer \
+	setpointerbounds \
+	setprefs \
+	setpubscreenmodes \
+	setwindowpointera \
+	setwindowtitles \
+	showtitle \
+	showwindow \
+	sizewindow \
+        startscreennotifytaglist \
+	sysreqhandler \
+	timeddisplayalert \
+	unlockibase \
+	unlockpubscreen \
+	unlockpubscreenlist \
+	viewaddress \
+	viewportaddress \
+	wbenchtoback \
+	wbenchtofront \
+        windowaction \
+	windowlimits \
+	windowtoback \
+	windowtofront \
+	zipwindow
+
+#MM kernel-intuition : kernel-intuition-$(ARCH)-$(CPU)
+#MM kernel-intuition-linklib : kernel-intuition-$(ARCH)-$(CPU)
+
+#MM kernel-intuition-includes : \
+#MM     kernel-exec-includes \
+#MM     kernel-utility-includes \
+#MM     kernel-graphics-includes \
+#MM     workbench-libs-cgfx-includes \
+#MM     kernel-timer-includes \
+#MM     kernel-layers-includes \
+#MM     kernel-keymap-includes \
+#MM     kernel-input-includes \
+#MM     includes-copy
+#MM- core-linklibs: linklibs-intuition
+
+ifeq ($(AROS_TARGET_CPU)-$(AROS_TARGET_ARCH),m68k-amiga)
+# The amiga-m68k kickstart has to fit in a 512KB ROM bank - drop the runtime
+# debug log machinery (see rom/exec/mmakefile.src).
+USER_CPPFLAGS += -DNO_RUNTIME_DEBUG
+endif
+
+ifneq ($(ROM_OPTIMIZATION_CFLAGS),)
+OPTIMIZATION_CFLAGS := $(ROM_OPTIMIZATION_CFLAGS)
+endif
+
+%build_module mmake=kernel-intuition \
+  modname=intuition modtype=library \
+  files="intuition_init $(FUNCS) $(FILES)"

@@ -1,0 +1,15 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+FILES := tiffclass
+
+#MM- workbench-datatypes-complete: workbench-datatypes-tiff
+#MM workbench-datatypes-tiff : includes linklibs workbench-libs-tiff-linklib
+
+#USER_CPPFLAGS   := -DMYDEBUG -DDEBUG=1
+USER_CPPFLAGS += -DAROS_LC_SETFUNCS
+USER_LDFLAGS := -static
+
+%build_module mmake=workbench-datatypes-tiff \
+    modname=tiff modtype=datatype \
+    files=$(FILES)

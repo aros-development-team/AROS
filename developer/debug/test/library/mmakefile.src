@@ -1,0 +1,127 @@
+include $(SRCDIR)/config/aros.cfg
+
+#MM- test : test-library
+#MM- test-library : test-library-dummytest \
+#MM      test-library-dummytest_auto \
+#MM      test-library-usereltest \
+#MM      test-library-norootreltest \
+#MM      test-library-peropenertest \
+#MM      test-library-peropenertest_child \
+#MM      test-genmodule-library-cunit
+
+#MM- test-cunit : test-genmodule-library-cunit
+#MM- test-cunit-quick : test-genmodule-library-cunit-quick
+
+#MM- test-genmodule-library-cunit : test-genmodule-library-$(TARGET_UNITTESTS)-cunit
+#MM- test-genmodule-library-cunit-quick : test-genmodule-library-$(TARGET_UNITTESTS)-cunit-quick
+
+#MM- test-library-userellib: includes-pertask includes-dummy linklibs-pertask linklibs-dummy
+#MM- test-library-norootrellib: includes-pertask linklibs-pertask
+
+#MM test-library-dummytest : test-library-dummylib
+#MM test-library-dummytest_auto : test-library-dummylib
+#MM test-library-peropenertest : test-library-peropenerlib \
+#MM     test-library-pertasklib
+#MM test-library-peropenertest_child : \
+#MM     test-library-pertasklib
+#MM- test-genmodule-library-cunit-deps : \
+#MM     linklibs-cunit \
+#MM     test-library-userellib
+
+#MM test-library-usereltest :  test-library-userellib
+#MM test-library-norootreltest : test-library-norootrellib test-library-userellib \
+#MM     test-library-pertasklib test-library-dummylib
+
+#MM- test-library-clean : \
+#MM      test-library-dummytest-clean \
+#MM      test-library-dummytest_auto-clean \
+#MM      test-library-peropenertest-clean \
+#MM      test-library-dummylib-clean \
+#MM      test-library-peropenerlib-clean \
+#MM      test-library-pertasklib-clean \
+#MM      test-library-userellib-clean \
+#MM      test-library-norootrellib-clean \
+#MM      test-library-norootreltest-clean
+
+TARGETDIR := $(AROS_TESTS)/Library
+CUNITEXEDIR := $(AROS_TESTS)/cunit/genmodule/library
+
+USER_INCLUDES := -I$(TARGETDIR)/$(AROS_DIR_DEVELOPER)/include
+USER_LDFLAGS := -L$(TARGETDIR)/$(AROS_DIR_DEVELOPER)/lib
+
+# Test Progs
+
+%build_prog mmake=test-library-peropenertest \
+    progname=peropenertest targetdir=$(TARGETDIR) \
+    uselibs=peropener
+
+%build_prog mmake=test-library-peropenertest_child \
+    progname=peropenertest_child targetdir=$(TARGETDIR) \
+    uselibs="pertask"
+
+%build_prog mmake=test-library-dummytest \
+    progname=dummytest targetdir=$(TARGETDIR) \
+
+%build_prog mmake=test-library-dummytest_auto \
+    files=dummytest_auto progname=dummytest_auto targetdir=$(TARGETDIR) \
+    uselibs=dummy
+
+%build_prog mmake=test-library-usereltest \
+    progname=usereltest targetdir=$(TARGETDIR) \
+    uselibs="userel pertask"
+
+# Opens the libraries itself: it defines NorootrelBase, so the linklib's
+# auto-open code is not linked in.
+%build_prog mmake=test-library-norootreltest \
+    progname=norootreltest targetdir=$(TARGETDIR) \
+    uselibs="norootrel"
+
+# Libraries
+
+%build_module mmake=test-library-dummylib \
+    modname=dummy modtype=library files=dummylib prefix=$(TARGETDIR)
+
+%build_module mmake=test-library-peropenerlib \
+    modname=peropener modtype=library \
+    files="peropenervalue peropenernolib peropenernamechange" \
+    prefix=$(TARGETDIR)
+
+%build_module mmake=test-library-pertasklib \
+    modname=pertask modtype=library \
+    files="getparentbase pertaskvalue" linklibfiles=pertaskvalue_linklib \
+    prefix=$(TARGETDIR)
+
+%build_module mmake=test-library-userellib \
+    modname=userel modtype=library \
+    files="dummyadd pertaskgetparentbase dummyprint4 getchildvalue" \
+    prefix=$(TARGETDIR)
+
+%build_module mmake=test-library-norootrellib \
+    modname=norootrel modtype=library \
+    files="norootrelvalue" \
+    prefix=$(TARGETDIR)
+
+# CUnit tests
+
+USER_INCLUDES += -I$(AROS_CONTRIB_INCLUDES)
+USER_CFLAGS := $(CFLAGS_NO_BUILTIN)
+USER_LDFLAGS += -L$(AROS_CONTRIB_LIB) -lposixc
+
+#MM test-genmodule-library-relbase-yes-cunit : test-genmodule-library-cunit-deps
+
+%build_prog mmake=test-genmodule-library-autoopen-yes-cunit \
+    progname=cunit-genmodule-autoopen targetdir=$(CUNITEXEDIR) \
+    uselibs="dummy cunit posixc"
+
+%build_prog mmake=test-genmodule-library-library-yes-cunit \
+    progname=cunit-genmodule-library targetdir=$(CUNITEXEDIR) \
+    uselibs="dummy cunit posixc"
+
+%build_prog mmake=test-genmodule-library-relbase-yes-cunit \
+    progname=cunit-genmodule-relbase targetdir=$(CUNITEXEDIR) \
+    uselibs="userel pertask cunit posixc"
+
+#MM- test-genmodule-library-yes-cunit : test-genmodule-library-relbase-yes-cunit test-genmodule-library-autoopen-yes-cunit test-genmodule-library-library-yes-cunit
+#MM- test-genmodule-library-yes-cunit-quick : test-genmodule-library-relbase-yes-cunit-quick test-genmodule-library-autoopen-yes-cunit-quick test-genmodule-library-library-yes-cunit-quick
+
+%common

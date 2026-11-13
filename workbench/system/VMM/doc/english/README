@@ -1,0 +1,10 @@
+Short: Virtual memory for Amigas with MMU
+Uploader: apel@tecmath.de (Martin Apel)
+Author:   apel@tecmath.de (Martin Apel)
+Type: util/misc
+
+VMM  implements  a  virtual  memory  manager for Amigas with a MMU.  A
+localized  user  interface  to  enter  all  parameters  and to disable
+certain  tasks  and  load  files  from  using  virtual  memory is also
+provided.  For the user interface MUI 2.3 is needed.
+Among minor other enhancements V3.3 contains a German documentation.

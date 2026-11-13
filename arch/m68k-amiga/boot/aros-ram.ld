@@ -1,0 +1,46 @@
+MEMORY {
+  valid  (rwx)    : org = 0x00000000 , l = 2M
+  invalid (rwx) : org = 0xdead0000 , l = 0x0
+}
+
+SECTIONS 
+{
+  .start.MEMF_LOCAL           : {
+INCLUDE start_objs.ld
+                                } >valid
+  .kick.MEMF_KICK             : { _kick_start = .;
+INCLUDE any_objs.ld
+                                  _kick_end = .; 
+                                } >valid
+  .rom.MEMF_LOCAL             : { _rom_start = .;
+INCLUDE local_objs.ld
+                                   /* This is for the static libs */
+                                  *(.text .text.* .rodata .rodata.* .romstrings .romsets)
+                                  *(.eh_frame)
+                                  _rom_end = .;   
+                                  _ext_start = .;   
+                                  /* Intentionally empty */
+                                  _ext_end = .;   
+                                } >valid
+  /* SS, typically at 0x800-0x1000. Since MEMF_CHIP RAM starts at
+   * 0x1000, this is a good place for it. Only used until after
+   * all expansion ROMs have been run, at which point we'll allocate
+   * a faster location for it.
+   */
+  .ss.MEMF_LOCAL              : {
+                                  _ss = .;
+                                  . = . + 0x800;
+                                  _ss_end = .;
+                                 } >valid
+
+  /* This should cause angry complaints if .data exists
+   * We don't want .bss, and we don't need it.
+   */
+  .bss                        : { *(.bss)              } >invalid
+
+  /* This should cause angry complaints if .data exists
+   * We don't want .data, and we don't need it.
+   */
+  .data                       : { *(.data)             } >invalid
+
+}

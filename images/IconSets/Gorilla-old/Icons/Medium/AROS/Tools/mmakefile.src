@@ -1,0 +1,11 @@
+# Copyright (C) 2004, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+
+ICONS := Calculator HDToolBox PCITool InstallAROS Editor Commodities Debug WiMP \
+         ScreenGrabber
+
+#MM- iconset-Gorilla-old-icons-aros-clean : iconset-Gorilla-old-icons-aros-tools-clean
+#MM- iconset-Gorilla-old-icons-aros : iconset-Gorilla-old-icons-aros-tools
+%build_icons mmake=iconset-Gorilla-old-icons-aros-tools icons=$(ICONS) \
+             dir=$(AROS_TOOLS)

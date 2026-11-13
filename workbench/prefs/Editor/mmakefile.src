@@ -1,0 +1,25 @@
+#
+# Makefile to make JanoEditor Prefs Program.
+
+include $(SRCDIR)/config/aros.cfg
+
+FILES := JanoPrefs PrefsPort Prefs Prefs_Strings SampleEd Utils
+
+EXEDIR := $(AROS_PREFS)
+
+USER_CFLAGS := -DJANOPREF
+USER_INCLUDES := -I$(SRCDIR)/$(CURDIR)/../../tools/Edit -I$(TOP)/$(CURDIR)/
+
+#MM- workbench-prefs : workbench-prefs-editor
+#MM workbench-prefs-editor : includes linklibs workbench-prefs-editor-catalogs
+
+Prefs.c : ../../tools/Edit/Prefs.c
+	@$(CP) $< $@
+
+%build_prog mmake=workbench-prefs-editor \
+    progname=Editor targetdir=$(EXEDIR) \
+    files=$(FILES)
+    
+
+%common
+

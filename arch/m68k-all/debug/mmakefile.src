@@ -1,0 +1,12 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+FILES=debug_gdb segtracker
+
+USER_INCLUDES += -I$(SRCDIR)/rom/debug
+
+%build_archspecific \
+  mainmmake=kernel-debug modname=debug maindir=rom/debug arch=m68k \
+  files="$(FILES)"
+
+%common

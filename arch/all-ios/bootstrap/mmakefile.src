@@ -1,0 +1,59 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+EXEDIR := $(TARGETDIR)/Payload/AROSBootstrap.app
+OBJDIR := $(GENDIR)/arch/all-hosted/bootstrap/arch
+
+FILES	      := kickstart
+OBJCFILES     := main appdelegate filesystem ui
+ICON          := arch/all-hosted/hidd/x11/icon.png
+PACKAGE	      := AROSBootstrap.ipa
+USER_INCLUDES := -I$(SRCDIR)/arch/all-hosted/bootstrap -isystem $(SRCDIR)/bootstrap/include -isystem $(GENINCDIR)
+
+#MM- kernel-bootstrap-package-ios: kernel-bootstrap-hosted kernel-bootstrap-package-ios-quick
+#MM- kernel-bootstrap-package-ios-signed: kernel-bootstrap-codesign-ios kernel-bootstrap-package-ios-quick
+#MM kernel-bootstrap-hosted-darwin-ios: kernel-bootstrap-bundle-ios
+
+OBJS := $(addsuffix .o,$(addprefix $(OBJDIR)/,$(notdir $(FILES) $(OBJCFILES))))
+DEPS := $(addsuffix .d,$(addprefix $(OBJDIR)/,$(notdir $(FILES) $(OBJCFILES))))
+
+#MM
+kernel-bootstrap-hosted-darwin-ios :: $(OBJS) $(DEPS)
+#MM
+kernel-bootstrap-hosted-darwin-ios-quick :: $(OBJS) $(DEPS)
+
+
+%rule_compile basename=% targetdir=$(OBJDIR) \
+    cflags="$(CFLAGS) $(IOS_CFLAGS)" dflags="$(CFLAGS) $(IOS_CFLAGS)" compiler=kernel
+
+$(OBJDIR$)/%.o : %.m
+	%compile_q cmd=$(KERNEL_CC) opt="$(CFLAGS) $(KERNEL_CFLAGS) $(KERNEL_OBJCFLAGS) $(IOS_CFLAGS)"
+
+$(OBJDIR)/%.d : %.m
+	%mkdepend_q cc=$(KERNEL_CC) flags="$(CFLAGS) $(KERNEL_OBJCFLAGS) $(IOS_CFLAGS)"
+
+%include_deps depstargets="kernel-bootstrap-hosted-darwin-ios kernel-bootstrap-hosted-darwin-ios-quick" deps=$(DEPS)
+
+#MM
+kernel-bootstrap-bundle-ios:
+	@$(MKDIR) $(EXEDIR)
+	@$(RM) $(EXEDIR)/CodeResources $(EXEDIR)/_CodeSignature $(EXEDIR)/embedded.mobileprovision
+	@$(ECHO) Making property list...
+	@$(SRCDIR)/$(CURDIR)/mkplist.sh $(SRCDIR)/$(CURDIR) >$(EXEDIR)/Info.plist
+	@if [ -f $(IOS_SDK_PATH)/ResourceRules.plist ]; then \
+	    $(ECHO) Writing resource rules... ;\
+	    $(CP) -f $(IOS_SDK_PATH)/ResourceRules.plist $(EXEDIR)/ ;\
+	fi
+	@$(ECHO) Writing PkgInfo...
+	@$(CP) -f $(SRCDIR)/$(CURDIR)/PkgInfo $(SRCDIR)/$(ICON) $(EXEDIR)/
+
+#MM
+kernel-bootstrap-codesign-ios:
+	@cd $(SRCDIR)/$(CURDIR); ./appsign.sh $(EXEDIR)
+
+#MM
+kernel-bootstrap-package-ios-quick:
+	@$(ECHO) Building package...
+	@cd $(TARGETDIR); $(RM) $(PACKAGE); zip -ry $(PACKAGE) Payload
+
+%common

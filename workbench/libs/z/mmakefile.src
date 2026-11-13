@@ -1,0 +1,213 @@
+#
+#   Generate the zlib linklib.
+#
+
+include $(SRCDIR)/config/aros.cfg
+include $(SRCDIR)/$(CURDIR)/make.opt
+
+REPOSITORIES :=  \
+    cache:// \
+    https://chromium.googlesource.com/chromium/src/+archive/lkgr/third_party
+ARCHSUFFIX := "tar.gz"
+PATCHSPEC := $(ARCHBASE)-aros.diff:$(ARCHBASE):-f,-p1
+
+%fetch mmake=zlib-fetch archive=$(ARCHBASE) destination=$(PORTSDIR)/zlib \
+    location=$(PORTSSOURCEDIR) base=$(PORTSDIR)/zlib destination=$(PORTSDIR)/zlib/zlib archive_origins=$(REPOSITORIES) suffixes=$(ARCHSUFFIX) \
+    patches_specs=$(PATCHSPEC)
+
+%create_patch mmake=zlib-create-patch \
+    archive=$(ARCHBASE) suffixes=$(ARCHSUFFIX) \
+    srcdir=zlib base=$(PORTSDIR)/zlib destination=$(PORTSDIR)/zlib/zlib 
+
+#MM- ports-includes : \
+#MM     workbench-libs-z-includes-copy \
+#MM     workbench-libs-z-geninc \
+#MM     workbench-libs-z-pkgc
+
+#MM workbench-libs-z-includes-copy : zlib-fetch
+#MM workbench-libs-z-geninc : zlib-fetch
+#MM workbench-libs-z-pkgc : zlib-fetch
+
+#MM workbench-libs-z-includes : \
+#MM     kernel-exec-includes \
+#MM     kernel-dos-includes \
+#MM     includes-copy \
+#MM     workbench-libs-z-includes-copy
+
+FILES := \
+    adler32 \
+    compress \
+    crc32 \
+    deflate \
+    gzclose \
+    gzlib \
+    gzread \
+    gzwrite \
+    infback \
+    inftrees \
+    inffast \
+    trees \
+    uncompr \
+    zutil
+         
+OLDFILES :=\
+         contrib/blast/blast \
+         contrib/infback9/infback9 \
+         contrib/infback9/inftree9
+
+#bitstream compatibility with canonical zlib
+#LIBZ_CPPFLAGS +=-DUSE_ZLIB_RABIN_KARP_ROLLING_HASH
+
+ifneq (,$(findstring x86_64,$(AROS_TARGET_CPU)))
+LIBZ_CPPFLAGS +=-DINFLATE_CHUNK_SIMD_SSE2
+LIBZ_CPPFLAGS +=-DADLER32_SIMD_SSSE3
+LIBZ_CPPFLAGS +=-DINFLATE_CHUNK_READ_64LE
+LIBZ_CPPFLAGS +=-DDEFLATE_CHUNK_WRITE_64LE
+LIBZ_CPPFLAGS +=-DCRC32_SIMD_SSE42_PCLMUL
+LIBZ_CPPFLAGS +=-DDEFLATE_SLIDE_HASH_SSE2
+LIBZ_CPPFLAGS +=-DX86_NOT_WINDOWS
+LIBZ_CPPFLAGS +=-DCRC32_SIMD_AVX512_PCLMUL
+FILES += \
+        adler32_simd \
+        contrib/optimizations/inffast_chunk \
+        contrib/optimizations/inflate \
+        cpu_features \
+        crc32_simd \
+        crc32_512_simd \
+        crc_folding
+LIBZ_HAVE_SIMD=yes
+endif
+
+ifneq (,$(findstring aarch64,$(AROS_TARGET_CPU)))
+LIBZ_CPPFLAGS +=-DINFLATE_CHUNK_SIMD_NEON
+LIBZ_CPPFLAGS +=-DADLER32_SIMD_NEON
+LIBZ_CPPFLAGS +=-DINFLATE_CHUNK_READ_64LE
+LIBZ_CPPFLAGS +=-DDEFLATE_CHUNK_WRITE_64LE
+LIBZ_CPPFLAGS +=-DCRC32_ARMV8_CRC32
+LIBZ_CPPFLAGS +=-DDEFLATE_SLIDE_HASH_NEON
+# Force-enable the ARMv8 CRC path: AROS has no getauxval for runtime
+# detection. ARMV8_OS_MACOS hardcodes arm_cpu_enable_crc32=1 and avoids the
+# getauxval/pthread machinery. Note: it also sets arm_cpu_enable_pmull=1, but
+# Pi3/Pi4 (Cortex-A53/A72) implement CRC32 without the ARMv8 crypto extension,
+# so PMULL is an undefined instruction there; zlib-aros.diff forces
+# arm_cpu_enable_pmull=0 under __AROS__ so the PMULL crc path is never taken.
+LIBZ_CPPFLAGS +=-DARMV8_OS_MACOS
+# clang 11's AArch64 backend ignores crc32_simd.c's per-function
+# __attribute__((target("arch=armv8-a+aes+crc"))), so the crc32 intrinsics
+# can't be selected. Give the whole TU the features via -march instead. The
+# PMULL code in crc32_512_simd.c still compiles (harmless; never executed).
+LIBZ_CPPFLAGS +=-march=armv8-a+crc+crypto
+FILES += \
+        adler32_simd \
+        contrib/optimizations/inffast_chunk \
+        contrib/optimizations/inflate \
+        cpu_features \
+        crc32_simd \
+        crc_folding
+LIBZ_HAVE_SIMD=yes
+endif
+
+# The RVV code paths are disabled for riscv64: the RVV intrinsics can not
+# be compiled without the V extension in -march (the base profile is
+# RVA22U64), and cpu_features.c's runtime dispatch relies on the Linux
+# getauxval interface. Revisit once AROS-side feature detection exists.
+ifneq (,$(findstring riscv64,$(AROS_TARGET_CPU)))
+LIBZ_CPPFLAGS +=-DINFLATE_CHUNK_GENERIC
+LIBZ_CPPFLAGS +=-DINFLATE_CHUNK_READ_64LE
+LIBZ_CPPFLAGS +=-DDEFLATE_CHUNK_WRITE_64LE
+
+FILES += \
+        contrib/optimizations/inffast_chunk \
+        contrib/optimizations/inflate
+LIBZ_HAVE_SIMD=yes
+endif
+
+ifneq (yes,$(LIBZ_HAVE_SIMD))
+FILES += \
+    inflate
+endif
+
+USER_CPPFLAGS := $(LIBZ_CPPFLAGS)
+USER_LDFLAGS += -lpthread
+
+# z1.conf sets norootrellibs (see tools/genmodule/config.h): code that runs
+# with the root base must not call posixc.library or stdc.library. The only
+# root-level code is the exec.library version check.
+%build_module mmake=workbench-libs-z \
+  modname=z1 modtype=library \
+  files="$(addprefix $(ARCHSRCDIR)/,$(FILES))" linklibname=z
+
+#MM- linklibs: linklibs-z-static
+#MM linklibs-z-static : zlib-fetch
+
+# N.B: z.static is compiled without the posix wrappers, so that it looks for the default function
+# symbol names (e.g. lseek)
+
+USER_CPPFLAGS := $(LIBZ_CPPFLAGS) -DNO_STRERROR -DNDEBUG
+
+%build_linklib mmake=linklibs-z-static libname=z.static \
+    files="$(addprefix $(ARCHSRCDIR)/,$(FILES))" \
+    objdir=$(GENDIR)/$(CURDIR)/static
+
+#MM- linklibs: linklibs-z-nogzip-static
+#MM linklibs-z-nogzip-static : zlib-fetch
+
+# gzip-less zlib for compress()/uncompress()-only consumers (icon.library).
+# NO_GZIP removes the crc32 references from deflate/inflate, so crc32.o's
+# ~7KB of tables and code never get pulled in - which m68k kickstart images
+# cannot afford (and their link scripts reject the DYNAMIC_CRC_TABLE bss).
+USER_CPPFLAGS := $(LIBZ_CPPFLAGS) -DNO_STRERROR -DNDEBUG -DNO_GZIP
+
+LIBZ_NOGZIP_FILES := $(addprefix $(ARCHSRCDIR)/,$(FILES))
+
+# Kickstart builds take inflate.c through inflate_nogzip.c, which leaves out
+# the inflate entry points that compress()/uncompress() consumers never reach
+# (inflateSync(), inflateCopy(), the dictionary and gzip header functions...).
+# Only this link library is built that way: z1.library and z.static above
+# always carry the complete inflate.c.
+ifneq ($(ROM_OPTIMIZATION_CFLAGS),)
+ifneq ($(filter inflate,$(FILES)),)
+LIBZ_NOGZIP_FILES := $(addprefix $(ARCHSRCDIR)/,$(filter-out inflate,$(FILES))) inflate_nogzip
+endif
+endif
+
+%build_linklib mmake=linklibs-z-nogzip-static libname=z-nogzip.static \
+    files="$(LIBZ_NOGZIP_FILES)" \
+    objdir=$(GENDIR)/$(CURDIR)/static-nogzip
+
+INCLUDE_FILES := zlib.h chromeconf.h
+%copy_includes mmake=workbench-libs-z-includes-copy dir=$(ARCHSRCDIR)
+
+#MM
+workbench-libs-z-geninc : $(AROS_INCLUDES)/zconf.h
+
+$(AROS_INCLUDES)/zconf.h : $(ARCHSRCDIR)/zconf.h.chr
+	@$(IF) $(TEST) ! -d $(AROS_LIB)/pkgconfig ; then $(MKDIR) $(AROS_LIB)/pkgconfig ; else $(NOP) ; fi
+	@$(SED) -e 's/^#if !defined(CHROMIUM_ZLIB_NO_CHROMECONF)/#if defined(ZLIB_USE_CHROMECONF)/' \
+	    $< > $@
+
+#MM- workbench-libs-z-includes : workbench-libs-z-geninc
+
+#MM
+workbench-libs-z-pkgc : $(AROS_LIB)/pkgconfig/zlib.pc
+
+$(AROS_LIB)/pkgconfig/zlib.pc : $(ARCHSRCDIR)/zlib.pc.cmakein
+	@$(IF) $(TEST) ! -d $(AROS_LIB)/pkgconfig ; then $(MKDIR) $(AROS_LIB)/pkgconfig ; else $(NOP) ; fi
+	@$(SED) -e 's|@CMAKE_INSTALL_PREFIX@|/Developer|g' \
+	    -e 's|@INSTALL_LIB_DIR@|$${prefix}/lib|g' \
+	    -e 's|@INSTALL_INC_DIR@|$${prefix}/include|g' \
+	    -e 's|@VERSION@|1.3.1|g' \
+	    -e 's|^exec_prefix=.*|exec_prefix=$${prefix}|' \
+	    $< > $@
+
+%build_prog mmake=workbench-libs-z-minigzip \
+    progname=minigzip \
+    files=$(ARCHSRCDIR)/test/minigzip targetdir=$(AROS_C) uselibs="z1"
+
+#MM- workbench-c : \
+#MM        workbench-libs-z-minigzip
+
+#MM workbench-libs-z-minigzip : \
+#MM        workbench-libs-z-linklib
+
+%common

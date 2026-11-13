@@ -1,0 +1,21 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+FILES       := main locale parsers
+USER_CPPFLAGS := -DADATE="\"$(shell date '+%d.%m.%Y')\""
+EXEDIR      := $(AROS_DEBUG)/Hardware
+
+# Build ACPITool only for PC
+#MM- workbench-pc-$(CPU) : debug-tools-acpitool
+
+#MM debug-tools-acpitool : \
+#MM                                      kernel-acpica-sharedlib-includes \
+#MM                                      kernel-acpica-sharedlib-linklib \
+#MM                                      debug-tools-acpitool-icon \
+#MM                                      debug-tools-acpitool-catalogs
+
+%build_prog mmake=debug-tools-acpitool \
+    progname=ACPITool targetdir=$(EXEDIR) \
+    files=$(FILES) uselibs=acpica
+
+%common

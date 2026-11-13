@@ -1,0 +1,16 @@
+#
+#   Rules to build example.pam, a sample pam.library module. It is a test
+#   aid, not installed in SYS:Libs/PAM: copy it there by hand to try it.
+
+include $(SRCDIR)/config/aros.cfg
+
+USER_LDFLAGS := -static
+
+#MM test-security-pamexample : includes linklibs workbench-libs-pam-includes workbench-libs-pam-linklib
+#MM- test-security : test-security-pamexample
+
+%build_module mmake=test-security-pamexample modname=example \
+  modtype=library modsuffix=pam moduledir=$(AROS_DIR_DEVELOPER)/Debug/Tests/security conffile=example.conf files="example" \
+  uselibs=""
+
+%common

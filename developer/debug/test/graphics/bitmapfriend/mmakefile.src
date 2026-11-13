@@ -1,0 +1,11 @@
+# Copyright (C) 2026, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+USER_LDFLAGS := -static
+
+#MM test-graphics-bitmapfriend : includes linklibs
+
+%build_progs mmake=test-graphics-bitmapfriend \
+    files=bitmapfriend targetdir=$(AROS_TESTS)/graphics/bitmapfriend
+
+%common

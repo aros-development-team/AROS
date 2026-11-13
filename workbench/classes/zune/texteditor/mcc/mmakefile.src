@@ -1,0 +1,56 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM workbench-classes-zune-texteditor-class : includes linklibs \
+#MM     workbench-libs-rexxsyslib
+
+# We need to use -idirafter, so that we
+# *don't* pick up the project's local MUI headers.
+USER_INCLUDES := -idirafter $(SRCDIR)/$(CURDIR)/../include -I$(SRCDIR)/$(CURDIR)/../mcp
+USER_CPPFLAGS := -DAROS_ABI_V1
+USER_LDFLAGS := -static
+
+FILES := library \
+        AllocBitMap \
+        BlockOperators \
+        CaseConversion \
+        ClipboardServer \
+        ColorOperators \
+        Dispatcher \
+        EditorStuff \
+        ExportHook \
+        ExportBlock \
+        ExportText \
+        GetSetAttrs \
+        Grow \
+        HandleARexx \
+        HandleInput \
+        InitConfig \
+        ImportHook \
+        ImportText \
+        Keybindings \
+        Methods \
+        MixedFunctions \
+        Navigation \
+        Pointer \
+        PrintLineWithStyles \
+        Search \
+        SetBlock \
+        SpellChecker \
+        StyleOperators \
+        UndoFunctions \
+        NewGfx \
+        Debug \
+	extrasrc/MoveList
+
+%build_module_simple mmake=workbench-classes-zune-texteditor-class \
+  modname=TextEditor modtype=mcc \
+  files=$(FILES) uselibs="rexxsyslib"
+
+
+#MM includes-copy
+
+INCLUDE_FILES := ../include/mui/TextEditor_mcc.h
+%copy_includes path=mui dir=../include/mui
+
+%common

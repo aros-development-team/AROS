@@ -1,0 +1,13 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+
+USER_LDFLAGS := -static
+
+FILES := handler unit sis900
+
+%build_module mmake=workbench-devs-networks-sis900 \
+    modname=sis900 modtype=device \
+    files="sis900_init $(FILES)" \
+    moduledir=Devs/Networks uselibs="hiddstubs"
+

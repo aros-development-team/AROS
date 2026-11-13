@@ -1,0 +1,19 @@
+# Copyright (C) 2009-2020, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM kernel-bootloader-kobj: includes kernel-bootloader-includes
+#MM kernel-bootloader: includes kernel-bootloader-includes
+
+USER_CPPFLAGS := \
+               -DUSE_EXEC_DEBUG \
+               -D__UTILITY_NOLIBBASE__
+USER_LDFLAGS := -static
+
+ifneq ($(ROM_OPTIMIZATION_CFLAGS),)
+OPTIMIZATION_CFLAGS := $(ROM_OPTIMIZATION_CFLAGS)
+endif
+
+%build_module mmake=kernel-bootloader \
+    modname=bootloader modtype=resource \
+    files="bootloader_init getbootinfo"

@@ -1,0 +1,179 @@
+#ifndef _EXEC_UTIL_H
+#define _EXEC_UTIL_H
+
+/*
+    Copyright © 1995-2026, The AROS Development Team. All rights reserved.
+    $Id$
+
+    Desc: Utility functions for exec.
+    Lang: english
+*/
+
+#include <aros/config.h>
+
+#include <aros/asmcall.h>
+#include <exec/types.h>
+#include <utility/tagitem.h>
+#include <proto/arossupport.h>
+
+#include <stdarg.h>
+
+#include "exec_intern.h"
+
+/* PC and FP registers for various CPUs */
+#ifdef __i386__
+#define PC eip
+#define FP ebp
+#endif
+
+#ifdef __x86_64__
+#define PC rip
+#define FP rbp
+#endif
+
+#ifdef __mc68000__
+#define PC pc
+#ifdef CONFIG_GCC_FP_A6
+#define FP a[6]
+#else
+#define FP a[5]
+#define CALLER_FRAME NULL
+#endif
+#endif
+
+#ifdef __powerpc__
+#define PC ip
+#define FP gpr[1]
+#endif
+
+#ifdef __arm__
+#define PC pc
+#define FP r[11]
+#define CALLER_FRAME NULL
+#endif
+
+#ifdef __riscv
+#define PC pc
+#define FP fp
+#define CALLER_FRAME NULL
+#endif
+
+
+#ifdef __aarch64__
+#define PC pc
+#define FP fp
+#define CALLER_FRAME NULL
+#endif
+
+#ifndef PC
+#error unsupported CPU type
+#endif
+
+/* Newer gcc gives an error for calling __builtin_frame_address with non 0 arg */
+/* FIXME: Find a way to get caller's frame, until then it's disabled for now */
+#if __GNUC__ > 4 || (__GNUC__ == 4 && (__GNUC_MINOR__ > 6 ))
+#define CALLER_FRAME NULL
+#endif
+
+#ifndef CALLER_FRAME
+#define CALLER_FRAME __builtin_frame_address(1)
+#endif
+
+#ifndef EXEC_TASKS_H
+struct Task;
+#endif
+#ifndef EXEC_LISTS_H
+struct List;
+#endif
+#ifndef ETASK_H
+struct IntETask;
+#endif
+
+struct TraceLocation
+{
+    const char *function;
+    APTR	caller;
+    APTR	stack;
+};
+
+#define CURRENT_LOCATION(name) {name, __builtin_return_address(0), CALLER_FRAME}
+
+/*
+    Prototypes
+*/
+BOOL PrepareContext(struct Task *task, APTR entryPoint, APTR fallBack,
+                    const struct TagItem *tagList, struct ExecBase *SysBase);
+
+BOOL Exec_InitETask(struct Task *task, struct Task *parent, struct ExecBase *SysBase);
+void Exec_CleanupETask(struct Task *task, struct ExecBase *SysBase);
+void Exec_ExpungeETask(struct ETask *et, struct ExecBase *SysBase);
+BOOL Exec_ExpandTS(struct Task *task, struct ExecBase *SysBase);
+struct ETask *Exec_FindChild(ULONG id, struct ExecBase *SysBase);
+struct IntETask *FindETask(struct List *, ULONG id, struct ExecBase *SysBase);
+
+BOOL Exec_CheckTask(struct Task *task, struct ExecBase *SysBase);
+
+#if defined(__AROSEXEC_SMP__)
+void Exec_CancelSignalIPIs(struct Task *task, struct ExecBase *SysBase);
+#define CancelSignalIPIs(t) Exec_CancelSignalIPIs(t,SysBase)
+#endif
+
+STRPTR Alert_AddString(STRPTR dest, CONST_STRPTR src);
+STRPTR Alert_GetTitle(ULONG alertNum);
+STRPTR Alert_GetString(ULONG alertnum, STRPTR buf);
+STRPTR FormatAlert(char *buffer, ULONG alertNum, struct Task *task, APTR location, UBYTE type, struct ExecBase *SysBase);
+STRPTR FormatTask(STRPTR buffer, const char *text, struct Task *, struct ExecBase *SysBase);
+STRPTR FormatLocation(STRPTR buf, const char *text, APTR location, struct ExecBase *SysBase);
+
+void FormatAlertExtra(char *buffer, APTR stack, UBYTE type, APTR data, struct ExecBase *SysBase);
+char *FormatCPUContext(char *buffer, struct ExceptionContext *ctx, struct ExecBase *SysBase);
+APTR UnwindFrame(APTR fp, APTR *caller);
+
+void Exec_ExtAlert(ULONG alertNum, APTR location, APTR stack, UBYTE type, APTR data, struct ExecBase *SysBase);
+ULONG Exec_UserAlert(ULONG alertNum, struct ExecBase *SysBase);
+void Exec_SystemAlert(ULONG alertNum, APTR location, APTR stack, UBYTE type, APTR data, struct ExecBase *SysBase);
+void Exec_DoResetCallbacks(struct IntExecBase *SysBase, UBYTE action);
+
+APTR InternalRawDoFmt(CONST_STRPTR FormatString, APTR DataStream, VOID_FUNC PutChProc,
+		      APTR PutChData, va_list VaListStream);
+
+/*
+ * The varargs NewRawDoFmt() of <defines/exec.h> is a static inline function
+ * that the compiler cannot inline, so each file using it would get its own
+ * copy. Exec's own code shares this one instead; it makes the same
+ * VNewRawDoFmt() call.
+ */
+STRPTR Exec_NewRawDoFmt(struct ExecBase *SysBase, CONST_STRPTR FormatString,
+                        VOID_FUNC PutChProc, APTR PutChData, ...);
+#undef NewRawDoFmt
+#define NewRawDoFmt(fmt, put, ...) Exec_NewRawDoFmt(SysBase, (fmt), (put), __VA_ARGS__)
+
+IPTR *InternalFindResident(const UBYTE *name, IPTR *list);
+
+void FastPutMsg(struct MsgPort *port, struct Message *message, struct ExecBase *SysBase);
+void InternalPutMsgType(struct MsgPort *port, struct Message *message, UBYTE type, struct ExecBase *SysBase);
+void InternalPutMsg(struct MsgPort *port, struct Message *message, struct ExecBase *SysBase);
+
+LONG AllocTaskSignal(struct Task *ThisTask, LONG signalNum, struct ExecBase *SysBase);
+
+static inline void InitMsgPort(struct MsgPort *ret)
+{
+    /* Set port to type 'signalling' */
+    ret->mp_Flags = PA_SIGNAL;
+    /* Set port to type MsgPort */
+    ret->mp_Node.ln_Type = NT_MSGPORT;
+#if defined(__AROSEXEC_SMP__)
+    EXEC_SPINLOCK_INIT(&ret->mp_SpinLock);
+#endif
+    /* Clear the list of messages */
+    NEWLIST(&ret->mp_MsgList);
+}
+
+/* Pseudo-functions, including SysBase for nicer calling */
+#define FindChild(i)	    Exec_FindChild(i,SysBase)
+#define FindETask(l,i)	    Exec_FindETask(l,i,SysBase)
+#define InitETask(t,p)	    Exec_InitETask(t,p,SysBase)
+#define CleanupETask(t)     Exec_CleanupETask(t,SysBase)
+#define ExpungeETask(e)	    Exec_ExpungeETask(e,SysBase)
+
+#endif /* _EXEC_UTIL_H */

@@ -1,0 +1,15 @@
+include $(SRCDIR)/config/aros.cfg
+
+#MM- contrib-development : tools-ilbmtoc
+#MM tools-ilbmtoc : includes linklibs
+
+FILES := ilbmtoc
+EXEDIR := $(AROS_CONTRIB)/$(AROS_DIR_DEVELOPER)/Build
+NOWARN_FLAGS := $(NOWARN_FORMAT)
+USER_CFLAGS := $(NOWARN_FLAGS)
+
+%build_prog mmake=tools-ilbmtoc \
+    progname=ilbmtoc targetdir=$(EXEDIR) \
+    files=$(FILES)
+
+%common

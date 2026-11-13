@@ -1,0 +1,453 @@
+/*
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
+
+    Desc: Installer V44.10
+*/
+
+#include "Installer.h"
+#include "main.h"
+#include "cleanup.h"
+#include "locale.h"
+#include "gui.h"
+#include "parse.h"
+#include "variables.h"
+#include "execute.h"
+
+#include "version.h"
+
+#define TESTING 0
+#if TESTING
+char test_script[] = "SYS:Developer/Debug/Tests/Installer/test.script";
+#endif /* DEBUG */
+
+char *filename = NULL;
+BPTR inputfile;
+char buffer[MAXARGSIZE];
+int error = 0, grace_exit = 0;
+
+InstallerPrefs preferences;
+ScriptArg script;
+
+IPTR args[TOTAL_ARGS] = { 0 };
+UBYTE **tooltypes;
+
+/*
+ * MAIN
+ */
+int main(int argc, char *argv[])
+{
+    struct RDArgs *rda = NULL;
+
+    ScriptArg *currentarg, *dummy;
+    int nextarg, endoffile, count;
+
+    Locale_Initialize();
+
+    if (argc != 0)
+    { /* Invoked from Shell */
+        preferences.fromcli = TRUE;
+        /* evaluate args with RDArgs(); */
+        rda = ReadArgs(ARG_TEMPLATE, args, NULL);
+        if (rda == NULL)
+        {
+            PrintFault(IoErr(), INSTALLER_NAME);
+            exit(-1);
+        }
+
+        /* open script file */
+        if (args[ARG_SCRIPT])
+        {
+            filename = (STRPTR)args[ARG_SCRIPT];
+        }
+        else
+        {
+#ifdef DEBUG
+            fprintf(stderr, "No SCRIPT specified!\n");
+#endif
+#if TESTING
+            fprintf(stderr, "Using %s instead...\n", test_script);
+            filename = test_script;
+#else
+            FreeArgs(rda);
+            exit(-1);
+#endif /* DEBUG */
+        }
+    }
+    else
+    {
+        STRPTR ttemp;
+
+        /* Invoked from Workbench */
+        preferences.fromcli = FALSE;
+        tooltypes = ArgArrayInit(argc, (UBYTE **)argv);
+
+        /* open script file */
+        ttemp = ArgString(tooltypes, "SCRIPT", NULL);
+        if (ttemp == NULL)
+        {
+#ifdef DEBUG
+            fprintf(stderr, "No SCRIPT ToolType in Icon!\n");
+#endif
+#if TESTING
+            ttemp = test_script;
+#else
+            ArgArrayDone();
+            Delay(50);
+            exit(-1);
+#endif /* DEBUG */
+        }
+        filename = ttemp;
+    }
+
+    inputfile = Open(filename, MODE_OLDFILE);
+    if (inputfile == BNULL)
+    {
+        /* not a debug message: say which script, then the DOS reason
+         * (IoErr() before printf(), which may touch it) */
+        {
+            LONG ioerr = IoErr();
+            printf("Installer: Error opening script <%s>\n", filename);
+            PrintFault(ioerr, INSTALLER_NAME);
+        }
+        exit(-1);
+    }
+
+    preferences.welcome = FALSE;
+    preferences.transcriptstream = BNULL;
+    preferences.pretend = 0;
+
+    if (argc)
+    {
+        preferences.debug = TRUE;
+        /* NOLOG/S: no log file at all. The default "install_log_file" is
+         * relative to the current directory, and an Installer run from
+         * a CD (Workbench runs it in the script's drawer) could not
+         * create it - and quit before the first page. */
+        if (args[ARG_NOLOG])
+        {
+            preferences.novicelog = FALSE;
+            preferences.transcriptfile = NULL;
+        }
+        else
+        {
+            preferences.novicelog = TRUE;
+            preferences.transcriptfile = strdup((args[ARG_LOGFILE]) ? (char *)args[ARG_LOGFILE] : "install_log_file");
+        }
+        if (args[ARG_APPBANNER])
+        {
+            preferences.bannerfile = strdup((char *)args[ARG_APPBANNER]);
+        }
+        preferences.nopretend = (int)args[ARG_NOPRETEND];
+        /* DRYRUN/S: dry run without asking - the pretend page is skipped
+         * and nothing is written (a package manager's preview, test harnesses) */
+        if (args[ARG_DRYRUN])
+        {
+            preferences.pretend = TRUE;
+            preferences.nopretend = TRUE;
+        }
+        if (args[ARG_MINUSER])
+        {
+            preferences.minusrlevel = _NOVICE;
+            if (strcasecmp("average", (char *)args[ARG_MINUSER]) == 0)
+            {
+                preferences.minusrlevel = _AVERAGE;
+            }
+            else if (strcasecmp("expert", (char *)args[ARG_MINUSER]) == 0)
+            {
+                preferences.minusrlevel = _EXPERT;
+            }
+            else
+            {
+                preferences.minusrlevel = _NOVICE;
+            }
+        }
+        else
+        {
+            preferences.minusrlevel = _NOVICE;
+        }
+        if (args[ARG_DEFUSER])
+        {
+            preferences.defusrlevel = preferences.minusrlevel;
+            if (strcasecmp("average", (char *)args[ARG_DEFUSER]) == 0)
+            {
+                preferences.defusrlevel = _AVERAGE;
+            }
+            else if (strcasecmp("expert", (char *)args[ARG_DEFUSER]) == 0)
+            {
+                preferences.defusrlevel = _EXPERT;
+            }
+            else
+            {
+                preferences.defusrlevel = _NOVICE;
+            }
+        }
+        else
+        {
+            preferences.defusrlevel = _NOVICE;
+        }
+        if (preferences.defusrlevel < preferences.minusrlevel)
+        {
+            preferences.defusrlevel = preferences.minusrlevel;
+        }
+    }
+    else
+    {
+        STRPTR ttemp, tstring;
+
+        preferences.debug = TRUE;
+
+        /* Create a log file in Novice mode? (TRUE) */
+        if (strcmp("TRUE", ArgString(tooltypes, "LOG", "TRUE")) == 0)
+        {
+            preferences.novicelog = TRUE;
+        }
+        else
+        {
+            preferences.novicelog = FALSE;
+        }
+
+        /* Write to which LOGFILE? NOLOG (the original's tooltype): none */
+        if (FindToolType(tooltypes, "NOLOG") != NULL)
+        {
+            preferences.novicelog = FALSE;
+            preferences.transcriptfile = NULL;
+        }
+        else
+        {
+            preferences.transcriptfile = strdup(ArgString(tooltypes, "LOGFILE", "install_log_file"));
+        }
+        /* Picture above the pages? (APPBANNER=<file>) */
+        ttemp = ArgString(tooltypes, "APPBANNER", NULL);
+        if (ttemp != NULL)
+        {
+            preferences.bannerfile = strdup(ttemp);
+        }
+        /* Is PRETEND possible? */
+        preferences.nopretend = (strcmp("TRUE", ArgString(tooltypes, "PRETEND", "TRUE")) != 0);
+        ttemp = ArgString(tooltypes, "MINUSER", "NOVICE");
+        tstring = "NOVICE";
+        preferences.minusrlevel = _NOVICE;
+        if (strcasecmp("average", ttemp) == 0)
+        {
+            preferences.minusrlevel = _AVERAGE;
+            tstring = "AVERAGE";
+        }
+        else if (strcasecmp("expert", ttemp) == 0)
+        {
+            preferences.minusrlevel = _EXPERT;
+            tstring = "EXPERT";
+        }
+
+        ttemp = ArgString(tooltypes, "DEFUSER", tstring);
+        preferences.defusrlevel = preferences.minusrlevel;
+        if (strcasecmp("average", ttemp) == 0)
+        {
+            preferences.defusrlevel = _AVERAGE;
+        }
+        else if (strcasecmp("expert", ttemp) == 0)
+        {
+            preferences.defusrlevel = _EXPERT;
+        }
+        if (preferences.defusrlevel < preferences.minusrlevel)
+        {
+            preferences.defusrlevel = preferences.minusrlevel;
+        }
+
+        if (preferences.defusrlevel < preferences.minusrlevel)
+        {
+            preferences.defusrlevel = preferences.minusrlevel;
+        }
+    }
+
+    preferences.copyfail = COPY_FAIL;
+    preferences.copyflags = 0;
+
+    preferences.onerror.cmd = NULL;
+    preferences.onerror.next = NULL;
+    preferences.onerror.parent = NULL;
+    preferences.onerrorparent = NULL;
+    for ( count = 0 ; count < NUMERRORS ; count++ )
+    {
+        dummy = &(preferences.trap[count]);
+        dummy->cmd = NULL;
+        dummy->next = NULL;
+        dummy->parent = NULL;
+        preferences.trapparent[count] = NULL;
+    }
+
+    /* Init GUI -- i.e open empty window */
+    init_gui();
+
+    line = 1;
+
+    endoffile = FALSE;
+    script.arg = NULL;
+    script.cmd = NULL;
+    script.next = NULL;
+    script.parent = NULL;
+    script.intval = 0;
+    script.ignore = 0;
+    currentarg = script.cmd;
+    /* parse script file */
+    do
+    {
+        /* Allocate space for script cmd and save first one to scriptroot */
+        if (script.cmd == NULL)
+        {
+            script.cmd = (ScriptArg *)malloc(sizeof(ScriptArg));
+            if (script.cmd == NULL)
+            {
+                end_alloc();
+            }
+            currentarg = script.cmd;
+            currentarg->parent = &script;
+        }
+        else
+        {
+            currentarg->next = (ScriptArg *)malloc(sizeof(ScriptArg));
+            if (currentarg->next == NULL)
+            {
+                end_alloc();
+            }
+            currentarg->next->parent = currentarg->parent;
+            currentarg = currentarg->next;
+        }
+        /* Set initial values */
+        currentarg->arg = NULL;
+        currentarg->cmd = NULL;
+        currentarg->next = NULL;
+        currentarg->intval = 0;
+        currentarg->ignore = 0;
+
+        nextarg = FALSE;
+        do
+        {
+            count = Read(inputfile, &buffer[0], 1);
+            if (count == 0)
+            {
+                endoffile = TRUE;
+            }
+
+            if (!isspace(buffer[0]) && (endoffile == FALSE))
+            {
+                /* This is text, is it valid ? */
+                switch(buffer[0])
+                {
+                    case SEMICOLON: /* A comment, ok - Go on with next line */
+                        do
+                        {
+                            count = Read(inputfile, &buffer[0], 1);
+                        } while (buffer[0] != LINEFEED && count != 0);
+                        line++;
+                        if (count == 0)
+                        {
+                            endoffile = TRUE;
+                        }
+                        break;
+
+                    case LBRACK: /* A command (...) , parse the content of braces */
+                        currentarg->cmd = (ScriptArg *)malloc(sizeof(ScriptArg));
+                        if (currentarg->cmd == NULL)
+                        {
+                            end_alloc();
+                        }
+                        dummy = currentarg->cmd;
+                        dummy->parent = currentarg;
+                        dummy->arg = NULL;
+                        dummy->ignore = 0;
+                        dummy->intval = 0;
+                        dummy->cmd = NULL;
+                        dummy->next = NULL;
+                        parse_file(currentarg->cmd);
+                        nextarg = TRUE;
+                        break;
+
+                    default: /* Plain text or closing bracket is not allowed */
+                        Close(inputfile);
+                        show_parseerror("Too many closing brackets!", line);
+                        cleanup();
+                        exit(-1);
+                        break;
+                }
+            }
+            else
+            {
+                if (buffer[0] == LINEFEED)
+                {
+                    line++;
+                }
+            }
+        } while (nextarg != TRUE && !endoffile);
+    } while (!endoffile);
+
+    /* Okay, we (again) have allocated one ScriptArg too much, so get rid of it */
+    currentarg = script.cmd;
+    if (currentarg->next != NULL)
+    {
+        while (currentarg->next->next != NULL)
+        {
+            currentarg = currentarg->next;
+        }
+        free(currentarg->next);
+        currentarg->next = NULL;
+    }
+
+    Close(inputfile);
+
+    if (preferences.transcriptfile != NULL)
+    {
+        /* open transcript file */
+        preferences.transcriptstream = Open(preferences.transcriptfile, MODE_NEWFILE);
+        if (preferences.transcriptstream == BNULL)
+        {
+            PrintFault(IoErr(), INSTALLER_NAME);
+            cleanup();
+            exit(-1);
+        }
+    }
+
+    /* Set variables which are not constant */
+    set_preset_variables(argc);
+
+    /* NOTE: Now everything from commandline(ReadArgs)/ToolTypes(Workbench)
+           will become invalid!
+    */
+    if (argc != 0)
+    { /* Finally free ReadArgs struct (set_preset_variables() needed them) */
+        FreeArgs(rda);
+    }
+    else
+    { /* Or free tooltypes array if started from WB */
+        ArgArrayDone();
+    }
+
+    /* If the script does not contain a (welcome) section, call the default one */
+    if (preferences.welcome == FALSE)
+    {
+        request_userlevel(NULL);
+    }
+
+
+    /* Don't bother NOVICE */
+    if (get_var_int("@user-level") == _NOVICE)
+    {
+        preferences.copyflags &= ~COPY_ASKUSER;
+    }
+    else
+    {
+        preferences.copyflags |= COPY_ASKUSER;
+    }
+
+    /* execute parsed script */
+    execute_script(script.cmd, 0);
+
+#ifdef DEBUG
+    dump_varlist();
+#endif /* DEBUG */
+
+    final_report();
+    cleanup();
+
+return error;
+}
+

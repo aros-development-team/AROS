@@ -1,0 +1,25 @@
+# Copyright (C) 2025, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM- test-llm : test-llm-llama2 test-llm-qwen3
+
+ifeq ($(AROS_TARGET_CPU),x86_64)
+ISA_FLAGS += -msse4.2 -mpclmul
+OPTIMIZATION_CFLAGS := -O3
+endif
+
+%build_prog mmake=test-llm-llama2 \
+    progname=llama2 targetdir=$(AROS_TESTS)/llm \
+    uselibs="posixc"
+
+%build_prog mmake=test-llm-qwen3 \
+    progname=qwen3 targetdir=$(AROS_TESTS)/llm \
+    uselibs="posixc"
+
+# https://huggingface.co/karpathy/tinyllamas/blob/main/stories110M.bin
+# https://huggingface.co/karpathy/tinyllamas/blob/main/stories110M.pt
+
+#%fetch mmake=linklibs-aom-fetch archive=$(AOMARCHBASE) destination=$(PORTSDIR)/libaom \
+#    location=$(PORTSSOURCEDIR) archive_origins=$(AOMREPOSITORIES) suffixes=$(AOMARCHSUFFIX) \
+#    patches_specs=$(PATCHSPEC)

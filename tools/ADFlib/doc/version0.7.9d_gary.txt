@@ -1,0 +1,70 @@
+
+ADFLib changes - Wednesday 16/10/02
+-----------------------------------
+
+Background
+----------
+Bjark Viksoe changed ADFLib 0.7.9b in or before December 2001. Experimental
+version sent to me by Laurent in December 2001, soon to be released as 0.7.9c.
+Changes tried with ADFOpus then put aside due to difficulties compiling.
+Successfully tried again in October 2002, having neither heard anything more
+from Laurent nor seen a later version at the web site.
+
+Bjark Viksoe's changes removed the dynamic projects and changed a number of
+parameters such as where compiled files were stored. These were potentially not
+portable  and operated outside the compilation directory e.g. "..\..\AdfLib...",
+"C:\Temp". 
+
+Laurent's original settings were slightly at odds with common VC++ practice i.e. Win32
+and Debug directories used for compiled files rather than Release and Debug; Debug
+executables used Release libs rather than debug versions.
+
+Enter Gary with a shiny version of ADF Opus to release and a desire to release it with
+a clean and equally shiny ADFLib 0.7.9c distribution.
+
+
+Method
+------
+I started with a clean installation of ADFLib 0.7.9b. Loading this into VC++ 6 SP5
+updated the project and workspace files to VC++ 6 versions. Next, I unpacked a clean
+installation of the potential 0.7.9c version received from Laurent. I then used WinDiff
+to determine exactly what changes Bjark had made and manually edited the 0.7.9b files
+to match.
+
+
+Changes
+-------
+
+-Reinstated dynlib, dynunadf and staticunadf by starting with V0.7.9b.
+
+-Returned to original ADFLib compilation settings as above, then made some subtle changes.
+
+-Release output files now go to Bin/Win32/Release, rather than Bin/Win32, for
+ symmetry and standardisation. Intermediate files still go to Release and Debug.
+
+-Debug dynunadf and staticunadf now use the debug libs, not the release ones,
+ to allow full debugger access.
+
+-Fixed a path setting problem which caused a failure to find adflibd.lib.
+
+-Changed Bjark's setting of "C7 Compatible" back to "Program Database for Edit and Continue"
+ for consistency with the other projects.
+
+-Annotated Bjark's changes with /* BV */ for easy identification.
+
+-Removed C++ comment tags and replaced them with C tags across the board. ADFLib should
+ hopefully be pure C again now.
+
+-Removed a change implemented for Opus which was inadvertantly left in during earlier updates
+ i.e. a string added to struct nativeDevice in adf_nativ.h.
+
+-Updated Laurent's copyright on every page to include 2002.
+
+-Updated the version and date strings to:
+ #define ADFLIB_VERSION "0.7.9c"
+ #define ADFLIB_DATE "16 October, 2002"
+
+-Everything compiles cleanly with no warnings. :-)
+
+-Bjark's changes appear to support non-standard FD ADFs up to 83 tracks. Can we confirm this?
+

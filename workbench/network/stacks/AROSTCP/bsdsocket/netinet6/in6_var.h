@@ -1,0 +1,254 @@
+/*
+ * Copyright (C) 2020-2026 The AROS Development Team.  All rights reserved.
+ *
+ * Based on KAME IPv6 implementation:
+ * Copyright (C) 1995, 1996, 1997, and 1998 WIDE Project. All rights reserved.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ */
+
+#ifndef NETINET6_IN6_VAR_H
+#define NETINET6_IN6_VAR_H
+
+#include <netinet/in.h>
+#include <netinet/in_var.h>
+#include <netinet/icmp6.h>
+#include <net/if.h>
+
+/*
+ * IPv6 multicast membership record (kernel-internal).
+ */
+struct in6_multi {
+	struct in6_addr in6m_addr;	/* IPv6 multicast address */
+	struct ifnet   *in6m_ifp;	/* back pointer to ifnet */
+	u_int		in6m_refcount;	/* reference count */
+	struct in6_multi *in6m_next;	/* linked list */
+	u_int		in6m_state;	/* MLD membership state */
+	u_int		in6m_timer;	/* MLD report delay timer (ticks) */
+};
+
+/*
+ * Look up the in6_multi record for a given (group, interface) pair; the
+ * IPv6 counterpart of IN_LOOKUP_MULTI().
+ */
+#define	IN6_LOOKUP_MULTI(addr, ifp, in6m)				\
+{									\
+	struct in6_multi *_in6m;					\
+	for(_in6m = in6_multihead; _in6m != NULL; _in6m = _in6m->in6m_next) \
+		if(_in6m->in6m_ifp == (ifp) &&				\
+		   IN6_ARE_ADDR_EQUAL(&_in6m->in6m_addr, &(addr)))	\
+			break;						\
+	(in6m) = _in6m;							\
+}
+
+/*
+ * Macros for IPv6 address classification.
+ */
+/*
+ * Kernel-optimized IPv6 address classification macros.
+ * These use s6_addr32[] for faster word-level comparison in the stack.
+ * The public <netinet/in.h> provides portable byte-level versions;
+ * these override them in kernel context for performance.
+ */
+#undef IN6_IS_ADDR_UNSPECIFIED
+#define IN6_IS_ADDR_UNSPECIFIED(a) \
+	((a)->s6_addr32[0] == 0 && (a)->s6_addr32[1] == 0 && \
+	 (a)->s6_addr32[2] == 0 && (a)->s6_addr32[3] == 0)
+
+#undef IN6_IS_ADDR_LOOPBACK
+#define IN6_IS_ADDR_LOOPBACK(a) \
+	((a)->s6_addr32[0] == 0 && (a)->s6_addr32[1] == 0 && \
+	 (a)->s6_addr32[2] == 0 && ntohl((a)->s6_addr32[3]) == 1)
+
+#undef IN6_IS_ADDR_V4MAPPED
+#define IN6_IS_ADDR_V4MAPPED(a) \
+	((a)->s6_addr32[0] == 0 && (a)->s6_addr32[1] == 0 && \
+	 ntohl((a)->s6_addr32[2]) == 0x0000ffff)
+
+#undef IN6_IS_ADDR_V4COMPAT
+#define IN6_IS_ADDR_V4COMPAT(a) \
+	((a)->s6_addr32[0] == 0 && (a)->s6_addr32[1] == 0 && \
+	 (a)->s6_addr32[2] == 0 && \
+	 ntohl((a)->s6_addr32[3]) > 1)
+
+/* Convenience: access s6_addr32 portably without assuming struct layout */
+#ifndef s6_addr32
+#define s6_addr32 un.u32_addr
+#endif
+
+#undef IN6_ARE_ADDR_EQUAL
+#define IN6_ARE_ADDR_EQUAL(a, b) \
+	(bcmp(&(a)->s6_addr[0], &(b)->s6_addr[0], sizeof(struct in6_addr)) == 0)
+
+/* IPv6 statistics */
+struct ip6stat {
+	u_long ip6s_total;		/* total packets received */
+	u_long ip6s_tooshort;		/* packet too short */
+	u_long ip6s_toosmall;		/* not enough data */
+	u_long ip6s_fragments;		/* fragments received */
+	u_long ip6s_fragdropped;	/* frags dropped (out of space) */
+	u_long ip6s_fragtimeout;	/* fragments timed out */
+	u_long ip6s_fragoverflow;	/* fragments that exceeded limit */
+	u_long ip6s_forward;		/* packets forwarded */
+	u_long ip6s_cantforward;	/* packets rcvd for unreachable dest */
+	u_long ip6s_redirectsent;	/* packets forwarded on same net */
+	u_long ip6s_delivered;		/* datagrams delivered to upper level */
+	u_long ip6s_localout;		/* total ip packets generated here */
+	u_long ip6s_odropped;		/* lost packets due to nobufs, etc. */
+	u_long ip6s_reassembled;	/* total packets reassembled ok */
+	u_long ip6s_fragmented;		/* datagrams successfully fragmented */
+	u_long ip6s_ofragments;		/* output fragments created */
+	u_long ip6s_cantfrag;		/* don't fragment flag was set, etc. */
+	u_long ip6s_badoptions;		/* error in option processing */
+	u_long ip6s_noroute;		/* packets discarded due to no route */
+	u_long ip6s_badvers;		/* IPv6 version != 6 */
+	u_long ip6s_rawout;		/* total raw ip packets generated */
+	u_long ip6s_badscope;		/* scope error */
+	u_long ip6s_notmember;		/* don't join this multicast group */
+	u_long ip6s_nxthist[256];	/* next header history */
+	u_long ip6s_m1;			/* one mbuf */
+	u_long ip6s_m2m[32];		/* two or more mbufs */
+	u_long ip6s_mext1;		/* one ext mbuf */
+	u_long ip6s_mext2m;		/* two or more ext mbufs */
+	u_long ip6s_exthdrtoolong;	/* ext hdr too long; could be dropped */
+	u_long ip6s_nogif;		/* no match gif found */
+	u_long ip6s_toomanyhdr;		/* discarded due to too many headers */
+	u_long ip6s_sources_none;
+	u_long ip6s_sources_sameif[16];
+	u_long ip6s_sources_otherif[16];
+	u_long ip6s_sources_samescope[16];
+	u_long ip6s_sources_otherscope[16];
+	u_long ip6s_sources_deprecated[16];
+	u_long ip6s_forward_cachehit;
+	u_long ip6s_forward_cachemiss;
+};
+
+/* icmp6stat defined in <netinet/icmp6.h> */
+
+/*
+ * route_in6 - like struct route but with a properly-sized IPv6 destination.
+ * Use this instead of struct route when doing IPv6 route lookups.
+ */
+struct route_in6 {
+	struct  rtentry      *ro_rt;
+	struct  sockaddr_in6  ro_dst;
+};
+
+/*
+ * Per-socket IPv6 multicast options.
+ */
+#define IPV6_MAX_MEMBERSHIPS		20
+#define IP6_DEFAULT_MULTICAST_HLIM	1
+#define IP6_DEFAULT_MULTICAST_LOOP	1
+
+struct ip6_moptions {
+	struct ifnet	*im6o_multicast_ifp;	/* multicast output interface */
+	u_int8_t	 im6o_multicast_hlim;	/* multicast hop limit */
+	u_int8_t	 im6o_multicast_loop;	/* enable loopback */
+	u_int16_t	 im6o_num_memberships;	/* number of group memberships */
+	struct in6_multi *im6o_membership[IPV6_MAX_MEMBERSHIPS];
+};
+
+/* IPv6 Privacy Extensions (RFC 4941) - temporary address lifetimes */
+#define IP6_TEMP_PREFERRED_LIFETIME  86400   /* 1 day (seconds) */
+#define IP6_TEMP_VALID_LIFETIME      604800  /* 7 days (seconds) */
+#define IP6_TEMP_REGEN_ADVANCE       5       /* seconds before deprecation to regen */
+#define IP6_TEMP_MAX_DESYNC_FACTOR   600     /* max random desync (seconds) */
+
+/* IN6P socket flags (stored in in6p_flags) */
+#define IN6P_PKTINFO	0x01		/* receive packet info (RECVPKTINFO) */
+#define IN6P_HOPLIMIT	0x02		/* receive hop limit (RECVHOPLIMIT) */
+#define IN6P_RECVPATHMTU 0x04		/* IPV6_RECVPATHMTU */
+#define IN6P_DONTFRAG	0x08		/* IPV6_DONTFRAG */
+#define IN6P_MINMTU	0x10		/* IPV6_USE_MIN_MTU 1 */
+#define IN6P_PMTU	0x20		/* IPV6_USE_MIN_MTU 0 (neither: -1) */
+#define IN6P_TCLASS	0x40		/* receive the traffic class (RECVTCLASS) */
+
+/* ip6_output() flags: the RFC 3542 section 11 options for one datagram */
+#define IPV6_OUT_MINMTU	0x01		/* send at most IPV6_MMTU bytes a packet */
+#define IPV6_OUT_DONTFRAG 0x02		/* do not fragment; EMSGSIZE above the link MTU */
+/* a socket's IPV6_USE_MIN_MTU: -1, 0 or 1 */
+#define IN6P_MINMTU_OPT(inp) (((inp)->in6p_flags & IN6P_MINMTU) ? 1 : \
+                              ((inp)->in6p_flags & IN6P_PMTU) ? 0 : -1)
+
+#ifdef KERNEL
+extern struct ip6stat ip6stat;
+extern struct icmp6stat icmp6stat;
+extern struct in6_ifaddr *in6_ifaddr;
+extern struct ifqueue ip6intrq;		/* IPv6 packet input queue */
+extern int ip6_defhlim;
+extern int ip6_forwarding;
+extern int ip6_v6only;
+extern struct in6_multi *in6_multihead;	/* global IPv6 multicast list */
+
+int  in6_control(struct socket *, int, caddr_t, struct ifnet *);
+void in6_ifscrub(struct ifnet *, struct in6_ifaddr *);
+int  in6_ifinit(struct ifnet *, struct in6_ifaddr *, struct sockaddr_in6 *, int);
+void in6_purgeaddr(struct ifaddr *);
+int  in6_ifconf(int, caddr_t);
+struct in6_ifaddr *in6_ifawithifp(struct ifnet *, struct in6_addr *);
+struct in6_ifaddr *in6_ourifa(const struct in6_addr *, struct ifnet *);
+struct in6_ifaddr *in6_ifaof_ifpforlinklocal(struct ifnet *);
+int  in6_localaddr(struct in6_addr *);
+void in6_if_up(struct ifnet *);
+struct in6_multi *in6_addmulti(struct in6_addr *, struct ifnet *);
+void in6_delmulti(struct in6_multi *);
+struct ip6_moptions;
+void ip6_freemoptions(struct ip6_moptions *);
+void in6_ifdetach(struct ifnet *);
+/* IPv6 starts and stops while the stack runs (netinet6/in6_proto.c) */
+void in6_attach_running(void);
+int  in6_detach_all(void);
+void ip6_input_stop(void);		/* ip6_input.c */
+void ip6_flush(void);
+void ip6_deinit(void);
+void icmp6_defaults(void);		/* icmp6.c */
+void in6_family_defaults(void);		/* in6_family.c */
+
+/*
+ * The stack's own view of an IPv6 interface address. The public record
+ * (struct in6_ifaddr, common/include/netinet/in_var.h) comes first, so a
+ * pointer to one is a pointer to the other; in6.c allocates the whole of it,
+ * zeroed, in one mbuf. What only the stack needs lives here, out of the
+ * public header.
+ */
+/* The IN6_IFF_* states the stack keeps for an address, not a caller's to set */
+#define	IN6_IFF_STACKSTATE	(IN6_IFF_TENTATIVE | IN6_IFF_DUPLICATED | \
+				 IN6_IFF_DETACHED | IN6_IFF_DEPRECATED)
+
+struct in6_ifaddr_priv {
+	struct in6_ifaddr ia6p_ia;
+	struct in6_multi *ia6p_solicited; /* the address's solicited-node group */
+};
+#define IA6_PRIV(ia)	((struct in6_ifaddr_priv *)(ia))
+
+/*
+ * What an ICMPv6 error tells the upper-layer protocol of the packet it
+ * quotes (icmp6_notify_error()): the pr_ctlinput's sockaddr is the quoted
+ * destination, and this is its arg.
+ */
+struct ip6ctlparam {
+	struct in6_addr ip6c_src;	/* the quoted packet's source (ours) */
+	u_int16_t ip6c_sport;		/* its ports, network byte order; */
+	u_int16_t ip6c_dport;		/* 0 when not known */
+	u_int32_t ip6c_seq;		/* TCP: its sequence number, host order */
+	int ip6c_haveseq;		/* ip6c_seq was quoted */
+	u_int32_t ip6c_mtu;		/* PRC_MSGSIZE: the path MTU, >= IPV6_MMTU */
+};
+struct inpcb;
+struct sockaddr;
+struct sockaddr_in6;
+int  ip6_outflags(int, int, const struct in6_addr *);
+void ip6_notify_pmtu(const struct inpcb *, const struct sockaddr_in6 *, u_int32_t);
+u_int32_t ip6_pathmtu(const struct inpcb *);
+
+/* Privacy extensions (RFC 4941) */
+extern int ip6_use_tempaddr;   /* enable temporary addresses (0=off, 1=on) */
+struct nd_prefix;  /* forward declaration for prototype below */
+int  in6_tmpifadd(struct ifnet *, struct nd_prefix *);
+void in6_tmpaddrtimer(void);   /* called from slow timer */
+#endif /* KERNEL */
+
+#endif /* NETINET6_IN6_VAR_H */

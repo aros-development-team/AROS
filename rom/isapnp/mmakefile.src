@@ -1,0 +1,35 @@
+include $(SRCDIR)/config/aros.cfg
+
+FILES       := controller devices init pnp pnp_iterators pnp_structs end
+
+NOWARN_FLAGS := $(NOWARN_UNUSED) $(NOWARN_UNUSED_PARAMETER)
+USER_CFLAGS := -W -Wall -Wstrict-prototypes -fstrict-aliasing  $(NOWARN_FLAGS) -I$(GENDIR)/$(CURDIR)
+USER_LDFLAGS := -static
+
+%build_module_simple mmake=kernel-isapnp \
+    modname=isapnp modtype=resource \
+    files="$(FILES) kickstart_init"
+
+# This causes generation of version.h at makedepend stage. Otherwise the build fails.
+$(OBJDIR)/init.d: $(GENDIR)/$(CURDIR)/version.h
+
+$(GENDIR)/$(CURDIR)/version.h:	version.rev version.date
+	@echo Creating $@
+	@ver=`cat $(SRCDIR)/$(CURDIR)/version.ver` \
+	 rev=`cat $(SRCDIR)/$(CURDIR)/version.rev` \
+	 date=`cat $(SRCDIR)/$(CURDIR)/version.date` && \
+	 echo "#define VERSION $$ver" > $@ && \
+	 echo "#define REVISION $$rev" >> $@ && \
+	 echo "#define VERS \"$$ver.$$rev ($$date)\"" >> $@
+
+%build_prog mmake=workbench-c-isapnp progname=ISApnp \
+    files=isapnp targetdir=$(AROS_C) \
+    usestartup=no
+
+INCLUDE_FILES := include/isapnp.h
+%copy_includes path=resources dir=include
+
+INCLUDE_FILES := include/isapnp_protos.h
+%copy_includes path=clib dir=include
+
+%common

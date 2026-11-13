@@ -1,0 +1,41 @@
+# Copyright (C) 2022-2023, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM- AHI-WASAPI-bridge-mingw32 : AHI-linklibs-WASAPI-bridge AHI-linklibs-WASAPI-native
+
+##USER_CFLAGS = -isystem $(GENINCDIR) $(KERNEL_INCLUDES)
+
+WASAPI_BRIDGE_FILES = \
+    WASAPI \
+    WASAPI_hostlib
+
+%build_linklib mmake=AHI-linklibs-WASAPI-bridge \
+  libname=WASAPI-bridge \
+  files="$(WASAPI_BRIDGE_FILES)"
+
+NATIVE_BINDIR := $(AROSDIR)/Libs/Host
+NATIVE_LIBDIR := $(AROS_DEVELOPER)/$(CPU)-mingw32/lib
+
+NATIVE_FILES  := WASAPI_native
+
+NATIVE_LDFLAGS  := -shared -static-libgcc -L$(NATIVE_LIBDIR) -Wl,--subsystem,windows,--out-implib,libwasapiaudio.a
+
+USER_INCLUDES := -I$(AROS_DEVELOPER)/$(CPU)-mingw32/include
+
+#MM AHI-linklibs-WASAPI-native : AHI-linklibs-WASAPI-native-rc
+
+%build_prog mmake=AHI-linklibs-WASAPI-native \
+    progname=wasapiaudio.dll targetdir=$(NATIVE_BINDIR) \
+    files="$(NATIVE_FILES)" objs="$(GENDIR)/$(CURDIR)/wasapiaudio.o" compiler=kernel uselibs="aroskernel ole32" \
+    ldflags=$(NATIVE_LDFLAGS)
+
+$(GENDIR)/$(CURDIR)/wasapiaudio.o: $(SRCDIR)/$(CURDIR)/WASAPIAudio.rc
+	$(KERNEL_RESCOMP) -i $(SRCDIR)/$(CURDIR)/WASAPIAudio.rc -o $(GENDIR)/$(CURDIR)/wasapiaudio.o
+
+#MM
+AHI-linklibs-WASAPI-native-rc : $(GENDIR)/$(CURDIR)/wasapiaudio.o
+
+
+%common
+

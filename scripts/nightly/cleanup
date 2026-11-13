@@ -1,0 +1,2 @@
+printi  "Cleaning up..."
+execute rm -rf $BUILD_BASE

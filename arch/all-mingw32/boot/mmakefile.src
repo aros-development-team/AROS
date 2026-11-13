@@ -1,0 +1,47 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM- distfiles-mingw32-$(AROS_TARGET_CPU) : distfiles-system
+#MM- distfiles-mingw32-$(AROS_TARGET_CPU)-quick : distfiles-system
+
+EXEDIR := $(AROSARCHDIR)
+
+# Board support package (basic drivers set)
+MINGW32_DEVS	 := timer
+MINGW32_HANDLERS := emul
+MINGW32_HIDD	 := wingdi
+MINGW32_LIBS	 := expansion exec
+MINGW32_RES	 := hostlib battclock processor task
+
+#MM- boot-mingw32: kernel-bootstrap-hosted kernel-boot-mingw32
+
+#MM- AROS-mingw32-$(CPU): kernel-link-mingw32 kernel-objs kernel-link-hosted \
+#MM			  workbench-hosted
+
+#MM- kernel-link-mingw32: kernel-kernel-kobj		\
+#MM			  kernel-hostlib-kobj		\
+#MM			  kernel-battclock-kobj		\
+#MM			  kernel-processor-kobj		\
+#MM			  kernel-timer-kobj		\
+#MM			  kernel-expansion-kobj		\
+#MM			  kernel-exec-kobj		\
+#MM			  kernel-task-kobj		\
+#MM			  kernel-emul-kobj		\
+#MM			  kernel-fs-emul-kobj		\
+#MM			  kernel-hidd-wingdi-kobj	\
+#MM			  linklibs			\
+#MM			  kernel-link-mingw32-quick
+
+%link_kickstart mmake=kernel-link-mingw32 file=$(EXEDIR)/aros-bsp-mingw32 \
+	devs=$(MINGW32_DEVS) handlers=$(MINGW32_HANDLERS) hidds=$(MINGW32_HIDD) libs=$(MINGW32_LIBS) res=$(MINGW32_RES) \
+	startup=$(KOBJSDIR)/kernel_resource.o \
+	uselibs="hiddstubs" \
+	map=$(GENDIR)/boot/kernel-mingw32.map
+
+#MM
+kernel-boot-mingw32: $(EXEDIR)/AROSBootstrap.conf
+
+$(EXEDIR)/AROSBootstrap.conf: AROSBootstrap.conf
+	@$(CP) $^ $@
+
+%common

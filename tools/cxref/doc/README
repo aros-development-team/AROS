@@ -1,0 +1,16 @@
+     C Cross Referencing & Documenting tool. Version 1.4 - documentation
+     ===================================================================
+
+The files fonts.sty, page.sty and cxref.sty are needed for cxref.tex to be
+LaTeXed.  They are included in the executable program cxref and output as files
+into the output directory.  These files are derived from the fonts.style,
+page.style and cxref.style files in this directory.
+
+fonts.style  Is a modified copy of 10pt.sty from the standard LaTeX distribution.
+
+page.style   Gives narrower margins than the standard LaTeX a4.sty.
+
+cxref.style  Contains all of the new environments that are used in typesetting
+             the cxref output.
+
+Andrew M. Bishop November 1996.

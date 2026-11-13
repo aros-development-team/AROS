@@ -1,0 +1,28 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+USER_LDFLAGS := -static
+
+FILES	:=  af_fontdescr_io memoryfontfunc diskfontfunc \
+	    dosstreamhook diskfont_io bullet basicfuncs
+
+FUNCS	:=  opendiskfont	\
+	    availfonts		\
+	    newfontcontents     \
+	    disposefontcontents \
+	    newscaleddiskfont
+
+#MM workbench-libs-diskfont-includes : \
+#MM     kernel-exec-includes \
+#MM     kernel-utility-includes \
+#MM     kernel-graphics-includes \
+#MM     workbench-libs-bullet-includes \
+#MM     includes-copy
+#MM- workbench-libs-diskfont : linklibs
+#MM- core-linklibs: linklibs-diskfont
+
+%build_module mmake=workbench-libs-diskfont \
+    modname=diskfont modtype=library \
+    files="diskfont_init $(FUNCS) $(FILES)"
+
+%common

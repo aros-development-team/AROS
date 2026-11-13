@@ -1,0 +1,30 @@
+#
+#   Makefile to make icontrol prefs program.
+
+include $(SRCDIR)/config/aros.cfg
+
+FILES 	    := main args icontroleditor locale misc prefs
+EXEDIR      := $(AROSDIR)/Prefs
+
+#MM- workbench-prefs : workbench-prefs-icontrol
+#MM workbench-prefs-icontrol : includes linklibs \
+#MM     workbench-prefs-icontrol-catalogs \
+#MM     workbench-prefs-icontrol-images
+
+%build_prog mmake=workbench-prefs-icontrol \
+    progname=IControl targetdir=$(EXEDIR) \
+    files=$(FILES)
+
+
+IMAGES	    := menupulldownclassic menupulldown3d menupopupclassic menupopup3d
+SRCIMAGES   := $(foreach f, $(IMAGES), images/$(f).ilbm)
+C_IMAGES    := $(foreach f, $(IMAGES), $(f)_image.c)
+
+#MM
+workbench-prefs-icontrol-images : $(C_IMAGES)
+
+./%_image.c : images/%.ilbm
+	@$(ILBMTOC) $< >$@    	
+
+%common
+

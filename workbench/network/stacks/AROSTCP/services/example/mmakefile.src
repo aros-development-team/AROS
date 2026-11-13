@@ -1,0 +1,15 @@
+include $(SRCDIR)/config/aros.cfg
+
+STACK_NAME := AROSTCP
+
+#MM workbench-network-stacks-arostcp-services-example : \
+#MM     network-includes-copy
+
+FILES := nsexample
+
+%build_prog mmake=workbench-network-stacks-arostcp-services-example \
+    progname=nsexample \
+    files="$(FILES)" \
+    targetdir=$(AROS_SYSTEM)/Network/Services
+
+%common

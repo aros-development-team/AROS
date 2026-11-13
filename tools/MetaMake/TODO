@@ -1,0 +1,12 @@
+- Option for mmake to run it in the current directory only for some
+target (still considering all deps).
+
+- Allow to continue #MM lines
+
+- Allow to specify a meta rule for which mmake doesn't call make
+(ie. mmake will not try to run make on the makefile which contains this
+metatarget) to avoid "Nothing known about <metatarget>".
+
+- MetaMake should convert the source makefiles into makefiles while
+searching for metatargets. This would allow to modify the metatargets
+on the fly !

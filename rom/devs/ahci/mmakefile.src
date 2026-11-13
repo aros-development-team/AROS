@@ -1,0 +1,52 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM kernel-ahci : kernel-timer-includes kernel-$(TARGET_USELOGRES)-log-includes
+
+INCLUDE_FILES := $(call WILDCARD, include/devices/*.h)
+%copy_includes path=devices dir=include/devices
+
+INCLUDE_FILES := $(call WILDCARD, include/hidd/*.h)
+%copy_includes path=hidd dir=include/hidd
+
+AHCIDEVICEFILES :=  \
+        ahci_init \
+        ahci_io \
+        ahci_scsi \
+        ahci_cam_aros \
+        ahci_aros \
+        ahci_aros_bus \
+        ahci \
+        ahci_attach \
+        ahci_pm \
+        bus_pci \
+        timer \
+        subr_prf
+
+AHCICLASSFILES :=  \
+        ahci_controllerclass \
+        ahci_busclass \
+        ahci_unitclass
+
+USER_CPPFLAGS :=  \
+               -D__OOP_NOLIBBASE__ \
+               -D__OOP_NOATTRBASES__ \
+               -D__OOP_NOMETHODBASES__
+
+# Contains code from openbsd.org
+USER_CPPFLAGS += -D__BSD_VISIBLE
+# Enable coalescing
+#USER_CPPFLAGS += -DAHCI_COALESCE
+# Enable ACHI debugging
+#USER_CPPFLAGS += -DAHCI_DEBUG
+# Enable AROS debugging
+#USER_CPPFLAGS += -DDEBUG=1
+
+USER_LDFLAGS := -static
+
+%build_module mmake=kernel-ahci \
+  modname=ahci modtype=device \
+  files="$(AHCIDEVICEFILES) $(AHCICLASSFILES)" \
+  uselibs="hiddstubs"
+
+%common

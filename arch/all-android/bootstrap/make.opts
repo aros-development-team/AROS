@@ -1,0 +1,9 @@
+KERNEL_LDFLAGS += -shared -llog
+PROG	       := lib$(PROG)
+EXE_SUFFIX     := .so
+
+ifeq ($(CPU), i386)
+    EXEDIR := $(GENDIR)/arch/all-android/bootstrap/app/libs/x86
+else
+    EXEDIR := $(GENDIR)/arch/all-android/bootstrap/app/libs/armeabi
+endif

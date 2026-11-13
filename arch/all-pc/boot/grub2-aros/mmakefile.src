@@ -1,0 +1,87 @@
+# Copyright (C) 2004-2026, The AROS Development Team. All rights reserved.
+# Rules for building the grub2 native utils,
+# in provision to use grub-mkimage in InstallAROS
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM- arch-common-grub2 : grub2-aros-quick
+
+ifeq ($(AROS_TARGET_VARIANT),efi)
+    GRUB_ARCH := efi
+else
+    GRUB_ARCH := pc
+endif
+
+GRUB2PACKAGE    := grub
+GRUB2DESTDIR    := $(AROS_CONTRIB)/GNU
+# GRUB moved off savannah/ftp.gnu.org: releases from 2.16 on are published on
+# freedesktop GitLab, where each release's tarballs live under a directory named
+# after the tag. ftp.gnu.org is kept for the older versions still built from it.
+GRUB2REPOS      := \
+    cache:// \
+    https://gitlab.freedesktop.org/api/v4/projects/26558/packages/generic/source-assets/$(GRUB2PACKAGE)-$(GRUB2_VERSION) \
+    ftp://ftp.gnu.org/gnu/grub
+
+# automake terminates every link rule with $(LIBS), so setting it here
+# replaces the per-utility *_LDADD hunks the AROS patch used to carry.
+CONFIG_OPTS := \
+		--with-platform=$(GRUB_ARCH)        \
+		--datarootdir=$(GRUB2DESTDIR)/share \
+		--sysconfdir=$(GRUB2DESTDIR)/etc	\
+		--enable-silent-rules               \
+		--disable-nls                       \
+		--disable-efiemu                    \
+		--disable-grub-mkfont               \
+		--disable-werror                    \
+		--program-prefix=                   \
+		LIBS=-lpthread
+
+#ifeq ($(GRUB2_USELZMA),yes)
+#CONFIG_OPTS += \
+#		        --enable-liblzma
+#endif
+
+ifeq ($(AROS_TOOLCHAIN),llvm)
+# grub's boot components (kernel.img, boot.img, etc.) must be linked as
+# plain ELF executables at fixed link addresses. The AROS clang triple
+# routes linking through collect-aros, which always emits AROS relocatable
+# modules and ignores -Ttext, producing images grub-mkimage rejects
+# ("its start address is 0x0 instead of 0x9000"). Use a bare linux triple
+# so clang generates plain ELF and drives the system linker instead.
+GRUB2_LLVM_ISA_FLAGS   := --target=$(AROS_TARGET_CPU)-pc-linux-gnu
+GRUB2_LLVM_ISA32_FLAGS := --target=$(AROS_TARGET_CPU32)-pc-linux-gnu -march=i486 -m32
+ifneq ($(AROS_TARGET_CPU32),)
+GRUB2_ENV=grub_cv_target_cc_link_format=-melf_$(AROS_TARGET_CPU32)
+GRUB2_ENV+=TARGET_CFLAGS="$(GRUB2_LLVM_ISA32_FLAGS)"
+GRUB2_ENV+=TARGET_LDFLAGS="$(GRUB2_LLVM_ISA32_FLAGS) -nostartfiles"
+GRUB2_ENV+=TARGET_CCASFLAGS="$(GRUB2_LLVM_ISA32_FLAGS) -Wa,--32"
+else
+GRUB2_ENV=grub_cv_target_cc_link_format=-melf_$(AROS_TARGET_CPU)
+GRUB2_ENV+=TARGET_CFLAGS="$(GRUB2_LLVM_ISA_FLAGS)"
+GRUB2_ENV+=TARGET_LDFLAGS="$(GRUB2_LLVM_ISA_FLAGS) -nostartfiles"
+endif
+
+grub2-aros--CROSS_CPP=$(TARGET_CPP)
+grub2-aros--CROSS_CC=$(TARGET_CC)
+grub2-aros--CROSS_CXX=$(TARGET_CXX)
+grub2-aros--CROSS_SYSROOT=$(TARGET_SYSROOT)
+grub2-aros--CROSS_LD=$(TARGET_LD)
+grub2-aros--CROSS_CFLAGS=$(TARGET_CFLAGS)
+grub2-aros--CROSS_CXXFLAGS=$(TARGET_CXXFLAGS)
+grub2-aros--CROSS_LDFLAGS=$(TARGET_LDFLAGS)
+grub2-aros--CROSS_AS=$(TARGET_AS) $(TARGET_AFLAGS)
+GRUB2_CROSSFLAG=yes
+else
+GRUB2_CROSSFLAG=no
+endif
+
+grub2-aros--touchfileflag := $(GENDIR)/arch/all-pc/boot/.grub2-files-touched
+
+NOWARN_CFLAGS := $(NOWARN_IMPLICIT_FUNCTION_DECL) $(NOWARN_INT_CONVERSION) $(NOWARN_INCOMPAT_POINTER_TYPES)
+TARGET_ISA_CFLAGS := $(NOWARN_CFLAGS)
+TARGET_ISA_CFLAGS += -D_STDC_NOINLINE_CTYPE
+
+%fetch_and_build mmake=grub2-aros \
+        package=$(GRUB2PACKAGE) version=$(GRUB2_VERSION) suffixes="tar.xz tar.gz" package_repo=$(GRUB2REPOS) \
+        prefix="$(GRUB2DESTDIR)" patch=yes aros_prefix="/GNU" nix=no gnuflags=no xflag=no \
+        extraoptions="$(CONFIG_OPTS)" config_env_extra="$(GRUB2_ENV)" kernelisaflags= crossbuild=$(GRUB2_CROSSFLAG)

@@ -1,0 +1,31 @@
+# Copyright (C) 2004-2025, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+
+FILES       := args locale main misc prefs smeditor smproperties smselector smattributes
+EXEDIR      := $(AROS_PREFS)
+
+#MM- workbench-prefs : workbench-prefs-screenmode
+#MM workbench-prefs-screenmode : includes linklibs \
+#MM workbench-prefs-screenmode-catalogs workbench-prefs-screenmode-copyimages
+
+%build_prog mmake=workbench-prefs-screenmode \
+    progname=ScreenMode targetdir=$(EXEDIR) \
+    files=$(FILES)
+
+$(AROS_IMAGES)/display-landscape : $(SRCDIR)/$(CURDIR)/display-landscape.png
+	@if [ -f $< ]; then      \
+            $(MKDIR) $(dir $@) ; \
+            $(CP) $< $@ ;        \
+        fi
+
+$(AROS_IMAGES)/display-portrait : $(SRCDIR)/$(CURDIR)/display-portrait.png
+	@if [ -f $< ]; then      \
+            $(MKDIR) $(dir $@) ; \
+            $(CP) $< $@ ;        \
+        fi
+
+#MM
+workbench-prefs-screenmode-copyimages : $(AROS_IMAGES)/display-landscape $(AROS_IMAGES)/display-portrait
+
+%common

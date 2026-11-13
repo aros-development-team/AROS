@@ -1,0 +1,31 @@
+GENMODULE_SRCS := \
+    genmodule.c \
+    boopsisupport.c \
+    config.c \
+    dtsupport.c \
+    fileread.c \
+    functionhead.c \
+    muisupport.c \
+    oopsupport.c \
+    stringlist.c \
+    writeincclib.c \
+    writeincproto.c \
+    writeincdefines.c \
+    writeincinline.c \
+    writeinclibdefs.c \
+    writeincinterfaces.c \
+    writemakefile.c \
+    writestart.c \
+    writeend.c \
+    writeautoinit.c \
+    writestubs.c \
+    writefunclist.c \
+    writefd.c \
+    writeskel.c \
+    writethunk.c \
+    writegetlibbase.c \
+    writelinkentries.c \
+    writeutils.c
+
+GENMODULE_INCS := genmodule.h fileread.h functionhead.h
+GENMODULE_DEPS := $(addprefix $(SRCDIR)/tools/genmodule/,$(GENMODULE_SRCS) $(GENMODULE_INCS))

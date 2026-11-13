@@ -1,0 +1,20 @@
+#
+# Rules to create AROS for sam440-ppc
+#
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM- distfiles-sam440-ppc : bootiso
+#MM- distfiles-sam440-ppc-quick : bootiso-quick
+
+#MM- AROS-sam440-ppc : kernel-sam440-ppc software-sam440-ppc
+
+#MM- software-sam440-ppc : general-setup binary-sam440-ppc \
+#MM	    workbench-sam440-ppc demos
+
+#MM- workbench-sam440-ppc : workbench-complete workbench
+
+#MM- AROS-complete-sam440-ppc : AROS-sam440-ppc
+
+#MM- includes-sam440-ppc : includes-common-i386 includes-copy-sam440-ppc includes-copy
+

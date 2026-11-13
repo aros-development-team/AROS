@@ -1,0 +1,60 @@
+ Introduction.
+ ==============================================
+
+ hostdisk.device is a hosted device driver which allows you to mount physical
+disk, partition, or image file located on your host operating systems. In
+particular, it can allow you to mount AmigaOS hard drives or native AROS
+partitions within hosted AROS.
+
+ On UNIX systems it is adviced to run AROS under root user if you want to use
+this driver. UNIXes often restrict (or totally disallow) access to disk devices
+for non-root users.
+
+ Mounting host-side physical disks.
+ ==============================================
+
+ The driver behaves in the same manner as real device driver would do. It
+represents physical drives of your host operating system as units. E. g.
+unit 0 corresponds to the first physical drive, unit 1 - to the second, etc.
+ An exact mapping between unit numbers and device names on currently supported
+operatins systems is (N stands for unit number):
+
+ Windows: \\.\PhysicalDrive<N>
+ Darwin : /dev/disk<N>
+
+ This way you can even browse and edit partitions of your drives using
+HDToolBox. Please be extremely careful and know what you do and why when doing
+this on a drive that is currently in use by your host operating system!
+
+ Note that some operating systems (UNIXes) are known to block write access to
+the disk device if it is being used (e. g. has mounted partitions).
+hostdisk.device handles this correctly and allows to work in read-only mode
+under such a conditions.
+
+ Mounting host-side partitions and image files.
+ ==============================================
+
+ In this mode you need to create a custom mount file with Unit= parameter
+specifying device or file name in string form. For example:
+
+FileSystem	= sfs.handler
+Device		= hostdisk.device
+Unit		= /dev/disk0s3
+BlockSize	= 512
+Surfaces	= 1
+BlocksPerTrack	= 1
+LowCyl		= 0
+HighCyl		= 10559031
+Reserved	= 2
+Activate	= 1
+DosType         = 0x53465300
+
+ This is the file i use to mount DH0: partition for native AROS on my IntelMac.
+Please do not copy it 1:1, hard disk filesystems are not capable of detecting
+partition size by themselves and require to fill in HighCyl correctly. This
+example uses virtual geometry for LBA access (cylinder number = block number)
+for simplification. You can use your host's tools to determine total size of
+the partition you want to mount.
+
+ The same applies to image files, with the exception that you don't need to run
+AROS under root to gain access to them. You just need an access to the file.

@@ -1,0 +1,19 @@
+# Copyright (C) 2026, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+
+FILES   := main gui accounts locale
+EXEDIR  := $(AROS_SYSTEM)
+
+#MM- workbench-system : workbench-system-accounts
+
+#MM  workbench-system-accounts : includes linklibs \
+#MM      workbench-system-accounts-catalogs kernel-security-includes \
+#MM      workbench-libs-pam-includes workbench-libs-usergroup-includes \
+#MM      workbench-libs-usergroup-linklib
+
+%build_prog mmake=workbench-system-accounts \
+    progname=Accounts targetdir=$(EXEDIR) \
+    files=$(FILES) uselibs="usergroup"
+
+%common

@@ -1,0 +1,17 @@
+# Copyright (C) 2003, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+
+FILES   := main locale
+EXEDIR  := $(AROS_TOOLS)
+
+#MM- workbench-tools : workbench-tools-screengrabber
+#MM  workbench-tools-screengrabber : includes linklibs \
+#MM  workbench-tools-screengrabber-catalogs
+
+%build_prog mmake=workbench-tools-screengrabber \
+    progname=ScreenGrabber targetdir=$(EXEDIR) \
+    files=$(FILES)
+
+%common
+

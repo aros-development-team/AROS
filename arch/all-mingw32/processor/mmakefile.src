@@ -1,0 +1,33 @@
+#
+
+include $(SRCDIR)/config/aros.cfg
+
+USER_INCLUDES := -I$(SRCDIR)/rom/processor
+
+FILES := \
+    processor_hostlib
+
+%build_archspecific mainmmake=kernel-processor modname=processor maindir=rom/processor \
+    arch=mingw32 files=$(FILES)
+
+NATIVE_BINDIR := $(AROSDIR)/Libs/Host
+NATIVE_LIBDIR := $(AROS_DEVELOPER)/$(CPU)-mingw32/lib
+
+NATIVE_FILES  := processor_hostcpu
+
+NATIVE_LDFLAGS  := -shared -static-libgcc -L$(NATIVE_LIBDIR) -Wl,--subsystem,windows,--out-implib,libwincpu.a
+
+USER_INCLUDES := -I$(AROS_DEVELOPER)/$(CPU)-mingw32/include
+
+#MM mingw32-processor-native : mingw32-processor-native-rc
+#MM kernel-processor-mingw32 : mingw32-processor-native 
+
+%build_prog mmake=mingw32-processor-native \
+    progname=wincpu.dll targetdir=$(NATIVE_BINDIR) \
+    files="$(NATIVE_FILES)" objs="$(GENDIR)/$(CURDIR)/wincpu.o" compiler=kernel uselibs="aroskernel powrprof" \
+    ldflags=$(NATIVE_LDFLAGS)
+
+$(GENDIR)/$(CURDIR)/wincpu.o: $(SRCDIR)/$(CURDIR)/wincpu.rc
+	$(KERNEL_RESCOMP) -i $(SRCDIR)/$(CURDIR)/wincpu.rc -o $(GENDIR)/$(CURDIR)/wincpu.o
+
+%common

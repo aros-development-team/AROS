@@ -1,0 +1,19 @@
+#
+#   Makefile to make the 2View image viewer.
+
+include $(SRCDIR)/config/aros.cfg
+
+FILES := \
+    2View \
+    Misc \
+    read
+
+EXEDIR := $(AROSDIR)/Demos
+
+#MM demos : includes linklibs
+
+%build_prog mmake=demos \
+    progname=2View targetdir=$(EXEDIR) \
+    files=$(FILES)
+
+%common

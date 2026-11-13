@@ -1,0 +1,302 @@
+#
+
+include $(SRCDIR)/config/aros.cfg
+
+LIBSOFTFLOATVERSION=3e
+SOFTFLOATREPOSITORIES = https://www.jhauser.us/arithmetic
+SOFTFLOATARCHBASE     := SoftFloat-$(LIBSOFTFLOATVERSION)
+SOFTFLOATARCHSUFFIX := "zip"
+#SOFTFLOATPATCHSPEC := $(SOFTFLOATARCHBASE)-aros.diff:libsoftfloat-$(LIBSOFTFLOATVERSION):-f,-p1
+SOFTFLOATARCHSRCDIR := $(PORTSDIR)/libsoftfloat/$(SOFTFLOATARCHBASE)
+
+%fetch mmake=linklibs-softfloat-fetch archive=$(SOFTFLOATARCHBASE) destination=$(PORTSDIR)/libsoftfloat \
+    archive_origins=$(SOFTFLOATREPOSITORIES) suffixes=$(SOFTFLOATARCHSUFFIX) \
+    patches_specs=$(PATCHSPEC)
+
+%create_patch mmake=linklibs-softfloat-create-patch \
+    archive=$(SOFTFLOATARCHBASE) suffixes=$(SOFTFLOATARCHSUFFIX) \
+    destination=$(PORTSDIR)/libsoftfloat \
+    srcdir="$(SOFTFLOATARCHBASE)"
+
+FILES_PRIMITIVES = \
+  s_compare96M \
+  s_compare128M \
+  s_shortShiftLeft64To96M \
+  s_shortShiftLeftM \
+  s_shiftLeftM \
+  s_shortShiftRightM \
+  s_shortShiftRightJam64 \
+  s_shortShiftRightJamM \
+  s_shiftRightJam32 \
+  s_shiftRightJam64 \
+  s_shiftRightJamM \
+  s_shiftRightM \
+  s_countLeadingZeros8 \
+  s_countLeadingZeros16 \
+  s_countLeadingZeros32 \
+  s_countLeadingZeros64 \
+  s_addM \
+  s_addCarryM \
+  s_addComplCarryM \
+  s_negXM \
+  s_sub1XM \
+  s_subM \
+  s_mul64To128M \
+  s_mul128MTo256M \
+  s_approxRecip_1Ks \
+  s_approxRecip32_1 \
+  s_approxRecipSqrt_1Ks \
+  s_approxRecipSqrt32_1 \
+  s_remStepMBy32
+
+FILES_SPECIALIZE = \
+  softfloat_raiseFlags \
+  s_f16UIToCommonNaN \
+  s_commonNaNToF16UI \
+  s_propagateNaNF16UI \
+  s_f32UIToCommonNaN \
+  s_commonNaNToF32UI \
+  s_propagateNaNF32UI \
+  s_f64UIToCommonNaN \
+  s_commonNaNToF64UI \
+  s_propagateNaNF64UI \
+  extF80M_isSignalingNaN \
+  s_extF80MToCommonNaN \
+  s_commonNaNToExtF80M \
+  s_propagateNaNExtF80M \
+  f128M_isSignalingNaN \
+  s_f128MToCommonNaN \
+  s_commonNaNToF128M \
+  s_propagateNaNF128M
+
+FILES_OTHERS = \
+  s_roundToUI32 \
+  s_roundMToUI64 \
+  s_roundToI32 \
+  s_roundMToI64 \
+  s_normSubnormalF16Sig \
+  s_roundPackToF16 \
+  s_normRoundPackToF16 \
+  s_addMagsF16 \
+  s_subMagsF16 \
+  s_mulAddF16 \
+  s_normSubnormalF32Sig \
+  s_roundPackToF32 \
+  s_normRoundPackToF32 \
+  s_addMagsF32 \
+  s_subMagsF32 \
+  s_mulAddF32 \
+  s_normSubnormalF64Sig \
+  s_roundPackToF64 \
+  s_normRoundPackToF64 \
+  s_addMagsF64 \
+  s_subMagsF64 \
+  s_mulAddF64 \
+  s_tryPropagateNaNExtF80M \
+  s_invalidExtF80M \
+  s_normExtF80SigM \
+  s_roundPackMToExtF80M \
+  s_normRoundPackMToExtF80M \
+  s_addExtF80M \
+  s_compareNonnormExtF80M \
+  s_isNaNF128M \
+  s_tryPropagateNaNF128M \
+  s_invalidF128M \
+  s_shiftNormSigF128M \
+  s_roundPackMToF128M \
+  s_normRoundPackMToF128M \
+  s_addF128M \
+  s_mulAddF128M \
+  softfloat_state \
+  ui32_to_f16 \
+  ui32_to_f32 \
+  ui32_to_f64 \
+  ui32_to_extF80M \
+  ui32_to_f128M \
+  ui64_to_f16 \
+  ui64_to_f32 \
+  ui64_to_f64 \
+  ui64_to_extF80M \
+  ui64_to_f128M \
+  i32_to_f16 \
+  i32_to_f32 \
+  i32_to_f64 \
+  i32_to_extF80M \
+  i32_to_f128M \
+  i64_to_f16 \
+  i64_to_f32 \
+  i64_to_f64 \
+  i64_to_extF80M \
+  i64_to_f128M \
+  f16_to_ui32 \
+  f16_to_ui64 \
+  f16_to_i32 \
+  f16_to_i64 \
+  f16_to_ui32_r_minMag \
+  f16_to_ui64_r_minMag \
+  f16_to_i32_r_minMag \
+  f16_to_i64_r_minMag \
+  f16_to_f32 \
+  f16_to_f64 \
+  f16_to_extF80M \
+  f16_to_f128M \
+  f16_roundToInt \
+  f16_add \
+  f16_sub \
+  f16_mul \
+  f16_mulAdd \
+  f16_div \
+  f16_rem \
+  f16_sqrt \
+  f16_eq \
+  f16_le \
+  f16_lt \
+  f16_eq_signaling \
+  f16_le_quiet \
+  f16_lt_quiet \
+  f16_isSignalingNaN \
+  f32_to_ui32 \
+  f32_to_ui64 \
+  f32_to_i32 \
+  f32_to_i64 \
+  f32_to_ui32_r_minMag \
+  f32_to_ui64_r_minMag \
+  f32_to_i32_r_minMag \
+  f32_to_i64_r_minMag \
+  f32_to_f16 \
+  f32_to_f64 \
+  f32_to_extF80M \
+  f32_to_f128M \
+  f32_roundToInt \
+  f32_add \
+  f32_sub \
+  f32_mul \
+  f32_mulAdd \
+  f32_div \
+  f32_rem \
+  f32_sqrt \
+  f32_eq \
+  f32_le \
+  f32_lt \
+  f32_eq_signaling \
+  f32_le_quiet \
+  f32_lt_quiet \
+  f32_isSignalingNaN \
+  f64_to_ui32 \
+  f64_to_ui64 \
+  f64_to_i32 \
+  f64_to_i64 \
+  f64_to_ui32_r_minMag \
+  f64_to_ui64_r_minMag \
+  f64_to_i32_r_minMag \
+  f64_to_i64_r_minMag \
+  f64_to_f16 \
+  f64_to_f32 \
+  f64_to_extF80M \
+  f64_to_f128M \
+  f64_roundToInt \
+  f64_add \
+  f64_sub \
+  f64_mul \
+  f64_mulAdd \
+  f64_div \
+  f64_rem \
+  f64_sqrt \
+  f64_eq \
+  f64_le \
+  f64_lt \
+  f64_eq_signaling \
+  f64_le_quiet \
+  f64_lt_quiet \
+  f64_isSignalingNaN \
+  extF80M_to_ui32 \
+  extF80M_to_ui64 \
+  extF80M_to_i32 \
+  extF80M_to_i64 \
+  extF80M_to_ui32_r_minMag \
+  extF80M_to_ui64_r_minMag \
+  extF80M_to_i32_r_minMag \
+  extF80M_to_i64_r_minMag \
+  extF80M_to_f16 \
+  extF80M_to_f32 \
+  extF80M_to_f64 \
+  extF80M_to_f128M \
+  extF80M_roundToInt \
+  extF80M_add \
+  extF80M_sub \
+  extF80M_mul \
+  extF80M_div \
+  extF80M_rem \
+  extF80M_sqrt \
+  extF80M_eq \
+  extF80M_le \
+  extF80M_lt \
+  extF80M_eq_signaling \
+  extF80M_le_quiet \
+  extF80M_lt_quiet \
+  f128M_to_ui32 \
+  f128M_to_ui64 \
+  f128M_to_i32 \
+  f128M_to_i64 \
+  f128M_to_ui32_r_minMag \
+  f128M_to_ui64_r_minMag \
+  f128M_to_i32_r_minMag \
+  f128M_to_i64_r_minMag \
+  f128M_to_f16 \
+  f128M_to_f32 \
+  f128M_to_f64 \
+  f128M_to_extF80M \
+  f128M_roundToInt \
+  f128M_add \
+  f128M_sub \
+  f128M_mul \
+  f128M_mulAdd \
+  f128M_div \
+  f128M_rem \
+  f128M_sqrt \
+  f128M_eq \
+  f128M_le \
+  f128M_lt \
+  f128M_eq_signaling \
+  f128M_le_quiet \
+  f128M_lt_quiet
+
+FILES = $(FILES_PRIMITIVES) $(FILES_OTHERS)
+USER_INCLUDES := -I$(GENDIR)/$(CURDIR) -iquote $(SOFTFLOATARCHSRCDIR)/source/include
+
+ifneq (,$(findstring arm,$(AROS_TARGET_CPU)))
+FILES += $(addprefix ARM-VFPv2/,$(FILES_SPECIALIZE))
+USER_INCLUDES += -iquote $(SOFTFLOATARCHSRCDIR)/source/ARM-VFPv2
+ifeq (be,$(AROS_TARGET_VARIANT))
+SOFTFLOATLE = 0
+endif
+endif
+ifeq (,$(SOFTFLOATLE))
+SOFTFLOATLE = 1
+endif
+
+$(GENDIR)/$(CURDIR)/platform.h : $(SRCDIR)/$(CURDIR)/mmakefile.src
+	@$(ECHO) "Generating platform.h"
+	%mkdir_q dir=$(GENDIR)/$(CURDIR)
+	@$(ECHO) "// Autogenerated from $(SRCDIR)/$(CURDIR)/mmakefile.src - do not edit" > $@
+	@$(ECHO) "// AROS libsoftfloat configuration for $(AROS_TARGET_CPU)" >> $@
+	@$(ECHO) "#define LITTLEENDIAN $(SOFTFLOATLE)" >> $@
+
+#	@$(ECHO) "#define INLINE static inline" >> $@
+#	@$(ECHO) "#define SOFTFLOAT_FAST_DIV64TO32" >> $@
+#	@$(ECHO) "#define SOFTFLOAT_FAST_INT64" >> $@
+
+#MM
+linklibs-softfloat-genfiles : $(GENDIR)/$(CURDIR)/platform.h
+
+#MM- includes-softfloat-copy : linklibs-softfloat-fetch
+
+#MM includes-softfloat-copy
+INCLUDE_FILES := softfloat.h softfloat_types.h
+%copy_includes mmake=includes-softfloat-copy dir=$(SOFTFLOATARCHSRCDIR)/source/include
+
+#MM linklibs-softfloat : includes includes-copy includes-softfloat-copy linklibs-softfloat-genfiles
+
+%build_linklib mmake=linklibs-softfloat libname=softfloat files="$(addprefix $(SOFTFLOATARCHSRCDIR)/source/,$(FILES))"
+
+%common

@@ -1,0 +1,33 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM workbench-classes-zune-hotkeystring-class : includes linklibs
+
+#MM workbench-classes-zune-hotkeystring-test : \
+#MM workbench-classes-zune-hotkeystring-class includes linklibs
+
+USER_INCLUDES := -idirafter $(SRCDIR)/$(CURDIR)/../../include -I$(SRCDIR)/$(CURDIR)/..
+USER_CFLAGS := -DAROS_ABI_V1
+
+FILES := Dispatcher HandleInput Debug
+	 
+%build_module_simple mmake=workbench-classes-zune-hotkeystring-class \
+  modname=HotkeyString modtype=mcc \
+  files="library $(FILES)" uselibs=stdc.static
+
+
+
+USER_INCLUDES := -idirafter $(SRCDIR)/$(CURDIR)/../../include -I$(SRCDIR)/$(CURDIR)/..
+
+%build_prog mmake=workbench-classes-zune-hotkeystring-test \
+    progname=HotkeyString-Test files="HotkeyString-Test $(FILES)" \
+    targetdir=$(AROS_TESTS)/Zune
+
+
+
+#MM includes-copy
+
+INCLUDE_FILES := ../../include/mui/HotkeyString_mcc.h
+%copy_includes path=mui dir=../../include/mui
+
+%common

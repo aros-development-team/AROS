@@ -1,0 +1,111 @@
+#
+#   Makefile for security.library (AROS multi-user support, MuFS derived)
+#
+
+include $(SRCDIR)/config/aros.cfg
+
+PUBLICFUNCS := \
+	secAccess_Control \
+	secAddMonitor \
+	secAllocGroupInfo \
+	secAllocUserInfo \
+	secCheckPasswdA \
+	secContextLocate \
+	secEnumChildren \
+	secFreeExtOwner \
+	secFreeGroupInfo \
+	secFreeUserInfo \
+	secFreeze \
+	secGetConfigDirLock \
+	secGetDefProtection \
+	secGetGroupInfo \
+	secGetPasswdDirLock \
+	secGetPktDefProtection \
+	secGetPktOwner \
+	secGetRelationshipA \
+	secGetTaskExtOwner \
+	secGetTaskOwner \
+	secGetUserInfo \
+	secKill \
+	secLimitDOSSetProtection \
+	secLocksecBase \
+	secPasswd \
+	secRemMonitor \
+	secSetDefProtectionA \
+	secSetProtection \
+	secUnfreeze \
+	secUnlocksecBase \
+	secUserInfo2ExtOwner \
+	secIsConfigured \
+	secLimitProtection \
+	secIsVolumeSecured \
+	secVerifyUserA \
+	secQueryUserA \
+	secAuthControlA \
+	secUserAdminA \
+	secExpandPathA \
+	secKeyAdminA \
+	secKeyClientA
+
+CRTPUBLICFUNCS := \
+	secgetgid \
+	secgetpgid \
+	secgetuid \
+	secsetegid \
+	secseteuid \
+	secsetgid \
+	secsetreuid \
+	secsetuid
+
+FSFUNCS := \
+	secFSRendezVous
+
+PLUGINFUNCS := \
+	secLoadPlugin \
+	secUnloadPlugin \
+	secRegisterHandler \
+	secUnRegisterHandler \
+	secPluginOperationComplete
+
+DOSFUNCS := \
+	security_dosfuncs
+
+SECURITYFILES := \
+	security_afterdos \
+	security_config \
+	security_locale \
+	security_volumes \
+	security_memory \
+	security_plugins \
+	security_crypto \
+	security_monitor \
+	security_packetio \
+	security_enforce \
+	security_task \
+	security_server \
+	security_segment \
+	security_support \
+	security_login \
+	security_logingui \
+	security_auth \
+	security_log \
+	security_protect \
+	security_useradmin \
+	security_keys
+
+%get_archincludes modname=exec \
+    includeflag=TARGET_EXEC_INCLUDES maindir=rom/exec
+
+USER_INCLUDES := $(TARGET_EXEC_INCLUDES) -I$(SRCDIR)/rom/exec
+USER_CPPFLAGS := -DUSE_EXEC_DEBUG
+#USER_CPPFLAGS += -DDEBUG=1
+USER_LDFLAGS := -static
+
+#MM kernel-security : includes linklibs kernel-security-catalogs kernel-task-includes workbench-libs-pam-includes kernel-log-includes
+#MM kernel-security-includes : includes kernel-security-catalogs
+
+%build_module mmake=kernel-security modname=security \
+  modtype=library files="security_init $(PUBLICFUNCS) $(CRTPUBLICFUNCS) $(FSFUNCS) $(PLUGINFUNCS) $(DOSFUNCS) $(SECURITYFILES)" \
+  uselibs="amiga"
+
+%common

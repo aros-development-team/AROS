@@ -1,0 +1,9 @@
+# DataType Description for MOV
+Name=MOV
+Version=$VER: MOV 1.0 (23.02.2009)
+BaseName=mov
+Pattern=#?.mov
+GroupID=movi
+ID=mov
+Flags=DTF_BINARY,DTF_CASE
+Priority=0

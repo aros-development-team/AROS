@@ -1,0 +1,15 @@
+#
+#  Makefile.in for PulseAudio "virtual" sound card driver
+#
+
+VPATH		= @srcdir@
+
+srcdir		= @srcdir@
+
+DRIVER		= pulseaudio.audio
+MODEFILE	= PULSEAUDIO
+
+OBJECTS		= pulseaudio-init.o pulseaudio-main.o pulseaudio-playslave.o pulseaudio-accel.o
+LIBS		= -lpulseaudio-bridge
+
+include ../Common/Makefile.common

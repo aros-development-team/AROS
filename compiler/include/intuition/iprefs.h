@@ -1,0 +1,121 @@
+#ifndef INTUITION_IPREFS_H
+#define INTUITION_IPREFS_H
+
+/*
+    Copyright © 1995-2026, The AROS Development Team. All rights reserved.
+    $Id$
+
+    Desc: PRIVATE/TOP SECRET!!! Communication between IPrefs program and Intuition
+    Lang: english
+*/
+
+#ifndef EXEC_TYPES_H
+#   include <exec/types.h>
+#endif
+#ifndef GRAPHICS_GFX_H
+#   include <graphics/gfx.h>
+#endif
+#ifndef GRAPHICS_TEXT_H
+#   include <graphics/text.h>
+#endif
+#ifndef INTUITION_SCREENS_H
+#   include <intuition/screens.h>
+#endif
+
+#define IPREFS_TYPE_SCREENMODE_V37 1
+#define IPREFS_TYPE_FONT_V37       2
+#define IPREFS_TYPE_OVERSCAN_V37   3
+#define IPREFS_TYPE_ICONTROL_V37   4
+#define IPREFS_TYPE_POINTER_V37    5
+#define IPREFS_TYPE_PALETTE_V37    6
+#define IPREFS_TYPE_POINTER_V39    7
+#define IPREFS_TYPE_PALETTE_V39    8
+#define IPREFS_TYPE_PENS_V39       9
+#define IPREFS_TYPE_POINTER_ALPHA 10
+
+/* Public semaphore owned by IPrefs. It is held exclusively while IPrefs
+   applies the saved preferences. Obtain it shared, then release it, to
+   wait for that to finish. It does not exist if IPrefs was never run. */
+#define IPREFS_SEMAPHORE_NAME "\xAB IPrefs \xBB"
+
+/* backwards compatibility */
+#define IPREFS_TYPE_SCREENMODE IPREFS_TYPE_SCREENMODE_V37
+#define IPREFS_TYPE_ICONTROL IPREFS_TYPE_ICONTROL_V37
+#define IPREFS_TYPE_POINTER IPREFS_TYPE_POINTER_V39
+#define IPREFS_TYPE_OLD_PALETTE IPREFS_TYPE_PALETTE_V39
+
+struct IScreenModePrefs
+{
+    ULONG smp_DisplayID;
+    UWORD smp_Width;
+    UWORD smp_Height;
+    UWORD smp_Depth;
+    UWORD smp_Control;
+};
+
+struct IIControlPrefs
+{
+    UWORD ic_TimeOut;
+    WORD  ic_MetaDrag;
+    ULONG ic_Flags;
+    UBYTE ic_WBtoFront;
+    UBYTE ic_FrontToBack;
+    UBYTE ic_ReqTrue;
+    UBYTE ic_ReqFalse;
+    UWORD ic_VDragModes[2];
+};
+
+struct IPointerPrefsV37
+{
+    UWORD	*data;
+    UWORD	YSize;	
+    WORD	XOffset;
+    WORD	YOffset;
+    ULONG   unk[5];
+};
+
+struct IPointerPrefs
+{
+    struct BitMap *BitMap;
+    WORD  XOffset;
+    WORD  YOffset;
+    UWORD BytesPerRow;
+    UWORD Size;
+    UWORD YSize;
+    UWORD Which;
+    ULONG Zero;
+};
+
+struct IOldPenPrefs
+{
+    UWORD Count;
+    UWORD Type;
+    ULONG Pad;
+    UWORD PenTable[NUMDRIPENS+1];
+};
+
+struct IOldOverScanPrefs
+{
+    ULONG DisplayID;
+    Point ViewPos;
+    Point Text;
+    struct Rectangle Standard;
+};
+
+struct IOldFontPrefs
+{
+    struct TextAttr fp_TextAttr;
+    UBYTE           fp_Name[32];
+    ULONG           fp_NotUsed;
+    WORD            fp_Type;
+};
+
+struct IFontPrefs
+{
+    struct TextAttr fp_TextAttr;
+    UBYTE           fp_Name[32];
+    ULONG           fp_xxx;
+    BOOL            fp_ScrFont;
+};
+
+#endif /* INTUITION_IPREFS_H */

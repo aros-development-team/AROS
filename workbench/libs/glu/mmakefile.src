@@ -1,0 +1,173 @@
+
+include $(SRCDIR)/config/aros.cfg
+-include $(GENDIR)/$(CURDIR)/glu/glulibrary.entrypoints
+
+
+################################################################################
+# GLU                                                                          #
+################################################################################
+
+#MM- workbench-libs-complete : workbench-libs-glu
+
+#MM workbench-libs-glu : includes workbench-libs-mesa-linklib workbench-libs-glu-fetch
+#MM workbench-libs-glu-includes : workbench-libs-glu-fetch workbench-libs-glu-includes-copy
+#MM workbench-libs-glu-includes-copy : workbench-libs-glu-fetch
+
+#MM- ports-includes : workbench-libs-glu-includes-copy
+
+REPOSITORIES =  \
+    cache:// \
+    https://archive.mesa3d.org/glu/ \
+    ftp://ftp.embeddedarm.com/mirror/yocto/
+ARCHBASE := glu-9.0.2
+PATCHSPEC := $(ARCHBASE)-aros.diff:$(ARCHBASE):-p1
+GLU_SUFFIXES := tar.xz tar.bz2 tar.gz
+
+top_srcdir = $(PORTSDIR)/glu/$(ARCHBASE)
+
+GLU_INCLUDE_FILES := glu.h
+
+LIBUTIL_SOURCES = \
+            libutil/error \
+            libutil/glue \
+            libutil/mipmap \
+            libutil/project \
+            libutil/quad \
+            libutil/registry
+
+LIBTESS_SOURCES = \
+            libtess/dict \
+            libtess/geom \
+            libtess/memalloc \
+            libtess/mesh \
+            libtess/normal \
+            libtess/priorityq \
+            libtess/render \
+            libtess/sweep \
+            libtess/tess \
+            libtess/tessmono
+
+LIBNURBS_SOURCES = \
+            libnurbs/interface/bezierEval \
+            libnurbs/interface/bezierPatch \
+            libnurbs/interface/bezierPatchMesh \
+            libnurbs/interface/glcurveval \
+            libnurbs/interface/glinterface \
+            libnurbs/interface/glrenderer \
+            libnurbs/interface/glsurfeval \
+            libnurbs/interface/incurveeval \
+            libnurbs/interface/insurfeval \
+            libnurbs/internals/arc \
+            libnurbs/internals/arcsorter \
+            libnurbs/internals/arctess \
+            libnurbs/internals/backend \
+            libnurbs/internals/basiccrveval \
+            libnurbs/internals/basicsurfeval \
+            libnurbs/internals/bin \
+            libnurbs/internals/bufpool \
+            libnurbs/internals/cachingeval \
+            libnurbs/internals/ccw \
+            libnurbs/internals/coveandtiler \
+            libnurbs/internals/curve \
+            libnurbs/internals/curvelist \
+            libnurbs/internals/curvesub \
+            libnurbs/internals/dataTransform \
+            libnurbs/internals/displaylist \
+            libnurbs/internals/flist \
+            libnurbs/internals/flistsorter \
+            libnurbs/internals/hull \
+            libnurbs/internals/intersect \
+            libnurbs/internals/knotvector \
+            libnurbs/internals/mapdesc \
+            libnurbs/internals/mapdescv \
+            libnurbs/internals/maplist \
+            libnurbs/internals/mesher \
+            libnurbs/internals/monotonizer \
+            libnurbs/internals/monoTriangulationBackend \
+            libnurbs/internals/mycode \
+            libnurbs/internals/nurbstess \
+            libnurbs/internals/nurbsinterfac \
+            libnurbs/internals/patch \
+            libnurbs/internals/patchlist \
+            libnurbs/internals/quilt \
+            libnurbs/internals/reader \
+            libnurbs/internals/renderhints \
+            libnurbs/internals/slicer \
+            libnurbs/internals/sorter \
+            libnurbs/internals/splitarcs \
+            libnurbs/internals/subdivider \
+            libnurbs/internals/tobezier \
+            libnurbs/internals/trimline \
+            libnurbs/internals/trimregion \
+            libnurbs/internals/trimvertpool \
+            libnurbs/internals/uarray \
+            libnurbs/internals/varray \
+            libnurbs/nurbtess/directedLine \
+            libnurbs/nurbtess/gridWrap \
+            libnurbs/nurbtess/monoChain \
+            libnurbs/nurbtess/monoPolyPart \
+            libnurbs/nurbtess/monoTriangulation \
+            libnurbs/nurbtess/partitionX \
+            libnurbs/nurbtess/partitionY \
+            libnurbs/nurbtess/polyDBG \
+            libnurbs/nurbtess/polyUtil \
+            libnurbs/nurbtess/primitiveStream \
+            libnurbs/nurbtess/quicksort \
+            libnurbs/nurbtess/rectBlock \
+            libnurbs/nurbtess/sampleCompBot \
+            libnurbs/nurbtess/sampleComp \
+            libnurbs/nurbtess/sampleCompRight \
+            libnurbs/nurbtess/sampleCompTop \
+            libnurbs/nurbtess/sampledLine \
+            libnurbs/nurbtess/sampleMonoPoly \
+            libnurbs/nurbtess/searchTree
+
+EMUL_C_SOURCES := \
+    emul_stdc
+
+LIBRARY_SOURCES := \
+            $(addprefix $(top_srcdir)/src/, $(LIBUTIL_SOURCES)) \
+            $(addprefix $(top_srcdir)/src/, $(LIBTESS_SOURCES)) \
+            $(EMUL_C_SOURCES)
+
+USER_INCLUDES := \
+            -I$(top_srcdir)/src/include \
+            -I$(top_srcdir)/src/libnurbs/internals \
+            -I$(top_srcdir)/src/libnurbs/nurbtess
+
+NOWARN_FLAGS := $(NOWARN_NONNULL_COMPARE) $(NOWARN_MISLEADING_INDENTATION) \
+                $(NOWARN_UNINITIALIZED) $(NOWARN_VOLATILE_REGISTER_VAR)
+GLU_COMMONFLAGS := $(CFLAGS_NO_ASYNCHRONOUS_UNWIND_TABLES) $(CFLAGS_NO_EXCEPTIONS)
+ifneq ($(glu_ENTRYPOINTS),)
+GLU_COMMONFLAGS += $(CFLAGS_FUNCTION_SECTIONS)
+#USER_LDFLAGS := -Wl,--gc-sections $(glu_ENTRYPOINTS)
+endif
+USER_CPPFLAGS := -DLIBRARYBUILD
+USER_CFLAGS := $(GLU_COMMONFLAGS) $(NOWARN_FLAGS)
+# glu still uses the 'register' keyword, which clang rejects outright from C++17 on
+USER_CXXFLAGS := $(GLU_COMMONFLAGS) $(CFLAGS_NO_RTTI) $(NOWARN_FLAGS) $(NOWARN_REGISTER)
+USER_LDFLAGS := -static-libstdc++
+
+CC_SOURCES := \
+    $(addprefix $(top_srcdir)/src/, $(LIBNURBS_SOURCES))
+
+%fetch mmake=workbench-libs-glu-fetch archive=$(ARCHBASE) destination=$(PORTSDIR)/glu \
+    location=$(PORTSSOURCEDIR) archive_origins=$(REPOSITORIES) suffixes="$(GLU_SUFFIXES)" \
+    patches_specs=$(PATCHSPEC)
+
+%create_patch mmake=workbench-libs-glu-create-patch suffixes="$(GLU_SUFFIXES)" \
+    archive=$(ARCHBASE) srcdir=$(ARCHBASE) destination=$(PORTSDIR)/glu
+
+%build_module mmake=workbench-libs-glu \
+    modname=glu modtype=library linklibname=GLU \
+    files="$(LIBRARY_SOURCES)" cxxfiles="$(CC_SOURCES)" \
+    uselibs="GL"
+
+#MM
+workbench-libs-glu-includes:
+%copy_includes mmake=workbench-libs-glu-includes-copy path=GL dir=$(top_srcdir)/include/GL includes=$(GLU_INCLUDE_FILES)
+
+%common
+
+
+

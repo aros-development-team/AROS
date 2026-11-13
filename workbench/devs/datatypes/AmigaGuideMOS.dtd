@@ -1,0 +1,8 @@
+Name=AmigaGuideMOS
+BaseName=amigaguide
+Pattern=#?
+Mask=0x40 'a' 'm' 'i' 'g' 'a' 'g' 'u' 'i' 'd' 'e'
+GroupID=
+ID=amig
+Flags=DTF_ASCII
+Priority=0

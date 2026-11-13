@@ -1,0 +1,51 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+USER_LDFLAGS := -static
+
+FILES := commodities_inputhandler eventfuncs
+
+FUNCS := activatecxobj \
+	 addievents \
+	 attachcxobj \
+	 brokercommand \
+	 clearcxobjerror \
+	 copybrokerlist \
+	 createcxobj \
+	 cxbroker \
+	 cxmsgdata \
+	 cxmsgid \
+	 cxmsgtype \
+	 cxobjerror \
+	 cxobjtype \
+	 deletecxobj \
+	 deletecxobjall \
+	 disposecxmsg \
+	 divertcxmsg \
+	 enqueuecxobj \
+	 freebrokerlist \
+	 insertcxobj \
+	 invertkeymap \
+	 matchix \
+	 parseix \
+	 removecxobj \
+	 routecxmsg \
+	 setcxobjpri \
+	 setfilter \
+	 setfilterix \
+	 settranslate
+
+#MM workbench-libs-commodities-includes : \
+#MM     kernel-exec-includes \
+#MM     kernel-keymap-includes \
+#MM     kernel-timer-includes \
+#MM     kernel-utility-includes \
+#MM     includes-copy
+#MM- workbench-libs-commodities : linklibs
+#MM- core-linklibs: linklibs-commodities
+
+%build_module mmake=workbench-libs-commodities \
+    modname=commodities modtype=library \
+    files="$(FUNCS) $(FILES) commodities_init"
+
+%common

@@ -1,0 +1,23 @@
+#
+#   Makefile for building keymap.library
+#
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM- core-linklibs : linklibs-keymap
+
+FILES := defaultkeymap support
+FUNCS := askkeymapdefault mapansi maprawkey setkeymapdefault
+
+USER_CFLAGS := $(CFLAGS_NO_BUILTIN)
+USER_CPPFLAGS := \
+               -DNO_INLINE_STDARG \
+               -DUSE_EXEC_DEBUG
+USER_LDFLAGS := -static
+
+#MM kernel-keymap-includes : \
+#MM     kernel-exec-includes
+
+%build_module mmake=kernel-keymap \
+  modname=keymap modtype=library \
+  files="keymap_init $(FUNCS) $(FILES)"

@@ -1,0 +1,288 @@
+/*
+    Copyright (C) 2013-2026, The AROS Development Team. All rights reserved.
+
+    Desc:
+*/
+
+#include <aros/debug.h>
+
+#include <aros/libcall.h>
+#include <exec/types.h>
+#include <libraries/lowlevel.h>
+
+#include <devices/timer.h>
+
+#include <proto/potgo.h>
+
+#include <hardware/cia.h>
+#include <hardware/custom.h>
+
+#include "lowlevel_intern.h"
+
+/* See rom/lowlevel/readjoyport.c for documentation */
+
+#define POTGO_GAMEPAD_PORT0 \
+        (1 << 11) | (1 << 10) | (1 <<  9) | (1 <<  8)
+#define POTGO_GAMEPAD_PORT1 \
+        (1 << 15) | (1 << 14) | (1 << 13) | (1 << 12)
+
+/*
+ * ciaapra - (1 << 7) is /FIR1 (port 1, pin 6)
+ * ciaapra - (1 << 6) is /FIR0 (port 0, pin 6)
+ * ciaaddra - 0x03
+ * JOYnDAT:
+ *     pin 1 (up) = ((JOYnDAT >> 0) ^ (JOYnDAT >> 1)) & 1
+ *     pin 2 (dn) = ((JOYnDAT >> 8) ^ (JOYnDAT >> 9)) & 1
+ *     pin 3 (lt) = (JOYnDAT >> 9) & 1
+ *     pin 4 (rt) = (JOYnDAT >> 1) & 1
+ * POTGO/POTINP:
+ *     port 0: pin 9 (1 << 10), pin 5 (1 << 8)
+ *     port 1: pin 9 (1 << 14), pin 5 (1 << 12)
+ */
+static inline ULONG llPollGameCtrl(int port)
+{
+    volatile struct Custom *custom = (struct Custom*)0xdff000;
+    volatile struct CIA *cia = (struct CIA *)0xbfe001;
+    UWORD pot;
+    ULONG bits = 0;
+    UWORD joydat;
+    UWORD ciaddra;
+    int i;
+    UBYTE cmask = (port == 0) ? (1 << 6) : (1 << 7);
+
+    /* Prepare Pin 5 for shift mode, keeping the pad loaded for now. */
+    pot = custom->potinp;
+    pot &= ~((port == 0) ? (3 << 8) : (3 << 12));
+    cia->ciapra  &= ~cmask;
+    /*
+     * Clocking the buttons out means driving /FIRx (pin 6), so the line
+     * has to become an output for the duration. Remember how the port was set
+     * up: a pin left driving afterwards reads as a button held down,
+     * and a game polling it never sees the player let go.
+     */
+    ciaddra = cia->ciaddra;
+    cia->ciaddra |= cmask;
+    custom->potgo = pot | ((port == 0) ? (2 << 8) : (2 << 12));
+
+    /* Read Blue first, then clock the next button onto Pin 9. */
+    D(bug("Sin: \n"));
+    for (i = 0; i < 9; i++) {
+        bits <<= 1;
+        bits |= ((custom->potinp >> ((port == 0) ? 10 : 14)) & 1) ? 0 : 1;
+        D(bug(" %d", bits & 1));
+        cia->ciapra |= cmask;
+        cia->ciapra &= ~cmask;
+    }
+    D(bug("\n"));
+
+    cia->ciapra &= ~cmask;
+    custom->potgo = pot;
+    cia->ciaddra = ciaddra;
+
+    /* The final pad bits are high then low: 01 after active-low inversion. */
+    if ((bits & 3) != 1) {
+        /* Stuck bits? Probably not a game controller */
+        D(bug("%s: Stuck bits? (0x%04x)\n", __func__, bits));
+        /* Revert to autosense */
+        return 0;
+    }
+    bits &= ~3;
+    bits <<= 15;
+
+    /* Get the joypad bits */
+    joydat = (port == 0) ? custom->joy0dat : custom->joy1dat;
+   
+    if ((joydat >> 1) & 1) {
+        bits |= JPF_JOY_RIGHT;
+    }
+    if ((joydat >> 9) & 1) {
+        bits |= JPF_JOY_LEFT;
+    }
+    if (((joydat >> 0) ^ (joydat >> 1)) & 1) {
+        bits |= JPF_JOY_DOWN;
+    }
+    if (((joydat >> 8) ^ (joydat >> 9)) & 1) {
+        bits |= JPF_JOY_UP;
+    }
+
+    return JP_TYPE_GAMECTLR | bits;
+}
+
+/*
+ * ciaapra - (1 << 7) is /FIR1 (port 2, pin 6)
+ * ciaapra - (1 << 6) is /FIR0 (port 1, pin 6)
+ * ciaaddra - 0x03
+ * JOYnDAT:
+ *     pin 1 (up) = ((JOYnDAT >> 0) ^ (JOYnDAT >> 1)) & 1
+ *     pin 2 (dn) = ((JOYnDAT >> 8) ^ (JOYnDAT >> 9)) & 1
+ *     pin 3 (lt) = (JOYnDAT >> 9) & 1
+ *     pin 4 (rt) = (JOYnDAT >> 1) & 1
+ * POTGO/POTINP:
+ *     port 1: pin 9 (1 << 10), pin 5 (1 << 8)
+ *     port 2: pin 9 (1 << 14), pin 5 (1 << 12)
+ */
+static inline ULONG llPollJoystick(int port)
+{
+    volatile struct Custom *custom = (struct Custom*)0xdff000;
+    volatile struct CIA *cia = (struct CIA *)0xbfe001;
+    ULONG bits = 0;
+    UWORD joydat;
+    UBYTE cmask = (port == 0) ? (1 << 6) : (1 << 7);
+
+    /* 'red' - /FIRn on CIA Port A */
+    bits |= (cia->ciapra & cmask) ? 0 : JPF_BUTTON_RED;
+
+    /* 'blue' - Pin 9 on POTINP */
+    bits |= ((custom->potinp >> ((port == 0) ? 10 : 14)) & 1) ? 0 : JPF_BUTTON_BLUE;
+
+    /* Get the joypad bits */
+    joydat = (port == 0) ? custom->joy0dat : custom->joy1dat;
+   
+    if ((joydat >> 1) & 1) {
+        bits |= JPF_JOY_RIGHT;
+    }
+    if ((joydat >> 9) & 1) {
+        bits |= JPF_JOY_LEFT;
+    }
+    if (((joydat >> 0) ^ (joydat >> 1)) & 1) {
+        bits |= JPF_JOY_DOWN;
+    }
+    if (((joydat >> 8) ^ (joydat >> 9)) & 1) {
+        bits |= JPF_JOY_UP;
+    }
+
+    return JP_TYPE_JOYSTK | bits;
+}
+
+static inline ULONG llPollMouse(int port)
+{
+    volatile struct Custom *custom = (struct Custom *)0xdff000;
+    volatile struct CIA *cia = (struct CIA *)0xbfe001;
+    ULONG state = JP_TYPE_MOUSE |
+                  (port == 0 ? custom->joy0dat : custom->joy1dat);
+    UWORD pot = custom->potinp;
+    UBYTE fire = port == 0 ? (1 << 6) : (1 << 7);
+    UBYTE shift = port == 0 ? 8 : 12;
+
+    if (!(cia->ciapra & fire))
+        state |= JPF_BUTTON_RED;
+    if (!(pot & (1 << (shift + 2))))
+        state |= JPF_BUTTON_BLUE;
+    if (!(pot & (1 << shift)))
+        state |= JPF_BUTTON_PLAY;
+    return state;
+}
+
+
+ULONG llPortOpen(struct LowLevelBase *LowLevelBase, int port, UWORD *bits)
+{
+    UWORD potbits, potres;
+    ULONG type = LowLevelBase->ll_Arch.llad_PortType[port];
+    struct Library *PotgoBase = LowLevelBase->ll_Arch.llad_PotgoBase;
+    volatile struct Custom *custom = (struct Custom*)0xdff000;
+
+    /* Joysticks use only the two direction bits of each JOYDAT byte.
+     * Movement beyond that range identifies quadrature mouse counters.
+     * Recheck a cached joystick classification so a mouse first sampled
+     * at rest can become visible after it moves. Keep a detected mouse
+     * classified while its byte counters stop or wrap. */
+    if ((type == 0 || type == JP_TYPE_JOYSTK) &&
+        ((port == 0 ? custom->joy0dat : custom->joy1dat) & ~0x0303))
+    {
+        type = JP_TYPE_MOUSE;
+        LowLevelBase->ll_Arch.llad_PortType[port] = type;
+    }
+
+    if (type == 0 || type == JP_TYPE_GAMECTLR || type == JP_TYPE_JOYSTK ||
+        type == JP_TYPE_MOUSE) {
+        if (port == 0)
+            potbits = POTGO_GAMEPAD_PORT0;
+        else
+            potbits = POTGO_GAMEPAD_PORT1;
+        potres = AllocPotBits(potbits);
+        if (potres != potbits) {
+            D(bug("%s: Can't allocate PotGo bits 0x%04x\n", __func__));
+
+            FreePotBits(potres);
+            type = JP_TYPE_NOTAVAIL;
+            PotgoBase = NULL;
+        } else {
+            /* Mouse buttons require both potentiometer lines as inputs;
+             * pads need Pin 5 driven high to load their serial state. */
+            UWORD pot;
+            pot = custom->potinp;
+            if (type == JP_TYPE_MOUSE)
+            {
+                pot &= ~potbits;
+                custom->potgo = pot;
+            }
+            else
+            {
+                pot &= ~((port == 0) ? (3 << 8) : (3 << 12));
+                custom->potgo = pot | ((port == 0) ? (3 << 8) : (3 << 12));
+            }
+        }
+    } else {
+        /* No Potgo bits allocated */
+        potbits = 0;
+    }
+
+    /* Handle autosense */
+    if (type == 0) {
+        type = llPollGameCtrl(port);
+        if (type == 0)
+            type = JP_TYPE_JOYSTK;
+        LowLevelBase->ll_Arch.llad_PortType[port] = type & JP_TYPE_MASK;
+        D(bug("%s: Autosense: 0x%08x\n", __func__, LowLevelBase->ll_Arch.llad_PortType[port]));
+    }
+
+    *bits = potbits;
+    return type;
+}
+    
+static VOID llPortClose(struct LowLevelBase *LowLevelBase, int port, UWORD potbits)
+{
+    struct Library *PotgoBase = LowLevelBase->ll_Arch.llad_PotgoBase;
+
+    if (potbits) {
+        FreePotBits(potbits);
+    }
+}
+
+
+AROS_LH1(ULONG, ReadJoyPort,
+    AROS_LHA(ULONG, port, D0),
+    struct LowLevelBase *, LowLevelBase, 5, LowLevel)
+{
+  AROS_LIBFUNC_INIT
+
+//  D(bug("%s: Port %d\n", __func__, port));
+
+  if (port == 0 || port == 1) {
+      ULONG state, type;
+      UWORD potbits;
+
+      type = llPortOpen(LowLevelBase, port, &potbits);
+      switch (type) {
+      case JP_TYPE_GAMECTLR:
+          state = llPollGameCtrl(port);
+          break;
+      case JP_TYPE_JOYSTK:
+          state = llPollJoystick(port);
+          break;
+      case JP_TYPE_MOUSE:
+          state = llPollMouse(port);
+          break;
+      default:
+          state = JP_TYPE_UNKNOWN;
+          break;
+      }
+      llPortClose(LowLevelBase, port, potbits);
+
+      return state;
+  }
+
+  return JP_TYPE_NOTAVAIL; // return failure until implemented
+
+  AROS_LIBFUNC_EXIT
+} /* ReadJoyPort */

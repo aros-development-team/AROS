@@ -1,0 +1,196 @@
+
+/*
+ * Helpers that several files use on drawing paths. On m68k these bodies are
+ * inlined into enough callers to matter for the 512 KiB ROM bank, so there
+ * they are compiled once, out of line, in gfxfuncsupport.c (which defines
+ * GFX_GETDRIVERDATA_IMPL) and the other files see only the prototypes. Each
+ * is called once per drawing operation or clip rectangle, ahead of the far
+ * costlier driver method call. Other targets keep them inline.
+ */
+#if defined(__mc68000__) && !defined(GFX_GETDRIVERDATA_IMPL)
+OOP_Object *SelectDriverObject(struct BitMap *srcbm, OOP_Object *dstbm_obj, struct GfxBase *GfxBase);
+OOP_Object *GetDriverData(struct RastPort *rp, struct GfxBase *GfxBase);
+void internal_BltBitMapRastPort(struct BitMap *srcBitMap, WORD xSrc, WORD ySrc, struct RastPort *destRP,
+                                WORD xDest, WORD yDest, WORD xSize, WORD ySize, ULONG minterm,
+                                RENDERFUNC render_func, PLANEPTR mask, struct GfxBase *GfxBase);
+#else
+#if defined(__mc68000__)
+#define GFX_INLINE_SHARED
+#else
+#define GFX_INLINE_SHARED static inline
+#endif
+
+/*
+ * Select a driver to call for operations between struct BitMap (source) and OOP_Object (destination).
+ * Used by BltBitMapRastPort() and BltMaskBitMapRastPort().
+ *
+ * Selection rules:
+ * 1. If one of drivers is fakegfx.hidd, we must use it in order
+ *    to de-masquerade fakefb objects.
+ * 2. If one of drivers is our default software bitmap driver,
+ *    we use another one, which can be an accelerated video driver.
+ */
+GFX_INLINE_SHARED OOP_Object *SelectDriverObject(struct BitMap *srcbm, OOP_Object *dstbm_obj, struct GfxBase *GfxBase)
+{
+    struct gfxdisplay_data *driver  = GET_BM_DRIVERDATA(srcbm);
+
+    OOP_Object *gfxhidd = NULL;
+    OOP_Object *dest_display;
+
+    OOP_GetAttr(dstbm_obj, aHidd_BitMap_Display, (IPTR *)&dest_display);
+    if (dest_display)
+    {
+        struct gfxdisplay_data *dst_driver = NULL, *mdd;
+        for (mdd = (struct gfxdisplay_data *)GFXPRIVATE_MONITORFIRST; mdd; mdd = mdd->display_next) {
+            if (mdd->display_obj == dest_display)
+                dst_driver = mdd;
+        }
+
+        if  (dst_driver &&
+            ((driver == (struct gfxdisplay_data *)CDD(GfxBase)) ||
+            (dst_driver->display_flags & DF_SoftCursor)))
+        {
+            /*
+             * If source bitmap is generic software one, or the destination uses a software cursor
+             */
+            gfxhidd = dst_driver->display_gfxhidd;
+        }
+    }
+
+    if (!gfxhidd)
+        gfxhidd = driver->display_gfxhidd;
+
+    /* A caller-owned planar screen has no HIDD display attribute, even when
+     * MakeVPort() displays it through AmigaVideo.  Its generic wrapper must
+     * not force BltBitMapRastPort() into the pixel-by-pixel software CopyBox.
+     * The native driver checks whether the particular planes can be blitted
+     * and falls back to the generic method when they cannot. */
+    if (gfxhidd == ((struct gfxdisplay_data *)CDD(GfxBase))->display_gfxhidd &&
+        GfxBase->ActiView && GfxBase->ActiView->ViewPort)
+    {
+        struct gfxdisplay_data *active =
+            GET_VP_DRIVERDATA(GfxBase->ActiView->ViewPort);
+        struct BitMap *planar = NULL;
+
+        if (active && (active->display_flags & DF_ExternalPlanar))
+            OOP_GetAttr(dstbm_obj, aHidd_PlanarBM_BitMap, (IPTR *)&planar);
+
+        if (planar)
+            gfxhidd = active->display_gfxhidd;
+    }
+
+    return gfxhidd;
+}
+
+GFX_INLINE_SHARED OOP_Object *GetDriverData(struct RastPort *rp, struct GfxBase *GfxBase)
+{
+    /*
+     * Here we do a little bit of hacky-wacky magic.
+     * As we all know, there is no common call for RastPort deinitialization.
+     * At the other hand, we need some way to represent a RastPort as GC object to our graphics drivers.
+     * Fortunately, RastPort has enough private space in it to embed a specially-made GC object.
+     *
+     * There are several restrictions in such approach:
+     * 1. We must never OOP_DisposeObject() this GC. It is not a real issue, because this object is assumed
+     *    to be owned by graphics.library, and only it has rights to dispose it.
+     * 2. We can't use subclasses of this class. Since GC is just a data container, nobody needed to subclass
+     *    it until and including now. I hope this won't ever become an issue. Additionally, with current
+     *	  graphics.library design, GC objects are freely passed accross different display drivers.
+     *
+     * Well, so, we need to build an OOP_Object of GC class without doing any allocations.
+     * Is it possible? Yes, it is. We need to know three facts in order to do this:
+     * 1. OOP_Object is actually a class pointer, *preceding* instance data structure.
+     * 2. GC's superclass is root class. So, its instance data has offset 0.
+     * 3. As i said above, size of the complete object perfectly fits inside RastPort's private area.
+     */
+
+    /* Take our instance data, this will be our object pointer. Having it as APTR gets rid of warnings */
+    APTR gc = RP_GC(rp);
+
+    /*
+     * Now fill in attributes. We could perfectly use OOP_SetAttrs(), but why?
+     * It's our own object, let's go fast!
+     */
+    if (!(rp->Flags & RPF_NO_PENS))
+    {
+    	/* If PenMode is disabled, FG and BG are already set */
+    	GC_FG(gc) = rp->BitMap ? BM_PIXEL(rp->BitMap, rp->FgPen & PEN_MASK) : rp->FgPen;
+    	GC_BG(gc) = rp->BitMap ? BM_PIXEL(rp->BitMap, rp->BgPen & PEN_MASK) : rp->BgPen;
+    }
+    GC_DRMD(gc)   = vHidd_GC_DrawMode_Copy;
+    GC_COLEXP(gc) = 0;
+    /*
+     * rp->Mask selects bitplanes, so it only means anything where a pixel is
+     * a pen. On a truecolor bitmap the bits are color components and the mask
+     * has no counterpart, so leave every bit writable there -- as for the
+     * usual 0xFF, which drivers can then recognize as "no mask at all".
+     */
+    GC_COLMASK(gc) = (rp->Mask != 0xFF && rp->BitMap &&
+                      rp->BitMap->Depth <= 8) ? rp->Mask : ~0;
+
+    /* Now set GC's DrawMode (effectively ROP) and color expansion (actually transparency) flags */
+    if (rp->DrawMode & JAM2)
+    {
+	GC_COLEXP(gc) = vHidd_GC_ColExp_Opaque;
+    }
+    else if (rp->DrawMode & COMPLEMENT)
+    {
+	GC_DRMD(gc) = vHidd_GC_DrawMode_Invert;
+    }
+    else if ((rp->DrawMode & (~INVERSVID)) == JAM1)
+    {
+	GC_COLEXP(gc) = vHidd_GC_ColExp_Transparent;
+    }
+
+    /* FIXME: Handle INVERSVID by swapping apen and bpen ? */
+
+    OOP_OCLASS(gc) = CDD(GfxBase)->gcClass;	/* Set class pointer			*/
+    return gc;					/* Our handmade object is ready to use!	*/
+}
+
+/*
+ * The body of BltBitMapRastPort() and BltMaskBitMapRastPort(): render_func
+ * does the copy of each piece, mask is the mask of BltMaskBitMapRastPort().
+ */
+GFX_INLINE_SHARED void internal_BltBitMapRastPort(struct BitMap *srcBitMap, WORD xSrc, WORD ySrc,
+                                                  struct RastPort *destRP, WORD xDest, WORD yDest,
+                                                  WORD xSize, WORD ySize, ULONG minterm,
+                                                  RENDERFUNC render_func, PLANEPTR mask,
+                                                  struct GfxBase *GfxBase)
+{
+    struct bitmap_render_data   brd;
+    struct Rectangle            rr;
+    OOP_Object                  *gc;
+    Point                       src;
+
+    brd.srcbm_obj = OBTAIN_HIDD_BM(srcBitMap);
+    if(NULL == brd.srcbm_obj) {
+        return;
+    }
+
+    brd.minterm = minterm;
+    brd.srcbm   = srcBitMap;
+    brd.mask    = mask;
+
+    /* Get RastPort's GC and set the correct ROP */
+    gc = GetDriverData(destRP, GfxBase);
+    GC_DRMD(gc) = MINTERM_TO_GCDRMD(minterm);
+
+    rr.MinX = xDest;
+    rr.MinY = yDest;
+    rr.MaxX = xDest + xSize - 1;
+    rr.MaxY = yDest + ySize - 1;
+
+    src.x = xSrc;
+    src.y = ySrc;
+
+    do_render_with_gc(destRP, &src, &rr, render_func, &brd, gc, TRUE, TRUE, GfxBase);
+
+    RELEASE_HIDD_BM(brd.srcbm_obj, srcBitMap);
+}
+#endif /* __mc68000__ && !GFX_GETDRIVERDATA_IMPL */
+
+static inline BOOL GetRPClipRectangleForLayer(struct RastPort *rp, struct Layer *lay, struct Rectangle *r, struct GfxBase *GfxBase)
+{
+    return GetRPClipRectangleForRect(rp, &lay->bounds, r);
+}

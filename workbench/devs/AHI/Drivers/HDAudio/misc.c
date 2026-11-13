@@ -1,0 +1,1592 @@
+/*
+The contents of this file are subject to the AROS Public License Version 1.1 (the "License"); you may not use this file except in compliance with the License. You may obtain a copy of the License at
+http://www.aros.org/license.html
+
+Software distributed under the License is distributed on an "AS IS" basis, WITHOUT WARRANTY OF
+ANY KIND, either express or implied. See the License for the specific language governing rights and
+limitations under the License.
+
+(C) Copyright 2010-2026 The AROS Dev Team
+(C) Copyright 2009-2010 Stephen Jones.
+(C) Copyright xxxx-2009 Davy Wentzler.
+
+The Initial Developer of the Original Code is Davy Wentzler.
+
+All Rights Reserved.
+*/
+
+#ifdef __AROS__
+#include <aros/debug.h>
+#endif
+
+#include <config.h>
+
+#include <exec/memory.h>
+#include <proto/expansion.h>
+
+#include <proto/dos.h>
+
+#include <math.h>
+
+#include "library.h"
+#include "interrupt.h"
+#include "misc.h"
+#include "hda_hidd.h"
+
+
+/* Public functions in main.c */
+int card_init(struct HDAudioChip *card);
+void card_cleanup(struct HDAudioChip *card);
+static BOOL perform_codec_specific_settings(struct HDAudioChip *card);
+static void determine_frequencies(struct HDAudioChip *card);
+static void determine_bitsizes(struct HDAudioChip *card);
+static void set_frequency_info(struct Freq *freq, UWORD bitnr);
+static void codec_discovery(struct HDAudioChip *card);
+static BOOL perform_realtek_specific_settings(struct HDAudioChip *card, UWORD device);
+static BOOL perform_via_specific_settings(struct HDAudioChip *card, UWORD device);
+static BOOL perform_idt_specific_settings(struct HDAudioChip *card, UWORD device);
+static BOOL perform_ad_specific_settings(struct HDAudioChip *card, UWORD device);
+static void set_gpio(UBYTE mask, struct HDAudioChip *card);
+static BOOL interrogate_unknown_chip(struct HDAudioChip *card);
+static UBYTE find_widget(struct HDAudioChip *card, UBYTE type, UBYTE pin_type);
+static BOOL power_up_all_nodes(struct HDAudioChip *card);
+
+struct Device *TimerBase = NULL;
+struct timerequest *TimerIO = NULL;
+struct MsgPort *replymp = NULL;
+static BOOL forceQuery = FALSE;
+static BOOL dumpAll = FALSE;
+static int force_speaker_nid = 0;
+
+
+#ifdef __AROS__
+#define DebugPrintF bug
+INTGW(static, void,  playbackinterrupt, PlaybackInterrupt);
+INTGW(static, void,  recordinterrupt,   RecordInterrupt);
+#endif
+
+void micro_delay(unsigned int val)
+{
+    replymp = (struct MsgPort *) CreateMsgPort();
+    if(!replymp) {
+        D(bug("[HDAudio] Could not create the reply port!\n"));
+        return;
+    }
+
+    TimerIO = (struct timerequest *) CreateIORequest(replymp, sizeof(struct timerequest));
+
+    if(TimerIO == NULL) {
+        D(bug("[HDAudio] Out of memory.\n"));
+        return;
+    }
+
+    if(OpenDevice((CONST_STRPTR) "timer.device", UNIT_MICROHZ, (struct IORequest *) TimerIO, 0) != 0) {
+        D(bug("[HDAudio] Unable to open 'timer.device'.\n"));
+        return;
+    } else {
+        TimerBase = (struct Device *) TimerIO->tr_node.io_Device;
+    }
+
+    TimerIO->tr_node.io_Command = TR_ADDREQUEST; /* Add a request.   */
+    TimerIO->tr_time.tv_secs = 0;                /* 0 seconds.      */
+    TimerIO->tr_time.tv_micro = val;             /* 'val' micro seconds. */
+    DoIO((struct IORequest *) TimerIO);
+    CloseDevice((struct IORequest *) TimerIO);
+    DeleteIORequest((struct IORequest *) TimerIO);
+    TimerIO = NULL;
+
+    if(replymp) {
+        DeleteMsgPort(replymp);
+    }
+}
+
+
+/******************************************************************************
+** DriverData allocation ******************************************************
+******************************************************************************/
+
+struct HDAudioChip *AllocDriverData(APTR controller, struct DriverBase *AHIsubBase)
+{
+    struct HDAudioChip *card;
+    BOOL success = TRUE;
+
+    D(bug("[HDAudio] %s()\n", __func__));
+
+    card = (struct HDAudioChip *) AllocVec(sizeof(struct HDAudioChip), MEMF_PUBLIC | MEMF_CLEAR);
+
+    if(card == NULL) {
+        Req("Unable to allocate driver structure.");
+        return NULL;
+    }
+
+    card->ahisubbase = AHIsubBase;
+
+    card->playback_interrupt.is_Node.ln_Type = IRQTYPE;
+    card->playback_interrupt.is_Node.ln_Pri  = 0;
+    card->playback_interrupt.is_Node.ln_Name = (char *) LibName;
+#ifdef __AROS__
+    card->playback_interrupt.is_Code         = (APTR)&playbackinterrupt;
+#else
+    card->playback_interrupt.is_Code         = PlaybackInterrupt;
+#endif
+    card->playback_interrupt.is_Data         = (APTR) card;
+
+    card->record_interrupt.is_Node.ln_Type = IRQTYPE;
+    card->record_interrupt.is_Node.ln_Pri  = 0;
+    card->record_interrupt.is_Node.ln_Name = (char *) LibName;
+#ifdef __AROS__
+    card->record_interrupt.is_Code         = (APTR)&recordinterrupt;
+#else
+    card->record_interrupt.is_Code         = RecordInterrupt;
+#endif
+    card->record_interrupt.is_Data         = (APTR) card;
+
+    card->hda_ctrl = controller;
+
+    if(card_init(card) < 0) {
+        D(bug("[HDAudio] Unable to initialize Card subsystem.\n"));
+        success = FALSE;
+    } else {
+        card->card_initialized = TRUE;
+        card->input          = 0;
+        card->output         = 0;
+        card->monitor_volume = (Fixed)(0x10000 * pow(10.0, -6.0 / 20.0));   // -6 dB
+        card->input_gain     = 0x10000; // 0dB
+        card->output_volume  = 0x10000; // 0dB
+
+        set_monitor_volumes(card, -6.0); // -6dB monitor volume
+    }
+
+    if(!success) {
+        FreeDriverData(card, AHIsubBase);
+        card = NULL;
+    }
+
+    return card;
+}
+
+
+/******************************************************************************
+** DriverData deallocation ****************************************************
+******************************************************************************/
+
+void FreeDriverData(struct HDAudioChip *card, struct DriverBase  *AHIsubBase)
+{
+    if(card != NULL) {
+        if(card->card_initialized) {
+            card_cleanup(card);
+        }
+
+        if(card->hda_ctrl != NULL) {
+            ahi_hda_release_controller(card->hda_ctrl);
+        }
+
+        FreeVec(card);
+    }
+}
+
+int card_init(struct HDAudioChip *card)
+{
+    int i;
+
+    /* The controller has been reset and initialized by the hidd */
+    card->codecbits = (UWORD)ahi_hda_get_attr(card->hda_ctrl,
+                                              aHidd_HDA_CodecMask);
+
+    if(card->codecbits == 0) {
+        D(bug("[HDAudio] No codecs found!\n"));
+        return -1;
+    }
+
+    D(bug("[HDAudio] codecs %08x\n", card->codecbits));
+
+    D(bug("[HDAudio] Finding codec ..\n"));
+
+    /* Find the first codec with an audio function group */
+    for(i = 0; i < 16; i++) {
+        if(card->codecbits & (1 << i)) {
+            card->codecnr = i;
+            if(power_up_all_nodes(card))
+                break;
+        }
+    }
+
+    if(perform_codec_specific_settings(card) == FALSE) {
+        return -1;
+    }
+
+    /* Program the output amplifiers to 0 dB. After a codec reset the
+       amplifiers of some codecs (e.g. VMware's virtual codec) power up
+       at minimum gain (-64 dB); unmute_widget()/the vendor setup only
+       clear the mute bits and preserve the gain. Nothing else programs
+       the output gain unless AHIC_OutputVolume reaches the driver, which
+       only happens on the device-unit path or when an application
+       allocates with AHI_DEFAULT_ID - low-level clients that pass an
+       explicit mode ID (e.g. sound.datatype) would otherwise play into
+       an inaudible output. */
+    card->output_volume = 0x10000;
+    set_dac_gain(card, 0.0);
+
+    if(dumpAll) {
+        codec_discovery(card);
+    }
+
+    D(bug("[HDAudio] card_init() was a success!\n"));
+
+    return 0;
+}
+
+
+void card_cleanup(struct HDAudioChip *card)
+{
+}
+
+
+static void codec_discovery(struct HDAudioChip *card)
+{
+    UWORD i, j;
+
+    ULONG subnode_count_response = get_parameter(card->function_group,
+                                   VERB_GET_PARMS_NODE_COUNT, card);
+    UBYTE subnode_count = subnode_count_response & 0xFF;
+    UBYTE sub_starting_node = (subnode_count_response >> 16) & 0xFF;
+    ULONG connections = 0, config_default;
+
+    bug("[HDAudio] Subnode count = %d, sub_starting_node = %x\n",
+        subnode_count, sub_starting_node);
+
+    //bug("[HDAudio] Audio supported = %lx\n",
+    //    get_parameter(card->function_group, 0xA, card));
+    //bug("[HDAudio] Sup streams = %lx\n",
+    //    get_parameter(card->function_group, 0xB, card));
+
+    for(i = 0; i < subnode_count; i++) { // widgets
+        const ULONG NID = i + sub_starting_node;
+        ULONG widget_caps;
+
+        widget_caps =
+            get_parameter(NID, VERB_GET_PARMS_AUDIO_WIDGET_CAPS, card);
+
+        bug("[HDAudio] Subnode %x has caps %lx\n", NID, widget_caps);
+        bug("[HDAudio] %xh: Supported PCM size/rate = %lx\n", NID,
+            get_parameter(NID, VERB_GET_PARMS_SUPPORTED_PCM_SIZE_RATE, card));
+
+        if(AUDIO_WIDGET_CAPS(widget_caps) == 0x4) { // pin complex
+            bug("[HDAudio] PIN: caps = %lx\n",
+                get_parameter(NID, VERB_GET_PARMS_PIN_CAPS, card));
+            bug("[HDAudio] PIN: Connected = %s\n",
+                is_jack_connected(card, NID) ? "TRUE" : "FALSE");
+
+            config_default = send_command_12(card->codecnr, NID,
+                                             VERB_GET_CONFIG_DEFAULT, 0, card);
+            bug("[HDAudio] PIN: Configuration Default = %08lx\n",
+                config_default);
+        }
+
+        bug("[HDAudio] %xh: Input Amp caps = %lx\n", NID,
+            get_parameter(NID, 0xD, card));
+        bug("[HDAudio] %xh: Output Amp caps = %lx\n", NID,
+            get_parameter(NID, 0x12, card));
+
+        connections = get_parameter(NID, 0xE, card);
+        bug("[HDAudio] %xh: Conn list len = %lx\n", NID, connections);
+        if(connections > 0) { // print connections
+            ULONG entry = 0;
+
+            bug("[HDAudio] %xh: Incoming connection list: ", NID);
+            for(entry = 0; entry < connections; entry += 4) {
+                ULONG connectedTo = send_command_12(card->codecnr, NID,
+                                                    VERB_GET_CONNECTION_LIST_ENTRY, entry, card);
+
+                bug("%lx, ", connectedTo);
+            }
+            bug("\n");
+        }
+
+        bug("[HDAudio] %xh: Supported power state = %lx\n", NID,
+            get_parameter(NID, 0xF, card));
+
+        ULONG n;
+        n = send_command_12(card->codecnr, NID,
+                            VERB_GET_CONNECTION_SELECT, 0, card);
+        bug("[HDAudio] %xh: Connection selection = %lx\n", NID, n);
+
+        bug("[HDAudio] %xh: Input Amp gain =", NID);
+        for(j = 0; j < connections; j++) {
+            if(j != 0) bug(",");
+            n = send_command_4(card->codecnr, NID, 0xB, j, card);
+            bug(" %ld", n & 0x7f);
+            if(n & 0x80) bug(" (muted)");
+        }
+        bug("\n");
+
+        n = send_command_4(card->codecnr, NID, 0xB, 0x8000, card);
+        bug("[HDAudio] %xh: Output Amp gain = %ld%s\n", NID, n & 0x7f,
+            n & 0x80 ? " (muted)" : "");
+
+        n = send_command_4(card->codecnr, NID, 0xA, 0, card);
+        bug("[HDAudio] %xh: Format = %lx\n", NID, n);
+        n = send_command_12(card->codecnr, NID, 0xF05, 0, card);
+        bug("[HDAudio] %xh: Power state = %lx\n", NID, n);
+        n = send_command_12(card->codecnr, NID, 0xF06, 0, card);
+        bug("[HDAudio] %xh: Stream = %lx\n", NID, n);
+        n = send_command_12(card->codecnr, NID, 0xF07, 0, card);
+        bug("[HDAudio] %xh: Pin widget control = %lx\n", NID, n);
+        bug("[HDAudio] --------------------------------\n\n");
+    }
+}
+
+
+static BOOL power_up_all_nodes(struct HDAudioChip *card)
+{
+    int i;
+    ULONG node_count_response = get_parameter(0, VERB_GET_PARMS_NODE_COUNT, card);
+    UBYTE node_count = node_count_response & 0xFF;
+    UBYTE starting_node = (node_count_response >> 16) & 0xFF;
+    BOOL audio_found = FALSE;
+
+    D(bug("[HDAudio] power up\n"));
+    send_command_12(card->codecnr, 1, VERB_SET_POWER_STATE, 0,
+                    card);  // send function reset to audio node, this should power up all nodes
+    udelay(20000);
+
+    for(i = 0; i < node_count && !audio_found; i++) {
+        ULONG function_group_response = get_parameter(starting_node + i, VERB_GET_PARMS_FUNCTION_GROUP_TYPE, card);
+        UBYTE function_group = function_group_response & 0xFF;
+
+        if(function_group == AUDIO_FUNCTION) {
+            int j;
+
+            ULONG subnode_count_response = get_parameter(starting_node + i, VERB_GET_PARMS_NODE_COUNT, card);
+            UBYTE subnode_count = subnode_count_response & 0xFF;
+            UBYTE sub_starting_node = (subnode_count_response >> 16) & 0xFF;
+
+            audio_found = TRUE;
+            card->function_group = starting_node + i;
+
+            for(j = 0; j < subnode_count; j++) { // widgets
+                const ULONG NID = j + sub_starting_node;
+                ULONG widget_caps;
+
+                widget_caps = get_parameter(NID, VERB_GET_PARMS_AUDIO_WIDGET_CAPS, card);
+
+                {
+                    if(AUDIO_WIDGET_POWER_CONTROL(widget_caps) == 1) { // power control
+                        ULONG power_state = 0;
+
+                        power_state = send_command_12(card->codecnr, NID, VERB_GET_POWER_STATE, 0, card);
+                        D(bug("[HDAudio] %xh: power state = %xh\n", NID, power_state));
+
+                        if(power_state != 0) {
+                            D(bug("[HDAudio] Setting power state to 0\n"));
+                            send_command_12(card->codecnr, NID, VERB_SET_POWER_STATE, 0, card);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    return audio_found;
+}
+
+
+ULONG get_parameter(UBYTE node, UBYTE parameter, struct HDAudioChip *card)
+{
+    return send_command_12(card->codecnr, node, VERB_GET_PARMS, parameter, card);
+}
+
+
+ULONG send_command_4(UBYTE codec, UBYTE node, UBYTE verb, UWORD payload, struct HDAudioChip *card)
+{
+    return hda_command(card->hda_ctrl, HDA_COMMAND_4(codec, node, verb, payload));
+}
+
+
+ULONG send_command_12(UBYTE codec, UBYTE node, UWORD verb, UBYTE payload, struct HDAudioChip *card)
+{
+    return hda_command(card->hda_ctrl, HDA_COMMAND_12(codec, node, verb, payload));
+}
+
+
+static BOOL perform_codec_specific_settings(struct HDAudioChip *card)
+{
+    BOOL configured = FALSE;
+    ULONG vendor_device_id = get_parameter(0x0, VERB_GET_PARMS_VENDOR_DEVICE,
+                                           card); // get vendor and device ID from root node
+    UWORD vendor = (vendor_device_id >> 16);
+    UWORD device = (vendor_device_id & 0xFFFF);
+
+    card->dac_min_gain = -64.0;
+    card->dac_max_gain = 0;
+    card->dac_step_gain = 1.0;
+
+    D(bug("[HDAudio] vendor = %x, device = %x\n", vendor, device));
+
+    if(vendor == 0x10EC && forceQuery == FALSE) { // Realtek
+        configured = perform_realtek_specific_settings(card, device);
+    } else if(vendor == 0x1106 && forceQuery == FALSE) { // VIA
+        configured = perform_via_specific_settings(card, device);
+    } else if(vendor == 0x111d || (vendor == 0x8384 && forceQuery == FALSE)) { // IDT
+        configured = perform_idt_specific_settings(card, device);
+    } else if(vendor == 0x11d4 && forceQuery == FALSE) { // Analog Devices
+        configured = perform_ad_specific_settings(card, device);
+    }
+
+    // call query-based configuration if the vendor-specific configuration
+    // functions haven't configured the codec or have only partially
+    // configured it by overriding some values
+    if(!configured) {
+        if(!interrogate_unknown_chip(card)) {
+            return FALSE;
+        }
+    }
+
+    determine_frequencies(card);
+    determine_bitsizes(card);
+    return TRUE;
+}
+
+
+static BOOL perform_realtek_specific_settings(struct HDAudioChip *card, UWORD device)
+{
+    D(bug("[HDAudio] Found Realtek codec\n"));
+
+    if(!(device == 0x662
+            || device == 0x663
+            || device == 0x268
+            || device == 0x269
+            || device == 0x888)) {
+        D(bug("[HDAudio] Unknown Realtek codec.\n"));
+        return FALSE;
+    }
+
+    card->dac_nid = 0x2;
+    card->dac_volume_nids[0] = 0x2;
+    card->dac_volume_count = 1;
+    card->adc_nid = 0x8;
+
+    card->adc_mixer_nid = 0x23;
+    card->line_in_nid = 0x1A;
+    card->mic1_nid = 0x18;
+    card->mic2_nid = 0x19;
+    card->cd_nid = 0x1C;
+
+    card->adc_mixer_is_mux = FALSE;
+
+    // FRONT pin (0x14)
+    send_command_4(card->codecnr, 0x14, VERB_SET_AMP_GAIN, OUTPUT_AMP_GAIN | AMP_GAIN_LR,
+                   card); // set amplifier gain: unmute output of FRONT (Port-D)
+
+    send_command_12(card->codecnr, 0x14, VERB_SET_PIN_WIDGET_CONTROL, 0x40, card); // output enabled
+    card->speaker_active = TRUE;
+
+    // MIC1 pin (0x18) as input
+    send_command_12(card->codecnr, card->mic1_nid, VERB_SET_PIN_WIDGET_CONTROL, 0x20, card); // input enabled
+
+    send_command_4(card->codecnr, card->mic1_nid, VERB_SET_AMP_GAIN, INPUT_AMP_GAIN | AMP_GAIN_LR,
+                   card); // set amplifier gain: unmute input and set boost to +10dB
+
+
+    // device specific support
+    if(device == 0x662 || device == 0x663) { // Realtek ALC662/663
+        D(bug("[HDAudio] Adding ALC662/663 specific support\n"));
+
+        card->adc_mixer_indices[0] = 2; // line in
+        card->adc_mixer_indices[1] = 0; // mic1
+        card->adc_mixer_indices[2] = 1; // mic2
+        card->adc_mixer_indices[3] = 4; // cd
+        card->adc_mixer_indices[4] = 8; // mon mixer
+
+        card->adc_min_gain = -13.5;
+        card->adc_max_gain = 33.0;
+        card->adc_step_gain = 1.5;
+
+        // LINE2 pin (0x1B) as second front output (duplicates sound of 0xC (front DAC))
+        send_command_4(card->codecnr, 0x1B, VERB_SET_AMP_GAIN, OUTPUT_AMP_GAIN | AMP_GAIN_LR,
+                       card); // set amplifier gain: unmute output of LINE2 (Port-E)
+
+        send_command_12(card->codecnr, 0x1B, VERB_SET_PIN_WIDGET_CONTROL, 0x40, card); // output enabled
+
+        // Monitor mixer (0xB): set the first 3 inputs to 0dB and unmute them
+        send_command_4(card->codecnr, 0xB, VERB_SET_AMP_GAIN, INPUT_AMP_GAIN | AMP_GAIN_LR | 23,
+                       card); // set input amplifier gain and unmute (index 0 is MIC1), 23 is 0dB
+
+        send_command_4(card->codecnr, 0xB, VERB_SET_AMP_GAIN, INPUT_AMP_GAIN | AMP_GAIN_LR | 23 | (1 << 8),
+                       card); // set input amplifier gain and unmute (index 2 is MIC2), 23 is 0dB
+
+        send_command_4(card->codecnr, 0xB, VERB_SET_AMP_GAIN, INPUT_AMP_GAIN | AMP_GAIN_LR | 23 | (2 << 8),
+                       card); // set input amplifier gain and unmute (index 2 is LINE1), 23 is 0dB
+
+        // Front DAC (0xC)
+        send_command_4(card->codecnr, 0xC, VERB_SET_AMP_GAIN, INPUT_AMP_GAIN | AMP_GAIN_LR, card); // unmute PCM at index 0
+
+        send_command_4(card->codecnr, 0xC, VERB_SET_AMP_GAIN, INPUT_AMP_GAIN | AMP_GAIN_LR | (1 << 8),
+                       card); // unmute monitor mixer at index 1
+
+        // LINE1 pin (0x1A) as input
+        send_command_12(card->codecnr, card->line_in_nid, VERB_SET_PIN_WIDGET_CONTROL, 0x20, card); // input enabled
+
+        // MIC2 pin (0x19) as input
+        send_command_12(card->codecnr, card->mic2_nid, VERB_SET_PIN_WIDGET_CONTROL, 0x20, card); // input enabled
+
+        send_command_4(card->codecnr, card->adc_mixer_nid, VERB_SET_AMP_GAIN, OUTPUT_AMP_GAIN | AMP_GAIN_LR | 11,
+                       card); // set amplifier gain: unmute and set to 0dB
+    } else if(device == 0x268) {
+        D(bug("[HDAudio] Adding ALC268 specific support\n"));
+
+        card->speaker_nid = 0x14;
+        card->headphone_nid = 0x15;
+
+        card->adc_mixer_indices[0] = 2; // line in
+        card->adc_mixer_indices[1] = 0; // mic1
+        card->adc_mixer_indices[2] = 5; // mic2
+        card->adc_mixer_indices[3] = 3; // cd
+        card->adc_mixer_indices[4] = 255; // no mon mixer
+
+        card->adc_min_gain = -16.5;
+        card->adc_max_gain = 30.0;
+        card->adc_step_gain = 1.5;
+
+        card->adc_mixer_is_mux = TRUE;
+
+        // sum widget before output (0xF)
+        send_command_4(card->codecnr, 0xF, VERB_SET_AMP_GAIN, INPUT_AMP_GAIN | AMP_GAIN_LR, card); // unmute
+
+        // sum widget before headphone output (0x10)
+        send_command_4(card->codecnr, 0x10, VERB_SET_AMP_GAIN, INPUT_AMP_GAIN | AMP_GAIN_LR | (2 << 8), card); // unmute
+
+        // HP-OUT pin (0x15)
+        send_command_4(card->codecnr, 0x15, VERB_SET_AMP_GAIN, OUTPUT_AMP_GAIN | AMP_GAIN_LR,
+                       card); // set amplifier gain: unmute output of HP-OUT (Port-A)
+
+        send_command_12(card->codecnr, 0x15, VERB_SET_PIN_WIDGET_CONTROL, 0x40, card); // output enabled
+
+        send_command_12(card->codecnr, 0x14, VERB_SET_EAPD, 0x2, card); // enable EAPD (external power amp)
+
+        send_command_12(card->codecnr, 0x15, VERB_SET_EAPD, 0x2, card); // enable EAPD (external power amp)
+    } else if(device == 0x269) { // Dell mini etc.
+        D(bug("[HDAudio] Adding ALC269 specific support\n"));
+
+        card->speaker_nid = 0x14;
+        card->headphone_nid = 0x15;
+
+        card->adc_mixer_indices[0] = 2; // line in
+        card->adc_mixer_indices[1] = 0; // mic1
+        card->adc_mixer_indices[2] = 1; // mic2
+        card->adc_mixer_indices[3] = 4; // cd
+        card->adc_mixer_indices[4] = 6; // mon mixer
+
+        card->adc_min_gain = -17;
+        card->adc_max_gain = 29.0;
+        card->adc_step_gain = 1.0;
+
+        card->adc_mixer_is_mux = TRUE;
+
+        // Front DAC (0xC)
+        send_command_4(card->codecnr, 0xC, VERB_SET_AMP_GAIN, INPUT_AMP_GAIN | AMP_GAIN_LR, card); // unmute PCM at index 0
+
+        send_command_4(card->codecnr, 0xC, VERB_SET_AMP_GAIN, INPUT_AMP_GAIN | AMP_GAIN_LR | (1 << 8),
+                       card); // unmute monitor mixer at index 1
+
+        // sum widget before output (0xF)
+        send_command_4(card->codecnr, 0xF, VERB_SET_AMP_GAIN, INPUT_AMP_GAIN | AMP_GAIN_LR, card); // unmute
+
+        // sum widget before headphone output (0x10)
+        send_command_4(card->codecnr, 0x10, VERB_SET_AMP_GAIN, INPUT_AMP_GAIN | AMP_GAIN_LR | (2 << 8), card); // unmute
+
+        // HP-OUT pin (0x15)
+        send_command_4(card->codecnr, 0x15, VERB_SET_AMP_GAIN, OUTPUT_AMP_GAIN | AMP_GAIN_LR,
+                       card); // set amplifier gain: unmute output of HP-OUT (Port-A)
+
+        send_command_12(card->codecnr, 0x15, VERB_SET_PIN_WIDGET_CONTROL, 0x40, card); // output enabled
+
+        send_command_12(card->codecnr, 0x14, VERB_SET_EAPD, 0x2, card); // enable EAPD (external power amp)
+
+        send_command_12(card->codecnr, 0x15, VERB_SET_EAPD, 0x2, card); // enable EAPD (external power amp)
+    } else if(device == 0x888) { // ALC888
+        D(bug("[HDAudio] Adding ALC888 specific support\n"));
+
+        card->adc_mixer_indices[0] = 2; // line in
+        card->adc_mixer_indices[1] = 0; // mic1
+        card->adc_mixer_indices[2] = 1; // mic2
+        card->adc_mixer_indices[3] = 4; // cd
+        card->adc_mixer_indices[4] = 10; // mon mixer
+
+        card->adc_min_gain = -16.5;
+        card->adc_max_gain = 30.0;
+        card->adc_step_gain = 1.5;
+
+        card->dac_min_gain = -46.5;
+        card->dac_max_gain = 0;
+        card->dac_step_gain = 1.5;
+
+        card->dac_volume_nids[0] = 0xC;
+        card->dac_volume_count = 1;
+
+        send_command_4(card->codecnr, 0xC, VERB_SET_AMP_GAIN, INPUT_AMP_GAIN | AMP_GAIN_LR, card); // unmute PCM at index 0
+        send_command_4(card->codecnr, 0xC, VERB_SET_AMP_GAIN, INPUT_AMP_GAIN | AMP_GAIN_LR | (1 << 8),
+                       card); // unmute monitor mixer at index 1
+    }
+
+    return TRUE;
+}
+
+
+static BOOL perform_via_specific_settings(struct HDAudioChip *card, UWORD device)
+{
+    D(bug("[HDAudio] Found VIA codec\n"));
+
+    if(!(device == 0xE721 || device == 0x0397)) {
+        D(bug("[HDAudio] Unknown VIA codec.\n"));
+        return FALSE;
+    }
+
+    card->dac_nid = 0x10;
+    card->adc_nid = 0x13;
+
+    card->adc_mixer_nid = 0x17;
+    card->line_in_nid = 0x1B;
+    card->mic1_nid = 0x1A;
+    card->mic2_nid = 0x1E;
+    card->cd_nid = 0x1F;
+
+    card->adc_mixer_is_mux = TRUE;
+
+    // FRONT pin (0x1C)
+    send_command_4(card->codecnr, 0x1C, VERB_SET_AMP_GAIN, OUTPUT_AMP_GAIN | AMP_GAIN_LR | 0x1B,
+                   card); // set amplifier gain: unmute output and set to 0dB of FRONT (Port-D)
+    send_command_12(card->codecnr, 0x1C, VERB_SET_PIN_WIDGET_CONTROL, 0x40, card); // output enabled
+
+    // MIC1 pin as input
+    send_command_12(card->codecnr, card->mic1_nid, VERB_SET_PIN_WIDGET_CONTROL, 0x20, card); // input enabled
+    send_command_4(card->codecnr, card->mic1_nid, VERB_SET_AMP_GAIN, INPUT_AMP_GAIN | AMP_GAIN_LR,
+                   card); // set amplifier gain: unmute input
+
+
+    // device specific support
+    if(device == 0xE721) { // VIA VT1708B
+        D(bug("[HDAudio] Adding VIA VT1708B specific support\n"));
+
+        card->adc_mixer_indices[0] = 3; // line in
+        card->adc_mixer_indices[1] = 2; // mic1
+        card->adc_mixer_indices[2] = 4; // mic2
+        card->adc_mixer_indices[3] = 1; // cd
+        card->adc_mixer_indices[4] = 255; // mon mixer
+
+        card->adc_min_gain = -13.5;
+        card->adc_max_gain = 33.0;
+        card->adc_step_gain = 1.5;
+    }
+
+    return TRUE;
+}
+
+/*
+  IDT specific settings
+
+  information: http://www.idt.com/document/92hd75b-datasheet-92hd75-being-discontinued-see-pdn-notice
+
+  TODO: input
+
+*/
+static BOOL perform_idt_specific_settings(struct HDAudioChip *card, UWORD device)
+{
+    D(bug("[HDAudio] Found IDT codec\n"));
+
+    if(!(device == 0x7608
+            || device == 0x76a0
+            || device == 0x7680)) {
+        D(bug("[HDAudio] Unknown IDT codec.\n"));
+        return FALSE;
+    }
+
+    if(device == 0x76a0) {
+        D(bug("[HDAudio] STAC9205 detected.\n"));
+
+        card->eapd_gpio_mask = 0x1;
+        set_gpio(card->eapd_gpio_mask, card);
+
+        return FALSE;
+    } else if(device == 0x7608) {
+
+        card->dac_nid = 0x10;
+        card->adc_nid = 0x12;
+        card->adc_mixer_nid = 0x1C;
+        card->dac_volume_nids[0] = 0x10;
+        card->dac_volume_count = 1;
+
+        card->speaker_nid = 0x0D;
+        card->headphone_nid = 0x0A;
+
+        card->line_in_nid = 0x0B;
+        card->mic1_nid = 0x0B;
+        card->mic2_nid = 0x0C;
+        card->cd_nid = 0x0E; /* no cd but ...*/
+
+        card->adc_mixer_is_mux = TRUE;
+
+        /* to not to enable headphone and the speaker at the same time */
+        card->speaker_active = TRUE;
+
+        /* enable eapd. Specs says this is spdif out, but this is required */
+        send_command_12(card->codecnr, 0x1f, VERB_SET_EAPD, 0x2, card);
+
+        /* set connections */
+        send_command_12(card->codecnr, 0x0f, VERB_SET_CONNECTION_SELECT, 0, card);  /* 48QFN specific */
+        send_command_12(card->codecnr, 0x0a, VERB_SET_CONNECTION_SELECT, 0, card);  /* headset */
+        send_command_12(card->codecnr, 0x0d, VERB_SET_CONNECTION_SELECT, 0, card);  /* speaker */
+
+        /* set output gains */
+        send_command_4(card->codecnr, 0x0f, VERB_SET_AMP_GAIN, OUTPUT_AMP_GAIN | AMP_GAIN_LR, card);
+        send_command_4(card->codecnr, 0x0a, VERB_SET_AMP_GAIN, OUTPUT_AMP_GAIN | AMP_GAIN_LR, card);
+        send_command_4(card->codecnr, 0x0d, VERB_SET_AMP_GAIN, OUTPUT_AMP_GAIN | AMP_GAIN_LR, card);
+
+        /* enable outputs */
+        send_command_12(card->codecnr, 0x0f, VERB_SET_PIN_WIDGET_CONTROL, 0x40, card);
+        send_command_12(card->codecnr, 0x0a, VERB_SET_PIN_WIDGET_CONTROL, 0x40, card);
+        send_command_12(card->codecnr, 0x0d, VERB_SET_PIN_WIDGET_CONTROL, 0x40, card);
+
+        /* Not sure about indices */
+        card->adc_mixer_indices[0] = 3;   // line in
+        card->adc_mixer_indices[1] = 2;   // mic1
+        card->adc_mixer_indices[2] = 4;   // mic2
+        card->adc_mixer_indices[3] = 1;   // cd
+        card->adc_mixer_indices[4] = 255; // no mon mixer
+
+        card->adc_min_gain = 0.0;
+        card->adc_max_gain = 22.5;
+        card->adc_step_gain = 1.5;
+
+        card->dac_min_gain = -95.25;
+        card->dac_max_gain = 0.0;
+        card->dac_step_gain = 0.75;
+
+        return TRUE;
+    } else if(device == 0x7680) {
+        D(bug("[HDAudio] STAC9221 A1 detected.\n"));
+
+        card->dac_nid = 0x03;
+        card->adc_nid = 0x06;
+        card->dac_volume_nids[0] = 0x03;
+        card->dac_volume_count = 1;
+
+        card->speaker_nid = 0x00;
+        card->headphone_nid = 0x02;
+
+        /* to not to enable headphone and the speaker at the same time */
+        card->speaker_active = TRUE;
+
+        /* set connections */
+        send_command_12(card->codecnr, 0x0c, VERB_SET_CONNECTION_SELECT, 0, card);  /* */
+        send_command_12(card->codecnr, 0x0a, VERB_SET_CONNECTION_SELECT, 0, card);  /* HP */
+
+        /* set output gains */
+        send_command_4(card->codecnr, 0x03, VERB_SET_AMP_GAIN, OUTPUT_AMP_GAIN | AMP_GAIN_LR, card);
+
+        /* enable outputs */
+        send_command_12(card->codecnr, 0x0c, VERB_SET_PIN_WIDGET_CONTROL, 0x40, card);
+        send_command_12(card->codecnr, 0x0a, VERB_SET_PIN_WIDGET_CONTROL, 0x40, card);
+
+        card->dac_min_gain = -95.25;
+        card->dac_max_gain = 0.0;
+        card->dac_step_gain = 0.75;
+        return TRUE;
+    }
+
+    return FALSE;
+}
+
+
+static BOOL perform_ad_specific_settings(struct HDAudioChip *card,
+        UWORD device)
+{
+    D(bug("[HDAudio] Found Analog Devices codec\n"));
+
+    // device specific support
+    if(device == 0x1981) { // AD1981HD
+        D(bug("[HDAudio] Adding AD1981HD specific support\n"));
+        if(force_speaker_nid == 0) {
+            force_speaker_nid = 0x7;
+        }
+    } else if(device == 0x1884) { // AD1884
+        // Use the second DAC for all outputs, since the line-out port can't
+        // use the first DAC!
+        card->dac_nid = 0x4;
+        send_command_12(card->codecnr, 0xe,
+                        VERB_SET_CONNECTION_SELECT, 1, card); // Mono
+        send_command_12(card->codecnr, 0xf,
+                        VERB_SET_CONNECTION_SELECT, 1, card); // Port F
+        send_command_12(card->codecnr, 0x22,
+                        VERB_SET_CONNECTION_SELECT, 1, card); // Port A
+        send_command_12(card->codecnr, 0x23,
+                        VERB_SET_CONNECTION_SELECT, 1, card); // Port E
+    }
+
+    return FALSE;
+}
+
+static void update_gpio(UBYTE mask, BOOL on, struct HDAudioChip *card)
+{
+    ULONG gpio_data, gpio_enable, gpio_dir;
+
+    gpio_enable = send_command_12(card->codecnr, card->function_group,
+                                  VERB_GET_GPIO_ENABLE, 0, card);
+    gpio_enable |= mask;
+    send_command_12(card->codecnr, card->function_group, VERB_SET_GPIO_ENABLE,
+                    gpio_enable, card);
+
+    gpio_dir = send_command_12(card->codecnr, card->function_group,
+                               VERB_GET_GPIO_DIR, 0, card);
+    gpio_dir |= mask;
+    send_command_12(card->codecnr, card->function_group, VERB_SET_GPIO_DIR,
+                    gpio_dir, card);
+
+    gpio_data = send_command_12(card->codecnr, card->function_group,
+                                VERB_GET_GPIO_DATA, 0, card);
+    if(on)
+        gpio_data |= mask;
+    else
+        gpio_data &= ~mask;
+    send_command_12(card->codecnr, card->function_group, VERB_SET_GPIO_DATA,
+                    gpio_data, card);
+}
+
+
+static void set_gpio(UBYTE mask, struct HDAudioChip *card)
+{
+    update_gpio(mask, TRUE, card);
+}
+
+
+static UBYTE get_connected_widget(UBYTE nid, UBYTE index,
+                                  struct HDAudioChip *card)
+{
+    UBYTE input_nid = 0;
+    ULONG connections, entry;
+
+    connections = get_parameter(nid, 0xE, card);
+    if(index < connections) {
+        entry = send_command_12(card->codecnr, nid,
+                                VERB_GET_CONNECTION_LIST_ENTRY, index, card);
+        input_nid = entry >> ((index % 4) * 8);
+    }
+
+    return input_nid;
+}
+
+
+static UBYTE get_selected_widget(UBYTE nid, struct HDAudioChip *card)
+{
+    UBYTE input_nid = 0;
+    ULONG connections;
+    ULONG index;
+
+    connections = get_parameter(nid, 0xE, card);
+    if(connections > 0) {
+        if(connections == 1)
+            index = 0;
+        else {
+            index = send_command_12(card->codecnr, nid,
+                                    VERB_GET_CONNECTION_SELECT, 0, card);
+        }
+
+        input_nid = get_connected_widget(nid, index, card);
+    }
+
+    return input_nid;
+}
+
+
+/* Adds a widget to the array of volume controlling widgets if it has volume
+ * control */
+static void check_widget_volume(UBYTE nid, struct HDAudioChip *card)
+{
+    ULONG parm;
+
+    parm = get_parameter(nid, VERB_GET_PARMS_AUDIO_WIDGET_CAPS, card);
+    D(bug("[HDAudio] NID %xh: Audio widget caps = %lx\n", nid, parm));
+    if(parm & 0x4) { // OutAmpPre
+        D(bug("[HDAudio] NID %xh has volume control\n", nid));
+        card->dac_volume_nids[card->dac_volume_count++] = nid;
+    } else {
+        D(bug("[HDAudio] NID %xh does not have volume control\n", nid));
+    }
+}
+
+
+/* Unmute all of a widget's inputs and outputs */
+static void unmute_widget(UBYTE nid, struct HDAudioChip *card)
+{
+    UWORD connections, i;
+    ULONG gain;
+
+    D(bug("[HDAudio] Unmuting NID %xh\n", nid));
+
+    // Get number of inputs
+    connections = get_parameter(nid, 0xE, card);
+
+    // Unmute inputs while retaining their gain levels
+    for(i = 0; i < connections; i++) {
+        gain = send_command_4(card->codecnr, nid, 0xB, i, card);
+        send_command_4(card->codecnr, nid, VERB_SET_AMP_GAIN,
+                       INPUT_AMP_GAIN | AMP_GAIN_LR | i << 8 | gain & 0x7f, card);
+    }
+
+    // Unmute output while retaining its gain level
+    gain = send_command_4(card->codecnr, nid, 0xB, OUTPUT_AMP_GAIN, card);
+    send_command_4(card->codecnr, nid, VERB_SET_AMP_GAIN,
+                   OUTPUT_AMP_GAIN | AMP_GAIN_LR | gain & 0x7f, card);
+}
+
+
+static BOOL interrogate_unknown_chip(struct HDAudioChip *card)
+{
+    int adc, front, steps = 0, offset0dB = 0;
+    double step_size = 0.25;
+    ULONG parm, widget_caps, nid;
+    UWORD connections, i;
+    UBYTE before_front = 0, first_subnode, subnode_limit;
+
+    D(bug("[HDAudio] Unknown codec, interrogating chip...\n"));
+
+    /* Mark all ADC mixer inputs as absent until they are discovered.
+       The vendor-specific setup functions fill these in explicitly; on
+       the interrogation path they would otherwise all read as amp
+       index 0 and set_adc_input() would send bogus amp verbs. */
+    for(i = 0; i < INPUTS; i++) {
+        card->adc_mixer_indices[i] = 255;
+    }
+
+    // Umute all widgets
+    parm = get_parameter(card->function_group, VERB_GET_PARMS_NODE_COUNT, card);
+    first_subnode = parm >> 16 & 0xFF;
+    subnode_limit = first_subnode + (parm & 0xFF);
+    for(i = first_subnode; i < subnode_limit; i++) {
+        unmute_widget(i, card);
+    }
+
+    if(card->dac_nid == 0) {
+        // find out the first PCM DAC
+        int dac = find_widget(card, 0, 0);
+
+        if(dac == 0) {
+            bug("Didn't find DAC!\n");
+            return FALSE;
+        }
+
+        card->dac_nid = dac;
+    }
+    D(bug("[HDAudio] DAC NID = %xh\n", card->dac_nid));
+
+    check_widget_volume(card->dac_nid, card);
+
+    // find FRONT pin
+    front = find_widget(card, 4, 0);
+    D(bug("[HDAudio] Front PIN = %xh\n", front));
+
+    if(front == 0) {
+        D(bug("[HDAudio] Didn't find jack/pin for line output!\n"));
+    } else {
+        send_command_12(card->codecnr, front, VERB_SET_PIN_WIDGET_CONTROL, 0x40, card); // output enabled
+        send_command_12(card->codecnr, front, VERB_SET_CONNECTION_SELECT, 0, card); // use first input
+        check_widget_volume(front, card);
+    }
+
+    // find SPEAKER
+    if(force_speaker_nid > 0) {
+        D(bug("[HDAudio] Using speaker nid from config file\n"));
+        card->speaker_nid = force_speaker_nid;
+    } else {
+        card->speaker_nid = find_widget(card, 4, 1);
+    }
+    D(bug("[HDAudio] Speaker NID = %xh\n", card->speaker_nid));
+
+    if(card->speaker_nid != 0) {
+        // check if there is a power amp and if so, enable it
+        if(get_parameter(card->speaker_nid, VERB_GET_PARMS_PIN_CAPS, card) & PIN_CAPS_EAPD_CAPABLE) {
+            D(bug("[HDAudio] Enabling power amp of speaker\n"));
+            send_command_12(card->codecnr, card->speaker_nid, VERB_SET_EAPD, 0x2, card); // enable EAPD (external power amp)
+        }
+
+        D(bug("[HDAudio] Enabling speaker output\n"));
+        send_command_12(card->codecnr, card->speaker_nid, VERB_SET_PIN_WIDGET_CONTROL, 0x40, card); // output enabled
+        card->speaker_active = TRUE;
+        send_command_12(card->codecnr, card->speaker_nid, VERB_SET_CONNECTION_SELECT, 0, card); // use first input
+
+        check_widget_volume(card->speaker_nid, card);
+    } else {
+        D(bug("[HDAudio] No speaker pin found, continuing anyway!\n"));
+    }
+
+    // Find headphones socket
+    card->headphone_nid = find_widget(card, 4, 2);
+
+    D(bug("[HDAudio] Headphone NID = %xh\n", card->headphone_nid));
+
+    if(card->headphone_nid != 0) {
+        send_command_12(card->codecnr, card->headphone_nid, VERB_SET_PIN_WIDGET_CONTROL, 0xC0,
+                        card); // output enabled and headphone enabled
+        send_command_12(card->codecnr, card->headphone_nid, VERB_SET_CONNECTION_SELECT, 0, card); // use first input
+
+        // check if there is a power amp and if so, enable it
+        if(get_parameter(card->headphone_nid, VERB_GET_PARMS_PIN_CAPS, card) & PIN_CAPS_EAPD_CAPABLE) {
+            D(bug("[HDAudio] Enabling power amp of headphone port\n"));
+            send_command_12(card->codecnr, card->headphone_nid, VERB_SET_EAPD, 0x2, card); // enable EAPD (external power amp)
+        }
+
+        check_widget_volume(card->headphone_nid, card);
+    }
+
+    // find the node before the front, speaker or HP node
+    if(front != 0)
+        nid = front;
+    else if(card->speaker_nid != 0)
+        nid = card->speaker_nid;
+    else if(card->headphone_nid != 0)
+        nid = card->headphone_nid;
+    else nid = 0;
+
+    if(nid != 0)
+        before_front = (UBYTE)send_command_12(card->codecnr, nid,
+                                              VERB_GET_CONNECTION_LIST_ENTRY, 0, card);
+
+    if(before_front != card->dac_nid) {
+        D(bug("[HDAudio] The widget before front/speaker/HP (%xh) is not equal to DAC!\n", before_front));
+
+        check_widget_volume(before_front, card);
+    } else {
+        D(bug("[HDAudio] The widget before front/speaker/HP is equal to DAC.\n"));
+    }
+
+    for(i = 0; card->dac_volume_nids[i] != 0; i++) {
+        parm = get_parameter(card->dac_volume_nids[i],
+                             VERB_GET_PARMS_AUDIO_WIDGET_CAPS, card);
+        if((parm & 0x8) != 0)
+            parm = get_parameter(card->dac_volume_nids[i],
+                                 VERB_GET_PARMS_OUTPUT_AMP_CAPS, card);
+        else
+            parm = get_parameter(card->function_group,
+                                 VERB_GET_PARMS_OUTPUT_AMP_CAPS, card);
+        D(bug("[HDAudio] NID %xh: Output amp caps = %lx\n", card->dac_volume_nids[i], parm));
+
+        step_size = (((parm >> 16) & 0x7F) + 1) * 0.25;
+        steps = ((parm >> 8) & 0x7F);
+        offset0dB = (parm & 0x7F);
+
+        if(steps != 0) {
+            card->dac_min_gain = -(offset0dB * step_size);
+            card->dac_max_gain = card->dac_min_gain + step_size * steps;
+            card->dac_step_gain = step_size;
+            D(bug("[HDAudio] Gain step size = %lu * 0.25 dB,"
+                  " min gain = %d, max gain = %d\n",
+                  (((parm >> 16) & 0x7F) + 1), (int)(card->dac_min_gain),
+                  (int)(card->dac_max_gain)));
+        }
+    }
+
+    // find out the first PCM ADC
+    adc = find_widget(card, 1, 0);
+    D(bug("[HDAudio] ADC NID = %xh\n", adc));
+
+    if(adc != 0) {
+        card->adc_nid = adc;
+
+        /* Derive the ADC gain range from the input amplifier capabilities,
+           the same way the DAC gain range is derived above. Without this
+           set_adc_gain() has no valid step size to work with. */
+        parm = get_parameter(card->adc_nid,
+                             VERB_GET_PARMS_AUDIO_WIDGET_CAPS, card);
+        if((parm & 0x8) != 0)
+            parm = get_parameter(card->adc_nid,
+                                 VERB_GET_PARMS_INPUT_AMP_CAPS, card);
+        else
+            parm = get_parameter(card->function_group,
+                                 VERB_GET_PARMS_INPUT_AMP_CAPS, card);
+        D(bug("[HDAudio] NID %xh: Input amp caps = %lx\n", adc, parm));
+
+        step_size = (((parm >> 16) & 0x7F) + 1) * 0.25;
+        steps = ((parm >> 8) & 0x7F);
+        offset0dB = (parm & 0x7F);
+
+        if(steps != 0) {
+            card->adc_min_gain = -(offset0dB * step_size);
+            card->adc_max_gain = card->adc_min_gain + step_size * steps;
+            card->adc_step_gain = step_size;
+            D(bug("[HDAudio] ADC gain step size = %lu * 0.25 dB,"
+                  " min gain = %d, max gain = %d\n",
+                  (((parm >> 16) & 0x7F) + 1), (int)(card->adc_min_gain),
+                  (int)(card->adc_max_gain)));
+        }
+
+        card->line_in_nid = find_widget(card, 4, 8);
+        D(bug("[HDAudio] Line-in NID = %xh\n", card->line_in_nid));
+        card->mic1_nid = find_widget(card, 4, 0xA);
+        D(bug("[HDAudio] Mic1 NID = %xh\n", card->mic1_nid));
+
+        // find ADC mixer by tracing a path from the ADC towards the ports
+        nid = adc;
+        while(nid != 0) {
+            widget_caps = get_parameter(nid,
+                                        VERB_GET_PARMS_AUDIO_WIDGET_CAPS, card);
+            D(bug("[HDAudio] audio widget caps = %lx\n", widget_caps));
+
+            if(((widget_caps >> 20) & 0xF) == 0x3) {
+                card->adc_mixer_nid = nid;
+                D(bug("[HDAudio] ADC mixer NID = %xh\n", card->adc_mixer_nid));
+                card->adc_mixer_is_mux = TRUE;
+            }
+
+            nid = get_selected_widget(nid, card);
+        }
+
+        if(card->line_in_nid != 0) {
+            send_command_12(card->codecnr, card->line_in_nid,
+                            VERB_SET_PIN_WIDGET_CONTROL, 0x20, card); // input enabled
+        }
+        if(card->mic1_nid != 0) {
+            send_command_12(card->codecnr, card->mic1_nid,
+                            VERB_SET_PIN_WIDGET_CONTROL, 0x20, card); // input enabled
+        }
+    } else
+        bug("[HDAudio] Didn't find ADC!\n");
+
+    return TRUE;
+}
+
+
+static UBYTE find_widget(struct HDAudioChip *card, UBYTE type, UBYTE pin_type)
+{
+    ULONG node_count_response = get_parameter(card->function_group,
+                                VERB_GET_PARMS_NODE_COUNT, card);
+    UBYTE node_count = node_count_response & 0xFF;
+    UBYTE starting_node = (node_count_response >> 16) & 0xFF;
+    UBYTE i;
+    ULONG config_default;
+
+    for(i = 0; i < node_count; i++) { // widgets
+        UBYTE nid = i + starting_node;
+        ULONG widget_caps, pin_caps, connections;
+
+        widget_caps = get_parameter(nid, VERB_GET_PARMS_AUDIO_WIDGET_CAPS,
+                                    card);
+
+        if(((widget_caps >> 20) & 0xF) == type) {
+            BOOL ok;
+
+            if(type == 4) { // node is a pin widget
+                config_default = send_command_12(card->codecnr, nid,
+                                                 VERB_GET_CONFIG_DEFAULT, 0, card);
+
+                if(((config_default >> 20) & 0xF) == pin_type) {
+                    D(bug("[HDAudio] Config default for NID %x = %x\n", nid,
+                          config_default));
+                    if((widget_caps & 1 << 8) != 0)
+                        connections = get_parameter(nid, 0xE, card) & 0x7f;
+                    else
+                        connections = 0;
+                    pin_caps =
+                        get_parameter(nid, VERB_GET_PARMS_PIN_CAPS, card);
+                    switch(pin_type) {
+                    case 0x0:
+                    case 0x1:
+                    case 0x2:
+                    case 0x4:
+                    case 0x5:
+                        ok = (pin_caps & PIN_CAPS_OUTPUT_CAPABLE) != 0
+                             && connections != 0;
+                        break;
+                    default:
+                        ok = (pin_caps & PIN_CAPS_INPUT_CAPABLE) != 0;
+                    }
+
+                    // check speaker connection type is internal
+                    if(pin_type == 1 && (config_default >> 16 & 0xB) != 3)
+                        ok = FALSE;
+
+                    // check headphone connection type is mini-jack
+                    if(pin_type == 2 && (config_default >> 16 & 0xF) != 1)
+                        ok = FALSE;
+
+                    // check microphone connection type is mini-jack
+                    if(pin_type == 0xA && (config_default >> 16 & 0xF) != 1)
+                        ok = FALSE;
+                }
+            } else
+                ok = (widget_caps & 0x1) == 1 && // stereo
+                     ((widget_caps >> 9) & 0x1) == 0; // analogue
+
+            if(ok)
+                return nid;
+        }
+    }
+
+    return 0;
+}
+
+static void determine_bitsizes(struct HDAudioChip *card)
+{
+    ULONG verb = get_parameter(card->dac_nid, VERB_GET_PARMS_SUPPORTED_PCM_SIZE_RATE, card);
+    UWORD bitsize_flags = (verb & PCM_SIZE_RATE_BITSIZE_MASK) >> 16;
+    int i;
+    ULONG bitsizes = 0;
+
+    if(bitsize_flags == 0) {
+        verb = get_parameter(card->function_group, VERB_GET_PARMS_SUPPORTED_PCM_SIZE_RATE, card);
+        bitsize_flags = (verb & PCM_SIZE_RATE_BITSIZE_MASK) >> 16;
+        D(bug("[HDAudio] dac_nid didn't have a list of sample rates, trying AFG node\n"));
+    }
+
+    // count number of bitsizes
+    for(i = 0; i < 5; i++) {
+        if(bitsize_flags & (1 << i)) {
+            bitsizes++;
+        }
+    }
+
+    D(bug("[HDAudio] Bitsizes found = %lu\n", bitsizes));
+    card->bitsizes = (ULONG *) AllocVec(sizeof(ULONG) * bitsizes, MEMF_PUBLIC | MEMF_CLEAR);
+    card->nr_of_bitsizes = bitsizes;
+
+    i = 0;
+    if(bitsize_flags & 0x0001)
+        card->bitsizes[i++] = 8;
+    if(bitsize_flags & 0x0002) {
+        /* First, select 16 bit */
+        card->selected_bitsize_index = i;
+        card->bitsizes[i++] = 16;
+    }
+    if(bitsize_flags & 0x0004)
+        card->bitsizes[i++] = 20;
+    if(bitsize_flags & 0x0008) {
+        /* Use 24 bit where present */
+        card->selected_bitsize_index = i;
+        card->bitsizes[i++] = 24;
+    }
+    if(bitsize_flags & 0x0010)
+        card->bitsizes[i++] = 32;
+
+    D(bug("[HDAudio] Selected bitsize = %lu\n", card->bitsizes[card->selected_bitsize_index]));
+}
+
+
+static void determine_frequencies(struct HDAudioChip *card)
+{
+    ULONG verb = get_parameter(card->dac_nid, VERB_GET_PARMS_SUPPORTED_PCM_SIZE_RATE, card);
+    UWORD samplerate_flags = verb & PCM_SIZE_RATE_RATE_MASK;
+    int i;
+    ULONG freqs = 0;
+    BOOL default_freq_found = FALSE;
+
+    if(samplerate_flags == 0) {
+        verb = get_parameter(card->function_group, VERB_GET_PARMS_SUPPORTED_PCM_SIZE_RATE, card);
+        samplerate_flags = verb & PCM_SIZE_RATE_RATE_MASK;
+        D(bug("[HDAudio] dac_nid didn't have a list of sample rates, trying AFG node\n"));
+    }
+
+    // count number of frequencies
+    for(i = 0; i < 12; i++) {
+        if(samplerate_flags & (1 << i)) {
+            freqs++;
+        }
+    }
+
+    D(bug("[HDAudio] Frequencies found = %lu\n", freqs));
+    card->frequencies = (struct Freq *) AllocVec(sizeof(struct Freq) * freqs, MEMF_PUBLIC | MEMF_CLEAR);
+    card->nr_of_frequencies = freqs;
+
+    freqs = 0;
+    for(i = 0; i < 12; i++) {
+        if(samplerate_flags & (1 << i)) {
+            set_frequency_info(&(card->frequencies[freqs]), i);
+
+            if(card->frequencies[freqs].frequency == 44100 && !default_freq_found) {
+                card->selected_freq_index = freqs; // set default freq index to 44100 Hz
+                default_freq_found = TRUE;
+            }
+
+            freqs++;
+        }
+    }
+
+    if(default_freq_found == FALSE) {
+        D(bug("[HDAudio] 44100 Hz is not supported!\n"));
+        if(freqs > 0) {
+            D(bug("[HDAudio] Setting default frequency to %lu\n", card->frequencies[0].frequency));
+            card->selected_freq_index = 0;
+        }
+    }
+}
+
+
+
+static void set_frequency_info(struct Freq *freq, UWORD bitnr)
+{
+    switch(bitnr) {
+    case 0:
+        freq->frequency = 8000;
+        freq->base44100 = 0;
+        freq->mult = 0;
+        freq->div = 5;
+        break;
+
+    case 1:
+        freq->frequency = 11025;
+        freq->base44100 = 1;
+        freq->mult = 0;
+        freq->div = 3;
+        break;
+
+    case 2:
+        freq->frequency = 16000;
+        freq->base44100 = 0;
+        freq->mult = 0;
+        freq->div = 2;
+        break;
+
+    case 3:
+        freq->frequency = 22050;
+        freq->base44100 = 1;
+        freq->mult = 0;
+        freq->div = 1;
+        break;
+
+    case 4:
+        freq->frequency = 32000;
+        freq->base44100 = 0;
+        freq->mult = 0;
+        freq->div = 2;
+        break;
+
+    case 5:
+        freq->frequency = 44100;
+        freq->base44100 = 1;
+        freq->mult = 0;
+        freq->div = 0;
+        break;
+
+    case 6:
+        freq->frequency = 48000;
+        freq->base44100 = 0;
+        freq->mult = 0;
+        freq->div = 0;
+        break;
+
+    case 7:
+        freq->frequency = 88200;
+        freq->base44100 = 1;
+        freq->mult = 1;
+        freq->div = 0;
+        break;
+
+    case 8:
+        freq->frequency = 96000;
+        freq->base44100 = 0;
+        freq->mult = 1;
+        freq->div = 0;
+        break;
+
+    case 9:
+        freq->frequency = 176400;
+        freq->base44100 = 1;
+        freq->mult = 3;
+        freq->div = 0;
+        break;
+
+    case 10:
+        freq->frequency = 192000;
+        freq->base44100 = 0;
+        freq->mult = 3;
+        freq->div = 0;
+        break;
+
+    default:
+        D(bug("[HDAudio] Unsupported frequency!\n"));
+        break;
+    }
+}
+
+
+void set_monitor_volumes(struct HDAudioChip *card, double dB)
+{
+#if 0
+    int i;
+#endif
+    int dB_steps = (int)((dB + 34.5) / 1.5);
+
+    if(dB_steps < 0) {
+        dB_steps = 0;
+    } else if(dB_steps > 31) {
+        dB_steps = 31;
+    }
+
+#if 0
+    for(i = 0; i < 9; i++) {
+        if(i == 0 || i == 1 || i == 2 || i == 4) {
+            send_command_4(card->codecnr, 0xB, VERB_SET_AMP_GAIN, INPUT_AMP_GAIN | AMP_GAIN_LR | (i << 8) | dB_steps, card);
+        } else { // mute
+            send_command_4(card->codecnr, 0xB, VERB_SET_AMP_GAIN, INPUT_AMP_GAIN | AMP_GAIN_LR | (i << 8) | (1 << 7), card);
+        }
+    }
+#endif
+}
+
+
+void set_adc_input(struct HDAudioChip *card)
+{
+    int i;
+    UBYTE selected;
+
+    if(card->input >= INPUTS) {
+        card->input = 0;
+    }
+
+    if(card->adc_mixer_nid == 0) {
+        /* Codec was configured via the generic interrogation path and no
+           ADC mixer/selector was found: there is nothing valid to program.
+           Amp verbs sent to NID 0 mute the output stream on some codecs
+           (e.g. QEMU's HDA codec). */
+        D(bug("[HDAudio] set_adc_input: no ADC mixer known, skipping\n"));
+        return;
+    }
+
+    selected = card->adc_mixer_indices[card->input];
+
+    if(card->adc_mixer_is_mux == TRUE) {
+        if(selected == 255) { // input not present, fall back to first entry
+            selected = 0;
+        }
+        D(bug("[HDAudio] Selecting ADC input %d\n", selected));
+        send_command_12(card->codecnr, card->adc_mixer_nid, VERB_SET_CONNECTION_SELECT,
+                        selected, card);
+        return;
+    } else {
+        /* Mute the inputs that are not selected first, then unmute the
+           selected one last: if several inputs share an amp index, a
+           single interleaved pass would re-mute the input that was just
+           unmuted. */
+        for(i = 0; i < INPUTS; i++) {
+            if(card->adc_mixer_indices[i] != 255 // input is present
+                    && i != card->input
+                    && card->adc_mixer_indices[i] != selected) {
+                D(bug("[HDAudio] Muting ADC input %d\n", card->adc_mixer_indices[i]));
+                send_command_4(card->codecnr, card->adc_mixer_nid, VERB_SET_AMP_GAIN,
+                               INPUT_AMP_GAIN | AMP_GAIN_LR | (card->adc_mixer_indices[i] << 8) | (1 << 7), card);
+            }
+        }
+
+        if(selected != 255) { // unmute the selected input
+            D(bug("[HDAudio] Unmuting ADC input %d\n", selected));
+            send_command_4(card->codecnr, card->adc_mixer_nid, VERB_SET_AMP_GAIN,
+                           INPUT_AMP_GAIN | AMP_GAIN_LR | (selected << 8), card);
+        }
+    }
+}
+
+
+void set_adc_gain(struct HDAudioChip *card, double dB)
+{
+    int dB_steps;
+
+    if(card->adc_nid == 0 || card->adc_step_gain <= 0.0) {
+        /* No ADC found, or no valid gain range was determined */
+        D(bug("[HDAudio] set_adc_gain: no ADC gain info, skipping\n"));
+        return;
+    }
+
+    dB_steps = (int)((dB - card->adc_min_gain) / card->adc_step_gain);
+
+    if(dB_steps < 0) {
+        dB_steps = 0;
+    }
+
+    if(card->adc_mixer_is_mux == TRUE) {
+        send_command_4(card->codecnr, card->adc_mixer_nid, VERB_SET_AMP_GAIN, OUTPUT_AMP_GAIN | AMP_GAIN_LR | dB_steps, card);
+    } else {
+        send_command_4(card->codecnr, card->adc_nid, VERB_SET_AMP_GAIN, INPUT_AMP_GAIN | AMP_GAIN_LR | dB_steps, card);
+    }
+}
+
+
+void set_dac_gain(struct HDAudioChip *card, double dB)
+{
+    int i;
+    int dB_steps = (int)((dB - card->dac_min_gain) / card->dac_step_gain);
+
+    if(dB_steps < 0) {
+        dB_steps = 0;
+    }
+
+    for(i = 0; i < card->dac_volume_count; i++)
+        send_command_4(card->codecnr, card->dac_volume_nids[i],
+                       VERB_SET_AMP_GAIN, OUTPUT_AMP_GAIN | AMP_GAIN_LR | dB_steps, card);
+}
+
+
+void setForceQuery(void)
+{
+    forceQuery = TRUE;
+}
+
+
+void setDumpAll(void)
+{
+    dumpAll = TRUE;
+}
+
+
+void setForceSpeaker(int speaker_nid)
+{
+    force_speaker_nid = speaker_nid;
+}
+
+
+
+BOOL is_jack_connected(struct HDAudioChip *card, UBYTE NID)
+{
+    ULONG result;
+
+    send_command_12(card->codecnr, NID, VERB_EXECUTE_PIN_SENSE, 0, card);
+    udelay(2000);
+    result = send_command_12(card->codecnr, NID, VERB_GET_PIN_SENSE, 0, card);
+
+    if(result & 0x80000000) {
+        D(bug("[HDAudio] jack connected\n"));
+        return TRUE;
+    } else {
+        D(bug("[HDAudio] jack disconnected\n"));
+        return FALSE;
+    }
+}
+
+
+
+void detect_headphone_change(struct HDAudioChip *card)
+{
+    if(card->speaker_nid != 0 &&
+            card->headphone_nid != 0) {
+        if(card->speaker_active &&
+                is_jack_connected(card, card->headphone_nid)) { // disable speaker
+            D(bug("[HDAudio] disabling speaker\n"));
+            send_command_12(card->codecnr, card->speaker_nid, VERB_SET_PIN_WIDGET_CONTROL, 0x0, card); // output disabled
+            card->speaker_active = FALSE;
+        } else if(card->speaker_active == FALSE &&
+                  is_jack_connected(card, card->headphone_nid) == FALSE) { // enable speaker
+            D(bug("[HDAudio] enabling speaker\n"));
+            send_command_12(card->codecnr, card->speaker_nid, VERB_SET_PIN_WIDGET_CONTROL, 0x40, card); // output enabled
+            card->speaker_active = TRUE;
+        }
+    }
+}
+
+UWORD get_hda_format(struct HDAudioChip *card)
+{
+    BYTE bitsize = FORMAT_16BITS;
+    if(card->bitsizes[card->selected_bitsize_index] == 24)
+        bitsize = FORMAT_24BITS;
+
+    return ((card->frequencies[card->selected_freq_index].base44100 > 0) ? BASE44 : 0) | // base freq: 48 or 44.1 kHz
+           (card->frequencies[card->selected_freq_index].mult << 11) | // multiplier
+           (card->frequencies[card->selected_freq_index].div << 8) | // divisor
+           bitsize | FORMAT_STEREO;
+}

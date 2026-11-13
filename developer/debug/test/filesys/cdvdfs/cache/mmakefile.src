@@ -1,0 +1,14 @@
+# Copyright (C) 2026, The AROS Development Team. All rights reserved.
+include $(SRCDIR)/config/aros.cfg
+
+#MM- test-filesys : test-filesys-cdvdfs
+#MM- test-filesys-quick : test-filesys-cdvdfs-quick
+#MM- test-filesys-cdvdfs : test-filesys-cdvdfs-cache
+#MM- test-filesys-cdvdfs-quick : test-filesys-cdvdfs-cache-quick
+
+#MM
+test-filesys-cdvdfs-cache:
+	$(PYTHON) $(SRCDIR)/$(CURDIR)/host_test.py --cc "$(HOST_CC)"
+
+#MM
+test-filesys-cdvdfs-cache-quick: test-filesys-cdvdfs-cache

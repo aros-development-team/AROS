@@ -1,0 +1,32 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+%set_archincludes mainmmake=kernel-exec maindir=rom/exec \
+  modname=exec pri=0 arch=pc-i386 \
+  includes="-I$(SRCDIR)/$(CURDIR)"
+
+%get_archincludes modname=kernel \
+    includeflag=TARGET_KERNEL_INCLUDES maindir=rom/kernel
+
+%get_archincludes modname=exec \
+    includeflag=TARGET_EXEC_INCLUDES maindir=rom/exec
+
+PRIV_EXEC_INCLUDES = \
+    $(TARGET_EXEC_INCLUDES) \
+    -I$(SRCDIR)/rom/exec \
+    $(TARGET_KERNEL_INCLUDES) \
+    -I$(SRCDIR)/rom/kernel
+
+CFILES := cachecleare debug_init debug_internal memoryrawio
+AFILES := cache userstate
+
+#MM kernel-exec-pc-i386 : kernel-kernel-includes kernel-exec-includes includes-asm_h
+
+USER_INCLUDES 	:= $(PRIV_EXEC_INCLUDES)
+USER_AFLAGS 	:= $(PRIV_EXEC_INCLUDES) -I$(GENINCDIR)
+
+%build_archspecific \
+  mainmmake=kernel-exec maindir=rom/exec arch=pc-i386 \
+  files=$(CFILES) asmfiles=$(AFILES) modname=exec
+
+%common

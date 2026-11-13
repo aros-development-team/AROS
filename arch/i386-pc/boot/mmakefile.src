@@ -1,0 +1,98 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+# The "core" AROS components for a bootable system
+
+#MM- boot-pc-i386        : \
+#MM                              bootloader-$(AROS_TARGET_BOOTLOADER)-pc-i386 \
+#MM                              kernel-bootstrap-pc-compress
+
+#MM- includes-pc-i386 : \
+#MM                              includes-common-i386 \
+#MM                              includes-copy-pc-i386 \
+#MM                              includes-copy
+
+#
+# Rules to create kickstart packages for pc-i386
+#
+
+#MM- kernel-link-pc-i386 : \
+#MM                              kernel-pc-i386-kernel-compress \
+#MM                              kernel-bsp-pc-i386-compress \
+#MM                              kernel-legacy-pc-i386-compress \
+#MM                              kernel-package-base-compress \
+#MM                              kernel-package-usb-compress \
+#MM                              kernel-package-fs-compress
+
+#
+# The kernel
+#
+
+#MM- kernel-pc-i386-kernel: \
+#MM                              kernel-kernel-kobj \
+#MM                              kernel-exec-kobj \
+#MM                              kernel-task-kobj
+
+%link_kickstart mmake=kernel-pc-i386-kernel file=$(AROSARCHDIR)/kernel \
+	startup=$(KOBJSDIR)/kernel_resource.o libs=exec res=task packfmt=$(AROS_PACKAGE_FMT)
+
+#
+# Board support package
+#
+
+#MM- kernel-bsp-pc-i386 : \
+#MM                              linklibs \
+#MM                              kernel-hidd-bus \
+#MM                              kernel-hidd-base \
+#MM                              kernel-battclock \
+#MM                              kernel-entropy \
+#MM                              kernel-processor \
+#MM                              kernel-timer \
+#MM                              kernel-expansion \
+#MM                              kernel-efi \
+#MM                              kernel-pc-acpica \
+#MM                              kernel-hidd-acpibutton \
+#MM                              kernel-pc-hpet \
+#MM                              kernel-ata \
+#MM                              kernel-hidd-pciata \
+#MM                              kernel-ahci \
+#MM                              kernel-nvme \
+#MM                              kernel-virtio \
+#MM                              kernel-pc-i386-serial \
+#MM                              kernel-pc-i386-parallel \
+#MM                              kernel-hidd-i8042 \
+#MM                              kernel-hidd-pci \
+#MM                              kernel-hidd-pci-pcipc \
+#MM                              kernel-hidd-vesagfx \
+#MM                              kernel-hidd-vgagfx    
+
+KRSRCS      := efi hpet entropy
+KRSRCS_ARCH := battclock processor
+KLIBS       := acpica
+KLIBS_ARCH  := expansion
+KDEVS       := ahci ata nvme virtio
+KDEVS_ARCH  := timer
+KHIDDS      := ata_pci bus i8042 vesagfx vgagfx pci pcipc serial parallel storage system acpibutton
+
+%make_package mmake=kernel-bsp-pc-i386 file=$(AROSARCHDIR)/aros-bsp.pkg \
+    devs=$(KDEVS) arch_devs=$(KDEVS_ARCH) hidds=$(KHIDDS) libs=$(KLIBS) \
+    arch_libs=$(KLIBS_ARCH) res=$(KRSRCS) arch_res=$(KRSRCS_ARCH) packfmt=$(AROS_PACKAGE_FMT)
+
+#
+# Legacy drivers package
+#
+
+#MM- kernel-legacy-pc-i386 : \
+#MM                              kernel-hidd-serialmouse \
+#MM                              kernel-devs-trackdisk \
+#MM                              kernel-isapnp
+
+# ISAPnP disabled because totally untested
+#LEGACY_RSRCS := isapnp
+LEGACY_DEVS  := trackdisk
+LEGACY_HIDDS := serialmouse
+
+%make_package mmake=kernel-legacy-pc-i386 file=$(AROSARCHDIR)/aros-legacy.pkg \
+	devs=$(LEGACY_DEVS) hidds=$(LEGACY_HIDDS) res=$(LEGACY_RSRCS) packfmt=$(AROS_PACKAGE_FMT) prune=no
+
+%common

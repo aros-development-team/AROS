@@ -1,0 +1,18 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+FUNCS := openengine \
+    	 closeengine \
+	 setinfoa \
+	 obtaininfoa \
+	 releaseinfoa
+
+# Only build the includes for bullet.library
+#MM- workbench-libs-bullet : workbench-libs-bullet-intern-includes
+#MM- workbench-libs-bullet-includes : workbench-libs-bullet-intern-includes
+
+%build_module mmake=workbench-libs-bullet-intern \
+  modname=bullet modtype=library \
+  files=$(FUNCS)
+
+%common

@@ -1,0 +1,62 @@
+TABLE OF CONTENTS
+
+Rawimage.mcc/Rawimage.mcc
+Rawimage.mcc/MUIA_Rawimage_Data
+Rawimage.mcc/Rawimage.mcc
+
+    NAME
+        Rawimage.mcc -- Display embedded raw or compressed images.
+
+    SUPERCLASS
+        Pixmap.mui
+
+    DESCRIPTION
+        Convert an embedded MUI_RawimageData header into Pixmap attributes.
+        Supported ARGB and RGB payloads are raw, BZip2 and RLE. Z and LZMA
+        format identifiers are declared but not implemented.
+
+    NOTES
+        All four header ULONG fields use big-endian byte order, even on i386.
+        Pixel bytes are ARGB or RGB. The image payload is borrowed, not copied;
+        keep it readable and unchanged for the object's lifetime.
+        On construction, invalid non-NULL data causes object creation to fail.
+        After construction, the setter does not report translation or decode
+        errors. Recreate the object rather than replacing its live payload:
+        Pixmap may retain cached data or mishandle previously borrowed buffers.
+        Neither class fully validates malformed image data.
+
+    SEE_ALSO
+        MUIA_Rawimage_Data, Pixmap.mui
+Rawimage.mcc/MUIA_Rawimage_Data
+
+    NAME
+        MUIA_Rawimage_Data -- Supply embedded image data.
+
+    FUNCTION
+        Set Pixmap dimensions, pixel format, compression and payload.
+
+    INPUTS
+        Initialize/set; struct MUI_RawimageData *. No local getter.
+        ri_Width, ri_Height, ri_Format and ri_Size are big-endian ULONGs.
+        ri_Data follows the 16-byte header. For raw data, ri_Size may be zero.
+
+    NOTES
+        Supported formats: RAWIMAGE_FORMAT_RAW_ARGB_ID,
+        RAWIMAGE_FORMAT_RAW_RGB_ID, RAWIMAGE_FORMAT_BZ2_ARGB_ID,
+        RAWIMAGE_FORMAT_BZ2_RGB_ID, RAWIMAGE_FORMAT_RLE_ARGB_ID,
+        and RAWIMAGE_FORMAT_RLE_RGB_ID. Supply valid dimensions,
+        lengths and readable, suitably aligned persistent storage.
+        GetTagData uses the first Data tag. NULL does not clear an image.
+        On Set, the wrapper ignores the conversion result and forwards the
+        original tags; other Pixmap tags can override translated settings.
+        The payload remains caller-owned. No rollback is guaranteed on error.
+
+    EXAMPLE
+        One opaque red ARGB pixel, as bytes (not native ULONG constants):
+        00 00 00 01  00 00 00 01  00 00 00 00  00 00 00 00
+        ff ff 00 00
+        Store at a suitably aligned address for the object's lifetime.
+
+    SEE_ALSO
+        Rawimage.mcc, MUIA_Pixmap_Data
+

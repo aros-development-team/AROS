@@ -1,0 +1,63 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+USER_LDFLAGS := -static
+
+FILES :=    basicfuncs bufferingfuncs clipboardfuncs collectionhooks \
+	    prophooks stophook dosstreamhandler
+
+FUNCS := \
+	allociff \
+	alloclocalitem \
+	closeclipboard \
+	closeiff \
+	collectionchunk \
+	collectionchunks \
+	currentchunk \
+	entryhandler \
+	exithandler \
+	findcollection \
+	findlocalitem \
+	findprop \
+	findpropcontext \
+	freeiff \
+	freelocalitem \
+	goodid \
+	goodtype \
+	idtostr \
+	initiff \
+	initiffasclip \
+	initiffasdos \
+	localitemdata \
+	openclipboard \
+	openiff \
+	parentchunk \
+	parseiff \
+	popchunk \
+	propchunk \
+	propchunks \
+	pushchunk \
+	readchunkbytes \
+	readchunkrecords \
+	setlocalitempurge \
+	stopchunk \
+	stopchunks \
+	stoponexit \
+	storeitemincontext \
+	storelocalitem \
+	writechunkbytes \
+	writechunkrecords
+
+#MM workbench-libs-iffparse-includes : \
+#MM     kernel-exec-includes \
+#MM     kernel-dos-includes \
+#MM     kernel-utility-includes \
+#MM     includes-copy
+#MM- workbench-libs-iffparse : linklibs
+#MM- core-linklibs: linklibs-iffparse
+
+%build_module mmake=workbench-libs-iffparse \
+    modname=iffparse modtype=library \
+    files="iffparse_init $(FUNCS) $(FILES)"
+
+%common

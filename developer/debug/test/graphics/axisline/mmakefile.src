@@ -1,0 +1,15 @@
+# Copyright (C) 2026, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+USER_LDFLAGS := -static
+
+#MM test-graphics-axisline : includes linklibs
+%build_progs mmake=test-graphics-axisline \
+    files=axisline targetdir=$(AROS_TESTS)/graphics/axisline
+
+# The native Amiga group selects the stock CD32 performance assertion.
+#MM test-graphics-axisline-native : includes linklibs
+%build_progs mmake=test-graphics-axisline-native \
+    files=axislinebench targetdir=$(AROS_TESTS)/graphics/axisline
+
+%common

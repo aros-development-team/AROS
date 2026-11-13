@@ -1,0 +1,49 @@
+#   LIB.DEF
+#
+#   LBMAKE definition file, use LBMAKE to generate any asyncio link library
+#   you wish.  To use, DTMP: must be assigned to a little of semi-temporary
+#   space.  The generated library will be placed in DLIB:
+#
+#   Flag	Description
+#
+#    s		generate small-data library
+#    r		generate registered-args library
+#    p		generate profiled library
+#    l		generate large-data library
+#    e          generate library that doesn't require external symbols.
+#               Valid in all combinations. NOTE: If profiling is used,
+#               then the profiler might drag in stuff that needs external
+#               symbols. I haven't tested this..
+#
+#   EXAMPLE:
+#
+#   1> LbMake asyncio l		    generate a large-data asyncio.lib
+#
+#   1> LbMake asyncio s p	    generate a small-data profiled asynciosp.lib
+#
+
+@Type   e    -D ASIO_NOEXTERNALS
+@Type	s    -ms -r -pr
+@Type	l    -mD
+@Type	r    -mRR -proto -mi -D ASIO_REGARGS
+@Type	p    -prof -mi0
+
+@Library    asyncio	/dlib/asyncio%s.lib
+
+@DefTree    DTmp:asyncio_%s/
+
+CloseAsync.c                +asyncio
+OpenAsync.c                 +asyncio
+OpenAsyncFH.c               +asyncio
+OpenAsyncFromFH.c           +asyncio
+PeekAsync.c                 +asyncio
+ReadAsync.c                 +asyncio
+ReadCharAsync.c             +asyncio
+RecordAsyncFailure.c        +asyncio
+RequeuePacket.c             +asyncio
+SeekAsync.c                 +asyncio
+SendPacket.c                +asyncio
+WaitPacket.c                +asyncio
+WriteAsync.c                +asyncio
+WriteCharAsync.c            +asyncio
+FGetsLenAsync.c             +asyncio

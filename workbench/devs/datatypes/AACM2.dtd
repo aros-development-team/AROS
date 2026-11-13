@@ -1,0 +1,10 @@
+# DataType Description for AAC (MPEG-2 ADTS stream)
+Name=AACM2
+Version=$VER: AACM2 41.0 (21.7.2026)
+BaseName=aac
+Pattern=#?
+Mask=0xff 0xf9
+GroupID=soun
+ID=aac2
+Flags=DTF_BINARY,DTF_CASE
+Priority=1

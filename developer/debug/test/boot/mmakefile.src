@@ -1,0 +1,19 @@
+#
+#   Makefile to make test boot module.
+
+include $(SRCDIR)/config/aros.cfg
+
+FILES  := testboot
+EXEDIR := $(AROS_TESTS)/boot
+
+USER_CFLAGS  := -isystem $(SRCDIR)/arch/all-native/bootconsole/include
+USER_LDFLAGS := -L $(GENDIR)/lib
+
+#MM test-boot : linklibs-bootconsole
+
+%build_prog mmake=test-boot \
+    progname=testboot targetdir=$(EXEDIR) \
+    files=$(FILES) uselibs="bootconsole" \
+    usestartup=no
+
+%common

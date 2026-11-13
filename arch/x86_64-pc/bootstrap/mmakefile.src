@@ -1,0 +1,18 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM kernel-bootstrap-pc-x86_64: linklibs-stdc-static32 linklibs-bootconsole32 linklibs-bootstrap32
+
+MAINDIR := arch/all-pc/bootstrap
+
+USER_INCLUDES := -I $(SRCDIR)/$(MAINDIR) -isystem $(SRCDIR)/bootstrap/include \
+               -I$(GENDIR)/include
+ifeq ($(AROS_TARGET_CPU),x86_64)
+    ISA_FLAGS := $(ISA_X86_FLAGS)
+endif
+
+%build_archspecific \
+	mainmmake=kernel-bootstrap-pc maindir=$(MAINDIR) arch=x86_64 \
+	files=cpu compiler=kernel
+
+%common

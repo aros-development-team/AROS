@@ -1,0 +1,66 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+FILES      := wrapper
+STORAGEDIR := $(AROSDIR)/Storage/Monitors
+# Cards on a PCI bus can be fitted to any machine that has one
+ifeq ($(filter pc opensbi,$(AROS_TARGET_ARCH)),)
+PCIDEVSDIR := $(STORAGEDIR)
+else
+PCIDEVSDIR := $(AROS_DEVS)/Monitors
+endif
+ifneq ($(AROS_TARGET_ARCH),pc)
+PCDEVSDIR := $(STORAGEDIR)
+else
+PCDEVSDIR := $(AROS_DEVS)/Monitors
+endif
+ifneq ($(AROS_TARGET_ARCH),amiga)
+AMIGADEVSDIR := $(STORAGEDIR)
+else
+AMIGADEVSDIR := $(AROS_DEVS)/Monitors
+endif
+
+#MM- workbench-devs-monitors: devs-monitors-wrapper devs-monitors-wrapper-copy
+
+#MM devs-monitors-wrapper : includes linklibs
+
+%build_prog mmake=devs-monitors-wrapper \
+    progname=Wrapper targetdir=$(STORAGEDIR) \
+    files=$(FILES)
+
+WRAPPER_MONITORS := $(PCIDEVSDIR)/ATI $(PCIDEVSDIR)/AMDGPU $(PCIDEVSDIR)/NVidia
+ifeq ($(AROS_TARGET_ARCH),pc)
+WRAPPER_MONITORS += $(PCDEVSDIR)/VMWare
+endif
+ifeq ($(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU),amiga-m68k)
+WRAPPER_MONITORS += $(AMIGADEVSDIR)/SAGA
+endif
+
+#MM
+devs-monitors-wrapper-copy: $(WRAPPER_MONITORS)
+
+$(PCIDEVSDIR)/ATI: $(STORAGEDIR)/Wrapper | $(PCIDEVSDIR)
+	%fileactionmsg msg="Creating   " file="$@" elipses="..."
+	@$(CP) -f $< $@
+
+$(PCIDEVSDIR)/AMDGPU: $(STORAGEDIR)/Wrapper | $(PCIDEVSDIR)
+	%fileactionmsg msg="Creating   " file="$@" elipses="..."
+	@$(CP) -f $< $@
+
+$(PCIDEVSDIR)/NVidia: $(STORAGEDIR)/Wrapper | $(PCIDEVSDIR)
+	%fileactionmsg msg="Creating   " file="$@" elipses="..."
+	@$(CP) -f $< $@
+
+$(PCDEVSDIR)/VMWare: $(STORAGEDIR)/Wrapper | $(PCDEVSDIR)
+	%fileactionmsg msg="Creating   " file="$@" elipses="..."
+	@$(CP) -f $< $@
+
+$(AMIGADEVSDIR)/SAGA: $(STORAGEDIR)/Wrapper | $(AMIGADEVSDIR)
+	%fileactionmsg msg="Creating   " file="$@" elipses="..."
+	@$(CP) -f $< $@
+
+$(AROS_DEVS)/Monitors:
+	%fileactionmsg msg="Creating   " file="$@" elipses="..."
+	%mkdir_q dir="$@"
+
+%common

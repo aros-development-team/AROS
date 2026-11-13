@@ -1,0 +1,20 @@
+# Copyright (C) 2012, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+
+FILES           := autopipe
+
+EXEDIR          := $(AROS_TESTS)/pipe
+
+#MM- test : test-pipe test-pipe-pure
+#MM- test-quick : test-pipe-quick
+
+#MM test-pipe : includes linklibs
+
+USER_CFLAGS += -DADATE="\"$(shell date '+%d.%m.%Y')\""
+
+%build_progs mmake=test-pipe \
+    files=$(FILES) targetdir=$(EXEDIR) \
+    usestartup="no"
+
+%common

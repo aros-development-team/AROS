@@ -1,0 +1,328 @@
+/*
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
+
+    Desc: Resident CLI command
+*/
+
+/******************************************************************************
+
+
+    NAME
+
+        Resident
+
+    SYNOPSIS
+
+        NAME,FILE,REMOVE/S,ADD/S,REPLACE/S,PURE=FORCE/S,SYSTEM/S
+
+    LOCATION
+
+        C:
+
+    FUNCTION
+
+        Handles list of resident commands. Those commands will be
+        loaded once and then executed from memory.
+
+        Only pure commands can be made resident, i.e. they must
+        be re-entrant and re-executable. Such commands have the "P"
+        protection flag set.
+
+        If called without arguments it lists the resident commands.
+
+    INPUTS
+
+        NAME    -- The reference name of the resident command. If no
+                   name is given the filepart of the file argument
+                   is used.
+        FILE    -- The file name of the command. It must be an
+                   absolute path.
+        REMOVE  -- Deactivates a resident command.
+        ADD     -- Adds multiple versions of the same command.
+        REPLACE -- If a resident command already exists, it will be
+                   replaced. That's the default option.
+        FORCE   -- Add commands which don't have the "P" bit set.
+        SYSTEM  -- Adds a command to the system resident list. Those
+                   commands can't be removed.
+
+    RESULT
+
+    NOTES
+
+    EXAMPLE
+
+        RESIDENT C:COPY
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+    HISTORY
+
+******************************************************************************/
+
+#include <proto/dos.h>
+#include <dos/dosextens.h>
+#include <string.h>
+#include <exec/lists.h>
+#include <exec/nodes.h>
+#include <exec/memory.h>
+
+#include <string.h>
+
+#include <aros/shcommands.h>
+
+struct SegNode
+{
+    struct MinNode node;
+    IPTR data[2];
+};
+
+static struct SegNode *NewSegNode(struct ExecBase *SysBase, STRPTR name, LONG uc);
+
+AROS_SH7(Resident, 41.3,
+AROS_SHA(STRPTR, ,NAME, ,NULL),
+AROS_SHA(STRPTR, ,FILE, ,NULL),
+AROS_SHA(BOOL, ,REMOVE,/S,FALSE),
+AROS_SHA(BOOL, ,ADD,/S,FALSE),
+AROS_SHA(BOOL, ,REPLACE,/S,FALSE),
+AROS_SHA(BOOL,PURE=,FORCE,/S,FALSE),
+AROS_SHA(BOOL, ,SYSTEM,/S,FALSE))
+{
+    AROS_SHCOMMAND_INIT
+
+
+    if (SHArg(FILE) || SHArg(NAME))
+    {
+        STRPTR name, file;
+        BPTR seglist;
+        struct FileInfoBlock *fib;
+
+        if (SHArg(FILE))
+        {
+            name = SHArg(NAME);
+            file = SHArg(FILE);
+        }
+        else
+        {
+            name = FilePart(SHArg(NAME));
+            file = SHArg(NAME);
+        }
+
+        SetIoErr(0);
+        if (SHArg(REMOVE))
+        {
+            struct Segment *found;
+
+            Forbid();
+            found = FindSegment(name, NULL, FALSE);
+            if (!found)
+                found = FindSegment(name, NULL, TRUE);
+            if (!found)
+            {
+                SetIoErr(ERROR_OBJECT_NOT_FOUND);
+            }
+            else
+            if (!RemSegment(found))
+            {
+                if (found->seg_UC == CMD_INTERNAL)
+                    found->seg_UC = CMD_DISABLED;
+                else
+                    SetIoErr(ERROR_OBJECT_IN_USE);
+            }
+            Permit();
+
+            if (IoErr())
+            {
+                PrintFault(IoErr(), SHArg(NAME));
+                return RETURN_WARN;
+            }
+
+            return RETURN_OK;
+        }
+
+        if (SHArg(REPLACE))
+        {
+            struct Segment *found;
+
+            Forbid();
+            found = FindSegment(name, NULL, TRUE);
+            if (found && found->seg_UC == CMD_DISABLED)
+            {
+                found->seg_UC = CMD_INTERNAL;
+                Permit();
+                return RETURN_OK;
+            }
+            Permit();
+        }
+
+        if (!SHArg(ADD)) SHArg(REPLACE) = TRUE;
+
+        if (!SHArg(FORCE) && (fib = (struct FileInfoBlock *)AllocDosObject(DOS_FIB, NULL)))
+        {
+            BPTR lock;
+
+            if ((lock = Lock(file, SHARED_LOCK)))
+            {
+                if (Examine(lock, fib))
+                {
+                    if ((fib->fib_Protection & FIBF_PURE) == 0)
+                        SetIoErr(ERROR_OBJECT_WRONG_TYPE);
+                }
+
+                UnLock(lock);
+            }
+
+            FreeDosObject(DOS_FIB, fib);
+        }
+
+        if (IoErr() || !(seglist = LoadSeg(file)))
+        {
+            PrintFault(IoErr(), file);
+            return RETURN_FAIL;
+        }
+
+        if (SHArg(REPLACE))
+        {
+            struct Segment *found;
+
+            Forbid();
+            found = FindSegment(name, NULL, FALSE);
+
+            if (found)
+            {
+                if (found->seg_UC != 0)
+                {
+                     Permit();
+                     PrintFault(ERROR_OBJECT_IN_USE, file);
+                     UnLoadSeg(seglist);
+                     return RETURN_FAIL;
+                }
+
+                UnLoadSeg(found->seg_Seg);
+                found->seg_Seg = seglist;
+                Permit();
+
+                return RETURN_OK;
+            }
+            Permit();
+        /* Fall through */
+        }
+
+        /* WB1.x backwards compatibility hack, do not allow
+         * override of built-in resident or to add l:shell-seg (CLI) */
+        if (!stricmp(name, "resident") || !stricmp(name, "cli")) {
+            SetIoErr(ERROR_OBJECT_WRONG_TYPE);
+            UnLoadSeg(seglist);
+            return 1; /* yes, return code = 1 in this special case */
+        }
+
+        if (!AddSegment(name, seglist, SHArg(SYSTEM)?CMD_SYSTEM:0))
+        {
+            UnLoadSeg(seglist);
+            PrintFault(IoErr(), "Resident");
+            return RETURN_FAIL;
+        }
+    }
+    else
+    {
+
+        struct MinList l;
+        struct Segment *curr;
+        struct SegNode *n;
+        struct DosInfo *dinf = BADDR(DOSBase->dl_Root->rn_Info);
+        BOOL isbreak = FALSE;
+
+        NEWLIST((struct List *)&l);
+
+        SetIoErr(0);
+        Forbid();
+        curr = (struct Segment *)BADDR(dinf->di_ResList);
+        while (curr)
+        {
+            n = NewSegNode(SysBase, AROS_BSTR_ADDR(MKBADDR(&curr->seg_Name[0])), curr->seg_UC);
+
+            if (!n)
+            {
+                SetIoErr(ERROR_NO_FREE_STORE);
+                break;
+            }
+
+            AddTail((struct List *)&l, (struct Node *)n);
+            curr = (struct Segment *)BADDR(curr->seg_Next);
+        }
+        Permit();
+
+        if (IoErr())
+        {
+            PrintFault(IoErr(), "Resident");
+            return RETURN_FAIL;
+        }
+
+        PutStr("NAME                           USECOUNT\n\n");
+        while ((n = (struct SegNode *)RemHead((struct List *)&l)))
+        {
+            if (SetSignal(0L, SIGBREAKF_CTRL_C) & SIGBREAKF_CTRL_C)
+                isbreak = TRUE;
+            if (!isbreak) {
+                if (n->data[1] == CMD_SYSTEM)
+                    Printf("%-30s SYSTEM\n", (CONST_STRPTR)n->data[0]);
+                else
+                if (n->data[1] == CMD_INTERNAL)
+                    Printf("%-30s INTERNAL\n", (CONST_STRPTR)n->data[0]);
+                else
+                if (n->data[1] == CMD_DISABLED)
+                    Printf("%-30s DISABLED\n", (CONST_STRPTR)n->data[0]);
+                else
+                    Printf("%-30s %-ld\n", (CONST_STRPTR)n->data[0], (ULONG)n->data[1]);
+            }
+            FreeVec((APTR)n->data[0]);
+            FreeVec(n);
+        }
+        if (isbreak) {
+            SetIoErr(ERROR_BREAK);
+            PrintFault(IoErr(), "Resident");
+            return RETURN_FAIL;
+        }
+    }
+
+    return RETURN_OK;
+
+    AROS_SHCOMMAND_EXIT
+}
+
+static STRPTR myStrDup(struct ExecBase *SysBase, STRPTR str)
+{
+    size_t len = strlen(str)+1;
+    STRPTR ret = (STRPTR) AllocVec(len, MEMF_ANY);
+
+    if (ret)
+    {
+        CopyMem(str, ret, len);
+    }
+
+    return ret;
+}
+
+
+static struct SegNode *NewSegNode(struct ExecBase *SysBase, STRPTR name,
+                                  LONG uc)
+{
+    struct SegNode *sn = AllocVec(sizeof (struct SegNode), MEMF_ANY);
+
+    if (sn)
+    {
+        sn->data[0] = (IPTR) myStrDup(SysBase, name);
+        if (sn->data[0])
+        {
+            sn->data[1] = uc;
+            return sn;
+        }
+
+        FreeVec(sn);
+    }
+
+    return NULL;
+}

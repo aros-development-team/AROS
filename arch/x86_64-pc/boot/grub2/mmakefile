@@ -1,0 +1,47 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM- bootloader-grub2-pc-x86_64-quick : bootloader-grub2-pc-x86_64
+#MM bootloader-grub2-pc-x86_64 : grub2-dirs bootloader-grub2gfx-common bootloader-grub2gfx-txtmode grub2-pc-x86_64
+#MM- bootloader-grub2gfx-pc-x86_64-quick : bootloader-grub2gfx-pc-x86_64
+#MM bootloader-grub2gfx-pc-x86_64 : grub2-dirs bootloader-grub2gfx-common bootloader-grub2gfx-gfxmode grub2-pc-x86_64
+
+#MM- grub2-pc-x86_64: arch-common-grub2 grub2-iso-setup 
+
+MODULES_DEFAULT:=$(SRCDIR)/$(CURDIR)/../modules.default
+MODULE_BOOTSTRAP:=/$(AROS_DIR_BOOTARCH)/bootstrap.$(AROS_PACKAGE_FMT)
+
+# grub-mkrescue uses lower-case path names
+ifeq ($(HOST_MTOOLS),yes)
+ifneq ($(XORRISO),)
+EFI_DIR=efi
+#EFI_BOOT_DIR=boot
+endif
+endif
+EFI_DIR ?= EFI
+EFI_BOOT_DIR ?= BOOT
+
+GRUB_CFG_TEMPLATE := grub.cfg
+GRUB_CFG_OUTPUTS := \
+  $(AROS_BOOT)/grub/grub.cfg \
+  $(AROSDIR)/$(EFI_DIR)/$(EFI_BOOT_DIR)/grub/grub.cfg
+
+bootloader-grub2-pc-x86_64: $(GRUB_CFG_OUTPUTS)
+bootloader-grub2gfx-pc-x86_64: $(GRUB_CFG_OUTPUTS)
+
+ifeq ($(DEBUG),yes)
+SEDPARAMS = -e 's|@debug@|debug|g'
+else
+SEDPARAMS = -e 's|@debug@||g'
+endif
+
+$(GRUB_CFG_OUTPUTS): $(GRUB_CFG_TEMPLATE)
+	@$(ECHO) Generating $@...
+	@$(SED) $(SEDPARAMS) \
+		-e 's#@modules.default@#sed "s\#^\#    module2 \#g" $(MODULES_DEFAULT)#e' \
+		-e 's#@EFIDIR@#$(EFI_DIR)#g' \
+		-e 's#@BOOTDIR@#$(EFI_BOOT_DIR)#g' \
+		-e 's#@arch.dir@#$(AROS_DIR_ARCH)#g' \
+		-e 's#@pkg.fmt@#$(AROS_PACKAGE_FMT)#g' \
+		-e 's#@module.bootstrap@#$(MODULE_BOOTSTRAP)#g' \
+		$(GRUB_CFG_TEMPLATE) > $@

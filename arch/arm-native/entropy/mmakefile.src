@@ -1,0 +1,21 @@
+include $(SRCDIR)/config/aros.cfg
+
+# entropy_hw.c needs entropy.resource's private headers.
+USER_INCLUDES := -I$(SRCDIR)/rom/entropy
+
+%build_archspecific \
+  mainmmake=kernel-entropy modname=entropy maindir=rom/entropy \
+  arch=raspi-arm \
+  files="entropy_hw"
+
+%build_archspecific \
+  mainmmake=kernel-entropy modname=entropy maindir=rom/entropy \
+  arch=raspi-armeb \
+  files="entropy_hw"
+
+%build_archspecific \
+  mainmmake=kernel-entropy modname=entropy maindir=rom/entropy \
+  arch=raspi-aarch64 \
+  files="entropy_hw"
+
+%common

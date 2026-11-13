@@ -1,0 +1,60 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+USER_LDFLAGS := -static
+
+FILES := \
+     filereqalloc filereqextra req misc rtlocale \
+     general filereq boopsigads filereqsetup filereqmain boopsi \
+     palettereq rtfuncs
+
+FUNCS := \
+    rtallocrequesta \
+    rtchangereqattra \
+    rtclosewindowsafely \
+    rtezrequesta \
+    rtfilerequesta \
+    rtfontrequesta \
+    rtfreefilelist \
+    rtfreerequest \
+    rtfreereqbuffer \
+    rtgetlonga \
+    rtgetstringa \
+    rtgetvscreensize \
+    rtinternalenterpassword \
+    rtinternalgetpassword \
+    rtlockwindow \
+    rtlockprefs \
+    rtpaletterequesta \
+    rtreqhandlera \
+    rtscreenmoderequesta \
+    rtscreentofrontsafely \
+    rtsetreqposition \
+    rtsetwaitpointer \
+    rtspread \
+    rtunlockprefs \
+    rtunlockwindow
+
+#MM- workbench-libs-reqtools-includes : \
+#MM      kernel-exec-includes \
+#MM      kernel-dos-includes \
+#MM      kernel-graphics-includes \
+#MM      kernel-layers-includes \
+#MM      kernel-intuition-includes \
+#MM      kernel-console-includes \
+#MM      workbench-libs-workbench-includes \
+#MM      workbench-libs-diskfont-includes \
+#MM      workbench-libs-gadtools-includes \
+#MM      workbench-libs-locale-includes \
+#MM      workbench-gadgets-colorwheel-includes \
+#MM      includes-copy
+#MM- workbench-libs-reqtools : linklibs workbench-libs-reqtools-catalogs
+
+%build_module mmake=workbench-libs-reqtools \
+    modname=reqtools modtype=library \
+    files="reqtools_init $(FUNCS) $(FILES)"
+
+INCLUDE_FILES:=reqtools.h
+%copy_includes path=libraries dir=$(SRCDIR)/$(CURDIR)/amigaincludesforgcc/libraries includes=$(INCLUDE_FILES)
+
+%common

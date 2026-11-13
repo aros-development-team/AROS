@@ -1,0 +1,40 @@
+<html>
+<head>
+<title>Untitled Document</title>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+</head>
+
+<body bgcolor="#FFFFFF">
+<h1>Readme file for ADFLib on Win32</h1>
+<p>
+<p>This file contains additional information on using ADFLib under 32-bit Windows. 
+  See the main library documentation for more general info.
+<h2>Compiling the library on Win32 platforms</h2>
+<p>The ADFLib distribution contains a two makefiles for nmake:
+<p><b>Win32Lib.mak</b><br>
+  Compiles the ADFLib as a static library. To use it, simply link your program 
+  with adflib.lib and #include adflibusr.h.
+<p><b>Win32DLL.mak</b><br>
+  Compiles ADFLib as a DLL. This will produce the files ADFLib.dll, ADFLib.lib 
+  (the import library to link with your
+<p>Both makefiles contain debug and release targets. To specify which one to use, 
+  use a command line like this:
+<pre>NMAKE /f "ADFLib.mak" CFG="ADFLib - Win32 Release"</pre>
+<p>The makefiles will produce a debug version of the library by default if no 
+  configuration is specified.
+<h2>The Win32 native functions</h2>
+<p>When ADFLib is compiled under Win32, the Win32 native functions will be linked, 
+  allowing you to access Amiga harddisks directly in Windows. Current only Windows 
+  NT is supported - support for Windows 95 and 98 is in the pipeline.
+<p>For the direct drive access routines to work under Windows NT, you need administrative 
+  priviledges. This is a security feature of Windows NT and there is no way around 
+  it.
+<p>To open a physical device, simply use the following format as the filname: 
+<pre>|Hx</pre>
+<p>Where x is the ID of the drive to mount. Example: 
+<pre>hd = adfMountDev(&quot;|H1&quot;);</pre>
+<p>Your system boot device always has an ID of 0. Attempting to mount it is not 
+  a good idea!
+<p>&nbsp;
+</body>
+</html>

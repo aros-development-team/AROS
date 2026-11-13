@@ -1,0 +1,509 @@
+/*
+ * amiga_config.c --- Configuring AmiTCP/IP
+ *
+ * Copyright (C) 1993 AmiTCP/IP Group, <amitcp-group@hut.fi>
+ *                    Helsinki University of Technology, Finland.
+ *                    All rights reserved.
+ * Copyright (C) 2005-2026 The AROS Dev Team
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place - Suite 330, Boston,
+ * MA 02111-1307, USA.
+ *
+ */
+
+#include <conf.h>
+
+#include <sys/param.h>
+#include <sys/systm.h>
+#include <sys/syslog.h>
+#include <sys/socket.h>
+#include <sys/malloc.h>
+#include <sys/mbuf.h>
+
+#include <netdb.h>		/* pathnames */
+
+#include <kern/amiga_gui.h>
+#include <kern/amiga_includes.h>
+#include <kern/amiga_config.h>
+#include <kern/amiga_netdb.h>
+#include <utility/tagitem.h>
+#include <dos/rdargs.h>
+
+#include <proto/dos.h>
+
+#include "net/netdbpaths.h"
+#include <net/route.h>
+#include <netinet/in_systm.h>
+#include <netinet/in.h>
+#include <netinet/ip.h>
+#include <netinet/in_pcb.h>
+#include <netinet/ip_var.h>
+#include <netinet/ip_icmp.h>
+#include <netinet/icmp_var.h>
+#include <netinet/tcp.h>
+#include <netinet/tcp_timer.h>
+#include <netinet/tcp_var.h>
+#include <netinet/udp.h>
+#include <netinet/udp_var.h>
+
+#include <stdio.h>
+
+/* External functions */
+int ultoa(unsigned long ul, char *buffer);
+
+extern struct Task *AROSTCP_Task; /* referenced by sendbreak() */
+
+/* Parsing error messages */
+UBYTE ERR_UNKNOWN[]     = "Unknown command";
+UBYTE ERR_ILLEGAL_VAR[] = "%s: unknown variable %s";
+UBYTE ERR_ILLEGAL_IND[] = "%s: unknown index %s";
+UBYTE ERR_SYNTAX[]      = "Syntax error";
+UBYTE ERR_TOO_LONG[]    = "Result too long";
+UBYTE ERR_MEMORY[]      = "Memory exhausted";
+UBYTE ERR_NONETDB[]     = "No active net database";
+UBYTE ERR_VALUE[]       = "Illegal value";
+UBYTE ERR_NOWRITE[]     = "%s: Variable %s is not writeable";
+
+/* Array of parsing functions. Note that the order is same as in the
+ * enum keyword.
+ */
+var_f rexx_parse_funs[] = {
+    getvalue,			/* KEY_QUERY */
+    setvalue,			/* KEY_SET */
+    readfile,			/* KEY_READ */
+    parseroute,			/* KEY_ROUTE */
+    do_netdb,			/* KEY_ADD */
+    reset_netdb,			/* KEY_RESET */
+    sendbreak			/* KEY_KILL */
+};
+
+/*
+ * Parse a Rexx command line
+ */
+LONG
+parseline(struct CSource *csarg, UBYTE **errstrp, struct CSource *res)
+{
+    UBYTE Buffer[KEYWORDLEN];
+    enum keyword keyword;
+
+    /* Parse the command keyword */
+    LONG item = ReadItem(Buffer, sizeof(Buffer), csarg);
+
+    if(item == 0)
+        return RETURN_OK;
+    else if(item < 0) {
+        *errstrp = ERR_SYNTAX;
+        return RETURN_WARN;
+    }
+
+    if((keyword = FindArg((UBYTE *)REXXKEYWORDS, Buffer)) < 0) {
+        *errstrp = ERR_UNKNOWN;
+        return RETURN_WARN;
+    }
+
+    return rexx_parse_funs[keyword](csarg, errstrp, res);
+}
+
+/*
+ * 'Parse' the "KILL" command
+ */
+LONG
+sendbreak(struct CSource *args, UBYTE **errstrp, struct CSource *res)
+{
+    Signal(AROSTCP_Task, SIGBREAKF_CTRL_C);
+    return RETURN_OK;
+}
+
+extern UBYTE *KW_VARS;
+extern struct cfg_variable variables[];
+
+/*
+ * Parse the "Query" commands
+ */
+LONG
+getvalue(struct CSource *args, UBYTE **errstrp, struct CSource *res)
+{
+    UBYTE Buffer[KEYWORDLEN];
+    WORD var, index;
+    LONG vlen;
+    UBYTE *value = NULL;
+
+    Buffer[0] = '\0';
+
+    while((var = ReadItem(Buffer, sizeof(Buffer), args)) > 0) {
+        if((var = FindArg(KW_VARS, Buffer)) < 0 ||
+                (variables[var].flags & VF_READ) != VF_READ) {
+            res->CS_CurChr = 0;
+            csprintf(res, ERR_ILLEGAL_VAR, "getvalue", Buffer);
+            *errstrp = res->CS_Buffer;
+            return RETURN_WARN;
+        } else {
+
+            if(variables[var].flags & VF_TABLE) {
+                if(ReadItem(Buffer, sizeof(Buffer), args) <= 0 ||
+                        (index = FindArg((UBYTE *)variables[var].index, Buffer)) < 0) {
+                    res->CS_CurChr = 0;
+                    csprintf(res, ERR_ILLEGAL_IND, "getvalue", Buffer);
+                    *errstrp = res->CS_Buffer;
+                    return RETURN_WARN;
+                }
+            } else {
+                index = 0;
+            }
+
+            switch(variables[var].type) {
+            case VAR_FUNC:
+                if(variables[var].value) {
+                    if(vlen = (*(var_f)(variables[var].value))(args, errstrp, res))
+                        return vlen;
+                } else {
+                    *errstrp = ERR_ILLEGAL_VAR;
+                    return RETURN_ERROR;
+                }
+                value = (char *)1; /* successful flag.. */
+                continue; /* while() */
+            case VAR_LONG:
+            case VAR_FLAG:
+                vlen = ultoa(((LONG *)variables[var].value)[index], Buffer);
+                value = Buffer;
+                break;
+            case VAR_STRP:
+                value = ((UBYTE **)variables[var].value)[index];
+                if(value == NULL)		/* unset string variable */
+                    value = (UBYTE *)"";
+                vlen  = strnlen(value, KEYWORDLEN);
+                break;
+            case VAR_INET: {
+                ULONG s_addr =
+                    ((struct in_addr *)variables[var].value)[index].s_addr;
+                vlen = snprintf(Buffer, sizeof(Buffer), "%ld.%ld.%ld.%ld",
+                                (long)(s_addr >> 24) & 0xff, (long)(s_addr >> 16) & 0xff,
+                                (long)(s_addr >> 8) & 0xff, (long)s_addr & 0xff);
+                value = Buffer;
+            }
+            break;
+            case VAR_ENUM: {
+                ULONG i = 0, nth;
+                STRPTR p;
+
+                nth = ((ULONG *)variables[var].value)[index];
+                /*
+                 * search nth keyword from the template
+                 */
+                value = (STRPTR)variables[var].notify;
+                while(*value && i < nth)
+                    if(*value++ == ',')
+                        i++;
+                if(i < nth) {	/* value not found */
+                    *errstrp = ERR_VALUE;
+                    return RETURN_ERROR;
+                }
+                /*
+                     * find the length of the answer
+                 */
+                p = value;
+                while(*p && *p != '=' && *p != ',')
+                    p++;
+
+                vlen = p - value;
+            }
+            break;
+            }
+            /* prepend by space? */
+            if(res->CS_CurChr)
+                res->CS_Buffer[res->CS_CurChr++] = ' ';
+            if(vlen + res->CS_CurChr >= res->CS_Length) {
+                *errstrp = ERR_TOO_LONG;
+                return RETURN_ERROR;
+            }
+            bcopy(value, res->CS_Buffer + res->CS_CurChr, (WORD)vlen);
+            res->CS_CurChr += vlen;
+        }
+    }
+    if(!value || var != ITEM_NOTHING) {
+        *errstrp = ERR_SYNTAX;
+        return RETURN_WARN;
+    }
+    res->CS_Buffer[res->CS_CurChr] = '\0';
+    return RETURN_OK;
+}
+
+/*
+ * Parse the "Set" commands
+ *
+ * TODO: notifications for VAR_INET;
+ */
+LONG
+setvalue(struct CSource *args, UBYTE **errstrp, struct CSource *res)
+{
+    UBYTE Buffer[KEYWORDLEN];
+    LONG  BufLen = sizeof(Buffer);
+    LONG vlen, item;
+    WORD var, index;
+    UBYTE *value;
+    void *dp = NULL;		/* pointer to data item */
+
+    Buffer[0] = '\0';
+
+    while((item = ReadItem(Buffer, BufLen, args)) > 0) {
+        if((var = FindArg(KW_VARS, Buffer)) < 0 ||
+                (!(variables[var].flags & VF_WRITE) &&
+                 (initialized || !(variables[var].flags & VF_CONF)))) {
+            res->CS_CurChr = 0;
+            csprintf(res, (var < 0) ? ERR_ILLEGAL_VAR : ERR_NOWRITE,
+                     "setvalue", Buffer);
+            *errstrp = res->CS_Buffer;
+            return RETURN_WARN;
+        } else {
+            if(variables[var].flags & VF_TABLE) {
+                if(ReadItem(Buffer, BufLen, args) <= 0 ||
+                        (index = FindArg((UBYTE *)variables[var].index, Buffer)) < 0) {
+                    res->CS_CurChr = 0;
+                    csprintf(res, ERR_ILLEGAL_IND, "setvalue", Buffer);
+                    *errstrp = res->CS_Buffer;
+                    return RETURN_WARN;
+                }
+            } else {
+                index = 0;
+            }
+
+            if(variables[var].type != VAR_FLAG &&
+                    *CURRENT(args) == '=')
+                args->CS_CurChr++;
+
+            /* If dp is different for a type,
+             * it must be calculated in the case statement
+             */
+            dp = (void *)((LONG *)variables[var].value + index);
+
+            switch(variables[var].type) {
+            case VAR_FUNC:
+                if(variables[var].notify) {
+                    if(vlen = (*(var_f)(variables[var].notify))(args, errstrp, res))
+                        return vlen;
+                } else {
+                    *errstrp = ERR_ILLEGAL_VAR;
+                    return RETURN_ERROR;
+                }
+                break;
+            case VAR_LONG:
+                if((vlen = StrToLong(CURRENT(args), &item)) <= 0)
+                    goto reterr;
+                if(variables[var].notify)
+                    if(!(*variables[var].notify)(dp, item)) {
+                        *errstrp = ERR_VALUE;
+                        return RETURN_WARN;
+                    }
+                *(LONG *)dp = item;
+                args->CS_CurChr += vlen;
+                break;
+            case VAR_STRP:
+                if(ReadItem(Buffer, BufLen, args) <= 0)
+                    goto reterr;
+                vlen  = strnlen(Buffer, BufLen) + 1;
+                value = bsd_malloc(vlen, M_CFGVAR, M_WAITOK);
+                if(!value) {
+                    *errstrp = ERR_MEMORY;
+                    return RETURN_ERROR;
+                }
+                memcpy(value, Buffer, vlen);
+                if(variables[var].notify)
+                    if(!(*variables[var].notify)(dp, (IPTR) value)) {
+                        bsd_free(value, M_CFGVAR);
+                        *errstrp = ERR_VALUE;
+                        return RETURN_WARN;
+                    }
+                if(variables[var].flags & VF_FREE) {
+                    bsd_free(*(UBYTE **)dp, M_CFGVAR);
+                }
+                *(UBYTE **)dp = value;
+                variables[var].flags |= VF_FREE;
+                break;
+            case VAR_INET:
+                /* Currently, nameservice cannot be used */
+                if(ReadItem(Buffer, BufLen, args) <= 0)
+                    goto reterr;
+                if(!__inet_aton(Buffer, (struct in_addr *)dp))
+                    goto reterr;
+                break;
+            case VAR_ENUM:
+                if(ReadItem(Buffer, BufLen, args) <= 0)
+                    goto reterr;
+                /*
+                 * Match the item against the template. The value is the index of
+                 * the matching keyword, if one is found.
+                 */
+                if((vlen = FindArg((STRPTR)variables[var].notify, Buffer)) < 0)
+                    goto reterr;
+                /*
+                 * Set the new value. Note that there is no notify function, since
+                 * the notify field was used for the template.
+                 */
+                *(LONG *)dp = vlen;
+                break;
+            default:
+                goto reterr;
+            }
+        }
+    }
+
+    if(item != ITEM_NOTHING) {
+reterr:
+        *errstrp = ERR_SYNTAX;
+        return RETURN_WARN;
+    }
+
+#define DONE "Done."
+    /*
+     * CS_CurChr accumulates across config lines; make sure appending the
+     * "Done." reply (plus its terminating NUL) cannot overflow CS_Buffer.
+     */
+    if(res->CS_CurChr + sizeof(DONE) >= res->CS_Length) {
+        *errstrp = ERR_TOO_LONG;
+        return RETURN_ERROR;
+    }
+    bcopy(DONE, res->CS_Buffer + res->CS_CurChr, sizeof(DONE));
+    res->CS_CurChr += sizeof(DONE);
+    res->CS_Buffer[res->CS_CurChr] = '\0';
+    return RETURN_OK;
+}
+
+/*
+ * (SET WITH=file - read_sets() - and the reading of the command line and
+ * general.config - readconfig(), parsefile() - are the configuration
+ * reader's, module "netconfig": kern/netconfig_stubs.c,
+ * kern/netconfig_module.c. QUERY and SET of the variables stay here: they
+ * are what the stack answers while it runs.)
+ */
+
+/*
+ * Parse a 'WITH' command
+ */
+LONG
+readfile(struct CSource *args, UBYTE **errstrp, struct CSource *res)
+{
+    *errstrp = "readfile() is currently unimplemented\n";
+    return RETURN_WARN;
+}
+
+#if 0
+/*
+ * The order of following keywords is selected to reflect the order of
+ * route message numbers in <net/route.h>, so DO NOT CHANGE THE ORDER.
+ */
+static STRPTR KW_ROUTE_CMDS =
+    "RESET,ADD,DELETE,CHANGE,GET";
+
+static STRPTR ROUTE_TEMPLATE =
+    "NET/S,HOST/S,DESTINATION/A,GATEWAY/A,INTERFACE/S,HCNT=HOPCOUNT/K/N";
+
+enum route_template {
+    ROUTE_NET, ROUTE_HOST, ROUTE_DESTINATION, ROUTE_GATEWAY, ROUTE_INTERFACE,
+    ROUTE_HOPCOUNT, ROUTE_TEMPLATE_SIZE
+};
+
+#endif /* 0 */
+
+/*
+ * Parse route command
+ */
+LONG
+parseroute(struct CSource *args, UBYTE **errstrp, struct CSource *res)
+{
+#if defined(__AROS__)
+    D(bug("[AROSTCP](amiga_config.c) parseroute()\n"));
+#endif
+#if 1
+    *errstrp = "ROUTE not implemented.\n";
+    return RETURN_FAIL;
+#else
+    UBYTE Buffer[KEYWORDLEN];
+    LONG  BufLen = sizeof(Buffer);
+    struct RDArgs *rdargs;
+    IPTR argArray[ROUTE_TEMPLATE_SIZE] = { 0 };
+    LONG vlen, item;
+    WORD index;
+    UBYTE *value;
+    void *dp = NULL;		/* pointer to data item */
+    int req, flags = 0;
+    struct sockaddr_in destination, gateway, netmask;
+    int error;
+
+    Buffer[0] = '\0';
+
+    if((item = ReadItem(Buffer, BufLen, args)) <= 0
+            || (req = FindArg(KW_ROUTE_CMDS, Buffer)) < 0) {
+        *errstrp = ERR_SYNTAX;
+        return RETURN_FAIL;
+    }
+
+    if(req == 0)	{		/* RESET, delete all routes */
+        *errstrp = "route reset is currently unimplemented\n";
+        return RETURN_FAIL;
+    }
+
+    if(req == RTM_CHANGE) {
+        *errstrp = "route change is currently unimplemented\n";
+        return RETURN_FAIL;
+    }
+    if(req == RTM_GET) {
+        *errstrp = "route get is currently unimplemented\n";
+        return RETURN_FAIL;
+    }
+
+    /*
+     * Initialize the RDArgs structure for ReadArgs()
+     */
+    rdargs = AllocDosObjectTags(DOS_RDARGS, TAG_END);
+    if(rdargs == NULL) {
+        *errstrp = ERR_MEMORY;
+        return RETURN_FAIL;
+    }
+
+    rdargs->RDA_Source = *args;
+    rdargs->RDA_DAList = NULL;
+    rdargs->RDA_Buffer = NULL;
+    rdargs->RDA_BufSiz = 0;
+    rdargs->RDA_ExtHelp = NULL;
+    rdargs->RDA_Flags = 0;
+
+    if(ReadArgs(ROUTE_TEMPLATE, argArray, rdargs) == NULL
+            || (argArray[ROUTE_HOST] && argArray[ROUTE_NET])) {
+        FreeDosObject(DOS_RDARGS, rdargs);
+        *errstrp = ERR_SYNTAX;
+        return RETURN_FAIL;
+    }
+
+    /*
+     * Find destination host/network
+     */
+    /* INCOMPLETE */
+
+    if(!argArray[ROUTE_INTERFACE])
+        flags |= RTF_GATEWAY;
+    if(argArray[ROUTE_HOST])
+        flags |= RTF_HOST;
+
+#if 0
+    error = rtrequest(req, &destination, &gateway,
+                      (flags & RTF_HOST) ? NULL : &netmask,
+                      flags, (struct rtentry **)0);
+#endif
+
+    FreeArgs(rdargs);
+    FreeDosObject(DOS_RDARGS, rdargs);
+
+    return RETURN_OK;
+#endif
+}

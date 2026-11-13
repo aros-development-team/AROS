@@ -1,0 +1,32 @@
+include $(SRCDIR)/config/aros.cfg
+
+#MM
+clean ::
+	-$(RM) ./machine
+
+#MM
+machine : $(SRCDIR)/$(CURDIR)/machine.c
+	$(HOST_CC) -idirafter $(AROS_INCLUDES) -o machine $(SRCDIR)/$(CURDIR)/machine.c
+	./machine
+
+#MM- AROS : kernel kernel-$(ARCH)-$(CPU)-$(AROS_TARGET_VARIANT) kernel-$(ARCH)-$(CPU) kernel-$(FAMILY)
+#MM- kernel : kernel-link-$(ARCH)-$(CPU)-$(AROS_TARGET_VARIANT) kernel-link-$(ARCH)-$(CPU) kernel-link-$(FAMILY)
+#MM- kernel-$(ARCH)-$(CPU) : linklibs
+
+#MM- AROS : boot workbench demos external
+#MM- workbench : workbench-$(ARCH)-$(CPU)-$(AROS_TARGET_VARIANT) workbench-$(ARCH)-$(CPU) workbench-$(FAMILY)
+#MM- demos : includes linklibs
+#MM- contrib : includes linklibs
+
+#MM- core-includes: \
+#MM      kernel-expansion-includes \
+#MM      kernel-utility-includes \
+#MM      kernel-oop-includes \
+#MM      kernel-graphics-includes \
+#MM      kernel-layers-includes \
+#MM      kernel-intuition-includes \
+#MM      workbench-libs-cgfx-includes \
+#MM      kernel-dos-includes \
+#MM      workbench-libs-workbench-includes
+
+%include_deps $(TOP)/bin/$(AROS_TARGET_ARCH)-$(TARGET_CPU)/gen/config/host.cfg

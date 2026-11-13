@@ -1,0 +1,28 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+%get_archincludes modname=kernel \
+    includeflag=TARGET_KERNEL_INCLUDES maindir=rom/kernel
+
+%get_archincludes modname=exec \
+    includeflag=TARGET_EXEC_INCLUDES maindir=rom/exec
+
+PRIV_KERNEL_INCLUDES = \
+    $(TARGET_KERNEL_INCLUDES) \
+	-I$(SRCDIR)/rom/kernel \
+	$(TARGET_EXEC_INCLUDES) \
+	-I$(SRCDIR)/rom/exec
+
+CFILES := \
+        debug_init_arch
+
+#MM kernel-debug-sam440-ppc : kernel-kernel-ppc-includes kernel-debug-includes
+
+USER_INCLUDES     := $(PRIV_KERNEL_INCLUDES) \
+                   -I$(SRCDIR)/rom/debug
+
+%build_archspecific \
+  mainmmake=kernel-debug maindir=rom/debug arch=sam440-ppc \
+  files=$(CFILES) modname=debug
+
+TARGETDIR = $(BD_OBJDIR$(BDID))

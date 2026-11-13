@@ -1,0 +1,276 @@
+$Date: 96/07/24 20:27:32 $
+
+V1.0:  This is the first release
+
+V1.0b: Bug fix: Unit 0 of the paging device was always used instead of the
+                given unit.
+
+       Bug fix: In case of an error "Reboot" didn't work.
+
+V1.1:  Now runs on non-A4000 machines. Sets up its own MMU table, 
+       if necessary.
+
+       Statistics window is font-sensitive now
+
+       Dynamic memory allocation policy implemented
+
+       Now up to 64 MB of virtual memory possible
+
+       Now supports both 4K and 8K pages (two program versions)
+
+       Paging to a file implemented
+
+       Separate program for printing out statistics is available now
+       ("VMM40Stat")
+
+       Disk access time reduced.
+
+V1.2:  Fixed a bug which caused VMM40 to crash the machine when paging to
+       a file with its name longer than 20 characters.
+
+       V1.1 tried to improve system consistency by disabling allocation of
+       VM inside forbidden/disabled sections. This caused programs which
+       do an AvailMem (); AllocMem () inside a Forbid/Permit to fail on
+       VM allocations (e.g. ADPro). Removed in V1.2.
+
+       A  small  program  "ShowPageSize"  has  been added to determine which
+       pagesize is possible on your system.
+
+       Maximum VM size has been increased to 128 MB as requested.
+
+       A programmer's library has been added for exclusive use of 
+       virtual memory.
+
+V1.3:  FreeMem now marks the freed pages as empty resulting in less paging
+       on freeing memory. Unfortunately this breaks tools such as MungWall
+       which writes to memory it hasn't allocated.
+
+       Fixed a bug which caused strange behaviour during disk IO using
+       multiple units sharing the same device. This was probably responsible
+       for some strange misbehaviours when rendering text and icons.
+
+       The preferences are now changeable while VMM40 is running. 
+       All parameters except the paging device/file and the page-file size
+       will be immediately changed by VMM40.
+
+       An advanced section for memory allocation has been added to 
+       VMM40Prefs. You can now determine the minimum size for VM allocations
+       for PUBLIC and non-PUBLIC requests separately.
+
+       Reduced VMM's usage of signals on behalf of other tasks. There were
+       problems with tasks who had all their signals already allocated.
+
+       The Wait function had to be patched in order to avoid problems
+       with tasks which have a stack in VM.
+
+       You can now exit VMM40 even if there's VM still allocated. In this
+       case VMM40 will try to page in all this memory and set up the
+       MMU tables accordingly, after which it will quit.
+
+       Now writes out modified pages before it needs to resulting
+       in better average page-fault service times.
+
+       Added a reset handler which inhibits a reset until paging currently
+       going on has finished. This prevents the validate procedure after 
+       reset if you are paging to a file.
+
+       Fixed a bug which caused VMM40 to hang when writing the first page
+       to DMA-driven harddisks.
+
+       Some minor changes and cleanups.
+
+V2.0:  VMM runs on the 68030. Consequently VMM40 has been renamed to VMM.
+
+       Implemented so-called pseudo-partitions, which look like a file
+       but can be accessed with the speed of a partition.
+
+       VMM is a commodity in V2.0 using a hotkey to display its GUI.
+       Consequently the setup of V2.0 has changed a bit. VMM40 has 
+       been moved to L:VMM-Handler and VMM40Prefs is now simply called 
+       VMM. The VMM: assign and the StartVMM program have become obsolete.
+
+       Hopefully fixed bugs having to do with paging to DMA devices
+       (Patched CachePreDMA and CachePostDMA)
+
+       The GUI has changed a bit to make room for some additionally needed
+       gadgets.
+
+       VMM now patches Workbench's title bar to include the amount of free
+       VM. There's a configuration button to enable or disable this feature.
+
+       Better exit handling if there's still VM allocated.
+
+       Miscellaneous minor changes and bug fixes
+
+V2.0a: Fixed a small but nasty bug I introduced shortly before the release
+       of V2.0 when converting from GCC 2.5.7 to GCC 2.6.0. This caused
+       VMM to crash when paging to a partition was used for the first time.
+       Subsequent uses of partition paging worked OK.
+       Also corrected a minor mistake that caused the VMM window not to be
+       updated after certain menu function were invoked.
+
+V2.1:  AvailMem now returns amount of free public memory if task is not
+       permitted to use virtual memory.
+
+       Fixed a bug in the startup code which caused VMM to crash if the
+       preferences file wasn't found. Now a requester is displayed.
+
+       Fixed a bug in the Installer script which caused the default 
+       configuration file not to be copied.
+
+       Implemented a write buffer to write multiple pages to disk.
+       Although this involves copying the pages to the buffer it generally
+       results in a quite noticeable speed improvement.
+
+       Deleted the memory option for paging to the largest available chunk
+       since no-one ever seems to use it.
+
+       Paging to a file is speeded up significantly by using additional
+       buffers for the filesystem. FFS and OFS are very inefficient on
+       seeking on long files. VMM installs as many buffers as are needed
+       to keep the file list blocks of the paging file in memory.
+       Other file systems such as the MSDOS filesystem don't need this.
+
+       FreeMem now marks the freed pages as unused instead of invalid.
+       Previously subsequent accesses to that range of memory resulted 
+       in a page-fault without any disk access but the overhead for 
+       page-fault handling.
+
+       Corrected font calculation for statistics window.
+
+       Improved error handling.
+
+       Fixed a hard to find bug which could cause spurious crashes on
+       68030 systems with a 68882. I underestimated the amount of
+       data which is pushed onto the stack during a context switch if
+       the FPU is busy.
+
+       Added support for external statistics displays. You can now write
+       your own (possibly graphical) statistics output for VMM.
+
+       Worked around a DOS bug which caused failure to use pseudo-partitions
+       on partitions with the same volume and device name.
+
+V3.0:  Implemented code paging, i.e. you can put program code into VM
+       and swap it out just as usual memory.
+
+       Implemented memory tracking. It is now possible to determine how
+       much virtual memory is used by each task.
+
+       Implemented another mode for specification of paging memory:
+       The 'restricted dynamic mode' works like dynamic mode but you can
+       specify lower and upper bounds for paging memory.
+
+       I wrote a completely new user interface using MUI. This also
+       supports localization.
+
+       Hopefully fixed problems with some processor cards (Better handling
+       of transparent translation registers).
+
+       Additionally implemented a 'custom MMU setup' which should make
+       all those nasty boards work which previously had problems with 
+       VMM's MMU setup.
+       
+       VMM can now be controlled using ARexx.
+
+       VMM now supports machines equipped with a 68020 + 68851 combination.
+
+       Fixed a bug which caused VMM to display a message "Not enough 
+       memory" when enabling statistics while VMM was running.
+
+       Fixed a race condition which could cause VMM to crash when it
+       received a message from an external statistics program during
+       program exit time.
+
+       The format of the configuration file has changed to a binary description.
+       There is a program provided to convert the old style prefs file into
+       the new representation.
+
+V3.1:  Fixed   a   bug  which  caused  VMM  not  to  work  under  OS2.0.   An
+       auto-OpenLibrary  'feature'  of  libnix which was unknown to me caused
+       the  startup  code  to open locale.library and refuse to run if it was
+       not  there.   This problem has been eliminated by simply disabling the
+       auto-OpenLibrary feature.
+
+       Added a new keyword 'FORCE' to the VMM tooltypes.  If specified in the
+       icon or on the commandline, VMM will not ask you if it may overwrite a
+       partition  or  file not previously used by VMM, but will simply do so.
+       This  is  very useful for people who use the same paging partition for
+       VMM and e.g.  LINUX.
+
+       Raised  the  VM  limit  from 128 MB to 512 MB after receiving multiple
+       requests  to  do so. Additionally the usage of physical memory for MMU 
+       tables has decreased a bit under certain circumstances.
+
+       Added  a  FAST  ROM  option  to  VMM. Since on some machines there are 
+       problems  with  tools such as CPU which map the ROM to Fast memory and
+       it wasn't much work I added this one.
+
+       VMM is now able to create a pseudo-partition on a DC-FFS disk.
+
+       Added  an  empty-page-collector  which causes unused pages to be freed
+       more often. This reduces disk accesses due to pagefaults up to 30%.
+
+       Fixed  a  bug in the reset code which caused VMM to generate a GURU on
+       some machines when pressing reset.
+
+       Fixed  a  minor  bug  which caused VMM to try to free memory again and
+       again, although there was no memory to free.  Mostly happened when the
+       system  was  short  of  CHIP  memory although VMM did not use any CHIP
+       memory.
+
+       Changed a bit in the MMU mapping when the VMM_MMU.config file is used.
+       Now  memory  for  a  pagetable  is allocated on the first access to an 
+       address  mapped  by this table. Previously VMM could not start on some
+       machines  because  their  processor boards mapped the whole 4 GB range 
+       needing 4 MB just for pagetables.
+
+       Modified  the  memory  tracking such that the loadfile is displayed as
+       the  owner  of  its  code and not the loading task (most important for
+       libraries and devices).
+
+       Found  a  bug  which  I  have  long  been searching for which produced
+       obscure  irreproducible  crashes.   The  bug is contained in ramlib in
+       conjunction with using semaphores. I have developed a patch for ramlib
+       (which is not very system-conforming) which fixes this bug.
+
+       Fixed  a  minor  bug which caused VMM to incorrectly accept partitions
+       with a blocksize other than 512 bytes for pseudo-partitions.
+
+       Worked  around a bug in GCC which caused VMM to always use the default
+       settings for code paging for the compiler passes of GCC.
+
+V3.2:  Fixed  an  Enforcer  hit  which occured when the statistics window was 
+       opened as a titlebar upon startup.
+
+       Modified  the  resethandler  stuff  to  remove  the  delay  that could 
+       sometimes occur upon reset.
+
+       Fixed  a  bug  in  ReadMMUConfig. It generated an empty VMM_MMU.config
+       file when used in a setup with 8K pages.
+
+       Added the possibility to enter directories into the task settings list.
+       This way you can group your files into directories with programs using
+       VM  and  ones  which  should  not  use VM. Note that only files loaded 
+       directly from a given directory are affected, not programs residing in
+       a subdirectory of the given one.
+
+       VMM now automatically detects swap-partitions also used by LINUX. This
+       way  you don't need to give the FORCE option to VMM, reducing the risk
+       to accidentally overwrite a normal partition.
+
+V3.3:  The output of VMMUsageCLI looks somewhat nicer now (suggested by Steve
+       Koren).
+
+       Each entry in the task list can now be as long as you like (i.e. about
+       10000 characters). Can be used to enter complicated patterns 
+       (suggested by Steve Koren).
+
+       VMM now works on the 68060.
+
+       Fixed  a  bug  which  caused  VMM to crash if FastROM was enabled on a 
+       68030.
+
+V3.4:  Added  a  'tst.l  d0' at the end of the AllocMem patch routine to make 
+       buggy  programs  work which rely on the condition codes to be set upon
+       the return of AllocMem.

@@ -1,0 +1,188 @@
+#   Copyright © 1995-2025, The AROS Development Team. All rights reserved.
+#   $Id$
+#
+#   Desc: target.cfg - an autoconf output file for make variables.
+#
+
+# -------------------------------------------------------------------------- 
+# TARGET CONFIG SECTION
+# -------------------------------------------------------------------------- 
+
+FAMILY                        := @aros_target_family@
+FLAVOUR                       := @aros_flavour@
+SHARED_MOD                    := @aros_shared_default@
+
+@aros_target_extra@
+# MMU flags
+USE_MMU                       := @aros_enable_mmu@
+
+# Defined as 'yes' if we can build our own toolchain.
+# This is a prerequisite for ObjectiveC and C++ support,
+# since they depend on the AROS C Library
+AROS_TARGET_TOOLCHAIN         := @aros_target_toolchain@
+
+# The toolchain families to build/use
+AROS_TOOLCHAIN                := @aros_toolchain@
+KERNEL_TOOLCHAIN              := @aros_kernel_toolchain@
+
+TARGET_BINUTILS_VER           := @target_binutils_version@
+TARGET_GCC_VER                := @target_gcc_version@
+TARGET_LLVM_VER               := @target_llvm_version@
+# separate (llvm <= 22) or umbrella (23+, one runtimes/ cmake pass). Lives
+# here so metamake can expand it in #MM dependency lines - it reads only
+# host.cfg and target.cfg, never tools/crosstools/llvm.cfg.
+TARGET_LLVM_RUNTIMES_STYLE    := @target_llvm_runtimes_style@
+
+# Rust cross compiler (tools/crosstools/rust): yes/no, and the rust release
+TARGET_RUST                   := @aros_enable_rust@
+TARGET_RUST_VER               := @target_rust_version@
+
+# Bootloader to use on platforms that support it
+AROS_TARGET_BOOTLOADER        := @aros_target_bootloader@
+
+TARGET_USELOGRES              := @with_log_resource@
+TARGET_UNITTESTS              := @aros_config_unittests@
+
+PCI_HIDD_TARGET               := @pci_hidd_target@
+CROSSTOOLS_TARGET             := @crosstools_target@
+OBJC_TARGET                   := @objc_target@
+JAVA_TARGET                   := @java_target@
+JPEGXL_TOOLCHAINSUPPORT       := @jpegxl_toolchainsupport@
+NOUVEAU_TOOLCHAINSUPPORT      := @nouveau_toolchainsupport@
+@aros_target_options@
+
+# -------------------------------------------------------------------------- 
+# KERNEL TOOLCHAIN SECTION
+# -------------------------------------------------------------------------- 
+
+KERNEL_CPP                    := @aros_kernel_cpp@
+KERNEL_CC                     := $(CC_PREFIX)@aros_kernel_cc@
+KERNEL_CXX                    := $(CC_PREFIX)@aros_kernel_cxx@
+KERNEL_LD                     := @aros_kernel_ld@
+
+KERNEL_RESCOMP                := @aros_kernel_rescomp@
+
+KERNEL_SYSROOT                = @aros_kernel_sysroot@
+
+KERNEL_CPPFLAGS               = @aros_kernel_cppflags@ $(USER_CPPFLAGS)
+KERNEL_CFLAGS                 = @aros_kernel_cflags@ $(USER_CFLAGS)
+KERNEL_CXXFLAGS               = $(USER_CXXFLAGS)
+KERNEL_OBJCFLAGS              := @aros_kernel_objcflags@
+KERNEL_INCLUDES               := @aros_kernel_includes@
+KERNEL_LDFLAGS                := @aros_kernel_ldflags@
+KERNEL_OPTIMIZATION_CFLAGS    := @kernel_optimization_cflags@
+ROM_OPTIMIZATION_CFLAGS       := @rom_optimization_cflags@
+
+KERNEL_ISA_FLAGS              = @aros_kernel_isa_flags@
+KERNEL_ISA_CFLAGS             = $(KERNEL_ISA_FLAGS)
+KERNEL_ISA_CXXFLAGS           = $(KERNEL_ISA_FLAGS)
+KERNEL_ISA_OBJCFLAGS          = $(KERNEL_ISA_FLAGS)
+KERNEL_ISA_AFLAGS             = $(KERNEL_ISA_FLAGS)
+KERNEL_ISA_LDFLAGS             = $(KERNEL_ISA_FLAGS)
+
+KERNEL_IQUOTE                 = @kernel_cflags_iquote@
+KERNEL_IQUOTE_END             = @kernel_cflags_iquote_end@
+
+KERNEL_AR                     := @aros_kernel_ar@
+KERNEL_RANLIB                 := @aros_kernel_ranlib@
+
+# -------------------------------------------------------------------------- 
+# TARGET TOOLCHAIN SECTION
+# -------------------------------------------------------------------------- 
+
+TARGET_CPP                    := $(strip @aros_target_cpp@)
+TARGET_CC                     := $(strip $(CC_PREFIX)@aros_target_cc@)
+TARGET_CXX                    := $(strip $(CC_PREFIX)@aros_target_cxx@)
+TARGET_AS                     := $(strip @aros_target_as@)
+TARGET_LD                     := $(strip @aros_target_ld@)
+SHARED_LD                     := $(strip @aros_shared_ld@)
+GENMAP                        := $(strip @aros_target_genmap@)
+TARGET_OBJCOPY                := $(strip @aros_target_objcopy@)
+
+TARGET_DEF_STRIP              := $(strip @aros_target_strip@ @aros_target_strip_flags@)
+
+TARGET_OBJDUMP                := $(strip @aros_target_objdump@)
+
+CONFIG_NOWARN_CFLAGS          = $(strip $(foreach nowarn,@aros_nowarn_flags@,$($(nowarn))))
+CONFIG_WARN_CFLAGS            := $(strip @aros_warn_flags@)
+CONFIG_NOWARN_CXXFLAGS        = $(strip $(foreach nowarn,$(subst NOWARN_POINTER_SIGN,,@aros_nowarn_flags@),$($(nowarn))))
+CONFIG_WARN_CXXFLAGS          := $(subst -Werror-implicit-function-declaration,,@aros_warn_flags@)
+
+TARGET_SYSROOT                = $(strip $(COMPILER_SYSROOT))
+CONFIG_BASE_CFLAGS            = $(strip @aros_config_cflags@ $(CONFIG_NOWARN_CFLAGS))
+CONFIG_BASE_CXXFLAGS          = $(strip @aros_config_cxxflags@ $(CONFIG_NOWARN_CXXFLAGS))
+CONFIG_BASE_CPPFLAGS          = $(strip @aros_config_cppflags@)
+CONFIG_CFLAGS                 = $(strip @aros_config_cflags@ $(CONFIG_WARN_CFLAGS) $(CONFIG_NOWARN_CFLAGS))
+CONFIG_CXXFLAGS               = $(strip @aros_config_cxxflags@ $(CONFIG_WARN_CXXFLAGS) $(CONFIG_NOWARN_CXXFLAGS))
+CONFIG_CPPFLAGS               = $(strip @aros_config_cppflags@)
+CONFIG_AFLAGS                 = $(strip @aros_config_aflags@)
+CONFIG_LDFLAGS                = $(strip @aros_config_ldflags@)
+SHARED_CFLAGS                 = $(strip @aros_shared_cflags@)
+SHARED_AFLAGS                 = $(strip @aros_shared_aflags@)
+SHARED_LDFLAGS                = $(strip @aros_shared_ldflags@)
+TARGET_CFLAGS                 = $(strip $(OPTIMIZATION_CFLAGS) $(CONFIG_CFLAGS) $(USER_CFLAGS))
+TARGET_CXXFLAGS               = $(strip $(OPTIMIZATION_CFLAGS) $(CONFIG_CXXFLAGS) $(USER_CXXFLAGS))
+TARGET_CPPFLAGS               = $(strip $(USER_INCLUDES) $(CONFIG_CPPFLAGS) $(USER_CPPFLAGS))
+TARGET_LDFLAGS                = $(strip $(CONFIG_LDFLAGS))
+DEBUG_CFLAGS                  = $(strip @aros_debug_cflags@)
+DEBUG_CXXFLAGS                = $(strip @aros_debug_cxxflags@)
+DEBUG_CPPFLAGS                = $(strip @aros_debug_cppflags@)
+DEBUG_AFLAGS                  = $(strip @aros_debug_aflags@)
+DEBUG_LDFLAGS                 = $(strip @aros_debug_ldflags@)
+OPTIMIZATION_CFLAGS           = $(strip @aros_optimization_cflags@)
+@aros_isa_extra@ISA_FLAGS                     = $(strip @aros_isa_flags@)
+
+TARGET_ISA_CFLAGS             = $(ISA_FLAGS)
+TARGET_ISA_CXXFLAGS           = $(ISA_FLAGS)
+TARGET_ISA_OBJCFLAGS          = $(TARGET_ISA_CFLAGS)
+TARGET_ISA_AFLAGS             = $(ISA_FLAGS)
+TARGET_ISA_LDFLAGS            = $(ISA_FLAGS)
+@target_isa_extra@
+
+TARGET_LIBATOMIC              = @use_libatomic@
+TARGET_C_LIBS                 = $(strip @aros_c_libs@)
+TARGET_CXX_LDFLAGS            = $(strip @aros_cxx_ldflags@)
+TARGET_CXX_LIBS               := $(strip @aros_cxx_libs@)
+@target_link_extra@
+COVERAGEINSTR_FLAGS           = $(strip $(CFLAGS_PROFILE_ARCS) $(CFLAGS_TEST_COVERAGE))
+COVERAGEINSTR_LIBS            = gcov
+FUNCINSTR_FLAGS               = $(CFLAGS_INSTR_FUNCTIONS)
+FUNCINSTR_LIBS                = instrfunc
+
+NOSTDINC_CFLAGS               := $(strip @aros_target_nostdinc_cflags@)
+NOSTARTUP_LDFLAGS             := $(strip @aros_target_nostartup_ldflags@)
+NOSTARTUP_OBJECTS             = $(strip @aros_target_nostartup_objects@)
+NIX_LDFLAGS                   := $(strip @aros_target_nix_ldflags@)
+DETACH_LDFLAGS                := $(strip @aros_target_detach_ldflags@)
+NOSTDLIB_LDFLAGS              := $(strip @aros_target_nostdlib_ldflags@)
+
+FMTBINARY_LDFLAGS             := @toolchain_ld_fmtbinary@
+# Empty unless the linker needs the image base stating for raw binary
+# output; the link rule appends the same address it gives to -Ttext.
+IMAGEBASE_LDFLAGS             := @toolchain_ld_imagebase@
+
+AR                            = $(strip @aros_target_ar@)
+AR_PLAIN                      = $(strip @aros_plain_ar@)
+RANLIB                        = $(strip @aros_target_ranlib@)
+NM                            := $(strip @aros_target_nm@)
+NM_PLAIN                      := $(strip @aros_plain_nm@)
+OBJCOPY                       := $(strip @aros_target_objcopy@)
+OBJDUMP                       := $(strip @aros_target_objdump@)
+STRIP_PLAIN                   := $(strip @aros_target_strip@)
+@target_extra_cfg@
+
+# --------------------------------------------------------------------------
+# MAGIC: This is needed here for MetaMake to work. mmake will read the
+# configured version of this file to find out a number of variables.
+# --------------------------------------------------------------------------
+AROS_TARGET_PLATFORM          := @aros_target_platform@
+
+HOSTDIR                       := $(TOP)/bin/$(AROS_HOST_ARCH)-$(AROS_HOST_CPU)
+TOOLDIR                       := $(HOSTDIR)/tools
+GENMFSCRIPT                   := $(TOOLDIR)/genmf.py
+GENMF                         := $(PYTHON) $(GENMFSCRIPT)
+ARCH                          := $(AROS_TARGET_ARCH)
+CPU                           := $(AROS_TARGET_CPU)
+CPU_MODE                      := $(AROS_TARGET_CPU_MODE)
+CC                            := $(TARGET_CC)
+AS                            := $(TARGET_AS)

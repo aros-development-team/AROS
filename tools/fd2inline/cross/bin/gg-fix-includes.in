@@ -1,0 +1,201 @@
+#!/bin/sh
+
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+bindir=@bindir@
+datadir=@datadir@
+fd2inlinedir=${datadir}/fd2inline
+FD2INLINE=${bindir}/fd2inline
+SPLITASM="awk -f ${fd2inlinedir}/splitasm.awk"
+
+ERROR="\e[31m"
+INFO="\e[32m"
+NORMAL="\e[0m"
+
+if [ $# -eq 1 ]; then
+  case "$1" in
+   --include)
+       STUBS=no
+     ;;
+   --lib)
+       STUBS=yes
+     ;;
+  esac
+fi
+
+if [ -z "$STUBS" ]; then
+  echo "Usage: $0 [--include] [--lib]"
+  exit
+fi
+
+if [ "${STUBS}" = "yes" ]; then
+  build_dir=`mktemp -qd /tmp/gg-fix-includes.XXXXXX`
+
+  if [ -z "${build_dir}" ]; then
+    echo "Error: Unable to create temporary directory."
+    exit
+  fi
+fi
+
+for gcc in ${bindir}/*-*-gcc; do
+ target=`echo "${gcc}" | sed -e "s,.*/\(.*\)-gcc,\1,"`
+ 
+ if test -d ${prefix}/${target}; then
+  case "${target}" in
+   i?86be-amithlon)
+     CC="${target}-gcc -Os -fomit-frame-pointer"
+     AS="${target}-as"
+     AR="${target}-ar"
+     FD2INLINE_OS="ix86be-amithlon"
+     FIXINCLUDE="perl ${fd2inlinedir}/geninclude.pl"
+     ;;
+   m68k-amigaos)
+     CC="${target}-gcc -Os -fomit-frame-pointer"
+     AS="${target}-as"
+     AR="${target}-ar"
+     FD2INLINE_OS="${target}"
+     FIXINCLUDE="cat"
+     ;;
+   ppc-morphos)
+     CC="${target}-gcc -Os -fomit-frame-pointer"
+     AS="${target}-as"
+     AR="${target}-ar"
+     FD2INLINE_OS="${target}"
+     FIXINCLUDE="perl ${fd2inlinedir}/geninclude.pl"
+     ;;
+   *)
+     FD2INLINE_OS="X"
+     ;;
+  esac
+
+  echo -e "${ERROR}"
+  
+  if test "$FD2INLINE_OS" == "X"; then
+   echo -e "${target}: Unsupported target."
+  else
+  
+   echo -e "${INFO}*** Target ${target}${ERROR}"
+
+   if [ "${STUBS}" = "no" ]; then
+     rm -r ${prefix}/${target}/sys-include
+     echo "The sys-include directory is automatically generated. Do no edit!" > ${prefix}/${target}/sys-include.readme
+     mkdir ${prefix}/${target}/sys-include
+     mkdir ${prefix}/${target}/sys-include/inline
+     mkdir ${prefix}/${target}/sys-include/proto
+   else
+     rm ${prefix}/${target}/lib/libamigastubs.a
+   fi;
+
+   for fd_dir in ${prefix}/os-lib/fd/*; do
+     package=`echo "${fd_dir}" | sed -e "s,.*/,,"`
+
+     if test -d ${fd_dir}; then
+      echo -e "${INFO} *** Package ${package}${ERROR}"
+
+      if [ "${STUBS}" = "no" ]; then     
+       echo -e "${INFO}  *** Patching and installing header files${ERROR}"
+
+       for dir in `cd ${prefix}/os-include/${package} &&
+                   find * -type d \
+                     -and -not -ipath "ppcinline*" \
+                     -and -not -ipath "ppcpragma*" \
+                     -and -not -ipath "ppcproto*" \
+                     -and -not -ipath "inline*" \
+                     -and -not -ipath "pragma*" \
+                     -and -not -ipath "proto*"`; do
+         test -d ${prefix}/${target}/sys-include/${dir} || \
+             mkdir ${prefix}/${target}/sys-include/${dir}
+       done
+                  
+       for header in `cd ${prefix}/os-include/${package} &&
+                      find * -iname "*.h" -and -type f \
+                        -and -not -ipath "ppcinline*" \
+                        -and -not -ipath "ppcpragma*" \
+                        -and -not -ipath "ppcproto*" \
+                        -and -not -ipath "inline*" \
+                        -and -not -ipath "pragma*" \
+                        -and -not -ipath "proto*"`; do
+         echo -ne "${NORMAL}[${header}] ${ERROR}"
+         ${FIXINCLUDE} ${prefix}/os-include/${package}/${header} \
+            > ${prefix}/${target}/sys-include/${header}
+       done
+
+       echo; echo
+       echo -e "${INFO}  *** Generating inlines and proto files${ERROR}"
+      
+       for fd in ${fd_dir}/*_*.[Ff][Dd]; do
+         base=`echo "${fd}" | sed -e "s,${fd_dir}/\(.*\)_\(.*\)\...,\1,"`
+         clib="${prefix}/os-include/${package}/clib/${base}_protos.h"
+
+         if test ! -r ${clib}; then
+          echo "Warning: ${clib} is missing."
+         else
+          echo -ne "${NORMAL}[${base}] ${ERROR}"
+          ${FD2INLINE} --quiet --new --target=${FD2INLINE_OS} ${fd} ${clib} \
+            -o ${prefix}/${target}/sys-include/inline/${base}.h
+             
+          ${FD2INLINE} --quiet --proto --target=${FD2INLINE_OS} ${fd} \
+            -o ${prefix}/${target}/sys-include/proto/${base}.h
+         fi
+       done
+        
+       cp ${fd2inlinedir}/stubs.h ${fd2inlinedir}/${FD2INLINE_OS}/* \
+          ${prefix}/${target}/sys-include/inline/
+
+      else
+        echo; echo
+        echo -e "${INFO}  *** Generating stub libraries${ERROR}"
+
+        # Note that we cannot compile the stubs until inlines and prototypes
+        # has been generated!
+
+        for fd in ${fd_dir}/*_*.[Ff][Dd]; do
+          base=`echo "${fd}" | sed -e "s,${fd_dir}/\(.*\)_\(.*\)\...,\1,"`
+          clib="${prefix}/os-include/${package}/clib/${base}_protos.h"
+
+          if test ! -r ${clib}; then
+            echo "Warning: ${clib} is missing."
+          else
+            echo -ne "${NORMAL}[${base}] ${ERROR}"
+            ${FD2INLINE} --quiet --stubs --target=${FD2INLINE_OS} ${fd} ${clib} \
+              -o ${build_dir}/-stubs.c
+
+            ${CC} -D__CLIB_TYPES__ -S ${build_dir}/-stubs.c \
+		  -o ${build_dir}/-stubs.s || exit
+
+            ${SPLITASM} -v dest=${build_dir} ${build_dir}/-stubs.s
+          fi
+        done
+      fi
+
+      echo; echo
+     fi
+   done
+
+   if [ "${STUBS}" = "yes" ]; then
+     rm ${build_dir}/-stubs.s ${build_dir}/-stubs.c
+
+     echo -e "${INFO} *** Assembling files${ERROR}"
+ 
+     for stub in ${build_dir}/*.s; do
+       base=`basename ${stub} .s`
+       ${AS} $stub -o ${build_dir}/${base}.o
+       rm $stub
+       echo -ne "${NORMAL}[${base}] ${ERROR}"
+     done
+
+     echo; echo
+
+     # This line can get pretty long, so we get rid of the path at least ...
+     ( cd ${build_dir} && ${AR} -rs ${prefix}/${target}/lib/libamigastubs.a *.o; \
+       rm *.o )
+   fi
+  fi
+ fi
+done
+
+if [ "${STUBS}" = "yes" ]; then
+  rmdir ${build_dir}
+fi
+
+echo -e "${INFO}Done!${NORMAL}"

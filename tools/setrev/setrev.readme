@@ -1,0 +1,30 @@
+short: BumpRev-like utility
+type: dev/misc
+author: jochen.wiedmann@zdv.uni-tuebingen.de
+uploader: jochen.wiedmann@zdv.uni-tuebingen.de
+
+This is a small little hack very similar to Commodore's BumpRev
+or Dice's UpRev. The difference is that SetRev does not need a
+special _rev.h file, instead it may scan a given source file
+for the current version and revision and modify it. In short:
+BumpRev for those who don't like too much different files.
+
+
+
+Usage: SetRev PROJECT/A,VERSION/N,FILE/K
+
+The given FILE (default: PROJECT_rev.h) will be searched for
+version and revision definitions and bumped to the next
+revision number.
+
+Example: SetRev SetRev FILE SetRev.c
+
+will scan the file SetRev.c for the following definitions and
+bumpt the current revision number:
+    #define VERSION	   1
+    #define REVISION	   1
+    #define DATE    "30.10.94"
+    #define VERS    "SetRev 1.1"
+    #define VSTRING "SetRev 1.1 (30.10.94)"
+    #define VERSTAG "\0$VER: SetRev 1.1 (30.10.94)"
+

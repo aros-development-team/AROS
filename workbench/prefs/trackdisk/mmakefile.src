@@ -1,0 +1,16 @@
+# Copyright (C) 2007, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+
+FILES 	     := locale trackdisk_prefs
+EXEDIR       := $(AROS_PREFS)
+
+#MM- workbench-prefs : workbench-prefs-trackdisk
+#MM  workbench-prefs-trackdisk : includes linklibs \
+#MM  workbench-prefs-trackdisk-catalogs
+
+%build_prog mmake=workbench-prefs-trackdisk \
+    progname=Trackdisk targetdir=$(EXEDIR) \
+    files=$(FILES)
+
+%common

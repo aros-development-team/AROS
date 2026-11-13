@@ -1,0 +1,29 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+USER_CPPFLAGS := \
+               -DUSE_EXEC_DEBUG
+USER_INCLUDES := -I$(SRCDIR)/arch/$(CPU)-$(ARCH)/card \
+		 -I$(SRCDIR)/arch/all-$(ARCH)/card
+USER_INCLUDES += -I$(SRCDIR)/rom/card
+USER_LDFLAGS := -static
+
+#MM kernel-card : includes kernel-card-$(ARCH)-$(CPU)
+
+FUNCTIONS := card_init
+# lowlevel task \
+#	owncard releasecard readcardstatus ifamigaxip getcardmap \
+#	begincardaccess endcardaccess cardresetremove \
+#	cardmiscontrol cardaccessspeed cardprogramvoltage \
+#	cardresetcard copytuple devicetuple cardforcechange \
+#	cardchangecount cardinterface
+
+ifneq ($(ROM_OPTIMIZATION_CFLAGS),)
+OPTIMIZATION_CFLAGS := $(ROM_OPTIMIZATION_CFLAGS)
+endif
+
+%build_module mmake=kernel-cardres \
+    modname=card modtype=resource \
+    files="$(FUNCTIONS)"
+
+%common

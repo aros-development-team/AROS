@@ -1,0 +1,924 @@
+/*
+    Copyright (C) 2013-2026, The AROS Development Team. All rights reserved.
+
+    Desc: BCM VideoCore4 Gfx Hidd Class.
+*/
+
+#define DEBUG 0
+#include <aros/debug.h>
+
+#define __OOP_NOATTRBASES__
+
+#include <aros/asmcall.h>
+#include <proto/exec.h>
+#include <proto/oop.h>
+#include <proto/utility.h>
+#include <aros/symbolsets.h>
+#include <devices/inputevent.h>
+#include <exec/alerts.h>
+#include <exec/memory.h>
+#include <graphics/displayinfo.h>
+#include <graphics/view.h>
+#include <hardware/custom.h>
+#include <hidd/hidd.h>
+#include <hidd/gfx.h>
+#include <hidd/gallium.h>
+#include <oop/oop.h>
+#include <clib/alib_protos.h>
+#include <string.h>
+
+#include <proto/mbox.h>
+
+#include "vcgfx_hidd.h"
+#include "vcgfx_hardware.h"
+#include "vcgfx_decode.h"
+#include "vcgfx_hvs6.h"
+#include "vcgfx_neon.h"
+
+#ifdef MBoxBase
+#undef MBoxBase
+#endif
+#define MBoxBase      xsd->vcsd_MBoxBase
+
+#include LC_LIBDEFS_FILE
+
+#define MNAME_ROOT(x) VideoCoreGfx__Root__ ## x
+#define MNAME_GFX(x) VideoCoreGfx__Hidd_Gfx__ ## x
+#define MNAME_DISPLAY(x) VideoCoreGfxDisplay__Hidd_Display__ ## x
+#define MNAME_DISPLAY_ROOT(x) VideoCoreGfxDisplay__Root__ ## x
+
+#define SYNCTAGS_SIZE (11 * sizeof(struct TagItem))
+
+APTR FNAME_SUPPORT(GenModeArray)(OOP_Class *cl, OOP_Object *o, struct List *modelist, struct TagItem *fmts)
+{
+    APTR                modearray = NULL;
+    struct TagItem      *ma_syncs = NULL, *ma_synctags = NULL;
+    int                 i, fmtcount = 0, modecount = 0;
+    struct DisplayMode  *modecurrent;
+
+    /* quickly count fmts and modes */
+    while (fmts[fmtcount].ti_Tag == aHidd_DMEnum_PixFmtTags)
+        fmtcount++;
+
+    ForeachNode(modelist, modecurrent)
+    {
+        modecount++;
+    }
+
+    D(bug("[VideoCoreGfx] %s: %d PixFmts, %d SyncModes\n", __PRETTY_FUNCTION__, fmtcount, modecount));
+
+    /* build our table .. */
+    if (fmtcount && modecount)
+    {
+        if ((modearray = AllocVec((fmtcount * sizeof(struct TagItem)) + ((modecount + 1) * sizeof(struct TagItem)) + (modecount * SYNCTAGS_SIZE), MEMF_PUBLIC)) != NULL)
+        {
+            struct TagItem *ma_fmts = (struct TagItem  *)modearray;
+
+            D(bug("[VideoCoreGfx] %s: PixFmt's @ 0x%p\n", __PRETTY_FUNCTION__, modearray));
+
+            for (i = 0; i < fmtcount; i ++)
+            {
+                D(bug("[VideoCoreGfx] %s: PixFmt #%d @ 0x%p\n", __PRETTY_FUNCTION__, i, fmts[i].ti_Data));
+                ma_fmts[i].ti_Tag = aHidd_DMEnum_PixFmtTags;
+                ma_fmts[i].ti_Data = fmts[i].ti_Data;
+            }
+            ma_syncs = (struct TagItem *)&ma_fmts[fmtcount];
+            D(bug("[VideoCoreGfx] %s: SyncMode's @ 0x%p\n", __PRETTY_FUNCTION__, ma_syncs));
+            ma_synctags = (struct TagItem  *)&ma_syncs[modecount + 1];
+            i = 0;
+            ForeachNode(modelist, modecurrent)
+            {
+                D(bug("[VideoCoreGfx] %s: SyncMode #%d Tags @ 0x%p\n", __PRETTY_FUNCTION__, i, ma_synctags));
+
+                ma_syncs[i].ti_Tag = aHidd_DMEnum_SyncTags;
+                ma_syncs[i].ti_Data = (IPTR)ma_synctags;
+
+                ma_synctags[0].ti_Tag = aHidd_Sync_PixelClock;
+                ma_synctags[0].ti_Data = modecurrent->dm_clock * 1000;
+                ma_synctags[1].ti_Tag = aHidd_Sync_HDisp;
+                ma_synctags[1].ti_Data = modecurrent->dm_hdisp;
+                ma_synctags[2].ti_Tag = aHidd_Sync_HSyncStart;
+                ma_synctags[2].ti_Data = modecurrent->dm_hstart;
+                ma_synctags[3].ti_Tag = aHidd_Sync_HSyncEnd;
+                ma_synctags[3].ti_Data = modecurrent->dm_hend;
+                ma_synctags[4].ti_Tag = aHidd_Sync_HTotal;
+                ma_synctags[4].ti_Data = modecurrent->dm_htotal;
+                ma_synctags[5].ti_Tag = aHidd_Sync_VDisp;
+                ma_synctags[5].ti_Data = modecurrent->dm_vdisp;
+                ma_synctags[6].ti_Tag = aHidd_Sync_VSyncStart;
+                ma_synctags[6].ti_Data = modecurrent->dm_vstart;
+                ma_synctags[7].ti_Tag = aHidd_Sync_VSyncEnd;
+                ma_synctags[7].ti_Data = modecurrent->dm_vend;
+                ma_synctags[8].ti_Tag = aHidd_Sync_VTotal;
+                ma_synctags[8].ti_Data = modecurrent->dm_vtotal;
+                ma_synctags[9].ti_Tag = aHidd_Sync_Description;
+                ma_synctags[9].ti_Data = (IPTR)modecurrent->dm_descr;
+                ma_synctags[10].ti_Tag = TAG_DONE;
+
+                ma_synctags = (struct TagItem  *)&ma_synctags[11];
+                i++;
+            }
+            ma_syncs[i].ti_Tag = TAG_DONE;
+        }
+    }
+#if defined(DEBUGMODEARRAY)
+    if (modearray)
+    {
+        ma_syncs = (struct TagItem *)modearray;
+        while (ma_syncs->ti_Tag != TAG_DONE)
+        {
+            D(bug("[VideoCoreGfx] %s: 0x%p: %08x, %08x\n", __PRETTY_FUNCTION__, ma_syncs, ma_syncs->ti_Tag, ma_syncs->ti_Data));
+            ma_syncs++;
+        }
+    }
+#endif
+    return (APTR)modearray;
+}
+
+void FNAME_SUPPORT(DestroyModeArray)(struct List *modelist, APTR modearray)
+{
+    D(bug("[VideoCoreGfx] %s()\n", __PRETTY_FUNCTION__));
+}
+
+OOP_Object *MNAME_ROOT(New)(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
+{
+    //struct VideoCoreGfx_staticdata *xsd = XSD(cl);
+    OOP_Object                  *self = NULL;
+
+    struct TagItem gfxmsg_tags[] =
+    {
+        { aHidd_Name            , (IPTR)"vcgfx.hidd"     },
+        { aHidd_HardwareName    , (IPTR)"VideoCore4 Display Adaptor"   },
+        { aHidd_ProducerName    , (IPTR)"Broadcom Corporation"  },
+        { aHidd_Gfx_FrameBufferType, vHidd_FrameBuffer_Direct },
+        { TAG_MORE              , (IPTR)msg->attrList       }
+    };
+    struct pRoot_New            gfxmsg_New;
+
+    struct List                 vc_modelist;
+    APTR                        vc_modearray, vc_pixfmts;
+
+    EnterFunc(bug("VideoCoreGfx::New()\n"));
+
+    NewList(&vc_modelist);
+
+    /* Planes scan screens out of their own memory */
+    XSD(cl)->vcsd_NoFB = vcgfx_planes_supported(XSD(cl));
+    if (XSD(cl)->vcsd_NoFB)
+        gfxmsg_tags[3].ti_Data = vHidd_FrameBuffer_None;
+
+    FNAME_SUPPORT(SDTV_SyncGen)(&vc_modelist, cl);
+    FNAME_SUPPORT(HDMI_SyncGen)(&vc_modelist, cl);
+    vc_pixfmts = FNAME_SUPPORT(GenPixFmts)(cl);
+
+    if ((vc_modearray = FNAME_SUPPORT(GenModeArray)(cl, o, &vc_modelist, (struct TagItem *)vc_pixfmts)) != NULL)
+    {
+        D(bug("[VideoCoreGfx] VideoCoreGfx::New: Generated Mode Array @ 0x%p\n", vc_modearray));
+
+        gfxmsg_New.mID = msg->mID;
+        gfxmsg_New.attrList = gfxmsg_tags;
+        msg = &gfxmsg_New;
+
+        D(bug("[VideoCoreGfx] VideoCoreGfx::New: Creating object [cl:0x%p, o:0x%p, msg:0x%p]\n", cl, o, msg));
+
+        if ((self = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg)) != NULL)
+        {
+            struct TagItem displaytags[] =
+            {
+                { aHidd_Display_GfxHidd,  (IPTR)self         },
+                { aHidd_Display_ModeTags, (IPTR)vc_modearray },
+                { aHidd_Display_DecodeVectors,
+                  vcgfx_has_hevc(XSD(cl)) ? (IPTR)&vcgfx_decode_vectors : 0 },
+                { aHidd_Display_DecodeDataSize, vcgfx_decode_datasize },
+                { TAG_DONE,               0                  }
+            };
+
+            D(bug("[VideoCoreGfx] VideoCoreGfx::New: Storing reference to self in staticdata\n"));
+            XSD(cl)->vcsd_VideoCoreGfxInstance = self;
+            XSD(cl)->vcsd_VideoCoreGfxDisplay =
+                OOP_NewObject(XSD(cl)->vcsd_VideoCoreGfxDisplayClass, NULL, displaytags);
+            if (XSD(cl)->vcsd_VideoCoreGfxDisplay)
+            {
+                OOP_GetAttr(XSD(cl)->vcsd_VideoCoreGfxDisplay,
+                    aHidd_Display_DMEnumerator, (IPTR *)&XSD(cl)->vcsd_DMEnum);
+            }
+            else
+            {
+                OOP_MethodID disp_mid = OOP_GetMethodID(IID_Root, moRoot_Dispose);
+                OOP_CoerceMethod(cl, self, (OOP_Msg)&disp_mid);
+                self = NULL;
+            }
+        }
+        FNAME_SUPPORT(DestroyModeArray)(&vc_modelist, vc_modearray);
+    }
+
+    ReturnPtr("VideoCoreGfx::New: Obj", OOP_Object *, self);
+}
+
+VOID MNAME_ROOT(Dispose)(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
+{
+    D(bug("[VideoCoreGfx] VideoCoreGfx::Dispose()\n"));
+
+    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+}
+
+VOID MNAME_ROOT(Get)(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
+{
+    ULONG idx;
+    BOOL found = FALSE;
+
+//    D(bug("[VideoCoreGfx] VideoCoreGfx::Get()\n"));
+
+    if (IS_GFX_ATTR(msg->attrID, idx))
+    {
+        switch (idx)
+        {
+        case aoHidd_Gfx_MemoryAttribs:
+            {
+                struct TagItem *matstate = (struct TagItem *)msg->storage;
+                found = TRUE;
+                if (matstate)
+                {
+                    struct TagItem *matag;
+                    struct MemHeaderExt *gpumem = &XSD(cl)->vcsd_GPUMemManage;
+                    IPTR memsize = (IPTR)(gpumem->mhe_MemHeader.mh_Upper - gpumem->mhe_MemHeader.mh_Lower);
+                    while ((matag = NextTagItem(&matstate)))
+                    {
+                        switch(matag->ti_Tag)
+                        {
+                        case tHidd_Gfx_MemTotal:
+                        case tHidd_Gfx_MemAddressableTotal:
+                            matag->ti_Data = memsize;
+                            break;
+
+                        /*
+                         * All of the GPU heap is CPU addressable here, so
+                         * the addressable figures match the plain ones.
+                         */
+                        case tHidd_Gfx_MemFree:
+                        case tHidd_Gfx_MemAddressableFree:
+                            matag->ti_Data = gpumem->mhe_Avail ?
+                                gpumem->mhe_Avail(gpumem, MEMF_ANY) : 0;
+                            break;
+                        }
+                    }
+                }
+            }
+            break;
+
+        case aoHidd_Gfx_SupportsHWCursor:
+            *msg->storage = XSD(cl)->vcsd_CurBuf ? TRUE : FALSE;
+            found = TRUE;
+            break;
+
+        case aoHidd_Gfx_DisplayDefault:
+            *msg->storage = (IPTR)XSD(cl)->vcsd_VideoCoreGfxDisplay;
+            found = TRUE;
+            break;
+        }
+    }
+    if (!found)
+        OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+}
+
+VOID MNAME_DISPLAY_ROOT(Get)(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
+{
+    ULONG idx;
+    BOOL found = FALSE;
+
+    if (IS_DISPLAY_ATTR(msg->attrID, idx))
+    {
+        switch (idx)
+        {
+        case aoHidd_Display_SpriteTypes:
+            *msg->storage = XSD(cl)->vcsd_CurBuf ? vHidd_SpriteType_DirectColor : 0;
+            found = TRUE;
+            break;
+
+        case aoHidd_Display_PlaneCount:
+            if (XSD(cl)->vcsd_NoFB)
+            {
+                *msg->storage = 1 + VCGFX_OVL_PLANES;
+                found = TRUE;
+            }
+            break;
+        }
+    }
+    if (!found)
+        OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+}
+
+int FNAME_SUPPORT(InitCursor)(struct VideoCoreGfx_staticdata *xsd)
+{
+    /* BCM2712 has no firmware cursor or ALLOCMEM; use our own plane. */
+    if (xsd->vcsd_HVSGen == VCGFX_HVS_HVS6)
+        return vc4_hvs6_init_cursor(xsd);
+
+
+    /* 64x64 ARGB cursor buffer in GPU memory, locked for the driver's
+     * lifetime (firmware re-reads it on each SETCURSORINFO). VCMEM_DIRECT
+     * (uncached 0xC alias) lets the CPU write pixels; VCMEM_NORMAL is
+     * rejected for ARM-side requests.
+     * ALLOCMEM value buffer: size/align/flags in, handle out.
+     */
+    VC4_MBOX_LOCK(xsd);
+    xsd->vcsd_MBoxMessage[0] = AROS_LE2LONG(10 * 4);
+    xsd->vcsd_MBoxMessage[1] = AROS_LE2LONG(VCTAG_REQ);
+    xsd->vcsd_MBoxMessage[2] = AROS_LE2LONG(VCTAG_ALLOCMEM);
+    xsd->vcsd_MBoxMessage[3] = AROS_LE2LONG(12);
+    xsd->vcsd_MBoxMessage[4] = AROS_LE2LONG(12);
+    xsd->vcsd_MBoxMessage[5] = AROS_LE2LONG(VC4_CURSOR_BUF_BYTES);
+    xsd->vcsd_MBoxMessage[6] = AROS_LE2LONG(16);
+    xsd->vcsd_MBoxMessage[7] = AROS_LE2LONG(VCMEM_DIRECT);
+    xsd->vcsd_MBoxMessage[8] = 0;
+    xsd->vcsd_MBoxMessage[9] = 0;
+
+    if (MBoxCall((void*)VCMB_BASE, VCMB_PROPCHAN, xsd->vcsd_MBoxMessage)
+        == (volatile unsigned int *)-1)
+    {
+        VC4_MBOX_UNLOCK(xsd);
+        return FALSE;
+    }
+    xsd->vcsd_CurBufHandle = AROS_LE2LONG(xsd->vcsd_MBoxMessage[5]);
+    if (!xsd->vcsd_CurBufHandle)
+    {
+        VC4_MBOX_UNLOCK(xsd);
+        return FALSE;
+    }
+
+    /* LOCKMEM: handle in, bus address out (same value slot). */
+    xsd->vcsd_MBoxMessage[0] = AROS_LE2LONG(8 * 4);
+    xsd->vcsd_MBoxMessage[1] = AROS_LE2LONG(VCTAG_REQ);
+    xsd->vcsd_MBoxMessage[2] = AROS_LE2LONG(VCTAG_LOCKMEM);
+    xsd->vcsd_MBoxMessage[3] = AROS_LE2LONG(4);
+    xsd->vcsd_MBoxMessage[4] = AROS_LE2LONG(4);
+    xsd->vcsd_MBoxMessage[5] = AROS_LE2LONG(xsd->vcsd_CurBufHandle);
+    xsd->vcsd_MBoxMessage[6] = 0;
+    xsd->vcsd_MBoxMessage[7] = 0;
+
+    if (MBoxCall((void*)VCMB_BASE, VCMB_PROPCHAN, xsd->vcsd_MBoxMessage)
+        == (volatile unsigned int *)-1)
+    {
+        VC4_MBOX_UNLOCK(xsd);
+        return FALSE;
+    }
+
+    xsd->vcsd_CurBufBus = AROS_LE2LONG(xsd->vcsd_MBoxMessage[5]);
+    VC4_MBOX_UNLOCK(xsd);
+    xsd->vcsd_CurVisible = FALSE;
+
+    /* A valid bus address has the GPU alias bits set (0xC/0x4). QEMU may
+     * return a bare low-RAM address that overlaps CPU allocations; treat
+     * anything outside the alias range as "no HW cursor".
+     */
+    if ((xsd->vcsd_CurBufBus & 0xC0000000) == 0)
+    {
+        xsd->vcsd_CurBuf = NULL;
+        return FALSE;
+    }
+    xsd->vcsd_CurBuf = (APTR)(IPTR)(xsd->vcsd_CurBufBus & 0x3fffffff);
+
+    if (xsd->vcsd_CurBuf == NULL)
+        return FALSE;
+
+    D(bug("[VideoCoreGfx] HW cursor buffer @ 0x%p (bus 0x%08x)\n",
+        xsd->vcsd_CurBuf, xsd->vcsd_CurBufBus));
+    return TRUE;
+}
+
+VOID MNAME_DISPLAY(NominalDimensions)(OOP_Class *cl, OOP_Object *o, struct pHidd_Display_NominalDimensions *msg)
+{
+    struct VideoCoreGfx_staticdata *xsd = XSD(cl);
+
+    /* Return the panel's native HDMI resolution if known, else fall
+     * through to the superclass (AROS_NOMINAL_*).
+     */
+    if (xsd->vcsd_NativeWidth && xsd->vcsd_NativeHeight)
+    {
+        if (msg->width)
+            *msg->width  = xsd->vcsd_NativeWidth;
+        if (msg->height)
+            *msg->height = xsd->vcsd_NativeHeight;
+        if (msg->depth)
+            *msg->depth  = 24;
+        return;
+    }
+
+    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+}
+
+/* The fb behind the planes: the display timing, and the backdrop. Ours
+ * only - graphics.library and the compositor must not draw into it. */
+static void vc4_fb_new(OOP_Class *cl, OOP_Object *o, OOP_Object *bm)
+{
+    struct TagItem fbtags[] =
+    {
+        { aHidd_BitMap_FrameBuffer, TRUE                 },
+        { aHidd_BitMap_ModeID,      vHidd_ModeID_Invalid },
+        { TAG_DONE,                 0                    }
+    };
+
+    OOP_GetAttr(bm, aHidd_BitMap_ModeID, &fbtags[1].ti_Data);
+    if (fbtags[1].ti_Data == vHidd_ModeID_Invalid)
+        return;
+    HIDD_Display_CreateObject(o, XSD(cl)->vcsd_basebm, fbtags);
+    OOP_SetAttrsTags(o, aHidd_Display_FrameBuffer, 0, TAG_DONE);
+}
+
+/* Without a framebuffer the bitmap given is scanned out itself; the base
+ * class then tracks it for the cursor. */
+/* The compositor's display mode and its size, for fHidd_Display_Show_Scale */
+static BOOL vc4_scale_mode(OOP_Class *cl, OOP_Object *o, IPTR *mode, ULONG *w, ULONG *h)
+{
+    OOP_Object *comp = NULL, *sync = NULL, *pf = NULL;
+    IPTR m = vHidd_ModeID_Invalid, mw = 0, mh = 0;
+
+    OOP_GetAttr(o, aHidd_Display_Compositor, (IPTR *)&comp);
+    if (comp)
+        OOP_GetAttr(comp, aHidd_Compositor_DisplayMode, &m);
+    if ((m == vHidd_ModeID_Invalid)
+        || !HIDD_DMEnum_GetMode(XSD(cl)->vcsd_DMEnum, m, &sync, &pf) || !sync)
+        return FALSE;
+    OOP_GetAttr(sync, aHidd_Sync_HDisp, &mw);
+    OOP_GetAttr(sync, aHidd_Sync_VDisp, &mh);
+    if (!mw || !mh)
+        return FALSE;
+    *mode = m;
+    *w    = mw;
+    *h    = mh;
+    return TRUE;
+}
+
+OOP_Object *MNAME_DISPLAY(Show)(OOP_Class *cl, OOP_Object *o, struct pHidd_Display_Show *msg)
+{
+    struct VideoCoreGfx_staticdata *xsd = XSD(cl);
+
+    if (xsd->vcsd_NoFB)
+    {
+        IPTR smode = vHidd_ModeID_Invalid;
+        ULONG sw = 0, sh = 0;
+
+        if (msg->bitMap && !xsd->vcsd_FBObj)
+            vc4_fb_new(cl, o, msg->bitMap);
+        if (!xsd->vcsd_FBObj)
+            return NULL;
+        /* Asked to scale and cannot: NULL, the compositor composes instead */
+        if ((msg->flags & fHidd_Display_Show_Scale) && !vc4_scale_mode(cl, o, &smode, &sw, &sh))
+            return NULL;
+        if (!vcgfx_show(xsd, msg->bitMap, smode, sw, sh))
+            return NULL;
+    }
+    return (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+}
+
+VOID MNAME_DISPLAY(UpdateRect)(OOP_Class *cl, OOP_Object *o, struct pHidd_Display_UpdateRect *msg)
+{
+    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+    vcgfx_mirror_rect(XSD(cl), msg->bitMap, msg->x, msg->y, msg->width, msg->height);
+}
+
+/* How far a plane scales: VideoCore IV up only, HVS5/6 down to 2/3 too,
+ * that is a source at most 1.5 times the size it lands. */
+static void vc4_plane_scale(struct VideoCoreGfx_staticdata *xsd, ULONG *min, ULONG *max)
+{
+    *min = HIDD_PLANE_SCALE_UNITY;
+    *max = HIDD_PLANE_SCALE_UNITY;
+    if (xsd->vcsd_HVSGen == VCGFX_HVS_VC4)
+        *max = 16 * HIDD_PLANE_SCALE_UNITY;
+    else if ((xsd->vcsd_HVSGen == VCGFX_HVS_HVS5) || vc4_hvs6_scales(xsd))
+    {
+        *min = (2 * HIDD_PLANE_SCALE_UNITY + 2) / 3;
+        *max = 16 * HIDD_PLANE_SCALE_UNITY;
+    }
+}
+
+/* Overlay planes above or below the primary, at any z but the primary's:
+ * 32-bit screens and client surfaces, 32 or 16 bit or video, in scanout
+ * memory; 32-bit ones may blend by their own alpha. Below, they show
+ * through the alpha of what is above. How many fit at once is the
+ * budget's to say, in CommitPlanes(). With no colour key a video partly
+ * covered goes off rather than show over what covers it. */
+ULONG MNAME_DISPLAY(GetPlaneInfo)(OOP_Class *cl, OOP_Object *o, struct pHidd_Display_GetPlaneInfo *msg)
+{
+    struct VideoCoreGfx_staticdata *xsd = XSD(cl);
+    struct HIDD_PlaneInfo info = { 0 };
+    ULONG len = msg->infoLen;
+
+    if (!xsd->vcsd_NoFB || (msg->index > VCGFX_OVL_PLANES))
+        return (ULONG)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+
+    if (msg->index == 0)
+    {
+        /* The base primary, but scaling a screen to fill the display, and
+         * over the planes below it by its own alpha */
+        struct pHidd_Display_GetPlaneInfo supmsg = *msg;
+
+        supmsg.info    = &info;
+        supmsg.infoLen = sizeof(info);
+        if (!OOP_DoSuperMethod(cl, o, (OOP_Msg)&supmsg))
+            return 0;
+        vc4_plane_scale(xsd, &info.ScaleMin, &info.ScaleMax);
+        info.ZMin        = VCGFX_PRIMARY_Z;
+        info.ZMax        = VCGFX_PRIMARY_Z;
+        info.AlphaModes |= 1 << vHidd_CompAlpha_PerPixel;
+        if (len > sizeof(info))
+            len = sizeof(info);
+        CopyMem(&info, msg->info, len);
+        return len;
+    }
+
+    info.Type       = vHidd_Plane_Overlay;
+    info.ZMin       = 0;
+    info.ZMax       = 2 * VCGFX_PRIMARY_Z;
+    info.PixFmtMask = (1 << vcgfx_native32(xsd)) | (1 << vHidd_StdPixFmt_BGRA32)
+                    | (1 << vHidd_StdPixFmt_BGR032) | (1 << vHidd_StdPixFmt_RGB16_LE)
+                    | (1 << vHidd_StdPixFmt_RGB15_LE);
+    if (xsd->vcsd_HVSGen == VCGFX_HVS_HVS6)
+        info.PixFmtMask |= 1 << vHidd_StdPixFmt_RGBA32;     /* the screens' own, with alpha */
+    if (vcgfx_yuv_ok(xsd, vHidd_VideoFmt_NV12))
+        info.VideoFmtMask = (1 << vHidd_VideoFmt_NV12) | (1 << vHidd_VideoFmt_I420);
+    /* 10-bit decode targets: SAND128 columns HVS5 and HVS6 read */
+    if (info.VideoFmtMask && vcgfx_sand_scanout(xsd))
+        info.VideoFmtMask |= 1 << vHidd_VideoFmt_P010;
+    vc4_plane_scale(xsd, &info.ScaleMin, &info.ScaleMax);
+    info.AlphaModes = (1 << vHidd_CompAlpha_None) | (1 << vHidd_CompAlpha_PerPixel);
+    info.PosAlignX  = 1;
+    info.PosAlignY  = 1;
+    info.Flags      = PIF_NEEDS_DISPLAYMEM | PIF_HIDE_OBSCURED;
+
+    if (len > sizeof(info))
+        len = sizeof(info);
+    CopyMem(&info, msg->info, len);
+    return len;
+}
+
+/* Scan-out bitmaps a plane can show: RGB, and NV12/I420 where entries carry
+ * their own colour conversion. */
+ULONG MNAME_DISPLAY(QueryScanout)(OOP_Class *cl, OOP_Object *o, struct pHidd_Display_QueryScanout *msg)
+{
+    struct VideoCoreGfx_staticdata *xsd = XSD(cl);
+    ULONG flags = SCF_PLANE, maxw = (xsd->vcsd_HVSGen == VCGFX_HVS_VC4) ? 4095 : 0, pxflags;
+
+    if (!xsd->vcsd_NoFB)
+        return (ULONG)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+    if (msg->caps)
+        memset(msg->caps, 0, sizeof(*msg->caps));
+    if (!msg->width || !msg->height || (maxw && (msg->width > maxw)))
+        return 0;
+    if (msg->videoFmt ? !vcgfx_yuv_ok(xsd, msg->videoFmt)
+                      : !vcgfx_scanout_rgb(xsd, msg->pixFmt, &pxflags))
+        return 0;
+
+    if (msg->caps)
+    {
+        vc4_plane_scale(xsd, &msg->caps->ScaleMin, &msg->caps->ScaleMax);
+        if (msg->caps->ScaleMax != HIDD_PLANE_SCALE_UNITY)
+            flags |= SCF_SCALE;
+        msg->caps->Flags      = flags;
+        msg->caps->MaxWidth   = maxw;
+        msg->caps->MaxBuffers = VCGFX_SCAN_BUFFERS;
+    }
+    return flags;
+}
+
+BOOL MNAME_DISPLAY(CommitPlanes)(OOP_Class *cl, OOP_Object *o, struct pHidd_Display_CommitPlanes *msg)
+{
+    if (!XSD(cl)->vcsd_NoFB)
+        return (BOOL)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+    return vcgfx_planes_commit(XSD(cl), msg->states, msg->count, msg->flags);
+}
+
+BOOL MNAME_DISPLAY(SetCursorShape)(OOP_Class *cl, OOP_Object *o, struct pHidd_Display_SetCursorShape *msg)
+{
+    struct VideoCoreGfx_staticdata *xsd = XSD(cl);
+    IPTR width = 0, height = 0;
+
+    /* Without a cursor buffer the base class renders a software pointer */
+    if (!xsd->vcsd_CurBuf)
+        return (BOOL)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+
+    if (msg->shape == NULL)
+    {
+        /* Hide and forget the current shape. */
+        xsd->vcsd_CurVisible = FALSE;
+        if (xsd->vcsd_HVS.hvs_Active || xsd->vcsd_HVS6.h6_Active)
+        {
+            vc4_hvs_update_cursor(xsd);
+            return TRUE;
+        }
+        VC4_MBOX_LOCK(xsd);
+        xsd->vcsd_MBoxMessage[0] = AROS_LE2LONG(8 * 4);
+        xsd->vcsd_MBoxMessage[1] = AROS_LE2LONG(VCTAG_REQ);
+        xsd->vcsd_MBoxMessage[2] = AROS_LE2LONG(VCTAG_SETCURSORSTATE);
+        xsd->vcsd_MBoxMessage[3] = AROS_LE2LONG(16);
+        xsd->vcsd_MBoxMessage[4] = AROS_LE2LONG(16);
+        xsd->vcsd_MBoxMessage[5] = AROS_LE2LONG(0);     /* enable=0 */
+        xsd->vcsd_MBoxMessage[6] = AROS_LE2LONG(0);
+        xsd->vcsd_MBoxMessage[7] = AROS_LE2LONG(0);
+        xsd->vcsd_MBoxMessage[8] = AROS_LE2LONG(0);
+        xsd->vcsd_MBoxMessage[9] = 0;
+        MBoxCall((void*)VCMB_BASE, VCMB_PROPCHAN, xsd->vcsd_MBoxMessage);
+        VC4_MBOX_UNLOCK(xsd);
+        return TRUE;
+    }
+
+    OOP_GetAttr(msg->shape, aHidd_BitMap_Width,  &width);
+    OOP_GetAttr(msg->shape, aHidd_BitMap_Height, &height);
+    if (width == 0 || height == 0 ||
+        width > VC4_CURSOR_MAX_W || height > VC4_CURSOR_MAX_H)
+        return FALSE;
+
+    /* HVS6 reads RGBA, and cannot snoop this cached buffer. */
+    HIDD_BM_GetImage(msg->shape, (UBYTE *)xsd->vcsd_CurBuf, width * 4,
+                     0, 0, width, height,
+                     (xsd->vcsd_HVSGen == VCGFX_HVS_HVS6)
+                         ? vHidd_StdPixFmt_RGBA32 : vHidd_StdPixFmt_BGRA32);
+    if (xsd->vcsd_HVSGen == VCGFX_HVS_HVS6)
+        CacheClearE(xsd->vcsd_CurBuf, VC4_CURSOR_BUF_BYTES, CACRF_ClearD);
+
+    xsd->vcsd_CurWidth  = width;
+    xsd->vcsd_CurHeight = height;
+    xsd->vcsd_CurHotX   = msg->xoffset;
+    xsd->vcsd_CurHotY   = msg->yoffset;
+
+    if (xsd->vcsd_HVS.hvs_Active || xsd->vcsd_HVS6.h6_Active)
+    {
+        /* Our cursor plane reads vcsd_CurBuf directly; the new geometry
+         * is picked up by the list rebuild. */
+        vc4_hvs_update_cursor(xsd);
+        return TRUE;
+    }
+
+    /* SETCURSORINFO: width, height, format(0), buf, hot_x, hot_y */
+    VC4_MBOX_LOCK(xsd);
+    xsd->vcsd_MBoxMessage[0] = AROS_LE2LONG(12 * 4);
+    xsd->vcsd_MBoxMessage[1] = AROS_LE2LONG(VCTAG_REQ);
+    xsd->vcsd_MBoxMessage[2] = AROS_LE2LONG(VCTAG_SETCURSORINFO);
+    xsd->vcsd_MBoxMessage[3] = AROS_LE2LONG(24);
+    xsd->vcsd_MBoxMessage[4] = AROS_LE2LONG(24);
+    xsd->vcsd_MBoxMessage[5] = AROS_LE2LONG(width);
+    xsd->vcsd_MBoxMessage[6] = AROS_LE2LONG(height);
+    xsd->vcsd_MBoxMessage[7] = AROS_LE2LONG(0);
+    xsd->vcsd_MBoxMessage[8] = AROS_LE2LONG(xsd->vcsd_CurBufBus);
+    xsd->vcsd_MBoxMessage[9] = AROS_LE2LONG(xsd->vcsd_CurHotX);
+    xsd->vcsd_MBoxMessage[10] = AROS_LE2LONG(xsd->vcsd_CurHotY);
+    xsd->vcsd_MBoxMessage[11] = 0;
+
+    if (MBoxCall((void*)VCMB_BASE, VCMB_PROPCHAN, xsd->vcsd_MBoxMessage)
+        == (volatile unsigned int *)-1)
+    {
+        VC4_MBOX_UNLOCK(xsd);
+        return FALSE;
+    }
+    {
+        BOOL ok = (AROS_LE2LONG(xsd->vcsd_MBoxMessage[5]) == 0);
+        VC4_MBOX_UNLOCK(xsd);
+        return ok;
+    }
+}
+
+BOOL MNAME_DISPLAY(SetCursorPos)(OOP_Class *cl, OOP_Object *o, struct pHidd_Display_SetCursorPos *msg)
+{
+    struct VideoCoreGfx_staticdata *xsd = XSD(cl);
+
+    if (!xsd->vcsd_CurBuf)
+        return (BOOL)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+
+    /* Firmware places the image top-left at (x,y) and ignores the
+     * SETCURSORINFO hotspot, so apply the AROS hotspot offset here
+     * (vcsd_CurHotX/Y = pointer xoffset/yoffset, typically <= 0). */
+    xsd->vcsd_CurX = (LONG)msg->x + (LONG)xsd->vcsd_CurHotX;
+    xsd->vcsd_CurY = (LONG)msg->y + (LONG)xsd->vcsd_CurHotY;
+
+    if (!xsd->vcsd_CurVisible)
+        return TRUE;
+
+    if (xsd->vcsd_HVS.hvs_Active || xsd->vcsd_HVS6.h6_Active)
+    {
+        vc4_hvs_update_cursor(xsd);
+        return TRUE;
+    }
+
+    VC4_MBOX_LOCK(xsd);
+    xsd->vcsd_MBoxMessage[0] = AROS_LE2LONG(8 * 4);
+    xsd->vcsd_MBoxMessage[1] = AROS_LE2LONG(VCTAG_REQ);
+    xsd->vcsd_MBoxMessage[2] = AROS_LE2LONG(VCTAG_SETCURSORSTATE);
+    xsd->vcsd_MBoxMessage[3] = AROS_LE2LONG(16);
+    xsd->vcsd_MBoxMessage[4] = AROS_LE2LONG(16);
+    xsd->vcsd_MBoxMessage[5] = AROS_LE2LONG(1);     /* enable */
+    xsd->vcsd_MBoxMessage[6] = AROS_LE2LONG((ULONG)xsd->vcsd_CurX);
+    xsd->vcsd_MBoxMessage[7] = AROS_LE2LONG((ULONG)xsd->vcsd_CurY);
+    xsd->vcsd_MBoxMessage[8] = AROS_LE2LONG(1);     /* 1 = framebuffer coords (firmware scales) */
+    xsd->vcsd_MBoxMessage[9] = 0;
+
+    MBoxCall((void*)VCMB_BASE, VCMB_PROPCHAN, xsd->vcsd_MBoxMessage);
+    VC4_MBOX_UNLOCK(xsd);
+    return TRUE;
+}
+
+VOID MNAME_DISPLAY(SetCursorVisible)(OOP_Class *cl, OOP_Object *o, struct pHidd_Display_SetCursorVisible *msg)
+{
+    struct VideoCoreGfx_staticdata *xsd = XSD(cl);
+
+    if (!xsd->vcsd_CurBuf)
+    {
+        OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+        return;
+    }
+
+    xsd->vcsd_CurVisible = msg->visible ? TRUE : FALSE;
+
+    if (xsd->vcsd_HVS.hvs_Active || xsd->vcsd_HVS6.h6_Active)
+    {
+        vc4_hvs_update_cursor(xsd);
+        return;
+    }
+
+    VC4_MBOX_LOCK(xsd);
+    xsd->vcsd_MBoxMessage[0] = AROS_LE2LONG(8 * 4);
+    xsd->vcsd_MBoxMessage[1] = AROS_LE2LONG(VCTAG_REQ);
+    xsd->vcsd_MBoxMessage[2] = AROS_LE2LONG(VCTAG_SETCURSORSTATE);
+    xsd->vcsd_MBoxMessage[3] = AROS_LE2LONG(16);
+    xsd->vcsd_MBoxMessage[4] = AROS_LE2LONG(16);
+    xsd->vcsd_MBoxMessage[5] = AROS_LE2LONG(msg->visible ? 1 : 0);
+    xsd->vcsd_MBoxMessage[6] = AROS_LE2LONG((ULONG)xsd->vcsd_CurX);
+    xsd->vcsd_MBoxMessage[7] = AROS_LE2LONG((ULONG)xsd->vcsd_CurY);
+    xsd->vcsd_MBoxMessage[8] = AROS_LE2LONG(1);     /* 1 = framebuffer coords */
+    xsd->vcsd_MBoxMessage[9] = 0;
+
+    MBoxCall((void*)VCMB_BASE, VCMB_PROPCHAN, xsd->vcsd_MBoxMessage);
+    VC4_MBOX_UNLOCK(xsd);
+}
+
+/* NEON rect copy between two chunky 32bpp bitmaps; falls through to
+ * super otherwise. Handles same-buffer overlap via row direction;
+ * same-row right-shift uses a reverse copyline.
+ */
+VOID MNAME_GFX(CopyBox)(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CopyBox *msg)
+{
+    IPTR src_buf = 0, dst_buf = 0;
+    IPTR src_pitch = 0, dst_pitch = 0;
+    IPTR src_bpp = 0, dst_bpp = 0, src_std = 0, dst_std = 0;
+    UBYTE *srow_base, *drow_base;
+    ULONG row_bytes;
+    LONG y, y_start, y_end, y_step;
+    BOOL same_row_overlap;
+
+    if (GC_DRMD(msg->gc) != vHidd_GC_DrawMode_Copy)
+    {
+        OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+        return;
+    }
+
+    OOP_GetAttr(msg->src,  aHidd_ChunkyBM_Buffer,    &src_buf);
+    OOP_GetAttr(msg->dest, aHidd_ChunkyBM_Buffer,    &dst_buf);
+    OOP_GetAttr(msg->src,  aHidd_BitMap_BytesPerRow, &src_pitch);
+    OOP_GetAttr(msg->dest, aHidd_BitMap_BytesPerRow, &dst_pitch);
+    {
+        OOP_Object *src_pf = NULL, *dst_pf = NULL;
+        OOP_GetAttr(msg->src,  aHidd_BitMap_PixFmt, (IPTR *)&src_pf);
+        OOP_GetAttr(msg->dest, aHidd_BitMap_PixFmt, (IPTR *)&dst_pf);
+        if (src_pf)
+        {
+            OOP_GetAttr(src_pf, aHidd_PixFmt_BytesPerPixel, &src_bpp);
+            OOP_GetAttr(src_pf, aHidd_PixFmt_StdPixFmt, &src_std);
+        }
+        if (dst_pf)
+        {
+            OOP_GetAttr(dst_pf, aHidd_PixFmt_BytesPerPixel, &dst_bpp);
+            OOP_GetAttr(dst_pf, aHidd_PixFmt_StdPixFmt, &dst_std);
+        }
+        /* Rows copy as they are only in one byte order; X and A are alike
+         * but into alpha from none, which the superclass makes opaque */
+        if ((src_std == vHidd_StdPixFmt_BGRA32) || (dst_std != vHidd_StdPixFmt_BGRA32))
+        {
+            if (src_std == vHidd_StdPixFmt_BGRA32)
+                src_std = vHidd_StdPixFmt_BGR032;
+            if (dst_std == vHidd_StdPixFmt_BGRA32)
+                dst_std = vHidd_StdPixFmt_BGR032;
+        }
+    }
+
+    if (!src_buf || !dst_buf || src_bpp != 4 || dst_bpp != 4 || src_std != dst_std)
+    {
+        OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+        return;
+    }
+
+    row_bytes = msg->width * 4;
+    srow_base = (UBYTE *)src_buf + msg->srcY  * src_pitch + msg->srcX  * 4;
+    drow_base = (UBYTE *)dst_buf + msg->destY * dst_pitch + msg->destX * 4;
+
+    /* Pick row iteration direction so overlapping in-buffer copies
+     * read each source row before it's overwritten by a dest row.
+     */
+    if (src_buf == dst_buf && msg->destY > msg->srcY)
+    {
+        y_start = msg->height - 1;
+        y_end   = -1;
+        y_step  = -1;
+    }
+    else
+    {
+        y_start = 0;
+        y_end   = msg->height;
+        y_step  = 1;
+    }
+
+    /* Same buffer, same row(s), dest right of source within its extent:
+     * rows alias byte-wise, need a reverse copy.
+     */
+    same_row_overlap = (src_buf == dst_buf
+                        && msg->destY == msg->srcY
+                        && msg->destX > msg->srcX
+                        && (ULONG)(msg->destX - msg->srcX) < msg->width);
+
+    /* NEON, not DMA: measured 700 MB/s against 30 on a Pi 4 and 220 against
+     * 36 on a Pi 3, uncached reads and all, and a full-display copy could
+     * outlast the DMA timeout. */
+    for (y = y_start; y != y_end; y += y_step)
+    {
+        UBYTE *srow = srow_base + y * src_pitch;
+        UBYTE *drow = drow_base + y * dst_pitch;
+        if (same_row_overlap)
+            neon_copyline_rev(drow, srow, row_bytes);
+        else
+            neon_copyline(drow, srow, row_bytes);
+    }
+}
+
+OOP_Object *MNAME_DISPLAY(CreateObject)(OOP_Class *cl, OOP_Object *o, struct pHidd_Display_CreateObject *msg)
+{
+    OOP_Object      *object = NULL;
+
+    if (msg->cl == XSD(cl)->vcsd_basebm)
+    {
+        BOOL displayable;
+        BOOL framebuffer;
+        struct TagItem newbm_tags[2] =
+        {
+            {TAG_IGNORE, 0                  },
+            {TAG_MORE  , (IPTR)msg->attrList}
+        };
+        struct pHidd_Display_CreateObject newbm_msg;
+
+        displayable = (BOOL)GetTagData(aHidd_BitMap_Displayable, FALSE, msg->attrList);
+        framebuffer = (BOOL)GetTagData(aHidd_BitMap_FrameBuffer, FALSE, msg->attrList);
+        if (framebuffer)
+        {
+            newbm_tags[0].ti_Tag = aHidd_BitMap_ClassPtr;
+            newbm_tags[0].ti_Data = (IPTR)XSD(cl)->vcsd_VideoCoreGfxOnBMClass;
+        }
+        else
+        {
+            /* Displayable bitmaps and friends of ours go to the offscreen
+             * class: large 32bpp ones land in GPU memory, the rest in a
+             * plain ChunkyBM system-RAM buffer. */
+            OOP_Object *friend = (OOP_Object *)GetTagData(aHidd_BitMap_Friend, 0, msg->attrList);
+            OOP_Class *frcl = friend ? OOP_OCLASS(friend) : NULL;
+
+            if (displayable || frcl == XSD(cl)->vcsd_VideoCoreGfxOnBMClass
+                            || frcl == XSD(cl)->vcsd_VideoCoreGfxOffBMClass
+                            || GetTagData(aHidd_BitMap_Scanout, FALSE, msg->attrList))
+            {
+                newbm_tags[0].ti_Tag  = aHidd_BitMap_ClassPtr;
+                newbm_tags[0].ti_Data = (IPTR)XSD(cl)->vcsd_VideoCoreGfxOffBMClass;
+            }
+        }
+
+        newbm_msg.mID = msg->mID;
+        newbm_msg.cl = msg->cl;
+        newbm_msg.attrList = newbm_tags;
+
+        object = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)&newbm_msg);
+    }
+    else
+    {
+        /* Lazy lookup: at InitLib time the disk FS and gallium framework
+         * aren't up. By the time CreatePipe calls HIDD_Gfx_CreateObject the
+         * disk is mounted and CLID_Hidd_Gallium is registered. */
+        if (!XSD(cl)->vcsd_basegallium)
+            XSD(cl)->vcsd_basegallium = OOP_FindClass(CLID_Hidd_Gallium);
+
+        if (XSD(cl)->vcsd_basegallium && msg->cl == XSD(cl)->vcsd_basegallium)
+        {
+            /* V3D on BCM2711/2712, VC4 before. Loaded from the FS on first
+             * request so the class registers before OOP_NewObject. */
+            BOOL isv3d = XSD(cl)->vcsd_HVSGen != VCGFX_HVS_VC4;
+            CONST_STRPTR gallium_lib = isv3d ? "v3d.hidd" : "vc4gallium.hidd";
+            CONST_STRPTR gallium_cl  = isv3d ? "hidd.gallium.v3d"
+                                             : "hidd.gallium.vc4";
+
+            if (!XSD(cl)->vcsd_GalliumLib)
+                XSD(cl)->vcsd_GalliumLib = OpenLibrary(gallium_lib, 0);
+
+            if (XSD(cl)->vcsd_GalliumLib)
+                object = OOP_NewObject(NULL, (STRPTR)gallium_cl, msg->attrList);
+            /* else: object stays NULL; CreatePipe will use its softpipe fallback. */
+        }
+        else
+            object = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+    }
+
+    return object;
+}

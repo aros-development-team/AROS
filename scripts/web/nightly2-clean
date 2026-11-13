@@ -1,0 +1,31 @@
+#!/bin/bash
+
+##############################################################################
+# Removes incomplete or broken nightly build files from the upload directory.
+
+#-- Setup & Configuration ----------------------------------------------------
+#ROOT=/home/groups/a/ar/aros
+ROOT=/home/project-web/aros
+SRC="$ROOT/uploads/nightly2"
+LOCK="$SRC.lock"
+
+#-- Acquire Lock -------------------------------------------------------------
+aros/bin/lockfile -r 0 "$LOCK"
+if [[ $? != 0 ]]; then
+    echo Could not acquire lock. Aborting...
+    exit 1
+fi
+
+#-- Remove Stale Files -------------------------------------------------------
+cd "$SRC"
+
+count=$(($(ls -1 | wc -l) - 1))
+for directory in *; do
+    if [[ $count -gt 0 ]]; then
+        rm -rf "$directory"
+        count=$((count - 1))
+    fi
+done
+
+#-- Release Lock -------------------------------------------------------------
+rm -f "$LOCK"

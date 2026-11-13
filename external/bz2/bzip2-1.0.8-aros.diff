@@ -1,0 +1,14 @@
+diff -ruN bzip2-1.0.8/compress.c bzip2-1.0.8.aros/compress.c
+--- bzip2-1.0.8/compress.c	2019-07-13 17:50:05.000000000 +0000
++++ bzip2-1.0.8.aros/compress.c	2025-06-06 00:16:58.222320154 +0000
+@@ -595,6 +595,10 @@
+ 
+    if (s->verbosity >= 3)
+       VPrintf1( "codes %d\n", s->numZ-nBytes );
++
++#ifdef BZ_NO_STDIO
++   (void)nBytes; // Unused when stdio is disabled
++#endif
+ }
+ 
+ 

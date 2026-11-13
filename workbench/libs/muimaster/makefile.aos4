@@ -1,0 +1,199 @@
+#
+# Makefile for zunemaster.library
+#
+
+# If Kickstart isn't defined, we don't run on AmigaOS
+ifndef Kickstart
+
+CROSS_COMPILE = ppc-amigaos-
+RM     = rm -R
+MKDIR  = mkdir -p
+
+else
+
+RM = delete all
+MKDIR = makedir
+endif
+
+# Uncomment the next line if you are cross compiling
+
+CC     = $(CROSS_COMPILE)gcc
+CXX    = $(CROSS_COMPILE)c++
+AS     = $(CROSS_COMPILE)as
+LD     = $(CROSS_COMPILE)ld
+RANLIB = $(CROSS_COMPILE)ranlib
+STRIP  = $(CROSS_COMPILE)strip
+
+# Change these as required
+OPTIMIZE = -O0 # -O3
+DEBUG = #-g #-DMYDEBUG #-ggdb # -g -DDEBUG
+INC = -I include -I .
+CFLAGS = -D__AMIGAOS4__ -D__USE_OLD_TIMEVAL__ -DNDEBUG -D__USE_INLINE__ -Wall -fno-strict-aliasing  -mcrt=clib2 -c $(OPTIMIZE) $(DEBUG) $(INC)
+
+# Flags passed to gcc during linking
+LINK = -nostartfiles -mcrt=clib2
+
+# Name of the "thing" to build
+TARGET = zunemaster.library
+
+# Additional linker libraries
+LIBS = -ldebug -lm
+
+# Version of the binary to build
+VERSION = 0
+
+# Source code files used in this project
+
+ASRCS= #amiga-mui/hookentry.S amiga-mui/muidispatcherentry.S
+
+CLASSSRCS=aboutmui.c\
+	application.c \
+	area.c \
+	balance.c \
+	bitmap.c \
+	bodychunk.c \
+	boopsi.c \
+	chunkyimage.c \
+	coloradjust.c \
+	colorfield.c \
+	configdata.c \
+	crawling.c \
+	cycle.c \
+	dataspace.c \
+	dirlist.c \
+	family.c \
+	frameadjust.c \
+	framedisplay.c \
+	gauge.c \
+	group.c \
+	image.c \
+	imageadjust.c \
+	imagedisplay.c \
+	knob.c \
+	levelmeter.c \
+	list.c \
+	listview.c \
+	mccprefs.c \
+	menuitem.c \
+	notify.c \
+	numeric.c \
+	numericbutton.c \
+	penadjust.c \
+	pendisplay.c \
+	popasl.c \
+	popframe.c \
+	popimage.c \
+	poplist.c \
+	popobject.c \
+	poppen.c \
+	popscreen.c \
+	popstring.c \
+	prop.c \
+	radio.c \
+	rectangle.c \
+	register.c \
+	scale.c \
+	scrollbar.c \
+	scrollbutton.c \
+	scrollgroup.c \
+	semaphore.c \
+	settings.c \
+	settingsgroup.c \
+	slider.c \
+	string.c \
+	text.c \
+	virtgroup.c \
+	volumelist.c \
+	window.c
+#	iconlist.c \
+#	iconlistview.c \
+
+BASEARCHSRCS=\
+	bubbleengine.c \
+	clipboard.c \
+	datatypescache.c \
+	dragndrop.c \
+	font.c \
+	frame.c \
+	imspec_gradient.c \
+	imspec_vector.c \
+	imspec.c \
+	menu.c \
+	mui_addclipping.c \
+	mui_addclipregion.c \
+	mui_allocaslrequest.c \
+	mui_aslrequest.c \
+	mui_beginrefresh.c \
+	mui_createcustomclass.c \
+	mui_deletecustomclass.c \
+	mui_disposeobject.c \
+	mui_endrefresh.c \
+	mui_error.c \
+	mui_freeaslrequest.c \
+	mui_freeclass.c \
+	mui_getclass.c \
+	mui_layout.c \
+	mui_makeobject.c \
+	mui_newobject.c \
+	mui_obtainpen.c \
+	mui_rejectidcmp.c \
+	mui_releasepen.c \
+	mui_redraw.c \
+	mui_removeclipping.c \
+	mui_removeclipregion.c \
+	mui_request.c \
+	mui_requestidcmp.c \
+	mui_seterror.c \
+	penspec.c \
+	support_amigaos.c \
+	support_classes.c \
+	support.c \
+	textengine.c \
+	zunemaster_68k.c \
+	zunemaster_init-aos4.c
+
+SRCS = $(BASEARCHSRCS) $(addprefix classes/,$(CLASSSRCS))
+
+# -------------------------------------------------------------
+
+OBJS = $(SRCS:%.c=ppc-amigaos-objs/%.o)
+AOBJS = $(ASRCS:%.S=ppc-amigaos-objs/%.o)
+
+all: envs dirs $(TARGET)
+
+.PHONY: envs
+envs:
+
+.PHONY: dirs
+dirs:
+	-$(MKDIR) ppc-amigaos-objs ppc-amigaos-objs/classes
+
+buildincludes: buildincludes.c
+	gcc $< -o $@
+
+.PHONY: includes
+includes: dirs buildincludes
+	-$(RM) include-generated
+	-$(MKDIR) include-generated include-generated/libraries include-generated/proto include-generated/inline4 include-generated/interfaces
+	./buildincludes >include-generated/libraries/mui.h
+	cp include/proto/zunemaster.h include-generated/proto
+	cp include/proto/muimaster.h include-generated/proto
+	cp include/inline4/zunemaster.h include-generated/inline4
+	cp include/interfaces/zunemaster.h include-generated/interfaces
+
+# Rules for building
+$(TARGET): $(OBJS) $(AOBJS)
+	$(CC) $(LINK) -o $@.debug $(OBJS) $(AOBJS) $(LIBS) -Wl,--cref,-M,-Map=$@.map
+	$(STRIP) --strip-all -o $@ $@.debug
+	cp zunemaster.library.debug "/cygdrive/c/Dokumente und Einstellungen/sba/Eigene Dateien/AmigaOne/zunemaster.library"
+
+ppc-amigaos-objs/%.o: %.c
+	$(CC) $(CFLAGS) -c $< -o $@
+
+.PHONY: clean
+clean:
+	$(RM) $(TARGET) $(OBJS) ppc-amigaos-objs
+
+.PHONY: revision
+revision:
+	bumprev $(VERSION) $(TARGET)

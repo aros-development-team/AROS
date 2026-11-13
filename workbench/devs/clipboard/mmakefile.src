@@ -1,0 +1,9 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM- workbench-devs-complete : workbench-devs-clipboard
+#MM workbench-devs-clipboard : includes linklibs
+
+%build_module mmake=workbench-devs-clipboard \
+    modname=clipboard modtype=device \
+    files=clipboard

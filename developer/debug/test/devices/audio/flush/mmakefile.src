@@ -1,0 +1,11 @@
+# Copyright (C) 2026, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+USER_LDFLAGS := -static
+
+#MM test-devices-audio-flush : includes linklibs
+
+%build_progs mmake=test-devices-audio-flush \
+    files=audioflush targetdir=$(AROS_TESTS)/devices/audio
+
+%common

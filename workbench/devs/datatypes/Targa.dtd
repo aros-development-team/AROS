@@ -1,0 +1,10 @@
+# DataType Description for Targa
+Name=Targa
+Version=$VER: Targa 1.0 (18.02.2017)
+BaseName=targa
+Pattern=#?.tga
+Mask=
+GroupID=pict
+ID=tga
+Flags=DTF_BINARY,DTF_CASE
+Priority=0

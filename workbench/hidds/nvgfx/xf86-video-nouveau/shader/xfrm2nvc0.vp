@@ -1,0 +1,63 @@
+#ifndef ENVYAS
+static uint32_t
+NVC0VP_Transform2[] = {
+	0x00020461,
+	0x00000000,
+	0x00000000,
+	0x00000000,
+	0x000ff000,
+	0x00000000, /* VP_ATTR_EN[0x000] */
+	0x0001033f, /* VP_ATTR_EN[0x080] */
+	0x00000000, /* VP_ATTR_EN[0x100] */
+	0x00000000,
+	0x00000000, /* VP_ATTR_EN[0x200] */
+	0x00000000,
+	0x00000000, /* VP_ATTR_EN[0x300] */
+	0x00000000,
+	0x0033f000, /* VP_EXPORT_EN[0x040] */
+	0x00000000, /* VP_EXPORT_EN[0x0c0] */
+	0x00000000,
+	0x00000000,
+	0x00000000,
+	0x00000000, /* VP_EXPORT_EN[0x2c0] */
+	0x00000000,
+#include "xfrm2nvc0.vpc"
+};
+#else
+
+ld b128 $r0:$r1:$r2:$r3 a[0x80] 0x0 unk39
+st b128 a[0x70] $r0:$r1:$r2:$r3 0x0 unk39
+ld b64 $r0:$r1 a[0x90] 0x0 unk39
+mul ftz rn f32 $r2 $r0 c0[0x0]
+mul ftz rn f32 $r3 $r0 c0[0xc]
+mul ftz rn f32 $r4 $r0 c0[0x18]
+fma ftz rn f32 $r2 $r1 c0[0x4] $r2
+fma ftz rn f32 $r3 $r1 c0[0x10] $r3
+fma ftz rn f32 $r4 $r1 c0[0x1c] $r4
+add ftz rn f32 $r2 $r2 c0[0x8]
+add ftz rn f32 $r3 $r3 c0[0x14]
+add ftz rn f32 $r4 $r4 c0[0x20]
+rcp f32 $r4 $r4
+mul ftz rn f32 $r2 $r2 $r4
+mul ftz rn f32 $r3 $r3 $r4
+mul ftz rn f32 $r0 $r2 c0[0x24]
+mul ftz rn f32 $r1 $r3 c0[0x28]
+st b64 a[0x80] $r0:$r1 0x0 unk39
+ld b64 $r0:$r1 a[0xa0] 0x0 unk39
+mul ftz rn f32 $r2 $r0 c0[0x2c]
+mul ftz rn f32 $r3 $r0 c0[0x38]
+mul ftz rn f32 $r4 $r0 c0[0x44]
+fma ftz rn f32 $r2 $r1 c0[0x30] $r2
+fma ftz rn f32 $r3 $r1 c0[0x3c] $r3
+fma ftz rn f32 $r4 $r1 c0[0x48] $r4
+add ftz rn f32 $r2 $r2 c0[0x34]
+add ftz rn f32 $r3 $r3 c0[0x40]
+add ftz rn f32 $r4 $r4 c0[0x4c]
+rcp f32 $r4 $r4
+mul ftz rn f32 $r2 $r2 $r4
+mul ftz rn f32 $r3 $r3 $r4
+mul ftz rn f32 $r0 $r2 c0[0x50]
+mul ftz rn f32 $r1 $r3 c0[0x54]
+st b64 a[0x90] $r0:$r1 0x0 unk39
+exit
+#endif

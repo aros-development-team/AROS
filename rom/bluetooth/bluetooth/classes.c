@@ -1,0 +1,1458 @@
+/*
+ *----------------------------------------------------------------------------
+ *       bluetooth.library: classes, bindings, error log, events
+ *----------------------------------------------------------------------------
+ *
+ * Classes are libraries in SYS:Classes/Bluetooth exporting the btclass API
+ * (libraries/btclass.h). Binding works as in Poseidon: for every registered
+ * device the classes are asked, in priority order, for a service binding
+ * per service and, failing that, for a device binding. The class scan of a
+ * device is triggered from the event handler task (the "hub task" of this
+ * stack) so that class code never runs inside the hardware task.
+ */
+
+#include "debug.h"
+
+#include "bluetooth.library.h"
+
+#include <proto/exec.h>
+#include <proto/dos.h>
+#include <proto/utility.h>
+#include <proto/btclass.h>
+#include <proto/timer.h>
+
+#include <string.h>
+
+#define NewList(list) NEWLIST(list)
+
+#define BtClsBase bc->bc_ClassBase
+#define DOSBase BluetoothBase->bt_DosBase
+#define TimerBase BluetoothBase->bt_TimerIOReq.tr_node.io_Device
+
+/* *** Classes *** */
+
+/* /// "btAddClass()" */
+/*****************************************************************************
+    NAME
+        APTR btAddClass(
+
+    SYNOPSIS
+        STRPTR name, ULONG version)
+
+    FUNCTION
+        Open a Bluetooth class library and register it in binding-priority order.
+
+    INPUTS
+        name - Non-NULL, NUL-terminated library name or path.
+        version - Minimum library version accepted by OpenLibrary().
+
+    RESULT
+        Class handle, or NULL if no library can be opened, the opened
+        library name is already registered, or class allocation fails.
+
+    NOTES
+        The exact name is tried first. On failure, leading path components
+        are removed at slash or colon boundaries and the remaining suffixes
+        are tried in turn. Supply a library implementing the btclass API;
+        opening an arbitrary library does not validate that interface.
+
+        The library remains open until btRemClass(). Higher class priorities
+        are offered bindings first; priority is stored as the node's signed
+        byte. Addition sends BEHMB_ADDCLASS, allowing the event handler to
+        schedule a scan; return does not mean any device has been bound.
+        Event allocation can fail independently.
+
+        Call from task context and serialize class addition, removal and
+        scans. Keep bluetooth.library open while the class is registered.
+        Release the handle with btRemClass(), not btFreeVec().
+
+    BUGS
+        Name and path copy failures are not checked before registration.
+        A non-NULL result can therefore contain missing metadata. Duplicate
+        checking and insertion are separate operations; concurrent additions
+        are not guaranteed to reject the same class.
+
+    SEE ALSO
+        btRemClass(), btClassScan()
+
+*****************************************************************************/
+AROS_LH2(struct BtClass *, btAddClass,
+         AROS_LHA(STRPTR, name, A1),
+         AROS_LHA(ULONG, vers, D0),
+         LIBBASETYPEPTR, BluetoothBase, 33, bt)
+{
+    AROS_LIBFUNC_INIT
+    struct Library *cls = NULL;
+    struct BtClass *bc;
+    IPTR pri = 0;
+    STRPTR desc = "";
+    STRPTR origname = name;
+
+    KPRINTF(5, ("btAddClass(%s, %ld)\n", name, vers));
+
+    while(*name) {
+        if((cls = OpenLibrary(name, vers))) {
+            break;
+        }
+        do {
+            if((*name == '/') || (*name == ':')) {
+                ++name;
+                break;
+            }
+        } while(*(++name));
+    }
+    if(cls) {
+        Forbid();
+        if(FindName(&BluetoothBase->bt_Classes, cls->lib_Node.ln_Name)) {
+            Permit();
+            btAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
+                           "Attempted to add class %s twice.",
+                           name);
+            KPRINTF(20, ("attempt to add class twice!\n"));
+            CloseLibrary(cls);
+            return(NULL);
+        }
+        Permit();
+        if((bc = btAllocVec(sizeof(struct BtClass)))) {
+            bc->bc_Base = BluetoothBase;
+            bc->bc_ClassBase = cls;
+            bc->bc_Node.ln_Name = bc->bc_ClassName = btCopyStr(cls->lib_Node.ln_Name);
+            bc->bc_FullPath = btCopyStr(origname);
+
+            btcGetAttrs(BCGA_CLASS, NULL,
+                        BCCA_Priority, &pri,
+                        BCCA_Description, &desc,
+                        TAG_END);
+
+            bc->bc_Node.ln_Pri = pri;
+            btLockWriteBase();
+            Enqueue(&BluetoothBase->bt_Classes, &bc->bc_Node);
+            btUnlockBase();
+
+            btAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname),
+                           "Say hello to %s V%ld.%ld (%s).",
+                           cls->lib_Node.ln_Name, cls->lib_Version, cls->lib_Revision, desc);
+            btSendEvent(BEHMB_ADDCLASS, bc, NULL);
+            return(bc);
+        }
+        CloseLibrary(cls);
+    }
+    return(NULL);
+    AROS_LIBFUNC_EXIT
+}
+/* \\\ */
+
+/* /// "btRemClass()" */
+/*****************************************************************************
+    NAME
+        VOID btRemClass(
+
+    SYNOPSIS
+        APTR bc)
+
+    FUNCTION
+        Remove a class from binding selection, release its bindings and close its library.
+
+    INPUTS
+        bc - Live registered class handle. NULL is invalid.
+
+    RESULT
+        None. Binding-release failures are not returned.
+
+    NOTES
+        Call from task context. Quiesce scans, class callbacks and competing
+        class operations before removal. Release callbacks run synchronously
+        and can wait; do not call from a worker whose termination they await.
+        The class handle and copied metadata are invalid on return.
+
+        The removal event carries the freed handle as an identifier only.
+        Recipients must not dereference it. Removing a class does not remove
+        the Bluetooth devices or unload other registered classes.
+
+    BUGS
+        If the usage count remains nonzero after attempted release, the
+        function logs the condition but still closes the class library and
+        frees the class object. It does not refuse an unsafe unload; ensure
+        all bindings and in-flight class operations have ended first.
+
+    SEE ALSO
+        btAddClass(), btReleaseDevBinding(), btReleaseSvcBinding()
+
+*****************************************************************************/
+AROS_LH1(void, btRemClass,
+         AROS_LHA(struct BtClass *, bc, A1),
+         LIBBASETYPEPTR, BluetoothBase, 34, bt)
+{
+    AROS_LIBFUNC_INIT
+    KPRINTF(5, ("btRemClass(%p)\n", bc));
+    btLockWriteBase();
+    Remove(&bc->bc_Node);
+    btUnlockBase();
+
+    /* Check if there are still bindings remaining */
+    while(bc->bc_UseCnt) {
+        struct BtDevice *bd;
+        struct BtService *bsv;
+
+        KPRINTF(20, ("This should never happen: Class %s still in use (%ld), can't close!\n",
+                     bc->bc_ClassBase->lib_Node.ln_Name, bc->bc_UseCnt));
+
+        /* Well, try to release the open bindings in a best effort attempt */
+        btLockReadBase();
+        bd = NULL;
+        while((bd = btGetNextDevice(bd))) {
+            if(bd->bd_DevBinding && (bd->bd_ClsBinding == bc) && (!(bd->bd_Flags & BDFF_APPBINDING))) {
+                btUnlockBase();
+                btReleaseDevBinding(bd);
+                btLockReadBase();
+                bd = NULL; /* restart */
+                continue;
+            }
+            bsv = (struct BtService *) bd->bd_Services.lh_Head;
+            while(bsv->bsv_Node.ln_Succ) {
+                if(bsv->bsv_SvcBinding && (bsv->bsv_ClsBinding == bc)) {
+                    btUnlockBase();
+                    btReleaseSvcBinding(bsv);
+                    btLockReadBase();
+                    bd = NULL; /* restart */
+                    break;
+                }
+                bsv = (struct BtService *) bsv->bsv_Node.ln_Succ;
+            }
+        }
+        btUnlockBase();
+        if(bc->bc_UseCnt) {
+            btAddErrorMsg(RETURN_FAIL, (STRPTR) GM_UNIQUENAME(libname),
+                           "This should never happen! Class %s still in use (cnt=%ld). Could not get rid of it!",
+                           bc->bc_ClassBase->lib_Node.ln_Name, bc->bc_UseCnt);
+            break;
+        }
+    }
+    btAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname),
+                   "Removed class %s.",
+                   bc->bc_ClassBase->lib_Node.ln_Name);
+    CloseLibrary(bc->bc_ClassBase);
+    btFreeVec(bc->bc_ClassName);
+    btFreeVec(bc->bc_FullPath);
+    btFreeVec(bc);
+    btSendEvent(BEHMB_REMCLASS, bc, NULL);
+    AROS_LIBFUNC_EXIT
+}
+/* \\\ */
+
+/* *** Error Msgs *** */
+
+/* /// "btAddErrorMsgA()" */
+/*****************************************************************************
+    NAME
+        APTR btAddErrorMsgA(
+
+    SYNOPSIS
+        UWORD level, STRPTR origin, STRPTR fmtstr, RAWARG fmtdata)
+
+    FUNCTION
+        Format and append a message to the Bluetooth error-message list,
+        subject to the configured severity filters.
+
+    INPUTS
+        level - Severity. Values below RETURN_WARN are informational;
+            RETURN_WARN to below RETURN_ERROR are warnings; RETURN_ERROR
+            to below RETURN_FAIL are errors; RETURN_FAIL and above are
+            failures.
+        origin - Non-NULL, NUL-terminated origin name; copied.
+        fmtstr - Non-NULL, NUL-terminated RawDoFmt format.
+        fmtdata - Matching RawDoFmt argument stream; referenced data must
+            remain unchanged while the message is formatted.
+
+    RESULT
+        Message handle, or NULL if filtered out or allocation fails. NULL
+        does not distinguish suppression from failure.
+
+    NOTES
+        The message and copied strings belong to the library list. Remove
+        the message with btRemErrorMsg(), not btFreeVec(). Coordinate with
+        other message-list users; the handle is not a retained reference.
+        Inputs are not retained after formatting.
+
+        Call from task context. A successful append sends BEHMB_ADDERRORMSG,
+        but event delivery can fail independently. With btdebug enabled,
+        output is also sent to the kernel log and, from a DOS process with
+        DOS available, appended to SYS:BluetoothLog.txt. Output failures
+        do not change the returned handle.
+
+    SEE ALSO
+        btRemErrorMsg(), btCopyStrFmtA(), btSendEvent()
+
+*****************************************************************************/
+AROS_LH4(struct BtErrorMsg *, btAddErrorMsgA,
+         AROS_LHA(UWORD, level, D0),
+         AROS_LHA(STRPTR, origin, A0),
+         AROS_LHA(STRPTR, fmtstr, A1),
+         AROS_LHA(RAWARG, fmtdata, A2),
+         LIBBASETYPEPTR, BluetoothBase, 38, bt)
+{
+    AROS_LIBFUNC_INIT
+    struct BtErrorMsg *bem;
+    struct BtGlobalCfg *bgc = BluetoothBase->bt_GlobalCfg;
+    if(bgc) {
+        if(((!bgc->bgc_LogInfo) && (level < RETURN_WARN)) ||
+                ((!bgc->bgc_LogWarning) && (level >= RETURN_WARN) && (level < RETURN_ERROR)) ||
+                ((!bgc->bgc_LogError) && (level >= RETURN_ERROR) && (level < RETURN_FAIL)) ||
+                ((!bgc->bgc_LogFailure) && (level >= RETURN_FAIL))) {
+            return(NULL);
+        }
+    }
+    if((bem = btAllocVec(sizeof(struct BtErrorMsg)))) {
+        bem->bem_Base = BluetoothBase;
+        bem->bem_Level = level;
+        if((bem->bem_Origin = btCopyStr(origin))) {
+            if((bem->bem_Msg = btCopyStrFmtA(fmtstr, fmtdata))) {
+                if (BluetoothBase->bt_Flags & BTF_KLOG) {
+                    KPrintF("[%s] %s\n", origin, bem->bem_Msg);
+                }
+                if(bHaveDOS(BluetoothBase)) {
+                    DateStamp(&bem->bem_DateStamp);
+                } else if(BluetoothBase->bt_StackInit) {
+                    struct timerequest tr = BluetoothBase->bt_TimerIOReq;
+                    tr.tr_node.io_Command = TR_GETSYSTIME;
+                    DoIO((struct IORequest *) &tr);
+                    bem->bem_DateStamp.ds_Days = tr.tr_time.tv_secs / (24*60*60);
+                    bem->bem_DateStamp.ds_Minute = (tr.tr_time.tv_secs / 60) % 60;
+                    bem->bem_DateStamp.ds_Tick = (tr.tr_time.tv_secs % 60) * 50;
+                }
+                Forbid();
+                AddTail(&BluetoothBase->bt_ErrorMsgs, &bem->bem_Node);
+                Permit();
+                btSendEvent(BEHMB_ADDERRORMSG, bem, NULL);
+                /* with the "btdebug" boot argument also mirror the line to the
+                   boot volume, so a board without keyboard/shell still leaves a
+                   readable log. Only from a Process (DOS I/O needs one). */
+                if((BluetoothBase->bt_Flags & BTF_KLOG) && bHaveDOS(BluetoothBase) &&
+                   (FindTask(NULL)->tc_Node.ln_Type == NT_PROCESS)) {
+                    BPTR fh = Open("SYS:BluetoothLog.txt", MODE_READWRITE);
+                    if(fh) {
+                        Seek(fh, 0, OFFSET_END);
+                        FPrintf(fh, "%ld %s: %s\n", (LONG) level, origin, bem->bem_Msg);
+                        Close(fh);
+                    }
+                }
+                return(bem);
+            }
+            btFreeVec(bem->bem_Origin);
+        }
+        btFreeVec(bem);
+    }
+    return(NULL);
+    AROS_LIBFUNC_EXIT
+}
+/* \\\ */
+
+/* /// "btRemErrorMsg()" */
+/*****************************************************************************
+    NAME
+        VOID btRemErrorMsg(
+
+    SYNOPSIS
+        APTR bem)
+
+    FUNCTION
+        Unlink an error message, free its copied strings and storage, then
+        send BEHMB_REMERRORMSG.
+
+    INPUTS
+        bem - Live message handle in this library's error list. NULL and
+            previously removed handles are invalid.
+
+    RESULT
+        None.
+
+    NOTES
+        The handle and its strings are invalid after removal. The removal
+        event carries the old address only as an identifier: recipients
+        must not dereference it. Earlier queued add events do not keep the
+        message alive. Serialize removal with message readers and other
+        removers. Call from task context.
+
+    SEE ALSO
+        btAddErrorMsgA(), btSendEvent()
+
+*****************************************************************************/
+AROS_LH1(void, btRemErrorMsg,
+         AROS_LHA(struct BtErrorMsg *, bem, A0),
+         LIBBASETYPEPTR, BluetoothBase, 39, bt)
+{
+    AROS_LIBFUNC_INIT
+    KPRINTF(1, ("btRemErrorMsg()\n"));
+    Forbid();
+    Remove(&bem->bem_Node);
+    Permit();
+    btFreeVec(bem->bem_Origin);
+    btFreeVec(bem->bem_Msg);
+    btFreeVec(bem);
+    btSendEvent(BEHMB_REMERRORMSG, bem, NULL);
+    AROS_LIBFUNC_EXIT
+}
+/* \\\ */
+
+/* *** Bindings *** */
+
+/* /// "bDeviceClassScan()" */
+/*
+ * Offers a registered device to the classes: forced bindings first, then
+ * a service binding for every unbound service, then -- if no service could
+ * be bound -- a device binding. Called with the library base read locked.
+ */
+void bDeviceClassScan(LIBBASETYPEPTR BluetoothBase, struct BtDevice *bd)
+{
+    struct BtClass *bc;
+    struct BtService *bsv;
+    APTR binding;
+    BOOL hassvcbinding;
+    STRPTR owner;
+
+    if(!(bd->bd_Flags & BDFF_REGISTERED)) {
+        return;
+    }
+    /* Only offer a device to the classes once its services are known. A
+     * DEVICECONNECTED scan can otherwise run while the hardware task is still
+     * enumerating services (GATT/SDP); the binding attempt takes device locks
+     * and spawns binding subtasks, stalling that enumeration until it times
+     * out. Services becoming known raises BEHMB_SERVICESCHG, which drives a
+     * second scan that does the real binding. */
+    if(!(bd->bd_Flags & BDFF_SERVICESKNOWN)) {
+        return;
+    }
+    if(bd->bd_PoPoCfg.bpc_NoClassBind || bd->bd_DevBinding || (bd->bd_Flags & BDFF_APPBINDING)) {
+        return;
+    }
+    KPRINTF(5, ("Doing ClassScan on Device: %s\n", bd->bd_Name));
+
+    /* A class's service binding (btcDoMethod(BCM_*ServiceBinding)) can spawn a
+     * subtask that does blocking GATT/SDP I/O, which the hardware task must
+     * service - and the hardware task also needs the device lock (pairing,
+     * disconnect, ...). So we must NOT hold the device lock across a binding
+     * attempt. Instead: snapshot the unbound services under the lock and mark
+     * them "binding in progress" (bClearServices/bFreeService keep those), drop
+     * the lock for the attempts, then reacquire it briefly to record results. */
+    {
+        struct BtService *svcs[16];
+        UWORD nsvc = 0, i;
+
+        btLockWriteDevice(bd);
+        for(bsv = (struct BtService *) bd->bd_Services.lh_Head; bsv->bsv_Node.ln_Succ;
+            bsv = (struct BtService *) bsv->bsv_Node.ln_Succ) {
+            if(bsv->bsv_SvcBinding) {
+                hassvcbinding = TRUE;
+            } else if(!bsv->bsv_BindingInProgress && !bsv->bsv_Gone && (nsvc < 16)) {
+                bsv->bsv_BindingInProgress = TRUE;
+                svcs[nsvc++] = bsv;
+            }
+        }
+        btUnlockDevice(bd);
+
+        /* forced device binding wins over service bindings, as before */
+        owner = btGetForcedBinding(bd->bd_IDString, NULL);
+        if((!hassvcbinding) && owner) {
+            bc = (struct BtClass *) BluetoothBase->bt_Classes.lh_Head;
+            while(bc->bc_Node.ln_Succ) {
+                if(!strcmp(owner, bc->bc_ClassName)) {
+                    binding = (APTR) btcDoMethod(BCM_ForceDeviceBinding, bd);
+                    if(binding) {
+                        btLockWriteDevice(bd);
+                        bd->bd_DevBinding = binding;
+                        bd->bd_ClsBinding = bc;
+                        btUnlockDevice(bd);
+                        bc->bc_UseCnt++;
+                        btSendEvent(BEHMB_ADDBINDING, bd, NULL);
+                    } else {
+                        btAddErrorMsg(RETURN_ERROR, (STRPTR) GM_UNIQUENAME(libname),
+                                       "Forced device binding of %s to %s failed.", bd->bd_Name, owner);
+                    }
+                    break;
+                }
+                bc = (struct BtClass *) bc->bc_Node.ln_Succ;
+            }
+            btLockWriteDevice(bd);
+            for(i = 0; i < nsvc; i++) {
+                svcs[i]->bsv_BindingInProgress = FALSE;
+            }
+            btUnlockDevice(bd);
+            return;
+        }
+
+        /* Service bindings, one snapshot service at a time, WITHOUT the lock. */
+        for(i = 0; i < nsvc; i++) {
+            bsv = svcs[i];
+            binding = NULL;
+            owner = btGetForcedBinding(bd->bd_IDString, bsv->bsv_IDString);
+            bc = (struct BtClass *) BluetoothBase->bt_Classes.lh_Head;
+            while(bc->bc_Node.ln_Succ) {
+                if(owner) {
+                    if(!strcmp(owner, bc->bc_ClassName)) {
+                        binding = (APTR) btcDoMethod(BCM_ForceServiceBinding, bsv);
+                        if(!binding) {
+                            btAddErrorMsg(RETURN_ERROR, (STRPTR) GM_UNIQUENAME(libname),
+                                           "Forced service binding of %s to %s failed.", bd->bd_Name, owner);
+                        }
+                    }
+                    if(!binding) {
+                        bc = (struct BtClass *) bc->bc_Node.ln_Succ;
+                        continue;
+                    }
+                } else {
+                    binding = (APTR) btcDoMethod(BCM_AttemptServiceBinding, bsv);
+                }
+                if(binding) {
+                    btLockWriteDevice(bd);
+                    bsv->bsv_SvcBinding = binding;
+                    bsv->bsv_ClsBinding = bc;
+                    btUnlockDevice(bd);
+                    hassvcbinding = TRUE;
+                    bc->bc_UseCnt++;
+                    btSendEvent(BEHMB_ADDBINDING, bd, NULL);
+                    break;
+                }
+                bc = (struct BtClass *) bc->bc_Node.ln_Succ;
+            }
+        }
+
+        /* done with the snapshot: clear the in-progress markers */
+        btLockWriteDevice(bd);
+        for(i = 0; i < nsvc; i++) {
+            svcs[i]->bsv_BindingInProgress = FALSE;
+        }
+        btUnlockDevice(bd);
+    }
+
+    /* Could not establish a service binding: try a device binding then. Device
+     * bindings do not do blocking I/O for our classes, so the lock is fine. */
+    if(!hassvcbinding && !bd->bd_DevBinding) {
+        btLockWriteDevice(bd);
+        owner = btGetForcedBinding(bd->bd_IDString, NULL);
+        bc = (struct BtClass *) BluetoothBase->bt_Classes.lh_Head;
+        while(bc->bc_Node.ln_Succ) {
+            binding = NULL;
+            if(owner) {
+                if(!strcmp(owner, bc->bc_ClassName)) {
+                    binding = (APTR) btcDoMethod(BCM_ForceDeviceBinding, bd);
+                    if(!binding) {
+                        btAddErrorMsg(RETURN_ERROR, (STRPTR) GM_UNIQUENAME(libname),
+                                       "Forced device binding of %s to %s failed.", bd->bd_Name, owner);
+                    }
+                }
+                if(!binding) {
+                    bc = (struct BtClass *) bc->bc_Node.ln_Succ;
+                    continue;
+                }
+            } else {
+                binding = (APTR) btcDoMethod(BCM_AttemptDeviceBinding, bd);
+            }
+            if(binding) {
+                bd->bd_DevBinding = binding;
+                bd->bd_ClsBinding = bc;
+                bc->bc_UseCnt++;
+                btSendEvent(BEHMB_ADDBINDING, bd, NULL);
+                break;
+            }
+            bc = (struct BtClass *) bc->bc_Node.ln_Succ;
+        }
+        btUnlockDevice(bd);
+    }
+}
+/* \\\ */
+
+/* /// "btClassScan()" */
+/*****************************************************************************
+    NAME
+        VOID btClassScan(
+
+    SYNOPSIS
+        )
+
+    FUNCTION
+        Offer eligible known devices and services to registered Bluetooth classes.
+
+    INPUTS
+        None.
+
+    RESULT
+        None. Individual binding failures are not returned.
+
+    NOTES
+        A device must be registered, have known services, permit class
+        binding and have no device or application binding. Existing service
+        bindings are preserved. Classes are visited in priority order;
+        forced class configuration restricts which class is offered a
+        binding. A successful binding sends BEHMB_ADDBINDING.
+
+        This is a synchronous scan of existing objects, not radio discovery
+        or remote service enumeration. Class methods can start workers and
+        wait for I/O. Call from task context outside the hardware task and
+        serialize scans with class changes and application claims. The base
+        read lock remains held across the scan; callbacks must not wait for
+        another task that needs exclusive base access.
+
+        At most 16 unbound, eligible services per device are selected in one
+        scan. Device-binding methods are called with the device write lock
+        held on the normal fallback path; service-binding attempts release
+        that lock. Do not assume every service is attempted in one call.
+
+    BUGS
+        The scan's service-binding status is not initialized before it is
+        tested. Forced-device selection and device-binding fallback can
+        therefore depend on an indeterminate value. The implementation does
+        not provide reliable device-binding selection when no service has
+        set that status.
+
+    SEE ALSO
+        btAddClass(), btGetForcedBinding(), btUnbindAll()
+
+*****************************************************************************/
+AROS_LH0(void, btClassScan,
+         LIBBASETYPEPTR, BluetoothBase, 35, bt)
+{
+    AROS_LIBFUNC_INIT
+    struct BtHardware *bth;
+    struct BtDevice *bd;
+    struct BtClass *bc;
+
+    btLockReadBase();
+
+    if((FindTask(NULL)->tc_Node.ln_Type != NT_PROCESS) && (!BluetoothBase->bt_ConfigRead)) {
+        BluetoothBase->bt_StartedAsTask = TRUE;
+    }
+
+    bc = (struct BtClass *) BluetoothBase->bt_Classes.lh_Head;
+    if(!bc->bc_Node.ln_Succ) {
+        btAddErrorMsg0(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname), "ClassScan attempted with no classes installed!");
+        btUnlockBase();
+        return;
+    }
+
+    bth = (struct BtHardware *) BluetoothBase->bt_Hardware.lh_Head;
+    while(bth->bth_Node.ln_Succ) {
+        bd = (struct BtDevice *) bth->bth_Devices.lh_Head;
+        while (bd->bd_Node.ln_Succ) {
+            bDeviceClassScan(BluetoothBase, bd);
+            bd = (struct BtDevice *) bd->bd_Node.ln_Succ;
+        }
+        bth = (struct BtHardware *) bth->bth_Node.ln_Succ;
+    }
+    btUnlockBase();
+    KPRINTF(5, ("************ Scanning finished!\n"));
+    AROS_LIBFUNC_EXIT
+}
+/* \\\ */
+
+/* /// "btClaimAppBindingA()" */
+/*****************************************************************************
+    NAME
+        APTR btClaimAppBindingA(
+
+    SYNOPSIS
+        struct TagItem *taglist)
+
+    FUNCTION
+        Claim exclusive application ownership of a device's binding slot.
+
+    INPUTS
+        taglist - Application-binding tags. NULL lacks the required device and hook.
+
+    TAGS
+        BABA_Device - Required live device handle.
+        BABA_ReleaseHook - Required Hook pointer, retained until release.
+        BABA_UserData - IPTR passed to the release hook as its message
+            argument. Supply explicitly, using zero if no data is needed.
+        BABA_ForceRelease - FALSE by default. TRUE releases an existing
+            device binding, or existing service bindings when no device
+            binding exists, before attempting the claim.
+        BABA_Task - Replaced by the calling task on successful allocation;
+            it cannot assign ownership to another task.
+
+    RESULT
+        Application-binding handle, or NULL if required inputs are absent,
+        a device or service binding remains, or allocation fails.
+
+    NOTES
+        Call from task context. A successful claim excludes class bindings
+        through the device's application-binding flag; it does not establish
+        a connection, register the device or retain its lifetime. Serialize
+        claims with scans, device removal and other binding changes.
+
+        The release hook is called synchronously in the releasing task,
+        which need not be the claimant. Its object is the binding handle;
+        its message is BABA_UserData converted to APTR. The device write
+        lock is held and the device's binding pointer has already been
+        cleared. The hook result is ignored. Finish application cleanup
+        before returning; the binding is then freed by the library.
+
+        Keep the hook, its code, referenced user data, claimant task and
+        bluetooth.library valid until release finishes. Do not free the
+        binding yourself or claim a replacement from within its release
+        hook. Avoid waiting for work that needs the held device lock.
+        Release a live claim with btReleaseAppBinding().
+
+    BUGS
+        Omitting BABA_UserData leaves the callback argument uninitialized.
+        Forced release is destructive: failure to allocate the new binding
+        does not restore the old bindings. It is not an atomic replacement.
+
+    SEE ALSO
+        btReleaseAppBinding(), btReleaseDevBinding(), btClassScan()
+
+*****************************************************************************/
+AROS_LH1(struct BtAppBinding *, btClaimAppBindingA,
+         AROS_LHA(struct TagItem *, tags, A1),
+         LIBBASETYPEPTR, BluetoothBase, 45, bt)
+{
+    AROS_LIBFUNC_INIT
+    struct BtDevice *bd;
+    struct BtService *bsv;
+    struct BtAppBinding tmpbab;
+    struct BtAppBinding *bab = NULL;
+
+    KPRINTF(2, ("btClaimAppBindingA(%p)\n", tags));
+
+    tmpbab.bab_Device = NULL;
+    tmpbab.bab_ReleaseHook = NULL;
+    tmpbab.bab_Task = NULL;
+    tmpbab.bab_ForceRelease = FALSE;
+    btSetAttrsA(BGA_APPBINDING, &tmpbab, tags);
+    if(tmpbab.bab_Device && tmpbab.bab_ReleaseHook) {
+        bd = tmpbab.bab_Device;
+
+        if(tmpbab.bab_ForceRelease) {
+            if(bd->bd_DevBinding) {
+                btAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname),
+                               "%s really wants to bind to %s, so I'm letting the old binding go.",
+                               FindTask(NULL)->tc_Node.ln_Name,
+                               bd->bd_Name);
+                btReleaseDevBinding(bd);
+            } else {
+                bsv = (struct BtService *) bd->bd_Services.lh_Head;
+                while(bsv->bsv_Node.ln_Succ) {
+                    if(bsv->bsv_SvcBinding) {
+                        btAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname),
+                                       "%s really wants to bind to %s, so I'm letting the old binding go.",
+                                       FindTask(NULL)->tc_Node.ln_Name,
+                                       bd->bd_Name);
+                        btReleaseSvcBinding(bsv);
+                    }
+                    bsv = (struct BtService *) bsv->bsv_Node.ln_Succ;
+                }
+            }
+        }
+        btLockWriteDevice(bd);
+        if(!bd->bd_DevBinding) {
+            BOOL hassvc = FALSE;
+            bsv = (struct BtService *) bd->bd_Services.lh_Head;
+            while(bsv->bsv_Node.ln_Succ) {
+                if(bsv->bsv_SvcBinding) {
+                    hassvc = TRUE;
+                    break;
+                }
+                bsv = (struct BtService *) bsv->bsv_Node.ln_Succ;
+            }
+            if(!hassvc) {
+                if((bab = btAllocVec(sizeof(struct BtAppBinding)))) {
+                    *bab = tmpbab;
+                    bab->bab_Task = FindTask(NULL);
+                    bab->bab_Node.ln_Name = bab->bab_Task->tc_Node.ln_Name;
+                    bd->bd_DevBinding = bab;
+                    bd->bd_ClsBinding = NULL;
+                    bd->bd_Flags |= BDFF_APPBINDING;
+                }
+            }
+        }
+        btUnlockDevice(bd);
+        if(bab) {
+            btSendEvent(BEHMB_ADDBINDING, bd, NULL);
+            return(bab);
+        }
+    }
+    return(NULL);
+    AROS_LIBFUNC_EXIT
+}
+/* \\\ */
+
+/* /// "btReleaseAppBinding()" */
+/*****************************************************************************
+    NAME
+        APTR btReleaseAppBinding(
+
+    SYNOPSIS
+        APTR bab)
+
+    FUNCTION
+        Release the device binding associated with an application-binding handle.
+
+    INPUTS
+        bab - Live application-binding handle, or NULL for no operation.
+
+    RESULT
+        No defined return value. Ignore the public APTR result.
+
+    NOTES
+        The release hook runs synchronously through btReleaseDevBinding().
+        It can run in a task other than the claimant and under the device
+        write lock. The library frees the binding after the hook returns.
+        Do not use or release the handle again, including after an external
+        removal has already invoked the hook.
+
+        Serialize release with claims and device removal. The function uses
+        the handle's device; it does not verify that the device still points
+        to this exact binding. Call from task context and preserve the
+        callback's code and data until completion.
+
+    BUGS
+        The public declaration returns APTR, but the implementation returns void.
+
+    SEE ALSO
+        btClaimAppBindingA(), btReleaseDevBinding()
+
+*****************************************************************************/
+AROS_LH1(void, btReleaseAppBinding,
+         AROS_LHA(struct BtAppBinding *, bab, A0),
+         LIBBASETYPEPTR, BluetoothBase, 46, bt)
+{
+    AROS_LIBFUNC_INIT
+    KPRINTF(2, ("btReleaseAppBinding(%p)\n", bab));
+    if(bab) {
+        btReleaseDevBinding(bab->bab_Device);
+    }
+    AROS_LIBFUNC_EXIT
+}
+/* \\\ */
+
+/* /// "btReleaseDevBinding()" */
+/*****************************************************************************
+    NAME
+        VOID btReleaseDevBinding(
+
+    SYNOPSIS
+        APTR bd)
+
+    FUNCTION
+        Detach a device-level class or application binding and invoke its release callback.
+
+    INPUTS
+        bd - Live device handle, or NULL for no operation.
+
+    RESULT
+        None. An unbound device requires no action; callback results are ignored.
+
+    NOTES
+        Call from task context. The device binding pointer is cleared before
+        the callback. The device write lock is held throughout release.
+        For an application binding, CallHookPkt() receives the binding as
+        object and its user data as message; the library then frees it and
+        clears the application-binding flag. For a class binding, the class
+        receives BCM_ReleaseDeviceBinding and its usage count is decremented.
+
+        Callbacks must complete cleanup before returning. They must not
+        install a replacement binding or wait for another task that needs
+        the held lock. Serialize release with claims, scans and device
+        removal. This call does not release service-level bindings or remove
+        the device. A removal event refers to the device, not the released
+        binding.
+
+    SEE ALSO
+        btReleaseAppBinding(), btReleaseSvcBinding(), btUnbindAll()
+
+*****************************************************************************/
+AROS_LH1(void, btReleaseDevBinding,
+         AROS_LHA(struct BtDevice *, bd, A0),
+         LIBBASETYPEPTR, BluetoothBase, 50, bt)
+{
+    AROS_LIBFUNC_INIT
+    struct BtClass *bc;
+    APTR binding;
+    struct BtAppBinding *bab;
+
+    KPRINTF(5, ("btReleaseDevBinding(%p)\n", bd));
+    if(bd) {
+        btLockWriteDevice(bd);
+        if((binding = bd->bd_DevBinding)) {
+            bd->bd_DevBinding = NULL;
+            if(bd->bd_Flags & BDFF_APPBINDING) {
+                bab = (struct BtAppBinding *) binding;
+                CallHookPkt(bab->bab_ReleaseHook, bab, (APTR) bab->bab_UserData);
+                bd->bd_ClsBinding = NULL;
+                bd->bd_Flags &= ~BDFF_APPBINDING;
+                btFreeVec(bab);
+                btSendEvent(BEHMB_REMBINDING, bd, NULL);
+            } else {
+                bc = bd->bd_ClsBinding;
+                if(bc) {
+                    bd->bd_ClsBinding = NULL;
+                    btcDoMethod(BCM_ReleaseDeviceBinding, binding);
+                    bc->bc_UseCnt--;
+                    btSendEvent(BEHMB_REMBINDING, bd, NULL);
+                }
+            }
+        }
+        btUnlockDevice(bd);
+    }
+    AROS_LIBFUNC_EXIT
+}
+/* \\\ */
+
+/* /// "btReleaseSvcBinding()" */
+/*****************************************************************************
+    NAME
+        VOID btReleaseSvcBinding(
+
+    SYNOPSIS
+        APTR bsv)
+
+    FUNCTION
+        Detach a service-level class binding and invoke its release method.
+
+    INPUTS
+        bsv - Live service handle, or NULL for no operation.
+
+    RESULT
+        None. An unbound service requires no action; the class method result is ignored.
+
+    NOTES
+        Call from task context. The service binding pointer is cleared
+        before BCM_ReleaseServiceBinding is called. The owning device's
+        write lock is held throughout the callback; the class usage count
+        is then decremented. Keep the service, device and class valid until
+        release completes and serialize with scans and service replacement.
+
+        The callback must finish cleanup before returning and must not wait
+        for another task that needs the held device lock. Do not call from
+        a worker that the callback must stop. The service remains present,
+        but its old binding is no longer valid. BEHMB_REMBINDING identifies
+        the owning device; it does not carry the service handle.
+
+    SEE ALSO
+        btReleaseDevBinding(), btClassScan(), btUnbindAll()
+
+*****************************************************************************/
+AROS_LH1(void, btReleaseSvcBinding,
+         AROS_LHA(struct BtService *, bsv, A0),
+         LIBBASETYPEPTR, BluetoothBase, 51, bt)
+{
+    AROS_LIBFUNC_INIT
+    struct BtClass *bc;
+    struct BtDevice *bd;
+    APTR binding;
+
+    KPRINTF(5, ("btReleaseSvcBinding(%p)\n", bsv));
+
+    if(bsv) {
+        bd = bsv->bsv_Device;
+        btLockWriteDevice(bd);
+        if((binding = bsv->bsv_SvcBinding)) {
+            bsv->bsv_SvcBinding = NULL;
+            bc = bsv->bsv_ClsBinding;
+            if(bc) {
+                bsv->bsv_ClsBinding = NULL;
+                btcDoMethod(BCM_ReleaseServiceBinding, binding);
+                bc->bc_UseCnt--;
+            }
+            btSendEvent(BEHMB_REMBINDING, bd, NULL);
+        }
+        btUnlockDevice(bd);
+    }
+    AROS_LIBFUNC_EXIT
+}
+/* \\\ */
+
+/* /// "btUnbindAll()" */
+/*****************************************************************************
+    NAME
+        VOID btUnbindAll(
+
+    SYNOPSIS
+        )
+
+    FUNCTION
+        Release device and service bindings across the active hardware device lists.
+
+    INPUTS
+        None.
+
+    RESULT
+        None. Callback failures are not reported.
+
+    NOTES
+        Application bindings are included, so their release hooks may run.
+        The traversal drops the base lock for each release and restarts
+        afterward. This is not an atomic snapshot or a permanent binding
+        inhibit. Stop competing claims and scans if all devices must remain
+        unbound when the call returns.
+
+        Call from task context outside workers that release callbacks must
+        stop. Keep devices and services valid across each release. Callbacks
+        run synchronously under the owning device's write lock and may wait
+        without a timeout. Continuous rebinding can prevent termination.
+        Classes remain registered, devices remain present, and forced-binding
+        configuration is unchanged. Devices outside the active lists are
+        not visited.
+
+    SEE ALSO
+        btReleaseDevBinding(), btReleaseSvcBinding(), btClassScan()
+
+*****************************************************************************/
+AROS_LH0(void, btUnbindAll,
+         LIBBASETYPEPTR, BluetoothBase, 52, bt)
+{
+    AROS_LIBFUNC_INIT
+    struct BtHardware *bth;
+    struct BtDevice *bd;
+    struct BtService *bsv;
+    BOOL restart;
+
+    KPRINTF(10, ("btUnbindAll()\n"));
+    btLockReadBase();
+    do {
+        restart = FALSE;
+        bth = (struct BtHardware *) BluetoothBase->bt_Hardware.lh_Head;
+        while(bth->bth_Node.ln_Succ) {
+            bd = (struct BtDevice *) bth->bth_Devices.lh_Head;
+            while(bd->bd_Node.ln_Succ) {
+                if(bd->bd_DevBinding) {
+                    btUnlockBase();
+                    btReleaseDevBinding(bd);
+                    btLockReadBase();
+                    restart = TRUE;
+                    break;
+                }
+                bsv = (struct BtService *) bd->bd_Services.lh_Head;
+                while(bsv->bsv_Node.ln_Succ) {
+                    if(bsv->bsv_SvcBinding) {
+                        btUnlockBase();
+                        btReleaseSvcBinding(bsv);
+                        btLockReadBase();
+                        restart = TRUE;
+                        break;
+                    }
+                    bsv = (struct BtService *) bsv->bsv_Node.ln_Succ;
+                }
+                if(restart) {
+                    break;
+                }
+                bd = (struct BtDevice *) bd->bd_Node.ln_Succ;
+            }
+            if(restart) {
+                break;
+            }
+            bth = (struct BtHardware *) bth->bth_Node.ln_Succ;
+        }
+    } while(restart);
+    btUnlockBase();
+    AROS_LIBFUNC_EXIT
+}
+/* \\\ */
+
+/* *** Events *** */
+
+/* /// "btAddEventHandler()" */
+AROS_LH2(struct BtEventHook *, btAddEventHandler,
+         AROS_LHA(struct MsgPort *, mp, A1),
+         AROS_LHA(ULONG, msgmask, D0),
+         LIBBASETYPEPTR, BluetoothBase, 47, bt)
+{
+    AROS_LIBFUNC_INIT
+    struct BtEventHook *beh = NULL;
+
+    KPRINTF(5, ("btAddEventHandler(%p, %p)\n", mp, msgmask));
+
+    if(mp) {
+        ObtainSemaphore(&BluetoothBase->bt_ReentrantLock);
+        if((beh = btAllocVec(sizeof(struct BtEventHook)))) {
+            beh->beh_MsgPort = mp;
+            beh->beh_MsgMask = msgmask;
+            AddTail(&BluetoothBase->bt_EventHooks, &beh->beh_Node);
+        }
+        ReleaseSemaphore(&BluetoothBase->bt_ReentrantLock);
+    }
+    return(beh);
+    AROS_LIBFUNC_EXIT
+}
+/* \\\ */
+
+/* /// "btRemEventHandler()" */
+/*****************************************************************************
+    NAME
+        VOID btRemEventHandler(
+
+    SYNOPSIS
+        APTR beh)
+
+    FUNCTION
+        Unregister an event hook, reply to every message currently queued
+        on its port and free the hook.
+
+    INPUTS
+        beh - Live hook returned by btAddEventHandler(), or NULL for
+            no operation.
+
+    RESULT
+        None.
+
+    NOTES
+        Use a dedicated message port: queued messages are replied without
+        checking their type or which hook delivered them. The port itself
+        is not deleted. Keep it alive through this call. Messages already
+        removed from the port by a consumer are not reclaimed here; reply
+        to them before ending the consumer's use of the library.
+
+        Call from task context. Serialize removal with consumers and other
+        removers; the hook is invalid afterward. Unregister all hooks and
+        complete outstanding replies before closing bluetooth.library.
+
+    SEE ALSO
+        btAddEventHandler(), btSendEvent(), exec.library/ReplyMsg()
+
+*****************************************************************************/
+AROS_LH1(void, btRemEventHandler,
+         AROS_LHA(struct BtEventHook *, beh, A0),
+         LIBBASETYPEPTR, BluetoothBase, 48, bt)
+{
+    AROS_LIBFUNC_INIT
+    struct Message *msg;
+
+    KPRINTF(5, ("btRemEventHandler(%p)\n", beh));
+    if(!beh) {
+        return;
+    }
+    ObtainSemaphore(&BluetoothBase->bt_ReentrantLock);
+    Remove(&beh->beh_Node);
+    while((msg = GetMsg(beh->beh_MsgPort))) {
+        ReplyMsg(msg);
+    }
+    ReleaseSemaphore(&BluetoothBase->bt_ReentrantLock);
+    bGarbageCollectEvents(BluetoothBase);
+    btFreeVec(beh);
+    AROS_LIBFUNC_EXIT
+}
+/* \\\ */
+
+/* /// "btSendEvent()" */
+/*****************************************************************************
+    NAME
+        VOID btSendEvent(
+
+    SYNOPSIS
+        ULONG behmt, APTR param1, APTR param2)
+
+    FUNCTION
+        Queue a separate event note for each registered hook whose mask
+        selects the event. Reclaim previously replied notes first.
+
+    INPUTS
+        behmt - Event number (BEHMB_*), not a BEHMF_* bit mask. Use a
+            defined event number from libraries/bluetooth.h.
+        param1, param2 - Event-specific values copied into each note;
+            pointed-to objects and data are not copied or retained.
+
+    RESULT
+        None. Allocation failure can omit delivery to any individual hook
+        without reporting an error; delivery is not all-or-nothing.
+
+    NOTES
+        Call from task context; this can wait for the event-list semaphore
+        but does not wait for recipients. Keep referenced objects valid for
+        asynchronous use, or define them as identifiers only. Removal events
+        can carry already-invalid object addresses.
+
+        Recipients must ReplyMsg() each note exactly once and must not free
+        it themselves. ben_Data and ben_Device are NULL; ben_DataLength is
+        zero. This generic call does not construct the copied value payload
+        of a service-write notification.
+
+    SEE ALSO
+        btAddEventHandler(), btRemEventHandler(), exec.library/ReplyMsg()
+
+*****************************************************************************/
+AROS_LH3(void, btSendEvent,
+         AROS_LHA(ULONG, behmt, D0),
+         AROS_LHA(APTR, param1, A0),
+         AROS_LHA(APTR, param2, A1),
+         LIBBASETYPEPTR, BluetoothBase, 49, bt)
+{
+    AROS_LIBFUNC_INIT
+    struct BtEventNote *ben;
+    struct BtEventHook *beh;
+    ULONG msgmask = (1L<<behmt);
+
+    KPRINTF(1, ("btSendEvent(%p, %p, %p)\n", behmt, param1, param2));
+
+    bGarbageCollectEvents(BluetoothBase);
+    ObtainSemaphore(&BluetoothBase->bt_ReentrantLock);
+    beh = (struct BtEventHook *) BluetoothBase->bt_EventHooks.lh_Head;
+    while(beh->beh_Node.ln_Succ) {
+        if(beh->beh_MsgMask & msgmask) {
+            if((ben = btAllocVec(sizeof(struct BtEventNote)))) {
+                ben->ben_Msg.mn_ReplyPort = &BluetoothBase->bt_EventReplyPort;
+                ben->ben_Msg.mn_Length = sizeof(struct BtEventNote);
+                ben->ben_Event = behmt;
+                ben->ben_Param1 = param1;
+                ben->ben_Param2 = param2;
+                ben->ben_Data = NULL;
+                ben->ben_DataLength = 0;
+                ben->ben_Device = NULL;
+                PutMsg(beh->beh_MsgPort, &ben->ben_Msg);
+            }
+        }
+        beh = (struct BtEventHook *) beh->beh_Node.ln_Succ;
+    }
+    ReleaseSemaphore(&BluetoothBase->bt_ReentrantLock);
+    AROS_LIBFUNC_EXIT
+}
+/* \\\ */
+
+/* /// "bSendServiceWriteEvent()" */
+/* Send every listener its own stable copy. The service value itself may be
+ * overwritten by the next ATT Write Command before the owner task runs. */
+void bSendServiceWriteEvent(struct BtBase *BluetoothBase, APTR record, ULONG index,
+                            const UBYTE *data, ULONG length, APTR device)
+{
+    struct BtEventNote *ben;
+    struct BtEventHook *beh;
+
+    bGarbageCollectEvents(BluetoothBase);
+    ObtainSemaphore(&BluetoothBase->bt_ReentrantLock);
+    beh = (struct BtEventHook *) BluetoothBase->bt_EventHooks.lh_Head;
+    while(beh->beh_Node.ln_Succ) {
+        if(beh->beh_MsgMask & BEHMF_SERVICEWRITE) {
+            if((ben = btAllocVec(sizeof(struct BtEventNote) + length))) {
+                ben->ben_Msg.mn_ReplyPort = &BluetoothBase->bt_EventReplyPort;
+                ben->ben_Msg.mn_Length = sizeof(struct BtEventNote) + length;
+                ben->ben_Event = BEHMB_SERVICEWRITE;
+                ben->ben_Param1 = record;
+                ben->ben_Param2 = (APTR) (IPTR) index;
+                ben->ben_Data = length ? (APTR) (ben + 1) : NULL;
+                ben->ben_DataLength = length;
+                ben->ben_Device = device;
+                if(length) {
+                    CopyMem((APTR) data, ben->ben_Data, length);
+                }
+                PutMsg(beh->beh_MsgPort, &ben->ben_Msg);
+            }
+        }
+        beh = (struct BtEventHook *) beh->beh_Node.ln_Succ;
+    }
+    ReleaseSemaphore(&BluetoothBase->bt_ReentrantLock);
+}
+/* \\\ */
+
+/* /// "bGarbageCollectEvents()" */
+void bGarbageCollectEvents(LIBBASETYPEPTR BluetoothBase)
+{
+    struct BtEventNote *ben;
+    while((ben = (struct BtEventNote *) GetMsg(&BluetoothBase->bt_EventReplyPort))) {
+        btFreeVec(ben);
+    }
+}
+/* \\\ */
+
+/* *** Event handler task *** */
+
+/* /// "bStartEventHandler()" */
+BOOL bStartEventHandler(LIBBASETYPEPTR BluetoothBase)
+{
+    struct BtHandlerTask *bh = &BluetoothBase->bt_EventHandler;
+
+    /* Already running? */
+    if(bh->bh_Task) {
+        return(TRUE);
+    }
+
+    bh->bh_ReadySignal = SIGB_SINGLE;
+    bh->bh_ReadySigTask = FindTask(NULL);
+    SetSignal(0, SIGF_SINGLE); // clear single bit
+
+    /*
+     * Note: we must not hold bt_ReentrantLock here. The event broadcaster
+     * registers itself with btAddEventHandler() - which takes bt_ReentrantLock -
+     * before it signals readiness, so holding the lock would deadlock the sub
+     * task against us. libOpen() (our only caller) is already serialised by the
+     * library loader, so no additional guard is needed.
+     */
+    if(btSpawnSubTask("Bluetooth Event Broadcast", bEventHandlerTask, BluetoothBase)) {
+        Wait(1UL<<bh->bh_ReadySignal);
+    }
+    bh->bh_ReadySigTask = NULL;
+
+    if(bh->bh_Task) {
+        btAddErrorMsg0(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname), "Event broadcaster started.");
+        return(TRUE);
+    }
+    return(FALSE);
+}
+/* \\\ */
+
+/* /// "bEventHandlerTask()" */
+/*
+ * Besides forwarding config changes to the classes (like Poseidon's event
+ * broadcaster) this task performs the class scans: whenever a device becomes
+ * registered, connected or gets its services enumerated, and after every
+ * class addition, the classes are offered the registered devices. Doing
+ * this here keeps class code out of the hardware tasks.
+ */
+AROS_UFH0(void, bEventHandlerTask)
+{
+    AROS_USERFUNC_INIT
+    LIBBASETYPEPTR BluetoothBase;
+    struct Task *thistask;
+    ULONG sigs;
+    ULONG sigmask;
+    struct BtClass *bc;
+    struct BtHandlerTask *bh;
+    struct BtEventNote *ben;
+    ULONG counter;
+    ULONG cfgchanged;
+    BOOL classscan;
+
+    thistask = FindTask(NULL);
+    BluetoothBase = thistask->tc_UserData;
+    bh = &BluetoothBase->bt_EventHandler;
+    SetTaskPri(thistask, 0);
+
+    if((bh->bh_MsgPort = CreateMsgPort())) {
+        if((bh->bh_TimerMsgPort = CreateMsgPort())) {
+            if((bh->bh_TimerIOReq = (struct timerequest *) CreateIORequest(bh->bh_TimerMsgPort, sizeof(struct timerequest)))) {
+                if(!(OpenDevice("timer.device", UNIT_VBLANK, (struct IORequest *) bh->bh_TimerIOReq, 0))) {
+                    bh->bh_TimerIOReq->tr_node.io_Message.mn_Node.ln_Type = NT_REPLYMSG;
+                    bh->bh_TimerIOReq->tr_node.io_Message.mn_Node.ln_Name = "EventHandler";
+                    bh->bh_TimerIOReq->tr_node.io_Command = TR_ADDREQUEST;
+
+                    bh->bh_EventHandler = btAddEventHandler(bh->bh_MsgPort,
+                                                            BEHMF_CONFIGCHG|BEHMF_DEVICEREGISTERED|
+                                                            BEHMF_DEVICEUNREGISTERED|
+                                                            BEHMF_DEVICECONNECTED|BEHMF_SERVICESCHG|
+                                                            BEHMF_ADDCLASS|BEHMF_ADDHARDWARE);
+                    if(bh->bh_EventHandler) {
+                        bh->bh_Task = thistask;
+                        Forbid();
+                        if(bh->bh_ReadySigTask) {
+                            Signal(bh->bh_ReadySigTask, 1L<<bh->bh_ReadySignal);
+                        }
+                        Permit();
+
+                        bh->bh_TimerIOReq->tr_time.tv_micro = 500*1000;
+                        SendIO(&bh->bh_TimerIOReq->tr_node);
+                        sigmask = (1UL<<bh->bh_MsgPort->mp_SigBit)|(1UL<<bh->bh_TimerMsgPort->mp_SigBit)|SIGBREAKF_CTRL_C;
+                        counter = 0;
+                        cfgchanged = 0;
+                        classscan = FALSE;
+                        do {
+                            if(BluetoothBase->bt_CheckConfigReq) {
+                                bCheckCfgChanged(BluetoothBase);
+                            }
+                            if(BluetoothBase->bt_SaveConfigReq) {
+                                /* a registration or bond changed: persist it. Only
+                                   once a config has been loaded from (or written to)
+                                   disk - before BTStackLoader ran, the in-memory
+                                   config is just the defaults and must not clobber
+                                   the user's prefs file. */
+                                BluetoothBase->bt_SaveConfigReq = FALSE;
+                                if(BluetoothBase->bt_ConfigRead && bOpenDOS(BluetoothBase)) {
+                                    if(btSaveCfgToDisk(NULL, FALSE)) {
+                                        btAddErrorMsg0(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname),
+                                                       "Device registrations saved to Sys/bluetooth.prefs.");
+                                    }
+                                }
+                            }
+                            while((ben = (struct BtEventNote *) GetMsg(bh->bh_MsgPort))) {
+                                switch(ben->ben_Event) {
+                                case BEHMB_CONFIGCHG:
+                                    if(!cfgchanged) {
+                                        cfgchanged = counter;
+                                    }
+                                    break;
+
+                                case BEHMB_DEVICEREGISTERED:
+                                case BEHMB_DEVICECONNECTED:
+                                case BEHMB_SERVICESCHG:
+                                case BEHMB_ADDCLASS:
+                                case BEHMB_ADDHARDWARE:
+                                    classscan = TRUE;
+                                    break;
+
+                                case BEHMB_SERVICEGONE: {
+                                    /* the peer closed its connection to one of our
+                                       service records: release the class binding
+                                       (the hardware task cannot) and drop the service */
+                                    struct BtService *bsv = (struct BtService *) ben->ben_Param1;
+                                    struct BtDevice *bd = bsv ? bsv->bsv_Device : NULL;
+                                    if(bd) {
+                                        btReleaseSvcBinding(bsv);
+                                        btLockWriteDevice(bd);
+                                        bFreeService(BluetoothBase, bsv);
+                                        bd->bd_NumServices--;
+                                        btUnlockDevice(bd);
+                                        btSendEvent(BEHMB_SERVICESCHG, bd, NULL);
+                                    }
+                                    break;
+                                }
+
+                                case BEHMB_DEVICEUNREGISTERED: {
+                                    /* the hardware task cannot release bindings itself */
+                                    struct BtDevice *bd = (struct BtDevice *) ben->ben_Param1;
+                                    struct BtService *bsv;
+                                    btLockReadBase();
+                                    if(bd && !(bd->bd_Flags & BDFF_REGISTERED)) {
+                                        btReleaseDevBinding(bd);
+                                        bsv = (struct BtService *) bd->bd_Services.lh_Head;
+                                        while(bsv->bsv_Node.ln_Succ) {
+                                            btReleaseSvcBinding(bsv);
+                                            bsv = (struct BtService *) bsv->bsv_Node.ln_Succ;
+                                        }
+                                    }
+                                    btUnlockBase();
+                                    break;
+                                }
+                                }
+                                ReplyMsg(&ben->ben_Msg);
+                            }
+                            if(classscan) {
+                                classscan = FALSE;
+                                btClassScan();
+                            }
+                            if(CheckIO(&bh->bh_TimerIOReq->tr_node)) {
+                                WaitIO(&bh->bh_TimerIOReq->tr_node);
+                                bh->bh_TimerIOReq->tr_time.tv_micro = 500*1000;
+                                SendIO(&bh->bh_TimerIOReq->tr_node);
+                                counter++;
+                                if((cfgchanged + 2) == counter) {
+                                    KPRINTF(10, ("Sending information about config changed to all classes.\n"));
+                                    btLockReadBase();
+                                    bc = (struct BtClass *) BluetoothBase->bt_Classes.lh_Head;
+                                    while(bc->bc_Node.ln_Succ) {
+                                        btcDoMethod(BCM_ConfigChangedEvent);
+                                        bc = (struct BtClass *) bc->bc_Node.ln_Succ;
+                                    }
+                                    btUnlockBase();
+                                    cfgchanged = 0;
+                                }
+                            }
+                            sigs = Wait(sigmask);
+                        } while(!(sigs & SIGBREAKF_CTRL_C));
+                        btRemEventHandler(bh->bh_EventHandler);
+                        bh->bh_EventHandler = NULL;
+                        AbortIO(&bh->bh_TimerIOReq->tr_node);
+                        WaitIO(&bh->bh_TimerIOReq->tr_node);
+                    }
+                    CloseDevice((struct IORequest *) bh->bh_TimerIOReq);
+                }
+                DeleteIORequest((struct IORequest *) bh->bh_TimerIOReq);
+            }
+            DeleteMsgPort(bh->bh_TimerMsgPort);
+        }
+        DeleteMsgPort(bh->bh_MsgPort);
+        bh->bh_MsgPort = NULL;
+    }
+    Forbid();
+    bh->bh_Task = NULL;
+    if(bh->bh_ReadySigTask) {
+        Signal(bh->bh_ReadySigTask, 1L<<bh->bh_ReadySignal);
+    }
+    AROS_USERFUNC_EXIT
+}
+/* \\\ */

@@ -1,0 +1,83 @@
+/* ===================== AmigaOS4.x theme =============================== */
+CloseRight          = No         /* put the Close image to the right */
+
+BaseColors = 0x00c6d7ec 0x00d0d0d0  /* base color fore activated and deactivated borderlines ARGB format */
+
+RightBorderGads     = 24         /* width of the right border when gadgets are used */
+BottomBorderGads    = 24         /* height of the bottom border when gadgets are used */
+
+/* the following configuration values are double ints, the first is an offset, the 2nd a width/hight */
+
+ContainerTop        = 0    11    /* top part of the propotional container */
+ContainerVertTile   = 12  272    /* the tileable part of the container */
+ContainerBottom     = 284  12    /* the bottom part of the container */
+
+ContainerLeft       = 0    11    /* as above but for the vertical bars */
+ContainerHorTile    = 12  272
+ContainerRight      = 284  12
+
+/* knobs consist of a top/left, a upper/left tileable part, a gripper, a bottom/right tileable part and a bottom/right part */
+KnobTop             = 0     4     /* upper part of the knob */
+KnobTileTop         = 4    54     /* the upper tileable part */
+KnobVertGripper     = 64   10     /* the gripper */
+KnobTileBottom      = 75   52     /* the bottom tileable part */
+KnobBottom          = 136   4     /* the bottom part */
+
+KnobLeft            = 0     4     /* as above but for horizontal knob */
+KnobTileLeft        = 4    54
+KnobHorGripper      = 64   10
+KnobTileRight       = 75   52
+KnobRight           = 136   4 
+
+/* =================================================================== */
+
+UseGradients        = No          /* use gradients instead of the default image in Borders */
+ActivatedGradient   = 0xf3f3f3 0xf1f1f1 0     /* top bottom and arc for the Activated Gradient (ARGB Format) maybe arc does not work */
+DeactivatedGradient = 0xf2f2f2 0xf2f2f2 0   /* same but for deactivated windows */
+
+NoInactiveSelected  = No          /* Window border gadgets have only 3 states? */
+
+/* =================================================================== */
+
+SBarHeight          = 28           /* height of the Screentitlebar */
+LogoOffset          = 0 1          /* put the Screenlogo at this offset (horizontal position) */
+TitleOffset         = 21          /* offset for the Title of a Screen */
+SBarChildPre       = 189   1
+SBarChildFill       = 190   2
+SBarChildPost       = 192   1
+SBarGadPre       = 194   2
+SBarGadFill       = 196   2
+SBarGadPost       = 198   2
+
+/* =================================================================== */
+
+FillTitleBar        = Yes
+
+BarHeight           = 31        /* Height of window titlebar */
+
+BarLayout           = Vertical  /* Horizontal (default) or Vertical, should be Vertical */
+BarRounded          = Yes        /* Titlebar top corners should be rounded? (BETA maybe it will not work 100%) */
+BarMasking          = Yes        /* Picture mask defines titlebar shape? */
+
+/* =================================================================== */
+
+BarPre              =   0     8  /*   Left end of titlebar if no gadgets follow */
+BarPreGadget        =   0     8  /* Left end of titlebar if some gadgets follow */
+BarLGadgetFill      =   10     2  /*  Tileable background for left-side gadgets */
+BarJoinGB           =   10    1  /* Join between gadgets and left part of dragbar */
+BarLFill            =   10    2  /*  Tileable background for left part of dragbar */
+BarJoinBT           =   10    1  /* Join between left part of dragbar and title */
+BarTitleFill        =   10    2  /* Tileable background for title */
+BarJoinTB           =   10    1  /*  Join between title and right part of dragbar */
+BarRFill            =   10    2  /* Tileable background for right part of dragbar */
+BarJoinBG           =   10  1  /* Join between right part of dragbar and gadgets */
+BarRGadgetFill      =   10   2  /* Tileable background for right-side gadgets */
+BarPostGadget       =   292   8  /* Right end of titlebar if some gadgets precede */
+BarPost             =   292   8  /* Right end of titlebar if no gadgets precede */
+
+/* =================================================================== */
+/* sizes of borders when no gadgets are alive */
+
+LeftBorder          = 6
+RightBorder         = 6
+BottomBorder        = 6

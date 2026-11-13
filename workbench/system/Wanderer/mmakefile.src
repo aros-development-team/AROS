@@ -1,0 +1,41 @@
+# Copyright (C) 2004-2023, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+
+USER_CFLAGS := -I $(SRCDIR)/$(CURDIR)/Classes
+
+FILES := main \
+    locale \
+    support \
+    filesystems \
+    filesystems_utilities \
+    wanderer \
+    wandererprefs \
+    iconwindow \
+    panel_toolbar \
+    panel_statusbar \
+    iconwindow_drawerlist \
+    iconwindow_volumelist \
+    iconwindowbackfill \
+    wandererprefsfont \
+    appobjects
+
+#MM- workbench-system : workbench-system-wanderer
+#MM- workbench-system-wanderer : \
+#MM  workbench-system-wanderer-app \
+#MM  workbench-system-wanderer-icons \
+#MM  workbench-system-wanderer-tools
+
+#MM- workbench-system-wanderer-quick : workbench-system-wanderer-app-quick workbench-system-wanderer-classes-quick
+
+#MM  workbench-system-wanderer-app : \
+#MM  workbench-libs-muimaster-includes \
+#MM  workbench-system-wanderer-env \
+#MM  workbench-system-wanderer-catalogs \
+#MM  workbench-system-wanderer-classes
+
+%build_prog mmake=workbench-system-wanderer-app \
+    progname=Wanderer targetdir=$(AROS_WANDERER) files=$(FILES) \
+    detach=yes
+
+%common

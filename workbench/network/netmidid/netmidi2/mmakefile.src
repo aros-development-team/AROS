@@ -1,0 +1,22 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+# The Universal MIDI Packet and Network MIDI 2.0 (UDP) as a link library.
+# ump: the packet's formats, and the translation between MIDI 1.0 byte
+# streams and UMPs both ways, with Jitter Reduction timestamps and the
+# answers a device owes to discovery. netmidi2: the session protocol of
+# M2-124-UM, as a Host and as a Client, with the commands that carry UMPs
+# and ask for lost ones again. Portable C that calls nothing of the
+# system: whoever links it owns the socket and the clock.
+
+FILES := ump netmidi2
+
+USER_INCLUDES := -I$(SRCDIR)/$(CURDIR)/include
+
+#MM linklibs-netmidi2 : includes
+
+%build_linklib mmake=linklibs-netmidi2 \
+    libname=netmidi2 \
+    files="$(FILES)"
+
+%common

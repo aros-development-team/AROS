@@ -1,0 +1,110 @@
+#ifndef ASM_TLS_H
+#define ASM_TLS_H
+/*
+    Copyright (C) 2026, The AROS Development Team. All rights reserved.
+
+    Per-hart data for native (supervisor-mode) RISC-V targets.
+
+    The pointer lives in the tp register. Every task and every trap runs
+    in S-mode, tp is not part of a task context (see traps.S), and the
+    toolchains never use it for thread-local storage (gcc is configured
+    --disable-tls and uses emutls; the Rust target has no native thread
+    locals), so it keeps its value across task switches.
+
+    Only SMP builds load tp. Uniprocessor builds keep the per-CPU state
+    in ExecBase, exactly as before (see exec_platform.h).
+*/
+
+/* traps.S and startup.S reach these without a C compiler; kept in step
+   with the structure by static assertions in kernel_riscv.c */
+#define TLS_THISTASK_OFFSET     16
+#define TLS_TRAPDEPTH_OFFSET    40
+#define TLS_HARTID_OFFSET       48
+#define TLS_STACKTOP_OFFSET     56
+
+/* The boot hart's trap stack (secondaries trap on their start-up stack) */
+#define RISCV_BOOT_TRAPSTACKSIZE    65536
+
+#ifndef __ASSEMBLER__
+
+#include <aros/config.h>
+#include <exec/types.h>
+
+/*
+ * Build-time switch for the SMP lock-up watchdog: the per-hart trail
+ * below, KrnSpinLock()'s wait record and the watcher on the last CPU
+ * (riscv64-opensbi kernel_watchdog.c).
+ */
+#if defined(__AROSEXEC_SMP__)
+//#define RISCV_KRNWATCHDOG
+#endif
+
+typedef struct tls
+{
+    struct ExecBase     *SysBase;
+    void *              *KernelBase;    /* Base of kernel.resource              */
+    struct Task         *ThisTask;      /* Currently running task on this hart  */
+    ULONG               ScheduleFlags;
+    BYTE                IDNestCnt;
+    BYTE                TDNestCnt;
+    UWORD               Quantum;
+    UWORD               Elapsed;
+    UWORD               _pad0;
+    ULONG               CPUNumber;      /* Logical CPU number, boot hart = 0    */
+    /* RISC-V specific from here on */
+    LONG                TrapDepth;      /* Trap nesting depth (traps.S, issuper)*/
+    UQUAD               HartID;         /* SBI hart id, for firmware calls only */
+    APTR                StackTop;       /* Trap stack (a secondary's initial sp) */
+    APTR                Platform;       /* Platform per-hart data (HartData)    */
+#if defined(RISCV_KRNWATCHDOG)
+    /*
+     * Lock-up trail, written only by this hart and read by the watchdog
+     * on another one (kernel_watchdog.c). What a hart was doing at its
+     * last timer interrupt is all that is left to see once it stops
+     * taking them - RISC-V has no NMI to ask it again.
+     */
+    UQUAD               WdTicks;        /* Timer interrupts taken               */
+    UQUAD               WdTime;         /* rdtime at the last one               */
+    UQUAD               WdPC[8];        /* Interrupted pc, last 8 ticks         */
+    UQUAD               WdRA;           /* ... and ra, sp, sstatus at the last  */
+    UQUAD               WdSP;
+    UQUAD               WdSR;
+    struct Task         *WdTask;        /* Task it interrupted (NULL: asleep in
+                                           the dispatcher)                      */
+    APTR                SpinWait;       /* Spinlock waited for, or NULL         */
+    APTR                SpinCaller;     /* Who asked for it                     */
+    UQUAD               SpinSince;      /* rdtime when the wait began           */
+#endif
+} tls_t;
+
+#define TLSSF_Quantum   (1 << 0)
+#define TLSSF_Switch    (1 << 1)
+#define TLSSF_Dispatch  (1 << 2)
+
+#define TLS_OFFSET(name) ((char *)&(((tls_t *)0)->name)-(char *)0)
+
+#define TLS_PTR_GET() \
+    ({ \
+        tls_t *__tls; \
+        asm volatile("mv %0, tp":"=r"(__tls)); \
+        __tls;  \
+    })
+
+#define TLS_GET(name) \
+    ({ \
+        tls_t *__tls; \
+        asm volatile("mv %0, tp":"=r"(__tls)); \
+        typeof(__tls -> name) __ret = (__tls -> name); \
+        __ret;  \
+    })
+
+#define TLS_SET(name, val) \
+    do { \
+        tls_t *__tls; \
+        asm volatile("mv %0, tp":"=r"(__tls)); \
+        (__tls -> name) = val; \
+    } while(0);
+
+#endif /* !__ASSEMBLER__ */
+
+#endif

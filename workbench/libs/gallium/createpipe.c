@@ -1,0 +1,220 @@
+/*
+    Copyright (C) 2015-2026, The AROS Development Team. All rights reserved.
+*/
+
+#include <aros/debug.h>
+
+#include <proto/utility.h>
+#include <proto/intuition.h>
+
+#include <hidd/gfx.h>
+#include <hidd/vulkan_hidd.h>
+
+#include <string.h>
+
+#include "gallium_intern.h"
+
+#undef HiddGalliumAttrBase
+#define HiddGalliumAttrBase GB(GalliumBase)->galliumAttrBase
+
+/* Base-free string join. This library is resident; going through the
+ * stdc sprintf stub would cache the FIRST caller task's per-task
+ * StdCBase in our globals and use that dead base from every later
+ * process (2nd-GL-app crash). */
+static void galliumstrjoin(char *dst, const char *a, const char *b)
+{
+    while (*a)
+        *dst++ = *a++;
+    while (*b)
+        *dst++ = *b++;
+    *dst = '\0';
+}
+
+/*
+ * A Vulkan object: the display's (CreateObject asked for the Vulkan class),
+ * or, with no display, the software driver's. vulkan.hidd, and the
+ * software driver, are loaded here when first needed.
+ */
+static OOP_Object *GalliumVulkanObject(struct Library *GalliumBase, OOP_Object *display)
+{
+    struct GalliumBase *gb = GB(GalliumBase);
+    OOP_Class *vkclass;
+    OOP_AttrBase vkAB;
+    OOP_Object *vk = NULL;
+
+    if (!gb->vulkanhidd && !(gb->vulkanhidd = OpenLibrary("vulkan.hidd", 8)))
+        return NULL;
+    if (!(vkclass = OOP_FindClass(CLID_Hidd_Vulkan)) || !(vkAB = OOP_ObtainAttrBase(IID_Hidd_Vulkan)))
+        return NULL;
+    {
+        struct TagItem vktags[] =
+        {
+            { vkAB + aoHidd_Vulkan_InterfaceVersion, VULKAN_INTERFACE_VERSION },
+            { TAG_DONE, 0 }
+        };
+
+        if (display)
+            vk = HIDD_Display_CreateObject(display, vkclass, vktags);
+        else
+        {
+            if (!gb->lavapipehidd)
+                gb->lavapipehidd = OpenLibrary("lavapipe.hidd", 0);
+            if (gb->lavapipehidd)
+                vk = OOP_NewObject(NULL, "hidd.vulkan.lavapipe", vktags);
+        }
+    }
+    OOP_ReleaseAttrBase(IID_Hidd_Vulkan);
+    return vk;
+}
+
+/*
+ * GL on Vulkan: a Vulkan object wrapped by zink.hidd, which owns it from
+ * then on (and disposes it when it cannot use it).
+ */
+static OOP_Object *GalliumOnVulkan(struct Library *GalliumBase, OOP_Object *vk,
+                                   struct TagItem *galliumTags)
+{
+    struct GalliumBase *gb = GB(GalliumBase);
+
+    if (!vk)
+        return NULL;
+    D(bug("[Gallium] %s: Vulkan object @ 0x%p, trying zink\n", __PRETTY_FUNCTION__, vk));
+    if (!gb->zinkhidd)
+        gb->zinkhidd = OpenLibrary("zink.hidd", 0);
+    if (!gb->zinkhidd)
+    {
+        OOP_DisposeObject(vk);
+        return NULL;
+    }
+    {
+        struct TagItem ztags[] =
+        {
+            { aHidd_Gallium_VulkanObject, (IPTR)vk },
+            { TAG_MORE, (IPTR)galliumTags }
+        };
+        return OOP_NewObject(NULL, "hidd.gallium.zink", ztags);
+    }
+}
+
+/*****************************************************************************
+
+    NAME */
+
+      AROS_LH1(PipeHandle_t, CreatePipe,
+
+/*  SYNOPSIS */
+      AROS_LHA(struct TagItem *, tags, A0),
+
+/*  LOCATION */
+      struct Library *, GalliumBase, 5, Gallium)
+
+/*  FUNCTION
+        Instantiates a gallium pipe.
+
+    INPUTS
+        tags - a pointer to tags to be used during creation.
+
+    TAGS
+        CPS_PipeFriendBitmap - a bitmap our pipe screen will target.
+        CPS_PipeScreenDriver * - where to store the driver.
+        CPS_GalliumInterfaceVersion - Indicates a version of gallium interface
+            that a client is expected to receive. The client expected version
+            must ideally match with the version that the driver provides,
+            because gallium interface is not backwards compatible. This tag is
+            required. Unless otherwise needed, the value
+            GALLIUM_INTERFACE_VERSION should be passed.
+            See also CreatePipeV.
+
+    RESULT
+        A valid pipe instance or NULL if creation was not successful.
+
+    BUGS
+
+    INTERNALS
+
+*****************************************************************************/
+{
+    AROS_LIBFUNC_INIT
+
+    struct TagItem galliumTags[] =
+    {
+        { aHidd_Gallium_InterfaceVersion,       0 },
+        { aHidd_Gallium_CoreAPI,                0 },
+        { TAG_DONE,                             0 }
+    };
+    OOP_Object                                  *_driver = NULL;
+    OOP_Object                                  **driver;
+    struct BitMap                               *friendbm;
+    struct Screen                               *pubscreen = NULL;
+
+    galliumTags[0].ti_Data = GetTagData(CPS_GalliumInterfaceVersion, -1, tags);
+    galliumTags[1].ti_Data = GetTagData(CPS_GalliumCoreAPI, 0, tags);
+    friendbm = (struct BitMap *)GetTagData(CPS_PipeFriendBitMap, 0, tags);
+    driver = (OOP_Object **)GetTagData(CPS_PipeScreenDriver, (IPTR)&_driver, tags);
+
+    /* The tag is missing */
+    if (galliumTags[0].ti_Data == -1)
+        return NULL;
+
+    if (!friendbm)
+    {
+        if ((pubscreen = LockPubScreen(NULL)) != NULL)
+            friendbm = pubscreen->RastPort.BitMap;
+    }
+
+    D(bug("[Gallium] %s: friendbm @ 0x%p\n", __PRETTY_FUNCTION__, friendbm));
+
+    if (friendbm && IS_HIDD_BM(friendbm))
+    {
+        OOP_Object *bmObj = HIDD_BM_OBJ(friendbm);
+        if (bmObj)
+        {
+            OOP_Object *display;
+            OOP_GetAttr(bmObj, aHidd_BitMap_Display, (IPTR *)&display);
+
+            if (display)
+            {
+                *driver = HIDD_Display_CreateObject(display, GB(GalliumBase)->basegallium, galliumTags);
+                /* no gallium driver for the card: GL on its Vulkan driver, if it has one */
+                if (!*driver)
+                    *driver = GalliumOnVulkan(GalliumBase, GalliumVulkanObject(GalliumBase, display), galliumTags);
+            }
+        }
+    }
+
+    if (pubscreen)
+        UnlockPubScreen(NULL, pubscreen);
+
+    /* the software fallback zink: GL on the software Vulkan driver */
+    if (!*driver && !strcmp(GB(GalliumBase)->fallback, "zink"))
+        *driver = GalliumOnVulkan(GalliumBase, GalliumVulkanObject(GalliumBase, NULL), galliumTags);
+
+    if (!*driver)
+    {
+        char tmpname[128];
+        if (!GB(GalliumBase)->fallbackmodule)
+        {
+            galliumstrjoin(tmpname, GB(GalliumBase)->fallback, ".hidd");
+
+            D(bug("[Gallium] %s: trying fallback '%s' ...\n", __PRETTY_FUNCTION__, tmpname));
+
+            GB(GalliumBase)->fallbackmodule = OpenLibrary(tmpname, 9);
+
+            D(bug("[Gallium] %s: '%s' @ 0x%p\n", __PRETTY_FUNCTION__, tmpname, GB(GalliumBase)->fallbackmodule));
+        }
+
+        if (GB(GalliumBase)->fallbackmodule)
+        {
+            galliumstrjoin(tmpname, "hidd.gallium.", GB(GalliumBase)->fallback);
+
+            *driver = OOP_NewObject(NULL, tmpname, galliumTags);
+
+            D(bug("[Gallium] %s: '%s' @ 0x%p\n", __PRETTY_FUNCTION__, tmpname, *driver));
+        }
+    }
+
+    return *driver;
+
+    AROS_LIBFUNC_EXIT
+}
+

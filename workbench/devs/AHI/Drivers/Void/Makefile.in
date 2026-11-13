@@ -1,0 +1,16 @@
+#
+#  Makefile.in for Void sound card driver
+#
+
+VPATH		= @srcdir@
+
+srcdir		= @srcdir@
+
+DRIVER		= void.audio
+MODEFILE	= VOID
+
+OBJECTS		= void-init.o void-main.o void-playslave.o void-accel.o
+
+MODEDEST	= Storage
+
+include ../Common/Makefile.common

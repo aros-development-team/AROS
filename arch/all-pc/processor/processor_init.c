@@ -1,0 +1,170 @@
+/*
+    Copyright (C) 2010-2021, The AROS Development Team. All rights reserved.
+*/
+
+#include <aros/config.h>
+
+#include <aros/debug.h>
+
+#include <proto/exec.h>
+#include <proto/kernel.h>
+#include <aros/symbolsets.h>
+
+#include <exec/tasks.h>
+#include <exec/rawfmt.h>
+
+#include "processor_intern.h"
+#include "processor_arch_intern.h"
+
+/* Private Data passed to each Processors Query Task */
+struct PQData
+{
+    struct ProcessorBase *ProcessorBase;
+    struct X86ProcessorInformation *pqd_ProcInfo;
+    ULONG pqd_CPUNo;
+};
+
+static void Processor_QueryTask(struct ExecBase *SysBase)
+{
+    struct ProcessorBase *ProcessorBase;
+    struct PQData *pqData;
+    struct Task *thisTask;
+    struct MemList *ml;
+
+    D(
+        bug("[processor.x86] %s()\n", __func__);
+        bug("[processor.x86] %s: SysBase @ 0x%p\n", __func__, SysBase);
+    )
+
+    thisTask = FindTask(NULL);
+    ml = (struct MemList *)thisTask->tc_UserData;
+    AddTail(&thisTask->tc_MemEntry, &ml->ml_Node);
+
+    pqData = (struct PQData *)ml->ml_ME[1].me_Addr;
+    ProcessorBase = pqData->ProcessorBase;
+
+    D(
+        bug("[processor.x86] %s: ProcessorBase @ 0x%p\n", __func__, ProcessorBase);
+        bug("[processor.x86] %s: This CPU ProcInfo @ 0x%p\n", __func__, pqData->pqd_ProcInfo);
+    )
+
+    if (pqData->pqd_ProcInfo)
+    {
+        ReadProcessorInformation(ProcessorBase, pqData->pqd_ProcInfo);
+        Processor_UpdateTopology(ProcessorBase, pqData->pqd_CPUNo,
+                                 pqData->pqd_ProcInfo);
+    }
+    else
+    {
+        bug("[processor.x86] %s: ERROR: procinfo missing!\n", __func__);
+    }
+
+    D(bug("[processor.x86] %s: Finished!\n", __func__));
+}
+
+LONG Processor_Init(struct ProcessorBase * ProcessorBase)
+{
+    struct X86ProcessorInformation **sysprocs;
+    struct Task *processorQueryTask;
+    char *processorQueryTaskName;
+    IPTR cpuNameArg[] = { 0 };
+    struct MemList *ml;
+    unsigned int cpuNo;
+    BOOL retval = TRUE;
+    void *taskAffinity;
+
+    D(
+        bug("[processor.x86] %s()\n", __func__);
+        bug("[processor.x86] %s: SysBase @ 0x%p, ProcessorBase @ 0x%p\n", __func__, SysBase, ProcessorBase);
+    )
+
+    /*
+     * Allocate cpu count + 1 slots
+     * and embed UtilityBase in the last.
+    */
+    sysprocs = AllocVec((ProcessorBase->cpucount + 1) * sizeof(APTR), MEMF_ANY | MEMF_CLEAR);
+    if (sysprocs == NULL)
+        return FALSE;
+
+    sysprocs[ProcessorBase->cpucount] =  TaggedOpenLibrary(TAGGEDOPEN_UTILITY);
+    if (!sysprocs[ProcessorBase->cpucount])
+    {
+        FreeVec(sysprocs);
+        return FALSE;
+    }
+
+    D(bug("[processor.x86] %s: UtilityBase @ 0x%p\n", __func__, sysprocs[ProcessorBase->cpucount]);)
+
+    ProcessorBase->Private1 = sysprocs;
+
+    for (cpuNo = 0; cpuNo < ProcessorBase->cpucount; cpuNo++)
+    {
+        sysprocs[cpuNo] = AllocMem(sizeof(struct X86ProcessorInformation), MEMF_CLEAR);
+        if (sysprocs[cpuNo])
+        {
+#if !defined(__AROSEXEC_SMP__)
+            if (cpuNo > 0)
+                continue;
+#endif
+            cpuNameArg[0] = (IPTR)cpuNo + 1;
+
+            if ((ml = AllocMem(sizeof(struct MemList) + sizeof(struct MemEntry), MEMF_PUBLIC|MEMF_CLEAR)) != NULL)
+            {
+                ml->ml_NumEntries      = 2;
+
+                ml->ml_ME[1].me_Length = sizeof(struct PQData);
+                if ((ml->ml_ME[1].me_Addr = AllocMem(ml->ml_ME[1].me_Length, MEMF_PUBLIC|MEMF_CLEAR)) != NULL)
+                {
+                    ml->ml_ME[0].me_Length = 22;
+                    if ((ml->ml_ME[0].me_Addr = AllocMem(ml->ml_ME[0].me_Length, MEMF_PUBLIC|MEMF_CLEAR)) != NULL)
+                    {
+                        struct PQData *pqData = (struct PQData *)ml->ml_ME[1].me_Addr;
+                        pqData->pqd_ProcInfo = sysprocs[cpuNo];
+                        pqData->ProcessorBase = ProcessorBase;
+                        pqData->pqd_CPUNo = cpuNo;
+                        processorQueryTaskName = (char *)ml->ml_ME[0].me_Addr;
+
+                        RawDoFmt("Processor #%03u Query", (RAWARG)cpuNameArg, RAWFMTFUNC_STRING, processorQueryTaskName);
+
+                        taskAffinity = KrnAllocCPUMask();
+                        KrnGetCPUMask(cpuNo, taskAffinity);
+
+                        processorQueryTask = NewCreateTask(TASKTAG_NAME   , processorQueryTaskName,
+                                                TASKTAG_AFFINITY   , taskAffinity,
+                                                TASKTAG_PRI        , 100,
+                                                TASKTAG_PC         , Processor_QueryTask,
+                                                TASKTAG_ARG1       , SysBase,
+                                                TASKTAG_USERDATA, ml,
+                                                TAG_DONE);
+
+                        if (processorQueryTask)
+                        {
+                            continue;
+                        }
+                        FreeEntry(ml);
+                    }
+                    else
+                    {
+                        bug("[processor.x86] FATAL : Failed to allocate memory for ProcQuery Task name");
+                        FreeMem(ml->ml_ME[1].me_Addr, ml->ml_ME[1].me_Length);
+                        FreeMem(ml, sizeof(struct MemList) + sizeof(struct MemEntry));
+                    }
+                }
+                else
+                {
+                    bug("[processor.x86] FATAL : Failed to allocate memory for ProcQuery Task params");
+                    FreeMem(ml, sizeof(struct MemList) + sizeof(struct MemEntry));
+                }
+            }
+            else
+            {
+                bug("[processor.x86] FATAL : Failed to allocate additional memory for processor query task");
+            }
+        }
+        retval = FALSE;
+    }
+
+    return retval;
+}
+
+ADD2INITLIB(Processor_Init, 1);

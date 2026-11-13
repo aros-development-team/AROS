@@ -1,0 +1,12 @@
+# Copyright (C) 2023, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+
+$(AROS_PRESETS)/Icons/Mason/Default/Images/Drawer : $(SRCDIR)/$(CURDIR)/Default.png
+	@$(MKDIR) -p "$(dir $@)"
+	$(CP) $< $@
+
+#MM
+mason-icon-drawer-images : $(AROS_PRESETS)/Icons/Mason/Default/Images/Drawer
+
+#MM- icon-images : mason-icon-drawer-images

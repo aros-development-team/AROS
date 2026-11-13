@@ -1,0 +1,49 @@
+Short:        RIFF-WAVE (.wav) sound datatype
+Author:       Fredrik Wikstrom
+Uploader:     Fredrik Wikstrom <fredrik@a500.org>
+Type:         util/dtype
+Version:      50.3
+Architecture: ppc-amigaos
+
+Installation:
+
+1. copy the file WAVE to DEVS:DataTypes/.
+2. copy wave.datatype to SYS:Classes/DataTypes/.
+
+Supported encodings:
+
+ - PCM (uncompressed)
+ - IMA ADPCM (16->3 & 16->4)
+ - MS ADPCM (16->4)
+ - A-Law/u-Law (16->8)
+ - IEEE Float (32 & 64-bit)
+ - GSM610 (mono only)
+ - G.721 (4-bit, untested)
+ - G.723 (2, 3 & 5-bit, untested)
+
+Alternatively, if you have the OS4 SDK installed, you can just type "make
+install" and both files will be installed to their correct places.
+
+Bugs:
+
+None known.
+
+Compiling:
+
+To compile just type "make". To compile without GSM610 and G.72X support use
+"make GSM=0 G72X=0".
+
+In order to be able to recreate the descriptor (from WAVE.dt) file you will need
+to have the MakeDT.rexx arexx script installed in REXX: (can be downloaded from
+Aminet). The rest will be handled by the Makefile.
+
+Changes:
+
+50.3 (20-Nov-2007)
+ - Increased optimisation and some code cleanup
+ - Improved the decoder system somewhat
+ - Added 2-bit g723 support to the g72x decoder (no idea if this works or not)
+ - Also removed some g72x code that wasn't being used (encoders and some alaw/
+   ulaw stuff)
+
+See the Changelog file in the archive for a complete list of changes.

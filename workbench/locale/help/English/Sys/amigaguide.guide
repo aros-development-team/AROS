@@ -1,0 +1,148 @@
+@database amigaguide.guide
+@$VER: amigaguide.guide 1.0 (03.04.2013)
+
+
+@node MAIN
+   1) @{" Buttons " link HELP_BUTTONS}
+   2) @{" Menus " link HELP_MENUS}
+   3) @{" Key " link HELP_KEYSTROKES}
+   4) @{" Mouse " link HELP_MOUSE}
+   5) @{" Cursor keys " link HELP_ARROWS}
+@endnode
+
+
+@node HELP_BUTTONS "Buttons"
+@{b}Contents@{ub}
+Shows the content document of the current database.
+
+@{b}Index@{ub}
+Shows the index document of the current database.
+
+@{b}Help@{ub}
+Shows the help document of the current database. If the database
+doesn't have its own document a global help database will be shown.
+
+@{b}Retrace@{ub}
+Jumps back to the previously shown document.
+
+@{b}Browse@{ub}
+Walks through the documents in the order they are placed in the database.
+@endnode
+
+
+@node HELP_MENUS "Menus"
+@{b}Project@{ub}
+
+ Open
+ Opens a file selection requester.
+
+ Save As
+ Saves current object to file.
+
+ Print
+ Prints current document.
+
+ About
+ Shows information about the current document.
+
+ Quit
+ Ends the program.
+
+@{b}Edit@{ub}
+
+ Mark
+ Mark a text block to be stored to the clipboard.
+
+ Copy
+ Copies current document to the clipboard.
+
+ Select All
+ Selects all lines of the current document.
+
+ Clear Selected
+ Unselects current selection.
+
+@{b}Window@{ub}
+
+ Minimize
+ Makes window as small as possible.
+
+ Normal
+ Adapts window's size to current content.
+
+ Maximize
+ Makes window as large as possible.
+
+@{b}Settings@{ub}
+
+ Save As Defaults
+ Saves current window position.
+
+@endnode
+
+
+@node HELP_KEYSTROKES "Keys"
+@{b}HELP@{ub}
+Shows this document.
+
+@{b}ESC@{ub}
+Closes current window.
+
+@{b}Backspace@{ub}
+Scrolls one page backwards.
+
+@{b}Space@{ub}
+Scrolls one page forwards.
+
+@{b}>@{ub}
+Jumps to the end of the current document.
+
+@{b}<@{ub}
+Jumps to the beginning of the current document.
+@endnode
+
+
+@node HELP_ARROWS "Cursor keys"
+@{b}Up@{ub}
+Scrolls up through the document.
+
+@{b}Down@{ub}
+Scrolls down through the document.
+
+@{b}Shift-Up@{ub}
+Scrolls one page up through the document.
+
+@{b}Shift-Down@{ub}
+Scrolls one page down through the document.
+
+@{b}Alt-Up@{ub}
+Jumps to the beginning of the document.
+
+@{b}Alt-Down@{ub}
+Jumps to the end of the document.
+
+@{b}Left@{ub}
+Scrolls left through the document.
+
+@{b}Right@{ub}
+Scrolls right through the document.
+
+@{b}Shift-Left@{ub}
+Scrolls left window-width through the document.
+
+@{b}Shift-Right@{ub}
+Scrolls right window-width through the document.
+
+@{b}Alt-Left@{ub}
+Jumps to the left border of the document.
+
+@{b}Alt-Right@{ub}
+Jumps to the right border of the document.
+@endnode
+
+
+@node HELP_MOUSE "Mouse"
+@{b}Selection button@{ub}
+Activates the element under the mouse pointer.
+@endnode
+

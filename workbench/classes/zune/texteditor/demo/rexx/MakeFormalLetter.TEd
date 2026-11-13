@@ -1,0 +1,24 @@
+/* lala */
+
+
+call addlib("rexxreqtools.library", 0, -30, 0)
+Options Results
+
+LF  = '0a'x
+Esc = '1b'x
+
+Name = rtgetstring("", , "Enter your full name:", ,)
+
+
+if Name ~= "" Then Do
+
+ Clear
+ Text LF || LF || Esc || '[s:2]' || Esc || 'cA nice letter example:' || LF
+ Text Esc || 'r' || Date() || LF
+ Text Esc || 'l Dear ' || Name || LF || LF || 'Thank you for your interest in ' || Esc || 'bMotorola' || Esc || 'n Semiconductor Product Sector products and services.' || LF || LF || 'Enclosed are the documents you requested. We currently have over 2,300 databooks, datasheets and reference materials in stock to assist in your search for information regarding Motorola SPS products.'
+ Text '  [...]' || LF || LF
+ Text 'ohh, and ' || Esc || 'b' || Esc || 'p[7]' || Word(Name, 1) || Esc || 'p[0]' || Esc || "n - Don't be a stranger :-)" || LF
+ Text LF || LF || '   Sincerely,' || LF || LF || '      Literature Distribution Center for Motorola SPS' || LF
+ Text Esc || '[s:2]' || LF
+
+End

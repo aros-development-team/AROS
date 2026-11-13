@@ -1,0 +1,16 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+USER_CPPFLAGS := -DMUIMASTER_YES_INLINE_STDARG
+USER_LDFLAGS := -static
+
+FILES :=    arosx.class arosx.class.config.gui arosxcontroller arosxctrl_map debug
+
+#MM- kernel-usb-classes-arosx : kernel-usb-usbclass kernel-usb-poseidon-includes \
+#MM             workbench-hidds-controller-includes kernel-hidd-input-includes
+
+%build_module_library mmake=kernel-usb-classes-arosx \
+    modname=arosx modtype=usbclass modsuffix="class" \
+    files="$(FILES)"
+
+%common

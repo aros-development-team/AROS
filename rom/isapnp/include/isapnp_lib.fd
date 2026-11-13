@@ -1,0 +1,52 @@
+* "isapnp.resource"
+##base _ISAPNPBase
+##bias 6
+##public
+*
+* ISA functions
+*
+ISAC_SetMasterInt(on)(d0)
+ISAC_GetMasterInt()()
+ISAC_SetWaitState(on)(d0)
+ISAC_GetWaitState()()
+ISAC_GetInterruptStatus(interrupt)(d0)
+ISAC_GetRegByte(reg)(d0)
+ISAC_SetRegByte(reg,value)(d0,d1)
+ISAC_GetRegWord(reg)(d0)
+ISAC_SetRegWord(reg,value)(d0,d1)
+ISAC_GetRegLong(reg)(d0)
+ISAC_SetRegLong(reg,value)(d0,d1)
+ISAC_ReadByte(address)(d0)
+ISAC_WriteByte(address,value)(d0,d1)
+ISAC_ReadWord(address)(d0)
+ISAC_WriteWord(address,value)(d0,d1)
+ISAC_ReadLong(address)(d0)
+ISAC_WriteLong(address,value)(d0,d1)
+*
+* Structure allocation and deallocation (private)
+*
+##private
+ISAPNP_AllocCard()()
+ISAPNP_FreeCard(card)(a0)
+ISAPNP_AllocDevice()()
+ISAPNP_FreeDevice(dev)(a0)
+ISAPNP_AllocResourceGroup(pri)(d0)
+ISAPNP_FreeResourceGroup(rg)(a0)
+ISAPNP_AllocResource(type)(d0)
+ISAPNP_FreeResource(r)(a0)
+*
+* PnP activation (private)
+*
+ISAPNP_ScanCards()()
+ISAPNP_ConfigureCards()()
+*
+* Card and device handling
+*
+##public
+ISAPNP_FindCard(last_card,manufacturer,product,revision,serial)(a0,d0,d1,d2,d3)
+ISAPNP_FindDevice(last_device,manufacturer,product,revision)(a0,d0,d1,d2)
+ISAPNP_LockCardsA(flags,cards)(d0,a0)
+ISAPNP_UnlockCards(card_lock_handle)(a0)
+ISAPNP_LockDevicesA(flags,devices)(d0,a0)
+ISAPNP_UnlockDevices(device_lock_handle)(a0)
+##end

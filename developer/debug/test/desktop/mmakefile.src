@@ -1,0 +1,13 @@
+# Makefile for loaddesktop program
+
+include $(SRCDIR)/config/aros.cfg
+
+FILES	:= loaddesktop
+EXEDIR := $(AROS_TESTS)/desktop
+
+#MM test-desktop : includes linklibs
+
+%build_progs mmake=test-desktop \
+    files=$(FILES) targetdir=$(EXEDIR)
+
+%common

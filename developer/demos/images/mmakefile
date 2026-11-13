@@ -1,0 +1,14 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+IMAGES	    := ArrowUp ArrowDown ArrowLeft ArrowRight ImageButton
+IMAGEFILES  := $(foreach f,$(IMAGES),$(TOP)/$(CURDIR)/$(f)0.h $(TOP)/$(CURDIR)/$(f)1.h)
+
+#MM
+demos-images-setup : $(IMAGEFILES)
+	@$(NOP)
+
+$(TOP)/$(CURDIR)/%.h : $(SRCDIR)/$(CURDIR)/%.dat $(SRCDIR)/$(CURDIR)/datfilt.awk
+	$(MKDIR) $(TOP)/$(CURDIR)
+	cd $(TOP)/$(CURDIR); ${AWK} -f $(SRCDIR)/$(CURDIR)/datfilt.awk $<
+

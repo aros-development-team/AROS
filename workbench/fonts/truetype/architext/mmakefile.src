@@ -1,0 +1,19 @@
+# Copyright (C) 2020-2025, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM- fonts-truetype : fonts-truetype-architext
+#MM- fonts-truetype-quick : fonts-truetype-architext
+#MM- fonts-truetype-architext : fonts-truetype-architext-ttf fonts-truetype-architext-amifonts
+
+%copy_files_q mmake=fonts-truetype-architext-ttf files="$(call WILDCARD, *.ttf)" \
+    dst=$(AROSDIR)/Fonts/TrueType
+
+#MM
+fonts-truetype-architext-amifonts :
+	@cd $(SRCDIR)/$(CURDIR); for file in *.font *.otag; do \
+            if [ ! -e "$(AROSDIR)/Fonts/$$file" ]; then \
+                $(ECHO) Copying "$$file"...; \
+                $(CP) "$$file" $(AROSDIR)/Fonts; \
+            fi; \
+        done

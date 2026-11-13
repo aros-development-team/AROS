@@ -1,0 +1,62 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+%set_archincludes mainmmake=kernel-kernel maindir=rom/kernel \
+  modname=kernel pri=0 arch=pc-i386 \
+  includes="-I$(SRCDIR)/$(CURDIR)"
+
+%get_archincludes modname=kernel \
+    includeflag=TARGET_KERNEL_INCLUDES maindir=rom/kernel
+
+%get_archincludes modname=exec \
+    includeflag=TARGET_EXEC_INCLUDES maindir=rom/exec
+
+PRIV_KERNEL_INCLUDES = \
+    $(TARGET_KERNEL_INCLUDES) \
+	-I$(SRCDIR)/rom/kernel \
+	$(TARGET_EXEC_INCLUDES) \
+	-I$(SRCDIR)/rom/exec
+
+FILES    := \
+             kernel_startup \
+             kernel_debug \
+             platform_init \
+             kernel_cpu \
+             utils
+FUNCS   := 
+ASMFILES  := \
+             core_interrupts
+
+MAINDIR := rom/kernel
+USER_AFLAGS   := $(AFLAGS) -isystem $(GENINCDIR) -I$(SRCDIR)/arch/all-pc/kernel
+USER_INCLUDES := $(PRIV_KERNEL_INCLUDES) \
+                 -I$(SRCDIR)/arch/all-native/kernel \
+		 -isystem $(SRCDIR)/arch/all-native/bootconsole/include
+
+#MM kernel-kernel-pc-i386 : kernel-pc-acpica-includes includes-asm_h linklibs-bootconsole
+
+%build_archspecific \
+  mainmmake=kernel-kernel modname=kernel maindir=$(MAINDIR) \
+  arch=pc-i386 files="$(FILES) $(FUNCS)" asmfiles=$(ASMFILES) aflags=$(USER_AFLAGS) 
+
+# Build smpboot.bin.o in $(GENDIR)/$(MAINDIR)/arch, where it will be picked up
+# by the linker automatically (make.tmpl macros link in everything that is found there)
+# However we don't want our intermediate files to be picked up, so we put them in
+# $(GENDIR)/$(CURDIR)
+
+OBJDIR := $(GENDIR)/$(CURDIR)
+ARCHOBJDIR := $(GENDIR)/$(MAINDIR)/kernel/arch
+
+kernel-kernel-pc-i386 :: $(ARCHOBJDIR)/smpboot.bin.o 
+kernel-kernel-pc-i386-quick :: $(ARCHOBJDIR)/smpboot.bin.o 
+kernel-kernel-pc-i386-kobj :: $(ARCHOBJDIR)/smpboot.bin.o
+kernel-kernel-pc-i386-kobj-quick :: $(ARCHOBJDIR)/smpboot.bin.o
+
+%rule_assemble_multi basenames=smpbootstrap targetdir=$(OBJDIR)
+%rule_link_binary file=$(ARCHOBJDIR)/smpboot.bin.o name=smpbootstrap objs=$(OBJDIR)/smpbootstrap.o ldflags="-m elf_i386"
+
+$(OBJDIR)/smpbootstrap.o : | $(OBJDIR)
+
+GLOB_MKDIRS += $(ARCHOBJDIR) $(OBJDIR)
+
+%common

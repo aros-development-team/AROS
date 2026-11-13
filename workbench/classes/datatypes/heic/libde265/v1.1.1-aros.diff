@@ -1,0 +1,30 @@
+diff -ruN libde265-1.1.1/libde265/deblock.cc libde265-1.1.1.aros/libde265/deblock.cc
+--- libde265-1.1.1/libde265/deblock.cc	2026-06-03 15:18:11.000000000 +0000
++++ libde265-1.1.1.aros/libde265/deblock.cc	2026-07-30 19:47:43.942424878 +0000
+@@ -591,7 +591,7 @@
+             if (img->get_cu_transquant_bypass(xDi,yDi)) filterQ=false;
+           }
+ 
+-          if constexpr (sizeof(pixel_t)==1) {
++          if (sizeof(pixel_t)==1) {
+             img->decctx->acceleration.deblock_luma_8((uint8_t*)ptr, stride, vertical,
+                                                      dE,dEp,dEq,tc, filterP,filterQ);
+           }
+@@ -732,7 +732,7 @@
+             if (img->get_cu_transquant_bypass(SubWidthC*xDi,SubHeightC*yDi)) filterQ=false;
+ 
+ 
+-            if constexpr (sizeof(pixel_t)==1) {
++            if (sizeof(pixel_t)==1) {
+               img->decctx->acceleration.deblock_chroma_8((uint8_t*)ptr, stride, 1, tc, filterP,filterQ);
+             }
+             else {
+@@ -748,7 +748,7 @@
+             if (sps.pcm_loop_filter_disable_flag && img->get_pcm_flag(SubWidthC*xDi,SubHeightC*yDi)) filterQ=false;
+             if (img->get_cu_transquant_bypass(SubWidthC*xDi,SubHeightC*yDi)) filterQ=false;
+ 
+-            if constexpr (sizeof(pixel_t)==1) {
++            if (sizeof(pixel_t)==1) {
+               img->decctx->acceleration.deblock_chroma_8((uint8_t*)ptr, stride, 0, tc, filterP,filterQ);
+             }
+             else {

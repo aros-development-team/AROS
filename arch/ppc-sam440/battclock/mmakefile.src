@@ -1,0 +1,10 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+USER_INCLUDES 	:= -I$(SRCDIR)/rom/battclock
+
+%build_archspecific \
+  mainmmake=kernel-battclock maindir=rom/battclock arch=sam440-ppc \
+  files="readbattclock writebattclock" modname=battclock
+
+#MM- kernel-battclock-sam440-ppc : kernel-battclock-includes

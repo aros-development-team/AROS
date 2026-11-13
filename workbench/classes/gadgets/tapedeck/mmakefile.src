@@ -1,0 +1,15 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+USER_CPPFLAGS := -DDEBUG=0
+USER_LDFLAGS := -static
+
+FILES := tapedeckclass
+
+#MM- workbench-datatypes-animation : workbench-gadgets-tapedeck
+#MM workbench-gadgets-tapedeck : includes linklibs
+
+%build_module mmake=workbench-gadgets-tapedeck \
+  modname=tapedeck modtype=gadget \
+  files=$(FILES)
+

@@ -1,0 +1,46 @@
+#!/usr/bin/env python3
+# AROS mmakefile.src generator
+# original version from Jack Patton 2/24/2004
+# Script to generate a mmakefile.src based upon the .c files in the current directory.
+
+import sys, glob, datetime
+
+if len(sys.argv) != 2:
+    print("Usage: genmmakefile <project name>")
+    sys.exit(1)
+
+target = sys.argv[1]
+now = datetime.datetime.now()
+
+out = open("mmakefile.src", "w", encoding="iso-8859-1")
+out.write("""# Copyright (C) {year} The AROS Development Team. All rights reserved.
+# Makefile to make {target}.
+
+include $(SRCDIR)/config/aros.cfg
+
+EXE    := {target}
+EXEDIR := $(AROSDIR)
+FILES  := """.format(target=target, year=now.year))
+
+files = sorted(glob.glob("*.c"))
+for file in files:
+    out.write("\\\n        {} ".format(file[0:-2]))
+
+out.write("""
+
+NOWARN_FLAGS  :=
+USER_CFLAGS   := $(NOWARN_FLAGS)
+USER_INCLUDES :=
+USER_LDFLAGS  :=
+USER_CPPFLAGS :=
+
+#MM {target} : includes linklibs
+
+%build_prog mmake={target} \\
+    progname=$(EXE) targetdir=$(EXEDIR) \\
+    files=$(FILES) uselibs=\"\"
+
+%common
+""".format(target=target))
+
+out.close()

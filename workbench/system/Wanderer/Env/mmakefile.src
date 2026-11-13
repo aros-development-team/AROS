@@ -1,0 +1,31 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM workbench-system-wanderer-env : workbench-system-wanderer-env-dir
+
+workbench-system-wanderer-env: \
+        $(AROS_ENVARC)/SYS/Wanderer/global.prefs \
+        $(AROS_ENVARC)/SYS/Wanderer/toolbar.prefs \
+        $(AROS_ENVARC)/SYS/Wanderer/statusbar.prefs
+
+ifneq ($(AROS_PREFS_SET),)
+CONFIGSET=$(AROS_PREFS_SET)
+else
+CONFIGSET=default
+endif
+
+$(AROS_ENVARC)/SYS/Wanderer/global.prefs: $(CONFIGSET)/global.prefs
+		@$(CP) $< $@
+
+$(AROS_ENVARC)/SYS/Wanderer/toolbar.prefs: $(CONFIGSET)/toolbar.prefs
+		@$(CP) $< $@
+
+$(AROS_ENVARC)/SYS/Wanderer/statusbar.prefs: $(CONFIGSET)/statusbar.prefs
+		@$(CP) $< $@
+
+$(AROS_ENVARC)/SYS/Wanderer/backdrop.prefs: $(CONFIGSET)/backdrop.prefs
+		@$(CP) $< $@
+
+#MM
+workbench-system-wanderer-env-dir :
+	%mkdirs_q $(AROS_ENVARC)/SYS/Wanderer

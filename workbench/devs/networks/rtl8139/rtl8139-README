@@ -1,0 +1,24 @@
+rtl8139.device
+-----------------
+
+see "COPYING" for license information
+This driver is incomplete/ experimental - use at your own risk!
+
+Based on the gpl sanos rtl8129/8139 NIC driver
+
+supported NIC's:
+    0x10ec, 0x8139 - RealTek RTL8139+
+    0x10ec, 0x8139 - RealTek RTL8139C Fast Ethernet
+    0x10ec, 0x8129 - RealTek RTL8129 Fast Ethernet
+    0x10ec, 0x8139 - RealTek RTL8139 Fast Ethernet
+    0x10ec, 0x8138 - RealTek RTL8139B PCI
+    0x1113, 0x1211 - Accton EN-1207D Fast Ethernet Adapter
+    0x1113, 0x1211 - SMC1211TX EZCard 10/100 (RealTek RTL8139)
+    0x1186, 0x1300 - D-Link DFE-538TX (RTL8139)
+    0x018a, 0x0106 - LevelOne FPC-0106Tx (RTL8139)
+    0x021b, 0x8139 - Compaq HNE-300 (RTL8139c)
+
+TODO/Known Issues:
+
+# set rx mode needs fixed to correctly set multicast filter.
+# Needs fixed to handle link change.

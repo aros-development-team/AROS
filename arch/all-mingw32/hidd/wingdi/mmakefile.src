@@ -1,0 +1,44 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+FILES := startup gdi_hostlib wingdi_hiddclass wingdi_bitmapclass wingdi_kbdclass wingdi_mouseclass
+
+#MM kernel-hidd-wingdi-kobj  : kernel-hidd-wingdi-native devs-monitors-gdi
+#MM kernel-hidd-wingdi       : kernel-hidd-wingdi-native
+
+%build_module mmake=kernel-hidd-wingdi \
+  modname=wingdi modtype=hidd \
+  files=$(FILES) uselibs="hiddstubs"
+
+DISK_FILES  := disk_startup
+DISK_EXEDIR := $(AROS_STORAGE)/Monitors
+
+#MM devs-monitors-gdi : iconset-$(AROS_TARGET_ICONSET)-gdi
+
+%build_prog mmake=devs-monitors-gdi \
+    progname=GDI targetdir=$(DISK_EXEDIR) \
+    files=$(DISK_FILES)
+
+NATIVE_BINDIR := $(AROSDIR)/Libs/Host
+NATIVE_LIBDIR := $(AROS_DEVELOPER)/$(CPU)-mingw32/lib
+
+NATIVE_FILES  := gdi_native
+
+NATIVE_LDFLAGS  := -shared -static-libgcc -L$(NATIVE_LIBDIR)
+
+USER_INCLUDES := -I$(AROS_DEVELOPER)/$(CPU)-mingw32/include
+
+#MM kernel-hidd-wingdi-native : AHI-linklibs-WASAPI-native-rc
+
+%build_prog mmake=kernel-hidd-wingdi-native \
+    progname=wingdi.dll targetdir=$(NATIVE_BINDIR) \
+    files="$(NATIVE_FILES)" objs="$(GENDIR)/$(CURDIR)/wingdi.o"  compiler=kernel uselibs="aroskernel gdi32" \
+    ldflags=$(NATIVE_LDFLAGS)
+
+$(GENDIR)/$(CURDIR)/wingdi.o: $(SRCDIR)/$(CURDIR)/wingdi.rc
+	$(KERNEL_RESCOMP) -i $(SRCDIR)/$(CURDIR)/wingdi.rc -o $(GENDIR)/$(CURDIR)/wingdi.o
+
+#MM
+kernel-hidd-wingdi-native-rc : $(GENDIR)/$(CURDIR)/wingdi.o
+
+%common

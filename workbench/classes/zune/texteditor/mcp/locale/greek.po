@@ -1,0 +1,743 @@
+# Translation catalog description file (pot-style)
+# $Id: greek.po 954 2014-04-05 11:31:14Z damato $
+# 
+# version 2
+# Translators:
+msgid ""
+msgstr ""
+"Project-Id-Version: MCC TextEditor\n"
+"Report-Msgid-Bugs-To: http://sf.net/p/texteditor-mcc/\n"
+"POT-Creation-Date: 2014-02-23 12:29+0100\n"
+"PO-Revision-Date: 2014-04-02 09:12+0000\n"
+"Last-Translator: damato <mail@jens-maus.de>\n"
+"Language-Team: Greek (http://www.transifex.com/projects/p/texteditor-mcc/language/el/)\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Catalog-Name: TextEditor_mcp\n"
+"Language: el\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+msgctxt "MSG_HelpBubble_BlockQual (0//)"
+msgid ""
+"Move the cursor key and hold down the qualifier\n"
+"that you set here to mark text."
+msgstr ""
+
+msgctxt "MSG_HelpBubble_CheckWord (1//)"
+msgid ""
+"If enabled, then the editor will lookup the word,\n"
+"and only show suggestions if the word is misspelled."
+msgstr ""
+
+msgctxt "MSG_HelpBubble_Smooth (2//)"
+msgid "This enables pixel smooth scrolling."
+msgstr ""
+
+msgctxt "MSG_HelpBubble_TypeNSpell (3//)"
+msgid ""
+"Enable this to let the editor\n"
+"lookup the words while you type them."
+msgstr ""
+
+msgctxt "MSG_HelpBubble_UndoLevel (4//)"
+msgid ""
+"Each undo level eats up 10 bytes of memory.\n"
+"Cut and copy will take a little more,\n"
+"depending on the size of the block you\n"
+"are cutting or copying."
+msgstr ""
+
+msgctxt "MSG_Button_DefaultKeys (5//)"
+msgid "Default _keys"
+msgstr "Προεπιλεγμένα _πλήκτρα"
+
+msgctxt "MSG_Button_Delete (6//)"
+msgid "_Delete"
+msgstr "_Διαγραφή"
+
+msgctxt "MSG_Button_Insert (7//)"
+msgid "_Insert"
+msgstr "_Εισαγωγή"
+
+msgctxt "MSG_ConfigMenu_CheckWord (8//)"
+msgid "Check word"
+msgstr "Έλεγχος λέξης"
+
+msgctxt "MSG_ConfigMenu_TypeNSpell (9//)"
+msgid "Type'n'spell"
+msgstr "Πληκτρολόγηση & ορθογραφία"
+
+msgctxt "MSG_CycleItem_Alt (10//)"
+msgid "Alt"
+msgstr "Alt"
+
+msgctxt "MSG_CycleItem_Ctrl (11//)"
+msgid "Control"
+msgstr "Control"
+
+msgctxt "MSG_CycleItem_Mouse (12//)"
+msgid "(mouse only)"
+msgstr "(μόνο ποντίκι)"
+
+msgctxt "MSG_CycleItem_Shift (13//)"
+msgid "Shift"
+msgstr "Shift"
+
+msgctxt "MSG_Execution_ARexx (14//)"
+msgid "ARexx"
+msgstr "ARexx"
+
+msgctxt "MSG_Execution_CLI (15//)"
+msgid "CLI"
+msgstr "CLI"
+
+msgctxt "MSG_Function_BOL (16//)"
+msgid "Beginning of line"
+msgstr "Αρχή γραμμής"
+
+msgctxt "MSG_Function_Backspace (17//)"
+msgid "Backspace"
+msgstr "Backspace"
+
+msgctxt "MSG_Function_Bottom (18//)"
+msgid "Bottom"
+msgstr "Κάτω μέρος"
+
+msgctxt "MSG_Function_Copy (19//)"
+msgid "Copy"
+msgstr "Αντιγραφή"
+
+msgctxt "MSG_Function_Cut (20//)"
+msgid "Cut"
+msgstr "Αποκοπή"
+
+msgctxt "MSG_Function_DelBOL (21//)"
+msgid "Delete to BOL"
+msgstr "Διαγραφή στην έναρξη γραμμής"
+
+msgctxt "MSG_Function_DelBOW (22//)"
+msgid "Delete to BOW"
+msgstr "Διαγραφή στην έναρξη λέξης"
+
+msgctxt "MSG_Function_DelEOL (23//)"
+msgid "Delete to EOL"
+msgstr "Διαγραφή στο τέλος γραμμής"
+
+msgctxt "MSG_Function_DelEOW (24//)"
+msgid "Delete to EOW"
+msgstr "Διαγραφή στο τέλος λέξης"
+
+msgctxt "MSG_Function_Delete (25//)"
+msgid "Delete"
+msgstr "Διαγραφή"
+
+msgctxt "MSG_Function_Down (26//)"
+msgid "Down"
+msgstr "Κάτω"
+
+msgctxt "MSG_Function_EOL (27//)"
+msgid "End of line"
+msgstr "Τέλος γραμμής"
+
+msgctxt "MSG_Function_Left (28//)"
+msgid "Left"
+msgstr "Αριστερά"
+
+msgctxt "MSG_Function_NextGadget (29//)"
+msgid "Next gadget"
+msgstr "Επόμενο αντικείμενο"
+
+msgctxt "MSG_Function_NxtPage (30//)"
+msgid "Next page"
+msgstr "Επόμενη σελίδα"
+
+msgctxt "MSG_Function_NxtPara (31//)"
+msgid "Next paragraph"
+msgstr "Επόμενη παράγραφος"
+
+msgctxt "MSG_Function_NxtSent (32//)"
+msgid "Next sentence"
+msgstr "Επόμενη πρόταση"
+
+msgctxt "MSG_Function_NxtWord (33//)"
+msgid "Next word"
+msgstr "Επόμενη λέξη"
+
+msgctxt "MSG_Function_Paste (34//)"
+msgid "Paste"
+msgstr "Επικόλληση"
+
+msgctxt "MSG_Function_PrvPage (35//)"
+msgid "Prev page"
+msgstr "Προηγούμενη σελίδα"
+
+msgctxt "MSG_Function_PrvPara (36//)"
+msgid "Prev paragraph"
+msgstr "Προηγούμενη παράγραφος"
+
+msgctxt "MSG_Function_PrvSent (37//)"
+msgid "Prev sentence"
+msgstr "Προηγούμενη πρόταση"
+
+msgctxt "MSG_Function_PrvWord (38//)"
+msgid "Prev word"
+msgstr "Προηγούμενη λέξη"
+
+msgctxt "MSG_Function_Redo (39//)"
+msgid "Redo"
+msgstr "Επανάληψη"
+
+msgctxt "MSG_Function_Return (40//)"
+msgid "Return"
+msgstr "Επιστροφή"
+
+msgctxt "MSG_Function_Right (41//)"
+msgid "Right"
+msgstr "Δεξιά"
+
+msgctxt "MSG_Function_SuggestSpelling (42//)"
+msgid "Suggest spelling"
+msgstr "Προτεινόμενη ορθογραφία"
+
+msgctxt "MSG_Function_Tab (43//)"
+msgid "Tab"
+msgstr "Στηλοθέτης"
+
+msgctxt "MSG_Function_Top (44//)"
+msgid "Top"
+msgstr "Πάνω μέρος"
+
+msgctxt "MSG_Function_Undo (45//)"
+msgid "Undo"
+msgstr "Αναίρεση"
+
+msgctxt "MSG_Function_Up (46//)"
+msgid "Up"
+msgstr "Πάνω"
+
+msgctxt "MSG_GroupTitle_Control (47//)"
+msgid "Control"
+msgstr "Έλεγχος"
+
+msgctxt "MSG_GroupTitle_Cursor (48//)"
+msgid "Cursor"
+msgstr "Κέρσορας"
+
+msgctxt "MSG_GroupTitle_Design (49//)"
+msgid "Design"
+msgstr "Σχεδίαση"
+
+msgctxt "MSG_GroupTitle_Fonts (50//)"
+msgid "Fonts"
+msgstr "Γραμματοσειρές"
+
+msgctxt "MSG_GroupTitle_Separator (51//)"
+msgid "Separator"
+msgstr "Διαχωριστής"
+
+msgctxt "MSG_HelpTxt_SpellChecker (52//)"
+msgid ""
+" \\33u Intro \\33n\n"
+"\n"
+"The TextEditor gadget allows for easy integration of external spell checkers, making it possible to have both type'n'spell and also normal word guessing.\n"
+"\n"
+" \\33u Lookup command \\33n\n"
+"\n"
+"For the type'n'spell you'll have to set the lookup command to a script that will lookup the word and set the environment variable \"Found\" to either 0 (for not found) or 1 (for a match). This matches the default behaviour of AlphaSpell.\n"
+"\n"
+"You write %s where you want the word. If you use AlphaSpell, then you can use:\n"
+"\n"
+"\\33bARexx:\\33n \"Options Results;Address ALPHASPELL Search For '%s' Path 'T:' Danish.ald\"\n"
+"\n"
+"You \\33bmust\\33n remember the quotes, this will let ARexx execute it as a command instead of a script.\n"
+"\n"
+" \\33u Suggest command \\33n\n"
+"\n"
+"If you press <HELP> over a word, then the editor will launch this command, again with %s substituted with the current word.\n"
+"Your script should produce a file in T: named \"Matches\". This file is then read by the gadget, and the contents are listed in a popup listview, from where you can choose a word which will replace the misspelled one. Again, AlphaSpell users can use:\n"
+"\n"
+"\\33bARexx:\\33n \"Options Results;Address ALPHASPELL Match '%s' To 'T:Matches' Path 'T:' Danish.ald\"\n"
+"\n"
+"If you use the methods described above, then you must start AlphaSpell with the \"ARexx\" switch.\n"
+"\n"
+"It is advised to keep your dictionary in RAM if you enable the type'n'spell feature."
+msgstr " \\33u Εισαγωγή \\33n\n\nΤο αντικείμενο TextEditor επιτρέπει την εύκολη υλοποίηση εξωτερικών ορθογραφικών ελέγχων, κάνοντάς το δυνατό να έχετε τόσο την πληκτρολόγηση και ορθογραφία όσο και κανονικό εντοπισμό λέξης.\n\n \\33u Αναζήτηση εντολής \\33n\n\nΓια την πληκτρολόγηση και ορθογραφία θα πρέπει να ορίσετε την αναζήτηση εντολής σε ένα αρχείο δέσμης εντολών που θα ψάχνει την λέξη και θα ορίζει την μεταβλητή περιβάλλοντος \"Found\" σε 0 (αν δε βρεθεί) ή 1 (αν υπάρχει ταύτιση). Αυτή ταυτίζει την προκαθορισμένη διαγωγή του AlphaSpell.\n\nΓράφετε %s εκεί που θέλετε τη λέξη. Αν χρησιμοποιήσετε το AlphaSpell, τότε μπορείτε να χρησιμοποιήσετε:\n\n\\33bARexx:\\33n \"Options Results;Address ALPHASPELL Search For '%s' Path 'T:' Danish.ald\"\n\nΘα \\33bπρέπει\\33n να θυμάστε πάντα τις αποστρόφους, αφού θα επιτρέψει στην ARexx να το εκτελέσει ως μια εντολή αντί για μια δέσμη εντολών.\n\n \\33u Προτεινόμενη εντολή \\33n\n\nΑν πατήσετε το <HELP> πάνω σε μια λέξη, τότε ο κειμενογράφος θα εκτελέσει ξανά αυτή την εντολή, αντικαθηστώντας το %s με τη τρέχουσα λέξη.\nΟι δέσμες εντολών σας θα πρέπει να δημιουργήσουν ένα αρχείο στο T: με το όνομα \"Matches\". Αυτό το αρχείο διαβάζεται από το αντικείμενο, και τα περιεχόμενά του εμφανίζονται σε μια προβολή λίστας, από όπου μπορείτε να διαλέξετε μια λέξη που θα αντικαταστήσει τη λάθος λέξη. Οι χρήστες AlphaSpell μπορούν να γράψουν:\n\n\\33bARexx:\\33n \"Options Results;Address ALPHASPELL Match '%s' To 'T:Matches' Path 'T:' Danish.ald\"\n\nΑν χρησιμοποιήσετε τις παραπάνω μεθόδους, τότε θα πρέπει να ξεκινήσετε το AlphaSpell με την επιλογή \"ARexx\".\n\nΕίναι προτιμότερο να διατηρήσετε το λεξικό σας στη RAM αν ενεργοποιήσετε την επιλογή πληκτρολόγηση και ορθογραφία."
+
+msgctxt "MSG_LVLabel_Action (53//)"
+msgid "\\33c\\0333Action:"
+msgstr "\\33c\\0333Ενέργεια:"
+
+msgctxt "MSG_LVLabel_Key (54//)"
+msgid "\\33c\\0333Key:"
+msgstr "\\33c\\0333Πλήκτρο:"
+
+msgctxt "MSG_Label_Background (55//)"
+msgid "Background"
+msgstr "Φόντο"
+
+msgctxt "MSG_Label_BlinkSpeed (56//)"
+msgid "Blinkspeed"
+msgstr "Tαχύτητα αναβοσβήματος"
+
+msgctxt "MSG_Label_BlkQual (57//)"
+msgid "Block qualifier"
+msgstr "Προσδιοριστικό τμήματος"
+
+msgctxt "MSG_Label_Cursor (58//)"
+msgid "Normal"
+msgstr "Κανονικός"
+
+msgctxt "MSG_Label_Fixed (59//)"
+msgid "Fixed"
+msgstr "Σταθερή"
+
+msgctxt "MSG_Label_Frame (60//)"
+msgid "Frame"
+msgstr "Πλαίσιο"
+
+msgctxt "MSG_Label_Highlight (61//)"
+msgid "Highlight"
+msgstr "Μαρκάρισμα"
+
+msgctxt "MSG_Label_LookupCmd (62//)"
+msgid "Lookup command"
+msgstr "Εντολή αναζήτησης"
+
+msgctxt "MSG_Label_LookupWords (63//)"
+msgid "Lookup word before suggesting?"
+msgstr "Αναζήτηση λέξης πριν την υπόδειξη;"
+
+msgctxt "MSG_Label_Normal (64//)"
+msgid "Normal"
+msgstr "Κανονική"
+
+msgctxt "MSG_Label_Selected (65//)"
+msgid "Selected"
+msgstr "Επιλεγμένος"
+
+msgctxt "MSG_Label_SeparatorShadow (66//)"
+msgid "Shadow"
+msgstr "Σκιά"
+
+msgctxt "MSG_Label_SeparatorShine (67//)"
+msgid "Shine"
+msgstr "Λάμψη"
+
+msgctxt "MSG_Label_Smooth (68//)"
+msgid "Smooth"
+msgstr "Ομαλή"
+
+msgctxt "MSG_Label_SpellNType (69//)"
+msgid "Spell check as you type?"
+msgstr "Έλεγχος ορθογραφίας κατά την πληκτρολόγηση;"
+
+msgctxt "MSG_Label_SuggestCmd (70//)"
+msgid "Suggest command"
+msgstr "Προτεινόμενη εντολή"
+
+msgctxt "MSG_Label_TabSize (71//)"
+msgid "Tab size"
+msgstr "Μέγεθος στηλοθέτη"
+
+msgctxt "MSG_Label_Text (72//)"
+msgid "Text"
+msgstr "Κείμενο"
+
+msgctxt "MSG_Label_UndoLevel (73//)"
+msgid "Undo levels"
+msgstr "Επίπεδα αναίρεσης"
+
+msgctxt "MSG_Label_Width (74//)"
+msgid "Width"
+msgstr "Μήκος"
+
+msgctxt "MSG_MenuItem_Background (75//)"
+msgid "Background"
+msgstr "Φόντο"
+
+msgctxt "MSG_MenuItem_Bold (76//)"
+msgid "Bold"
+msgstr "Έντονο"
+
+msgctxt "MSG_MenuItem_Center (77//)"
+msgid "Center"
+msgstr "Κέντρο"
+
+msgctxt "MSG_MenuItem_Copy (78//)"
+msgid "Copy"
+msgstr "Αντιγραφή"
+
+msgctxt "MSG_MenuItem_Cut (79//)"
+msgid "Cut"
+msgstr "Αποκοπή"
+
+msgctxt "MSG_MenuItem_Delete (80//)"
+msgid "Delete"
+msgstr "Διαγραφή"
+
+msgctxt "MSG_MenuItem_Fill (81//)"
+msgid "Fill"
+msgstr "Πλήρης"
+
+msgctxt "MSG_MenuItem_Halfshadow (82//)"
+msgid "Halfshadow"
+msgstr "Μισή-σκιά"
+
+msgctxt "MSG_MenuItem_Halfshine (83//)"
+msgid "Halfshine"
+msgstr "Μισή-λάμψη"
+
+msgctxt "MSG_MenuItem_Italic (84//)"
+msgid "Italic"
+msgstr "Πλάγια"
+
+msgctxt "MSG_MenuItem_Left (85//)"
+msgid "Left"
+msgstr "Αριστερά"
+
+msgctxt "MSG_MenuItem_Mark (86//)"
+msgid "Mark"
+msgstr "Μαρκάρισμα"
+
+msgctxt "MSG_MenuItem_Normal (87//)"
+msgid "Normal"
+msgstr "Κανονική"
+
+msgctxt "MSG_MenuItem_Paste (88//)"
+msgid "Paste"
+msgstr "Επικόλληση"
+
+msgctxt "MSG_MenuItem_Redo (89//)"
+msgid "Redo"
+msgstr "Επανάληψη"
+
+msgctxt "MSG_MenuItem_Right (90//)"
+msgid "Right"
+msgstr "Δεξιά"
+
+msgctxt "MSG_MenuItem_Shadow (91//)"
+msgid "Shadow"
+msgstr "Σκιά"
+
+msgctxt "MSG_MenuItem_Shine (92//)"
+msgid "Shine"
+msgstr "Λάμψη"
+
+msgctxt "MSG_MenuItem_Text (93//)"
+msgid "Text"
+msgstr "Κείμενο"
+
+msgctxt "MSG_MenuItem_Underline (94//)"
+msgid "Underline"
+msgstr "Υπογράμμιση"
+
+msgctxt "MSG_MenuItem_Undo (95//)"
+msgid "Undo"
+msgstr "Αναίρεση"
+
+msgctxt "MSG_MenuSubTitle_Alignment (96//)"
+msgid "Alignment"
+msgstr "Στοίχιση"
+
+msgctxt "MSG_MenuSubTitle_Color (97//)"
+msgid "Color"
+msgstr "Χρώμα"
+
+msgctxt "MSG_MenuTitle_Edit (98//)"
+msgid "Edit"
+msgstr "Επεξεργασία"
+
+msgctxt "MSG_Page_Keybindings (99//)"
+msgid "Keybindings"
+msgstr "Συντομεύσεις"
+
+msgctxt "MSG_Page_Sample (100//)"
+msgid "Sample"
+msgstr "Δείγμα"
+
+msgctxt "MSG_Page_Settings (101//)"
+msgid "Settings"
+msgstr "Επιλογές"
+
+msgctxt "MSG_Page_SpellChecker (102//)"
+msgid "Spell checker"
+msgstr "Ορθογραφικός έλεγχος"
+
+msgctxt "MSG_PopWinTitle_Background (103//)"
+msgid "Select background"
+msgstr "Επιλογή φόντου"
+
+msgctxt "MSG_PopWinTitle_Cursor (104//)"
+msgid "Select cursor color"
+msgstr "Επιλογή χρώματος κέρσορα"
+
+msgctxt "MSG_PopWinTitle_Frame (105//)"
+msgid "Adjust frame"
+msgstr "Τροποποίηση πλαισίου"
+
+msgctxt "MSG_PopWinTitle_Highlight (106//)"
+msgid "Select highlight color"
+msgstr "Επιλογή χρώματος μαρκαρίσματος"
+
+msgctxt "MSG_PopWinTitle_Selected (107//)"
+msgid "Select block color"
+msgstr "Επιλογή χρώματος τμήματος"
+
+msgctxt "MSG_PopWinTitle_SeparatorShadow (108//)"
+msgid "Select separators shadow color"
+msgstr "Επιλογή χρώματος της σκιάς διαχωριστικών"
+
+msgctxt "MSG_PopWinTitle_SeparatorShine (109//)"
+msgid "Select separators shine color"
+msgstr "Επιλογή χρώματος της λάμψης διαχωριστικών"
+
+msgctxt "MSG_PopWinTitle_Text (110//)"
+msgid "Select text color"
+msgstr "Επιλογή χρώματος του κειμένου"
+
+msgctxt "MSG_SliderText_MaxWidth (111//)"
+msgid "Same as char"
+msgstr "Ίδιο με χαρακτήρα"
+
+msgctxt "MSG_SliderText_MinSpeed (112//)"
+msgid "Off"
+msgstr "Κλειστό"
+
+msgctxt "MSG_SliderText_MinWidth (113//)"
+msgid "1 pixel"
+msgstr "1 ιχνοστοιχείο"
+
+msgctxt "MSG_SliderText_StdSpeed (114//)"
+msgid "\\33r%ld ms"
+msgstr "\\33r%ld ms"
+
+msgctxt "MSG_SliderText_StdWidth (115//)"
+msgid "%ld pixels"
+msgstr "%ld ιχνοστοιχεία"
+
+msgctxt "MSG_SliderText_TabSize (116//)"
+msgid "%ld spaces"
+msgstr "%ld διαστήματα"
+
+msgctxt "MSG_Function_GotoBookmark1 (117//)"
+msgid "Goto bookmark 1"
+msgstr "Πηγαίνετε στο σελιδοδείκτη 1"
+
+msgctxt "MSG_Function_GotoBookmark2 (118//)"
+msgid "Goto bookmark 2"
+msgstr "Πηγαίνετε στο σελιδοδείκτη 2"
+
+msgctxt "MSG_Function_GotoBookmark3 (119//)"
+msgid "Goto bookmark 3"
+msgstr "Πηγαίνετε στο σελιδοδείκτη 3"
+
+msgctxt "MSG_Function_SetBookmark1 (120//)"
+msgid "Set bookmark 1"
+msgstr "Ορίστε το σελιδοδείκτη 1"
+
+msgctxt "MSG_Function_SetBookmark2 (121//)"
+msgid "Set bookmark 2"
+msgstr "Ορίστε το σελιδοδείκτη 2"
+
+msgctxt "MSG_Function_SetBookmark3 (122//)"
+msgid "Set bookmark 3"
+msgstr "Ορίστε το σελιδοδείκτη 3"
+
+msgctxt "MSG_Button_Snoop (123//)"
+msgid "Snoop"
+msgstr "Εκμάθηση"
+
+msgctxt "MSG_Function_DelLine (124//)"
+msgid "Delete line"
+msgstr "Διαγραφή γραμμής"
+
+msgctxt "MSG_Function_SelectAll (125//)"
+msgid "Select all"
+msgstr "Επιλογή όλων"
+
+msgctxt "MSG_Function_SelectNone (126//)"
+msgid "Select none"
+msgstr "Καμία επιλογή"
+
+msgctxt "MSG_WarnConfigVersion_Title (127//)"
+msgid "TextEditor.mcp warning"
+msgstr "Προειδοποίηση TextEditor.mcp"
+
+msgctxt "MSG_WarnConfigVersion (128//)"
+msgid ""
+"Your currently saved keybindings setup is incompatible\n"
+"with the version of TextEditor.mcc you have installed.\n"
+"\n"
+"It is suggested that you reset the current keybindings\n"
+"to their defaults and edit them manually afterwards."
+msgstr "Οι τρέχοντες αποθηκευμένες συντομεύσεις σας είναι μη συμβατές\nμε την έκδοση TextEditor.mcc που έχετε εγκαταστήσει.\n\nΕίναι προτεινόμενο να επαναφέρετε τις τρέχουσες συντομεύσεις\nστις εργοστασιακές ρυθμίσεις και να τις επεξεργαστείτε μετά\nχειροκίνητα."
+
+msgctxt "MSG_ResetAbort (129//)"
+msgid "Reset|Abort"
+msgstr "Επαναφορά|Ματαίωση"
+
+msgctxt "MSG_WarnHotkeyString_Title (130//)"
+msgid "TextEditor.mcp warning"
+msgstr "Προειδοποίηση TextEditor.mcp"
+
+msgctxt "MSG_WarnHotkeyString (131//)"
+msgid ""
+"TextEditor.mcp couldn't open the minimum required\n"
+"version of the HotkeyString.mcc custom class and\n"
+"therefore failed during initialization.\n"
+"\n"
+"Please make sure you have the latest Hotkeystring.mcc\n"
+"class from http://www.sf.net/projects/bstring-mcc/\n"
+"installed and try again."
+msgstr "Ο TextEditor.mcp αδυνατεί να ανοίξει την ελάχιστη έκδοση που\nαπαιτείται της HotkeyString.mcc custom class και συνεπώς\nαπέτυχε κατά την αρχικοποίηση.\n\nΠαρακαλώ βεβαιωθείτε ότι έχετε τη τελευταία HotkeyString.mcc\nclass από το http://www.sf.net/projects/bstring-mcc/\nεγκατεστημένη και δοκιμάστε ξανά."
+
+msgctxt "MSG_Ok (132//)"
+msgid "Ok"
+msgstr "ΟΚ"
+
+msgctxt "MSG_Label_InactiveCursor (133//)"
+msgid "Inactive cursor"
+msgstr "Ανενεργός κέρσορας"
+
+msgctxt "MSG_HELP_InactiveCursor (134//)"
+msgid ""
+"If enabled, a custom cursor will be used\n"
+"whenever the editor doesn't have the focus."
+msgstr "Αν επιλεχτεί, ένας τροποποιημένος κέρσορας θα χρησιμοποιηθεί\nόταν ο κειμενογράφος δεν είναι ενεργός."
+
+msgctxt "MSG_Label_SelectPointer (135//)"
+msgid "Selection pointer"
+msgstr "Επιλογή δείκτη"
+
+msgctxt "MSG_HELP_SelectPointer (136//)"
+msgid ""
+"If enabled, a custom selection pointer will appear\n"
+"when the mouse pointer is above the texteditor gadget."
+msgstr "Αν επιλεχτεί, ένας τροποποιημένος επιλεγμένος δείκτης θα εμφανιστεί\nόταν το ποντίκι είναι πάνω από ενα αντικείμενο texteditor."
+
+msgctxt "MSG_Label_InactiveColor (137//)"
+msgid "Inactive"
+msgstr "Ανενεργός"
+
+msgctxt "MSG_PopWinTitle_InactiveColor (138//)"
+msgid "Select inactive color"
+msgstr "Επιλογή ανενεργού χρώματος"
+
+msgctxt "MSG_HELP_TABSIZE (139//)"
+msgid "How many spaces hitting the <TAB> key will jump."
+msgstr "Πόσα διαστήματα θα δημιουργούνται με το πάτημα του πλήκτρου <TAB>."
+
+msgctxt "MSG_HELP_DESIGN_FRAME (140//)"
+msgid ""
+"This is a button to adjust a frame.\n"
+"Click it to open an adjust window or\n"
+"use the drag&drop facilities to copy\n"
+"from or to another frame adjust button."
+msgstr "Αυτό είναι ένα κουμπί για τη τροποποίηση του πλαισίου.\nΚάντε κλικ για να ανοίξετε ένα παράθυρο τροποποίησης ή\nκάντε χρήση της μεταφοράς & απόθεσης για να αντιγράψετε\nένα κουμπί τροποποίησης πλαισίου από ή σε άλλο πλαίσιο."
+
+msgctxt "MSG_HELP_DESIGN_BACKGROUND (141//)"
+msgid ""
+"This is a button to adjust a background\n"
+"color or pattern. Click it to open an\n"
+"adjust window or use the drag&drop facilities\n"
+"to copy from or to another background adjust button."
+msgstr "Αυτό είναι ένα κουμπί για τη τροποποίηση του χρώματος\nή μοτίβου του φόντου. Κάντε κλικ για να ανοίξετε ένα\nπαράθυρο τροποποίησης ή κάντε χρήση της μεταφοράς &\nαπόθεσης για να αντιγράψετε ένα κουμπί τροποποίησης\nφόντου από ή σε άλλο φόντο."
+
+msgctxt "MSG_HELP_DESIGN_TEXT (142//)"
+msgid "This is the color used to print the text."
+msgstr "Αυτό είναι το χρώμα που χρησιμοποιείται\nγια την εκτύπωση του κειμένου."
+
+msgctxt "MSG_HELP_DESIGN_HIGHLIGHT (143//)"
+msgid ""
+"This is the color used to\n"
+"print highlighted text."
+msgstr "Αυτό είναι το χρώμα που χρησιμοποιείται\nγια την εκτύπωση του μαρκαρισμένου κειμένου."
+
+msgctxt "MSG_HELP_SEPARATOR_SHINE (144//)"
+msgid ""
+"This is the color used to\n"
+"print separator bars."
+msgstr "Αυτό είναι το χρώμα που χρησιμοποιείται\nγια την εκτύπωση της μπάρας διαχωριστικών."
+
+msgctxt "MSG_HELP_SEPARATOR_SHADOW (145//)"
+msgid ""
+"This is the color used to print\n"
+"separator bars in shadow mode."
+msgstr "Αυτό είναι το χρώμα που χρησιμοποιείται για την\nεκτύπωση της μπάρας διαχωριστικών με λειτουργία σκιάς."
+
+msgctxt "MSG_HELP_FONTS_NORMAL (146//)"
+msgid "Default font to be used by the editor."
+msgstr "Προκαθορισμένη γραμματοσειρά που θα\nχρησιμοποιηθεί από το κειμενογράφο."
+
+msgctxt "MSG_HELP_FONTS_FIXED (147//)"
+msgid ""
+"Default font to be used by the editor\n"
+"whenever a fixed width font is requested."
+msgstr "Προκαθορισμένη γραμματοσειρά που θα χρησιμοποιηθεί\nαπό το κειμενογράφο, άσχετα αν ζητηθεί μια σταθερή\nγραμματοσειρά."
+
+msgctxt "MSG_HELP_CURSOR_NORMAL (148//)"
+msgid "Default color to be used for the cursor."
+msgstr "Προκαθορισμένο χρώμα που θα\nχρησιμοποιηθεί για το κέρσορα."
+
+msgctxt "MSG_HELP_CURSOR_SELECTED (149//)"
+msgid ""
+"Color to be used for the cursor\n"
+"in selected text."
+msgstr "Χρώμα που θα χρησιμοποιηθεί για το\nκέρσορα σε επιλεγμένο κείμενο."
+
+msgctxt "MSG_HELP_CURSOR_INACTIVE (150//)"
+msgid ""
+"Color to use to print selected text\n"
+"when the editor doesn't have the focus."
+msgstr "Χρώμα που θα χρησιμοποιηθεί για την εκτύπωση\nεπιλεγμένου κειμένου όταν ο κειμενογράφος δεν\nείναι ενεργός."
+
+msgctxt "MSG_HELP_CURSOR_WIDTH (151//)"
+msgid "This is the width the cursor should have."
+msgstr "Αυτό είναι το μήκος που θα έχει ο κέρσορας."
+
+msgctxt "MSG_HELP_CURSOR_BLINKSPEED (152//)"
+msgid ""
+"You may want the cursor to blink to make\n"
+"it easier to find. Select 'Off' to disable\n"
+"this feature."
+msgstr "Μπορεί να θελήσετε ο κέρσορας να αναβοσβήνει\nώστε να το βρίσκετε εύκολα. Επιλέξτε 'Κλειστό'\nγια να το απανεργοποιήσετε."
+
+msgctxt "MSG_HELP_BUTTON_DEFAULTKEYS (153//)"
+msgid ""
+"Restore all keybindings\n"
+"to the built-in defaults."
+msgstr "Επαναφορά όλων των συντομεύσεων\nστις εργοστασιακές ρυθμίσεις."
+
+msgctxt "MSG_HELP_BUTTON_SNOOP (154//)"
+msgid ""
+"Use this field to set a keybinding for this action.\n"
+"You can either edit the string gadget directly or press\n"
+"the 'Snoop' button to make the gadget monitor keypresses\n"
+"until you press it again to confirm."
+msgstr "Χρησιμοποιήστε αυτό το πεδίο για να ορίστε συντομεύσεις\nγια αυτή την ενέργεια. Μπορείτε είτε να επεξεργαστείτε το\nαντικείμενο συμβολοσειράς άμεσα ή να πατήσετε στο κουμπί 'Έκμάθηση'\nγια να καθορίσετε το συνδυασμό πλήκτρων μέχρι να τα πατήσετε\nξανά για επιβεβαίωση."
+
+msgctxt "MSG_HELP_BUTTON_INSERT (155//)"
+msgid "Add a new keybinding to the list."
+msgstr "Προσθέστε μια νέα συντόμευση στη λίστα."
+
+msgctxt "MSG_HELP_BUTTON_DELETE (156//)"
+msgid "Delete this keybinding from the list."
+msgstr "Διαγράψτε μια συντόμευση από τη λίστα."
+
+msgctxt "MSG_HELP_SPELLCHECKER_LOOKUP_CMD (157//)"
+msgid ""
+"Specify here the lookup command you want to use, or\n"
+"leave this empty to disable the type'n'spell feature."
+msgstr "Καθορίστε εδώ την εντολή αναζήτησης που θέλετε να χρησιμοποιήσετε\nή αφήστε το κενό για να απενεργοποιήσετε τη λειτουργία πληκτρολόγησης\nκαι ορθογραφίας."
+
+msgctxt "MSG_HELP_SPELLCHECKER_SUGGEST_CMD (158//)"
+msgid ""
+"Specify here the command that will be used\n"
+"to suggest an alternate word. As explained above,\n"
+"usually you should specify a script here."
+msgstr "Καθορίστε εδώ την εντολή που θα χρησιμοποιηθεί για τη\nυπόδειξη εναλλακτικής λέξης. Όπως αναφέρθηκε παραπάνω,\nθα πρέπει να καθορίσετε εδώ μια δέσμη εντολών."
+
+msgctxt "MSG_UNDO_SLIDER_FORMAT (159//)"
+msgid "%ld (+/- 5)"
+msgstr "%ld (+/-5)"

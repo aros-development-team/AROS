@@ -1,0 +1,331 @@
+
+	incdir	include:
+	include	exec/memory.i
+	include exec/tasks.i
+	include	lvo/exec_lib.i
+	include	devices/ahi.i
+	include	libraries/ahi_sub.i
+	include	libraries/toccata.i
+	include	lvo/toccata_lib.i
+	include	utility/hooks.i
+	include	toccata.i
+	include	macros.i
+
+	XDEF	_intAHIsub_Disable
+	XDEF	_intAHIsub_Enable
+	XDEF	_intAHIsub_Update
+	XDEF	_intAHIsub_SetVol
+	XDEF	_intAHIsub_SetFreq
+	XDEF	_intAHIsub_SetSound
+	XDEF	_intAHIsub_SetEffect
+	XDEF	_intAHIsub_LoadSound
+	XDEF	_intAHIsub_UnloadSound
+
+	XDEF	_SlaveProcessEntry
+
+	XDEF	_RecordFunc
+
+	XDEF	_PlayFuncMono
+	XDEF	_PlayFuncStereo
+	XDEF	_PlayFuncMono32
+	XDEF	_PlayFuncStereo32
+
+	XDEF	_MixFunc
+
+	XREF	_SlaveProcess
+	XREF	_NoTask
+
+*******************************************************************************
+
+;in:
+* a2	struct AHI_AudioCtrl
+_intAHIsub_Disable:
+	push	a6
+	move.l	4.w,a6
+	call	Disable
+	pop	a6
+	rts
+
+;in:
+* a2	struct AHI_AudioCtrl
+_intAHIsub_Enable:
+	push	a6
+	move.l	4.w,a6
+	call	Enable
+	pop	a6
+	rts
+
+
+* Unused functions
+
+_intAHIsub_SetVol:
+_intAHIsub_SetFreq:
+_intAHIsub_SetSound:
+_intAHIsub_SetEffect:
+_intAHIsub_LoadSound:
+_intAHIsub_UnloadSound:
+	moveq	#AHIS_UNKNOWN,d0
+_intAHIsub_Update:
+	rts
+
+
+*******************************************************************************
+
+_SlaveProcessEntry:
+	move.l	4.w,a6
+	suba.l	a1,a1
+	call	FindTask
+	move.l	d0,a0
+	move.l	TC_Userdata(a0),a2
+	move.l	ahiac_DriverData(a2),a0
+	move.l	t_AHIsubBase(a0),a6
+	bra	_SlaveProcess
+
+*******************************************************************************
+;in:
+* d0	size
+* a0	buffer
+* a1	AudioCtrl
+_RecordFunc:
+	pushm	a2/a3
+	move.l	a1,a2
+	move.l	ahiac_DriverData(a2),a1
+
+* Update dd->t_RecMessage->ahirm_Length:
+	move.l	t_RecMessage(a1),a3
+	lsr.l	#2,d0				;bytes => samples
+	move.l	d0,ahirm_Length(a3)
+
+* Copy sample buffer
+	move.l	t_RecBuffer(a1),a3
+	lsr.l	#1,d0
+	bcs	.1
+	subq.l	#1,d0
+	bmi	.exit
+.loop
+	move.l	(a0)+,(a3)+
+.1
+	move.l	(a0)+,(a3)+
+	dbf	d0,.loop
+
+* Call the SamplerFunc Hook
+	move.l	t_RecMessage(a1),a1
+	move.l	ahiac_SamplerFunc(a2),a0
+	move.l	h_Entry(a0),a3
+	jsr	(a3)
+.exit
+	moveq	#TRUE,d0
+	popm	a2/a3
+	rts
+
+*******************************************************************************
+
+TocSamplesCnt	EQUR	d7
+TocBuffer	EQUR	a6
+
+*
+* These functions fills the Toccata buffer with the mixed output. Since
+* the Toccata buffer is not the same size as the mixing buffer, the mixing
+* routine may have to be called several times each interrupt. Or if the mixing
+* buffer is larger than the Toccata buffer, it may not be called at all.
+*
+* The routines are not very well commented, but they should be pretty stright-
+* forward once you know what they actually do.
+*
+
+;in:
+* d0    scratch
+* d1    scratch
+* a0    scratch
+* a1    ato_SoftIntData
+* a5    scratch
+
+PlayFunc_Pre	MACRO
+	pushm	d7/a2-a3/a6
+	move.l	a1,a2				;a2 is later used as Hook object
+	move.l	ahiac_DriverData(a2),a5
+
+* Swap Toccata buffer buffers and get pointer to one of them.
+	move.l	t_SampBuffer1(a5),TocBuffer
+	move.l	t_SampBuffer2(a5),t_SampBuffer1(a5)
+	move.l	TocBuffer,t_SampBuffer2(a5)
+
+* TocSamplesCnt is number of samples left in Toccata buffer to fill.
+	move.l	t_TocSamples(a5),TocSamplesCnt
+
+* t_MixSamplesCnt is uncopied samples left in mixing buffer
+.loop
+	tst.l	t_MixSamplesCnt(a5)
+	bne	.fillTocBuffer
+
+* There are no unplayed samples in the mixing buffer. Fill it again!
+
+	move.l	ahiac_BuffSamples(a2),t_MixSamplesCnt(a5)
+
+	move.l	t_MixBuffer1(a5),d0
+	move.l	t_MixBuffer2(a5),t_MixBuffer1(a5)
+	move.l	t_MixBuffer3(a5),t_MixBuffer2(a5)
+	move.l	d0,t_MixBuffer3(a5)
+
+	move.l	t_MixBuffer1(a5),t_MixBufferPtr(a5)
+
+; Now check if the mixing routine will mix more samples than are transfered
+; each software interrupt. If so, signal a (high-priority) task to do the
+; actual mixing. This is because one cannot be sure that the mixing routine
+; terminates before FIFO is empty. If the routine will mix less samples than
+; transfered, there is no need to use a task for it (in fact that would be a
+; pretty stupid idea, since the mixing hook may have to be called several
+; times during the interrupt.
+
+	move.l	t_TocSamples(a5),d0
+	cmp.l	ahiac_BuffSamples(a2),d0
+	bmi	.taskmix
+
+; The mixing buffer is smaller than the toccata one => Mix in soft interrupt
+
+.mixinline
+	move.l	ahiac_PlayerFunc(a2),a0
+	suba.l	a1,a1
+	move.l	h_Entry(a0),a3
+	jsr	(a3)				;Call Player Hook
+
+*** NOTE: No protection against CPU overload when mixing inline!
+	move.l	ahiac_MixerFunc(a2),a0
+	move.l	t_MixBuffer3(a5),a1
+	move.l	h_Entry(a0),a3
+	jsr	(a3)				;Call Mixer Hook
+	bra	.fillTocBuffer
+.taskmix
+
+; The mixing buffer is larger than the toccata one => Signal task to mix.
+; But first, check if we're using a hard interrupt. If so, we Cause() a 
+; SoftInt instead of signalling a task.
+
+	move.w	sr,d0
+	and.w	#%0000011100000000,d0		;Check if we run as SoftInt (lev 0)
+	beq	.nohardint
+
+	push	a6
+	move.l	4.w,a6
+	move.l	t_MixSoftInt(a5),a1
+	call	Cause
+	pop	a6
+	bra	.fillTocBuffer
+.nohardint
+
+; If the flag t_NoTask is TRUE, we mix in the software interrupt anyway.
+
+	tst.w	t_NoTask(a5)
+	bne	.mixinline
+
+	push	a6
+	move.l	4.w,a6
+	move.l	t_SlaveProcess(a5),a1
+	move.b	t_MixSignal(a5),d1
+	moveq	#0,d0
+	bset	d1,d0
+	call	Signal
+	pop	a6
+
+.fillTocBuffer
+	move.l	t_MixSamplesCnt(a5),d0
+	sub.l	d0,TocSamplesCnt
+	bpl	.1
+	add.l	TocSamplesCnt,d0
+	moveq	#0,TocSamplesCnt
+.1
+* d0 is now how many samples should be copied before either the Toccata buffer
+* is full or the mixing is empty.
+
+	sub.l	d0,t_MixSamplesCnt(a5)
+
+* t_MixBufferPtr is the address (in the mixing buffer) where the next untouched
+* sample is located.
+	move.l	t_MixBufferPtr(a5),a0
+	lsr.l	#1,d0				;Just unrolling...
+	bcs	.2
+	subq.l	#1,d0
+.transferLoop
+	ENDM
+
+* Example:
+*	move.w	(a0)+,(TocBuffer)+
+*.2
+*	move.w	(a0)+,(TocBuffer)+
+
+PlayFunc_Post	MACRO
+	dbf	d0,.transferLoop
+	move.l	a0,t_MixBufferPtr(a5)		;Update pointer till next time
+	tst.l	TocSamplesCnt			;Is Toccata buffer full now?
+	bne	.loop				;Nope, loop.
+
+	popm	d7/a2-a3/a6
+	rts
+	ENDM
+
+
+
+
+
+
+_PlayFuncMono:
+	PlayFunc_Pre
+	move.w	(a0)+,(TocBuffer)+
+.2
+	move.w	(a0)+,(TocBuffer)+
+	PlayFunc_Post
+
+
+_PlayFuncStereo:
+	PlayFunc_Pre
+	move.l	(a0)+,(TocBuffer)+		; 2 WORDs == left and right data
+.2
+	move.l	(a0)+,(TocBuffer)+
+	PlayFunc_Post
+
+_PlayFuncMono32:
+	PlayFunc_Pre
+	move.w	(a0),(TocBuffer)+		; Upper 16 bits...
+	addq.l	#4,a0
+.2
+	move.w	(a0),(TocBuffer)+		; Upper 16 bits...
+	addq.l	#4,a0
+	PlayFunc_Post
+
+_PlayFuncStereo32:
+	PlayFunc_Pre
+	move.w	(a0),(TocBuffer)+		; Upper 16 bits...
+	move.w	4(a0),(TocBuffer)+		; Upper 16 bits...
+	addq.l	#8,a0
+.2
+	move.w	(a0),(TocBuffer)+		; Upper 16 bits...
+	move.w	4(a0),(TocBuffer)+		; Upper 16 bits...
+	addq.l	#8,a0
+	PlayFunc_Post
+
+
+
+
+_MixFunc:
+	pushm	a2-a3
+	move.l	a1,a2				;a2 is Hook object
+	move.l	ahiac_DriverData(a2),a5
+
+	move.l	ahiac_PlayerFunc(a2),a0
+	suba.l	a1,a1
+	move.l	h_Entry(a0),a3
+	jsr	(a3)				;Call Player Hook
+
+	move.l	ahiac_PreTimer(a2),a0
+	jsr	(a0)
+	bne	.mixed				;Skip mixing!
+	move.l	ahiac_MixerFunc(a2),a0
+	move.l	t_MixBuffer3(a5),a1
+	move.l	h_Entry(a0),a3
+	jsr	(a3)				;Call Mixer Hook
+.mixed
+	move.l	ahiac_PostTimer(a2),a0
+	jsr	(a0)
+
+	popm	a2-a3
+	rts

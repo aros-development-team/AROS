@@ -1,0 +1,148 @@
+1. INTRODUCTION
+---------------
+
+BH Format is intended to be a compatible replacement for Format
+version 40 (AmigaOS up to v3.1) or version version 50 (MorphOS up to 1.4.5)
+with important additions:
+
+* It can perform low-level formats (or fake formats, as they usually are)
+  on drives larger than 4 GB (AmigaOS v40 Format command will destroy data
+  on such a drive).
+
+* It will warn you if the device to be formatted is misconfigured or if
+  your file-system or if your disk is too large for your current device
+  driver or file-system to handle (only for m68k).
+
+* It allows you to specify file-system type (DosType) and device flags
+  directly.  This will be particularly useful in conjunction with firth-
+  coming improvements to Francis Swift's XFS package.
+
+* It can create a default disk icon, following the same rules as the
+  DefIcons program from NewIcons does.
+
+* It has a GUI (native MorphOS version lacks it), can be used as a module for
+  ScalOS desktop.
+
+Also BH Format is a native formatting utility for AROS.
+
+It currently lacks localisation, some error reporting code, and good
+documentation.  However, full source code is included and licensed
+under the GNU GPL, so perhaps I can get some help with this...
+
+2. INSTALLATION
+---------------
+
+1. Copy Format program together with its icon (Format.info) to SYS:System
+directory (replacing original program on m68k AmigaOS).
+
+2. On MorphOS: delete (or rename) original MOSSYS:C/Format utility and add
+the following command to your S:User-startup file:
+
+Path SYS:System ADD
+
+3. To install as a ScalOS module execute the following command:
+
+MakeLink Scalos:Modules/Format_Disk.module SYS:System/Format
+
+
+3. AUTHOR
+---------
+
+Please send bug reports, success reports, fixes and improvements to
+me.
+
+	Pavel Fedin
+	RUSSIA
+
+	email: sonic_amiga@rambler.ru
+
+Original author of this program is:
+
+        Ben Hutchings
+        8 Primrose Street
+        Cambridge
+        CB4 3EH
+        ENGLAND
+
+        email: womble@zzumbouk.demon.co.uk
+
+4. HISTORY
+----------
+
+12 February 2009
+
+- GUI for selecting device added so it is possible to start from Wanderer.
+- Device was not released when formatting was interrupted by user or error.
+
+Version 43.6, 28 June 2008.
+
+Fixed one minor and one major bug:
+
+- Turns on cursor if interrupted by the user
+- Cancelling formatting using CTRL-C really works
+
+Version 43.5, 15 June 2008.
+
+Ported to MorphOS and AROS
+
+Does not hold a lock on DosList for a long time
+
+Fixed bug: track buffer size size was undefined when formatting
+non-FFS partitions, this could cause memory trashing.
+
+Version 43.4, 9 June 1999.
+
+Fixed 2 medium and 4 minor bugs:
+
+- In the GUI, the logic of the trashcan check-box was inverted.
+- Starting Format from Workbench with the icon of an ejected disk
+  would result in formatting whatever was currently in the drive
+  that the ejected volume was previously in.  It should, and now
+  does, ask for the ejected disk to be re-inserted and fail if
+  the user refuses.
+
+- The warning about MaxTransfer setting had several words repeated.
+- The default disk icon for a file-system type would not be fetched
+  unless a file-system type was specified using the CLI DOSTYPE
+  keyword.
+- The area cleared after formatting the disk and before displaying
+  "Initializing disk..." was calculated wrongly (typo).
+- The positions of the ticks on the format progress bar were
+  calculated slightly wrongly.
+
+Version 43.3, 6 June 1999.
+
+Changed all variable and function names to Hungarian naming
+convention (the real thing, not Micro$oft's botched version).
+Hopefully this makes the code easy to understand.
+
+Restructured the program so that the GUI and CLI procedures can
+share as much code as possible.  Changed error reporting code to
+use a single function that will print the message to the console
+or display it in a requester depending on how the program was
+started.
+
+Wrote almost all the necessary GUI code (search for TODO: in gui.c
+to find the missing bits).  The GUI is, of course, font-sensitive.
+
+Added another rule for finding default disk icons - if there isn't
+a default icon for the device then the program looks for a default
+icon for the file-system type before finally asking icon.library
+for the default disk icon.  This should now match DefIcons rules
+exactly.
+
+Version 43.2, 25 April 1999.
+
+Added DOSTYPE keyword for specifying file-system type to handlers
+that implement multiple non-native types.  Added FLAGS keyword for
+specifying non-standard flags when opening the device driver.
+Added NOVERIFY switch for disabling format verification (pointless).
+Added DISKICON switch for putting a default disk icon on the disk.
+Marked comments on unimplemented stuff with "TODO" so that they're
+easy to find.
+
+Version 43.1, 13 April 1999.
+
+The product of some hours' hacking last year, and a little
+clean-up recently.
+

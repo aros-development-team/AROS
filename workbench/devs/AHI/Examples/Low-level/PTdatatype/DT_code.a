@@ -1,0 +1,32 @@
+
+
+	include	"datatypes/datatypes.i"
+	include "dos/dos.i"
+	include "lvo/dos_lib.i"
+
+	SECTION	TEXT,CODE
+Start:
+	movem.l	d2-d7/a2-a6,-(sp)
+	move.l	a0,a2
+	move.l	dthc_FileHandle(a2),d1
+	move.l	#1080,d2
+	moveq	#OFFSET_BEGINNING,d3
+	move.l	dthc_DOSBase(a2),a6
+	jsr	_LVOSeek(a6)
+	move.l	dthc_FileHandle(a2),d1
+	clr.l	-(sp)
+	move.l	sp,d2
+	moveq	#4,d3
+	jsr	_LVORead(a6)
+	move.l	(sp)+,d0
+	cmp.l	#'M.K.',d0
+	beq.b	1$
+	moveq	#0,d0
+	bra.b	2$
+1$
+	moveq	#1,d0
+2$
+	movem.l	(sp)+,d2-d7/a2-a6
+	rts
+
+	END

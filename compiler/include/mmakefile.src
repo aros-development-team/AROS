@@ -1,0 +1,180 @@
+
+include $(SRCDIR)/config/aros.cfg
+include $(TOP)/$(CURDIR)/geninc.cfg
+
+%get_archincludes modname=kernel \
+    includeflag=TARGET_KERNEL_INCLUDES maindir=rom/kernel
+
+%get_archincludes modname=exec \
+    includeflag=TARGET_EXEC_INCLUDES maindir=$(CURDIR)
+
+PRIV_EXEC_INCLUDES = \
+    $(TARGET_EXEC_INCLUDES) \
+	-I$(SRCDIR)/rom/exec \
+	$(TARGET_KERNEL_INCLUDES) \
+	-I$(SRCDIR)/rom/kernel
+
+INCSUBDIRS :=	aros				\
+		aros/preprocessor		\
+		aros/preprocessor/variadic	\
+		aros/preprocessor/array		\
+		aros/types			\
+		asm				\
+		bluetooth			\
+		c++				\
+		c++/exec			\
+		classes	                        \
+		clib				\
+		datatypes			\
+		defines			        \
+		devices				\
+		diskfont			\
+		dos				\
+		exec				\
+		gadgets				\
+		graphics			\
+		hardware			\
+		hardware/cdc			\
+		hardware/cpu			\
+		hardware/efi			\
+		hardware/pic			\
+		hardware/usb			\
+		hidd				\
+		images		                \
+		inline			        \
+		intuition			\
+		irda				\
+		libcore				\
+		libraries			\
+		midi				\
+		pragmas				\
+		prefs				\
+		proto				\
+		reaction			\
+		classact			\
+		classact/clib			\
+		resources			\
+		rexx				\
+		SDI				\
+		scsi				\
+		utility				\
+                vhi                             \
+		workbench
+
+# clib & proto are handled above.
+#INCEMPTYDIRS := defines				\
+#		inline
+
+INCLUDES_BASE    := $(foreach d,$(addprefix $(SRCDIR)/$(CURDIR)/,$(INCSUBDIRS)),$(wildcard $(d)/*.h) $(wildcard $(d)/*.hpp)) $(wildcard *.h)
+INCLUDES      := $(subst $(SRCDIR)/$(CURDIR)/,,$(INCLUDES_BASE))
+ARCHINCDIR    := $(SRCDIR)/arch/$(CPU)-$(ARCH)/include/
+ARCHFAMILYINCDIR    := $(SRCDIR)/arch/$(CPU)-$(FAMILY)/include/
+ARCH_INCLUDES := $(subst $(ARCHINCDIR),,$(foreach d,$(addprefix $(ARCHINCDIR),$(INCSUBDIRS)),$(wildcard $(d)/*.h) $(wildcard $(d)/*.hpp)))
+ARCHFAMILY_INCLUDES := $(subst $(ARCHFAMILYINCDIR),,$(foreach d,$(addprefix $(ARCHFAMILYINCDIR),$(INCSUBDIRS)),$(wildcard $(d)/*.h) $(wildcard $(d)/*.hpp)))
+# ARCH > FAMILY > GENERIC
+INCLUDES      := $(filter-out $(strip $(ARCH_INCLUDES) $(filter-out $(ARCH_INCLUDES),$(ARCHFAMILY_INCLUDES))),$(INCLUDES))
+DEST_INCLUDES := $(foreach f,$(INCLUDES),$(AROS_INCLUDES)/$(f))
+GEN_INCLUDES  := $(foreach f,$(INCLUDES),$(GENINCDIR)/$(f))
+INCL_DIRS     := $(foreach dir,$(INCSUBDIRS) $(INCEMPTYDIRS),$(AROS_INCLUDES)/$(dir)) \
+                 $(foreach dir,$(INCSUBDIRS) $(INCEMPTYDIRS),$(GENINCDIR)/$(dir))
+
+#MM- includes : includes-generate
+#MM- includes-generate : includes-generate-deps
+#MM- includes-generate-deps : includes-copy ports-includes includes-$(ARCH)-$(CPU) includes-$(FAMILY)-$(CPU)
+# ports-includes aggregates headers/pkgconfig files installed from fetched
+# external port archives. It is deliberately kept out of includes-copy, so
+# targets that only need the core includes (e.g. the crosstools toolchain)
+# do not force every port archive to be downloaded and unpacked.
+#MM- includes-copy : compiler-includes includes-copy-$(ARCH)-$(CPU) includes-copy-$(FAMILY)-$(CPU) \
+#MM                  includes-copy-$(CPU)
+
+#MM- includes-$(ARCH)-$(CPU) : \
+#MM     includes-copy-$(ARCH)-$(CPU) \
+#MM     includes-generate-$(ARCH)-$(CPU)
+#MM- includes-generate-$(ARCH)-$(CPU) : includes-copy-$(ARCH)-$(CPU)
+#MM- includes-copy-$(ARCH)-$(CPU) :
+#MM- includes-copy-$(CPU) :
+
+#MM- includes-$(FAMILY)-$(CPU) : \
+#MM     includes-copy-$(FAMILY)-$(CPU) \
+#MM     includes-generate-$(FAMILY)-$(CPU)
+#MM- includes-generate-$(FAMILY)-$(CPU) : includes-copy-$(FAMILY)-$(CPU)
+#MM- includes-copy-$(FAMILY)-$(CPU) :
+
+#MM
+compiler-includes : setup $(DEST_INCLUDES) $(GEN_INCLUDES) includes-execbase_h
+
+# execbase is copied seperately, since on SMP builds we need to
+# remove some fields
+
+$(GENINCDIR)/exec/execbase.h : $(SRCDIR)/$(CURDIR)/exec/execbase.inc
+	@$(ECHO) "Copying    C   includes to $(GENINCDIR)..."
+	@$(CP) $< $@
+ifneq ($(strip $(EXECSMP)),"")
+	$(SED) -i -e 's/.*ThisTask;.*/    IPTR         SMPPrivate1;/' -e 's/.*Quantum;.*/    WORD         SMPPrivate2;/' -e 's/.*Elapsed;.*/    WORD         SMPPrivate3;/' -e 's/.*IDNestCnt;.*/    UBYTE        SMPPrivate4;/' -e 's/.*TDNestCnt;.*/    UBYTE        SMPPrivate5;/' $@
+endif
+
+$(AROS_INCLUDES)/exec/execbase.h : $(GENINCDIR)/exec/execbase.h
+	@$(ECHO) "Copying    C   includes to $(AROS_INCLUDES)..."
+	@$(CP) $< $@
+
+#MM
+includes-execbase_h : $(AROS_INCLUDES)/exec/execbase.h
+
+.PHONY : includes-execbase_h
+
+# normal include copy routines
+
+$(AROS_INCLUDES)/%.h : $(SRCDIR)/$(CURDIR)/%.h
+	@$(ECHO) "Copying    C   includes to $(AROS_INCLUDES)..."
+	@$(CP) $< $@
+
+$(GENINCDIR)/%.h : $(SRCDIR)/$(CURDIR)/%.h
+	@$(ECHO) "Copying    C   includes to $(GENINCDIR)..."
+	@$(CP) $< $@
+
+$(AROS_INCLUDES)/%.hpp : $(SRCDIR)/$(CURDIR)/%.hpp
+	@$(ECHO) "Copying    C++ includes to $(AROS_INCLUDES)..."
+	@$(CP) $< $@
+
+$(GENINCDIR)/%.hpp : $(SRCDIR)/$(CURDIR)/%.hpp
+	@$(ECHO) "Copying    C++ includes to $(GENINCDIR)..."
+	@$(CP) $< $@
+
+setup : $(INCL_DIRS)
+
+$(INCL_DIRS) :
+	@$(ECHO) "Creating   $@..."
+	@$(MKDIR) $@
+
+#MM
+includes-asm_h-$(CPU) : $(GENINCDIR)/aros/$(CPU)/asm.h
+
+.PHONY : includes-asm_h-$(CPU)
+
+#MM includes-asm_h : includes-copy includes-asm_h-$(CPU)
+#MM
+includes-asm_h:
+	@$(NOP)
+
+ifeq ($(AROS_TOOLCHAIN),gnu)
+GREPTOKEN := ".asciz"
+else
+GREPTOKEN := ".ascii"
+endif
+
+$(OBJDIR)/asm.s : $(SRCDIR)/$(CURDIR)/asm.c | $(OBJDIR)
+	@$(ECHO) "Compiling  $<..."
+	@$(TARGET_CC) $(TARGET_SYSROOT) $(CFLAGS) $(PRIV_EXEC_INCLUDES) -S $< -o $@
+
+$(GENINCDIR)/aros/$(CPU)/asm.h : $(OBJDIR)/asm.s | $(GENINCDIR)/aros/$(AROS_TARGET_CPU)
+	@$(ECHO) Generating $@...
+	@grep $(GREPTOKEN) $< | cut -d'"' -f2 | sed 's/\$$//g' >$@
+
+$(OBJDIR) :
+	@$(MKDIR) $@
+
+$(GENINCDIR)/aros/$(CPU) :
+	@$(MKDIR) $@
+
+%common

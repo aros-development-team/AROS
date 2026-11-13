@@ -1,0 +1,275 @@
+@database "GetAudioID.guide"
+
+@author "Tomi Blinnikka"
+@(c) "Copyright Tomi Blinnikka 1996"
+@$VER: GetAudioID.guide 1.01 (01.05.96) (C) Copyright Tomi Blinnikka 1996
+@wordwrap
+
+@node Main "GetAudioID table of contents"
+@next Doc_Version
+
+01.05.96                    @{b}GetAudioID V1.01@{ub}
+
+@{u}Table of contents@{uu}
+
+     @{"Document versions                   " link Doc_Version}
+     @{"Copyright                           " link Copyright}
+     @{"What does GetAudioID do?            " link Basics}
+     @{"Compatibility                       " link Compatibility}
+     @{"Starting from CLI/Shell             " link CLIStart}
+     @{"Starting from Workbench             " link WBStart}
+     @{"How to use the formatting string    " link Examples}
+     @{"Error messages                      " link Errors}
+     @{"Bugs                                " link Bugs}
+     @{"Versions                            " link Versions}
+     @{"Future versions                     " link Future}
+     @{"Shareware fee                       " link Shareware}
+     @{"Contacting the author               " link Author}
+@endnode
+
+@node Doc_Version "Document version"
+@prev Main
+@next Copyright
+
+@{u}DOCUMENT VERSIONS@{uu}
+
+Updated: 30.04.96 - for version 1.00
+Updated: 01.05.96 - for version 1.01
+@endnode
+
+@node Copyright "Copyright information"
+@prev Doc_Version
+@next Basics
+
+@{u}COPYRIGHT INFORMATION@{uu}
+
+ Copyright (C) @{"Tomi Blinnikka" link "Author"} 1996, @{u}All Rights Reserved.@{uu}
+
+This program is @{"SHAREWARE" link "Shareware"}. This means that you can copy it and give it
+to all your friends, upload it to a BBS or include it in a PD-library
+(FISH, Aminet CDROMS etc.). BUT (!!!) if you use this program 
+frequently you must pay 5 to 10 USD. The other restrictions are: this archive
+can only be spread in its original form without additions, deletions, or 
+modifications of any kind and it IS NOT TO BE SOLD FOR PROFIT. THIS INCLUDES
+GERMAN PD DEALERS. If you wish to use this program for commercial purposes,
+you need written permission from the author.
+
+@{b}GETAUDIOID@{ub} IS PROVIDED "AS-IS" AND SUBJECT TO CHANGE;      
+NO WARRANTIES ARE MADE.  ALL USE IS AT YOUR OWN RISK.  NO LIABILITY
+OR RESPONSIBILITY IS ASSUMED.
+@endnode
+
+@node Basics "Basics about GetAudioID"
+@prev Copyright
+@next Compatibility
+
+@{u}WHAT DOES IT DO?@{uu}
+
+This program opens a requester asking for the desired audio mode and mixing
+frequency. It then returns the selected ID and frequency as a text string.
+Optional @{"formatting" link Examples} is supported.
+@endnode
+
+@node Compatibility "What is GetAudioID compatible with?"
+@prev Basics
+@next CLIStart
+
+@{u}COMPATIBILITY@{uu}
+
+@{b}GetAudioID@{ub} requires Kickstart 2.04 or newer and ahi.device version
+1 or newer.
+
+@endnode
+
+@node CLIStart "Starting GetAudioID from a CLI/Shell"
+@prev Compatibility
+@next WBStart
+
+@{u}STARTING FROM CLI/SHELL@{uu}
+
+You can start the program from a CLI/SHELL/etc. and @{"Workbench" link "WBStart"}.
+
+To run the program, enter the following into your CLI/SHELL/etc.
+
+	1> GetAudioID DEC=DECIMAL/S,TITLE/K,POSITIVE/K,NEGATIVE/K,
+	   LFORMAT/K,PUBSCREEN/K:
+
+	Where:  DECIMAL prints the AudioID in decimal notation instead of
+		the default hexadecimal one. Use DEC as an abbreviation.
+
+		TITLE specifies the window title for the requester. Useful
+		for scripts. Keyword required.
+
+		POSITIVE specifies the gadget text for the positive gadget
+		(the 'OK' button). Useful for scripts. Keyword required.
+
+		NEGATIVE specifies the gadget text for the negative gadget
+		(the 'Cancel' button). Useful for scripts. Keyword required.
+
+		LFORMAT allows you to specify an alternate @{"formatting" link Examples}
+		string for the result. Useful for scripts. Keyword
+		required. Double quotes may be required.
+
+		PUBSCREEN specifies the public screen name where the
+		requester should open. Keyword required.
+
+@endnode
+
+@node WBStart "Starting from the Workbench"
+@prev CLIStart
+@next Examples
+
+@{u}STARTING FROM WORKBENCH@{uu}
+
+From Workbench, start the program like any other by double-clicking on its
+icon. If, however, you would like to specify a @{"formatting string" link Examples} or
+public screen, use the tool types. This is done by clicking once on the icon
+and selecting 'Information...' from the 'Icons' menu in the Workbench. Then
+change the tool types accordingly (please refer to your User Manual, if
+necessary). Please take care with upper- and lowercase letters! The inputs ARE
+case-sensitive. If a public screen name isn't given, @{b}GetAudioID@{ub} will
+use the default public screen.
+
+Below is a list of available tool types and there usage:
+
+TOOL TYPE	VALUE
+-----------------------------------------------------------------------
+DECIMAL		<None>
+TITLE		<Window title for the requester>
+POSITIVE	<Text for positive gadget (the 'OK' button)>
+NEGATIVE	<Text for negative gadget (the 'Cancel' button)>
+LFORMAT		<@{"Formatting string" link Examples} for the result>
+PUBSCREEN	<Name of the public screen to open on>
+
+Examples:
+
+	DECIMAL
+	TITLE=Choose sound mode
+	POSITIVE=Okay
+	NEGATIVE=Nope
+	LFORMAT=The selected mode ID was %ld, mixing frequency of %ld.
+	PUBSCREEN=My_Public_Screen.1
+
+or simply
+
+	PUBSCREEN=Workbench
+@endnode
+
+@node Examples "Formatting string examples"
+@prev WBStart
+@next Errors
+
+@{u}HOW TO USE THE FORMATTING STRING@{uu}
+
+To change the output of @{b}GetAudioID@{ub}, use the LFORMAT option. It
+works like the LFORMAT option of the system command List. You may enter any
+text you wish where the first occurance of "%ld" or "%lx" will be replaced
+with the ModeID selected and the second with the mixing frequency. Use "%%"
+to print a procent sign. @{b}NOTE:@{ub} You must use the "l" after the
+procent sign and no more than two occurances of "%ld" or "%lx" are allowed.
+
+@{u}EXAMPLES:@{uu}
+
+LFORMAT=The AudioID for the selected mode is 0x%08lx (hex) and the mixing
+frequency is %ld Hz.
+
+LFORMAT="ID=$%lx MIX=$%lx"
+@endnode
+
+@node Errors "Error messages displayed by GetAudioID"
+@prev Examples
+@next Bugs
+
+@{u}ERROR MESSAGES@{uu}
+
+The @{b}GetAudioID@{ub} program will display necessary error messages. If a library
+can't be opened, the user will be informed. I HATE PROGRAMS THAT DON'T TELL
+WHAT-THE-HELL IS GOING ON! That clear? If @{b}GetAudioID@{ub} doesn't give any 
+output something has gone terribly wrong or you're running with an old
+Kickstart. Even in this case the return code will be set to -20 (FAIL).
+@endnode
+
+@node Bugs "Known bugs"
+@prev Errors
+@next Versions
+
+@{u}BUGS@{uu}
+
+No known bugs at the moment. @{b}GetAudioID@{ub} has been tested with
+Enforcer & Mungwall.
+@endnode
+
+@node Versions "List of versions and changes"
+@prev Bugs
+@next Future
+
+@{u}VERSIONS@{uu}
+
+Version Size	Date	 Description
+------------------------------------------------------------------------
+1.01	2276	01.05.96 Doesn't have a default AudioID anymore and thus
+			 complies with the AHI standard.
+			 Will return with code -5 (WARN) if no mode was
+			 selected but OK was pressed.
+
+1.00	2260	30.04.96 Added WB support.
+			 Added options TITLE, POSITIVE, NEGATIVE,
+			 LFORMAT & PUBSCREEN.
+			 Added locale support and Finnish catalog.
+			 Wrote documents.
+
+0.00a-	 N/A	29.04.96 Wrote the program basics and main routines.
+0.99a
+@endnode
+
+@node Future "Future versions and ideas for them"
+@prev Versions
+@next Shareware
+
+@{u}FUTURE VERSIONS@{uu}
+
+Future version will have the bug fixes for the bugs I haven't found.
+I'm out of ideas.
+@endnode
+
+@node Shareware "GetAudioID shareware fee"
+@prev Future
+@next Author
+
+@{u}SHAREWARE FEE@{uu}
+
+If you use this program on a regular basis, be kind enough to thank me with
+a few bucks. The suggested fee is 5 to 10 USD. This doesn't apply if you've
+registered @{b}AHIPlay@{ub} by @{"Tomi Blinnikka" link Author}.
+@endnode
+
+@node Author "Contacting the author"
+@prev Shareware
+
+@{u}CONTACTING THE AUTHOR@{uu}
+
+Please send donations, @{"bug" link "Bugs"} reports, and list of features you would like to
+have included in @{"future versions" link "Future"} to
+
+Tomi Blinnikka
+Syystie 10
+00780 Helsinki
+FINLAND
+
+Contact me at the address above or you can also contact me on the 
+following BBS and net address:
+
+MITS +358-0-348 205
+
+docbliny@walrus.megabaud.fi
+
+
+"...trademark of Xerox Corporations. Reading legal mush can turn your
+brain to guacamole! Epson is registered trademark of Epson America
+..." -Amiga RKRM Includes & AutoDocs, fourth page.
+
+
+						Tomi Blinnikka
+
+						docbliny@walrus.megabaud.fi
+@endnode

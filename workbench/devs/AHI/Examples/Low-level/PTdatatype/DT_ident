@@ -1,0 +1,14 @@
+# DataType file for Protracker modules
+FileName=ProtrackerDT/Devs/DataTypes/Protracker
+Version=1.0
+DTName=Protracker,protracker
+ID=soun,ptmd
+Code=DT_code
+Recog=#?
+Flags=Binary,n,0
+#
+#FileName=SYS:Devs/DataTypes/Protracker
+#DTName=Protracker,protracker
+#ID=soun,aiff
+#Recog=#?.aiff
+#Flags=Binary,n,0

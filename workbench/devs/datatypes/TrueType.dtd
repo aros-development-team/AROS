@@ -1,0 +1,8 @@
+Name=TrueType
+Version=$VER: TrueType 41.2 (6.11.2025)
+BaseName=TrueType
+Pattern=#?.ttf
+Mask=0x00 0x01 0x00 0x00
+GroupID=syst
+Flags=DTF_BINARY
+Priority=1

@@ -1,0 +1,8 @@
+#!/bin/zsh
+# Creates AROS/pc-x86_64 crosstools packages.
+
+CONFIGUREEXTRA="--with-binutils-version=2.32 --with-gcc-version=8.3.0"
+
+BUILDTARGET=pc-x86_64
+
+source $SP/pkg/crosstools

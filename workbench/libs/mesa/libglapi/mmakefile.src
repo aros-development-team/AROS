@@ -1,0 +1,149 @@
+#
+#   Build Mesa3DGL private libglapi.a
+#
+
+include $(SRCDIR)/config/aros.cfg
+
+include $(SRCDIR)/$(CURDIR)/../mesa.cfg
+-include $(GENDIR)/$(CURDIR)/../mesa3dgl/mesa3dgllibrary.entrypoints
+
+CUR_MESADIR_OLD := src/mapi
+CUR_MESADIR_NEW := src/mesa/glapi
+
+ifneq ($(wildcard $(top_srcdir)/$(CUR_MESADIR_OLD)/Makefile.sources),)
+CUR_MESADIR := $(CUR_MESADIR_OLD)
+MESA_GLAPI_LAYOUT := old
+include $(top_srcdir)/$(CUR_MESADIR)/Makefile.sources
+else
+CUR_MESADIR := $(CUR_MESADIR_NEW)
+MESA_GLAPI_LAYOUT := new
+endif
+
+#MM- mesa3dgl-linklibs : mesa3d-linklib-glapi
+
+USER_INCLUDES += \
+            -I$(top_srcdir)/include \
+            -iquote $(top_builddir)/$(CUR_MESADIR) \
+            -iquote $(top_srcdir)/$(CUR_MESADIR) \
+            -iquote $(top_mesa3dgldir)/src \
+            -iquote $(SRCDIR)/$(CURDIR)/..
+
+ifeq ($(MESA_GLAPI_LAYOUT),old)
+USER_INCLUDES += \
+            -iquote $(top_builddir)/$(CUR_MESADIR)/glapi
+else
+USER_INCLUDES += \
+            -iquote $(top_srcdir)/src/mesa \
+            -iquote $(top_srcdir)/src/mesa/glapi \
+            -iquote $(top_srcdir)/src/mesa/glapi/glapi \
+            -iquote $(top_srcdir)/src/util \
+            -iquote $(top_builddir)/$(CUR_MESADIR)/shared-glapi
+endif
+
+ifneq ($(mesa3dgl_ENTRYPOINTS),)
+MESA_COMPILEOPTIONS += $(CFLAGS_FUNCTION_SECTIONS)
+endif
+
+USER_CFLAGS += $(MESA_NOWARNFLAGS)
+USER_CXXFLAGS += $(MESA_NOWARNFLAGS)
+
+ifeq ($(MESA_GLAPI_LAYOUT),old)
+MAPI_GLAPI_C_FILES  := $(filter %.c, $(MAPI_UTIL_FILES))
+
+MESA3DGL_GLAPI_SOURCES := \
+	glapi/glapi_dispatch \
+	glapi/glapi_entrypoint \
+	glapi/glapi_getproc \
+	glapi/glapi_nop \
+	glapi/glapi \
+	$(MAPI_GLAPI_C_FILES:.c=)
+
+MESA3DGL_GLAPI_SOURCES_C := $(addprefix $(top_srcdir)/$(CUR_MESADIR)/, $(MESA3DGL_GLAPI_SOURCES))
+
+$(top_builddir)/$(CUR_MESADIR)/glapi/glapitemp.h: $(top_srcdir)/$(CUR_MESADIR)/glapi/gen/gl_apitemp.py
+	%mkdir_q dir="$(dir $@)"
+	$(Q)$(ECHO) "Generating $(if $(filter /%,$@),$(if $(filter $(SRCDIR)/%,$(abspath $@)),$(patsubst $(SRCDIR)/%,%,$(abspath $@)),$(patsubst $(TOP)/%,%,$(abspath $@))),$(patsubst $(SRCDIR)/%,%,$(abspath $(SRCDIR)/$(CURDIR)/$@)))"
+	$(Q)$(PYTHON) $(PYTHON_FLAGS) $< -f $(top_srcdir)/$(CUR_MESADIR)/glapi/gen/gl_and_es_API.xml > $@
+
+GLAPI_GEN_FILES=$(top_builddir)/$(CUR_MESADIR)/glapi/glapitemp.h
+
+$(top_builddir)/$(CUR_MESADIR)/glapi/glapitable.h: $(top_srcdir)/$(CUR_MESADIR)/glapi/gen/gl_table.py
+	%mkdir_q dir="$(dir $@)"
+	$(Q)$(ECHO) "Generating $(if $(filter /%,$@),$(if $(filter $(SRCDIR)/%,$(abspath $@)),$(patsubst $(SRCDIR)/%,%,$(abspath $@)),$(patsubst $(TOP)/%,%,$(abspath $@))),$(patsubst $(SRCDIR)/%,%,$(abspath $(SRCDIR)/$(CURDIR)/$@)))"
+	$(Q)$(PYTHON) $(PYTHON_FLAGS) $< -f $(top_srcdir)/$(CUR_MESADIR)/glapi/gen/gl_and_es_API.xml > $@
+
+GLAPI_GEN_FILES+=$(top_builddir)/$(CUR_MESADIR)/glapi/glapitable.h
+
+$(top_builddir)/$(CUR_MESADIR)/glapi/glprocs.h: $(top_srcdir)/$(CUR_MESADIR)/glapi/gen/gl_procs.py
+	%mkdir_q dir="$(dir $@)"
+	$(Q)$(ECHO) "Generating $(if $(filter /%,$@),$(if $(filter $(SRCDIR)/%,$(abspath $@)),$(patsubst $(SRCDIR)/%,%,$(abspath $@)),$(patsubst $(TOP)/%,%,$(abspath $@))),$(patsubst $(SRCDIR)/%,%,$(abspath $(SRCDIR)/$(CURDIR)/$@)))"
+	$(Q)$(PYTHON) $(PYTHON_FLAGS) $< -c -f $(top_srcdir)/$(CUR_MESADIR)/glapi/gen/gl_and_es_API.xml > $@
+
+GLAPI_GEN_FILES+=$(top_builddir)/$(CUR_MESADIR)/glapi/glprocs.h
+
+$(top_builddir)/$(CUR_MESADIR)/glapi/glapi_x86.s: $(top_srcdir)/$(CUR_MESADIR)/glapi/gen/gl_x86_asm.py
+	%mkdir_q dir="$(dir $@)"
+	$(Q)$(ECHO) "Generating $(if $(filter /%,$@),$(if $(filter $(SRCDIR)/%,$(abspath $@)),$(patsubst $(SRCDIR)/%,%,$(abspath $@)),$(patsubst $(TOP)/%,%,$(abspath $@))),$(patsubst $(SRCDIR)/%,%,$(abspath $(SRCDIR)/$(CURDIR)/$@)))"
+	$(Q)$(PYTHON) $(PYTHON_FLAGS) $< -f $(top_srcdir)/$(CUR_MESADIR)/glapi/gen/gl_and_es_API.xml > $@
+
+ifeq ($(MESA_USE_X86),TRUE)
+GLAPI_GEN_FILES += $(top_builddir)/$(CUR_MESADIR)/glapi/glapi_x86.s
+MESA3DGL_GLAPI_SOURCES_ASM += $(top_builddir)/$(CUR_MESADIR)/glapi/glapi_x86
+USER_INCLUDES += \
+            -iquote $(top_srcdir)/src/mesa
+endif
+
+$(top_builddir)/$(CUR_MESADIR)/glapi/glapi_x86-64.s: $(top_srcdir)/$(CUR_MESADIR)/glapi/gen/gl_x86-64_asm.py
+	%mkdir_q dir="$(dir $@)"
+	$(Q)$(ECHO) "Generating $(if $(filter /%,$@),$(if $(filter $(SRCDIR)/%,$(abspath $@)),$(patsubst $(SRCDIR)/%,%,$(abspath $@)),$(patsubst $(TOP)/%,%,$(abspath $@))),$(patsubst $(SRCDIR)/%,%,$(abspath $(SRCDIR)/$(CURDIR)/$@)))"
+	$(Q)$(PYTHON) $(PYTHON_FLAGS) $< -f $(top_srcdir)/$(CUR_MESADIR)/glapi/gen/gl_and_es_API.xml > $@
+
+ifeq ($(MESA_USE_X86_64),TRUE)
+GLAPI_GEN_FILES += $(top_builddir)/$(CUR_MESADIR)/glapi/glapi_x86-64.s
+MESA3DGL_GLAPI_SOURCES_ASM += $(top_builddir)/$(CUR_MESADIR)/glapi/glapi_x86-64
+USER_INCLUDES += \
+            -iquote $(top_srcdir)/src/mesa
+endif
+
+#MM
+mesa3d-linklib-glapi-generate : $(GLAPI_GEN_FILES)
+
+#MM mesa3d-linklib-glapi : mesa3d-fetch mesa3d-linklib-glapi-generate
+else
+MESA3DGL_GLAPI_SOURCES := \
+	shared-glapi/core
+
+MESA3DGL_GLAPI_SOURCES_C := $(addprefix $(top_srcdir)/$(CUR_MESADIR)/, $(MESA3DGL_GLAPI_SOURCES)) \
+	$(top_builddir)/$(CUR_MESADIR)/shared-glapi/public_glapi_wrappers
+USER_CPPFLAGS += -DMAPI_MODE_SHARED_GLAPI
+
+$(top_builddir)/$(CUR_MESADIR)/shared-glapi/shared_glapi_mapi_tmp.h: \
+        $(top_srcdir)/$(CUR_MESADIR)/mapi_abi.py \
+        $(top_srcdir)/$(CUR_MESADIR)/glapi/gen/gl_and_es_API.xml \
+        $(top_srcdir)/src/glx/libgl-symbols.txt
+	%mkdir_q dir="$(dir $@)"
+	$(Q)$(ECHO) "Generating $(if $(filter /%,$@),$(if $(filter $(SRCDIR)/%,$(abspath $@)),$(patsubst $(SRCDIR)/%,%,$(abspath $@)),$(patsubst $(TOP)/%,%,$(abspath $@))),$(patsubst $(SRCDIR)/%,%,$(abspath $(SRCDIR)/$(CURDIR)/$@)))"
+	$(Q)$(PYTHON) $(PYTHON_FLAGS) $< --printer shared-glapi --gl_symbols $(word 3,$^) $(word 2,$^) > $@
+
+GLAPI_GEN_FILES := $(top_builddir)/$(CUR_MESADIR)/shared-glapi/shared_glapi_mapi_tmp.h
+
+#MM
+mesa3d-linklib-glapi-generate : $(GLAPI_GEN_FILES) $(top_builddir)/$(CUR_MESADIR)/shared-glapi/public_glapi_wrappers.c
+
+$(top_builddir)/$(CUR_MESADIR)/shared-glapi/public_glapi_wrappers.c: \
+		$(top_builddir)/$(CUR_MESADIR)/shared-glapi/shared_glapi_mapi_tmp.h \
+		$(SRCDIR)/$(CURDIR)/public_glapi_required_symbols.txt \
+		$(SRCDIR)/$(CURDIR)/gen_public_glapi_wrappers.sh
+	%mkdir_q dir="$(dir $@)"
+	$(Q)$(ECHO) "Generating $(if $(filter /%,$@),$(if $(filter $(SRCDIR)/%,$(abspath $@)),$(patsubst $(SRCDIR)/%,%,$(abspath $@)),$(patsubst $(TOP)/%,%,$(abspath $@))),$(patsubst $(SRCDIR)/%,%,$(abspath $(SRCDIR)/$(CURDIR)/$@)))"
+	$(Q)AWK="$(AWK)" $(SHELL) $(SRCDIR)/$(CURDIR)/gen_public_glapi_wrappers.sh \
+		$(top_builddir)/$(CUR_MESADIR)/shared-glapi/shared_glapi_mapi_tmp.h \
+		$(SRCDIR)/$(CURDIR)/public_glapi_required_symbols.txt \
+		$@
+
+#MM mesa3d-linklib-glapi : mesa3d-fetch mesa3d-linklib-glapi-generate
+endif
+
+%build_linklib mmake=mesa3d-linklib-glapi libname=glapi libdir=$(top_libdir) objdir=$(top_builddir)/$(CUR_MESADIR) files="$(MESA3DGL_GLAPI_SOURCES_C)" asmfiles="$(MESA3DGL_GLAPI_SOURCES_ASM)"
+
+%common

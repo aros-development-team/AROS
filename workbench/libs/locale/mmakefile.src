@@ -1,0 +1,29 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+USER_LDFLAGS := -static
+USER_INCLUDES := -I$(SRCDIR)/rom/dos/catalogs
+
+FILES := defaultlocale english initlocale catalog_funcs patches 
+FUNCS := \
+    closecatalog closelocale convtolower convtoupper \
+    formatdate formatstring getcatalogstr getlocalestr \
+    isxxxx opencataloga openlocale parsedate prefsupdate \
+    strconvert strncmp locrawdofmt locstrnicmp locstricmp \
+    loctolower loctoupper locdatetostr locstrtodate \
+    locdosgetlocalizedstring
+
+#MM workbench-libs-locale-includes : \
+#MM     kernel-exec-includes \
+#MM     kernel-dos-includes \
+#MM     workbench-libs-iffparse-includes \
+#MM     workbench-libs-rexxsyslib-includes \
+#MM     includes-copy
+#MM- workbench-libs-locale : linklibs workbench-libs-dos-catalogs
+#MM- core-linklibs: linklibs-locale
+
+%build_module mmake=workbench-libs-locale \
+    modname=locale modtype=library \
+    files="locale_init $(FUNCS) $(FILES)"
+
+%common

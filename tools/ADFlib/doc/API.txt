@@ -1,0 +1,270 @@
+The ADFlib API quick overview
+*****************************
+
+outdated ! But may be useful anyway...
+
+
+Always read ADFlib structures, never change a value directly, the
+behaviour of the library could then become unforeseeable.
+
+
+
+Minimal C program with ADFlib
+-----------------------------
+
+#include<stdio.h>  /* for puts() */
+
+#include"adflib.h"
+
+ENV_DECLARATION;
+
+int main(int argc, char *argv[])
+{
+    adfEnvInitDefault();
+
+    puts("hello world");
+
+    adfEnvCleanUp();
+}
+
+
+
+
+Device
+------
+
+struct Device {
+    int devType;               /* see adf_str.h */
+    BOOL readOnly;
+    long size;                 /* in bytes */
+
+    int nVol;                  /* partitions */
+    struct Volume** volList;  
+
+    long cylinders;            /* geometry */
+    long heads;
+    long sectors;
+
+    BOOL isNativeDev;
+    void *nativeDev;
+};
+
+struct Device* adfMountDev(char* name)
+ mounts and allocates a device (real or dump)
+
+void adfDeviceInfo(struct Device* dev)
+ prints device info to stdout : must be rewritten for another GUI
+
+void adfUnMountDev(struct Device* dev)
+
+void adfCreateHd(struct Device* dev, int nbPartitions, struct Partition** part)
+ create a filesystem for harddisk with one or several partition
+ (see hd_test2.c)
+
+void adfCreateFlop(struct Device* dev, char* name, int flags)
+ flags are for ffs, dircache or international (see fl_test.c)
+
+
+Volume
+------
+
+struct Volume {
+    struct Device* dev;
+
+    SECTNUM firstBlock;     /* first block of data area (from beginning of device) */
+    SECTNUM lastBlock;      /* last block of data area  (from beginning of device) */
+    SECTNUM rootBlock;      /* root block (from firstBlock) */
+
+    char dosType;           /* FFS/OFS, DIRCACHE, INTERNATIONAL */
+    BOOL bootCode;
+    int datablockSize;      /* 488 or 512 */
+
+    char *volName;
+
+    long bitmapSize;             /* in blocks */
+    SECTNUM *bitmapBlocks;       /* bitmap blocks pointers */
+    struct bBitmapBlock **bitmapTable;
+    BOOL *bitmapBlocksChg;
+
+    SECTNUM curDirPtr;
+};
+
+
+struct Volume* adfMount(struct Device* dev, int partition, BOOL readOnly)
+ The first partition is #0
+ To be called after adfCreateFlop(), adfCreateHd() or adfMountDev().
+
+void adfVolumeInfo(vol)
+ Display volume info to stdout, must be rewritten for another GUI
+
+void adfUnMount(struct Volume *vol)
+
+
+Dump device (.ADF)
+------------------
+
+struct adfCreateDumpDevice(char*, int cyl, int heads, int sectors)
+ To be used in place of adfMountDev(). Create a filename of the right size,
+ nothing else
+
+
+File
+----
+
+struct File* adfOpenFile(struct Volume *volume, char* filename, char* mode)
+ mode = "r" or "w"
+
+void adfCloseFile(struct File* file)
+
+long adfReadFile(struct File* file, long length, unsigned char* buffer)
+ returns the number of bytes read
+
+long adfWriteFile(struct File* file, long length, unsigned char* buffer)
+ returns the number of bytes written
+
+BOOL adfEndOfFile(struct File* file)
+
+
+Directory
+---------
+
+struct List* adfGetDirEnt(struct Volume* vol, SECTNUM nSect)
+ Returns a linked list with the directory entries. Each cell content of the list
+ must be freed with adfFreeEntry()
+
+void adfFreeEntry(struct Entry *entry)
+
+SECTNUM adfChangeDir(struct Volume* vol, char* dirname)
+ change current directory
+
+void adfParentDir(struct Volume* vol)
+ change current directory
+
+void printEntry(struct Entry* entry)
+ print the cell content to stdout
+
+void CreateDir(struct Volume* vol, SECTNUM parentSect, char* name)
+
+
+
+Callbacks mechanism
+-------------------
+
+* The library environment : 'struct Env adfEnv'
+
+This variable is the only global variable of the library. It contains
+callbacks for error and notification messages, and global variables.
+By default, adfEnvInitDefault() initialize adfEnv functions that display
+messages to stderr. You must use adfSetEnv() to use your own defined
+functions.
+The environment must be clean up with adfEnvCleanUp().
+
+Four functions are available :
+- (*adfEnv.eFct)(char*), called by ADFlib for a fatal error. It STOPS 
+  the library : you must redefine yourself a more friendly to handle 
+  this kind of error.
+- (adfEnv.wFct)(char*), called for warnings. It is called when something wrong
+  happens, but processing can continue.
+- (adfEnv.vFct)(char*), called to display verbose messages.
+- (*adfEnv.notifyEnv)(SECTNUM p, int t), called to tell that 
+  the volume structure has changed. The value p give where the change appeared, 
+  t the type of the value (ST_DIR,ST_FILE,...).
+
+The environment also contains access to nativeFunctions.
+
+
+* Native device and functions
+
+By default, the library is compiled to manage .ADF files (dump files) and
+real devices like harddisk and removable disks (called native devives) 
+on ONE defined plateform (WinNT/Intel or Linux/68k...)
+
+To add a new plateform to be supported by ADFlib, you must write your
+own files adf_nativ.h and adf_nativ.c.
+
+. data types
+
+adf_nativ.h defines two structures :
+- 'struct nativeDev'. It contains all the variable necessary for 
+  the native device management. You can add here whatever you what to
+  be able to manage your real device on your plateform !
+- 'struct nativeFunctions'. It defines the minimal API between ADFlib and
+  the specific native part. The functions names and prototypes must not be
+  changed, since they are called by the library. It is possible to add
+  other functions.
+
+The type device 'struct Device' contains one variable 'void* nativeDev'.
+It is allocated within adf_nativ.c by adfInitDevice().
+Another variable 'BOOL isNativeDev' tells if the ADFlib is working with
+a dump file (.ADF) or a real device.
+
+'adfEnv' contains one variable 'void *nativeFct'. adfEnvInitDefault()
+allocates it by calling the function adfInitNativeFct().
+
+
+. callback functions :
+
+The structure 'struct nativeFunctions' must have at least :
+  BOOL (*adfInitDevice)(struct Device*, char*)
+  BOOL (*adfNativeReadSector)(struct Device*, long, int, unsigned char*)
+  BOOL (*adfNativeWriteSector)(struct Device*, long, int, unsigned char*)
+  BOOL (*adfIsDevNative)(char*)
+  void (*adfReleaseDevice)()
+
+
+For example, adfMountDev() calls adfInitDevice() this way :
+  struct nativeFunctions *nFct;
+  
+  ... /* struct Device* dev allocation */
+
+  nFct = adfEnv.nativeFct; /* was of type void* */
+
+  /* only once ! */
+  dev->isNativeDev = (*nFct->adfIsDevNative)(filename);
+
+  /* choose between dump or a real device */
+  if (dev->isNativeDev)
+      (*nFct->adfInitDevice)(dev, filename);
+  else
+      adfInitDumpDevice(dev, filename);
+
+
+You must define one function to initialize a device, for example :
+
+BOOL myInitDevice(struct Device *dev, char* name)
+{
+    /* allocate and initailize dev->nativeDev */
+
+    /* return TRUE if everything happens right */
+}
+
+or
+
+BOOL myIsDevNative(char* name)
+{
+    /* for a Unix like platform */
+    return( strncmp("/dev/",name,5)==0 );
+}
+
+
+
+And so on to read, write a 512 bytes block, and release the native device.
+
+
+The function 'adfInitNativeFct()', also defined in adf_nativ.c (and .h),
+makes the names and the ADFlib native API :
+
+void adfInitNativeFct()
+{
+    struct nativeFunctions *nFct;
+
+    nFct = (struct nativeFunctions*)adfEnv.nativeFct;
+
+    nFct->adfInitDevice = myInitDevice ;
+    nFct->adfNativeReadSector = myReadSector ;
+...
+}
+
+But the prototypes must stay the same !
+
+ 

@@ -1,0 +1,21 @@
+$Id: BUGS,v 1.5 2001/05/08 23:44:05 lcs Exp $
+
+Known bugs and missing features:
+
+* Memory resources not handled at all.
+
+* If an independent descriptor follows after dependent functions,
+  the descriptor numbers will be wrong.
+
+* Cards with only 10 bit IO decoding will not reserve IO areas where
+  a15-a10 != 0.  However, since Windows does not allow this either, this
+  should really not be an issue.
+
+* Creative's SB AWE32 PnP is broken.  ISA-PnP knows this and corrects the
+  PnP data.  However, the current fix is hardcoded to use IO addreses
+  0x0620, 0x0A20 and 0x0E20, even though they are in fact relocatable.
+
+* For each configured logical device, ISA-PnP should be able to run a 
+  shell script with information about the resources allocated. For example,
+  a shell script could create the ENV:SANA2/gg_ne2000.config_0 file
+  automatically.

@@ -1,0 +1,6 @@
+#ifndef TESTS_VENDOR_INIT_TEST_VENDOR_INIT_H
+#define TESTS_VENDOR_INIT_TEST_VENDOR_INIT_H
+
+void run_vendor_init_tests(void);
+
+#endif /* TESTS_VENDOR_INIT_TEST_VENDOR_INIT_H */

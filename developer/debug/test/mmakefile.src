@@ -1,0 +1,47 @@
+#
+#   Makefile for AROS Test binaries & scripts.
+
+include $(SRCDIR)/config/aros.cfg
+
+COMMONTESTFILES := \
+    runtests
+
+EXEDIR := $(AROS_TESTS)
+
+USER_INCLUDES := -I$(SRCDIR)/workbench/libs
+USER_CFLAGS += -DADATE="\"$(shell date '+%d.%m.%Y')\""
+
+#MM- test : \
+#MM  test-common \
+#MM  test-crt \
+#MM  test-kernel \
+#MM  test-intuition \
+#MM  test-layers \
+#MM  test-zune \
+#MM  test-miscfiles
+
+#MM- test-quick : \
+#MM  test-common-quick \
+#MM  test-crt-quick \
+#MM  test-kernel-quick \
+#MM  test-intuition-quick \
+#MM  test-layers-quick \
+#MM  test-zune-quick \
+#MM  test-miscfiles-quick
+
+#MM- test : test-$(AROS_TARGET_ARCH) \
+#MM  test-$(AROS_TARGET_CPU) \
+#MM  test-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)
+
+#MM- test-quick : test-$(AROS_TARGET_ARCH)-quick \
+#MM  test-$(AROS_TARGET_CPU)-quick \
+#MM  test-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)-quick
+
+#MM  test-common : includes linklibs
+
+%build_progs mmake=test-common \
+    files=$(COMMONTESTFILES) targetdir=$(EXEDIR)
+
+%copy_files_q mmake=test-miscfiles files="testscript" dst=$(EXEDIR)
+
+%common

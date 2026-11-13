@@ -1,0 +1,8 @@
+Name=AmigaGuide
+BaseName=amigaguide
+Pattern=#?
+Mask=0x40 'd' 'a' 't' 'a' 'b' 'a' 's' 'e'
+GroupID=docu
+ID=amig
+Flags=DTF_ASCII
+Priority=0

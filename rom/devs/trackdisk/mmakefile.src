@@ -1,0 +1,19 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM- kernel-pc-i386-trackdisk : includes
+#MM- kernel-pc-i386-trackdisk-kobj : includes
+
+USER_CPPFLAGS := \
+               -DUSE_EXEC_DEBUG
+USER_INCLUDES := -I$(TOP)/rom/devs
+USER_LDFLAGS := -static
+
+ifneq ($(ROM_OPTIMIZATION_CFLAGS),)
+OPTIMIZATION_CFLAGS := $(ROM_OPTIMIZATION_CFLAGS)
+endif
+
+%build_module mmake=kernel-devs-trackdisk \
+  modname=trackdisk modtype=device \
+  files="trackdisk_device trackdisk_hw" \
+  uselibs="hiddstubs"

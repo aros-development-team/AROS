@@ -1,0 +1,18 @@
+diff -ruN xz-5.8.3/src/liblzma/check/crc64_fast.c xz-5.8.3.aros/src/liblzma/check/crc64_fast.c
+--- xz-5.8.3/src/liblzma/check/crc64_fast.c	2026-03-31 15:27:00.000000000 +0000
++++ xz-5.8.3.aros/src/liblzma/check/crc64_fast.c	2026-07-29 01:38:30.749236893 +0000
+@@ -37,6 +37,14 @@
+ 		const uint8_t *buf, size_t size, uint64_t crc);
+ #else
+ 
++// AROS: <aros/cpu.h> (reached through the standard headers) defines the
++// m68k register names used by the AROS ABI annotations, A1 among them.
++// liblzma never uses those annotations, so drop the definition to let
++// the slicing macro below use the name.
++#ifdef __AROS__
++#	undef A1
++#endif
++
+ #ifdef WORDS_BIGENDIAN
+ #	define A1(x) ((x) >> 56)
+ #else

@@ -1,0 +1,119 @@
+;Designer Produced empty .cd File : Do not edit.
+;
+;
+;Max 31 characterss!
+SelectAudioID  (//)
+Please select an audio mode!
+;
+;
+FileNotPrepared  (//)
+File has not been prepared yet!
+;
+;
+OKtext  (//)
+OK
+;
+;
+NoHardware  (//)
+Can't allocate audio hardware.
+;
+;
+UnknownErr  (//)
+Unknown error.
+;
+;
+Finished  (//)
+Finished!
+;
+;Window: AHI Hard disk record example Text: (seconds)
+Win0Texts1  (//)
+(seconds)
+;
+;Window: AHI Hard disk record example Gadget: File format String
+Win0_formatString0  (//)
+IFF-AIFF
+;
+;Window: AHI Hard disk record example Gadget: File format String
+Win0_formatString1  (//)
+IFF-AIFC (Not compr.)
+;
+;Window: AHI Hard disk record example Gadget: Win0_volslider levelforma
+Win0_volsliderLevelFormat  (//)
+%ld %%
+;
+;Window: AHI Hard disk record example Gadget: Win0_gainslider levelform
+Win0_gainsliderLevelFormat  (//)
+%ld %%
+;
+;Window: AHI Hard disk record example Gadget: Win0_length String Format
+Win0_lengthStringFormat  (//)
+%ld kB
+;
+;Window: AHI Hard disk record example Gadget: Win0_srclist
+Win0_srclistString  (//)
+Source
+;
+;Window: AHI Hard disk record example Gadget: Win0_dstlist
+Win0_dstlistString  (//)
+Loopback dest.
+;
+;Window: AHI Hard disk record example Gadget: Win0_volslider
+Win0_volsliderString  (//)
+Loopback volume
+;
+;Window: AHI Hard disk record example Gadget: Win0_ambutton
+Win0_ambuttonString  (//)
+Select audio mode...
+;
+;Window: AHI Hard disk record example Gadget: Win0_amtext1
+Win0_amtext1String  (//)
+
+;
+;Window: AHI Hard disk record example Gadget: Win0_amtext2
+Win0_amtext2String  (//)
+
+;
+;Window: AHI Hard disk record example Gadget: Win0_gainslider
+Win0_gainsliderString  (//)
+Input gain
+;
+;Window: AHI Hard disk record example Gadget: Win0_duration
+Win0_durationString  (//)
+Sample duration
+;
+;Window: AHI Hard disk record example Gadget: Win0_length
+Win0_lengthString  (//)
+Sample length
+;
+;Window: AHI Hard disk record example Gadget: Win0_filename
+Win0_filenameString  (//)
+
+;
+;Window: AHI Hard disk record example Gadget: Win0_fnbutton
+Win0_fnbuttonString  (//)
+File name...
+;
+;Window: AHI Hard disk record example Gadget: Win0_create
+Win0_createString  (//)
+Prepare sample file
+;
+;Window: AHI Hard disk record example Gadget: Win0_begin
+Win0_beginString  (//)
+Begin recording
+;
+;Window: AHI Hard disk record example Gadget: Win0_secleft
+Win0_secleftString  (//)
+seconds left
+;
+;Window: AHI Hard disk record example Gadget: Win0_format
+Win0_formatString  (//)
+File format
+;
+;Window: AHI Hard disk record example Title
+Win0Title  (//)
+AHI Hard disk record example
+;
+;Window: AHI Hard disk record example Screen Title
+Win0ScreenTitle  (//)
+HardDiskRecord
+;

@@ -1,0 +1,274 @@
+<HTML>
+<HEAD><TITLE> Directory </TITLE></HEAD>
+
+<BODY>
+
+<H1 ALIGN=CENTER>the Directory API</H1>
+
+<HR>
+<H1>Data structures</H1>
+
+<PRE>
+
+/* entry types */
+
+#define ST_DIR     2
+#define ST_FILE   -3
+
+
+struct Entry{
+    int type;              /* type of the entry */
+    char *name;            /* name */
+    SECTNUM sector;        /* sector pointer */
+    char *comment;         /* optional comment */
+    unsigned long size;    /* file size, 0 for a directory */
+    long access;           /* RWEDAPSH access rights */
+
+    int year, month, day;  /* date */
+    int hour, min, sec;    /* hour */
+}
+
+
+/* general purpose list used to stored directory entries */
+struct List{
+    void *content;         /* Filled with struct Entry* type */
+    struct List *subdir;   /* If the cell content is a dir, its entries list */
+                           /*  is stored here, else filled with NULL   */
+    struct List *next;     /* Next cell */
+}
+</PRE>
+
+<HR>
+<P ALIGN=CENTER><FONT SIZE=+2> adfGetDirEnt() </FONT></P>
+
+<H2>Syntax</H2>
+
+<B>struct List*</B> adfGetDirEnt(<B>struct Volume*</B> vol, <B>SECTNUM</B> dir )<BR>
+equivalent to <BR>
+<B>struct List*</B> adfGetRDirEnt(<B>struct Volume*</B> vol, <B>SECTNUM</B> dir, FALSE )<BR>
+
+
+<H2>Description</H2>
+
+Returns a linked list which contains the entries of one directory.
+
+<H2>Return values</H2>
+
+The list, NULL in case of error.
+
+<H2>Examples</H2>
+
+<PRE>
+struct List *list, *cell;
+struct Entry *entry;
+
+/* saves the head of the list */
+cell = list = adfGetDirEnt(vol,vol->curDirPtr);
+
+/* while cell->next is NULL, the last cell */
+while(cell) {
+    entry = (struct Entry*)cell->content;
+    printf("%s %ld\n", entry->name, entry->sector);
+    cell = cell->next;
+}
+
+/* frees the list and the content */
+adfFreeDirList(list);
+
+
+
+</PRE>
+
+<HR>
+
+<P ALIGN=CENTER><FONT SIZE=+2> adfGetRDirEnt() </FONT></P>
+
+<H2>Syntax</H2>
+
+<B>struct List*</B> adfGetRDirEnt(<B>struct Volume*</B> vol, <B>SECTNUM</B> dir, <B>BOOL</B> recursive )<BR>
+
+<H2>Description</H2>
+
+Returns a linked list which contains the entries of one directory.
+
+<H2>Return values</H2>
+
+The list, NULL in case of error.
+
+<H2>Examples</H2>
+
+<PRE>
+
+#define TRUE 1
+
+int main()
+{
+
+struct List *list, *cell;
+struct Entry *entry;
+
+...
+
+/* saves the head of the list */
+cell = list = adfGetRDirEnt(vol,vol->curDirPtr,TRUE);
+
+/* prints the tree */
+printTree(cell);
+
+/* frees the list and the content */
+adfFreeDirList(list);
+
+...
+
+}
+
+/* print the directories tree. recursive */
+printTree(struct List* tree)
+{
+    while(tree) {
+        entry = (struct Entry*)cell->content;
+        printf("%s %ld\n", entry->name, entry->sector);
+        if (tree->subdir!=NULL)
+            printTree(tree->subdir)
+        tree = tree->next;
+    }
+}
+
+
+</PRE>
+
+
+<HR>
+
+<P ALIGN=CENTER><FONT SIZE=+2> adfChangeDir() </FONT></P>
+
+<H2>Syntax</H2>
+
+<B>RETCODE</B> adfChangeDir(<B>struct Volume*</B> vol, <B>char *</B>dirName)
+
+<H2>Description</H2>
+
+Change the current working directory to the new one (dirName).
+
+<H2>Return values</H2>
+
+RC_OK, something different in case of error.
+<P>
+
+<HR>
+<P ALIGN=CENTER><FONT SIZE=+2> adfParentDir() </FONT></P>
+
+<H2>Syntax</H2>
+
+<B>RETCODE</B> adfParentDir(<B>struct Volume*</B> vol)
+
+
+<H2>Description</H2>
+
+Change the current working directory to its parent directory. If the current
+directory is the root of the filesystem ('/'), nothing happens.
+
+<H2>Return values</H2>
+
+RC_OK, something different in case of error.
+<P>
+
+<HR>
+
+<P ALIGN=CENTER><FONT SIZE=+2> adfCreateDir() </FONT></P>
+
+<H2>Syntax</H2>
+
+<B>RETCODE</B> adfCreateDir(<B>struct Volume*</B> vol, 
+ <B>SECTNUM</B> parent, <B>char*</B> dirName)
+
+<H2>Description</H2>
+
+Creates a new directory (dirName) into the specified directory (parent).
+
+<H2>Return values</H2>
+
+RC_OK, something different in case of error.
+<P>
+
+<HR>
+<P ALIGN=CENTER><FONT SIZE=+2> adfRemoveEntry() </FONT></P>
+
+<H2>Syntax</H2>
+
+<B>RETCODE</B> adfRemoveEntry(<B>struct Volume *</B>vol, 
+ <B>SECTNUM</B> parent, <B>char *</B>name)
+
+<H2>Description</H2>
+
+Removes a entry (a file or an empty directory) from one directory (parent).
+
+<H2>Return values</H2>
+
+RC_OK, something different in case of error.
+<P>
+
+<HR>
+<P ALIGN=CENTER><FONT SIZE=+2> adfFreeDirList() </FONT></P>
+
+<H2>Syntax</H2>
+
+<B>void</B> adfFreeDirList(<B>struct List*</B> list)
+
+<H2>Description</H2>
+
+Frees a linked list or a tree of directory entries.
+
+
+<P>
+
+
+<HR>
+<P ALIGN=CENTER><FONT SIZE=+2> adfAccess2String() </FONT></P>
+
+<H2>Syntax</H2>
+
+<B>char*</B> adfAccess2String(<B>long</B> access)
+
+<H2>Description</H2>
+
+Converts the access rights from <I>long</I> to <I>char*</I>.
+
+<H2>Return values</H2>
+
+A C string which represents the access rights.
+<P>
+
+<HR>
+
+<P ALIGN=CENTER><FONT SIZE=+2> adfRenameEntry() </FONT></P>
+
+<H2>Syntax</H2>
+
+<B>RETCODE</B> adfRenameEntry(<B>struct Volume*</B> vol, <B>SECTNUM</B> oldDir, <B>char*</B> old, <B>SECTNUM</B> newDir, <B>char*</B> new)
+
+<H2>Description</H2>
+
+Changes the name of the entry <I>old</I> located in the <I>oldDir</I> into
+the name <I>new</I>, located into the <I>newDir</I> directory.
+<P>
+
+<HR>
+
+<P ALIGN=CENTER><FONT SIZE=+2> printEntry() </FONT></P>
+
+<H2>Syntax</H2>
+
+<B>void</B> printEntry(<B>struct Entry*</B> entry)
+
+<H2>Description</H2>
+
+Do no use this function (not an adf one), but you can use its code to learn
+how to display a directory entry (in adf_dir.c).
+<P>
+
+<HR>
+
+</BODY>
+
+</HTML>

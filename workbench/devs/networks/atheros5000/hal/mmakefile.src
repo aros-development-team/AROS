@@ -1,0 +1,19 @@
+# Makefile to build the Atheros HAL.
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM- workbench-devs-networks-atheros5000-hal : \
+#MM workbench-devs-networks-atheros5000-hal-opts
+
+OPT_AH_PATH=$(TOP)/$(CURDIR)/opt_ah.h
+
+include $(SRCDIR)/$(CURDIR)/Makefile.inc
+
+NOWARN_FLAGS := $(NOWARN_SHIFT_OVERFLOW)
+USER_CFLAGS += $(NOWARN_FLAGS) $(CFLAGS_NO_BUILTIN)
+
+%build_linklib mmake=workbench-devs-networks-atheros5000-hal libname="athhal" \
+ files="$(basename $(HAL_OBJS))"
+
+#MM
+workbench-devs-networks-atheros5000-hal-opts: $(TOP)/$(CURDIR)/opt_ah.h

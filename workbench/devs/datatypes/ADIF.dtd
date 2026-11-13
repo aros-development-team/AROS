@@ -1,0 +1,10 @@
+# DataType Description for AAC (ADIF stream)
+Name=ADIF
+Version=$VER: ADIF 41.0 (21.7.2026)
+BaseName=aac
+Pattern=#?
+Mask='A' 'D' 'I' 'F'
+GroupID=soun
+ID=adif
+Flags=DTF_BINARY,DTF_CASE
+Priority=1

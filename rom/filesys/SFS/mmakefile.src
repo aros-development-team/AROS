@@ -1,0 +1,12 @@
+# Copyright (C) 2003-2013, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM- workbench-complete: workbench-devs-sfs-c
+
+#MM- workbench-devs-sfs-c: workbench-devs-sfs-c-setcache 		\
+#MM			   workbench-devs-sfs-c-sfsquery		\
+#MM			   workbench-devs-sfs-c-sfsformat		\
+#MM			   workbench-devs-sfs-c-sfscheck
+
+%common

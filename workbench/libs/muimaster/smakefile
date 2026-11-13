@@ -1,0 +1,527 @@
+CFLAGS = NOVERS gst=all.gst idlen=40 IDIR=include
+LIBCODE =
+
+SUPPORTOBJS = \
+  objs/datatypescache.o \
+  objs/dragndrop.o \
+  objs/font.o \
+  objs/frame.o \
+  objs/imspec.o \
+  objs/imspec_vector.o \
+  objs/imspec_gradient.o \
+  objs/menu.o \
+  objs/penspec.o \
+  objs/support.o \
+  objs/support_amigaos.o \
+  objs/support_classes.o \
+  objs/textengine.o \
+  objs/bubbleengine.o \
+  objs/clipboard.o
+
+LIBOBJS = \
+  objs/mui_addclipping.o\
+  objs/mui_addclipregion.o\
+  objs/mui_allocaslrequest.o\
+  objs/mui_aslrequest.o\
+  objs/mui_beginrefresh.o\
+  objs/mui_createcustomclass.o\
+  objs/mui_deletecustomclass.o\
+  objs/mui_disposeobject.o\
+  objs/mui_endrefresh.o\
+  objs/mui_error.o\
+  objs/mui_freeaslrequest.o\
+  objs/mui_freeclass.o\
+  objs/mui_getclass.o\
+  objs/mui_layout.o\
+  objs/mui_makeobject.o\
+  objs/mui_newobject.o\
+  objs/mui_obtainpen.o\
+  objs/mui_redraw.o\
+  objs/mui_rejectidcmp.o\
+  objs/mui_releasepen.o\
+  objs/mui_removeclipping.o\
+  objs/mui_removeclipregion.o\
+  objs/mui_request.o\
+  objs/mui_requestidcmp.o\
+  objs/mui_seterror.o
+
+CLASSESOBJS= \
+  objs/classes/aboutmui.o \
+  objs/classes/application.o \
+  objs/classes/area.o \
+  objs/classes/balance.o \
+  objs/classes/bitmap.o \
+  objs/classes/bodychunk.o \
+  objs/classes/boopsi.o \
+  objs/classes/chunkyimage.o \
+  objs/classes/configdata.o \
+  objs/classes/coloradjust.o \
+  objs/classes/colorfield.o \
+  objs/classes/crawling.o \
+  objs/classes/cycle.o \
+  objs/classes/dataspace.o \
+  objs/classes/dirlist.o \
+  objs/classes/family.o \
+  objs/classes/frameadjust.o \
+  objs/classes/framedisplay.o \
+  objs/classes/gauge.o \
+  objs/classes/group.o \
+  objs/classes/iconlist.o \
+  objs/classes/iconlistview.o \
+  objs/classes/image.o \
+  objs/classes/imageadjust.o \
+  objs/classes/imagedisplay.o \
+  objs/classes/knob.o \
+  objs/classes/levelmeter.o \
+  objs/classes/list.o \
+  objs/classes/listview.o \
+  objs/classes/mccprefs.o \
+  objs/classes/menuitem.o \
+  objs/classes/notify.o \
+  objs/classes/numeric.o \
+  objs/classes/numericbutton.o \
+  objs/classes/penadjust.o \
+  objs/classes/pendisplay.o \
+  objs/classes/poppen.o \
+  objs/classes/popasl.o \
+  objs/classes/popframe.o \
+  objs/classes/popimage.o \
+  objs/classes/poplist.o \
+  objs/classes/popobject.o \
+  objs/classes/popscreen.o \
+  objs/classes/popstring.o \
+  objs/classes/prop.o \
+  objs/classes/radio.o \
+  objs/classes/rectangle.o \
+  objs/classes/register.o \
+  objs/classes/semaphore.o \
+  objs/classes/scale.o \
+  objs/classes/scrollbar.o \
+  objs/classes/scrollbutton.o \
+  objs/classes/scrollgroup.o \
+  objs/classes/settings.o \
+  objs/classes/settingsgroup.o \
+  objs/classes/slider.o \
+  objs/classes/string.o \
+  objs/classes/text.o \
+  objs/classes/virtgroup.o \
+  objs/classes/volumelist.o \
+  objs/classes/window.o
+
+NLISTOBJS= \
+  //classes/nlist/NList_mcc/NList_mcc.o \
+  //classes/nlist/NList_mcc/NList_mcc0.o \
+  //classes/nlist/NList_mcc/NList_mcc1.o \
+  //classes/nlist/NList_mcc/NList_mcc2.o \
+  //classes/nlist/NList_mcc/NList_mcc3.o \
+  //classes/nlist/NList_mcc/NList_mcc4.o \
+  //classes/nlist/NList_mcc/NList_mcc5.o \
+  //classes/nlist/NList_mcc/NList_mcc6.o \
+  //classes/nlist/NList_mcc/move.o \
+  //classes/nlist/NList_mcc/cbio.o \
+  //classes/nlist/NList_mcc/NList_func.o \
+  //classes/nlist/NList_mcc/NList_func2.o \
+  //classes/nlist/NList_mcc/NList_func3.o \
+  //classes/nlist/NList_mcc/NList_func4.o \
+  //classes/nlist/NList_mcc/NList_grp.o \
+  //classes/nlist/NList_mcc/NList_img.o \
+  //classes/nlist/NList_mcc/NList_img2.o
+
+NLISTVIEWOBJS= \
+  //classes/nlist/NListview_mcc/NListview.o
+
+all: dirs all.gst include zunemaster.library test wb
+
+dirs:
+  execute  <<
+    if not exists objs
+      makedir objs
+    endif
+
+    if not exists objs/classes
+      makedir objs/classes
+    endif
+
+    if not exists objs/demos
+      makedir objs/demos
+    endif
+<
+
+all.gst: headers.c
+  sc headers.c noobjname makegst all.gst
+
+zunemaster.library: objs/zunemaster_lib.o objs/muimaster_init.o $(LIBOBJS) $(SUPPORTOBJS) $(CLASSESOBJS)
+  sc to zunemaster.library nostartup link with <<
+lib:debug.lib
+objs/zunemaster_lib.o
+objs/muimaster_init.o
+$(LIBOBJS) $(SUPPORTOBJS) $(CLASSESOBJS)
+nocheckabort
+<
+
+objs/zunemaster_lib.o: zunemaster_lib.c
+  sc $(CFLAGS) stringmerge zunemaster_lib.c objname=$@
+
+objs/muimaster_init.o: muimaster_init.c
+  sc $(CFLAGS) muimaster_init.c objname=$@
+
+objs/datatypescache.o: datatypescache.c
+  sc $(CFLAGS) datatypescache.c objname=$@
+
+objs/dragndrop.o: dragndrop.c
+  sc $(CFLAGS) dragndrop.c objname=$@
+
+objs/font.o: frame.c
+  sc $(CFLAGS) font.c objname=$@
+
+objs/frame.o: frame.c
+  sc $(CFLAGS) frame.c objname=$@
+
+objs/imspec.o: imspec.c
+  sc $(CFLAGS) imspec.c objname=$@
+
+objs/imspec_vector.o: imspec_vector.c
+  sc $(CFLAGS) imspec_vector.c objname=$@
+
+objs/imspec_gradient.o: imspec_gradient.c
+  sc $(CFLAGS) imspec_gradient.c objname=$@
+
+objs/menu.o: menu.c
+  sc $(CFLAGS) menu.c objname=$@
+
+objs/support.o: support.c
+  sc $(CFLAGS) support.c objname=$@
+
+objs/support_amigaos.o: support_amigaos.c
+  sc $(CFLAGS) support_amigaos.c objname=$@
+
+objs/support_classes.o: support_classes.c
+  sc $(CFLAGS) support_classes.c objname=$@
+
+objs/textengine.o: textengine.c
+  sc $(CFLAGS) textengine.c objname=$@
+
+objs/bubbleengine.o: bubbleengine.c
+  sc $(CFLAGS) bubbleengine.c objname=$@
+
+objs/clipboard.o: clipboard.c
+  sc $(CFLAGS) clipboard.c objname=$@
+
+objs/penspec.o: penspec.c
+  sc $(CFLAGS) penspec.c objname=$@
+
+objs/prefs.o: prefs.c
+  sc $(CFLAGS) prefs.c objname=$@
+
+
+objs/mui_addclipping.o: mui_addclipping.c
+  sc $(CFLAGS) $(LIBSDIRS) $(LIBCODE) mui_addclipping.c objname=$@
+
+objs/mui_addclipregion.o: mui_addclipregion.c
+  sc $(CFLAGS) $(LIBSDIRS) $(LIBCODE) mui_addclipregion.c objname=$@
+
+objs/mui_allocaslrequest.o: mui_allocaslrequest.c
+  sc $(CFLAGS) $(LIBSDIRS) $(LIBCODE) mui_allocaslrequest.c objname=$@
+
+objs/mui_aslrequest.o: mui_aslrequest.c
+  sc $(CFLAGS) $(LIBSDIRS) $(LIBCODE) mui_aslrequest.c objname=$@
+
+objs/mui_beginrefresh.o: mui_beginrefresh.c
+  sc $(CFLAGS) $(LIBSDIRS) $(LIBCODE) mui_beginrefresh.c objname=$@
+
+objs/mui_createcustomclass.o: mui_createcustomclass.c
+  sc $(CFLAGS) $(LIBSDIRS) $(LIBCODE) mui_createcustomclass.c objname=$@
+
+objs/mui_deletecustomclass.o: mui_deletecustomclass.c
+  sc $(CFLAGS) $(LIBSDIRS) $(LIBCODE) mui_deletecustomclass.c objname=$@
+
+objs/mui_disposeobject.o: mui_disposeobject.c
+  sc $(CFLAGS) $(LIBSDIRS) $(LIBCODE) mui_disposeobject.c objname=$@
+
+objs/mui_endrefresh.o: mui_endrefresh.c
+  sc $(CFLAGS) $(LIBSDIRS) $(LIBCODE) mui_endrefresh.c objname=$@
+
+objs/mui_error.o: mui_error.c
+  sc $(CFLAGS) $(LIBSDIRS) $(LIBCODE) mui_error.c objname=$@
+
+objs/mui_freeaslrequest.o: mui_freeaslrequest.c
+  sc $(CFLAGS) $(LIBSDIRS) $(LIBCODE) mui_freeaslrequest.c objname=$@
+
+objs/mui_freeclass.o: mui_freeclass.c
+  sc $(CFLAGS) $(LIBSDIRS) $(LIBCODE) mui_freeclass.c objname=$@
+
+objs/mui_getclass.o: mui_getclass.c
+  sc $(CFLAGS) $(LIBSDIRS) $(LIBCODE) mui_getclass.c objname=$@
+
+objs/mui_layout.o: mui_layout.c
+  sc $(CFLAGS) $(LIBSDIRS) $(LIBCODE) mui_layout.c objname=$@
+
+objs/mui_makeobject.o: mui_makeobject.c
+  sc $(CFLAGS) $(LIBSDIRS) $(LIBCODE) mui_makeobject.c objname=$@
+
+objs/mui_newobject.o: mui_newobject.c
+  sc $(CFLAGS) $(LIBSDIRS) $(LIBCODE) mui_newobject.c objname=$@
+
+objs/mui_obtainpen.o: mui_obtainpen.c
+  sc $(CFLAGS) $(LIBSDIRS) $(LIBCODE) mui_obtainpen.c objname=$@
+
+objs/mui_redraw.o: mui_redraw.c
+  sc $(CFLAGS) $(LIBSDIRS) $(LIBCODE) mui_redraw.c objname=$@
+
+objs/mui_rejectidcmp.o: mui_rejectidcmp.c
+  sc $(CFLAGS) $(LIBSDIRS) $(LIBCODE) mui_rejectidcmp.c objname=$@
+
+objs/mui_releasepen.o: mui_releasepen.c
+  sc $(CFLAGS) $(LIBSDIRS) $(LIBCODE) mui_releasepen.c objname=$@
+
+objs/mui_removeclipping.o: mui_removeclipping.c
+  sc $(CFLAGS) $(LIBSDIRS) $(LIBCODE) mui_removeclipping.c objname=$@
+
+objs/mui_removeclipregion.o: mui_removeclipregion.c
+  sc $(CFLAGS) $(LIBSDIRS) $(LIBCODE) mui_removeclipregion.c objname=$@
+
+objs/mui_request.o: mui_request.c
+  sc $(CFLAGS) $(LIBSDIRS) $(LIBCODE) mui_request.c objname=$@
+
+objs/mui_requestidcmp.o: mui_requestidcmp.c
+  sc $(CFLAGS) $(LIBSDIRS) $(LIBCODE) mui_requestidcmp.c objname=$@
+
+objs/mui_seterror.o: mui_seterror.c
+  sc $(CFLAGS) $(LIBSDIRS) $(LIBCODE) mui_seterror.c objname=$@
+
+
+objs/classes/aboutmui.o: classes/aboutmui.c
+  sc $(CFLAGS) $(CLASSESDIRS) classes/aboutmui.c objname=$@
+
+objs/classes/application.o: classes/application.c
+  sc $(CFLAGS) $(CLASSESDIRS) classes/application.c objname=$@
+
+objs/classes/area.o: classes/area.c
+  sc $(CFLAGS) $(CLASSESDIRS) classes/area.c objname=$@
+
+objs/classes/balance.o: classes/balance.c
+  sc $(CFLAGS) $(CLASSESDIRS) classes/balance.c objname=$@
+
+objs/classes/bitmap.o: classes/bitmap.c
+  sc $(CFLAGS) $(CLASSESDIRS) classes/bitmap.c objname=$@
+
+objs/classes/bodychunk.o: classes/bodychunk.c
+  sc $(CFLAGS) $(CLASSESDIRS) classes/bodychunk.c objname=$@
+
+objs/classes/boopsi.o: classes/boopsi.c
+  sc $(CFLAGS) $(CLASSESDIRS) classes/boopsi.c objname=$@
+
+objs/classes/chunkyimage.o: classes/chunkyimage.c
+  sc $(CFLAGS) $(CLASSESDIRS) classes/chunkyimage.c objname=$@
+
+objs/classes/coloradjust.o: classes/coloradjust.c
+  sc $(CFLAGS) $(CLASSESDIRS) classes/coloradjust.c objname=$@
+
+objs/classes/colorfield.o: classes/colorfield.c
+  sc $(CFLAGS) $(CLASSESDIRS) classes/colorfield.c objname=$@
+
+objs/classes/configdata.o: classes/configdata.c
+  sc $(CFLAGS) $(CLASSESDIRS) classes/configdata.c objname=$@
+
+objs/classes/crawling.o: classes/crawling.c
+  sc $(CFLAGS) $(CLASSESDIRS) classes/crawling.c objname=$@
+
+objs/classes/cycle.o: classes/cycle.c
+  sc $(CFLAGS) $(CLASSESDIRS) classes/cycle.c objname=$@
+
+objs/classes/dataspace.o: classes/dataspace.c
+  sc $(CFLAGS) $(CLASSESDIRS) classes/dataspace.c objname=$@
+
+objs/classes/dirlist.o: classes/dirlist.c
+  sc $(CFLAGS) $(CLASSESDIRS) classes/dirlist.c objname=$@
+
+objs/classes/family.o: classes/family.c
+  sc $(CFLAGS) $(CLASSESDIRS) classes/family.c objname=$@
+
+objs/classes/frameadjust.o: classes/frameadjust.c
+  sc $(CFLAGS) $(CLASSESDIRS) classes/frameadjust.c objname=$@
+
+objs/classes/framedisplay.o: classes/framedisplay.c
+  sc $(CFLAGS) $(CLASSESDIRS) classes/framedisplay.c objname=$@
+
+objs/classes/gauge.o: classes/gauge.c
+  sc $(CFLAGS) $(CLASSESDIRS) classes/gauge.c objname=$@
+
+objs/classes/group.o: classes/group.c
+  sc $(CFLAGS) $(CLASSESDIRS) classes/group.c objname=$@
+
+objs/classes/iconlist.o: classes/iconlist.c
+  sc $(CFLAGS) $(CLASSESDIRS) classes/iconlist.c objname=$@
+
+objs/classes/iconlistview.o: classes/iconlistview.c
+  sc $(CFLAGS) $(CLASSESDIRS) classes/iconlistview.c objname=$@
+
+objs/classes/image.o: classes/image.c
+  sc $(CFLAGS) $(CLASSESDIRS) classes/image.c objname=$@
+
+objs/classes/imageadjust.o: classes/imageadjust.c
+  sc $(CFLAGS) $(CLASSESDIRS) classes/imageadjust.c objname=$@
+
+objs/classes/imagedisplay.o: classes/imagedisplay.c
+  sc $(CFLAGS) $(CLASSESDIRS) classes/imagedisplay.c objname=$@
+
+objs/classes/knob.o: classes/knob.c
+  sc $(CFLAGS) $(CLASSESDIRS) classes/knob.c objname=$@
+
+objs/classes/levelmeter.o: classes/levelmeter.c
+  sc $(CFLAGS) $(CLASSESDIRS) classes/levelmeter.c objname=$@
+
+objs/classes/list.o: classes/list.c
+  sc $(CFLAGS) $(CLASSESDIRS) classes/list.c objname=$@
+
+objs/classes/listview.o: classes/listview.c
+  sc $(CFLAGS) $(CLASSESDIRS) classes/listview.c objname=$@
+
+objs/classes/notify.o: classes/notify.c
+  sc $(CFLAGS) $(CLASSESDIRS) classes/notify.c objname=$@
+
+objs/classes/mccprefs.o: classes/mccprefs.c
+  sc $(CFLAGS) $(CLASSESDIRS) classes/mccprefs.c objname=$@
+
+objs/classes/menuitem.o: classes/menuitem.c
+  sc $(CFLAGS) $(CLASSESDIRS) classes/menuitem.c objname=$@
+
+objs/classes/numeric.o: classes/numeric.c
+  sc $(CFLAGS) $(CLASSESDIRS) classes/numeric.c objname=$@
+
+objs/classes/numericbutton.o: classes/numericbutton.c
+  sc $(CFLAGS) $(CLASSESDIRS) classes/numericbutton.c objname=$@
+
+objs/classes/penadjust.o: classes/penadjust.c
+  sc $(CFLAGS) $(CLASSESDIRS) classes/penadjust.c objname=$@
+
+objs/classes/pendisplay.o: classes/pendisplay.c
+  sc $(CFLAGS) $(CLASSESDIRS) classes/pendisplay.c objname=$@
+
+objs/classes/popasl.o: classes/popasl.c
+  sc $(CFLAGS) $(CLASSESDIRS) classes/popasl.c objname=$@ nostackcheck
+
+objs/classes/popimage.o: classes/popimage.c
+  sc $(CFLAGS) $(CLASSESDIRS) classes/popimage.c objname=$@
+
+objs/classes/poplist.o: classes/poplist.c
+  sc $(CFLAGS) $(CLASSESDIRS) classes/poplist.c objname=$@
+
+objs/classes/popobject.o: classes/popobject.c
+  sc $(CFLAGS) $(CLASSESDIRS) classes/popobject.c objname=$@
+
+objs/classes/poppen.o: classes/poppen.c
+  sc $(CFLAGS) $(CLASSESDIRS) classes/poppen.c objname=$@
+
+objs/classes/popscreen.o: classes/popscreen.c
+  sc $(CFLAGS) $(CLASSESDIRS) classes/popscreen.c objname=$@
+
+objs/classes/popstring.o: classes/popstring.c
+  sc $(CFLAGS) $(CLASSESDIRS) classes/popstring.c objname=$@
+
+objs/classes/popframe.o: classes/popframe.c
+  sc $(CFLAGS) $(CLASSESDIRS) classes/popframe.c objname=$@
+
+objs/classes/radio.o: classes/radio.c
+  sc $(CFLAGS) $(CLASSESDIRS) classes/radio.c objname=$@
+
+objs/classes/slider.o: classes/slider.c
+  sc $(CFLAGS) $(CLASSESDIRS) classes/slider.c objname=$@
+
+objs/classes/scale.o: classes/scale.c
+  sc $(CFLAGS) $(CLASSESDIRS) classes/scale.c objname=$@
+
+objs/classes/semaphore.o: classes/semaphore.c
+  sc $(CFLAGS) $(CLASSESDIRS) classes/semaphore.c objname=$@
+
+objs/classes/settings.o: classes/settings.c
+  sc $(CFLAGS) $(CLASSESDIRS) classes/settings.c objname=$@
+
+objs/classes/scrollbar.o: classes/scrollbar.c
+  sc $(CFLAGS) $(CLASSESDIRS) classes/scrollbar.c objname=$@
+
+objs/classes/scrollbutton.o: classes/scrollbutton.c
+  sc $(CFLAGS) $(CLASSESDIRS) classes/scrollbutton.c objname=$@
+
+objs/classes/scrollgroup.o: classes/scrollgroup.c
+  sc $(CFLAGS) $(CLASSESDIRS) classes/scrollgroup.c objname=$@
+
+objs/classes/settingsgroup.o: classes/settingsgroup.c
+  sc $(CFLAGS) $(CLASSESDIRS) classes/settingsgroup.c objname=$@
+
+objs/classes/string.o: classes/string.c
+  sc $(CFLAGS) $(CLASSESDIRS) classes/string.c objname=$@
+
+objs/classes/text.o: classes/text.c
+  sc $(CFLAGS) $(CLASSESDIRS) classes/text.c objname=$@
+
+objs/classes/virtgroup.o: classes/virtgroup.c
+  sc $(CFLAGS) $(CLASSESDIRS) classes/virtgroup.c objname=$@
+
+objs/classes/volumelist.o: classes/volumelist.c
+  sc $(CFLAGS) $(CLASSESDIRS) classes/volumelist.c objname=$@
+
+objs/classes/window.o: classes/window.c
+  sc $(CFLAGS) $(CLASSESDIRS) classes/window.c objname=$@
+
+objs/classes/rectangle.o: classes/rectangle.c
+  sc $(CFLAGS) $(CLASSESDIRS) classes/rectangle.c objname=$@
+
+objs/classes/register.o: classes/register.c
+  sc $(CFLAGS) $(CLASSESDIRS) classes/register.c objname=$@
+
+objs/classes/prop.o: classes/prop.c
+  sc $(CFLAGS) $(CLASSESDIRS) classes/prop.c objname=$@
+
+objs/test.o: test.c
+  sc $(CFLAGS) $(CLASSESDIRS) test.c objname=$@
+
+objs/wanderer.o: //wanderer/wanderer.c
+  sc $(CFLAGS) $(CLASSESDIRS) //wanderer/wanderer.c objname=$@
+
+muimaster.lib: $(SUPPORTOBJS) $(LIBOBJS) $(CLASSESOBJS)
+  -delete muimaster.lib
+  oml muimaster.lib A $(SUPPORTOBJS) $(LIBOBJS) $(CLASSESOBJS) #$(NLISTOBJS) ${NLISTVIEWOBJS)
+
+test: objs/test.o $(SUPPORTOBJS) $(LIBOBJS) $(CLASSESOBJS)
+  sc link lib lib:debug.lib to test with <<
+objs/test.o $(SUPPORTOBJS) $(LIBOBJS) $(CLASSESOBJS)
+#//classes/nlist/NListview_mcc/nlistview.mcc.lib
+#//classes/nlist/NList_mcc/nlist.mcc.lib
+<
+
+wb: objs/wanderer.o  $(SUPPORTOBJS) $(LIBOBJS) $(CLASSESOBJS)
+  sc link lib lib:debug.lib to wb with <<
+objs/wanderer.o $(SUPPORTOBJS) $(LIBOBJS) $(CLASSESOBJS)
+<
+
+demos: muimaster.lib
+  smake -f //demos/smakefile
+
+include: buildincludes zunemaster_lib.sfd
+  -delete include all
+  -makedir include
+  -makedir include/libraries include/clib include/proto include/pragma
+  buildincludes >include/libraries/mui.h
+  -makedir t:zunemaster
+  copy zunemaster_lib.sfd t:zunemaster
+  execute <<
+    cd t:zunemaster
+    sfd zunemaster_lib.sfd
+<
+  fd2pragma t:zunemaster/fd/zunemaster_lib.fd to include/pragma
+  copy t:zunemaster/protos/zunemaster_protos.h to include/clib
+  fd2pragma t:zunemaster/fd/zunemaster_lib.fd special=35 to include/proto
+  delete t:zunemaster all
+  execute <<
+    echo "\#ifndef PROTO_MUIMASTER_H" >include/proto/muimaster.h
+    echo "\#define PROTO_MUIMASTER_H" >>include/proto/muimaster.h
+    echo "\#endif" >>include/proto/muimaster.h
+<
+
+buildincludes: buildincludes.c
+  sc link buildincludes.c
+
+clean:
+  -delete objs all
+  -delete test

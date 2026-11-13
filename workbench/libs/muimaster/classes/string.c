@@ -1,0 +1,2914 @@
+/*
+    Copyright (C) 2003-2026, The AROS Development Team. All rights reserved.
+*/
+
+/* This is based on muimaster/class/text.c (first string version)
+ * and on rom/intuition/str*.c
+ */
+
+#define MUIMASTER_YES_INLINE_STDARG
+
+#include <string.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <ctype.h>
+
+#include <exec/types.h>
+#include <clib/alib_protos.h>
+
+#include <proto/exec.h>
+#include <proto/dos.h>
+#include <proto/graphics.h>
+#include <proto/intuition.h>
+#include <proto/utility.h>
+#include <proto/muimaster.h>
+#include <proto/locale.h>
+
+#ifdef __AROS__
+#include <devices/rawkeycodes.h>
+#endif
+
+#include "mui.h"
+#include "muimaster_intern.h"
+#include "support.h"
+#include "prefs.h"
+#include "penspec.h"
+#include "imspec.h"
+#include "clipboard.h"
+#include "string.h"
+
+//#define MYDEBUG 1
+#include "debug.h"
+
+/****** String.mui/MUIC_String ************
+*
+*   NAME
+*       MUIC_String
+*
+*   SUPERCLASS
+*       Area.mui
+*
+*   DESCRIPTION
+*       Single-line byte-string editor. Owns a fixed buffer of MaxLen bytes,
+*       including the NUL terminator (default 80); positions count bytes.
+*       Contents is copied and truncated. Accept, Reject, AttachedList and
+*       EditHook pointers are borrowed. Use the GUI task; no locking is provided.
+*
+*   METHODS
+*       Keyboard/mouse editing supports selection, cursor movement and
+*       clipboard operations. Paste deletes selection before checking the
+*       clipboard, so a read failure can still remove text. Normal edits may
+*       notify Contents; MUIKEY_PRESS notifies Acknowledge and, when parsing
+*       succeeds, Integer. Insert and ClearSelected do not notify either.
+*       Export/Import use Dataspace and require valid terminated text records.
+*
+*   NOTES
+*       Secret masks the display, not stored or exported text. Text buffers are
+*       freed without secure erasure. WORD/UWORD-based helpers limit usable
+*       lengths independently of allocation size. Construct without initial
+*       text and set Contents afterwards: non-NULL initial Contents/Integer
+*       can trigger comparison against an uninitialized allocated buffer.
+*
+*   BUGS
+*       EditHook/LonelyEditHook and KeyUpFocus/KeyDownFocus are not operative;
+*       SelectSize has no setter. FileNameStart returns the buffer pointer,
+*       not a position. BufferPos is clamped only during drawing; unsafe
+*       positions can reach editing or rendering first. Ordinary-key input
+*       can skip CloseLocale; clipboard I/O failures are incompletely reported.
+*
+*/
+/****** String.mui/MUIA_String_Accept ************
+*
+*   NAME
+*       MUIA_String_Accept
+*
+*   FUNCTION
+*       Specify the case-sensitive set of bytes to allow during ordinary
+*       character entry.
+*
+*   INPUTS
+*       Initialize, set, get; borrowed terminated STRPTR, or NULL to disable
+*       this filter. Default NULL.
+*
+*   NOTES
+*       Borrowed, case-sensitive allowed-byte set; retain it while installed.
+*       Reject is applied afterwards, so a byte in both sets is rejected. An empty
+*       Accept rejects normal typed bytes. Filters do not apply to editing
+*       commands, paste, or programmatic Contents, Integer and Insert; they do not
+*       sanitize existing text.
+*
+*/
+/****** String.mui/MUIA_String_Reject ************
+*
+*   NAME
+*       MUIA_String_Reject
+*
+*   FUNCTION
+*       Specify the case-sensitive set of bytes to exclude during ordinary
+*       character entry.
+*
+*   INPUTS
+*       Initialize, set, get; borrowed terminated STRPTR, or NULL to disable
+*       this filter. Default NULL.
+*
+*   NOTES
+*       Borrowed, case-sensitive rejected-byte set; retain it while installed.
+*       Reject is checked after Accept. An empty Reject excludes nothing; an empty
+*       Accept blocks normal typing. Neither filter applies to editing commands,
+*       paste or programmatic edits, or removes existing text.
+*
+*/
+/****** String.mui/MUIA_String_Acknowledge ************
+*
+*   NAME
+*       MUIA_String_Acknowledge
+*
+*   FUNCTION
+*       Read the buffer pointer associated with acknowledgement state.
+*
+*   INPUTS
+*       Get; borrowed STRPTR or NULL. Used as a notification trigger by the
+*       event handler.
+*
+*   NOTES
+*       MUIKEY_PRESS sends an Acknowledge notification with a borrowed pointer to
+*       mutable Contents, not a saved accepted value. Contents replacement updates
+*       the pointer without sending this notification; keyboard update paths can
+*       clear it. Insert and ClearSelected leave it untouched. Thus a non-NULL
+*       getter does not prove Return was pressed. Setting this attribute does not
+*       change the local pointer; copy text to retain it.
+*
+*/
+/****** String.mui/MUIA_String_AdvanceOnCR ************
+*
+*   NAME
+*       MUIA_String_AdvanceOnCR
+*
+*   FUNCTION
+*       Advance to the next active object when the editor handles MUIKEY_PRESS.
+*
+*   INPUTS
+*       Initialize, set, get; BOOL. Default FALSE.
+*
+*   NOTES
+*       On MUIKEY_PRESS, TRUE advances Window_ActiveObject to Next and FALSE clears
+*       focus, unless StayActive is TRUE. Acknowledge is notified; Integer is also
+*       notified when numeric parsing succeeds. No input validation occurs.
+*
+*/
+/****** String.mui/MUIA_String_AttachedList ************
+*
+*   NAME
+*       MUIA_String_AttachedList
+*
+*   FUNCTION
+*       Route list navigation keys to another object.
+*
+*   INPUTS
+*       Initialize, set, get; borrowed List-compatible object pointer or NULL.
+*       Default NULL.
+*
+*   NOTES
+*       While active, Up/Down/PageUp/PageDown/Top/Bottom forward selectors to the
+*       borrowed List object's List_Active. String does not copy selected text or
+*       own the list; keep it alive until detached/disposed. NULL disables
+*       forwarding.
+*
+*/
+/****** String.mui/MUIA_String_BufferPos ************
+*
+*   NAME
+*       MUIA_String_BufferPos
+*
+*   FUNCTION
+*       Read or set the insertion cursor byte offset.
+*
+*   INPUTS
+*       Initialize, set, get; stored as ULONG despite the LONG header
+*       annotation. Default zero.
+*
+*   NOTES
+*       Use byte positions from zero to the current text length. The setter stores
+*       an unchecked value; drawing clamps it later, so a getter or subsequent edit
+*       can see an unsafe offset. MUIV_String_BufferPos_End (0xffffffff) has no
+*       immediate special handling: supply the actual length when editing before a
+*       redraw. The setter clears marking and requests an update.
+*
+*   BUGS
+*       Editing helpers trust BufferPos before indexing or moving bytes. A
+*       negative value converted to ULONG, or another out-of-range value, is
+*       unsafe before the deferred clamp. Do not use the sentinel as an
+*       immediate validation guarantee.
+*
+*/
+/****** String.mui/MUIA_String_Contents ************
+*
+*   NAME
+*       MUIA_String_Contents
+*
+*   FUNCTION
+*       Read or replace the editable text.
+*
+*   INPUTS
+*       Initialize, set, get; terminated STRPTR, or NULL to clear. Default
+*       empty.
+*
+*   NOTES
+*       The setter copies at most MaxLen-1 bytes, terminates the buffer and accepts
+*       NULL to clear. NoInput and Accept/Reject do not apply. Supply
+*       nonoverlapping source storage. The getter returns borrowed mutable storage
+*       (also via Text_Contents): do not free it or retain its address across
+*       disposal. Replacing text resets DisplayPos and marking, clamps the cursor
+*       and updates Acknowledge without notifying Acknowledge. Equal non-NULL text
+*       suppresses Contents notification; comparison happens before truncation, so
+*       a changed source may notify even when stored text is unchanged. The
+*       notification can carry the original input pointer, not the truncated
+*       buffer. Text_Contents is a Set/Get alias, not a String constructor tag.
+*
+*   BUGS
+*       Non-NULL initial Contents follows the uninitialized-buffer comparison
+*       described in MUIC_String. Construct empty, then set text. Neither
+*       replacement nor disposal securely erases prior text.
+*
+*/
+/****** String.mui/MUIA_String_DisplayPos ************
+*
+*   NAME
+*       MUIA_String_DisplayPos
+*
+*   FUNCTION
+*       Read or request the first displayed byte offset.
+*
+*   INPUTS
+*       Set, get; LONG. Initial value zero; no local constructor handling.
+*
+*   NOTES
+*       Setting this byte offset also sets BufferPos and clears marking. Drawing
+*       may adjust the position to expose the cursor; replacing Contents resets it.
+*       Supply a valid offset within the text: the setter does not validate it
+*       before display calculations.
+*
+*   BUGS
+*       Use a nonnegative offset within current text length. The setter does not
+*       validate it; display calculations can use it before a safe range is
+*       established. This is not an independent horizontal-scroll control.
+*
+*/
+/****** String.mui/MUIA_String_EditHook ************
+*
+*   NAME
+*       MUIA_String_EditHook
+*
+*   FUNCTION
+*       Retain an edit-hook pointer at construction.
+*
+*   INPUTS
+*       Constructor storage only; borrowed struct Hook pointer, default NULL.
+*
+*   NOTES
+*       Only the constructor retains this borrowed pointer; no local Set/Get or
+*       callback invocation is implemented, despite the header annotation. Keep
+*       storage alive while retained; do not rely on editor-hook behavior.
+*
+*/
+/****** String.mui/MUIA_String_Format ************
+*
+*   NAME
+*       MUIA_String_Format
+*
+*   FUNCTION
+*       Choose the horizontal alignment used to draw the visible text.
+*
+*   INPUTS
+*       Initialize, get; LONG. MUIV_String_Format_Left (0),
+*       MUIV_String_Format_Center (1) or MUIV_String_Format_Right (2). Default
+*       Left.
+*
+*   NOTES
+*       Constructor-only alignment controls drawing and mouse placement. No local
+*       setter exists; use only Left, Center or Right. Other values have no
+*       alignment branch.
+*
+*/
+/****** String.mui/MUIA_String_Integer ************
+*
+*   NAME
+*       MUIA_String_Integer
+*
+*   FUNCTION
+*       Format a numeric value as text or parse the current text as a signed
+*       LONG.
+*
+*   INPUTS
+*       Initialize, set, get. The header says ULONG; the implementation uses
+*       signed decimal formatting and StrToLong.
+*
+*   NOTES
+*       Setting formats signed decimal text through a bounded local buffer, then
+*       uses Contents (which can truncate at MaxLen). The getter uses AROS
+*       StrToLong: optional whitespace/sign, decimal prefix, trailing text
+*       accepted, invalid input returns zero; overflow is not checked. This is not
+*       a numeric-only editor. An unchanged parsed value suppresses the Integer
+*       setter's own notification, though Contents may still notify. MUIKEY_PRESS
+*       sends Integer only when parsing succeeds. The formatter passes an IPTR
+*       value to %ld without an explicit cast; do not infer cross-ABI formatting
+*       guarantees.
+*
+*   BUGS
+*       The formatting call passes the IPTR tag value directly to %ld without a
+*       cast. No additional cross-ABI formatting guarantee is established here.
+*       Initial Integer text takes the same uninitialized comparison path as
+*       non-NULL initial Contents.
+*
+*/
+/****** String.mui/MUIA_String_LonelyEditHook ************
+*
+*   NAME
+*       MUIA_String_LonelyEditHook
+*
+*   FUNCTION
+*       Store the constructor flag associated with edit-hook handling.
+*
+*   INPUTS
+*       Constructor storage only; BOOL, default FALSE.
+*
+*   NOTES
+*       Stored at construction only. No local setter/getter uses this flag, and it
+*       does not activate EditHook callbacks.
+*
+*/
+/****** String.mui/MUIA_String_MaxLen ************
+*
+*   NAME
+*       MUIA_String_MaxLen
+*
+*   FUNCTION
+*       Choose the fixed buffer allocation size, including the terminating zero.
+*
+*   INPUTS
+*       Initialize, get; stored as ULONG. Default 80, allowing 79 text bytes.
+*
+*   NOTES
+*       Includes the NUL byte (default 80 permits 79 text bytes). Zero becomes one;
+*       no resize setter exists. Contents truncates and insertion stops before
+*       overflow. Secret mode allocates another buffer of this size; allocation
+*       failure aborts construction. Negative LONG inputs become large unsigned
+*       lengths. WORD/UWORD indexing and secret-fill loops impose further practical
+*       limits: keep text sizes small.
+*
+*   BUGS
+*       Negative LONG tag values become large unsigned sizes, not a request for
+*       the default. WORD-based selection/measurement and the UWORD secret-fill
+*       loop limit usable sizes independently of allocation success. The class
+*       does not enforce a comprehensive maximum; use short, application-bounded
+*       single-line text.
+*
+*/
+/****** String.mui/MUIA_String_Secret ************
+*
+*   NAME
+*       MUIA_String_Secret
+*
+*   FUNCTION
+*       Mask displayed text with asterisks.
+*
+*   INPUTS
+*       Initialize, get; BOOL, default FALSE.
+*
+*   NOTES
+*       Constructor-only visual masking uses a separate asterisk display buffer.
+*       Contents, Integer, Acknowledge, export and clipboard copy still expose
+*       plaintext, and buffers are not securely erased. Do not treat this as
+*       confidential storage.
+*
+*/
+/****** String.mui/MUIA_String_Columns ************
+*
+*   NAME
+*       MUIA_String_Columns
+*
+*   FUNCTION
+*       Set a fixed text-width contribution to layout.
+*
+*   INPUTS
+*       Initialize only; stored as WORD. Default -1.
+*
+*   NOTES
+*       Controls font-based width in AskMinMax, not capacity. Nonnegative values
+*       use Columns times font X size; otherwise minimum/default use 4/12 character
+*       widths and maximum MUI_MAXMAX. Height uses font Y size. Constructor-only
+*       WORD value; out-of-range inputs are narrowed without validation.
+*
+*/
+/****** String.mui/MUIA_String_NoInput ************
+*
+*   NAME
+*       MUIA_String_NoInput
+*
+*   FUNCTION
+*       Disable text-changing keyboard commands handled by String.
+*
+*   INPUTS
+*       Initialize, set, get; BOOL, default FALSE.
+*
+*   NOTES
+*       TRUE blocks keyboard insertion, paste, deletion and cut, but permits
+*       copying, cursor/selection commands, focus and acknowledgement. Programmatic
+*       Contents, Integer, Insert, ClearSelected and Import still modify text. It
+*       does not disable the gadget.
+*
+*/
+/****** String.mui/MUIA_String_SelectSize ************
+*
+*   NAME
+*       MUIA_String_SelectSize
+*
+*   FUNCTION
+*       Read the signed length of the current marked range.
+*
+*   INPUTS
+*       Get; signed LONG result in IPTR storage. Zero when there is no nonempty
+*       marked range.
+*
+*   NOTES
+*       Getter returns signed marked-range length based on byte, space-delimited
+*       word or whole-string selection; negative when MarkPos is below BufferPos.
+*       Internal positions use WORD. The setter is unimplemented: a Set tag may
+*       still notify the superclass without changing selection.
+*
+*   BUGS
+*       The setter is an explicit TODO and changes no selection state. No
+*       constructor behavior exists. A Set tag can still reach superclass
+*       notifications even though the requested selection is not applied.
+*
+*/
+/****** String.mui/MUIA_String_StayActive ************
+*
+*   NAME
+*       MUIA_String_StayActive
+*
+*   FUNCTION
+*       Keep focus when acknowledging text and avoid local deactivation on an
+*       outside click.
+*
+*   INPUTS
+*       Initialize, set, get; BOOL, default FALSE.
+*
+*   NOTES
+*       TRUE overrides AdvanceOnCR on MUIKEY_PRESS and prevents local outside-click
+*       deactivation. It does not lock Window_ActiveObject or prevent GoInactive
+*       and window-close handling.
+*
+*/
+/****** String.mui/MUIA_String_KeyUpFocus ************
+*
+*   NAME
+*       MUIA_String_KeyUpFocus
+*
+*   FUNCTION
+*       Identify an unimplemented compatibility attribute.
+*
+*   INPUTS
+*       Public header identifier only; no supported local initialization, setter
+*       or getter.
+*
+*   NOTES
+*       Not implemented: no local initialization, setter, getter or focus transfer.
+*       Up/Down keys instead forward navigation to AttachedList when set.
+*       Superclass tag delegation is not this feature.
+*
+*/
+/****** String.mui/MUIA_String_KeyDownFocus ************
+*
+*   NAME
+*       MUIA_String_KeyDownFocus
+*
+*   FUNCTION
+*       Identify an unimplemented compatibility attribute.
+*
+*   INPUTS
+*       Public header identifier only; no supported local initialization, setter
+*       or getter.
+*
+*   NOTES
+*       Not implemented: no local initialization, setter, getter or focus transfer.
+*       Up/Down keys instead forward navigation to AttachedList when set.
+*       Superclass tag delegation is not this feature.
+*
+*/
+/****** String.mui/MUIM_String_ClearSelected ************
+*
+*   NAME
+*       MUIM_String_ClearSelected
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_String_ClearSelected);
+*
+*   FUNCTION
+*       Remove the current marked range and request a redraw.
+*
+*   INPUTS
+*       obj - Live String with valid buffer and selection state. No payload
+*       arguments.
+*
+*   RESULT
+*       Always zero, whether text was removed or no range was selected.
+*
+*   NOTES
+*       Removes the marked range (if nonempty), moves the cursor to its start and
+*       redraws; always clears marking. NoInput does not block it. No
+*       Contents/Acknowledge notification is sent and Acknowledge state is
+*       unchanged.
+*
+*/
+/****** String.mui/MUIM_String_Insert ************
+*
+*   NAME
+*       MUIM_String_Insert
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_String_Insert, (IPTR)text, pos);
+*
+*   FUNCTION
+*       Insert bytes at a chosen position until the text ends or the buffer is
+*       full.
+*
+*   INPUTS
+*       obj - Live String with valid current cursor.
+*       text - Non-NULL terminated STRPTR readable for the call, independent of
+*       the destination buffer.
+*       pos - LONG byte offset from zero through current length, or a declared
+*       selector.
+*
+*   RESULT
+*       Always zero, including invalid position, partial insertion and no space.
+*       No inserted-byte count is returned.
+*
+*   NOTES
+*       Position selectors StartOfString, EndOfString and BufferPos resolve to
+*       start, end and cursor; invalid offsets are ignored. Insert copies up to
+*       available capacity without Accept/Reject, NoInput or printable-byte
+*       filtering. It does not replace a selection or notify Contents/Acknowledge.
+*       The old cursor advances when at/after the insertion point. If nothing fits
+*       at a valid position, BufferPos can move there without redraw; marking and
+*       Acknowledge stay unchanged. The result is always zero, even for partial
+*       insertion.
+*
+*/
+/****** String.mui/MUIM_String_FileNameStart ************
+*
+*   NAME
+*       MUIM_String_FileNameStart
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_String_FileNameStart, (IPTR)buffer,
+*       pos);
+*
+*   FUNCTION
+*       Return the internal text-buffer pointer from an unfinished compatibility
+*       method.
+*
+*   INPUTS
+*       obj - Live String.
+*       buffer - Declared STRPTR argument; ignored.
+*       pos - Declared LONG argument; ignored.
+*
+*   RESULT
+*       Borrowed STRPTR cast to IPTR, pointing to the object's current text
+*       buffer.
+*
+*   NOTES
+*       Unimplemented filename-position calculation: ignores buffer and pos,
+*       returning the borrowed mutable internal STRPTR as IPTR, not a byte index or
+*       volume marker. No ownership transfer occurs; the pointer expires with the
+*       object.
+*
+*/
+
+extern struct Library *MUIMasterBase;
+
+struct MUI_StringData
+{
+    ULONG msd_Flags;
+    CONST_STRPTR msd_Accept;    /* MUIA_String_Accept */
+    CONST_STRPTR msd_Reject;    /* MUIA_String_Reject */
+    LONG msd_Align;
+    struct Hook *msd_EditHook;
+    Object *msd_AttachedList;
+    LONG msd_RedrawReason;
+
+    ULONG msd_useSecret;
+    /* Fields mostly ripped from rom/intuition/strgadgets.c */
+    STRPTR Buffer;              /* char container                   */
+    STRPTR SecBuffer;           /* Buffer for secret string         */
+    STRPTR VisualBuffer;        /* Pointer to either Buffer or SecBuffer */
+    ULONG BufferSize;           /* memory allocated                 */
+    ULONG NumChars;             /* string length                    */
+    ULONG BufferPos;            /* cursor (insert/delete) position  */
+    ULONG MarkPos;              /* cursor text marking start pos    */
+    LONG DispPos;               /* leftmost visible char            */
+    ULONG DispCount;            /* number of visible chars          */
+
+    ULONG OldClick_Sec;
+    ULONG OldClick_Micro;
+    ULONG NewClick_Sec;
+    ULONG NewClick_Micro;
+    WORD MultiClick;
+
+    WORD Columns;
+
+    struct MUI_EventHandlerNode ehn;
+    struct MUI_PenSpec_intern inactive_text;
+    struct MUI_PenSpec_intern active_text;
+    struct MUI_PenSpec_intern marked_text;
+    struct MUI_PenSpec_intern marked_bg;
+    struct MUI_PenSpec_intern cursor;
+
+    BOOL is_active;
+    STRPTR AckBuffer;           /* pointer to buffer of MUIA_String_Acknowledge */
+};
+
+#define MSDF_ADVANCEONCR    (1<<0)
+#define MSDF_LONELYEDITHOOK (1<<1)
+#define MSDF_MARKING            (1<<2)
+#define MSDF_KEYMARKING            (1<<3)
+#define MSDF_NOINPUT            (1<<4)
+#define MSDF_STAYACTIVE     (1<<5)
+
+enum
+{
+    NO_REASON = 0,
+    WENT_ACTIVE = 1,
+    WENT_INACTIVE,
+    DO_CURSOR_LEFT = 3,
+    DO_CURSOR_RIGHT,
+    DO_DELETE = 5,
+    DO_BACKSPACE,
+    DO_ADDCHAR = 7,
+    NEW_CONTENTS,
+    MOVE_CURSOR,
+    DO_UNKNOWN,
+};
+
+#define SECRET_CHAR '*'
+
+
+
+
+
+/**************************************************************************
+ Buffer_Alloc
+ Allocate memory for buffer
+**************************************************************************/
+/*
+ * Allocate owned text/optional Secret buffers. Requires valid size; failure
+ * aborts construction.
+ */
+static BOOL Buffer_Alloc(struct MUI_StringData *data)
+{
+    UWORD i;
+
+    data->Buffer =
+        (STRPTR) AllocVec(data->BufferSize * sizeof(char), MEMF_ANY);
+    if (NULL == data->Buffer)
+    {
+        bug("[MUI:String] Buffer_Alloc: Failed to allocate %ld bytes for buffer1\n",
+            data->BufferSize * sizeof(char));
+        return FALSE;
+    }
+    if (data->msd_useSecret)
+    {
+        data->SecBuffer =
+            (STRPTR) AllocVec(data->BufferSize * sizeof(char), MEMF_ANY);
+        if (NULL == data->SecBuffer)
+        {
+            bug("[MUI:String] Buffer_Alloc: Failed to allocate %ld bytes for buffer2\n",
+                data->BufferSize * sizeof(char));
+            FreeVec(data->Buffer);
+            data->Buffer = NULL;
+            return FALSE;
+        }
+
+        /* Initialise maximum number of asterisks we'll need */
+        for (i = 0; i < data->BufferSize - 1; i++)
+            data->SecBuffer[i] = SECRET_CHAR;
+
+        data->VisualBuffer = data->SecBuffer;
+    }
+    else
+        data->VisualBuffer = data->Buffer;
+
+    return TRUE;
+}
+
+/*
+ * Temporarily NUL-terminate Secret display at NumChars; requires allocated
+ * in-range buffer.
+ */
+static inline VOID PrepareVisualBuffer(struct MUI_StringData *data)
+{
+    if (data->msd_useSecret)
+        data->VisualBuffer[data->NumChars] = '\0';
+}
+
+/* Restore the Secret display fill byte at NumChars after drawing. */
+static inline VOID CleanVisualBuffer(struct MUI_StringData *data)
+{
+    if (data->msd_useSecret)
+        data->VisualBuffer[data->NumChars] = SECRET_CHAR;
+}
+
+/**************************************************************************
+ Buffer_SetNewContents
+ Initialize buffer with a string, replace former content if any. Returns
+ TRUE if value actually changed.
+**************************************************************************/
+/*
+ * Copy/truncate independent NUL-terminated input, or clear on NULL. Non-NULL
+ * comparison requires initialized storage; update count and cursor.
+ */
+static BOOL Buffer_SetNewContents(struct MUI_StringData *data,
+    CONST_STRPTR str)
+{
+    if (NULL == data->Buffer)
+        return FALSE;
+
+    if (NULL == str)
+    {
+        data->Buffer[0] = 0;
+        data->NumChars = 0;
+    }
+    else
+    {
+        if (!strcmp(data->Buffer, str))
+            return FALSE;
+
+        data->NumChars = strlen(str);
+        if (data->NumChars >= data->BufferSize)
+            data->NumChars = data->BufferSize - 1;
+
+        strncpy(data->Buffer, str, data->BufferSize);
+        data->Buffer[data->BufferSize - 1] = 0;
+    }
+
+    // avoid to BufferPos jumps to end of string if characters are inserted
+    // in string
+    if (data->BufferPos > data->NumChars)
+        data->BufferPos = data->NumChars;
+    data->DispPos = 0;
+    data->AckBuffer = data->Buffer;
+    return TRUE;
+}
+
+/**************************************************************************
+ Buffer_AddChar
+ Add a char on cursor position
+**************************************************************************/
+/*
+ * Insert one byte at valid cursor, shifting suffix including NUL. Return TRUE
+ * on success, FALSE if unavailable or full.
+ */
+static BOOL Buffer_AddChar(struct MUI_StringData *data, unsigned char code)
+{
+    STRPTR dst;
+
+    if (data->Buffer == NULL)
+        return FALSE;
+
+    if (data->NumChars + 1 >= data->BufferSize)
+        return FALSE;
+
+    dst = &data->Buffer[data->BufferPos + 1];
+
+    memmove(dst, &data->Buffer[data->BufferPos],
+        data->NumChars - data->BufferPos);
+
+    dst[data->NumChars - data->BufferPos] = 0;
+    dst[-1] = code;
+
+    data->BufferPos++;
+    data->NumChars++;
+    return TRUE;
+}
+
+/* Find preceding literal-space boundary; input/output positions use WORD. */
+static WORD Buffer_GetWordStartIndex(struct MUI_StringData *data,
+    WORD startindex)
+{
+    WORD index = startindex;
+
+    while (index > 0)
+    {
+        if (data->Buffer[index - 1] == ' ')
+        {
+            break;
+        }
+        index--;
+    }
+
+    return index;
+}
+
+/* Find following literal-space boundary, bounded by NumChars; WORD indexing. */
+static WORD Buffer_GetWordEndIndex(struct MUI_StringData *data,
+    WORD startindex)
+{
+    WORD index = startindex;
+
+    while (index < data->NumChars)
+    {
+        if (data->Buffer[index] == ' ')
+        {
+            break;
+        }
+        index++;
+    }
+
+    return index;
+}
+
+/*
+ * Find preceding word boundary using literal spaces; requires valid WORD
+ * position.
+ */
+static WORD Buffer_GetPrevWordIndex(struct MUI_StringData *data,
+    WORD startindex)
+{
+    WORD index = startindex;
+
+    while (index > 0)
+    {
+        index--;
+
+        if ((index == 0) ||
+            ((data->Buffer[index - 1] == ' ') &&
+                (data->Buffer[index] != ' ')))
+        {
+            break;
+        }
+
+    }
+
+    return index;
+}
+
+/*
+ * Find following word boundary using literal spaces; requires valid WORD
+ * position.
+ */
+static WORD Buffer_GetSuccWordIndex(struct MUI_StringData *data,
+    WORD startindex)
+{
+    WORD index = startindex;
+
+    while (index < data->NumChars)
+    {
+        index++;
+
+        if ((index == data->NumChars) ||
+            ((data->Buffer[index - 1] == ' ') &&
+                (data->Buffer[index] != ' ')))
+        {
+            break;
+        }
+    }
+
+    return index;
+}
+
+/*
+ * Normalize marked byte/word/all range using WORD positions; requires
+ * representable cursor/mark.
+ */
+static BOOL Buffer_GetMarkedRange(struct MUI_StringData *data, WORD *start,
+    WORD *stop)
+{
+    WORD markstart = data->MarkPos;
+    WORD markstop = data->BufferPos;
+
+    markstart = MIN(markstart, data->NumChars);
+    markstart = MAX(markstart, 0);
+
+    markstop = MIN(markstop, data->NumChars);
+    markstop = MAX(markstop, 0);
+
+    if (markstart > markstop)
+    {
+        markstart ^= markstop;
+        markstop ^= markstart;
+        markstart ^= markstop;
+    }
+
+    switch (data->MultiClick)
+    {
+    case 0:
+        /* char select */
+        break;
+
+    case 1:
+        /* word select */
+        markstart = Buffer_GetWordStartIndex(data, markstart);
+        markstop = Buffer_GetWordEndIndex(data, markstop);
+        break;
+
+    default:
+        /* select all */
+        markstart = 0;
+        markstop = data->NumChars;
+        break;
+
+    }
+
+    if (markstart == markstop)
+        return FALSE;
+
+    if (start)
+        *start = markstart;
+    if (stop)
+        *stop = markstop;
+
+    //kprintf("Buffer_GetMarkedRange: returning %d .. %d\n",
+    //    markstart, markstop);
+
+    return TRUE;
+}
+
+/*
+ * Return whether a nonempty normalized range is marked; requires valid WORD
+ * indices.
+ */
+static BOOL Buffer_AnythingMarked(struct MUI_StringData *data)
+{
+    if (!(data->msd_Flags & MSDF_MARKING))
+        return FALSE;
+
+    return Buffer_GetMarkedRange(data, NULL, NULL);
+}
+
+/*
+ * Remove normalized selection including NUL, clear mark and move cursor;
+ * return whether content changed.
+ */
+static BOOL Buffer_KillMarked(struct MUI_StringData *data)
+{
+    WORD markstart = data->MarkPos;
+    WORD markstop = data->BufferPos;
+    WORD marklen;
+
+    //kprintf("\nBuffer_KillMarked 1  markpos %d  bufferpos %d  numchars %d\n",
+    //    markstart, markstop, data->NumChars);
+
+    if (!(data->msd_Flags & MSDF_MARKING))
+        return FALSE;
+
+    data->msd_Flags &= ~MSDF_MARKING;
+
+    if (!Buffer_GetMarkedRange(data, &markstart, &markstop))
+        return FALSE;
+
+    //kprintf("Buffer_KillMarked 2  markstart %d  markstop %d\n",
+    //    markstart, markstop);
+
+    if (markstart > markstop)
+    {
+        markstart ^= markstop;
+        markstop ^= markstart;
+        markstart ^= markstop;
+    }
+
+    marklen = markstop - markstart;
+
+    //kprintf("Buffer_KillMarked: markstart %d  markstop %d\n",
+    //    markstart, markstop);
+
+    memmove(&data->Buffer[markstart],
+        &data->Buffer[markstart + marklen],
+        data->NumChars - markstart - marklen + 1);
+    data->NumChars -= marklen;
+    data->BufferPos = markstart;
+
+    return TRUE;
+}
+
+/**************************************************************************
+ OM_NEW
+**************************************************************************/
+/*
+ * Construct Area and fixed editor buffers. Borrow filters/list/hook; fail on
+ * allocation errors. Initial non-NULL text can read uninitialized buffer.
+ */
+IPTR String__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
+{
+    struct MUI_StringData *data;
+    struct TagItem *tags, *tag;
+    CONST_STRPTR str = NULL;
+    char integerbuf[20];
+
+    obj = (Object *) DoSuperNewTags(cl, obj, NULL,
+        /*  MUIA_FillArea, TRUE, */
+        TAG_MORE, (IPTR) msg->ops_AttrList);
+    if (!obj)
+        return FALSE;
+
+    data = INST_DATA(cl, obj);
+    data->msd_useSecret = FALSE;
+    data->msd_Align = MUIV_String_Format_Left;
+    data->BufferSize = 80;
+    data->Columns = -1;
+
+    Buffer_SetNewContents(data, "");    /* <-- isn't this pointless? */
+
+    /* parse initial taglist */
+    for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags));)
+    {
+        switch (tag->ti_Tag)
+        {
+        case MUIA_String_Accept:
+            data->msd_Accept = (CONST_STRPTR) tag->ti_Data;
+            break;
+
+        case MUIA_String_Reject:
+            data->msd_Reject = (CONST_STRPTR) tag->ti_Data;
+            break;
+
+        case MUIA_String_AdvanceOnCR:
+            _handle_bool_tag(data->msd_Flags, tag->ti_Data,
+                MSDF_ADVANCEONCR);
+            break;
+
+        case MUIA_String_BufferPos:
+            data->BufferPos = (ULONG) tag->ti_Data;
+            break;
+
+        case MUIA_String_AttachedList:
+            data->msd_AttachedList = (Object *) tag->ti_Data;
+            break;
+
+        case MUIA_String_Secret:
+            data->msd_useSecret = (BOOL) tag->ti_Data;
+            break;
+
+        case MUIA_String_Contents:
+            str = (CONST_STRPTR) tag->ti_Data;
+            break;
+
+        case MUIA_String_EditHook:
+            data->msd_EditHook = (struct Hook *)tag->ti_Data;
+            break;
+
+        case MUIA_String_Format:
+            data->msd_Align = (LONG) tag->ti_Data;
+            break;
+
+        case MUIA_String_Integer:
+            snprintf(integerbuf, 19, "%ld", tag->ti_Data);
+            str = integerbuf;
+            break;
+
+        case MUIA_String_LonelyEditHook:
+            _handle_bool_tag(data->msd_Flags, tag->ti_Data,
+                MSDF_LONELYEDITHOOK);
+            break;
+
+        case MUIA_String_MaxLen:
+            data->BufferSize = tag->ti_Data;
+            if (data->BufferSize < 1)
+                data->BufferSize = 1;
+            break;
+
+        case MUIA_String_Columns:      /* BetterString */
+            data->Columns = (WORD) tag->ti_Data;
+            break;
+
+        case MUIA_String_NoInput:      /* BetterString */
+            _handle_bool_tag(data->msd_Flags, tag->ti_Data, MSDF_NOINPUT);
+            break;
+
+        case MUIA_String_StayActive:   /* BetterString */
+            _handle_bool_tag(data->msd_Flags, tag->ti_Data,
+                MSDF_STAYACTIVE);
+            break;
+
+        }
+    }
+
+    if (Buffer_Alloc(data))
+    {
+        Buffer_SetNewContents(data, str);
+    }
+
+    if (NULL == data->Buffer)
+    {
+        CoerceMethod(cl, obj, OM_DISPOSE);
+        return 0;
+    }
+
+    D(bug("[MUI:String] New(%p)\n", obj));
+
+    data->ehn.ehn_Events = IDCMP_MOUSEBUTTONS;
+    data->ehn.ehn_Priority = 0;
+    data->ehn.ehn_Flags = MUI_EHF_GUIMODE;
+    data->ehn.ehn_Object = obj;
+    data->ehn.ehn_Class = cl;
+
+    CurrentTime(&data->OldClick_Sec, &data->OldClick_Micro);
+
+    return (IPTR) obj;
+}
+
+/**************************************************************************
+ OM_DISPOSE
+**************************************************************************/
+/*
+ * Release owned text/Secret buffers without erasure, then Area; retained
+ * pointers expire.
+ */
+IPTR String__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
+{
+    struct MUI_StringData *data = INST_DATA(cl, obj);
+
+    FreeVec(data->Buffer);
+    FreeVec(data->SecBuffer);
+
+    D(bug("[MUI:String] Dispose %p\n", obj));
+
+    return DoSuperMethodA(cl, obj, msg);
+}
+
+/**************************************************************************
+ OM_SET
+**************************************************************************/
+/*
+ * Handle supported tags, copy Contents and request redraws; cursor setters
+ * may store unchecked positions. Delegate remaining tags to Area.
+ */
+IPTR String__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
+{
+    struct MUI_StringData *data = INST_DATA(cl, obj);
+    struct TagItem *tags = msg->ops_AttrList;
+    struct TagItem *tag;
+
+    while ((tag = NextTagItem(&tags)) != NULL)
+    {
+        switch (tag->ti_Tag)
+        {
+        case MUIA_Text_Contents: /* MUI5 */
+        case MUIA_String_Contents:
+            if (Buffer_SetNewContents(data, (STRPTR) tag->ti_Data))
+            {
+                data->msd_RedrawReason = NEW_CONTENTS;
+                data->msd_Flags &= ~(MSDF_MARKING | MSDF_KEYMARKING);
+                MUI_Redraw(obj, MADF_DRAWOBJECT);
+            }
+            else
+            {
+                /* Attribute value not changed, don't fire notification */
+                tag->ti_Tag = TAG_IGNORE;
+            }
+            break;
+
+        case MUIA_String_Accept:
+            data->msd_Accept = (CONST_STRPTR) tag->ti_Data;
+            break;
+
+        case MUIA_String_Reject:
+            data->msd_Reject = (CONST_STRPTR) tag->ti_Data;
+            break;
+
+        case MUIA_String_AttachedList:
+            data->msd_AttachedList = (Object *) tag->ti_Data;
+            break;
+
+        case MUIA_String_Integer:
+            {
+                char buf[20];
+                IPTR oldval, newval;
+
+                get(obj, MUIA_String_Integer, &oldval);
+                snprintf(buf, 19, "%ld", tag->ti_Data);
+                set(obj, MUIA_String_Contents, buf);
+                get(obj, MUIA_String_Integer, &newval);
+                if (oldval == newval) tag->ti_Tag = TAG_IGNORE; /* Attribute value not changed */
+            }
+            break;
+
+        case MUIA_String_AdvanceOnCR:
+            _handle_bool_tag(data->msd_Flags, tag->ti_Data,
+                MSDF_ADVANCEONCR);
+            break;
+
+        case MUIA_String_BufferPos:
+            data->BufferPos = (ULONG) tag->ti_Data;
+            data->msd_Flags &= ~MSDF_MARKING;
+            data->msd_RedrawReason = MOVE_CURSOR;
+            MUI_Redraw(obj, MADF_DRAWUPDATE);
+            break;
+
+        case MUIA_String_DisplayPos:
+            data->BufferPos = (ULONG) tag->ti_Data;
+            data->DispPos = data->BufferPos;    // move both pos
+            data->msd_Flags &= ~MSDF_MARKING;
+            data->msd_RedrawReason = MOVE_CURSOR;
+            MUI_Redraw(obj, MADF_DRAWUPDATE);
+            break;
+
+        case MUIA_String_NoInput:      /* BetterString */
+            _handle_bool_tag(data->msd_Flags, tag->ti_Data, MSDF_NOINPUT);
+            break;
+
+        case MUIA_String_StayActive:   /* BetterString */
+            _handle_bool_tag(data->msd_Flags, tag->ti_Data,
+                MSDF_STAYACTIVE);
+            break;
+
+        case MUIA_String_SelectSize:   /* BetterString */
+            // TODO: Implement OM_SET(MUIA_String_SelectSize)!
+            break;
+
+        }
+    }
+
+    return DoSuperMethodA(cl, obj, (Msg) msg);
+}
+
+
+/**************************************************************************
+ OM_GET
+**************************************************************************/
+/*
+ * Return supported attributes, including borrowed Contents/Acknowledge
+ * pointers, through writable IPTR storage; delegate others.
+ */
+IPTR String__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
+{
+    struct MUI_StringData *data = INST_DATA(cl, obj);
+
+#define STORE *(msg->opg_Storage)
+    switch (msg->opg_AttrID)
+    {
+    case MUIA_Text_Contents: /* MUI5 */
+    case MUIA_String_Contents:
+        STORE = (IPTR) data->Buffer;
+        return TRUE;
+
+    case MUIA_String_Secret:
+        STORE = (IPTR) data->msd_useSecret;
+        return TRUE;
+
+    case MUIA_String_Acknowledge:
+        STORE = (IPTR) data->AckBuffer;
+        return TRUE;
+
+    case MUIA_String_Accept:
+        STORE = (IPTR) data->msd_Accept;
+        return TRUE;
+
+    case MUIA_String_Reject:
+        STORE = (IPTR) data->msd_Reject;
+        return TRUE;
+
+    case MUIA_String_AttachedList:
+        STORE = (IPTR) data->msd_AttachedList;
+        return TRUE;
+
+    case MUIA_String_Format:
+        STORE = (IPTR) data->msd_Align;
+        return TRUE;
+
+    case MUIA_String_Integer:
+        {
+            STRPTR buf = NULL;
+            STORE = 0;
+            get(obj, MUIA_String_Contents, &buf);
+            if (NULL != buf)
+            {
+                LONG val = 0;
+                StrToLong(buf, &val);
+                STORE = val;
+            }
+            return TRUE;
+        }
+
+    case MUIA_String_MaxLen:
+        STORE = (IPTR) data->BufferSize;
+        return TRUE;
+
+    case MUIA_String_AdvanceOnCR:
+        STORE = (data->msd_Flags & MSDF_ADVANCEONCR) ? TRUE : FALSE;
+        return TRUE;
+
+    case MUIA_String_BufferPos:
+        STORE = data->BufferPos;
+        return TRUE;
+
+    case MUIA_String_DisplayPos:
+        STORE = data->DispPos;
+        return TRUE;
+
+    case MUIA_String_NoInput:  /* BetterString */
+        STORE = (data->msd_Flags & MSDF_NOINPUT) ? TRUE : FALSE;
+        return TRUE;
+
+    case MUIA_String_StayActive:       /* BetterString */
+        STORE = (data->msd_Flags & MSDF_STAYACTIVE) ? TRUE : FALSE;
+        return TRUE;
+
+    case MUIA_String_SelectSize:       /* BetterString */
+        if (data->msd_Flags & MSDF_MARKING)
+        {
+            WORD markstart, markstop;
+
+            if (Buffer_GetMarkedRange(data, &markstart, &markstop))
+            {
+                LONG size = markstop - markstart;
+
+                if (data->MarkPos < data->BufferPos)
+                    size = -size;
+
+                STORE = (IPTR) size;
+
+                return 1;
+            }
+
+        }
+
+        STORE = 0;
+        return TRUE;
+
+    }
+
+    return DoSuperMethodA(cl, obj, (Msg) msg);
+#undef STORE
+}
+
+/**************************************************************************
+ MUIM_Setup
+**************************************************************************/
+/*
+ * After Area setup acquire pens and register Window event handler; failure
+ * requires matching cleanup.
+ */
+IPTR String__MUIM_Setup(struct IClass *cl, Object *obj,
+    struct MUIP_Setup *msg)
+{
+    struct MUI_StringData *data = INST_DATA(cl, obj);
+
+    if (0 == DoSuperMethodA(cl, obj, (Msg) msg))
+        return FALSE;
+
+    data->is_active = FALSE;
+    set(obj, MUIA_Background,
+        (IPTR) muiGlobalInfo(obj)->mgi_Prefs->string_bg_inactive);
+
+    zune_pen_spec_to_intern(
+        (const struct MUI_PenSpec *)muiGlobalInfo(obj)->mgi_Prefs->
+        string_text_inactive, &data->inactive_text);
+    zune_penspec_setup(&data->inactive_text, muiRenderInfo(obj));
+
+    zune_pen_spec_to_intern(
+        (const struct MUI_PenSpec *)muiGlobalInfo(obj)->mgi_Prefs->
+        string_text_active, &data->active_text);
+    zune_penspec_setup(&data->active_text, muiRenderInfo(obj));
+
+    zune_pen_spec_to_intern(
+        (const struct MUI_PenSpec *)muiGlobalInfo(obj)->mgi_Prefs->
+        string_text_marked, &data->marked_text);
+    zune_penspec_setup(&data->marked_text, muiRenderInfo(obj));
+
+    zune_pen_spec_to_intern(
+        (const struct MUI_PenSpec *)muiGlobalInfo(obj)->mgi_Prefs->
+        string_bg_marked, &data->marked_bg);
+    zune_penspec_setup(&data->marked_bg, muiRenderInfo(obj));
+
+    zune_pen_spec_to_intern(
+        (const struct MUI_PenSpec *)muiGlobalInfo(obj)->mgi_Prefs->
+        string_cursor, &data->cursor);
+    zune_penspec_setup(&data->cursor, muiRenderInfo(obj));
+
+    DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR) & data->ehn);
+    return TRUE;
+}
+
+/**************************************************************************
+ MUIM_Cleanup
+**************************************************************************/
+/* Remove Window handler and release pens, then delegate Area cleanup. */
+IPTR String__MUIM_Cleanup(struct IClass *cl, Object *obj,
+    struct MUIP_Cleanup *msg)
+{
+    struct MUI_StringData *data = INST_DATA(cl, obj);
+
+    D(bug("[MUI:String] Cleanup %p\n", obj));
+    DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR) & data->ehn);
+
+    zune_penspec_cleanup(&data->inactive_text);
+    zune_penspec_cleanup(&data->active_text);
+    zune_penspec_cleanup(&data->marked_text);
+    zune_penspec_cleanup(&data->marked_bg);
+    zune_penspec_cleanup(&data->cursor);
+
+    return (DoSuperMethodA(cl, obj, (Msg) msg));
+}
+
+/**************************************************************************
+ MUIM_AskMinMax
+**************************************************************************/
+/* Add font-based layout bounds according to Columns, then Area contributions. */
+IPTR String__MUIM_AskMinMax(struct IClass *cl, Object *obj,
+    struct MUIP_AskMinMax *msg)
+{
+    struct MUI_StringData *data = INST_DATA(cl, obj);
+
+    DoSuperMethodA(cl, obj, (Msg) msg);
+
+    if (data->Columns >= 0)
+    {
+        msg->MinMaxInfo->MinWidth += _font(obj)->tf_XSize * data->Columns;
+        msg->MinMaxInfo->DefWidth += _font(obj)->tf_XSize * data->Columns;
+        msg->MinMaxInfo->MaxWidth += _font(obj)->tf_XSize * data->Columns;
+    }
+    else
+    {
+        msg->MinMaxInfo->MinWidth += _font(obj)->tf_XSize * 4;
+        msg->MinMaxInfo->DefWidth += _font(obj)->tf_XSize * 12;
+        msg->MinMaxInfo->MaxWidth = MUI_MAXMAX;
+    }
+
+    msg->MinMaxInfo->MinHeight += _font(obj)->tf_YSize;
+    msg->MinMaxInfo->DefHeight += _font(obj)->tf_YSize;
+    msg->MinMaxInfo->MaxHeight += _font(obj)->tf_YSize;
+
+/*    D(bug("String_AskMinMax(%p): Min=%ldx%ld Max=%ldx%ld Def=%ldx%ld\n", */
+/*            obj, msg->MinMaxInfo->MinWidth, msg->MinMaxInfo->MinHeight, */
+/*            msg->MinMaxInfo->MaxWidth, msg->MinMaxInfo->MaxHeight, */
+/*            msg->MinMaxInfo->DefWidth, msg->MinMaxInfo->DefHeight)); */
+
+    return TRUE;
+}
+
+
+/*
+ * Measure greatest useful display start using the current font and cursor
+ * space; requires valid text range.
+ */
+static WORD MaxDispPos(struct IClass *cl, Object *obj)
+{
+    struct MUI_StringData *data = INST_DATA(cl, obj);
+    WORD numfit, max_disppos, numchars;
+    struct TextExtent te;
+    BOOL cursor_at_end;
+
+    cursor_at_end = (data->BufferPos == data->NumChars);
+
+/*      D(bug("MaxDispPos(current length: %d, bufferpos=%d)\n", */
+/*            data->NumChars, data->BufferPos)); */
+
+/*      D(bug("cursor_at_end: %d\n", cursor_at_end)); */
+
+    if (cursor_at_end)          /* Cursor at end of string ? */
+    {
+/*              D(bug("Making cursor last char\n")); */
+        numchars = data->NumChars + 1;  /* Take cursor into account */
+
+/*            This has already been done by UpdateDisp() which called us
+        strinfo->Buffer[strinfo->NumChars] = 0x20;
+
+*/
+    }
+    else
+    {
+        numchars = data->NumChars;
+    }
+
+    /* Find the amount of characters that fit into the bbox, counting
+     ** from the last character in the buffer and forward,
+     */
+    numfit = TextFit(_rp(obj),
+        &(data->Buffer[numchars - 1]),
+        numchars, &te, NULL, -1, _mwidth(obj), _mheight(obj));
+
+    max_disppos = numchars - numfit;
+
+/*    if ((max_disppos > 0) && (!cursor_at_end))
+            max_disppos --;
+  */
+
+/*      D(bug("Numchars w/cursor: %d, Numfit: %d, maxdisppos=%d  " */
+/*            "bbox->Width = %d  te->te_Width = %d\n", */
+/*            numchars, numfit, max_disppos, _mwidth(obj), te.te_Width)); */
+
+    return max_disppos;
+}
+
+
+/*
+ * Adjust byte display offset and visible count to keep cursor in view;
+ * requires valid prepared text.
+ */
+static void UpdateDisp(struct IClass *cl, Object *obj)
+{
+    struct MUI_StringData *data = INST_DATA(cl, obj);
+    struct TextExtent te;
+    STRPTR dispstr;
+
+    /* If the cursor is at the trailing \0, insert a SPACE instead */
+    if (data->BufferPos == data->NumChars)
+        data->VisualBuffer[data->NumChars] = ' ';
+
+    /* In this function we check if the cursor has gone outside
+     ** of the visible area (because of application setting
+     ** strinfo->BufferPos or strinfo->DispPos to a different value, or
+     ** because of user input).
+     ** This is made a bit difficult by the rule (R), that there
+     ** should NOT be available space on the right, and characters
+     ** scrolled out at the left, at the same time.
+     ** We have 3 possible scenarios:
+     ** 1) Cursor to the left of DispPos:
+     **    Set DispPos to the lowest of BufferPos and the
+     **          maximum allowed disppos (according to (R) ).
+     ** 2) Cursor to the right of visible area:
+     **    Set dispose sou that the cursor is the last visible character.
+     **    This afheres to (R).
+     ** 3) Cursor inside visible area. Do a check on rule (R),
+     **    and if DispPos > max allowed, then adjust it down,
+     **    so that the last character in the buffer becomes last character
+     **          displayed. (The cursor will still be visible after adjustion)
+     */
+
+    /* 1) Cursor to the left of visible area */
+    if (data->BufferPos < data->DispPos)
+    {
+        WORD max_disppos;
+
+        max_disppos = MaxDispPos(cl, obj);
+        data->DispPos = MIN(data->BufferPos, max_disppos);
+    }
+    else        /* Cursor equal to the right of disppos [ 2) or 3) ] */
+    {
+        UWORD strsize;
+
+        /* How many pixels are there from current 1st displayed to cursor? */
+        strsize = TextLength(_rp(obj),
+            data->VisualBuffer + data->DispPos,
+            data->BufferPos - data->DispPos + 1);
+
+        /* 2) More than fits into the gadget ? */
+        if (strsize > _mwidth(obj))
+        {
+            /* Compute new DispPos such that the cursor is at the right */
+            data->DispPos = data->BufferPos
+                - TextFit(_rp(obj),
+                &(data->VisualBuffer[data->BufferPos]),
+                data->NumChars, &te, NULL, -1,
+                _mwidth(obj), _mheight(obj)) + 1;
+
+/*              D(bug("cursor right of visible area, new disppos: %d\n", */
+/*                  data->DispPos)); */
+        }
+        else                    /* 3). Cursor inside gadget */
+        {
+            WORD max_disppos;
+
+            max_disppos = MaxDispPos(cl, obj);
+            if (data->DispPos > max_disppos)
+                data->DispPos = max_disppos;
+
+        }        /* if (cursor inside or to the right of visible area ) */
+
+    }
+
+    /* Update the DispCount */
+    /* It might be necessary with special handling for centre aligned gads */
+    dispstr = &(data->VisualBuffer[data->DispPos]);
+/*      D(bug("DispCount before = %d\n", data->DispCount)); */
+    data->DispCount = TextFit(_rp(obj), dispstr,
+        data->NumChars - data->DispPos,
+        &te, NULL, 1, _mwidth(obj), _mheight(obj));
+/*      D(bug("DispCount after = %d\n", data->DispCount)); */
+
+    /* 0-terminate string (in case we put a SPACE at the end) */
+    data->VisualBuffer[data->NumChars] = '\0';
+}
+
+
+/* Gets left position of text in the string gadget */
+/*
+ * Compute visible text left edge for alignment; requires setup RastPort and
+ * valid display range.
+ */
+static UWORD GetTextLeft(struct IClass *cl, Object *obj)
+{
+    struct MUI_StringData *data = INST_DATA(cl, obj);
+    UWORD text_left = 0;
+    STRPTR dispstr = &(data->VisualBuffer[data->DispPos]);
+    UWORD dispstrlen;
+    BOOL cursor_at_end;
+
+    cursor_at_end = (data->BufferPos == data->NumChars);
+    dispstrlen = MIN(data->DispCount, data->NumChars - data->DispPos);
+
+    switch (data->msd_Align)
+    {
+    case MUIV_String_Format_Left:
+        text_left = _mleft(obj);
+        break;
+
+    case MUIV_String_Format_Center:
+        {
+            WORD textwidth = TextLength(_rp(obj), dispstr, dispstrlen);
+            if (cursor_at_end)
+                textwidth += TextLength(_rp(obj), " ", 1);
+            text_left = _mleft(obj) + ((_mwidth(obj) - textwidth) / 2);
+/*              D(bug("GetTextLeft: dispstr=%s, dispstrlen=%d, textw=%d, " */
+/*                  "textl=%d\n", */
+/*                  dispstr, dispstrlen, textwidth, text_left)); */
+        }
+        break;
+
+    case MUIV_String_Format_Right:
+        {
+            WORD textwidth = TextLength(_rp(obj), dispstr, dispstrlen);
+
+            if (cursor_at_end)
+                textwidth += TextLength(_rp(obj), " ", 1);
+            text_left = _mleft(obj) + (_mwidth(obj) - 1 - textwidth);
+        }
+        break;
+    }
+    return (text_left);
+}
+
+/* Gets right offset of text in the string gadget */
+/*
+ * Compute visible text right edge for alignment; requires setup RastPort and
+ * valid display range.
+ */
+static UWORD GetTextRight(struct IClass *cl, Object *obj)
+{
+    struct MUI_StringData *data = INST_DATA(cl, obj);
+    UWORD text_right = 0;
+    STRPTR dispstr = &(data->VisualBuffer[data->DispPos]);
+    UWORD dispstrlen;
+    BOOL cursor_at_end;
+
+    cursor_at_end = (data->BufferPos == data->NumChars);
+    dispstrlen = MIN(data->DispCount, data->NumChars - data->DispPos);
+
+    switch (data->msd_Align)
+    {
+    case MUIV_String_Format_Left:
+        text_right =
+            _mleft(obj) + TextLength(_rp(obj), dispstr, dispstrlen);
+        break;
+
+    case MUIV_String_Format_Center:
+        {
+            WORD textwidth = TextLength(_rp(obj), dispstr, dispstrlen);
+
+            if (cursor_at_end)
+                textwidth += TextLength(_rp(obj), " ", 1);
+            text_right = _mright(obj) - ((_mwidth(obj) - textwidth) / 2);
+        }
+        break;
+
+    case MUIV_String_Format_Right:
+        text_right = _mright(obj);
+        break;
+    }
+    return (text_right);
+}
+
+
+/* Updates the stringdata in case user has set some fields */
+/* Recompute text length and clamp cursor to the NUL-terminated buffer. */
+static VOID UpdateStringData(struct IClass *cl, Object *obj)
+{
+    struct MUI_StringData *data = INST_DATA(cl, obj);
+
+    data->NumChars = strlen(data->Buffer);
+
+    if (data->BufferPos > data->NumChars)
+    {
+        data->BufferPos = data->NumChars;
+    }
+}
+
+/* Render marked/unmarked text segments using active and selection pens. */
+static VOID TextM(Object *obj, struct MUI_StringData *data,
+    STRPTR text, WORD textlen, WORD markstart, WORD markend)
+{
+    struct RastPort *rp = _rp(obj);
+    ULONG textpen;
+    WORD len;
+
+    if (data->is_active)
+        textpen = data->active_text.p_pen;
+    else
+        textpen = data->inactive_text.p_pen;
+
+    //kprintf("TextM: textlen %d  markstart %d  markend %d ... \n",
+    //    textlen, markstart, markend);
+
+    /* <unmarked><marked><unmarked> */
+
+    /* <unmarked> */
+
+    len = MIN(markstart, textlen);
+    len = MAX(len, 0);
+
+    if (len)
+    {
+        //kprintf("A: %d   ", len);
+
+        SetABPenDrMd(rp, textpen, _pens(obj)[MPEN_BACKGROUND], JAM1);
+        Text(rp, text, len);
+
+        text += len;
+        textlen -= len;
+
+    }
+
+    len = MIN(markend - len, textlen);
+    len = MAX(len, 0);
+
+    if (len)
+    {
+        //kprintf("B: %d   ", len);
+        SetABPenDrMd(_rp(obj), data->marked_text.p_pen,
+            data->marked_bg.p_pen, JAM2);
+        Text(rp, text, len);
+
+        text += len;
+        textlen -= len;
+    }
+
+    if (textlen)
+    {
+        //kprintf("C: %d   ", textlen);
+
+        SetABPenDrMd(rp, textpen, _pens(obj)[MPEN_BACKGROUND], JAM1);
+        Text(rp, text, textlen);
+    }
+    //kprintf("\n");
+}
+
+/**************************************************************************
+ MUIM_Draw
+**************************************************************************/
+/*
+ * Delegate Area, prepare Secret visual buffer, update scroll and draw
+ * text/cursor; restore visual buffer.
+ */
+IPTR String__MUIM_Draw(struct IClass *cl, Object *obj,
+    struct MUIP_Draw *msg)
+{
+    struct MUI_StringData *data = INST_DATA(cl, obj);
+    UWORD text_left;
+    UWORD text_top;
+    STRPTR dispstr;
+    UWORD dispstrlen;
+    ULONG textpen;
+    UWORD textleft_save;
+    WORD markstart = 0, markstop = 0;
+
+    /*  D(bug("\nString_Draw(%p) %ldx%ldx%ldx%ld reason=%ld msgflgs=%ld " */
+/*          "curs=%d " */
+/*          "displ=%ld len=%ld buf='%s'\n",obj,_mleft(obj),_mtop(obj), */
+/*          _mwidth(obj),_mheight(obj), data->msd_RedrawReason, msg->flags, */
+/*          data->BufferPos, data->DispPos, data->NumChars, data->Buffer)); */
+
+    DoSuperMethodA(cl, obj, (Msg) msg);
+
+    if (!(msg->flags & MADF_DRAWUPDATE) && !(msg->flags & MADF_DRAWOBJECT))
+        return 0;
+
+    PrepareVisualBuffer(data);
+    SetFont(_rp(obj), _font(obj));
+    if (data->is_active)
+        textpen = data->active_text.p_pen;
+    else
+        textpen = data->inactive_text.p_pen;
+
+    /* Update the stringdata in case of user change */
+    UpdateStringData(cl, obj);
+
+    /* Update the DispPos and DispCount fields so that the gadget renders
+     * properly */
+    UpdateDisp(cl, obj);
+
+    text_top = _mtop(obj)
+        + ((_mheight(obj) - _rp(obj)->Font->tf_YSize) >> 1)
+        + _rp(obj)->Font->tf_Baseline;
+
+    dispstr = data->VisualBuffer + data->DispPos;
+    dispstrlen = MIN(data->DispCount, data->NumChars - data->DispPos);
+    textleft_save = text_left = GetTextLeft(cl, obj);
+
+    // little flicker improvement, don't redraw first part of string
+    // when adding a char
+    if (msg->flags & MADF_DRAWUPDATE &&
+        data->msd_RedrawReason == DO_ADDCHAR &&
+        data->msd_Align == MUIV_String_Format_Left && data->DispPos == 0)
+    {
+        text_left += TextLength(_rp(obj), dispstr, data->BufferPos - 1);
+        dispstr += data->BufferPos - 1;
+        dispstrlen -= data->BufferPos - 1;
+        DoMethod(obj, MUIM_DrawBackground, text_left, _mtop(obj),
+            _mwidth(obj) - text_left + _mleft(obj), _mheight(obj),
+            text_left, _mtop(obj), 0);
+    }
+    else if (msg->flags & MADF_DRAWUPDATE)
+    {
+        DoMethod(obj, MUIM_DrawBackground, _mleft(obj), _mtop(obj),
+            _mwidth(obj), _mheight(obj), _mleft(obj), _mtop(obj), 0);
+    }
+
+    SetABPenDrMd(_rp(obj), textpen, _pens(obj)[MPEN_BACKGROUND], JAM1);
+    Move(_rp(obj), text_left, text_top);
+
+    if ((data->msd_Flags & MSDF_MARKING)
+        && Buffer_GetMarkedRange(data, &markstart, &markstop))
+    {
+        TextM(obj, data, dispstr, dispstrlen, markstart - data->DispPos,
+            markstop - data->DispPos);
+
+    }
+    else
+    {
+        Text(_rp(obj), dispstr, dispstrlen);
+
+        if (data->is_active)    // active, draw cursor
+        {
+            UWORD cursoroffset = data->BufferPos - data->DispPos;
+
+            dispstr = data->VisualBuffer + data->DispPos;
+            text_left = textleft_save;
+
+            SetABPenDrMd(_rp(obj), data->active_text.p_pen,
+                data->cursor.p_pen, JAM2);
+            text_left += TextLength(_rp(obj), dispstr, cursoroffset);
+
+
+            Move(_rp(obj), text_left, text_top);
+            Text(_rp(obj),
+                ((data->BufferPos < data->NumChars)
+                    ? dispstr + cursoroffset : (STRPTR) " "), 1);
+        }
+    }
+
+    data->msd_RedrawReason = NO_REASON;
+    CleanVisualBuffer(data);
+
+    return TRUE;
+}
+
+/**************************************************************************
+ Returns whether object needs redrawing
+**************************************************************************/
+/*
+ * Handle editing/clipboard keys before Accept/Reject filtering; can report
+ * change even for navigation. Insertion path may skip CloseLocale.
+ */
+static int String_HandleVanillakey(struct IClass *cl, Object *obj,
+    unsigned char code, UWORD qual, IPTR *retval)
+{
+    struct MUI_StringData *data =
+        (struct MUI_StringData *)INST_DATA(cl, obj);
+    BOOL doinput;
+
+    D(bug("[MUI:String] HandleVanillakey: code=%d qual=%d\n", code, qual));
+
+    if (0 == code)
+        return 0;
+
+    doinput = (data->msd_Flags & MSDF_NOINPUT) ? FALSE : TRUE;
+
+    if (doinput && (code == '\b'))      /* backspace */
+    {
+        if (Buffer_KillMarked(data))
+        {
+            return 1;
+        }
+
+        if (data->BufferPos > 0)
+        {
+            LONG shift;
+
+            if ((qual & IEQUALIFIER_LSHIFT) || (qual & IEQUALIFIER_RSHIFT))
+            {
+                shift = data->BufferPos;
+                data->msd_RedrawReason = NEW_CONTENTS;
+            }
+            else
+            {
+                shift = 1;
+                data->msd_RedrawReason = DO_BACKSPACE;
+            }
+
+            D(bug("[MUI:String] HandleVanillakey: 'Backspace' count=%d pos=%d"
+                " shift=%d\n", data->NumChars, data->BufferPos, shift));
+            memmove(&data->Buffer[data->BufferPos - shift],
+                &data->Buffer[data->BufferPos],
+                data->NumChars - data->BufferPos + 1);
+            data->BufferPos -= shift;
+            data->NumChars -= shift;
+            return 1;
+        }
+        return 0;
+    }
+
+    if (doinput && (code == 21))        // ctrl-u == NAK (like shift-bs)
+    {
+        if (Buffer_KillMarked(data))
+        {
+            return 1;
+        }
+
+        if (data->BufferPos > 0)
+        {
+            D(bug("[MUI:String] HandleVanillakey: 'Ctrl-U' count=%d pos=%d\n",
+                data->NumChars, data->BufferPos));
+            memmove(&data->Buffer[0],
+                &data->Buffer[data->BufferPos],
+                data->NumChars - data->BufferPos + 1);
+            data->NumChars -= data->BufferPos;
+            data->BufferPos = 0;
+            data->msd_RedrawReason = NEW_CONTENTS;
+            return 1;
+        }
+        return 0;
+    }
+
+    if (doinput && (code == 127))       /* del */
+    {
+        if (!Buffer_KillMarked(data))
+        {
+            if ((qual & IEQUALIFIER_LSHIFT) || (qual & IEQUALIFIER_RSHIFT))
+            {
+                data->Buffer[data->BufferPos] = 0;
+                data->NumChars = data->BufferPos;
+                data->msd_RedrawReason = NEW_CONTENTS;
+            }
+            else
+            {
+                if (data->BufferPos < data->NumChars)
+                {
+                    D(bug("[MUI:String] HandleVanillakey: 'Delete' count=%d"
+                        " pos=%d\n", data->NumChars, data->BufferPos));
+                    memmove(&data->Buffer[data->BufferPos],
+                        &data->Buffer[data->BufferPos + 1],
+                        data->NumChars - data->BufferPos);
+                    data->NumChars--;
+                }
+
+                data->msd_RedrawReason = DO_DELETE;
+            }
+        }
+        return 1;
+    }
+
+    if (doinput && (code == 11))        // ctrl-k == VT == \v (like shift-del)
+    {
+        if (!Buffer_KillMarked(data))
+        {
+            data->Buffer[data->BufferPos] = 0;
+            data->NumChars = data->BufferPos;
+            data->msd_RedrawReason = NEW_CONTENTS;
+        }
+        return 1;
+    }
+
+    if (doinput && (code == 24))        /* ctrl x == ascii cancel */
+    {
+        if (!Buffer_KillMarked(data))
+        {
+            data->Buffer[0] = 0;
+            data->BufferPos = 0;
+            data->NumChars = 0;
+            data->msd_RedrawReason = NEW_CONTENTS;
+        }
+        return 1;
+    }
+
+    if (code == 1)              // ctrl-a, linestart
+    {
+        data->BufferPos = 0;
+        data->msd_Flags &= ~(MSDF_MARKING | MSDF_KEYMARKING);
+        return 1;
+    }
+
+    if (code == 26)             // ctrl-z, lineend
+    {
+        data->BufferPos = data->NumChars;
+        data->msd_Flags &= ~(MSDF_MARKING | MSDF_KEYMARKING);
+        return 1;
+    }
+
+    if (code == '\t')             // tab
+    {
+        return 0;
+    }
+
+    if (((ToLower(code) == 'c') || (ToLower(code) == 'x')) &&
+        (qual & IEQUALIFIER_RCOMMAND))
+    {
+        WORD markstart, markstop;
+
+        if ((data->msd_Flags & MSDF_MARKING)
+            && Buffer_GetMarkedRange(data, &markstart, &markstop))
+        {
+            clipboard_write_text(&data->Buffer[markstart],
+                markstop - markstart);
+
+            if (doinput && (ToLower(code) == 'x'))
+            {
+                Buffer_KillMarked(data);
+            }
+            else
+            {
+                data->BufferPos = markstop;
+                data->msd_Flags &= ~MSDF_MARKING;
+            }
+            return 1;
+        }
+        return 0;
+    }
+
+    if (doinput && (ToLower(code) == 'v') && (qual & IEQUALIFIER_RCOMMAND))
+    {
+        STRPTR text;
+        int retval;
+        struct Locale *locale = OpenLocale(NULL);
+
+        retval = Buffer_KillMarked(data);
+        if ((text = clipboard_read_text()))
+        {
+            STRPTR text2 = text;
+            UBYTE c;
+
+            while ((c = *text2++))
+            {
+                if (!IsPrint(locale, c))
+                    break;
+                if (!(Buffer_AddChar(data, c)))
+                    break;
+                if (!retval)
+                    retval = 1;
+            }
+
+            clipboard_free_text(text);
+        }
+
+        CloseLocale(locale);
+
+        return retval;
+    }
+
+    if (data->msd_Accept != NULL)
+    {
+        /* Check if character is accepted */
+        if (NULL == strchr(data->msd_Accept, code))
+        {
+            DisplayBeep(NULL);
+            *retval = MUI_EventHandlerRC_Eat;
+            return 0;
+        }
+    }
+
+    if (data->msd_Reject != NULL)
+    {
+        /* Check if character is rejected */
+        if (NULL != strchr(data->msd_Reject, code))
+        {
+            DisplayBeep(NULL);
+            *retval = MUI_EventHandlerRC_Eat;
+            return 0;
+        }
+    }
+
+    if (doinput)
+    {
+        struct Locale *locale = OpenLocale(NULL);
+
+        if (!(code >= 0x09 && code <= 0x0D) && IsPrint(locale, code))
+        {
+            Buffer_KillMarked(data);
+            if (Buffer_AddChar(data, code))
+            {
+                data->msd_RedrawReason = DO_ADDCHAR;
+                return 2;
+            }
+        }
+
+        CloseLocale(locale);
+    }
+
+    data->msd_RedrawReason = DO_UNKNOWN;
+    return 0;
+}
+
+
+/**************************************************************************
+ MUIM_HandleEvent
+**************************************************************************/
+/*
+ * Process active keyboard, selection and list navigation; send
+ * Contents/Acknowledge/Integer notifications as applicable.
+ */
+IPTR String__MUIM_HandleEvent(struct IClass *cl, Object *obj,
+    struct MUIP_HandleEvent *msg)
+{
+    struct MUI_StringData *data =
+        (struct MUI_StringData *)INST_DATA(cl, obj);
+    IPTR retval = 0;
+    int update = 0;
+    BOOL edited = FALSE;
+    LONG muikey = msg->muikey;
+    BOOL cursor_kills_marking = FALSE;
+
+    if ((data->msd_Flags & MSDF_MARKING)
+        && !(data->msd_Flags & MSDF_KEYMARKING))
+    {
+        cursor_kills_marking = TRUE;
+    }
+
+    /* Convert raw keys to MUI keys for marking */
+    if (muikey == MUIKEY_NONE && msg->imsg != NULL)
+    {
+        if (msg->imsg->Class == IDCMP_RAWKEY)
+        {
+            static LONG muikeytable[3][2] = {
+                {MUIKEY_LEFT, MUIKEY_RIGHT},
+                {MUIKEY_WORDLEFT, MUIKEY_WORDRIGHT},
+                {MUIKEY_LINESTART, MUIKEY_LINEEND}
+            };
+            WORD dirindex = -1, amountindex = 0;
+
+            switch (msg->imsg->Code)
+            {
+            case 0x4F:
+                dirindex = 0;
+                break;
+
+            case 0x4E:
+                dirindex = 1;
+                break;
+
+#ifdef __AROS__
+            case RAWKEY_HOME:
+                muikey = MUIKEY_LINESTART;
+                break;
+
+            case RAWKEY_END:
+                muikey = MUIKEY_LINEEND;
+                break;
+#endif
+
+            }
+
+            if (dirindex != -1)
+            {
+                if (msg->imsg->
+                    Qualifier & (IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT))
+                {
+                    amountindex = 2;
+                }
+                else if (msg->imsg->Qualifier & IEQUALIFIER_CONTROL)
+                {
+                    amountindex = 1;
+                }
+
+                muikey = muikeytable[amountindex][dirindex];
+            }
+
+        }
+    }
+
+    D(bug("[MUI:String] HandleEvent: muikey %d, imsg %p is_active=%d\n", muikey,
+            msg->imsg, data->is_active));
+    if (muikey != MUIKEY_NONE && data->is_active)
+    {
+        retval = MUI_EventHandlerRC_Eat;
+
+        switch (muikey)
+        {
+        case MUIKEY_LEFT:
+            if (cursor_kills_marking)
+            {
+                update = 1;
+                data->BufferPos = MIN(data->BufferPos, data->MarkPos);
+                if (data->BufferPos > 0)
+                    data->BufferPos--;
+
+                data->msd_Flags &= ~MSDF_MARKING;
+            }
+            else if (data->BufferPos > 0)
+            {
+                update = 1;
+
+                data->BufferPos--;
+                data->msd_RedrawReason = DO_CURSOR_LEFT;
+            }
+            break;
+        case MUIKEY_RIGHT:
+            if (cursor_kills_marking)
+            {
+                update = 1;
+                data->BufferPos = MAX(data->BufferPos, data->MarkPos);
+                data->msd_Flags &= ~MSDF_MARKING;
+            }
+            else if (data->BufferPos < data->NumChars)
+            {
+                update = 1;
+                data->BufferPos++;
+                data->msd_RedrawReason = DO_CURSOR_RIGHT;
+            }
+            break;
+        case MUIKEY_WORDLEFT:
+            if (data->BufferPos > 0)
+            {
+                data->BufferPos =
+                    Buffer_GetPrevWordIndex(data, data->BufferPos);
+                update = 1;
+                data->msd_RedrawReason = DO_CURSOR_LEFT;
+            }
+            if (cursor_kills_marking)
+            {
+                data->msd_Flags &= ~MSDF_MARKING;
+                update = 1;
+            }
+            break;
+        case MUIKEY_WORDRIGHT:
+            if (data->BufferPos < data->NumChars)
+            {
+                data->BufferPos =
+                    Buffer_GetSuccWordIndex(data, data->BufferPos);
+                update = 1;
+                data->msd_RedrawReason = DO_CURSOR_RIGHT;
+            }
+            if (cursor_kills_marking)
+            {
+                data->msd_Flags &= ~MSDF_MARKING;
+                update = 1;
+            }
+            break;
+        case MUIKEY_LINESTART:
+            data->BufferPos = 0;
+            update = 1;
+            if (cursor_kills_marking)
+            {
+                data->msd_Flags &= ~MSDF_MARKING;
+            }
+            break;
+
+        case MUIKEY_LINEEND:
+            data->BufferPos = data->NumChars;
+            update = 1;
+            if (cursor_kills_marking)
+            {
+                data->msd_Flags &= ~MSDF_MARKING;
+            }
+            break;
+
+        case MUIKEY_UP:
+            if (data->msd_AttachedList)
+                set(data->msd_AttachedList,
+                    MUIA_List_Active, MUIV_List_Active_Up);
+            break;
+        case MUIKEY_DOWN:
+            if (data->msd_AttachedList)
+                set(data->msd_AttachedList,
+                    MUIA_List_Active, MUIV_List_Active_Down);
+            break;
+        case MUIKEY_PAGEUP:
+            if (data->msd_AttachedList)
+                set(data->msd_AttachedList,
+                    MUIA_List_Active, MUIV_List_Active_PageUp);
+            break;
+        case MUIKEY_PAGEDOWN:
+            if (data->msd_AttachedList)
+                set(data->msd_AttachedList,
+                    MUIA_List_Active, MUIV_List_Active_PageDown);
+            break;
+        case MUIKEY_TOP:
+            if (data->msd_AttachedList)
+                set(data->msd_AttachedList,
+                    MUIA_List_Active, MUIV_List_Active_Top);
+            break;
+        case MUIKEY_BOTTOM:
+            if (data->msd_AttachedList)
+                set(data->msd_AttachedList,
+                    MUIA_List_Active, MUIV_List_Active_Bottom);
+            break;
+        case MUIKEY_PRESS:
+            {
+                UBYTE *buf = NULL;
+                LONG val = 0;
+
+                get(obj, MUIA_String_Contents, &buf);
+
+                if (data->msd_Flags & MSDF_STAYACTIVE)
+                {
+                    /* Do not change active object */
+                }
+                else if (data->msd_Flags & MSDF_ADVANCEONCR)
+                {
+                    set(_win(obj), MUIA_Window_ActiveObject,
+                        MUIV_Window_ActiveObject_Next);
+                }
+                else if (!(data->msd_Flags & MSDF_STAYACTIVE))
+                {
+                    set(_win(obj), MUIA_Window_ActiveObject,
+                        MUIV_Window_ActiveObject_None);
+                }
+
+                /* Notify listeners of new string value */
+                data->AckBuffer = buf;
+                set(obj, MUIA_String_Acknowledge, buf);
+
+                /* Notify listeners of new integer value (if any) */
+                if (StrToLong(buf, &val) >= 0)
+                    superset(cl, obj, MUIA_String_Integer, val);
+            }
+            break;
+
+        case MUIKEY_WINDOW_CLOSE:
+            data->is_active = FALSE;
+            set(obj, MUIA_Background,
+                (IPTR) muiGlobalInfo(obj)->mgi_Prefs->string_bg_inactive);
+            DoMethod(obj, MUIM_GoInactive);
+            retval = 0;
+            break;
+
+        default:
+            retval = 0;
+        }                       // switch(muikey)
+    }                           // if (muikey != MUIKEY_NONE)
+
+    if (msg->imsg)
+    {
+        UWORD code = msg->imsg->Code;
+        //UWORD qual = msg->imsg->Qualifier;
+        WORD x = msg->imsg->MouseX;
+        WORD y = msg->imsg->MouseY;
+
+        //bug("String_HandleEvent: parsing imsg %p, class=%ld\n",
+        //    msg->imsg, msg->imsg->Class);
+
+        switch (msg->imsg->Class)
+        {
+        case IDCMP_MOUSEBUTTONS:       /* set cursor and activate it */
+            if (code == SELECTDOWN)
+            {
+                //bug("String_HandleEvent: code == SELECTDOWN, x=%d y=%d\n",
+                //    x, y);
+
+                if (_isinobject(obj, x, y))
+                {
+                    UWORD text_left, text_right;
+
+                    retval = MUI_EventHandlerRC_Eat;
+
+                    CurrentTime(&data->NewClick_Sec, &data->NewClick_Micro);
+                    if (DoubleClick(data->OldClick_Sec,
+                            data->OldClick_Micro, data->NewClick_Sec,
+                            data->NewClick_Micro))
+                    {
+                        data->MultiClick++;
+                    }
+                    else
+                    {
+                        data->MultiClick = 0;
+                    }
+                    data->OldClick_Sec = data->NewClick_Sec;
+                    data->OldClick_Micro = data->NewClick_Micro;
+
+                    //kprintf("multiclick %d\n", data->MultiClick);
+
+                    if (!data->is_active)
+                    {
+                        //bug("String got button, lets activate\n");
+                        data->is_active = TRUE;
+                        data->msd_RedrawReason = WENT_ACTIVE;
+                        // redraw
+                        set(obj, MUIA_Background,
+                            (IPTR) muiGlobalInfo(obj)->mgi_Prefs->
+                            string_bg_active);
+
+                        //DoMethod(obj, MUIM_GoActive);
+                        set(_win(obj), MUIA_Window_ActiveObject, obj);
+                        // let other objects a chance to get desactivated
+                        //retval = 0;
+                    }
+
+                    if (!(data->ehn.ehn_Events & IDCMP_MOUSEMOVE))
+                    {
+                        DoMethod(_win(obj), MUIM_Window_RemEventHandler,
+                            (IPTR) & data->ehn);
+                        data->ehn.ehn_Events |= IDCMP_MOUSEMOVE;
+                        DoMethod(_win(obj), MUIM_Window_AddEventHandler,
+                            (IPTR) & data->ehn);
+                    }
+
+                    PrepareVisualBuffer(data);
+                    text_left = GetTextLeft(cl, obj);
+                    text_right = GetTextRight(cl, obj);
+                    CleanVisualBuffer(data);
+
+                    /* Check if mouseclick is inside displayed text */
+                    if ((x >= text_left) && (x <= text_right))
+                    {
+                        /* Find new cursor pos. */
+                        struct TextExtent te;
+                        ULONG newpos;
+                        STRPTR dispstr = data->Buffer + data->DispPos;
+
+                        newpos = data->DispPos
+                            + TextFit(_rp(obj), dispstr,
+                            data->NumChars - data->DispPos, &te, NULL, 1,
+                            x - text_left, _rp(obj)->Font->tf_YSize);
+
+                        if (data->BufferPos != newpos)
+                        {
+                            data->BufferPos = newpos;
+                            update = 1;
+                        }
+                    }
+                    else if (x < text_left)
+                    {
+                        /* Click on empty space at left. Set cursor to first
+                         * visible */
+                        if (data->BufferPos != data->DispPos)
+                        {
+                            data->BufferPos = data->DispPos;
+                            update = 1;
+                        }
+                    }
+                    else
+                    {
+                        /* Click on empty space at right. Set cursor to last
+                         * visible */
+                        if (data->BufferPos !=
+                            data->DispPos + data->DispCount)
+                        {
+                            data->BufferPos =
+                                data->DispPos + data->DispCount;
+                            update = 1;
+                        }
+                    }           /* if (click is on text or not) */
+
+                    data->MarkPos = data->BufferPos;
+
+                    if (data->MultiClick == 0)
+                    {
+                        if (data->msd_Flags & MSDF_MARKING)
+                        {
+                            data->msd_Flags &= ~MSDF_MARKING;
+                            update = 1;
+                        }
+                    }
+                    else if (data->MultiClick
+                        && Buffer_GetMarkedRange(data, NULL, NULL))
+                    {
+                        data->msd_Flags |= MSDF_MARKING;
+                        update = 1;
+                    }
+
+
+                }               /* is in object */
+                else if (data->is_active
+                    && !(data->msd_Flags & MSDF_STAYACTIVE))
+                        /* and click not on object */
+                {
+                    data->is_active = FALSE;
+                    set(obj, MUIA_Background,
+                        (IPTR) muiGlobalInfo(obj)->mgi_Prefs->
+                        string_bg_inactive);
+                    //DoMethod(obj, MUIM_GoInactive);
+                    // let other objects a chance to get activated
+                    //retval = 0;
+                }
+            }                   /* if (code == SELECTDOWN) */
+            else if (code == SELECTUP)
+            {
+                if (data->ehn.ehn_Events & IDCMP_MOUSEMOVE)
+                {
+                    DoMethod(_win(obj), MUIM_Window_RemEventHandler,
+                        (IPTR) & data->ehn);
+                    data->ehn.ehn_Events &= ~IDCMP_MOUSEMOVE;
+                    DoMethod(_win(obj), MUIM_Window_AddEventHandler,
+                        (IPTR) & data->ehn);
+                }
+            }
+            break;
+
+        case IDCMP_MOUSEMOVE:
+            if (data->is_active)
+            {
+                UWORD text_left, text_right;
+
+                if (!(data->msd_Flags & MSDF_MARKING))
+                {
+                    data->msd_Flags |= MSDF_MARKING;
+                }
+
+                PrepareVisualBuffer(data);
+                text_left = GetTextLeft(cl, obj);
+                text_right = GetTextRight(cl, obj);
+                CleanVisualBuffer(data);
+
+                /* Check if mouseclick is inside displayed text */
+                if ((x >= text_left) && (x <= text_right))
+                {
+                    /* Find new cursor pos. */
+                    struct TextExtent te;
+                    ULONG newpos;
+                    STRPTR dispstr = data->Buffer + data->DispPos;
+
+                    newpos = data->DispPos
+                        + TextFit(_rp(obj), dispstr,
+                        data->NumChars - data->DispPos, &te, NULL, 1,
+                        x - text_left, _rp(obj)->Font->tf_YSize);
+
+                    if (data->BufferPos != newpos)
+                    {
+                        WORD old_markstart = 0, old_markstop = 0;
+                        WORD markstart = 0, markstop = 0;
+                        BOOL was_marked, is_marked;
+
+                        was_marked = Buffer_AnythingMarked(data) &&
+                            Buffer_GetMarkedRange(data, &old_markstart,
+                            &old_markstop);
+
+                        data->BufferPos = newpos;
+
+                        is_marked = Buffer_AnythingMarked(data) &&
+                            Buffer_GetMarkedRange(data, &markstart,
+                            &markstop);
+
+                        if ((was_marked != is_marked) ||
+                            (old_markstart != markstart) ||
+                            (old_markstop != markstop))
+                        {
+                            update = 1;
+                        }
+                    }
+                }
+                else if ((x < text_left) && (data->BufferPos > 0))
+                {
+                    data->BufferPos--;
+                    update = 1;
+                    data->msd_RedrawReason = DO_CURSOR_LEFT;
+                }
+                else if ((x > text_right)
+                    && (data->BufferPos < data->NumChars))
+                {
+                    data->BufferPos++;
+                    update = 1;
+                    data->msd_RedrawReason = DO_CURSOR_RIGHT;
+                }
+                //kprintf("  ---- bp: %d\n", data->BufferPos);
+            }
+            break;
+
+        case IDCMP_RAWKEY:
+            {
+                unsigned char code;
+
+                //bug("String_HandleEvent: idcmp_rawkey\n");
+
+                if (!data->is_active)
+                    break;
+
+                code = ConvertKey(msg->imsg);
+                if (!code)
+                {
+                    switch (msg->imsg->Code)
+                    {
+                    case 0x64: /* LALT */
+                    case 0x65: /* RALT */
+                    case 0x64 | IECODE_UP_PREFIX:
+                    case 0x65 | IECODE_UP_PREFIX:
+                        if (msg->imsg->
+                            Qualifier & (IEQUALIFIER_LALT |
+                                IEQUALIFIER_RALT))
+                        {
+                            data->MarkPos = data->BufferPos;
+                            data->msd_Flags |=
+                                (MSDF_MARKING | MSDF_KEYMARKING);
+                        }
+                        else
+                        {
+                            data->msd_Flags &= ~MSDF_KEYMARKING;
+                        }
+                        break;
+
+                    }
+                }
+
+                if (code)
+                {
+                    update =
+                        String_HandleVanillakey(cl, obj, code,
+                        msg->imsg->Qualifier, &retval);
+                    if (update)
+                    {
+                        retval = MUI_EventHandlerRC_Eat;
+                        edited = TRUE;
+                    }
+                }
+            }
+            break;
+        }
+    }
+
+    /* Trigger notification */
+    if (edited)
+    {
+        data->AckBuffer = NULL;
+        superset(cl, obj, MUIA_String_Contents, data->Buffer);
+    }
+
+    if (update)
+    {
+        MUI_Redraw(obj, MADF_DRAWUPDATE);
+    }
+    //D(bug("String eh return %ld\n", retval));
+
+    return retval;
+}
+
+
+/**************************************************************************
+ MUIM_Export : to export an object's "contents" to a dataspace object.
+**************************************************************************/
+/*
+ * With nonzero ObjectID copy NUL-terminated Contents to Dataspace. No
+ * transfer error is reported.
+ */
+IPTR String__MUIM_Export(struct IClass *cl, Object *obj,
+    struct MUIP_Export *msg)
+{
+    struct MUI_StringData *data = INST_DATA(cl, obj);
+    ULONG id;
+
+    if ((id = muiNotifyData(obj)->mnd_ObjectID))
+    {
+        if (data->Buffer != NULL)
+            DoMethod(msg->dataspace, MUIM_Dataspace_Add,
+                (IPTR) data->Buffer, data->NumChars + 1, (IPTR) id);
+        else
+            DoMethod(msg->dataspace, MUIM_Dataspace_Remove, (IPTR) id);
+    }
+
+    return 0;
+}
+
+
+/**************************************************************************
+ MUIM_Import : to import an object's "contents" from a dataspace object.
+**************************************************************************/
+/*
+ * With nonzero ObjectID read Dataspace record and set Contents; requires
+ * valid terminated text, returns zero.
+ */
+IPTR String__MUIM_Import(struct IClass *cl, Object *obj,
+    struct MUIP_Import *msg)
+{
+    ULONG id;
+    STRPTR s;
+
+    if ((id = muiNotifyData(obj)->mnd_ObjectID))
+    {
+        if ((s = (STRPTR) DoMethod(msg->dataspace, MUIM_Dataspace_Find,
+                    (IPTR) id)))
+        {
+            set(obj, MUIA_String_Contents, s);
+        }
+    }
+
+    return 0;
+}
+
+/**************************************************************************
+ MUIM_GoActive
+**************************************************************************/
+/* Register active Window input handling and update editor state/background. */
+IPTR String__MUIM_GoActive(struct IClass *cl, Object *obj, Msg msg)
+{
+    struct MUI_StringData *data =
+        (struct MUI_StringData *)INST_DATA(cl, obj);
+
+    //D(bug("String_GoActive %p\n", obj));
+    DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR) & data->ehn);
+    data->ehn.ehn_Events = IDCMP_MOUSEBUTTONS | IDCMP_RAWKEY;
+    DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR) & data->ehn);
+    data->is_active = TRUE;
+    data->msd_Flags &= ~MSDF_KEYMARKING;
+    data->msd_RedrawReason = WENT_ACTIVE;
+    // redraw
+    set(obj, MUIA_Background,
+        (IPTR) muiGlobalInfo(obj)->mgi_Prefs->string_bg_active);
+
+    return 0;
+}
+
+/**************************************************************************
+ MUIM_GoInactive
+**************************************************************************/
+/*
+ * Restrict Window handler to mouse events, clear active state and restore
+ * background.
+ */
+IPTR String__MUIM_GoInactive(struct IClass *cl, Object *obj, Msg msg)
+{
+    struct MUI_StringData *data =
+        (struct MUI_StringData *)INST_DATA(cl, obj);
+
+    //D(bug("String_GoInactive %p\n", obj));
+
+    DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR) & data->ehn);
+    data->ehn.ehn_Events = IDCMP_MOUSEBUTTONS;
+    DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR) & data->ehn);
+    data->is_active = FALSE;
+    data->msd_RedrawReason = WENT_INACTIVE;
+    data->MultiClick = 0;
+
+    // redraw
+    set(obj, MUIA_Background,
+        (IPTR) muiGlobalInfo(obj)->mgi_Prefs->string_bg_inactive);
+
+    return 0;
+}
+
+/**************************************************************************
+ MUIM_String_ClearSelected (BetterString)
+**************************************************************************/
+/*
+ * Delete marked range and redraw when changed. Ignore NoInput; return zero
+ * without Contents notification.
+ */
+IPTR String__MUIM_ClearSelected(struct IClass *cl, Object *obj,
+    struct MUIP_String_ClearSelected *msg)
+{
+    struct MUI_StringData *data =
+        (struct MUI_StringData *)INST_DATA(cl, obj);
+
+    //D(bug("String_ClearSelected %p\n", obj));
+
+    if (Buffer_KillMarked(data))
+    {
+        MUI_Redraw(obj, MADF_DRAWUPDATE);
+    }
+
+    return 0;
+}
+
+/**************************************************************************
+ MUIM_String_Insert (BetterString)
+**************************************************************************/
+/*
+ * Insert independent text at valid cursor/selector until full, without
+ * filtering or notifications; return zero even on truncation.
+ */
+IPTR String__MUIM_Insert(struct IClass *cl, Object *obj,
+    struct MUIP_String_Insert *msg)
+{
+    struct MUI_StringData *data =
+        (struct MUI_StringData *)INST_DATA(cl, obj);
+    LONG pos;
+    ULONG old_bufferpos;
+    ULONG num_inserted = 0;
+
+    //D(bug("String_Insert %p\n", obj));
+
+    switch ((ULONG) msg->pos)
+    {
+    case MUIV_String_Insert_StartOfString:
+        pos = 0;
+        break;
+
+    case MUIV_String_Insert_EndOfString:
+        pos = data->NumChars;
+        break;
+
+    case MUIV_String_Insert_BufferPos:
+        pos = data->BufferPos;
+        break;
+
+    default:
+        pos = msg->pos;
+        break;
+    }
+
+    if ((pos < 0) || (pos > data->NumChars))
+        return 0;
+
+    old_bufferpos = data->BufferPos;
+    data->BufferPos = pos;
+
+    while (msg->text[num_inserted]
+        && Buffer_AddChar(data, msg->text[num_inserted]))
+    {
+        num_inserted++;
+    }
+
+    if (num_inserted)
+    {
+        if (old_bufferpos >= pos)
+        {
+            data->BufferPos = old_bufferpos + num_inserted;
+        }
+        else
+        {
+            data->BufferPos = old_bufferpos;
+        }
+
+        MUI_Redraw(obj, MADF_DRAWUPDATE);
+    }
+
+    return 0;
+}
+
+/**************************************************************************
+ MUIM_String_FileNameStart (BetterString)
+**************************************************************************/
+/*
+ * Return borrowed internal buffer pointer as IPTR, ignoring arguments;
+ * filename index TODO.
+ */
+IPTR String__MUIM_FileNameStart(struct IClass *cl, Object *obj,
+    struct MUIP_String_FileNameStart *msg)
+{
+    struct MUI_StringData *data =
+        (struct MUI_StringData *)INST_DATA(cl, obj);
+    STRPTR buf;
+
+    //D(bug("String_FileNameStart %p\n", obj));
+
+    buf = data->Buffer;
+
+    // TODO: Return the partial filename start position, not the buffer pointer.
+
+    return (IPTR) buf;
+}
+
+/*
+ * Dispatch local String/BOOPSI messages, otherwise delegate to Area
+ * superclass.
+ */
+BOOPSI_DISPATCHER(IPTR, String_Dispatcher, cl, obj, msg)
+{
+    switch (msg->MethodID)
+    {
+    case OM_NEW:
+        return String__OM_NEW(cl, obj, (struct opSet *)msg);
+    case OM_DISPOSE:
+        return String__OM_DISPOSE(cl, obj, msg);
+    case OM_SET:
+        return String__OM_SET(cl, obj, (struct opSet *)msg);
+    case OM_GET:
+        return String__OM_GET(cl, obj, (struct opGet *)msg);
+
+    case MUIM_Setup:
+        return String__MUIM_Setup(cl, obj, (APTR) msg);
+    case MUIM_Cleanup:
+        return String__MUIM_Cleanup(cl, obj, (APTR) msg);
+    case MUIM_AskMinMax:
+        return String__MUIM_AskMinMax(cl, obj, (APTR) msg);
+    case MUIM_Draw:
+        return String__MUIM_Draw(cl, obj, (APTR) msg);
+    case MUIM_Export:
+        return String__MUIM_Export(cl, obj, (APTR) msg);
+    case MUIM_Import:
+        return String__MUIM_Import(cl, obj, (APTR) msg);
+    case MUIM_GoActive:
+        return String__MUIM_GoActive(cl, obj, (APTR) msg);
+    case MUIM_GoInactive:
+        return String__MUIM_GoInactive(cl, obj, (APTR) msg);
+    case MUIM_HandleEvent:
+        return String__MUIM_HandleEvent(cl, obj, (APTR) msg);
+
+    /* BetterString */
+    case MUIM_String_ClearSelected:
+        return String__MUIM_ClearSelected(cl, obj, (APTR) msg);
+    case MUIM_String_Insert:
+        return String__MUIM_Insert(cl, obj, (APTR) msg);
+    case MUIM_String_FileNameStart:
+        return String__MUIM_FileNameStart(cl, obj, (APTR) msg);
+    }
+
+    return DoSuperMethodA(cl, obj, msg);
+}
+BOOPSI_DISPATCHER_END
+
+/*
+ * Class descriptor.
+ */
+const struct __MUIBuiltinClass _MUI_String_desc =
+{
+    MUIC_String,
+    MUIC_Area,
+    sizeof(struct MUI_StringData),
+    (void *)String_Dispatcher
+};

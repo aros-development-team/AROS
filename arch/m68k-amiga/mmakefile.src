@@ -1,0 +1,22 @@
+#
+# Rules to create AROS for amiga-m68k
+#
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM- boot-distfiles-amiga-m68k : bootdisk
+#MM- boot-distfiles-quick-amiga-m68k : bootdisk-quick
+#MM- distfiles-amiga-m68k : bootiso
+#MM- distfiles-quick-amiga-m68k : bootiso-quick
+
+#MM- AROS-amiga-m68k : kernel-amiga-m68k software-amiga-m68k
+
+#MM- software-amiga-m68k : general-setup binary-amiga-m68k \
+#MM	    workbench-amiga-m68k demos
+
+#MM- workbench-amiga-m68k : workbench-complete workbench
+
+#MM- AROS-complete-amiga-m68k : AROS-amiga-m68k
+
+#MM- includes-amiga-m68k : includes-common-i386 includes-copy-amiga-m68k includes-copy
+

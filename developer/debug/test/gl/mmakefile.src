@@ -1,0 +1,25 @@
+#
+
+include $(SRCDIR)/config/aros.cfg
+
+GLTESTFILES 	    := \
+        glsimplerendering \
+        glgetprocaddress \
+        glclear \
+        glcustomscreen \
+        gltri \
+        gltexfbo \
+        glscanout \
+        glwater
+
+EXEDIR      := $(AROS_TESTS)/graphics/gl
+
+#MM- test : test-gl
+
+#MM test-gl : includes linklibs workbench-libs-gl-includes workbench-libs-gallium-includes
+
+%build_progs mmake=test-gl \
+    targetdir=$(EXEDIR) \
+    files="$(GLTESTFILES)" uselibs="GL"
+
+%common

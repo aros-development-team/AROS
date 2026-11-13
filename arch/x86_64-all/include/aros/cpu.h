@@ -1,0 +1,217 @@
+#ifndef AROS_X86_64_CPU_H
+#define AROS_X86_64_CPU_H
+
+/*
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
+    $Id$
+
+    NOTE: This file must compile *without* any other header !
+
+    Desc: machine.h include file for Linux/x86_64 (work in progres...)
+    Lang: english
+*/
+
+/*
+ *  The first Hardware IRQ starts at 32
+ *  (0 - 31 are x86 cpu exceptions, see below..)
+ */
+#define X86_CPU_EXCEPT_COUNT    32
+#define HW_IRQ_BASE     X86_CPU_EXCEPT_COUNT
+
+/*
+ * Interrupt identity widths - see rom/kernel/kernel_irqtypes.h.
+ * The source number is the GSI, so it uses the full 16-bit space that
+ * kb_Interrupts[] is sized for. The controller id and instance are split
+ * 16/16 rather than the default 8/8: a large IOAPIC machine can present
+ * more controller instances than a byte can name, and aliasing two of them
+ * points an IRQ at the wrong piece of hardware rather than merely running
+ * out of room.
+ */
+#define KRN_IRQID_BITS          16
+#define KRN_ICID_BITS           16
+#define KRN_ICINST_BITS         16
+
+typedef  unsigned char cpuid_t;
+typedef  unsigned char apicid_t;
+typedef  void *cpumask_t;
+
+/* Information about size and alignment,
+ * the defines have to be numeric constants */
+#define AROS_STACK_GROWS_DOWNWARDS 1
+#define AROS_BIG_ENDIAN            0
+#define AROS_SIZEOFULONG           4 /* Size of an ULONG */
+#define AROS_SIZEOFPTR             8 /* Size of a PTR */
+#define AROS_WORDALIGN             2 /* Alignment for WORD */
+#define AROS_LONGALIGN             4 /* Alignment for LONG */
+#define AROS_QUADALIGN             8 /* Alignment for QUAD */
+#define AROS_PTRALIGN              8 /* Alignment for PTR */
+#define AROS_IPTRALIGN             8 /* Alignment for IPTR */
+#define AROS_DOUBLEALIGN           8 /* Alignment for double */
+#define AROS_WORSTALIGN           16 /* Worst case alignment */
+#define AROS_STACKALIGN           16 /* Clean stack alignment */
+
+/* Cache-line isolation for spinlocks (Intel guidance, 128 B). Done by
+ * padding, not by an aligned attribute: AllocMem delivers at most
+ * AROS_WORSTALIGN and OOP instance data only pointer alignment, so a
+ * declared 128-byte alignment is a promise memory does not keep - and
+ * gcc acts on it with aligned SSE stores that #GP at runtime (the x86
+ * equivalent of the NEON traps that removed the attribute on ARM). */
+#define AROS_SPINLOCK_ISOLATION  128
+
+/* define this if we have no support for linear varargs in the compiler */
+#define NO_LINEAR_VARARGS       1
+
+#define AROS_SLOWSTACKTAGS      1
+#define AROS_SLOWSTACKMETHODS   1
+#define AROS_SLOWSTACKHOOKS     1
+#define AROS_SLOWSTACKFORMAT    1
+
+#define AROS_32BIT_TYPE         int
+#define AROS_64BIT_TYPE         long
+#define AROS_64BIT_STACKTYPE    long
+
+#define AROS_MAKE_INT64(i)  i ## L
+#define AROS_MAKE_UINT64(i) i ## UL
+
+#define __WORDSIZE              64
+
+#define STACKED __attribute__((aligned(8)))
+
+/* Use C pointer and string for the BCPL pointers and strings
+ * For a normal ABI these should not be defined for maximum source code
+ * compatibility.
+ */
+#define AROS_FAST_BPTR 1
+#define AROS_FAST_BSTR 1
+
+/* types and limits for sig_atomic_t */
+#define AROS_SIG_ATOMIC_T       int
+#define AROS_SIG_ATOMIC_MIN     (-0x7fffffff-1)
+#define AROS_SIG_ATOMIC_MAX     0x7fffffff
+
+#if defined(__GNUC__) && !defined(__clang__) && !defined(__TINYC__)
+register unsigned char * AROS_GET_SP __asm__("%rsp");
+
+#elif defined(__clang__)
+#if __has_builtin(__builtin_stack_pointer)
+#define AROS_GET_SP __builtin_stack_pointer()
+#else
+#define AROS_GET_SP ({ \
+       unsigned long long rsp; \
+       asm("mov %%rsp, %0" : "=r"(rsp)); \
+       rsp; \
+})
+#endif
+#endif
+
+/*do we need a function attribute to get parameters on the stack? */
+#define __stackparm
+
+/*
+ * Structure representing a jump code.
+ * Used to build proper seglist header, for example by LoadSeg()
+ * On x86-64 we use this code:
+ *     movabsq $vec, %r11
+ *     jmpq    *%r11
+*/
+struct FullJumpVec
+{
+    unsigned short movabsq;
+    void          *vec;
+    unsigned short jmp1;
+    unsigned char  jmp2;
+} __attribute__((packed));
+
+#define __AROS_SET_FULLJMP(v,a) \
+do \
+{  \
+    struct FullJumpVec *_v = v; \
+    _v->movabsq = 0xBB49;       \
+    _v->vec     = (a);          \
+    _v->jmp1    = 0xFF41;       \
+    _v->jmp2    = 0xE3;         \
+} while (0)
+
+/*
+ * One entry in libraries' vector table.
+ * On x86-64 we use vector table consisting only of pointers.
+ * We do not include jump code in them.
+ */
+struct JumpVec
+{
+    void *vec;
+};
+
+/* Use these to access a vector table */
+#define LIB_VECTSIZE                    ((int)sizeof (struct JumpVec))
+#define __AROS_GETJUMPVEC(lib,n)        (&((struct JumpVec *)lib)[-(long)(n)])
+#define __AROS_GETVECADDR(lib,n)        (__AROS_GETJUMPVEC(lib,n)->vec)
+#define __AROS_SETVECADDR(lib,n,addr)   (__AROS_GETJUMPVEC(lib,n)->vec = (addr))
+#define __AROS_INITVEC(lib,n)           __AROS_SETVECADDR(lib,n,_aros_not_implemented)
+
+/*
+   We want to activate the execstubs and preserve all registers
+   when calling obtainsemaphore, obtainsemaphoreshared, releasesemaphore,
+   getcc, permit, forbid, enable, disable
+*/
+#undef UseExecstubs
+#define UseExecstubs 1
+
+/* Macros to test/set failure of AllocEntry() */
+#define AROS_ALLOCENTRY_FAILED(memType) \
+        ((struct MemList *)((IPTR)(memType) | 0x80ul<<(sizeof(APTR)-1)*8))
+#define AROS_CHECK_ALLOCENTRY(memList) \
+        (!((IPTR)(memList) & 0x80ul<<(sizeof(APTR)-1)*8))
+
+/*
+    Find the next valid alignment for a structure if the next x bytes must
+    be skipped.
+*/
+#define AROS_ALIGN(x)        (((x)+AROS_WORSTALIGN-1)&-AROS_WORSTALIGN)
+
+/* Prototypes */
+extern void _aros_not_implemented (char *);
+
+/* How much stack do we need ? Lots :-) */
+#define AROS_STACKSIZE  40960
+
+/* How to map function arguments to CPU registers */
+/*
+    The i386 processor doesn't have enough registers to map the m68k
+    register set onto them - so simply use the compiler's calling
+    convention. The library base is mapped to the last argument so that
+    it can be ignored by the function.
+*/
+
+/* What to do with the library base in header, prototype and call */
+#define __AROS_LH_BASE(basetype,basename)   basetype basename
+#define __AROS_LP_BASE(basetype,basename)   void * 
+#define __AROS_LC_BASE(basetype,basename)   basename
+#define __AROS_LD_BASE(basetype,basename)   basetype
+
+/* How to transform an argument in header, opt prototype, call and forced
+   prototype. */
+#define __AROS_LHA(type,name,reg)     type name
+#define __AROS_LPA(type,name,reg)     type
+#define __AROS_LCA(type,name,reg)     name
+#define __AROS_LDA(type,name,reg)     type
+#define __AROS_UFHA(type,name,reg)    type name
+#define __AROS_UFPA(type,name,reg)    type
+#define __AROS_UFCA(type,name,reg)    name
+#define __AROS_UFDA(type,name,reg)    type
+#define __AROS_LHA2(type,name,reg1,reg2)     type name
+#define __AROS_LPA2(type,name,reg1,reg2)     type
+#define __AROS_LCA2(type,name,reg1,reg2)     name
+#define __AROS_LDA2(type,name,reg1,reg2)     type
+
+/* Prefix for library function in header, prototype and call */
+#define __AROS_LH_PREFIX    /* eps */
+#define __AROS_LP_PREFIX    /* eps */
+#define __AROS_LC_PREFIX    /* eps */
+#define __AROS_LD_PREFIX    /* eps */
+#define __AROS_UFH_PREFIX   /* eps */
+#define __AROS_UFP_PREFIX   /* eps */
+#define __AROS_UFC_PREFIX   /* eps */
+#define __AROS_UFD_PREFIX   /* eps */
+
+#endif /* AROS_X86_64_CPU_H */

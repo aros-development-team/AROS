@@ -1,0 +1,20 @@
+Installation:
+
+1. make a backup of the file DEVS:ahi/wavetools.audio
+2. copy NewAHIWavetools/AHI/wavetools.audio to DEVS:ahi/
+
+About wavetools.audio 2.1:
+Replaced a SendIO with a DoIO in replay routine (hard work :)
+Also added input gain (or rather I activated it since almost all the
+code was in there).
+
+It works fine on my A4000/040 for replay using delitracker 2.27.
+I tried gain with The harddiskrecord program for AHI distribution.
+
+Problems:
+Wavetools has only 16 levels of input gain ranging from 0 (no gain) to
+15 (22.5 db gain).
+Fixed bug in inputgain now it should work as it was intended.
+
+About wavetools.audio 2.11:
+Misunderstood how inputgain worked, but now it should be fixed.

@@ -1,0 +1,9 @@
+Name=Bitmap_Font
+Version=$VER: Bitmap Font 1.0 (20.8.2025)
+BaseName=font
+Pattern=#?.font
+Mask=0x0f 0x00
+GroupID=pict
+ID=bitm
+Flags=DTF_BINARY,DTF_CASE
+Priority=1

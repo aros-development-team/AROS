@@ -1,0 +1,77 @@
+#
+#  Makefile.in for the examples
+#
+
+#
+# Autoconfig stuff
+########################################
+
+@SET_MAKE@
+
+top_srcdir	= @top_srcdir@
+srcdir		= @srcdir@
+DISTDIR		= @DISTDIR@
+
+DEVDIR		= ${DISTDIR}/Developer
+USRDIR		= ${DISTDIR}/User
+
+DEVEXDIR	= ${DEVDIR}/Examples
+USREXDIR	= ${USRDIR}/Examples
+
+build_os	= @build_os@
+
+INSTALL		= @INSTALL@
+INSTALL_DATA	= @INSTALL_DATA@
+
+VPATH		= @srcdir@
+
+
+#
+# Files
+########################################
+
+TARGETS		= 
+
+
+#
+# Targets
+########################################
+
+.PHONY:		all clean distclean maintainer-clean bindist
+
+all:		$(TARGETS)
+
+clean:
+	$(RM) $(TARGETS)
+
+distclean:	clean
+	$(RM) Makefile
+
+maintainer-clean: distclean
+
+install:
+
+bindist:	$(TARGETS)
+	$(INSTALL) -d $(DEVEXDIR) #$(USREXDIR)
+	for d in Device Extras Low-level; do \
+	  cd $(srcdir) && find $${d} -type f -and -not -path '*CVS*' \
+	    -exec $(INSTALL_DATA) -D {} $(DEVEXDIR)/{} \; ; \
+	done
+#	for d in Extras; do \
+#	  find $${d} -type f -and -not -path '*CVS*' \
+#	    -exec $(INSTALL_DATA) -D {} $(USREXDIR)/{} \; ; \
+#	done
+
+
+#
+# Auto-remake autoconf stuff
+########################################
+
+Makefile: Makefile.in ../config.status
+	(cd .. && ./config.status)
+
+
+#
+# Rules
+########################################
+

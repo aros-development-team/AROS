@@ -1,0 +1,25 @@
+#
+#   AEABI support for ARM CPU's
+#
+
+include $(SRCDIR)/config/aros.cfg
+
+FILES := uldiv ldiv llsl llsr lasr
+ASMFILES := uidivmod idivmod uldivmod ldivmod idiv0 ldiv0 unwind
+
+#MM- linklibs-arm : linklibs-aeabi
+#MM- linklibs-armeb : linklibs-aeabi
+
+#MM linklibs-aeabi : linklibs-softfloat includes-asm_h
+
+ifeq (hard,$(GCC_CONFIG_FLOAT_ABI))
+FILES += i2d l2d i2f l2f
+else
+FILES += softfloat dcmpun fcmpun
+endif
+
+%build_linklib mmake=linklibs-aeabi \
+    libname=aeabi files="$(FILES)" \
+    objdir="$(GENDIR)/$(CURDIR)" asmfiles="$(ASMFILES)"
+
+%common

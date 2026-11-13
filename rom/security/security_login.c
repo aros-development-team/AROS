@@ -1,0 +1,1411 @@
+/*
+    Copyright (C) 2002-2026, The AROS Development Team. All rights reserved.
+
+    Desc: security.library login/logout. Derived from MultiUser Log.c
+          (c) Geert Uytterhoeven.
+
+          A graphical login uses an intuition requester when possible, the
+          console login talks to the secT_Input/secT_Output filehandles.
+*/
+
+#include <proto/exec.h>
+#include <proto/dos.h>
+#include <proto/utility.h>
+#include <proto/intuition.h>
+
+#include <proto/security.h>
+
+#include <dos/var.h>
+#include <exec/memory.h>
+#include <dos/datetime.h>
+#include <intuition/intuition.h>
+
+#include "security_intern.h"
+#include "security_task.h"
+#include "security_login.h"
+#include "security_auth.h"
+#include "security_server.h"
+#include "security_userinfo.h"
+#include "security_memory.h"
+#include "security_support.h"
+#include "security_monitor.h"
+#include "security_keys.h"
+
+/*
+ * Tag parsing
+ */
+BOOL InterpretTagList(struct SecurityBase *secBase, struct TagItem *taglist, struct secTags *tags)
+{
+    struct TagItem *tstate = taglist;
+    struct TagItem *tag;
+    struct Task *me = FindTask(NULL);
+    BOOL isproc = (me->tc_Node.ln_Type == NT_PROCESS);
+
+    /* dos and utility are not there before the after-DOS stage */
+    if (!secBase->sec_AfterDOSDone)
+        return FALSE;
+
+    tags->Input = isproc ? Input() : BNULL;
+    tags->Output = isproc ? Output() : BNULL;
+    tags->PubScrName = NULL;
+    tags->Task = me;
+    tags->UserID = NULL;
+    tags->Password = NULL;
+    tags->DefProtection = secDEFPROTECTION;
+    tags->Graphical = FALSE;
+    tags->Own = FALSE;
+    tags->Global = FALSE;
+    tags->Quiet = FALSE;
+    tags->All = FALSE;
+    tags->NoLog = FALSE;
+    tags->System = FALSE;
+    tags->Ticket = NULL;
+    tags->PamHandle = NULL;
+
+    while ((tag = NextTagItem(&tstate)))
+    {
+        switch (tag->ti_Tag)
+        {
+        case secT_Input:         tags->Input = (BPTR)tag->ti_Data;              break;
+        case secT_Output:        tags->Output = (BPTR)tag->ti_Data;             break;
+        case secT_Graphical:     tags->Graphical = tag->ti_Data ? TRUE : FALSE; break;
+        case secT_PubScrName:    tags->PubScrName = (STRPTR)tag->ti_Data;       break;
+        case secT_Task:          if (tag->ti_Data) tags->Task = (struct Task *)tag->ti_Data; break;
+        case secT_Own:           tags->Own = tag->ti_Data ? TRUE : FALSE;       break;
+        case secT_Global:        tags->Global = tag->ti_Data ? TRUE : FALSE;    break;
+        case secT_Quiet:         tags->Quiet = tag->ti_Data ? TRUE : FALSE;     break;
+        case secT_UserID:        tags->UserID = (STRPTR)tag->ti_Data;           break;
+        case secT_Password:      tags->Password = (STRPTR)tag->ti_Data;         break;
+        case secT_DefProtection: tags->DefProtection = tag->ti_Data;            break;
+        case secT_All:           tags->All = tag->ti_Data ? TRUE : FALSE;       break;
+        case secT_NoLog:         tags->NoLog = tag->ti_Data ? TRUE : FALSE;     break;
+        case secT_System:        tags->System = tag->ti_Data ? TRUE : FALSE;    break;
+        case secT_Ticket:        tags->Ticket = (struct secLoginTicket *)tag->ti_Data; break;
+        }
+    }
+
+    /* Only root may switch off logging or touch other people's tasks */
+    if (tags->NoLog && !CallerIsRoot(secBase))
+        return FALSE;
+    if (tags->Task != me)
+    {
+        ULONG owner = GetTaskOwner(secBase, tags->Task);
+        ULONG mine = GetTaskOwner(secBase, me);
+
+        if (!CallerIsRoot(secBase) && owner != secOWNER_NOBODY && owner != mine)
+            return FALSE;
+    }
+    /* A graphical login needs a screen */
+    if (tags->Graphical && !(secBase->sec_AfterDOSDone && IntuitionBase && IntuitionBase->FirstScreen))
+        tags->Graphical = FALSE;
+    return TRUE;
+}
+
+/*
+ * Console I/O
+ */
+static void myfputs(struct SecurityBase *secBase, BPTR file, CONST_STRPTR str)
+{
+    if (file && str)
+    {
+        FPuts(file, str);
+        Flush(file);
+    }
+}
+
+BOOL ReadLineCon(struct SecurityBase *secBase, BPTR input, STRPTR buf, ULONG size)
+{
+    ULONG len;
+
+    if (!input || !FGets(input, buf, size))
+    {
+        buf[0] = '\0';
+        return FALSE;
+    }
+    len = strlen(buf);
+    while (len && (buf[len - 1] == '\n' || buf[len - 1] == '\r'))
+        buf[--len] = '\0';
+    return len > 0;
+}
+
+/* Read a password without echo. Returns FALSE on EOF/break. */
+BOOL ReadPasswordCon(struct SecurityBase *secBase, BPTR input, BPTR output, STRPTR buf, ULONG size, struct LocaleInfo *li)
+{
+    ULONG len = 0;
+    BOOL done = FALSE, ok = TRUE;
+    LONG c;
+
+    if (!input)
+        return FALSE;
+
+    if (li)
+        myfputs(secBase, output, GetLocS(secBase, li, MSG_PASSWDPROMPT_CON));
+    myfputs(secBase, output, " ");
+
+    SetMode(input, 1);
+    do
+    {
+        c = FGetC(input);
+        switch (c)
+        {
+        case -1:
+        case 3:                         /* CTRL-C */
+            ok = FALSE;
+            done = TRUE;
+            break;
+        case '\b':
+        case 127:
+            if (len)
+                len--;
+            break;
+        case '\n':
+        case '\r':
+            done = TRUE;
+            break;
+        default:
+            if ((len < size - 1) && (c & 0x7f) > 31)
+                buf[len++] = c;
+            else
+                FPutC(output, 7);
+            Flush(output);
+            break;
+        }
+    } while (!done);
+    buf[len] = '\0';
+    SetMode(input, 0);
+    myfputs(secBase, output, "\n");
+    return ok;
+}
+
+/* Does the user have a password at all? (unknown users: yes) */
+static BOOL UserHasPassword(struct SecurityBase *secBase, CONST_STRPTR userid)
+{
+    struct secPrivUserInfo *info;
+    BOOL pwd = TRUE;
+
+    if ((info = (struct secPrivUserInfo *)secAllocUserInfo()))
+    {
+        strncpy(info->Pub.UserID, userid, secUSERIDSIZE - 1);
+        info->Pub.UserID[secUSERIDSIZE - 1] = '\0';
+        if (SendServerPacket(secBase, secSAction_GetUserInfo, (SIPTR)info, secKeyType_UserID, 0, 0))
+            pwd = info->Password;
+        secFreeUserInfo((struct secUserInfo *)info);
+    }
+    /* a security key is typed into the password field too */
+    if (!pwd && SendServerPacket(secBase, secSAction_UserHasKeys, (SIPTR)userid, 0, 0, 0))
+        pwd = TRUE;
+    return pwd;
+}
+
+/*
+ * Graphical prompts: a small intuition window with one string gadget
+ */
+
+/*
+ * Ask the user for a UserID / password until a valid pair is entered.
+ * failallowed: give up after one failed attempt (secLoginA).
+ * nopasswd:    root may login as anybody without a password.
+ */
+static void CreateUserProfile(struct SecurityBase *secBase, struct secPrivUserInfo *info);
+
+/*
+ * A login succeeded: the monitors and the log line. (Security.server's
+ * CheckUser() does the same for the logins it decides itself.)
+ */
+static void RecordLogin(struct SecurityBase *secBase, struct secTags *tags, struct secPrivUserInfo *info)
+{
+    UWORD from = (UWORD)(GetTaskOwner(secBase, FindTask(NULL)) >> 16);
+
+    CallMonitors(secBase, secTrgB_Login, from, info->Pub.uid, info->Pub.UserID);
+    if (!tags->NoLog && (secBase->Config.LogFlags & secLogF_Login))
+    {
+        SIPTR args[2];
+        args[0] = from;
+        args[1] = (SIPTR)info->Pub.UserID;
+        VLogF(secBase, LOGF_Flag_Type_Information, SECLOG_SUB_LIBRARY, GetLogStr(secBase, MSG_LOG_LOGIN), args);
+    }
+}
+
+/*
+ * The password check of a login request. It goes to the authentication
+ * process like every other verification (failure hold-back, lock-out,
+ * log); only root switching to another user without a password (MuFS
+ * rule) is decided by the server. Should the authentication process not
+ * run, the server checks the password and a failure costs two seconds.
+ */
+/*
+ * What the user is told while a hardware token is waited for: a line on the
+ * console, or the status window. The hook is called again and again by the
+ * token's plugin; FALSE gives up.
+ */
+struct LoginStatus
+{
+    struct SecurityBase     *secBase;
+    struct secTags          *tags;
+    struct LocaleInfo       *li;
+    struct LoginStatusGUI   gui;
+    char                    Shown[96];
+};
+
+static CONST_STRPTR KeyStatusText(struct SecurityBase *secBase, struct LocaleInfo *li, const struct secKeyStatus *ks)
+{
+    switch (ks->Type)
+    {
+    case secKS_INSERT:  return GetLocS(secBase, li, MSG_KEY_INSERT);
+    case secKS_TOUCH:   return GetLocS(secBase, li, MSG_KEY_TOUCH);
+    case secKS_WAIT:    return GetLocS(secBase, li, MSG_KEY_WAIT);
+    case secKS_DONE:    return NULL;
+    }
+    return ks->Text;
+}
+
+/* Shows one status; FALSE when the user gave up. 'gui' may be NULL (console only) */
+static BOOL ShowKeyStatus(struct SecurityBase *secBase, struct secTags *tags, struct LocaleInfo *li,
+                          struct LoginStatusGUI *gui, STRPTR shown, ULONG shownsize, CONST_STRPTR text)
+{
+    if (!text)
+    {
+        if (gui)
+            StatusGUIEnd(secBase, gui);
+        shown[0] = '\0';
+        return TRUE;
+    }
+    if (gui && tags->Graphical)
+    {
+        BOOL unavailable, go;
+
+        go = StatusGUIShow(secBase, gui, tags->PubScrName, tags->System, GetLocS(secBase, li, MSG_KEY_TITLE), text,
+                           GetLocS(secBase, li, MSG_CANCEL), &unavailable);
+        if (!unavailable)
+            return go;
+    }
+    if (strcmp(text, shown))
+    {
+        strncpy(shown, text, shownsize - 1);
+        myfputs(secBase, tags->Output, text);
+        myfputs(secBase, tags->Output, "\n");
+    }
+    return !(SetSignal(0, 0) & SIGBREAKF_CTRL_C);
+}
+
+AROS_UFH3(static IPTR, LoginStatusFunc,
+    AROS_UFHA(struct Hook *, hook, A0),
+    AROS_UFHA(struct secKeyStatus *, ks, A2),
+    AROS_UFHA(APTR, unused, A1))
+{
+    AROS_USERFUNC_INIT
+
+    struct LoginStatus *ls = (struct LoginStatus *)hook->h_Data;
+
+    return ShowKeyStatus(ls->secBase, ls->tags, ls->li, &ls->gui, ls->Shown, sizeof(ls->Shown),
+                         KeyStatusText(ls->secBase, ls->li, ks));
+
+    AROS_USERFUNC_EXIT
+}
+
+#define KEYLIST_MAX     8
+
+static struct secPrivUserInfo *CheckLogin(struct SecurityBase *secBase, struct secTags *tags, STRPTR userid, STRPTR password, BOOL nopasswd, struct LocaleInfo *li)
+{
+    struct secPrivUserInfo *info;
+    struct secAPacket pkt;
+    struct secKeyInfo *list;
+    UBYTE challenge[secKEYCHALLENGESIZE];
+    LONG r;
+
+    if (nopasswd || !secBase->AuthPort)
+    {
+        info = (struct secPrivUserInfo *)SendServerPacket(secBase, secSAction_CheckUser, (SIPTR)userid,
+                                                          (SIPTR)password, nopasswd, tags->NoLog);
+        if (!info && !nopasswd)
+            Delay(2 * TICKS_PER_SECOND);
+        return info;
+    }
+
+    if (!(info = (struct secPrivUserInfo *)secAllocUserInfo()))
+        return NULL;
+    list = AllocVec(KEYLIST_MAX * sizeof(struct secKeyInfo), MEMF_ANY | MEMF_CLEAR);
+    memset(&pkt, 0, sizeof(pkt));
+    pkt.Type = secAAction_Verify;
+    pkt.UserID = userid;
+    pkt.Token = password;
+    pkt.TokenType = secHASH_NONE;
+    pkt.Service = (CONST_STRPTR)"login";
+    pkt.Info = info;
+    pkt.NoLog = tags->NoLog;
+    /* a challenge token may have to answer: the first pass then hands out
+     * a ticket, the challenge and the user's tokens */
+    pkt.WantTicket = (list != NULL);
+    pkt.Challenge = challenge;
+    pkt.KeyList = list;
+    pkt.KeyListSize = list ? KEYLIST_MAX : 0;
+    r = SendAuthPacket(secBase, &pkt);
+    if (r == secVERIFY_KEYNEEDED && list && pkt.KeyCount)
+    {
+        struct LoginStatus ls;
+        struct Hook hook;
+        UBYTE *assertion;
+        ULONG size = secKEYASSERTIONMAX, which = 0, kr = secKCERR_FAILED;
+
+        memset(&ls, 0, sizeof(ls));
+        ls.secBase = secBase;
+        ls.tags = tags;
+        ls.li = li;
+        memset(&hook, 0, sizeof(hook));
+        hook.h_Entry = (HOOKFUNC)LoginStatusFunc;
+        hook.h_Data = &ls;
+        if ((assertion = AllocVec(secKEYASSERTIONMAX, MEMF_ANY | MEMF_CLEAR)))
+        {
+            kr = KeyClientAssert(secBase, list, pkt.KeyCount > KEYLIST_MAX ? KEYLIST_MAX : pkt.KeyCount, challenge,
+                                 assertion, &size, &which, &hook, 0);
+        }
+        StatusGUIEnd(secBase, &ls.gui);
+        if (kr == secKCERR_OK)
+        {
+            /* second pass: the answer with the same ticket */
+            pkt.Type = secAAction_Verify;
+            pkt.Token = "";
+            pkt.Assertion = assertion;
+            pkt.AssertionLen = size;
+            pkt.KeyPublicID = list[which < KEYLIST_MAX ? which : 0].PublicID;
+            pkt.Challenge = NULL;
+            pkt.KeyList = NULL;
+            pkt.KeyListSize = 0;
+            r = SendAuthPacket(secBase, &pkt);
+        }
+        else
+        {
+            pkt.Type = secAAction_Discard;
+            SendAuthPacket(secBase, &pkt);
+            r = secVERIFY_FAILED;
+        }
+        if (assertion)
+            FreeVec(assertion);
+    }
+    else if (r == secVERIFY_KEYNEEDED)
+    {
+        pkt.Type = secAAction_Discard;
+        SendAuthPacket(secBase, &pkt);
+        r = secVERIFY_FAILED;
+    }
+    if (r == secVERIFY_OK && pkt.WantTicket)
+    {
+        /* the login goes on with the record itself; the ticket is not needed */
+        pkt.Type = secAAction_Discard;
+        SendAuthPacket(secBase, &pkt);
+    }
+    memset(challenge, 0, sizeof(challenge));
+    if (list)
+        FreeVec(list);
+    if (r == secVERIFY_OK)
+    {
+        RecordLogin(secBase, tags, info);
+        return info;
+    }
+    secFreeUserInfo((struct secUserInfo *)info);
+    return NULL;
+}
+
+static struct secPrivUserInfo *LoginRequest(struct SecurityBase *secBase, struct secTags *tags, BOOL failallowed, BOOL nopasswd, struct LocaleInfo *li)
+{
+    char version[16];
+    char hostname[32];
+    char uidbuf[secUSERIDSIZE];
+    char pwdbuf[secPASSWORDSIZE];
+    char text[256];
+    STRPTR userid, password;
+    struct secPrivUserInfo *info = NULL;
+    int retry = 0, i;
+    BOOL ret;
+    BOOL guipwd = FALSE;    /* the password came with the user id from the login window */
+
+    if (GetVar("Kickstart", version, sizeof(version), GVF_GLOBAL_ONLY) == -1)
+        strcpy(version, "?");
+    if (GetVar("HostName", hostname, sizeof(hostname), GVF_GLOBAL_ONLY) == -1)
+        strcpy(hostname, "?");
+    else
+    {
+        for (i = 0; hostname[i] && (hostname[i] != '.'); i++);
+        hostname[i] = '\0';
+    }
+
+    do
+    {
+        if (tags->UserID)
+            userid = tags->UserID;
+        else
+        {
+            userid = uidbuf;
+            do
+            {
+                SIPTR args[2] = { (SIPTR)version, (SIPTR)hostname };
+
+                memset(uidbuf, 0, sizeof(uidbuf));
+                if (tags->Graphical)
+                {
+                    /* the login window asks for user id and password at once */
+                    FormatString(GetLocS(secBase, li, MSG_LOGINPROMPT_GUI), args, text, sizeof(text));
+                    memset(pwdbuf, 0, sizeof(pwdbuf));
+                    LONG g = LoginGUI(secBase, tags->PubScrName, text, failallowed, tags->System,
+                                      uidbuf, sizeof(uidbuf), pwdbuf, sizeof(pwdbuf));
+                    if (g == LOGINGUI_UNAVAILABLE)
+                    {
+                        /* no MUI (yet): ask on the console instead */
+                        tags->Graphical = FALSE;
+                        ret = FALSE;
+                        continue;
+                    }
+                    ret = (g == LOGINGUI_OK);
+                    guipwd = ret;
+                }
+                else
+                {
+                    if (!retry)
+                    {
+                        FormatString(GetLocS(secBase, li, MSG_LOGINREQ_CON), args, text, sizeof(text));
+                        myfputs(secBase, tags->Output, text);
+                    }
+                    myfputs(secBase, tags->Output, GetLocS(secBase, li, MSG_LOGINPROMPT_CON));
+                    myfputs(secBase, tags->Output, " ");
+                    ret = ReadLineCon(secBase, tags->Input, uidbuf, sizeof(uidbuf));
+                    retry = ret ? (retry + 1) % 4 : 0;
+                    if (!ret && !tags->Input)
+                        return NULL;        /* nothing to read from */
+                }
+                if (!ret && failallowed)
+                    return NULL;
+            } while (!ret);
+        }
+
+        if (tags->Password)
+            password = tags->Password;
+        else
+        {
+            password = pwdbuf;
+            if (!guipwd)
+                memset(pwdbuf, 0, sizeof(pwdbuf));
+            if (!nopasswd && UserHasPassword(secBase, userid))
+            {
+                if (guipwd)
+                    ret = TRUE;
+                else if (tags->Graphical)
+                {
+                    /* user id given by the caller: the window only needs the password */
+                    SIPTR args[2] = { (SIPTR)version, (SIPTR)hostname };
+                    FormatString(GetLocS(secBase, li, MSG_LOGINPROMPT_GUI), args, text, sizeof(text));
+                    CopyMem(userid, uidbuf, strlen(userid) + 1 > sizeof(uidbuf) ? sizeof(uidbuf) : strlen(userid) + 1);
+                    uidbuf[sizeof(uidbuf) - 1] = '\0';
+                    LONG g = LoginGUI(secBase, tags->PubScrName, text, failallowed, tags->System,
+                                      uidbuf, sizeof(uidbuf), pwdbuf, sizeof(pwdbuf));
+                    if (g == LOGINGUI_UNAVAILABLE)
+                    {
+                        tags->Graphical = FALSE;
+                        ret = ReadPasswordCon(secBase, tags->Input, tags->Output, pwdbuf, sizeof(pwdbuf), li);
+                    }
+                    else
+                        ret = (g == LOGINGUI_OK);
+                }
+                else
+                    ret = ReadPasswordCon(secBase, tags->Input, tags->Output, pwdbuf, sizeof(pwdbuf), li);
+                if (!ret)
+                {
+                    if (failallowed)
+                        return NULL;
+                    password = NULL;
+                }
+            }
+        }
+
+        if (userid && password)
+        {
+            info = CheckLogin(secBase, tags, userid, password, nopasswd, li);
+            memset(pwdbuf, 0, sizeof(pwdbuf));
+            guipwd = FALSE;
+            if (!info)
+            {
+                if (failallowed)
+                    return NULL;
+                if (tags->Graphical)
+                    LoginMessageGUI(secBase, GetLocS(secBase, li, MSG_LOGINREQ_GUI),
+                                    GetLocS(secBase, li, MSG_LOGINFAIL_GUI), GetLocS(secBase, li, MSG_OK));
+                else
+                    myfputs(secBase, tags->Output, GetLocS(secBase, li, MSG_LOGINFAIL_CON));
+            }
+            else
+                CreateUserProfile(secBase, info);
+        }
+    } while (!info);
+
+    return info;
+}
+
+/*
+ * A user logs in: make sure SYS:Security/Profiles/<user> exists, owned by
+ * that user. Runs before the credentials are switched, so the (still
+ * privileged) boot context creates it. Without a Profiles directory the
+ * volume is not profile-enabled (Security-Startup creates it on its first
+ * run) and nothing is done.
+ */
+static void CreateUserProfile(struct SecurityBase *secBase, struct secPrivUserInfo *info)
+{
+    TEXT path[sizeof("SYS:Security/Profiles/") + secUSERIDSIZE];
+    BPTR lock;
+
+    if (!(lock = Lock("SYS:Security/Profiles", SHARED_LOCK)))
+        return;
+    UnLock(lock);
+
+    strcpy(path, "SYS:Security/Profiles/");
+    strncat(path, info->Pub.UserID, secUSERIDSIZE - 1);
+
+    if ((lock = Lock(path, SHARED_LOCK)))
+    {
+        UnLock(lock);
+        return;
+    }
+    if ((lock = CreateDir(path)))
+    {
+        UnLock(lock);
+        SetOwner(path, ((ULONG)info->Pub.uid << 16) | info->Pub.gid);
+    }
+}
+
+/*
+ * Apply an owner to a task, or to a task and all its descendants
+ * (secT_Global), pushing the previous credentials. TaskOwnerSem held.
+ */
+static void ApplyOwner(struct SecurityBase *secBase, struct secTaskNode *node, const struct secExtOwner *owner, struct secSession *session, BOOL push, BOOL recurse)
+{
+    struct MinNode *n;
+
+    if (push)
+        PushOwner(secBase, node);
+    SetNodeOwner(secBase, node, owner);
+    if (session)
+        JoinSession(secBase, node, session);
+    if (recurse)
+    {
+        ForeachNode(&node->Children, n)
+            ApplyOwner(secBase, TASKNODE_FROM_SIBLINGS(n), owner, session, push, TRUE);
+    }
+}
+
+static BOOL RestoreOwner(struct SecurityBase *secBase, struct secTaskNode *node, BOOL recurse)
+{
+    struct MinNode *n;
+    BOOL res;
+
+    res = PopOwner(secBase, node);
+    if (recurse)
+    {
+        ForeachNode(&node->Children, n)
+            PopOwner(secBase, TASKNODE_FROM_SIBLINGS(n));
+    }
+    return res;
+}
+
+/*
+ * Local shell variables live in a process' pr_LocalVars and SetVar() only
+ * reaches the calling process. Set one in another process - the shell that
+ * runs Security-Startup when "Login PARENT" is used - the way dos.library
+ * does, so that the shell can free it again.
+ */
+static void SetProcessVar(struct SecurityBase *secBase, struct Task *task, CONST_STRPTR name, CONST_STRPTR value)
+{
+    struct Process *pr = (struct Process *)task;
+    struct LocalVar *lv, *n;
+    ULONG nlen = strlen(name), vlen = strlen(value);
+
+    if (!task || task->tc_Node.ln_Type != NT_PROCESS)
+        return;
+    if (task == FindTask(NULL))
+    {
+        SetVar(name, value, -1, GVF_LOCAL_ONLY);
+        return;
+    }
+    if (!(lv = AllocVec(sizeof(struct LocalVar) + nlen + 1, MEMF_PUBLIC | MEMF_CLEAR)))
+        return;
+    lv->lv_Node.ln_Type = LV_VAR;
+    lv->lv_Node.ln_Name = (STRPTR)(lv + 1);
+    CopyMem(name, lv->lv_Node.ln_Name, nlen + 1);
+    lv->lv_Len = vlen;
+    if (vlen)
+    {
+        if (!(lv->lv_Value = AllocMem(vlen, MEMF_PUBLIC)))
+        {
+            FreeVec(lv);
+            return;
+        }
+        CopyMem(value, lv->lv_Value, vlen);
+    }
+    Forbid();
+    ForeachNode(&pr->pr_LocalVars, n)
+    {
+        if (n->lv_Node.ln_Type == LV_VAR && !Stricmp(name, n->lv_Node.ln_Name))
+        {
+            Remove(&n->lv_Node);
+            if (n->lv_Len)
+                FreeMem(n->lv_Value, n->lv_Len);
+            FreeVec(n);
+            break;
+        }
+    }
+    AddHead((struct List *)&pr->pr_LocalVars, &lv->lv_Node);
+    Permit();
+}
+
+/* "$Home"/"$User" = home directory and user id of the user that just logged in */
+static void SetHomeVar(struct SecurityBase *secBase, struct Task *task, UWORD uid)
+{
+    struct secUserInfo *ui = secAllocUserInfo();
+
+    if (ui)
+    {
+        ui->uid = uid;
+        if (secGetUserInfo(ui, secKeyType_uid))
+        {
+            SetProcessVar(secBase, task, "Home", ui->HomeDir);
+            SetProcessVar(secBase, task, "User", ui->UserID);
+        }
+        else
+        {
+            SetProcessVar(secBase, task, "Home", "");
+            SetProcessVar(secBase, task, "User", "");
+        }
+        secFreeUserInfo(ui);
+    }
+}
+
+/* After a fresh login from the logout prompt: home dir, lastlogin, profile */
+static void PostLogin(struct SecurityBase *secBase, struct secTags *tags, struct secPrivUserInfo *info, struct LocaleInfo *li)
+{
+    char day[LEN_DATSTRING], date[LEN_DATSTRING], time[LEN_DATSTRING];
+#define LASTLOGINSIZE (3 * LEN_DATSTRING + 2)
+    char lastlogin[LASTLOGINSIZE + 1];
+    char text[256];
+    BPTR file, dir, olddir = BNULL;
+    struct DateTime dt;
+    SIPTR args[6];
+    BOOL neverloggedin = TRUE;
+    int i;
+
+    if (FindTask(NULL)->tc_Node.ln_Type != NT_PROCESS)
+        return;
+
+    SetVar("Home", info->Pub.HomeDir, -1, GVF_LOCAL_ONLY);
+    if (info->Pub.HomeDir[0] && (dir = Lock(info->Pub.HomeDir, ACCESS_READ)))
+    {
+        if (NameFromLock(dir, text, sizeof(text)))
+            SetCurrentDirName(text);
+        olddir = CurrentDir(dir);
+        if (olddir)
+            UnLock(olddir);
+    }
+
+    if ((file = Open(secLastLogin_FileName, MODE_OLDFILE)))
+    {
+        if (FGets(file, lastlogin, LASTLOGINSIZE))
+            neverloggedin = FALSE;
+        Close(file);
+    }
+    dt.dat_Format = FORMAT_DOS;
+    dt.dat_Flags = 0;
+    DateStamp(&dt.dat_Stamp);
+    dt.dat_StrDay = day;
+    dt.dat_StrDate = date;
+    dt.dat_StrTime = time;
+    DateToStr(&dt);
+    args[0] = (SIPTR)day;
+    args[1] = (SIPTR)date;
+    args[2] = (SIPTR)time;
+    args[3] = args[4] = args[5] = (SIPTR)"";
+    if ((file = Open(secLastLogin_FileName, MODE_NEWFILE)))
+    {
+        VFPrintf(file, "%s %s %s\n", (RAWARG)args);
+        Close(file);
+    }
+    if (!neverloggedin)
+    {
+        args[3] = (SIPTR)lastlogin;
+        for (i = 0; lastlogin[i] && (lastlogin[i] != ' '); i++);
+        if (lastlogin[i])
+        {
+            lastlogin[i++] = '\0';
+            while (lastlogin[i] == ' ') i++;
+            args[4] = (SIPTR)&lastlogin[i];
+            while (lastlogin[i] && (lastlogin[i] != ' ')) i++;
+            if (lastlogin[i])
+            {
+                lastlogin[i++] = '\0';
+                while (lastlogin[i] == ' ') i++;
+                args[5] = (SIPTR)&lastlogin[i];
+                while (lastlogin[i] && (lastlogin[i] != ' ') && (lastlogin[i] != '\n')) i++;
+                lastlogin[i] = '\0';
+            }
+        }
+    }
+
+    if (secBase->Config.Flags & secCFGF_LastLoginReq)
+    {
+        FormatString(GetLocS(secBase, li, neverloggedin ? MSG_FIRSTLOGIN : MSG_LASTLOGIN), args, text, sizeof(text));
+        if (tags->Graphical)
+            LoginMessageGUI(secBase, GetLocS(secBase, li, MSG_LOGINREQ_GUI), text, GetLocS(secBase, li, MSG_OK));
+        else if (tags->Output)
+        {
+            FPuts(tags->Output, "\n");
+            FPuts(tags->Output, text);
+            FPuts(tags->Output, "\n");
+            Flush(tags->Output);
+        }
+    }
+
+    /* Run the profile from the configuration directory, if any */
+    if ((secBase->Config.Flags & secCFGF_Profile) &&
+        (dir = (BPTR)SendServerPacket(secBase, secSAction_ConfigDirLock, 0, 0, 0, 0)))
+    {
+        olddir = CurrentDir(dir);
+        if ((file = Lock(secProfile_FileName, ACCESS_READ)))
+        {
+            UnLock(file);
+            strcpy(text, "Execute " secProfile_FileName);
+            Execute(text, tags->Input, tags->Output);
+        }
+        CurrentDir(olddir);
+        UnLock(dir);
+    }
+}
+
+/*
+ * Login through pam.library when it is available: the "login" service's
+ * stack decides. Without a service file the stack is the built-in default,
+ * which on a configured system is the "security" module, so the behaviour
+ * is that of LoginRequest(). An administrator may add modules to
+ * SYS:Security/PAM/login.
+ *
+ * Returns PAMLOGIN_FALLBACK when pam.library cannot be used for this
+ * request (not on disk, no authentication process, root logging in without
+ * a password): the caller then uses LoginRequest(). A graphical login
+ * runs the stack too, with the LoginWindow as its conversation.
+ */
+#define PAMLOGIN_FALLBACK   ((struct secPrivUserInfo *)-1)
+#define PAMLOGIN_BROKEN     ((struct secPrivUserInfo *)-2)
+
+#include <libraries/pam.h>
+#include <proto/pam.h>
+
+/* Results that mean the stack itself is unusable, not that it refused */
+static BOOL IsBrokenStack(LONG r)
+{
+    switch (r)
+    {
+    case PAM_OPEN_ERR:
+    case PAM_SYMBOL_ERR:
+    case PAM_SERVICE_ERR:
+    case PAM_SYSTEM_ERR:
+    case PAM_BUF_ERR:
+    case PAM_AUTHINFO_UNAVAIL:
+    case PAM_ABORT:
+    case PAM_MODULE_UNKNOWN:
+        return TRUE;
+    }
+    return FALSE;
+}
+
+/* pam.library, once it can be opened; kept open */
+static struct Library *GetPam(struct SecurityBase *secBase)
+{
+    if (!secBase->sec_PamBase)
+    {
+        struct Library *base = OpenLibrary(PAMNAME, PAMVERSION);
+
+        Forbid();
+        if (!secBase->sec_PamBase)
+        {
+            secBase->sec_PamBase = base;
+            base = NULL;
+        }
+        Permit();
+        if (base)
+            CloseLibrary(base);
+    }
+    return secBase->sec_PamBase;
+}
+
+/*
+ * The graphical conversation of a pam.library login: the LoginWindow asks
+ * for the user ID and the password at once and answers the stack's first
+ * user and password prompts; a further question (another token, a new
+ * password) gets a window of its own with the user ID filled in, and
+ * messages a requester. Without MUI the questions go to the console.
+ */
+struct GuiConv
+{
+    struct SecurityBase *secBase;
+    struct secTags      *tags;
+    struct LocaleInfo   *li;
+    CONST_STRPTR        Prompt;         /* the login window's text */
+    BOOL                CancelOK;
+    BOOL                Asked;          /* the window has been shown */
+    BOOL                PwdPending;     /* its password not handed out yet */
+    char                uid[secUSERIDSIZE];
+    char                pwd[secPASSWORDSIZE];
+    struct LoginStatusGUI StatusGUI;    /* while a hardware token is waited for */
+    char                StatusShown[96];
+};
+
+static STRPTR ConvDup(CONST_STRPTR s)
+{
+    ULONG len = strlen(s) + 1;
+    STRPTR d = AllocVec(len, MEMF_ANY);
+
+    if (d)
+        CopyMem((APTR)s, d, len);
+    return d;
+}
+
+AROS_UFH3(static IPTR, GuiConvFunc,
+    AROS_UFHA(struct Hook *, hook, A0),
+    AROS_UFHA(struct PamHandle *, handle, A2),
+    AROS_UFHA(struct PamConvMsg *, cm, A1))
+{
+    AROS_USERFUNC_INIT
+
+    struct GuiConv *gc = (struct GuiConv *)hook->h_Data;
+    struct SecurityBase *secBase = gc->secBase;
+    struct secTags *tags = gc->tags;
+    struct pam_response *resp;
+    LONG i, g;
+    char buf[secPASSWORDSIZE];
+
+    if (!(resp = AllocVec(cm->NumMsg * sizeof(struct pam_response), MEMF_CLEAR)))
+        return PAM_BUF_ERR;
+
+    for (i = 0; i < cm->NumMsg; i++)
+    {
+        const struct pam_message *m = cm->Messages[i];
+        BOOL ok = TRUE;
+
+        switch (m->msg_style)
+        {
+        case PAM_PROMPT_ECHO_ON:
+            if (!gc->Asked && tags->Graphical)
+            {
+                memset(gc->pwd, 0, sizeof(gc->pwd));
+                g = LoginGUI(secBase, tags->PubScrName, gc->Prompt, gc->CancelOK, tags->System,
+                             gc->uid, sizeof(gc->uid), gc->pwd, sizeof(gc->pwd));
+                if (g == LOGINGUI_UNAVAILABLE)
+                    tags->Graphical = FALSE;
+                else
+                {
+                    gc->Asked = TRUE;
+                    gc->PwdPending = (g == LOGINGUI_OK);
+                    ok = (g == LOGINGUI_OK);
+                }
+            }
+            if (ok && !tags->Graphical && !gc->Asked)
+            {
+                myfputs(secBase, tags->Output, m->msg);
+                ok = ReadLineCon(secBase, tags->Input, gc->uid, sizeof(gc->uid));
+                gc->Asked = TRUE;
+            }
+            ok = ok && (resp[i].resp = ConvDup(gc->uid));
+            break;
+
+        case PAM_PROMPT_ECHO_OFF:
+            if (gc->PwdPending)
+            {
+                gc->PwdPending = FALSE;
+                ok = (resp[i].resp = ConvDup(gc->pwd)) != NULL;
+                memset(gc->pwd, 0, sizeof(gc->pwd));
+                break;
+            }
+            memset(buf, 0, sizeof(buf));
+            if (tags->Graphical)
+            {
+                /* the user ID is known: the window asks for this token only */
+                if (!gc->uid[0] && tags->UserID)
+                    strncpy(gc->uid, tags->UserID, sizeof(gc->uid) - 1);
+                g = LoginGUI(secBase, tags->PubScrName, m->msg ? m->msg : gc->Prompt, gc->CancelOK, tags->System,
+                             gc->uid, sizeof(gc->uid), buf, sizeof(buf));
+                if (g == LOGINGUI_UNAVAILABLE)
+                    tags->Graphical = FALSE;
+                else
+                    ok = (g == LOGINGUI_OK);
+                gc->Asked = TRUE;
+            }
+            if (ok && !tags->Graphical)
+            {
+                myfputs(secBase, tags->Output, m->msg);
+                ok = ReadPasswordCon(secBase, tags->Input, tags->Output, buf, sizeof(buf), NULL);
+            }
+            ok = ok && (resp[i].resp = ConvDup(buf));
+            memset(buf, 0, sizeof(buf));
+            break;
+
+        case PAM_ERROR_MSG:
+        case PAM_TEXT_INFO:
+            if (m->msg)
+            {
+                if (tags->Graphical)
+                    LoginMessageGUI(secBase, GetLocS(secBase, gc->li, MSG_LOGINREQ_GUI), m->msg, GetLocS(secBase, gc->li, MSG_OK));
+                else
+                {
+                    myfputs(secBase, tags->Output, m->msg);
+                    myfputs(secBase, tags->Output, "\n");
+                }
+            }
+            break;
+
+        case PAM_AROS_STATUS:
+            /* a hardware token is waited for; the user may give up */
+            ok = ShowKeyStatus(secBase, tags, gc->li, &gc->StatusGUI, gc->StatusShown, sizeof(gc->StatusShown), m->msg);
+            break;
+
+        default:
+            ok = FALSE;
+            break;
+        }
+        if (!ok)
+        {
+            LONG j;
+            for (j = 0; j <= i; j++)
+            {
+                if (resp[j].resp)
+                {
+                    memset(resp[j].resp, 0, strlen(resp[j].resp));
+                    FreeVec(resp[j].resp);
+                }
+            }
+            FreeVec(resp);
+            memset(gc->pwd, 0, sizeof(gc->pwd));
+            return PAM_CONV_ERR;
+        }
+    }
+    cm->Responses = resp;
+    return PAM_SUCCESS;
+
+    AROS_USERFUNC_EXIT
+}
+
+static struct secPrivUserInfo *PamLoginRequest(struct SecurityBase *secBase, struct secTags *tags, BOOL failallowed, BOOL nopasswd, struct LocaleInfo *li)
+{
+    struct Library *PamBase;
+    struct PamHandle *h;
+    struct secPrivUserInfo *info = NULL;
+    CONST_STRPTR user;
+    LONG r;
+
+    struct GuiConv gc;
+    struct Hook convhook;
+    char text[256];
+
+    if (nopasswd || !secBase->sec_AfterDOSDone || !secBase->AuthPort)
+        return PAMLOGIN_FALLBACK;
+    if (!(PamBase = GetPam(secBase)))
+        return PAMLOGIN_FALLBACK;
+
+    if (tags->Graphical)
+    {
+        char version[16], hostname[32];
+        SIPTR args[2];
+        int i;
+
+        if (GetVar("Kickstart", version, sizeof(version), GVF_GLOBAL_ONLY) == -1)
+            strcpy(version, "?");
+        if (GetVar("HostName", hostname, sizeof(hostname), GVF_GLOBAL_ONLY) == -1)
+            strcpy(hostname, "?");
+        for (i = 0; hostname[i] && hostname[i] != '.'; i++)
+            ;
+        hostname[i] = '\0';
+        args[0] = (SIPTR)version;
+        args[1] = (SIPTR)hostname;
+        FormatString(GetLocS(secBase, li, MSG_LOGINPROMPT_GUI), args, text, sizeof(text));
+    }
+
+    for (;;)
+    {
+        struct TagItem ptags[] =
+        {
+            { PAMT_Interactive, (tags->UserID && tags->Password) ? FALSE : TRUE },
+            { PAMT_Input,       (IPTR)tags->Input      },
+            { PAMT_Output,      (IPTR)tags->Output     },
+            { tags->Password ? PAMT_AuthTok : TAG_IGNORE, (IPTR)tags->Password },
+            { PAMT_Task,        (IPTR)tags->Task       },
+            { TAG_DONE,         0                      }
+        };
+
+        memset(&gc, 0, sizeof(gc));
+        gc.secBase = secBase;
+        gc.tags = tags;
+        gc.li = li;
+        gc.Prompt = text;
+        gc.CancelOK = failallowed;
+        convhook.h_Entry = (HOOKFUNC)GuiConvFunc;
+        convhook.h_SubEntry = NULL;
+        convhook.h_Data = &gc;
+
+        if (!(h = PamStartA("login", tags->UserID, (tags->Graphical && !(tags->UserID && tags->Password)) ? &convhook : NULL, ptags)))
+            break;
+        r = PamAuthenticate(h, 0);
+        StatusGUIEnd(secBase, &gc.StatusGUI);
+        if (r == PAM_SUCCESS)
+            r = PamAcctMgmt(h, 0);
+        if (r == PAM_SUCCESS)
+        {
+            APTR ticket = NULL;
+
+            /* The security module's ticket: the record the authentication
+             * process verified, and the ticket is used up with it */
+            if (PamGetData(h, PAM_SECURITY_TICKET_DATA, &ticket) == PAM_SUCCESS && ticket)
+                info = RedeemTicket(secBase, (struct secLoginTicket *)ticket);
+            /* Another module authenticated: the user it settled on */
+            if (!info && PamGetItem(h, PAM_USER, (APTR *)&user) == PAM_SUCCESS && user &&
+                (info = (struct secPrivUserInfo *)secAllocUserInfo()))
+            {
+                strncpy(info->Pub.UserID, user, secUSERIDSIZE - 1);
+                if (!secGetUserInfo(&info->Pub, secKeyType_UserID))
+                {
+                    secFreeUserInfo((struct secUserInfo *)info);
+                    info = NULL;
+                    r = PAM_USER_UNKNOWN;
+                }
+            }
+            if (info)
+            {
+                CreateUserProfile(secBase, info);
+                RecordLogin(secBase, tags, info);
+            }
+        }
+        if (info)
+            tags->PamHandle = h;    /* the session stage follows */
+        else
+            PamEnd(h, r);
+
+        if (!info && IsBrokenStack(r))
+        {
+            /* Not a refusal but a broken or unreachable stack (a bad
+             * service file, a missing module). Asking again would loop
+             * forever, and the built-in request would ignore whatever
+             * policy the stack holds: only root may log in until the
+             * configuration is repaired. */
+            SIPTR args[1] = { r };
+            VLogF(secBase, LOGF_Flag_Type_Error, SECLOG_SUB_LIBRARY, "pam.library login stack failed (%ld), root-only login", args);
+            info = PAMLOGIN_BROKEN;
+            break;
+        }
+        if (info || r == PAM_CONV_ERR || failallowed)
+            break;
+        /* secLogoutA(): ask again until somebody logs in */
+        if (tags->Graphical)
+            LoginMessageGUI(secBase, GetLocS(secBase, li, MSG_LOGINREQ_GUI),
+                            GetLocS(secBase, li, MSG_LOGINFAIL_GUI), GetLocS(secBase, li, MSG_OK));
+        else
+        {
+            myfputs(secBase, tags->Output, GetLocS(secBase, li, MSG_LOGINFAIL_CON));
+            if (!tags->Input)
+                break;
+        }
+        if (tags->UserID && tags->Password)
+            break;
+    }
+    return info;
+}
+
+/*
+ * The "login" stack's session modules run when the login has been
+ * decided but before the task changes owner, so in the still privileged
+ * context. If they refuse, the login fails. The transaction then stays
+ * open with the security session and is closed with it (EndPamSession()).
+ */
+static BOOL OpenPamSession(struct SecurityBase *secBase, struct secTags *tags)
+{
+    struct Library *PamBase = secBase->sec_PamBase;
+    LONG r;
+
+    if (!tags->PamHandle)
+        return TRUE;
+    if ((r = PamOpenSession(tags->PamHandle, 0)) == PAM_SUCCESS)
+        return TRUE;
+    {
+        SIPTR args[1] = { r };
+        VLogF(secBase, LOGF_Flag_Type_Warn, SECLOG_SUB_LIBRARY, "login refused by the session stack (%ld)", args);
+    }
+    PamEnd(tags->PamHandle, r);
+    tags->PamHandle = NULL;
+    return FALSE;
+}
+
+/* TaskOwnerSem held: hand the open transaction to the session, or end it */
+static void KeepPamSession(struct SecurityBase *secBase, struct secTags *tags, struct secSession *session)
+{
+    if (!tags->PamHandle)
+        return;
+    if (session)
+        session->PamHandle = tags->PamHandle;
+    else
+        EndPamSession(secBase, tags->PamHandle);
+    tags->PamHandle = NULL;
+}
+
+/*
+ * The login request: through pam.library's "login" stack when it can be
+ * used, the built-in request otherwise. A broken stack leaves a root-only
+ * built-in request, so that the administrator can repair it.
+ */
+static struct secPrivUserInfo *AnyLoginRequest(struct SecurityBase *secBase, struct secTags *tags, BOOL failallowed, BOOL nopasswd, struct LocaleInfo *li)
+{
+    struct secPrivUserInfo *info = PamLoginRequest(secBase, tags, failallowed, nopasswd, li);
+
+    if (info == PAMLOGIN_FALLBACK)
+        info = LoginRequest(secBase, tags, failallowed, nopasswd, li);
+    else if (info == PAMLOGIN_BROKEN)
+    {
+        myfputs(secBase, tags->Output, "The login configuration is damaged: only root can log in.\n");
+        info = LoginRequest(secBase, tags, failallowed, nopasswd, li);
+        if (info && info->Pub.uid != secROOT_UID)
+        {
+            secFreeUserInfo((struct secUserInfo *)info);
+            info = NULL;
+        }
+    }
+    return info;
+}
+
+/*****************************************************************************
+
+    NAME */
+        AROS_LH1(ULONG, secLogoutA,
+
+/*  SYNOPSIS */
+        AROS_LHA(struct TagItem *, taglist, A0),
+
+/*  LOCATION */
+        struct SecurityBase *, secBase, 5, Security)
+
+/*  FUNCTION
+        Logout and restore the previous user. If there was no previous user
+        or the previous user was nobody, a login request will appear (unless
+        secT_Quiet). A login from this request also sets the local variable
+        "Home", the current directory, shows the last login information and
+        executes the .profile from the configuration directory.
+
+    INPUTS
+        taglist - see secLoginA(); additionally
+            secT_Quiet - (BOOL) never request a login, simply logout.
+            secT_All   - (BOOL) logout all previous users.
+
+    RESULT
+        The user you are now (uid<<16 | gid), secOWNER_NOBODY for nobody.
+
+    SEE ALSO
+        secLoginA()
+
+******************************************************************************/
+{
+    AROS_LIBFUNC_INIT
+
+    struct secTags tags;
+    struct secTaskNode *node;
+    struct secPrivUserInfo *info;
+    struct secExtOwner *xuser;
+    struct LocaleInfo li;
+    BOOL nobody;
+    ULONG user;
+
+    D(bug(DEBUG_NAME_STR " %s()\n", __func__);)
+
+    if (!InterpretTagList(secBase, taglist, &tags))
+        return secOWNER_NOBODY;
+    tags.UserID = tags.Password = NULL;
+    tags.NoLog = FALSE;
+
+    ObtainSemaphore(&secBase->TaskOwnerSem);
+    node = FindOrCreateTaskNode(secBase, tags.Task);
+    do
+    {
+        nobody = node ? !RestoreOwner(secBase, node, tags.Global) : TRUE;
+        if (node && !nobody && !node->Owner)
+            nobody = TRUE;
+    } while (tags.All && !nobody && node && !IsMinListEmpty(&node->OwnerStack));
+    if (node && nobody)
+    {
+        ClearOwnerStack(secBase, node);
+        SetNodeOwner(secBase, node, NULL);
+        LeaveSession(secBase, node);
+    }
+    ReleaseSemaphore(&secBase->TaskOwnerSem);
+
+    user = GetTaskOwner(secBase, tags.Task);
+
+    if (nobody && !tags.Quiet && secBase->Configured)
+    {
+        OpenLoc(secBase, &li);
+        info = AnyLoginRequest(secBase, &tags, FALSE, FALSE, &li);
+        if (info && !OpenPamSession(secBase, &tags))
+        {
+            secFreeUserInfo((struct secUserInfo *)info);
+            info = NULL;
+        }
+        if (info)
+        {
+            if ((xuser = secUserInfo2ExtOwner((struct secUserInfo *)info)))
+            {
+                struct secSession *session = NULL;
+
+                ObtainSemaphore(&secBase->TaskOwnerSem);
+                if ((node = FindOrCreateTaskNode(secBase, tags.Task)))
+                {
+                    session = AllocSession(secBase, info->Pub.UserID);
+                    if (session)
+                        session->Leader = node;
+                    ApplyOwner(secBase, node, xuser, session, FALSE, tags.Global);
+                }
+                KeepPamSession(secBase, &tags, session);
+                ReleaseSemaphore(&secBase->TaskOwnerSem);
+                user = secExtOwner2ULONG(xuser);
+                secFreeExtOwner(xuser);
+                PostLogin(secBase, &tags, info, &li);
+            }
+            secFreeUserInfo((struct secUserInfo *)info);
+        }
+        if (tags.PamHandle)
+        {
+            EndPamSession(secBase, tags.PamHandle);
+            tags.PamHandle = NULL;
+        }
+        CloseLoc(secBase, &li);
+    }
+
+    return user;
+
+    AROS_LIBFUNC_EXIT
+}
+
+/*****************************************************************************
+
+    NAME */
+        AROS_LH1(ULONG, secLoginA,
+
+/*  SYNOPSIS */
+        AROS_LHA(struct TagItem *, taglist, A0),
+
+/*  LOCATION */
+        struct SecurityBase *, secBase, 6, Security)
+
+/*  FUNCTION
+        Login to the system and remember the previous user of the task.
+
+    TAGS
+        secT_Graphical  - (BOOL) use a graphical login instead of a console
+                          one. Default FALSE.
+        secT_Input      - (BPTR) filehandle to read from. Default Input().
+        secT_Output     - (BPTR) filehandle to write to. Default Output().
+        secT_PubScrName - (STRPTR) public screen for the requester.
+        secT_Task       - (struct Task *) the task to login. Only your own
+                          tasks or tasks owned by nobody, unless you are root.
+                          Default: the current task.
+        secT_Own        - (BOOL) make the task owned by the caller's owner.
+        secT_Global     - (BOOL) also login all descendants of the task.
+        secT_UserID     - (STRPTR) do not ask for a UserID.
+        secT_Password   - (STRPTR) do not ask for a password (needs secT_UserID).
+        secT_NoLog      - (BOOL) do not log this action (root only).
+        secT_Ticket     - (struct secLoginTicket *) a ticket from
+                          secVerifyUserA() for this task: log in the
+                          user it was issued for, without prompting.
+
+    RESULT
+        The user that logged in (uid<<16 | gid), or secOWNER_NOBODY for a
+        failure.
+
+    NOTES
+        On an unconfigured system (no password file) any login succeeds as
+        root, so that Security-Startup scripts work before the system is set
+        up.
+
+    SEE ALSO
+        secLogoutA()
+
+******************************************************************************/
+{
+    AROS_LIBFUNC_INIT
+
+    struct secTags tags;
+    struct secTaskNode *node;
+    struct secExtOwner *xuser = NULL;
+    struct secSession *session = NULL;
+    struct secPrivUserInfo *info = NULL;
+    struct LocaleInfo li;
+    BOOL isroot;
+
+    D(bug(DEBUG_NAME_STR " %s()\n", __func__);)
+
+    if (!InterpretTagList(secBase, taglist, &tags) || (tags.Password && !tags.UserID))
+        return secOWNER_NOBODY;
+
+    isroot = CallerIsRoot(secBase);
+
+    if (tags.Own)
+    {
+        if (!(xuser = GetTaskExtOwner(secBase, FindTask(NULL))))
+            return secOWNER_NOBODY;
+    }
+    else if (!secBase->Configured)
+    {
+        /* Unconfigured: everybody is root */
+        xuser = CloneExtOwner(&RootExtOwner);
+    }
+    else if (tags.Ticket)
+    {
+        /* A ticket from secVerifyUserA(): the user was authenticated by the
+         * authentication process on behalf of this task; no prompt */
+        if ((info = RedeemTicket(secBase, tags.Ticket)))
+            xuser = secUserInfo2ExtOwner((struct secUserInfo *)info);
+        if (!xuser)
+        {
+            if (info)
+                secFreeUserInfo((struct secUserInfo *)info);
+            return secOWNER_NOBODY;
+        }
+        CreateUserProfile(secBase, info);
+        RecordLogin(secBase, &tags, info);
+    }
+    else
+    {
+        OpenLoc(secBase, &li);
+        info = AnyLoginRequest(secBase, &tags, TRUE, isroot, &li);
+        if (info && OpenPamSession(secBase, &tags))
+            xuser = secUserInfo2ExtOwner((struct secUserInfo *)info);
+        CloseLoc(secBase, &li);
+        if (!xuser)
+        {
+            if (info)
+                secFreeUserInfo((struct secUserInfo *)info);
+            if (tags.PamHandle)
+                EndPamSession(secBase, tags.PamHandle);
+            return secOWNER_NOBODY;
+        }
+    }
+
+    ObtainSemaphore(&secBase->TaskOwnerSem);
+    if ((node = FindOrCreateTaskNode(secBase, tags.Task)))
+    {
+        if (info && (session = AllocSession(secBase, info->Pub.UserID)))
+            session->Leader = node;
+        ApplyOwner(secBase, node, xuser, session, TRUE, tags.Global);
+    }
+    KeepPamSession(secBase, &tags, session);
+    ReleaseSemaphore(&secBase->TaskOwnerSem);
+
+    /* $Home for the shell that logged in (Security-Startup: Login PARENT) */
+    if (node)
+        SetHomeVar(secBase, tags.Task, xuser->uid);
+
+    secFreeExtOwner(xuser);
+    if (info)
+        secFreeUserInfo((struct secUserInfo *)info);
+
+    D(bug(DEBUG_NAME_STR " %s: task %p ('%s') now owned by %08lx\n", __func__, tags.Task, tags.Task->tc_Node.ln_Name, (unsigned long)GetTaskOwner(secBase, tags.Task));)
+    return GetTaskOwner(secBase, tags.Task);
+
+    AROS_LIBFUNC_EXIT
+}
