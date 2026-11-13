@@ -143,12 +143,14 @@ AROS_LH1(void, BeginIO,
     APTR data = iotd->iotd_Req.io_Data;
     ULONG len = iotd->iotd_Req.io_Length;
     UQUAD off64;
+    ULONG offset_high = iotd->iotd_Req.io_Actual;
     struct DriveGeometry *geom;
     struct NSDeviceQueryResult *nsqr;
     BOOL done = (io->io_Flags & IOF_QUICK) ? TRUE : FALSE;
 
     io->io_Message.mn_Node.ln_Type = NT_MESSAGE;
     io->io_Error = 0;
+    iotd->iotd_Req.io_Actual = 0;
 
     ObtainSemaphore(&unit->au_Lock);
     AddHead(&unit->au_IOs, &io->io_Message.mn_Node);
@@ -162,7 +164,7 @@ AROS_LH1(void, BeginIO,
     case TD_READ64:
     case NSCMD_TD_READ64:
         off64  = iotd->iotd_Req.io_Offset;
-        off64 |= ((UQUAD)iotd->iotd_Req.io_Actual) << 32;
+        off64 |= ((UQUAD)offset_high) << 32;
         done = virtio_blk_rw(io, off64, FALSE);
         break;
 
@@ -173,7 +175,7 @@ AROS_LH1(void, BeginIO,
     case TD_WRITE64:
     case NSCMD_TD_WRITE64:
         off64  = iotd->iotd_Req.io_Offset;
-        off64 |= ((UQUAD)iotd->iotd_Req.io_Actual) << 32;
+        off64 |= ((UQUAD)offset_high) << 32;
         done = virtio_blk_rw(io, off64, TRUE);
         break;
 
@@ -184,7 +186,7 @@ AROS_LH1(void, BeginIO,
     case TD_FORMAT64:
     case NSCMD_TD_FORMAT64:
         off64  = iotd->iotd_Req.io_Offset;
-        off64 |= ((UQUAD)iotd->iotd_Req.io_Actual) << 32;
+        off64 |= ((UQUAD)offset_high) << 32;
         done = virtio_blk_rw(io, off64, TRUE);
         break;
 
