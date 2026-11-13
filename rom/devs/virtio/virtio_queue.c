@@ -234,9 +234,9 @@ static int virtio_submit_now(struct virtio_queue *vq, struct virtio_request *tem
     avail_idx = vq->q_Avail->idx;
     vq->q_Avail->ring[avail_idx % vq->q_Size] = idxs[0];
     /* Memory barrier ensuring descriptors are visible before idx update */
-    __asm__ __volatile__("" ::: "memory");
+    __sync_synchronize();
     vq->q_Avail->idx = avail_idx + 1;
-    __asm__ __volatile__("" ::: "memory");
+    __sync_synchronize();
 
     ReleaseSemaphore(&vq->q_Lock);
 
@@ -287,6 +287,7 @@ ULONG virtio_process_used(struct virtio_queue *vq)
 
     ObtainSemaphore(&vq->q_Lock);
     used_idx = vq->q_Used->idx;
+    __sync_synchronize();
 
     while (vq->q_LastUsedIdx != used_idx) {
         UWORD slot_idx = vq->q_LastUsedIdx % vq->q_Size;
