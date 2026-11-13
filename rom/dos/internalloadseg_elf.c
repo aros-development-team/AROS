@@ -36,6 +36,9 @@
 
 struct hunk
 {
+#if __WORDSIZE > 32
+    ULONG pad;
+#endif
     ULONG size;
     BPTR  next;
     char  data[0];

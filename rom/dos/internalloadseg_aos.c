@@ -22,44 +22,29 @@
 #include "internalloadseg.h"
 #include "include/loadseg.h"
 
-/* _ilsAllocVec guarantees ULONG alignment, including on 64-bit targets.
- * Access native BPTR links and tables without requiring pointer alignment.
- * A relocated longword can also start at a word-aligned hunk offset. */
-static BPTR hunk_read_bptr(const void *src)
+/* A 68k relocation can start at a word offset. m68k can access it
+   directly; other targets must not assume ULONG alignment. */
+static inline ULONG hunk_read_long(const void *src)
 {
-    BPTR value;
-    CopyMem(src, &value, sizeof(value));
-    return value;
-}
-
-static void hunk_write_bptr(void *dest, BPTR value)
-{
-    CopyMem(&value, dest, sizeof(value));
-}
-
-static BPTR hunk_get_entry(const UBYTE *table, ULONG index)
-{
-    return hunk_read_bptr(table + index * sizeof(BPTR));
-}
-
-static void hunk_set_entry(UBYTE *table, ULONG index, BPTR value)
-{
-    hunk_write_bptr(table + index * sizeof(BPTR), value);
-}
-
-static ULONG hunk_read_long(const void *src)
-{
+#ifdef __mc68000
+    return *(const ULONG *)src;
+#else
     ULONG value;
-    CopyMem(src, &value, sizeof(value));
+    __builtin_memcpy(&value, src, sizeof(value));
     return value;
+#endif
 }
 
-static void hunk_write_long(void *dest, ULONG value)
+static inline void hunk_write_long(void *dest, ULONG value)
 {
-    CopyMem(&value, dest, sizeof(value));
+#ifdef __mc68000
+    *(ULONG *)dest = value;
+#else
+    __builtin_memcpy(dest, &value, sizeof(value));
+#endif
 }
 
-#define GETHUNKPTR(x) ((UBYTE *)BADDR(hunk_get_entry(hunktab, (x))) + sizeof(BPTR))
+#define GETHUNKPTR(x) ((UBYTE *)BADDR(hunktab[x]) + sizeof(BPTR))
 
 #ifndef __mc68000
 /* The relocations applied so far, for GSLI_68KRELOCS. An allocation failure
@@ -224,7 +209,7 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
   #define ERROR(a)    { *error=a; goto end; }
 
 
-  UBYTE *hunktab = BADDR(table);
+  BPTR *hunktab = BADDR(table);
   BPTR firsthunk = BNULL, prevhunk = BNULL;
   ULONG lcount, hunktype, first, last, curhunk, lasthunk, numhunks;
   UWORD wcount;
@@ -305,7 +290,7 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
     ULONG hunksize;
 
     if (i > last) {
-      hunk_set_entry(hunktab, i, BNULL);
+      hunktab[i] = BNULL;
       continue;
     }
 
@@ -345,18 +330,18 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
     hunkptr = ilsAllocVec(hunksize, req | MEMF_31BIT);
     if (!hunkptr)
       ERROR(ERROR_NO_FREE_STORE);
-    hunk_set_entry(hunktab, i, MKBADDR(hunkptr));
+    hunktab[i] = MKBADDR(hunkptr);
     D(bug(" @%p\n", hunkptr));
     if (!firsthunk)
-      firsthunk = hunk_get_entry(hunktab, i);
+      firsthunk = hunktab[i];
       /* Link hunks
          if this is not the first hunk that is loaded, then connect
          it to the previous one (pointer to the field where the
          pointer to the next hunk is located)
        */
     if (prevhunk)
-      hunk_write_bptr(BADDR(prevhunk), hunk_get_entry(hunktab, i));
-    prevhunk = hunk_get_entry(hunktab, i);
+      *(BPTR *)BADDR(prevhunk) = hunktab[i];
+    prevhunk = hunktab[i];
   }
 
   while(!hunk_long(&hr, &hunktype))
@@ -642,20 +627,20 @@ done:
     /* Clear caches */
     for (t = first; t < numhunks && t <= last; t++)
     {
-        hunksize = *((ULONG*)BADDR(hunk_get_entry(hunktab, t)) - 1);
+        hunksize = *((ULONG*)BADDR(hunktab[t]) - 1);
         if (hunksize)
-          ils_ClearCache(BADDR(hunk_get_entry(hunktab, t)), hunksize, CACRF_ClearI | CACRF_ClearD);
+          ils_ClearCache(BADDR(hunktab[t]), hunksize, CACRF_ClearI | CACRF_ClearD);
     }
 #endif
 
     if (table)
       return firsthunk;
 
-    hunksize = *((ULONG*)BADDR(hunk_get_entry(hunktab, 0)) - 1);
+    hunksize = *((ULONG*)BADDR(hunktab[0]) - 1);
     if (last > first && hunksize >= 32 / 4)
     {
       /* NOTE: HUNK_OVERLAY is not required for overlay mode. */
-      ULONG *h = (ULONG*)(BADDR(hunk_get_entry(hunktab, first)));
+      ULONG *h = (ULONG*)BADDR(hunktab[first]);
 
       if (h[2] == 0x0000abcd)
       {
@@ -698,7 +683,7 @@ end:
   if (hunktab != NULL)
   {
     for (t = 0 /* first */; t < numhunks /* last */; t++)
-      ilsFreeVec(BADDR(hunk_get_entry(hunktab, t)));
+      ilsFreeVec(BADDR(hunktab[t]));
     ilsFreeVec(hunktab);
   }
   ilsFreeMem(srb->buffer, LOADSEG_HUNK_BUFFER);

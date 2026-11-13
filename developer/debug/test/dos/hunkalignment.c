@@ -47,9 +47,22 @@ static ULONG get32(const UBYTE *p)
 
 static BPTR next_segment(BPTR seg)
 {
-    BPTR next;
-    CopyMem(BADDR(seg), &next, sizeof(next));
-    return next;
+    return *(BPTR *)BADDR(seg);
+}
+
+static int segment_layout(BPTR seg, ULONG payload)
+{
+    UBYTE *link = BADDR(seg);
+    UBYTE *allocation = link - sizeof(BPTR);
+    unsigned int i;
+
+    if ((IPTR)link % sizeof(BPTR))
+        return FALSE;
+    for (i = 0; i < sizeof(blocks) / sizeof(blocks[0]); i++)
+        if (blocks[i].address == allocation)
+            return blocks[i].size == payload + 2 * sizeof(BPTR) &&
+                   ((ULONG *)link)[-1] == blocks[i].size;
+    return FALSE;
 }
 
 static void make_image(ULONG kind)
@@ -182,10 +195,9 @@ static void test_relocation(ULONG kind, ULONG fragment)
     data = (UBYTE *)BADDR(second) + sizeof(BPTR);
     bss = (UBYTE *)BADDR(third) + sizeof(BPTR);
     CopyMem((UBYTE *)BADDR(seg) - sizeof(ULONG), &prefix, sizeof(prefix));
-    check(prefix == 12 + sizeof(ULONG) + sizeof(BPTR), "ULONG size prefix unchanged");
-    if (sizeof(BPTR) > sizeof(ULONG))
-        check((IPTR)BADDR(seg) % sizeof(BPTR) == sizeof(ULONG),
-              "64-bit BPTR link really has only ULONG alignment");
+    check(prefix == 12 + 2 * sizeof(BPTR), "allocation size remains at link minus four bytes");
+    check(segment_layout(seg, 12) && segment_layout(second, 8) &&
+          segment_layout(third, 8), "native-aligned links, prefixes and allocation bases");
     check((IPTR)(code + 2) % sizeof(ULONG) == 2, "relocated LONG really has word alignment");
     want = (ULONG)((IPTR)data + 4);
     if (kind == HUNK_RELRELOC32)

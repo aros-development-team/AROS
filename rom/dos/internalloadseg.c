@@ -158,15 +158,25 @@ int read_block(BPTR file, APTR buffer, ULONG size, SIPTR * funcarray, struct Dos
 
 APTR _ilsAllocVec(SIPTR *funcarray, ULONG size, ULONG req)
 {
-    UBYTE *p = ilsAllocMem(size, req);
+    UBYTE *p;
+
+    /* Callers include one ULONG for the size. On 64-bit targets extend
+       that prefix to a BPTR so that seglist links and hunk tables keep
+       the allocator's native alignment. The size remains at buf - 4. */
+#if __WORDSIZE > 32
+    if (size > ~(ULONG)0 - (sizeof(BPTR) - sizeof(ULONG)))
+        return NULL;
+    size += sizeof(BPTR) - sizeof(ULONG);
+#endif
+    p = ilsAllocMem(size, req);
 
     D(bug("allocmem %p %d\n", p, size));
     if (!p)
         return NULL;
         
-    /* Note that the result is ULONG-aligned even on 64 bits! */
-    *((ULONG*)p) = (ULONG)size;
-    return p + sizeof(ULONG);
+    p += sizeof(BPTR);
+    ((ULONG *)p)[-1] = size;
+    return p;
 }
 
 void _ilsFreeVec(SIPTR *funcarray, void *buf)
@@ -175,8 +185,8 @@ void _ilsFreeVec(SIPTR *funcarray, void *buf)
     ULONG size;
     if (!buf)
         return;
-    p -= sizeof(ULONG);
-    size = ((ULONG*)p)[0];
+    size = ((ULONG *)p)[-1];
+    p -= sizeof(BPTR);
     D(bug("freemem %p %d\n", p, size));
     if (!size)
         return;
