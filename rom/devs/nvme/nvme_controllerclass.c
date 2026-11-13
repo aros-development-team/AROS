@@ -239,6 +239,62 @@ static BOOL nvme_msix_enabled(device_t dev)
                 capmsix + PCIMSIX_FLAGS) & PCIMSIXF_ENABLE) != 0;
 }
 
+/* Failure rollback is only called before any unit is published. If the
+   controller will not acknowledge disable, retain its DMA allocations. */
+BOOL nvme_quiesce(device_t dev, struct IORequest *tmr)
+{
+    struct NVMEBase *NVMEBase = dev->dev_NVMEBase;
+    ULONG q;
+    BOOL stopped;
+
+    if (!tmr || !dev->dev_nvmeregbase)
+        return FALSE;
+    dev->dev_nvmeregbase->cc &= ~NVME_CC_ENABLE;
+    stopped = nvme_wait_ready(dev, tmr, dev->dev_nvmeregbase->cap, 0);
+    if (dev->dev_Queues) {
+        for (q = 0; q <= KrnGetCPUCount(); q++) {
+            struct nvme_queue *queue = dev->dev_Queues[q];
+            if (!queue)
+                continue;
+            nvme_stop_completions(queue, tmr);
+            if (queue->q_irq_registered == 1)
+                HIDD_PCIDriver_RemoveInterrupt(dev->dev_PCIDriverObject,
+                    dev->dev_Object, &queue->q_IntHandler);
+            else if (queue->q_irq_registered == 2)
+                RemIntServer(INTB_KERNEL + queue->q_irq, &queue->q_IntHandler);
+            queue->q_irq_registered = 0;
+            nvme_stop_iotask(queue);
+            /* No callback can now touch a caller's stack, even if DMA
+               memory must remain quarantined after a failed disable. */
+            memset(queue->cehandlers, 0, queue->q_depth * sizeof(*queue->cehandlers));
+            memset(queue->cehooks, 0, queue->q_depth * sizeof(*queue->cehooks));
+        }
+    }
+    if (dev->dev_VectorsOwned) {
+        HIDD_PCIDevice_ReleaseVectors(dev->dev_Object);
+        dev->dev_VectorsOwned = FALSE;
+    }
+    dev->dev_Quiesced = stopped;
+    if (!stopped)
+        bug("[NVME] controller did not stop; retaining DMA allocations\n");
+    return stopped;
+}
+
+void nvme_release_queues(device_t dev)
+{
+    struct NVMEBase *NVMEBase = dev->dev_NVMEBase;
+    ULONG q;
+    if (!dev->dev_Quiesced || !dev->dev_Queues)
+        return;
+    for (q = 0; q <= KrnGetCPUCount(); q++) {
+        nvme_free_queue(dev->dev_Queues[q]);
+        dev->dev_Queues[q] = NULL;
+    }
+    FreeMem(dev->dev_Queues, sizeof(APTR) * (KrnGetCPUCount() + 1));
+    dev->dev_Queues = NULL;
+    dev->queuecnt = 0;
+}
+
 /* Controller class methods */
 OOP_Object *NVME__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
@@ -360,9 +416,8 @@ OOP_Object *NVME__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
                 if (!nvme_wait_ready(dev, nvmeTimer, cap, NVME_CSTS_RDY))
                 {
 resetfailed:
-                    nvme_free_queue(dev->dev_Queues[0]);
-                    FreeMem(dev->dev_Queues, sizeof(APTR) * (KrnGetCPUCount() + 1));
-                    dev->dev_Queues = NULL;
+                    nvme_quiesce(dev, nvmeTimer);
+                    nvme_release_queues(dev);
                     // TODO: dispose the controller object
                     nvme_CloseTimer(nvmeTimer);
                     return NULL;
@@ -379,13 +434,14 @@ resetfailed:
                 dev->dev_Queues[0]->q_IntHandler.is_Data = dev->dev_Queues[0];
                 if (!HIDD_PCIDriver_AddInterrupt(dev->dev_PCIDriverObject, dev->dev_Object, &dev->dev_Queues[0]->q_IntHandler)) {
                     bug("[NVME:Controller] %s: ERROR - failed to add PCI interrupt handler!\n", __func__);
-                    nvme_free_queue(dev->dev_Queues[0]);
-                    FreeMem(dev->dev_Queues, sizeof(APTR) * (KrnGetCPUCount() + 1));
-                    dev->dev_Queues = NULL;
+                    nvme_quiesce(dev, nvmeTimer);
+                    nvme_release_queues(dev);
                     // TODO: dispose the controller object
                     nvme_CloseTimer(nvmeTimer);
                     return NULL;
                 }
+
+                dev->dev_Queues[0]->q_irq_registered = 1;
 
                 /*
                  * There is someone to answer the line now - let it speak.
@@ -477,12 +533,10 @@ resetfailed:
                             {aHidd_StorageUnit_Revision,(IPTR)ctrl->fr                                  },
                             {TAG_DONE,                  0                                               }
                         };
-                        attrs[BUS_TAG_HARDWARENAME].ti_Data = (IPTR)AllocVec(24, MEMF_CLEAR);
+                        attrs[BUS_TAG_HARDWARENAME].ti_Data = (IPTR)dev->dev_BusName;
                         sprintf((char *)attrs[BUS_TAG_HARDWARENAME].ti_Data, "NVME %u.%u Device Bus", (dev->dev_nvmeregbase->vs >> 16) & 0xFFFF, dev->dev_nvmeregbase->vs & 0xFFFF);
 
-                        nvme_CloseTimer(nvmeTimer);
-                        nvmeTimer = NULL;
-
+                        if (HW_AddDriver(dev->dev_Controller, NVMEBase->busClass, attrs)) {
                         /* Install reset callback */
                         data->ac_ResetHandler.is_Node.ln_Pri = SD_PRI_DOS - 1;
                         data->ac_ResetHandler.is_Node.ln_Name = ((struct Node *)dev->dev_Controller)->ln_Name;
@@ -490,7 +544,12 @@ resetfailed:
                         data->ac_ResetHandler.is_Data         = dev;
                         AddResetCallback(&data->ac_ResetHandler);
 
-                        HW_AddDriver(dev->dev_Controller, NVMEBase->busClass, attrs);
+
+                        } else {
+                            nvme_quiesce(dev, nvmeTimer);
+                            nvme_release_queues(dev);
+                            data = NULL;
+                        }
                     } else {
                         bug("[NVME:Controller] %s: ERROR - failed to query controller identity!\n", __func__);
                         {
@@ -523,14 +582,17 @@ resetfailed:
                                 " bus master %s\n", __func__,
                                 (UWORD)cmdreg, ismaster ? "on" : "OFF");
                         }
+                        nvme_quiesce(dev, nvmeTimer);
                         data = NULL;
                     }
-                    HIDD_PCIDriver_FreePCIMem(dev->dev_PCIDriverObject, buffer);
+                    if (data || dev->dev_Quiesced)
+                        HIDD_PCIDriver_FreePCIMem(dev->dev_PCIDriverObject, buffer);
+                    if (!data)
+                        nvme_release_queues(dev);
                 } else {
                     D(bug ("[NVME:Controller] %s: ERROR - failed to create DMA buffer!\n", __func__);)
-                    nvme_free_queue(dev->dev_Queues[0]);
-                    FreeMem(dev->dev_Queues, sizeof(APTR) * (KrnGetCPUCount() + 1));
-                    dev->dev_Queues = NULL;
+                    nvme_quiesce(dev, nvmeTimer);
+                    nvme_release_queues(dev);
                     // TODO: dispose the controller object
                     data = NULL;
                 }
@@ -552,6 +614,8 @@ resetfailed:
         }
         if (data)
             AddTail(&NVMEBase->nvme_Controllers, &data->ac_Node);
+        else
+            nvmeController = NULL;
     }
 
     D(bug ("[NVME:Controller] %s: returning 0x%p\n", __func__, nvmeController);)
@@ -572,18 +636,19 @@ VOID NVME__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
     ForeachNodeSafe (&NVMEBase->nvme_Controllers, nvmeNode, tmpNode) {
         if (nvmeNode->ac_Object == o) {
             D(bug ("[NVME:Controller] %s: Destroying Controller Entry @ %p\n", __func__, nvmeNode);)
-            Remove(&nvmeNode->ac_Node);
-            if (nvmeNode->ac_dev && nvmeNode->ac_dev->dev_Queues) {
-                ULONG q;
-                for (q = 0; q <= nvmeNode->ac_dev->queuecnt; q++) {
-                    if (nvmeNode->ac_dev->dev_Queues[q]) {
-                        nvme_free_queue(nvmeNode->ac_dev->dev_Queues[q]);
-                        nvmeNode->ac_dev->dev_Queues[q] = NULL;
-                    }
+            struct IORequest *tmr = nvme_OpenTimer(NVMEBase);
+            if (!tmr)
+                return;
+            RemResetCallback(&nvmeNode->ac_ResetHandler);
+            if (nvmeNode->ac_dev) {
+                if (!nvme_quiesce(nvmeNode->ac_dev, tmr)) {
+                    nvme_CloseTimer(tmr);
+                    return;
                 }
-                FreeMem(nvmeNode->ac_dev->dev_Queues, sizeof(APTR) * (KrnGetCPUCount() + 1));
-                nvmeNode->ac_dev->dev_Queues = NULL;
+                nvme_release_queues(nvmeNode->ac_dev);
             }
+            Remove(&nvmeNode->ac_Node);
+            nvme_CloseTimer(tmr);
         }
     }
 }

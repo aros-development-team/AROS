@@ -103,16 +103,8 @@ struct nvme_queue *nvme_alloc_queue(device_t dev, int qid, int depth, int vector
     return nvmeq;
 }
 
-void nvme_free_queue(struct nvme_queue *nvmeq)
+void nvme_stop_iotask(struct nvme_queue *nvmeq)
 {
-    struct NVMEBase *NVMEBase = (nvmeq && nvmeq->dev) ? nvmeq->dev->dev_NVMEBase : NULL;
-
-    if (!nvmeq) {
-        return;
-    }
-
-    (void)NVMEBase;
-
     /* The IO task polls this queue, so it has to be gone first */
     if (nvmeq->q_IOTask) {
         ULONG oldsig = SetSignal(0, SIGF_SINGLE) & SIGF_SINGLE;
@@ -123,6 +115,20 @@ void nvme_free_queue(struct nvme_queue *nvmeq)
         SetSignal(oldsig, oldsig);
         nvmeq->q_IOTask = NULL;
     }
+
+}
+
+void nvme_free_queue(struct nvme_queue *nvmeq)
+{
+    struct NVMEBase *NVMEBase = (nvmeq && nvmeq->dev) ? nvmeq->dev->dev_NVMEBase : NULL;
+
+    if (!nvmeq) {
+        return;
+    }
+
+    (void)NVMEBase;
+
+    nvme_stop_iotask(nvmeq);
 
     if (nvmeq->sqba) {
         if (nvmeq->dev && nvmeq->dev->dev_PCIDriverObject && NVMEBase) {

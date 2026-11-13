@@ -15,6 +15,7 @@
 
 #include "nvme_debug.h"
 #include "nvme_intern.h"
+#include "nvme_timer.h"
 
 /*
     Hardware Access Support Functions
@@ -155,7 +156,7 @@ int nvme_process_cq(struct nvme_queue *nvmeq)
         KrnSpinLock(&nvmeq->q_lock, NULL, SPINLOCK_MODE_WRITE);
 #endif
 
-    if (nvmeq->cq_processing) {
+    if (nvmeq->cq_processing || nvmeq->cq_stopped) {
 #if defined(__AROSEXEC_SMP__)
         KrnSpinUnLock(&nvmeq->q_lock);
 #endif
@@ -219,4 +220,27 @@ int nvme_process_cq(struct nvme_queue *nvmeq)
     D(bug ("[NVME:HW] %s: finished\n", __func__);)
 
     return processed;
+}
+
+/* Stop new walkers, then wait for any callback already outside q_lock. */
+void nvme_stop_completions(struct nvme_queue *nvmeq, struct IORequest *tmr)
+{
+#if defined(__AROSEXEC_SMP__)
+    struct NVMEBase *NVMEBase = nvmeq->dev->dev_NVMEBase;
+#endif
+    BOOL processing;
+    do {
+        Disable();
+#if defined(__AROSEXEC_SMP__)
+        KrnSpinLock(&nvmeq->q_lock, NULL, SPINLOCK_MODE_WRITE);
+#endif
+        nvmeq->cq_stopped = TRUE;
+        processing = nvmeq->cq_processing;
+#if defined(__AROSEXEC_SMP__)
+        KrnSpinUnLock(&nvmeq->q_lock);
+#endif
+        Enable();
+        if (processing)
+            nvme_WaitTO(tmr, 0, 1000, 0);
+    } while (processing);
 }
