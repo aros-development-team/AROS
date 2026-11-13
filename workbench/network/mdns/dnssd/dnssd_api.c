@@ -18,6 +18,48 @@
 #include <aros/libcall.h>
 
 #include "dnssd_intern.h"
+#include "dnssd_model.h"
+
+/*
+ * A request of command with parts, of session ds (NULL: none yet, or none
+ * needed), in a block of its own (dnssd_ipc_port.h); NULL and *rc if it
+ * cannot be made. Its data is copied in: nothing of the caller's is lent.
+ */
+struct DNSSDIPCMsg *
+dnssdNewMsg(UWORD command, const struct dnssd_ipc_parts *parts,
+    const struct DNSSDSession *ds, LONG *rc)
+{
+    static const struct dnssd_ipc_parts none;
+    const ULONG head = offsetof(struct DNSSDIPCMsg, dm_Request);
+    struct DNSSDIPCMsg *msg;
+    size_t need, written;
+
+    if (parts == NULL) {
+        parts = &none;
+    }
+    if (dnssd_ipc_measure(parts, &need) != DNSSD_IPC_OK || head + need > 0xffff) {
+        *rc = DNSSD_ERR_BADPARAM;
+        return NULL;
+    }
+    msg = AllocVec(head + need, MEMF_PUBLIC | MEMF_CLEAR);
+    if (msg == NULL) {
+        *rc = DNSSD_ERR_NOMEM;
+        return NULL;
+    }
+    if (dnssd_ipc_build(command, parts, &msg->dm_Request, need, &written) !=
+            DNSSD_IPC_OK) {
+        FreeVec(msg);
+        *rc = DNSSD_ERR_BADPARAM;
+        return NULL;
+    }
+    msg->dm_Msg.mn_Length = (UWORD)(head + written);
+    if (ds != NULL) {
+        msg->dm_Request.session = ds->ds_Session;
+        msg->dm_Request.incarnation = ds->ds_Incarnation;
+    }
+    *rc = DNSSD_OK;
+    return msg;
+}
 
 /*
  * One call of mdnsd: msg goes to its port and comes back answered. A reply
@@ -34,11 +76,9 @@ dnssdSend(struct DNSSDIPCMsg *msg)
         return DNSSD_ERR_NOMEM;
     }
     msg->dm_Msg.mn_Node.ln_Type = NT_MESSAGE;
-    msg->dm_Msg.mn_Length = sizeof(*msg);
     msg->dm_Msg.mn_ReplyPort = reply;
-    msg->dm_Version = DNSSD_IPC_VERSION;
-    msg->dm_TaskID = GetETaskID(FindTask(NULL));
-    msg->dm_Result = DNSSD_ERR_NOENGINE;
+    msg->dm_Request.task = GetETaskID(FindTask(NULL));
+    msg->dm_Request.result = DNSSD_ERR_NOENGINE;
     Forbid();
     engine = FindPort((STRPTR)DNSSD_IPC_PORT);
     if (engine != NULL) {
@@ -50,7 +90,7 @@ dnssdSend(struct DNSSDIPCMsg *msg)
         GetMsg(reply);
     }
     DeleteMsgPort(reply);
-    return msg->dm_Result;
+    return msg->dm_Request.result;
 }
 
 /*
@@ -150,65 +190,77 @@ host_addresses(struct TagItem *tags, struct DNSSDAddress *addresses)
     return count;
 }
 
-/* An operation of session from msg, which names it; the tags every one
- * takes. */
+/* An operation of session from msg (NULL: rc says why it was not made),
+ * which names it and is freed here; the tags every one takes. */
 static LONG
-start(struct DNSSDSession *session, struct DNSSDIPCMsg *msg,
+start(struct DNSSDSession *session, struct DNSSDIPCMsg *msg, LONG rc,
     struct TagItem *tags, DNSSDOperationRef *operation)
 {
     struct DNSSDOperation *op;
-    LONG rc;
+    ULONG id;
 
+    if (msg == NULL) {
+        return rc;
+    }
     op = AllocVec(sizeof(*op), MEMF_PUBLIC | MEMF_CLEAR);
     if (op == NULL) {
+        FreeVec(msg);
         return DNSSD_ERR_NOMEM;
     }
-    msg->dm_Interface = GetTagData(DNSSD_Interface, 0, tags);
+    msg->dm_Request.interface_index = GetTagData(DNSSD_Interface, 0, tags);
     rc = dnssdSend(msg);
+    id = msg->dm_Request.operation;
+    FreeVec(msg);
     if (rc != DNSSD_OK) {
         FreeVec(op);
         return rc;
     }
     op->do_Session = session;
-    op->do_ID = msg->dm_Operation;
+    op->do_ID = id;
     AddTail((struct List *)&session->ds_Operations, (struct Node *)op);
     *operation = op;
     return DNSSD_OK;
 }
 
 /*
- * <type>.<domain> after wire + at (and "<subtype>._sub." before them): the
- * offsets of the type and the domain, and the whole length, or -1.
+ * A service's type and domain (text) as wire names, in the parts; their
+ * bytes in typeWire and domainWire. DNSSD_ERR_BADNAME if either is no name.
  */
 static LONG
-service_to_wire(const char *subtype, const char *type, const char *domain,
-    UBYTE *wire, LONG at, UWORD *typeOffset, UWORD *domainOffset)
+service_parts(CONST_STRPTR type, CONST_STRPTR domain, UBYTE *typeWire,
+    UBYTE *domainWire, struct dnssd_ipc_parts *parts)
 {
-    if (subtype != NULL) {
-        if ((at = label_to_wire(subtype, wire, at)) < 0 ||
-            (at = label_to_wire("_sub", wire, at)) < 0) {
-            return -1;
-        }
+    LONG t = text_to_wire(type, typeWire, 0);
+    LONG d = text_to_wire(domain, domainWire, 0);
+
+    if (t < 0 || d < 0) {
+        return DNSSD_ERR_BADNAME;
     }
-    *typeOffset = (UWORD)at;
-    /* a type is two labels, "_name._tcp" or "_name._udp" */
-    if ((at = text_to_wire(type, wire, at)) < 0) {
-        return -1;
-    }
-    at--;                               /* the domain follows */
-    *domainOffset = (UWORD)at;
-    return text_to_wire(domain, wire, at);
+    parts->service_type = typeWire;
+    parts->service_type_size = (ULONG)t;
+    parts->domain = domainWire;
+    parts->domain_size = (ULONG)d;
+    return DNSSD_OK;
 }
 
-static void
-init_msg(struct DNSSDIPCMsg *msg, const struct DNSSDSession *ds, UWORD command)
+/* DNSSD_HostAddress's struct DNSSDAddress is sent as it is */
+typedef char address_layout_check[
+    sizeof(struct DNSSDAddress) == sizeof(struct dnssd_model_wire_address) &&
+    offsetof(struct DNSSDAddress, da_Interface) ==
+        offsetof(struct dnssd_model_wire_address, interface_index) ? 1 : -1];
+
+/* An instance's own label (UTF-8, dots allowed, 1 to 63 bytes), as it is. */
+static LONG
+instance_part(CONST_STRPTR instance, struct dnssd_ipc_parts *parts)
 {
-    memset(msg, 0, sizeof(*msg));
-    msg->dm_Command = command;
-    if (ds != NULL) {
-        msg->dm_Session = ds->ds_Session;
-        msg->dm_Incarnation = ds->ds_Incarnation;
+    ULONG length = strnlen(instance, 64);
+
+    if (length == 0 || length > 63) {
+        return DNSSD_ERR_BADNAME;
     }
+    parts->instance = (const UBYTE *)instance;
+    parts->instance_size = length;
+    return DNSSD_OK;
 }
 
 /*****************************************************************************
@@ -247,7 +299,7 @@ init_msg(struct DNSSDIPCMsg *msg, const struct DNSSDSession *ds, UWORD command)
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    struct DNSSDIPCMsg msg;
+    struct DNSSDIPCMsg *msg;
     struct DNSSDSession *ds;
     LONG rc;
 
@@ -264,15 +316,18 @@ init_msg(struct DNSSDIPCMsg *msg, const struct DNSSDSession *ds, UWORD command)
     ds->ds_Notify.mn_Node.ln_Type = NT_MESSAGE;
     ds->ds_Notify.mn_Length = sizeof(ds->ds_Notify);
     ds->ds_Notify.mn_ReplyPort = port;
-    init_msg(&msg, NULL, DNSSD_IPC_OPEN);
-    msg.dm_Notify = &ds->ds_Notify;
-    rc = dnssdSend(&msg);
+    msg = dnssdNewMsg(DNSSD_IPC_OPEN, NULL, NULL, &rc);
+    if (msg != NULL) {
+        msg->dm_Notify = &ds->ds_Notify;
+        rc = dnssdSend(msg);
+        ds->ds_Session = msg->dm_Request.session;
+        ds->ds_Incarnation = msg->dm_Request.incarnation;
+        FreeVec(msg);
+    }
     if (rc != DNSSD_OK) {
         FreeVec(ds);
         return rc;
     }
-    ds->ds_Session = msg.dm_Session;
-    ds->ds_Incarnation = msg.dm_Incarnation;
     *session = ds;
     return DNSSD_OK;
     AROS_LIBFUNC_EXIT
@@ -300,14 +355,18 @@ init_msg(struct DNSSDIPCMsg *msg, const struct DNSSDSession *ds, UWORD command)
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    struct DNSSDIPCMsg msg;
+    struct DNSSDIPCMsg *msg;
     struct DNSSDOperation *op;
+    LONG rc;
 
     if (session == NULL) {
         return;
     }
-    init_msg(&msg, session, DNSSD_IPC_CLOSE);
-    dnssdSend(&msg);
+    msg = dnssdNewMsg(DNSSD_IPC_CLOSE, NULL, session, &rc);
+    if (msg != NULL) {
+        dnssdSend(msg);
+        FreeVec(msg);
+    }
     /* mdnsd holds the notification no more, replied or not */
     session->ds_Notify.mn_Node.ln_Type = NT_REPLYMSG;
     notify_back(session);
@@ -346,26 +405,44 @@ init_msg(struct DNSSDIPCMsg *msg, const struct DNSSDSession *ds, UWORD command)
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    struct DNSSDIPCMsg msg;
+    struct dnssd_ipc_parts parts;
+    struct DNSSDIPCMsg *msg;
+    ULONG room;
     LONG rc;
 
     if (session == NULL || size == NULL) {
         return DNSSD_ERR_BADPARAM;
     }
-    init_msg(&msg, session, DNSSD_IPC_READ);
-    msg.dm_Data = (UBYTE *)event;
-    msg.dm_DataMax = event != NULL ? *size : 0;
+    /* mdnsd writes the event into the request's block, then it is copied
+     * out. The room is never more than the caller has: an event that does
+     * not fit stays mdnsd's, and the reply says its size (a caller with no
+     * buffer asks just that) */
+    room = event != NULL ? (*size & ~3UL) : 0;
+    if (room > DNSSD_IPC_MAX_SIZE - 512) {
+        room = DNSSD_IPC_MAX_SIZE - 512;
+    }
+    memset(&parts, 0, sizeof(parts));
+    parts.reply_room = room != 0 ? room : 4;
+    msg = dnssdNewMsg(DNSSD_IPC_READ, &parts, session, &rc);
+    if (msg == NULL) {
+        return rc;
+    }
     /* lent again only if mdnsd finds nothing to read */
     if (notify_back(session)) {
-        msg.dm_Notify = &session->ds_Notify;
+        msg->dm_Notify = &session->ds_Notify;
     }
-    rc = dnssdSend(&msg);
-    if (rc == DNSSD_ERR_EMPTY && msg.dm_Notify != NULL) {
+    rc = dnssdSend(msg);
+    if (rc == DNSSD_ERR_EMPTY && msg->dm_Notify != NULL) {
         session->ds_Notify.mn_Node.ln_Type = NT_MESSAGE;
     }
-    if (rc == DNSSD_OK || rc == DNSSD_ERR_TOOSMALL) {
-        *size = msg.dm_DataSize;
+    if (rc == DNSSD_OK) {
+        CopyMem((UBYTE *)&msg->dm_Request + msg->dm_Request.reply.offset, event,
+            msg->dm_Request.reply.size);
     }
+    if (rc == DNSSD_OK || rc == DNSSD_ERR_TOOSMALL) {
+        *size = msg->dm_Request.reply.size;
+    }
+    FreeVec(msg);
     return rc;
     AROS_LIBFUNC_EXIT
 }
@@ -390,15 +467,18 @@ init_msg(struct DNSSDIPCMsg *msg, const struct DNSSDSession *ds, UWORD command)
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    struct DNSSDIPCMsg msg;
+    struct DNSSDIPCMsg *msg;
     LONG rc;
 
     if (operation == NULL) {
         return DNSSD_ERR_BADPARAM;
     }
-    init_msg(&msg, operation->do_Session, DNSSD_IPC_CANCEL);
-    msg.dm_Operation = operation->do_ID;
-    rc = dnssdSend(&msg);
+    msg = dnssdNewMsg(DNSSD_IPC_CANCEL, NULL, operation->do_Session, &rc);
+    if (msg != NULL) {
+        msg->dm_Request.operation = operation->do_ID;
+        rc = dnssdSend(msg);
+        FreeVec(msg);
+    }
     Remove((struct Node *)operation);
     FreeVec(operation);
     return rc;
@@ -438,11 +518,14 @@ init_msg(struct DNSSDIPCMsg *msg, const struct DNSSDSession *ds, UWORD command)
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    struct DNSSDIPCMsg msg;
+    struct dnssd_ipc_parts parts;
+    struct DNSSDIPCMsg *msg;
     UBYTE wire[256];
-    LONG length;
+    ULONG timeout = GetTagData(DNSSD_Timeout, 3, tags);
+    LONG length, rc;
 
-    if (session == NULL || name == NULL || operation == NULL) {
+    if (session == NULL || name == NULL || operation == NULL ||
+        timeout < 1 || timeout > 60) {
         return DNSSD_ERR_BADPARAM;
     }
     *operation = NULL;
@@ -450,15 +533,15 @@ init_msg(struct DNSSDIPCMsg *msg, const struct DNSSDSession *ds, UWORD command)
     if (length < 0) {
         return DNSSD_ERR_BADNAME;
     }
-    init_msg(&msg, session, DNSSD_IPC_LOOKUP);
-    msg.dm_Data = wire;
-    msg.dm_DataSize = length;
-    msg.dm_Family = GetTagData(DNSSD_Family, DNSSD_FAMILY_ANY, tags);
-    msg.dm_Timeout = GetTagData(DNSSD_Timeout, 3, tags);
-    if (msg.dm_Timeout < 1 || msg.dm_Timeout > 60) {
-        return DNSSD_ERR_BADPARAM;
+    memset(&parts, 0, sizeof(parts));
+    parts.name = wire;
+    parts.name_size = (ULONG)length;
+    msg = dnssdNewMsg(DNSSD_IPC_LOOKUP, &parts, session, &rc);
+    if (msg != NULL) {
+        msg->dm_Request.family = GetTagData(DNSSD_Family, DNSSD_FAMILY_ANY, tags);
+        msg->dm_Request.timeout = timeout;
     }
-    return start(session, &msg, tags, operation);
+    return start(session, msg, rc, tags, operation);
     AROS_LIBFUNC_EXIT
 }
 
@@ -650,12 +733,20 @@ out:
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    struct DNSSDIPCMsg msg;
+    struct DNSSDIPCMsg *msg;
     struct TagItem *tstate = tags, *tag;
+    ULONG incarnation, sessions, operations;
     LONG rc;
 
-    init_msg(&msg, NULL, DNSSD_IPC_STATUS);
-    rc = dnssdSend(&msg);
+    msg = dnssdNewMsg(DNSSD_IPC_STATUS, NULL, NULL, &rc);
+    if (msg == NULL) {
+        return rc;
+    }
+    rc = dnssdSend(msg);
+    incarnation = msg->dm_Request.incarnation;
+    sessions = msg->dm_Request.count[0];
+    operations = msg->dm_Request.count[1];
+    FreeVec(msg);
     if (rc != DNSSD_OK) {
         return rc;
     }
@@ -667,13 +758,13 @@ out:
         }
         switch (tag->ti_Tag) {
         case DNSSD_Status_Incarnation:
-            *to = msg.dm_Incarnation;
+            *to = incarnation;
             break;
         case DNSSD_Status_Sessions:
-            *to = msg.dm_StatusSessions;
+            *to = sessions;
             break;
         case DNSSD_Status_Operations:
-            *to = msg.dm_StatusOperations;
+            *to = operations;
             break;
         }
     }
@@ -709,24 +800,33 @@ out:
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    struct DNSSDIPCMsg msg;
-    UBYTE wire[256];
-    LONG length;
+    struct dnssd_ipc_parts parts;
+    struct DNSSDIPCMsg *msg;
+    UBYTE typeWire[256], domainWire[256], subtype[64];
+    CONST_STRPTR sub = (CONST_STRPTR)GetTagData(DNSSD_Subtype, 0, tags);
+    LONG rc;
 
     if (session == NULL || type == NULL || operation == NULL) {
         return DNSSD_ERR_BADPARAM;
     }
     *operation = NULL;
-    init_msg(&msg, session, DNSSD_IPC_BROWSE);
-    length = service_to_wire((CONST_STRPTR)GetTagData(DNSSD_Subtype, 0, tags),
-        type, (CONST_STRPTR)GetTagData(DNSSD_Domain, (IPTR)"local", tags),
-        wire, 0, &msg.dm_TypeOffset, &msg.dm_DomainOffset);
-    if (length < 0) {
-        return DNSSD_ERR_BADNAME;
+    memset(&parts, 0, sizeof(parts));
+    rc = service_parts(type, (CONST_STRPTR)GetTagData(DNSSD_Domain, (IPTR)"local", tags),
+        typeWire, domainWire, &parts);
+    if (rc != DNSSD_OK) {
+        return rc;
     }
-    msg.dm_Data = wire;
-    msg.dm_DataSize = length;
-    return start(session, &msg, tags, operation);
+    if (sub != NULL) {
+        LONG length = label_to_wire(sub, subtype, 0);
+
+        if (length < 0) {
+            return DNSSD_ERR_BADNAME;
+        }
+        parts.subtypes = subtype;
+        parts.subtypes_size = (ULONG)length;
+    }
+    msg = dnssdNewMsg(DNSSD_IPC_BROWSE, &parts, session, &rc);
+    return start(session, msg, rc, tags, operation);
     AROS_LIBFUNC_EXIT
 }
 
@@ -762,32 +862,29 @@ out:
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    struct DNSSDIPCMsg msg;
-    UBYTE wire[256];
-    LONG length;
+    struct dnssd_ipc_parts parts;
+    struct DNSSDIPCMsg *msg;
+    UBYTE typeWire[256], domainWire[256];
+    ULONG timeout = GetTagData(DNSSD_Timeout, 5, tags);
+    LONG rc;
 
     if (session == NULL || instance == NULL || type == NULL ||
-        operation == NULL) {
+        operation == NULL || timeout < 1 || timeout > 60) {
         return DNSSD_ERR_BADPARAM;
     }
     *operation = NULL;
-    init_msg(&msg, session, DNSSD_IPC_RESOLVE);
-    length = label_to_wire(instance, wire, 0);
-    if (length >= 0) {
-        length = service_to_wire(NULL, type,
+    memset(&parts, 0, sizeof(parts));
+    if ((rc = instance_part(instance, &parts)) != DNSSD_OK ||
+        (rc = service_parts(type,
             (CONST_STRPTR)GetTagData(DNSSD_Domain, (IPTR)"local", tags),
-            wire, length, &msg.dm_TypeOffset, &msg.dm_DomainOffset);
+            typeWire, domainWire, &parts)) != DNSSD_OK) {
+        return rc;
     }
-    if (length < 0) {
-        return DNSSD_ERR_BADNAME;
+    msg = dnssdNewMsg(DNSSD_IPC_RESOLVE, &parts, session, &rc);
+    if (msg != NULL) {
+        msg->dm_Request.timeout = timeout;
     }
-    msg.dm_Data = wire;
-    msg.dm_DataSize = length;
-    msg.dm_Timeout = GetTagData(DNSSD_Timeout, 5, tags);
-    if (msg.dm_Timeout < 1 || msg.dm_Timeout > 60) {
-        return DNSSD_ERR_BADPARAM;
-    }
-    return start(session, &msg, tags, operation);
+    return start(session, msg, rc, tags, operation);
     AROS_LIBFUNC_EXIT
 }
 
@@ -819,12 +916,14 @@ out:
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    struct DNSSDIPCMsg msg;
+    struct dnssd_ipc_parts parts;
+    struct DNSSDIPCMsg *msg;
     UBYTE wire[256];
-    LONG length;
+    ULONG timeout = GetTagData(DNSSD_Timeout, 0, tags);
+    LONG length, rc;
 
     if (session == NULL || name == NULL || operation == NULL ||
-        rrtype == 0 || rrtype > 0xffff) {
+        rrtype == 0 || rrtype > 0xffff || timeout > 60) {
         return DNSSD_ERR_BADPARAM;
     }
     *operation = NULL;
@@ -832,15 +931,15 @@ out:
     if (length < 0) {
         return DNSSD_ERR_BADNAME;
     }
-    init_msg(&msg, session, DNSSD_IPC_QUERY);
-    msg.dm_Data = wire;
-    msg.dm_DataSize = length;
-    msg.dm_RRType = (UWORD)rrtype;
-    msg.dm_Timeout = GetTagData(DNSSD_Timeout, 0, tags);
-    if (msg.dm_Timeout > 60) {
-        return DNSSD_ERR_BADPARAM;
+    memset(&parts, 0, sizeof(parts));
+    parts.name = wire;
+    parts.name_size = (ULONG)length;
+    msg = dnssdNewMsg(DNSSD_IPC_QUERY, &parts, session, &rc);
+    if (msg != NULL) {
+        msg->dm_Request.rrtype = (UWORD)rrtype;
+        msg->dm_Request.timeout = timeout;
     }
-    return start(session, &msg, tags, operation);
+    return start(session, msg, rc, tags, operation);
     AROS_LIBFUNC_EXIT
 }
 
@@ -893,16 +992,20 @@ out:
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    struct DNSSDIPCMsg msg;
+    /* the request's parts, off the caller's stack (it may be 4 KB) */
+    struct RegisterScratch {
+        UBYTE typeWire[256], domainWire[256];
+        UBYTE subtypes[DNSSD_IPC_MAX_SUBTYPES * 64];
+        struct DNSSDAddress addresses[DNSSD_HOST_ADDRESSES];
+    } *scratch;
+    struct dnssd_ipc_parts parts;
+    struct DNSSDIPCMsg *msg;
     struct TagItem *tstate = tags, *tag;
-    UBYTE wire[256];
-    UBYTE *extra;
-    struct DNSSDAddress addresses[DNSSD_HOST_ADDRESSES];
-    LONG rc;
     const UBYTE *txt = (const UBYTE *)GetTagData(DNSSD_TXT, 0, tags);
     ULONG txtLength = GetTagData(DNSSD_TXTLength, 0, tags);
-    ULONG at;
-    LONG length;
+    CONST_STRPTR host = (CONST_STRPTR)GetTagData(DNSSD_Host, 0, tags);
+    ULONG at = 0, subtypes = 0;
+    LONG count, rc;
 
     if (session == NULL || instance == NULL || type == NULL ||
         operation == NULL || port == 0 || port > 0xffff ||
@@ -910,62 +1013,57 @@ out:
         return DNSSD_ERR_BADPARAM;
     }
     *operation = NULL;
-    init_msg(&msg, session, DNSSD_IPC_REGISTER);
-    length = label_to_wire(instance, wire, 0);
-    if (length >= 0) {
-        length = service_to_wire(NULL, type,
-            (CONST_STRPTR)GetTagData(DNSSD_Domain, (IPTR)"local", tags),
-            wire, length, &msg.dm_TypeOffset, &msg.dm_DomainOffset);
-    }
-    if (length < 0) {
-        return DNSSD_ERR_BADNAME;
-    }
-    /* the TXT data, then each subtype as a label, then 0 */
-    extra = AllocVec(txtLength + 8 * 64 + 1, MEMF_ANY);
-    if (extra == NULL) {
+    scratch = AllocVec(sizeof(*scratch), MEMF_ANY);
+    if (scratch == NULL) {
         return DNSSD_ERR_NOMEM;
     }
-    if (txtLength != 0) {
-        memcpy(extra, txt, txtLength);
+    memset(&parts, 0, sizeof(parts));
+    if ((rc = instance_part(instance, &parts)) != DNSSD_OK ||
+        (rc = service_parts(type,
+            (CONST_STRPTR)GetTagData(DNSSD_Domain, (IPTR)"local", tags),
+            scratch->typeWire, scratch->domainWire, &parts)) != DNSSD_OK) {
+        FreeVec(scratch);
+        return rc;
     }
-    at = txtLength;
     while ((tag = NextTagItem(&tstate)) != NULL) {
         if (tag->ti_Tag == DNSSD_Subtype) {
             LONG next;
 
-            if (at + 64 + 1 > txtLength + 8 * 64 + 1 ||
-                (next = label_to_wire((CONST_STRPTR)tag->ti_Data, extra + at, 0)) < 0) {
-                FreeVec(extra);
+            if (subtypes++ == DNSSD_IPC_MAX_SUBTYPES ||
+                (next = label_to_wire((CONST_STRPTR)tag->ti_Data,
+                    scratch->subtypes + at, 0)) < 0) {
+                FreeVec(scratch);
                 return DNSSD_ERR_BADNAME;
             }
             at += next;
         }
     }
-    extra[at++] = 0;
-    {
-        CONST_STRPTR host = (CONST_STRPTR)GetTagData(DNSSD_Host, 0, tags);
-        LONG count = host_addresses(tags, addresses);
-
-        if (count < 0 || (host != NULL) != (count > 0) ||
-            (host != NULL && (strlen(host) == 0 || strlen(host) > 63))) {
-            FreeVec(extra);
-            return DNSSD_ERR_BADPARAM;
-        }
-        if (host != NULL) {
-            strcpy((char *)msg.dm_Host, host);
-            msg.dm_HostAddresses = addresses;
-            msg.dm_HostAddressCount = (UWORD)count;
-        }
+    if (at != 0) {
+        parts.subtypes = scratch->subtypes;
+        parts.subtypes_size = at;
     }
-    msg.dm_Data = wire;
-    msg.dm_DataSize = length;
-    msg.dm_Port = (UWORD)port;
-    msg.dm_TXTLength = (UWORD)txtLength;
-    msg.dm_Extra = extra;
-    msg.dm_ExtraSize = at;
-    rc = start(session, &msg, tags, operation);
-    FreeVec(extra);
-    return rc;
+    if (txtLength != 0) {
+        parts.txt = txt;
+        parts.txt_size = txtLength;
+    }
+    count = host_addresses(tags, scratch->addresses);
+    if (count < 0 || (host != NULL) != (count > 0) ||
+        (host != NULL && (host[0] == '\0' || strnlen(host, 64) > 63))) {
+        FreeVec(scratch);
+        return DNSSD_ERR_BADPARAM;
+    }
+    if (host != NULL) {
+        parts.host = (const UBYTE *)host;
+        parts.host_size = strnlen(host, 64);
+        parts.addresses = scratch->addresses;
+        parts.address_count = (ULONG)count;
+    }
+    msg = dnssdNewMsg(DNSSD_IPC_REGISTER, &parts, session, &rc);
+    FreeVec(scratch);
+    if (msg != NULL) {
+        msg->dm_Request.port = (UWORD)port;
+    }
+    return start(session, msg, rc, tags, operation);
     AROS_LIBFUNC_EXIT
 }
 
@@ -995,32 +1093,47 @@ out:
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    struct DNSSDIPCMsg msg;
+    static const UBYTE empty[1] = { 0 };    /* TXT of one empty string */
+    struct dnssd_ipc_parts parts;
+    struct DNSSDIPCMsg *msg;
     const UBYTE *txt = (const UBYTE *)GetTagData(DNSSD_TXT, 0, tags);
     ULONG txtLength = GetTagData(DNSSD_TXTLength, 0, tags);
     ULONG port = GetTagData(DNSSD_Port, 0, tags);
-    struct DNSSDAddress addresses[DNSSD_HOST_ADDRESSES];
-    LONG count = host_addresses(tags, addresses);
+    struct DNSSDAddress *addresses;
+    LONG count, rc;
 
     if (operation == NULL || port > 0xffff || txtLength > DNSSD_TXT_MAX ||
-        (txt == NULL && txtLength != 0) || count < 0) {
+        (txt == NULL && txtLength != 0)) {
         return DNSSD_ERR_BADPARAM;
     }
-    init_msg(&msg, operation->do_Session, DNSSD_IPC_UPDATE);
-    msg.dm_Operation = operation->do_ID;
-    msg.dm_Port = (UWORD)port;
+    addresses = AllocVec(sizeof(*addresses) * DNSSD_HOST_ADDRESSES, MEMF_ANY);
+    if (addresses == NULL) {
+        return DNSSD_ERR_NOMEM;
+    }
+    count = host_addresses(tags, addresses);
+    if (count < 0) {
+        FreeVec(addresses);
+        return DNSSD_ERR_BADPARAM;
+    }
+    memset(&parts, 0, sizeof(parts));
     if (FindTagItem(DNSSD_TXT, tags) != NULL) {
-        msg.dm_Flags = DNSSD_IPCF_TXT;
-        msg.dm_Extra = (UBYTE *)txt;
-        msg.dm_ExtraSize = txtLength;
-        msg.dm_TXTLength = (UWORD)txtLength;
+        parts.txt = txtLength != 0 ? txt : empty;
+        parts.txt_size = txtLength != 0 ? txtLength : sizeof(empty);
     }
     if (count > 0) {
-        msg.dm_Flags |= DNSSD_IPCF_ADDRESSES;
-        msg.dm_HostAddresses = addresses;
-        msg.dm_HostAddressCount = (UWORD)count;
+        parts.addresses = addresses;
+        parts.address_count = (ULONG)count;
     }
-    return dnssdSend(&msg);
+    msg = dnssdNewMsg(DNSSD_IPC_UPDATE, &parts, operation->do_Session, &rc);
+    FreeVec(addresses);
+    if (msg == NULL) {
+        return rc;
+    }
+    msg->dm_Request.operation = operation->do_ID;
+    msg->dm_Request.port = (UWORD)port;
+    rc = dnssdSend(msg);
+    FreeVec(msg);
+    return rc;
     AROS_LIBFUNC_EXIT
 }
 

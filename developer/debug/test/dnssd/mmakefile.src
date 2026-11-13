@@ -5,10 +5,12 @@ include $(SRCDIR)/config/aros.cfg
 USER_CFLAGS := $(CFLAGS_GNU99) -Wall -Wextra -Werror
 USER_INCLUDES := -I$(SRCDIR)/workbench/network/mdns
 
-#MM- test : test-dnssd-model test-dnssd-link test-dnssd-link-aros
-#MM- test-quick : test-dnssd-model test-dnssd-link test-dnssd-link-aros
+#MM- test : test-dnssd-model test-dnssd-ipc test-dnssd-link test-dnssd-link-aros
+#MM- test-quick : test-dnssd-model test-dnssd-ipc test-dnssd-link test-dnssd-link-aros
 #MM test-dnssd-model : includes linklibs
 #MM test-dnssd-model-quick : test-dnssd-model
+#MM test-dnssd-ipc : includes linklibs
+#MM test-dnssd-ipc-quick : test-dnssd-ipc
 #MM test-dnssd-link : includes linklibs
 #MM test-dnssd-link-quick : test-dnssd-link
 #MM test-dnssd-link-aros : includes linklibs
@@ -17,6 +19,11 @@ USER_INCLUDES := -I$(SRCDIR)/workbench/network/mdns
 %build_prog mmake=test-dnssd-model \
     progname=dnssdmodeltest \
     files="dnssd_model_test $(SRCDIR)/workbench/network/mdns/dnssd_model" \
+    targetdir=$(AROS_TESTS)/dnssd
+
+%build_prog mmake=test-dnssd-ipc \
+    progname=dnssdipctest \
+    files="dnssd_ipc_test $(SRCDIR)/workbench/network/mdns/dnssd_ipc $(SRCDIR)/workbench/network/mdns/dnssd_model" \
     targetdir=$(AROS_TESTS)/dnssd
 
 %build_prog mmake=test-dnssd-link \

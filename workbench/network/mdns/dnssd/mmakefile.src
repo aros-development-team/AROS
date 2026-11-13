@@ -1,6 +1,6 @@
 include $(SRCDIR)/config/aros.cfg
 
-# dnssd_ipc.h, the messages the library and mdnsd exchange, is the daemon's
+# dnssd_ipc.h and dnssd_ipc.c, the requests the library sends mdnsd, are the daemon's
 USER_INCLUDES := -I$(SRCDIR)/$(CURDIR)/..
 
 #MM- workbench-network-mdns : workbench-network-mdns-dnssd
@@ -13,6 +13,6 @@ USER_INCLUDES := -I$(SRCDIR)/$(CURDIR)/..
 
 %build_module mmake=workbench-network-mdns-dnssd \
     modname=dnssd modtype=library \
-    files="dnssd_api"
+    files="dnssd_api ../dnssd_ipc"
 
 %common
