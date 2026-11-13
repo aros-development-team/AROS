@@ -12,7 +12,7 @@
 #include <string.h>
 #include <netinet/in.h>
 
-#include "mdnsd.h"
+#include "mdns_bonami.h"
 #define QUERY_SESSIONS 8
 #define QUERY_QUEUE 8
 

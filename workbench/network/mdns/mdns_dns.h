@@ -42,14 +42,16 @@ struct MDNSHeader
 
 struct MDNSQuestion
 {
-    char  qname[256];
+    char  qname[256];   /* as text, for presentation */
+    UBYTE qwire[256];   /* as wire labels, uncompressed: what is compared */
     UWORD qtype;
     UWORD qclass;
 };
 
 struct MDNSRecord
 {
-    char  name[256];
+    char  name[256];    /* as text, for presentation */
+    UBYTE wire[256];    /* as wire labels, uncompressed: what is compared */
     UWORD type;
     UWORD rclass;
     ULONG ttl;
@@ -63,6 +65,11 @@ struct MDNSRecord
 };
 
 LONG mdnsNameToWire(const char *name, UBYTE *buf, LONG buflen, LONG *used);
+/* wire names (mdns_dns.c) */
+LONG mdnsWireNameLength(const UBYTE *name);
+BOOL mdnsWireNameEqual(const UBYTE *a, const UBYTE *b);
+LONG mdnsWireNameRead(const UBYTE *pkt, LONG length, LONG offset, UBYTE *name);
+BOOL mdnsWireNameFromText(const char *text, UBYTE *name);
 LONG mdnsWireToName(const UBYTE *wire, LONG wirelen, LONG offset,
     const UBYTE *pkt, LONG pktlen, char *name, LONG namelen);
 LONG mdnsSkipName(const UBYTE *pkt, LONG pktlen, LONG offset);
@@ -72,6 +79,11 @@ LONG mdnsParseQuestion(const UBYTE *pkt, LONG pktlen, LONG offset,
     struct MDNSQuestion *q, LONG *consumed);
 LONG mdnsParseRecord(const UBYTE *pkt, LONG pktlen, LONG offset,
     struct MDNSRecord *r, LONG *consumed);
+LONG mdnsAppendRecordWire(UBYTE *pkt, LONG pktmax, LONG *pos, UWORD *ancount,
+    const UBYTE *name, UWORD type, UWORD rclass, ULONG ttl,
+    const UBYTE *rdata, UWORD rdlength);
+LONG mdnsBuildQueryWire(UBYTE *pkt, LONG pktmax, UWORD id, const UBYTE *qname,
+    UWORD qtype, UWORD qclass, LONG *pktlen);
 LONG mdnsAppendRecord(UBYTE *pkt, LONG pktmax, LONG *pos, UWORD *ancount,
     const char *name, UWORD type, UWORD rclass, ULONG ttl,
     const UBYTE *rdata, UWORD rdlength);

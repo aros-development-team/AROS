@@ -14,7 +14,7 @@
 #include <proto/utility.h>
 #include <string.h>
 #include <netinet/in.h>
-#include "mdnsd.h"
+#include "mdns_bonami.h"
 
 #define DISC_RECORDS 128
 #define DISC_VIEWS 32

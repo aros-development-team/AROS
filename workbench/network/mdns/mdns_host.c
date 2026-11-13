@@ -35,7 +35,7 @@ mdnsHostFqdn(const struct MDNSDaemon *md, char *buf, LONG buflen)
         buf[n] = md->md_HostName[n];
         n++;
     }
-    mdnsTextCopy(buf + n, buflen - n, "." MDNS_DOMAIN_LOCAL);
+    mdnsTextCopy(buf + n, buflen - n, ".local");
 }
 
 void

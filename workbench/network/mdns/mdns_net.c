@@ -261,14 +261,14 @@ set_primary(struct Library *SocketBase, struct MDNSDaemon *md)
     }
 
     {
-        char base[MDNS_MAX_HOST + 1];
+        char base[MDNSD_HOST_MAX + 1];
         char *dot;
 
         base[0] = '\0';
-        if (gethostname(base, MDNS_MAX_HOST) != 0 || base[0] == '\0') {
+        if (gethostname(base, MDNSD_HOST_MAX) != 0 || base[0] == '\0') {
             mdnsTextCopy(base, (LONG)sizeof(base), "aros");
         }
-        base[MDNS_MAX_HOST] = '\0';
+        base[MDNSD_HOST_MAX] = '\0';
         /* over mDNS a host is its first label, in the mDNS domain */
         if ((dot = strchr(base, '.')) != NULL) {
             *dot = '\0';
@@ -302,7 +302,7 @@ mdnsNetNameHost(struct MDNSDaemon *md)
         number /= 10;
     } while (number != 0);
     /* a label has at most 63 characters */
-    len = mdnsTextLength(md->md_HostName, MDNS_MAX_HOST);
+    len = mdnsTextLength(md->md_HostName, MDNSD_HOST_MAX);
     if (len > 63 - 1 - n) {
         len = 63 - 1 - n;
     }

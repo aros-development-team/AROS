@@ -80,11 +80,10 @@ handle_packet(struct MDNSDaemon *md, const UBYTE *pkt, LONG pktlen,
             if (record.type == DNS_TYPE_PTR &&
                 (record.rclass & 0x7fff) == DNS_CLASS_IN &&
                 nknown < MDNS_KNOWN_MAX &&
-                mdnsWireToName(pkt, pktlen, record.rdoffset, pkt, pktlen,
-                    known[nknown].target,
-                    (LONG)sizeof(known[nknown].target)) >= 0) {
-                mdnsTextCopy(known[nknown].owner,
-                    (LONG)sizeof(known[nknown].owner), record.name);
+                mdnsWireNameRead(pkt, pktlen, record.rdoffset,
+                    known[nknown].target) >= 0) {
+                memcpy(known[nknown].owner, record.wire,
+                    (size_t)mdnsWireNameLength(record.wire));
                 known[nknown].ttl = record.ttl;
                 nknown++;
             }
