@@ -105,20 +105,35 @@ static void core_IPIPendingAdd(struct APICData *apicPrivate, ULONG *mask, LONG d
             apicPrivate->cores[i].cpu_IPIPending += delta;
 }
 
+/* Is cpu the only CPU in mask? */
+static BOOL core_IPIOnlyCPU(ULONG *mask, ULONG masklongs, int cpu)
+{
+    ULONG i;
+
+    for (i = 0; i < masklongs; i++)
+        if (mask[i] != ((i == (ULONG)cpu / 32) ? ((ULONG)1 << (cpu % 32)) : 0))
+            return FALSE;
+    return TRUE;
+}
+
 /* Run the calls queued for this CPU from a waiting caller, in supervisor
-   state (a TLB shootdown hook reloads cr3). Only with calls queued:
-   scanning an empty queue takes kb_BusyIPIHooksLock from the CPUs that
-   need it. */
+   state (a TLB shootdown hook reloads cr3) and with interrupts off, as in
+   the IPI handler. Only with calls queued: scanning an empty queue takes
+   kb_BusyIPIHooksLock from the CPUs that need it. */
 static void core_IPIServeOwnQueue(struct KernelBase *KernelBase)
 {
     struct CPUData *core = &KernelBase->kb_PlatformData->kb_APIC->cores[KrnGetCPUNumber()];
+    unsigned long flags;
     APTR ssp = NULL;
 
     if (!core->cpu_IPIPending)
         return;
     if (!Kernel_13_KrnIsSuper())
         ssp = SuperState();
+    __save_flags(flags);
+    __cli();
     core_IPICallHookHandle(NULL, KernelBase);
+    __restore_flags(flags);
     if (ssp)
         UserState(ssp);
 }
@@ -126,11 +141,27 @@ static void core_IPIServeOwnQueue(struct KernelBase *KernelBase)
 /* Take an entry off the free list. Entries only come back when their target
    CPUs drain them, and some may be waiting on this CPU, which cannot take the
    IPI if the caller is inside Disable(): run this CPU's own queue while
-   waiting. */
+   waiting. A hook gets the entry of the call it runs (see
+   core_IPICallHookHandle()). */
 static struct IPIHook *core_IPIHookAlloc(struct KernelBase *KernelBase)
 {
     struct PlatformData *pdata = KernelBase->kb_PlatformData;
     struct IPIHook *ipi;
+    unsigned long flags;
+
+    __save_flags(flags);
+    __cli();
+    {
+        struct CPUData *core = &pdata->kb_APIC->cores[KrnGetCPUNumber()];
+
+        ipi = core->cpu_IPISpare;
+        core->cpu_IPISpare = NULL;
+        if (!ipi && core->cpu_IPIInHook)
+            bug("[Kernel:IPI] a hook queues a call without a spare entry\n");
+    }
+    __restore_flags(flags);
+    if (ipi)
+        return ipi;
 
     do
     {
@@ -386,11 +417,15 @@ int core_DoCallIPI(struct Hook *hook, void *cpu_mask, int async, int nargs, IPTR
 }
 
 /*
- * Run the calls queued for this CPU, no list lock held while a hook runs.
- * An entry is freed only when every requested CPU is done; a synchronous
- * entry is freed by its waiting sender. A hook may queue a call of its own
- * (signal_hook does when the task has moved on); with the pool empty that
- * serves this CPU's queue again, one hook deeper.
+ * Run the calls queued for this CPU, interrupts off, no list lock held
+ * while a hook runs. An entry is freed only when every requested CPU is
+ * done; a synchronous entry is freed by its waiting sender.
+ *
+ * A hook may queue one call of its own (signal_hook does). An asynchronous
+ * call for this CPU alone is complete once it runs here, so its entry is
+ * the hook's spare, and one of this CPU's stand-in entries takes its place
+ * on the busy list for a cancel to find. Calls for several CPUs and
+ * synchronous calls have no spare: their hooks must not queue calls.
  */
 static void core_IPICallHookHandle(struct ExceptionContext *regs, struct KernelBase *KernelBase)
 {
@@ -406,7 +441,9 @@ static void core_IPICallHookHandle(struct ExceptionContext *regs, struct KernelB
        interrupts off: a nested IPI_CALL_HOOK would spin on them. */
     for (;;)
     {
-        struct IPIHook *ipi = NULL, *n = NULL, *found = NULL;
+        struct IPIHook *ipi = NULL, *n = NULL, *found = NULL, *stand = NULL;
+        struct CPUData *core = &apicPrivate->cores[cpunum];
+        APTR spare = NULL;
         BOOL complete = FALSE;
 
         __save_flags(flags);
@@ -418,10 +455,27 @@ static void core_IPICallHookHandle(struct ExceptionContext *regs, struct KernelB
                 !KrnCPUInMask(cpunum, ipi->ih_CPUClaimed))
             {
                 bit_test_and_set_long(ipi->ih_CPUClaimed, cpunum);
-                apicPrivate->cores[cpunum].cpu_IPIPending--;
+                core->cpu_IPIPending--;
                 found = ipi;
                 break;
             }
+        }
+        if (found && found->ih_Async && (core->cpu_IPIStandsUsed < CPU_IPISTANDS) &&
+            core_IPIOnlyCPU(found->ih_CPURequested, masklongs, cpunum))
+        {
+            stand = core->cpu_IPIStand[core->cpu_IPIStandsUsed++];
+            stand->ih_Hook.h_Entry = found->ih_Hook.h_Entry;
+            stand->ih_Hook.h_SubEntry = found->ih_Hook.h_SubEntry;
+            stand->ih_Hook.h_Data = found->ih_Hook.h_Data;
+            bcopy(found->ih_Args, stand->ih_Args, sizeof(stand->ih_Args));
+            bcopy(found->ih_CPURequested, stand->ih_CPURequested, sizeof(ULONG) * masklongs);
+            bcopy(found->ih_CPUClaimed, stand->ih_CPUClaimed, sizeof(ULONG) * masklongs);
+            bcopy(found->ih_CPUDone, stand->ih_CPUDone, sizeof(ULONG) * masklongs);
+            stand->ih_Async = 1;
+            REMOVE(found);
+            ADDTAIL(&pdata->kb_BusyIPIHooks, stand);
+            spare = core->cpu_IPISpare;
+            core->cpu_IPISpare = found;
         }
         KrnSpinUnLock(&pdata->kb_BusyIPIHooksLock);
         __restore_flags(flags);
@@ -435,11 +489,28 @@ static void core_IPICallHookHandle(struct ExceptionContext *regs, struct KernelB
         */
         D(bug("[Kernel:IPI.CPU.%03u] %s: Calling HOOK Entry %p with Data %p\n", cpunum, __func__,
             found->ih_Hook.h_Entry, found->ih_Async ? (APTR)&found->ih_Hook : found->ih_Hook.h_Data));
-        CALLHOOKPKT(&found->ih_Hook, NULL, 0);
+        core->cpu_IPIInHook++;
+        CALLHOOKPKT(stand ? &stand->ih_Hook : &found->ih_Hook, NULL, 0);
+        core->cpu_IPIInHook--;
 
         __save_flags(flags);
         __cli();
         KrnSpinLock(&pdata->kb_BusyIPIHooksLock, NULL, SPINLOCK_MODE_WRITE);
+        if (stand)
+        {
+            REMOVE(stand);
+            core->cpu_IPIStandsUsed--;
+            KrnSpinUnLock(&pdata->kb_BusyIPIHooksLock);
+            if (core->cpu_IPISpare == found)
+            {
+                KrnSpinLock(&pdata->kb_FreeIPIHooksLock, NULL, SPINLOCK_MODE_WRITE);
+                ADDTAIL(&pdata->kb_FreeIPIHooks, found);
+                KrnSpinUnLock(&pdata->kb_FreeIPIHooksLock);
+            }
+            core->cpu_IPISpare = spare;
+            __restore_flags(flags);
+            continue;
+        }
         bit_test_and_set_long(found->ih_CPUDone, cpunum);
         if (!memcmp(found->ih_CPUDone, found->ih_CPURequested, sizeof(ULONG) * masklongs))
         {
