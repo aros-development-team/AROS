@@ -147,7 +147,7 @@ OOP_Object *NVMEBus__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
 
     D(bug ("[NVME:Bus] Root__New()\n");)
 
-    if (!dev || !dev->dev_Queues[0] || maxUnits <= 0)
+    if (!dev || !dev->dev_Queues[0] || maxUnits <= 0 || maxUnits > 65535)
         return NULL;
 
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
@@ -171,6 +171,10 @@ OOP_Object *NVMEBus__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
 
         data->ab_UnitMax = maxUnits;
         data->ab_Units = AllocMem(sizeof(OOP_Object *) * maxUnits, MEMF_CLEAR);
+        if (!data->ab_Units) {
+            OOP_DisposeObject(o);
+            return NULL;
+        }
         D(bug ("[NVME:Bus] Root__New: Allocated pointers for %u unit(s) @ 0x%p\n", maxUnits, data->ab_Units);)
     }
     return o;
@@ -181,6 +185,8 @@ void NVMEBus__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
     struct nvme_Bus *data = OOP_INST_DATA(cl, o);
     D(bug ("[NVME:Bus] Root__Dispose(%p)\n", o);)
 
+    if (data->ab_Units)
+        FreeMem(data->ab_Units, sizeof(OOP_Object *) * data->ab_UnitMax);
     OOP_DoSuperMethod(cl, o, msg);
 }
 
