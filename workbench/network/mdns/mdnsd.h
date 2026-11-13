@@ -315,6 +315,8 @@ LONG mdnsRegUpdateRef(struct MDNSDaemon *md, APTR ref, const UBYTE *txt,
 void mdnsRegRemoveRef(struct MDNSDaemon *md, APTR ref);
 
 /* dnssd_server.c: dnssd.library's sessions and operations. */
+BOOL dnssdServerInit(struct MDNSDaemon *md, ULONG gone);
+void dnssdServerGone(struct MDNSDaemon *md);
 void dnssdServerMessage(struct MDNSDaemon *md, struct DNSSDIPCMsg *msg);
 void dnssdServerReap(struct MDNSDaemon *md);
 void dnssdServerTick(struct MDNSDaemon *md);
