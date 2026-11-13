@@ -150,7 +150,7 @@ OOP_Object *NVMEBus__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
     /* The public unit number reserves twelve bits for the namespace. */
     if (maxUnits > 4096)
         maxUnits = 4096;
-    if (!dev || !dev->dev_Queues[0] || maxUnits <= 0)
+    if (!dev || !dev->dev_Queues || !dev->dev_Queues[0] || maxUnits <= 0)
         return NULL;
 
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
@@ -275,7 +275,7 @@ BOOL Hidd_NVMEBus_Start(OOP_Object *o, struct NVMEBase *NVMEBase)
     struct nvme_Bus *data = OOP_INST_DATA(NVMEBase->busClass, o);
     APTR buffer = HIDD_PCIDriver_AllocPCIMem(data->ab_Dev->dev_PCIDriverObject, 8192);
     struct IORequest *nvmeTimer = nvme_OpenTimer(NVMEBase);
-    struct ExpansionBase *ExpansionBase;
+    struct ExpansionBase *ExpansionBase = NULL;
     UQUAD lbaStart, lbaEnd;
     struct nvme_command c;
     struct completionevent_handler busehandle;
@@ -331,11 +331,9 @@ BOOL Hidd_NVMEBus_Start(OOP_Object *o, struct NVMEBase *NVMEBase)
             sigs = nvme_WaitTO(nvmeTimer, 1, 0, busehandle.ceh_SigSet);
         }
         SetSignal(signals, signals);
-        if (!(sigs & busehandle.ceh_SigSet)) {
-            DIRQ(bug ("[NVME:Bus] NVMEBus_Start: timeout sending set features\n");)
-            nvme_CloseTimer(nvmeTimer);
-            return FALSE;
-        }
+        if (!(sigs & busehandle.ceh_SigSet) || busehandle.ceh_Status)
+            goto failed;
+
 #if defined(USE_MSI)
         if (!(NVMEBase->nvme_Flags & NVMEF_FLAG_NOMSI)) {
             if (!busehandle.ceh_Status) {
@@ -394,6 +392,8 @@ BOOL Hidd_NVMEBus_Start(OOP_Object *o, struct NVMEBase *NVMEBase)
                         TASKTAG_PRI, 21,
                         TASKTAG_ARG1, data->ab_Dev->dev_Queues[nn + 1],
                         TAG_END);
+                if (!data->ab_Dev->dev_Queues[nn + 1]->q_IOTask)
+                    goto failed;
 
 #if defined(USE_MSI)
                 struct TagItem vecAttribs[] = {
@@ -472,11 +472,11 @@ BOOL Hidd_NVMEBus_Start(OOP_Object *o, struct NVMEBase *NVMEBase)
                             data->ab_Dev->queuecnt++;
                         } else {
                             bug ("[NVME:Bus] NVMEBus_Start: ERROR - failed to register IO submission queue (status=%u)\n", busehandle.ceh_Status);
+                            goto failed;
                         }
                     } else {
                         bug ("[NVME:Bus] NVMEBus_Start: ERROR - failed to register IO completion queue (status=%u)\n", busehandle.ceh_Status);
-                        nvme_free_queue(data->ab_Dev->dev_Queues[nn + 1]);
-                        data->ab_Dev->dev_Queues[nn + 1] = NULL;
+                        goto failed;
                     }
                 }
 #if defined(USE_MSI)
@@ -488,6 +488,7 @@ BOOL Hidd_NVMEBus_Start(OOP_Object *o, struct NVMEBase *NVMEBase)
 #endif
             } else {
                 bug ("[NVME:Bus] NVMEBus_Start: ERROR - failed to allocate IO queue\n");
+                goto failed;
             }
         }
 
@@ -521,6 +522,8 @@ BOOL Hidd_NVMEBus_Start(OOP_Object *o, struct NVMEBase *NVMEBase)
                 sigs = nvme_WaitTO(nvmeTimer, 1, 0, busehandle.ceh_SigSet);
             }
             SetSignal(signals, signals);
+            if (!(sigs & busehandle.ceh_SigSet) && !busehandle.ceh_Status)
+                goto failed;
             if ((!busehandle.ceh_Status) && (AROS_LE2QUAD(id_ns->ncap) != 0)) {
                 int i, lbaf = id_ns->flbas & 0xf;
                 /* Only plain data LBAs fit the trackdisk interface. Later
@@ -562,6 +565,8 @@ BOOL Hidd_NVMEBus_Start(OOP_Object *o, struct NVMEBase *NVMEBase)
                     sigs = nvme_WaitTO(nvmeTimer, 1, 0, busehandle.ceh_SigSet);
                 }
                 SetSignal(signals, signals);
+                if (!(sigs & busehandle.ceh_SigSet) && !busehandle.ceh_Status)
+                    goto failed;
                 if (!busehandle.ceh_Status) {
                     D(
                         bug ("[NVME:Bus] NVMEBus_Start: ns#%u range type info:\n", nn + 1);
@@ -594,108 +599,58 @@ BOOL Hidd_NVMEBus_Start(OOP_Object *o, struct NVMEBase *NVMEBase)
                 if (lbaEnd) {
                     if ((data->ab_Units[nn] = OOP_NewObject(NVMEBase->unitClass, NULL, attrs)) != NULL) {
                         struct nvme_Unit *unit = OOP_INST_DATA(NVMEBase->unitClass, data->ab_Units[nn]);
-                        const ULONG IdDOS = AROS_MAKE_ID('D','O','S','\001');
-                        IPTR pp[4 + DE_BOOTBLOCKS + 1] = {0};
 
                         data->ab_UnitCnt++;
 
-                        if (ExpansionBase) {
-                            const TEXT dosdevstem[3] = "HD";
-                            struct TagItem NVMEIDTags[] = {
-                                {tHidd_Storage_IDStem,  (IPTR)dosdevstem        },
-                                {TAG_DONE,              0                       }
-                            };
-                            struct DeviceNode *devnode;
-
-                            unit->au_SecShift = id_ns->lbaf[lbaf].ds;
-                            D(bug ("[NVME:Bus] NVMEBus_Start:      Sector Size = %ubytes\n", 1UL << unit->au_SecShift);)
-                            unit->au_SecCnt = AROS_LE2QUAD(id_ns->nsze);
-                            D(bug ("[NVME:Bus] NVMEBus_Start:      # of Sectors = %u\n", unit->au_SecCnt);)
-                            unit->au_Low = lbaStart;
-                            unit->au_High = lbaEnd - 1;
-                            unit->au_Bus = data;
-                            /*
-                             * Per-unit transfer cap: the controller's MDTS (if any),
-                             * further bounded by the 16 bit zero-based NLB field,
-                             * i.e. at most 65536 LBAs in a single command.
-                             */
-                            {
-                                UQUAD nlbmax = (UQUAD)65536 << unit->au_SecShift;
-                                UQUAD cap = data->ab_Dev->dev_MaxXfer ? data->ab_Dev->dev_MaxXfer : nlbmax;
-                                if (cap > nlbmax)
-                                    cap = nlbmax;
-                                if (cap > 0xFFFFFFFFULL)
-                                    cap = 0xFFFFFFFFULL;
-                                unit->au_MaxTransfer = (ULONG)cap;
-                            }
-
-                            data->ab_IDNode = HIDD_Storage_AllocateID(NVMEBase->storageRoot, NVMEIDTags);
-
-                            unit->nu_Heads = 1;
-                            unit->nu_Cyl = unit->au_SecCnt;
-                            if (unit->nu_Cyl < unit->au_SecCnt)
-                                unit->nu_Cyl = ~((ULONG)0);
-                            unit->nu_Cyl /= 63;
-
-                            /* divide by 2 */
-                            do {
-                                if (((unit->nu_Cyl >> 1) << 1) != unit->nu_Cyl)
-                                    break;
-                                if ((unit->nu_Heads << 1) > 255)
-                                    break;
-                                unit->nu_Heads <<= 1;
-                                unit->nu_Cyl >>= 1;
-                            } while (1);
-
-                            /* divide by 3 */
-                            do {
-                                if (((unit->nu_Cyl / 3) * 3) != unit->nu_Cyl)
-                                    break;
-                                if ((unit->nu_Heads * 3) > 255)
-                                    break;
-                                unit->nu_Heads *= 3;
-                                unit->nu_Cyl /= 3;
-                            } while (1);
-
-                            pp[0]                   = (IPTR)data->ab_IDNode->ln_Name;
-                            pp[1]                   = (IPTR)MOD_NAME_STRING;
-                            pp[2]                   = unit->au_UnitNum;
-                            //pp[3]                 = ; open flags
-                            pp[DE_TABLESIZE    + 4] = DE_BOOTBLOCKS;
-                            pp[DE_SIZEBLOCK    + 4] = 1 << (unit->au_SecShift - 2);
-                            pp[DE_NUMHEADS     + 4] = unit->nu_Heads;
-                            pp[DE_SECSPERBLOCK + 4] = 1;
-                            pp[DE_BLKSPERTRACK + 4] = 63;
-                            pp[DE_RESERVEDBLKS + 4] = 2;
-                            pp[DE_LOWCYL       + 4] = (ULONG)unit->au_Low;
-                            pp[DE_HIGHCYL      + 4] = unit->nu_Cyl - 1;
-                            pp[DE_NUMBUFFERS   + 4] = 10;
-                            pp[DE_BUFMEMTYPE   + 4] = MEMF_PUBLIC;
-                            pp[DE_MAXTRANSFER  + 4] = unit->au_MaxTransfer;
-                            D(
-                                bug("[NVME:Bus] NVMEBus_Start: mdts = %u\n", data->ab_Dev->dev_mdts);
-                                bug("[NVME:Bus] NVMEBus_Start: DE_MAXTRANSFER = %u\n", pp[DE_MAXTRANSFER + 4]);
-                            )
-                            /* NVMe addresses memory with 64-bit PRPs and only needs dword alignment */
-                            pp[DE_MASK         + 4] = ~3;
-                            D(bug("[NVME:Bus] NVMEBus_Start: DE_MASK= %08x\n", pp[DE_MASK + 4]);)
-                            pp[DE_BOOTPRI      + 4] = 0;
-                            pp[DE_DOSTYPE      + 4] = IdDOS;
-                            pp[DE_CONTROL      + 4] = 0;
-                            pp[DE_BOOTBLOCKS   + 4] = 2;
-
-                            devnode = MakeDosNode(pp);
-                            if (devnode) {
-                                D(
-                                    bug("[NVME:Bus] NVMEBus_Start: DeviceNode @ 0x%p\n", devnode);
-                                    bug("[NVME:Bus] NVMEBus_Start:'%b', type=0x%08lx with StartCyl=%d, EndCyl=%d .. ",
-                                        devnode->dn_Name, pp[DE_DOSTYPE + 4], pp[DE_LOWCYL + 4], pp[DE_HIGHCYL + 4]);
-                                )
-
-                                AddBootNode(pp[DE_BOOTPRI + 4], 0, devnode, NULL);
-                                D(bug("done\n"));
-                            }
+                        unit->au_SecShift = id_ns->lbaf[lbaf].ds;
+                        D(bug ("[NVME:Bus] NVMEBus_Start:      Sector Size = %ubytes\n", 1UL << unit->au_SecShift);)
+                        unit->au_SecCnt = AROS_LE2QUAD(id_ns->nsze);
+                        D(bug ("[NVME:Bus] NVMEBus_Start:      # of Sectors = %u\n", unit->au_SecCnt);)
+                        unit->au_Low = lbaStart;
+                        unit->au_High = lbaEnd - 1;
+                        unit->au_Bus = data;
+                        /*
+                         * Per-unit transfer cap: the controller's MDTS (if any),
+                         * further bounded by the 16 bit zero-based NLB field,
+                         * i.e. at most 65536 LBAs in a single command.
+                         */
+                        {
+                            UQUAD nlbmax = (UQUAD)65536 << unit->au_SecShift;
+                            UQUAD cap = data->ab_Dev->dev_MaxXfer ? data->ab_Dev->dev_MaxXfer : nlbmax;
+                            if (cap > nlbmax)
+                                cap = nlbmax;
+                            if (cap > 0xFFFFFFFFULL)
+                                cap = 0xFFFFFFFFULL;
+                            unit->au_MaxTransfer = (ULONG)cap;
                         }
+
+                        unit->nu_Heads = 1;
+                        unit->nu_Cyl = unit->au_SecCnt;
+                        if (unit->nu_Cyl < unit->au_SecCnt)
+                            unit->nu_Cyl = ~((ULONG)0);
+                        unit->nu_Cyl /= 63;
+
+                        /* divide by 2 */
+                        do {
+                            if (((unit->nu_Cyl >> 1) << 1) != unit->nu_Cyl)
+                                break;
+                            if ((unit->nu_Heads << 1) > 255)
+                                break;
+                            unit->nu_Heads <<= 1;
+                            unit->nu_Cyl >>= 1;
+                        } while (1);
+
+                        /* divide by 3 */
+                        do {
+                            if (((unit->nu_Cyl / 3) * 3) != unit->nu_Cyl)
+                                break;
+                            if ((unit->nu_Heads * 3) > 255)
+                                break;
+                            unit->nu_Heads *= 3;
+                            unit->nu_Cyl /= 3;
+                        } while (1);
+
+
                     } else {
                         bug("[NVME:Bus] NVMEBus_Start: Failed to create ns#%u unit\n", nn + 1);
                     }
@@ -703,14 +658,97 @@ BOOL Hidd_NVMEBus_Start(OOP_Object *o, struct NVMEBase *NVMEBase)
             }
         }
 
+        if (!data->ab_UnitCnt)
+            goto failed;
+        for (nn = 0; ExpansionBase && nn < maxUnits; nn++) {
+            if (data->ab_Units[nn]) {
+                struct nvme_Unit *unit = OOP_INST_DATA(NVMEBase->unitClass, data->ab_Units[nn]);
+                const ULONG IdDOS = AROS_MAKE_ID('D','O','S','\001');
+                IPTR pp[4 + DE_BOOTBLOCKS + 1] = {0};
+
+                const TEXT dosdevstem[3] = "HD";
+                struct TagItem NVMEIDTags[] = {
+                    {tHidd_Storage_IDStem,  (IPTR)dosdevstem        },
+                    {TAG_DONE,              0                       }
+                };
+                struct DeviceNode *devnode;
+
+                data->ab_IDNode = HIDD_Storage_AllocateID(NVMEBase->storageRoot, NVMEIDTags);
+                if (!data->ab_IDNode) {
+                    bug("[NVME:Bus] cannot allocate a DOS device name\n");
+                    continue;
+                }
+
+
+                pp[0]                   = (IPTR)data->ab_IDNode->ln_Name;
+                pp[1]                   = (IPTR)MOD_NAME_STRING;
+                pp[2]                   = unit->au_UnitNum;
+                //pp[3]                 = ; open flags
+                pp[DE_TABLESIZE    + 4] = DE_BOOTBLOCKS;
+                pp[DE_SIZEBLOCK    + 4] = 1 << (unit->au_SecShift - 2);
+                pp[DE_NUMHEADS     + 4] = unit->nu_Heads;
+                pp[DE_SECSPERBLOCK + 4] = 1;
+                pp[DE_BLKSPERTRACK + 4] = 63;
+                pp[DE_RESERVEDBLKS + 4] = 2;
+                pp[DE_LOWCYL       + 4] = (ULONG)unit->au_Low;
+                pp[DE_HIGHCYL      + 4] = unit->nu_Cyl - 1;
+                pp[DE_NUMBUFFERS   + 4] = 10;
+                pp[DE_BUFMEMTYPE   + 4] = MEMF_PUBLIC;
+                pp[DE_MAXTRANSFER  + 4] = unit->au_MaxTransfer;
+                D(
+                    bug("[NVME:Bus] NVMEBus_Start: mdts = %u\n", data->ab_Dev->dev_mdts);
+                    bug("[NVME:Bus] NVMEBus_Start: DE_MAXTRANSFER = %u\n", pp[DE_MAXTRANSFER + 4]);
+                )
+                /* NVMe addresses memory with 64-bit PRPs and only needs dword alignment */
+                pp[DE_MASK         + 4] = ~3;
+                D(bug("[NVME:Bus] NVMEBus_Start: DE_MASK= %08x\n", pp[DE_MASK + 4]);)
+                pp[DE_BOOTPRI      + 4] = 0;
+                pp[DE_DOSTYPE      + 4] = IdDOS;
+                pp[DE_CONTROL      + 4] = 0;
+                pp[DE_BOOTBLOCKS   + 4] = 2;
+
+                devnode = MakeDosNode(pp);
+                if (devnode) {
+                    D(
+                        bug("[NVME:Bus] NVMEBus_Start: DeviceNode @ 0x%p\n", devnode);
+                        bug("[NVME:Bus] NVMEBus_Start:'%b', type=0x%08lx with StartCyl=%d, EndCyl=%d .. ",
+                            devnode->dn_Name, pp[DE_DOSTYPE + 4], pp[DE_LOWCYL + 4], pp[DE_HIGHCYL + 4]);
+                    )
+
+                    AddBootNode(pp[DE_BOOTPRI + 4], 0, devnode, NULL);
+                    D(bug("done\n"));
+                }
+            
+            }
+        }
+
         nvme_CloseTimer(nvmeTimer);
-        CloseLibrary((struct Library *)ExpansionBase);
+        if (ExpansionBase)
+            CloseLibrary((struct Library *)ExpansionBase);
 
         HIDD_PCIDriver_FreePCIMem(data->ab_Dev->dev_PCIDriverObject, buffer);
         return TRUE;
     }
-    if (nvmeTimer)
+failed:
+    if (nvmeTimer) {
+        BOOL stopped = nvme_quiesce(data->ab_Dev, nvmeTimer);
+        if (buffer && stopped)
+            HIDD_PCIDriver_FreePCIMem(data->ab_Dev->dev_PCIDriverObject, buffer);
+        nvme_release_queues(data->ab_Dev);
         nvme_CloseTimer(nvmeTimer);
+    } else if (buffer) {
+        /* No command has been submitted when timer creation fails. */
+        HIDD_PCIDriver_FreePCIMem(data->ab_Dev->dev_PCIDriverObject, buffer);
+    }
+    if (ExpansionBase)
+        CloseLibrary((struct Library *)ExpansionBase);
+    for (nn = 0; nn < maxUnits; nn++) {
+        if (data->ab_Units[nn]) {
+            OOP_DisposeObject(data->ab_Units[nn]);
+            data->ab_Units[nn] = NULL;
+        }
+    }
+    data->ab_UnitCnt = 0;
     return FALSE;
 }
 
