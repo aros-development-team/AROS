@@ -86,13 +86,9 @@ static struct Window *open_window(struct Screen *screen, WORD left)
 
 int main(void)
 {
-    struct Task *me = FindTask(NULL);
     struct Screen *screen = NULL;
     struct Window *first = NULL, *second = NULL;
-    BYTE taken[32];
-    ULONG before, during, after;
-    BOOL first_listed, first_closed, second_opened = FALSE, second_closed = FALSE;
-    int count = 0, i;
+    BOOL first_listed;
 
     IntuitionBase = (struct IntuitionBase *)OpenLibrary("intuition.library", 39);
     if (IntuitionBase)
@@ -114,6 +110,14 @@ int main(void)
 
     if (first_listed)
     {
+        /* Exec's signal calls modify the current task's mask. Read each
+           snapshot through a volatile-qualified pointer. */
+        const volatile struct Task *me = FindTask(NULL);
+        BYTE taken[32];
+        ULONG before, during, after;
+        BOOL first_closed, second_opened, second_closed = FALSE;
+        int count = 0, i;
+
         /* every signal bit that this task has left, and only those */
         before = me->tc_SigAlloc;
         while (count < 32 && (taken[count] = AllocSignal(-1)) != -1)
