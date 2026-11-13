@@ -1371,6 +1371,10 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
                  */
                 req = USBUnit->hu_Channel[chan].hc_Request;
 
+                /* Assigned but not started yet: the bits belong to the previous owner. */
+                if (req != NULL && !USBUnit->hu_Channel[chan].hc_Armed)
+                    continue;
+
                 /* Counted before dispatch so retries can't hide load. */
                 if (req != NULL && req->iouh_Req.io_Command == UHCMD_INTXFER &&
                     req->iouh_DevAddr < 8)

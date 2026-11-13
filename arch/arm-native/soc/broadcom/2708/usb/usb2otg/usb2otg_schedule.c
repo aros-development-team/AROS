@@ -1492,6 +1492,7 @@ void FNAME_DEV(StartChannel)(struct USB2OTGUnit *otg_Unit, int chan, int quick)
         }
     }
 
+    otg_Unit->hu_Channel[chan].hc_Armed = 1;
     wr32le(USB2OTG_CHANNEL_REG(chan, CHARBASE), tmp);
 
 }
@@ -1611,6 +1612,7 @@ void FNAME_DEV(ScheduleCtrlTDs)(struct USB2OTGUnit *otg_Unit)
                 return;
             }
             otg_Unit->hu_Channel[ctrl_chan].hc_Request = req;
+            otg_Unit->hu_Channel[ctrl_chan].hc_Armed = 0;
         } else {
             /* HOL diag: who holds the ctrl channel while this dev waits. */
             D(
@@ -1693,6 +1695,7 @@ void FNAME_DEV(ScheduleBulkTDs)(struct USB2OTGUnit *otg_Unit)
 
         REMOVE(req);
         otg_Unit->hu_Channel[chan].hc_Request = req;
+        otg_Unit->hu_Channel[chan].hc_Armed = 0;
         otg_Unit->hu_BulkArmCount++;
         usb2otg_bulk_assign(otg_Unit, chan, req);
 
@@ -1810,6 +1813,7 @@ void FNAME_DEV(ScheduleIntTDs)(struct USB2OTGUnit *otg_Unit)
 
             /* Channel was free and there is request available. Assign the request to given channel now */
             otg_Unit->hu_Channel[chan].hc_Request = req;
+            otg_Unit->hu_Channel[chan].hc_Armed = 0;
             otg_Unit->hu_Channel[chan].hc_ArmedRole = new_role;
             if (req->iouh_DevAddr < 8)
             {
