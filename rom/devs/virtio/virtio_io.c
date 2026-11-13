@@ -46,7 +46,7 @@ static BOOL virtio_blk_rw(struct IORequest *io, UQUAD off64, BOOL is_write)
         return TRUE;
     }
 
-    if ((off64 & ((1ULL << unit->au_SecShift) - 1)) ||
+    if (!data || (off64 & ((1ULL << unit->au_SecShift) - 1)) ||
         (off64 >> unit->au_SecShift) >= unit->au_SecCnt ||
         (len >> unit->au_SecShift) >
             unit->au_SecCnt - (off64 >> unit->au_SecShift)) {
@@ -206,6 +206,7 @@ AROS_LH1(void, BeginIO,
 
     case NSCMD_DEVICEQUERY:
         if (len < sizeof(*nsqr)) goto bad_length;
+        if (!data) goto bad_address;
         nsqr = data;
         nsqr->DevQueryFormat = 0;
         nsqr->SizeAvailable  = sizeof(struct NSDeviceQueryResult);
@@ -223,6 +224,7 @@ AROS_LH1(void, BeginIO,
 
     case TD_GETGEOMETRY:
         if (len < sizeof(*geom)) goto bad_length;
+        if (!data) goto bad_address;
         geom = data;
         SetMem(geom, 0, len);
         geom->dg_Heads        = unit->nu_Heads;
@@ -276,6 +278,10 @@ AROS_LH1(void, BeginIO,
     default:
 bad_cmd:
         io->io_Error = IOERR_NOCMD;
+        done = TRUE;
+        break;
+bad_address:
+        io->io_Error = IOERR_BADADDRESS;
         done = TRUE;
         break;
 bad_length:
