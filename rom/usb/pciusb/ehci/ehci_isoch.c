@@ -99,6 +99,19 @@ static ULONG ehciIsoFrameInterval(struct IOUsbHWReq *ioreq)
     return interval ? interval : 1;
 }
 
+/* UHFF_MULTI_3 is UHFF_MULTI_1|UHFF_MULTI_2, and Poseidon sets UHFF_MULTI_1
+   on every high-speed endpoint, so compare the field rather than bit-test. */
+static ULONG ehciIsoMulti(struct IOUsbHWReq *ioreq)
+{
+    ULONG mflags = ioreq->iouh_Flags;
+
+    if((mflags & UHFF_MULTI_3) == UHFF_MULTI_3)
+        return 3;
+    if(mflags & UHFF_MULTI_2)
+        return 2;
+    return 1;
+}
+
 /* True when every transaction of this descriptor has completed. */
 static BOOL ehciIsoPTDComplete(struct PTDNode *ptd)
 {
@@ -541,10 +554,23 @@ void ehciScheduleIsoTDs(struct PCIController *hc)
 WORD ehciInitIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
 {
     BOOL split = (rtn->rtn_IOReq.iouh_Flags & UHFF_SPLITTRANS) != 0;
+    BOOL hw_bw = FALSE;
+    ULONG hw_bw_len = 0;
     UWORD idx;
     UWORD ptdcount = rtn->rtn_PTDCount;
 
     pciusbEHCIDebug("EHCI", "%s()\n", __func__);
+
+    /* Allocate the whole-frame high-bandwidth bounce here, for every PTD, so
+       the completion interrupt never has to allocate one. */
+    if(!split && rtn->rtn_IOReq.iouh_Dir == UHDIR_IN) {
+        ULONG multi = ehciIsoMulti(&rtn->rtn_IOReq);
+
+        if(multi > 1) {
+            hw_bw = TRUE;
+            hw_bw_len = (ULONG)rtn->rtn_IOReq.iouh_MaxPktSize * multi * 8;
+        }
+    }
 
     if(!rtn->rtn_PTDs || !ptdcount)
         return UHIOERR_BADPARAMS;
@@ -592,6 +618,16 @@ WORD ehciInitIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
 
         ptd->ptd_Chipset = ptdpriv;
         rtn->rtn_PTDs[idx] = ptd;
+
+        if(hw_bw) {
+            ptdpriv->ptd_ReuseBuffer = AllocVec(hw_bw_len,
+                                                MEMF_31BIT|MEMF_PUBLIC);
+            if(!ptdpriv->ptd_ReuseBuffer) {
+                ehciFreeIsochIO(hc, rtn);
+                return UHIOERR_OUTOFMEMORY;
+            }
+            ptdpriv->ptd_ReuseSize = hw_bw_len;
+        }
     }
 
     rtn->rtn_NextPTD = 0;
@@ -867,15 +903,7 @@ BOOL ehciStartIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
 
         dma_len = len;
         if(!(ptd->ptd_Flags & PTDF_SITD)) {
-            ULONG mflags = rtn->rtn_IOReq.iouh_Flags;
-
-            /* UHFF_MULTI_3 is UHFF_MULTI_1|UHFF_MULTI_2, and Poseidon sets
-               UHFF_MULTI_1 on every high-speed endpoint, so a bit test
-               classifies all of them as Mult 3.  Compare the field. */
-            if((mflags & UHFF_MULTI_3) == UHFF_MULTI_3)
-                multi = 3;
-            else if(mflags & UHFF_MULTI_2)
-                multi = 2;
+            multi = ehciIsoMulti(&rtn->rtn_IOReq);
 
             /* High-bandwidth IN: the client requests one microframe's worth
                (Multi * max packet); an iTD covers eight microframes. */

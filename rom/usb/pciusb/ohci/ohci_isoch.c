@@ -352,6 +352,8 @@ void ohciStartIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
     struct OhciTD *lasttd = NULL;
     ULONG headphys;
     ULONG termphys;
+    UWORD zero_queued = 0;
+    UWORD passes = 0;
 
     pciusbOHCIDebug("OHCI", "%s()\n", __func__);
 
@@ -385,6 +387,7 @@ void ohciStartIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
         lasttd = scan;
     }
 
+restart:
     for(idx = 0; idx < ptdcount; idx++) {
         struct PTDNode *ptd = rtn->rtn_PTDs[idx];
         struct OhciPTDPrivate *ptdpriv;
@@ -409,6 +412,34 @@ void ohciStartIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
         if(!oitd)
             continue;
 
+        /* A client can legitimately return a zero length (e.g. SonixcamTool at
+           a buffer wrap).  OHCI cannot schedule an empty IsoTD, so complete it
+           here with a zero-length done hook and queue its replacement; some
+           clients (SonixcamTool) use that hook to rewind and continue. */
+        if(!ptdpriv->ptd_BufferReq.ubr_Length) {
+            struct IOUsbHWBufferReq *bufreq = &ptdpriv->ptd_BufferReq;
+            struct IOUsbHWRTIso *urti = rtn->rtn_RTIso;
+
+            bufreq->ubr_Length = 0;
+            bufreq->ubr_Frame = ptd->ptd_FrameIdx;
+            ptdpriv->ptd_BounceBuffer = NULL;
+            ptd->ptd_Flags &= ~(PTDF_ACTIVE|PTDF_BUFFER_VALID);
+
+            if(urti) {
+                if(rtn->rtn_IOReq.iouh_Dir == UHDIR_IN) {
+                    if(urti->urti_InDoneHook)
+                        CallHookPkt(urti->urti_InDoneHook, rtn, bufreq);
+                } else {
+                    if(urti->urti_OutDoneHook)
+                        CallHookPkt(urti->urti_OutDoneHook, rtn, bufreq);
+                }
+            }
+
+            if(ohciQueueIsochIO(hc, rtn) == RC_OK)
+                zero_queued++;
+            continue;
+        }
+
         dmabuffer = ptdpriv->ptd_BufferReq.ubr_Buffer;
 #if __WORDSIZE == 64
         if(dmabuffer) {
@@ -427,7 +458,7 @@ void ohciStartIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
 #endif
         ptdpriv->ptd_BounceBuffer = (dmabuffer != ptdpriv->ptd_BufferReq.ubr_Buffer) ? dmabuffer : NULL;
 
-        if(!dmabuffer || !ptdpriv->ptd_BufferReq.ubr_Length) {
+        if(!dmabuffer) {
             ptd->ptd_Flags &= ~PTDF_BUFFER_VALID;
             continue;
         }
@@ -496,6 +527,13 @@ void ohciStartIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
         lasttd = (struct OhciTD *)oitd;
 
         ptd->ptd_Flags |= PTDF_ACTIVE;
+    }
+
+    /* Start any replacement requests queued by zero-length completions.
+       Bounded so a client that keeps returning zero cannot loop forever. */
+    if(zero_queued && ++passes <= ptdcount) {
+        zero_queued = 0;
+        goto restart;
     }
 
     if(lasttd) {
