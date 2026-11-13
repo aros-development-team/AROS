@@ -85,8 +85,6 @@ OOP_Object *VirtIO__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
 
         wanted_features =
             ((UQUAD)1 << VIRTIO_F_VERSION_1)        |
-            ((UQUAD)1 << VIRTIO_F_ANY_LAYOUT)       |
-            ((UQUAD)1 << VIRTIO_BLK_F_SIZE_MAX)     |
             ((UQUAD)1 << VIRTIO_BLK_F_SEG_MAX)      |
             ((UQUAD)1 << VIRTIO_BLK_F_GEOMETRY)     |
             ((UQUAD)1 << VIRTIO_BLK_F_BLK_SIZE)     |
