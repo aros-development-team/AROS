@@ -207,20 +207,11 @@ AROS_UFH3(void, virtio_PCIEnumerator_h,
     if ((UWORD)vendor != VIRTIO_PCI_VENDOR_ID)
         return;
 
-    /*
-     * Modern: device id 0x1040..0x107F. Subsystem ID indicates the device
-     *         class. We want only block (subsys = 2).
-     * Legacy: device id 0x1001 is virtio-blk.
-     */
-    if (((UWORD)product) == VIRTIO_PCI_DEVICEID_BLK_LEGACY) {
-        /* legacy virtio-blk */
-    } else if (((UWORD)product) >= VIRTIO_PCI_DEVICEID_MIN
-            && ((UWORD)product) <= VIRTIO_PCI_DEVICEID_MAX) {
-        if ((UWORD)sub_dev != VIRTIO_DEVICE_BLOCK)
-            return;
-    } else {
+    /* Modern device IDs encode the device type; subsystem IDs do not.
+     * Transitional block devices can also expose the modern transport. */
+    if ((UWORD)product != VIRTIO_PCI_DEVICEID_BLK_LEGACY &&
+        (UWORD)product != VIRTIO_PCI_DEVICEID_BLK_MODERN)
         return;
-    }
 
     dev = AllocPooled(VirtIOBase->virtio_MemPool, sizeof(*dev));
     if (dev == NULL)
