@@ -41,6 +41,10 @@
 #define DNSSD_ERR_CANCELLED (-10)
 #define DNSSD_ERR_BADNAME   (-11)   /* not a name DNS can carry */
 #define DNSSD_ERR_EXISTS    (-12)   /* this host has that service registered already */
+#define DNSSD_ERR_CONFLICT  (-13)   /* another host has the name (of a host registered for) */
+
+#define DNSSD_TXT_MAX           8900    /* bytes of TXT data a service may have */
+#define DNSSD_HOST_ADDRESSES    8       /* addresses of a host registered for */
 
 /* Address families of struct DNSSDAddress (and of DNSSD_Family). */
 #define DNSSD_FAMILY_ANY    0
@@ -133,7 +137,9 @@ struct DNSSDEvent
 #define DNSSD_TXTLength     (DNSSD_Dummy + 8)   /* its length in bytes, at most 1300 */
 #define DNSSD_Port          (DNSSD_Dummy + 9)   /* Update: another port */
 #define DNSSD_Host          (DNSSD_Dummy + 10)  /* Register for another host: its name ("printer") */
-#define DNSSD_HostAddress   (DNSSD_Dummy + 11)  /* and its address, struct DNSSDAddress * (IPv4) */
+#define DNSSD_HostAddress   (DNSSD_Dummy + 11)  /* Register, Update: one of its addresses, struct
+                                                 * DNSSDAddress *, IPv4 or IPv6 - one tag each, up to
+                                                 * 8; an IPv6 link-local one with its da_Interface */
 
 /* DNSSD_GetStatusA() */
 #define DNSSD_Status_Incarnation (DNSSD_Dummy + 0x100)  /* ULONG *: mdnsd's incarnation */

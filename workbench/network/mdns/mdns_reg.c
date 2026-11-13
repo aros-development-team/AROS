@@ -188,17 +188,58 @@ txt_from_text(const char *text, UBYTE *data, LONG size)
     return (UWORD)length;
 }
 
-/* The data of the TXT record. An instance always has one: one empty
- * string when it has nothing to say. */
+/* The data of the TXT record, where it is. An instance always has one:
+ * one empty string when it has nothing to say. */
+static const UBYTE empty_txt[1] = { 0 };
+
 static LONG
-txt_data(const struct MDNSRegisteredService *rs, UBYTE *data, LONG size)
+txt_ref(const struct MDNSRegisteredService *rs, const UBYTE **data)
 {
-    if (rs->rs_TXTLength == 0 || rs->rs_TXTLength > size) {
-        data[0] = 0;
+    if (rs->rs_TXTLength == 0 || rs->rs_TXT == NULL) {
+        *data = empty_txt;
         return 1;
     }
-    memcpy(data, rs->rs_TXT, rs->rs_TXTLength);
+    *data = rs->rs_TXT;
     return rs->rs_TXTLength;
+}
+
+/* A service's TXT data becomes a copy of data (length bytes, 0 for none);
+ * FALSE when there is no memory for it, the old data kept. */
+static BOOL
+txt_set(struct MDNSRegisteredService *rs, const UBYTE *data, UWORD length)
+{
+    UBYTE *copy = NULL;
+
+    if (length != 0) {
+        copy = AllocVec(length, MEMF_ANY);
+        if (copy == NULL) {
+            return FALSE;
+        }
+        memcpy(copy, data, length);
+    }
+    if (rs->rs_TXT != NULL) {
+        FreeVec(rs->rs_TXT);
+    }
+    rs->rs_TXT = copy;
+    rs->rs_TXTLength = length;
+    return TRUE;
+}
+
+/* A proxied host's address record type, A or AAAA. */
+static UWORD
+address_type(const struct DNSSDAddress *a)
+{
+    return a->da_Family == DNSSD_FAMILY_IPV6 ? DNS_TYPE_AAAA : DNS_TYPE_A;
+}
+
+/* Is a proxied host's address published on the link of slot ifindex? One
+ * with a zone (an IPv6 link-local one) only on that link. */
+static BOOL
+address_on_link(const struct MDNSDaemon *md, const struct DNSSDAddress *a,
+    LONG ifindex)
+{
+    return a->da_Interface == 0 || ifindex < 0 || ifindex >= md->md_IfCount ||
+        md->md_Ifs[ifindex].mi_Index == a->da_Interface;
 }
 
 /* A resolver that speaks plain DNS keeps no mDNS cache: ten seconds at
@@ -260,6 +301,10 @@ service_append(struct MDNSDaemon *md, const struct MDNSRegisteredService *rs,
     UWORD unique = reply_legacy(md) ? DNS_CLASS_IN : DNS_CLASS_IN_FLUSH;
     LONG pos = *posp;
     UWORD ancount = *ancountp;
+    /* responses are packed to an Ethernet MTU; a service that does not
+     * fit one - a large TXT - goes in a packet of its own, up to the
+     * largest an mDNS packet may be (RFC 6762 section 17) */
+    LONG max = ancount == 0 ? (LONG)MDNS_MAX_PACKET : MDNS_RESPONSE_MAX;
     char instance[256];
     char type[256];
     UBYTE data[512];
@@ -271,35 +316,47 @@ service_append(struct MDNSDaemon *md, const struct MDNSRegisteredService *rs,
     /* A PTR record is shared by every instance of the type, so it does not
      * carry the cache-flush bit (RFC 6762 section 10.2). */
     if (mdnsNameToWire(instance, data, (LONG)sizeof(data), &length) != 0 ||
-        mdnsAppendRecord(pkt, MDNS_RESPONSE_MAX, &pos, &ancount, type,
+        mdnsAppendRecord(pkt, max, &pos, &ancount, type,
             DNS_TYPE_PTR, DNS_CLASS_IN, ttl, data, (UWORD)length) != 0) {
         return FALSE;
     }
 
     length = srv_data(md, rs, data, (LONG)sizeof(data));
     if (length < 0 ||
-        mdnsAppendRecord(pkt, MDNS_RESPONSE_MAX, &pos, &ancount, instance,
+        mdnsAppendRecord(pkt, max, &pos, &ancount, instance,
             DNS_TYPE_SRV, unique, srvttl, data, (UWORD)length) != 0) {
         return FALSE;
     }
 
-    length = txt_data(rs, data, (LONG)sizeof(data));
-    if (mdnsAppendRecord(pkt, MDNS_RESPONSE_MAX, &pos, &ancount, instance,
-            DNS_TYPE_TXT, unique, ttl, data, (UWORD)length) != 0) {
-        return FALSE;
+    {
+        const UBYTE *txt;
+
+        length = txt_ref(rs, &txt);
+        if (mdnsAppendRecord(pkt, max, &pos, &ancount, instance,
+                DNS_TYPE_TXT, unique, ttl, txt, (UWORD)length) != 0) {
+            return FALSE;
+        }
     }
 
     /* The address of the SRV record's host, so that whoever receives this
      * need not ask for it. */
-    if (rs->rs_Proxy && rs->rs_HostAddr != 0 && withAddr) {
+    if (rs->rs_Proxy && withAddr) {
         char target[256];
+        UWORD i;
 
         target_fqdn(md, rs, target, (LONG)sizeof(target));
-        mdnsAddrData(rs->rs_HostAddr, data);
-        if (mdnsAppendRecord(pkt, MDNS_RESPONSE_MAX, &pos, &ancount, target,
-                DNS_TYPE_A, unique,
-                reply_ttl(md, goodbye ? 0 : MDNS_TTL_HOST), data, 4) != 0) {
-            return FALSE;
+        for (i = 0; i < rs->rs_HostAddrCount; i++) {
+            const struct DNSSDAddress *a = &rs->rs_HostAddrs[i];
+
+            if (!address_on_link(md, a, ifindex)) {
+                continue;
+            }
+            if (mdnsAppendRecord(pkt, max, &pos, &ancount,
+                    target, address_type(a), unique,
+                    reply_ttl(md, goodbye ? 0 : MDNS_TTL_HOST), a->da_Bytes,
+                    a->da_Length) != 0) {
+                return FALSE;
+            }
         }
     }
     if (!rs->rs_Proxy && withAddr && !goodbye) {
@@ -320,7 +377,7 @@ service_append(struct MDNSDaemon *md, const struct MDNSRegisteredService *rs,
 
                 if (address == NULL)
                     break;
-                if (mdnsAppendRecord(pkt, MDNS_RESPONSE_MAX, &pos, &ancount,
+                if (mdnsAppendRecord(pkt, max, &pos, &ancount,
                         target, types[family], unique,
                         reply_ttl(md, MDNS_TTL_HOST), address->value.bytes,
                         address->value.length) != 0)
@@ -827,32 +884,68 @@ service_probe(struct MDNSDaemon *md, const struct MDNSRegisteredService *rs)
 {
     UBYTE *pkt = md->md_TxBuf;
     struct MDNSHeader *hdr = (struct MDNSHeader *)pkt;
-    char instance[256];
+    char instance[256], target[256];
     UBYTE data[6 + 256];
-    LONG length, pos;
-    UWORD nscount = 0;
+    const UBYTE *txt;
+    LONG pos, slot;
+    UWORD qclass = (UWORD)(DNS_CLASS_IN | (rs->rs_Step == 0 ? DNS_QU_BIT : 0));
+    UWORD saved = md->md_SendFamily;
 
     instance_fqdn(rs, instance, (LONG)sizeof(instance));
-    length = srv_data(md, rs, data, (LONG)sizeof(data));
-    if (length < 0 ||
-        mdnsBuildQuery(pkt, (LONG)MDNS_MAX_PACKET, 0, instance, DNS_TYPE_ANY,
-            (UWORD)(DNS_CLASS_IN | (rs->rs_Step == 0 ? DNS_QU_BIT : 0)),
-            &pos) != 0 ||
-        mdnsAppendRecord(pkt, (LONG)MDNS_MAX_PACKET, &pos, &nscount,
-            instance, DNS_TYPE_SRV, DNS_CLASS_IN, MDNS_TTL_HOST, data,
-            (UWORD)length) != 0) {
-        return;
+    target_fqdn(md, rs, target, (LONG)sizeof(target));
+    /* every record that is to be unique is probed for (RFC 6762 section
+     * 8.1): the instance's SRV and TXT, and the addresses of a host it
+     * stands in for - those of a link only on that link */
+    for (slot = 0; slot < md->md_IfCount; slot++) {
+        UWORD nscount = 0, i;
+        LONG length = srv_data(md, rs, data, (LONG)sizeof(data));
+
+        if (length < 0 ||
+            mdnsBuildQuery(pkt, (LONG)MDNS_MAX_PACKET, 0, instance, DNS_TYPE_ANY,
+                qclass, &pos) != 0) {
+            return;
+        }
+        if (rs->rs_Proxy && rs->rs_HostAddrCount != 0) {
+            LONG used;
+
+            if (mdnsNameToWire(target, pkt + pos, (LONG)MDNS_MAX_PACKET - pos - 4,
+                    &used) != 0) {
+                return;
+            }
+            pos += used;
+            pkt[pos++] = 0;
+            pkt[pos++] = DNS_TYPE_ANY;
+            pkt[pos++] = (UBYTE)(qclass >> 8);
+            pkt[pos++] = (UBYTE)qclass;
+            hdr->qdcount = htons(2);
+        }
+        if (mdnsAppendRecord(pkt, (LONG)MDNS_MAX_PACKET, &pos, &nscount,
+                instance, DNS_TYPE_SRV, DNS_CLASS_IN, MDNS_TTL_HOST, data,
+                (UWORD)length) != 0) {
+            return;
+        }
+        length = txt_ref(rs, &txt);
+        if (mdnsAppendRecord(pkt, (LONG)MDNS_MAX_PACKET, &pos, &nscount,
+                instance, DNS_TYPE_TXT, DNS_CLASS_IN,
+                rs->rs_TTL != 0 ? rs->rs_TTL : MDNS_TTL_OTHER, txt,
+                (UWORD)length) != 0) {
+            return;
+        }
+        for (i = 0; rs->rs_Proxy && i < rs->rs_HostAddrCount; i++) {
+            const struct DNSSDAddress *a = &rs->rs_HostAddrs[i];
+
+            if (address_on_link(md, a, slot) &&
+                mdnsAppendRecord(pkt, (LONG)MDNS_MAX_PACKET, &pos, &nscount,
+                    target, address_type(a), DNS_CLASS_IN, MDNS_TTL_HOST,
+                    a->da_Bytes, a->da_Length) != 0) {
+                return;
+            }
+        }
+        hdr->nscount = htons(nscount);
+        md->md_SendFamily = 0;
+        mdnsNetSendOn(md, slot, pkt, pos);
+        md->md_SendFamily = saved;
     }
-    hdr->nscount = htons(nscount);
-    length = txt_data(rs, data, (LONG)sizeof(data));
-    if (mdnsAppendRecord(pkt, (LONG)MDNS_MAX_PACKET, &pos, &nscount,
-            instance, DNS_TYPE_TXT, DNS_CLASS_IN,
-            rs->rs_TTL != 0 ? rs->rs_TTL : MDNS_TTL_OTHER, data,
-            (UWORD)length) != 0) {
-        return;
-    }
-    hdr->nscount = htons(nscount);
-    mdnsNetSendAll(md, pkt, pos);
 }
 
 /* "Name" becomes "Name (2)", "Name (2)" becomes "Name (3)". */
@@ -938,6 +1031,36 @@ mdnsRegHandleRecord(const struct MDNSDaemon *md, const struct MDNSRecord *r,
 {
     struct Node *n;
 
+    /* The name of a host a service stands in for, with addresses that are
+     * not the ones given: another host has the name. It is not this
+     * host's to rename - the client named it - so the registration ends
+     * (mdnsRegTick() tells its client). */
+    if (r->ttl != 0 && (r->rclass & 0x7fff) == DNS_CLASS_IN &&
+        (r->type == DNS_TYPE_A || r->type == DNS_TYPE_AAAA)) {
+        FOR_SERVICES(md, n) {
+            struct MDNSRegisteredService *rs = (struct MDNSRegisteredService *)n;
+            UWORD i;
+
+            if (!rs->rs_Proxy || rs->rs_Notify == NULL ||
+                rs->rs_State == MDNS_NAME_CONFLICT ||
+                Stricmp(rs->rs_HostTarget, r->name) != 0) {
+                continue;
+            }
+            for (i = 0; i < rs->rs_HostAddrCount; i++) {
+                const struct DNSSDAddress *a = &rs->rs_HostAddrs[i];
+
+                if (address_type(a) == r->type && a->da_Length == r->rdlength &&
+                    memcmp(a->da_Bytes, r->rdata, a->da_Length) == 0) {
+                    break;
+                }
+            }
+            if (i == rs->rs_HostAddrCount) {
+                rs->rs_State = MDNS_NAME_CONFLICT;
+                rs->rs_NextTick = mdnsTicks();
+            }
+        }
+        return;
+    }
     if (r->ttl == 0 || (r->rclass & 0x7fff) != DNS_CLASS_IN ||
         (r->type != DNS_TYPE_SRV && r->type != DNS_TYPE_TXT)) {
         return;
@@ -968,11 +1091,14 @@ mdnsRegHandleRecord(const struct MDNSDaemon *md, const struct MDNSRecord *r,
                 continue;
             }
         } else {
-            UBYTE expected[512];
-            LONG length = txt_data(rs, expected, (LONG)sizeof(expected));
+            const UBYTE *expected;
+            LONG length = txt_ref(rs, &expected);
 
+            /* a TXT longer than the parsed copy is compared as far as it
+             * goes: its length must match all the same */
             if (length == r->rdlength &&
-                memcmp(expected, r->rdata, (size_t)length) == 0) {
+                memcmp(expected, r->rdata, (size_t)(length < (LONG)sizeof(r->rdata) ?
+                    length : (LONG)sizeof(r->rdata))) == 0) {
                 continue;
             }
         }
@@ -1045,93 +1171,144 @@ probe_compare(UWORD classA, UWORD typeA, const UBYTE *a, LONG lenA,
 }
 
 /*
+ * Two hosts probing for one name at once (RFC 6762 section 8.2): each
+ * set of records, sorted by class, type and data, is compared record by
+ * record; the first difference decides, and when one set runs out the
+ * longer one is later. <0 when this host's set (n records) is the
+ * earlier - it gives way - 0 when they are the same, >0 when it is later.
+ */
+#define PROBE_SET_MAX   (MDNS_PROXY_ADDRESSES + 2)
+
+struct ProbeRecord
+{
+    UWORD           pr_Class, pr_Type;
+    LONG            pr_Length;
+    const UBYTE    *pr_Data;
+};
+
+static void
+probe_sort(struct ProbeRecord *set, LONG n)
+{
+    LONG i, j;
+
+    for (i = 1; i < n; i++) {
+        struct ProbeRecord r = set[i];
+
+        for (j = i; j > 0 && probe_compare(r.pr_Class, r.pr_Type, r.pr_Data,
+                r.pr_Length, set[j - 1].pr_Class, set[j - 1].pr_Type,
+                set[j - 1].pr_Data, set[j - 1].pr_Length) < 0; j--) {
+            set[j] = set[j - 1];
+        }
+        set[j] = r;
+    }
+}
+
+static LONG
+probe_tiebreak(struct ProbeRecord *mine, LONG n, const char *name,
+    const struct MDNSRecord *theirs, LONG count, const UBYTE *pkt, LONG pktlen)
+{
+    /* their data, uncompressed, in storage of its own: mdnsd has one task */
+    static UBYTE data[MDNS_PROPOSED_MAX][512];
+    struct ProbeRecord other[MDNS_PROPOSED_MAX];
+    LONG m = 0, i, j;
+
+    for (i = 0; i < count && m < MDNS_PROPOSED_MAX; i++) {
+        LONG length;
+
+        if (Stricmp(theirs[i].name, name) != 0 ||
+            (length = probe_rdata(&theirs[i], pkt, pktlen, data[m],
+                (LONG)sizeof(data[m]))) < 0) {
+            continue;
+        }
+        other[m].pr_Class = theirs[i].rclass;
+        other[m].pr_Type = theirs[i].type;
+        other[m].pr_Length = length;
+        other[m].pr_Data = data[m];
+        for (j = 0; j < m; j++) {
+            if (probe_compare(other[m].pr_Class, other[m].pr_Type, data[m],
+                    length, other[j].pr_Class, other[j].pr_Type,
+                    other[j].pr_Data, other[j].pr_Length) == 0) {
+                break;
+            }
+        }
+        if (j == m) {
+            m++;                /* duplicates do not add to a set */
+        }
+    }
+    if (m == 0) {
+        return 1;               /* nobody else probes for the name */
+    }
+    probe_sort(mine, n);
+    probe_sort(other, m);
+    for (i = 0; i < n && i < m; i++) {
+        LONG d = probe_compare(mine[i].pr_Class, mine[i].pr_Type, mine[i].pr_Data,
+            mine[i].pr_Length, other[i].pr_Class, other[i].pr_Type,
+            other[i].pr_Data, other[i].pr_Length);
+        if (d != 0) {
+            return d;
+        }
+    }
+    return n - m;
+}
+
+/*
  * Another host is probing, and these are the records it proposes. For a
- * name a service of this host is probing for too, the two sets of records
- * are compared and the host whose set is lexicographically later keeps
- * going; the other waits a second and probes again, by which time the
- * winner has announced and the usual conflict gives the loser another name
- * (RFC 6762 section 8.2). Both the TXT and SRV are proposed and compared in sorted order; when
- * all common records match, the longer set is the later one.
+ * name a service of this host is probing for too - its instance's, or the
+ * name of the host it stands in for - the two sets are compared and the
+ * host whose set is later keeps going; this one, if it loses, waits a
+ * second and probes again, by which time the winner has announced and the
+ * usual conflict decides (RFC 6762 section 8.2).
  */
 void
 mdnsRegHandleProbe(const struct MDNSDaemon *md,
     const struct MDNSRecord *theirs, LONG count, const UBYTE *pkt,
     LONG pktlen)
 {
-    /* Canonical RDATA stays in static storage: mdnsd has one task. */
-    static UBYTE mine[2][512], data[MDNS_PROPOSED_MAX][512], other[512];
+    static UBYTE srv[6 + 256];
     struct Node *n;
 
     FOR_SERVICES(md, n) {
         struct MDNSRegisteredService *rs = (struct MDNSRegisteredService *)n;
-        char instance[256];
-        LONG lengths[MDNS_PROPOSED_MAX], order[MDNS_PROPOSED_MAX];
-        UWORD classes[MDNS_PROPOSED_MAX], types[MDNS_PROPOSED_MAX];
-        LONG minelen[2], matches = 0, i, j, d = 0;
+        struct ProbeRecord mine[PROBE_SET_MAX];
+        char name[256];
+        LONG k, i;
 
         if (rs->rs_State != MDNS_NAME_PROBING || rs->rs_Step == 0) {
             continue;
         }
-        instance_fqdn(rs, instance, (LONG)sizeof(instance));
-        minelen[0] = txt_data(rs, mine[0], (LONG)sizeof(mine[0]));
-        minelen[1] = srv_data(md, rs, mine[1], (LONG)sizeof(mine[1]));
-        if (minelen[1] < 0) {
+        /* the instance: its TXT and SRV, the SRV's name in lower case */
+        instance_fqdn(rs, name, (LONG)sizeof(name));
+        mine[1].pr_Length = srv_data(md, rs, srv, (LONG)sizeof(srv));
+        if (mine[1].pr_Length < 0) {
             continue;
         }
-        for (i = 6; i < minelen[1]; i++) {
-            if (mine[1][i] >= 'A' && mine[1][i] <= 'Z') {
-                mine[1][i] += 'a' - 'A';
+        for (i = 6; i < mine[1].pr_Length; i++) {
+            if (srv[i] >= 'A' && srv[i] <= 'Z') {
+                srv[i] += 'a' - 'A';
             }
         }
-        for (i = 0; i < count && matches < MDNS_PROPOSED_MAX; i++) {
-            LONG length;
-
-            if (Stricmp(theirs[i].name, instance) != 0) {
-                continue;
-            }
-            length = probe_rdata(&theirs[i], pkt, pktlen, other,
-                (LONG)sizeof(other));
-            if (length < 0) {
-                continue;
-            }
-            for (j = 0; j < matches; j++) {
-                if (probe_compare(theirs[i].rclass, theirs[i].type, other,
-                        length, classes[j], types[j], data[j], lengths[j]) == 0) {
-                    break;
-                }
-            }
-            if (j < matches) {
-                continue;       /* duplicates do not add to a record set */
-            }
-            memcpy(data[matches], other, (size_t)length);
-            lengths[matches] = length;
-            classes[matches] = theirs[i].rclass;
-            types[matches] = theirs[i].type;
-            j = matches;
-            while (j > 0 && probe_compare(classes[matches], types[matches],
-                    data[matches], lengths[matches], classes[order[j - 1]],
-                    types[order[j - 1]], data[order[j - 1]],
-                    lengths[order[j - 1]]) < 0) {
-                order[j] = order[j - 1];
-                j--;
-            }
-            order[j] = matches++;
-        }
-        if (matches == 0) {
+        mine[0].pr_Class = mine[1].pr_Class = DNS_CLASS_IN;
+        mine[0].pr_Type = DNS_TYPE_TXT;
+        mine[0].pr_Length = txt_ref(rs, &mine[0].pr_Data);
+        mine[1].pr_Type = DNS_TYPE_SRV;
+        mine[1].pr_Data = srv;
+        if (probe_tiebreak(mine, 2, name, theirs, count, pkt, pktlen) < 0) {
+            rs->rs_Step = 0;
+            rs->rs_NextTick = mdnsTicks() + 50;
             continue;
         }
-        for (i = 0; i < 2 && i < matches; i++) {
-            j = order[i];
-            d = probe_compare(DNS_CLASS_IN, i == 0 ? DNS_TYPE_TXT : DNS_TYPE_SRV,
-                mine[i], minelen[i], classes[j], types[j], data[j], lengths[j]);
-            if (d != 0) {
-                break;
-            }
+        /* the host it stands in for: its addresses */
+        if (!rs->rs_Proxy || rs->rs_HostAddrCount == 0) {
+            continue;
         }
-        if (d == 0) {
-            d = 2 - matches;
+        for (k = 0; k < rs->rs_HostAddrCount; k++) {
+            mine[k].pr_Class = DNS_CLASS_IN;
+            mine[k].pr_Type = address_type(&rs->rs_HostAddrs[k]);
+            mine[k].pr_Length = rs->rs_HostAddrs[k].da_Length;
+            mine[k].pr_Data = rs->rs_HostAddrs[k].da_Bytes;
         }
-        if (d < 0) {
+        target_fqdn(md, rs, name, (LONG)sizeof(name));
+        if (probe_tiebreak(mine, k, name, theirs, count, pkt, pktlen) < 0) {
             rs->rs_Step = 0;
             rs->rs_NextTick = mdnsTicks() + 50;
         }
@@ -1146,7 +1323,7 @@ mdnsRegHandleProbe(const struct MDNSDaemon *md,
 BOOL
 mdnsRegTick(struct MDNSDaemon *md)
 {
-    struct Node *n;
+    struct Node *n, *next;
     ULONG now = mdnsTicks();
     BOOL probing = FALSE;
     /* A service's records point at the host's name and carry its address,
@@ -1160,9 +1337,20 @@ mdnsRegTick(struct MDNSDaemon *md)
         answers_flush(md, now);
     }
 
-    FOR_SERVICES(md, n) {
+    for (n = md->md_Services.lh_Head; n->ln_Succ != NULL; n = next) {
         struct MDNSRegisteredService *rs = (struct MDNSRegisteredService *)n;
 
+        /* its client may withdraw it while it is told */
+        next = n->ln_Succ;
+        if (rs->rs_State == MDNS_NAME_CONFLICT) {
+            MDNSRegNotify notify = rs->rs_Notify;
+
+            if (notify != NULL) {
+                rs->rs_Notify = NULL;           /* told once */
+                notify(rs->rs_NotifyData, rs, MDNSERR_DUPLICATE);
+            }
+            continue;
+        }
         if (rs->rs_State == MDNS_NAME_PROBING) {
             probing = TRUE;
             if (!hostReady || (LONG)(now - rs->rs_NextTick) < 0) {
@@ -1180,7 +1368,7 @@ mdnsRegTick(struct MDNSDaemon *md)
             rs->rs_NextTick = now + 50;
             service_send(md, rs, FALSE, all_subtypes(rs));
             if (rs->rs_Notify != NULL) {
-                rs->rs_Notify(rs->rs_NotifyData, rs);
+                rs->rs_Notify(rs->rs_NotifyData, rs, MDNS_OK);
             }
         } else if (rs->rs_Step < MDNS_ANNOUNCE_COUNT &&
                    (LONG)(now - rs->rs_NextTick) >= 0 &&
@@ -1350,7 +1538,7 @@ mdnsRegHandleQuery(struct MDNSDaemon *md, struct MDNSQuestion *q,
                    Stricmp(q->qname, rs->rs_HostTarget) == 0) {
             /* the host a service stands in for; this host's own name is
              * answered in mdns_host.c */
-            answer = any || q->qtype == DNS_TYPE_A;
+            answer = any || q->qtype == DNS_TYPE_A || q->qtype == DNS_TYPE_AAAA;
         } else if (any || q->qtype == DNS_TYPE_PTR) {
             char type[256];
             LONG subtype;
@@ -1519,8 +1707,15 @@ mdnsRegAdd(struct MDNSDaemon *md, struct MDNSIPCMsg *msg)
     }
     mdnsTextCopy(rs->rs_Domain, (LONG)sizeof(rs->rs_Domain),
         msg->mi_Domain[0] != '\0' ? msg->mi_Domain : MDNS_DOMAIN_LOCAL);
-    rs->rs_TXTLength = txt_from_text(msg->mi_TXT, rs->rs_TXT,
-        (LONG)sizeof(rs->rs_TXT));
+    {
+        UBYTE txt[MDNS_MAX_TXT + 1];
+        UWORD length = txt_from_text(msg->mi_TXT, txt, (LONG)sizeof(txt));
+
+        if (!txt_set(rs, txt, length)) {
+            FreeMem(rs, sizeof(*rs));
+            return MDNSERR_NOMEM;
+        }
+    }
     rs->rs_Port = msg->mi_Port;
     rs->rs_TTL = msg->mi_TTL;
     rs->rs_TaskID = msg->mi_TaskID;
@@ -1531,7 +1726,10 @@ mdnsRegAdd(struct MDNSDaemon *md, struct MDNSIPCMsg *msg)
         /* Announced on behalf of a host that does not speak mDNS itself:
          * its first label, in the mDNS domain. */
         rs->rs_Proxy = TRUE;
-        rs->rs_HostAddr = msg->mi_HostAddr;
+        rs->rs_HostAddrCount = 1;
+        rs->rs_HostAddrs[0].da_Family = DNSSD_FAMILY_IPV4;
+        rs->rs_HostAddrs[0].da_Length = 4;
+        mdnsAddrData(msg->mi_HostAddr, rs->rs_HostAddrs[0].da_Bytes);
         while (at < MDNS_MAX_HOST && msg->mi_HostName[at] != '\0' &&
                msg->mi_HostName[at] != '.') {
             rs->rs_HostTarget[at] = msg->mi_HostName[at];
@@ -1541,6 +1739,7 @@ mdnsRegAdd(struct MDNSDaemon *md, struct MDNSIPCMsg *msg)
             (msg->mi_HostName[at] != '\0' &&
              Stricmp(msg->mi_HostName + at, ".local") != 0 &&
              Stricmp(msg->mi_HostName + at, ".local.") != 0)) {
+            txt_set(rs, NULL, 0);
             FreeMem(rs, sizeof(*rs));
             return MDNSERR_BADPARAM;
         }
@@ -1551,6 +1750,7 @@ mdnsRegAdd(struct MDNSDaemon *md, struct MDNSIPCMsg *msg)
             (md->md_HostBase[0] != '\0' &&
              Strnicmp(rs->rs_HostTarget, md->md_HostBase, at) == 0 &&
              mdnsTextLength(md->md_HostBase, MDNS_MAX_HOST) == at)) {
+            txt_set(rs, NULL, 0);
             FreeMem(rs, sizeof(*rs));
             return MDNSERR_BADPARAM;
         }
@@ -1585,13 +1785,12 @@ mdnsRegUpdate(struct MDNSDaemon *md, const struct MDNSIPCMsg *msg)
         return MDNSERR_BADPARAM;
     }
     if (msg->mi_Flags & MDNS_IPC_UPDF_TXT) {
-        UBYTE txt[MDNS_TXT_DATA_MAX];
+        UBYTE txt[MDNS_MAX_TXT + 1];
         UWORD length = txt_from_text(msg->mi_TXT, txt, (LONG)sizeof(txt));
 
-        if (length != rs->rs_TXTLength ||
-            memcmp(txt, rs->rs_TXT, length) != 0) {
-            memcpy(rs->rs_TXT, txt, length);
-            rs->rs_TXTLength = length;
+        if ((length != rs->rs_TXTLength ||
+             (length != 0 && memcmp(txt, rs->rs_TXT, length) != 0)) &&
+            txt_set(rs, txt, length)) {
             changed = TRUE;
         }
     }
@@ -1618,6 +1817,7 @@ service_remove(struct MDNSDaemon *md, struct MDNSRegisteredService *rs)
     if (rs->rs_State == MDNS_NAME_ANNOUNCED) {
         service_send(md, rs, TRUE, all_subtypes(rs));
     }
+    txt_set(rs, NULL, 0);
     FreeMem(rs, sizeof(*rs));
 }
 
@@ -1646,18 +1846,44 @@ mdnsRegRelease(struct MDNSDaemon *md, ULONG taskID)
     }
 }
 
+/* Checks a proxied host's addresses: IPv4 or IPv6, an IPv6 link-local
+ * one with its zone (the interface it is on). */
+static BOOL
+valid_addresses(const struct DNSSDAddress *addrs, UWORD count)
+{
+    UWORD i;
+
+    if (count > MDNS_PROXY_ADDRESSES) {
+        return FALSE;
+    }
+    for (i = 0; i < count; i++) {
+        const struct DNSSDAddress *a = &addrs[i];
+
+        if (!((a->da_Family == DNSSD_FAMILY_IPV4 && a->da_Length == 4) ||
+              (a->da_Family == DNSSD_FAMILY_IPV6 && a->da_Length == 16)) ||
+            (a->da_Family == DNSSD_FAMILY_IPV6 && a->da_Bytes[0] == 0xfe &&
+             (a->da_Bytes[1] & 0xc0) == 0x80 && a->da_Interface == 0)) {
+            return FALSE;
+        }
+    }
+    return TRUE;
+}
+
 /*
  * A service for a dnssd.library client: its instance's own label (dots
  * allowed), type ("_ipp._tcp"), domain, subtypes (labels), port and TXT
- * data as they go on the wire. notify is told each time its name is
- * announced. *ref names it to mdnsRegRemoveRef()/mdnsRegUpdateRef().
+ * data as they go on the wire. For another host (host not NULL) its name's
+ * label and its addresses, IPv4 and IPv6: their A and AAAA records are
+ * probed, announced, answered and defended with the service's. notify is
+ * told each time its name is announced, or that the proxied host's name
+ * is another host's. *ref names it to mdnsRegRemoveRef()/UpdateRef().
  */
 LONG
 mdnsRegAddNative(struct MDNSDaemon *md, const char *instance,
     const char *type, const char *domain, const char subtypes[][MDNS_MAX_SUBTYPE + 1],
     UWORD subtypeCount, UWORD port, const UBYTE *txt, UWORD txtLength,
-    const char *host, ULONG hostAddr, MDNSRegNotify notify, APTR data,
-    APTR *ref)
+    const char *host, const struct DNSSDAddress *addrs, UWORD addrCount,
+    MDNSRegNotify notify, APTR data, APTR *ref)
 {
     struct MDNSRegisteredService *rs;
     struct Node *n;
@@ -1667,7 +1893,8 @@ mdnsRegAddNative(struct MDNSDaemon *md, const char *instance,
         type[0] == '\0' || mdnsTextLength(type, MDNS_MAX_TYPE + 1) > MDNS_MAX_TYPE ||
         mdnsTextLength(domain, MDNS_MAX_DOMAIN + 1) > MDNS_MAX_DOMAIN ||
         subtypeCount > MDNS_MAX_SUBTYPES || port == 0 ||
-        txtLength > MDNS_TXT_DATA_MAX) {
+        txtLength > MDNS_TXT_DATA_MAX ||
+        (host != NULL && (addrCount == 0 || !valid_addresses(addrs, addrCount)))) {
         return MDNSERR_BADPARAM;
     }
     for (i = 0; i < subtypeCount; i++) {
@@ -1692,6 +1919,10 @@ mdnsRegAddNative(struct MDNSDaemon *md, const char *instance,
     if (rs == NULL) {
         return MDNSERR_NOMEM;
     }
+    if (!txt_set(rs, txt, txtLength)) {
+        FreeMem(rs, sizeof(*rs));
+        return MDNSERR_NOMEM;
+    }
     mdnsTextCopy(rs->rs_Instance, (LONG)sizeof(rs->rs_Instance), instance);
     mdnsTextCopy(rs->rs_Type, (LONG)sizeof(rs->rs_Type), type);
     mdnsTextCopy(rs->rs_Domain, (LONG)sizeof(rs->rs_Domain),
@@ -1701,8 +1932,6 @@ mdnsRegAddNative(struct MDNSDaemon *md, const char *instance,
         mdnsTextCopy(rs->rs_Subtypes[i], (LONG)sizeof(rs->rs_Subtypes[i]),
             subtypes[i]);
     }
-    memcpy(rs->rs_TXT, txt, txtLength);
-    rs->rs_TXTLength = txtLength;
     rs->rs_Port = port;
     if (host != NULL) {
         LONG at = mdnsTextLength(host, 64);
@@ -1711,13 +1940,15 @@ mdnsRegAddNative(struct MDNSDaemon *md, const char *instance,
         /* announced for a host that does not speak mDNS itself: its
          * label, in the mDNS domain - not this host's own name */
         mdnsHostFqdn(md, own, (LONG)sizeof(own));
-        if (at == 0 || at > 63 || strchr(host, '.') != NULL || hostAddr == 0 ||
+        if (at == 0 || at > 63 || strchr(host, '.') != NULL ||
             (Strnicmp(own, host, at) == 0 && own[at] == '.')) {
+            txt_set(rs, NULL, 0);
             FreeMem(rs, sizeof(*rs));
             return MDNSERR_BADPARAM;
         }
         rs->rs_Proxy = TRUE;
-        rs->rs_HostAddr = hostAddr;
+        memcpy(rs->rs_HostAddrs, addrs, addrCount * sizeof(*addrs));
+        rs->rs_HostAddrCount = addrCount;
         mdnsTextCopy(rs->rs_HostTarget, (LONG)sizeof(rs->rs_HostTarget), host);
         mdnsTextCopy(rs->rs_HostTarget + at,
             (LONG)sizeof(rs->rs_HostTarget) - at, "." MDNS_DOMAIN_LOCAL);
@@ -1732,11 +1963,53 @@ mdnsRegAddNative(struct MDNSDaemon *md, const char *instance,
     return MDNS_OK;
 }
 
-/* A dnssd.library client's service changes its TXT data (txt not NULL)
- * or its port (not 0); what changed is announced. */
+/* The goodbyes of a proxied host's addresses that go (those of old not in
+ * the new set), on each link they were on (RFC 6762 section 10.1). */
+static void
+addresses_goodbye(struct MDNSDaemon *md, const struct MDNSRegisteredService *rs,
+    const struct DNSSDAddress *addrs, UWORD count)
+{
+    UBYTE *pkt = md->md_TxBuf;
+    char target[256];
+    LONG slot;
+
+    target_fqdn(md, rs, target, (LONG)sizeof(target));
+    for (slot = 0; slot < md->md_IfCount; slot++) {
+        LONG pos = (LONG)sizeof(struct MDNSHeader);
+        UWORD ancount = 0, i, j;
+
+        mdnsInitHeader((struct MDNSHeader *)pkt, DNS_FLAG_QR | DNS_FLAG_AA, 0);
+        for (i = 0; i < rs->rs_HostAddrCount; i++) {
+            const struct DNSSDAddress *a = &rs->rs_HostAddrs[i];
+
+            for (j = 0; j < count; j++) {
+                if (memcmp(&addrs[j], a, sizeof(*a)) == 0) {
+                    break;
+                }
+            }
+            if (j < count || !address_on_link(md, a, slot)) {
+                continue;
+            }
+            mdnsAppendRecord(pkt, MDNS_RESPONSE_MAX, &pos, &ancount, target,
+                address_type(a), DNS_CLASS_IN_FLUSH, 0, a->da_Bytes, a->da_Length);
+        }
+        if (ancount != 0) {
+            ((struct MDNSHeader *)pkt)->ancount = htons(ancount);
+            mdnsNetSendOn(md, slot, pkt, pos);
+            mdnsReflectPacket(md, pkt, pos, slot,
+                MDNS_REFLECT_DISCOVERY | MDNS_REFLECT_QUERY, NULL);
+        }
+    }
+}
+
+/* A dnssd.library client's service changes its TXT data (txt not NULL),
+ * its port (not 0), or the addresses of the host it stands in for
+ * (addrCount not -1): what changed is announced, an address that goes
+ * with its goodbye. */
 LONG
 mdnsRegUpdateRef(struct MDNSDaemon *md, APTR ref, const UBYTE *txt,
-    UWORD txtLength, UWORD port)
+    UWORD txtLength, UWORD port, const struct DNSSDAddress *addrs,
+    LONG addrCount)
 {
     struct MDNSRegisteredService *rs = service_find(md, ref);
     BOOL changed = FALSE;
@@ -1744,17 +2017,29 @@ mdnsRegUpdateRef(struct MDNSDaemon *md, APTR ref, const UBYTE *txt,
     if (rs == NULL || rs->rs_Notify == NULL) {
         return MDNSERR_NOTFOUND;
     }
-    if (txtLength > MDNS_TXT_DATA_MAX) {
+    if (txtLength > MDNS_TXT_DATA_MAX ||
+        (addrCount >= 0 && (!rs->rs_Proxy || addrCount == 0 ||
+            !valid_addresses(addrs, (UWORD)addrCount)))) {
         return MDNSERR_BADPARAM;
     }
     if (txt != NULL && (txtLength != rs->rs_TXTLength ||
-            memcmp(txt, rs->rs_TXT, txtLength) != 0)) {
-        memcpy(rs->rs_TXT, txt, txtLength);
-        rs->rs_TXTLength = txtLength;
+            (txtLength != 0 && memcmp(txt, rs->rs_TXT, txtLength) != 0))) {
+        if (!txt_set(rs, txt, txtLength)) {
+            return MDNSERR_NOMEM;
+        }
         changed = TRUE;
     }
     if (port != 0 && port != rs->rs_Port) {
         rs->rs_Port = port;
+        changed = TRUE;
+    }
+    if (addrCount >= 0 && (addrCount != rs->rs_HostAddrCount ||
+            memcmp(addrs, rs->rs_HostAddrs, addrCount * sizeof(*addrs)) != 0)) {
+        if (rs->rs_State == MDNS_NAME_ANNOUNCED) {
+            addresses_goodbye(md, rs, addrs, (UWORD)addrCount);
+        }
+        memcpy(rs->rs_HostAddrs, addrs, addrCount * sizeof(*addrs));
+        rs->rs_HostAddrCount = (UWORD)addrCount;
         changed = TRUE;
     }
     if (changed && rs->rs_State == MDNS_NAME_ANNOUNCED) {
@@ -1783,6 +2068,7 @@ mdnsRegFree(struct MDNSDaemon *md)
     struct Node *n;
 
     while ((n = RemHead(&md->md_Services)) != NULL) {
+        txt_set((struct MDNSRegisteredService *)n, NULL, 0);
         FreeMem(n, sizeof(struct MDNSRegisteredService));
     }
 }

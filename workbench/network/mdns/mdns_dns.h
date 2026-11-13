@@ -58,7 +58,8 @@ struct MDNSRecord
                          * required to resolve DNS name-compression pointers in
                          * PTR/SRV targets, which reference earlier packet bytes
                          * that are not present in the rdata[] copy below */
-    UBYTE rdata[512];
+    UBYTE rdata[512];   /* the first 512 bytes of rdata: a longer record's
+                         * whole data is at rdoffset in the packet */
 };
 
 LONG mdnsNameToWire(const char *name, UBYTE *buf, LONG buflen, LONG *used);

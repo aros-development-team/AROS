@@ -37,7 +37,6 @@
 #define OP_QUERY                4
 #define OP_REGISTER             5
 
-#define RESOLVE_TXT_MAX         1024
 
 struct QueuedEvent
 {
@@ -88,7 +87,7 @@ struct ServerOperation
     UBYTE           so_Name[256];       /* wire labels */
     UBYTE           so_Target[256];     /* Resolve: the SRV's target */
     struct DNSSDAddress so_Seen[LOOKUP_ADDRESSES];
-    UBYTE           so_TXT[RESOLVE_TXT_MAX];
+    UBYTE          *so_TXT;             /* Resolve: AllocVec()'d, so_TXTLength bytes */
 };
 
 struct DNSSDServer
@@ -294,6 +293,10 @@ end_operation(struct DNSSDServer *sv, struct ServerOperation *op)
     if (op->so_Service != NULL) {
         mdnsRegRemoveRef(op->so_Daemon, op->so_Service);  /* with its goodbyes */
         op->so_Service = NULL;
+    }
+    if (op->so_TXT != NULL) {
+        FreeVec(op->so_TXT);
+        op->so_TXT = NULL;
     }
     if (ss->ss_Operations != 0) {
         ss->ss_Operations--;
@@ -619,8 +622,9 @@ resolve_txt(APTR data, const struct MDNSCacheEntry *e, BOOL added)
 {
     struct ServerOperation *op = data;
 
-    if ((op->so_Interface != 0 && op->so_Interface != e->ce_Link) ||
-        e->ce_DataLength > RESOLVE_TXT_MAX) {
+    UBYTE *copy;
+
+    if (op->so_Interface != 0 && op->so_Interface != e->ce_Link) {
         return;
     }
     if (!added) {
@@ -631,21 +635,34 @@ resolve_txt(APTR data, const struct MDNSCacheEntry *e, BOOL added)
         memcmp(op->so_TXT, e->ce_Data, e->ce_DataLength) == 0) {
         return;
     }
+    if ((copy = AllocVec(e->ce_DataLength ? e->ce_DataLength : 1, MEMF_ANY)) == NULL) {
+        return;
+    }
+    if (op->so_TXT != NULL) {
+        FreeVec(op->so_TXT);
+    }
+    op->so_TXT = copy;
     memcpy(op->so_TXT, e->ce_Data, e->ce_DataLength);
     op->so_TXTLength = e->ce_DataLength;
     op->so_HaveTXT = TRUE;
     resolve_report(op);
 }
 
-/* Register: the service is announced, under the name it has now. */
+/* Register: the service is announced, under the name it has now; or the
+ * name of the host it stands in for is another host's, and it ends. */
 static void
-register_notify(APTR data, const struct MDNSRegisteredService *rs)
+register_notify(APTR data, const struct MDNSRegisteredService *rs, LONG result)
 {
     struct ServerOperation *op = data;
     struct EventParts ep;
     UBYTE wire[256];
     char full[256], type[256], domain[256], text[256];
     LONG used, at, typeAt, domainAt, i;
+
+    if (result != MDNS_OK) {
+        end_with(op->so_Daemon->md_DNSSD, op, DNSSD_ERR_CONFLICT);
+        return;
+    }
 
     /* the name as wire labels: the instance's label as it is */
     at = 0;
@@ -714,18 +731,13 @@ start_register(struct MDNSDaemon *md, struct ServerOperation *op,
         subtypes[count++][len] = '\0';
     }
     if (msg->dm_Host[0] != '\0' &&
-        (msg->dm_HostAddress.da_Family != DNSSD_FAMILY_IPV4 ||
-         msg->dm_HostAddress.da_Length != 4)) {
-        return DNSSD_ERR_BADPARAM;      /* another host: IPv4 for now */
+        (msg->dm_HostAddressCount == 0 || msg->dm_HostAddresses == NULL)) {
+        return DNSSD_ERR_BADPARAM;
     }
     rc = mdnsRegAddNative(md, instance, type, domain, subtypes, count,
         msg->dm_Port, msg->dm_Extra, msg->dm_TXTLength,
         msg->dm_Host[0] != '\0' ? (const char *)msg->dm_Host : NULL,
-        msg->dm_Host[0] != '\0' ?
-            ((ULONG)msg->dm_HostAddress.da_Bytes[0] << 24) |
-            ((ULONG)msg->dm_HostAddress.da_Bytes[1] << 16) |
-            ((ULONG)msg->dm_HostAddress.da_Bytes[2] << 8) |
-            msg->dm_HostAddress.da_Bytes[3] : 0,
+        msg->dm_HostAddresses, msg->dm_HostAddressCount,
         register_notify, op, &op->so_Service);
     return rc == MDNS_OK ? DNSSD_OK : rc == MDNSERR_DUPLICATE ? DNSSD_ERR_EXISTS :
         rc == MDNSERR_NOMEM ? DNSSD_ERR_NOMEM : DNSSD_ERR_BADPARAM;
@@ -807,6 +819,15 @@ start_operation(struct MDNSDaemon *md, struct ServerSession *ss, LONG sslot,
          !label_at(msg->dm_Data, msg->dm_DataSize, msg->dm_DomainOffset) ||
          msg->dm_DomainOffset <= msg->dm_TypeOffset)) {
         return DNSSD_ERR_BADPARAM;
+    }
+    /* multicast DNS answers in "local" (RFC 6762 section 3): a service
+     * in another domain is wide-area DNS-SD's, which this is not */
+    if (kind == OP_BROWSE || kind == OP_RESOLVE || kind == OP_REGISTER) {
+        static const UBYTE local[] = { 5, 'l', 'o', 'c', 'a', 'l', 0 };
+
+        if (!mdnsWireNameEqual(msg->dm_Data + msg->dm_DomainOffset, local)) {
+            return DNSSD_ERR_BADPARAM;
+        }
     }
     if (ss->ss_Operations >= SESSION_OPERATIONS) {
         return DNSSD_ERR_BUSY;
@@ -1064,11 +1085,15 @@ dnssdServerMessage(struct MDNSDaemon *md, struct DNSSDIPCMsg *msg)
         if (op != NULL && op->so_Session == slot && op->so_Kind == OP_REGISTER &&
             op->so_Generation == (msg->dm_Operation >> 16)) {
             BOOL txt = (msg->dm_Flags & DNSSD_IPCF_TXT) != 0;
+            BOOL addrs = (msg->dm_Flags & DNSSD_IPCF_ADDRESSES) != 0;
 
             msg->dm_Result = DNSSD_ERR_BADPARAM;
             if ((!txt || msg->dm_TXTLength <= msg->dm_ExtraSize) &&
+                (!addrs || msg->dm_HostAddresses != NULL) &&
                 mdnsRegUpdateRef(md, op->so_Service, txt ? msg->dm_Extra : NULL,
-                    txt ? msg->dm_TXTLength : 0, msg->dm_Port) == MDNS_OK) {
+                    txt ? msg->dm_TXTLength : 0, msg->dm_Port,
+                    msg->dm_HostAddresses,
+                    addrs ? (LONG)msg->dm_HostAddressCount : -1) == MDNS_OK) {
                 msg->dm_Result = DNSSD_OK;
             }
         }

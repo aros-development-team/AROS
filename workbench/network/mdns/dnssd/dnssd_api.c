@@ -129,6 +129,27 @@ label_to_wire(const char *label, UBYTE *wire, LONG at)
     return at + 1 + length;
 }
 
+/* The DNSSD_HostAddress tags, each a struct DNSSDAddress *, into addresses
+ * (at most DNSSD_HOST_ADDRESSES); how many, or -1 if there are more or one
+ * is NULL. */
+static LONG
+host_addresses(struct TagItem *tags, struct DNSSDAddress *addresses)
+{
+    struct TagItem *tstate = tags, *tag;
+    LONG count = 0;
+
+    while ((tag = NextTagItem(&tstate)) != NULL) {
+        if (tag->ti_Tag != DNSSD_HostAddress) {
+            continue;
+        }
+        if (tag->ti_Data == 0 || count == DNSSD_HOST_ADDRESSES) {
+            return -1;
+        }
+        addresses[count++] = *(const struct DNSSDAddress *)tag->ti_Data;
+    }
+    return count;
+}
+
 /* An operation of session from msg, which names it; the tags every one
  * takes. */
 static LONG
@@ -856,13 +877,19 @@ out:
 
     INPUTS
         DNSSD_TXT, DNSSD_TXTLength - its TXT data, length-prefixed strings
-            (DNS-SD's "key=value" items, binary values allowed); none: one
-            empty string
+            (DNS-SD's "key=value" items, binary values allowed), at most
+            DNSSD_TXT_MAX bytes - RFC 6763 section 6.2 asks for no more
+            than 1300 where it can be; none: one empty string
         DNSSD_Subtype - a subtype it has ("_printer"), one tag each
         DNSSD_Domain - default "local"
         DNSSD_Host, DNSSD_HostAddress - published for another host, one
             that does not speak mDNS itself: its name's label ("printer",
-            which becomes "printer.local") and its IPv4 address
+            which becomes "printer.local") and its addresses, IPv4 and
+            IPv6, one tag each (an IPv6 link-local one with its
+            da_Interface, and published on that link alone). Their A and
+            AAAA records are probed, announced, answered and defended with
+            the service's; if another host has the name, the operation
+            ends with DNSSD_EVENT_END, DNSSD_ERR_CONFLICT.
         DNSSD_UserData - returned in the operation's events
 
     RESULT
@@ -874,7 +901,10 @@ out:
     AROS_LIBFUNC_INIT
     struct DNSSDIPCMsg msg;
     struct TagItem *tstate = tags, *tag;
-    UBYTE wire[256], extra[1300 + 8 * 64 + 1];
+    UBYTE wire[256];
+    UBYTE *extra;
+    struct DNSSDAddress addresses[DNSSD_HOST_ADDRESSES];
+    LONG rc;
     const UBYTE *txt = (const UBYTE *)GetTagData(DNSSD_TXT, 0, tags);
     ULONG txtLength = GetTagData(DNSSD_TXTLength, 0, tags);
     ULONG at;
@@ -882,7 +912,7 @@ out:
 
     if (session == NULL || instance == NULL || type == NULL ||
         operation == NULL || port == 0 || port > 0xffff ||
-        (txt == NULL && txtLength != 0) || txtLength > 1300) {
+        (txt == NULL && txtLength != 0) || txtLength > DNSSD_TXT_MAX) {
         return DNSSD_ERR_BADPARAM;
     }
     *operation = NULL;
@@ -896,15 +926,22 @@ out:
     if (length < 0) {
         return DNSSD_ERR_BADNAME;
     }
+    /* the TXT data, then each subtype as a label, then 0 */
+    extra = AllocVec(txtLength + 8 * 64 + 1, MEMF_ANY);
+    if (extra == NULL) {
+        return DNSSD_ERR_NOMEM;
+    }
     if (txtLength != 0) {
         memcpy(extra, txt, txtLength);
     }
     at = txtLength;
     while ((tag = NextTagItem(&tstate)) != NULL) {
         if (tag->ti_Tag == DNSSD_Subtype) {
-            LONG next = label_to_wire((CONST_STRPTR)tag->ti_Data, extra + at, 0);
+            LONG next;
 
-            if (next < 0 || at + next + 1 > sizeof(extra)) {
+            if (at + 64 + 1 > txtLength + 8 * 64 + 1 ||
+                (next = label_to_wire((CONST_STRPTR)tag->ti_Data, extra + at, 0)) < 0) {
+                FreeVec(extra);
                 return DNSSD_ERR_BADNAME;
             }
             at += next;
@@ -913,16 +950,17 @@ out:
     extra[at++] = 0;
     {
         CONST_STRPTR host = (CONST_STRPTR)GetTagData(DNSSD_Host, 0, tags);
-        const struct DNSSDAddress *address =
-            (const struct DNSSDAddress *)GetTagData(DNSSD_HostAddress, 0, tags);
+        LONG count = host_addresses(tags, addresses);
 
-        if ((host != NULL) != (address != NULL) ||
+        if (count < 0 || (host != NULL) != (count > 0) ||
             (host != NULL && (strlen(host) == 0 || strlen(host) > 63))) {
+            FreeVec(extra);
             return DNSSD_ERR_BADPARAM;
         }
         if (host != NULL) {
             strcpy((char *)msg.dm_Host, host);
-            msg.dm_HostAddress = *address;
+            msg.dm_HostAddresses = addresses;
+            msg.dm_HostAddressCount = (UWORD)count;
         }
     }
     msg.dm_Data = wire;
@@ -931,7 +969,9 @@ out:
     msg.dm_TXTLength = (UWORD)txtLength;
     msg.dm_Extra = extra;
     msg.dm_ExtraSize = at;
-    return start(session, &msg, tags, operation);
+    rc = start(session, &msg, tags, operation);
+    FreeVec(extra);
+    return rc;
     AROS_LIBFUNC_EXIT
 }
 
@@ -949,12 +989,14 @@ out:
 
 /*  FUNCTION
         Changes what a registered service (DNSSD_RegisterA()) says: its TXT
-        data, its port. What changed is announced; an update that changes
-        nothing is not.
+        data, its port, the addresses of the host it stands in for. What
+        changed is announced, an address that goes with its goodbye; an
+        update that changes nothing is not announced.
 
     INPUTS
         DNSSD_TXT, DNSSD_TXTLength - the new TXT data
         DNSSD_Port - the new port
+        DNSSD_HostAddress - the host's addresses, all of them (one tag each)
 
 *****************************************************************************/
 {
@@ -963,9 +1005,11 @@ out:
     const UBYTE *txt = (const UBYTE *)GetTagData(DNSSD_TXT, 0, tags);
     ULONG txtLength = GetTagData(DNSSD_TXTLength, 0, tags);
     ULONG port = GetTagData(DNSSD_Port, 0, tags);
+    struct DNSSDAddress addresses[DNSSD_HOST_ADDRESSES];
+    LONG count = host_addresses(tags, addresses);
 
-    if (operation == NULL || port > 0xffff || txtLength > 1300 ||
-        (txt == NULL && txtLength != 0)) {
+    if (operation == NULL || port > 0xffff || txtLength > DNSSD_TXT_MAX ||
+        (txt == NULL && txtLength != 0) || count < 0) {
         return DNSSD_ERR_BADPARAM;
     }
     init_msg(&msg, operation->do_Session, DNSSD_IPC_UPDATE);
@@ -976,6 +1020,11 @@ out:
         msg.dm_Extra = (UBYTE *)txt;
         msg.dm_ExtraSize = txtLength;
         msg.dm_TXTLength = (UWORD)txtLength;
+    }
+    if (count > 0) {
+        msg.dm_Flags |= DNSSD_IPCF_ADDRESSES;
+        msg.dm_HostAddresses = addresses;
+        msg.dm_HostAddressCount = (UWORD)count;
     }
     return dnssdSend(&msg);
     AROS_LIBFUNC_EXIT
