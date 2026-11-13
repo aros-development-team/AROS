@@ -193,6 +193,7 @@ struct virtio_queue {
     struct Task             *q_IOTask;
 
     struct SignalSemaphore  q_Lock;
+    struct List             q_Pending;
 };
 
 struct virtio_Controller
