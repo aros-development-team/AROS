@@ -337,41 +337,33 @@ BOOL Hidd_NVMEBus_Start(OOP_Object *o, struct NVMEBase *NVMEBase)
 #if defined(USE_MSI)
         if (!(NVMEBase->nvme_Flags & NVMEF_FLAG_NOMSI)) {
             if (!busehandle.ceh_Status) {
-                int featqueues = MIN((busehandle.ceh_Result & 0xffff), (busehandle.ceh_Result >> 16)) + 1;
+                int featqueues = (MIN((busehandle.ceh_Result & 0xffff),
+                                     (busehandle.ceh_Result >> 16))) + 1;
                 if (featqueues < vectreqs[1].ti_Data)
                     vectreqs[1].ti_Data = featqueues;
             }
-
-            DIRQ(bug ("[NVME:Bus] NVMEBus_Start: required queues = %u\n", vectreqs[1].ti_Data);)
-
-            Disable();
-            DIRQ(bug ("[NVME:Bus] NVMEBus_Start: Removing Admin Int Server...\n");)
-            // Remove the device Admin Interrupt handler
-            HIDD_PCIDriver_RemoveInterrupt(data->ab_Dev->dev_PCIDriverObject, data->ab_Dev->dev_Object, &data->ab_Dev->dev_Queues[0]->q_IntHandler);
-            data->ab_Dev->dev_Queues[0]->q_irq_registered = 0;
-
-            DIRQ(bug ("[NVME:Bus] NVMEBus_Start: Attempting to Obtain PCI Device MSI Vectors ...\n");)
             if (HIDD_PCIDevice_ObtainVectors(data->ab_Dev->dev_Object, vectreqs)) {
-                data->ab_Dev->dev_VectorsOwned = TRUE;
                 struct TagItem vecAttribs[] = {
-                    {   tHidd_PCIVector_Int,    (IPTR)-1        },
-                    {   TAG_DONE,               0               }
+                    {tHidd_PCIVector_Int, (IPTR)-1}, {TAG_DONE, 0}
                 };
-                DIRQ(bug ("[NVME:Bus] NVMEBus_Start: Obtained MSI Vectors!\n");)
-                //Switch The Admin Queue IRQ;
                 HIDD_PCIDevice_GetVectorAttribs(data->ab_Dev->dev_Object, 0, vecAttribs);
                 if (vecAttribs[0].ti_Data != (IPTR)-1) {
                     AdminIntLine = vecAttribs[0].ti_Data;
+                    Disable();
+                    HIDD_PCIDriver_RemoveInterrupt(data->ab_Dev->dev_PCIDriverObject,
+                        data->ab_Dev->dev_Object, &data->ab_Dev->dev_Queues[0]->q_IntHandler);
                     data->ab_Dev->dev_Queues[0]->q_irq = AdminIntLine;
-                    //hwqcnt = ;
+                    AddIntServer(INTB_KERNEL + AdminIntLine,
+                        &data->ab_Dev->dev_Queues[0]->q_IntHandler);
+                    data->ab_Dev->dev_Queues[0]->q_irq_registered = 2;
+                    data->ab_Dev->dev_VectorsOwned = TRUE;
+                    Enable();
+                } else {
+                    HIDD_PCIDevice_ReleaseVectors(data->ab_Dev->dev_Object);
                 }
             }
-            DIRQ(bug ("[NVME:Bus] NVMEBus_Start: Re-Adding Admin Int Server ...\n");)
-            // Add the hardware IRQ Admin Interrupt handler
-            AddIntServer(INTB_KERNEL + AdminIntLine,
-                         &data->ab_Dev->dev_Queues[0]->q_IntHandler);
-            data->ab_Dev->dev_Queues[0]->q_irq_registered = 2;
-            Enable();
+            /* Without a usable vector, retain the PCI-installed handler:
+               the PCI line is not necessarily an Exec interrupt number. */
         }
 #endif
 
@@ -401,13 +393,13 @@ BOOL Hidd_NVMEBus_Start(OOP_Object *o, struct NVMEBase *NVMEBase)
                     {   tHidd_PCIVector_Native, (IPTR)-1        },
                     {   TAG_DONE,               0               }
                 };
-                if (AdminIntLine != PCIIntLine)
+                if (data->ab_Dev->dev_VectorsOwned)
                     HIDD_PCIDevice_GetVectorAttribs(data->ab_Dev->dev_Object, data->ab_Dev->dev_Queues[nn + 1]->cq_vector, vecAttribs);
 
-                if ((AdminIntLine == PCIIntLine) || ((vecAttribs[0].ti_Data != (IPTR)-1) && (vecAttribs[1].ti_Data != (IPTR)-1))) {
+                if ((!data->ab_Dev->dev_VectorsOwned) || ((vecAttribs[0].ti_Data != (IPTR)-1) && (vecAttribs[1].ti_Data != (IPTR)-1))) {
                     /* GIC INTIDs go past 255 (BCM2712 MSIs are 287 on) */
                     IPTR qIRQ, qVect;
-                    if (AdminIntLine != PCIIntLine) {
+                    if (data->ab_Dev->dev_VectorsOwned) {
                         qIRQ = vecAttribs[0].ti_Data;
                         qVect = vecAttribs[1].ti_Data;
                     } else {
@@ -466,9 +458,12 @@ BOOL Hidd_NVMEBus_Start(OOP_Object *o, struct NVMEBase *NVMEBase)
                             data->ab_Dev->dev_Queues[nn + 1]->q_IntHandler.is_Node.ln_Pri = 0;
                             data->ab_Dev->dev_Queues[nn + 1]->q_IntHandler.is_Code = (VOID_FUNC) NVME_IOIntCode;
                             data->ab_Dev->dev_Queues[nn + 1]->q_IntHandler.is_Data = data->ab_Dev->dev_Queues[nn + 1];
-                            AddIntServer(INTB_KERNEL + qIRQ,
-                                         &data->ab_Dev->dev_Queues[nn + 1]->q_IntHandler);
-                            data->ab_Dev->dev_Queues[nn + 1]->q_irq_registered = 2;
+                            /* The admin handler also drains IO queues on its line. */
+                            if (data->ab_Dev->dev_VectorsOwned && qIRQ != AdminIntLine) {
+                                AddIntServer(INTB_KERNEL + qIRQ,
+                                    &data->ab_Dev->dev_Queues[nn + 1]->q_IntHandler);
+                                data->ab_Dev->dev_Queues[nn + 1]->q_irq_registered = 2;
+                            }
                             data->ab_Dev->queuecnt++;
                         } else {
                             bug ("[NVME:Bus] NVMEBus_Start: ERROR - failed to register IO submission queue (status=%u)\n", busehandle.ceh_Status);
