@@ -539,22 +539,13 @@ BOOL Hidd_NVMEBus_Start(OOP_Object *o, struct NVMEBase *NVMEBase)
                     if (rt->attributes & NVME_LBART_ATTRIB_HIDE) {
                         D(bug ("[NVME:Bus] NVMEBus_Start:      Skipping hidden namespace\n");)
                         lbaEnd = 0;
-                    } else if (AROS_LE2QUAD(rt->nlb)) {
-                        lbaStart = AROS_LE2QUAD(rt->slba);
-                        lbaEnd =  AROS_LE2QUAD(rt->slba) + AROS_LE2QUAD(rt->nlb);
                     } else {
-                        /* Optional feature - no ranges defined still reports success. */
-                        D(bug ("[NVME:Bus] NVMEBus_Start:      No LBA range reported, using nsze\n");)
+                        /* Range descriptors describe uses within a namespace;
+                           they do not redefine its LBA numbering or capacity. */
                         lbaEnd = AROS_LE2QUAD(id_ns->nsze);
                     }
                 } else
                     lbaEnd = AROS_LE2QUAD(id_ns->nsze);
-
-                if (lbaEnd > AROS_LE2QUAD(id_ns->nsze) ||
-                    (lbaEnd && lbaStart >= lbaEnd)) {
-                    bug("[NVME:Bus] namespace %u has an invalid LBA range\n", nn + 1);
-                    continue;
-                }
 
                 if (lbaEnd) {
                     if ((data->ab_Units[nn] = OOP_NewObject(NVMEBase->unitClass, NULL, attrs)) != NULL) {
