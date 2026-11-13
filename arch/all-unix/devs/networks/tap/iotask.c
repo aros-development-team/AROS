@@ -9,6 +9,8 @@
 
 #include <hidd/unixio.h>
 
+#include <proto/alib.h>             /* __sprintf() */
+
 #include "tap.h"
 #include <devices/timer.h>
 
@@ -333,15 +335,68 @@ static void IOHandler(int fd, int mode, void *data)
 }
 
 
+/*
+ * The host's side of the tap: 1 up, 0 down, -1 if it cannot be read (no
+ * sysfs: the link is not watched).
+ */
+static int tap_link_read(struct tap_base *TAPBase, struct tap_unit *unit)
+{
+    char path[64], text[32];
+    int fd, n, ioerr, i;
+    ULONG flags = 0;
+
+    __sprintf(path, TAP_LINK_FLAGS, unit->name);
+    fd = Hidd_UnixIO_OpenFile(TAPBase->unixio, path, O_RDONLY, 0, &ioerr);
+    if (fd < 0)
+        return -1;
+    n = Hidd_UnixIO_ReadFile(TAPBase->unixio, fd, text, sizeof(text) - 1, &ioerr);
+    Hidd_UnixIO_CloseFile(TAPBase->unixio, fd, NULL);
+    if (n < 3 || text[0] != '0' || (text[1] != 'x' && text[1] != 'X'))
+        return -1;
+    for (i = 2; i < n; i++) {           /* "0x1003\n" */
+        char c = text[i];
+
+        if (c >= '0' && c <= '9')
+            flags = (flags << 4) | (c - '0');
+        else if (c >= 'a' && c <= 'f')
+            flags = (flags << 4) | (c - 'a' + 10);
+        else if (c >= 'A' && c <= 'F')
+            flags = (flags << 4) | (c - 'A' + 10);
+        else
+            break;
+    }
+    return (flags & IFF_UP) ? 1 : 0;
+}
+
+/* A change of the host's side is the unit's link going or coming. */
+static void tap_link_check(struct tap_base *TAPBase, struct tap_unit *unit)
+{
+    int up = tap_link_read(TAPBase, unit);
+
+    if (up < 0 || !(unit->flags & tu_LINKWATCH))
+        return;
+    if (up && !(unit->flags & tu_LINKUP)) {
+        unit->flags |= tu_LINKUP;
+        D(bug("[tap] [io:%d] link up\n", unit->num));
+        tap_event(unit, S2EVENT_CONNECT);
+    } else if (!up && (unit->flags & tu_LINKUP)) {
+        unit->flags &= ~tu_LINKUP;
+        D(bug("[tap] [io:%d] link down\n", unit->num));
+        tap_event(unit, S2EVENT_DISCONNECT);
+    }
+}
+
 void tap_iotask(struct tap_base *TAPBase, struct tap_unit *unit)
 {
-    struct MsgPort *reply_port, *timer_port;
-    struct timerequest *timer;
+    struct MsgPort *reply_port, *timer_port, *link_port = NULL;
+    struct timerequest *timer, *link_timer = NULL;
     struct Message *msg;
     ULONG write_signal_mask, abort_signal_mask, io_signal_mask, timer_signal_mask, signal_mask;
+    ULONG link_signal_mask = 0;
     ULONG signaled = 0, timer_seq = 0;
     short write_flag = 0;
     BOOL timer_armed = FALSE;
+    int link;
 
     D(bug("[tap] [io:%d] iotask starting up\n", unit->num));
 
@@ -365,8 +420,29 @@ void tap_iotask(struct tap_base *TAPBase, struct tap_unit *unit)
     }
     timer_signal_mask = timer != NULL ? 1 << timer_port->mp_SigBit : 0;
 
+    /* the host's side of the tap, watched if it can be read */
+    link = tap_link_read(TAPBase, unit);
+    if (link >= 0) {
+        link_port = CreateMsgPort();
+        link_timer = link_port != NULL ? (struct timerequest *)
+            CreateIORequest(link_port, sizeof(struct timerequest)) : NULL;
+        if (link_timer != NULL &&
+            OpenDevice("timer.device", UNIT_MICROHZ, (struct IORequest *) link_timer, 0) == 0) {
+            unit->flags |= tu_LINKWATCH | (link ? tu_LINKUP : 0);
+            link_signal_mask = 1 << link_port->mp_SigBit;
+            link_timer->tr_node.io_Command = TR_ADDREQUEST;
+            link_timer->tr_time.tv_secs = 0;
+            link_timer->tr_time.tv_micro = TAP_LINK_POLL_MS * 1000;
+            SendIO((struct IORequest *) link_timer);
+        } else if (link_timer != NULL) {
+            DeleteIORequest((struct IORequest *) link_timer);
+            link_timer = NULL;
+        }
+    }
+
     /* bundle all the signals together */
-    signal_mask = write_signal_mask | abort_signal_mask | io_signal_mask | timer_signal_mask;
+    signal_mask = write_signal_mask | abort_signal_mask | io_signal_mask | timer_signal_mask |
+                  link_signal_mask;
     D(bug("[tap] signal mask 0x%08X\n", signal_mask));
 
     /* start waiting for read events */
@@ -468,6 +544,16 @@ void tap_iotask(struct tap_base *TAPBase, struct tap_unit *unit)
             }
         }
 
+        if (link_timer != NULL && (signaled & link_signal_mask) &&
+            CheckIO((struct IORequest *) link_timer)) {
+            WaitIO((struct IORequest *) link_timer);
+            tap_link_check(TAPBase, unit);
+            link_timer->tr_node.io_Command = TR_ADDREQUEST;
+            link_timer->tr_time.tv_secs = 0;
+            link_timer->tr_time.tv_micro = TAP_LINK_POLL_MS * 1000;
+            SendIO((struct IORequest *) link_timer);
+        }
+
         D(bug("[tap] [io:%d] iotask signaled\n", unit->num));
         if (signaled & write_signal_mask)
         {
@@ -494,6 +580,31 @@ void tap_iotask(struct tap_base *TAPBase, struct tap_unit *unit)
         DeleteIORequest((struct IORequest *) timer);
     }
     DeleteMsgPort(timer_port);
+
+    if (link_timer != NULL) {
+        AbortIO((struct IORequest *) link_timer);
+        WaitIO((struct IORequest *) link_timer);
+        CloseDevice((struct IORequest *) link_timer);
+        DeleteIORequest((struct IORequest *) link_timer);
+    }
+    if (link_port != NULL)
+        DeleteMsgPort(link_port);
+    unit->flags &= ~(tu_LINKWATCH | tu_LINKUP);
+
+    /* what still waits for an event will have none from this unit */
+    {
+        struct IOSana2Req *req;
+
+        Disable();
+        while ((req = (struct IOSana2Req *) RemHead((struct List *) &unit->events)) != NULL) {
+            Enable();
+            req->ios2_Req.io_Error = IOERR_ABORTED;
+            req->ios2_WireError = S2WERR_GENERIC_ERROR;
+            ReplyMsg((struct Message *) req);
+            Disable();
+        }
+        Enable();
+    }
 
     Hidd_UnixIO_RemInterrupt(TAPBase->unixio, &unit->irq);
 

@@ -245,6 +245,9 @@ static int GM_UNIQUENAME(open)(LIBBASETYPEPTR LIBBASE, struct IOSana2Req *req, U
             /* and for the multicast addresses the openers added */
             NEWLIST(&(unit->mcast_ranges));
 
+            /* and for the S2_ONEVENT requests waiting */
+            NEWLIST(&(unit->events));
+
             /* only bring the io task up if the buffers were allocated */
             if (error == 0)
             {
@@ -336,6 +339,28 @@ static int GM_UNIQUENAME(close)(LIBBASETYPEPTR LIBBASE, struct IOSana2Req *req) 
     ULONG unitnum = unit->num;
 
     D(bug("[tap] in close\n"));
+
+    /* an opener's S2_ONEVENT requests still waiting end with it (the
+     * caller should have aborted them; the others' go on waiting) */
+    {
+        struct MinList done;
+        struct IOSana2Req *ev, *ev_next;
+
+        NEWLIST((struct List *) &done);
+        Disable();
+        ForeachNodeSafe(&unit->events, ev, ev_next) {
+            if (ev->ios2_BufferManagement == (APTR) opener) {
+                Remove((struct Node *) ev);
+                AddTail((struct List *) &done, (struct Node *) ev);
+            }
+        }
+        Enable();
+        while ((ev = (struct IOSana2Req *) RemHead((struct List *) &done)) != NULL) {
+            ev->ios2_Req.io_Error = IOERR_ABORTED;
+            ev->ios2_WireError = S2WERR_GENERIC_ERROR;
+            ReplyMsg((struct Message *) ev);
+        }
+    }
 
     unit->refcount --;
 
@@ -438,13 +463,28 @@ AROS_LH1(long, abort_io, AROS_LHA(struct IOSana2Req *, req, A1), LIBBASETYPEPTR,
             }
         }
         Enable();
+    }
 
-        if (result == 0) {
-            req->ios2_Req.io_Error = IOERR_ABORTED;
-            req->ios2_WireError = S2WERR_GENERIC_ERROR;
-            ReplyMsg((struct Message *) req);
-            D(bug("[tap] abort_io: aborted parked request %p\n", req));
+    /* an S2_ONEVENT request waits on its unit's list (command.c) */
+    if (result != 0 && req->ios2_Req.io_Unit != NULL) {
+        struct tap_unit *unit = (struct tap_unit *) req->ios2_Req.io_Unit;
+
+        Disable();
+        ForeachNode(&unit->events, node) {
+            if (node == (struct Node *) req) {
+                Remove((struct Node *) req);
+                result = 0;
+                break;
+            }
         }
+        Enable();
+    }
+
+    if (result == 0) {
+        req->ios2_Req.io_Error = IOERR_ABORTED;
+        req->ios2_WireError = S2WERR_GENERIC_ERROR;
+        ReplyMsg((struct Message *) req);
+        D(bug("[tap] abort_io: aborted parked request %p\n", req));
     }
 
     return result;

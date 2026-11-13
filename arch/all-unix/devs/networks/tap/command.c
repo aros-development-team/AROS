@@ -33,6 +33,7 @@ static const UWORD tap_supported_commands[] = {
     S2_UNTRACKTYPE,
     S2_GETTYPESTATS,
     S2_GETGLOBALSTATS,
+    S2_ONEVENT,
 #if NEWSTYLE_DEVICE
     NSCMD_DEVICEQUERY,
 #endif
@@ -65,9 +66,70 @@ static BOOL tap_config_interface(struct IOSana2Req *req, struct tap_unit *unit) 
     CopyMem(unit->hwaddr, &req->ios2_SrcAddr, ETH_ALEN);
     CopyMem(unit->hwaddr, &req->ios2_DstAddr, ETH_ALEN);
 
-    unit->flags |= tu_CONFIGURED;
+    /*
+     * SANA-II: S2_CONFIGINTERFACE "will leave the driver and network
+     * interface fully operational" - online, as the other drivers in the
+     * tree have it (their CmdConfigInterface() goes online); S2_ONLINE is
+     * for coming back after S2_OFFLINE. AROSTCP asks for the link's events
+     * right after S2_CONFIGINTERFACE, OFFLINE among them, and takes the
+     * S2WERR_UNIT_ONLINE of the S2_ONLINE it sends next as done.
+     */
+    unit->flags |= tu_CONFIGURED | tu_ONLINE;
+    tap_event(unit, S2EVENT_ONLINE);
 
     return TRUE;
+}
+
+/*
+ * S2_ONEVENT: the request asks for some of the events in ios2_WireError
+ * that tap.device reports (TAP_EVENTS). ONLINE and OFFLINE are states: one
+ * the unit is in already comes back at once, as other SANA-II drivers do
+ * (atheros5000's CmdOnEvent()) - the stack asks for ONLINE after a write
+ * failed offline, and the unit may be back by then. CONNECT and DISCONNECT
+ * are changes of the link: the request waits for the next one.
+ */
+static BOOL tap_onevent(struct IOSana2Req *req, struct tap_unit *unit) {
+    ULONG now;
+
+    if ((req->ios2_WireError & TAP_EVENTS) == 0) {
+        req->ios2_Req.io_Error = S2ERR_NOT_SUPPORTED;
+        req->ios2_WireError = S2WERR_BAD_EVENT;
+        return TRUE;
+    }
+    now = ((unit->flags & tu_ONLINE) ? S2EVENT_ONLINE : S2EVENT_OFFLINE) & req->ios2_WireError;
+    if (now != 0) {
+        req->ios2_Req.io_Error = 0;
+        req->ios2_WireError = now;
+        return TRUE;
+    }
+    /* in flight until it is replied to: CheckIO() and WaitIO() go by that */
+    req->ios2_Req.io_Flags &= ~IOF_QUICK;
+    req->ios2_Req.io_Message.mn_Node.ln_Type = NT_MESSAGE;
+    Disable();
+    AddTail((struct List *) &unit->events, (struct Node *) req);
+    Enable();
+    return FALSE;
+}
+
+/* An event: the requests that wait for it come back with it. */
+void tap_event(struct tap_unit *unit, ULONG event) {
+    struct MinList done;
+    struct IOSana2Req *req, *next;
+
+    NEWLIST((struct List *) &done);
+    Disable();
+    ForeachNodeSafe(&unit->events, req, next) {
+        if (req->ios2_WireError & event) {
+            Remove((struct Node *) req);
+            AddTail((struct List *) &done, (struct Node *) req);
+        }
+    }
+    Enable();
+    while ((req = (struct IOSana2Req *) RemHead((struct List *) &done)) != NULL) {
+        req->ios2_Req.io_Error = 0;
+        req->ios2_WireError = event;
+        ReplyMsg((struct Message *) req);
+    }
 }
 
 static BOOL tap_online(struct IOSana2Req *req, struct tap_unit *unit) {
@@ -93,6 +155,7 @@ static BOOL tap_online(struct IOSana2Req *req, struct tap_unit *unit) {
 
     D(bug("[tap] [%d] online\n", unit->num));
 
+    tap_event(unit, S2EVENT_ONLINE);
     return TRUE;
 }
 
@@ -110,6 +173,7 @@ static BOOL tap_offline(struct IOSana2Req *req, struct tap_unit *unit) {
 
     D(bug("[tap] [%d] offline\n", unit->num));
 
+    tap_event(unit, S2EVENT_OFFLINE);
     return TRUE;
 }
 
@@ -481,6 +545,11 @@ void tap_handle_request(struct IOSana2Req *req) {
         case S2_GETGLOBALSTATS:
             D(bug("[tap] [%d] S2_GETGLOBALSTATS\n", unit->num));
             completed = tap_get_global_stats(req, unit);
+            break;
+
+        case S2_ONEVENT:
+            D(bug("[tap] [%d] S2_ONEVENT 0x%lx\n", unit->num, req->ios2_WireError));
+            completed = tap_onevent(req, unit);
             break;
 
         default:
