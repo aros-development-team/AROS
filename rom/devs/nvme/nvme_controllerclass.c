@@ -198,11 +198,13 @@ static BOOL nvme_wait_ready(device_t dev, struct IORequest *tmr, UQUAD cap, ULON
             bug("[NVME:Controller] %s: controller stopped responding\n", __func__);
             return FALSE;
         }
-        if (csts & NVME_CSTS_CFS)
-        {
+        if (!want && !(csts & NVME_CSTS_RDY))
+            return TRUE;
+        if (csts & NVME_CSTS_CFS) {
             bug("[NVME:Controller] %s: controller reports fatal status\n", __func__);
             return FALSE;
         }
+
         if ((csts & NVME_CSTS_RDY) == want)
             return TRUE;
 
@@ -247,22 +249,36 @@ BOOL nvme_quiesce(device_t dev, struct IORequest *tmr)
     ULONG q;
     BOOL stopped;
 
+    if (dev->dev_Quiesced || dev->dev_Quarantined)
+        return dev->dev_Quiesced;
     if (!tmr || !dev->dev_nvmeregbase)
         return FALSE;
+    if (!nvme_msix_enabled(dev))
+        dev->dev_nvmeregbase->intms = ~0;
     dev->dev_nvmeregbase->cc &= ~NVME_CC_ENABLE;
     stopped = nvme_wait_ready(dev, tmr, dev->dev_nvmeregbase->cap, 0);
+    if (!stopped) {
+        struct TagItem disableMaster[] = {
+            {aHidd_PCIDevice_isMaster, FALSE}, {TAG_DONE, 0}
+        };
+        OOP_SetAttrs(dev->dev_Object, disableMaster);
+        /* Also suppress a stuck shared INTx line at the PCI function. */
+        HIDD_PCIDevice_WriteConfigWord(dev->dev_Object, PCICS_COMMAND,
+            HIDD_PCIDevice_ReadConfigWord(dev->dev_Object, PCICS_COMMAND) | (1U << 10));
+    }
     if (dev->dev_Queues) {
         for (q = 0; q <= KrnGetCPUCount(); q++) {
             struct nvme_queue *queue = dev->dev_Queues[q];
             if (!queue)
                 continue;
             nvme_stop_completions(queue, tmr);
-            if (queue->q_irq_registered == 1)
+            if (stopped && queue->q_irq_registered == 1)
                 HIDD_PCIDriver_RemoveInterrupt(dev->dev_PCIDriverObject,
                     dev->dev_Object, &queue->q_IntHandler);
-            else if (queue->q_irq_registered == 2)
+            else if (stopped && queue->q_irq_registered == 2)
                 RemIntServer(INTB_KERNEL + queue->q_irq, &queue->q_IntHandler);
-            queue->q_irq_registered = 0;
+            if (stopped)
+                queue->q_irq_registered = 0;
             nvme_stop_iotask(queue);
             /* No callback can now touch a caller's stack, even if DMA
                memory must remain quarantined after a failed disable. */
@@ -270,11 +286,12 @@ BOOL nvme_quiesce(device_t dev, struct IORequest *tmr)
             memset(queue->cehooks, 0, queue->q_depth * sizeof(*queue->cehooks));
         }
     }
-    if (dev->dev_VectorsOwned) {
+    if (stopped && dev->dev_VectorsOwned) {
         HIDD_PCIDevice_ReleaseVectors(dev->dev_Object);
         dev->dev_VectorsOwned = FALSE;
     }
     dev->dev_Quiesced = stopped;
+    dev->dev_Quarantined = !stopped;
     if (!stopped)
         bug("[NVME] controller did not stop; retaining DMA allocations\n");
     return stopped;

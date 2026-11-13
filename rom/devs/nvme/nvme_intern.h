@@ -162,6 +162,7 @@ typedef struct {
     ULONG               queuecnt;
     char                dev_BusName[40];
     BOOL                dev_Quiesced;
+    BOOL                dev_Quarantined;
     BOOL                dev_VectorsOwned;
     struct nvme_queue   **dev_Queues;
 } *device_t;
