@@ -336,9 +336,9 @@ struct nvme_Bus
 
     struct Node         *ab_IDNode;
 
-    char                *ab_DevName;
-    char                *ab_DevSer;
-    char                *ab_DevFW;
+    char                ab_DevName[41];
+    char                ab_DevSer[21];
+    char                ab_DevFW[9];
 };
 
 struct nvme_Unit

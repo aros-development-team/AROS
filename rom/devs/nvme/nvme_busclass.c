@@ -160,18 +160,14 @@ OOP_Object *NVMEBus__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
 
         data->ab_Dev = dev;
 
-        if (devName) {
-            data->ab_DevName = AllocVec(strlen(devName) + 1, MEMF_CLEAR);
-            CopyMem(devName, data->ab_DevName, strlen(devName));
-        }
-        if (devSer) {
-            data->ab_DevSer = AllocVec(strlen(devSer) + 1, MEMF_CLEAR);
-            CopyMem(devSer, data->ab_DevSer, strlen(devSer));
-        }
-        if (devFW) {
-            data->ab_DevFW = AllocVec(strlen(devFW) + 1, MEMF_CLEAR);
-            CopyMem(devFW, data->ab_DevFW, strlen(devFW));
-        }
+        /* Identify strings are fixed-width fields, not necessarily terminated. */
+        if (devName)
+            strncpy(data->ab_DevName, devName, sizeof(data->ab_DevName) - 1);
+        if (devSer)
+            strncpy(data->ab_DevSer, devSer, sizeof(data->ab_DevSer) - 1);
+        if (devFW)
+            strncpy(data->ab_DevFW, devFW, sizeof(data->ab_DevFW) - 1);
+        data->ab_DevName[40] = data->ab_DevSer[20] = data->ab_DevFW[8] = 0;
 
         data->ab_UnitMax = maxUnits;
         data->ab_Units = AllocMem(sizeof(OOP_Object *) * maxUnits, MEMF_CLEAR);
@@ -184,16 +180,6 @@ void NVMEBus__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
     struct nvme_Bus *data = OOP_INST_DATA(cl, o);
     D(bug ("[NVME:Bus] Root__Dispose(%p)\n", o);)
-
-    if (data->ab_DevName) {
-        FreeVec(data->ab_DevName);
-    }
-    if (data->ab_DevSer) {
-        FreeVec(data->ab_DevSer);
-    }
-    if (data->ab_DevFW) {
-        FreeVec(data->ab_DevFW);
-    }
 
     OOP_DoSuperMethod(cl, o, msg);
 }
