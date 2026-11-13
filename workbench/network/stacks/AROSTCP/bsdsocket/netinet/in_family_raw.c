@@ -97,6 +97,39 @@ in_rawctloutput(int op, struct socket *so, int level, int optname, struct mbuf *
     return (error);
 }
 
+int     in_pktinfo_send(const struct inpcb *, const struct cmsghdr *, struct in_addr *,
+                        struct ifnet **);
+
+/*
+ * inf_rawsendopts: IP_PKTINFO, the interface and the source of one
+ * datagram (in_pktinfo_send()). The source applies to a socket that is
+ * not IP_HDRINCL: with the header given, its own source is the one.
+ */
+int
+in_rawsendopts(struct inpcb *inp, struct mbuf *control, void *src,
+               struct ifnet **oifp, int *opts)
+{
+    struct cmsghdr *cm = mtod(control, struct cmsghdr *);
+    int left = control->m_len;
+
+    while(left > 0) {
+        int error;
+
+        if(left < (int)sizeof(*cm) || cm->cmsg_len < sizeof(*cm) ||
+                (int)cm->cmsg_len > left)
+            return (EINVAL);
+        if(cm->cmsg_level != IPPROTO_IP || cm->cmsg_type != IP_PKTINFO)
+            return (ENOPROTOOPT);
+        if((error = in_pktinfo_send(inp, cm, (struct in_addr *)src, oifp)) != 0)
+            return (error);
+        if(left < (int)_ALIGN(cm->cmsg_len))
+            break;
+        left -= _ALIGN(cm->cmsg_len);
+        cm = (struct cmsghdr *)((caddr_t)cm + _ALIGN(cm->cmsg_len));
+    }
+    return (0);
+}
+
 /*
  * inf_rawoutput: generate the IP header and pass the packet to
  * ip_output(), with the options the user may have set up with a control

@@ -1010,8 +1010,23 @@ protocols keep up, and a device with no read request posted holds what follows. 
   (`udp_savecontrol()`, from the header as it arrived) - and `IP_RECVIF` (FreeBSD's: the interface
   it came in by, as that interface's `sockaddr_dl` - index, name and hardware address - so that one
   socket bound to `INADDR_ANY` serves every link, as `IPV6_PKTINFO` lets an IPv6 one; raw sockets
-  too). `IP_TOS` as ancillary data (a byte, or an int as Linux takes it) sets the
-  TOS byte of one datagram.
+  too). `IP_PKTINFO` (Linux's `struct in_pktinfo`, with an AROS number, 100: Linux's 8 is
+  `IP_RETOPTS` here and NetBSD's 25/26 are the source-specific multicast options;
+  `IP_RECVPKTINFO` is the same option) gives the same facts as Linux does: the interface index,
+  the header's destination (`ipi_addr`: a group, a broadcast, or ours) and the address a reply
+  would come from (`ipi_spec_dst`: that destination when it is ours, else a ready address of the
+  interface it came in by) - `in_savecontrol()` writes all three messages from the same
+  information. Sent as ancillary data on a UDP or raw datagram, `IP_PKTINFO` names the interface
+  it leaves by - the packet leaves there, as for a socket bound to it (`IP_BOUNDIF`), whatever the
+  routing table or `IP_MULTICAST_IF` say - and its source, which must be an address of ours that
+  is ready (else `EADDRNOTAVAIL`) and wins over the bound address as `IPV6_PKTINFO`'s does; a
+  connected socket keeps its connection's source; with no source named, the interface's ready
+  address on the destination's network is taken. An interface that does not exist is `ENXIO`,
+  another than the one the socket is bound to `EINVAL`. With it one socket bound to `INADDR_ANY`
+  answers on the link a question came in by, from the address asked about, as a multi-link mDNS
+  responder must (RFC 6762 section 15.2; with two IPv4 link-local links, 169.254/16 is routed by
+  one of them only, RFC 3927 section 3.2). `IP_TOS` as ancillary data (a byte, or an int as
+  Linux takes it) sets the TOS byte of one datagram.
 - **IPv4 multicast** (built under `-DENABLE_MULTICAST`) provides host-side group membership,
   mirroring the IPv6 path. `in_addmulti`/`in_delmulti` (`in.c`) maintain the reference-counted
   `in_multihead` list and program the NIC hardware filter over SANA-II (RFC 1112 class-D →

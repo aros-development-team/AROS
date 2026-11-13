@@ -335,6 +335,7 @@ int     in_dgoutput(struct mbuf *, struct inpcb *, const void *, struct ifnet *,
 
 void in_rawattach(struct inpcb *);
 int  in_rawctloutput(int, struct socket *, int, int, struct mbuf **);
+int  in_rawsendopts(struct inpcb *, struct mbuf *, void *, struct ifnet **, int *);
 int  in_rawoutput(struct mbuf *, struct inpcb *, const void *, const void *, int, int, struct ifnet *, const int *);
 
 /* a protocol outside inetsw[] takes an IP protocol number (netinet/ip_input.c) */
@@ -394,6 +395,7 @@ const struct inetfamily in_family = {
     .inf_rawflags       = INFR_HDR | INFR_SRCLATE,
     .inf_rawattach      = in_rawattach,
     .inf_rawctloutput   = in_rawctloutput,
+    .inf_rawsendopts    = in_rawsendopts,
     .inf_rawoutput      = in_rawoutput,
 
     /* protocols outside inetsw[] */

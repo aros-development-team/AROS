@@ -301,7 +301,8 @@ int	STKARGFUN ip_output(void *args, ...)
          */
         if(imo != NULL) {
             ip->ip_ttl = imo->imo_multicast_ttl;
-            if(imo->imo_multicast_ifp != NULL)
+            /* an interface the packet is bound to wins */
+            if(imo->imo_multicast_ifp != NULL && boundifp == NULL)
                 ifp = imo->imo_multicast_ifp;
         } else
             ip->ip_ttl = IP_DEFAULT_MULTICAST_TTL;
@@ -694,6 +695,7 @@ struct mbuf **mp;
             case IP_RECVTOS:
             case IP_RECVTTL:
             case IP_RECVIF:
+            case IP_PKTINFO:
                 if(m->m_len != sizeof(int))
                     error = EINVAL;
                 else {
@@ -739,6 +741,10 @@ struct mbuf **mp;
 
                     case IP_RECVIF:
                         OPTSET(INP_RECVIF);
+                        break;
+
+                    case IP_PKTINFO:
+                        OPTSET(INP_RECVPKTINFO);
                         break;
                     }
                 }
@@ -787,6 +793,7 @@ struct mbuf **mp;
             case IP_RECVTOS:
             case IP_RECVTTL:
             case IP_RECVIF:
+            case IP_PKTINFO:
                 *mp = m = m_get(M_WAIT, MT_SOOPTS);
                 if(m == NULL) {		/* allocator may fail here */
                     error = ENOBUFS;
@@ -831,6 +838,10 @@ struct mbuf **mp;
 
                 case IP_RECVIF:
                     optval = OPTBIT(INP_RECVIF);
+                    break;
+
+                case IP_PKTINFO:
+                    optval = OPTBIT(INP_RECVPKTINFO);
                     break;
                 }
                 *mtod(m, int *) = optval;
