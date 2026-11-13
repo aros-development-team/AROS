@@ -113,13 +113,13 @@ static int VIRTIO_Init(struct VirtIOBase *VirtIOBase)
     if (enabled) {
         VirtIOBase->virtio_MemPool = CreatePool(MEMF_CLEAR | MEMF_PUBLIC | MEMF_SEM_PROTECTED, 8192, 4096);
         if (VirtIOBase->virtio_MemPool == NULL)
-            return FALSE;
+            goto fail;
 
 #if defined(__OOP_NOATTRBASES__)
         if (OOP_ObtainAttrBasesArray(&VirtIOBase->virtio_HWAttrBase, attrBaseIDs)) {
             DeletePool(VirtIOBase->virtio_MemPool);
             VirtIOBase->virtio_MemPool = NULL;
-            return FALSE;
+            goto fail;
         }
 #endif
 #if defined(__OOP_NOMETHODBASES__)
@@ -129,17 +129,28 @@ static int VIRTIO_Init(struct VirtIOBase *VirtIOBase)
 #endif
             DeletePool(VirtIOBase->virtio_MemPool);
             VirtIOBase->virtio_MemPool = NULL;
-            return FALSE;
+            goto fail;
         }
 #endif
 
         VirtIOBase->storageRoot = OOP_NewObject(NULL, CLID_Hidd_Storage, NULL);
         if (!VirtIOBase->storageRoot)
             VirtIOBase->storageRoot = OOP_NewObject(NULL, CLID_HW_Root, NULL);
-        if (!VirtIOBase->storageRoot)
-            return FALSE;
+        if (!VirtIOBase->storageRoot) {
+#if defined(__OOP_NOATTRBASES__)
+            OOP_ReleaseAttrBasesArray(&VirtIOBase->virtio_HWAttrBase, attrBaseIDs);
+#endif
+            DeletePool(VirtIOBase->virtio_MemPool);
+            VirtIOBase->virtio_MemPool = NULL;
+            goto fail;
+        }
     }
-    return enabled;
+    if (enabled)
+        return TRUE;
+fail:
+    CloseLibrary(VirtIOBase->virtio_UtilityBase);
+    VirtIOBase->virtio_UtilityBase = NULL;
+    return FALSE;
 }
 
 static int VIRTIO_Open(struct VirtIOBase *VirtIOBase,
