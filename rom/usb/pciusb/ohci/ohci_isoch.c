@@ -352,8 +352,6 @@ void ohciStartIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
     struct OhciTD *lasttd = NULL;
     ULONG headphys;
     ULONG termphys;
-    UWORD zero_queued = 0;
-    UWORD passes = 0;
 
     pciusbOHCIDebug("OHCI", "%s()\n", __func__);
 
@@ -387,7 +385,6 @@ void ohciStartIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
         lasttd = scan;
     }
 
-restart:
     for(idx = 0; idx < ptdcount; idx++) {
         struct PTDNode *ptd = rtn->rtn_PTDs[idx];
         struct OhciPTDPrivate *ptdpriv;
@@ -404,7 +401,7 @@ restart:
         if(!ptd || !(ptd->ptd_Flags & PTDF_BUFFER_VALID))
             continue;
 
-        if(ptd->ptd_Flags & PTDF_ACTIVE)
+        if(ptd->ptd_Flags & (PTDF_ACTIVE|PTDF_ZERO_PENDING))
             continue;
 
         ptdpriv = ohciPTDPrivate(ptd);
@@ -413,30 +410,13 @@ restart:
             continue;
 
         /* A client can legitimately return a zero length (e.g. SonixcamTool at
-           a buffer wrap).  OHCI cannot schedule an empty IsoTD, so complete it
-           here with a zero-length done hook and queue its replacement; some
-           clients (SonixcamTool) use that hook to rewind and continue. */
-        if(!ptdpriv->ptd_BufferReq.ubr_Length) {
-            struct IOUsbHWBufferReq *bufreq = &ptdpriv->ptd_BufferReq;
-            struct IOUsbHWRTIso *urti = rtn->rtn_RTIso;
-
-            bufreq->ubr_Length = 0;
-            bufreq->ubr_Frame = ptd->ptd_FrameIdx;
+           a buffer wrap), and a hook can leave the buffer NULL.  OHCI cannot
+           schedule an empty IsoTD, so mark the request pending; the SOF pass
+           retires it with a zero-length done hook in its scheduled frame. */
+        if(!ptdpriv->ptd_BufferReq.ubr_Length || !ptdpriv->ptd_BufferReq.ubr_Buffer) {
+            ptdpriv->ptd_BufferReq.ubr_Length = 0;
             ptdpriv->ptd_BounceBuffer = NULL;
-            ptd->ptd_Flags &= ~(PTDF_ACTIVE|PTDF_BUFFER_VALID);
-
-            if(urti) {
-                if(rtn->rtn_IOReq.iouh_Dir == UHDIR_IN) {
-                    if(urti->urti_InDoneHook)
-                        CallHookPkt(urti->urti_InDoneHook, rtn, bufreq);
-                } else {
-                    if(urti->urti_OutDoneHook)
-                        CallHookPkt(urti->urti_OutDoneHook, rtn, bufreq);
-                }
-            }
-
-            if(ohciQueueIsochIO(hc, rtn) == RC_OK)
-                zero_queued++;
+            ptd->ptd_Flags |= PTDF_ZERO_PENDING;
             continue;
         }
 
@@ -458,10 +438,6 @@ restart:
 #endif
         ptdpriv->ptd_BounceBuffer = (dmabuffer != ptdpriv->ptd_BufferReq.ubr_Buffer) ? dmabuffer : NULL;
 
-        if(!dmabuffer) {
-            ptd->ptd_Flags &= ~PTDF_BUFFER_VALID;
-            continue;
-        }
 
         phys = (ULONG)(IPTR)pciGetPhysical(hc, dmabuffer);
         frame = ptdpriv->ptd_BufferReq.ubr_Frame;
@@ -529,13 +505,6 @@ restart:
         ptd->ptd_Flags |= PTDF_ACTIVE;
     }
 
-    /* Start any replacement requests queued by zero-length completions.
-       Bounded so a client that keeps returning zero cannot loop forever. */
-    if(zero_queued && ++passes <= ptdcount) {
-        zero_queued = 0;
-        goto restart;
-    }
-
     if(lasttd) {
         WRITEMEM32_LE(&oed->oed_TailPtr, termphys);
         CacheClearE(&oed->oed_EPCaps, 16, CACRF_ClearD);
@@ -570,6 +539,10 @@ restart:
     WRITEMEM32_LE(&oed->oed_EPCaps, READMEM32_LE(&oed->oed_EPCaps) & ~OECF_SKIP);
     CacheClearE(&oed->oed_EPCaps, 16, CACRF_ClearD);
     SYNC;
+
+    /* SOF runs the RT-ISO completion/zero-retirement pass. */
+    if(rtn->rtn_RTIso)
+        ohciEnableInt(hc, OISF_SOF);
 }
 
 void ohciStopIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
@@ -601,7 +574,7 @@ void ohciStopIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
         struct PTDNode *ptd = rtn->rtn_PTDs[idx];
         if(ptd) {
             struct OhciPTDPrivate *ptdpriv = ohciPTDPrivate(ptd);
-            ptd->ptd_Flags &= ~(PTDF_ACTIVE|PTDF_BUFFER_VALID);
+            ptd->ptd_Flags &= ~(PTDF_ACTIVE|PTDF_BUFFER_VALID|PTDF_ZERO_PENDING);
             if(ptdpriv->ptd_BounceBuffer &&
                     ptdpriv->ptd_BounceBuffer != ptdpriv->ptd_BufferReq.ubr_Buffer) {
                 usbReleaseBuffer(ptdpriv->ptd_BounceBuffer, ptdpriv->ptd_BufferReq.ubr_Buffer,
@@ -609,6 +582,67 @@ void ohciStopIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
                 ptdpriv->ptd_BounceBuffer = NULL;
             }
         }
+    }
+
+    /* SOF is only needed while an RT-ISO handler or an abort is pending. */
+    if(hc->hc_RTIsoHandlers.mlh_Head->mln_Succ ||
+            hc->hc_AbortQueue.lh_Head->ln_Succ)
+        ohciEnableInt(hc, OISF_SOF);
+    else
+        ohciDisableInt(hc, OISF_SOF);
+}
+
+void ohciHandleZeroIsochTDs(struct PCIController *hc)
+{
+    struct RTIsoNode *rtn = (struct RTIsoNode *)hc->hc_RTIsoHandlers.mlh_Head;
+    UWORD curframe = (UWORD)(hc->hc_FrameCounter & 0xffff);
+
+    while(rtn->rtn_Node.mln_Succ) {
+        struct RTIsoNode *next = (struct RTIsoNode *)rtn->rtn_Node.mln_Succ;
+
+        if(rtn->rtn_PTDs && rtn->rtn_RTIso) {
+            UWORD idx;
+
+            for(idx = 0; idx < rtn->rtn_PTDCount; idx++) {
+                struct PTDNode *ptd = rtn->rtn_PTDs[idx];
+                struct OhciPTDPrivate *ptdpriv;
+                struct IOUsbHWBufferReq *bufreq;
+                struct IOUsbHWRTIso *urti;
+                LONG delta;
+
+                if(!ptd || !(ptd->ptd_Flags & PTDF_ZERO_PENDING))
+                    continue;
+
+                delta = (LONG)((UWORD)curframe - (UWORD)ptd->ptd_FrameIdx);
+                if(delta & 0x8000)
+                    delta -= 0x10000;
+                if(delta < 0)
+                    continue;   /* not its frame yet */
+
+                ptdpriv = ohciPTDPrivate(ptd);
+                bufreq = &ptdpriv->ptd_BufferReq;
+                urti = rtn->rtn_RTIso;
+
+                bufreq->ubr_Length = 0;
+                bufreq->ubr_Frame = ptd->ptd_FrameIdx;
+                ptd->ptd_Flags &= ~(PTDF_ACTIVE|PTDF_BUFFER_VALID|PTDF_ZERO_PENDING);
+
+                if(urti) {
+                    if(rtn->rtn_IOReq.iouh_Dir == UHDIR_IN) {
+                        if(urti->urti_InDoneHook)
+                            CallHookPkt(urti->urti_InDoneHook, rtn, bufreq);
+                    } else {
+                        if(urti->urti_OutDoneHook)
+                            CallHookPkt(urti->urti_OutDoneHook, rtn, bufreq);
+                    }
+                }
+
+                if(ohciQueueIsochIO(hc, rtn) == RC_OK)
+                    ohciStartIsochIO(hc, rtn);
+            }
+        }
+
+        rtn = next;
     }
 }
 
