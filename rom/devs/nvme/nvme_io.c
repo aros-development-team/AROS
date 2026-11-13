@@ -151,11 +151,11 @@ static BOOL nvme_sector_rw(struct IORequest *io, UQUAD off64, BOOL is_write)
 
     io->io_Flags &= ~IOF_QUICK;
     if (nvme_submit_iocmd(nvmeq, &cmdio, &ioehandle) != 0) {
+        nvme_dma_release(&ioehandle, TRUE);
         if (ioehandle.ceh_IOMem.me_Un.meu_Addr) {
             FreeMem(ioehandle.ceh_IOMem.me_Un.meu_Addr, ioehandle.ceh_IOMem.me_Length);
             ioehandle.ceh_IOMem.me_Un.meu_Addr = NULL;
         }
-        nvme_dma_release(&ioehandle, TRUE);
         io->io_Error = IOERR_ABORTED;
 
         return TRUE;
