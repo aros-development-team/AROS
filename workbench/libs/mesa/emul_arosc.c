@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2009-2019, The AROS Development Team. All rights reserved.
+    Copyright (C) 2009-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <aros/debug.h>
@@ -10,6 +10,7 @@
 
 #include <errno.h>
 #include <string.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <unistd.h>
 
@@ -161,7 +162,10 @@ char *strndup(const char *s, size_t n)
 
 char *strdup(const char *s)
 {
-    return strndup(s, (size_t)-1);
+    /* strdup() has no caller bound; PTRDIFF_MAX is the largest object
+     * size there can be, so it bounds the scan without exceeding it
+     * (a SIZE_MAX bound trips -Wstringop-overread once inlined). */
+    return strndup(s, PTRDIFF_MAX);
 }
 
 /*
