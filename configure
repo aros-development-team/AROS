@@ -10999,6 +10999,12 @@ printf '%s\n' "$darwin_sdk_path" >&6; }
                 aros_kernel_ld="$toolchain_ld -arch arm64"
                 aros_kernel_as="$toolchain_as -arch arm64"
                 aros_kernel_ranlib="ranlib"
+                # Apple/MacPorts ar cannot read @response files (see mklib_q in
+                # config/make.tmpl). With the LLVM toolchain use LLVM ar and ranlib.
+                if test "$aros_toolchain" = "llvm"; then
+                    aros_kernel_ar="llvm-ar"
+                    aros_kernel_ranlib="llvm-ranlib"
+                fi
                 aros_kernel_nm="nm"
                 aros_kernel_strip="strip"
                 kernel_tool_prefix=""
