@@ -207,6 +207,113 @@ mdnsBuildQuery(UBYTE *pkt, LONG pktmax, UWORD id, const char *qname,
     return 0;
 }
 
+/* ------------------------------------------------------------------
+ * Wire names: labels as they are on the wire, uncompressed, ended by the
+ * root label. What mdnsd keeps and compares (dnssd_reg.h); text is for
+ * presentation.
+ * ------------------------------------------------------------------ */
+LONG
+mdnsWireNameLength(const UBYTE *name)
+{
+    LONG at = 0;
+
+    while (at < 255 && name[at] != 0) {
+        at += name[at] + 1;
+    }
+    return at < 255 ? at + 1 : -1;
+}
+
+static UBYTE
+wire_lower(UBYTE c)
+{
+    return c >= 'A' && c <= 'Z' ? (UBYTE)(c + 32) : c;
+}
+
+BOOL
+mdnsWireNameEqual(const UBYTE *a, const UBYTE *b)
+{
+    LONG la = mdnsWireNameLength(a), lb = mdnsWireNameLength(b), i;
+
+    if (la < 0 || la != lb) {
+        return FALSE;
+    }
+    for (i = 0; i < la; i++) {
+        if (wire_lower(a[i]) != wire_lower(b[i])) {
+            return FALSE;
+        }
+    }
+    return TRUE;
+}
+
+/* A name at offset of pkt, compressed or not, into name as wire labels;
+ * the bytes it takes at offset, or -1. */
+LONG
+mdnsWireNameRead(const UBYTE *pkt, LONG length, LONG offset, UBYTE *name)
+{
+    LONG at = 0, consumed = 0, jumps = 0;
+    BOOL jumped = FALSE;
+
+    while (offset >= 0 && offset < length && jumps++ < 128) {
+        UBYTE n = pkt[offset++];
+
+        if (!jumped) {
+            consumed++;
+        }
+        if ((n & 0xc0) == 0xc0) {
+            if (offset >= length) {
+                return -1;
+            }
+            if (!jumped) {
+                consumed++;
+            }
+            offset = ((n & 0x3f) << 8) | pkt[offset];
+            jumped = TRUE;
+        } else {
+            if (n > 63 || at + n + 1 > 255 || offset + n > length) {
+                return -1;
+            }
+            name[at++] = n;
+            if (n == 0) {
+                return consumed;
+            }
+            memcpy(name + at, pkt + offset, n);
+            at += n;
+            offset += n;
+            if (!jumped) {
+                consumed += n;
+            }
+        }
+    }
+    return -1;
+}
+
+/* A text name ("host.local", dots separate labels, no escapes) as wire
+ * labels; FALSE if it does not make a name. */
+BOOL
+mdnsWireNameFromText(const char *text, UBYTE *name)
+{
+    LONG at = 0, start;
+
+    while (*text != '\0') {
+        start = at++;
+        while (*text != '\0' && *text != '.') {
+            if (at >= 254 || at - start > 63) {
+                return FALSE;
+            }
+            name[at++] = (UBYTE)*text++;
+        }
+        if (at - start - 1 == 0) {
+            return FALSE;
+        }
+        name[start] = (UBYTE)(at - start - 1);
+        if (*text == '.') {
+            text++;
+        }
+    }
+    name[at] = 0;
+    return at > 0;
+}
+
 LONG
 mdnsParseQuestion(const UBYTE *pkt, LONG pktlen, LONG offset,
     struct MDNSQuestion *q, LONG *consumed)
@@ -219,7 +326,8 @@ mdnsParseQuestion(const UBYTE *pkt, LONG pktlen, LONG offset,
 
     end = mdnsWireToName(pkt, pktlen, offset, pkt, pktlen, q->qname,
         (LONG)sizeof(q->qname));
-    if (end < 0 || end + 4 > pktlen) {
+    if (end < 0 || end + 4 > pktlen ||
+        mdnsWireNameRead(pkt, pktlen, offset, q->qwire) < 0) {
         return -1;
     }
 
@@ -242,7 +350,8 @@ mdnsParseRecord(const UBYTE *pkt, LONG pktlen, LONG offset,
 
     end = mdnsWireToName(pkt, pktlen, offset, pkt, pktlen, r->name,
         (LONG)sizeof(r->name));
-    if (end < 0 || end + 10 > pktlen) {
+    if (end < 0 || end + 10 > pktlen ||
+        mdnsWireNameRead(pkt, pktlen, offset, r->wire) < 0) {
         return -1;
     }
 
@@ -269,47 +378,80 @@ mdnsParseRecord(const UBYTE *pkt, LONG pktlen, LONG offset,
     return 0;
 }
 
+/* A record whose owner is a wire name (name, mdnsWireNameLength() bytes),
+ * at *pos of pkt (pktmax bytes); -1 if it does not fit. */
 LONG
-mdnsAppendRecord(UBYTE *pkt, LONG pktmax, LONG *pos, UWORD *ancount,
-    const char *name, UWORD type, UWORD rclass, ULONG ttl,
+mdnsAppendRecordWire(UBYTE *pkt, LONG pktmax, LONG *pos, UWORD *ancount,
+    const UBYTE *name, UWORD type, UWORD rclass, ULONG ttl,
     const UBYTE *rdata, UWORD rdlength)
 {
-    LONG nused;
-    LONG p;
-    ULONG nttl;
+    LONG nlen, p;
 
-    if (pkt == NULL || pos == NULL || ancount == NULL || name == NULL) {
+    if (pkt == NULL || pos == NULL || ancount == NULL || name == NULL ||
+        (nlen = mdnsWireNameLength(name)) < 0) {
         return -1;
     }
-
     p = *pos;
-    if (mdnsNameToWire(name, pkt + p, pktmax - p, &nused) != 0) {
+    if (p + nlen + 10 + rdlength > pktmax) {
         return -1;
     }
-    p += nused;
-
-    if (p + 10 + rdlength > pktmax) {
-        return -1;
-    }
-
+    memcpy(pkt + p, name, (size_t)nlen);
+    p += nlen;
     pkt[p++] = (UBYTE)((type >> 8) & 0xFF);
     pkt[p++] = (UBYTE)(type & 0xFF);
     pkt[p++] = (UBYTE)((rclass >> 8) & 0xFF);
     pkt[p++] = (UBYTE)(rclass & 0xFF);
-    nttl = ttl;
-    pkt[p++] = (UBYTE)((nttl >> 24) & 0xFF);
-    pkt[p++] = (UBYTE)((nttl >> 16) & 0xFF);
-    pkt[p++] = (UBYTE)((nttl >> 8) & 0xFF);
-    pkt[p++] = (UBYTE)(nttl & 0xFF);
+    pkt[p++] = (UBYTE)((ttl >> 24) & 0xFF);
+    pkt[p++] = (UBYTE)((ttl >> 16) & 0xFF);
+    pkt[p++] = (UBYTE)((ttl >> 8) & 0xFF);
+    pkt[p++] = (UBYTE)(ttl & 0xFF);
     pkt[p++] = (UBYTE)((rdlength >> 8) & 0xFF);
     pkt[p++] = (UBYTE)(rdlength & 0xFF);
     if (rdlength > 0 && rdata != NULL) {
         memcpy(pkt + p, rdata, (size_t)rdlength);
     }
     p += rdlength;
-
     *pos = p;
     (*ancount)++;
+    return 0;
+}
+
+/* The same, with the owner as text (the host's name, mdns_host.c). */
+LONG
+mdnsAppendRecord(UBYTE *pkt, LONG pktmax, LONG *pos, UWORD *ancount,
+    const char *name, UWORD type, UWORD rclass, ULONG ttl,
+    const UBYTE *rdata, UWORD rdlength)
+{
+    UBYTE wire[256];
+    LONG nused;
+
+    if (name == NULL || mdnsNameToWire(name, wire, (LONG)sizeof(wire), &nused) != 0) {
+        return -1;
+    }
+    return mdnsAppendRecordWire(pkt, pktmax, pos, ancount, wire, type, rclass,
+        ttl, rdata, rdlength);
+}
+
+/* A query with one question, its name a wire name; its length at *pktlen. */
+LONG
+mdnsBuildQueryWire(UBYTE *pkt, LONG pktmax, UWORD id, const UBYTE *qname,
+    UWORD qtype, UWORD qclass, LONG *pktlen)
+{
+    LONG pos = (LONG)sizeof(struct MDNSHeader), nlen;
+
+    if (pkt == NULL || qname == NULL || pktlen == NULL ||
+        (nlen = mdnsWireNameLength(qname)) < 0 || pos + nlen + 4 > pktmax) {
+        return -1;
+    }
+    mdnsInitHeader((struct MDNSHeader *)pkt, 0, 1);
+    ((struct MDNSHeader *)pkt)->id = htons(id);
+    memcpy(pkt + pos, qname, (size_t)nlen);
+    pos += nlen;
+    pkt[pos++] = (UBYTE)(qtype >> 8);
+    pkt[pos++] = (UBYTE)qtype;
+    pkt[pos++] = (UBYTE)(qclass >> 8);
+    pkt[pos++] = (UBYTE)qclass;
+    *pktlen = pos;
     return 0;
 }
 

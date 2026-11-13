@@ -42,6 +42,8 @@
 
 #include <stddef.h>
 
+#include <dnssd/dnssd.h>
+
 #include "mdnsd.h"
 #include "dnssd_model.h"
 
@@ -620,117 +622,77 @@ register_notify(APTR data, const struct MDNSRegisteredService *rs, LONG result)
 {
     struct ServerOperation *op = data;
     struct dnssd_model_service m;
-    UBYTE wire[256], type[256];
-    LONG used, at, typeAt, domainAt;
+    UBYTE type[256];
+    LONG typeAt = 1 + rs->rs_Reg.instance_len;
 
-    if (result != MDNS_OK) {
+    if (result != MDNSD_OK) {
         end_with(op->so_Daemon->md_DNSSD, op, DNSSD_ERR_CONFLICT);
-        return;
-    }
-    /* the name as wire labels: the instance's label as it is */
-    at = (LONG)strlen(rs->rs_Instance);
-    if (at > 63) {
-        return;
-    }
-    wire[0] = (UBYTE)at;
-    memcpy(wire + 1, rs->rs_Instance, at);
-    typeAt = 1 + at;
-    if (mdnsNameToWire(rs->rs_Type, wire + typeAt, 256 - typeAt, &used) != 0) {
-        return;
-    }
-    domainAt = typeAt + used - 1;
-    if (mdnsNameToWire(rs->rs_Domain, wire + domainAt, 256 - domainAt,
-            &used) != 0) {
         return;
     }
     memset(&m, 0, sizeof(m));
     m.kind = DNSSD_EVENT_REGISTERED;
-    m.port = rs->rs_Port;
+    m.port = rs->rs_Reg.port;
     m.rrtype = DNS_TYPE_SRV;
-    instance_parts(&m, wire, typeAt, domainAt, type);
+    instance_parts(&m, rs->rs_Name, typeAt, typeAt + rs->rs_Reg.type_len - 1, type);
     push_event(op->so_Daemon->md_DNSSD, op, &m);
 }
 
-/*
- * Wire labels from at to the end (or to stop, an offset) as text, for the
- * responder's registration, which still keeps text: dots between labels,
- * a dot or backslash in a label escaped (RFC 1035 section 5.1). Its length.
- */
-static ULONG
-name_text(const UBYTE *wire, LONG at, LONG stop, char *text, ULONG max)
-{
-    ULONG n = 0;
+/* A request's address is a registration's (dnssd_model.h): the same layout. */
+typedef char dnssd_address_is_the_wire_address[
+    sizeof(struct DNSSDAddress) == sizeof(struct dnssd_model_wire_address) &&
+    offsetof(struct DNSSDAddress, da_Bytes) ==
+        offsetof(struct dnssd_model_wire_address, bytes) ? 1 : -1];
 
-    while (wire[at] != 0 && (stop < 0 || at < stop)) {
-        UBYTE len = wire[at++], i;
-
-        if (n != 0 && n < max) {
-            text[n++] = '.';
-        }
-        for (i = 0; i < len; i++, at++) {
-            if ((wire[at] == '.' || wire[at] == '\\') && n + 1 < max) {
-                text[n++] = '\\';
-            }
-            if (n < max) {
-                text[n++] = (char)wire[at];
-            }
-        }
-    }
-    return n;
-}
-
-/* Register: the request's names, TXT, subtypes and host, as the
- * responder's registration takes them; the service. */
+/* Register: the request's names, subtypes, host and addresses as they are
+ * (dnssd_ipc_validate() has checked their form), made a registration. */
 static LONG
 start_register(struct MDNSDaemon *md, struct ServerOperation *op,
     const struct dnssd_ipc_request *r)
 {
-    char instance[64], type[MDNS_MAX_TYPE + 1], domain[MDNS_MAX_DOMAIN + 1];
-    char subtypes[MDNS_MAX_SUBTYPES][MDNS_MAX_SUBTYPE + 1], host[64];
-    struct DNSSDAddress addresses[DNSSD_IPC_MAX_ADDRESSES];
+    struct dnssd_model_wire_address addresses[DNSSD_IPC_MAX_ADDRESSES];
+    struct dnssd_reg reg;
+    struct dnssd_reg_parts p;
+    UBYTE type[256];
     const UBYTE *name = op->so_Name;
-    const UBYTE *sub = dnssd_ipc_data(r, &r->subtypes);
-    UWORD count = 0, naddr = 0;
-    ULONG at;
+    LONG typeLength = op->so_DomainOffset - op->so_TypeOffset;
     LONG rc;
 
-    if (r->txt.size > MDNS_TXT_DATA_MAX) {
+    if (r->txt.size > MDNS_TXT_DATA_MAX ||
+        r->addresses.size > sizeof(addresses)) {
         return DNSSD_ERR_BADPARAM;
     }
-    memcpy(instance, name + 1, name[0]);
-    instance[name[0]] = '\0';
-    if (name_text(name, op->so_TypeOffset, op->so_DomainOffset, type,
-            sizeof(type) - 1) >= sizeof(type) - 1 ||
-        name_text(name, op->so_DomainOffset, -1, domain,
-            sizeof(domain) - 1) >= sizeof(domain) - 1) {
+    /* the type's labels, then the root */
+    memcpy(type, name + op->so_TypeOffset, (size_t)typeLength);
+    type[typeLength] = 0;
+    memset(&p, 0, sizeof(p));
+    p.instance = name + 1;
+    p.instance_len = name[0];
+    p.type = type;
+    p.type_len = (ULONG)typeLength + 1;
+    p.domain = name + op->so_DomainOffset;
+    p.domain_len = (ULONG)mdnsWireNameLength(name + op->so_DomainOffset);
+    p.subtypes = dnssd_ipc_data(r, &r->subtypes);
+    p.subtypes_len = r->subtypes.size;
+    if (r->host.size != 0) {
+        memcpy(addresses, dnssd_ipc_data(r, &r->addresses), r->addresses.size);
+        p.host = dnssd_ipc_data(r, &r->host);
+        p.host_len = r->host.size;
+        p.addresses = addresses;
+        p.address_count = r->addresses.size / sizeof(addresses[0]);
+    }
+    p.port = r->port;
+    switch (dnssd_reg_init(&reg, &p)) {
+    case DNSSD_REG_OK:
+        break;
+    case DNSSD_REG_BAD_ARGUMENT:
+        return DNSSD_ERR_BADPARAM;
+    default:
         return DNSSD_ERR_BADNAME;
     }
-    type[name_text(name, op->so_TypeOffset, op->so_DomainOffset, type,
-        sizeof(type) - 1)] = '\0';
-    domain[name_text(name, op->so_DomainOffset, -1, domain,
-        sizeof(domain) - 1)] = '\0';
-    for (at = 0; at < r->subtypes.size; at += 1 + sub[at]) {
-        UBYTE len = sub[at];
-
-        if (count == MDNS_MAX_SUBTYPES || len > MDNS_MAX_SUBTYPE) {
-            return DNSSD_ERR_BADPARAM;
-        }
-        memcpy(subtypes[count], sub + at + 1, len);
-        subtypes[count++][len] = '\0';
-    }
-    host[0] = '\0';
-    if (r->host.size != 0) {
-        memcpy(host, dnssd_ipc_data(r, &r->host), r->host.size);
-        host[r->host.size] = '\0';
-        naddr = (UWORD)(r->addresses.size / sizeof(addresses[0]));
-        memcpy(addresses, dnssd_ipc_data(r, &r->addresses), r->addresses.size);
-    }
-    rc = mdnsRegAddNative(md, instance, type, domain, subtypes, count,
-        r->port, dnssd_ipc_data(r, &r->txt), (UWORD)r->txt.size,
-        host[0] != '\0' ? host : NULL, addresses, naddr,
-        register_notify, op, &op->so_Service);
-    return rc == MDNS_OK ? DNSSD_OK : rc == MDNSERR_DUPLICATE ? DNSSD_ERR_EXISTS :
-        rc == MDNSERR_NOMEM ? DNSSD_ERR_NOMEM : DNSSD_ERR_BADPARAM;
+    rc = mdnsRegAddCanonical(md, &reg, dnssd_ipc_data(r, &r->txt),
+        (UWORD)r->txt.size, 0, 0, register_notify, op, &op->so_Service);
+    return rc == MDNSD_OK ? DNSSD_OK : rc == MDNSD_ERR_DUPLICATE ? DNSSD_ERR_EXISTS :
+        rc == MDNSD_ERR_NOMEM ? DNSSD_ERR_NOMEM : DNSSD_ERR_BADPARAM;
 }
 
 /* Does a label of name (size bytes) start at offset? */
@@ -1111,7 +1073,7 @@ dnssdServerMessage(struct MDNSDaemon *md, struct DNSSDIPCMsg *msg)
         r->result = DNSSD_ERR_STALE;
         if (op != NULL && op->so_Session == slot && op->so_Kind == OP_REGISTER &&
             op->so_Generation == (r->operation >> 16)) {
-            struct DNSSDAddress addresses[DNSSD_IPC_MAX_ADDRESSES];
+            struct dnssd_model_wire_address addresses[DNSSD_IPC_MAX_ADDRESSES];
             LONG naddr = -1;
 
             if (r->addresses.size != 0) {
@@ -1121,7 +1083,7 @@ dnssdServerMessage(struct MDNSDaemon *md, struct DNSSDIPCMsg *msg)
             r->result = DNSSD_ERR_BADPARAM;
             if (r->txt.size <= MDNS_TXT_DATA_MAX &&
                 mdnsRegUpdateRef(md, op->so_Service, dnssd_ipc_data(r, &r->txt),
-                    (UWORD)r->txt.size, r->port, addresses, naddr) == MDNS_OK) {
+                    (UWORD)r->txt.size, r->port, addresses, naddr, 0) == MDNSD_OK) {
                 r->result = DNSSD_OK;
             }
         }

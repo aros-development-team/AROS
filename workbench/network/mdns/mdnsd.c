@@ -29,7 +29,9 @@
 #include <libraries/bsdsocket.h>
 #include <netinet/in.h>
 
-#include "mdnsd.h"
+#include <dnssd/dnssd.h>
+
+#include "mdns_bonami.h"
 
 /* Seconds between looks at the stack's interfaces. */
 #define MDNSD_RESCAN_SECONDS 3
