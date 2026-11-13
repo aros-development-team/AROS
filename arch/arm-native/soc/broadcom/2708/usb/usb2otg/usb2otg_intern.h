@@ -335,6 +335,7 @@ struct USB2OTGUnit
         ULONG               hc_LastSampleTsize;
         ULONG               hc_LastSampleActual;
         UWORD               hc_LastSampleIntr;
+        UBYTE               hc_Type;          /* USB2OTG_HCT_*: role of hc_Request, set when it is armed */
         UBYTE               hc_Armed;         /* hc_Request is live on the bus */
         UBYTE               hc_ArmedRole;     /* USB2OTG_CHANROLE_*: role of the last INT arm; role
                                                * change forces an exorcise (stale periodic-split
@@ -446,13 +447,6 @@ struct USB2OTGUnit
      * (lan78xx TX starvation, 100-200 Kbit/s).
      */
     UWORD               hu_NakGate[128][2];
-
-    /*
-     * Per-device bulk channel binding: [0]→CHAN_BULK, [1]→CHAN_BULK2.
-     * 0 = free. Partitions two concurrent bulk devices onto a channel
-     * each so a wedged/NAK-storming device cannot block the other.
-     */
-    UBYTE               hu_BulkOwnerDev[2];
 
     /*
      * Consecutive bulk bare-CHHLTD giveups (UHIOERR_TIMEOUT) per
@@ -669,6 +663,12 @@ void                    usb2otg_exorcise_channel(int chan);
  * 0 restores the strict partition for A/B testing.
  */
 #define USB2OTG_INT_POOL_OVERFLOW 1
+
+/* hc_Type values. */
+#define USB2OTG_HCT_CTRL        1
+#define USB2OTG_HCT_CTRL_SPLIT  2
+#define USB2OTG_HCT_BULK        3
+#define USB2OTG_HCT_INT         4
 
 /* hc_ArmedRole values. */
 #define USB2OTG_CHANROLE_UNUSED 0
@@ -1123,6 +1123,14 @@ static inline BOOL usb2otg_trace_bulk(int chan, struct IOUsbHWReq *req)
 static inline ULONG usb2otg_frame(void)
 {
     return (rd32le(USB2OTG_HOSTFRAMENO) & 0x3fff) >> 3;
+}
+
+/* INT, or split control: both run on the periodic-split pacing paths. */
+static inline BOOL usb2otg_chan_periodic(struct USB2OTGUnit *unit, int chan)
+{
+    UBYTE type = unit->hu_Channel[chan].hc_Type;
+
+    return type == USB2OTG_HCT_INT || type == USB2OTG_HCT_CTRL_SPLIT;
 }
 
 /*

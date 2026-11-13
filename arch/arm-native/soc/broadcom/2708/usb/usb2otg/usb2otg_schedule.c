@@ -32,116 +32,59 @@ static int usb2otg_endpoint_in_flight(struct USB2OTGUnit *otg_Unit,
 static int usb2otg_tt_in_flight(struct USB2OTGUnit *otg_Unit,
     struct IOUsbHWReq *candidate);
 
-/* TRUE if dev_addr has un-gated bulk work queued (for channel reclaim). */
-static BOOL usb2otg_dev_has_ready_bulk(struct USB2OTGUnit *otg_Unit,
-    UBYTE dev_addr)
+static int usb2otg_int_pool_free_count(struct USB2OTGUnit *otg_Unit,
+    BOOL direct);
+
+/*
+ * Free channel for a bulk request, one per endpoint. The bulk channels
+ * first, then the INT pool while each INT partition keeps one channel
+ * for its own role. Caller holds hu_Lock.
+ */
+static int usb2otg_alloc_bulk_channel(struct USB2OTGUnit *otg_Unit)
 {
-    struct IOUsbHWReq *req;
+    static const UBYTE order[] = { CHAN_BULK, CHAN_BULK2,
+        CHAN_INT1, CHAN_INT2, CHAN_INT3, CHAN_INT4, CHAN_INT5 };
+    ULONG excl = otg_Unit->hu_DeadChannels | otg_Unit->hu_BurnedChannels |
+                 otg_Unit->hu_IsoChanMask;
+    int i;
 
-    if (dev_addr == 0)
-        return FALSE;
-
-    ForeachNode(&otg_Unit->hu_BulkXFerQueue, req)
+    for (i = 0; i < sizeof(order); i++)
     {
-        if (req->iouh_Req.io_Command == UHCMD_BULKXFER &&
-            req->iouh_DevAddr == dev_addr &&
-            !usb2otg_nak_gated(otg_Unit, dev_addr, usb2otg_gate_dir(req)))
-            return TRUE;
-    }
-    return FALSE;
-}
+        int chan = order[i];
 
-/* TRUE if any device != skip_dev has ready bulk work (fairness). */
-static BOOL usb2otg_other_dev_has_ready_bulk(struct USB2OTGUnit *otg_Unit,
-    UBYTE skip_dev)
-{
-    struct IOUsbHWReq *req;
-
-    ForeachNode(&otg_Unit->hu_BulkXFerQueue, req)
-    {
-        if (req->iouh_Req.io_Command == UHCMD_BULKXFER &&
-            req->iouh_DevAddr != skip_dev &&
-            !usb2otg_nak_gated(otg_Unit, req->iouh_DevAddr, usb2otg_gate_dir(req)))
-            return TRUE;
+        if ((excl & (1 << chan)) || otg_Unit->hu_Channel[chan].hc_Request != NULL)
+            continue;
+        if (chan >= CHAN_INT1 && chan <= CHAN_INT_LAST &&
+            (chan == otg_Unit->hu_CtrlSplitChan ||
+             usb2otg_int_pool_free_count(otg_Unit, chan >= CHAN_INT_DIRECT_FIRST) < 2))
+            continue;
+        return chan;
     }
-    return FALSE;
+    return -1;
 }
 
 /*
- * Find/claim a bulk channel for req. Prefer one already owned by
- * req's device; otherwise steal from an idle owner with no ready work.
- * Returns -1 if nothing usable. Caller holds hu_Lock.
+ * TRUE if another queued request on candidate's endpoint has already
+ * moved data. It was requeued mid-transfer and must finish first, or
+ * the rest of its stream lands in the candidate.
  */
-static int usb2otg_claim_bulk_channel(struct USB2OTGUnit *otg_Unit,
-    struct IOUsbHWReq *req)
+static BOOL usb2otg_endpoint_partial_queued(struct USB2OTGUnit *otg_Unit,
+    struct IOUsbHWReq *candidate)
 {
-    static const UBYTE bulk_chans[2] = { CHAN_BULK, CHAN_BULK2 };
-    BOOL other_waiting;
-    int max_chans_per_dev;
-    int own_busy = 0;
-    int own_idle_chan = -1;
-    int i;
+    struct IOUsbHWReq *req;
 
-    /* Fairness cap: contention → 1 channel/dev; alone → both allowed. */
-    other_waiting = usb2otg_other_dev_has_ready_bulk(otg_Unit,
-                                                     req->iouh_DevAddr);
-    max_chans_per_dev = other_waiting ? 1 : 2;
-
-    /* Inventory: how many channels does req's device currently hold? */
-    for (i = 0; i < 2; i++)
+    if (candidate->iouh_Actual != 0)
+        return FALSE;
+    ForeachNode(&otg_Unit->hu_BulkXFerQueue, req)
     {
-        int chan = bulk_chans[i];
-        if ((otg_Unit->hu_DeadChannels | otg_Unit->hu_IsoChanMask) & (1 << chan))
-            continue;
-        if (otg_Unit->hu_BulkOwnerDev[i] != req->iouh_DevAddr)
-            continue;
-        if (otg_Unit->hu_Channel[chan].hc_Request != NULL)
-            own_busy++;
-        else if (own_idle_chan < 0)
-            own_idle_chan = chan;
+        if (req != candidate &&
+            req->iouh_Actual != 0 &&
+            req->iouh_DevAddr == candidate->iouh_DevAddr &&
+            req->iouh_Endpoint == candidate->iouh_Endpoint &&
+            req->iouh_Dir == candidate->iouh_Dir)
+            return TRUE;
     }
-
-    /* Sticky locality: reuse own idle channel if within cap. */
-    if (own_idle_chan >= 0 && own_busy + 1 <= max_chans_per_dev)
-        return own_idle_chan;
-
-    /* Already at cap on busy channels alone — no room for more. */
-    if (own_busy >= max_chans_per_dev)
-        return -1;
-
-    /* Pass 2: claim unowned, or steal from owner who already has another busy. */
-    for (i = 0; i < 2; i++)
-    {
-        int chan = bulk_chans[i];
-        UBYTE owner = otg_Unit->hu_BulkOwnerDev[i];
-
-        if ((otg_Unit->hu_DeadChannels | otg_Unit->hu_IsoChanMask) & (1 << chan))
-            continue;
-        if (otg_Unit->hu_Channel[chan].hc_Request != NULL)
-            continue;
-        if (owner == req->iouh_DevAddr)
-            continue;  /* handled in inventory pass */
-
-        if (owner != 0 && usb2otg_dev_has_ready_bulk(otg_Unit, owner))
-        {
-            /* Owner has queued work — only steal if they already hold another busy chan. */
-            int j;
-            int owner_busy = 0;
-            for (j = 0; j < 2; j++)
-            {
-                if (otg_Unit->hu_BulkOwnerDev[j] == owner &&
-                    otg_Unit->hu_Channel[bulk_chans[j]].hc_Request != NULL)
-                    owner_busy++;
-            }
-            if (owner_busy < 1)
-                continue;
-        }
-
-        otg_Unit->hu_BulkOwnerDev[i] = req->iouh_DevAddr;
-        return chan;
-    }
-
-    return -1;
+    return FALSE;
 }
 
 /*
@@ -181,6 +124,8 @@ static struct IOUsbHWReq *usb2otg_find_schedulable_bulk_req(
             continue;
         if (usb2otg_endpoint_in_flight(otg_Unit, req))
             continue;
+        if (usb2otg_endpoint_partial_queued(otg_Unit, req))
+            continue;
 
         /* Legacy per-request retry-delay counter (call-count, not wall time). */
         delay = (ULONG)(IPTR)req->iouh_DriverPrivate1;
@@ -190,7 +135,7 @@ static struct IOUsbHWReq *usb2otg_find_schedulable_bulk_req(
             continue;
         }
 
-        chan = usb2otg_claim_bulk_channel(otg_Unit, req);
+        chan = usb2otg_alloc_bulk_channel(otg_Unit);
         if (chan < 0)
             continue;
 
@@ -1612,6 +1557,8 @@ void FNAME_DEV(ScheduleCtrlTDs)(struct USB2OTGUnit *otg_Unit)
                 return;
             }
             otg_Unit->hu_Channel[ctrl_chan].hc_Request = req;
+            otg_Unit->hu_Channel[ctrl_chan].hc_Type =
+                (ctrl_chan == CHAN_CTRL) ? USB2OTG_HCT_CTRL : USB2OTG_HCT_CTRL_SPLIT;
             otg_Unit->hu_Channel[ctrl_chan].hc_Armed = 0;
         } else {
             /* HOL diag: who holds the ctrl channel while this dev waits. */
@@ -1660,11 +1607,7 @@ void FNAME_DEV(ScheduleCtrlTDs)(struct USB2OTGUnit *otg_Unit)
     }
 }
 
-/*
- * Schedule bulk. CHAN_BULK/CHAN_BULK2 are partitioned per-device
- * (usb2otg_claim_bulk_channel) so MSC + ethernet cannot block each
- * other.
- */
+/* Schedule bulk: every endpoint with work gets a channel while one is free. */
 void FNAME_DEV(ScheduleBulkTDs)(struct USB2OTGUnit *otg_Unit)
 {
     struct USB2OTGDevice *USB2OTGBase = otg_Unit->hu_USB2OTGBase;
@@ -1675,11 +1618,11 @@ void FNAME_DEV(ScheduleBulkTDs)(struct USB2OTGUnit *otg_Unit)
 
     D(bug("[USB2OTG] %s(%p)\n", __PRETTY_FUNCTION__, otg_Unit));
 
-    /* At most two bulk channels → iterate at most twice. */
-    for (slot = 0; slot < 2; slot++)
+    for (slot = 0; slot < 8; slot++)
     {
         struct IOUsbHWReq *req;
         int chan = -1;
+        UBYTE new_role, old_role;
 
         Disable();
         KrnSpinLock(&otg_Unit->hu_Lock, NULL, SPINLOCK_MODE_WRITE);
@@ -1694,12 +1637,24 @@ void FNAME_DEV(ScheduleBulkTDs)(struct USB2OTGUnit *otg_Unit)
         }
 
         REMOVE(req);
+        new_role = (req->iouh_Flags & UHFF_SPLITTRANS)
+                       ? USB2OTG_CHANROLE_SPLIT : USB2OTG_CHANROLE_DIRECT;
+        old_role = otg_Unit->hu_Channel[chan].hc_ArmedRole;
         otg_Unit->hu_Channel[chan].hc_Request = req;
+        otg_Unit->hu_Channel[chan].hc_Type = USB2OTG_HCT_BULK;
         otg_Unit->hu_Channel[chan].hc_Armed = 0;
+        otg_Unit->hu_Channel[chan].hc_ArmedRole = new_role;
         otg_Unit->hu_BulkArmCount++;
         usb2otg_bulk_assign(otg_Unit, chan, req);
 
         KrnSpinUnLock(&otg_Unit->hu_Lock);
+
+        /* Split and direct arms must not share stale engine state. */
+        if (old_role != USB2OTG_CHANROLE_UNUSED && old_role != new_role)
+        {
+            usb2otg_exorcise_channel(chan);
+            otg_Unit->hu_Channel[chan].hc_OddfrmFlip = 0;
+        }
         Enable();
 
         if (FNAME_DEV(SetupChannel)(otg_Unit, chan))
@@ -1813,6 +1768,7 @@ void FNAME_DEV(ScheduleIntTDs)(struct USB2OTGUnit *otg_Unit)
 
             /* Channel was free and there is request available. Assign the request to given channel now */
             otg_Unit->hu_Channel[chan].hc_Request = req;
+            otg_Unit->hu_Channel[chan].hc_Type = USB2OTG_HCT_INT;
             otg_Unit->hu_Channel[chan].hc_Armed = 0;
             otg_Unit->hu_Channel[chan].hc_ArmedRole = new_role;
             if (req->iouh_DevAddr < 8)

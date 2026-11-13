@@ -336,8 +336,6 @@ static int FNAME_DEV(Init)(LIBBASETYPEPTR USB2OTGBase)
                                         USB2OTGBase->hd_Unit->hu_NakGate[i][0] = USB2OTG_NAK_GATE_NONE;
                                         USB2OTGBase->hd_Unit->hu_NakGate[i][1] = USB2OTG_NAK_GATE_NONE;
                                     }
-                                    USB2OTGBase->hd_Unit->hu_BulkOwnerDev[0] = 0;
-                                    USB2OTGBase->hd_Unit->hu_BulkOwnerDev[1] = 0;
                                     for (i = 0; i < USB2OTG_TTCLEAR_PENDING; i++)
                                         USB2OTGBase->hd_Unit->hu_TTClearPending[i].tc_Hub = 0;
 

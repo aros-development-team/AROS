@@ -265,6 +265,10 @@ static void usb2otg_recover_periodic_queue(struct USB2OTGUnit *USBUnit)
     {
         struct IOUsbHWReq *req = USBUnit->hu_Channel[chan].hc_Request;
 
+        /* Bulk borrows INT channels; the periodic queue is not its business. */
+        if (req != NULL && !usb2otg_chan_periodic(USBUnit, chan))
+            continue;
+
         if (rd32le(USB2OTG_CHANNEL_REG(chan, CHARBASE)) & USB2OTG_HOSTCHAR_ENABLE)
             usb2otg_halt_channel_preserve_char(chan);
         usb2otg_exorcise_channel(chan);
@@ -425,8 +429,6 @@ static BOOL usb2otg_core_reset_recover(struct USB2OTGUnit *USBUnit, int wedged_c
             USBUnit->hu_NakGate[dev][1] = USB2OTG_NAK_GATE_NONE;
             USBUnit->hu_BulkGiveupStreak[dev] = 0;
         }
-        USBUnit->hu_BulkOwnerDev[0] = 0;
-        USBUnit->hu_BulkOwnerDev[1] = 0;
     }
 
     /* Re-power the port; the connect change drives re-enumeration. */
@@ -526,6 +528,7 @@ static void usb2otg_escalate_hw_reset(struct USB2OTGUnit *USBUnit, int wedged_ch
             continue;
 
         USBUnit->hu_Channel[i].hc_Request = NULL;
+
         USBUnit->hu_Channel[i].hc_SplitCSplitPending = 0;
         USBUnit->hu_Channel[i].hc_WatchdogCount = 0;
         USBUnit->hu_Channel[i].hc_DeferCount = 0;
@@ -1270,7 +1273,8 @@ static BOOL usb2otg_periodic_idle(struct USB2OTGUnit *USBUnit)
 
     for (chan = CHAN_INT1; chan <= CHAN_INT_LAST; chan++)
     {
-        if (USBUnit->hu_Channel[chan].hc_Request != NULL)
+        if (USBUnit->hu_Channel[chan].hc_Request != NULL &&
+            usb2otg_chan_periodic(USBUnit, chan))
             return FALSE;
     }
 
@@ -1513,7 +1517,7 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
                     if (do_split == USB2OTG_HCSPLT_SSPLIT &&
                         ((intr == USB2OTG_INTR_HALT_ACK) ||
                          (req->iouh_Req.io_Command == UHCMD_BULKXFER &&
-                          ((chan < CHAN_INT1) || (chan > CHAN_INT_LAST)) &&
+                          !usb2otg_chan_periodic(USBUnit, chan) &&
                           (intr & (0x10 | USB2OTG_INTRCHAN_HALT)))))
                     {
                         uint32_t tmp = rd32le(USB2OTG_CHANNEL_REG(chan, SPLITCTRL));
@@ -1537,7 +1541,7 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
                          */
                         if (req->iouh_Req.io_Command == UHCMD_CONTROLXFER)
                             USBUnit->hu_DelayedChannel[chan] = USB2OTG_CTRL_SPLIT_PACE_UFRAMES;
-                        else if (chan >= CHAN_INT1 && chan <= CHAN_INT_LAST)
+                        else if (usb2otg_chan_periodic(USBUnit, chan))
                         {
                             /*
                              * Periodic INT split: first CSPLIT two microframes
@@ -1560,7 +1564,7 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
                     }
                     else if ((do_split == USB2OTG_HCSPLT_CSPLIT) &&
                              (req->iouh_Req.io_Command == UHCMD_BULKXFER) &&
-                             ((chan < CHAN_INT1) || (chan > CHAN_INT_LAST)) &&
+                             !usb2otg_chan_periodic(USBUnit, chan) &&
                              (intr & USB2OTG_INTRCHAN_NEGATIVEACKNOWLEDGE))
                     {
                         /* Bulk CSPLIT NAK: TT not done; requeue for fresh SSPLIT. */
@@ -1593,7 +1597,7 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
                     {
                         /* CHHLTD+NYET on a CSPLIT: the retry cap below bounds the TT window. */
                         {
-                            if (chan >= CHAN_INT1 && chan <= CHAN_INT_LAST)
+                            if (usb2otg_chan_periodic(USBUnit, chan))
                             {
                                 /*
                                  * CSPLIT NYET = TT has not finished the
@@ -1656,7 +1660,7 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
                     }
                     else if (intr == USB2OTG_INTRCHAN_HALT &&
                              do_split == USB2OTG_HCSPLT_SSPLIT &&
-                             chan >= CHAN_INT1 && chan <= CHAN_INT_LAST &&
+                             usb2otg_chan_periodic(USBUnit, chan) &&
                              req->iouh_Req.io_Command == UHCMD_INTXFER)
                     {
                         /* Bare CHHLTD on SSPLIT INT: wrong OddFrame parity;
@@ -1671,9 +1675,8 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
                         req = NULL;
                     }
                     else if ((intr == USB2OTG_INTR_HALT_NAK && do_split) &&
-                        ((chan < CHAN_INT1 || chan > CHAN_INT_LAST) ||
-                         (chan == USBUnit->hu_CtrlSplitChan &&
-                          req->iouh_Req.io_Command == UHCMD_CONTROLXFER)))
+                        (!usb2otg_chan_periodic(USBUnit, chan) ||
+                         USBUnit->hu_Channel[chan].hc_Type == USB2OTG_HCT_CTRL_SPLIT))
                     {
                         D(
                             if (usb2otg_trace_bulk_ep2(chan, req))
@@ -1817,7 +1820,7 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
                     else if ((intr == USB2OTG_INTRCHAN_HALT) &&
                              (do_split == USB2OTG_HCSPLT_CSPLIT) &&
                              (req->iouh_Req.io_Command == UHCMD_BULKXFER) &&
-                             ((chan < CHAN_INT1) || (chan > CHAN_INT_LAST)))
+                             !usb2otg_chan_periodic(USBUnit, chan))
                     {
                         wr32le(USB2OTG_CHANNEL_REG(chan, INTR), USB2OTG_INTR_CLEAR_ALL);
                         usb2otg_halt_channel_preserve_char(chan);
@@ -2158,7 +2161,7 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
                         else if (intr & USB2OTG_INTRCHAN_NEGATIVEACKNOWLEDGE)
                         {
                             /* INT NAK: silently requeue so SOF re-promotes after interval. */
-                            if (chan >= CHAN_INT1 && chan <= CHAN_INT_LAST)
+                            if (usb2otg_chan_periodic(USBUnit, chan))
                             {
                                 if (req->iouh_DevAddr < 8)
                                 {
@@ -2346,7 +2349,7 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
                             else
                             {
 #endif
-                            if (chan >= CHAN_INT1 && chan <= CHAN_INT_LAST &&
+                            if (usb2otg_chan_periodic(USBUnit, chan) &&
                                 req->iouh_Req.io_Command == UHCMD_INTXFER)
                             {
                                 if (req->iouh_DevAddr < 8)
@@ -2978,7 +2981,7 @@ static BOOL usb2otg_process_naktimeout(struct USB2OTGUnit *otg_Unit)
              * recovery would otherwise race the SS->CS handoff and corrupt
              * CompSplt. The sequencer's bounded retry/requeue is the backstop.
              */
-            if (chan >= CHAN_INT1 && chan <= CHAN_INT_LAST &&
+            if (usb2otg_chan_periodic(otg_Unit, chan) &&
                 otg_Unit->hu_Channel[chan].hc_SplitState != USB2OTG_SPLIT_IDLE &&
                 otg_Unit->hu_DelayedChannel[chan] != 0)
             {
@@ -3063,7 +3066,7 @@ static BOOL usb2otg_process_naktimeout(struct USB2OTGUnit *otg_Unit)
 #endif
                         Enable();
                     }
-                    else if (chan >= CHAN_INT1 && chan <= CHAN_INT_LAST &&
+                    else if (usb2otg_chan_periodic(otg_Unit, chan) &&
                              (intr & (0x10 | 0x40)) /* NAK or NYET */)
                     {
                         /* INT NAK missed by IRQ — requeue, don't time out. */
@@ -3945,6 +3948,10 @@ static BOOL usb2otg_process_naktimeout(struct USB2OTGUnit *otg_Unit)
     /* Backed-off ctrl retries: ensure <=150 ms scheduling latency. */
     if (!IsListEmpty(&otg_Unit->hu_CtrlXFerQueue))
         FNAME_DEV(ScheduleCtrlTDs)(otg_Unit);
+
+    /* A channel freed without a completion leaves bulk work stranded. */
+    if (!IsListEmpty(&otg_Unit->hu_BulkXFerQueue))
+        FNAME_DEV(ScheduleBulkTDs)(otg_Unit);
 
     otg_Unit->hu_NakTimeoutReq.tr_time.tv_secs = 0;
     otg_Unit->hu_NakTimeoutReq.tr_time.tv_micro = 150 * 1000;
