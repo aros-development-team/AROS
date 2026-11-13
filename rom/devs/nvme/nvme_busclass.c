@@ -147,7 +147,10 @@ OOP_Object *NVMEBus__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
 
     D(bug ("[NVME:Bus] Root__New()\n");)
 
-    if (!dev || !dev->dev_Queues[0] || maxUnits <= 0 || maxUnits > 65535)
+    /* The public unit number reserves twelve bits for the namespace. */
+    if (maxUnits > 4096)
+        maxUnits = 4096;
+    if (!dev || !dev->dev_Queues[0] || maxUnits <= 0)
         return NULL;
 
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
@@ -514,17 +517,25 @@ BOOL Hidd_NVMEBus_Start(OOP_Object *o, struct NVMEBase *NVMEBase)
                 sigs = nvme_WaitTO(nvmeTimer, 1, 0, busehandle.ceh_SigSet);
             }
             SetSignal(signals, signals);
-            if ((!busehandle.ceh_Status) && (id_ns->ncap != 0)) {
+            if ((!busehandle.ceh_Status) && (AROS_LE2QUAD(id_ns->ncap) != 0)) {
                 int i, lbaf = id_ns->flbas & 0xf;
+                /* Only plain data LBAs fit the trackdisk interface. Later
+                   Identify versions can select formats beyond this table. */
+                if ((id_ns->flbas & 0x60) || lbaf > id_ns->nlbaf ||
+                    id_ns->lbaf[lbaf].ds < 9 || id_ns->lbaf[lbaf].ds >= 32 ||
+                    AROS_LE2WORD(id_ns->lbaf[lbaf].ms) != 0 || (id_ns->dps & 7)) {
+                    bug("[NVME:Bus] namespace %u has an unsupported LBA format\n", nn + 1);
+                    continue;
+                }
                 lbaStart = 0;
 
-                D(bug ("[NVME:Bus] NVMEBus_Start: ns#%u     ncap = %p\n", nn + 1, id_ns->ncap);)
+                D(bug ("[NVME:Bus] NVMEBus_Start: ns#%u     ncap = %p\n", nn + 1, AROS_LE2QUAD(id_ns->ncap));)
                 /*
                 	nlbaf = Number of supported LBA Formats
                 */
                 D(bug ("[NVME:Bus] NVMEBus_Start: ns#%u     nlbaf = %u, current = lbaf[%u]\n", nn + 1, id_ns->nlbaf + 1, lbaf);)
 
-                for (i = 0; i < id_ns->nlbaf + 1; i++) {
+                for (i = 0; i < 16 && i < id_ns->nlbaf + 1; i++) {
                     D(bug ("[NVME:Bus] NVMEBus_Start: ns#%u       lbaf[%u], ms = %u, ds = %u, rp = %u\n", nn + 1, i, id_ns->lbaf[i].ms, id_ns->lbaf[i].ds, id_ns->lbaf[i].rp);)
                 }
                 /* Second page of the buffer - casting first would scale the offset. */
@@ -552,23 +563,29 @@ BOOL Hidd_NVMEBus_Start(OOP_Object *o, struct NVMEBase *NVMEBase)
                         bug ("[NVME:Bus] NVMEBus_Start: ns#%u range type info:\n", nn + 1);
                         bug ("[NVME:Bus] NVMEBus_Start: ns#%u           type %02x\n", nn + 1, rt->type);
                         bug ("[NVME:Bus] NVMEBus_Start: ns#%u           attribs %02x\n", nn + 1, rt->attributes);
-                        bug ("[NVME:Bus] NVMEBus_Start: ns#%u           slba %08x%08x\n", nn + 1, (rt->slba >> 32), rt->slba & 0xFFFFFFFF);
-                        bug ("[NVME:Bus] NVMEBus_Start: ns#%u           nlb %08x%08x\n", nn + 1, (rt->nlb >> 32), rt->nlb & 0xFFFFFFFF);
+                        bug ("[NVME:Bus] NVMEBus_Start: ns#%u           slba %08x%08x\n", nn + 1, (AROS_LE2QUAD(rt->slba) >> 32), AROS_LE2QUAD(rt->slba) & 0xFFFFFFFF);
+                        bug ("[NVME:Bus] NVMEBus_Start: ns#%u           nlb %08x%08x\n", nn + 1, (AROS_LE2QUAD(rt->nlb) >> 32), AROS_LE2QUAD(rt->nlb) & 0xFFFFFFFF);
                     )
 
                     if (rt->attributes & NVME_LBART_ATTRIB_HIDE) {
                         D(bug ("[NVME:Bus] NVMEBus_Start:      Skipping hidden namespace\n");)
                         lbaEnd = 0;
-                    } else if (rt->nlb) {
-                        lbaStart = rt->slba;
-                        lbaEnd =  rt->slba + rt->nlb;
+                    } else if (AROS_LE2QUAD(rt->nlb)) {
+                        lbaStart = AROS_LE2QUAD(rt->slba);
+                        lbaEnd =  AROS_LE2QUAD(rt->slba) + AROS_LE2QUAD(rt->nlb);
                     } else {
                         /* Optional feature - no ranges defined still reports success. */
                         D(bug ("[NVME:Bus] NVMEBus_Start:      No LBA range reported, using nsze\n");)
-                        lbaEnd = id_ns->nsze;
+                        lbaEnd = AROS_LE2QUAD(id_ns->nsze);
                     }
                 } else
-                    lbaEnd = id_ns->nsze;
+                    lbaEnd = AROS_LE2QUAD(id_ns->nsze);
+
+                if (lbaEnd > AROS_LE2QUAD(id_ns->nsze) ||
+                    (lbaEnd && lbaStart >= lbaEnd)) {
+                    bug("[NVME:Bus] namespace %u has an invalid LBA range\n", nn + 1);
+                    continue;
+                }
 
                 if (lbaEnd) {
                     if ((data->ab_Units[nn] = OOP_NewObject(NVMEBase->unitClass, NULL, attrs)) != NULL) {
@@ -587,8 +604,8 @@ BOOL Hidd_NVMEBus_Start(OOP_Object *o, struct NVMEBase *NVMEBase)
                             struct DeviceNode *devnode;
 
                             unit->au_SecShift = id_ns->lbaf[lbaf].ds;
-                            D(bug ("[NVME:Bus] NVMEBus_Start:      Sector Size = %ubytes\n", 1 << unit->au_SecShift);)
-                            unit->au_SecCnt = id_ns->nsze;
+                            D(bug ("[NVME:Bus] NVMEBus_Start:      Sector Size = %ubytes\n", 1UL << unit->au_SecShift);)
+                            unit->au_SecCnt = AROS_LE2QUAD(id_ns->nsze);
                             D(bug ("[NVME:Bus] NVMEBus_Start:      # of Sectors = %u\n", unit->au_SecCnt);)
                             unit->au_Low = lbaStart;
                             unit->au_High = lbaEnd - 1;

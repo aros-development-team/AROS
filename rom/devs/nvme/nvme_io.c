@@ -393,7 +393,7 @@ AROS_LH1(void, BeginIO,
         SetMem(geom, 0, len);
 
         geom->dg_Heads        = unit->nu_Heads;
-        geom->dg_SectorSize   = 1 << unit->au_SecShift;
+        geom->dg_SectorSize   = 1UL << unit->au_SecShift;
         if (unit->au_SecCnt >> 32 != 0)
             geom->dg_TotalSectors = 0xFFFFFFFF;
         else

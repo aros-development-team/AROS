@@ -471,7 +471,7 @@ resetfailed:
                             {aHidd_Producer,            GetTagData(aHidd_Producer, 0, msg->attrList)    },
                             {aHidd_Product,             GetTagData(aHidd_Product, 0, msg->attrList)     },
                             {aHidd_DriverData,          (IPTR)dev                                       },
-                            {aHidd_Bus_MaxUnits,        ctrl->nn                                        },
+                            {aHidd_Bus_MaxUnits,        AROS_LE2LONG(ctrl->nn)                                        },
                             {aHidd_StorageUnit_Model,   (IPTR)ctrl->mn                                  },
                             {aHidd_StorageUnit_Serial,  (IPTR)ctrl->sn                                  },
                             {aHidd_StorageUnit_Revision,(IPTR)ctrl->fr                                  },
