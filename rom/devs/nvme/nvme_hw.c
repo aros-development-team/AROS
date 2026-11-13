@@ -39,7 +39,7 @@ int nvme_alloc_cmdid(struct nvme_queue *nvmeq)
     for (idx = 0; idx < depth; idx++) {
         UWORD slot = (start + idx) % depth;
         if (!nvmeq->cmdid_busy[slot]) {
-            nvmeq->cmdid_busy[slot] = 1;
+            __atomic_store_n(&nvmeq->cmdid_busy[slot], 1, __ATOMIC_RELEASE);
             nvmeq->cmdid_hint = (slot + 1) % depth;
             cmdid = slot;
             break;
@@ -68,7 +68,7 @@ void nvme_release_cmdid(struct nvme_queue *nvmeq, UWORD cmdid)
     KrnSpinLock(&nvmeq->q_lock, NULL, SPINLOCK_MODE_WRITE);
 #endif
 
-    nvmeq->cmdid_busy[cmdid] = 0;
+    __atomic_store_n(&nvmeq->cmdid_busy[cmdid], 0, __ATOMIC_RELEASE);
     nvmeq->cmdid_hint = cmdid;
 
 #if defined(__AROSEXEC_SMP__)

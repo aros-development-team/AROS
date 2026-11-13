@@ -103,9 +103,9 @@ static void nvme_iotask(struct nvme_queue *nvmeq)
         if (sigs & SIGBREAKF_CTRL_C)
             break;
         for (i = 0; i < nvmeq->q_depth; i ++) {
-            struct completionevent_handler *slot = nvmeq->cehandlers[i];
+            struct completionevent_handler *slot = __atomic_load_n(&nvmeq->cehandlers[i], __ATOMIC_ACQUIRE);
 
-            if (slot && slot->ceh_Reply) {
+            if (slot && __atomic_load_n(&slot->ceh_Reply, __ATOMIC_ACQUIRE)) {
                 struct IOExtTD *iotd = (struct IOExtTD *)slot->ceh_Msg;
 
                 D(bug ("[NVME:Bus] %s: replying to IO @ 0x%p\n", __func__, iotd);)
@@ -118,12 +118,12 @@ static void nvme_iotask(struct nvme_queue *nvmeq)
                 nvme_finish_ioevent(slot);
                 ReplyMsg((struct Message *)iotd);
 
-                slot->ceh_Reply = FALSE;
+                __atomic_store_n(&slot->ceh_Reply, FALSE, __ATOMIC_RELAXED);
                 slot->ceh_Task = NULL;
-                slot->ceh_Msg = NULL;
+                __atomic_store_n(&slot->ceh_Msg, NULL, __ATOMIC_RELEASE);
                 slot->ceh_SigSet = 0;
 
-                nvmeq->cehandlers[i] = NULL;
+                __atomic_store_n(&nvmeq->cehandlers[i], NULL, __ATOMIC_RELEASE);
                 nvmeq->cehooks[i] = NULL;
                 nvme_release_cmdid(nvmeq, i);
             }

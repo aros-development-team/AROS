@@ -177,14 +177,15 @@ static BOOL nvme_sector_rw(struct IORequest *io, UQUAD off64, BOOL is_write)
      * it is looking at has already been emptied.
      *
      * ceh_Reply is cleared again by the queue's task after it replies, so
-     * watch the slot ceasing to be ours too - that does not come back.
+     * also stop once the command ID is released. If another CPU reuses it
+     * immediately, polling is still bounded and never reads the old request.
      */
     {
         struct completionevent_handler *slot =
             &nvmeq->ce_entries[cmdio.common.op.command_id];
         ULONG spins = 4096;
 
-        while (spins-- && !slot->ceh_Reply && (slot->ceh_Msg == (APTR)io))
+        while (spins-- && !__atomic_load_n(&slot->ceh_Reply, __ATOMIC_ACQUIRE) && __atomic_load_n(&nvmeq->cmdid_busy[cmdio.common.op.command_id], __ATOMIC_ACQUIRE))
             nvme_process_cq(nvmeq);
     }
 
@@ -237,7 +238,7 @@ static BOOL nvme_flush(struct IORequest *io)
             &nvmeq->ce_entries[cmdio.common.op.command_id];
         ULONG spins = 4096;
 
-        while (spins-- && !slot->ceh_Reply && (slot->ceh_Msg == (APTR)io))
+        while (spins-- && !__atomic_load_n(&slot->ceh_Reply, __ATOMIC_ACQUIRE) && __atomic_load_n(&nvmeq->cmdid_busy[cmdio.common.op.command_id], __ATOMIC_ACQUIRE))
             nvme_process_cq(nvmeq);
     }
 

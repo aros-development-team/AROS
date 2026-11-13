@@ -11,6 +11,7 @@
 #include <exec/memory.h>
 
 #include <string.h>
+#include <stddef.h>
 
 #if defined(__AROSEXEC_SMP__)
 #include <proto/kernel.h>
@@ -66,7 +67,7 @@ void nvme_complete_ioevent(struct nvme_queue *nvmeq, struct nvme_completion *cqe
          * reply to the request and recycle the slot, so neither may be
          * touched after this point.
          */
-        slot->ceh_Reply = TRUE;
+        __atomic_store_n(&slot->ceh_Reply, TRUE, __ATOMIC_RELEASE);
 
         D(bug ("[NVME:IOQ] %s: Signaling 0x%p (%08x)\n", __func__, sigtask, sigset);)
         Signal(sigtask, sigset);
@@ -144,8 +145,12 @@ int nvme_submit_iocmd(struct nvme_queue *nvmeq,
     }
 
     slot = &nvmeq->ce_entries[cmdid];
-    CopyMem(handler, slot, sizeof(struct completionevent_handler));
-    slot->ceh_Reply = FALSE;
+    /* ceh_Reply is observed atomically by the worker and polling submitter,
+       including while this slot is being reused. Do not overwrite it via CopyMem. */
+    CopyMem(handler, slot, offsetof(struct completionevent_handler, ceh_Reply));
+    CopyMem(handler->ceh_DMAInline, slot->ceh_DMAInline,
+        sizeof(*slot) - offsetof(struct completionevent_handler, ceh_DMAInline));
+    __atomic_store_n(&slot->ceh_Reply, FALSE, __ATOMIC_RELAXED);
 
     if (handler->ceh_DMAMapCount > NVME_INLINE_DMA_SEGMENTS) {
         slot->ceh_DMAMap = AllocMem(handler->ceh_DMAMapCount * sizeof(struct nvme_dma_segment), MEMF_ANY | MEMF_CLEAR);
@@ -171,7 +176,7 @@ int nvme_submit_iocmd(struct nvme_queue *nvmeq,
 
     cmd->common.op.command_id = cmdid;
     nvmeq->cehooks[cmdid] = nvme_complete_ioevent;
-    nvmeq->cehandlers[cmdid] = slot;
+    __atomic_store_n(&nvmeq->cehandlers[cmdid], slot, __ATOMIC_RELEASE);
 
     retval = nvme_submit_cmd(nvmeq, cmd);
     if (retval != 0) {
