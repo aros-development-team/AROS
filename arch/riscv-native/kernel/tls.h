@@ -34,7 +34,7 @@
 /*
  * Build-time switch for the SMP lock-up watchdog: the per-hart trail
  * below, KrnSpinLock()'s wait record and the watcher on the last CPU
- * (riscv64-opensbi kernel_watchdog.c).
+ * (riscv64-sbi kernel_watchdog.c).
  */
 #if defined(__AROSEXEC_SMP__)
 //#define RISCV_KRNWATCHDOG

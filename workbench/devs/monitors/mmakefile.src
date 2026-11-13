@@ -10,5 +10,5 @@ include $(SRCDIR)/config/aros.cfg
 
 #MM-  workbench-devs-monitors-pc-i386 : workbench-devs-monitors-pci
 #MM-  workbench-devs-monitors-pc-x86_64 : workbench-devs-monitors-pci
-#MM-  workbench-devs-monitors-opensbi-riscv : workbench-devs-monitors-pci
-#MM-  workbench-devs-monitors-opensbi-riscv64 : workbench-devs-monitors-pci
+#MM-  workbench-devs-monitors-sbi-riscv : workbench-devs-monitors-pci
+#MM-  workbench-devs-monitors-sbi-riscv64 : workbench-devs-monitors-pci

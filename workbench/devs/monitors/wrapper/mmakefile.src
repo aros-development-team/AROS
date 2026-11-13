@@ -4,7 +4,7 @@ include $(SRCDIR)/config/aros.cfg
 FILES      := wrapper
 STORAGEDIR := $(AROSDIR)/Storage/Monitors
 # Cards on a PCI bus can be fitted to any machine that has one
-ifeq ($(filter pc opensbi,$(AROS_TARGET_ARCH)),)
+ifeq ($(filter pc sbi,$(AROS_TARGET_ARCH)),)
 PCIDEVSDIR := $(STORAGEDIR)
 else
 PCIDEVSDIR := $(AROS_DEVS)/Monitors

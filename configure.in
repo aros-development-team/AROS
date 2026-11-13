@@ -2201,9 +2201,9 @@ case "$target_os" in
         esac
         ;;
 
-    opensbi)
+    sbi|opensbi)
         aros_flavour="standalone"
-        aros_target_arch="opensbi"
+        aros_target_arch="sbi"
         aros_isa_flags="$""(ISA_RISCV_FLAGS)"
         aros_shared_default="no"
         llvm_target_cpu="RISCV"
@@ -2231,7 +2231,7 @@ case "$target_os" in
                 aros_object_format="riscvelf_aros"
                 ;;
             *)
-                AC_MSG_ERROR("Unsupported CPU '$target_cpu' for OpenSBI")
+                AC_MSG_ERROR("Unsupported CPU '$target_cpu' for SBI")
                 ;;
         esac
         ;;

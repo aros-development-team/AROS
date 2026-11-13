@@ -12,7 +12,7 @@ CFILES := \
         exec_smp
 
 %set_archincludes mainmmake=kernel-exec maindir=rom/exec \
-  modname=exec pri=4 arch=opensbi \
+  modname=exec pri=4 arch=sbi \
   includes="-I$(SRCDIR)/$(CURDIR)"
 
 %get_archincludes modname=kernel \
@@ -30,7 +30,7 @@ PRIV_EXEC_INCLUDES = \
 USER_INCLUDES := $(PRIV_EXEC_INCLUDES)
 
 %build_archspecific \
-  mainmmake=kernel-exec maindir=rom/exec arch=opensbi \
+  mainmmake=kernel-exec maindir=rom/exec arch=sbi \
   files="$(CFILES)" modname=exec
 
 %common

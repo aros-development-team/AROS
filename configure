@@ -11367,9 +11367,9 @@ printf '%s\n' "$darwin_sdk_path" >&6; }
         esac
         ;;
 
-    opensbi)
+    sbi|opensbi)
         aros_flavour="standalone"
-        aros_target_arch="opensbi"
+        aros_target_arch="sbi"
         aros_isa_flags="$""(ISA_RISCV_FLAGS)"
         aros_shared_default="no"
         llvm_target_cpu="RISCV"
@@ -11395,7 +11395,7 @@ printf '%s\n' "$darwin_sdk_path" >&6; }
                 aros_object_format="riscvelf_aros"
                 ;;
             *)
-                as_fn_error $? "\"Unsupported CPU '$target_cpu' for OpenSBI\"" "$LINENO" 5
+                as_fn_error $? "\"Unsupported CPU '$target_cpu' for SBI\"" "$LINENO" 5
                 ;;
         esac
         ;;
