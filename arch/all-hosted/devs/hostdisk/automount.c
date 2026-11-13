@@ -36,10 +36,11 @@ static int Automount(struct HostDiskBase *hdskBase)
 
     for (u = 0; u < 30; u++)
     {
-        IPTR pp[24];
+        IPTR pp[24] = {0};
 
         NewRawDoFmt(hdskBase->DiskDevice, (VOID_FUNC)RAWFMTFUNC_STRING, unit, u + hdskBase->unitBase);
 
+        Host_DefaultGeometry(&dg);
         if (Host_ProbeGeometry(hdskBase, unit, &dg) == 0)
         {
             struct DeviceNode *devnode;

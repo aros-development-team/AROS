@@ -35,6 +35,7 @@ struct unit
     struct HostDiskBase         *hdskBase;
     ULONG                       usecount;
     struct MsgPort              *port;
+    struct Task                 *closingTask;
     file_t                      file;
     UBYTE                       flags;
     ULONG                       changecount;
@@ -50,10 +51,12 @@ struct unit
 
 ULONG Host_Open(struct unit *Unit);
 void Host_Close(struct unit *Unit);
+ULONG Host_Flush(struct unit *Unit);
 LONG Host_Read(struct unit *Unit, APTR buf, ULONG size, ULONG *ioerr);
 LONG Host_Write(struct unit *Unit, APTR buf, ULONG size, ULONG *ioerr);
 ULONG Host_Seek(struct unit *Unit, ULONG pos);
 ULONG Host_Seek64(struct unit *Unit, ULONG pos, ULONG pos_hi);
+void Host_DefaultGeometry(struct DriveGeometry *dg);
 ULONG Host_GetGeometry(struct unit *Unit, struct DriveGeometry *dg);
 int Host_ProbeGeometry(struct HostDiskBase *hdskBase, char *name, struct DriveGeometry *dg);
 

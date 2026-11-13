@@ -63,6 +63,21 @@ void Host_Close(struct unit *Unit)
     Permit();
 }
 
+ULONG Host_Flush(struct unit *Unit)
+{
+    ULONG ret, err;
+
+    if (Unit->flags & UNIT_READONLY)
+        return 0;
+
+    Forbid();
+    ret = Unit->hdskBase->iface->FlushFileBuffers(Unit->file);
+    err = Unit->hdskBase->iface->GetLastError();
+    Permit();
+
+    return ret ? 0 : error(err);
+}
+
 LONG Host_Read(struct unit *Unit, APTR buf, ULONG size, ULONG *ioerr)
 {
     ULONG resSize;
@@ -106,30 +121,20 @@ LONG Host_Write(struct unit *Unit, APTR buf, ULONG size, ULONG *ioerr)
 
 ULONG Host_Seek(struct unit *Unit, ULONG pos)
 {
-    ULONG ret;
-
-    Forbid();
-    ret = Unit->hdskBase->iface->SetFilePointer(Unit->file, pos, NULL, FILE_BEGIN);
-    Permit();
-
-    if (ret != -1)
-        return 0;
-
-    return TDERR_SeekError;
+    return Host_Seek64(Unit, pos, 0);
 }
 
 ULONG Host_Seek64(struct unit *Unit, ULONG pos, ULONG pos_hi)
 {
-    ULONG ret;
+    ULONG ret, err;
+    LONG high = pos_hi;
 
     Forbid();
-    ret = Unit->hdskBase->iface->SetFilePointer(Unit->file, pos, &pos_hi, FILE_BEGIN);
+    ret = Unit->hdskBase->iface->SetFilePointer(Unit->file, pos, &high, FILE_BEGIN);
+    err = Unit->hdskBase->iface->GetLastError();
     Permit();
 
-    if (ret != -1)
-        return 0;
-
-    return TDERR_SeekError;
+    return ret == (ULONG)-1 && err != 0 ? TDERR_SeekError : 0;
 }
 
 ULONG Host_GetGeometry(struct unit *Unit, struct DriveGeometry *dg)
@@ -174,7 +179,7 @@ ULONG Host_GetGeometry(struct unit *Unit, struct DriveGeometry *dg)
         Permit();
 
         D(bug("hostdisk: Image file length: %d\n", len));
-        if (len != -1)
+        if (len != (ULONG)-1 || err == 0)
         {
             dg->dg_TotalSectors = (len >> 9) | (len64 << 23); /* This relies on the fact that SectorSize == 512) */
             dg->dg_Cylinders    = dg->dg_TotalSectors;        /* LBA, CylSectors == 1 */
@@ -204,6 +209,7 @@ static const char *KernelSymbols[] = {
     "GetFileSize",
     "DeviceIoControl",
     "GetLastError",
+    "FlushFileBuffers",
     NULL
 };
 

@@ -60,6 +60,8 @@ static int HostDisk_Cleanup(struct HostDiskBase *hdskBase)
 /****************************************************************************************/
 
 static void unitentry(struct IOExtTD *iotd);
+static void addchangeint(struct unit *unit, struct IOExtTD *iotd);
+static void remchangeint(struct unit *unit, struct IOExtTD *iotd);
 
 static void freeUnit(struct unit *unit)
 {
@@ -77,7 +79,6 @@ static int GM_UNIQUENAME(Open)(LIBBASETYPEPTR hdskBase, struct IOExtTD *iotd, IP
 {
     STRPTR unitname;
     struct unit *unit;
-    UBYTE unitflags = 0;
 
     if (unitnum < 1024)
     {
@@ -87,11 +88,15 @@ static int GM_UNIQUENAME(Open)(LIBBASETYPEPTR hdskBase, struct IOExtTD *iotd, IP
         if (!unitname)
             return FALSE;
 
-        unitflags = UNIT_FREENAME;
         NewRawDoFmt(hdskBase->DiskDevice, (VOID_FUNC)RAWFMTFUNC_STRING, unitname, unitnum + hdskBase->unitBase);
     }
     else
-        unitname = (STRPTR)unitnum;
+    {
+        unitname = AllocVec(strlen((STRPTR)unitnum) + 1, MEMF_ANY);
+        if (!unitname)
+            return FALSE;
+        strcpy(unitname, (STRPTR)unitnum);
+    }
 
     D(bug("hostdisk: open unit %s\n", unitname));
 
@@ -101,6 +106,7 @@ static int GM_UNIQUENAME(Open)(LIBBASETYPEPTR hdskBase, struct IOExtTD *iotd, IP
 
     if (unit)
     {
+        FreeVec(unitname);
         unit->usecount++;
         ReleaseSemaphore(&hdskBase->sigsem);
             
@@ -131,7 +137,7 @@ static int GM_UNIQUENAME(Open)(LIBBASETYPEPTR hdskBase, struct IOExtTD *iotd, IP
         unit->n.ln_Name = unitname;
         unit->usecount  = 1;
         unit->hdskBase  = hdskBase;
-        unit->flags     = unitflags;
+        unit->flags     = UNIT_FREENAME;
         NEWLIST((struct List *)&unit->changeints);
 
         iotd->iotd_Req.io_Unit = (struct Unit *)unit;
@@ -162,7 +168,10 @@ static int GM_UNIQUENAME(Open)(LIBBASETYPEPTR hdskBase, struct IOExtTD *iotd, IP
         freeUnit(unit);
     }
     else
+    {
+        FreeVec(unitname);
         iotd->iotd_Req.io_Error = TDERR_NoMem;
+    }
 
     ReleaseSemaphore(&hdskBase->sigsem);
 
@@ -183,8 +192,12 @@ static int GM_UNIQUENAME(Close)(LIBBASETYPEPTR hdskBase, struct IOExtTD *iotd)
     {
         Remove(&unit->n);
 
-        /* The task will free its unit structure itself */
+        /* Keep the device and host interface alive until the worker exits. */
+        unit->closingTask = FindTask(NULL);
+        SetSignal(0, SIGF_SINGLE);
         Signal(unit->port->mp_SigTask, SIGBREAKF_CTRL_C);
+        Wait(SIGF_SINGLE);
+        freeUnit(unit);
     }
 
     ReleaseSemaphore(&hdskBase->sigsem);
@@ -242,11 +255,12 @@ AROS_LH1(void, beginio,
     AROS_LIBFUNC_INIT
 
     struct NSDeviceQueryResult *nsdq;
+
+    iotd->iotd_Req.io_Message.mn_Node.ln_Type = NT_MESSAGE;
  
     DCMD(bug("hostdisk: command %u\n", iotd->iotd_Req.io_Command));
     switch(iotd->iotd_Req.io_Command)
     {
-        case CMD_UPDATE:
         case CMD_CLEAR:
         case CMD_FLUSH:
         case TD_MOTOR:
@@ -254,6 +268,18 @@ AROS_LH1(void, beginio,
             iotd->iotd_Req.io_Error = 0;
             break;
 
+        case TD_ADDCHANGEINT:
+            iotd->iotd_Req.io_Flags &= ~IOF_QUICK;
+            iotd->iotd_Req.io_Error = 0;
+            addchangeint((struct unit *)iotd->iotd_Req.io_Unit, iotd);
+            return;
+
+        case TD_REMCHANGEINT:
+            remchangeint((struct unit *)iotd->iotd_Req.io_Unit, iotd);
+            iotd->iotd_Req.io_Error = 0;
+            break;
+
+        case CMD_UPDATE:
         case CMD_READ:
         case CMD_WRITE:
         case TD_SEEK:
@@ -268,15 +294,13 @@ AROS_LH1(void, beginio,
         case NSCMD_TD_SEEK64:
         case TD_CHANGENUM:
         case TD_CHANGESTATE:
-        case TD_ADDCHANGEINT:
-        case TD_REMCHANGEINT:
         case TD_GETGEOMETRY:
         case TD_EJECT:
         case TD_PROTSTATUS:
             /* Forward to unit thread */
-            PutMsg(((struct unit *)iotd->iotd_Req.io_Unit)->port, &iotd->iotd_Req.io_Message);
-            /* Not done quick */
+            /* Publish all request state before the worker can reply. */
             iotd->iotd_Req.io_Flags &= ~IOF_QUICK;
+            PutMsg(((struct unit *)iotd->iotd_Req.io_Unit)->port, &iotd->iotd_Req.io_Message);
             return;
 
         /*
@@ -284,6 +308,14 @@ AROS_LH1(void, beginio,
             commands supported
         */
         case NSCMD_DEVICEQUERY:
+            if (iotd->iotd_Req.io_Length < sizeof(*nsdq)) {
+                iotd->iotd_Req.io_Error = IOERR_BADLENGTH;
+                break;
+            }
+            if (!iotd->iotd_Req.io_Data) {
+                iotd->iotd_Req.io_Error = IOERR_BADADDRESS;
+                break;
+            }
             nsdq = iotd->iotd_Req.io_Data;
 
             nsdq->DevQueryFormat    = 0;
@@ -313,9 +345,6 @@ AROS_LH1(void, beginio,
             break;
             
     } /* switch(iotd->iotd_Req.io_Command) */
-
-    /* WaitIO will look into this */
-    iotd->iotd_Req.io_Message.mn_Node.ln_Type = NT_MESSAGE;
 
     /* Finish message */
     if(!(iotd->iotd_Req.io_Flags&IOF_QUICK))
@@ -382,16 +411,18 @@ static LONG write(struct unit *unit, struct IOExtTD *iotd)
     LONG        size, subsize;
     ULONG       ioerr;
 
+    iotd->iotd_Req.io_Actual = 0;
     if (unit->flags & UNIT_READONLY)
         return TDERR_WriteProt;
 
     buf  = iotd->iotd_Req.io_Data;
     size = iotd->iotd_Req.io_Length;
 
-    iotd->iotd_Req.io_Actual = 0;
     while(size)
     {
         subsize = Host_Write(unit, buf, size, &ioerr);
+        if (!subsize)
+            return IOERR_BADLENGTH;
         if(subsize == -1)
         {
             return ioerr;
@@ -424,7 +455,7 @@ static void remchangeint(struct unit *unit, struct IOExtTD *iotd)
 
 /**************************************************************************/
 
-static ULONG getgeometry(struct unit *Unit, struct DriveGeometry *dg)
+void Host_DefaultGeometry(struct DriveGeometry *dg)
 {
     /*
      * First set some common defaults.
@@ -447,17 +478,24 @@ static ULONG getgeometry(struct unit *Unit, struct DriveGeometry *dg)
     dg->dg_BufMemType   = MEMF_PUBLIC;
     dg->dg_DeviceType   = DG_DIRECT_ACCESS;
     dg->dg_Flags        = 0;
+    dg->dg_Reserved     = 0;
+}
 
-    /* Call host-specific processing */
+static ULONG getgeometry(struct unit *Unit, struct DriveGeometry *dg)
+{
+    Host_DefaultGeometry(dg);
     return Host_GetGeometry(Unit, dg);
 }
 
 /**************************************************************************/
 
-void eject(struct unit *unit, BOOL eject)
+static ULONG eject(struct unit *unit, BOOL eject)
 {
     struct IOExtTD *iotd;
     ULONG err;
+
+    if (!!eject == (unit->file == INVALID_HANDLE_VALUE))
+        return 0;
 
     if (eject)
     {
@@ -468,15 +506,18 @@ void eject(struct unit *unit, BOOL eject)
     {
         err = Host_Open(unit);
         if (err)
-            return;
+            return err;
     }
 
     unit->changecount++;
 
+    Forbid();
     ForeachNode(&unit->changeints, iotd)
     {
         Cause((struct Interrupt *)iotd->iotd_Req.io_Data);
     }
+    Permit();
+    return 0;
 }
 
 /****************************************************************************************/
@@ -493,7 +534,10 @@ static void unitentry(struct IOExtTD *iotd)
     unit->port = CreateMsgPort();
     if (!unit->port)
     {
+        iotd->iotd_Req.io_Error = TDERR_NoMem;
+        Forbid();
         Signal(parent, SIGF_SINGLE);
+        RemTask(NULL);
         return;
     }
 
@@ -505,8 +549,12 @@ static void unitentry(struct IOExtTD *iotd)
         D(bug("%s: open failed :-(\n", me->tc_Node.ln_Name));
 
         iotd->iotd_Req.io_Error = err;
+        DeleteMsgPort(unit->port);
+        unit->port = NULL;
 
+        Forbid();
         Signal(parent, SIGF_SINGLE);
+        RemTask(NULL);
         return;
     }
 
@@ -528,6 +576,11 @@ static void unitentry(struct IOExtTD *iotd)
             {
                 switch(iotd->iotd_Req.io_Command)
                 {
+                case CMD_UPDATE:
+                    iotd->iotd_Req.io_Actual = 0;
+                    err = unit->file == INVALID_HANDLE_VALUE ? 0 : Host_Flush(unit);
+                    break;
+
                 /*
                  * In fact these two commands make a little sense, but they exist,
                  * so we honestly process them.
@@ -548,6 +601,7 @@ static void unitentry(struct IOExtTD *iotd)
                     DREAD(bug("hostdisk/CMD_READ: offset = %u (0x%08X)  size = %d\n", iotd->iotd_Req.io_Offset, iotd->iotd_Req.io_Offset, iotd->iotd_Req.io_Length));
                     
                     err = Host_Seek(unit, iotd->iotd_Req.io_Offset);
+                    iotd->iotd_Req.io_Actual = 0;
                     if (!err)
                         err = read(unit, iotd);
                     DREAD(else bug("CMD_READ: Seek failed\n");)
@@ -559,6 +613,7 @@ static void unitentry(struct IOExtTD *iotd)
                               iotd->iotd_Req.io_Actual, iotd->iotd_Req.io_Offset, iotd->iotd_Req.io_Length));
 
                     err = Host_Seek64(unit, iotd->iotd_Req.io_Offset, iotd->iotd_Req.io_Actual);
+                    iotd->iotd_Req.io_Actual = 0;
                     if (!err)
                         err = read(unit, iotd);
                     DREAD(else bug("CMD_READ64: Seek failed\n");)
@@ -570,6 +625,7 @@ static void unitentry(struct IOExtTD *iotd)
                     DWRITE(bug("hostdisk/CMD_WRITE: offset = %u (0x%08X)  size = %d\n", iotd->iotd_Req.io_Offset, iotd->iotd_Req.io_Offset, iotd->iotd_Req.io_Length));
 
                     err = Host_Seek(unit, iotd->iotd_Req.io_Offset);
+                    iotd->iotd_Req.io_Actual = 0;
                     if (!err)
                         err = write(unit, iotd);
                     break;
@@ -583,6 +639,7 @@ static void unitentry(struct IOExtTD *iotd)
                                iotd->iotd_Req.io_Actual, iotd->iotd_Req.io_Offset, iotd->iotd_Req.io_Length));
 
                     err = Host_Seek64(unit, iotd->iotd_Req.io_Offset, iotd->iotd_Req.io_Actual);
+                    iotd->iotd_Req.io_Actual = 0;
                     if (!err)
                         err = write(unit, iotd);
                     break;
@@ -597,25 +654,23 @@ static void unitentry(struct IOExtTD *iotd)
                     iotd->iotd_Req.io_Actual = (unit->file == INVALID_HANDLE_VALUE);
                     break;
 
-                case TD_ADDCHANGEINT:
-                    addchangeint(unit, iotd);
-                    err = 0;
-                    break;
-
-                case TD_REMCHANGEINT:
-                    remchangeint(unit, iotd);
-                    err = 0;
-                    break;
-
                 case TD_GETGEOMETRY:
                     DCMD(bug("%s: received TD_GETGEOMETRY\n", me->tc_Node.ln_Name));
 
-                    err = getgeometry(unit, (struct DriveGeometry *)iotd->iotd_Req.io_Data);
+                    iotd->iotd_Req.io_Actual = 0;
+                    if (iotd->iotd_Req.io_Length < sizeof(struct DriveGeometry))
+                        err = IOERR_BADLENGTH;
+                    else if (!iotd->iotd_Req.io_Data)
+                        err = IOERR_BADADDRESS;
+                    else {
+                        err = getgeometry(unit, (struct DriveGeometry *)iotd->iotd_Req.io_Data);
+                        if (!err)
+                            iotd->iotd_Req.io_Actual = sizeof(struct DriveGeometry);
+                    }
                     break;
 
                 case TD_EJECT:
-                    eject(unit, iotd->iotd_Req.io_Length);
-                    err = 0;
+                    err = eject(unit, iotd->iotd_Req.io_Length);
                     break;
 
                 case TD_PROTSTATUS:
@@ -633,13 +688,18 @@ static void unitentry(struct IOExtTD *iotd)
         }
 
         /* Process quit signal after our MsgPort is empty */
-        if (sigs & SIGBREAKF_CTRL_C)
+        if ((sigs & SIGBREAKF_CTRL_C) && unit->closingTask)
         {
             D(bug("%s: Received EXIT signal.\n", me->tc_Node.ln_Name));
 
-            Host_Close(unit);
+            if (unit->file != INVALID_HANDLE_VALUE)
+                Host_Close(unit);
+            DeleteMsgPort(unit->port);
 
-            freeUnit(unit);
+            /* Do not execute device code after waking the final closer. */
+            Forbid();
+            Signal(unit->closingTask, SIGF_SINGLE);
+            RemTask(NULL);
             return;
         }
 
