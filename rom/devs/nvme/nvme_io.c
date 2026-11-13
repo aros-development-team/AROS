@@ -158,6 +158,7 @@ static BOOL nvme_sector_rw(struct IORequest *io, UQUAD off64, BOOL is_write)
         bug("[NVME%02ld(%02u)] %s: %08x%08x (%u)\n", unit->au_UnitNum, queueno, __func__, (cmdio.rw.slba >> 32), (cmdio.rw.slba & 0xFFFFFFFF), AROS_LE2WORD(cmdio.rw.length));
     )
 
+    io->io_Flags &= ~IOF_QUICK;
     if (nvme_submit_iocmd(nvmeq, &cmdio, &ioehandle) != 0) {
         if (ioehandle.ceh_IOMem.me_Un.meu_Addr) {
             FreeMem(ioehandle.ceh_IOMem.me_Un.meu_Addr, ioehandle.ceh_IOMem.me_Length);
@@ -249,6 +250,7 @@ static BOOL nvme_flush(struct IORequest *io)
     cmdio.common.op.opcode = nvme_cmd_flush;
     cmdio.common.nsid = AROS_LONG2LE(nsid);
 
+    io->io_Flags &= ~IOF_QUICK;
     if (nvme_submit_iocmd(nvmeq, &cmdio, &ioehandle) != 0) {
         io->io_Error = IOERR_ABORTED;
         ObtainSemaphore(&unit->au_Lock);
@@ -490,8 +492,7 @@ bad_address:
         ObtainSemaphore(&unit->au_Lock);
         Remove(&io->io_Message.mn_Node);
         ReleaseSemaphore(&unit->au_Lock);
-    } else
-        io->io_Flags &= ~IOF_QUICK;
+    }
 
     /* Need a reply now? */
     if (done && !(io->io_Flags & IOF_QUICK))
