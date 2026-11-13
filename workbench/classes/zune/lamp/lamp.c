@@ -128,14 +128,13 @@ static LONG lamp_draw_pen(const struct Lamp_DATA *data, unsigned int region)
 
 static void lamp_draw_led(Object *obj, struct Lamp_DATA *data, ULONG size)
 {
-    LONG x, y, r, inner, dx, dy;
+    LONG x, y, r, inner, dy;
     LONG left = _mleft(obj), top = _mtop(obj);
     LONG base = data->lmp_PenNr;
     LONG bezel = lamp_draw_pen(data, 0);
     LONG shade = lamp_draw_pen(data, 1);
     LONG shine = lamp_draw_pen(data, 2);
     LONG glow = lamp_draw_pen(data, 3);
-    LONG current, runstart, next;
     if (!size) return;
     if (base == -1)
     {
@@ -151,15 +150,15 @@ static void lamp_draw_led(Object *obj, struct Lamp_DATA *data, ULONG size)
     inner = r > 3 ? r - 3 : 0;
     for (y = 0; y < (LONG)size; ++y)
     {
-        current = -2;
-        runstart = 0;
+        LONG current = -2;
+        LONG runstart = 0;
         dy = 2 * y + 1 - (LONG)size;
         for (x = 0; x <= (LONG)size; ++x)
         {
-            next = -2;
+            LONG next = -2;
             if (x < (LONG)size)
             {
-                dx = 2 * x + 1 - (LONG)size;
+                LONG dx = 2 * x + 1 - (LONG)size;
                 if (dx * dx + dy * dy <= r * r)
                 {
                     next = base;
@@ -537,7 +536,7 @@ IPTR Lamp__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
                     data->lmp_ColorType = MUIV_Lamp_ColorType_UserDefined;
                     recolor = TRUE;
                 }
-                else if (tag->ti_Data)
+                else
                 {
                     const ULONG *rgb = (const ULONG *)tag->ti_Data;
                     data->lmp_Color[0] = rgb[0];
@@ -688,7 +687,6 @@ IPTR Lamp__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 {
     struct Lamp_DATA *data = INST_DATA(cl, obj);
     ULONG size;
-    LONG right, bottom;
     DoSuperMethodA(cl, obj, (Msg)msg);
     if (!(msg->flags & (MADF_DRAWOBJECT | MADF_DRAWUPDATE))) return 0;
     if (data->lmp_PenChanged) lamp_acquire_pens(obj, data);
@@ -705,8 +703,8 @@ IPTR Lamp__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
     }
     else
     {
-        right = _mleft(obj) + (LONG)size - 1;
-        bottom = _mtop(obj) + (LONG)size - 1;
+        LONG right = _mleft(obj) + (LONG)size - 1;
+        LONG bottom = _mtop(obj) + (LONG)size - 1;
         if (data->lmp_PenNr != -1)
         {
             if (data->lmp_PenChangedOld == PCH_NEWSPEC)
