@@ -276,7 +276,7 @@ AROS_LH1(void, BeginIO,
 {
     AROS_LIBFUNC_INIT
 
-    const UWORD NSDSupported[] = {
+    static const UWORD NSDSupported[] = {
         CMD_READ,
         CMD_WRITE,
         CMD_UPDATE,
