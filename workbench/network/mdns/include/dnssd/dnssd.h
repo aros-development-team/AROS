@@ -15,8 +15,8 @@
  * is cancelled or its session closed.
  *
  * Every structure here has a fixed layout of fixed-width fields, the same on
- * every CPU, except de_UserData (an IPTR). Events say their own size and
- * version; a program reads only what its version has.
+ * every CPU, and no pointer. Events say their own size and version; a
+ * program reads only what its version has.
  */
 #ifndef DNSSD_DNSSD_H
 #define DNSSD_DNSSD_H
@@ -72,47 +72,59 @@ struct DNSSDAddress
     UBYTE   da_Bytes[16];
 };
 
-/* Event kinds. */
-#define DNSSD_EVENT_ADDRESS     1   /* LookupAddress: de_Addresses has one or more addresses of de_Name */
-#define DNSSD_EVENT_END         2   /* the operation is over: de_Result says how (DNSSD_OK, DNSSD_ERR_TIMEOUT, ...) */
-#define DNSSD_EVENT_LOST        3   /* events were dropped: start the operation again */
-#define DNSSD_EVENT_ADD         4   /* Browse: an instance on de_Interface; QueryRecord: a record */
-#define DNSSD_EVENT_REMOVE      5   /* what an ADD said is gone */
-#define DNSSD_EVENT_RESOLVED    6   /* Resolve: target, port, TXT and every address known, again when they change */
-#define DNSSD_EVENT_REGISTERED  7   /* Register: the service is announced under de_Instance - again
-                                     * with another name if a conflict renamed it */
+/*
+ * Event kinds: what an event is about. An event has the layout of mdnsd's
+ * canonical message (dnssd_model.h, version 2): it names things as DNS
+ * wire labels - DNSSD_NameToText() makes text of them - and an
+ * instance by its own label, as it is shown.
+ */
+#define DNSSD_EVENT_ADD         1   /* Browse: an instance on de_Interface */
+#define DNSSD_EVENT_REMOVE      2   /* Browse: that instance is gone; Resolve: the service is gone */
+#define DNSSD_EVENT_RESOLVED    3   /* Resolve: target, port, TXT and every address known, again when they change */
+#define DNSSD_EVENT_RESOLVE_FAILED 4
+#define DNSSD_EVENT_TYPE        5   /* Browse of "_services._dns-sd._udp": a service type on the link */
+#define DNSSD_EVENT_ADDRESS     6   /* LookupAddress: an address of de_Name */
+#define DNSSD_EVENT_RECORD      7   /* QueryRecord: a record of de_Name, de_RRType, de_RData */
+#define DNSSD_EVENT_REGISTERED  8   /* Register: announced under de_Instance - again if a conflict renamed it */
+#define DNSSD_EVENT_END         9   /* the operation is over: de_Result says how (DNSSD_OK, DNSSD_ERR_TIMEOUT, ...) */
+#define DNSSD_EVENT_LOST        10  /* events were dropped: start the operation again */
 
-#define DNSSD_EVENT_VERSION     1
+#define DNSSD_EVENTF_REMOVED    0x00000008  /* TYPE, ADDRESS, RECORD: what it reports is gone */
+
+#define DNSSD_EVENT_VERSION     2
 
 /*
- * An event, as DNSSD_ReadEvent() copies it: this header, then its parts.
- * Parts not used by a kind have size 0. Texts are UTF-8, not terminated:
- *   de_Name      the name the event is about, as text with RFC 1035 escapes
- *                ("My\.Printer._ipp._tcp.local")
- *   de_Instance  Browse, Resolve: the instance's own label, as it is shown
- *   de_Type      Browse, Resolve: the service type ("_ipp._tcp")
- *   de_Domain    Browse, Resolve: the domain ("local")
- *   de_Target    Resolve: the host that offers it ("printer.local")
- *   de_TXT       Resolve: the TXT record's data - length-prefixed strings
- *   de_RData     QueryRecord: the record's data, names in it uncompressed
- *   de_Addresses LookupAddress, Resolve: de_AddressCount struct DNSSDAddress
+ * An event, as DNSSD_ReadEvent() copies it: this header, then its parts,
+ * each at its de_*.dr_Offset from the start, dr_Size bytes (0: not there).
+ *   de_Name      the name it is about, DNS wire labels (ADDRESS, RECORD)
+ *   de_Instance  the instance's own label, UTF-8, as it is shown (dots allowed)
+ *   de_Type      the service type, wire labels ("_ipp._tcp")
+ *   de_Domain    wire labels ("local")
+ *   de_Target    the host that offers it, wire labels (RESOLVED)
+ *   de_TXT       the TXT record's data, length-prefixed strings
+ *   de_RData     a record's data, the names in it uncompressed (RECORD)
+ *   de_Addresses de_AddressCount struct DNSSDAddress, sorted, each once
+ * de_Operation is the operation's DNSSD_OperationID().
  */
 struct DNSSDEvent
 {
     ULONG           de_Size;        /* bytes of the whole event */
     UWORD           de_Version;     /* DNSSD_EVENT_VERSION */
+    UWORD           de_HeaderSize;  /* sizeof(struct DNSSDEvent) of its version */
     UWORD           de_Kind;        /* DNSSD_EVENT_* */
-    ULONG           de_Flags;
+    UWORD           de_RRType;
+    ULONG           de_Flags;       /* DNSSD_EVENTF_* */
     LONG            de_Result;      /* DNSSD_EVENT_END: how the operation ended */
-    ULONG           de_Sequence;    /* counts the operation's events from 1 */
+    ULONG           de_Incarnation; /* mdnsd's */
+    ULONG           de_Session;
+    ULONG           de_Operation;   /* DNSSD_OperationID() of its operation */
+    ULONG           de_Sequence;    /* counts the session's events from 1 */
     ULONG           de_Interface;   /* the link it is about, 0 for none or all */
     ULONG           de_TTL;         /* seconds */
-    UWORD           de_RRType;
-    UWORD           de_AddressCount;
-    UWORD           de_Port;        /* Resolve */
     UWORD           de_Priority;    /* Resolve: the SRV record's */
     UWORD           de_Weight;
-    UWORD           de_Reserved;
+    UWORD           de_Port;
+    UWORD           de_AddressCount;
     struct DNSSDRef de_Name;
     struct DNSSDRef de_Instance;
     struct DNSSDRef de_Type;
@@ -121,7 +133,6 @@ struct DNSSDEvent
     struct DNSSDRef de_TXT;
     struct DNSSDRef de_RData;
     struct DNSSDRef de_Addresses;
-    IPTR            de_UserData;    /* DNSSD_UserData of the operation */
 };
 
 /* Tags. */
@@ -129,7 +140,6 @@ struct DNSSDEvent
 #define DNSSD_Family        (DNSSD_Dummy + 1)   /* LookupAddress: DNSSD_FAMILY_*, default ANY */
 #define DNSSD_Interface     (DNSSD_Dummy + 2)   /* only this interface index, default all */
 #define DNSSD_Timeout       (DNSSD_Dummy + 3)   /* seconds, 1-60; LookupAddress default 3, Resolve 5; QueryRecord: none */
-#define DNSSD_UserData      (DNSSD_Dummy + 4)   /* IPTR returned in the operation's events */
 #define DNSSD_Domain        (DNSSD_Dummy + 5)   /* Browse, Resolve: default "local" */
 #define DNSSD_Subtype       (DNSSD_Dummy + 6)   /* Browse: only instances of this subtype ("_printer");
                                                  * Register: a subtype it has (repeatable) */

@@ -92,7 +92,7 @@ int main(void)
     service.addresses = addresses;
     service.address_count = 4;
 
-    CHECK(sizeof(struct dnssd_model_message) == 96u &&
+    CHECK(sizeof(struct dnssd_model_message) == 116u &&
           sizeof(struct dnssd_model_wire_address) == 24u,
           "serialized layout is fixed across pointer widths");
     CHECK(dnssd_model_measure(&service, &required) == DNSSD_MODEL_OK &&
@@ -108,7 +108,7 @@ int main(void)
 
     copy_header(&message, buffer);
     CHECK(message.version == DNSSD_MODEL_VERSION &&
-          message.header_size == 96u && message.size == written &&
+          message.header_size == 116u && message.size == written &&
           message.incarnation == service.incarnation &&
           message.session == service.session &&
           message.operation == service.operation &&
@@ -187,6 +187,62 @@ int main(void)
     CHECK(dnssd_model_measure(&service, &required) ==
               DNSSD_MODEL_BAD_ARGUMENT,
           "reject malformed TXT before serialization");
+
+    /* version 2: what each kind must carry */
+    {
+        static const uint8_t host[] = { 7, 'p', 'a', 'l', 'e', 'r', 'm', 'a',
+                                        5, 'l', 'o', 'c', 'a', 'l', 0 };
+        static const uint8_t a4[] = { 192, 168, 166, 1 };
+        struct dnssd_model_service other;
+
+        memset(&other, 0, sizeof(other));
+        other.kind = DNSSD_MODEL_EVENT_ADDRESS;
+        CHECK(dnssd_model_measure(&other, &required) == DNSSD_MODEL_BAD_ARGUMENT,
+              "an ADDRESS event needs a name");
+        other.name = span(host, sizeof(host));
+        other.addresses = addresses;
+        other.address_count = 1;
+        CHECK(dnssd_model_build(&other, buffer, sizeof(buffer), &written) ==
+                  DNSSD_MODEL_OK &&
+              dnssd_model_validate(buffer, written) == DNSSD_MODEL_OK,
+              "an ADDRESS event: a name and its addresses, no service");
+        other.kind = DNSSD_MODEL_EVENT_RECORD;
+        other.address_count = 0;
+        other.addresses = NULL;
+        other.rdata = span(a4, sizeof(a4));
+        CHECK(dnssd_model_measure(&other, &required) == DNSSD_MODEL_BAD_ARGUMENT,
+              "a RECORD event needs a record type");
+        other.rrtype = 1;
+        other.flags = DNSSD_MODEL_FLAG_REMOVED;
+        CHECK(dnssd_model_build(&other, buffer, sizeof(buffer), &written) ==
+                  DNSSD_MODEL_OK &&
+              dnssd_model_validate(buffer, written) == DNSSD_MODEL_OK,
+              "a RECORD event, removed: name, type and data");
+        copy_header(&message, buffer);
+        CHECK(message.rrtype == 1u && message.rdata.size == sizeof(a4) &&
+              memcmp(buffer + message.rdata.offset, a4, sizeof(a4)) == 0,
+              "the record's type and data are carried");
+        memset(&other, 0, sizeof(other));
+        other.kind = DNSSD_MODEL_EVENT_END;
+        other.result = -8;
+        CHECK(dnssd_model_build(&other, buffer, sizeof(buffer), &written) ==
+                  DNSSD_MODEL_OK && written == sizeof(message),
+              "an END event is the header and its result");
+        copy_header(&message, buffer);
+        CHECK(message.result == -8, "the result is carried");
+        other.kind = DNSSD_MODEL_EVENT_TYPE;
+        other.service_type = span(type, sizeof(type));
+        other.domain = span(domain, sizeof(domain));
+        other.instance = span(instance, sizeof(instance));
+        CHECK(dnssd_model_measure(&other, &required) == DNSSD_MODEL_BAD_ARGUMENT,
+              "a TYPE event names no instance");
+        other.instance = span(NULL, 0);
+        CHECK(dnssd_model_measure(&other, &required) == DNSSD_MODEL_OK,
+              "a TYPE event: a type and its domain");
+        other.kind = DNSSD_MODEL_EVENT_ADD;
+        CHECK(dnssd_model_measure(&other, &required) == DNSSD_MODEL_BAD_ARGUMENT,
+              "an instance's event needs the instance");
+    }
 
     if (failures == 0)
         printf("DNS-SD canonical model: 0 failures\n");
