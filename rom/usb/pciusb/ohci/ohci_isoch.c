@@ -217,6 +217,8 @@ WORD ohciQueueIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
     struct PTDNode *ptd = ohciNextIsoPTD(rtn);
     struct IOUsbHWBufferReq *bufreq;
     ULONG interval;
+    ULONG inherit_len;
+    ULONG request_len;
     BOOL explicit_frame = FALSE;
 
     pciusbOHCIDebug("OHCI", "%s()\n", __func__);
@@ -227,6 +229,9 @@ WORD ohciQueueIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
     struct OhciPTDPrivate *ptdpriv = ohciPTDPrivate(ptd);
     bufreq = &ptdpriv->ptd_BufferReq;
     *bufreq = rtn->rtn_BufferReq;
+    inherit_len = rtn->rtn_BufferReq.ubr_Length;
+    if(!inherit_len)
+        inherit_len = ioreq->iouh_Length ? ioreq->iouh_Length : ioreq->iouh_MaxPktSize;
     explicit_frame = (rtn->rtn_Flags & RTISO_FLAG_EXPLICIT_FRAME) != 0;
 
     if (urti && !explicit_frame)
@@ -249,8 +254,7 @@ WORD ohciQueueIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
         bufreq->ubr_Flags = 0;
     }
 
-    if (!bufreq->ubr_Length)
-        bufreq->ubr_Length = ioreq->iouh_Length;
+    request_len = bufreq->ubr_Length;
 
     if (urti) {
         if (explicit_frame)
@@ -324,11 +328,14 @@ WORD ohciQueueIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
     ptd->ptd_Flags |= PTDF_BUFFER_VALID;
     ptdpriv->ptd_BounceBuffer = NULL;
     rtn->rtn_BufferReq = *bufreq;
+    /* A deliberate zero-length request must not become the inherited length
+       for the next one (recover to the last usable length instead). */
+    rtn->rtn_BufferReq.ubr_Length = request_len ? request_len : inherit_len;
     /* RT iso contract (cf. denebusb): after each request the client buffer
        pointer advances by the length transferred, so the next request hook
        continues from the following data unless it supplies a new buffer. */
     if(urti)
-        rtn->rtn_BufferReq.ubr_Buffer += bufreq->ubr_Length;
+        rtn->rtn_BufferReq.ubr_Buffer += request_len;
 
     return RC_OK;
 }
