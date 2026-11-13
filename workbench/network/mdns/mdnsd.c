@@ -424,7 +424,9 @@ main(void)
     md->md_Port = NULL;
     RemPort(dport);
     while ((dmsg = (struct DNSSDIPCMsg *)GetMsg(dport)) != NULL) {
-        dmsg->dm_Result = DNSSD_ERR_NOENGINE;
+        if (DNSSD_IPC_REQUEST_ROOM(dmsg->dm_Msg.mn_Length) >= sizeof(dmsg->dm_Request)) {
+            dmsg->dm_Request.result = DNSSD_ERR_NOENGINE;
+        }
         ReplyMsg(&dmsg->dm_Msg);
     }
     DeleteMsgPort(dport);

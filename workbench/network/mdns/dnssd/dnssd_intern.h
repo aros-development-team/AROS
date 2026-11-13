@@ -12,11 +12,12 @@
 #include <exec/lists.h>
 #include <exec/ports.h>
 #include <dnssd/dnssd.h>
-#include "dnssd_ipc.h"
+#include "dnssd_ipc_port.h"
 
 /*
  * The library holds no DNS-SD state: every call is a message to mdnsd
- * (dnssd_ipc.h). A session and its operations are the caller's memory:
+ * (dnssd_ipc.h), one block it allocates for the call and frees after the
+ * reply. A session and its operations are the caller's memory:
  * the session lends mdnsd its notification message, which mdnsd replies to
  * the caller's port when there are events to read.
  */
@@ -41,6 +42,8 @@ struct DNSSDOperation
     ULONG           do_ID;
 };
 
+struct DNSSDIPCMsg *dnssdNewMsg(UWORD command, const struct dnssd_ipc_parts *parts,
+    const struct DNSSDSession *ds, LONG *rc);
 LONG dnssdSend(struct DNSSDIPCMsg *msg);
 
 #endif /* DNSSD_INTERN_H */

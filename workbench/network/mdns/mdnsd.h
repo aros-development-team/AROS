@@ -21,7 +21,8 @@
 
 #include "mdns_dns.h"
 #include "mdns_ipc.h"
-#include "dnssd_ipc.h"
+#include <dnssd/dnssd.h>
+#include "dnssd_ipc_port.h"
 #include "dnssd_link.h"
 
 /* Bounded daemon policy; overflow is explicit and never publishes a partial

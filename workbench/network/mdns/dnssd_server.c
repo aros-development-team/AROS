@@ -7,7 +7,9 @@
  * A session belongs to one client task. Its operations put their results
  * in the session's queue as finished events (struct DNSSDEvent and its
  * parts, in mdnsd's memory); the client copies them out one at a time
- * (DNSSD_IPC_READ). When the queue goes from empty to not empty mdnsd
+ * (DNSSD_IPC_READ). A request is read only after dnssd_ipc_validate() has
+ * passed all of it, within the bytes its message holds (dnssd_ipc.h).
+ * When the queue goes from empty to not empty mdnsd
  * replies to the notification message the session lent it, and the client,
  * woken on its port, reads until the queue is empty, which lends the
  * message again. Nothing of the client's is kept but that message, and it
@@ -117,19 +119,19 @@ make_id(UWORD generation, LONG slot)
 }
 
 static struct ServerSession *
-find_session(struct MDNSDaemon *md, const struct DNSSDIPCMsg *msg)
+find_session(struct MDNSDaemon *md, const struct dnssd_ipc_request *r)
 {
     struct DNSSDServer *sv = md->md_DNSSD;
-    ULONG slot = (msg->dm_Session & 0xffff) - 1;
+    ULONG slot = (r->session & 0xffff) - 1;
     struct ServerSession *ss;
 
-    if (sv == NULL || msg->dm_Incarnation != md->md_DaemonID ||
+    if (sv == NULL || r->incarnation != md->md_DaemonID ||
         slot >= SERVER_SESSIONS) {
         return NULL;
     }
     ss = &sv->sv_Sessions[slot];
-    if (!ss->ss_Active || ss->ss_Generation != (msg->dm_Session >> 16) ||
-        ss->ss_Task != msg->dm_TaskID) {
+    if (!ss->ss_Active || ss->ss_Generation != (r->session >> 16) ||
+        ss->ss_Task != r->task) {
         return NULL;
     }
     return ss;
@@ -653,75 +655,61 @@ name_text(const UBYTE *wire, LONG at, LONG stop, char *text, ULONG max)
     return n;
 }
 
-/* Register: the message's name, TXT and subtypes, checked; the service. */
+/* Register: the request's names, TXT, subtypes and host, as the
+ * responder's registration takes them; the service. */
 static LONG
 start_register(struct MDNSDaemon *md, struct ServerOperation *op,
-    const struct DNSSDIPCMsg *msg)
+    const struct dnssd_ipc_request *r)
 {
     char instance[64], type[MDNS_MAX_TYPE + 1], domain[MDNS_MAX_DOMAIN + 1];
-    char subtypes[MDNS_MAX_SUBTYPES][MDNS_MAX_SUBTYPE + 1];
-    const UBYTE *name = msg->dm_Data;
-    UWORD count = 0;
+    char subtypes[MDNS_MAX_SUBTYPES][MDNS_MAX_SUBTYPE + 1], host[64];
+    struct DNSSDAddress addresses[DNSSD_IPC_MAX_ADDRESSES];
+    const UBYTE *name = op->so_Name;
+    const UBYTE *sub = dnssd_ipc_data(r, &r->subtypes);
+    UWORD count = 0, naddr = 0;
     ULONG at;
     LONG rc;
 
-    if (name[0] == 0 || name[0] > 63 || msg->dm_TypeOffset != 1 + name[0] ||
-        msg->dm_Port == 0 || msg->dm_TXTLength > msg->dm_ExtraSize ||
-        msg->dm_TXTLength > MDNS_TXT_DATA_MAX ||
-        (msg->dm_ExtraSize != 0 && msg->dm_Extra == NULL)) {
+    if (r->txt.size > MDNS_TXT_DATA_MAX) {
         return DNSSD_ERR_BADPARAM;
     }
     memcpy(instance, name + 1, name[0]);
     instance[name[0]] = '\0';
-    if (strlen(instance) != name[0] ||
-        name_text(name, msg->dm_TypeOffset, msg->dm_DomainOffset, type,
+    if (name_text(name, op->so_TypeOffset, op->so_DomainOffset, type,
             sizeof(type) - 1) >= sizeof(type) - 1 ||
-        name_text(name, msg->dm_DomainOffset, -1, domain,
+        name_text(name, op->so_DomainOffset, -1, domain,
             sizeof(domain) - 1) >= sizeof(domain) - 1) {
         return DNSSD_ERR_BADNAME;
     }
-    type[name_text(name, msg->dm_TypeOffset, msg->dm_DomainOffset, type,
+    type[name_text(name, op->so_TypeOffset, op->so_DomainOffset, type,
         sizeof(type) - 1)] = '\0';
-    domain[name_text(name, msg->dm_DomainOffset, -1, domain,
+    domain[name_text(name, op->so_DomainOffset, -1, domain,
         sizeof(domain) - 1)] = '\0';
-    for (at = msg->dm_TXTLength; at < msg->dm_ExtraSize &&
-            msg->dm_Extra[at] != 0; at += 1 + msg->dm_Extra[at]) {
-        UBYTE len = msg->dm_Extra[at];
+    for (at = 0; at < r->subtypes.size; at += 1 + sub[at]) {
+        UBYTE len = sub[at];
 
-        if (count == MDNS_MAX_SUBTYPES || len > MDNS_MAX_SUBTYPE ||
-            at + 1 + len > msg->dm_ExtraSize) {
+        if (count == MDNS_MAX_SUBTYPES || len > MDNS_MAX_SUBTYPE) {
             return DNSSD_ERR_BADPARAM;
         }
-        memcpy(subtypes[count], msg->dm_Extra + at + 1, len);
+        memcpy(subtypes[count], sub + at + 1, len);
         subtypes[count++][len] = '\0';
     }
-    if (msg->dm_Host[0] != '\0' &&
-        (msg->dm_HostAddressCount == 0 || msg->dm_HostAddresses == NULL)) {
-        return DNSSD_ERR_BADPARAM;
+    host[0] = '\0';
+    if (r->host.size != 0) {
+        memcpy(host, dnssd_ipc_data(r, &r->host), r->host.size);
+        host[r->host.size] = '\0';
+        naddr = (UWORD)(r->addresses.size / sizeof(addresses[0]));
+        memcpy(addresses, dnssd_ipc_data(r, &r->addresses), r->addresses.size);
     }
     rc = mdnsRegAddNative(md, instance, type, domain, subtypes, count,
-        msg->dm_Port, msg->dm_Extra, msg->dm_TXTLength,
-        msg->dm_Host[0] != '\0' ? (const char *)msg->dm_Host : NULL,
-        msg->dm_HostAddresses, msg->dm_HostAddressCount,
+        r->port, dnssd_ipc_data(r, &r->txt), (UWORD)r->txt.size,
+        host[0] != '\0' ? host : NULL, addresses, naddr,
         register_notify, op, &op->so_Service);
     return rc == MDNS_OK ? DNSSD_OK : rc == MDNSERR_DUPLICATE ? DNSSD_ERR_EXISTS :
         rc == MDNSERR_NOMEM ? DNSSD_ERR_NOMEM : DNSSD_ERR_BADPARAM;
 }
 
-/* Is the name in a message wire labels that end where it says? */
-static BOOL
-valid_name(const struct DNSSDIPCMsg *msg)
-{
-    LONG length;
-
-    if (msg->dm_Data == NULL || msg->dm_DataSize < 2 ||
-        msg->dm_DataSize > 255) {
-        return FALSE;
-    }
-    length = mdnsWireNameLength(msg->dm_Data);
-    return length == (LONG)msg->dm_DataSize;
-}
-
+/* Does a label of name (size bytes) start at offset? */
 static BOOL
 label_at(const UBYTE *name, ULONG size, UWORD offset)
 {
@@ -736,25 +724,65 @@ label_at(const UBYTE *name, ULONG size, UWORD offset)
     return FALSE;
 }
 
+/*
+ * The name an operation watches, in so_Name: a lookup's or query's name; a
+ * browse's [<subtype>._sub.]<type>.<domain>; a resolve's or registration's
+ * <instance>.<type>.<domain> - with where the type and the domain start.
+ * The parts are valid wire names and labels (dnssd_ipc_validate()); what
+ * does not fit 255 bytes is no name.
+ */
+static LONG
+operation_name(struct ServerOperation *op, const struct dnssd_ipc_request *r)
+{
+    UBYTE *n = op->so_Name;
+    ULONG at = 0;
+
+    if (r->name.size != 0) {
+        memcpy(n, dnssd_ipc_data(r, &r->name), r->name.size);
+        return DNSSD_OK;
+    }
+    if (r->instance.size != 0) {
+        n[at++] = (UBYTE)r->instance.size;
+        memcpy(n + at, dnssd_ipc_data(r, &r->instance), r->instance.size);
+        at += r->instance.size;
+    } else if (r->command == DNSSD_IPC_BROWSE && r->subtypes.size != 0) {
+        static const UBYTE sub[] = { 4, '_', 's', 'u', 'b' };
+
+        memcpy(n, dnssd_ipc_data(r, &r->subtypes), r->subtypes.size);
+        at = r->subtypes.size;
+        memcpy(n + at, sub, sizeof(sub));
+        at += sizeof(sub);
+    }
+    if (at + r->service_type.size - 1 + r->domain.size > 255) {
+        return DNSSD_ERR_BADNAME;
+    }
+    op->so_TypeOffset = (UWORD)at;
+    memcpy(n + at, dnssd_ipc_data(r, &r->service_type), r->service_type.size - 1);
+    at += r->service_type.size - 1;
+    op->so_DomainOffset = (UWORD)at;
+    memcpy(n + at, dnssd_ipc_data(r, &r->domain), r->domain.size);
+    return DNSSD_OK;
+}
+
 static LONG
 start_operation(struct MDNSDaemon *md, struct ServerSession *ss, LONG sslot,
-    struct DNSSDIPCMsg *msg)
+    struct dnssd_ipc_request *r)
 {
     struct DNSSDServer *sv = md->md_DNSSD;
     struct ServerOperation *op;
-    ULONG timeout = msg->dm_Timeout;
+    ULONG timeout = r->timeout;
     UBYTE kind;
-    LONG i;
+    LONG i, rc;
 
-    switch (msg->dm_Command) {
+    switch (r->command) {
     case DNSSD_IPC_LOOKUP:
         kind = OP_LOOKUP;
         if (timeout == 0) {
             timeout = 3;
         }
-        if (msg->dm_Family != DNSSD_FAMILY_ANY &&
-            msg->dm_Family != DNSSD_FAMILY_IPV4 &&
-            msg->dm_Family != DNSSD_FAMILY_IPV6) {
+        if (r->family != DNSSD_FAMILY_ANY &&
+            r->family != DNSSD_FAMILY_IPV4 &&
+            r->family != DNSSD_FAMILY_IPV6) {
             return DNSSD_ERR_BADPARAM;
         }
         break;
@@ -776,21 +804,19 @@ start_operation(struct MDNSDaemon *md, struct ServerSession *ss, LONG sslot,
         }
         break;
     }
-    if (!valid_name(msg) || timeout > 60) {
+    if (timeout > 60) {
         return DNSSD_ERR_BADPARAM;
     }
-    if ((kind == OP_BROWSE || kind == OP_RESOLVE || kind == OP_REGISTER) &&
-        (!label_at(msg->dm_Data, msg->dm_DataSize, msg->dm_TypeOffset) ||
-         !label_at(msg->dm_Data, msg->dm_DataSize, msg->dm_DomainOffset) ||
-         msg->dm_DomainOffset <= msg->dm_TypeOffset)) {
-        return DNSSD_ERR_BADPARAM;
+    /* a registration names its instance (a default name is not yet) */
+    if (kind == OP_REGISTER && r->instance.size == 0) {
+        return DNSSD_ERR_BADNAME;
     }
     /* multicast DNS answers in "local" (RFC 6762 section 3): a service
      * in another domain is wide-area DNS-SD's, which this is not */
     if (kind == OP_BROWSE || kind == OP_RESOLVE || kind == OP_REGISTER) {
         static const UBYTE local[] = { 5, 'l', 'o', 'c', 'a', 'l', 0 };
 
-        if (!mdnsWireNameEqual(msg->dm_Data + msg->dm_DomainOffset, local)) {
+        if (!mdnsWireNameEqual(dnssd_ipc_data(r, &r->domain), local)) {
             return DNSSD_ERR_BADPARAM;
         }
     }
@@ -811,24 +837,25 @@ start_operation(struct MDNSDaemon *md, struct ServerSession *ss, LONG sslot,
     op->so_Slot = (UWORD)i;
     op->so_Kind = kind;
     op->so_Session = (UWORD)sslot;
-    op->so_Interface = msg->dm_Interface;
-    op->so_RRType = msg->dm_RRType;
-    op->so_TypeOffset = msg->dm_TypeOffset;
-    op->so_DomainOffset = msg->dm_DomainOffset;
+    op->so_Interface = r->interface_index;
+    op->so_RRType = r->rrtype;
     op->so_Deadline = timeout != 0 ? (mdnsTicks() + timeout * 50) | 1 : 0;
-    memcpy(op->so_Name, msg->dm_Data, msg->dm_DataSize);
+    if ((rc = operation_name(op, r)) != DNSSD_OK) {
+        FreeVec(op);
+        return rc;
+    }
     sv->sv_Operations[i] = op;
     ss->ss_Operations++;
-    msg->dm_Operation = make_id(op->so_Generation, i);
+    r->operation = make_id(op->so_Generation, i);
 
     /* a watch tells at once what is known: the events may come now */
     switch (kind) {
     case OP_LOOKUP:
-        if (msg->dm_Family != DNSSD_FAMILY_IPV6) {
+        if (r->family != DNSSD_FAMILY_IPV6) {
             op->so_Watch[0] = mdnsCacheWatch(md, op->so_Name, DNS_TYPE_A,
                 op->so_Interface, lookup_notify, op);
         }
-        if (msg->dm_Family != DNSSD_FAMILY_IPV4) {
+        if (r->family != DNSSD_FAMILY_IPV4) {
             op->so_Watch[1] = mdnsCacheWatch(md, op->so_Name, DNS_TYPE_AAAA,
                 op->so_Interface, lookup_notify, op);
         }
@@ -838,11 +865,10 @@ start_operation(struct MDNSDaemon *md, struct ServerSession *ss, LONG sslot,
             op->so_Interface, query_notify, op);
         break;
     case OP_REGISTER: {
-        LONG rc = start_register(md, op, msg);
-
+        rc = start_register(md, op, r);
         if (rc != DNSSD_OK) {
             end_operation(sv, op);
-            msg->dm_Operation = 0;
+            r->operation = 0;
             return rc;
         }
         return DNSSD_OK;
@@ -871,7 +897,7 @@ start_operation(struct MDNSDaemon *md, struct ServerSession *ss, LONG sslot,
     }
     if (op->so_Watch[0] == NULL && op->so_Watch[1] == NULL) {
         end_operation(sv, op);
-        msg->dm_Operation = 0;
+        r->operation = 0;
         return DNSSD_ERR_NOMEM;
     }
     return DNSSD_OK;
@@ -926,30 +952,35 @@ close_session(struct DNSSDServer *sv, struct ServerSession *ss, LONG slot)
     ss->ss_Active = 0;
 }
 
-/* The READ of a session: the next event, or the notification lent again. */
+/*
+ * The READ of a session: the next event, written into the request's reply
+ * room, or the notification lent again. An event that does not fit stays
+ * the next one, and the reply says its size.
+ */
 static LONG
-read_event(struct ServerSession *ss, struct DNSSDIPCMsg *msg, ULONG incarnation,
-    ULONG session)
+read_event(struct ServerSession *ss, struct DNSSDIPCMsg *msg, ULONG incarnation)
 {
+    struct dnssd_ipc_request *r = &msg->dm_Request;
+    UBYTE *room = (UBYTE *)r + r->reply.offset;
     struct QueuedEvent *qe;
 
     if (ss->ss_Lost) {
         struct dnssd_model_service m;
-        size_t written;
+        size_t written = 0;
 
         memset(&m, 0, sizeof(m));
         m.kind = DNSSD_EVENT_LOST;
         m.flags = DNSSD_MODEL_FLAG_LOST;
         m.incarnation = incarnation;
-        m.session = session;
-        m.sequence = ++ss->ss_Sequence;
-        if (dnssd_model_build(&m, msg->dm_Data, msg->dm_Data == NULL ? 0 :
-                msg->dm_DataMax, &written) != DNSSD_MODEL_OK) {
-            ss->ss_Sequence--;
-            msg->dm_DataSize = (ULONG)written;
+        m.session = r->session;
+        m.sequence = ss->ss_Sequence + 1;
+        if (dnssd_model_build(&m, room, r->reply.size, &written) != DNSSD_MODEL_OK) {
+            dnssd_model_measure(&m, &written);
+            r->reply.size = (ULONG)written;
             return DNSSD_ERR_TOOSMALL;
         }
-        msg->dm_DataSize = (ULONG)written;
+        ss->ss_Sequence++;
+        r->reply.size = (ULONG)written;
         ss->ss_Lost = 0;
         return DNSSD_OK;
     }
@@ -960,11 +991,12 @@ read_event(struct ServerSession *ss, struct DNSSDIPCMsg *msg, ULONG incarnation,
         }
         return DNSSD_ERR_EMPTY;
     }
-    msg->dm_DataSize = qe->qe_Size;
-    if (msg->dm_Data == NULL || msg->dm_DataMax < qe->qe_Size) {
+    if (r->reply.size < qe->qe_Size) {
+        r->reply.size = qe->qe_Size;
         return DNSSD_ERR_TOOSMALL;
     }
-    memcpy(msg->dm_Data, qe + 1, qe->qe_Size);
+    memcpy(room, qe + 1, qe->qe_Size);
+    r->reply.size = qe->qe_Size;
     Remove((struct Node *)qe);
     FreeVec(qe);
     ss->ss_Queued--;
@@ -975,18 +1007,22 @@ void
 dnssdServerMessage(struct MDNSDaemon *md, struct DNSSDIPCMsg *msg)
 {
     struct DNSSDServer *sv = md->md_DNSSD;
+    struct dnssd_ipc_request *r = &msg->dm_Request;
+    size_t room = DNSSD_IPC_REQUEST_ROOM(msg->dm_Msg.mn_Length);
     struct ServerSession *ss;
     LONG i, slot;
 
-    if (msg->dm_Version != DNSSD_IPC_VERSION ||
-        msg->dm_Msg.mn_Length != sizeof(*msg) || msg->dm_TaskID == 0) {
-        msg->dm_Result = DNSSD_ERR_BADPARAM;
+    if (room < sizeof(*r)) {
+        return;                         /* nowhere to answer: replied as it is */
+    }
+    if (dnssd_ipc_validate(r, room) != DNSSD_IPC_OK || r->task == 0) {
+        r->result = DNSSD_ERR_BADPARAM;
         return;
     }
     if (sv == NULL) {
         sv = AllocMem(sizeof(*sv), MEMF_CLEAR);
         if (sv == NULL) {
-            msg->dm_Result = DNSSD_ERR_NOMEM;
+            r->result = DNSSD_ERR_NOMEM;
             return;
         }
         for (i = 0; i < SERVER_SESSIONS; i++) {
@@ -994,10 +1030,10 @@ dnssdServerMessage(struct MDNSDaemon *md, struct DNSSDIPCMsg *msg)
         }
         md->md_DNSSD = sv;
     }
-    if (msg->dm_Command == DNSSD_IPC_OPEN) {
-        msg->dm_Result = DNSSD_ERR_BUSY;
+    if (r->command == DNSSD_IPC_OPEN) {
+        r->result = DNSSD_ERR_BUSY;
         if (msg->dm_Notify == NULL) {
-            msg->dm_Result = DNSSD_ERR_BADPARAM;
+            r->result = DNSSD_ERR_BADPARAM;
             return;
         }
         for (i = 0; i < SERVER_SESSIONS; i++) {
@@ -1006,65 +1042,66 @@ dnssdServerMessage(struct MDNSDaemon *md, struct DNSSDIPCMsg *msg)
                 ss->ss_Active = 1;
                 ss->ss_Lost = 0;
                 ss->ss_Generation = next_generation(sv);
-                ss->ss_Task = msg->dm_TaskID;
+                ss->ss_Task = r->task;
                 ss->ss_Notify = msg->dm_Notify;
                 ss->ss_Queued = 0;
                 ss->ss_Sequence = 0;
                 ss->ss_Operations = 0;
-                msg->dm_Session = make_id(ss->ss_Generation, i);
-                msg->dm_Incarnation = md->md_DaemonID;
-                msg->dm_Result = DNSSD_OK;
+                r->session = make_id(ss->ss_Generation, i);
+                r->incarnation = md->md_DaemonID;
+                r->result = DNSSD_OK;
                 break;
             }
         }
         return;
     }
-    if (msg->dm_Command == DNSSD_IPC_STATUS) {
-        msg->dm_Incarnation = md->md_DaemonID;
-        msg->dm_StatusSessions = 0;
-        msg->dm_StatusOperations = 0;
+    if (r->command == DNSSD_IPC_STATUS) {
+        r->incarnation = md->md_DaemonID;
+        r->count[0] = 0;
+        r->count[1] = 0;
         for (i = 0; i < SERVER_SESSIONS; i++) {
-            msg->dm_StatusSessions += sv->sv_Sessions[i].ss_Active;
+            r->count[0] += sv->sv_Sessions[i].ss_Active;
         }
         for (i = 0; i < SERVER_OPERATIONS; i++) {
-            msg->dm_StatusOperations += sv->sv_Operations[i] != NULL;
+            r->count[1] += sv->sv_Operations[i] != NULL;
         }
-        msg->dm_Result = DNSSD_OK;
+        r->result = DNSSD_OK;
         return;
     }
-    ss = find_session(md, msg);
+    ss = find_session(md, r);
     if (ss == NULL) {
-        msg->dm_Result = DNSSD_ERR_STALE;
+        r->result = DNSSD_ERR_STALE;
         return;
     }
     slot = ss - sv->sv_Sessions;
-    switch (msg->dm_Command) {
+    switch (r->command) {
     case DNSSD_IPC_CLOSE:
         close_session(sv, ss, slot);
-        msg->dm_Result = DNSSD_OK;
+        r->result = DNSSD_OK;
         break;
     case DNSSD_IPC_READ:
-        msg->dm_Result = read_event(ss, msg, md->md_DaemonID, msg->dm_Session);
+        r->result = read_event(ss, msg, md->md_DaemonID);
         break;
     case DNSSD_IPC_UPDATE: {
-        ULONG oslot = (msg->dm_Operation & 0xffff) - 1;
+        ULONG oslot = (r->operation & 0xffff) - 1;
         struct ServerOperation *op = oslot < SERVER_OPERATIONS ?
             sv->sv_Operations[oslot] : NULL;
 
-        msg->dm_Result = DNSSD_ERR_STALE;
+        r->result = DNSSD_ERR_STALE;
         if (op != NULL && op->so_Session == slot && op->so_Kind == OP_REGISTER &&
-            op->so_Generation == (msg->dm_Operation >> 16)) {
-            BOOL txt = (msg->dm_Flags & DNSSD_IPCF_TXT) != 0;
-            BOOL addrs = (msg->dm_Flags & DNSSD_IPCF_ADDRESSES) != 0;
+            op->so_Generation == (r->operation >> 16)) {
+            struct DNSSDAddress addresses[DNSSD_IPC_MAX_ADDRESSES];
+            LONG naddr = -1;
 
-            msg->dm_Result = DNSSD_ERR_BADPARAM;
-            if ((!txt || msg->dm_TXTLength <= msg->dm_ExtraSize) &&
-                (!addrs || msg->dm_HostAddresses != NULL) &&
-                mdnsRegUpdateRef(md, op->so_Service, txt ? msg->dm_Extra : NULL,
-                    txt ? msg->dm_TXTLength : 0, msg->dm_Port,
-                    msg->dm_HostAddresses,
-                    addrs ? (LONG)msg->dm_HostAddressCount : -1) == MDNS_OK) {
-                msg->dm_Result = DNSSD_OK;
+            if (r->addresses.size != 0) {
+                naddr = (LONG)(r->addresses.size / sizeof(addresses[0]));
+                memcpy(addresses, dnssd_ipc_data(r, &r->addresses), r->addresses.size);
+            }
+            r->result = DNSSD_ERR_BADPARAM;
+            if (r->txt.size <= MDNS_TXT_DATA_MAX &&
+                mdnsRegUpdateRef(md, op->so_Service, dnssd_ipc_data(r, &r->txt),
+                    (UWORD)r->txt.size, r->port, addresses, naddr) == MDNS_OK) {
+                r->result = DNSSD_OK;
             }
         }
         break;
@@ -1074,26 +1111,26 @@ dnssdServerMessage(struct MDNSDaemon *md, struct DNSSDIPCMsg *msg)
     case DNSSD_IPC_BROWSE:
     case DNSSD_IPC_RESOLVE:
     case DNSSD_IPC_QUERY:
-        msg->dm_Result = start_operation(md, ss, slot, msg);
+        r->result = start_operation(md, ss, slot, r);
         break;
     case DNSSD_IPC_CANCEL: {
-        ULONG oslot = (msg->dm_Operation & 0xffff) - 1;
+        ULONG oslot = (r->operation & 0xffff) - 1;
         struct ServerOperation *op;
 
-        msg->dm_Result = DNSSD_OK;          /* idempotent: gone is cancelled */
+        r->result = DNSSD_OK;           /* idempotent: gone is cancelled */
         if (oslot >= SERVER_OPERATIONS) {
-            msg->dm_Result = DNSSD_ERR_BADPARAM;
+            r->result = DNSSD_ERR_BADPARAM;
             break;
         }
         op = sv->sv_Operations[oslot];
         if (op != NULL && op->so_Session == slot &&
-            op->so_Generation == (msg->dm_Operation >> 16)) {
+            op->so_Generation == (r->operation >> 16)) {
             end_operation(sv, op);
         }
         break;
     }
     default:
-        msg->dm_Result = DNSSD_ERR_BADPARAM;
+        r->result = DNSSD_ERR_BADPARAM;
         break;
     }
 }
