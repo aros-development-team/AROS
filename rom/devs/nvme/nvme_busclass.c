@@ -582,7 +582,7 @@ BOOL Hidd_NVMEBus_Start(OOP_Object *o, struct NVMEBase *NVMEBase)
                     if ((data->ab_Units[nn] = OOP_NewObject(NVMEBase->unitClass, NULL, attrs)) != NULL) {
                         struct nvme_Unit *unit = OOP_INST_DATA(NVMEBase->unitClass, data->ab_Units[nn]);
                         const ULONG IdDOS = AROS_MAKE_ID('D','O','S','\001');
-                        IPTR pp[4 + DE_BOOTBLOCKS + 1];
+                        IPTR pp[4 + DE_BOOTBLOCKS + 1] = {0};
 
                         data->ab_UnitCnt++;
 
