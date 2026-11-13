@@ -126,9 +126,9 @@ BOOL virtio_hw_reset(device_t dev)
     /* Wait for status to read back as 0 */
     {
         ULONG spin = 1000000;
-        while (dev->dev_CommonCfg->device_status != 0 && spin--)
-            ;
-        if (!spin) return FALSE;
+        while (dev->dev_CommonCfg->device_status != 0) {
+            if (spin-- == 0) return FALSE;
+        }
     }
 
     dev->dev_CommonCfg->device_status = VIRTIO_CONFIG_S_ACKNOWLEDGE;
