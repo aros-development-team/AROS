@@ -128,9 +128,9 @@ endif
 %build_with_cmake mmake=datatypes-heic-linklibs-aom package=aom srcdir=$(AOMARCHSRCDIR) \
     prefix="$(AROS_DEVELOPER)" extraoptions="$(LIBAOM_CMAKEOPTIONS)" extraldflags="$(LIBAOM_LDFLAGS)"
 
-LIBDE265VERSION=1.1.1
+LIBDE265VERSION=1.1.3
 # 0x0MMmmpp00 form of LIBDE265VERSION, as de265-version.h.in expects
-DE265_NUMERIC_VERSION=0x01010100
+DE265_NUMERIC_VERSION=0x01010300
 DE265REPOSITORIES = https://github.com/strukturag/libde265/archive/refs/tags
 DE265ARCHBASE     := v$(LIBDE265VERSION)
 DE265ARCHSUFFIX := "tar.gz"
@@ -199,7 +199,7 @@ $(GENDIR)/$(CURDIR)/libde265/de265-version.h : $(DE265ARCHSRCDIR)/libde265/de265
 #MM
 datatypes-heic-linklibs-de265-genfiles : $(GENDIR)/$(CURDIR)/libde265/de265-version.h
 
-LIBHEIFVERSION=1.23.1
+LIBHEIFVERSION=1.23.7
 # version components for libheif/heif_version.h
 HEIF_VER_MAJOR := $(word 1,$(subst ., ,$(LIBHEIFVERSION)))
 HEIF_VER_MINOR := $(word 2,$(subst ., ,$(LIBHEIFVERSION)))
