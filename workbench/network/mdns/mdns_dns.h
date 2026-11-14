@@ -1,4 +1,8 @@
 /*
+ * SPDX-License-Identifier: BSD-2-Clause
+ * Copyright 2026 amigazen project
+ * Copyright 2026 Jaime Dias
+ *
  * mdns_dns.h - DNS wire format helpers (RFC 1035 / mDNS)
  */
 
