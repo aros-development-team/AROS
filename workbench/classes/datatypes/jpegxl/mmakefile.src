@@ -26,7 +26,7 @@ include $(SRCDIR)/config/aros.cfg
 # libbrotli (decoder parts only, needed by libjxl)               #
 ##################################################################
 
-LIBBROTLIVERSION=1.2.0
+LIBBROTLIVERSION=1.2.1
 BROTLIREPOSITORIES = https://github.com/google/brotli/archive/refs/tags
 BROTLIARCHBASE     := v$(LIBBROTLIVERSION)
 BROTLIARCHSUFFIX := "tar.gz"
@@ -118,7 +118,7 @@ HWYCXXFILES := \
 # libjxl (decoder parts only)                                    #
 ##################################################################
 
-LIBJXLVERSION=0.12.0
+LIBJXLVERSION=0.13.0
 # version components for jxl/version.h
 JXL_VER_MAJOR := $(word 1,$(subst ., ,$(LIBJXLVERSION)))
 JXL_VER_MINOR := $(word 2,$(subst ., ,$(LIBJXLVERSION)))
