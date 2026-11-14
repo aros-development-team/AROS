@@ -1,0 +1,15 @@
+include $(SRCDIR)/config/aros.cfg
+
+# Deliberate, finite device probe; not part of automatic quick tests.
+#MM test-virtio-gpu : includes linklibs
+
+ifeq ($(AROS_TARGET_CPU),x86_64)
+
+USER_CFLAGS := -Wall -Wextra -Werror=implicit-function-declaration
+
+%build_progs mmake=test-virtio-gpu \
+    files=virtiogpuprobe targetdir=$(AROS_TESTS)/hidds/gfx
+
+%common
+
+endif
