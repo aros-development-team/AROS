@@ -73,6 +73,7 @@ extern ULONG ndb_Serial;
 struct ifnet;
 void ifnet_set_dns(struct ifnet *ifp, const UBYTE *v4csv, const UBYTE *v6csv);
 void ifnet_clear_dns(struct ifnet *ifp);
+void ifnet_forget_dns(struct ifnet *ifp);     /* the learned ones alone (link lost) */
 
 /* DNS servers and search domains learned from Router Advertisements
  * (RDNSS and DNSSL options, RFC 8106), each for its lifetime in seconds. */

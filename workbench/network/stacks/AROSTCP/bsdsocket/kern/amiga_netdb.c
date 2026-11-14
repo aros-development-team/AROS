@@ -178,7 +178,18 @@ inet6_aton(const char *src, struct in6_addr *dst)
  * away.  A server may be given as an IPv4 or an IPv6 literal (either token may
  * carry either family); the node is tagged with nsn_Family accordingly.
  */
-static void ifdns_remove_locked(ULONG index, BOOL learned_too)
+/*
+ * Which of an interface's entries go: IFDNS_CONFIGURED its DNS= servers
+ * (replaced by ndb_set_locked()), IFDNS_LEARNED the servers and domains
+ * learned from Router Advertisements (those with an end: the link went, and
+ * with it the network that advertised them), IFDNS_ALL both (the interface
+ * goes down or away).
+ */
+#define IFDNS_CONFIGURED 1
+#define IFDNS_LEARNED    2
+#define IFDNS_ALL        (IFDNS_CONFIGURED | IFDNS_LEARNED)
+
+static void ifdns_remove_locked(ULONG index, int which)
 {
     struct MinNode *node, *next;
 
@@ -186,12 +197,14 @@ static void ifdns_remove_locked(ULONG index, BOOL learned_too)
         struct NameserventNode *nsn = (struct NameserventNode *)node;
 
         next = node->mln_Succ;
-        if(nsn->nsn_OwnerIndex == index && (learned_too || nsn->nsn_Expire == 0)) {
+        if(nsn->nsn_OwnerIndex == index &&
+                (which & (nsn->nsn_Expire != 0 ? IFDNS_LEARNED : IFDNS_CONFIGURED))) {
             Remove((struct Node *)node);
             bsd_free(node, M_NETDB);
         }
     }
-    if(!learned_too)
+    /* a domain is only ever learned (DNSSL): DNS= gives servers alone */
+    if(!(which & IFDNS_LEARNED))
         return;
     for(node = DynDB.dyn_Domains.mlh_Head; node->mln_Succ; node = next) {
         next = node->mln_Succ;
@@ -271,6 +284,7 @@ static int ifdns_add_csv_locked(ULONG index, const UBYTE *csv)
 #define NDB_OP_SET      1       /* an interface's DNS= servers */
 #define NDB_OP_CLEAR    2       /* all of an interface's entries */
 #define NDB_OP_FLUSH    3       /* every dynamic entry */
+#define NDB_OP_FORGET   4       /* an interface's learned entries */
 
 struct ndb_op {
     struct MinNode node;
@@ -314,7 +328,7 @@ static int ndb_set_locked(ULONG index, const UBYTE *v4csv, const UBYTE *v6csv)
 {
     int added = 0;
 
-    ifdns_remove_locked(index, FALSE);
+    ifdns_remove_locked(index, IFDNS_CONFIGURED);
     if(v4csv && *v4csv)
         added += ifdns_add_csv_locked(index, v4csv);
     if(v6csv && *v6csv)
@@ -366,7 +380,9 @@ int ndb_ops_locked(void)
         if(o->op == NDB_OP_FLUSH)
             ndb_flush_locked();
         else if(o->op == NDB_OP_CLEAR)
-            ifdns_remove_locked(o->index, TRUE);
+            ifdns_remove_locked(o->index, IFDNS_ALL);
+        else if(o->op == NDB_OP_FORGET)
+            ifdns_remove_locked(o->index, IFDNS_LEARNED);
         else
             ndb_set_locked(o->index, (UBYTE *)o->v4, (UBYTE *)o->v6);
         bsd_free(o, M_NETDB);
@@ -398,20 +414,33 @@ void ifnet_set_dns(struct ifnet *ifp, const UBYTE *v4csv, const UBYTE *v6csv)
               ifp->if_name, ifp->if_unit, added);
 }
 
+static void ifnet_remove_dns(struct ifnet *ifp, UBYTE op, int which)
+{
+    if(!ndb_lock()) {
+        if(ndb_queue(op, ifp->if_index, NULL, NULL))
+            return;
+        ObtainSemaphore(&DynDB.dyn_Lock);
+    }
+    ndb_ops_locked();
+    ifdns_remove_locked(ifp->if_index, which);
+    ReleaseSemaphore(&DynDB.dyn_Lock);
+    ndb_Serial++;
+}
+
 /* Drop all of ifp's DNS servers and search domains, those from its DNS=
  * tokens and those learned from Router Advertisements (interface going down
  * or away). */
 void ifnet_clear_dns(struct ifnet *ifp)
 {
-    if(!ndb_lock()) {
-        if(ndb_queue(NDB_OP_CLEAR, ifp->if_index, NULL, NULL))
-            return;
-        ObtainSemaphore(&DynDB.dyn_Lock);
-    }
-    ndb_ops_locked();
-    ifdns_remove_locked(ifp->if_index, TRUE);
-    ReleaseSemaphore(&DynDB.dyn_Lock);
-    ndb_Serial++;
+    ifnet_remove_dns(ifp, NDB_OP_CLEAR, IFDNS_ALL);
+}
+
+/* Drop what ifp learned from Router Advertisements; its DNS= servers are
+ * the configuration's and stay (the link went: the network that advertised
+ * the others may not be there when it is back). */
+void ifnet_forget_dns(struct ifnet *ifp)
+{
+    ifnet_remove_dns(ifp, NDB_OP_FORGET, IFDNS_LEARNED);
 }
 
 /*

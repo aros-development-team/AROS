@@ -895,6 +895,75 @@ in_ifdetach(struct ifnet *ifp)
 
 
 /*
+ * Every IPv4 address of an interface goes, with what hangs on them: the
+ * DHCP client is told, the link-local claim is given up, every IPv4 route
+ * through the interface is deleted (rt_purgeif(); in_control() scrubs only
+ * each address's own routes, and a gateway route such as the DHCP default
+ * would keep rt_ifa on the freed address), then the addresses. A request
+ * naming no address means "the first one on this interface", so the loop
+ * deletes them all. Returns the number of addresses removed.
+ */
+static int
+in_ifpurge(struct ifnet *ifp, struct sana_softc *ssc)
+{
+    struct ifreq ifr;
+    int deleted = 0;
+
+    kill_dhclient(ifp);
+    if(ssc != NULL && ssc->ss_autoip.state != AUTOIP_DISABLED)
+        autoip_stop(ifp);
+    rt_purgeif(ifp, AF_INET);
+    while(1) {
+        bzero(&ifr, sizeof(ifr));
+        if(in_control(NULL, SIOCDIFADDR, (caddr_t)&ifr, ifp) != 0)
+            break;
+        deleted++;
+    }
+    return (deleted);
+}
+
+/*
+ * The link went (NFE_LINKDOWN): what IPv4 learned from the network that was
+ * there goes, what the configuration gave stays. The network may be another
+ * one when the link is back (NFE_LINKUP), and then:
+ *  - a DHCP lease belongs to the old one: on an interface the configuration
+ *    has on DHCP every address goes (in_ifpurge()), and the DHCP client
+ *    gets a new lease when the link is back;
+ *  - an IPv4LL address (RFC 3927) is valid on the link it was claimed on
+ *    alone: it goes, and is claimed again - with its probes, on the new
+ *    link - when the link is back;
+ *  - a static address and its routes are the configuration's, not the
+ *    network's: they stay as they are. Nothing would put them back - the
+ *    configuration is applied once, when it is read - and a cable pulled
+ *    and plugged in again would leave the interface without an address
+ *    until the next reload.
+ * Returns the number of addresses removed.
+ */
+static int
+in_iflinkdown(struct ifnet *ifp, struct sana_softc *ssc)
+{
+    struct ifaliasreq ifra;
+    struct sockaddr_in *sin = (struct sockaddr_in *)&ifra.ifra_addr;
+    int deleted = 0;
+
+    if(ifp->if_data.ifi_aros_usedhcp)
+        return (in_ifpurge(ifp, ssc));
+    if(ssc == NULL || ssc->ss_autoip.state == AUTOIP_DISABLED)
+        return (0);
+    /* the claim is given up; its address, once it has one, goes with it */
+    if(ssc->ss_autoip.state == AUTOIP_BOUND) {
+        bzero(&ifra, sizeof(ifra));
+        sin->sin_len = sizeof(*sin);
+        sin->sin_family = AF_INET;
+        sin->sin_addr = ssc->ss_autoip.candidate;
+        if(in_control(NULL, SIOCDIFADDR, (caddr_t)&ifra, ifp) == 0)
+            deleted++;
+    }
+    autoip_stop(ifp);
+    return (deleted);
+}
+
+/*
  * IPv4's part in the life of an interface (net/netmodule.h). Registered
  * from ip_init().
  */
@@ -918,26 +987,25 @@ in_ifevent(int event, struct ifnet *ifp)
 
     case NFE_AUTOADDR:
         /* the configuration says AUTO: a link-local address (RFC 3927) */
-        if(ssc != NULL)
+        if(ssc != NULL) {
+            ssc->ss_autoip.wanted = 1;
             autoip_start(ifp);
+        }
         break;
 
     case NFE_LINKUP:
-        /* New network -> new address */
+        /* Perhaps a new network: a new lease, a new link-local claim. A
+         * static address stayed (in_iflinkdown()); autoip was stopped when
+         * the link went, and the configuration's AUTO says it runs again. */
         kill_dhclient(ifp);
         run_dhclient(ifp);
-        if(ssc != NULL && ssc->ss_autoip.state != AUTOIP_DISABLED)
+        if(ssc != NULL && ssc->ss_autoip.wanted)
             autoip_start(ifp);
         break;
 
     case NFE_LINKDOWN:
-        kill_dhclient(ifp);
-        if(ssc != NULL && ssc->ss_autoip.state != AUTOIP_DISABLED)
-            autoip_stop(ifp);
-        /* in_control() scrubs only each address's interface route: a gateway
-         * route (the DHCP default) would keep rt_ifa on the freed address. */
-        rt_purgeif(ifp, AF_INET);
-        /* FALLTHROUGH: and remove the addresses */
+        deleted = in_iflinkdown(ifp, ssc);
+        break;
 
     case NFE_UNCONFIGURE:
         /*
@@ -953,8 +1021,11 @@ in_ifevent(int event, struct ifnet *ifp)
         break;
 
     case NFE_UNCONFIGURE_PRE:
-        if(ssc != NULL && ssc->ss_autoip.state != AUTOIP_DISABLED)
-            autoip_stop(ifp);
+        if(ssc != NULL) {
+            if(ssc->ss_autoip.state != AUTOIP_DISABLED)
+                autoip_stop(ifp);
+            ssc->ss_autoip.wanted = 0;      /* the configuration says again */
+        }
         break;
 
     case NFE_REMOVING:
@@ -1053,8 +1124,8 @@ in_attach_running(void)
 
 /*
  * IPV4 STOPS (inet_stop()): what it has on the interfaces goes, on every
- * interface of the stack - the loopback and tunnels among them - as it
- * goes on one whose link went (NFE_LINKDOWN): the DHCP client is told, the
+ * interface of the stack - the loopback and tunnels among them - static
+ * addresses too (in_ifpurge()): the DHCP client is told, the
  * link-local claim is given up, every IPv4 route through the interface is
  * deleted (rt_purgeif(), which also frees what hangs on them) and then
  * every IPv4 address, each with the routes that still used it
@@ -1076,8 +1147,13 @@ in_detach_all(void)
     int deleted = 0;
     spl_t s;
 
-    for(ifp = ifnet_list; ifp != NULL; ifp = ifp->if_next)
-        deleted += in_ifevent(NFE_LINKDOWN, ifp);
+    for(ifp = ifnet_list; ifp != NULL; ifp = ifp->if_next) {
+        struct sana_softc *ssc = sana_softc_of(ifp);
+
+        deleted += in_ifpurge(ifp, ssc);
+        if(ssc != NULL)
+            ssc->ss_autoip.wanted = 0;
+    }
 
 #ifdef ENABLE_MULTICAST
     s = splimp();

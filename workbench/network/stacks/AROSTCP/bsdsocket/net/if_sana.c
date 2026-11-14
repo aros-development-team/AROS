@@ -1469,7 +1469,7 @@ sana_linkdown(struct sana_softc *ssc)
     struct ifnet *ifp = (struct ifnet *)ssc;
     int deleted;
 
-    ifnet_clear_dns(ifp);       /* drop this interface's DNS servers with its addresses */
+    ifnet_forget_dns(ifp);      /* what the old network advertised; DNS= stays */
     /* each family gives up what belonged to the network that went */
     deleted = netfamily_if_event(NFE_LINKDOWN, ifp);
 

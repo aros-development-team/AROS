@@ -161,6 +161,7 @@ struct sana_softc {
   struct arptable    *ss_arp_table;   /* ARP/IP table */
   struct {                          /* IPv4LL / RFC 3927 state */
     UBYTE          state;           /* AUTOIP_xxx state */
+    UBYTE          wanted;          /* IP=AUTO: run again when the link is back */
     UBYTE          count;           /* probe/announce counter */
     UBYTE          ticks;           /* 1-second countdown */
     UBYTE          conflicts;       /* conflict counter */

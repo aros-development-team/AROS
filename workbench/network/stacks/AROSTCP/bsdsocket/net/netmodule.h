@@ -178,7 +178,8 @@ struct sockaddr;
 
 #define NFE_UP              1   /* brought up with its device running: make what the family makes itself */
 #define NFE_LINKUP          2   /* the link came (back): the network may be another one */
-#define NFE_LINKDOWN        3   /* the link went: give up what belonged to that network */
+#define NFE_LINKDOWN        3   /* the link went: give up what belonged to that network (leases,
+                                   link-local claims), keep what the configuration gave */
 #define NFE_UNCONFIGURE_PRE 4   /* about to lose its configuration: before its routes are flushed */
 #define NFE_UNCONFIGURE     5   /* ... after: remove the family's addresses */
 #define NFE_REMOVING        6   /* is being taken out of the configuration, still usable */
