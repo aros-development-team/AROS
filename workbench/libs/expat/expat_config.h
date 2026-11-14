@@ -98,13 +98,13 @@
 #define PACKAGE_URL ""
 
 /* Define to the version of this package. */
-#define PACKAGE_VERSION "2.7.3"
+#define PACKAGE_VERSION "2.10.0"
 
 /* Define to 1 if you have the ANSI C header files. */
 #define STDC_HEADERS 1
 
 /* Version number of package */
-#define VERSION "2.7.3"
+#define VERSION "2.10.0"
 
 /* whether byteorder is bigendian */
 #if AROS_BIG_ENDIAN
