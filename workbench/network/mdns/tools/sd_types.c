@@ -2,14 +2,14 @@
  * SPDX-License-Identifier: BSD-2-Clause
  * Copyright 2026 amigazen project
  *
- * ba_types.c - plain-English service-type aliases (see ba_types.h).
+ * sd_types.c - plain-English service-type aliases (see sd_types.h).
  */
 
 #include <exec/types.h>
 
-#include "ba_types.h"
+#include "sd_types.h"
 
-struct BAServiceType
+struct SDServiceType
 {
     const char *bt_Alias;       /* short word the user may type (or NULL) */
     const char *bt_Type;        /* DNS-SD service type */
@@ -18,9 +18,9 @@ struct BAServiceType
 
 /*
  * Ordered so the first entry for a given type carries the description used by
- * BATypeFriendly().  Several aliases may point at the same type.
+ * SDTypeFriendly().  Several aliases may point at the same type.
  */
-static const struct BAServiceType BAServiceTypes[] =
+static const struct SDServiceType SDServiceTypes[] =
 {
     { "web",         "_http._tcp",           "Web server (HTTP)" },
     { "http",        "_http._tcp",           "Web server (HTTP)" },
@@ -56,7 +56,7 @@ static const struct BAServiceType BAServiceTypes[] =
 };
 
 BOOL
-BAStrEqualCI(const char *a, const char *b)
+SDStrEqualCI(const char *a, const char *b)
 {
     LONG i = 0;
 
@@ -84,7 +84,7 @@ BAStrEqualCI(const char *a, const char *b)
 }
 
 CONST_STRPTR
-BATypeFromAlias(CONST_STRPTR word)
+SDTypeFromAlias(CONST_STRPTR word)
 {
     LONG i;
 
@@ -95,9 +95,9 @@ BATypeFromAlias(CONST_STRPTR word)
     if (word[0] == '_') {
         return word;
     }
-    for (i = 0; BAServiceTypes[i].bt_Alias != NULL; i++) {
-        if (BAStrEqualCI((const char *)word, BAServiceTypes[i].bt_Alias)) {
-            return (CONST_STRPTR)BAServiceTypes[i].bt_Type;
+    for (i = 0; SDServiceTypes[i].bt_Alias != NULL; i++) {
+        if (SDStrEqualCI((const char *)word, SDServiceTypes[i].bt_Alias)) {
+            return (CONST_STRPTR)SDServiceTypes[i].bt_Type;
         }
     }
     /* Unknown word: return as-is so the browse simply finds nothing. */
@@ -105,16 +105,16 @@ BATypeFromAlias(CONST_STRPTR word)
 }
 
 CONST_STRPTR
-BATypeFriendly(CONST_STRPTR type)
+SDTypeFriendly(CONST_STRPTR type)
 {
     LONG i;
 
     if (type == NULL) {
         return (CONST_STRPTR)"?";
     }
-    for (i = 0; BAServiceTypes[i].bt_Type != NULL; i++) {
-        if (BAStrEqualCI((const char *)type, BAServiceTypes[i].bt_Type)) {
-            return (CONST_STRPTR)BAServiceTypes[i].bt_Friendly;
+    for (i = 0; SDServiceTypes[i].bt_Type != NULL; i++) {
+        if (SDStrEqualCI((const char *)type, SDServiceTypes[i].bt_Type)) {
+            return (CONST_STRPTR)SDServiceTypes[i].bt_Friendly;
         }
     }
     return type;

@@ -3,49 +3,71 @@
  * Copyright 2026 amigazen project
  * Copyright 2026 Jaime Dias
  *
- * Nearby - see what services are on your local network, in plain English.
- *
- * A friendly Amiga-style front end to bonami.library's mDNS/DNS-SD browse.
- * Uses a standard ReadArgs template and a service-type alias table so nobody
- * has to type "_afpovertcp._tcp".
- *
- *   Nearby [TYPE] [ALL] [DOMAIN <d>] [TIME <secs>] [RAW] [PORTS]
- *
- *   TYPE    a plain word ("web", "printer", "files", "ssh", ...) or a real
- *           DNS-SD type ("_http._tcp").  Omit it (or say ALL) to list the
- *           kinds of service present on the network instead of instances.
- *   ALL     list the service kinds on the network (not individual services).
- *   DOMAIN  network domain to search (default: your local network).
- *   TIME    how many seconds to look; omit to keep looking until Ctrl-C.
- *   RAW     also show the underlying DNS-SD type strings.
- *   PORTS   show each service's host and port (and any extra info).
- *
- * Examples:
- *   Nearby                 ; what kinds of things are out there?
- *   Nearby web             ; who has a web server?
- *   Nearby printer PORTS   ; printers, with host and port
- *   Nearby ssh TIME 10     ; look for SSH logins for 10 seconds
- *
- * Without a TYPE, or with ALL, it lists the kinds of service present: a
- * browse of _services._dns-sd._udp, which mdnsd answers with the types on
- * the link (RFC 6763 section 9).
- *
- * The browse is queued (DISCOVERY.md): Nearby sleeps on a request lent to
- * mdnsd and reads the events in its own task.
+ * Nearby - see what services are on your local network, in plain English,
+ *          on dnssd.library.
  */
 
+/******************************************************************************
+
+    NAME
+
+        Nearby [TYPE] [ALL] [DOMAIN <d>] [TIME <secs>] [RAW] [PORTS]
+
+    SYNOPSIS
+
+        TYPE,ALL/S,DOMAIN/K,TIME/N/K,RAW/S,PORTS/S
+
+    LOCATION
+
+        C:
+
+    FUNCTION
+
+        Lists the services of a kind on the local network as they come, change
+        (shown again) and go, or, without a TYPE, the kinds of service there are (a browse of
+        "_services._dns-sd._udp", RFC 6763 section 9). A plain word stands
+        for the service type, so that nobody has to type
+        "_afpovertcp._tcp".
+
+    INPUTS
+
+        TYPE    a plain word ("web", "printer", "files", "ssh", ...) or a
+                real DNS-SD type ("_http._tcp")
+        ALL     list the kinds of service on the network, not the services
+        DOMAIN  network domain to search (default: your local network)
+        TIME    how many seconds to look; without it, until Ctrl-C
+        RAW     also show the DNS-SD type strings
+        PORTS   show each service's port, addresses (IPv4 and IPv6) and
+                extra information
+
+    RESULT
+
+        0, or 20 for an error.
+
+    EXAMPLE
+
+        Nearby                  ; what kinds of things are out there?
+        Nearby web              ; who has a web server?
+        Nearby printer PORTS    ; printers, with address and port
+        Nearby ssh TIME 10      ; look for SSH logins for 10 seconds
+
+    SEE ALSO
+
+        Share, Handshake, dnssd
+
+******************************************************************************/
+
 #include <exec/types.h>
+#include <exec/memory.h>
 #include <dos/dos.h>
 #include <dos/rdargs.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
+#include <proto/dnssd.h>
 #include <utility/tagitem.h>
 
-#include <bonami/mdns.h>
-#include <proto/bonami.h>
-
-#include "ba_common.h"
-#include "ba_types.h"
+#include "sd_common.h"
+#include "sd_types.h"
 
 #define ARG_TYPE    0
 #define ARG_ALL     1
@@ -56,112 +78,133 @@
 #define ARG_COUNT   6
 
 static const char *NearbyTemplate = "TYPE,ALL/S,DOMAIN/K,TIME/N/K,RAW/S,PORTS/S";
-static const char version_tag[] __attribute__((used)) = "\0$VER: Nearby 41.1 (22.10.2026)";
+static const char version_tag[] __attribute__((used)) =
+    "\0$VER: Nearby 42.0 (13.11.2026)";
 
 static void
-NearbyPrintKind(const struct MDNSDiscoveryEvent *ev, BOOL raw)
+NearbyPrintKind(const struct SDService *sv, BOOL gone, BOOL raw)
 {
-    if (ev->de_Code == MEVENT_REMOVE) {
-        BAPrintf("  gone: %s\n", BATypeFriendly((CONST_STRPTR)ev->de_Type));
+    if (gone) {
+        SDPrintf("  gone: %s\n", SDTypeFriendly((CONST_STRPTR)sv->sv_Type));
     } else if (raw) {
-        BAPrintf("  %-26s  %s\n", BATypeFriendly((CONST_STRPTR)ev->de_Type),
-            ev->de_Type);
+        SDPrintf("  %-26s  %s\n", SDTypeFriendly((CONST_STRPTR)sv->sv_Type),
+            sv->sv_Type);
     } else {
-        BAPrintf("  %s\n", BATypeFriendly((CONST_STRPTR)ev->de_Type));
+        SDPrintf("  %s\n", SDTypeFriendly((CONST_STRPTR)sv->sv_Type));
     }
 }
 
 static void
-NearbyPrint(const struct MDNSDiscoveryEvent *ev, BOOL raw, BOOL ports)
+NearbyPrint(const struct SDService *sv, BOOL gone, BOOL raw, BOOL ports)
 {
-    LONG length = ev->de_TXTLength;
-
-    if (ev->de_Code == MEVENT_REMOVE) {
-        BAPrintf("  gone: %s\n", ev->de_Name);
+    if (gone) {
+        SDPrintf("  gone: %s\n", sv->sv_Name);
         return;
     }
     if (!ports) {
         if (raw) {
-            BAPrintf("  %-28s  (%s)\n", ev->de_Name, ev->de_Type);
+            SDPrintf("  %-28s  (%s)\n", sv->sv_Name, sv->sv_Type);
         } else {
-            BAPrintf("  %s\n", ev->de_Name);
+            SDPrintf("  %s\n", sv->sv_Name);
         }
         return;
     }
-    BAPrintf("  %-26s port %ld", ev->de_Name, (LONG)ev->de_Port);
-    if (ev->de_Address != 0) {
-        BAPrintf("  (%ld.%ld.%ld.%ld)", BA_IP_ARGS(ev->de_Address));
-    }
-    BAPrintf("\n");
-    if (length > 0) {
-        if (length > MDNS_DISCOVERY_TXT_MAX) {
-            length = MDNS_DISCOVERY_TXT_MAX;
+    SDPrintf("  %-26s port %ld", sv->sv_Name, (LONG)sv->sv_Port);
+    if (sv->sv_AddressCount != 0) {
+        UWORD i;
+
+        /* every address it has, IPv4 and IPv6 */
+        SDPrintf("  (");
+        for (i = 0; i < sv->sv_AddressCount; i++) {
+            char text[64];
+
+            SDAddressText(&sv->sv_Addresses[i], text, (LONG)sizeof(text));
+            SDPrintf("%s%s", (CONST_STRPTR)(i != 0 ? ", " : ""), text);
         }
-        BAPrintf("      info: ");
-        BAPrintTXT(ev->de_TXT, length);
-        BAPrintf("\n");
+        SDPrintf(")");
+    }
+    SDPrintf("\n");
+    if (sv->sv_TXTLength > 1) {
+        SDPrintf("      info: ");
+        SDPrintTXT(sv->sv_TXT, sv->sv_TXTLength);
+        SDPrintf("\n");
     }
 }
 
 static int
 NearbyRun(CONST_STRPTR word, BOOL all, LONG timeSecs, BOOL raw, BOOL ports)
 {
-    MDNSBrowseRef ref = NULL;
-    struct TagItem tags[] = {
-        { MDNS_EventMode, MDNS_EVENT_QUEUE },
-        { MDNS_BrowseRef, (IPTR)&ref },
-        { TAG_END, 0 }
-    };
-    struct BAWatch watch;
-    struct MDNSDiscoveryEvent ev;
     BOOL kinds = all || word == NULL;
-    CONST_STRPTR type = kinds ? (CONST_STRPTR)MDNS_TYPE_SERVICES_DNS_SD :
-        BATypeFromAlias(word);
+    CONST_STRPTR type = kinds ? (CONST_STRPTR)SD_TYPE_SERVICES :
+        SDTypeFromAlias(word);
+    struct SDSession session;
+    struct SDFinder finder;
+    struct SDService *sv;
     LONG rc;
-    LONG why;
-    int result = 0;
+    int result = -1;
 
-    rc = BrowseServiceTypeA((STRPTR)type, NULL, tags);
-    if (rc != MDNS_OK) {
-        BAAppPrintMDNSError("browse", rc);
+    sv = AllocVec(sizeof(*sv), MEMF_ANY | MEMF_CLEAR);
+    if (sv == NULL) {
+        SDAppPrintError("browse", DNSSD_ERR_NOMEM);
         return 20;
     }
-    rc = BAWatchStart(&watch, ref, timeSecs);
-    if (rc != MDNS_OK) {
-        StopBrowse(ref);
-        BAAppPrintMDNSError("browse", rc);
+    if ((rc = SDSessionOpen(&session, timeSecs)) != DNSSD_OK) {
+        FreeVec(sv);
+        SDAppPrintError("browse", rc);
+        return 20;
+    }
+    if ((rc = SDFinderStart(&finder, &session, type)) != DNSSD_OK) {
+        SDSessionClose(&session);
+        FreeVec(sv);
+        SDAppPrintError("browse", rc);
         return 20;
     }
     if (kinds) {
-        BAPrintf("Kinds of service on your local network");
+        SDPrintf("Kinds of service on your local network");
     } else {
-        BAPrintf("Looking for %s", BATypeFriendly(type));
+        SDPrintf("Looking for %s", SDTypeFriendly(type));
     }
     if (timeSecs > 0) {
-        BAPrintf(" (%ld seconds)...\n\n", timeSecs);
+        SDPrintf(" (%ld seconds)...\n\n", timeSecs);
     } else {
-        BAPrintf(" (Ctrl-C to stop)...\n\n");
+        SDPrintf(" (Ctrl-C to stop)...\n\n");
     }
-    while ((why = BAWatchWait(&watch)) == BA_WAIT_EVENTS) {
-        while (ReadMDNSEvent(ref, &ev) == MDNS_OK) {
-            if (ev.de_Code != MEVENT_ADD && ev.de_Code != MEVENT_REMOVE) {
-                continue;
-            }
-            if (kinds) {
-                NearbyPrintKind(&ev, raw);
-            } else {
-                NearbyPrint(&ev, raw, ports);
+    while (result < 0 && SDSessionWait(&session) == SD_WAIT_EVENTS) {
+        const struct DNSSDEvent *e;
+
+        while (result < 0 && (e = SDSessionRead(&session, &rc)) != NULL) {
+            switch (SDFinderEvent(&finder, e, sv, &rc)) {
+            case SD_FOUND_TYPE:
+                NearbyPrintKind(sv, FALSE, raw);
+                break;
+            case SD_FOUND_NOTYPE:
+                NearbyPrintKind(sv, TRUE, raw);
+                break;
+            case SD_FOUND_ADD:
+            case SD_FOUND_UPDATE:           /* shown again as it is now */
+                NearbyPrint(sv, FALSE, raw, ports);
+                break;
+            case SD_FOUND_REMOVE:
+                NearbyPrint(sv, TRUE, raw, ports);
+                break;
+            case SD_FOUND_END:
+                SDAppPrintError("browse", rc);
+                result = 20;
+                break;
             }
         }
+        if (result < 0 && rc != DNSSD_ERR_EMPTY) {
+            SDAppPrintError("browse", rc);
+            result = 20;
+        }
     }
-    if (why == BA_WAIT_END) {
-        BAAppPrintMDNSError("browse", watch.bw_Result);
-        result = 20;
-    } else {
-        BAPrintf("\nDone.\n");
+    if (result < 0) {
+        SDPrintf("\nDone.\n");
+        result = 0;
     }
-    StopBrowse(ref);
-    BAWatchEnd(&watch);
+    SDFinderStop(&finder);
+    SDSessionClose(&session);
+    FreeVec(sv);
     return result;
 }
 
@@ -170,9 +213,7 @@ main(void)
 {
     struct RDArgs *rda;
     IPTR args[ARG_COUNT];
-    CONST_STRPTR word;
     LONG timeSecs = 0;
-    LONG rc;
     int result;
     int i;
 
@@ -184,25 +225,17 @@ main(void)
         PrintFault(IoErr(), (CONST_STRPTR)"Nearby");
         return 20;
     }
-    word = (CONST_STRPTR)args[ARG_TYPE];
     if (args[ARG_TIME] != 0) {
         timeSecs = *((LONG *)args[ARG_TIME]);
     }
-    if (!BAAppOpen()) {
-        BAPrintf("Cannot open %s version %ld.\n", BONAMINAME,
-            (LONG)BONAMI_LIB_VERSION);
+    if (!SDAppOpen()) {
+        SDPrintf("Cannot open %s version %ld.\n", DNSSDNAME, (LONG)DNSSD_VERSION);
         FreeArgs(rda);
         return 20;
     }
-    rc = BAAppOpenEngine();
-    if (rc != MDNS_OK) {
-        BAAppPrintMDNSError("start mDNS", rc);
-        result = 20;
-    } else {
-        result = NearbyRun(word, args[ARG_ALL] != 0, timeSecs,
-            args[ARG_RAW] != 0, args[ARG_PORTS] != 0);
-    }
-    BAAppClose();
+    result = NearbyRun((CONST_STRPTR)args[ARG_TYPE], args[ARG_ALL] != 0,
+        timeSecs, args[ARG_RAW] != 0, args[ARG_PORTS] != 0);
+    SDAppClose();
     FreeArgs(rda);
     return result;
 }
