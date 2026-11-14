@@ -9,6 +9,8 @@
 #include <proto/timer.h>
 
 #include <errno.h>
+#include <stdarg.h>
+#include <stdio.h>
 #include <string.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -40,10 +42,23 @@ struct aros_malloc_hdr
 
 #define HDR_BYTES AROS_ALIGN(sizeof(struct aros_malloc_hdr))
 
+/* The size of the block that holds the header, size bytes and extra bytes,
+   or 0 when that does not fit the header's ULONG. Every module that links
+   this file frees blocks the others allocated, so the header keeps its
+   layout. */
+static ULONG block_size(size_t size, size_t extra)
+{
+    size_t total = HDR_BYTES + extra;
+
+    if (size > (size_t)0xFFFFFFFFu - total)
+        return 0;
+    return (ULONG)(total + size);
+}
+
 void *malloc(size_t size)
 {
-    ULONG total = HDR_BYTES + size;
-    UBYTE *raw = (UBYTE *)AllocMem(total, MEMF_ANY);
+    ULONG total = block_size(size, 0);
+    UBYTE *raw = total ? (UBYTE *)AllocMem(total, MEMF_ANY) : NULL;
     if (!raw)
     {
         errno = ENOMEM;
@@ -71,8 +86,8 @@ void free(void *ptr)
 void *calloc(size_t nmemb, size_t size)
 {
     size_t user = nmemb * size;
-    ULONG total = HDR_BYTES + user;
-    UBYTE *raw = (UBYTE *)AllocMem(total, MEMF_ANY | MEMF_CLEAR);
+    ULONG total = (size && user / size != nmemb) ? 0 : block_size(user, 0);
+    UBYTE *raw = total ? (UBYTE *)AllocMem(total, MEMF_ANY | MEMF_CLEAR) : NULL;
     if (!raw)
     {
         errno = ENOMEM;
@@ -110,8 +125,8 @@ void *realloc(void *ptr, size_t size)
 
 /*
  * The other C library allocators would come from stdc.library, whose blocks
- * free() above does not recognise and drops: LLVM's aligned operator new and
- * every strdup would leak. They allocate here too.
+ * free() above does not recognise and drops: LLVM's aligned operator new,
+ * every strdup and every asprintf would leak. They allocate here too.
  */
 void *aligned_alloc(size_t alignment, size_t size)
 {
@@ -119,10 +134,16 @@ void *aligned_alloc(size_t alignment, size_t size)
     UBYTE *raw, *user;
     struct aros_malloc_hdr *h;
 
+    /* the mask below needs a power of two */
+    if (alignment == 0 || (alignment & (alignment - 1)) != 0)
+    {
+        errno = EINVAL;
+        return NULL;
+    }
     if (alignment < AROS_WORSTALIGN)
         alignment = AROS_WORSTALIGN;
-    total = HDR_BYTES + size + alignment;
-    raw = (UBYTE *)AllocMem(total, MEMF_ANY);
+    total = block_size(size, alignment);
+    raw = total ? (UBYTE *)AllocMem(total, MEMF_ANY) : NULL;
     if (!raw)
     {
         errno = ENOMEM;
@@ -139,8 +160,13 @@ void *aligned_alloc(size_t alignment, size_t size)
 
 int posix_memalign(void **memptr, size_t alignment, size_t size)
 {
-    void *p = aligned_alloc(alignment, size);
+    void *p;
 
+    if (alignment % sizeof(void *) != 0
+        || alignment == 0 || (alignment & (alignment - 1)) != 0)
+        return EINVAL;
+
+    p = aligned_alloc(alignment, size);
     if (!p)
         return ENOMEM;
     *memptr = p;
@@ -166,6 +192,37 @@ char *strdup(const char *s)
      * size there can be, so it bounds the scan without exceeding it
      * (a SIZE_MAX bound trips -Wstringop-overread once inlined). */
     return strndup(s, PTRDIFF_MAX);
+}
+
+int vasprintf(char **restrict strp, const char *restrict format, va_list args)
+{
+    va_list measure;
+    char *text;
+    int len;
+
+    va_copy(measure, args);
+    len = vsnprintf(NULL, 0, format, measure);
+    va_end(measure);
+
+    if (len < 0 || !(text = (char *)malloc((size_t)len + 1)))
+    {
+        *strp = NULL;
+        return -1;
+    }
+    vsnprintf(text, (size_t)len + 1, format, args);
+    *strp = text;
+    return len;
+}
+
+int asprintf(char **restrict strp, const char *restrict format, ...)
+{
+    va_list args;
+    int len;
+
+    va_start(args, format);
+    len = vasprintf(strp, format, args);
+    va_end(args);
+    return len;
 }
 
 /*

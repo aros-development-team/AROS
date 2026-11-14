@@ -2,7 +2,11 @@
     Copyright (C) 2026, The AROS Development Team. All rights reserved.
 
     Making and destroying a VkDevice must give back all its memory. The first
-    cycles fill the driver's caches; the last ones must not lose a byte.
+    cycles fill the driver's caches; the measured ones must not lose a byte.
+
+    AvailMem() counts every task's memory, so one measurement can show a loss
+    that is not the driver's. A leak loses memory in every round; the test
+    fails only if the round that lost least still lost some.
 */
 
 #include <exec/memory.h>
@@ -16,6 +20,7 @@
 
 #define WARM_CYCLES     2
 #define MEASURED_CYCLES 3
+#define ROUNDS          3
 
 /* The driver compiles shaders on this task's stack */
 ULONG __stack = 1024 * 1024;
@@ -62,21 +67,36 @@ static BOOL cycle(void)
 
 int main(void)
 {
-    ULONG before = 0;
-    LONG lost;
-    int i;
+    IPTR before;
+    SIPTR lost = 0, least = 0;
+    int round, i;
 
-    for (i = 0; i < WARM_CYCLES + MEASURED_CYCLES; i++)
+    for (i = 0; i < WARM_CYCLES; i++)
     {
-        if (i == WARM_CYCLES)
-            before = AvailMem(MEMF_ANY);
         if (!cycle())
         {
             printf("devicememory: no Vulkan device FAIL\n");
             return RETURN_FAIL;
         }
     }
-    lost = (LONG)(before - AvailMem(MEMF_ANY));
-    printf("devicememory: lost=%ld over %d cycles %s\n", (long)lost, MEASURED_CYCLES, lost > 0 ? "FAIL" : "PASS");
-    return lost > 0 ? RETURN_FAIL : RETURN_OK;
+
+    for (round = 0; round < ROUNDS; round++)
+    {
+        before = AvailMem(MEMF_ANY);
+        for (i = 0; i < MEASURED_CYCLES; i++)
+        {
+            if (!cycle())
+            {
+                printf("devicememory: no Vulkan device FAIL\n");
+                return RETURN_FAIL;
+            }
+        }
+        lost = (SIPTR)(before - AvailMem(MEMF_ANY));
+        if (round == 0 || lost < least)
+            least = lost;
+    }
+
+    printf("devicememory: lost=%ld over %d cycles, least of %d rounds %s\n",
+        (long)least, MEASURED_CYCLES, ROUNDS, least > 0 ? "FAIL" : "PASS");
+    return least > 0 ? RETURN_FAIL : RETURN_OK;
 }
