@@ -285,7 +285,7 @@ static void usb2otg_recover_periodic_queue(struct USB2OTGUnit *USBUnit)
                 interval = 2;
             req->iouh_DriverPrivate1 =
                 (APTR)(IPTR)((frnm << 16) | ((frnm + interval) & 0x7ff));
-            ADDTAIL(&USBUnit->hu_IntXFerQueue, (struct Node *)req);
+            usb2otg_requeue(USBUnit, &USBUnit->hu_IntXFerQueue, req, FALSE);
             USBUnit->hu_Channel[chan].hc_Request = NULL;
         }
     }
@@ -2180,7 +2180,9 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
                                 else
                                 {
 #endif
-                                ADDTAIL(&USBUnit->hu_IntXFerQueue, req);
+                                if (req->iouh_Req.io_Command == UHCMD_CONTROLXFER)
+                                    usb2otg_exorcise_channel(chan);
+                                usb2otg_requeue(USBUnit, &USBUnit->hu_IntXFerQueue, req, FALSE);
                                 USBUnit->hu_Channel[chan].hc_Request = NULL;
 #if defined(__AROSEXEC_SMP__)
                                 KrnSpinUnLock(&USBUnit->hu_Lock);
@@ -3049,7 +3051,9 @@ static BOOL usb2otg_process_naktimeout(struct USB2OTGUnit *otg_Unit)
                         req->iouh_DriverPrivate1 = (APTR)(IPTR)((frnm << 16) | next);
                         /* NAK = liveness — reset watchdog wedge counter. */
                         req->iouh_DriverPrivate2 = (APTR)0;
-                        ADDHEAD(&otg_Unit->hu_IntXFerQueue, req);
+                        if (req->iouh_Req.io_Command == UHCMD_CONTROLXFER)
+                            usb2otg_exorcise_channel(chan);
+                        usb2otg_requeue(otg_Unit, &otg_Unit->hu_IntXFerQueue, req, TRUE);
                         otg_Unit->hu_Channel[chan].hc_Request = NULL;
                         otg_Unit->hu_Channel[chan].hc_WatchdogCount = 0;
 #if defined(__AROSEXEC_SMP__)

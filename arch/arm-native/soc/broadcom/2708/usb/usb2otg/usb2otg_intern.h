@@ -1113,13 +1113,22 @@ static inline BOOL usb2otg_same_endpoint(struct IOUsbHWReq *a, struct IOUsbHWReq
 
 /*
  * Put a halted request back on queue. Bulk goes ahead of later requests
- * on its endpoint, so the endpoint's stream stays in order. hu_Lock held.
+ * on its endpoint, so the endpoint's stream stays in order. Split control
+ * halted on a periodic path restarts from the control queue, with the
+ * usual backoff; the caller exorcises its channel. hu_Lock held.
  */
 static inline void usb2otg_requeue(struct USB2OTGUnit *unit, struct List *queue,
     struct IOUsbHWReq *req, BOOL head)
 {
     struct IOUsbHWReq *q;
 
+    if (queue == &unit->hu_IntXFerQueue &&
+        req->iouh_Req.io_Command == UHCMD_CONTROLXFER)
+    {
+        req->iouh_DriverPrivate1 = usb2otg_ctrl_backoff(unit, usb2otg_frame());
+        queue = &unit->hu_CtrlXFerQueue;
+        head = FALSE;
+    }
     if (queue == &unit->hu_BulkXFerQueue)
     {
         ForeachNode(queue, q)
