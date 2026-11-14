@@ -98,27 +98,35 @@ BOOL usb2otg_iso_init(struct USB2OTGUnit *unit)
 
 /*
  * Channel for a newly bound endpoint: a free one, else a busy one whose
- * work drains first, INT before bulk as INT lets go sooner. hu_Lock held.
+ * work drains first: INT, then control, as a bulk IN can hold its
+ * channel for long. hu_Lock held.
  */
 static int iso_pick_chan(struct USB2OTGUnit *unit)
 {
     static const UBYTE order[] = { CHAN_INT5, CHAN_INT4, CHAN_INT3,
-        CHAN_INT2, CHAN_INT1, CHAN_BULK2, CHAN_BULK };
+        CHAN_INT2, CHAN_INT1, CHAN_CTRL, CHAN_BULK2, CHAN_BULK };
     ULONG excl = unit->hu_DeadChannels | unit->hu_BurnedChannels |
                  unit->hu_IsoChanMask;
-    int busy = -1;
+    int busy = -1, busy_rank = 3;
     int i;
 
     for (i = 0; i < sizeof(order); i++)
     {
         int chan = order[i];
+        UBYTE type = unit->hu_Channel[chan].hc_Type;
+        int rank;
 
         if (excl & (1 << chan))
             continue;
         if (unit->hu_Channel[chan].hc_Request == NULL)
             return chan;
-        if (busy < 0)
+        rank = (type == USB2OTG_HCT_INT) ? 0 :
+               (type == USB2OTG_HCT_CTRL || type == USB2OTG_HCT_CTRL_SPLIT) ? 1 : 2;
+        if (rank < busy_rank)
+        {
             busy = chan;
+            busy_rank = rank;
+        }
     }
     return busy;
 }
