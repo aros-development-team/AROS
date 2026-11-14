@@ -211,7 +211,7 @@ static LONG setup_and_execute(struct M68KEmuContext *ctx, ULONG entry,
         WaitPort(&me->pr_MsgPort);
         wb = GetMsg(&me->pr_MsgPort);
     }
-    ctx = M68KEmu_CreateContext(M68KEmuBase);
+    ctx = M68KEmu_CreateContextWithStack(M68KEmuBase, stackSize);
     if (!ctx)
     {
         if (wb)
@@ -287,7 +287,7 @@ static LONG setup_and_execute(struct M68KEmuContext *ctx, ULONG entry,
     { FreeMem(fileData, fileSize); Close(fh); return -1; }
     Close(fh);
 
-    ctx = M68KEmu_CreateContext(M68KEmuBase);
+    ctx = M68KEmu_CreateContextWithStack(M68KEmuBase, stackSize);
     if (!ctx) { FreeMem(fileData, fileSize); return -1; }
 
     entry = M68KEmu_LoadHunksFromMemory(ctx, fileData, fileSize);

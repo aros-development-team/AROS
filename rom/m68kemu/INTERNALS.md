@@ -71,6 +71,9 @@ containment becomes its m68k address, anything else a handle.
 
 ### Address Map
 
+The ranges below show the default 64 KB root stack. A larger requested root
+stack lowers `stack_bottom` and the Fast region's end together.
+
 ```plain
 0x000000 - 0x0003FF   Exception vectors (M68KEMU_VECTORS_SIZE)
   0x000004              AbsExecBase (restored every instruction if a program changes it)
@@ -87,7 +90,7 @@ containment becomes its m68k address, anything else a handle.
 0x010400 - 0x1FFFFF   Heap, "chip memory" region (M68KEMU_HEAP_BASE .. M68KEMU_CHIP_END)
 0x200000 - 0x1FEFFFF  Heap, "expansion fast memory" region (M68KEMU_CHIP_END .. stack_bottom)
   0xF80000 - 0xFFFFFF   Kickstart ROM area, left out of the Fast region (M68KEMU_ROM_BASE/SIZE)
-0x01FF0000 - 0x01FFFFFF Supervisor stack of the program (M68KEMU_STACK_SIZE 64 KB, grows downward)
+0x01FF0000 - 0x01FFFFFF Supervisor stack of the program (M68KEMU_STACK_SIZE 64 KB minimum, grows downward)
 0x7F000000 + 4n       Native BPTR handles (M68KEMU_HANDLE_BASE)
 0xFFDEAD00            Return address of the program (SENTINEL_ADDR), outside memory
 0xFFDEAE00            Return address of a nested call (NEST_SENTINEL), outside memory
@@ -98,6 +101,15 @@ at `M68KEMU_FAULT_STUB`. The ROM area holds a ROM header (`0x11144ef9`,
 `0x00f80002`, `0x0000ffff`, exec's `lib_Version`/`lib_Revision`), the ROM size at
 `M68KEMU_ROM_END - 20` and a copy of exec's `lib_IdString` at `ROM_BASE + 0x100`,
 so programs that read the Kickstart version find one.
+
+`M68KEmu_CreateContextWithStack()` reserves the requested root stack before
+any HUNK or heap allocation. Sizes below `M68KEMU_STACK_SIZE` use that minimum;
+other sizes round up to four bytes, matching the heap's chunk alignment.
+The size is checked before rounding and before native allocations. The stack
+must leave the ROM and a terminal free chunk of at least
+`M68KEMU_HEAP_MIN_SPLIT` bytes below it. `M68KEmu_CreateContext()` retains the
+old minimum for callers without a request. The root task shadow publishes
+these context bounds through `tc_SPLower` and `tc_SPUpper`.
 
 `M68KEmu_Execute()` also allocates from the heap a 16 KB user stack (USP), an
 8 KB interrupt stack (`irq_stack_top`), and, on first use by `M68KEmu_Call68k()`
@@ -138,7 +150,7 @@ MemHeaders' chunk lists, so a program that walks `MemList` sees the real state;
 | Resource | Limit | Constant / location |
 |----------|-------|---------------------|
 | Containment memory | 32 MB | `M68KEMU_MEM_SIZE` |
-| Program stack | 64 KB | `M68KEMU_STACK_SIZE` |
+| Root program stack | Requested size, 64 KB minimum | `M68KEMU_STACK_SIZE` |
 | Chip RAM region | 0x010400–0x1FFFFF | `M68KEMU_CHIP_END` |
 | Library bases | 64 | `M68KEMU_MAX_LIBS` |
 | LVOs per library | 512 | `M68KEMU_MAX_LVO` |
@@ -213,8 +225,10 @@ M68KEmu_Execute(ctx):
 `setup_and_execute()` in `m68kemu_run.c` runs this either inline (`stackSize ==
 0`) or in a child process created with `CreateNewProc(NP_Synchronous)`, named
 "m68kemu", inheriting Input/Output, current directory, `PROGDIR:` (RunFile) and
-the caller's CLI status. `stackSize` only selects between the two; the 68k stack
-is always `M68KEMU_STACK_SIZE`.
+the caller's CLI status. `stackSize` retains that launch-mode choice and is
+also forwarded to context creation to reserve the root 68k stack before
+loading code. The native process stack and the separately allocated user,
+interrupt, callback and child stacks are unchanged.
 
 ### Other CPUs
 
@@ -1166,8 +1180,8 @@ Further limitations visible in the code:
   AppMessage is ever delivered.
 - `FindSemaphore` on a system semaphore returns a handle whose fields the
   program cannot read.
-- The 68k stack is always 64 KB; `RunHunk`'s `stackSize` only decides whether the
-  program runs in a child process.
+- The root stack must fit above the ROM area while leaving the terminal heap
+  chunk. User, interrupt, callback and child stack policies are separate.
 - A program screen opens in the Workbench screen's mode, size and depth; its
   `sc_BitMap` has at most 8 planes.
 - `m68k_to_native_struct()` sizes the native copy as 3 × the m68k size rather

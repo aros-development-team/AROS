@@ -128,3 +128,39 @@ for its largest case. These function-level checks are separate from a full
 library build, instruction emulation and application or AROS acceptance.
 Sanitized runs default to disabling leak detection; `ASAN_OPTIONS` can
 override that choice.
+
+
+## Requested root-stack reservation
+
+Run from the repository root:
+
+```sh
+make -C developer/debug/test/m68kemu_host test-requested-stack
+make -C developer/debug/test/m68kemu_host test-requested-stack-sanitize
+```
+
+The ordinary fixture is part of the host Makefile's `test` target. It needs
+Python 3.9+ and a C99 compiler; ASan/UBSan are optional. `PYTHON` and `CC`
+select those tools. `REQUESTED_STACK_ARGS` passes runner options such as
+`--source-root /path/to/AROS` and `--build-dir /tmp/requested-stack`.
+Use a fresh build directory; the default temporary directory is removed.
+
+The runner extracts the actual context constructors, eight global heap
+functions, memory accessors and task-shadow stack writer. It reads their
+constants and the native allocation flags from the same source tree. The
+recording C fixture supplies controlled context fields and native allocation,
+initialization and task-identity collaborators; guest `ULONG` is 32-bit.
+
+The cases cover the legacy constructor, zero/small requests, 1 MiB, four-byte
+rounding, the maximum reservation and wrapping/oversized values, both native
+allocation failures, heap accounting and reservation around the CIA/custom
+holes and ROM, absolute allocation refusal and the published task bounds.
+Requests must be rejected before allocation if no terminal free chunk would
+remain above the ROM. The fixtures preserve the stack and ROM sentinels and
+check allocation cleanup explicitly. Sanitized runs disable leak detection
+by default; `ASAN_OPTIONS` can override it.
+
+`--prepare-only --build-dir /tmp/requested-stack` emits the actual production
+includes without compiling or executing a test. These focused checks do not
+compile the native launch translation unit, model native struct layouts or
+locks, execute the CPU, or qualify a complete library or application.

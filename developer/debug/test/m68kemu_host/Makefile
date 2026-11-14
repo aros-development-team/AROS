@@ -60,3 +60,15 @@ test-library-loading-versions-sanitize:
 	$(PYTHON) "$(TEST_DIR)/regressions/run_library_loading_versions.py" --cxx "$(CXX)" --sanitize $(LIBRARY_LOADING_ARGS)
 
 .PHONY: test-library-loading-versions test-library-loading-versions-sanitize
+
+# Requested root-stack reservation: ordinary fixture in test, sanitizer optional.
+REQUESTED_STACK_ARGS ?=
+test: test-requested-stack
+
+test-requested-stack:
+	$(PYTHON) "$(TEST_DIR)/regressions/run_requested_stack.py" --cc "$(CC)" $(REQUESTED_STACK_ARGS)
+
+test-requested-stack-sanitize:
+	$(PYTHON) "$(TEST_DIR)/regressions/run_requested_stack.py" --cc "$(CC)" --sanitize $(REQUESTED_STACK_ARGS)
+
+.PHONY: test-requested-stack test-requested-stack-sanitize

@@ -473,6 +473,8 @@ extern "C" {
 #endif
 
 struct M68KEmuContext *M68KEmu_CreateContext(struct M68KEmuLibBase *base);
+struct M68KEmuContext *M68KEmu_CreateContextWithStack(struct M68KEmuLibBase *base,
+                                                  ULONG requested_stack);
 void   M68KEmu_DestroyContext(struct M68KEmuContext *ctx);
 LONG   M68KEmu_Execute(struct M68KEmuContext *ctx);
 ULONG  M68KEmu_HeapAlloc(struct M68KEmuContext *ctx, ULONG size, ULONG requirements);
