@@ -4,12 +4,10 @@ include $(SRCDIR)/config/aros.cfg
 DEBUG_ACPI=no
 
 ACPICAPACKAGE      := acpica
-ACPICAVERSION      := 20260408
-INTELID            := 917611
-
+ACPICAVERSION      := 20260930
 ACPICAREPOSITORIES := \
     cache:// \
-    https://downloadmirror.intel.com/$(INTELID) \
+    github://$(ACPICAPACKAGE)/$(ACPICAPACKAGE)/releases/download/$(ACPICAVERSION) \
     https://axrt.org/download/thirdparty
 ACPICAARCHBASE     := $(ACPICAPACKAGE)-unix-$(ACPICAVERSION)
 ACPICASRCDIR       := $(PORTSDIR)/acpica/$(ACPICAARCHBASE)
