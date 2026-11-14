@@ -217,6 +217,8 @@ WORD ohciQueueIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
     struct PTDNode *ptd = ohciNextIsoPTD(rtn);
     struct IOUsbHWBufferReq *bufreq;
     ULONG interval;
+    ULONG inherit_len;
+    ULONG request_len;
     BOOL explicit_frame = FALSE;
 
     pciusbOHCIDebug("OHCI", "%s()\n", __func__);
@@ -227,6 +229,9 @@ WORD ohciQueueIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
     struct OhciPTDPrivate *ptdpriv = ohciPTDPrivate(ptd);
     bufreq = &ptdpriv->ptd_BufferReq;
     *bufreq = rtn->rtn_BufferReq;
+    inherit_len = rtn->rtn_BufferReq.ubr_Length;
+    if(!inherit_len)
+        inherit_len = ioreq->iouh_Length ? ioreq->iouh_Length : ioreq->iouh_MaxPktSize;
     explicit_frame = (rtn->rtn_Flags & RTISO_FLAG_EXPLICIT_FRAME) != 0;
 
     if (urti && !explicit_frame)
@@ -249,8 +254,7 @@ WORD ohciQueueIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
         bufreq->ubr_Flags = 0;
     }
 
-    if (!bufreq->ubr_Length)
-        bufreq->ubr_Length = ioreq->iouh_Length;
+    request_len = bufreq->ubr_Length;
 
     if (urti) {
         if (explicit_frame)
@@ -324,11 +328,14 @@ WORD ohciQueueIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
     ptd->ptd_Flags |= PTDF_BUFFER_VALID;
     ptdpriv->ptd_BounceBuffer = NULL;
     rtn->rtn_BufferReq = *bufreq;
+    /* A deliberate zero-length request must not become the inherited length
+       for the next one (recover to the last usable length instead). */
+    rtn->rtn_BufferReq.ubr_Length = request_len ? request_len : inherit_len;
     /* RT iso contract (cf. denebusb): after each request the client buffer
        pointer advances by the length transferred, so the next request hook
        continues from the following data unless it supplies a new buffer. */
     if(urti)
-        rtn->rtn_BufferReq.ubr_Buffer += bufreq->ubr_Length;
+        rtn->rtn_BufferReq.ubr_Buffer += request_len;
 
     return RC_OK;
 }
@@ -394,13 +401,24 @@ void ohciStartIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
         if(!ptd || !(ptd->ptd_Flags & PTDF_BUFFER_VALID))
             continue;
 
-        if(ptd->ptd_Flags & PTDF_ACTIVE)
+        if(ptd->ptd_Flags & (PTDF_ACTIVE|PTDF_ZERO_PENDING))
             continue;
 
         ptdpriv = ohciPTDPrivate(ptd);
         oitd = (struct OhciIsoTD *)ptd->ptd_Descriptor;
         if(!oitd)
             continue;
+
+        /* A client can legitimately return a zero length (e.g. SonixcamTool at
+           a buffer wrap), and a hook can leave the buffer NULL.  OHCI cannot
+           schedule an empty IsoTD, so mark the request pending; the SOF pass
+           retires it with a zero-length done hook in its scheduled frame. */
+        if(!ptdpriv->ptd_BufferReq.ubr_Length || !ptdpriv->ptd_BufferReq.ubr_Buffer) {
+            ptdpriv->ptd_BufferReq.ubr_Length = 0;
+            ptdpriv->ptd_BounceBuffer = NULL;
+            ptd->ptd_Flags |= PTDF_ZERO_PENDING;
+            continue;
+        }
 
         dmabuffer = ptdpriv->ptd_BufferReq.ubr_Buffer;
 #if __WORDSIZE == 64
@@ -420,10 +438,6 @@ void ohciStartIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
 #endif
         ptdpriv->ptd_BounceBuffer = (dmabuffer != ptdpriv->ptd_BufferReq.ubr_Buffer) ? dmabuffer : NULL;
 
-        if(!dmabuffer || !ptdpriv->ptd_BufferReq.ubr_Length) {
-            ptd->ptd_Flags &= ~PTDF_BUFFER_VALID;
-            continue;
-        }
 
         phys = (ULONG)(IPTR)pciGetPhysical(hc, dmabuffer);
         frame = ptdpriv->ptd_BufferReq.ubr_Frame;
@@ -525,6 +539,10 @@ void ohciStartIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
     WRITEMEM32_LE(&oed->oed_EPCaps, READMEM32_LE(&oed->oed_EPCaps) & ~OECF_SKIP);
     CacheClearE(&oed->oed_EPCaps, 16, CACRF_ClearD);
     SYNC;
+
+    /* SOF runs the RT-ISO completion/zero-retirement pass. */
+    if(rtn->rtn_RTIso)
+        ohciEnableInt(hc, OISF_SOF);
 }
 
 void ohciStopIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
@@ -556,7 +574,7 @@ void ohciStopIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
         struct PTDNode *ptd = rtn->rtn_PTDs[idx];
         if(ptd) {
             struct OhciPTDPrivate *ptdpriv = ohciPTDPrivate(ptd);
-            ptd->ptd_Flags &= ~(PTDF_ACTIVE|PTDF_BUFFER_VALID);
+            ptd->ptd_Flags &= ~(PTDF_ACTIVE|PTDF_BUFFER_VALID|PTDF_ZERO_PENDING);
             if(ptdpriv->ptd_BounceBuffer &&
                     ptdpriv->ptd_BounceBuffer != ptdpriv->ptd_BufferReq.ubr_Buffer) {
                 usbReleaseBuffer(ptdpriv->ptd_BounceBuffer, ptdpriv->ptd_BufferReq.ubr_Buffer,
@@ -564,6 +582,67 @@ void ohciStopIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
                 ptdpriv->ptd_BounceBuffer = NULL;
             }
         }
+    }
+
+    /* SOF is only needed while an RT-ISO handler or an abort is pending. */
+    if(hc->hc_RTIsoHandlers.mlh_Head->mln_Succ ||
+            hc->hc_AbortQueue.lh_Head->ln_Succ)
+        ohciEnableInt(hc, OISF_SOF);
+    else
+        ohciDisableInt(hc, OISF_SOF);
+}
+
+void ohciHandleZeroIsochTDs(struct PCIController *hc)
+{
+    struct RTIsoNode *rtn = (struct RTIsoNode *)hc->hc_RTIsoHandlers.mlh_Head;
+    UWORD curframe = (UWORD)(hc->hc_FrameCounter & 0xffff);
+
+    while(rtn->rtn_Node.mln_Succ) {
+        struct RTIsoNode *next = (struct RTIsoNode *)rtn->rtn_Node.mln_Succ;
+
+        if(rtn->rtn_PTDs && rtn->rtn_RTIso) {
+            UWORD idx;
+
+            for(idx = 0; idx < rtn->rtn_PTDCount; idx++) {
+                struct PTDNode *ptd = rtn->rtn_PTDs[idx];
+                struct OhciPTDPrivate *ptdpriv;
+                struct IOUsbHWBufferReq *bufreq;
+                struct IOUsbHWRTIso *urti;
+                LONG delta;
+
+                if(!ptd || !(ptd->ptd_Flags & PTDF_ZERO_PENDING))
+                    continue;
+
+                delta = (LONG)((UWORD)curframe - (UWORD)ptd->ptd_FrameIdx);
+                if(delta & 0x8000)
+                    delta -= 0x10000;
+                if(delta < 0)
+                    continue;   /* not its frame yet */
+
+                ptdpriv = ohciPTDPrivate(ptd);
+                bufreq = &ptdpriv->ptd_BufferReq;
+                urti = rtn->rtn_RTIso;
+
+                bufreq->ubr_Length = 0;
+                bufreq->ubr_Frame = ptd->ptd_FrameIdx;
+                ptd->ptd_Flags &= ~(PTDF_ACTIVE|PTDF_BUFFER_VALID|PTDF_ZERO_PENDING);
+
+                if(urti) {
+                    if(rtn->rtn_IOReq.iouh_Dir == UHDIR_IN) {
+                        if(urti->urti_InDoneHook)
+                            CallHookPkt(urti->urti_InDoneHook, rtn, bufreq);
+                    } else {
+                        if(urti->urti_OutDoneHook)
+                            CallHookPkt(urti->urti_OutDoneHook, rtn, bufreq);
+                    }
+                }
+
+                if(ohciQueueIsochIO(hc, rtn) == RC_OK)
+                    ohciStartIsochIO(hc, rtn);
+            }
+        }
+
+        rtn = next;
     }
 }
 
