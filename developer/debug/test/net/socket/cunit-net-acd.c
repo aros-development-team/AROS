@@ -195,11 +195,20 @@ static int net_reload(void)
 int init_suite(void) { return SocketBase != NULL && MiamiBase != NULL ? 0 : -1; }
 int clean_suite(void) { return 0; }
 
-/* The interface's own address has been probed by the time the tests run. */
+/* The interface's own address is ready once its probes are done: up to
+ * 7 s after it was added (PROBE_WAIT and three probes), which may not have
+ * passed yet when this is the first program after the stack starts. */
 void testACD_OWN_READY(void)
 {
+    int f;
+    long t;
+
     NEED_IF();
-    CU_ASSERT_EQUAL(aflags(ifaddr4), 0);
+    t = settle(ifaddr4, 10, &f);
+    if (t > 0)
+        printf("\n    %s: ready after %ld.%02ld s more", inet_ntoa(ifaddr4),
+               t / TICKS_PER_SECOND, (t % TICKS_PER_SECOND) * 100 / TICKS_PER_SECOND);
+    CU_ASSERT_EQUAL(f, 0);
 }
 
 /* A free address is tentative at once, can be bound, and is ready after
