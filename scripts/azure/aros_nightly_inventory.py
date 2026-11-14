@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""
-Generate a deterministic, read-only AROS nightly build inventory.
+"""Generate a deterministic, read-only AROS nightly build inventory.
 
 When --require-archive-parity is used, the archive is streamed and each
 member is checked against the observed package tree before publication.
@@ -301,8 +300,7 @@ def _check_zip_archive(archive, verifier):
 
 
 def verify_archive_parity(archive, rows, root_mode):
-    """
-    Check archive members against this exact observed package tree.
+    """Check archive members against this exact observed package tree.
 
     Read-only: members are streamed, never extracted.
     Supported: AROS Azure base .tar.bz2 and UNIX-produced .zip; any LHA/other
