@@ -69,11 +69,11 @@ BOOPSI_DISPATCHER(IPTR, d_ColorList, cl, obj, msg)
 
       DoSuperMethodA(cl, obj, msg);
       mri = muiRenderInfo(obj);
-      GetAttr(MUIA_Pendisplay_Spec, findobj(SWin, PREFS_POPPEN_ERRORS), (ULONG*)&spec);
+      GetAttr(MUIA_Pendisplay_Spec, findobj(SWin, PREFS_POPPEN_ERRORS), (IPTR *)&spec);
       d->ErrorPen = MUI_ObtainPen(mri, spec, 0);
-      GetAttr(MUIA_Pendisplay_Spec, findobj(SWin, PREFS_POPPEN_IMPORTANT), (ULONG*)&spec);
+      GetAttr(MUIA_Pendisplay_Spec, findobj(SWin, PREFS_POPPEN_IMPORTANT), (IPTR *)&spec);
       d->InfoPen = MUI_ObtainPen(mri, spec, 0);
-      GetAttr(MUIA_Pendisplay_Spec, findobj(SWin, PREFS_POPPEN_OTHERS), (ULONG*)&spec);
+      GetAttr(MUIA_Pendisplay_Spec, findobj(SWin, PREFS_POPPEN_OTHERS), (IPTR *)&spec);
       d->VerbosePen = MUI_ObtainPen(mri, spec, 0);
     }
     return TRUE;
@@ -100,11 +100,11 @@ BOOPSI_DISPATCHER(IPTR, d_ColorList, cl, obj, msg)
       MUI_ReleasePen(mri, d->ErrorPen);
       MUI_ReleasePen(mri, d->InfoPen);
       MUI_ReleasePen(mri, d->VerbosePen);
-      GetAttr(MUIA_Pendisplay_Spec, findobj(SWin, PREFS_POPPEN_ERRORS), (ULONG*)&spec);
+      GetAttr(MUIA_Pendisplay_Spec, findobj(SWin, PREFS_POPPEN_ERRORS), (IPTR *)&spec);
       d->ErrorPen = MUI_ObtainPen(mri, spec, 0);
-      GetAttr(MUIA_Pendisplay_Spec, findobj(SWin, PREFS_POPPEN_IMPORTANT), (ULONG*)&spec);
+      GetAttr(MUIA_Pendisplay_Spec, findobj(SWin, PREFS_POPPEN_IMPORTANT), (IPTR *)&spec);
       d->InfoPen = MUI_ObtainPen(mri, spec, 0);
-      GetAttr(MUIA_Pendisplay_Spec, findobj(SWin, PREFS_POPPEN_OTHERS), (ULONG*)&spec);
+      GetAttr(MUIA_Pendisplay_Spec, findobj(SWin, PREFS_POPPEN_OTHERS), (IPTR *)&spec);
       d->VerbosePen = MUI_ObtainPen(mri, spec, 0);
       DoMethod(obj, MUIM_NList_Redraw, MUIV_List_Redraw_All);
     }
@@ -136,7 +136,7 @@ BOOPSI_DISPATCHER(IPTR, d_ColorList, cl, obj, msg)
 					clockdata.sec,
 					clockdata.year))
 		{
-			return (LONG)sle;
+			return (IPTR)sle;
                 }
             }
         }
