@@ -22,6 +22,7 @@ POSIXCTESTFILES := \
         getpass \
         ioctl_tty \
         lseek \
+        lstat \
         mnt_names \
         open \
         opendir \
