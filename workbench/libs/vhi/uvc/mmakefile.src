@@ -1,0 +1,13 @@
+# Copyright (C) 2026, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+
+FILES := uvc
+
+#MM- workbench-libs-vhi-uvc : workbench-libs-vhi-includes kernel-usb-poseidon-includes
+
+%build_module_library mmake=workbench-libs-vhi-uvc \
+    modname=uvc modtype=library \
+    files="$(FILES)"
+
+%common
