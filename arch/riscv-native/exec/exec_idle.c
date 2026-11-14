@@ -14,8 +14,6 @@
 #include <aros/symbolsets.h>
 #include <proto/exec.h>
 
-#include <asm/cpu.h>
-
 /* kernel and exec share one core image */
 #include "kernel_riscv.h"
 
