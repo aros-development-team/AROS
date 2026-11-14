@@ -437,10 +437,30 @@ u_char origin;
     			return (EPERM);*/
     /* FALLTHROUGH */
 
-    case SIOCGIFADDR:
     case SIOCGIFNETMASK:
     case SIOCGIFDSTADDR:
     case SIOCGIFBRDADDR:
+        /*
+         * One of the interface's addresses in ifr_addr names that one - an
+         * alias's mask, broadcast or destination, as NetBSD's in_control()
+         * and IPv6's SIOCGIFNETMASK_IN6 give them. Anything else - nothing,
+         * or what an earlier request left there (a program asking
+         * SIOCGIFADDR, SIOCGIFNETMASK, SIOCGIFBRDADDR with one ifreq has
+         * the mask in it by the third) - names the first, as before.
+         */
+        if(ifr->ifr_addr.sa_family == AF_INET) {
+            const struct sockaddr_in *sin = (const struct sockaddr_in *)&ifr->ifr_addr;
+            struct in_ifaddr *named;
+
+            for(named = ia; named; named = named->ia_next)
+                if(named->ia_ifp == ifp &&
+                        named->ia_addr.sin_addr.s_addr == sin->sin_addr.s_addr) {
+                    ia = named;
+                    break;
+                }
+        }
+    /* FALLTHROUGH */
+    case SIOCGIFADDR:
         if(ia == (struct in_ifaddr *)0)
             return (EADDRNOTAVAIL);
         break;
