@@ -238,6 +238,8 @@ static int FNAME_DEV(Init)(LIBBASETYPEPTR USB2OTGBase)
 
                                     /* INT-as-BULK works around the BCM2835 core; QEMU's emulated 2.94a core runs direct INT natively */
                                     USB2OTGBase->hd_Unit->hu_IntAsBulk = (rd32le(USB2OTG_VENDORID) != 0x4F54294A);
+                                    /* QEMU's GNPTXSTS is a constant (queue space 4), so the drain gate would always time out */
+                                    USB2OTGBase->hd_Unit->hu_NPTxGate = USB2OTGBase->hd_Unit->hu_IntAsBulk;
 
                                     /* Heap memory (VC bus alias maps it), and 64-byte
                                      * aligned so DMA cache maintenance owns its lines. */
@@ -265,6 +267,8 @@ static int FNAME_DEV(Init)(LIBBASETYPEPTR USB2OTGBase)
                                     NewList(&USB2OTGBase->hd_Unit->hu_PeriodicTDQueue);
                                     NewList(&USB2OTGBase->hd_Unit->hu_FinishedXfers);
                                     KrnSpinInit(&USB2OTGBase->hd_Unit->hu_Lock);
+                                    if (!usb2otg_iso_init(USB2OTGBase->hd_Unit))
+                                        return FALSE;
 
                                     USB2OTGBase->hd_Unit->hu_PendingInt.is_Node.ln_Type = NT_INTERRUPT;
                                     USB2OTGBase->hd_Unit->hu_PendingInt.is_Node.ln_Name = "OTG2USB Pending Work Interrupt";
@@ -300,6 +304,22 @@ static int FNAME_DEV(Init)(LIBBASETYPEPTR USB2OTGBase)
                                     }
                                     USB2OTGBase->hd_Unit->hu_SofGateWakeFrame = 0xffff;
 
+                                    /* The SOF gate's wakes come back here as a softint */
+                                    USB2OTGBase->hd_Unit->hu_SofGateInt.is_Node.ln_Type = NT_INTERRUPT;
+                                    USB2OTGBase->hd_Unit->hu_SofGateInt.is_Node.ln_Name = "OTG2USB SOF Gate Interrupt";
+                                    USB2OTGBase->hd_Unit->hu_SofGateInt.is_Node.ln_Pri  = 16;
+                                    USB2OTGBase->hd_Unit->hu_SofGateInt.is_Data = USB2OTGBase->hd_Unit;
+                                    USB2OTGBase->hd_Unit->hu_SofGateInt.is_Code = (VOID_FUNC)FNAME_DEV(SofGateInt);
+                                    USB2OTGBase->hd_Unit->hu_SofGatePort.mp_Node.ln_Type = NT_MSGPORT;
+                                    USB2OTGBase->hd_Unit->hu_SofGatePort.mp_Flags = PA_SOFTINT;
+                                    USB2OTGBase->hd_Unit->hu_SofGatePort.mp_SigTask = &USB2OTGBase->hd_Unit->hu_SofGateInt;
+                                    NEWLIST(&USB2OTGBase->hd_Unit->hu_SofGatePort.mp_MsgList);
+                                    for (i = 0; i < 2; i++)
+                                    {
+                                        CopyMem(USB2OTGBase->hd_TimerReq, &USB2OTGBase->hd_Unit->hu_SofGateReq[i], sizeof(struct timerequest));
+                                        USB2OTGBase->hd_Unit->hu_SofGateReq[i].tr_node.io_Message.mn_ReplyPort = &USB2OTGBase->hd_Unit->hu_SofGatePort;
+                                    }
+
                                     CopyMem(USB2OTGBase->hd_TimerReq, &USB2OTGBase->hd_Unit->hu_NakTimeoutReq, sizeof(struct timerequest));
                                     USB2OTGBase->hd_Unit->hu_NakTimeoutReq.tr_node.io_Message.mn_ReplyPort = USB2OTGBase->hd_Unit->hu_WorkerPort;
                                     USB2OTGBase->hd_Unit->hu_NakTimeoutReq.tr_time.tv_secs = 0;
@@ -316,17 +336,11 @@ static int FNAME_DEV(Init)(LIBBASETYPEPTR USB2OTGBase)
                                         USB2OTGBase->hd_Unit->hu_NakGate[i][0] = USB2OTG_NAK_GATE_NONE;
                                         USB2OTGBase->hd_Unit->hu_NakGate[i][1] = USB2OTG_NAK_GATE_NONE;
                                     }
-                                    USB2OTGBase->hd_Unit->hu_BulkOwnerDev[0] = 0;
-                                    USB2OTGBase->hd_Unit->hu_BulkOwnerDev[1] = 0;
                                     for (i = 0; i < USB2OTG_TTCLEAR_PENDING; i++)
                                         USB2OTGBase->hd_Unit->hu_TTClearPending[i].tc_Hub = 0;
 
                                     USB2OTGBase->hd_Unit->hu_GlobalIRQHandle = KrnAddIRQHandler(IRQ_VC_USB, FNAME_DEV(GlobalIRQHandler), USB2OTGBase->hd_Unit, SysBase);
 
-                                    wr32le(SYSTIMER_CS, 1 << USB2OTG_SOF_GATE_TIMER);
-                                    USB2OTGBase->hd_Unit->hu_SofGateIRQHandle =
-                                        KrnAddIRQHandler(IRQ_TIMER0 + USB2OTG_SOF_GATE_TIMER,
-                                            FNAME_DEV(SofGateInt), USB2OTGBase->hd_Unit, SysBase);
                                     USB2OTGBase->hd_Unit->hu_USB2OTGBase = USB2OTGBase;
 
                                     D(bug("[USB2OTG] %s: Installed Global IRQ Handler [handle @ 0x%p] for IRQ #%ld\n",
@@ -608,6 +622,17 @@ AROS_LH1(void, FNAME_DEV(BeginIO),
                 ret = FNAME_DEV(cmdIntXFer)(ioreq, otg_Unit, USB2OTGBase);
                 break;
 
+            case UHCMD_ISOXFER:
+                ret = FNAME_DEV(cmdIsoXFer)(ioreq, otg_Unit, USB2OTGBase);
+                break;
+
+            case UHCMD_ADDISOHANDLER:
+            case UHCMD_REMISOHANDLER:
+            case UHCMD_STARTRTISO:
+            case UHCMD_STOPRTISO:
+                ret = FNAME_DEV(cmdRTIso)(ioreq, otg_Unit, USB2OTGBase);
+                break;
+
             default:
                 ret = IOERR_NOCMD;
                 break;
@@ -680,6 +705,10 @@ AROS_LH1(LONG, FNAME_DEV(AbortIO),
         int chan_at = -1;
         BOOL aborted = FALSE;
 
+        /* Iso requests are replied aborted by their own done list */
+        if (ioreq->iouh_Req.io_Command == UHCMD_ISOXFER)
+            return usb2otg_iso_abort(unit, ioreq) ? 0 : -1;
+
         if (unit != NULL)
         {
             struct List *queues[] = {
@@ -720,6 +749,7 @@ AROS_LH1(LONG, FNAME_DEV(AbortIO),
                         if (cmp == ioreq)
                         {
                             Remove((struct Node *)ioreq);
+                            usb2otg_bulk_forget(unit, ioreq);
                             loc = qnames[q];
                             aborted = TRUE;
                             break;
