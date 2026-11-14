@@ -10,8 +10,8 @@
 #define MUIC_Levelmeter          "Levelmeter.mui"
 
 /*** Identifier base (for AROS extensions) ***********************************/
-/* Class-local allocation; subject to upstream namespace review. */
-#define MUIB_Levelmeter         (MUIB_ZUNE | 0x00000c00)
+/* Class-local Zune extension block. */
+#define MUIB_Levelmeter         (MUIB_ZUNE | 0x00003800)
 
 /*** Attributes *************************************************************/
 #define MUIA_Levelmeter_Label   (MUIB_MUI | 0x00420dd5) /* V11 isg STRPTR */

@@ -55,12 +55,13 @@
 *       critical segment, then applies constructor attributes.
 *
 *       OM_SET applies Levelmeter attributes and passes the tag list to
-*       Numeric. Style, segment-count and orientation changes request parent
+*       Numeric. A live style switch acquires or releases segmented-display
+*       pens. Style, segment-count and orientation changes request parent
 *       relayout and a full redraw. Zone changes request an update redraw.
 *       OM_GET returns the stored Levelmeter attributes.
 *
-*       MUIM_Setup obtains the legacy background pen and the three segmented
-*       display colors after Numeric setup succeeds. MUIM_Cleanup releases
+*       MUIM_Setup obtains the legacy background pen and, only for the
+*       Segments style, the three display colors. MUIM_Cleanup releases
 *       each successfully obtained pen before Numeric cleanup.
 *
 *       MUIM_AskMinMax preserves the historical fixed Needle geometry. The
@@ -353,8 +354,49 @@ IPTR Levelmeter__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     return (IPTR) obj;
 }
 
+/* Acquire the segment colors only while the Segments style is set up. */
+static void Levelmeter_ObtainSegmentPens(Object *obj,
+    struct Levelmeter_DATA *data)
+{
+    struct ColorMap *cm = _screen(obj)->ViewPort.ColorMap;
+
+    data->normalpen = ObtainBestPen(cm,
+        0x33333333, 0xdddddddd, 0x33333333,
+        OBP_FailIfBad, FALSE, OBP_Precision, PRECISION_GUI, TAG_DONE);
+    data->warningpen = ObtainBestPen(cm,
+        0xeeeeeeee, 0xaaaaaaaa, 0x33333333,
+        OBP_FailIfBad, FALSE, OBP_Precision, PRECISION_GUI, TAG_DONE);
+    data->criticalpen = ObtainBestPen(cm,
+        0xeeeeeeee, 0x44444444, 0x44444444,
+        OBP_FailIfBad, FALSE, OBP_Precision, PRECISION_GUI, TAG_DONE);
+}
+
+/* Release acquired segment colors before changing style or cleaning up. */
+static void Levelmeter_ReleaseSegmentPens(Object *obj,
+    struct Levelmeter_DATA *data)
+{
+    struct ColorMap *cm = _screen(obj)->ViewPort.ColorMap;
+
+    if (data->normalpen != -1)
+    {
+        ReleasePen(cm, data->normalpen);
+        data->normalpen = -1;
+    }
+    if (data->warningpen != -1)
+    {
+        ReleasePen(cm, data->warningpen);
+        data->warningpen = -1;
+    }
+    if (data->criticalpen != -1)
+    {
+        ReleasePen(cm, data->criticalpen);
+        data->criticalpen = -1;
+    }
+}
+
 /*
  * Apply local Levelmeter attributes and pass the same tag list to Numeric.
+ * On a live style transition, update segmented pen ownership before redraw.
  * Request parent relayout for style, segment-count or orientation changes;
  * request a full or update redraw according to the resulting change flags.
  * Return Numeric's OM_SET result.
@@ -362,8 +404,19 @@ IPTR Levelmeter__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 IPTR Levelmeter__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct Levelmeter_DATA *data = INST_DATA(cl, obj);
+    ULONG oldStyle = data->style;
     ULONG changes = Levelmeter_ApplyTags(data, msg->ops_AttrList);
-    IPTR result = DoSuperMethodA(cl, obj, (Msg) msg);
+    IPTR result;
+
+    if (oldStyle != data->style && (_flags(obj) & MADF_SETUP))
+    {
+        if (data->style == MUIV_Levelmeter_Style_Segments)
+            Levelmeter_ObtainSegmentPens(obj, data);
+        else
+            Levelmeter_ReleaseSegmentPens(obj, data);
+    }
+
+    result = DoSuperMethodA(cl, obj, (Msg) msg);
 
     if ((changes & LEVELMETER_CHANGE_RELAYOUT) && _parent(obj))
     {
@@ -410,11 +463,10 @@ IPTR Levelmeter__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 }
 
 /*
- * Run Numeric setup and, on success, obtain the legacy background pen plus
- * normal, warning and critical segmented-display pens from the screen ColorMap.
- * Store -1 for each failed acquisition. Return Numeric's setup result; segment
- * drawing has theme-pen fallbacks, while the legacy Needle background path
- * retains its historical missing-fallback bug.
+ * Run Numeric setup and acquire the legacy background pen. Obtain the three
+ * segmented-display pens only for the Segments style; failed acquisitions
+ * remain -1 and draw using theme fallbacks. Return Numeric's setup result;
+ * the legacy Needle background path retains its missing-fallback bug.
  */
 IPTR Levelmeter__MUIM_Setup(struct IClass *cl, Object *obj,
     struct MUIP_Setup *msg)
@@ -437,24 +489,16 @@ IPTR Levelmeter__MUIM_Setup(struct IClass *cl, Object *obj,
             0x39393939,
             0x93939393,
             OBP_FailIfBad, FALSE, OBP_Precision, PRECISION_GUI, TAG_DONE);
-        data->normalpen = ObtainBestPen(_screen(obj)->ViewPort.ColorMap,
-            0x33333333, 0xdddddddd, 0x33333333,
-            OBP_FailIfBad, FALSE, OBP_Precision, PRECISION_GUI, TAG_DONE);
-        data->warningpen = ObtainBestPen(_screen(obj)->ViewPort.ColorMap,
-            0xeeeeeeee, 0xaaaaaaaa, 0x33333333,
-            OBP_FailIfBad, FALSE, OBP_Precision, PRECISION_GUI, TAG_DONE);
-        data->criticalpen = ObtainBestPen(_screen(obj)->ViewPort.ColorMap,
-            0xeeeeeeee, 0x44444444, 0x44444444,
-            OBP_FailIfBad, FALSE, OBP_Precision, PRECISION_GUI, TAG_DONE);
+        if (data->style == MUIV_Levelmeter_Style_Segments)
+            Levelmeter_ObtainSegmentPens(obj, data);
     }
 
     return retval;
 }
 
 /*
- * Release every successfully obtained background or segmented-display pen,
- * reset each pen sentinel to -1, then return Numeric's cleanup result. Requires
- * the same live screen/ColorMap ownership context established by MUIM_Setup.
+ * Release successfully acquired background and segmented-display pens before
+ * Numeric cleanup. Requires the screen/ColorMap established by MUIM_Setup.
  */
 IPTR Levelmeter__MUIM_Cleanup(struct IClass *cl, Object *obj,
     struct MUIP_Cleanup *msg)
@@ -466,21 +510,7 @@ IPTR Levelmeter__MUIM_Cleanup(struct IClass *cl, Object *obj,
         ReleasePen(_screen(obj)->ViewPort.ColorMap, data->levelbgpen);
         data->levelbgpen = -1;
     }
-    if (data->normalpen != -1)
-    {
-        ReleasePen(_screen(obj)->ViewPort.ColorMap, data->normalpen);
-        data->normalpen = -1;
-    }
-    if (data->warningpen != -1)
-    {
-        ReleasePen(_screen(obj)->ViewPort.ColorMap, data->warningpen);
-        data->warningpen = -1;
-    }
-    if (data->criticalpen != -1)
-    {
-        ReleasePen(_screen(obj)->ViewPort.ColorMap, data->criticalpen);
-        data->criticalpen = -1;
-    }
+    Levelmeter_ReleaseSegmentPens(obj, data);
 
     return DoSuperMethodA(cl, obj, (Msg) msg);
 }
@@ -625,7 +655,7 @@ static LONG Levelmeter_ActivePen(Object *obj,
     ULONG warningStart = criticalStart - warning;
 
     if (segment >= criticalStart)
-        return data->criticalpen != -1 ? data->criticalpen : _pens(obj)[MPEN_SHADOW];
+        return data->criticalpen != -1 ? data->criticalpen : _pens(obj)[MPEN_MARK];
     if (segment >= warningStart)
         return data->warningpen != -1 ? data->warningpen : _pens(obj)[MPEN_SHINE];
     return data->normalpen != -1 ? data->normalpen : _pens(obj)[MPEN_FILL];
@@ -660,6 +690,10 @@ static IPTR Levelmeter_DrawSegments(Object *obj,
 
     if (width <= 0 || height <= 0)
         return TRUE;
+
+    if (msg->flags & MADF_DRAWOBJECT)
+        DoMethod(obj, MUIM_DrawBackground, left, top, width, height,
+            left, top, 0);
 
     for (segment = 0; segment < data->segments; segment++)
     {
