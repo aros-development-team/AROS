@@ -248,6 +248,9 @@ static int smp_Wake(struct KernelBase *KernelBase)
         
         apicData->cores[cpuNo].cpu_GDT = PlatformAllocGDT(KernelBase, apicData->cores[cpuNo].cpu_LocalID);
         apicData->cores[cpuNo].cpu_TLS = PlatformAllocTLS(KernelBase, apicData->cores[cpuNo].cpu_LocalID);
+#if (__WORDSIZE==64)
+        ((tls_t *)apicData->cores[cpuNo].cpu_TLS)->CPUNumber = cpuNo;
+#endif
 #if defined(__AROSEXEC_SMP__)
         apicTLS = apicData->cores[cpuNo].cpu_TLS;
         /* PlatformAllocTLS() cleared the block, scheduling data and all */
