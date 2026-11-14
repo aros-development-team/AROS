@@ -76,6 +76,7 @@
 Object                  *FindMenuitem(Object* strip, int id);
 Object                  *Wanderer__Func_CreateWandererIntuitionMenu(BOOL isRoot, BOOL useBackdrop);
 void                    wanderer_menufunc_window_update(void);
+void                    wanderer_menufunc_window_resize_to_fit(void);
 void                    wanderer_menufunc_window_cleanup(void);
 void                    wanderer_menufunc_window_find(void);
 void                    execute_open_with_command(BPTR cd, STRPTR contents);
@@ -1021,6 +1022,7 @@ enum
     MEN_WINDOW_OPEN_PARENT,
     MEN_WINDOW_CLOSE,
     MEN_WINDOW_UPDATE,
+    MEN_WINDOW_RESIZE_TO_FIT,
 
     MEN_WINDOW_SELECT,
     MEN_WINDOW_CLEAR,
@@ -1351,6 +1353,111 @@ void wanderer_menufunc_window_update()
 
         DoMethod(iconList, MUIM_IconList_Update);
         DoMethod(iconList, MUIM_IconList_Sort);
+    }
+}
+///
+
+///wanderer_menufunc_window_resize_to_fit()
+void wanderer_menufunc_window_resize_to_fit(void)
+{
+    Object *window = (Object *) XGET(_WandererIntern_AppObj, MUIA_Wanderer_ActiveWindow);
+    Object *iconList;
+    struct Window *intuitionWindow;
+    IPTR isRoot = FALSE;
+    LONG windowWidth, windowHeight;
+    LONG viewWidth, viewHeight;
+    ULONG contentWidth, contentHeight;
+    LONG overheadWidth, overheadHeight;
+    LONG targetWidth, targetHeight;
+    LONG maxWidth, maxHeight;
+    LONG windowLeft, windowTop;
+
+D(bug("[Wanderer]: %s()\n", __func__));
+
+    if (window == NULL)
+        return;
+
+    GET(window, MUIA_IconWindow_IsRoot, &isRoot);
+    if (isRoot)
+        return;
+
+    iconList = (Object *) XGET(window, MUIA_IconWindow_IconList);
+    intuitionWindow = (struct Window *) XGET(window, MUIA_Window_Window);
+
+    if ((iconList == NULL) || (intuitionWindow == NULL) || (intuitionWindow->WScreen == NULL))
+        return;
+
+    DoMethod(iconList, MUIM_IconList_RethinkDimensions, NULL);
+
+    windowWidth = (LONG) XGET(window, MUIA_Window_Width);
+    windowHeight = (LONG) XGET(window, MUIA_Window_Height);
+    viewWidth = _mwidth(iconList);
+    viewHeight = _mheight(iconList);
+    contentWidth = (ULONG) XGET(iconList, MUIA_IconList_Width);
+    contentHeight = (ULONG) XGET(iconList, MUIA_IconList_Height);
+
+    if ((windowWidth <= 0) || (windowHeight <= 0) ||
+        (viewWidth <= 0) || (viewHeight <= 0))
+        return;
+
+    windowLeft = intuitionWindow->LeftEdge;
+    windowTop = intuitionWindow->TopEdge;
+    if (windowLeft < 0)
+        windowLeft = 0;
+    if (windowTop < 0)
+        windowTop = 0;
+
+    maxWidth = (LONG) intuitionWindow->WScreen->Width
+             - windowLeft
+             - intuitionWindow->BorderLeft
+             - intuitionWindow->BorderRight;
+    maxHeight = (LONG) intuitionWindow->WScreen->Height
+              - windowTop
+              - intuitionWindow->BorderTop
+              - intuitionWindow->BorderBottom;
+
+    if (maxWidth < 1)
+        maxWidth = 1;
+    if (maxHeight < 1)
+        maxHeight = 1;
+
+    overheadWidth = windowWidth - viewWidth;
+    overheadHeight = windowHeight - viewHeight;
+    if (overheadWidth < 0)
+        overheadWidth = 0;
+    if (overheadHeight < 0)
+        overheadHeight = 0;
+
+    if ((contentWidth >= (ULONG) maxWidth) ||
+        (overheadWidth >= maxWidth - (LONG) contentWidth))
+        targetWidth = maxWidth;
+    else
+        targetWidth = overheadWidth + (LONG) contentWidth;
+
+    if ((contentHeight >= (ULONG) maxHeight) ||
+        (overheadHeight >= maxHeight - (LONG) contentHeight))
+        targetHeight = maxHeight;
+    else
+        targetHeight = overheadHeight + (LONG) contentHeight;
+
+    if (targetWidth < 1)
+        targetWidth = 1;
+    if (targetHeight < 1)
+        targetHeight = 1;
+
+    {
+        struct Window *intuitionWindow =
+            (struct Window *) XGET(window, MUIA_Window_Window);
+
+        if (intuitionWindow)
+        {
+            ChangeWindowBox(intuitionWindow,
+                intuitionWindow->LeftEdge, intuitionWindow->TopEdge,
+                (LONG) targetWidth + intuitionWindow->BorderLeft +
+                    intuitionWindow->BorderRight,
+                (LONG) targetHeight + intuitionWindow->BorderTop +
+                    intuitionWindow->BorderBottom);
+        }
     }
 }
 ///
@@ -2984,6 +3091,8 @@ VOID SetMenuDefaultNotifies(Object *wanderer, Object *strip, STRPTR path)
                                 wanderer_menufunc_window_close, NULL);
     DoMenuNotify(strip, MEN_WINDOW_UPDATE, MUIA_Menuitem_Trigger,
                                 wanderer_menufunc_window_update, NULL);
+    DoMenuNotify(strip, MEN_WINDOW_RESIZE_TO_FIT, MUIA_Menuitem_Trigger,
+                                wanderer_menufunc_window_resize_to_fit, NULL);
     DoMenuNotify(strip, MEN_WINDOW_CLEAR, MUIA_Menuitem_Trigger,
                                 wanderer_menufunc_window_clear, NULL);
 
@@ -3907,6 +4016,7 @@ Object * Wanderer__Func_CreateWandererIntuitionMenu( BOOL isRoot, BOOL isBackdro
                 {NM_ITEM,       _(MSG_MEN_OPENPAR),     NULL                    , 0                                     , 0, (APTR) MEN_WINDOW_OPEN_PARENT },
                 {NM_ITEM,       _(MSG_MEN_CLOSE),       _(MSG_MEN_SC_CLOSE)     , 0                                     , 0, (APTR) MEN_WINDOW_CLOSE },
                 {NM_ITEM,       _(MSG_MEN_UPDATE),      NULL                    , 0                                     , 0, (APTR) MEN_WINDOW_UPDATE },
+                {NM_ITEM,       _(MSG_MEN_RESIZETOFIT), NULL                    , 0                                     , 0, (APTR) MEN_WINDOW_RESIZE_TO_FIT },
                 {NM_ITEM,       NM_BARLABEL },
                 {NM_ITEM,       _(MSG_MEN_CONTENTS),    _(MSG_MEN_SC_CONTENTS)  , 0                                     , 0, (APTR) MEN_WINDOW_SELECT },
                 {NM_ITEM,       _(MSG_MEN_CLRSEL),      _(MSG_MEN_SC_CLRSEL)    , 0                                     , 0, (APTR) MEN_WINDOW_CLEAR },
