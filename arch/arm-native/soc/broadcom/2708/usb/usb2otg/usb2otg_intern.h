@@ -347,7 +347,7 @@ struct USB2OTGUnit
         UWORD               hc_LastSampleIntr;
         UBYTE               hc_Type;          /* USB2OTG_HCT_*: role of hc_Request, set when it is armed */
         UBYTE               hc_Armed;         /* hc_Request is live on the bus */
-        UBYTE               hc_ArmedRole;     /* USB2OTG_CHANROLE_*: role of the last INT arm; role
+        UBYTE               hc_ArmedRole;     /* USB2OTG_CHANROLE_*: role of the last arm; role
                                                * change forces an exorcise (stale periodic-split
                                                * state kills direct arms with bare CHHLTD) */
         UBYTE               hc_GiveupStreak;  /* consecutive split give-ups; reset on completion; burn at 4 */

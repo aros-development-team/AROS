@@ -527,7 +527,6 @@ static void usb2otg_escalate_hw_reset(struct USB2OTGUnit *USBUnit, int wedged_ch
             continue;
 
         USBUnit->hu_Channel[i].hc_Request = NULL;
-
         USBUnit->hu_Channel[i].hc_SplitCSplitPending = 0;
         USBUnit->hu_Channel[i].hc_WatchdogCount = 0;
         USBUnit->hu_Channel[i].hc_DeferCount = 0;
@@ -1043,12 +1042,14 @@ static void handle_SOF(struct USB2OTGUnit *USBUnit, struct ExecBase *SysBase, UL
                          * delay firing on a reassigned channel re-writes
                          * CHENA on a live transfer — the core kills it
                          * with bare CHHLTD (killed every hub status poll
-                         * once a split device was present).
+                         * once a split device was present). Assigned
+                         * but not yet started is not its transfer either.
                          */
                         struct IOUsbHWReq *dreq =
                             USBUnit->hu_Channel[chan].hc_Request;
 
-                        if (dreq != NULL && (dreq->iouh_Flags & UHFF_SPLITTRANS))
+                        if (dreq != NULL && (dreq->iouh_Flags & UHFF_SPLITTRANS) &&
+                            USBUnit->hu_Channel[chan].hc_Armed)
                             FNAME_DEV(StartChannel)(USBUnit, chan, 1);
                     }
                 }
