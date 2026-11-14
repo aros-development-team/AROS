@@ -2,12 +2,22 @@
  * SPDX-License-Identifier: BSD-2-Clause
  * Copyright 2026 Jaime Dias
  *
- * Bounded, daemon-owned DNS-SD cache and per-operation event queues. DNS
- * names remain counted labels: dots/backslashes in an instance never become
- * separators. All entry points run in mdnsd's task and none calls client
- * code. The one piece of client memory kept is a lent MDNSEventRequest,
- * which is only given back: er_Result is set and the message is replied,
- * once. No client event buffer, Hook or task pointer is retained.
+ * mdns_discovery.c - bonami.library's browses and resolves, until it goes
+ *
+ * Its operations are views of mdnsd's one cache (mdns_cache.c): a browse
+ * watches the PTRs of its type; each instance they name, the SRV and TXT of
+ * that instance on that link and the A record of the host its SRV names.
+ * The cache asks for them (RFC 6762 sections 5.2, 7.1) and tells when they
+ * come and go. An instance is told to the browse (MEVENT_ADD) when its PTR,
+ * SRV, TXT and an IPv4 address are all there, again when what it says
+ * changes, and its MEVENT_REMOVE when it no longer is.
+ *
+ * DNS names remain counted labels: dots/backslashes in an instance never
+ * become separators. All entry points run in mdnsd's task and none calls
+ * client code. The one piece of client memory kept is a lent
+ * MDNSEventRequest, which is only given back: er_Result is set and the
+ * message is replied, once. No client event buffer, Hook or task pointer is
+ * retained.
  */
 #include <exec/memory.h>
 #include <proto/exec.h>
@@ -16,33 +26,12 @@
 #include <netinet/in.h>
 #include "mdns_bonami.h"
 
-#define DISC_RECORDS 128
 #define DISC_VIEWS 32
 #define DISC_SESSIONS 16
 #define DISC_QUEUE 8
-#define DISC_TTL_MAX 4500
-#define DISC_PENDING 8      /* A/AAAA records held for an SRV yet to come */
-#define DISC_PENDING_TICKS 50
 
-struct DiscoveryRecord
-{
-    UBYTE key[256];
-    UBYTE data[512];
-    UWORD type, length;
-    ULONG link, expires, received, refresh, ttl, serial;
-    ULONG nextMissing, missingInterval;
-    UWORD refreshStep, missingAddressQueries;
-};
-
-#define DISC_ASKED_A       1
-#define DISC_ASKED_AAAA    2
-struct PendingAddress
-{
-    UBYTE key[256];
-    UBYTE data[16];
-    UWORD type, length, rclass;
-    ULONG link, ttl, received;
-};
+/* An instance on a link that a browse reaches, what it was last told as,
+ * and the watches that keep its records. */
 struct DiscoveryView
 {
     UBYTE key[256];
@@ -53,6 +42,7 @@ struct DiscoveryView
     UWORD activeBrowsers;
     APTR browserHandles[DISC_SESSIONS];
     APTR activeHandles[DISC_SESSIONS];
+    APTR srvWatch, txtWatch, addrWatch;
     struct MDNSDiscoveryEvent event;
 };
 struct DiscoverySession
@@ -61,25 +51,20 @@ struct DiscoverySession
     ULONG owner;
     UBYTE key[256];
     BOOL resolve, failed, resolved;
-    ULONG nextQuery, interval, deadline;
+    ULONG deadline;
     UWORD head, count;
     struct MDNSDiscoveryEvent queue[DISC_QUEUE];
     struct MDNSEventRequest *request;   /* lent by the owner, or NULL */
+    APTR watch;                         /* browse: its PTRs; resolve: SRV */
+    APTR txtWatch, addrWatch;           /* resolve */
 };
 struct MDNSDiscovery
 {
-    struct DiscoveryRecord records[DISC_RECORDS];
     struct DiscoveryView views[DISC_VIEWS];
     struct DiscoverySession sessions[DISC_SESSIONS];
     IPTR nextHandle;
-    ULONG lastRefresh, serial;
-    /* The views are rebuilt only when the cache or the operations changed,
-     * or when the next record expires. */
-    BOOL changed, expiring;
-    ULONG nextExpiry;
-    /* An A that came before the SRV naming its host: kept a second, so
-     * that the order records arrive in does not matter. */
-    struct PendingAddress pending[DISC_PENDING];
+    /* The views are rebuilt only when the cache or the operations changed. */
+    BOOL changed;
 };
 
 /* RFC 6763 section 9: the PTRs of this name point at the service types
@@ -121,47 +106,6 @@ static BOOL same_key(const UBYTE *a, const UBYTE *b)
         }
     }
     return TRUE;
-}
-
-/* Decode compression with bounded traversal, preserving the labels/case.
- * Return bytes consumed at the original offset, independently of the target. */
-static LONG decode(const UBYTE *pkt, LONG length, LONG offset, UBYTE *key)
-{
-    LONG at = 0, consumed = 0, jumps = 0;
-    BOOL jumped = FALSE;
-
-    while (offset >= 0 && offset < length && jumps++ < 128) {
-        UBYTE n = pkt[offset++];
-
-        if (!jumped) {
-            consumed++;
-        }
-        if ((n & 0xc0) == 0xc0) {
-            if (offset >= length) {
-                return -1;
-            }
-            if (!jumped) {
-                consumed++;
-            }
-            offset = ((n & 0x3f) << 8) | pkt[offset];
-            jumped = TRUE;
-        } else {
-            if (n > 63 || at + n + 1 > 255 || offset + n > length) {
-                return -1;
-            }
-            key[at++] = n;
-            if (n == 0) {
-                return consumed;
-            }
-            memcpy(key + at, pkt + offset, n);
-            at += n;
-            offset += n;
-            if (!jumped) {
-                consumed += n;
-            }
-        }
-    }
-    return -1;
 }
 
 static BOOL type_key(const char *type, UBYTE *key)
@@ -252,16 +196,78 @@ static void wake(struct DiscoverySession *s, LONG result)
     ReplyMsg(&request->er_Msg);
 }
 
+/* A record an operation watches came or went: look again. */
+static void changed(APTR data, const struct MDNSCacheEntry *e, BOOL added)
+{
+    (void)e;
+    (void)added;
+    ((struct MDNSDiscovery *)data)->changed = TRUE;
+}
+
+static void unwatch(struct MDNSDaemon *md, APTR *w)
+{
+    if (*w != NULL) {
+        mdnsCacheUnwatch(md, *w);
+        *w = NULL;
+    }
+}
+
+static void watch(struct MDNSDaemon *md, APTR *w, const UBYTE *name,
+    UWORD type, ULONG link)
+{
+    if (*w == NULL) {
+        *w = mdnsCacheWatch(md, name, type, link, changed, md->md_Discovery);
+    }
+}
+
+/* The address watch follows the host the latest SRV names, if any. */
+static void watch_host(struct MDNSDaemon *md, APTR *addrWatch,
+    const UBYTE *key, ULONG link)
+{
+    const struct MDNSCacheEntry *srv =
+        mdnsCacheLatest(md, key, DNS_TYPE_SRV, link);
+
+    if (*addrWatch != NULL && (srv == NULL ||
+            !same_key(mdnsCacheWatchName(*addrWatch), srv->ce_Data + 6))) {
+        unwatch(md, addrWatch);
+    }
+    if (srv != NULL) {
+        watch(md, addrWatch, srv->ce_Data + 6, DNS_TYPE_A, link);
+    }
+}
+
+static void view_clear(struct MDNSDaemon *md, struct DiscoveryView *v)
+{
+    unwatch(md, &v->srvWatch);
+    unwatch(md, &v->txtWatch);
+    unwatch(md, &v->addrWatch);
+    memset(v, 0, sizeof(*v));
+}
+
+static void session_unwatch(struct MDNSDaemon *md, struct DiscoverySession *s)
+{
+    unwatch(md, &s->watch);
+    unwatch(md, &s->txtWatch);
+    unwatch(md, &s->addrWatch);
+}
+
+static void session_end(struct MDNSDaemon *md, struct DiscoverySession *s)
+{
+    session_unwatch(md, s);
+    memset(s, 0, sizeof(*s));
+}
+
 /* An operation that ran out of room: the caller must stop and begin it
  * again. Nothing else is failed with it. */
-static void fail(struct MDNSDiscovery *d, struct DiscoverySession *s)
+static void fail(struct MDNSDaemon *md, struct DiscoverySession *s)
 {
     if (s->handle == NULL || s->failed) {
         return;
     }
     s->failed = TRUE;
     s->count = 0;
-    d->changed = TRUE;
+    session_unwatch(md, s);
+    md->md_Discovery->changed = TRUE;
     wake(s, MDNSERR_BUSY);
 }
 
@@ -324,45 +330,6 @@ static void notify(struct MDNSDaemon *md, const struct DiscoveryView *view,
     }
 }
 
-static struct DiscoveryRecord *find_record(struct MDNSDiscovery *d,
-    const UBYTE *key, ULONG link, UWORD type, ULONG now)
-{
-    LONG i;
-    struct DiscoveryRecord *found = NULL;
-
-    for (i = 0; i < DISC_RECORDS; i++) {
-        struct DiscoveryRecord *r = &d->records[i];
-
-        if (r->type == type && r->link == link && !due(now, r->expires) &&
-            same_key(key, r->key) &&
-            (found == NULL || (LONG)(r->serial - found->serial) > 0)) {
-            found = r;
-        }
-    }
-    return found;
-}
-
-/*
- * What an active operation can reach, and so what is cached, refreshed and
- * asked for: the PTRs of a browsed type; the SRV and TXT of an instance of
- * a browsed type, or of an instance being resolved; the A/AAAA of a host that
- * such an SRV names. Everything else on the network is left alone
- * (RFC 6762 section 5.2 asks for queries only for what someone wants).
- */
-static BOOL browsed(const struct MDNSDiscovery *d, const UBYTE *type)
-{
-    LONG i;
-
-    for (i = 0; i < DISC_SESSIONS; i++) {
-        const struct DiscoverySession *s = &d->sessions[i];
-
-        if (live(s) && !s->resolve && same_key(s->key, type)) {
-            return TRUE;
-        }
-    }
-    return FALSE;
-}
-
 static UWORD browse_sessions(const struct MDNSDiscovery *d,
     const UBYTE *type)
 {
@@ -378,148 +345,6 @@ static UWORD browse_sessions(const struct MDNSDiscovery *d,
     }
     return result;
 }
-static BOOL ptr_targets(const struct MDNSDiscovery *d, const UBYTE *owner,
-    const UBYTE *instance, ULONG link, ULONG now)
-{
-    LONG i;
-
-    for (i = 0; i < DISC_RECORDS; i++) {
-        const struct DiscoveryRecord *r = &d->records[i];
-
-        if (r->type == DNS_TYPE_PTR && r->link == link &&
-            !due(now, r->expires) && same_key(r->key, owner) &&
-            same_key(r->data, instance)) {
-            return TRUE;
-        }
-    }
-    return FALSE;
-}
-
-static BOOL wanted_instance(const struct MDNSDiscovery *d,
-    const UBYTE *instance, ULONG link, ULONG now)
-{
-    LONG i;
-
-    if (browsed(d, instance + instance[0] + 1)) {
-        return TRUE;
-    }
-    for (i = 0; i < DISC_SESSIONS; i++) {
-        const struct DiscoverySession *s = &d->sessions[i];
-
-        if (live(s) && s->resolve && same_key(s->key, instance)) {
-            return TRUE;
-        }
-        if (live(s) && !s->resolve &&
-            ptr_targets(d, s->key, instance, link, now)) {
-            return TRUE;
-        }
-    }
-    return FALSE;
-}
-static BOOL wanted_host(const struct MDNSDiscovery *d, const UBYTE *host,
-    ULONG link, ULONG now)
-{
-    LONG i;
-
-    for (i = 0; i < DISC_RECORDS; i++) {
-        const struct DiscoveryRecord *r = &d->records[i];
-
-        if (r->type == DNS_TYPE_SRV && r->link == link && !due(now, r->expires) &&
-            same_key(r->data + 6, host) &&
-            wanted_instance(d, r->key, link, now)) {
-            return TRUE;
-        }
-    }
-    return FALSE;
-}
-static BOOL wanted(const struct MDNSDiscovery *d, UWORD type, const UBYTE *key,
-    ULONG link, ULONG now)
-{
-    switch (type) {
-    case DNS_TYPE_PTR:
-        return browsed(d, key);
-    case DNS_TYPE_SRV:
-    case DNS_TYPE_TXT:
-        return wanted_instance(d, key, link, now);
-    case DNS_TYPE_A:
-    case DNS_TYPE_AAAA:
-        return wanted_host(d, key, link, now);
-    }
-    return FALSE;
-}
-
-/* Mark the cache records reached by the current operations. Do the session
- * lookups once per PTR/SRV/TXT, then join wanted SRVs to their A records.
- * This avoids repeating the records-by-sessions host search for every A in
- * a full-cache eviction or refresh pass. */
-static void mark_wanted_records(const struct MDNSDiscovery *d, ULONG now,
-    UBYTE marked[DISC_RECORDS])
-{
-    LONG i, j;
-
-    memset(marked, 0, DISC_RECORDS);
-    for (i = 0; i < DISC_RECORDS; i++) {
-        const struct DiscoveryRecord *r = &d->records[i];
-
-        if (r->type != 0 && r->type != DNS_TYPE_A &&
-            r->type != DNS_TYPE_AAAA &&
-            !due(now, r->expires) &&
-            wanted(d, r->type, r->key, r->link, now)) {
-            marked[i] = TRUE;
-        }
-    }
-    for (i = 0; i < DISC_RECORDS; i++) {
-        const struct DiscoveryRecord *srv = &d->records[i];
-
-        if (!marked[i] || srv->type != DNS_TYPE_SRV) {
-            continue;
-        }
-        for (j = 0; j < DISC_RECORDS; j++) {
-            const struct DiscoveryRecord *addr = &d->records[j];
-
-            if ((addr->type == DNS_TYPE_A || addr->type == DNS_TYPE_AAAA) &&
-                addr->link == srv->link &&
-                !due(now, addr->expires) &&
-                same_key(addr->key, srv->data + 6)) {
-                marked[j] = TRUE;
-            }
-        }
-    }
-}
-
-/* The cache has no room for a record operations want: those operations,
- * and only those, are failed. */
-static void fail_wanting(struct MDNSDiscovery *d, UWORD type, const UBYTE *key,
-    ULONG link, ULONG now)
-{
-    LONG i;
-
-    if (type == DNS_TYPE_A || type == DNS_TYPE_AAAA) {
-        for (i = 0; i < DISC_RECORDS; i++) {
-            const struct DiscoveryRecord *r = &d->records[i];
-
-            if (r->type == DNS_TYPE_SRV && r->link == link &&
-                !due(now, r->expires) && same_key(r->data + 6, key)) {
-                fail_wanting(d, DNS_TYPE_SRV, r->key, link, now);
-            }
-        }
-        return;
-    }
-    for (i = 0; i < DISC_SESSIONS; i++) {
-        struct DiscoverySession *s = &d->sessions[i];
-
-        if (!live(s)) {
-            continue;
-        }
-        if ((s->resolve && type != DNS_TYPE_PTR && same_key(s->key, key)) ||
-            (!s->resolve && type == DNS_TYPE_PTR && same_key(s->key, key)) ||
-            (!s->resolve && type != DNS_TYPE_PTR &&
-                ptr_targets(d, s->key, key, link, now))) {
-            fail(d, s);
-        }
-    }
-}
-
 static ULONG interface_address4(const struct MDNSDaemon *md, ULONG link)
 {
     LONG i;
@@ -530,39 +355,6 @@ static ULONG interface_address4(const struct MDNSDaemon *md, ULONG link)
         }
     }
     return 0;
-}
-
-static BOOL snapshot(const struct MDNSDaemon *md, struct MDNSDiscovery *d,
-    const UBYTE *key, ULONG link, struct MDNSDiscoveryEvent *out, ULONG now)
-{
-    const struct DiscoveryRecord *srv = find_record(d, key, link, DNS_TYPE_SRV, now);
-    const struct DiscoveryRecord *txt = find_record(d, key, link, DNS_TYPE_TXT, now);
-    const struct DiscoveryRecord *addr;
-    const UBYTE *type = key + key[0] + 1;
-    LONG n;
-
-    if (srv == NULL || txt == NULL || key[0] == 0) {
-        return FALSE;
-    }
-    addr = find_record(d, srv->data + 6, link, DNS_TYPE_A, now);
-    if (addr == NULL || (srv->data[4] == 0 && srv->data[5] == 0)) {
-        return FALSE;
-    }
-    memset(out, 0, sizeof(*out));
-    memcpy(out->de_Name, key + 1, key[0]);
-    n = type[0];
-    if (n + 5 > MDNS_MAX_TYPE || type[n + 1] != 4) {
-        return FALSE;
-    }
-    memcpy(out->de_Type, type + 1, n);
-    out->de_Type[n] = '.';
-    memcpy(out->de_Type + n + 1, type + n + 2, 4);
-    out->de_Port = ((UWORD)srv->data[4] << 8) | srv->data[5];
-    memcpy(&out->de_Address, addr->data, 4);
-    out->de_Interface = htonl(interface_address4(md, link));
-    out->de_TXTLength = txt->length;
-    memcpy(out->de_TXT, txt->data, txt->length);
-    return TRUE;
 }
 
 static BOOL is_services(const UBYTE *key)
@@ -644,303 +436,104 @@ static BOOL valid_instance(const UBYTE *key)
     return valid_type(key + key[0] + 1);
 }
 
-/* Whether any browse or resolve wants records at all. */
-static BOOL discovering(const struct MDNSDiscovery *d)
+/* Does a PTR of owner on link name instance? */
+static BOOL ptr_targets(struct MDNSDaemon *md, const UBYTE *owner,
+    const UBYTE *instance, ULONG link)
 {
-    LONG i;
+    const struct MDNSCacheEntry *e = NULL;
 
-    for (i = 0; i < DISC_SESSIONS; i++) {
-        if (live(&d->sessions[i])) {
+    while ((e = mdnsCacheFind(md, e, owner, DNS_TYPE_PTR, link)) != NULL) {
+        if (same_key(e->ce_Data, instance)) {
             return TRUE;
         }
     }
     return FALSE;
 }
-static void hold_address(struct MDNSDiscovery *d, UWORD type, UWORD rclass,
-    ULONG ttl, const UBYTE *key, const UBYTE *data, UWORD length,
-    ULONG link, ULONG now)
+
+/* TXT data as RFC 6763 section 6 has it - strings, one at least, that fill
+ * it exactly - and no more than an event holds. */
+static BOOL txt_valid(const struct MDNSCacheEntry *txt)
 {
-    struct PendingAddress *slot = &d->pending[0];
-    LONG i;
+    LONG at = 0;
 
-    for (i = 0; i < DISC_PENDING; i++) {
-        struct PendingAddress *a = &d->pending[i];
-
-        if (a->type == type && a->link == link && same_key(a->key, key)) {
-            slot = a;
-            break;
-        }
-        if (a->link == 0 || due(now, a->received + DISC_PENDING_TICKS) ||
-            (LONG)(a->received - slot->received) < 0) {
-            slot = a;
-        }
+    if (txt->ce_DataLength == 0 ||
+        txt->ce_DataLength > MDNS_DISCOVERY_TXT_MAX) {
+        return FALSE;
     }
-    memcpy(slot->key, key, 256);
-    memcpy(slot->data, data, length);
-    slot->type = type;
-    slot->length = length;
-    slot->rclass = rclass;
-    slot->ttl = ttl;
-    slot->link = link;
-    slot->received = now;
+    while (at < txt->ce_DataLength) {
+        at += txt->ce_Data[at] + 1;
+    }
+    return at == txt->ce_DataLength;
 }
 
-static void cache(struct MDNSDiscovery *d, UWORD type, UWORD rclass, ULONG ttl,
-    const UBYTE *key, const UBYTE *data, LONG size, ULONG link, ULONG now)
+static BOOL snapshot(struct MDNSDaemon *md, const UBYTE *key, ULONG link,
+    struct MDNSDiscoveryEvent *out)
 {
-    LONG i;
-    struct DiscoveryRecord *slot = NULL;
-    ULONG missingAt = 0, missingInterval = 50;
-    UWORD missingAddressQueries = 0;
+    const struct MDNSCacheEntry *srv =
+        mdnsCacheLatest(md, key, DNS_TYPE_SRV, link);
+    const struct MDNSCacheEntry *txt =
+        mdnsCacheLatest(md, key, DNS_TYPE_TXT, link);
+    const struct MDNSCacheEntry *addr;
+    const UBYTE *type = key + key[0] + 1;
+    LONG n;
 
-    for (i = 0; i < DISC_RECORDS; i++) {
-        struct DiscoveryRecord *r = &d->records[i];
-        BOOL match = r->type == type && r->link == link && same_key(r->key, key);
-        BOOL equalData = r->length == size && memcmp(r->data, data, size) == 0;
-        BOOL identical;
-
-        if (type == DNS_TYPE_PTR) {
-            equalData = same_key(r->data, data);
-        } else if (type == DNS_TYPE_SRV) {
-            equalData = memcmp(r->data, data, 6) == 0 && same_key(r->data + 6, data + 6);
-        }
-        identical = match && equalData;
-
-        if (identical) {
-            slot = r;
-        } else if (match && (rclass & 0x8000) != 0 &&
-            type != DNS_TYPE_PTR && ttl != 0 &&
-            due(now, r->received + 50) && !due(now + 50, r->expires)) {
-            r->expires = now + 50;   /* cache flush: grace, not instant removal */
-            d->changed = TRUE;
-        }
+    if (srv == NULL || txt == NULL || key[0] == 0 || !txt_valid(txt)) {
+        return FALSE;
     }
-    if (ttl == 0) {
-        if (slot != NULL && !due(now + 50, slot->expires)) {
-            slot->expires = now + 50; /* another responder may rescue it */
-            d->changed = TRUE;
-        }
-        return;
+    addr = mdnsCacheLatest(md, srv->ce_Data + 6, DNS_TYPE_A, link);
+    if (addr == NULL || addr->ce_DataLength != 4 ||
+        (srv->ce_Data[4] == 0 && srv->ce_Data[5] == 0)) {
+        return FALSE;
     }
-    if (slot != NULL) {
-        missingAt = slot->nextMissing;
-        missingInterval = slot->missingInterval;
-        missingAddressQueries = slot->missingAddressQueries;
+    memset(out, 0, sizeof(*out));
+    memcpy(out->de_Name, key + 1, key[0]);
+    n = type[0];
+    if (n + 5 > MDNS_MAX_TYPE || type[n + 1] != 4) {
+        return FALSE;
     }
-    /* A record already held is renewed; a new one only when an operation
-     * can reach it. */
-    if (slot == NULL && !wanted(d, type, key, link, now)) {
-        if ((type == DNS_TYPE_A || type == DNS_TYPE_AAAA) && discovering(d)) {
-            hold_address(d, type, rclass, ttl, key, data, (UWORD)size,
-                link, now);
-        }
-        return;
-    }
-    if (slot == NULL) {
-        for (i = 0; i < DISC_RECORDS; i++) {
-            if (d->records[i].type == 0 || due(now, d->records[i].expires)) {
-                slot = &d->records[i];
-                break;
-            }
-        }
-    }
-    if (slot == NULL) {
-        UBYTE marked[DISC_RECORDS];
-
-        /* Full: the oldest record no operation reaches any more gives way. */
-        mark_wanted_records(d, now, marked);
-        for (i = 0; i < DISC_RECORDS; i++) {
-            struct DiscoveryRecord *r = &d->records[i];
-
-            if ((slot == NULL || (LONG)(r->serial - slot->serial) < 0) &&
-                !marked[i]) {
-                slot = r;
-            }
-        }
-    }
-    if (slot == NULL) {
-        fail_wanting(d, type, key, link, now);
-        return;
-    }
-    d->changed = TRUE;
-    memset(slot, 0, sizeof(*slot));
-    memcpy(slot->key, key, 256);
-    memcpy(slot->data, data, size);
-    slot->length = size;
-    slot->link = link;
-    slot->type = type;
-    slot->ttl = ttl > DISC_TTL_MAX ? DISC_TTL_MAX : ttl;
-    slot->received = now;
-    slot->serial = ++d->serial;
-    slot->nextMissing = missingAt;
-    slot->missingInterval = missingInterval;
-    slot->missingAddressQueries = missingAddressQueries;
-    slot->expires = now + slot->ttl * 50;
-    slot->refresh = now + slot->ttl * (40 + now % 2); /* 80–82 percent */
-    if (type == DNS_TYPE_SRV) {
-        /* the address of its host may have come first */
-        for (i = 0; i < DISC_PENDING; i++) {
-            struct PendingAddress *a = &d->pending[i];
-
-            if (a->link == link && !due(now, a->received + DISC_PENDING_TICKS) &&
-                same_key(a->key, data + 6)) {
-                struct PendingAddress held = *a;
-
-                memset(a, 0, sizeof(*a));
-                cache(d, held.type, held.rclass, held.ttl, held.key,
-                      held.data, held.length, held.link, now);
-            }
-        }
-    }
+    memcpy(out->de_Type, type + 1, n);
+    out->de_Type[n] = '.';
+    memcpy(out->de_Type + n + 1, type + n + 2, 4);
+    out->de_Port = ((UWORD)srv->ce_Data[4] << 8) | srv->ce_Data[5];
+    memcpy(&out->de_Address, addr->ce_Data, 4);
+    out->de_Interface = htonl(interface_address4(md, link));
+    out->de_TXTLength = txt->ce_DataLength;
+    memcpy(out->de_TXT, txt->ce_Data, txt->ce_DataLength);
+    return TRUE;
 }
 
-void mdnsDiscoveryRecord(struct MDNSDaemon *md, const struct MDNSRecord *record,
-    const UBYTE *pkt, LONG length, LONG ownerOffset)
+/* A PTR a browse can be told of: one of _services._dns-sd._udp naming a
+ * type, or one of a type (or a subtype of it) naming an instance of it. */
+static BOOL ptr_valid(const struct MDNSCacheEntry *e)
 {
-    struct MDNSDiscovery *d = md->md_Discovery;
-    UBYTE key[256] = {0}, data[512] = {0};
-    LONG size = record->rdlength, consumed;
-    ULONG now = mdnsTicks();
-    ULONG link = md->md_SendIf >= 0 ? md->md_Ifs[md->md_SendIf].mi_Index : 0;
+    UBYTE target[256];
 
-    md->md_DiscoveryRecords++;
-    if (record->type == DNS_TYPE_PTR) {
-        md->md_DiscoveryPTR++;
+    if (e->ce_DataLength > sizeof(target)) {
+        return FALSE;
     }
-    if (d == NULL || (record->rclass & 0x7fff) != DNS_CLASS_IN ||
-        link == 0 || decode(pkt, length, ownerOffset, key) < 0 ||
-        record->rdoffset < 0 || record->rdoffset + size > length) {
-        return;
-    }
-    if (record->type == DNS_TYPE_PTR) {
-        consumed = decode(pkt, length, record->rdoffset, data);
-        if (consumed != size) {
-            return;
-        }
-        if (is_services(key) ? !valid_type(data) :
-            !valid_instance(data) || !ptr_owner_matches(key, data)) {
-            return;
-        }
-        size = key_length(data);
-    } else if (record->type == DNS_TYPE_SRV) {
-        if (!valid_instance(key) || size < 7) {
-            return;
-        }
-        memcpy(data, record->rdata, 6);
-        consumed = decode(pkt, length, record->rdoffset + 6, data + 6);
-        if (consumed != size - 6) {
-            return;
-        }
-        size = 6 + key_length(data + 6);
-    } else if (record->type == DNS_TYPE_TXT) {
-        LONG at = 0;
-
-        if (!valid_instance(key) || size == 0 || size > MDNS_DISCOVERY_TXT_MAX) {
-            return;
-        }
-        while (at < size) {
-            at += record->rdata[at] + 1;
-        }
-        if (at != size) {
-            return;
-        }
-        memcpy(data, record->rdata, size);
-    } else if (record->type == DNS_TYPE_A) {
-        if (size != 4) {
-            return;
-        }
-        memcpy(data, record->rdata, 4);
-    } else if (record->type == DNS_TYPE_AAAA) {
-        if (size != 16) {
-            return;
-        }
-        memcpy(data, record->rdata, 16);
-    } else {
-        return;
-    }
-    cache(d, record->type, record->rclass, record->ttl, key, data, size, link, now);
-}
-
-
-
-static void send_question(struct MDNSDaemon *md, const UBYTE *key, UWORD type, ULONG link)
-{
-    UBYTE pkt[1400];
-    LONG n = key_length(key), i, pos;
-    UWORD answers = 0;
-    ULONG now = mdnsTicks();
-    struct MDNSDiscovery *d = md->md_Discovery;
-
-    if (link == 0) {
-        for (i = 0; i < md->md_IfCount; i++) {
-            send_question(md, key, type, md->md_Ifs[i].mi_Index);
-        }
-        return;
-    }
-    memset(pkt, 0, sizeof(struct MDNSHeader));
-    pkt[5] = 1;
-    memcpy(pkt + 12, key, n);
-    pos = 12 + n;
-    pkt[pos++] = type >> 8;
-    pkt[pos++] = type;
-    pkt[pos++] = 0;
-    pkt[pos++] = DNS_CLASS_IN;
-    for (i = 0; i < DISC_RECORDS; i++) {
-        const struct DiscoveryRecord *r = &d->records[i];
-        LONG ownerLen = key_length(r->key);
-        ULONG ttl;
-
-        if (r->type != type || (link != 0 && r->link != link) ||
-            !same_key(r->key, key) || due(now, r->expires) ||
-            (LONG)(r->expires - now) <= (LONG)(r->ttl * 25)) {
-            continue;
-        }
-        if (pos + ownerLen + 10 + r->length > (LONG)sizeof(pkt)) {
-            break; /* omitting known answers only causes extra answers */
-        }
-        memcpy(pkt + pos, r->key, ownerLen);
-        pos += ownerLen;
-        pkt[pos++] = type >> 8;
-        pkt[pos++] = type;
-        pkt[pos++] = 0;
-        pkt[pos++] = DNS_CLASS_IN;
-        ttl = (r->expires - now) / 50;
-        pkt[pos++] = ttl >> 24;
-        pkt[pos++] = ttl >> 16;
-        pkt[pos++] = ttl >> 8;
-        pkt[pos++] = ttl;
-        pkt[pos++] = r->length >> 8;
-        pkt[pos++] = r->length;
-        memcpy(pkt + pos, r->data, r->length);
-        pos += r->length;
-        answers++;
-    }
-    pkt[6] = answers >> 8;
-    pkt[7] = answers;
-    for (i = 0; i < md->md_IfCount; i++) {
-        if (link == 0 || md->md_Ifs[i].mi_Index == link) {
-            mdnsNetSendOn(md, i, pkt, pos);
-        }
-    }
+    memset(target, 0, sizeof(target));
+    memcpy(target, e->ce_Data, e->ce_DataLength);
+    return is_services(e->ce_Name) ? valid_type(target) :
+        valid_instance(target) && ptr_owner_matches(e->ce_Name, target);
 }
 
 static struct DiscoveryView *view_of(struct MDNSDiscovery *d,
-    const struct DiscoveryRecord *ptr)
+    const UBYTE *instance, ULONG link)
 {
     LONG j;
 
     for (j = 0; j < DISC_VIEWS; j++) {
-        if (d->views[j].key[0] != 0 && d->views[j].link == ptr->link &&
-            same_key(d->views[j].key, ptr->data)) {
+        if (d->views[j].key[0] != 0 && d->views[j].link == link &&
+            same_key(d->views[j].key, instance)) {
             return &d->views[j];
         }
     }
     return NULL;
 }
 
-static void release_type_views(struct MDNSDiscovery *d, const UBYTE *type,
-    ULONG now)
+static void release_type_views(struct MDNSDaemon *md, const UBYTE *type)
 {
+    struct MDNSDiscovery *d = md->md_Discovery;
     LONG i;
     BOOL services = is_services(type);
 
@@ -948,15 +541,16 @@ static void release_type_views(struct MDNSDiscovery *d, const UBYTE *type,
         struct DiscoveryView *view = &d->views[i];
 
         if (view->key[0] != 0 && view->type == services &&
-            (services || ptr_targets(d, type, view->key, view->link, now))) {
-            memset(view, 0, sizeof(*view));
+            (services || ptr_targets(md, type, view->key, view->link))) {
+            view_clear(md, view);
         }
     }
 }
 
-static void refresh_views(struct MDNSDaemon *md, ULONG now)
+static void refresh_views(struct MDNSDaemon *md)
 {
     struct MDNSDiscovery *d = md->md_Discovery;
+    const struct MDNSCacheEntry *r;
     LONG i, j;
 
     /* Which views the browsed PTRs still have; the others go first, so
@@ -967,15 +561,12 @@ static void refresh_views(struct MDNSDaemon *md, ULONG now)
         memset(d->views[i].activeHandles, 0,
             sizeof(d->views[i].activeHandles));
     }
-    for (i = 0; i < DISC_RECORDS; i++) {
-        struct DiscoveryRecord *r = &d->records[i];
+    for (r = NULL; (r = mdnsCacheFind(md, r, NULL, DNS_TYPE_PTR, 0)) != NULL; ) {
         struct DiscoveryView *view;
+        UWORD browsers = browse_sessions(d, r->ce_Name);
 
-        UWORD browsers = r->type == DNS_TYPE_PTR ?
-            browse_sessions(d, r->key) : 0;
-
-        if (r->type == DNS_TYPE_PTR && !due(now, r->expires) &&
-            browsers != 0 && (view = view_of(d, r)) != NULL) {
+        if (browsers != 0 && ptr_valid(r) &&
+            (view = view_of(d, r->ce_Data, r->ce_Link)) != NULL) {
             view->active = TRUE;
             view->activeBrowsers |= browsers;
             for (j = 0; j < DISC_SESSIONS; j++) {
@@ -992,59 +583,55 @@ static void refresh_views(struct MDNSDaemon *md, ULONG now)
             if (v->present) {
                 notify(md, v, MEVENT_REMOVE, v->browsers);
             }
-            memset(v, 0, sizeof(*v));
+            view_clear(md, v);
         }
     }
-    for (i = 0; i < DISC_RECORDS; i++) {
-        struct DiscoveryRecord *r = &d->records[i];
+    for (r = NULL; (r = mdnsCacheFind(md, r, NULL, DNS_TYPE_PTR, 0)) != NULL; ) {
         struct DiscoveryView *view;
-        UWORD browsers = r->type == DNS_TYPE_PTR ?
-            browse_sessions(d, r->key) : 0;
+        UWORD browsers = browse_sessions(d, r->ce_Name);
 
-        if (r->type != DNS_TYPE_PTR || due(now, r->expires) ||
-            browsers == 0 || view_of(d, r) != NULL) {
+        if (browsers == 0 || !ptr_valid(r) ||
+            view_of(d, r->ce_Data, r->ce_Link) != NULL) {
             continue;
         }
         for (view = NULL, j = 0; j < DISC_VIEWS; j++) {
             if (d->views[j].key[0] == 0) {
+                LONG k;
+
                 view = &d->views[j];
-                memcpy(view->key, r->data, 256);
-                view->link = r->link;
+                memcpy(view->key, r->ce_Data, r->ce_DataLength);
+                view->link = r->ce_Link;
                 view->active = TRUE;
                 view->activeBrowsers = browsers;
-                {
-                    LONG k;
-
-                    for (k = 0; k < DISC_SESSIONS; k++) {
-                        if ((browsers & (1U << k)) != 0) {
-                            view->activeHandles[k] = d->sessions[k].handle;
-                        }
+                for (k = 0; k < DISC_SESSIONS; k++) {
+                    if ((browsers & (1U << k)) != 0) {
+                        view->activeHandles[k] = d->sessions[k].handle;
                     }
                 }
-                view->type = is_services(r->key);
+                view->type = is_services(r->ce_Name);
                 break;
             }
         }
         if (view == NULL) {
             /* More instances of the type than there are views: those who
              * browse it are failed, once, and its records are no longer
-             * wanted; nobody else is touched. */
+             * watched; nobody else is touched. */
             for (j = 0; j < DISC_SESSIONS; j++) {
                 struct DiscoverySession *s = &d->sessions[j];
 
-                if (live(s) && !s->resolve && same_key(s->key, r->key)) {
-                    fail(d, s);
+                if (live(s) && !s->resolve && same_key(s->key, r->ce_Name)) {
+                    fail(md, s);
                 }
             }
             /* The failed type no longer has a live browse. Return its views
              * now so a later PTR in this rebuild can use them. */
-            release_type_views(d, r->key, now);
+            release_type_views(md, r->ce_Name);
         }
     }
     for (i = 0; i < DISC_VIEWS; i++) {
         struct DiscoveryView *v = &d->views[i];
         struct MDNSDiscoveryEvent event;
-        BOOL present, changed;
+        BOOL present, differs;
         UWORD added = 0, removed = 0;
 
         if (v->key[0] == 0) {
@@ -1054,11 +641,16 @@ static void refresh_views(struct MDNSDaemon *md, ULONG now)
             type_event(md, v->key, v->link, &event);
             present = TRUE;
         } else {
-            present = snapshot(md, d, v->key, v->link, &event, now);
+            /* an instance's records are asked for and kept while it is
+             * seen */
+            watch(md, &v->srvWatch, v->key, DNS_TYPE_SRV, v->link);
+            watch(md, &v->txtWatch, v->key, DNS_TYPE_TXT, v->link);
+            watch_host(md, &v->addrWatch, v->key, v->link);
+            present = snapshot(md, v->key, v->link, &event);
         }
-        changed = present && v->present &&
+        differs = present && v->present &&
             memcmp(&event, &v->event, sizeof(event)) != 0;
-        for (j = 0; present && v->present && !changed &&
+        for (j = 0; present && v->present && !differs &&
                 j < DISC_SESSIONS; j++) {
             BOOL was = (v->browsers & (1U << j)) != 0;
             BOOL is = (v->activeBrowsers & (1U << j)) != 0;
@@ -1072,12 +664,12 @@ static void refresh_views(struct MDNSDaemon *md, ULONG now)
                 added |= (UWORD)(1U << j);
             }
         }
-        if (v->present && (!present || changed)) {
+        if (v->present && (!present || differs)) {
             notify(md, v, MEVENT_REMOVE, v->browsers);
         } else if (removed != 0) {
             notify(md, v, MEVENT_REMOVE, removed);
         }
-        if (present && (!v->present || changed)) {
+        if (present && (!v->present || differs)) {
             v->event = event;
             notify(md, v, MEVENT_ADD, v->activeBrowsers);
         } else if (added != 0) {
@@ -1090,150 +682,59 @@ static void refresh_views(struct MDNSDaemon *md, ULONG now)
     }
 }
 
+/* Operations ended: the views only they reached go now, with their
+ * watches, before the cache's next turn would ask for them. */
+static void settle(struct MDNSDaemon *md)
+{
+    refresh_views(md);
+    md->md_Discovery->changed = TRUE;   /* and the resolves, in the turn */
+}
+
+/* After the cache's turn (mdnsCacheTick()), which has told what came and
+ * went. */
 void mdnsDiscoveryTick(struct MDNSDaemon *md)
 {
     struct MDNSDiscovery *d = md->md_Discovery;
     ULONG now = mdnsTicks();
     LONG i, j;
-    BOOL interested = FALSE, rebuild;
-    UBYTE marked[DISC_RECORDS];
+    BOOL rebuild;
 
     if (d == NULL) {
         return;
     }
     /* This runs on every turn of mdnsd's loop. The views and resolutions
      * are looked at again only when something they depend on changed. */
-    rebuild = d->changed || (d->expiring && due(now, d->nextExpiry));
+    rebuild = d->changed;
     if (rebuild) {
         d->changed = FALSE;
-        refresh_views(md, now);
-        d->expiring = FALSE;
-        for (i = 0; i < DISC_RECORDS; i++) {
-            const struct DiscoveryRecord *r = &d->records[i];
-
-            if (r->type != 0 && !due(now, r->expires) &&
-                (!d->expiring || (LONG)(r->expires - d->nextExpiry) < 0)) {
-                d->nextExpiry = r->expires;
-                d->expiring = TRUE;
-            }
-        }
+        refresh_views(md);
     }
     for (i = 0; i < DISC_SESSIONS; i++) {
         struct DiscoverySession *s = &d->sessions[i];
+        struct MDNSDiscoveryEvent event;
 
-        if (s->handle == NULL) {
+        if (s->handle == NULL || !s->resolve || s->resolved || s->failed) {
             continue;
         }
-        if (s->resolve && !s->resolved && !s->failed) {
-            struct MDNSDiscoveryEvent event;
-
-            for (j = 0; rebuild && j < md->md_IfCount; j++) {
-                if (snapshot(md, d, s->key, md->md_Ifs[j].mi_Index,
-                        &event, now)) {
+        if (rebuild) {
+            watch_host(md, &s->addrWatch, s->key, 0);
+            for (j = 0; j < md->md_IfCount; j++) {
+                if (snapshot(md, s->key, md->md_Ifs[j].mi_Index, &event)) {
                     event.de_Code = MEVENT_RESOLVED;
                     enqueue(md, s, &event);
                     s->resolved = TRUE;
-                    d->changed = TRUE;
                     break;
                 }
             }
-            if (!s->resolved && due(now, s->deadline)) {
-                memset(&event, 0, sizeof(event));
-                event.de_Code = MEVENT_RESOLVE_FAILED;
-                enqueue(md, s, &event);
-                s->resolved = TRUE;
-                d->changed = TRUE;
-            }
         }
-        if (!s->failed && (!s->resolve || !s->resolved)) {
-            interested = TRUE;
+        if (!s->resolved && due(now, s->deadline)) {
+            memset(&event, 0, sizeof(event));
+            event.de_Code = MEVENT_RESOLVE_FAILED;
+            enqueue(md, s, &event);
+            s->resolved = TRUE;
         }
-        if (s->failed || (s->resolve && s->resolved) || md->md_IfCount == 0 ||
-            md->md_Socket < 0 || !due(now, s->nextQuery)) {
-            continue;
-        }
-        send_question(md, s->key, s->resolve ? DNS_TYPE_SRV : DNS_TYPE_PTR, 0);
-        if (s->resolve) {
-            send_question(md, s->key, DNS_TYPE_TXT, 0);
-        }
-        mdnsRegAnswerLocal(md, MDNS_REFLECT_DISCOVERY, NULL);
-        s->nextQuery = now + s->interval;
-        if (s->interval < 180000) {
-            s->interval *= 2;
-        }
-        if (s->interval > 180000) {
-            s->interval = 180000;
-        }
-    }
-    /* Resolve missing components at most once per second; independently
-     * refresh records at 80/85/90/95 percent of their own TTL. */
-    if (!interested || !due(now, d->lastRefresh + 50) || md->md_IfCount == 0 || md->md_Socket < 0) {
-        return;
-    }
-    d->lastRefresh = now;
-    mark_wanted_records(d, now, marked);
-    for (i = 0; i < DISC_RECORDS; i++) {
-        struct DiscoveryRecord *r = &d->records[i];
-        BOOL missing = FALSE;
-
-        if (!marked[i]) {
-            continue;
-        }
-        if (r->refreshStep < 4 && due(now, r->refresh)) {
-            send_question(md, r->key, r->type, r->link);
-            r->refreshStep++;
-            r->refresh = r->received + r->ttl * (40 + 2 * r->refreshStep) +
-                (r->ttl * r->refreshStep) / 2 + r->ttl * (r->received % 2);
-        }
-        if (!due(now, r->nextMissing)) {
-            continue;
-        }
-        if (r->type == DNS_TYPE_PTR && !is_services(r->key)) {
-            if (find_record(d, r->data, r->link, DNS_TYPE_SRV, now) == NULL) {
-                send_question(md, r->data, DNS_TYPE_SRV, r->link);
-                missing = TRUE;
-            }
-            if (find_record(d, r->data, r->link, DNS_TYPE_TXT, now) == NULL) {
-                send_question(md, r->data, DNS_TYPE_TXT, r->link);
-                missing = TRUE;
-            }
-        } else if (r->type == DNS_TYPE_SRV) {
-            BOOL haveA = find_record(d, r->data + 6, r->link,
-                DNS_TYPE_A, now) != NULL;
-            BOOL haveAAAA = find_record(d, r->data + 6, r->link,
-                DNS_TYPE_AAAA, now) != NULL;
-
-            /* Until one usable address arrives, retry both families with
-             * the normal backoff. Once either family is known, the service
-             * is reachable: ask for the other family once, but do not keep
-             * querying forever when the host intentionally publishes only
-             * A or only AAAA. */
-            if (!haveA && !haveAAAA) {
-                send_question(md, r->data + 6, DNS_TYPE_A, r->link);
-                send_question(md, r->data + 6, DNS_TYPE_AAAA, r->link);
-                r->missingAddressQueries = 0;
-                missing = TRUE;
-            } else if (!haveA &&
-                !(r->missingAddressQueries & DISC_ASKED_A)) {
-                send_question(md, r->data + 6, DNS_TYPE_A, r->link);
-                r->missingAddressQueries |= DISC_ASKED_A;
-            } else if (!haveAAAA &&
-                !(r->missingAddressQueries & DISC_ASKED_AAAA)) {
-                send_question(md, r->data + 6, DNS_TYPE_AAAA, r->link);
-                r->missingAddressQueries |= DISC_ASKED_AAAA;
-            } else if (haveA && haveAAAA) {
-                r->missingAddressQueries = 0;
-            }
-        }
-        if (!missing) {
-            r->missingInterval = 50;
-        }
-        r->nextMissing = now + r->missingInterval;
-        if (missing && r->missingInterval < 180000) {
-            r->missingInterval *= 2;
-        }
-        if (r->missingInterval > 180000) {
-            r->missingInterval = 180000;
+        if (s->resolved) {
+            session_unwatch(md, s);
         }
     }
 }
@@ -1303,20 +804,26 @@ LONG mdnsDiscoveryMessage(struct MDNSDaemon *md, struct MDNSIPCMsg *msg)
         }
         s->owner = msg->mi_TaskID;
         s->handle = (APTR)d->nextHandle++;
-        s->interval = 50;
-        s->nextQuery = mdnsTicks() + 1 + (mdnsTicks() + s->owner) % 6;
         s->deadline = mdnsTicks() + 250; /* bounded asynchronous resolution */
         msg->mi_Handle = s->handle;
         msg->mi_DaemonID = md->md_DaemonID;
         d->changed = TRUE;
+        /* this host's own services are in the cache as it announces them;
+         * once more, so that all it announced is there */
         mdnsRegAnswerLocal(md, MDNS_REFLECT_DISCOVERY, NULL);
+        /* the cache asks for what the operation wants, and keeps it */
+        if (s->resolve) {
+            watch(md, &s->watch, s->key, DNS_TYPE_SRV, 0);
+            watch(md, &s->txtWatch, s->key, DNS_TYPE_TXT, 0);
+        } else {
+            watch(md, &s->watch, s->key, DNS_TYPE_PTR, 0);
+        }
         for (i = 0; i < DISC_VIEWS; i++) {
             const struct DiscoveryView *v = &d->views[i];
 
             if (!s->resolve && v->present &&
                 (v->type ? same_key(s->key, services_key) :
-                    ptr_targets(d, s->key, v->key, v->link,
-                        mdnsTicks()))) {
+                    ptr_targets(md, s->key, v->key, v->link))) {
                 struct MDNSDiscoveryEvent event = v->event;
 
                 event.de_Code = MEVENT_ADD;
@@ -1367,8 +874,8 @@ LONG mdnsDiscoveryMessage(struct MDNSDaemon *md, struct MDNSIPCMsg *msg)
     /* The request goes back before the stop's own reply, so the owner has
      * it again when StopBrowse()/StopResolve() returns. */
     wake(s, MDNSERR_CANCELLED);
-    memset(s, 0, sizeof(*s));
-    d->changed = TRUE;
+    session_end(md, s);
+    settle(md);
     return MDNS_OK;
 }
 
@@ -1397,10 +904,10 @@ void mdnsDiscoveryRelease(struct MDNSDaemon *md, ULONG owner)
     }
     for (i = 0; i < DISC_SESSIONS; i++) {
         if (md->md_Discovery->sessions[i].owner == owner) {
-            memset(&md->md_Discovery->sessions[i], 0, sizeof(struct DiscoverySession));
-            md->md_Discovery->changed = TRUE;
+            session_end(md, &md->md_Discovery->sessions[i]);
         }
     }
+    settle(md);
 }
 
 /* On mdnsd's reap timer: the operations of a task that ended without
@@ -1417,11 +924,14 @@ void mdnsDiscoveryReap(struct MDNSDaemon *md)
         struct DiscoverySession *s = &d->sessions[i];
 
         if (s->handle != NULL && FindTaskByPID(s->owner) == NULL) {
-            memset(s, 0, sizeof(*s));
-            d->changed = TRUE;
+            session_end(md, s);
         }
     }
+    settle(md);
 }
+
+/* The links went or changed: every instance told is withdrawn; what is
+ * still there is told again, as the cache has it. */
 void mdnsDiscoveryReset(struct MDNSDaemon *md)
 {
     struct MDNSDiscovery *d = md->md_Discovery;
@@ -1435,21 +945,26 @@ void mdnsDiscoveryReset(struct MDNSDaemon *md)
             notify(md, &d->views[i], MEVENT_REMOVE,
                 d->views[i].browsers);
         }
+        view_clear(md, &d->views[i]);
     }
-    memset(d->records, 0, sizeof(d->records));
-    memset(d->views, 0, sizeof(d->views));
-    memset(d->pending, 0, sizeof(d->pending));
     d->changed = TRUE;
-    d->expiring = FALSE;
-    for (i = 0; i < DISC_SESSIONS; i++) {
-        d->sessions[i].nextQuery = mdnsTicks();
-        d->sessions[i].interval = 50;
-    }
 }
+
+/* At the end, before the cache goes. */
 void mdnsDiscoveryFree(struct MDNSDaemon *md)
 {
-    if (md->md_Discovery != NULL) {
-        FreeMem(md->md_Discovery, sizeof(*md->md_Discovery));
-        md->md_Discovery = NULL;
+    struct MDNSDiscovery *d = md->md_Discovery;
+    LONG i;
+
+    if (d == NULL) {
+        return;
     }
+    for (i = 0; i < DISC_VIEWS; i++) {
+        view_clear(md, &d->views[i]);
+    }
+    for (i = 0; i < DISC_SESSIONS; i++) {
+        session_unwatch(md, &d->sessions[i]);
+    }
+    FreeMem(d, sizeof(*d));
+    md->md_Discovery = NULL;
 }

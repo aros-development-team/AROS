@@ -21,7 +21,14 @@
  * nobody refreshes them.
  *
  * Memory: each record is allocated by itself, within MDNS_CACHE_BYTES; when
- * that is full, the record nearest its end goes first.
+ * that is full, a record nobody watches goes first, the one nearest its end;
+ * then, only if none is left, a watched one.
+ *
+ * The questions due on a link at one time go out together, in one query
+ * (more than one only when they do not fit), each with its known answers.
+ *
+ * This is mdnsd's only cache: dnssd.library's operations (dnssd_server.c)
+ * and bonami.library's browses (mdns_discovery.c) are watches on it.
  */
 #include <exec/memory.h>
 #include <proto/exec.h>
@@ -45,10 +52,25 @@ struct CacheQuestion
     struct MinNode  cq_Node;
     UBYTE           cq_Name[256];
     UWORD           cq_Type;
+    BOOL            cq_Asking;          /* due in this turn */
     ULONG           cq_Link;            /* 0: every link */
     ULONG           cq_Next;            /* mdnsTicks() of the next query */
     ULONG           cq_Interval;
     struct MinList  cq_Watches;
+};
+
+/* a record whose refresh is asked for in this turn */
+#define CACHE_ASKING        0x80
+
+/* A query that goes out: its questions, each a name and a type. */
+#define ASK_MAX             16
+#define ASK_PACKET          1400        /* one Ethernet frame */
+
+struct CacheAsk
+{
+    const UBYTE    *ca_Name;
+    UWORD           ca_Type;
+    LONG            ca_Offset;          /* where its name is in the packet */
 };
 
 struct MDNSCache
@@ -87,15 +109,19 @@ expand_rdata(UWORD type, const UBYTE *pkt, LONG length, LONG rdoffset,
         return -1;
     }
     switch (type) {
+    /* a name in the data ends where the data does, or the record is
+     * not what it says */
     case DNS_TYPE_PTR:
     case 5:     /* CNAME */
     case 2:     /* NS */
-        if (mdnsWireNameRead(pkt, length, rdoffset, data) < 0) {
+        if (mdnsSkipName(pkt, length, rdoffset) != rdoffset + rdlength ||
+            mdnsWireNameRead(pkt, length, rdoffset, data) < 0) {
             return -1;
         }
         return mdnsWireNameLength(data);
     case DNS_TYPE_SRV:
-        if (rdlength < 7) {
+        if (rdlength < 7 ||
+            mdnsSkipName(pkt, length, rdoffset + 6) != rdoffset + rdlength) {
             return -1;
         }
         memcpy(data, pkt + rdoffset, 6);
@@ -111,6 +137,14 @@ expand_rdata(UWORD type, const UBYTE *pkt, LONG length, LONG rdoffset,
         memcpy(data, pkt + rdoffset, rdlength);
         return rdlength;
     }
+}
+
+/* Is a record still there: not one at its end that the next turn takes. */
+static BOOL
+alive(const struct MDNSCacheEntry *e, ULONG now)
+{
+    return !due(now, e->ce_Expires) ||
+        ((e->ce_Flags & MDNS_CACHE_LOCAL) && e->ce_TTL != 0);
 }
 
 static BOOL
@@ -168,19 +202,32 @@ drop(struct MDNSCache *c, struct MDNSCacheEntry *e)
     FreeVec(e);
 }
 
-/* Room for bytes more: the records nearest their end go. */
+static BOOL watched(const struct MDNSCache *c, const struct MDNSCacheEntry *e);
+
+/* Room for bytes more: of the records nobody watches, the one nearest its
+ * end goes; when every one is watched, the watched one nearest its end. The
+ * host's own records stay. */
 static void
 make_room(struct MDNSCache *c, ULONG bytes)
 {
     while (c->mc_Bytes + bytes > MDNS_CACHE_BYTES) {
         struct MDNSCacheEntry *e, *oldest = NULL;
+        BOOL oldestWatched = TRUE;
 
         for (e = (struct MDNSCacheEntry *)c->mc_Records.mlh_Head;
              e->ce_Node.mln_Succ != NULL;
              e = (struct MDNSCacheEntry *)e->ce_Node.mln_Succ) {
-            if (!(e->ce_Flags & MDNS_CACHE_LOCAL) &&
-                (oldest == NULL || (LONG)(e->ce_Expires - oldest->ce_Expires) < 0)) {
+            BOOL w;
+
+            if (e->ce_Flags & MDNS_CACHE_LOCAL) {
+                continue;
+            }
+            w = watched(c, e);
+            if (oldest == NULL || (oldestWatched && !w) ||
+                (w == oldestWatched &&
+                 (LONG)(e->ce_Expires - oldest->ce_Expires) < 0)) {
                 oldest = e;
+                oldestWatched = w;
             }
         }
         if (oldest == NULL) {
@@ -282,64 +329,78 @@ mdnsCacheRecord(const struct MDNSDaemon *md, const UBYTE *pkt, LONG length,
     tell(c, e, TRUE);
 }
 
-/* The question on link (a slot) with the answers known there that have
- * more than half their life left (RFC 6762 section 7.1). */
+/*
+ * A query on link (a slot) with count questions, and after them the answers
+ * known there that have more than half their life left (RFC 6762 section
+ * 7.1), each named by a pointer to its question's name. Answers that do not
+ * fit are left out, which only brings more answers.
+ */
 static void
-ask(struct MDNSDaemon *md, const UBYTE *name, UWORD type, LONG slot)
+ask_send(struct MDNSDaemon *md, LONG slot, struct CacheAsk *asks, UWORD count)
 {
     const struct MDNSCache *c = md->md_Cache;
     UBYTE *pkt = md->md_TxBuf;
     struct MDNSCacheEntry *e;
     ULONG now = mdnsTicks();
-    LONG at, namelen = mdnsWireNameLength(name);
-    UWORD answers = 0;
+    LONG at = 12;
+    UWORD answers = 0, i;
     UWORD savedFamily = md->md_SendFamily;
+    BOOL full = FALSE;
 
-    if (pkt == NULL || namelen < 0) {
+    if (pkt == NULL || count == 0) {
         return;
     }
     memset(pkt, 0, 12);
-    pkt[5] = 1;                         /* one question */
-    memcpy(pkt + 12, name, namelen);
-    at = 12 + namelen;
-    pkt[at++] = (UBYTE)(type >> 8);
-    pkt[at++] = (UBYTE)type;
-    pkt[at++] = 0;
-    pkt[at++] = DNS_CLASS_IN;
-    for (e = (struct MDNSCacheEntry *)c->mc_Records.mlh_Head;
-         e->ce_Node.mln_Succ != NULL;
-         e = (struct MDNSCacheEntry *)e->ce_Node.mln_Succ) {
-        LONG left, rdlen;
+    pkt[4] = (UBYTE)(count >> 8);
+    pkt[5] = (UBYTE)count;
+    for (i = 0; i < count; i++) {
+        LONG namelen = mdnsWireNameLength(asks[i].ca_Name);
 
-        if (e->ce_Link != md->md_Ifs[slot].mi_Index ||
-            (type != DNS_TYPE_ANY && e->ce_Type != type) ||
-            !mdnsWireNameEqual(e->ce_Name, name) ||
-            (e->ce_Flags & MDNS_CACHE_LOCAL)) {
-            continue;
-        }
-        left = (LONG)(e->ce_Expires - now) / TICKS;
-        if (left <= 0 || (ULONG)left * 2 < e->ce_TTL) {
-            continue;
-        }
-        rdlen = e->ce_DataLength;
-        if (at + 2 + 10 + rdlen > MDNS_MAX_PACKET - 64 || at + 12 > 1400) {
-            break;          /* the rest would make it more than one packet */
-        }
-        pkt[at++] = 0xc0;               /* the question's name */
-        pkt[at++] = 12;
-        pkt[at++] = (UBYTE)(e->ce_Type >> 8);
-        pkt[at++] = (UBYTE)e->ce_Type;
+        asks[i].ca_Offset = at;
+        memcpy(pkt + at, asks[i].ca_Name, namelen);
+        at += namelen;
+        pkt[at++] = (UBYTE)(asks[i].ca_Type >> 8);
+        pkt[at++] = (UBYTE)asks[i].ca_Type;
         pkt[at++] = 0;
         pkt[at++] = DNS_CLASS_IN;
-        pkt[at++] = (UBYTE)(left >> 24);
-        pkt[at++] = (UBYTE)(left >> 16);
-        pkt[at++] = (UBYTE)(left >> 8);
-        pkt[at++] = (UBYTE)left;
-        pkt[at++] = (UBYTE)(rdlen >> 8);
-        pkt[at++] = (UBYTE)rdlen;
-        memcpy(pkt + at, e->ce_Data, rdlen);
-        at += rdlen;
-        answers++;
+    }
+    for (i = 0; i < count && !full; i++) {
+        for (e = (struct MDNSCacheEntry *)c->mc_Records.mlh_Head;
+             e->ce_Node.mln_Succ != NULL;
+             e = (struct MDNSCacheEntry *)e->ce_Node.mln_Succ) {
+            LONG left, rdlen;
+
+            if (e->ce_Link != md->md_Ifs[slot].mi_Index ||
+                (asks[i].ca_Type != DNS_TYPE_ANY && e->ce_Type != asks[i].ca_Type) ||
+                !mdnsWireNameEqual(e->ce_Name, asks[i].ca_Name) ||
+                (e->ce_Flags & MDNS_CACHE_LOCAL)) {
+                continue;
+            }
+            left = (LONG)(e->ce_Expires - now) / TICKS;
+            if (left <= 0 || (ULONG)left * 2 < e->ce_TTL) {
+                continue;
+            }
+            rdlen = e->ce_DataLength;
+            if (at + 2 + 10 + rdlen > ASK_PACKET) {
+                full = TRUE;
+                break;
+            }
+            pkt[at++] = (UBYTE)(0xc0 | (asks[i].ca_Offset >> 8));
+            pkt[at++] = (UBYTE)asks[i].ca_Offset;
+            pkt[at++] = (UBYTE)(e->ce_Type >> 8);
+            pkt[at++] = (UBYTE)e->ce_Type;
+            pkt[at++] = 0;
+            pkt[at++] = DNS_CLASS_IN;
+            pkt[at++] = (UBYTE)(left >> 24);
+            pkt[at++] = (UBYTE)(left >> 16);
+            pkt[at++] = (UBYTE)(left >> 8);
+            pkt[at++] = (UBYTE)left;
+            pkt[at++] = (UBYTE)(rdlen >> 8);
+            pkt[at++] = (UBYTE)rdlen;
+            memcpy(pkt + at, e->ce_Data, rdlen);
+            at += rdlen;
+            answers++;
+        }
     }
     pkt[6] = (UBYTE)(answers >> 8);
     pkt[7] = (UBYTE)answers;
@@ -348,16 +409,29 @@ ask(struct MDNSDaemon *md, const UBYTE *name, UWORD type, LONG slot)
     md->md_SendFamily = savedFamily;
 }
 
+/* One more question for a query being made on slot: sent first when the
+ * query is full; one already in it is not asked twice. */
 static void
-ask_question(struct MDNSDaemon *md, const struct CacheQuestion *q)
+ask_add(struct MDNSDaemon *md, LONG slot, struct CacheAsk *asks, UWORD *count,
+    LONG *size, const UBYTE *name, UWORD type)
 {
-    LONG i;
+    LONG namelen = mdnsWireNameLength(name);
+    UWORD i;
 
-    for (i = 0; i < md->md_IfCount; i++) {
-        if (q->cq_Link == 0 || q->cq_Link == md->md_Ifs[i].mi_Index) {
-            ask(md, q->cq_Name, q->cq_Type, i);
+    for (i = 0; i < *count; i++) {
+        if (asks[i].ca_Type == type && mdnsWireNameEqual(asks[i].ca_Name, name)) {
+            return;
         }
     }
+    if (*count == ASK_MAX || *size + namelen + 4 > ASK_PACKET) {
+        ask_send(md, slot, asks, *count);
+        *count = 0;
+        *size = 12;
+    }
+    asks[*count].ca_Name = name;
+    asks[*count].ca_Type = type;
+    (*count)++;
+    *size += namelen + 4;
 }
 
 static BOOL
@@ -407,6 +481,8 @@ mdnsCacheTick(struct MDNSDaemon *md)
     struct MDNSCacheEntry *e, *next;
     struct CacheQuestion *q;
     ULONG now = mdnsTicks();
+    BOOL asking = FALSE;
+    LONG i;
 
     if (c == NULL) {
         return;
@@ -415,9 +491,7 @@ mdnsCacheTick(struct MDNSDaemon *md)
          (next = (struct MDNSCacheEntry *)e->ce_Node.mln_Succ) != NULL; e = next) {
         /* one of the host's own goes with its goodbye (TTL 0), the others
          * when their time is up */
-        if (!link_active(md, e->ce_Link) ||
-            ((!(e->ce_Flags & MDNS_CACHE_LOCAL) || e->ce_TTL == 0) &&
-             due(now, e->ce_Expires))) {
+        if (!link_active(md, e->ce_Link) || !alive(e, now)) {
             drop(c, e);
             continue;
         }
@@ -432,30 +506,118 @@ mdnsCacheTick(struct MDNSDaemon *md)
             e->ce_Refresh++;
             e->ce_Next = 0;
             if (watched(c, e)) {
-                LONG i;
-
-                for (i = 0; i < md->md_IfCount; i++) {
-                    if (md->md_Ifs[i].mi_Index == e->ce_Link) {
-                        ask(md, e->ce_Name, e->ce_Type, i);
-                    }
-                }
+                e->ce_Flags |= CACHE_ASKING;
+                asking = TRUE;
             }
         }
     }
     if (md->md_Socket < 0) {
+        for (e = (struct MDNSCacheEntry *)c->mc_Records.mlh_Head;
+             e->ce_Node.mln_Succ != NULL;
+             e = (struct MDNSCacheEntry *)e->ce_Node.mln_Succ) {
+            e->ce_Flags &= ~CACHE_ASKING;
+        }
         return;
     }
     for (q = (struct CacheQuestion *)c->mc_Questions.mlh_Head;
          q->cq_Node.mln_Succ != NULL;
          q = (struct CacheQuestion *)q->cq_Node.mln_Succ) {
-        if (!due(now, q->cq_Next)) {
+        q->cq_Asking = due(now, q->cq_Next);
+        asking |= q->cq_Asking;
+    }
+    if (!asking) {
+        return;
+    }
+    /* what is due on each link, together */
+    for (i = 0; i < md->md_IfCount; i++) {
+        struct CacheAsk asks[ASK_MAX];
+        UWORD count = 0;
+        LONG size = 12;
+        ULONG link = md->md_Ifs[i].mi_Index;
+
+        for (q = (struct CacheQuestion *)c->mc_Questions.mlh_Head;
+             q->cq_Node.mln_Succ != NULL;
+             q = (struct CacheQuestion *)q->cq_Node.mln_Succ) {
+            if (q->cq_Asking && (q->cq_Link == 0 || q->cq_Link == link)) {
+                ask_add(md, i, asks, &count, &size, q->cq_Name, q->cq_Type);
+            }
+        }
+        for (e = (struct MDNSCacheEntry *)c->mc_Records.mlh_Head;
+             e->ce_Node.mln_Succ != NULL;
+             e = (struct MDNSCacheEntry *)e->ce_Node.mln_Succ) {
+            if ((e->ce_Flags & CACHE_ASKING) && e->ce_Link == link) {
+                ask_add(md, i, asks, &count, &size, e->ce_Name, e->ce_Type);
+            }
+        }
+        ask_send(md, i, asks, count);
+    }
+    for (e = (struct MDNSCacheEntry *)c->mc_Records.mlh_Head;
+         e->ce_Node.mln_Succ != NULL;
+         e = (struct MDNSCacheEntry *)e->ce_Node.mln_Succ) {
+        e->ce_Flags &= ~CACHE_ASKING;
+    }
+    for (q = (struct CacheQuestion *)c->mc_Questions.mlh_Head;
+         q->cq_Node.mln_Succ != NULL;
+         q = (struct CacheQuestion *)q->cq_Node.mln_Succ) {
+        if (!q->cq_Asking) {
             continue;
         }
-        ask_question(md, q);
+        q->cq_Asking = FALSE;
         q->cq_Next = now + q->cq_Interval;
         q->cq_Interval = q->cq_Interval * 2 > QUERY_MAX_INTERVAL ?
             QUERY_MAX_INTERVAL : q->cq_Interval * 2;
     }
+}
+
+/*
+ * The next record after "after" (NULL: the first) of name and type on link
+ * (0: any) that is still there; NULL when there is none. Its pointer holds
+ * until the cache next changes.
+ */
+const struct MDNSCacheEntry *
+mdnsCacheFind(struct MDNSDaemon *md, const struct MDNSCacheEntry *after,
+    const UBYTE *name, UWORD type, ULONG link)
+{
+    struct MDNSCache *c = md->md_Cache;
+    const struct MDNSCacheEntry *e;
+    ULONG now = mdnsTicks();
+
+    if (c == NULL) {
+        return NULL;
+    }
+    e = after != NULL ? (const struct MDNSCacheEntry *)after->ce_Node.mln_Succ :
+        (const struct MDNSCacheEntry *)c->mc_Records.mlh_Head;
+    for (; e->ce_Node.mln_Succ != NULL;
+         e = (const struct MDNSCacheEntry *)e->ce_Node.mln_Succ) {
+        if ((link == 0 || e->ce_Link == link) && e->ce_Type == type &&
+            alive(e, now) && (name == NULL || mdnsWireNameEqual(e->ce_Name, name))) {
+            return e;
+        }
+    }
+    return NULL;
+}
+
+/* The latest of name and type on link (the last heard, the last of
+ * several heard at once), or NULL. */
+const struct MDNSCacheEntry *
+mdnsCacheLatest(struct MDNSDaemon *md, const UBYTE *name, UWORD type,
+    ULONG link)
+{
+    const struct MDNSCacheEntry *e = NULL, *found = NULL;
+
+    while ((e = mdnsCacheFind(md, e, name, type, link)) != NULL) {
+        if (found == NULL || (LONG)(e->ce_Received - found->ce_Received) >= 0) {
+            found = e;
+        }
+    }
+    return found;
+}
+
+/* The name a watch asks for. */
+const UBYTE *
+mdnsCacheWatchName(APTR watch)
+{
+    return ((struct CacheWatch *)watch)->cw_Question->cq_Name;
 }
 
 APTR
@@ -504,7 +666,7 @@ mdnsCacheWatch(const struct MDNSDaemon *md, const UBYTE *name, UWORD type,
     /* what is known already, at once */
     for (e = (struct MDNSCacheEntry *)c->mc_Records.mlh_Head;
          (next = (struct MDNSCacheEntry *)e->ce_Node.mln_Succ) != NULL; e = next) {
-        if (matches(q, e)) {
+        if (matches(q, e) && alive(e, mdnsTicks())) {
             notify(data, e, TRUE);
         }
     }
