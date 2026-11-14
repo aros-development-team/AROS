@@ -1,0 +1,85 @@
+TABLE OF CONTENTS
+
+SlideSwitch.mcc/SlideSwitch.mcc
+SlideSwitch.mcc/MUIA_Numeric_Value
+SlideSwitch.mcc/MUIA_Numeric_Default
+SlideSwitch.mcc/MUIA_Numeric_Min
+SlideSwitch.mcc/MUIA_Numeric_Max
+SlideSwitch.mcc/MUIA_Numeric_Reverse
+SlideSwitch.mcc/SlideSwitch.mcc
+
+   SlideSwitch.mcc is a Zune custom class derived from Numeric.mui. It presents
+   the Numeric value as a binary, two-position slide switch. The class adds no
+   attributes or methods of its own; it specializes inherited Numeric state and
+   input behavior for a fixed Off/On range.
+
+   MUIV_SlideSwitch_Off is 0 and MUIV_SlideSwitch_On is 1. The initial value is
+   Off by default. An explicit MUIA_Numeric_Value takes precedence over
+   MUIA_Numeric_Default during construction; both inputs are normalized to the
+   binary range before Numeric.mui processes them.
+
+   The selected half contains the thumb. Off is marked with "O" and uses
+   MPEN_BACKGROUND. On is marked with "I" and uses MPEN_FILL. The label uses
+   MPEN_TEXT. The default appearance uses MUII_SliderBack, MUIV_Font_Knob and
+   MUIV_Frame_Slider.
+
+   Click either half to select its state. Dragging changes the state when the
+   pointer crosses the switch midpoint. Shift-click does not start a drag or
+   change the state. Numeric.mui handles raw-key and mouse-wheel input.
+   MUIA_Numeric_Reverse reverses the visual left/right mapping and the inherited
+   Numeric input direction without changing the logical Off/On values.
+
+   Observe state changes with ordinary MUIA_Numeric_Value notifications. Other
+   Numeric.mui interfaces retain their Numeric contracts. Value-oriented
+   methods operate on the fixed 0..1 range unless described below.
+SlideSwitch.mcc/MUIA_Numeric_Value
+
+   MUIA_Numeric_Value -- [ISG], LONG
+
+   Selects the current switch state. Zero becomes MUIV_SlideSwitch_Off; every
+   nonzero input becomes MUIV_SlideSwitch_On. The getter therefore returns only
+   0 or 1.
+
+   Ordinary Numeric Value notifications remain available. Setting a value that
+   normalizes to the already stored state does not create a new Value change.
+   The supplied TagItem storage must be writable. SlideSwitch rewrites its data
+   to 0 or 1, and Numeric.mui may replace an unchanged Value tag with
+   TAG_IGNORE.
+SlideSwitch.mcc/MUIA_Numeric_Default
+
+   MUIA_Numeric_Default -- [ISG], LONG
+
+   Selects the binary value used by the inherited MUIM_Numeric_SetDefault
+   method and by construction when no explicit Value is supplied. Zero becomes
+   MUIV_SlideSwitch_Off; every nonzero input becomes MUIV_SlideSwitch_On.
+   The default is Off.
+
+   Changing Default does not itself change the current Value. The supplied
+   TagItem storage must be writable because SlideSwitch rewrites Default data
+   to 0 or 1 before Numeric.mui processes it.
+SlideSwitch.mcc/MUIA_Numeric_Min
+
+   MUIA_Numeric_Min -- [..G], LONG
+
+   Returns MUIV_SlideSwitch_Off (0). SlideSwitch owns a fixed binary range and
+   ignores attempts to initialize or set another minimum. The supplied TagItem
+   storage must be writable: SlideSwitch replaces the attempted Min tag with
+   TAG_IGNORE before Numeric.mui processes it.
+SlideSwitch.mcc/MUIA_Numeric_Max
+
+   MUIA_Numeric_Max -- [..G], LONG
+
+   Returns MUIV_SlideSwitch_On (1). SlideSwitch owns a fixed binary range and
+   ignores attempts to initialize or set another maximum. The supplied TagItem
+   storage must be writable: SlideSwitch replaces the attempted Max tag with
+   TAG_IGNORE before Numeric.mui processes it.
+SlideSwitch.mcc/MUIA_Numeric_Reverse
+
+   MUIA_Numeric_Reverse -- [ISG], BOOL
+
+   FALSE (default) uses the normal mapping: Off on the left and On on the
+   right. TRUE exchanges the visual sides while preserving the logical values
+   0 and 1. Changing Reverse requests a redraw so the new mapping becomes
+   visible.
+
+   Reverse also affects inherited Numeric keyboard and mouse-wheel direction.

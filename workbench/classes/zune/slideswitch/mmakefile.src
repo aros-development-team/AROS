@@ -1,0 +1,22 @@
+# Copyright (C) 2026, Andy Rexx. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+
+USER_CFLAGS := $(PARANOIA_CFLAGS)
+USER_LDFLAGS := -static
+
+FILES         := slideswitch
+INCLUDE_FILES := slideswitch.h
+
+#MM- workbench-classes-zune : workbench-classes-zune-slideswitch
+
+#MM  workbench-classes-zune-slideswitch : includes
+
+%build_module \
+    mmake=workbench-classes-zune-slideswitch \
+    modname=SlideSwitch modtype=mcc \
+    conffile=slideswitch.conf
+
+%copy_includes path=zune
+
+%common
