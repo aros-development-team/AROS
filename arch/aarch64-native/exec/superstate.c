@@ -5,7 +5,9 @@
 */
 
 #include <proto/exec.h>
+#include <proto/kernel.h>
 
+#include "exec_intern.h"
 #include "kernel_cpu.h"
 
 /* See rom/exec/superstate.c for documentation */
@@ -16,6 +18,10 @@ AROS_LH0(APTR, SuperState,
     AROS_LIBFUNC_INIT
 
     register uint64_t superSP;
+
+    /* Already at EL1h: UserState() must not drop the caller to EL1t */
+    if (KrnIsSuper())
+        return NULL;
 
     asm volatile (
         "       str     x30, [sp, #-16]!        \n"
