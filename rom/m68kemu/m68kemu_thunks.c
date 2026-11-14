@@ -6114,8 +6114,17 @@ static IPTR thunk_gfx_BltTemplate_m(struct M68KEmuContext *ctx, void *cpu)
 static IPTR thunk_gfx_AllocBitMap_m(struct M68KEmuContext *ctx, void *cpu)
 {
     struct BitMap scratch, *friend = m68k_bitmap_in(ctx, THUNK_A(0), &scratch);
+    struct BitMap *bitmap;
+    ULONG result;
 
-    return (IPTR)AllocBitMap(THUNK_D(0), THUNK_D(1), THUNK_D(2), THUNK_D(3), friend);
+    bitmap = AllocBitMap(THUNK_D(0), THUNK_D(1), THUNK_D(2), THUNK_D(3), friend);
+    if (!bitmap)
+        return 0;
+    /* As in the generated thunk, return a guest struct, not a native pointer. */
+    result = shadow_create_by_name(ctx, "BitMap", bitmap);
+    if (!result)
+        FreeBitMap(bitmap);
+    return result;
 }
 
 /* ── calls whose arguments point at small structures or arrays in the
