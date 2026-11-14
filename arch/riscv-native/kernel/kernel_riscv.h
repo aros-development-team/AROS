@@ -10,7 +10,7 @@
     scheduler and the IPI core. Whatever needs the firmware - starting
     a hart, raising an inter-processor interrupt, remote TLB fences - is
     reached through the hook table below, which the platform (e.g.
-    riscv64-opensbi over SBI) fills in. It follows the ARM_Implementation
+    riscv64-sbi over SBI) fills in. It follows the ARM_Implementation
     / ARMI_* hooks of the ARM ports.
 */
 
@@ -27,7 +27,7 @@ struct ExecBase;
  * The most harts a native RISC-V kernel numbers. CPU masks are a fixed
  * RISCV_CPUMASK_WORDS ULONGs for the lifetime of the boot, so a mask
  * never has to be resized when a hart comes online. Platforms may
- * describe fewer (riscv64-opensbi: KRN_MAX_HARTS).
+ * describe fewer (riscv64-sbi: KRN_MAX_HARTS).
  */
 #define RISCV_MAXCPUS           32
 #define RISCV_CPUMASK_WORDS     ((RISCV_MAXCPUS + 31) / 32)

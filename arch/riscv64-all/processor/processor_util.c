@@ -17,7 +17,7 @@
 
 /*
  * Weak default for machines with no way to ask: the IDs stay unknown.
- * The OpenSBI platform code overrides this with the SBI queries.
+ * The SBI platform code overrides this with the SBI queries.
  */
 void __attribute__((weak)) Processor_PlatformReadIDs(UQUAD *vendor,
                                                      UQUAD *archid,

@@ -64,7 +64,7 @@ VOID Processor_AnswerTag(struct ProcessorBase *ProcessorBase, ULONG coreNo,
 
 /*
  * The machine ID CSRs can not be read from S-mode; how they are
- * obtained is the platform's business (SBI on an OpenSBI machine). The
+ * obtained is the platform's business (SBI on this RISC-V platform). The
  * weak default reports them unknown.
  */
 VOID Processor_PlatformReadIDs(UQUAD *vendor, UQUAD *archid, UQUAD *impl);

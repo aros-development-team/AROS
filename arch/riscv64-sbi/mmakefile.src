@@ -1,0 +1,11 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+# Platform home for the sbi-riscv64 target. An SBI firmware hands control
+# to AROS in S-mode; everything below runs supervisor-mode on top of the
+# standard SBI interface.
+
+#MM- kernel-exec-sbi-riscv64 : kernel-exec-riscv64
+#MM- kernel-exec-sbi-riscv64-kobj : kernel-exec-riscv64-kobj
+
+%common

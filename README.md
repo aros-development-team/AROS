@@ -154,7 +154,7 @@
     <td style="text-align:center"> --- </td>
   </tr>
   <tr>
-    <td>opensbi-riscv64</td>
+    <td>sbi-riscv64</td>
     <td style="text-align:center"> --- </td>
     <td style="text-align:center"> --- </td>
     <td style="text-align:center"> --- </td>
@@ -170,7 +170,7 @@
     </td>
   </tr>
     <tr>
-    <td>opensbi-riscv64-smp</td>
+    <td>sbi-riscv64-smp</td>
     <td style="text-align:center"> --- </td>
     <td style="text-align:center"> --- </td>
     <td style="text-align:center"> --- </td>
