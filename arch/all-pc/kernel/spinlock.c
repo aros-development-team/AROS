@@ -81,13 +81,20 @@ AROS_LH3(spinlock_t *, KrnSpinLock,
     }
     else
     {
+        ULONG old;
+
         /*
-        Check if upper 8 bits of lock->lock are all 0, which means spinlock is not in UPDATING state and it is not
-        in the WRITE state. If we manage to obtain it, we set the UPDATING flag. Until we release UPDATING state
-        we are free to do whatever we want with the spinlock
+        Add one reader with a single compare and exchange, as long as the lock is not in WRITE mode. The lock word
+        is never left half updated, so an interrupt handler that takes this lock in READ mode on the same CPU cannot
+        find it busy because of the reader it interrupted.
         */
-        while (!compare_and_exchange_byte((UBYTE*)&lock->block[3], 0, SPINLOCKF_UPDATING >> 24, NULL))
+        for (;;)
         {
+            old = lock->lock;
+            if (!(old & (SPINLOCKF_WRITE | SPINLOCKF_UPDATING)) &&
+                compare_and_exchange_long((ULONG*)&lock->lock, old, old + 1, NULL))
+                break;
+
             // Tell CPU we are spinning
             asm volatile("pause");
 
@@ -98,18 +105,7 @@ AROS_LH3(spinlock_t *, KrnSpinLock,
                 CALLHOOKPKT(failhook, (APTR)lock, 0);
             }
             D(bug("[Kernel] %s: spinning on write lock ...\n", __func__);)
-        };
-
-        /*
-        At this point we have the spinlock in UPDATING state. So, update readcount field (no worry with atomic add,
-        spinlock is for our exclusive use here), and then release it just by setting updating flag to 0
-        */
-        lock->slock.readcount++;
-#if defined(AROS_NO_ATOMIC_OPERATIONS)
-        lock->slock.updating = 0;
-#else
-        __AROS_ATOMIC_AND_L(lock->lock, ~SPINLOCKF_UPDATING);
-#endif
+        }
     }
 
     D(bug("[Kernel] %s: lock = %08x\n", __func__, lock->lock));

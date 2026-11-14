@@ -30,26 +30,17 @@ AROS_LH1(void, KrnSpinUnLock,
     */
     if (!compare_and_exchange_long((ULONG*)&lock->lock, SPINLOCKF_WRITE, 0, NULL))
     {
-        /*
-        Unlocking READ mode spinlock means we need to put it into UDPATING state, decrement counter and unlock from
-        UPDATING state.
-        */
-        while (!compare_and_exchange_byte((UBYTE*)&lock->block[3], 0, SPINLOCKF_UPDATING >> 24, NULL))
-        {
-            // Tell CPU we are spinning
-            asm volatile("pause");
-        }
+        ULONG old;
 
-        // Just in case someone tries to unlock already unlocked stuff
-        if (lock->slock.readcount != 0)
+        /*
+        Unlocking READ mode spinlock: take one reader off with a single compare and exchange (see KrnSpinLock).
+        A lock without readers is left alone, just in case someone tries to unlock already unlocked stuff.
+        */
+        do
         {
-            lock->slock.readcount--;
-        }
-#if defined(AROS_NO_ATOMIC_OPERATIONS)
-        lock->slock.updating = 0;
-#else
-        __AROS_ATOMIC_AND_L(lock->lock, ~SPINLOCKF_UPDATING);
-#endif
+            old = lock->lock;
+        } while ((old & ~(SPINLOCKF_WRITE | SPINLOCKF_UPDATING)) &&
+                 !compare_and_exchange_long((ULONG*)&lock->lock, old, old - 1, NULL));
     }
 
     D(bug("[Kernel] %s: lock = %08x\n", __func__, lock->lock));

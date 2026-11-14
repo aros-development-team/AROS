@@ -3,7 +3,7 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-FILES := mmap stackcheck mmio
+FILES := mmap stackcheck mmio spinlock_irq
 
 EXEDIR := $(AROS_TESTS)/kernel
 
