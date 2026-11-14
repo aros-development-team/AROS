@@ -164,3 +164,243 @@ by default; `ASAN_OPTIONS` can override it.
 includes without compiling or executing a test. These focused checks do not
 compile the native launch translation unit, model native struct layouts or
 locks, execute the CPU, or qualify a complete library or application.
+
+
+## Process streams
+
+Run from the repository root:
+
+```sh
+make -C developer/debug/test/m68kemu_host test-process-streams
+make -C developer/debug/test/m68kemu_host test-process-streams-sanitize
+```
+
+The ordinary fixture is part of the host Makefile's `test` target. It needs
+Python 3.9+ and a C99 compiler; ASan/UBSan are optional. `PYTHON` and `CC`
+select those tools. `PROCESS_STREAMS_ARGS` passes runner options such as
+`--source-root /path/to/AROS` and `--build-dir /tmp/process-streams`.
+Use a fresh build directory; the default temporary directory is removed.
+The fixture is built with `-std=c99 -Wall -Wextra -Werror`, so a compiler
+warning fails the target; the sanitizer target adds ASan and UBSan without
+recovery.
+
+The runner extracts the actual launch function `setup_and_execute`, the
+BPTR handle translators, the Process stream helper when the tree has it,
+`m68k_process_of`, and the complete initial Process block of the ExecBase
+shadow. It reads the handle limits, the Process and CLI offsets and the
+`NP_` and tag constants from the same source tree and its public headers.
+The offset of `pr_CES` is fixed in the runner and checked against the
+generated shadow layout, so it does not come from the helper under test.
+The recording C fixture supplies the native task, the layout, the
+allocations and the tag capture; guest `ULONG` is 32-bit and native `BPTR`
+is 64-bit.
+
+The fixture runs 64 checks in two groups. The 32 launch checks cover a
+child on the synchronous route that inherits the caller's 64-bit input,
+output and error streams, also when the error stream is NULL or is the
+output stream, with the lifecycle tags unchanged and no stream marked for
+closing, so that every stream stays borrowed from the caller; a failed
+child creation, which returns failure, releases both directory locks and
+closes no caller stream; the direct route for a zero stack, with its
+startup message, window pointer and directory handling unchanged; and an
+early setup failure, which starts neither route. The 32 projection checks
+cover the three stream fields of the guest Process as translated handles
+that convert back to the exact 64-bit native value: for the initial
+Process, after an owner refresh that follows a changed stream, for a new
+other Process with its own shadow, and for that Process seen again, which
+keeps its guest address. An aliased output and error stream share one
+handle, and a plain Task stays supported and exposes no stream field. The
+fixture models the documented close tags only; no native child runs.
+
+The fixture prints a `FAIL:` line for a failed check, one
+`GROUP <name>: <n> failed` line per group and a final
+`process streams: 64 checks, <n> failed` line. Its exit status is 1 when
+any check failed, which make reports as an error. It tests the behaviour
+that the Process stream change introduces: on a tree without that change
+the runner still prepares the sources, without the stream helper, and
+checks in both groups fail. Sanitized runs disable leak detection by
+default; `ASAN_OPTIONS` can override it.
+
+`--prepare-only --build-dir /tmp/process-streams` emits the actual
+production includes without compiling or executing a test. These focused
+checks do not model native struct layouts or locks, execute the CPU or a
+native child, or qualify a complete library or application.
+
+
+## Initial Process arguments
+
+Run from the repository root:
+
+```sh
+make -C developer/debug/test/m68kemu_host test-initial-arguments
+make -C developer/debug/test/m68kemu_host test-initial-arguments-sanitize
+```
+
+The ordinary fixture is part of the host Makefile's `test` target. It needs
+Python 3.9+ and a C99 compiler; ASan/UBSan are optional. `PYTHON` and `CC`
+select those tools. `INITIAL_ARGUMENTS_ARGS` passes runner options such as
+`--source-root /path/to/AROS` and `--build-dir /tmp/initial-arguments`.
+Use a fresh build directory; the default temporary directory is removed.
+The fixture is built with `-std=c99 -Wall -Wextra -Werror`, so a compiler
+warning fails the target; the sanitizer target adds ASan and UBSan without
+recovery.
+
+The runner extracts the same production code as the Process stream
+regression, with the same constants: the launch function
+`setup_and_execute`, the BPTR handle translators, the Process stream helper
+when the tree has it, `m68k_process_of` and the complete initial Process
+block of the ExecBase shadow. The fixture is that regression's fixture with
+one more group. Its launch and projection groups are the same 64 checks and
+need the Process stream change in the same way.
+
+The 70 argument checks run the launch through both routes, the direct one
+and the synchronous child, for three argument strings, an empty string and
+a NULL pointer. They check that the launch returns the execution result;
+that the context holds the final guest argument pointer and the exact size,
+with a zero pointer for the empty and the NULL case; that the guest Process
+carries that pointer in its argument field, published by the launch itself,
+since the fixture executes no guest code; that the published bytes equal
+the caller's and end with a NUL; that the automatic library opening already
+sees the final pointer and size; that an owner refresh keeps the Process
+and its argument field; and that the child route passes the caller's native
+pointer unchanged in `NP_Arguments`, while the direct route creates no
+child.
+
+The fixture prints a `FAIL:` line for a failed check, the `launch`,
+`projection` and `arguments` group lines, and a final line that still
+carries the stream regression's label:
+`process streams: 134 checks, <n> failed`. Its exit status is 1 when any
+check failed, which make reports as an error. The arguments group tests
+what the initial-arguments change introduces: on a tree that has only the
+Process stream change, checks of that group fail and the other two groups
+pass. Sanitized runs disable leak detection by default; `ASAN_OPTIONS` can
+override it.
+
+`--prepare-only --build-dir /tmp/initial-arguments` emits the actual
+production includes without compiling or executing a test. These focused
+checks do not model native struct layouts or locks, execute the CPU or a
+native child, or qualify a complete library or application. `GetArgStr`
+and `SetArgStr` have their own regression below.
+
+
+## Guest argument APIs
+
+Run from the repository root:
+
+```sh
+make -C developer/debug/test/m68kemu_host test-argument-apis
+make -C developer/debug/test/m68kemu_host test-argument-apis-sanitize
+```
+
+The ordinary fixture is part of the host Makefile's `test` target. It needs
+Python 3.9+ and a C99 compiler; ASan/UBSan are optional. `PYTHON` and `CC`
+select those tools. `ARGUMENT_APIS_ARGS` passes runner options such as
+`--source-root /path/to/AROS` and `--build-dir /tmp/argument-apis`.
+Use a fresh build directory; the default temporary directory is removed.
+The fixture is built with `-std=c99 -Wall -Wextra -Werror`, so a compiler
+warning fails the target; the sanitizer target adds ASan and UBSan without
+recovery.
+
+The runner reads the dos.library thunk table. When manual thunks are
+registered for `GetArgStr` (LVO -534) and `SetArgStr` (LVO -540) it extracts
+them with their two helpers; when neither is registered it extracts the
+generated thunks; it refuses a table that registers only one of them. It
+checks in the dispatcher's source that manual thunks are tried before
+generated ones. It also extracts five memory accessors and reads the
+ExecBase and Process offsets and `ERROR_BAD_NUMBER` from the same source
+tree and its public header. The recording C fixture supplies the native
+argument accessors, the error value, the CPU registers and a counter for
+the low-write trap; guest `ULONG` is 32-bit.
+
+The fixture runs 63 checks in three groups over a 4 KiB guest arena. The
+16 semantics checks: `GetArgStr` returns the guest Process's own pointer
+and sees a direct guest change of the field; `SetArgStr` publishes the new
+guest pointer and returns the exact old one, also from and to NULL and for
+an unchanged replacement; successful calls preserve `IoErr`; an empty
+string in the last byte of the arena and a Process field that ends exactly
+at the arena boundary are accepted. The 35 bounds checks: an old or a new
+string pointer at or beyond the arena end, or an unterminated string in
+its last byte; a zero, out-of-range or boundary-straddling SysBase or
+Process address; and a Process field in protected low memory. Each
+rejection returns zero with `ERROR_BAD_NUMBER`, a rejected setter leaves
+the Process field as it was, and no rejection reaches the low-write trap.
+The 12 ownership checks: after a getter and a setter call, also with an
+invalid replacement, the native argument accessors were never called, the
+native Process's argument pointer is unchanged, and the startup argument
+pointer, size and bytes are as they were.
+
+The fixture prints a `FAIL:` line for a failed check, the `semantics`,
+`bounds` and `ownership` group lines and a final
+`argument APIs: 63 checks, <n> failed` line. Its exit status is 1 when any
+check failed, which make reports as an error. It tests the manual thunks
+that the argument API change introduces: on a tree without them the
+generated thunks are extracted instead and checks in all three groups
+fail. Sanitized runs disable leak detection by default; `ASAN_OPTIONS` can
+override it.
+
+`--prepare-only --build-dir /tmp/argument-apis` emits the actual production
+includes without compiling or executing a test. These focused checks do not
+model native struct layouts, execute the CPU, or qualify a complete library
+or application. They do not cover how the initial arguments reach the
+guest Process, which has its own regression above.
+
+
+## AllocBitMap result projection
+
+Run from the repository root:
+
+```sh
+make -C developer/debug/test/m68kemu_host test-bitmap-result
+make -C developer/debug/test/m68kemu_host test-bitmap-result-sanitize
+```
+
+The ordinary fixture is part of the host Makefile's `test` target. It needs
+Python 3.9+ and a C99 compiler; ASan/UBSan are optional. `PYTHON` and `CC`
+select those tools. `BITMAP_RESULT_ARGS` passes runner options such as
+`--source-root /path/to/AROS` and `--build-dir /tmp/bitmap-result`.
+Use a fresh build directory; the default temporary directory is removed.
+The fixture is built with `-std=c99 -Wall -Wextra -Werror`, so a compiler
+warning fails the target; the sanitizer target adds ASan and UBSan without
+recovery.
+
+The runner extracts the actual manual `AllocBitMap` thunk, the shadow
+factory and registry, the bitmap converters, five memory accessors and the
+generated `FreeBitMap` consumer, and checks that the manual thunk is the
+one registered for LVO -918. It reads the shadow and handle limits, the
+Screen bitmap offset and the BitMap shadow layout from the same source
+tree, and two memory flags from its public header. The recording C fixture
+supplies the native allocation and release, the guest heap and the layout
+lookup over a 32 MiB guest arena; guest `ULONG` is 32-bit and native
+pointers are 64-bit.
+
+The fixture runs 121 checks in two groups. The 105 contract checks call the
+thunk with a friend bitmap given as NULL, as a registered shadow, as a
+Screen's bitmap, as a handle and as a guest planar structure, each with
+three native results: a host object, an address below 4 GiB and one above
+it, which needs a 64-bit host. Each time the guest receives the address of
+a registered guest bitmap inside the arena and never the native pointer;
+the width, height, depth, flags and the converted friend reach the native
+call once and unchanged; the shadow is created and synchronized once; the
+native bitmap is not released; the RastPort bitmap converter resolves the
+guest address to the same native bitmap; and the generated `FreeBitMap`
+thunk hands that native bitmap back exactly once. The 16 failure checks: a
+failed native allocation returns zero with nothing to release and no
+shadow; a failed guest allocation, a full shadow table and a missing BitMap
+layout each return zero, release the native bitmap exactly once and
+register no shadow. The full table also releases the guest block that the
+factory had taken, stays unchanged and logs its refusal once; the other two
+leave no guest block behind.
+
+The fixture prints a `FAIL:` line for a failed check, the `contract` and
+`failures` group lines and a final `bitmap result: 121 checks, <n> failed`
+line. Its exit status is 1 when any check failed, which make reports as an
+error. It tests the result projection and the rollback that the AllocBitMap
+change introduces: on a tree without that change the manual thunk is
+already registered, the runner prepares the same functions, and checks in
+both groups fail. Sanitized runs disable leak detection by default;
+`ASAN_OPTIONS` can override it.
+
+`--prepare-only --build-dir /tmp/bitmap-result` emits the actual production
+includes without compiling or executing a test. These focused checks do not
+call graphics.library, model native struct layouts, execute the CPU, or
+qualify a complete library or application.
