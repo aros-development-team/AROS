@@ -731,6 +731,7 @@ WORD FNAME_DEV(cmdBulkXFer)(struct IOUsbHWReq *ioreq,
             }
         }
     }
+    usb2otg_bulk_forget(otg_Unit, ioreq);
     AddTail(&otg_Unit->hu_BulkXFerQueue, (struct Node *) ioreq);
 #if defined(__AROSEXEC_SMP__)
     KrnSpinUnLock(&otg_Unit->hu_Lock);

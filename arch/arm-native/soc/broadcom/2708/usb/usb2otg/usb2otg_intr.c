@@ -2536,12 +2536,13 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
                                     "bare-chhltd");
 
                                 {
-                                    struct USB2OTGChannel *hc = &USBUnit->hu_Channel[chan];
-                                    UBYTE np = hc->hc_BulkNoProgressCount;
+                                    D(struct USB2OTGChannel *hc = &USBUnit->hu_Channel[chan];)
+                                    struct USB2OTGBulkTrack *bt = usb2otg_bulk_track(USBUnit, req);
+                                    UBYTE np = bt->bt_NoProgressCount;
 
                                     /* Absolute cap: not reset by np-reset below. */
-                                    if (hc->hc_BareChhltdTotal < 0xFFFF)
-                                        hc->hc_BareChhltdTotal++;
+                                    if (bt->bt_BareChhltdTotal < 0xFFFF)
+                                        bt->bt_BareChhltdTotal++;
 
                                     D(
                                         {
@@ -2574,7 +2575,7 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
                                                     "  NPTXSTS=%08x HFNUM=%08x HOSTPORT=%08x\n"
                                                     "  start_hfnum=%08x ufdelta=%d coreINTR=%08x HAINT=%08x PID=%u\n",
                                                     (unsigned)np,
-                                                    (unsigned)hc->hc_BulkRequeueCount,
+                                                    (unsigned)bt->bt_RequeueCount,
                                                     bare_chhltd_total,
                                                     chan,
                                                     (int)req->iouh_DevAddr,
@@ -2603,7 +2604,7 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
                                      * Idle bulk-IN bypasses the np-counter
                                      * giveup (legit NAK pattern). Absolute
                                      * cap still applies via
-                                     * hc_BareChhltdTotal (1500 × ~1 ms).
+                                     * bt_BareChhltdTotal (1500 × ~1 ms).
                                      * After 2 consecutive no-progress
                                      * giveups the device is likely gone
                                      * (unplug = bare-CHHLTD storm) — fail
@@ -2618,7 +2619,7 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
                                         USBUnit->hu_BulkGiveupStreak[req->iouh_DevAddr] >= 2
                                             ? 25 : 250;
                                     if ((np >= np_limit && !skip_np_giveup) ||
-                                        hc->hc_BareChhltdTotal >= 1500)
+                                        bt->bt_BareChhltdTotal >= 1500)
                                     {
                                         if (req->iouh_Actual == 0 &&
                                             USBUnit->hu_BulkGiveupStreak[req->iouh_DevAddr] < 0xFF)
@@ -2679,7 +2680,7 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
                                             /* IN-idle long backoff. */
                                             usb2otg_nak_gate_set(USBUnit,
                                                 req->iouh_DevAddr, 1, 200);
-                                            hc->hc_BulkNoProgressCount = 0;
+                                            bt->bt_NoProgressCount = 0;
                                         }
                                         else
                                         {
@@ -2984,6 +2985,7 @@ static BOOL usb2otg_process_naktimeout(struct USB2OTGUnit *otg_Unit)
 
                     if (FNAME_DEV(AdvanceChannel)(otg_Unit, chan))
                     {
+                        usb2otg_bulk_finish(otg_Unit, chan, req);
                         otg_Unit->hu_Channel[chan].hc_Request = NULL;
                         otg_Unit->hu_Channel[chan].hc_WatchdogCount = 0;
                         ADDTAIL(&otg_Unit->hu_FinishedXfers, (struct Node *)req);

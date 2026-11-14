@@ -248,6 +248,7 @@ static void usb2otg_finish_setup_error(struct USB2OTGUnit *otg_Unit, int chan,
     KrnSpinLock(&otg_Unit->hu_Lock, NULL, SPINLOCK_MODE_WRITE);
 #endif
     req->iouh_Req.io_Error = error;
+    usb2otg_bulk_finish(otg_Unit, chan, req);
     otg_Unit->hu_Channel[chan].hc_Request = NULL;
     otg_Unit->hu_Channel[chan].hc_OrigBuffer = NULL;
     otg_Unit->hu_Channel[chan].hc_SplitCSplitPending = 0;

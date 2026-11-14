@@ -749,6 +749,7 @@ AROS_LH1(LONG, FNAME_DEV(AbortIO),
                         if (cmp == ioreq)
                         {
                             Remove((struct Node *)ioreq);
+                            usb2otg_bulk_forget(unit, ioreq);
                             loc = qnames[q];
                             aborted = TRUE;
                             break;
