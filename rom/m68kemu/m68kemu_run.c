@@ -83,17 +83,19 @@ static LONG setup_and_execute(struct M68KEmuContext *ctx, ULONG entry,
         snprintf(ctx->program_name, sizeof(ctx->program_name), "%s", programName);
     }
 
+    /* C startup reads pr_Arguments from the initial Process shadow. */
+    ctx->m68k_argptr  = m68k_argptr;
+    ctx->m68k_argsize = argSize;
+
     /* Init ExecBase shadow data fields */
     shadow_init_execbase(ctx, m68k_sysbase, SysBase);
 
     /* Auto-open libraries referenced by C startup tables */
     M68KEmu_AutoOpenLibs(ctx);
 
-    /* Store arguments for the entry point —
-       M68KEmu_Execute will set registers after reset */
+    /* Store the remaining entry-point state; M68KEmu_Execute sets
+       registers from this context after reset. */
     ctx->entry_point  = entry;
-    ctx->m68k_argptr  = m68k_argptr;
-    ctx->m68k_argsize = argSize;
     ctx->m68k_sysbase = m68k_sysbase;
 
     /* If stackSize is 0, run directly (non-threaded) */
