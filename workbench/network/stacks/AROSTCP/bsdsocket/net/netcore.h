@@ -35,7 +35,7 @@
 #define NETCORE_LIBNAME     "arostcp.library"
 #define NETCORE_LIBVERSION  1       /* of the library: its vectors */
 #define NETCORE_LIBREVISION 0
-#define NETCORE_VERSION     10      /* of the table: raised with every line added to netcore.def */
+#define NETCORE_VERSION     11      /* of the table: raised with every line added to netcore.def */
 
 /*
  * Every declaration named in netcore.def must be visible here, so that the

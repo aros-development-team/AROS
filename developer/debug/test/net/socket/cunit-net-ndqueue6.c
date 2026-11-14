@@ -143,7 +143,8 @@ static int bpf_start(void)
     return 0;
 }
 
-/* Delete the neighbour cache entry (the host route) for addr. */
+/* Delete the neighbour cache entry for addr on the interface: a routing
+ * socket message with RTF_LLINFO, as ndp -d sends. */
 static int forget_neighbour(const struct in6_addr *addr)
 {
     long buf[256 / sizeof(long)];
@@ -156,9 +157,10 @@ static int forget_neighbour(const struct in6_addr *addr)
     bzero(buf, sizeof(buf));
     h->rtm_version = RTM_VERSION;
     h->rtm_type = RTM_DELETE;
-    h->rtm_flags = RTF_HOST;
+    h->rtm_flags = RTF_HOST | RTF_LLINFO;
     h->rtm_addrs = RTA_DST;
     h->rtm_seq = 1;
+    h->rtm_index = ifindex;
     sa6(sa, addr, 0);
     sa->sin6_scope_id = 0;
     h->rtm_msglen = sizeof(*h) + ROUNDUP(sizeof(*sa));

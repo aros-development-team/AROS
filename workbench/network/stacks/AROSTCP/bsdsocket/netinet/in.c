@@ -289,7 +289,7 @@ struct in_addr in;
 
 int	in_interfaces;		/* number of external internet interfaces */
 
-static int in_control_locked(struct socket *, int, caddr_t, struct ifnet *);
+static int in_control_locked(struct socket *, int, caddr_t, struct ifnet *, u_char);
 
 #ifdef ENABLE_MULTICAST
 /*
@@ -322,19 +322,32 @@ in_join_allhosts(struct ifnet *ifp)
 int
 in_control(struct socket *so, int cmd, caddr_t data, struct ifnet *ifp)
 {
-    spl_t s = splimp();
-    int error = in_control_locked(so, cmd, data, ifp);
+    spl_t s;
+    int error;
+    u_char origin = IN_ORIGIN_MANUAL;
 
+    /* SIOCAIFADDR saying where the address came from: its request first */
+    if(cmd == SIOCAIFADDR_ORIGIN) {
+        u_int o = ((struct in_originreq *)data)->ifro_origin;
+
+        if(o > IN_ORIGIN_LINKLOCAL)
+            return (EINVAL);
+        origin = (u_char)o;
+        cmd = SIOCAIFADDR;
+    }
+    s = splimp();
+    error = in_control_locked(so, cmd, data, ifp, origin);
     splx(s);
     return (error);
 }
 
 static int
-in_control_locked(so, cmd, data, ifp)
+in_control_locked(so, cmd, data, ifp, origin)
 struct socket *so;
 int cmd;
 caddr_t data;
 register struct ifnet *ifp;
+u_char origin;
 {
     register struct ifreq *ifr = (struct ifreq *)data;
     register struct in_ifaddr *ia = 0;
@@ -406,6 +419,18 @@ register struct ifnet *ifp;
                 in_interfaces++;
         }
         break;
+
+    case SIOCGIFAFLAG_IN: {         /* an address's IN_IFF_* flags (NetBSD) */
+        const struct sockaddr_in *sin = (const struct sockaddr_in *)&ifr->ifr_addr;
+
+        for(; ia; ia = ia->ia_next)
+            if(ia->ia_ifp == ifp && ia->ia_addr.sin_addr.s_addr == sin->sin_addr.s_addr)
+                break;
+        if(ia == NULL || sin->sin_family != AF_INET)
+            return (EADDRNOTAVAIL);
+        ifr->ifr_addrflags = ia->ia4_flags;
+        return (0);
+    }
 
     case SIOCSIFBRDADDR:
     /*		if ((so->so_state & SS_PRIV) == 0)
@@ -485,6 +510,7 @@ register struct ifnet *ifp;
     break;
 
     case SIOCSIFADDR:
+        ia->ia_origin = IN_ORIGIN_MANUAL;
         return (in_ifinit(ifp, ia,
                           (struct sockaddr_in *) &ifr->ifr_addr, 1));
 
@@ -518,6 +544,7 @@ register struct ifnet *ifp;
             ia->ia_dstaddr = ifra->ifra_dstaddr;
             maskIsNew  = 1; /* We lie; but the effect's the same */
         }
+        ia->ia_origin = origin;         /* before its probes start */
         if(ifra->ifra_addr.sin_family == AF_INET &&
                 (hostIsNew || maskIsNew))
             error = in_ifinit(ifp, ia, &ifra->ifra_addr, 0);
@@ -529,6 +556,7 @@ register struct ifnet *ifp;
         return (error);
 
     case SIOCDIFADDR:
+        arp_dad_forget(ia);             /* a reload may give it back */
         rt_newaddrmsg(RTM_DELADDR, (struct ifaddr *)ia, 0, NULL);
         in_ifscrub(ifp, ia);
         rt_purgeifa((struct ifaddr *)ia);   /* gateway routes, ARP entries */
@@ -565,6 +593,9 @@ register struct ifnet *ifp;
     return (0);
 }
 
+/* in_control() keeps an in_ifaddr in an mbuf */
+typedef char in_ifaddr_fits_an_mbuf[sizeof(struct in_ifaddr) <= MLEN ? 1 : -1];
+
 /*
  * Delete any existing route for an interface.
  */
@@ -596,10 +627,11 @@ int scrub;
 {
     register u_long i = ntohl(sin->sin_addr.s_addr);
     struct sockaddr_in oldaddr;
-    int error, flags = RTF_UP;
+    int error, flags = RTF_UP, newaddr;
     spl_t s = splimp();
 
     oldaddr = ia->ia_addr;
+    newaddr = oldaddr.sin_family != AF_INET || oldaddr.sin_addr.s_addr != sin->sin_addr.s_addr;
     ia->ia_addr = *sin;
     /*
      * Give the interface a chance to initialize
@@ -692,7 +724,32 @@ int scrub;
 #ifdef ENABLE_MULTICAST
     in_join_allhosts(ifp);
 #endif
+    /* a new address on an ARP interface is probed before it is used (RFC
+     * 5227); a new mask on the same address is not a new address. EEXIST:
+     * another interface has the network's route, the address is here all
+     * the same (two links with 169.254/16, RFC 3927 section 3.2) */
+    if((error == 0 || error == EEXIST) && newaddr)
+        arp_dad_start(ia);
     return (error);
+}
+
+/*
+ * An address that is not ready - tentative, or another host's (RFC 5227) -
+ * is no source: another of its interface's that is ready, as NetBSD's
+ * in_selectsrc() does. With none ready it stays, and ip_output() refuses
+ * it.
+ */
+struct in_ifaddr *
+in_readyia(struct in_ifaddr *ia)
+{
+    struct in_ifaddr *other;
+
+    if(ia == NULL || !(ia->ia4_flags & IN_IFF_NOTREADY))
+        return (ia);
+    for(other = in_ifaddr; other; other = other->ia_next)
+        if(other->ia_ifp == ia->ia_ifp && !(other->ia4_flags & IN_IFF_NOTREADY))
+            return (other);
+    return (ia);
 }
 
 /*
@@ -724,7 +781,11 @@ struct in_addr in;
      * with a broadcast address.
      */
     for(ia = in_ifaddr; ia; ia = ia->ia_next)
-        if(ia->ia_ifp->if_flags & IFF_BROADCAST) {
+        /* a host address (/32), or one of a point-to-point pair (/31, RFC
+         * 3021), has no network or broadcast address of its own: its
+         * "subnet" is the address itself, or its peer */
+        if((ia->ia_ifp->if_flags & IFF_BROADCAST) &&
+                ia->ia_subnetmask < 0xfffffffeUL) {
             u_long t;
             if(ia->ia_broadaddr.sin_addr.s_addr == in.s_addr)
                 return (1);
@@ -860,9 +921,9 @@ in_delmulti(struct in_multi *inm)
  * device would never be told the group's address.
  *
  * The interface's own membership of the all-hosts group, from
- * in_join_allhosts(), is released here. What sockets still hold cannot be
- * freed under them: those entries are cut loose from the interface and go
- * when their sockets drop them. Nothing is sent and the device is not
+ * in_join_allhosts(), is released here. What sockets hold is released by
+ * in_pcbifgone() (in_family.c); an entry still held is cut loose from the
+ * interface and goes with its last holder. Nothing is sent and the device is not
  * asked to forget the addresses: it is offline and about to be closed.
  */
 void
@@ -942,23 +1003,16 @@ in_ifpurge(struct ifnet *ifp, struct sana_softc *ssc)
 static int
 in_iflinkdown(struct ifnet *ifp, struct sana_softc *ssc)
 {
-    struct ifaliasreq ifra;
-    struct sockaddr_in *sin = (struct sockaddr_in *)&ifra.ifra_addr;
     int deleted = 0;
 
     if(ifp->if_data.ifi_aros_usedhcp)
         return (in_ifpurge(ifp, ssc));
     if(ssc == NULL || ssc->ss_autoip.state == AUTOIP_DISABLED)
         return (0);
-    /* the claim is given up; its address, once it has one, goes with it */
-    if(ssc->ss_autoip.state == AUTOIP_BOUND) {
-        bzero(&ifra, sizeof(ifra));
-        sin->sin_len = sizeof(*sin);
-        sin->sin_family = AF_INET;
-        sin->sin_addr = ssc->ss_autoip.candidate;
-        if(in_control(NULL, SIOCDIFADDR, (caddr_t)&ifra, ifp) == 0)
-            deleted++;
-    }
+    /* the claim is given up: autoip_stop() takes its address, which is on
+     * the interface while it is claimed (AUTOIP_CLAIMING), off with it */
+    if(ssc->ss_autoip.state == AUTOIP_CLAIMING)
+        deleted++;
     autoip_stop(ifp);
     return (deleted);
 }
@@ -995,8 +1049,10 @@ in_ifevent(int event, struct ifnet *ifp)
 
     case NFE_LINKUP:
         /* Perhaps a new network: a new lease, a new link-local claim. A
-         * static address stayed (in_iflinkdown()); autoip was stopped when
-         * the link went, and the configuration's AUTO says it runs again. */
+         * static address stayed (in_iflinkdown()), and is probed again
+         * (RFC 5227); autoip was stopped when the link went, and the
+         * configuration's AUTO says it runs again. */
+        arp_dad_linkup(ifp);
         kill_dhclient(ifp);
         run_dhclient(ifp);
         if(ssc != NULL && ssc->ss_autoip.wanted)
@@ -1018,9 +1074,19 @@ in_ifevent(int event, struct ifnet *ifp)
                 break;
             deleted++;
         }
+        /* the end of what the configuration gave back (NFE_UNCONFIGURE_PRE) */
+        arp_dad_reload(FALSE);
         break;
 
     case NFE_UNCONFIGURE_PRE:
+        /*
+         * The configuration is about to be taken off and, for a reload,
+         * put back: an address in use that it gives back is remembered,
+         * and is not probed again if it comes back (RFC 5227: nothing has
+         * changed on the network). A link that went and came back is
+         * another matter: what stayed is probed again (NFE_LINKUP).
+         */
+        arp_dad_reload(TRUE);
         if(ssc != NULL) {
             if(ssc->ss_autoip.state != AUTOIP_DISABLED)
                 autoip_stop(ifp);

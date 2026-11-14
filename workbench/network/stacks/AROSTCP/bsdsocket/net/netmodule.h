@@ -248,6 +248,37 @@ struct netiface {
 
 #define NETIFACE_MAX        8   /* published interfaces at one time */
 
+/*
+ * Requests of the stack itself to a family's nfo_control, about its table of
+ * link-layer neighbours when that is not in the routing table (IPv6's
+ * neighbour cache, as FreeBSD's lltable): the administration module's
+ * routing socket and GetRouteInfo() ask it so. They are not ioctls - an
+ * ioctl has IOC_IN, IOC_OUT or IOC_VOID set - and come with no socket. A
+ * family that keeps its neighbours in routes has no such table and does
+ * not answer them.
+ */
+struct rt_msghdr;
+
+#define NFC_LLINFO_RTMSG    1   /* data: struct nfc_llinfo_rtmsg */
+#define NFC_LLINFO_ROWS     2   /* data: struct nfc_llinfo_rows */
+
+/* A routing message with RTF_LLINFO about one of the family's addresses:
+ * RTM_ADD sets a neighbour's link-layer address by hand (the gateway a
+ * sockaddr_dl), RTM_DELETE deletes it, RTM_GET reads it - into *nr_rtm,
+ * which may be replaced by a larger one (R_Malloc()). */
+struct nfc_llinfo_rtmsg {
+    struct rt_msghdr  **nr_rtm;
+    struct sockaddr    *nr_dst;
+    struct sockaddr    *nr_gate;
+};
+
+/* The neighbours as GetRouteInfo() rows: with nr_buf NULL their size is
+ * added to nr_size; else they are written at nr_buf, which moves past them. */
+struct nfc_llinfo_rows {
+    long                nr_size;
+    char               *nr_buf;
+};
+
 #define NFQ_LOCAL       1   /* is the address on a network this host is attached to */
 #define NFQ_FORWARDABLE 2   /* may a packet to the address be forwarded */
 #define NFQ_NETMASK     3   /* the mask of the address's network when a route names none

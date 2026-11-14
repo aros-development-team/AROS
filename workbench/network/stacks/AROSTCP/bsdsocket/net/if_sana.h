@@ -162,10 +162,9 @@ struct sana_softc {
   struct {                          /* IPv4LL / RFC 3927 state */
     UBYTE          state;           /* AUTOIP_xxx state */
     UBYTE          wanted;          /* IP=AUTO: run again when the link is back */
-    UBYTE          count;           /* probe/announce counter */
-    UBYTE          ticks;           /* 1-second countdown */
+    UBYTE          ticks;           /* 1-second countdown (AUTOIP_WAIT) */
     UBYTE          conflicts;       /* conflict counter */
-    struct in_addr candidate;       /* candidate/bound address */
+    struct in_addr candidate;       /* the address claimed */
   } ss_autoip;
 #endif	/* INET */
 #if	ISO

@@ -551,6 +551,18 @@ sana_unrun(struct sana_softc *ssc)
     for(next = ssc->ss_reqs; req = next ;) {
         next = req -> ioip_next;
         WaitIO((struct IORequest *)req);
+        /* a packet that had arrived or was being written, and the buffer
+         * a read was posted with: as sana_linktype_quiesce(). An interface
+         * that leaves a running stack (sana_remove_unseen()) would
+         * otherwise keep its receive clusters out of the pool for good. */
+        if(req->ioip_packet != NULL) {
+            m_freem(req->ioip_packet);
+            req->ioip_packet = NULL;
+        }
+        if(req->ioip_reserved != NULL) {
+            m_freem(req->ioip_reserved);
+            req->ioip_reserved = NULL;
+        }
         DeleteIORequest((struct IORequest *)req);
     }
     ssc->ss_reqs = next;

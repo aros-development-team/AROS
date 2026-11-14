@@ -12,6 +12,7 @@ EXEDIR := $(AROS_TESTS)/Socket
 CUNITEXEDIR := $(AROS_TESTS)/cunit/net/socket
 
 CUNITSOCKETTESTFILES := \
+    cunit-net-acd \
     cunit-net-addr6 \
     cunit-net-addrflags6 \
     cunit-net-addrsig \
@@ -32,18 +33,22 @@ CUNITSOCKETTESTFILES := \
     cunit-net-localhost \
     cunit-net-mcast6 \
     cunit-net-mcast6if \
+    cunit-net-mcastgone \
     cunit-net-mld6 \
     cunit-net-modlib \
     cunit-net-modstop \
     cunit-net-module \
     cunit-net-naflags6 \
     cunit-net-narouter6 \
+    cunit-net-nd6cache \
+    cunit-net-nd6limits \
     cunit-net-ndqueue6 \
     cunit-net-netconfig \
     cunit-net-netdb \
     cunit-net-nud6 \
     cunit-net-packetmod \
     cunit-net-pfil \
+    cunit-net-pktinfo \
     cunit-net-pmtu4 \
     cunit-net-pmtu6 \
     cunit-net-ports \

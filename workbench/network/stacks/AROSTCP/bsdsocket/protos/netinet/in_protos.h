@@ -34,6 +34,7 @@ void in_ifdetach(struct ifnet * ifp);
 struct in_ifaddr * in_iaonnetof(u_long net);
 
 int in_broadcast(struct in_addr in);
+struct in_ifaddr *in_readyia(struct in_ifaddr *ia);
 
 /* IPv4 starts and stops while the stack runs (netinet/in_proto.c) */
 void in_attach_running(void);

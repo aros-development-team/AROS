@@ -2,6 +2,7 @@ void rtinitheads(void);
 void rtalloc(struct route * ro);
 struct rtentry * rtalloc1(struct sockaddr * dst, int report);
 void rt_pmtu_update(struct sockaddr * dst, u_long mtu);
+void rt_pmtu_update_if(struct sockaddr * dst, u_long mtu, struct ifnet * ifp);
 void rt_pmtu_timer(void);
 void rt_flushfamily(int af);
 u_long rt_expire_out(u_long expire);

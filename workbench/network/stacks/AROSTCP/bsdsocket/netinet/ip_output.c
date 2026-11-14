@@ -301,7 +301,8 @@ int	STKARGFUN ip_output(void *args, ...)
          */
         if(imo != NULL) {
             ip->ip_ttl = imo->imo_multicast_ttl;
-            if(imo->imo_multicast_ifp != NULL)
+            /* an interface the packet is bound to wins */
+            if(imo->imo_multicast_ifp != NULL && boundifp == NULL)
                 ifp = imo->imo_multicast_ifp;
         } else
             ip->ip_ttl = IP_DEFAULT_MULTICAST_TTL;
@@ -382,7 +383,7 @@ int	STKARGFUN ip_output(void *args, ...)
      * of outgoing interface.
      */
     if(ip->ip_src.s_addr == INADDR_ANY && ia != NULL)
-        ip->ip_src = IA_SIN(ia)->sin_addr;
+        ip->ip_src = IA_SIN(in_readyia(ia))->sin_addr;  /* one that is ready */
 #endif
     /*
      * Look for broadcast address and
@@ -415,6 +416,25 @@ int	STKARGFUN ip_output(void *args, ...)
 #ifdef ENABLE_MULTICAST
 sendit:
 #endif
+    /*
+     * Only from an address that is ready (RFC 5227, as NetBSD's
+     * ip_ifaddrvalid()): from a tentative one the packet is dropped - a
+     * TCP SYN is sent again once it is ready - from a duplicated one the
+     * sender gets EADDRNOTAVAIL. A forwarded packet is not ours.
+     */
+    if(!(flags & IP_FORWARDING) && ip->ip_src.s_addr != INADDR_ANY) {
+        register struct in_ifaddr *sia;
+
+        for(sia = in_ifaddr; sia; sia = sia->ia_next)
+            if(IA_SIN(sia)->sin_addr.s_addr == ip->ip_src.s_addr)
+                break;
+        if(sia && (sia->ia4_flags & IN_IFF_NOTREADY)) {
+            ipstat.ips_odropped++;
+            error = (sia->ia4_flags & IN_IFF_DUPLICATED) ? EADDRNOTAVAIL : 0;
+            goto bad;
+        }
+    }
+
     /*
      * The packet hooks (the filter engine, Miami hooks): one word tested
      * while nothing is hooked (net/pfil.h). A dropped packet is freed
@@ -674,6 +694,8 @@ struct mbuf **mp;
             case IP_DONTFRAG:
             case IP_RECVTOS:
             case IP_RECVTTL:
+            case IP_RECVIF:
+            case IP_PKTINFO:
                 if(m->m_len != sizeof(int))
                     error = EINVAL;
                 else {
@@ -715,6 +737,14 @@ struct mbuf **mp;
 
                     case IP_RECVTTL:
                         OPTSET(INP_RECVTTL);
+                        break;
+
+                    case IP_RECVIF:
+                        OPTSET(INP_RECVIF);
+                        break;
+
+                    case IP_PKTINFO:
+                        OPTSET(INP_RECVPKTINFO);
                         break;
                     }
                 }
@@ -762,6 +792,8 @@ struct mbuf **mp;
             case IP_DONTFRAG:
             case IP_RECVTOS:
             case IP_RECVTTL:
+            case IP_RECVIF:
+            case IP_PKTINFO:
                 *mp = m = m_get(M_WAIT, MT_SOOPTS);
                 if(m == NULL) {		/* allocator may fail here */
                     error = ENOBUFS;
@@ -802,6 +834,14 @@ struct mbuf **mp;
 
                 case IP_RECVTTL:
                     optval = OPTBIT(INP_RECVTTL);
+                    break;
+
+                case IP_RECVIF:
+                    optval = OPTBIT(INP_RECVIF);
+                    break;
+
+                case IP_PKTINFO:
+                    optval = OPTBIT(INP_RECVPKTINFO);
                     break;
                 }
                 *mtod(m, int *) = optval;

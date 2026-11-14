@@ -974,34 +974,82 @@ rt_pmtu_timer(void)
 /*
  * rt_pmtu_update - the path to dst takes packets of at most mtu bytes (the
  * caller has clamped it): put that on dst's own route, only ever lowered.
+ * ifp is the interface the report came in by (NULL if unknown): the zone of
+ * an IPv6 link-local dst.
+ *
+ * A destination with no host route of its own gets one, as KAME's
+ * icmp6_mtudisc_clone() does, so that the routes others share are left
+ * alone: through the same router, or for an IPv6 destination on the link
+ * (whose neighbour is in the neighbour cache, not a route) on the link's
+ * interface. The routing table holds fe80::/64 once and keys a host route
+ * by address alone, so a link-local dst's route is put on ifp and only used
+ * there (ip6_output()); a report from another link about the same address
+ * is not recorded meanwhile.
  */
 void
-rt_pmtu_update(struct sockaddr *dst, u_long mtu)
+rt_pmtu_update_if(struct sockaddr *dst, u_long mtu, struct ifnet *ifp)
 {
     struct rtentry *rt;
     u_long old_mtu;
-    int added = 0;
+    int added = 0, linklocal = 0;
 
+#if INET6
+    linklocal = dst->sa_family == AF_INET6 &&
+                IN6_IS_ADDR_LINKLOCAL(&((struct sockaddr_in6 *)dst)->sin6_addr);
+    if(linklocal && (ifp == NULL || (ifp->if_flags & IFF_LOOPBACK)))
+        return;                         /* no zone */
+#endif
     rt = rtalloc1(dst, 0);
     if(rt == NULL)
         return;
-    if(rt->rt_rmx.rmx_mtu != 0 && mtu >= rt->rt_rmx.rmx_mtu) {
-        rtfree(rt);                     /* not lower: nothing to do */
+    if((linklocal && (rt->rt_flags & RTF_HOST) && rt->rt_ifp != ifp) ||
+            (rt->rt_rmx.rmx_mtu != 0 && mtu >= rt->rt_rmx.rmx_mtu)) {
+        rtfree(rt);                     /* another zone's, or not lower */
         return;
     }
     if(!(rt->rt_flags & RTF_HOST)) {
         struct rtentry *nrt = NULL;
+        struct sockaddr *gate = NULL;
+        struct sockaddr_storage own;
 
-        /* an on-link destination with no host route of its own: leave the
-         * prefix, which the whole link shares, alone */
-        if(!(rt->rt_flags & RTF_GATEWAY) ||
-                rtrequest(RTM_ADD, dst, rt->rt_gateway, NULL,
-                          RTF_HOST | RTF_GATEWAY | RTF_DYNAMIC, &nrt) != 0 ||
+        if(rt->rt_flags & RTF_GATEWAY) {
+            if(!linklocal)
+                gate = rt->rt_gateway;  /* the same router */
+        }
+#if INET6
+        else if(dst->sa_family == AF_INET6) {
+            /*
+             * On the link: our address there, as an interface route has it
+             * - for a link-local dst the one of ifp's link, which IPv6 says
+             * (NFQ_GATEWAYLINK, asked with the dst's zone set), else the
+             * address of the prefix's route.
+             */
+            if(linklocal) {
+                struct sockaddr_in6 zoned = *(struct sockaddr_in6 *)dst;
+
+                zoned.sin6_scope_id = ifp->if_index;
+                if(netfamily_addrquery(AF_INET6, NFQ_GATEWAYLINK,
+                        (struct sockaddr *)&zoned, (struct sockaddr *)&own) > 0 &&
+                        own.ss_len != 0) {
+                    /* with its zone: ifa_ifwithroute() then takes ifp and its
+                     * address, not the first interface whose address or
+                     * network matches fe80::/64 */
+                    ((struct sockaddr_in6 *)&own)->sin6_scope_id = ifp->if_index;
+                    gate = (struct sockaddr *)&own;
+                }
+            } else if(rt->rt_ifa != NULL)
+                gate = rt->rt_ifa->ifa_addr;
+        }
+#endif
+        if(gate == NULL ||
+                rtrequest(RTM_ADD, dst, gate, NULL,
+                          RTF_HOST | RTF_DYNAMIC | (rt->rt_flags & RTF_GATEWAY),
+                          &nrt) != 0 ||
                 nrt == NULL) {
             rtfree(rt);
             return;
         }
-        nrt->rt_rmx = rt->rt_rmx;       /* the router's route's metrics */
+        nrt->rt_rmx = rt->rt_rmx;       /* the shared route's metrics */
         rtfree(rt);
         rt = nrt;
         added = 1;
@@ -1009,4 +1057,11 @@ rt_pmtu_update(struct sockaddr *dst, u_long mtu)
     old_mtu = rt->rt_rmx.rmx_mtu;
     rt->rt_rmx.rmx_mtu = mtu;
     pmtu_keep(rt, old_mtu, added);
+}
+
+/* rt_pmtu_update_if() for a report whose interface is not known (IPv4). */
+void
+rt_pmtu_update(struct sockaddr *dst, u_long mtu)
+{
+    rt_pmtu_update_if(dst, mtu, NULL);
 }
