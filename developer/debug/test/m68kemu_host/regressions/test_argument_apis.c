@@ -247,12 +247,16 @@ static void test_tasks(struct M68KEmuContext *ctx) {
     check(r==0&&io_error==73&&pt&&shadow_lookup(ctx,pt)==&third.pr_Task&&shadow_lookup(ctx,pt+M68K_PR_MSGPORT)==&third.pr_MsgPort&&ctx->num_shadows==M68KEMU_MAX_SHADOWS,"two slots: the Process and its port are registered");
     /* no MsgPort layout: a new Process cannot register its port */
     reset(ctx);(void)get_as(ctx,&root.pr_Task);shadows=ctx->num_shadows;missing_port_layout=TRUE;
+    {
+    const char *label="without a MsgPort layout a new Process is taken back whole (a tree that reads through the missing layout is not called, and fails here)";
 #if PROCESS_PORT_LAYOUT_CHECKED
     r=get_as(ctx,&third.pr_Task);
+    check(r==0&&io_error==ERROR_BAD_NUMBER&&heap_frees==1&&heap_freed_size==M68K_SIZEOF_PROCESS&&ctx->num_shadows==shadows&&!guest_of(ctx,&third.pr_Task),label);
 #else
-    r=1;    /* this tree reads the port's type through the missing layout: the call is not made here */
+    /* This tree reads through the missing layout: report failure without calling it. */
+    check(FALSE,label);
 #endif
-    check(r==0&&io_error==ERROR_BAD_NUMBER&&heap_frees==1&&heap_freed_size==M68K_SIZEOF_PROCESS&&ctx->num_shadows==shadows&&!guest_of(ctx,&third.pr_Task),"without a MsgPort layout a new Process is taken back whole (a tree that reads through the missing layout is not called, and fails here)");
+    }
     missing_port_layout=FALSE;
     /* a process ends; a new native process has its address */
     reset(ctx);memcpy(ctx->mem+B,"child-b",8);memcpy(ctx->mem+D,"other-d",8);
