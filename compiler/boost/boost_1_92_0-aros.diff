@@ -1,6 +1,6 @@
-diff -ruN boost_1_89_0/boost/assert/source_location.hpp boost_1_89_0.aros/boost/assert/source_location.hpp
---- boost_1_89_0/boost/assert/source_location.hpp	2025-08-06 19:49:08.000000000 +0100
-+++ boost_1_89_0.aros/boost/assert/source_location.hpp	2026-07-28 12:54:50.146594725 +0100
+diff -ruN boost_1_92_0/boost/assert/source_location.hpp boost_1_92_0.aros/boost/assert/source_location.hpp
+--- boost_1_92_0/boost/assert/source_location.hpp	2025-08-06 19:49:08.000000000 +0100
++++ boost_1_92_0.aros/boost/assert/source_location.hpp	2026-07-28 12:54:50.146594725 +0100
 @@ -76,7 +76,7 @@
  # pragma warning( disable: 4996 )
  #endif
@@ -10,9 +10,9 @@ diff -ruN boost_1_89_0/boost/assert/source_location.hpp boost_1_89_0.aros/boost/
  # define BOOST_ASSERT_SNPRINTF(buffer, format, arg) std::sprintf(buffer, format, arg)
  #else
  # define BOOST_ASSERT_SNPRINTF(buffer, format, arg) std::snprintf(buffer, sizeof(buffer)/sizeof(buffer[0]), format, arg)
-diff -ruN boost_1_89_0/libs/iostreams/src/mapped_file.cpp boost_1_89_0.aros/libs/iostreams/src/mapped_file.cpp
---- boost_1_89_0/libs/iostreams/src/mapped_file.cpp	2025-08-06 19:49:10.000000000 +0100
-+++ boost_1_89_0.aros/libs/iostreams/src/mapped_file.cpp	2026-09-13 12:41:40.485752691 +0100
+diff -ruN boost_1_92_0/libs/iostreams/src/mapped_file.cpp boost_1_92_0.aros/libs/iostreams/src/mapped_file.cpp
+--- boost_1_92_0/libs/iostreams/src/mapped_file.cpp	2025-08-06 19:49:10.000000000 +0100
++++ boost_1_92_0.aros/libs/iostreams/src/mapped_file.cpp	2026-09-13 12:41:40.485752691 +0100
 @@ -26,7 +26,21 @@
  #else
  # include <errno.h>
