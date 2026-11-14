@@ -98,6 +98,12 @@ static void rv_StopCPU(void)
         asm volatile("wfi");
 }
 
+/* RVI_AckIPI: the SBI IPI raises sip.SSIP, which S-mode clears itself */
+static void rv_AckIPI(void)
+{
+    csr_clear(sip, SIP_SSIP);
+}
+
 /* RVI_SendIPI: one SBI call per hart - ids need not be contiguous */
 static void rv_SendIPI(const ULONG *mask)
 {
@@ -238,6 +244,7 @@ static int Platform_Init(struct KernelBase *LIBBASE)
             __func__);
 
     /* Inter-processor interrupts reach the boot hart too */
+    __riscv_arosintern.RVI_AckIPI = rv_AckIPI;
     csr_set(sie, SIE_SSIE);
 #endif
 

@@ -120,8 +120,8 @@
             "\tjr   t0\n"                                                  \
             /* Deliberate illegal-instruction trap: the rellib base for  \
              * this stub was never resolved (offset table absent or the \
-             * library not opened).  sepc names the *_relwrapper; the   \
-             * restored a0-a7/fa0-fa7 are the original arguments.       */ \
+             * library not opened).  sepc/mepc names the *_relwrapper;  \
+             * the restored a0-a7/fa0-fa7 are the original arguments.   */ \
             "2:\tunimp\n"                                                  \
             : : "i" ((lvo)*LIB_VECTSIZE)                                   \
         );                                                                 \

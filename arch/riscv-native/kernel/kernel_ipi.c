@@ -4,12 +4,12 @@
     Desc: Inter-processor interrupts for native RISC-V SMP kernels.
 
     Delivery: a sender ORs its message bits into the target's pending
-    word and raises the target's supervisor software interrupt through
-    the platform (RVI_SendIPI - an SBI call on riscv64-opensbi). The
+    word and raises the target's software interrupt through the
+    platform (RVI_SendIPI - an SBI call on riscv64-opensbi). The
     software interrupt carries no payload, so the pending word is the
-    message; the handler clears sip.SSIP first and then takes the word,
-    so a message posted while it runs raises a fresh interrupt instead
-    of being lost.
+    message; the handler clears its pending bit first and then takes
+    the word, so a message posted while it runs raises a fresh interrupt
+    instead of being lost.
 
     Hook calls (IPI_CALL_HOOK) queue on the target, following the
     aarch64-native model: entries come from a per-target pool so that
@@ -27,6 +27,7 @@
 #include <proto/exec.h>
 
 #include <aros/types/spinlock_s.h>
+#include <asm/cpu.h>
 
 #include <kernel_base.h>
 #include <kernel_debug.h>
@@ -72,7 +73,7 @@ extern void krnRVCPUOffline(uint32_t cpu);
 /* Interrupts masked: a preempted holder would deadlock a Disable()d waiter */
 static inline unsigned int ipiq_lock(struct CPUIPIData *cid)
 {
-    unsigned int prev = krnRVIntrDisable();
+    unsigned int prev = rv_intr_disable();
 
     while (!krnRVSpinTryWrite(&cid->cid_Lock))
     {
@@ -85,15 +86,12 @@ static inline unsigned int ipiq_lock(struct CPUIPIData *cid)
 static inline void ipiq_unlock(struct CPUIPIData *cid, unsigned int prev)
 {
     asm volatile("amoswap.w.rl zero, zero, (%0)" :: "r"(&cid->cid_Lock.lock) : "memory");
-    krnRVIntrRestore(prev);
+    rv_intr_restore(prev);
 }
 
 static inline BOOL core_IntrMasked(void)
 {
-    unsigned long sstatus;
-
-    asm volatile("csrr %0, sstatus" : "=r"(sstatus));
-    return !(sstatus & 2);
+    return !(csr_read(RV_CSR_STATUS) & RV_STATUS_IE);
 }
 
 /*
@@ -390,7 +388,7 @@ static void core_HandleCallHookIPI(uint32_t cpu)
     EXEC_BLOCK_DISPATCH_DEC;
 }
 
-/* Supervisor software interrupt: called from the trap dispatch */
+/* Software interrupt (SSI): called from the trap dispatch */
 void core_IPIHandle(void)
 {
     uint32_t cpu = krnRVCPUNumber();
@@ -398,7 +396,8 @@ void core_IPIHandle(void)
     ULONG msg;
 
     /* Acknowledge first, so a post that lands from here on interrupts again */
-    asm volatile("csrc sip, %0" :: "r"(2UL) : "memory");
+    if (__riscv_arosintern.RVI_AckIPI)
+        __riscv_arosintern.RVI_AckIPI();
 
     if (!cid)
         return;

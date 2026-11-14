@@ -54,7 +54,7 @@ static spinlock_t mmu_lock;
 
 static inline unsigned int krnMMULock(void)
 {
-    unsigned int prev = krnRVIntrDisable();
+    unsigned int prev = rv_intr_disable();
 
     while (!krnRVSpinTryWrite(&mmu_lock))
     {
@@ -67,7 +67,7 @@ static inline unsigned int krnMMULock(void)
 static inline void krnMMUUnlock(unsigned int prev)
 {
     asm volatile("amoswap.w.rl zero, zero, (%0)" :: "r"(&mmu_lock.lock) : "memory");
-    krnRVIntrRestore(prev);
+    rv_intr_restore(prev);
 }
 
 /* After the local sfence.vma: the same on every other online hart */

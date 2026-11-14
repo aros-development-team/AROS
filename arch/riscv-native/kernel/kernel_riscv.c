@@ -8,6 +8,7 @@
 #include <aros/config.h>
 #include <exec/types.h>
 #include <stddef.h>
+#include <asm/cpu.h>
 
 #include "kernel_riscv.h"
 
@@ -106,7 +107,7 @@ volatile UQUAD __riscv_cpu_idletime[RISCV_MAXCPUS];
 void krnRVIdleWait(void)
 {
     uint32_t cpu = krnRVCPUNumber();
-    unsigned int prev = krnRVIntrDisable();
+    unsigned int prev = rv_intr_disable();
     UQUAD from, to;
 
     from = krnRVReadTime();
@@ -116,7 +117,7 @@ void krnRVIdleWait(void)
     if (cpu < RISCV_MAXCPUS)
         __riscv_cpu_idletime[cpu] += to - from;
 
-    krnRVIntrRestore(prev);
+    rv_intr_restore(prev);
 }
 
 void krnRVCPUOnline(uint32_t cpu)
