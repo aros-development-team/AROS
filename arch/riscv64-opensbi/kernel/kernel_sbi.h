@@ -103,10 +103,18 @@ static inline long sbi_probe_extension(unsigned long eid)
 }
 
 /* Write to the SBI debug console (DBCN extension, SBI >= 2.0) */
-static inline long sbi_debug_console_write(const char *buf, unsigned long len)
+static inline struct sbiret sbi_debug_console_write(const char *buf,
+                                                    unsigned long len)
 {
-    struct sbiret ret = sbi_ecall(SBI_EXT_DBCN, SBI_DBCN_WRITE,
-                                  len, (unsigned long)buf, 0, 0, 0, 0);
+    return sbi_ecall(SBI_EXT_DBCN, SBI_DBCN_WRITE,
+                     len, (unsigned long)buf, 0, 0, 0, 0);
+}
+
+/* Write one byte to the SBI debug console (DBCN extension, SBI >= 2.0) */
+static inline long sbi_debug_console_write_byte(int ch)
+{
+    struct sbiret ret = sbi_ecall(SBI_EXT_DBCN, SBI_DBCN_WRITE_BYTE,
+                                  (unsigned char)ch, 0, 0, 0, 0, 0);
     return ret.error;
 }
 
@@ -126,11 +134,11 @@ static inline int sbi_console_getchar(void)
 }
 
 /* Read from the SBI debug console (DBCN extension, SBI >= 2.0) */
-static inline long sbi_debug_console_read(char *buf, unsigned long len)
+static inline struct sbiret sbi_debug_console_read(char *buf,
+                                                   unsigned long len)
 {
-    struct sbiret ret = sbi_ecall(SBI_EXT_DBCN, SBI_DBCN_READ,
-                                  len, (unsigned long)buf, 0, 0, 0, 0);
-    return (ret.error == SBI_SUCCESS) ? ret.value : 0;
+    return sbi_ecall(SBI_EXT_DBCN, SBI_DBCN_READ,
+                     len, (unsigned long)buf, 0, 0, 0, 0);
 }
 
 /* Program the next timer interrupt (TIME extension) */
