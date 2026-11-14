@@ -3,43 +3,76 @@
  * Copyright 2026 amigazen project
  * Copyright 2026 Jaime Dias
  *
- * Share - advertise a service running on this Amiga to the local network.
- *
- * Other machines running Bonjour/Avahi/mDNS (Macs, PCs, phones, other Amigas)
- * will see the service appear.  Share keeps advertising until you press Ctrl-C,
- * then withdraws it cleanly.
- *
- *   Share NAME/A TYPE/A PORT/N/A [DOMAIN <d>] [TEXT <k=v> ...] [QUIET]
- *
- *   NAME    the name others will see, e.g. "AmigaShare" (quote if it has
- *           spaces).
- *   TYPE    a plain word ("web", "files", "ftp", ...) or a real DNS-SD type.
- *   PORT    the TCP/UDP port your service listens on (1-65535).
- *   DOMAIN  network domain (default: your local network).
- *   TEXT    optional key=value pairs describing the service, each in
- *           quotes: ReadArgs() would take the '=' of a bare one as its own.
- *   QUIET   suppress the running banner.
- *
- * Examples:
- *   Share AmigaShare web 80 "path=/" "version=1"
- *   Share "Tim's FTP" ftp 21
- *
- * Native AmigaOS only.  You must actually be running a server on that port for
- * the advert to be useful.
+ * Share - advertise a service running on this Amiga to the local network,
+ *         on dnssd.library.
  */
+
+/******************************************************************************
+
+    NAME
+
+        Share NAME/A TYPE/A PORT/N/A [DOMAIN <d>] [TEXT <k=v> ...] [QUIET]
+
+    SYNOPSIS
+
+        NAME/A,TYPE/A,PORT/N/A,DOMAIN/K,TEXT/M,QUIET/S
+
+    LOCATION
+
+        C:
+
+    FUNCTION
+
+        Advertises a service of this computer: other machines running
+        Bonjour, Avahi or mDNS (Macs, PCs, phones, other Amigas) see it
+        appear. Share keeps advertising until Ctrl-C, then withdraws it
+        cleanly. If another machine has the name already, the service is
+        advertised as "Name (2)", and Share says so.
+
+    INPUTS
+
+        NAME    the name others will see, e.g. "AmigaShare" (quote it if it
+                has spaces)
+        TYPE    a plain word ("web", "files", "ftp", ...) or a real DNS-SD
+                type ("_http._tcp")
+        PORT    the TCP or UDP port the service listens on, 1-65535
+        DOMAIN  network domain (default: your local network)
+        TEXT    key=value items describing the service, each in quotes:
+                ReadArgs() would take the '=' of a bare one as its own. A
+                value may be binary: "\xNN" is the byte NN, "\\" a
+                backslash
+        QUIET   no messages while it runs
+
+    RESULT
+
+        0, or 20 when the service could not be advertised.
+
+    NOTES
+
+        A server must actually listen on that port for the advert to be of
+        use.
+
+    EXAMPLE
+
+        Share AmigaShare web 80 "path=/" "version=1"
+        Share "Tim's FTP" ftp 21
+
+    SEE ALSO
+
+        Nearby, Handshake, dnssd
+
+******************************************************************************/
 
 #include <exec/types.h>
 #include <dos/dos.h>
 #include <dos/rdargs.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
+#include <proto/dnssd.h>
 #include <utility/tagitem.h>
 
-#include <bonami/mdns.h>
-#include <proto/bonami.h>
-
-#include "ba_common.h"
-#include "ba_types.h"
+#include "sd_common.h"
+#include "sd_types.h"
 
 #define ARG_NAME    0
 #define ARG_TYPE    1
@@ -51,72 +84,81 @@
 
 static const char *ShareTemplate =
     "NAME/A,TYPE/A,PORT/N/A,DOMAIN/K,TEXT/M,QUIET/S";
+static const char version_tag[] __attribute__((used)) =
+    "\0$VER: Share 42.0 (13.11.2026)";
 
 static int
 ShareRun(CONST_STRPTR name, CONST_STRPTR word, UWORD port,
     STRPTR *textv, BOOL quiet)
 {
-    struct TagItem tags[8];
-    char txt[MDNS_MAX_TXT + 1];
-    CONST_STRPTR type;
-    MDNSRegisterRef ref;
-    LONG rc;
-    LONG nt;
+    CONST_STRPTR type = SDTypeFromAlias(word);
+    struct SDSession session;
+    DNSSDOperationRef op;
+    UBYTE txt[1300];
+    char items[400];
+    LONG txtLength, rc, why;
+    int result = -1;
 
-    type = BATypeFromAlias(word);
-
-    if (!BAEncodeTXT(txt, (LONG)sizeof(txt), (char **)textv)) {
-        BAPrintf("Share: TEXT is too long.\n");
+    txtLength = SDTXTFromItems(txt, (LONG)sizeof(txt), (char **)textv);
+    if (txtLength < 0) {
+        SDPrintf("Share: TEXT is too long, or an escape is not \\xNN.\n");
         return 20;
     }
-
-    ref = NULL;
-    nt = 0;
-    tags[nt].ti_Tag = MDNS_ServiceName;
-    tags[nt].ti_Data = (IPTR)name;
-    nt++;
-    tags[nt].ti_Tag = MDNS_ServiceType;
-    tags[nt].ti_Data = (IPTR)type;
-    nt++;
-    tags[nt].ti_Tag = MDNS_Port;
-    tags[nt].ti_Data = (IPTR)port;
-    nt++;
-    if (txt[0] != '\0') {
-        tags[nt].ti_Tag = MDNS_TXTRecord;
-        tags[nt].ti_Data = (IPTR)txt;
-        nt++;
-    }
-    tags[nt].ti_Tag = MDNS_RegisterRef;
-    tags[nt].ti_Data = (IPTR)&ref;
-    nt++;
-    tags[nt].ti_Tag = TAG_END;
-    tags[nt].ti_Data = 0;
-
-    rc = RegisterServiceA(tags);
-    if (rc != MDNS_OK) {
-        BAAppPrintMDNSError("advertise", rc);
+    SDItemsText(items, (LONG)sizeof(items), (char **)textv);
+    if ((rc = SDSessionOpen(&session, 0)) != DNSSD_OK) {
+        SDAppPrintError("advertise", rc);
         return 20;
     }
+    if (txtLength != 0) {
+        rc = DNSSD_Register(session.bs_Session, name, type, port, &op,
+            DNSSD_TXT, (IPTR)txt, DNSSD_TXTLength, txtLength, TAG_DONE);
+    } else {
+        rc = DNSSD_Register(session.bs_Session, name, type, port, &op, TAG_DONE);
+    }
+    if (rc != DNSSD_OK) {
+        SDSessionClose(&session);
+        SDAppPrintError("advertise", rc);
+        return 20;
+    }
+    while (result < 0 && (why = SDSessionWait(&session)) == SD_WAIT_EVENTS) {
+        const struct DNSSDEvent *e;
 
-    if (!quiet) {
-        BAPrintf("Now sharing \"%s\" (%s) on port %ld.\n",
-            name, BATypeFriendly(type), (LONG)port);
-        BAPrintf("Others see it as: %s.%s.local\n", name, type);
-        if (txt[0] != '\0') {
-            BAPrintf("Info advertised:  %s\n", txt);
+        while (result < 0 && (e = SDSessionRead(&session, &rc)) != NULL) {
+            if (e->de_Kind == DNSSD_EVENT_REGISTERED && !quiet) {
+                const UBYTE *label = SDEventPart(e, &e->de_Instance);
+                char as[64];
+                ULONG i;
+
+                for (i = 0; label != NULL && i < e->de_Instance.dr_Size && i < 63; i++) {
+                    as[i] = (char)label[i];
+                }
+                as[i] = '\0';
+                SDPrintf("Now sharing \"%s\" (%s) on port %ld.\n",
+                    as, SDTypeFriendly(type), (LONG)port);
+                SDPrintf("Others see it as: %s.%s.local\n", as, type);
+                if (items[0] != '\0') {
+                    SDPrintf("Info advertised:  %s\n", items);
+                }
+                SDPrintf("\nSharing... press Ctrl-C to stop.\n");
+            } else if (e->de_Kind == DNSSD_EVENT_END) {
+                SDAppPrintError("advertise", e->de_Result);
+                result = 20;
+            }
         }
-        BAPrintf("\nSharing... press Ctrl-C to stop.\n");
+        if (result < 0 && rc != DNSSD_ERR_EMPTY) {
+            SDAppPrintError("advertise", rc);
+            result = 20;
+        }
     }
-
-    Wait(SIGBREAKF_CTRL_C);
-
-    /* RegisterServiceA() wrote the handle; DeregisterService(NULL) would
-       do nothing */
-    DeregisterService(ref);
-    if (!quiet) {
-        BAPrintf("Stopped sharing \"%s\".\n", name);
+    DNSSD_Cancel(op);
+    SDSessionClose(&session);
+    if (result < 0) {
+        if (!quiet) {
+            SDPrintf("Stopped sharing \"%s\".\n", name);
+        }
+        result = 0;
     }
-    return 0;
+    return result;
 }
 
 int
@@ -124,53 +166,32 @@ main(void)
 {
     struct RDArgs *rda;
     IPTR args[ARG_COUNT];
-    CONST_STRPTR name;
-    CONST_STRPTR word;
-    STRPTR *textv;
     LONG portNum;
-    BOOL quiet;
     int result;
     int i;
 
     for (i = 0; i < ARG_COUNT; i++) {
         args[i] = 0;
     }
-
     rda = ReadArgs((STRPTR)ShareTemplate, args, NULL);
     if (rda == NULL) {
-        PrintFault(IoErr(), "Share");
+        PrintFault(IoErr(), (CONST_STRPTR)"Share");
         return 20;
     }
-
-    name = (CONST_STRPTR)args[ARG_NAME];
-    word = (CONST_STRPTR)args[ARG_TYPE];
     portNum = (args[ARG_PORT] != 0) ? *((LONG *)args[ARG_PORT]) : 0;
-    textv = (STRPTR *)args[ARG_TEXT];
-    quiet = (args[ARG_QUIET] != 0) ? TRUE : FALSE;
-
     if (portNum < 1 || portNum > 65535) {
-        BAPrintf("Share: PORT must be 1-65535.\n");
+        SDPrintf("Share: PORT must be 1-65535.\n");
         FreeArgs(rda);
         return 20;
     }
-
-    if (!BAAppOpen()) {
-        BAPrintf("Cannot open %s (v%ld+).\n", BONAMINAME,
-            (LONG)BONAMI_LIB_VERSION);
+    if (!SDAppOpen()) {
+        SDPrintf("Cannot open %s version %ld.\n", DNSSDNAME, (LONG)DNSSD_VERSION);
         FreeArgs(rda);
         return 20;
     }
-
-    if (BAAppOpenEngine() != MDNS_OK) {
-        BAPrintf("Cannot start the mDNS engine.\n");
-        BAAppClose();
-        FreeArgs(rda);
-        return 20;
-    }
-
-    result = ShareRun(name, word, (UWORD)portNum, textv, quiet);
-
-    BAAppClose();
+    result = ShareRun((CONST_STRPTR)args[ARG_NAME], (CONST_STRPTR)args[ARG_TYPE],
+        (UWORD)portNum, (STRPTR *)args[ARG_TEXT], args[ARG_QUIET] != 0);
+    SDAppClose();
     FreeArgs(rda);
     return result;
 }
