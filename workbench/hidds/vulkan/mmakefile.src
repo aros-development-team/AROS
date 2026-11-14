@@ -29,18 +29,14 @@ VULKAN_HPP_FILES := \
 #MM- workbench-hidds: hidd-vulkan
 #MM hidd-vulkan : includes
 
-#MM- workbench-hidds: hidd-vulkan-loader
-#MM hidd-vulkan-loader : includes
-
 USER_INCLUDES += \
             -iquote $(SRCDIR)/$(CURDIR)
 
 %build_module mmake=hidd-vulkan modname=vulkan modtype=hidd \
    files="$(HIDD_VULKAN_FILES)"
 
-%build_linklib mmake=hidd-vulkan-loader \
-    libname=vulkan \
-    files="vulkan_loader"
+# The loader is vulkan.library (workbench/libs/vulkan); programs link its
+# libvulkan.a.
 
 # VulkanProbe: the Vulkan stack on whatever devices the loader finds (the
 # display's driver, else the software one): per device, a logical device, a
@@ -53,6 +49,6 @@ USER_INCLUDES += \
     uselibs="vulkan"
 
 #MM- workbench-hidds: hidd-vulkan-vulkanprobe
-#MM- hidd-vulkan-vulkanprobe : hidd-vulkan-loader
+#MM- hidd-vulkan-vulkanprobe : workbench-libs-vulkan-linklib
 
 %common

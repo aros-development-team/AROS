@@ -1,0 +1,95 @@
+Description of the Vulkan ABI for AROS
+
+1. Library
+
+The library is named vulkan.library; its base variable is VulkanBase. The
+initial version is 1. It is the Vulkan loader: it finds the drivers
+(vulkan.hidd objects), owns the VkInstance, dispatches every command to the
+driver the object it is called with belongs to, and implements the window
+system integration (VK_KHR_surface, VK_AROS_surface, VK_KHR_swapchain)
+itself, for every driver.
+
+Programs link libvulkan.a (uselibs="vulkan", or -lvulkan), which holds the
+stubs for the functions in the vector table and opens the library.
+
+2. Vector table
+
+The exact placement of each function is in vulkan.conf, which is generated
+from the Vulkan registry by vulkan_gen.py and is committed:
+
+  - the native calls (vkACreateSurface, vkAGetSurfaceAttr,
+    vkCreateAROSSurfaceAROS) and a reserve for more;
+  - Vulkan 1.0 to 1.4 core, in registry order;
+  - VK_KHR_surface and VK_KHR_swapchain.
+
+Functions are only ever appended. Commands of other extensions have no
+vector: they are obtained with vkGetInstanceProcAddr or
+vkGetDeviceProcAddr, as on every other platform.
+
+All functions use the stack calling convention.
+
+3. Library base
+
+The library base is NOT passed to the library's functions: the pointers
+vkGetInstanceProcAddr and vkGetDeviceProcAddr return are called as plain C
+function pointers, and the functions in the vector table are the same
+functions.
+
+4. Function pointers
+
+vkGetInstanceProcAddr returns the library's own entry point for a command;
+it works with any instance, device or driver. vkGetDeviceProcAddr returns
+the driver's function itself (or the library's, for the few commands it
+implements or has to see), which is only valid for that device and its
+queues and command buffers - the usual contract, and the fastest path.
+
+5. Drivers
+
+A driver is a subclass of hidd.vulkan (<hidd/vulkan_hidd.h>) that answers
+moHidd_Vulkan_GetInstanceProcAddr like an ICD's vk_icdGetInstanceProcAddr:
+asked for "vkGetInstanceProcAddr" with a NULL instance it returns that
+entry point itself. The library calls no other method.
+
+The first pointer-sized member of every dispatchable object a driver
+creates (instance, physical device, device, queue, command buffer) belongs
+to the library, as in the Khronos loader-ICD interface (VK_LOADER_DATA):
+the driver must reserve it and not read it.
+
+A driver's own window system extensions (anything with "surface",
+"display", "swapchain" or "present" in its name) are neither listed to the
+application nor enabled in the driver.
+
+6. Surfaces
+
+A surface is the inner area of an Intuition window, or a rectangle of it.
+It is made with vkCreateAROSSurfaceAROS (instance extension
+VK_AROS_surface, <vulkan/vulkan_aros.h>) or with the tag based
+vkACreateSurface. The surface must be destroyed before its window is
+closed.
+
+7. Presentation
+
+A swapchain is presented in one of two ways, chosen when it is created:
+
+  - by scan-out: its images are the buffers of a scan-out bitmap of the
+    window's display, imported by the driver (VK_KHR_external_memory_fd,
+    VK_EXT_external_memory_dma_buf, VK_EXT_image_drm_format_modifier; the
+    buffer's handle stands in the place of the file descriptor). The
+    display shows the bitmap itself, through a hardware plane where it has
+    one. Used when the device's driver is the one of the window's display,
+    the format is B8G8R8A8, no more than three images are asked for and the
+    display offers a plane for the size;
+  - by read-back otherwise: the image is copied into a host visible buffer
+    and written into the window's RastPort.
+
+vkAGetSurfaceAttr(VKSA_PresentPath) tells which. The environment variable
+VK_PRESENT=readback forces the second; VK_DEBUG (any value) makes the
+library say on the debug output why a swapchain is not shown by scan-out.
+VK_DRIVER=software or =all selects the software driver, or both.
+
+A window closed with a surface still on it leaves the surface lost
+(VK_ERROR_SURFACE_LOST_KHR); destroying the surface first is still the
+rule.
+
+VK_AROS_surface is not registered with Khronos yet: its extension number
+and structure type value are provisional. Use the names from the header.

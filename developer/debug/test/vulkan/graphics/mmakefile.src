@@ -8,6 +8,6 @@ include $(SRCDIR)/config/aros.cfg
     uselibs="vulkan"
 
 #MM- test : test-vulkan-torusknot
-#MM test-vulkan-torusknot : includes linklibs hidd-vulkan-loader
+#MM test-vulkan-torusknot : includes linklibs workbench-libs-vulkan-linklib
 
 %common

@@ -1,0 +1,15 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+# vkwsi - vulkan.library's window system integration: surface, swapchain,
+# frames presented into a window and read back out of it
+%build_prog mmake=test-vulkan-wsi \
+    progname=vkwsi \
+    files=vkwsi \
+    targetdir=$(AROS_TESTS)/graphics/vulkan \
+    uselibs="vulkan"
+
+#MM- test : test-vulkan-wsi
+#MM test-vulkan-wsi : includes linklibs workbench-libs-vulkan-linklib
+
+%common
