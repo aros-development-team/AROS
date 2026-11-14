@@ -444,6 +444,8 @@ LLVM_LIBUNWIND_CMAKEOPTIONS :=                                                  
 #   no IANA database path for; the separate llvm 20 build settled on the same.
 LLVM_RUNTIMES_CMAKEOPTIONS :=                                                                                                           \
   $(LLVM_CONFIG_OPT)                                                                                                                    \
+  -DCMAKE_SYSTEM_NAME=Generic                                                                                                           \
+  -DUNIX=ON                                                                                                                             \
   -DCMAKE_C_COMPILER=$(LLVM_BUILD_BINDIR)/clang                                                                                         \
   -DCMAKE_CXX_COMPILER=$(LLVM_BUILD_BINDIR)/clang++                                                                                     \
   -DCMAKE_SYSROOT=$(AROS_DEVELOPER)                                                                                                     \
