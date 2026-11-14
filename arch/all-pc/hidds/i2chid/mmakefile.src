@@ -1,0 +1,16 @@
+include $(SRCDIR)/config/aros.cfg
+
+# The HIDD is packaged in the PC BSP and initializes at RTF_AFTERDOS.
+# Keep the command available for explicit discovery and diagnostics.
+#MM- AROS-pc-drivers : workbench-c-i2ctouchpad
+#MM workbench-c-i2ctouchpad : includes linklibs kernel-acpica-sharedlib-linklib
+%build_prog mmake=workbench-c-i2ctouchpad progname=I2CTouchpad \
+    targetdir=$(AROS_C) files="I2CTouchpad i2chid_driver i2chid_core" uselibs="acpica"
+# Boot residents cannot depend on opening the disk-based C runtime.
+USER_LDFLAGS := -static
+
+#MM- AROS-pc-drivers : kernel-hidd-i2chid
+#MM kernel-hidd-i2chid : kernel-acpica-sharedlib-linklib
+%build_module mmake=kernel-hidd-i2chid modname=i2chid modtype=hidd \
+    files="i2chid_hidd i2chid_driver i2chid_core" uselibs="acpica"
+%common

@@ -49,6 +49,7 @@ include $(SRCDIR)/config/aros.cfg
 #MM                     kernel-expansion                        \
 #MM                     kernel-pc-acpica                        \
 #MM                     kernel-pc-hpet                          \
+#MM                     kernel-hidd-i2chid                       \
 #MM                     kernel-hidd-i8042                       \
 #MM                     kernel-pc-i386-serial                   \
 #MM                     kernel-pc-i386-parallel                 \
@@ -66,7 +67,7 @@ KLIBS       := acpica security
 KLIBS_ARCH  := expansion
 KDEVS       := ata ahci nvme virtio
 KDEVS_ARCH  := timer
-KHIDDS      := ata_pci bus i8042 ipmi smbios-ipmi parallel pci pcipc pcivmd telemetry power serial vesagfx vgagfx storage system
+KHIDDS      := ata_pci bus i8042 i2chid ipmi smbios-ipmi parallel pci pcipc pcivmd telemetry power serial vesagfx vgagfx storage system
 
 LOG_RESOURCES := serial.logger
 BSP_MISC := \
