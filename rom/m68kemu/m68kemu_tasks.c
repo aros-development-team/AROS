@@ -873,17 +873,23 @@ static LONG child_entry(void)
     struct M68KChild *ch = (struct M68KChild *)me->pr_Task.tc_UserData;
     struct M68KEmuContext *ctx = ch->ctx;
     ULONG regs[15] = { 0 };
-    LONG rc;
+    LONG rc = 0;
 
     m68k_gil_obtain(ctx);
-    m68k_process_of(ctx, &me->pr_Task);
-    regs[14] = ctx->m68k_sysbase;              /* A6 */
-    rc = (LONG)M68KEmu_RunTask(ctx, ch->entry, ch->stack + ch->stacksize, regs);
-    if (ch->exitcode && !ctx->faulted)
+    /* create_proc() cancelled this child: it has no m68k Process and the
+       program was told that there is no child. Nothing of the program runs
+       here then; the child only gives back what was made for it. */
+    if (ch->entry)
     {
-        regs[0] = rc;
-        regs[1] = ch->exitdata;
-        M68KEmu_RunTask(ctx, ch->exitcode, ch->stack + ch->stacksize, regs);
+        m68k_process_of(ctx, &me->pr_Task);
+        regs[14] = ctx->m68k_sysbase;              /* A6 */
+        rc = (LONG)M68KEmu_RunTask(ctx, ch->entry, ch->stack + ch->stacksize, regs);
+        if (ch->exitcode && !ctx->faulted)
+        {
+            regs[0] = rc;
+            regs[1] = ch->exitdata;
+            M68KEmu_RunTask(ctx, ch->exitcode, ch->stack + ch->stacksize, regs);
+        }
     }
     M68KEmu_HeapFree(ctx, ch->stack, ch->stacksize);
     ctx->num_children--;
@@ -1112,7 +1118,14 @@ static IPTR create_proc(struct M68KEmuContext *ctx, void *cpu, ULONG state,
     }
     /* the child waits for the program's lock before it does anything */
     m68k_process_forget(ctx, &p->pr_Task);
-    return m68k_process_of(ctx, &p->pr_Task);
+    ULONG mproc = m68k_process_of(ctx, &p->pr_Task);
+    /* No m68k Process for it: the program is told that there is no child.
+       The native process exists already, so it is cancelled while it still
+       waits for the lock: it will run neither its entry nor its exit code,
+       and gives back its stack, its count and its hold itself. */
+    if (!mproc)
+        ch->entry = ch->exitcode = 0;
+    return mproc;
 }
 
 /* dos -498: CreateNewProc(D1=tags) */

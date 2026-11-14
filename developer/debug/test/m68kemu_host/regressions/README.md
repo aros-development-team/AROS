@@ -519,3 +519,88 @@ detection by default; `ASAN_OPTIONS` can override it.
 includes without compiling or executing a test. These focused checks do not
 call graphics.library, model native struct layouts, execute the CPU, or
 qualify a complete library or application.
+
+## A 68k child without a guest Process
+
+Run from the repository root:
+
+```sh
+make -C developer/debug/test/m68kemu_host test-child-projection
+make -C developer/debug/test/m68kemu_host test-child-projection-sanitize
+```
+
+The ordinary fixture is part of the host Makefile's `test` target. It needs
+Python 3.9+ and a C99 compiler; ASan/UBSan are optional. `PYTHON` and `CC`
+select those tools. `CHILD_PROJECTION_ARGS` passes runner options such as
+`--source-root /path/to/AROS` and `--build-dir /tmp/child-projection`.
+Use a fresh build directory; the default temporary directory is removed.
+The fixture is built with `-std=c99 -Wall -Wextra -Werror`, so a compiler
+warning fails the target; the sanitizer target adds ASan and UBSan without
+recovery.
+
+`CreateNewProc` with `NP_Entry` starts a native process first and only then
+makes the guest Process that the program is given. When that Process cannot
+be made, the program is told that there is no child, and the native process,
+which exists already, must not run anything of the program.
+
+The runner extracts the actual `create_proc` and `child_entry` with the
+record they share (`struct M68KChild`) and `proc_name`, the Process lookup
+`m68k_process_of`, the registry (`shadow_register`, `shadow_lookup`,
+`shadow_remove`), the forgetting of an ended process
+(`m68k_forget_entry`, `m68k_process_forget`), the tag walker
+(`item_ok`, `next_item`, `m68k_next_tag`) and five memory accessors. It
+reads the registry limit, the handle base and the guest Process offsets
+from the same source tree, and the tags and two memory flags from its
+public headers. The recording C fixture supplies the native side: a
+`CreateNewProc` that makes a native process and does not run it, the
+program's lock with its owner, the guest heap and the native heap with
+every block and its frees, the layout lookup, and a stand-in for the run of
+guest code that records each call and runs nothing. The test itself calls
+the native entry that `create_proc` handed to `CreateNewProc`, after
+`create_proc` has returned, as the scheduler runs the child once the parent
+lets the lock go. Guest `ULONG` is 32-bit and native pointers are 64-bit.
+
+The fixture runs 80 checks in three groups. The 18 creation checks follow
+one child with an exit code from the call to its end: the guest Process
+returned and registered with its port, one native process with the
+module's entry and the child's record, the name copied, the count, the
+hold and the guest stack taken before it runs, nothing run inside the call
+while the parent keeps the lock, then the entry run once by the child
+itself with the lock, on its stack, finding the same guest Process, the
+exit code run with the entry's result, and afterwards the stack, the
+count, the hold, the record and the lock given back once; no exit code
+after a fault; the two stack size rules. The 9 refusal checks are the
+cases in which no native process exists: no entry, an entry outside the
+program's memory, no memory for the guest stack, and a native
+`CreateNewProc` that refuses, each leaving nothing behind and nothing of
+the parent changed.
+
+The 53 projection checks are three cases of a child whose native process
+exists and whose guest Process cannot be made: no memory for it, a full
+registry, and a registry with one slot left, where a Process needs two.
+Each case has 17 checks with the case's name in front: `CreateNewProc`
+returns 0; the native process waits and still owns its record, its stack,
+its count and its hold, which the parent must not free; no guest Process
+and no registry entry is left. Then room is made again and the child is
+run: it runs neither its entry nor its exit code, looks up no guest
+Process and makes none, ends with 0, and gives back its stack, its count,
+its hold and its record exactly once; the entries and the memory of the
+parent and of an earlier child are as before; a later `CreateNewProc`
+gives a child that runs. Two more checks count the registry's own report
+of a full table for each case by itself, once in the two registry cases and
+never in the first, and the paths that must not be reached in any case.
+
+The fixture prints a `FAIL:` line for a failed check, the `creation`,
+`refusal` and `projection` group lines and a final
+`child projection: 80 checks, <n> failed` line. Its exit status is 1 when
+any check failed, which make reports as an error. On a tree whose
+`create_proc` returns 0 in these cases and leaves the child as it was, the
+runner prepares the same functions, the creation and refusal groups pass,
+and checks of the projection group fail: the child runs its entry and its
+exit code and makes a guest Process for itself. Sanitized runs disable
+leak detection by default; `ASAN_OPTIONS` can override it.
+
+`--prepare-only --build-dir /tmp/child-projection` emits the actual
+production includes without compiling or executing a test. These focused
+checks do not create a native process, take a real lock, execute the CPU or
+any guest code, or qualify a complete library or application.

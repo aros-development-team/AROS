@@ -120,3 +120,15 @@ test-bitmap-result-sanitize:
 	$(PYTHON) "$(TEST_DIR)/regressions/run_bitmap_result.py" --cc "$(CC)" --sanitize $(BITMAP_RESULT_ARGS)
 
 .PHONY: test-bitmap-result test-bitmap-result-sanitize
+
+# A 68k child without a guest Process: ordinary fixture in test, sanitizer optional.
+CHILD_PROJECTION_ARGS ?=
+test: test-child-projection
+
+test-child-projection:
+	$(PYTHON) "$(TEST_DIR)/regressions/run_child_projection.py" --cc "$(CC)" $(CHILD_PROJECTION_ARGS)
+
+test-child-projection-sanitize:
+	$(PYTHON) "$(TEST_DIR)/regressions/run_child_projection.py" --cc "$(CC)" --sanitize $(CHILD_PROJECTION_ARGS)
+
+.PHONY: test-child-projection test-child-projection-sanitize

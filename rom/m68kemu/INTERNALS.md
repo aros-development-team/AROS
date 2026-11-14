@@ -397,6 +397,13 @@ stays in the program's memory. `GetArgStr` and `SetArgStr` act on the m68k
 Process of the task that calls them. A child's argument field starts NULL:
 `NP_Arguments` is not passed on.
 
+When no m68k Process can be made for a new 68k child (no room in the program's
+memory or in the registry), `CreateNewProc` returns 0 although its native
+process exists already. `create_proc` then cancels the child while it still
+waits for the lock: its entry and its exit code are cleared, and `child_entry`
+runs nothing of the program for it, makes no m68k Process for it, and gives
+back its stack, its count in `ctx->num_children` and its hold on the context.
+
 ### Context Lifetime
 
 `ctx->alive` counts the users of a context: the caller of `RunHunk`/`RunFile`
