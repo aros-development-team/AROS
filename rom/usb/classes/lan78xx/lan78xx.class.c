@@ -48,6 +48,7 @@ static void lan78xx_store_mac(struct NepClassEth *ncp, ULONG lo, ULONG hi);
 static BOOL lan78xx_wait_reg_clear(struct NepClassEth *ncp, UWORD reg, ULONG mask);
 static BOOL lan78xx_wait_reg_set(struct NepClassEth *ncp, UWORD reg, ULONG mask);
 static LONG lan78xx_chip_init(struct NepClassEth *ncp);
+static void lan78xx_hw_ready(struct NepClassEth *ncp);
 static LONG lan78xx_eeprom_wait(struct NepClassEth *ncp);
 static LONG lan78xx_eeprom_read(struct NepClassEth *ncp, UWORD offset, UWORD len, UBYTE *dest);
 static void lan78xx_set_macaddr(struct NepClassEth *ncp);
@@ -253,6 +254,7 @@ struct NepClassEth *usbForceDeviceBinding(struct NepEthBase *nh, struct PsdDevic
     Permit();
 
     psdSafeRawDoFmt(buf, sizeof(buf), "lan78xx.class<%08lx>", ncp);
+    ncp->ncp_HwReady = FALSE;
     ncp->ncp_ReadySignal = SIGB_SINGLE;
     ncp->ncp_ReadySigTask = FindTask(NULL);
     SetSignal(0, SIGF_SINGLE);
@@ -270,6 +272,7 @@ struct NepClassEth *usbForceDeviceBinding(struct NepEthBase *nh, struct PsdDevic
     }
 
     ncp->ncp_ReadySigTask = NULL;
+    lan78xx_hw_ready(ncp);
     CloseLibrary(ps);
     return (NULL);
 }
@@ -517,13 +520,13 @@ AROS_UFH0(void, nEthTask)
         KPrintF("[LAN78XX] nAllocEth failed - unit will not come up\n");
     }
     if (ncp) {
-        lan78xx_signal_ready(ncp);
-
         /* Hardware init only.  Don't bring the interface online here —
          * that would arm the bulk-IN pipe immediately and NAK-storm the
          * USB bus before AROSTCP has any reason to listen.  We go online
          * when the stack issues S2_CONFIGINTERFACE or S2_ONLINE. */
         nInitHardware(ncp);
+        lan78xx_hw_ready(ncp);
+        lan78xx_signal_ready(ncp);
 
         /* Set up a 1-second tick used by the link watcher.  The timer
          * runs independently of the USB pipe traffic; its signal bit
@@ -897,6 +900,7 @@ void nFreeEth(struct NepClassEth *ncp)
         ncp->ncp_Base = NULL;
     }
 
+    lan78xx_hw_ready(ncp);
     Forbid();
     ncp->ncp_Task = NULL;
     if (ncp->ncp_ReadySigTask) {
@@ -1497,6 +1501,16 @@ static BOOL lan78xx_pick_interface(struct NepClassEth *ncp)
     }
 
     return (FALSE);
+}
+
+/* Release a devOpen() that waits for the station address. */
+static void lan78xx_hw_ready(struct NepClassEth *ncp)
+{
+    Forbid();
+    ncp->ncp_HwReady = TRUE;
+    if (ncp->ncp_OpenWaiter)
+        Signal(ncp->ncp_OpenWaiter, SIGF_SINGLE);
+    Permit();
 }
 
 static void lan78xx_signal_ready(struct NepClassEth *ncp)

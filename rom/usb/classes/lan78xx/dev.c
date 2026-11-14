@@ -95,6 +95,15 @@ AROS_LH3(DEVBASETYPEPTR, devOpen, AROS_LHA(struct IOSana2Req *, ioreq, A1), AROS
             KPRINTF(20, ("devOpen: could not open unit!\n"));
             KPRINTF(1, ("devOpen: no matching unit %lu found for %s\n", unit, DEVNAME));
         } else {
+            /* Bound but not initialised yet: the MAC is still zero. */
+            while (!ncp->ncp_HwReady) {
+                ncp->ncp_OpenWaiter = FindTask(NULL);
+                SetSignal(0, SIGF_SINGLE);
+                if (!ncp->ncp_HwReady)
+                    Wait(SIGF_SINGLE);
+            }
+            ncp->ncp_OpenWaiter = NULL;
+
             ncp->ncp_OpenFlags |= flags;
 
             /* Got taglist? (don't fail if not available!) */
