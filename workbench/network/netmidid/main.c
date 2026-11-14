@@ -194,11 +194,13 @@ static int periodic(struct netmidid *d, uint64_t now)
             puts(TAG "advertised by the system mDNS service");
         if (registered >= 0)
             discovered = registered;
-        while (netmidi_discovery_next(d->discovery, now, &seen)) {
+        while (netmidi_discovery_next(d->discovery, &seen)) {
             const struct netmidid_transport *owner;
 
-            if (strcmp(seen.name, d->session_name) == 0)
-                continue;           /* our own registration, come back */
+            /* our own registration, come back - under the name it has now,
+               "AROS MIDI (2)" if another machine had ours */
+            if (netmidi_discovery_own(d->discovery, seen.name))
+                continue;
             owner = seen.browse >= 0 &&
                     seen.browse < NETMIDI_DISCOVERY_BROWSES ?
                     d->browse_owner[seen.browse] : NULL;
@@ -356,9 +358,19 @@ static int run(void)
             if (wait_ticks < 1000 && (long)(wait_ticks * 100) < wait_us)
                 wait_us = (long)(wait_ticks * 100);
         }
-        netmidi_network_wait(&d->network, wait_us,
-                             netmidi_camd_signal_bit(&d->camd),
-                             &network_events);
+        {
+            /* a CAMD program sent something, or mdnsd has events for us */
+            unsigned long wake = 0;
+            int bit = netmidi_camd_signal_bit(&d->camd);
+
+            if (bit >= 0)
+                wake |= 1UL << bit;
+            bit = netmidi_discovery_signal(d->discovery);
+            if (bit >= 0)
+                wake |= 1UL << bit;
+            netmidi_network_wait(&d->network, wait_us, wake,
+                                 &network_events);
+        }
         if (network_events & NETMIDI_NETWORK_STOP)
             break;
         for (i = 0; i < NETMIDI_NETWORK_SOCKETS; ++i) {
