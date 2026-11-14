@@ -328,7 +328,6 @@ struct USB2OTGUnit
         UBYTE               hc_BulkNoProgressCount;
         UWORD               hc_BareChhltdTotal; /* cumulative bare-CHHLTD per request; absolute give-up cap */
         ULONG               hc_StartHfnum;    /* HFNUM at last StartChannel arm; for bulk progress timing */
-        UBYTE               hc_NakParked;     /* 1 = bulk-IN parked waiting for NAK gate; SOF re-arms with quick=1 */
         UBYTE               hc_QuietIdleStreak; /* consecutive WAIT-QUIET defers with NPTX queue+FIFO fully idle (wedge signature) */
         UBYTE               hc_OddfrmFlip;    /* invert ODDFRM choice for direct periodic; toggled on deschedule (self-calibrating) */
         ULONG               hc_LastSampleHfnum; /* sample snapshot for WAIT-QUIET liveness check */
@@ -609,6 +608,7 @@ void                    usb2otg_exorcise_channel(int chan);
 
 #define KernelBase      USB2OTGBase->hd_KernelBase
 
+/* Channel names only set the allocators' search order. */
 #define CHAN_CTRL       0
 #define CHAN_BULK       1
 #define CHAN_INT1       2
@@ -616,7 +616,6 @@ void                    usb2otg_exorcise_channel(int chan);
 #define CHAN_INT3       4
 #define CHAN_INT4       5
 #define CHAN_INT5       6
-#define CHAN_INT_LAST   CHAN_INT5
 #define CHAN_BULK2      7
 
 /*
@@ -1124,7 +1123,6 @@ static inline BOOL usb2otg_irq_finish_or_requeue(struct USB2OTGUnit *unit,
     else
         ADDTAIL(queue, (struct Node *)req);
     unit->hu_Channel[chan].hc_Request = NULL;
-    unit->hu_Channel[chan].hc_NakParked = 0;
 #if defined(__AROSEXEC_SMP__)
     KrnSpinUnLock(&unit->hu_Lock);
 #endif
@@ -1404,9 +1402,10 @@ static inline void usb2otg_bulk_requeue(struct USB2OTGUnit *otg_Unit, int chan,
             int int_busy = 0;
             int scan;
 
-            for (scan = CHAN_INT1; scan <= CHAN_INT_LAST; scan++)
+            for (scan = 0; scan < 8; scan++)
             {
-                if (otg_Unit->hu_Channel[scan].hc_Request != NULL)
+                if (otg_Unit->hu_Channel[scan].hc_Request != NULL &&
+                    otg_Unit->hu_Channel[scan].hc_Type == USB2OTG_HCT_INT)
                     int_busy++;
             }
 

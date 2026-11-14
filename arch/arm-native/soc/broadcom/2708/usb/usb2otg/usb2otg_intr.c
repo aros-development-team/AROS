@@ -41,9 +41,8 @@ static void usb2otg_quar_log_release(struct USB2OTGUnit *unit,
         {
             /* Release is as important to see as the quarantine. */
             D(ULONG dark = unit->hu_WdTicks - unit->hu_QuarSetTick[c];)
-            D(bug("[USB2OTG:QUAR] chan=%d released (%s) after %lu ticks (~%lu ms)%s\n",
-                c, where, (unsigned long)dark, (unsigned long)(dark * 150),
-                (c == CHAN_CTRL) ? " — CTRL BLACKOUT ENDS" : "");)
+            D(bug("[USB2OTG:QUAR] chan=%d released (%s) after %lu ticks (~%lu ms)\n",
+                c, where, (unsigned long)dark, (unsigned long)(dark * 150));)
             (void)where;
         }
     }
@@ -183,8 +182,8 @@ static void usb2otg_halt_channel_preserve_char(int chan)
 
 static inline BOOL usb2otg_trace_bulk_ep2(int chan, struct IOUsbHWReq *req)
 {
+    (void)chan;
     return req != NULL &&
-           chan == 1 &&
            req->iouh_Req.io_Command == UHCMD_BULKXFER &&
            req->iouh_Endpoint == 2;
 }
@@ -1458,7 +1457,7 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
                 }
 
                 D(
-                    if (chan == CHAN_CTRL)
+                    if (req != NULL && req->iouh_Req.io_Command == UHCMD_CONTROLXFER)
                         bug("[USB2OTG:DBG] CTRL-IRQ intr=%04x dev=%d bReq=%02x wVal=%04x\n",
                             (unsigned)intr,
                             req ? (int)req->iouh_DevAddr : -1,
@@ -1677,7 +1676,7 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
                              * TT is NAKed by the hub forever. Budget the
                              * retries and back off in wall time; ADDTAIL
                              * so other devices' control gets a turn
-                             * (ADDHEAD monopolised CHAN_CTRL at ~1 kHz).
+                             * (ADDHEAD monopolised the channel at ~1 kHz).
                              */
                             ULONG naks = (ULONG)(IPTR)req->iouh_DriverPrivate2 + 1;
 
@@ -2942,17 +2941,6 @@ static BOOL usb2otg_process_naktimeout(struct USB2OTGUnit *otg_Unit)
                 Enable();
                 continue;
             }
-            /* Parked-NAK channel idles for the gate; not stuck. */
-            if (otg_Unit->hu_Channel[chan].hc_NakParked)
-            {
-#if defined(__AROSEXEC_SMP__)
-                KrnSpinUnLock(&otg_Unit->hu_Lock);
-#endif
-                Enable();
-                otg_Unit->hu_Channel[chan].hc_WatchdogCount = 0;
-                continue;
-            }
-
             /*
              * SOF scheduler owns active periodic-split channels: a CSPLIT
              * re-arm is pending within microframes (hu_DelayedChannel != 0),

@@ -338,9 +338,6 @@ BOOL FNAME_DEV(SetupChannel)(struct USB2OTGUnit *otg_Unit, int chan)
             {
                 otg_Unit->hu_QuarSetTick[chan] = otg_Unit->hu_WdTicks;
                 otg_Unit->hu_DeadChannels |= (1 << chan);
-                D(if (chan == CHAN_CTRL)
-                    bug("[USB2OTG:QUAR] CTRL BLACKOUT BEGINS (setup, no queue) tick=%lu\n",
-                        (unsigned long)otg_Unit->hu_WdTicks);)
                 usb2otg_finish_setup_error(otg_Unit, chan, req, UHIOERR_HOSTERROR);
                 return FALSE;
             }
@@ -351,9 +348,6 @@ BOOL FNAME_DEV(SetupChannel)(struct USB2OTGUnit *otg_Unit, int chan)
 #endif
             otg_Unit->hu_QuarSetTick[chan] = otg_Unit->hu_WdTicks;
             otg_Unit->hu_DeadChannels |= (1 << chan);
-            D(if (chan == CHAN_CTRL)
-                bug("[USB2OTG:QUAR] CTRL BLACKOUT BEGINS (setup, requeued) tick=%lu\n",
-                    (unsigned long)otg_Unit->hu_WdTicks);)
             otg_Unit->hu_Channel[chan].hc_Request = NULL;
             ADDHEAD(queue, (struct Node *)req);
             usb2otg_sof_gate_wake(otg_Unit);
