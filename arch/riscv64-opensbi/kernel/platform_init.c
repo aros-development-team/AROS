@@ -245,7 +245,7 @@ static int Platform_Init(struct KernelBase *LIBBASE)
 
     /* Inter-processor interrupts reach the boot hart too */
     __riscv_arosintern.RVI_AckIPI = rv_AckIPI;
-    csr_set(sie, SIE_SSIE);
+    csr_set(RV_CSR_IE, RV_IE_SOFT);
 #endif
 
     D(

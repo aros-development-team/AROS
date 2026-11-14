@@ -25,7 +25,7 @@
 #define SCHEDQUANTUM_VALUE      4
 
 #include <aros/atomic.h>
-#include <asm/cpu.h>
+#include <asm/riscv/csr.h>   /* rv_intr_disable/restore, not the generic helpers */
 #include <aros/types/spinlock_s.h>
 #include <utility/hooks.h>
 
