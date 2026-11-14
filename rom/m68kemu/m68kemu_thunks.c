@@ -403,6 +403,7 @@ ULONG m68k_process_of(struct M68KEmuContext *ctx, struct Task *task)
                 ctx->shadow_map[i].native_ptr = task;
         shadow_sync(ctx, layout, ctx->m68k_proc, task);
         m68k_task_stack(ctx, ctx->m68k_proc, task);
+        m68k_process_streams(ctx, ctx->m68k_proc, task);
         if (task->tc_Node.ln_Type == NT_PROCESS && !shadow_lookup(ctx, ctx->m68k_proc + M68K_PR_MSGPORT))
             shadow_register(ctx, ctx->m68k_proc + M68K_PR_MSGPORT, &((struct Process *)task)->pr_MsgPort,
                             shadow_find_layout("MsgPort")->shadow_type);
@@ -414,6 +415,7 @@ ULONG m68k_process_of(struct M68KEmuContext *ctx, struct Task *task)
         {
             shadow_sync(ctx, layout, ctx->shadow_map[i].m68k_addr, task);
             m68k_task_stack(ctx, ctx->shadow_map[i].m68k_addr, task);
+            m68k_process_streams(ctx, ctx->shadow_map[i].m68k_addr, task);
             return ctx->shadow_map[i].m68k_addr;
         }
     ULONG m68k = M68KEmu_HeapAlloc(ctx, M68K_SIZEOF_PROCESS, 0); /* m68k Process size */
@@ -422,6 +424,7 @@ ULONG m68k_process_of(struct M68KEmuContext *ctx, struct Task *task)
     shadow_register(ctx, m68k, task, layout->shadow_type);
     shadow_sync(ctx, layout, m68k, task);
     m68k_task_stack(ctx, m68k, task);
+    m68k_process_streams(ctx, m68k, task);
     if (task->tc_Node.ln_Type == NT_PROCESS)
     {
         struct Process *proc = (struct Process *)task;

@@ -142,6 +142,10 @@ static LONG setup_and_execute(struct M68KEmuContext *ctx, ULONG entry,
             { NP_CloseInput,  FALSE },
             { NP_Output,      (IPTR)Output() },
             { NP_CloseOutput, FALSE },
+            /* Borrow all three caller streams; the child must not close them. */
+            { NP_Error,       me->pr_Task.tc_Node.ln_Type == NT_PROCESS
+                              ? (IPTR)me->pr_CES : (IPTR)BNULL },
+            { NP_CloseError,  FALSE },
             { NP_CurrentDir,  (IPTR)dirlock },
             { homeDir ? NP_HomeDir : TAG_IGNORE, (IPTR)homeDir },
             { NP_Cli,         is_cli },

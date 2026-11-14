@@ -94,6 +94,20 @@ void m68k_task_stack(struct M68KEmuContext *ctx, ULONG mtask, struct Task *task)
     m68k_write32(ctx, mtask + 62, ctx->stack_top);       /* tc_SPUpper */
 }
 
+/* Process streams are native BPTR handles, not containment pointers.
+   Keep their 32-bit projections current after a Task shadow refresh, too. */
+void m68k_process_streams(struct M68KEmuContext *ctx, ULONG mproc, struct Task *task)
+{
+    struct Process *proc;
+
+    if (!mproc || !task || task->tc_Node.ln_Type != NT_PROCESS)
+        return;
+    proc = (struct Process *)task;
+    m68k_write32(ctx, mproc + M68K_PR_CIS, m68k_bptr_out(ctx, proc->pr_CIS));
+    m68k_write32(ctx, mproc + M68K_PR_COS, m68k_bptr_out(ctx, proc->pr_COS));
+    m68k_write32(ctx, mproc + M68K_PR_CES, m68k_bptr_out(ctx, proc->pr_CES));
+}
+
 /* A Screen's embedded ViewPort and RastPort are passed on by address, and
    its ColorMap goes to the pen functions: give them shadows as well. */
 /* A deep screen's ColorMap has 256 entries, but only the 8 the palette prefs
@@ -609,10 +623,7 @@ ULONG shadow_init_execbase(struct M68KEmuContext *ctx, ULONG m68k_base, void *na
                 /* pr_Arguments (offset 204) */
                 if (ctx->m68k_argptr)
                     m68k_write32(ctx, m68k_proc + M68K_PR_ARGUMENTS, ctx->m68k_argptr);
-                /* pr_CIS — current input stream, for ReadArgs */
-                m68k_write32(ctx, m68k_proc + M68K_PR_CIS, (ULONG)(IPTR)Input());
-                /* pr_COS — current output stream */
-                m68k_write32(ctx, m68k_proc + M68K_PR_COS, (ULONG)(IPTR)Output());
+                m68k_process_streams(ctx, m68k_proc, task);
             }
             m68k_write32(ctx, m68k_base + M68K_EXECBASE_THISTASK, m68k_proc);
         }
