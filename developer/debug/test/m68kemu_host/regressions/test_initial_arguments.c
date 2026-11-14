@@ -207,21 +207,30 @@ static void test_projections(void) {
 }
 
 static void test_arguments(void) {
-    static const char *args[]={"--help ","--gui-test ","a \"quoted value\" ","",NULL};
+    static const struct {
+        const char *text;
+        ULONG size;
+    } args[]={
+        {"--help ",sizeof("--help ")-1},
+        {"--gui-test ",sizeof("--gui-test ")-1},
+        {"a \"quoted value\" ",sizeof("a \"quoted value\" ")-1},
+        {"",sizeof("")-1},
+        {NULL,0}
+    };
     struct M68KEmuContext ctx;unsigned before=failures,route,i;
-    for(route=0;route<2;route++)for(i=0;i<5;i++) {
-        ULONG n=args[i]?(ULONG)strlen(args[i]):0,ptr,published;
+    for(route=0;route<2;route++)for(i=0;i<sizeof(args)/sizeof(args[0]);i++) {
+        ULONG n=args[i].size,ptr,published;
         LONG rc;
         reset(&ctx);
-        rc=setup_and_execute(&ctx,0x800,(CONST_STRPTR)args[i],n,route?1048576:0,"args-fixture",0,&base);
+        rc=setup_and_execute(&ctx,0x800,(CONST_STRPTR)args[i].text,n,route?1048576:0,"args-fixture",0,&base);
         ptr=ctx.m68k_argptr;published=read32(&ctx,ctx.m68k_proc+204);
         check(rc==17,"argument case returns actual execution result");
         check(ctx.m68k_argsize==n&&(n?ptr!=0:ptr==0),"final argument pointer and exact size");
         check(published==ptr,"initial Process publishes argument pointer before startup");
-        check(!n||(published&&memcmp(ctx.mem+published,args[i],n)==0&&ctx.mem[published+n]==0),"initial Process argument bytes remain intact");
+        check(!n||(published&&memcmp(ctx.mem+published,args[i].text,n)==0&&ctx.mem[published+n]==0),"initial Process argument bytes remain intact");
         check(auto_argptr==ptr&&auto_argsize==n,"auto-open sees published argument context");
         check(m68k_process_of(&ctx,current)==ctx.m68k_proc&&read32(&ctx,ctx.m68k_proc+204)==ptr,"owner refresh retains initial arguments");
-        check(route?(creates==1&&tag_value(NP_Arguments,UINT64_MAX)==(IPTR)(uintptr_t)args[i]):(!creates&&executes==1),"argument routes and native borrowed pointer retained");
+        check(route?(creates==1&&tag_value(NP_Arguments,UINT64_MAX)==(IPTR)(uintptr_t)args[i].text):(!creates&&executes==1),"argument routes and native borrowed pointer retained");
         release(&ctx);
     }
     printf("GROUP arguments: %u failed\n",failures-before);
