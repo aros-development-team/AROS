@@ -727,8 +727,15 @@ int scrub;
      * Add route for the network.
      */
     if(ifp->if_flags & IFF_BROADCAST) {
-        ia->ia_broadaddr.sin_addr =
-            in_makeaddr(ia->ia_subnet, INADDR_BROADCAST);
+        /*
+         * The address's own subnet with every host bit set, as FreeBSD's
+         * in_ifinit() makes it. in_makeaddr() took the host bits from the
+         * mask of the first address in the same classful network, which
+         * another address of a smaller subnet could be: 10.9.0.2/32, then
+         * 10.78.0.1/16, made 10.78.0.0 the broadcast of the second.
+         */
+        ia->ia_broadaddr.sin_addr.s_addr =
+            htonl((u_int32_t)(ia->ia_subnet | ~ia->ia_subnetmask));
         ia->ia_netbroadcast.s_addr =
             htonl(ia->ia_net | (INADDR_BROADCAST & ~ ia->ia_netmask));
     } else if(ifp->if_flags & IFF_LOOPBACK) {
