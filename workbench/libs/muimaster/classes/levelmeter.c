@@ -34,35 +34,68 @@
 *       Numeric.mui
 *
 *   DESCRIPTION
-*       Show Numeric Value as a needle on a semicircular scale. ValueToScale
-*       maps the current value to zero through 180 degrees, honoring
-*       Numeric_Reverse. No periodic sampling, peak hold, decay or automatic
-*       source binding is implemented; application code sets Value.
-*       Construction prepends FillArea FALSE and initializes a private pen
-*       sentinel. Setup calls Numeric and obtains a background pen from the
-*       screen ColorMap. Cleanup releases a successfully obtained pen before
-*       Numeric Cleanup. Complete this lifecycle before disposal; no local
-*       disposer substitutes for Cleanup.
+*       Display the inherited Numeric value as either a legacy needle meter or
+*       a segmented meter. MUIV_Levelmeter_Style_Needle is the default and
+*       preserves the historical semicircular display.
+*
+*       MUIV_Levelmeter_Style_Segments maps the inherited Numeric value to an
+*       active segment count with MUIM_Numeric_ValueToScale(). Horizontal
+*       meters grow from left to right; vertical meters grow from bottom to
+*       top. Critical segments occupy the high end of the scale, warning
+*       segments occupy the range immediately below them, and the remaining
+*       active segments use the normal color.
+*
+*       The class does not sample an input source or implement peak hold,
+*       decay, FFT processing, channel management, or decibel conversion.
+*       Applications update MUIA_Numeric_Value.
 *
 *   METHODS
-*       AskMinMax adds 53 pixels in width and 46 pixels in height to all
-*       superclass size fields and returns TRUE. Full Draw paints frame,
-*       background, scale marks and an empty label field. Update Draw erases the
-*       old needle with the background pen before drawing the new one. Draw
-*       returns FALSE without full/update flags, otherwise TRUE and ignores
-*       superclass/drawing results.
-*       Setup returns Numeric's result even if ObtainBestPen fails. Draw uses
-*       the stored pen without checking the -1 failure sentinel. The class has
-*       no mouse handler of its own and retains Numeric's raw-key handler; it is
-*       not automatically a read-only object merely because it looks like a
-*       meter.
+*       OM_NEW preserves MUIA_FillArea FALSE, initializes the Needle style,
+*       16 segments, horizontal orientation, two warning segments and one
+*       critical segment, then applies constructor attributes.
+*
+*       OM_SET applies Levelmeter attributes and passes the tag list to
+*       Numeric. A live style switch acquires or releases segmented-display
+*       pens. Style, segment-count and orientation changes request parent
+*       relayout and a full redraw. Zone changes request an update redraw.
+*       OM_GET returns the stored Levelmeter attributes.
+*
+*       MUIM_Setup obtains the legacy background pen and, only for the
+*       Segments style, the three display colors. MUIM_Cleanup releases
+*       each successfully obtained pen before Numeric cleanup.
+*
+*       MUIM_AskMinMax preserves the historical fixed Needle geometry. The
+*       Segments style derives its primary minimum and default dimension from
+*       MUIA_Levelmeter_Segments and permits expansion in both dimensions.
+*
+*       MUIM_Draw delegates to the segmented renderer when Segments is
+*       selected. Needle drawing otherwise follows the historical frame,
+*       scale and needle path.
 *
 *   NOTES
-*       The Label attribute has no implementation. Numeric_Format/Stringify are
-*       inherited but not used to draw a numeric label. Scale artwork uses a
-*       nominal 39 by 20 pixel area and current frame geometry. Use ordered
-*       representable Numeric bounds and a live screen/render context. No
-*       separate bitmap or native gadget is owned.
+*       Segments defaults to 16 segments, producing 13 normal, two warning
+*       and one critical segment. The default active colors match the current
+*       AHIRecord level display. If a segmented color pen cannot be obtained,
+*       the renderer falls back to Zune theme pens. Inactive segments use the
+*       Levelmeter background pen when available and MPEN_SHADOW otherwise.
+*
+*       MUIA_Numeric_Min, MUIA_Numeric_Max and MUIA_Numeric_Reverse remain
+*       authoritative for value mapping. The class retains Numeric's raw-key
+*       handling; applications that require a passive display must manage
+*       focus and input accordingly.
+*
+*   BUGS
+*       MUIA_Levelmeter_Label is declared but not implemented. The class does
+*       not store or draw the supplied string.
+*
+*       In Needle style, MUIM_Setup still returns Numeric's successful setup
+*       result when obtaining the legacy background pen fails. The Needle
+*       draw path later uses the stored -1 failure sentinel without a fallback.
+*
+*   SEE ALSO
+*       Numeric.mui, MUIA_Numeric_Value, MUIA_Numeric_Min,
+*       MUIA_Numeric_Max, MUIA_Numeric_Reverse, MUIA_Levelmeter_Style,
+*       MUIA_Levelmeter_Segments, MUIA_Levelmeter_Horiz
 *
 */
 /****** Levelmeter.mui/MUIA_Levelmeter_Label ************
@@ -71,17 +104,104 @@
 *       MUIA_Levelmeter_Label
 *
 *   FUNCTION
-*       Declared label attribute without an implementation in this AROS class.
+*       Declare a label string for the Levelmeter interface.
 *
 *   INPUTS
-*       String pointer; header declares initialize, set and get, but no local
-*       handler implements those operations.
+*       Initialize, set and get; STRPTR.
+*
+*   BUGS
+*       This AROS implementation has no local storage, getter, drawing or size
+*       handling for the attribute. Supplying a string has no visible effect
+*       and transfers no ownership to the object.
+*
+*/
+/****** Levelmeter.mui/MUIA_Levelmeter_Style ************
+*
+*   NAME
+*       MUIA_Levelmeter_Style
+*
+*   FUNCTION
+*       Select the Levelmeter rendering style.
+*
+*   INPUTS
+*       Initialize, set and get; ULONG. The default is
+*       MUIV_Levelmeter_Style_Needle. MUIV_Levelmeter_Style_Segments selects
+*       the segmented display. Other values are ignored.
 *
 *   NOTES
-*       The constructor does not store the string, no getter returns it, and
-*       Draw paints only the empty label background. No string ownership is
-*       acquired. Supplying a label does not display text or change sizing;
-*       inherited Numeric_Format also does not populate this field.
+*       Changing the style requests parent relayout and a full redraw. The
+*       stored Numeric value and Numeric range are not changed.
+*
+*/
+/****** Levelmeter.mui/MUIA_Levelmeter_Segments ************
+*
+*   NAME
+*       MUIA_Levelmeter_Segments
+*
+*   FUNCTION
+*       Set or retrieve the segment count used by the Segments style.
+*
+*   INPUTS
+*       Initialize, set and get; ULONG from 1 through
+*       MUIV_Levelmeter_Segments_Max. The default is 16. Values outside the
+*       supported range are ignored.
+*
+*   NOTES
+*       Changing the count requests parent relayout and a full redraw.
+*       CriticalSegments is limited to the new segment count and
+*       WarningSegments is then limited to the remaining range.
+*
+*/
+/****** Levelmeter.mui/MUIA_Levelmeter_Horiz ************
+*
+*   NAME
+*       MUIA_Levelmeter_Horiz
+*
+*   FUNCTION
+*       Select the orientation used by the Segments style.
+*
+*   INPUTS
+*       Initialize, set and get; BOOL. The default is TRUE. TRUE draws active
+*       segments from left to right. FALSE draws them from bottom to top.
+*
+*   NOTES
+*       Changing orientation requests parent relayout and a full redraw. The
+*       attribute is stored in Needle style but does not alter Needle drawing.
+*
+*/
+/****** Levelmeter.mui/MUIA_Levelmeter_WarningSegments ************
+*
+*   NAME
+*       MUIA_Levelmeter_WarningSegments
+*
+*   FUNCTION
+*       Set or retrieve the size of the warning zone.
+*
+*   INPUTS
+*       Initialize, set and get; ULONG. The default is 2. The stored value is
+*       limited to the segment range remaining below the critical zone.
+*
+*   NOTES
+*       The warning zone occupies the highest segments below the critical
+*       zone. Changing the value requests an update redraw.
+*
+*/
+/****** Levelmeter.mui/MUIA_Levelmeter_CriticalSegments ************
+*
+*   NAME
+*       MUIA_Levelmeter_CriticalSegments
+*
+*   FUNCTION
+*       Set or retrieve the size of the critical zone.
+*
+*   INPUTS
+*       Initialize, set and get; ULONG. The default is 1. The stored value is
+*       limited to the configured segment count.
+*
+*   NOTES
+*       The critical zone always occupies the highest segments. Changing the
+*       value also re-limits WarningSegments to the remaining range and
+*       requests an update redraw.
 *
 */
 
@@ -113,10 +233,100 @@ extern struct Library *MUIMasterBase;
 #define TOTAL_HEIGHT OUTERFRAME_H + BORDERSIZE_H + INNERFRAME_H * 2 \
 + LEVEL_HEIGHT + LEVEL_LABEL_SPACING + LABEL_HEIGHT
 
+#define LEVELMETER_CHANGE_REDRAW   0x01
+#define LEVELMETER_CHANGE_FULL     0x02
+#define LEVELMETER_CHANGE_RELAYOUT 0x04
+
 /*
- * Construct Numeric with FillArea FALSE and set background-pen sentinel to
- * -1. Return superclass object or NULL. Pen acquisition is deferred to
- * Setup.
+ * Return the smaller unsigned value. This helper owns no resources and has
+ * no side effects.
+ */
+static ULONG Levelmeter_MinUlong(ULONG a, ULONG b)
+{
+    return a < b ? a : b;
+}
+
+/*
+ * Apply Levelmeter attributes with last-value-wins tag semantics. Ignore an
+ * unsupported Style or Segments value, then normalize CriticalSegments to
+ * Segments and WarningSegments to the remaining range. Store changed values
+ * and return LEVELMETER_CHANGE_* flags describing redraw and relayout needs.
+ * The caller owns data and the tag list.
+ */
+static ULONG Levelmeter_ApplyTags(struct Levelmeter_DATA *data,
+    struct TagItem *tags)
+{
+    struct TagItem *state = tags;
+    struct TagItem *tag;
+    ULONG style = data->style;
+    ULONG segments = data->segments;
+    ULONG warning = data->warningSegments;
+    ULONG critical = data->criticalSegments;
+    BOOL horiz = data->horiz;
+    ULONG changes = 0;
+
+    while ((tag = NextTagItem(&state)) != NULL)
+    {
+        switch (tag->ti_Tag)
+        {
+        case MUIA_Levelmeter_Style:
+            if (tag->ti_Data == MUIV_Levelmeter_Style_Needle ||
+                tag->ti_Data == MUIV_Levelmeter_Style_Segments)
+                style = (ULONG) tag->ti_Data;
+            break;
+        case MUIA_Levelmeter_Segments:
+            if (tag->ti_Data >= 1 && tag->ti_Data <= MUIV_Levelmeter_Segments_Max)
+                segments = (ULONG) tag->ti_Data;
+            break;
+        case MUIA_Levelmeter_Horiz:
+            horiz = (tag->ti_Data != 0);
+            break;
+        case MUIA_Levelmeter_WarningSegments:
+            warning = (ULONG) tag->ti_Data;
+            break;
+        case MUIA_Levelmeter_CriticalSegments:
+            critical = (ULONG) tag->ti_Data;
+            break;
+        }
+    }
+
+    critical = Levelmeter_MinUlong(critical, segments);
+    warning = Levelmeter_MinUlong(warning, segments - critical);
+
+    if (data->style != style)
+    {
+        data->style = style;
+        changes |= LEVELMETER_CHANGE_FULL | LEVELMETER_CHANGE_RELAYOUT;
+    }
+    if (data->segments != segments)
+    {
+        data->segments = segments;
+        changes |= LEVELMETER_CHANGE_FULL | LEVELMETER_CHANGE_RELAYOUT;
+    }
+    if (data->horiz != horiz)
+    {
+        data->horiz = horiz;
+        changes |= LEVELMETER_CHANGE_FULL | LEVELMETER_CHANGE_RELAYOUT;
+    }
+    if (data->warningSegments != warning)
+    {
+        data->warningSegments = warning;
+        changes |= LEVELMETER_CHANGE_REDRAW;
+    }
+    if (data->criticalSegments != critical)
+    {
+        data->criticalSegments = critical;
+        changes |= LEVELMETER_CHANGE_REDRAW;
+    }
+
+    return changes;
+}
+
+/*
+ * Construct Numeric with MUIA_FillArea FALSE. Initialize all pen sentinels,
+ * Needle compatibility state and segmented-display defaults, then apply the
+ * constructor tag list. Return the superclass object or NULL. Pen acquisition
+ * is deferred to MUIM_Setup.
  */
 IPTR Levelmeter__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
@@ -129,15 +339,134 @@ IPTR Levelmeter__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
         struct Levelmeter_DATA *data = INST_DATA(cl, obj);
 
         data->levelbgpen = -1;
+        data->normalpen = -1;
+        data->warningpen = -1;
+        data->criticalpen = -1;
+        data->prevangle = 0.0;
+        data->style = MUIV_Levelmeter_Style_Needle;
+        data->segments = MUIV_Levelmeter_Segments_Default;
+        data->warningSegments = 2;
+        data->criticalSegments = 1;
+        data->horiz = TRUE;
+        Levelmeter_ApplyTags(data, msg->ops_AttrList);
     }
 
     return (IPTR) obj;
 }
 
+/* Acquire the segment colors only while the Segments style is set up. */
+static void Levelmeter_ObtainSegmentPens(Object *obj,
+    struct Levelmeter_DATA *data)
+{
+    struct ColorMap *cm = _screen(obj)->ViewPort.ColorMap;
+
+    data->normalpen = ObtainBestPen(cm,
+        0x33333333, 0xdddddddd, 0x33333333,
+        OBP_FailIfBad, FALSE, OBP_Precision, PRECISION_GUI, TAG_DONE);
+    data->warningpen = ObtainBestPen(cm,
+        0xeeeeeeee, 0xaaaaaaaa, 0x33333333,
+        OBP_FailIfBad, FALSE, OBP_Precision, PRECISION_GUI, TAG_DONE);
+    data->criticalpen = ObtainBestPen(cm,
+        0xeeeeeeee, 0x44444444, 0x44444444,
+        OBP_FailIfBad, FALSE, OBP_Precision, PRECISION_GUI, TAG_DONE);
+}
+
+/* Release acquired segment colors before changing style or cleaning up. */
+static void Levelmeter_ReleaseSegmentPens(Object *obj,
+    struct Levelmeter_DATA *data)
+{
+    struct ColorMap *cm = _screen(obj)->ViewPort.ColorMap;
+
+    if (data->normalpen != -1)
+    {
+        ReleasePen(cm, data->normalpen);
+        data->normalpen = -1;
+    }
+    if (data->warningpen != -1)
+    {
+        ReleasePen(cm, data->warningpen);
+        data->warningpen = -1;
+    }
+    if (data->criticalpen != -1)
+    {
+        ReleasePen(cm, data->criticalpen);
+        data->criticalpen = -1;
+    }
+}
+
 /*
- * Call Numeric Setup, then obtain a background pen from screen ColorMap on
- * success. Retain pen for Cleanup and return superclass result even if
- * acquisition fails. Requires live screen and no unmatched prior Setup.
+ * Apply local Levelmeter attributes and pass the same tag list to Numeric.
+ * On a live style transition, update segmented pen ownership before redraw.
+ * Request parent relayout for style, segment-count or orientation changes;
+ * request a full or update redraw according to the resulting change flags.
+ * Return Numeric's OM_SET result.
+ */
+IPTR Levelmeter__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
+{
+    struct Levelmeter_DATA *data = INST_DATA(cl, obj);
+    ULONG oldStyle = data->style;
+    ULONG changes = Levelmeter_ApplyTags(data, msg->ops_AttrList);
+    IPTR result;
+
+    if (oldStyle != data->style && (_flags(obj) & MADF_SETUP))
+    {
+        if (data->style == MUIV_Levelmeter_Style_Segments)
+            Levelmeter_ObtainSegmentPens(obj, data);
+        else
+            Levelmeter_ReleaseSegmentPens(obj, data);
+    }
+
+    result = DoSuperMethodA(cl, obj, (Msg) msg);
+
+    if ((changes & LEVELMETER_CHANGE_RELAYOUT) && _parent(obj))
+    {
+        DoMethod(_parent(obj), MUIM_Group_InitChange);
+        DoMethod(_parent(obj), MUIM_Group_ExitChange);
+    }
+
+    if (changes & LEVELMETER_CHANGE_FULL)
+        MUI_Redraw(obj, MADF_DRAWOBJECT);
+    else if (changes & LEVELMETER_CHANGE_REDRAW)
+        MUI_Redraw(obj, MADF_DRAWUPDATE);
+
+    return result;
+}
+
+/*
+ * Return stored Levelmeter attributes through opg_Storage. Delegate unknown
+ * attributes to Numeric. This method does not modify object state.
+ */
+IPTR Levelmeter__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
+{
+    const struct Levelmeter_DATA *data = INST_DATA(cl, obj);
+
+    switch (msg->opg_AttrID)
+    {
+    case MUIA_Levelmeter_Style:
+        *msg->opg_Storage = data->style;
+        return TRUE;
+    case MUIA_Levelmeter_Segments:
+        *msg->opg_Storage = data->segments;
+        return TRUE;
+    case MUIA_Levelmeter_Horiz:
+        *msg->opg_Storage = data->horiz;
+        return TRUE;
+    case MUIA_Levelmeter_WarningSegments:
+        *msg->opg_Storage = data->warningSegments;
+        return TRUE;
+    case MUIA_Levelmeter_CriticalSegments:
+        *msg->opg_Storage = data->criticalSegments;
+        return TRUE;
+    }
+
+    return DoSuperMethodA(cl, obj, (Msg) msg);
+}
+
+/*
+ * Run Numeric setup and acquire the legacy background pen. Obtain the three
+ * segmented-display pens only for the Segments style; failed acquisitions
+ * remain -1 and draw using theme fallbacks. Return Numeric's setup result;
+ * the legacy Needle background path retains its missing-fallback bug.
  */
 IPTR Levelmeter__MUIM_Setup(struct IClass *cl, Object *obj,
     struct MUIP_Setup *msg)
@@ -160,15 +489,16 @@ IPTR Levelmeter__MUIM_Setup(struct IClass *cl, Object *obj,
             0x39393939,
             0x93939393,
             OBP_FailIfBad, FALSE, OBP_Precision, PRECISION_GUI, TAG_DONE);
+        if (data->style == MUIV_Levelmeter_Style_Segments)
+            Levelmeter_ObtainSegmentPens(obj, data);
     }
 
     return retval;
 }
 
 /*
- * Release stored background pen when not -1, reset sentinel and return
- * Numeric Cleanup result. Requires same live screen/ColorMap as Setup. No
- * native gadget or image ownership.
+ * Release successfully acquired background and segmented-display pens before
+ * Numeric cleanup. Requires the screen/ColorMap established by MUIM_Setup.
  */
 IPTR Levelmeter__MUIM_Cleanup(struct IClass *cl, Object *obj,
     struct MUIP_Cleanup *msg)
@@ -180,6 +510,7 @@ IPTR Levelmeter__MUIM_Cleanup(struct IClass *cl, Object *obj,
         ReleasePen(_screen(obj)->ViewPort.ColorMap, data->levelbgpen);
         data->levelbgpen = -1;
     }
+    Levelmeter_ReleaseSegmentPens(obj, data);
 
     return DoSuperMethodA(cl, obj, (Msg) msg);
 }
@@ -188,16 +519,41 @@ IPTR Levelmeter__MUIM_Cleanup(struct IClass *cl, Object *obj,
  MUIM_AskMinMax
 **************************************************************************/
 /*
- * Ask Numeric/Area then add fixed 53 by 46 content dimensions to all
- * corresponding size fields. Return TRUE ignoring superclass result.
- * Requires writable MinMaxInfo; Label does not affect size.
+ * Ask Numeric for its size constraints. For Segments, derive the primary
+ * minimum and default size from the configured segment count, use a compact
+ * cross-axis size and allow expansion to MUI_MAXMAX. For Needle, preserve the
+ * historical fixed 53 by 46 contribution. Return TRUE.
  */
 IPTR Levelmeter__MUIM_AskMinMax(struct IClass *cl, Object *obj,
     struct MUIP_AskMinMax *msg)
 {
-    //struct Levelmeter_DATA *data = INST_DATA(cl, obj);
+    const struct Levelmeter_DATA *data = INST_DATA(cl, obj);
 
     DoSuperMethodA(cl, obj, (Msg) msg);
+
+    if (data->style == MUIV_Levelmeter_Style_Segments)
+    {
+        ULONG primaryMin = data->segments * 3 - 1;
+        ULONG primaryDef = data->segments * 8 - 1;
+
+        if (data->horiz)
+        {
+            msg->MinMaxInfo->MinWidth += primaryMin;
+            msg->MinMaxInfo->MinHeight += 6;
+            msg->MinMaxInfo->DefWidth += primaryDef;
+            msg->MinMaxInfo->DefHeight += 10;
+        }
+        else
+        {
+            msg->MinMaxInfo->MinWidth += 6;
+            msg->MinMaxInfo->MinHeight += primaryMin;
+            msg->MinMaxInfo->DefWidth += 10;
+            msg->MinMaxInfo->DefHeight += primaryDef;
+        }
+        msg->MinMaxInfo->MaxWidth = MUI_MAXMAX;
+        msg->MinMaxInfo->MaxHeight = MUI_MAXMAX;
+        return TRUE;
+    }
 
     msg->MinMaxInfo->MinWidth += TOTAL_WIDTH;
     msg->MinMaxInfo->MinHeight += TOTAL_HEIGHT;
@@ -284,11 +640,111 @@ static void DrawNeedle(struct RastPort *rp, LONG x1, LONG y1, LONG x2,
  MUIM_Draw
 **************************************************************************/
 /*
- * Paint full frame/scale/empty label background or erase old needle, then
- * map Value to 0..180 and draw new needle. Return FALSE without full/update
- * flags, otherwise TRUE. Requires live render state and valid background
- * pen; does not check acquisition failure. Store prevangle; no text
- * formatting or periodic update source.
+ * Select the active-segment pen for a zero-based segment index. Critical
+ * segments occupy the top end, warning segments the range immediately below,
+ * and all lower segments are normal. If a requested color pen was not obtained
+ * during setup, return the corresponding Zune theme pen.
+ */
+static LONG Levelmeter_ActivePen(Object *obj,
+    const struct Levelmeter_DATA *data, ULONG segment)
+{
+    ULONG critical = Levelmeter_MinUlong(data->criticalSegments, data->segments);
+    ULONG warning = Levelmeter_MinUlong(data->warningSegments,
+        data->segments - critical);
+    ULONG criticalStart = data->segments - critical;
+    ULONG warningStart = criticalStart - warning;
+
+    if (segment >= criticalStart)
+        return data->criticalpen != -1 ? data->criticalpen : _pens(obj)[MPEN_MARK];
+    if (segment >= warningStart)
+        return data->warningpen != -1 ? data->warningpen : _pens(obj)[MPEN_SHINE];
+    return data->normalpen != -1 ? data->normalpen : _pens(obj)[MPEN_FILL];
+}
+
+/*
+ * Draw the Segments style for full or update redraws. Map Numeric value to
+ * 0..Segments with MUIM_Numeric_ValueToScale(), divide the current object
+ * rectangle into horizontal left-to-right or vertical bottom-to-top segments,
+ * and fill active segments with zone colors. Inactive segments use the legacy
+ * background pen when available and MPEN_SHADOW otherwise. Return FALSE only
+ * when neither supported draw flag is present; otherwise return TRUE.
+ */
+static IPTR Levelmeter_DrawSegments(Object *obj,
+    const struct Levelmeter_DATA *data, const struct MUIP_Draw *msg)
+{
+    ULONG active;
+    ULONG segment;
+    LONG left, top, width, height;
+    LONG lastPen = -1;
+
+    if (!(msg->flags & (MADF_DRAWOBJECT | MADF_DRAWUPDATE)))
+        return FALSE;
+    if (data->segments == 0 || _rp(obj) == NULL || _pens(obj) == NULL)
+        return TRUE;
+
+    active = (ULONG) DoMethod(obj, MUIM_Numeric_ValueToScale, 0, data->segments);
+    left = _mleft(obj);
+    top = _mtop(obj);
+    width = _mwidth(obj);
+    height = _mheight(obj);
+
+    if (width <= 0 || height <= 0)
+        return TRUE;
+
+    if (msg->flags & MADF_DRAWOBJECT)
+        DoMethod(obj, MUIM_DrawBackground, left, top, width, height,
+            left, top, 0);
+
+    for (segment = 0; segment < data->segments; segment++)
+    {
+        LONG x1 = left;
+        LONG y1 = top;
+        LONG x2 = left + width - 1;
+        LONG y2 = top + height - 1;
+        LONG pen;
+
+        if (data->horiz)
+        {
+            x1 = left + (LONG) ((segment * (ULONG) width) / data->segments);
+            x2 = left + (LONG) (((segment + 1) * (ULONG) width) / data->segments) - 1;
+            if (segment + 1 < data->segments)
+                x2--;
+        }
+        else
+        {
+            y1 = top + height - (LONG) (((segment + 1) * (ULONG) height) / data->segments);
+            y2 = top + height - (LONG) ((segment * (ULONG) height) / data->segments) - 1;
+            if (segment + 1 < data->segments)
+                y1++;
+        }
+
+        if (x2 < x1 || y2 < y1)
+            continue;
+
+        if (segment < active)
+            pen = Levelmeter_ActivePen(obj, data, segment);
+        else if (data->levelbgpen != -1)
+            pen = data->levelbgpen;
+        else
+            pen = _pens(obj)[MPEN_SHADOW];
+
+        if (pen != lastPen)
+        {
+            SetAPen(_rp(obj), pen);
+            lastPen = pen;
+        }
+        RectFill(_rp(obj), x1, y1, x2, y2);
+    }
+
+    return TRUE;
+}
+
+/*
+ * Run Numeric drawing first. Dispatch Segments style to the segmented renderer.
+ * Otherwise preserve the historical Needle path: on a full draw paint frame,
+ * background, scale and empty label field; on update erase the previous needle,
+ * map Numeric value to 0..180 and draw the new needle. The Needle path retains
+ * the historical unchecked background-pen failure sentinel.
  */
 IPTR Levelmeter__MUIM_Draw(struct IClass *cl, Object *obj,
     struct MUIP_Draw *msg)
@@ -298,6 +754,9 @@ IPTR Levelmeter__MUIM_Draw(struct IClass *cl, Object *obj,
     WORD x1, y1, x2, y2;
 
     DoSuperMethodA(cl, obj, (Msg) msg);
+
+    if (data->style == MUIV_Levelmeter_Style_Segments)
+        return Levelmeter_DrawSegments(obj, data, msg);
 
     if (!(msg->flags & (MADF_DRAWOBJECT | MADF_DRAWUPDATE)))
         return FALSE;
@@ -519,10 +978,10 @@ IPTR Levelmeter__MUIM_Draw(struct IClass *cl, Object *obj,
 
 #if ZUNE_BUILTIN_LEVELMETER
 /*
- * When built in, route local overrides and delegate other messages to
- * Numeric. Return the selected handler result. Requires ABI-correct message
- * and live object except construction; resource ownership follows the class
- * lifecycle contract.
+ * Route OM_NEW, OM_SET, OM_GET, MUIM_Setup, MUIM_Cleanup, MUIM_AskMinMax and
+ * MUIM_Draw to Levelmeter handlers when the class is built into muimaster.
+ * Delegate all other messages to Numeric. Resource ownership follows the
+ * Levelmeter setup/cleanup lifecycle.
  */
 BOOPSI_DISPATCHER(IPTR, Levelmeter_Dispatcher, cl, obj, msg)
 {
@@ -530,6 +989,10 @@ BOOPSI_DISPATCHER(IPTR, Levelmeter_Dispatcher, cl, obj, msg)
     {
     case OM_NEW:
         return Levelmeter__OM_NEW(cl, obj, (struct opSet *)msg);
+    case OM_SET:
+        return Levelmeter__OM_SET(cl, obj, (struct opSet *)msg);
+    case OM_GET:
+        return Levelmeter__OM_GET(cl, obj, (struct opGet *)msg);
     case MUIM_Setup:
         return Levelmeter__MUIM_Setup(cl, obj, (struct MUIP_Setup *)msg);
     case MUIM_Cleanup:
