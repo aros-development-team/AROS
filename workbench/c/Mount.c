@@ -16,7 +16,7 @@
 
     FORMAT
 
-        Mount <Device> <From> [SHUTDOWN]
+        Mount <Device> [<Device> ...] [FROM <MountList>] [SHUTDOWN]
 
     SYNOPSIS
 
@@ -28,18 +28,20 @@
 
     FUNCTION
 
-        Loads and mounts a device
+        Creates a DOS device entry from a mount definition. SHUTDOWN
+        requests handler termination without removing the device entry.
 
     INPUTS
 
-        DEVICE   -- The device type to be mounted
-        FROM     -- Search device in this mountlist
+        DEVICE   -- Device names or mount-definition files
+        FROM     -- MountList file to search for named devices
         SHUTDOWN -- Stop the handler behind an already mounted device,
                     without removing the device node
 
     RESULT
 
-        Standard DOS error codes.
+        On CLI success RETURN_OK; on CLI failure RETURN_FAIL.
+        Details are reported with the DOS error text when available.
 
     NOTES
 
@@ -281,6 +283,7 @@ int main(void)
   IPTR args[3];
   IPTR *params;
   LONG error = RETURN_FAIL;
+  LONG firsterror = RETURN_OK;
   struct RDArgs *rda;
   char dirname[PATHSTR_MAX];
 
@@ -314,8 +317,13 @@ int main(void)
                 if (args[2])
                 {
                   len = strlen(*MyDevPtr);
+                  if (len == 0 || len >= PATHSTR_MAX)
+                  {
+                    error = ERROR_LINE_TOO_LONG;
+                    break;
+                  }
                   Strlcpy(dirname, *MyDevPtr, PATHSTR_MAX);
-                  if (len && dirname[len-1] == ':')
+                  if (dirname[len-1] == ':')
                     dirname[len-1] = '\0';
 
                   error = ShutdownDevice(dirname);
@@ -337,6 +345,12 @@ int main(void)
                   StartupString = NULL;
 
                   len = strlen(*MyDevPtr);
+                  if (len == 0 || len >= PATHSTR_MAX)
+                  {
+                    error = ERROR_LINE_TOO_LONG;
+                    FreeVec(params);
+                    break;
+                  }
                   if ((*MyDevPtr)[len-1] == ':')
                   {
                     /* search for a devicename */
@@ -376,6 +390,11 @@ int main(void)
                           }
 
                           slen = strlen(*SearchPtr);
+                          if (slen >= PATHSTR_MAX || len >= PATHSTR_MAX - slen)
+                          {
+                            error = ERROR_LINE_TOO_LONG;
+                            break;
+                          }
                           Strlcpy(dirname, *SearchPtr, PATHSTR_MAX);
                           dirname[slen] = '\0';
                           Strlcat(dirname, *MyDevPtr, PATHSTR_MAX);
@@ -427,7 +446,10 @@ int main(void)
                                        dirname,
                                        sizeof(dirname)) == FALSE)
                       {
-                        ShowFault(IoErr(), "Error on NameFromLock");
+                        error = IoErr();
+                        if (error == RETURN_OK)
+                          error = RETURN_FAIL;
+                        ShowFault(error, "Error on NameFromLock");
                         break;
                       }
                       
@@ -436,7 +458,10 @@ int main(void)
                                   &(MyAp->ap_Info.fib_FileName[0]),
                                   sizeof(dirname)) == FALSE)
                       {
-                        ShowFault(IoErr(), "Error on AddPart");
+                        error = IoErr();
+                        if (error == RETURN_OK)
+                          error = RETURN_FAIL;
+                        ShowFault(error, "Error on AddPart");
                         break;
                       }
                       if (MyAp->ap_Info.fib_DirEntryType > 0)
@@ -466,6 +491,8 @@ int main(void)
                         IsFilesystem = TRUE;
                         error=readmountfile(params, dirname);
                         DEBUG_MOUNT(KPrintF("Mount: readmount file returned %ld\n", error));
+                        if (error != RETURN_OK && firsterror == RETURN_OK)
+                          firsterror = error;
                       }
                     }
                     /* This absolutely, positively must be called, all of the time. */
@@ -475,7 +502,7 @@ int main(void)
                     {
                       SetIoErr(0);
                     }
-                    else
+                    else if (err != RETURN_OK)
                     {
                       /* if it was real error promote it - Piru */
                       error = err;
@@ -488,6 +515,8 @@ int main(void)
                   error = ERROR_NO_FREE_STORE;
                   break;
                 }
+                if (error != RETURN_OK && firsterror == RETURN_OK)
+                  firsterror = error;
                 MyDevPtr++;
               }
             }
@@ -497,6 +526,9 @@ int main(void)
           {
             error = IoErr();
           }
+
+          if (firsterror != RETURN_OK)
+            error = firsterror;
 
           if (error && error != ERROR_NO_MORE_ENTRIES && error < ERR_SPECIAL)
           {
@@ -531,6 +563,8 @@ int main(void)
 
                 error=readmountfile(params, _WBenchMsg->sm_ArgList[i].wa_Name);
                 DEBUG_MOUNT(KPrintF("Mount: readmountfile returned %ld\n", error));
+                if (error != RETURN_OK && firsterror == RETURN_OK)
+                  firsterror = error;
                 if (error && error != ERROR_NO_MORE_ENTRIES && error < ERR_SPECIAL)
                   ShowFault(error, "Mount");
 
@@ -538,6 +572,8 @@ int main(void)
               }
 
               FreeVec(params);
+              if (firsterror != RETURN_OK)
+                error = firsterror;
             }
             else
             {
@@ -591,6 +627,9 @@ struct MsgPort      *port = NULL;
   return 0;
 }
 
+/* Check whether a DOS device, volume or assign already has this name.
+   The DOS-list read lock is released before the result is returned.
+   Returns ERROR_OBJECT_EXISTS for a match, otherwise RETURN_OK. */
 ULONG CheckDevice(char *name)
 {
 struct DosList  *dl;
@@ -631,6 +670,9 @@ static ULONG DefaultNumBuffers(void)
   return 20;
 }
 
+/* Initialize a parameter packet and the mount defaults for one device.
+   The caller provides PARAMSLENGTH bytes; this also resets the parser flags
+   and the per-device globals explicitly assigned below. */
 void InitParams(IPTR *params)
 {
   struct DosEnvec *vec;
@@ -677,6 +719,8 @@ void InitParams(IPTR *params)
   SetMem(&flagargs, 0, sizeof(flagargs));
 }
 
+/* Release the untransferred parser-owned strings after a mount attempt.
+   Registered DOS-node storage is detached from these pointers by mount(). */
 void FreeStuff(void)
 {
   if (UnitString)
@@ -714,6 +758,8 @@ void FreeStuff(void)
 /************************************************************************************************/
 /************************************************************************************************/
 
+/* Parse a mount numeric value as signed decimal or unsigned hex.
+   If end is non-NULL, the conversion routine reports its end position. */
 static long GetValue(IPTR bufp, char **end)
 {
         char *buf = (char *)bufp;
@@ -736,6 +782,9 @@ static long GetValue(IPTR bufp, char **end)
 /************************************************************************************************/
 /************************************************************************************************/
 
+/* Parse one mount configuration or ToolType into params and globals.
+   May replace per-device strings; the caller owns the subsequent FreeStuff().
+   Returns RETURN_OK or a parser/allocation/configuration error. */
 ULONG ReadMountArgs(IPTR *params, struct RDArgs *rda)
 {
     struct DosEnvec *vec;
@@ -792,7 +841,14 @@ ULONG ReadMountArgs(IPTR *params, struct RDArgs *rda)
             FreeVec(HandlerString);
 
         if ((HandlerString = AllocVec(len + BSTR_EXTRA, MEMF_PUBLIC|MEMF_CLEAR)))
+        {
             bstrcpy(HandlerString, s, len);
+        }
+        else
+        {
+            result = ERROR_NO_FREE_STORE;
+            goto error;
+        }
     }
 
     if (args[ARG_STACKSIZE] != 0)
@@ -823,6 +879,11 @@ ULONG ReadMountArgs(IPTR *params, struct RDArgs *rda)
         
         if ((DeviceString = AllocVec(len + 1,MEMF_PUBLIC|MEMF_CLEAR)))
             Strlcpy(DeviceString, (STRPTR)args[ARG_DEVICE], len + 1);
+        else
+        {
+            result = ERROR_NO_FREE_STORE;
+            goto error;
+        }
     }
 
     if (args[ARG_UNIT] != 0)
@@ -1004,6 +1065,9 @@ error:
 /************************************************************************************************/
 /************************************************************************************************/
 
+/* Read DEVS:MountList (or the requested file) and find the named entry.
+   On a successful read, initialize params, parse the selected entry and mount it;
+   release the read buffer and untransferred parser strings afterwards. */
 ULONG   readmountlist(IPTR      *params,
                       STRPTR    name,
                       char      *mountlist)
@@ -1044,7 +1108,7 @@ ULONG   error;
       {
         case ERR_DEVICENOTFOUND:
         case ERR_INVALIDKEYWORD:
-          ShowError(name, "Device not found in file '%s'", name, mountlist);
+          ShowError(name, "Device not found in file '%s'", mountlist);
           break;
       }
     }
@@ -1058,6 +1122,9 @@ ULONG   error;
 /************************************************************************************************/
 /************************************************************************************************/
 
+/* Load one mount definition and optional icon ToolTypes.
+   Reject parser errors before mount(), then release the parser-owned strings.
+   The mounted DOS-node storage, if registered, is not released here. */
 ULONG readmountfile(IPTR *params, STRPTR filename)
 {
 struct Library          *IconBase;
@@ -1178,20 +1245,24 @@ char                    name[NAMESTR_MAX];
                 rda.RDA_Source.CS_Length = toollen+1;
                 rda.RDA_Source.CS_CurChr = 0;
                 rda.RDA_Flags = RDAF_NOPROMPT;
-                if ((ReadMountArgs(params, &rda)==RETURN_OK))
                 {
-                  mountinfo = TRUE;
+                  ULONG parser_error = ReadMountArgs(params, &rda);
+                  if (parser_error == RETURN_OK)
+                    mountinfo = TRUE;
+                  else
+                  {
+                    error = parser_error;
+                    mountinfo = FALSE;
+                  }
+                  FreeVec(ToolString);
+                  if (parser_error != RETURN_OK)
+                    break;
                 }
-                else
-                {
-                  DEBUG_MOUNT(KPrintF("ReadMountFile: ReadArgs failed error %ld\n",
-                                     error));
-                }
-                FreeVec(ToolString);
               }
               else
               {
                 error = ERROR_NO_FREE_STORE;
+                mountinfo = FALSE;
                 break;
               }
             }
@@ -1231,10 +1302,16 @@ char                    name[NAMESTR_MAX];
 /************************************************************************************************/
 
 
+/* Read a mount definition, appending a newline and a null terminator.
+   On success, the caller owns *mem and *size holds the original file size.
+   A failed read after allocation frees the buffer without clearing *mem;
+   callers must check the return value before using it. */
 LONG readfile(STRPTR name, STRPTR *mem, LONG *size)
 {
     BPTR ml;
-    ULONG rest,sub;
+    ULONG rest;
+    LONG sub;
+    LONG read_error;
     STRPTR buf;
     struct Process *me = (struct Process *) FindTask(NULL);
     APTR oldwinptr;
@@ -1254,7 +1331,13 @@ LONG readfile(STRPTR name, STRPTR *mem, LONG *size)
 
             if (*size != -1)
             {
-                *mem = (STRPTR)AllocVec(*size+2, MEMF_ANY);
+                if (*size < 0 || *size > 0x7fffffffL - 2)
+                {
+                    Close(ml);
+                    SetIoErr(ERROR_NO_FREE_STORE);
+                    return IoErr();
+                }
+                *mem = (STRPTR)AllocVec((ULONG)*size + 2, MEMF_ANY);
 
                 if (*mem)
                 {
@@ -1275,8 +1358,10 @@ LONG readfile(STRPTR name, STRPTR *mem, LONG *size)
 
                         sub = Read(ml, buf, rest);
 
-                        if (sub == -1)
+                        if (sub <= 0)
                         {
+                            if (sub == 0)
+                                SetIoErr(ERROR_SEEK_ERROR);
                             break;
                         }
 
@@ -1293,17 +1378,25 @@ LONG readfile(STRPTR name, STRPTR *mem, LONG *size)
             }
         }
 
+        read_error = IoErr();
         Close(ml);
     }
+    else
+    {
+        read_error = IoErr();
+    }
 
-    DEBUG_MOUNT(KPrintF("ReadFile: error %ld\n", IoErr()));
-    return IoErr();
+    DEBUG_MOUNT(KPrintF("ReadFile: error %ld\n", read_error));
+    SetIoErr(read_error);
+    return read_error;
 }
 
 /************************************************************************************************/
 /************************************************************************************************/
 
 
+/* Normalize mount-file comments and separators in place for ReadArgs.
+   Only the caller-owned buffer of the supplied size is modified. */
 void preparefile(STRPTR buf, LONG size)
 {
     STRPTR end = buf + size;
@@ -1382,6 +1475,9 @@ void preparefile(STRPTR buf, LONG size)
 /************************************************************************************************/
 /************************************************************************************************/
 
+/* Find the matching filesystem.resource entry, preferring the
+   highest-version match. The returned pointer remains resource-owned;
+   this routine does not allocate or pin it beyond the list traversal. */
 struct FileSysEntry *GetFileSysEntry(ULONG DosType)
 {
 
@@ -1431,6 +1527,9 @@ struct FileSysEntry *GetFileSysEntry(ULONG DosType)
     if (MyFileSysEntry->fse_PatchFlags & f) \
         MyDeviceNode->dn_ ## name = (typeof(MyDeviceNode->dn_ ## name))MyFileSysEntry->fse_ ## name
 
+/* Apply fields selected by filesystem.resource patch flags to a
+   newly created DOS node. The caller must reconcile any replaced startup
+   storage before transferring the node to the DOS list. */
 void PatchDosNode(struct DeviceNode *MyDeviceNode, ULONG DosType)
 {
     struct FileSysEntry *MyFileSysEntry;
@@ -1466,6 +1565,10 @@ void PatchDosNode(struct DeviceNode *MyDeviceNode, ULONG DosType)
 #define FLAGS_INDEX      3
 #define ENVIROMENT_INDEX 4
 
+/* Allocate a DOS node and associated name/startup/environment data.
+   ParameterPkt selects the FileSysStartupMsg path; otherwise StartupName
+   selects the handler-startup path. Returns NULL on allocation failure.
+   On success the caller owns the allocations until DOS-list registration. */
 struct DeviceNode *MyMakeDosNode(char *DosName, IPTR *ParameterPkt, char *StartupName)
 {
   int DosNameSize;
@@ -1612,6 +1715,8 @@ struct DeviceNode *MyMakeDosNode(char *DosName, IPTR *ParameterPkt, char *Startu
 /************************************************************************************************/
 
 
+/* Parse a prepared mount definition buffer with ReadMountArgs.
+   The buffer and parameter packet remain caller-owned. */
 LONG parsemountfile(IPTR *params, STRPTR buf, LONG size)
 {
 STRPTR args[NUM_ARGS];
@@ -1642,6 +1747,9 @@ struct RDArgs rda;
 /************************************************************************************************/
 
 
+/* Locate the requested device section and parse its arguments.
+   On a match, rewrite name to the section's name without its colon.
+   Returns ERR_DEVICENOTFOUND when no matching section is present. */
 LONG    parsemountlist(IPTR             *params,
                        STRPTR           name,
                        STRPTR           buf,
@@ -1704,7 +1812,7 @@ struct RDArgs rda;
         *--s2 = 0;
 
         if (!Strnicmp(name, buffer, s2 - buffer) &&
-           (!name[s2 - buffer] || (name[s2 - buffer] == ':' || !name[s2 - buffer + 1])))
+           (!name[s2 - buffer] || (name[s2 - buffer] == ':' && !name[s2 - buffer + 1])))
         {
             DEBUG_MOUNT(KPrintF("ParseMountList: found\n"));
 
@@ -1751,6 +1859,9 @@ struct RDArgs rda;
 /************************************************************************************************/
 /************************************************************************************************/
 
+/* Check the required filesystem geometry and selected numeric ranges.
+   Also installs the parsed device name in params[1]. Returns RETURN_OK
+   or the corresponding configuration error. */
 static LONG checkmount(STRPTR name, IPTR *params)
 {
 struct DosEnvec *vec;
@@ -1798,6 +1909,10 @@ struct DosEnvec *vec;
 /************************************************************************************************/
 /************************************************************************************************/
 
+/* Create and register one DOS node from the current parser state.
+   On registration success DOS owns the node and retained startup allocations;
+   a subsequent ACTIVATE error does not undo that registration. A failed
+   registration releases only the locally owned constructor allocations. */
 LONG mount(IPTR *params, STRPTR name)
 {
     struct DosEnvec *vec;
@@ -1805,6 +1920,7 @@ LONG mount(IPTR *params, STRPTR name)
     struct DeviceNode *dn;
     struct FileSysStartupMsg *allocatedfssm;
     BOOL startupreplaced;
+    BOOL registered = FALSE;
     STRPTR cp;
 
     for (cp = name; *cp != 0; cp++)
@@ -1904,6 +2020,7 @@ LONG mount(IPTR *params, STRPTR name)
         {
             if (AddDosEntry((struct DosList *)dn))
             {
+                    registered = TRUE;
                     /* Patched-out startup storage was not transferred to DOS. */
                     if (startupreplaced)
                     {
@@ -1921,11 +2038,24 @@ LONG mount(IPTR *params, STRPTR name)
                     }
                     if (Activate)
                     {
-                        Strlcat(name, ":", PATHSTR_MAX);
-                        DEBUG_MOUNT(KPrintF("Activating \"%s\"\n", (IPTR)name));
-                        DeviceProc(name);
+                        char actname[PATHSTR_MAX];
+                        if (cp - name >= sizeof(actname) - 1)
+                        {
+                            error = ERROR_LINE_TOO_LONG;
+                        }
+                        else
+                        {
+                            Strlcpy(actname, name, sizeof(actname));
+                            Strlcat(actname, ":", sizeof(actname));
+                            DEBUG_MOUNT(KPrintF("Activating \"%s\"\n", (IPTR)actname));
+                            if (!DeviceProc(actname))
+                            {
+                                error = IoErr();
+                                if (error == RETURN_OK)
+                                    error = ERROR_DEVICE_NOT_MOUNTED;
+                            }
+                        }
                     }
-                    error = 0;
             }
             else
             {
@@ -1938,7 +2068,8 @@ LONG mount(IPTR *params, STRPTR name)
                 DEBUG_MOUNT(KPrintF("MountDev: no loadseg and no handler specified\n"));
                 error = ERROR_OBJECT_NOT_FOUND;
         }
-        if (error != RETURN_OK)
+        /* Activation failure does not undo a registered DOS node. */
+        if (error != RETURN_OK && !registered)
         {
             FreeVec(allocatedenvec);
             FreeVec(allocatedfssm);
@@ -1954,6 +2085,8 @@ LONG mount(IPTR *params, STRPTR name)
     return error;
 }
 
+/* Format a mount configuration error to the CLI or a requester.
+   Uses the shared diagnostic buffer; caller supplies the format arguments. */
 void ShowError(STRPTR name, const char *s, ...)
 {
     AROS_SLOWSTACKFORMAT_PRE(s);
@@ -1990,6 +2123,8 @@ void ShowError(STRPTR name, const char *s, ...)
 }
 
 
+/* Format into a bounded destination through AROS VSNPrintf.
+   The destination is caller-owned and buffer_size is its supplied capacity. */
 void _snprintf(STRPTR buffer, LONG buffer_size, CONST_STRPTR format, ...)
 {
         AROS_SLOWSTACKFORMAT_PRE(format);
@@ -1997,6 +2132,8 @@ void _snprintf(STRPTR buffer, LONG buffer_size, CONST_STRPTR format, ...)
         AROS_SLOWSTACKFORMAT_POST(format);
 }
 
+/* Format a DOS error using Fault(), falling back to the numeric code.
+   Present it in the CLI or a requester according to IsCli. */
 void ShowFault(LONG code, const char *s, ...)
 {
         char buf[NAMESTR_MAX];
