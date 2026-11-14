@@ -2092,6 +2092,67 @@ static IPTR thunk_dos_Seek(struct M68KEmuContext *ctx, void *cpu)
     return (IPTR)Seek(fh, pos, mode);
 }
 
+/* Argument strings belong to the emulated Process, not to its native host.
+   Guest code can change pr_Arguments directly as well as through SetArgStr. */
+static ULONG m68k_argument_field(struct M68KEmuContext *ctx)
+{
+    ULONG task;
+
+    if (!m68k_in_mem(ctx, ctx->m68k_sysbase, M68K_EXECBASE_THISTASK + 4))
+        return 0;
+    task = m68k_read32(ctx, ctx->m68k_sysbase + M68K_EXECBASE_THISTASK);
+    return m68k_in_mem(ctx, task, M68K_PR_ARGUMENTS + 4)
+        ? task + M68K_PR_ARGUMENTS : 0;
+}
+
+static BOOL m68k_argument_string(struct M68KEmuContext *ctx, ULONG addr)
+{
+    return !addr || (m68k_in_mem(ctx, addr, 1) &&
+        memchr(ctx->mem + addr, 0, ctx->mem_size - addr) != NULL);
+}
+
+/* -534: GetArgStr() -> D0=current guest argument string */
+static IPTR thunk_dos_GetArgStr_m(struct M68KEmuContext *ctx, void *cpu)
+{
+    ULONG field = m68k_argument_field(ctx), addr;
+
+    (void)cpu;
+    if (!field)
+    {
+        SetIoErr(ERROR_BAD_NUMBER);
+        return 0;
+    }
+    addr = m68k_read32(ctx, field);
+    if (!m68k_argument_string(ctx, addr))
+    {
+        SetIoErr(ERROR_BAD_NUMBER);
+        return 0;
+    }
+    return addr;
+}
+
+/* -540: SetArgStr(D1=string) -> D0=old guest string; NULL is legal. */
+static IPTR thunk_dos_SetArgStr_m(struct M68KEmuContext *ctx, void *cpu)
+{
+    ULONG field = m68k_argument_field(ctx), addr = THUNK_D(1), old;
+
+    if (!field || !m68k_write_allowed(ctx, field) ||
+        !m68k_argument_string(ctx, addr))
+    {
+        SetIoErr(ERROR_BAD_NUMBER);
+        return 0;
+    }
+    old = m68k_read32(ctx, field);
+    if (!m68k_argument_string(ctx, old))
+    {
+        SetIoErr(ERROR_BAD_NUMBER);
+        return 0;
+    }
+    m68k_write32(ctx, field, addr);
+    /* The startup registers and native ReadArgs source keep their lifetime. */
+    return old;
+}
+
 /* -132: IoErr() -> D0=result */
 static IPTR thunk_dos_IoErr(struct M68KEmuContext *ctx, void *cpu)
 {
@@ -3340,6 +3401,8 @@ static IPTR thunk_dos_StrToDate_m(struct M68KEmuContext *ctx, void *cpu)
 }
 
 const struct M68KThunkEntry m68kemu_thunks_dos[] = {
+    { 534, thunk_dos_GetArgStr_m },
+    { 540, thunk_dos_SetArgStr_m },
     { 192, thunk_dos_DateStamp_m },
     { 816, thunk_dos_StrToLong_m },
     { 738, thunk_dos_CompareDates_m },
