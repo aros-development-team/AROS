@@ -1,0 +1,28 @@
+# Copyright (C) 2026, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+
+DEJAVUARCHIVE := dejavu-fonts-ttf-2.37
+DEJAVUSRC     := $(PORTSDIR)/dejavu/$(DEJAVUARCHIVE)
+DEJAVUFILES   := DejaVuSansMono.ttf DejaVuSansMono-Bold.ttf
+
+#MM- fonts-truetype : fonts-truetype-dejavu
+#MM- fonts-truetype-quick : fonts-truetype-dejavu
+#MM- fonts-truetype-dejavu : fonts-truetype-dejavu-ttf fonts-truetype-dejavu-amifonts
+#MM fonts-truetype-dejavu-ttf : fonts-truetype-dejavu-fetch
+
+%fetch mmake=fonts-truetype-dejavu-fetch archive=$(DEJAVUARCHIVE) suffixes="tar.bz2" \
+    location=$(PORTSSOURCEDIR) destination=$(PORTSDIR)/dejavu \
+    archive_origins="https://github.com/dejavu-fonts/dejavu-fonts/releases/download/version_2_37"
+
+#MM
+fonts-truetype-dejavu-ttf : | $(AROSDIR)/Fonts/TrueType
+	$(CP) $(addprefix $(DEJAVUSRC)/ttf/,$(DEJAVUFILES)) $(AROSDIR)/Fonts/TrueType
+	$(CP) $(DEJAVUSRC)/LICENSE $(AROSDIR)/Fonts/TrueType/LICENSE-DejaVu.txt
+
+%copy_files_q mmake=fonts-truetype-dejavu-amifonts files="$(call WILDCARD, *.font *.otag)" \
+    dst=$(AROSDIR)/Fonts
+
+%rule_makedirs dirs=$(AROSDIR)/Fonts/TrueType
+
+%common
