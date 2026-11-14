@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc:
 */
@@ -125,6 +125,10 @@ extern struct InputEvent *cxIHandler();
             {
               if (SetupIHandler((struct CommoditiesBase *)CxBase) == FALSE)
                 {
+                  /* The broker is not in the list yet: free it, so that
+                     the caller gets NULL together with CBERR_SYSERR. */
+                  FreeCxStructure(co, CX_OBJECT, CxBase);
+                  co = NULL;
                   goto sysErr;
                 }
               else
