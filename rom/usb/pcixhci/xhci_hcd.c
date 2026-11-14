@@ -2403,7 +2403,7 @@ void xhciFinishRequest(struct PCIController *hc, struct PCIUnit *unit, struct IO
         unit->hu_NakTimeoutFrame[devadrep] = 0;
 }
 
-static inline void xhciIOErrfromCC(struct IOUsbHWReq *ioreq, ULONG cc)
+static inline void xhciIOErrfromCC(struct PCIController *hc, struct IOUsbHWReq *ioreq, ULONG cc)
 {
     switch(cc) {
     case TRB_CC_SUCCESS:                                        /* Success */
@@ -2460,10 +2460,6 @@ static inline void xhciIOErrfromCC(struct IOUsbHWReq *ioreq, ULONG cc)
         break;
 
     default: {
-#if defined(AROS_USE_LOGRES)
-        struct PCIUnit *unit = (struct PCIUnit *)ioreq->iouh_Req.io_Unit;
-        struct PCIController *hc = xhciGetController(unit);
-#endif
         pciusbWarn("xHCI", DEBUGCOLOR_SET "%s:  IOReq 0x%p - UHIOERR_HOSTERROR (cc=%ld)" DEBUGCOLOR_RESET" \n", __func__, ioreq,
                    cc);
         {
@@ -2671,12 +2667,12 @@ void xhciHandleFinishedTDs(struct PCIController *hc, struct timerequest *timerre
          * First, look at completion code from the event TRB
          * (set in xhciIntWorkProcess).
          */
-        if(driprivate->dpCC > 0) {
+        if(__atomic_load_n(&driprivate->dpCC, __ATOMIC_ACQUIRE) > 0) {
             pciusbXHCIDebugV("xHCI",
                              DEBUGCOLOR_SET "Periodic IOReq %p complete (CC=%u)" DEBUGCOLOR_RESET"\n",
                              ioreq, driprivate->dpCC);
 
-            xhciIOErrfromCC(ioreq, driprivate->dpCC);
+            xhciIOErrfromCC(hc, ioreq, driprivate->dpCC);
 
             transactiondone = TRUE;
         } else {
@@ -2796,14 +2792,14 @@ void xhciHandleFinishedTDs(struct PCIController *hc, struct timerequest *timerre
             transactiondone = FALSE;
             devadrep = xhciDevEPKey(ioreq);
 
-            if(driprivate->dpCC > TRB_CC_INVALID) {
+            if(__atomic_load_n(&driprivate->dpCC, __ATOMIC_ACQUIRE) > TRB_CC_INVALID) {
                 pciusbXHCIDebugV("xHCI",
                                  DEBUGCOLOR_SET "IOReq Complete (completion code %u)!"
                                  DEBUGCOLOR_RESET" \n",
                                  driprivate->dpCC);
                 transactiondone = TRUE;
 
-                xhciIOErrfromCC(ioreq, driprivate->dpCC);
+                xhciIOErrfromCC(hc, ioreq, driprivate->dpCC);
 
                 unit->hu_NakTimeoutFrame[devadrep] = 0;
 
@@ -2930,11 +2926,8 @@ BOOL xhciIntWorkProcess(struct PCIController *hc, struct IOUsbHWReq *ioreq, ULON
         pciusbXHCIDebugTRBV("xHCI", DEBUGCOLOR_SET "          Ring    @ 0x%p" DEBUGCOLOR_RESET" \n",
                             driprivate->dpDevice->dc_EPAllocs[driprivate->dpEPID].dmaa_Ptr);
 
-        driprivate->dpCC = ccode;
-
-        /* Avoid log storms for expected ISO conditions and short packets */
-        if((ccode != TRB_CC_SUCCESS) && (ccode != TRB_CC_SHORT_PACKET) &&
-                !(ccode == TRB_CC_RING_UNDERRUN && (ioreq->iouh_Req.io_Command == UHCMD_ISOXFER))) {
+        /* Avoid log storms for short packets */
+        if((ccode != TRB_CC_SUCCESS) && (ccode != TRB_CC_SHORT_PACKET)) {
             pciusbWarn("xHCI",
                        DEBUGWARNCOLOR_SET
                        "cc=%d for IOReq 0x%p"
@@ -2946,8 +2939,7 @@ BOOL xhciIntWorkProcess(struct PCIController *hc, struct IOUsbHWReq *ioreq, ULON
          * This is particularly useful to spot endpoints that remain HALTED /
          * STOPPED while new TDs are being submitted.
          */
-        if((ccode != TRB_CC_SUCCESS) && (ccode != TRB_CC_SHORT_PACKET) &&
-                !(ccode == TRB_CC_RING_UNDERRUN && (ioreq->iouh_Req.io_Command == UHCMD_ISOXFER))) {
+        if((ccode != TRB_CC_SUCCESS) && (ccode != TRB_CC_SHORT_PACKET)) {
             xhciDiagDumpEndpointBrief(hc, driprivate->dpDevice, (UBYTE)driprivate->dpEPID, "completion-error");
             xhciDumpEndpointCtx(hc, driprivate->dpDevice, driprivate->dpEPID, "completion-error");
         }
@@ -2955,17 +2947,6 @@ BOOL xhciIntWorkProcess(struct PCIController *hc, struct IOUsbHWReq *ioreq, ULON
         ULONG transferred = (remaining <= ioreq->iouh_Length)
                             ? (ioreq->iouh_Length - remaining)
                             : ioreq->iouh_Length;
-
-        /*
-         * For periodic ISO OUT, Ring Underrun indicates that no data was
-         * serviced in time. Report 0 bytes to the client and continue.
-         */
-        if((ccode == TRB_CC_RING_UNDERRUN) &&
-                (ioreq->iouh_Req.io_Command == UHCMD_ISOXFER) &&
-                (ioreq->iouh_Dir == UHDIR_OUT)) {
-            transferred = 0;
-            remaining   = ioreq->iouh_Length;
-        }
 
         /* Clear ringio bookkeeping */
         if(driprivate->dpDevice) {
@@ -3041,6 +3022,8 @@ BOOL xhciIntWorkProcess(struct PCIController *hc, struct IOUsbHWReq *ioreq, ULON
         }
 
         ioreq->iouh_Actual = transferred;
+        /* the done scan completes the request once it sees the code, maybe on another CPU */
+        __atomic_store_n(&driprivate->dpCC, (UBYTE)ccode, __ATOMIC_RELEASE);
         pciusbXHCIDebugTRBV("xHCI", DEBUGCOLOR_SET "IOReq Transfer done, %u bytes <io length %u, %u remaining>"
                             DEBUGCOLOR_RESET" \n", transferred, ioreq->iouh_Length, remaining);
 
@@ -3654,6 +3637,10 @@ static AROS_INTH1(xhciIntCode, struct PCIController *, hc)
                     ring = (volatile struct pcisusbXHCIRing *)devCtx->dc_EPAllocs[trbe_epid].dmaa_Ptr;
                 }
 
+                /* an empty iso ring, not a completed TD; only isochronous endpoints report these */
+                if(trbe_ccode == TRB_CC_RING_UNDERRUN || trbe_ccode == TRB_CC_RING_OVERRUN)
+                    break;
+
                 if(ring && xhciRingAndIndexFromDMA(hc, devCtx, trbe_epid, trb_dma, &ring, &last)) {
                     have_idx = TRUE;
                 }
@@ -3695,16 +3682,6 @@ static AROS_INTH1(xhciIntCode, struct PCIController *, hc)
                     pciusbXHCIDebugTRBV("xHCI",
                                         DEBUGCOLOR_SET "TRANSFER EVT idx=%lu ringio=%p ring=%p" DEBUGCOLOR_RESET" \n",
                                         (unsigned long)last, req, ring);
-                } else if(trbe_ccode == TRB_CC_RING_UNDERRUN) {
-                    /*
-                     * Ring Underrun does not reliably report a TRB pointer.
-                     * Complete the currently active request for this endpoint.
-                     */
-                    req = xhciBusyReqFromSlotEpid(hc, devCtx, trbe_epid);
-                    if(req) {
-                        /* Report 0 bytes transferred */
-                        event_rem = req->iouh_Length;
-                    }
                 }
 
                 /*
@@ -3766,7 +3743,6 @@ static AROS_INTH1(xhciIntCode, struct PCIController *, hc)
                                    xhciEndpointIsIsoch(hc, devCtx, trbe_epid);
 
                     if(!isotail &&
-                       (trbe_ccode != TRB_CC_RING_UNDERRUN) &&
                        (trbe_ccode != TRB_CC_STOPPED) &&
                        (trbe_ccode != TRB_CC_STOPPED_LENGTH_INVALID) &&
                        (trbe_ccode != TRB_CC_STOPPED_SHORT_PACKET)) {
