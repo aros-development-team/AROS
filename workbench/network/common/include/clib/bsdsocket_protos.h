@@ -8,6 +8,8 @@
 #include <aros/libcall.h>
 #include <sys/types.h>
 #include <sys/select.h>
+#include <sys/socket.h>
+#include <utility/tagitem.h>
 
 #if defined(__CONFIG_ROADSHOW__)
 #define BSDSOCKET_ROADSHOW_BPF
