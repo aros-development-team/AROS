@@ -47,9 +47,6 @@
 #include <netinet6/nd6.h>
 #include <kern/amiga_netdb.h>
 
-/* Forward declarations */
-int ip6_output(void *, ...);
-
 #include <protos/netinet/in_cksum_protos.h>
 #include <protos/net/route_protos.h>
 #include <net/netcore_map.h>        /* always the last include */

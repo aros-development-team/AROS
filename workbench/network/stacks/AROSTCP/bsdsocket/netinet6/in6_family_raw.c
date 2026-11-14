@@ -56,7 +56,6 @@
 #include <netinet/raw_ip_protos.h>
 #include <net/netcore_map.h>        /* always the last include */
 
-extern int  ip6_output(void *args, ...);    /* (m, opt, ro, flags, im6o, ifpp, inp) */
 extern const struct inetfamily in6_family;
 
 /* The family's own part of a raw socket (behind its struct rawpcb). */

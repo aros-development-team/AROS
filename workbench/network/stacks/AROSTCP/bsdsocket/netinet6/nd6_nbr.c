@@ -45,9 +45,6 @@
 #include <netinet6/in6_var.h>
 #include <netinet6/nd6.h>
 
-/* Forward declarations */
-int ip6_output(void *, ...);
-
 #include <protos/netinet/in_cksum_protos.h>
 #include <protos/net/rtsock_protos.h>
 #include <protos/net/route_protos.h>

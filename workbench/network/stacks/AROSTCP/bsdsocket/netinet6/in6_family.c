@@ -46,7 +46,6 @@
 
 extern int ip6_ctloutput(int, struct socket *, int, int, struct mbuf **);
 extern int in6_cksum(struct mbuf *, u_int8_t, u_int32_t, u_int32_t);
-extern int ip6_output(void *, ...);     /* (m, opt, ro, flags, im6o, ifpp, inp) */
 extern int ip6_defhlim;                 /* the default hop limit */
 
 /*

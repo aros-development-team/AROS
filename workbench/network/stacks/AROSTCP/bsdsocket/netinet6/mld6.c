@@ -55,9 +55,6 @@
 #include <protos/netinet/in_cksum_protos.h>
 #include <net/netcore_map.h>        /* always the last include */
 
-/* ip6_output uses varargs; forward declare here */
-int ip6_output(void *, ...);
-
 /*
  * Protocol constants (RFC 2710 §7).
  */

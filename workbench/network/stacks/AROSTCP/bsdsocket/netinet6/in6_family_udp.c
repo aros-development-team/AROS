@@ -61,7 +61,6 @@
 
 extern const struct inetfamily in6_family;
 extern int in6_cksum(struct mbuf *, u_int8_t, u_int32_t, u_int32_t);
-extern int ip6_output(void *, ...);     /* (m, opt, ro, flags, im6o, ifpp, inp) */
 extern void icmp6_error(struct mbuf *, int, int, int);
 
 int     in6_rcvfrom(struct mbuf *, const void *, u_int, const void *, struct sockaddr *);

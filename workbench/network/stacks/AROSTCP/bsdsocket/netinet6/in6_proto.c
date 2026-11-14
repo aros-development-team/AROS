@@ -93,8 +93,6 @@ void icmp6_fasttimo(void);
 void icmp6_slowtimo(void);
 void icmp6_drain(void);
 
-int  ip6_output(void *args, ...);
-
 /* ctloutput: old BSD 5-arg signature */
 int ip6_ctloutput(int op, struct socket *so, int level, int optname,
                   struct mbuf **m);
