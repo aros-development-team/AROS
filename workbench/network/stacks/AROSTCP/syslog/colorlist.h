@@ -10,7 +10,7 @@ struct ColorListData
   ULONG VerbosePen;
 };
 
-struct MUI_CustomClass *ColorList;
+extern struct MUI_CustomClass *ColorList;
 
 struct MUI_CustomClass *CreateColorListClass(void);
 
