@@ -16,6 +16,7 @@
 #include "nvme_debug.h"
 #include "nvme_intern.h"
 #include "nvme_hw.h"
+#include "nvme_timer.h"
 
 /*
     Admin Queue Support Functions
@@ -27,16 +28,18 @@ void nvme_complete_adminevent(struct nvme_queue *nvmeq, struct nvme_completion *
 
     D(bug("[NVME:ADMINQ] %s(0x%p)\n", __func__, cqe);)
 
-    if ((handler = nvmeq->cehandlers[cqe->command_id]) != NULL) {
+    if ((handler = nvmeq->cehandlers[AROS_LE2WORD(cqe->command_id)]) != NULL) {
         D(bug ("[NVME:ADMINQ] %s: cehandler @ 0x%p\n", __func__, handler);)
         handler->ceh_Result = AROS_LE2LONG(cqe->result);
         handler->ceh_Status = AROS_LE2WORD(cqe->status) >> 1;
-        nvmeq->cehandlers[cqe->command_id] = NULL;
+        nvmeq->cehandlers[AROS_LE2WORD(cqe->command_id)] = NULL;
         nvme_dma_release(handler, TRUE);
-        D(bug ("[NVME:ADMINQ] %s: Signaling 0x%p (%08x)\n", __func__, handler->ceh_Task, handler->ceh_SigSet);)
-        Signal(handler->ceh_Task, handler->ceh_SigSet);
-        nvmeq->cehooks[cqe->command_id] = NULL;
-        nvme_release_cmdid(nvmeq, cqe->command_id);
+        struct Task *task = handler->ceh_Task;
+        ULONG sigs = handler->ceh_SigSet;
+        nvmeq->cehooks[AROS_LE2WORD(cqe->command_id)] = NULL;
+        nvme_release_cmdid(nvmeq, AROS_LE2WORD(cqe->command_id));
+        /* The waiter may return and reuse its stack as soon as it wakes. */
+        Signal(task, sigs);
     }
 }
 
@@ -46,6 +49,11 @@ int nvme_submit_admincmd(device_t dev, struct nvme_command *cmd, struct completi
     int cmdid;
 
     D(bug("[NVME:ADMINQ] %s(0x%p, 0x%p)\n", __func__, dev, cmd);)
+
+    if (handler) {
+        handler->ceh_Status = 0;
+        handler->ceh_Result = 0;
+    }
 
     cmdid = nvme_alloc_cmdid(dev->dev_Queues[0]);
     if (cmdid < 0) {
@@ -96,4 +104,27 @@ int nvme_submit_admincmd(device_t dev, struct nvme_command *cmd, struct completi
     }
 
     return retval;
+}
+
+/* A timed-out command still owns its buffer and can signal its waiter late.
+   Stop callbacks before restoring SIGF_SINGLE and returning to code that may
+   use that signal for an Exec semaphore. The caller frees DMA only if quiesced. */
+BOOL nvme_exec_admincmd(device_t dev, struct IORequest *tmr,
+    struct nvme_command *cmd, struct completionevent_handler *handler)
+{
+    ULONG saved = SetSignal(0, handler->ceh_SigSet) & handler->ceh_SigSet;
+    BOOL completed = TRUE;
+
+    if (nvme_submit_admincmd(dev, cmd, handler) != 0) {
+        handler->ceh_Status = 1;
+    } else if (!(nvme_WaitTO(tmr, 1, 0, handler->ceh_SigSet) & handler->ceh_SigSet)) {
+        /* An interrupt may have been missed while another queue held the pin. */
+        nvme_process_cq(dev->dev_Queues[0]);
+        if (!(SetSignal(0, handler->ceh_SigSet) & handler->ceh_SigSet)) {
+            nvme_quiesce(dev, tmr);
+            completed = FALSE;
+        }
+    }
+    SetSignal(saved, handler->ceh_SigSet);
+    return completed;
 }
