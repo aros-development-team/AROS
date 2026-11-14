@@ -112,7 +112,9 @@ struct ServerOperation
     ULONG           so_Interface;       /* 0: all */
     ULONG           so_Deadline;        /* mdnsTicks(), 0: none */
     ULONG           so_TTL;
-    ULONG           so_Reported;        /* Resolve: signature of what was said */
+    BOOL            so_Told;            /* Resolve: RESOLVED was said */
+    BOOL            so_Changed;         /* and something it says changed since */
+    BOOL            so_Pending;         /* to be looked at in the turn */
     APTR            so_Watch[4];
     APTR            so_Service;         /* Register: mdnsRegAddNative()'s ref */
     UBYTE           so_Name[256];       /* wire labels */
@@ -456,46 +458,28 @@ browse_notify(APTR data, const struct MDNSCacheEntry *e, BOOL added)
 
 /* A signature of what a resolve knows: it is said again only when that
  * changes. */
-static ULONG
-resolve_signature(const struct ServerOperation *op)
-{
-    ULONG sum = 1 + op->so_Port + ((ULONG)op->so_Priority << 8) +
-        ((ULONG)op->so_Weight << 16) + op->so_Found * 7919UL;
-    LONG i, n = mdnsWireNameLength(op->so_Target);
-
-    for (i = 0; i < n; i++) {
-        sum = sum * 31 + op->so_Target[i];
-    }
-    for (i = 0; op->so_HaveTXT && i < op->so_TXTLength; i++) {
-        sum = sum * 31 + op->so_TXT[i];
-    }
-    for (i = 0; i < op->so_Found * (LONG)sizeof(op->so_Seen[0]); i++) {
-        sum += ((const UBYTE *)op->so_Seen)[i] * (ULONG)(i + 1);
-    }
-    return sum == 0 ? 1 : sum;
-}
-
 /*
  * Resolve: what is known, once the service has its SRV, its TXT (every
  * DNS-SD service has one, RFC 6763 section 6) and an address - or, when
- * the time is up (final), without the TXT. Said again when it changes.
+ * the time is up (final), without the TXT. Said again whenever any of it
+ * changes - its port, priority, weight, host, TXT, an address that comes
+ * or goes, the last one too (an empty set of addresses then) - but never
+ * without its TXT (a service that goes loses it before its SRV).
  */
 static void
 resolve_report_when(struct ServerOperation *op, BOOL final)
 {
     struct dnssd_model_service m;
     UBYTE type[256];
-    ULONG signature;
 
-    if (!op->so_HaveSRV || op->so_Found == 0 ||
-        (!op->so_HaveTXT && !final)) {
+    op->so_Pending = FALSE;
+    if (!op->so_HaveSRV || (!op->so_HaveTXT && !final) ||
+        (!op->so_Told && op->so_Found == 0) ||
+        (op->so_Told && !op->so_Changed)) {
         return;
     }
-    signature = resolve_signature(op);
-    if (signature == op->so_Reported) {
-        return;
-    }
-    op->so_Reported = signature;
+    op->so_Told = TRUE;
+    op->so_Changed = FALSE;
     memset(&m, 0, sizeof(m));
     m.kind = DNSSD_EVENT_RESOLVED;
     m.interface_index = op->so_Interface;
@@ -514,10 +498,13 @@ resolve_report_when(struct ServerOperation *op, BOOL final)
     push_event(op->so_Daemon->md_DNSSD, op, &m);
 }
 
+/* What changed is said once, in the turn (dnssdServerTick()): the records
+ * of one response, or those a watch finds in the cache as it begins, one
+ * after another, make one RESOLVED, not one each. */
 static void
 resolve_report(struct ServerOperation *op)
 {
-    resolve_report_when(op, FALSE);
+    op->so_Pending = TRUE;
 }
 
 static void
@@ -539,6 +526,7 @@ resolve_address(APTR data, const struct MDNSCacheEntry *e, BOOL added)
     } else {
         return;
     }
+    op->so_Changed = TRUE;
     resolve_report(op);
 }
 
@@ -559,7 +547,7 @@ resolve_srv(APTR data, const struct MDNSCacheEntry *e, BOOL added)
             UBYTE type[256];
 
             op->so_HaveSRV = FALSE;
-            op->so_Reported = 0;
+            op->so_Told = FALSE;            /* told afresh if it comes back */
             memset(&m, 0, sizeof(m));
             m.kind = DNSSD_EVENT_REMOVE;
             m.interface_index = e->ce_Link;
@@ -569,6 +557,13 @@ resolve_srv(APTR data, const struct MDNSCacheEntry *e, BOOL added)
             push_event(md->md_DNSSD, op, &m);
         }
         return;
+    }
+    if (!op->so_HaveSRV ||
+        op->so_Priority != (UWORD)((d[0] << 8) | d[1]) ||
+        op->so_Weight != (UWORD)((d[2] << 8) | d[3]) ||
+        op->so_Port != (UWORD)((d[4] << 8) | d[5]) ||
+        !mdnsWireNameEqual(op->so_Target, d + 6)) {
+        op->so_Changed = TRUE;
     }
     op->so_Priority = (UWORD)((d[0] << 8) | d[1]);
     op->so_Weight = (UWORD)((d[2] << 8) | d[3]);
@@ -620,6 +615,7 @@ resolve_txt(APTR data, const struct MDNSCacheEntry *e, BOOL added)
     memcpy(op->so_TXT, e->ce_Data, e->ce_DataLength);
     op->so_TXTLength = e->ce_DataLength;
     op->so_HaveTXT = TRUE;
+    op->so_Changed = TRUE;
     resolve_report(op);
 }
 
@@ -913,6 +909,9 @@ dnssdServerTick(struct MDNSDaemon *md)
     for (i = 0; i < SERVER_OPERATIONS; i++) {
         struct ServerOperation *op = sv->sv_Operations[i];
 
+        if (op != NULL && op->so_Kind == OP_RESOLVE && op->so_Pending) {
+            resolve_report_when(op, FALSE);
+        }
         if (op != NULL && op->so_Deadline != 0 &&
             (LONG)(now - op->so_Deadline) >= 0) {
             BOOL found;
