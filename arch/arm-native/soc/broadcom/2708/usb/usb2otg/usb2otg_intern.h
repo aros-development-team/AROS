@@ -218,9 +218,9 @@ struct USBNSDeviceQueryResult
 };
 
 /*
- * Isochronous transfers run on hardware channels lent by the bulk/INT
- * pools while an iso endpoint is bound to them; the schedulers skip a
- * lent channel (hu_IsoChanMask). One endpoint per channel, so a headset
+ * Isochronous transfers run on a hardware channel taken from the shared
+ * pool while an iso endpoint is bound to it; the schedulers skip a lent
+ * channel (hu_IsoChanMask). One endpoint per channel, so a headset
  * can stream both ways.
  */
 #define USB2OTG_ISO_CHANS       2
@@ -680,8 +680,9 @@ void                    usb2otg_exorcise_channel(int chan);
  *  4: INT pool overflow (split<->direct) with exorcise on role flip
  *  5: bulk and INT channels allocated per request from one pool
  *  6: control channels allocated per request as well
+ *  7: iso binds any channel from the pool
  */
-#define USB2OTG_BUILD_REV 6
+#define USB2OTG_BUILD_REV 7
 
 /*
  * Testing hook: after _AFTER split-interrupt HCINT events have passed

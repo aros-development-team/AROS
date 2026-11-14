@@ -12,12 +12,6 @@
 
 #include "usb2otg_intern.h"
 
-/*
- * Lent to iso while bound: the last INT channel first, as INT polls free
- * it between intervals; a waiting bulk IN can hold the second bulk one.
- */
-static const UBYTE usb2otg_iso_hwchan[USB2OTG_ISO_CHANS] = { CHAN_INT5, CHAN_BULK2 };
-
 /* (Micro)frames an endpoint keeps its channel with nothing queued */
 #define USB2OTG_ISO_LINGER  64
 /* SOFs an armed packet may go without its halt: then halt it, then drop it */
@@ -97,10 +91,36 @@ BOOL usb2otg_iso_init(struct USB2OTGUnit *unit)
     for (i = 0; i < USB2OTG_ISO_CHANS; i++)
     {
         NEWLIST(&unit->hu_Iso[i].is_Queue);
-        unit->hu_Iso[i].is_Chan = usb2otg_iso_hwchan[i];
         unit->hu_Iso[i].is_Buf = buf + i * USB2OTG_ISO_BUFSIZE;
     }
     return TRUE;
+}
+
+/*
+ * Channel for a newly bound endpoint: a free one, else a busy one whose
+ * work drains first, INT before bulk as INT lets go sooner. hu_Lock held.
+ */
+static int iso_pick_chan(struct USB2OTGUnit *unit)
+{
+    static const UBYTE order[] = { CHAN_INT5, CHAN_INT4, CHAN_INT3,
+        CHAN_INT2, CHAN_INT1, CHAN_BULK2, CHAN_BULK };
+    ULONG excl = unit->hu_DeadChannels | unit->hu_BurnedChannels |
+                 unit->hu_IsoChanMask;
+    int busy = -1;
+    int i;
+
+    for (i = 0; i < sizeof(order); i++)
+    {
+        int chan = order[i];
+
+        if (excl & (1 << chan))
+            continue;
+        if (unit->hu_Channel[chan].hc_Request == NULL)
+            return chan;
+        if (busy < 0)
+            busy = chan;
+    }
+    return busy;
 }
 
 /* Queue a transfer on the iso channel bound to its endpoint, binding a free one if needed */
@@ -111,6 +131,7 @@ static WORD iso_submit(struct USB2OTGUnit *unit, struct IOUsbHWReq *req)
 #endif
     struct USB2OTGIso *is = NULL, *free_is = NULL;
     UWORD now;
+    int chan;
     int i;
 
     if (req->iouh_Flags & UHFF_LOWSPEED)
@@ -136,9 +157,10 @@ static WORD iso_submit(struct USB2OTGUnit *unit, struct IOUsbHWReq *req)
                  c->is_Dir == req->iouh_Dir)
             is = c;
     }
-    if (is == NULL && free_is != NULL)
+    if (is == NULL && free_is != NULL && (chan = iso_pick_chan(unit)) >= 0)
     {
         is = free_is;
+        is->is_Chan = chan;
         is->is_Bound = TRUE;
         is->is_Fresh = TRUE;
         is->is_Dev = req->iouh_DevAddr;
@@ -580,7 +602,7 @@ void usb2otg_iso_chan_irq(struct USB2OTGUnit *unit, int chan, ULONG intr)
     int i;
 
     for (i = 0; i < USB2OTG_ISO_CHANS; i++)
-        if (unit->hu_Iso[i].is_Chan == chan)
+        if (unit->hu_Iso[i].is_Bound && unit->hu_Iso[i].is_Chan == chan)
             is = &unit->hu_Iso[i];
     if (is == NULL || !is->is_Armed)
         return;
