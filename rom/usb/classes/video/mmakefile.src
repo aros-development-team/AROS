@@ -1,0 +1,17 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+USER_LDFLAGS := -static
+
+FILES :=    uvc.class debug
+
+#MM- kernel-usb-classes : kernel-usb-classes-uvc
+
+#MM- kernel-usb-classes-uvc : kernel-usb-usbclass kernel-usb-poseidon-includes linklibs-romhack \
+#MM     workbench-libs-jpeg-includes
+
+%build_module_library mmake=kernel-usb-classes-uvc \
+    modname=uvc modtype=usbclass modsuffix="class" \
+    files="$(FILES)" uselibs="romhack"
+
+%common
