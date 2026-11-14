@@ -789,6 +789,7 @@ static BOOL TestMessages(ULONG iters)
 /*                                                                            */
 /*  Multiple tasks Cause() software interrupts that increment a counter.      */
 /*  Tests the SoftInts list protection under contention.                      */
+/*  Each task then runs a softint that Cause()s itself while running.         */
 /******************************************************************************/
 
 static volatile LONG g_SoftIntCounter;
@@ -804,11 +805,38 @@ AROS_INTH1(SoftIntHandler, APTR, data)
     AROS_INTFUNC_EXIT
 }
 
+/* A softint that asks for itself again while it runs */
+struct SoftIntChain
+{
+    struct Interrupt    sc_Int;
+    volatile LONG       sc_Left;
+    volatile LONG       sc_Runs;
+};
+
+AROS_INTH1(SoftIntChainHandler, struct SoftIntChain *, sc)
+{
+    AROS_INTFUNC_INIT
+
+    sc->sc_Runs++;
+    if (sc->sc_Left > 0)
+    {
+        sc->sc_Left--;
+        /* Running: the first is kept for later, the second is coalesced */
+        Cause(&sc->sc_Int);
+        Cause(&sc->sc_Int);
+    }
+
+    return FALSE;
+
+    AROS_INTFUNC_EXIT
+}
+
 static void SoftIntWorker(void)
 {
     struct Task *me = FindTask(NULL);
     struct SoftIntTestData *data = (struct SoftIntTestData *)me->tc_UserData;
     struct Interrupt softint;
+    struct SoftIntChain chain;
     ULONG i;
 
     memset(&softint, 0, sizeof(softint));
@@ -824,7 +852,7 @@ static void SoftIntWorker(void)
 
     for (i = 0; i < data->sitd_Iters; i++)
     {
-        while (*(volatile UBYTE *)&softint.is_Node.ln_Type == NT_SOFTINT)
+        while (*(volatile UBYTE *)&softint.is_Node.ln_Type != NT_INTERRUPT)
             asm volatile("" ::: "memory");
         Cause(&softint);
         D(
@@ -834,8 +862,27 @@ static void SoftIntWorker(void)
         )
     }
 
-    while (*(volatile UBYTE *)&softint.is_Node.ln_Type == NT_SOFTINT)
+    while (*(volatile UBYTE *)&softint.is_Node.ln_Type != NT_INTERRUPT)
         asm volatile("" ::: "memory");
+
+    /* One Cause() must give exactly one run per request made while running */
+    memset(&chain, 0, sizeof(chain));
+    chain.sc_Int.is_Code = (VOID_FUNC)SoftIntChainHandler;
+    chain.sc_Int.is_Data = &chain;
+    chain.sc_Int.is_Node.ln_Type = NT_INTERRUPT;
+    chain.sc_Int.is_Node.ln_Name = "SMP SoftInt Chain";
+    chain.sc_Left = data->sitd_Iters;
+
+    Cause(&chain.sc_Int);
+    while (*(volatile UBYTE *)&chain.sc_Int.is_Node.ln_Type != NT_INTERRUPT)
+        asm volatile("" ::: "memory");
+
+    if ((ULONG)chain.sc_Runs != data->sitd_Iters + 1)
+    {
+        bug("[smpstress] %s: chained softint ran %ld times, expected %lu\n",
+            me->tc_Node.ln_Name, (long)chain.sc_Runs, (unsigned long)data->sitd_Iters + 1);
+        __sync_add_and_fetch(&data->sitd_Errors, 1);
+    }
 
     __sync_add_and_fetch(&data->sitd_DoneCount, 1);
     Signal(data->sitd_MainTask, SIGF_DONE);
@@ -911,6 +958,11 @@ static BOOL TestSoftInts(ULONG iters)
     {
         bug(" FAIL (counter=%ld, expected=%lu)\n",
                (long)g_SoftIntCounter, (unsigned long)expected);
+        return FALSE;
+    }
+    if (data.sitd_Errors)
+    {
+        bug(" FAIL (%ld chained softint errors)\n", (long)data.sitd_Errors);
         return FALSE;
     }
     bug(" OK\n");
@@ -1114,6 +1166,9 @@ int main(int argc, char **argv)
 
     bug("\n======================================\n");
     bug("Results: %d passed, %d failed\n", passed, failed);
+
+    /* Left pending, the break signals would abort the caller's script */
+    SetSignal(0, SIGF_READY | SIGF_DONE);
 
     return failed ? RETURN_ERROR : RETURN_OK;
 }
