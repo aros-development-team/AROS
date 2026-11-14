@@ -71,6 +71,77 @@ void CloseDriver(struct DriverData *driverdata,struct CamdBase *CamdBase){
 	EndReceiverProc(driverdata,CamdBase);
 }
 
+BOOL DriverPortInUse(struct DriverData *driverdata){
+	return camd_legacy_port_refs_in_use(&driverdata->openrefs) ? TRUE : FALSE;
+}
+
+/* CLSemaphore must be held exclusively. */
+BOOL SetDriverLegacyUse(
+	struct DriverData *driverdata,
+	ULONG direction,
+	BOOL present,
+	ULONG *ErrorCode,
+	struct CamdBase *CamdBase
+){
+	enum CAMDLegacyPortTransition transition;
+	enum CAMDLegacyPortRefResult result;
+
+	result=camd_legacy_port_refs_set_legacy(
+		&driverdata->openrefs,direction,present,&transition);
+	if(result!=CAMD_LEGACY_PORT_REF_OK) return FALSE;
+	if(transition==CAMD_LEGACY_PORT_TRANSITION_OPEN){
+		if(OpenDriver(driverdata,ErrorCode,CamdBase)==FALSE){
+			/* OpenDriver already unwound its partial receiver process. */
+			camd_legacy_port_refs_set_legacy(
+				&driverdata->openrefs,direction,FALSE,&transition);
+			return FALSE;
+		}
+	}else if(transition==CAMD_LEGACY_PORT_TRANSITION_CLOSE){
+		CloseDriver(driverdata,CamdBase);
+	}
+	return TRUE;
+}
+
+/* CLSemaphore must be held exclusively. */
+enum CAMDProviderResult AcquireDriverEndpointPort(
+	struct DriverData *driverdata,
+	ULONG direction,
+	struct CamdBase *CamdBase
+){
+	enum CAMDLegacyPortTransition transition;
+	enum CAMDLegacyPortRefResult result;
+
+	result=camd_legacy_port_refs_acquire_endpoint(
+		&driverdata->openrefs,direction,&transition);
+	if(result==CAMD_LEGACY_PORT_REF_OVERFLOW) return CAMD_PROVIDER_STATE;
+	if(result!=CAMD_LEGACY_PORT_REF_OK) return CAMD_PROVIDER_INVALID;
+	if(transition==CAMD_LEGACY_PORT_TRANSITION_OPEN &&
+	   OpenDriver(driverdata,NULL,CamdBase)==FALSE){
+		camd_legacy_port_refs_release_endpoint(
+			&driverdata->openrefs,direction,&transition);
+		return CAMD_PROVIDER_CALLBACK_FAILED;
+	}
+	return CAMD_PROVIDER_OK;
+}
+
+/* CLSemaphore must be held exclusively. */
+enum CAMDProviderResult ReleaseDriverEndpointPort(
+	struct DriverData *driverdata,
+	ULONG direction,
+	struct CamdBase *CamdBase
+){
+	enum CAMDLegacyPortTransition transition;
+	enum CAMDLegacyPortRefResult result;
+
+	result=camd_legacy_port_refs_release_endpoint(
+		&driverdata->openrefs,direction,&transition);
+	if(result==CAMD_LEGACY_PORT_REF_STATE) return CAMD_PROVIDER_STATE;
+	if(result!=CAMD_LEGACY_PORT_REF_OK) return CAMD_PROVIDER_INVALID;
+	if(transition==CAMD_LEGACY_PORT_TRANSITION_CLOSE)
+		CloseDriver(driverdata,CamdBase);
+	return CAMD_PROVIDER_OK;
+}
+
 BOOL AllocDriverData(
 	struct Drivers *driver,
 	struct MidiDeviceData *mididevicedata,
@@ -139,8 +210,13 @@ BOOL AllocDriverData(
 		InitSemaphore(&driverdata->sendsemaphore);
 		InitSemaphore(&driverdata->sysexsemaphore);
 
-		driverdata->isOutOpen=FALSE;
-		driverdata->isInOpen=FALSE;
+		camd_legacy_port_refs_init(&driverdata->openrefs);
+		if(camd_native_worker_fanout_create(
+			ENDPOINT_OUTPUT_SESSIONS,&driverdata->EndpointOutputFanout)!=
+		   CAMD_NATIVE_WORKER_FANOUT_OK){
+			return FALSE;
+		}
+		driverdata->EndpointOutputSig=-1;
 	}
 
 	return TRUE;
@@ -172,11 +248,8 @@ static void DetachPort(struct DriverData *driverdata,struct CamdBase *CamdBase){
 	struct MyMidiCluster *incluster=driverdata->incluster;
 	struct MyMidiCluster *outcluster=driverdata->outcluster;
 
-	if(driverdata->isInOpen==TRUE || driverdata->isOutOpen==TRUE){
-		driverdata->isInOpen=FALSE;
-		driverdata->isOutOpen=FALSE;
-		CloseDriver(driverdata,CamdBase);
-	}
+	SetDriverLegacyUse(driverdata,CAMD_PROVIDER_DIRECTION_INPUT,FALSE,NULL,CamdBase);
+	SetDriverLegacyUse(driverdata,CAMD_PROVIDER_DIRECTION_OUTPUT,FALSE,NULL,CamdBase);
 
 	if(incluster!=NULL){
 		Remove(&driverdata->innode);
@@ -248,12 +321,16 @@ BOOL AttachDriverData(
 		/* Receivers in the in cluster and senders in the out cluster can
 		   only be clients' links. If the port does not open now, they keep
 		   waiting, and the next link to the cluster tries again. */
-		if(IsListEmpty(&driverdata->incluster->cluster.mcl_Receivers)==FALSE ||
-		   IsListEmpty(&driverdata->outcluster->cluster.mcl_Senders)==FALSE){
-			if(OpenDriver(driverdata,NULL,CamdBase)==TRUE){
-				driverdata->isInOpen=!IsListEmpty(&driverdata->incluster->cluster.mcl_Receivers);
-				driverdata->isOutOpen=!IsListEmpty(&driverdata->outcluster->cluster.mcl_Senders);
-			}else{
+		if(IsListEmpty(&driverdata->incluster->cluster.mcl_Receivers)==FALSE){
+			if(SetDriverLegacyUse(driverdata,CAMD_PROVIDER_DIRECTION_INPUT,
+				TRUE,NULL,CamdBase)==FALSE){
+				D(bug("camd.library: %s port %ld did not open for its waiting links\n",
+				      driver->mididevicedata->Name,(long)lokke));
+			}
+		}
+		if(IsListEmpty(&driverdata->outcluster->cluster.mcl_Senders)==FALSE){
+			if(SetDriverLegacyUse(driverdata,CAMD_PROVIDER_DIRECTION_OUTPUT,
+				TRUE,NULL,CamdBase)==FALSE){
 				D(bug("camd.library: %s port %ld did not open for its waiting links\n",
 				      driver->mididevicedata->Name,(long)lokke));
 			}
@@ -291,12 +368,23 @@ void FreeDriverData(struct Drivers *driver,
 	struct DriverData *driverdata;
 	ULONG lokke;
 
+	/* Endpoint sessions refer to the DriverData, so it stays while any
+	   is left. */
+	if(UnpublishDriverEndpoints(driver,CamdBase)==FALSE) return;
+
 	DetachDriverData(driver,CamdBase);
 
 	if(driver->driverdatas!=NULL){
 		for(lokke=0;lokke<driver->numports;lokke++){
 			driverdata=driver->driverdatas[lokke];
 			if(driverdata!=NULL){
+				if(driverdata->EndpointSysEx!=NULL){
+					FreeVec(driverdata->EndpointSysEx);
+				}
+				if(driverdata->EndpointOutputFanout!=NULL){
+					camd_native_worker_fanout_destroy(
+						driverdata->EndpointOutputFanout);
+				}
 				if(driverdata->buffer!=NULL){
 					FreeVec(driverdata->buffer);
 				}
@@ -330,6 +418,30 @@ struct Drivers *FindPrevDriverForMidiDeviceData(
 	return temp;
 }
 
+struct Drivers *FindDriverForMidiDeviceData(
+	struct MidiDeviceData *mididevicedata,
+	struct CamdBase *CamdBase
+){
+	struct Drivers *driver;
+
+	for(driver=CB(CamdBase)->drivers;driver;driver=driver->next){
+		if(driver->mididevicedata==mididevicedata) return driver;
+	}
+	return NULL;
+}
+
+BOOL MidiDeviceNameIsLoaded(
+	CONST_STRPTR name,
+	struct CamdBase *CamdBase
+){
+	struct Drivers *driver;
+
+	for(driver=CB(CamdBase)->drivers;driver;driver=driver->next){
+		if(mystrcmp((char *)name,driver->mididevicedata->Name)) return TRUE;
+	}
+	return FALSE;
+}
+
 #ifdef __amigaos4__
 void LoadDriver(char *name,
 	struct CamdIFace *ICamd
@@ -349,6 +461,14 @@ void LoadDriver(char *name,
 	D(bug("camd.library: drivers.c/LoadDriver - It was%s a success..\n",mididevicedata==NULL?" not":""));
 
 	if(mididevicedata==NULL) return;
+
+	/* A published endpoint of that name has the clusters the driver's
+	   ports would join. */
+	if(AppEndpointNamed(mididevicedata->Name,CamdBase)){
+		D(bug("camd.library: %s is a published endpoint's name; driver not loaded\n",mididevicedata->Name));
+		CloseMidiDevice(mididevicedata);
+		return;
+	}
 
 	if((mididevicedata->Flags&1)==0){
 #ifdef __AROS__
@@ -389,7 +509,10 @@ void LoadDriver(char *name,
 		ObtainSemaphore(CB(CamdBase)->CLSemaphore);
 		attached=AttachDriverData(driver,CamdBase);
 		ReleaseSemaphore(CB(CamdBase)->CLSemaphore);
-		if(attached==TRUE) return;
+		if(attached==TRUE){
+			PublishDriverEndpoints(driver,name,CamdBase);
+			return;
+		}
 	}
 
 	FreeDriverData(driver,CamdBase);

@@ -1,7 +1,7 @@
 /*
-    Copyright (C) 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
-    Desc: 
+    Desc:
 */
 
 #include <proto/dos.h>
@@ -10,6 +10,8 @@
 #include <proto/utility.h>
 
 #include "camd_intern.h"
+#include "endpoint_registry.h"
+#include "identity_store_aros.h"
 
 
 #ifdef __amigaos4__
@@ -29,19 +31,40 @@ BOOL InitCamd(struct CamdBase *CamdBase){
 	InitSemaphore(CB(CamdBase)->CLSemaphore);
 	InitSemaphore(&CB(CamdBase)->DriverScanSemaphore);
 	InitSemaphore(&CB(CamdBase)->NotifySemaphore);
+	InitSemaphore(&CB(CamdBase)->EndpointClientSemaphore);
+	CB(CamdBase)->EndpointRegistry=camd_registry_create();
+	if(CB(CamdBase)->EndpointRegistry==NULL){
+		FreeMem(CB(CamdBase)->CLSemaphore,sizeof(struct SignalSemaphore));
+		CB(CamdBase)->CLSemaphore=NULL;
+		return FALSE;
+	}
+	if(!InitEndpointOwners(CamdBase)){
+		camd_registry_destroy(CB(CamdBase)->EndpointRegistry);
+		CB(CamdBase)->EndpointRegistry=NULL;
+		FreeMem(CB(CamdBase)->CLSemaphore,sizeof(struct SignalSemaphore));
+		CB(CamdBase)->CLSemaphore=NULL;
+		return FALSE;
+	}
+	CB(CamdBase)->EndpointIdentity=camd_identity_store_aros_create();
 #ifndef __amigaos4__
 	NEWLIST(&CB(CamdBase)->mymidinodes);
 	NEWLIST(&CB(CamdBase)->midiclusters);
 	NEWLIST(&CB(CamdBase)->clusnotifynodes);
+	NEWLIST((struct List *)&CB(CamdBase)->clusterwatches);
 #else // ???
 	NEWLIST(CB(CamdBase)->mymidinodes);
 	NEWLIST(CB(CamdBase)->midiclusters);
 	NEWLIST(CB(CamdBase)->clusnotifynodes);
+	NEWLIST(CB(CamdBase)->clusterwatches);
 #endif
 #ifndef __amigaos4__
 	InitDriverWatch(CamdBase);
 #endif
-	if(InitCamdTimer()==FALSE) return FALSE;
+	if(InitCamdTimer()==FALSE) goto fail;
+	if(InitCamdClock()==FALSE){
+		UninitCamdTimer();
+		goto fail;
+	}
 	lock=Lock("devs:Midi",ACCESS_READ);
 	if(lock==0){
 		return TRUE;
@@ -60,6 +83,19 @@ BOOL InitCamd(struct CamdBase *CamdBase){
 	}
 	UnLock(lock);
 	return TRUE;
+
+fail:
+#ifndef __amigaos4__
+	StopDriverWatch();
+#endif
+	UninitEndpointOwners(CamdBase);
+	camd_identity_store_aros_destroy(CB(CamdBase)->EndpointIdentity);
+	CB(CamdBase)->EndpointIdentity=NULL;
+	camd_registry_destroy(CB(CamdBase)->EndpointRegistry);
+	CB(CamdBase)->EndpointRegistry=NULL;
+	FreeMem(CB(CamdBase)->CLSemaphore,sizeof(struct SignalSemaphore));
+	CB(CamdBase)->CLSemaphore=NULL;
+	return FALSE;
 }
 
 #ifdef __amigaos4__
@@ -76,6 +112,7 @@ void UninitCamd(struct CamdBase *CamdBase){
 #ifndef __amigaos4__
 	StopDriverWatch();
 #endif
+	UninitEndpointOwners(CamdBase);
 
 	if( ! IsListEmpty(&CB(CamdBase)->midiclusters)){
 		node=CB(CamdBase)->midiclusters.lh_Head;
@@ -87,11 +124,10 @@ void UninitCamd(struct CamdBase *CamdBase){
 				driverdata=FindReceiverDriverInCluster(midicluster);
 			}
 			if(driverdata!=NULL){
-				if(driverdata->isInOpen==TRUE || driverdata->isOutOpen==TRUE){
-					driverdata->isInOpen=FALSE;
-					driverdata->isOutOpen=FALSE;
-					CloseDriver(driverdata,CamdBase);
-				}
+				SetDriverLegacyUse(driverdata,CAMD_PROVIDER_DIRECTION_INPUT,
+					FALSE,NULL,CamdBase);
+				SetDriverLegacyUse(driverdata,CAMD_PROVIDER_DIRECTION_OUTPUT,
+					FALSE,NULL,CamdBase);
 			}else{
 				RemoveCluster((struct MidiCluster *)node,CamdBase);	//Clients should have do this, but..
 			}
@@ -101,15 +137,33 @@ void UninitCamd(struct CamdBase *CamdBase){
 
 	while(driver!=NULL){
 		temp2=driver->next;
-		(*driver->mididevicedata->Expunge)();
 		FreeDriverData(driver,CamdBase);
-		CloseMidiDevice(driver->mididevicedata);
+		if(driver->mididevicedata->Expunge!=NULL)
+			(*driver->mididevicedata->Expunge)();
+		if(driver->inMemory){
+			CB(CamdBase)->drivers=driver->next;
+			FreeMem(driver,sizeof(struct Drivers));
+		}else{
+			CloseMidiDevice(driver->mididevicedata);
+		}
 		driver=temp2;
 	}
+	FreeEndpointSnapshots(CamdBase);
+	camd_identity_store_aros_destroy(CB(CamdBase)->EndpointIdentity);
+	CB(CamdBase)->EndpointIdentity=NULL;
+	camd_registry_destroy(CB(CamdBase)->EndpointRegistry);
+	CB(CamdBase)->EndpointRegistry=NULL;
+
 
 	if(CB(CamdBase)->CLSemaphore!=NULL)
 	  FreeMem(CB(CamdBase)->CLSemaphore,sizeof(struct SignalSemaphore));
 
+	/* Watches a client did not end. */
+	while((node=RemHead((struct List *)&CB(CamdBase)->clusterwatches))){
+		FreeMem(node,sizeof(struct ClusterWatch));
+	}
+
+	UninitCamdClock();
 	UninitCamdTimer();
 }
 

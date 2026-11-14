@@ -25,15 +25,33 @@
 
 /****************************************************************************************/
 
-/* Expunge callbacks return success after releasing their resources. */
-static int Expunge(struct CamdBase *CamdBase)
+/* A client that left an endpoint session or snapshot open still refers to
+   CAMD's drivers and registry, so CAMD stays loaded. */
+static int ExpungeCamd(struct CamdBase *CamdBase)
 {
+    if (EndpointClientsRemain(CamdBase))
+        return FALSE;
     UninitCamd(CamdBase);
     return TRUE;
 }
 
+/* Counted per task, so that a task's endpoint objects can go with its last
+   close of the library. */
+static int OpenCamd(struct CamdBase *CamdBase)
+{
+    return TaskOpenedCamd(CamdBase);
+}
+
+static int CloseCamd(struct CamdBase *CamdBase)
+{
+    TaskClosedCamd(CamdBase);
+    return TRUE;
+}
+
 ADD2INITLIB(InitCamd, 0);
-ADD2EXPUNGELIB(Expunge, 0);
+ADD2OPENLIB(OpenCamd, 0);
+ADD2CLOSELIB(CloseCamd, 0);
+ADD2EXPUNGELIB(ExpungeCamd, 0);
 
 #else
 #  include "camd_aos4_init.c"

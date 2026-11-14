@@ -31,7 +31,6 @@ debugdriver.o: debugdriver.c makefile
 
 #define NUMPORTS 4
 
-#define D(x)
 
 struct ExecBase *SysBase;
 
@@ -123,7 +122,7 @@ SAVEDS ASM void ActivateXmit(REG(a2) APTR userdata,ULONG REG(d0) portnum){
     data=(TransmitFunc)(userdata);
 
     if(data==0x100) return;
-    D(kprintf("Debugdriver has received: %lx at port %ld\n",data,portnum);)
+    kprintf("Debugdriver has received: %lx at port %ld\n",(unsigned long)data,(long)portnum);
   }
 }
 
