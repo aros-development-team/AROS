@@ -64,7 +64,7 @@ show_inet_one(const char *name, int s, struct in_addr addr)
 
 	inet_ntop(AF_INET, &addr, buf, sizeof(buf));
 	if (inet_ask(s, name, addr, SIOCGIFNETMASK, &ifr) >= 0) {
-		int p = mask2prefix(&ifr.ifr_addr);
+		int p = mask2prefix(&ifr.ifr_addr, AF_INET);
 		if (p >= 0)
 			prefix = p;
 	}
@@ -216,7 +216,8 @@ show_inet6_addr(const char *name, int s4)
 				if (IoctlSocket(s6, SIOCGIFNETMASK_IN6,
 				    (caddr_t)&nmifr6) >= 0) {
 					int p = mask2prefix(
-					    (struct sockaddr *)&nmifr6.ifr_ifru);
+					    (struct sockaddr *)&nmifr6.ifr_ifru,
+					    AF_INET6);
 					if (p >= 0)
 						prefix = p;
 				}

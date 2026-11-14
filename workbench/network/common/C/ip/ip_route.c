@@ -105,7 +105,7 @@ format_route_dst(struct sockaddr *dst, struct sockaddr *mask,
 	if (rtflags & RTF_HOST) {
 		snprintf(buf, buflen, "%s", addr);
 	} else {
-		prefix = mask2prefix(mask);
+		prefix = mask2prefix(mask, dst->sa_family);
 		if (prefix >= 0)
 			snprintf(buf, buflen, "%s/%d", addr, prefix);
 		else
