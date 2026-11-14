@@ -39,6 +39,7 @@
 #include "m68kemu_offsets.h"
 
 void *shadow_lookup(struct M68KEmuContext *ctx, ULONG m68k_addr);
+void shadow_remove(struct M68KEmuContext *ctx, ULONG m68k_addr);
 
 /* ---------------------------------------------------------------------- */
 /* the tasks of the program                                               */
@@ -922,6 +923,46 @@ static char *proc_name(struct M68KEmuContext *ctx, ULONG data)
     return name;
 }
 
+/* shadow_remove() takes the first entry with a guest address: only when
+   that is the entry meant, by its native pointer and its type */
+static void m68k_forget_entry(struct M68KEmuContext *ctx, ULONG addr, void *native, UWORD type)
+{
+    for (UWORD i = 0; i < ctx->num_shadows; i++)
+        if (ctx->shadow_map[i].m68k_addr == addr)
+        {
+            if (ctx->shadow_map[i].native_ptr == native && ctx->shadow_map[i].type == type)
+                shadow_remove(ctx, addr);
+            return;
+        }
+}
+
+/* A process just created has nothing in the registry yet. What is there
+   for its native address was left by an ended process that had the same
+   one: its Process and its port. They are forgotten, so that the new
+   process gets a guest Process of its own, with nothing of the other's.
+   The ended one's guest structure stays in the program's memory. */
+static void m68k_process_forget(struct M68KEmuContext *ctx, struct Task *task)
+{
+    const struct M68KStructLayout *tl = shadow_find_layout("Task");
+    const struct M68KStructLayout *pl = shadow_find_layout("MsgPort");
+
+    if (!task || !tl || !pl || task == ctx->emu_task)
+        return;
+    for (UWORD i = 0; i < ctx->num_shadows; i++)
+        if (ctx->shadow_map[i].native_ptr == task && ctx->shadow_map[i].type == tl->shadow_type)
+        {
+            ULONG old = ctx->shadow_map[i].m68k_addr;
+
+            if (old != ctx->m68k_proc)
+            {
+                m68k_forget_entry(ctx, old + M68K_PR_MSGPORT, &((struct Process *)task)->pr_MsgPort,
+                                  pl->shadow_type);
+                m68k_forget_entry(ctx, old, task, tl->shadow_type);
+            }
+            return;
+        }
+}
+
 /* A process of the program: from CreateNewProc tags, or CreateProc's name,
    priority, seglist and stack; NP_Entry or the seglist is 68k code */
 static IPTR create_proc(struct M68KEmuContext *ctx, void *cpu, ULONG state,
@@ -1016,7 +1057,11 @@ static IPTR create_proc(struct M68KEmuContext *ctx, void *cpu, ULONG state,
             Forbid();
             p = CreateNewProc(t);
             if (p)
+            {
                 ctx->native_procs[k] = p;
+                /* while nothing else runs: it does not wait for the lock */
+                m68k_process_forget(ctx, &p->pr_Task);
+            }
             Permit();
             FreeVec(name);
             if (!p)
@@ -1065,6 +1110,8 @@ static IPTR create_proc(struct M68KEmuContext *ctx, void *cpu, ULONG state,
         FreeVec(ch);
         return 0;
     }
+    /* the child waits for the program's lock before it does anything */
+    m68k_process_forget(ctx, &p->pr_Task);
     return m68k_process_of(ctx, &p->pr_Task);
 }
 

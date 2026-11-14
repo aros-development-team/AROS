@@ -94,18 +94,66 @@ void m68k_task_stack(struct M68KEmuContext *ctx, ULONG mtask, struct Task *task)
     m68k_write32(ctx, mtask + 62, ctx->stack_top);       /* tc_SPUpper */
 }
 
-/* Process streams are native BPTR handles, not containment pointers.
-   Keep their 32-bit projections current after a Task shadow refresh, too. */
+/* Process streams are native BPTR handles, not containment pointers. Each
+   field is written when the guest Process is first seen, and again only
+   when what was written no longer stands for the native stream: the
+   stream is another one, or it has another handle now. Otherwise the
+   field is left alone, so a value the program stores in its own pr_CIS,
+   pr_COS or pr_CES stays. What was last written is kept with the
+   Process's entry in the registry; equal handles alone would not show
+   that the stream is the same, since a dropped handle is given out again. */
 void m68k_process_streams(struct M68KEmuContext *ctx, ULONG mproc, struct Task *task)
 {
+    static const UWORD field[3] = { M68K_PR_CIS, M68K_PR_COS, M68K_PR_CES };
     struct Process *proc;
+    BPTR native[3];
+    UWORD e;
 
     if (!mproc || !task || task->tc_Node.ln_Type != NT_PROCESS)
         return;
+    for (e = 0; e < ctx->num_shadows && ctx->shadow_map[e].m68k_addr != mproc; e++)
+        ;
+    if (e == ctx->num_shadows)
+        return;
     proc = (struct Process *)task;
-    m68k_write32(ctx, mproc + M68K_PR_CIS, m68k_bptr_out(ctx, proc->pr_CIS));
-    m68k_write32(ctx, mproc + M68K_PR_COS, m68k_bptr_out(ctx, proc->pr_COS));
-    m68k_write32(ctx, mproc + M68K_PR_CES, m68k_bptr_out(ctx, proc->pr_CES));
+    native[0] = proc->pr_CIS;
+    native[1] = proc->pr_COS;
+    native[2] = proc->pr_CES;
+    for (int i = 0; i < 3; i++)
+    {
+        ULONG handle = m68k_bptr_out(ctx, native[i]);
+
+        if (ctx->shadow_map[e].streams_valid &&
+            ctx->shadow_map[e].stream_native[i] == native[i] &&
+            ctx->shadow_map[e].stream_handle[i] == handle)
+            continue;
+        m68k_write32(ctx, mproc + field[i], handle);
+        ctx->shadow_map[e].stream_native[i] = native[i];
+        ctx->shadow_map[e].stream_handle[i] = handle;
+    }
+    ctx->shadow_map[e].streams_valid = TRUE;
+}
+
+/* SelectInput() (which 0) or SelectOutput() (which 1) chose a stream for
+   this Process: its guest Process shows the choice at once, also over a
+   value the program had stored in the field itself. */
+void m68k_process_stream_selected(struct M68KEmuContext *ctx, ULONG mproc, struct Task *task,
+                                  int which, BPTR stream)
+{
+    static const UWORD field[2] = { M68K_PR_CIS, M68K_PR_COS };
+    ULONG handle;
+
+    if (!mproc || !task || task->tc_Node.ln_Type != NT_PROCESS || which < 0 || which > 1)
+        return;
+    handle = m68k_bptr_out(ctx, stream);
+    for (UWORD e = 0; e < ctx->num_shadows; e++)
+        if (ctx->shadow_map[e].m68k_addr == mproc)
+        {
+            m68k_write32(ctx, mproc + field[which], handle);
+            ctx->shadow_map[e].stream_native[which] = stream;
+            ctx->shadow_map[e].stream_handle[which] = handle;
+            return;
+        }
 }
 
 /* A Screen's embedded ViewPort and RastPort are passed on by address, and
@@ -580,15 +628,19 @@ ULONG shadow_init_execbase(struct M68KEmuContext *ctx, ULONG m68k_base, void *na
     {
         struct Task *task = FindTask(NULL);
         ULONG m68k_proc = M68KEmu_HeapAlloc(ctx, M68K_SIZEOF_PROCESS, 0); /* m68k Process size */
+        const struct M68KStructLayout *tl = shadow_find_layout("Task");
+
+        /* a Process that is not in the registry could not keep what belongs
+           to it: then there is none, as when there is no memory for it */
+        if (m68k_proc && (!tl || !shadow_register(ctx, m68k_proc, task, tl->shadow_type)))
+        {
+            M68KEmu_HeapFree(ctx, m68k_proc, M68K_SIZEOF_PROCESS);
+            m68k_proc = 0;
+        }
         if (m68k_proc)
         {
-            const struct M68KStructLayout *tl = shadow_find_layout("Task");
-            if (tl)
-            {
-                shadow_register(ctx, m68k_proc, task, tl->shadow_type);
-                shadow_sync(ctx, tl, m68k_proc, task);
-                m68k_task_stack(ctx, m68k_proc, task);
-            }
+            shadow_sync(ctx, tl, m68k_proc, task);
+            m68k_task_stack(ctx, m68k_proc, task);
             /* Set pr_CLI if running from CLI — build a real m68k CLI struct */
             if (task->tc_Node.ln_Type == NT_PROCESS)
             {

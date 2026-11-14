@@ -21,8 +21,10 @@ def extract_function(path, name):
         lambda match: ''.join('\n' if c == '\n' else ' ' for c in match[0]),
         source,
     )
+    # A definition starts in the first column. A call inside a statement
+    # that a brace follows, such as a condition, does not.
     match = re.search(
-        r'(?m)^[^\n;{}]*\b' + re.escape(name) +
+        r'(?m)^(?=\S)[^\n;{}]*\b' + re.escape(name) +
         r'\s*\([^;{}]*\)[^;{}]*\{', masked)
     if not match:
         raise ValueError(f'{path}: definition of {name} not found')
@@ -48,13 +50,17 @@ def prepare(source, output):
     thunks = path('m68kemu_thunks.c')
     runtime = path('m68kemu_runtime.c')
     layouts = path('m68kemu_shadow_layouts.h')
+    tasks = path('m68kemu_tasks.c')
+    generated = path('m68kemu_thunks_gen.c')
+    bridge = path('m68kemu_moira.cpp')
     native = [source / 'compiler/include' / name for name in (
         'dos/dostags.h', 'utility/tagitem.h', 'exec/nodes.h', 'exec/memory.h')]
     # The official headers retain Latin-1 bytes. Keep their raw source
     # unchanged; only ASCII macro lines enter the fixture.
     text = '\n'.join(f.read_text(encoding='latin1')
                      for f in (header, offsets, *native))
-    names = ('M68KEMU_MAX_HANDLES', 'M68KEMU_HANDLE_BASE', 'M68KEMU_MAX_LVO',
+    names = ('M68KEMU_MAX_SHADOWS',
+             'M68KEMU_MAX_HANDLES', 'M68KEMU_HANDLE_BASE', 'M68KEMU_MAX_LVO',
              'M68K_SIZEOF_PROCESS', 'M68K_SIZEOF_CLI', 'M68K_PR_CLI',
              'M68K_CLI_DEFAULTSTACK', 'M68K_CLI_MODULE', 'M68K_CLI_COMMANDNAME',
              'M68K_PR_WINDOWPTR', 'M68K_PR_ARGUMENTS', 'M68K_PR_CIS', 'M68K_PR_COS',
@@ -76,12 +82,63 @@ def prepare(source, output):
     ces = re.findall(r'^#define\s+M68K_PR_CES\s+(\d+)', offsets.read_text(), re.M)
     assert not ces or ces == ['224'], ces
     constants.append('#define M68K_PR_CES 224')
+    # Input (LVO -54) and Output (-60) are manual thunks. SelectInput (-294)
+    # and SelectOutput (-300): the manual thunks when the tree registers
+    # them, else the generated ones that the generated table registers.
+    table = thunks.read_text().split(
+        'const struct M68KThunkEntry m68kemu_thunks_dos[] = {', 1)[1].split('};', 1)[0]
+    registered = {lvo: re.findall(r'\{\s*' + str(lvo) + r',\s*(\w+)\s*\}', table)
+                  for lvo in (54, 60, 294, 300)}
+    assert registered[54] == ['thunk_dos_Input'], registered
+    assert registered[60] == ['thunk_dos_Output'], registered
+    has_selectors = bool(registered[294] and registered[300])
+    # Both manual selectors are registered together, or neither is.
+    assert has_selectors or not (registered[294] or registered[300]), registered
+    if has_selectors:
+        assert registered[294] == ['thunk_dos_SelectInput_m'], registered
+        assert registered[300] == ['thunk_dos_SelectOutput_m'], registered
+        selector_source = thunks
+        selectors = ['thunk_dos_SelectInput_m', 'thunk_dos_SelectOutput_m']
+    else:
+        selector_source = generated
+        selectors = ['thunk_dos_SelectInput', 'thunk_dos_SelectOutput']
+        generated_text = generated.read_text()
+        assert re.search(r'\{\s*294,\s*thunk_dos_SelectInput\s*\}', generated_text)
+        assert re.search(r'\{\s*300,\s*thunk_dos_SelectOutput\s*\}', generated_text)
+    # A manual thunk is found and returns before the generated table is searched.
+    dispatch = bridge.read_text()
+    first = dispatch.index('for (ULONG j = 0; j < lib->num_thunks; j++)')
+    second = dispatch.index('for (ULONG j = 0; j < lib->num_gen_thunks; j++)')
+    assert first < second and 'return;' in dispatch[first:second]
+    (output / 'selectors.inc').write_text('\n'.join(
+        extract_function(selector_source, name) for name in selectors))
+    consumers = ['thunk_dos_Input', 'thunk_dos_Output']
+    (output / 'native-consumers.inc').write_text('\n'.join(
+        extract_function(thunks, name) for name in consumers))
+    # A new process at an ended one's native address: the actual handling of
+    # create_proc, when the tree has it.
+    lifetime = ['m68k_forget_entry', 'm68k_process_forget']
+    has_forget = bool(re.search(r'^static void m68k_process_forget\(',
+                                tasks.read_text(), re.M))
+    (output / 'lifetime.inc').write_text(
+        '\n'.join(extract_function(tasks, name) for name in lifetime)
+        if has_forget else '')
+    constants += ['#define API_SELECT_IN ' + selectors[0],
+                  '#define API_SELECT_OUT ' + selectors[1],
+                  '#define HAVE_PROCESS_FORGET ' + ('1' if has_forget else '0')]
     (output / 'constants.inc').write_text('\n'.join(constants) + '\n')
-    has_helper = bool(re.search(r'^void m68k_process_streams\(', shadow.read_text(), re.M))
-    body = (extract_function(runtime, 'm68k_bptr_out') + '\n' +
-            extract_function(runtime, 'm68k_bptr_in'))
+    registry = ['shadow_register', 'shadow_lookup', 'shadow_remove']
+    (output / 'registry.inc').write_text('\n'.join(
+        extract_function(thunks, name) for name in registry))
+    shadow_source = shadow.read_text()
+    has_helper = bool(re.search(r'^void m68k_process_streams\(', shadow_source, re.M))
+    has_selected = bool(re.search(r'^void m68k_process_stream_selected\(', shadow_source, re.M))
+    handles = ['m68k_bptr_out', 'm68k_bptr_in', 'm68k_bptr_drop']
+    body = '\n'.join(extract_function(runtime, name) for name in handles)
     if has_helper:
         body += '\n' + extract_function(shadow, 'm68k_process_streams')
+    if has_selected:
+        body += '\n' + extract_function(shadow, 'm68k_process_stream_selected')
     (output / 'handles.inc').write_text(body)
     (output / 'launch.inc').write_text(extract_function(launch, 'setup_and_execute'))
     (output / 'process.inc').write_text(extract_function(thunks, 'm68k_process_of'))
@@ -97,15 +154,23 @@ def prepare(source, output):
         return hashlib.sha256(p.read_bytes()).hexdigest()
     record = dict(
         source_inputs={str(p): sha(p) for p in (header, offsets, shadow, launch, thunks,
-                                                 runtime, layouts, *native)},
+                                                 runtime, layouts, tasks, generated,
+                                                 bridge, *native)},
         has_stream_helper=has_helper,
-        actual_functions=['m68k_bptr_out', 'm68k_bptr_in', 'setup_and_execute', 'm68k_process_of'] +
-                         (['m68k_process_streams'] if has_helper else []),
+        has_selector_helper=has_selected,
+        manual_selectors_registered=has_selectors,
+        manual_registration={str(lvo): found for lvo, found in registered.items()},
+        manual_dispatch_precedes_generated=True,
+        process_forget_selected=has_forget,
+        actual_functions=handles + ['setup_and_execute', 'm68k_process_of'] + registry +
+                         (['m68k_process_streams'] if has_helper else []) +
+                         (['m68k_process_stream_selected'] if has_selected else []) +
+                         selectors + consumers + (lifetime if has_forget else []),
         actual_initializer='Complete Override ThisTask compound block of shadow_init_execbase',
         generated={p.name: sha(p) for p in output.glob('*.inc')},
         scope='Actual source bodies and compound block with controlled native task, '
-              'layout, allocation and tag collaborators; no full SDK ABI, CPU, locks '
-              'or native child execution')
+              'stream selector, layout, allocation and tag collaborators; no full '
+              'SDK ABI, CPU, locks or native child execution')
     (output / 'source-record.local.json').write_text(json.dumps(record, indent=2) + '\n')
 
 

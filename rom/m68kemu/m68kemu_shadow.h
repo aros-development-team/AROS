@@ -7,6 +7,7 @@
 #define M68KEMU_SHADOW_H
 
 #include <exec/types.h>
+#include <dos/bptr.h>
 
 /* Field types */
 enum {
@@ -70,6 +71,8 @@ void *m68k_to_native_struct(struct M68KEmuContext *ctx,
                             const char *struct_name, ULONG m68k_addr);
 void m68k_task_stack(struct M68KEmuContext *ctx, ULONG mtask, struct Task *task);
 void m68k_process_streams(struct M68KEmuContext *ctx, ULONG mproc, struct Task *task);
+void m68k_process_stream_selected(struct M68KEmuContext *ctx, ULONG mproc, struct Task *task,
+                                  int which, BPTR stream);
 void m68k_screen_extras(struct M68KEmuContext *ctx, ULONG ms, struct Screen *scr);
 /* Repack a m68k RawDoFmt datastream into a native one - FreeMem() the result */
 APTR m68k_to_native_fmt_stream(struct M68KEmuContext *ctx, const char *fmt,

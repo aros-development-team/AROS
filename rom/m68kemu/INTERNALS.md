@@ -390,6 +390,13 @@ Process; `FindTask()` returns one m68k Process stand-in per native task, re-sync
 on every call, with `pr_MsgPort` registered as a shadow of the native port and a
 68k CLI structure when the task has one.
 
+A process just created gets an m68k Process of its own: the registry entries
+that an ended process left for the same native address, its Process and its
+port, are forgotten first (`m68k_process_forget`); the ended one's structure
+stays in the program's memory. `GetArgStr` and `SetArgStr` act on the m68k
+Process of the task that calls them. A child's argument field starts NULL:
+`NP_Arguments` is not passed on.
+
 ### Context Lifetime
 
 `ctx->alive` counts the users of a context: the caller of `RunHunk`/`RunFile`
@@ -660,7 +667,9 @@ a gadget.
   screen's `sc_BitMap`, or planes in the program's memory, for which a native
   planar BitMap is built; `BltBitMap`, `BltBitMapRastPort`,
   `BltMaskBitMapRastPort`, `ClipBlit`, `BltTemplate`, `AllocBitMap`, `InitBitMap`,
-  `InitRastPort`, `GetBitMapAttr`
+  `InitRastPort`, `GetBitMapAttr`. `FreeBitMap` frees only the guest BitMap
+  that `AllocBitMap` returned, with its registry entry and its guest
+  structure; any other argument is not passed to the native call
 - Text and fonts: `Text`, `TextLength`, `TextExtent`, `TextFit`, `SetFont`,
   `OpenFont`, `AskFont` (and diskfont `OpenDiskFont`); `TextAttr` is read from
   the program's memory, `TextExtent` written back
@@ -795,30 +804,50 @@ enum { SF_END=0, SF_BYTE, SF_WORD, SF_LONG, SF_PTR };
 A flat array in `M68KEmuContext`:
 
 ```c
-struct { ULONG m68k_addr; void *native_ptr; UWORD type; } shadow_map[M68KEMU_MAX_SHADOWS];  /* 1024 */
+struct {
+    ULONG m68k_addr; void *native_ptr; UWORD type;
+    UBYTE streams_valid;        /* a Process entry: its streams were written once */
+    BPTR  stream_native[3];     /* the native pr_CIS, pr_COS, pr_CES last written ... */
+    ULONG stream_handle[3];     /* ... and the handles they had */
+} shadow_map[M68KEMU_MAX_SHADOWS];  /* 1024 */
 UWORD num_shadows;
 ```
 
-- **Register**: O(1) append; a full table is reported once through `m68k_log()`
-  ("more than 1024 live library objects (messages not replied?)") and further
-  registrations fail
+- **Register**: O(1) append of a cleared entry; a full table is reported once
+  through `m68k_log()` ("more than 1024 live library objects (messages not
+  replied?)") and further registrations fail. A guest Process is only
+  published when it was registered; otherwise its guest block is released
+  and there is none. One that `m68k_process_of` makes for another native
+  Process is registered together with its port, or not at all. The
+  program's first Process is registered by `shadow_init_execbase`, and its
+  port on a later lookup
 - **Lookup**: O(n) scan by m68k address (`m68k_to_host_or_shadow` does the same
   scan inline)
-- **Remove**: O(n) scan + swap-with-last
+- **Remove**: O(n) scan + swap-with-last; the whole entry moves, with its
+  stream state
+- **Process streams**: `m68k_process_streams()` writes `pr_CIS`, `pr_COS` and
+  `pr_CES` of a guest Process when it is first seen, and again only when the
+  native stream or its handle is no longer the one last written, so a value
+  the program stores in a field stays; `SelectInput` and `SelectOutput` write
+  their field at once. `Input()`, `Output()` and the native DOS calls keep
+  using the native Process: a value stored directly in a field is kept and
+  read back, it does not redirect native input or output
 - **Dedup**: `shadow_create` and `sync_fields` look for an existing entry with the
   same native pointer and type
 
 Hand-assigned type tags: 1 Window, 3 RastPort, 4 MsgPort, 5 Screen, 6 ViewPort,
 9 DrawInfo pen table, 12 DosList copy, 13 font glyph block, 14 program-owned
-RastPort twin, 17 ExecBase list, 30 Layer, 31 BOOPSI object, 32 BOOPSI class,
-33 BOOPSI label node, 34 DiskObject, 35 ExAllControl, 36 DevProc, 40 AreaInfo,
+RastPort twin, 17 ExecBase list, 18 ExAllControl, 30 Layer, 31 BOOPSI object,
+32 BOOPSI class, 33 BOOPSI label node, 34 DiskObject, 36 DevProc, 40 AreaInfo,
 41 TmpRas, 42 TextAttr. The generated layouts are numbered 20–316 in table order
 (`gen_shadow_layouts.py` reserves 0–19), so the hand-assigned tags from 30 up
 share their numbers with generated layouts (30 is also `AppWindowDropZoneMsg`,
-31 `AreaInfo`, 32 `AssignList`, 33 `BadBlockBlock`, 34 `BadBlockEntry`, 40
-`BootNode`, 41 `Border`, 42 `CDInfo`). Lookups by address are unaffected; the
-dedup by `(native_ptr, type)` would only be confused if the same native object
-were registered under both.
+31 `AreaInfo`, 32 `AssignList`, 33 `BadBlockBlock`, 34 `BadBlockEntry`, 36
+`BitMapHeader`, 40 `BootNode`, 41 `Border`, 42 `CDInfo`). Lookups by address
+are unaffected; the dedup by `(native_ptr, type)` would only be confused if the
+same native object were registered under both. No hand-assigned tag may share
+the number of a layout whose entries a thunk tells by their type: `BitMap` (35,
+`FreeBitMap`), `Task` (258) and `MsgPort` (193, the Process and its port).
 
 ### Recursive Sub-Shadows
 

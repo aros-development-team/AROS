@@ -21,8 +21,10 @@ def extract_function(path, name):
         lambda match: ''.join('\n' if c == '\n' else ' ' for c in match[0]),
         source,
     )
+    # A definition starts in the first column. A call inside a statement
+    # that a brace follows, such as a condition, does not.
     match = re.search(
-        r'(?m)^[^\n;{}]*\b' + re.escape(name) +
+        r'(?m)^(?=\S)[^\n;{}]*\b' + re.escape(name) +
         r'\s*\([^;{}]*\)[^;{}]*\{', masked)
     if not match:
         raise ValueError(f'{path}: definition of {name} not found')
@@ -46,13 +48,20 @@ def prepare(source, output):
     manual = path('m68kemu_thunks.c')
     generated = path('m68kemu_thunks_gen.c')
     bridge = path('m68kemu_moira.cpp')
+    tasks = path('m68kemu_tasks.c')
     native = source / 'compiler/include/dos/dos.h'
-    # The official header retains Latin-1 bytes. Keep its raw source
+    nodes = source / 'compiler/include/exec/nodes.h'
+    # The official headers retain Latin-1 bytes. Keep their raw source
     # unchanged; only ASCII macro lines enter the fixture.
-    text = offsets.read_text() + '\n' + native.read_text(encoding='latin1')
+    text = '\n'.join((header.read_text(), offsets.read_text(),
+                      native.read_text(encoding='latin1'),
+                      nodes.read_text(encoding='latin1')))
     constants = []
-    for name in ('M68K_EXECBASE_THISTASK', 'M68K_PR_ARGUMENTS', 'ERROR_BAD_NUMBER'):
-        found = re.findall(r'^\s*#define\s+' + re.escape(name) +
+    for name in ('M68KEMU_MAX_SHADOWS', 'M68K_EXECBASE_THISTASK', 'M68K_PR_ARGUMENTS',
+                 'M68K_PR_MSGPORT', 'M68K_PR_CLI', 'M68K_SIZEOF_PROCESS', 'M68K_SIZEOF_CLI',
+                 'M68K_CLI_DEFAULTSTACK', 'M68K_CLI_MODULE', 'M68K_CLI_COMMANDNAME',
+                 'NT_PROCESS', 'ERROR_BAD_NUMBER'):
+        found = re.findall(r'^[ \t]*#define\s+' + re.escape(name) +
                            r'\s+([^\n]+)', text, re.M)
         assert len(found) == 1, (name, found)
         constants.append('#define ' + name + ' ' + found[0])
@@ -75,7 +84,31 @@ def prepare(source, output):
         names = ['thunk_dos_GetArgStr', 'thunk_dos_SetArgStr']
         for name in names:
             body += extract_function(generated, name) + '\n'
-    constants += ['#define API_GET ' + names[0], '#define API_SET ' + names[1]]
+    # The Process lookup and the registry it searches are the actual ones.
+    lookup = ['m68k_process_of', 'shadow_register', 'shadow_lookup', 'shadow_remove']
+    process = extract_function(manual, 'm68k_process_of')
+    (output / 'process.inc').write_text(process)
+    (output / 'registry.inc').write_text('\n'.join(
+        extract_function(manual, name) for name in lookup[1:]))
+    # A Process's port is registered with the type of the MsgPort layout. A
+    # tree that reads that type straight through the lookup, also where it
+    # makes a new Process, would follow a missing layout: the fixture does
+    # not make that one call there and lets its check fail instead. The
+    # first Process's own branch reads it that way in every tree.
+    unchecked_port_layout = process.count('shadow_find_layout("MsgPort")->shadow_type')
+    port_layout_checked = unchecked_port_layout <= 1
+    # A new process at an ended one's native address: the actual handling of
+    # create_proc, when the tree has it.
+    lifetime = ['m68k_forget_entry', 'm68k_process_forget']
+    has_forget = bool(re.search(r'^static void m68k_process_forget\(',
+                                tasks.read_text(), re.M))
+    (output / 'lifetime.inc').write_text(
+        '\n'.join(extract_function(tasks, name) for name in lifetime)
+        if has_forget else '')
+    constants += ['#define API_GET ' + names[0], '#define API_SET ' + names[1],
+                  '#define HAVE_PROCESS_FORGET ' + ('1' if has_forget else '0'),
+                  '#define PROCESS_PORT_LAYOUT_CHECKED ' +
+                  ('1' if port_layout_checked else '0')]
     (output / 'constants.inc').write_text('\n'.join(constants) + '\n')
     (output / 'api.inc').write_text(body)
     (output / 'accessors.inc').write_text('\n'.join(
@@ -92,13 +125,19 @@ def prepare(source, output):
         return hashlib.sha256(p.read_bytes()).hexdigest()
     record = dict(
         source_inputs={str(p): sha(p) for p in (header, offsets, manual, generated,
-                                                 bridge, native)},
+                                                 bridge, tasks, native, nodes)},
         manual_selected=has_manual, selected_functions=names,
         manual_registration={str(lvo): found for lvo, found in selected.items()},
         manual_dispatch_precedes_generated=True,
+        lookup_functions=lookup,
+        process_forget_selected=has_forget,
+        lifetime_functions=lifetime if has_forget else [],
+        port_layout_reads_unchecked=unchecked_port_layout,
+        port_layout_checked_for_a_new_process=port_layout_checked,
         generated={p.name: sha(p) for p in output.glob('*.inc')},
-        scope='Actual paired API and accessor bodies; controlled native accessors, '
-              'error and CPU-register collaborators, no native SDK/ABI or CPU')
+        scope='Actual paired API, Process lookup, registry and accessor bodies; '
+              'controlled native task, accessors, error, layout, heap and '
+              'CPU-register collaborators, no native SDK/ABI or CPU')
     (output / 'source-record.local.json').write_text(json.dumps(record, indent=2) + '\n')
 
 

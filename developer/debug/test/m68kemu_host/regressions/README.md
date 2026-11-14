@@ -185,17 +185,27 @@ warning fails the target; the sanitizer target adds ASan and UBSan without
 recovery.
 
 The runner extracts the actual launch function `setup_and_execute`, the
-BPTR handle translators, the Process stream helper when the tree has it,
-`m68k_process_of`, and the complete initial Process block of the ExecBase
-shadow. It reads the handle limits, the Process and CLI offsets and the
-`NP_` and tag constants from the same source tree and its public headers.
+BPTR handle translators with `m68k_bptr_drop`, the Process stream helper
+and the selector helper when the tree has them, `m68k_process_of`, the
+shadow registry (`shadow_register`, `shadow_lookup`, `shadow_remove`), the
+complete initial Process block of the ExecBase shadow, the `Input` and
+`Output` thunks, and the thunks registered for `SelectInput` (LVO -294) and
+`SelectOutput` (LVO -300): the manual ones when the dos.library table
+registers both, else the generated ones. When the tree has it, it also
+extracts the handling of a new process at an ended one's native address
+(`m68k_process_forget`). It checks in the dispatcher's source that manual
+thunks are tried before generated ones. It reads the handle and registry
+limits, the Process and CLI offsets and the `NP_` and tag constants from
+the same source tree and its public headers.
 The offset of `pr_CES` is fixed in the runner and checked against the
 generated shadow layout, so it does not come from the helper under test.
-The recording C fixture supplies the native task, the layout, the
-allocations and the tag capture; guest `ULONG` is 32-bit and native `BPTR`
-is 64-bit.
+The recording C fixture supplies the native task and its streams, the
+native selectors, the layouts, the allocations and the tag capture; guest
+`ULONG` is 32-bit and native `BPTR` is 64-bit. The `Input` and `Output`
+thunks do not use their CPU argument: the fixture switches the
+unused-parameter warning off around that one include and nowhere else.
 
-The fixture runs 64 checks in two groups. The 32 launch checks cover a
+The fixture runs 105 checks in three groups. The 32 launch checks cover a
 child on the synchronous route that inherits the caller's 64-bit input,
 output and error streams, also when the error stream is NULL or is the
 output stream, with the lifecycle tags unchanged and no stream marked for
@@ -212,14 +222,42 @@ keeps its guest address. An aliased output and error stream share one
 handle, and a plain Task stays supported and exposes no stream field. The
 fixture models the documented close tags only; no native child runs.
 
+The 41 ownership checks cover what in the three stream fields is the
+program's and what is the module's. A handle, NULL, a copy of another
+field's handle and a number that is no handle, each stored by the program
+in a field of its own Process, stay through refreshes made by its own task
+and by another. A native change of a stream is shown at the next refresh
+and replaces a stored value, also when the new stream got the handle value
+of a dropped one. `SelectInput` and `SelectOutput` show the chosen stream
+in the field at once, return the stream before, and win over a stored
+value even when they choose the stream that is already the native one; a
+value stored after them stays. A parent and its children keep their own
+stored values, a new child starts with its own native streams, and a
+child's selector changes nothing of its parent. A plain Task shows no
+stream. `Input()` and `Output()` answer from the native Process: they
+agree with the fields until the program stores a value itself, and a
+stored value is kept and read back without redirecting them. A new process
+at an ended one's native address gets a guest Process of its own. A
+projection that got no handle because the handle table was full is made
+when a handle is free again. An entry registered into a registry slot that
+a removal vacated starts with no stream state, and an entry that a removal
+moves keeps its state. A root Process whose registration is refused, or
+that has no Task layout, is not published and its guest block is released,
+as when there is no guest memory. No check of this group stands inside a
+loop.
+
 The fixture prints a `FAIL:` line for a failed check, one
 `GROUP <name>: <n> failed` line per group and a final
-`process streams: 64 checks, <n> failed` line. Its exit status is 1 when
-any check failed, which make reports as an error. It tests the behaviour
-that the Process stream change introduces: on a tree without that change
-the runner still prepares the sources, without the stream helper, and
-checks in both groups fail. Sanitized runs disable leak detection by
-default; `ASAN_OPTIONS` can override it.
+`process streams: 105 checks, <n> failed` line. Its exit status is 1 when
+any check failed, which make reports as an error. The launch and
+projection groups test the behaviour that the Process stream change
+introduces: on a tree without that change the runner still prepares the
+sources, without the stream helper, and checks in both groups fail. The
+ownership group tests the rule that a refresh leaves a stored value alone:
+on a tree whose refresh rewrites the fields every time, and whose
+selectors are the generated ones, checks of that group fail and the other
+two groups pass. Sanitized runs disable leak detection by default;
+`ASAN_OPTIONS` can override it.
 
 `--prepare-only --build-dir /tmp/process-streams` emits the actual
 production includes without compiling or executing a test. These focused
@@ -245,13 +283,13 @@ The fixture is built with `-std=c99 -Wall -Wextra -Werror`, so a compiler
 warning fails the target; the sanitizer target adds ASan and UBSan without
 recovery.
 
-The runner extracts the same production code as the Process stream
-regression, with the same constants: the launch function
-`setup_and_execute`, the BPTR handle translators, the Process stream helper
-when the tree has it, `m68k_process_of` and the complete initial Process
-block of the ExecBase shadow. The fixture is that regression's fixture with
-one more group. Its launch and projection groups are the same 64 checks and
-need the Process stream change in the same way.
+The runner extracts the launch function `setup_and_execute`, the BPTR
+handle translators, the Process stream helper when the tree has it,
+`m68k_process_of` and the complete initial Process block of the ExecBase
+shadow, with the constants of the Process stream regression. The fixture
+has that regression's launch and projection groups, the same 64 checks,
+which need the Process stream change in the same way, over a recording
+registry of its own, and one more group.
 
 The 70 argument checks run the launch through both routes, the direct one
 and the synchronous child, for three argument strings, an empty string and
@@ -306,13 +344,20 @@ registered for `GetArgStr` (LVO -534) and `SetArgStr` (LVO -540) it extracts
 them with their two helpers; when neither is registered it extracts the
 generated thunks; it refuses a table that registers only one of them. It
 checks in the dispatcher's source that manual thunks are tried before
-generated ones. It also extracts five memory accessors and reads the
-ExecBase and Process offsets and `ERROR_BAD_NUMBER` from the same source
-tree and its public header. The recording C fixture supplies the native
-argument accessors, the error value, the CPU registers and a counter for
-the low-write trap; guest `ULONG` is 32-bit.
+generated ones. It also extracts the Process lookup `m68k_process_of`, the
+shadow registry (`shadow_register`, `shadow_lookup`, `shadow_remove`), five
+memory accessors and, when the tree has it, the handling of a new process
+at an ended one's native address (`m68k_process_forget`). It reads the
+registry limit, the ExecBase, Process and CLI offsets, `NT_PROCESS` and
+`ERROR_BAD_NUMBER` from the same source tree and its public headers. The
+recording C fixture supplies the native task that is current, the native
+argument accessors, the error value, the layouts, the guest heap, the CPU
+registers and a counter for the low-write trap; the Task field sync and
+the stack and stream writers are empty stand-ins. Guest `ULONG` is 32-bit.
+The root Process is named both ways, as a launch names it: registered for
+the current native task and published in the guest `ThisTask`.
 
-The fixture runs 63 checks in three groups over a 4 KiB guest arena. The
+The fixture runs 112 checks in four groups over a 4 KiB guest arena. The
 16 semantics checks: `GetArgStr` returns the guest Process's own pointer
 and sees a direct guest change of the field; `SetArgStr` publishes the new
 guest pointer and returns the exact old one, also from and to NULL and for
@@ -320,23 +365,50 @@ an unchanged replacement; successful calls preserve `IoErr`; an empty
 string in the last byte of the arena and a Process field that ends exactly
 at the arena boundary are accepted. The 35 bounds checks: an old or a new
 string pointer at or beyond the arena end, or an unterminated string in
-its last byte; a zero, out-of-range or boundary-straddling SysBase or
-Process address; and a Process field in protected low memory. Each
-rejection returns zero with `ERROR_BAD_NUMBER`, a rejected setter leaves
-the Process field as it was, and no rejection reaches the low-write trap.
-The 12 ownership checks: after a getter and a setter call, also with an
-invalid replacement, the native argument accessors were never called, the
-native Process's argument pointer is unchanged, and the startup argument
-pointer, size and bytes are as they were.
+its last byte, is rejected; a zero, out-of-range or boundary-straddling
+guest SysBase and a zero or out-of-range guest `ThisTask` do not matter,
+because the calling native task selects the Process: the getter returns
+and the setter writes the caller's own argument; a Process whose field
+straddles the arena end and a Process field in protected low memory are
+rejected. Each rejection returns zero with `ERROR_BAD_NUMBER`, a rejected
+setter leaves the Process field as it was, and no case reaches the
+low-write trap. The 12 ownership checks: after a getter and a setter call,
+also with an invalid replacement, the native argument accessors were never
+called, the native Process's argument pointer is unchanged, and the
+startup argument pointer, size and bytes are as they were. The 49 task
+checks: a child made as `CreateNewProc` makes one has a guest Process of
+its own whose argument field starts NULL; a parent and two children read
+and set their own fields only, also through direct guest writes, with the
+same string in two of them, with NULL, and in every order of calls; a
+guest `ThisTask` that names another Process changes nothing; a task first
+seen inside the call gets one registered guest Process; a plain Task has
+its own structure; without a Task layout, without guest memory or with a
+full registry the calls return zero with `ERROR_BAD_NUMBER`, register
+nothing, release the guest block they took and change no other task's
+field; with one registry slot left a Process, which needs an entry for
+itself and one for its port, is taken back whole, a plain Task still takes
+the slot, and with two slots the Process and its port are registered;
+without a MsgPort layout a new Process is taken back whole; a new process
+at the native address of an ended one gets a new
+guest Process with a NULL argument, while the ended one's structure keeps
+its bytes, its registry entries are gone and every other live entry and
+argument stays; no call reaches the native argument accessors. No check of
+this group stands inside a loop.
 
 The fixture prints a `FAIL:` line for a failed check, the `semantics`,
-`bounds` and `ownership` group lines and a final
-`argument APIs: 63 checks, <n> failed` line. Its exit status is 1 when any
-check failed, which make reports as an error. It tests the manual thunks
-that the argument API change introduces: on a tree without them the
-generated thunks are extracted instead and checks in all three groups
-fail. Sanitized runs disable leak detection by default; `ASAN_OPTIONS` can
-override it.
+`bounds`, `ownership` and `tasks` group lines and a final
+`argument APIs: 112 checks, <n> failed` line. Its exit status is 1 when
+any check failed, which make reports as an error. It tests the manual
+thunks that the argument API change introduces: on a tree without them the
+generated thunks are extracted instead and checks in every group fail. On
+a tree whose manual thunks find the Process through the guest `ThisTask`,
+the checks of the task group in which the caller is not the first Process
+fail, and so do the getter and setter checks of the SysBase and `ThisTask`
+cases. A tree that reads the type of a new Process's port through a
+missing MsgPort layout would follow a NULL pointer: the runner sees that
+in the source, the fixture does not make that one call there, and its
+check fails. Sanitized runs disable leak detection by default;
+`ASAN_OPTIONS` can override it.
 
 `--prepare-only --build-dir /tmp/argument-apis` emits the actual production
 includes without compiling or executing a test. These focused checks do not
@@ -364,16 +436,28 @@ warning fails the target; the sanitizer target adds ASan and UBSan without
 recovery.
 
 The runner extracts the actual manual `AllocBitMap` thunk, the shadow
-factory and registry, the bitmap converters, five memory accessors and the
-generated `FreeBitMap` consumer, and checks that the manual thunk is the
-one registered for LVO -918. It reads the shadow and handle limits, the
-Screen bitmap offset and the BitMap shadow layout from the same source
-tree, and two memory flags from its public header. The recording C fixture
-supplies the native allocation and release, the guest heap and the layout
+factory, destructor and registry (`shadow_create`, `shadow_destroy`,
+`shadow_register`, `shadow_lookup`, `shadow_remove`), the bitmap
+converters, five memory accessors, the DOS object code of an ExAll control
+(`exall_control_new`, `exall_control` and the `FreeDosObject` thunk) and
+the thunk registered for `FreeBitMap`, LVO -924: the manual one when the
+graphics.library table registers it, else the generated one. It passes the
+registry tag of an ExAll control on as the tree defines it, and checks
+that the manual thunk is
+the one registered for LVO -918 and, in the dispatcher's source, that
+manual thunks are tried before generated ones. It reads the shadow and
+handle limits, the Screen bitmap offset and the BitMap shadow layout from
+the same source tree, and two memory flags and two DOS object types from
+its public headers. The recording C fixture supplies the native allocation
+and release of bitmaps and of DOS objects, the guest heap and the layout
 lookup over a 32 MiB guest arena; guest `ULONG` is 32-bit and native
-pointers are 64-bit.
+pointers are 64-bit. The guest heap records every live block with the size
+it was allocated with and counts a free of a block that is not live, or
+with another size, as bad. The native side hands out the one configured
+bitmap or, for the lifecycle group, bitmaps of a pool, and counts each
+one's releases.
 
-The fixture runs 121 checks in two groups. The 105 contract checks call the
+The fixture runs 154 checks in three groups. The 105 contract checks call the
 thunk with a friend bitmap given as NULL, as a registered shadow, as a
 Screen's bitmap, as a handle and as a guest planar structure, each with
 three native results: a host object, an address below 4 GiB and one above
@@ -382,8 +466,9 @@ a registered guest bitmap inside the arena and never the native pointer;
 the width, height, depth, flags and the converted friend reach the native
 call once and unchanged; the shadow is created and synchronized once; the
 native bitmap is not released; the RastPort bitmap converter resolves the
-guest address to the same native bitmap; and the generated `FreeBitMap`
-thunk hands that native bitmap back exactly once. The 16 failure checks: a
+guest address to the same native bitmap; and the `FreeBitMap` thunk
+registered for LVO -924 hands that native bitmap back exactly once. The 16
+failure checks: a
 failed native allocation returns zero with nothing to release and no
 shadow; a failed guest allocation, a full shadow table and a missing BitMap
 layout each return zero, release the native bitmap exactly once and
@@ -391,14 +476,44 @@ register no shadow. The full table also releases the guest block that the
 factory had taken, stays unchanged and logs its refusal once; the other two
 leave no guest block behind.
 
-The fixture prints a `FAIL:` line for a failed check, the `contract` and
-`failures` group lines and a final `bitmap result: 121 checks, <n> failed`
-line. Its exit status is 1 when any check failed, which make reports as an
-error. It tests the result projection and the rollback that the AllocBitMap
-change introduces: on a tree without that change the manual thunk is
-already registered, the runner prepares the same functions, and checks in
-both groups fail. Sanitized runs disable leak detection by default;
-`ASAN_OPTIONS` can override it.
+The 33 lifecycle checks pair every allocation with its free. In 4096
+turns, four times the registry's 1024 entries, each with a distinct native
+bitmap, every allocation succeeds and after every free the registry and
+the guest heap, in live blocks and bytes, are at their baseline, the freed
+guest address resolves to nothing, each native bitmap is released exactly
+once and the full-registry refusal is never logged. The same holds for
+1100 turns in which the native address returns every time. With 1000
+bitmaps alive together beside another entry, freed first-in, last-in and
+alternating, every live bitmap still resolves to its own native bitmap
+after each free. With the registry full the next allocation is refused as
+before, and after one free it succeeds. A second free of the same guest
+address, NULL, a handle, a Screen's embedded bitmap that is a second
+address of an allocated native bitmap, a planar structure in the guest
+arena, the guest addresses of entries of other types, an address outside
+the arena and one inside a guest BitMap are not passed to the native call
+and change nothing; after each of them the owner's address still frees
+its bitmap exactly once. Without the BitMap layout the type cannot be
+verified and nothing is passed on. The entry that a free moves into the
+freed slot keeps its address, native pointer, type and stream state, and
+a registration into the slot that the move vacated starts with no stream
+state. An ExAll control made by the actual DOS object code is not freed as
+a bitmap, and a bitmap is neither found nor freed as an ExAll control;
+each is then freed once by its own call, with the 16 or 40 guest bytes it
+was allocated with. No check of this group stands inside a loop: a loop
+feeds counters and each counter is checked once.
+
+The fixture prints a `FAIL:` line for a failed check, the `contract`,
+`failures` and `lifecycle` group lines and a final
+`bitmap result: 154 checks, <n> failed` line. Its exit status is 1 when
+any check failed, which make reports as an error. The contract and
+failures groups test the result projection and the rollback that the
+AllocBitMap change introduces: on a tree without that change the manual
+thunk is already registered, the runner prepares the same functions, and
+checks in both groups fail. The lifecycle group tests the paired
+`FreeBitMap`: on a tree whose LVO -924 is the generated thunk, which frees
+the native bitmap and keeps the guest BitMap registered, checks of that
+group fail and the other two groups pass. Sanitized runs disable leak
+detection by default; `ASAN_OPTIONS` can override it.
 
 `--prepare-only --build-dir /tmp/bitmap-result` emits the actual production
 includes without compiling or executing a test. These focused checks do not

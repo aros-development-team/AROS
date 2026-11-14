@@ -43,7 +43,7 @@ struct M68KEmuContext {
     UBYTE mem[16384]; ULONG bump,m68k_proc,seg_start,m68k_argptr;
     struct Task *emu_task;
     unsigned num_shadows;
-    struct { ULONG m68k_addr; void *native_ptr; UWORD type; } shadow_map[16];
+    struct { ULONG m68k_addr; void *native_ptr; UWORD type; UBYTE streams_valid; BPTR stream_native[3]; ULONG stream_handle[3]; } shadow_map[16];
     BPTR *handles; ULONG num_handles;
     char program_name[108];
     void *wb_startup; BOOL wb_queued;
@@ -83,6 +83,7 @@ static ULONG M68KEmu_HeapAlloc(struct M68KEmuContext *ctx,ULONG n,ULONG flags) {
     ULONG a=ctx->bump;(void)flags;n=(n+3)&~3u;assert(a+n<=sizeof(ctx->mem));
     ctx->bump+=n;memset(ctx->mem+a,0,n);return a;
 }
+static void M68KEmu_HeapFree(struct M68KEmuContext *ctx,ULONG a,ULONG n) {(void)ctx;(void)a;(void)n;}
 static struct Task *FindTask(const void *name) {(void)name;return current;}
 static BPTR Input(void) {return ((struct Process *)current)->pr_CIS;}
 static BPTR Output(void) {return ((struct Process *)current)->pr_COS;}
@@ -99,6 +100,9 @@ static void shadow_sync(struct M68KEmuContext *ctx,const struct M68KStructLayout
     (void)layout;(void)native;assert(a+92<=sizeof(ctx->mem));
     /* The actual Task layout ends before every Process stream. */
     memset(ctx->mem+a,0,92);
+}
+static void shadow_remove(struct M68KEmuContext *ctx,ULONG a) {
+    unsigned i;for(i=0;i<ctx->num_shadows;i++)if(ctx->shadow_map[i].m68k_addr==a){ctx->shadow_map[i]=ctx->shadow_map[--ctx->num_shadows];return;}
 }
 static void *shadow_lookup(struct M68KEmuContext *ctx,ULONG a) {
     unsigned i;for(i=0;i<ctx->num_shadows;i++)if(ctx->shadow_map[i].m68k_addr==a)return ctx->shadow_map[i].native_ptr;
