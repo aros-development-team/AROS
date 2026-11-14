@@ -24,6 +24,164 @@
 // Lamp sizes from MUIV_Lamp_Type_Tiny to MUIV_Lamp_Type_Huge
 const static ULONG lampsizes[] = {5, 6, 7, 8, 9};
 
+/* Legacy sizes are intentionally retained; explicit diameter is additive. */
+#define LAMP_MAX_DIAMETER 64
+#define LAMP_EFFECT_PENS 4
+
+static ULONG lamp_diameter(const struct Lamp_DATA *data)
+{
+    return data->lmp_Diameter ? data->lmp_Diameter : lampsizes[data->lmp_Type];
+}
+
+static ULONG lamp_darken(ULONG v, ULONG percent)
+{
+    return (v / 100UL) * percent;
+}
+
+static ULONG lamp_brighten(ULONG v, ULONG percent)
+{
+    return v + ((0xffffffffUL - v) / 100UL) * percent;
+}
+
+static void lamp_release_pens(Object *obj, struct Lamp_DATA *data)
+{
+    ULONG i;
+    for (i = 0; i < LAMP_EFFECT_PENS; i++)
+    {
+        if (data->lmp_EffectPen[i] != -1)
+        {
+            ReleasePen(_screen(obj)->ViewPort.ColorMap, data->lmp_EffectPen[i]);
+            data->lmp_EffectPen[i] = -1;
+        }
+    }
+    if (data->lmp_PenNr != -1)
+    {
+        if (data->lmp_PenChangedOld == PCH_NEWSPEC)
+            MUI_ReleasePen(muiRenderInfo(obj), data->lmp_PenNr);
+        else if (data->lmp_PenChangedOld == PCH_NEWPEN)
+            ReleasePen(_screen(obj)->ViewPort.ColorMap, data->lmp_PenNr);
+    }
+    data->lmp_PenNr = -1;
+    data->lmp_PenChangedOld = PCH_NONE;
+}
+
+static LONG lamp_obtain_rgb(Object *obj, ULONG r, ULONG g, ULONG b)
+{
+    return ObtainBestPen(_screen(obj)->ViewPort.ColorMap, r, g, b,
+                         OBP_Precision, PRECISION_GUI, TAG_DONE);
+}
+
+static void lamp_acquire_pens(Object *obj, struct Lamp_DATA *data)
+{
+    ULONG c[3], i;
+    LONG pen;
+    BOOL unlit = (data->lmp_Intensity == 0 ||
+                  (data->lmp_ColorType != MUIV_Lamp_ColorType_PenSpec &&
+                   !data->lmp_Color[0] && !data->lmp_Color[1] && !data->lmp_Color[2]));
+    lamp_release_pens(obj, data);
+    if (data->lmp_ColorType == MUIV_Lamp_ColorType_PenSpec)
+    {
+        pen = MUI_ObtainPen(muiRenderInfo(obj), &data->lmp_PenSpec, 0);
+        if (pen != -1)
+        {
+            data->lmp_PenNr = pen;
+            data->lmp_PenChangedOld = PCH_NEWSPEC;
+        }
+    }
+    else
+    {
+        for (i = 0; i < 3; ++i)
+            c[i] = lamp_darken(data->lmp_Color[i], data->lmp_Intensity);
+        pen = lamp_obtain_rgb(obj, c[0], c[1], c[2]);
+        if (pen != -1)
+        {
+            data->lmp_PenNr = pen;
+            data->lmp_PenChangedOld = PCH_NEWPEN;
+        }
+    }
+
+    if (data->lmp_Style == MUIV_Lamp_Style_LED)
+    {
+        /* Neutral bezel; shaded lens; bright reflection; diffuse upper rim. */
+        data->lmp_EffectPen[0] = lamp_obtain_rgb(obj, 0x25252525UL, 0x25252525UL, 0x25252525UL);
+        for (i = 0; i < 3; ++i)
+            c[i] = lamp_darken(data->lmp_ColorType == MUIV_Lamp_ColorType_PenSpec ?
+                               0x55555555UL : data->lmp_Color[i], data->lmp_Intensity / 2UL);
+        data->lmp_EffectPen[1] = lamp_obtain_rgb(obj, c[0], c[1], c[2]);
+        for (i = 0; i < 3; ++i)
+            c[i] = lamp_brighten(data->lmp_ColorType == MUIV_Lamp_ColorType_PenSpec ?
+                                 0x99999999UL : data->lmp_Color[i], unlit ? 12UL : 65UL);
+        data->lmp_EffectPen[2] = lamp_obtain_rgb(obj, c[0], c[1], c[2]);
+        for (i = 0; i < 3; ++i)
+            c[i] = lamp_brighten(data->lmp_ColorType == MUIV_Lamp_ColorType_PenSpec ?
+                                 0x88888888UL : data->lmp_Color[i], unlit ? 5UL : 20UL);
+        data->lmp_EffectPen[3] = lamp_obtain_rgb(obj, c[0], c[1], c[2]);
+    }
+    data->lmp_PenChanged = PCH_NONE;
+}
+
+static LONG lamp_draw_pen(const struct Lamp_DATA *data, unsigned int region)
+{
+    LONG p = data->lmp_EffectPen[region];
+    return p != -1 ? p : -1;
+}
+
+static void lamp_draw_led(Object *obj, const struct Lamp_DATA *data, ULONG size)
+{
+    LONG x, y, r, inner;
+    LONG left = _mleft(obj), top = _mtop(obj);
+    LONG base = data->lmp_PenNr;
+    LONG bezel = lamp_draw_pen(data, 0);
+    LONG shade = lamp_draw_pen(data, 1);
+    LONG shine = lamp_draw_pen(data, 2);
+    LONG glow = lamp_draw_pen(data, 3);
+    if (!size) return;
+    if (base == -1)
+    {
+        if (!_pens(obj)) return;
+        base = _pens(obj)[MPEN_TEXT];
+    }
+    else if (data->lmp_PenChangedOld == PCH_NEWSPEC) base = MUIPEN(base);
+    if (bezel == -1) bezel = base;
+    if (shade == -1) shade = base;
+    if (shine == -1) shine = base;
+    if (glow == -1) glow = base;
+    r = (LONG)size - 1;
+    inner = r > 3 ? r - 3 : 0;
+    for (y = 0; y < (LONG)size; ++y)
+    {
+        LONG current = -2;
+        LONG runstart = 0;
+        LONG dy = 2 * y + 1 - (LONG)size;
+        for (x = 0; x <= (LONG)size; ++x)
+        {
+            LONG next = -2;
+            if (x < (LONG)size)
+            {
+                LONG dx = 2 * x + 1 - (LONG)size;
+                if (dx * dx + dy * dy <= r * r)
+                {
+                    next = base;
+                    if (dx * dx + dy * dy > inner * inner) next = bezel;
+                    else if (y >= (LONG)(size * 2 / 3)) next = shade;
+                    else if (x < (LONG)(size / 2) && y < (LONG)(size / 3)) next = shine;
+                    else if (y < (LONG)(size / 3)) next = glow;
+                }
+            }
+            if (next != current)
+            {
+                if (current >= 0)
+                {
+                    SetAPen(_rp(obj), current);
+                    RectFill(_rp(obj), left + runstart, top + y, left + x - 1, top + y);
+                }
+                runstart = x;
+                current = next;
+            }
+        }
+    }
+}
+
 // Lamp default colors
 const static ULONG defaultcolors[][3] =
 {
@@ -51,18 +209,24 @@ const static ULONG defaultcolors[][3] =
 *       Area.mui
 *
 *   DESCRIPTION
-*       Draw a colored status lamp from a preset, RGB components or a MUI
-*       pen specification. Defaults: Type_Medium and Color_Off.
+*       Display a status indicator in Zune. The default is a circular LED;
+*       select Flat for the original filled-rectangle presentation.
+*       Size, color and brightness are independent presentation controls.
 *
 *   NOTES
-*       Color and PenSpec inputs are copied. Getter pointers into instance
-*       storage are borrowed and valid only while the object remains alive.
+*       The class preserves all historical attribute and method IDs. Color
+*       selection accepts 12 semantic presets, a pointer to three ULONG RGB
+*       components, or a MUI_PenSpec. RGB/PenSpec inputs are copied.
+*       Retrieved pointer values refer to object-owned storage; their lifetime
+*       ends when the object is disposed.
+*       AROS graphics.library pens are acquired on demand, cached between
+*       draws, released on replacement and in MUIM_Cleanup.
 *
-*   BUGS
-*       An initial PenSpec does not select its pen for the first draw; set
-*       PenSpec again after creation. Type is an unchecked 0..4 index and Set
-*       does not relayout. Pen acquisition can fail without an error result;
-*       Cleanup can overwrite a pending color acquisition kind.
+*   LIMITATIONS
+*       There is no class-owned timer or animation. Applications may schedule
+*       changes through their existing Zune event loop. Low-color screens may
+*       approximate the requested color; no alpha blending is required.
+*       If a pen cannot be allocated, the current MUI text pen is used.
 *
 */
 /****** Lamp.mcc/MUIA_Lamp_Type ************
@@ -71,15 +235,15 @@ const static ULONG defaultcolors[][3] =
 *       MUIA_Lamp_Type
 *
 *   FUNCTION
-*       Select the status lamp size.
+*       Select one of five legacy size presets (Tiny=0 to Huge=4).
 *
 *   INPUTS
-*       Initialize/set/get; ULONG. Tiny (0), Small (1), Medium (2, default),
-*       Big (3), Huge (4).
+*       Initialize/set/get; ULONG, default Medium (2). Invalid indices are
+*       ignored. Width and height are 5, 6, 7, 8 or 9 pixels, respectively,
+*       unless Diameter overrides them.
 *
 *   NOTES
-*       Only 0..4 are safe: the size table is not range-checked. The
-*       table sizes (5..9) augment layout bounds; Set does not relayout.
+*       Changing Type requests parent layout when Diameter is zero.
 *
 */
 /****** Lamp.mcc/MUIA_Lamp_Color ************
@@ -88,17 +252,17 @@ const static ULONG defaultcolors[][3] =
 *       MUIA_Lamp_Color
 *
 *   FUNCTION
-*       Select one of 12 status colors, or copy three ULONG RGB values.
+*       Set one of 12 MUIV_Lamp_Color_* presets (0..11), or copy three ULONG
+*       RGB components from a non-NULL pointer supplied as an IPTR value.
 *
 *   INPUTS
-*       Initialize/set/get; IPTR. Values 0..11 are MUIV_Lamp_Color_* presets;
-*       other values are pointers to three readable ULONGs. Default Off (0).
+*       Initialize/set/get; default Off. Preset values are integers 0..11;
+*       all other values are interpreted as readable ULONG[3] pointers.
 *
 *   NOTES
-*       The getter returns a preset index in UserDefined mode, a borrowed
-*       RGB array pointer in Color mode, or zero in PenSpec mode. Query ColorType
-*       before interpreting it. Input RGB arrays are copied immediately; no
-*       separate RGB-component or ColorType notifications are generated.
+*       Get returns the preset ID, an object-owned RGB pointer, or zero in
+*       PenSpec mode. Query ColorType before interpreting the value. A setter
+*       invalidates cached pens and requests redraw.
 *
 */
 /****** Lamp.mcc/MUIA_Lamp_ColorType ************
@@ -107,13 +271,10 @@ const static ULONG defaultcolors[][3] =
 *       MUIA_Lamp_ColorType
 *
 *   FUNCTION
-*       Identify the current color representation.
+*       Return the active color representation.
 *
 *   INPUTS
-*       Get only; ULONG: UserDefined (0), Color/RGB (1), PenSpec (2).
-*
-*   NOTES
-*       Indicates representation, not successful pen acquisition.
+*       Get only; UserDefined=0, Color=1, PenSpec=2.
 *
 */
 /****** Lamp.mcc/MUIA_Lamp_Red ************
@@ -122,15 +283,11 @@ const static ULONG defaultcolors[][3] =
 *       MUIA_Lamp_Red
 *
 *   FUNCTION
-*       Set or read the stored red RGB component.
-*
-*   INPUTS
-*       Initialize/set/get; ULONG, default 0.
+*       Set/get the red ULONG RGB component; setting selects RGB mode.
 *
 *   NOTES
-*       Set selects RGB mode, preserves the other components and redraws.
-*       Get returns the saved value, even while PenSpec mode is selected.
-*       No separate Color/ColorType notification is generated.
+*       Other components are preserved. Does not emit separate ColorType
+*       notifications. Default is zero; retained even in PenSpec mode.
 *
 */
 /****** Lamp.mcc/MUIA_Lamp_Green ************
@@ -139,15 +296,11 @@ const static ULONG defaultcolors[][3] =
 *       MUIA_Lamp_Green
 *
 *   FUNCTION
-*       Set or read the stored green RGB component.
-*
-*   INPUTS
-*       Initialize/set/get; ULONG, default 0.
+*       Set/get the green ULONG RGB component; setting selects RGB mode.
 *
 *   NOTES
-*       Set selects RGB mode, preserves the other components and redraws.
-*       Get returns the saved value, even while PenSpec mode is selected.
-*       No separate Color/ColorType notification is generated.
+*       Other components are preserved. Does not emit separate ColorType
+*       notifications. Default is zero; retained even in PenSpec mode.
 *
 */
 /****** Lamp.mcc/MUIA_Lamp_Blue ************
@@ -156,15 +309,11 @@ const static ULONG defaultcolors[][3] =
 *       MUIA_Lamp_Blue
 *
 *   FUNCTION
-*       Set or read the stored blue RGB component.
-*
-*   INPUTS
-*       Initialize/set/get; ULONG, default 0.
+*       Set/get the blue ULONG RGB component; setting selects RGB mode.
 *
 *   NOTES
-*       Set selects RGB mode, preserves the other components and redraws.
-*       Get returns the saved value, even while PenSpec mode is selected.
-*       No separate Color/ColorType notification is generated.
+*       Other components are preserved. Does not emit separate ColorType
+*       notifications. Default is zero; retained even in PenSpec mode.
 *
 */
 /****** Lamp.mcc/MUIA_Lamp_PenSpec ************
@@ -173,15 +322,65 @@ const static ULONG defaultcolors[][3] =
 *       MUIA_Lamp_PenSpec
 *
 *   FUNCTION
-*       Set a MUI pen specification.
+*       Select a MUI pen specification and switch to PenSpec color mode.
 *
 *   INPUTS
-*       Initialize/set/get; non-NULL struct MUI_PenSpec *.
+*       Initialize/set/get; non-NULL struct MUI_PenSpec pointer.
 *
 *   NOTES
-*       Input is copied. Get returns a borrowed pointer to instance storage.
-*       Set after creation to activate MUI pen acquisition; construction alone
-*       leaves RGB acquisition pending. Pen resolution is not reported.
+*       Input is copied at the time of the call; Get returns an object-owned
+*       pointer. The initial PenSpec applies on the first draw. LED lens
+*       shading uses neutral tones because the resolved pen RGB is not read.
+*       Intensity applies only to RGB and preset colors.
+*
+*/
+/****** Lamp.mcc/MUIA_Lamp_Style ************
+*
+*   NAME
+*       MUIA_Lamp_Style
+*
+*   FUNCTION
+*       Select circular LED rendering or the historical flat rectangle.
+*
+*   INPUTS
+*       Initialize/set/get; ULONG. LED=1 (default), Flat=0.
+*
+*   NOTES
+*       Invalid values are ignored. Style changes request full redraw.
+*
+*/
+/****** Lamp.mcc/MUIA_Lamp_Diameter ************
+*
+*   NAME
+*       MUIA_Lamp_Diameter
+*
+*   FUNCTION
+*       Override the size preset with an explicit square diameter.
+*
+*   INPUTS
+*       Initialize/set/get; ULONG. Zero (default) uses Type; 5..64 specify
+*       the exact diameter in pixels. Other values are ignored.
+*
+*   NOTES
+*       A change requests parent layout. Applications using Lamp as a list
+*       image may require their list to recalculate its image dimensions.
+*
+*/
+/****** Lamp.mcc/MUIA_Lamp_Intensity ************
+*
+*   NAME
+*       MUIA_Lamp_Intensity
+*
+*   FUNCTION
+*       Scale the displayed RGB brightness independently from stored color.
+*
+*   INPUTS
+*       Initialize/set/get; ULONG 0..100, default 100. Values above 100
+*       are ignored. Intensity does not alter PenSpec-defined base pens.
+*
+*   NOTES
+*       Color getters return the unscaled RGB components. A change causes
+*       pen reacquisition at the next draw, not a periodic timer wakeup.
 *
 */
 /****** Lamp.mcc/MUIM_Lamp_SetRGB ************
@@ -193,22 +392,21 @@ const static ULONG defaultcolors[][3] =
 *       DoMethod(obj, MUIM_Lamp_SetRGB, red, green, blue);
 *
 *   FUNCTION
-*       Set three ULONG RGB components together.
+*       Set the three ULONG RGB components as one color update.
 *
 *   RESULT
-*       Zero; setter success is not reported.
+*       Zero; the setter does not report color allocation errors.
 *
 *   NOTES
-*       A Color notification may receive a temporary stack array. Copy its
-*       contents during the callback; never retain that pointer.
+*       The Color attribute receives an object-owned RGB pointer, never
+*       a temporary stack array.
 *
 */
 
 /*** Methods ****************************************************************/
 /* Create the superclass, returning NULL on failure. Initialize Medium size,
  * black preset, RGB acquisition pending, and no acquired pen. Process tags
- * in order and copy RGB or PenSpec input. PenSpec changes representation
- * but does not change the pending RGB acquisition kind.
+ * in order and copy RGB or PenSpec input. PenSpec selects the pen type before the first draw.
  */
 Object *Lamp__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
@@ -231,13 +429,20 @@ Object *Lamp__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     data->lmp_PenChanged = PCH_NEWPEN;
     data->lmp_PenChangedOld = PCH_NONE;
     data->lmp_PenNr = -1;
+    data->lmp_Style = MUIV_Lamp_Style_LED;
+    data->lmp_Diameter = 0;
+    data->lmp_Intensity = 100;
+    {
+        ULONG i;
+        for (i = 0; i < LAMP_EFFECT_PENS; i++) data->lmp_EffectPen[i] = -1;
+    }
 
     while ((tag = NextTagItem(&tstate)) != NULL)
     {
         switch (tag->ti_Tag)
         {
             case MUIA_Lamp_Type:
-                data->lmp_Type = tag->ti_Data;
+                if (tag->ti_Data <= MUIV_Lamp_Type_Huge) data->lmp_Type = tag->ti_Data;
                 break;
 
             case MUIA_Lamp_Color:
@@ -275,8 +480,25 @@ Object *Lamp__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
                 break;
 
             case MUIA_Lamp_PenSpec:
-                data->lmp_PenSpec = *((struct MUI_PenSpec *)tag->ti_Data);
-                data->lmp_ColorType = MUIV_Lamp_ColorType_PenSpec;
+                if (tag->ti_Data)
+                {
+                    data->lmp_PenSpec = *((struct MUI_PenSpec *)tag->ti_Data);
+                    data->lmp_ColorType = MUIV_Lamp_ColorType_PenSpec;
+                    data->lmp_PenChanged = PCH_NEWSPEC;
+                }
+                break;
+
+            case MUIA_Lamp_Style:
+                if (tag->ti_Data <= MUIV_Lamp_Style_LED) data->lmp_Style = tag->ti_Data;
+                break;
+
+            case MUIA_Lamp_Diameter:
+                if (!tag->ti_Data || (tag->ti_Data >= 5 && tag->ti_Data <= LAMP_MAX_DIAMETER))
+                    data->lmp_Diameter = tag->ti_Data;
+                break;
+
+            case MUIA_Lamp_Intensity:
+                if (tag->ti_Data <= 100) data->lmp_Intensity = tag->ti_Data;
                 break;
         }
     }
@@ -285,74 +507,105 @@ Object *Lamp__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 }
 
 
-/* Process color and size tags in order; color changes redraw, size changes do not relayout. */
+/* Process updates in tag order, with redraw and parent layout when needed. */
 IPTR Lamp__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 {
-    struct Lamp_DATA           *data   = INST_DATA(cl, obj);
-    struct TagItem             *tstate = msg->ops_AttrList;
-    struct TagItem             *tag;
-
+    struct Lamp_DATA *data = INST_DATA(cl, obj);
+    struct TagItem *tstate = msg->ops_AttrList, *tag;
+    BOOL relayout = FALSE, redraw = FALSE, full = FALSE, recolor = FALSE;
+    IPTR result;
     while ((tag = NextTagItem(&tstate)) != NULL)
     {
         switch (tag->ti_Tag)
         {
             case MUIA_Lamp_Type:
-                data->lmp_Type = tag->ti_Data;
-                MUI_Redraw(obj, MADF_DRAWUPDATE);
+                if (tag->ti_Data <= MUIV_Lamp_Type_Huge && data->lmp_Type != tag->ti_Data)
+                {
+                    data->lmp_Type = tag->ti_Data;
+                    redraw = TRUE;
+                    if (!data->lmp_Diameter) relayout = TRUE;
+                }
                 break;
-
             case MUIA_Lamp_Color:
                 if (tag->ti_Data < 12)
                 {
                     data->lmp_ColorSpec = tag->ti_Data;
-                    data->lmp_Color[0] = defaultcolors[data->lmp_ColorSpec][0];
-                    data->lmp_Color[1] = defaultcolors[data->lmp_ColorSpec][1];
-                    data->lmp_Color[2] = defaultcolors[data->lmp_ColorSpec][2];
+                    data->lmp_Color[0] = defaultcolors[tag->ti_Data][0];
+                    data->lmp_Color[1] = defaultcolors[tag->ti_Data][1];
+                    data->lmp_Color[2] = defaultcolors[tag->ti_Data][2];
                     data->lmp_ColorType = MUIV_Lamp_ColorType_UserDefined;
+                    recolor = TRUE;
                 }
                 else
                 {
-                    ULONG *cols = (ULONG *)tag->ti_Data;
-                    data->lmp_Color[0] = cols[0];
-                    data->lmp_Color[1] = cols[1];
-                    data->lmp_Color[2] = cols[2];
+                    const ULONG *rgb = (const ULONG *)tag->ti_Data;
+                    data->lmp_Color[0] = rgb[0];
+                    data->lmp_Color[1] = rgb[1];
+                    data->lmp_Color[2] = rgb[2];
                     data->lmp_ColorType = MUIV_Lamp_ColorType_Color;
+                    recolor = TRUE;
                 }
-                data->lmp_PenChanged = PCH_NEWPEN;
-                MUI_Redraw(obj, MADF_DRAWUPDATE);
                 break;
-
             case MUIA_Lamp_Red:
                 data->lmp_Color[0] = tag->ti_Data;
                 data->lmp_ColorType = MUIV_Lamp_ColorType_Color;
-                data->lmp_PenChanged = PCH_NEWPEN;
-                MUI_Redraw(obj, MADF_DRAWUPDATE);
+                recolor = TRUE;
                 break;
-
             case MUIA_Lamp_Green:
                 data->lmp_Color[1] = tag->ti_Data;
                 data->lmp_ColorType = MUIV_Lamp_ColorType_Color;
-                data->lmp_PenChanged = PCH_NEWPEN;
-                MUI_Redraw(obj, MADF_DRAWUPDATE);
+                recolor = TRUE;
                 break;
-
             case MUIA_Lamp_Blue:
                 data->lmp_Color[2] = tag->ti_Data;
                 data->lmp_ColorType = MUIV_Lamp_ColorType_Color;
-                data->lmp_PenChanged = PCH_NEWPEN;
-                MUI_Redraw(obj, MADF_DRAWUPDATE);
+                recolor = TRUE;
                 break;
-
             case MUIA_Lamp_PenSpec:
-                data->lmp_PenSpec = *((struct MUI_PenSpec *)tag->ti_Data);
-                data->lmp_ColorType = MUIV_Lamp_ColorType_PenSpec;
-                data->lmp_PenChanged = PCH_NEWSPEC;
-                MUI_Redraw(obj, MADF_DRAWUPDATE);
+                if (tag->ti_Data)
+                {
+                    data->lmp_PenSpec = *((struct MUI_PenSpec *)tag->ti_Data);
+                    data->lmp_ColorType = MUIV_Lamp_ColorType_PenSpec;
+                    recolor = TRUE;
+                }
+                break;
+            case MUIA_Lamp_Style:
+                if (tag->ti_Data <= MUIV_Lamp_Style_LED && data->lmp_Style != tag->ti_Data)
+                {
+                    data->lmp_Style = tag->ti_Data;
+                    full = TRUE;
+                    recolor = TRUE;
+                }
+                break;
+            case MUIA_Lamp_Diameter:
+                if ((!tag->ti_Data || (tag->ti_Data >= 5 && tag->ti_Data <= LAMP_MAX_DIAMETER)) &&
+                    data->lmp_Diameter != tag->ti_Data)
+                {
+                    data->lmp_Diameter = tag->ti_Data;
+                    relayout = TRUE;
+                    full = TRUE;
+                }
+                break;
+            case MUIA_Lamp_Intensity:
+                if (tag->ti_Data <= 100 && data->lmp_Intensity != tag->ti_Data)
+                {
+                    data->lmp_Intensity = tag->ti_Data;
+                    recolor = TRUE;
+                }
                 break;
         }
     }
-
-    return DoSuperMethodA(cl, obj, (Msg) msg);
+    if (recolor)
+    {
+        data->lmp_PenChanged = data->lmp_ColorType == MUIV_Lamp_ColorType_PenSpec ?
+                               PCH_NEWSPEC : PCH_NEWPEN;
+        redraw = TRUE;
+    }
+    result = DoSuperMethodA(cl, obj, (Msg)msg);
+    if (relayout && _parent(obj)) DoMethod(_parent(obj), MUIM_Layout);
+    if (full) MUI_Redraw(obj, MADF_DRAWOBJECT);
+    else if (redraw) MUI_Redraw(obj, MADF_DRAWUPDATE);
+    return result;
 }
 
 
@@ -399,6 +652,16 @@ IPTR Lamp__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
             *store = data->lmp_Color[2];
             return TRUE;
 
+        case MUIA_Lamp_Style:
+            *store = data->lmp_Style;
+            return TRUE;
+        case MUIA_Lamp_Diameter:
+            *store = data->lmp_Diameter;
+            return TRUE;
+        case MUIA_Lamp_Intensity:
+            *store = data->lmp_Intensity;
+            return TRUE;
+
         case MUIA_Lamp_PenSpec:
             *store = (IPTR)&data->lmp_PenSpec;
             return TRUE;
@@ -408,146 +671,77 @@ IPTR Lamp__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 }
 
 
-/* Release the acquired pen and restore the old acquisition kind as pending. */
+/* Release owned pens before superclass cleanup; preserve desired color mode. */
 IPTR Lamp__MUIM_Cleanup(struct IClass *cl, Object *obj, Msg msg)
 {
-    struct Lamp_DATA *data = INST_DATA(cl,obj);
-
-    if (data->lmp_PenChangedOld == PCH_NEWPEN)
-    {
-        if (data->lmp_PenNr != -1)
-        {
-            ReleasePen(_screen(obj)->ViewPort.ColorMap, data->lmp_PenNr);
-            data->lmp_PenNr = -1;
-        }
-    }
-    else if (data->lmp_PenChangedOld == PCH_NEWSPEC)
-    {
-        MUI_ReleasePen(muiRenderInfo(obj), data->lmp_PenNr);
-    }
-
-    if (data->lmp_PenChangedOld != PCH_NONE)
-    {
-        data->lmp_PenChanged = data->lmp_PenChangedOld;
-        data->lmp_PenChangedOld = PCH_NONE;
-    }
-
+    struct Lamp_DATA *data = INST_DATA(cl, obj);
+    lamp_release_pens(obj, data);
+    data->lmp_PenChanged = data->lmp_ColorType == MUIV_Lamp_ColorType_PenSpec ?
+                           PCH_NEWSPEC : PCH_NEWPEN;
     return DoSuperMethodA(cl, obj, msg);
 }
 
 
-/* Acquire a pending pen, redraw the color rectangle, and keep the pen until replaced or cleaned up. */
+/* Redraw the flat indicator or shaded LED using cached graphics pens. */
 IPTR Lamp__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 {
     struct Lamp_DATA *data = INST_DATA(cl, obj);
-
-    ULONG right, bottom;
-
+    ULONG size;
     DoSuperMethodA(cl, obj, (Msg)msg);
-
-    if (!(msg->flags & (MADF_DRAWOBJECT | MADF_DRAWUPDATE)))
-        return 0;
-
-    if (data->lmp_PenChanged)
+    if (!(msg->flags & (MADF_DRAWOBJECT | MADF_DRAWUPDATE))) return 0;
+    if (data->lmp_PenChanged) lamp_acquire_pens(obj, data);
+    size = lamp_diameter(data);
+    if (_mright(obj) < _mleft(obj) || _mbottom(obj) < _mtop(obj)) return 0;
+    if (size > (ULONG)(_mright(obj) - _mleft(obj) + 1))
+        size = (ULONG)(_mright(obj) - _mleft(obj) + 1);
+    if (size > (ULONG)(_mbottom(obj) - _mtop(obj) + 1))
+        size = (ULONG)(_mbottom(obj) - _mtop(obj) + 1);
+    if (!size) return 0;
+    if (data->lmp_Style == MUIV_Lamp_Style_LED)
     {
-        if (data->lmp_PenChangedOld == PCH_NEWPEN)
-        {
-            if (data->lmp_PenNr != -1)
-            {
-                ReleasePen(_screen(obj)->ViewPort.ColorMap, data->lmp_PenNr);
-                D(bug("[Lamp/Draw] released pen %u\n", data->lmp_PenNr));
-                data->lmp_PenNr = -1;
-            }
-        }
-        else if (data->lmp_PenChangedOld == PCH_NEWSPEC)
-        {
-            MUI_ReleasePen(muiRenderInfo(obj), data->lmp_PenNr);
-            D(bug("[Lamp/Draw] released MUI pen %u\n", data->lmp_PenNr));
-        }
-
-        if (data->lmp_PenChanged == PCH_NEWPEN)
-        {
-            data->lmp_PenNr = ObtainBestPen
-            (
-                _screen(obj)->ViewPort.ColorMap,
-                data->lmp_Color[0],
-                data->lmp_Color[1],
-                data->lmp_Color[2],
-                OBP_Precision, PRECISION_GUI,
-                TAG_DONE
-            );
-            D(bug("[Lamp/Draw] obtained pen %u r %u g %u b %u\n", data->lmp_PenNr,
-            data->lmp_Color[0], data->lmp_Color[1], data->lmp_Color[2]));
-
-            if (data->lmp_PenNr != -1)
-            {
-                SetAPen(_rp(obj), data->lmp_PenNr);
-            }
-        }
-        else if (data->lmp_PenChanged == PCH_NEWSPEC)
-        {
-            data->lmp_PenNr = MUI_ObtainPen(muiRenderInfo(obj), &data->lmp_PenSpec, 0);
-            D(bug("[Lamp/Draw] obtained MUI pen %u\n", data->lmp_PenNr));
-            SetAPen(_rp(obj), MUIPEN(data->lmp_PenNr));
-        }
-
-        data->lmp_PenChangedOld = data->lmp_PenChanged;
-        data->lmp_PenChanged = PCH_NONE;
+        lamp_draw_led(obj, data, size);
     }
-
-    right = _mleft(obj) + lampsizes[data->lmp_Type];
-    if (right > _mright(obj))
-        right = _mright(obj);
-    bottom = _mtop(obj) + lampsizes[data->lmp_Type];
-    if (bottom > _mbottom(obj))
-        bottom = _bottom(obj);
-
-    D(bug("[Lamp/Draw] right %d bottom %d\n", right, bottom));
-
-    /* Every draw, not just the one that obtained the pen: whoever drew last
-     * (a list row's text, say) has left its own pen in the rastport. */
-    if (data->lmp_PenChangedOld == PCH_NEWSPEC)
-        SetAPen(_rp(obj), MUIPEN(data->lmp_PenNr));
-    else if (data->lmp_PenChangedOld == PCH_NEWPEN && data->lmp_PenNr != -1)
-        SetAPen(_rp(obj), data->lmp_PenNr);
-
-    RectFill(_rp(obj), _mleft(obj), _mtop(obj), right, bottom);
-
+    else
+    {
+        LONG right = _mleft(obj) + (LONG)size - 1;
+        LONG bottom = _mtop(obj) + (LONG)size - 1;
+        if (data->lmp_PenNr != -1)
+        {
+            if (data->lmp_PenChangedOld == PCH_NEWSPEC)
+                SetAPen(_rp(obj), MUIPEN(data->lmp_PenNr));
+            else SetAPen(_rp(obj), data->lmp_PenNr);
+        }
+        else if (_pens(obj)) SetAPen(_rp(obj), _pens(obj)[MPEN_TEXT]);
+        else return 0;
+        RectFill(_rp(obj), _mleft(obj), _mtop(obj), right, bottom);
+    }
     return 0;
 }
 
 
-/* Add the unchecked Type table entry to superclass dimensions. */
+/* Add the validated preset or explicit diameter to layout bounds. */
 IPTR Lamp__MUIM_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMax *msg)
 {
     struct Lamp_DATA *data = INST_DATA(cl, obj);
-
-    ULONG size = lampsizes[data->lmp_Type];
-
+    ULONG size = lamp_diameter(data);
     DoSuperMethodA(cl, obj, (Msg)msg);
-
-    msg->MinMaxInfo->MinWidth  += size;
-    msg->MinMaxInfo->DefWidth  += size;
-    msg->MinMaxInfo->MaxWidth  += size;
-
+    msg->MinMaxInfo->MinWidth += size;
+    msg->MinMaxInfo->DefWidth += size;
+    msg->MinMaxInfo->MaxWidth += size;
     msg->MinMaxInfo->MinHeight += size;
     msg->MinMaxInfo->DefHeight += size;
     msg->MinMaxInfo->MaxHeight += size;
-
     return 0;
 }
 
 
-/* Set Color using a temporary RGB array; notifications may expose the stack pointer. */
+/* Use persistent instance storage in Color notifications. */
 IPTR Lamp__MUIM_Lamp_SetRGB(struct IClass *cl, Object *obj, struct MUIP_Lamp_SetRGB *msg)
 {
-    ULONG rgb[3];
-
-    rgb[0] = msg->red;
-    rgb[1] = msg->green;
-    rgb[2] = msg->blue;
-
-    SET(obj, MUIA_Lamp_Color, rgb);
-
+    struct Lamp_DATA *data = INST_DATA(cl, obj);
+    data->lmp_Color[0] = msg->red;
+    data->lmp_Color[1] = msg->green;
+    data->lmp_Color[2] = msg->blue;
+    SET(obj, MUIA_Lamp_Color, data->lmp_Color);
     return 0;
 }
