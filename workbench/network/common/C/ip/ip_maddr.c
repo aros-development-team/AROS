@@ -54,7 +54,6 @@ static int
 show_maddr(const char *dev)
 {
 	struct ifconf ifc;
-	char buf[4096];
 	struct ifreq *ifr;
 	int s, idx;
 	char *cp, *cplim;
@@ -64,9 +63,7 @@ show_maddr(const char *dev)
 	if (s < 0)
 		return 1;
 
-	ifc.ifc_len = sizeof(buf);
-	ifc.ifc_buf = buf;
-	if (IoctlSocket(s, SIOCGIFCONF, (char *)&ifc) < 0) {
+	if (ip_getifconf(s, &ifc) < 0) {
 		perror("ip: SIOCGIFCONF");
 		CloseSocket(s);
 		return 1;
@@ -134,6 +131,7 @@ show_maddr(const char *dev)
 		}
 	}
 
+	free(ifc.ifc_buf);
 	CloseSocket(s);
 	return 0;
 }

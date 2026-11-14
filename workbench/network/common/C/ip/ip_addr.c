@@ -109,7 +109,6 @@ show_inet6_addr(const char *name, int s4)
 {
 	int s6;
 	struct ifconf ifc;
-	char buf[8192];
 	struct ifreq *ifr;
 	char *cp, *cplim;
 
@@ -122,9 +121,7 @@ show_inet6_addr(const char *name, int s4)
 	 * as AF_INET6 sockaddrs when queried on an AF_INET6 socket.
 	 * Walk them to find addresses for our interface.
 	 */
-	ifc.ifc_len = sizeof(buf);
-	ifc.ifc_buf = buf;
-	if (IoctlSocket(s6, SIOCGIFCONF, (char *)&ifc) < 0) {
+	if (ip_getifconf(s6, &ifc) < 0) {
 		/* Fallback: try SIOCGIFADDR_IN6 for single address */
 		struct in6_ifreq ifr6;
 		char addr[INET6_ADDRSTRLEN];
@@ -218,6 +215,7 @@ show_inet6_addr(const char *name, int s4)
 		}
 	}
 
+	free(ifc.ifc_buf);
 	CloseSocket(s6);
 }
 
@@ -263,7 +261,6 @@ static int
 show_addrs(const char *dev)
 {
 	struct ifconf ifc;
-	char buf[4096];
 	struct ifreq *ifr;
 	int s, idx;
 	char *cp, *cplim;
@@ -278,9 +275,7 @@ show_addrs(const char *dev)
 	if (s < 0)
 		return 1;
 
-	ifc.ifc_len = sizeof(buf);
-	ifc.ifc_buf = buf;
-	if (IoctlSocket(s, SIOCGIFCONF, (char *)&ifc) < 0) {
+	if (ip_getifconf(s, &ifc) < 0) {
 		perror("ip: SIOCGIFCONF");
 		CloseSocket(s);
 		return 1;
@@ -357,6 +352,7 @@ show_addrs(const char *dev)
 			show_inet6_addr(ifr->ifr_name, s);
 	}
 
+	free(ifc.ifc_buf);
 	CloseSocket(s);
 	return 0;
 }
