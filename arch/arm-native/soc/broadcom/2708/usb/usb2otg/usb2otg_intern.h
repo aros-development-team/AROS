@@ -1104,6 +1104,39 @@ static inline BOOL usb2otg_chan_periodic(struct USB2OTGUnit *unit, int chan)
     return type == USB2OTG_HCT_INT || type == USB2OTG_HCT_CTRL_SPLIT;
 }
 
+static inline BOOL usb2otg_same_endpoint(struct IOUsbHWReq *a, struct IOUsbHWReq *b)
+{
+    return a->iouh_DevAddr == b->iouh_DevAddr &&
+           a->iouh_Endpoint == b->iouh_Endpoint &&
+           a->iouh_Dir == b->iouh_Dir;
+}
+
+/*
+ * Put a halted request back on queue. Bulk goes ahead of later requests
+ * on its endpoint, so the endpoint's stream stays in order. hu_Lock held.
+ */
+static inline void usb2otg_requeue(struct USB2OTGUnit *unit, struct List *queue,
+    struct IOUsbHWReq *req, BOOL head)
+{
+    struct IOUsbHWReq *q;
+
+    if (queue == &unit->hu_BulkXFerQueue)
+    {
+        ForeachNode(queue, q)
+        {
+            if (usb2otg_same_endpoint(q, req))
+            {
+                Insert(queue, (struct Node *)req, q->iouh_Req.io_Message.mn_Node.ln_Pred);
+                return;
+            }
+        }
+    }
+    if (head)
+        ADDHEAD(queue, (struct Node *)req);
+    else
+        ADDTAIL(queue, (struct Node *)req);
+}
+
 /*
  * Move req from channel slot to follow-up queue under hu_Lock, with
  * a TOCTOU check vs the watchdog. Returns FALSE if the watchdog
@@ -1131,10 +1164,7 @@ static inline BOOL usb2otg_irq_finish_or_requeue(struct USB2OTGUnit *unit,
     if (unit->hu_Channel[chan].hc_Request != req)
         return FALSE;
 #endif
-    if (head)
-        ADDHEAD(queue, (struct Node *)req);
-    else
-        ADDTAIL(queue, (struct Node *)req);
+    usb2otg_requeue(unit, queue, req, head);
     unit->hu_Channel[chan].hc_Request = NULL;
 #if defined(__AROSEXEC_SMP__)
     KrnSpinUnLock(&unit->hu_Lock);

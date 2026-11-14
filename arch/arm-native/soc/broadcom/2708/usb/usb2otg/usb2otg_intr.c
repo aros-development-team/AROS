@@ -534,7 +534,7 @@ static void usb2otg_escalate_hw_reset(struct USB2OTGUnit *USBUnit, int wedged_ch
         switch (stuck_req->iouh_Req.io_Command)
         {
             case UHCMD_BULKXFER:
-                ADDHEAD(&USBUnit->hu_BulkXFerQueue, (struct Node *)stuck_req);
+                usb2otg_requeue(USBUnit, &USBUnit->hu_BulkXFerQueue, stuck_req, TRUE);
                 break;
             case UHCMD_CONTROLXFER:
                 ADDHEAD(&USBUnit->hu_CtrlXFerQueue, (struct Node *)stuck_req);
@@ -1786,7 +1786,7 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
                                 if (usb2otg_trace_bulk_ep2(chan, req))
                                     bug("[USB2OTG:TRACE] REQUEUE-BEGIN-BULKQ chan=%d req=%p\n", chan, req);
                             )
-                            ADDHEAD(&USBUnit->hu_BulkXFerQueue, req);
+                            usb2otg_requeue(USBUnit, &USBUnit->hu_BulkXFerQueue, req, TRUE);
                         }
 
                         /* Mark channel free (ctrl path did it via helper). */
@@ -2035,7 +2035,7 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
                                 if (req->iouh_Req.io_Command == UHCMD_CONTROLXFER)
                                     ADDHEAD(&USBUnit->hu_CtrlXFerQueue, req);
                                 else
-                                    ADDHEAD(&USBUnit->hu_BulkXFerQueue, req);
+                                    usb2otg_requeue(USBUnit, &USBUnit->hu_BulkXFerQueue, req, TRUE);
                                 USBUnit->hu_Channel[chan].hc_Request = NULL;
 #if defined(__AROSEXEC_SMP__)
                                 KrnSpinUnLock(&USBUnit->hu_Lock);
@@ -2289,7 +2289,7 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
                             else if (req->iouh_Req.io_Command == UHCMD_BULKXFER)
                             {
                                 usb2otg_bulk_requeue(USBUnit, chan, req, intr, "frame-overrun");
-                                ADDHEAD(&USBUnit->hu_BulkXFerQueue, req);
+                                usb2otg_requeue(USBUnit, &USBUnit->hu_BulkXFerQueue, req, TRUE);
                             }
                             USBUnit->hu_Channel[chan].hc_Request = NULL;
 #if defined(__AROSEXEC_SMP__)
@@ -2690,7 +2690,7 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
                                                 usb2otg_gate_dir(req),
                                                 USB2OTG_BULK_NAK_GATE_UFRAMES);
                                         }
-                                        ADDTAIL(&USBUnit->hu_BulkXFerQueue, req);
+                                        usb2otg_requeue(USBUnit, &USBUnit->hu_BulkXFerQueue, req, FALSE);
                                     }
                                 }
                             }

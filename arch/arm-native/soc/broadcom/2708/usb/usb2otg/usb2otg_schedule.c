@@ -102,25 +102,14 @@ static BOOL usb2otg_claim_channel(struct USB2OTGUnit *otg_Unit, int chan,
     return flip;
 }
 
-/*
- * TRUE if another queued request on candidate's endpoint has already
- * moved data. It was requeued mid-transfer and must finish first, or
- * the rest of its stream lands in the candidate.
- */
-static BOOL usb2otg_endpoint_partial_queued(struct USB2OTGUnit *otg_Unit,
-    struct IOUsbHWReq *candidate)
+/* Only the oldest queued request of an endpoint may start: keeps its stream in order. */
+static BOOL usb2otg_endpoint_older_queued(struct IOUsbHWReq *candidate)
 {
-    struct IOUsbHWReq *req;
+    struct Node *n;
 
-    if (candidate->iouh_Actual != 0)
-        return FALSE;
-    ForeachNode(&otg_Unit->hu_BulkXFerQueue, req)
+    for (n = candidate->iouh_Req.io_Message.mn_Node.ln_Pred; n->ln_Pred != NULL; n = n->ln_Pred)
     {
-        if (req != candidate &&
-            req->iouh_Actual != 0 &&
-            req->iouh_DevAddr == candidate->iouh_DevAddr &&
-            req->iouh_Endpoint == candidate->iouh_Endpoint &&
-            req->iouh_Dir == candidate->iouh_Dir)
+        if (usb2otg_same_endpoint((struct IOUsbHWReq *)n, candidate))
             return TRUE;
     }
     return FALSE;
@@ -163,7 +152,7 @@ static struct IOUsbHWReq *usb2otg_find_schedulable_bulk_req(
             continue;
         if (usb2otg_endpoint_in_flight(otg_Unit, req))
             continue;
-        if (usb2otg_endpoint_partial_queued(otg_Unit, req))
+        if (usb2otg_endpoint_older_queued(req))
             continue;
 
         /* Legacy per-request retry-delay counter (call-count, not wall time). */
@@ -384,7 +373,7 @@ BOOL FNAME_DEV(SetupChannel)(struct USB2OTGUnit *otg_Unit, int chan)
             otg_Unit->hu_QuarSetTick[chan] = otg_Unit->hu_WdTicks;
             otg_Unit->hu_DeadChannels |= (1 << chan);
             otg_Unit->hu_Channel[chan].hc_Request = NULL;
-            ADDHEAD(queue, (struct Node *)req);
+            usb2otg_requeue(otg_Unit, queue, req, TRUE);
             usb2otg_sof_gate_wake(otg_Unit);
 #if defined(__AROSEXEC_SMP__)
             KrnSpinUnLock(&otg_Unit->hu_Lock);
