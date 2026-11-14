@@ -15,9 +15,9 @@
  * wire names, its TXT data as it goes on the wire, the addresses of a host
  * it stands in for. Its names are kept built, as wire names, and compared
  * with the wire names of what comes in (struct MDNSQuestion's qwire,
- * struct MDNSRecord's wire): no name goes through text here. The front ends
- * (dnssd_server.c, and the bonami.library port in mdns_client.c until it
- * goes) make the registration and call mdnsRegAddCanonical().
+ * struct MDNSRecord's wire): no name goes through text here. dnssd.library's
+ * front end (dnssd_server.c) makes the registration and calls
+ * mdnsRegAddCanonical().
  */
 
 #include <exec/types.h>
@@ -393,9 +393,7 @@ subtypes_send(struct MDNSDaemon *md, struct MDNSRegisteredService *rs,
                     hdr->ancount = htons(ancount);
                     mdnsNetSendOn(md, i, pkt, pos);
                     if (!mdnsReplyIsUnicast(md)) {
-                        mdnsReflectPacket(md, pkt, pos, i,
-                            MDNS_REFLECT_DISCOVERY | MDNS_REFLECT_QUERY,
-                            NULL);
+                        mdnsReflectPacket(md, pkt, pos, i);
                     }
                 }
                 pos = mdnsResponseBegin(md, pkt);
@@ -410,49 +408,18 @@ subtypes_send(struct MDNSDaemon *md, struct MDNSRegisteredService *rs,
             hdr->ancount = htons(ancount);
             mdnsNetSendOn(md, i, pkt, pos);
             if (!mdnsReplyIsUnicast(md)) {
-                mdnsReflectPacket(md, pkt, pos, i,
-                    MDNS_REFLECT_DISCOVERY | MDNS_REFLECT_QUERY, NULL);
+                mdnsReflectPacket(md, pkt, pos, i);
             }
         }
     }
 }
 
-static void
-subtypes_reflect(struct MDNSDaemon *md,
-    const struct MDNSRegisteredService *rs, BOOL goodbye, LONG ifindex,
-    UWORD consumers, APTR queryHandle)
-{
-    UBYTE *pkt = md->md_TxBuf;
-    struct MDNSHeader *hdr = (struct MDNSHeader *)pkt;
-    LONG subtype, pos = mdnsResponseBegin(md, pkt);
-    UWORD ancount = 0;
-
-    for (subtype = 0; subtype < rs->rs_Reg.subtype_count; subtype++) {
-        if (!subtype_append(md, rs, subtype, goodbye, pkt, &pos, &ancount)) {
-            if (ancount != 0) {
-                hdr->ancount = htons(ancount);
-                mdnsReflectPacket(md, pkt, pos, ifindex, consumers,
-                    queryHandle);
-            }
-            pos = mdnsResponseBegin(md, pkt);
-            ancount = 0;
-            if (!subtype_append(md, rs, subtype, goodbye, pkt, &pos,
-                    &ancount)) {
-                continue;
-            }
-        }
-    }
-    if (ancount != 0) {
-        hdr->ancount = htons(ancount);
-        mdnsReflectPacket(md, pkt, pos, ifindex, consumers, queryHandle);
-    }
-}
-
-/* One local type-enumeration record. A type is withdrawn only after its last
- * announced registration is gone. */
+/* The type-enumeration record of a service's type, into the cache (RFC
+ * 6763 section 9). A type is withdrawn only after its last announced
+ * registration is gone. */
 static void
 type_reflect(struct MDNSDaemon *md, const struct MDNSRegisteredService *rs,
-    BOOL goodbye, LONG ifindex, UWORD consumers, APTR queryHandle)
+    BOOL goodbye, LONG ifindex)
 {
     UBYTE *pkt = md->md_TxBuf;
     struct MDNSHeader *hdr = (struct MDNSHeader *)pkt;
@@ -480,45 +447,7 @@ type_reflect(struct MDNSDaemon *md, const struct MDNSRegisteredService *rs,
         return;
     }
     hdr->ancount = htons(ancount);
-    mdnsReflectPacket(md, pkt, pos, ifindex, consumers, queryHandle);
-}
-
-static void
-service_reflect(struct MDNSDaemon *md, struct MDNSRegisteredService *rs,
-    BOOL goodbye, LONG ifindex, UWORD consumers, APTR queryHandle)
-{
-    UBYTE *pkt = md->md_TxBuf;
-    struct MDNSHeader *hdr = (struct MDNSHeader *)pkt;
-    LONG pos;
-    UWORD ancount = 0;
-
-    subtypes_reflect(md, rs, goodbye, ifindex, consumers, queryHandle);
-    pos = mdnsResponseBegin(md, pkt);
-    if (service_append(md, rs, goodbye, ifindex, pkt, &pos, &ancount,
-            TRUE)) {
-        hdr->ancount = htons(ancount);
-        mdnsReflectPacket(md, pkt, pos, ifindex, consumers, queryHandle);
-        type_reflect(md, rs, goodbye, ifindex, consumers, queryHandle);
-    }
-}
-
-void
-mdnsRegAnswerLocal(struct MDNSDaemon *md, UWORD consumers, APTR queryHandle)
-{
-    struct Node *n;
-    LONG i;
-
-    FOR_SERVICES(md, n) {
-        struct MDNSRegisteredService *rs =
-            (struct MDNSRegisteredService *)n;
-
-        if (rs->rs_State != MDNS_NAME_ANNOUNCED) {
-            continue;
-        }
-        for (i = 0; i < md->md_IfCount; i++) {
-            service_reflect(md, rs, FALSE, i, consumers, queryHandle);
-        }
-    }
+    mdnsReflectPacket(md, pkt, pos, ifindex);
 }
 
 /* One service's records as a response of their own, to the interface a
@@ -547,11 +476,10 @@ service_send(struct MDNSDaemon *md, struct MDNSRegisteredService *rs,
                 rs->rs_Multicast = mdnsNow();
                 rs->rs_MulticastTick[i] = mdnsTicks();
             }
+            /* what goes to the group, the host's own cache has too */
             if (!mdnsReplyIsUnicast(md)) {
-                mdnsReflectPacket(md, pkt, pos, i,
-                    MDNS_REFLECT_DISCOVERY | MDNS_REFLECT_QUERY, NULL);
-                type_reflect(md, rs, goodbye, i,
-                    MDNS_REFLECT_DISCOVERY | MDNS_REFLECT_QUERY, NULL);
+                mdnsReflectPacket(md, pkt, pos, i);
+                type_reflect(md, rs, goodbye, i);
             }
         }
     }
@@ -1513,7 +1441,7 @@ mdnsRegHandleQuery(struct MDNSDaemon *md, struct MDNSQuestion *q,
 }
 
 /* The service whose reference a client has, or NULL. */
-struct MDNSRegisteredService *
+static struct MDNSRegisteredService *
 mdnsRegFind(const struct MDNSDaemon *md, CONST_APTR ref)
 {
     struct Node *n;
@@ -1529,8 +1457,7 @@ mdnsRegFind(const struct MDNSDaemon *md, CONST_APTR ref)
 /*
  * A service from its registration (dnssd_reg_init() has checked it): its
  * TXT data as it goes on the wire (txtLength bytes, 0 for one empty
- * string), the time to live of its own records (0 for the defaults), and
- * whose it is (owner: what the front end names its clients by). The name
+ * string) and the time to live of its own records (0 for the defaults). The name
  * is probed first; mdnsRegTick() announces it about a second from now, and
  * tells notify each time it is announced - under the next free name if
  * another host had it - or that the host it stands in for is another's.
@@ -1538,7 +1465,7 @@ mdnsRegFind(const struct MDNSDaemon *md, CONST_APTR ref)
  */
 LONG
 mdnsRegAddCanonical(struct MDNSDaemon *md, const struct dnssd_reg *reg,
-    const UBYTE *txt, UWORD txtLength, ULONG ttl, ULONG owner,
+    const UBYTE *txt, UWORD txtLength, ULONG ttl,
     MDNSRegNotify notify, APTR data, APTR *ref)
 {
     struct MDNSRegisteredService *rs;
@@ -1578,7 +1505,6 @@ mdnsRegAddCanonical(struct MDNSDaemon *md, const struct dnssd_reg *reg,
     rs->rs_Reg.state = DNSSD_REG_PENDING;
     names_build(rs);
     rs->rs_TTL = ttl;
-    rs->rs_Owner = owner;
     rs->rs_Notify = notify;
     rs->rs_NotifyData = data;
     rs->rs_ClientRef = (APTR)(IPTR)md->md_NextHandle++;
@@ -1622,8 +1548,7 @@ addresses_goodbye(struct MDNSDaemon *md, const struct MDNSRegisteredService *rs,
         if (ancount != 0) {
             ((struct MDNSHeader *)pkt)->ancount = htons(ancount);
             mdnsNetSendOn(md, slot, pkt, pos);
-            mdnsReflectPacket(md, pkt, pos, slot,
-                MDNS_REFLECT_DISCOVERY | MDNS_REFLECT_QUERY, NULL);
+            mdnsReflectPacket(md, pkt, pos, slot);
         }
     }
 }
@@ -1722,20 +1647,6 @@ mdnsRegRemoveRef(struct MDNSDaemon *md, APTR ref)
 
     if (rs != NULL) {
         service_remove(md, rs);
-    }
-}
-
-/* Every service of one owner goes (a client that is gone). */
-void
-mdnsRegRemoveOwner(struct MDNSDaemon *md, ULONG owner)
-{
-    struct Node *n, *next;
-
-    for (n = md->md_Services.lh_Head; n->ln_Succ != NULL; n = next) {
-        next = n->ln_Succ;
-        if (((struct MDNSRegisteredService *)n)->rs_Owner == owner) {
-            service_remove(md, (struct MDNSRegisteredService *)n);
-        }
     }
 }
 

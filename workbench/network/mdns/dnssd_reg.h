@@ -10,8 +10,8 @@
  * stands in for (its label and its addresses, IPv4 and IPv6 alike), the
  * port and the link. The names the records carry are built from it, as
  * wire names; a conflict renames the instance ("Name (2)") here. No client
- * library's types are in it: the daemon's two front ends - dnssd.library's
- * requests, and bonami.library's until it goes - fill it in.
+ * library's types are in it: dnssd.library's requests fill it in
+ * (dnssd_server.c).
  *
  * Plain C, as dnssd_model.c: built into mdnsd and into the host test.
  */

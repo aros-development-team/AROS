@@ -8,9 +8,10 @@
  * It answers for the host's name in the mDNS domain, "<hostname>.local", on
  * every interface that can multicast, so that other machines on the link
  * find this one by name without a DNS server, and for the services that
- * programs on this host register through bonami.library (RFC 6763). The
- * library reaches it through the public message port MDNS_IPC_PORT; no
- * client shares memory with it.
+ * programs on this host register through dnssd.library (RFC 6763), whose
+ * browses, resolves, lookups and record questions it answers from its
+ * cache. The library reaches it through the public message port
+ * DNSSD_IPC_PORT; no client shares memory with it.
  *
  * The AROSTCP service manager starts it from db/services.d/mdns and stops
  * it with the stack. Started by hand it runs until Ctrl-C.
@@ -31,7 +32,7 @@
 
 #include <dnssd/dnssd.h>
 
-#include "mdns_bonami.h"
+#include "mdnsd.h"
 
 /* Seconds between looks at the stack's interfaces. */
 #define MDNSD_RESCAN_SECONDS 3
@@ -69,8 +70,6 @@ net_down(struct MDNSDaemon *md)
 {
     struct Library *SocketBase = md->md_SocketBase;
 
-    mdnsDiscoveryReset(md);
-    mdnsQueryReset(md);
     mdnsRegGoodbyeAll(md);
     mdnsHostGoodbye(md);
     mdnsNetClose(md);
@@ -104,8 +103,6 @@ net_up(struct MDNSDaemon *md, ULONG addressMask)
      * for again with the addresses as they are now. */
     if (mdnsNetRescan(md)) {
         mdnsCacheLinksChanged(md);
-        mdnsDiscoveryReset(md);
-        mdnsQueryReset(md);
         mdnsHostRestart(md);
         mdnsRegRestartAll(md);
     }
@@ -282,9 +279,7 @@ main(void)
     static struct MDNSDaemon daemon;
     struct MDNSDaemon *md = &daemon;
     struct MDNSDSignals sig;
-    struct MDNSIPCMsg *msg;
-    struct MsgPort *port;
-    ULONG portmask, dportmask;
+    ULONG dportmask;
     struct DNSSDIPCMsg *dmsg;
     struct MsgPort *dport;
     ULONG lastScan = 0, lastReap = 0;
@@ -294,9 +289,9 @@ main(void)
 
     /* One responder owns the host's names. */
     Forbid();
-    port = FindPort((STRPTR)MDNS_IPC_PORT);
+    dport = FindPort((STRPTR)DNSSD_IPC_PORT);
     Permit();
-    if (port != NULL) {
+    if (dport != NULL) {
         PutStr("mdnsd: already running\n");
         return RETURN_WARN;
     }
@@ -316,9 +311,8 @@ main(void)
     NEWLIST(&md->md_Services);
     md->md_RxBuf = (UBYTE *)AllocMem(MDNS_MAX_PACKET, MEMF_CLEAR);
     md->md_TxBuf = (UBYTE *)AllocMem(MDNS_MAX_PACKET, MEMF_CLEAR);
-    port = CreateMsgPort();
     dport = CreateMsgPort();
-    if (md->md_RxBuf == NULL || md->md_TxBuf == NULL || port == NULL ||
+    if (md->md_RxBuf == NULL || md->md_TxBuf == NULL ||
         dport == NULL || !mdnsCacheInit(md)) {
         if (md->md_RxBuf != NULL) {
             FreeMem(md->md_RxBuf, MDNS_MAX_PACKET);
@@ -326,17 +320,12 @@ main(void)
         if (md->md_TxBuf != NULL) {
             FreeMem(md->md_TxBuf, MDNS_MAX_PACKET);
         }
-        if (port != NULL) {
-            DeleteMsgPort(port);
-        }
         if (dport != NULL) {
             DeleteMsgPort(dport);
         }
         return RETURN_FAIL;
     }
-    md->md_Port = port;
     md->md_DNSSDPort = dport;
-    portmask = 1UL << port->mp_SigBit;
     dportmask = 1UL << dport->mp_SigBit;
 
     /* Without the service registry, for example when started by hand, it
@@ -355,15 +344,13 @@ main(void)
     if (!dnssdServerInit(md, goneMask)) {
         PutStr("mdnsd: no memory for dnssd.library's sessions\n");
     }
-    port->mp_Node.ln_Name = (STRPTR)MDNS_IPC_PORT;
-    AddPort(port);
     /* dnssd.library's port */
     dport->mp_Node.ln_Name = (STRPTR)DNSSD_IPC_PORT;
     AddPort(dport);
 
     while (running) {
         ULONG got = wait_and_receive(md,
-            portmask | dportmask | sig.ms_Stop | sig.ms_Begin | sig.ms_End |
+            dportmask | sig.ms_Stop | sig.ms_Begin | sig.ms_End |
             addressMask | goneMask | SIGBREAKF_CTRL_C, probing);
 
         if (got & (sig.ms_Stop | SIGBREAKF_CTRL_C)) {
@@ -387,10 +374,6 @@ main(void)
             }
         }
 
-        while ((msg = (struct MDNSIPCMsg *)GetMsg(port)) != NULL) {
-            mdnsClientMessage(md, msg);
-            ReplyMsg(&msg->mi_Msg);
-        }
         if (got & goneMask) {
             dnssdServerGone(md);        /* before a message of a new task */
         }
@@ -400,16 +383,12 @@ main(void)
         }
         if (running && mdnsNow() - lastReap >= MDNSD_REAP_SECONDS) {
             lastReap = mdnsNow();
-            mdnsClientReap(md);
-            mdnsDiscoveryReap(md);
             dnssdServerReap(md);
         }
 
         /* the cache first: what it drops is told to the operations that
          * watch it, which then look again in their own turn */
         mdnsCacheTick(md);
-        mdnsDiscoveryTick(md);
-        mdnsQueryTick(md);
         dnssdServerTick(md);
         probing = FALSE;
         if (running && md->md_Socket >= 0) {
@@ -421,22 +400,13 @@ main(void)
         }
     }
 
-    /* Every lent request for events goes back while the port is still
-     * public: a client that cannot find the port any more never waits for
-     * one. Messages still queued are not acted on, so none is lent again. */
-    mdnsDiscoveryCancel(md);
-    mdnsQueryCancel(md);
+    /* Every lent notification goes back while the port is still public: a
+     * client that cannot find the port any more never waits for one.
+     * Messages still queued are not acted on, so none is lent again. */
     dnssdServerCancel(md);
 
     /* No client may find the port any more; whoever already sent is told
      * that mdnsd is gone. */
-    RemPort(port);
-    while ((msg = (struct MDNSIPCMsg *)GetMsg(port)) != NULL) {
-        msg->mi_Result = MDNSERR_NOENGINE;
-        ReplyMsg(&msg->mi_Msg);
-    }
-    DeleteMsgPort(port);
-    md->md_Port = NULL;
     RemPort(dport);
     while ((dmsg = (struct DNSSDIPCMsg *)GetMsg(dport)) != NULL) {
         if (DNSSD_IPC_REQUEST_ROOM(dmsg->dm_Msg.mn_Length) >= sizeof(dmsg->dm_Request)) {
@@ -449,9 +419,7 @@ main(void)
 
     net_down(md);
     mdnsRegFree(md);
-    mdnsDiscoveryFree(md);
     dnssdServerFree(md);
-    mdnsQueryFree(md);
     mdnsCacheFree(md);
     mdnsdServiceClose();
     if (addressSignal >= 0) {

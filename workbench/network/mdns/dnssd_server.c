@@ -698,7 +698,7 @@ start_register(struct MDNSDaemon *md, struct ServerOperation *op,
         return DNSSD_ERR_BADNAME;
     }
     rc = mdnsRegAddCanonical(md, &reg, dnssd_ipc_data(r, &r->txt),
-        (UWORD)r->txt.size, r->ttl, 0, register_notify, op, &op->so_Service);
+        (UWORD)r->txt.size, r->ttl, register_notify, op, &op->so_Service);
     return rc == MDNSD_OK ? DNSSD_OK : rc == MDNSD_ERR_DUPLICATE ? DNSSD_ERR_EXISTS :
         rc == MDNSD_ERR_NOMEM ? DNSSD_ERR_NOMEM : DNSSD_ERR_BADPARAM;
 }
