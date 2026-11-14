@@ -61,6 +61,7 @@ include $(SRCDIR)/config/aros.cfg
 #MM                              kernel-pc-i386-serial \
 #MM                              kernel-pc-i386-parallel \
 #MM                              kernel-hidd-i8042 \
+#MM                              kernel-hidd-i2chid \
 #MM                              kernel-hidd-pci \
 #MM                              kernel-hidd-pci-pcipc \
 #MM                              kernel-hidd-vesagfx \
@@ -72,7 +73,7 @@ KLIBS       := acpica
 KLIBS_ARCH  := expansion
 KDEVS       := ahci ata nvme virtio
 KDEVS_ARCH  := timer
-KHIDDS      := ata_pci bus i8042 vesagfx vgagfx pci pcipc serial parallel storage system acpibutton
+KHIDDS      := ata_pci bus i8042 i2chid vesagfx vgagfx pci pcipc serial parallel storage system acpibutton
 
 %make_package mmake=kernel-bsp-pc-i386 file=$(AROSARCHDIR)/aros-bsp.pkg \
     devs=$(KDEVS) arch_devs=$(KDEVS_ARCH) hidds=$(KHIDDS) libs=$(KLIBS) \
