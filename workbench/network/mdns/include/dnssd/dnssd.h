@@ -150,6 +150,8 @@ struct DNSSDEvent
 #define DNSSD_HostAddress   (DNSSD_Dummy + 11)  /* Register, Update: one of its addresses, struct
                                                  * DNSSDAddress *, IPv4 or IPv6 - one tag each, up to
                                                  * 8; an IPv6 link-local one with its da_Interface */
+#define DNSSD_TimeToLive    (DNSSD_Dummy + 12)  /* Register, Update: seconds its records live, 1-4500;
+                                                 * default 120 for the host's, 4500 for the others */
 
 /* DNSSD_GetStatusA() */
 #define DNSSD_Status_Incarnation (DNSSD_Dummy + 0x100)  /* ULONG *: mdnsd's incarnation */

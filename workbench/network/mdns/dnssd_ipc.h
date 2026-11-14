@@ -48,6 +48,9 @@
 #define DNSSD_IPC_MAX_SIZE      16384u  /* the largest request */
 #define DNSSD_IPC_MAX_ADDRESSES 8u      /* addresses of a host registered for */
 #define DNSSD_IPC_MAX_SUBTYPES  8u
+/* RESOLVE: no time limit - it runs until it is cancelled (timeout 0) */
+#define DNSSD_IPC_FLAG_UNTIL_CANCELLED  0x0001u
+#define DNSSD_IPC_MAX_TTL       4500u   /* seconds a record may live (RFC 6762 section 10) */
 
 enum dnssd_ipc_result {
     DNSSD_IPC_OK = 0,
@@ -73,7 +76,7 @@ struct dnssd_ipc_request {
     uint16_t version;
     uint16_t header_size;
     uint16_t command;
-    uint16_t flags;             /* none defined: 0 */
+    uint16_t flags;             /* DNSSD_IPC_FLAG_*, the others 0 */
     int32_t  result;
     uint32_t task;              /* the caller's GetETaskID() */
     uint32_t incarnation;
@@ -82,6 +85,9 @@ struct dnssd_ipc_request {
     uint32_t family;            /* LOOKUP: DNSSD_FAMILY_* */
     uint32_t interface_index;   /* 0: every link */
     uint32_t timeout;           /* seconds */
+    uint32_t ttl;               /* REGISTER, UPDATE: of the records, seconds,
+                                 * 1-DNSSD_IPC_MAX_TTL (0: the defaults,
+                                 * or unchanged) */
     uint16_t rrtype;            /* QUERY */
     uint16_t port;              /* REGISTER, UPDATE (0: unchanged) */
     uint32_t count[2];          /* STATUS: sessions, operations */

@@ -48,8 +48,16 @@
 #include "dnssd_model.h"
 
 #define SERVER_SESSIONS         16
-#define SERVER_OPERATIONS       32
-#define SESSION_OPERATIONS      8      /* one session's at a time */
+/* Operations at a time, in all and of one session: a browse that follows
+ * what it finds has a resolve for each instance. Each costs memory only
+ * while it runs; the bounds keep one program from taking it all. */
+#if defined(__mc68000__)
+#define SERVER_OPERATIONS       48
+#define SESSION_OPERATIONS      24
+#else
+#define SERVER_OPERATIONS       128
+#define SESSION_OPERATIONS      64
+#endif
 #define SESSION_EVENTS          64     /* queued for one session */
 #define LOOKUP_ADDRESSES        16     /* distinct addresses one lookup reports */
 
@@ -690,7 +698,7 @@ start_register(struct MDNSDaemon *md, struct ServerOperation *op,
         return DNSSD_ERR_BADNAME;
     }
     rc = mdnsRegAddCanonical(md, &reg, dnssd_ipc_data(r, &r->txt),
-        (UWORD)r->txt.size, 0, 0, register_notify, op, &op->so_Service);
+        (UWORD)r->txt.size, r->ttl, 0, register_notify, op, &op->so_Service);
     return rc == MDNSD_OK ? DNSSD_OK : rc == MDNSD_ERR_DUPLICATE ? DNSSD_ERR_EXISTS :
         rc == MDNSD_ERR_NOMEM ? DNSSD_ERR_NOMEM : DNSSD_ERR_BADPARAM;
 }
@@ -785,7 +793,7 @@ start_operation(struct MDNSDaemon *md, struct ServerSession *ss, LONG sslot,
         break;
     default:
         kind = OP_RESOLVE;
-        if (timeout == 0) {
+        if (timeout == 0 && !(r->flags & DNSSD_IPC_FLAG_UNTIL_CANCELLED)) {
             timeout = 5;
         }
         break;
@@ -1083,7 +1091,7 @@ dnssdServerMessage(struct MDNSDaemon *md, struct DNSSDIPCMsg *msg)
             r->result = DNSSD_ERR_BADPARAM;
             if (r->txt.size <= MDNS_TXT_DATA_MAX &&
                 mdnsRegUpdateRef(md, op->so_Service, dnssd_ipc_data(r, &r->txt),
-                    (UWORD)r->txt.size, r->port, addresses, naddr, 0) == MDNSD_OK) {
+                    (UWORD)r->txt.size, r->port, addresses, naddr, r->ttl) == MDNSD_OK) {
                 r->result = DNSSD_OK;
             }
         }
