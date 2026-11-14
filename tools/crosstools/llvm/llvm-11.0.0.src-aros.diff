@@ -1329,3 +1329,14 @@ diff -ruN -x '*.orig' -x '*.rej' llvm-11.0.0.src/lib/Support/YAMLTraits.cpp llvm
        if (!Key || !Value) {
          if (!Key)
            setError(KeyNode, "Map key must be a scalar");
+diff -ruN -x '*.orig' -x '*.rej' llvm-11.0.0.src/lib/Target/X86/MCTargetDesc/X86MCTargetDesc.h llvm-11.0.0.src.aros/lib/Target/X86/MCTargetDesc/X86MCTargetDesc.h
+--- llvm-11.0.0.src/lib/Target/X86/MCTargetDesc/X86MCTargetDesc.h	2020-10-07 10:10:48.000000000 +0000
++++ llvm-11.0.0.src.aros/lib/Target/X86/MCTargetDesc/X86MCTargetDesc.h	2020-10-07 10:10:48.000000000 +0000
+@@ -13,5 +13,6 @@
+ #ifndef LLVM_LIB_TARGET_X86_MCTARGETDESC_X86MCTARGETDESC_H
+ #define LLVM_LIB_TARGET_X86_MCTARGETDESC_X86MCTARGETDESC_H
+-
++
++#include <cstdint>
+ #include <memory>
+ #include <string>
