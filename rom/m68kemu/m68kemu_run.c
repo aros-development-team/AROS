@@ -83,17 +83,19 @@ static LONG setup_and_execute(struct M68KEmuContext *ctx, ULONG entry,
         snprintf(ctx->program_name, sizeof(ctx->program_name), "%s", programName);
     }
 
+    /* C startup reads pr_Arguments from the initial Process shadow. */
+    ctx->m68k_argptr  = m68k_argptr;
+    ctx->m68k_argsize = argSize;
+
     /* Init ExecBase shadow data fields */
     shadow_init_execbase(ctx, m68k_sysbase, SysBase);
 
     /* Auto-open libraries referenced by C startup tables */
     M68KEmu_AutoOpenLibs(ctx);
 
-    /* Store arguments for the entry point —
-       M68KEmu_Execute will set registers after reset */
+    /* Store the remaining entry-point state; M68KEmu_Execute sets
+       registers from this context after reset. */
     ctx->entry_point  = entry;
-    ctx->m68k_argptr  = m68k_argptr;
-    ctx->m68k_argsize = argSize;
     ctx->m68k_sysbase = m68k_sysbase;
 
     /* If stackSize is 0, run directly (non-threaded) */
@@ -142,6 +144,10 @@ static LONG setup_and_execute(struct M68KEmuContext *ctx, ULONG entry,
             { NP_CloseInput,  FALSE },
             { NP_Output,      (IPTR)Output() },
             { NP_CloseOutput, FALSE },
+            /* Borrow all three caller streams; the child must not close them. */
+            { NP_Error,       me->pr_Task.tc_Node.ln_Type == NT_PROCESS
+                              ? (IPTR)me->pr_CES : (IPTR)BNULL },
+            { NP_CloseError,  FALSE },
             { NP_CurrentDir,  (IPTR)dirlock },
             { homeDir ? NP_HomeDir : TAG_IGNORE, (IPTR)homeDir },
             { NP_Cli,         is_cli },
@@ -211,7 +217,7 @@ static LONG setup_and_execute(struct M68KEmuContext *ctx, ULONG entry,
         WaitPort(&me->pr_MsgPort);
         wb = GetMsg(&me->pr_MsgPort);
     }
-    ctx = M68KEmu_CreateContext(M68KEmuBase);
+    ctx = M68KEmu_CreateContextWithStack(M68KEmuBase, stackSize);
     if (!ctx)
     {
         if (wb)
@@ -287,7 +293,7 @@ static LONG setup_and_execute(struct M68KEmuContext *ctx, ULONG entry,
     { FreeMem(fileData, fileSize); Close(fh); return -1; }
     Close(fh);
 
-    ctx = M68KEmu_CreateContext(M68KEmuBase);
+    ctx = M68KEmu_CreateContextWithStack(M68KEmuBase, stackSize);
     if (!ctx) { FreeMem(fileData, fileSize); return -1; }
 
     entry = M68KEmu_LoadHunksFromMemory(ctx, fileData, fileSize);

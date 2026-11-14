@@ -39,6 +39,7 @@
 #include "m68kemu_offsets.h"
 
 void *shadow_lookup(struct M68KEmuContext *ctx, ULONG m68k_addr);
+void shadow_remove(struct M68KEmuContext *ctx, ULONG m68k_addr);
 
 /* ---------------------------------------------------------------------- */
 /* the tasks of the program                                               */
@@ -872,17 +873,23 @@ static LONG child_entry(void)
     struct M68KChild *ch = (struct M68KChild *)me->pr_Task.tc_UserData;
     struct M68KEmuContext *ctx = ch->ctx;
     ULONG regs[15] = { 0 };
-    LONG rc;
+    LONG rc = 0;
 
     m68k_gil_obtain(ctx);
-    m68k_process_of(ctx, &me->pr_Task);
-    regs[14] = ctx->m68k_sysbase;              /* A6 */
-    rc = (LONG)M68KEmu_RunTask(ctx, ch->entry, ch->stack + ch->stacksize, regs);
-    if (ch->exitcode && !ctx->faulted)
+    /* create_proc() cancelled this child: it has no m68k Process and the
+       program was told that there is no child. Nothing of the program runs
+       here then; the child only gives back what was made for it. */
+    if (ch->entry)
     {
-        regs[0] = rc;
-        regs[1] = ch->exitdata;
-        M68KEmu_RunTask(ctx, ch->exitcode, ch->stack + ch->stacksize, regs);
+        m68k_process_of(ctx, &me->pr_Task);
+        regs[14] = ctx->m68k_sysbase;              /* A6 */
+        rc = (LONG)M68KEmu_RunTask(ctx, ch->entry, ch->stack + ch->stacksize, regs);
+        if (ch->exitcode && !ctx->faulted)
+        {
+            regs[0] = rc;
+            regs[1] = ch->exitdata;
+            M68KEmu_RunTask(ctx, ch->exitcode, ch->stack + ch->stacksize, regs);
+        }
     }
     M68KEmu_HeapFree(ctx, ch->stack, ch->stacksize);
     ctx->num_children--;
@@ -920,6 +927,46 @@ static char *proc_name(struct M68KEmuContext *ctx, ULONG data)
         name[len] = 0;
     }
     return name;
+}
+
+/* shadow_remove() takes the first entry with a guest address: only when
+   that is the entry meant, by its native pointer and its type */
+static void m68k_forget_entry(struct M68KEmuContext *ctx, ULONG addr, void *native, UWORD type)
+{
+    for (UWORD i = 0; i < ctx->num_shadows; i++)
+        if (ctx->shadow_map[i].m68k_addr == addr)
+        {
+            if (ctx->shadow_map[i].native_ptr == native && ctx->shadow_map[i].type == type)
+                shadow_remove(ctx, addr);
+            return;
+        }
+}
+
+/* A process just created has nothing in the registry yet. What is there
+   for its native address was left by an ended process that had the same
+   one: its Process and its port. They are forgotten, so that the new
+   process gets a guest Process of its own, with nothing of the other's.
+   The ended one's guest structure stays in the program's memory. */
+static void m68k_process_forget(struct M68KEmuContext *ctx, struct Task *task)
+{
+    const struct M68KStructLayout *tl = shadow_find_layout("Task");
+    const struct M68KStructLayout *pl = shadow_find_layout("MsgPort");
+
+    if (!task || !tl || !pl || task == ctx->emu_task)
+        return;
+    for (UWORD i = 0; i < ctx->num_shadows; i++)
+        if (ctx->shadow_map[i].native_ptr == task && ctx->shadow_map[i].type == tl->shadow_type)
+        {
+            ULONG old = ctx->shadow_map[i].m68k_addr;
+
+            if (old != ctx->m68k_proc)
+            {
+                m68k_forget_entry(ctx, old + M68K_PR_MSGPORT, &((struct Process *)task)->pr_MsgPort,
+                                  pl->shadow_type);
+                m68k_forget_entry(ctx, old, task, tl->shadow_type);
+            }
+            return;
+        }
 }
 
 /* A process of the program: from CreateNewProc tags, or CreateProc's name,
@@ -1016,7 +1063,11 @@ static IPTR create_proc(struct M68KEmuContext *ctx, void *cpu, ULONG state,
             Forbid();
             p = CreateNewProc(t);
             if (p)
+            {
                 ctx->native_procs[k] = p;
+                /* while nothing else runs: it does not wait for the lock */
+                m68k_process_forget(ctx, &p->pr_Task);
+            }
             Permit();
             FreeVec(name);
             if (!p)
@@ -1065,7 +1116,16 @@ static IPTR create_proc(struct M68KEmuContext *ctx, void *cpu, ULONG state,
         FreeVec(ch);
         return 0;
     }
-    return m68k_process_of(ctx, &p->pr_Task);
+    /* the child waits for the program's lock before it does anything */
+    m68k_process_forget(ctx, &p->pr_Task);
+    ULONG mproc = m68k_process_of(ctx, &p->pr_Task);
+    /* No m68k Process for it: the program is told that there is no child.
+       The native process exists already, so it is cancelled while it still
+       waits for the lock: it will run neither its entry nor its exit code,
+       and gives back its stack, its count and its hold itself. */
+    if (!mproc)
+        ch->entry = ch->exitcode = 0;
+    return mproc;
 }
 
 /* dos -498: CreateNewProc(D1=tags) */

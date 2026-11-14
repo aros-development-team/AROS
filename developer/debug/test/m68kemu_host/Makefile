@@ -60,3 +60,75 @@ test-library-loading-versions-sanitize:
 	$(PYTHON) "$(TEST_DIR)/regressions/run_library_loading_versions.py" --cxx "$(CXX)" --sanitize $(LIBRARY_LOADING_ARGS)
 
 .PHONY: test-library-loading-versions test-library-loading-versions-sanitize
+
+# Requested root-stack reservation: ordinary fixture in test, sanitizer optional.
+REQUESTED_STACK_ARGS ?=
+test: test-requested-stack
+
+test-requested-stack:
+	$(PYTHON) "$(TEST_DIR)/regressions/run_requested_stack.py" --cc "$(CC)" $(REQUESTED_STACK_ARGS)
+
+test-requested-stack-sanitize:
+	$(PYTHON) "$(TEST_DIR)/regressions/run_requested_stack.py" --cc "$(CC)" --sanitize $(REQUESTED_STACK_ARGS)
+
+.PHONY: test-requested-stack test-requested-stack-sanitize
+
+# Process stream borrowing and translation: ordinary fixture in test, sanitizer optional.
+PROCESS_STREAMS_ARGS ?=
+test: test-process-streams
+
+test-process-streams:
+	$(PYTHON) "$(TEST_DIR)/regressions/run_process_streams.py" --cc "$(CC)" $(PROCESS_STREAMS_ARGS)
+
+test-process-streams-sanitize:
+	$(PYTHON) "$(TEST_DIR)/regressions/run_process_streams.py" --cc "$(CC)" --sanitize $(PROCESS_STREAMS_ARGS)
+
+.PHONY: test-process-streams test-process-streams-sanitize
+
+# Initial Process arguments: ordinary fixture in test, sanitizer optional.
+INITIAL_ARGUMENTS_ARGS ?=
+test: test-initial-arguments
+
+test-initial-arguments:
+	$(PYTHON) "$(TEST_DIR)/regressions/run_initial_arguments.py" --cc "$(CC)" $(INITIAL_ARGUMENTS_ARGS)
+
+test-initial-arguments-sanitize:
+	$(PYTHON) "$(TEST_DIR)/regressions/run_initial_arguments.py" --cc "$(CC)" --sanitize $(INITIAL_ARGUMENTS_ARGS)
+
+.PHONY: test-initial-arguments test-initial-arguments-sanitize
+
+# Guest GetArgStr and SetArgStr: ordinary fixture in test, sanitizer optional.
+ARGUMENT_APIS_ARGS ?=
+test: test-argument-apis
+
+test-argument-apis:
+	$(PYTHON) "$(TEST_DIR)/regressions/run_argument_apis.py" --cc "$(CC)" $(ARGUMENT_APIS_ARGS)
+
+test-argument-apis-sanitize:
+	$(PYTHON) "$(TEST_DIR)/regressions/run_argument_apis.py" --cc "$(CC)" --sanitize $(ARGUMENT_APIS_ARGS)
+
+.PHONY: test-argument-apis test-argument-apis-sanitize
+
+# AllocBitMap result projection: ordinary fixture in test, sanitizer optional.
+BITMAP_RESULT_ARGS ?=
+test: test-bitmap-result
+
+test-bitmap-result:
+	$(PYTHON) "$(TEST_DIR)/regressions/run_bitmap_result.py" --cc "$(CC)" $(BITMAP_RESULT_ARGS)
+
+test-bitmap-result-sanitize:
+	$(PYTHON) "$(TEST_DIR)/regressions/run_bitmap_result.py" --cc "$(CC)" --sanitize $(BITMAP_RESULT_ARGS)
+
+.PHONY: test-bitmap-result test-bitmap-result-sanitize
+
+# A 68k child without a guest Process: ordinary fixture in test, sanitizer optional.
+CHILD_PROJECTION_ARGS ?=
+test: test-child-projection
+
+test-child-projection:
+	$(PYTHON) "$(TEST_DIR)/regressions/run_child_projection.py" --cc "$(CC)" $(CHILD_PROJECTION_ARGS)
+
+test-child-projection-sanitize:
+	$(PYTHON) "$(TEST_DIR)/regressions/run_child_projection.py" --cc "$(CC)" --sanitize $(CHILD_PROJECTION_ARGS)
+
+.PHONY: test-child-projection test-child-projection-sanitize
