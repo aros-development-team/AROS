@@ -52,9 +52,9 @@ int netmidi_network_receive(const struct netmidi_network_runtime *runtime,
  * AROS. Returns -1 when there is none or it gave less than was asked. */
 int netmidi_network_random(void *buffer, size_t length);
 /* Waits up to timeout_us for a datagram on any socket, or, on AROS, for
- * wake_signal_bit or Ctrl-C. */
+ * one of the signals of wake_signals (a mask) or Ctrl-C. */
 int netmidi_network_wait(const struct netmidi_network_runtime *runtime,
-                         long timeout_us, int wake_signal_bit,
+                         long timeout_us, unsigned long wake_signals,
                          unsigned int *events);
 
 #endif
