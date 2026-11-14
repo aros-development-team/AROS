@@ -287,33 +287,6 @@ mdnsWireNameRead(const UBYTE *pkt, LONG length, LONG offset, UBYTE *name)
     return -1;
 }
 
-/* A text name ("host.local", dots separate labels, no escapes) as wire
- * labels; FALSE if it does not make a name. */
-BOOL
-mdnsWireNameFromText(const char *text, UBYTE *name)
-{
-    LONG at = 0, start;
-
-    while (*text != '\0') {
-        start = at++;
-        while (*text != '\0' && *text != '.') {
-            if (at >= 254 || at - start > 63) {
-                return FALSE;
-            }
-            name[at++] = (UBYTE)*text++;
-        }
-        if (at - start - 1 == 0) {
-            return FALSE;
-        }
-        name[start] = (UBYTE)(at - start - 1);
-        if (*text == '.') {
-            text++;
-        }
-    }
-    name[at] = 0;
-    return at > 0;
-}
-
 LONG
 mdnsParseQuestion(const UBYTE *pkt, LONG pktlen, LONG offset,
     struct MDNSQuestion *q, LONG *consumed)
@@ -455,29 +428,3 @@ mdnsBuildQueryWire(UBYTE *pkt, LONG pktmax, UWORD id, const UBYTE *qname,
     return 0;
 }
 
-LONG
-mdnsTxtNext(const char *text, LONG *pos, UBYTE *item, LONG max)
-{
-    LONG in = *pos;
-    LONG out = 0;
-
-    while (text[in] == ' ') {
-        in++;
-    }
-    if (text[in] == '\0') {
-        *pos = in;
-        return -1;
-    }
-    while (text[in] != '\0' && text[in] != ' ') {
-        /* a backslash gives the next character as it is */
-        if (text[in] == '\\' && text[in + 1] != '\0') {
-            in++;
-        }
-        if (out < max) {
-            item[out++] = (UBYTE)text[in];
-        }
-        in++;
-    }
-    *pos = in;
-    return out;
-}

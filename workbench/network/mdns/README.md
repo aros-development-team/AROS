@@ -1,4 +1,4 @@
-# mdnsd and bonami.library
+# mdnsd and dnssd.library
 
 `mdnsd` is a dual-stack multicast DNS responder (RFC 6762) for AROSTCP. It answers for
 the host's name in the mDNS domain, `<hostname>.local`, on every interface
@@ -6,15 +6,11 @@ that can multicast, so that other machines on the link find this one by name
 without a DNS server: `ping amiga.local`, `ssh amiga.local`.
 
 It also answers for the services that programs on this host offer (DNS-SD,
-RFC 6763), which they register through `bonami.library`, so that other
+RFC 6763), which they register through `dnssd.library`, so that other
 machines find a printer, a file share or a MIDI session without being told
-an address or a port.
-
-It also browses for services and resolves them asynchronously, through a
-queue per operation with an optional wakeup by a lent request message. See
-[DISCOVERY.md](DISCOVERY.md) for the API, lifetime contract and limits.
-It can also list the service types present on the link (RFC 6763 section
-9). Generic host lookup and record queries remain separate.
+an address or a port; and it finds the services of other machines for
+them: browse, resolve, address lookup and record questions, answered from
+one cache of what it hears on the links.
 
 ## What it does
 
@@ -34,13 +30,13 @@ It can also list the service types present on the link (RFC 6763 section
   bit (section 6.7). A question with the unicast-response bit is answered to
   the asker alone when the group had the record within the last 30 seconds,
   and to the group otherwise (section 5.4).
-- **Interfaces.** An IPv4 UDP 5353 socket for each usable IPv4 interface,
-  bound with `SO_BINDTODEVICE`, and one IPv6 UDP 5353 socket joined to
-  `ff02::fb` on every usable IPv6 link. `IPV6_PKTINFO` identifies the input
-  link and scoped destinations select the output link. Tentative, duplicate,
-  detached and deprecated IPv6 addresses are not used. AROSTCP signals mdnsd
-  when an address changes, and a three-second scan remains as a fallback; a
-  link that came, went or changed its usable address makes mdnsd probe again.
+- **Interfaces.** One IPv4 and one IPv6 UDP 5353 socket for every usable
+  link. `IP_PKTINFO` and `IPV6_PKTINFO` name the link a datagram came by,
+  and each answer leaves by the link that was asked, from that link's
+  address. Tentative, duplicate, detached and deprecated IPv6 addresses are
+  not used. AROSTCP signals mdnsd when an address changes, and a
+  three-second scan remains as a fallback; a link that came, went or changed
+  its usable address makes mdnsd probe again.
 - **Goodbye.** When it stops, or lets go of the stack, it withdraws the
   record with a time to live of zero.
 
@@ -50,16 +46,18 @@ It can also list the service types present on the link (RFC 6763 section
   `Printer._ipp._tcp.local`, with a `PTR` record from the type to the
   instance, the instance's `SRV` (this host's name and the port) and `TXT`,
   and the host's address. Its own records live 75 minutes and the `SRV` two,
-  or what its client asked for.
-- **Subtypes.** A registration may repeat `MDNS_ServiceSubtype` for up to
-  eight subtype labels. Each publishes a shared PTR such as
-  `_printer._sub._ipp._tcp.local` to the ordinary instance; SRV, TXT and
-  addresses remain shared with the base registration. Browsing the subtype
-  uses that full `_sub` type and still reports the base type in legacy events.
+  or what its client asked for (`DNSSD_TimeToLive`).
+- **The registration** is kept as DNS has it (`dnssd_reg.h`): the
+  instance's own label (UTF-8, dots allowed), type and domain as wire names,
+  subtypes as labels, and the names its records carry built once, compared
+  with what comes in as wire names.
+- **Subtypes.** A registration may have up to eight subtype labels. Each
+  publishes a shared PTR such as `_printer._sub._ipp._tcp.local` to the
+  ordinary instance; SRV, TXT and addresses remain the base registration's.
 - **The name** is asked for and announced as the host's is, and waits for
   the host's name to be settled. When another host has it the service
   becomes `Printer (2)`, then `Printer (3)`; when two hosts ask at the same
-  moment the `SRV` records are compared (section 8.2).
+  moment their records are compared (section 8.2).
 - **Answers.** A question for the type is answered after 20 to 120 ms,
   picked at random, with every instance of the type in one response and the
   host's address once (section 6); an instance the asker lists as known is
@@ -67,118 +65,79 @@ It can also list the service types present on the link (RFC 6763 section
   `_services._dns-sd._udp.local` is answered with the types there are.
   Plain DNS resolvers and the unicast-response bit are treated as for the
   host's name.
-- **Another host's service.** A client may register a service with a host
-  name and an address of its own, for a machine that does not speak mDNS:
-  mdnsd then answers for that name too.
-- **Clients that go away.** With a task's last `CloseLibrary()` what it
-  registered is withdrawn. A task that ends without closing is noticed
-  within a few seconds through its stable Exec task ID. `FindTaskByPID()`
-  checks running/spinning tasks on SMP as well as ready/waiting tasks;
-  a new task reusing an old task's address does not inherit its services.
+- **Another host's service.** A client may register a service for a machine
+  that does not speak mDNS, with that host's name and addresses, IPv4 and
+  IPv6: their A and AAAA records are probed, announced, answered and
+  defended with the service's.
+- **Clients that go away.** A session's services are withdrawn, with their
+  goodbyes, when it is closed or its task ends: `task.resource` tells mdnsd
+  at once (`TNA_REMOVED`), and a look by stable Exec task ID every few
+  seconds remains as recovery.
 
-## bonami.library
+## The cache
 
-The library holds no network state: network operations are messages to mdnsd's
-public port, and the reply is waited for. Without mdnsd those calls return
-`MDNSERR_NOENGINE`. `MakeTXTRecordA()` and `FreeTXTRecord()` are local memory
-helpers and do not need the daemon.
+Every answer mdnsd hears goes into one cache (`mdns_cache.c`), names in it
+as uncompressed wire labels, within a budget (24 KB on the 68k, 128 KB
+elsewhere). What an operation wants is a watch on it: a question asked on the
+links as RFC 6762 says - first within 20-120 ms, then after 1, 2, 4 s... up
+to an hour - with the answers already known, and refreshed at 80-95 % of
+each watched record's life. The questions due on a link at one time go in
+one query. A record a cache-flush answer replaces, or a goodbye, goes a
+second later. When the budget is full, a record nobody watches goes first.
+
+## dnssd.library
+
+A program opens a session with a message port of its own; each request is
+an operation of the session. mdnsd keeps the results, puts a message on the
+port when there are some, and the program reads them one event at a time
+into a buffer of its own. No pointer of the daemon's is left with the
+program, nothing arrives for an operation once it is cancelled, and every
+request is checked, over the bytes it has, before mdnsd reads it.
 
 | Function | What it does |
 |---|---|
-| `OpenMDNSEngine()` | says whether mdnsd is running |
-| `CloseMDNSEngine()` | withdraws everything the calling task registered |
-| `RegisterServiceA(tags)` | offers a service; returns at once |
-| `UpdateServiceA(ref, tags)` | changes its text or port |
-| `DeregisterService(ref)` | withdraws it |
+| `DNSSD_OpenSessionA()`, `DNSSD_CloseSession()` | a session, and its end (its operations with it) |
+| `DNSSD_ReadEvent()` | the session's next event |
+| `DNSSD_BrowseA()` | the instances of a type, or the types on the link |
+| `DNSSD_ResolveA()` | an instance's host, port, TXT and addresses; with `DNSSD_Timeout` 0 followed until cancelled |
+| `DNSSD_LookupAddressA()`, `DNSSD_LookupAddressSyncA()` | a host's addresses |
+| `DNSSD_QueryRecordA()` | any record |
+| `DNSSD_RegisterA()`, `DNSSD_UpdateA()` | publishes a service, and changes it |
+| `DNSSD_Cancel()` | ends an operation |
+| `DNSSD_NameToText()`, `DNSSD_OperationID()`, `DNSSD_GetStatusA()` | helpers |
 
-Some upstream ABI slots remain compatibility stubs.
-`InquiryFromNIPCTagsA` and `PublishNIPCEntitiesA` return `MDNSERR_NOTREADY`.
-
-`GetMDNSStatusA()` returns one daemon-wide counter snapshot through the six
-existing `MDNS_Status*` output tags. RX/TX count successful datagrams and RX
-answers count answer-section records parsed from responses. The debug values
-count records offered to queued discovery, PTR records among them, and queue
-delivery attempts. Counters reset when mdnsd starts.
-
-Version 41.3 also provides `LookupHostA()` and queued generic record queries:
-`QueryRecordA()` / `StopQuery()`, `ReadMDNSRecordEvent()` and the existing
-`RequestMDNSEvent()` wakeup. See `DISCOVERY.md` for ownership, record format,
-bounds and restart behavior. Hook delivery remains deliberately unavailable;
-queries do not execute client code in mdnsd.
-Version 41.6 adds AAAA answers to generic queries. `MDNSRecordEvent` keeps
-the IPv4 interface address in `re_Interface` (zero on an IPv6-only link) and
-uses its existing reserved word as `re_InterfaceIndex`, the IPv6 scope ID.
-The queued browse, resolve and generic query APIs include services registered
-with this same mdnsd. Their canonical PTR, SRV, TXT, address and service-type
-records are reflected internally per interface; the daemon does not depend on
-receiving its own multicast packets. Updates and withdrawals produce the same
-queued changes as records learned from the link.
-Version 41.7 adds RFC 6763 subtype registration and browsing. The repeatable
-`MDNS_ServiceSubtype` tag accepts one underscored DNS label; subtype
-membership is announced, reflected locally and withdrawn with the base
-service. No public structure or vector changed.
-`UnpublishNIPCEntitiesA` does nothing. The remaining compatibility stubs
-invoke no callbacks, change no output buffers and take ownership of no memory.
-Public headers include the upstream handles,
-events, flags, service snapshots, tags and Envoy definitions. These
-definitions preserve source compatibility; only the registration tags
-documented by the implemented functions are acted on in this release.
-
-`dnssd -q name rrtype` prints the queued answers of a generic query until
-Ctrl-C, and `dnssd -G v4 host` performs the bounded IPv4 lookup. `dnssd -Z`
-uses a short SRV record query for each discovered instance, so its zone output
-names the real SRV target and can use that name as the A owner; it never
-invents either value from the instance name.
-
-### Task lifetime and compatibility
-
-The first fifteen slots, their order/registers and existing tag/error values
-follow upstream Bonami. The AROS implementation is version 41.7. Its daemon
-and library must be installed together: their private IPC is now version 6.
-
-Registration lifetime deliberately differs from upstream Bonami:
-
-- `CloseMDNSEngine()` withdraws the calling task's registrations; it does
-  not merely drop an engine reference and does not stop the system daemon.
-- Only the registering task can update or deregister its service. Another
-  task's update returns `MDNSERR_BADPARAM`; its deregister call does nothing.
-  Passing a reference to a main task does not transfer ownership.
-- A duplicate local instance name/type returns `MDNSERR_DUPLICATE`.
-- The registering task's final library close or termination withdraws its
-  services, even while other tasks of the program still have the library
-  open. Keep the registering task alive for as long as publication is wanted.
-
-Instance names are one DNS label (at most 63 bytes). Literal dots are
-rejected with `MDNSERR_BADPARAM` until presentation escaping is supported.
-Host names supplied for proxies must be a single label or a .local name,
-and must differ from this host's current and base names. Proxy host names
-are not independently probed; the client supplies a name/address it may
-advertise. A proxy name and address must be supplied together.
-
-`MDNS_TimeToLive` is accepted on registration and update in the range
-1..4500 seconds. An invalid TTL rejects the update before applying changes.
+Each function's AutoDoc is in `dnssd/dnssd_api.c`; the events and tags in
+`<dnssd/dnssd.h>`.
 
 ```c
-#include <proto/bonami.h>
+#include <proto/dnssd.h>
 
-MDNSRegisterRef ref = NULL;
-struct TagItem tags[] = {
-    { MDNS_ServiceName, (IPTR)"Living Room" },
-    { MDNS_ServiceType, (IPTR)"_http._tcp" },
-    { MDNS_Port, 80 },
-    { MDNS_TXTRecord, (IPTR)"path=/ note=two\\ words" },
-    { MDNS_RegisterRef, (IPTR)&ref },
-    { TAG_END, 0 }
-};
+static const UBYTE txt[] = { 6, 'p','a','t','h','=','/' };
+DNSSDSessionRef session;
+DNSSDOperationRef op;
 
-if (RegisterServiceA(tags) == MDNS_OK) {
-    /* ... */
-    DeregisterService(ref);
+if (DNSSD_OpenSessionA(&session, port, NULL) == DNSSD_OK &&
+    DNSSD_Register(session, "Living Room", "_http._tcp", 80, &op,
+        DNSSD_TXT, (IPTR)txt, DNSSD_TXTLength, sizeof(txt), TAG_DONE) == DNSSD_OK) {
+    /* DNSSD_EVENT_REGISTERED says the name it has; until ... */
+    DNSSD_CloseSession(session);
 }
 ```
 
-The text is `key=value` items with a space between them; a space inside an
-item is written with a backslash before it.
+## The tools
+
+In `C:`, on `dnssd.library` (`tools/`, each with its AutoDoc):
+
+- `dnssd` in the manner of Apple's `dns-sd` and Avahi's `avahi-browse`:
+  browse (`-B`, `-Z`), resolve (`-L`), register (`-R`, `-P` for another
+  host), record questions (`-q`) and lookups (`-G`).
+- `Nearby`, `Share` and `Handshake`, which say the same in plain words:
+  what is on the network, advertise a service, reach one.
+
+A browse in `dnssd` or `Nearby` follows what it finds: up to 16 instances
+are resolved until cancelled, and a change of their port, TXT or addresses
+is shown as it happens; others are resolved four at a time and followed
+when there is room.
 
 ## How it runs
 
@@ -194,15 +153,12 @@ Started by hand it runs until Ctrl-C.
 
 ## Limits
 
-- The legacy `MDNSDiscoveryEvent` still contains one IPv4 endpoint and IPv4
-  interface address. AAAA records are cached and available through
-  `QueryRecordA()`, but an IPv6-only service does not complete legacy
-  browse/resolve until a compatible extended event API is added.
 - One usable IPv6 link-local address is selected per interface.
 - The number after a name that was lost is not remembered when mdnsd
   restarts: it starts from the system's name again.
-- At most eight interfaces.
-- A service's text is at most 256 characters, its instance name 63 bytes.
+- At most 32 interfaces.
+- A service's TXT data is at most 8900 bytes (RFC 6763 section 6.2 asks for
+  1300 where it can), its instance name 63 bytes.
 - Known answers that come in a second packet are not waited for.
 - It needs a stack that delivers IPv4/IPv6 multicast to sockets that joined
   their groups, and a SANA-II driver that accepts the corresponding multicast
@@ -214,15 +170,17 @@ Started by hand it runs until Ctrl-C.
 |---|---|
 | `mdnsd.c` | the main loop: signals, sockets, time |
 | `mdnsd_service.c` | registration with `netservices.library` |
-| `mdns_net.c` | the interfaces and their sockets, the name in use |
+| `mdns_net.c`, `dnssd_link*.c` | the links, their addresses and sockets, the name in use |
 | `mdns_host.c` | the host's name: probing, announcing, answering, conflicts |
-| `mdns_reg.c` | registered services: probing, announcing, answering |
-| `mdns_client.c` | the library's messages; clients that went away |
-| `mdns_packet.c` | takes a received packet apart |
-| `mdns_dns.c` | the DNS wire format |
-| `mdns_ipc.h` | the messages between the library and mdnsd |
-| `library/` | `bonami.library` |
-| `include/` | `<bonami/mdns.h>`, `<libraries/bonamibase.h>` |
+| `mdns_reg.c`, `dnssd_reg.c` | registered services: probing, announcing, answering |
+| `mdns_cache.c` | the cache and the questions that keep it |
+| `mdns_packet.c`, `mdns_dns.c` | received packets; the DNS wire format |
+| `dnssd_server.c` | `dnssd.library`'s sessions and operations |
+| `dnssd_ipc.c`, `dnssd_ipc.h`, `dnssd_ipc_port.h` | the requests between the library and mdnsd |
+| `dnssd_model.c` | the events, as they are copied to a program |
+| `dnssd/` | `dnssd.library` |
+| `include/` | `<dnssd/dnssd.h>` |
+| `tools/` | `dnssd`, `Nearby`, `Share`, `Handshake` |
 | `services.d/mdns` | the service manager's entry |
 
 Derived from [amigazen Bonami](https://github.com/amigazen/Bonami), under

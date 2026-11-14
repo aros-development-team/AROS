@@ -28,7 +28,7 @@
  * (more than one only when they do not fit), each with its known answers.
  *
  * This is mdnsd's only cache: dnssd.library's operations (dnssd_server.c)
- * and bonami.library's browses (mdns_discovery.c) are watches on it.
+ * are watches on it.
  */
 #include <exec/memory.h>
 #include <proto/exec.h>
@@ -567,57 +567,6 @@ mdnsCacheTick(struct MDNSDaemon *md)
         q->cq_Interval = q->cq_Interval * 2 > QUERY_MAX_INTERVAL ?
             QUERY_MAX_INTERVAL : q->cq_Interval * 2;
     }
-}
-
-/*
- * The next record after "after" (NULL: the first) of name and type on link
- * (0: any) that is still there; NULL when there is none. Its pointer holds
- * until the cache next changes.
- */
-const struct MDNSCacheEntry *
-mdnsCacheFind(struct MDNSDaemon *md, const struct MDNSCacheEntry *after,
-    const UBYTE *name, UWORD type, ULONG link)
-{
-    struct MDNSCache *c = md->md_Cache;
-    const struct MDNSCacheEntry *e;
-    ULONG now = mdnsTicks();
-
-    if (c == NULL) {
-        return NULL;
-    }
-    e = after != NULL ? (const struct MDNSCacheEntry *)after->ce_Node.mln_Succ :
-        (const struct MDNSCacheEntry *)c->mc_Records.mlh_Head;
-    for (; e->ce_Node.mln_Succ != NULL;
-         e = (const struct MDNSCacheEntry *)e->ce_Node.mln_Succ) {
-        if ((link == 0 || e->ce_Link == link) && e->ce_Type == type &&
-            alive(e, now) && (name == NULL || mdnsWireNameEqual(e->ce_Name, name))) {
-            return e;
-        }
-    }
-    return NULL;
-}
-
-/* The latest of name and type on link (the last heard, the last of
- * several heard at once), or NULL. */
-const struct MDNSCacheEntry *
-mdnsCacheLatest(struct MDNSDaemon *md, const UBYTE *name, UWORD type,
-    ULONG link)
-{
-    const struct MDNSCacheEntry *e = NULL, *found = NULL;
-
-    while ((e = mdnsCacheFind(md, e, name, type, link)) != NULL) {
-        if (found == NULL || (LONG)(e->ce_Received - found->ce_Received) >= 0) {
-            found = e;
-        }
-    }
-    return found;
-}
-
-/* The name a watch asks for. */
-const UBYTE *
-mdnsCacheWatchName(APTR watch)
-{
-    return ((struct CacheWatch *)watch)->cw_Question->cq_Name;
 }
 
 APTR

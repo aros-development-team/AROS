@@ -22,8 +22,7 @@
 #include "dnssd_link.h"
 #include "dnssd_reg.h"
 
-/* What the responder answers its front ends (dnssd_server.c, and the
- * bonami.library port in mdns_client.c, whose codes these are). */
+/* What the responder answers its front end (dnssd_server.c). */
 #define MDNSD_OK                0
 #define MDNSD_ERR_BADPARAM      (-1)
 #define MDNSD_ERR_NOMEM         (-2)
@@ -81,7 +80,7 @@ typedef void (*MDNSRegNotify)(APTR data, const struct MDNSRegisteredService *rs,
     LONG result);
 
 /*
- * A service a client registered (dnssd.library, or bonami.library): its
+ * A service a client registered through dnssd.library: its
  * registration (dnssd_reg.h) and the names built from it, as wire names;
  * its TXT data as it goes on the wire; where it is in probing and
  * announcing.
@@ -101,8 +100,6 @@ struct MDNSRegisteredService
     UWORD           rs_Step;        /* probes or announcements sent */
     ULONG           rs_TTL;         /* of its records, 0 for the defaults */
     APTR            rs_ClientRef;   /* the handle the client has */
-    ULONG           rs_Owner;       /* whose: the front end's name for a
-                                     * client (a bonami.library task), or 0 */
     ULONG           rs_NextTick;    /* mdnsTicks() of the next step */
     ULONG           rs_Answered;    /* md_PacketSerial it last answered */
     ULONG           rs_Multicast;   /* mdnsNow() when its records last went
@@ -126,8 +123,6 @@ struct MDNSKnownAnswer
     ULONG ttl;
 };
 
-struct MDNSDiscovery;
-struct MDNSQueryState;
 struct MDNSCache;
 struct DNSSDServer;
 
@@ -156,9 +151,6 @@ struct MDNSDaemon
     ULONG                   md_RxPackets;
     ULONG                   md_TxPackets;
     ULONG                   md_RxAnswers;
-    ULONG                   md_DiscoveryRecords;
-    ULONG                   md_DiscoveryPTR;
-    ULONG                   md_DiscoveryNotify;
 
     char                    md_HostName[MDNSD_HOST_MAX + 1];
                                             /* the name in use: the system's
@@ -195,13 +187,10 @@ struct MDNSDaemon
     struct in6_addr         md_QueryAddr6;
     UWORD                   md_QueryPort;
 
-    struct MDNSDiscovery   *md_Discovery;
-    struct MDNSQueryState  *md_Query;
     struct MDNSCache       *md_Cache;
     struct DNSSDServer     *md_DNSSD;   /* dnssd.library's sessions */
     struct MsgPort         *md_DNSSDPort;
     ULONG                   md_DaemonID;
-    struct MsgPort         *md_Port;        /* bonami.library's clients' */
     struct List             md_Services;    /* MDNSRegisteredService */
     ULONG                   md_NextHandle;
     ULONG                   md_PacketSerial; /* counts received queries */
@@ -281,19 +270,6 @@ void mdnsCacheLinksChanged(const struct MDNSDaemon *md);
 APTR mdnsCacheWatch(const struct MDNSDaemon *md, const UBYTE *name, UWORD type,
     ULONG link, MDNSCacheNotify notify, APTR data);
 void mdnsCacheUnwatch(struct MDNSDaemon *md, APTR watch);
-const UBYTE *mdnsCacheWatchName(APTR watch);
-const struct MDNSCacheEntry *mdnsCacheFind(struct MDNSDaemon *md,
-    const struct MDNSCacheEntry *after, const UBYTE *name, UWORD type,
-    ULONG link);
-const struct MDNSCacheEntry *mdnsCacheLatest(struct MDNSDaemon *md,
-    const UBYTE *name, UWORD type, ULONG link);
-
-/* mdns_query.c: its part the core calls. */
-void mdnsQueryRecord(struct MDNSDaemon *md, const struct MDNSRecord *record,
-    const UBYTE *packet, LONG length);
-void mdnsQueryLocalRecord(struct MDNSDaemon *md,
-    const struct MDNSRecord *record, const UBYTE *packet, LONG length,
-    APTR handle);
 
 /* dnssd_server.c: dnssd.library's sessions and operations. */
 BOOL dnssdServerInit(struct MDNSDaemon *md, ULONG gone);
@@ -351,17 +327,12 @@ BOOL mdnsReplyIsUnicast(const struct MDNSDaemon *md);
 
 /* mdns_reg.c */
 LONG mdnsRegAddCanonical(struct MDNSDaemon *md, const struct dnssd_reg *reg,
-    const UBYTE *txt, UWORD txtLength, ULONG ttl, ULONG owner,
+    const UBYTE *txt, UWORD txtLength, ULONG ttl,
     MDNSRegNotify notify, APTR data, APTR *ref);
 LONG mdnsRegUpdateRef(struct MDNSDaemon *md, APTR ref, const UBYTE *txt,
     UWORD txtLength, UWORD port, const struct dnssd_model_wire_address *addrs,
     LONG addrCount, ULONG ttl);
 void mdnsRegRemoveRef(struct MDNSDaemon *md, APTR ref);
-void mdnsRegRemoveOwner(struct MDNSDaemon *md, ULONG owner);
-struct MDNSRegisteredService *mdnsRegFind(const struct MDNSDaemon *md,
-    CONST_APTR ref);
-void mdnsRegAnswerLocal(struct MDNSDaemon *md, UWORD consumers,
-    APTR queryHandle);
 void mdnsRegFree(struct MDNSDaemon *md);
 BOOL mdnsRegTick(struct MDNSDaemon *md);
 void mdnsRegAnnounceAll(struct MDNSDaemon *md);
@@ -380,12 +351,8 @@ void mdnsHandlePacket(struct MDNSDaemon *md, const UBYTE *pkt, LONG pktlen,
     ULONG srcaddr, UWORD srcport);
 void mdnsHandlePacket6(struct MDNSDaemon *md, const UBYTE *pkt, LONG pktlen,
     const struct in6_addr *srcaddr, UWORD srcport);
-/* The host's own records, as it sends them, go into the cache, where every
- * browse, resolve and dnssd.library operation sees them (DISCOVERY), and to
- * bonami.library's record questions (QUERY: queryHandle's, or all). */
-#define MDNS_REFLECT_DISCOVERY  1
-#define MDNS_REFLECT_QUERY      2
+/* What the host sends to the group, into its own cache. */
 void mdnsReflectPacket(struct MDNSDaemon *md, const UBYTE *pkt, LONG pktlen,
-    LONG ifindex, UWORD consumers, APTR queryHandle);
+    LONG ifindex);
 
 #endif /* MDNSD_MDNSD_H */
