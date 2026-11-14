@@ -2,7 +2,9 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-#MM- workbench-libs-vhi : includes workbench-libs-vhi-includes
+#MM- workbench-libs-complete : workbench-libs-vhi
+
+#MM- workbench-libs-vhi : includes workbench-libs-vhi-includes workbench-libs-vhi-uvc
 
 #
 # use genmodule to generate the AROS VHI Driver API headers
