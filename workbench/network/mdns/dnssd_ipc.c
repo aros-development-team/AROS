@@ -248,7 +248,10 @@ dnssd_ipc_validate(const void *buffer, size_t capacity)
         return DNSSD_IPC_BAD_MESSAGE;
     memcpy(&r, buffer, sizeof(r));
     if (r.version != DNSSD_IPC_VERSION || r.header_size != sizeof(r) ||
-        r.command == 0 || r.command > DNSSD_IPC_COMMANDS || r.flags != 0 ||
+        r.command == 0 || r.command > DNSSD_IPC_COMMANDS ||
+        (r.flags & ~(uint16_t)DNSSD_IPC_FLAG_UNTIL_CANCELLED) != 0 ||
+        ((r.flags & DNSSD_IPC_FLAG_UNTIL_CANCELLED) &&
+         (r.command != DNSSD_IPC_RESOLVE || r.timeout != 0)) ||
         r.size < sizeof(r) || r.size > r.capacity || r.capacity > capacity ||
         r.capacity > DNSSD_IPC_MAX_SIZE)
         return DNSSD_IPC_BAD_MESSAGE;
@@ -311,7 +314,12 @@ dnssd_ipc_validate(const void *buffer, size_t capacity)
         return DNSSD_IPC_BAD_MESSAGE;
     if (r.command == DNSSD_IPC_REGISTER && r.port == 0)
         return DNSSD_IPC_BAD_MESSAGE;
-    if (r.command == DNSSD_IPC_UPDATE && !(have & (P_TXT | P_ADDRS)) && r.port == 0)
+    /* a time to live, for a registration's records only */
+    if (r.ttl > DNSSD_IPC_MAX_TTL ||
+        (r.ttl != 0 && r.command != DNSSD_IPC_REGISTER && r.command != DNSSD_IPC_UPDATE))
+        return DNSSD_IPC_BAD_MESSAGE;
+    if (r.command == DNSSD_IPC_UPDATE && !(have & (P_TXT | P_ADDRS)) && r.port == 0 &&
+        r.ttl == 0)
         return DNSSD_IPC_BAD_MESSAGE;
     return DNSSD_IPC_OK;
 }

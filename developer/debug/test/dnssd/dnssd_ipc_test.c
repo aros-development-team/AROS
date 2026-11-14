@@ -91,8 +91,8 @@ int main(void)
     addrs[2].bytes[15] = 0x77;
 
     /* the same layout on every host: fixed-width fields, natural alignment */
-    CHECK(sizeof(struct dnssd_ipc_request) == 132u &&
-          offsetof(struct dnssd_ipc_request, name) == 60u, "the header's layout");
+    CHECK(sizeof(struct dnssd_ipc_request) == 136u &&
+          offsetof(struct dnssd_ipc_request, name) == 64u, "the header's layout");
 
     /* ---- every command, built and accepted ---- */
     memset(&p, 0, sizeof(p));
@@ -174,6 +174,38 @@ int main(void)
     CHECK(valid(n), "UPDATE the port alone");
     hdr()->port = 0;
     CHECK(!valid(n), "UPDATE nothing");
+    hdr()->ttl = 120;
+    CHECK(valid(n), "UPDATE the time to live alone");
+
+    /* a time to live: a registration's, and RFC 6762's longest at most */
+    parts_register(&p, 0);
+    n = build(DNSSD_IPC_REGISTER, &p);
+    copy(n);
+    hdr()->ttl = 4500;
+    CHECK(valid(n), "REGISTER with a time to live of 4500 s");
+    hdr()->ttl = 4501;
+    CHECK(!valid(n), "REGISTER with a time to live of 4501 s");
+    memset(&p, 0, sizeof(p));
+    p.instance = instance; p.instance_size = sizeof(instance);
+    p.service_type = type; p.service_type_size = sizeof(type);
+    p.domain = domain; p.domain_size = sizeof(domain);
+    n = build(DNSSD_IPC_RESOLVE, &p);
+    copy(n);
+    hdr()->ttl = 120;
+    CHECK(!valid(n), "a time to live on a RESOLVE");
+    hdr()->ttl = 0;
+    hdr()->flags = DNSSD_IPC_FLAG_UNTIL_CANCELLED;
+    CHECK(valid(n), "a RESOLVE until it is cancelled");
+    hdr()->timeout = 5;
+    CHECK(!valid(n), "until cancelled, with a time limit");
+    hdr()->timeout = 0;
+    hdr()->flags = 2;
+    CHECK(!valid(n), "a flag not defined");
+    parts_register(&p, 0);
+    n = build(DNSSD_IPC_REGISTER, &p);
+    copy(n);
+    hdr()->flags = DNSSD_IPC_FLAG_UNTIL_CANCELLED;
+    CHECK(!valid(n), "until cancelled, on a REGISTER");
 
     /* building: what does not fit, what cannot be */
     parts_register(&p, 1);

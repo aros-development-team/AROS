@@ -857,7 +857,8 @@ out:
     INPUTS
         DNSSD_Domain - default "local"
         DNSSD_Interface - only on this interface index
-        DNSSD_Timeout - seconds, 1 to 60, default 5
+        DNSSD_Timeout - seconds, 1 to 60, default 5; 0: no time limit, the
+            service is followed until the operation is cancelled
 
 *****************************************************************************/
 {
@@ -869,7 +870,7 @@ out:
     LONG rc;
 
     if (session == NULL || instance == NULL || type == NULL ||
-        operation == NULL || timeout < 1 || timeout > 60) {
+        operation == NULL || timeout > 60) {
         return DNSSD_ERR_BADPARAM;
     }
     *operation = NULL;
@@ -883,6 +884,9 @@ out:
     msg = dnssdNewMsg(DNSSD_IPC_RESOLVE, &parts, session, &rc);
     if (msg != NULL) {
         msg->dm_Request.timeout = timeout;
+        if (timeout == 0) {
+            msg->dm_Request.flags = DNSSD_IPC_FLAG_UNTIL_CANCELLED;
+        }
     }
     return start(session, msg, rc, tags, operation);
     AROS_LIBFUNC_EXIT
@@ -976,6 +980,9 @@ out:
             than 1300 where it can be; none: one empty string
         DNSSD_Subtype - a subtype it has ("_printer"), one tag each
         DNSSD_Domain - default "local"
+        DNSSD_TimeToLive - seconds its records live in other hosts' caches,
+            1-4500 (RFC 6762 section 10); default 120 for the SRV and the
+            host's addresses, 4500 for the others
         DNSSD_Host, DNSSD_HostAddress - published for another host, one
             that does not speak mDNS itself: its name's label ("printer",
             which becomes "printer.local") and its addresses, IPv4 and
@@ -1004,11 +1011,13 @@ out:
     const UBYTE *txt = (const UBYTE *)GetTagData(DNSSD_TXT, 0, tags);
     ULONG txtLength = GetTagData(DNSSD_TXTLength, 0, tags);
     CONST_STRPTR host = (CONST_STRPTR)GetTagData(DNSSD_Host, 0, tags);
+    ULONG ttl = GetTagData(DNSSD_TimeToLive, 0, tags);
     ULONG at = 0, subtypes = 0;
     LONG count, rc;
 
     if (session == NULL || instance == NULL || type == NULL ||
         operation == NULL || port == 0 || port > 0xffff ||
+        ttl > DNSSD_IPC_MAX_TTL ||
         (txt == NULL && txtLength != 0) || txtLength > DNSSD_TXT_MAX) {
         return DNSSD_ERR_BADPARAM;
     }
@@ -1062,6 +1071,7 @@ out:
     FreeVec(scratch);
     if (msg != NULL) {
         msg->dm_Request.port = (UWORD)port;
+        msg->dm_Request.ttl = ttl;
     }
     return start(session, msg, rc, tags, operation);
     AROS_LIBFUNC_EXIT
@@ -1089,6 +1099,7 @@ out:
         DNSSD_TXT, DNSSD_TXTLength - the new TXT data
         DNSSD_Port - the new port
         DNSSD_HostAddress - the host's addresses, all of them (one tag each)
+        DNSSD_TimeToLive - another time to live for its records
 
 *****************************************************************************/
 {
@@ -1099,10 +1110,12 @@ out:
     const UBYTE *txt = (const UBYTE *)GetTagData(DNSSD_TXT, 0, tags);
     ULONG txtLength = GetTagData(DNSSD_TXTLength, 0, tags);
     ULONG port = GetTagData(DNSSD_Port, 0, tags);
+    ULONG ttl = GetTagData(DNSSD_TimeToLive, 0, tags);
     struct DNSSDAddress *addresses;
     LONG count, rc;
 
     if (operation == NULL || port > 0xffff || txtLength > DNSSD_TXT_MAX ||
+        ttl > DNSSD_IPC_MAX_TTL ||
         (txt == NULL && txtLength != 0)) {
         return DNSSD_ERR_BADPARAM;
     }
@@ -1131,6 +1144,7 @@ out:
     }
     msg->dm_Request.operation = operation->do_ID;
     msg->dm_Request.port = (UWORD)port;
+    msg->dm_Request.ttl = ttl;
     rc = dnssdSend(msg);
     FreeVec(msg);
     return rc;
