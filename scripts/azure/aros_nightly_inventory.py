@@ -1,22 +1,22 @@
 #!/usr/bin/env python3
-"""Generate a deterministic, read-only AROS nightly build inventory.
+"""Generate a deterministic, read-only AROS nightly build inventory."""
 
-When --require-archive-parity is used, the archive is streamed and each
-member is checked against the observed package tree before publication.
-Unsupported formats and unrepresentable metadata fail closed.
-
-Build-host tool only. Not a signed update manifest, installer, or a
-complete description of AROS filesystem metadata after extraction.
-
-Canonical output v0 uses ASCII, LF, tab separators and hex-encoded raw POSIX
-path bytes. No timestamps, traversal-order dependencies or host user IDs.
-All SHA-256 digests are lower-case hex. The generation ID hashes the canonical
-body with domain separation; the ID line itself is excluded.
-
-This tool requires exclusive access to a quiescent *unpacked package tree*.
-It does not claim immunity against a malicious concurrent process replacing
-ancestor directories or modifying archives during packaging.
-"""
+#
+# When --require-archive-parity is used, the archive is streamed and each
+# member is checked against the observed package tree before publication.
+# Unsupported formats and unrepresentable metadata fail closed.
+#
+# Build-host tool only. Not a signed update manifest, installer, or a
+# complete description of AROS filesystem metadata after extraction.
+#
+# Canonical output v0 uses ASCII, LF, tab separators and hex-encoded raw POSIX
+# path bytes. No timestamps, traversal-order dependencies or host user IDs.
+# All SHA-256 digests are lower-case hex. The generation ID hashes the canonical
+# body with domain separation; the ID line itself is excluded.
+#
+# This tool requires exclusive access to a quiescent *unpacked package tree*.
+# It does not claim immunity against a malicious concurrent process replacing
+# ancestor directories or modifying archives during packaging.
 
 import argparse
 import hashlib
@@ -300,13 +300,11 @@ def _check_zip_archive(archive, verifier):
 
 
 def verify_archive_parity(archive, rows, root_mode):
-    """Check archive members against this exact observed package tree.
-
-    Read-only: members are streamed, never extracted.
-    Supported: AROS Azure base .tar.bz2 and UNIX-produced .zip; any LHA/other
-    archive fails closed. This checks the packaging contract, not the target's
-    AROS protection bits or runtime filesystem behavior.
-    """
+    """Check archive members against this exact observed package tree."""
+    # Read-only: members are streamed, never extracted.
+    # Supported: AROS Azure base .tar.bz2 and UNIX-produced .zip; any LHA/other
+    # archive fails closed. This checks the packaging contract, not the target's
+    # AROS protection bits or runtime filesystem behavior.
     kind, prefix = _archive_format(archive)
     verifier = _ArchiveMembers(prefix, rows, root_mode)
     try:
