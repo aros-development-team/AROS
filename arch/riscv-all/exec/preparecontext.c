@@ -10,7 +10,7 @@
 #include <proto/arossupport.h>
 #include <proto/kernel.h>
 #include <aros/riscv/cpucontext.h>
-#include <asm/cpu.h>
+#include <asm/riscv/csr.h>
 
 #include "exec_intern.h"
 #include "exec_util.h"
