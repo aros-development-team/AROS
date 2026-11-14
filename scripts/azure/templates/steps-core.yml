@@ -191,6 +191,13 @@ steps:
         rm -Rf '$(AROSBUILDSDIR)/$(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.bootpackage)'
       fi
     fi
+    # Fail closed: a requested V1 proof requires genuine main distfiles.
+    if [[ "$(arosbuild.name)" == "pc-i386" && "${AROS_NIGHTLY_REQUIRE_PARITY:-no}" == "yes" ]]; then
+      if [[ -f /tmp/_aros_distfiles_build_failed || ! -d "$(AROSBUILDDIR)/distfiles" ]]; then
+        echo "BLOCKED: no successful pc-i386 main distfiles for archive parity" >&2
+        exit 1
+      fi
+    fi
     if [ ! -f /tmp/_aros_distfiles_build_failed ]; then
       cp -r $(AROSBUILDDIR)/distfiles/* $(AROSPACKAGEDIR)/
       cp -r $(AROSSRCDIR)/LICENSE $(AROSPACKAGEDIR)/
@@ -210,11 +217,35 @@ steps:
       md5sum $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package).$(arosbuild.packagefmt) >$(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package).$(arosbuild.packagefmt).md5
       mv $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package).$(arosbuild.packagefmt) $(AROSBUILDBINDIR)/
       mv $(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package).$(arosbuild.packagefmt).md5 $(AROSBUILDBINDIR)/
+      if [[ "$(arosbuild.name)" == "pc-i386" ]]; then
+        # Unsigned build observation, not an update trust manifest.
+        # Optional pc-i386 archive parity (V1), disabled by default.
+        AROS_INV_SUFFIX=inventory-v0
+        AROS_PARITY_ARGS=()
+        if [[ "$(arosbuild.name)" == "pc-i386" && "${AROS_NIGHTLY_REQUIRE_PARITY:-no}" == "yes" ]]; then
+          AROS_INV_SUFFIX=inventory-v1
+          AROS_PARITY_ARGS=(--require-archive-parity)
+        fi
+        # Inventory the exact packaged tree before it is deleted; leave base.manifest unchanged.
+        AROS_SOURCE_COMMIT=$(git -C "$(AROSSRCDIR)" rev-parse --verify HEAD) || exit 1
+        if ! python3 "$(AROSSRCDIR)/scripts/azure/aros_nightly_inventory.py" \
+          --tree "$(AROSPACKAGEDIR)" \
+          --archive "$(AROSBUILDBINDIR)/$(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package).$(arosbuild.packagefmt)" \
+          --output "$(AROSBUILDBINDIR)/$(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package).$(arosbuild.packagefmt).${AROS_INV_SUFFIX}" \
+          --target "$(arosbuild.name)" --component base \
+          --source-commit "$AROS_SOURCE_COMMIT" --build-label "$(AROSBUILDID)" \
+          "${AROS_PARITY_ARGS[@]}" \
+          > "$(AROSLOGSDIR)/$(arosbuild.package)-$(arosbuild.name)-inventory.log" 2>&1; then
+          cat "$(AROSLOGSDIR)/$(arosbuild.package)-$(arosbuild.name)-inventory.log" >&2
+          exit 1
+        fi
+      fi
       rm -Rf '$(AROSBUILDSDIR)/$(AROSBUILDID)-$(arosbuild.name)-$(arosbuild.package)'
     fi
     rm -Rf $(AROSPACKAGEDIR)
   workingDirectory: '$(AROSBUILDSDIR)'
-  condition: ne( variables['SF_RSYNC_USER'], '' )
+  # Allow explicit pc-i386 parity proof in fork CI without deploy credentials.
+  condition: or( ne( variables['SF_RSYNC_USER'], '' ), and( eq( variables['arosbuild.name'], 'pc-i386' ), eq( variables['AROS_NIGHTLY_REQUIRE_PARITY'], 'yes' ) ) )
   displayName: 'Creating $(arosbuild.name) base package(s)'
 
 - script: |
@@ -267,7 +298,7 @@ steps:
   parameters:
     source: '$(Build.BinariesDirectory)/Upload/'
     destination: '$(SF_RSYNC_USER),aros@web.sourceforge.net:uploads/nightly2/'
-    condition: and( ne( variables['SF_RSYNC_USER'], '' ), ne( variables['arosbuild.deploy'], 'no' ) )
+    condition: and( ne( variables['SF_RSYNC_USER'], '' ), ne( variables['arosbuild.deploy'], 'no' ), ne( variables['AROS_NIGHTLY_REQUIRE_PARITY'], 'yes' ) )
     displayName: 'Deploying base build'
 
 # --- Hosted unit tests (the base package exists locally on this agent) -------
