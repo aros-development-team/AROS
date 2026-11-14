@@ -16,6 +16,9 @@
 #include <proto/exec.h>
 #include <proto/kernel.h>
 
+#define AROS_NO_ATOMIC_OPERATIONS
+#include <exec_platform.h>
+
 #include "kernel_cpu.h"
 #include "kernel_intern.h"
 #include "kernel_scheduler.h"
@@ -224,11 +227,16 @@ void handle_syscall(void *regs)
                 D(bug("[Kernel] ## USERSTATE... (0x%lx ->", ((struct ExceptionContext *)regs)->cpsr));
                 /*
                  * Counterpart of SC_SUPERSTATE: return the caller to EL1t
-                 * (task mode) and re-enable IRQs. The caller (exec's
-                 * UserState()) restores SP_EL0 itself after the SVC.
+                 * (task mode). The IRQ/FIQ mask follows the Disable()
+                 * nesting: Enable() at EL1h does not unmask, and the task
+                 * may have called SuperState() under its own Disable().
+                 * The caller (exec's UserState()) restores SP_EL0 itself
+                 * after the SVC.
                  */
-                ((struct ExceptionContext *)regs)->cpsr &= ~(CPUMODE_MASK | PSTATE_I_BIT);
+                ((struct ExceptionContext *)regs)->cpsr &= ~(CPUMODE_MASK | PSTATE_I_BIT | PSTATE_F_BIT);
                 ((struct ExceptionContext *)regs)->cpsr |= CPUMODE_USER;
+                if (IDNESTCOUNT_GET >= 0)
+                    ((struct ExceptionContext *)regs)->cpsr |= PSTATE_I_BIT | PSTATE_F_BIT;
                 D(bug(" 0x%lx)\n", ((struct ExceptionContext *)regs)->cpsr));
                 break;
             }
