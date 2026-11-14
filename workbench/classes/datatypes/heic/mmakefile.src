@@ -45,11 +45,13 @@ USER_CPPFLAGS += \
         -DDE265_LOG_TRACE
 endif
 
-LIBAOMVERSION=3.12.1
+LIBAOMVERSION=3.15.3
 AOMREPOSITORIES = https://storage.googleapis.com/aom-releases
 AOMARCHBASE     := libaom-$(LIBAOMVERSION)
 AOMARCHSUFFIX := "tar.gz"
-AOMPATCHSPEC := $(AOMARCHBASE)-aros.diff:$(AOMARCHBASE):-f,-p1
+# 3.15.3 moved the linux-only includes in aom_ports/ppc_cpudetect.c inside
+# CONFIG_RUNTIME_CPU_DETECT upstream, which is all the AROS patch did.
+#AOMPATCHSPEC := $(AOMARCHBASE)-aros.diff:$(AOMARCHBASE):-f,-p1
 AOMARCHSRCDIR := $(PORTSDIR)/libaom/$(AOMARCHBASE)
 
 %fetch mmake=linklibs-aom-fetch archive=$(AOMARCHBASE) destination=$(PORTSDIR)/libaom \
