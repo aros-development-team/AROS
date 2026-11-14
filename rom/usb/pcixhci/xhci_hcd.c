@@ -2626,6 +2626,75 @@ static void xhciHandleClearFeatureEndpointHalt(struct PCIController *hc,
 static void xhciRetireAbandonedRequests(struct PCIController *hc, struct PCIUnit *unit,
                                         struct timerequest *timerreq);
 
+/*
+ * Deliver one already-received RTISO IN service payload using Poseidon's
+ * scatter/gather contract. UBFF_CONTBUFFER continues with the remaining
+ * bytes of this same USB service, not with another USB transaction.
+ */
+static void xhciDeliverRTIsoIn(struct RTIsoNode *rtn, APTR data,
+        ULONG actual, ULONG frame)
+{
+    struct IOUsbHWRTIso *urti;
+    struct IOUsbHWBufferReq *bufreq;
+    UBYTE *src;
+    ULONG remaining;
+
+    if(!rtn || !(urti = rtn->rtn_RTIso))
+        return;
+
+    bufreq = &rtn->rtn_BufferReq;
+    src = (UBYTE *)data;
+    remaining = actual;
+
+    if(!urti->urti_InReqHook) {
+        bufreq->ubr_Buffer = data;
+        bufreq->ubr_Length = actual;
+        bufreq->ubr_Frame = frame;
+        bufreq->ubr_Flags &= ~UBFF_CONTBUFFER;
+
+        if(urti->urti_InDoneHook)
+            CallHookPkt(urti->urti_InDoneHook, rtn, bufreq);
+        return;
+    }
+
+    do {
+        ULONG copied;
+        BOOL cont;
+
+        bufreq->ubr_Length = remaining;
+        bufreq->ubr_Frame = frame;
+        bufreq->ubr_Flags &= ~UBFF_CONTBUFFER;
+
+        CallHookPkt(urti->urti_InReqHook, rtn, bufreq);
+
+        copied = bufreq->ubr_Length;
+        if(copied > remaining)
+            copied = remaining;
+
+        if(copied && bufreq->ubr_Buffer)
+            CopyMem(src, bufreq->ubr_Buffer, copied);
+        else if(copied)
+            copied = 0;
+
+        bufreq->ubr_Length = copied;
+
+        if(urti->urti_InDoneHook)
+            CallHookPkt(urti->urti_InDoneHook, rtn, bufreq);
+
+        cont = (bufreq->ubr_Flags & UBFF_CONTBUFFER) != 0;
+
+        if(bufreq->ubr_Buffer)
+            bufreq->ubr_Buffer = (UBYTE *)bufreq->ubr_Buffer + copied;
+
+        src += copied;
+        remaining -= copied;
+        bufreq->ubr_Flags &= ~UBFF_CONTBUFFER;
+
+        if(!cont || !remaining || !copied)
+            break;
+    } while(remaining);
+}
+
 void xhciHandleFinishedTDs(struct PCIController *hc, struct timerequest *timerreq)
 {
     struct PCIUnit *unit = hc->hc_Unit;
@@ -2725,12 +2794,13 @@ void xhciHandleFinishedTDs(struct PCIController *hc, struct timerequest *timerre
             if(rtn && rtn->rtn_RTIso) {
                 struct IOUsbHWRTIso *urti = rtn->rtn_RTIso;
                 struct IOUsbHWBufferReq *bufreq = ptd ? &ptd->ptd_BufferReq : &rtn->rtn_BufferReq;
-                bufreq->ubr_Length = actual;
-                bufreq->ubr_Frame = ioreq->iouh_Frame;
+
                 if(ioreq->iouh_Dir == UHDIR_IN) {
-                    if(urti->urti_InDoneHook)
-                        CallHookPkt(urti->urti_InDoneHook, rtn, bufreq);
+                    xhciDeliverRTIsoIn(rtn, ioreq->iouh_Data, actual,
+                                       ioreq->iouh_Frame);
                 } else {
+                    bufreq->ubr_Length = actual;
+                    bufreq->ubr_Frame = ioreq->iouh_Frame;
                     if(urti->urti_OutDoneHook)
                         CallHookPkt(urti->urti_OutDoneHook, rtn, bufreq);
                 }
