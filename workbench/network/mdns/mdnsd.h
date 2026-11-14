@@ -281,15 +281,19 @@ void mdnsCacheLinksChanged(const struct MDNSDaemon *md);
 APTR mdnsCacheWatch(const struct MDNSDaemon *md, const UBYTE *name, UWORD type,
     ULONG link, MDNSCacheNotify notify, APTR data);
 void mdnsCacheUnwatch(struct MDNSDaemon *md, APTR watch);
+const UBYTE *mdnsCacheWatchName(APTR watch);
+const struct MDNSCacheEntry *mdnsCacheFind(struct MDNSDaemon *md,
+    const struct MDNSCacheEntry *after, const UBYTE *name, UWORD type,
+    ULONG link);
+const struct MDNSCacheEntry *mdnsCacheLatest(struct MDNSDaemon *md,
+    const UBYTE *name, UWORD type, ULONG link);
 
-/* mdns_query.c, mdns_discovery.c: their parts the core calls. */
+/* mdns_query.c: its part the core calls. */
 void mdnsQueryRecord(struct MDNSDaemon *md, const struct MDNSRecord *record,
     const UBYTE *packet, LONG length);
 void mdnsQueryLocalRecord(struct MDNSDaemon *md,
     const struct MDNSRecord *record, const UBYTE *packet, LONG length,
     APTR handle);
-void mdnsDiscoveryRecord(struct MDNSDaemon *md, const struct MDNSRecord *r,
-    const UBYTE *pkt, LONG length, LONG ownerOffset);
 
 /* dnssd_server.c: dnssd.library's sessions and operations. */
 BOOL dnssdServerInit(struct MDNSDaemon *md, ULONG gone);
@@ -376,6 +380,9 @@ void mdnsHandlePacket(struct MDNSDaemon *md, const UBYTE *pkt, LONG pktlen,
     ULONG srcaddr, UWORD srcport);
 void mdnsHandlePacket6(struct MDNSDaemon *md, const UBYTE *pkt, LONG pktlen,
     const struct in6_addr *srcaddr, UWORD srcport);
+/* The host's own records, as it sends them, go into the cache, where every
+ * browse, resolve and dnssd.library operation sees them (DISCOVERY), and to
+ * bonami.library's record questions (QUERY: queryHandle's, or all). */
 #define MDNS_REFLECT_DISCOVERY  1
 #define MDNS_REFLECT_QUERY      2
 void mdnsReflectPacket(struct MDNSDaemon *md, const UBYTE *pkt, LONG pktlen,

@@ -405,9 +405,11 @@ main(void)
             dnssdServerReap(md);
         }
 
+        /* the cache first: what it drops is told to the operations that
+         * watch it, which then look again in their own turn */
+        mdnsCacheTick(md);
         mdnsDiscoveryTick(md);
         mdnsQueryTick(md);
-        mdnsCacheTick(md);
         dnssdServerTick(md);
         probing = FALSE;
         if (running && md->md_Socket >= 0) {
