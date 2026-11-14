@@ -74,4 +74,12 @@ int mask2prefix(const struct sockaddr *sa);
  */
 int ip_socket(int family);
 
+/*
+ * SIOCGIFCONF on s into a buffer of its own, grown until the answer fits:
+ * ifc->ifc_buf, which the caller frees. 0, or -1 with errno set (ENOMEM,
+ * or the ioctl's error) and nothing to free.
+ */
+struct ifconf;	/* <net/if.h>; not every file that includes this has it */
+int ip_getifconf(int s, struct ifconf *ifc);
+
 #endif /* IP_H */

@@ -494,19 +494,40 @@ getinfo(ifr)
 void
 printall()
 {
-	char inbuf[8192];
+	char *inbuf = NULL;
+	int len = 4096;
 	const struct sockaddr_dl *sdl = NULL;
 	struct ifconf ifc;
 	struct ifreq ifreq, *ifr;
 	int i, idx;
 
-	ifc.ifc_len = sizeof(inbuf);
-	ifc.ifc_buf = inbuf;
 	getsock(af);
 	if (s < 0)
 		err(1, "socket");
-	if (IoctlSocket(s, SIOCGIFCONF, (char *)&ifc) < 0)
-		err(1, "SIOCGIFCONF");
+	/*
+	 * The list is as long as the machine has addresses: allocated, not on
+	 * the stack (a command has 8 KB of it on an Amiga), and doubled until
+	 * the answer leaves room for the largest entry - the name and a
+	 * sockaddr_storage - since the stack stops at one that does not fit.
+	 */
+	for (;;) {
+		char *nbuf = realloc(inbuf, len);
+
+		if (nbuf == NULL) {
+			free(inbuf);
+			errno = ENOMEM;
+			err(1, "SIOCGIFCONF");
+		}
+		inbuf = nbuf;
+		ifc.ifc_len = len;
+		ifc.ifc_buf = inbuf;
+		if (IoctlSocket(s, SIOCGIFCONF, (char *)&ifc) < 0)
+			err(1, "SIOCGIFCONF");
+		if (len - ifc.ifc_len >= (int)(sizeof(struct ifreq) +
+		    sizeof(struct sockaddr_storage)))
+			break;
+		len *= 2;
+	}
 	ifr = ifc.ifc_req;
 	ifreq.ifr_name[0] = '\0';
 	for (i = 0, idx = 0; i < ifc.ifc_len; ) {
@@ -550,6 +571,7 @@ printall()
 	}
 	if (lflag)
 		putchar('\n');
+	free(inbuf);
 }
 
 #define RIDADDR 0

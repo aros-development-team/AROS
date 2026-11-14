@@ -20,6 +20,7 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -182,6 +183,42 @@ mask2prefix(const struct sockaddr *sa)
 		}
 	}
 	return prefix;
+}
+
+/*
+ * The list is as long as the machine has addresses, so the buffer is
+ * allocated, not on the stack - a command has 8 KB of it on an Amiga - and
+ * doubled until the answer leaves room. The stack stops at an entry that
+ * does not fit, and an entry is the name and an address of up to a
+ * sockaddr_storage (IPv6, AF_LINK): only that much room left says nothing
+ * was cut off.
+ */
+int
+ip_getifconf(int s, struct ifconf *ifc)
+{
+	char *buf = NULL;
+	int len = 4096;
+
+	for (;;) {
+		char *nbuf = realloc(buf, len);
+
+		if (nbuf == NULL) {
+			free(buf);
+			errno = ENOMEM;
+			return -1;
+		}
+		buf = nbuf;
+		ifc->ifc_len = len;
+		ifc->ifc_buf = buf;
+		if (IoctlSocket(s, SIOCGIFCONF, (char *)ifc) < 0) {
+			free(buf);
+			return -1;
+		}
+		if (len - ifc->ifc_len >= (int)(sizeof(struct ifreq) +
+		    sizeof(struct sockaddr_storage)))
+			return 0;
+		len *= 2;
+	}
 }
 
 int
