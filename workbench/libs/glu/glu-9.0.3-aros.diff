@@ -1,6 +1,6 @@
-diff -ruN glu-9.0.2/src/include/gluos.h glu-9.0.2.aros/src/include/gluos.h
---- glu-9.0.2/src/include/gluos.h	2021-06-24 21:36:59.000000000 +0000
-+++ glu-9.0.2.aros/src/include/gluos.h	2022-05-07 12:14:17.800645600 +0000
+diff -ruN glu-9.0.3/src/include/gluos.h glu-9.0.3.aros/src/include/gluos.h
+--- glu-9.0.3/src/include/gluos.h	2021-06-24 21:36:59.000000000 +0000
++++ glu-9.0.3.aros/src/include/gluos.h	2022-05-07 12:14:17.800645600 +0000
 @@ -77,6 +77,8 @@
  #include <malloc.h>
  #define WINGDIAPI
@@ -10,9 +10,9 @@ diff -ruN glu-9.0.2/src/include/gluos.h glu-9.0.2.aros/src/include/gluos.h
  #else
  
  /* Disable Microsoft-specific keywords */
-diff -ruN glu-9.0.2/src/libnurbs/interface/insurfeval.cc glu-9.0.2.aros/src/libnurbs/interface/insurfeval.cc
---- glu-9.0.2/src/libnurbs/interface/insurfeval.cc	2021-06-24 21:36:59.000000000 +0000
-+++ glu-9.0.2.aros/src/libnurbs/interface/insurfeval.cc	2022-05-07 12:14:17.800645600 +0000
+diff -ruN glu-9.0.3/src/libnurbs/interface/insurfeval.cc glu-9.0.3.aros/src/libnurbs/interface/insurfeval.cc
+--- glu-9.0.3/src/libnurbs/interface/insurfeval.cc	2021-06-24 21:36:59.000000000 +0000
++++ glu-9.0.3.aros/src/libnurbs/interface/insurfeval.cc	2022-05-07 12:14:17.800645600 +0000
 @@ -1344,6 +1344,8 @@
    free(lowerXYZ);
    free(upperNormal);
@@ -31,9 +31,9 @@ diff -ruN glu-9.0.2/src/libnurbs/interface/insurfeval.cc glu-9.0.2.aros/src/libn
  }
  
  /*-----------------------begin evalMachine-------------------*/
-diff -ruN glu-9.0.2/src/libnurbs/nurbtess/sampleCompTop.cc glu-9.0.2.aros/src/libnurbs/nurbtess/sampleCompTop.cc
---- glu-9.0.2/src/libnurbs/nurbtess/sampleCompTop.cc	2021-06-24 21:36:59.000000000 +0000
-+++ glu-9.0.2.aros/src/libnurbs/nurbtess/sampleCompTop.cc	2022-05-07 12:14:17.800645600 +0000
+diff -ruN glu-9.0.3/src/libnurbs/nurbtess/sampleCompTop.cc glu-9.0.3.aros/src/libnurbs/nurbtess/sampleCompTop.cc
+--- glu-9.0.3/src/libnurbs/nurbtess/sampleCompTop.cc	2021-06-24 21:36:59.000000000 +0000
++++ glu-9.0.3.aros/src/libnurbs/nurbtess/sampleCompTop.cc	2022-05-07 12:14:17.800645600 +0000
 @@ -511,26 +511,6 @@
      }
    else if(up_rightCornerWhere != 2)

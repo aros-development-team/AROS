@@ -19,7 +19,7 @@ REPOSITORIES =  \
     cache:// \
     https://archive.mesa3d.org/glu/ \
     ftp://ftp.embeddedarm.com/mirror/yocto/
-ARCHBASE := glu-9.0.2
+ARCHBASE := glu-9.0.3
 PATCHSPEC := $(ARCHBASE)-aros.diff:$(ARCHBASE):-p1
 GLU_SUFFIXES := tar.xz tar.bz2 tar.gz
 
