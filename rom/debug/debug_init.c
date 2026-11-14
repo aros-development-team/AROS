@@ -30,10 +30,12 @@
 #include "../../arch/all-unix/kernel/hostinterface.h"
 #endif
 
+/* Initialize the module database and bind the resolver ABI supported by kernel.resource. */
 static int Debug_Init(struct DebugBase *DebugBase)
 {
     struct TagItem *bootMsg;
     struct ELF_ModuleInfo *kmod;
+    LONG resolverResult;
 #if AROS_MODULES_DEBUG
     struct HostInterface *HostIFace;
 #endif
@@ -44,6 +46,13 @@ static int Debug_Init(struct DebugBase *DebugBase)
 
     NEWLIST(&DebugBase->db_Modules);
     InitSemaphore(&DebugBase->db_ModSem);
+    DebugBase->db_SymResolverABI = KRN_SYMRESOLVER_ABI_LEGACY;
+#if defined(__i386__) || defined(__x86_64__)
+    DebugBase->db_ResolverGeneration = 0;
+#if defined(__AROSEXEC_SMP__)
+    DebugBase->db_ResolverReaders = 0;
+#endif
+#endif
 
     bootMsg = KrnGetBootInfo();
     kmod = (struct ELF_ModuleInfo *)LibGetTagData(KRN_DebugInfo, 0, bootMsg);
@@ -54,8 +63,18 @@ static int Debug_Init(struct DebugBase *DebugBase)
         RegisterModule_ELF(kmod->Name, BNULL, kmod->eh, kmod->sh, (struct Library *)DebugBase);
     }
 
-    /* Let the kernel's backtraces and trap handlers name addresses */
-    KrnRegisterSymResolver(Debug_SymResolver, DebugBase);
+    /* Let the kernel's backtraces and trap handlers name addresses. */
+    DebugBase->db_SymResolverABI = KrnGetSystemAttr(KATTR_SymResolverABI);
+    if (DebugBase->db_SymResolverABI >= KRN_SYMRESOLVER_ABI_LEASE)
+        resolverResult = KrnRegisterSymResolver(Debug_SymResolver, DebugBase);
+    else
+        resolverResult = KrnRegisterSymResolver(Debug_SymResolverLegacy, DebugBase);
+
+    if (resolverResult != 0)
+    {
+        bug("[Debug] KrnRegisterSymResolver() failed: %ld\n", resolverResult);
+        return FALSE;
+    }
 
 #if AROS_MODULES_DEBUG
     HostIFace = (APTR)LibGetTagData(KRN_HostInterface, 0, bootMsg);
