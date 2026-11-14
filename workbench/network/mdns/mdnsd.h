@@ -269,7 +269,9 @@ void mdnsCacheTick(struct MDNSDaemon *md);
 void mdnsCacheLinksChanged(const struct MDNSDaemon *md);
 APTR mdnsCacheWatch(const struct MDNSDaemon *md, const UBYTE *name, UWORD type,
     ULONG link, MDNSCacheNotify notify, APTR data);
-void mdnsCacheUnwatch(struct MDNSDaemon *md, APTR watch);
+void mdnsCacheUnwatch(const struct MDNSDaemon *md, APTR watch);
+void mdnsCacheDropLocal(const struct MDNSDaemon *md, const UBYTE *owner,
+    const UBYTE *target);
 
 /* dnssd_server.c: dnssd.library's sessions and operations. */
 BOOL dnssdServerInit(struct MDNSDaemon *md, ULONG gone);
@@ -309,12 +311,12 @@ BOOL mdnsNetAddress6(const struct MDNSDaemon *md, LONG index,
 BOOL mdnsNetSendOn(struct MDNSDaemon *md, LONG index, const UBYTE *pkt,
     LONG pktlen);
 void mdnsNetSendAll(struct MDNSDaemon *md, const UBYTE *pkt, LONG pktlen);
-void mdnsNetNameHost(struct MDNSDaemon *md);
 
 /* mdns_host.c */
 void mdnsHostRestart(struct MDNSDaemon *md);
 BOOL mdnsHostTick(struct MDNSDaemon *md);
 void mdnsHostGoodbye(struct MDNSDaemon *md);
+void mdnsHostSetName(struct MDNSDaemon *md, const char *base, ULONG suffix);
 void mdnsHostHandleQuery(struct MDNSDaemon *md, struct MDNSQuestion *q);
 void mdnsHostHandleProbe(struct MDNSDaemon *md,
     const struct MDNSRecord *theirs, LONG count);
@@ -343,7 +345,7 @@ void mdnsRegHandleQuery(struct MDNSDaemon *md, struct MDNSQuestion *q,
 void mdnsRegHandleProbe(const struct MDNSDaemon *md,
     const struct MDNSRecord *theirs, LONG count, const UBYTE *pkt,
     LONG pktlen);
-void mdnsRegHandleRecord(const struct MDNSDaemon *md,
+void mdnsRegHandleRecord(struct MDNSDaemon *md,
     const struct MDNSRecord *r, const UBYTE *pkt, LONG pktlen);
 
 /* mdns_packet.c */
