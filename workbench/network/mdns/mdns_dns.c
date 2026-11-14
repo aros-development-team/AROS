@@ -1,6 +1,7 @@
 /*
  * SPDX-License-Identifier: BSD-2-Clause
  * Copyright 2026 amigazen project
+ * Copyright 2026 Jaime Dias
  *
  * mdns_dns.c - DNS wire encode/decode (C89)
  */

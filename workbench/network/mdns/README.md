@@ -186,5 +186,16 @@ Started by hand it runs until Ctrl-C.
 | `tools/` | `dnssd`, `Nearby`, `Share`, `Handshake` |
 | `services.d/mdns` | the service manager's entry |
 
-Derived from [amigazen Bonami](https://github.com/amigazen/Bonami), under
-its BSD 2-Clause license; see `LICENSE`.
+## Credits
+
+mdnsd and the tools are derived from
+[amigazen Bonami](https://github.com/amigazen/Bonami), under its BSD
+2-Clause license (`LICENSE`): the responder's DNS wire code, its answers
+for the host's name and for registered services, its main loop
+(`mdns_dns.c`, `mdns_host.c`, `mdns_net.c`, `mdns_packet.c`, `mdns_reg.c`,
+`mdnsd.c`, `mdnsd.h`), and the tools with their helpers and table of
+service types (`tools/`). Each of those files keeps amigazen's copyright
+notice. `bonami.library` itself, amigazen's interface, is no longer part
+of AROS: programs that use it take it from the Bonami project.
+`dnssd.library`, the cache, the link inventory and the session protocol
+are AROS's own.
