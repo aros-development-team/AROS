@@ -345,7 +345,7 @@ int smp_Initialize(void)
 
     if (pdata->kb_APIC && (pdata->kb_APIC->apic_count > 1))
     {
-        int number_of_ipi_messages = 0;
+        int number_of_ipi_messages = 0, number_of_stands = 0;
         struct IPIHook *hooks;
         int i;
 
@@ -360,18 +360,23 @@ int smp_Initialize(void)
         KrnSpinInit(&pdata->kb_BusyIPIHooksLock);
         
         number_of_ipi_messages = pdata->kb_APIC->apic_count * 10;
+        number_of_stands = pdata->kb_APIC->apic_count * CPU_IPISTANDS;
         D(bug("[Kernel:SMP] %s: Allocating %d IPI CALL_HOOK messages ...\n", __func__, number_of_ipi_messages));
-        hooks = AllocMem((sizeof(struct IPIHook) * number_of_ipi_messages + 127), MEMF_PUBLIC | MEMF_CLEAR);
+        hooks = AllocMem((sizeof(struct IPIHook) * (number_of_ipi_messages + number_of_stands) + 127), MEMF_PUBLIC | MEMF_CLEAR);
         hooks = (struct IPIHook *)(((IPTR)hooks + 127) & ~127);
         if (hooks)
         {
-            for (i=0; i < number_of_ipi_messages; i++)
+            for (i=0; i < number_of_ipi_messages + number_of_stands; i++)
             {
                 hooks[i].ih_CPUDone = KrnAllocCPUMask();
                 hooks[i].ih_CPURequested = KrnAllocCPUMask();
-                KrnSpinInit(&hooks[i].ih_Lock);
+                hooks[i].ih_CPUClaimed = KrnAllocCPUMask();
 
-                ADDHEAD(&pdata->kb_FreeIPIHooks, &hooks[i]);
+                if (i < number_of_ipi_messages)
+                    ADDHEAD(&pdata->kb_FreeIPIHooks, &hooks[i]);
+                else
+                    pdata->kb_APIC->cores[(i - number_of_ipi_messages) / CPU_IPISTANDS]
+                        .cpu_IPIStand[(i - number_of_ipi_messages) % CPU_IPISTANDS] = &hooks[i];
             }
         }
         else

@@ -29,6 +29,9 @@ struct CPUMMUConfig
     int                         mmu_PDEPageUsed;
 };
 
+/* Calls whose entry a hook may reuse, running at once on one CPU (kernel_ipi.c) */
+#define CPU_IPISTANDS   2
+
 struct CPUData
 {
     ULONG                       cpu_TimerFreq;	/* Timer clock frequency                                */
@@ -49,6 +52,13 @@ struct CPUData
     UBYTE                       cpu_PerfMaxRatio;
     UBYTE                       cpu_PerfCurRatio;
     UBYTE                       cpu_PerfCapable;
+    volatile ULONG              cpu_IPIPending;     /* Calls queued for this CPU and not claimed yet; written
+                                                       under kb_BusyIPIHooksLock, read without it            */
+    APTR                        cpu_IPISpare;       /* Entry of the call this CPU is running, free for one
+                                                       call its hook queues                                  */
+    APTR                        cpu_IPIStand[CPU_IPISTANDS]; /* Stand in for such entries on the busy list   */
+    ULONG                       cpu_IPIStandsUsed;
+    ULONG                       cpu_IPIInHook;      /* Hooks this CPU is running                             */
 };
 
 struct APICData

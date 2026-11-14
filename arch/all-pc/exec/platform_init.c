@@ -281,10 +281,11 @@ static void X86_SetTaskState(struct Task *changeTask, ULONG newState, BOOL doloc
  * On SMP the task's tc_SpinLock is held across the whole move and the list
  * locks nest inside it, as in arm-native's Exec_ReschedTask().
  *
- * oldState is a snapshot. The x86 core (kernel_scheduler.c) changes tc_State
- * without taking tc_SpinLock, so it can still move the task between the
- * snapshot and the Remove(), leaving fromLock naming a list the task has
- * left. Closing that is #1712.
+ * oldState is a snapshot. The scheduler moves a task under the same lock,
+ * but TS_SPIN is still written without it (Exec_TaskSpinLockFailFunc(),
+ * core_Schedule()), and a TS_SPIN task stays on TaskRunning until
+ * core_Switch() parks it, so for TS_SPIN fromLock can name a list the task
+ * is not on. No lock on pc passes that fail hook yet.
  */
 void X86_HandleReschedTask(struct ExceptionContext *regs)
 {

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2017, The AROS Development Team. All rights reserved.
+    Copyright (C) 2017-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <asm/cpu.h>
@@ -37,8 +37,6 @@ AROS_LH3(spinlock_t *, KrnSpinLock,
     {
         ULONG tmp;
         struct Task *me = NULL;
-        BYTE old_pri = 0;
-        UBYTE priority_changed = 0;
         if (!Kernel_13_KrnIsSuper())
             me = GET_THIS_TASK;
         /*
@@ -47,7 +45,6 @@ AROS_LH3(spinlock_t *, KrnSpinLock,
         */
         while (!compare_and_exchange_long((ULONG*)&lock->lock, SPINLOCK_UNLOCKED, SPINLOCKF_WRITE, &tmp))
         {
-            struct Task *t = lock->s_Owner;
             // Tell CPU we are spinning
             asm volatile("pause");
 
@@ -58,15 +55,7 @@ AROS_LH3(spinlock_t *, KrnSpinLock,
                 CALLHOOKPKT(failhook, (APTR)lock, 0);
             }
             D(bug("[Kernel] %s: my name is %s\n", __func__, Kernel_13_KrnIsSuper() ? "--supervisor code--" : me->tc_Node.ln_Name));
-            D(bug("[Kernel] %s: spinning on held lock (val=%08x, s_Owner=%p)...\n", __func__, tmp, t));
-            if (me && t && (me->tc_Node.ln_Pri > t->tc_Node.ln_Pri))
-            {
-                D(bug("[Kernel] %s: spinlock owner (%s) has pri %d, lowering ours...\n", __func__, t ? (t->tc_Node.ln_Name) : "--supervisor--", t ? t->tc_Node.ln_Pri : 999));
-                // If lock is spinning and the owner of lock has lower priority than ours, we need to reduce
-                // tasks priority too, otherwise it might happen that waiting task spins forever
-                priority_changed = 1;
-                old_pri = SetTaskPri(me, t->tc_Node.ln_Pri);
-            }
+            D(bug("[Kernel] %s: spinning on held lock (val=%08x, s_Owner=%p)...\n", __func__, tmp, lock->s_Owner));
         };
         if (Kernel_13_KrnIsSuper())
         {
@@ -75,8 +64,6 @@ AROS_LH3(spinlock_t *, KrnSpinLock,
         else
         {
             lock->s_Owner = me;
-            if (priority_changed)
-                SetTaskPri(me, old_pri);
         }
     }
     else
