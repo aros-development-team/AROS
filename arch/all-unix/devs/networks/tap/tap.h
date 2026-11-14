@@ -75,6 +75,16 @@ extern int rand(void);
 /* the longest a frame waits for a read request before it is dropped */
 #define TAP_HOLD_MS      50
 
+/*
+ * The link: the host's side of the tap, up or down (its IFF_UP, read from
+ * TAP_LINK_FLAGS every TAP_LINK_POLL_MS), is the unit's cable plugged in
+ * or not - "ip link set aros0 down" on the host unplugs it. A change is a
+ * SANA-II event, S2EVENT_DISCONNECT or S2EVENT_CONNECT, to the S2_ONEVENT
+ * requests that wait for it, as a card reports its link.
+ */
+#define TAP_LINK_FLAGS   "/sys/class/net/%s/flags"
+#define TAP_LINK_POLL_MS 250
+
 
 struct tap_opener {
     struct MinNode              node;
@@ -152,6 +162,8 @@ struct tap_unit
      * the others' traffic. rxholdseq counts the holds (one timer each).
      * rxreset (an opener closed) drops the held frame and the types.
      */
+    struct MinList              events;         /* S2_ONEVENT requests waiting */
+
     ULONG                       rxheld;
     ULONG                       rxtypes[TAP_RXTYPES];
     ULONG                       nrxtypes;
@@ -174,9 +186,16 @@ struct tap_base
 /* unit flags */
 #define tu_CONFIGURED   (1<<0)
 #define tu_ONLINE       (1<<1)
+#define tu_LINKWATCH    (1<<2)          /* the host's side can be read */
+#define tu_LINKUP       (1<<3)          /* and is up */
+
+/* the events tap.device reports (S2_ONEVENT) */
+#define TAP_EVENTS      (S2EVENT_ONLINE | S2EVENT_OFFLINE | S2EVENT_CONNECT | S2EVENT_DISCONNECT)
 
 
 extern void tap_handle_request(struct IOSana2Req *req);
+
+extern void tap_event(struct tap_unit *unit, ULONG event);
 
 extern void tap_hexdump(unsigned char *buf, int bufsz);
 
