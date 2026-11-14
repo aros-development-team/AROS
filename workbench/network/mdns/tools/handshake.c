@@ -3,39 +3,65 @@
  * Copyright 2026 amigazen project
  * Copyright 2026 Jaime Dias
  *
- * Handshake - find out how to reach one named service on the local network.
- *
- * You already know a service's name (e.g. from Nearby); Handshake resolves it
- * to the host, IP address and port you need to connect, plus any extra info the
- * service advertises.
- *
- *   Handshake NAME/A TYPE/A [DOMAIN <d>] [TIME <secs>]
- *
- *   NAME    the service's name, e.g. "Tim's Mac" (quote names with spaces).
- *   TYPE    a plain word ("web", "files", "ssh", ...) or a real DNS-SD type.
- *   DOMAIN  network domain (default: your local network).
- *   TIME    how many seconds to keep trying (default 30).
- *
- * Examples:
- *   Handshake "Tim's Mac" web
- *   Handshake AmigaShare files
- *
- * The resolve is queued (DISCOVERY.md): mdnsd reports the instance resolved,
- * or failed after five seconds, and Handshake asks again until TIME is up.
+ * Handshake - find out how to reach one named service on the local network,
+ *             on dnssd.library.
  */
+
+/******************************************************************************
+
+    NAME
+
+        Handshake NAME/A TYPE/A [DOMAIN <d>] [TIME <secs>]
+
+    SYNOPSIS
+
+        NAME/A,TYPE/A,DOMAIN/K,TIME/N/K
+
+    LOCATION
+
+        C:
+
+    FUNCTION
+
+        You already know a service's name (from Nearby, say): Handshake
+        resolves it to the host, its IP addresses (IPv4 and IPv6) and the
+        port you need to connect, and any extra information the service
+        advertises.
+
+    INPUTS
+
+        NAME    the service's name, e.g. "Tim's Mac" (quote names with
+                spaces)
+        TYPE    a plain word ("web", "files", "ssh", ...) or a real DNS-SD
+                type ("_http._tcp")
+        DOMAIN  network domain (default: your local network)
+        TIME    how many seconds to keep trying, 1 to 60 (default 30)
+
+    RESULT
+
+        0 when it was reached, 5 when not, 20 for an error.
+
+    EXAMPLE
+
+        Handshake "Tim's Mac" web
+        Handshake AmigaShare files
+
+    SEE ALSO
+
+        Nearby, Share, dnssd
+
+******************************************************************************/
 
 #include <exec/types.h>
 #include <dos/dos.h>
 #include <dos/rdargs.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
+#include <proto/dnssd.h>
 #include <utility/tagitem.h>
 
-#include <bonami/mdns.h>
-#include <proto/bonami.h>
-
-#include "ba_common.h"
-#include "ba_types.h"
+#include "sd_common.h"
+#include "sd_types.h"
 
 #define ARG_NAME    0
 #define ARG_TYPE    1
@@ -44,93 +70,83 @@
 #define ARG_COUNT   4
 
 static const char *HandshakeTemplate = "NAME/A,TYPE/A,DOMAIN/K,TIME/N/K";
+static const char version_tag[] __attribute__((used)) =
+    "\0$VER: Handshake 42.0 (13.11.2026)";
 
 static void
-HandshakeReport(const struct MDNSDiscoveryEvent *ev)
+HandshakeReport(CONST_STRPTR name, const struct DNSSDEvent *e)
 {
-    LONG length = ev->de_TXTLength;
+    struct DNSSDAddress addresses[SD_ADDRESSES];
+    ULONG count = SDEventAddresses(e, addresses, SD_ADDRESSES), i;
+    char target[256];
 
-    BAPrintf("\nReached \"%s\":\n", ev->de_Name);
-    if (ev->de_Address != 0) {
-        BAPrintf("  IP:    %ld.%ld.%ld.%ld\n", BA_IP_ARGS(ev->de_Address));
+    SDEventName(e, &e->de_Target, target, (LONG)sizeof(target));
+    SDPrintf("\nReached \"%s\":\n", name);
+    SDPrintf("  Host:  %s\n", target);
+    for (i = 0; i < count; i++) {
+        char text[64];
+
+        SDAddressText(&addresses[i], text, (LONG)sizeof(text));
+        SDPrintf("  IP:    %s\n", text);
     }
-    BAPrintf("  Port:  %ld\n", (LONG)ev->de_Port);
-    if (length > 0) {
-        if (length > MDNS_DISCOVERY_TXT_MAX) {
-            length = MDNS_DISCOVERY_TXT_MAX;
-        }
-        BAPrintf("  Info:  ");
-        BAPrintTXT(ev->de_TXT, length);
-        BAPrintf("\n");
+    SDPrintf("  Port:  %ld\n", (LONG)e->de_Port);
+    if (e->de_TXT.dr_Size > 1) {
+        SDPrintf("  Info:  ");
+        SDPrintTXT(SDEventPart(e, &e->de_TXT), (LONG)e->de_TXT.dr_Size);
+        SDPrintf("\n");
     }
 }
 
-/* One resolve: 0 resolved, 5 not, 10 stopped by Ctrl-C, 20 an error. */
-static int
-HandshakeOnce(CONST_STRPTR name, CONST_STRPTR type)
-{
-    MDNSResolveRef ref = NULL;
-    struct TagItem tags[] = {
-        { MDNS_EventMode, MDNS_EVENT_QUEUE },
-        { MDNS_ResolveRef, (IPTR)&ref },
-        { TAG_END, 0 }
-    };
-    struct BAWatch watch;
-    struct MDNSDiscoveryEvent ev;
-    LONG rc;
-    LONG why = BA_WAIT_EVENTS;
-    int result = -1;
-
-    rc = ResolveServiceA((STRPTR)name, (STRPTR)type, NULL, tags);
-    if (rc != MDNS_OK) {
-        BAAppPrintMDNSError("contact", rc);
-        return 20;
-    }
-    rc = BAWatchStart(&watch, ref, 0);
-    if (rc != MDNS_OK) {
-        StopResolve(ref);
-        BAAppPrintMDNSError("contact", rc);
-        return 20;
-    }
-    while (result < 0 && (why = BAWatchWait(&watch)) == BA_WAIT_EVENTS) {
-        while (result < 0 && ReadMDNSEvent(ref, &ev) == MDNS_OK) {
-            if (ev.de_Code == MEVENT_RESOLVED) {
-                HandshakeReport(&ev);
-                result = 0;
-            } else if (ev.de_Code == MEVENT_RESOLVE_FAILED) {
-                result = 5;
-            }
-        }
-    }
-    if (result < 0) {
-        if (why == BA_WAIT_BREAK) {
-            result = 10;
-        } else {
-            BAAppPrintMDNSError("contact", watch.bw_Result);
-            result = 20;
-        }
-    }
-    StopResolve(ref);
-    BAWatchEnd(&watch);
-    return result;
-}
-
+/* 0 reached, 5 not, 20 an error. */
 static int
 HandshakeRun(CONST_STRPTR name, CONST_STRPTR word, LONG timeSecs)
 {
-    CONST_STRPTR type = BATypeFromAlias(word);
-    LONG attempts = ((timeSecs > 0 ? timeSecs : 30) + 4) / 5;
-    int result = 5;
+    CONST_STRPTR type = SDTypeFromAlias(word);
+    struct SDSession session;
+    DNSSDOperationRef op;
+    LONG rc, why;
+    int result = -1;
 
-    BAPrintf("Contacting \"%s\" (%s)...\n", name, BATypeFriendly(type));
-    while (attempts-- > 0 && (result = HandshakeOnce(name, type)) == 5) {
-        ;
+    if (timeSecs <= 0) {
+        timeSecs = 30;
+    } else if (timeSecs > 60) {
+        timeSecs = 60;
+    }
+    if ((rc = SDSessionOpen(&session, 0)) != DNSSD_OK) {
+        SDAppPrintError("contact", rc);
+        return 20;
+    }
+    rc = DNSSD_Resolve(session.bs_Session, name, type, &op,
+        DNSSD_Timeout, timeSecs, TAG_DONE);
+    if (rc != DNSSD_OK) {
+        SDSessionClose(&session);
+        SDAppPrintError("contact", rc);
+        return 20;
+    }
+    SDPrintf("Contacting \"%s\" (%s)...\n", name, SDTypeFriendly(type));
+    while (result < 0 && (why = SDSessionWait(&session)) == SD_WAIT_EVENTS) {
+        const struct DNSSDEvent *e;
+
+        while (result < 0 && (e = SDSessionRead(&session, &rc)) != NULL) {
+            if (e->de_Kind == DNSSD_EVENT_RESOLVED) {
+                HandshakeReport(name, e);
+                result = 0;
+            } else if (e->de_Kind == DNSSD_EVENT_END) {
+                result = 5;
+            }
+        }
+        if (result < 0 && rc != DNSSD_ERR_EMPTY) {
+            SDAppPrintError("contact", rc);
+            result = 20;
+        }
     }
     if (result == 5) {
-        BAPrintf("\nCould not reach \"%s\".  Is it switched on and "
+        SDPrintf("\nCould not reach \"%s\".  Is it switched on and "
             "advertising?\n", name);
     }
-    return result == 10 ? 5 : result;
+    DNSSD_Cancel(op);
+    SDSessionClose(&session);
+    return result < 0 ? 5 : result;
 }
 
 int
@@ -139,7 +155,6 @@ main(void)
     struct RDArgs *rda;
     IPTR args[ARG_COUNT];
     LONG timeSecs = 0;
-    LONG rc;
     int result;
     int i;
 
@@ -154,21 +169,14 @@ main(void)
     if (args[ARG_TIME] != 0) {
         timeSecs = *((LONG *)args[ARG_TIME]);
     }
-    if (!BAAppOpen()) {
-        BAPrintf("Cannot open %s version %ld.\n", BONAMINAME,
-            (LONG)BONAMI_LIB_VERSION);
+    if (!SDAppOpen()) {
+        SDPrintf("Cannot open %s version %ld.\n", DNSSDNAME, (LONG)DNSSD_VERSION);
         FreeArgs(rda);
         return 20;
     }
-    rc = BAAppOpenEngine();
-    if (rc != MDNS_OK) {
-        BAAppPrintMDNSError("start mDNS", rc);
-        result = 20;
-    } else {
-        result = HandshakeRun((CONST_STRPTR)args[ARG_NAME],
-            (CONST_STRPTR)args[ARG_TYPE], timeSecs);
-    }
-    BAAppClose();
+    result = HandshakeRun((CONST_STRPTR)args[ARG_NAME],
+        (CONST_STRPTR)args[ARG_TYPE], timeSecs);
+    SDAppClose();
     FreeArgs(rda);
     return result;
 }

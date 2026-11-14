@@ -14,7 +14,7 @@ include $(SRCDIR)/config/aros.cfg
 # configuration names, each session on a port of DEVS:Midi/networkmidi2.
 #
 # Sessions are advertised by the system's mDNS service, which it asks
-# through bonami.library: it holds no socket on port 5353 itself.
+# through dnssd.library: it holds no socket on port 5353 itself.
 
 FILES := main transport_applemidi transport_midi2 adapters network config \
     config_applemidi config_midi2 discovery
@@ -32,7 +32,8 @@ USER_CPPFLAGS := -DNETMIDI_SERVICE
 #MM workbench-network-netmidid : includes linklibs linklibs-applemidi linklibs-rtpmidi linklibs-netmidi-common \
 #MM      linklibs-netmidi2 \
 #MM      network-includes-copy \
-#MM      workbench-network-mdns-bonami-includes
+#MM      workbench-network-mdns-includes \
+#MM      workbench-network-mdns-dnssd-includes
 
 %build_prog mmake=workbench-network-netmidid \
     progname=netmidid targetdir=$(AROS_SYSTEM)/Network/Services \

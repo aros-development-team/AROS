@@ -39,6 +39,7 @@
 #include <net/route.h>
 #include <net/if.h>
 #include <net/if_protos.h>
+#include <netinet/in_protos.h>
 
 #include <netinet/in.h>
 #include <netinet/in_systm.h>
@@ -155,9 +156,19 @@ in_pcbbindaddr(struct inpcb *inp, struct mbuf *nam, const void **addr,
     if(nam->m_len != sizeof(*sin))
         return (EINVAL);
     if(!IN_MULTICAST(ntohl(sin->sin_addr.s_addr)) &&
-            sin->sin_addr.s_addr != INADDR_ANY &&
-            !in_ownaddr(&sin->sin_addr, NULL))
-        return (EADDRNOTAVAIL);
+            sin->sin_addr.s_addr != INADDR_ANY) {
+        struct sockaddr_in a;
+        struct ifaddr *ifa;
+
+        in_sinof(&a, sin->sin_addr);
+        if((ifa = ifa_ifwithaddr(sintosa(&a))) == NULL)
+            return (EADDRNOTAVAIL);
+        /* another host has it (RFC 5227); a tentative one may be bound,
+         * and is used once it is ready (as NetBSD) */
+        if(ifa->ifa_addr->sa_family == AF_INET &&
+                (((struct in_ifaddr *)ifa)->ia4_flags & IN_IFF_DUPLICATED))
+            return (EADDRNOTAVAIL);
+    }
     *addr = &sin->sin_addr;
     *port = sin->sin_port;
     return (0);
@@ -241,15 +252,16 @@ in_srcia(struct inpcb *inp, struct in_addr dst, struct in_ifaddr **iap)
         }
     }
 #endif
-    *iap = ia;
+    *iap = in_readyia(ia);
     return (0);
 }
 
 /*
  * inf_selectsrc. With the interface named (a socket bound to one,
- * SO_BINDTODEVICE) the source is that interface's own address - "any" if
- * it has none yet, which is how a DHCP client sends; otherwise in_srcia()
- * decides, which needs the PCB (its route, its multicast options).
+ * SO_BINDTODEVICE, or IP_PKTINFO's) the source is that interface's own
+ * address - its ready one on the destination's network, if it has one;
+ * "any" if it has none yet, which is how a DHCP client sends. Otherwise
+ * in_srcia() decides, which needs the PCB (its route, its multicast options).
  */
 int
 in_selectsrc(struct inpcb *inp, const void *dst, struct ifnet *oifp, void *src)
@@ -258,9 +270,20 @@ in_selectsrc(struct inpcb *inp, const void *dst, struct ifnet *oifp, void *src)
     int error;
 
     if(oifp != NULL) {
+        /* the first address of the interface, or the one on the
+         * destination's network */
+        struct in_ifaddr *first = NULL;
+        u_long d = ntohl(((const struct in_addr *)dst)->s_addr);
+
         for(ia = in_ifaddr; ia; ia = ia->ia_next)
-            if(ia->ia_ifp == oifp)
-                break;
+            if(ia->ia_ifp == oifp) {
+                if(first == NULL)
+                    first = ia;
+                if((d & ia->ia_subnetmask) == ia->ia_subnet &&
+                        !(ia->ia4_flags & IN_IFF_NOTREADY))
+                    break;
+            }
+        ia = in_readyia(ia ? ia : first);
         ((struct in_addr *)src)->s_addr = ia ? IA_SIN(ia)->sin_addr.s_addr : INADDR_ANY;
         return (0);
     }

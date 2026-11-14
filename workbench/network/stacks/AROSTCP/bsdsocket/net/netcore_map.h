@@ -950,6 +950,10 @@
 #error "sana_unrun is a macro in the headers: note its wrapper in netcore.def"
 #endif
 #define sana_unrun (*__netcore.nc_sana_unrun)
+#ifdef  rt_pmtu_update_if
+#error "rt_pmtu_update_if is a macro in the headers: note its wrapper in netcore.def"
+#endif
+#define rt_pmtu_update_if (*__netcore.nc_rt_pmtu_update_if)
 
 #endif /* NETMODULE */
 #endif /* !NET_NETCORE_MAP_H */

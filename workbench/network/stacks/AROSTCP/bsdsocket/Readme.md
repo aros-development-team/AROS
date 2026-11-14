@@ -580,7 +580,7 @@ ICMPv6 socket cannot set it (it reads 2).
   long. On LP64 `CMSG_DATA()` starts past padding after the 12-byte header, which a length of
   `sizeof(struct cmsghdr) + size` would cut from the data's end. `recvmsg()` copies the whole chain
   into the caller's buffer and reports what did not fit with `MSG_CTRUNC` in `msg_flags`. IPv4's
-  `IP_RECVDSTADDR`, `IP_RECVTOS` and `IP_RECVTTL` use the same helper.
+  `IP_RECVDSTADDR`, `IP_RECVTOS`, `IP_RECVTTL` and `IP_RECVIF` use the same helper.
 - **Receive time.** A UDP socket with `SO_TIMESTAMP` gets, first in each datagram's ancillary data,
   the time the stack handed it to the socket - before it waits in the buffer, so a late
   `recvmsg()` does not move it (`sbcreatetimestamp()`, `kern/uipc_socket2.c`, from
@@ -603,8 +603,38 @@ The IPv6 ND engine (RFC 4861: NS/NA resolution, RS/RA, DAD, NUD) is multicast-ba
 real link layer; it is not exercised by loopback. `nd6_nbr.c` handles NS/NA/DAD, `icmp6.c`
 dispatches ICMPv6, and `in6.c` performs link-local autoconfiguration and joins the solicited-node
 group via `in6_addmulti` → `S2_ADDMULTICASTADDRESS`, mapping `ff02::X` → `33:33:XX:XX:XX:XX`.
-`nd6_lookup` returns a neighbour route with its reference **held** (KAME semantics); every caller
-`rtfree()`s it when done.
+The neighbour cache (RFC 4861 section 5.1, `nd6.c`) is kept apart from the routing table, as
+FreeBSD's `lltable` has kept it since 8.0: an entry (`struct llinfo_nd6`) per neighbour, and a
+neighbour is an address on a link, so the key is (interface, address) - `fe80::1` on eth0 and
+`fe80::1` on eth1 are two entries, each with its own link-layer address and state, and sending to
+them by turns resolves neither again. The route gives the next hop and the interface; the next hop
+is looked up on that interface (`nd6_nbr_lookup()`), and the prefix routes of a link are not cloned
+per neighbour. The entries are in a 64-bucket hash table (chained: 256 neighbours average 3 comparisons a lookup, 1024 on four links
+9) and one list the timer walks, at an `spl`
+like everything in Neighbour Discovery; an entry is about 62 bytes on m68k (96 on x86_64), against
+a cloned route and its state before (about 230 and 430). An interface holds `nd6_maxnbrs` (256) at
+most (those past `ND6_MAXIFS`, with no ND state of their own, share one such count): when it is full, an entry not yet resolved (NOSTATE) or else the STALE one unused longest,
+without packets waiting and not set by hand, is taken over; with none, the new neighbour fails with
+`ENOBUFS` - an entry waiting for its address to be resolved (INCOMPLETE, with packets queued) is
+never given up. One of the interface's own addresses is a neighbour reachable for good, at the
+interface's link-layer address (FreeBSD's `LLE_IFADDR`; a router that is one of our addresses is
+reachable), made when first looked up and deleted with the address. An entry set by hand or ours
+keeps its address and state; a Neighbor Advertisement for it is heeded only for its Router flag.
+An entry is deleted when resolution or unreachability detection fails (sections
+7.2.2, 7.3.3), when it has been STALE and unused for a day, and with its interface - removed
+(`nd6_ifdetach()`) or its link lost (`sana_linkdown()`: a new network when it comes back). The counts
+are in `nd6stat` (`nd6s_nbr_reused`, `nd6s_nbr_full`, `nd6s_nbr_nomem`).
+
+The cache is managed as on BSD: a routing socket message with `RTF_LLINFO` about an IPv6 address is
+about the neighbour cache (FreeBSD's `lla_rt_output()`): `RTM_ADD` with a link-layer gateway sets a
+neighbour by hand (`ndp -s`: static, REACHABLE for good, left alone by Neighbour Discovery),
+`RTM_DELETE` deletes an entry, `RTM_GET` reads it; the interface is the gateway's `sdl_index`, else
+`rtm_index`, else the address's zone. Without `RTF_LLINFO` a message is about routes, as before.
+`GetRouteInfo(AF_INET6, RTF_LLINFO)` lists the entries as the rows of cloned neighbour routes were
+(`RTF_UP | RTF_HOST | RTF_LLINFO`, the link-layer address as a `sockaddr_dl` naming the interface,
+the interface index, the expiry time; a link-local address with its zone), one row per (interface,
+address), so `ip -6 neigh` reads them as before; the route listing (`netstat -r`) has no neighbour
+clones any more, as on FreeBSD (`cunit-net-nd6cache`).
 Neighbor Solicitations follow RFC 4861 §7.2.2 and §7.3.3 (`nd6_solicit()`): to resolve an address
 they go to its solicited-node group, to probe a neighbour in PROBE to the neighbour itself, at the
 link-layer address cached; at most three, a RetransTimer apart (the interface's, from Router
@@ -613,8 +643,8 @@ packets waiting meanwhile are queued, not answered with solicitations of their o
 
 A route through a router (`RTF_GATEWAY`) is not a neighbour: `nd6_rtrequest()` leaves it alone and
 its gateway stays the router's IPv6 address. When a packet follows it, `nd6_resolve()` resolves the
-router through the router's own neighbour entry on the route's interface (`nd6_lookup()`), as KAME's
-`nd6_output()` does, so one entry serves every route through that router and its Neighbor
+router through the router's own neighbour entry on the route's interface (`nd6_nbr_lookup()`), as
+KAME's `nd6_output()` does, so one entry serves every route through that router and its Neighbor
 Advertisements update the state in use. The default router learned from Router Advertisements is
 installed as `::/0` with an all-zero netmask, like a `GW6` default from the interface database; a
 route to `::` without a netmask would be a host route, which the routing table refuses.
@@ -799,11 +829,14 @@ section 14; RFC 8899) with the RFC 3542 section 11 options, as KAME and FreeBSD 
 An ICMPv6 error about a link-scope destination carries the interface it came in on as the
 destination's zone (`sin6_scope_id`), so a socket bound to another interface is not told.
 
-That route is the destination's own. On the link it is the neighbour's host route, cloned by
-neighbour discovery. Through a router the table only has the router's route (a prefix, or `::/0`),
-which every destination behind it shares, so - as KAME's `icmp6_mtudisc_clone()` does - a host route
-through the same router (`RTF_HOST | RTF_GATEWAY | RTF_DYNAMIC`, the router route's metrics) is
-added for the destination and the MTU put on that. A lowered MTU is kept 10 minutes (`rmx_expire`
+That route is the destination's own. The table only has a shared route for most destinations - the
+router's (a prefix, or `::/0`) for one behind a router, the link's prefix for one on the link, whose
+neighbour is in the neighbour cache, not a route (§6.1) - so, as KAME's `icmp6_mtudisc_clone()` does,
+a host route is added for the destination (`RTF_HOST | RTF_DYNAMIC`, the shared route's metrics) and
+the MTU put on that: through the same router (`RTF_GATEWAY`), or on the link's interface. The table
+holds `fe80::/64` once and keys a host route by address alone, so a link-local destination's is put on
+the interface the Packet Too Big came in by (its zone) and used only there (`ip6_output()`,
+`ip6_pathmtu()`); a report about the same address from another link is not recorded meanwhile. A lowered MTU is kept 10 minutes (`rmx_expire`
 says when), then the larger one is tried again (RFC 8201 section 4): `rt_pmtu_timer()` (from
 `ip_slowtimo()`) deletes a host route added for it and gives any other route its previous MTU back.
 The routes are held, with a reference, in a table of 32 (`pmtu_routes[]`, `net/route.c`, shared with
@@ -974,8 +1007,26 @@ protocols keep up, and a device with no read request posted holds what follows. 
   byte, so the ECN field) and `IP_RECVTTL` (FreeBSD's: `cmsg_type` `IP_RECVTTL`, the TTL the
   datagram arrived with in one byte - not Linux's `IP_TTL` and int; an mDNS responder checks it is
   255, RFC 6762 section 11) - whether it was sent to one address or to a group or broadcast address
-  (`udp_savecontrol()`, from the header as it arrived). `IP_TOS` as ancillary data (a byte, or an int as Linux takes it) sets the
-  TOS byte of one datagram.
+  (`udp_savecontrol()`, from the header as it arrived) - and `IP_RECVIF` (FreeBSD's: the interface
+  it came in by, as that interface's `sockaddr_dl` - index, name and hardware address - so that one
+  socket bound to `INADDR_ANY` serves every link, as `IPV6_PKTINFO` lets an IPv6 one; raw sockets
+  too). `IP_PKTINFO` (Linux's `struct in_pktinfo`, with an AROS number, 100: Linux's 8 is
+  `IP_RETOPTS` here and NetBSD's 25/26 are the source-specific multicast options;
+  `IP_RECVPKTINFO` is the same option) gives the same facts as Linux does: the interface index,
+  the header's destination (`ipi_addr`: a group, a broadcast, or ours) and the address a reply
+  would come from (`ipi_spec_dst`: that destination when it is ours, else a ready address of the
+  interface it came in by) - `in_savecontrol()` writes all three messages from the same
+  information. Sent as ancillary data on a UDP or raw datagram, `IP_PKTINFO` names the interface
+  it leaves by - the packet leaves there, as for a socket bound to it (`IP_BOUNDIF`), whatever the
+  routing table or `IP_MULTICAST_IF` say - and its source, which must be an address of ours that
+  is ready (else `EADDRNOTAVAIL`) and wins over the bound address as `IPV6_PKTINFO`'s does; a
+  connected socket keeps its connection's source; with no source named, the interface's ready
+  address on the destination's network is taken. An interface that does not exist is `ENXIO`,
+  another than the one the socket is bound to `EINVAL`. With it one socket bound to `INADDR_ANY`
+  answers on the link a question came in by, from the address asked about, as a multi-link mDNS
+  responder must (RFC 6762 section 15.2; with two IPv4 link-local links, 169.254/16 is routed by
+  one of them only, RFC 3927 section 3.2). `IP_TOS` as ancillary data (a byte, or an int as
+  Linux takes it) sets the TOS byte of one datagram.
 - **IPv4 multicast** (built under `-DENABLE_MULTICAST`) provides host-side group membership,
   mirroring the IPv6 path. `in_addmulti`/`in_delmulti` (`in.c`) maintain the reference-counted
   `in_multihead` list and program the NIC hardware filter over SANA-II (RFC 1112 class-D →
@@ -1019,11 +1070,59 @@ locals before summing rather than reading them through a `u_int16_t *` taken fro
   issuing a SANA-II write inline, `sana_output` enqueues the packet on `if_snd` and `sana_start`
   feeds queued packets into the pool of write requests as earlier ones complete, so a burst of sends
   cannot drain the request or cluster pool and wedge the interface. `sana2arp.c` implements IPv4
-  ARP with a **per-interface** ARP table (each `sana_softc` has its own `ss_arp.table` under
+  ARP with a **per-interface** ARP table (each `sana_softc` has its own `ss_arp_table` under
   `ARPTAB_LOCK`). While an address is resolved, up to `ARP_MAXHOLD` (16) packets are queued on its
   entry (`at_hold`, chained through `m_nextpkt`, oldest dropped first) and all are sent when the reply
   comes, so the fragments of a datagram all leave; the request is sent again at most once a second
   (RFC 1122 section 2.3.2.1), not for every packet queued.
+  An entry's reachability is checked as IPv6's neighbour unreachability detection does (RFC 4861
+  section 7.3; RFC 1122's unicast poll): confirmed by an ARP reply to us, it is reachable for 30 s,
+  then stale; used while stale it waits 5 s for a confirmation, then is asked
+  with up to 3 ARP requests sent to its hardware address, a second apart; unanswered, the entry goes
+  and the next packet resolves the address again by broadcast. An entry not used is never probed.
+  Before, a used entry never aged: a neighbour that changed its hardware address without
+  announcing it was sent to at the old one for as long as traffic went to it. The times run on ARP's
+  monotonic clock (`arp_ticks`, fast ticks), as conflict detection's.
+- **IPv4 address conflict detection** (RFC 5227, as NetBSD; `sana2arp.c` `arp_dad_*`). An address
+  added to an ARP interface - by hand, from `db/interfaces`, by DHCP or by autoip - is tentative
+  (`IN_IFF_TENTATIVE` in `ia4_flags`) until `net.inet.ip.dad_count` (3) ARP probes from 0.0.0.0,
+  after a random wait below 1 s and 1-2 s apart, and 2 s more, have gone unanswered: 3 to 7 s, while
+  the interface is up. Meanwhile it is not a source (`ip_output()` drops the packet: a TCP SYN goes
+  again once it is ready), not a destination (`ip_input()`), not answered for in ARP, and
+  `arpwhohas()` asks from a ready address of the interface (0.0.0.0 if none); it can be bound. Then
+  it is announced twice, 2 s apart. A host that answers a probe, or probes for the address at the
+  same time, makes it `IN_IFF_DUPLICATED`: not used, `bind()` gives `EADDRNOTAVAIL`, a send from it
+  too. An address that is not ready is not this host's: a socket with no address of its own takes
+  a ready address of the outgoing interface as its source instead (`in_readyia()`, as NetBSD's
+  `in_selectsrc()`), `arpresolve()` sends what is addressed to it out on the link, to its owner,
+  and the owner's ARP packets make its entry as any neighbour's. (A host address, /32, or one of a
+  /31 pair has no network or broadcast address of its own - `in_broadcast()` - so what goes to such
+  an alias is not taken for a broadcast.)
+  An address in use that another host claims is defended once in 10 s with an announcement; what a
+  second claim within them does depends on where the address came from (RFC 5227 section 2.4),
+  which each address keeps (`ia_origin`, `IN_ORIGIN_*` in `<netinet/in_var.h>`): one added with
+  `SIOCAIFADDR` or `SIOCSIFADDR` is configured by hand, and `SIOCAIFADDR_ORIGIN` (a
+  `struct in_originreq`: the `in_aliasreq` and the origin) adds one saying it is a DHCP lease or an
+  IPv4LL address. One configured by hand is kept - defended again once 10 s are past, never given
+  up once in use, so that no host on the link can take it away (2.4 (c)), on a DHCP interface too;
+  a DHCP lease is duplicated, and `dhclient` - woken by the `SBTC_SIG_ADDRESS_CHANGE_MASK` signal
+  in its `WaitSelect()`, reading the lease's flags with `SIOCGIFAFLAG_IN`, with no routing socket
+  - declines it and asks for another (2.4 (b)); an IPv4LL one goes back to autoip for another. A duplicated address is probed
+  again every minute and is ready once no one answers. An in-place reload deletes and adds the
+  addresses again: one that was in use and comes back within 30 s keeps its state and is not
+  probed again (`arp_dad_forget()`/`arp_dad_kept()`; the window covers `dhclient` applying its
+  lease again after the reload). Each change is an `RTM_NEWADDR` and the
+  `SBTC_SIG_ADDRESS_CHANGE_MASK` signal, as IPv6's DAD; `SIOCGIFAFLAG_IN` (NetBSD,
+  `ifr_addrflags`) reads the flags, and `ifconfig` shows `tentative` or `duplicated`.
+  `net.inet.ip.dad_count` 0 turns the probes off: an address is ready at once, announced, and a
+  conflict only logged. The timer is IP's `pr_fasttimo` (50 ms ticks).
+- **IPv4 link-local addresses** (RFC 3927, `IP=AUTO`): autoip picks a 169.254/16 address (seeded by
+  the hardware address, so the same one again after a restart) and adds it; conflict detection
+  probes, announces and defends it as any other - always, whatever `dad_count` says - and when it
+  is duplicated autoip takes it off and picks another; after 10 conflicts, one a minute. The link
+  coming back starts autoip again (`ss_autoip.wanted`). With two interfaces on `IP=AUTO` each gets
+  its address, probed, but the routing table holds 169.254/16 once: link-local peers are reached by
+  the interface that has the route (RFC 3927 section 3.2), as IPv6's `fe80::/64` before scopes.
 - **Tunnel pseudo-interface.** `if_stf.c` provides a deviceless 6in4 (SIT) interface that
   encapsulates IPv6 in IPv4 (protocol 41) over the existing IPv4 stack — no SANA-II device is bound.
   See §6.5.

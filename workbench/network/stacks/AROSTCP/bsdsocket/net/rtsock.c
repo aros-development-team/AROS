@@ -161,7 +161,7 @@ route_output(m, so)
 register struct mbuf *m;
 struct socket *so;
 {
-    register struct rt_msghdr *rtm = 0;
+    struct rt_msghdr *rtm = 0;          /* its address goes to IPv6 (NFC_LLINFO_RTMSG) */
     register struct rtentry *rt = 0;
     struct rtentry *saved_nrt = 0;
     struct sockaddr *dst = 0, *gate = 0, *netmask = 0, *genmask = 0;
@@ -220,6 +220,22 @@ struct socket *so;
     }
     if((rtm->rtm_addrs & RTA_IFA) && cp < lim)  {
         ifaaddr = (struct sockaddr *)cp;
+    }
+    /*
+     * A message with RTF_LLINFO about an IPv6 address is about IPv6's
+     * neighbour cache, which is not in the routing table: IPv6 answers it
+     * (NFC_LLINFO_RTMSG, net/netmodule.h), as FreeBSD's lla_rt_output().
+     * Without IPv6 there is nothing to answer it.
+     */
+    if((rtm->rtm_flags & RTF_LLINFO) && dst->sa_family == AF_INET6) {
+        struct nfc_llinfo_rtmsg req;
+
+        req.nr_rtm = &rtm;
+        req.nr_dst = dst;
+        req.nr_gate = gate;
+        error = netfamily_control(AF_INET6, NULL, NFC_LLINFO_RTMSG, (caddr_t)&req, NULL);
+        dst = (struct sockaddr *)(rtm + 1);     /* rtm may be a new one */
+        goto flush;
     }
     switch(rtm->rtm_type) {
     case RTM_ADD:

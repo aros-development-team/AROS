@@ -416,16 +416,9 @@ in6_ifinit(struct ifnet *ifp, struct in6_ifaddr *ia,
         if(ia->ia_dstaddr.sin6_family != AF_INET6)
             return 0;
         flags |= RTF_HOST;
-    } else {
-        /*
-         * On broadcast/multicast interfaces (e.g. Ethernet), set
-         * RTF_CLONING so that rtalloc1() can create per-host cloned
-         * routes for each neighbor.  Without this, all neighbors on
-         * the prefix share one route entry and stomp on each other's
-         * cached link-layer address in rt_gateway / rt_llinfo.
-         */
-        flags |= RTF_CLONING;
     }
+    /* On a broadcast link the prefix route is not cloned: its neighbours
+     * are in the neighbour cache (nd6.c), one per (interface, address). */
 
     error = rtinit(&ia->ia_ifa, RTM_ADD, flags);
     if(error == 0)
@@ -455,14 +448,16 @@ in6_purgeaddr(struct ifaddr *ifa)
     in6_ifscrub(ifp, ia);
 
     /*
-     * Routes hold no reference on their rt_ifa: the host routes cloned from
-     * the prefix route in6_ifscrub() just removed, and any other route that
-     * resolved through this address, would be left pointing at it once it is
+     * Routes hold no reference on their rt_ifa: any route that resolved
+     * through this address would be left pointing at it once it is
      * freed below, and deleting them later (rt_purgeif() on a reload, for
      * one) would call ifa_rtrequest through freed memory. Delete them now,
      * as in_control() does for an IPv4 address.
      */
     rt_purgeifa((struct ifaddr *)ia);
+
+    /* nor is it a neighbour of ours any more */
+    nd6_ifaddr_gone(ifp, &ia->ia_addr.sin6_addr);
 
     /* the address no longer answers neighbour solicitations */
     if(IA6_PRIV(ia)->ia6p_solicited != NULL) {
@@ -1000,8 +995,9 @@ in6_delmulti(struct in6_multi *in6m)
  * By now its addresses are gone (sana_if_deconfigure()), and their
  * solicited-node memberships with them. The interface's own membership of
  * the all-nodes group, from in6_join_allnodes(), is released here. What
- * sockets still hold cannot be freed under them: those entries are cut
- * loose from the interface and go when their sockets drop them. Nothing is
+ * sockets hold is released by in_pcbifgone() (in6_family.c); an entry
+ * still held is cut loose from the interface and goes with its last
+ * holder. Nothing is
  * sent and the device is not asked to forget the addresses: it is offline
  * and about to be closed. The IPv6 counterpart of in_ifdetach().
  */
@@ -1220,6 +1216,12 @@ in6_ifevent(int event, struct ifnet *ifp)
         in6_if_up(ifp);
         break;
 
+    case NFE_LINKDOWN:
+        /* the neighbours were on the network that went; those set by
+         * hand, and our own addresses', stay */
+        nd6_purge_neighbors(ifp, 1);
+        break;
+
     case NFE_UNCONFIGURE_PRE:
         /* forget the routers heard on it, the routes they gave, the prefixes */
         nd6_purge_routers(ifp);
@@ -1261,6 +1263,12 @@ in6_ifcontrol(struct socket *so, int cmd, caddr_t data, struct ifnet *ifp)
 {
     if(cmd == SIOCGLIFADDR)
         return (in6_ifconf(cmd, data));
+    if(cmd == NFC_LLINFO_RTMSG)
+        return (nd6_llinfo_rtmsg((struct nfc_llinfo_rtmsg *)data));
+    if(cmd == NFC_LLINFO_ROWS) {
+        nd6_llinfo_rows((struct nfc_llinfo_rows *)data);
+        return (0);
+    }
     return (in6_control(so, cmd, data, ifp));
 }
 

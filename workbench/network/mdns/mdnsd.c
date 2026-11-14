@@ -8,9 +8,10 @@
  * It answers for the host's name in the mDNS domain, "<hostname>.local", on
  * every interface that can multicast, so that other machines on the link
  * find this one by name without a DNS server, and for the services that
- * programs on this host register through bonami.library (RFC 6763). The
- * library reaches it through the public message port MDNS_IPC_PORT; no
- * client shares memory with it.
+ * programs on this host register through dnssd.library (RFC 6763), whose
+ * browses, resolves, lookups and record questions it answers from its
+ * cache. The library reaches it through the public message port
+ * DNSSD_IPC_PORT; no client shares memory with it.
  *
  * The AROSTCP service manager starts it from db/services.d/mdns and stops
  * it with the stack. Started by hand it runs until Ctrl-C.
@@ -28,6 +29,8 @@
 #include <proto/bsdsocket.h>
 #include <libraries/bsdsocket.h>
 #include <netinet/in.h>
+
+#include <dnssd/dnssd.h>
 
 #include "mdnsd.h"
 
@@ -67,8 +70,6 @@ net_down(struct MDNSDaemon *md)
 {
     struct Library *SocketBase = md->md_SocketBase;
 
-    mdnsDiscoveryReset(md);
-    mdnsQueryReset(md);
     mdnsRegGoodbyeAll(md);
     mdnsHostGoodbye(md);
     mdnsNetClose(md);
@@ -101,11 +102,79 @@ net_up(struct MDNSDaemon *md, ULONG addressMask)
     /* An interface came, went or changed its address: the name is asked
      * for again with the addresses as they are now. */
     if (mdnsNetRescan(md)) {
-        mdnsDiscoveryReset(md);
-        mdnsQueryReset(md);
+        mdnsCacheLinksChanged(md);
         mdnsHostRestart(md);
         mdnsRegRestartAll(md);
     }
+}
+
+/* The slot of the link with this interface index, or -1. */
+static LONG
+link_slot(const struct MDNSDaemon *md, ULONG index)
+{
+    LONG i;
+
+    for (i = 0; index != 0 && i < md->md_IfCount; i++) {
+        if (md->md_Ifs[i].mi_Index == index) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+/* A datagram on the IPv4 socket: IP_PKTINFO names the link it came by, and
+ * one of a link mdnsd does not serve is dropped. */
+static void
+receive4(struct MDNSDaemon *md, struct Library *SocketBase)
+{
+    union {
+        struct cmsghdr align;
+        UBYTE data[CMSG_SPACE(sizeof(struct in_pktinfo))];
+    } control;
+    struct sockaddr_in from;
+    struct msghdr message;
+    struct iovec vector;
+    struct cmsghdr *header;
+    LONG slot = -1;
+    int got;
+
+    memset(&message, 0, sizeof(message));
+    memset(&from, 0, sizeof(from));
+    vector.iov_base = md->md_RxBuf;
+    vector.iov_len = MDNS_MAX_PACKET;
+    message.msg_name = &from;
+    message.msg_namelen = sizeof(from);
+    message.msg_iov = &vector;
+    message.msg_iovlen = 1;
+    message.msg_control = &control;
+    message.msg_controllen = sizeof(control);
+    got = recvmsg((int)md->md_Socket4, &message, 0);
+    if (got <= 0) {
+        return;
+    }
+    for (header = CMSG_FIRSTHDR(&message); header != NULL;
+            header = CMSG_NXTHDR(&message, header)) {
+        if (header->cmsg_level == IPPROTO_IP &&
+            header->cmsg_type == IP_PKTINFO &&
+            header->cmsg_len == CMSG_LEN(sizeof(struct in_pktinfo))) {
+            struct in_pktinfo info;
+
+            memcpy(&info, CMSG_DATA(header), sizeof(info));
+            slot = link_slot(md, (ULONG)info.ipi_ifindex);
+            break;
+        }
+    }
+    if (slot < 0) {
+        return;
+    }
+    md->md_RxPackets++;
+    md->md_SendIf = slot;
+    md->md_SendFamily = AF_INET;
+    mdnsHandlePacket(md, md->md_RxBuf, (LONG)got,
+        (ULONG)ntohl((unsigned long)from.sin_addr.s_addr),
+        (UWORD)ntohs(from.sin_port));
+    md->md_SendIf = -1;
+    md->md_SendFamily = 0;
 }
 
 /* Waits for a signal, a datagram on any interface, or a second to pass: a
@@ -117,7 +186,7 @@ wait_and_receive(struct MDNSDaemon *md, ULONG sigmask, BOOL probing)
     struct Library *SocketBase = md->md_SocketBase;
     struct timeval tv;
     fd_set readfds;
-    LONG i, top = -1;
+    LONG top = -1;
 
     if (SocketBase == NULL) {
         /* Between "reconfigure begin" and "end" there is no stack to ask. */
@@ -127,15 +196,9 @@ wait_and_receive(struct MDNSDaemon *md, ULONG sigmask, BOOL probing)
     FD_ZERO(&readfds);
     tv.tv_sec = (probing || md->md_AnswerPending) ? 0 : 1;
     tv.tv_usec = md->md_AnswerPending ? 20000 : probing ? 250000 : 0;
-    for (i = 0; i < md->md_IfCount; i++) {
-        LONG sock = md->md_Ifs[i].mi_Socket;
-
-        if (sock >= 0) {
-            FD_SET(sock, &readfds);
-            if (sock > top) {
-                top = sock;
-            }
-        }
+    if (md->md_Socket4 >= 0) {
+        FD_SET(md->md_Socket4, &readfds);
+        top = md->md_Socket4;
     }
     if (md->md_Socket6 >= 0) {
         FD_SET(md->md_Socket6, &readfds);
@@ -148,26 +211,8 @@ wait_and_receive(struct MDNSDaemon *md, ULONG sigmask, BOOL probing)
         return sigmask;
     }
 
-    for (i = 0; i < md->md_IfCount; i++) {
-        LONG sock = md->md_Ifs[i].mi_Socket;
-
-        if (sock >= 0 && FD_ISSET(sock, &readfds)) {
-            struct sockaddr_in from;
-            socklen_t fromlen = sizeof(from);
-            int got = recvfrom(sock, (char *)md->md_RxBuf, MDNS_MAX_PACKET,
-                0, (struct sockaddr *)&from, &fromlen);
-
-            if (got > 0) {
-                md->md_RxPackets++;
-                md->md_SendIf = i;
-                md->md_SendFamily = AF_INET;
-                mdnsHandlePacket(md, md->md_RxBuf, (LONG)got,
-                    (ULONG)ntohl((unsigned long)from.sin_addr.s_addr),
-                    (UWORD)ntohs(from.sin_port));
-                md->md_SendIf = -1;
-                md->md_SendFamily = 0;
-            }
-        }
+    if (md->md_Socket4 >= 0 && FD_ISSET(md->md_Socket4, &readfds)) {
+        receive4(md, SocketBase);
     }
     if (md->md_Socket6 >= 0 && FD_ISSET(md->md_Socket6, &readfds)) {
         union {
@@ -179,8 +224,10 @@ wait_and_receive(struct MDNSDaemon *md, ULONG sigmask, BOOL probing)
         struct msghdr message;
         struct iovec vector;
         BOOL havePacketInfo = FALSE;
+        LONG i;
         int got;
 
+        memset(&packetInfo, 0, sizeof(packetInfo));
         memset(&message, 0, sizeof(message));
         memset(&from6, 0, sizeof(from6));
         vector.iov_base = md->md_RxBuf;
@@ -210,12 +257,8 @@ wait_and_receive(struct MDNSDaemon *md, ULONG sigmask, BOOL probing)
             }
         }
 
-        for (i = 0; havePacketInfo && i < md->md_IfCount; i++) {
-            if (packetInfo.ipi6_ifindex == md->md_Ifs[i].mi_Index) {
-                break;
-            }
-        }
-        if (got > 0 && havePacketInfo && i < md->md_IfCount) {
+        i = havePacketInfo ? link_slot(md, packetInfo.ipi6_ifindex) : -1;
+        if (got > 0 && i >= 0) {
             md->md_RxPackets++;
             /* What this packet causes to be sent goes back to its link
              * and, for unicast, its address family. */
@@ -236,46 +279,54 @@ main(void)
     static struct MDNSDaemon daemon;
     struct MDNSDaemon *md = &daemon;
     struct MDNSDSignals sig;
-    struct MDNSIPCMsg *msg;
-    struct MsgPort *port;
-    ULONG portmask;
+    ULONG dportmask;
+    struct DNSSDIPCMsg *dmsg;
+    struct MsgPort *dport;
     ULONG lastScan = 0, lastReap = 0;
-    ULONG addressMask = 0;
-    BYTE addressSignal = -1;
+    ULONG addressMask = 0, goneMask = 0;
+    BYTE addressSignal = -1, goneSignal = -1;
     BOOL running = TRUE, probing = FALSE;
 
     /* One responder owns the host's names. */
     Forbid();
-    port = FindPort((STRPTR)MDNS_IPC_PORT);
+    dport = FindPort((STRPTR)DNSSD_IPC_PORT);
     Permit();
-    if (port != NULL) {
+    if (dport != NULL) {
         PutStr("mdnsd: already running\n");
         return RETURN_WARN;
     }
 
     md->md_Socket = -1;
+    md->md_Socket4 = -1;
     md->md_Socket6 = -1;
     md->md_SendIf = -1;
     md->md_NextHandle = 1;
     md->md_DaemonID = GetETaskID(FindTask(NULL));
+    if (dnssd_link_inventory_init(&md->md_LinkInventory,
+            md->md_Links, md->md_LinkScratch, MDNS_IFS_MAX,
+            md->md_Addresses, md->md_AddressScratch,
+            MDNS_ADDRESS_MAX) != DNSSD_LINK_OK) {
+        return RETURN_FAIL;
+    }
     NEWLIST(&md->md_Services);
     md->md_RxBuf = (UBYTE *)AllocMem(MDNS_MAX_PACKET, MEMF_CLEAR);
     md->md_TxBuf = (UBYTE *)AllocMem(MDNS_MAX_PACKET, MEMF_CLEAR);
-    port = CreateMsgPort();
-    if (md->md_RxBuf == NULL || md->md_TxBuf == NULL || port == NULL) {
+    dport = CreateMsgPort();
+    if (md->md_RxBuf == NULL || md->md_TxBuf == NULL ||
+        dport == NULL || !mdnsCacheInit(md)) {
         if (md->md_RxBuf != NULL) {
             FreeMem(md->md_RxBuf, MDNS_MAX_PACKET);
         }
         if (md->md_TxBuf != NULL) {
             FreeMem(md->md_TxBuf, MDNS_MAX_PACKET);
         }
-        if (port != NULL) {
-            DeleteMsgPort(port);
+        if (dport != NULL) {
+            DeleteMsgPort(dport);
         }
         return RETURN_FAIL;
     }
-    md->md_Port = port;
-    portmask = 1UL << port->mp_SigBit;
+    md->md_DNSSDPort = dport;
+    dportmask = 1UL << dport->mp_SigBit;
 
     /* Without the service registry, for example when started by hand, it
      * still runs and Ctrl-C stops it. */
@@ -285,13 +336,22 @@ main(void)
         addressMask = 1UL << addressSignal;
     }
     net_up(md, addressMask);
-    port->mp_Node.ln_Name = (STRPTR)MDNS_IPC_PORT;
-    AddPort(port);
+    /* dnssd.library's sessions, and the signal that a client task went */
+    goneSignal = AllocSignal(-1);
+    if (goneSignal >= 0) {
+        goneMask = 1UL << goneSignal;
+    }
+    if (!dnssdServerInit(md, goneMask)) {
+        PutStr("mdnsd: no memory for dnssd.library's sessions\n");
+    }
+    /* dnssd.library's port */
+    dport->mp_Node.ln_Name = (STRPTR)DNSSD_IPC_PORT;
+    AddPort(dport);
 
     while (running) {
         ULONG got = wait_and_receive(md,
-            portmask | sig.ms_Stop | sig.ms_Begin | sig.ms_End |
-            addressMask | SIGBREAKF_CTRL_C, probing);
+            dportmask | sig.ms_Stop | sig.ms_Begin | sig.ms_End |
+            addressMask | goneMask | SIGBREAKF_CTRL_C, probing);
 
         if (got & (sig.ms_Stop | SIGBREAKF_CTRL_C)) {
             running = FALSE;
@@ -314,18 +374,22 @@ main(void)
             }
         }
 
-        while ((msg = (struct MDNSIPCMsg *)GetMsg(port)) != NULL) {
-            mdnsClientMessage(md, msg);
-            ReplyMsg(&msg->mi_Msg);
+        if (got & goneMask) {
+            dnssdServerGone(md);        /* before a message of a new task */
+        }
+        while ((dmsg = (struct DNSSDIPCMsg *)GetMsg(dport)) != NULL) {
+            dnssdServerMessage(md, dmsg);
+            ReplyMsg(&dmsg->dm_Msg);
         }
         if (running && mdnsNow() - lastReap >= MDNSD_REAP_SECONDS) {
             lastReap = mdnsNow();
-            mdnsClientReap(md);
-            mdnsDiscoveryReap(md);
+            dnssdServerReap(md);
         }
 
-        mdnsDiscoveryTick(md);
-        mdnsQueryTick(md);
+        /* the cache first: what it drops is told to the operations that
+         * watch it, which then look again in their own turn */
+        mdnsCacheTick(md);
+        dnssdServerTick(md);
         probing = FALSE;
         if (running && md->md_Socket >= 0) {
             /* the host's name first: no service is announced before it */
@@ -336,29 +400,33 @@ main(void)
         }
     }
 
-    /* Every lent request for events goes back while the port is still
-     * public: a client that cannot find the port any more never waits for
-     * one. Messages still queued are not acted on, so none is lent again. */
-    mdnsDiscoveryCancel(md);
-    mdnsQueryCancel(md);
+    /* Every lent notification goes back while the port is still public: a
+     * client that cannot find the port any more never waits for one.
+     * Messages still queued are not acted on, so none is lent again. */
+    dnssdServerCancel(md);
 
     /* No client may find the port any more; whoever already sent is told
      * that mdnsd is gone. */
-    RemPort(port);
-    while ((msg = (struct MDNSIPCMsg *)GetMsg(port)) != NULL) {
-        msg->mi_Result = MDNSERR_NOENGINE;
-        ReplyMsg(&msg->mi_Msg);
+    RemPort(dport);
+    while ((dmsg = (struct DNSSDIPCMsg *)GetMsg(dport)) != NULL) {
+        if (DNSSD_IPC_REQUEST_ROOM(dmsg->dm_Msg.mn_Length) >= sizeof(dmsg->dm_Request)) {
+            dmsg->dm_Request.result = DNSSD_ERR_NOENGINE;
+        }
+        ReplyMsg(&dmsg->dm_Msg);
     }
-    DeleteMsgPort(port);
-    md->md_Port = NULL;
+    DeleteMsgPort(dport);
+    md->md_DNSSDPort = NULL;
 
     net_down(md);
     mdnsRegFree(md);
-    mdnsDiscoveryFree(md);
-    mdnsQueryFree(md);
+    dnssdServerFree(md);
+    mdnsCacheFree(md);
     mdnsdServiceClose();
     if (addressSignal >= 0) {
         FreeSignal(addressSignal);
+    }
+    if (goneSignal >= 0) {
+        FreeSignal(goneSignal);         /* the hook is off (dnssdServerFree()) */
     }
     FreeMem(md->md_RxBuf, MDNS_MAX_PACKET);
     FreeMem(md->md_TxBuf, MDNS_MAX_PACKET);

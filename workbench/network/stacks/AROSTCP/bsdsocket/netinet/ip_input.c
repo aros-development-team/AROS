@@ -145,6 +145,22 @@ extern struct icmpstat icmpstat;	/* ip_icmp.c */
 extern int icmpprintfs;			/* ip_icmp.c */
 extern int useloopback;			/* net/sana2arp.c */
 extern int tcp_mssdflt;			/* in_family.c: the MSS IPv4 assumes */
+extern int ip_dad_count;		/* net/sana2arp.c: RFC 5227 probes */
+
+/* net.inet.ip.dad_count: the probes an address gets, 0 (none) to 10 */
+static int
+ip_sysctl_dad_count(const struct netvar *nv, void *oldp, size_t *oldlenp,
+                    void *newp, size_t newlen)
+{
+    int v = ip_dad_count, error;
+
+    error = sysctl_int(oldp, oldlenp, newp, newlen, &v);
+    if(error == 0 && newp && (v < 0 || v > 10))
+        error = EINVAL;
+    if(error == 0)
+        ip_dad_count = v;
+    return (error);
+}
 
 static const struct netvar ip_netvars[] = {
     { "ipstat",          &ipstat,          sizeof(ipstat),   NVT_STATS, PF_INET, IPPROTO_IP, IPCTL_STATS },
@@ -154,6 +170,7 @@ static const struct netvar ip_netvars[] = {
     { "ipprintfs",       &ipprintfs,       sizeof(int),      NVT_INT },
     { "icmpprintfs",     &icmpprintfs,     sizeof(int),      NVT_INT },
     { "useloopback",     &useloopback,     sizeof(int),      NVT_INT },
+    { "ip_dad_count",    (void *)ip_sysctl_dad_count, 0,     NVT_SYSCTL, PF_INET, IPPROTO_IP, IPCTL_DAD_COUNT },
     /* net.inet.tcp.mssdflt is IPv4's default MSS: IPv4's variable, under
      * the name it has always had */
     { "tcp_mssdflt",     &tcp_mssdflt,     sizeof(int),      NVT_INT,   PF_INET, IPPROTO_TCP, TCPCTL_MSSDFLT },
@@ -485,7 +502,9 @@ next:
     for(ia = in_ifaddr; ia; ia = ia->ia_next) {
 #define	satosin(sa)	((struct sockaddr_in *)(sa))
 
-        if(IA_SIN(ia)->sin_addr.s_addr == ip->ip_dst.s_addr)
+        /* an address not ready (RFC 5227) is not ours yet, as NetBSD */
+        if(IA_SIN(ia)->sin_addr.s_addr == ip->ip_dst.s_addr &&
+                !(ia->ia4_flags & IN_IFF_NOTREADY))
             goto ours;
         if(
 #ifdef	DIRECTED_BROADCAST

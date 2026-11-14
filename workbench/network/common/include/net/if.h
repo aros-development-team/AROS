@@ -486,6 +486,7 @@ struct	ifreq {
 		int	ifru_metric;
 		int	ifru_mtu;
 		caddr_t	ifru_data;
+		int	ifru_addrflags;		/* IN_IFF_* (SIOCGIFAFLAG_IN) */
 	} ifr_ifru;
 #define	ifr_addr	ifr_ifru.ifru_addr	/* address */
 #define	ifr_dstaddr	ifr_ifru.ifru_dstaddr	/* other end of p-to-p link */
@@ -493,6 +494,7 @@ struct	ifreq {
 #define	ifr_flags	ifr_ifru.ifru_flags	/* flags */
 #define	ifr_metric	ifr_ifru.ifru_metric	/* metric */
 #define	ifr_mtu		ifr_ifru.ifru_mtu	/* mtu */
+#define	ifr_addrflags	ifr_ifru.ifru_addrflags	/* an address's IN_IFF_* flags */
 #define	ifr_data	ifr_ifru.ifru_data	/* for use by interface */
 #define ifr_index	ifr_ifru.ifru_index	/* interface index */
 #define ifr_ifindex	ifr_ifru.ifru_index	/* interface index (alias) */

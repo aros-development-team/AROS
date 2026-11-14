@@ -79,6 +79,9 @@ int duid_v4 = 0;
 int std_dhcid = 0;
 
 int decline_wait_time = 10; /* Default to 10 secs per, RFC 2131, 3.1.5 */
+#if defined(__AROS__)
+static void aros_addrwatch_startup(void);
+#endif
 
 /* ASSERT_STATE() does nothing now; it used to be
    assert (state_is == state_shouldbe). */
@@ -1027,6 +1030,11 @@ main(int argc, char **argv) {
 	   now. */
 	if (no_daemon || nowait)
 		write_client_pid_file();
+
+#if defined(__AROS__)
+	/* a leased address the stack finds duplicated is declined */
+	aros_addrwatch_startup();
+#endif
 
 	/* Start dispatching packets and timeouts... */
 	dispatch();
@@ -4753,7 +4761,124 @@ aros_apply_primary(int sock)
 	aros_applied = *best;
 }
 
+/*
+ * A new address is tentative until the stack has probed it (RFC 5227,
+ * SIOCGIFAFLAG_IN): wait for that, at most 15 s, as other systems'
+ * dhclient-script checks with ARP (ARPCHECK). 1 if another host has it:
+ * the address is taken off again, and script_go()'s non-zero status has
+ * dhclient decline the lease (DHCPDECLINE, RFC 2131 section 3.1 (5)).
+ * A stack without the ioctl answers an error: no conflict.
+ */
+static int
+aros_addr_duplicated(int sock, const char *interface, const struct sockaddr_in *addr)
+{
+	struct ifreq ifr;
+	struct timespec tick = { 0, 100000000 };	/* 0.1 s */
+	int i;
+
+	for (i = 0; i < 150; i++) {
+		memset(&ifr, 0, sizeof(ifr));
+		snprintf(ifr.ifr_name, sizeof(ifr.ifr_name), "%s", interface);
+		memcpy(&ifr.ifr_addr, addr, sizeof(*addr));
+		if (IoctlSocket(sock, SIOCGIFAFLAG_IN, (char *)&ifr) < 0)
+			return 0;
+		if (ifr.ifr_addrflags & IN_IFF_DUPLICATED) {
+			IoctlSocket(sock, SIOCDIFADDR, (char *)&ifr);
+			return 1;
+		}
+		if (!(ifr.ifr_addrflags & IN_IFF_TENTATIVE))
+			return 0;
+		nanosleep(&tick, NULL);
+	}
+	return 0;
+}
+
+/*
+ * The stack signals every change of an address's state (its
+ * SBTC_SIG_ADDRESS_CHANGE_MASK), and the dispatch loop's WaitSelect()
+ * waits for that signal too (omapi_aros_sigmask). On it the flags of each
+ * leased address are read (SIOCGIFAFLAG_IN): one another host took while it
+ * was in use - its defence failed (RFC 5227 section 2.4), IN_IFF_DUPLICATED
+ * - is given up as a DHCPNAK's would be, declined, and a new lease is asked
+ * for after decline_wait_time. No routing socket is kept open for it.
+ */
+static int aros_lease_flags(struct client_state *client)
+{
+	struct ifreq ifr;
+	struct sockaddr_in *sin = (struct sockaddr_in *)&ifr.ifr_addr;
+	int sock = socket(AF_INET, SOCK_DGRAM, 0), r;
+
+	if (sock < 0)
+		return 0;
+	memset(&ifr, 0, sizeof(ifr));
+	snprintf(ifr.ifr_name, sizeof(ifr.ifr_name), "%s", client->interface->name);
+	sin->sin_len = sizeof(*sin);
+	sin->sin_family = AF_INET;
+	memcpy(&sin->sin_addr, client->active->address.iabuf, 4);
+	r = IoctlSocket(sock, SIOCGIFAFLAG_IN, (char *)&ifr);
+	CloseSocket(sock);
+	return r == 0 ? ifr.ifr_addrflags : 0;
+}
+
+static void aros_lease_lost(struct client_state *client)
+{
+	struct timeval tv;
+
+	log_info("%s: %s is in use by another host, declining it",
+		 client->interface->name, piaddr(client->active->address));
+	cancel_timeout(state_bound, client);
+	cancel_timeout(send_request, client);
+	script_init(client, "EXPIRE", NULL);
+	script_write_params(client, "old_", client->active);
+	script_write_requested(client);
+	if (client->alias)
+		script_write_params(client, "alias_", client->alias);
+	script_go(client);
+	make_decline(client, client->active);
+	send_decline(client);
+	destroy_client_lease(client->active);
+	client->active = NULL;
+	client->state = S_INIT;
+	tv.tv_sec = cur_tv.tv_sec + decline_wait_time;
+	tv.tv_usec = cur_tv.tv_usec;
+	add_timeout(&tv, state_init, client, 0, 0);
+}
+
 static void
+aros_addrwatch_signalled(unsigned long sigs)
+{
+	struct interface_info *ip;
+	struct client_state *client;
+
+	for (ip = interfaces; ip != NULL; ip = ip->next)
+		for (client = ip->client; client != NULL; client = client->next)
+			if (client->active != NULL &&
+			    (client->state == S_BOUND || client->state == S_RENEWING ||
+			     client->state == S_REBINDING) &&
+			    (aros_lease_flags(client) & IN_IFF_DUPLICATED))
+				aros_lease_lost(client);
+}
+
+static void
+aros_addrwatch_startup(void)
+{
+	BYTE sig = AllocSignal(-1);
+
+	if (sig < 0) {
+		log_error("aros_addrwatch: no signal for address changes");
+		return;
+	}
+	if (SocketBaseTags(SBTM_SETVAL(SBTC_SIG_ADDRESS_CHANGE_MASK), 1UL << sig,
+	    TAG_END) != 0) {
+		log_error("aros_addrwatch: the stack does not signal address changes");
+		FreeSignal(sig);
+		return;
+	}
+	omapi_aros_signalled = aros_addrwatch_signalled;
+	omapi_aros_sigmask = 1UL << sig;
+}
+
+static int
 aros_apply_lease(char **envp)
 {
 	const char *reason     = env_lookup(envp, "reason");
@@ -4765,11 +4890,11 @@ aros_apply_lease(char **envp)
 	const char *new_dns    = env_lookup(envp, "new_domain_name_servers");
 	const char *new_host   = env_lookup(envp, "new_host_name");
 	const char *new_domain = env_lookup(envp, "new_domain_name");
-	int sock;
+	int sock, status = 0;
 
 	if (reason == NULL || interface == NULL) {
 		log_error("aros_apply_lease: missing reason or interface");
-		return;
+		return 0;
 	}
 
 	bug("[dhclient] aros_apply_lease: reason=%s interface=%s ip=%s mask=%s gw=%s\n",
@@ -4790,7 +4915,7 @@ aros_apply_lease(char **envp)
 	if (sock < 0) {
 		bug("[dhclient] aros_apply_lease: socket() failed errno=%d\n", errno);
 		log_error("aros_apply_lease: socket: %m");
-		return;
+		return 0;
 	}
 
 	if (strcmp(reason, "BOUND")  == 0 ||
@@ -4800,33 +4925,40 @@ aros_apply_lease(char **envp)
 		/* Apply address + mask + broadcast */
 		if (new_ip && new_mask) {
 			struct ifaliasreq ifar;
+			struct in_originreq ifro;
 			struct sockaddr_in *sa;
 
 			/*
-			 * Remove any existing address first.  PREINIT sets
-			 * 0.0.0.0 as a placeholder; if we don't remove it,
-			 * SIOCAIFADDR adds the real address as a second
-			 * alias and queries still return 0.0.0.0.
+			 * What this client put on the interface goes first: the
+			 * 0.0.0.0 PREINIT set as a placeholder (else the new
+			 * address would be a second one and queries would still
+			 * give 0.0.0.0), and a previous lease's address. Nothing
+			 * else: an address configured by hand stays.
 			 */
 			{
+				const char *old_ip = env_lookup(envp, "old_ip_address");
 				struct ifreq del_ifr;
-				memset(&del_ifr, 0, sizeof(del_ifr));
-				strncpy(del_ifr.ifr_name, interface,
-					sizeof(del_ifr.ifr_name) - 1);
-				if (IoctlSocket(sock, SIOCGIFADDR,
-						(char *)&del_ifr) == 0) {
-					struct sockaddr_in *cur =
-					    (struct sockaddr_in *)&del_ifr.ifr_addr;
-					struct sockaddr_in newsin;
-					memset(&newsin, 0, sizeof(newsin));
-					if (sin_from_str(&newsin, new_ip) &&
-					    cur->sin_addr.s_addr !=
-					    newsin.sin_addr.s_addr) {
-						bug("[dhclient] aros_apply_lease: removing old addr %s\n",
+				struct sockaddr_in *cur =
+				    (struct sockaddr_in *)&del_ifr.ifr_addr;
+				struct sockaddr_in newsin;
+				int k;
+
+				memset(&newsin, 0, sizeof(newsin));
+				sin_from_str(&newsin, new_ip);
+				for (k = 0; k < 2; k++) {
+					memset(&del_ifr, 0, sizeof(del_ifr));
+					strncpy(del_ifr.ifr_name, interface,
+						sizeof(del_ifr.ifr_name) - 1);
+					cur->sin_len = sizeof(*cur);
+					cur->sin_family = AF_INET;
+					if (k == 1 && (old_ip == NULL ||
+					    !sin_from_str(cur, old_ip) ||
+					    cur->sin_addr.s_addr == newsin.sin_addr.s_addr))
+						continue;
+					if (IoctlSocket(sock, SIOCDIFADDR,
+							(char *)&del_ifr) == 0)
+						bug("[dhclient] aros_apply_lease: removed %s\n",
 						    inet_ntoa(cur->sin_addr));
-						IoctlSocket(sock, SIOCDIFADDR,
-							    (char *)&del_ifr);
-					}
 				}
 			}
 
@@ -4851,15 +4983,30 @@ aros_apply_lease(char **envp)
 				sin_from_str(sa, new_bcast);
 			}
 
-			if (IoctlSocket(sock, SIOCAIFADDR, (char *)&ifar) < 0) {
-				bug("[dhclient] aros_apply_lease: SIOCAIFADDR(%s) failed errno=%d\n",
+			/* a lease: the stack gives it back to us if another
+			 * host takes it while it is in use (RFC 5227 2.4) */
+			memset(&ifro, 0, sizeof(ifro));
+			memcpy(&ifro.ifro_ifra, &ifar, sizeof(ifro.ifro_ifra));
+			ifro.ifro_origin = IN_ORIGIN_DHCP;
+			if (IoctlSocket(sock, SIOCAIFADDR_ORIGIN, (char *)&ifro) < 0) {
+				bug("[dhclient] aros_apply_lease: SIOCAIFADDR_ORIGIN(%s) failed errno=%d\n",
 				    new_ip, errno);
-				log_error("aros_apply_lease: SIOCAIFADDR: %m");
+				log_error("aros_apply_lease: SIOCAIFADDR_ORIGIN: %m");
 			} else {
 				bug("[dhclient] aros_apply_lease: SIOCAIFADDR(%s/%s) on %s OK\n",
 				    new_ip, new_mask, interface);
 				log_info("aros_apply_lease: address %s/%s applied to %s",
 					 new_ip, new_mask, interface);
+				/* a new address: is another host using it? */
+				if ((strcmp(reason, "BOUND") == 0 ||
+				     strcmp(reason, "REBOOT") == 0) &&
+				    aros_addr_duplicated(sock, interface,
+					(struct sockaddr_in *)&ifar.ifra_addr)) {
+					log_info("aros_apply_lease: %s is in use on %s, declining",
+						 new_ip, interface);
+					status = 1;
+					goto done;
+				}
 			}
 		}
 
@@ -5143,6 +5290,7 @@ aros_apply_lease(char **envp)
 
 done:
 	CloseSocket(sock);
+	return status;
 }
 #endif /* __AROS__ */
 
@@ -5225,11 +5373,11 @@ int script_go(struct client_state *client)
 		exit (0);
 	}
 #else
-	/* AROS does not support fork()/execve() - apply lease directly via ioctls */
-	aros_apply_lease(envp);
+	/* AROS does not support fork()/execve() - apply lease directly via
+	 * ioctls; non-zero: the address is in use, decline it */
+	wstatus = aros_apply_lease(envp);
 	IGNORE_UNUSED(pid);
 	IGNORE_UNUSED(wpid);
-	wstatus = 0;
 #endif /* !__AROS__ */
 
 	if (client) {
@@ -5252,7 +5400,7 @@ int script_go(struct client_state *client)
 
     return (WEXITSTATUS(wstatus));
 #else
-    return 0;
+    return wstatus;
 #endif /* !__AROS__ */
 }
 

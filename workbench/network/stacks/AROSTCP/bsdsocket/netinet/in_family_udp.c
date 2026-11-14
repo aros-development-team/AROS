@@ -12,8 +12,8 @@
  * inetfamily (netinet/inetfamily.h), and the two entry points by which
  * IPv4 hands UDP a datagram and what ICMP said about one. Everything here
  * is what IPv4 alone does for a datagram socket: its socket address,
- * broadcast, IP_RECVDSTADDR / IP_RECVTOS / IP_RECVTTL, IP_TOS on one
- * datagram, IP options, the limited broadcast of a socket bound to an
+ * broadcast, IP_RECVDSTADDR / IP_RECVTOS / IP_RECVTTL / IP_RECVIF / IP_PKTINFO,
+ * IP_TOS and IP_PKTINFO on one datagram, IP options, the limited broadcast of a socket bound to an
  * interface, ICMP port unreachable.
  *
  * The send path is the IPv4 half of what was udp_output() in
@@ -41,6 +41,7 @@
 
 #include <net/if.h>
 #include <net/route.h>
+#include <net/if_dl.h>
 
 #include <netinet/in.h>
 #include <netinet/in_systm.h>
@@ -53,6 +54,7 @@
 #include <netinet/udp.h>
 #include <netinet/udp_var.h>
 #include <netinet/in_protos.h>
+#include <net/if_protos.h>                  /* ifa_ifwithaddr(): a pointer */
 #include <netinet/in_cksum_protos.h>
 #include <netinet/ip_input_protos.h>
 #include <netinet/ip_output_protos.h>
@@ -69,6 +71,8 @@ struct mbuf **in_savecontrol(struct inpcb *, const struct ifnet *, const void *,
 void    in_unreach(struct mbuf *, int);
 int     in_dgoutput(struct mbuf *, struct inpcb *, const void *, struct ifnet *,
                     struct mbuf *, int, int, int);
+int     in_pktinfo_send(const struct inpcb *, const struct cmsghdr *, struct in_addr *,
+                        struct ifnet **);
 
 /*
  * inf_rcvfrom: the sender as a sockaddr_in; a datagram for a group or for
@@ -91,7 +95,9 @@ in_rcvfrom(struct mbuf *m, const void *src, u_int sport, const void *dst,
 
 /*
  * inf_savecontrol: IP_RECVDSTADDR, IP_RECVTOS, IP_RECVTTL (the last two
- * one byte each, as FreeBSD).
+ * one byte each, as FreeBSD), IP_RECVIF, IP_PKTINFO. The last three are
+ * the same facts - where the datagram came in, to what - for programs
+ * written for FreeBSD or for Linux.
  */
 struct mbuf **
 in_savecontrol(struct inpcb *inp, const struct ifnet *rcvif, const void *dst,
@@ -119,6 +125,59 @@ in_savecontrol(struct inpcb *inp, const struct ifnet *rcvif, const void *dst,
         if(*mp)
             mp = &(*mp)->m_next;
     }
+    if((inp->inp_flags & INP_RECVIF) && rcvif != NULL) {
+        /*
+         * The interface it came in by, as FreeBSD's ip_savecontrol() gives
+         * it: the interface's link-level address (if_attach() put it on
+         * if_addrlist) - index, name and hardware address - or a
+         * sockaddr_dl with the index alone.
+         */
+        const struct ifaddr *ifa;
+        struct sockaddr_dl sdl;
+        const struct sockaddr_dl *sdp = NULL;
+
+        for(ifa = rcvif->if_addrlist; ifa != NULL; ifa = ifa->ifa_next)
+            if(ifa->ifa_addr != NULL && ifa->ifa_addr->sa_family == AF_LINK) {
+                sdp = (const struct sockaddr_dl *)ifa->ifa_addr;
+                break;
+            }
+        if(sdp == NULL || CMSG_SPACE((u_int)sdp->sdl_len) > MLEN) {
+            memset(&sdl, 0, sizeof(sdl));
+            sdl.sdl_len = sizeof(sdl);
+            sdl.sdl_family = AF_LINK;
+            sdl.sdl_index = rcvif->if_index;
+            sdp = &sdl;
+        }
+        *mp = sbcreatecontrol((caddr_t)sdp, sdp->sdl_len, IP_RECVIF, IPPROTO_IP);
+        if(*mp)
+            mp = &(*mp)->m_next;
+    }
+    if((inp->inp_flags & INP_RECVPKTINFO) && rcvif != NULL) {
+        /*
+         * Linux's: the interface, the header's destination, and the
+         * address a reply would come from - that destination when it is
+         * one of ours, else (a group, a broadcast) a ready address of the
+         * interface it came in by.
+         */
+        struct in_pktinfo pi;
+        struct in_ifaddr *ia;
+
+        memset(&pi, 0, sizeof(pi));
+        pi.ipi_ifindex = rcvif->if_index;
+        pi.ipi_addr = *(const struct in_addr *)dst;
+        if(!IN_MULTICAST(ntohl(pi.ipi_addr.s_addr)) && !in_broadcast(pi.ipi_addr))
+            pi.ipi_spec_dst = pi.ipi_addr;
+        else {
+            for(ia = in_ifaddr; ia; ia = ia->ia_next)
+                if(ia->ia_ifp == rcvif)
+                    break;
+            if((ia = in_readyia(ia)) != NULL)
+                pi.ipi_spec_dst = IA_SIN(ia)->sin_addr;
+        }
+        *mp = sbcreatecontrol((caddr_t)&pi, sizeof(pi), IP_PKTINFO, IPPROTO_IP);
+        if(*mp)
+            mp = &(*mp)->m_next;
+    }
     return (mp);
 }
 
@@ -134,11 +193,58 @@ in_unreach(struct mbuf *m, int off)
 }
 
 /*
+ * IP_PKTINFO on a datagram sent (UDP and raw): the interface it leaves by
+ * (*oifp; ENXIO if there is no such interface, EINVAL if the socket is
+ * bound to another one) and its source (*src, left 0.0.0.0 if none; an
+ * address of ours that is ready, else EADDRNOTAVAIL - RFC 5227: a
+ * tentative or duplicated one is nobody's to send from).
+ */
+int
+in_pktinfo_send(const struct inpcb *inp, const struct cmsghdr *cm, struct in_addr *src,
+                struct ifnet **oifp)
+{
+    struct in_pktinfo pi;
+
+    if(cm->cmsg_len != CMSG_LEN(sizeof(pi)))
+        return (EINVAL);
+    bcopy(CMSG_DATA(cm), (caddr_t)&pi, sizeof(pi));
+    if(pi.ipi_ifindex != 0) {
+        struct ifnet *ifp;
+
+        for(ifp = ifnet_list; ifp; ifp = ifp->if_next)
+            if(ifp->if_index == pi.ipi_ifindex)
+                break;
+        if(ifp == NULL)
+            return (ENXIO);
+        if(inp->inp_boundif != NULL && inp->inp_boundif != ifp)
+            return (EINVAL);
+        *oifp = ifp;
+    }
+    if(pi.ipi_spec_dst.s_addr != INADDR_ANY) {
+        struct sockaddr_in sin;
+        const struct in_ifaddr *ia;
+
+        memset(&sin, 0, sizeof(sin));
+        sin.sin_len = sizeof(sin);
+        sin.sin_family = AF_INET;
+        sin.sin_addr = pi.ipi_spec_dst;
+        ia = (struct in_ifaddr *)ifa_ifwithaddr((struct sockaddr *)&sin);
+        if(ia == NULL || (ia->ia4_flags & IN_IFF_NOTREADY))
+            return (EADDRNOTAVAIL);
+        *src = pi.ipi_spec_dst;
+    }
+    return (0);
+}
+
+/*
  * inf_dgoutput.
  *
  * Ancillary data: IP_TOS for this datagram (a byte, as FreeBSD, or an
  * int, as Linux), so an application can set the ECN field per packet
- * (RFC 9000 section 13.4). Anything else is ignored.
+ * (RFC 9000 section 13.4); IP_PKTINFO, the interface it leaves by and its
+ * source (in_pktinfo_send()), so that one socket bound to INADDR_ANY
+ * answers on the link a question came in by, from the address asked
+ * about. Anything else is ignored.
  *
  * A datagram sent with an address: "any" stands for this host's primary
  * address, and the limited broadcast address for the broadcast address of
@@ -146,7 +252,10 @@ in_unreach(struct mbuf *m, int off)
  * bound to no address is chosen by the route (in_selectsrc()). A socket
  * bound to an interface (SO_BINDTODEVICE) sends from that interface's own
  * address - none yet for a DHCP client - and its 255.255.255.255 stays as
- * it is.
+ * it is; so does a datagram IP_PKTINFO sends by an interface. The source
+ * IP_PKTINFO names wins over the address the socket is bound to, as
+ * IPV6_PKTINFO's does (RFC 3542 section 6.1); a connected socket keeps the
+ * source of its connection.
  */
 int
 in_dgoutput(struct mbuf *m, struct inpcb *inp, const void *faddr,
@@ -158,8 +267,11 @@ in_dgoutput(struct mbuf *m, struct inpcb *inp, const void *faddr,
     struct ipovly *ipov;
     struct ip *ip;
     u_char tos = inp->inp_ip.ip_tos;
-    int ipflags, error;
+    struct ifnet *oifp = inp->inp_boundif;
+    struct in_addr osrc;
+    int ipflags, error = 0;
 
+    osrc.s_addr = INADDR_ANY;
     if(control) {
         struct cmsghdr *cm = mtod(control, struct cmsghdr *);
         int left = control->m_len;
@@ -175,13 +287,19 @@ in_dgoutput(struct mbuf *m, struct inpcb *inp, const void *faddr,
                     memcpy(&v, CMSG_DATA(cm), sizeof(v));
                     tos = v & 0xff;
                 }
-            }
+            } else if(cm->cmsg_level == IPPROTO_IP && cm->cmsg_type == IP_PKTINFO &&
+                      (error = in_pktinfo_send(inp, cm, &osrc, &oifp)) != 0)
+                break;
             if(left < (int)_ALIGN(cm->cmsg_len))
                 break;
             left -= _ALIGN(cm->cmsg_len);
             cm = (struct cmsghdr *)((caddr_t)cm + _ALIGN(cm->cmsg_len));
         }
         m_freem(control);
+        if(error) {
+            m_freem(m);
+            return (error);
+        }
     }
 
     if(faddr == NULL) {
@@ -198,17 +316,17 @@ in_dgoutput(struct mbuf *m, struct inpcb *inp, const void *faddr,
             else if(tobroadcast && (in_ifaddr->ia_ifp->if_flags & IFF_BROADCAST))
                 dst = ((struct sockaddr_in *)&in_ifaddr->ia_broadaddr)->sin_addr;
         }
-        src = inp->inp_laddr;
+        src = osrc.s_addr != INADDR_ANY ? osrc : inp->inp_laddr;
         if(src.s_addr == INADDR_ANY) {
             /* by the route, which the PCB keeps for the next datagram */
             if((error = in_selectsrc(inp, &dst, (struct ifnet *)NULL, &src)) != 0) {
                 m_freem(m);
                 return (error);
             }
-            if(inp->inp_boundif)
-                (void)in_selectsrc(inp, &dst, inp->inp_boundif, &src);
+            if(oifp)
+                (void)in_selectsrc(inp, &dst, oifp, &src);
         }
-        if(inp->inp_boundif && tobroadcast)
+        if(oifp && tobroadcast)
             dst.s_addr = INADDR_BROADCAST;
     }
 
@@ -259,9 +377,10 @@ in_dgoutput(struct mbuf *m, struct inpcb *inp, const void *faddr,
         ip->ip_off = IP_DF;
 
     ipflags = inp->inp_socket->so_options & (SO_DONTROUTE | SO_BROADCAST);
-    if(inp->inp_boundif) {
-        /* SO_BINDTODEVICE: ip_output() takes the interface from the header */
-        m->m_pkthdr.rcvif = inp->inp_boundif;
+    if(oifp) {
+        /* SO_BINDTODEVICE or IP_PKTINFO: ip_output() takes the interface
+         * from the header */
+        m->m_pkthdr.rcvif = oifp;
         ipflags |= IP_BOUNDIF;
     }
     return (ip_output(m, inp->inp_options, &inp->inp_route, ipflags,

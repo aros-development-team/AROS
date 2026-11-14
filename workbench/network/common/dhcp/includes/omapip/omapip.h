@@ -394,6 +394,12 @@ isc_result_t omapi_unregister_io_object (omapi_object_t *);
 isc_result_t omapi_dispatch (struct timeval *);
 isc_result_t omapi_wait_for_completion (omapi_object_t *, struct timeval *);
 isc_result_t omapi_one_dispatch (omapi_object_t *, struct timeval *);
+#ifdef __AROS__
+/* exec signals the dispatch loop waits on besides the sockets, and what is
+ * called with those that came (see omapi_one_dispatch()) */
+extern unsigned long omapi_aros_sigmask;
+extern void (*omapi_aros_signalled)(unsigned long);
+#endif
 isc_result_t omapi_io_set_value (omapi_object_t *, omapi_object_t *,
 				 omapi_data_string_t *,
 				 omapi_typed_data_t *);

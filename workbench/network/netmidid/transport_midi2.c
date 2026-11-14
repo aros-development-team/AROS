@@ -446,20 +446,34 @@ static void midi2_discovered(struct netmidid *d, void *self,
 
     (void)d;
     /* a Network MIDI 2.0 Host: known to its user by its endpoint's name,
-       to the network by its instance's */
-    if (seen->present)
-        printf(TAG "MIDI 2.0 host \"%s\" (\"%s\") found at %u.%u.%u.%u port %u\n",
-               seen->endpoint, seen->name,
-               (unsigned int)(seen->address >> 24),
-               (unsigned int)((seen->address >> 16) & 255),
-               (unsigned int)((seen->address >> 8) & 255),
-               (unsigned int)(seen->address & 255),
-               (unsigned int)seen->port);
-    else
+       to the network by its instance's; found again when its addresses or
+       port change */
+    if (seen->present) {
+        char text[64];
+        int i;
+
+        printf("%sMIDI 2.0 host \"%s\" (\"%s\") found at ", TAG,
+               seen->endpoint, seen->name);
+        for (i = 0; i < seen->address_count; ++i) {
+            netmidi_discovery_address_text(&seen->addresses[i], text,
+                                           sizeof(text));
+            printf("%s%s", i ? ", " : "", text);
+        }
+        printf(" port %u\n", (unsigned int)seen->port);
+        if (!seen->address)
+            printf("%sMIDI 2.0 host \"%s\" has IPv6 addresses only, which "
+                   "this transport does not reach yet\n", TAG, seen->name);
+    } else {
         printf(TAG "MIDI 2.0 host \"%s\" is gone\n", seen->name);
+    }
     if (rt->midi2_wanted[0] &&
         (strcmp(seen->endpoint, rt->midi2_wanted) == 0 ||
          strcmp(seen->name, rt->midi2_wanted) == 0)) {
+        if (seen->present && !seen->address) {
+            /* nothing to invite over IPv4 */
+            rt->midi2_host = 0;
+            return;
+        }
         if (seen->present) {
             rt->midi2_host_key = ((uint64_t)seen->address << 16) | seen->port;
             if (!rt->midi2_host)

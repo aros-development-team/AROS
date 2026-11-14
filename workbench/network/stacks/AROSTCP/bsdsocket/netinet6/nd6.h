@@ -54,27 +54,49 @@
  */
 
 /*
- * Neighbor cache entry (llinfo_nd6).
- * One per neighbor, linked in a doubly-linked list with sentinel.
+ * Neighbor cache entry (RFC 4861 section 5.1): one per neighbour, that is
+ * per (interface, IPv6 address) - fe80::1 on two links is two neighbours.
+ * The entries are kept apart from the routing table (nd6.c), in a hash
+ * table and in one list with a sentinel that the timer walks.
  */
-#define ND6_MAXQUEUELEN	16		/* packets queued per neighbour while resolving */
+#define ND6_MAXQUEUELEN	16		/* packets queued per neighbour while resolving
+					   (nd6_maxqueuelen's default) */
+#define ND6_LLADDRLEN	8		/* longest link-layer address kept (Ethernet: 6) */
+/*
+ * Entries per interface (nd6_maxnbrs) and packets held by all entries
+ * together (nd6_maxheld): sized by nd6_init() from the free memory - one
+ * per ND6_MEM_PER_NBR bytes, ND6_MINNBRS to ND6_MAXNBRS - so that a 2 MB
+ * machine does not give the cache what a 1 GB one can.
+ */
+#define ND6_MINNBRS	16
+#define ND6_MAXNBRS	256
+#define ND6_MEM_PER_NBR	32768
+#define ND6_GCTIME	86400		/* an unused STALE entry is dropped after (s) */
 
 struct llinfo_nd6 {
-	struct llinfo_nd6 *ln_next;
+	struct llinfo_nd6 *ln_next;	/* the list of all entries */
 	struct llinfo_nd6 *ln_prev;
-	struct rtentry *ln_rt;		/* back-pointer to routing entry */
+	struct llinfo_nd6 *ln_hnext;	/* the hash chain */
+	struct ifnet *ln_ifp;		/* the link the neighbour is on */
+	struct in6_addr ln_addr;	/* its address */
 	struct mbuf *ln_hold;		/* packets queued while resolving (m_nextpkt) */
-	short ln_holdlen;		/* how many, at most ND6_MAXQUEUELEN */
-	long ln_asked;			/* # of NS sent */
-	short ln_state;			/* ND6_LLINFO_* */
-	short ln_router;		/* neighbor is a router */
 	long ln_expire;			/* expiry time (seconds) */
 	long ln_ntick;			/* ticks for state transitions */
+	short ln_holdlen;		/* how many, at most ND6_MAXQUEUELEN */
+	short ln_asked;			/* # of NS sent */
+	short ln_state;			/* ND6_LLINFO_* */
+	u_char ln_router;		/* neighbor is a router */
+	u_char ln_flags;		/* ND6_LNF_* */
+	u_char ln_alen;			/* link-layer address length, 0 = none yet */
+	u_char ln_lladdr[ND6_LLADDRLEN];
 };
+#define ND6_LNF_STATIC	0x01		/* set through the routing socket: kept as is */
+#define ND6_LNF_IFADDR	0x02		/* one of our own addresses: kept as is */
+#define ND6_LNF_KEEP	(ND6_LNF_STATIC | ND6_LNF_IFADDR)
 
 void nd6_hold_add(struct llinfo_nd6 *, struct mbuf *);
 void nd6_hold_free(struct llinfo_nd6 *, int);
-void nd6_hold_send(struct llinfo_nd6 *, struct ifnet *, struct sockaddr *, struct rtentry *);
+void nd6_hold_send(struct llinfo_nd6 *, struct ifnet *, struct sockaddr *);
 
 
 /*
@@ -90,6 +112,7 @@ struct nd_ifinfo {
 	int recalctm;			/* RecalcReachable countdown */
 	u_int8_t chlim;			/* CurHopLimit */
 	int initialized;
+	int nbrs;			/* neighbour cache entries on the link */
 	int rtr_soliciting;		/* # RS sent so far */
 	long rtr_solicit_timer;		/* next RS time (seconds) */
 };
@@ -180,6 +203,9 @@ struct nd6stat {
 	u_long nd6s_nud_probe;		/* NUD: probe failures */
 	u_long nd6s_dad_dup;		/* DAD: duplicate detected */
 	u_long nd6s_res_holdq_full;	/* queued packet replaced */
+	u_long nd6s_nbr_reused;		/* cache full: an idle entry taken over */
+	u_long nd6s_nbr_full;		/* cache full: no entry made */
+	u_long nd6s_nbr_nomem;		/* no memory for an entry */
 };
 
 /* nd_opts union for option parsing (RFC 4861 §4.6) */
@@ -210,10 +236,18 @@ union nd_opts {
 
 #ifdef KERNEL
 
+struct sockaddr_dl;
+
 /* --- Globals (nd6.c) --- */
 extern struct llinfo_nd6 llinfo_nd6;
 extern int nd6_maxndopt;
-extern int nd6_maxqueuelen;
+extern int nd6_maxqueuelen;		/* packets held per entry */
+extern int nd6_maxnbrs;			/* entries per interface */
+extern int nd6_maxheld;			/* packets held by all entries */
+struct netvar;
+int nd6_sysctl_maxqueuelen(const struct netvar *, void *, size_t *, void *, size_t);
+int nd6_sysctl_maxnbrs(const struct netvar *, void *, size_t *, void *, size_t);
+int nd6_sysctl_maxheld(const struct netvar *, void *, size_t *, void *, size_t);
 extern struct nd6stat nd6stat;
 
 /* --- nd6.c: core neighbor cache and NUD --- */
@@ -228,17 +262,27 @@ struct nd_ifinfo *nd6_ifinfo(struct ifnet *);
 int  nd6_is_addr_neighbor(struct sockaddr_in6 *, struct ifnet *);
 void nd6_option_init(void *, int, union nd_opts *);
 int  nd6_options(union nd_opts *);
-struct rtentry *nd6_lookup(struct in6_addr *, int, struct ifnet *);
-void nd6_free(struct rtentry *);
+struct llinfo_nd6 *nd6_nbr_lookup(struct ifnet *, const struct in6_addr *, int);
+void nd6_nbr_free(struct llinfo_nd6 *);
+void nd6_nbr_stale(struct llinfo_nd6 *);
+int  nd6_nbr_set(struct ifnet *, const struct in6_addr *, const u_char *, int);
+void nd6_nbr_sdl(const struct llinfo_nd6 *, struct sockaddr_dl *);
+void nd6_purge_neighbors(const struct ifnet *, int keep);
+struct nfc_llinfo_rtmsg;
+struct nfc_llinfo_rows;
+int  nd6_llinfo_rtmsg(struct nfc_llinfo_rtmsg *);    /* NFC_LLINFO_RTMSG */
+void nd6_llinfo_rows(struct nfc_llinfo_rows *);      /* NFC_LLINFO_ROWS */
+void nd6_ifaddr_gone(struct ifnet *, const struct in6_addr *);
 void nd6_setmtu(struct ifnet *);
 void nd6_timer(void *);
-void nd6_nud_hint(struct rtentry *);
-int  nd6_resolve(struct ifnet *, struct rtentry *, struct mbuf *,
-	struct sockaddr *, u_char *);
+void nd6_nud_hint(struct ifnet *, const struct in6_addr *);
+int  nd6_resolve(struct ifnet *, struct mbuf *, struct sockaddr *, u_char *);
+int  nd6_lt_resolve(struct ifnet *, struct rtentry *, struct mbuf *,
+                    struct sockaddr *, u_char *);  /* IPv6's link-type resolver */
 void nd6_rtrequest(int, struct rtentry *, struct sockaddr *);
 void nd6_storelladdr(struct rtentry *);
 int  nd6_ioctl(u_long, caddr_t, struct ifnet *);
-int  nd6_cache_lladdr(struct ifnet *, struct in6_addr *,
+int  nd6_cache_lladdr(struct ifnet *, const struct in6_addr *,
 	char *, int, int, int);
 caddr_t nd6_ifptomac(struct ifnet *);
 
@@ -264,7 +308,7 @@ void defrouter_select(void);
 void defrouter_unreachable(struct in6_addr *, struct ifnet *);
 void defrouter_reachable(struct in6_addr *, struct ifnet *);
 void defrouter_notrouter(struct in6_addr *, struct ifnet *);
-void nd6_probe(struct ifnet *, struct in6_addr *);
+void nd6_probe(struct ifnet *, const struct in6_addr *);
 struct nd_prefix *nd6_prefix_lookup(struct sockaddr_in6 *, int, const struct ifnet *);
 void nd6_prefix_timer(void);
 void nd6_defrouter_timer(void);

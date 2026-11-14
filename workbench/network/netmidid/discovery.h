@@ -9,7 +9,7 @@
 #include <stdint.h>
 
 /* Our name on the network, through the system's mDNS service:
- * bonami.library and mdnsd. We hold no socket on port 5353 and answer no
+ * dnssd.library and mdnsd. We hold no socket on port 5353 and answer no
  * question ourselves; the service does, for every program on the machine.
  * Where there is no such service nothing is advertised and the calls say
  * so. */
@@ -21,11 +21,30 @@
 #define NETMIDI_DISCOVERY_BROWSES 2
 #define NETMIDI_DISCOVERY_ENDPOINT 99   /* a UMP Endpoint Name, 98 bytes,
                                            and its end (M2-124-UM 4.4) */
+#define NETMIDI_DISCOVERY_PEERS 16      /* instances followed at a time: with
+                                           the registrations and searches,
+                                           2 + 2 + 16 = 20 of the 24
+                                           operations mdnsd allows a session
+                                           on the 68k */
 
-/* A service instance someone else advertises, as it came or went. */
+#define NETMIDI_DISCOVERY_ADDRESSES 4
+
+/* An address of a peer: IPv4 or IPv6, and the interface it was learned on
+ * (the zone of an IPv6 link-local one). */
+struct netmidi_address {
+    uint8_t family;                 /* 4 or 6 */
+    uint8_t bytes[16];              /* 4 or 16 of them, network order */
+    uint32_t link;
+};
+
+/* A service instance someone else advertises, as it came, changed or
+ * went. */
 struct netmidi_discovered {
     char name[64];
-    uint32_t address;               /* IPv4, host order; 0 when not known */
+    uint32_t address;               /* its first IPv4, host order; 0 when
+                                       it has none */
+    int address_count;              /* every address it has, IPv4 first */
+    struct netmidi_address addresses[NETMIDI_DISCOVERY_ADDRESSES];
     uint16_t port;
     int present;                    /* 1 it is there, 0 it left */
     int browse;                     /* which search found it: what
@@ -35,9 +54,23 @@ struct netmidi_discovered {
                                                    empty */
 };
 
+/* An instance a search found, followed until it goes: what it was last
+ * reported as. */
+struct netmidi_discovery_peer {
+    char name[64];
+    uint32_t link;                  /* the interface it was found on */
+    int browse;                     /* the search that found it */
+    void *resolve;                  /* the operation that follows it */
+    uint32_t resolve_id;
+    int reported;                   /* told as present */
+    struct netmidi_discovered last; /* what it was told as */
+};
+
 struct netmidi_discovery {
-    void *library;                  /* bonami.library, opened */
-    int engine;                     /* the service answered */
+    void *library;                  /* dnssd.library, opened */
+    void *session;                  /* our session with mdnsd, or NULL */
+    void *port;                     /* where mdnsd tells of events */
+    uint32_t incarnation;           /* the mdnsd that has the session */
     struct {
         char name[NETMIDI_DISCOVERY_NAME];
         char type[NETMIDI_DISCOVERY_TYPE];
@@ -48,19 +81,21 @@ struct netmidi_discovery {
         int wanted;                 /* asked for since the last begin */
         long refused;               /* why it was last refused, or 0 */
         void *reference;            /* the registration, or NULL */
+        uint32_t id;
+        char advertised[NETMIDI_DISCOVERY_NAME];  /* the name it has on
+                                       the network now, once announced */
     } service[NETMIDI_DISCOVERY_SERVICES];
     int count;
     uint64_t last_attempt;
     struct {
         const char *type;           /* what to look for, or NULL */
         void *reference;            /* the search, or NULL */
+        uint32_t id;
     } browse[NETMIDI_DISCOVERY_BROWSES];
     int browses;
-    /* The searches' queues are read in our own task, at most once a
-       second: each read is a round trip to the service. */
-    uint64_t last_read;
-    int reading;                    /* in a pass over the queues */
-    int cursor;                     /* the search being read */
+    struct netmidi_discovery_peer peer[NETMIDI_DISCOVERY_PEERS];
+    int reading;                    /* mdnsd said there are events: read
+                                       until there are none */
 };
 
 /* Once, before anything else. */
@@ -100,15 +135,27 @@ int netmidi_discovery_poll(struct netmidi_discovery *discovery,
  * there is no room for another. */
 int netmidi_discovery_browse(struct netmidi_discovery *discovery,
                              const char *type);
-/* The next instance that appeared or left, 1, or 0 when there is none
- * waiting. Called until it returns 0; the queues are looked at at most once
- * a second (now as for poll). An instance is reported as present only once
- * its address and port are known, and again when what it advertises
- * changes: an instance is known by its name, not counted. A search whose
- * queue overflowed is begun again, and its instances reported anew. Our
- * own registrations come back here too; the caller knows its own name. */
-int netmidi_discovery_next(struct netmidi_discovery *discovery, uint64_t now,
+/* The signal mdnsd raises when it has events for us, to wait on with the
+ * others; -1 while there is no session. */
+int netmidi_discovery_signal(const struct netmidi_discovery *discovery);
+/* The next instance that appeared, changed or left, 1, or 0 when there is
+ * none waiting. Called until it returns 0, after the signal (or on any
+ * turn: without the signal it does nothing). An instance is reported as
+ * present once its port and an address are known, and again when its
+ * addresses, port or endpoint name change; it is followed until it goes.
+ * A search whose events were lost is begun again, and its instances
+ * reported anew. Our own registrations come back here too
+ * (netmidi_discovery_own()). */
+int netmidi_discovery_next(struct netmidi_discovery *discovery,
                            struct netmidi_discovered *event);
+/* Is name one of ours, as mdnsd announced it? A conflict may have given a
+ * service another name than the one asked for ("AROS MIDI (2)"), and then
+ * an instance under the name asked for is another host's. */
+int netmidi_discovery_own(const struct netmidi_discovery *discovery,
+                          const char *name);
+/* An address as text: "192.168.1.2", "fe80::1%2". */
+void netmidi_discovery_address_text(const struct netmidi_address *address,
+                                    char *text, size_t size);
 /* The value of key in a text record as it is on the wire: strings each
  * after its length (RFC 6763 section 6). Keys match without regard to
  * ASCII case. The value is copied as a string, cut at size - 1 bytes or at

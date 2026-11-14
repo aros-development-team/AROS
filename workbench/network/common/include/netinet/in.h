@@ -333,11 +333,31 @@ struct ip_opts {
 #define	IP_MULTICAST_LOOP	11	/* set/get IP multicast loopback */
 #define	IP_ADD_MEMBERSHIP	12	/* add an IP group membership */
 #define	IP_DROP_MEMBERSHIP	13	/* drop an IP group membership */
+#define	IP_RECVIF		20	/* bool; receive the interface (sockaddr_dl) w/datagram */
 #define	IP_ADD_SOURCE_MEMBERSHIP 25	/* add source-specific multicast */
 #define	IP_DROP_SOURCE_MEMBERSHIP 26	/* drop source-specific multicast */
 #define	IP_RECVTTL		65	/* bool; receive the TTL w/datagram */
 #define	IP_DONTFRAG		67	/* bool; send datagrams with DF, never fragmented */
 #define	IP_RECVTOS		68	/* bool; receive the TOS byte (ECN) w/datagram */
+/*
+ * IP_PKTINFO (Linux's, with an AROS number: Linux's 8 is IP_RETOPTS here,
+ * NetBSD's 25 and 26 are the source-specific multicast options, and
+ * FreeBSD has no IP_PKTINFO). As a socket option, an int: a datagram comes
+ * with a struct in_pktinfo; IP_RECVPKTINFO is the same option. As
+ * ancillary data on a datagram sent, a struct in_pktinfo: ipi_ifindex, if
+ * not 0, is the interface it leaves by, whatever the routing table and
+ * IP_MULTICAST_IF say; ipi_spec_dst, if not 0.0.0.0, its source (an
+ * address of ours); ipi_addr is not used.
+ */
+#define	IP_PKTINFO		100	/* bool / struct in_pktinfo */
+#define	IP_RECVPKTINFO		IP_PKTINFO
+
+struct in_pktinfo {
+	int		ipi_ifindex;	/* interface index */
+	struct in_addr	ipi_spec_dst;	/* received: the local address a reply
+					   would come from; sent: the source */
+	struct in_addr	ipi_addr;	/* received: the header's destination */
+};
 
 /*
  * Argument structure for IP_ADD_MEMBERSHIP and IP_DROP_MEMBERSHIP.

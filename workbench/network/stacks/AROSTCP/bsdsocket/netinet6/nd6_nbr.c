@@ -406,9 +406,7 @@ nd6_na_input(struct mbuf *m, int off, int icmp6len)
     struct ip6_hdr *ip6 = mtod(m, struct ip6_hdr *);
     struct nd_neighbor_advert *nd_na;
     struct in6_addr tgt;
-    struct rtentry *rt = NULL;
     struct llinfo_nd6 *ln;
-    struct sockaddr_dl *sdl;
     struct ifnet *ifp = m->m_pkthdr.rcvif;
     union nd_opts ndopts;
     char *lladdr = NULL;
@@ -482,128 +480,92 @@ nd6_na_input(struct mbuf *m, int off, int icmp6len)
         goto bad;
     }
 
-    if(ndopts.nd_opts_tgt_lladdr) {
+    if(ndopts.nd_opts_tgt_lladdr && ifp->if_addrlen <= ND6_LLADDRLEN) {
         lladdr = (char *)(ndopts.nd_opts_tgt_lladdr + 1);
         lladdrlen = ifp->if_addrlen;
     }
 
-    /* look up neighbor cache entry */
-    rt = nd6_lookup(&tgt, 0, ifp);
-    if(rt == NULL || (ln = (struct llinfo_nd6 *)rt->rt_llinfo) == NULL) {
+    /* look up neighbor cache entry, the target's on this link */
+    ln = nd6_nbr_lookup(ifp, &tgt, 0);
+    if(ln == NULL) {
         /* no existing entry — if this is a router, create one */
-        if(is_router) {
-            if(rt)
-                rtfree(rt);         /* release ref before re-lookup */
-            rt = nd6_lookup(&tgt, 1, ifp);
-            if(rt && rt->rt_llinfo == NULL) {
-                MALLOC(ln, struct llinfo_nd6 *, sizeof(*ln),
-                       M_PCB, M_NOWAIT);
-                if(ln) {
-                    bzero(ln, sizeof(*ln));
-                    rt->rt_llinfo = (caddr_t)ln;
-                    ln->ln_rt = rt;
-                    ln->ln_state = ND6_LLINFO_STALE;
-                    ln->ln_router = 1;
-                    ln->ln_next = llinfo_nd6.ln_next;
-                    ln->ln_prev = &llinfo_nd6;
-                    llinfo_nd6.ln_next->ln_prev = ln;
-                    llinfo_nd6.ln_next = ln;
-                    /* cache TLLA if present */
-                    if(lladdr && lladdrlen > 0) {
-                        if(rt->rt_gateway &&
-                                rt->rt_gateway->sa_family
-                                != AF_LINK)
-                            nd6_storelladdr(rt);
-                        sdl = (rt->rt_gateway &&
-                               rt->rt_gateway->sa_family
-                               == AF_LINK)
-                              ? (struct sockaddr_dl *)
-                              rt->rt_gateway : NULL;
-                        if(sdl) {
-                            bcopy(lladdr,
-                                  LLADDR(sdl),
-                                  lladdrlen);
-                            sdl->sdl_alen =
-                                lladdrlen;
-                        }
-                    }
-                }
+        if(is_router && (ln = nd6_nbr_lookup(ifp, &tgt, 1)) != NULL) {
+            ln->ln_router = 1;
+            /* cache TLLA if present: STALE, as an unsolicited NA makes it */
+            if(lladdr && lladdrlen > 0) {
+                bcopy(lladdr, ln->ln_lladdr, lladdrlen);
+                ln->ln_alen = lladdrlen;
+                nd6_nbr_stale(ln);
             }
         }
         goto bad;
     }
-
-    /*
-     * RFC 4861 §7.2.5 — update neighbor cache based on NA.
-     * Ensure gateway is AF_LINK for MAC storage.
-     */
-    if(rt->rt_gateway && rt->rt_gateway->sa_family != AF_LINK)
-        nd6_storelladdr(rt);
-    sdl = (rt->rt_gateway && rt->rt_gateway->sa_family == AF_LINK)
-          ? (struct sockaddr_dl *)rt->rt_gateway : NULL;
-
-    if(ln->ln_state == ND6_LLINFO_INCOMPLETE) {
+    /* RFC 4861 §7.2.5 — update neighbor cache based on NA; an entry set
+     * by hand, or one of ours, keeps its address and state, and only the
+     * Router flag is heeded (the second branch) */
+    if(ln->ln_state == ND6_LLINFO_INCOMPLETE && !(ln->ln_flags & ND6_LNF_KEEP)) {
         /* entry was waiting for address resolution */
         if(lladdr == NULL)
             goto bad;	/* need TLLA for INCOMPLETE */
 
-        if(sdl && lladdrlen > 0) {
-            bcopy(lladdr, LLADDR(sdl), lladdrlen);
-            sdl->sdl_alen = lladdrlen;
-        }
-        if(is_solicited)
-            ln->ln_state = ND6_LLINFO_REACHABLE;
-        else
-            ln->ln_state = ND6_LLINFO_STALE;
-
-        {
+        bcopy(lladdr, ln->ln_lladdr, lladdrlen);
+        ln->ln_alen = lladdrlen;
+        if(is_solicited) {
             struct timeval _tv;
+
             GetUpTime(&_tv);
+            ln->ln_state  = ND6_LLINFO_REACHABLE;
             ln->ln_expire = _tv.tv_sec + ND6_REACHABLE_TIME / 1000;
-        }
+        } else
+            nd6_nbr_stale(ln);
+
         if(ln->ln_router && !is_router)
             defrouter_notrouter(&tgt, ifp);
         ln->ln_router = is_router;
 
-        /* if it is a router not in use, it may be the better one now */
-        defrouter_reachable(&tgt, ifp);
-
         /* send the queued packets */
-        if(ln->ln_hold && sdl && sdl->sdl_alen > 0) {
+        if(ln->ln_hold) {
             struct sockaddr_in6 dst_sa;
             bzero(&dst_sa, sizeof(dst_sa));
             dst_sa.sin6_family = AF_INET6;
             dst_sa.sin6_len    = sizeof(dst_sa);
             dst_sa.sin6_addr   = tgt;
-            nd6_hold_send(ln, ifp, (struct sockaddr *)&dst_sa, rt);
-        } else
-            nd6_hold_free(ln, 0);
+            nd6_hold_send(ln, ifp, (struct sockaddr *)&dst_sa);
+        }
+
+        /* if it is a router not in use, it may be the better one now (this
+         * may make or take over other entries, but frees none: ln is not
+         * used after it) */
+        defrouter_reachable(&tgt, ifp);
     } else {
         /* existing entry in REACHABLE/STALE/DELAY/PROBE */
         int llchange = 0;
 
-        if(lladdr && sdl && sdl->sdl_alen > 0)
-            llchange = bcmp(lladdr, LLADDR(sdl), lladdrlen);
+        if(lladdr && ln->ln_alen > 0)
+            llchange = bcmp(lladdr, ln->ln_lladdr, lladdrlen);
 
-        if(is_override || !llchange) {
+        if(ln->ln_flags & ND6_LNF_KEEP) {
+            /* left as it is */
+        } else if(is_override || !llchange) {
             /* update link-layer address */
-            if(lladdr && sdl && lladdrlen > 0) {
-                bcopy(lladdr, LLADDR(sdl), lladdrlen);
-                sdl->sdl_alen = lladdrlen;
+            if(lladdr) {
+                bcopy(lladdr, ln->ln_lladdr, lladdrlen);
+                ln->ln_alen = lladdrlen;
             }
             if(is_solicited) {
-                ln->ln_state = ND6_LLINFO_REACHABLE;
                 struct timeval _tv;
+
                 GetUpTime(&_tv);
+                ln->ln_state = ND6_LLINFO_REACHABLE;
                 ln->ln_expire = _tv.tv_sec +
                                 ND6_REACHABLE_TIME / 1000;
             } else if(llchange) {
-                ln->ln_state = ND6_LLINFO_STALE;
+                nd6_nbr_stale(ln);
             }
         } else {
             /* not override and address changed */
             if(is_solicited && ln->ln_state == ND6_LLINFO_REACHABLE)
-                ln->ln_state = ND6_LLINFO_STALE;
+                nd6_nbr_stale(ln);
         }
 
         /* router flag change handling (RFC 4861 §7.2.5 last para) */
@@ -617,14 +579,10 @@ nd6_na_input(struct mbuf *m, int off, int icmp6len)
         }
     }
 
-    if(rt)
-        rtfree(rt);             /* release the ref held by nd6_lookup */
     m_freem(m);
     return;
 
 bad:
-    if(rt)
-        rtfree(rt);             /* release the ref held by nd6_lookup */
     m_freem(m);
 }
 
