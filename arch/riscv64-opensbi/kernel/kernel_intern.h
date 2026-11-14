@@ -60,6 +60,7 @@ extern uint64_t __timebase_freq;
 
 /* Early SBI debug console (kernel_console.c) */
 void krnSBIPutC(char c);
+void krnSBIPutBuf(const char *s, unsigned long len);
 int  krnSBIGetC(void);
 void krnSBIPutStr(const char *s);
 int krnMMUMapPages(unsigned long va, unsigned long pa, unsigned long size,
