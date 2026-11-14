@@ -275,42 +275,9 @@ set_primary(struct Library *SocketBase, struct MDNSDaemon *md)
         }
         /* another name from the system starts without a number again */
         if (strcmp(base, md->md_HostBase) != 0) {
-            mdnsTextCopy(md->md_HostBase, (LONG)sizeof(md->md_HostBase),
-                base);
-            md->md_HostSuffix = 0;
+            mdnsHostSetName(md, base, 0);
         }
     }
-    mdnsNetNameHost(md);
-}
-
-/* The name in use, from what the system calls itself and the number the
- * host took after another host turned out to have the name. */
-void
-mdnsNetNameHost(struct MDNSDaemon *md)
-{
-    char digits[12];
-    ULONG number = md->md_HostSuffix;
-    LONG n = 0, len;
-
-    mdnsTextCopy(md->md_HostName, (LONG)sizeof(md->md_HostName),
-        md->md_HostBase);
-    if (number == 0) {
-        return;
-    }
-    do {
-        digits[n++] = (char)('0' + number % 10);
-        number /= 10;
-    } while (number != 0);
-    /* a label has at most 63 characters */
-    len = mdnsTextLength(md->md_HostName, MDNSD_HOST_MAX);
-    if (len > 63 - 1 - n) {
-        len = 63 - 1 - n;
-    }
-    md->md_HostName[len++] = '-';
-    while (n > 0) {
-        md->md_HostName[len++] = digits[--n];
-    }
-    md->md_HostName[len] = '\0';
 }
 
 static void close_sockets(struct Library *SocketBase, struct MDNSDaemon *md);

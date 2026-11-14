@@ -84,6 +84,9 @@ to an hour - with the answers already known, and refreshed at 80-95 % of
 each watched record's life. The questions due on a link at one time go in
 one query. A record a cache-flush answer replaces, or a goodbye, goes a
 second later. When the budget is full, a record nobody watches goes first.
+The host's own records - its name and its services - go into the cache as
+it announces them, so programs on the host find them as other hosts do; they
+end with their goodbye, or when the host loses or changes the name.
 
 ## dnssd.library
 

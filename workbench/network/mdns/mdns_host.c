@@ -181,7 +181,76 @@ host_send_addr(struct MDNSDaemon *md, BOOL goodbye, UWORD qtype)
         if (!mdnsReplyIsUnicast(md) && !goodbye) {
             md->md_HostMulticast = mdnsNow();
         }
+        /* what the group has, the host's own cache has too: a lookup of
+         * its own name is answered as any other's */
+        if (!mdnsReplyIsUnicast(md)) {
+            mdnsReflectPacket(md, pkt, pos, i);
+        }
     }
+}
+
+/*
+ * The host's records under the name it has now leave its cache. They are a
+ * copy of what it announced (host_send_addr()), there for its own programs,
+ * and end only with a goodbye; so whatever makes them untrue drops them, and
+ * only two things do - both here: the name changes (mdnsHostSetName()), or
+ * the links or their addresses do (mdnsHostRestart(), which announces them
+ * again). A link that goes takes its records with it in the cache's turn.
+ */
+static void
+host_forget(struct MDNSDaemon *md)
+{
+    char fqdn[256];
+    UBYTE wire[256];
+    LONG used;
+
+    if (md->md_HostName[0] == '\0') {
+        return;                         /* no name yet */
+    }
+    mdnsHostFqdn(md, fqdn, (LONG)sizeof(fqdn));
+    if (mdnsNameToWire(fqdn, wire, (LONG)sizeof(wire), &used) == 0) {
+        mdnsCacheDropLocal(md, wire, NULL);
+    }
+}
+
+/*
+ * The name the host goes by: what the system calls itself (base; NULL keeps
+ * it) and the number it took after other hosts had the name (suffix, 0 for
+ * none: "aros", "aros-2"). The only place md_HostName changes; what the host
+ * said under the name it had goes from its cache first - another host has
+ * that name now, or the host gives it up.
+ */
+void
+mdnsHostSetName(struct MDNSDaemon *md, const char *base, ULONG suffix)
+{
+    char digits[12];
+    ULONG number = suffix;
+    LONG n = 0, len;
+
+    host_forget(md);
+    if (base != NULL) {
+        mdnsTextCopy(md->md_HostBase, (LONG)sizeof(md->md_HostBase), base);
+    }
+    md->md_HostSuffix = suffix;
+    mdnsTextCopy(md->md_HostName, (LONG)sizeof(md->md_HostName),
+        md->md_HostBase);
+    if (number == 0) {
+        return;
+    }
+    do {
+        digits[n++] = (char)('0' + number % 10);
+        number /= 10;
+    } while (number != 0);
+    /* a label has at most 63 characters */
+    len = mdnsTextLength(md->md_HostName, MDNSD_HOST_MAX);
+    if (len > 63 - 1 - n) {
+        len = 63 - 1 - n;
+    }
+    md->md_HostName[len++] = '-';
+    while (n > 0) {
+        md->md_HostName[len++] = digits[--n];
+    }
+    md->md_HostName[len] = '\0';
 }
 
 /* Starts asking for the name, from the first probe. */
@@ -198,6 +267,7 @@ host_probe_from(struct MDNSDaemon *md, ULONG ticks)
 void
 mdnsHostRestart(struct MDNSDaemon *md)
 {
+    host_forget(md);            /* announced again, with what there is now */
     host_probe_from(md, 0);
 }
 
@@ -425,7 +495,8 @@ mdnsHostHandleRecord(struct MDNSDaemon *md, const struct MDNSRecord *r)
             return;
         }
     }
-    md->md_HostSuffix = md->md_HostSuffix == 0 ? 2 : md->md_HostSuffix + 1;
-    mdnsNetNameHost(md);
+    /* another host has the name: the next one */
+    mdnsHostSetName(md, NULL,
+        md->md_HostSuffix == 0 ? 2 : md->md_HostSuffix + 1);
     host_probe_from(md, MDNS_PROBE_TICKS);
 }

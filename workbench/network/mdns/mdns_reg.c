@@ -807,10 +807,20 @@ service_probe(struct MDNSDaemon *md, const struct MDNSRegisteredService *rs)
 
 /* The next name after a conflict ("Name (2)", dnssd_reg_rename()), not
  * one another local service of the type already owns. */
+/* What this host said under a service's names it says no more: its own
+ * records in its cache go (those of a name lost get no goodbye). */
 static void
-service_rename(const struct MDNSDaemon *md, struct MDNSRegisteredService *rs)
+service_forget(struct MDNSDaemon *md, const struct MDNSRegisteredService *rs)
+{
+    mdnsCacheDropLocal(md, rs->rs_Name, rs->rs_Name);
+}
+
+static void
+service_rename(struct MDNSDaemon *md, struct MDNSRegisteredService *rs)
 {
     BOOL used;
+
+    service_forget(md, rs);             /* the name is another host's now */
 
     do {
         struct Node *n;
@@ -838,7 +848,7 @@ service_rename(const struct MDNSDaemon *md, struct MDNSRegisteredService *rs)
  * for it: the records under that name now are the other host's.
  */
 void
-mdnsRegHandleRecord(const struct MDNSDaemon *md, const struct MDNSRecord *r,
+mdnsRegHandleRecord(struct MDNSDaemon *md, const struct MDNSRecord *r,
     const UBYTE *pkt, LONG pktlen)
 {
     struct Node *n;
@@ -867,6 +877,9 @@ mdnsRegHandleRecord(const struct MDNSDaemon *md, const struct MDNSRecord *r,
                 }
             }
             if (i == rs->rs_Reg.address_count) {
+                /* the host's name is another host's: what this one said
+                 * of it goes from its cache */
+                mdnsCacheDropLocal(md, rs->rs_HostName, NULL);
                 rs->rs_State = MDNS_NAME_CONFLICT;
                 rs->rs_Reg.state = DNSSD_REG_CONFLICT;
                 rs->rs_NextTick = mdnsTicks();
@@ -1633,6 +1646,12 @@ service_remove(struct MDNSDaemon *md, struct MDNSRegisteredService *rs)
     Remove(&rs->rs_Node);
     if (rs->rs_State == MDNS_NAME_ANNOUNCED) {
         service_send(md, rs, TRUE, all_subtypes(rs));
+    } else {
+        /* no goodbye, which would end them: its own records go now */
+        service_forget(md, rs);
+        if (PROXY(rs)) {
+            mdnsCacheDropLocal(md, rs->rs_HostName, NULL);
+        }
     }
     rs->rs_Reg.state = DNSSD_REG_REMOVED;
     txt_set(rs, NULL, 0);

@@ -16,9 +16,11 @@
  * its life (section 5.2); one a cache-flush answer replaces, or a goodbye
  * (TTL 0), goes a second later (sections 10.2, 10.1).
  *
- * The host's own records come in as they are announced (mdnsReflectPacket())
- * and stay until their goodbye, which ends them a second later as any:
- * nobody refreshes them.
+ * The host's own records - its name's addresses, its services' - come in
+ * as they are announced (mdnsReflectPacket()) and stay until their goodbye,
+ * which ends them a second later as any: nobody refreshes them. A name the
+ * host no longer holds - lost to another host, which gets no goodbye from
+ * it, or given up - has its own records dropped (mdnsCacheDropLocal()).
  *
  * Memory: each record is allocated by itself, within MDNS_CACHE_BYTES; when
  * that is full, a record nobody watches goes first, the one nearest its end;
@@ -566,6 +568,32 @@ mdnsCacheTick(struct MDNSDaemon *md)
         q->cq_Next = now + q->cq_Interval;
         q->cq_Interval = q->cq_Interval * 2 > QUERY_MAX_INTERVAL ?
             QUERY_MAX_INTERVAL : q->cq_Interval * 2;
+    }
+}
+
+/* The host no longer holds a name (wire labels): its own records owned by
+ * owner, or its PTRs that name target, which would never end, go now - the
+ * watches told - and another host's, if any, stay. */
+void
+mdnsCacheDropLocal(const struct MDNSDaemon *md, const UBYTE *owner,
+    const UBYTE *target)
+{
+    struct MDNSCache *c = md->md_Cache;
+    struct MDNSCacheEntry *e, *next;
+
+    if (c == NULL || (owner == NULL && target == NULL)) {
+        return;
+    }
+    for (e = (struct MDNSCacheEntry *)c->mc_Records.mlh_Head;
+         (next = (struct MDNSCacheEntry *)e->ce_Node.mln_Succ) != NULL; e = next) {
+        if (!(e->ce_Flags & MDNS_CACHE_LOCAL)) {
+            continue;
+        }
+        if ((owner != NULL && mdnsWireNameEqual(e->ce_Name, owner)) ||
+            (target != NULL && e->ce_Type == DNS_TYPE_PTR &&
+             mdnsWireNameEqual(e->ce_Data, target))) {
+            drop(c, e);
+        }
     }
 }
 
