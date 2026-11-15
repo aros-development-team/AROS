@@ -27,6 +27,7 @@ CUNITSOCKETTESTFILES := \
     cunit-net-filter6 \
     cunit-net-frag6 \
     cunit-net-icmp6err \
+    cunit-net-ifalias \
     cunit-net-iflist \
     cunit-net-inet6 \
     cunit-net-keepalive \

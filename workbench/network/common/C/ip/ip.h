@@ -64,9 +64,11 @@ const char *format_lladdr(const unsigned char *addr, int len,
 void format_flags(unsigned int flags, char *buf, size_t buflen);
 
 /*
- * Count prefix length from a network mask.
+ * Count prefix length from a network mask. af is the family it is a mask
+ * for (the destination's): the stack gives masks without a family, laid
+ * out as that family's sockaddr.
  */
-int mask2prefix(const struct sockaddr *sa);
+int mask2prefix(const struct sockaddr *sa, int af);
 
 /*
  * Open a socket for ioctl operations.

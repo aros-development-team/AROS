@@ -21,6 +21,7 @@
 #include <netdb.h>
 
 #include <errno.h>
+#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -129,7 +130,7 @@ format_flags(unsigned int flags, char *buf, size_t buflen)
 }
 
 int
-mask2prefix(const struct sockaddr *sa)
+mask2prefix(const struct sockaddr *sa, int af)
 {
 	const unsigned char *addr;
 	int len;
@@ -156,16 +157,30 @@ mask2prefix(const struct sockaddr *sa)
 		break;
 	}
 #endif
-	case 0:
+	case 0: {
 		/*
-		 * Some routing messages use sa_family == 0 for netmasks.
-		 * Treat the raw bytes after sa_family as the mask.
+		 * A netmask as the stack keeps it (SIOCGIFNETMASK, routing
+		 * messages): no family, laid out as a sockaddr of af - the
+		 * destination's - and cut after its last non-zero byte
+		 * (sa_len); what is past sa_len is zero.
 		 */
-		addr = (const unsigned char *)sa + 2;
-		if (sa->sa_len <= 2)
+		int off;
+
+		if (af == AF_INET)
+			off = offsetof(struct sockaddr_in, sin_addr), len = 4;
+#ifdef INET6
+		else if (af == AF_INET6)
+			off = offsetof(struct sockaddr_in6, sin6_addr), len = 16;
+#endif
+		else
+			return -1;
+		if (sa->sa_len <= off)
 			return 0;
-		len = sa->sa_len - 2;
+		if (sa->sa_len - off < len)
+			len = sa->sa_len - off;
+		addr = (const unsigned char *)sa + off;
 		break;
+	}
 	default:
 		return -1;
 	}
