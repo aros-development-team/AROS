@@ -179,7 +179,8 @@ static void ahci_ata_sense(struct ata_xfer *xa,
         }
     }
 
-    memset(sense_data, 0, sizeof(*sense_data));
+    memset(sense_data, 0, offsetof(struct scsi_sense_data, extra_bytes));
+    sense_data->extra_len = SSD_MIN_SIZE - 8;
 
     sense_data->error_code = SSD_ERRCODE_VALID | SSD_CURRENT_ERROR;
 
