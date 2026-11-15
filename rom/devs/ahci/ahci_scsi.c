@@ -275,7 +275,7 @@ static BYTE ahci_scsi_page_inquiry(struct ahci_port *ap, struct ata_port *at, st
         struct scsi_vpd_supported_page_list    list;
         struct scsi_vpd_unit_serial_number    serno;
         UBYTE                    buf[256];
-    } page;
+    } page = {0};
     scsi_cdb_t cdb;
     int i;
     int j;
@@ -291,7 +291,7 @@ static BYTE ahci_scsi_page_inquiry(struct ahci_port *ap, struct ata_port *at, st
         page.list.list[i++] = SVPD_SUPPORTED_PAGE_LIST;
         page.list.list[i++] = SVPD_UNIT_SERIAL_NUMBER;
         page.list.length = i;
-        len = offsetof(struct scsi_vpd_supported_page_list, list[3]);
+        len = offsetof(struct scsi_vpd_supported_page_list, list[2]);
         break;
     case SVPD_UNIT_SERIAL_NUMBER:
         i = 0;
@@ -313,11 +313,14 @@ static BYTE ahci_scsi_page_inquiry(struct ahci_port *ap, struct ata_port *at, st
         break;
     }
 
+    if (len > cdb->inquiry.length)
+        len = cdb->inquiry.length;
     if (len > scsi->scsi_Length)
-        return IOERR_BADLENGTH;
-
-    memset(scsi->scsi_Data + len, 0, scsi->scsi_Length - len);
-    CopyMem(&page, scsi->scsi_Data, len);
+        len = scsi->scsi_Length;
+    if (len && !scsi->scsi_Data)
+        return IOERR_BADADDRESS;
+    if (len)
+        CopyMem(&page, scsi->scsi_Data, len);
     scsi->scsi_Actual = len;
 
     return 0;
