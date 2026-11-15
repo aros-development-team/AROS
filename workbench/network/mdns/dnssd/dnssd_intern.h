@@ -33,6 +33,9 @@ struct DNSSDSession
     ULONG           ds_Session;
     ULONG           ds_Incarnation;
     struct MinList  ds_Operations;
+    struct Task    *ds_Task;        /* the opener: the session is its own */
+    struct DNSSDIPCMsg *ds_Close;   /* made at open: closing needs no memory */
+    struct MsgPort *ds_ClosePort;
 };
 
 struct DNSSDOperation
@@ -45,5 +48,6 @@ struct DNSSDOperation
 struct DNSSDIPCMsg *dnssdNewMsg(UWORD command, const struct dnssd_ipc_parts *parts,
     const struct DNSSDSession *ds, LONG *rc);
 LONG dnssdSend(struct DNSSDIPCMsg *msg);
+LONG dnssdSendOn(struct DNSSDIPCMsg *msg, struct MsgPort *reply);
 
 #endif /* DNSSD_INTERN_H */

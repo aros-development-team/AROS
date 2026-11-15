@@ -69,12 +69,24 @@ dnssdNewMsg(UWORD command, const struct dnssd_ipc_parts *parts,
 LONG
 dnssdSend(struct DNSSDIPCMsg *msg)
 {
-    struct MsgPort *engine, *reply;
+    struct MsgPort *reply;
+    LONG rc;
 
     reply = CreateMsgPort();
     if (reply == NULL) {
         return DNSSD_ERR_NOMEM;
     }
+    rc = dnssdSendOn(msg, reply);
+    DeleteMsgPort(reply);
+    return rc;
+}
+
+/* The same through reply, a port of the calling task's own. */
+LONG
+dnssdSendOn(struct DNSSDIPCMsg *msg, struct MsgPort *reply)
+{
+    struct MsgPort *engine;
+
     msg->dm_Msg.mn_Node.ln_Type = NT_MESSAGE;
     msg->dm_Msg.mn_ReplyPort = reply;
     msg->dm_Request.task = GetETaskID(FindTask(NULL));
@@ -89,8 +101,18 @@ dnssdSend(struct DNSSDIPCMsg *msg)
         WaitPort(reply);
         GetMsg(reply);
     }
-    DeleteMsgPort(reply);
     return msg->dm_Request.result;
+}
+
+/* A session's memory, with what was made for its CLOSE. */
+static void
+free_session(struct DNSSDSession *ds)
+{
+    if (ds->ds_ClosePort != NULL) {
+        DeleteMsgPort(ds->ds_ClosePort);
+    }
+    FreeVec(ds->ds_Close);
+    FreeVec(ds);
 }
 
 /*
@@ -312,7 +334,14 @@ instance_part(CONST_STRPTR instance, struct dnssd_ipc_parts *parts)
         return DNSSD_ERR_NOMEM;
     }
     ds->ds_Port = port;
+    ds->ds_Task = FindTask(NULL);
     NEWLIST((struct List *)&ds->ds_Operations);
+    ds->ds_Close = dnssdNewMsg(DNSSD_IPC_CLOSE, NULL, NULL, &rc);
+    ds->ds_ClosePort = CreateMsgPort();
+    if (ds->ds_Close == NULL || ds->ds_ClosePort == NULL) {
+        free_session(ds);
+        return DNSSD_ERR_NOMEM;
+    }
     ds->ds_Notify.mn_Node.ln_Type = NT_MESSAGE;
     ds->ds_Notify.mn_Length = sizeof(ds->ds_Notify);
     ds->ds_Notify.mn_ReplyPort = port;
@@ -325,9 +354,11 @@ instance_part(CONST_STRPTR instance, struct dnssd_ipc_parts *parts)
         FreeVec(msg);
     }
     if (rc != DNSSD_OK) {
-        FreeVec(ds);
+        free_session(ds);
         return rc;
     }
+    ds->ds_Close->dm_Request.session = ds->ds_Session;
+    ds->ds_Close->dm_Request.incarnation = ds->ds_Incarnation;
     *session = ds;
     return DNSSD_OK;
     AROS_LIBFUNC_EXIT
@@ -347,7 +378,10 @@ instance_part(CONST_STRPTR instance, struct dnssd_ipc_parts *parts)
 /*  FUNCTION
         Cancels every operation of the session and closes it. Nothing of it
         reaches the port afterwards, and its notification is off the port.
-        The operations' handles are freed.
+        The operations' handles are freed. Closing needs no memory.
+
+        Only the task that opened the session closes it: called from
+        another, the call does nothing.
 
     INPUTS
         session - the session, or NULL
@@ -355,26 +389,32 @@ instance_part(CONST_STRPTR instance, struct dnssd_ipc_parts *parts)
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    struct DNSSDIPCMsg *msg;
     struct DNSSDOperation *op;
     LONG rc;
 
     if (session == NULL) {
         return;
     }
-    msg = dnssdNewMsg(DNSSD_IPC_CLOSE, NULL, session, &rc);
-    if (msg != NULL) {
-        dnssdSend(msg);
-        FreeVec(msg);
+    /* the session and its port are the opener's: from another task its
+     * CLOSE would not be the session's, and mdnsd would keep replying to
+     * the notification - which is then kept, not freed */
+    if (FindTask(NULL) != session->ds_Task) {
+        return;
     }
-    /* mdnsd holds the notification no more, replied or not */
+    rc = dnssdSendOn(session->ds_Close, session->ds_ClosePort);
+    /* closed, or mdnsd gone (it gives every notification back as it ends:
+     * STALE says a newer one runs): otherwise mdnsd may still reply to the
+     * notification, and the session stays */
+    if (rc != DNSSD_OK && rc != DNSSD_ERR_STALE && rc != DNSSD_ERR_NOENGINE) {
+        return;
+    }
     session->ds_Notify.mn_Node.ln_Type = NT_REPLYMSG;
     notify_back(session);
     while ((op = (struct DNSSDOperation *)RemHead(
             (struct List *)&session->ds_Operations)) != NULL) {
         FreeVec(op);
     }
-    FreeVec(session);
+    free_session(session);
     AROS_LIBFUNC_EXIT
 }
 
