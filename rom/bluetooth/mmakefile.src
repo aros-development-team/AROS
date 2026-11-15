@@ -25,7 +25,7 @@ include $(SRCDIR)/config/aros.cfg
 #MM      kernel-bluetooth-btclass-includes
 
 # Platform bindings
-#MM- kernel-bluetooth-opensbi-riscv64 : kernel-bluetooth
+#MM- kernel-bluetooth-sbi-riscv64 : kernel-bluetooth
 #MM- kernel-bluetooth-pc-x86_64 : kernel-bluetooth
 #MM- kernel-bluetooth-pc-i386 : kernel-bluetooth
 #MM- kernel-bluetooth-linux-x86_64 : kernel-bluetooth

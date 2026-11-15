@@ -8,7 +8,7 @@ include $(SRCDIR)/config/aros.cfg
 # reached through __riscv_arosintern (kernel_riscv.h), which the
 # platform fills in.
 #
-# Keyed on the opensbi ARCH, so it is built for every opensbi CPU. The
+# Keyed on the sbi ARCH, so it is built for every sbi CPU. The
 # include priority sorts it after the platform directory (10) and before
 # riscv-all (5): the flag files are concatenated in lexical order.
 #
@@ -39,7 +39,7 @@ CFILES := \
         spinunlock
 
 %set_archincludes mainmmake=kernel-kernel maindir=rom/kernel \
-  modname=kernel pri=4 arch=opensbi \
+  modname=kernel pri=4 arch=sbi \
   includes="-I$(SRCDIR)/$(CURDIR)"
 
 %get_archincludes modname=kernel \
@@ -58,7 +58,7 @@ USER_INCLUDES := $(PRIV_KERNEL_INCLUDES) -I$(GENINCDIR)
 USER_CPPFLAGS := -D__AROS_EXEC_LIBRARY__
 
 %build_archspecific \
-  mainmmake=kernel-kernel modname=kernel maindir=rom/kernel arch=opensbi \
+  mainmmake=kernel-kernel modname=kernel maindir=rom/kernel arch=sbi \
   files="$(CFILES)" compiler=kernel
 
 %common

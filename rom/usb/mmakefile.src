@@ -53,7 +53,7 @@ include $(SRCDIR)/config/aros.cfg
 #MM- kernel-usb-sam440-ppc : \
 #MM         kernel-usb
 
-#MM- kernel-usb-opensbi-riscv64 : \
+#MM- kernel-usb-sbi-riscv64 : \
 #MM         kernel-usb-trident \
 #MM         kernel-usb-classes-common \
 #MM         poseidon-usb-shellcommands

@@ -12,7 +12,7 @@
 
 #include "kernel_riscv.h"
 
-/* Filled in by the platform (riscv64-opensbi: kernel_startup.c) */
+/* Filled in by the platform (riscv64-sbi: kernel_startup.c) */
 struct RISCV_Implementation __riscv_arosintern;
 
 /* The boot hart is CPU 0 and online from the first instruction */

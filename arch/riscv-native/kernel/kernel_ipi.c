@@ -5,7 +5,7 @@
 
     Delivery: a sender ORs its message bits into the target's pending
     word and raises the target's software interrupt through the
-    platform (RVI_SendIPI - an SBI call on riscv64-opensbi). The
+    platform (RVI_SendIPI - an SBI call on riscv64-sbi). The
     software interrupt carries no payload, so the pending word is the
     message; the handler clears its pending bit first and then takes
     the word, so a message posted while it runs raises a fresh interrupt
