@@ -311,22 +311,25 @@ GFX_SHARED VOID copymembox16(UBYTE *src, LONG srcX, LONG srcY, ULONG srcMod,
     LONG src_start_add, dst_start_add; /* must be signed */
     BOOL descending;
 
-    src_start     = src + srcY * srcMod + srcX * 2;
+    /* LONG * ULONG is evaluated as unsigned 32 bit, so a negative Y would be
+       zero-extended instead of sign-extended when added to a 64 bit pointer.
+       Do the address arithmetic in SIPTR. */
+    src_start     = src + (SIPTR)srcY * (SIPTR)srcMod + (SIPTR)srcX * 2;
     src_start_add = (LONG)srcMod - width * 2;
 
-    dst_start     = dst + dstY * dstMod + dstX * 2;
+    dst_start     = dst + (SIPTR)dstY * (SIPTR)dstMod + (SIPTR)dstX * 2;
     dst_start_add = (LONG)dstMod - width * 2;
 
     IPTR src_begin = (IPTR)src_start;
-    IPTR src_end   = src_begin + (height - 1) * srcMod + width * 2;
+    IPTR src_end   = src_begin + (SIPTR)(height - 1) * (SIPTR)srcMod + width * 2;
 
     IPTR dst_begin = (IPTR)dst_start;
 
     if (src_begin < dst_begin && src_end > dst_begin) {
         /* Overlap: copy backwards */
         descending = TRUE;
-        src_start += (height - 1) * srcMod + width * 2;
-        dst_start += (height - 1) * dstMod + width * 2;
+        src_start += (SIPTR)(height - 1) * (SIPTR)srcMod + width * 2;
+        dst_start += (SIPTR)(height - 1) * (SIPTR)dstMod + width * 2;
 
         phase = ((IPTR)src_start & 1L);
         if (phase > width) phase = width;
