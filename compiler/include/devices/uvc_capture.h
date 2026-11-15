@@ -3,7 +3,7 @@
 #define DEVICES_UVC_CAPTURE_H
 #include <exec/types.h>
 
-/* uvc.class methods, called through the class's usbDoMethodA(). */
+/* uvc.class's internal interface, used by its own VHI libraries. Applications open uvc<unit>.vhi instead. */
 #define UVCM_COUNT 0x55564300UL
 #define UVCM_INFO  (UVCM_COUNT + 1)
 #define UVCM_GRAB  (UVCM_COUNT + 2)
@@ -14,7 +14,7 @@
 #define UVCM_RATES (UVCM_COUNT + 7)
 #define UVCM_GRABRATE (UVCM_COUNT + 8)
 
-/* Optional uvc.library GET extensions; other VHI drivers may reject them. */
+/* GET extensions of the VHI libraries uvc.class publishes; other VHI drivers may reject them. */
 #define VHI_UVC_MODECOUNT 0x55564310UL
 #define VHI_UVC_MODEINFO  0x55564311UL
 #define VHI_UVC_DEVICEINFO 0x55564312UL
@@ -67,8 +67,8 @@ struct VHIUVCModeQuery {
     ULONG index;
     struct UVCModeInfo mode;
 };
-/* VHI GET MODECOUNT returns count for the selected input. GET MODEINFO takes
- * VHIUVCModeQuery*, returns TRUE on success; synthetic input has no modes. */
+/* VHI GET MODECOUNT returns the camera's mode count. GET MODEINFO takes
+ * VHIUVCModeQuery*, returns TRUE on success. */
 /* MODECOUNT: binding id. MODEINFO: binding id, zero-based mode index,
  * UVCModeInfo*, buffer size. Returns FALSE on stale id/index or short buffer.
  * Modes describe supported native descriptors, not guaranteed bandwidth or

@@ -3,7 +3,7 @@ include $(SRCDIR)/config/aros.cfg
 
 USER_LDFLAGS := -static
 
-FILES :=    uvc.class debug
+FILES :=    uvc.class uvc_vhi debug
 
 #MM- kernel-usb-classes : kernel-usb-classes-uvc
 
