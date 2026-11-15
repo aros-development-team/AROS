@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: OOP metaclass
 */
@@ -466,7 +466,7 @@ static struct IFMethod *ifmeta_findmethod(OOP_Class *cl, OOP_Object *o, struct P
     /* Look up ID in hashtable and get linked list of buckets,
        storing interfaces
     */
-    b = inst->data.iftab_directptr[ifid & inst->data.hashmask];
+    b = inst->data.iftab_directptr[HashIndexULONG(inst->data.hashmask, ifid)];
 loop:
     if (b)
     {
@@ -757,7 +757,7 @@ static IPTR Meta_CoerceMethod(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 
     mid &= METHOD_MASK;
 
-    b = IFI(cl)->data.iftab_directptr[ifid & IFI(cl)->data.hashmask];
+    b = IFI(cl)->data.iftab_directptr[HashIndexULONG(IFI(cl)->data.hashmask, ifid)];
     while (b)
     {
         if (b->InterfaceID == ifid)

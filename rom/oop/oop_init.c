@@ -1,10 +1,11 @@
 /*
-    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: OOP Library
 */
 
-#define NUM_IDS 31
+/* Expected number of interface IDs; the table gets twice as many buckets */
+#define NUM_IDS 64
 
 #include <utility/utility.h>
 #include <proto/oop.h>
