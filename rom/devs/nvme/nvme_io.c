@@ -60,6 +60,8 @@ static BOOL nvme_sector_rw(struct IORequest *io, UQUAD off64, BOOL is_write)
     int queueno;
     BOOL setup_ok = FALSE;
 
+    iotd->iotd_Req.io_Actual = 0;
+
     D(
         bug("[NVME%02ld] %s(%08x%08x, 0x%p, %u) %s\n", unit->au_UnitNum, __func__, (off64 >> 32), off64 & 0xFFFFFFFF, data, len, is_write ? "WRITE" : "READ");
 
@@ -131,15 +133,6 @@ static BOOL nvme_sector_rw(struct IORequest *io, UQUAD off64, BOOL is_write)
     ioehandle.ceh_SigSet = SIGF_SINGLE;
     ioehandle.ceh_Msg = io;
 
-    /*
-     * Take the request off the unit's list before it is submitted: once the
-     * controller has it, it may be answered and replied at any moment, and
-     * its node then belongs to the caller's reply port.
-     */
-    ObtainSemaphore(&unit->au_Lock);
-    Remove(&io->io_Message.mn_Node);
-    ReleaseSemaphore(&unit->au_Lock);
-
     if (is_write) {
         cmdio.rw.op.opcode = nvme_cmd_write;
     } else {
@@ -156,23 +149,14 @@ static BOOL nvme_sector_rw(struct IORequest *io, UQUAD off64, BOOL is_write)
         bug("[NVME%02ld(%02u)] %s: %08x%08x (%u)\n", unit->au_UnitNum, queueno, __func__, (cmdio.rw.slba >> 32), (cmdio.rw.slba & 0xFFFFFFFF), AROS_LE2WORD(cmdio.rw.length));
     )
 
+    io->io_Flags &= ~IOF_QUICK;
     if (nvme_submit_iocmd(nvmeq, &cmdio, &ioehandle) != 0) {
+        nvme_dma_release(&ioehandle, TRUE);
         if (ioehandle.ceh_IOMem.me_Un.meu_Addr) {
             FreeMem(ioehandle.ceh_IOMem.me_Un.meu_Addr, ioehandle.ceh_IOMem.me_Length);
             ioehandle.ceh_IOMem.me_Un.meu_Addr = NULL;
         }
-        nvme_dma_release(&ioehandle, TRUE);
         io->io_Error = IOERR_ABORTED;
-
-        /*
-         * The command never reached the controller, so BeginIO() finishes
-         * the request itself and removes it from the unit's list. Put it
-         * back there first - it was taken off above - or that would be a
-         * second Remove() of the same node, through stale links.
-         */
-        ObtainSemaphore(&unit->au_Lock);
-        AddHead(&unit->au_IOs, &io->io_Message.mn_Node);
-        ReleaseSemaphore(&unit->au_Lock);
 
         return TRUE;
     }
@@ -193,14 +177,15 @@ static BOOL nvme_sector_rw(struct IORequest *io, UQUAD off64, BOOL is_write)
      * it is looking at has already been emptied.
      *
      * ceh_Reply is cleared again by the queue's task after it replies, so
-     * watch the slot ceasing to be ours too - that does not come back.
+     * also stop once the command ID is released. If another CPU reuses it
+     * immediately, polling is still bounded and never reads the old request.
      */
     {
         struct completionevent_handler *slot =
             &nvmeq->ce_entries[cmdio.common.op.command_id];
         ULONG spins = 4096;
 
-        while (spins-- && !slot->ceh_Reply && (slot->ceh_Msg == (APTR)io))
+        while (spins-- && !__atomic_load_n(&slot->ceh_Reply, __ATOMIC_ACQUIRE) && __atomic_load_n(&nvmeq->cmdid_busy[cmdio.common.op.command_id], __ATOMIC_ACQUIRE))
             nvme_process_cq(nvmeq);
     }
 
@@ -226,6 +211,8 @@ static BOOL nvme_flush(struct IORequest *io)
     ULONG nsid = (unit->au_UnitNum & ((1 << 12) - 1)) + 1;
     int queueno;
 
+    IOStdReq(io)->io_Actual = 0;
+
     memset(&cmdio, 0, sizeof(cmdio));
     memset(&ioehandle, 0, sizeof(ioehandle));
     nvme_dma_init(&ioehandle);
@@ -237,19 +224,12 @@ static BOOL nvme_flush(struct IORequest *io)
     ioehandle.ceh_SigSet = SIGF_SINGLE;
     ioehandle.ceh_Msg = io;
 
-    /* Off the unit's list before submission, as for a transfer */
-    ObtainSemaphore(&unit->au_Lock);
-    Remove(&io->io_Message.mn_Node);
-    ReleaseSemaphore(&unit->au_Lock);
-
     cmdio.common.op.opcode = nvme_cmd_flush;
     cmdio.common.nsid = AROS_LONG2LE(nsid);
 
+    io->io_Flags &= ~IOF_QUICK;
     if (nvme_submit_iocmd(nvmeq, &cmdio, &ioehandle) != 0) {
         io->io_Error = IOERR_ABORTED;
-        ObtainSemaphore(&unit->au_Lock);
-        AddHead(&unit->au_IOs, &io->io_Message.mn_Node);
-        ReleaseSemaphore(&unit->au_Lock);
         return TRUE;
     }
 
@@ -258,7 +238,7 @@ static BOOL nvme_flush(struct IORequest *io)
             &nvmeq->ce_entries[cmdio.common.op.command_id];
         ULONG spins = 4096;
 
-        while (spins-- && !slot->ceh_Reply && (slot->ceh_Msg == (APTR)io))
+        while (spins-- && !__atomic_load_n(&slot->ceh_Reply, __ATOMIC_ACQUIRE) && __atomic_load_n(&nvmeq->cmdid_busy[cmdio.common.op.command_id], __ATOMIC_ACQUIRE))
             nvme_process_cq(nvmeq);
     }
 
@@ -276,7 +256,7 @@ AROS_LH1(void, BeginIO,
 {
     AROS_LIBFUNC_INIT
 
-    const UWORD NSDSupported[] = {
+    static const UWORD NSDSupported[] = {
         CMD_READ,
         CMD_WRITE,
         CMD_UPDATE,
@@ -311,10 +291,6 @@ AROS_LH1(void, BeginIO,
     io->io_Error = 0;
 
     D(bug("[NVME%02ld] IO %p Start, io_Flags = %d, io_Command = %d\n", unit->au_UnitNum, io, io->io_Flags, io->io_Command));
-    ObtainSemaphore(&unit->au_Lock);
-    AddHead(&unit->au_IOs, &io->io_Message.mn_Node);
-    ReleaseSemaphore(&unit->au_Lock);
-
     switch (io->io_Command) {
     case CMD_READ:
         D(bug("[NVME%02ld] CMD_READ ", unit->au_UnitNum);)
@@ -417,7 +393,7 @@ AROS_LH1(void, BeginIO,
         SetMem(geom, 0, len);
 
         geom->dg_Heads        = unit->nu_Heads;
-        geom->dg_SectorSize   = 1 << unit->au_SecShift;
+        geom->dg_SectorSize   = 1UL << unit->au_SecShift;
         if (unit->au_SecCnt >> 32 != 0)
             geom->dg_TotalSectors = 0xFFFFFFFF;
         else
@@ -436,12 +412,25 @@ AROS_LH1(void, BeginIO,
         D(bug("[NVME%02ld] TD_ADDCHANGEINT\n", unit->au_UnitNum);)
         if (io->io_Flags & IOF_QUICK)
             goto bad_cmd;
+        ObtainSemaphore(&unit->au_Lock);
+        AddHead(&unit->au_IOs, &io->io_Message.mn_Node);
+        ReleaseSemaphore(&unit->au_Lock);
+        done = FALSE;
         break;
 
     case TD_REMCHANGEINT:
         D(bug("[NVME%02ld] TD_REMCHANGEINT\n", unit->au_UnitNum);)
-        if (io->io_Flags & IOF_QUICK)
-            goto bad_cmd;
+        ObtainSemaphore(&unit->au_Lock);
+        {
+            struct Node *node;
+            for (node = unit->au_IOs.lh_Head; node->ln_Succ; node = node->ln_Succ) {
+                if (node == &io->io_Message.mn_Node) {
+                    Remove(node);
+                    break;
+                }
+            }
+        }
+        ReleaseSemaphore(&unit->au_Lock);
         done = TRUE;
         break;
 
@@ -481,20 +470,14 @@ bad_address:
         break;
     }
 
-    /* The IO is finished, so no need to keep it around anymore */
-    if (done) {
-        ObtainSemaphore(&unit->au_Lock);
-        Remove(&io->io_Message.mn_Node);
-        ReleaseSemaphore(&unit->au_Lock);
-    } else
-        io->io_Flags &= ~IOF_QUICK;
+    if (done)
+        D(bug("[NVME%02ld] IO %p Quick, io_Flags = %d, io_Comand = %d, io_Error = %d\n", unit->au_UnitNum, io, io->io_Flags, io->io_Command, io->io_Error));
 
     /* Need a reply now? */
     if (done && !(io->io_Flags & IOF_QUICK))
         ReplyMsg(&io->io_Message);
 
-    if (done)
-        D(bug("[NVME%02ld] IO %p Quick, io_Flags = %d, io_Comand = %d, io_Error = %d\n", unit->au_UnitNum, io, io->io_Flags, io->io_Command, io->io_Error));
+
 
     AROS_LIBFUNC_EXIT
 }
