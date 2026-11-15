@@ -982,6 +982,9 @@ read_event(struct ServerSession *ss, struct DNSSDIPCMsg *msg, ULONG incarnation)
     if (qe->qe_Node.mln_Succ == NULL) {
         Forbid();
         if (ss->ss_Notify == NULL && msg->dm_Notify != NULL && !ss->ss_Gone) {
+            /* lent from here on: a reply in this same turn of the loop,
+             * before the client has run, sets NT_REPLYMSG over this */
+            msg->dm_Notify->mn_Node.ln_Type = NT_MESSAGE;
             ss->ss_Notify = msg->dm_Notify;
         }
         Permit();

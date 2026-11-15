@@ -431,10 +431,8 @@ instance_part(CONST_STRPTR instance, struct dnssd_ipc_parts *parts)
     if (notify_back(session)) {
         msg->dm_Notify = &session->ds_Notify;
     }
+    /* mdnsd marks the notification lent when it keeps it */
     rc = dnssdSend(msg);
-    if (rc == DNSSD_ERR_EMPTY && msg->dm_Notify != NULL) {
-        session->ds_Notify.mn_Node.ln_Type = NT_MESSAGE;
-    }
     if (rc == DNSSD_OK) {
         CopyMem((UBYTE *)&msg->dm_Request + msg->dm_Request.reply.offset, event,
             msg->dm_Request.reply.size);
