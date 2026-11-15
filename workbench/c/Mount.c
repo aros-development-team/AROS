@@ -41,9 +41,14 @@
     RESULT
 
         On CLI success RETURN_OK; on CLI failure RETURN_FAIL.
+        An already mounted device is skipped in a batch. An optional
+        ACTIVATE failure does not undo a successfully registered device.
         Details are reported with the DOS error text when available.
 
     NOTES
+
+        Unknown icon ToolTypes are ignored. Errors in recognized mount
+        options and allocation failures remain fatal.
 
         SHUTDOWN leaves the device mounted, so the handler is started
         again the next time the device is accessed. Removing the device
@@ -309,6 +314,8 @@ int main(void)
             MyDevPtr    =(STRPTR *)args[0];
             if (MyDevPtr)
             {
+              /* A repeated mount in a multi-device request is not fatal. */
+              BOOL multiple = MyDevPtr[0] && MyDevPtr[1];
               while (*MyDevPtr)
               {
                 DEBUG_MOUNT(KPrintF("Mount: Current DevName <%s>\n",
@@ -319,7 +326,7 @@ int main(void)
                   len = strlen(*MyDevPtr);
                   if (len == 0 || len >= PATHSTR_MAX)
                   {
-                    error = ERROR_LINE_TOO_LONG;
+                    error = len ? ERROR_LINE_TOO_LONG : ERROR_REQUIRED_ARG_MISSING;
                     break;
                   }
                   Strlcpy(dirname, *MyDevPtr, PATHSTR_MAX);
@@ -347,7 +354,7 @@ int main(void)
                   len = strlen(*MyDevPtr);
                   if (len == 0 || len >= PATHSTR_MAX)
                   {
-                    error = ERROR_LINE_TOO_LONG;
+                    error = len ? ERROR_LINE_TOO_LONG : ERROR_REQUIRED_ARG_MISSING;
                     FreeVec(params);
                     break;
                   }
@@ -423,6 +430,8 @@ int main(void)
                     /* search for a filename */
 
                     LONG err;
+                    ULONG matched = 0;
+                    BOOL saw_duplicate = FALSE;
 
                     UBYTE stack_ap[sizeof(struct AnchorPath) + 3];
                     struct AnchorPath   *MyAp = (struct AnchorPath *) (((IPTR) stack_ap + 3) & ~3);
@@ -489,14 +498,24 @@ int main(void)
                         SetMem(&flagargs, 0, sizeof(flagargs));
                         IsEHandler = TRUE;
                         IsFilesystem = TRUE;
+                        matched++;
                         error=readmountfile(params, dirname);
                         DEBUG_MOUNT(KPrintF("Mount: readmount file returned %ld\n", error));
+                        if (error == ERROR_OBJECT_EXISTS)
+                        {
+                          saw_duplicate = TRUE;
+                          error = RETURN_OK;
+                        }
                         if (error != RETURN_OK && firsterror == RETURN_OK)
                           firsterror = error;
                       }
                     }
                     /* This absolutely, positively must be called, all of the time. */
                     MatchEnd(MyAp);
+
+                    /* Preserve single-file error semantics, but not batch failures. */
+                    if (matched == 1 && saw_duplicate && !multiple)
+                      error = ERROR_OBJECT_EXISTS;
 
                     if (err == ERROR_NO_MORE_ENTRIES)
                     {
@@ -515,6 +534,8 @@ int main(void)
                   error = ERROR_NO_FREE_STORE;
                   break;
                 }
+                if (multiple && error == ERROR_OBJECT_EXISTS)
+                  error = RETURN_OK;
                 if (error != RETURN_OK && firsterror == RETURN_OK)
                   firsterror = error;
                 MyDevPtr++;
@@ -563,6 +584,8 @@ int main(void)
 
                 error=readmountfile(params, _WBenchMsg->sm_ArgList[i].wa_Name);
                 DEBUG_MOUNT(KPrintF("Mount: readmountfile returned %ld\n", error));
+                if (_WBenchMsg->sm_NumArgs > 2 && error == ERROR_OBJECT_EXISTS)
+                  error = RETURN_OK;
                 if (error != RETURN_OK && firsterror == RETURN_OK)
                   firsterror = error;
                 if (error && error != ERROR_NO_MORE_ENTRIES && error < ERR_SPECIAL)
@@ -801,7 +824,9 @@ ULONG ReadMountArgs(IPTR *params, struct RDArgs *rda)
     if (!(MyRDA = ReadArgs((STRPTR)options, &args[0], rda)))
     {
         DEBUG_MOUNT(KPrintF("ReadMountArgs: ReadArgs failed, error %u\n", IoErr()));
-        return  ERR_INVALIDKEYWORD;
+        if (IoErr() == ERROR_NO_FREE_STORE)
+            return ERROR_NO_FREE_STORE;
+        return ERR_INVALIDKEYWORD;
     }
 
     for (i = 0; i < NUM_ARGS; i++)
@@ -1122,9 +1147,47 @@ ULONG   error;
 /************************************************************************************************/
 /************************************************************************************************/
 
+/* Recognize a ToolType against the ReadArgs template, including aliases.
+   Unknown icon metadata is ignored; errors in known options are not. */
+static BOOL IsMountToolType(const char *tool)
+{
+    const char *entry = (const char *)options;
+    const char *end = tool;
+    size_t length;
+
+    while (*end && *end != '=' && *end != ' ' && *end != '\t')
+        end++;
+    length = (size_t)(end - tool);
+    if (!length)
+        return FALSE;
+
+    while (*entry)
+    {
+        const char *part = entry;
+        const char *partend;
+        while (*part && *part != ',' && *part != '/' && *part != '=')
+            part++;
+        if ((size_t)(part - entry) == length && !Strnicmp(tool, entry, length))
+            return TRUE;
+        if (*part == '=')
+        {
+            const char *alias = ++part;
+            while (*part && *part != ',' && *part != '/')
+                part++;
+            if ((size_t)(part - alias) == length && !Strnicmp(tool, alias, length))
+                return TRUE;
+        }
+        partend = part;
+        while (*partend && *partend != ',')
+            partend++;
+        entry = *partend ? partend + 1 : partend;
+    }
+    return FALSE;
+}
+
 /* Load one mount definition and optional icon ToolTypes.
-   Reject parser errors before mount(), then release the parser-owned strings.
-   The mounted DOS-node storage, if registered, is not released here. */
+   Ignore unknown ToolTypes, but stop on recognized-option or allocation errors
+   before mount(). Release untransferred parser-owned strings afterwards. */
 ULONG readmountfile(IPTR *params, STRPTR filename)
 {
 struct Library          *IconBase;
@@ -1249,14 +1312,15 @@ char                    name[NAMESTR_MAX];
                   ULONG parser_error = ReadMountArgs(params, &rda);
                   if (parser_error == RETURN_OK)
                     mountinfo = TRUE;
-                  else
+                  else if (parser_error != ERR_INVALIDKEYWORD ||
+                           IsMountToolType(ToolPtr))
                   {
                     error = parser_error;
                     mountinfo = FALSE;
+                    FreeVec(ToolString);
+                    break;
                   }
                   FreeVec(ToolString);
-                  if (parser_error != RETURN_OK)
-                    break;
                 }
               }
               else
@@ -1360,7 +1424,7 @@ LONG readfile(STRPTR name, STRPTR *mem, LONG *size)
 
                         if (sub <= 0)
                         {
-                            if (sub == 0)
+                            if (sub == 0 || IoErr() == RETURN_OK)
                                 SetIoErr(ERROR_SEEK_ERROR);
                             break;
                         }
@@ -1910,9 +1974,8 @@ struct DosEnvec *vec;
 /************************************************************************************************/
 
 /* Create and register one DOS node from the current parser state.
-   On registration success DOS owns the node and retained startup allocations;
-   a subsequent ACTIVATE error does not undo that registration. A failed
-   registration releases only the locally owned constructor allocations. */
+   After successful registration, optional ACTIVATE is best effort and does not
+   change the mount result. Failed registration releases local allocations. */
 LONG mount(IPTR *params, STRPTR name)
 {
     struct DosEnvec *vec;
@@ -1920,7 +1983,6 @@ LONG mount(IPTR *params, STRPTR name)
     struct DeviceNode *dn;
     struct FileSysStartupMsg *allocatedfssm;
     BOOL startupreplaced;
-    BOOL registered = FALSE;
     STRPTR cp;
 
     for (cp = name; *cp != 0; cp++)
@@ -2020,7 +2082,7 @@ LONG mount(IPTR *params, STRPTR name)
         {
             if (AddDosEntry((struct DosList *)dn))
             {
-                    registered = TRUE;
+                    error = RETURN_OK;
                     /* Patched-out startup storage was not transferred to DOS. */
                     if (startupreplaced)
                     {
@@ -2039,21 +2101,12 @@ LONG mount(IPTR *params, STRPTR name)
                     if (Activate)
                     {
                         char actname[PATHSTR_MAX];
-                        if (cp - name >= sizeof(actname) - 1)
-                        {
-                            error = ERROR_LINE_TOO_LONG;
-                        }
-                        else
+                        if (cp - name < sizeof(actname) - 1)
                         {
                             Strlcpy(actname, name, sizeof(actname));
                             Strlcat(actname, ":", sizeof(actname));
                             DEBUG_MOUNT(KPrintF("Activating \"%s\"\n", (IPTR)actname));
-                            if (!DeviceProc(actname))
-                            {
-                                error = IoErr();
-                                if (error == RETURN_OK)
-                                    error = ERROR_DEVICE_NOT_MOUNTED;
-                            }
+                            (void)DeviceProc(actname);
                         }
                     }
             }
@@ -2068,8 +2121,7 @@ LONG mount(IPTR *params, STRPTR name)
                 DEBUG_MOUNT(KPrintF("MountDev: no loadseg and no handler specified\n"));
                 error = ERROR_OBJECT_NOT_FOUND;
         }
-        /* Activation failure does not undo a registered DOS node. */
-        if (error != RETURN_OK && !registered)
+        if (error != RETURN_OK)
         {
             FreeVec(allocatedenvec);
             FreeVec(allocatedfssm);
