@@ -293,6 +293,13 @@ mdnsCacheRecord(const struct MDNSDaemon *md, const UBYTE *pkt, LONG length,
                    (LONG)(e->ce_Expires - (now + TICKS)) > 0) {
             /* the sender holds the whole set: the others go in a second */
             e->ce_Expires = now + TICKS;
+        } else if (flush && local && ttl != 0 &&
+                   (e->ce_Flags & MDNS_CACHE_LOCAL) && e->ce_TTL != 0 &&
+                   due(now, e->ce_Received + TICKS)) {
+            /* the host's own set replaced (a TXT or port changed, a host
+             * renamed): its old data ends too, as no goodbye says so */
+            e->ce_TTL = 0;
+            e->ce_Expires = now + TICKS;
         }
     }
     if (same != NULL) {
