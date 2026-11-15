@@ -14,10 +14,11 @@ AROS_LH0(APTR, SuperState,
     AROS_LIBFUNC_INIT
 
     /*
-     * Everything currently runs in S-mode on top of SBI firmware - there is
-     * no higher plane to switch to (M-mode belongs to the SEE). Once
-     * user-mode task separation exists this will trap into the kernel
-     * like the other native ports.
+     * The kernel and every task run in the kernel's privilege mode (S-mode
+     * on top of SBI firmware, where M-mode belongs to the SEE; or M-mode
+     * itself) - there is no higher plane to switch to. Once user-mode task
+     * separation exists this will trap into the kernel like the other
+     * native ports.
      */
     return NULL;
 

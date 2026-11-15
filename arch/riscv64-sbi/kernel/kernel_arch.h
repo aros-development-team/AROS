@@ -12,7 +12,7 @@
 #ifndef KERNEL_ARCH_H
 #define KERNEL_ARCH_H
 
-#include "kernel_cpu.h"
+#include <kernel_cpu.h>        /* riscv-native's; quotes would find rom/kernel's sample */
 
 #include <kernel_irqtypes.h>   /* irqid_t - this header may be reached without kernel_base.h */
 

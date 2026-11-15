@@ -6,7 +6,7 @@
     Desc: Shared declarations for native RISC-V kernels.
 
     riscv-native holds the firmware-independent part of the kernel:
-    per-hart TLS, the CPU numbering and masks, spinlocks, the SMP
+    the context switch, per-hart TLS, the CPU numbering and masks, spinlocks, the SMP
     scheduler and the IPI core. Whatever needs the firmware - starting
     a hart, raising an inter-processor interrupt, remote TLB fences - is
     reached through the hook table below, which the platform (e.g.
@@ -22,6 +22,7 @@
 
 struct KernelBase;
 struct ExecBase;
+struct ExceptionContext;
 
 /*
  * The most harts a native RISC-V kernel numbers. CPU masks are a fixed
@@ -54,6 +55,9 @@ struct RISCV_Implementation
     void    (*RVI_StopCPU)(void);
     /* rdtime ticks per second */
     UQUAD   RVI_TimebaseFreq;
+    /* The scheduler tick, for the dispatcher (kernel_cpu.c) when it
+       finds the timer pending while it waits for a task; NULL context */
+    void    (*RVI_TimerTick)(struct ExceptionContext *ctx);
 };
 
 #if defined(__AROSEXEC_SMP__)

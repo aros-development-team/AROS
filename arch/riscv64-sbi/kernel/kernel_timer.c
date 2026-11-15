@@ -66,11 +66,11 @@ volatile uint64_t __timer_ticks;
 
 /*
  * CPU load accounting, after the model the x86 APIC heartbeat uses:
- * the dispatcher accumulates the time spent in wfi into
- * __cpu_sleeptime, and once a second of timebase the load becomes the
- * busy fraction of the elapsed window, scaled to 0..0xffffffff.
+ * the idle task and the dispatcher accumulate the time spent in wfi
+ * into __riscv_cpu_idletime, and once a second of timebase the load
+ * becomes the busy fraction of the elapsed window, scaled to
+ * 0..0xffffffff.
  */
-volatile uint64_t __cpu_sleeptime;
 volatile uint32_t __cpu_load;
 uint64_t __timebase_freq;
 
@@ -482,13 +482,12 @@ void krnTimerTick(struct ExceptionContext *ctx)
         uint64_t window = now - last_load_time;
         uint64_t idle = __riscv_cpu_idletime[0];
         /* Asleep in the dispatcher, and in the idle task */
-        uint64_t slept = __cpu_sleeptime + (idle - last_idle_time);
+        uint64_t slept = idle - last_idle_time;
         struct KernelBase *kbase = getKernelBase();
 
         if (slept > window)
             slept = window;
         __cpu_load = krnLoadScale(window, slept);
-        __cpu_sleeptime = 0;
         last_idle_time = idle;
         last_load_time = now;
 

@@ -2,7 +2,7 @@
 include $(SRCDIR)/config/aros.cfg
 
 CFILES          := \
-        superstate cpu_init platform_init
+        cpu_init platform_init
 
 # The sbi platform invokes the native RISC-V code (riscv-native) from
 # its own targets, as the pc target invokes all-native; they are on
