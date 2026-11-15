@@ -1,9 +1,9 @@
 include $(SRCDIR)/config/aros.cfg
 
-#MM- workbench-network-mdns-includes : \
-#MM      workbench-network-mdns-includes-dnssd
+# dnssd.library's public header, <dnssd/dnssd.h>, is one of the network's
+# common includes (workbench/network/common/include): a client outside mDNS
+# - the stack's resolver among them - uses it without depending on mDNS.
 
-%copy_includes mmake=workbench-network-mdns-includes-dnssd \
-    path=dnssd dir=dnssd includes="dnssd.h"
+#MM- workbench-network-mdns-includes : network-includes-copy
 
 %common
