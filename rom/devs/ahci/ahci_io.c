@@ -450,22 +450,18 @@ bad_address:
         break;
     }
 
-    /* The IO is finished, so no need to keep it around anymore */
-    if (done) {
-        ObtainSemaphore(&unit->sim_Lock);
-        Remove(&io->io_Message.mn_Node);
-        ReleaseSemaphore(&unit->sim_Lock);
-    } else
-        io->io_Flags &= ~IOF_QUICK;
-        
+    /* Submission may already have replied on another CPU. Do not touch
+       an asynchronous request after handing it to the completion path. */
+    if (!done)
+        return;
 
-    /* Need a reply now? */
-    if (done && !(io->io_Flags & IOF_QUICK))
+    ObtainSemaphore(&unit->sim_Lock);
+    Remove(&io->io_Message.mn_Node);
+    ReleaseSemaphore(&unit->sim_Lock);
+
+    ahciDebug("[AHCI%02ld] synchronous IO complete\n", unit->sim_Unit);
+    if (!(io->io_Flags & IOF_QUICK))
         ReplyMsg(&io->io_Message);
-
-    if (done)
-        ahciDebug("[AHCI%02ld]" AHCI_IO_STR " Quick, io_Flags = %d, io_Comand = %d, io_Error = %d\n", unit->sim_Unit AHCI_IO_DBG, io->io_Flags, io->io_Command, io->io_Error);
-    ahciDebug("[AHCI%02ld] %s:" AHCI_IO_STR " finished\n", unit->sim_Unit, __func__ AHCI_IO_DBG);
 
     AROS_LIBFUNC_EXIT
 }
