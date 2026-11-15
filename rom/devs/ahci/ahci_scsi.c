@@ -196,16 +196,21 @@ static void ahci_io_complete(struct ata_xfer *xa)
     struct IORequest *io = xa->atascsi_private;
     const int sense_length = offsetof(struct scsi_sense_data, extra_bytes[0]);
     struct cam_sim *unit = (struct cam_sim *)io->io_Unit;
+    /* ATA disk commands transfer their full length on success. Some
+       controllers do not provide a usable PRDBC for those commands. */
+    ULONG actual = xa->datalen;
+    if (xa->flags & ATA_F_PACKET)
+        actual = xa->resid <= xa->datalen ? xa->datalen - xa->resid : 0;
 
     switch (xa->state) {
     case ATA_S_COMPLETE:
         if (io->io_Command == HD_SCSICMD) {
             struct SCSICmd *scsi = IOStdReq(io)->io_Data;
             scsi->scsi_Status = SCSI_GOOD;
-            scsi->scsi_Actual = xa->datalen;
+            scsi->scsi_Actual = actual;
             IOStdReq(io)->io_Actual = sizeof(*scsi);
         } else {
-            IOStdReq(io)->io_Actual = xa->datalen;
+            IOStdReq(io)->io_Actual = actual;
         }
         break;
     case ATA_S_ERROR:
