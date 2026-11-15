@@ -79,6 +79,7 @@ struct PTDNode
 #define PTDF_BUFFER_VALID       (1<<1)
 #define PTDF_SITD               (1<<2)
 #define PTDF_QUEUED             (1<<3)
+#define PTDF_ZERO_PENDING       (1<<4) /* prepared zero-length request, retired on SOF */
 
 #define PCIUSB_ISO_PTD_COUNT    8
 
