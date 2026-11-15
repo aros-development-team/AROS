@@ -311,6 +311,7 @@ mdnsCacheRecord(const struct MDNSDaemon *md, const UBYTE *pkt, LONG length,
         same->ce_TTL = ttl;
         same->ce_Expires = expires;
         same->ce_Refresh = 0;
+        same->ce_Next = 0;              /* its refreshes from this life */
         return;
     }
     if (ttl == 0) {
