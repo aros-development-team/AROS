@@ -14,6 +14,8 @@
 #define SBI_DBCN_ZERO_WRITE_TIMEOUT_LIMIT 3
 
 static int sbi_have_dbcn = -1;
+static int sbi_have_legacy_putc = -1;
+static int sbi_have_legacy_getc = -1;
 static unsigned int sbi_dbcn_zero_write_timeouts;
 
 static int krnSBIHaveDBCN(void)
@@ -21,6 +23,49 @@ static int krnSBIHaveDBCN(void)
     if (sbi_have_dbcn < 0)
         sbi_have_dbcn = sbi_probe_extension(SBI_EXT_DBCN) != 0;
     return sbi_have_dbcn;
+}
+
+/*
+ * The legacy (v0.1) console calls are optional from SBI 0.2 on, and a
+ * call to one the firmware lacks just fails. Probe them like any other
+ * extension; firmware with neither these nor DBCN has no console, and
+ * the output then goes nowhere. Firmware older than 0.2 has no base
+ * extension to ask, but the legacy calls were all it had.
+ */
+static int krnSBIProbeLegacy(unsigned long eid)
+{
+    struct sbiret ret = sbi_ecall(SBI_EXT_BASE, SBI_BASE_PROBE_EXTENSION,
+                                  eid, 0, 0, 0, 0, 0);
+
+    if (ret.error != SBI_SUCCESS)
+        return 1;
+    return ret.value != 0;
+}
+
+static int krnSBIHaveLegacyPutC(void)
+{
+    if (sbi_have_legacy_putc < 0)
+        sbi_have_legacy_putc = krnSBIProbeLegacy(SBI_LEGACY_CONSOLE_PUTCHAR);
+    return sbi_have_legacy_putc;
+}
+
+static void krnSBILegacyPutC(char c)
+{
+    if (krnSBIHaveLegacyPutC())
+        sbi_console_putchar(c);
+}
+
+static int krnSBILegacyGetC(void)
+{
+    int ch;
+
+    if (sbi_have_legacy_getc < 0)
+        sbi_have_legacy_getc = krnSBIProbeLegacy(SBI_LEGACY_CONSOLE_GETCHAR);
+    if (!sbi_have_legacy_getc)
+        return -1;
+
+    ch = sbi_console_getchar();
+    return ch < 0 ? -1 : ch;
 }
 
 static void krnSBIHandleDBCNError(long error)
@@ -110,6 +155,8 @@ void krnSBIPutBuf(const char *s, unsigned long len)
 
     /* On an SBI error ret.value is undefined; DBCN may have emitted part of
        this unconfirmed tail, so the legacy fallback can repeat those bytes. */
+    if (!len || !krnSBIHaveLegacyPutC())
+        return;
     while (len--)
         sbi_console_putchar(*s++);
 }
@@ -120,7 +167,7 @@ void krnSBIPutC(char c)
 
     if (!krnSBIHaveDBCN())
     {
-        sbi_console_putchar(c);
+        krnSBILegacyPutC(c);
         return;
     }
 
@@ -128,7 +175,7 @@ void krnSBIPutC(char c)
     if (error != SBI_SUCCESS)
     {
         krnSBIHandleDBCNError(error);
-        sbi_console_putchar(c);
+        krnSBILegacyPutC(c);
     }
     else
         sbi_dbcn_zero_write_timeouts = 0;
@@ -138,7 +185,6 @@ void krnSBIPutC(char c)
 int krnSBIGetC(void)
 {
     struct sbiret ret;
-    int ch;
 
     if (krnSBIHaveDBCN())
     {
@@ -148,8 +194,7 @@ int krnSBIGetC(void)
         if (ret.error != SBI_SUCCESS)
         {
             krnSBIHandleDBCNError(ret.error);
-            ch = sbi_console_getchar();
-            return ch < 0 ? -1 : ch;
+            return krnSBILegacyGetC();
         }
 
         if (ret.value == 1)
@@ -157,8 +202,7 @@ int krnSBIGetC(void)
         return -1;
     }
 
-    ch = sbi_console_getchar();
-    return ch < 0 ? -1 : ch;
+    return krnSBILegacyGetC();
 }
 
 void krnSBIPutStr(const char *s)

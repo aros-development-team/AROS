@@ -268,6 +268,13 @@ unsigned long __efi_rsdp __attribute__((section(".data"))) = 0;
 unsigned long __efi_systab __attribute__((section(".data"))) = 0;
 
 /*
+ * The firmware's vendor string ("EDK II", ...) as ASCII, for the boot
+ * loader name. Copied while boot services are still up, so the kernel
+ * need not read firmware memory for it.
+ */
+char __efi_fwvendor[48] __attribute__((section(".data"))) = { 0 };
+
+/*
  * Every GUID in the EFI configuration table, so the kernel can report
  * what the firmware actually published. The stub's own output goes to
  * the EFI console, which is not necessarily the UART being watched.
@@ -793,6 +800,16 @@ efi_status_t efi_stub_entry(efi_handle_t image, struct efi_system_table *st)
 
     conout = st->con_out;
     __efi_systab = (unsigned long)st;
+    if (st->firmware_vendor)
+    {
+        for (i = 0; i < sizeof(__efi_fwvendor) - 1 && st->firmware_vendor[i]; i++)
+        {
+            u16 ch = st->firmware_vendor[i];
+
+            __efi_fwvendor[i] = (ch >= 0x20 && ch < 0x7f) ? (char)ch : '?';
+        }
+        __efi_fwvendor[i] = '\0';
+    }
     efi_puts("\nAROS/riscv64 UEFI stub\n");
 
     /* The device tree comes from the EFI configuration table */

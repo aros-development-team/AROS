@@ -51,6 +51,7 @@ extern unsigned long __efi_initrd_start, __efi_initrd_end;
 extern unsigned long __efi_mem_start, __efi_mem_size;
 extern unsigned long __efi_nregions, __efi_regions[][2];
 extern unsigned long __efi_systab;
+extern char __efi_fwvendor[];
 extern char __efi_cmdline[];
 extern unsigned long __efi_fb_base, __efi_fb_size;
 extern unsigned int __efi_fb_width, __efi_fb_height, __efi_fb_pitch;
@@ -376,15 +377,11 @@ static void krnFillVBEFromGOP(void)
     VBEModeInfo.linear_reserved_field_position = VBEModeInfo.reserved_field_position;
 }
 
-static const char *krnSBIImplementationName(void)
+#define SBI_IMPL_OPENSBI 1
+
+static const char *krnSBIImplementationName(long implid)
 {
-    struct sbiret ret = sbi_ecall(SBI_EXT_BASE, SBI_BASE_GET_IMPL_ID,
-                                  0, 0, 0, 0, 0, 0);
-
-    if (ret.error != SBI_SUCCESS)
-        return "SBI";
-
-    switch (ret.value)
+    switch (implid)
     {
         case 0:  return "Berkeley Boot Loader (BBL)";
         case 1:  return "OpenSBI";
@@ -400,6 +397,68 @@ static const char *krnSBIImplementationName(void)
         case 11: return "bhyve";
         default: return "SBI";
     }
+}
+
+/*
+ * KRN_BootLoader: the SBI firmware, and on a UEFI boot the firmware that
+ * loaded AROS in front of it, e.g. "EDK II (UEFI), OpenSBI 1.5".
+ * bootloader.resource keeps the pointer, so the name lives in static
+ * storage.
+ */
+static char krnBootLoaderStr[96];
+
+static void krnBootLoaderAppend(unsigned int *pos, const char *s)
+{
+    while (*s && *pos < sizeof(krnBootLoaderStr) - 1)
+        krnBootLoaderStr[(*pos)++] = *s++;
+    krnBootLoaderStr[*pos] = '\0';
+}
+
+static void krnBootLoaderAppendDec(unsigned int *pos, unsigned long val)
+{
+    char buf[21];
+    int i = 20;
+
+    buf[i] = '\0';
+    do
+    {
+        buf[--i] = '0' + (val % 10);
+        val /= 10;
+    } while (val && i > 0);
+
+    krnBootLoaderAppend(pos, &buf[i]);
+}
+
+static const char *krnBootLoaderName(void)
+{
+    struct sbiret ret = sbi_ecall(SBI_EXT_BASE, SBI_BASE_GET_IMPL_ID,
+                                  0, 0, 0, 0, 0, 0);
+    long implid = (ret.error == SBI_SUCCESS) ? (long)ret.value : -1;
+    unsigned int pos = 0;
+
+    if (__efi_systab)
+    {
+        krnBootLoaderAppend(&pos, __efi_fwvendor[0] ? __efi_fwvendor : "UEFI");
+        krnBootLoaderAppend(&pos, __efi_fwvendor[0] ? " (UEFI), " : ", ");
+    }
+    krnBootLoaderAppend(&pos, krnSBIImplementationName(implid));
+
+    /* The version encoding is up to each implementation; OpenSBI's is
+       major << 16 | minor */
+    if (implid == SBI_IMPL_OPENSBI)
+    {
+        ret = sbi_ecall(SBI_EXT_BASE, SBI_BASE_GET_IMPL_VERSION,
+                        0, 0, 0, 0, 0, 0);
+        if (ret.error == SBI_SUCCESS)
+        {
+            krnBootLoaderAppend(&pos, " ");
+            krnBootLoaderAppendDec(&pos, (unsigned long)ret.value >> 16);
+            krnBootLoaderAppend(&pos, ".");
+            krnBootLoaderAppendDec(&pos, (unsigned long)ret.value & 0xffff);
+        }
+    }
+
+    return krnBootLoaderStr;
 }
 
 struct TagItem *krnPrepareBootTags(void *fdt, struct krnFDTInfo *info)
@@ -425,7 +484,7 @@ struct TagItem *krnPrepareBootTags(void *fdt, struct krnFDTInfo *info)
     tag->ti_Data = (IPTR)fdt;
     tag++;
     tag->ti_Tag  = KRN_BootLoader;
-    tag->ti_Data = (IPTR)krnSBIImplementationName();
+    tag->ti_Data = (IPTR)krnBootLoaderName();
     tag++;
     /* Filled in once the module package has been loaded */
     tag->ti_Tag  = KRN_DebugInfo;
