@@ -1,4 +1,6 @@
 /*
+ * Copyright (C) 2026, The AROS Development Team. All rights reserved.
+ *
  *----------------------------------------------------------------------------
  *                  uvc (USB Video Class) class for poseidon
  *----------------------------------------------------------------------------
@@ -15,6 +17,11 @@
 #include "uvc_payload.h"
 #include "uvc_jpeg.h"
 
+#if defined(__AROSEXEC_SMP__)
+#include <proto/kernel.h>
+APTR KernelBase;
+#endif
+
 #define __LOG_LIBBASE (nh->nh_LogResBase)
 #include <proto/log.h>
 #include <resources/log.h>
@@ -25,7 +32,7 @@
 #define UVCLOG(type, fmt, ...) do { \
     if (nh->nh_LogRHandle) \
         logAddEntry(((type) | 20), nh->nh_LogRHandle, "", __func__, 0, fmt, ##__VA_ARGS__); \
-    bug("uvc.class: " fmt "\n", ##__VA_ARGS__); \
+    D(bug("uvc.class: " fmt "\n", ##__VA_ARGS__)); \
 } while (0)
 
 /* /// "Lib Stuff" */
@@ -40,6 +47,10 @@ static int libInit(LIBBASETYPEPTR nh)
     NEWLIST(&nh->nh_Cameras);
     InitSemaphore(&nh->nh_Lock);
     InitSemaphore(&uvc_jpeg_lock);
+#if defined(__AROSEXEC_SMP__)
+    if (!(KernelBase = OpenResource("kernel.resource")))
+        return FALSE;
+#endif
     nh->nh_NextId = 0;
     nh->nh_UtilityBase = OpenLibrary("utility.library", 39);
     nh->nh_LogResBase = OpenResource("log.resource");
@@ -126,7 +137,7 @@ static BOOL uvc_parse_streaming(struct NepClassUVC *nch)
         if (!p || len < 13 || p[0] > len || p[2] != 0x01) continue;
         for (i = 0; i < p[11] && 12 + i < p[0] && !nch->ncu_VSInterface; i++)
             nch->ncu_VSInterface = psdFindInterface(nch->ncu_Device, NULL,
-                IFA_InterfaceNum, p[12 + i],
+                IFA_InterfaceNum, p[12 + i], IFA_AlternateNum, 0,
                 IFA_Class, VIDEO_CLASSCODE, IFA_SubClass, VIDEO_STREAM_SUBCLASS,
                 TAG_END);
         break;
@@ -134,6 +145,7 @@ static BOOL uvc_parse_streaming(struct NepClassUVC *nch)
     dd = NULL;
     if (!nch->ncu_VSInterface)
         nch->ncu_VSInterface = psdFindInterface(nch->ncu_Device, NULL,
+            IFA_AlternateNum, 0,
             IFA_Class, VIDEO_CLASSCODE, IFA_SubClass, VIDEO_STREAM_SUBCLASS,
             TAG_END);
     if (!nch->ncu_VSInterface) goto done;
@@ -240,18 +252,27 @@ static BOOL uvc_parse_streaming(struct NepClassUVC *nch)
     altcap = superspeed ? 49152 : 3072;
     {
         struct List *alts = NULL;
-        struct Node *node;
+        struct Node *root, *node, *next;
+        IPTR vsnum = 0;
         nch->ncu_StreamEP = psdFindEndpoint(nch->ncu_VSInterface, NULL,
             EA_IsIn, TRUE, EA_TransferType, USEAF_BULK, TAG_END);
         nch->ncu_IsBulk = nch->ncu_StreamEP != NULL;
         if (!nch->ncu_IsBulk) {
-            psdGetAttrs(PGA_INTERFACE, nch->ncu_VSInterface,
-                        IFA_AlternateIfList, &alts, TAG_END);
-            if (alts) for (node=alts->lh_Head; node->ln_Succ; node=node->ln_Succ) {
-                APTR ep = psdFindEndpoint((APTR)node, NULL, EA_IsIn, TRUE,
-                                          EA_TransferType, USEAF_ISOCHRONOUS, TAG_END);
+            /* The alternates hang on the selected one, which is not alternate 0
+             * while the interface is left on a streaming alternate. */
+            psdGetAttrs(PGA_INTERFACE, nch->ncu_VSInterface, IFA_InterfaceNum, &vsnum, TAG_END);
+            root = (struct Node *)psdFindInterface(nch->ncu_Device, NULL,
+                                                   IFA_InterfaceNum, vsnum, TAG_END);
+            if (root) psdGetAttrs(PGA_INTERFACE, root, IFA_AlternateIfList, &alts, TAG_END);
+            for (node = root; node; node = next) {
+                APTR ep;
                 IPTR raw = 0, transactions = 1;
                 ULONG bytes;
+                next = node == root ? (alts ? alts->lh_Head : NULL) : node->ln_Succ;
+                if (next && !next->ln_Succ) next = NULL;
+                if (node == (struct Node *)nch->ncu_VSInterface) continue;
+                ep = psdFindEndpoint((APTR)node, NULL, EA_IsIn, TRUE,
+                                     EA_TransferType, USEAF_ISOCHRONOUS, TAG_END);
                 if (!ep) continue;
                 psdGetAttrs(PGA_ENDPOINT, ep, EA_MaxPktSize, &raw,
                             EA_NumTransMuFrame, &transactions, TAG_END);
@@ -348,7 +369,7 @@ done:
     if (!nch->ncu_VSInterface)
         UVCLOG(LOGF_Flag_Type_Warn, "'%s': no VideoStreaming interface", nch->ncu_Name);
     else if (!ncand)
-        UVCLOG(LOGF_Flag_Type_Warn, "'%s': no uncompressed supported frame up to 1920x1080", nch->ncu_Name);
+        UVCLOG(LOGF_Flag_Type_Warn, "'%s': no supported frame up to 3840x2160", nch->ncu_Name);
     else if (!nch->ncu_StreamEP)
         UVCLOG(LOGF_Flag_Type_Warn, "'%s': %lu supported frames but no bulk IN or isochronous IN alternate up to %lu bytes (%lu isochronous alternates)",
                nch->ncu_Name, (IPTR)ncand, (IPTR)altcap, (IPTR)alts_with_iso);
@@ -356,8 +377,10 @@ done:
         UVCLOG(LOGF_Flag_Type_Warn, "'%s': none of %lu supported frames fits the %s stream endpoint (%lu bytes/interval)",
                nch->ncu_Name, (IPTR)ncand, nch->ncu_IsBulk ? "bulk" : "isochronous", (IPTR)nch->ncu_StreamMaxPkt);
     else
-        UVCLOG(LOGF_Flag_Type_Information, "'%s': YUY2 %lux%lu format %lu frame %lu interval %lu (%s; %lu supported frames offered), %s, largest alternate %lu bytes/interval (%lu isochronous alternates), frame buffer %lu",
-               nch->ncu_Name, (IPTR)nch->ncu_Width, (IPTR)nch->ncu_Height,
+        UVCLOG(LOGF_Flag_Type_Information, "'%s': %s %lux%lu format %lu frame %lu interval %lu (%s; %lu supported frames offered), %s, largest alternate %lu bytes/interval (%lu isochronous alternates), frame buffer %lu",
+               nch->ncu_Name, nch->ncu_PixelFormat == UVC_MODE_MJPEG ? "MJPEG" :
+               nch->ncu_PixelFormat == UVC_MODE_GRAY8 ? "Y8" :
+               nch->ncu_PixelFormat == UVC_MODE_GRAY16 ? "Y16" : "YUY2", (IPTR)nch->ncu_Width, (IPTR)nch->ncu_Height,
                (IPTR)nch->ncu_FormatIndex, (IPTR)nch->ncu_FrameIndex, (IPTR)nch->ncu_Interval, reason, (IPTR)ncand,
                nch->ncu_IsBulk ? "bulk" : "isochronous", (IPTR)nch->ncu_StreamMaxPkt, (IPTR)alts_with_iso,
                (IPTR)nch->ncu_MaxFrameBuf);
@@ -389,13 +412,11 @@ static LONG uvc_transfer(struct NepUVCBase *nh, struct Library *ps, APTR pipe,
     return CheckIO((struct IORequest *)timer) ? -1 : err;
 }
 
-static BOOL uvc_alt(struct NepUVCBase *nh, struct Library *ps, APTR control,
-                    APTR interface, struct MsgPort *mp, struct timerequest *timer)
+/* SET_INTERFACE and its check; Poseidon's interface list is left as it is. */
+static BOOL uvc_alt_request(struct NepUVCBase *nh, struct Library *ps, APTR control,
+                            IPTR number, IPTR alternate, struct MsgPort *mp, struct timerequest *timer)
 {
-    IPTR number = 0, alternate = 0;
     UBYTE current[8] = {0};
-    psdGetAttrs(PGA_INTERFACE, interface, IFA_InterfaceNum, &number,
-                IFA_AlternateNum, &alternate, TAG_END);
     psdPipeSetup(control, URTF_STANDARD|URTF_INTERFACE,
                  USR_SET_INTERFACE, alternate, number);
     if (uvc_transfer(nh, ps, control, NULL, 0, mp, timer, "SET_INTERFACE")) return FALSE;
@@ -407,6 +428,16 @@ static BOOL uvc_alt(struct NepUVCBase *nh, struct Library *ps, APTR control,
                number, alternate, (IPTR)current[0], (IPTR)psdGetPipeActual(control));
         return FALSE;
     }
+    return TRUE;
+}
+
+static BOOL uvc_alt(struct NepUVCBase *nh, struct Library *ps, APTR control,
+                    APTR interface, struct MsgPort *mp, struct timerequest *timer)
+{
+    IPTR number = 0, alternate = 0;
+    psdGetAttrs(PGA_INTERFACE, interface, IFA_InterfaceNum, &number,
+                IFA_AlternateNum, &alternate, TAG_END);
+    if (!uvc_alt_request(nh, ps, control, number, alternate, mp, timer)) return FALSE;
     if (!psdSetAltInterface(NULL, interface)) {
         UVCLOG(LOGF_Flag_Type_Warn, "interface %lu alternate %lu: psdSetAltInterface failed (host controller endpoint setup)",
                number, alternate);
@@ -420,14 +451,23 @@ static BOOL uvc_alt(struct NepUVCBase *nh, struct Library *ps, APTR control,
  * copy the newest complete frame. It stops after UVC_IDLE s without a grab. */
 #define UVC_IDLE 3
 #define UVC_PKTBUFS 64
+#define UVC_BULKERRORS 8            /* failed bulk transfers in a row that end the stream */
 struct UVCStream {
     struct NepUVCBase *nh;
-    struct List waiters;            /* grabs waiting for a frame (changed under Disable) */
+#if defined(__AROSEXEC_SMP__)
+    spinlock_t lock;
+#endif
+    struct SignalSemaphore readers; /* one grab at a time takes and copies a frame */
+    struct List waiters;            /* grabs waiting for a frame (changed under UVC_LOCK) */
     struct Process *proc;
     volatile BOOL quit, done;       /* asked to stop; process gone */
+    volatile BOOL gone;             /* the device went away */
     volatile ULONG users;           /* grabs inside (under nh_Lock) */
     volatile ULONG lastgrab;        /* seconds, of the last grab */
     struct PsdDevice *device;
+    struct PsdInterface *vsif;      /* alternate 0 of the VideoStreaming interface */
+    ULONG vsnum, epnum;             /* its interface number; the stream endpoint's number */
+    BOOL atzero;                    /* the process put the device back on alternate 0 */
     APTR streamep;
     ULONG size;                     /* bytes per transfer */
     BOOL isbulk, ismjpeg;
@@ -436,7 +476,7 @@ struct UVCStream {
     UWORD width, height;
     ULONG expected;                 /* frame buffer bytes */
     ULONG maxpayload;
-    /* frames: written at interrupt level, read by grabs (indexes swapped under Disable) */
+    /* frames: written at interrupt level, read by grabs (indexes swapped under UVC_LOCK) */
     UBYTE *fbuf[3];
     ULONG flen[3];
     volatile LONG wi, li, ri;       /* being filled, newest (-1 none), being copied (-1 none) */
@@ -450,6 +490,15 @@ struct UVCStream {
     volatile ULONG packets, frames, broken, errors;
     ULONG id;
 };
+
+/* the frame indexes and waiters are shared with the done hook, which may run on another CPU */
+#if defined(__AROSEXEC_SMP__)
+#define UVC_LOCK(st)    do { Disable(); KrnSpinLock(&(st)->lock, NULL, SPINLOCK_MODE_WRITE); } while (0)
+#define UVC_UNLOCK(st)  do { KrnSpinUnLock(&(st)->lock); Enable(); } while (0)
+#else
+#define UVC_LOCK(st)    Disable()
+#define UVC_UNLOCK(st)  Enable()
+#endif
 
 struct UVCWaiter {
     struct MinNode node;
@@ -475,7 +524,7 @@ static struct UVCStream *uvc_stream_setup(struct NepClassUVC *nch)
     APTR streamalt = nch->ncu_StreamAltIf, streamep = nch->ncu_StreamEP;
     ULONG streamsize = nch->ncu_StreamMaxPkt;
     UBYTE probe[26];
-    IPTR ifnum = 0, altnum = 0;
+    IPTR ifnum = 0, altnum = 0, epnum = 0;
     ULONG maxpayload = 0, maxvideoframe = 0, expected, i;
     const char *stage = "allocate";
     BOOL timeropen = FALSE, timersent = FALSE, ok = FALSE;
@@ -494,6 +543,13 @@ static struct UVCStream *uvc_stream_setup(struct NepClassUVC *nch)
     control = psdAllocPipe(nch->ncu_Device, mp, NULL);
     if (!control) goto out;
     psdGetAttrs(PGA_INTERFACE, nch->ncu_VSInterface, IFA_InterfaceNum, &ifnum, TAG_END);
+    /* Negotiate at alternate 0. Selecting it also puts its interface back at
+     * the root of Poseidon's list, where the alternates below are read from. */
+    stage = "alternate 0";
+    if (!nch->ncu_IsBulk &&
+        psdFindInterface(nch->ncu_Device, NULL, IFA_InterfaceNum, ifnum, TAG_END) != nch->ncu_VSInterface &&
+        !uvc_alt(nh, ps, control, nch->ncu_VSInterface, mp, timer))
+        goto out;
     stage = "probe-default";
     memset(probe, 0, sizeof(probe));
     psdPipeSetup(control, URTF_IN|URTF_CLASS|URTF_INTERFACE,
@@ -599,10 +655,18 @@ static struct UVCStream *uvc_stream_setup(struct NepClassUVC *nch)
         if (!(st->fbuf[i] = AllocVec(expected, MEMF_PUBLIC))) goto out;
     st->nh = nh;
     NewList(&st->waiters);
+    InitSemaphore(&st->readers);
+#if defined(__AROSEXEC_SMP__)
+    KrnSpinInit(&st->lock);
+#endif
     st->wi = 0;
     st->li = st->ri = -1;
     st->device = nch->ncu_Device;
+    st->vsif = nch->ncu_IsBulk ? NULL : nch->ncu_VSInterface;
+    st->vsnum = ifnum;
     st->streamep = nch->ncu_IsBulk ? nch->ncu_StreamEP : streamep;
+    psdGetAttrs(PGA_ENDPOINT, st->streamep, EA_EndpointNum, &epnum, TAG_END);
+    st->epnum = epnum;
     st->size = nch->ncu_IsBulk ? maxpayload : streamsize;
     st->isbulk = nch->ncu_IsBulk;
     st->ismjpeg = nch->ncu_IsMJPEG;
@@ -640,7 +704,7 @@ out:
 }
 
 /* A complete frame in fbuf[wi]: it becomes the newest, and filling moves to the buffer that is neither the newest
- * nor being copied. Interrupt level, or a task under Disable. */
+ * nor being copied. Under UVC_LOCK. */
 static void uvc_publish(struct UVCStream *st, ULONG len)
 {
     struct UVCWaiter *w;
@@ -679,7 +743,11 @@ AROS_UFH3(void, uvc_iso_done,
     ULONG len = ubr->ubr_Length;
     st->packets++;
     if (len && len <= st->size && ubr->ubr_Buffer) {
-        if (uvc_payload_feed(&st->asm_, ubr->ubr_Buffer, len)) uvc_publish(st, st->asm_.used);
+        if (uvc_payload_feed(&st->asm_, ubr->ubr_Buffer, len)) {
+            UVC_LOCK(st);
+            uvc_publish(st, st->asm_.used);
+            UVC_UNLOCK(st);
+        }
         else if (st->asm_.saw_eof && st->asm_.damaged && (ubr->ubr_Buffer[1] & 2)) st->broken++;
     }
     AROS_USERFUNC_EXIT
@@ -693,6 +761,7 @@ AROS_UFH3(void, uvc_iso_release,
     AROS_USERFUNC_INIT
     struct UVCStream *st = hook->h_Data;
     st->errors++;           /* the device went away: the process stops the stream */
+    st->gone = TRUE;
     st->quit = TRUE;
     Signal(&st->proc->pr_Task, SIGBREAKF_CTRL_C);
     AROS_USERFUNC_EXIT
@@ -706,11 +775,11 @@ static void uvc_stream_proc(void)
     struct Library *ps = OpenLibrary("poseidon.library", 4);
     struct MsgPort *mp = CreateMsgPort(), *tp = CreateMsgPort();
     struct timerequest *timer = tp ? (struct timerequest *)CreateIORequest(tp, sizeof(*timer)) : NULL;
-    APTR pipes[2] = {0};
+    APTR pipes[2] = {0}, control;
     BOOL pending[2] = {0}, timeropen = FALSE, timersent = FALSE, started = FALSE;
     struct uvc_bulk_payload bulk = {0};
     UBYTE *bulkbuf[2] = {0};
-    ULONG slot = 0, i;
+    ULONG slot = 0, failed = 0, i;
     if (!ps || !mp || !timer || OpenDevice("timer.device", UNIT_MICROHZ, (struct IORequest *)timer, 0)) goto out;
     timeropen = TRUE;
     st->asm_.data = st->fbuf[st->wi];
@@ -756,24 +825,35 @@ static void uvc_stream_proc(void)
             SendIO((struct IORequest *)timer);
             timersent = TRUE;
         }
-        if (st->isbulk) {
+        if (st->isbulk && !pending[slot]) {
+            Wait((1UL << tp->mp_SigBit) | SIGBREAKF_CTRL_C);
+        } else if (st->isbulk) {
             while (!psdCheckPipe(pipes[slot]) && !CheckIO((struct IORequest *)timer))
                 Wait((1UL << mp->mp_SigBit) | (1UL << tp->mp_SigBit) | SIGBREAKF_CTRL_C);
             if (psdCheckPipe(pipes[slot])) {
                 LONG error = psdWaitPipe(pipes[slot]);
                 pending[slot] = FALSE;
-                if (error) st->errors++;
-                else {
+                if (error) {
+                    st->errors++;
+                    /* a stall, or a row of failures: the next grab negotiates again */
+                    if (error == UHIOERR_STALL ||
+                        (error != UHIOERR_NAKTIMEOUT && ++failed >= UVC_BULKERRORS)) break;
+                } else {
                     ULONG actual = psdGetPipeActual(pipes[slot]);
+                    failed = 0;
                     st->packets++;
                     if (uvc_bulk_feed(&bulk, &st->asm_, bulkbuf[slot], actual, st->size)) {
-                        Disable();
+                        UVC_LOCK(st);
                         uvc_publish(st, st->asm_.used);
-                        Enable();
+                        UVC_UNLOCK(st);
                     }
                 }
-                psdSendPipe(pipes[slot], bulkbuf[slot], st->size);
-                pending[slot] = TRUE;
+                /* Other errors return at once; those transfers are sent again on the next tick.
+                 * After one, the two transfers can be taken in the wrong order once. */
+                if (!error || error == UHIOERR_NAKTIMEOUT) {
+                    psdSendPipe(pipes[slot], bulkbuf[slot], st->size);
+                    pending[slot] = TRUE;
+                }
                 slot ^= 1;
             }
         } else {
@@ -783,6 +863,12 @@ static void uvc_stream_proc(void)
             WaitIO((struct IORequest *)timer);
             timersent = FALSE;
             if (uvc_seconds() - st->lastgrab > UVC_IDLE) break;
+            for (i = 0; st->isbulk && i < 2; i++) {
+                if (!pending[i]) {
+                    psdSendPipe(pipes[i], bulkbuf[i], st->size);
+                    pending[i] = TRUE;
+                }
+            }
         }
     }
 out:
@@ -796,6 +882,26 @@ out:
         if (pipes[i]) psdFreePipe(pipes[i]);
         FreeVec(bulkbuf[i]);
     }
+    /* Leave the device idle: an isochronous stream's interface at alternate 0,
+     * a bulk stream's endpoint with its halt cleared. */
+    if (timeropen && !st->gone && (control = psdAllocPipe(st->device, mp, NULL))) {
+        if (timersent) {
+            if (!CheckIO((struct IORequest *)timer)) AbortIO((struct IORequest *)timer);
+            WaitIO((struct IORequest *)timer);
+        }
+        timer->tr_node.io_Command = TR_ADDREQUEST;
+        timer->tr_time.tv_secs = 1;
+        timer->tr_time.tv_micro = 0;
+        SendIO((struct IORequest *)timer);
+        timersent = TRUE;
+        if (st->isbulk) {
+            psdPipeSetup(control, URTF_STANDARD|URTF_ENDPOINT,
+                         USR_CLEAR_FEATURE, UFS_ENDPOINT_HALT, st->epnum|URTF_IN);
+            uvc_transfer(nh, ps, control, NULL, 0, mp, timer, "CLEAR_FEATURE(ENDPOINT_HALT)");
+        } else
+            st->atzero = uvc_alt_request(nh, ps, control, st->vsnum, 0, mp, timer);
+        psdFreePipe(control);
+    }
     if (timersent) { if (!CheckIO((struct IORequest *)timer)) AbortIO((struct IORequest *)timer); WaitIO((struct IORequest *)timer); }
     if (timeropen) CloseDevice((struct IORequest *)timer);
     if (timer) DeleteIORequest((struct IORequest *)timer);
@@ -804,12 +910,12 @@ out:
     FreeVec(bulk.data);
     if (ps) CloseLibrary(ps);
     Forbid();                           /* done is seen only after this process can no longer run */
-    st->done = TRUE;
     {
         struct UVCWaiter *w;
-        Disable();
+        UVC_LOCK(st);
         ForeachNode(&st->waiters, w) Signal(w->task, w->sigmask);
-        Enable();
+        st->done = TRUE;                /* last: once seen, st may be freed */
+        UVC_UNLOCK(st);
     }
 }
 
@@ -828,25 +934,27 @@ static void uvc_stream_free(struct UVCStream *st)
     FreeVec(st);
 }
 
-/* Stop st and free it once its process and its last grab are gone. */
-static void uvc_stream_stop(struct NepUVCBase *nh, struct UVCStream *st)
+/* Stop st and free it once its process and its last grab are gone (caller holds the device lock). */
+static void uvc_stream_stop(struct NepUVCBase *nh, struct Library *ps, struct UVCStream *st)
 {
-    BOOL idle;
+    BOOL done, idle;
     st->quit = TRUE;
     for (;;) {
-        Disable();
+        UVC_LOCK(st);
         {
             struct UVCWaiter *w;
             ForeachNode(&st->waiters, w) Signal(w->task, w->sigmask);
         }
-        if (st->proc && !st->done) Signal(&st->proc->pr_Task, SIGBREAKF_CTRL_C);
-        Enable();
+        done = st->done || !st->proc;
+        if (!done) Signal(&st->proc->pr_Task, SIGBREAKF_CTRL_C);
+        UVC_UNLOCK(st);
         ObtainSemaphore(&nh->nh_Lock);
-        idle = (st->done || !st->proc) && !st->users;
+        idle = done && !st->users;
         ReleaseSemaphore(&nh->nh_Lock);
         if (idle) break;
         Delay(1);
     }
+    if (st->atzero) psdSetAltInterface(NULL, st->vsif);
     uvc_stream_free(st);
 }
 
@@ -855,8 +963,9 @@ static ULONG uvc_stream_frame(struct NepUVCBase *nh, struct UVCStream *st, UBYTE
 {
     struct UVCWaiter w;
     BYTE sig = AllocSignal(-1);
-    ULONG start = uvc_seconds(), len = 0, result = 0, pixels = (ULONG)st->width * st->height;
+    ULONG start, now, len = 0, result = 0, pixels = (ULONG)st->width * st->height;
     LONG r = -1;
+    ULONG broken = 0;
     UBYTE *raw;
     if (sig < 0 || capacity < pixels * 3 || !(raw = AllocVec(st->expected, MEMF_PUBLIC))) {
         if (sig >= 0) FreeSignal(sig);
@@ -864,13 +973,16 @@ static ULONG uvc_stream_frame(struct NepUVCBase *nh, struct UVCStream *st, UBYTE
     }
     w.task = FindTask(NULL);
     w.sigmask = 1UL << sig;
-    Disable();
+    ObtainSemaphore(&st->readers);
+    start = now = uvc_seconds();
+    UVC_LOCK(st);
     AddTail(&st->waiters, (struct Node *)&w.node);
-    while (st->seq == st->given && !st->quit && !st->done && uvc_seconds() - start < 3) {
-        Enable();
-        st->lastgrab = uvc_seconds();
-        Wait(w.sigmask | SIGBREAKF_CTRL_C);
-        Disable();
+    while (st->seq == st->given && !st->quit && !st->done && !broken && now - start < 3) {
+        UVC_UNLOCK(st);
+        st->lastgrab = now;
+        broken = Wait(w.sigmask | SIGBREAKF_CTRL_C) & SIGBREAKF_CTRL_C;
+        now = uvc_seconds();
+        UVC_LOCK(st);
     }
     if (st->seq != st->given && st->li >= 0) {
         r = st->ri = st->li;            /* the interrupt now fills neither this one nor the newest */
@@ -878,13 +990,16 @@ static ULONG uvc_stream_frame(struct NepUVCBase *nh, struct UVCStream *st, UBYTE
         st->given = st->seq;
     }
     Remove((struct Node *)&w.node);
-    Enable();
+    UVC_UNLOCK(st);
     if (r >= 0) {
         memcpy(raw, st->fbuf[r], len);
-        Disable();
+        UVC_LOCK(st);
         st->ri = -1;
-        Enable();
+        UVC_UNLOCK(st);
     }
+    ReleaseSemaphore(&st->readers);
+    if (broken)
+        SetSignal(SIGBREAKF_CTRL_C, SIGBREAKF_CTRL_C);
     st->lastgrab = uvc_seconds();
     FreeSignal(sig);
     if (len) {
@@ -1032,7 +1147,7 @@ IPTR uvc_method(struct NepUVCBase *nh, ULONG method, IPTR *args)
                     st = NULL;
                     nch->ncu_Stream = NULL;
                 }
-                if (old) uvc_stream_stop(nh, old);
+                if (old) uvc_stream_stop(nh, ps, old);
                 if (!st && (st = uvc_stream_setup(&snapshot))) {
                     if (uvc_stream_start(st)) nch->ncu_Stream = st;
                     else { uvc_stream_free(st); st = NULL; }
@@ -1080,9 +1195,8 @@ struct NepClassUVC * usbAttemptInterfaceBinding(struct NepUVCBase *nh, struct Ps
                     TAG_DONE);
         CloseLibrary(ps);
 
-        /* Bind on the VideoControl interface; the associated VideoStreaming
-         * interface(s) are claimed via the interface association once streaming
-         * is implemented. */
+        /* Bind on the VideoControl interface; its VideoStreaming interface is
+         * found from the VideoControl header. */
         if((ifclass == VIDEO_CLASSCODE) && (subclass == VIDEO_CTRL_SUBCLASS))
         {
             return(usbForceInterfaceBinding(nh, pif));
@@ -1204,7 +1318,7 @@ void usbReleaseInterfaceBinding(struct NepUVCBase *nh, struct NepClassUVC *nch)
         ObtainSemaphore(&nh->nh_Lock);
         Remove(&nch->ncu_Node);
         ReleaseSemaphore(&nh->nh_Lock);
-        if (nch->ncu_Stream) uvc_stream_stop(nh, nch->ncu_Stream);
+        if (nch->ncu_Stream) uvc_stream_stop(nh, ps, nch->ncu_Stream);
         psdFreeVec(nch);
         CloseLibrary(ps);
     }
