@@ -1326,13 +1326,16 @@ static AROS_INTH1(ohciCompleteInt, struct PCIController *,hc)
 
     ohciUpdateFrameCounter(hc);
 
-    /* Retire prepared zero-length requests in their scheduled frame. */
-    ohciHandleZeroIsochTDs(hc);
-
     /* **************** PROCESS DONE TRANSFERS **************** */
 
+    /* Drain the DoneQueue first: a completed IsoTD delivers its done hook
+       here, and the zero-length retirement pass must not overtake it. */
     if (ohcihcp->ohc_OhciDoneQueue)
         ohciHandleFinishedTDs(hc);
+
+    /* Retire prepared zero-length requests in their scheduled frame, in
+       frame order relative to the IsoTDs that were just completed. */
+    ohciHandleZeroIsochTDs(hc);
 
     if (hc->hc_Flags & HCF_ABORT)
         restartmask = ohciHandleAbortedEDs(hc);

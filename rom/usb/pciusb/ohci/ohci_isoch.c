@@ -619,6 +619,40 @@ void ohciHandleZeroIsochTDs(struct PCIController *hc)
                 if(delta < 0)
                     continue;   /* not its frame yet */
 
+                /* Keep done hooks in scheduled-frame order.  An IsoTD of this
+                   stream with an earlier frame may still be in flight (its
+                   done hook is delivered from the DoneQueue, possibly in a
+                   later interrupt).  Retiring this zero-length request first
+                   would hand the client its zero-length done hook - the image
+                   end for SonixcamTool - before the data of the earlier frame.
+                   Wait until no earlier-frame IsoTD of this stream is active. */
+                {
+                    UWORD scan;
+                    BOOL earlier = FALSE;
+
+                    for(scan = 0; scan < rtn->rtn_PTDCount; scan++) {
+                        struct PTDNode *other = rtn->rtn_PTDs[scan];
+                        LONG other_delta;
+
+                        if(!other || other == ptd)
+                            continue;
+                        if(!(other->ptd_Flags & PTDF_ACTIVE))
+                            continue;
+
+                        other_delta = (LONG)((UWORD)other->ptd_FrameIdx -
+                                             (UWORD)ptd->ptd_FrameIdx);
+                        if(other_delta & 0x8000)
+                            other_delta -= 0x10000;
+                        if(other_delta < 0) {
+                            earlier = TRUE;
+                            break;
+                        }
+                    }
+
+                    if(earlier)
+                        continue;
+                }
+
                 ptdpriv = ohciPTDPrivate(ptd);
                 bufreq = &ptdpriv->ptd_BufferReq;
                 urti = rtn->rtn_RTIso;
