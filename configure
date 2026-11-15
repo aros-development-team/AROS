@@ -10998,6 +10998,9 @@ printf '%s\n' "$darwin_sdk_path" >&6; }
                 aros_nominal_depth=8
                 aros_kernel_rs="$toolchain_ar"
                 aros_kernel_ar_flags="-cr"
+                # mklib_q passes the object list to ar in a response file (@file), which
+                # Apple's ar does not understand. Use the toolchain's ar, like aros_kernel_rs.
+                aros_kernel_ar="$toolchain_ar"
                 aros_kernel_ld="$toolchain_ld -arch arm64"
                 aros_kernel_as="$toolchain_as -arch arm64"
                 aros_kernel_ranlib="ranlib"
