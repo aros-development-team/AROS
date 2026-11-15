@@ -101,6 +101,14 @@ static AROS_INTH1(NVME_ResetHandler, device_t, dev)
 
     DIRQ(bug ("[NVME:Controller] %s(0x%p)\n", __func__, dev);)
 
+    /* A registered reset callback may outlive controller cleanup. Quiesced
+       controllers have no queues; quarantined controllers retain their DMA
+       storage but no longer deliver completions. Neither needs another reset
+       sequence, including the optional admin-command shutdown below. */
+    if (dev->dev_Quiesced || dev->dev_Quarantined ||
+        !dev->dev_Queues || !dev->dev_Queues[0])
+        return TRUE;
+
     memset(&c, 0, sizeof(c));
     memset(&cehandle, 0, sizeof(cehandle));
     nvme_dma_init(&cehandle);
