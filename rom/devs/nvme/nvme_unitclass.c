@@ -15,6 +15,8 @@
 #include <hidd/nvme.h>
 #include <oop/oop.h>
 
+#include <string.h>
+
 #include LC_LIBDEFS_FILE
 
 #include "nvme_debug.h"
