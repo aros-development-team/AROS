@@ -10990,8 +10990,10 @@ printf '%s\n' "$darwin_sdk_path" >&6; }
                 aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Daarch64"
                 aros_isa_flags="$""(ISA_AARCH64_FLAGS)"
                 aros_macosx_version="11.0"
-                                                aros_config_cflags="$aros_config_cflags $""(CFLAGS_NO_OMIT_FP) -D__arm64__"
-                aros_config_cxxflags="$aros_config_cxxflags $""(CFLAGS_NO_OMIT_FP) -D__arm64__"
+                # x18 is reserved by the Apple arm64 ABI: the host OS may overwrite it
+                # (it reads as 0 after a signal), so AROS code must not use it.
+                                                aros_config_cflags="$aros_config_cflags $""(CFLAGS_NO_OMIT_FP) -D__arm64__ -ffixed-x18"
+                aros_config_cxxflags="$aros_config_cxxflags $""(CFLAGS_NO_OMIT_FP) -D__arm64__ -ffixed-x18"
                 default_llvm_version="20.1.0"
                 aros_kernel_isa_flags="-arch arm64"
                 aros_kernel_ldflags="-arch arm64"
