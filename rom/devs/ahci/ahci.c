@@ -2593,8 +2593,8 @@ ahci_issue_pending_commands(struct ahci_port *ap, struct ahci_ccb *ccb)
                 }
             }
             ahci_pwrite(ap, AHCI_PREG_CI, 1 << ccb->ccb_slot);
-            if ((ap->ap_run_flags &
-                    (ATA_F_EXCLUSIVE | ATA_F_AUTOSENSE)) == 0) {
+            if (ap->ap_run_flags &
+                    (ATA_F_EXCLUSIVE | ATA_F_AUTOSENSE)) {
                 break;
             }
             ccb = TAILQ_FIRST(&ap->ap_ccb_pending);
