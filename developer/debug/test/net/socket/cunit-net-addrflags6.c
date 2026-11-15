@@ -248,6 +248,10 @@ int main(int argc, char **argv)
         printf("bsdsocket.library 4 not available - skipping ADDRFLAGS6 tests\n");
         return 0;
     }
+    if (st_skip_program("cunit-net-addrflags6", ST_V6)) {
+        CloseLibrary(SocketBase);
+        return 0;
+    }
     ready = index_of(ifname, &ifindex) == 0 && get_linklocal(&linklocal) &&
             (sig = AllocSignal(-1)) != -1;
     if (ready) {

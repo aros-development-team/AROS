@@ -54,6 +54,15 @@ static const struct PrefsExchangeData PrefsInfo[] =
   { SelectPointer,  MUIA_Selected,           MUICFG_BetterString_SelectPointer,  1, (APTR)CFG_BetterString_SelectPointer_Def  }
 };
 
+/*
+ * Construct the preferences group and register its nine controls when
+ * muimaster is at least 20.0. On group creation failure, dispose the
+ * superclass object and return NULL. ConfigToGadgets loads defaults for
+ * missing items without notifications. GadgetsToConfig stores nondefaults
+ * and removes defaults plus obsolete Font/Frame items. Both transfers
+ * return zero and ignore dataspace operation results; require valid objects
+ * and correctly sized data. Delegate other methods.
+ */
 DISPATCHER(_DispatcherP)
 {
   struct InstData_MCP *data = (struct InstData_MCP *)INST_DATA(cl, obj);

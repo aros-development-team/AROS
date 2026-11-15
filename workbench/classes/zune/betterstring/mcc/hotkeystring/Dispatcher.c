@@ -29,6 +29,10 @@
 #include "private.h"
 #include "version.h"
 
+/* Delegate BetterString setup and, on success, register a priority-1 raw-
+ * key handler with the live containing Window. Return superclass result.
+ * Cleanup must remove this additional handler.
+ */
 IPTR Setup(struct IClass *cl, Object *obj, struct MUI_RenderInfo *rinfo)
 {
   struct InstData *data = (struct InstData *)INST_DATA(cl, obj);
@@ -46,6 +50,10 @@ IPTR Setup(struct IClass *cl, Object *obj, struct MUI_RenderInfo *rinfo)
   return result;
 }
 
+/* Remove the extra raw-key handler from the live containing Window and
+ * return superclass Cleanup result. Require matched setup/cleanup and no
+ * use after disconnection.
+ */
 IPTR Cleanup (struct IClass *cl, Object *obj, Msg msg)
 {
   struct InstData *data = (struct InstData *)INST_DATA(cl, obj);
@@ -54,6 +62,11 @@ IPTR Cleanup (struct IClass *cl, Object *obj, Msg msg)
   return DoSuperMethodA(cl, obj, msg);
 }
 
+/* Process the first Snoop tag, changing capture flags and overwriting
+ * Window_DisableKeys when active. Then pass the first non-NULL raw-key IX
+ * code/qualifier to HandleInput synchronously. Borrow the expression;
+ * ignore masks, other fields and helper result. No own success result.
+ */
 VOID Set (struct IClass *cl, Object *obj, struct opSet *msg)
 {
   struct InstData *data = (struct InstData *)INST_DATA(cl, obj);
@@ -88,6 +101,10 @@ VOID Set (struct IClass *cl, Object *obj, struct opSet *msg)
   }
 }
 
+/* Write Version or Revision to valid opg_Storage and return TRUE. Delegate
+ * other queries, including Snoop and IX, to BetterString. No own getter
+ * exposes either capture state or an InputXpression.
+ */
 IPTR Get (struct IClass *cl, Object *obj, struct opGet *msg)
 {
   IPTR ti_Data;
@@ -110,6 +127,12 @@ IPTR Get (struct IClass *cl, Object *obj, struct opGet *msg)
   return TRUE;
 }
 
+/* Default Snoop TRUE after superclass construction, then process initial
+ * own tags. Handle setup/cleanup/set/get and active snooping events.
+ * Unhandled HandleEvent returns zero without direct superclass forwarding.
+ * Activation/deactivation overwrite Window key-disable state without saving
+ * it; other methods delegate.
+ */
 DISPATCHER(_Dispatcher)
 {
   struct InstData *data = (struct InstData *)INST_DATA(cl, obj);

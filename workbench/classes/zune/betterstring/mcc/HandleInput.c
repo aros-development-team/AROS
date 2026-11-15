@@ -45,6 +45,10 @@
  ({ IPTR __args[] = { SDI_VACAST(__VA_ARGS__) }; \
      RawDoFmt(fmt, (RAWARG)__args, NULL, (STRPTR)buf); })
 #elif defined(__amigaos4__)
+/* Non-AROS formatting helper: write RawDoFmt output into caller storage and
+ * return its length. Require sufficient capacity and matching varargs. AROS
+ * uses the macro variant instead of these compatibility definitions.
+ */
 static int VARARGS68K MySPrintf(char *buf, const char *fmt, ...)
 {
   VA_LIST args;
@@ -56,6 +60,10 @@ static int VARARGS68K MySPrintf(char *buf, const char *fmt, ...)
   return(strlen(buf));
 }
 #else
+/* Non-AROS formatting helper: write RawDoFmt output into caller storage and
+ * return its length. Require sufficient capacity and matching varargs. AROS
+ * uses the macro variant instead of these compatibility definitions.
+ */
 static int STDARGS MySPrintf(char *buf, const char *fmt, ...)
 {
   static const UWORD PutCharProc[2] = {0x16C0,0x4E75};
@@ -72,6 +80,11 @@ static int STDARGS MySPrintf(char *buf, const char *fmt, ...)
 }
 #endif
 
+/* Free the previous Undo buffer and try to copy current content and cursor
+ * into one replacement slot. Clear redo availability only on successful
+ * allocation. Failure loses the previous slot and is not returned; this is
+ * not a multi-level history.
+ */
 static void AddToUndo(struct InstData *data)
 {
   ENTER();
@@ -88,6 +101,10 @@ static void AddToUndo(struct InstData *data)
   LEAVE();
 }
 
+/* Compute the horizontal text/cursor offset for the active alignment using
+ * live font and drawing resources. Return zero for left/default alignment.
+ * Borrow content and object; no storage is returned or retained.
+ */
 static WORD AlignOffset(Object *obj, struct InstData *data)
 {
   WORD   width = _mwidth(obj);
@@ -127,6 +144,10 @@ static WORD AlignOffset(Object *obj, struct InstData *data)
   return offset;
 }
 
+/* Return FALSE when code occurs in the optional terminated rejection
+ * string, otherwise TRUE. NULL rejects nothing. Despite its name, TRUE
+ * means the byte passes this filter.
+ */
 static BOOL Reject(UBYTE code, STRPTR reject)
 {
   BOOL rc = TRUE;
@@ -149,11 +170,19 @@ static BOOL Reject(UBYTE code, STRPTR reject)
   return rc;
 }
 
+/* Return TRUE when the optional terminated acceptance string contains code,
+ * or when it is NULL. Borrow the string; no locale or multi-byte
+ * interpretation is performed.
+ */
 static BOOL Accept(UBYTE code, STRPTR accept)
 {
   return(accept ? !Reject(code, accept) : TRUE);
 }
 
+/* Convert one ASCII hexadecimal digit to its numeric value; return zero for
+ * any other byte. Zero therefore does not distinguish invalid input from
+ * the digit zero.
+ */
 static UWORD DecimalValue(UBYTE code)
 {
   if(code >= '0' && code <= '9')
@@ -166,6 +195,9 @@ static UWORD DecimalValue(UBYTE code)
   return(0);
 }
 
+/* Return TRUE only for ASCII 0-9, a-f or A-F. No allocation or locale-
+ * dependent parsing occurs.
+ */
 static BOOL IsHex(UBYTE code)
 {
   return(
@@ -174,6 +206,10 @@ static BOOL IsHex(UBYTE code)
     (code >= 'A' && code <= 'F') ? TRUE : FALSE);
 }
 
+/* Find a decimal digit run from the valid BufferPos: scan to its beginning
+ * if currently on a digit, otherwise search right, then left. Return start
+ * offset or -1. Use the instance locale and borrow terminated content.
+ */
 static LONG FindDigit(struct InstData *data)
 {
   WORD  pos = data->BufferPos;
@@ -210,6 +246,10 @@ static LONG FindDigit(struct InstData *data)
   return pos;
 }
 
+/* From a valid byte offset, skip the current locale-alphanumeric run and
+ * following separators to the next word or terminator. Return the UWORD
+ * offset; do not modify the borrowed string.
+ */
 static UWORD NextWord(STRPTR text, UWORD x, struct Locale *locale)
 {
   ENTER();
@@ -224,6 +264,10 @@ static UWORD NextWord(STRPTR text, UWORD x, struct Locale *locale)
   return x;
 }
 
+/* From a valid byte offset, move left over separators and the
+ * preceding/current locale-alphanumeric run. Return its UWORD start,
+ * stopping at zero. Do not modify the borrowed string.
+ */
 static UWORD PrevWord(STRPTR text, UWORD x, struct Locale *locale)
 {
   ENTER();
@@ -241,6 +285,10 @@ static UWORD PrevWord(STRPTR text, UWORD x, struct Locale *locale)
   return x;
 }
 
+/* Save one undo snapshot, then remove a nonempty enabled selection and move
+ * BufferPos to its lower endpoint. Does not clear the selection flag itself
+ * or notify/redraw. Without a selection only the undo snapshot is affected.
+ */
 void DeleteBlock(struct InstData *data)
 {
   ENTER();
@@ -260,6 +308,11 @@ void DeleteBlock(struct InstData *data)
   LEAVE();
 }
 
+/* Unless Secret is set, synchronously send the selected span or the entire
+ * unselected string to the clipboard server. No result is returned and
+ * clipboard failure is not propagated. Do not change content or selection
+ * here.
+ */
 static void CopyBlock(struct InstData *data)
 {
   ENTER();
@@ -286,6 +339,11 @@ static void CopyBlock(struct InstData *data)
   LEAVE();
 }
 
+/* Save undo; for a selection, attempt clipboard copy and delete it,
+ * clearing selection. Without a selection clear all content and reset the
+ * cursor without clipboard copy. Clipboard failure does not prevent
+ * deletion; caller handles notification/redraw.
+ */
 static void CutBlock(struct InstData *data)
 {
   ENTER();
@@ -307,6 +365,12 @@ static void CutBlock(struct InstData *data)
   LEAVE();
 }
 
+/* Synchronously request clipboard text. On success delete the current
+ * selection, limit the inserted length by MaxLength, expand and insert at
+ * BufferPos, then free the returned shared-pool string. No result is
+ * returned; an allocation failure after deletion is not rolled back.
+ * Accept/Reject and NoInput are not checked.
+ */
 static void Paste(struct InstData *data)
 {
   STRPTR str;
@@ -342,6 +406,10 @@ static void Paste(struct InstData *data)
   LEAVE();
 }
 
+/* Swap live Contents/Undo pointers and cursor positions and toggle redo
+ * availability; clear selection. Require a valid Undo buffer and direction
+ * checked by the caller. No copy, notification or redraw occurs here.
+ */
 static void UndoRedo(struct InstData *data)
 {
   STRPTR oldcontents;
@@ -369,6 +437,11 @@ static void UndoRedo(struct InstData *data)
   LEAVE();
 }
 
+/* Swap Contents with a valid Original snapshot, mark Original, clear
+ * selection and put the cursor at the new end. Require a usable snapshot;
+ * no NULL check, error result, redraw or notification is provided.
+ * Activation snapshot correctness is a separate limitation.
+ */
 static void RevertToOriginal(struct InstData *data)
 {
   STRPTR oldcontents;
@@ -387,6 +460,10 @@ static void RevertToOriginal(struct InstData *data)
   LEAVE();
 }
 
+/* Toggle one byte at the valid cursor using locale functions and advance
+ * it. Return TRUE when a byte is processed, FALSE at the terminator. No
+ * undo snapshot is saved and no notification/redraw occurs here.
+ */
 static BOOL ToggleCaseChar(struct InstData *data)
 {
   UBYTE key = *(data->Contents+data->BufferPos);
@@ -405,6 +482,10 @@ static BOOL ToggleCaseChar(struct InstData *data)
   return result;
 }
 
+/* Toggle locale case from the valid cursor through NextWord and advance the
+ * cursor. Return whether any byte was traversed, not whether every byte
+ * changed. No undo, redraw or notification occurs here.
+ */
 static BOOL ToggleCaseWord(struct InstData *data)
 {
   UWORD Stop = NextWord(data->Contents, data->BufferPos, data->locale);
@@ -425,6 +506,11 @@ static BOOL ToggleCaseWord(struct InstData *data)
   return result;
 }
 
+/* Find and parse a nearby decimal run, increment an unsigned value, format
+ * with minimum source width and call Overwrite. Return TRUE for the parsed
+ * operation without propagating replacement failure. No arbitrary-precision
+ * or overflow guarantee; no undo is saved.
+ */
 static BOOL IncreaseNearNumber(struct InstData *data)
 {
   LONG pos;
@@ -454,6 +540,11 @@ static BOOL IncreaseNearNumber(struct InstData *data)
   return result;
 }
 
+/* Find and parse a nearby decimal run and decrement a nonzero unsigned
+ * value before formatted Overwrite. Return FALSE when no run is parsed or
+ * its value is zero; replacement failure is not propagated. No undo is
+ * saved.
+ */
 static BOOL DecreaseNearNumber(struct InstData *data)
 {
   LONG pos;
@@ -488,6 +579,11 @@ static BOOL DecreaseNearNumber(struct InstData *data)
   return result;
 }
 
+/* Scan the hexadecimal run around the cursor and format its computed value
+ * for Overwrite. The accumulation expression is defective, so TRUE only
+ * indicates a processed run, not a correct conversion or successful
+ * replacement. No undo is saved.
+ */
 static BOOL HexToDec(struct InstData *data)
 {
   LONG  cut = 0;
@@ -519,6 +615,10 @@ static BOOL HexToDec(struct InstData *data)
   return result;
 }
 
+/* Find a nearby decimal run, parse it and format lowercase hexadecimal for
+ * Overwrite. Return FALSE when no run is parsed; TRUE does not propagate
+ * replacement failure. No undo is saved.
+ */
 static BOOL DecToHex(struct InstData *data)
 {
   LONG pos;
@@ -546,6 +646,11 @@ static BOOL DecToHex(struct InstData *data)
   return result;
 }
 
+/* Forward current Contents directly to superclass OM_SET and clear the
+ * pending flag when NoNotify is clear; otherwise set the pending flag. The
+ * synchronous callback can run application code. Does not first compare
+ * content or pass through the local setter.
+ */
 void TriggerNotify(struct IClass *cl, Object *obj)
 {
   struct InstData *data = (struct InstData *)INST_DATA(cl, obj);
@@ -571,6 +676,11 @@ void TriggerNotify(struct IClass *cl, Object *obj)
   LEAVE();
 }
 
+/* Translate a valid IntuiMessage raw-key event through MapRawKey into a
+ * one-byte buffer and return that byte. Borrow IAddress and its event data.
+ * Initialize output to zero but ignore MapRawKey result; no multi-byte
+ * character output is provided.
+ */
 ULONG ConvertKey(struct IntuiMessage *imsg)
 {
   struct InputEvent  event;
@@ -591,6 +701,12 @@ ULONG ConvertKey(struct IntuiMessage *imsg)
   return code;
 }
 
+/* Dispatch the public action enumeration, request redraw, and trigger/queue
+ * Contents notification for actions marked edited. Return the action-
+ * specific result; unknown actions return FALSE. NoInput and NoShortcuts
+ * are not checked. Public AutoDocs describe non-propagated failures and the
+ * required Revert/completion state.
+ */
 IPTR mDoAction(struct IClass *cl, Object *obj, struct MUIP_BetterString_DoAction *msg)
 {
   struct InstData *data = (struct InstData *)INST_DATA(cl, obj);
@@ -743,6 +859,13 @@ IPTR mDoAction(struct IClass *cl, Object *obj, struct MUIP_BetterString_DoAction
   return result;
 }
 
+/* Process standard MUI keys before raw-key restrictions, then active
+ * editing, focus, mouse selection and pointer handling. Manage completion-
+ * cache lifetime and tick registration; request redraw/notification after
+ * handled edits. Require live GUI/render state and valid borrowed events.
+ * Return Eat for consumed events or zero otherwise; not an edit-success
+ * result.
+ */
 IPTR mHandleInput(struct IClass *cl, Object *obj, struct MUIP_HandleEvent *msg)
 {
   struct InstData *data = (struct InstData *)INST_DATA(cl, obj);
@@ -1570,6 +1693,12 @@ IPTR mHandleInput(struct IClass *cl, Object *obj, struct MUIP_HandleEvent *msg)
   return result;
 }
 
+/* Resolve the insertion sentinel or valid byte offset, call Overwrite with
+ * zero removed bytes, clear selection and request redraw/Contents
+ * notification. Always return TRUE, ignoring truncation/allocation results.
+ * Require independent terminated input text and valid offsets. NoInput and
+ * filters are not checked.
+ */
 IPTR mInsert(struct IClass *cl, Object *obj, struct MUIP_BetterString_Insert *msg)
 {
   struct InstData *data = (struct InstData *)INST_DATA(cl, obj);

@@ -33,6 +33,11 @@
 #define USE_OS3 (((struct Library *)GfxBase)->lib_Version >= 39)
 #endif
 
+/* Allocate with supplied dimensions/depth/friend. AROS adds BMF_MINPLANES
+ * and BMF_DISPLAYABLE and returns AllocBitMap result. Caller owns the
+ * bitmap and pairs it with MUIG_FreeBitMap. Legacy non-AROS branches use
+ * different allocation rules.
+ */
 struct BitMap * SAVEDS ASM MUIG_AllocBitMap(REG(d0, LONG width), REG(d1, LONG height), REG(d2, LONG depth), REG(d3, LONG flags), REG(a0, struct BitMap *friend))
 {
   #if defined(__amigaos4__)
@@ -86,6 +91,10 @@ struct BitMap * SAVEDS ASM MUIG_AllocBitMap(REG(d0, LONG width), REG(d1, LONG he
 }
 
 
+/* Release a bitmap from the matching allocator. AROS calls FreeBitMap;
+ * legacy branches wait for blits and may free planes manually. Require no
+ * further drawing use; caller pointers are not cleared.
+ */
 VOID SAVEDS ASM MUIG_FreeBitMap(REG(a0, struct BitMap *bm))
 {
   #if defined(__amigaos4__) || defined(__MORPHOS__) || defined(__AROS__)

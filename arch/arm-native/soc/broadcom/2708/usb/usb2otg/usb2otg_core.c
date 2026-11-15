@@ -23,6 +23,11 @@ static const UWORD __suported_cmds[] =
     UHCMD_CONTROLXFER,
     UHCMD_INTXFER,
     UHCMD_BULKXFER,
+    UHCMD_ISOXFER,
+    UHCMD_ADDISOHANDLER,
+    UHCMD_REMISOHANDLER,
+    UHCMD_STARTRTISO,
+    UHCMD_STOPRTISO,
     NSCMD_DEVICEQUERY,
     0
 };
@@ -46,7 +51,6 @@ struct Unit * FNAME_DEV(OpenUnit)(struct IOUsbHWReq *ioreq,
         {
             otg_Unit->hu_UnitAllocated = TRUE;
 
-            otg_Unit->hu_CtrlSplitChan = CHAN_CTRL_SPLIT;
             otg_Unit->hu_BurnedChannels = 0;
 
             D(bug("[USB2OTG] %s: Enabling Power ..\n", __PRETTY_FUNCTION__));
@@ -549,7 +553,7 @@ WORD FNAME_DEV(cmdQueryDevice)(struct IOUsbHWReq *ioreq,
 
     if (((tag = FindTagItem(UHA_Capabilities, taglist)) != NULL) && (tag->ti_Data))
     {
-        *((IPTR *) tag->ti_Data) = UHCF_USB20;
+        *((IPTR *) tag->ti_Data) = UHCF_USB20 | UHCF_ISO | UHCF_RT_ISO;
         count++;
     }
     ioreq->iouh_Actual = count;
@@ -727,6 +731,7 @@ WORD FNAME_DEV(cmdBulkXFer)(struct IOUsbHWReq *ioreq,
             }
         }
     }
+    usb2otg_bulk_forget(otg_Unit, ioreq);
     AddTail(&otg_Unit->hu_BulkXFerQueue, (struct Node *) ioreq);
 #if defined(__AROSEXEC_SMP__)
     KrnSpinUnLock(&otg_Unit->hu_Lock);

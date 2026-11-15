@@ -16,7 +16,7 @@ include $(SRCDIR)/$(CURDIR)/sources.drm.mak
 # radeonsi.amdd (radeonsi/), opened by the hidd on demand.
 
 #MM- workbench-hidds-amdgpu : hidd-amdgpu-mesa$(OPT_MESAGL)
-#MM- hidd-amdgpu-mesa26.2.5 : hidd-amdgpu-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)
+#MM- hidd-amdgpu-mesa26.2.7 : hidd-amdgpu-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)
 #MM- hidd-amdgpu-pc-x86_64 : hidd-amdgpu hidd-amdgpu-ids
 #MM hidd-amdgpu: includes kernel-acpica-sharedlib-includes kernel-acpica-sharedlib-linklib hidd-amdgpu-drmcore hidd-amdgpu-drm hidd-amdgpu-libdrm hidd-gallium mesa3dgl-linklibs linklibs-libatomic workbench-libs-z-linklib
 #MM hidd-amdgpu-libdrm : mesa3dgl-linklibs

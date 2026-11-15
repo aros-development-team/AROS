@@ -53,9 +53,7 @@
 #include <netinet6/mld6.h>
 
 #include <protos/netinet/in_cksum_protos.h>
-
-/* ip6_output uses varargs; forward declare here */
-int ip6_output(void *, ...);
+#include <net/netcore_map.h>        /* always the last include */
 
 /*
  * Protocol constants (RFC 2710 §7).
@@ -161,6 +159,14 @@ void
 mld6_init(void)
 {
 	mld6_timer_running = 0;
+}
+
+/* IPv6 stops (inet6_stop()): MLD's variables as the file has them */
+void
+mld6_defaults(void)
+{
+	mld6_timer_running = 0;
+	mld6_random_seed = 1;
 }
 
 /* ------------------------------------------------------------------

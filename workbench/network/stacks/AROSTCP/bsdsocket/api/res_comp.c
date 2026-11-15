@@ -68,6 +68,8 @@ static char sccsid[] = "@(#)res_comp.c	6.22 (Berkeley) 3/19/91";
 #include <kern/amiga_netdb.h>
 #include <api/resolv.h>
 
+#include <net/netcore_map.h>        /* always the last include */
+
 static int dn_find(u_char *exp_dn, u_char *msg,
                    u_char **dnptrs, u_char **lastdnptr);
 

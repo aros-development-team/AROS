@@ -226,6 +226,33 @@ int __stat64(BPTR lock, struct stat64 *sb, BOOL filehandle)
     return 0;
 }
 
+/* Ask the handler whether path runs into a soft link, without following
+   it. Costs one packet for an ordinary object. Only a positive answer
+   counts: handlers report "not a link" in different ways, and some do not
+   know the packet at all. The link may be an earlier component of the
+   path, so the caller still has to look at the final one. */
+BOOL __path_is_softlink(const char *path)
+{
+    struct DevProc *dvp = NULL;
+    char            buffer[256];
+    LONG            res = -1;
+
+    /* like Lock(), try each directory of a multi-directory assign */
+    do
+    {
+        if ((dvp = GetDeviceProc(path, dvp)) == NULL)
+            return FALSE;
+
+        res = ReadLink(dvp->dvp_Port, dvp->dvp_Lock, path, buffer, sizeof(buffer));
+    }
+    while (res == -1 && IoErr() == ERROR_OBJECT_NOT_FOUND);
+
+    FreeDeviceProc(dvp);
+
+    /* -2: a link whose target does not fit the buffer */
+    return res > 0 || res == -2;
+}
+
 int __stat_from_path(const char *path, struct stat *sb)
 {
     int                  len;

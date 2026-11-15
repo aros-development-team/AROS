@@ -36,6 +36,7 @@ extern u_int32_t tcp_ts_key[];
 #define TCPH_COOKIE	2
 #define TCPH_SYNCACHE	3
 #define TCPH_TSOFF	4
+/* (key, TCPH_xxx, address length, local and foreign address and port, extra) */
 u_int32_t tcp_conn_hash(const u_int32_t *, int, int, const void *,
 	    const void *, u_int16_t, u_int16_t, u_int32_t);
 
@@ -50,39 +51,45 @@ u_int16_t tcp_syncookie_validate(int, const void *, const void *,
 	    u_int16_t, u_int16_t, tcp_seq);
 
 /*
- * Dual-stack (IPv4/IPv6) support.
- *
- * tcp_isipv6() returns non-zero for a TCP socket in the AF_INET6 domain.
- * The TCP engine uses it to branch between the IPv4 (in_pcb*, ip_output,
- * in_cksum, struct ip) and IPv6 (in6_pcb*, ip6_output, in6_cksum,
- * struct ip6_hdr) paths.
+ * TCP and the address families (netinet/inetfamily.h). TCP does not know
+ * which family a connection is of: it asks the family the PCB points to
+ * (inp_family), or the one a segment came in by.
  */
-struct inpcb;
 struct mbuf;
-struct in6_addr;
-struct inpcbhead;
-int  tcp_isipv6(struct inpcb *inp);
-
-/* IPv6 protocol control block helpers (netinet6/in6_pcb.c). */
-int  in6_pcbbind(struct inpcb *, struct mbuf *);
-int  in6_pcbconnect(struct inpcb *, struct mbuf *);
-void in6_pcbdisconnect(struct inpcb *);
-void in6_setsockaddr(struct inpcb *, struct mbuf *);
-void in6_setpeeraddr(struct inpcb *, struct mbuf *);
-struct inpcb *in6_pcblookup(struct inpcbhead *, struct in6_addr *, u_int,
-	    struct in6_addr *, u_int, const struct ifnet *);
-
-/* IPv6 output path (netinet6/ip6_output.c, netinet6/in6.c). */
-extern int  ip6_defhlim;		/* default IPv6 hop limit */
-extern int  ip6_output(void *, ...);	/* (m, opt, ro, flags, im6o, ifpp, inp) */
+struct ifnet;
+struct inetfamily;
 
 /*
- * Shared dual-stack TCP/IPv6 output helper (netinet/tcp_subr.c).  m must start
- * at the TCP header (hdr+opts+data, length tlen); prepends and fills the IPv6
- * header, computes the checksum and calls ip6_output().
+ * The largest network header a family puts in front of a segment, options
+ * apart (IPv6's): only sizes the room kept free in front of what is built.
  */
-struct ip6_moptions;
-int  tcp_v6output(struct mbuf *, struct in6_addr *, struct in6_addr *,
-                  int, int, int, struct inpcb *);
+#define TCP_NETHDR_MAX	40
+
+/*
+ * A segment waiting in the reassembly queue keeps the length of its data
+ * where its checksum was (verified long before it got there).
+ */
+#define th_qlen		th_sum
+
+void	 tcp_mtudisc(struct tcpcb *, u_int32_t);
+
+/* TCP's variables, registered by name (netinet/tcp_usrreq.c) */
+void	 tcp_vars_register(void);
+/* ... and taken back when TCP stops; its variables are then as the file has them */
+void	 tcp_vars_unregister(void);
+
+/*
+ * TCP stops (netinet/inet_transport.c transport_stop()): each file puts
+ * its own variables back to what the file gives them, and frees what it
+ * allocated. A module library that stays in memory between a stop and the
+ * next start has only this to go by: its data is not loaded again.
+ */
+void	 tcp_deinit(void);		/* tcp_subr.c: undoes tcp_init() */
+void	 tcp_input_defaults(void);	/* tcp_input.c */
+void	 tcp_timer_defaults(void);	/* tcp_timer.c */
+void	 tcp_cc_defaults(void);		/* tcp_cc_cubic.c */
+void	 tcp_rack_defaults(void);	/* tcp_rack.c */
+void	 tcp_ss_defaults(void);		/* tcp_ss.c */
+void	 tcp_debug_free(void);		/* tcp_debug.c */
 
 #endif

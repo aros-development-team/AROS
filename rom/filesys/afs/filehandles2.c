@@ -555,7 +555,12 @@ SIPTR error;
         /* do we move a directory? */
         if (OS_BE2LONG(oldfile->buffer[BLK_SECONDARY_TYPE(volume)])==ST_USERDIR)
         {
-                /* is newdirblock child of olock/oname */
+                /* is newdirblock olock/oname itself, or a child of it */
+                if (dirblocknum == oldfile->blocknum)
+                {
+                        error = ERROR_OBJECT_IN_USE;
+                        goto rename_exit;
+                }
                 dirblock = getBlock(afsbase, volume, dirblocknum);
                 if (dirblock == NULL)
                         goto rename_exit;

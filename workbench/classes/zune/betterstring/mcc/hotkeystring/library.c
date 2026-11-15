@@ -80,6 +80,10 @@ static VOID ClassExpunge(UNUSED struct Library *base);
 /* define all implementations of our user functions                           */
 /******************************************************************************/
 
+/* Open keymap.library version 37 and obtain its interface where required.
+ * Return TRUE on success, FALSE otherwise. Class registration belongs to
+ * the included startup code; no input capture occurs here.
+ */
 static BOOL ClassInit(UNUSED struct Library *base)
 {
   if((KeymapBase = OpenLibrary("keymap.library", 37)) &&
@@ -92,6 +96,10 @@ static BOOL ClassInit(UNUSED struct Library *base)
 }
 
 
+/* Drop the platform interface and close the owned keymap.library reference
+ * when present, then clear its base. Require no active users; this hook
+ * does not remove instance event handlers.
+ */
 static VOID ClassExpunge(UNUSED struct Library *base)
 {
   if(KeymapBase)

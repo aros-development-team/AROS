@@ -17,3 +17,5 @@ void icmp_send(register struct mbuf * m,
               struct mbuf * opts);
 
 n_time iptime(void);
+
+void icmp_defaults(void);	/* IPv4 stops: ICMP's variables as the file has them */

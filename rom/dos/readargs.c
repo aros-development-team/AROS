@@ -900,7 +900,7 @@ end:
 
     if (error)
     {
-        if (!(rdargs->RDA_Flags & RDAF_NOALLOC))
+        if (!rdargs || !(rdargs->RDA_Flags & RDAF_NOALLOC))
             FreeVec(strbuf);
 
         /* ReadArgs() failed. Clean everything up. */

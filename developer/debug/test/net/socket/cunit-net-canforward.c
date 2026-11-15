@@ -6,6 +6,11 @@
     Roadshow's In_CanForward(): not network 0, not the loopback network
     127, not multicast or class E (224/3), not link-local 169.254/16 (RFC
     3927 section 2.7); any other unicast address, yes.
+
+    The rules are IPv4's own, and IPv4 answers the call. On a stack without
+    IPv4 nothing is forwarded to an IPv4 address and the call says no for
+    every address - a true answer, with nothing of the rules in it to test:
+    the program is left out there.
     Usage:  cunit-net-canforward
 */
 
@@ -65,6 +70,10 @@ int main(void)
     SocketBase = OpenLibrary("bsdsocket.library", 4);
     if (SocketBase == NULL) {
         printf("bsdsocket.library 4 not available - skipping CANFORWARD tests\n");
+        return 0;
+    }
+    if (st_skip_program("cunit-net-canforward", ST_V4)) {
+        CloseLibrary(SocketBase);
         return 0;
     }
     if (CU_initialize_registry() != CUE_SUCCESS) {

@@ -32,6 +32,11 @@
 #include <sys/time.h>
 #ifdef __AROS__
 #include <aros/debug.h>
+
+#ifdef __AROS__
+unsigned long omapi_aros_sigmask;
+void (*omapi_aros_signalled)(unsigned long);
+#endif
 #endif
 
 static omapi_io_object_t omapi_io_states;
@@ -658,14 +663,21 @@ isc_result_t omapi_one_dispatch (omapi_object_t *wo,
 		 * fresh lease) never interrupts it: we sit here holding bsdsocket.library
 		 * open and the stack can never shut down.  WaitSelect() also waits on
 		 * exec signals - break out on CTRL-C and exit so the base is released. */
+		/* Also on the signals a client asked for (omapi_aros_sigmask:
+		 * dhclient's, the stack's address changes), which are handed to
+		 * omapi_aros_signalled() before the sockets are looked at. */
 		{
-			ULONG sigs = SIGBREAKF_CTRL_C;
+			ULONG sigs = SIGBREAKF_CTRL_C | omapi_aros_sigmask;
 			count = WaitSelect(max + 1, &r, &w, &x, t ? &to : NULL, &sigs);
 			bug("[dhclient] omapi_one_dispatch: blocking WaitSelect count=%d errno=%d sigs=0x%08lx\n",
 			    count, errno, (unsigned long)sigs);
 			if (sigs & SIGBREAKF_CTRL_C)
 				exit(0);
-			if (count < 0 && errno == EINTR)
+			if ((sigs & omapi_aros_sigmask) && omapi_aros_signalled != NULL) {
+				omapi_aros_signalled(sigs & omapi_aros_sigmask);
+				if (count < 0)
+					count = 0;      /* woken by the signal: nothing to read */
+			} else if (count < 0 && errno == EINTR)
 				exit(0);
 		}
 #else

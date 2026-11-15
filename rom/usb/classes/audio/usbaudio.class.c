@@ -502,7 +502,12 @@ AROS_LH2(IPTR, usbDoMethodA,
 
         case UCM_AttemptResumeDevice:
             nch = (struct NepClassAudio *) methoddata[0];
-            Signal(nch->nch_Task, (1L<<nch->nch_TaskMsgPort->mp_SigBit));
+            Forbid();
+            if(nch->nch_Task && nch->nch_TaskMsgPort)
+            {
+                Signal(nch->nch_Task, (1L<<nch->nch_TaskMsgPort->mp_SigBit));
+            }
+            Permit();
             return(TRUE);
 
         default:
@@ -3176,6 +3181,8 @@ BOOL nSelectAudioMode(struct NepAudioMode *nam)
                 EA_MaxPktSize, &nam->nam_MaxPktSize,
                 EA_Interval, &nam->nam_Interval,
                 TAG_END);
+    /* endpoint-recipient requests carry the full endpoint address (incl. direction bit) in wIndex */
+    nam->nam_EPAddr = nam->nam_EPNum | (nam->nam_IsInput ? URTF_IN : 0);
 
     maxfreq = (1000 * nam->nam_MaxPktSize) / (nam->nam_FrameSize * nam->nam_Interval);
     if(maxfreq < nam->nam_MaxFreq)
@@ -3192,7 +3199,7 @@ BOOL nSelectAudioMode(struct NepAudioMode *nam)
         freqbuf[0] = freq;
         freqbuf[1] = (freq>>8);
         freqbuf[2] = (freq>>16);
-        psdPipeSetup(nam->nam_EP0Pipe, URTF_CLASS|URTF_ENDPOINT, UAUDR_SET_CUR, UAECS_SAMPLE_FREQ<<8, nam->nam_EPNum);
+        psdPipeSetup(nam->nam_EP0Pipe, URTF_CLASS|URTF_ENDPOINT, UAUDR_SET_CUR, UAECS_SAMPLE_FREQ<<8, nam->nam_EPAddr);
         ioerr = psdDoPipe(nam->nam_EP0Pipe, freqbuf, 3);
         if(ioerr)
         {
@@ -3206,7 +3213,7 @@ BOOL nSelectAudioMode(struct NepAudioMode *nam)
     {
         KPRINTF(1, ("Setting pitch control\n"));
         freqbuf[0] = 1;
-        psdPipeSetup(nam->nam_EP0Pipe, URTF_CLASS|URTF_ENDPOINT, UAUDR_SET_CUR, UAECS_PITCH<<8, nam->nam_EPNum);
+        psdPipeSetup(nam->nam_EP0Pipe, URTF_CLASS|URTF_ENDPOINT, UAUDR_SET_CUR, UAECS_PITCH<<8, nam->nam_EPAddr);
         ioerr = psdDoPipe(nam->nam_EP0Pipe, freqbuf, 1);
         if(ioerr)
         {
@@ -3248,7 +3255,7 @@ BOOL nSelectAudioMode(struct NepAudioMode *nam)
         psdAddErrorMsg(RETURN_FAIL, (STRPTR) libname, "Could not allocate RT Iso Handler!");
         return(FALSE);
     }
-    /*psdPipeSetup(nch->nch_EP0Pipe, URTF_CLASS|URTF_ENDPOINT, UAUDR_SET_CUR, UAECS_SAMPLE_FREQ, nam->nam_EPNum);
+    /*psdPipeSetup(nch->nch_EP0Pipe, URTF_CLASS|URTF_ENDPOINT, UAUDR_SET_CUR, UAECS_SAMPLE_FREQ, nam->nam_EPAddr);
     freq[0] = 44100 & 0xff;
     freq[1] = (44100>>8);
     freq[2] = (44100>>16);
@@ -3258,7 +3265,7 @@ BOOL nSelectAudioMode(struct NepAudioMode *nam)
         psdAddErrorMsg(RETURN_WARN, (STRPTR) libname,
                        "Could not set current frequency!");
     }
-    psdPipeSetup(nch->nch_EP0Pipe, URTF_IN|URTF_CLASS|URTF_ENDPOINT, UAUDR_GET_CUR, UAECS_SAMPLE_FREQ, nam->nam_EPNum);
+    psdPipeSetup(nch->nch_EP0Pipe, URTF_IN|URTF_CLASS|URTF_ENDPOINT, UAUDR_GET_CUR, UAECS_SAMPLE_FREQ, nam->nam_EPAddr);
     ioerr = psdDoPipe(nch->nch_EP0Pipe, freq, 3);
     if(ioerr)
     {

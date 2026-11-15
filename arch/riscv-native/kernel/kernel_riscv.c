@@ -8,10 +8,11 @@
 #include <aros/config.h>
 #include <exec/types.h>
 #include <stddef.h>
+#include <asm/cpu.h>
 
 #include "kernel_riscv.h"
 
-/* Filled in by the platform (riscv64-opensbi: kernel_startup.c) */
+/* Filled in by the platform (riscv64-sbi: kernel_startup.c) */
 struct RISCV_Implementation __riscv_arosintern;
 
 /* The boot hart is CPU 0 and online from the first instruction */
@@ -71,10 +72,10 @@ BOOL krnRVStopOtherCPUs(void)
     /* Each one drops out of the online mask just before it stops */
     limit = __riscv_arosintern.RVI_TimebaseFreq ?
             __riscv_arosintern.RVI_TimebaseFreq : 10000000;
-    asm volatile("rdtime %0" : "=r"(start));
+    start = krnRVReadTime();
     while (__atomic_load_n(&__riscv_cpu_count, __ATOMIC_ACQUIRE) > 1)
     {
-        asm volatile("rdtime %0" : "=r"(now));
+        now = krnRVReadTime();
         if ((now - start) > limit)
             return FALSE;
         krnRVPause();
@@ -106,17 +107,17 @@ volatile UQUAD __riscv_cpu_idletime[RISCV_MAXCPUS];
 void krnRVIdleWait(void)
 {
     uint32_t cpu = krnRVCPUNumber();
-    unsigned int prev = krnRVIntrDisable();
+    unsigned int prev = rv_intr_disable();
     UQUAD from, to;
 
-    asm volatile("rdtime %0" : "=r"(from));
+    from = krnRVReadTime();
     asm volatile("wfi" ::: "memory");
-    asm volatile("rdtime %0" : "=r"(to));
+    to = krnRVReadTime();
 
     if (cpu < RISCV_MAXCPUS)
         __riscv_cpu_idletime[cpu] += to - from;
 
-    krnRVIntrRestore(prev);
+    rv_intr_restore(prev);
 }
 
 void krnRVCPUOnline(uint32_t cpu)

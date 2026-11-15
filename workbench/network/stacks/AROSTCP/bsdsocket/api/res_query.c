@@ -76,6 +76,8 @@ static char sccsid[] = "@(#)res_query.c	5.11 (Berkeley) 3/6/91";
 #include <api/amiga_api.h>
 #include <kern/amiga_netdb.h>
 
+#include <net/netcore_map.h>        /* always the last include */
+
 #if PACKETSZ > 1024
 #define MAXPACKET	PACKETSZ
 #else

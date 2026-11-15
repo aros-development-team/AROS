@@ -8,6 +8,7 @@
 #include <proto/exec.h>
 #include <proto/mbox.h>
 #include <proto/kernel.h>
+#include <proto/openfirmware.h>
 
 #include <hardware/mmc.h>
 #include <hardware/sdhc.h>
@@ -25,6 +26,112 @@
 
 extern APTR     MBoxBase;
 extern IPTR     __arm_periiobase;
+
+/* A node's cell count property, or def where it has none. */
+static ULONG FNAME_BCMSDC(OFCells)(APTR OpenFirmwareBase, void *key, char *name, ULONG def)
+{
+    void *prop = key ? OF_FindProperty(key, name) : NULL;
+
+    return (prop && (OF_GetPropLen(prop) == sizeof(ULONG)))
+        ? AROS_BE2LONG(*(ULONG *)OF_GetPropValue(prop)) : def;
+}
+
+/*
+ * Where the controller sees RAM, from the first dma-ranges entry of its bus
+ * node. The BCM2711 B0 gives EMMC2 the first GB at 0xC0000000; on a C0 the
+ * firmware rewrites it to plain physical addresses.
+ */
+static BOOL FNAME_BCMSDC(DMAWindow)(struct bcmsdc_private *priv, char *busnode)
+{
+    APTR OpenFirmwareBase = OpenResource("openfirmware.resource");
+    void *key, *root, *prop;
+    const ULONG *cell;
+    ULONG ac, pac, sc, i;
+    UQUAD child = 0, parent = 0, size = 0;
+
+    if (!OpenFirmwareBase || !(key = OF_OpenKey(busnode)))
+        return FALSE;
+
+    ac  = FNAME_BCMSDC(OFCells)(OpenFirmwareBase, key, "#address-cells", 2);
+    sc  = FNAME_BCMSDC(OFCells)(OpenFirmwareBase, key, "#size-cells", 1);
+    if ((root = OF_OpenKey("/")) != NULL)
+    {
+        pac = FNAME_BCMSDC(OFCells)(OpenFirmwareBase, root, "#address-cells", 2);
+        OF_CloseKey(root);
+    }
+    else
+        pac = 2;
+
+    /* Empty (one to one) or not understood: keep the defaults */
+    prop = OF_FindProperty(key, "dma-ranges");
+    if (!prop || (ac > 2) || (pac > 2) || (sc > 2) ||
+        (OF_GetPropLen(prop) < (ac + pac + sc) * sizeof(ULONG)))
+    {
+        OF_CloseKey(key);
+        return FALSE;
+    }
+
+    cell = (const ULONG *)OF_GetPropValue(prop);
+    for (i = 0; i < ac; i++)
+        child = (child << 32) | AROS_BE2LONG(*cell++);
+    for (i = 0; i < pac; i++)
+        parent = (parent << 32) | AROS_BE2LONG(*cell++);
+    for (i = 0; i < sc; i++)
+        size = (size << 32) | AROS_BE2LONG(*cell++);
+    OF_CloseKey(key);
+
+    if (!size || (child + size > 0x100000000ULL))
+        return FALSE;
+
+    priv->dmaparent = parent;
+    priv->dmachild  = child;
+    priv->dmasize   = size;
+    DINIT(bug("[SDCard--] %s: DMA window 0x%08x..0x%08x at bus 0x%08x\n", busnode,
+        (unsigned)parent, (unsigned)(parent + size - 1), (unsigned)child));
+
+    return TRUE;
+}
+
+/* The controller's address for len bytes at virt, 0 outside its window */
+static IPTR FNAME_BCMSDC(DMAPhys)(APTR virt, ULONG len, struct sdcard_Bus *bus)
+{
+    struct SDCardBase *SDCardBase = bus->sdcb_DeviceBase;
+    struct bcmsdc_private *priv = BCMSDC_PRIV(bus);
+    UQUAD phys = (UQUAD)(IPTR)KrnVirtualToPhysical(virt);
+
+    if ((phys < priv->dmaparent) || ((phys + len) > (priv->dmaparent + priv->dmasize)))
+        return 0;
+
+    return (IPTR)(phys - priv->dmaparent + priv->dmachild);
+}
+
+#define BCMSDC_DMAALLOC_TRIES   8
+
+/*
+ * Memory inside the window. MEMF_31BIT is wider than the B0's first GB, so
+ * hold on to blocks that land outside it while asking again.
+ */
+static APTR FNAME_BCMSDC(DMAAlloc)(ULONG size, ULONG flags, struct sdcard_Bus *bus)
+{
+    APTR rejects[BCMSDC_DMAALLOC_TRIES];
+    APTR mem = NULL;
+    ULONG n;
+
+    for (n = 0; n < BCMSDC_DMAALLOC_TRIES; n++)
+    {
+        if (!(mem = AllocMem(size, flags | MEMF_31BIT)))
+            break;
+        if (FNAME_BCMSDC(DMAPhys)(mem, size, bus))
+            break;
+        rejects[n] = mem;
+        mem = NULL;
+    }
+
+    while (n-- > 0)
+        FreeMem(rejects[n], size);
+
+    return mem;
+}
 
 /* Does the controller in this window report a card in the slot? */
 static BOOL FNAME_BCMSDC(CardPresent)(IPTR base)
@@ -219,6 +326,8 @@ bcminit_clock:
 
     if ((__BCM2708Bus = AllocPooled(SDCardBase->sdcard_MemPool, sizeof(struct sdcard_Bus))) != NULL)
     {
+        struct bcmsdc_private *priv;
+
         __BCM2708Bus->sdcb_DeviceBase = SDCardBase;
         __BCM2708Bus->sdcb_IOBase = (APTR)ctrlBase;
         __BCM2708Bus->sdcb_BusIRQ = ctrlIRQ;
@@ -287,8 +396,11 @@ bcminit_clock:
         __BCM2708Bus->sdcb_BusInit = FNAME_BCMSDC(SDBusInit);
         __BCM2708Bus->sdcb_BusPostIRQInit = FNAME_BCMSDC(SDBusPostIRQInit);
 
-        if ((__BCM2708Bus->sdcb_BusUnits = AllocPooled(SDCardBase->sdcard_MemPool, sizeof(struct sdcard_BusUnits))) != NULL)
+        if (((priv = AllocPooled(SDCardBase->sdcard_MemPool, sizeof(struct bcmsdc_private))) != NULL) &&
+            ((__BCM2708Bus->sdcb_BusUnits = AllocPooled(SDCardBase->sdcard_MemPool, sizeof(struct sdcard_BusUnits))) != NULL))
         {
+            __BCM2708Bus->sdcb_Private = (IPTR)priv;
+
             ObtainSemaphore(&SDCardBase->sdcard_BusSem);
             __BCM2708Bus->sdcb_BusUnits->sdcbu_UnitBase = SDCardBase->sdcard_TotalBusUnits;
             __BCM2708Bus->sdcb_BusUnits->sdcbu_UnitMax = BCM2708SDUNIT_MAX;
@@ -350,9 +462,17 @@ bcminit_clock:
             DINIT(bug("[SDCard--] %s: SDHC Base Clock Rate : %dMHz\n", __PRETTY_FUNCTION__, __BCM2708Bus->sdcb_ClockMax / 1000000));
             DINIT(bug("[SDCard--] %s: SDHC Min Clock Rate : %dHz (hardcoded)\n", __PRETTY_FUNCTION__, __BCM2708Bus->sdcb_ClockMin));
 
+            /* Without a window the controller sees plain physical addresses */
+            if ((__arm_periiobase == BCM2711_PERIIOBASE) &&
+                FNAME_BCMSDC(DMAWindow)(priv, isEMMC2 ? "/emmc2bus" : "/soc"))
+            {
+                __BCM2708Bus->sdcb_DMAPhys = FNAME_BCMSDC(DMAPhys);
+                __BCM2708Bus->sdcb_DMAAlloc = FNAME_BCMSDC(DMAAlloc);
+            }
+
             FNAME_SDCBUS(ADMAAlloc)(__BCM2708Bus);
 
-            __BCM2708Bus->sdcb_Private = (IPTR)sdcard_CurrentTime();
+            priv->lastwrite = sdcard_CurrentTime();
 
             FNAME_SDC(RegisterBus)(__BCM2708Bus, SDCardBase);
 
@@ -360,6 +480,8 @@ bcminit_clock:
         }
         else
         {
+            if (priv)
+                FreePooled(SDCardBase->sdcard_MemPool, priv, sizeof(struct bcmsdc_private));
             FreePooled(SDCardBase->sdcard_MemPool, __BCM2708Bus, sizeof(struct sdcard_Bus));
         }
     }

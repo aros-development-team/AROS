@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2022-2025, The AROS Development Team.
+    Copyright (C) 2022-2026, The AROS Development Team.
 */
 
 #include <aros/debug.h>
@@ -69,7 +69,7 @@ static int powerenum_init(struct SysexpPowerBase *PowerBase)
 
 ADD2INITLIB(powerenum_init, 10);
 
-/*****************************************************************************
+/*****i power/ModuleInit
     NAME
         void ModuleInit(
 

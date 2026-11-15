@@ -41,6 +41,7 @@ exp_gcc_version=`cat ${srcdir}/config/gcc_exp`
 default_llvm_version=`cat ${srcdir}/config/llvm_def`
 exp_binutils_version=`cat ${srcdir}/config/binutils_exp`
 default_grub2_version=`cat ${srcdir}/arch/all-pc/boot/grub2_def`
+default_mesagl_version=`cat ${srcdir}/workbench/libs/mesa/mesa_def`
 
 # The AROS target is slightly different to the normal GNU style
 # format. We don't have the middle part, and we reverse the order
@@ -179,12 +180,15 @@ if test "$IS_SUN_COMPILER" -ne "0"; then
     HOST_TOOLCHAIN_FAMILY=sun
 fi
 IS_LLVM_COMPILER=`echo $HOST_COMPILER_VERSION | grep -i -c -E 'LLVM|clang'`
+# $CC may carry extra options (newer autoconf appends e.g. -std=gnu23), so
+# only look at the compiler command itself when deriving the tool names.
+CC_BASE_CMD=`echo "$CC_BASE" | sed -e 's| .*||'`
 if test "$IS_LLVM_COMPILER" -ne "0"; then
-    if test "$CC_BASE" != "gcc"; then
+    if test "$CC_BASE_CMD" != "gcc"; then
         HOST_TOOLCHAIN_CC=clang
         HOST_TOOLCHAIN_CXX=clang++
         HOST_TOOLCHAIN_PREFIX=llvm-
-        HOST_TOOLCHAIN_SUFFIX="`echo $CC_BASE | sed -e \"s|clang||g\"`"
+        HOST_TOOLCHAIN_SUFFIX="`echo $CC_BASE_CMD | sed -e \"s|clang||g\"`"
         HOST_TOOLCHAIN_FAMILY=llvm
     else
         IS_GNU_COMPILER=1
@@ -1828,6 +1832,9 @@ case "$target_os" in
                 aros_nominal_depth=8
                 aros_kernel_rs="$toolchain_ar"
                 aros_kernel_ar_flags="-cr"
+                # mklib_q passes the object list to ar in a response file (@file), which
+                # Apple's ar does not understand. Use the toolchain's ar, like aros_kernel_rs.
+                aros_kernel_ar="$toolchain_ar"
                 aros_kernel_ld="$toolchain_ld -arch arm64"
                 aros_kernel_as="$toolchain_as -arch arm64"
                 aros_kernel_ranlib="ranlib"
@@ -2200,9 +2207,9 @@ case "$target_os" in
         esac
         ;;
 
-    opensbi)
+    sbi|opensbi)
         aros_flavour="standalone"
-        aros_target_arch="opensbi"
+        aros_target_arch="sbi"
         aros_isa_flags="$""(ISA_RISCV_FLAGS)"
         aros_shared_default="no"
         llvm_target_cpu="RISCV"
@@ -2230,7 +2237,7 @@ case "$target_os" in
                 aros_object_format="riscvelf_aros"
                 ;;
             *)
-                AC_MSG_ERROR("Unsupported CPU '$target_cpu' for OpenSBI")
+                AC_MSG_ERROR("Unsupported CPU '$target_cpu' for SBI")
                 ;;
         esac
         ;;
@@ -3045,11 +3052,11 @@ case "$aros_target_cpu" in
             aros_isa_extra="$aros_isa_extra$export_newline"
         fi
 
-        aros_config_cflags="$aros_config_cflags $""(CFLAGS_NO_UNWIND_TABLES) $""(CFLAGS_NO_ASYNCHRONOUS_UNWIND_TABLES) $""(CFLAGS_NO_EXCEPTIONS)"
-        aros_config_cxxflags="$aros_config_cxxflags $""(CFLAGS_NO_UNWIND_TABLES) $""(CFLAGS_NO_ASYNCHRONOUS_UNWIND_TABLES) $""(CFLAGS_NO_EXCEPTIONS)"
-        aros_config_aflags="$aros_config_aflags $""(CFLAGS_NO_UNWIND_TABLES) $""(CFLAGS_NO_ASYNCHRONOUS_UNWIND_TABLES) $""(CFLAGS_NO_EXCEPTIONS)"
+        aros_config_cflags="$aros_config_cflags $""(CFLAGS_NO_UNWIND_TABLES) $""(CFLAGS_NO_ASYNCHRONOUS_UNWIND_TABLES)"
+        aros_config_cxxflags="$aros_config_cxxflags $""(CFLAGS_NO_UNWIND_TABLES) $""(CFLAGS_NO_ASYNCHRONOUS_UNWIND_TABLES)"
+        aros_config_aflags="$aros_config_aflags $""(CFLAGS_NO_UNWIND_TABLES) $""(CFLAGS_NO_ASYNCHRONOUS_UNWIND_TABLES)"
         aros_kernel_cflags="$aros_kernel_cflags"
-        aros_kernel_export_cflags="$aros_kernel_export_cflags $""(CFLAGS_NO_UNWIND_TABLES) $""(CFLAGS_NO_ASYNCHRONOUS_UNWIND_TABLES) $""(CFLAGS_NO_EXCEPTIONS)"
+        aros_kernel_export_cflags="$aros_kernel_export_cflags $""(CFLAGS_NO_UNWIND_TABLES) $""(CFLAGS_NO_ASYNCHRONOUS_UNWIND_TABLES)"
         ;;
     i386)
         aros_isa_extra="$x86_isa_extra$export_newline$x86_64_isa_extra$export_newline"
@@ -3111,7 +3118,7 @@ fi
 AC_MSG_RESULT($aros_target_guitheme)
 
 AC_MSG_CHECKING([which version of mesa to build ...])
-AC_ARG_WITH(mesagl,AS_HELP_STRING([--with-mesagl=family],[Which version of MesaGL to build (defaults to 26.2.5)]),aros_mesagl="$withval",aros_mesagl="26.2.5")
+AC_ARG_WITH(mesagl,AS_HELP_STRING([--with-mesagl=family],[Which version of MesaGL to build (default=$default_mesagl_version)]),aros_mesagl="$withval",aros_mesagl="$default_mesagl_version")
 AC_MSG_RESULT($aros_mesagl)
 aros_target_options+="$export_newline""# Enable MesaGL$export_newline""OPT_MESAGL                    := $aros_mesagl$export_newline"
 

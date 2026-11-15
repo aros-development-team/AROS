@@ -32,6 +32,12 @@
 #include "private.h"
 #include "version.h"
 
+/* Return TRUE and write a recognized attribute to valid opg_Storage,
+ * delegating others to Area. Content, placeholder, filter, hook and object
+ * pointers are borrowed. SelectOnActive reports effective flags; SelectSize
+ * is signed. String_Integer uses StrToLong without checking conversion
+ * failure. Columns has no local getter.
+ */
 IPTR mGet(struct IClass *cl, Object *obj, struct opGet *msg)
 {
   struct InstData *data = (struct InstData *)INST_DATA(cl, obj);
@@ -154,6 +160,14 @@ IPTR mGet(struct IClass *cl, Object *obj, struct opGet *msg)
   return TRUE;
 }
 
+/* Apply boolean tags, then process local attributes in order. Copy Contents
+ * but borrow filters, hooks, placeholder and object pointers. May change
+ * caller tag IDs to TAG_IGNORE. Update selection/cursor and request redraw
+ * as needed; queue or flush contents notifications according to NoNotify.
+ * Return zero; the dispatcher separately forwards the modified message to
+ * Area. Allocation failure is not a transactional rollback or separately
+ * returned error.
+ */
 IPTR mSet(struct IClass *cl, Object *obj, struct opSet *msg)
 {
   struct InstData *data = (struct InstData *)INST_DATA(cl, obj);

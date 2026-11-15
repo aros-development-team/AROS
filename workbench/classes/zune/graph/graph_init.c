@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2017, The AROS Development Team. All rights reserved.
+    Copyright (C) 2017-2026, The AROS Development Team. All rights reserved.
     $Id: $
 */
 
@@ -23,6 +23,12 @@ struct Device      *TimerBase;
 struct timerequest *TimerIO;
 
 /*** Library startup and shutdown *******************************************/
+/* Initialize globals, allocate a cleared timerequest, and open timer.device
+ * UNIT_VBLANK for library startup. Return TRUE on success; on failure close
+ * any opened device and free the request before returning FALSE. Freed
+ * globals are not reset afterward; this is not an idempotent retry/cleanup
+ * contract.
+ */
 static int Graph_StartTimer(LIBBASETYPEPTR LIBBASE)
 {
     TimerIO   = NULL;
@@ -57,6 +63,11 @@ error:
     return FALSE;
 }
 
+/* Close the timer device when TimerBase is non-NULL and free TimerIO when
+ * non-NULL, then return TRUE. Intended for expunge after successful
+ * startup. Globals are not reset, so repeated calls or cleanup after a
+ * failed startup are not independently safe contracts.
+ */
 static int Graph_StopTimer(LIBBASETYPEPTR LIBBASE)
 {
     if (TimerBase != NULL) CloseDevice((struct IORequest *) TimerIO);

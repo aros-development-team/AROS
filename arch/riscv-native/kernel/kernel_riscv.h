@@ -3,15 +3,14 @@
 /*
     Copyright (C) 2026, The AROS Development Team. All rights reserved.
 
-    Desc: Shared declarations for native (supervisor-mode) RISC-V
-          kernels.
+    Desc: Shared declarations for native RISC-V kernels.
 
     riscv-native holds the firmware-independent part of the kernel:
     per-hart TLS, the CPU numbering and masks, spinlocks, the SMP
     scheduler and the IPI core. Whatever needs the firmware - starting
     a hart, raising an inter-processor interrupt, remote TLB fences - is
     reached through the hook table below, which the platform (e.g.
-    riscv64-opensbi over SBI) fills in. It follows the ARM_Implementation
+    riscv64-sbi over SBI) fills in. It follows the ARM_Implementation
     / ARMI_* hooks of the ARM ports.
 */
 
@@ -28,7 +27,7 @@ struct ExecBase;
  * The most harts a native RISC-V kernel numbers. CPU masks are a fixed
  * RISCV_CPUMASK_WORDS ULONGs for the lifetime of the boot, so a mask
  * never has to be resized when a hart comes online. Platforms may
- * describe fewer (riscv64-opensbi: KRN_MAX_HARTS).
+ * describe fewer (riscv64-sbi: KRN_MAX_HARTS).
  */
 #define RISCV_MAXCPUS           32
 #define RISCV_CPUMASK_WORDS     ((RISCV_MAXCPUS + 31) / 32)
@@ -41,8 +40,10 @@ struct RISCV_Implementation
      * hart reports in through cpu_Register().
      */
     int     (*RVI_StartCPU)(uint32_t cpu, tls_t *tls);
-    /* Raise the supervisor software interrupt on every CPU in mask */
+    /* Raise the software interrupt on every CPU in mask */
     void    (*RVI_SendIPI)(const ULONG *mask);
+    /* Clear the calling hart's software interrupt (the IPI acknowledge) */
+    void    (*RVI_AckIPI)(void);
     /* Per-hart platform setup, on that hart, before it schedules */
     void    (*RVI_InitCore)(struct KernelBase *, struct ExecBase *);
     /* Start the hart's own scheduler tick, on that hart */
@@ -67,6 +68,33 @@ void krnRVResetCPUs(void);
 #endif
 
 extern struct RISCV_Implementation __riscv_arosintern;
+
+/*
+ * The time counter, RVI_TimebaseFreq ticks per second. rdtime fills one
+ * register, so rv32 reads the two halves separately and retries if the
+ * high half moved in between.
+ */
+static inline UQUAD krnRVReadTime(void)
+{
+#if __riscv_xlen == 32
+    ULONG hi, lo, hi2;
+
+    do
+    {
+        asm volatile("rdtimeh %0" : "=r"(hi));
+        asm volatile("rdtime %0" : "=r"(lo));
+        asm volatile("rdtimeh %0" : "=r"(hi2));
+    } while (hi != hi2);
+    return ((UQUAD)hi << 32) | lo;
+#elif __riscv_xlen == 64
+    UQUAD v;
+
+    asm volatile("rdtime %0" : "=r"(v));
+    return v;
+#else
+#error "kernel_riscv.h: __riscv_xlen must be 32 or 64"
+#endif
+}
 
 /*
  * Logical CPU numbering. CPU 0 is the boot hart; the others are
@@ -137,26 +165,6 @@ static inline uint32_t krnRVCPUNumber(void)
 extern int __riscv64_trap_depth;
 #define KRN_TRAPDEPTH   __riscv64_trap_depth
 #endif
-
-/*
- * Mask out supervisor interrupts on this hart, returning whether they
- * were enabled. On RISC-V the IPI is an ordinary supervisor interrupt
- * (SSI), so this also holds off the IPI handler - there is no separate
- * FIQ-like level to mask as on ARM.
- */
-static inline unsigned int krnRVIntrDisable(void)
-{
-    unsigned long old;
-
-    asm volatile("csrrci %0, sstatus, 2" : "=r"(old) :: "memory");
-    return (unsigned int)(old & 2);
-}
-
-static inline void krnRVIntrRestore(unsigned int prev)
-{
-    if (prev)
-        asm volatile("csrsi sstatus, 2" ::: "memory");
-}
 
 /* Spin-wait hint (Zihintpause, part of RVA22; a nop elsewhere) */
 static inline void krnRVPause(void)

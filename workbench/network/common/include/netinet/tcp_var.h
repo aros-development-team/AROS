@@ -54,6 +54,21 @@
  */
 #define TCP_SACK_BOARD	32
 
+/*
+ * RACK (RFC 8985 section 6): when each part of what is in flight was last
+ * sent. t_xmap[i] covers [the previous entry's end (t_xmap_start for the
+ * first), end), in sequence order. The map is allocated when a connection
+ * negotiates SACK (tcp_rack_attach()), t_xmap_len entries: tcp_rack_maplen,
+ * chosen when the stack starts from the memory free then (tcp_rack_init()).
+ */
+struct tcp_xrec {
+	tcp_seq		end;
+	u_int32_t	ts;		/* tcp_ms() when last sent */
+	u_short		flags;
+#define	XR_RETX		0x01		/* last sent as a retransmission */
+#define	XR_DELIV	0x02		/* acknowledged or SACKed */
+};
+
 struct sackblk {
 	tcp_seq	start;		/* left edge (first unacknowledged byte) */
 	tcp_seq	end;		/* right edge (next byte after SACK'd data) */
@@ -146,8 +161,11 @@ struct tcpcb {
 #define TF_PMTUD_BH	0x0080		/* MSS lowered: path MTU black hole suspected */
 #define TF_PMTUD_NODF	0x0100		/* IPv4: DF off after a black hole */
 #define TF_ECN_SYN	0x0200		/* our SYN asked for ECN */
+#define TF_PTO		0x0400		/* TCPT_REXMT is the loss probe timeout (RFC 8985) */
+#define TF_TLP		0x0800		/* a loss probe is out, up to t_tlp_end */
+#define TF_UNDO		0x1000		/* the last recovery may prove needless (D-SACKs) */
 
-	struct	tcpiphdr *t_template;	/* skeletal packet for transmit */
+	struct	tcphdr *t_template;	/* skeletal TCP header for transmit */
 	struct	inpcb *t_inpcb;		/* back pointer to internet pcb */
 /*
  * The following fields are used as in the protocol specification.
@@ -280,6 +298,14 @@ struct tcpcb {
 	u_int	t_challenge_cnt;
 
 /*
+ * ACKs sent for segments dropped (dropafterack), counted as the challenge
+ * ACKs are, so that two ends out of step do not answer each other's ACKs
+ * for ever (an ACK war; FreeBSD's tcp_ack_war_check()).
+ */
+	u_long	t_ackwar_time;
+	u_int	t_ackwar_cnt;
+
+/*
  * What this connection adds to tcp_now in its TSval (RFC 7323 section 5.4).
  */
 	u_int32_t t_ts_offset;
@@ -289,6 +315,37 @@ struct tcpcb {
  * retransmitted in this recovery (HighRxt), so that a hole goes once.
  */
 	tcp_seq	snd_highrxt;
+
+/*
+ * Receive buffer autosizing (SB_AUTOSIZE): what arrived in order since
+ * t_rfbuf_ts (tcp_ms(); 0: no period running).
+ */
+	u_int32_t t_rfbuf_ts;
+	u_long	t_rfbuf_cnt;
+	u_long	t_autobuf;		/* its share of tcp_autobuf_used (pool bytes) */
+
+/* Tail Loss Probe (RFC 8985 section 7): where the probe's data ends */
+	tcp_seq	t_tlp_end;
+
+/* RACK (RFC 8985 section 6), tcp_rack.c */
+	struct tcp_xrec *t_xmap;		/* NULL: no RACK on this connection */
+	tcp_seq	t_xmap_start;
+	u_short	t_xmap_n;
+	u_short	t_xmap_len;		/* entries t_xmap holds */
+	u_char	t_rack_reord;		/* reordering seen on this connection */
+	u_char	t_rack_mult;		/* reo_wnd multiplier, grown by D-SACKs */
+	u_int32_t t_rack_ts;		/* RACK.xmit_ts: latest send time delivered */
+	tcp_seq	t_rack_end;		/* RACK.end_seq */
+	u_int32_t t_rack_rtt;		/* RACK.rtt (ms) */
+	u_int32_t t_rack_minrtt;	/* least RACK.rtt (ms; 0: none) */
+	tcp_seq	t_rack_lost;		/* the holes below it are lost */
+
+/* Undoing a needless recovery (RFC 3708 with D-SACK, as Linux): cwnd and
+ * ssthresh before it, and the bytes it retransmitted that no D-SACK has
+ * reported yet */
+	u_long	t_undo_cwnd;
+	u_long	t_undo_ssthresh;
+	long	t_undo_bytes;
 
 /* TUBA stuff */
 	caddr_t	t_tuba_pcb;		/* next level down pcb for TCP over z */
@@ -448,6 +505,7 @@ struct	tcpstat {
 	u_long	tcps_sc_reset;		/* entries removed by RST */
 	u_long	tcps_sc_zonefail;	/* entry allocation failures */
 	u_long	tcps_sc_aborted;	/* completions aborted (listen full) */
+	u_long	tcps_rcvackwar;		/* ACKs for dropped segments not sent (rate) */
 };
 
 /*
@@ -469,7 +527,12 @@ struct	tcpstat {
 #define	TCPCTL_REXMIT_MIN	14	/* minimum retransmission timeout (ms) */
 #define	TCPCTL_ABC_L		15	/* slow start: at most L * SMSS per ACK (RFC 3465) */
 #define	TCPCTL_HYSTART		16	/* HyStart++ in the first slow start (RFC 9406) */
-#define TCPCTL_MAXID		17
+#define	TCPCTL_MINMSS		17	/* the least MSS a connection takes */
+#define	TCPCTL_SENDBUF_MAX	18	/* send buffer autosizing ceiling (0: off) */
+#define	TCPCTL_RECVBUF_MAX	19	/* receive buffer autosizing ceiling (0: off) */
+#define	TCPCTL_TLP		20	/* tail loss probe (RFC 8985 section 7) */
+#define	TCPCTL_RACK		21	/* RACK loss detection (RFC 8985 section 6) */
+#define TCPCTL_MAXID		22
 
 #define TCPCTL_NAMES { \
 	{ 0, 0 }, \
@@ -489,9 +552,27 @@ struct	tcpstat {
 	{ "rexmit_min", CTLTYPE_INT }, \
 	{ "abc_l", CTLTYPE_INT }, \
 	{ "hystart", CTLTYPE_INT }, \
+	{ "minmss", CTLTYPE_INT }, \
+	{ "sendbuf_max", CTLTYPE_INT }, \
+	{ "recvbuf_max", CTLTYPE_INT }, \
+	{ "tlp", CTLTYPE_INT }, \
+	{ "rack", CTLTYPE_INT }, \
 }
 
 #ifdef KERNEL
+/*
+ * The TCP header of a segment in an mbuf. struct tcphdr is packed, so
+ * through a plain pointer to it the compiler must assume any address and,
+ * on machines that cannot read a word from an odd one (the 68000), fetches
+ * and stores every 16- and 32-bit field a byte at a time: some 120 cycles
+ * more for each th_seq or th_ack. The header of a segment is even-aligned
+ * - the network header in front of it starts at an even address of its
+ * mbuf and is a multiple of 4 bytes long, and what TCP builds starts at
+ * such a place - and this type says so. (struct tcpiphdr said the same
+ * for the code that was here before.) Needs <netinet/tcp.h> first.
+ */
+typedef struct tcphdr tcp_ahdr_t __attribute__((__aligned__(2)));
+
 extern	struct inpcbhead tcb;		/* head of queue of active tcpcb's */
 extern	struct inpcbinfo tcbinfo;
 extern	struct tcpstat tcpstat;	/* tcp statistics */
@@ -521,12 +602,20 @@ extern	int tcp_do_rfc1644;	/* XXX */
 #define TCP_KEEP_MAXSECS	(32767 / PR_SLOWHZ)
 extern	int tcp_do_pmtud;		/* IPv4 path MTU discovery */
 extern	int tcp_do_pmtud_blackhole;	/* black-hole detection */
-extern	int tcp_mssdflt;	/* XXX */
 extern	u_long tcp_now;		/* for RFC 1323 timestamps */
 extern	int tcp_rttdflt;	/* initial retransmission timeout (s) */
 extern	int tcp_rexmit_min;	/* minimum retransmission timeout (ms) */
 extern	int tcp_abc_l;		/* slow start byte counting limit (RFC 3465) */
 extern	int tcp_do_hystart;	/* HyStart++ (RFC 9406) */
+extern	int tcp_minmss;		/* the least MSS (TCP_MINMSS) */
+/* the least MSS a connection uses: tcp_minmss, never below 64 bytes */
+#define	TCP_MSS_FLOOR	(tcp_minmss > 64 ? tcp_minmss : 64)
+extern	int tcp_do_tlp;		/* tail loss probe (RFC 8985) */
+extern	int tcp_do_rack;	/* RACK loss detection (RFC 8985) */
+extern	int tcprexmtthresh;	/* DupThresh */
+extern	u_long tcp_autosndbuf_max;	/* send buffer autosizing ceiling */
+extern	u_long tcp_autorcvbuf_max;	/* receive buffer autosizing ceiling */
+#define	TCP_AUTOSNDBUF_INC	(16 * 1024)	/* send buffer autosizing step */
 extern  u_short tcp_lastport;	/* last assigned port */
 extern	int tcp_do_sack;	/* enable SACK (RFC 2018) */
 extern	int tcp_do_newreno;	/* enable NewReno (RFC 3782) */
@@ -538,20 +627,25 @@ void	 tcp_canceltimers __P((struct tcpcb *));
 struct tcpcb *
 	 tcp_close __P((struct tcpcb *));
 int	 tcp_connect __P((struct tcpcb *, struct mbuf *));
-void	 tcp_ctlinput __P((int, struct sockaddr *, void *));
 int	 tcp_ctloutput __P((int, struct socket *, int, int, struct mbuf **));
 struct tcpcb *
 	 tcp_disconnect __P((struct tcpcb *));
 struct tcpcb *
 	 tcp_drop __P((struct tcpcb *, int));
 void	 tcp_dooptions __P((struct tcpcb *,
-	    u_char *, int, struct tcpiphdr *, struct tcpopt *));
+	    u_char *, int, struct tcphdr *, struct tcpopt *));
 void	 tcp_drain __P((void));
 void	 tcp_fasttimo __P((void));
 struct rmxp_tao *
 	 tcp_gettaocache __P((struct inpcb *));
 void	 tcp_init __P((void));
-void	 tcp_input __P((void *arg, ...));
+struct inetfamily;
+struct inctlparam;
+/* a segment, its network header still in front (hlen bytes), from the
+ * family it arrived by */
+void	 tcp_input __P((struct mbuf *, int, const struct inetfamily *));
+/* what a family's ICMP says about a segment sent (netinet/inetfamily.h) */
+void	 tcp_ctlnotify __P((int, const struct inctlparam *));
 void	 tcp_mss __P((struct tcpcb *, int));
 int	 tcp_mssopt __P((struct tcpcb *));
 struct tcpcb *
@@ -559,22 +653,19 @@ struct tcpcb *
 void	 tcp_notify __P((struct inpcb *, int));
 int	 tcp_output __P((struct tcpcb *));
 void	 tcp_pulloutofband __P((struct socket *,
-	    struct tcpiphdr *, struct mbuf *));
+	    struct tcphdr *, struct mbuf *));
 void	 tcp_quench __P((struct inpcb *, int));
-int	 tcp_reass __P((struct tcpcb *, struct tcpiphdr *, struct mbuf *));
-struct in6_addr;
-void	 tcp_respond __P((struct tcpcb *,
-	    struct tcpiphdr *, struct mbuf *, tcp_seq, tcp_seq, int,
-	    int, struct in6_addr *, struct in6_addr *));
-struct rtentry *
-	 tcp_rtlookup __P((struct inpcb *));
+int	 tcp_reass __P((struct tcpcb *, struct tcphdr *, int, struct mbuf *));
+void	 tcp_respond __P((struct tcpcb *, const struct inetfamily *,
+	    const void *, const void *, tcp_ahdr_t *, struct mbuf *,
+	    tcp_seq, tcp_seq, int));
 void	 tcp_setpersist __P((struct tcpcb *));
 void	 tcp_slowtimo __P((void));
-int	 tcp_sysctl __P((int *, u_int, void *, size_t *, void *, size_t));
-struct tcpiphdr *
+struct tcphdr *
 	 tcp_template __P((struct tcpcb *));
 struct tcpcb *
 	 tcp_timers __P((struct tcpcb *, int));
+struct tcpiphdr;	/* only tcp_debug.c still has one */
 void	 tcp_trace __P((int, int, struct tcpcb *, struct tcpiphdr *, int));
 struct tcpcb *
 	 tcp_usrclosed __P((struct tcpcb *));
@@ -585,6 +676,23 @@ void	 tcp_rto_after_syn __P((struct tcpcb *));
 u_int32_t tcp_ms __P((void));
 u_long	 tcp_ss_incr __P((struct tcpcb *, u_int));
 void	 tcp_hystart_init __P((struct tcpcb *));
+int	 tcp_autobuf_grow __P((struct tcpcb *, struct sockbuf *, u_long, u_long));
+void	 tcp_autobuf_init __P((void));
+u_long	 tcp_autobuf_pool __P((void));
+u_long	 tcp_autobuf_one __P((void));
+void	 tcp_autobuf_release __P((struct tcpcb *));
+void	 tcp_tlp_arm __P((struct tcpcb *));
+void	 tcp_timer_want __P((u_int32_t));
+u_int32_t tcp_rexmt_due __P((int *));
+int	 tcp_rack_on __P((const struct tcpcb *));
+void	 tcp_rack_init __P((void));
+void	 tcp_rack_attach __P((struct tcpcb *));
+void	 tcp_rack_detach __P((struct tcpcb *));
+void	 tcp_rack_sent __P((struct tcpcb *, tcp_seq, tcp_seq, int));
+void	 tcp_rack_ack __P((struct tcpcb *, const struct tcpopt *, tcp_seq));
+void	 tcp_rack_reset __P((struct tcpcb *));
+int	 tcp_dsack_block __P((const struct tcpopt *, tcp_seq, struct sackblk *));
+int	 tcp_rscale __P((struct socket *));
 #endif /* KERNEL */
 
 #endif /* _NETINET_TCP_VAR_H_ */

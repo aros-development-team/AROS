@@ -34,6 +34,14 @@
 #include "massstorage.h"
 #include "dev.h"
 
+/* TRUE for "device sent more data than requested". UHCI/OHCI/EHCI HCDs report
+   this as UHIOERR_OVERFLOW; xhci folds the same wire condition into Babble
+   Detected (UHIOERR_BABBLE). The transports treat both as benign truncation. */
+static inline BOOL nIsOverflowErr(LONG ioerr)
+{
+    return (ioerr == UHIOERR_OVERFLOW) || (ioerr == UHIOERR_BABBLE);
+}
+
 #ifndef TD_READ64
 #define TD_READ64     24
 #define TD_WRITE64    25
@@ -51,11 +59,18 @@ struct NepClassMS * GM_UNIQUENAME(nAllocMS)(void);
 void GM_UNIQUENAME(nFreeMS)(struct NepClassMS *ncm);
 
 BOOL GM_UNIQUENAME(nLoadClassConfig)(struct NepMSBase *nh);
-BOOL GM_UNIQUENAME(nLoadBindingConfig)(struct NepClassMS *ncm);
+BOOL GM_UNIQUENAME(nLoadBindingConfig)(struct NepClassMS *ncm, BOOL announce);
 LONG GM_UNIQUENAME(nOpenBindingCfgWindow)(struct NepMSBase *nh, struct NepClassMS *ncm);
 
 void GM_UNIQUENAME(nGUITaskCleanup)(struct NepClassMS *ncm);
 BOOL GM_UNIQUENAME(nStoreConfig)(struct NepClassMS *ncm);
+BOOL nTryFallback(struct Library *ps, struct NepClassMS *ncm, ULONG flag, CONST_STRPTR name, BOOL enable, LONG rc);
+BOOL nApplyFallback(struct NepClassMS *ncm, ULONG flag, CONST_STRPTR name, BOOL enable, LONG rc);
+
+void nSetNakTimeout(struct NepClassMS *ncm, struct PsdPipe *pp, ULONG timeout_ms);
+ULONG nNakTimeoutMs(struct NepClassMS *ncm);
+void nApplyNakTimeout(struct NepClassMS *ncm, ULONG timeout_ms);
+void nWakeUnitTask(struct NepClassMS *ncm);
 
 void GM_UNIQUENAME(nHexString)(UBYTE *src, ULONG len, UBYTE *buf);
 

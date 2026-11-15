@@ -130,6 +130,8 @@ __END_DECLS
  */
 #define SIOCAIFADDR_IN6	 _IOW ('i', 26, struct in6_aliasreq) /* add/chg IPv6 alias */
 #define SIOCDIFADDR_IN6  _IOW ('i', 25, struct in6_ifreq)   /* delete IPv6 addr */
+#define SIOCGIFAFLAG_IN	 _IOWR('i', 39, struct ifreq)       /* an address's IN_IFF_* flags (NetBSD) */
+#define SIOCAIFADDR_ORIGIN _IOW('i', 26, struct in_originreq) /* SIOCAIFADDR with its IN_ORIGIN_* */
 #define SIOCGIFADDR_IN6	 _IOWR('i', 33, struct in6_ifreq)   /* get IPv6 address */
 #define SIOCGIFDSTADDR_IN6 _IOWR('i', 34, struct in6_ifreq) /* get IPv6 p-p addr */
 #define SIOCGIFNETMASK_IN6 _IOWR('i', 37, struct in6_ifreq) /* get IPv6 netmask */
@@ -187,5 +189,16 @@ struct nat;
 #define SIOCFLNAT	_IOWR('r', 84, int)               /* flush NAT rules */
 #define SIOCCNATL	_IOWR('r', 85, int)               /* flush NAT entries*/
 #define SIOCPURGENAT	_IOWR('r', 86, int)               /* purge NAT */
+
+/*
+ * AROSTCP: the IPv6 filter rules (struct ipf_rule6, net/ipfilter.h - to
+ * be included where these are used: the number carries the structure's
+ * size). The data is the rule itself.
+ */
+struct ipf_rule6;
+
+#define SIOCADAFR6	_IOW ('r', 90, struct ipf_rule6)  /* add IPv6 rule (append) */
+#define SIOCINAFR6	_IOW ('r', 91, struct ipf_rule6)  /* insert IPv6 rule */
+#define SIOCRMAFR6	_IOW ('r', 92, struct ipf_rule6)  /* remove IPv6 rule */
 
 #endif /* !SYS_IOCTL_H */

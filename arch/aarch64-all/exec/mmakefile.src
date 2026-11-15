@@ -24,7 +24,7 @@ USER_AFLAGS	:= $(PRIV_EXEC_INCLUDES) -I$(GENINCDIR)
 
 %build_archspecific \
   mainmmake=kernel-exec modname=exec maindir=rom/exec \
-  files="cachecleare newstackswap preparecontext" asmfiles="stackswap execstubs" \
+  files="cachecleare newstackswap preparecontext" asmfiles="stackswap execstubs copymem copymemquick" \
   arch=aarch64
 
 %common

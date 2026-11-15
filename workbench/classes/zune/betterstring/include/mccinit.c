@@ -75,94 +75,73 @@
 
  About:
 
-  The purpose of this source file is to provide a template for the library init
-  code for a creation of an own MUI custom class (mcc/mcp) for AmigaOS4,
-  AmigaOS3 and MorphOS. By directly including this file (#include "mccinit.c")
-  and defining certain preprocessor values, a MUI developer doesn't have to
-  care about library init stuff which is normally highly system dependent and
-  various between different Amiga operating systems.
+  Include this template once from each class library's library.c. It provides
+  library initialization, open/close/expunge vectors and MCC_Query for AROS,
+  with separate AmigaOS and MorphOS branches. The including file supplies
+  the dispatchers and optional hooks. This is not an instance dispatcher.
 
- Usage:
+ Configuration:
 
-  This file should be included by another source file (e.g. 'library.c') in
-  your main development branch while certain preprocessor macros right before
-  the include statement can be defined to change the behaviour of mccinit.c.
-  These possible macros are:
+  Required: CLASS is the library/class name including its suffix; VERSION
+  and REVISION are numeric versions; USERLIBID is the version text without
+  "$VER: ". Keep those values consistent. MASTERVERSION defaults to
+  MUIMASTER_VMIN. The BetterString, HotkeyString and MCP wrappers set it to 19.
 
-    USERLIBID     (char*)   - version string for the mcc/mcp (exluding $VER:)
-    VERSION       (int)     - version number (must match USERLIBID)
-    REVISION      (int)     - revision number (must match USERLIBID)
-    CLASS         (char*)   - class name (including .mcc/.mcp)
-    MASTERVERSION (int)     - the minimun required muimaster version
-                              (default: MUIMASTER_VMIN)
-    MIN_STACKSIZE (int)     - if defined, the specified minimum stack size
-                              will be enforced when calling all user functions
-                              like ClassXXXX() and PreClassXXX().
+  SUPERCLASS and INSTDATA select the MCC superclass and instance structure;
+  _Dispatcher supplies its dispatcher. SUPERCLASSP, INSTDATAP and
+  _DispatcherP select the MCP equivalents. Defining both creates both classes.
+  Instance sizes use sizeof(struct INSTDATA) and sizeof(struct INSTDATAP).
 
-    MCC only:
-    --------
-    SUPERCLASS  (char*)   - superclass ID of MCC (e.g. MUIC_Area)
-    INSTDATA              - name of instance data structure of MCC (e.g. InstData)
-    USEDCLASSES           - name of NULL terminated string array which contains
-                            names of other required custom classes for MCC.
-    _Dispatcher           - name of Dispatcher function for MCC
+  USEDCLASSES and USEDCLASSESP are NULL-terminated name arrays returned by
+  query selectors 5 and 6; this template does not load their entries.
+  SHORTHELP supplies borrowed text for selector 7. ONLYGLOBAL and INFOCLASS
+  enable TRUE results for selectors 3 and 4. PREFSIMAGEOBJECT is evaluated
+  on each selector-2 call; its expression determines object ownership.
+  BetterString.mcp uses a factory returning a new image object.
 
-    MCP only:
-    -------
-    SUPERCLASSP (char*)   - superclass ID of MCP (e.g. MUIC_Mccprefs)
-    INSTDATAP             - name of instance data structure of MCP
-    USEDCLASSESP          - name of NULL terminated string array which contains
-                            names of other required custom classes for MCC.
-    SHORTHELP   (char*)   - alternative help text for prefs program's listview
-    PREFSIMAGEOBJECT      - pointer to the image object for the MCP
-    _DispatcherP          - name of Dispatcher function for MCP
+  On AROS, MIN_STACKSIZE makes the wrapper compare the task's total stack
+  bounds with the requested size. It does not measure unused stack space.
+  A smaller stack triggers temporary allocation and NewStackSwap. Allocation
+  failure skips the wrapped operation and returns FALSE. The three supplied
+  class wrappers request 8192 bytes. Without MIN_STACKSIZE, and on AmigaOS4,
+  callMccFunction expands to a direct call.
 
-  In addition, the following defines and functions can be defined or are
-  required:
+ Hook calls and lifetime:
 
-    CLASSINIT     - if defined, a "BOOL ClassInit(struct Library *base)"
-                    function can be defined in your own code and will be called
-                    right after the general library initialization are
-                    finished. This function should then open own libraries
-                    or do own library initialization tasks as it is only called
-                    once at the very first library/class open.
+  PRECLASSINIT enables PreClassInit(), called without arguments after
+  muimaster opens and before custom classes are created. FALSE aborts setup.
+  CLASSINIT enables BOOL ClassInit(struct Library *), called after class
+  creation during LibInit, not on the first LibOpen. A failing ClassInit
+  must unwind its own partial work: this failure path does not call
+  ClassExpunge or PostClassExpunge.
 
-    CLASSEXPUNGE  - if defined a "VOID ClassExpunge(struct Library *base)"
-                    function can be defined in your own code and will be called
-                    as soon as the library will be freed/expunged by the
-                    operating system. In this function you should close/free
-                    stuff you normally opened/allocated in CLASSINIT.
+  CLASSEXPUNGE enables ClassExpunge(struct Library *), called before custom
+  class deletion. POSTCLASSEXPUNGE enables PostClassExpunge(), called without
+  arguments after deletion and before dependent libraries close; its result
+  is ignored. Class deletion results are also ignored. Ensure instances and
+  other users have finished before expunge; open count alone does not check
+  their lifetimes.
 
-    CLASSOPEN     - if defined, a "BOOL ClassOpen(struct Library *base)"
-                    function can be defined in your own code and will be called
-                    right after each single application opens the custom class.
-                    In this function you can then set flags or do library open
-                    specific tasks.
+  CLASSOPEN and CLASSCLOSE select per-open/per-close wrappers. ClassOpen
+  receives struct Library * and supplies the success result; ClassClose
+  receives struct Library * and its result is ignored. None of the three
+  supplied class libraries enables these hooks. Their conditional branches
+  contain OS4 interface dependencies, and the close branch refers to an
+  undeclared success variable; they are not a verified AROS extension path.
 
-    CLASSCLOSE    - if defined a "VOID ClassClose(struct Library *base)"
-                    function can be defined in your own code and will be called
-                    right after the library was successfully flagged as closed
-                    by the CloseLibrary() call of an application.
+  The base semaphore serializes wrapped setup and teardown, with no timeout.
+  It does not make arbitrary hook code safe under Forbid, protect instance
+  methods, or establish reentrant lifecycle operations. LibOpen increments
+  its open count before the optional hook. LibClose requires a matching open.
+  An expunge request with open references sets LIBF_DELEXP; the last close
+  then deletes the library. A successful new open clears that flag.
 
-
-    PRECLASSINIT      - if defined a "BOOL PreClassInit(struct Library *base)"
-                        function can be defined and will be called right _before_
-                        and library initialization takes place.
-
-    POSTCLASSEXPUNGE  - if defined a "BOOL PostClassExpunge(struct Library *base)"
-                        function can be defined and will be called right _after_
-                        the custom class was free via MUI_DeleteCustomClass() in
-                        the library expunge phase.
-
-   Warning:
-   -------
-   The above class functions are normally called by the operating system
-   in a Forbid()/Permit() state. That means you are supposed to make sure that
-   your operations doesn't break the Forbid() state or otherwise you may run
-   into a race condition. However, we have added semaphore locking to partly
-   protect you from that case - but you should still consider doing processor
-   intensitive tasks in a library's own function instead of using those
-   class initialization functions.
+  LibDelete removes the base from Exec's list before teardown. It ignores
+  callMccFunction's result and frees the base even if temporary-stack
+  allocation prevented teardown. No successful-cleanup guarantee follows
+  from its returned segment. Hooks must respect their own blocking and
+  resource contracts; this template supplies no rollback for hook-owned
+  resources. Library and query entry points require a live matching base.
 
 *******************************************************************************/
 
@@ -374,6 +353,10 @@ STATIC IPTR                   LIBFUNC MCC_Query  (REG(d0, LONG which));
 /******************************************************************************/
 
 #if !defined(__amigaos4__)
+/* LibNull
+ * Return zero for the reserved vector. No state changes or ownership
+ * transfer. This definition is excluded on AmigaOS4.
+ */
 STATIC LONG LIBFUNC LibNull(VOID)
 {
   return(0);
@@ -386,6 +369,11 @@ STATIC LONG LIBFUNC LibNull(VOID)
 
 #if defined(__amigaos4__)
 /* ------------------- OS4 Manager Interface ------------------------ */
+/* _manager_Obtain
+ * AmigaOS4 only: atomically increment the manager interface reference count
+ * and return its new value. Require a live Self; do not confuse this count
+ * with library opens. No overflow check.
+ */
 STATIC uint32 _manager_Obtain(struct LibraryManagerInterface *Self)
 {
   uint32 res;
@@ -401,6 +389,11 @@ STATIC uint32 _manager_Obtain(struct LibraryManagerInterface *Self)
   return res;
 }
 
+/* _manager_Release
+ * AmigaOS4 only: atomically decrement the manager interface reference count
+ * and return its new value. Require a matched obtain and live Self; no
+ * underflow check or destruction is performed.
+ */
 STATIC uint32 _manager_Release(struct LibraryManagerInterface *Self)
 {
   uint32 res;
@@ -439,11 +432,19 @@ STATIC CONST struct TagItem lib_managerTags[] =
 
 /* ------------------- Library Interface(s) ------------------------ */
 
+/* _MCCClass_Obtain
+ * AmigaOS4 main-interface stub: return zero without changing a reference
+ * count. Do not infer resource acquisition from this result.
+ */
 ULONG _MCCClass_Obtain(UNUSED struct Interface *Self)
 {
   return 0;
 }
 
+/* _MCCClass_Release
+ * AmigaOS4 main-interface stub: return zero without decrementing a count or
+ * freeing resources. Interface lifetime is not managed here.
+ */
 ULONG _MCCClass_Release(UNUSED struct Interface *Self)
 {
   return 0;
@@ -581,6 +582,13 @@ const USED_VAR ULONG __abox__ = 1;
 
 #if defined(MIN_STACKSIZE) && !defined(__amigaos4__)
 
+/* stackswap_call
+ * Call the supplied synchronous callback on the caller-provided alternate
+ * stack and return its value. AROS passes arg as the first NewStackSwap
+ * argument; other branches use their platform ABI. Require a valid stack
+ * descriptor, live storage and callback. This helper does not allocate or
+ * free the stack.
+ */
 /* generic StackSwap() function which calls function() surrounded by
    StackSwap() calls */
 #if defined(__AROS__)
@@ -635,6 +643,13 @@ asm(".text                    \n\
 #error Bogus operating system
 #endif
 
+/* callMccFunction
+ * Call function(arg), using temporary stack storage when total task stack
+ * bounds are smaller than MIN_STACKSIZE. Return FALSE without calling on
+ * allocation failure; otherwise return the callback result through BOOL.
+ * Free temporary storage after return. Require synchronous completion and
+ * valid callback/base. No remaining-stack measurement or timeout.
+ */
 STATIC BOOL callMccFunction(ULONG (*function)(struct LibraryHeader *), struct LibraryHeader *arg)
 {
   BOOL success = FALSE;
@@ -695,6 +710,14 @@ STATIC BOOL callMccFunction(ULONG (*function)(struct LibraryHeader *), struct Li
 /******************************************************************************/
 
 /* open and init all necessary library and stuff in the LibInit() phase */
+/* mccLibInit
+ * Open dos, graphics, intuition and utility libraries at version 39, then
+ * muimaster at MASTERVERSION. Run optional pre-init, create enabled classes
+ * and run ClassInit. Return TRUE on success. On failure delete created
+ * classes and close acquired dependencies; hook-owned rollback remains with
+ * the hook. Do not call ClassExpunge on initialization failure. Caller
+ * supplies a live base and lifecycle serialization.
+ */
 STATIC ULONG mccLibInit(struct LibraryHeader *base)
 {
   // now that this library/class is going to be initialized for the first time
@@ -818,6 +841,13 @@ STATIC ULONG mccLibInit(struct LibraryHeader *base)
 }
 
 /* expunge everything we previously opened and call user definable functions */
+/* mccLibExpunge
+ * Run ClassExpunge, delete MCP then MCC, run PostClassExpunge and debug
+ * cleanup, then close retained dependencies and clear their bases. Return
+ * TRUE regardless of class-deletion results. Require no live instances or
+ * other users and lifecycle serialization. Library base and segment remain
+ * owned by the caller.
+ */
 STATIC ULONG mccLibExpunge(UNUSED struct LibraryHeader *base)
 {
   // in case the user specified that he has an own class
@@ -895,6 +925,12 @@ STATIC ULONG mccLibExpunge(UNUSED struct LibraryHeader *base)
 
 /* we call the user definable function here only */
 #if defined(CLASSOPEN)
+/* mccLibOpen
+ * When CLASSOPEN is enabled, forward the live embedded Library to ClassOpen
+ * and return its result. Caller handles count rollback and semaphore
+ * protection. This hook is not enabled by the supplied three class
+ * libraries.
+ */
 STATIC ULONG mccLibOpen(struct LibraryHeader *base)
 {
   return ClassOpen(&base->lh_Library);
@@ -903,6 +939,11 @@ STATIC ULONG mccLibOpen(struct LibraryHeader *base)
 
 /* we call the user definable function here only */
 #if defined(CLASSCLOSE)
+/* mccLibClose
+ * When CLASSCLOSE is enabled, call ClassClose with the live embedded
+ * Library and return TRUE. Ignore the hook result. Caller owns lifetime and
+ * serialization; supplied class libraries do not enable this hook.
+ */
 STATIC ULONG mccLibClose(struct LibraryHeader *base)
 {
   ClassClose(&base->lh_Library);
@@ -914,6 +955,13 @@ STATIC ULONG mccLibClose(struct LibraryHeader *base)
 /* Standard Library Functions, all of them are called in Forbid() state.      */
 /******************************************************************************/
 
+/* LibInit
+ * Initialize library metadata and the cleared semaphore, then run
+ * mccLibInit while holding it. Return base and retain librarySegment only
+ * on success; otherwise return NULL. AROS takes sb as SysBase. Caller owns
+ * the allocated library header. Setup can block and stack allocation can
+ * prevent it. This performs class setup before ordinary opens.
+ */
 #if defined(__amigaos4__)
 STATIC struct LibraryHeader * LibInit(struct LibraryHeader *base, BPTR librarySegment, struct ExecIFace *pIExec)
 {
@@ -1015,6 +1063,13 @@ STATIC struct LibraryHeader * LIBFUNC LibInit(REG(d0, struct LibraryHeader *base
   FreeMem((STRPTR)(LIB)-(LIB)->lib_NegSize, (ULONG)((LIB)->lib_NegSize+(LIB)->lib_PosSize))
 #endif
 
+/* LibDelete
+ * Require zero open references and no remaining users. Remove base from
+ * Exec list, run teardown under its semaphore, save the segment and free
+ * the library allocation. Return that segment; base becomes invalid. The
+ * stack-wrapper result is ignored, so skipped teardown does not prevent
+ * freeing the base. Do not retry through the freed pointer.
+ */
 STATIC BPTR LibDelete(struct LibraryHeader *base)
 {
 #if defined(__amigaos4__)
@@ -1050,6 +1105,12 @@ STATIC BPTR LibDelete(struct LibraryHeader *base)
   return rc;
 }
 
+/* LibExpunge
+ * With outstanding opens, set LIBF_DELEXP and return zero. Otherwise call
+ * LibDelete and return the segment; the base is then invalid. Require a
+ * live matching base and system lifecycle calling context. This does not
+ * independently check instance or query-result lifetimes.
+ */
 #if defined(__amigaos4__)
 STATIC BPTR LibExpunge(struct LibraryManagerInterface *Self)
 {
@@ -1094,6 +1155,13 @@ STATIC BPTR LIBFUNC LibExpunge(REG(a6, struct LibraryHeader *base))
 /*****************************************************************************************************/
 /*****************************************************************************************************/
 
+/* LibOpen
+ * Increment the open count and clear delayed expunge before the optional
+ * ClassOpen hook. Return base on success; hook failure decrements the count
+ * and returns NULL. Requested version is not checked here. Balance each
+ * successful call with LibClose. Supplied class wrappers disable CLASSOPEN;
+ * see the template notes before enabling it.
+ */
 #if defined(__amigaos4__)
 STATIC struct LibraryHeader *LibOpen(struct LibraryManagerInterface *Self, ULONG version UNUSED)
 {
@@ -1173,6 +1241,13 @@ STATIC struct LibraryHeader * LIBFUNC LibOpen(REG(d0, UNUSED ULONG version), REG
 /*****************************************************************************************************/
 /*****************************************************************************************************/
 
+/* LibClose
+ * Optionally invoke ClassClose, then decrement the open count. On the last
+ * close with delayed expunge, delete the library and return its segment;
+ * otherwise return zero. Require a matching successful open: no underflow
+ * protection exists. Supplied wrappers disable CLASSCLOSE; its conditional
+ * implementation has the limitations described above.
+ */
 #if defined(__amigaos4__)
 STATIC BPTR LibClose(struct LibraryManagerInterface *Self)
 {
@@ -1235,6 +1310,14 @@ STATIC BPTR LIBFUNC LibClose(REG(a6, struct LibraryHeader *base))
 /*****************************************************************************************************/
 /*****************************************************************************************************/
 
+/* MCC_Query
+ * Query the live library: 0 returns MCC, 1 MCP, 2 evaluates the image
+ * expression, 3/4 return enabled global/info flags, 5/6 return class-name
+ * arrays, and 7 returns help text. Undefined selectors return zero. Class
+ * pointers, arrays and text are borrowed while the library remains open;
+ * image ownership follows its factory. No locking, copying or reference
+ * increment occurs.
+ */
 #if defined(__amigaos4__)
 STATIC IPTR LIBFUNC MCC_Query(UNUSED struct Interface *self, REG(d0, LONG which))
 {

@@ -160,6 +160,10 @@ typedef struct {
     ULONG               pagesize;
     ULONG               ctrl_config;
     ULONG               queuecnt;
+    char                dev_BusName[40];
+    BOOL                dev_Quiesced;
+    BOOL                dev_Quarantined;
+    BOOL                dev_VectorsOwned;
     struct nvme_queue   **dev_Queues;
 } *device_t;
 
@@ -310,6 +314,9 @@ struct nvme_queue {
     UQUAD cq_dma;
     UWORD cq_head;
     UWORD cq_phase;
+    BOOL cq_stopped;
+    UBYTE q_irq_registered;          /* 1: PCI driver, 2: Exec interrupt server */
+    BOOL cq_processing;             /* one walker owns callbacks and the head doorbell */
     UWORD cmdid_hint;
     UBYTE *cmdid_busy;
 };
@@ -336,9 +343,9 @@ struct nvme_Bus
 
     struct Node         *ab_IDNode;
 
-    char                *ab_DevName;
-    char                *ab_DevSer;
-    char                *ab_DevFW;
+    char                ab_DevName[41];
+    char                ab_DevSer[21];
+    char                ab_DevFW[9];
 };
 
 struct nvme_Unit

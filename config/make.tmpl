@@ -3533,7 +3533,7 @@ BD_INCL_FILES          := $(addprefix $(GENINCDIR)/%(path)/,%(includes))
 BD_INC_PATH            := $(SRCDIR)/$(CURDIR)/
 endif
 
-$(BD_INCL_FILES) : $(GENINCDIR)/%(path)/% : $(BD_INC_PATH)%
+$(BD_INCL_FILES) : $(GENINCDIR)/%(path)/% : $(BD_INC_PATH)% $(SRCDIR)/$(CURDIR)/mmakefile.src
 	$(Q)$(CP) $< $@
 
 ifeq (%(compiler),target)
@@ -3547,7 +3547,7 @@ endif
 
 BD_INCL_FILES          += $(BD_INCL_FILES2)
 
-$(BD_INCL_FILES2) : %(includedir)/%(path)/% : $(BD_INC_PATH)%
+$(BD_INCL_FILES2) : %(includedir)/%(path)/% : $(BD_INC_PATH)% $(SRCDIR)/$(CURDIR)/mmakefile.src
 	$(Q)$(CP) $< $@
 endif
 

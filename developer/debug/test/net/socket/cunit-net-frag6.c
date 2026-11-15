@@ -274,6 +274,10 @@ int main(int argc, char **argv)
         printf("bsdsocket.library not available - skipping FRAG6 tests\n");
         return 0;
     }
+    if (st_skip_program("cunit-net-frag6", ST_V6)) {
+        CloseLibrary(SocketBase);
+        return 0;
+    }
     ready = setup();
     if (!ready)
         printf("%s: no multicast interface with an MTU below %d - skipping FRAG6 tests\n", ifname, 40 + 8 + BIG);

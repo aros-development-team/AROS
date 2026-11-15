@@ -88,17 +88,26 @@ struct	udpstat {
 }
 
 #ifdef KERNEL
+struct inetfamily;
+struct inctlparam;
+
 extern struct	inpcbhead udb;
 extern struct	inpcbinfo udbinfo;
 extern struct	udpstat udpstat;
 
-void	 udp_ctlinput __P((int, struct sockaddr *, void *));
+/*
+ * UDP is one implementation for every address family (netinet/udp_usrreq.c).
+ * A family hands a datagram in with its instance of the family interface
+ * (netinet/inetfamily.h), and what its ICMP says about one in the neutral
+ * form of struct inctlparam.
+ */
 void	 udp_init __P((void));
-void	 udp_input __P((void *args, ...));
-int	 udp_output __P((void *args, ...));
-int	 udp_sysctl __P((int *, u_int, void *, size_t *, void *, size_t));
+void	 udp_input __P((struct mbuf *, int, const struct inetfamily *));
+void	 udp_ctlnotify __P((int, const struct inctlparam *));
 int	 udp_usrreq __P((struct socket *,
 	    int, struct mbuf *, struct mbuf *, struct mbuf *));
+
+/* IPv4's entry points for UDP (netinet/in_family_udp.c) */
 #endif
 
 #endif

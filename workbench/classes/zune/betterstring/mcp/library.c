@@ -96,6 +96,12 @@ static VOID ClassExpunge(UNUSED struct Library *base);
 #include <mui/NBitmap_mcc.h>
 #endif
 
+/*
+ * Create a preferences icon. On AROS, try NBitmap ARGB32 only after the
+ * version probe permits it; otherwise, or on creation failure, try
+ * Bodychunk. Return an owned MUI object or NULL. Image arrays have static
+ * lifetime; dispose the object through MUI after use.
+ */
 static Object *get_prefs_image(void)
 {
   Object *obj;
@@ -150,12 +156,19 @@ static Object *get_prefs_image(void)
 /******************************************************************************/
 /* define all implementations of our user functions                           */
 /******************************************************************************/
+/*
+ * Open locale.library version 38 and open the catalog. On AROS, probe
+ * mui/NBitmap.mcc for version 15.8 or later, close the probe reference and
+ * retain only a capability flag. Return TRUE after locale initialization
+ * even if the catalog or optional NBitmap is unavailable. Pair successful
+ * initialization with ClassExpunge.
+ */
 static BOOL ClassInit(UNUSED struct Library *base)
 {
   if((LocaleBase = (APTR)OpenLibrary("locale.library", 38)) &&
      GETINTERFACE(ILocale, struct LocaleIFace *, LocaleBase))
   {
-    // open the TextEditor.mcp catalog
+    // open the BetterString.mcp catalog
     OpenCat();
 
     #if !defined(__MORPHOS__)
@@ -187,6 +200,12 @@ static BOOL ClassInit(UNUSED struct Library *base)
 }
 
 
+/*
+ * Close the catalog, drop any platform interface, close locale.library and
+ * clear its base. Require catalog-string users and preferences objects to
+ * have finished. Class lifecycle and icon ownership belong to the included
+ * startup code.
+ */
 static VOID ClassExpunge(UNUSED struct Library *base)
 {
   CloseCat();

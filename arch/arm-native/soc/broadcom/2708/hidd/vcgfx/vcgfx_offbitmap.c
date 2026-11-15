@@ -590,6 +590,8 @@ BOOL MNAME_BM(LockBuffer)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Lock
 {
     struct BitmapData *data = OOP_INST_DATA(cl, o);
 
+    /* A page a NoWait swap displaced is written once off the display */
+    vcgfx_plane_page_free(cl, o, msg->buffer);
     if (data->dectgt)
         return vcgfx_dectgt_lock(data->dectgt, msg);
     if (!data->nbufs || (msg->buffer >= data->nbufs) || !msg->addressReturn || !msg->pitchReturn)
@@ -655,6 +657,15 @@ BOOL MNAME_BM(SwapBuffers)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Swa
         return FALSE;
     if (msg->newFront == data->front)
         return TRUE;
+
+    /* NoWait while the display has not taken the last flip: this frame is
+     * not shown and its buffer goes back to the renderer, as on nvgfx. The
+     * newest one goes up at the next swap after the display is ready. */
+    if ((msg->flags & fHidd_Swap_NoWait) && vcgfx_plane_flip_pending(cl, o))
+    {
+        data->back = msg->newFront;
+        return TRUE;
+    }
 
     data->back = (msg->newFront + 1) % data->nbufs;
     if (!vcgfx_plane_page(cl, o, msg->newFront, !(msg->flags & fHidd_Swap_NoWait))

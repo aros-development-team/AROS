@@ -57,7 +57,24 @@ struct in_ifaddr {
 	struct	sockaddr_in ia_dstaddr; /* reserve space for broadcast addr */
 #define	ia_broadaddr	ia_dstaddr
 	struct	sockaddr_in ia_sockmask; /* reserve space for general netmask */
+	/*
+	 * Address conflict detection (RFC 5227, as NetBSD's ia4_flags): an
+	 * address on an ARP interface is tentative until it has been probed,
+	 * and duplicated if another host has it (net/sana2arp.c).
+	 */
+	u_int	ia4_flags;		/* IN_IFF_* */
+	u_short	ia_dad_ticks;		/* fast ticks to the next step (0: none) */
+	u_char	ia_dad_probes;		/* probes sent */
+	u_char	ia_dad_count;		/* probes to send (ip_dad_count at the start) */
+	u_char	ia_dad_announces;	/* announcements still to send */
+	u_char	ia_origin;		/* IN_ORIGIN_*: where the address came from */
+	u_long	ia_dad_defended;	/* arp_dad_now when last defended (0: never) */
 };
+
+/* ia4_flags (the NetBSD values) */
+#define	IN_IFF_TENTATIVE	0x01	/* tentative address: being probed */
+#define	IN_IFF_DUPLICATED	0x02	/* another host has the address */
+#define	IN_IFF_NOTREADY		(IN_IFF_TENTATIVE | IN_IFF_DUPLICATED)
 
 struct	in_aliasreq {
 	char	ifra_name[IFNAMSIZ];		/* if name, e.g. "en0" */
@@ -65,6 +82,23 @@ struct	in_aliasreq {
 	struct	sockaddr_in ifra_broadaddr;
 #define ifra_dstaddr ifra_broadaddr
 	struct	sockaddr_in ifra_mask;
+};
+
+/*
+ * Where an IPv4 address came from (ia_origin) decides what a conflict over
+ * it does once it is in use (RFC 5227 section 2.4): one configured by hand
+ * is defended and kept; a DHCP lease is given up to the DHCP client, which
+ * declines it; an IPv4 link-local one (RFC 3927) moves to another. An
+ * address added with SIOCAIFADDR, or SIOCSIFADDR, is configured by hand;
+ * SIOCAIFADDR_ORIGIN adds it saying where it came from.
+ */
+#define	IN_ORIGIN_MANUAL	0
+#define	IN_ORIGIN_DHCP		1
+#define	IN_ORIGIN_LINKLOCAL	2
+
+struct	in_originreq {
+	struct	in_aliasreq ifro_ifra;		/* as SIOCAIFADDR's */
+	u_int	ifro_origin;			/* IN_ORIGIN_* */
 };
 /*
  * Given a pointer to an in_ifaddr (ifaddr),

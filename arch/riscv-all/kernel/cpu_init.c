@@ -33,16 +33,16 @@ unsigned long __riscv_vlenb;
 static int cpu_Init(struct KernelBase *KernelBase)
 {
     /*
-     * Runtime-detect the vector extension: sstatus.VS reads as a
+     * Runtime-detect the vector extension: the status VS field reads as a
      * hardwired zero when V is not implemented, so enable it and see if
      * the write sticks. The vector CSRs may only be accessed while VS is
      * enabled, so vlenb is read before switching VS back off.
      */
-    csr_set(sstatus, SSTATUS_VS_INITIAL);
-    if (csr_read(sstatus) & SSTATUS_VS)
+    csr_set(RV_CSR_STATUS, RV_STATUS_VS_INITIAL);
+    if (csr_read(RV_CSR_STATUS) & RV_STATUS_VS)
     {
-        __riscv_vlenb = csr_read(0xC22 /* CSR_VLENB */);
-        csr_clear(sstatus, SSTATUS_VS);
+        __riscv_vlenb = csr_read(CSR_VLENB);
+        csr_clear(RV_CSR_STATUS, RV_STATUS_VS);
     }
 
     /*

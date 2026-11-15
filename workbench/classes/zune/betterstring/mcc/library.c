@@ -87,6 +87,12 @@ static VOID ClassExpunge(UNUSED struct Library *base);
 /******************************************************************************/
 /* define all implementations of our user functions                           */
 /******************************************************************************/
+/* Open required locale/layers/keymap/diskfont libraries, optionally
+ * cybergraphics, then create pool and clipboard server. Return TRUE only
+ * after startup. Nested required-library failures unwind their references;
+ * optional CyberGfx cleanup is not complete on every failure path. Startup
+ * can wait without timeout.
+ */
 static BOOL ClassInit(UNUSED struct Library *base)
 {
   if((LocaleBase = OpenLibrary("locale.library", 38)) &&
@@ -140,6 +146,10 @@ static BOOL ClassInit(UNUSED struct Library *base)
 }
 
 
+/* Stop the clipboard server before deleting the pool, then drop/close
+ * retained libraries and clear bases. Require all instance users stopped.
+ * Shutdown waits synchronously without timeout.
+ */
 static VOID ClassExpunge(UNUSED struct Library *base)
 {
   ShutdownClipboardServer();

@@ -91,11 +91,11 @@ void FNAME_BCMSDCBUS(BCMMMIOReadLongs)(ULONG reg, ULONG *dest, ULONG count,
 static void FNAME_BCMSDCBUS(BCM283xWriteLong)(ULONG reg, ULONG val, struct sdcard_Bus *bus)
 {
     /* Bug: two SDC clock cycle delay required between successive chipset writes */
-    while (sdcard_CurrentTime() < (bus->sdcb_Private + 6))
+    while (sdcard_CurrentTime() < (BCMSDC_PRIV(bus)->lastwrite + 6))
         sdcard_Udelay(1);
 
     *(volatile ULONG *)(bus->sdcb_IOBase + reg) = AROS_LONG2LE(val);
-    bus->sdcb_Private = (IPTR)sdcard_CurrentTime();
+    BCMSDC_PRIV(bus)->lastwrite = sdcard_CurrentTime();
 }
 
 void FNAME_BCMSDCBUS(BCMMMIOWriteByte)(ULONG reg, UBYTE val, struct sdcard_Bus *bus)

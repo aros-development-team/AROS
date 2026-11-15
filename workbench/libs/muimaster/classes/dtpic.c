@@ -36,6 +36,139 @@
 #include "support_classes.h"
 #include "dtpic_private.h"
 
+/****** Dtpic.mui/MUIC_Dtpic ************
+*
+*   NAME
+*       MUIC_Dtpic
+*
+*   SUPERCLASS
+*       Area.mui
+*
+*   DESCRIPTION
+*       Display an unscaled picture using datatypes.library. Loading is
+*       synchronous during Setup or a changed Name on a set-up object; it may
+*       perform filesystem I/O without a local timeout. The filename is
+*       borrowed and must stay valid.
+*
+*   METHODS
+*       Setup can return TRUE even when picture loading fails; no load status
+*       is exposed. A failed reload discards the previous picture. Use the
+*       normal Show/Hide and Setup/Cleanup lifecycle: Dispose does not release
+*       datatype resources.
+*
+*   NOTES
+*       Rendering depends on image masking and screen depth. Cached high-color
+*       alpha compositing supports fading and pointer-state brightness; a full
+*       draw refreshes the background cache. Direct alpha fallback ignores the
+*       Alpha setting. Mask and plain bitmap paths do not apply global alpha;
+*       the mask path also ignores brightness states.
+*       Alpha/Fade changes do not request redraw. Name changes do not
+*       explicitly request group relayout.
+*
+*   BUGS
+*       State-bitmap allocation can fail without failing the load, leaving an
+*       unchecked NULL bitmap at draw time. Buffer-size multiplication is
+*       unchecked. Composite alpha uses division by 256, so Alpha 255 is not
+*       mathematically exact opacity. Event registration bookkeeping can become
+*       stale if Cleanup occurs without Hide.
+*
+*/
+/****** Dtpic.mui/MUIA_Dtpic_Name ************
+*
+*   NAME
+*       MUIA_Dtpic_Name
+*
+*   FUNCTION
+*       Set or get the picture filename.
+*
+*   INPUTS
+*       Initialize, set, get: borrowed STRPTR; default NULL.
+*
+*   NOTES
+*       The string is not copied or freed; keep it valid and unchanged until
+*       replacement or disposal. After Setup, a different string triggers
+*       synchronous loading. Equal text leaves the old pointer in place.
+*       Replacing a non-NULL name with NULL is unsafe. A failed reload discards
+*       the previous image; Get returns the stored pointer, not load status. A
+*       size change does not explicitly trigger relayout.
+*
+*/
+/****** Dtpic.mui/MUIA_Dtpic_Alpha ************
+*
+*   NAME
+*       MUIA_Dtpic_Alpha
+*
+*   FUNCTION
+*       Set the target opacity for cached high-color compositing.
+*
+*   INPUTS
+*       Initialize, set, get: LONG; default 255. Use 0-255; values are not
+*       validated.
+*
+*   NOTES
+*       Get returns the target, not the animated value. Current opacity starts
+*       at 255; Fade determines transitions. Set alone does not request redraw.
+*       Direct alpha fallback and mask/plain bitmap paths ignore this setting.
+*       Values outside 0-255 have undefined visual results.
+*
+*/
+/****** Dtpic.mui/MUIA_Dtpic_Fade ************
+*
+*   NAME
+*       MUIA_Dtpic_Fade
+*
+*   FUNCTION
+*       Control progress toward the target Alpha.
+*
+*   INPUTS
+*       Initialize, set, get: LONG; default 0.
+*
+*   NOTES
+*       Negative values apply Alpha immediately; zero freezes the current
+*       value; positive values step on received Intuiticks by Fade * 50 / 20.
+*       This is not a time duration. Keep Fade * 50 within LONG range. Set does
+*       not request redraw and does not control pointer-state brightness.
+*
+*/
+/****** Dtpic.mui/MUIA_Dtpic_DarkenSelState ************
+*
+*   NAME
+*       MUIA_Dtpic_DarkenSelState
+*
+*   FUNCTION
+*       Enable darkening while the mouse button is pressed.
+*
+*   INPUTS
+*       Initialize, get: BOOL; default FALSE. No local setter.
+*
+*   NOTES
+*       Tracks a private pressed flag, not Area Selected or an activation
+*       event. Selected takes precedence over highlighting. The high-color
+*       alpha path animates brightness; the plain bitmap path uses a prepared
+*       darkened bitmap. The mask path does not darken. Get returns the option,
+*       not the pressed state.
+*
+*/
+/****** Dtpic.mui/MUIA_Dtpic_LightenOnMouse ************
+*
+*   NAME
+*       MUIA_Dtpic_LightenOnMouse
+*
+*   FUNCTION
+*       Enable highlighting when the pointer enters the object.
+*
+*   INPUTS
+*       Initialize, get: BOOL; default FALSE. No local setter.
+*
+*   NOTES
+*       Hover state changes on mouse-motion events; Show does not sample the
+*       pointer position, and Hide does not clear the flag. The high-color
+*       alpha path animates brightness; the plain bitmap path uses a prepared
+*       highlighted bitmap. The mask path ignores highlighting. Get returns the
+*       option, not hover state.
+*
+*/
+
 extern struct Library *MUIMasterBase;
 
 #ifdef DataTypesBase
@@ -44,6 +177,10 @@ extern struct Library *MUIMasterBase;
 
 #define DataTypesBase data->datatypesbase
 
+/*
+ * Release owned datatype resources, state bitmaps and compositing buffers.
+ * Does not free the borrowed filename or unregister window events.
+ */
 static void killdto(struct Dtpic_DATA *data)
 {
     if (data->bm_selected) FreeBitMap(data->bm_selected);
@@ -84,6 +221,10 @@ static void killdto(struct Dtpic_DATA *data)
  * an 85ms transition at 50 Intuiticks per second. */
 #define DTPIC_STATE_FADE_STEP 60
 
+/*
+ * Return selected (-127), highlighted (+50) or normal (0). Selection takes
+ * precedence.
+ */
 static LONG dtpic_state_target(struct Dtpic_DATA *data)
 {
     if (data->selected)
@@ -93,11 +234,18 @@ static LONG dtpic_state_target(struct Dtpic_DATA *data)
     return 0;
 }
 
+/*
+ * Return whether brightness differs from its target.
+ */
 static BOOL dtpic_state_animating(struct Dtpic_DATA *data)
 {
     return data->state_offset != dtpic_state_target(data);
 }
 
+/*
+ * Move brightness toward the selected/highlighted target by at most 60 per
+ * tick.
+ */
 static void update_state(struct Dtpic_DATA *data)
 {
     LONG target = dtpic_state_target(data);
@@ -116,6 +264,10 @@ static void update_state(struct Dtpic_DATA *data)
     }
 }
 
+/*
+ * Reconfigure the window event mask when it changes. Registration errors are
+ * ignored; even a zero mask sets the active flag.
+ */
 static void change_event_handler(Object *obj, struct Dtpic_DATA *data)
 {
     // enable only events which we really need
@@ -161,6 +313,10 @@ static void change_event_handler(Object *obj, struct Dtpic_DATA *data)
     }
 }
 
+/*
+ * Calculate the per-tick opacity step. Negative Fade sets the target
+ * immediately; zero leaves current opacity unchanged. Does not redraw.
+ */
 static void update_alpha(struct Dtpic_DATA *data)
 {
     if (data->fade < 0)
@@ -192,6 +348,10 @@ static void update_alpha(struct Dtpic_DATA *data)
         data->alpha, data->deltaalpha, data->currentalpha));
 }
 
+/*
+ * Copy and process a bitmap. Return an owned bitmap or NULL; caller frees the
+ * result.
+ */
 static struct BitMap *clone_bitmap(struct BitMap *from_bm, ULONG operation,
     ULONG value)
 {
@@ -218,6 +378,10 @@ static struct BitMap *clone_bitmap(struct BitMap *from_bm, ULONG operation,
     return to_bm;
 }
 
+/*
+ * Replace the picture synchronously, releasing old resources on failure.
+ * Returns TRUE even when loading fails; optional state bitmaps may be NULL.
+ */
 IPTR setup_datatype(struct IClass *cl, Object *obj)
 {
     struct Dtpic_DATA *data = INST_DATA(cl, obj);
@@ -294,6 +458,10 @@ IPTR setup_datatype(struct IClass *cl, Object *obj)
     return TRUE;
 }
 
+/*
+ * Initialize borrowed Name, options and alpha state without loading. Return
+ * the superclass object or NULL.
+ */
 IPTR Dtpic__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     obj = (Object *) DoSuperMethodA(cl, obj, (Msg) msg);
@@ -348,6 +516,10 @@ IPTR Dtpic__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     return (IPTR) obj;
 }
 
+/*
+ * Perform Area Setup and attempt picture loading. TRUE does not establish
+ * load success.
+ */
 IPTR Dtpic__MUIM_Setup(struct IClass *cl, Object *obj,
     struct MUIP_Setup *msg)
 {
@@ -357,6 +529,10 @@ IPTR Dtpic__MUIM_Setup(struct IClass *cl, Object *obj,
     return setup_datatype(cl, obj);
 }
 
+/*
+ * Remove the registered handler and free owned picture resources.
+ * Registration bookkeeping is not reset; normally Hide first.
+ */
 IPTR Dtpic__MUIM_Cleanup(struct IClass *cl, Object *obj,
     struct MUIP_Cleanup *msg)
 {
@@ -372,6 +548,10 @@ IPTR Dtpic__MUIM_Cleanup(struct IClass *cl, Object *obj,
     return DoSuperMethodA(cl, obj, (Msg) msg);
 }
 
+/*
+ * Add image dimensions to Area min/default/max sizes. No scaling or overflow
+ * check.
+ */
 IPTR Dtpic__MUIM_AskMinMax(struct IClass *cl, Object *obj,
     struct MUIP_AskMinMax *msg)
 {
@@ -397,6 +577,10 @@ IPTR Dtpic__MUIM_AskMinMax(struct IClass *cl, Object *obj,
  * Apply the selected/highlighted brightness offset to an ARGB pixel array
  * in place. Pixel format is RECTFMT_ARGB: low byte alpha, then red, green,
  * blue.
+ */
+/*
+ * Adjust ARGB pixel brightness in place, clamping color channels and
+ * preserving alpha.
  */
 static void dtpic_apply_state(ULONG *pixels, ULONG count, LONG offset)
 {
@@ -434,6 +618,10 @@ static void dtpic_apply_state(ULONG *pixels, ULONG count, LONG offset)
  * rendering and the flicker caused by erasing the background on screen.
  * Returns TRUE on success, FALSE if the caller has to fall back to direct
  * alpha blitting.
+ */
+/*
+ * Composite the image over a cached background. A full draw refreshes the
+ * cache; FALSE selects direct alpha fallback. Buffer sizes are unchecked.
  */
 static BOOL Dtpic_alpha_draw(Object *obj, struct Dtpic_DATA *data,
     ULONG flags)
@@ -524,6 +712,10 @@ static BOOL Dtpic_alpha_draw(Object *obj, struct Dtpic_DATA *data,
     return TRUE;
 }
 
+/*
+ * Choose alpha, mask or plain bitmap rendering. The alpha fallback ignores
+ * global opacity; the mask path ignores pointer-state effects.
+ */
 IPTR Dtpic__MUIM_Draw(struct IClass *cl, Object *obj,
     struct MUIP_Draw *msg)
 {
@@ -626,6 +818,9 @@ IPTR Dtpic__MUIM_Draw(struct IClass *cl, Object *obj,
     return 0;
 }
 
+/*
+ * Delegate to Area; resource release depends on prior Cleanup.
+ */
 IPTR Dtpic__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
 {
     //struct Dtpic_DATA *data = INST_DATA(cl, obj);
@@ -633,6 +828,10 @@ IPTR Dtpic__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
     return DoSuperMethodA(cl, obj, msg);
 }
 
+/*
+ * Update Name, Alpha and Fade. A changed Name reloads synchronously after
+ * Setup; loading errors are not reported through this method.
+ */
 IPTR Dtpic__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct Dtpic_DATA *data = INST_DATA(cl, obj);
@@ -677,6 +876,10 @@ IPTR Dtpic__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
     return DoSuperMethodA(cl, obj, (Msg) msg);
 }
 
+/*
+ * Return stored Name, target Alpha, Fade and constructor options; delegate
+ * other queries to Area.
+ */
 IPTR Dtpic__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 {
     struct Dtpic_DATA *data = INST_DATA(cl, obj);
@@ -703,6 +906,10 @@ IPTR Dtpic__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
     return DoSuperMethodA(cl, obj, (Msg) msg);
 }
 
+/*
+ * Update alpha/brightness on ticks and pointer state on mouse events; request
+ * redraw as needed.
+ */
 IPTR Dtpic__MUIM_HandleEvent(struct IClass *cl, Object *obj,
     struct MUIP_HandleEvent *msg)
 {
@@ -793,6 +1000,10 @@ IPTR Dtpic__MUIM_HandleEvent(struct IClass *cl, Object *obj,
     return 0;
 }
 
+/*
+ * Update event registration after Area Show, even if the superclass call
+ * failed.
+ */
 IPTR Dtpic__MUIM_Show(struct IClass *cl, Object *obj,
     struct MUIP_Show *msg)
 {
@@ -806,6 +1017,10 @@ IPTR Dtpic__MUIM_Show(struct IClass *cl, Object *obj,
     return retval;
 }
 
+/*
+ * Remove handler and clear its active flag/mask. Picture resources remain
+ * until Cleanup.
+ */
 IPTR Dtpic__MUIM_Hide(struct IClass *cl, Object *obj,
     struct MUIP_Hide *msg)
 {
@@ -824,6 +1039,9 @@ IPTR Dtpic__MUIM_Hide(struct IClass *cl, Object *obj,
 }
 
 #if ZUNE_BUILTIN_DTPIC
+/*
+ * Dispatch local methods and delegate unknown methods to Area.
+ */
 BOOPSI_DISPATCHER(IPTR, Dtpic_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)

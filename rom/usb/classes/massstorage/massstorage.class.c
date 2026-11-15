@@ -12,6 +12,9 @@
 #include <linklibs/fatbpb.h>
 
 #define DEF_NAKTIMEOUT  (600)
+/* Optical drives NAK for many seconds while seeking or spinning up, so they
+   get a floor under the configured value (deciseconds, like cdc_NakTimeout). */
+#define MIN_CD_NAKTIMEOUT (150)
 
 static inline BOOL nIsBulkTransport(ULONG proto)
 {
@@ -117,7 +120,9 @@ static int GM_UNIQUENAME(libOpen)(LIBBASETYPEPTR nh)
 
 static int GM_UNIQUENAME(libClose)(LIBBASETYPEPTR nh)
 {
-    if(nh->nh_Library.lib_OpenCnt == 0) // FIXME is this 0 or 1? Does AROS decrease it before calling libClose?
+    /* 0, not 1: genmodule decrements lib_OpenCnt before calling the CLOSELIB
+       set (tools/genmodule/writestart.c), so 0 means this was the last close. */
+    if(nh->nh_Library.lib_OpenCnt == 0)
     {
         ObtainSemaphore(&nh->nh_TaskLock);
         Forbid();
@@ -259,6 +264,92 @@ struct NepClassMS * GM_UNIQUENAME(usbAttemptInterfaceBinding)(struct NepMSBase *
 }
 /* \\\ */
 
+/* /// "nVendorQuirks()" */
+/* The hard-coded per-model quirks, as a pure function of the binding's IDs so
+   that a config reload re-applies exactly what bind did. The first set is only
+   a default for the model: a saved per-device record replaces it, like every
+   other default. The second set applies regardless. Neither is subject to
+   PFF_NO_FALLBACK - these are known facts about the hardware, not guesses. */
+static ULONG nVendorQuirks(struct Library *ps, struct NepClassMS *ncm, BOOL announce)
+{
+    ULONG vendid = ncm->ncm_UnitVendorID;
+    ULONG prodid = ncm->ncm_UnitProdID;
+    ULONG pf = 0;
+
+    if(ncm->ncm_UsingDefaultCfg && nIsBulkTransport(ncm->ncm_TPType))
+    {
+        if(vendid == 0x05e3) /* 2.5 HD Wrapper by Eagle Tec */
+        {
+            pf |= PFF_FIX_INQ36|PFF_SIMPLE_SCSI|PFF_DELAY_DATA;
+            if(announce)
+            {
+                psdAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname),
+                               "Broken Genesys firmware data phase delay activated. Performance loss!");
+            }
+        }
+        if((vendid == 0x0d7d) && (prodid == 0x1600)) /* HAMA Memory stick */
+        {
+            pf |= PFF_SIMPLE_SCSI;
+        }
+        if(((vendid == 0x04cb) && (prodid == 0x0100)) || /* Fujifilm FinePix 1400Zoom */
+           ((vendid == 0x0204) && (prodid == 0x6025)) || /* Brock's EXIGO Flashstick */
+           ((vendid == 0x0aec) && (prodid == 0x5010))) /* SOYO Multislot Reader */
+        {
+            pf |= PFF_FIX_INQ36;
+        }
+        if(((vendid == 0x0c76) && (prodid == 0x0005)) || /* JetFlash */
+           ((vendid == 0x066f) && (prodid == 0x8000))) /* Aiptek_mp3-310_128MB.txt */
+        {
+            pf |= PFF_NO_RESET;
+        }
+
+        if(((vendid == 0x059b) && (prodid == 0x0031)) || /* ZIP 100 */
+           //((vendid == 0x0aec) && (prodid == 0x5010)) || /* Neodio CF-Reader */
+           ((vendid == 0x058f) && (prodid == 0x9380)) || /* guido's stick */
+           ((vendid == 0x3579) && (prodid == 0x6901)))
+           //((vendid == 0x07c4) && (prodid == 0xb00b)))   /* USB Memory Stick */
+        {
+            pf |= PFF_SINGLE_LUN;
+        }
+        if(pf && announce)
+        {
+            psdAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname),
+                           "Preconfig patchflags 0x%04lx", pf);
+        }
+    }
+
+    if((vendid == 0x090a) && (prodid == 0x1100))
+    {
+        pf |= PFF_CLEAR_EP;
+        if(announce)
+        {
+            psdAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname), "Enabling clear endpoint halt mode for this device!");
+        }
+    }
+    if(vendid == 0x07b4) /* Olympus C-xx */
+    {
+        pf |= PFF_CSS_BROKEN;
+        if(announce)
+        {
+            psdAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname), "Workaround for broken Olympus cameras enabled.");
+        }
+    }
+    if(vendid == 0x067b) /* Prolific */
+    {
+        pf |= PFF_CSS_BROKEN;
+        if(announce)
+        {
+            psdAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname), "Workaround for broken Prolific signature enabled.");
+        }
+    }
+    if((vendid == 0x0c76) && (prodid == 0x0005))
+    {
+        pf |= PFF_FIX_INQ36|PFF_FAKE_INQUIRY|PFF_MODE_XLATE;
+    }
+    return(pf);
+}
+/* \\\ */
+
 /* /// "usbForceInterfaceBinding()" */
 struct NepClassMS * GM_UNIQUENAME(usbForceInterfaceBinding)(struct NepMSBase *nh, struct PsdInterface *pif)
 {
@@ -289,7 +380,6 @@ struct NepClassMS * GM_UNIQUENAME(usbForceInterfaceBinding)(struct NepMSBase *nh
     UWORD lunnum;
     LONG ioerr;
     LONG retry;
-    ULONG patchflags = 0;
     BOOL delayedstore = FALSE;
 
     KPRINTF(1, ("nepMSForceInterfaceBinding(%08lx)\n", pif));
@@ -332,44 +422,6 @@ struct NepClassMS * GM_UNIQUENAME(usbForceInterfaceBinding)(struct NepMSBase *nh
             subclass = MS_SCSI_SUBCLASS;
         }
 
-        if(nIsBulkTransport(proto))
-        {
-            if(vendid == 0x05e3) /* 2.5 HD Wrapper by Eagle Tec */
-            {
-                patchflags |= PFF_FIX_INQ36|PFF_SIMPLE_SCSI|PFF_DELAY_DATA;
-                psdAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname),
-                               "Broken Genesys firmware data phase delay activated. Performance loss!");
-            }
-            if((vendid == 0x0d7d) && (prodid == 0x1600)) /* HAMA Memory stick */
-            {
-                patchflags |= PFF_SIMPLE_SCSI;
-            }
-            if(((vendid == 0x04cb) && (prodid == 0x0100)) || /* Fujifilm FinePix 1400Zoom */
-               ((vendid == 0x0204) && (prodid == 0x6025)) || /* Brock's EXIGO Flashstick */
-               ((vendid == 0x0aec) && (prodid == 0x5010))) /* SOYO Multislot Reader */
-            {
-                patchflags |= PFF_FIX_INQ36;
-            }
-            if(((vendid == 0x0c76) && (prodid == 0x0005)) || /* JetFlash */
-               ((vendid == 0x066f) && (prodid == 0x8000))) /* Aiptek_mp3-310_128MB.txt */
-            {
-                patchflags |= PFF_NO_RESET;
-            }
-
-            if(((vendid == 0x059b) && (prodid == 0x0031)) || /* ZIP 100 */
-               //((vendid == 0x0aec) && (prodid == 0x5010)) || /* Neodio CF-Reader */
-               ((vendid == 0x058f) && (prodid == 0x9380)) || /* guido's stick */
-               ((vendid == 0x3579) && (prodid == 0x6901)))
-               //((vendid == 0x07c4) && (prodid == 0xb00b)))   /* USB Memory Stick */
-            {
-                patchflags |= PFF_SINGLE_LUN;
-            }
-            if(patchflags)
-            {
-                psdAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname),
-                               "Preconfig patchflags 0x%04lx", patchflags);
-            }
-        }
         lunnum = 0;
         while(lunnum <= maxlun)
         {
@@ -428,6 +480,13 @@ struct NepClassMS * GM_UNIQUENAME(usbForceInterfaceBinding)(struct NepMSBase *nh
                 NewList(&ncm->ncm_XFerQueue);
                 NewList(&ncm->ncm_DCInts);
                 InitSemaphore(&ncm->ncm_XFerLock);
+                /* devOpen can see the unit the moment it is in the list, but
+                   nothing owns its message port until nMSTask has come up, and
+                   the unit is never unlinked again (see below). So it starts
+                   shut and only nMSTask opens it - a bind that dies on the way
+                   up simply never clears this, and no zombie unit can be
+                   opened. Not implied by MEMF_CLEAR: FALSE is "open". */
+                ncm->ncm_DenyRequests = TRUE;
                 AddTail(&nh->nh_Units, &ncm->ncm_Unit.unit_MsgPort.mp_Node);
                 strcpy(ncm->ncm_DevIDString, devidstr);
                 strcpy(ncm->ncm_IfIDString, ifidstr);
@@ -452,34 +511,10 @@ struct NepClassMS * GM_UNIQUENAME(usbForceInterfaceBinding)(struct NepMSBase *nh
             }
             ncm->ncm_UnitLUN0 = firstncm;
 
-            GM_UNIQUENAME(nLoadBindingConfig)(ncm);
-            if(ncm->ncm_UsingDefaultCfg)
-            {
-                ncm->ncm_CDC->cdc_PatchFlags |= nh->nh_DummyNCM.ncm_CDC->cdc_PatchFlags;
-            } else {
-                patchflags = 0; // specific flags override defaults, ALL defaults.
-            }
-
-            patchflags |= ncm->ncm_CDC->cdc_PatchFlags;
-            if((vendid == 0x090a) && (prodid == 0x1100))
-            {
-                patchflags |= PFF_CLEAR_EP;
-                psdAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname), "Enabling clear endpoint halt mode for this device!");
-            }
-            if(vendid == 0x07b4) /* Olympus C-xx */
-            {
-                patchflags |= PFF_CSS_BROKEN;
-                psdAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname), "Workaround for broken Olympus cameras enabled.");
-            }
-            if(vendid == 0x067b) /* Prolific */
-            {
-                patchflags |= PFF_CSS_BROKEN;
-                psdAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname), "Workaround for broken Prolific signature enabled.");
-            }
-            if((vendid == 0x0c76) && (prodid == 0x0005))
-            {
-                patchflags |= PFF_FIX_INQ36|PFF_FAKE_INQUIRY|PFF_MODE_XLATE;
-            }
+            /* class defaults, then the device's own record, then the
+               per-model quirks - the same merge every later reload does */
+            GM_UNIQUENAME(nLoadBindingConfig)(ncm, lunnum == 0);
+            ncm->ncm_FallbackAdvised = 0;
 
             // do this for the first LUN only
             if(lunnum == 0)
@@ -574,7 +609,7 @@ struct NepClassMS * GM_UNIQUENAME(usbForceInterfaceBinding)(struct NepMSBase *nh
                         }
                     }
 
-                    if((!(patchflags & PFF_SINGLE_LUN)) && (proto != MS_PROTO_UAS))
+                    if((!(ncm->ncm_CDC->cdc_PatchFlags & PFF_SINGLE_LUN)) && (proto != MS_PROTO_UAS))
                     {
                         retry = 3;
                         maxlun = 0;
@@ -605,13 +640,8 @@ struct NepClassMS * GM_UNIQUENAME(usbForceInterfaceBinding)(struct NepMSBase *nh
                         } while(--retry);
                         if(ioerr)
                         {
-                            if((!(patchflags & PFF_NO_FALLBACK)) && (!(patchflags & PFF_SINGLE_LUN)))
-                            {
-                                patchflags |= PFF_SINGLE_LUN;
-                                psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
-                                               "Fallback: Enabling SingleLUN.");
-                                delayedstore = TRUE;
-                            }
+                            /* stored below, once out of Forbid */
+                            delayedstore = nTryFallback(ps, ncm, PFF_SINGLE_LUN, "Single LUN", TRUE, RETURN_WARN);
                         }
                         if(maxlun > 7)
                         {
@@ -644,7 +674,6 @@ struct NepClassMS * GM_UNIQUENAME(usbForceInterfaceBinding)(struct NepMSBase *nh
                 }
                 ncm->ncm_UnitNo = unitno;
             }
-            ncm->ncm_CDC->cdc_PatchFlags = patchflags;
             Permit();
 
             if(delayedstore)
@@ -854,12 +883,18 @@ AROS_LH2(IPTR, usbDoMethodA,
             return(GM_UNIQUENAME(nOpenBindingCfgWindow)(nh, (struct NepClassMS *) methoddata[0]));
 
         case UCM_ConfigChangedEvent:
+            /* Re-read the prefs into every live unit. Each unit task re-arms
+               its own pipes (see ncm_ApplyNak); touching them from here would
+               race nFreeMS(). */
             GM_UNIQUENAME(nLoadClassConfig)(nh);
             Forbid();
             ncm = (struct NepClassMS *) nh->nh_Units.lh_Head;
             while(ncm->ncm_Unit.unit_MsgPort.mp_Node.ln_Succ)
             {
-                GM_UNIQUENAME(nLoadBindingConfig)(ncm);
+                GM_UNIQUENAME(nLoadBindingConfig)(ncm, FALSE);
+                /* set even with no task up: the main loop looks before its first Wait */
+                ncm->ncm_ApplyNak = TRUE;
+                nWakeUnitTask(ncm);
                 ncm = (struct NepClassMS *) ncm->ncm_Unit.unit_MsgPort.mp_Node.ln_Succ;
             }
             Permit();
@@ -867,13 +902,31 @@ AROS_LH2(IPTR, usbDoMethodA,
 
         case UCM_AttemptSuspendDevice:
             ncm = (struct NepClassMS *) methoddata[0];
+            /* Refuse while a command is on the wire: SET_SUSPEND(1) would park
+               the endpoints under it. ncm_CmdBusy = nScsiDirect nesting depth,
+               XFerLock = a sibling LUN mid-command. Queued-but-unstarted IO is
+               fine - psdDoPipe auto-resumes. */
+            if(ncm->ncm_CmdBusy)
+            {
+                return(FALSE);
+            }
+            if(ncm->ncm_MaxLUN)
+            {
+                if(!AttemptSemaphore(&ncm->ncm_UnitLUN0->ncm_XFerLock))
+                {
+                    return(FALSE);
+                }
+                ReleaseSemaphore(&ncm->ncm_UnitLUN0->ncm_XFerLock);
+            }
             ncm->ncm_Running = FALSE;
             return(TRUE);
 
         case UCM_AttemptResumeDevice:
             ncm = (struct NepClassMS *) methoddata[0];
             ncm->ncm_Running = TRUE;
-            Signal(ncm->ncm_Task, (1L<<ncm->ncm_TaskMsgPort->mp_SigBit));
+            /* through the unit port, not the pipe port: the latter may be gone
+               (ncm_Task NULL) and only the main loop waits on the unit port */
+            nWakeUnitTask(ncm);
             return(TRUE);
 
         default:
@@ -962,7 +1015,10 @@ BOOL GM_UNIQUENAME(nLoadClassConfig)(struct NepMSBase *nh)
 /* \\\ */
 
 /* /// "nLoadBindingConfig()" */
-BOOL GM_UNIQUENAME(nLoadBindingConfig)(struct NepClassMS *ncm)
+/* Class defaults, overlaid by the device's own record, plus the per-model
+   quirks. Bind and every reload go through here, so the effective flag set is
+   the same both times. announce logs the per-model quirks (bind only). */
+BOOL GM_UNIQUENAME(nLoadBindingConfig)(struct NepClassMS *ncm, BOOL announce)
 {
     struct NepMSBase *nh = ncm->ncm_ClsBase;
     struct Library *ps;
@@ -1007,8 +1063,47 @@ BOOL GM_UNIQUENAME(nLoadBindingConfig)(struct NepClassMS *ncm)
         }
     }
     Permit();
+    ncm->ncm_CDC->cdc_PatchFlags |= nVendorQuirks(ps, ncm, announce);
     CloseLibrary(ps);
     return(FALSE);
+}
+/* \\\ */
+
+/* /// "nTryFallback()" */
+/* The one gate for a learned quirk: set (or, with !enable, clear) flag in the
+   binding's patch flags. Returns TRUE only if the flag actually changed, so
+   the caller can do its own follow-up - persisting it, normally through
+   nApplyFallback(). With PFF_NO_FALLBACK the change is refused and the log
+   names the switch the device seems to want instead. name is the switch's GUI
+   label. The hard-coded per-model quirks are not learned and do not come
+   through here (see nVendorQuirks). ps is the caller's own poseidon base. */
+BOOL nTryFallback(struct Library *ps, struct NepClassMS *ncm, ULONG flag,
+                  CONST_STRPTR name, BOOL enable, LONG rc)
+{
+    ULONG pf = ncm->ncm_CDC->cdc_PatchFlags;
+
+    if(enable ? (pf & flag) : !(pf & flag))
+    {
+        return(FALSE);
+    }
+    if(pf & PFF_NO_FALLBACK)
+    {
+        /* once per binding: some callers sit on the per-IO path */
+        if(!(ncm->ncm_FallbackAdvised & flag))
+        {
+            ncm->ncm_FallbackAdvised |= flag;
+            psdAddErrorMsg(rc, (STRPTR) GM_UNIQUENAME(libname),
+                           enable ? "\"%s\" is probably needed for this device. Please check this."
+                                  : "\"%s\" is probably enabled incorrectly for this device. Please check this.",
+                           (STRPTR) name);
+        }
+        return(FALSE);
+    }
+    ncm->ncm_CDC->cdc_PatchFlags = enable ? (pf | flag) : (pf & ~flag);
+    psdAddErrorMsg(rc, (STRPTR) GM_UNIQUENAME(libname),
+                   enable ? "Fallback: Enabling %s." : "Fallback: Disabling %s.",
+                   (STRPTR) name);
+    return(TRUE);
 }
 /* \\\ */
 
@@ -1165,6 +1260,13 @@ AROS_UFH0(void, GM_UNIQUENAME(nMSTask))
     if((ncm = GM_UNIQUENAME(nAllocMS())))
     {
         Forbid();
+        /* The task is up and owns the unit's message port, so the unit is open
+           for business - and it has to be open *here*, before the startup reset
+           below: nBulkReset() bails out on ncm_DenyRequests, which is set both
+           at unit creation and by the previous binding's teardown. Clearing it
+           further down meant the reset was skipped on every rebind and the
+           "No Reset" fallback got persisted to the stored config. */
+        ncm->ncm_DenyRequests = FALSE;
         if(ncm->ncm_ReadySigTask)
         {
             Signal(ncm->ncm_ReadySigTask, 1L<<ncm->ncm_ReadySignal);
@@ -1205,13 +1307,7 @@ AROS_UFH0(void, GM_UNIQUENAME(nMSTask))
             nLockXFer(ncm);
             if(nBulkReset(ncm))
             {
-                if((!(ncm->ncm_CDC->cdc_PatchFlags & PFF_NO_FALLBACK)) && (!(ncm->ncm_CDC->cdc_PatchFlags & PFF_NO_RESET)))
-                {
-                    ncm->ncm_CDC->cdc_PatchFlags |= PFF_NO_RESET;
-                    psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
-                                   "Fallback: Enabling No Reset.");
-                    GM_UNIQUENAME(nStoreConfig)(ncm);
-                }
+                nApplyFallback(ncm, PFF_NO_RESET, "No Initial Reset", TRUE, RETURN_WARN);
             }
             nUnlockXFer(ncm);
         }
@@ -1219,7 +1315,6 @@ AROS_UFH0(void, GM_UNIQUENAME(nMSTask))
         ncm->ncm_UnitReady = FALSE;
         ncm->ncm_HasMounted = FALSE;
         ncm->ncm_Removable = TRUE;
-        ncm->ncm_DenyRequests = FALSE;
 
         scsicmd.scsi_Data = (UWORD *) inquirydata;
         scsicmd.scsi_Length = 36;
@@ -1271,32 +1366,22 @@ AROS_UFH0(void, GM_UNIQUENAME(nMSTask))
                 // assume 2048 byte blocks
                 ncm->ncm_BlockSize = 2048;
                 ncm->ncm_BlockShift = 11;
-                if(ncm->ncm_CDC->cdc_NakTimeout == DEF_NAKTIMEOUT)
+                /* The stored config is deliberately not touched: the default
+                   is already above the floor, so getting here means the value
+                   was set on purpose, and nStoreConfig() would write back the
+                   whole chunk. (The old code compared against DEF_NAKTIMEOUT
+                   and then set 150: it lowered the default 60s to 15s and
+                   persisted that per device.) */
                 {
-                    psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname), "Silently increasing NAK Timeout value to 15 seconds for CD/DVD drives...");
-                    ncm->ncm_CDC->cdc_NakTimeout = 150;
-                    GM_UNIQUENAME(nStoreConfig)(ncm);
-
-                    psdSetAttrs(PGA_PIPE, ncm->ncm_EP0Pipe,
-                                PPA_NakTimeout, TRUE,
-                                PPA_NakTimeoutTime, (ncm->ncm_CDC->cdc_NakTimeout+1)*100,
-                                TAG_END);
-                    psdSetAttrs(PGA_PIPE, ncm->ncm_EPInPipe,
-                                PPA_NakTimeout, TRUE,
-                                PPA_NakTimeoutTime, ncm->ncm_CDC->cdc_NakTimeout*100,
-                                TAG_END);
-                    psdSetAttrs(PGA_PIPE, ncm->ncm_EPOutPipe,
-                                PPA_NakTimeout, TRUE,
-                                PPA_NakTimeoutTime, ncm->ncm_CDC->cdc_NakTimeout*100,
-                                TAG_END);
-                }
-                else if(!ncm->ncm_CDC->cdc_NakTimeout)
-                {
-                    // that's okay, nak timeout disabled
-                }
-                else if(ncm->ncm_CDC->cdc_NakTimeout < 150)
-                {
-                    psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname), "NAK Timeout should be at least 15 seconds for CD/DVD drives!");
+                    ULONG nakms = nNakTimeoutMs(ncm);
+                    if(nakms != ncm->ncm_CDC->cdc_NakTimeout*100)
+                    {
+                        psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
+                                       "Raising NAK Timeout to %ld seconds for CD/DVD drives (configured %ld00ms).",
+                                       (ULONG) (MIN_CD_NAKTIMEOUT/10),
+                                       (ULONG) ncm->ncm_CDC->cdc_NakTimeout);
+                        nApplyNakTimeout(ncm, nakms);
+                    }
                 }
             }
 
@@ -1329,6 +1414,12 @@ AROS_UFH0(void, GM_UNIQUENAME(nMSTask))
 
         do
         {
+            if(ncm->ncm_ApplyNak)
+            {
+                /* UCM_ConfigChangedEvent reloaded the config under us */
+                ncm->ncm_ApplyNak = FALSE;
+                nApplyNakTimeout(ncm, nNakTimeoutMs(ncm));
+            }
             if(ncm->ncm_Removable || ncm->ncm_ForceRTCheck)
             {
                 GM_UNIQUENAME(nStartRemovableTask)(ps, ncm->ncm_ClsBase);
@@ -1394,14 +1485,14 @@ AROS_UFH0(void, GM_UNIQUENAME(nMSTask))
                         }
                         /* Reset does a flush too */
                     case CMD_FLUSH:
-                        ioreq2 = (struct IOStdReq *) ncm->ncm_XFerQueue.lh_Head;
-                        while(ioreq2->io_Message.mn_Node.ln_Succ)
+                        /* devAbortIO scans this list from the caller's task */
+                        Forbid();
+                        while((ioreq2 = (struct IOStdReq *) RemHead(&ncm->ncm_XFerQueue)))
                         {
-                            Remove((struct Node *) ioreq2);
                             ioreq2->io_Error = IOERR_ABORTED;
                             ReplyMsg((struct Message *) ioreq2);
-                            ioreq2 = (struct IOStdReq *) ncm->ncm_XFerQueue.lh_Head;
                         }
+                        Permit();
                         ReplyMsg((struct Message *) ioreq);
                         break;
 
@@ -1445,6 +1536,13 @@ static BOOL nUasCollectEndpoints(struct NepClassMS *ncm)
     IPTR  eptype;
     IPTR  is_in;
     UBYTE pipe_id;
+
+    /* the unit struct is reused across replugs - drop the previous binding's
+       (freed) endpoint objects or the guards below keep them forever */
+    ncm->ncm_EPCmd = NULL;
+    ncm->ncm_EPStatus = NULL;
+    ncm->ncm_EPIn = NULL;
+    ncm->ncm_EPOut = NULL;
 
     while((pdd = psdFindDescriptor(ncm->ncm_Device, pdd,
                                    DDA_Interface, ncm->ncm_Interface,
@@ -1531,119 +1629,54 @@ static BOOL nUasCollectEndpoints(struct NepClassMS *ncm)
     return ncm->ncm_EPCmd && ncm->ncm_EPStatus && ncm->ncm_EPIn && ncm->ncm_EPOut;
 }
 
-static void nUasDisableStreams(struct NepClassMS *ncm)
+/* /// "nWakeUnitTask()" */
+/* A flag the main loop services has changed (ncm_ApplyNak, ncm_ForceRTCheck,
+   ncm_Running). Only the main loop waits on the unit port, so this wake-up
+   cannot be swallowed by a wait further down. Safe on a unit with no task. */
+void nWakeUnitTask(struct NepClassMS *ncm)
 {
-    if(ncm->ncm_EPInStream)
+    struct MsgPort *mp = &ncm->ncm_Unit.unit_MsgPort;
+
+    Forbid();
+    if(mp->mp_SigTask)
     {
-        psdCloseStream(ncm->ncm_EPInStream);
-        ncm->ncm_EPInStream = NULL;
+        Signal(mp->mp_SigTask, 1UL<<mp->mp_SigBit);
     }
-    if(ncm->ncm_EPOutStream)
-    {
-        psdCloseStream(ncm->ncm_EPOutStream);
-        ncm->ncm_EPOutStream = NULL;
-    }
-    if(ncm->ncm_EPIn)
-    {
-        psdSetAttrs(PGA_ENDPOINT, ncm->ncm_EPIn,
-                    EA_StreamBase, 0,
-                    TAG_END);
-    }
-    if(ncm->ncm_EPOut)
-    {
-        psdSetAttrs(PGA_ENDPOINT, ncm->ncm_EPOut,
-                    EA_StreamBase, 0,
-                    TAG_END);
-    }
-    ncm->ncm_UasStreamId = 0;
+    Permit();
 }
 
-static void nUasInitStreams(struct NepClassMS *ncm)
+/* Shut the unit port: no more signals, and the bit goes back if this task
+   armed it. Safe on a port that never was armed (a bind that failed early). */
+static void nDisarmUnitPort(struct NepClassMS *ncm)
 {
-    IPTR maxstreams_in = 0;
-    IPTR maxstreams_out = 0;
-    IPTR maxpkt_in = 0;
-    IPTR maxpkt_out = 0;
-    BOOL use_timeout = ncm->ncm_CDC && ncm->ncm_CDC->cdc_NakTimeout;
+    struct MsgPort *mp = &ncm->ncm_Unit.unit_MsgPort;
 
-    ncm->ncm_UasStreamId = 0;
-    if(!ncm->ncm_EPIn || !ncm->ncm_EPOut)
+    Forbid();
+    mp->mp_Flags = PA_IGNORE;
+    if(mp->mp_SigTask)
     {
-        return;
+        mp->mp_SigTask = NULL;
+        FreeSignal((LONG) mp->mp_SigBit);
     }
-
-    psdGetAttrs(PGA_ENDPOINT, ncm->ncm_EPIn,
-                EA_MaxStreams, &maxstreams_in,
-                EA_MaxPktSize, &maxpkt_in,
-                TAG_END);
-    psdGetAttrs(PGA_ENDPOINT, ncm->ncm_EPOut,
-                EA_MaxStreams, &maxstreams_out,
-                EA_MaxPktSize, &maxpkt_out,
-                TAG_END);
-
-    if(!maxstreams_in || !maxstreams_out)
-    {
-        return;
-    }
-
-    psdSetAttrs(PGA_ENDPOINT, ncm->ncm_EPIn,
-                EA_StreamBase, 1,
-                TAG_END);
-    psdSetAttrs(PGA_ENDPOINT, ncm->ncm_EPOut,
-                EA_StreamBase, 1,
-                TAG_END);
-
-    if(use_timeout)
-    {
-        ncm->ncm_EPOutStream = psdOpenStream(ncm->ncm_EPOut,
-                                            PSA_BufferedWrite, FALSE,
-                                            PSA_NoZeroPktTerm, TRUE,
-                                            PSA_NumPipes, 1,
-                                            PSA_BufferSize, maxpkt_out,
-                                            PSA_NakTimeout, TRUE,
-                                            PSA_NakTimeoutTime, ncm->ncm_CDC->cdc_NakTimeout*100,
-                                            TAG_END);
-    } else {
-        ncm->ncm_EPOutStream = psdOpenStream(ncm->ncm_EPOut,
-                                            PSA_BufferedWrite, FALSE,
-                                            PSA_NoZeroPktTerm, TRUE,
-                                            PSA_NumPipes, 1,
-                                            PSA_BufferSize, maxpkt_out,
-                                            TAG_END);
-    }
-    if(!ncm->ncm_EPOutStream)
-    {
-        nUasDisableStreams(ncm);
-        return;
-    }
-
-    if(use_timeout)
-    {
-        ncm->ncm_EPInStream = psdOpenStream(ncm->ncm_EPIn,
-                                           PSA_BufferedRead, FALSE,
-                                           PSA_ReadAhead, FALSE,
-                                           PSA_NumPipes, 1,
-                                           PSA_BufferSize, maxpkt_in,
-                                           PSA_NakTimeout, TRUE,
-                                           PSA_NakTimeoutTime, ncm->ncm_CDC->cdc_NakTimeout*100,
-                                           TAG_END);
-    } else {
-        ncm->ncm_EPInStream = psdOpenStream(ncm->ncm_EPIn,
-                                           PSA_BufferedRead, FALSE,
-                                           PSA_ReadAhead, FALSE,
-                                           PSA_NumPipes, 1,
-                                           PSA_BufferSize, maxpkt_in,
-                                           TAG_END);
-    }
-    if(!ncm->ncm_EPInStream)
-    {
-        nUasDisableStreams(ncm);
-        return;
-    }
-
-    ncm->ncm_UasStreamId = 1;
+    Permit();
 }
 
+/* The pointer is cleared before the port goes, so nobody ever sees a dead
+   one. Every pipe on it must have been freed already. */
+static void nDeleteTaskPort(struct NepClassMS *ncm)
+{
+    struct MsgPort *mp;
+
+    Forbid();
+    mp = ncm->ncm_TaskMsgPort;
+    ncm->ncm_TaskMsgPort = NULL;
+    Permit();
+    if(mp)
+    {
+        DeleteMsgPort(mp);
+    }
+}
+/* \\\ */
 
 /* /// "nAllocMS()" */
 struct NepClassMS * GM_UNIQUENAME(nAllocMS)(void)
@@ -1654,9 +1687,16 @@ struct NepClassMS * GM_UNIQUENAME(nAllocMS)(void)
 
     thistask = FindTask(NULL);
     ncm = thistask->tc_UserData;
-    ncm->ncm_EPInStream = NULL;
-    ncm->ncm_EPOutStream = NULL;
-    ncm->ncm_UasStreamId = 0;
+    /* the unit struct is reused across replugs: never start from the previous
+       binding's (freed) pipes or port - a UAS <-> BOT flip would otherwise
+       free the stale status/command pipes a second time in nFreeMS() */
+    ncm->ncm_EP0Pipe = NULL;
+    ncm->ncm_EPInPipe = NULL;
+    ncm->ncm_EPOutPipe = NULL;
+    ncm->ncm_EPCmdPipe = NULL;
+    ncm->ncm_EPStatusPipe = NULL;
+    ncm->ncm_EPIntPipe = NULL;
+    ncm->ncm_TaskMsgPort = NULL;
     do
     {
         if(!(ncm->ncm_Base = OpenLibrary("poseidon.library", 4)))
@@ -1691,12 +1731,15 @@ struct NepClassMS * GM_UNIQUENAME(nAllocMS)(void)
                 break;
             }
         }
+        ncm->ncm_EPIntNum = 0;
         if((!ncm->ncm_EPInt) && (ncm->ncm_TPType == MS_PROTO_CBI))
         {
             psdAddErrorMsg(RETURN_FAIL, (STRPTR) GM_UNIQUENAME(libname), "INT endpoint missing!");
             break;
-        } else if(ncm->ncm_EPOut) {
-            psdGetAttrs(PGA_ENDPOINT, ncm->ncm_EPOut,
+        } else if(ncm->ncm_EPInt) {
+            /* the interrupt endpoint's own number (this used to copy the OUT
+               endpoint's, so a CLEAR_FEATURE(HALT) on it went astray) */
+            psdGetAttrs(PGA_ENDPOINT, ncm->ncm_EPInt,
                         EA_EndpointNum, &epnum,
                         TAG_END);
             ncm->ncm_EPIntNum = epnum;
@@ -1756,7 +1799,6 @@ struct NepClassMS * GM_UNIQUENAME(nAllocMS)(void)
                                 psdFreePipe(ncm->ncm_EPInPipe);
                                 psdFreePipe(ncm->ncm_EPOutPipe);
                                 psdFreePipe(ncm->ncm_EP0Pipe);
-                                DeleteMsgPort(ncm->ncm_TaskMsgPort);
                                 goto alloc_fail;
                             }
                             if(!(ncm->ncm_EPStatusPipe = psdAllocPipe(ncm->ncm_Device, ncm->ncm_TaskMsgPort, ncm->ncm_EPStatus)))
@@ -1766,39 +1808,12 @@ struct NepClassMS * GM_UNIQUENAME(nAllocMS)(void)
                                 psdFreePipe(ncm->ncm_EPInPipe);
                                 psdFreePipe(ncm->ncm_EPOutPipe);
                                 psdFreePipe(ncm->ncm_EP0Pipe);
-                                DeleteMsgPort(ncm->ncm_TaskMsgPort);
                                 goto alloc_fail;
                             }
                         }
-                        if(ncm->ncm_CDC->cdc_NakTimeout)
-                        {
-                            psdSetAttrs(PGA_PIPE, ncm->ncm_EP0Pipe,
-                                        PPA_NakTimeout, TRUE,
-                                        PPA_NakTimeoutTime, (ncm->ncm_CDC->cdc_NakTimeout+1)*100,
-                                        TAG_END);
-                            psdSetAttrs(PGA_PIPE, ncm->ncm_EPInPipe,
-                                        PPA_NakTimeout, TRUE,
-                                        PPA_NakTimeoutTime, ncm->ncm_CDC->cdc_NakTimeout*100,
-                                        TAG_END);
-                            psdSetAttrs(PGA_PIPE, ncm->ncm_EPOutPipe,
-                                        PPA_NakTimeout, TRUE,
-                                        PPA_NakTimeoutTime, ncm->ncm_CDC->cdc_NakTimeout*100,
-                                        TAG_END);
-                            if(ncm->ncm_EPCmdPipe)
-                            {
-                                psdSetAttrs(PGA_PIPE, ncm->ncm_EPCmdPipe,
-                                            PPA_NakTimeout, TRUE,
-                                            PPA_NakTimeoutTime, ncm->ncm_CDC->cdc_NakTimeout*100,
-                                            TAG_END);
-                            }
-                            if(ncm->ncm_EPStatusPipe)
-                            {
-                                psdSetAttrs(PGA_PIPE, ncm->ncm_EPStatusPipe,
-                                            PPA_NakTimeout, TRUE,
-                                            PPA_NakTimeoutTime, ncm->ncm_CDC->cdc_NakTimeout*100,
-                                            TAG_END);
-                            }
-                        }
+                        /* ncm_DeviceType is not known yet, so the CD/DVD floor
+                           is applied again by nMSTask() after the INQUIRY */
+                        nApplyNakTimeout(ncm, nNakTimeoutMs(ncm));
                         psdSetAttrs(PGA_PIPE, ncm->ncm_EPOutPipe,
                                     PPA_NoShortPackets, TRUE,
                                     TAG_END);
@@ -1814,21 +1829,11 @@ struct NepClassMS * GM_UNIQUENAME(nAllocMS)(void)
                                         PPA_AllowRuntPackets, TRUE,
                                         TAG_END);
                         }
-                        if(ncm->ncm_TPType == MS_PROTO_UAS)
-                        {
-                            nUasInitStreams(ncm);
-                        }
                         if(ncm->ncm_EPInt)
                         {
                             if((ncm->ncm_EPIntPipe = psdAllocPipe(ncm->ncm_Device, ncm->ncm_TaskMsgPort, ncm->ncm_EPInt)))
                             {
-                                if(ncm->ncm_CDC->cdc_NakTimeout)
-                                {
-                                    psdSetAttrs(PGA_PIPE, ncm->ncm_EPIntPipe,
-                                                PPA_NakTimeout, TRUE,
-                                                PPA_NakTimeoutTime, ncm->ncm_CDC->cdc_NakTimeout*100,
-                                                TAG_END);
-                                }
+                                nSetNakTimeout(ncm, ncm->ncm_EPIntPipe, nNakTimeoutMs(ncm));
                                 ncm->ncm_Task = thistask;
                                 return(ncm);
                             }
@@ -1844,13 +1849,19 @@ struct NepClassMS * GM_UNIQUENAME(nAllocMS)(void)
                 }
                 psdFreePipe(ncm->ncm_EP0Pipe);
             }
-            DeleteMsgPort(ncm->ncm_TaskMsgPort);
         }
 alloc_fail:
-        FreeSignal((LONG) ncm->ncm_Unit.unit_MsgPort.mp_SigBit);
+        ;
     } while(FALSE);
+    /* every way out of the loop has freed its pipes */
+    nDeleteTaskPort(ncm);
     CloseLibrary(ncm->ncm_Base);
     Forbid();
+    /* Failed bind: the unit stays linked in nh_Units for a later rebind, so
+       leave it in the same shut state nFreeMS() leaves behind - deny requests
+       and disarm the port, whose sig task is about to die. */
+    ncm->ncm_DenyRequests = TRUE;
+    nDisarmUnitPort(ncm);
     ncm->ncm_Task = NULL;
     if(ncm->ncm_ReadySigTask)
     {
@@ -1866,9 +1877,7 @@ void GM_UNIQUENAME(nFreeMS)(struct NepClassMS *ncm)
     struct IOStdReq *ioreq;
     /* Disable the message port, messages may still be queued */
     Forbid();
-    ncm->ncm_Unit.unit_MsgPort.mp_Flags = PA_IGNORE;
-    ncm->ncm_Unit.unit_MsgPort.mp_SigTask = NULL;
-    FreeSignal((LONG) ncm->ncm_Unit.unit_MsgPort.mp_SigBit);
+    nDisarmUnitPort(ncm);
     // get rid of all messages that still have appeared here
     while((ioreq = (struct IOStdReq *) GetMsg(&ncm->ncm_Unit.unit_MsgPort)))
     {
@@ -1877,14 +1886,21 @@ void GM_UNIQUENAME(nFreeMS)(struct NepClassMS *ncm)
     }
     Permit();
 
-    nUasDisableStreams(ncm);
     psdFreePipe(ncm->ncm_EPIntPipe);
     psdFreePipe(ncm->ncm_EPStatusPipe);
     psdFreePipe(ncm->ncm_EPCmdPipe);
     psdFreePipe(ncm->ncm_EPInPipe);
     psdFreePipe(ncm->ncm_EPOutPipe);
     psdFreePipe(ncm->ncm_EP0Pipe);
-    DeleteMsgPort(ncm->ncm_TaskMsgPort);
+    /* the unit struct is reused across replugs: a later rebind on another
+       transport (UAS <-> BOT) must not see this binding's dead pipes */
+    ncm->ncm_EPIntPipe = NULL;
+    ncm->ncm_EPStatusPipe = NULL;
+    ncm->ncm_EPCmdPipe = NULL;
+    ncm->ncm_EPInPipe = NULL;
+    ncm->ncm_EPOutPipe = NULL;
+    ncm->ncm_EP0Pipe = NULL;
+    nDeleteTaskPort(ncm);
 
     psdFreeVec(ncm->ncm_OneBlock);
     ncm->ncm_OneBlock = NULL;
@@ -1936,19 +1952,14 @@ UBYTE * nGetModePage(struct NepClassMS *ncm, UBYTE page)
                            "SCSI_MODE_SENSE(0x%02lx) failed: %ld",
                            page, ioerr);
         }
-        if((!(pf & PFF_NO_FALLBACK)) && (!(pf & PFF_MODE_XLATE)) && (ioerr == HFERR_Phase))
+        if(ioerr == HFERR_Phase)
         {
-            ncm->ncm_CDC->cdc_PatchFlags |= PFF_MODE_XLATE;
-            psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
-                           "Fallback: Enabling CMD6->CMD10.");
-            GM_UNIQUENAME(nStoreConfig)(ncm);
-        }
-        else if((!(pf & PFF_NO_FALLBACK)) && (pf & PFF_MODE_XLATE) && (!(pf & PFF_SIMPLE_SCSI)) && (ioerr == HFERR_Phase))
-        {
-            ncm->ncm_CDC->cdc_PatchFlags |= PFF_SIMPLE_SCSI;
-            psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
-                           "Fallback: Enabling Simple SCSI.");
-            GM_UNIQUENAME(nStoreConfig)(ncm);
+            if(!(pf & PFF_MODE_XLATE))
+            {
+                nApplyFallback(ncm, PFF_MODE_XLATE, "Translate CMD6->CMD10", TRUE, RETURN_WARN);
+            } else {
+                nApplyFallback(ncm, PFF_SIMPLE_SCSI, "Simple SCSI", TRUE, RETURN_WARN);
+            }
         }
         return(NULL);
     }
@@ -2021,7 +2032,12 @@ LONG nGetBlockSize(struct NepClassMS *ncm)
     scsicmd.scsi_Length = 8;
     scsicmd.scsi_Command = cmd10;
     scsicmd.scsi_CmdLength = 10;
-    scsicmd.scsi_Flags = SCSIF_READ|SCSIF_AUTOSENSE;
+    /* Autoretry: a device coming out of reset answers the first command that
+       reaches it with a unit attention, and the capacity can be that command.
+       That is an "ask me again", not a failure - the transport retries once
+       on it. (A loop here retried every error, so a dead drive cost three
+       more NAK timeouts.) */
+    scsicmd.scsi_Flags = SCSIF_READ|SCSIF_AUTOSENSE|0x80;
     scsicmd.scsi_SenseData = sensedata;
     scsicmd.scsi_SenseLength = 18;
     cmd10[0] = SCSI_DA_READ_CAPACITY;
@@ -2034,26 +2050,7 @@ LONG nGetBlockSize(struct NepClassMS *ncm)
     cmd10[7] = 0;
     cmd10[8] = 0;
     cmd10[9] = 0;
-    ioerr = nScsiDirect(ncm, &scsicmd);
-
-    /*
-     * A device coming out of reset answers the first command that reaches
-     * it with a unit attention, and the capacity is exactly the sort of
-     * command that lands there first. That is a "ask me again", not a
-     * failure, so give it a couple more chances before believing it.
-     */
-    if(ioerr)
-    {
-        UWORD retry;
-
-        for(retry = 0; ioerr && (retry < 3); retry++)
-        {
-            psdDelayMS(10);
-            ioerr = nScsiDirect(ncm, &scsicmd);
-        }
-    }
-
-    if(ioerr)
+    if((ioerr = nScsiDirect(ncm, &scsicmd)))
     {
         psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
                        "SCSI_READ_CAPACITY failed: %ld",
@@ -2080,6 +2077,16 @@ LONG nGetBlockSize(struct NepClassMS *ncm)
 /* \\\ */
 
 /* /// "nFakeGeometry()" */
+/* Invent a cylinder/head/sector geometry for a device that has none worth
+   using. The product has to be exactly dg_TotalSectors: partitioning works in
+   whole cylinders, so a smaller product loses the tail of the disk and a
+   larger one claims blocks that are not there. Hence the prime factorisation -
+   the factors are dealt out to sectors per track and heads until those look
+   conventional, and whatever is left becomes the cylinder count.
+
+   A count that will not factor is taken as the off-by-one READ CAPACITY bug
+   (total blocks reported instead of the last block): real media never has a
+   prime number of blocks. Fix Capacity is flipped and the count retried. */
 void nFakeGeometry(struct NepClassMS *ncm, struct DriveGeometry *tddg)
 {
     UWORD cnt;
@@ -2134,6 +2141,18 @@ void nFakeGeometry(struct NepClassMS *ncm, struct DriveGeometry *tddg)
             KPRINTF(10, ("remblks = %ld, curprime=%ld\n", remblks, curprime));
             if(remblks % curprime)
             {
+                /* NOTE: this test is inverted. "No divisor up to the square
+                   root, so the rest is prime" is remblks < curprimesq; as
+                   written the search gives up the first time a prime does not
+                   divide a still-large remainder. In effect only 2s and 3s
+                   are factored out, the rest is lumped into the cylinders, and
+                   PrimeTable goes unused. It also makes the "prime number"
+                   verdict below fire for any odd count that is not a multiple
+                   of 3, so that heuristic is really "odd means off by one".
+                   Left alone on purpose: correcting it changes the geometry
+                   reported for disks whose count has factors such as 5 or 7,
+                   and with it the cylinder boundaries of anything already
+                   partitioned on the old one. */
                 if(remblks >= curprimesq)
                 {
                     // it's a prime!
@@ -2182,26 +2201,16 @@ void nFakeGeometry(struct NepClassMS *ncm, struct DriveGeometry *tddg)
         psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname), "FakeGeometry: Total number of blocks is a prime number!");
         if(ncm->ncm_CDC->cdc_PatchFlags & PFF_FIX_CAPACITY)
         {
-            if(ncm->ncm_CDC->cdc_PatchFlags & PFF_NO_FALLBACK)
+            if(!nApplyFallback(ncm, PFF_FIX_CAPACITY, "Fix Capacity", FALSE, RETURN_ERROR))
             {
-                psdAddErrorMsg(RETURN_ERROR, (STRPTR) GM_UNIQUENAME(libname),
-                               "This is probably due to the Fix Capacity switch being enabled incorrectly. Please check this.");
                 return;
-            } else {
-                ncm->ncm_CDC->cdc_PatchFlags &= ~PFF_FIX_CAPACITY;
-                psdAddErrorMsg(RETURN_ERROR, (STRPTR) GM_UNIQUENAME(libname),
-                               "Fallback: Disabling Fix Capacity.");
-                GM_UNIQUENAME(nStoreConfig)(ncm);
-                remblks = ++tddg->dg_TotalSectors;
             }
+            remblks = ++tddg->dg_TotalSectors;
         } else {
-            if(!(ncm->ncm_CDC->cdc_PatchFlags & PFF_NO_FALLBACK))
+            /* assume the off-by-one either way; No Fallback only stops it
+               from being remembered */
+            if(!nApplyFallback(ncm, PFF_FIX_CAPACITY, "Fix Capacity", TRUE, RETURN_WARN))
             {
-                ncm->ncm_CDC->cdc_PatchFlags |= PFF_FIX_CAPACITY;
-                psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
-                              "Fallback: Enabling Fix Capacity.");
-                GM_UNIQUENAME(nStoreConfig)(ncm);
-            } else {
                 psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
                               "Assuming Fix Capacity bug (total blocks instead of last block)!");
             }
@@ -2335,7 +2344,7 @@ LONG nGetGeometry(struct NepClassMS *ncm, struct IOStdReq *ioreq)
     scsicmd.scsi_Length = sizeof(capacitydata);
     scsicmd.scsi_Command = cmd10;
     scsicmd.scsi_CmdLength = 10;
-    scsicmd.scsi_Flags = SCSIF_READ|SCSIF_AUTOSENSE;
+    scsicmd.scsi_Flags = SCSIF_READ|SCSIF_AUTOSENSE|0x80; /* autoretry, as in nGetBlockSize() */
     scsicmd.scsi_SenseData = sensedata;
     scsicmd.scsi_SenseLength = 18;
     cmd10[0] = SCSI_DA_READ_CAPACITY;
@@ -2516,31 +2525,17 @@ LONG nGetGeometry(struct NepClassMS *ncm, struct IOStdReq *ioreq)
        (ncm->ncm_Geometry.dg_Cylinders * ncm->ncm_Geometry.dg_TrackSectors * ncm->ncm_Geometry.dg_Heads == ncm->ncm_Geometry.dg_TotalSectors - 1) &&
        (!(ncm->ncm_CDC->cdc_PatchFlags & PFF_FIX_CAPACITY)))
     {
-        if(!(ncm->ncm_CDC->cdc_PatchFlags & PFF_NO_FALLBACK))
+        if(nApplyFallback(ncm, PFF_FIX_CAPACITY, "Fix Capacity", TRUE, RETURN_WARN))
         {
-            ncm->ncm_CDC->cdc_PatchFlags |= PFF_FIX_CAPACITY;
-            psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
-                           "Fallback: Enabling Fix Capacity.");
-            GM_UNIQUENAME(nStoreConfig)(ncm);
             ncm->ncm_Geometry.dg_TotalSectors--;
-        } else {
-            psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
-                           "Fix Capacity is probably needed for this device. Please check this.");
         }
     }
     else if(gotblks && gotcyl && gotheads && gotsect &&
             (ncm->ncm_Geometry.dg_Cylinders * ncm->ncm_Geometry.dg_TrackSectors * ncm->ncm_Geometry.dg_Heads == ncm->ncm_Geometry.dg_TotalSectors + 1) &&
             ncm->ncm_CDC->cdc_PatchFlags & PFF_FIX_CAPACITY)
     {
-        if(ncm->ncm_CDC->cdc_PatchFlags & PFF_NO_FALLBACK)
+        if(nApplyFallback(ncm, PFF_FIX_CAPACITY, "Fix Capacity", FALSE, RETURN_ERROR))
         {
-            psdAddErrorMsg(RETURN_ERROR, (STRPTR) GM_UNIQUENAME(libname),
-                           "Fix Capacity is probably enabled incorrectly. Please check this.");
-        } else {
-            ncm->ncm_CDC->cdc_PatchFlags &= ~PFF_FIX_CAPACITY;
-            psdAddErrorMsg(RETURN_ERROR, (STRPTR) GM_UNIQUENAME(libname),
-                           "Fallback: Disabling Fix Capacity.");
-            GM_UNIQUENAME(nStoreConfig)(ncm);
             ncm->ncm_Geometry.dg_TotalSectors++;
         }
     }
@@ -2551,13 +2546,9 @@ LONG nGetGeometry(struct NepClassMS *ncm, struct IOStdReq *ioreq)
     {
         psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname), "Firmware returns known bogus geometry, will fall back to faked geometry!");
         gotheads = gotcyl = gotsect = FALSE;
-        if((ncm->ncm_CDC->cdc_PatchFlags & (PFF_SIMPLE_SCSI|PFF_NO_FALLBACK)) == PFF_SIMPLE_SCSI)
-        {
-            ncm->ncm_CDC->cdc_PatchFlags |= PFF_SIMPLE_SCSI;
-            psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
-                           "Fallback: Enabling Simple SCSI.");
-            GM_UNIQUENAME(nStoreConfig)(ncm);
-        }
+        /* (the old test here only fired when Simple SCSI was already set, so
+           this fallback never took effect) */
+        nApplyFallback(ncm, PFF_SIMPLE_SCSI, "Simple SCSI", TRUE, RETURN_WARN);
     }
 
     // missing more than one?
@@ -2644,6 +2635,60 @@ LONG nStartStop(struct NepClassMS *ncm, struct IOStdReq *ioreq)
         ioreq->io_Error = TDERR_NotSpecified;
     }
     return(ioreq->io_Error);
+}
+/* \\\ */
+
+/* /// "nSetNakTimeout()" */
+/* Set a pipe's NAK timeout; zero switches it off. No-op for a missing pipe,
+   so callers can pass any of the unit's pipe pointers unguarded. The HCD
+   applies it as a deadline on each transfer, counted from the submit - which
+   makes this, in effect, the command timeout. */
+void nSetNakTimeout(struct NepClassMS *ncm, struct PsdPipe *pp, ULONG timeout_ms)
+{
+    if(pp)
+    {
+        psdSetAttrs(PGA_PIPE, pp,
+                    PPA_NakTimeout, timeout_ms != 0,
+                    PPA_NakTimeoutTime, timeout_ms,
+                    TAG_END);
+    }
+}
+/* \\\ */
+
+/* /// "nNakTimeoutMs()" */
+/* The configured NAK timeout in ms, with the optical-drive floor: CD/DVD
+   drives NAK for seconds while seeking or spinning up, so a too-short value is
+   raised to MIN_CD_NAKTIMEOUT. Never lowers a longer one, and a configured
+   zero (NAK timeouts switched off) stays zero. */
+ULONG nNakTimeoutMs(struct NepClassMS *ncm)
+{
+    ULONG nak = ncm->ncm_CDC->cdc_NakTimeout;
+
+    if(nak && (nak < MIN_CD_NAKTIMEOUT) &&
+       ((ncm->ncm_DeviceType == PDT_WORM) || (ncm->ncm_DeviceType == PDT_CDROM)))
+    {
+        nak = MIN_CD_NAKTIMEOUT;
+    }
+    return(nak*100);
+}
+/* \\\ */
+
+/* /// "nApplyNakTimeout()" */
+/* Set the timeout on every pipe the unit currently owns; zero switches it
+   off on all of them. EP0 gets 100ms more than the data pipes on purpose: the
+   control pipe carries the recovery traffic (CLEAR FEATURE, bulk-only reset)
+   that has to survive a data pipe timing out, so it must outlive them. That
+   offset is why EP0 cannot just be handed to nSetNakTimeout by the caller -
+   with NAK timeouts switched off the sum would be a live 100ms window instead
+   of "off". */
+void nApplyNakTimeout(struct NepClassMS *ncm, ULONG timeout_ms)
+{
+    nSetNakTimeout(ncm, ncm->ncm_EP0Pipe, timeout_ms ? timeout_ms+100 : 0);
+    nSetNakTimeout(ncm, ncm->ncm_EPInPipe, timeout_ms);
+    nSetNakTimeout(ncm, ncm->ncm_EPOutPipe, timeout_ms);
+    nSetNakTimeout(ncm, ncm->ncm_EPCmdPipe, timeout_ms);
+    nSetNakTimeout(ncm, ncm->ncm_EPStatusPipe, timeout_ms);
+    nSetNakTimeout(ncm, ncm->ncm_EPIntPipe, timeout_ms);
 }
 /* \\\ */
 
@@ -2908,13 +2953,7 @@ LONG nRead64(struct NepClassMS *ncm, struct IOStdReq *ioreq)
        (((ioreq->io_Offset >> ncm->ncm_BlockShift)<<ncm->ncm_BlockShift) != ioreq->io_Offset))
     {
         KPRINTF(20, ("unaligned read access offset %ld, length %ld...\n", ioreq->io_Offset, dataremain));
-        if((!(ncm->ncm_CDC->cdc_PatchFlags & PFF_EMUL_LARGE_BLK)) && (!(ncm->ncm_CDC->cdc_PatchFlags & PFF_NO_FALLBACK)))
-        {
-            ncm->ncm_CDC->cdc_PatchFlags |= PFF_EMUL_LARGE_BLK;
-            psdAddErrorMsg(RETURN_ERROR, (STRPTR) GM_UNIQUENAME(libname),
-                           "Fallback: Enabling emulation for large block devices.");
-            GM_UNIQUENAME(nStoreConfig)(ncm);
-        }
+        nApplyFallback(ncm, PFF_EMUL_LARGE_BLK, "Emulate on larger block sizes", TRUE, RETURN_ERROR);
         if(ncm->ncm_CDC->cdc_PatchFlags & PFF_EMUL_LARGE_BLK)
         {
             return(nRead64Emul(ncm, ioreq));
@@ -3036,6 +3075,7 @@ LONG nSeek64(struct NepClassMS *ncm, struct IOStdReq *ioreq)
     startblock = (ioreq->io_Offset>>ncm->ncm_BlockShift)|(ioreq->io_Actual<<(32-ncm->ncm_BlockShift));
     scsicmd.scsi_Data = NULL;
     scsicmd.scsi_Length = 0;
+    scsicmd.scsi_Command = cmd10;
     scsicmd.scsi_CmdLength = 10;
     scsicmd.scsi_Flags = SCSIF_READ|SCSIF_AUTOSENSE|0x80;
     scsicmd.scsi_SenseData = sensedata;
@@ -3079,13 +3119,7 @@ LONG nWrite64(struct NepClassMS *ncm, struct IOStdReq *ioreq)
        ((ioreq->io_Offset >> ncm->ncm_BlockShift)<<ncm->ncm_BlockShift != ioreq->io_Offset))
     {
         KPRINTF(20, ("unaligned write access offset %ld, length %ld...\n", ioreq->io_Offset, dataremain));
-        if((!(ncm->ncm_CDC->cdc_PatchFlags & PFF_EMUL_LARGE_BLK)) && (!(ncm->ncm_CDC->cdc_PatchFlags & PFF_NO_FALLBACK)))
-        {
-            ncm->ncm_CDC->cdc_PatchFlags |= PFF_EMUL_LARGE_BLK;
-            psdAddErrorMsg(RETURN_ERROR, (STRPTR) GM_UNIQUENAME(libname),
-                           "Fallback: Enabling emulation for large block devices.");
-            GM_UNIQUENAME(nStoreConfig)(ncm);
-        }
+        nApplyFallback(ncm, PFF_EMUL_LARGE_BLK, "Emulate on larger block sizes", TRUE, RETURN_ERROR);
         if(ncm->ncm_CDC->cdc_PatchFlags & PFF_EMUL_LARGE_BLK)
         {
             return(nWrite64Emul(ncm, ioreq));
@@ -3175,7 +3209,7 @@ LONG nWrite64(struct NepClassMS *ncm, struct IOStdReq *ioreq)
 /* \\\ */
 
 /* /// "nScsiDirect()" */
-LONG nScsiDirect(struct NepClassMS *ncm, struct SCSICmd *scsicmd)
+static LONG nScsiDirectInner(struct NepClassMS *ncm, struct SCSICmd *scsicmd)
 {
     STRPTR prodname;
     STRPTR vendname;
@@ -3657,7 +3691,7 @@ LONG nScsiDirect(struct NepClassMS *ncm, struct SCSICmd *scsicmd)
     }
 
     pf = ncm->ncm_CDC->cdc_PatchFlags;
-    if((res == HFERR_Phase) && (!(pf & PFF_NO_FALLBACK)) && (!(pf & PFF_SIMPLE_SCSI)))
+    if((res == HFERR_Phase) && (!(pf & PFF_SIMPLE_SCSI)))
     {
         switch(scsicmd->scsi_Command[0])
         {
@@ -3680,10 +3714,7 @@ LONG nScsiDirect(struct NepClassMS *ncm, struct SCSICmd *scsicmd)
                 break;
 
             default:
-                ncm->ncm_CDC->cdc_PatchFlags |= PFF_SIMPLE_SCSI;
-                psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
-                               "Fallback: Enabling Simple SCSI.");
-                GM_UNIQUENAME(nStoreConfig)(ncm);
+                nApplyFallback(ncm, PFF_SIMPLE_SCSI, "Simple SCSI", TRUE, RETURN_WARN);
                 break;
         }
     }
@@ -3698,19 +3729,11 @@ LONG nScsiDirect(struct NepClassMS *ncm, struct SCSICmd *scsicmd)
 
     if(res && (scsicmd->scsi_Command[0] == SCSI_INQUIRY))
     {
-        if((!(ncm->ncm_CDC->cdc_PatchFlags & PFF_NO_FALLBACK)) && (!(ncm->ncm_CDC->cdc_PatchFlags & PFF_FIX_INQ36)))
+        if(!(ncm->ncm_CDC->cdc_PatchFlags & PFF_FIX_INQ36))
         {
-            ncm->ncm_CDC->cdc_PatchFlags |= PFF_FIX_INQ36;
-            psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
-                           "Fallback: Enabling Trim Inquiry.");
-            GM_UNIQUENAME(nStoreConfig)(ncm);
-        }
-        else if((!(ncm->ncm_CDC->cdc_PatchFlags & PFF_NO_FALLBACK)) && (!(ncm->ncm_CDC->cdc_PatchFlags & PFF_FAKE_INQUIRY)))
-        {
-            ncm->ncm_CDC->cdc_PatchFlags |= PFF_FAKE_INQUIRY;
-            psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
-                           "Fallback: Enabling Fake Inquiry.");
-            GM_UNIQUENAME(nStoreConfig)(ncm);
+            nApplyFallback(ncm, PFF_FIX_INQ36, "Trim Inquiry", TRUE, RETURN_WARN);
+        } else {
+            nApplyFallback(ncm, PFF_FAKE_INQUIRY, "Fake Inquiry", TRUE, RETURN_WARN);
         }
     }
 
@@ -3798,6 +3821,19 @@ LONG nScsiDirect(struct NepClassMS *ncm, struct SCSICmd *scsicmd)
     }
     return(res);
 }
+
+LONG nScsiDirect(struct NepClassMS *ncm, struct SCSICmd *scsicmd)
+{
+    /* Busy bracket for the suspend probe (UCM_AttemptSuspendDevice runs in
+       the caller's task): counts wire-command nesting so suspend is refused
+       mid-command. */
+    LONG res;
+
+    ncm->ncm_CmdBusy++;
+    res = nScsiDirectInner(ncm, scsicmd);
+    ncm->ncm_CmdBusy--;
+    return(res);
+}
 /* \\\ */
 
 /* /// "nLockXFer()" */
@@ -3856,6 +3892,21 @@ BOOL GM_UNIQUENAME(nStoreConfig)(struct NepClassMS *ncm)
         return(TRUE);
     }
     return(FALSE);
+}
+/* \\\ */
+
+/* /// "nApplyFallback()" */
+/* nTryFallback(), and remember the change in the device's record. Goes
+   through the unit's own poseidon base, like nStoreConfig(). */
+BOOL nApplyFallback(struct NepClassMS *ncm, ULONG flag, CONST_STRPTR name,
+                    BOOL enable, LONG rc)
+{
+    if(!nTryFallback(ps, ncm, flag, name, enable, rc))
+    {
+        return(FALSE);
+    }
+    GM_UNIQUENAME(nStoreConfig)(ncm);
+    return(TRUE);
 }
 /* \\\ */
 
@@ -3961,6 +4012,7 @@ AROS_UFH0(void, GM_UNIQUENAME(nRemovableTask))
                             scsicmd.scsi_Flags = SCSIF_READ|SCSIF_AUTOSENSE|0x80;
                             scsicmd.scsi_SenseData = sensedata;
                             scsicmd.scsi_SenseLength = 18;
+                            scsicmd.scsi_SenseActual = 0;
                             cmd6[0] = SCSI_TEST_UNIT_READY;
                             cmd6[1] = 0;
                             cmd6[2] = 0;
@@ -3969,13 +4021,21 @@ AROS_UFH0(void, GM_UNIQUENAME(nRemovableTask))
                             cmd6[5] = 0;
                             if((ioerr = nScsiDirectTunnel(ncm, &scsicmd)))
                             {
-                                KPRINTF(1, ("Test unit ready yielded: %ld/%ld\n", sensedata[2], sensedata[12]));
+                                /* Bytes the device did not actually return are
+                                   garbage, not this answer: a command that fails
+                                   without autosense is exactly what a bus reset
+                                   produces, and sensedata is reused for every unit. */
+                                BOOL  haveSense = (scsicmd.scsi_SenseActual >= 14);
+                                UBYTE sensekey  = haveSense ? (sensedata[2] & SK_MASK) : 0xff;
+                                UBYTE asc       = haveSense ? sensedata[12] : 0;
+
+                                KPRINTF(1, ("Test unit ready yielded: %ld/%ld\n", sensekey, asc));
                                 /*psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
                                                "SCSI_TEST_UNIT_READY failed: %ld",
                                                ioerr);*/
                                 /* Check for MEDIUM NOT PRESENT */
-                                if(((sensedata[2] & SK_MASK) == SK_NOT_READY) &&
-                                   ((sensedata[12] == 0x3a) || (sensedata[12] == 0x04)))
+                                if((sensekey == SK_NOT_READY) &&
+                                   ((asc == 0x3a) || (asc == 0x04)))
                                 {
                                     if(ncm->ncm_UnitReady)
                                     {
@@ -4258,7 +4318,9 @@ void GM_UNIQUENAME(nFreeRT)(struct NepMSBase *nh)
         {
             if(ncm->ncm_Task)
             {
-                Signal(ncm->ncm_Task, 1L<<ncm->ncm_TaskMsgPort->mp_SigBit);
+                /* the unit port: the main loop waits on it, and the pipe port
+                   may already be gone */
+                nWakeUnitTask(ncm);
             }
             ncm = (struct NepClassMS *) ncm->ncm_Unit.unit_MsgPort.mp_Node.ln_Succ;
         }
@@ -4418,13 +4480,7 @@ LONG nGetWriteProtect(struct NepClassMS *ncm)
                                    "Failed to get write protection state: %ld",
                                    ioerr);
                 }
-                if(!(ncm->ncm_CDC->cdc_PatchFlags & PFF_NO_FALLBACK))
-                {
-                    ncm->ncm_CDC->cdc_PatchFlags |= PFF_SIMPLE_SCSI;
-                    psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
-                                   "Fallback: Enabling Simple SCSI.");
-                }
-                GM_UNIQUENAME(nStoreConfig)(ncm);
+                nApplyFallback(ncm, PFF_SIMPLE_SCSI, "Simple SCSI", TRUE, RETURN_WARN);
                 return(0);
             }
         }
@@ -5935,6 +5991,13 @@ AROS_UFH0(void, GM_UNIQUENAME(nGUITask))
                         MUIA_InputMode, MUIV_InputMode_RelVerify,
                         MUIA_Text_Contents, ncm->ncm_Interface ? (IPTR) "\33c Save as Default " : (IPTR) "\33c Save Defaults ",
                         End),
+                    Child, (IPTR) (ncm->ncm_ForgetObj = (APTR) TextObject, ButtonFrame,
+                        MUIA_ShowMe, (IPTR) ncm->ncm_Interface,
+                        MUIA_Background, MUII_ButtonBack,
+                        MUIA_CycleChain, 1,
+                        MUIA_InputMode, MUIV_InputMode_RelVerify,
+                        MUIA_Text_Contents, (IPTR) "\33c Forget Device ",
+                        End),
                     Child, (IPTR) (ncm->ncm_CloseObj = (APTR) TextObject, ButtonFrame,
                         MUIA_Background, MUII_ButtonBack,
                         MUIA_CycleChain, 1,
@@ -5976,6 +6039,8 @@ AROS_UFH0(void, GM_UNIQUENAME(nGUITask))
              ncm->ncm_App, 2, MUIM_Application_ReturnID, ID_DEF_CONFIG);
     DoMethod(ncm->ncm_CloseObj, MUIM_Notify, MUIA_Pressed, FALSE,
              ncm->ncm_App, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
+    DoMethod(ncm->ncm_ForgetObj, MUIM_Notify, MUIA_Pressed, FALSE,
+             ncm->ncm_App, 2, MUIM_Application_ReturnID, ID_FORGET_CONFIG);
 
     DoMethod(ncm->ncm_AutoDtxMaxTransObj, MUIM_Notify, MUIA_Pressed, FALSE,
              ncm->ncm_App, 2, MUIM_Application_ReturnID, ID_AUTODTXMAXTX);
@@ -6199,6 +6264,25 @@ AROS_UFH0(void, GM_UNIQUENAME(nGUITask))
 
                 case ID_ABOUT:
                     MUI_RequestA(ncm->ncm_App, ncm->ncm_MainWindow, 0, NULL, "Blimey!", VERSION_STRING "\n\nCode for AutoMounting based\non work by Thore B" ISOASCII_Atilde ISOASCII_PARAGRAPH "ckelmann.", NULL);
+                    break;
+
+                case ID_FORGET_CONFIG:
+                    /* Drop this class's record for the device so the class
+                       defaults govern it again. Only our own payload goes:
+                       Trident's data for the device (custom name, forced
+                       binding) stays. The live units follow through
+                       UCM_ConfigChangedEvent -> nLoadBindingConfig, which runs
+                       once this window is gone (it skips units with a window open). */
+                    if(MUI_RequestA(ncm->ncm_App, ncm->ncm_MainWindow, 0, NULL, "Forget|Cancel",
+                                    "Forget the saved settings of this device?\n"
+                                    "The class defaults will apply to it again.", NULL))
+                    {
+                        psdSetUsbDevCfg(GM_UNIQUENAME(libname), ncm->ncm_DevIDString, ncm->ncm_IfIDString, NULL);
+                        psdSaveCfgToDisk(NULL, FALSE);
+                        psdAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname),
+                                       "Forgot the saved settings of %s.", ncm->ncm_DevIDString);
+                        retid = MUIV_Application_ReturnID_Quit;
+                    }
                     break;
             }
             if(retid == MUIV_Application_ReturnID_Quit)

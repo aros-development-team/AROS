@@ -383,7 +383,7 @@ BOOL ACPIBattery__Hidd_Telemetry__GetEntryAttribs(OOP_Class *cl, OOP_Object *o,
         break;
     case 4:
         entryId = "Voltage";
-        units = vHW_TelemetryUnit_Volts;
+        units = vHW_TelemetryUnit_MilliVolts;     /* _BST reports millivolts */
         minValue = 0;
         maxValue = (LONG)voltage;
         value = (LONG)voltage;

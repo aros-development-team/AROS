@@ -4,221 +4,185 @@ Aboutbox.mcc/Aboutbox.mcc
 Aboutbox.mcc/MUIA_Aboutbox_Build
 Aboutbox.mcc/MUIA_Aboutbox_Credits
 Aboutbox.mcc/MUIA_Aboutbox_LogoData
-Aboutbox.mcc/MUIA_Aboutbox_LogoFallback
+Aboutbox.mcc/MUIA_Aboutbox_LogoFallbackMode
 Aboutbox.mcc/MUIA_Aboutbox_LogoFile
-Aboutbox.mcc/Aboutbox.mcc                         
+Aboutbox.mcc/Aboutbox.mcc
 
-   Aboutbox.mcc is a MUI custom class which offers a standardized 'About'
-   and copyright information requester to achieve an uniform look across all
-   applications which make use of it. It also reduces the amount of work
-   required to  implement an own About requester.
+    NAME
+        Aboutbox.mcc -- Display application information and credits.
 
-   To get the right look out of Aboutbox.mcc it is very important that 
-   the standard MUIA_Application_#? tags are properly filled and are style 
-   conform. Aboutbox will do some magic on them to retrieve the data
-   it needs.
+    SUPERCLASS
+        Window.mui
 
-   Setting the environment variable 'ABOUTBOX_DEBUG' will return verbose
-   debug information in case information provided in the tag values are
-   unsuitable.
+    DESCRIPTION
+        Build a window with a logo, a scrolling information/credits area, and
+        an Ok button. The source configuration declares version 20.30. All
+        five Aboutbox attributes are initialization-only, with no local
+        setters or getters. Constructor duplicates use the last value.
+        During Window_Setup, read Application_Title, Description, Version, and
+        Copyright. Show the title in bold and append description and version.
+        Strip an initial literal "$VER: " from the version string; no
+        version/date parser or author-list parser is implemented. Append build
+        text beneath a non-NULL Application_Version, then prepend the literal
+        English "Copyright " to the copyright value.
+        The title bar becomes "About " plus Application_Title, limited by a
+        128-byte buffer. Provide a non-NULL application title and a non-NULL
+        Credits string, even when the latter is empty: setup formats the title
+        and unconditionally dereferences Credits. Missing Credits is not
+        safely treated as no credits.
+        Ok and CloseRequest queue Window_Open FALSE through
+        Application_PushMethod. Attach the object to its Application and
+        follow the normal Window lifecycle. The class does not open itself.
 
+    NOTES
+        Build, Credits, LogoFile, and LogoData pointers are borrowed at
+        construction. Keep their storage valid for subsequent setup/open
+        cycles; constructor return does not end their lifetime requirement.
+        Generated app-info and expanded credits buffers are owned by the
+        object and freed at disposal. Cleanup removes and disposes the
+        per-setup logo and clears generated text for reuse.
+        Credits appear below a divider in the same scrolling area, not on a
+        second page. Build information is not hidden behind a version-number
+        click. Placeholder labels and the About/Copyright/Ok text are
+        hard-coded English. No ABOUTBOX_DEBUG environment-variable handler
+        exists in this implementation.
+        Buffer-growth failure can silently leave partial or truncated text;
+        setup still returns superclass success. Logo fallback stops at the
+        first non-NULL object, not at verified successful image rendering.
+        This reference makes no MorphOS-specific path, size, or localization
+        claims.
 
-   EXAMPLE
-       myapp = ApplicationObject,
-           MUIA_Application_Title,       "AboutboxDemo",
-           MUIA_Application_Version,     "$VER: AboutboxDemo 1.0 (07.04.07)",
-           MUIA_Application_Copyright,   "© 2007 Christian Rosentreter",
-           MUIA_Application_Author,      "Christian Rosentreter",
-           MUIA_Application_Description, "Demonstrates Aboutbox.mcc.",
-       ...
-
-
-   NOTES
-   Do not add copyright information to the MUIA_Application_Version
-   string. The style is:
-
-       "$VER: <app_title> <version>.<revision> (<dd>.<mm>.<yyyy>)"
-   
-   A 2-digit year in the date is accepted too. Avoid adding weird information
-   directly after the <app_title>. Do not use leading zeros for the re-
-   vision (<version>.<revision> is not a decimal number; it's two numbers
-   separated by a dot).
-
-   
-   If the project has multiple authors then a comma separated list can
-   be used in MUIA_Application_Author, like: "Christian Rosentreter, Mister
-   Banana", etc.
-
-   If the project requires multiple copyrights (e.g. because the Application
-   was developed by someone else in the past) then a comma separated list can
-   be used, too.
- 
-   Avoid English and untranslatable words like: 'and', 'by', 'written by' and so
-   on. Do not add 'Copyright' to the string, only use the ISO-Latin1 copyright
-   sign ('©', hex: 0xa9). Aboutbox.mcc will automatically transform it to 
-   "Copyright ©" (or a localized variant) and also uses it to break the 
-   string into multiple lines. Accepted formats:
-
-       "© <year> <author1>"
-       "© <year> <author1>, <author2>"
-       "© <year> <author1>, © <year> <author2>"
-       "© <year1>-<year2> <author>"
-       etc.
-
-   Instead a single <year> a range like <year1>-<year2> can be used too. 
-   There must be a space after the copyright sign and before the <year>.
-
-
+    SEE ALSO
+        MUIA_Aboutbox_Build, MUIA_Aboutbox_Credits,
+        MUIA_Aboutbox_LogoFallbackMode
 Aboutbox.mcc/MUIA_Aboutbox_Build
 
-   NAME
-   MUIA_Aboutbox_Build -- (V20.10) [I..], STRPTR
+    NAME
+        MUIA_Aboutbox_Build -- Append build information to the version text.
 
-   FUNCTION
-   Optional build information. Useful if the project is managed  via a
-   revisions control software like Subversion. Build information is hidden by
-   default, but can be viewed by clicking the version number in the Aboutbox
-   window.
+    FUNCTION
+        Store a borrowed build string for later information generation.
 
+    INPUTS
+        Initialize only; STRPTR to a NUL-terminated string, or NULL. Default
+        NULL. No local setter or getter.
 
+    NOTES
+        Displayed on a new line after Application_Version when that
+        application attribute is non-NULL. It is visible without clicking.
+        Without a version string, Build is not appended. No format parsing or
+        source-control integration occurs. Keep the string valid across setup
+        cycles; it is not copied at construction.
 Aboutbox.mcc/MUIA_Aboutbox_Credits
 
-   NAME
-   MUIA_Aboutbox_Credits -- (V20) [I..], STRPTR
+    NAME
+        MUIA_Aboutbox_Credits -- Supply credits text with placeholders.
 
-   FUNCTION
-   Optional extra credits. If a valid string is passed then Aboutbox.mcc will
-   add a second page to the requester and displays the information there. Currently
-   the format of the string is limited to the ISO-8859-1 (Latin-1) character set.
+    FUNCTION
+        Store a borrowed credits string and expand it during setup.
 
-   Various  placeholders can be used to get predefined strings (or a 
-   localized equivalents):
+    INPUTS
+        Initialize only; non-NULL readable NUL-terminated string. Use an empty
+        string for no credits. No local setter or getter.
 
-       %p - 'Programming:'
-       %P - 'Additional programming:'
-       %l - 'Translations:'
-       %L - 'Proofreading:'
-       %t - 'Thanks to:'
-       %T - 'Special thanks to:'
-       %a - 'Acknowledgements:'
-       %d - 'Documentation:'
-       %i - 'Icons:'
-       %I - 'Icon:'                   (v20.10)
-       %W - 'Web support:'
-       %m - 'Music:'                  (v20.10)
-       %s - 'Sound Effects'           (v20.10)
-       %g - 'Graphics'                (v20.10)
-       %? - 'Disclaimer'              (v20.10)
-       %$ - 'License'                 (v20.10)
+    NOTES
+        The instance defaults to a NULL pointer, but ParseCredits dereferences
+        it unconditionally. Supply this attribute explicitly with valid
+        storage that remains alive across setup cycles. Credits are shown in
+        the same scrolling area as application information.
+        Each tab expands to four spaces. %% produces a percent sign. Unknown
+        %x sequences retain x and drop the percent; a trailing percent is
+        dropped. Other bytes, including MUI text escapes, pass to the Text
+        object without encoding conversion. The expansion starts with a
+        newline.
+        Placeholders expand to fixed English text:
+        %p Programming:; %P Additional programming:; %l Translations:; %L
+        Proofreading:; %t Thanks to:; %T Special thanks to:.
+        %a Acknowledgements:; %d Documentation:; %i Icons:; %I Icon:; %W Web
+        support:; %m Music:; %s Sound effects:; %g Graphics:; %? Disclaimer:;
+        %$ License:.
+        No localization lookup or line-length enforcement occurs. Expansion
+        allocation failure has no explicit error result.
 
-   For printing an actual percent sign a double percent ('%%') can be used.
-
-   Tabs (\t) are replaced with 4 spaces. Further all normal MUI escaping sequences
-   can be used without limitations. Lines in the string should preferably not be longer
-   than 40 characters.
-
-   See the example for suggested layout.
-
-
-   EXAMPLE
-       STATIC CONST UBYTE credits[] = 
-            "\33b%p\33n\n"                 /* Programming: */
-            "\tChristian Rosentreter\n"
-            "\n"
-            "\33b%l\33n\n"                 /* Translation: */
-            "\tChristian Rosentreter\n"
-            "\tMax Mustermann\n"
-            "\tJohn Doe\n"
-            "\tMr. Bean\n"
-            "\n"
-            "\33b%t\33n\n"                 /* Thanks to:   */
-            "\tMax Mustermann\n"
-            "\tJohn Doe";
-   
-
+    EXAMPLE
+        MUIA_Aboutbox_Credits, (IPTR)"%p\n\tExample Author"
 Aboutbox.mcc/MUIA_Aboutbox_LogoData
 
-   NAME
-   MUIA_Aboutbox_LogoData -- (V20.2) [I..], struct MUI_RawimageData *
+    NAME
+        MUIA_Aboutbox_LogoData -- Supply embedded logo data.
 
-   FUNCTION
-   Data pointer to into code embedded logo data in MUI_RawimageData format
-   (see Rawimage.mcc documentation). The image must be exactly 64 pixels
-   in width and 64 pixels in height. Other sizes are not supported.        
+    FUNCTION
+        Store a borrowed Rawimage payload for the I fallback step.
 
-   NOTES
-   This attribute should be avoided generally and not be used unless
-   *absolutely* necessary. Aboutbox' default handling for the displayed
-   logo is sufficient in 99.9% of all cases and any normal application 
-   usually doesn't require to overwrite it. This is reserved for some
-   specific system components which require advanced special handling.
+    INPUTS
+        Initialize only; const struct MUI_RawimageData *, or NULL. Default
+        NULL. No local setter or getter.
 
-   SEE ALSO
-   MUIA_Aboutbox_LogoFallback, MUIA_Aboutbox_LogoFile, 
-   MUIA_Rawimage_Data
+    NOTES
+        When the fallback order reaches I, non-NULL data is passed to a
+        Rawimage object. That class defines the format, byte order, validity
+        requirements, and borrowed payload lifetime. Keep the image valid
+        throughout use and later setup cycles. There is no local 64-by-64 size
+        check or resizing rule.
+        Unsupported data may make Rawimage construction fail and allow a later
+        fallback step. A non-NULL logo object ends fallback; no rendered-image
+        verification follows. NULL skips this step.
 
-Aboutbox.mcc/MUIA_Aboutbox_LogoFallback
+    SEE ALSO
+        MUIA_Aboutbox_LogoFallbackMode, Rawimage.mcc/MUIA_Rawimage_Data
+Aboutbox.mcc/MUIA_Aboutbox_LogoFallbackMode
 
-   NAME
-   MUIA_Aboutbox_LogoFallback -- (V20.2) [I..], ULONG
+    NAME
+        MUIA_Aboutbox_LogoFallbackMode -- Set the logo search order.
 
-   FUNCTION
-   Specify in which order default handling and fallback handlings to aquire
-   correct logo data are executed.
+    FUNCTION
+        Choose the sequence of logo-object construction attempts.
 
-   Supported Specificators:
-   D - default application icon (usually PROGDIR:<application>.info)
-   E - file specified in MUIA_Aboutbox_LogoFile
-   I - data specified with MUIA_Aboutbox_LogoData
+    INPUTS
+        Initialize only; ULONG. Default MUIV_Aboutbox_LogoFallbackMode_Auto,
+        MAKE_ID('D', 'E', 'I', 0). NoLogo (0) disables attempts. No local
+        setter or getter.
 
-   The specificators can be merged in any order with the MAKE_ID() macro
-   from "libraries/iffparse.h". The composed specification ID should be
-   terminated with a '0' byte.
+    NOTES
+        Process bytes from most significant to least significant until a zero
+        byte, exhausted value, or non-NULL logo. D creates a private icon
+        object from the program name. E tries LogoFile through Dtpic after
+        checking that the path names a file. I tries LogoData through
+        Rawimage. Unknown nonzero bytes are skipped.
+        D uses GetProgramName when available, rewrites an APPDIR: name as
+        PROGDIR: plus its file part, or constructs PROGDIR: plus the task name
+        when GetProgramName fails. It is not unconditionally
+        PROGDIR:<executable>.info. Paths use fixed internal buffers.
+        Success means object creation, not proof of decoded/rendered image
+        content. The actual public attribute is LogoFallbackMode; the older
+        document's LogoFallback name is not defined in the AROS header.
 
-   Defaults to MUIV_Aboutbox_LogoFallbackMode_Auto.
+    EXAMPLE
+        MUIA_Aboutbox_LogoFallbackMode, MAKE_ID('D', 'I', 0, 0)
 
-   EXAMPLE
-       /*  Let it first check for the application icon and if not
-        *  available use an internal fallback logo.
-        */
-       aboutwindow = AboutboxObject,
-           MUIA_Aboutbox_LogoFallback, MAKE_ID('D', 'I', '\0', '\0'),
-           MUIA_Aboutbox_LogoData,     _internal_fallback_image_data,
-       End;
-
-   NOTES
-   This attribute should be avoided generally and not be used unless
-   *absolutely* necessary. Aboutbox' default handling for the displayed
-   logo is sufficient in 99.9% of all cases and any normal application 
-   usually doesn't require to overwrite it. This is reserved for some
-   specific system components which require advanced special handling.
-
-   SEE ALSO
-   MUIA_Aboutbox_LogoData, MUIA_Aboutbox_LogoFile
-
+    SEE ALSO
+        MUIA_Aboutbox_LogoFile, MUIA_Aboutbox_LogoData
 Aboutbox.mcc/MUIA_Aboutbox_LogoFile
 
-   NAME
-   MUIA_Aboutbox_LogoFile -- (V20.2) [I..], STRPTR
+    NAME
+        MUIA_Aboutbox_LogoFile -- Supply a file for the E fallback step.
 
-   FUNCTION
-   Specify an alternative location where to load the logo image from.
+    FUNCTION
+        Store a borrowed path used to construct a Dtpic logo.
 
-   The image must be exactly 64 pixels in width and 64 pixels in height.
-   Other sizes are not supported.
+    INPUTS
+        Initialize only; readable NUL-terminated STRPTR, or NULL. Default
+        NULL. No local setter or getter.
 
-   The path must be absolute. Relative paths are not supported. This makes
-   it only useful for -and naturally limits it to- usage of fixed images
-   or icons from a standard MorphOS system installation ('SYS:' or
-   'MOSSYS:' paths).
+    NOTES
+        When E is reached, Lock/Examine must identify a file rather than a
+        directory. The path is then supplied as MUIA_Dtpic_Name. NULL or a
+        failed file check skips the attempt. Relative paths are not explicitly
+        rejected; their interpretation follows the task's DOS context.
+        The wrapper imposes no 64-by-64 size limit and no MorphOS volume
+        requirement. Image loading and display follow Dtpic. A non-NULL Dtpic
+        object stops fallback before later setup/rendering success is known.
+        Keep the path valid for all relevant setup cycles.
 
-   NOTES
-   This attribute should be avoided generally and not be used unless
-   *absolutely* necessary. Aboutbox' default handling for the displayed
-   logo is sufficient in 99.9% of all cases and any normal application 
-   usually doesn't require to overwrite it. This is reserved for some
-   specific system components which require advanced special handling.
-
-   SEE ALSO
-   MUIA_Aboutbox_LogoFallback, MUIA_Aboutbox_LogoData
-
+    SEE ALSO
+        MUIA_Aboutbox_LogoFallbackMode

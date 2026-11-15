@@ -34,6 +34,9 @@
                          file descriptor greater or equal to the operation
                          argument.
 
+        F_DUPFD_CLOEXEC (int) - As F_DUPFD, with FD_CLOEXEC set on the new
+                         file descriptor.
+
         F_GETFD (void) - Read the file descriptor flags
 
         F_SETFD (int)  - Set the file descriptor flags to value given in
@@ -68,6 +71,8 @@
         The return value of the function depends on the performed operation:
 
         F_DUPFD  - New duplicated file descriptor
+
+        F_DUPFD_CLOEXEC - New duplicated file descriptor
 
         F_GETFD  - File descriptor flags
 
@@ -130,7 +135,10 @@
                     return 0;
                 }
                 case F_DUPFD:
+                case F_DUPFD_CLOEXEC:
                 {
+                    /* Descriptor flags are not kept for these descriptors
+                       (see F_SETFD above), so both commands duplicate. */
                     va_list ap;
                     int arg;
                     va_start(ap, cmd);
@@ -164,6 +172,22 @@
             */
             
             return dup2(fd, __getfirstfd(arg));
+        }
+        case F_DUPFD_CLOEXEC:
+        {
+            va_list ap;
+            int     arg, newfd;
+            fdesc  *newdesc;
+
+            va_start(ap, cmd);
+            arg = va_arg(ap, int);
+            va_end(ap);
+
+            newfd = dup2(fd, __getfirstfd(arg));
+            if (newfd >= 0 && (newdesc = __getfdesc(newfd)) != NULL)
+                newdesc->fdflags |= FD_CLOEXEC;
+
+            return newfd;
         }
         case F_GETFD:
             return desc->fdflags;

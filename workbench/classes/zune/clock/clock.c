@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2019, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 
 #define MUIMASTER_YES_INLINE_STDARG
@@ -28,7 +28,177 @@
 #define SHADOW_OFFY 4
 
 
+/****** Clock.mcc/MUIC_Clock ************
+*
+*   NAME
+*       MUIC_Clock
+*
+*   SUPERCLASS
+*       Area.mui
+*
+*   DESCRIPTION
+*       Analog clock, initialized from MUIA_Clock_Time or the system clock.
+*       An Application timer refreshes Time from the system clock once per
+*       delivered tick unless Frozen; it does not increment a custom time.
+*
+*   NOTES
+*       Time is copied on input and borrowed on Get. Setup/Cleanup own the
+*       timer handler; Show/Hide own the highlight pen.
+*
+*   BUGS
+*       Frozen does not redraw or remove the timer. Individual time tags
+*       are not processed during construction. Ticked is notification-only.
+*       Time notifications during a timer call may contain a stack pointer;
+*       copy it synchronously or query Time. Failed graphics allocation skips drawing.
+*
+*/
+/****** Clock.mcc/MUIA_Clock_Time ************
+*
+*   NAME
+*       MUIA_Clock_Time
+*
+*   FUNCTION
+*       Get or replace the displayed ClockData.
+*
+*   INPUTS
+*       Initialize, set, get; non-NULL ClockData pointer for input.
+*
+*   NOTES
+*       Input is copied; Get returns a pointer borrowed until object disposal,
+*       with contents subject to updates. No input validation. A non-frozen
+*       timer refresh replaces it. Set redraws but does not emit Ticked or
+*       individual component notifications. Timer notifications can carry a
+*       temporary input pointer; do not retain it.
+*
+*/
+/****** Clock.mcc/MUIA_Clock_Hour ************
+*
+*   NAME
+*       MUIA_Clock_Hour
+*
+*   FUNCTION
+*       Get or set the hour in ClockData.
+*
+*   INPUTS
+*       Set, get; UWORD, 0..23. Not parsed during construction.
+*
+*   NOTES
+*       No range validation or carrying; redraws and may notify this tag.
+*       No Time/Ticked notification. A non-frozen tick overwrites the value.
+*
+*/
+/****** Clock.mcc/MUIA_Clock_Min ************
+*
+*   NAME
+*       MUIA_Clock_Min
+*
+*   FUNCTION
+*       Get or set minutes in ClockData.
+*
+*   INPUTS
+*       Set, get; UWORD, 0..59. Not parsed during construction.
+*
+*   NOTES
+*       No range validation or carrying; redraws and may notify this tag.
+*       No Time/Ticked notification. A non-frozen tick overwrites the value.
+*
+*/
+/****** Clock.mcc/MUIA_Clock_Sec ************
+*
+*   NAME
+*       MUIA_Clock_Sec
+*
+*   FUNCTION
+*       Get or set seconds in ClockData.
+*
+*   INPUTS
+*       Set, get; UWORD, 0..59. Not parsed during construction.
+*
+*   NOTES
+*       No range validation or carrying; redraws and may notify this tag.
+*       No Time/Ticked notification. A non-frozen tick overwrites the value.
+*
+*/
+/****** Clock.mcc/MUIA_Clock_Frozen ************
+*
+*   NAME
+*       MUIA_Clock_Frozen
+*
+*   FUNCTION
+*       Suspend timer-driven Time refreshes.
+*
+*   INPUTS
+*       Initialize, set, get; BOOL, default FALSE.
+*
+*   NOTES
+*       The timer remains registered. Explicit Time and component setters
+*       still work. Changing Frozen alone does not redraw.
+*
+*/
+/****** Clock.mcc/MUIA_Clock_EditHand ************
+*
+*   NAME
+*       MUIA_Clock_EditHand
+*
+*   FUNCTION
+*       Select the hand highlighted while Frozen.
+*
+*   INPUTS
+*       Initialize, set, get; WORD, default -1; 0=hour, 1=minute,
+*       2=second (MUIV_Clock_EditHand_*).
+*
+*   NOTES
+*       Other values highlight nothing. Set redraws; this is not an
+*       interactive editing facility.
+*
+*/
+/****** Clock.mcc/MUIA_Clock_Ticked ************
+*
+*   NAME
+*       MUIA_Clock_Ticked
+*
+*   FUNCTION
+*       Notify listeners after a non-frozen timer refresh.
+*
+*   INPUTS
+*       Notification tag TRUE; no stored setter/getter value.
+*
+*   NOTES
+*       Emitted after Time on each delivered non-frozen timer call, even
+*       when time is unchanged. Direct setters do not emit Ticked. Use
+*       EveryTime notifications when every delivery matters.
+*
+*/
+/****** Clock.mcc/MUIM_Clock_Timer ************
+*
+*   NAME
+*       MUIM_Clock_Timer
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_Clock_Timer);
+*
+*   FUNCTION
+*       Refresh Time from the system clock unless Frozen.
+*
+*   INPUTS
+*       Live Clock object; no payload.
+*
+*   RESULT
+*       Always zero; no error status.
+*
+*   NOTES
+*       Sets Time followed by Ticked=TRUE. The Time notification may
+*       expose temporary ClockData; do not retain that pointer. This method
+*       does not enforce a one-second interval or advance custom time.
+*
+*/
+
 /*** Methods ****************************************************************/
+/*
+ * Copy Time or obtain system time; initialize Frozen/EditHand and the
+ * deferred Application timer. Individual time components are ignored
+ * at construction. Return object or zero on superclass failure.
+ */
 IPTR Clock__OM_NEW(Class *cl, Object *obj, struct opSet *msg)
 {
     struct Clock_DATA *data;
@@ -76,12 +246,20 @@ IPTR Clock__OM_NEW(Class *cl, Object *obj, struct opSet *msg)
 }
 
 
+/*
+ * Delegate disposal; callers must complete Hide/Cleanup and release
+ * borrowed ClockData pointers beforehand.
+ */
 IPTR Clock__OM_DISPOSE(Class *cl, Object *obj, Msg msg)
 {
     return DoSuperMethodA(cl, obj, msg);
 }
 
 
+/*
+ * Apply Time/component flags and request redraw except for Frozen-only
+ * changes; delegate tags unmodified. Requires valid Time pointer.
+ */
 IPTR Clock__OM_SET(Class *cl, Object *obj, struct opSet *msg)
 {
     struct Clock_DATA *data = INST_DATA(cl, obj);
@@ -135,6 +313,10 @@ IPTR Clock__OM_SET(Class *cl, Object *obj, struct opSet *msg)
 }
 
 
+/*
+ * Return fields or borrowed ClockData through writable storage.
+ * Ticked has no getter; otherwise delegate unknown attributes.
+ */
 IPTR Clock__OM_GET(Class *cl, Object *obj, struct opGet *msg)
 {
     struct Clock_DATA *data = INST_DATA(cl, obj);
@@ -175,6 +357,10 @@ IPTR Clock__OM_GET(Class *cl, Object *obj, struct opGet *msg)
 }
 
 
+/*
+ * Register the timer handler after successful Area setup. Failure
+ * to register is not reported separately; Cleanup removes the node.
+ */
 IPTR Clock__MUIM_Setup(Class *cl, Object *obj, struct MUIP_Setup *msg)
 {
     struct Clock_DATA *data = INST_DATA(cl, obj);
@@ -186,6 +372,10 @@ IPTR Clock__MUIM_Setup(Class *cl, Object *obj, struct MUIP_Setup *msg)
     return TRUE;
 }
 
+/*
+ * Acquire highlight pen after successful Show; failed pen allocation
+ * falls back to shine. Hide releases the acquired pen.
+ */
 IPTR Clock__MUIM_Show(Class *cl, Object *obj, struct MUIP_Setup *msg)
 {
     struct Clock_DATA *data = INST_DATA(cl, obj);
@@ -202,6 +392,10 @@ IPTR Clock__MUIM_Show(Class *cl, Object *obj, struct MUIP_Setup *msg)
     return TRUE;
 }
 
+/*
+ * Release highlight pen, then delegate Hide. Bitmap survives until
+ * Cleanup.
+ */
 IPTR Clock__MUIM_Hide(Class *cl, Object *obj, struct MUIP_Cleanup *msg)
 {
     struct Clock_DATA *data = INST_DATA(cl, obj);
@@ -216,6 +410,10 @@ IPTR Clock__MUIM_Hide(Class *cl, Object *obj, struct MUIP_Cleanup *msg)
 }
 
 
+/*
+ * Release rendering buffers and Application timer handler, then
+ * delegate Cleanup. Requires no active timer/draw callbacks.
+ */
 IPTR Clock__MUIM_Cleanup(Class *cl, Object *obj, struct MUIP_Cleanup *msg)
 {
     struct Clock_DATA *data = INST_DATA(cl, obj);
@@ -233,6 +431,9 @@ IPTR Clock__MUIM_Cleanup(Class *cl, Object *obj, struct MUIP_Cleanup *msg)
 }
 
 
+/*
+ * Add 31 to minimum/default Area dimensions; return TRUE.
+ */
 IPTR Clock__MUIM_AskMinMax(Class *cl, Object *obj, struct MUIP_AskMinMax *msg)
 {
     DoSuperMethodA(cl, obj, (Msg)msg);
@@ -250,6 +451,10 @@ IPTR Clock__MUIM_AskMinMax(Class *cl, Object *obj, struct MUIP_AskMinMax *msg)
 
 #define MY_PI 3.14159265358979323846
 
+/*
+ * Draw a filled hand on an initialized RastPort with AreaInfo/TmpRas.
+ * Requires valid geometry and representable WORD coordinates.
+ */
 static void DrawHand
 (
     struct RastPort *rp, WORD cx, WORD cy, DOUBLE angle,
@@ -287,6 +492,9 @@ static void DrawHand
 }
 
 
+/*
+ * Draw a line hand; geometry must fit WORD coordinates.
+ */
 static void DrawThinHand(struct RastPort *rp, WORD cx, WORD cy, DOUBLE angle, WORD radius)
 {
     WORD x, y;
@@ -299,6 +507,10 @@ static void DrawThinHand(struct RastPort *rp, WORD cx, WORD cy, DOUBLE angle, WO
     Draw(rp, x, y);
 }
 
+/*
+ * Draw using cached/offscreen bitmap and temporary raster. Requires
+ * valid graphics lifecycle; allocation failure skips drawing. Returns 0.
+ */
 IPTR Clock__MUIM_Draw(Class *cl, Object *obj, struct MUIP_Draw *msg)
 {
     struct Clock_DATA *data = INST_DATA(cl, obj);
@@ -516,6 +728,11 @@ IPTR Clock__MUIM_Draw(Class *cl, Object *obj, struct MUIP_Draw *msg)
 }
 
 
+/*
+ * Unless frozen, set Time from system time, then emit Ticked.
+ * Time notification uses temporary ClockData; callbacks must copy it.
+ * Always returns zero.
+ */
 IPTR Clock__MUIM_Clock_Timer(Class *cl, Object *obj, Msg msg)
 {
     struct Clock_DATA *data;

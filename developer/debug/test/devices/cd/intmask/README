@@ -5,7 +5,9 @@ CD32 interrupt-mask race regression
 
 Run test-devices-cd-intmask or test-devices-cd-intmask-quick, selected beneath
 the native Amiga CD device test group, or run python3 host_test.py directly.
-The host compiler needs AddressSanitizer and UndefinedBehaviorSanitizer.
+The test is built with AddressSanitizer and UndefinedBehaviorSanitizer when
+the host compiler can link and run them. Otherwise it prints a notice and
+runs without them; --require-sanitizers makes that an error.
 
 The harness compiles the actual CD32_IntEnable/CD32_IntDisable functions
 from arch/m68k-amiga/devs/cd/cd32.c. It injects a completion interrupt between

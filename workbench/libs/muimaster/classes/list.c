@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2002-2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 2002-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <string.h>
@@ -27,6 +27,1090 @@
 #include "textengine.h"
 #include "listimage.h"
 #include "prefs.h"
+
+/****** List.mui/MUIC_List ************
+*
+*   NAME
+*       MUIC_List
+*
+*   SUPERCLASS
+*       Group.mui
+*
+*   DESCRIPTION
+*       Display indexed entries in columns and manage the active cursor and
+*       selection. List is a Group containing a drawing area and optional
+*       vertical scrollbar; its Listview_List getter returns the List itself.
+*
+*       Entries are opaque pointers. By default List retains them without
+*       copying or freeing them, but displays and compares them as terminated
+*       strings. To own copied strings, pair MUIV_List_ConstructHook_String
+*       with MUIV_List_DestructHook_String. Custom data needs compatible
+*       display and comparison hooks.
+*
+*       List owns its entry records and internal pool, but borrows external
+*       pools, hooks, format strings, titles and entry data. Keep borrowed
+*       objects valid while in use; do not mutate or dispose the List during
+*       its synchronous hooks.
+*
+*   NOTES
+*       Active and selected are independent. Move and Exchange preserve the
+*       active index; Sort follows the active entry. Direct Select calls do
+*       not send Listview_SelectChange notifications. Quiet defers drawing but
+*       not all notifications or callbacks.
+*
+*       CreateImage handles require explicit DeleteImage; List does not
+*       dispose their Area objects or automatically release all handles at
+*       cleanup.
+*
+*   BUGS
+*       Insert may leave a partially changed list on allocation or
+*       construction failure. Format replacement is also nontransactional; its
+*       setter does not report allocation failure. Some setters and redraw
+*       paths trust caller indices. Clear/Remove can access stale active-entry
+*       records while updating Active. With external pools, the title record
+*       is not explicitly freed. See the individual method contracts for
+*       affected cases.
+*
+*/
+/****** Scrmodelist.mui/MUIC_Scrmodelist ************
+*
+*   NAME
+*       MUIC_Scrmodelist
+*
+*   SUPERCLASS
+*       Not defined by the builtin implementation.
+*
+*   DESCRIPTION
+*       The header declares Scrmodelist.mui and macros.h provides
+*       ScrmodelistObject, but AROS does not register or implement a built-in
+*       Scrmodelist class. No runtime availability, superclass or methods
+*       follow from this declaration; external classes are outside this
+*       contract.
+*
+*/
+/****** List.mui/MUIA_List_Active ************
+*
+*   NAME
+*       MUIA_List_Active
+*
+*   FUNCTION
+*       Read or change the active entry index.
+*
+*   INPUTS
+*       Initialize, set, get; LONG. Default MUIV_List_Active_Off (-1).
+*
+*   NOTES
+*       Accepts an index or Off, Top, Bottom, Up, Down, PageUp or PageDown.
+*       Relative movement clamps to the entry range; construction only
+*       resolves Top/Bottom and clamps explicit values. Active does not change
+*       selection. After setup it calls Jump even when AutoVisible is off.
+*       Notifications can carry the supplied selector rather than the resolved
+*       index; get the value again after setting. Read-only Listview hides the
+*       cursor, not this setter.
+*
+*/
+/****** List.mui/MUIA_List_AdjustWidth ************
+*
+*   NAME
+*       MUIA_List_AdjustWidth
+*
+*   FUNCTION
+*       Constrain the list width from its contents during size negotiation.
+*
+*   INPUTS
+*       Initialize only; BOOL, default FALSE.
+*
+*   NOTES
+*       For nonempty lists the minimum, default and maximum width use the sum
+*       of measured column widths, gaps and bars. Empty lists retain
+*       40/100/unlimited. There is no local setter/getter or automatic parent
+*       relayout on entry changes.
+*
+*/
+/****** List.mui/MUIA_List_AdjustHeight ************
+*
+*   NAME
+*       MUIA_List_AdjustHeight
+*
+*   FUNCTION
+*       Constrain the list height from its contents during size negotiation.
+*
+*   INPUTS
+*       Initialize only; BOOL, default FALSE.
+*
+*   NOTES
+*       For nonempty lists minimum, default and maximum height use measured
+*       entry heights plus the title; empty lists retain 36/96/unlimited.
+*       Drawing uses one maximum row height, so all rows need not fit. No
+*       local setter/getter or automatic parent relayout is provided.
+*
+*/
+/****** List.mui/MUIA_List_AutoVisible ************
+*
+*   NAME
+*       MUIA_List_AutoVisible
+*
+*   FUNCTION
+*       Enable the active-entry adjustment performed during layout.
+*
+*   INPUTS
+*       Initialize, set, get; BOOL, default FALSE.
+*
+*   NOTES
+*       Layout scrolls when Active crosses the lower visible boundary, but
+*       does not symmetrically handle an Active above First. Changing Active
+*       after setup calls Jump regardless of this flag; setting it does not
+*       scroll immediately. Get returns a flag mask, not normalized TRUE.
+*
+*/
+/****** List.mui/MUIA_List_CompareHook ************
+*
+*   NAME
+*       MUIA_List_CompareHook
+*
+*   FUNCTION
+*       Supply the comparator used by Compare and Sort.
+*
+*   INPUTS
+*       Initialize, set; borrowed Hook pointer. NULL selects the builtin
+*       comparator; no local getter.
+*
+*   NOTES
+*       CallHookPkt receives entry2 as object and entry1 as message. Return a
+*       negative, zero or positive LONG for the entry1/entry2 order. Default
+*       is case-insensitive Stricmp on terminated strings. Changing the hook
+*       does not sort; keep hook and data live during synchronous comparison.
+*
+*/
+/****** List.mui/MUIA_List_ConstructHook ************
+*
+*   NAME
+*       MUIA_List_ConstructHook
+*
+*   FUNCTION
+*       Choose how incoming entry pointers become stored entries.
+*
+*   INPUTS
+*       Initialize, set; borrowed Hook pointer, NULL, or
+*       MUIV_List_ConstructHook_String. Default NULL; no local getter.
+*
+*   NOTES
+*       NULL stores the input pointer unchanged. The String selector copies
+*       text into the pool (NULL becomes empty). Custom hooks receive pool as
+*       object and entry as message; zero means failure. Match owned data to a
+*       Destruct hook before insertion. Changing hooks does not reconstruct
+*       old entries.
+*
+*/
+/****** List.mui/MUIA_List_DestructHook ************
+*
+*   NAME
+*       MUIA_List_DestructHook
+*
+*   FUNCTION
+*       Choose how stored entry data is released.
+*
+*   INPUTS
+*       Initialize, set; borrowed Hook pointer, NULL, or
+*       MUIV_List_DestructHook_String. Default NULL; no local getter.
+*
+*   NOTES
+*       NULL does not free entry data. String frees only allocations from the
+*       matching String constructor. Custom hooks receive pool and stored
+*       entry; return values are ignored. Changing policy while entries exist
+*       may free them incorrectly.
+*
+*/
+/****** List.mui/MUIA_List_DisplayHook ************
+*
+*   NAME
+*       MUIA_List_DisplayHook
+*
+*   FUNCTION
+*       Provide display strings for the columns of an entry or title.
+*
+*   INPUTS
+*       Initialize, set; borrowed Hook pointer or NULL. Default NULL; no local
+*       getter.
+*
+*   NOTES
+*       The hook receives the string-pointer array as object and entry as
+*       message; NULL entry denotes a title. Set all displayed columns to live
+*       strings or NULL. The slot preceding the array carries entry metadata,
+*       with ABI limits noted in MUIM_List_Display. Without a hook only column
+*       zero is assigned. Changing the hook does not remeasure; request
+*       Redraw_All.
+*
+*/
+/****** List.mui/MUIA_List_DragSortable ************
+*
+*   NAME
+*       MUIA_List_DragSortable
+*
+*   FUNCTION
+*       Accept a drag from this List and move its active entry on drop.
+*
+*   INPUTS
+*       Initialize, set, get; BOOL, default FALSE.
+*
+*   NOTES
+*       DragQuery accepts this List as source only when enabled. DragDrop
+*       moves the active entry and sets Active, not a group of selected
+*       entries. This flag does not set Draggable or the Listview drag type.
+*       Get returns a mask.
+*
+*/
+/****** List.mui/MUIA_List_DropMark ************
+*
+*   NAME
+*       MUIA_List_DropMark
+*
+*   FUNCTION
+*       Read the insertion boundary recorded by the last DragDrop call.
+*
+*   INPUTS
+*       Get; LONG, initially zero.
+*
+*   NOTES
+*       DragDrop stores the insertion boundary before moving the active entry;
+*       Entries means after the last item. Hover drawing does not update this
+*       attribute, and its value does not prove Move succeeded.
+*
+*/
+/****** List.mui/MUIA_List_Entries ************
+*
+*   NAME
+*       MUIA_List_Entries
+*
+*   FUNCTION
+*       Read the current number of entries.
+*
+*   INPUTS
+*       Get; LONG, initially zero.
+*
+*   NOTES
+*       Mutators update the confirmed entry count and may notify through the
+*       superclass. Applications must use the entry methods, not set the
+*       count. Insertion failure can leave it inconsistent; see
+*       MUIM_List_Insert.
+*
+*/
+/****** List.mui/MUIA_List_First ************
+*
+*   NAME
+*       MUIA_List_First
+*
+*   FUNCTION
+*       Read or set the first displayed entry index.
+*
+*   INPUTS
+*       Get and implemented Set despite the get-only header annotation; LONG,
+*       initially zero. No constructor parsing.
+*
+*   NOTES
+*       Set stores the index without validation, requests redraw and updates
+*       the scrollbar unless Quiet. Prefer Jump after layout. Cleanup does not
+*       reset First to -1; it does not indicate that a window is open. Set may
+*       notify.
+*
+*/
+/****** List.mui/MUIA_List_Format ************
+*
+*   NAME
+*       MUIA_List_Format
+*
+*   FUNCTION
+*       Describe columns using comma-separated ReadArgs option strings.
+*
+*   INPUTS
+*       Initialize, set, get; borrowed terminated STRPTR or NULL. Default NULL
+*       gives one default column.
+*
+*   NOTES
+*       Comma-separated columns accept DELTA=D/N, PREPARSE=P/K, WEIGHT=W/N,
+*       MINWIDTH=MIW/N, MAXWIDTH=MAW/N, COL=C/N and BAR/S. Only DELTA,
+*       PREPARSE, BAR and measured text widths affect layout in this
+*       implementation; WEIGHT, MINWIDTH, MAXWIDTH and COL are stored but not
+*       applied. BAR adds 2 pixels; PREPARSE is copied, while the Format
+*       string remains borrowed.
+*
+*       Set reparses and redraws without reporting allocation failure. Prior
+*       format storage is released first; partial growth is not rolled back.
+*       Column growth can leave a title record undersized when a title is
+*       enabled later. Keep the supplied Format string alive.
+*
+*/
+/****** List.mui/MUIA_List_InsertPosition ************
+*
+*   NAME
+*       MUIA_List_InsertPosition
+*
+*   FUNCTION
+*       Read the starting slot chosen by the latest insertion attempt.
+*
+*   INPUTS
+*       Get; LONG, initially zero.
+*
+*   NOTES
+*       Insert sets this before allocation, so failure can change it. With
+*       sorted insertion it records the original append slot, not final sorted
+*       positions; the method return is a different value.
+*
+*/
+/****** List.mui/MUIA_List_MinLineHeight ************
+*
+*   NAME
+*       MUIA_List_MinLineHeight
+*
+*   FUNCTION
+*       Set the minimum measured entry height.
+*
+*   INPUTS
+*       Initialize only; ULONG storage despite LONG header annotation. Default
+*       zero.
+*
+*   NOTES
+*       Measurement applies this to entries and title; all rows then use the
+*       maximum height. There is no local validation or Set/Get: negative
+*       signed values become large unsigned heights.
+*
+*/
+/****** List.mui/MUIA_List_MultiTestHook ************
+*
+*   NAME
+*       MUIA_List_MultiTestHook
+*
+*   FUNCTION
+*       Decide whether an entry can share a selection with other entries.
+*
+*   INPUTS
+*       Initialize, set; borrowed Hook pointer or NULL. Default NULL permits
+*       multiselection. No local getter.
+*
+*   NOTES
+*       The hook receives NULL as object and the entry as message. Zero
+*       forbids multi-selection with that entry, but not selecting it alone.
+*       Setting a non-NULL hook clears selection, even if unchanged; Ask does
+*       not call it. Keep the hook valid and do not mutate List during the
+*       call.
+*
+*/
+/****** List.mui/MUIA_List_Pool ************
+*
+*   NAME
+*       MUIA_List_Pool
+*
+*   FUNCTION
+*       Supply the pool used for entry records, copied strings and image
+*       handles.
+*
+*   INPUTS
+*       Initialize only; valid Exec pool pointer or NULL. Default NULL creates
+*       an internal pool.
+*
+*   NOTES
+*       External pools are borrowed and must outlive List and its handles;
+*       List deletes only its own pool. Pool size tags affect only pool
+*       creation. The title record is not explicitly freed on disposal in
+*       external pools.
+*
+*/
+/****** List.mui/MUIA_List_PoolPuddleSize ************
+*
+*   NAME
+*       MUIA_List_PoolPuddleSize
+*
+*   FUNCTION
+*       Set a size passed to CreatePool when List creates its own pool.
+*
+*   INPUTS
+*       Initialize only; ULONG tag stored in LONG. Default 2008 bytes.
+*
+*   NOTES
+*       Use values valid for Exec CreatePool and representable by the stored
+*       size. The class does not validate the size pair. Ignored for pool
+*       creation when Pool supplies an external pool. No local setter or getter
+*       exists; this does not resize a live pool.
+*
+*/
+/****** List.mui/MUIA_List_PoolThreshSize ************
+*
+*   NAME
+*       MUIA_List_PoolThreshSize
+*
+*   FUNCTION
+*       Set a size passed to CreatePool when List creates its own pool.
+*
+*   INPUTS
+*       Initialize only; ULONG tag stored in LONG. Default 1024 bytes.
+*
+*   NOTES
+*       Use values valid for Exec CreatePool and representable by the stored
+*       size. The class does not validate the size pair. Ignored for pool
+*       creation when Pool supplies an external pool. No local setter or getter
+*       exists; this does not resize a live pool.
+*
+*/
+/****** List.mui/MUIA_List_Quiet ************
+*
+*   NAME
+*       MUIA_List_Quiet
+*
+*   FUNCTION
+*       Defer List rendering and selected scrollbar updates during a batch.
+*
+*   INPUTS
+*       Set only; BOOL, initially FALSE. No local constructor parsing or getter.
+*
+*   NOTES
+*       Quiet defers drawing and some scrollbar updates, but is not a nesting
+*       counter and does not suppress all notifications or callbacks. Updates
+*       may be lost in paths that do not record pending work; restore FALSE
+*       and request Redraw_All if necessary.
+*
+*/
+/****** List.mui/MUIA_List_ShowDropMarks ************
+*
+*   NAME
+*       MUIA_List_ShowDropMarks
+*
+*   FUNCTION
+*       Draw a provisional insertion line during drag reporting.
+*
+*   INPUTS
+*       Initialize, set, get; BOOL, default TRUE.
+*
+*   NOTES
+*       Only affects rendering in DragReport, not whether a drag is accepted or
+*       entries move. Get returns a flag mask when enabled. The drawing position
+*       is tracked separately from DropMark. DragFinish resets the internal y
+*       position and delegates; it does not explicitly erase the line itself.
+*
+*/
+/****** List.mui/MUIA_List_SourceArray ************
+*
+*   NAME
+*       MUIA_List_SourceArray
+*
+*   FUNCTION
+*       Insert an initial NULL-terminated array of entry pointers.
+*
+*   INPUTS
+*       Initialize only; readable APTR array or NULL. Default NULL.
+*
+*   NOTES
+*       The constructor consumes the NULL-terminated pointer array
+*       synchronously and inserts according to ConstructHook. It does not
+*       retain the array. Partial insertion failure is possible; see
+*       MUIM_List_Insert.
+*
+*/
+/****** List.mui/MUIA_List_Title ************
+*
+*   NAME
+*       MUIA_List_Title
+*
+*   FUNCTION
+*       Show a direct title or request column titles from the display callback.
+*
+*   INPUTS
+*       Initialize, set, get; borrowed STRPTR, NULL for no title, or pointer
+*       value 1 for callback titles. Default NULL.
+*
+*   NOTES
+*       A one-column title other than pointer value 1 is displayed directly.
+*       With multiple columns, or value 1, Display is called with NULL entry and
+*       entry_pos -1; provide all title strings. The string is not copied or
+*       freed. Set requests Redraw_All. Title is not included in Entries and
+*       cannot be retrieved as an ordinary entry index; it has a separate
+*       internal record.
+*
+*/
+/****** List.mui/MUIA_List_Visible ************
+*
+*   NAME
+*       MUIA_List_Visible
+*
+*   FUNCTION
+*       Read the number of complete rows calculated for the drawing area.
+*
+*   INPUTS
+*       Get; LONG, initially -1.
+*
+*   NOTES
+*       Layout/drawing divide available height after title space by the maximum
+*       row height. The result is capacity, not the number of existing entries,
+*       and can exceed Entries. It can be zero for a small area. AROS emits
+*       Visible and private scrollbar notifications when recalculated. Cleanup
+*       does not reset it to -1. Internal setters synchronize scrollbar state;
+*       applications should not set it to fabricate layout.
+*
+*/
+/****** List.mui/MUIM_List_Clear ************
+*
+*   NAME
+*       MUIM_List_Clear
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_List_Clear);
+*
+*   FUNCTION
+*       Remove all confirmed entries.
+*
+*   INPUTS
+*       obj - Live List with matching destruction policy.
+*
+*   RESULT
+*       Always zero, including an empty list.
+*
+*   NOTES
+*       Calls Destruct in reverse order, frees records, resets Entries/First
+*       and Active, and requests redraw. The title and capacity remain.
+*       Updating Active after freeing its former entry can touch stale
+*       storage.
+*
+*/
+/****** List.mui/MUIM_List_Construct ************
+*
+*   NAME
+*       MUIM_List_Construct
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_List_Construct, (IPTR)entry,
+*       (IPTR)pool);
+*
+*   FUNCTION
+*       Create the data pointer to store for an entry.
+*
+*   INPUTS
+*       entry - Input data interpreted by the construction policy.
+*       pool - Live pool supplied to that policy.
+*
+*   RESULT
+*       Stored pointer, or zero on failure.
+*
+*   NOTES
+*       NULL hook returns the input pointer. String mode copies text into a
+*       pool allocation with its size stored immediately before the string;
+*       NULL input becomes empty text. Custom hooks receive pool and entry.
+*       The returned pointer must be released with the matching Destruct
+*       policy. This call does not insert an entry.
+*
+*/
+/****** List.mui/MUIM_List_Destruct ************
+*
+*   NAME
+*       MUIM_List_Destruct
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_List_Destruct, (IPTR)entry,
+*       (IPTR)pool);
+*
+*   FUNCTION
+*       Release entry data using the current destruction policy.
+*
+*   INPUTS
+*       entry - Data produced by the matching construction policy.
+*       pool - Same live pool used for allocation.
+*
+*   RESULT
+*       Always zero; custom-hook return is ignored.
+*
+*   NOTES
+*       NULL hook does nothing. String mode frees only allocations made by its
+*       matching String constructor; custom hooks receive pool and stored
+*       entry. Direct calls do not remove List records: do not free data still
+*       referenced.
+*
+*/
+/****** List.mui/MUIM_List_Compare ************
+*
+*   NAME
+*       MUIM_List_Compare
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_List_Compare, (IPTR)entry1,
+*       (IPTR)entry2, sort_type1, sort_type2);
+*
+*   FUNCTION
+*       Compare entry1 with entry2.
+*
+*   INPUTS
+*       entry1, entry2 - Live data suitable for the current comparator.
+*       sort_type1, sort_type2 - Declared LONG fields; ignored locally.
+*
+*   RESULT
+*       Hook result; interpret as signed LONG ordering, negative/zero/positive.
+*
+*   NOTES
+*       Custom CompareHook receives entry2 as object and entry1 as message;
+*       default is case-insensitive Stricmp. This method does not sort or
+*       copy.
+*
+*/
+/****** List.mui/MUIM_List_Display ************
+*
+*   NAME
+*       MUIM_List_Display
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_List_Display, (IPTR)entry, (IPTR)array,
+*       entry_pos, (IPTR)preparses);
+*
+*   FUNCTION
+*       Fill display-column string pointers.
+*
+*   INPUTS
+*       entry - Stored data, or NULL for title.
+*       array - Writable STRPTR array with a writable preceding pointer slot
+*       when using a hook.
+*       entry_pos - LONG index, or -1 for title.
+*       preparses - Declared array; ignored by the base method.
+*
+*   RESULT
+*       1 without a hook; otherwise the hook result. Rendering callers ignore
+*       that result.
+*
+*   NOTES
+*       Without a hook only array[0] is assigned. A hook receives the array as
+*       object and entry as message. The preceding slot holds entry position,
+*       written as ULONG here but pointer-sized on an internal row path; title
+*       handling differs. Do not rely on consistent pointer-sized metadata.
+*       All used column strings must survive measurement and drawing. Format
+*       preparses are prepared internally; this base method does not pass its
+*       preparses argument separately to the hook.
+*
+*/
+/****** List.mui/MUIM_List_GetEntry ************
+*
+*   NAME
+*       MUIM_List_GetEntry
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_List_GetEntry, pos, (IPTR)entry);
+*
+*   FUNCTION
+*       Return the stored data pointer at an index.
+*
+*   INPUTS
+*       pos - LONG index or MUIV_List_GetEntry_Active.
+*       entry - Non-NULL writable APTR result location.
+*
+*   RESULT
+*       Stored pointer as IPTR, also written to the entry output; zero with a
+*       NULL output value for an invalid position.
+*
+*   NOTES
+*       Returns borrowed data. Sorting/moving changes indices; removing or
+*       clearing entries may destroy the pointer. No copy is made. The output
+*       pointer must not be NULL.
+*
+*/
+/****** List.mui/MUIM_List_Insert ************
+*
+*   NAME
+*       MUIM_List_Insert
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_List_Insert, (IPTR)entries, count,
+*       pos);
+*
+*   FUNCTION
+*       Construct and insert a sequence of entries.
+*
+*   INPUTS
+*       entries - Readable APTR array for the call.
+*       count - Positive LONG count, or -1 for a NULL-terminated array.
+*       pos - LONG insertion slot or MUIV_List_Insert_Top, Active, Sorted or
+*       Bottom.
+*
+*   RESULT
+*       On completion, the pre-sort index of the last inserted slot, cast to
+*       ULONG. On nonpositive count or failure, all-bits-one IPTR (~0). This is
+*       not a Boolean or count.
+*
+*   NOTES
+*       Top inserts at zero, Bottom appends, Active uses its index or zero,
+*       and Sorted appends then sorts. Other positions are clamped.
+*       ConstructHook supplies each stored pointer; the input array is not
+*       retained. InsertPosition is the pre-sort slot; sorting can also affect
+*       Active.
+*
+*       This operation is not atomic. An allocation or Construct failure can
+*       leave partial entries and inconsistent counts; failure paths do not
+*       roll back and may calculate invalid move lengths. The return value
+*       cannot certify a recoverable partial state. Do not mutate List
+*       reentrantly from its hooks.
+*
+*/
+/****** List.mui/MUIM_List_InsertSingle ************
+*
+*   NAME
+*       MUIM_List_InsertSingle
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_List_InsertSingle, (IPTR)entry, pos);
+*
+*   FUNCTION
+*       Insert one entry through Insert.
+*
+*   INPUTS
+*       entry - Input interpreted by ConstructHook; NULL is allowed only if that
+*       policy produces a non-NULL stored value.
+*       pos - Same index/selectors as Insert.
+*
+*   RESULT
+*       Exactly the Insert result for a count of one: pre-sort slot or
+*       all-bits-one failure.
+*
+*   NOTES
+*       Passes the message entry to Insert synchronously. Construction,
+*       sorting, error handling and ownership follow MUIM_List_Insert.
+*
+*/
+/****** List.mui/MUIM_List_Move ************
+*
+*   NAME
+*       MUIM_List_Move
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_List_Move, from, to);
+*
+*   FUNCTION
+*       Move one entry to another index.
+*
+*   INPUTS
+*       from - LONG index or MUIV_List_Move_Top, Active or Bottom.
+*       to - Same choices, plus MUIV_List_Move_Next or Previous relative to the
+*       resolved first index.
+*
+*   RESULT
+*       TRUE when distinct valid indices were changed; FALSE for invalid indices
+*       or the same index.
+*
+*   NOTES
+*       Move shifts records; selection bits follow the data. Active keeps its
+*       index and may name different data afterwards. No Construct/Destruct or
+*       Active notification occurs. Quiet defers the full redraw.
+*
+*/
+/****** List.mui/MUIM_List_Exchange ************
+*
+*   NAME
+*       MUIM_List_Exchange
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_List_Exchange, pos1, pos2);
+*
+*   FUNCTION
+*       Exchange two entry records.
+*
+*   INPUTS
+*       pos1 - LONG index or MUIV_List_Exchange_Top, Active or Bottom.
+*       pos2 - Same choices, plus MUIV_List_Exchange_Next or Previous relative
+*       to the resolved first index.
+*
+*   RESULT
+*       TRUE when distinct valid indices were changed; FALSE for invalid indices
+*       or the same index.
+*
+*   NOTES
+*       Exchange swaps two records, preserving their selection bits. Active
+*       keeps its index and may name different data afterwards. No
+*       Construct/Destruct or Active notification occurs. Unlike Move,
+*       Exchange does not record the same pending full update under Quiet.
+*
+*/
+/****** List.mui/MUIM_List_Remove ************
+*
+*   NAME
+*       MUIM_List_Remove
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_List_Remove, pos);
+*
+*   FUNCTION
+*       Destroy and remove one entry or the selected entries.
+*
+*   INPUTS
+*       pos - LONG index or MUIV_List_Remove_First, Active, Last or Selected.
+*
+*   RESULT
+*       Always zero, including invalid index or empty list.
+*
+*   NOTES
+*       Selected removes flagged entries, or Active if none are flagged. The
+*       method destroys records, shifts survivors and adjusts Active. The
+*       UWORD selected scan does not support unrestricted counts; updating
+*       Active can reference stale records. Do not remove entries while
+*       traversing them with NextSelected; use Remove_Selected instead.
+*
+*/
+/****** List.mui/MUIM_List_Select ************
+*
+*   NAME
+*       MUIM_List_Select
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_List_Select, pos, seltype, (IPTR)info);
+*
+*   FUNCTION
+*       Change selection bits or query their state.
+*
+*   INPUTS
+*       pos - LONG index, MUIV_List_Select_Active or All.
+*       seltype - MUIV_List_Select_Off deselects; On selects; Toggle reverses;
+*       Ask only queries.
+*       info - Optional writable LONG result pointer.
+*
+*   RESULT
+*       Always zero. For All+Ask, the info output is the selected count.
+*       Otherwise it is the last processed entry's previous selection bit; no
+*       processed entry yields zero. An invalid explicit index returns before
+*       writing info.
+*
+*   NOTES
+*       Off deselects and On selects; MultiTestHook may refuse a combination.
+*       Active is unchanged. Calls request redraw but do not emit
+*       Listview_SelectChange. Quiet may suppress redraw without marking all
+*       rows pending. Use Ask to verify the selection state.
+*
+*/
+/****** List.mui/MUIM_List_NextSelected ************
+*
+*   NAME
+*       MUIM_List_NextSelected
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_List_NextSelected, (IPTR)pos);
+*
+*   FUNCTION
+*       Find the next selected entry index.
+*
+*   INPUTS
+*       pos - Non-NULL writable LONG. Start with MUIV_List_NextSelected_Start;
+*       otherwise supply a valid previous index.
+*
+*   RESULT
+*       Always TRUE. The pos output receives the next index or
+*       MUIV_List_NextSelected_End.
+*
+*   NOTES
+*       Start and End are both -1. An initial call without selected entries
+*       returns Active if set; later calls scan strictly after the supplied
+*       index. End restarts on another call. Do not mutate the list or pass
+*       invalid negative/overflowing indices while iterating.
+*
+*/
+/****** List.mui/MUIM_List_Sort ************
+*
+*   NAME
+*       MUIM_List_Sort
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_List_Sort);
+*
+*   FUNCTION
+*       Sort the entire list using Compare.
+*
+*   INPUTS
+*       obj - Live List with a consistent comparator and valid entry data.
+*
+*   RESULT
+*       Always zero, even when reordered.
+*
+*   NOTES
+*       Uses unstable quadratic selection sort. Selection flags follow
+*       entries; Active follows its entry without an Active notification.
+*       Synchronous comparators must not mutate or dispose List. Quiet defers
+*       redraw.
+*
+*/
+/****** List.mui/MUIM_List_Jump ************
+*
+*   NAME
+*       MUIM_List_Jump
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_List_Jump, pos);
+*
+*   FUNCTION
+*       Scroll until a requested index is in the visible range.
+*
+*   INPUTS
+*       pos - LONG index or MUIV_List_Jump_Top, Active, Bottom, Up or Down.
+*       obj - Laid-out List with a positive visible-row count for meaningful
+*       scrolling.
+*
+*   RESULT
+*       Always TRUE; not proof that an existing entry was displayed.
+*
+*   NOTES
+*       Up targets First-1, Down First+Visible. The method clamps the target
+*       and changes First only when needed; Active is unchanged. TRUE does not
+*       confirm a visible entry when the list is empty or unlaid-out.
+*
+*/
+/****** List.mui/MUIM_List_Redraw ************
+*
+*   NAME
+*       MUIM_List_Redraw
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_List_Redraw, pos, (IPTR)entry);
+*
+*   FUNCTION
+*       Recalculate measurements and request a row or full redraw.
+*
+*   INPUTS
+*       pos - Valid LONG index, MUIV_List_Redraw_Active, All or Entry.
+*       entry - Data pointer matched by identity for Entry; ignored otherwise.
+*
+*   RESULT
+*       Always zero.
+*
+*   NOTES
+*       Entry locates the first pointer-equal entry; All remeasures and
+*       redraws. Cached maxima can grow without shrinking. Quiet defers
+*       drawing. Numeric indices other than -1 are not fully validated and may
+*       access outside the array; supply both method arguments.
+*
+*/
+/****** List.mui/MUIM_List_TestPos ************
+*
+*   NAME
+*       MUIM_List_TestPos
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_List_TestPos, x, y, (IPTR)res);
+*
+*   FUNCTION
+*       Map window-relative coordinates to row and column information.
+*
+*   INPUTS
+*       x, y - LONG coordinates. Both MUI_MAXMAX select the last stored
+*       mouse-release position.
+*       res - Non-NULL writable MUI_List_TestPos_Result.
+*       obj - Laid-out List with valid measured row height.
+*
+*   RESULT
+*       Always TRUE. Inspect entry, column and flags rather than treating TRUE
+*       as a hit.
+*
+*   NOTES
+*       Returns entry/column (-1 if absent) and hit flags; xoffset and yoffset
+*       are written only on the corresponding hit paths, so initialize the
+*       result before calling. Both coordinates MUI_MAXMAX use cached release
+*       coordinates, not live mouse position. Visible-row bounds do not
+*       subtract First; invalid scroll state can yield out-of-range entry
+*       indices.
+*
+*/
+/****** List.mui/MUIM_List_CreateImage ************
+*
+*   NAME
+*       MUIM_List_CreateImage
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_List_CreateImage, (IPTR)area, flags);
+*
+*   FUNCTION
+*       Create a list-image handle referring to an Area object.
+*
+*   INPUTS
+*       area - Live Area-compatible object not simultaneously used in another
+*       parent hierarchy.
+*       flags - ULONG; ignored here, use zero.
+*
+*   RESULT
+*       Opaque handle, or zero for NULL area or handle allocation failure.
+*
+*   NOTES
+*       Allocates a pooled handle that borrows the Area. Setup is attempted
+*       immediately when List is set up, without checking success. Embed it as
+*       ESC followed by uppercase O and [hexadecimal handle] in display text.
+*       Keep Area and handle valid until all references are removed; call
+*       DeleteImage explicitly. List does not dispose the Area or walk handles
+*       at Cleanup/Dispose.
+*
+*/
+/****** List.mui/MUIM_List_DeleteImage ************
+*
+*   NAME
+*       MUIM_List_DeleteImage
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_List_DeleteImage, (IPTR)listimg);
+*
+*   FUNCTION
+*       Disconnect an image object and release its handle.
+*
+*   INPUTS
+*       listimg - Live handle returned by this List's CreateImage, or NULL.
+*
+*   RESULT
+*       Always zero. NULL is a no-op.
+*
+*   NOTES
+*       Cleanup/DisconnectParent the Area, unlink the pooled handle and
+*       release it; the Area is not disposed. Handles are not checked for
+*       membership or setup state: remove text references and delete each once
+*       during a matching setup lifecycle.
+*
+*/
+/* Private MUIM_List_SelectChange
+ * Private subclass callback. Active changes invoke it with position/state
+ * and flags zero, but the base handler simply returns1 and changes nothing.
+ * Public Select does not call it. The declared Multi flag does not imply
+ * base behavior.
+ */
+/* Private MUIA_List_Prop_Entries
+ * Private scrollbar count storage: Set/Get LONG. Set does not allocate or
+ * change confirmed entries; only internal synchronization may use it.
+ * Default0, updated by Entries except while Quiet.
+ */
+/* Private MUIA_List_Prop_Visible
+ * Private scrollbar visible count: Set/Get LONG, default-1. Setter also
+ * changes entries_visible. Layout overwrites it; arbitrary external values
+ * can invalidate scrolling calculations.
+ */
+/* Private MUIA_List_Prop_First
+ * Private scrollbar first index: Set/Get LONG, default0. Setter
+ * synchronizes List_First when different, without bounds checking.
+ * Scrollbar hook uses NoNotifySet to avoid notification recursion.
+ */
+/* Private MUIA_List_VertProp_Entries
+ * Private alias of MUIA_List_Prop_Entries with identical numeric ID,
+ * storage and synchronization behavior; not a second independent count.
+ */
+/* Private MUIA_List_VertProp_Visible
+ * Private alias of MUIA_List_Prop_Visible with identical numeric ID and
+ * shared visible-row storage. No independent vertical sizing contract.
+ */
+/* Private MUIA_List_VertProp_First
+ * Private alias of MUIA_List_Prop_First, sharing unvalidated first-row
+ * storage and List_First synchronization. No separate ownership or state.
+ */
+/* Private MUIA_List_HorizProp_Entries
+ * Private header identifier without a local constructor, Set or Get branch.
+ * No horizontal scrollbar count implementation is established; unknown
+ * operations delegate Group.
+ */
+/* Private MUIA_List_HorizProp_Visible
+ * Private header identifier without local handling. No horizontal visible-
+ * range implementation is established; do not infer parity with vertical
+ * aliases.
+ */
+/* Private MUIA_List_HorizProp_First
+ * Private header identifier without local handling. No horizontal scrolling
+ * state is stored by List for this tag; unknown operations delegate Group.
+ */
+/* Private MUIA_List_ListArea
+ * Private constructor-only replacement Area. Non-NULL object becomes a
+ * Group member and suppresses normal List row drawing; List still uses its
+ * geometry. No Set/Get branch. Follow Group child ownership and lifecycle;
+ * allocation/member errors are not comprehensively checked.
+ */
 
 extern struct Library *MUIMasterBase;
 
@@ -218,285 +1302,31 @@ struct MUI_ListData
 #define LIST_QUIET         (1<<5)
 #define LIST_CHANGED    (1<<6)
 
+/* Forward declaration: grow pooled per-entry width records for a larger
+ * column count. Requires live pool and consistent records; failure can
+ * leave earlier records grown. No rollback or ownership transfer.
+ */
 static BOOL IncreaseColumns(struct MUI_ListData *data, int new_columns);
 
-/****** List.mui/MUIA_List_Active ********************************************
-*
-*   NAME
-*       MUIA_List_Active -- (V4) [ISG], LONG
-*
-*   FUNCTION
-*       The index of the active entry. There can be at most one active entry
-*       in a list. The active entry is highlighted visibly, except for
-*       read-only lists (those whose Listview has MUIA_Listview_Input set to
-*       FALSE). Selecting an entry with the mouse, or moving through the list
-*       with keyboard controls will also change the active entry (again
-*       excepting read-only lists).
-*
-*       When set programmatically through this attribute, some special values
-*       can be used:
-*
-*           MUIV_List_Active_Off
-*           MUIV_List_Active_Top
-*           MUIV_List_Active_Bottom
-*           MUIV_List_Active_Up
-*           MUIV_List_Active_Down
-*           MUIV_List_Active_PageUp
-*           MUIV_List_Active_PageDown
-*
-*       When this attribute is read, either the index of the active entry or
-*       the special value MUIV_List_Active_Off will be returned.
-*
-*       Setting this attribute to a new value will additionally have the same
-*       effect as calling the MUIM_List_Jump method with the specified or
-*       implied index.
-*
-*   NOTES
-*       The concept of an active entry must not be confused with that of a
-*       selected entry.
-*
-*   SEE ALSO
-*       MUIM_List_Jump, MUIM_List_Select, MUIA_Listview_Input
-*
-******************************************************************************
-*
-*/
 
-/****** List.mui/MUIA_List_AutoVisible ***************************************
-*
-*   NAME
-*       MUIA_List_AutoVisible -- (V11) [ISG], BOOL
-*
-*   FUNCTION
-*       When this attribute is set to true, the active entry will be in the
-*       visible portion of the list whenever the list is unhidden.
-*
-*   SEE ALSO
-*       MUIA_List_Active
-*
-******************************************************************************
-*
-*/
 
-/****** List.mui/MUIA_List_CompareHook ***************************************
-*
-*   NAME
-*       MUIA_List_CompareHook -- (V4) [IS.], struct Hook *
-*
-*   FUNCTION
-*       The provided hook indicates the sort ordering of two list entries.
-*       The hook receives list-entry data pointers as its second and third
-*       arguments. The hook should return a negative value if the first entry
-*       should be placed before the second entry, a positive value if the
-*       first entry should be placed after the second entry, and zero if the
-*       entries are equal.
-*
-*       In addition to being used internally for sorting operations, this hook
-*       will be called when MUIM_List_Compare is externally invoked.
-*
-*       If this attribute is not specified or is set to NULL, all list entries
-*       must be strings.
-*
-******************************************************************************
-*
-*/
 
-/****** List.mui/MUIA_List_ConstructHook *************************************
-*
-*   NAME
-*       MUIA_List_ConstructHook -- (V4) [IS.], struct Hook *
-*
-*   FUNCTION
-*       The provided hook creates a list entry. Whenever a data item is added
-*       to the list, it is the result of this hook that is really added.
 
-*       The hook receives the list's memory pool as its second argument and
-*       the data item for the entry as its third argument. The memory pool may
-*       be used for allocating memory for the new entry if desired. The hook
-*       should return the new data entry, or NULL if an error occurred.
-*
-*       If this attribute is not specified or is set to NULL, all list entries
-*       must be strings (which must continue to exist for the lifetime of the
-*       list).
-*
-*       If you want string entries to be duplicated within the list, so that
-*       they do not have to be preserved externally, a built-in hook for this
-*       purpose can be used by providing the special value
-*       MUIV_List_ConstructHook_String.
-*
-*       Whenever this attribute is specified, a matching hook must be
-*       specified for the MUIA_ListDestructHook attribute.
-*
-*   SEE ALSO
-*       MUIA_List_DestructHook
-*
-******************************************************************************
-*
-*/
 
-/****** List.mui/MUIA_List_DestructHook **************************************
-*
-*   NAME
-*       MUIA_List_DestructHook -- (V4) [IS.], struct Hook *
-*
-*   FUNCTION
-*       The provided hook destroys a list entry, and is called whenever a data
-*       item is removed from the list. It can be used to deallocate any
-*       resources for the entry that were allocated by the hook specified for
-*       MUIA_List_ConstructHook.
-*
-*       The hook receives the list's memory pool as its second argument and
-*       the list entry to be destroyed as its third argument. The hook should
-*       have no return value.
-*
-*       If this attribute is not specified or is set to NULL, all list entries
-*       must be strings (which must continue to exist for the lifetime of the
-*       list).
-*
-*       If you want string entries to be duplicated within the list, so that
-*       they do not have to be preserved externally, a built-in hook for this
-*       purpose can be used by providing the special value
-*       MUIV_List_ConstructHook_String.
-*
-*       This attribute must only be specified when a matching hook has been
-*       specified for the MUIA_List_ConstructHook attribute. If you specified
-*       MUIV_List_ConstructHook_String for MUIA_List_ConstructHook, you must
-*       specify MUIV_List_DestructHook_String for this attribute.
-*
-*   SEE ALSO
-*       MUIA_List_ConstructHook
-*
-******************************************************************************
-*
-*/
 
-/****** List.mui/MUIA_List_DropMark ******************************************
-*
-*   NAME
-*       MUIA_List_DropMark -- (V11) [..G], LONG
-*
-*   FUNCTION
-*       Provides the index of the last position where a list entry was
-*       successfully dropped. The initial value before any entry has been
-*       dropped is undefined.
-*
-*   SEE ALSO
-*       MUIA_List_DragSortable, MUIA_List_ShowDropMarks,
-*       MUIA_Listview_Draggable
-*
-******************************************************************************
-*
-*/
 
-/****** List.mui/MUIA_List_First *********************************************
-*
-*   NAME
-*       MUIA_List_First -- (V4) [..G], LONG
-*
-*   FUNCTION
-*       The index of the first entry that can be seen (assuming nothing
-*       obscures the list) This value of this attribute is -1 when the
-*       list's window is not open.
-*
-*   NOTES
-*       Notification does not occur on this attribute in MUI.
-*
-*   SEE ALSO
-*       MUIA_List_First, MUIA_List_Entries
-*
-******************************************************************************
-*
-*/
 
-/****** List.mui/MUIA_List_MultiTestHook *************************************
-*
-*   NAME
-*       MUIA_List_MultiTestHook -- (V4) [IS.], struct Hook *
-*
-*   FUNCTION
-*       The provided hook indicates whether a particular list entry
-*       may be multiselected. The hook receives the list-entry data pointer as
-*       its third argument, and returns a Boolean value. If this attribute is
-*       not specified or is set to NULL, all list entries are considered
-*       multi-selectable.
-*
-*       Whenever an entry is about to be selected, this hook is called if
-*       there are other entries already selected. If the hook returns TRUE,
-*       the entry may be multi-selected; if the hook returns FALSE, the entry
-*       remains unselected.
-*
-*       Additionally, if a non-multi-selectable entry has been selected (as
-*       the only selected entry in the list), any attempt to select an
-*       additional entry will fail.
-*
-******************************************************************************
-*
-*/
 
-/****** List.mui/MUIA_List_ShowDropMarks *************************************
-*
-*   NAME
-*       MUIA_List_ShowDropMarks -- (V11) [ISG], BOOL
-*
-*   FUNCTION
-*       Specifies whether a visual indication will be shown of where a list
-*       item will be inserted if dropped during a drag-and-drop operation.
-*       Defaults to TRUE. Only has an affect when the list is a drop target
-*       (e.g. when MUIA_List_DragSortable is TRUE).
-*
-*   SEE ALSO
-*       MUIA_List_DragSortable, MUIA_List_DropMark, MUIA_Listview_Draggable
-*
-******************************************************************************
-*
-*/
 
-/****** List.mui/MUIA_List_Title *********************************************
-*
-*   NAME
-*       MUIA_List_Title -- (V6) [ISG], char *
-*
-*   FUNCTION
-*       A heading for the list, placed above list entries. A value of NULL
-*       means no title is used. A value of TRUE means that the custom
-*       display hook provides a separate title for each column; the hook
-*       must then provide column titles instead of normal column data when
-*       the entry pointer provided is NULL.
-*
-*   NOTES
-*       If a string is set for this attribute, it is not cached within the
-*       object.
-*
-*   SEE ALSO
-*       MUIA_List_DisplayHook
-*
-******************************************************************************
-*
-*/
-
-/****** List.mui/MUIA_List_Visible *******************************************
-*
-*   NAME
-*       MUIA_List_Visible -- (V4) [..G], LONG
-*
-*   FUNCTION
-*       The number of entries that can be seen at once with the list's
-*       current dimensions. This value of this attribute is -1 when the
-*       list's window is not open.
-*
-*   NOTES
-*       Notification does not occur on this attribute in MUI.
-*
-*   SEE ALSO
-*       MUIA_List_First, MUIA_List_Entries
-*
-******************************************************************************
-*
-*/
 
 /**************************************************************************
- Allocate a single list entry, does not initialize it (except the pointer)
+ Allocate and zero a single list entry, including its width slots
 **************************************************************************/
+/*
+ * Allocate and zero a pooled record with widths for columns+1. Requires
+ * live pool and representable allocation arithmetic. Return owned record or
+ * NULL; data ownership is established separately by Construct.
+ */
 static struct ListEntry *AllocListEntry(struct MUI_ListData *data)
 {
     struct ListEntry *le;
@@ -517,6 +1347,11 @@ static struct ListEntry *AllocListEntry(struct MUI_ListData *data)
 /**************************************************************************
  Deallocate a single list entry, does not deinitialize it
 **************************************************************************/
+/*
+ * Free a record through the same live pool used by AllocListEntry. Requires
+ * no remaining record users and prior destruction of owned entry data.
+ * Return void; does not call Destruct itself.
+ */
 static void FreeListEntry(struct MUI_ListData *data,
     struct ListEntry *entry)
 {
@@ -529,6 +1364,12 @@ static void FreeListEntry(struct MUI_ListData *data,
  the list. Returns 0 if not. It also allocates the space for the title.
  It can be accessed with data->entries[ENTRY_TITLE]
 **************************************************************************/
+/*
+ * Grow the pointer array geometrically, preserving entries and the
+ * preceding title slot. Requires consistent counts and nonoverflowing
+ * sizes. Return1 for sufficient/new storage,0 on allocation failure; never
+ * shrink. Free old array only after successful allocation.
+ */
 static int SetListSize(struct MUI_ListData *data, LONG size)
 {
     struct ListEntry **new_entries;
@@ -564,6 +1405,12 @@ static int SetListSize(struct MUI_ListData *data, LONG size)
  SetListSize() must be used first.
  With current implementation, this call will never fail
 **************************************************************************/
+/*
+ * Move existing pointer suffix upward to reserve count slots at pos.
+ * Requires sufficient allocated capacity and valid nonnegative
+ * position/count. Always1; does not construct entries or update counts and
+ * performs no bounds checks.
+ */
 static int PrepareInsertListEntries(struct MUI_ListData *data, int pos,
     int count)
 {
@@ -575,6 +1422,12 @@ static int PrepareInsertListEntries(struct MUI_ListData *data, int pos,
 /**************************************************************************
  Removes count (already deinitalized) list entries starting az pos.
 **************************************************************************/
+/*
+ * Move pointer suffix down over count reserved/removed slots. Requires
+ * pos+count within the count used in the subtraction. Return void, no
+ * destruction/count update. Partial insertion callers can violate this
+ * length precondition.
+ */
 static void RemoveListEntries(struct MUI_ListData *data, int pos, int count)
 {
     // FIXME: segfault if entries_num = pos = count = 1
@@ -585,6 +1438,11 @@ static void RemoveListEntries(struct MUI_ListData *data, int pos, int count)
 /**************************************************************************
  Frees all memory allocated by ParseListFormat()
 **************************************************************************/
+/*
+ * Free copied preparses, column metadata and display pointer arrays; reset
+ * columns and pointers. Requires no active display callback or renderer
+ * using them. Return void; borrowed Format itself is not freed.
+ */
 static void FreeListFormat(struct MUI_ListData *data)
 {
     int i;
@@ -615,6 +1473,13 @@ static void FreeListFormat(struct MUI_ListData *data)
  Use initial=FALSE for format changes outside OM_NEW.
  Return FALSE on failure.
 **************************************************************************/
+/*
+ * Discard old format storage, allocate column/display arrays and parse
+ * comma-separated ReadArgs options. Requires live pool/consistent entry
+ * records and readable input or NULL. Return FALSE on checked
+ * allocation/growth failures without rollback; parse/duplicate failures can
+ * leave defaults. Store some options without applying them.
+ */
 static BOOL ParseListFormat(struct MUI_ListData *data, STRPTR format,
     BOOL initial)
 {
@@ -756,6 +1621,12 @@ static BOOL ParseListFormat(struct MUI_ListData *data, STRPTR format,
  Call the MUIM_List_Display for the given entry. It fills out
  data->string and data->preparses
 **************************************************************************/
+/*
+ * Prepare column preparses and dispatch Display for a valid row or title.
+ * Direct one-column title bypasses callback; ordinary rows set preceding
+ * pointer metadata. Requires allocated arrays and live borrowed text.
+ * Return void, no result check or ownership transfer.
+ */
 static void DisplayEntry(struct IClass *cl, Object *obj, int entry_pos)
 {
     struct MUI_ListData *data = INST_DATA(cl, obj);
@@ -790,6 +1661,13 @@ static void DisplayEntry(struct IClass *cl, Object *obj, int entry_pos)
  to it. pos might be ENTRY_TITLE. Returns 0 if pos entry needs to
  be redrawn after this operation, 1 if all entries need to be redrawn.
 **************************************************************************/
+/*
+ * Measure each displayed column and grow entry/shared height/width maxima
+ * after setup. Requires valid row/title record and callbacks that preserve
+ * list state. Return1 if shared dimensions grew,0 otherwise or before
+ * setup. Text allocation failures are skipped; cached entry height is not
+ * reset.
+ */
 static int CalcDimsOfEntry(struct IClass *cl, Object *obj, int pos)
 {
     struct MUI_ListData *data = INST_DATA(cl, obj);
@@ -852,6 +1730,12 @@ static int CalcDimsOfEntry(struct IClass *cl, Object *obj, int pos)
 /**************************************************************************
  Determine the widths of the entries
 **************************************************************************/
+/*
+ * Reset column/global maxima and measure title plus entries after setup,
+ * accumulating heights and widths. Requires valid records and format.
+ * Return void; cached per-entry heights can prevent shrinkage, and row
+ * maximum is forced to at least1.
+ */
 static void CalcWidths(struct IClass *cl, Object *obj)
 {
     int i, j;
@@ -885,6 +1769,12 @@ static void CalcWidths(struct IClass *cl, Object *obj)
  Calculates the number of visible entry lines. Returns 1 if it has
  changed
 **************************************************************************/
+/*
+ * Calculate full visible rows and centered row origin from area
+ * height/title/maxheight. Requires layout geometry and positive maxheight.
+ * Notify changed visible count through superclass. Return whether
+ * count/origin changed; no count-range validation.
+ */
 static int CalcVertVisible(struct IClass *cl, Object *obj)
 {
     struct MUI_ListData *data = INST_DATA(cl, obj);
@@ -921,6 +1811,13 @@ static int CalcVertVisible(struct IClass *cl, Object *obj)
  Space can only grow, not shrink.
  Return FALSE on error (no memory).
 **************************************************************************/
+/*
+ * Grow pooled width-bearing records one by one, including title only when
+ * enabled. Requires larger requested capacity and consistent records/pool.
+ * Return FALSE on allocation failure after possible partial replacement,
+ * TRUE otherwise; no rollback. Hidden title record can remain at older
+ * capacity.
+ */
 static BOOL IncreaseColumns(struct MUI_ListData *data, int new_columns)
 {
     int i = 0;
@@ -959,6 +1856,11 @@ static BOOL IncreaseColumns(struct MUI_ListData *data, int new_columns)
 /**************************************************************************
  Default hook to compare two list entries. Works for strings only.
 **************************************************************************/
+/*
+ * Compare message entry1 against object entry2 with Stricmp. Requires both
+ * readable terminated strings and hook ABI. Return signed ordering; no
+ * allocation, mutation or lifetime extension.
+ */
 AROS_UFH3S(int, default_compare_func,
     AROS_UFHA(struct Hook *, h, A0),
     AROS_UFHA(char *, s2, A2),
@@ -973,6 +1875,12 @@ AROS_UFH3S(int, default_compare_func,
 
 #define PROP_VERT_FIRST   1
 
+/*
+ * Handle vertical-scrollbar callback by reading its current First and
+ * applying List_VertProp_First with NoNotifySet. Requires live hook
+ * data/List/scrollbar and two-word message. Always0; other callback types
+ * ignored.
+ */
 static ULONG List_Function(struct Hook *hook, Object * obj, void **msg)
 {
     struct MUI_ListData *data = (struct MUI_ListData *)hook->h_Data;
@@ -991,6 +1899,13 @@ static ULONG List_Function(struct Hook *hook, Object * obj, void **msg)
 
 /* At entry to this function, data->area is always set, but data->vert may
  * or may not be set */
+/*
+ * Before setup, remove/reinsert drawing area and optional scrollbar in
+ * requested order and install reciprocal notifications. Requires live Group
+ * children; creates/disposes scrollbar as needed. Return void; setup state
+ * causes immediate no-op, allocation/member results not comprehensively
+ * checked.
+ */
 static void List_HandleScrollerPos(struct IClass *cl, Object *obj)
 {
     struct MUI_ListData *data = INST_DATA(cl, obj);
@@ -1086,6 +2001,13 @@ static void List_HandleScrollerPos(struct IClass *cl, Object *obj)
 /**************************************************************************
  OM_NEW
 **************************************************************************/
+/*
+ * Create horizontal Group, transfer Frame tag to drawing area, parse
+ * borrowed policies and create pool/format/title storage. Insert
+ * SourceArray then initialize Active and image list. Return object or0 for
+ * checked failures; subordinate and insertion failures are not fully
+ * propagated. Mutates original Frame tag to TAG_IGNORE.
+ */
 IPTR List__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_ListData *data;
@@ -1362,6 +2284,13 @@ IPTR List__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 /**************************************************************************
  OM_DISPOSE
 **************************************************************************/
+/*
+ * Destruct confirmed entries in reverse order, free records/pointer array
+ * and format, delete only internal pool, then delegate Group. Requires
+ * callbacks/lifetimes valid and images explicitly removed. Return
+ * superclass result; external pool retains title record and image objects
+ * are not disposed here.
+ */
 IPTR List__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
 {
     struct MUI_ListData *data = INST_DATA(cl, obj);
@@ -1394,6 +2323,13 @@ IPTR List__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
 /**************************************************************************
  OM_SET
 **************************************************************************/
+/*
+ * Apply local policies/state, redraw/synchronize scrollbars and delegate
+ * Group with forwarding semantics. Requires valid live records and mutable
+ * tags; Selected is ignored. Some public read-only attributes have internal
+ * setters; Format failure ignored. Active can touch stale old records after
+ * removal; return superclass result.
+ */
 IPTR List__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_ListData *data = INST_DATA(cl, obj);
@@ -1681,6 +2617,12 @@ IPTR List__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 /**************************************************************************
  OM_GET
 **************************************************************************/
+/*
+ * Write local counts, indices, borrowed pointers and Listview compatibility
+ * values to writable IPTR storage. Return1 for handled/superclass success,0
+ * otherwise. Boolean flags are masks; Listview_List returns self and
+ * SelectChange returnsFALSE. Does not transfer ownership.
+ */
 IPTR List__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 {
 /* small macro to simplify return value storage */
@@ -1758,6 +2700,12 @@ IPTR List__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 /**************************************************************************
  MUIM_Setup
 **************************************************************************/
+/*
+ * Require superclass setup, acquire highlight image specs/preferences,
+ * connect/setup registered images and add window handler. Return0 only for
+ * superclass failure,1 otherwise; image/setup outcomes ignored. Requires
+ * live Window and registered Area objects.
+ */
 IPTR List__MUIM_Setup(struct IClass *cl, Object *obj,
     struct MUIP_Setup *msg)
 {
@@ -1802,6 +2750,12 @@ IPTR List__MUIM_Setup(struct IClass *cl, Object *obj,
 /**************************************************************************
  MUIM_Cleanup
 **************************************************************************/
+/*
+ * Release highlight specs, remove event handler, reset mouse click and
+ * delegate Group cleanup. Requires matching setup. Return superclass
+ * result; does not iterate registered image handles for
+ * cleanup/disconnection.
+ */
 IPTR List__MUIM_Cleanup(struct IClass *cl, Object *obj,
     struct MUIP_Cleanup *msg)
 {
@@ -1820,6 +2774,11 @@ IPTR List__MUIM_Cleanup(struct IClass *cl, Object *obj,
 /**************************************************************************
  MUIM_AskMinMax
 **************************************************************************/
+/*
+ * Delegate Group and measure contents, then add adjusted or default
+ * width/height contributions. Requires setup font/valid limits and
+ * callbacks. ReturnTRUE; no general parent relayout or overflow protection.
+ */
 IPTR List__MUIM_AskMinMax(struct IClass *cl, Object *obj,
     struct MUIP_AskMinMax *msg)
 {
@@ -1870,15 +2829,13 @@ IPTR List__MUIM_AskMinMax(struct IClass *cl, Object *obj,
     return TRUE;
 }
 
-/****i* List.mui/MUIM_Layout *************************************************
-*
-*   NAME
-*       MUIM_Layout
-*
-******************************************************************************
-*
-*/
 
+/*
+ * Delegate Group, calculate visible rows, optionally adjust active bottom
+ * visibility and bound First, then synchronize scrollbar Visible. Requires
+ * positive measured row height. Return superclass result; does not
+ * symmetrically enforce active-above-first visibility.
+ */
 IPTR List__MUIM_Layout(struct IClass *cl, Object *obj,
     struct MUIP_Layout *msg)
 {
@@ -1923,6 +2880,11 @@ IPTR List__MUIM_Layout(struct IClass *cl, Object *obj,
 /**************************************************************************
  MUIM_Show
 **************************************************************************/
+/*
+ * Delegate Group then show three highlight image specs. Requires successful
+ * setup and valid render state. Return superclass result; no entry-data
+ * ownership change or separate image-handle traversal.
+ */
 IPTR List__MUIM_Show(struct IClass *cl, Object *obj,
     struct MUIP_Show *msg)
 {
@@ -1939,6 +2901,11 @@ IPTR List__MUIM_Show(struct IClass *cl, Object *obj,
 /**************************************************************************
  MUIM_Hide
 **************************************************************************/
+/*
+ * Hide three highlight specs then delegate Group. Requires matched
+ * setup/show lifecycle. Return superclass result; entries and registered
+ * image handles remain retained.
+ */
 IPTR List__MUIM_Hide(struct IClass *cl, Object *obj,
     struct MUIP_Hide *msg)
 {
@@ -1956,6 +2923,12 @@ IPTR List__MUIM_Hide(struct IClass *cl, Object *obj,
  Draw an entry at entry_pos at the given row. To draw the title, set pos to
  ENTRY_TITLE
 **************************************************************************/
+/*
+ * Dispatch display and draw each column at measured widths with centered
+ * row text. Requires setup graphics, valid index/title and stable callback
+ * strings. Return void; text chunks are temporary and freed, failed text
+ * allocation skipped.
+ */
 static VOID List_DrawEntry(struct IClass *cl, Object *obj, int entry_pos,
     int y)
 {
@@ -2004,6 +2977,13 @@ static VOID List_DrawEntry(struct IClass *cl, Object *obj, int entry_pos,
 /**************************************************************************
  MUIM_Draw
 **************************************************************************/
+/*
+ * Skip all drawing when Quiet; otherwise delegate Group and draw measured
+ * rows/title/highlights unless area replaced. Requires valid scroll indices
+ * and setup graphics. Maintain clipping/scroll damage refresh and clear
+ * pending state. Return0 after local drawing or superclass result on
+ * replacement path.
+ */
 IPTR List__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 {
     struct MUI_ListData *data = INST_DATA(cl, obj);
@@ -2248,21 +3228,13 @@ IPTR List__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
     return 0;
 }
 
-/****** List.mui/MUIM_List_Clear *********************************************
-*
-*   NAME
-*       MUIM_List_Clear (V4)
-*
-*   SYNOPSIS
-*       DoMethod(obj, MUIM_List_Clear);
-*
-*   FUNCTION
-*       Removes all entries from the list.
-*
-******************************************************************************
-*
-*/
 
+/*
+ * Destruct/free confirmed entries then publish zero count/first and
+ * inactive cursor, request redraw. Requires consistent callbacks; always0,
+ * retains capacity/title. Active update can use freed old record storage;
+ * no transactional lifetime guard.
+ */
 IPTR List__MUIM_Clear(struct IClass *cl, Object *obj,
     struct MUIP_List_Clear *msg)
 {
@@ -2296,43 +3268,13 @@ IPTR List__MUIM_Clear(struct IClass *cl, Object *obj,
     return 0;
 }
 
-/****** List.mui/MUIM_List_Exchange ******************************************
-*
-*   NAME
-*       MUIM_List_Exchange (V4)
-*
-*   SYNOPSIS
-*       DoMethod(obj, MUIM_List_Exchange, LONG pos1, LONG pos2);
-*
-*   FUNCTION
-*       Exchange two entries' positions.
-*
-*   INPUTS
-*       pos1 - the current index of the first entry that should be moved, or
-*           one of these special values:
-*               MUIV_List_Exchange_Active: the active entry.
-*               MUIV_List_Exchange_Top: the first entry.
-*               MUIV_List_Exchange_Bottom: the last entry.
-*       pos2 - the index of the entry that the first entry should be exchanged
-*           with, or one of these special values:
-*               MUIV_List_Exchange_Active: the active entry.
-*               MUIV_List_Exchange_Top: the first entry.
-*               MUIV_List_Exchange_Bottom: the last entry.
-*               MUIV_List_Exchange_Next: the next entry after pos1.
-*               MUIV_List_Exchange_Previous: the previous entry before pos1.
-*
-*   NOTES
-*       This method will do nothing if either index is greater than the last
-*       index in the list, or if MUIV_List_Exchange_Next or
-*       MUIV_List_Exchange_Previous imply an index outside the list.
-*
-*   SEE ALSO
-*       MUIM_List_Move
-*
-******************************************************************************
-*
-*/
 
+/*
+ * Resolve selectors and swap distinct valid records, requesting two row
+ * redraws. Requires consistent list; TRUE changed,FALSE invalid/equal.
+ * Active index unchanged, no hooks, and Quiet pending-state bookkeeping is
+ * incomplete.
+ */
 IPTR List__MUIM_Exchange(struct IClass *cl, Object *obj,
     struct MUIP_List_Exchange *msg)
 {
@@ -2401,6 +3343,11 @@ IPTR List__MUIM_Exchange(struct IClass *cl, Object *obj,
 /**************************************************************************
  MUIM_List_Redraw
 **************************************************************************/
+/*
+ * Remeasure all or resolved row, mark updates and honor Quiet pending
+ * state. Requires valid numeric index; only -1 is rejected before record
+ * access. Always0, first pointer match used for Entry; no ownership change.
+ */
 IPTR List__MUIM_Redraw(struct IClass *cl, Object *obj,
     struct MUIP_List_Redraw *msg)
 {
@@ -2466,42 +3413,13 @@ IPTR List__MUIM_Redraw(struct IClass *cl, Object *obj,
     return 0;
 }
 
-/****** List.mui/MUIM_List_Remove ********************************************
-*
-*   NAME
-*       MUIM_List_Remove (V4)
-*
-*   SYNOPSIS
-*       DoMethod(obj, MUIM_List_Remove, LONG pos);
-*
-*   FUNCTION
-*       Removes entries from the list. If a destruct hook has been
-*       installed, it will be called for the removed entry.
-*
-*   INPUTS
-*       pos - the index of the entry to be removed. The following
-*           special values can also be used:
-*           MUIV_List_Remove_First: remove the first entry.
-*           MUIV_List_Remove_Last: remove the last entry.
-*           MUIV_List_Remove_Active: remove the active entry.
-*           MUIV_List_Remove_Selected: remove all selected entries
-*               (or the active entry if there are no selected entries).
-*
-*   NOTES
-*       When the active entry is removed, the next entry becomes active
-*       (if there is no entry below the active entry, the previous entry
-*       becomes active instead).
-*
-*   SEE ALSO
-*       MUIM_List_Insertsingle, MUIM_List_Insert, MUIA_List_DestructHook.
-*
-******************************************************************************
-*
-* It was not possible to use MUIM_List_NextSelected here because that method
-* may skip entries if entries are removed during an iteration.
-*
-*/
 
+/*
+ * Destruct/free matching rows and compact pointers, adjust confirmed/public
+ * counts and Active then redraw. Requires valid state and callbacks;
+ * always0. Selected falls back to active if none selected; UWORD scan and
+ * stale-active lifetime limits remain.
+ */
 IPTR List__MUIM_Remove(struct IClass *cl, Object *obj,
     struct MUIP_List_Remove *msg)
 {
@@ -2617,50 +3535,13 @@ IPTR List__MUIM_Remove(struct IClass *cl, Object *obj,
     return 0;
 }
 
-/****** List.mui/MUIM_List_Select ********************************************
-*
-*   NAME
-*       MUIM_List_Select (V4)
-*
-*   SYNOPSIS
-*       DoMethod(obj, MUIM_List_Select, LONG pos, LONG seltype, LONG *state);
-*
-*   FUNCTION
-*       Selects or deselects entries in the list and/or enquires about their
-*       current selection state. If a multiselection test hook has been
-*       installed via MUIA_List_MultiTestHook, it will be called to validate
-*       the requested selection.
-*
-*       This method may also be used to count the number of selected entries
-*       (see below).
-*
-*   INPUTS
-*       pos - the index of the entry to be selected. The following
-*           special values can also be used:
-*           MUIV_List_Select_Active: Select the active entry.
-*           MUIV_List_Select_All: Select all entries.
-*       seltype - the new selection state; one of the following:
-*           MUIV_List_Select_Off: Select the entry.
-*           MUIV_List_Select_On: Deselect the entry.
-*           MUIV_List_Select_Toggle: Switch to the alternate selection state.
-*           MUIV_List_Select_Ask: Do not change the selection state, just
-*               retrieve the current state. If 'pos' is MUIV_List_Select_All,
-*               the number of selected entries will be retrieved instead (V9).
-*       state - a pointer in which to fill in the previous selection state
-*           (either MUIV_List_Select_On or MUIV_List_Select_Off) or the
-*           number of selected entries. May be NULL.
-*
-*   NOTES
-*       If pos is MUIV_List_Select_All and seltype is not
-*       MUIV_List_Select_Ask, the value filled in 'state' is undefined.
-*
-*   SEE ALSO
-*       MUIA_List_Active, MUIA_List_MultiTestHook.
-*
-******************************************************************************
-*
-*/
 
+/*
+ * Resolve range and query/change selection bits, applying MultiTestHook to
+ * coexistence. Requires declared mode and stable callbacks; always0.
+ * Optional info is selected count only for All+Ask, otherwise last previous
+ * state. Direct method emits no SelectChange notification.
+ */
 IPTR List__MUIM_Select(struct IClass *cl, Object *obj,
     struct MUIP_List_Select *msg)
 {
@@ -2794,38 +3675,14 @@ IPTR List__MUIM_Select(struct IClass *cl, Object *obj,
     return 0;
 }
 
-/****** List.mui/MUIM_List_Insert ********************************************
-*
-*   NAME
-*       MUIM_List_Insert (V4)
-*
-*   SYNOPSIS
-*       DoMethod(obj, MUIM_List_Insert, APTR *entries, LONG count, LONG pos);
-*
-*   FUNCTION
-*       Adds multiple entries to the list. If a construct hook has been
-*       installed, the results of passing the entries to this hook will be
-*       inserted.
-*
-*   INPUTS
-*       entries - an array of entries to be inserted.
-*       count - the number of entries to insert. A special value of -1 may be
-*           used, indicating that the array of entries is NULL-terminated.
-*       pos - the index at which to insert the new entries. The following
-*           special values can also be used:
-*           MUIV_List_Insert_Top: insert at index 0.
-*           MUIV_List_Insert_Bottom: insert after all existing entries.
-*           MUIV_List_Insert_Active: insert at the index of the active entry
-*               (or at index 0 if there is no active entry).
-*           MUIV_List_Insert_Sorted: keep the list sorted.
-*
-*   SEE ALSO
-*       MUIM_List_InsertSingle, MUIM_List_Remove, MUIA_List_ConstructHook.
-*
-******************************************************************************
-*
-*/
 
+/*
+ * Reserve pointer gap, construct entries and publish count/update state on
+ * completion. Requires valid array, pool, callbacks and arithmetic. Return
+ * pre-sort last slot or all-bits-one failure; partial failures lack
+ * rollback and can violate gap-compaction preconditions. Sorted active
+ * adjustment occurs after sorting.
+ */
 IPTR List__MUIM_Insert(struct IClass *cl, Object *obj,
     struct MUIP_List_Insert *msg)
 {
@@ -2982,36 +3839,13 @@ IPTR List__MUIM_Insert(struct IClass *cl, Object *obj,
     return (ULONG) pos;
 }
 
-/****** List.mui/MUIM_List_InsertSingle **************************************
-*
-*   NAME
-*       MUIM_List_InsertSingle (V7)
-*
-*   SYNOPSIS
-*       DoMethod(obj, MUIM_List_InsertSingle, APTR entry, LONG pos);
-*
-*   FUNCTION
-*       Adds a single entry to the list. If a construct hook has been
-*       installed, the result of passing the entry to this hook will be
-*       inserted.
-*
-*   INPUTS
-*       entry - the entry to be inserted.
-*       pos - the index at which to insert the new entry. The following
-*           special values can also be used:
-*           MUIV_List_Insert_Top: insert at index 0.
-*           MUIV_List_Insert_Bottom: insert after all existing entries.
-*           MUIV_List_Insert_Active: insert at the index of the active entry
-*               (or at index 0 if there is no active entry).
-*           MUIV_List_Insert_Sorted: keep the list sorted.
-*
-*   SEE ALSO
-*       MUIM_List_Insert, MUIM_List_Remove, MUIA_List_ConstructHook.
-*
-******************************************************************************
-*
-*/
 
+/*
+ * Dispatch Insert synchronously with address of message entry and count1.
+ * Requires correct message and construction-compatible data. Return Insert
+ * result unchanged, including failure/state limits; no separate allocation
+ * policy.
+ */
 IPTR List__MUIM_InsertSingle(struct IClass *cl, Object *obj,
     struct MUIP_List_InsertSingle *msg)
 {
@@ -3019,31 +3853,12 @@ IPTR List__MUIM_InsertSingle(struct IClass *cl, Object *obj,
         msg->pos);
 }
 
-/****** List.mui/MUIM_List_GetEntry ******************************************
-*
-*   NAME
-*       MUIM_List_GetEntry (V4)
-*
-*   SYNOPSIS
-*       DoMethod(obj, MUIM_List_GetEntry, LONG pos, APTR *entry);
-*
-*   FUNCTION
-*       Retrieves an entry from the list. If the requested entry position is
-*       invalid, the entry will be NULL.
-*
-*   INPUTS
-*       pos - the index of the entry to get, or the special value
-*           MUIV_List_GetEntry_Active to get the active entry.
-*       entry - a pointer to a variable in which to store a pointer to the
-*           entry data.
-*
-*   SEE ALSO
-*       MUIM_List_Insert, MUIM_List_InsertSingle, MUIM_List_Remove.
-*
-******************************************************************************
-*
-*/
 
+/*
+ * Resolve Active or numeric index and write borrowed stored pointer to
+ * required APTR output. Return same pointer or0 with NULL output for
+ * invalid index. Requires writable output; no copy or lifetime extension.
+ */
 IPTR List__MUIM_GetEntry(struct IClass *cl, Object *obj,
     struct MUIP_List_GetEntry *msg)
 {
@@ -3065,6 +3880,12 @@ IPTR List__MUIM_GetEntry(struct IClass *cl, Object *obj,
 /**************************************************************************
  MUIM_List_Construct
 **************************************************************************/
+/*
+ * Retain input, allocate builtin pooled string with size prefix, or invoke
+ * custom hook with pool/object and entry/message. Return stored pointer
+ * or0; caller owns matching destruction duty. Does not insert a record;
+ * require valid pool and source representation.
+ */
 IPTR List__MUIM_Construct(struct IClass *cl, Object *obj,
     struct MUIP_List_Construct *msg)
 {
@@ -3092,6 +3913,11 @@ IPTR List__MUIM_Construct(struct IClass *cl, Object *obj,
 /**************************************************************************
  MUIM_List_Destruct
 **************************************************************************/
+/*
+ * No-op for NULL policy, free builtin prefixed allocation or invoke custom
+ * destruction hook. Require matching policy/pool and no remaining entry
+ * users. Always0; direct invocation does not remove list record.
+ */
 IPTR List__MUIM_Destruct(struct IClass *cl, Object *obj,
     struct MUIP_List_Destruct *msg)
 {
@@ -3112,32 +3938,12 @@ IPTR List__MUIM_Destruct(struct IClass *cl, Object *obj,
     return 0;
 }
 
-/****** List.mui/MUIM_List_Compare *******************************************
-*
-*   NAME
-*       MUIM_List_Compare (V20)
-*
-*   SYNOPSIS
-*       DoMethod(obj, MUIM_List_Compare, APTR entry1, APTR entry2,
-*           LONG sort_type1, LONG sort_type2);
-*
-*   FUNCTION
-*       Compare two list entries according to the current comparison hook
-*       (MUIA_List_CompareHook).
-*
-*   INPUTS
-*       entry1 - the first entry data.
-*       entry2 - the second entry data.
-*       sort_type1 - undocumented.
-*       sort_type2 - undocumented.
-*
-*   SEE ALSO
-*       MUIA_List_CompareHook, MUIM_List_Sort.
-*
-******************************************************************************
-*
-*/
 
+/*
+ * Invoke comparator with entry2/object and entry1/message, ignoring both
+ * sort fields. Requires valid live comparator and data. Return hook result
+ * interpreted as signedLONG by Sort; no mutation or sorting here.
+ */
 IPTR List__MUIM_Compare(struct IClass *cl, Object *obj,
     struct MUIP_List_Compare *msg)
 {
@@ -3149,6 +3955,13 @@ IPTR List__MUIM_Compare(struct IClass *cl, Object *obj,
 /**************************************************************************
  MUIM_List_Display
 **************************************************************************/
+/*
+ * Without hook set first string only and return1; otherwise write ULONG
+ * metadata before array and call hook with array/object and entry/message.
+ * Requires writable prefix and all used column pointers valid afterwards.
+ * Return hook result; preparses argument unused and metadata width is ABI-
+ * sensitive.
+ */
 IPTR List__MUIM_Display(struct IClass *cl, Object *obj,
     struct MUIP_List_Display *msg)
 {
@@ -3170,64 +3983,24 @@ IPTR List__MUIM_Display(struct IClass *cl, Object *obj,
 /**************************************************************************
  MUIM_List_SelectChange
 **************************************************************************/
+/*
+ * Private MUIM_List_SelectChange callback is a no-op returning1. Position,
+ * state and flags are ignored. Active setter invokes it; public Select does
+ * not. Subclass behavior must not invalidate active traversal.
+ */
 IPTR List__MUIM_SelectChange(struct IClass *cl, Object *obj,
     struct MUIP_List_SelectChange *msg)
 {
     return 1;
 }
 
-/****** List.mui/MUIM_List_CreateImage ***************************************
-*
-*   NAME
-*       MUIM_List_CreateImage (V11)
-*
-*   SYNOPSIS
-*       DoMethod(obj, MUIM_List_CreateImage, Object *area, ULONG flags);
-*
-*   FUNCTION
-*       Creates an image to be inserted within list entries. An instance of
-*       any Area subclass is passed in and a blackbox value is returned that
-*       can be displayed by embedding its hexadecimal representation within
-*       any of the list's display strings (provided either statically or by
-*       the list's display hook. The format string to be used is
-*       "\330[%p]".
-*
-*       It is recommended that lists that embed images are instances of a
-*       custom subclass so that this method can be called in the list's
-*       MUIM_Setup method, and MUIM_List_DeleteImage can be called in the
-*       list's MUIM_Cleanup method. However, this is not necessary as long as
-*       MUIM_List_CreateImage is called after the list has had its MUIM_Setup
-*       called, and MUIM_List_DeleteImage is called after the list has had its
-*       MUIM_Cleanup method called.
-*
-*   INPUTS
-*       area - the area object that is used to generate the image.
-*       flags - must be zero.
-*
-*   RESULT
-*       A blackbox reference to the list image, or NULL on an error.
-*
-*   NOTES
-*       If this method returns NULL, no special action needs to be taken, as
-*       embedding this value in a list string will simply cause no image to
-*       appear.
-*
-*       The object passed in becomes a child of the list, so it cannot be used
-*       elsewhere simultaneously.
-*
-*   SEE ALSO
-*       MUIM_List_DeleteImage, MUIA_List_DisplayHook.
-*
-******************************************************************************
-*
-* Connects an Area subclass object to the list, much like an object gets
-* connected to a window. List calls Setup and AskMinMax on that object,
-* keeps a reference to it (that reference will be returned).
-* Text engine will dereference that pointer and draw the object with its
-* default size.
-*
-*/
 
+/*
+ * Allocate pooled handle retaining Area object, append to image list and
+ * connect/setup immediately when List setup. Return handle or0 for
+ * NULL/allocation failure; flags ignored and setup success unchecked.
+ * Caller must delete handle explicitly and owns Area disposal.
+ */
 IPTR List__MUIM_CreateImage(struct IClass *cl, Object *obj,
     struct MUIP_List_CreateImage *msg)
 {
@@ -3252,27 +4025,13 @@ IPTR List__MUIM_CreateImage(struct IClass *cl, Object *obj,
     return (IPTR) li;
 }
 
-/****** List.mui/MUIM_List_DeleteImage ***************************************
-*
-*   NAME
-*       MUIM_List_DeleteImage (V11)
-*
-*   SYNOPSIS
-*       DoMethod(obj, MUIM_List_DeleteImage, APTR image);
-*
-*   FUNCTION
-*       Deletes an image created by MUIM_List_CreateImage.
-*
-*   INPUTS
-*       image - a blackbox reference to the list image, or NULL.
-*
-*   SEE ALSO
-*       MUIM_List_CreateImage, MUIA_List_DisplayHook.
-*
-******************************************************************************
-*
-*/
 
+/*
+ * For non-NULL live same-list handle call Area Cleanup/DisconnectParent,
+ * unlink and free pooled handle. Requires matched setup and removed display
+ * references. Always0; does not dispose Area or validate ownership/double
+ * deletion.
+ */
 IPTR List__MUIM_DeleteImage(struct IClass *cl, Object *obj,
     struct MUIP_List_DeleteImage *msg)
 {
@@ -3290,30 +4049,13 @@ IPTR List__MUIM_DeleteImage(struct IClass *cl, Object *obj,
     return 0;
 }
 
-/****** List.mui/MUIM_List_Jump **********************************************
-*
-*   NAME
-*       MUIM_List_Jump (V4)
-*
-*   SYNOPSIS
-*       DoMethod(obj, MUIM_List_Jump, LONG pos);
-*
-*   FUNCTION
-*       Scrolls the list so that a particular entry is visible.
-*
-*   INPUTS
-*       pos - index of entry that should become visible, or one of these
-*           special values:
-*               MUIV_List_Jump_Active: show the active entry.
-*               MUIV_List_Jump_Top: show the first entry.
-*               MUIV_List_Jump_Bottom: show the last entry.
-*               MUIV_List_Jump_Up: show the previous hidden entry.
-*               MUIV_List_Jump_Down: show the next hidden entry.
-*
-******************************************************************************
-*
-*/
 
+/*
+ * Resolve/clamp target and set First only when outside current visible
+ * span. Requires valid positive visible count for meaningful output.
+ * AlwaysTRUE even empty/unlaid-out, does not change Active or validate
+ * display success.
+ */
 IPTR List__MUIM_Jump(struct IClass *cl, Object *obj,
     struct MUIP_List_Jump *msg)
 {
@@ -3368,28 +4110,13 @@ IPTR List__MUIM_Jump(struct IClass *cl, Object *obj,
     return TRUE;
 }
 
-/****** List.mui/MUIM_List_Sort **********************************************
-*
-*   NAME
-*       MUIM_List_Sort (V4)
-*
-*   SYNOPSIS
-*       DoMethod(obj, MUIM_List_Sort);
-*
-*   FUNCTION
-*       Sort the list's entries according to the current comparison hook
-*       (MUIA_List_CompareHook).
-*
-*   NOTES
-*       The active index does not change, so the active entry may do so.
-*
-*   SEE ALSO
-*       MUIA_List_CompareHook, MUIM_List_Compare.
-*
-******************************************************************************
-*
-*/
 
+/*
+ * Selection-sort records using Compare with zero sort fields, preserving
+ * active data by direct index adjustment. Requires stable
+ * comparator/callback lifetimes. Always0, quadratic and not stable; marks
+ * reordered rows and defers redraw under Quiet, no Active notification.
+ */
 IPTR List__MUIM_Sort(struct IClass *cl, Object *obj,
     struct MUIP_List_Sort *msg)
 {
@@ -3447,39 +4174,13 @@ IPTR List__MUIM_Sort(struct IClass *cl, Object *obj,
     return 0;
 }
 
-/****** List.mui/MUIM_List_Move **********************************************
-*
-*   NAME
-*       MUIM_List_Move (V9)
-*
-*   SYNOPSIS
-*       DoMethod(obj, MUIM_List_Move, LONG from, LONG to);
-*
-*   FUNCTION
-*       Move a list entry to a new position.
-*
-*   INPUTS
-*       from - the current index of the entry that should be moved, or one of
-*           these special values:
-*               MUIV_List_Move_Active: the active entry.
-*               MUIV_List_Move_Top: the first entry.
-*               MUIV_List_Move_Bottom: the last entry.
-*       to - the index of the entry's new position, or one of
-*           these special values:
-*               MUIV_List_Move_Active: the active entry.
-*               MUIV_List_Move_Top: the first entry.
-*               MUIV_List_Move_Bottom: the last entry.
-*
-*   NOTES
-*       The active index does not change, so the active entry may do so.
-*
-*   SEE ALSO
-*       MUIM_List_Exchange
-*
-******************************************************************************
-*
-*/
 
+/*
+ * Resolve selectors, validate distinct indices and shift records to
+ * destination. TRUE changed,FALSE invalid/equal. Active adjustment code is
+ * disabled, so index remains unchanged; selection flags move with record.
+ * Mark full pending redraw; no construction/destruction.
+ */
 IPTR List__MUIM_Move(struct IClass *cl, Object *obj,
     struct MUIP_List_Move *msg)
 {
@@ -3566,44 +4267,13 @@ IPTR List__MUIM_Move(struct IClass *cl, Object *obj,
     return TRUE;
 }
 
-/****** List.mui/MUIM_List_NextSelected **************************************
-*
-*   NAME
-*       MUIM_List_NextSelected (V6)
-*
-*   SYNOPSIS
-*       DoMethod(obj, MUIM_List_NextSelected, LONG *pos);
-*
-*   FUNCTION
-*       Allows iteration through a list's selected entries by providing the
-*       index of the next selected entry after the specified index.
-*
-*   INPUTS
-*       pos - the address of a variable containing the index of the previous
-*           selected entry. The variable must be initialised to the special
-*           value MUIV_List_NextSelected_Start to find the first selected
-*           entry. When this method returns, the variable will contain the
-*           index of the next selected entry, or MUIV_List_NextSelected_End if
-*           there are no more.
-*
-*   NOTES
-*       If there are no selected entries but there is an active entry, the
-*       index of the active entry will be stored (when
-*       MUIV_List_NextSelected_Start is specified).
-*
-*       Some selected entries may be skipped if any entries are removed
-*       between calls to this method during an iteration of a list.
-*
-*       MUIV_List_NextSelected_Start and MUIV_List_NextSelected_End may have
-*       the same numeric value.
-*
-*   SEE ALSO
-*       MUIM_List_Select, MUIM_List_Remove.
-*
-******************************************************************************
-*
-*/
 
+/*
+ * Read required LONG cursor, scan after it or from Start, with active
+ * fallback only at initial empty-selection scan. AlwaysTRUE, write next
+ * index or End. Require valid prior index; other negatives/overflow not
+ * checked. Mutation during iteration can skip entries.
+ */
 IPTR List__MUIM_NextSelected(struct IClass *cl, Object *obj,
     struct MUIP_List_NextSelected *msg)
 {
@@ -3646,6 +4316,12 @@ IPTR List__MUIM_NextSelected(struct IClass *cl, Object *obj,
 /**************************************************************************
  MUIM_List_TestPos
 **************************************************************************/
+/*
+ * Map window coordinates or cached release position to row/column/flags.
+ * Requires layout and writable result. AlwaysTRUE; offsets only
+ * conditionally written and row bounds assume valid scroll state.
+ * Initialize result when unused offsets matter.
+ */
 IPTR List__MUIM_TestPos(struct IClass *cl, Object *obj,
     struct MUIP_List_TestPos *msg)
 {
@@ -3731,15 +4407,12 @@ IPTR List__MUIM_TestPos(struct IClass *cl, Object *obj,
     return TRUE;
 }
 
-/****i* List.mui/MUIM_DragQuery **********************************************
-*
-*   NAME
-*       MUIM_DragQuery
-*
-******************************************************************************
-*
-*/
 
+/*
+ * Accept only self-originating drag when DragSortable set, otherwise
+ * refuse. Requires valid method object pointer comparison. No reordering,
+ * allocation or cross-list transfer is performed.
+ */
 IPTR List__MUIM_DragQuery(struct IClass *cl, Object *obj,
     struct MUIP_DragQuery *msg)
 {
@@ -3752,15 +4425,12 @@ IPTR List__MUIM_DragQuery(struct IClass *cl, Object *obj,
 }
 
 
-/****i* List.mui/MUIM_DragFinish *********************************************
-*
-*   NAME
-*       MUIM_DragFinish
-*
-******************************************************************************
-*
-*/
 
+/*
+ * Reset internal drop-marker y to-1 and delegate superclass finish.
+ * Requires valid drag lifecycle; return superclass result. Does not
+ * explicitly erase marker or reset public DropMark.
+ */
 IPTR List__MUIM_DragFinish(struct IClass *cl, Object *obj,
     struct MUIP_DragFinish *msg)
 {
@@ -3771,15 +4441,13 @@ IPTR List__MUIM_DragFinish(struct IClass *cl, Object *obj,
     return DoSuperMethodA(cl, obj, (Msg) msg);
 }
 
-/****i* List.mui/MUIM_DragReport *********************************************
-*
-*   NAME
-*       MUIM_DragReport
-*
-******************************************************************************
-*
-*/
 
+/*
+ * Test coordinates and optionally erase/draw provisional line using setup
+ * RastPort. ReturnTRUE; does not update DropMark. Below-row calculation
+ * subtracts First from min(Visible,Entries), so scrolled positions can
+ * produce unexpected marker placement.
+ */
 IPTR List__MUIM_DragReport(struct IClass *cl, Object *obj,
     struct MUIP_DragReport *msg)
 {
@@ -3834,15 +4502,13 @@ IPTR List__MUIM_DragReport(struct IClass *cl, Object *obj,
 }
 
 
-/****i* List.mui/MUIM_DragDrop ***********************************************
-*
-*   NAME
-*       MUIM_DragDrop
-*
-******************************************************************************
-*
-*/
 
+/*
+ * Test position, record insertion boundary in DropMark and optionally move
+ * active record/SetActive. Requires valid drag/list state; alwaysTRUE,
+ * ignores Move result. Does not move a selected group or notify DropMark by
+ * its direct assignment.
+ */
 IPTR List__MUIM_DragDrop(struct IClass *cl, Object *obj,
     struct MUIP_DragDrop *msg)
 {
@@ -3886,15 +4552,14 @@ IPTR List__MUIM_DragDrop(struct IClass *cl, Object *obj,
 }
 
 
-/****i* List.mui/MUIM_CreateDragImage ****************************************
-*
-*   NAME
-*       MUIM_CreateDragImage
-*
-******************************************************************************
-*
-*/
 
+/*
+ * Delegate when drag type None; otherwise snapshot one hit row with frame
+ * into allocated drag image. Requires setup graphics/valid coordinates.
+ * Return pointer orNULL; bitmap allocation failure can still return a
+ * structure with NULL bitmap. Caller follows inherited drag-image deletion
+ * lifecycle.
+ */
 static IPTR List__MUIM_CreateDragImage(struct IClass *cl, Object *obj,
     struct MUIP_CreateDragImage *msg)
 {
@@ -3973,6 +4638,11 @@ static IPTR List__MUIM_CreateDragImage(struct IClass *cl, Object *obj,
     return (IPTR) img;
 }
 
+/*
+ * Read First/Entries/Visible, offset and clamp to nonnegative last page,
+ * then SetFirst when changed. Requires consistent laid-out list and
+ * representable delta. Return void, no active/selection change.
+ */
 static void DoWheelMove(struct IClass *cl, Object *obj, LONG wheely)
 {
     LONG new, first, entries, visible;
@@ -4002,6 +4672,13 @@ static void DoWheelMove(struct IClass *cl, Object *obj, LONG wheely)
 /**************************************************************************
  MUIM_HandleEvent
 **************************************************************************/
+/*
+ * Handle keyboard, wheel, mouse selection/range tracking and double-click
+ * notifications. Requires setup Window, stable list and ABI event valid for
+ * call. Return consumption flags; emit Listview_SelectChange for attempted
+ * input changes, not a success count. Cached mouse position updates on
+ * release.
+ */
 IPTR List__MUIM_HandleEvent(struct IClass *cl, Object *obj,
     struct MUIP_HandleEvent *msg)
 {
@@ -4311,6 +4988,12 @@ IPTR List__MUIM_HandleEvent(struct IClass *cl, Object *obj,
 /**************************************************************************
  Dispatcher
 **************************************************************************/
+/*
+ * Dispatch local List and lifecycle handlers with ABI-correct message or
+ * delegate Group. Requires appropriate live object/setup state except
+ * construction. Return handler result without extra bounds, ownership or
+ * callback guards.
+ */
 BOOPSI_DISPATCHER(IPTR, List_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)

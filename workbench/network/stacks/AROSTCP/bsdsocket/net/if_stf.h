@@ -33,13 +33,20 @@ struct stf_softc {
     struct route       sc_route;	/* cached route to sc_dst */
     UBYTE              sc_name[IFNAMSIZ];
     struct stf_softc  *sc_next;		/* list of tunnel interfaces */
+    ULONG              sc_seen;		/* reload generation its line was last read in */
 };
 
 extern struct stf_softc *stf_softc_list;
 
-/* Create and attach a tunnel pseudo-interface (called from addifent). */
-struct ifnet *stf_make(struct ssconfig *ifc, struct in_addr src,
-                       struct in_addr dst, UBYTE ttl);
+/*
+ * The tunnel makes itself known to the core as a kind of tunnel interface
+ * (struct nettunnel, net/netmodule.h); called by IPv6's module start.  A
+ * tunnel is made through that registration (nettunnel_find()), not by
+ * calling this file.
+ */
+void stf_attach(void);
+/* ... and takes itself back, with every tunnel interface, when IPv6 stops */
+void stf_detach(void);
 
 /* inetsw[] pr_input handler for inbound IP protocol 41 (decapsulation). */
 void stf_input(void *arg, ...);

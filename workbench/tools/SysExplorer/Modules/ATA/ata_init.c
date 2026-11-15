@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2018-2019, The AROS Development Team.
+    Copyright (C) 2018-2026, The AROS Development Team.
 */
 
 #include <aros/debug.h>
@@ -77,7 +77,7 @@ static int ataenum_init(struct SysexpATABase *AtaBase)
 
 ADD2INITLIB(ataenum_init, 10);
 
-/*****************************************************************************
+/*****i ata/ModuleInit
     NAME
         void ModuleInit(
 

@@ -113,13 +113,13 @@ static int VIRTIO_Init(struct VirtIOBase *VirtIOBase)
     if (enabled) {
         VirtIOBase->virtio_MemPool = CreatePool(MEMF_CLEAR | MEMF_PUBLIC | MEMF_SEM_PROTECTED, 8192, 4096);
         if (VirtIOBase->virtio_MemPool == NULL)
-            return FALSE;
+            goto fail;
 
 #if defined(__OOP_NOATTRBASES__)
         if (OOP_ObtainAttrBasesArray(&VirtIOBase->virtio_HWAttrBase, attrBaseIDs)) {
             DeletePool(VirtIOBase->virtio_MemPool);
             VirtIOBase->virtio_MemPool = NULL;
-            return FALSE;
+            goto fail;
         }
 #endif
 #if defined(__OOP_NOMETHODBASES__)
@@ -129,17 +129,28 @@ static int VIRTIO_Init(struct VirtIOBase *VirtIOBase)
 #endif
             DeletePool(VirtIOBase->virtio_MemPool);
             VirtIOBase->virtio_MemPool = NULL;
-            return FALSE;
+            goto fail;
         }
 #endif
 
         VirtIOBase->storageRoot = OOP_NewObject(NULL, CLID_Hidd_Storage, NULL);
         if (!VirtIOBase->storageRoot)
             VirtIOBase->storageRoot = OOP_NewObject(NULL, CLID_HW_Root, NULL);
-        if (!VirtIOBase->storageRoot)
-            return FALSE;
+        if (!VirtIOBase->storageRoot) {
+#if defined(__OOP_NOATTRBASES__)
+            OOP_ReleaseAttrBasesArray(&VirtIOBase->virtio_HWAttrBase, attrBaseIDs);
+#endif
+            DeletePool(VirtIOBase->virtio_MemPool);
+            VirtIOBase->virtio_MemPool = NULL;
+            goto fail;
+        }
     }
-    return enabled;
+    if (enabled)
+        return TRUE;
+fail:
+    CloseLibrary(VirtIOBase->virtio_UtilityBase);
+    VirtIOBase->virtio_UtilityBase = NULL;
+    return FALSE;
 }
 
 static int VIRTIO_Open(struct VirtIOBase *VirtIOBase,
@@ -207,20 +218,11 @@ AROS_UFH3(void, virtio_PCIEnumerator_h,
     if ((UWORD)vendor != VIRTIO_PCI_VENDOR_ID)
         return;
 
-    /*
-     * Modern: device id 0x1040..0x107F. Subsystem ID indicates the device
-     *         class. We want only block (subsys = 2).
-     * Legacy: device id 0x1001 is virtio-blk.
-     */
-    if (((UWORD)product) == VIRTIO_PCI_DEVICEID_BLK_LEGACY) {
-        /* legacy virtio-blk */
-    } else if (((UWORD)product) >= VIRTIO_PCI_DEVICEID_MIN
-            && ((UWORD)product) <= VIRTIO_PCI_DEVICEID_MAX) {
-        if ((UWORD)sub_dev != VIRTIO_DEVICE_BLOCK)
-            return;
-    } else {
+    /* Modern device IDs encode the device type; subsystem IDs do not.
+     * Transitional block devices can also expose the modern transport. */
+    if ((UWORD)product != VIRTIO_PCI_DEVICEID_BLK_LEGACY &&
+        (UWORD)product != VIRTIO_PCI_DEVICEID_BLK_MODERN)
         return;
-    }
 
     dev = AllocPooled(VirtIOBase->virtio_MemPool, sizeof(*dev));
     if (dev == NULL)
@@ -306,7 +308,11 @@ static int VIRTIO_Probe(struct VirtIOBase *VirtIOBase)
         virtio_tags[VIRTIO_TAG_DEVICE].ti_Data = (IPTR)dev->dev_Object;
         OOP_GetAttr(dev->dev_Object, aHidd_PCIDevice_Driver,    (IPTR *)&dev->dev_PCIDriverObject);
 
-        HW_AddDriver(VirtIOBase->storageRoot, VirtIOBase->virtioClass, virtio_tags);
+        if (!HW_AddDriver(VirtIOBase->storageRoot, VirtIOBase->virtioClass, virtio_tags)) {
+            HIDD_PCIDevice_Release(dev->dev_Object);
+            FreePooled(VirtIOBase->virtio_MemPool, dev, sizeof(*dev));
+            continue;
+        }
         D(
             if (dev->dev_Controller) {
                 bug("[VIRTIO:PCI] %s: VirtIO Controller Object @ 0x%p\n", __func__, dev->dev_Controller);

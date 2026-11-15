@@ -112,9 +112,19 @@ _remque(register struct queue_node *node)
 
 void cs_putchar(unsigned char, struct CSource *);
 void panic(const char *, ...);
+/* "<name><unit>" of an interface, cut to fit; returns its length (net/if.c) */
+struct ifnet;
+int if_fullname(const struct ifnet *ifp, char *buf, int buflen);
 #ifdef __AROS__
-#define __log(A, B, C...) \
-bug("[AROSTCP] "), bug(B , ## C), bug("\n")
+/*
+ * One log line, "[AROSTCP] " + the message + a newline, made by one
+ * function of the core (kern/subr_prf.c), for the core and the modules
+ * alike: three bug() calls at every log site cost 2.7 KB of code in the
+ * core on m68k, and a library would carry its own copy of the formatting
+ * code behind them (4.7 KB on m68k, in each library).
+ */
+void net_debuglog(const char *fmt, ...);
+#define __log(A, B, C...) net_debuglog(B , ## C)
 #define log(A, B, C...) __log(A, B , ## C)
 #else
 void __log(unsigned long, const char *, ...);

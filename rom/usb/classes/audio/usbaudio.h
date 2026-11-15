@@ -80,6 +80,7 @@ struct NepAudioMode
 
     ULONG               nam_IfNum;        /* Interface number */
     IPTR                nam_EPNum;        /* Endpoint number */
+    IPTR                nam_EPAddr;       /* Endpoint address (number | direction bit) for endpoint-recipient wIndex */
 
     struct NepAudioUnit *nam_RootUnit;    /* Root unit containing control information */
     ULONG               nam_AHIModeID;    /* AHI Mode ID */

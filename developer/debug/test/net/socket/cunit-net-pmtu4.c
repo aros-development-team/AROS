@@ -329,6 +329,10 @@ int main(int argc, char **argv)
         printf("bsdsocket.library not available - skipping PMTU4 tests\n");
         return 0;
     }
+    if (st_skip_program("cunit-net-pmtu4", ST_V4)) {
+        CloseLibrary(SocketBase);
+        return 0;
+    }
     ready = setup();
     if (!ready)
         printf("%s: no IPv4 interface - skipping PMTU4 tests\n", ifname);

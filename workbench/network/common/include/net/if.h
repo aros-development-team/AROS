@@ -120,6 +120,21 @@ struct if_data {
    u_char   ifi_aros_usedhcp6;         /* non-zero if DHCPv6 is requested   */
 };
 
+#ifdef KERNEL
+struct ifnet;
+extern struct ifnet *ifnet;	/* the list of interfaces (net/if.c) */
+extern struct ifnet loif;	/* the loopback interface (net/if_loop.c) */
+/*
+ * The list of interfaces has the name of the structure. A module in a
+ * library file of its own reaches the core's variables through macros of
+ * their names (net/netcore_map.h), and a macro called `ifnet' would
+ * replace the word after `struct' as well. So the variable has a second
+ * name that is not a tag, for code that may be built as such a module. In
+ * the stack program it means the same.
+ */
+#define ifnet_list	ifnet
+#endif
+
 struct ifnet {
 	char	*if_name;		/* name, e.g. ``en'' or ``lo'' */
 	struct	ifnet *if_next;		/* all struct ifnets are chained */
@@ -471,6 +486,7 @@ struct	ifreq {
 		int	ifru_metric;
 		int	ifru_mtu;
 		caddr_t	ifru_data;
+		int	ifru_addrflags;		/* IN_IFF_* (SIOCGIFAFLAG_IN) */
 	} ifr_ifru;
 #define	ifr_addr	ifr_ifru.ifru_addr	/* address */
 #define	ifr_dstaddr	ifr_ifru.ifru_dstaddr	/* other end of p-to-p link */
@@ -478,6 +494,7 @@ struct	ifreq {
 #define	ifr_flags	ifr_ifru.ifru_flags	/* flags */
 #define	ifr_metric	ifr_ifru.ifru_metric	/* metric */
 #define	ifr_mtu		ifr_ifru.ifru_mtu	/* mtu */
+#define	ifr_addrflags	ifr_ifru.ifru_addrflags	/* an address's IN_IFF_* flags */
 #define	ifr_data	ifr_ifru.ifru_data	/* for use by interface */
 #define ifr_index	ifr_ifru.ifru_index	/* interface index */
 #define ifr_ifindex	ifr_ifru.ifru_index	/* interface index (alias) */

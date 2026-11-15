@@ -723,6 +723,8 @@ AROS_UFH0(void, nRawWrapTask)
                                     if (ioreq == (APTR)-1)
                                     {
                                         ncp->ncp_ShortPktRead = TRUE;
+                                        /* read-ahead is re-armed below: don't spin on a failing pipe */
+                                        psdDelayMS(20);
                                     } else {
                                         ioreq->io_Actual += len;
                                         ioreq->io_Error = (ioerr > 0) ? IOERR_BADLENGTH : ioerr;

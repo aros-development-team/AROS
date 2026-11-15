@@ -180,6 +180,10 @@ int main(int argc, char **argv)
         printf("bsdsocket.library not available - skipping TCPMSS6 tests\n");
         return 0;
     }
+    if (st_skip_program("cunit-net-tcpmss6", ST_V6)) {
+        CloseLibrary(SocketBase);
+        return 0;
+    }
     ready = setup();
     if (!ready)
         printf("%s: no interface with a link-local address - skipping TCPMSS6 tests\n", ifname);

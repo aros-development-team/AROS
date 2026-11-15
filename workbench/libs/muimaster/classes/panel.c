@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 2025-2026, The AROS Development Team. All rights reserved.
 
     Panel class implementation
 */
@@ -42,6 +42,517 @@
 #include "textengine.h"
 #include "utility/tagitem.h"
 
+/****** Panel.mui/MUIC_Panel ************
+*
+*   NAME
+*       MUIC_Panel
+*
+*   SUPERCLASS
+*       Group.mui
+*
+*   DESCRIPTION
+*       A Group with an optional PanelTitle and drag handle. A non-NULL
+*       Title and non-None TitlePosition at construction create the title; later
+*       sets cannot create one. Left titles select horizontal grouping unless
+*       caller Group tags override it. Group owns all generated children.
+*
+*   METHODS
+*       Collapsed hides content, not the title or handle; expanding makes
+*       all content children visible rather than restoring their earlier state.
+*       First collapse requires positive geometry or saved dimensions. Without
+*       a title, collapsed state is not usable. Title clicks bypass PanelGroup's
+*       cached state; coordinate changes through PanelGroup if its state matters.
+*
+*   BUGS
+*       MUIA_Panel_Draggable is not implemented; use inherited
+*       MUIA_Draggable. Its mere presence creates a handle, even when FALSE.
+*       Changing title position does not reorient Group/handle. Padding has no
+*       layout effect. Drag-image allocation failure can leave a partial image;
+*       deletion frees the bitmap but not the image structure.
+*
+*/
+/****** Panel.mui/MUIA_Panel_Padding ************
+*
+*   NAME
+*       MUIA_Panel_Padding
+*
+*   FUNCTION
+*       Store the panel padding value.
+*
+*   INPUTS
+*       Initialize, set and get, integer stored as UWORD. Default zero.
+*
+*   NOTES
+*       The field has no layout or drawing consumer. Set requests redraw when
+*       changed but does not add spacing. Large values truncate. Get returns
+*       TRUE with the stored value; use inherited Group/Area spacing controls
+*       for their documented effects.
+*
+*/
+/****** Panel.mui/MUIA_Panel_Title ************
+*
+*   NAME
+*       MUIA_Panel_Title
+*
+*   FUNCTION
+*       Set or read the title text.
+*
+*   INPUTS
+*       Initialize, set and get, terminated STRPTR. Default no title.
+*
+*   NOTES
+*       Construction copies the text through a new PanelTitle only when
+*       TitlePosition is not None. Set replaces text in an existing title and
+*       otherwise has no local effect. Get returns TRUE with a borrowed pointer
+*       to the owned copy, or NULL without a title. Copy it before
+*       replacement/disposal; do not free it or pass the same owned pointer back
+*       to Set, which frees it before copying. Avoid empty text with left
+*       vertical rendering. Allocation failure is not reported as Panel creation
+*       or Set failure.
+*
+*/
+/****** Panel.mui/MUIA_Panel_TitlePosition ************
+*
+*   NAME
+*       MUIA_Panel_TitlePosition
+*
+*   FUNCTION
+*       Select the title position used at construction.
+*
+*   INPUTS
+*       Initialize, set and get, ULONG: None (0, default), Top (1), Left (2).
+*
+*   NOTES
+*       Construction uses Left for horizontal grouping and creates a title only
+*       with non-NULL Title and non-None position. Get without a title returns
+*       None with TRUE. Set only forwards to an existing PanelTitle: it neither
+*       removes the title for None nor changes Group/handle orientation.
+*       PanelTitle position replacement also has resource-lifecycle defects;
+*       recreate the Panel to change its arrangement.
+*
+*/
+/****** Panel.mui/MUIA_Panel_TitleTextPosition ************
+*
+*   NAME
+*       MUIA_Panel_TitleTextPosition
+*
+*   FUNCTION
+*       Align text within the title.
+*
+*   INPUTS
+*       Initialize, set and get, ULONG: Centered (0, default), Left (1), Right
+*       (2).
+*
+*   NOTES
+*       Forwarded to an existing PanelTitle. For vertical text, Left means near
+*       the top and Right near the bottom. Unknown values use centered drawing.
+*       No title means Set has no effect and Get returns Centered with TRUE.
+*       Alignment does not change parent Group orientation.
+*
+*/
+/****** Panel.mui/MUIA_Panel_TitleVertical ************
+*
+*   NAME
+*       MUIA_Panel_TitleVertical
+*
+*   FUNCTION
+*       Render left-side title text as stacked characters.
+*
+*   INPUTS
+*       Initialize, set and get, BOOL; default FALSE.
+*
+*   NOTES
+*       Forwarded to an existing PanelTitle. Effective only with Left position;
+*       characters are stacked rather than rotated. Use nonempty text, since
+*       empty vertical text reaches division by its length. Set invalidates
+*       title measurements and requests redraw, but no explicit parent relayout.
+*       Get without a title returns FALSE with TRUE.
+*
+*/
+/****** Panel.mui/MUIA_Panel_Collapsible ************
+*
+*   NAME
+*       MUIA_Panel_Collapsible
+*
+*   FUNCTION
+*       Allow title-click toggling.
+*
+*   INPUTS
+*       Initialize, set and get, BOOL; default FALSE.
+*
+*   NOTES
+*       Forwarded to PanelTitle when present. Direct Panel_Collapsed Set is not
+*       gated by this option. Changing it after Setup does not allocate missing
+*       arrow resources. Without a title Get returns FALSE with TRUE and Set has
+*       no local effect. PanelGroup caches this option and does not
+*       automatically track later changes.
+*
+*/
+/****** Panel.mui/MUIA_Panel_Collapsed ************
+*
+*   NAME
+*       MUIA_Panel_Collapsed
+*
+*   FUNCTION
+*       Hide or show panel content.
+*
+*   INPUTS
+*       Initialize, set and get, BOOL; default FALSE.
+*
+*   NOTES
+*       The title stores the state. Setup applies initial collapse; changed Set
+*       keeps title/handle visible and sets all other children ShowMe to the
+*       inverse, then requests group layout and redraw. Expanding does not
+*       restore independently hidden children. A first runtime collapse without
+*       valid current or saved geometry is rejected locally. Get returns the
+*       title state with TRUE, or FALSE without a title. No-title panels cannot
+*       reliably reverse a collapse because no state is retained. Direct changes
+*       do not refresh PanelGroup caches.
+*
+*/
+/****** Panel.mui/MUIA_Panel_DrawSeparator ************
+*
+*   NAME
+*       MUIA_Panel_DrawSeparator
+*
+*   FUNCTION
+*       Request a line beside the title when expanded.
+*
+*   INPUTS
+*       Initialize and set, BOOL; default TRUE for a Panel-created title. No
+*       local Panel getter.
+*
+*   NOTES
+*       Forwarded to PanelTitle_ShowSeparator. The title draws a horizontal line
+*       at Top or vertical line at Left only when not collapsed. The title size
+*       calculation still includes the separator when collapsed. Without a title
+*       there is no local effect.
+*
+*/
+/****** Panel.mui/MUIA_Panel_TitleClickedHook ************
+*
+*   NAME
+*       MUIA_Panel_TitleClickedHook
+*
+*   FUNCTION
+*       Install the callback for title clicks.
+*
+*   INPUTS
+*       Initialize and set, borrowed struct Hook pointer; default NULL. No local
+*       Panel getter.
+*
+*   NOTES
+*       Forwarded to an existing title. On SELECTDOWN inside it, PanelTitle
+*       first attempts Toggle if collapsible, then calls CallHookPkt(hook,
+*       titleObject, NULL), ignoring the hook result and consuming the event.
+*       The object argument is PanelTitle, not Panel. Keep hook and callback
+*       state alive through use; callbacks must preserve objects needed by the
+*       remaining synchronous event path.
+*
+*/
+/****** Panel.mui/MUIA_Panel_Draggable ************
+*
+*   NAME
+*       MUIA_Panel_Draggable
+*
+*   FUNCTION
+*       Identify a declared Panel-specific tag with no local behavior.
+*
+*   INPUTS
+*       Declared in panel.h; no local initialization, Set or Get case.
+*
+*   NOTES
+*       Use inherited MUIA_Draggable for the implemented handle path. Do not
+*       infer that this similarly named identifier creates a handle or enables
+*       dragging. The inherited constructor path creates a handle on tag
+*       presence even for FALSE; see the class limitations.
+*
+*/
+/****** Panel.mui/MUIA_Panel_DrawStateIndicator ************
+*
+*   NAME
+*       MUIA_Panel_DrawStateIndicator
+*
+*   FUNCTION
+*       Choose whether the title draws a collapse arrow.
+*
+*   INPUTS
+*       Initialize only locally, BOOL; default FALSE. No local Panel Set/Get
+*       case.
+*
+*   NOTES
+*       Passed to PanelTitle at construction. Arrow drawing also requires
+*       Collapsible and available vector resources. Hiding the indicator does
+*       not disable clicking or remove reserved arrow space. Setting this Panel
+*       tag later has no local implementation.
+*
+*/
+/****** DragHandle.mui/MUIC_DragHandle ************
+*
+*   NAME
+*       MUIC_DragHandle
+*
+*   SUPERCLASS
+*       Area.mui
+*
+*   DESCRIPTION
+*       An Area drawing two parallel lines. Vertical is a BOOL despite the
+*       header's pointer annotation. Construction defaults to Draggable TRUE
+*       and RelVerify. Drag-image creation/deletion is delegated to the current
+*       parent (or Area without one); keep that parent alive through both calls.
+*
+*   NOTES
+*       Vertical defaults to a 7-pixel minimum width; horizontal to a
+*       7-pixel minimum height. Maximum dimensions are not uniformly capped.
+*       Changing Vertical does not trigger relayout or redraw. Drawing uses
+*       MPEN_HALFSHADOW directly and leaves JAM1 drawing mode.
+*
+*/
+/****** DragHandle.mui/MUIA_DragHandle_Vertical ************
+*
+*   NAME
+*       MUIA_DragHandle_Vertical
+*
+*   FUNCTION
+*       Choose vertical rather than horizontal handle lines.
+*
+*   INPUTS
+*       Initialize, set and get, BOOL in implementation; default FALSE. The
+*       header incorrectly annotates an object pointer.
+*
+*   NOTES
+*       Stored without Boolean normalization. Nonzero draws vertical lines and
+*       chooses the vertical size branch. Set does not trigger redraw or layout.
+*       Get writes the stored value and returns TRUE. A Panel creates the
+*       initial value from the title position available at handle creation.
+*
+*/
+/****** PanelTitle.mui/MUIC_PanelTitle ************
+*
+*   NAME
+*       MUIC_PanelTitle
+*
+*   SUPERCLASS
+*       Area.mui
+*
+*   DESCRIPTION
+*       An Area with owned text, optional state arrow and separator.
+*       PanelTitle is intended as a Panel child: Toggle writes to its parent,
+*       which must synchronize the title's state. Vertical left-side text
+*       stacks bytes rather than rotating characters.
+*
+*   METHODS
+*       Setup installs a mouse handler and prepares arrow resources;
+*       Cleanup removes the handler, and Dispose frees the title's resources.
+*       A SELECTDOWN in the title calls Toggle when collapsible, invokes an
+*       optional hook and consumes the event. Collapsible reserves arrow space
+*       even when its indicator is hidden. Update-only draws are not handled.
+*
+*   BUGS
+*       Empty vertical text can divide by zero. Text copying and repeated
+*       constructor Text tags have allocation/leak limitations. Position changes
+*       and repeated Setup can leave incorrect or leaked arrow resources;
+*       changing Collapsible after Setup does not allocate arrows. Keep the
+*       title's position and collapse configuration fixed for its lifetime.
+*
+*/
+/****** PanelTitle.mui/MUIA_PanelTitle_Text ************
+*
+*   NAME
+*       MUIA_PanelTitle_Text
+*
+*   FUNCTION
+*       Replace or read the owned title text.
+*
+*   INPUTS
+*       Initialize, set and get, terminated STRPTR; default NULL.
+*
+*   NOTES
+*       Text is copied with StrDup; Get returns a borrowed copy pointer with
+*       TRUE. Set frees the old copy before duplicating the input, so first copy
+*       an obtained pointer if reusing it. Replacement invalidates measurements
+*       and requests full redraw only when set up; no explicit parent relayout.
+*       Avoid empty strings for left vertical rendering. Copy failure leaves no
+*       text without an independent error result.
+*
+*/
+/****** PanelTitle.mui/MUIA_PanelTitle_Position ************
+*
+*   NAME
+*       MUIA_PanelTitle_Position
+*
+*   FUNCTION
+*       Select top or left title rendering.
+*
+*   INPUTS
+*       Initialize, set and get, ULONG: Top (1, default), Left (2).
+*
+*   NOTES
+*       Sets size/drawing orientation within the title, not parent Group
+*       orientation. Other values are not a supported no-title mode. Runtime Set
+*       manages arrows in the wrong order, using the old position before storing
+*       the new one; prefer construction-time choice and recreate for another
+*       arrangement. Get returns TRUE with the stored value.
+*
+*/
+/****** PanelTitle.mui/MUIA_PanelTitle_TextPosition ************
+*
+*   NAME
+*       MUIA_PanelTitle_TextPosition
+*
+*   FUNCTION
+*       Align title text along its reading direction.
+*
+*   INPUTS
+*       Initialize, set and get, ULONG: Centered (0, default), Left (1), Right
+*       (2).
+*
+*   NOTES
+*       Horizontal Left/Right align near the corresponding edge. Vertical
+*       Left/Right align near top/bottom. Unknown values draw centered. Set
+*       requests full redraw when changed and set up. Get returns TRUE with the
+*       stored value.
+*
+*/
+/****** PanelTitle.mui/MUIA_PanelTitle_Vertical ************
+*
+*   NAME
+*       MUIA_PanelTitle_Vertical
+*
+*   FUNCTION
+*       Stack characters for a left-side title.
+*
+*   INPUTS
+*       Initialize, set and get, BOOL; default FALSE.
+*
+*   NOTES
+*       Only effective at Left position. Uses bytewise graphics Text calls and
+*       measures character A; do not use empty text. Does not rotate glyphs. Set
+*       stores the value and requests full redraw when changed and set up; no
+*       explicit parent relayout. Get returns TRUE with the stored value.
+*
+*/
+/****** PanelTitle.mui/MUIA_PanelTitle_Collapsible ************
+*
+*   NAME
+*       MUIA_PanelTitle_Collapsible
+*
+*   FUNCTION
+*       Enable parent-directed toggling and reserve arrow space.
+*
+*   INPUTS
+*       Initialize, set and get, BOOL; default FALSE.
+*
+*   NOTES
+*       Toggle requires a live Panel parent. This flag does not itself change
+*       collapsed state. Enabling after Setup does not allocate missing arrow
+*       specifications. Set stores the value and requests full redraw when
+*       changed and set up; no explicit parent relayout. Get returns TRUE with
+*       the stored value.
+*
+*/
+/****** PanelTitle.mui/MUIA_PanelTitle_Collapsed ************
+*
+*   NAME
+*       MUIA_PanelTitle_Collapsed
+*
+*   FUNCTION
+*       Store the title state used for arrow and separator drawing.
+*
+*   INPUTS
+*       Initialize, set and get, BOOL; default FALSE.
+*
+*   NOTES
+*       Direct Set affects this title only; it does not hide Panel content. Use
+*       Panel_Collapsed for content visibility. Toggle relies on parent feedback
+*       to update this field. Set stores the value and requests full redraw when
+*       changed and set up; no explicit parent relayout. Get returns TRUE with
+*       the stored value.
+*
+*/
+/****** PanelTitle.mui/MUIA_PanelTitle_ShowSeparator ************
+*
+*   NAME
+*       MUIA_PanelTitle_ShowSeparator
+*
+*   FUNCTION
+*       Draw a separator while the title is expanded.
+*
+*   INPUTS
+*       Initialize, set and get, BOOL; default FALSE.
+*
+*   NOTES
+*       Top draws a bottom line; Left draws a side line. Collapsed suppresses
+*       drawing but not the size allowance. Set stores the value and requests
+*       full redraw when changed and set up; no explicit parent relayout. Get
+*       returns TRUE with the stored value.
+*
+*/
+/****** PanelTitle.mui/MUIA_PanelTitle_ClickHook ************
+*
+*   NAME
+*       MUIA_PanelTitle_ClickHook
+*
+*   FUNCTION
+*       Call a hook after a title press.
+*
+*   INPUTS
+*       Initialize, set and get, borrowed struct Hook pointer; default NULL.
+*
+*   NOTES
+*       For SELECTDOWN inside the object, attempt Toggle first when collapsible,
+*       then call CallHookPkt(hook, titleObject, NULL). Return value is ignored;
+*       the event is consumed. The hook can run even when no collapse occurred.
+*       Keep callback and object state valid through the call; Get returns the
+*       borrowed pointer with TRUE.
+*
+*/
+/****** PanelTitle.mui/MUIA_PanelTitle_DrawStateIndicator ************
+*
+*   NAME
+*       MUIA_PanelTitle_DrawStateIndicator
+*
+*   FUNCTION
+*       Enable drawing of the collapse arrow.
+*
+*   INPUTS
+*       Initialize only locally, BOOL; default FALSE. No local Set/Get case.
+*
+*   NOTES
+*       Drawing also requires Collapsible and valid arrow specifications. Top
+*       uses right/down for collapsed/expanded; Left uses up/right. Arrow space
+*       is reserved whenever Collapsible is set, regardless of this option. No
+*       arrow-allocation failure is returned to the caller.
+*
+*/
+/****** PanelTitle.mui/MUIM_PanelTitle_Toggle ************
+*
+*   NAME
+*       MUIM_PanelTitle_Toggle
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_PanelTitle_Toggle);
+*
+*   FUNCTION
+*       Request the inverse collapsed state from the parent Panel.
+*
+*   INPUTS
+*       obj - Live PanelTitle attached to a live Panel; preserve both through
+*       synchronous Set and notifications.
+*
+*   RESULT
+*       TRUE when Collapsible is nonzero; FALSE otherwise. TRUE reports the
+*       request path, not a verified parent-state change.
+*
+*   NOTES
+*       Set parent Panel_Collapsed to the inverse of the stored title state,
+*       then request full redraw if set up. The method does not directly change
+*       its own state and does not invoke ClickHook. The click handler invokes
+*       the hook separately afterward. PanelGroup cached state is not updated
+*       automatically.
+*
+*/
+
 #define DEBUG 0
 #include <aros/debug.h>
 
@@ -59,6 +570,12 @@ struct DragHandle_DATA {
 };
 
 /*** DragHandle Methods ****************************************************************/
+/*
+ * Create Area with draggable/RelVerify defaults then store Vertical. Return
+ * object or zero on superclass failure. Caller tags may override defaults;
+ * no local resource allocation. Vertical is BOOL storage despite pointer
+ * annotation in header.
+ */
 IPTR DragHandle__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct DragHandle_DATA *data;
@@ -89,6 +606,10 @@ IPTR DragHandle__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     return (IPTR) obj;
 }
 
+/*
+ * Store Vertical without normalization or redraw/layout request, then return
+ * Area setter result. no pointer ownership or allocation.
+ */
 IPTR DragHandle__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct DragHandle_DATA *data = INST_DATA(cl, obj);
@@ -103,6 +624,10 @@ IPTR DragHandle__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
     return DoSuperMethodA(cl, obj, (Msg) msg);
 }
 
+/*
+ * Write Vertical to valid output storage and return TRUE; delegate unknown
+ * queries to Area. returned value is stored BOOL, not an object pointer.
+ */
 IPTR DragHandle__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 {
     struct DragHandle_DATA *data = INST_DATA(cl, obj);
@@ -114,6 +639,11 @@ IPTR DragHandle__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
     return DoSuperMethodA(cl, obj, (Msg) msg);
 }
 
+/*
+ * Delegate the borrowed drag-image request to current parent if present,
+ * otherwise Area, returning its result. Requires stable live parent through
+ * creation/deletion; no local image allocation or coordinate conversion.
+ */
 IPTR DragHandle__MUIM_CreateDragImage(struct IClass *cl, Object *obj, struct MUIP_CreateDragImage *msg)
 {
     struct DragHandle_DATA *data = INST_DATA(cl, obj);
@@ -128,6 +658,11 @@ IPTR DragHandle__MUIM_CreateDragImage(struct IClass *cl, Object *obj, struct MUI
     return DoSuperMethodA(cl, obj, (Msg) msg);
 }
 
+/*
+ * Delegate image deletion to current parent if present, otherwise Area.
+ * Requires matching creator/parent and valid image message; no local cleanup
+ * or ownership repair.
+ */
 IPTR DragHandle__MUIM_DeleteDragImage(struct IClass *cl, Object *obj, struct MUIP_DeleteDragImage *msg)
 {
     struct DragHandle_DATA *data = INST_DATA(cl, obj);
@@ -142,6 +677,11 @@ IPTR DragHandle__MUIM_DeleteDragImage(struct IClass *cl, Object *obj, struct MUI
     return DoSuperMethodA(cl, obj, (Msg) msg);
 }
 
+/*
+ * Delegate Area then overwrite minima/defaults from Vertical, increase
+ * selected maxima and return zero. Requires writable size record; does not
+ * uniformly constrain the thin dimension to seven pixels.
+ */
 IPTR DragHandle__MUIM_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMax *msg)
 {
     DoSuperMethodA(cl, obj, (Msg) msg);
@@ -179,6 +719,12 @@ IPTR DragHandle__MUIM_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskM
     return 0;
 }
 
+/*
+ * Draw parallel lines after Area regardless of flags using valid RastPort.
+ * Use MPEN_HALFSHADOW as literal pen, restore old pen but retain JAM1 mode;
+ * return superclass result. Requires drawable setup geometry; no allocation
+ * or error propagation.
+ */
 IPTR DragHandle__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 {
     struct DragHandle_DATA *data = INST_DATA(cl, obj);
@@ -237,6 +783,11 @@ IPTR DragHandle__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg
     return result;
 }
 
+/*
+ * Delegate directly to Area Setup. Requires valid lifecycle/setup message;
+ * this class acquires no additional setup resources and does not validate
+ * the parent drag-image path.
+ */
 IPTR DragHandle__MUIM_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
 {
     return DoSuperMethodA(cl, obj, (Msg) msg);
@@ -245,6 +796,12 @@ IPTR DragHandle__MUIM_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *m
 /*** Class initialization ***************************************************/
 
 #if ZUNE_BUILTIN_DRAGHANDLE
+/*
+ * Dispatch ABI-correct local lifecycle and class messages to their handlers;
+ * delegate remaining messages to the declared superclass. Requires live
+ * object except construction and normal resource lifecycle; adds no
+ * validation or synchronization.
+ */
 BOOPSI_DISPATCHER(IPTR, DragHandle_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID) {
@@ -267,6 +824,12 @@ const struct __MUIBuiltinClass _MUI_DragHandle_desc = { MUIC_DragHandle,
                                                         (void *) DragHandle_Dispatcher };
 #endif /* ZUNE_BUILTIN_DRAGHANDLE */
 
+/*
+ * Create a new DragHandle with Vertical derived from supplied title
+ * position; return owned object or NULL. Caller must add it to an owning
+ * Group or dispose it. Requires live Panel instance; no insertion performed
+ * here.
+ */
 Object *Panel_CreateDragHandle(struct IClass *cl, Object *panel, ULONG title_position)
 {
     struct Panel_DATA *data = INST_DATA(cl, panel);
@@ -283,6 +846,13 @@ Object *Panel_CreateDragHandle(struct IClass *cl, Object *panel, ULONG title_pos
  * PanelTitle Methods
  *****************************************************************/
 
+/*
+ * Measure borrowed owned text using ZText horizontally or character-A
+ * metrics times byte length vertically. Requires live instance and suitable
+ * render context; NULL text/object clears dimensions. Return void, store
+ * UWORD sizes; successful ZText before Setup may leave old dimensions.
+ * Destroy temporary ZText; no overflow validation.
+ */
 static void PanelTitle_CalculateTextSize(struct PanelTitle_DATA *data, Object *obj)
 {
     if (!data->text || !obj) {
@@ -319,6 +889,12 @@ static void PanelTitle_CalculateTextSize(struct PanelTitle_DATA *data, Object *o
     }
 }
 
+/*
+ * Draw an available stored vector specification for supplied direction if
+ * collapsible and RastPort valid. Requires live render info and valid
+ * specification lifetime; missing spec draws nothing. Return void, no
+ * allocation or pen-state restoration guarantee.
+ */
 static void PanelTitle_DrawArrow(Object *obj, struct PanelTitle_DATA *data, LONG left, LONG top, UWORD direction)
 {
     struct RastPort *rp = _rp(obj);
@@ -377,6 +953,11 @@ static void PanelTitle_DrawArrow(Object *obj, struct PanelTitle_DATA *data, LONG
     }
 }
 
+/*
+ * Draw horizontal or vertical line with setup pens and JAM1 if RastPort
+ * exists. Requires valid geometry/render context. Return void, leave
+ * selected pen/draw mode changed and retain no resources.
+ */
 static void PanelTitle_DrawSeparator(Object *obj, LONG left, LONG bottom, LONG width, LONG top, BOOL horizontal)
 {
     struct RastPort *rp = _rp(obj);
@@ -395,6 +976,11 @@ static void PanelTitle_DrawSeparator(Object *obj, LONG left, LONG bottom, LONG w
     }
 }
 
+/*
+ * Clean up each non-NULL arrow specification using zune_imspec_cleanup.
+ * Requires live owned specifications not previously cleaned; pointers are
+ * not cleared. repeated use without replacement can act on stale pointers.
+ */
 static void PanelTitle_FreeVectorSpecs(struct IClass *cl, Object *obj)
 {
     struct PanelTitle_DATA *data = INST_DATA(cl, obj);
@@ -407,6 +993,12 @@ static void PanelTitle_FreeVectorSpecs(struct IClass *cl, Object *obj)
         zune_imspec_cleanup(data->down_arrow_spec);
 }
 
+/*
+ * Allocate right plus up/ down arrow specifications for stored Left/Top
+ * using live render info. Return void, no allocation status propagation or
+ * cleanup of overwritten pointers. Caller must maintain ownership and
+ * correct setup/position lifecycle.
+ */
 static void PanelTitle_AllocateVectorSpecs(struct IClass *cl, Object *obj)
 {
     struct PanelTitle_DATA *data = INST_DATA(cl, obj);
@@ -423,6 +1015,12 @@ static void PanelTitle_AllocateVectorSpecs(struct IClass *cl, Object *obj)
 
 /*** Methods ****************************************************************/
 
+/*
+ * Delegate Area, initialize defaults and duplicate Text constructor values,
+ * borrow ClickHook. Return object or zero only on superclass failure;
+ * duplicate Text tags leak prior copy and copy failure is not propagated.
+ * Keep initial geometry/orientation coherent.
+ */
 IPTR PanelTitle__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct PanelTitle_DATA *data;
@@ -465,6 +1063,11 @@ IPTR PanelTitle__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     return (IPTR) obj;
 }
 
+/*
+ * Free owned text, clean arrow specifications then return Area disposal
+ * result. Requires handler removed through Cleanup and valid non-stale
+ * specs; does not repair pointers left by flawed position transitions.
+ */
 IPTR PanelTitle__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
 {
     struct PanelTitle_DATA *data = INST_DATA(cl, obj);
@@ -479,6 +1082,13 @@ IPTR PanelTitle__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
     return DoSuperMethodA(cl, obj, msg);
 }
 
+/*
+ * Replace copied text or update supported options; redraw full when needed
+ * and set up, then return Area result. Text self-alias is unsafe because old
+ * copy is freed first. Position frees/allocates specs using old position
+ * before storing new; no DrawStateIndicator setter or explicit parent
+ * relayout.
+ */
 IPTR PanelTitle__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct PanelTitle_DATA *data = INST_DATA(cl, obj);
@@ -554,6 +1164,12 @@ IPTR PanelTitle__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
     return DoSuperMethodA(cl, obj, (Msg) msg);
 }
 
+/*
+ * Return text pointer/options/hook with TRUE into writable storage; delegate
+ * DrawStateIndicator and unknown queries. Text is borrowed until
+ * replacement/disposal and hook remains caller-owned. Does not allocate or
+ * synchronize parent collapse state.
+ */
 IPTR PanelTitle__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 {
     struct PanelTitle_DATA *data = INST_DATA(cl, obj);
@@ -579,6 +1195,13 @@ IPTR PanelTitle__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
     return DoSuperMethodA(cl, obj, (Msg) msg);
 }
 
+/*
+ * Require Area success, register mouse-button handler, measure text and
+ * allocate arrows if collapsible; return TRUE without checking
+ * registration/spec allocation. Requires live Window/render context.
+ * Repeated Setup can overwrite retained specs because Cleanup does not
+ * release them.
+ */
 IPTR PanelTitle__MUIM_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
 {
     struct PanelTitle_DATA *data = INST_DATA(cl, obj);
@@ -606,6 +1229,11 @@ IPTR PanelTitle__MUIM_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *m
     return TRUE;
 }
 
+/*
+ * Remove event handler from live Window then return Area Cleanup result.
+ * Requires corresponding Setup and no active callback. Retains arrow
+ * specifications for Dispose; no pointer reset or release here.
+ */
 IPTR PanelTitle__MUIM_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup *msg)
 {
     struct PanelTitle_DATA *data = INST_DATA(cl, obj);
@@ -615,6 +1243,12 @@ IPTR PanelTitle__MUIM_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanu
     return DoSuperMethodA(cl, obj, (Msg) msg);
 }
 
+/*
+ * Delegate Area then replace title size bounds from text, padding, arrow
+ * space and separator. Requires writable output and render context for
+ * measurement. No text yields flexible zero minima; narrow dimension
+ * arithmetic unchecked. Return superclass result.
+ */
 IPTR PanelTitle__MUIM_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMax *msg)
 {
     struct PanelTitle_DATA *data = INST_DATA(cl, obj);
@@ -663,6 +1297,13 @@ IPTR PanelTitle__MUIM_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskM
     return result;
 }
 
+/*
+ * After Area, draw only full-object/non-NULL-text path. Measure text, draw
+ * optional arrow and text then expanded separator; left vertical empty text
+ * divides by zero. Requires live specs/render context and nonempty vertical
+ * text. Return superclass result; temporary ZText released, pen/mode left
+ * changed.
+ */
 IPTR PanelTitle__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 {
     struct PanelTitle_DATA *data = INST_DATA(cl, obj);
@@ -810,6 +1451,12 @@ IPTR PanelTitle__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg
     return result;
 }
 
+/*
+ * On SELECTDOWN inside title, request parent toggle if collapsible, call
+ * borrowed hook with title and NULL message, then return Eat. Requires live
+ * objects through synchronous callbacks; hook result ignored. Other events
+ * delegate Area; no local resources retained.
+ */
 IPTR PanelTitle__MUIM_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_HandleEvent *msg)
 {
     struct PanelTitle_DATA *data = INST_DATA(cl, obj);
@@ -837,6 +1484,12 @@ IPTR PanelTitle__MUIM_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Ha
     return DoSuperMethodA(cl, obj, (Msg) msg);
 }
 
+/*
+ * If collapsible, set live parent Panel_Collapsed to inverse stored title
+ * state, redraw if set up and return TRUE; otherwise FALSE. Does not itself
+ * change title cache or invoke hook; TRUE does not prove parent accepted
+ * transition.
+ */
 IPTR PanelTitle__MUIM_PanelTitle_Toggle(struct IClass *cl, Object *obj, struct MUIP_PanelTitle_Toggle *msg)
 {
     struct PanelTitle_DATA *data = INST_DATA(cl, obj);
@@ -856,6 +1509,12 @@ IPTR PanelTitle__MUIM_PanelTitle_Toggle(struct IClass *cl, Object *obj, struct M
 /*** Class dispatcher *******************************************************/
 
 #if ZUNE_BUILTIN_PANELTITLE
+/*
+ * Dispatch ABI-correct local lifecycle and class messages to their handlers;
+ * delegate remaining messages to the declared superclass. Requires live
+ * object except construction and normal resource lifecycle; adds no
+ * validation or synchronization.
+ */
 BOOPSI_DISPATCHER(IPTR, PanelTitle_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID) {
@@ -890,6 +1549,13 @@ const struct __MUIBuiltinClass _MUI_PanelTitle_desc = { MUIC_PanelTitle,
  *
  *****************************************************************/
 
+/*
+ * Create Group orientation from initial TitlePosition, parse fields, create
+ * handles on every inherited Draggable tag regardless value and optional
+ * title afterward. Return object despite child allocation failure. Group
+ * owns inserted children; title copied, hook borrowed. Handle orientation
+ * depends on tag order.
+ */
 IPTR Panel__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct Panel_DATA *data;
@@ -966,6 +1632,12 @@ IPTR Panel__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     return (IPTR) obj;
 }
 
+/*
+ * Read live child list, allocate temporary method array, order recorded
+ * handle/title first and other children afterward, send Group_Sort and free
+ * array. Requires recorded children belong to group and stable list. Return
+ * void, allocation failure leaves order unchanged; no NULL child-list guard.
+ */
 void Panel__Sort_Children(struct IClass *cl, Object *obj)
 {
     struct Panel_DATA *data = INST_DATA(cl, obj);
@@ -1014,6 +1686,13 @@ void Panel__Sort_Children(struct IClass *cl, Object *obj)
     }
 }
 
+/*
+ * Forward supported title tags, store unused Padding, manage inherited
+ * Draggable handle and change content ShowMe on changed collapse. Requires
+ * stable children and valid geometry; first collapse can delegate early when
+ * geometry unavailable. Expansion forces all content visible; return
+ * superclass result, no rollback or container cache update.
+ */
 IPTR Panel__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct Panel_DATA *data = INST_DATA(cl, obj);
@@ -1162,6 +1841,12 @@ IPTR Panel__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
     return DoSuperMethodA(cl, obj, (Msg) msg);
 }
 
+/*
+ * Return Padding/title-related state with TRUE, supplying defaults without
+ * title. Inherited Draggable branch returns handle presence without writing
+ * output; caller must not treat storage as initialized. Other queries
+ * delegate Group; text remains borrowed.
+ */
 IPTR Panel__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 {
     struct Panel_DATA *data = INST_DATA(cl, obj);
@@ -1219,6 +1904,12 @@ IPTR Panel__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
     return DoSuperMethodA(cl, obj, (Msg) msg);
 }
 
+/*
+ * Require Group success, sort generated children first and hide content when
+ * initial title state collapsed. Return TRUE without checking sorting;
+ * requires valid owned child list. Does not save initial expanded dimensions
+ * or notify PanelGroup cache.
+ */
 IPTR Panel__MUIM_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
 {
     struct Panel_DATA *data = INST_DATA(cl, obj);
@@ -1251,11 +1942,22 @@ IPTR Panel__MUIM_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
     return TRUE;
 }
 
+/*
+ * Delegate the balanced change-begin message to Group. Requires normal
+ * live-object lifecycle and matching ExitChange; no additional local state
+ * or allocation.
+ */
 IPTR Panel__MUIM_Group_InitChange(struct IClass *cl, Object *obj, Msg msg)
 {
     return DoSuperMethodA(cl, obj, msg);
 }
 
+/*
+ * Delegate Group end-change then sort handle/title first, returning
+ * inherited result. Requires balanced change operation, stable child list
+ * and valid recorded generated children. Temporary allocation failure is not
+ * reported.
+ */
 IPTR Panel__MUIM_Group_ExitChange(struct IClass *cl, Object *obj, Msg msg)
 {
 
@@ -1268,6 +1970,13 @@ IPTR Panel__MUIM_Group_ExitChange(struct IClass *cl, Object *obj, Msg msg)
     return result;
 }
 
+/*
+ * Allocate cleared image structure and optional friend bitmap, copy object
+ * rectangle and store touch coordinates. Requires drawable object/screen.
+ * Return NULL only for structure allocation failure; non-NULL can contain
+ * NULL bitmap. Returned resources need matching deletion; bitmap-copy errors
+ * unreported.
+ */
 IPTR Panel__MUIM_CreateDragImage(struct IClass *cl, Object *obj, struct MUIP_CreateDragImage *msg)
 {
     struct MUI_DragImage *img = (struct MUI_DragImage *) AllocVec(sizeof(struct MUI_DragImage), MEMF_CLEAR);
@@ -1296,6 +2005,11 @@ IPTR Panel__MUIM_CreateDragImage(struct IClass *cl, Object *obj, struct MUIP_Cre
     return (IPTR) img;
 }
 
+/*
+ * Free the supplied drag-image bitmap and return zero. Requires valid image
+ * pointer and matching bitmap; allocated image structure itself is not
+ * freed, producing a leak in the local create/delete pair.
+ */
 IPTR Panel__MUIM_DeleteDragImage(struct IClass *cl, Object *obj, struct MUIP_DeleteDragImage *msg)
 {
     FreeBitMap(msg->di->bm);
@@ -1305,6 +2019,12 @@ IPTR Panel__MUIM_DeleteDragImage(struct IClass *cl, Object *obj, struct MUIP_Del
 /*** Class initialization ***************************************************/
 
 #if ZUNE_BUILTIN_PANEL
+/*
+ * Dispatch ABI-correct local lifecycle and class messages to their handlers;
+ * delegate remaining messages to the declared superclass. Requires live
+ * object except construction and normal resource lifecycle; adds no
+ * validation or synchronization.
+ */
 BOOPSI_DISPATCHER(IPTR, Panel_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID) {

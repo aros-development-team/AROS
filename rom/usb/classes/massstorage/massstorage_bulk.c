@@ -16,23 +16,38 @@ extern const STRPTR GM_UNIQUENAME(libname);
 
 /*
  * Some devices (notably flash-based) can legitimately NAK bulk transfers for
- * extended periods while busy (erase/program/wear-leveling). Poseidon can be
- * configured with a finite NAK timeout on pipes; when that fires we get
- * UHIOERR_NAKTIMEOUT (often shown as "response timeout").
+ * extended periods while busy (erase/program/wear-leveling), and disks NAK
+ * while spinning up. Poseidon can be configured with a finite NAK timeout on
+ * pipes; when that fires we get UHIOERR_NAKTIMEOUT (often shown as "response
+ * timeout"). The HCD counts it from the submit, so it is really the command
+ * timeout.
  *
- * Treat UHIOERR_NAKTIMEOUT as a retryable "device busy" condition and, to
- * reduce repeated aborts, relax the pipe's NAK timeout for subsequent attempts.
+ * nScsiDirectBulk() gives such a device ONE more chance per command, under
+ * these rules:
+ *  - at most one relaxed retry per command (nakrelaxed), never an open-ended
+ *    loop: a second NAK timeout is an ordinary transport error (bulk-only
+ *    reset, report, no further retry);
+ *  - the device is put through nBulkReset() before the CBW is sent again -
+ *    re-sending a CBW to a device still inside the previous command's data or
+ *    status phase would violate the Bulk-Only protocol;
+ *  - the relaxed window only ever raises the pipe timeout, never lowers a
+ *    longer configured one, and it is temporary: on every way out of
+ *    nScsiDirectBulk() the configured value is put back on all pipes
+ *    (nApplyNakTimeout), so the user's setting is never silently overridden;
+ *  - consequently ncm_XFerLock (and the unit task) is held for at most one
+ *    relaxed timeout plus the reset and back-off beyond the normal case.
  */
 static void nRelaxNakTimeout(struct NepClassMS *ncm, struct PsdPipe *pp, ULONG new_timeout_ms)
 {
-    /* Only touch it if the stack supports the attributes (Poseidon) and if a non-zero timeout is requested. */
-    if(pp && new_timeout_ms)
+    ULONG cur = nNakTimeoutMs(ncm);
+
+    /* A configured zero means NAK timeouts are off and we never get here;
+       a configured value above the relaxed one stays as it is. */
+    if(new_timeout_ms < cur)
     {
-        psdSetAttrs(PGA_PIPE, pp,
-                    PPA_NakTimeout, TRUE,
-                    PPA_NakTimeoutTime, new_timeout_ms,
-                    TAG_END);
+        new_timeout_ms = cur;
     }
+    nSetNakTimeout(ncm, pp, new_timeout_ms);
 }
 
 
@@ -257,6 +272,7 @@ LONG nScsiDirectBulk(struct NepClassMS *ncm, struct SCSICmd *scsicmd)
     ULONG datalen;
     LONG rioerr;
     UWORD retrycnt = 0;
+    BOOL nakrelaxed = FALSE; /* the one "device busy" retry has been spent */
     UBYTE cmdstrbuf[16*3+2];
 
     KPRINTF(10, ("%s(0x%p, 0x%p)\n", __func__, ncm, scsicmd));
@@ -334,7 +350,7 @@ LONG nScsiDirectBulk(struct NepClassMS *ncm, struct SCSICmd *scsicmd)
                 pp = (scsicmd->scsi_Flags & SCSIF_READ) ? ncm->ncm_EPInPipe : ncm->ncm_EPOutPipe;
                 ioerr = psdDoPipe(pp, scsicmd->scsi_Data, datalen);
                 scsicmd->scsi_Actual = psdGetPipeActual(pp);
-                if(ioerr == UHIOERR_OVERFLOW)
+                if(nIsOverflowErr(ioerr))
                 {
                     KPRINTF(10, ("Extra Data received, but ignored!\n"));
                     ioerr = 0;
@@ -381,7 +397,7 @@ LONG nScsiDirectBulk(struct NepClassMS *ncm, struct SCSICmd *scsicmd)
                                    psdGetPipeActual(ncm->ncm_EPInPipe));
                     ioerr = psdDoPipe(ncm->ncm_EPInPipe, &umscsw, UMSCSW_SIZEOF);
                 }
-                if(ioerr == UHIOERR_OVERFLOW)
+                if(nIsOverflowErr(ioerr))
                 {
                     KPRINTF(10, ("Extra Status received, but ignored!\n"));
                     ioerr = 0;
@@ -473,7 +489,7 @@ LONG nScsiDirectBulk(struct NepClassMS *ncm, struct SCSICmd *scsicmd)
                                                  USR_CLEAR_FEATURE, UFS_ENDPOINT_HALT, (ULONG) ncm->ncm_EPInNum|URTF_IN);
                                     ioerr = psdDoPipe(ncm->ncm_EP0Pipe, NULL, 0);
                                 }
-                                if((ioerr == UHIOERR_RUNTPACKET) || (ioerr == UHIOERR_OVERFLOW))
+                                if((ioerr == UHIOERR_RUNTPACKET) || nIsOverflowErr(ioerr))
                                 {
                                     KPRINTF(10, ("Extra or less data received, but ignored!\n"));
                                     ioerr = 0;
@@ -492,8 +508,9 @@ LONG nScsiDirectBulk(struct NepClassMS *ncm, struct SCSICmd *scsicmd)
                                         KPRINTF(2, ("stall...\n"));
                                         psdPipeSetup(ncm->ncm_EP0Pipe, URTF_STANDARD|URTF_ENDPOINT,
                                                      USR_CLEAR_FEATURE, UFS_ENDPOINT_HALT, (ULONG) ncm->ncm_EPInNum|URTF_IN);
-                                        ioerr = psdDoPipe(ncm->ncm_EP0Pipe, NULL, 0);
-                                        ioerr |= psdDoPipe(ncm->ncm_EPInPipe, &umscsw, UMSCSW_SIZEOF);
+                                        psdDoPipe(ncm->ncm_EP0Pipe, NULL, 0);
+                                        /* the retry's own result (the old code OR'd two error codes together here) */
+                                        ioerr = psdDoPipe(ncm->ncm_EPInPipe, &umscsw, UMSCSW_SIZEOF);
                                     }
                                     if(ioerr == UHIOERR_RUNTPACKET)
                                     {
@@ -504,7 +521,7 @@ LONG nScsiDirectBulk(struct NepClassMS *ncm, struct SCSICmd *scsicmd)
                                         ioerr = psdDoPipe(ncm->ncm_EPInPipe, &umscsw, UMSCSW_SIZEOF);
                                     }
 
-                                    if(ioerr == UHIOERR_OVERFLOW)
+                                    if(nIsOverflowErr(ioerr))
                                     {
                                         KPRINTF(10, ("Extra Status received, but ignored!\n"));
                                         ioerr = 0;
@@ -628,12 +645,17 @@ LONG nScsiDirectBulk(struct NepClassMS *ncm, struct SCSICmd *scsicmd)
                         rioerr = HFERR_BadStatus;
                     }
                 } else {
-                    if(ioerr == UHIOERR_NAKTIMEOUT)
+                    if((ioerr == UHIOERR_NAKTIMEOUT) && (!nakrelaxed))
                     {
-                        /* Device may simply be busy and NAKing for too long. Treat as retryable. */
-                        KPRINTF(10, ("Command status NAK-timeout, assuming device busy; backing off and retrying\n"));
+                        /* Device may simply be busy and NAKing for too long: one
+                           reset + retry with a longer window (see nRelaxNakTimeout) */
+                        KPRINTF(10, ("Command status NAK-timeout, assuming device busy; resetting, backing off and retrying once\n"));
+                        psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
+                                       "Command (%s) status timed out, assuming busy device: retrying once with a 120s timeout.", cmdstrbuf);
+                        nBulkReset(ncm);
                         psdDelayMS(500);
                         nRelaxNakTimeout(ncm, ncm->ncm_EPInPipe, 120000); /* 120s */
+                        nakrelaxed = TRUE;
                         if(!retrycnt) retrycnt = 1;
                         scsicmd->scsi_Status = SCSI_CHECK_CONDITION;
                         rioerr = HFERR_Phase;
@@ -649,13 +671,19 @@ LONG nScsiDirectBulk(struct NepClassMS *ncm, struct SCSICmd *scsicmd)
                     }
                 }
             } else {
-                if(ioerr == UHIOERR_NAKTIMEOUT)
+                if((ioerr == UHIOERR_NAKTIMEOUT) && (!nakrelaxed))
                 {
-                    /* Prolonged NAKs are common when flash devices are busy (erase/program). Retry with backoff. */
-                    KPRINTF(10, ("Data phase NAK-timeout, assuming device busy; backing off and retrying\n"));
+                    /* Prolonged NAKs are common when flash devices are busy
+                       (erase/program): one reset + retry with a longer window
+                       (see nRelaxNakTimeout) */
+                    KPRINTF(10, ("Data phase NAK-timeout, assuming device busy; resetting, backing off and retrying once\n"));
+                    psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
+                                   "Command (%s) data phase timed out, assuming busy device: retrying once with a %lds timeout.",
+                                   cmdstrbuf, (scsicmd->scsi_Flags & SCSIF_READ) ? 60 : 120);
+                    nBulkReset(ncm);
                     psdDelayMS(500);
-                    /* Relax timeout for subsequent attempts to reduce repeated aborts. */
                     nRelaxNakTimeout(ncm, pp, (scsicmd->scsi_Flags & SCSIF_READ) ? 60000 : 120000);
+                    nakrelaxed = TRUE;
                     if(!retrycnt) retrycnt = 1;
                     scsicmd->scsi_Status = SCSI_CHECK_CONDITION;
                     rioerr = HFERR_Phase;
@@ -671,12 +699,17 @@ LONG nScsiDirectBulk(struct NepClassMS *ncm, struct SCSICmd *scsicmd)
                 }
             }
         } else {
-            if(ioerr == UHIOERR_NAKTIMEOUT)
+            if((ioerr == UHIOERR_NAKTIMEOUT) && (!nakrelaxed))
             {
-                /* CBW OUT timed out due to prolonged NAK; treat as retryable busy. */
-                KPRINTF(10, ("Command block NAK-timeout, assuming device busy; backing off and retrying\n"));
+                /* CBW OUT timed out due to prolonged NAK: one reset + retry with
+                   a longer window (see nRelaxNakTimeout) */
+                KPRINTF(10, ("Command block NAK-timeout, assuming device busy; resetting, backing off and retrying once\n"));
+                psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
+                               "Command (%s) block timed out, assuming busy device: retrying once with a 120s timeout.", cmdstrbuf);
+                nBulkReset(ncm);
                 psdDelayMS(500);
                 nRelaxNakTimeout(ncm, ncm->ncm_EPOutPipe, 120000); /* 120s */
+                nakrelaxed = TRUE;
                 if(!retrycnt) retrycnt = 1;
                 scsicmd->scsi_Status = SCSI_CHECK_CONDITION;
                 rioerr = HFERR_Phase;
@@ -701,6 +734,12 @@ LONG nScsiDirectBulk(struct NepClassMS *ncm, struct SCSICmd *scsicmd)
         }
         KPRINTF(1, ("Retrying...\n"));
     } while(retrycnt--);
+    if(nakrelaxed)
+    {
+        /* the relaxed window was for this command only: back to the
+           configured value on every pipe, whatever way we got here */
+        nApplyNakTimeout(ncm, nNakTimeoutMs(ncm));
+    }
     nUnlockXFer(ncm);
     return(rioerr);
 }

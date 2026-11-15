@@ -482,6 +482,7 @@ AROS_UFH0(void, nHidTask)
     LONG ioerr;
     BOOL firstpkt = TRUE;
 
+    nApplyInputTaskPriFloor();
     if((nch = nAllocHid()))
     {
         Forbid();
@@ -513,7 +514,6 @@ AROS_UFH0(void, nHidTask)
                         KPRINTF(1, ("Data: %08lx %08lx\n", (*(ULONG *) bufreal), ((ULONG *) bufreal)[1]));
                         qualifier = IEQUALIFIER_RELATIVEMOUSE;
                         buts = bufreal[0];
-                        iecode = IECODE_NOBUTTON;
                         wheel = 0;
                         if(buts & 1)
                         {
@@ -543,32 +543,48 @@ AROS_UFH0(void, nHidTask)
                             }
                         }
 
-                        if((buts^oldbuts) & 1)
+                        /* One RAWMOUSE event per button edge, the movement riding
+                           on the first one; with no edge the movement goes out
+                           alone. The old if/else chain delivered only one edge per
+                           report and deferred a second one (two buttons pressed or
+                           released at once) to the next report, i.e. until the
+                           mouse moved again. */
                         {
-                            iecode = (buts & 1) ? IECODE_LBUTTON : IECODE_LBUTTON|IECODE_UP_PREFIX;
-                            oldbuts ^= 1;
+                            UWORD changed = (buts ^ oldbuts) & 7;
+                            UWORD bit;
+                            oldbuts = buts;
+                            nch->nch_FakeEvent.ie_X = ((BYTE *) bufreal)[1];
+                            nch->nch_FakeEvent.ie_Y = ((BYTE *) bufreal)[2];
+                            nch->nch_FakeEvent.ie_Class = IECLASS_RAWMOUSE;
+                            nch->nch_FakeEvent.ie_SubClass = 0;
+                            nch->nch_FakeEvent.ie_NextEvent = NULL;
+                            nch->nch_FakeEvent.ie_Qualifier = qualifier;
+                            nch->nch_InpIOReq->io_Data = &nch->nch_FakeEvent;
+                            nch->nch_InpIOReq->io_Length = sizeof(struct InputEvent);
+                            nch->nch_InpIOReq->io_Command = IND_WRITEEVENT;
+                            if(!changed)
+                            {
+                                nch->nch_FakeEvent.ie_Code = IECODE_NOBUTTON;
+                                DoIO((struct IORequest *) nch->nch_InpIOReq);
+                            }
+                            for(bit = 0; changed; bit++)
+                            {
+                                if(changed & (1 << bit))
+                                {
+                                    /* IECODE_LBUTTON, _RBUTTON, _MBUTTON are consecutive */
+                                    iecode = IECODE_LBUTTON + bit;
+                                    if(!(buts & (1 << bit)))
+                                    {
+                                        iecode |= IECODE_UP_PREFIX;
+                                    }
+                                    nch->nch_FakeEvent.ie_Code = iecode;
+                                    DoIO((struct IORequest *) nch->nch_InpIOReq);
+                                    nch->nch_FakeEvent.ie_X = 0;
+                                    nch->nch_FakeEvent.ie_Y = 0;
+                                    changed &= ~(1 << bit);
+                                }
+                            }
                         }
-                        else if((buts^oldbuts) & 2)
-                        {
-                            iecode = (buts & 2) ? IECODE_RBUTTON : IECODE_RBUTTON|IECODE_UP_PREFIX;
-                            oldbuts ^= 2;
-                        }
-                        else if((buts^oldbuts) & 4)
-                        {
-                            iecode = (buts & 4) ? IECODE_MBUTTON : IECODE_MBUTTON|IECODE_UP_PREFIX;
-                            oldbuts ^= 4;
-                        }
-                        nch->nch_FakeEvent.ie_X = ((BYTE *) bufreal)[1];
-                        nch->nch_FakeEvent.ie_Y = ((BYTE *) bufreal)[2];
-                        nch->nch_FakeEvent.ie_Class = IECLASS_RAWMOUSE;
-                        nch->nch_FakeEvent.ie_SubClass = 0;
-                        nch->nch_FakeEvent.ie_Code = iecode;
-                        nch->nch_FakeEvent.ie_NextEvent = NULL;
-                        nch->nch_FakeEvent.ie_Qualifier = qualifier;
-                        nch->nch_InpIOReq->io_Data = &nch->nch_FakeEvent;
-                        nch->nch_InpIOReq->io_Length = sizeof(struct InputEvent);
-                        nch->nch_InpIOReq->io_Command = IND_WRITEEVENT;
-                        DoIO((struct IORequest *) nch->nch_InpIOReq);
                         if(wheel)
                         {
                             /* Each report carries a relative wheel movement. Deliver it

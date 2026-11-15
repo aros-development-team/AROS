@@ -314,6 +314,12 @@ static struct BitMap vertSizePointerBitmap =
 #define ARRAY_SIZE(a)    (sizeof(a) / sizeof(a[0]))
 #endif
 
+/* IdentifyPointerColors
+ * Read palette entries 17 through 19 from the live window screen and choose
+ * the closest black/white indices. Mutate shared static bitmap plane
+ * pointers for both resize images. Require a suitable colormap; no
+ * per-instance bitmap copy or synchronization is provided.
+ */
 static void IdentifyPointerColors(Object *obj)
 {
   ULONG i;
@@ -439,6 +445,12 @@ static void IdentifyPointerColors(Object *obj)
   LEAVE();
 }
 
+/* SetupCustomPointers
+ * On AROS, create missing horizontal and vertical pointerclass objects from
+ * static bitmaps. Store each result independently; no failure status or
+ * all-or-nothing rollback. Other platforms can use system pointer-type
+ * values. Pair with CleanupCustomPointers after all pointer users finish.
+ */
 void SetupCustomPointers(struct InstData *data)
 {
   ENTER();
@@ -512,6 +524,12 @@ void SetupCustomPointers(struct InstData *data)
   LEAVE();
 }
 
+/* CleanupCustomPointers
+ * Dispose owned pointer objects, clear their fields and set
+ * activeCustomPointer to none. Platform system-type values are only
+ * cleared. Do not reset the window pointer here; ensure no window still
+ * uses a disposed object.
+ */
 void CleanupCustomPointers(struct InstData *data)
 {
   ENTER();
@@ -548,6 +566,12 @@ void CleanupCustomPointers(struct InstData *data)
   LEAVE();
 }
 
+/* ShowCustomPointer
+ * If the owner window is awake, choose horizontal or vertical pointer from
+ * cached parent group type, update palette-plane mapping and install it on
+ * the window. If unavailable, call HideCustomPointer. Borrow live
+ * object/window/screen state. No previous window pointer is saved.
+ */
 void ShowCustomPointer(Object *obj, struct InstData *data)
 {
   ENTER();
@@ -602,6 +626,11 @@ void ShowCustomPointer(Object *obj, struct InstData *data)
   LEAVE();
 }
 
+/* HideCustomPointer
+ * If a custom pointer is recorded active, reset the window pointer with
+ * SetWindowPointer and clear the active marker. Require live window state.
+ * This restores the default, not a previously saved custom pointer.
+ */
 void HideCustomPointer(Object *obj, struct InstData *data)
 {
   ENTER();

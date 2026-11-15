@@ -217,6 +217,92 @@ struct USBNSDeviceQueryResult
     const UWORD         *SupportedCommands;     /* 0 terminated list of cmd's   */
 };
 
+/*
+ * Isochronous transfers run on a hardware channel taken from the shared
+ * pool while an iso endpoint is bound to it; the schedulers skip a lent
+ * channel (hu_IsoChanMask). One endpoint per channel, so a headset
+ * can stream both ways.
+ */
+#define USB2OTG_ISO_CHANS       2
+#define USB2OTG_ISO_BUFSIZE     3072    /* high-bandwidth: 3 x 1024 */
+#define USB2OTG_RT_SLOTS        4       /* packets a realtime stream keeps queued */
+
+struct USB2OTGIso
+{
+    struct List         is_Queue;       /* UHCMD_ISOXFER for the bound endpoint */
+    struct IOUsbHWReq   *is_Req;        /* request whose packets are going out */
+    struct IOUsbHWReq   *is_AbortReq;   /* is_Req, to be ended at the next halt */
+    ULONG               is_Offset;      /* bytes of is_Req handed to the channel */
+    ULONG               is_Pending;     /* channel intr bits seen before the halt */
+    UWORD               is_Next;        /* HFNUM the next packet is due */
+    UWORD               is_Len;         /* bytes of is_Req in this packet */
+    UWORD               is_Size;        /* XFERSIZE armed */
+    UWORD               is_PLen;        /* packet bytes: OUT to send, IN room */
+    UWORD               is_POff;        /* split: packet bytes sent/received */
+    UWORD               is_Chunk;       /* split: OUT bytes armed */
+    UWORD               is_At;          /* split: HFNUM of the next transaction */
+    UWORD               is_Frame;       /* split: frame of the packet */
+    UBYTE               is_Split;
+    UBYTE               is_Phase;
+    UBYTE               is_HubAddr;
+    UBYTE               is_HubPort;
+    UBYTE               is_Fresh;       /* bound, the channel not yet cleared */
+    UBYTE               is_OddFlip;     /* direct: this core's ODDFRM sense */
+    /* Census, reported when the channel is handed back */
+    ULONG               is_Pkts;
+    ULONG               is_Lost;
+    ULONG               is_DropOut;     /* split OUT start-split failed */
+    ULONG               is_DropSS;      /* split IN start-split failed */
+    ULONG               is_DropCS;      /* split IN complete-split failed */
+    ULONG               is_DropLate;    /* split sequence ran out of its frame */
+    UBYTE               is_Chan;
+    UBYTE               is_Bound;
+    UBYTE               is_Armed;
+    UBYTE               is_Dev;
+    UBYTE               is_Ep;
+    UBYTE               is_Dir;
+    UBYTE               is_Idle;        /* SOFs with nothing queued */
+    UBYTE               is_Age;         /* SOFs the armed packet has waited */
+    UBYTE               *is_Buf;        /* 64-aligned DMA bounce */
+};
+
+struct USB2OTGRTSlot
+{
+    struct IOUsbHWReq       rs_Req;     /* first: the done list hands it back */
+    struct IOUsbHWBufferReq rs_BufReq;
+    struct USB2OTGRTIso     *rs_RT;
+    UBYTE                   *rs_Buf;
+    BOOL                    rs_Busy;
+};
+
+struct USB2OTGRTIso
+{
+    struct IOUsbHWRTIso     *rt_URTI;
+    struct IOUsbHWBufferReq rt_BufReq;
+    ULONG                   rt_PktSize;
+    BOOL                    rt_Running;
+    BOOL                    rt_Dying;   /* removed: freed once no slot is busy */
+    struct USB2OTGRTSlot    rt_Slots[USB2OTG_RT_SLOTS];
+};
+
+/*
+ * Bulk give-up state per endpoint: a requeued request can come back on
+ * any channel, and other bulk may use its old one in between.
+ */
+struct USB2OTGBulkTrack
+{
+    struct IOUsbHWReq * bt_Req;             /* NULL = free */
+    UWORD               bt_Key;             /* dev << 5 | ep << 1 | in */
+    UBYTE               bt_RequeueCount;
+    UBYTE               bt_NoProgressCount;
+    UWORD               bt_BareChhltdTotal; /* cumulative bare-CHHLTD per request; absolute give-up cap */
+    UWORD               bt_LastIntr;
+    ULONG               bt_StartFrame;
+    ULONG               bt_LastProgressFrame;
+    ULONG               bt_LastActual;
+};
+#define USB2OTG_BULK_TRACKS     8
+
 struct USB2OTGUnit
 {
     struct Unit         hu_Unit;
@@ -250,23 +336,18 @@ struct USB2OTGUnit
         UBYTE               hc_CsplitRetry;    /* CSPLIT NYET retries this interval; caps to TT result window */
         UBYTE               hc_SplitState;     /* periodic-split SM: USB2OTG_SPLIT_{IDLE,SS,CS} */
         UWORD               hc_SplitSSUframe;  /* HFNUM&0x3fff uframe the SSPLIT was issued in */
-        struct IOUsbHWReq * hc_BulkReq;     /* Last bulk request tracked on this channel */
-        ULONG               hc_BulkStartFrame;
-        ULONG               hc_BulkLastProgressFrame;
-        ULONG               hc_BulkLastActual;
-        UWORD               hc_BulkLastIntr;
-        UBYTE               hc_BulkRequeueCount;
-        UBYTE               hc_BulkNoProgressCount;
-        UWORD               hc_BareChhltdTotal; /* cumulative bare-CHHLTD per request; absolute give-up cap */
+        UWORD               hc_SsArmUframe;    /* HFNUM&0x3fff at the last INT SSPLIT arm */
+        struct IOUsbHWReq * hc_BulkReq;     /* Last bulk request sampled on this channel */
         ULONG               hc_StartHfnum;    /* HFNUM at last StartChannel arm; for bulk progress timing */
-        UBYTE               hc_NakParked;     /* 1 = bulk-IN parked waiting for NAK gate; SOF re-arms with quick=1 */
         UBYTE               hc_QuietIdleStreak; /* consecutive WAIT-QUIET defers with NPTX queue+FIFO fully idle (wedge signature) */
         UBYTE               hc_OddfrmFlip;    /* invert ODDFRM choice for direct periodic; toggled on deschedule (self-calibrating) */
         ULONG               hc_LastSampleHfnum; /* sample snapshot for WAIT-QUIET liveness check */
         ULONG               hc_LastSampleTsize;
         ULONG               hc_LastSampleActual;
         UWORD               hc_LastSampleIntr;
-        UBYTE               hc_ArmedRole;     /* USB2OTG_CHANROLE_*: role of the last INT arm; role
+        UBYTE               hc_Type;          /* USB2OTG_HCT_*: role of hc_Request, set when it is armed */
+        UBYTE               hc_Armed;         /* hc_Request is live on the bus */
+        UBYTE               hc_ArmedRole;     /* USB2OTG_CHANROLE_*: role of the last arm; role
                                                * change forces an exorcise (stale periodic-split
                                                * state kills direct arms with bare CHHLTD) */
         UBYTE               hc_GiveupStreak;  /* consecutive split give-ups; reset on completion; burn at 4 */
@@ -299,10 +380,21 @@ struct USB2OTGUnit
     volatile UWORD      hu_SofGateWakeFrame;    /* frame the wake was aimed at */
     ULONG               hu_SofGateMasks;        /* census: gate closures */
     ULONG               hu_SofGateWakes;        /* census: wakes (timer or work) */
-    APTR                hu_SofGateIRQHandle;
+    /* timer.device reopens the gate; two requests so a later one can stay queued */
+    struct MsgPort      hu_SofGatePort;         /* PA_SOFTINT */
+    struct Interrupt    hu_SofGateInt;
+    struct timerequest  hu_SofGateReq[2];
+    ULONG               hu_SofGateDue[2];       /* SYSTIMER_CLO at expiry */
+    UBYTE               hu_SofGateBusy;         /* bit per request: sent, not replied */
     /* Wake lateness in frames: <1, <4, <16, more. */
     ULONG               hu_SofGateLate[4];
     ULONG               hu_SofGateLateMax;
+    /* Isochronous: see USB2OTG_ISO_CHANS */
+    struct USB2OTGIso   hu_Iso[USB2OTG_ISO_CHANS];
+    APTR                hu_IsoBufRaw;
+    UBYTE               hu_IsoChanMask;         /* hardware channels lent to iso */
+    struct List         hu_IsoDone;             /* finished iso requests and RT slots */
+    struct SignalSemaphore hu_IsoSem;           /* RT handler commands vs. completions */
     struct Task         *hu_WorkerTask;
     struct MsgPort      *hu_WorkerPort;
     cpumask_t           hu_WorkerAffinity;
@@ -367,13 +459,6 @@ struct USB2OTGUnit
     UWORD               hu_NakGate[128][2];
 
     /*
-     * Per-device bulk channel binding: [0]→CHAN_BULK, [1]→CHAN_BULK2.
-     * 0 = free. Partitions two concurrent bulk devices onto a channel
-     * each so a wedged/NAK-storming device cannot block the other.
-     */
-    UBYTE               hu_BulkOwnerDev[2];
-
-    /*
      * Consecutive bulk bare-CHHLTD giveups (UHIOERR_TIMEOUT) per
      * device with no progress. An unplugged device answers every
      * transaction with bare CHHLTD; the class keeps retrying the CBW,
@@ -383,6 +468,9 @@ struct USB2OTGUnit
      * completion for the device.
      */
     UBYTE               hu_BulkGiveupStreak[128];
+
+    struct USB2OTGBulkTrack hu_BulkTrack[USB2OTG_BULK_TRACKS];
+    UBYTE               hu_BulkTrackNext;   /* next entry to recycle when all are taken */
 
     /*
      * Microframes still to wait before a channel's pending CSPLIT is
@@ -468,16 +556,10 @@ struct USB2OTGUnit
      */
     UBYTE               hu_DeadChannels;
 
-    /*
-     * Split-control channel, runtime: a channel whose split engine
-     * cannot be revived is retired and split control moves on. The
-     * order is INT3, INT2, INT1, then the direct-INT pool as a last
-     * resort. hu_BurnedChannels is never cleared (unlike
-     * hu_DeadChannels) — a retired channel stays retired.
-     */
-    UBYTE               hu_CtrlSplitChan;
+    /* Channels whose split engine cannot be revived. Never cleared. */
     UBYTE               hu_BurnedChannels;
     BOOL                hu_IntAsBulk;       /* direct INT armed as BULK (BCM2835 workaround) */
+    BOOL                hu_NPTxGate;        /* drain NPTxFIFO before bulk OUT (QEMU has no FIFO) */
 
 /*
  * DMA buffers — must be in heap memory so the 0xC0000000 VC bus
@@ -526,6 +608,7 @@ void                    usb2otg_exorcise_channel(int chan);
 
 #define USB2OTG_WORK_PENDING    (1U << 0)
 #define USB2OTG_WORK_NAKTIMEOUT (1U << 1)
+#define USB2OTG_WORK_GATEARM    (1U << 2)   /* send the SOF gate's timer request */
 
 #ifdef UtilityBase
 #undef UtilityBase
@@ -539,6 +622,7 @@ void                    usb2otg_exorcise_channel(int chan);
 
 #define KernelBase      USB2OTGBase->hd_KernelBase
 
+/* Channel names only set the allocators' search order. */
 #define CHAN_CTRL       0
 #define CHAN_BULK       1
 #define CHAN_INT1       2
@@ -546,50 +630,32 @@ void                    usb2otg_exorcise_channel(int chan);
 #define CHAN_INT3       4
 #define CHAN_INT4       5
 #define CHAN_INT5       6
-#define CHAN_INT_LAST   CHAN_INT5
 #define CHAN_BULK2      7
 
 /*
- * INT channel partition: split transfers on CHAN_INT1..INT3, direct
- * (non-split) on CHAN_INT4..INT5. Sharing one channel between
- * periodic-split and direct arms made the core kill every direct arm
- * with bare CHHLTD in the arming uframe (hub status polls dead from
- * the moment a LS/FS device enumerated — hotplug blind). Observed on
- * Pi 3B+; suspicion is stale per-channel periodic-split state.
+ * One split transaction per TT hub at a time (usb2otg_tt_in_flight).
+ * 0 lets them overlap as dwc2 does; not tested since the CSPLIT timing
+ * fixes. Split iso runs on lent channels outside the rule.
  */
-#define CHAN_INT_DIRECT_FIRST   CHAN_INT4
+#define USB2OTG_TT_ONE_SPLIT    1
 
 /*
- * INT pool overflow: let a free channel take a request from the OTHER
- * partition when that partition has no free usable channel, guarded by
- * an exorcise on every role change (the historical mixed-role poisoning
- * above predates usb2otg_exorcise_channel — the bet, to be proven on
- * hardware, is that the forced disable cycle clears the stale split
- * state). One channel of the target pool is always left free for its
- * home role: a split INT can park in SSPLIT/CSPLIT for a long time,
- * and letting two of those fill the direct pool would starve the HS
- * hub's status-change poll — hotplug blind again, by a new mechanism.
- * 0 restores the strict partition for A/B testing.
+ * Last microframe an INT SSPLIT may start in. Later ones leave too
+ * little of the frame for the CSPLITs: the TT answers NYET until we
+ * give up, and the report is lost. Later arms wait for the next frame.
  */
-#define USB2OTG_INT_POOL_OVERFLOW 1
+#define USB2OTG_SSPLIT_LAST_UFRAME  2
+
+/* hc_Type values. */
+#define USB2OTG_HCT_CTRL        1
+#define USB2OTG_HCT_CTRL_SPLIT  2
+#define USB2OTG_HCT_BULK        3
+#define USB2OTG_HCT_INT         4
 
 /* hc_ArmedRole values. */
 #define USB2OTG_CHANROLE_UNUSED 0
 #define USB2OTG_CHANROLE_SPLIT  1
 #define USB2OTG_CHANROLE_DIRECT 2
-
-/*
- * Split-control channel. A halted/failed split sequence poisons its
- * channel: every subsequent NON-split arm on it bare-CHHLTDs in the
- * arming uframe (splits keep working). Observed twice on Pi 3B+:
- * chan 2 (split-INT vs hub polls) and CHAN_CTRL (dead-device split
- * ctrl vs live-device ctrl — froze ALL control traffic after unplug).
- * So control to LS/FS devices behind a TT gets its own channel,
- * taken out of the split-INT pool (splits: INT1-2, split-ctrl: INT3,
- * direct INT: INT4-5).
- */
-#define CHAN_CTRL_SPLIT         CHAN_INT3
-
 
 /* Periodic-split sequencer state (hc_SplitState). */
 #define USB2OTG_SPLIT_IDLE  0   /* not a split, or split sequence finished */
@@ -625,8 +691,11 @@ void                    usb2otg_exorcise_channel(int chan);
  *  2: burn only on cross-device give-up streaks; TT-clear pending queue
  *  3: exorcise audit - 11 abandon sites + both in-place ctrl retries
  *  4: INT pool overflow (split<->direct) with exorcise on role flip
+ *  5: bulk and INT channels allocated per request from one pool
+ *  6: control channels allocated per request as well
+ *  7: iso binds any channel from the pool
  */
-#define USB2OTG_BUILD_REV 4
+#define USB2OTG_BUILD_REV 7
 
 /*
  * Testing hook: after _AFTER split-interrupt HCINT events have passed
@@ -808,26 +877,46 @@ static inline APTR usb2otg_ctrl_backoff(struct USB2OTGUnit *unit,
 #define USB2OTG_INT_NAK_BACKOFF_FRAMES  8
 
 /*
- * Shorter waits are cheaper on SOFs than re-arming the wake, which
- * runs off system timer channel 1 (0 and 2 are the firmware's, 3 is
- * the kernel VBlank).
+ * Shorter waits are cheaper on SOFs than re-arming the wake. The wake is
+ * a timer.device request: system timer channel 1 is timer.device's own.
  */
 #define USB2OTG_SOF_GATE                1
 #define USB2OTG_SOF_GATE_MIN_FRAMES     2
-#define USB2OTG_SOF_GATE_TIMER          1
 
 /*
- * The compare is an equality match, so a deadline already passed would
- * not fire for ~71 minutes. Report that and let the caller reopen.
+ * Ask for a wake in 'frames' ms. An earlier one already pending will do;
+ * a later one stays queued (an early wake is harmless). FALSE if no
+ * request is free: the caller reopens. Not from the IRQ: timer.device
+ * there can preempt timer.device's own handler (aarch64 Enable() in an
+ * IRQ unmasks), double-counting time or spinning in AbortIO. Caller
+ * holds Disable().
  */
-static inline BOOL usb2otg_sof_gate_arm(ULONG frames)
+static inline BOOL usb2otg_sof_gate_arm(struct USB2OTGUnit *unit, ULONG frames)
 {
-    ULONG target = rd32le(SYSTIMER_CLO) + frames * 1000;
+    ULONG due = rd32le(SYSTIMER_CLO) + frames * 1000;
+    struct timerequest *tr;
+    int i;
 
-    wr32le(SYSTIMER_CS, 1 << USB2OTG_SOF_GATE_TIMER);
-    wr32le(SYSTIMER_C0 + (USB2OTG_SOF_GATE_TIMER * 4), target);
-
-    return ((LONG)(rd32le(SYSTIMER_CLO) - target) < 0);
+    for (i = 0; i < 2; i++)
+    {
+        if ((unit->hu_SofGateBusy & (1 << i)) &&
+            (LONG)(unit->hu_SofGateDue[i] - due) <= 0)
+            return TRUE;
+    }
+    for (i = 0; i < 2; i++)
+    {
+        if (unit->hu_SofGateBusy & (1 << i))
+            continue;
+        tr = &unit->hu_SofGateReq[i];
+        tr->tr_node.io_Command = TR_ADDREQUEST;
+        tr->tr_time.tv_secs = frames / 1000;
+        tr->tr_time.tv_micro = (frames % 1000) * 1000;
+        unit->hu_SofGateBusy |= 1 << i;
+        unit->hu_SofGateDue[i] = due;
+        SendIO(&tr->tr_node);
+        return TRUE;
+    }
+    return FALSE;
 }
 
 /* Caller runs in the IRQ or holds Disable(). */
@@ -985,8 +1074,7 @@ void                    FNAME_DEV(Cause)(struct USB2OTGDevice *, struct Interrup
 static inline BOOL usb2otg_track_bulk_req(struct IOUsbHWReq *req)
 {
     return req != NULL &&
-           req->iouh_Req.io_Command == UHCMD_BULKXFER &&
-           req->iouh_Length != 0;
+           req->iouh_Req.io_Command == UHCMD_BULKXFER;
 }
 
 /* Enable to trace all bulk I/O (mass storage, ethernet, etc.). */
@@ -1006,6 +1094,56 @@ static inline BOOL usb2otg_trace_bulk(int chan, struct IOUsbHWReq *req)
 static inline ULONG usb2otg_frame(void)
 {
     return (rd32le(USB2OTG_HOSTFRAMENO) & 0x3fff) >> 3;
+}
+
+/* INT, or split control: both run on the periodic-split pacing paths. */
+static inline BOOL usb2otg_chan_periodic(struct USB2OTGUnit *unit, int chan)
+{
+    UBYTE type = unit->hu_Channel[chan].hc_Type;
+
+    return type == USB2OTG_HCT_INT || type == USB2OTG_HCT_CTRL_SPLIT;
+}
+
+static inline BOOL usb2otg_same_endpoint(struct IOUsbHWReq *a, struct IOUsbHWReq *b)
+{
+    return a->iouh_DevAddr == b->iouh_DevAddr &&
+           a->iouh_Endpoint == b->iouh_Endpoint &&
+           a->iouh_Dir == b->iouh_Dir;
+}
+
+/*
+ * Put a halted request back on queue. Bulk goes ahead of later requests
+ * on its endpoint, so the endpoint's stream stays in order. Split control
+ * halted on a periodic path restarts from the control queue, with the
+ * usual backoff; the caller exorcises its channel. hu_Lock held.
+ */
+static inline void usb2otg_requeue(struct USB2OTGUnit *unit, struct List *queue,
+    struct IOUsbHWReq *req, BOOL head)
+{
+    struct IOUsbHWReq *q;
+
+    if (queue == &unit->hu_IntXFerQueue &&
+        req->iouh_Req.io_Command == UHCMD_CONTROLXFER)
+    {
+        req->iouh_DriverPrivate1 = usb2otg_ctrl_backoff(unit, usb2otg_frame());
+        queue = &unit->hu_CtrlXFerQueue;
+        head = FALSE;
+    }
+    if (queue == &unit->hu_BulkXFerQueue)
+    {
+        ForeachNode(queue, q)
+        {
+            if (usb2otg_same_endpoint(q, req))
+            {
+                Insert(queue, (struct Node *)req, q->iouh_Req.io_Message.mn_Node.ln_Pred);
+                return;
+            }
+        }
+    }
+    if (head)
+        ADDHEAD(queue, (struct Node *)req);
+    else
+        ADDTAIL(queue, (struct Node *)req);
 }
 
 /*
@@ -1035,12 +1173,8 @@ static inline BOOL usb2otg_irq_finish_or_requeue(struct USB2OTGUnit *unit,
     if (unit->hu_Channel[chan].hc_Request != req)
         return FALSE;
 #endif
-    if (head)
-        ADDHEAD(queue, (struct Node *)req);
-    else
-        ADDTAIL(queue, (struct Node *)req);
+    usb2otg_requeue(unit, queue, req, head);
     unit->hu_Channel[chan].hc_Request = NULL;
-    unit->hu_Channel[chan].hc_NakParked = 0;
 #if defined(__AROSEXEC_SMP__)
     KrnSpinUnLock(&unit->hu_Lock);
 #endif
@@ -1221,53 +1355,98 @@ static inline BOOL usb2otg_log_rate(ULONG count)
     return count <= 5 || (count & 0x3f) == 0;
 }
 
-static inline void usb2otg_bulk_assign(struct USB2OTGUnit *otg_Unit, int chan,
+/* Give-up state for req's endpoint; a new or recycled entry comes back zeroed and free. hu_Lock held. */
+static inline struct USB2OTGBulkTrack *usb2otg_bulk_track(struct USB2OTGUnit *otg_Unit,
     struct IOUsbHWReq *req)
 {
+    UWORD key = (req->iouh_DevAddr << 5) | (req->iouh_Endpoint << 1) |
+                (req->iouh_Dir == UHDIR_IN);
+    struct USB2OTGBulkTrack *bt, *free_bt = NULL;
+    int i;
+
+    for (i = 0; i < USB2OTG_BULK_TRACKS; i++)
+    {
+        bt = &otg_Unit->hu_BulkTrack[i];
+        if (bt->bt_Req != NULL && bt->bt_Key == key)
+            return bt;
+        if (bt->bt_Req == NULL && free_bt == NULL)
+            free_bt = bt;
+    }
+    if (free_bt == NULL)
+    {
+        free_bt = &otg_Unit->hu_BulkTrack[otg_Unit->hu_BulkTrackNext];
+        otg_Unit->hu_BulkTrackNext = (otg_Unit->hu_BulkTrackNext + 1) % USB2OTG_BULK_TRACKS;
+    }
+    memset(free_bt, 0, sizeof(*free_bt));
+    free_bt->bt_Key = key;
+    return free_bt;
+}
+
+/* A new submission starts with fresh counters, even in a reused IOReq. hu_Lock held. */
+static inline void usb2otg_bulk_forget(struct USB2OTGUnit *otg_Unit,
+    struct IOUsbHWReq *req)
+{
+    int i;
+
+    for (i = 0; i < USB2OTG_BULK_TRACKS; i++)
+        if (otg_Unit->hu_BulkTrack[i].bt_Req == req)
+            otg_Unit->hu_BulkTrack[i].bt_Req = NULL;
+}
+
+static inline struct USB2OTGBulkTrack *usb2otg_bulk_assign(struct USB2OTGUnit *otg_Unit,
+    int chan, struct IOUsbHWReq *req)
+{
     struct USB2OTGChannel *hc = &otg_Unit->hu_Channel[chan];
+    struct USB2OTGBulkTrack *bt;
 
     if (!usb2otg_track_bulk_req(req))
-        return;
+        return NULL;
 
-    if (hc->hc_BulkReq != req)
+    bt = usb2otg_bulk_track(otg_Unit, req);
+    if (bt->bt_Req != req)
     {
         ULONG frame = usb2otg_frame();
 
+        bt->bt_Req = req;
+        bt->bt_StartFrame = frame;
+        bt->bt_LastProgressFrame = frame;
+        bt->bt_LastActual = req->iouh_Actual;
+        bt->bt_LastIntr = 0;
+        bt->bt_RequeueCount = 0;
+        bt->bt_NoProgressCount = 0;
+        bt->bt_BareChhltdTotal = 0;
+    }
+    if (hc->hc_BulkReq != req)
+    {
         hc->hc_BulkReq = req;
-        hc->hc_BulkStartFrame = frame;
-        hc->hc_BulkLastProgressFrame = frame;
-        hc->hc_BulkLastActual = req->iouh_Actual;
-        hc->hc_BulkLastIntr = 0;
-        hc->hc_BulkRequeueCount = 0;
-        hc->hc_BulkNoProgressCount = 0;
-        hc->hc_BareChhltdTotal = 0;
         hc->hc_LastSampleHfnum = 0;
         hc->hc_LastSampleTsize = 0;
         hc->hc_LastSampleActual = 0;
         hc->hc_LastSampleIntr = 0;
     }
+    return bt;
 }
 
 static inline void usb2otg_bulk_progress(struct USB2OTGUnit *otg_Unit, int chan,
     struct IOUsbHWReq *req, ULONG intr)
 {
-    struct USB2OTGChannel *hc = &otg_Unit->hu_Channel[chan];
+    struct USB2OTGBulkTrack *bt;
 
     if (!usb2otg_track_bulk_req(req))
         return;
 
-    usb2otg_bulk_assign(otg_Unit, chan, req);
-    hc->hc_BulkLastIntr = (UWORD)intr;
+    bt = usb2otg_bulk_assign(otg_Unit, chan, req);
+    bt->bt_LastIntr = (UWORD)intr;
 
-    if (req->iouh_Actual != hc->hc_BulkLastActual)
+    if (req->iouh_Actual != bt->bt_LastActual)
     {
-        D(ULONG prev = hc->hc_BulkLastActual;)
+        D(ULONG prev = bt->bt_LastActual;)
 
-        hc->hc_BulkLastActual = req->iouh_Actual;
-        hc->hc_BulkLastProgressFrame = usb2otg_frame();
+        bt->bt_LastActual = req->iouh_Actual;
+        bt->bt_LastProgressFrame = usb2otg_frame();
 
         D(
-            if (hc->hc_BulkRequeueCount >= 4 || hc->hc_BulkNoProgressCount >= 4)
+            if (bt->bt_RequeueCount >= 4 || bt->bt_NoProgressCount >= 4)
             {
                 bug("[USB2OTG:BULK] bulk-progress chan=%d dev=%d ep=%d dir=%s %lu->%lu/%lu intr=%04x rq=%u np=%u split=%u\n",
                     chan,
@@ -1278,51 +1457,52 @@ static inline void usb2otg_bulk_progress(struct USB2OTGUnit *otg_Unit, int chan,
                     (unsigned long)req->iouh_Actual,
                     (unsigned long)req->iouh_Length,
                     (unsigned int)intr,
-                    (unsigned int)hc->hc_BulkRequeueCount,
-                    (unsigned int)hc->hc_BulkNoProgressCount,
+                    (unsigned int)bt->bt_RequeueCount,
+                    (unsigned int)bt->bt_NoProgressCount,
                     (unsigned int)otg_Unit->hu_Channel[chan].hc_SplitCSplitPending);
             }
         )
 
-        hc->hc_BulkRequeueCount = 0;
-        hc->hc_BulkNoProgressCount = 0;
-        hc->hc_BareChhltdTotal = 0;
+        bt->bt_RequeueCount = 0;
+        bt->bt_NoProgressCount = 0;
+        bt->bt_BareChhltdTotal = 0;
     }
 }
 
 static inline void usb2otg_bulk_requeue(struct USB2OTGUnit *otg_Unit, int chan,
     struct IOUsbHWReq *req, ULONG intr, const char *why)
 {
-    struct USB2OTGChannel *hc = &otg_Unit->hu_Channel[chan];
+    struct USB2OTGBulkTrack *bt;
 
     if (!usb2otg_track_bulk_req(req))
         return;
 
-    usb2otg_bulk_assign(otg_Unit, chan, req);
-    hc->hc_BulkLastIntr = (UWORD)intr;
-    hc->hc_BulkRequeueCount++;
+    bt = usb2otg_bulk_assign(otg_Unit, chan, req);
+    bt->bt_LastIntr = (UWORD)intr;
+    bt->bt_RequeueCount++;
 
-    if (req->iouh_Actual == hc->hc_BulkLastActual)
-        hc->hc_BulkNoProgressCount++;
+    if (req->iouh_Actual == bt->bt_LastActual)
+        bt->bt_NoProgressCount++;
     else
     {
-        hc->hc_BulkLastActual = req->iouh_Actual;
-        hc->hc_BulkLastProgressFrame = usb2otg_frame();
-        hc->hc_BulkNoProgressCount = 0;
+        bt->bt_LastActual = req->iouh_Actual;
+        bt->bt_LastProgressFrame = usb2otg_frame();
+        bt->bt_NoProgressCount = 0;
     }
 
     D(
-        if (hc->hc_BulkRequeueCount == 4 ||
-            hc->hc_BulkRequeueCount == 8 ||
-            hc->hc_BulkRequeueCount == 16)
+        if (bt->bt_RequeueCount == 4 ||
+            bt->bt_RequeueCount == 8 ||
+            bt->bt_RequeueCount == 16)
         {
             ULONG frame = usb2otg_frame();
             int int_busy = 0;
             int scan;
 
-            for (scan = CHAN_INT1; scan <= CHAN_INT_LAST; scan++)
+            for (scan = 0; scan < 8; scan++)
             {
-                if (otg_Unit->hu_Channel[scan].hc_Request != NULL)
+                if (otg_Unit->hu_Channel[scan].hc_Request != NULL &&
+                    otg_Unit->hu_Channel[scan].hc_Type == USB2OTG_HCT_INT)
                     int_busy++;
             }
 
@@ -1335,9 +1515,9 @@ static inline void usb2otg_bulk_requeue(struct USB2OTGUnit *otg_Unit, int chan,
                 (unsigned long)req->iouh_Length,
                 (unsigned int)intr,
                 why,
-                (unsigned int)hc->hc_BulkRequeueCount,
-                (unsigned int)hc->hc_BulkNoProgressCount,
-                (unsigned long)((frame - hc->hc_BulkStartFrame) & 0x7ff),
+                (unsigned int)bt->bt_RequeueCount,
+                (unsigned int)bt->bt_NoProgressCount,
+                (unsigned long)((frame - bt->bt_StartFrame) & 0x7ff),
                 (int)IsListEmpty(&otg_Unit->hu_BulkXFerQueue) ? 0 : 1,
                 int_busy,
                 rd32le(USB2OTG_CHANNEL_REG(chan, SPLITCTRL)),
@@ -1351,16 +1531,17 @@ static inline void usb2otg_bulk_finish(struct USB2OTGUnit *otg_Unit, int chan,
     struct IOUsbHWReq *req)
 {
     struct USB2OTGChannel *hc = &otg_Unit->hu_Channel[chan];
+    struct USB2OTGBulkTrack *bt;
 
     if (!usb2otg_track_bulk_req(req))
         return;
 
-    usb2otg_bulk_assign(otg_Unit, chan, req);
+    bt = usb2otg_bulk_assign(otg_Unit, chan, req);
 
     D(
         if (req->iouh_Req.io_Error != 0 ||
-            hc->hc_BulkRequeueCount >= 4 ||
-            hc->hc_BulkNoProgressCount >= 4)
+            bt->bt_RequeueCount >= 4 ||
+            bt->bt_NoProgressCount >= 4)
         {
             ULONG frame = usb2otg_frame();
 
@@ -1372,21 +1553,16 @@ static inline void usb2otg_bulk_finish(struct USB2OTGUnit *otg_Unit, int chan,
                 (unsigned long)req->iouh_Actual,
                 (unsigned long)req->iouh_Length,
                 (int)req->iouh_Req.io_Error,
-                (unsigned int)hc->hc_BulkRequeueCount,
-                (unsigned int)hc->hc_BulkNoProgressCount,
-                (unsigned long)((frame - hc->hc_BulkStartFrame) & 0x7ff),
-                (unsigned int)hc->hc_BulkLastIntr,
+                (unsigned int)bt->bt_RequeueCount,
+                (unsigned int)bt->bt_NoProgressCount,
+                (unsigned long)((frame - bt->bt_StartFrame) & 0x7ff),
+                (unsigned int)bt->bt_LastIntr,
                 (unsigned int)otg_Unit->hu_Channel[chan].hc_SplitCSplitPending);
         }
     )
 
+    bt->bt_Req = NULL;
     hc->hc_BulkReq = NULL;
-    hc->hc_BulkStartFrame = 0;
-    hc->hc_BulkLastProgressFrame = 0;
-    hc->hc_BulkLastActual = 0;
-    hc->hc_BulkLastIntr = 0;
-    hc->hc_BulkRequeueCount = 0;
-    hc->hc_BulkNoProgressCount = 0;
     hc->hc_LastSampleHfnum = 0;
     hc->hc_LastSampleTsize = 0;
     hc->hc_LastSampleActual = 0;
@@ -1402,6 +1578,14 @@ void                    FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit,
 void                    FNAME_DEV(ScheduleCtrlTDs)(struct USB2OTGUnit *);
 void                    FNAME_DEV(ScheduleBulkTDs)(struct USB2OTGUnit *);
 void                    FNAME_DEV(ScheduleIntTDs)(struct USB2OTGUnit *);
+BOOL                    usb2otg_iso_init(struct USB2OTGUnit *);
+WORD                    FNAME_DEV(cmdIsoXFer)(struct IOUsbHWReq *, struct USB2OTGUnit *, struct USB2OTGDevice *);
+WORD                    FNAME_DEV(cmdRTIso)(struct IOUsbHWReq *, struct USB2OTGUnit *, struct USB2OTGDevice *);
+BOOL                    usb2otg_iso_abort(struct USB2OTGUnit *, struct IOUsbHWReq *);
+void                    usb2otg_iso_sof(struct USB2OTGUnit *, ULONG hfnum);
+void                    usb2otg_iso_chan_irq(struct USB2OTGUnit *, int chan, ULONG intr);
+void                    usb2otg_iso_pending(struct USB2OTGUnit *);
+void                    usb2otg_iso_reset(struct USB2OTGUnit *);
 BOOL                    FNAME_DEV(SetupChannel)(struct USB2OTGUnit *, int chan);
 void                    FNAME_DEV(StartChannel)(struct USB2OTGUnit *, int chan, int quick);
 int                     FNAME_DEV(AdvanceChannel)(struct USB2OTGUnit *, int chan);

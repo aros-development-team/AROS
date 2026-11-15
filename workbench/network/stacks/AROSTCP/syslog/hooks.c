@@ -60,7 +60,7 @@ LONG SaveAsHook(void)
   if (freq = MUI_AllocAslRequest(ASL_FileRequest, NULL))
   {
     if (MUI_AslRequestTags(freq,
-     ASLFR_Window, (ULONG)_window(list),
+     ASLFR_Window, (IPTR)_window(list),
      ASLFR_TitleText, "Save media log file",
      ASLFR_DoSaveMode, TRUE,
     TAG_END))
@@ -79,7 +79,7 @@ LONG SaveAsHook(void)
 
           for (entry = 0; ; entry++)
           {
-						DoMethod(list, MUIM_List_GetEntry, entry, (ULONG)&sle);
+						DoMethod(list, MUIM_List_GetEntry, entry, (IPTR)&sle);
 						if (!sle) break;
 						FPrintf(logfile, "\"%s\", \"%s\", \"%s\", \"%s\"\n", sle->Time, levels[LOG_PRI(sle->Level)],
 						 sle->ProcessName, sle->EventDescription);

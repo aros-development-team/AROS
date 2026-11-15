@@ -1,0 +1,38 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+#
+# Copyright (C) 2026 The AROS Dev Team
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License version 2 as
+# published by the Free Software Foundation.
+#
+#
+# inet6.prot - IPv6: IPv6, ICMPv6, neighbour discovery, MLD,
+# the 6in4 tunnel (module "inet6"; PROTOCOLS=INET6). Needs module
+# "transport".
+#
+# A module of the stack in a library file of its own (bsdsocket/net/netcore.h,
+# bsdsocket/kern/net_modload.c). It is built from the stack's sources where
+# they are, with the stack's own include paths and options (stack.cfg), plus
+# -DNETMODULE, the .conf file every module library shares and the shared
+# glue file. The file list is $(STACK_INET6_C) of stack.cfg.
+#
+include $(SRCDIR)/workbench/network/stacks/AROSTCP/bsdsocket/stack.cfg
+
+#MM- workbench-network-stacks-arostcp-modules : workbench-network-stacks-arostcp-modules-inet6
+#MM workbench-network-stacks-arostcp-modules-inet6 : includes linklibs network-includes-copy
+
+USER_INCLUDES := $(STACK_INCLUDES)
+USER_CPPFLAGS := $(STACK_MODULE_CPPFLAGS)
+USER_CFLAGS   := $(STACK_CFLAGS)
+USER_LDFLAGS  := $(STACK_MODULE_LDFLAGS)
+
+%build_module_library mmake=workbench-network-stacks-arostcp-modules-inet6 \
+    modname=inet6 modtype=library modsuffix=$(STACK_MODULE_PROT) \
+    conffile=$(STACK_MODULE_CONF) \
+    files="$(addprefix $(STACK_SRC_REL)/,$(STACK_INET6_C) $(STACK_MODULE_GLUE))" \
+    moduledir=$(STACK_MODULE_DIR)
+
+%common

@@ -1,6 +1,11 @@
 #ifndef HWACPIPOWERMETER_INTERN_H
 #define HWACPIPOWERMETER_INTERN_H
 
+#include <exec/libraries.h>
+
+/* Opened by the init code; no autoinit base is used (__ACPICA_NOLIBBASE__) */
+extern struct Library *ACPICABase;
+
 #include <proto/acpica.h>
 
 #include <exec/libraries.h>

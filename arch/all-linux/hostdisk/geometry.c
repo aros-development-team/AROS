@@ -15,6 +15,7 @@
 #include <devices/trackdisk.h>
 #include <proto/hostlib.h>
 
+#include <errno.h>
 #include <linux/fs.h>
 #include <linux/hdreg.h>
 
@@ -24,23 +25,23 @@
 ULONG Host_DeviceGeometry(int file, struct DriveGeometry *dg, struct HostDiskBase *hdskBase)
 {
     int ret, err;
-    struct hd_geometry geo;
-    size_t blksize;
+    struct hd_geometry geo = {0};
+    int blksize;
     unsigned long devsize;
 
-    D(bug("hostdisk: Host_DeviceGeometry(%s)\n", Unit->filename));
+    D(bug("hostdisk: Host_DeviceGeometry(%d)\n", file));
 
     HostLib_Lock();
  
-    ret = hdskBase->iface->ioctl(file, HDIO_GETGEO, &geo);
-
-    if (ret != -1)
-        ret = hdskBase->iface->ioctl(file, BLKSSZGET, &blksize);
-
+    ret = hdskBase->iface->ioctl(file, BLKSSZGET, &blksize);
     if (ret != -1)
         ret = hdskBase->iface->ioctl(file, BLKGETSIZE, &devsize);
 
     err = *hdskBase->errnoPtr;
+
+    /* CHS is optional on loop, device-mapper and other LBA devices. */
+    if (ret != -1 && hdskBase->iface->ioctl(file, HDIO_GETGEO, &geo) == -1)
+        geo.heads = geo.sectors = 0;
 
     HostLib_Unlock();
 
@@ -51,16 +52,20 @@ ULONG Host_DeviceGeometry(int file, struct DriveGeometry *dg, struct HostDiskBas
         return err;
     }
 
-    D(bug("hostdisk: Block size: %lu\n", blksize));
+    D(bug("hostdisk: Block size: %d\n", blksize));
     D(bug("hostdisk: %lu blocks per 512 bytes\n", devsize));
     D(bug("hostdisk: Disk has %u heads, %u sectors, %u cylinders\n", geo.heads, geo.sectors, geo.cylinders));
+
+    if (blksize < 512 || blksize % 512)
+        return EINVAL;
 
     dg->dg_SectorSize   = blksize;
     dg->dg_TotalSectors = devsize / (blksize / 512);
     dg->dg_CylSectors   = geo.heads * geo.sectors;
 
-    if (dg->dg_TotalSectors % dg->dg_CylSectors)
+    if (!dg->dg_CylSectors || dg->dg_TotalSectors % dg->dg_CylSectors)
     {
+        dg->dg_Heads = dg->dg_TrackSectors = 1;
         dg->dg_CylSectors = 1;
         dg->dg_Cylinders  = dg->dg_TotalSectors;
 

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2018-2019, The AROS Development Team.
+    Copyright (C) 2018-2026, The AROS Development Team.
 */
 
 #include <aros/debug.h>
@@ -75,7 +75,7 @@ static int ahcienum_init(struct SysexpAHCIBase *AhciBase)
 
 ADD2INITLIB(ahcienum_init, 10);
 
-/*****************************************************************************
+/*****i ahci/ModuleInit
     NAME
         void ModuleInit(
 

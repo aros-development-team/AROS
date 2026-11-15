@@ -16,6 +16,7 @@
 #include <netinet/in.h>
 #include <netdb.h>
 
+#include <stdlib.h>
 #include <string.h>
 
 #include "fp_ipp.h"
@@ -116,6 +117,64 @@ static LONG unchunk(UBYTE *body, LONG len)
     return out;
 }
 
+/* TRUE when the chunks from pos on end with the last chunk and the blank
+   line after it (and any trailers), as far as got. */
+static BOOL chunksComplete(const UBYTE *buf, LONG pos, LONG got)
+{
+    for (;;) {
+        LONG eol = pos, size;
+
+        while (eol < got && buf[eol] != '\n')
+            eol++;
+        if (eol >= got)
+            return FALSE;
+        size = hexValue((const char *)buf + pos);
+        pos = eol + 1;
+        if (size == 0)
+            break;
+        if (size < 0 || size > got - pos - 2)
+            return FALSE;
+        pos += size + 2;
+    }
+    /* trailer fields, then the blank line */
+    for (;;) {
+        if (got - pos >= 2 && buf[pos] == '\r' && buf[pos + 1] == '\n')
+            return TRUE;
+        while (pos < got && buf[pos] != '\n')
+            pos++;
+        if (pos >= got)
+            return FALSE;
+        pos++;
+    }
+}
+
+/* TRUE when buf holds the whole HTTP answer: its Content-Length, or the last chunk. */
+static BOOL answerComplete(const UBYTE *buf, LONG got)
+{
+    LONG i, e, hdrend = -1, length = -1;
+
+    for (i = 0; i + 3 < got; i++)
+        if (buf[i] == '\r' && buf[i + 1] == '\n' && buf[i + 2] == '\r' && buf[i + 3] == '\n') {
+            hdrend = i;
+            break;
+        }
+    if (hdrend < 0)
+        return FALSE;
+    for (i = 0; i < hdrend; i++) {
+        if (buf[i] != '\n')
+            continue;
+        if (hdrend - i > 18 && strncasecmp((const char *)buf + i + 1, "Transfer-Encoding:", 18) == 0) {
+            /* as post() decides it below: chunked when the value says so */
+            for (e = i + 19; e < hdrend && buf[e] != '\r'; e++)
+                if (e + 7 <= hdrend && strncmp((const char *)buf + e, "chunked", 7) == 0)
+                    return chunksComplete(buf, hdrend + 4, got);
+        }
+        if (hdrend - i > 15 && strncasecmp((const char *)buf + i + 1, "Content-Length:", 15) == 0)
+            length = atol((const char *)buf + i + 16);
+    }
+    return length >= 0 && got >= hdrend + 4 + length;
+}
+
 /* POSTs an application/ipp request; the answer goes to buf, *body to its de-chunked body.
    Returns the HTTP status, -1 when there was no answer. */
 static LONG post(const char *uri, const UBYTE *data, LONG datalen, UBYTE *buf, LONG bufmax,
@@ -164,8 +223,12 @@ static LONG post(const char *uri, const UBYTE *data, LONG datalen, UBYTE *buf, L
         CloseSocket(fd);
         return -1;
     }
-    while (got < bufmax - 1 && (n = recv(fd, buf + got, bufmax - 1 - got, 0)) > 0)
+    /* Printers may keep the connection open after answering: stop once the answer is complete. */
+    while (got < bufmax - 1 && (n = recv(fd, buf + got, bufmax - 1 - got, 0)) > 0) {
         got += n;
+        if (answerComplete(buf, got))
+            break;
+    }
     CloseSocket(fd);
     buf[got] = 0;
 

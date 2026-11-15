@@ -10,7 +10,8 @@
     The low-level command issue mirrors the proven sequence in
     rom/devs/sdcard/sdcard_bus.c (the BCM2835 Arasan needs an atomic 32-bit
     TRANSFER_MODE+COMMAND write and a short delay between register writes),
-    but runs fully polled - no IRQ is routed to the ARM (SIGNAL_ENABLE = 0).
+    but commands run polled - only the SDIO card interrupt is routed to the
+    ARM (SIGNAL_ENABLE), once a client arms it with SDIOSetInterrupt().
 */
 
 #define DEBUG 0
@@ -1168,13 +1169,18 @@ static int sdio_do_probe(struct SDIOBase *SDIOBase)
  * interrupt. Enabling everything there storms: the command path leaves
  * CMD_COMPLETE and DATA_END set until its own wait loop clears them, so the
  * level-triggered line re-enters the handler without end.
+ *
+ * The card interrupt itself is masked in both: per the SDHCI spec its
+ * detection stops when the INT_ENABLE bit is cleared and restarts when it is
+ * set again. With INT_ENABLE left on, CARD_INT stays latched and re-fires on
+ * every re-arm, even with DAT1 released (as Linux sdhci does it).
  */
 #define SDIO_INTEN_BASE  (SDHCI_INT_ALL_MASK & ~SDHCI_INT_CARD_INT)
 
 /*
  * Arasan IRQ handler. The only armed source is the SDIO card interrupt (the
- * chip pulls DAT1 low when SDPCMD_INTSTATUS has an enabled bit). Clear
- * SIGNAL_ENABLE so it cannot re-fire while DAT1 is still low, then signal the
+ * chip pulls DAT1 low when SDPCMD_INTSTATUS has an enabled bit). Mask it so
+ * it cannot re-fire while DAT1 is still low, then signal the
  * bwfm RX pump: it clears SDPCMD_INTSTATUS, releasing DAT1, drains its frames
  * and re-arms via SDIOAckInterrupt().
  */
@@ -1182,9 +1188,12 @@ static void sdio_irq_handler(void *data1, void *data2)
 {
     struct SDIOBase *SDIOBase = (struct SDIOBase *)data1;
 
-    if (sdio_rl(SDIOBase, SDHCI_INT_STATUS) & SDHCI_INT_CARD_INT)
+    /* The line can be shared (EMMC2 on BCM2711): act only on our signal. */
+    if ((sdio_rl(SDIOBase, SDHCI_SIGNAL_ENABLE) & SDHCI_INT_CARD_INT) &&
+        (sdio_rl(SDIOBase, SDHCI_INT_STATUS) & SDHCI_INT_CARD_INT))
     {
         sdio_wl(SDIOBase, SDHCI_SIGNAL_ENABLE, 0);
+        sdio_wl(SDIOBase, SDHCI_INT_ENABLE, SDIO_INTEN_BASE);
         if (SDIOBase->sdio_IRQTask)
             Signal(SDIOBase->sdio_IRQTask, SDIOBase->sdio_IRQSig);
     }
@@ -1788,12 +1797,13 @@ AROS_LH0(int, SDIOIsPresent,
 
     INPUTS
         task - Live task to notify. The pointer is retained and must remain
-            valid while interrupt delivery is possible.
+            valid while interrupt delivery is possible. NULL disarms the
+            card interrupt at both the host and the card.
         sigmask - Mask of signals allocated to task, not a signal-bit number.
 
     RESULT
         Zero if the card interrupt-enable write succeeds; -1 if it fails.
-        The task and mask are stored and host signalling is enabled even
+        The task and mask are stored and host signalling is changed even
         when that write fails.
 
     NOTES
@@ -1809,9 +1819,8 @@ AROS_LH0(int, SDIOIsPresent,
 
     BUGS
         Registration is not transactional or synchronized with the handler.
-        There is no safe unregister-and-drain operation. NULL task suppresses
-        Signal() but does not disable card or host interrupts. This function
-        does not check whether probe-time handler registration succeeded.
+        There is no safe unregister-and-drain operation. This function does
+        not check whether probe-time handler registration succeeded.
 
     SEE ALSO
         SDIOAckInterrupt(), SDIOProbe()
@@ -1825,6 +1834,20 @@ AROS_LH2(int, SDIOSetInterrupt,
     AROS_LIBFUNC_INIT
 
     int err;
+
+    if (task == NULL)
+    {
+        /* Disarm: the card must release DAT1 too, or a pending interrupt
+         * stays asserted on a data line for good. */
+        sdio_wl(SDIOBase, SDHCI_SIGNAL_ENABLE, 0);
+        sdio_wl(SDIOBase, SDHCI_INT_ENABLE, SDIO_INTEN_BASE);
+        SDIOBase->sdio_IRQTask = NULL;
+        ObtainSemaphore(&SDIOBase->sdio_Sem);
+        err = sdio_rw_direct(SDIOBase, 1, 0, SDIO_CCCR_INT_ENABLE, 0, NULL);
+        ReleaseSemaphore(&SDIOBase->sdio_Sem);
+        D(bug("[SDIO] card interrupt disarmed (CCCR err %d)\n", err));
+        return err;
+    }
 
     SDIOBase->sdio_IRQTask = task;
     SDIOBase->sdio_IRQSig = sigmask;
@@ -1860,7 +1883,8 @@ AROS_LH2(int, SDIOSetInterrupt,
 
     NOTES
         Call after the consumer services pending work and clears the device
-        interrupt source. Only the host signal-enable register is written.
+        interrupt source. Only the host interrupt-enable registers are
+        written.
         This does not clear card status, drain data, clear the task signal or
         register a consumer.
 
@@ -1877,6 +1901,8 @@ AROS_LH0(void, SDIOAckInterrupt,
 {
     AROS_LIBFUNC_INIT
 
+    /* Restart card-interrupt detection, then let it reach the ARM. */
+    sdio_wl(SDIOBase, SDHCI_INT_ENABLE, SDIO_INTEN_BASE | SDHCI_INT_CARD_INT);
     sdio_wl(SDIOBase, SDHCI_SIGNAL_ENABLE, SDHCI_INT_CARD_INT);
 
     AROS_LIBFUNC_EXIT

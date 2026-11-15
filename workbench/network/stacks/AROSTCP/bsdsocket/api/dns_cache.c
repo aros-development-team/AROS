@@ -49,6 +49,9 @@
 #include <api/resolv.h>
 #include <kern/amiga_includes.h>
 #include <api/dns_cache.h>
+#include <api/resolver_ops.h>
+
+#include <net/netcore_map.h>        /* always the last include */
 
 /*
  * Number of cache slots. Small and fixed -- resolver working sets are tiny.
@@ -203,21 +206,43 @@ dns_cache_min_ttl(const UBYTE *msg, int msglen)
 }
 
 /*
- * One-time initialisation of the semaphore, from api_init() before any base
- * can look names up (Forbid() would not keep a second CPU out). The slot
+ * The cache is the resolver module's (api/resolver_ops.h): set up when the
+ * module starts, before its table is handed to the core and so before any
+ * look-up can come (Forbid() would not keep a second CPU out). The slot
  * table itself is a zeroed static, so nothing else needs setting up.
  */
 void
-dns_cache_init(void)
+dns_cache_start(void)
 {
 #if defined(__AROS__)
-    D(bug("[AROSTCP](dns_cache.c) dns_cache_init()\n"));
+    D(bug("[AROSTCP](dns_cache.c) dns_cache_start()\n"));
 #endif
 
     if(!dns_cache_ready) {
         InitSemaphore(&dns_cache_lock);
         dns_cache_ready = TRUE;
     }
+}
+
+/*
+ * The module stops: no look-up runs and none can start (the core has its
+ * table back), so the entries are freed without the lock, and the cache is
+ * as the file has it - empty - for a start of the same copy of the module.
+ */
+void
+dns_cache_stop(void)
+{
+    int i;
+
+    for(i = 0; i < DNS_CACHE_SLOTS; i++) {
+        if(dns_cache_table[i].dce_Name != NULL)
+            bsd_free(dns_cache_table[i].dce_Name, M_TEMP);
+        if(dns_cache_table[i].dce_Response != NULL)
+            bsd_free(dns_cache_table[i].dce_Response, M_TEMP);
+    }
+    bzero(dns_cache_table, sizeof(dns_cache_table));
+    dns_cache_ready = FALSE;
+    dns_cache_enabled = TRUE;
 }
 
 int

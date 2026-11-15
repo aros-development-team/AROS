@@ -403,61 +403,131 @@ NList.mcc/MUIM_NList_UseImage
 NList.mcc/MUIA_NList_CompareHook
 
     NAME
-        MUIA_NList_CompareHook -- [IS.], struct Hook *
+        MUIA_NList_CompareHook -- Select entry comparison.
+
+    INPUTS
+        Initialize/set; struct Hook *, default NULL. The legacy form uses
+        the classic hook object/message arguments.
 
     FUNCTION
-        Same function as List.mui/MUIA_List_CompareHook.
+        Called through MUIM_NList_Compare with entry2 as hook object and
+        entry1 as hook message (A2/A1 in the classic convention). Return a
+        signed value less than, equal to or greater than zero for entry1
+        before, equal to or after entry2. Do not assume the result magnitude
+        is exactly one.
+
+        The default NULL hook uses Stricmp, so payloads must be readable
+        NUL-terminated strings unless comparison is overridden. This legacy
+        hook does not receive sort types as arguments. Use CompareHook2 or
+        override Compare to interpret them. Changing the comparison hook
+        does not automatically sort the list.
+
+        The hook pointer is borrowed. Keep the hook and its code valid while
+        installed. No getter is implemented locally. List_CompareHook is a
+        legacy alias (with the MUIA_ prefix). At construction, the NList
+        alias takes precedence over the List alias, and Hook2 overrides
+        either legacy form. During set, the last processed form selects the
+        calling convention.
+
+        Changing the hook does not reconstruct or dispose existing entries.
+        Keep construction and destruction policies compatible with every
+        retained payload. The legacy hook helper temporarily supplies the
+        list object in h_Data when h_Data was NULL; otherwise it preserves
+        the existing value.
 
     SEE ALSO
-        MUIA_NList_ConstructHook, MUIA_NList_DestructHook
+        MUIA_NList_CompareHook2, MUIM_NList_Compare
+
 NList.mcc/MUIA_NList_CompareHook2
 
     NAME
-        MUIA_NList_CompareHook2 -- [IS.], struct Hook *
+        MUIA_NList_CompareHook2 -- Select entry comparison. Use the message
+        hook convention.
+
+    INPUTS
+        Initialize/set; borrowed struct Hook * or NULL. No local getter.
 
     FUNCTION
-        Same function as MUIA_NList_CompareHook but A2 will be the object
-        and A1 a NList_CompareMessage struct pointer.
+        Use the same payload and result rules as MUIA_NList_CompareHook, but
+        the hook object is the NList object and the hook message describes
+        entry1, entry2, sort_type and sort_type2 in NList_CompareMessage.
+        The message is temporary; do not retain its address. Use the
+        platform header and hook convention.
 
-    EXAMPLES
-        See NList-Demo program.
+        At construction this form overrides the legacy form. During set the
+        last processed form wins. Unlike the legacy helper, this path does
+        not supply a missing h_Data value. Changing the form does not
+        transform existing payloads. The header identifies sort_type2 as an
+        addition in version 19.96; do not assume that field exists in older
+        implementations.
 
     SEE ALSO
-        MUIA_NList_CompareHook
+        MUIA_NList_CompareHook, MUIM_NList_Compare
+
 NList.mcc/MUIA_NList_ConstructHook
 
     NAME
-        MUIA_NList_ConstructHook -- [IS.], struct Hook *
+        MUIA_NList_ConstructHook -- Select entry construction.
+
+    INPUTS
+        Initialize/set; struct Hook *, default NULL. The legacy form uses
+        the classic hook object/message arguments.
 
     FUNCTION
-        Same function as List.mui/MUIA_List_ConstructHook.
+        Called through MUIM_NList_Construct with pool as hook object and the
+        input entry as hook message (A2/A1 in the classic convention).
+        Return the retained entry pointer, or NULL to reject it. The default
+        NULL hook retains the original pointer without copying. Keep
+        borrowed entry data valid until removal, replacement, clear or
+        disposal.
 
-        Think to finish lines entries on a \0 , \n and \r.
-        The list will not display anything which come after
-        a \n , \r or \0, so finish lines entries on a \0, \r
-        and \n if you dont want to waste memory.
+        MUIV_NList_ConstructHook_String (-1) selects the built-in copier. It
+        copies only up to the first NUL, LF or CR, adds a NUL terminator and
+        allocates from the supplied pool. Pair it with
+        MUIV_NList_DestructHook_String on DestructHook. Allocation failure
+        returns NULL.
 
-    SPECIAL INPUTS
-        MUIV_NList_ConstructHook_String
+        The hook pointer is borrowed. Keep the hook and its code valid while
+        installed. No getter is implemented locally. List_ConstructHook is a
+        legacy alias (with the MUIA_ prefix). At construction, the NList
+        alias takes precedence over the List alias, and Hook2 overrides
+        either legacy form. During set, the last processed form selects the
+        calling convention.
 
-        It's a builtin hook that copy a string entry.
-        (so original string can be trash after)
-        you must set MUIV_NList_DestructHook_String
-        too if you use it.
+        Changing the hook does not reconstruct or dispose existing entries.
+        Keep construction and destruction policies compatible with every
+        retained payload. The legacy hook helper temporarily supplies the
+        list object in h_Data when h_Data was NULL; otherwise it preserves
+        the existing value.
 
     SEE ALSO
-        MUIA_NList_DestructHook, MUIA_NList_DisplayHook
+        MUIA_NList_ConstructHook2, MUIM_NList_Construct
+
 NList.mcc/MUIA_NList_ConstructHook2
 
     NAME
-        MUIA_NList_ConstructHook2 -- [IS.], struct Hook *
+        MUIA_NList_ConstructHook2 -- Select entry construction. Use the
+        message hook convention.
+
+    INPUTS
+        Initialize/set; borrowed struct Hook * or NULL. No local getter.
 
     FUNCTION
-        Same function as MUIA_NList_ConstructHook but A2 will be the object
-        and A1 a NList_ConstructMessage struct pointer.
+        Use the same payload and result rules as MUIA_NList_ConstructHook,
+        but the hook object is the NList object and the hook message
+        describes entry and pool in NList_ConstructMessage. The message is
+        temporary; do not retain its address. Use the platform header and
+        hook convention.
+
+        At construction this form overrides the legacy form. During set the
+        last processed form wins. Unlike the legacy helper, this path does
+        not supply a missing h_Data value. Changing the form does not
+        transform existing payloads. The String sentinel is recognized only
+        by the legacy attribute, not by Hook2.
 
     SEE ALSO
-        MUIA_NList_ConstructHook
+        MUIA_NList_ConstructHook, MUIM_NList_Construct
+
 NList.mcc/MUIA_NList_CopyColumnToClipHook
 
     NAME
@@ -579,31 +649,66 @@ NList.mcc/MUIM_NList_UseImage
 NList.mcc/MUIA_NList_DestructHook
 
     NAME
-        MUIA_NList_DestructHook -- [IS.], struct Hook *
+        MUIA_NList_DestructHook -- Select entry destruction.
+
+    INPUTS
+        Initialize/set; struct Hook *, default NULL. The legacy form uses
+        the classic hook object/message arguments.
 
     FUNCTION
-        Same function as List.mui/MUIA_List_DestructHook.
+        Called through MUIM_NList_Destruct with pool as hook object and the
+        constructed payload as hook message (A2/A1 in the classic
+        convention). Release only storage owned by this policy, using the
+        matching allocator. The hook result is ignored. The default NULL
+        hook does not free payloads.
 
-    SPECIAL INPUTS
-        MUIV_NList_DestructHook_String
+        MUIV_NList_DestructHook_String (-1) selects the built-in
+        FreeVecPooled destructor for the matching string constructor. It is
+        not suitable for arbitrary borrowed pointers. Logical entries are
+        destructed once; wrapped continuation rows do not own separate
+        payloads.
 
-        It's a builtin hook that free the string entry
-        previously allocated and copied by
-        the MUIV_NList_ConstructHook_String builtin hook.
+        The hook pointer is borrowed. Keep the hook and its code valid while
+        installed. No getter is implemented locally. List_DestructHook is a
+        legacy alias (with the MUIA_ prefix). At construction, the NList
+        alias takes precedence over the List alias, and Hook2 overrides
+        either legacy form. During set, the last processed form selects the
+        calling convention.
+
+        Changing the hook does not reconstruct or dispose existing entries.
+        Keep construction and destruction policies compatible with every
+        retained payload. The legacy hook helper temporarily supplies the
+        list object in h_Data when h_Data was NULL; otherwise it preserves
+        the existing value.
 
     SEE ALSO
-        MUIA_NList_ConstructHook, MUIA_NList_DisplayHook
+        MUIA_NList_DestructHook2, MUIM_NList_Destruct
+
 NList.mcc/MUIA_NList_DestructHook2
 
     NAME
-        MUIA_NList_DestructHook2 -- [IS.], struct Hook *
+        MUIA_NList_DestructHook2 -- Select entry destruction. Use the
+        message hook convention.
+
+    INPUTS
+        Initialize/set; borrowed struct Hook * or NULL. No local getter.
 
     FUNCTION
-        Same function as MUIA_NList_DestructHook but A2 will be the object
-        and A1 a NList_DestructMessage struct pointer.
+        Use the same payload and result rules as MUIA_NList_DestructHook,
+        but the hook object is the NList object and the hook message
+        describes entry and pool in NList_DestructMessage. The message is
+        temporary; do not retain its address. Use the platform header and
+        hook convention.
+
+        At construction this form overrides the legacy form. During set the
+        last processed form wins. Unlike the legacy helper, this path does
+        not supply a missing h_Data value. Changing the form does not
+        transform existing payloads. The String sentinel is recognized only
+        by the legacy attribute, not by Hook2.
 
     SEE ALSO
-        MUIA_NList_DestructHook
+        MUIA_NList_DestructHook, MUIM_NList_Destruct
+
 NList.mcc/MUIA_NList_DisplayHook
 
     NAME
@@ -1642,35 +1747,55 @@ NList.mcc/MUIM_NList_UseImage
 NList.mcc/MUIA_NList_SortType
 
     NAME
-        MUIA_NList_SortType -- [ISGN], LONG
+        MUIA_NList_SortType -- Store the primary comparison value.
+
+    INPUTS
+        Initialize/set/get/notify; LONG. Default MUIV_NList_SortType_None
+        (0xF0000000).
 
     FUNCTION
-        This value will be set in the NList_CompareMessage struct
-        of MUIA_NList_CompareHook2 hook function.
+        Store the value supplied to MUIM_NList_Compare and the corresponding
+        CompareHook2 message field. The default Stricmp comparison ignores
+        it; its meaning belongs to the custom comparison policy.
+        SortType_None is a stored value, not a local switch that disables
+        Sort.
 
-        It is set by MUIM_NList_Sort2 and MUIM_NList_Sort3 methods too.
-
-    EXAMPLES
-        See NList-Demo program.
+        Setting this attribute does not sort the list and does not clear the
+        internal sorted flag. If the comparison policy changes, explicitly
+        sort the whole list before relying on incremental sorted insertion.
+        The setter leaves the tag for superclass notification; get returns
+        the stored value.
 
     SEE ALSO
-        MUIA_NList_CompareHook2, MUIM_NList_Sort2, MUIM_NList_Sort3, MUIA_NList_SortType2
+        MUIM_NList_Sort, MUIM_NList_Sort2, MUIM_NList_Sort3,
+        MUIA_NList_CompareHook2
+
 NList.mcc/MUIA_NList_SortType2
 
     NAME
-        MUIA_NList_SortType2 -- [ISGN], LONG
+        MUIA_NList_SortType2 -- Store the secondary comparison value.
+
+    INPUTS
+        Initialize/set/get/notify; LONG. Default MUIV_NList_SortType_None
+        (0xF0000000).
 
     FUNCTION
-        This value will be set in the NList_CompareMessage struct
-        of MUIA_NList_CompareHook2 hook function.
+        Store the value supplied to MUIM_NList_Compare and the corresponding
+        CompareHook2 message field. The default Stricmp comparison ignores
+        it; its meaning belongs to the custom comparison policy.
+        SortType_None is a stored value, not a local switch that disables
+        Sort.
 
-        It is set by MUIM_NList_Sort3 method too.
-
-    EXAMPLES
-        See NList-Demo program.
+        Setting this attribute does not sort the list and does not clear the
+        internal sorted flag. If the comparison policy changes, explicitly
+        sort the whole list before relying on incremental sorted insertion.
+        The setter leaves the tag for superclass notification; get returns
+        the stored value.
 
     SEE ALSO
-        MUIA_NList_CompareHook2, MUIM_NList_Sort2, MUIM_NList_Sort3, MUIA_NList_SortType
+        MUIM_NList_Sort, MUIM_NList_Sort2, MUIM_NList_Sort3,
+        MUIA_NList_CompareHook2
+
 NList.mcc/MUIA_NList_SourceArray
 
     NAME
@@ -1922,16 +2047,29 @@ NList.mcc/MUIM_NList_UseImage
 NList.mcc/MUIM_NList_Clear
 
     NAME
-        MUIM_NList_Clear --
+        MUIM_NList_Clear -- Remove all logical entries and display rows.
 
     SYNOPSIS
-        DoMethod(obj,MUIM_NList_Clear,);
+        DoMethod(obj, MUIM_NList_Clear);
 
     FUNCTION
-        Same function as List.mui/MUIM_List_Clear.
+        Destruct each logical payload once, release the display records and
+        entry array, and reset the active entry to Off, First to zero and
+        InsertPosition to -1. Borrowed payloads are not freed when no
+        destructor is installed. All list-owned payload pointers become
+        invalid.
+
+        Request layout, wrapping, scrollbar and redraw updates. Visible is
+        reset only when the list is not quiet; quiet mode retains it until
+        recalculation. Clearing an already empty list is allowed. Destructor
+        results are ignored.
+
+    RESULT
+        Always TRUE.
 
     SEE ALSO
-        MUIM_NList_Insert, MUIA_NList_DestructHook
+        MUIM_NList_Remove, MUIM_NList_Destruct
+
 NList.mcc/MUIM_NList_ColWidth
 
     NAME
@@ -2004,100 +2142,67 @@ NList.mcc/MUIM_NList_UseImage
         MUIM_NList_ColToColumn, MUIM_NList_SetColumnCol, MUIA_NList_Columns
 NList.mcc/MUIM_NList_Compare
 
-	NAME
-		MUIM_NList_Compare --
+    NAME
+        MUIM_NList_Compare -- Compare two logical payloads.
 
-	SYNOPSIS
-		DoMethod(obj,MUIM_NList_Compare,APTR entry1,APTR entry2,
-        ULONG sort_type1,ULONG sort_type2);
+    SYNOPSIS
+        Subclass handler: struct MUIP_NList_Compare *msg;
 
-	FUNCTION
-		This method is called ONLY by NList.mcc when application needs to
-        compare    two    list   entries   f.e.   when   MUIM_NList_Sort,
-        MUIM_NList_Sort2, MUIM_NList_Sort3 are called. So, this method is
-        only  useful  within  NList.mcc  subclass, function method should
-        looks      like      normal       MUIA_NList_CompareHook       or
-		MUIA_NList_CompareHook2  hook function. If your subclass will not
-        override this method NList.mcc implementation will be  used,  and
-        it'll call MUIA_NList_CompareHook or MUIA_NList_CompareHook2 hook
-        in that case.
+    INPUTS
+        entry1, entry2 -- Borrowed payloads. sort_type1, sort_type2 -- LONG
+        comparison-policy values.
 
-        When you are overriding this method you probably  would  like  to
-        override     MUIM_NList_Construct,     MUIM_NList_Destruct    and
-        MUIM_NList_Display method as well.
+    FUNCTION
+        Invoke CompareHook or CompareHook2 when installed; otherwise call
+        Stricmp on the two payloads. The default requires readable NUL-
+        terminated strings and ignores sort types. The legacy hook receives
+        entry2 as object and entry1 as message; Hook2 receives the NList
+        object and the structured arguments.
 
-	INPUTS
-		entry1     - First entry to compare.
+        Sorting calls this extension point. A subclass that delegates must
+        preserve the original message. A custom comparator must provide
+        consistent ordering for the retained payload type.
 
-		entry2     - Second entry to compare.
+    RESULT
+        Signed negative, zero or positive comparison result carried in IPTR.
+        The default does not restrict the magnitude to -1 or 1. Sort breaks
+        equal comparisons by prior entry position, retaining equal-entry
+        order.
 
-		sort_type1 - Sort type 1.
-
-		sort_type2 - Sort type 2.
-
-	RESULTS
-        If entry1 > entry2 1, if entry1 ==  entry2  0  and  if  entry1  <
-        entry2    -1.    i.e.    the    same    as    MUIA_NList_Compare,
-        MUIA_NList_CompareHook2 or strcmp() alike functions.
-
-	NOTE
-        Do not even think about calling it by yourself! Method parameters
-        structure might grow in the future! Be warned.
-
-        Internal implementation of this method can use internal or passed
-        arguments,  so  please  do  not  cheating  and  if  you  are  not
-		overriding it, pass the original arguments to super class.
-
-	SEE ALSO
-		MUIA_NList_CompareHook, MUIA_NList_CompareHook2,
-		MUIM_NList_Construct, MUIM_NList_Destruct, MUIM_NList_Display
+    SEE ALSO
+        MUIA_NList_CompareHook, MUIA_NList_CompareHook2, MUIM_NList_Sort
 
 NList.mcc/MUIM_NList_Construct
 
-	NAME
-		MUIM_NList_Construct --
+    NAME
+        MUIM_NList_Construct -- Construct a logical entry payload.
 
-	SYNOPSIS
-        DoMethod(obj,MUIM_NList_Construct,APTR entry,APTR pool);
+    SYNOPSIS
+        Subclass handler: struct MUIP_NList_Construct *msg;
+
+    INPUTS
+        entry -- Non-NULL input payload for construction. pool -- Pool
+        supplied by NList. The message owns neither.
 
     FUNCTION
-        This method is called  ONLY  by  NList.mcc  when  application  is
-        creating     new     entry     f.e.    when    MUIM_NList_Insert,
-        MUIM_NList_InsertSingle or MUIM_NList_Replace is called. So, this
-        method  is only useful within NList.mcc subclass, function method
-        should   looks   like    normal    MUIA_NList_ConstructHook    or
-        MUIA_NList_ConstructHook2  hook  function.  If your subclass will
-        not override this method NList.mcc implementation will  be  used,
-        and       it'll       call       MUIA_NList_ContructHook       or
-		MUIA_NList_ConstructHook2 hook in that case.
+        NList calls this extension point during insertion and replacement.
+        With a configured hook, dispatch using the selected legacy or
+        message convention. Without a hook, return the original entry
+        unchanged. NULL input returns NULL without calling the hook.
 
-        When you are overriding this method you probably  would  like  to
-        override      MUIM_NList_Destruct,     MUIM_NList_Compare     and
-        MUIM_NList_Display method as well.
-
-	INPUTS
-        entry - original entry pointer passed to  f.e.  MUIM_NList_Insert
-				method. Equivalent of A1 register of
-                MUIA_NList_ConstructHook.
-
-		pool  - pool  header  pointer.  Equivalent  of  A2  register  of
-                MUIA_NList_ConstructHook.
+        A subclass may override this method with a matching Destruct policy.
+        If delegating, pass the original message to the superclass.
+        Application code should insert entries through Insert or
+        ReplaceSingle instead of calling this lifecycle method directly.
 
     RESULT
-		New entry, similar as returned by one of construct hooks.
+        Retained payload pointer or NULL. NULL is a construction failure;
+        ReplaceSingle then removes the old entry. Insertion may retain other
+        successfully constructed entries.
 
-	NOTE
-        Do not even think about calling it by yourself! Method parameters
-        structure might grow in the future! Be warned.
-
-        Internal implementation of this method can use internal or passed
-        arguments,  so  please  do  not  cheating  and  if  you  are  not
-		overriding it, pass the original arguments to super class.
-
-	SEE ALSO
-		MUIA_NList_ConstructHook, MUIA_NList_ConstructHook2,
-		MUIM_NList_Insert, MUIM_NList_InsertSingle, MUIM_NList_Replace,
-		MUIM_NList_Destruct, MUIM_NList_Compare, MUIM_NList_Display
+    SEE ALSO
+        MUIA_NList_ConstructHook, MUIA_NList_ConstructHook2,
+        MUIM_NList_Destruct
 
 NList.mcc/MUIM_NList_ContextMenuBuild
 
@@ -2437,48 +2542,32 @@ NList.mcc/MUIM_NList_UseImage
         MUIM_NList_CreateImage, MUIM_NList_UseImage
 NList.mcc/MUIM_NList_Destruct
 
-	NAME
-		MUIM_NList_Destruct --
+    NAME
+        MUIM_NList_Destruct -- Release a logical entry payload.
 
-	SYNOPSIS
-		DoMethod(obj,MUIM_NList_Destruct,APTR entry,APTR pool);
-
-    FUNCTION
-        This method is called  ONLY  by  NList.mcc  when  application  is
-        deleting  entry f.e. when MUIM_NList_Remove or MUIM_NList_Replace
-        are called. So, this  method  is  only  useful  within  NList.mcc
-        subclass,    function    method    should   looks   like   normal
-        MUIA_NList_DestructHook    or    MUIA_NList_DestructHook2    hook
-        function.   If  your  subclass  will  not  override  this  method
-        NList.mcc  implementation  will   be   used,   and   it'll   call
-        MUIA_NList_DestructHook  or MUIA_NList_DestructHook2 hook in that
-        case.
-
-        When  you  are  overriding  this   method   you   must   override
-        MUIM_NList_Construct    and   probably   MUIM_NList_Compare   and
-        MUIM_NList_Display method as well.
+    SYNOPSIS
+        Subclass handler: struct MUIP_NList_Destruct *msg;
 
     INPUTS
-		entry - entry pointer returned by MUIM_NList_Construct method.
+        entry -- Payload returned by Construct. pool -- Corresponding pool.
 
-		pool  - pool header pointer.
+    FUNCTION
+        NList calls this extension point for removal, replacement, clear and
+        disposal. If entry and the configured hook are non-NULL, invoke that
+        hook. Without a hook no payload storage is freed. Wrapped
+        continuation rows do not trigger separate destruction.
+
+        Override this method with the matching Construct policy. Do not free
+        borrowed caller storage. When delegating, preserve the original
+        message. Application code should use the list lifecycle operations
+        instead of invoking Destruct on a live entry.
 
     RESULT
-        Currently undefined. If you are overriding it completely,  please
-        return 0, if not use the value returned by super class!
+        Always zero in the default handler; hook return values are ignored.
 
-	NOTE
-        Do not even think about calling it by yourself! Method parameters
-        structure might grow in the future! Be warned.
-
-        Internal implementation of this method can use internal or passed
-        arguments,  so  please  do  not  cheating  and  if  you  are  not
-		overriding it, pass the original arguments to super class.
-
-	SEE ALSO
-		MUIA_NList_ConstructHook, MUIA_NList_ConstructHook2,
-		MUIM_NList_Insert, MUIM_NList_InsertSingle, MUIM_NList_Replace,
-		MUIM_NList_Destruct, MUIM_NList_Compare, MUIM_NList_Display
+    SEE ALSO
+        MUIM_NList_Construct, MUIA_NList_DestructHook,
+        MUIA_NList_DestructHook2
 
 NList.mcc/MUIM_NList_Display
 
@@ -2711,79 +2800,105 @@ NList.mcc/MUIM_NList_UseImage
 NList.mcc/MUIM_NList_Exchange
 
     NAME
-        MUIM_NList_Exchange --
+        MUIM_NList_Exchange -- Exchange two logical entries.
 
     SYNOPSIS
-        DoMethod(obj,MUIM_NList_Exchange,LONG pos1, LONG pos2);
-
-    FUNCTION
-        Same function as List.mui/MUIM_List_Exchange.
-
-        Exchange two entries in a NList object.
+        DoMethod(obj, MUIM_NList_Exchange, pos1, pos2);
 
     INPUTS
-        pos1 - number of the first entry.
-        pos2 - number of the second entry.
+        Both positions accept zero-based display indices or
+        MUIV_NList_Exchange_Top (0), Active (-1), Bottom (-2). Only pos2
+        also accepts Next (-3) or Previous (-4), relative to the resolved
+        first position.
 
-        MUIV_NList_Exchange_Top
-        MUIV_NList_Exchange_Active
-        MUIV_NList_Exchange_Bottom
-        MUIV_NList_Exchange_Next      only valid for second parameter
-        MUIV_NList_Exchange_Previous  only valid for second parameter
+    FUNCTION
+        Map wrapped continuations to their logical owners and exchange their
+        existing records. No payload is constructed or destructed. The
+        active entry follows its record. Clear character selection, mark the
+        list unsorted and request rewrapping/redraw. Next can resolve back
+        to the same owner when the following display row is a continuation.
+
+    RESULT
+        TRUE for two valid, distinct resolved entries. FALSE for invalid or
+        identical resolved positions.
 
     SEE ALSO
-        MUIM_NList_Insert, MUIM_NList_Remove, MUIM_NList_Move
+        MUIM_NList_Move, MUIM_NList_GetEntry
+
 NList.mcc/MUIM_NList_GetEntry
 
     NAME
-        MUIM_NList_GetEntry --
+        MUIM_NList_GetEntry -- Retrieve a borrowed logical payload.
 
     SYNOPSIS
-        DoMethod(obj,MUIM_NList_GetEntry,LONG pos, APTR *entry);
+        entry = (APTR)DoMethod(obj, MUIM_NList_GetEntry, pos, &entry);
+
+    INPUTS
+        pos -- Zero-based display index or MUIV_NList_GetEntry_Active (-1).
+        entry -- Optional writable APTR output storage; NULL omits the
+        store.
 
     FUNCTION
-        Same function as List.mui/MUIM_List_GetEntry.
+        Map a wrapped continuation row to its logical owner. Return that
+        payload, without copying or extracting a displayed substring. The
+        optional output receives the same pointer. Removal, replacement,
+        clear or disposal may invalidate list-owned payloads; do not free
+        them through this borrowed pointer.
 
-    SPECIAL INPUTS
-        MUIV_NList_GetEntry_Active    give active entry (or NULL if none)
+    RESULT
+        Payload pointer directly, or NULL for an invalid position or no
+        active entry. This is not a BOOL success result. MUIM_List_GetEntry
+        is routed to this same handler.
 
     SEE ALSO
-        MUIM_NList_Insert, MUIM_NList_Remove, MUIM_NList_GetEntryInfo
+        MUIM_NList_GetEntryInfo, MUIM_NList_Construct
+
 NList.mcc/MUIM_NList_GetEntryInfo
 
     NAME
-        MUIM_NList_GetEntryInfo --
+        MUIM_NList_GetEntryInfo -- Retrieve logical-entry and display-slice
+        information.
 
     SYNOPSIS
-        DoMethod(obj,MUIM_NList_GetEntryInfo,struct MUI_NList_GetEntryInfo *res);
-
-    FUNCTION
-        You get usefull informations about some entry from its number,
-        or from the real line number which can be different when there
-        is word wrap in the list.
+        DoMethod(obj, MUIM_NList_GetEntryInfo, &info);
 
     INPUTS
-        res - pointer to a MUI_NList_GetEntryInfo struct :
-              LONG pos;       number of entry you want info about */
-              LONG line;      real line number */
-              LONG entry_pos; entry number of returned entry ptr */
-              APTR entry;     entry pointer */
-              LONG wrapcol;   NOWRAP, WRAPCOLx, or WRAPPED|WRAPCOLx */
-              LONG charpos;   start char number in string (unused if NOWRAP) */
-              LONG charlen;   string lenght (unused if NOWRAP) */
+        info -- Valid writable struct MUI_NList_GetEntryInfo. Initialize it
+        before calling.
 
-              if pos is MUIV_NList_GetEntryInfo_Line then the method will
-              use the line number to search infos, else line will be set
-              to its correct number for the value of pos.
-              entry is the entry ptr, think that if it's a word wrapped
-              entry then it come from the returned entry_pos entry.
-              Think too that if wrapcol tell you that it's a WRAPPED entry,
-              only the WRAPCOLx col is drawn, from the charpos position
-              in the string returned by DisplayHook for the column and for
-              entry_pos/entry.
+        pos -- Display-row index, MUIV_NList_GetEntry_Active (-1), or
+        MUIV_NList_GetEntryInfo_Line (-2). With Line, supply the zero-based
+        logical entry number in line. For ordinary display lookup initialize
+        line to zero.
+
+    FUNCTION
+        For display lookup, entry_pos identifies the logical owner, entry is
+        its borrowed payload, and line is its zero-based logical number.
+        wrapcol, charpos and charlen describe the requested display row. For
+        Line lookup, the fields describe the owner's first row. pos is not
+        rewritten.
+
+        No substring is copied or terminated. Character offsets refer to
+        displayed column text; they do not necessarily index an arbitrary
+        application payload. Use slice fields only when the wrap state and
+        completed layout make them meaningful. Payload ownership is
+        unchanged.
+
+        The implementation also recognizes internal modes: pos -3 uses
+        InsertPosition, falling back to the last row when that value is -1;
+        line -2 in display lookup returns a private entry record and leaves
+        the remaining slice fields unchanged. These are not public header
+        selectors; application code should use the documented modes and
+        initialize line.
+
+    RESULT
+        Always TRUE. No match sets entry to NULL, entry_pos and line to -1,
+        and the slice fields to zero. Check entry instead of treating TRUE
+        as evidence of a match.
 
     SEE ALSO
         MUIM_NList_GetEntry
+
 NList.mcc/MUIM_NList_GetPos
 
     NAME
@@ -2845,154 +2960,154 @@ NList.mcc/MUIM_NList_UseImage
 NList.mcc/MUIM_NList_Insert
 
     NAME
-        MUIM_NList_Insert --
+        MUIM_NList_Insert -- Insert logical entries.
 
     SYNOPSIS
-        DoMethod(obj,MUIM_NList_Insert,APTR *entries, LONG count, LONG pos, LONG flags);
-
-    FUNCTION
-        Same function as List.mui/MUIM_List_Insert.
-
-        Entry (display) contents will be display until \0 , \n or \r.
-
-        You can insert a multiline string with count==-2.
+        DoMethod(obj, MUIM_NList_Insert, entries, count, pos, flags);
 
     INPUTS
-        entries - pointer to an array of pointers to be inserted.
-                  Warning: This is a pointer to a pointer.
+        entries -- APTR * pointer array, or a readable NUL-terminated string
+        when count is -2. NULL inserts nothing.
 
-                  It's a pointer to string if count==-2.
+        count -- Positive item count; -1 counts pointers up to the first
+        NULL; -2 splits text on LF, CR or CRLF. String mode includes an
+        empty final entry after a trailing separator and one empty entry for
+        an empty string. Other nonpositive counts insert nothing.
 
-        count   - Number of elements to be inserted. If count==-1,
-                  entries will be inserted until NULL pointer in
-                  the entries array is found.
+        pos -- Insert before this zero-based display-row index.
+        MUIV_NList_Insert_Top (0), Active (-1), Sorted (-2) and Bottom (-3)
+        are supported. Active without a valid active entry appends. Other
+        out-of-range positions also append. A wrapped continuation position
+        is adjusted to its logical owner.
 
-                  If count==-2 then entries must be a string pointer
-                  which can be multiline with \n , \r or \r\n separators.
-                  You'll get as many entries inserted as lines in the string.
-                  The end char is \0.
+        flags -- ULONG; zero or MUIV_NList_Insert_Flag_Raw. Raw skips per-
+        entry column-add processing; it does not bypass construction,
+        sorting or all redraw work.
 
-        pos     - New entries will be added in front of this entry.
-                MUIV_NList_Insert_Top     insert as first entry.
-                MUIV_NList_Insert_Active  insert in front of the active entry.
-                MUIV_NList_Insert_Sorted  insert sorted (all entries will be
-                                          sorted if necessary).
-                MUIV_NList_Insert_Bottom  insert as last entry.
+    FUNCTION
+        Call Construct for each candidate, retaining non-NULL results.
+        Without a construct hook the original payload pointers are borrowed;
+        with the string hook each line is copied. Keep uncopied payloads
+        alive until their list lifetime ends. Entries are initially
+        unwrapped and left-aligned.
 
-        flags   - Special flags for the insert operation or 0.
-                MUIV_NList_Insert_Flag_Raw insert the entries without the automatic
-                                           reordering of the columns. This could
-                                           speed up the insert of entries very
-                                           significant but will not automatically
-                                           change the width of a column.
+        Sorted requests sort the full list or merge into the previously
+        sorted list. The current comparison policy must match the ordering
+        of an incrementally merged prefix. Character selection is cleared
+        and geometry/redraw work is requested as needed.
+
+    RESULT
+        TRUE when the insertion path retains entries, FALSE for no retained
+        insertion. This is neither an inserted count nor proof that every
+        input succeeded. Construct failure can leave a partial insertion.
+
+    NOTES
+        This implementation does not provide a complete bounded traversal or
+        allocation-failure guarantee for pointer-array insertion, including
+        the single-entry wrappers. Do not treat count or a NULL terminator
+        as proof that all internal reads stay within the input array.
+        Allocation failure is not handled transactionally. These are
+        implementation limitations, not additional caller-supplied padding
+        requirements.
 
     SEE ALSO
-        MUIM_NList_Remove, MUIA_NList_ConstructHook, MUIM_NList_InsertSingle
-        MUIM_NList_InsertSingleWrap, MUIM_NList_InsertWrap
+        MUIM_NList_InsertWrap, MUIM_NList_InsertSingle, MUIM_NList_Construct
+
 NList.mcc/MUIM_NList_InsertSingle
 
     NAME
-        MUIM_NList_InsertSingle --
+        MUIM_NList_InsertSingle -- Insert one logical entry.
 
     SYNOPSIS
-        DoMethod(obj,MUIM_NList_InsertSingle,APTR entry, LONG pos);
-
-    FUNCTION
-        Same function as List.mui/MUIM_List_InsertSingle.
+        DoMethod(obj, MUIM_NList_InsertSingle, entry, pos);
 
     INPUTS
-        entry   - item to insert.
+        entry -- Non-NULL input payload. pos -- Insert before this zero-
+        based display-row index. MUIV_NList_Insert_Top (0), Active (-1),
+        Sorted (-2) and Bottom (-3) are supported. Active without a valid
+        active entry appends. Other out-of-range positions also append. A
+        wrapped continuation position is adjusted to its logical owner.
 
-        pos     - New entry will be added in front of this entry.
-                MUIV_NList_Insert_Top     insert as first entry.
-                MUIV_NList_Insert_Active  insert in front of the active entry.
-                MUIV_NList_Insert_Sorted  insert sorted (all entries will be
-                                          sorted if necessary).
-                MUIV_NList_Insert_Bottom  insert as last entry.
+    FUNCTION
+        Use the common Insert path with count one, NOWRAP, ALIGN_LEFT and
+        flags zero. Construction and payload ownership follow Insert. NULL
+        entry returns FALSE without insertion. The common pointer traversal
+        and failure limitations apply to this wrapper as well.
+
+    RESULT
+        Common insertion BOOL, not an entry index.
 
     SEE ALSO
-        MUIM_NList_Remove, MUIA_NList_ConstructHook, MUIM_NList_Insert,
-        MUIM_NList_InsertSingleWrap, MUIM_NList_InsertWrap
+        MUIM_NList_Insert, MUIM_NList_InsertSingleWrap
+
 NList.mcc/MUIM_NList_InsertSingleWrap
 
     NAME
-        MUIM_NList_InsertSingleWrap --
+        MUIM_NList_InsertSingleWrap -- Insert one entry with wrapping and
+        alignment.
 
     SYNOPSIS
-        DoMethod(obj,MUIM_NList_InsertSingleWrap,
-                      APTR entry, LONG pos, LONG wrapcol, LONG align);
-
-    FUNCTION
-        Same function as MUIM_NList_InsertSingle but permit word wrap
-        and alignement for the entry.
+        DoMethod(obj, MUIM_NList_InsertSingleWrap, entry, pos, wrapcol,
+        align);
 
     INPUTS
-        entry   - item to insert.
+        entry and pos -- As for InsertSingle.
 
-        pos     - New entry will be added in front of this entry.
-                MUIV_NList_Insert_Top     insert as first entry.
-                MUIV_NList_Insert_Active  insert in front of the active entry.
-                MUIV_NList_Insert_Sorted  insert sorted (all entries will be
-                                          sorted if necessary).
-                MUIV_NList_Insert_Bottom  insert as last entry.
+        wrapcol -- NOWRAP or one of WRAPCOL0 through WRAPCOL6. Only one
+        display column can wrap; the implementation masks to these bits and
+        selects the lowest set bit if several are supplied.
 
-        wrapcol - WRAPCOL0 to WRAPCOL6. You can't ask word wrap for an
-                other col. NOWRAP if you don't want word wrap.
-                So only one of (display hook) col 0 to 6 can be wrapped.
+        align -- ALIGN_LEFT, ALIGN_CENTER, ALIGN_RIGHT or ALIGN_JUSTIFY.
+        Stored after masking with 0x0700. Alignment escape sequences in the
+        parsed display text can override this initial style.
 
-        align   - ALIGN_LEFT, ALIGN_CENTER, ALIGN_RIGHT or ALIGN_JUSTIFY.
-                be aware that align will be used if there is no escape
-                align sequence in the preparses or column entry string.
+    FUNCTION
+        Delegate to common insertion with count one and flags zero. NULL
+        entry returns FALSE. Construct/destruct ownership and the
+        traversal/failure limitations of Insert apply unchanged.
+
+    RESULT
+        Common insertion BOOL.
 
     SEE ALSO
-        MUIM_NList_Remove, MUIA_NList_ConstructHook, MUIM_NList_Insert,
-        MUIM_NList_InsertSingle, MUIM_NList_InsertWrap
+        MUIM_NList_Insert, MUIM_NList_InsertWrap, MUIM_NList_ReplaceSingle
+
 NList.mcc/MUIM_NList_InsertWrap
 
     NAME
-        MUIM_NList_InsertWrap --
+        MUIM_NList_InsertWrap -- Insert entries with wrapping and alignment.
 
     SYNOPSIS
-        DoMethod(obj,MUIM_NList_InsertWrap, APTR *entries,
-                      LONG count, LONG pos, LONG wrapcol, LONG align);
-
-    FUNCTION
-        Same function as MUIM_NList_Insert but permit word wrap and
-        alignement for the entry.
+        DoMethod(obj, MUIM_NList_InsertWrap, entries, count, pos, wrapcol,
+        align, flags);
 
     INPUTS
-        entries - pointer to an array of pointers to be inserted.
-                  Warning: This is a pointer to a pointer.
+        entries, count, pos and flags -- As for Insert, including the final
+        ULONG flags argument.
 
-                  It's a pointer to string if count==-2.
+        wrapcol -- NOWRAP or one of WRAPCOL0 through WRAPCOL6. Only one
+        display column can wrap; the implementation masks to these bits and
+        selects the lowest set bit if several are supplied.
 
-        count   - Number of elements to be inserted. If count==-1,
-                  entries will be inserted until NULL pointer in
-                  the entries array is found.
+        align -- ALIGN_LEFT, ALIGN_CENTER, ALIGN_RIGHT or ALIGN_JUSTIFY.
+        Stored after masking with 0x0700. Alignment escape sequences in the
+        parsed display text can override this initial style.
 
-                  If count==-2 then entries must be a string pointer
-                  which can be multiline with \n , \r or \r\n separators.
-                  You'll get as many entries inserted as lines in the string.
-                  The end char is \0.
+    FUNCTION
+        Use the common Insert path with the supplied wrapping and alignment.
+        Wrapping creates display rows that refer to one logical payload; it
+        does not create independently owned payloads for each continuation.
+        The same input traversal, partial-insertion and allocation-failure
+        limitations apply.
 
-        pos     - New entry will be added in front of this entry.
-                MUIV_NList_Insert_Top     insert as first entry.
-                MUIV_NList_Insert_Active  insert in front of the active entry.
-                MUIV_NList_Insert_Sorted  insert sorted (all entries will be
-                                          sorted if necessary).
-                MUIV_NList_Insert_Bottom  insert as last entry.
-
-        wrapcol - WRAPCOL0 to WRAPCOL6. You can't ask word wrap for an
-                other col. NOWRAP if you don't want word wrap.
-                So only one of (display hook) col 0 to 6 can be wrapped.
-
-        align   - ALIGN_LEFT, ALIGN_CENTER, ALIGN_RIGHT or ALIGN_JUSTIFY.
-                be aware that align will be used if there is no escape
-                align sequence in the preparses or column entry string.
+    RESULT
+        Common insertion BOOL, not a count of logical entries or wrapped
+        rows.
 
     SEE ALSO
-        MUIM_NList_Remove, MUIA_NList_ConstructHook, MUIM_NList_Insert,
-        MUIM_NList_InsertSingle, MUIM_NList_InsertSingleWrap
+        MUIM_NList_Insert, MUIM_NList_InsertSingleWrap,
+        MUIM_NList_GetEntryInfo
+
 NList.mcc/MUIM_NList_Jump
 
     NAME
@@ -3016,31 +3131,46 @@ NList.mcc/MUIM_NList_UseImage
 NList.mcc/MUIM_NList_Move
 
     NAME
-        MUIM_NList_Move --
+        MUIM_NList_Move -- Move one entry or the selected entry group.
 
     SYNOPSIS
-        DoMethod(obj,MUIM_NList_Move,LONG from, LONG to);
-
-    FUNCTION
-        Same function as List.mui/MUIM_List_Move.
+        DoMethod(obj, MUIM_NList_Move, from, to);
 
     INPUTS
-        pos1 - number of the first entry.
-        pos2 - number of the second entry.
+        from -- Zero-based display index or MUIV_NList_Move_Top (0), Active
+        (-1), Bottom (-2), Selected (-5).
 
-        Possible special values :
+        to -- A final display position for an ordinary move, or an insertion
+        boundary for Selected. Top, Active and Bottom are accepted. Next
+        (-3) and Previous (-4) apply only to ordinary moves. Active must
+        identify a valid entry.
 
-        MUIV_NList_Move_Top
-        MUIV_NList_Move_Active
-        MUIV_NList_Move_Bottom
-        MUIV_NList_Move_Next        only valid for second parameter
-                                    if first one is not Move_Selected
-        MUIV_NList_Move_Previous    only valid for second parameter
-                                    if first one is not Move_Selected
-        MUIV_NList_Move_Selected    only valid for first parameter
+    FUNCTION
+        Ordinary moves normalize wrapped continuations to their owner, move
+        the existing record, track the active payload and update
+        InsertPosition. No payload is copied or destructed. Invalid and
+        identical resolved positions do nothing. When moving downward past a
+        wrapped destination, the destination includes that owner's
+        continuation rows.
+
+        Selected moves preserve relative order and include the logical
+        owners of selected wrapped rows. In character-selection mode they
+        use the covered entry range. A numeric destination is interpreted
+        before removal of the selected block. The multi-entry path uses a
+        temporary pooled array and does not validate a missing Active
+        destination. Use a valid destination. This path does not explicitly
+        clear the internal sorted flag; explicitly sort again before relying
+        on sorted insertion after manual reordering.
+
+    RESULT
+        Ordinary move: TRUE for a move, FALSE for no valid change. Selected:
+        TRUE can also mean no selection or an unchanged contiguous block;
+        the single-entry branch returns the ordinary move result. Temporary
+        allocation failure returns FALSE.
 
     SEE ALSO
-        MUIM_NList_Insert, MUIM_NList_Remove, MUIM_NList_Exchange
+        MUIM_NList_Exchange, MUIM_NList_Sort
+
 NList.mcc/MUIM_NList_NextSelected
 
     NAME
@@ -3128,60 +3258,78 @@ NList.mcc/MUIM_NList_UseImage
 NList.mcc/MUIM_NList_Remove
 
     NAME
-        MUIM_NList_Remove --
+        MUIM_NList_Remove -- Remove one logical entry or selected entries.
 
     SYNOPSIS
-        DoMethod(obj,MUIM_NList_Remove,LONG pos);
-
-    FUNCTION
-        Same function as List.mui/MUIM_List_Remove.
+        DoMethod(obj, MUIM_NList_Remove, pos);
 
     INPUTS
-        pos - number of the entry to be removed or one of
-              MUIV_NList_Remove_First
-              MUIV_NList_Remove_Active
-              MUIV_NList_Remove_Selected
-              MUIV_NList_Remove_Last
-              When the active or a selected entry is removed,
-              the following entry will become active.
-              When the active is the removed and is the last,
-              the new last become active.
+        pos -- Zero-based display index, or MUIV_NList_Remove_First (0),
+        Active (-1), Last (-2), Selected (-3).
+
+    FUNCTION
+        Normalize a wrapped continuation to its logical owner. Destruct the
+        removed payload, update row positions and selection/active state,
+        and request redraw and any needed rewrapping. Selected scans entry
+        selection flags; it is not a text-range deletion operation.
+
+        Removing an active entry keeps the numerical active position for a
+        following entry when available and clamps it at the end. Removing an
+        earlier entry shifts the active index down. The implementation may
+        select an adjacent entry while maintaining selection state. Removal
+        of the final entry uses Clear. Retained indices and list-owned
+        payload pointers may become invalid.
+
+    RESULT
+        TRUE when removal proceeds, FALSE for no valid target or no selected
+        entries. Destructor failures are not reported.
 
     SEE ALSO
-        MUIM_NList_Insert, MUIA_NList_DestructHook
+        MUIM_NList_Clear, MUIM_NList_Destruct
+
 NList.mcc/MUIM_NList_ReplaceSingle
 
     NAME
-        MUIM_NList_ReplaceSingle --
+        MUIM_NList_ReplaceSingle -- Replace a logical payload at an existing
+        position.
 
-    FUNCTION
-        DoMethod(obj,MUIM_NList_ReplaceSingle,
-                      APTR entry, LONG pos, LONG wrapcol, LONG align);
-
-    FUNCTION
-        Same function as MUIM_NList_InsertSingleWrap but replace an existing
-        entry rather than inserting.
-        It's better to do a direct replace than remove then insert it !
+    SYNOPSIS
+        DoMethod(obj, MUIM_NList_ReplaceSingle, entry, pos, wrapcol, align);
 
     INPUTS
-        entry   - item to insert.
+        entry -- Non-NULL replacement input.
 
-        pos     - position of the entry to be replaced
-                MUIV_NList_Insert_Top     replace the first entry.
-                MUIV_NList_Insert_Active  replace the active entry.
-                MUIV_NList_Insert_Bottom  replace the last entry.
-                Invalid positions will cause the replacement to fail!
+        pos -- Zero-based display index or Insert_Top, Insert_Active or
+        Insert_Bottom (MUIV_NList_ prefix). Active must exist. Sorted and
+        other invalid positions fail; they do not append.
 
-        wrapcol - WRAPCOL0 to WRAPCOL6. You can't ask word wrap for an
-                other col. NOWRAP if you don't want word wrap.
-                So only one of (display hook) col 0 to 6 can be wrapped.
+        wrapcol -- NOWRAP or one of WRAPCOL0 through WRAPCOL6. Only one
+        display column can wrap; the implementation masks to these bits and
+        selects the lowest set bit if several are supplied.
 
-        align   - ALIGN_LEFT, ALIGN_CENTER, ALIGN_RIGHT or ALIGN_JUSTIFY.
-                be aware that align will be used if there is no escape
-                align sequence in the preparses or column entry string.
+        align -- ALIGN_LEFT, ALIGN_CENTER, ALIGN_RIGHT or ALIGN_JUSTIFY.
+        Stored after masking with 0x0700. Alignment escape sequences in the
+        parsed display text can override this initial style.
+
+    FUNCTION
+        Normalize a wrapped continuation to its owner. Construct the new
+        payload before destructing the old payload and updating the existing
+        record. Set InsertPosition, clear character selection and mark the
+        list unsorted. Do not pass an alias that becomes invalid when the
+        old payload is destructed.
+
+        If Construct returns NULL, this implementation removes the old
+        entry. Replacement is therefore not transactional and does not
+        preserve the old value on construction failure.
+
+    RESULT
+        TRUE after replacement, or the removal result after construction
+        failure. Thus TRUE can mean the old entry was removed without
+        replacement. NULL input or an invalid position returns FALSE.
 
     SEE ALSO
-        MUIM_NList_Remove, MUIM_NList_InsertSingleWrap
+        MUIM_NList_Construct, MUIM_NList_Destruct, MUIM_NList_Remove
+
 NList.mcc/MUIM_NList_Select
 
     NAME
@@ -3323,111 +3471,92 @@ NList.mcc/MUIM_NList_UseImage
 NList.mcc/MUIM_NList_Sort
 
     NAME
-        MUIM_NList_Sort --
+        MUIM_NList_Sort -- Sort logical entries using the current comparison
+        policy.
 
     SYNOPSIS
-        DoMethod(obj,MUIM_NList_Sort);
+        DoMethod(obj, MUIM_NList_Sort);
 
     FUNCTION
-        Same function as List.mui/MUIM_List_Sort.
+        Compare payloads through MUIM_NList_Compare and the current sort
+        types. Wrapped rows are compared through their owners; original
+        positions break equal comparisons, preserving their relative order.
+        Reorder existing records without constructing or destructing
+        payloads. The active entry and tracked InsertPosition follow
+        reordered records.
+
+        The default comparator uses Stricmp and requires strings. Custom
+        payloads need a suitable comparator. Required wrapping, selection
+        and redraw work may still occur when the order does not change.
+
+    RESULT
+        TRUE if the sort exchanged entries; FALSE if no exchanges occurred
+        or the temporary sort array could not be allocated. FALSE is not an
+        unambiguous failure report.
 
     SEE ALSO
-        MUIA_NList_CompareHook, MUIA_NList_CompareHook2, MUIM_NList_Sort, MUIM_NList_Sort3,
-        MUIA_NList_SortType, MUIA_NList_SortType2
+        MUIM_NList_Compare, MUIM_NList_Sort2, MUIM_NList_Sort3
+
 NList.mcc/MUIM_NList_Sort2
 
     NAME
-        MUIM_NList_Sort2 --
+        MUIM_NList_Sort2 -- Update the primary sort value and sort.
 
     SYNOPSIS
-        DoMethod(obj,MUIM_NList_Sort2,LONG sort_type, LONG sort_type_add);
-
-    FUNCTION
-        Same function as MUIM_NList_Sort but will set MUIA_NList_SortType
-        before starting the sort.
-
-        It is really usefull only if you use MUIA_NList_CompareHook2 instead
-        of classic MUIA_NList_CompareHook so your hook will be able to do
-        different type of sort when NList_SortType change.
+        DoMethod(obj, MUIM_NList_Sort2, sort_type, sort_type_add);
 
     INPUTS
-        sort_type     - The new MUIA_NList_SortType value (see below).
+        sort_type, sort_type_add -- LONG policy value and update amount.
 
-        sort_type_add - If 0 then sort_type will be the new MUIA_NList_SortType,
-                        else if current MUIA_NList_SortType & MUIV_NList_SortTypeValue_Mask
-                        is same as sort_type then sort_type_add will be added to the
-                        MUIA_NList_SortType value,
-                        else sort_type will be the new MUIA_NList_SortType.
+    FUNCTION
+        If sort_type_add is nonzero and (current &
+        ~MUIV_NList_SortTypeAdd_Mask) equals sort_type, add sort_type_add to
+        current. Otherwise assign sort_type. The mask is 0xC0000000. The
+        header provides SortTypeAdd_None (0), SortTypeAdd_2Values
+        (0x80000000), and SortTypeAdd_4Values (0x40000000), each with the
+        MUIV_NList_ prefix. The comparison policy interprets these values;
+        the class does not itself select a column or reverse Stricmp.
 
-                        See examples for special values.
+        Update SortType, set its attribute, then call Sort. SortType2 is
+        unchanged. A custom Compare implementation or CompareHook2 can
+        interpret the updated value; the default comparator ignores it.
 
-    EXAMPLES
-        Many times this method will be used to sort multicolumn list in different
-        ways when the user click on title buttons :
-
-        DoMethod(list,MUIM_Notify,MUIA_NList_TitleClick, MUIV_EveryTime,
-          list, 3, MUIM_NList_Sort2, MUIV_TriggerValue, MUIV_NList_SortTypeAdd_xxx);
-
-        if MUIV_NList_SortTypeAdd_None    then the hook sort_type value will be the column
-                                          number.
-        if MUIV_NList_SortTypeAdd_2Values then the hook sort_type value will be a cycle of
-                                          values which change on each click :
-                                          o Column number  (first time)
-                                          o Column number + MUIV_NList_SortTypeAdd_2Values
-                                          o back to column number ...
-
-        if MUIV_NList_SortTypeAdd_4Values then the hook sort_type value will be a cycle of
-                                          values which change on each click :
-                                          o Column number  (first time)
-                                          o Column number + MUIV_NList_SortTypeAdd_4Values
-                                          o Column number + MUIV_NList_SortTypeAdd_4Values*2
-                                          o Column number + MUIV_NList_SortTypeAdd_4Values*3
-                                          o back to column number ...
-        See NList-Demo program.
+    RESULT
+        The Sort change indicator. FALSE does not mean the sort attribute
+        was unchanged or rejected.
 
     SEE ALSO
-        MUIA_NList_CompareHook2, MUIM_NList_Sort, MUIM_NList_Sort3, MUIA_NList_SortType,
-        MUIA_NList_SortType2
+        MUIM_NList_Sort, MUIM_NList_Sort3, MUIA_NList_SortType
+
 NList.mcc/MUIM_NList_Sort3
 
     NAME
-        MUIM_NList_Sort3 --
+        MUIM_NList_Sort3 -- Update one or both sort values and sort.
 
     SYNOPSIS
-        DoMethod(obj,MUIM_NList_Sort3,LONG sort_type, LONG sort_type_add, LONG which);
-
-    FUNCTION
-        Same function as MUIM_NList_Sort2 but will set MUIA_NList_SortType,
-        MUIA_NList_SortType2 or both before starting the sort.
-
-        When using MUIV_NList_Sort3_SortType_Both the method will change
-        MUIA_NList_SortType exactly the same way as MUIM_NList_Sort2 would do
-        it, then copy that value to MUIA_NList_SortType2.
-
-        It is really usefull only if you use MUIA_NList_CompareHook2 instead
-        of classic MUIA_NList_CompareHook so your hook will be able to do
-        different type of sort when NList_SortType change.
+        DoMethod(obj, MUIM_NList_Sort3, sort_type, sort_type_add, which);
 
     INPUTS
-        sort_type     - The new MUIA_NList_SortType/2 value.
+        sort_type and sort_type_add -- As for Sort2. which --
+        MUIV_NList_Sort3_SortType_1 (1), SortType_2 (2) or SortType_Both
+        (0).
 
-        sort_type_add - If 0 then sort_type will be the new MUIA_NList_SortType/2,
-                        else if current MUIA_NList_SortType/2 & MUIV_NList_SortTypeValue_Mask
-                        is same as sort_type then sort_type_add will be added to the
-                        MUIA_NList_SortType/2 value,
-                        else sort_type will be the new MUIA_NList_SortType/2.
+    FUNCTION
+        Apply the Sort2 update rule to the selected value. Selector 2
+        updates only SortType2; selector 1 updates only SortType. Both
+        updates SortType first and copies the resulting value to SortType2.
+        Unrecognized selectors follow the Both branch; use the declared
+        constants.
 
-        which         - MUIV_NList_Sort3_SortType_1      set MUIA_NList_SortType value.
-                        MUIV_NList_Sort3_SortType_2      set MUIA_NList_SortType2 value.
-                        MUIV_NList_Sort3_SortType_Both   set MUIA_NList_SortType value
-                                                         then copy it to MUIA_NList_SortType2.
+        Set the affected attributes, then sort with the resulting policy
+        values. A zero change result does not undo those updates.
 
-    EXAMPLES
-        See NList-Demo program.
+    RESULT
+        The Sort change indicator.
 
     SEE ALSO
-        MUIA_NList_CompareHook2, MUIM_NList_Sort, MUIM_NList_Sort2, MUIA_NList_SortType,
-        MUIA_NList_SortType2
+        MUIM_NList_Sort, MUIM_NList_Sort2, MUIA_NList_SortType2
+
 NList.mcc/MUIM_NList_TestPos
 
     NAME

@@ -17,43 +17,43 @@
 struct ExceptionContext
 {
     union {
-        ULONG x[RISCV_REGSAVE_CNT];     /* General purpose registers    */
+        IPTR  x[RISCV_REGSAVE_CNT];     /* General purpose registers    */
         struct {
-            ULONG ra;                   /* 0 = x1                       */
-            ULONG sp;                   /* x2                           */
-            ULONG t0;                   /* x5                           */
-            ULONG t1;
-            ULONG t2;
+            IPTR  ra;                   /* 0 = x1                       */
+            IPTR  sp;                   /* x2                           */
+            IPTR  t0;                   /* x5                           */
+            IPTR  t1;
+            IPTR  t2;
 #define REG_X_FP_OFF    5
-            ULONG fp;
-            ULONG s1;
+            IPTR  fp;
+            IPTR  s1;
 #define REG_X_Ax_OFF    7
-            ULONG a0;
-            ULONG a1;
-            ULONG a2;
-            ULONG a3;
-            ULONG a4;
-            ULONG a5;
-            ULONG a6;
-            ULONG a7;
-            ULONG s2;
-            ULONG s3;
-            ULONG s4;
-            ULONG s5;
-            ULONG s6;
-            ULONG s7;
-            ULONG s8;
-            ULONG s9;
-            ULONG s10;
-            ULONG s11;
-            ULONG t3;
-            ULONG t4;
-            ULONG t5;
-            ULONG t6;
+            IPTR  a0;
+            IPTR  a1;
+            IPTR  a2;
+            IPTR  a3;
+            IPTR  a4;
+            IPTR  a5;
+            IPTR  a6;
+            IPTR  a7;
+            IPTR  s2;
+            IPTR  s3;
+            IPTR  s4;
+            IPTR  s5;
+            IPTR  s6;
+            IPTR  s7;
+            IPTR  s8;
+            IPTR  s9;
+            IPTR  s10;
+            IPTR  s11;
+            IPTR  t3;
+            IPTR  t4;
+            IPTR  t5;
+            IPTR  t6;
         };
     };
-    ULONG pc;		                /* sepc/mepc when trapped	    */
-    ULONG sr;		                /* sstatus/mstatus when trapped   */
+    IPTR  pc;		                /* sepc/mepc when trapped	    */
+    IPTR  sr;		                /* sstatus/mstatus when trapped   */
     ULONG Flags;	                /* ECF_* flags			    */
     APTR  fpuContext;               /* FPU register state, if saved   */
     APTR  vecContext;               /* Vector register state, if saved */
@@ -74,11 +74,11 @@ struct FpuContext
  */
 struct VectorContext
 {
-    ULONG vstart;
-    ULONG vtype;
-    ULONG vl;
-    ULONG vcsr;
-    ULONG vlenb;                    /* bytes per v register           */
+    IPTR  vstart;
+    IPTR  vtype;
+    IPTR  vl;
+    IPTR  vcsr;
+    IPTR  vlenb;                    /* bytes per v register           */
     UBYTE v[];                      /* 32 * vlenb bytes, 16-aligned   */
 };
 

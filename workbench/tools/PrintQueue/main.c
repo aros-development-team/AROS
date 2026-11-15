@@ -27,7 +27,7 @@
 
 #define REFRESH_MS 1000
 
-const char version[] = "$VER: PrintQueue 1.1 (8.11.2026)";
+const char version[] = "$VER: PrintQueue 1.2 (9.11.2026)";
 
 struct Job
 {
@@ -162,6 +162,26 @@ static BOOL job_flag(struct Job *job, CONST_STRPTR suffix)
     return TRUE;
 }
 
+/* "held", with the spooler's reason when it held the job itself. */
+static void held_state(struct Job *job)
+{
+    TEXT path[300], why[100];
+    BPTR file;
+    LONG len;
+
+    strcpy(job->state, "held");
+    job_flag_path(job, ".hold", path, sizeof(path));
+    if ((file = Open(path, MODE_OLDFILE)) == BNULL)
+        return;
+    if (FGets(file, why, sizeof(why)) != NULL && (len = strlen(why)) > 0)
+    {
+        if (why[len - 1] == '\n')
+            why[len - 1] = '\0';
+        snprintf(job->state, sizeof(job->state), "held: %s", why);
+    }
+    Close(file);
+}
+
 /* The spooler acts on <job><suffix> (.hold, .stop, .restart, .cancel). */
 static void set_job_flag(struct Job *job, CONST_STRPTR suffix, BOOL on)
 {
@@ -247,7 +267,7 @@ static void refresh(void)
             else if (strcmp(job.name, active) == 0)
                 snprintf(job.state, sizeof(job.state), "%s", line + strlen(active) + 2);
             else if (job_flag(&job, ".hold"))
-                strcpy(job.state, "held");
+                held_state(&job);
             else if (queue_paused(job.unit))
                 strcpy(job.state, "queue paused");
             else

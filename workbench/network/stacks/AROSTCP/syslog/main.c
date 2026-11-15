@@ -63,9 +63,15 @@ STRPTR DebugLevels[] = {"emergency", "alerts", "critical", "errors", "warnings",
 BOOL Setup(void)
 {
   if (!(GfxBase = OpenLibrary("graphics.library", 0))) return FALSE;
+#if !defined(__AROS__)
+  /* on AROS the program's start-up code opens these two (and declares
+   * their bases with their own types) */
   if (!(IntuitionBase = OpenLibrary("intuition.library", 0))) return FALSE;
+#endif
   if (!(MUIMasterBase = OpenLibrary("muimaster.library", 0))) return FALSE;
+#if !defined(__AROS__)
   if (!(LocaleBase = OpenLibrary("locale.library", 0))) return FALSE;
+#endif
   if (!(ColorList = CreateColorListClass())) return FALSE;
   Locale = OpenLocale(NULL);
   if (FindPort("SysLog")) return FALSE;
@@ -76,9 +82,13 @@ void Cleanup(void)
 {
   CloseLocale(Locale);
   if (ColorList) MUI_DeleteCustomClass(ColorList);
+#if !defined(__AROS__)
   if (LocaleBase) CloseLibrary(LocaleBase);
+#endif
   if (MUIMasterBase) CloseLibrary(MUIMasterBase);
+#if !defined(__AROS__)
   if (IntuitionBase) CloseLibrary(IntuitionBase);
+#endif
   if (GfxBase) CloseLibrary(GfxBase);
 }
 
@@ -92,50 +102,50 @@ Object *BuildSettingsWindow(void)
   Object *win;
 
   win = MUI_NewObject(MUIC_Window,
-	 MUIA_Window_Title, (ULONG)"SysLog settings",
+	 MUIA_Window_Title, (IPTR)"SysLog settings",
    MUIA_Window_ID, 0x4D444C50,
-   MUIA_Window_RootObject, (ULONG)MUI_NewObject(MUIC_Group,
-    MUIA_Group_Child, (ULONG)MUI_NewObject(MUIC_Group,
+   MUIA_Window_RootObject, (IPTR)MUI_NewObject(MUIC_Group,
+    MUIA_Group_Child, (IPTR)MUI_NewObject(MUIC_Group,
      MUIA_Group_Columns, 2,
-     MUIA_Group_Child, (ULONG)MUI_NewObject(MUIC_Text,
-      MUIA_Text_Contents, (ULONG)"\33rColor of error messages",
+     MUIA_Group_Child, (IPTR)MUI_NewObject(MUIC_Text,
+      MUIA_Text_Contents, (IPTR)"\33rColor of error messages",
       MUIA_Weight, 0,
      TAG_END),
-     MUIA_Group_Child, (ULONG)MUI_NewObject(MUIC_Poppen,
-      MUIA_FixWidthTxt, (ULONG)"6EDA",
+     MUIA_Group_Child, (IPTR)MUI_NewObject(MUIC_Poppen,
+      MUIA_FixWidthTxt, (IPTR)"6EDA",
       MUIA_InnerSpacing(1),
       MUIA_ObjectID, 1,
       MUIA_UserData, PREFS_POPPEN_ERRORS,
-      MUIA_Window_Title, (ULONG)"Error messages",
+      MUIA_Window_Title, (IPTR)"Error messages",
      TAG_END),
-     MUIA_Group_Child, (ULONG)MUI_NewObject(MUIC_Text,
-      MUIA_Text_Contents, (ULONG)"\33rColor of important information",
+     MUIA_Group_Child, (IPTR)MUI_NewObject(MUIC_Text,
+      MUIA_Text_Contents, (IPTR)"\33rColor of important information",
       MUIA_Weight, 0,
      TAG_END),
-     MUIA_Group_Child, (ULONG)MUI_NewObject(MUIC_Poppen,
-      MUIA_FixWidthTxt, (ULONG)"6EDA",
+     MUIA_Group_Child, (IPTR)MUI_NewObject(MUIC_Poppen,
+      MUIA_FixWidthTxt, (IPTR)"6EDA",
       MUIA_InnerSpacing(1),
       MUIA_ObjectID, 2,
       MUIA_UserData, PREFS_POPPEN_IMPORTANT,
-      MUIA_Window_Title, (ULONG)"Important information",
+      MUIA_Window_Title, (IPTR)"Important information",
      TAG_END),
-     MUIA_Group_Child, (ULONG)MUI_NewObject(MUIC_Text,
-      MUIA_Text_Contents, (ULONG)"\33rColor of debug information",
+     MUIA_Group_Child, (IPTR)MUI_NewObject(MUIC_Text,
+      MUIA_Text_Contents, (IPTR)"\33rColor of debug information",
       MUIA_Weight, 0,
      TAG_END),
-     MUIA_Group_Child, (ULONG)MUI_NewObject(MUIC_Poppen,
-      MUIA_FixWidthTxt, (ULONG)"6EDA",
+     MUIA_Group_Child, (IPTR)MUI_NewObject(MUIC_Poppen,
+      MUIA_FixWidthTxt, (IPTR)"6EDA",
       MUIA_InnerSpacing(1),
       MUIA_ObjectID, 3,
       MUIA_UserData, PREFS_POPPEN_OTHERS,
-      MUIA_Window_Title, (ULONG)"Debug information",
+      MUIA_Window_Title, (IPTR)"Debug information",
      TAG_END),
     TAG_END),
-    MUIA_Group_Child, (ULONG)MUI_NewObject(MUIC_Group,
+    MUIA_Group_Child, (IPTR)MUI_NewObject(MUIC_Group,
      MUIA_Group_Horiz, TRUE,
-     MUIA_Group_Child, (ULONG)MUI_NewObject(MUIC_Text,
-      MUIA_Text_Contents, (ULONG)"Save",
-      MUIA_Text_PreParse, (ULONG)"\33c",
+     MUIA_Group_Child, (IPTR)MUI_NewObject(MUIC_Text,
+      MUIA_Text_Contents, (IPTR)"Save",
+      MUIA_Text_PreParse, (IPTR)"\33c",
       MUIA_Text_HiChar, 's',
       MUIA_ControlChar, 's',
       MUIA_InputMode, MUIV_InputMode_RelVerify,
@@ -144,9 +154,9 @@ Object *BuildSettingsWindow(void)
       MUIA_Font, MUIV_Font_Button,
       MUIA_UserData, PREFS_BUTTON_SAVE,
      TAG_END),
-     MUIA_Group_Child, (ULONG)MUI_NewObject(MUIC_Text,
-      MUIA_Text_Contents, (ULONG)"Use",
-      MUIA_Text_PreParse, (ULONG)"\33c",
+     MUIA_Group_Child, (IPTR)MUI_NewObject(MUIC_Text,
+      MUIA_Text_Contents, (IPTR)"Use",
+      MUIA_Text_PreParse, (IPTR)"\33c",
       MUIA_Text_HiChar, 'u',
       MUIA_ControlChar, 'u',
       MUIA_InputMode, MUIV_InputMode_RelVerify,
@@ -155,9 +165,9 @@ Object *BuildSettingsWindow(void)
       MUIA_Font, MUIV_Font_Button,
       MUIA_UserData, PREFS_BUTTON_USE,
      TAG_END),
-     MUIA_Group_Child, (ULONG)MUI_NewObject(MUIC_Text,
-      MUIA_Text_Contents, (ULONG)"Cancel",
-      MUIA_Text_PreParse, (ULONG)"\33c",
+     MUIA_Group_Child, (IPTR)MUI_NewObject(MUIC_Text,
+      MUIA_Text_Contents, (IPTR)"Cancel",
+      MUIA_Text_PreParse, (IPTR)"\33c",
       MUIA_Text_HiChar, 'c',
       MUIA_ControlChar, 'c',
       MUIA_InputMode, MUIV_InputMode_RelVerify,
@@ -181,7 +191,7 @@ void MainLoop(Object *win)
   SetAttrs(win, MUIA_Window_Open, TRUE, TAG_END);
   portmask = 1 << Port->mp_SigBit;
 
-  while (DoMethod(App, MUIM_Application_NewInput, (ULONG)&signals) != (ULONG)MUIV_Application_ReturnID_Quit)
+  while (DoMethod(App, MUIM_Application_NewInput, (IPTR)&signals) != (ULONG)MUIV_Application_ReturnID_Quit)
   {
     if (signals)
     {
@@ -194,7 +204,7 @@ void MainLoop(Object *win)
         {
 		if (slp->Level != LOG_CLOSE)
 		{
-			DoMethod(List, MUIM_List_InsertSingle, (ULONG)slp, MUIV_List_Insert_Bottom);
+			DoMethod(List, MUIM_List_InsertSingle, (IPTR)slp, MUIV_List_Insert_Bottom);
 			DoMethod(List, MUIM_List_Jump, MUIV_List_Jump_Bottom, TAG_END);
 		}
 		ReplyMsg(&slp->Msg);
@@ -248,28 +258,28 @@ Object* CreateMenu(void)
   Object *o;
 
   o = MUI_NewObject(MUIC_Menustrip,
-   MUIA_Family_Child, (ULONG)MUI_NewObject(MUIC_Menu,
-    MUIA_Menu_Title, (ULONG)"Project",
-    MUIA_Family_Child, (ULONG)MUI_NewObject(MUIC_Menuitem,
-     MUIA_Menuitem_Title, (ULONG)"Clear",
-     MUIA_Menuitem_Shortcut, (ULONG)"C",
+   MUIA_Family_Child, (IPTR)MUI_NewObject(MUIC_Menu,
+    MUIA_Menu_Title, (IPTR)"Project",
+    MUIA_Family_Child, (IPTR)MUI_NewObject(MUIC_Menuitem,
+     MUIA_Menuitem_Title, (IPTR)"Clear",
+     MUIA_Menuitem_Shortcut, (IPTR)"C",
      MUIA_UserData, MENU_CLEAR,
     TAG_END),
-/*  MUIA_Family_Child, (ULONG)MUI_NewObject(MUIC_Menuitem,
-     MUIA_Menuitem_Title, (ULONG)"Save as...",
-     MUIA_Menuitem_Shortcut, (ULONG)"S",
+/*  MUIA_Family_Child, (IPTR)MUI_NewObject(MUIC_Menuitem,
+     MUIA_Menuitem_Title, (IPTR)"Save as...",
+     MUIA_Menuitem_Shortcut, (IPTR)"S",
      MUIA_UserData, MENU_SAVEAS,
     TAG_END),*/
-    MUIA_Family_Child, (ULONG)MUI_NewObject(MUIC_Menuitem,
-     MUIA_Menuitem_Title, (ULONG)"Settings...",
+    MUIA_Family_Child, (IPTR)MUI_NewObject(MUIC_Menuitem,
+     MUIA_Menuitem_Title, (IPTR)"Settings...",
      MUIA_UserData, MENU_SETTINGS,
     TAG_END),
-    MUIA_Family_Child, (ULONG)MUI_NewObject(MUIC_Menuitem,
+    MUIA_Family_Child, (IPTR)MUI_NewObject(MUIC_Menuitem,
      MUIA_Menuitem_Title, MENUBAR,
     TAG_END),
-    MUIA_Family_Child, (ULONG)MUI_NewObject(MUIC_Menuitem,
-     MUIA_Menuitem_Title, (ULONG)"Quit",
-     MUIA_Menuitem_Shortcut, (ULONG)"Q",
+    MUIA_Family_Child, (IPTR)MUI_NewObject(MUIC_Menuitem,
+     MUIA_Menuitem_Title, (IPTR)"Quit",
+     MUIA_Menuitem_Shortcut, (IPTR)"Q",
      MUIA_UserData, MENU_QUIT,
     TAG_END),
    TAG_END),
@@ -284,23 +294,23 @@ BOOL BuildGui(void)
   Object *lv;
 
   App = MUI_NewObject(MUIC_Application,
-   MUIA_Application_Author, (ULONG)"Grzegorz \"Krashan\" Kraszewski, Pavel \"Sonic\" Fedin, Nick \"Kalamatee\" Andrews",
-   MUIA_Application_Base, (ULONG)"SysLog",
-	 MUIA_Application_Copyright, (ULONG)"(c) 2005 by Grzegorz Kraszewski, Pavel Fedin, Nick Andrews",
-	 MUIA_Application_Description, (ULONG)"AROSTCP syslog viewer",
+   MUIA_Application_Author, (IPTR)"Grzegorz \"Krashan\" Kraszewski, Pavel \"Sonic\" Fedin, Nick \"Kalamatee\" Andrews",
+   MUIA_Application_Base, (IPTR)"SysLog",
+	 MUIA_Application_Copyright, (IPTR)"(c) 2005 by Grzegorz Kraszewski, Pavel Fedin, Nick Andrews",
+	 MUIA_Application_Description, (IPTR)"AROSTCP syslog viewer",
    MUIA_Application_SingleTask, TRUE,
-	 MUIA_Application_Title, (ULONG)"SysLog",
-	 MUIA_Application_Version, (ULONG)"$VER: SysLog 1.2 (15.11.2005)\n",
-   MUIA_Application_Menustrip, (ULONG)CreateMenu(),
-   MUIA_Application_Window, (ULONG)(Win = MUI_NewObject(MUIC_Window,
-		MUIA_Window_Title, (ULONG)"AROSTCP syslog viewer",
-		MUIA_Window_ScreenTitle, (ULONG)"SysLog 1.2 (c) 2005-2007 Grzegorz Kraszewski, Pavel Fedin, Nick Andrews",
+	 MUIA_Application_Title, (IPTR)"SysLog",
+	 MUIA_Application_Version, (IPTR)"$VER: SysLog 1.2 (15.11.2005)\n",
+   MUIA_Application_Menustrip, (IPTR)CreateMenu(),
+   MUIA_Application_Window, (IPTR)(Win = MUI_NewObject(MUIC_Window,
+		MUIA_Window_Title, (IPTR)"AROSTCP syslog viewer",
+		MUIA_Window_ScreenTitle, (IPTR)"SysLog 1.2 (c) 2005-2007 Grzegorz Kraszewski, Pavel Fedin, Nick Andrews",
     MUIA_Window_ID, 0x4D444C47,
-    MUIA_Window_RootObject, (ULONG)MUI_NewObject(MUIC_Group,
-     MUIA_Group_Child, (ULONG)(lv = MUI_NewObject(MUIC_Listview,
-      MUIA_Listview_List, (ULONG)(List = NewObject(ColorList->mcc_Class, NULL,
+    MUIA_Window_RootObject, (IPTR)MUI_NewObject(MUIC_Group,
+     MUIA_Group_Child, (IPTR)(lv = MUI_NewObject(MUIC_Listview,
+      MUIA_Listview_List, (IPTR)(List = NewObject(ColorList->mcc_Class, NULL,
        MUIA_Frame, MUIV_Frame_ReadList,
-			 MUIA_List_Format, (ULONG)"BAR,BAR,BAR,",
+			 MUIA_List_Format, (IPTR)"BAR,BAR,BAR,",
        MUIA_List_Title, TRUE,
       TAG_END)),
       MUIA_Listview_Input, FALSE,
@@ -309,17 +319,17 @@ BOOL BuildGui(void)
       MUIA_Group_Horiz, TRUE,
       MUIA_Group_Child, MUI_NewObject(MUIC_Text,
        MUIA_Text_SetMax, TRUE,
-       MUIA_Text_Contents, (ULONG)"Debug level",
+       MUIA_Text_Contents, (IPTR)"Debug level",
       TAG_END),
       MUIA_Group_Child, DbgLevel = MUI_NewObject(MUIC_Cycle,
-       MUIA_Cycle_Entries, (ULONG)DebugLevels,
+       MUIA_Cycle_Entries, (IPTR)DebugLevels,
        MUIA_Weight, 1,
       TAG_END),
       MUIA_Group_Child, MUI_NewObject(MUIC_Rectangle,
       TAG_END),
      TAG_END),
     TAG_END),
-    MUIA_Window_DefaultObject, (ULONG)lv,
+    MUIA_Window_DefaultObject, (IPTR)lv,
    TAG_END)),
    MUIA_Application_Window, SWin = BuildSettingsWindow(),
   TAG_END);
@@ -334,12 +344,12 @@ void SetNotifications (void)
 #if defined(__AROS__)
 	h_SettingsHook.h_Entry = ( HOOKFUNC )SettingsHook;
 #endif
-  DoMethod(Win, MUIM_Notify, MUIA_Window_CloseRequest, MUIV_EveryTime, (ULONG)App, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
-  DoMethod(App, MUIM_Notify, MUIA_Application_MenuAction, MENU_QUIT, (ULONG)App, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
-/*DoMethod(App, MUIM_Notify, MUIA_Application_MenuAction, MENU_SAVEAS, (ULONG)List, 2, MUIM_CallHook, (ULONG)&h_SaveAsHook);*/
-  DoMethod(App, MUIM_Notify, MUIA_Application_MenuAction, MENU_SETTINGS, (ULONG)App, 2, MUIM_CallHook, (ULONG)&h_SettingsHook);
+  DoMethod(Win, MUIM_Notify, MUIA_Window_CloseRequest, MUIV_EveryTime, (IPTR)App, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
+  DoMethod(App, MUIM_Notify, MUIA_Application_MenuAction, MENU_QUIT, (IPTR)App, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
+/*DoMethod(App, MUIM_Notify, MUIA_Application_MenuAction, MENU_SAVEAS, (IPTR)List, 2, MUIM_CallHook, (IPTR)&h_SaveAsHook);*/
+  DoMethod(App, MUIM_Notify, MUIA_Application_MenuAction, MENU_SETTINGS, (IPTR)App, 2, MUIM_CallHook, (IPTR)&h_SettingsHook);
   DoMethod(App, MUIM_Notify, MUIA_Application_MenuAction, MENU_CLEAR,
-   (ULONG)List, 1, MUIM_List_Clear);
+   (IPTR)List, 1, MUIM_List_Clear);
 
   /* close prefs window */
 

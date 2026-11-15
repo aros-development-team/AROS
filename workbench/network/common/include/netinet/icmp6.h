@@ -698,7 +698,9 @@ void	kmod_icmp6stat_inc(int statnum);
 #define ICMPV6CTL_MLD_VERSION	23
 #define ICMPV6CTL_ND6_MAXQLEN	24
 #define ICMPV6CTL_NODEINFO_OLDMCPREFIX	25
-#define ICMPV6CTL_MAXID		26
+#define ICMPV6CTL_ND6_MAXNBRS	26	/* AROS: neighbour entries per interface */
+#define ICMPV6CTL_ND6_MAXHELD	27	/* AROS: packets held by all neighbour entries */
+#define ICMPV6CTL_MAXID		28
 
 #ifdef _KERNEL
 # ifdef __STDC__

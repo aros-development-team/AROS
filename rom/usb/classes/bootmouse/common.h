@@ -54,3 +54,18 @@
 #define min(x,y) (((x) < (y)) ? (x) : (y))
 #define max(x,y) (((x) > (y)) ? (x) : (y))
 
+/* Tasks that feed input.device must sit above DOS handlers (5) and the band
+   dynamic schedulers manage. With IND_ADDEVENT, input.device (pri 20)
+   auto-repeats a key until *this* task delivers the key-up, and only this task
+   re-arms the interrupt IN pipe; a busy handler at 5 could hold both back for
+   seconds. A floor, not an override: a higher pgc_SubTaskPri wins. */
+#define INPUT_CLASS_TASK_PRI 10
+
+static inline void nApplyInputTaskPriFloor(void)
+{
+    struct Task *task = FindTask(NULL);
+    if(task->tc_Node.ln_Pri < INPUT_CLASS_TASK_PRI)
+    {
+        SetTaskPri(task, INPUT_CLASS_TASK_PRI);
+    }
+}

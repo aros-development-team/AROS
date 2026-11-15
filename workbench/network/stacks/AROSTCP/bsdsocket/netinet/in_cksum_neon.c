@@ -94,6 +94,7 @@
 #include <arm_neon.h>    /* NEON intrinsics -- requires -mfpu=neon on ARMv7 */
 #include <stdint.h>
 #include <string.h>      /* memcpy */
+#include <net/netcore_map.h>        /* always the last include */
 
 /* ------------------------------------------------------------------ */
 /* Helper: branchless fold of a 64-bit accumulator to a 16-bit        */

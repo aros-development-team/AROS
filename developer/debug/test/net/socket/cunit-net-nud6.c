@@ -89,6 +89,8 @@ static int watch_ns(const char *target, int secs, int period, struct ns_seen *se
     d.sin6_port = htons(9);
     d.sin6_scope_id = ifindex;
     s = socket(AF_INET6, SOCK_DGRAM, 0);
+    if (s < 0)
+        return -1;                      /* nothing sent: no count */
     for (ticks = 0; ticks < secs * 50; ticks += 5) {
         long n;
 
@@ -303,6 +305,10 @@ int main(int argc, char **argv)
     SocketBase = OpenLibrary("bsdsocket.library", 4);
     if (SocketBase == NULL) {
         printf("bsdsocket.library 4 not available - skipping NUD6 tests\n");
+        return 0;
+    }
+    if (st_skip_program("cunit-net-nud6", ST_V6)) {
+        CloseLibrary(SocketBase);
         return 0;
     }
     ready = setup();

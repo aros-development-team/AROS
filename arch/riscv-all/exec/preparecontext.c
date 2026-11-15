@@ -10,7 +10,7 @@
 #include <proto/arossupport.h>
 #include <proto/kernel.h>
 #include <aros/riscv/cpucontext.h>
-#include <asm/cpu.h>
+#include <asm/riscv/csr.h>
 
 #include "exec_intern.h"
 #include "exec_util.h"
@@ -33,8 +33,8 @@ BOOL PrepareContext(struct Task *task, APTR entryPoint, APTR fallBack,
         return FALSE;
 
     /*
-     * Set up function arguments. The ILP32 ABI passes the first eight
-     * integer arguments in a0-a7, so all of TASKTAG_ARG1..8 fit in
+     * Set up function arguments. The ILP32 and LP64 ABIs pass the first
+     * eight integer arguments in a0-a7, so all of TASKTAG_ARG1..8 fit in
      * registers and none go to the stack.
      */
     while((t = LibNextTagItem((struct TagItem **)&tagList)))
@@ -43,8 +43,31 @@ BOOL PrepareContext(struct Task *task, APTR entryPoint, APTR fallBack,
         {
 #if defined(__AROSEXEC_SMP__)
             case TASKTAG_AFFINITY:
-                IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuAffinity = t->ti_Data;
+            {
+                struct IntETask *iet = IntETask(task->tc_UnionETask.tc_ETask);
+                void *aff = (void *)t->ti_Data;
+
+                /*
+                 * NULL is not a valid mask. The value 0 is also
+                 * TASKAFFINITY_BOOT, so honour that meaning with a real
+                 * mask for the boot CPU rather than storing NULL (which
+                 * no CPU would dispatch). If even that can not be had,
+                 * keep the mask InitETask gave the task.
+                 */
+                if ((IPTR)aff == TASKAFFINITY_BOOT)
+                {
+                    if (!(aff = KrnAllocCPUMask()))
+                        break;
+                    KrnGetCPUMask(0, aff);
+                }
+
+                /* Replace the InitETask mask - freeing it, not leaking it */
+                if (iet->iet_CpuAffinity &&
+                    ((IPTR)iet->iet_CpuAffinity != TASKAFFINITY_ANY))
+                    KrnFreeCPUMask(iet->iet_CpuAffinity);
+                iet->iet_CpuAffinity = aff;
                 break;
+            }
 #endif
 #define REGARG(argno)                       \
         case TASKTAG_ARG ## argno:          \
@@ -67,9 +90,10 @@ BOOL PrepareContext(struct Task *task, APTR entryPoint, APTR fallBack,
     ctx->fp = 0;
     ctx->ra = (IPTR)fallBack;
     ctx->Flags = 0;
-    /* Return to S-mode with interrupts enabled and a fresh (Initial)
-       FPU state - first FP use marks it Dirty for the lazy switcher */
-    ctx->sr = SSTATUS_SPP | SSTATUS_SPIE | SSTATUS_FS_INITIAL;
+    /* Return to the kernel's mode (S or M) with interrupts enabled and a
+       fresh (Initial) FPU state - first FP use marks it Dirty for the
+       lazy switcher */
+    ctx->sr = RV_STATUS_PP_KERNEL | RV_STATUS_PIE | RV_STATUS_FS_INITIAL;
 
     /* Set up the frame to be used by Dispatch() */
     ctx->sp = (IPTR)task->tc_SPReg;

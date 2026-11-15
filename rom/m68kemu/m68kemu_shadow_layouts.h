@@ -2092,7 +2092,7 @@ static const struct M68KFieldMap shadow_fields_IODRPReq[] = {
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* IODRPTagsReq: m68k=66B, aros=120B, 23 fields */
+/* IODRPTagsReq: m68k=66B, aros=128B, 23 fields */
 static const struct M68KFieldMap shadow_fields_IODRPTagsReq[] = {
     {    0,    0, SF_PTR  , 0, 0, NULL },  /* ln_Succ */
     {    4,    8, SF_PTR  , 0, 0, NULL },  /* ln_Pred */
@@ -2108,15 +2108,15 @@ static const struct M68KFieldMap shadow_fields_IODRPTagsReq[] = {
     {   31,   67, SF_BYTE , 0, 0, NULL },  /* io_Error */
     {   32,   72, SF_PTR  , 0, 0, NULL },  /* io_RastPort */
     {   36,   80, SF_PTR  , 0, 0, NULL },  /* io_ColorMap */
-    {   40,   88, SF_LONG , 0, 0, NULL },  /* io_Modes */
-    {   44,   92, SF_WORD , 0, 0, NULL },  /* io_SrcX */
-    {   46,   94, SF_WORD , 0, 0, NULL },  /* io_SrcY */
-    {   48,   96, SF_WORD , 0, 0, NULL },  /* io_SrcWidth */
-    {   50,   98, SF_WORD , 0, 0, NULL },  /* io_SrcHeight */
-    {   52,  100, SF_LONG , 0, 0, NULL },  /* io_DestCols */
-    {   56,  104, SF_LONG , 0, 0, NULL },  /* io_DestRows */
-    {   60,  108, SF_WORD , 0, 0, NULL },  /* io_Special */
-    {   62,  112, SF_PTR  , 0, 0, NULL },  /* io_TagList */
+    {   40,   88, SF_PTR  , 0, 0, NULL },  /* io_Modes */
+    {   44,   96, SF_WORD , 0, 0, NULL },  /* io_SrcX */
+    {   46,   98, SF_WORD , 0, 0, NULL },  /* io_SrcY */
+    {   48,  100, SF_WORD , 0, 0, NULL },  /* io_SrcWidth */
+    {   50,  102, SF_WORD , 0, 0, NULL },  /* io_SrcHeight */
+    {   52,  104, SF_LONG , 0, 0, NULL },  /* io_DestCols */
+    {   56,  108, SF_LONG , 0, 0, NULL },  /* io_DestRows */
+    {   60,  112, SF_WORD , 0, 0, NULL },  /* io_Special */
+    {   62,  120, SF_PTR  , 0, 0, NULL },  /* io_TagList */
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 

@@ -710,7 +710,7 @@ AROS_UFH0(void, nPrinterTask)
                     Permit();
                     ioreq->IOPar.io_Actual = psdStreamWrite(ncp->ncp_EPOutStream, ioreq->IOPar.io_Data, ioreq->IOPar.io_Length);
                     ncp->ncp_WritePending = NULL;
-                    ioerr = psdGetStreamError(ncp->ncp_EPInStream);
+                    ioerr = psdGetStreamError(ncp->ncp_EPOutStream);
                     if(ioerr > 0)
                     {
                         ioreq->IOPar.io_Error = ParErr_LineErr;

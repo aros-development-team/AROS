@@ -227,6 +227,10 @@ int main(int argc, char **argv)
         printf("bsdsocket.library not available - skipping SLAACLIFE tests\n");
         return 0;
     }
+    if (st_skip_program("cunit-net-slaaclife", ST_V6)) {
+        CloseLibrary(SocketBase);
+        return 0;
+    }
     ready = index_of(ifname, &ifindex) == 0 && have_addr(NULL, &linklocal);
     if (!ready)
         printf("%s: no interface with a link-local address - skipping SLAACLIFE tests\n", ifname);

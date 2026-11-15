@@ -138,7 +138,7 @@ OOP_Object *CocoaGfx__Hidd_Display__CreateObject(OOP_Class *cl, OOP_Object *o,
             supermsg.cl = msg->cl;
             supermsg.attrList = bmtags;
 
-            bug("[CocoaGfx] CreateObject: fb=%d modeid=0x%x\n", is_fb, modeid);
+            bug("[CocoaGfx] CreateObject: fb=%d modeid=0x%08X\n", is_fb, (ULONG)modeid);
             return (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)&supermsg);
         }
     }

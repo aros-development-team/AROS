@@ -15,8 +15,6 @@
 #include "acpifan_intern.h"
 
 CONST_STRPTR    acpiFan_str = "ACPI Fan Device";
-static CONST_STRPTR    acpiFan_telemetryId = "Speed";
-static CONST_STRPTR    acpiFan_statusId = "Status";
 
 static void ACPIFan_UpdateMinMax(ACPI_OBJECT *object, ULONG *minValue, ULONG *maxValue, BOOL *found)
 {
@@ -188,8 +186,17 @@ OOP_Object *ACPIFan__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
     struct Library      *UtilityBase = CSD(cl)->cs_UtilityBase;
     ACPI_HANDLE         acpiHandle = (ACPI_HANDLE)GetTagData(aHW_ACPIFan_Handle, 0, msg->attrList);
     OOP_Object          *fanO = NULL;
+    struct HWACPIFanData probe = { acpiHandle };
+    ULONG values = vHidd_FanF(vHidd_Fan_Speed);
 
     D(bug("[ACPI:Fan] %s()\n", __func__));
+
+    /* What _FST reports decides which values the fan has */
+    ACPIFan_ReadStatusPackage(&probe, NULL, NULL, NULL, &probe.acpifan_HasStatus, &probe.acpifan_HasControl);
+    if (probe.acpifan_HasStatus)
+        values |= vHidd_FanF(vHidd_Fan_Running);
+    if (probe.acpifan_HasControl)
+        values |= vHidd_FanF(vHidd_Fan_Level);
 
     char devicePath[5 + 128];
     struct TagItem new_tags[] =
@@ -197,6 +204,7 @@ OOP_Object *ACPIFan__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
         { aHidd_Name,                   (IPTR)"acpifan.hidd" },
         { aHidd_HardwareName,           (IPTR)acpiFan_str       },
         { TAG_IGNORE,                   0                       },
+        { aHidd_Fan_Values,             values                  },
         { TAG_DONE,                     0                       }
     };
     acpiNewFanMsg.mID      = msg->mID,
@@ -204,8 +212,8 @@ OOP_Object *ACPIFan__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
 
     if (msg->attrList)
     {
-        new_tags[3].ti_Tag  = TAG_MORE;
-        new_tags[3].ti_Data = (IPTR)msg->attrList;
+        new_tags[4].ti_Tag  = TAG_MORE;
+        new_tags[4].ti_Data = (IPTR)msg->attrList;
     }
 
     /* The namespace path tells other components which device this is */
@@ -230,18 +238,13 @@ OOP_Object *ACPIFan__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
         D(bug("[ACPI:Fan] %s: Object @ 0x%p\n", __func__, fanO));
 
         data->acpifan_Handle = acpiHandle;
-        data->acpifan_TelemetryCount = 1;
         data->acpifan_FpsMin = 0;
         data->acpifan_FpsMax = 0;
         data->acpifan_HasFps = FALSE;
-        data->acpifan_HasStatus = FALSE;
-        data->acpifan_HasControl = FALSE;
+        data->acpifan_HasStatus = probe.acpifan_HasStatus;
+        data->acpifan_HasControl = probe.acpifan_HasControl;
 
         ACPIFan_ReadPerformanceStates(data);
-        ACPIFan_ReadStatusPackage(data, NULL, NULL, NULL,
-            &data->acpifan_HasStatus, &data->acpifan_HasControl);
-        if (data->acpifan_HasStatus || data->acpifan_HasControl)
-            data->acpifan_TelemetryCount = 2;
     }
     return fanO;
 }
@@ -259,13 +262,6 @@ VOID ACPIFan__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 
     D(bug("[ACPI:Fan] %s()\n", __func__));
 
-    Hidd_Telemetry_Switch(msg->attrID, idx)
-    {
-    case aoHidd_Telemetry_EntryCount:
-        *msg->storage = (IPTR)data->acpifan_TelemetryCount;
-        return;
-    }
-
     HW_ACPIFan_Switch(msg->attrID, idx)
     {
     case aoHW_ACPIFan_Handle:
@@ -276,81 +272,38 @@ VOID ACPIFan__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
     OOP_DoSuperMethod(cl, o, &msg->mID);
 }
 
-BOOL ACPIFan__Hidd_Telemetry__GetEntryAttribs(OOP_Class *cl, OOP_Object *o,
-    struct pHidd_Telemetry_GetEntryAttribs *msg)
+BOOL ACPIFan__Hidd_Fan__GetValue(OOP_Class *cl, OOP_Object *o, struct pHidd_Fan_GetValue *msg)
 {
     struct HWACPIFanData *data = OOP_INST_DATA(cl, o);
-    struct Library *UtilityBase = CSD(cl)->cs_UtilityBase;
-    struct TagItem *tstate;
-    struct TagItem *tag;
-    LONG value = 0;
-    ULONG units = vHW_TelemetryUnit_Unknown;
-    LONG minValue = 0;
-    LONG maxValue = 0;
-    BOOL readOnly = TRUE;
-    CONST_STRPTR entryId = NULL;
-    ULONG statusValue = 0;
-    ULONG controlValue = 0;
-    BOOL hasStatus = FALSE;
-    BOOL hasControl = FALSE;
+    ULONG statusValue = 0, controlValue = 0, speedValue = 0;
+    BOOL hasStatus = FALSE, hasControl = FALSE;
 
-    if (msg->index >= data->acpifan_TelemetryCount)
-        return FALSE;
+    ACPIFan_ReadStatusPackage(data, &statusValue, &controlValue, &speedValue, &hasStatus, &hasControl);
 
-    switch (msg->index)
+    *msg->min = 0;
+    *msg->max = 0;
+    switch (msg->which)
     {
-    case 0:
-        entryId = acpiFan_telemetryId;
-        units = vHW_TelemetryUnit_RPM;
-        minValue = data->acpifan_HasFps ? (LONG)data->acpifan_FpsMin : 0;
-        maxValue = data->acpifan_HasFps ? (LONG)data->acpifan_FpsMax : 0;
-        value = (LONG)ACPIFan_ReadSpeed(data);
-        break;
-    case 1:
-        if (!ACPIFan_ReadStatusPackage(data, &statusValue, &controlValue, NULL,
-            &hasStatus, &hasControl))
-            return FALSE;
-        if (!(hasStatus || hasControl))
-            return FALSE;
-        entryId = acpiFan_statusId;
-        units = vHW_TelemetryUnit_Raw;
-        minValue = 0;
-        maxValue = hasControl ? 3 : 1;
-        value = 0;
-        if (hasStatus && statusValue)
-            value |= 0x1;
-        if (hasControl && controlValue)
-            value |= 0x2;
-        break;
-    default:
-        return FALSE;
-    }
-
-    tstate = msg->tags;
-    while ((tag = NextTagItem(&tstate)))
-    {
-        switch (tag->ti_Tag)
+    case vHidd_Fan_Speed:
+        /* _FPS lists the speeds the fan can be set to */
+        if (data->acpifan_HasFps)
         {
-        case tHidd_Telemetry_EntryID:
-            *(CONST_STRPTR *)tag->ti_Data = entryId;
-            break;
-        case tHidd_Telemetry_EntryUnits:
-            *(ULONG *)tag->ti_Data = units;
-            break;
-        case tHidd_Telemetry_EntryMin:
-            *(LONG *)tag->ti_Data = minValue;
-            break;
-        case tHidd_Telemetry_EntryMax:
-            *(LONG *)tag->ti_Data = maxValue;
-            break;
-        case tHidd_Telemetry_EntryValue:
-            *(LONG *)tag->ti_Data = value;
-            break;
-        case tHidd_Telemetry_EntryReadOnly:
-            *(BOOL *)tag->ti_Data = readOnly;
-            break;
+            *msg->min = (LONG)data->acpifan_FpsMin;
+            *msg->max = (LONG)data->acpifan_FpsMax;
         }
+        *msg->value = (LONG)speedValue;
+        return TRUE;
+    case vHidd_Fan_Running:
+        if (!hasStatus)
+            return FALSE;
+        *msg->max = 1;
+        *msg->value = statusValue ? 1 : 0;
+        return TRUE;
+    case vHidd_Fan_Level:
+        if (!hasControl)
+            return FALSE;
+        *msg->value = (LONG)controlValue;
+        return TRUE;
     }
-
-    return TRUE;
+    return FALSE;
 }

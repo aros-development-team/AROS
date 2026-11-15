@@ -171,6 +171,7 @@ void testMCAST6IF_EACH_LINK(void)
     NEED_IF();
     CU_ASSERT_FATAL((r = member(3, &port)) >= 0);
     s = socket(AF_INET6, SOCK_DGRAM, 0);
+    CU_ASSERT_FATAL(s >= 0);
     for (i = 0; i < 2; i++) {
         sa6(&d, GROUP, port, ifindex[i]);
         CU_ASSERT_EQUAL(sendto(s, "m", 1, 0, (struct sockaddr *)&d, sizeof(d)), 1);
@@ -196,6 +197,7 @@ void testMCAST6IF_JOINED_LINK_ONLY(void)
     NEED_IF();
     CU_ASSERT_FATAL((r = member(1, &port)) >= 0);
     s = socket(AF_INET6, SOCK_DGRAM, 0);
+    CU_ASSERT_FATAL(s >= 0);
     sa6(&d, GROUP, port, ifindex[1]);
     CU_ASSERT_EQUAL(sendto(s, "m", 1, 0, (struct sockaddr *)&d, sizeof(d)), 1);
     CU_ASSERT(!receive(r, 1, &from, &index));
@@ -240,6 +242,7 @@ void testMCAST6IF_CONNECT_ZONE(void)
     NEED_IF();
     CU_ASSERT_FATAL((r = member(3, &port)) >= 0);
     s = socket(AF_INET6, SOCK_DGRAM, 0);
+    CU_ASSERT_FATAL(s >= 0);
     sa6(&d, GROUP, port, ifindex[1]);
     CU_ASSERT_EQUAL_FATAL(connect(s, (struct sockaddr *)&d, sizeof(d)), 0);
     CU_ASSERT_EQUAL(send(s, "m", 1, 0), 1);
@@ -262,6 +265,10 @@ int main(int argc, char **argv)
     SocketBase = OpenLibrary("bsdsocket.library", 3);
     if (SocketBase == NULL) {
         printf("bsdsocket.library not available - skipping MCAST6IF tests\n");
+        return 0;
+    }
+    if (st_skip_program("cunit-net-mcast6if", ST_V6)) {
+        CloseLibrary(SocketBase);
         return 0;
     }
     ready = 1;

@@ -243,26 +243,10 @@ WORD xhciQueueIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
     }
 
     {
-        UWORD interval = ioreq->iouh_Interval ? ioreq->iouh_Interval : 1;
-        BOOL superspeed = (ioreq->iouh_Flags & UHFF_SUPERSPEED) != 0;
-        BOOL highspeed = (ioreq->iouh_Flags & UHFF_HIGHSPEED) != 0;
+        /* poseidon passes the service interval: microframes for HS/SS, frames for FS */
+        ULONG interval = ioreq->iouh_Interval ? ioreq->iouh_Interval : 1;
 
-        if(interval > 16)
-            interval = 16;
-
-        if(superspeed || highspeed) {
-            interval_uf = 1UL << (interval - 1);
-        } else {
-            UWORD exp = (interval - 1) + 3;
-
-            if(exp > 15)
-                exp = 15;
-
-            interval_uf = 1UL << exp;
-        }
-
-        if(interval_uf < 1)
-            interval_uf = 1;
+        interval_uf = (ioreq->iouh_Flags & (UHFF_SUPERSPEED | UHFF_HIGHSPEED)) ? interval : interval * 8;
     }
 
     interval_frames = (interval_uf + 7) >> 3;

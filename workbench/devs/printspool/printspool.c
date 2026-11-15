@@ -48,6 +48,7 @@
 
 #define CHUNK_SIZE      65536
 #define RETRY_TICKS     (5 * TICKS_PER_SECOND)
+#define MAX_RESENDS     10      /* a dropped job is sent whole again this often, then held */
 #define JOB_SUFFIX      ".job"
 #define TMP_SUFFIX      ".tmp"
 
@@ -240,6 +241,54 @@ static void set_flag(struct PrintSpoolBase *PrintSpoolBase, CONST_STRPTR name, C
         Close(file);
 }
 
+/* Held by the spooler: the .hold file says why, for PrintQueue. FALSE when it could
+   not be written, so the job is not held and is picked up again. */
+static BOOL hold_job(struct PrintSpoolBase *PrintSpoolBase, CONST_STRPTR name, CONST_STRPTR why)
+{
+    TEXT path[300];
+    BPTR file;
+    BOOL ok;
+
+    job_path(PrintSpoolBase, name, ".hold", path, sizeof(path));
+    if ((file = Open(path, MODE_NEWFILE)) == BNULL)
+        return FALSE;
+    ok = FPuts(file, why) == 0;
+    return Close(file) && ok;
+}
+
+/* Whether the device answers for a whole job (CMD_UPDATE, CMD_RESET): only such a
+   device's IOERR_ABORTED and PDERR_CANCEL mean a dropped or refused job; the port
+   devices have error numbers of their own. */
+static BOOL knows_jobs(struct IOStdReq *io)
+{
+    struct NSDeviceQueryResult q;
+    UWORD *c;
+
+    memset(&q, 0, sizeof(q));
+    io->io_Command = NSCMD_DEVICEQUERY;
+    io->io_Data = &q;
+    io->io_Length = sizeof(q);
+    io->io_Flags = 0;
+    if (DoIO((struct IORequest *)io) != 0 || io->io_Actual < 16 || q.SupportedCommands == NULL)
+        return FALSE;
+    for (c = q.SupportedCommands; *c; c++)
+        if (*c == CMD_UPDATE)
+            return TRUE;
+    return FALSE;
+}
+
+/* A job that will not be finished: the device gives it up instead of ending it on close. */
+static void give_up(struct IOStdReq *io, BOOL jobs)
+{
+    if (!jobs)
+        return;
+    io->io_Command = CMD_RESET;
+    io->io_Data = NULL;
+    io->io_Length = 0;
+    io->io_Flags = 0;
+    DoIO((struct IORequest *)io);
+}
+
 #define cancelled(base, name) has_flag(base, name, ".cancel")
 
 static LONG job_unit(CONST_STRPTR name)
@@ -369,18 +418,27 @@ static void spooler_main(void)
     struct MsgPort *tport = CreateMsgPort();
     struct timerequest *tr = tport != NULL ? (struct timerequest *)CreateIORequest(tport, sizeof(*tr)) : NULL;
 
+    /* the job a device dropped, and how often it was sent again */
+    TEXT resend_name[64] = "";
+    LONG resends = 0;
+
     if (tr != NULL && OpenDevice("timer.device", UNIT_VBLANK, (struct IORequest *)tr, 0) != 0)
     {
         DeleteIORequest((struct IORequest *)tr);
         tr = NULL;
     }
+
     set_status(PrintSpoolBase, "idle");
     for (;;)
     {
         BPTR file;
         TEXT device[64], app[64], doc[128], reason[96] = "";
-        LONG unit = 0, devunit, actual, sent = 0, total = 0;
+        LONG unit = 0, devunit, actual = 0, sent = 0, total = 0;
         BOOL done = FALSE, started = FALSE, keep = FALSE, paused = FALSE;
+        /* the device dropped the job (send it whole again), refused it (hold it), or sent
+           all of it without the printer confirming it (hold it: it may have printed) */
+        BOOL dropped = FALSE, refused = FALSE, unconfirmed = FALSE, jobs = FALSE, updated = FALSE;
+        LONG failure = 0, taken;
 
         housekeep(PrintSpoolBase, NULL);
 
@@ -432,7 +490,10 @@ static void spooler_main(void)
             }
             io->io_Device = NULL;
             if (OpenDevice(device, devunit, (struct IORequest *)io, 0) == 0)
+            {
+                jobs = knows_jobs(io);
                 break;
+            }
             __sprintf(status, "%s: waiting, cannot open %s unit %ld", name, device, (long)devunit);
             set_status(PrintSpoolBase, status);
             if (strcmp(reason, "unreachable") != 0)
@@ -499,6 +560,11 @@ static void spooler_main(void)
                 paused = FALSE;
                 job_event(PrintSpoolBase, name, unit, device, devunit, "printing", NULL, app, doc);
             }
+            if (cancelled(PrintSpoolBase, name))
+            {
+                done = TRUE;
+                break;
+            }
             if (has_flag(PrintSpoolBase, name, ".stop") || has_flag(PrintSpoolBase, name, ".restart"))
             {
                 keep = done = TRUE;
@@ -509,13 +575,16 @@ static void spooler_main(void)
             __sprintf(status, "%s: printing on %s unit %ld, %ld/%ld KB", name, device,
                 (long)devunit, (long)(sent / 1024), (long)(total / 1024));
             set_status(PrintSpoolBase, status);
-            for (;;)
+            for (taken = 0;;)
             {
                 io->io_Command = CMD_WRITE;
-                io->io_Data = chunk;
-                io->io_Length = actual;
+                io->io_Data = chunk + taken;
+                io->io_Length = actual - taken;
                 io->io_Flags = 0;
-                if (DoIO((struct IORequest *)io) == 0)
+                io->io_Actual = 0;
+                if (DoIO((struct IORequest *)io) != 0 && !jobs)
+                    taken += io->io_Actual < (ULONG)(actual - taken) ? (LONG)io->io_Actual : actual - taken;
+                if (io->io_Error == 0 || taken >= actual)
                 {
                     sent += actual;
                     if (reason[0])
@@ -526,7 +595,22 @@ static void spooler_main(void)
                     }
                     break;
                 }
-                /* Out of paper, offline, unplugged: wait, then send the chunk again. */
+                /* The device lost the job (a network printer's connection broke):
+                   it is sent whole again on a new open. */
+                if (jobs && io->io_Error == IOERR_ABORTED)
+                {
+                    dropped = done = TRUE;
+                    break;
+                }
+                /* The printer would not take it. */
+                if (jobs && io->io_Error == PDERR_CANCEL)
+                {
+                    failure = io->io_Error;
+                    refused = done = TRUE;
+                    break;
+                }
+                /* Out of paper, offline, unplugged: wait, then send the rest of the chunk
+                   again - what the device took before it failed is not sent twice. */
                 __sprintf(status, "%s: waiting, %s error %ld", name, device, (long)io->io_Error);
                 set_status(PrintSpoolBase, status);
                 if (strcmp(reason, "error") != 0)
@@ -534,21 +618,126 @@ static void spooler_main(void)
                     strcpy(reason, "error");
                     job_event(PrintSpoolBase, name, unit, device, devunit, "waiting", reason, app, doc);
                 }
-                Delay(RETRY_TICKS);
+                do
+                {
+                    housekeep(PrintSpoolBase, name);
+                    Delay(RETRY_TICKS);
+                } while (held(PrintSpoolBase, name) && !cancelled(PrintSpoolBase, name)
+                         && !has_flag(PrintSpoolBase, name, ".stop") && !has_flag(PrintSpoolBase, name, ".restart"));
                 if (cancelled(PrintSpoolBase, name))
                 {
                     done = TRUE;
                     break;
                 }
+                if (has_flag(PrintSpoolBase, name, ".stop") || has_flag(PrintSpoolBase, name, ".restart"))
+                {
+                    keep = done = TRUE;
+                    break;
+                }
+            }
+        }
+        /* A read error is not the end of the job: it is kept, held. */
+        if (!done && actual < 0)
+        {
+            LONG err = IoErr();
 
+            __sprintf(status, "%s: held, the job file could not be read (error %ld)", name, (long)err);
+            set_status(PrintSpoolBase, status);
+            job_event(PrintSpoolBase, name, unit, device, devunit, "held", "unreadable", app, doc);
+            if (io->io_Device != NULL)
+            {
+                give_up(io, jobs);
+                CloseDevice((struct IORequest *)io);
+                io->io_Device = NULL;
+            }
+            Close(file);
+            if (!hold_job(PrintSpoolBase, name, "the job file could not be read"))
+                Delay(RETRY_TICKS);
+            continue;
+        }
+        /* All of it went out: the device finishes the job and says whether the
+           printer took it. A device with nothing to finish does not know the command. */
+        if (!done && io->io_Device != NULL)
+        {
+            io->io_Command = CMD_UPDATE;
+            io->io_Data = NULL;
+            io->io_Length = 0;
+            io->io_Flags = 0;
+            io->io_Actual = 0;
+            updated = TRUE;
+            if (DoIO((struct IORequest *)io) != 0 && jobs)
+            {
+                if (io->io_Error == IOERR_ABORTED && io->io_Actual > 0)
+                    unconfirmed = TRUE;
+                else if (io->io_Error == IOERR_ABORTED)
+                    dropped = TRUE;
+                else
+                    refused = TRUE;
+                failure = io->io_Error;
+                done = TRUE;
             }
         }
         if (io->io_Device != NULL)
         {
+            /* Ended early (cancelled, stopped, restarted, dropped): the printer must not
+               get what was sent as a complete document. */
+            if (!updated)
+                give_up(io, jobs);
             CloseDevice((struct IORequest *)io);
             io->io_Device = NULL;
         }
         Close(file);
+        if (dropped && !cancelled(PrintSpoolBase, name))
+        {
+            if (strcmp(resend_name, name) != 0)
+            {
+                strcpy(resend_name, name);
+                resends = 0;
+            }
+            if (++resends < MAX_RESENDS)
+            {
+                __sprintf(status, "%s: %s unit %ld dropped the job, sending it again (%ld of %ld)", name,
+                    device, (long)devunit, (long)resends + 1, (long)MAX_RESENDS);
+                set_status(PrintSpoolBase, status);
+                job_event(PrintSpoolBase, name, unit, device, devunit, "waiting", "dropped", app, doc);
+                Delay(RETRY_TICKS);
+                continue;
+            }
+            resend_name[0] = '\0';
+            __sprintf(status, "%s: held, %s unit %ld dropped it %ld times", name, device,
+                (long)devunit, (long)MAX_RESENDS);
+            set_status(PrintSpoolBase, status);
+            job_event(PrintSpoolBase, name, unit, device, devunit, "held", "dropped", app, doc);
+            if (!hold_job(PrintSpoolBase, name, "the printer dropped it every time it was sent"))
+                Delay(RETRY_TICKS);
+            continue;
+        }
+        if (unconfirmed && !cancelled(PrintSpoolBase, name))
+        {
+            if (strcmp(resend_name, name) == 0)
+                resend_name[0] = '\0';
+            __sprintf(status, "%s: held, sent to %s unit %ld, but the printer did not confirm it", name,
+                device, (long)devunit);
+            set_status(PrintSpoolBase, status);
+            job_event(PrintSpoolBase, name, unit, device, devunit, "held", "unconfirmed", app, doc);
+            if (!hold_job(PrintSpoolBase, name, "sent, but the printer did not confirm it"))
+                Delay(RETRY_TICKS);
+            continue;
+        }
+        if (refused && !cancelled(PrintSpoolBase, name))
+        {
+            if (strcmp(resend_name, name) == 0)
+                resend_name[0] = '\0';
+            __sprintf(status, "%s: held, %s unit %ld refused it (error %ld)", name, device,
+                (long)devunit, (long)failure);
+            set_status(PrintSpoolBase, status);
+            job_event(PrintSpoolBase, name, unit, device, devunit, "held", "refused", app, doc);
+            if (!hold_job(PrintSpoolBase, name, "the printer refused it"))
+                Delay(RETRY_TICKS);
+            continue;
+        }
+        if (strcmp(resend_name, name) == 0)
+            resend_name[0] = '\0';
         if (keep)
         {
             /* the printer may have printed some of it; the job is sent whole again */

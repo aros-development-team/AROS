@@ -33,6 +33,10 @@
 #include "private.h"
 
 #if !defined(__MORPHOS__) && !defined(__AROS__)
+/* Non-AROS compatibility helper: forward a terminated varargs tag list to
+ * superclass OM_NEW and return its object result. AROS uses DoSuperNewTags
+ * instead. No independent object ownership is created.
+ */
 Object * VARARGS68K DoSuperNew(struct IClass *cl, Object *obj, ...)
 {
   Object *rc;
@@ -47,6 +51,12 @@ Object * VARARGS68K DoSuperNew(struct IClass *cl, Object *obj, ...)
 }
 #endif // !__MORPHOS
 
+/* Construct Area, allocate an empty content buffer, open the default
+ * locale, record MUI version flags and an optional borrowed background,
+ * then apply initial tags. Reset BufferPos to zero afterward. On buffer
+ * allocation failure dispose the object and return NULL; otherwise return
+ * it. Normal setup/show is still required.
+ */
 static IPTR mNew(struct IClass *cl, Object *obj, struct opSet *msg)
 {
   ENTER();
@@ -99,6 +109,11 @@ static IPTR mNew(struct IClass *cl, Object *obj, struct opSet *msg)
   return (IPTR)obj;
 }
 
+/* Free owned content, original and undo strings, the stored completion
+ * buffer, and locale, then delegate disposal. Cleanup must already have
+ * removed active event/Window notifications. Borrowed filter, hook,
+ * background and focus pointers are not freed. Return superclass result.
+ */
 static IPTR mDispose(struct IClass *cl, Object *obj, Msg msg)
 {
   struct InstData *data = (struct InstData *)INST_DATA(cl, obj);
@@ -135,6 +150,10 @@ static IPTR mDispose(struct IClass *cl, Object *obj, Msg msg)
   return DoSuperMethodA(cl, obj, msg);
 }
 
+/* When ObjectID is nonzero, add the terminated content to the supplied live
+ * Dataspace under that ID. Ignore Add result and return zero. No filesystem
+ * export or clipboard operation occurs.
+ */
 static IPTR mExport(struct IClass *cl, Object *obj, struct MUIP_Export *msg)
 {
   struct InstData *data = (struct InstData *)INST_DATA(cl, obj);
@@ -149,6 +168,11 @@ static IPTR mExport(struct IClass *cl, Object *obj, struct MUIP_Export *msg)
   return 0;
 }
 
+/* With nonzero ObjectID, find the Dataspace value and set String_Contents,
+ * including NULL when absent. The setter copies or clears content. Return
+ * zero without propagating lookup/copy failure. Require a live Dataspace
+ * and a valid terminated string when present.
+ */
 static IPTR mImport(UNUSED struct IClass *cl, Object *obj, struct MUIP_Import *msg)
 {
   ULONG id;
@@ -167,6 +191,12 @@ static IPTR mImport(UNUSED struct IClass *cl, Object *obj, struct MUIP_Import *m
   return 0;
 }
 
+/* After setup and with a live window, install selection-on-activation sleep
+ * tracking once when enabled. AROS follows the conservative branch that
+ * first adds a dummy notification. Store installed flags; notification
+ * results are not propagated. This helper does not claim the superclass
+ * notification implementation is safe in all reentrant cases.
+ */
 void AddWindowSleepNotify(struct IClass *cl, Object *obj)
 {
   struct InstData *data = (struct InstData *)INST_DATA(cl, obj);
@@ -254,6 +284,10 @@ void AddWindowSleepNotify(struct IClass *cl, Object *obj)
   LEAVE();
 }
 
+/* After setup and with a live window, remove this object's Window_Sleep
+ * notification if marked installed and clear its flag. A failed removal is
+ * logged but not returned. The dummy notification is not removed here.
+ */
 void RemWindowSleepNotify(struct IClass *cl, Object *obj)
 {
   struct InstData *data = (struct InstData *)INST_DATA(cl, obj);
@@ -274,6 +308,12 @@ void RemWindowSleepNotify(struct IClass *cl, Object *obj)
   LEAVE();
 }
 
+/* Load display configuration and acquire pens, then delegate Area setup. On
+ * success record setup, register the event handler, optionally create the
+ * selection pointer, and add window-sleep tracking. Return TRUE after
+ * superclass success; otherwise release configuration pens and return
+ * FALSE.
+ */
 static IPTR mSetup(struct IClass *cl, Object *obj, struct MUI_RenderInfo *rinfo)
 {
   struct InstData *data = (struct InstData *)INST_DATA(cl, obj);
@@ -325,6 +365,10 @@ static IPTR mSetup(struct IClass *cl, Object *obj, struct MUI_RenderInfo *rinfo)
   return rc;
 }
 
+/* Release selection-pointer resources, remove sleep tracking and the window
+ * event handler, free configuration pens and clear setup state, then return
+ * superclass cleanup result. Require the matched GUI setup lifecycle.
+ */
 static IPTR mCleanup(struct IClass *cl, Object *obj, Msg msg)
 {
   struct InstData *data = (struct InstData *)INST_DATA(cl, obj);
@@ -347,6 +391,11 @@ static IPTR mCleanup(struct IClass *cl, Object *obj, Msg msg)
   return DoSuperMethodA(cl, obj, msg);
 }
 
+/* Delegate Area sizing and add one font-height to all heights. Nonzero
+ * Columns adds the measured width of n times Columns to all widths; zero
+ * adds flexible minimum/default/maximum contributions. Update the supplied
+ * MinMaxInfo and return zero.
+ */
 static IPTR mAskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMax *msg)
 {
   struct InstData *data = (struct InstData *)INST_DATA(cl, obj);
@@ -383,6 +432,11 @@ static IPTR mAskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMax *ms
   return 0;
 }
 
+/* Delegate Show, initialize the drawing RastPort and allocate its bitmap
+ * for the visible width plus margin and font height. Mark Shown and return
+ * TRUE without checking bitmap allocation or superclass result. Require
+ * valid render resources; Hide releases the bitmap.
+ */
 static IPTR mShow(struct IClass *cl, Object *obj, Msg msg)
 {
   struct InstData *data = (struct InstData *)INST_DATA(cl, obj);
@@ -408,6 +462,10 @@ static IPTR mShow(struct IClass *cl, Object *obj, Msg msg)
   return TRUE;
 }
 
+/* Clear Shown, hide the selection pointer and free the drawing bitmap, then
+ * return superclass Hide result. Require matched Show/Hide lifecycle; do
+ * not use freed drawing storage afterward.
+ */
 static IPTR mHide(struct IClass *cl, Object *obj, Msg msg)
 {
   struct InstData *data = (struct InstData *)INST_DATA(cl, obj);
@@ -425,6 +483,10 @@ static IPTR mHide(struct IClass *cl, Object *obj, Msg msg)
   return DoSuperMethodA(cl, obj, msg);
 }
 
+/* Delegate Area drawing and call PrintString for object/update flags.
+ * Require valid rendering lifecycle. Return zero, not a rendering-success
+ * status.
+ */
 static IPTR mDraw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 {
   ENTER();
@@ -440,6 +502,11 @@ static IPTR mDraw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
   return 0;
 }
 
+/* Ignore input while disabled or not shown. Otherwise invoke mHandleInput,
+ * publish changed DisplayPos, then forward unconsumed list-navigation keys
+ * to AttachedList when configured. Return the event-consumption code.
+ * Borrow the event and target objects synchronously.
+ */
 static IPTR mHandleEvent(struct IClass *cl, Object *obj, struct MUIP_HandleEvent *msg)
 {
   struct InstData *data = (struct InstData *)INST_DATA(cl, obj);
@@ -502,6 +569,11 @@ static IPTR mHandleEvent(struct IClass *cl, Object *obj, struct MUIP_HandleEvent
   return result;
 }
 
+/* Replace the Original snapshot, apply effective selection policy and mark
+ * Active/FreshActive; update the background or redraw. Return TRUE even if
+ * snapshot allocation fails. The snapshot copy length is incorrect in this
+ * source, so exact Revert restoration is not guaranteed.
+ */
 static IPTR mGoActive(struct IClass *cl, Object *obj, UNUSED Msg msg)
 {
   struct InstData *data = (struct InstData *)INST_DATA(cl, obj);
@@ -542,6 +614,10 @@ static IPTR mGoActive(struct IClass *cl, Object *obj, UNUSED Msg msg)
   return TRUE;
 }
 
+/* Clear selection, Active and FreshActive; restore the configured
+ * inactive/owned background, with a redraw for the legacy path when needed.
+ * Return TRUE. Do not free content or snapshots here.
+ */
 static IPTR mGoInactive(struct IClass *cl, Object *obj, UNUSED Msg msg)
 {
   struct InstData *data = (struct InstData *)INST_DATA(cl, obj);
@@ -572,6 +648,12 @@ static IPTR mGoInactive(struct IClass *cl, Object *obj, UNUSED Msg msg)
   return TRUE;
 }
 
+/* Route class methods to local handlers and unknown messages to Area.
+ * OM_SET runs local mSet then forwards the modified caller message.
+ * ClearSelected dispatches Delete and returns TRUE regardless of its
+ * result. Return other handler results unchanged; no extra ownership or
+ * synchronization is added.
+ */
 DISPATCHER(_Dispatcher)
 {
   IPTR result;

@@ -378,6 +378,7 @@ void kernel_cstart(const struct TagItem *start_msg)
     /* Pre-Allocate TLS & GDT */
     if (!__KernBootPrivate->BOOTTLS)
         __KernBootPrivate->BOOTTLS = core_BSPAllocTLS(__KernBootPrivate);
+    ((tls_t *)__KernBootPrivate->BOOTTLS)->CPUNumber = 0;
     if (!__KernBootPrivate->BOOTGDT) {
         __KernBootPrivate->kbp_APIC_Max = 1;
         __KernBootPrivate->BOOTGDT = core_BSPAllocGDT(__KernBootPrivate);

@@ -21,6 +21,7 @@
 #include "socktest.h"
 
 #include <net/if.h>
+#include <net/if_dl.h>
 
 struct Library *SocketBase = NULL;
 
@@ -32,7 +33,8 @@ typedef union { struct cmsghdr h; char b[256]; } ctlbuf;
 int init_suite(void) { return (SocketBase != NULL) ? 0 : -1; }
 int clean_suite(void) { return 0; }
 
-/* A bound loopback receiver and a sender, a datagram from one to the other. */
+/* A bound loopback receiver and a sender, a datagram from one to the other.
+ * Both or neither: on failure the descriptors are -1 and nothing is open. */
 static int pair(int family, int *rfd, int *sfd, struct sockaddr_storage *dst,
     socklen_t *dlen)
 {
@@ -40,8 +42,14 @@ static int pair(int family, int *rfd, int *sfd, struct sockaddr_storage *dst,
 
     *rfd = st_bound(family, SOCK_DGRAM, &nport);
     *sfd = socket(family, SOCK_DGRAM, 0);
-    if (*rfd < 0 || *sfd < 0)
+    if (*rfd < 0 || *sfd < 0) {
+        if (*rfd >= 0)
+            CloseSocket(*rfd);
+        if (*sfd >= 0)
+            CloseSocket(*sfd);
+        *rfd = *sfd = -1;
         return -1;
+    }
     *dlen = st_loopback(family, dst, nport);
     return 0;
 }
@@ -61,7 +69,7 @@ static int recv_ctl(int fd, ctlbuf *ctl,
     mh->msg_iovlen = 1;
     mh->msg_control = ctl;
     mh->msg_controllen = ctlsize;
-    if (sock_wait(fd, 0, 3) <= 0)
+    if (fd < 0 || sock_wait(fd, 0, 3) <= 0)
         return -1;
     return recvmsg(fd, mh, 0);
 }
@@ -75,19 +83,26 @@ static struct cmsghdr *find(struct msghdr *mh, int level, int type)
     return NULL;
 }
 
-static unsigned lo_index(void)
+/* The index of the interface named name, 0 if there is none - asked
+ * through a socket of a family the stack runs (IPv6 alone, or IPv4 alone). */
+static unsigned index_of(const char *name)
 {
     struct ifreq ifr;
-    int s = socket(AF_INET6, SOCK_DGRAM, 0);
+    int s = socket(st_any_family(), SOCK_DGRAM, 0);
     unsigned idx = 0;
 
     bzero(&ifr, sizeof(ifr));
-    strcpy(ifr.ifr_name, "lo0");
+    snprintf(ifr.ifr_name, sizeof(ifr.ifr_name), "%s", name);
     if (s >= 0 && IoctlSocket(s, SIOCGIFINDEX, (char *)&ifr) == 0)
         idx = ifr.ifr_index;
     if (s >= 0)
         CloseSocket(s);
     return idx;
+}
+
+static unsigned lo_index(void)
+{
+    return index_of("lo0");
 }
 
 /* IPV6_RECVPKTINFO: the destination and the receiving interface, whole. */
@@ -101,7 +116,7 @@ void testCMSG_V6_PKTINFO(void)
     socklen_t dlen;
     int r, s, on = 1;
 
-    CU_ASSERT_EQUAL(pair(AF_INET6, &r, &s, &dst, &dlen), 0);
+    CU_ASSERT_EQUAL_FATAL(pair(AF_INET6, &r, &s, &dst, &dlen), 0);
     CU_ASSERT_EQUAL(setsockopt(r, IPPROTO_IPV6, IPV6_RECVPKTINFO, &on, sizeof(on)), 0);
     CU_ASSERT_EQUAL(sendto(s, "pi", 2, 0, (struct sockaddr *)&dst, dlen), 2);
     CU_ASSERT_EQUAL(recv_ctl(r, &ctl, sizeof(ctl), &mh), 2);
@@ -129,7 +144,7 @@ void testCMSG_V6_HOPLIMIT(void)
     socklen_t dlen;
     int r, s, on = 1, hops = 47;
 
-    CU_ASSERT_EQUAL(pair(AF_INET6, &r, &s, &dst, &dlen), 0);
+    CU_ASSERT_EQUAL_FATAL(pair(AF_INET6, &r, &s, &dst, &dlen), 0);
     CU_ASSERT_EQUAL(setsockopt(r, IPPROTO_IPV6, IPV6_RECVHOPLIMIT, &on, sizeof(on)), 0);
     CU_ASSERT_EQUAL(setsockopt(s, IPPROTO_IPV6, IPV6_UNICAST_HOPS, &hops, sizeof(hops)), 0);
     CU_ASSERT_EQUAL(sendto(s, "hl", 2, 0, (struct sockaddr *)&dst, dlen), 2);
@@ -155,7 +170,7 @@ void testCMSG_V6_BOTH(void)
     socklen_t dlen;
     int r, s, on = 1;
 
-    CU_ASSERT_EQUAL(pair(AF_INET6, &r, &s, &dst, &dlen), 0);
+    CU_ASSERT_EQUAL_FATAL(pair(AF_INET6, &r, &s, &dst, &dlen), 0);
     setsockopt(r, IPPROTO_IPV6, IPV6_RECVPKTINFO, &on, sizeof(on));
     setsockopt(r, IPPROTO_IPV6, IPV6_RECVHOPLIMIT, &on, sizeof(on));
     CU_ASSERT_EQUAL(sendto(s, "two", 3, 0, (struct sockaddr *)&dst, dlen), 3);
@@ -176,7 +191,7 @@ void testCMSG_V6_CTRUNC(void)
     socklen_t dlen;
     int r, s, on = 1;
 
-    CU_ASSERT_EQUAL(pair(AF_INET6, &r, &s, &dst, &dlen), 0);
+    CU_ASSERT_EQUAL_FATAL(pair(AF_INET6, &r, &s, &dst, &dlen), 0);
     setsockopt(r, IPPROTO_IPV6, IPV6_RECVPKTINFO, &on, sizeof(on));
     setsockopt(r, IPPROTO_IPV6, IPV6_RECVHOPLIMIT, &on, sizeof(on));
     CU_ASSERT_EQUAL(sendto(s, "cut", 3, 0, (struct sockaddr *)&dst, dlen), 3);
@@ -197,7 +212,7 @@ void testCMSG_V4_RECVDSTADDR(void)
     socklen_t dlen;
     int r, s, on = 1;
 
-    CU_ASSERT_EQUAL(pair(AF_INET, &r, &s, &dst, &dlen), 0);
+    CU_ASSERT_EQUAL_FATAL(pair(AF_INET, &r, &s, &dst, &dlen), 0);
     CU_ASSERT_EQUAL(setsockopt(r, IPPROTO_IP, IP_RECVDSTADDR, &on, sizeof(on)), 0);
     CU_ASSERT_EQUAL(sendto(s, "v4", 2, 0, (struct sockaddr *)&dst, dlen), 2);
     CU_ASSERT_EQUAL(recv_ctl(r, &ctl, sizeof(ctl), &mh), 2);
@@ -321,7 +336,7 @@ void testCMSG_V4_TTL(void)
     socklen_t dlen;
     int r, s, on = 1, off = 0, mine = 99, t37 = 37, t200 = 200;
 
-    CU_ASSERT_EQUAL(pair(AF_INET, &r, &s, &dst, &dlen), 0);
+    CU_ASSERT_EQUAL_FATAL(pair(AF_INET, &r, &s, &dst, &dlen), 0);
     CU_ASSERT_EQUAL(setsockopt(r, IPPROTO_IP, IP_RECVTTL, &on, sizeof(on)), 0);
     CU_ASSERT_EQUAL(setsockopt(r, IPPROTO_IP, IP_TTL, &mine, sizeof(mine)), 0);
     CU_ASSERT_EQUAL(setsockopt(s, IPPROTO_IP, IP_TTL, &t37, sizeof(t37)), 0);
@@ -346,7 +361,7 @@ void testCMSG_V4_TTL_FRAGMENTED(void)
     socklen_t dlen;
     int r, s, on = 1, t42 = 42, rcv = 8192;
 
-    CU_ASSERT_EQUAL(pair(AF_INET, &r, &s, &dst, &dlen), 0);
+    CU_ASSERT_EQUAL_FATAL(pair(AF_INET, &r, &s, &dst, &dlen), 0);
     setsockopt(r, SOL_SOCKET, SO_RCVBUF, &rcv, sizeof(rcv));
     CU_ASSERT_EQUAL(setsockopt(r, IPPROTO_IP, IP_RECVTTL, &on, sizeof(on)), 0);
     CU_ASSERT_EQUAL(setsockopt(s, IPPROTO_IP, IP_TTL, &t42, sizeof(t42)), 0);
@@ -368,7 +383,7 @@ void testCMSG_V4_TTL_CTRUNC(void)
     socklen_t dlen;
     int r, s, on = 1;
 
-    CU_ASSERT_EQUAL(pair(AF_INET, &r, &s, &dst, &dlen), 0);
+    CU_ASSERT_EQUAL_FATAL(pair(AF_INET, &r, &s, &dst, &dlen), 0);
     CU_ASSERT_EQUAL(setsockopt(r, IPPROTO_IP, IP_RECVDSTADDR, &on, sizeof(on)), 0);
     CU_ASSERT_EQUAL(setsockopt(r, IPPROTO_IP, IP_RECVTTL, &on, sizeof(on)), 0);
     CU_ASSERT_EQUAL(sendto(s, "x", 1, 0, (struct sockaddr *)&dst, dlen), 1);
@@ -394,7 +409,7 @@ void testCMSG_V6_TCLASS(void)
     socklen_t dlen;
     int r, s, on = 1, tc = 0xba, ce = 3, bad = 256;
 
-    CU_ASSERT_EQUAL(pair(AF_INET6, &r, &s, &dst, &dlen), 0);
+    CU_ASSERT_EQUAL_FATAL(pair(AF_INET6, &r, &s, &dst, &dlen), 0);
     CU_ASSERT_EQUAL(setsockopt(r, IPPROTO_IPV6, IPV6_RECVTCLASS, &on, sizeof(on)), 0);
     CU_ASSERT_EQUAL(sendto(s, "a", 1, 0, (struct sockaddr *)&dst, dlen), 1);
     CU_ASSERT_EQUAL(got_tclass(r), 0);
@@ -417,7 +432,7 @@ void testCMSG_V4_TOS(void)
     unsigned char b = 1;
     int r, s, on = 1, tos = 0xba, i = 2;
 
-    CU_ASSERT_EQUAL(pair(AF_INET, &r, &s, &dst, &dlen), 0);
+    CU_ASSERT_EQUAL_FATAL(pair(AF_INET, &r, &s, &dst, &dlen), 0);
     CU_ASSERT_EQUAL(setsockopt(r, IPPROTO_IP, IP_RECVTOS, &on, sizeof(on)), 0);
     CU_ASSERT_EQUAL(setsockopt(s, IPPROTO_IP, IP_TOS, &tos, sizeof(tos)), 0);
     CU_ASSERT_EQUAL(sendto(s, "a", 1, 0, (struct sockaddr *)&dst, dlen), 1);
@@ -468,6 +483,7 @@ void testCMSG_V4_MCAST(void)
     CU_ASSERT_EQUAL(setsockopt(r, IPPROTO_IP, IP_RECVDSTADDR, &on, sizeof(on)), 0);
     CU_ASSERT_EQUAL(setsockopt(r, IPPROTO_IP, IP_RECVTOS, &on, sizeof(on)), 0);
     CU_ASSERT_EQUAL(setsockopt(r, IPPROTO_IP, IP_RECVTTL, &on, sizeof(on)), 0);
+    CU_ASSERT_EQUAL(setsockopt(r, IPPROTO_IP, IP_RECVIF, &on, sizeof(on)), 0);
     CU_ASSERT_EQUAL(setsockopt(s, IPPROTO_IP, IP_MULTICAST_IF, &mr.imr_interface, sizeof(mr.imr_interface)), 0);
     setsockopt(s, IPPROTO_IP, IP_MULTICAST_TTL, &ttl, sizeof(ttl));
     setsockopt(s, IPPROTO_IP, IP_MULTICAST_LOOP, &loop, sizeof(loop));
@@ -494,7 +510,57 @@ void testCMSG_V4_MCAST(void)
     CU_ASSERT_PTR_NOT_NULL(c);
     if (c != NULL)
         CU_ASSERT_EQUAL(*(unsigned char *)CMSG_DATA(c), ttl);
+    /* looped back on the interface it was sent by */
+    c = find(&mh, IPPROTO_IP, IP_RECVIF);
+    CU_ASSERT_PTR_NOT_NULL(c);
+    if (c != NULL) {
+        struct sockaddr_dl sdl;
+
+        memcpy(&sdl, CMSG_DATA(c), sizeof(sdl));
+        CU_ASSERT_EQUAL(sdl.sdl_family, AF_LINK);
+        CU_ASSERT_EQUAL(sdl.sdl_index, index_of(ifname));
+    }
     setsockopt(r, IPPROTO_IP, IP_DROP_MEMBERSHIP, &mr, sizeof(mr));
+    CloseSocket(s);
+    CloseSocket(r);
+}
+
+/* IP_RECVIF (FreeBSD's): off by default; the interface a datagram came in
+ * by, as its link-level address - lo0, by index and name, over the
+ * loopback. */
+void testCMSG_V4_RECVIF(void)
+{
+    struct sockaddr_storage dst;
+    socklen_t dlen;
+    ctlbuf ctl;
+    struct msghdr mh;
+    struct cmsghdr *c;
+    int r, s, on = 1, v = -1;
+    socklen_t l = sizeof(v);
+
+    CU_ASSERT_FATAL(pair(AF_INET, &r, &s, &dst, &dlen) == 0);
+    CU_ASSERT_EQUAL(getsockopt(r, IPPROTO_IP, IP_RECVIF, &v, &l), 0);
+    CU_ASSERT_EQUAL(v, 0);
+    CU_ASSERT_EQUAL(setsockopt(r, IPPROTO_IP, IP_RECVIF, &on, sizeof(on)), 0);
+    l = sizeof(v);
+    CU_ASSERT_EQUAL(getsockopt(r, IPPROTO_IP, IP_RECVIF, &v, &l), 0);
+    CU_ASSERT_EQUAL(v, 1);
+    CU_ASSERT_EQUAL(sendto(s, "if", 2, 0, (struct sockaddr *)&dst, dlen), 2);
+    CU_ASSERT_EQUAL(recv_ctl(r, &ctl, sizeof(ctl), &mh), 2);
+    c = find(&mh, IPPROTO_IP, IP_RECVIF);
+    CU_ASSERT_PTR_NOT_NULL(c);
+    if (c != NULL) {
+        struct sockaddr_dl sdl;
+        size_t n = c->cmsg_len - CMSG_LEN(0);
+
+        bzero(&sdl, sizeof(sdl));
+        memcpy(&sdl, CMSG_DATA(c), n < sizeof(sdl) ? n : sizeof(sdl));
+        CU_ASSERT_EQUAL(sdl.sdl_family, AF_LINK);
+        CU_ASSERT_EQUAL(sdl.sdl_len, n);
+        CU_ASSERT_EQUAL(sdl.sdl_index, lo_index());
+        CU_ASSERT_EQUAL(sdl.sdl_nlen, 3);
+        CU_ASSERT_EQUAL(memcmp(sdl.sdl_data, "lo0", 3), 0);
+    }
     CloseSocket(s);
     CloseSocket(r);
 }
@@ -516,18 +582,19 @@ int main(int argc, char **argv)
     }
     p = CU_add_suite("CMSG_Suite", init_suite, clean_suite);
     if (p == NULL ||
-        !CU_add_test(p, "IPV6_PKTINFO over ::1", testCMSG_V6_PKTINFO) ||
-        !CU_add_test(p, "IPV6_HOPLIMIT over ::1", testCMSG_V6_HOPLIMIT) ||
-        !CU_add_test(p, "both IPv6 messages arrive", testCMSG_V6_BOTH) ||
-        !CU_add_test(p, "short control buffer sets MSG_CTRUNC", testCMSG_V6_CTRUNC) ||
-        !CU_add_test(p, "IP_RECVDSTADDR over 127.0.0.1", testCMSG_V4_RECVDSTADDR) ||
-        !CU_add_test(p, "IPV6_TCLASS by option and per datagram", testCMSG_V6_TCLASS) ||
-        !CU_add_test(p, "IP_TOS by option and per datagram", testCMSG_V4_TOS) ||
-        !CU_add_test(p, "IP_RECVTTL: off by default, on and off", testCMSG_V4_TTL_OPTION) ||
-        !CU_add_test(p, "IP_RECVTTL: the TTL the datagram arrived with", testCMSG_V4_TTL) ||
-        !CU_add_test(p, "IP_RECVTTL on a fragmented datagram", testCMSG_V4_TTL_FRAGMENTED) ||
-        !CU_add_test(p, "IP_RECVTTL and a short control buffer", testCMSG_V4_TTL_CTRUNC) ||
-        !CU_add_test(p, "a multicast datagram has its ancillary data", testCMSG_V4_MCAST))
+        !st_add_test(p, "IPV6_PKTINFO over ::1", testCMSG_V6_PKTINFO, ST_V6) ||
+        !st_add_test(p, "IPV6_HOPLIMIT over ::1", testCMSG_V6_HOPLIMIT, ST_V6) ||
+        !st_add_test(p, "both IPv6 messages arrive", testCMSG_V6_BOTH, ST_V6) ||
+        !st_add_test(p, "short control buffer sets MSG_CTRUNC", testCMSG_V6_CTRUNC, ST_V6) ||
+        !st_add_test(p, "IP_RECVDSTADDR over 127.0.0.1", testCMSG_V4_RECVDSTADDR, ST_V4) ||
+        !st_add_test(p, "IPV6_TCLASS by option and per datagram", testCMSG_V6_TCLASS, ST_V6) ||
+        !st_add_test(p, "IP_TOS by option and per datagram", testCMSG_V4_TOS, ST_V4) ||
+        !st_add_test(p, "IP_RECVTTL: off by default, on and off", testCMSG_V4_TTL_OPTION, ST_V4) ||
+        !st_add_test(p, "IP_RECVTTL: the TTL the datagram arrived with", testCMSG_V4_TTL, ST_V4) ||
+        !st_add_test(p, "IP_RECVTTL on a fragmented datagram", testCMSG_V4_TTL_FRAGMENTED, ST_V4) ||
+        !st_add_test(p, "IP_RECVTTL and a short control buffer", testCMSG_V4_TTL_CTRUNC, ST_V4) ||
+        !st_add_test(p, "a multicast datagram has its ancillary data", testCMSG_V4_MCAST, ST_V4) ||
+        !st_add_test(p, "IP_RECVIF gives the interface", testCMSG_V4_RECVIF, ST_V4))
     {
         CU_cleanup_registry();
         CloseLibrary(SocketBase);

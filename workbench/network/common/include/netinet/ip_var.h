@@ -126,6 +126,7 @@ struct	ipstat {
 /* flags passed to ip_output as last parameter */
 #define	IP_FORWARDING		0x1		/* most of ip header exists */
 #define	IP_BOUNDIF		0x2		/* send on the interface in m_pkthdr.rcvif (SO_BINDTODEVICE) */
+#define	IP_RAWOUTPUT		0x4		/* raw ip header exists (IP_HDRINCL) */
 #define	IP_ROUTETOIF		SO_DONTROUTE	/* bypass routing tables */
 #define	IP_ALLOWBROADCAST	SO_BROADCAST	/* can send broadcast packets */
 

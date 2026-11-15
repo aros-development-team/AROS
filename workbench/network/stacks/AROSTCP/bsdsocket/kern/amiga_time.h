@@ -89,5 +89,6 @@ struct timeoutRequest * createTimeoutRequest(TimerCallback_t fun,
 					     ULONG seconds, ULONG micros);
 void deleteTimeoutRequest(struct timeoutRequest *tr);
 BOOL timer_poll(VOID);
+u_long time_msofday(void);	/* ms since midnight UT, host byte order */
 
 #endif /* AMIGA_TIME_H */

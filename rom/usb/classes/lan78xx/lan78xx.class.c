@@ -48,6 +48,7 @@ static void lan78xx_store_mac(struct NepClassEth *ncp, ULONG lo, ULONG hi);
 static BOOL lan78xx_wait_reg_clear(struct NepClassEth *ncp, UWORD reg, ULONG mask);
 static BOOL lan78xx_wait_reg_set(struct NepClassEth *ncp, UWORD reg, ULONG mask);
 static LONG lan78xx_chip_init(struct NepClassEth *ncp);
+static void lan78xx_hw_ready(struct NepClassEth *ncp);
 static LONG lan78xx_eeprom_wait(struct NepClassEth *ncp);
 static LONG lan78xx_eeprom_read(struct NepClassEth *ncp, UWORD offset, UWORD len, UBYTE *dest);
 static void lan78xx_set_macaddr(struct NepClassEth *ncp);
@@ -253,6 +254,7 @@ struct NepClassEth *usbForceDeviceBinding(struct NepEthBase *nh, struct PsdDevic
     Permit();
 
     psdSafeRawDoFmt(buf, sizeof(buf), "lan78xx.class<%08lx>", ncp);
+    ncp->ncp_HwReady = FALSE;
     ncp->ncp_ReadySignal = SIGB_SINGLE;
     ncp->ncp_ReadySigTask = FindTask(NULL);
     SetSignal(0, SIGF_SINGLE);
@@ -270,6 +272,7 @@ struct NepClassEth *usbForceDeviceBinding(struct NepEthBase *nh, struct PsdDevic
     }
 
     ncp->ncp_ReadySigTask = NULL;
+    lan78xx_hw_ready(ncp);
     CloseLibrary(ps);
     return (NULL);
 }
@@ -517,13 +520,13 @@ AROS_UFH0(void, nEthTask)
         KPrintF("[LAN78XX] nAllocEth failed - unit will not come up\n");
     }
     if (ncp) {
-        lan78xx_signal_ready(ncp);
-
         /* Hardware init only.  Don't bring the interface online here —
          * that would arm the bulk-IN pipe immediately and NAK-storm the
          * USB bus before AROSTCP has any reason to listen.  We go online
          * when the stack issues S2_CONFIGINTERFACE or S2_ONLINE. */
         nInitHardware(ncp);
+        lan78xx_hw_ready(ncp);
+        lan78xx_signal_ready(ncp);
 
         /* Set up a 1-second tick used by the link watcher.  The timer
          * runs independently of the USB pipe traffic; its signal bit
@@ -574,7 +577,6 @@ AROS_UFH0(void, nEthTask)
                     ncp->ncp_WritePending = NULL;
                     if (ioreq) {
                         LONG txerr = psdGetPipeError(pp);
-                        if (txerr)
                         if (txerr) {
                             KPRINTF(5, ("lan78xx: TX err=%ld\n", (LONG)txerr));
                             nDoEvent(ncp, S2EVENT_ERROR | S2EVENT_TX);
@@ -898,6 +900,7 @@ void nFreeEth(struct NepClassEth *ncp)
         ncp->ncp_Base = NULL;
     }
 
+    lan78xx_hw_ready(ncp);
     Forbid();
     ncp->ncp_Task = NULL;
     if (ncp->ncp_ReadySigTask) {
@@ -1500,6 +1503,16 @@ static BOOL lan78xx_pick_interface(struct NepClassEth *ncp)
     return (FALSE);
 }
 
+/* Release a devOpen() that waits for the station address. */
+static void lan78xx_hw_ready(struct NepClassEth *ncp)
+{
+    Forbid();
+    ncp->ncp_HwReady = TRUE;
+    if (ncp->ncp_OpenWaiter)
+        Signal(ncp->ncp_OpenWaiter, SIGF_SINGLE);
+    Permit();
+}
+
 static void lan78xx_signal_ready(struct NepClassEth *ncp)
 {
     Forbid();
@@ -1726,6 +1739,8 @@ static LONG lan78xx_chip_init(struct NepClassEth *ncp)
      * every idle bulk-IN with a zero-length packet, one round trip per
      * poll. Set, it NAKs instead and the DMA core retries the token.
      * Needs USB2OTG_BULK_IN_NAK_LIVENESS on the host side.
+     * LAN7500: HW_CFG bit 7. LAN7800/7801: USB_CFG0 bit 6 (HW_CFG bit 7
+     * is SUSPEND_N_SEL there).
      */
 
     /* Burst cap + bulk-in delay.  Pi3 is HS — use the high-speed sizing. */
@@ -1746,11 +1761,11 @@ static LONG lan78xx_chip_init(struct NepClassEth *ncp)
 
         if (lan78xx_read_reg(ncp, LAN78XX_REG_HW_CFG, &val))
             return (-1);
-        lan78xx_write_reg(ncp, LAN78XX_REG_HW_CFG, val | LAN78XX_HW_CFG_MEF | LAN78XX_HW_CFG_BIR);
+        lan78xx_write_reg(ncp, LAN78XX_REG_HW_CFG, val | LAN78XX_HW_CFG_MEF);
 
         if (lan78xx_read_reg(ncp, LAN78XX_REG_USB_CFG0, &val))
             return (-1);
-        lan78xx_write_reg(ncp, LAN78XX_REG_USB_CFG0, val | LAN78XX_USB_CFG0_BCE);
+        lan78xx_write_reg(ncp, LAN78XX_REG_USB_CFG0, val | LAN78XX_USB_CFG0_BCE | LAN78XX_USB_CFG0_BIR);
     }
 
     lan78xx_write_reg(ncp, LAN78XX_REG_INT_STS, 0xFFFFFFFFUL);

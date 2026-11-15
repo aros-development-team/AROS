@@ -3,18 +3,19 @@
 
     Desc: NewStackSwap() - Call a function with a swapped stack, RISC-V version.
 
-    Translated from the aarch64-all version. The ILP32 ABI passes up to 8
-    integer args in a0-a7, so none are pushed to the new stack; the
-    inline asm loads all eight from the StackSwapArgs into a0-a7 before
-    the call. The Enable()/Disable() vector offsets (-21 and -20 *
-    LIB_VECTSIZE = 4) are -84 and -80; they are hardcoded here because
-    the generated asm.h symbols are not visible to C inline asm (the
-    arm-all and aarch64-all versions do the same).
+    Translated from the aarch64-all version. The ILP32 and LP64 ABIs pass
+    up to 8 integer args in a0-a7, so none are pushed to the new stack;
+    the inline asm loads all eight from the StackSwapArgs into a0-a7
+    before the call, with the load and slot size from aros/riscv/xlen.h.
+    The generated asm.h symbols are not visible to C inline asm, so the
+    Enable()/Disable() vector offsets are passed in as constants
+    (-21 and -20 * LIB_VECTSIZE).
 */
 
 #include <aros/debug.h>
 #include <exec/tasks.h>
 #include <proto/exec.h>
+#include <aros/riscv/xlen.h>
 
 AROS_LH3(IPTR, NewStackSwap,
         AROS_LHA(struct StackSwapStruct *,  sss, A0),
@@ -31,8 +32,8 @@ AROS_LH3(IPTR, NewStackSwap,
     volatile APTR spupper = t->tc_SPUpper;
     IPTR ret;
 
-    /* ILP32 passes up to 8 integer args in registers, so nothing is pushed
-       to the new stack. Just guard against a NULL args pointer. */
+    /* ILP32 and LP64 pass up to 8 integer args in registers, so nothing is
+       pushed to the new stack. Just guard against a NULL args pointer. */
     if (args == NULL)
         args = (struct StackSwapArgs *)splower;   /* dummy; values are ignored */
 
@@ -64,32 +65,33 @@ AROS_LH3(IPTR, NewStackSwap,
         "   mv   s6, %[entry]\n"
         "   mv   sp, %[newsp]\n"         /* switch to the new stack          */
 
-        /* Enable() -- vector at SysBase + (-21 * LIB_VECTSIZE) = -84 */
+        /* Enable() -- vector at SysBase + (-21 * LIB_VECTSIZE) */
         "   mv   a0, s4\n"
-        "   lw   t0, -84(a0)\n"
+        "   " __AROS_RV_LX_STR "   t0, %[enable](a0)\n"
         "   jalr t0\n"
 
         /* Load up to 8 register args and call the entry point */
-        "   lw   a0, 0(s5)\n"
-        "   lw   a1, 4(s5)\n"
-        "   lw   a2, 8(s5)\n"
-        "   lw   a3, 12(s5)\n"
-        "   lw   a4, 16(s5)\n"
-        "   lw   a5, 20(s5)\n"
-        "   lw   a6, 24(s5)\n"
-        "   lw   a7, 28(s5)\n"
+        "   " __AROS_RV_LX_STR "   a0, 0(s5)\n"
+        "   " __AROS_RV_LX_STR "   a1, 1*" __AROS_RV_SZREG_STR "(s5)\n"
+        "   " __AROS_RV_LX_STR "   a2, 2*" __AROS_RV_SZREG_STR "(s5)\n"
+        "   " __AROS_RV_LX_STR "   a3, 3*" __AROS_RV_SZREG_STR "(s5)\n"
+        "   " __AROS_RV_LX_STR "   a4, 4*" __AROS_RV_SZREG_STR "(s5)\n"
+        "   " __AROS_RV_LX_STR "   a5, 5*" __AROS_RV_SZREG_STR "(s5)\n"
+        "   " __AROS_RV_LX_STR "   a6, 6*" __AROS_RV_SZREG_STR "(s5)\n"
+        "   " __AROS_RV_LX_STR "   a7, 7*" __AROS_RV_SZREG_STR "(s5)\n"
         "   jalr s6\n"
         "   mv   s3, a0\n"               /* save the return value            */
 
-        /* Disable() -- vector at SysBase + (-20 * LIB_VECTSIZE) = -80 */
+        /* Disable() -- vector at SysBase + (-20 * LIB_VECTSIZE) */
         "   mv   a0, s4\n"
-        "   lw   t0, -80(a0)\n"
+        "   " __AROS_RV_LX_STR "   t0, %[disable](a0)\n"
         "   jalr t0\n"
 
         "   mv   sp, s2\n"               /* restore original sp              */
         "   mv   %[ret], s3\n"
         : [ret] "=r"(ret)
-        : [entry] "r"(entry), [newsp] "r"(sp), [args] "r"(args), [sysbase] "r"(SysBase)
+        : [entry] "r"(entry), [newsp] "r"(sp), [args] "r"(args), [sysbase] "r"(SysBase),
+          [enable] "i"(-21 * LIB_VECTSIZE), [disable] "i"(-20 * LIB_VECTSIZE)
         : "ra","t0","t1","t2","t3","t4","t5","t6",
           "a0","a1","a2","a3","a4","a5","a6","a7",
           "s2","s3","s4","s5","s6",

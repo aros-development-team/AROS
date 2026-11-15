@@ -15,6 +15,8 @@
 #include <hidd/nvme.h>
 #include <oop/oop.h>
 
+#include <string.h>
+
 #include LC_LIBDEFS_FILE
 
 #include "nvme_debug.h"
@@ -28,14 +30,13 @@ extern const char GM_UNIQUENAME(LibName)[];
 /* support functions */
 static void nvme_strcpy(const UBYTE *str1, UBYTE *str2, ULONG size)
 {
-    register int i = size;
+    ULONG i = 0;
 
-    while (i--) {
-        if (str1[i] < ' ')
-            str2[i] = '\0';
-        else
-            str2[i] = str1[i];
+    while (i < size && str1[i] >= ' ') {
+        str2[i] = str1[i];
+        i++;
     }
+    memset(str2 + i, 0, size + 1 - i);
 }
 
 /* Unit class methods */

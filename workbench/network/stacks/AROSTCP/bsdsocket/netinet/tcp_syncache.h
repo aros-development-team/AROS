@@ -10,14 +10,19 @@
 #define NETINET_TCP_SYNCACHE_H
 
 struct socket;
-struct tcpiphdr;
+struct tcphdr;
 struct mbuf;
-struct in6_addr;
+struct inetfamily;
+union inp_addr;
 
 /*
  * Public interface used by the TCP input, timer and init paths.
  *
- *   syncache_init    - allocate the hash table (called from tcp_init()).
+ *   syncache_init    - TCP starts: no table yet (called from tcp_init()).
+ *   syncache_listen  - a socket is to listen: make the table, sized by the
+ *                      free memory, if there is none yet (PRU_LISTEN). 0, or
+ *                      ENOBUFS and the socket does not listen. Every other
+ *                      entry returns at once while there is no table.
  *   syncache_add     - handle an incoming SYN for a listening socket: create
  *                      a half-open entry (or emit a SYN cookie under overflow)
  *                      and send the SYN-ACK.  Does not consume the mbuf.
@@ -34,22 +39,30 @@ struct in6_addr;
  *   syncache_timer   - retransmit/expire pending entries (called every slow
  *                      timer tick from tcp_slowtimo()).
  *   syncache_purge   - drop all entries belonging to a closing listen socket.
+ *   syncache_flush   - drop all entries of a family that leaves the transports.
+ *   syncache_deinit  - TCP stops: free the entries and the table.
  *
- * The add/expand/chkrst calls are dual-stack: isipv6 selects the family, and
- * for IPv6 src6/dst6 carry the segment's peer (source) and local (destination)
- * addresses (the struct tcpiphdr overlay only holds the TCP header then).
+ * The add/expand/chkrst calls take the family the segment came in by, its
+ * source and destination address in that family's form (zero behind the
+ * family's address length) and its TCP header (sequence numbers and window
+ * in host byte order, as tcp_input() has them).
  */
 void syncache_init(void);
-void syncache_add(struct socket *lso, struct tcpiphdr *ti,
-        u_char *optp, int optlen, struct mbuf *m,
-        int isipv6, struct in6_addr *src6, struct in6_addr *dst6);
-int  syncache_expand(struct socket *lso, struct tcpiphdr *ti,
-        u_char *optp, int optlen, struct mbuf *m, struct socket **sop,
-        int isipv6, struct in6_addr *src6, struct in6_addr *dst6);
-void syncache_chkrst(struct tcpiphdr *ti,
-        int isipv6, struct in6_addr *src6, struct in6_addr *dst6);
+int  syncache_listen(void);
+void syncache_add(struct socket *lso, const struct inetfamily *inf,
+        const union inp_addr *src, const union inp_addr *dst, struct tcphdr *th,
+        u_char *optp, int optlen, struct mbuf *m);
+int  syncache_expand(struct socket *lso, const struct inetfamily *inf,
+        const union inp_addr *src, const union inp_addr *dst, struct tcphdr *th,
+        u_char *optp, int optlen, struct mbuf *m, struct socket **sop);
+void syncache_chkrst(const struct inetfamily *inf, const union inp_addr *src,
+        const union inp_addr *dst, struct tcphdr *th);
 void syncache_timer(void);
 void syncache_purge(struct socket *lso);
+/* a family leaves the transports: its entries go (inf NULL: every entry) */
+void syncache_flush(const struct inetfamily *inf);
+/* TCP stops: the entries, the table, the cache's variables */
+void syncache_deinit(void);
 
 extern int tcp_syncookiesonly;	/* force SYN cookies for every SYN */
 

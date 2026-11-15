@@ -66,6 +66,7 @@
 
 #include <kern/amiga_includes.h>
 #include <kern/uipc_domain_protos.h>
+#include <net/netmodule.h>
 
 /* --- start moved from sys/domain.h --- */
 struct	domain *domains = NULL;
@@ -73,55 +74,17 @@ struct	domain *domains = NULL;
 
 static BOOL domain_initialized = FALSE;
 
-#define	ADDDOMAIN(x)	{ \
-	extern struct domain __CONCAT(x,domain); \
-	__CONCAT(x,domain.dom_next) = domains; \
-	domains = &__CONCAT(x,domain); \
-}
+/*
+ * The set of modules linked into the stack binary (kern/net_module.c walks
+ * it). The empty default is defined here, away from the code that reads
+ * the list, so that the compiler cannot assume its length.
+ */
+#include <aros/symbolsets.h>
+DEFINESET(NETMODULES)
 
-BOOL
-domaininit()
+static void
+domain_sizes(void)
 {
-    register struct domain *dp;
-    register struct protosw *pr;
-
-    if(domain_initialized)
-        return TRUE;
-
-#undef unix
-#ifndef AMITCP
-    ADDDOMAIN(unix);
-#endif /* AMITCP */
-    ADDDOMAIN(route);
-#if INET
-    ADDDOMAIN(inet);
-#endif
-#if INET6
-    ADDDOMAIN(inet6);
-#endif
-#if NS
-    ADDDOMAIN(ns);
-#endif
-#if ISO
-    ADDDOMAIN(iso);
-#endif
-#if RMP
-    ADDDOMAIN(rmp);
-#endif
-#if CCITT
-    ADDDOMAIN(ccitt);
-#endif
-#if NIMP > 0
-    ADDDOMAIN(imp);
-#endif
-
-    for(dp = domains; dp; dp = dp->dom_next) {
-        if(dp->dom_init)
-            (*dp->dom_init)();
-        for(pr = dp->dom_protosw; pr < dp->dom_protoswNPROTOSW; pr++)
-            if(pr->pr_init)
-                (*pr->pr_init)();
-    }
 #ifdef AMITCP
     /*
      * No space needed for the link header with SanaII drivers
@@ -133,14 +96,81 @@ domaininit()
 #endif
     max_hdr = max_linkhdr + max_protohdr;
     max_datalen = MHLEN - max_hdr;
+}
 
-#ifndef AMITCP
-    /*
-     * Timeouts are scheduled from amiga_main.c in AmiTCP/IP
-     */
-    pffasttimo();
-    pfslowtimo();
-#endif
+/*
+ * Attach a domain: link it at the end of the list (so the domains keep the
+ * order they were attached in), then initialise it and its protocols.
+ */
+int
+domain_attach(struct domain *dp)
+{
+    struct domain **dpp;
+    struct protosw *pr;
+
+    for(dpp = &domains; *dpp; dpp = &(*dpp)->dom_next)
+        if(*dpp == dp || (*dpp)->dom_family == dp->dom_family)
+            return (EEXIST);
+    dp->dom_next = NULL;
+    dp->dom_refs = 0;
+    *dpp = dp;
+
+    if(dp->dom_init)
+        (*dp->dom_init)();
+    for(pr = dp->dom_protosw; pr < dp->dom_protoswNPROTOSW; pr++)
+        if(pr->pr_init)
+            (*pr->pr_init)();
+    domain_sizes();
+    return (0);
+}
+
+/*
+ * Detach a domain. Only the link is undone here: what the domain's protocols
+ * own (tables, queues, timers) is released by the module that attached it,
+ * before it calls this.
+ */
+int
+domain_detach(struct domain *dp)
+{
+    struct domain **dpp;
+
+    if(dp->dom_refs != 0)
+        return (EBUSY);
+    for(dpp = &domains; *dpp; dpp = &(*dpp)->dom_next)
+        if(*dpp == dp) {
+            *dpp = dp->dom_next;
+            dp->dom_next = NULL;
+            return (0);
+        }
+    return (ENOENT);
+}
+
+/*
+ * The stack is ending and the modules are about to go (net/netmodule.h):
+ * the list is dropped as a whole. The domains and their protocol tables
+ * are the modules' own data; the protocols' timers have been deleted
+ * (timer_deinit()) and no socket exists.
+ */
+void
+domain_forget_all(void)
+{
+    domains = NULL;
+}
+
+/*
+ * Start the families compiled into the stack. Each is a module
+ * (net/netmodule.h) whose start function attaches its domain; the order is
+ * the order the domains have always been initialised in.
+ */
+BOOL
+domaininit()
+{
+    if(domain_initialized)
+        return TRUE;
+
+    netmodule_start_builtin();
+    domain_sizes();
+
     domain_initialized = TRUE;
     return TRUE;
 }

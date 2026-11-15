@@ -99,6 +99,8 @@ static int ns_while_sending(const char *target, int secs)
     d.sin6_port = htons(9);
     d.sin6_scope_id = ifindex;
     s = socket(AF_INET6, SOCK_DGRAM, 0);
+    if (s < 0)
+        return -1;                      /* nothing sent: no count */
     for (ticks = 0; ticks < secs * 10; ticks++) {
         long n;
 
@@ -207,6 +209,7 @@ void testNAFLAGS6_RECEIVED(void)
     d.sin6_port = htons(9);
     d.sin6_scope_id = ifindex;
     u = socket(AF_INET6, SOCK_DGRAM, 0);
+    CU_ASSERT_FATAL(u >= 0);
     sendto(u, (char *)"x", 1, 0, (struct sockaddr *)&d, sizeof(d));
     CloseSocket(u);
     Delay(10);
@@ -310,6 +313,10 @@ int main(int argc, char **argv)
     SocketBase = OpenLibrary("bsdsocket.library", 4);
     if (SocketBase == NULL) {
         printf("bsdsocket.library 4 not available - skipping NAFLAGS6 tests\n");
+        return 0;
+    }
+    if (st_skip_program("cunit-net-naflags6", ST_V6)) {
+        CloseLibrary(SocketBase);
         return 0;
     }
     ready = setup();

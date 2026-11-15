@@ -72,6 +72,11 @@ struct ServerData
 
 /// StringToClipboard
 // copy a string to the clipboard, public callable function
+/* With a live server, try its semaphore without waiting. Send a borrowed
+ * nonempty string or positive-length span and wait for reply; otherwise
+ * beep. Zero/negative length uses strlen. No write status or timeout. Keep
+ * input storage valid through the reply.
+ */
 void StringToClipboard(STRPTR str, LONG length)
 {
   ENTER();
@@ -111,7 +116,13 @@ void StringToClipboard(STRPTR str, LONG length)
 ///
 /// ClipboardToString
 // copy from the clipboard to a string, public callable function
-// the string must be FreeVec()ed externally
+// Release a returned string with SharedPoolFree().
+/* Try the server semaphore and synchronously request text. Return TRUE with
+ * an owned SharedPoolAlloc buffer and byte count, released via
+ * SharedPoolFree, not FreeVec. On failure leave caller outputs unchanged
+ * and return FALSE. Require writable outputs and live server; no wait
+ * timeout.
+ */
 BOOL ClipboardToString(STRPTR *str, LONG *length)
 {
   BOOL success = FALSE;
@@ -156,6 +167,10 @@ BOOL ClipboardToString(STRPTR *str, LONG *length)
 /// WriteToClipboard
 // write a given string via iffparse.library to the clipboard
 // non-public server side function
+/* Server-only: open clipboard unit zero as IFF, write an FTXT FORM with
+ * CHRS bytes, and close/free handles. Require a valid span. Chunk/write
+ * errors are not propagated; void return does not attest success.
+ */
 static void WriteToClipboard(STRPTR str, LONG length)
 {
   struct IFFHandle *iff;
@@ -188,6 +203,11 @@ static void WriteToClipboard(STRPTR str, LONG length)
 /// utf8_to_ansi
 // convert an UTF-8 string to ANSI
 #if defined(__MORPHOS__)
+/* MorphOS-only helper: decode UTF-8 and map each character through the
+ * default keymap into caller storage. Require suitable capacity and
+ * terminated source; no validation/status result. AROS does not use this
+ * conversion path.
+ */
 static void utf8_to_ansi(CONST_STRPTR src, STRPTR dst)
 {
   static struct KeyMap *keymap;
@@ -214,6 +234,12 @@ static void utf8_to_ansi(CONST_STRPTR src, STRPTR dst)
 /// ReadFromClipboard
 // read a string via iffparse.library from the clipboard
 // non-public server side function
+/* Server-only: initialize outputs NULL/zero, scan CHRS/CSET and return
+ * terminated shared-pool data for positive reads. AROS does not convert
+ * UTF-8 here. Partial positive reads are accepted; repeated chunks and
+ * failed reads can leave unreleased allocations. Caller releases returned
+ * data with SharedPoolFree.
+ */
 static void ReadFromClipboard(STRPTR *str, LONG *length)
 {
   struct IFFHandle *iff;
@@ -305,6 +331,11 @@ static void ReadFromClipboard(STRPTR *str, LONG *length)
 /// ClipboardServer
 // the clipboard server process
 #if defined(__amigaos4__)
+/* Receive startup, open iffparse and a request port, reply with that port,
+ * then process read/write/shutdown and reply to each request. Release
+ * port/library on exit. Some early failures exit without startup reply and
+ * can leave the starter waiting. No timeout or general error result.
+ */
 static LONG ClipboardServer(UNUSED STRPTR args, UNUSED LONG length, struct ExecBase *SysBase)
 #else
 static SAVEDS ASM LONG ClipboardServer(UNUSED REG(a0, STRPTR args), UNUSED REG(d0, LONG length))
@@ -410,6 +441,12 @@ static SAVEDS ASM LONG ClipboardServer(UNUSED REG(a0, STRPTR args), UNUSED REG(d
 // we must use a separate process, because accessing the clipboard via iffparse.library
 // allocates 2 signals for every instance of this class. Hence we will run out of signals
 // sooner or later. The separate process avoids this situation.
+/* Allocate semaphore, launch a separate process, initialize the shared
+ * reply port/message and wait for startup reply. Return TRUE when a port is
+ * supplied, otherwise FALSE on reported failure. Early server failure can
+ * leave the wait unresolved; partial resources are not fully unwound. Call
+ * once with a live pool.
+ */
 BOOL StartClipboardServer(void)
 {
   BOOL success = FALSE;
@@ -488,6 +525,11 @@ BOOL StartClipboardServer(void)
 ///
 /// ShutdownClipboardServer
 // shutdown the server process and clean up
+/* With no concurrent clients, send shutdown and wait for reply, clear
+ * serverPort, and free its semaphore. No timeout or server-lock
+ * acquisition. Must precede pool deletion; this is not concurrent
+ * cancellation.
+ */
 void ShutdownClipboardServer(void)
 {
   if(serverPort != NULL)

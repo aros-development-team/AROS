@@ -46,10 +46,9 @@ static int GM_UNIQUENAME(Expunge)(struct PrinterBase *PrinterBase)
     return TRUE;
 }
 
-/* Opening PrinterBase creates a new struct PrinterData * device
- * for that unit.
- *
- * For now, we only support one opener of a unit at a time.
+/* Opening a unit of PrinterBase creates a struct PrinterData * device for
+ * it, with its driver and its task, or joins the one that is there: a unit
+ * is shared, and its job runs from the first open to the last close.
  */
 static int GM_UNIQUENAME(OpenDevice)(struct PrinterBase *PrinterBase, union printerIO *pio, LONG unitnum, ULONG flags)
 {
@@ -67,11 +66,18 @@ static int GM_UNIQUENAME(OpenDevice)(struct PrinterBase *PrinterBase, union prin
     if (unitnum < 0 || unitnum >= PRINTER_UNITS)
         return FALSE;
 
+    /* The unit task takes this lock for the whole of the last close, so a
+     * unit found here stays until our own close, and one that is closing
+     * down has gone by the time we get the lock.
+     */
     ObtainSemaphore(&PrinterBase->pb_UnitLock[unitnum]);
-    if ((PrinterBase->pb_Unit[unitnum] == NULL)) {
+    pu = PrinterBase->pb_Unit[unitnum];
+    if (pu == NULL) {
         pu = Printer_Unit(PrinterBase,(LONG)unitnum);
         PrinterBase->pb_Unit[unitnum] = pu;
     }
+    if (pu != NULL)
+        pu->pu_Opens++;
     ReleaseSemaphore(&PrinterBase->pb_UnitLock[unitnum]);
 
     if (pu) {
@@ -83,8 +89,15 @@ static int GM_UNIQUENAME(OpenDevice)(struct PrinterBase *PrinterBase, union prin
                 AROS_LCA(IPTR, unitnum, D0),
                 AROS_LCA(ULONG, flags, D1),
                 struct Device *, (struct Device *)pu, 1 , dev);
-        if (io->io_Error)
+        if (io->io_Error) {
+            /* The unit's close gives back an open of printer.device, and
+             * this one is not counted: that happens when we return TRUE.
+             */
+            Forbid();
+            PrinterBase->pb_Device.dd_Library.lib_OpenCnt++;
+            Permit();
             CloseDevice((struct IORequest *)io);
+        }
     } else {
         io->io_Error = IOERR_OPENFAIL;
     }

@@ -51,7 +51,9 @@
 #include <net/if.h>
 #include <net/if_protos.h>
 #include <net/pfil.h>
-#include "../net/ipfilter.h"
+
+/* IPv4's packet hook point (netinet/in_proto.c) */
+extern struct pfil_point ip_pfil;
 
 #include <netinet/in.h>
 #include <netinet/in_systm.h>
@@ -63,6 +65,12 @@
 #include <kern/amiga_subr.h>
 #include <kern/amiga_includes.h>
 #include <protos/kern/kern_random_protos.h>
+#include <protos/netinet/in_protos.h>
+#include <protos/netinet/in_cksum_protos.h>
+#include <protos/netinet/ip_output_protos.h>
+#include <protos/net/if_loop_protos.h>
+#include <protos/net/route_protos.h>
+#include <net/netcore_map.h>        /* always the last include */
 
 /*
  * Random IP IDs, against ID prediction (idle scans, blind fragment
@@ -81,10 +89,6 @@ ip_randomid(void)
 
 #ifdef vax
 #include <machine/mtpr.h>
-#endif
-
-#ifndef IP_RAWOUTPUT
-#define IP_RAWOUTPUT 0
 #endif
 
 static struct mbuf *ip_insertoptions __P((struct mbuf *, struct mbuf *, int *));
@@ -281,10 +285,19 @@ int	STKARGFUN ip_output(void *args, ...)
         if(ro->ro_rt->rt_flags & RTF_GATEWAY)
             dst = (struct sockaddr_in *)ro->ro_rt->rt_gateway;
     }
+    /*
+     * M_MCAST tells how a frame was received. A packet made from one - the
+     * echo reply icmp_reflect() makes of a request sent to a group, in the
+     * request's own mbuf - must not leave as one: the interface would send
+     * it to its unicast destination as a multicast (S2_MULTICAST), which
+     * the device refuses. As in ip6_output(); M_BCAST is set or cleared
+     * below, by what the destination is.
+     */
+    if(!IN_MULTICAST(ntohl(ip->ip_dst.s_addr)))
+        m->m_flags &= ~M_MCAST;
 #ifdef ENABLE_MULTICAST
     if(IN_MULTICAST(ntohl(ip->ip_dst.s_addr))) {
         struct in_multi *inm;
-        extern struct ifnet loif;
 
         m->m_flags |= M_MCAST;
         /*
@@ -298,7 +311,8 @@ int	STKARGFUN ip_output(void *args, ...)
          */
         if(imo != NULL) {
             ip->ip_ttl = imo->imo_multicast_ttl;
-            if(imo->imo_multicast_ifp != NULL)
+            /* an interface the packet is bound to wins */
+            if(imo->imo_multicast_ifp != NULL && boundifp == NULL)
                 ifp = imo->imo_multicast_ifp;
         } else
             ip->ip_ttl = IP_DEFAULT_MULTICAST_TTL;
@@ -379,7 +393,7 @@ int	STKARGFUN ip_output(void *args, ...)
      * of outgoing interface.
      */
     if(ip->ip_src.s_addr == INADDR_ANY && ia != NULL)
-        ip->ip_src = IA_SIN(ia)->sin_addr;
+        ip->ip_src = IA_SIN(in_readyia(ia))->sin_addr;  /* one that is ready */
 #endif
     /*
      * Look for broadcast address and
@@ -412,12 +426,40 @@ int	STKARGFUN ip_output(void *args, ...)
 #ifdef ENABLE_MULTICAST
 sendit:
 #endif
-    /* Run through list of hooks and IP filter engine */
-    if(pfil_run_hooks(m, ifp, MIAMIPFBPT_IP, IPF_OUT)) {
-        DIPF(log(LOG_DEBUG, "ipfilter: dropped outgoing packet on %s%d\n",
-                 ifp->if_name, ifp->if_unit);)
-        error = EHOSTUNREACH;
-        goto bad;
+    /*
+     * Only from an address that is ready (RFC 5227, as NetBSD's
+     * ip_ifaddrvalid()): from a tentative one the packet is dropped - a
+     * TCP SYN is sent again once it is ready - from a duplicated one the
+     * sender gets EADDRNOTAVAIL. A forwarded packet is not ours.
+     */
+    if(!(flags & IP_FORWARDING) && ip->ip_src.s_addr != INADDR_ANY) {
+        register struct in_ifaddr *sia;
+
+        for(sia = in_ifaddr; sia; sia = sia->ia_next)
+            if(IA_SIN(sia)->sin_addr.s_addr == ip->ip_src.s_addr)
+                break;
+        if(sia && (sia->ia4_flags & IN_IFF_NOTREADY)) {
+            ipstat.ips_odropped++;
+            error = (sia->ia4_flags & IN_IFF_DUPLICATED) ? EADDRNOTAVAIL : 0;
+            goto bad;
+        }
+    }
+
+    /*
+     * The packet hooks (the filter engine, Miami hooks): one word tested
+     * while nothing is hooked (net/pfil.h). A dropped packet is freed
+     * already, and the send fails with what the hook said (the filter
+     * engine: EHOSTUNREACH). A hook may have replaced the chain.
+     */
+    if(PFIL_HOOKED(&ip_pfil, PFIL_OUT)) {
+        struct mbuf *hm = m;    /* m itself stays a register for the paths without hooks */
+
+        if((error = pfil_run(&ip_pfil, &hm, ifp, PFIL_OUT)) != 0) {
+            DIPF(log(LOG_DEBUG, "ipfilter: dropped an outgoing packet\n");)
+            goto done;
+        }
+        m0 = m = hm;
+        ip = mtod(m, struct ip *);
     }
 
     /*
@@ -662,6 +704,8 @@ struct mbuf **mp;
             case IP_DONTFRAG:
             case IP_RECVTOS:
             case IP_RECVTTL:
+            case IP_RECVIF:
+            case IP_PKTINFO:
                 if(m->m_len != sizeof(int))
                     error = EINVAL;
                 else {
@@ -703,6 +747,14 @@ struct mbuf **mp;
 
                     case IP_RECVTTL:
                         OPTSET(INP_RECVTTL);
+                        break;
+
+                    case IP_RECVIF:
+                        OPTSET(INP_RECVIF);
+                        break;
+
+                    case IP_PKTINFO:
+                        OPTSET(INP_RECVPKTINFO);
                         break;
                     }
                 }
@@ -750,6 +802,8 @@ struct mbuf **mp;
             case IP_DONTFRAG:
             case IP_RECVTOS:
             case IP_RECVTTL:
+            case IP_RECVIF:
+            case IP_PKTINFO:
                 *mp = m = m_get(M_WAIT, MT_SOOPTS);
                 if(m == NULL) {		/* allocator may fail here */
                     error = ENOBUFS;
@@ -790,6 +844,14 @@ struct mbuf **mp;
 
                 case IP_RECVTTL:
                     optval = OPTBIT(INP_RECVTTL);
+                    break;
+
+                case IP_RECVIF:
+                    optval = OPTBIT(INP_RECVIF);
+                    break;
+
+                case IP_PKTINFO:
+                    optval = OPTBIT(INP_RECVPKTINFO);
                     break;
                 }
                 *mtod(m, int *) = optval;

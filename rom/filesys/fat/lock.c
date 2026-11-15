@@ -421,6 +421,8 @@ void FreeLock(struct ExtFileLock *fl, struct Globals *glob)
     if (fl->ioh.block != NULL)
         Cache_FreeBlock(sb->cache, fl->ioh.block);
 
+    /* A second UnLock()/Close() on this lock is then caught, not freed again */
+    fl->magic = 0;
     FreeVecPooled(sb->info->mem_pool, fl);
 
     /* The volume can only follow the lock once the lock has gone */

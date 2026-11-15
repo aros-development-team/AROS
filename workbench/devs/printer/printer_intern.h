@@ -49,7 +49,25 @@ struct PrinterUnit {
     BOOL                pu_JobInfoSupported;
     TEXT                pu_JobApplication[64];
     TEXT                pu_JobDocument[128];
+
+    /* A unit is shared: the job runs from its first open to its last close.
+       pu_Opens is counted under the unit's pb_UnitLock. */
+    ULONG               pu_Opens;
+    BOOL                pu_DriverOpen;  /* ped_Open succeeded: ped_Close is owed */
+
+    /* The first error the output device gave since the current command began */
+    LONG                pu_IOError;
+
+    /* CMD_STOP: requests that print wait here, in order, for CMD_START */
+    BOOL                pu_Stopped;
+    struct MinList      pu_Held;
+
+    union printerIO    *pu_Current;     /* the request the unit task is working on */
 };
+
+/* Set by AbortIO() in a request that is queued, held or being worked on */
+#define IOB_ABORTED     1
+#define IOF_ABORTED     (1 << IOB_ABORTED)
 
 /*********************************************************************************************/
 
@@ -76,5 +94,8 @@ LONG Printer_Gfx_DumpRPort(struct IODRPReq *pio, struct TagItem *tags);
 
 LONG Printer_Text_Write(struct PrinterData *pd, UBYTE *text, LONG length);
 LONG Printer_Text_Command(struct PrinterData *pd, UWORD command, UBYTE p0, UBYTE p1, UBYTE p2, UBYTE p3);
+
+/* AbortIO() was called on the request being worked on */
+BOOL Printer_Aborted(struct PrinterData *pd);
 
 #endif /* PRINTER_INTERN_H */

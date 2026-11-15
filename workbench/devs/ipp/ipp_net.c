@@ -225,6 +225,7 @@ BOOL IPP_EndJob(struct IPPBase *IPPBase, struct IPPUnit *iu)
         return TRUE;
     if (!sendAll(iu, (UBYTE *)"0\r\n\r\n", 5))
         return FALSE;
+    iu->iu_Unconfirmed = TRUE;
 
     while (got < (LONG)sizeof(buf) - 1 && (n = recv(iu->iu_Socket, buf + got, sizeof(buf) - 1 - got, 0)) > 0) {
         got += n;
@@ -245,6 +246,9 @@ BOOL IPP_EndJob(struct IPPBase *IPPBase, struct IPPUnit *iu)
         for (i = 0; i < got && buf[i] != '\r' && buf[i] != '\n'; i++)
             ;
         buf[i] = 0;
+        /* 4xx: this job will not do; 5xx (busy, failing): it may on another try */
+        iu->iu_Refused = http >= 400 && http < 500;
+        iu->iu_Unconfirmed = FALSE;
         setError(iu, "the printer refused the job: ", (char *)buf);
         return FALSE;
     }
@@ -259,6 +263,7 @@ BOOL IPP_EndJob(struct IPPBase *IPPBase, struct IPPUnit *iu)
         return FALSE;
     }
     status = (buf[body + 2] << 8) | buf[body + 3];
+    iu->iu_Unconfirmed = FALSE;
     D(bug("[ipp] unit %lu: IPP status 0x%04x\n", (unsigned long)iu->iu_Number, status));
     if (status >= 0x0100) {
         char code[8] = "0x";
@@ -268,10 +273,38 @@ BOOL IPP_EndJob(struct IPPBase *IPPBase, struct IPPUnit *iu)
         code[4] = hex[(status >> 4) & 15];
         code[5] = hex[status & 15];
         code[6] = 0;
+        /* client-error-*: the job will not do; server-error-* (busy...): another try may */
+        iu->iu_Refused = status < 0x0500;
         setError(iu, "the printer did not take the job, IPP status ", code);
         return FALSE;
     }
     return TRUE;
+}
+
+/* A send failed: a printer that answered early and closed (401, 426) said why. */
+void IPP_ReadRefusal(struct IPPBase *IPPBase, struct IPPUnit *iu)
+{
+    struct timeval tv = { 2, 0 };
+    char buf[256];
+    LONG got = 0, n, i, http = 0;
+
+    if (!iu->iu_Target.it_IPP || iu->iu_Socket < 0)
+        return;
+    setsockopt(iu->iu_Socket, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
+    while (got < (LONG)sizeof(buf) - 1 && (n = recv(iu->iu_Socket, buf + got, sizeof(buf) - 1 - got, 0)) > 0)
+        got += n;
+    buf[got] = 0;
+    if (got < 12 || strncmp(buf, "HTTP/1.", 7) != 0)
+        return;
+    for (i = 9; i < 12; i++)
+        http = http * 10 + (buf[i] - '0');
+    if (http < 400 || http >= 500)
+        return;
+    for (i = 0; i < got && buf[i] != '\r' && buf[i] != '\n'; i++)
+        ;
+    buf[i] = 0;
+    iu->iu_Refused = TRUE;
+    setError(iu, "the printer refused the job: ", buf);
 }
 
 void IPP_Disconnect(struct IPPBase *IPPBase, struct IPPUnit *iu)

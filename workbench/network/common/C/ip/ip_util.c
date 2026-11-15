@@ -20,6 +20,8 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 
+#include <errno.h>
+#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -128,7 +130,7 @@ format_flags(unsigned int flags, char *buf, size_t buflen)
 }
 
 int
-mask2prefix(const struct sockaddr *sa)
+mask2prefix(const struct sockaddr *sa, int af)
 {
 	const unsigned char *addr;
 	int len;
@@ -155,16 +157,30 @@ mask2prefix(const struct sockaddr *sa)
 		break;
 	}
 #endif
-	case 0:
+	case 0: {
 		/*
-		 * Some routing messages use sa_family == 0 for netmasks.
-		 * Treat the raw bytes after sa_family as the mask.
+		 * A netmask as the stack keeps it (SIOCGIFNETMASK, routing
+		 * messages): no family, laid out as a sockaddr of af - the
+		 * destination's - and cut after its last non-zero byte
+		 * (sa_len); what is past sa_len is zero.
 		 */
-		addr = (const unsigned char *)sa + 2;
-		if (sa->sa_len <= 2)
+		int off;
+
+		if (af == AF_INET)
+			off = offsetof(struct sockaddr_in, sin_addr), len = 4;
+#ifdef INET6
+		else if (af == AF_INET6)
+			off = offsetof(struct sockaddr_in6, sin6_addr), len = 16;
+#endif
+		else
+			return -1;
+		if (sa->sa_len <= off)
 			return 0;
-		len = sa->sa_len - 2;
+		if (sa->sa_len - off < len)
+			len = sa->sa_len - off;
+		addr = (const unsigned char *)sa + off;
 		break;
+	}
 	default:
 		return -1;
 	}
@@ -182,6 +198,42 @@ mask2prefix(const struct sockaddr *sa)
 		}
 	}
 	return prefix;
+}
+
+/*
+ * The list is as long as the machine has addresses, so the buffer is
+ * allocated, not on the stack - a command has 8 KB of it on an Amiga - and
+ * doubled until the answer leaves room. The stack stops at an entry that
+ * does not fit, and an entry is the name and an address of up to a
+ * sockaddr_storage (IPv6, AF_LINK): only that much room left says nothing
+ * was cut off.
+ */
+int
+ip_getifconf(int s, struct ifconf *ifc)
+{
+	char *buf = NULL;
+	int len = 4096;
+
+	for (;;) {
+		char *nbuf = realloc(buf, len);
+
+		if (nbuf == NULL) {
+			free(buf);
+			errno = ENOMEM;
+			return -1;
+		}
+		buf = nbuf;
+		ifc->ifc_len = len;
+		ifc->ifc_buf = buf;
+		if (IoctlSocket(s, SIOCGIFCONF, (char *)ifc) < 0) {
+			free(buf);
+			return -1;
+		}
+		if (len - ifc->ifc_len >= (int)(sizeof(struct ifreq) +
+		    sizeof(struct sockaddr_storage)))
+			return 0;
+		len *= 2;
+	}
 }
 
 int

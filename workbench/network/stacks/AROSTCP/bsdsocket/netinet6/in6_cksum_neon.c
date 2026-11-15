@@ -62,6 +62,8 @@
 #include <arm_neon.h>    /* NEON intrinsics -- requires -mfpu=neon on ARMv7 */
 #include <stdint.h>
 #include <string.h>      /* memcpy */
+#include <sys/syslog.h>
+#include <net/netcore_map.h>        /* always the last include */
 
 /* ------------------------------------------------------------------ */
 /* Helper: branchless fold of a 64-bit accumulator to 16-bit.         */
@@ -250,8 +252,8 @@ in6_cksum(struct mbuf *m, u_int8_t nxt, u_int32_t off, u_int32_t len)
             mp = mp->m_next;
         }
         if(__builtin_expect(mp == NULL, 0)) {
-            printf("in6_cksum: offset %u past end of chain\n",
-                   (unsigned)off);
+            log(LOG_ERR, "in6_cksum: offset %lu past end of chain\n",
+                   (unsigned long)off);
             return 0;
         }
 

@@ -229,6 +229,10 @@ int main(int argc, char **argv)
         printf("bsdsocket.library not available - skipping UNREACH6 tests\n");
         return 0;
     }
+    if (st_skip_program("cunit-net-unreach6", ST_V6)) {
+        CloseLibrary(SocketBase);
+        return 0;
+    }
     have_if = setup();
     if (!have_if)
         printf("%s: no interface with a link-local address - skipping its UNREACH6 tests\n", ifname);

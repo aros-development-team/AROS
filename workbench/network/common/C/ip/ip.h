@@ -64,14 +64,24 @@ const char *format_lladdr(const unsigned char *addr, int len,
 void format_flags(unsigned int flags, char *buf, size_t buflen);
 
 /*
- * Count prefix length from a network mask.
+ * Count prefix length from a network mask. af is the family it is a mask
+ * for (the destination's): the stack gives masks without a family, laid
+ * out as that family's sockaddr.
  */
-int mask2prefix(const struct sockaddr *sa);
+int mask2prefix(const struct sockaddr *sa, int af);
 
 /*
  * Open a socket for ioctl operations.
  * Returns socket fd or -1 on error.
  */
 int ip_socket(int family);
+
+/*
+ * SIOCGIFCONF on s into a buffer of its own, grown until the answer fits:
+ * ifc->ifc_buf, which the caller frees. 0, or -1 with errno set (ENOMEM,
+ * or the ioctl's error) and nothing to free.
+ */
+struct ifconf;	/* <net/if.h>; not every file that includes this has it */
+int ip_getifconf(int s, struct ifconf *ifc);
 
 #endif /* IP_H */

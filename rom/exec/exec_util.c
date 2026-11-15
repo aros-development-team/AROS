@@ -262,11 +262,15 @@ Exec_CleanupETask(struct Task *task, struct ExecBase *SysBase)
     Forbid();
 
 #if defined(__AROSEXEC_SMP__)
-    if ((PrivExecBase(SysBase)->IntFlags & EXECF_CPUAffinity) && (IntETask(et)->iet_CpuAffinity))
-    {
-        if ((IPTR)IntETask(et)->iet_CpuAffinity != TASKAFFINITY_ANY)
-            KrnFreeCPUMask(IntETask(et)->iet_CpuAffinity);
-    }
+    /*
+     * EXECF_CPUAffinity says whether the scheduler honours the masks, not
+     * who owns them: TASKTAG_AFFINITY and SetTaskAffinity() give a task a
+     * mask while the flag is still clear, and it stays clear when SMP
+     * bring-up fails. The field is NULL unless one of them stored into it.
+     */
+    if (IntETask(et)->iet_CpuAffinity &&
+        ((IPTR)IntETask(et)->iet_CpuAffinity != TASKAFFINITY_ANY))
+        KrnFreeCPUMask(IntETask(et)->iet_CpuAffinity);
 #endif
 
 #if defined(__AROSEXEC_SMP__)

@@ -350,7 +350,15 @@ LIBATOMIC_SRCDIR := $(HOSTDIR)/Ports/host/gcc/gcc-$(GCC_VERSION)/libatomic
 ifeq ($(AROS_TARGET_CPU),m68k)
 ISA_FLAGS:=$(ISA_FLOAT_FLAGS)
 endif
+# prefix must name where libatomic is actually installed, which the install
+# step below sets to $(AROS_LIB).  %build_with_configure defaults prefix to
+# $(AROS_CONTRIB) for contrib ports, and libtool writes the configure-time
+# libdir into libatomic.la - so it recorded an Extras/lib that is never
+# created, and every libtool library linking libatomic baked that dead path
+# into its own .la.  libObjectivelyMVC then failed to link on
+# "'.../Extras/lib/libatomic.la' is not a valid libtool archive".
 %build_with_configure mmake=tools-crosstools-gcc-libatomic srcdir="$(LIBATOMIC_SRCDIR)" \
+	prefix="$(AROS_DEVELOPER)" \
 	basedir= gendir="$(LIBATOMIC_OBJDIR)" extraoptions="$(LIBATOMIC_OPTS)" install_env="$(LIBATOMIC_ENV)"
 
 LIBATOMIC_GCCOBJDIR := $(HOSTGENDIR)/$(CURDIR)/gcc/gcc

@@ -109,7 +109,7 @@ void testDONTWAIT_TCP_SEND(void)
     long t = 0, total = 0;
     int c = -1, s = -1, n, i;
 
-    CU_ASSERT_FATAL(st_tcp_pair(AF_INET6, &c, &s) == 0);
+    CU_ASSERT_FATAL(st_tcp_pair(st_prefer_family(AF_INET6), &c, &s) == 0);
     guard(c);
     for (i = 0; i < 1000; i++) {
         long t0 = ticks();
@@ -143,11 +143,11 @@ int main(void)
     }
     p = CU_add_suite("DONTWAIT_Suite", init_suite, clean_suite);
     if (p == NULL ||
-        !CU_add_test(p, "UDP recv: EWOULDBLOCK at once, socket still blocking (IPv4)", testDONTWAIT_UDP4) ||
-        !CU_add_test(p, "UDP recv: EWOULDBLOCK at once, socket still blocking (IPv6)", testDONTWAIT_UDP6) ||
-        !CU_add_test(p, "TCP recv: EWOULDBLOCK at once (IPv4)", testDONTWAIT_TCP_RECV4) ||
-        !CU_add_test(p, "TCP recv: EWOULDBLOCK at once (IPv6)", testDONTWAIT_TCP_RECV6) ||
-        !CU_add_test(p, "TCP send to a full peer: EWOULDBLOCK at once", testDONTWAIT_TCP_SEND))
+        !st_add_test(p, "UDP recv: EWOULDBLOCK at once, socket still blocking (IPv4)", testDONTWAIT_UDP4, ST_V4) ||
+        !st_add_test(p, "UDP recv: EWOULDBLOCK at once, socket still blocking (IPv6)", testDONTWAIT_UDP6, ST_V6) ||
+        !st_add_test(p, "TCP recv: EWOULDBLOCK at once (IPv4)", testDONTWAIT_TCP_RECV4, ST_V4) ||
+        !st_add_test(p, "TCP recv: EWOULDBLOCK at once (IPv6)", testDONTWAIT_TCP_RECV6, ST_V6) ||
+        !st_add_test(p, "TCP send to a full peer: EWOULDBLOCK at once", testDONTWAIT_TCP_SEND, ST_ANY))
     {
         CU_cleanup_registry();
         CloseLibrary(SocketBase);

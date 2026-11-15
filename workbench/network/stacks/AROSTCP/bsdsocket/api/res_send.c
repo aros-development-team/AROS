@@ -59,6 +59,8 @@ static char sccsid[] = "@(#)res_send.c	6.27 (Berkeley) 2/24/91";
 #include <kern/amiga_netdb.h>
 #include <stdio.h>
 
+#include <net/netcore_map.h>        /* always the last include */
+
 #ifndef AMITCP /* AmiTCP has this in the SocketBase */
 static int res_sock = -1;	/* socket used for communications */
 #endif

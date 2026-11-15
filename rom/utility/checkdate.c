@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: CheckDate() - is a date valid ?
 */
@@ -29,12 +29,12 @@
         ClockData structure is valid.
 
     INPUTS
-        date        -   A ClockData structure desribing the date
+        date        -   A ClockData structure describing the date
                         to check.
 
     RESULT
         If the date is valid, the number of seconds from midnight
-        1-Jan-1978 AD to the date, or 0 if the date is invalud.
+        1-Jan-1978 AD to the date, or 0 if the date is invalid.
 
     NOTES
         The date 01-Jan-78 00:00:00 is actually returned as invalid.
@@ -46,7 +46,7 @@
     EXAMPLE
 
     BUGS
-        Does not check whether the 29/2 is valid outside of a leap year.
+        None known.
 
     SEE ALSO
         Amiga2Date(), Date2Amiga()
@@ -85,7 +85,7 @@
 
     switch( date->month )
     {
-        /* 30 days hath September, April, June and November */
+        /* September, April, June and November have 30 days */
         case 4:
         case 6:
         case 9:
@@ -106,11 +106,12 @@
                 return 0;
             break;
 
-        /*  Except February with has 28, or 29 on a leap year,
-            should I check whether this is a leap year or not?
-        */
+        /* February has 28 days, or 29 on a leap year. */
         case 2:
-            if(date->mday > 29)
+            if(date->mday > 29 ||
+               (date->mday == 29 &&
+                !(((date->year % 400) == 0) ||
+                  (((date->year % 4) == 0) && ((date->year % 100) != 0)))))
                 return 0;
             break;
 

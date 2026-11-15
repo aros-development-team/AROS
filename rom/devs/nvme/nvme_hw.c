@@ -15,6 +15,7 @@
 
 #include "nvme_debug.h"
 #include "nvme_intern.h"
+#include "nvme_timer.h"
 
 /*
     Hardware Access Support Functions
@@ -39,7 +40,7 @@ int nvme_alloc_cmdid(struct nvme_queue *nvmeq)
     for (idx = 0; idx < depth; idx++) {
         UWORD slot = (start + idx) % depth;
         if (!nvmeq->cmdid_busy[slot]) {
-            nvmeq->cmdid_busy[slot] = 1;
+            __atomic_store_n(&nvmeq->cmdid_busy[slot], 1, __ATOMIC_RELEASE);
             nvmeq->cmdid_hint = (slot + 1) % depth;
             cmdid = slot;
             break;
@@ -68,7 +69,7 @@ void nvme_release_cmdid(struct nvme_queue *nvmeq, UWORD cmdid)
     KrnSpinLock(&nvmeq->q_lock, NULL, SPINLOCK_MODE_WRITE);
 #endif
 
-    nvmeq->cmdid_busy[cmdid] = 0;
+    __atomic_store_n(&nvmeq->cmdid_busy[cmdid], 0, __ATOMIC_RELEASE);
     nvmeq->cmdid_hint = cmdid;
 
 #if defined(__AROSEXEC_SMP__)
@@ -108,6 +109,13 @@ int nvme_submit_cmd(struct nvme_queue *nvmeq, struct nvme_command *cmd)
 
     CopyMem(cmd, &nvmeq->sqba[tail], sizeof(struct nvme_command));
     nvmeq->sq_tail = next;
+#if defined(__aarch64__)
+    __asm__ __volatile__("dmb oshst" ::: "memory");
+#elif defined(__arm__)
+    __asm__ __volatile__("dmb sy" ::: "memory");
+#else
+    __atomic_thread_fence(__ATOMIC_RELEASE);
+#endif
     *nvmeq->q_db = next;
 
 #if defined(__AROSEXEC_SMP__)
@@ -125,9 +133,10 @@ void nvme_complete_event(struct nvme_queue *nvmeq, struct nvme_completion *cqe)
     D(bug("[NVME:HW] %s: cmd id = %u\n", __func__, cqe->command_id);)
     D(bug("[NVME:HW] %s:     status = %04x\n", __func__, AROS_LE2WORD(cqe->status) >> 1);)
 
-    if (nvmeq->cehooks[cqe->command_id]) {
+    UWORD cmdid = AROS_LE2WORD(cqe->command_id);
+    if (cmdid < nvmeq->q_depth && nvmeq->cehooks[cmdid]) {
         D(bug ("[NVME:HW] %s: calling completion hook\n", __func__);)
-        nvmeq->cehooks[cqe->command_id](nvmeq, cqe);
+        nvmeq->cehooks[cmdid](nvmeq, cqe);
     }
 }
 
@@ -155,6 +164,15 @@ int nvme_process_cq(struct nvme_queue *nvmeq)
         KrnSpinLock(&nvmeq->q_lock, NULL, SPINLOCK_MODE_WRITE);
 #endif
 
+    if (nvmeq->cq_processing || nvmeq->cq_stopped) {
+#if defined(__AROSEXEC_SMP__)
+        KrnSpinUnLock(&nvmeq->q_lock);
+#endif
+        Enable();
+        return 0;
+    }
+    nvmeq->cq_processing = TRUE;
+
     head = nvmeq->cq_head;
     phase = nvmeq->cq_phase;
 
@@ -165,21 +183,22 @@ int nvme_process_cq(struct nvme_queue *nvmeq)
         if ((AROS_LE2WORD(cqe->status) & 1) != phase) {
             break;
         }
+#if defined(__aarch64__)
+        __asm__ __volatile__("dmb oshld" ::: "memory");
+#elif defined(__arm__)
+        __asm__ __volatile__("dmb sy" ::: "memory");
+#else
+        __atomic_thread_fence(__ATOMIC_ACQUIRE);
+#endif
         nvmeq->sq_head = AROS_LE2WORD(cqe->sq_head);
         if (++head == nvmeq->q_depth) {
             head = 0;
             phase = !phase;
         }
 
-        /*
-         * The completion hook takes the queue lock itself - it frees the
-         * command id - so it must not be called with the lock held, or the
-         * first completion deadlocks the CPU against itself. Publish what
-         * we have consumed first, so another core walking the queue cannot
-         * hand the same entry out twice while the hook runs, then drop the
-         * lock across the call. The controller cannot reuse the entry yet:
-         * that needs the head doorbell, which is only rung below.
-         */
+        /* The callback can take q_lock itself. Keep ownership of the whole
+           walk while it runs: another walker must not ring the doorbell and
+           allow the controller to overwrite the entry passed to the hook. */
         nvmeq->cq_head = head;
         nvmeq->cq_phase = phase;
 #if defined(__AROSEXEC_SMP__)
@@ -206,6 +225,7 @@ int nvme_process_cq(struct nvme_queue *nvmeq)
         nvmeq->cq_head = head;
         nvmeq->cq_phase = phase;
     }
+    nvmeq->cq_processing = FALSE;
 #if defined(__AROSEXEC_SMP__)
         KrnSpinUnLock(&nvmeq->q_lock);
     }
@@ -215,4 +235,27 @@ int nvme_process_cq(struct nvme_queue *nvmeq)
     D(bug ("[NVME:HW] %s: finished\n", __func__);)
 
     return processed;
+}
+
+/* Stop new walkers, then wait for any callback already outside q_lock. */
+void nvme_stop_completions(struct nvme_queue *nvmeq, struct IORequest *tmr)
+{
+#if defined(__AROSEXEC_SMP__)
+    struct NVMEBase *NVMEBase = nvmeq->dev->dev_NVMEBase;
+#endif
+    BOOL processing;
+    do {
+        Disable();
+#if defined(__AROSEXEC_SMP__)
+        KrnSpinLock(&nvmeq->q_lock, NULL, SPINLOCK_MODE_WRITE);
+#endif
+        nvmeq->cq_stopped = TRUE;
+        processing = nvmeq->cq_processing;
+#if defined(__AROSEXEC_SMP__)
+        KrnSpinUnLock(&nvmeq->q_lock);
+#endif
+        Enable();
+        if (processing)
+            nvme_WaitTO(tmr, 0, 1000, 0);
+    } while (processing);
 }

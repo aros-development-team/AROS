@@ -18,6 +18,11 @@
     instead, for scripted runs; NOWINDOW renders without a window: the
     check alone, or FRAMES frames of rendering.
 
+    SWAPCHAIN presents through vulkan.library's window system integration
+    instead: a surface on the window (VK_AROS_surface) and a swapchain
+    (VK_KHR_swapchain), each frame blitted from the offscreen image into the
+    next swapchain image and presented.
+
     Result: 0 when the check passes, 20 when it fails or Vulkan is missing.
 */
 
@@ -30,6 +35,7 @@
 #include <aros/debug.h>
 
 #include <vulkan/vulkan.h>
+#include <vulkan/vulkan_aros.h>
 
 #include <math.h>
 #include <stdarg.h>
@@ -110,6 +116,14 @@ static UBYTE *pixels;
 static BOOL rbinvalidate;
 static VkMemoryPropertyFlags rbflags;
 static ULONG nindices;
+
+/* SWAPCHAIN: presenting through the window system integration */
+static BOOL useswap;
+static VkSurfaceKHR surface;
+static VkSwapchainKHR swapchain;
+static VkImage swapimages[8];
+static uint32_t nswapimages;
+static VkSemaphore acquiresem, rendersem;
 
 static void tlog(const char *fmt, ...)
 {
@@ -488,9 +502,19 @@ static BOOL setup(void)
     UWORD *idx;
     ULONG nverts = SEGMENTS * SIDES;
 
+    static const char *instexts[] = { VK_KHR_SURFACE_EXTENSION_NAME, VK_AROS_SURFACE_EXTENSION_NAME };
+    static const char *devexts[] = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
+
     app.pApplicationName = "vktorusknot";
     app.apiVersion = VK_API_VERSION_1_0;
     ici.pApplicationInfo = &app;
+    if (useswap)
+    {
+        ici.enabledExtensionCount = 2;
+        ici.ppEnabledExtensionNames = instexts;
+        dci.enabledExtensionCount = 1;
+        dci.ppEnabledExtensionNames = devexts;
+    }
     CHECK(vkCreateInstance(&ici, NULL, &instance));
 
 #define F(n) if (!(p##n = (PFN_##n)vkGetInstanceProcAddr(instance, #n))) { tlog("no %s", #n); return FALSE; }
@@ -710,6 +734,133 @@ static BOOL render(float t)
     return TRUE;
 }
 
+/* ---- SWAPCHAIN: the window's surface and swapchain, and a frame onto it ---- */
+
+static BOOL swap_setup(struct Window *win)
+{
+    VkAROSSurfaceCreateInfoAROS sci = { VK_STRUCTURE_TYPE_AROS_SURFACE_CREATE_INFO_AROS };
+    VkSwapchainCreateInfoKHR ci = { VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR };
+    VkSemaphoreCreateInfo semi = { VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO };
+    VkSurfaceCapabilitiesKHR caps;
+    VkSurfaceFormatKHR formats[16];
+    uint32_t nformats = 16;
+
+    sci.window = win;
+    CHECK(vkCreateAROSSurfaceAROS(instance, &sci, NULL, &surface));
+    CHECK(vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physical, surface, &caps));
+    if (vkGetPhysicalDeviceSurfaceFormatsKHR(physical, surface, &nformats, formats) < 0 || !nformats)
+    {
+        tlog("no surface format");
+        return FALSE;
+    }
+
+    ci.surface = surface;
+    ci.minImageCount = caps.minImageCount;
+    ci.imageFormat = formats[0].format;
+    ci.imageColorSpace = formats[0].colorSpace;
+    ci.imageExtent = caps.currentExtent;
+    ci.imageArrayLayers = 1;
+    ci.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+    ci.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    ci.preTransform = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR;
+    ci.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+    ci.presentMode = VK_PRESENT_MODE_IMMEDIATE_KHR;
+    ci.clipped = VK_TRUE;
+    CHECK(vkCreateSwapchainKHR(device, &ci, NULL, &swapchain));
+    nswapimages = 8;
+    if (vkGetSwapchainImagesKHR(device, swapchain, &nswapimages, swapimages) < 0)
+        return FALSE;
+    CHECK(vkCreateSemaphore(device, &semi, NULL, &acquiresem));
+    CHECK(vkCreateSemaphore(device, &semi, NULL, &rendersem));
+    tlog("swapchain: %ux%u, format %d, %u images", (unsigned)caps.currentExtent.width,
+        (unsigned)caps.currentExtent.height, (int)formats[0].format, (unsigned)nswapimages);
+    return TRUE;
+}
+
+static void swap_teardown(void)
+{
+    if (device)
+        vkDeviceWaitIdle(device);
+    if (rendersem) vkDestroySemaphore(device, rendersem, NULL);
+    if (acquiresem) vkDestroySemaphore(device, acquiresem, NULL);
+    if (swapchain) vkDestroySwapchainKHR(device, swapchain, NULL);
+    if (surface) vkDestroySurfaceKHR(instance, surface, NULL);
+}
+
+/* the frame render() left in the offscreen image, onto the window */
+static BOOL swap_present(void)
+{
+    VkCommandBufferBeginInfo bi = { VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO };
+    VkImageMemoryBarrier bar = { VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER };
+    VkImageBlit blit = { { 0 } };
+    VkPipelineStageFlags stage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+    VkSubmitInfo si = { VK_STRUCTURE_TYPE_SUBMIT_INFO };
+    VkPresentInfoKHR pi = { VK_STRUCTURE_TYPE_PRESENT_INFO_KHR };
+    uint32_t index = 0;
+    VkResult res;
+
+    CHECK(vkAcquireNextImageKHR(device, swapchain, UINT64_MAX, acquiresem, VK_NULL_HANDLE, &index));
+
+    CHECK(pvkResetCommandBuffer(cmd, 0));
+    bi.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+    CHECK(pvkBeginCommandBuffer(cmd, &bi));
+
+    bar.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    bar.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    bar.image = swapimages[index];
+    bar.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    bar.subresourceRange.levelCount = 1;
+    bar.subresourceRange.layerCount = 1;
+    bar.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    bar.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+    bar.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+    pvkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+        0, 0, NULL, 0, NULL, 1, &bar);
+
+    /* the render pass left the offscreen image in TRANSFER_SRC_OPTIMAL */
+    blit.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    blit.srcSubresource.layerCount = 1;
+    blit.srcOffsets[1].x = WIDTH;
+    blit.srcOffsets[1].y = HEIGHT;
+    blit.srcOffsets[1].z = 1;
+    blit.dstSubresource = blit.srcSubresource;
+    blit.dstOffsets[1] = blit.srcOffsets[1];
+    vkCmdBlitImage(cmd, colorimg, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+        swapimages[index], VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &blit, VK_FILTER_NEAREST);
+
+    bar.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+    bar.newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+    bar.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+    bar.dstAccessMask = 0;
+    pvkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+        0, 0, NULL, 0, NULL, 1, &bar);
+    CHECK(pvkEndCommandBuffer(cmd));
+
+    si.waitSemaphoreCount = 1;
+    si.pWaitSemaphores = &acquiresem;
+    si.pWaitDstStageMask = &stage;
+    si.commandBufferCount = 1;
+    si.pCommandBuffers = &cmd;
+    si.signalSemaphoreCount = 1;
+    si.pSignalSemaphores = &rendersem;
+    CHECK(pvkResetFences(device, 1, &fence));
+    CHECK(pvkQueueSubmit(queue, 1, &si, fence));
+
+    pi.waitSemaphoreCount = 1;
+    pi.pWaitSemaphores = &rendersem;
+    pi.swapchainCount = 1;
+    pi.pSwapchains = &swapchain;
+    pi.pImageIndices = &index;
+    res = vkQueuePresentKHR(queue, &pi);
+    CHECK(pvkWaitForFences(device, 1, &fence, VK_TRUE, FENCE_TIMEOUT));
+    if (res != VK_SUCCESS && res != VK_SUBOPTIMAL_KHR)
+    {
+        tlog("vkQueuePresentKHR: %d", (int)res);
+        return FALSE;
+    }
+    return TRUE;
+}
+
 /* ---- the first frame's check ---- */
 
 static BOOL check_frame(void)
@@ -778,8 +929,8 @@ static BOOL check_frame(void)
 
 int main(void)
 {
-    IPTR args[2] = { 0, 0 };
-    struct RDArgs *rda = ReadArgs("FRAMES/K/N,NOWINDOW/S", args, NULL);
+    IPTR args[3] = { 0, 0, 0 };
+    struct RDArgs *rda = ReadArgs("FRAMES/K/N,NOWINDOW/S,SWAPCHAIN/S", args, NULL);
     ULONG frames = (rda && args[0]) ? *(ULONG *)args[0] : 0;
     BOOL nowindow = args[1] ? TRUE : FALSE;
     struct Window *win = NULL;
@@ -788,6 +939,7 @@ int main(void)
     struct DateStamp ds0, ds, start;
     char title[64];
 
+    useswap = (args[2] && !nowindow) ? TRUE : FALSE;
     if (rda)
         FreeArgs(rda);
 
@@ -816,6 +968,11 @@ int main(void)
         }
         else if (!win)
             tlog("no window: rendering without one");
+        if (ok && useswap && (!win || !swap_setup(win)))
+        {
+            tlog("FAIL: no swapchain");
+            ok = FALSE;
+        }
     }
 
     /* NOWINDOW without FRAMES: the check alone */
@@ -832,9 +989,15 @@ int main(void)
                 ok = FALSE;
                 break;
             }
+            if (win && useswap && !swap_present())
+            {
+                ok = FALSE;
+                break;
+            }
             if (win)
             {
-                WritePixelArray(pixels, 0, 0, WIDTH * 4, win->RPort, 0, 0, WIDTH, HEIGHT, RECTFMT_RGBA);
+                if (!useswap)
+                    WritePixelArray(pixels, 0, 0, WIDTH * 4, win->RPort, 0, 0, WIDTH, HEIGHT, RECTFMT_RGBA);
                 while ((msg = (struct IntuiMessage *)GetMsg(win->UserPort)))
                 {
                     if (msg->Class == IDCMP_CLOSEWINDOW)
@@ -872,6 +1035,15 @@ int main(void)
         }
     }
 
+    if (useswap && surface)
+    {
+        IPTR path = vkAGetSurfaceAttr(instance, surface, VKSA_PresentPath);
+
+        tlog("presented by %s%s", path == VKPP_Flip ? "scan-out" : path == VKPP_Readback ? "read-back" : "nothing",
+            vkAGetSurfaceAttr(instance, surface, VKSA_OnPlane) ? ", on a plane" : "");
+    }
+    if (useswap)
+        swap_teardown();
     if (win)
         CloseWindow(win);
     teardown();

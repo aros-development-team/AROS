@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <exec/memory.h>
@@ -94,6 +94,9 @@ apicid_t core_APIC_GetNumberFromLocal(struct APICData *data, apicid_t apicLocalI
 
 apicid_t core_APIC_GetNumber(struct APICData *data)
 {
+#if (__WORDSIZE==64)
+    return TLS_GET(CPUNumber);
+#else
     apicid_t __APICLogicalID;
 
     D(bug("[APIC] %s()\n", __func__));
@@ -110,6 +113,7 @@ apicid_t core_APIC_GetNumber(struct APICData *data)
     D(bug("[APIC] %s: APIC ID %03u\n", __func__, __APICLogicalID));
 
     return core_APIC_GetNumberFromLocal(data, __APICLogicalID);
+#endif
 }
 
 void core_APIC_GetMask(struct APICData *data, apicid_t cpuNo, cpumask_t *mask)

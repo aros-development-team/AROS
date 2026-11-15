@@ -7,7 +7,7 @@
 
     NOTE: This file must compile *without* any other header !
 
-    Desc: cpu.h include file for risc-v (RV32I) systems
+    Desc: cpu.h include file for risc-v (RV32 ILP32D, RV64 LP64D) systems
     Lang: english
 */
 
@@ -19,15 +19,26 @@ typedef	unsigned int	cpumask_t;
 #define AROS_STACK_GROWS_DOWNWARDS 1 /* Stack direction */
 #define AROS_BIG_ENDIAN 	   0 /* Big or little endian */
 #define AROS_SIZEOFULONG	   4 /* Size of an ULONG */
+#if (__riscv_xlen == 64)
+#define AROS_SIZEOFPTR		   8 /* Size of a PTR */
+#else
 #define AROS_SIZEOFPTR		   4 /* Size of a PTR */
+#endif
 #define AROS_WORDALIGN		   2 /* Alignment for WORD */
 #define AROS_LONGALIGN		   4 /* Alignment for LONG */
+#if (__riscv_xlen == 64)
+#define AROS_QUADALIGN		   8 /* Alignment for QUAD */
+#define AROS_PTRALIGN		   8 /* Alignment for PTR */
+#define AROS_IPTRALIGN		   8 /* Alignment for IPTR */
+#define AROS_DOUBLEALIGN	   8 /* Alignment for double */
+#else
 #define AROS_QUADALIGN		   4 /* Alignment for QUAD */
 #define AROS_PTRALIGN		   4 /* Alignment for PTR */
 #define AROS_IPTRALIGN		   4 /* Alignment for IPTR */
 #define AROS_DOUBLEALIGN	   4 /* Alignment for double */
+#endif
 #define AROS_WORSTALIGN 	  16 /* Worst case alignment */
-#define AROS_STACKALIGN		  16 /* FIXME: is this really needed? */
+#define AROS_STACKALIGN		  16 /* The RISC-V psABI requires a 16-byte aligned stack */
 
 /* define this if we have no support for linear varargs in the compiler */
 #define NO_LINEAR_VARARGS       1
@@ -39,6 +50,17 @@ typedef	unsigned int	cpumask_t;
 #define AROS_SLOWSTACKFORMAT    1
 
 #define AROS_32BIT_TYPE         int
+#if (__riscv_xlen == 64)
+#define AROS_64BIT_TYPE         long
+#define AROS_64BIT_STACKTYPE    long
+
+#define AROS_MAKE_INT64(i)  i ## L
+#define AROS_MAKE_UINT64(i) i ## UL
+
+#define __WORDSIZE              64
+
+#define STACKED __attribute__((aligned(8)))
+#endif
 
 /* Use C pointer and string for the BCPL pointers and strings
  * For a normal ABI these should not be defined for maximum source code
@@ -65,9 +87,30 @@ register unsigned char* AROS_GET_SP __asm__("sp");
 /*
     One entry in a libraries' jumptable. For assembler compatibility, the
     field jmp should contain the code for an absolute jmp to a 32bit
-    address. There are also a couple of macros which you should use to
-    access the vector table from C.
+    (RV32) or 64bit (RV64) address. There are also a couple of macros which
+    you should use to access the vector table from C.
 */
+#if (__riscv_xlen == 64)
+struct FullJumpVec
+{
+    unsigned int  jmp[4];   /* auipc t0,0 ; ld t0,16(t0) ; jr t0 ; nop */
+    unsigned long vec;      /* 64-bit absolute target address          */
+};
+/* RISC-V has no full-width absolute jump instruction, so the trampoline
+   loads the target (stored in 'vec', at offset 16 from the trampoline
+   start) into t0 via an AUIPC-relative load and jumps to it. The caller
+   must flush the instruction cache (fence.i / CacheClearE) afterwards. */
+#define __AROS_SET_FULLJMP(v,a) \
+do \
+{  \
+    struct FullJumpVec *_v = (v); \
+    _v->jmp[0] = 0x00000297;	/* auipc t0, 0      */	\
+    _v->jmp[1] = 0x0102B283;	/* ld    t0, 16(t0) */	\
+    _v->jmp[2] = 0x00028067;	/* jr    t0         */	\
+    _v->jmp[3] = 0x00000013;	/* nop (pad)        */	\
+    _v->vec    = (unsigned long)(a); \
+} while (0)
+#else
 struct FullJumpVec
 {
     unsigned long jmp[3];   /* auipc t0,0 ; lw t0,12(t0) ; jr t0 */
@@ -86,6 +129,7 @@ do \
     _v->jmp[2] = 0x00028067;	/* jr    t0         */	\
     _v->vec    = (unsigned long)(a); \
 } while (0)
+#endif
 
 struct JumpVec
 {
@@ -93,8 +137,8 @@ struct JumpVec
 };
 
 /* Use these to acces a vector table */
-#define LIB_VECTSIZE			(sizeof (struct JumpVec))
-#define __AROS_GETJUMPVEC(lib,n)        (&((struct JumpVec *)lib)[-(n)])
+#define LIB_VECTSIZE			((int)sizeof (struct JumpVec))
+#define __AROS_GETJUMPVEC(lib,n)        (&((struct JumpVec *)lib)[-(long)(n)])
 #define __AROS_GETVECADDR(lib,n)        (__AROS_GETJUMPVEC(lib,n)->vec)
 #define __AROS_SETVECADDR(lib,n,addr)   (__AROS_GETJUMPVEC(lib,n)->vec = (addr))
 #define __AROS_INITVEC(lib,n)		__AROS_SETVECADDR(lib,n,_aros_not_implemented)

@@ -22,67 +22,273 @@
 #include "panelgroup_private.h"
 #include "support.h"
 
-/****** PanelGroup.mui/MUIC_PanelGroup ************************************
 
-    NAME
-        MUIC_PanelGroup -- Container class for managing collapsible panels
 
-    SUPERCLASS
-        MUIC_Group
-
-    DESCRIPTION
-        PanelGroup is a specialized Group subclass designed to manage
-        multiple Panel objects. It provides functionality for collapsing
-        and expanding panels, either individually or in groups.
-
-        Key features:
-        - Automatic panel state management
-        - Optional single-panel expansion mode
-        - Collapse/expand all functionality
-        - Drag and drop reordering of panels
-        - Integration with Panel class collapse/expand
-
-    METHODS
-        OM_NEW -- Create PanelGroup object
-        OM_DISPOSE -- Dispose PanelGroup object
-        OM_SET -- Set PanelGroup attributes
-        OM_GET -- Get PanelGroup attributes
-        MUIM_Group_InitChange -- Begin group changes
-        MUIM_Group_ExitChange -- End group changes
-        MUIM_PanelGroup_AddPanel -- Add a panel to tracking
-        MUIM_PanelGroup_RemovePanel -- Remove a panel from tracking
-        MUIM_PanelGroup_ScanPanels -- Scan for Panel children
-        MUIM_PanelGroup_CollapsePanel -- Collapse a specific panel
-        MUIM_PanelGroup_ExpandPanel -- Expand a specific panel
-        MUIM_PanelGroup_TogglePanel -- Toggle a panel's state
-        MUIM_PanelGroup_GetPanelState -- Get panel's current state
-        MUIM_DragQuery -- Check if drag is accepted
-        MUIM_DragReport -- Handle drag feedback
-        MUIM_DragDrop -- Handle drag drop operation
-        MUIM_DragFinish -- Clean up after drag operation
-
-    ATTRIBUTES
-        MUIA_PanelGroup_AllowMultiple (BOOL)
-            Allow multiple panels to be expanded simultaneously.
-            Default: TRUE
-
-        MUIA_PanelGroup_ExpandedPanel (Object *)
-            Get/Set the currently expanded panel (when AllowMultiple is FALSE).
-            Default: NULL
-
-        MUIA_PanelGroup_DragReordering (BOOL)
-            Enable drag and drop reordering of panels.
-            Default: FALSE
-
-        MUIA_PanelGroup_CollapseAll (BOOL)
-            Set to TRUE to collapse all panels.
-            Write-only trigger attribute.
-
-        MUIA_PanelGroup_ExpandAll (BOOL)
-            Set to TRUE to expand all panels.
-            Write-only trigger attribute.
-
-***************************************************************************/
+/****** PanelGroup.mui/MUIC_PanelGroup ************
+*
+*   NAME
+*       MUIC_PanelGroup
+*
+*   SUPERCLASS
+*       Group.mui
+*
+*   DESCRIPTION
+*       A Group with cached state for recognized Panel and DragHandle
+*       children. Group owns children; tracking nodes only borrow their pointers.
+*       ScanPanels adds missing nodes but does not remove stale ones or refresh
+*       existing states immediately. A balanced Group change pair refreshes a
+*       cache marked stale. Direct child/title changes do not invalidate it.
+*
+*   METHODS
+*       Collapse/Expand/Toggle use cached state. They may update that cache
+*       before Setup without changing the visible child. AllowMultiple FALSE is
+*       not an invariant: externally changed panels and title clicks can bypass
+*       it. To refresh, ScanPanels then perform a balanced Group change pair.
+*       Keep tracked objects alive; ScanPanels does not reconcile removals.
+*
+*   BUGS
+*       Tracking allocation failures are not reported reliably. Drag
+*       reordering expects Handle -> Panel -> PanelGroup; dragging Panel itself
+*       is not accepted. Mixed child types can disrupt position calculations.
+*       A successful drop result need not mean a move; tracking order remains
+*       unchanged. The internal acceptance helper requires a non-NULL object.
+*
+*/
+/****** PanelGroup.mui/MUIA_PanelGroup_AllowMultiple ************
+*
+*   NAME
+*       MUIA_PanelGroup_AllowMultiple
+*
+*   FUNCTION
+*       Permit the expand-all operation and multiple expanded panels in managed
+*       operations.
+*
+*   INPUTS
+*       Initialize, set and get, BOOL normalized; default TRUE.
+*
+*   NOTES
+*       Switching to FALSE collapses other cached-collapsible tracked panels
+*       only if ExpandedPanel is non-NULL, and only set-up targets are actually
+*       written. It does not choose a panel when none is recorded. Single
+*       ExpandPanel collapses only the recorded prior panel, not every
+*       independently expanded child. Get returns TRUE with the option; it does
+*       not verify exclusivity.
+*
+*/
+/****** PanelGroup.mui/MUIA_PanelGroup_ExpandedPanel ************
+*
+*   NAME
+*       MUIA_PanelGroup_ExpandedPanel
+*
+*   FUNCTION
+*       Store the panel designated as expanded in single-panel mode.
+*
+*   INPUTS
+*       Initialize, set and get, borrowed Object pointer; default NULL. Supply a
+*       live child Panel or NULL.
+*
+*   NOTES
+*       Construction stores the pointer and can mark layout dirty, but does not
+*       enact initial exclusivity. Changed Set in single-panel mode collapses
+*       the previous live collapsible object and expands the new one through a
+*       setup-only helper. Membership is not validated. Multiple mode only
+*       stores the pointer. Repeating the same pointer does nothing locally. Get
+*       returns TRUE with the recorded pointer, not a scan of visible children;
+*       keep it valid while stored.
+*
+*/
+/****** PanelGroup.mui/MUIA_PanelGroup_CollapseAll ************
+*
+*   NAME
+*       MUIA_PanelGroup_CollapseAll
+*
+*   FUNCTION
+*       Trigger collapse of all eligible tracked panels.
+*
+*   INPUTS
+*       Set-only trigger, BOOL; nonzero invokes the operation, zero does
+*       nothing. Not processed by the local constructor; no local getter.
+*
+*   NOTES
+*       Calls MUIM_PanelGroup_CollapsePanel with NULL. Clears the recorded
+*       ExpandedPanel even if no node changes. Eligibility and results use
+*       cached flags; pre-Setup calls can change the cache without changing
+*       children. OM_SET returns the superclass result rather than the
+*       operation's changed flag.
+*
+*/
+/****** PanelGroup.mui/MUIA_PanelGroup_ExpandAll ************
+*
+*   NAME
+*       MUIA_PanelGroup_ExpandAll
+*
+*   FUNCTION
+*       Trigger expansion of all eligible tracked panels.
+*
+*   INPUTS
+*       Set-only trigger, BOOL; nonzero invokes the operation, zero does
+*       nothing. Not processed by the local constructor; no local getter.
+*
+*   NOTES
+*       Calls MUIM_PanelGroup_ExpandPanel with NULL. Does nothing in
+*       single-panel mode. Eligibility and results use cached flags; pre-Setup
+*       calls can change the cache without changing children. OM_SET returns the
+*       superclass result rather than the operation's changed flag.
+*
+*/
+/****** PanelGroup.mui/MUIA_PanelGroup_DragReordering ************
+*
+*   NAME
+*       MUIA_PanelGroup_DragReordering
+*
+*   FUNCTION
+*       Enable drop acceptance and child dragging for panel reordering.
+*
+*   INPUTS
+*       Initialize, set and get, BOOL normalized; default FALSE.
+*
+*   NOTES
+*       Sets this group Dropable and inherited Draggable on tracked objects;
+*       newly tracked objects are made draggable only when enabled. For Panel
+*       this controls its DragHandle path, not MUIA_Panel_Draggable. Use a
+*       vertical group of Panel children with handles: the drag query expects
+*       handle -> Panel -> this group. Mixed non-panel children are not indexed
+*       consistently. Get returns TRUE with the option, not proof of successful
+*       handle creation or drop.
+*
+*/
+/****** PanelGroup.mui/MUIM_PanelGroup_CollapsePanel ************
+*
+*   NAME
+*       MUIM_PanelGroup_CollapsePanel
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_PanelGroup_CollapsePanel, panel);
+*
+*   FUNCTION
+*       Collapse one tracked panel or all eligible tracked panels.
+*
+*   INPUTS
+*       obj - Live PanelGroup with coherent tracking.
+*       panel - Borrowed live tracked object, or NULL with the method-specific
+*       meaning.
+*
+*   RESULT
+*       TRUE if cached state changed; FALSE otherwise.
+*
+*   NOTES
+*       NULL selects all and clears ExpandedPanel. A specific target must
+*       be tracked, cached-collapsible and cached-expanded. Only set-up panels
+*       are actually changed; the cache can change before Setup. Direct child
+*       changes require the class's cache-refresh sequence.
+*
+*/
+/****** PanelGroup.mui/MUIM_PanelGroup_ExpandPanel ************
+*
+*   NAME
+*       MUIM_PanelGroup_ExpandPanel
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_PanelGroup_ExpandPanel, panel);
+*
+*   FUNCTION
+*       Expand one tracked panel or all eligible tracked panels.
+*
+*   INPUTS
+*       obj - Live PanelGroup with coherent tracking.
+*       panel - Borrowed live tracked object, or NULL with the method-specific
+*       meaning.
+*
+*   RESULT
+*       TRUE if cached state changed; FALSE otherwise.
+*
+*   NOTES
+*       NULL expands all only with AllowMultiple TRUE. A specific target
+*       must be tracked, cached-collapsible and cached-collapsed. Single-panel
+*       mode collapses only the previously recorded ExpandedPanel, not every
+*       independently expanded child. Cache changes can precede Setup; direct
+*       child changes require the class's cache-refresh sequence.
+*
+*/
+/****** PanelGroup.mui/MUIM_PanelGroup_TogglePanel ************
+*
+*   NAME
+*       MUIM_PanelGroup_TogglePanel
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_PanelGroup_TogglePanel, panel);
+*
+*   FUNCTION
+*       Choose collapse or expansion from a tracked panel's cached state.
+*
+*   INPUTS
+*       obj - Live PanelGroup with coherent tracking.
+*       panel - Borrowed live tracked object, or NULL with the method-specific
+*       meaning.
+*
+*   RESULT
+*       The selected CollapsePanel/ExpandPanel result, or FALSE for NULL,
+*       untracked or cached-noncollapsible target.
+*
+*   NOTES
+*       NULL does not mean all. Uses cached state rather than querying
+*       the child. Cache changes can precede Setup; see class synchronization
+*       requirements for direct child changes.
+*
+*/
+/****** PanelGroup.mui/MUIM_PanelGroup_GetPanelState ************
+*
+*   NAME
+*       MUIM_PanelGroup_GetPanelState
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_PanelGroup_GetPanelState, panel);
+*
+*   FUNCTION
+*       Read a tracked panel's cached collapse state.
+*
+*   INPUTS
+*       obj - Live PanelGroup with coherent tracking.
+*       panel - Borrowed live tracked object, or NULL with the method-specific
+*       meaning.
+*
+*   RESULT
+*       MUIV_PanelGroup_Panel_Collapsed (0) or MUIV_PanelGroup_Panel_Expanded
+*       (1). NULL and untracked targets also return Expanded.
+*
+*   NOTES
+*       Unknown and untracked objects return Expanded, as do expanded
+*       panels. No live query or cache refresh occurs. See the class-level
+*       synchronization requirements.
+*
+*/
+/****** PanelGroup.mui/MUIM_PanelGroup_ScanPanels ************
+*
+*   NAME
+*       MUIM_PanelGroup_ScanPanels
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_PanelGroup_ScanPanels);
+*
+*   FUNCTION
+*       Add recognized direct children to the tracking list.
+*
+*   INPUTS
+*       obj - Live PanelGroup with stable child list; previously tracked objects
+*       must still be alive.
+*
+*   RESULT
+*       FALSE when the child list is unavailable; TRUE after scanning, even if
+*       individual tracking-node allocations failed.
+*
+*   NOTES
+*       Recognizes direct Panel and DragHandle children, including
+*       subclasses. Adds missing nodes but does not remove departed children or
+*       refresh the retained nodes immediately. The count reflects recognized
+*       children, not successful allocations. Marks the cache stale; a balanced
+*       Group change pair refreshes it. No ownership transfer occurs.
+*
+*/
 
 #define DEBUG 1
 
@@ -93,15 +299,46 @@
 #endif
 
 /* Helper functions */
+/*
+ * Search live tracking list by pointer identity and return borrowed node or
+ * NULL. Does not dereference candidate panel or query state; list must
+ * remain stable and result expires on node removal/container disposal.
+ */
 static struct PanelNode *FindPanelNode(struct PanelGroup_DATA *data, Object *panel);
+/*
+ * Initialize FALSE, query live non-NULL panel Collapsible and return value
+ * without checking getter status. NULL yields FALSE. Borrow object for call;
+ * no ownership transfer or cache update.
+ */
 static BOOL IsPanelCollapsible(Object *panel);
+/*
+ * Initialize FALSE, query live non-NULL panel Collapsed and return value
+ * without checking getter status. NULL yields FALSE. Requires valid object
+ * pointer; no synchronization or allocation.
+ */
 static BOOL IsPanelCollapsed(Object *panel);
+/*
+ * Set requested state only on non-NULL live panel with MADF_SETUP. Return
+ * void without confirming transition; pre-Setup is a no- op. Notifications
+ * may execute synchronously and must preserve objects.
+ */
 static void SetPanelCollapsed(Object *panel, BOOL collapsed);
+/*
+ * Refresh every live tracked pointer using Panel getters, storing
+ * collapsible/collapsed flags. Requires no stale removed/disposed pointers
+ * and stable list through calls. does not discover membership or enforce
+ * exclusivity.
+ */
 static void UpdatePanelStates(struct IClass *cl, Object *obj);
 
 /**************************************************************************
  Helper function to find a panel in our tracking list
 **************************************************************************/
+/*
+ * Search live tracking list by pointer identity and return borrowed node or
+ * NULL. Does not dereference candidate panel or query state; list must
+ * remain stable and result expires on node removal/container disposal.
+ */
 static struct PanelNode *FindPanelNode(struct PanelGroup_DATA *data, Object *panel)
 {
     struct PanelNode *node;
@@ -120,6 +357,11 @@ static struct PanelNode *FindPanelNode(struct PanelGroup_DATA *data, Object *pan
 /**************************************************************************
  Helper function to check if a panel is collapsible
 **************************************************************************/
+/*
+ * Initialize FALSE, query live non-NULL panel Collapsible and return value
+ * without checking getter status. NULL yields FALSE. Borrow object for call;
+ * no ownership transfer or cache update.
+ */
 static BOOL IsPanelCollapsible(Object *panel)
 {
     BOOL collapsible = FALSE;
@@ -133,6 +375,11 @@ static BOOL IsPanelCollapsible(Object *panel)
 /**************************************************************************
  Helper function to check if a panel is collapsed
 **************************************************************************/
+/*
+ * Initialize FALSE, query live non-NULL panel Collapsed and return value
+ * without checking getter status. NULL yields FALSE. Requires valid object
+ * pointer; no synchronization or allocation.
+ */
 static BOOL IsPanelCollapsed(Object *panel)
 {
     BOOL collapsed = FALSE;
@@ -146,6 +393,11 @@ static BOOL IsPanelCollapsed(Object *panel)
 /**************************************************************************
  Helper function to set panel collapsed state
 **************************************************************************/
+/*
+ * Set requested state only on non-NULL live panel with MADF_SETUP. Return
+ * void without confirming transition; pre-Setup is a no-op. Notifications
+ * may execute synchronously and must preserve objects.
+ */
 static void SetPanelCollapsed(Object *panel, BOOL collapsed)
 {
     if (panel) {
@@ -158,6 +410,12 @@ static void SetPanelCollapsed(Object *panel, BOOL collapsed)
 /**************************************************************************
  Update panel states in our tracking list
 **************************************************************************/
+/*
+ * Refresh every live tracked pointer using Panel getters, storing
+ * collapsible/collapsed flags. Requires no stale removed/disposed pointers
+ * and stable list through calls. does not discover membership or enforce
+ * exclusivity.
+ */
 static void UpdatePanelStates(struct IClass *cl, Object *obj)
 {
     struct PanelGroup_DATA *data = INST_DATA(cl, obj);
@@ -172,6 +430,12 @@ static void UpdatePanelStates(struct IClass *cl, Object *obj)
     }
 }
 
+/*
+ * Delegate Group, initialize tracking defaults, parse options/pointer, set
+ * Dropable and scan direct children. Return object or zero on superclass
+ * failure; tracking allocation failures ignored. ExpandedPanel borrowed and
+ * initial dirty flag does not itself enforce exclusivity.
+ */
 IPTR PanelGroup__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct PanelGroup_DATA *data;
@@ -235,6 +499,12 @@ IPTR PanelGroup__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     return (IPTR) obj;
 }
 
+/*
+ * Remove/free tracking nodes then delegate owned child disposal to Group.
+ * Requires no active callback/drag/list traversal. Does not dispose borrowed
+ * node panels separately or validate stale pointers; return superclass
+ * result.
+ */
 IPTR PanelGroup__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
 {
     struct PanelGroup_DATA *data = INST_DATA(cl, obj);
@@ -250,6 +520,12 @@ IPTR PanelGroup__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
     return DoSuperMethodA(cl, obj, msg);
 }
 
+/*
+ * Process options/triggers in tag order, use setup-only state writes and
+ * cached eligibility, optionally balance Group change/redraw, then return
+ * Group result. ExpandedPanel membership unchecked; keep borrowed pointer
+ * live. Single mode does not guarantee all other panels collapsed.
+ */
 IPTR PanelGroup__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct PanelGroup_DATA *data = INST_DATA(cl, obj);
@@ -345,6 +621,12 @@ IPTR PanelGroup__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
     return DoSuperMethodA(cl, obj, (Msg) msg);
 }
 
+/*
+ * Write AllowMultiple, ExpandedPanel or DragReordering with TRUE; delegate
+ * trigger/unknown queries to Group. Requires writable storage; ExpandedPanel
+ * is borrowed and may not describe actual visible state. No refresh or
+ * allocation.
+ */
 IPTR PanelGroup__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 {
     struct PanelGroup_DATA *data = INST_DATA(cl, obj);
@@ -358,6 +640,11 @@ IPTR PanelGroup__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
     return DoSuperMethodA(cl, obj, (Msg) msg);
 }
 
+/*
+ * Mark layout_dirty TRUE then delegate Group begin-change. Requires live
+ * instance and matching ExitChange; does not itself invalidate cached states
+ * or modify membership.
+ */
 IPTR PanelGroup__MUIM_Group_InitChange(struct IClass *cl, Object *obj, Msg msg)
 {
     struct PanelGroup_DATA *data = INST_DATA(cl, obj);
@@ -366,6 +653,12 @@ IPTR PanelGroup__MUIM_Group_InitChange(struct IClass *cl, Object *obj, Msg msg)
     return DoSuperMethodA(cl, obj, msg);
 }
 
+/*
+ * Delegate Group then, when dirty and states not current, refresh cached
+ * flags; clear dirty and return inherited result. Requires balanced change
+ * and all tracked pointers live. Current cache is not re-queried merely
+ * because children changed externally.
+ */
 IPTR PanelGroup__MUIM_Group_ExitChange(struct IClass *cl, Object *obj, Msg msg)
 {
     struct PanelGroup_DATA *data = INST_DATA(cl, obj);
@@ -385,6 +678,12 @@ IPTR PanelGroup__MUIM_Group_ExitChange(struct IClass *cl, Object *obj, Msg msg)
     return result;
 }
 
+/*
+ * Compare class ancestry with obtained Panel/DragHandle classes and return
+ * BOOL recognition. Requires valid non-NULL object: OCLASS is evaluated
+ * before NULL guard. Class references are obtained here without a local
+ * matching release; no membership check.
+ */
 static IPTR Panelgroup__MUIM_Panelgroup_AcceptsPanel(Object *panel)
 {
     struct IClass *PanelClass = MUI_GetClass(MUIC_Panel);
@@ -408,6 +707,12 @@ static IPTR Panelgroup__MUIM_Panelgroup_AcceptsPanel(Object *panel)
 /**************************************************************************
  MUIM_PanelGroup_ScanPanels method - Scan for Panel children
 **************************************************************************/
+/*
+ * Scan stable direct child list, add recognized Panel/DragHandle nodes,
+ * replace count with recognized total and mark cache stale. Return FALSE
+ * only without child list, otherwise TRUE despite add failures. Does not
+ * remove stale nodes, reorder existing nodes or immediately refresh them.
+ */
 IPTR PanelGroup__MUIM_PanelGroup_ScanPanels(struct IClass *cl, Object *obj, Msg msg)
 {
     struct PanelGroup_DATA *data = INST_DATA(cl, obj);
@@ -444,6 +749,13 @@ IPTR PanelGroup__MUIM_PanelGroup_ScanPanels(struct IClass *cl, Object *obj, Msg 
 /**************************************************************************
  MUIM_PanelGroup_AddPanel method - Add a panel to our tracking
 **************************************************************************/
+/*
+ * Internal MUIM_PanelGroup_AddPanel: borrow panel, allocate tracking node
+ * with queried flags, append and optionally set Draggable.
+ * NULL/allocationfailure FALSE; duplicate TRUE; successful insertion also
+ * FALSE. Does not add Group membership or take panel ownership; keep pointer
+ * live until tracking removal.
+ */
 IPTR PanelGroup__MUIM_PanelGroup_AddPanel(struct IClass *cl, Object *obj, struct MUIP_PanelGroup_AddPanel *msg)
 {
     struct PanelGroup_DATA *data = INST_DATA(cl, obj);
@@ -485,6 +797,12 @@ IPTR PanelGroup__MUIM_PanelGroup_AddPanel(struct IClass *cl, Object *obj, struct
 /**************************************************************************
  MUIM_PanelGroup_RemovePanel method - Remove a panel from our tracking
 **************************************************************************/
+/*
+ * Internal MUIM_PanelGroup_RemovePanel: remove/free matching tracking node,
+ * clear matching ExpandedPanel, decrement count and mark stale. Return TRUE
+ * if found, FALSE otherwise. Does not remove Group membership, dispose panel
+ * or undo draggable state.
+ */
 IPTR PanelGroup__MUIM_PanelGroup_RemovePanel(struct IClass *cl, Object *obj, struct MUIP_PanelGroup_RemovePanel *msg)
 {
     struct PanelGroup_DATA *data = INST_DATA(cl, obj);
@@ -512,6 +830,12 @@ IPTR PanelGroup__MUIM_PanelGroup_RemovePanel(struct IClass *cl, Object *obj, str
 /**************************************************************************
  MUIM_PanelGroup_CollapsePanel method - Collapse panel(s)
 **************************************************************************/
+/*
+ * Use cached eligibility to collapse specific node or all, update cached
+ * flags/ExpandedPanel and balance Group change when changed. Return cached
+ * changed BOOL even if pre-Setup write was skipped. Requires live tracked
+ * objects and coherent cache; no pre-operation refresh.
+ */
 IPTR PanelGroup__MUIM_PanelGroup_CollapsePanel(struct IClass *cl,
                                                Object *obj,
                                                struct MUIP_PanelGroup_CollapsePanel *msg)
@@ -564,6 +888,12 @@ IPTR PanelGroup__MUIM_PanelGroup_CollapsePanel(struct IClass *cl,
 /**************************************************************************
  MUIM_PanelGroup_ExpandPanel method - Expand panel(s)
 **************************************************************************/
+/*
+ * Use cache to expand specific eligible node, collapsing only recorded old
+ * node in single mode; NULL expands all only in multiple mode. Return cached
+ * changed BOOL; pre-Setup helper may do nothing. Balance change on cached
+ * modifications, preserve live objects through notifications.
+ */
 IPTR PanelGroup__MUIM_PanelGroup_ExpandPanel(struct IClass *cl, Object *obj, struct MUIP_PanelGroup_ExpandPanel *msg)
 {
     struct PanelGroup_DATA *data = INST_DATA(cl, obj);
@@ -626,6 +956,11 @@ IPTR PanelGroup__MUIM_PanelGroup_ExpandPanel(struct IClass *cl, Object *obj, str
 /**************************************************************************
  MUIM_PanelGroup_TogglePanel method - Toggle panel state
 **************************************************************************/
+/*
+ * Reject NULL/untracked/cached-noncollapsible; otherwise dispatch
+ * expand/collapse from cached state and return that result. Requires live
+ * coherent tracking; no query of current child state or ownership change.
+ */
 IPTR PanelGroup__MUIM_PanelGroup_TogglePanel(struct IClass *cl, Object *obj, struct MUIP_PanelGroup_TogglePanel *msg)
 {
     struct PanelGroup_DATA *data = INST_DATA(cl, obj);
@@ -655,6 +990,11 @@ IPTR PanelGroup__MUIM_PanelGroup_TogglePanel(struct IClass *cl, Object *obj, str
 /**************************************************************************
  MUIM_PanelGroup_GetPanelState method - Get panel collapse state
 **************************************************************************/
+/*
+ * Return cached Collapsed0 or Expanded1; NULL/untracked also Expanded1.
+ * Requires stable list, no state refresh or child dereference. Result does
+ * not distinguish unknown from expanded.
+ */
 IPTR PanelGroup__MUIM_PanelGroup_GetPanelState(struct IClass *cl,
                                                Object *obj,
                                                struct MUIP_PanelGroup_GetPanelState *msg)
@@ -675,6 +1015,12 @@ IPTR PanelGroup__MUIM_PanelGroup_GetPanelState(struct IClass *cl,
 /**************************************************************************
  Helper function to find panel index in group
 **************************************************************************/
+/*
+ * Search current child list, increment index only for recognized
+ * Panel/DragHandle; return index at pointer match or -1. Requires valid live
+ * children; no allocation. This helper is defined but not called by the
+ * local drop path.
+ */
 static LONG FindPanelIndex(struct IClass *cl, Object *obj, Object *panel)
 {
     struct MinList *children;
@@ -700,6 +1046,12 @@ static LONG FindPanelIndex(struct IClass *cl, Object *obj, Object *panel)
 /**************************************************************************
  Helper function to calculate drop position from coordinates
 **************************************************************************/
+/*
+ * Compare pointer Y with midpoints of recognized children and return
+ * insertion index; X unused. Requires stable child geometry. Return type
+ * UWORD converts missing-list -1 to65535; caller must not infer a signed
+ * failure. No resource ownership.
+ */
 static UWORD CalculateDropPosition(struct IClass *cl, Object *obj, WORD x, WORD y)
 {
     struct MinList *children;
@@ -733,6 +1085,12 @@ static UWORD CalculateDropPosition(struct IClass *cl, Object *obj, WORD x, WORD 
 /**************************************************************************
  MUIM_DragQuery - Check if we accept the drag
 **************************************************************************/
+/*
+ * Refuse disabled/self, recognize live dragged object, then accept only when
+ * its parent has this group as parent. Requires non-NULL candidate and valid
+ * parent chain; helper dereferences before NULL check. Intended
+ * handle->Panel->group path, not direct Panel drag.
+ */
 IPTR PanelGroup__MUIM_DragQuery(struct IClass *cl, Object *obj, struct MUIP_DragQuery *msg)
 {
     struct PanelGroup_DATA *data = INST_DATA(cl, obj);
@@ -762,6 +1120,12 @@ IPTR PanelGroup__MUIM_DragQuery(struct IClass *cl, Object *obj, struct MUIP_Drag
     return MUIV_DragQuery_Refuse;
 }
 
+/*
+ * Compute/store insertion index, derive drop mark from all-child positions
+ * and request update; always return Refresh. Requires stable live child
+ * geometry/render lifecycle. Recognized-only position and all-child feedback
+ * may disagree; missing-list65535 still treated nonnegative.
+ */
 IPTR PanelGroup__MUIM_DragReport(struct IClass *cl, Object *obj, struct MUIP_DragReport *msg)
 {
     struct PanelGroup_DATA *data = INST_DATA(cl, obj);
@@ -799,6 +1163,12 @@ IPTR PanelGroup__MUIM_DragReport(struct IClass *cl, Object *obj, struct MUIP_Dra
     return MUIV_DragReport_Refresh;
 }
 
+/*
+ * Move dragged object parent using temporary all-child Group_Sort array and
+ * stored drop position, then balance change and free array. Requires valid
+ * handle/parent and child list. Always TRUE including no-op/allocation
+ * failure; does not reorder tracking list or revalidate drag policy.
+ */
 IPTR PanelGroup__MUIM_DragDrop(struct IClass *cl, Object *obj, struct MUIP_DragDrop *msg)
 {
     struct PanelGroup_DATA *data = INST_DATA(cl, obj);
@@ -877,6 +1247,11 @@ IPTR PanelGroup__MUIM_DragDrop(struct IClass *cl, Object *obj, struct MUIP_DragD
     return TRUE;
 }
 
+/*
+ * Reset drop position/mark, request full redraw then delegate Group finish
+ * and return result. Requires live instance and valid drag lifecycle; no
+ * temporary array retained or ownership transfer.
+ */
 IPTR PanelGroup__MUIM_DragFinish(struct IClass *cl, Object *obj, struct MUIP_DragFinish *msg)
 {
     struct PanelGroup_DATA *data = INST_DATA(cl, obj);
@@ -894,6 +1269,12 @@ IPTR PanelGroup__MUIM_DragFinish(struct IClass *cl, Object *obj, struct MUIP_Dra
 /**************************************************************************
  MUIM_Draw - Draw the panelgroup with drop marks if needed
 **************************************************************************/
+/*
+ * Draw optional dashed drop mark before Group drawing, saving/restoring
+ * pen/mode/pattern, then return superclass result. Requires valid render
+ * info even before RastPort test. Background/children may overdraw mark; no
+ * local draw-flag filter or resource allocation.
+ */
 IPTR PanelGroup__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 {
     struct PanelGroup_DATA *data = INST_DATA(cl, obj);
@@ -944,6 +1325,12 @@ IPTR PanelGroup__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg
  Main dispatcher
 **************************************************************************/
 #if ZUNE_BUILTIN_PANELGROUP
+/*
+ * Dispatch ABI-correct local lifecycle and class messages to their handlers;
+ * delegate remaining messages to the declared superclass. Requires live
+ * object except construction and normal resource lifecycle; adds no
+ * validation or synchronization.
+ */
 BOOPSI_DISPATCHER(IPTR, PanelGroup_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID) {

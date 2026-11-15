@@ -636,16 +636,16 @@ int main(int argc, char **argv)
         goto out;
     p = CU_add_suite("CLOCKSTEP_Suite", init_suite, clean_suite);
     if (p == NULL ||
-        !CU_add_test(p, "a step moves the system time only", testCLOCKSTEP_STEP) ||
-        !CU_add_test(p, "an address outlives a step forward", testCLOCKSTEP_ADDR_FORWARD) ||
-        !CU_add_test(p, "an address ends on time after a step back", testCLOCKSTEP_ADDR_BACK) ||
-        !CU_add_test(p, "an RIO route outlives a step forward", testCLOCKSTEP_ROUTE_FORWARD) ||
-        !CU_add_test(p, "an RIO route ends on time after a step back", testCLOCKSTEP_ROUTE_BACK) ||
-        !CU_add_test(p, "an RDNSS server outlives a step forward", testCLOCKSTEP_RDNSS_FORWARD) ||
-        !CU_add_test(p, "a path MTU outlives a step forward", testCLOCKSTEP_PMTU_FORWARD) ||
-        !CU_add_test(p, "a route's expiry reads back as given", testCLOCKSTEP_EXPIRE_GIVEN) ||
-        !CU_add_test(p, "a cached answer outlives a step forward", testCLOCKSTEP_DNSCACHE_FORWARD) ||
-        !CU_add_test(p, "a cached answer ends on time after a step back", testCLOCKSTEP_DNSCACHE_BACK))
+        !st_add_test(p, "a step moves the system time only", testCLOCKSTEP_STEP, ST_NONE) ||
+        !st_add_test(p, "an address outlives a step forward", testCLOCKSTEP_ADDR_FORWARD, ST_V6) ||
+        !st_add_test(p, "an address ends on time after a step back", testCLOCKSTEP_ADDR_BACK, ST_V6) ||
+        !st_add_test(p, "an RIO route outlives a step forward", testCLOCKSTEP_ROUTE_FORWARD, ST_V6) ||
+        !st_add_test(p, "an RIO route ends on time after a step back", testCLOCKSTEP_ROUTE_BACK, ST_V6) ||
+        !st_add_test(p, "an RDNSS server outlives a step forward", testCLOCKSTEP_RDNSS_FORWARD, ST_V6) ||
+        !st_add_test(p, "a path MTU outlives a step forward", testCLOCKSTEP_PMTU_FORWARD, ST_V6) ||
+        !st_add_test(p, "a route's expiry reads back as given", testCLOCKSTEP_EXPIRE_GIVEN, ST_V6) ||
+        !st_add_test(p, "a cached answer outlives a step forward", testCLOCKSTEP_DNSCACHE_FORWARD, ST_V6) ||
+        !st_add_test(p, "a cached answer ends on time after a step back", testCLOCKSTEP_DNSCACHE_BACK, ST_V6))
     {
         CU_cleanup_registry();
         goto out;

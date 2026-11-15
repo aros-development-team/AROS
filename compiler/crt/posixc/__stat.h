@@ -18,5 +18,6 @@ int __stat(BPTR lock, struct stat *sb, BOOL filehandle);
 int __stat64(BPTR lock, struct stat64 *sb, BOOL filehandle);
 int __stat_from_path(const char *path, struct stat *sb);
 int __stat64_from_path(const char *path, struct stat64 *sb);
+BOOL __path_is_softlink(const char *path);
 
 #endif

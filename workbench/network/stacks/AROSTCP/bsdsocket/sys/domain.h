@@ -69,10 +69,24 @@ struct	domain {
 	int	(*dom_dispose)(struct mbuf *);	/* dispose of internalized rights */
 	struct	protosw *dom_protosw, *dom_protoswNPROTOSW;
 	struct	domain *dom_next;
+	/*
+	 * Fields below were added for run-time attach and detach
+	 * (net/netmodule.h). The structure grows at the end only.
+	 */
+	long	dom_refs;		/* sockets that use a protocol of this domain */
 };
 
 #ifdef KERNEL
 extern struct	domain *domains;
+
+/*
+ * Attach a domain while the stack runs: link it, initialise it and its
+ * protocols. Detach refuses (EBUSY) while a socket of the domain exists.
+ * Both are called with the stack fenced (start-up, or syscall_semaphore held
+ * in the stack's task).
+ */
+int	domain_attach(struct domain *dp);
+int	domain_detach(struct domain *dp);
 #endif
 
 #endif /* !SYS_DOMAIN_H */

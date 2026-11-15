@@ -14,7 +14,7 @@ CLASSFILES := webpclass
 #MM datatypes-webp-linklibs-webpencode \
 #MM datatypes-webp-linklibs-webputils
 
-LIBWEBPVERSION=1.5.0
+LIBWEBPVERSION=1.6.0
 WEBPREPOSITORIES = \
     cache:// \
     https://storage.googleapis.com/downloads.webmproject.org/releases/webp

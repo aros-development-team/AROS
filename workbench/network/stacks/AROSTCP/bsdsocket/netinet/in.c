@@ -78,10 +78,19 @@
 
 #ifdef ENABLE_MULTICAST
 #include <net/if_sana.h>
-#include <net/sana2request.h>
+#include <netinet/ip_var.h>
+#include <netinet/in_pcb.h>
+#include <netinet/inetfamily.h>
+#include <netinet/ip_output_protos.h>
+#include <kern/amiga_dhcp.h>
+#include <net/sana2arp.h>
+#include <net/netmodule.h>
 #include <devices/sana2.h>
 #include <netinet/igmp.h>
 #endif
+#include <sys/syslog.h>
+#include <protos/net/route_protos.h>
+#include <net/netcore_map.h>        /* always the last include */
 
 #if INET
 /*
@@ -279,9 +288,8 @@ struct in_addr in;
 }
 
 int	in_interfaces;		/* number of external internet interfaces */
-extern	struct ifnet loif;
 
-static int in_control_locked(struct socket *, int, caddr_t, struct ifnet *);
+static int in_control_locked(struct socket *, int, caddr_t, struct ifnet *, u_char);
 
 #ifdef ENABLE_MULTICAST
 /*
@@ -314,19 +322,32 @@ in_join_allhosts(struct ifnet *ifp)
 int
 in_control(struct socket *so, int cmd, caddr_t data, struct ifnet *ifp)
 {
-    spl_t s = splimp();
-    int error = in_control_locked(so, cmd, data, ifp);
+    spl_t s;
+    int error;
+    u_char origin = IN_ORIGIN_MANUAL;
 
+    /* SIOCAIFADDR saying where the address came from: its request first */
+    if(cmd == SIOCAIFADDR_ORIGIN) {
+        u_int o = ((struct in_originreq *)data)->ifro_origin;
+
+        if(o > IN_ORIGIN_LINKLOCAL)
+            return (EINVAL);
+        origin = (u_char)o;
+        cmd = SIOCAIFADDR;
+    }
+    s = splimp();
+    error = in_control_locked(so, cmd, data, ifp, origin);
     splx(s);
     return (error);
 }
 
 static int
-in_control_locked(so, cmd, data, ifp)
+in_control_locked(so, cmd, data, ifp, origin)
 struct socket *so;
 int cmd;
 caddr_t data;
 register struct ifnet *ifp;
+u_char origin;
 {
     register struct ifreq *ifr = (struct ifreq *)data;
     register struct in_ifaddr *ia = 0;
@@ -399,15 +420,47 @@ register struct ifnet *ifp;
         }
         break;
 
+    case SIOCGIFAFLAG_IN: {         /* an address's IN_IFF_* flags (NetBSD) */
+        const struct sockaddr_in *sin = (const struct sockaddr_in *)&ifr->ifr_addr;
+
+        for(; ia; ia = ia->ia_next)
+            if(ia->ia_ifp == ifp && ia->ia_addr.sin_addr.s_addr == sin->sin_addr.s_addr)
+                break;
+        if(ia == NULL || sin->sin_family != AF_INET)
+            return (EADDRNOTAVAIL);
+        ifr->ifr_addrflags = ia->ia4_flags;
+        return (0);
+    }
+
     case SIOCSIFBRDADDR:
     /*		if ((so->so_state & SS_PRIV) == 0)
     			return (EPERM);*/
     /* FALLTHROUGH */
 
-    case SIOCGIFADDR:
     case SIOCGIFNETMASK:
     case SIOCGIFDSTADDR:
     case SIOCGIFBRDADDR:
+        /*
+         * One of the interface's addresses in ifr_addr names that one - an
+         * alias's mask, broadcast or destination, as NetBSD's in_control()
+         * and IPv6's SIOCGIFNETMASK_IN6 give them. Anything else - nothing,
+         * or what an earlier request left there (a program asking
+         * SIOCGIFADDR, SIOCGIFNETMASK, SIOCGIFBRDADDR with one ifreq has
+         * the mask in it by the third) - names the first, as before.
+         */
+        if(ifr->ifr_addr.sa_family == AF_INET) {
+            const struct sockaddr_in *sin = (const struct sockaddr_in *)&ifr->ifr_addr;
+            struct in_ifaddr *named;
+
+            for(named = ia; named; named = named->ia_next)
+                if(named->ia_ifp == ifp &&
+                        named->ia_addr.sin_addr.s_addr == sin->sin_addr.s_addr) {
+                    ia = named;
+                    break;
+                }
+        }
+    /* FALLTHROUGH */
+    case SIOCGIFADDR:
         if(ia == (struct in_ifaddr *)0)
             return (EADDRNOTAVAIL);
         break;
@@ -477,6 +530,7 @@ register struct ifnet *ifp;
     break;
 
     case SIOCSIFADDR:
+        ia->ia_origin = IN_ORIGIN_MANUAL;
         return (in_ifinit(ifp, ia,
                           (struct sockaddr_in *) &ifr->ifr_addr, 1));
 
@@ -510,6 +564,7 @@ register struct ifnet *ifp;
             ia->ia_dstaddr = ifra->ifra_dstaddr;
             maskIsNew  = 1; /* We lie; but the effect's the same */
         }
+        ia->ia_origin = origin;         /* before its probes start */
         if(ifra->ifra_addr.sin_family == AF_INET &&
                 (hostIsNew || maskIsNew))
             error = in_ifinit(ifp, ia, &ifra->ifra_addr, 0);
@@ -521,6 +576,7 @@ register struct ifnet *ifp;
         return (error);
 
     case SIOCDIFADDR:
+        arp_dad_forget(ia);             /* a reload may give it back */
         rt_newaddrmsg(RTM_DELADDR, (struct ifaddr *)ia, 0, NULL);
         in_ifscrub(ifp, ia);
         rt_purgeifa((struct ifaddr *)ia);   /* gateway routes, ARP entries */
@@ -533,7 +589,7 @@ register struct ifnet *ifp;
             if(ifa->ifa_next)
                 ifa->ifa_next = ((struct ifaddr *)ia)->ifa_next;
             else
-                printf("Couldn't unlink inifaddr from ifp\n");
+                log(LOG_ERR, "Couldn't unlink inifaddr from ifp\n");
         }
         oia = ia;
         if(oia == (ia = in_ifaddr))
@@ -544,7 +600,7 @@ register struct ifnet *ifp;
             if(ia->ia_next)
                 ia->ia_next = oia->ia_next;
             else
-                printf("Didn't unlink inifadr from list\n");
+                log(LOG_ERR, "Didn't unlink inifadr from list\n");
         }
         (void) m_free(dtom(oia));
         break;
@@ -556,6 +612,9 @@ register struct ifnet *ifp;
     }
     return (0);
 }
+
+/* in_control() keeps an in_ifaddr in an mbuf */
+typedef char in_ifaddr_fits_an_mbuf[sizeof(struct in_ifaddr) <= MLEN ? 1 : -1];
 
 /*
  * Delete any existing route for an interface.
@@ -588,10 +647,11 @@ int scrub;
 {
     register u_long i = ntohl(sin->sin_addr.s_addr);
     struct sockaddr_in oldaddr;
-    int error, flags = RTF_UP;
+    int error, flags = RTF_UP, newaddr;
     spl_t s = splimp();
 
     oldaddr = ia->ia_addr;
+    newaddr = oldaddr.sin_family != AF_INET || oldaddr.sin_addr.s_addr != sin->sin_addr.s_addr;
     ia->ia_addr = *sin;
     /*
      * Give the interface a chance to initialize
@@ -603,6 +663,20 @@ int scrub;
         splx(s);
         ia->ia_addr = oldaddr;
         return (error);
+    }
+    /*
+     * What IPv4 keeps with a SANA-II interface: the copy of the address
+     * that ARP requests are sent from, and the ARP table (still at splimp,
+     * as alloc_arptable() wants).
+     */
+    {
+        struct sana_softc *ssc = sana_softc_of(ifp);
+
+        if(ssc != NULL) {
+            ssc->ss_ipaddr = sin->sin_addr;
+            if((ifp->if_flags & IFF_NOARP) == 0)
+                alloc_arptable(ssc, 0);
+        }
     }
     splx(s);
     if(scrub) {
@@ -670,7 +744,32 @@ int scrub;
 #ifdef ENABLE_MULTICAST
     in_join_allhosts(ifp);
 #endif
+    /* a new address on an ARP interface is probed before it is used (RFC
+     * 5227); a new mask on the same address is not a new address. EEXIST:
+     * another interface has the network's route, the address is here all
+     * the same (two links with 169.254/16, RFC 3927 section 3.2) */
+    if((error == 0 || error == EEXIST) && newaddr)
+        arp_dad_start(ia);
     return (error);
+}
+
+/*
+ * An address that is not ready - tentative, or another host's (RFC 5227) -
+ * is no source: another of its interface's that is ready, as NetBSD's
+ * in_selectsrc() does. With none ready it stays, and ip_output() refuses
+ * it.
+ */
+struct in_ifaddr *
+in_readyia(struct in_ifaddr *ia)
+{
+    struct in_ifaddr *other;
+
+    if(ia == NULL || !(ia->ia4_flags & IN_IFF_NOTREADY))
+        return (ia);
+    for(other = in_ifaddr; other; other = other->ia_next)
+        if(other->ia_ifp == ia->ia_ifp && !(other->ia4_flags & IN_IFF_NOTREADY))
+            return (other);
+    return (ia);
 }
 
 /*
@@ -702,7 +801,11 @@ struct in_addr in;
      * with a broadcast address.
      */
     for(ia = in_ifaddr; ia; ia = ia->ia_next)
-        if(ia->ia_ifp->if_flags & IFF_BROADCAST) {
+        /* a host address (/32), or one of a point-to-point pair (/31, RFC
+         * 3021), has no network or broadcast address of its own: its
+         * "subnet" is the address itself, or its peer */
+        if((ia->ia_ifp->if_flags & IFF_BROADCAST) &&
+                ia->ia_subnetmask < 0xfffffffeUL) {
             u_long t;
             if(ia->ia_broadaddr.sin_addr.s_addr == in.s_addr)
                 return (1);
@@ -737,77 +840,23 @@ in_mcast_macaddr(struct in_addr *maddr, u_int8_t *mac)
 }
 
 /*
- * sana_add_mcast - tell the SANA-II device to accept the Ethernet multicast
- * for an IPv4 multicast group via S2_ADDMULTICASTADDRESS, so the NIC hardware
- * filter passes matching frames.  Mirrors sana_add_mcast6() in netinet6/in6.c.
+ * in_mcast_device - tell the interface's device to accept (add) or stop
+ * accepting (!add) the link address of an IPv4 group. The device request
+ * is the core's (sana_mcast(), shared with IPv6); only the mapping is ours.
  */
 static int
-sana_add_mcast(struct ifnet *ifp, struct in_addr *maddr)
+in_mcast_device(struct ifnet *ifp, struct in_addr *maddr, int add)
 {
-    struct sana_softc *ssc = (struct sana_softc *)ifp;
-    struct IOSana2Req *req;
     u_int8_t mac[6];
-    int error = 0;
-
-    if(!sana_ether_mcast(ifp))
-        return 0;  /* not Ethernet -- nothing to do */
 
     in_mcast_macaddr(maddr, mac);
-
-    D(bug("[AROSTCP:IN] %s: %s%d registering eth mcast %02x:%02x:%02x:%02x:%02x:%02x\n",
-          __func__, ifp->if_name, ifp->if_unit,
-          mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]));
-
-    req = CreateIOSana2Req(ssc);
-    if(req == NULL)
-        return ENOBUFS;
-
-    req->ios2_Req.io_Command = S2_ADDMULTICASTADDRESS;
-    bcopy(mac, req->ios2_SrcAddr, 6);
-    DoIO((struct IORequest *)req);
-
-    if(req->ios2_Req.io_Error)
-        error = EIO;
-
-    DeleteIOSana2Req(req);
-    return error;
-}
-
-/*
- * sana_del_mcast - stop the SANA-II device accepting an Ethernet multicast.
- */
-static int
-sana_del_mcast(struct ifnet *ifp, struct in_addr *maddr)
-{
-    struct sana_softc *ssc = (struct sana_softc *)ifp;
-    struct IOSana2Req *req;
-    u_int8_t mac[6];
-    int error = 0;
-
-    if(!sana_ether_mcast(ifp))
-        return 0;
-
-    in_mcast_macaddr(maddr, mac);
-
-    req = CreateIOSana2Req(ssc);
-    if(req == NULL)
-        return ENOBUFS;
-
-    req->ios2_Req.io_Command = S2_DELMULTICASTADDRESS;
-    bcopy(mac, req->ios2_SrcAddr, 6);
-    DoIO((struct IORequest *)req);
-
-    if(req->ios2_Req.io_Error)
-        error = EIO;
-
-    DeleteIOSana2Req(req);
-    return error;
+    return sana_mcast(ifp, mac, add);
 }
 
 /*
  * in_addmulti - add (or refcount) an IPv4 multicast membership on an
- * interface.  On the first reference the corresponding Ethernet multicast is
- * registered with the SANA-II device and an unsolicited IGMP report is sent.
+ * interface.  On the first reference the group's link address is registered
+ * with the device (in_mcast_device()) and an unsolicited IGMP report is sent.
  * Mirrors in6_addmulti() in netinet6/in6.c.
  */
 struct in_multi *in_multihead = NULL;
@@ -826,8 +875,8 @@ in_addmulti(struct in_addr *maddr, struct ifnet *ifp)
         }
     }
 
-    /* register the Ethernet multicast address with the NIC */
-    if(sana_add_mcast(ifp, maddr) != 0) {
+    /* register the group's link address with the device */
+    if(in_mcast_device(ifp, maddr, 1) != 0) {
         __log(LOG_ERR, "in_addmulti: S2_ADDMULTICASTADDRESS failed for %s%d\n",
               ifp->if_name, ifp->if_unit);
         /* continue anyway -- some drivers accept all multicast */
@@ -872,8 +921,8 @@ in_delmulti(struct in_multi *inm)
         /* announce that we are leaving before removing from the list */
         igmp_leavegroup(inm);
 
-        /* unregister the Ethernet multicast address from the NIC */
-        sana_del_mcast(inm->inm_ifp, &inm->inm_addr);
+        /* unregister the group's link address from the device */
+        in_mcast_device(inm->inm_ifp, &inm->inm_addr, 0);
     }
 
     for(p = &in_multihead; *p != NULL; p = &(*p)->inm_next) {
@@ -892,9 +941,9 @@ in_delmulti(struct in_multi *inm)
  * device would never be told the group's address.
  *
  * The interface's own membership of the all-hosts group, from
- * in_join_allhosts(), is released here. What sockets still hold cannot be
- * freed under them: those entries are cut loose from the interface and go
- * when their sockets drop them. Nothing is sent and the device is not
+ * in_join_allhosts(), is released here. What sockets hold is released by
+ * in_pcbifgone() (in_family.c); an entry still held is cut loose from the
+ * interface and goes with its last holder. Nothing is sent and the device is not
  * asked to forget the addresses: it is offline and about to be closed.
  */
 void
@@ -924,3 +973,287 @@ in_ifdetach(struct ifnet *ifp)
 }
 #endif /* ENABLE_MULTICAST */
 #endif
+
+
+/*
+ * Every IPv4 address of an interface goes, with what hangs on them: the
+ * DHCP client is told, the link-local claim is given up, every IPv4 route
+ * through the interface is deleted (rt_purgeif(); in_control() scrubs only
+ * each address's own routes, and a gateway route such as the DHCP default
+ * would keep rt_ifa on the freed address), then the addresses. A request
+ * naming no address means "the first one on this interface", so the loop
+ * deletes them all. Returns the number of addresses removed.
+ */
+static int
+in_ifpurge(struct ifnet *ifp, struct sana_softc *ssc)
+{
+    struct ifreq ifr;
+    int deleted = 0;
+
+    kill_dhclient(ifp);
+    if(ssc != NULL && ssc->ss_autoip.state != AUTOIP_DISABLED)
+        autoip_stop(ifp);
+    rt_purgeif(ifp, AF_INET);
+    while(1) {
+        bzero(&ifr, sizeof(ifr));
+        if(in_control(NULL, SIOCDIFADDR, (caddr_t)&ifr, ifp) != 0)
+            break;
+        deleted++;
+    }
+    return (deleted);
+}
+
+/*
+ * The link went (NFE_LINKDOWN): what IPv4 learned from the network that was
+ * there goes, what the configuration gave stays. The network may be another
+ * one when the link is back (NFE_LINKUP), and then:
+ *  - a DHCP lease belongs to the old one: on an interface the configuration
+ *    has on DHCP every address goes (in_ifpurge()), and the DHCP client
+ *    gets a new lease when the link is back;
+ *  - an IPv4LL address (RFC 3927) is valid on the link it was claimed on
+ *    alone: it goes, and is claimed again - with its probes, on the new
+ *    link - when the link is back;
+ *  - a static address and its routes are the configuration's, not the
+ *    network's: they stay as they are. Nothing would put them back - the
+ *    configuration is applied once, when it is read - and a cable pulled
+ *    and plugged in again would leave the interface without an address
+ *    until the next reload.
+ * Returns the number of addresses removed.
+ */
+static int
+in_iflinkdown(struct ifnet *ifp, struct sana_softc *ssc)
+{
+    int deleted = 0;
+
+    if(ifp->if_data.ifi_aros_usedhcp)
+        return (in_ifpurge(ifp, ssc));
+    if(ssc == NULL || ssc->ss_autoip.state == AUTOIP_DISABLED)
+        return (0);
+    /* the claim is given up: autoip_stop() takes its address, which is on
+     * the interface while it is claimed (AUTOIP_CLAIMING), off with it */
+    if(ssc->ss_autoip.state == AUTOIP_CLAIMING)
+        deleted++;
+    autoip_stop(ifp);
+    return (deleted);
+}
+
+/*
+ * IPv4's part in the life of an interface (net/netmodule.h). Registered
+ * from ip_init().
+ */
+static int
+in_ifevent(int event, struct ifnet *ifp)
+{
+    struct sana_softc *ssc = sana_softc_of(ifp);
+    struct ifreq ifr;
+    int deleted = 0;
+
+    switch(event) {
+    case NFE_UP:
+        /* up with its device running: the ARP table, unless it has one */
+        if(ssc != NULL && (ifp->if_flags & IFF_NOARP) == 0) {
+            spl_t s = splimp();
+
+            alloc_arptable(ssc, 0);
+            splx(s);
+        }
+        break;
+
+    case NFE_AUTOADDR:
+        /* the configuration says AUTO: a link-local address (RFC 3927) */
+        if(ssc != NULL) {
+            ssc->ss_autoip.wanted = 1;
+            autoip_start(ifp);
+        }
+        break;
+
+    case NFE_LINKUP:
+        /* Perhaps a new network: a new lease, a new link-local claim. A
+         * static address stayed (in_iflinkdown()), and is probed again
+         * (RFC 5227); autoip was stopped when the link went, and the
+         * configuration's AUTO says it runs again. */
+        arp_dad_linkup(ifp);
+        kill_dhclient(ifp);
+        run_dhclient(ifp);
+        if(ssc != NULL && ssc->ss_autoip.wanted)
+            autoip_start(ifp);
+        break;
+
+    case NFE_LINKDOWN:
+        deleted = in_iflinkdown(ifp, ssc);
+        break;
+
+    case NFE_UNCONFIGURE:
+        /*
+         * A request naming no address means "the first one on this
+         * interface", so this deletes them all.
+         */
+        while(1) {
+            bzero(&ifr, sizeof(ifr));
+            if(in_control(NULL, SIOCDIFADDR, (caddr_t)&ifr, ifp) != 0)
+                break;
+            deleted++;
+        }
+        /* the end of what the configuration gave back (NFE_UNCONFIGURE_PRE) */
+        arp_dad_reload(FALSE);
+        break;
+
+    case NFE_UNCONFIGURE_PRE:
+        /*
+         * The configuration is about to be taken off and, for a reload,
+         * put back: an address in use that it gives back is remembered,
+         * and is not probed again if it comes back (RFC 5227: nothing has
+         * changed on the network). A link that went and came back is
+         * another matter: what stayed is probed again (NFE_LINKUP).
+         */
+        arp_dad_reload(TRUE);
+        if(ssc != NULL) {
+            if(ssc->ss_autoip.state != AUTOIP_DISABLED)
+                autoip_stop(ifp);
+            ssc->ss_autoip.wanted = 0;      /* the configuration says again */
+        }
+        break;
+
+    case NFE_REMOVING:
+        kill_dhclient(ifp);
+        break;
+
+    case NFE_DETACHED:
+#ifdef ENABLE_MULTICAST
+        /* no group membership may go on naming this interface */
+        in_ifdetach(ifp);
+#endif
+        break;
+    }
+    return (deleted);
+}
+
+/*
+ * IPv4's address requests: its interface address ioctls, and those of its
+ * address resolution (the ARP table).
+ */
+static int
+in_ifcontrol(struct socket *so, int cmd, caddr_t data, struct ifnet *ifp)
+{
+    switch(cmd) {
+    case SIOCSARP:
+    case SIOCDARP:
+    case SIOCGARP:
+    case SIOCGARPT:
+        return (arpioctl(cmd, data));
+    }
+    return (in_control(so, cmd, data, ifp));
+}
+
+/* What the core asks about an IPv4 address (NFQ_xxx, net/netmodule.h). */
+static int
+in_addrquery(int what, const struct sockaddr *sa, struct sockaddr *res)
+{
+    const struct sockaddr_in *sin = (const struct sockaddr_in *)sa;
+
+    switch(what) {
+    case NFQ_LOCAL:
+        return (in_localaddr(sin->sin_addr) != 0);
+    case NFQ_FORWARDABLE:
+        return (in_canforward(sin->sin_addr) != 0);
+    case NFQ_NETMASK:
+        in_sockmaskof(sin->sin_addr, (struct sockaddr_in *)res);
+        return (1);
+    }
+    return (0);
+}
+
+const struct netfamily_ifops in_ifops = {
+    AF_INET, 10, in_ifevent, in_ifcontrol, in_addrquery
+};
+
+/*
+ * IPV4 STARTS WHILE THE STACK RUNS (inet_start(), netinet/in_proto.c): the
+ * interfaces are there already, and nobody will raise for them the events
+ * a starting stack raises. For each interface that is up IPv4 does what it
+ * does when one comes up (NFE_UP: the ARP table); and the loopback
+ * interface gets IPv4's loopback address, 127.0.0.1, which the stack's
+ * start-up gives it (loconfig(), net/if_loop.c) and which went with IPv4
+ * when it stopped.
+ *
+ * Nothing else is made here. The addresses the configuration gives the
+ * interfaces, their routes, a DHCP lease and a link-local claim come back
+ * with the next reload of the configuration, which reads them again: the
+ * stack keeps no copy of an interface's configuration that a family could
+ * apply by itself.
+ *
+ * When the stack itself starts, no interface is up yet when the families
+ * are started - the loopback is brought up by loconfig(), the others by
+ * the configuration, both later - and this does nothing.
+ */
+void
+in_attach_running(void)
+{
+    struct ifnet *ifp;
+
+    for(ifp = ifnet_list; ifp != NULL; ifp = ifp->if_next) {
+        if(!(ifp->if_flags & IFF_UP))
+            continue;
+        (void)in_ifevent(NFE_UP, ifp);
+        if(ifp->if_flags & IFF_LOOPBACK) {
+            struct ifreq ifr;
+            struct sockaddr_in *sin = (struct sockaddr_in *)&ifr.ifr_addr;
+
+            bzero((caddr_t)&ifr, sizeof(ifr));
+            sin->sin_len = sizeof(struct sockaddr_in);
+            sin->sin_family = AF_INET;
+            sin->sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+            (void)in_control((struct socket *)NULL, SIOCSIFADDR, (caddr_t)&ifr, ifp);
+        }
+    }
+}
+
+/*
+ * IPV4 STOPS (inet_stop()): what it has on the interfaces goes, on every
+ * interface of the stack - the loopback and tunnels among them - static
+ * addresses too (in_ifpurge()): the DHCP client is told, the
+ * link-local claim is given up, every IPv4 route through the interface is
+ * deleted (rt_purgeif(), which also frees what hangs on them) and then
+ * every IPv4 address, each with the routes that still used it
+ * (rt_purgeifa() in in_control()).
+ *
+ * Then the group memberships. Those of sockets were left when the sockets
+ * were closed - none exists now; what remains is each interface's own
+ * membership of the all-hosts group (in_join_allhosts()), for which no
+ * report is ever sent, and any that a socket did not leave. The devices
+ * stay open, so each is told to forget the group's link address; nothing
+ * is sent - IPv4 has no address left to send from.
+ *
+ * Returns the number of addresses removed.
+ */
+int
+in_detach_all(void)
+{
+    struct ifnet *ifp;
+    int deleted = 0;
+    spl_t s;
+
+    for(ifp = ifnet_list; ifp != NULL; ifp = ifp->if_next) {
+        struct sana_softc *ssc = sana_softc_of(ifp);
+
+        deleted += in_ifpurge(ifp, ssc);
+        if(ssc != NULL)
+            ssc->ss_autoip.wanted = 0;
+    }
+
+#ifdef ENABLE_MULTICAST
+    s = splimp();
+    while(in_multihead != NULL) {
+        struct in_multi *inm = in_multihead;
+
+        in_multihead = inm->inm_next;
+        if(inm->inm_ifp != NULL)
+            in_mcast_device(inm->inm_ifp, &inm->inm_addr, 0);
+        FREE(inm, M_IFADDR);
+    }
+    splx(s);
+#endif
+    in_interfaces = 0;
+    subnetsarelocal = SUBNETSARELOCAL;
+    return (deleted);
+}

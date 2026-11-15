@@ -39,6 +39,7 @@
 #include <proto/intuition.h>
 
 #include <kern/amiga_main_protos.h>
+#include <kern/netdiag.h>
 #include <dos/rdargs.h>		/* CSource */
 
 extern void exit(int);
@@ -115,6 +116,7 @@ panic(const char *fmt, ...)
     struct Library *IntuitionBase = NULL; /* local intuitionbase */
     extern struct Task *AROSTCP_Task;
 
+    netdiag.panics++;
     if(!in_panic) {
         /* If we're called previously.. */
         in_panic++;			/* We're in panic now */
@@ -127,6 +129,15 @@ panic(const char *fmt, ...)
         va_start(ap, fmt);
         vcsprintf(&cs, fmt, ap);
         va_end(ap);
+
+        /* kept where a program can read it while the stack waits below */
+        {
+            int i;
+
+            for(i = 0; i < NETDIAG_PANICLEN - 1 && buffer[i] != '\0'; i++)
+                netdiag.panic_text[i] = buffer[i];
+            netdiag.panic_text[i] = '\0';
+        }
 
         __log(LOG_EMERG, "panic: %s", buffer); /* Write to log */
 
@@ -207,6 +218,23 @@ panic(const char *fmt, ...)
 */
 
 #ifdef __AROS__
+/*
+ * What log() and __log() write on AROS (sys/systm.h), as one function: for
+ * the modules in library files of their own, which call it through the
+ * core's table.
+ */
+void
+net_debuglog(const char *fmt, ...)
+{
+    va_list ap;
+
+    bug("[AROSTCP] ");
+    va_start(ap, fmt);
+    vkprintf(fmt, ap);
+    va_end(ap);
+    bug("\n");
+}
+
 #undef __log
 #endif
 void

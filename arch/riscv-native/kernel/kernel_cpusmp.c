@@ -25,6 +25,8 @@
 #include <proto/kernel.h>
 #include <proto/exec.h>
 
+#include <asm/cpu.h>
+
 #include <kernel_base.h>
 #include <kernel_debug.h>
 
@@ -49,14 +51,6 @@ extern void cpu_BootStrap(struct Task *bstask, struct ExecBase *SysBase);
 extern struct Task *Exec_RVCreateIdleTask(struct ExecBase *SysBase);
 
 static spinlock_t startup_lock;
-
-static inline UQUAD krnRVTime(void)
-{
-    UQUAD v;
-
-    asm volatile("rdtime %0" : "=r"(v));
-    return v;
-}
 
 /*
  * The bootstrap task's code: it only gets scheduling going on this hart.
@@ -113,7 +107,7 @@ void __attribute__((noreturn)) cpu_Register(void)
         KrnGetCPUMask(cpunum, PrivExecBase(SysBase)->CPUMask);
 
     /* Inter-processor interrupts, then this hart's own tick */
-    asm volatile("csrs sie, %0" :: "r"(2UL) : "memory");    /* SIE.SSIE */
+    csr_set(RV_CSR_IE, RV_IE_SOFT);
     if (__riscv_arosintern.RVI_InitTimerCore)
         __riscv_arosintern.RVI_InitTimerCore();
 
@@ -210,10 +204,10 @@ void krnRVStartCPUs(struct KernelBase *KernelBase, struct ExecBase *SysBase)
         }
 
         /* The hart releases the lock once its idle task exists */
-        deadline = krnRVTime() + timebase;
+        deadline = krnRVReadTime() + timebase;
         while (!(released = krnRVSpinTryWrite(&startup_lock)))
         {
-            if ((QUAD)(krnRVTime() - deadline) > 0)
+            if ((QUAD)(krnRVReadTime() - deadline) > 0)
                 break;
             krnRVPause();
         }

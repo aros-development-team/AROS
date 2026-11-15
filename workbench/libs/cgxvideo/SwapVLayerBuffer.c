@@ -21,9 +21,14 @@
         struct Library *, CGXVideoBase, 16, Cgxvideo)
 
 /*  FUNCTION
-        Swaps the displayed and the rendering buffer of a double buffered
-        video layer at the next vertical blank. The next LockVLayer() may
-        wait for that vertical blank.
+        Shows the buffer rendered last at the next vertical blank. With two
+        buffers the call returns once the displaced buffer is off the
+        display. With three (VOA_MultiBuffer) it returns at once, and the
+        buffer the next LockVLayer() hands out is neither shown nor waiting
+        to be: if the display has not taken the previous buffer yet, the
+        one just rendered is not shown and is handed out again, so the
+        newest frame goes up at the next swap after the display is
+        ready.
 
     INPUTS
         VLayerHandle - pointer to a previously created videolayer handle
@@ -62,7 +67,8 @@
         IPTR back = 0;
 
         OOP_GetAttr(vh->bm, aHidd_BitMap_BackBuffer, &back);
-        HIDD_BM_SwapBuffers(vh->bm, back, 0);
+        /* with two, the buffer rendered next is the one displaced */
+        HIDD_BM_SwapBuffers(vh->bm, back, (vh->buffers >= 3) ? fHidd_Swap_NoWait : 0);
     }
     ReleaseSemaphore(&vh->lock);
 

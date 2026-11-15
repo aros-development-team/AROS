@@ -22,7 +22,8 @@ FILES := \
     compflicker \
     windowinputregion \
     windowinputdrop \
-    strgtextval
+    strgtextval \
+    windownosignal
 
 EXEDIR := $(AROS_TESTS)/intuition
 

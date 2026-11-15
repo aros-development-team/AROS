@@ -96,9 +96,8 @@ struct ssconfig {
 #define SSC_ALIAS  0
 #define SSC_COMPAT 1
 
-void ssconfig_free(struct ssconfig *config);
-struct ssconfig *ssconfig_parse(struct RDArgs *rdargs);
-struct ssconfig *ssconfig_make(int how, char *name, long unit);
-void ssconfig(struct sana_softc *ifp, struct ssconfig *sscp);
+/* ssconfig_parse() and ssconfig_free() (kern/netconfig_module.c), and
+ * ssconfig(), which sets up an interface from them (kern/netconfig_iface.c):
+ * the configuration reader's own, static there */
 
 #endif /* !NET_SANA2CONFIG_H */

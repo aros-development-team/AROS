@@ -45,8 +45,14 @@
 #include <netinet6/in6_var.h>
 #include <netinet6/nd6.h>
 #include <net/if_loop_protos.h>
+#include <net/route_protos.h>
 #include <protos/kern/kern_random_protos.h>
 #include <kern/uipc_socket2_protos.h>
+#include <protos/net/route_protos.h>
+#include <net/netcore_map.h>        /* always the last include */
+
+/* IPv6's packet hook point (netinet6/in6_proto.c) */
+extern struct pfil_point in6_pfil;
 
 /*
  * ip6_mloopback - give a copy of a group datagram being sent on ifp to this
@@ -139,22 +145,48 @@ ip6_notify_pmtu(const struct inpcb *inp, const struct sockaddr_in6 *dst,
 }
 
 /*
+ * A link-local destination's own route on ifp, the one a Packet Too Big
+ * about it puts its path MTU on (rt_pmtu_update()), with a reference held;
+ * NULL if there is none. The routing table keys it by address alone, so
+ * one on another interface is another zone's.
+ */
+static struct rtentry *
+ip6_llroute(const struct in6_addr *dst, const struct ifnet *ifp)
+{
+    struct sockaddr_in6 sin6;
+    struct rtentry *rt;
+
+    bzero(&sin6, sizeof(sin6));
+    sin6.sin6_family = AF_INET6;
+    sin6.sin6_len = sizeof(sin6);
+    sin6.sin6_addr = *dst;
+    rt = rtalloc1((struct sockaddr *)&sin6, 0);
+    if(rt != NULL && ((rt->rt_flags & (RTF_HOST | RTF_GATEWAY)) != RTF_HOST ||
+                      rt->rt_ifp != ifp)) {
+        rtfree(rt);
+        rt = NULL;
+    }
+    return rt;
+}
+
+/*
  * ip6_pathmtu - the path MTU to a connected socket's peer, as ip6_output()
- * finds it: a link-local peer on the socket's zone, through its neighbour
- * entry; any other through the routing table. 0 if there is no way there.
+ * finds it: for a link-local peer, on the socket's zone, the link's MTU or
+ * the one a Packet Too Big set (ip6_llroute()); any other through the
+ * routing table. 0 if there is no way there.
  */
 u_int32_t
 ip6_pathmtu(const struct inpcb *inp)
 {
     struct in6_addr dst = inp->inp_faddr6;
     struct rtentry *rt = NULL;
-    struct ifnet *ifp = NULL;
+    const struct ifnet *ifp = NULL;
     u_int32_t mtu;
 
     if(IN6_IS_ADDR_LINKLOCAL(&dst) || IN6_IS_ADDR_MULTICAST(&dst)) {
         ifp = inp->inp_boundif;
         if(ifp != NULL && IN6_IS_ADDR_LINKLOCAL(&dst))
-            rt = nd6_lookup(&dst, 0, ifp);
+            rt = ip6_llroute(&dst, ifp);
     } else {
         struct route_in6 ro;
 
@@ -221,6 +253,16 @@ ip6_output(void *args, ...)
         ro = (struct route *)&iproute;
     }
 
+    /*
+     * M_BCAST and M_MCAST tell how a frame was received. A packet made
+     * from one - the echo reply to a request sent to a group - must not
+     * leave as one: the interface would send it to its unicast
+     * destination as a multicast (S2_MULTICAST), which the device
+     * refuses. As FreeBSD's ip6_output() does, "just in case".
+     */
+    if(!IN6_IS_ADDR_MULTICAST(&ip6->ip6_dst))
+        m->m_flags &= ~(M_BCAST | M_MCAST);
+
     /* Route lookup */
     dst = (struct sockaddr_in6 *)&ro->ro_dst;
 
@@ -234,9 +276,8 @@ ip6_output(void *args, ...)
              * address means that interface, not the first one that is up */
         } else {
             /* pick first non-loopback, up interface */
-            extern struct ifnet *ifnet;
             struct ifnet *mifp;
-            for(mifp = ifnet; mifp; mifp = mifp->if_next) {
+            for(mifp = ifnet_list; mifp; mifp = mifp->if_next) {
                 if((mifp->if_flags & (IFF_UP | IFF_LOOPBACK)) == IFF_UP) {
                     ifp = mifp;
                     break;
@@ -294,21 +335,19 @@ ip6_output(void *args, ...)
                 lifp = NULL;
         if(lifp != NULL && !(lifp->if_flags & (IFF_LOOPBACK | IFF_POINTOPOINT))) {
             struct in6_addr nbr = ip6->ip6_dst;     /* the header is packed */
-            struct rtentry *nrt;
 
-            /* the neighbour's cache entry, on that link (nd6_lookup() moves
-             * it there if it was cloned for another interface) */
-            if((nrt = nd6_lookup(&nbr, 1, lifp)) != NULL) {
-                if(ro->ro_rt)
-                    RTFREE(ro->ro_rt);
-                ro->ro_rt = nrt;
-                dst->sin6_family = AF_INET6;
-                dst->sin6_len    = sizeof(*dst);
-                dst->sin6_addr   = nbr;
-                rt  = nrt;
-                ifp = lifp;
-                goto multicast_output;
-            }
+            /* straight to the neighbour on that link: the interface
+             * resolves it in that link's neighbour cache; a route of its
+             * own there only brings a path MTU */
+            if(ro->ro_rt)
+                RTFREE(ro->ro_rt);
+            ro->ro_rt = ip6_llroute(&nbr, lifp);
+            dst->sin6_family = AF_INET6;
+            dst->sin6_len    = sizeof(*dst);
+            dst->sin6_addr   = nbr;
+            rt  = NULL;
+            ifp = lifp;
+            goto multicast_output;
         }
     }
 
@@ -340,7 +379,6 @@ ip6_output(void *args, ...)
 #if INET6
     if(!(ifp->if_flags & IFF_LOOPBACK)) {
         struct in6_ifaddr *ia6;
-        extern struct ifnet loif;
         for(ia6 = in6_ifaddr; ia6; ia6 = ia6->ia_next) {
             if(IN6_ARE_ADDR_EQUAL(&ia6->ia_addr.sin6_addr, &ip6->ip6_dst)) {
                 ifp = &loif;
@@ -359,6 +397,27 @@ multicast_output:
     /* Set hop limit if not already set by transport layer */
     if(ip6->ip6_hlim == 0)
         ip6->ip6_hlim = ip6_defhlim;
+
+    /*
+     * The packet hooks (the filter engine, Miami hooks that asked for
+     * IPv6): one word tested while nothing is hooked (net/pfil.h). The
+     * outgoing interface is known, and the packet is judged whole, before
+     * the MTU and the fragments, as in IPv4 - with its payload length set
+     * for them, which is otherwise set only when it is sent. A dropped
+     * packet is freed already and the send fails with what the hook said
+     * (the filter engine: EHOSTUNREACH, as for IPv4).
+     */
+    if(PFIL_HOOKED(&in6_pfil, PFIL_OUT)) {
+        struct mbuf *hm = m;
+
+        ip6->ip6_plen = htons((u_int16_t)(m->m_pkthdr.len - sizeof(struct ip6_hdr)));
+        if((error = pfil_run(&in6_pfil, &hm, ifp, PFIL_OUT)) != 0) {
+            m = NULL;
+            goto bad;
+        }
+        m = hm;
+        ip6 = mtod(m, struct ip6_hdr *);
+    }
 
     mtu = ifp->if_mtu;
     /*
@@ -531,7 +590,7 @@ multicast_output:
     }
 
 bad:
-    m_freem(m);
+    m_freem(m);                 /* NULL when a packet hook dropped it */
     if(ro == (struct route *)&iproute && ro->ro_rt) {
         RTFREE(ro->ro_rt);
         ro->ro_rt = NULL;

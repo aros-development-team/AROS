@@ -6,6 +6,8 @@
 #include <hidd/pci.h>
 
 #include <exec/errors.h>
+#include <devices/trackdisk.h>
+#include <devices/newstyle.h>
 #include <string.h>
 
 #include "virtio_debug.h"
@@ -48,6 +50,7 @@ struct virtio_queue *virtio_alloc_queue(device_t dev, int qid, int size)
     vq->q_Index = qid;
     vq->q_Size = size;
     InitSemaphore(&vq->q_Lock);
+    NEWLIST(&vq->q_Pending);
 
     bytes = vq_alloc_size(size, &avail_off, &used_off);
     vq->q_RingBytes = bytes;
@@ -151,7 +154,7 @@ static void vq_free_chain(struct virtio_queue *vq, UWORD head)
     vq->q_NumFree += count;
 }
 
-int virtio_submit_blk_request(struct virtio_queue *vq, struct virtio_request *templ)
+static int virtio_submit_now(struct virtio_queue *vq, struct virtio_request *templ)
 {
     device_t dev = vq->dev;
     struct VirtIOBase *VirtIOBase = dev ? dev->dev_VirtIOBase : NULL;
@@ -160,6 +163,8 @@ int virtio_submit_blk_request(struct virtio_queue *vq, struct virtio_request *te
     UWORD idxs[3];
     UQUAD hdr_phys, status_phys, data_phys = 0;
     UWORD avail_idx;
+    ULONG hdr_len = sizeof(slot->vr_Header), data_len = templ->vr_DataLength;
+    ULONG status_len = 1;
 
     if (!dev || !dev->dev_PCIDriverObject || !VirtIOBase) return -1;
 
@@ -178,26 +183,26 @@ int virtio_submit_blk_request(struct virtio_queue *vq, struct virtio_request *te
 
     /* Translate buffers to PCI-DMA addresses. */
     {
-        ULONG l = sizeof(slot->vr_Header);
-        APTR p = CachePreDMA(&slot->vr_Header, &l, DMA_ReadFromRAM);
+        APTR p = CachePreDMA(&slot->vr_Header, &hdr_len, DMA_ReadFromRAM);
         hdr_phys = (UQUAD)(IPTR)HIDD_PCIDriver_CPUtoPCI(dev->dev_PCIDriverObject, p);
     }
+    if (hdr_len != sizeof(slot->vr_Header))
+        goto undo_header;
     if (templ->vr_DataLength > 0) {
-        ULONG l = templ->vr_DataLength;
         ULONG f = templ->vr_IsWrite ? DMA_ReadFromRAM : 0;
-        APTR p = CachePreDMA(templ->vr_DataAddr, &l, f);
+        APTR p = CachePreDMA(templ->vr_DataAddr, &data_len, f);
         data_phys = (UQUAD)(IPTR)HIDD_PCIDriver_CPUtoPCI(dev->dev_PCIDriverObject, p);
-        if (l < templ->vr_DataLength) {
-            vq_free_chain(vq, idxs[0]);
-            slot->vr_InUse = 0;
-            ReleaseSemaphore(&vq->q_Lock);
-            return -1;
-        }
+        if (data_len != templ->vr_DataLength)
+            goto undo_data;
     }
     {
-        ULONG l = 1;
-        APTR p = CachePreDMA(&slot->vr_Status, &l, 0);
+        APTR p = CachePreDMA(&slot->vr_Status, &status_len, 0);
         status_phys = (UQUAD)(IPTR)HIDD_PCIDriver_CPUtoPCI(dev->dev_PCIDriverObject, p);
+    }
+
+    if (status_len != 1) {
+        CachePostDMA(&slot->vr_Status, &status_len, DMA_NoModify);
+        goto undo_data;
     }
 
     /* Build descriptors. */
@@ -229,9 +234,9 @@ int virtio_submit_blk_request(struct virtio_queue *vq, struct virtio_request *te
     avail_idx = vq->q_Avail->idx;
     vq->q_Avail->ring[avail_idx % vq->q_Size] = idxs[0];
     /* Memory barrier ensuring descriptors are visible before idx update */
-    __asm__ __volatile__("" ::: "memory");
+    __sync_synchronize();
     vq->q_Avail->idx = avail_idx + 1;
-    __asm__ __volatile__("" ::: "memory");
+    __sync_synchronize();
 
     ReleaseSemaphore(&vq->q_Lock);
 
@@ -241,6 +246,38 @@ int virtio_submit_blk_request(struct virtio_queue *vq, struct virtio_request *te
     }
 
     return idxs[0];
+
+undo_data:
+    if (templ->vr_DataLength)
+        CachePostDMA(templ->vr_DataAddr, &data_len,
+                     DMA_NoModify | (templ->vr_IsWrite ? DMA_ReadFromRAM : 0));
+undo_header:
+    CachePostDMA(&slot->vr_Header, &hdr_len, DMA_ReadFromRAM | DMA_NoModify);
+    /* Allocation detached the tail, but has not yet rebuilt the chain. */
+    vq_free_chain(vq, idxs[0]);
+    slot->vr_InUse = 0;
+    ReleaseSemaphore(&vq->q_Lock);
+    return -1;
+}
+
+int virtio_submit_blk_request(struct virtio_queue *vq, struct virtio_request *templ)
+{
+    int result;
+    UWORD needed = templ->vr_DataLength ? 3 : 2;
+
+    ObtainSemaphore(&vq->q_Lock);
+    if (!IsListEmpty(&vq->q_Pending) || vq->q_NumFree < needed) {
+        struct IOStdReq *io = IOStdReq(templ->vr_IORequest);
+        /* Retain the input offset high word until descriptors are available.
+         * The caller cannot inspect/reuse a request before its reply. */
+        io->io_Actual = templ->vr_Header.sector >> 23;
+        AddTail(&vq->q_Pending, &io->io_Message.mn_Node);
+        result = 0;
+    } else {
+        result = virtio_submit_now(vq, templ);
+    }
+    ReleaseSemaphore(&vq->q_Lock);
+    return result;
 }
 
 ULONG virtio_process_used(struct virtio_queue *vq)
@@ -250,6 +287,7 @@ ULONG virtio_process_used(struct virtio_queue *vq)
 
     ObtainSemaphore(&vq->q_Lock);
     used_idx = vq->q_Used->idx;
+    __sync_synchronize();
 
     while (vq->q_LastUsedIdx != used_idx) {
         UWORD slot_idx = vq->q_LastUsedIdx % vq->q_Size;
@@ -261,6 +299,16 @@ ULONG virtio_process_used(struct virtio_queue *vq)
             req = &vq->q_Reqs[head];
             if (req->vr_InUse) {
                 struct IORequest *io = req->vr_IORequest;
+
+                ULONG len = sizeof(req->vr_Header);
+                CachePostDMA(&req->vr_Header, &len, DMA_ReadFromRAM);
+                if (req->vr_DataLength) {
+                    len = req->vr_DataLength;
+                    CachePostDMA(req->vr_DataAddr, &len,
+                                 req->vr_IsWrite ? DMA_ReadFromRAM : 0);
+                }
+                len = 1;
+                CachePostDMA(&req->vr_Status, &len, 0);
 
                 /* Translate virtio status into AROS error. */
                 if (io) {
@@ -290,6 +338,31 @@ ULONG virtio_process_used(struct virtio_queue *vq)
 
         vq->q_LastUsedIdx++;
         (void)ulen;
+    }
+    while (!IsListEmpty(&vq->q_Pending)) {
+        struct IOStdReq *io = (struct IOStdReq *)vq->q_Pending.lh_Head;
+        struct virtio_request templ;
+        BOOL flush = io->io_Command == CMD_UPDATE;
+        if (vq->q_NumFree < (flush ? 2 : 3))
+            break;
+        Remove(&io->io_Message.mn_Node);
+        memset(&templ, 0, sizeof(templ));
+        templ.vr_IORequest = (struct IORequest *)io;
+        if (flush) {
+            templ.vr_Header.type = VIRTIO_BLK_T_FLUSH;
+        } else {
+            templ.vr_DataAddr = io->io_Data;
+            templ.vr_DataLength = io->io_Length;
+            templ.vr_IsWrite = io->io_Command != CMD_READ &&
+                io->io_Command != TD_READ64 && io->io_Command != NSCMD_TD_READ64;
+            templ.vr_Header.type = templ.vr_IsWrite ? VIRTIO_BLK_T_OUT : VIRTIO_BLK_T_IN;
+            templ.vr_Header.sector = ((UQUAD)io->io_Actual << 23) | (io->io_Offset >> 9);
+        }
+        io->io_Actual = 0;
+        if (virtio_submit_now(vq, &templ) < 0) {
+            io->io_Error = IOERR_ABORTED;
+            ReplyMsg(&io->io_Message);
+        }
     }
     ReleaseSemaphore(&vq->q_Lock);
 

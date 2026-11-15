@@ -2,10 +2,13 @@
 
 #include <intuition/classusr.h>
 #include <syslog.h>
+#include <libraries/gadtools.h>
 
 #define findobj(parent, id) (Object*)DoMethod(parent, MUIM_FindUData, id)
 
-#define MENUBAR                -1
+/* a separator: pointer-sized, as MUI_NewObject() reads its tag data -
+ * a 32-bit -1 there is a string at 0xFFFFFFFF on 64-bit */
+#define MENUBAR                NM_BARLABEL
 #define MENU_QUIT               7
 #define MENU_SAVEAS             8
 #define MENU_SETTINGS           9

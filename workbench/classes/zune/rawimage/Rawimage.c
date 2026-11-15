@@ -1,6 +1,6 @@
 /*
     Copyright (C) 2011, Thore Böckelmann. All rights reserved.
-    Copyright (C) 2012, The AROS Development Team. All rights reserved.
+    Copyright (C) 2012-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <proto/intuition.h>
@@ -12,6 +12,7 @@
 
 /* ------------------------------------------------------------------------- */
 
+/* Translate big-endian headers to Pixmap settings; borrow the payload and propagate superclass setting failures. */
 static BOOL setRawimage(struct IClass *cl, Object *obj, struct MUI_RawimageData *rdata)
 {
     BOOL success = FALSE;
@@ -78,6 +79,7 @@ static BOOL setRawimage(struct IClass *cl, Object *obj, struct MUI_RawimageData 
     return success;
 }
 
+/* Create a Pixmap; invalid non-NULL image data disposes the new object. */
 IPTR Rawimage__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     if((obj = (Object *)DoSuperNewTags(cl, obj, NULL,
@@ -99,6 +101,7 @@ IPTR Rawimage__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 }
 
 
+/* Apply non-NULL Rawimage_Data but ignore translation errors; then forward original tags. */
 IPTR Rawimage__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_RawimageData *rdata;

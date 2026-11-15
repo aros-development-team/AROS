@@ -513,6 +513,11 @@ static void ohciHandleFinishedTDs(struct PCIController *hc)
                 struct IOUsbHWRTIso *urti = rtn->rtn_RTIso;
                 struct IOUsbHWBufferReq *donebuf = bufreq ? bufreq : &rtn->rtn_BufferReq;
 
+                /* Zero-length requests scheduled before this IsoTD come
+                   first, even if the SOF pass has not reached them yet. */
+                if (ptd)
+                    ohciRetireZeroIsochBefore(hc, rtn, ptd);
+
                 if (ioreq->iouh_Dir == UHDIR_IN) {
                     if (urti->urti_InDoneHook)
                         CallHookPkt(urti->urti_InDoneHook, rtn, donebuf);
@@ -807,6 +812,11 @@ static ULONG ohciHandleAbortedEDs(struct PCIController *hc)
 
     /* Everything is enabled again, aborting done */
     hc->hc_Flags &= ~(HCF_STOP_CTRL | HCF_STOP_BULK | HCF_ABORT);
+
+    /* SOF drives the RT-ISO zero-length retirement pass while a stream is
+       active; keep it running unless there are no RT-ISO handlers left. */
+    if (hc->hc_RTIsoHandlers.mlh_Head->mln_Succ)
+        ohciEnableInt(hc, OISF_SOF);
 
     /* We will accumulate flags and start queues only once, when everything is set up */
     return restartmask;
@@ -1323,8 +1333,14 @@ static AROS_INTH1(ohciCompleteInt, struct PCIController *,hc)
 
     /* **************** PROCESS DONE TRANSFERS **************** */
 
+    /* Drain the DoneQueue first: a completed IsoTD delivers its done hook
+       here, and the zero-length retirement pass must not overtake it. */
     if (ohcihcp->ohc_OhciDoneQueue)
         ohciHandleFinishedTDs(hc);
+
+    /* Retire prepared zero-length requests in their scheduled frame, in
+       frame order relative to the IsoTDs that were just completed. */
+    ohciHandleZeroIsochTDs(hc);
 
     if (hc->hc_Flags & HCF_ABORT)
         restartmask = ohciHandleAbortedEDs(hc);
@@ -1467,15 +1483,21 @@ static AROS_INTH1(ohciIntCode, struct PCIController *, hc)
             ohcihcp->ohc_OhciDoneQueue = donehead;
         }
         if (intr & OISF_SOF) {
-            /* Aborted EDs are available for freeing */
-            hc->hc_Flags |= HCF_ABORT;
+            /* Aborted EDs are available for freeing; SOF also drives the
+               RT-ISO zero-length retirement pass. */
+            if (hc->hc_AbortQueue.lh_Head->ln_Succ)
+                hc->hc_Flags |= HCF_ABORT;
+            if (hc->hc_RTIsoHandlers.mlh_Head->mln_Succ ||
+                    (hc->hc_Flags & HCF_ABORT)) {
+                /*
+                 * Leveraged down to SoftInt to keep queue rotation
+                 * synchronized.
+                 */
+                SureCause(base, &hc->hc_CompleteInt);
+            }
         }
 
-        if (intr & (OISF_SOF | OISF_DONEHEAD)) {
-            /*
-             * These two are leveraged down to SoftInt.
-             * This is done in order to keep queues rotation synchronized.
-             */
+        if (intr & OISF_DONEHEAD) {
             SureCause(base, &hc->hc_CompleteInt);
         }
 

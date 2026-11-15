@@ -36,6 +36,12 @@
 #include "private.h"
 #include "Debug.h"
 
+/* _Dispatcher
+ * Route own attributes, setup/cleanup/hide, pointer events and weight
+ * import/export. Delegate all other methods to Balance. Require the correct
+ * message layout; no separate pointer lifetime or persistence guarantee is
+ * added.
+ */
 DISPATCHER(_Dispatcher)
 {
   IPTR result;

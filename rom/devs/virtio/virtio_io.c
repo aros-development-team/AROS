@@ -32,6 +32,7 @@ static BOOL virtio_blk_rw(struct IORequest *io, UQUAD off64, BOOL is_write)
     struct virtio_Unit *unit = (struct virtio_Unit *)io->io_Unit;
     device_t dev = unit->au_Bus->ab_Dev;
     struct virtio_request templ;
+    UBYTE flags = io->io_Flags;
     APTR data = iotd->iotd_Req.io_Data;
     ULONG len = iotd->iotd_Req.io_Length;
 
@@ -41,11 +42,14 @@ static BOOL virtio_blk_rw(struct IORequest *io, UQUAD off64, BOOL is_write)
     }
 
     if (is_write && dev->dev_ReadOnly) {
-        io->io_Error = IOERR_NOCMD;
+        io->io_Error = TDERR_WriteProt;
         return TRUE;
     }
 
-    if ((off64 >> unit->au_SecShift) > unit->au_High) {
+    if (!data || (off64 & ((1ULL << unit->au_SecShift) - 1)) ||
+        (off64 >> unit->au_SecShift) >= unit->au_SecCnt ||
+        (len >> unit->au_SecShift) >
+            unit->au_SecCnt - (off64 >> unit->au_SecShift)) {
         io->io_Error = IOERR_BADADDRESS;
         return TRUE;
     }
@@ -73,12 +77,11 @@ static BOOL virtio_blk_rw(struct IORequest *io, UQUAD off64, BOOL is_write)
     templ.vr_Header.ioprio = 0;
     templ.vr_Header.sector = off64 >> 9;        /* 512-byte units */
 
-    /* Remove from pending list while we own it (matches NVMe pattern) */
-    ObtainSemaphore(&unit->au_Lock);
-    Remove(&io->io_Message.mn_Node);
-    ReleaseSemaphore(&unit->au_Lock);
+    /* The completion task may reply as soon as the request is published. */
+    io->io_Flags &= ~IOF_QUICK;
 
     if (virtio_submit_blk_request(dev->dev_VQ, &templ) < 0) {
+        io->io_Flags = flags;
         io->io_Error = IOERR_ABORTED;
         return TRUE;
     }
@@ -91,6 +94,7 @@ static BOOL virtio_blk_flush(struct IORequest *io)
     struct virtio_Unit *unit = (struct virtio_Unit *)io->io_Unit;
     device_t dev = unit->au_Bus->ab_Dev;
     struct virtio_request templ;
+    UBYTE flags = io->io_Flags;
 
     if (!dev || !dev->dev_VQ) {
         io->io_Error = IOERR_OPENFAIL;
@@ -110,11 +114,10 @@ static BOOL virtio_blk_flush(struct IORequest *io)
     templ.vr_Header.type = VIRTIO_BLK_T_FLUSH;
     templ.vr_Header.sector = 0;
 
-    ObtainSemaphore(&unit->au_Lock);
-    Remove(&io->io_Message.mn_Node);
-    ReleaseSemaphore(&unit->au_Lock);
+    io->io_Flags &= ~IOF_QUICK;
 
     if (virtio_submit_blk_request(dev->dev_VQ, &templ) < 0) {
+        io->io_Flags = flags;
         io->io_Error = IOERR_ABORTED;
         return TRUE;
     }
@@ -140,16 +143,15 @@ AROS_LH1(void, BeginIO,
     APTR data = iotd->iotd_Req.io_Data;
     ULONG len = iotd->iotd_Req.io_Length;
     UQUAD off64;
+    ULONG offset_high = iotd->iotd_Req.io_Actual;
     struct DriveGeometry *geom;
     struct NSDeviceQueryResult *nsqr;
     BOOL done = (io->io_Flags & IOF_QUICK) ? TRUE : FALSE;
 
     io->io_Message.mn_Node.ln_Type = NT_MESSAGE;
     io->io_Error = 0;
+    iotd->iotd_Req.io_Actual = 0;
 
-    ObtainSemaphore(&unit->au_Lock);
-    AddHead(&unit->au_IOs, &io->io_Message.mn_Node);
-    ReleaseSemaphore(&unit->au_Lock);
 
     switch (io->io_Command) {
     case CMD_READ:
@@ -159,7 +161,7 @@ AROS_LH1(void, BeginIO,
     case TD_READ64:
     case NSCMD_TD_READ64:
         off64  = iotd->iotd_Req.io_Offset;
-        off64 |= ((UQUAD)iotd->iotd_Req.io_Actual) << 32;
+        off64 |= ((UQUAD)offset_high) << 32;
         done = virtio_blk_rw(io, off64, FALSE);
         break;
 
@@ -170,7 +172,7 @@ AROS_LH1(void, BeginIO,
     case TD_WRITE64:
     case NSCMD_TD_WRITE64:
         off64  = iotd->iotd_Req.io_Offset;
-        off64 |= ((UQUAD)iotd->iotd_Req.io_Actual) << 32;
+        off64 |= ((UQUAD)offset_high) << 32;
         done = virtio_blk_rw(io, off64, TRUE);
         break;
 
@@ -181,7 +183,7 @@ AROS_LH1(void, BeginIO,
     case TD_FORMAT64:
     case NSCMD_TD_FORMAT64:
         off64  = iotd->iotd_Req.io_Offset;
-        off64 |= ((UQUAD)iotd->iotd_Req.io_Actual) << 32;
+        off64 |= ((UQUAD)offset_high) << 32;
         done = virtio_blk_rw(io, off64, TRUE);
         break;
 
@@ -192,14 +194,19 @@ AROS_LH1(void, BeginIO,
         done = TRUE;
         break;
 
-    case TD_CHANGESTATE:
     case TD_PROTSTATUS:
+        IOStdReq(io)->io_Actual = unit->au_Bus->ab_Dev->dev_ReadOnly ? -1 : 0;
+        done = TRUE;
+        break;
+
+    case TD_CHANGESTATE:
         IOStdReq(io)->io_Actual = 0;
         done = TRUE;
         break;
 
     case NSCMD_DEVICEQUERY:
         if (len < sizeof(*nsqr)) goto bad_length;
+        if (!data) goto bad_address;
         nsqr = data;
         nsqr->DevQueryFormat = 0;
         nsqr->SizeAvailable  = sizeof(struct NSDeviceQueryResult);
@@ -217,6 +224,7 @@ AROS_LH1(void, BeginIO,
 
     case TD_GETGEOMETRY:
         if (len < sizeof(*geom)) goto bad_length;
+        if (!data) goto bad_address;
         geom = data;
         SetMem(geom, 0, len);
         geom->dg_Heads        = unit->nu_Heads;
@@ -234,10 +242,24 @@ AROS_LH1(void, BeginIO,
         break;
 
     case TD_ADDCHANGEINT:
-        if (io->io_Flags & IOF_QUICK) goto bad_cmd;
+        io->io_Flags &= ~IOF_QUICK;
+        done = FALSE;
+        ObtainSemaphore(&unit->au_Lock);
+        AddHead(&unit->au_IOs, &io->io_Message.mn_Node);
+        ReleaseSemaphore(&unit->au_Lock);
         break;
     case TD_REMCHANGEINT:
-        if (io->io_Flags & IOF_QUICK) goto bad_cmd;
+        ObtainSemaphore(&unit->au_Lock);
+        {
+            struct Node *node;
+            for (node = unit->au_IOs.lh_Head; node->ln_Succ; node = node->ln_Succ) {
+                if (node == &io->io_Message.mn_Node) {
+                    Remove(node);
+                    break;
+                }
+            }
+        }
+        ReleaseSemaphore(&unit->au_Lock);
         done = TRUE;
         break;
 
@@ -258,18 +280,14 @@ bad_cmd:
         io->io_Error = IOERR_NOCMD;
         done = TRUE;
         break;
+bad_address:
+        io->io_Error = IOERR_BADADDRESS;
+        done = TRUE;
+        break;
 bad_length:
         io->io_Error = IOERR_BADLENGTH;
         done = TRUE;
         break;
-    }
-
-    if (done) {
-        ObtainSemaphore(&unit->au_Lock);
-        Remove(&io->io_Message.mn_Node);
-        ReleaseSemaphore(&unit->au_Lock);
-    } else {
-        io->io_Flags &= ~IOF_QUICK;
     }
 
     if (done && !(io->io_Flags & IOF_QUICK))
@@ -284,8 +302,26 @@ AROS_LH1(LONG, AbortIO,
 {
     AROS_LIBFUNC_INIT
 
-    /* Aborting in-flight virtio-blk IOs is not supported. */
-    return 0;
+    struct virtio_Unit *unit = (struct virtio_Unit *)io->io_Unit;
+    struct Node *node;
+    BOOL removed = FALSE;
+
+    ObtainSemaphore(&unit->au_Lock);
+    for (node = unit->au_IOs.lh_Head; node->ln_Succ; node = node->ln_Succ) {
+        if (node == &io->io_Message.mn_Node) {
+            Remove(node);
+            removed = TRUE;
+            break;
+        }
+    }
+    ReleaseSemaphore(&unit->au_Lock);
+    if (removed) {
+        io->io_Error = IOERR_ABORTED;
+        ReplyMsg(&io->io_Message);
+        return 0;
+    }
+    /* Requests already owned by the device must finish normally. */
+    return IOERR_NOCMD;
 
     AROS_LIBFUNC_EXIT
 }

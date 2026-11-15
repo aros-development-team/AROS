@@ -295,6 +295,10 @@ int main(int argc, char **argv)
         printf("bsdsocket.library not available - skipping TCPSYN6 tests\n");
         return 0;
     }
+    if (st_skip_program("cunit-net-tcpsyn6", ST_V6)) {
+        CloseLibrary(SocketBase);
+        return 0;
+    }
     ready = setup();
     if (!ready)
         printf("%s: no multicast interface with a neighbour - skipping TCPSYN6 tests\n", ifname);

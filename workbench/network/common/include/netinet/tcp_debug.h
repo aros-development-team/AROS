@@ -58,8 +58,14 @@ char	*tanames[] =
     { "input", "output", "user", "respond", "drop" };
 #endif
 
-#ifdef TCPDEBUG
+#ifdef KERNEL
+/*
+ * The trace: a ring of tcp_ndebug records, tcp_debx the next to be
+ * written. It is allocated when the first record is written; until then
+ * (and if it could not be allocated) tcp_debug is NULL and tcp_ndebug 0.
+ */
 extern struct	tcp_debug *tcp_debug;
+extern int	tcp_ndebug;
 extern int	tcp_debx;
 #endif
 #endif

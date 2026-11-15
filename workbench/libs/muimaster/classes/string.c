@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2003-2023, The AROS Development Team. All rights reserved.
+    Copyright (C) 2003-2026, The AROS Development Team. All rights reserved.
 */
 
 /* This is based on muimaster/class/text.c (first string version)
@@ -39,6 +39,551 @@
 
 //#define MYDEBUG 1
 #include "debug.h"
+
+/****** String.mui/MUIC_String ************
+*
+*   NAME
+*       MUIC_String
+*
+*   SUPERCLASS
+*       Area.mui
+*
+*   DESCRIPTION
+*       Single-line byte-string editor. Owns a fixed buffer of MaxLen bytes,
+*       including the NUL terminator (default 80); positions count bytes.
+*       Contents is copied and truncated. Accept, Reject, AttachedList and
+*       EditHook pointers are borrowed. Use the GUI task; no locking is provided.
+*
+*   METHODS
+*       Keyboard/mouse editing supports selection, cursor movement and
+*       clipboard operations. Paste deletes selection before checking the
+*       clipboard, so a read failure can still remove text. Normal edits may
+*       notify Contents; MUIKEY_PRESS notifies Acknowledge and, when parsing
+*       succeeds, Integer. Insert and ClearSelected do not notify either.
+*       Export/Import use Dataspace and require valid terminated text records.
+*
+*   NOTES
+*       Secret masks the display, not stored or exported text. Text buffers are
+*       freed without secure erasure. WORD/UWORD-based helpers limit usable
+*       lengths independently of allocation size. Construct without initial
+*       text and set Contents afterwards: non-NULL initial Contents/Integer
+*       can trigger comparison against an uninitialized allocated buffer.
+*
+*   BUGS
+*       EditHook/LonelyEditHook and KeyUpFocus/KeyDownFocus are not operative;
+*       SelectSize has no setter. FileNameStart returns the buffer pointer,
+*       not a position. BufferPos is clamped only during drawing; unsafe
+*       positions can reach editing or rendering first. Ordinary-key input
+*       can skip CloseLocale; clipboard I/O failures are incompletely reported.
+*
+*/
+/****** String.mui/MUIA_String_Accept ************
+*
+*   NAME
+*       MUIA_String_Accept
+*
+*   FUNCTION
+*       Specify the case-sensitive set of bytes to allow during ordinary
+*       character entry.
+*
+*   INPUTS
+*       Initialize, set, get; borrowed terminated STRPTR, or NULL to disable
+*       this filter. Default NULL.
+*
+*   NOTES
+*       Borrowed, case-sensitive allowed-byte set; retain it while installed.
+*       Reject is applied afterwards, so a byte in both sets is rejected. An empty
+*       Accept rejects normal typed bytes. Filters do not apply to editing
+*       commands, paste, or programmatic Contents, Integer and Insert; they do not
+*       sanitize existing text.
+*
+*/
+/****** String.mui/MUIA_String_Reject ************
+*
+*   NAME
+*       MUIA_String_Reject
+*
+*   FUNCTION
+*       Specify the case-sensitive set of bytes to exclude during ordinary
+*       character entry.
+*
+*   INPUTS
+*       Initialize, set, get; borrowed terminated STRPTR, or NULL to disable
+*       this filter. Default NULL.
+*
+*   NOTES
+*       Borrowed, case-sensitive rejected-byte set; retain it while installed.
+*       Reject is checked after Accept. An empty Reject excludes nothing; an empty
+*       Accept blocks normal typing. Neither filter applies to editing commands,
+*       paste or programmatic edits, or removes existing text.
+*
+*/
+/****** String.mui/MUIA_String_Acknowledge ************
+*
+*   NAME
+*       MUIA_String_Acknowledge
+*
+*   FUNCTION
+*       Read the buffer pointer associated with acknowledgement state.
+*
+*   INPUTS
+*       Get; borrowed STRPTR or NULL. Used as a notification trigger by the
+*       event handler.
+*
+*   NOTES
+*       MUIKEY_PRESS sends an Acknowledge notification with a borrowed pointer to
+*       mutable Contents, not a saved accepted value. Contents replacement updates
+*       the pointer without sending this notification; keyboard update paths can
+*       clear it. Insert and ClearSelected leave it untouched. Thus a non-NULL
+*       getter does not prove Return was pressed. Setting this attribute does not
+*       change the local pointer; copy text to retain it.
+*
+*/
+/****** String.mui/MUIA_String_AdvanceOnCR ************
+*
+*   NAME
+*       MUIA_String_AdvanceOnCR
+*
+*   FUNCTION
+*       Advance to the next active object when the editor handles MUIKEY_PRESS.
+*
+*   INPUTS
+*       Initialize, set, get; BOOL. Default FALSE.
+*
+*   NOTES
+*       On MUIKEY_PRESS, TRUE advances Window_ActiveObject to Next and FALSE clears
+*       focus, unless StayActive is TRUE. Acknowledge is notified; Integer is also
+*       notified when numeric parsing succeeds. No input validation occurs.
+*
+*/
+/****** String.mui/MUIA_String_AttachedList ************
+*
+*   NAME
+*       MUIA_String_AttachedList
+*
+*   FUNCTION
+*       Route list navigation keys to another object.
+*
+*   INPUTS
+*       Initialize, set, get; borrowed List-compatible object pointer or NULL.
+*       Default NULL.
+*
+*   NOTES
+*       While active, Up/Down/PageUp/PageDown/Top/Bottom forward selectors to the
+*       borrowed List object's List_Active. String does not copy selected text or
+*       own the list; keep it alive until detached/disposed. NULL disables
+*       forwarding.
+*
+*/
+/****** String.mui/MUIA_String_BufferPos ************
+*
+*   NAME
+*       MUIA_String_BufferPos
+*
+*   FUNCTION
+*       Read or set the insertion cursor byte offset.
+*
+*   INPUTS
+*       Initialize, set, get; stored as ULONG despite the LONG header
+*       annotation. Default zero.
+*
+*   NOTES
+*       Use byte positions from zero to the current text length. The setter stores
+*       an unchecked value; drawing clamps it later, so a getter or subsequent edit
+*       can see an unsafe offset. MUIV_String_BufferPos_End (0xffffffff) has no
+*       immediate special handling: supply the actual length when editing before a
+*       redraw. The setter clears marking and requests an update.
+*
+*   BUGS
+*       Editing helpers trust BufferPos before indexing or moving bytes. A
+*       negative value converted to ULONG, or another out-of-range value, is
+*       unsafe before the deferred clamp. Do not use the sentinel as an
+*       immediate validation guarantee.
+*
+*/
+/****** String.mui/MUIA_String_Contents ************
+*
+*   NAME
+*       MUIA_String_Contents
+*
+*   FUNCTION
+*       Read or replace the editable text.
+*
+*   INPUTS
+*       Initialize, set, get; terminated STRPTR, or NULL to clear. Default
+*       empty.
+*
+*   NOTES
+*       The setter copies at most MaxLen-1 bytes, terminates the buffer and accepts
+*       NULL to clear. NoInput and Accept/Reject do not apply. Supply
+*       nonoverlapping source storage. The getter returns borrowed mutable storage
+*       (also via Text_Contents): do not free it or retain its address across
+*       disposal. Replacing text resets DisplayPos and marking, clamps the cursor
+*       and updates Acknowledge without notifying Acknowledge. Equal non-NULL text
+*       suppresses Contents notification; comparison happens before truncation, so
+*       a changed source may notify even when stored text is unchanged. The
+*       notification can carry the original input pointer, not the truncated
+*       buffer. Text_Contents is a Set/Get alias, not a String constructor tag.
+*
+*   BUGS
+*       Non-NULL initial Contents follows the uninitialized-buffer comparison
+*       described in MUIC_String. Construct empty, then set text. Neither
+*       replacement nor disposal securely erases prior text.
+*
+*/
+/****** String.mui/MUIA_String_DisplayPos ************
+*
+*   NAME
+*       MUIA_String_DisplayPos
+*
+*   FUNCTION
+*       Read or request the first displayed byte offset.
+*
+*   INPUTS
+*       Set, get; LONG. Initial value zero; no local constructor handling.
+*
+*   NOTES
+*       Setting this byte offset also sets BufferPos and clears marking. Drawing
+*       may adjust the position to expose the cursor; replacing Contents resets it.
+*       Supply a valid offset within the text: the setter does not validate it
+*       before display calculations.
+*
+*   BUGS
+*       Use a nonnegative offset within current text length. The setter does not
+*       validate it; display calculations can use it before a safe range is
+*       established. This is not an independent horizontal-scroll control.
+*
+*/
+/****** String.mui/MUIA_String_EditHook ************
+*
+*   NAME
+*       MUIA_String_EditHook
+*
+*   FUNCTION
+*       Retain an edit-hook pointer at construction.
+*
+*   INPUTS
+*       Constructor storage only; borrowed struct Hook pointer, default NULL.
+*
+*   NOTES
+*       Only the constructor retains this borrowed pointer; no local Set/Get or
+*       callback invocation is implemented, despite the header annotation. Keep
+*       storage alive while retained; do not rely on editor-hook behavior.
+*
+*/
+/****** String.mui/MUIA_String_Format ************
+*
+*   NAME
+*       MUIA_String_Format
+*
+*   FUNCTION
+*       Choose the horizontal alignment used to draw the visible text.
+*
+*   INPUTS
+*       Initialize, get; LONG. MUIV_String_Format_Left (0),
+*       MUIV_String_Format_Center (1) or MUIV_String_Format_Right (2). Default
+*       Left.
+*
+*   NOTES
+*       Constructor-only alignment controls drawing and mouse placement. No local
+*       setter exists; use only Left, Center or Right. Other values have no
+*       alignment branch.
+*
+*/
+/****** String.mui/MUIA_String_Integer ************
+*
+*   NAME
+*       MUIA_String_Integer
+*
+*   FUNCTION
+*       Format a numeric value as text or parse the current text as a signed
+*       LONG.
+*
+*   INPUTS
+*       Initialize, set, get. The header says ULONG; the implementation uses
+*       signed decimal formatting and StrToLong.
+*
+*   NOTES
+*       Setting formats signed decimal text through a bounded local buffer, then
+*       uses Contents (which can truncate at MaxLen). The getter uses AROS
+*       StrToLong: optional whitespace/sign, decimal prefix, trailing text
+*       accepted, invalid input returns zero; overflow is not checked. This is not
+*       a numeric-only editor. An unchanged parsed value suppresses the Integer
+*       setter's own notification, though Contents may still notify. MUIKEY_PRESS
+*       sends Integer only when parsing succeeds. The formatter passes an IPTR
+*       value to %ld without an explicit cast; do not infer cross-ABI formatting
+*       guarantees.
+*
+*   BUGS
+*       The formatting call passes the IPTR tag value directly to %ld without a
+*       cast. No additional cross-ABI formatting guarantee is established here.
+*       Initial Integer text takes the same uninitialized comparison path as
+*       non-NULL initial Contents.
+*
+*/
+/****** String.mui/MUIA_String_LonelyEditHook ************
+*
+*   NAME
+*       MUIA_String_LonelyEditHook
+*
+*   FUNCTION
+*       Store the constructor flag associated with edit-hook handling.
+*
+*   INPUTS
+*       Constructor storage only; BOOL, default FALSE.
+*
+*   NOTES
+*       Stored at construction only. No local setter/getter uses this flag, and it
+*       does not activate EditHook callbacks.
+*
+*/
+/****** String.mui/MUIA_String_MaxLen ************
+*
+*   NAME
+*       MUIA_String_MaxLen
+*
+*   FUNCTION
+*       Choose the fixed buffer allocation size, including the terminating zero.
+*
+*   INPUTS
+*       Initialize, get; stored as ULONG. Default 80, allowing 79 text bytes.
+*
+*   NOTES
+*       Includes the NUL byte (default 80 permits 79 text bytes). Zero becomes one;
+*       no resize setter exists. Contents truncates and insertion stops before
+*       overflow. Secret mode allocates another buffer of this size; allocation
+*       failure aborts construction. Negative LONG inputs become large unsigned
+*       lengths. WORD/UWORD indexing and secret-fill loops impose further practical
+*       limits: keep text sizes small.
+*
+*   BUGS
+*       Negative LONG tag values become large unsigned sizes, not a request for
+*       the default. WORD-based selection/measurement and the UWORD secret-fill
+*       loop limit usable sizes independently of allocation success. The class
+*       does not enforce a comprehensive maximum; use short, application-bounded
+*       single-line text.
+*
+*/
+/****** String.mui/MUIA_String_Secret ************
+*
+*   NAME
+*       MUIA_String_Secret
+*
+*   FUNCTION
+*       Mask displayed text with asterisks.
+*
+*   INPUTS
+*       Initialize, get; BOOL, default FALSE.
+*
+*   NOTES
+*       Constructor-only visual masking uses a separate asterisk display buffer.
+*       Contents, Integer, Acknowledge, export and clipboard copy still expose
+*       plaintext, and buffers are not securely erased. Do not treat this as
+*       confidential storage.
+*
+*/
+/****** String.mui/MUIA_String_Columns ************
+*
+*   NAME
+*       MUIA_String_Columns
+*
+*   FUNCTION
+*       Set a fixed text-width contribution to layout.
+*
+*   INPUTS
+*       Initialize only; stored as WORD. Default -1.
+*
+*   NOTES
+*       Controls font-based width in AskMinMax, not capacity. Nonnegative values
+*       use Columns times font X size; otherwise minimum/default use 4/12 character
+*       widths and maximum MUI_MAXMAX. Height uses font Y size. Constructor-only
+*       WORD value; out-of-range inputs are narrowed without validation.
+*
+*/
+/****** String.mui/MUIA_String_NoInput ************
+*
+*   NAME
+*       MUIA_String_NoInput
+*
+*   FUNCTION
+*       Disable text-changing keyboard commands handled by String.
+*
+*   INPUTS
+*       Initialize, set, get; BOOL, default FALSE.
+*
+*   NOTES
+*       TRUE blocks keyboard insertion, paste, deletion and cut, but permits
+*       copying, cursor/selection commands, focus and acknowledgement. Programmatic
+*       Contents, Integer, Insert, ClearSelected and Import still modify text. It
+*       does not disable the gadget.
+*
+*/
+/****** String.mui/MUIA_String_SelectSize ************
+*
+*   NAME
+*       MUIA_String_SelectSize
+*
+*   FUNCTION
+*       Read the signed length of the current marked range.
+*
+*   INPUTS
+*       Get; signed LONG result in IPTR storage. Zero when there is no nonempty
+*       marked range.
+*
+*   NOTES
+*       Getter returns signed marked-range length based on byte, space-delimited
+*       word or whole-string selection; negative when MarkPos is below BufferPos.
+*       Internal positions use WORD. The setter is unimplemented: a Set tag may
+*       still notify the superclass without changing selection.
+*
+*   BUGS
+*       The setter is an explicit TODO and changes no selection state. No
+*       constructor behavior exists. A Set tag can still reach superclass
+*       notifications even though the requested selection is not applied.
+*
+*/
+/****** String.mui/MUIA_String_StayActive ************
+*
+*   NAME
+*       MUIA_String_StayActive
+*
+*   FUNCTION
+*       Keep focus when acknowledging text and avoid local deactivation on an
+*       outside click.
+*
+*   INPUTS
+*       Initialize, set, get; BOOL, default FALSE.
+*
+*   NOTES
+*       TRUE overrides AdvanceOnCR on MUIKEY_PRESS and prevents local outside-click
+*       deactivation. It does not lock Window_ActiveObject or prevent GoInactive
+*       and window-close handling.
+*
+*/
+/****** String.mui/MUIA_String_KeyUpFocus ************
+*
+*   NAME
+*       MUIA_String_KeyUpFocus
+*
+*   FUNCTION
+*       Identify an unimplemented compatibility attribute.
+*
+*   INPUTS
+*       Public header identifier only; no supported local initialization, setter
+*       or getter.
+*
+*   NOTES
+*       Not implemented: no local initialization, setter, getter or focus transfer.
+*       Up/Down keys instead forward navigation to AttachedList when set.
+*       Superclass tag delegation is not this feature.
+*
+*/
+/****** String.mui/MUIA_String_KeyDownFocus ************
+*
+*   NAME
+*       MUIA_String_KeyDownFocus
+*
+*   FUNCTION
+*       Identify an unimplemented compatibility attribute.
+*
+*   INPUTS
+*       Public header identifier only; no supported local initialization, setter
+*       or getter.
+*
+*   NOTES
+*       Not implemented: no local initialization, setter, getter or focus transfer.
+*       Up/Down keys instead forward navigation to AttachedList when set.
+*       Superclass tag delegation is not this feature.
+*
+*/
+/****** String.mui/MUIM_String_ClearSelected ************
+*
+*   NAME
+*       MUIM_String_ClearSelected
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_String_ClearSelected);
+*
+*   FUNCTION
+*       Remove the current marked range and request a redraw.
+*
+*   INPUTS
+*       obj - Live String with valid buffer and selection state. No payload
+*       arguments.
+*
+*   RESULT
+*       Always zero, whether text was removed or no range was selected.
+*
+*   NOTES
+*       Removes the marked range (if nonempty), moves the cursor to its start and
+*       redraws; always clears marking. NoInput does not block it. No
+*       Contents/Acknowledge notification is sent and Acknowledge state is
+*       unchanged.
+*
+*/
+/****** String.mui/MUIM_String_Insert ************
+*
+*   NAME
+*       MUIM_String_Insert
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_String_Insert, (IPTR)text, pos);
+*
+*   FUNCTION
+*       Insert bytes at a chosen position until the text ends or the buffer is
+*       full.
+*
+*   INPUTS
+*       obj - Live String with valid current cursor.
+*       text - Non-NULL terminated STRPTR readable for the call, independent of
+*       the destination buffer.
+*       pos - LONG byte offset from zero through current length, or a declared
+*       selector.
+*
+*   RESULT
+*       Always zero, including invalid position, partial insertion and no space.
+*       No inserted-byte count is returned.
+*
+*   NOTES
+*       Position selectors StartOfString, EndOfString and BufferPos resolve to
+*       start, end and cursor; invalid offsets are ignored. Insert copies up to
+*       available capacity without Accept/Reject, NoInput or printable-byte
+*       filtering. It does not replace a selection or notify Contents/Acknowledge.
+*       The old cursor advances when at/after the insertion point. If nothing fits
+*       at a valid position, BufferPos can move there without redraw; marking and
+*       Acknowledge stay unchanged. The result is always zero, even for partial
+*       insertion.
+*
+*/
+/****** String.mui/MUIM_String_FileNameStart ************
+*
+*   NAME
+*       MUIM_String_FileNameStart
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_String_FileNameStart, (IPTR)buffer,
+*       pos);
+*
+*   FUNCTION
+*       Return the internal text-buffer pointer from an unfinished compatibility
+*       method.
+*
+*   INPUTS
+*       obj - Live String.
+*       buffer - Declared STRPTR argument; ignored.
+*       pos - Declared LONG argument; ignored.
+*
+*   RESULT
+*       Borrowed STRPTR cast to IPTR, pointing to the object's current text
+*       buffer.
+*
+*   NOTES
+*       Unimplemented filename-position calculation: ignores buffer and pos,
+*       returning the borrowed mutable internal STRPTR as IPTR, not a byte index or
+*       volume marker. No ownership transfer occurs; the pointer expires with the
+*       object.
+*
+*/
 
 extern struct Library *MUIMasterBase;
 
@@ -108,68 +653,17 @@ enum
 #define SECRET_CHAR '*'
 
 
-/****** String.mui/MUIA_String_Accept ****************************************
-*
-*   NAME
-*       MUIA_String_Accept -- (V4) [ISG], STRPTR
-*
-*   FUNCTION
-*       A string containing the characters to be accepted by the string
-*       gadget. If NULL is specified, all characters are accepted. The
-*       character list is case sensitive.
-*
-*   NOTES
-*       MUIA_String_Reject takes precedence over MUIA_String_Accept.
-*
-*       The specified string is not cached within the object.
-*
-*   SEE ALSO
-*       MUIA_String_Reject
-*
-******************************************************************************
-*
-*/
 
-/****** String.mui/MUIA_String_Reject ****************************************
-*
-*   NAME
-*       MUIA_String_Reject -- (V4) [ISG], STRPTR
-*
-*   FUNCTION
-*       A string containing the characters to be rejected by the string
-*       gadget. If NULL is specified, no characters are rejected. The
-*       character list is case sensitive.
-*
-*   NOTES
-*       MUIA_String_Reject takes precedence over MUIA_String_Accept.
-*
-*       The specified string is not cached within the object.
-*
-*   SEE ALSO
-*       MUIA_String_Accept
-*
-******************************************************************************
-*
-*/
 
-/****** String.mui/MUIA_String_BufferPos *************************************
-*
-*   NAME
-*       MUIA_String_BufferPos -- (V4) [ISG], LONG
-*
-*   FUNCTION
-*       The cursor's position relative to the start of the string.
-*
-*   NOTES
-*
-******************************************************************************
-*
-*/
 
 /**************************************************************************
  Buffer_Alloc
  Allocate memory for buffer
 **************************************************************************/
+/*
+ * Allocate owned text/optional Secret buffers. Requires valid size; failure
+ * aborts construction.
+ */
 static BOOL Buffer_Alloc(struct MUI_StringData *data)
 {
     UWORD i;
@@ -207,12 +701,17 @@ static BOOL Buffer_Alloc(struct MUI_StringData *data)
     return TRUE;
 }
 
+/*
+ * Temporarily NUL-terminate Secret display at NumChars; requires allocated
+ * in-range buffer.
+ */
 static inline VOID PrepareVisualBuffer(struct MUI_StringData *data)
 {
     if (data->msd_useSecret)
         data->VisualBuffer[data->NumChars] = '\0';
 }
 
+/* Restore the Secret display fill byte at NumChars after drawing. */
 static inline VOID CleanVisualBuffer(struct MUI_StringData *data)
 {
     if (data->msd_useSecret)
@@ -224,6 +723,10 @@ static inline VOID CleanVisualBuffer(struct MUI_StringData *data)
  Initialize buffer with a string, replace former content if any. Returns
  TRUE if value actually changed.
 **************************************************************************/
+/*
+ * Copy/truncate independent NUL-terminated input, or clear on NULL. Non-NULL
+ * comparison requires initialized storage; update count and cursor.
+ */
 static BOOL Buffer_SetNewContents(struct MUI_StringData *data,
     CONST_STRPTR str)
 {
@@ -261,6 +764,10 @@ static BOOL Buffer_SetNewContents(struct MUI_StringData *data,
  Buffer_AddChar
  Add a char on cursor position
 **************************************************************************/
+/*
+ * Insert one byte at valid cursor, shifting suffix including NUL. Return TRUE
+ * on success, FALSE if unavailable or full.
+ */
 static BOOL Buffer_AddChar(struct MUI_StringData *data, unsigned char code)
 {
     STRPTR dst;
@@ -284,6 +791,7 @@ static BOOL Buffer_AddChar(struct MUI_StringData *data, unsigned char code)
     return TRUE;
 }
 
+/* Find preceding literal-space boundary; input/output positions use WORD. */
 static WORD Buffer_GetWordStartIndex(struct MUI_StringData *data,
     WORD startindex)
 {
@@ -301,6 +809,7 @@ static WORD Buffer_GetWordStartIndex(struct MUI_StringData *data,
     return index;
 }
 
+/* Find following literal-space boundary, bounded by NumChars; WORD indexing. */
 static WORD Buffer_GetWordEndIndex(struct MUI_StringData *data,
     WORD startindex)
 {
@@ -318,6 +827,10 @@ static WORD Buffer_GetWordEndIndex(struct MUI_StringData *data,
     return index;
 }
 
+/*
+ * Find preceding word boundary using literal spaces; requires valid WORD
+ * position.
+ */
 static WORD Buffer_GetPrevWordIndex(struct MUI_StringData *data,
     WORD startindex)
 {
@@ -339,6 +852,10 @@ static WORD Buffer_GetPrevWordIndex(struct MUI_StringData *data,
     return index;
 }
 
+/*
+ * Find following word boundary using literal spaces; requires valid WORD
+ * position.
+ */
 static WORD Buffer_GetSuccWordIndex(struct MUI_StringData *data,
     WORD startindex)
 {
@@ -359,6 +876,10 @@ static WORD Buffer_GetSuccWordIndex(struct MUI_StringData *data,
     return index;
 }
 
+/*
+ * Normalize marked byte/word/all range using WORD positions; requires
+ * representable cursor/mark.
+ */
 static BOOL Buffer_GetMarkedRange(struct MUI_StringData *data, WORD *start,
     WORD *stop)
 {
@@ -412,6 +933,10 @@ static BOOL Buffer_GetMarkedRange(struct MUI_StringData *data, WORD *start,
     return TRUE;
 }
 
+/*
+ * Return whether a nonempty normalized range is marked; requires valid WORD
+ * indices.
+ */
 static BOOL Buffer_AnythingMarked(struct MUI_StringData *data)
 {
     if (!(data->msd_Flags & MSDF_MARKING))
@@ -420,6 +945,10 @@ static BOOL Buffer_AnythingMarked(struct MUI_StringData *data)
     return Buffer_GetMarkedRange(data, NULL, NULL);
 }
 
+/*
+ * Remove normalized selection including NUL, clear mark and move cursor;
+ * return whether content changed.
+ */
 static BOOL Buffer_KillMarked(struct MUI_StringData *data)
 {
     WORD markstart = data->MarkPos;
@@ -464,6 +993,10 @@ static BOOL Buffer_KillMarked(struct MUI_StringData *data)
 /**************************************************************************
  OM_NEW
 **************************************************************************/
+/*
+ * Construct Area and fixed editor buffers. Borrow filters/list/hook; fail on
+ * allocation errors. Initial non-NULL text can read uninitialized buffer.
+ */
 IPTR String__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_StringData *data;
@@ -586,6 +1119,10 @@ IPTR String__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 /**************************************************************************
  OM_DISPOSE
 **************************************************************************/
+/*
+ * Release owned text/Secret buffers without erasure, then Area; retained
+ * pointers expire.
+ */
 IPTR String__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
 {
     struct MUI_StringData *data = INST_DATA(cl, obj);
@@ -601,6 +1138,10 @@ IPTR String__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
 /**************************************************************************
  OM_SET
 **************************************************************************/
+/*
+ * Handle supported tags, copy Contents and request redraws; cursor setters
+ * may store unchecked positions. Delegate remaining tags to Area.
+ */
 IPTR String__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_StringData *data = INST_DATA(cl, obj);
@@ -694,6 +1235,10 @@ IPTR String__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 /**************************************************************************
  OM_GET
 **************************************************************************/
+/*
+ * Return supported attributes, including borrowed Contents/Acknowledge
+ * pointers, through writable IPTR storage; delegate others.
+ */
 IPTR String__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 {
     struct MUI_StringData *data = INST_DATA(cl, obj);
@@ -799,6 +1344,10 @@ IPTR String__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 /**************************************************************************
  MUIM_Setup
 **************************************************************************/
+/*
+ * After Area setup acquire pens and register Window event handler; failure
+ * requires matching cleanup.
+ */
 IPTR String__MUIM_Setup(struct IClass *cl, Object *obj,
     struct MUIP_Setup *msg)
 {
@@ -843,6 +1392,7 @@ IPTR String__MUIM_Setup(struct IClass *cl, Object *obj,
 /**************************************************************************
  MUIM_Cleanup
 **************************************************************************/
+/* Remove Window handler and release pens, then delegate Area cleanup. */
 IPTR String__MUIM_Cleanup(struct IClass *cl, Object *obj,
     struct MUIP_Cleanup *msg)
 {
@@ -863,6 +1413,7 @@ IPTR String__MUIM_Cleanup(struct IClass *cl, Object *obj,
 /**************************************************************************
  MUIM_AskMinMax
 **************************************************************************/
+/* Add font-based layout bounds according to Columns, then Area contributions. */
 IPTR String__MUIM_AskMinMax(struct IClass *cl, Object *obj,
     struct MUIP_AskMinMax *msg)
 {
@@ -896,6 +1447,10 @@ IPTR String__MUIM_AskMinMax(struct IClass *cl, Object *obj,
 }
 
 
+/*
+ * Measure greatest useful display start using the current font and cursor
+ * space; requires valid text range.
+ */
 static WORD MaxDispPos(struct IClass *cl, Object *obj)
 {
     struct MUI_StringData *data = INST_DATA(cl, obj);
@@ -946,6 +1501,10 @@ static WORD MaxDispPos(struct IClass *cl, Object *obj)
 }
 
 
+/*
+ * Adjust byte display offset and visible count to keep cursor in view;
+ * requires valid prepared text.
+ */
 static void UpdateDisp(struct IClass *cl, Object *obj)
 {
     struct MUI_StringData *data = INST_DATA(cl, obj);
@@ -1033,6 +1592,10 @@ static void UpdateDisp(struct IClass *cl, Object *obj)
 
 
 /* Gets left position of text in the string gadget */
+/*
+ * Compute visible text left edge for alignment; requires setup RastPort and
+ * valid display range.
+ */
 static UWORD GetTextLeft(struct IClass *cl, Object *obj)
 {
     struct MUI_StringData *data = INST_DATA(cl, obj);
@@ -1076,6 +1639,10 @@ static UWORD GetTextLeft(struct IClass *cl, Object *obj)
 }
 
 /* Gets right offset of text in the string gadget */
+/*
+ * Compute visible text right edge for alignment; requires setup RastPort and
+ * valid display range.
+ */
 static UWORD GetTextRight(struct IClass *cl, Object *obj)
 {
     struct MUI_StringData *data = INST_DATA(cl, obj);
@@ -1113,6 +1680,7 @@ static UWORD GetTextRight(struct IClass *cl, Object *obj)
 
 
 /* Updates the stringdata in case user has set some fields */
+/* Recompute text length and clamp cursor to the NUL-terminated buffer. */
 static VOID UpdateStringData(struct IClass *cl, Object *obj)
 {
     struct MUI_StringData *data = INST_DATA(cl, obj);
@@ -1125,6 +1693,7 @@ static VOID UpdateStringData(struct IClass *cl, Object *obj)
     }
 }
 
+/* Render marked/unmarked text segments using active and selection pens. */
 static VOID TextM(Object *obj, struct MUI_StringData *data,
     STRPTR text, WORD textlen, WORD markstart, WORD markend)
 {
@@ -1186,6 +1755,10 @@ static VOID TextM(Object *obj, struct MUI_StringData *data,
 /**************************************************************************
  MUIM_Draw
 **************************************************************************/
+/*
+ * Delegate Area, prepare Secret visual buffer, update scroll and draw
+ * text/cursor; restore visual buffer.
+ */
 IPTR String__MUIM_Draw(struct IClass *cl, Object *obj,
     struct MUIP_Draw *msg)
 {
@@ -1292,6 +1865,10 @@ IPTR String__MUIM_Draw(struct IClass *cl, Object *obj,
 /**************************************************************************
  Returns whether object needs redrawing
 **************************************************************************/
+/*
+ * Handle editing/clipboard keys before Accept/Reject filtering; can report
+ * change even for navigation. Insertion path may skip CloseLocale.
+ */
 static int String_HandleVanillakey(struct IClass *cl, Object *obj,
     unsigned char code, UWORD qual, IPTR *retval)
 {
@@ -1534,6 +2111,10 @@ static int String_HandleVanillakey(struct IClass *cl, Object *obj,
 /**************************************************************************
  MUIM_HandleEvent
 **************************************************************************/
+/*
+ * Process active keyboard, selection and list navigation; send
+ * Contents/Acknowledge/Integer notifications as applicable.
+ */
 IPTR String__MUIM_HandleEvent(struct IClass *cl, Object *obj,
     struct MUIP_HandleEvent *msg)
 {
@@ -2061,6 +2642,10 @@ IPTR String__MUIM_HandleEvent(struct IClass *cl, Object *obj,
 /**************************************************************************
  MUIM_Export : to export an object's "contents" to a dataspace object.
 **************************************************************************/
+/*
+ * With nonzero ObjectID copy NUL-terminated Contents to Dataspace. No
+ * transfer error is reported.
+ */
 IPTR String__MUIM_Export(struct IClass *cl, Object *obj,
     struct MUIP_Export *msg)
 {
@@ -2083,6 +2668,10 @@ IPTR String__MUIM_Export(struct IClass *cl, Object *obj,
 /**************************************************************************
  MUIM_Import : to import an object's "contents" from a dataspace object.
 **************************************************************************/
+/*
+ * With nonzero ObjectID read Dataspace record and set Contents; requires
+ * valid terminated text, returns zero.
+ */
 IPTR String__MUIM_Import(struct IClass *cl, Object *obj,
     struct MUIP_Import *msg)
 {
@@ -2104,6 +2693,7 @@ IPTR String__MUIM_Import(struct IClass *cl, Object *obj,
 /**************************************************************************
  MUIM_GoActive
 **************************************************************************/
+/* Register active Window input handling and update editor state/background. */
 IPTR String__MUIM_GoActive(struct IClass *cl, Object *obj, Msg msg)
 {
     struct MUI_StringData *data =
@@ -2126,6 +2716,10 @@ IPTR String__MUIM_GoActive(struct IClass *cl, Object *obj, Msg msg)
 /**************************************************************************
  MUIM_GoInactive
 **************************************************************************/
+/*
+ * Restrict Window handler to mouse events, clear active state and restore
+ * background.
+ */
 IPTR String__MUIM_GoInactive(struct IClass *cl, Object *obj, Msg msg)
 {
     struct MUI_StringData *data =
@@ -2150,6 +2744,10 @@ IPTR String__MUIM_GoInactive(struct IClass *cl, Object *obj, Msg msg)
 /**************************************************************************
  MUIM_String_ClearSelected (BetterString)
 **************************************************************************/
+/*
+ * Delete marked range and redraw when changed. Ignore NoInput; return zero
+ * without Contents notification.
+ */
 IPTR String__MUIM_ClearSelected(struct IClass *cl, Object *obj,
     struct MUIP_String_ClearSelected *msg)
 {
@@ -2169,6 +2767,10 @@ IPTR String__MUIM_ClearSelected(struct IClass *cl, Object *obj,
 /**************************************************************************
  MUIM_String_Insert (BetterString)
 **************************************************************************/
+/*
+ * Insert independent text at valid cursor/selector until full, without
+ * filtering or notifications; return zero even on truncation.
+ */
 IPTR String__MUIM_Insert(struct IClass *cl, Object *obj,
     struct MUIP_String_Insert *msg)
 {
@@ -2231,6 +2833,10 @@ IPTR String__MUIM_Insert(struct IClass *cl, Object *obj,
 /**************************************************************************
  MUIM_String_FileNameStart (BetterString)
 **************************************************************************/
+/*
+ * Return borrowed internal buffer pointer as IPTR, ignoring arguments;
+ * filename index TODO.
+ */
 IPTR String__MUIM_FileNameStart(struct IClass *cl, Object *obj,
     struct MUIP_String_FileNameStart *msg)
 {
@@ -2247,6 +2853,10 @@ IPTR String__MUIM_FileNameStart(struct IClass *cl, Object *obj,
     return (IPTR) buf;
 }
 
+/*
+ * Dispatch local String/BOOPSI messages, otherwise delegate to Area
+ * superclass.
+ */
 BOOPSI_DISPATCHER(IPTR, String_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)

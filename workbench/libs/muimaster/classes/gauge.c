@@ -56,10 +56,10 @@
 *       recompute the cached dimensions or request relayout.
 *       Draw calls Area, paints the horizontal fill from the left or vertical
 *       fill from the bottom, and centers formatted text through the Zune text
-*       engine. It does not test drawing flags locally. Temporary text-engine
-*       objects are destroyed after drawing; allocation failure skips text. Draw
-*       and AskMinMax return zero. Setup returns zero on superclass failure,
-*       otherwise one.
+*       engine, clipped to the inner box. It does not test drawing flags
+*       locally. Temporary text-engine objects are destroyed after drawing;
+*       allocation failure skips text. Draw and AskMinMax return zero. Setup
+*       returns zero on superclass failure, otherwise one.
 *
 *   NOTES
 *       Dispose frees InfoText only when DupInfoText was enabled at
@@ -536,19 +536,24 @@ IPTR Gauge__MUIM_AskMinMax(struct IClass *cl, Object *obj,
 }
 
 /*
- * Call Area and paint oriented fill plus temporary centered Zune text; free
- * each temporary text object and skip failed allocation. Return zero
- * without checking draw flags locally. Requires valid render context and
- * nonzero Max vertically; multiplication may overflow. Does not reformat
- * cached text.
+ * Call Area and paint oriented fill plus temporary centered Zune text,
+ * clipped to the inner box; free each temporary text object and skip
+ * failed allocation. Return zero without checking draw flags locally.
+ * Requires valid render context and nonzero Max vertically; multiplication
+ * may overflow. Does not reformat cached text.
  */
 IPTR Gauge__MUIM_Draw(struct IClass *cl, Object *obj,
     struct MUIP_Draw *msg)
 {
     struct Gauge_DATA *data = INST_DATA(cl, obj);
+    APTR clip;
     //ULONG val;
 
     DoSuperMethodA(cl, obj, (Msg) msg);
+
+    /* the info text can be wider than the gauge */
+    clip = MUI_AddClipping(muiRenderInfo(obj), _mleft(obj), _mtop(obj),
+        _mwidth(obj), _mheight(obj));
 
 /*      D(bug("Gauge_Draw(0x%p) %ldx%ldx%ldx%ld :: %ldx%ldx%ldx%ld\n",obj,_left(obj),_top(obj),_right(obj),_bottom(obj), _mleft(obj),_mtop(obj), _mright(obj), _mbottom(obj))); */
 
@@ -607,6 +612,8 @@ IPTR Gauge__MUIM_Draw(struct IClass *cl, Object *obj,
             }
         }
     }
+
+    MUI_RemoveClipping(muiRenderInfo(obj), clip);
     return 0;
 }
 

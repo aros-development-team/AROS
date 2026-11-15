@@ -9,6 +9,8 @@
 #include <kern/amiga_includes.h>
 #include <kern/amiga_config.h>
 #include <sys/socket.h>
+#include <net/netmodule.h>
+#include <proto/dos.h>
 
 /* Variables related to Internet Message Control Protocol. */
 #define KW_ICMP \
@@ -73,16 +75,12 @@ STRPTR KW_VARS =
     "DBIP=DEBUGIP,GTW=GATEWAY,REDIR=IPSENDREDIRECTS,"
     "USENS=USENAMESERVER,ULO=USELOOPBACK,TCPSND=TCP_SENDSPACE,"
     "TCPRCV=TCP_RECVSPACE,CON=CONSOLENAME,LOGF=LOGFILENAME,OPENGUI,REFRESH,"
-    "DHCLIENT";
+    "DHCLIENT,PROTO=PROTOCOLS,MODULES";
 
 /* extern declarations */
 
 /* read_sets() is declared in amiga_config.h */
-extern LONG icmpstat;
 extern LONG read_icmphist(struct CSource *args, UBYTE **errstrp, struct CSource *res);
-extern LONG ipstat;
-extern LONG tcpstat;
-extern LONG udpstat;
 LONG getsockets(struct CSource *args, UBYTE **errstrp, struct CSource *res);
 LONG rexx_gethostname(struct CSource *args, UBYTE **errstrp, struct CSource *res);
 LONG rexx_sethostname(struct CSource *args, UBYTE **errstrp, struct CSource *res);
@@ -98,31 +96,73 @@ extern STRPTR taskname;
 int taskname_changed(void *pt, IPTR new);
 extern LONG nthLibrary;
 extern LONG debug_sana;
-extern LONG icmpprintfs;
-extern LONG ipprintfs;
-extern LONG ipforwarding;
-extern LONG ipsendredirects;
 extern LONG usens;
-extern LONG useloopback;
-extern ULONG tcp_sendspace;
-extern ULONG tcp_recvspace;
 extern STRPTR consolename ;
 int logname_changed(void *pt, IPTR new);
 extern STRPTR logfilename;
 extern LONG OpenGUIOnStartup;
 extern ULONG gui_refresh;
 extern STRPTR dhclient_name;   /* legacy sysctl slot; DHCP is an external service now */
+/*
+ * PROTOCOLS: which protocol modules the stack runs, a list of module names
+ * separated by commas - PROTOCOLS=INET,INET6 (the default when the item is
+ * absent), PROTOCOLS=INET, PROTOCOLS=INET6. Read when the stack starts,
+ * before any module is (net/netmodule.h, netmodule_start_builtin()); it
+ * can be read back but not set while the stack runs.
+ */
+extern char *netmodule_protocols;
+/*
+ * MODULES: the optional modules to have running from the start, a list of
+ * module names written as PROTOCOLS is - MODULES=RESOLVER,PACKET. Absent
+ * (the default): each is loaded when it is first used (net/netdemand.h).
+ * Read when the stack starts (netmodule_start_listed()); read back but not
+ * set while the stack runs. A name that cannot be had is an error in the
+ * log, not a reason not to start.
+ */
+extern char *netmodule_modules;
 
 /* Global variables */
 STRPTR KW_Protocols = KW_ROUTES;
 
+/*
+ * Variables that belong to a module of the stack (net/netmodule.h): the
+ * module registers them by name when it starts, and config_var_rebind()
+ * then points the entries below at them. Until then - and for good when
+ * the module is not part of the running stack - a statistics table is not
+ * a variable at all, and a switch can only be set while the configuration
+ * is read (which is before the modules start): the value waits here and is
+ * given to the module's variable when that appears. -1 is "not set".
+ * The transports are a module like the families: their statistics and the
+ * default TCP buffer sizes are found the same way.
+ */
+static LONG modvar_pending[7] = { -1, -1, -1, -1, -1, -1, -1 };
+
+static const struct cfg_modvar {
+    const char *mv_keyword;     /* in KW_VARS */
+    const char *mv_name;        /* as the module registers it */
+    WORD        mv_flags;       /* of the variable while the module is there */
+    LONG       *mv_pending;     /* NULL for a statistics table */
+} modvars[] = {
+    { "ICMP",            "icmpstat",        VF_TABLE | VF_READ, NULL },
+    { "IP",              "ipstat",          VF_TABLE | VF_READ, NULL },
+    { "DEBUGICMP",       "icmpprintfs",     VF_RW, &modvar_pending[0] },
+    { "DEBUGIP",         "ipprintfs",       VF_RW, &modvar_pending[1] },
+    { "GATEWAY",         "ipforwarding",    VF_RW, &modvar_pending[2] },
+    { "IPSENDREDIRECTS", "ipsendredirects", VF_RW, &modvar_pending[3] },
+    { "USELOOPBACK",     "useloopback",     VF_RW, &modvar_pending[4] },
+    { "TCP",             "tcpstat",         VF_TABLE | VF_READ, NULL },
+    { "UDP",             "udpstat",         VF_TABLE | VF_READ, NULL },
+    { "TCP_SENDSPACE",   "tcp_sendspace",   VF_RW, &modvar_pending[5] },
+    { "TCP_RECVSPACE",   "tcp_recvspace",   VF_RW, &modvar_pending[6] },
+};
+
 struct cfg_variable variables[] = {
     { VAR_FUNC, VF_RW, NULL, NULL, (notify_f)read_sets },
-    { VAR_LONG, VF_TABLE | VF_READ, KW_ICMP, &icmpstat, NULL },
+    { VAR_LONG, 0, KW_ICMP, NULL, NULL },                    /* a module's: modvars[] */
     { VAR_FUNC, VF_READ, NULL, (notify_f)read_icmphist, NULL },
-    { VAR_LONG, VF_TABLE | VF_READ, KW_IP,   &ipstat,   NULL },
-    { VAR_LONG, VF_TABLE | VF_READ, KW_TCP,  &tcpstat,  NULL },
-    { VAR_LONG, VF_TABLE | VF_READ, KW_UDP,  &udpstat,  NULL },
+    { VAR_LONG, 0, KW_IP,   NULL,   NULL },                  /* a module's */
+    { VAR_LONG, 0, KW_TCP,  NULL,   NULL },                  /* a module's */
+    { VAR_LONG, 0, KW_UDP,  NULL,   NULL },                  /* a module's */
     { VAR_FUNC, VF_READ, NULL, (notify_f)getsockets, NULL },
     { VAR_FUNC, VF_RW, NULL, (notify_f)rexx_gethostname, (notify_f)rexx_sethostname },
     { VAR_FUNC, VF_READ, NULL, (notify_f)getroutes, NULL },
@@ -135,17 +175,68 @@ struct cfg_variable variables[] = {
     { VAR_STRP, VF_RCONF, NULL, &taskname, taskname_changed },
     { VAR_LONG, VF_RW, NULL, &nthLibrary,  NULL },
     { VAR_ENUM, VF_RW, NULL, &debug_sana, boolean_enum },
-    { VAR_ENUM, VF_RW, NULL, &icmpprintfs, boolean_enum },
-    { VAR_ENUM, VF_RW, NULL, &ipprintfs, boolean_enum },
-    { VAR_ENUM, VF_RW, NULL, &ipforwarding, boolean_enum },
-    { VAR_ENUM, VF_RW, NULL, &ipsendredirects, boolean_enum },
+    { VAR_ENUM, VF_CONF, NULL, &modvar_pending[0], boolean_enum },   /* a module's */
+    { VAR_ENUM, VF_CONF, NULL, &modvar_pending[1], boolean_enum },   /* a module's */
+    { VAR_ENUM, VF_CONF, NULL, &modvar_pending[2], boolean_enum },   /* a module's */
+    { VAR_ENUM, VF_CONF, NULL, &modvar_pending[3], boolean_enum },   /* a module's */
     { VAR_ENUM, VF_RW, NULL, &usens, (notify_f)"NO,FIRST,SECOND" },
-    { VAR_ENUM, VF_RW, NULL, &useloopback, boolean_enum },
-    { VAR_LONG, VF_RW, NULL, (LONG *) &tcp_sendspace, NULL },
-    { VAR_LONG, VF_RW, NULL, (LONG *) &tcp_recvspace, NULL },
+    { VAR_ENUM, VF_CONF, NULL, &modvar_pending[4], boolean_enum },   /* a module's */
+    { VAR_LONG, VF_CONF, NULL, &modvar_pending[5], NULL },            /* a module's */
+    { VAR_LONG, VF_CONF, NULL, &modvar_pending[6], NULL },            /* a module's */
     { VAR_STRP, VF_RW, NULL, &consolename, logname_changed },
     { VAR_STRP, VF_RW, NULL, &logfilename, logname_changed },
     { VAR_ENUM, VF_RCONF, NULL, &OpenGUIOnStartup, boolean_enum },
     { VAR_LONG, VF_RCONF, NULL, &gui_refresh, NULL },
-    { VAR_STRP, VF_RCONF, NULL, &dhclient_name, NULL }
+    { VAR_STRP, VF_RCONF, NULL, &dhclient_name, NULL },
+    { VAR_STRP, VF_RCONF, NULL, &netmodule_protocols, NULL },
+    { VAR_STRP, VF_RCONF, NULL, &netmodule_modules, NULL }
 };
+
+/*
+ * The modules' variables changed (a table was registered or taken back):
+ * point each entry that stands for one at it, or back at nothing.
+ * Called by netvar_register() and netvar_unregister().
+ */
+void
+config_var_rebind(void)
+{
+    const struct cfg_modvar *mv;
+    const struct netvar *nv;
+    struct cfg_variable *var;
+    LONG i;
+
+    for(mv = modvars; mv < modvars + sizeof(modvars) / sizeof(modvars[0]); mv++) {
+        if((i = FindArg(KW_VARS, (STRPTR)mv->mv_keyword)) < 0)
+            continue;
+        var = &variables[i];
+        nv = netvar_find(mv->mv_name);
+        if(nv != NULL && mv->mv_pending != NULL && nv->nv_size != sizeof(LONG))
+            nv = NULL;          /* not what a switch is kept in */
+        if(nv != NULL) {
+            if(var->value == nv->nv_addr)
+                continue;
+            if(mv->mv_pending != NULL && *mv->mv_pending != -1) {
+                /* set in the configuration before the module started */
+                *(LONG *)nv->nv_addr = *mv->mv_pending;
+                *mv->mv_pending = -1;
+            }
+            var->value = nv->nv_addr;
+            var->flags = mv->mv_flags;
+        } else if(mv->mv_pending != NULL) {
+            /*
+             * The module that had the variable has taken it back (it
+             * stops; its memory is still there, this is called from its
+             * netvar_unregister()): what the switch was set to is kept
+             * here, and given to the variable when the module starts
+             * again - a stop and a start do not undo the configuration.
+             */
+            if(var->value != NULL && var->value != (void *)mv->mv_pending)
+                *mv->mv_pending = *(LONG *)var->value;
+            var->value = mv->mv_pending;
+            var->flags = VF_CONF;
+        } else {
+            var->value = NULL;
+            var->flags = 0;
+        }
+    }
+}

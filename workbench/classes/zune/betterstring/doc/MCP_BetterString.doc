@@ -1,0 +1,129 @@
+TABLE OF CONTENTS
+
+BetterString.mcp/BetterString.mcp
+BetterString.mcp/OM_NEW
+BetterString.mcp/MUIM_Settingsgroup_ConfigToGadgets
+BetterString.mcp/MUIM_Settingsgroup_GadgetsToConfig
+BetterString.mcp/BetterString.mcp
+
+    NAME
+        BetterString.mcp -- Edit BetterString preferences.
+
+    SUPERCLASS
+        Mccprefs.mui
+
+    DESCRIPTION
+        Provide preference controls for BetterString.mcc. This source defines
+        version 11.33 and requires muimaster version 19. BetterString.mcc is
+        listed as a used class. The header declares the class and
+        configuration-item IDs, but no own MUI attributes or methods.
+        The nine settings comprise two backgrounds, five pens and two
+        selection options. Configuration IDs are dataspace keys, not SetAttrs
+        tags. The inherited Settingsgroup methods exchange their values; this
+        class does not itself write a preferences file.
+        AROS defaults: ActiveBack "2:m1", ActiveText "m5", InactiveBack
+        "2:m2", InactiveText "m4", Cursor "m0", MarkedBack "m5", MarkedText
+        "m0", SelectOnActive FALSE, SelectPointer TRUE. Each name has the
+        MUICFG_BetterString_ prefix. Font and Frame are obsolete IDs removed
+        on export.
+
+    NOTES
+        The code treats muimaster 20.5500 or later as MUI4 and disables both
+        background controls. It disables SelectPointer when the example
+        reports a non-normal PointerType. Disabled controls still participate
+        in configuration exchange. These are version and attribute checks, not
+        an AROS capability guarantee.
+        The group installs no notifications to apply edited preferences to the
+        example field. Shortcut labels are help text; consult BetterString.mcc
+        for implemented editing behavior.
+        On AROS the icon uses NBitmap when its probed version is at least 15.8
+        and creation succeeds, otherwise Bodychunk. Missing catalog text uses
+        built-in strings. The standalone Preference.c uses a Group-derived
+        class and invokes no configuration transfer or preferences saving.
+BetterString.mcp/OM_NEW
+
+    NAME
+        BetterString.mcp/OM_NEW -- Create the preferences group.
+
+    SYNOPSIS
+        obj = NewObject(class, NULL, TAG_DONE);
+
+    FUNCTION
+        Call the superclass constructor, create the controls and attach their
+        group. At muimaster 20.0 or later, register all nine controls with
+        Mccprefs_RegisterGadget. No initial dataspace is loaded.
+
+    INPUTS
+        class -- A valid BetterString.mcp class. Supply inherited construction
+        tags as required by Mccprefs.
+
+    RESULT
+        The new object, or NULL if superclass or group construction fails.
+        Group failure disposes the superclass object. AddMember and
+        RegisterGadget results are not checked.
+
+    NOTES
+        Dispose through MUI after use. Keep catalog-backed text available
+        while controls use it. This implements an inherited method; it is not
+        a new method identifier.
+BetterString.mcp/MUIM_Settingsgroup_ConfigToGadgets
+
+    NAME
+        MUIM_Settingsgroup_ConfigToGadgets -- Load preference controls.
+
+    SYNOPSIS
+        DoMethod(obj, MUIM_Settingsgroup_ConfigToGadgets, configdata);
+
+    FUNCTION
+        Find each of nine items with Dataspace_Find, using its default when
+        absent. Assign string specifications to image/pen attributes and
+        dereference integer data as IPTR for the two checkmarks. Suppress
+        attribute notifications.
+
+    INPUTS
+        obj -- An initialized BetterString.mcp object.
+        configdata -- A live dataspace. Present strings must be valid
+        NUL-terminated specifications. Present integers must contain a
+        readable, appropriately aligned IPTR in the native representation.
+
+    RESULT
+        Always zero. This is not a load-success report.
+
+    NOTES
+        No size, type or schema validation is performed. Keep input storage
+        valid throughout the synchronous calls; subsequent string ownership
+        follows the receiving gadgets. The method does not copy the dataspace
+        or write a file. Use the UI in its owning application context.
+BetterString.mcp/MUIM_Settingsgroup_GadgetsToConfig
+
+    NAME
+        MUIM_Settingsgroup_GadgetsToConfig -- Export preference controls.
+
+    SYNOPSIS
+        DoMethod(obj, MUIM_Settingsgroup_GadgetsToConfig, configdata);
+
+    FUNCTION
+        Read all nine controls. Compare strings to defaults without case
+        sensitivity. Add a nondefault string including its NUL, or remove a
+        matching-default key. Add a nondefault integer using sizeof(SIPTR), or
+        remove its default-valued key. Finally remove obsolete Font and Frame
+        keys.
+
+    INPUTS
+        obj -- An initialized BetterString.mcp object with readable
+        specification strings.
+        configdata -- A live mutable dataspace. It is modified synchronously;
+        unrelated keys are retained.
+
+    RESULT
+        Always zero. Add and Remove results are ignored; a complete or atomic
+        update is not guaranteed.
+
+    NOTES
+        Disabled controls are included. Matching-default entries are removed
+        rather than preserving explicit defaults or capitalization. Integer
+        data follows the build ABI without endian or word-size conversion.
+        Dataspace_Add receives string pointers or a temporary integer address
+        and must copy bytes during the call. File saving belongs to the caller
+        or preference framework.
+

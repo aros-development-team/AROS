@@ -173,6 +173,7 @@ int proto;
 #endif /* AMITCP */
         so->so_state = SS_PRIV; /* all sockets have the force  now */
     so->so_proto = prp;
+    prp->pr_domain->dom_refs++;     /* dropped in sofree() */
     error =
         (*prp->pr_usrreq)(so, PRU_ATTACH,
                           (struct mbuf *)0, (struct mbuf *)(long)proto, (struct mbuf *)0);
@@ -237,6 +238,7 @@ register struct socket *so;
     }
     sbrelease(&so->so_snd);
     sorflush(so);
+    so->so_proto->pr_domain->dom_refs--;
     FREE(so, M_SOCKET);
 }
 
@@ -605,6 +607,10 @@ nopages:
 #endif
             if(dontroute)
                 so->so_options |= SO_DONTROUTE;
+            /* more of this write follows at once (FreeBSD's
+             * PRUS_MORETOCOME): TCP sends no part of a segment meanwhile */
+            if(!atomic && resid > 0 && space > 0)
+                so->so_snd.sb_flags |= SB_MORETOCOME;
             s = splnet();				/* XXX */
             error = (*so->so_proto->pr_usrreq)(so,
                                                (flags & MSG_OOB) ? PRU_SENDOOB : //PRU_SEND,
@@ -619,6 +625,7 @@ nopages:
                                                PRU_SEND_EOF : PRU_SEND,
                                                top, addr, control);
             splx(s);
+            so->so_snd.sb_flags &= ~SB_MORETOCOME;
             if(dontroute)
                 so->so_options &= ~SO_DONTROUTE;
             clen = 0;
@@ -1228,6 +1235,8 @@ struct mbuf *m0;
                     error = ENOBUFS;
                     goto bad;
                 }
+                /* the application's size: no autosizing */
+                (optname == SO_SNDBUF ? &so->so_snd : &so->so_rcv)->sb_flags &= ~SB_AUTOSIZE;
                 break;
 
             case SO_SNDLOWAT:

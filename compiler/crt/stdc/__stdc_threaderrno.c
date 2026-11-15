@@ -30,13 +30,6 @@ extern APTR TaskResBase;
 /* Per thread: the thread's errno (an int *). 0 when allocating one failed. */
 static LONG __stdc_errnoslot;
 
-/* A thread without a base of its own: its errno, freed with the thread */
-struct __stdc_threaderrno
-{
-    struct MemList  ml;
-    int             err;
-};
-
 /*****i**********************************************************************
     NAME
         int *__stdc_threaderrnoptr(
@@ -66,7 +59,7 @@ int *__stdc_threaderrnoptr(void)
 {
     struct StdCIntBase *StdCBase = (struct StdCIntBase *)__aros_getbase_StdCBase();
     struct Task *me = FindTask(NULL);
-    struct __stdc_threaderrno *te;
+    struct MemList tmpl, *ml;
     int *err;
 
     /* A base nobody opened (the root base, library init) or no slot: the
@@ -79,18 +72,19 @@ int *__stdc_threaderrnoptr(void)
         return err;
 
     /* No base of its own: an errno that exec frees with the thread */
-    te = AllocMem(sizeof(*te), MEMF_PUBLIC | MEMF_CLEAR);
-    if (!te)
+    tmpl.ml_NumEntries = 1;
+    tmpl.ml_ME[0].me_Reqs = MEMF_PUBLIC | MEMF_CLEAR;
+    tmpl.ml_ME[0].me_Length = sizeof(int);
+    ml = NewAllocEntry(&tmpl, NULL);
+    if (!ml)
         return &StdCBase->StdCBase._errno;
-    te->ml.ml_NumEntries = 1;
-    te->ml.ml_ME[0].me_Addr = te;
-    te->ml.ml_ME[0].me_Length = sizeof(*te);
+    err = ml->ml_ME[0].me_Addr;
     Forbid();
-    AddHead(&me->tc_MemEntry, &te->ml.ml_Node);
+    AddHead(&me->tc_MemEntry, &ml->ml_Node);
     Permit();
-    SetTaskStorageSlot(__stdc_errnoslot, (IPTR)&te->err);
+    SetTaskStorageSlot(__stdc_errnoslot, (IPTR)err);
 
-    return &te->err;
+    return err;
 }
 
 static int __init_errnoslot(struct StdCIntBase *StdCBase)

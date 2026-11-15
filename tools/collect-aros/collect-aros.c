@@ -702,7 +702,7 @@ int main(int argc, char *argv[])
 #ifdef OBJECT_FORMAT_EXTRA_FINAL
     if (incremental == 0)
     {
-        argallocs += 11;
+        argallocs += 12;
         cmdargv = xmalloc(sizeof(char *) * (argallocs + 1));
         cmdargv[0] = ld_name;
         cmdargv[1] = OBJECT_FORMAT;
@@ -711,25 +711,28 @@ int main(int argc, char *argv[])
         cmdargv[4] = "-o";
         cmdargv[5] = output;
         cmdargv[6] = tempoutput;
-        
+
         cnt = 0;
         if (extralist) {
         struct setnode *n;
         for (n = extralist; n; n = n->next)
             cmdargv[6 + cnt++] = n->secname;
         }
-    
+
         cmdargv[7 + cnt] = "-T";
         cmdargv[8 + cnt] = ldscriptname;
-        cmdargv[9 + cnt] = do_verbose;
-        cmdargv[10 + cnt] = NULL;
+        /* The program is complete: allocate its common symbols in .bss, as
+           the AROS loaders and elf2hunk cannot. */
+        cmdargv[9 + cnt] = "-d";
+        cmdargv[10 + cnt] = do_verbose;
+        cmdargv[11 + cnt] = NULL;
 
         docommand_ld(ld_name, cmdargv);
     }
     else
 #endif
     {
-        argallocs += 10;
+        argallocs += 11;
         cmdargv = xmalloc(sizeof(char *) * (argallocs + 1));
         cmdargv[0] = ld_name;
         cmdargv[1] = OBJECT_FORMAT;
@@ -753,6 +756,11 @@ int main(int argc, char *argv[])
 
         cmdargv[6 + cnt] = "-T";
         cmdargv[7 + cnt] = ldscriptname;
+        /* A final link allocates the program's common symbols in .bss, as
+           the AROS loaders and elf2hunk cannot. -Ur output is linked again,
+           so it keeps them common. */
+        if (incremental == 0)
+            cmdargv[8 + cnt++] = "-d";
         cmdargv[8 + cnt] = do_verbose;
         cmdargv[9 + cnt] = NULL;
 

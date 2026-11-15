@@ -47,11 +47,9 @@
 #include <netinet6/nd6.h>
 #include <kern/amiga_netdb.h>
 
-/* Forward declarations */
-int ip6_output(void *, ...);
-
 #include <protos/netinet/in_cksum_protos.h>
 #include <protos/net/route_protos.h>
+#include <net/netcore_map.h>        /* always the last include */
 
 /* Default router list (singly-linked) */
 static struct nd_defrouter *nd6_defrtrlist = NULL;
@@ -278,17 +276,9 @@ defrouter_live(const struct nd_defrouter *dr)
 static int
 defrouter_isreachable(struct nd_defrouter *dr)
 {
-    struct rtentry *rt = nd6_lookup(&dr->rtaddr, 0, dr->ifp);
-    int reach = 0;
+    const struct llinfo_nd6 *ln = nd6_nbr_lookup(dr->ifp, &dr->rtaddr, 0);
 
-    if(rt) {
-        const struct llinfo_nd6 *ln = (const struct llinfo_nd6 *)rt->rt_llinfo;
-
-        reach = (rt->rt_flags & RTF_LLINFO) && ln != NULL &&
-                ln->ln_state > ND6_LLINFO_INCOMPLETE;
-        rtfree(rt);
-    }
-    return reach;
+    return ln != NULL && ln->ln_state > ND6_LLINFO_INCOMPLETE;
 }
 
 /* ------------------------------------------------------------------
@@ -597,6 +587,36 @@ nd6_purge_routers(struct ifnet *ifp)
 }
 
 /*
+ * nd6_rtr_flush - IPv6 stops: whatever is still on the three lists - the
+ * default routers, the routes they gave, the prefixes - is freed. The
+ * entries of each interface went with the interface
+ * (nd6_purge_routers(), nd6_purge_prefixes()), each taking its route out
+ * of the table, so this finds one only if its interface left the list of
+ * interfaces behind its back. Its route is not looked for: the caller
+ * empties IPv6's routing table as a whole next (rt_flushfamily()).
+ */
+void
+nd6_rtr_flush(void)
+{
+    struct nd_defrouter *dr;
+    struct nd_route_info *ri;
+    struct nd_prefix *pr;
+
+    while((dr = nd6_defrtrlist) != NULL) {
+        nd6_defrtrlist = dr->next;
+        FREE(dr, M_PCB);
+    }
+    while((ri = nd6_rtinfolist) != NULL) {
+        nd6_rtinfolist = ri->next;
+        FREE(ri, M_PCB);
+    }
+    while((pr = nd6_prefixlist) != NULL) {
+        nd6_prefixlist = pr->next;
+        FREE(pr, M_PCB);
+    }
+}
+
+/*
  * defrouter_notrouter - addr on ifp says it is no longer a router (a
  * Neighbor Advertisement with the Router flag clear): it leaves the default
  * router list, and the routes through it go, as FreeBSD's defrouter_del()
@@ -773,18 +793,18 @@ nd6_prefix_onlink(struct nd_prefix *pr)
      * The route is put on the prefix's interface: with a link-local address
      * for gateway, rtrequest() would take whichever interface registered
      * fe80::/64 first, as for the routes through a router (nd6_router_route()).
+     * Its neighbours are in the neighbour cache, not cloned from it.
      */
     if(rtrequest(RTM_ADD, (struct sockaddr *)&prefix,
                  ifa->ifa_addr, (struct sockaddr *)&mask,
-                 RTF_UP | RTF_CLONING, &rt) == 0) {
+                 RTF_UP, &rt) == 0) {
         pr->ndpr_onlink = 1;
         if(rt != NULL) {
             if(rt->rt_ifp != pr->ndpr_ifp) {
                 rt->rt_ifp = pr->ndpr_ifp;
                 rt->rt_ifa = ifa;
-                /* the link-layer gateway its neighbours are cloned with
-                 * (nd6_rtrequest()) names the interface: edited in place,
-                 * as nd6_lookup() does */
+                /* its link-layer gateway (nd6_rtrequest()) names the
+                 * interface: edited in place */
                 if(rt->rt_gateway && rt->rt_gateway->sa_family == AF_LINK) {
                     struct sockaddr_dl *sdl = (struct sockaddr_dl *)rt->rt_gateway;
 
@@ -827,7 +847,7 @@ nd6_prefix_offlink(struct nd_prefix *pr)
         prefix.sin6_addr.s6_addr[i] &= mask.sin6_addr.s6_addr[i];
 
     rtrequest(RTM_DELETE, (struct sockaddr *)&prefix,
-              NULL, (struct sockaddr *)&mask, RTF_UP | RTF_CLONING, NULL);
+              NULL, (struct sockaddr *)&mask, RTF_UP, NULL);
     pr->ndpr_onlink = 0;
 }
 

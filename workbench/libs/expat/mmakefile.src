@@ -1,7 +1,7 @@
 #   AROS metamakefile for expat
 include $(SRCDIR)/config/aros.cfg
 
-EXPATVERSION=2.8.2
+EXPATVERSION=2.10.0
 # GitHub release tag form of EXPATVERSION (dots -> underscores)
 EXPATVRS=$(subst .,_,$(EXPATVERSION))
 EXPATREPOSITORIES =  \
@@ -45,6 +45,7 @@ EXPATARCHSRCDIR := $(PORTSDIR)/expat/$(EXPATARCHBASE)
 #MM     workbench-libs-expat-includes-copy
 
 EXPATFILES := \
+    $(EXPATARCHSRCDIR)/lib/xcs \
     $(EXPATARCHSRCDIR)/lib/xmlparse \
     $(EXPATARCHSRCDIR)/lib/xmltok \
     $(EXPATARCHSRCDIR)/lib/xmlrole

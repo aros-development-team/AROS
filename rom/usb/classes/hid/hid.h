@@ -508,6 +508,7 @@ struct NepClassHid
     BOOL                nch_TrackKeyEvents;
     ULONG               nch_LastUSBKey;
     ULONG               nch_CurrUSBKey;
+    UWORD               nch_LastRawKey;   /* last key edge nSendRawKey sent (Amiga raw code) */
     BOOL                nch_TrackEvents;
     BOOL                nch_ReportValues;
     BOOL                nch_DisableActions;

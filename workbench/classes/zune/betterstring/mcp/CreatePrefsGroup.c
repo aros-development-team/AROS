@@ -51,6 +51,11 @@ const char *Key17[] = { "Shift + bs/del", "Delete to start/end of line" };
 const char *Key18[] = { "Alt + crsr",     "Go to prev/next word" };
 const char *Key19[] = { "Alt + bs/del",   "Delete prev/next word" };
 
+/*
+ * Create a right-aligned, zero-weight text label from readable text. Return
+ * a new MUI object or NULL. Transfer ownership to its containing group or
+ * dispose it; this helper adds no string-lifetime guarantee.
+ */
 Object *TxtLabel(const char *text)
 {
   return TextObject, ImageButtonFrame,
@@ -62,6 +67,11 @@ Object *TxtLabel(const char *text)
     End;
 }
 
+/*
+ * Create a zero-weight text label without right-alignment preparse. Return
+ * a new MUI object or NULL. Transfer ownership to its group or dispose it;
+ * require readable text during construction.
+ */
 Object *TxtLLabel(const char *text)
 {
   return TextObject, ImageButtonFrame,
@@ -72,6 +82,12 @@ Object *TxtLLabel(const char *text)
     End;
 }
 
+/*
+ * Fill three display slots with the two borrowed item strings and a literal
+ * equals sign. Require a non-NULL two-pointer item and three writable
+ * slots; this hook has no title-row or NULL-item branch. Allocate and free
+ * nothing.
+ */
 HOOKPROTONH(DisplayCode, VOID, STRPTR* place, STRPTR *item)
 {
   *place++ = *item++;
@@ -80,6 +96,15 @@ HOOKPROTONH(DisplayCode, VOID, STRPTR* place, STRPTR *item)
 }
 MakeStaticHook(DisplayHook, DisplayCode);
 
+/*
+ * Create the example field, shortcut list and nine controls. Store child
+ * pointers in valid instance data and return their owning group or NULL.
+ * The caller attaches or disposes the group. Static shortcut arrays borrow
+ * catalog strings and are rewritten on each call without locking. Disable
+ * backgrounds at the selected MUI4 threshold and the pointer control when
+ * the example reports a nonnormal pointer type. Install no notifications to
+ * apply edits to the example; do not load or save a dataspace.
+ */
 Object *CreatePrefsGroup(struct InstData_MCP *data)
 {
   Object *example;

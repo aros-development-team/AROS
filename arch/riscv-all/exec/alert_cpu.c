@@ -10,14 +10,15 @@
 #include "exec_intern.h"
 #include "exec_util.h"
 
-static const char *gpr_fmt = "X5=0x%08lx  X6 =0x%08lx  X7 =0x%08lx\n"
-                             "X8=0x%08lx  X9=0x%08lx  X10 =0x%08lx  X11 =0x%08lx\n"
-                             "X12=0x%08lx  X13=0x%08lx  X14=0x%08lx  X15=0x%08lx\n"
-                             "X16=0x%08lx  X17=0x%08lx  X18=0x%08lx  X19=0x%08lx\n"
-                             "X20=0x%08lx  X21=0x%08lx  X22=0x%08lx  X23=0x%08lx\n"
-                             "X24=0x%08lx  X25=0x%08lx  X26=0x%08lx  X27=0x%08lx\n"
-                             "X28=0x%08lx  X29=0x%08lx  X30=0x%08lx  X31=0x%08lx\n"
-                             "SP=0x%08lx  RA =0x%08lx  PC =0x%08lx\n";
+/* %P prints a whole register (IPTR) at its width; %lx would read a ULONG */
+static const char *gpr_fmt = "X5 =0x%P  X6 =0x%P  X7 =0x%P\n"
+                             "X8 =0x%P  X9 =0x%P  X10=0x%P  X11=0x%P\n"
+                             "X12=0x%P  X13=0x%P  X14=0x%P  X15=0x%P\n"
+                             "X16=0x%P  X17=0x%P  X18=0x%P  X19=0x%P\n"
+                             "X20=0x%P  X21=0x%P  X22=0x%P  X23=0x%P\n"
+                             "X24=0x%P  X25=0x%P  X26=0x%P  X27=0x%P\n"
+                             "X28=0x%P  X29=0x%P  X30=0x%P  X31=0x%P\n"
+                             "SP =0x%P  RA =0x%P  PC =0x%P\n";
 
 char *FormatCPUContext(char *buffer, struct ExceptionContext *ctx, struct ExecBase *SysBase)
 {
@@ -41,7 +42,8 @@ APTR UnwindFrame(APTR fp, APTR *caller)
 {
     /*
      * The RISC-V frame pointer (s0) points to the CFA; the epilogue
-     * restores ra from fp-XLEN and the caller's fp from fp-2*XLEN.
+     * restores ra from one register slot below fp and the caller's fp
+     * from two slots below.
      */
     APTR *frame = fp;
 

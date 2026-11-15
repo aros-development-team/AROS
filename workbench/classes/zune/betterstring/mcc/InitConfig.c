@@ -34,6 +34,10 @@
 
 #include "Debug.h"
 
+/* Read a configured pen specification or borrow the default and obtain a
+ * pen for the render context. Return its value for later release through
+ * FreeConfig; no copied specification is retained.
+ */
 static ULONG GetCol(Object *obj, ULONG item, struct MUI_PenSpec *defaultcol)
 {
   struct MUI_PenSpec *spec;
@@ -44,6 +48,11 @@ static ULONG GetCol(Object *obj, ULONG item, struct MUI_PenSpec *defaultcol)
   return MUI_ObtainPen(muiRenderInfo(obj), spec, 0L);
 }
 
+/* Acquire five pens, copy configured backgrounds into bounded buffers or
+ * use static defaults, and read selection preferences. Set the effective
+ * background. Require valid rendering/configuration state; individual
+ * acquisition failures are not returned or rolled back.
+ */
 void InitConfig(Object *obj, struct InstData *data)
 {
   IPTR setting;
@@ -98,6 +107,10 @@ void InitConfig(Object *obj, struct InstData *data)
   LEAVE();
 }
 
+/* Release five stored pens against their matching render context. Require
+ * prior acquisition and no subsequent use. Does not clear fields or free
+ * borrowed backgrounds.
+ */
 VOID FreeConfig(struct MUI_RenderInfo *mri, struct InstData *data)
 {
   ENTER();

@@ -8,7 +8,7 @@ STORAGEICONS := Wrapper Headless
 PCIDEVSICONS   := ATI AMDGPU NVidia
 PCDEVSICONS    := IntelGMA VMWare
 # Cards on a PCI bus can be fitted to any machine that has one
-ifeq ($(filter pc opensbi,$(AROS_TARGET_ARCH)),)
+ifeq ($(filter pc sbi,$(AROS_TARGET_ARCH)),)
 PCIDEVSDIR := $(AROSDIR)/Storage/Monitors
 else
 PCIDEVSDIR := $(AROS_DEVS)/Monitors

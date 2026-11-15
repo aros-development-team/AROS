@@ -68,6 +68,8 @@
 
 #include <net/route.h>
 #include <net/if.h>
+#include <net/netisr.h>
+#include <net/netmodule.h>
 
 #include <netinet/in.h>
 #include <netinet/in_systm.h>
@@ -84,6 +86,8 @@
 #include <kern/uipc_domain_protos.h>
 #include <net/raw_usrreq_protos.h>
 #include <protos/net/route_protos.h>
+#include <kern/amiga_time.h>
+#include <net/netcore_map.h>        /* always the last include */
 
 struct	icmpstat icmpstat = { 0 };
 
@@ -96,14 +100,16 @@ int	icmpprintfs = 0;	/* has effect only if ICMPPRINTFS is defined */
 
 extern	struct protosw inetsw[];
 
-/* tcp_now: 500ms tick counter incremented by tcp_slowtimo() */
-extern u_long tcp_now;
+/*
+ * The clock of the rate limit is the core's count of slow timeouts
+ * (net_slowticks, net/netmodule.h: 500 ms each), not a transport's.
+ */
 
 /* ICMP rate limiting (token bucket) */
 static int icmp_ratelimit_tokens = 10;    /* current tokens */
 static int icmp_ratelimit_max = 10;       /* max burst */
 static int icmp_ratelimit_rate = 5;       /* tokens per slow-tick (500ms) */
-static long icmp_ratelimit_last = 0;      /* last refill time (tcp_now) */
+static long icmp_ratelimit_last = 0;      /* last refill time (net_slowticks) */
 
 /*
  * Rate-limit ICMP error generation using a token bucket.
@@ -114,9 +120,9 @@ icmp_ratelimit(void)
 {
     long elapsed;
 
-    elapsed = (long)(tcp_now - icmp_ratelimit_last);
+    elapsed = (long)(net_slowticks - icmp_ratelimit_last);
     if (elapsed > 0) {
-        icmp_ratelimit_last = tcp_now;
+        icmp_ratelimit_last = net_slowticks;
         icmp_ratelimit_tokens += elapsed * icmp_ratelimit_rate;
         if (icmp_ratelimit_tokens > icmp_ratelimit_max)
             icmp_ratelimit_tokens = icmp_ratelimit_max;
@@ -227,11 +233,29 @@ freeit:
     m_freem(n);
 }
 
-static struct sockproto icmproto = { AF_INET, IPPROTO_ICMP };
+/* the raw sockets' hand-over of a packet, if the running stack has raw
+ * sockets (netinet/in_proto.c) */
+extern int (*in_rawhandoff)(struct mbuf *, int, int, const struct inetfamily *, int);
+extern const struct inetfamily in_family;
 static struct sockaddr_in icmpsrc = { sizeof(struct sockaddr_in), AF_INET };
 static struct sockaddr_in icmpdst = { sizeof(struct sockaddr_in), AF_INET };
 static struct sockaddr_in icmpgw = { sizeof(struct sockaddr_in), AF_INET };
 struct sockaddr_in icmpmask = { 8, 0 };
+
+/* IPv4 stops (inet_stop()): ICMP's variables as the file has them */
+void
+icmp_defaults(void)
+{
+    icmp_ratelimit_tokens = 10;
+    icmp_ratelimit_last = 0;
+    bzero((caddr_t)&icmpstat, sizeof(icmpstat));
+    icmpprintfs = 0;
+    icmpsrc.sin_addr.s_addr = 0;
+    icmpdst.sin_addr.s_addr = 0;
+    icmpgw.sin_addr.s_addr = 0;
+    bzero((caddr_t)&icmpmask, sizeof(icmpmask));
+    icmpmask.sin_len = 8;
+}
 struct in_ifaddr *ifptoia();
 
 /*
@@ -241,7 +265,7 @@ struct in_ifaddr *ifptoia();
  * IP_PMTU_MIN, as Linux (min_pmtu), so that a forged message cannot make
  * the stack send tiny packets. The MTU goes on the destination's own route
  * (rt_pmtu_update(), route.c), and back into the message for the
- * protocols' ctlinput (tcp_ctlinput() reads it).
+ * protocols' ctlinput (in_ctlnotify(), netinet/in_proto.c, reads it).
  */
 #define IP_PMTU_MIN     552
 
@@ -285,7 +309,7 @@ void icmp_input(void *arg, ...)
     register int i;
     struct in_ifaddr *ia;
     int code;
-    extern u_char ip_protox[];
+    extern struct protodispatch ip_protos;
     extern struct in_addr in_makeaddr();
     int hlen;
     va_list va;
@@ -378,8 +402,8 @@ deliver:
             printf("deliver to protocol %ld\n", (long)icp->icmp_ip.ip_p);
 #endif
         icmpsrc.sin_addr = icp->icmp_ip.ip_dst;
-        if(inetsw[ip_protox[icp->icmp_ip.ip_p]].pr_ctlinput)
-            (*inetsw[ip_protox[icp->icmp_ip.ip_p]].pr_ctlinput)
+        if(PROTODISPATCH(&ip_protos, icp->icmp_ip.ip_p)->pr_ctlinput)
+            (*PROTODISPATCH(&ip_protos, icp->icmp_ip.ip_p)->pr_ctlinput)
             (code, (struct sockaddr *)&icmpsrc,
              (caddr_t) &icp->icmp_ip);
         break;
@@ -485,10 +509,8 @@ reflect:
     }
 
 raw:
-    icmpsrc.sin_addr = ip->ip_src;
-    icmpdst.sin_addr = ip->ip_dst;
-    (void) raw_input(m, &icmproto, (struct sockaddr *)&icmpsrc,
-                     (struct sockaddr *)&icmpdst);
+    /* to the raw sockets that listen for ICMP */
+    (void) (*in_rawhandoff)(m, hlen, IPPROTO_ICMP, &in_family, 0);
     return;
 
 freeit:
@@ -642,10 +664,5 @@ struct mbuf *opts;
 n_time
 iptime()
 {
-    struct timeval atv;
-    u_long t;
-
-    GetSysTime(&atv);
-    t = (atv.tv_sec % (24 * 60 * 60)) * 1000 + atv.tv_usec / 1000;
-    return (htonl(t));
+    return (htonl(time_msofday()));     /* kern/amiga_time.c: the computation exists once */
 }

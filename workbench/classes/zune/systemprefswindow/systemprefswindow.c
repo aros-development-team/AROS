@@ -1,8 +1,288 @@
 /*
-    Copyright (C) 2004-2015, The AROS Development Team. All rights reserved.
+    Copyright (C) 2004-2026, The AROS Development Team. All rights reserved.
     This file is part of the SystemPrefsWindow class, which is distributed under
     the terms of version 2.1 of the GNU Lesser General Public License.
     
+*/
+
+/****** SystemPrefsWindow.mcc/MUIC_SystemPrefsWindow ************
+*
+*   NAME
+*       MUIC_SystemPrefsWindow
+*
+*   SUPERCLASS
+*       PrefsWindow.mcc
+*
+*   DESCRIPTION
+*       Connect a PrefsEditor-derived content object to the PrefsWindow buttons
+*       and a preferences menu. Supply that editor in one non-NULL
+*       WindowContents tag; construction returns NULL if it is missing. The
+*       superclass adopts it into the content hierarchy and changes the first
+*       WindowContents tag to TAG_IGNORE. Keep constructor tag storage writable.
+*       The configured class version is 1.3.
+*       The window title defaults to the editor Name. Menu items invoke Import,
+*       Export, Export with icon, SetDefaults, Test, Revert, Save, Use, and
+*       Cancel. A reusable ASL file requester starts at SYS:Prefs/Presets,
+*       rejects icons, and allows patterns. Failure to allocate it does not fail
+*       construction; Import and Export then return FALSE.
+*       Changed and Testing notifications update button states: Test requires
+*       Changed, Revert requires Testing, and Save/Use require either.
+*       Capability checks additionally require CanTest for Test/Revert, CanSave
+*       for Save, and CanUse for Use. Cancel is not changed by this calculation.
+*       Initially Test, Revert, Save, and Use are forced disabled rather than
+*       initialized from current editor state.
+*
+*   NOTES
+*       Capability restrictions apply to Disabled tags, not method dispatch. The
+*       menu items are not synchronized to the disabled buttons, and direct
+*       calls are not blocked. The OM_SET implementation can change caller tag
+*       values to TRUE in place when a capability is absent; it does not restore
+*       them. Capability changes alone have no installed notification to
+*       recompute the buttons.
+*       Test and Revert delegate to the editor without quitting. Successful
+*       Save, Use, and Cancel send MUIV_Application_ReturnID_Quit to the
+*       Application; they do not merely set Window_Open FALSE. The application
+*       decides how to handle that return ID. Failures return FALSE without an
+*       implemented error requester.
+*       Import/Export are synchronous requester operations that can wait for the
+*       user. Their refresh hook forwards IDCMP_REFRESHWINDOW to
+*       Application_CheckRefresh. Use in the normal Application/Window GUI
+*       lifecycle. The class owns its requester and catalog; the superclass owns
+*       the editor child.
+*
+*   BUGS
+*       The same requester is reused. Export sets ASLFR_DoSaveMode TRUE; Import
+*       does not explicitly reset it. Do not assume the requester mode is
+*       independently initialized for each action.
+*       Import marks the editor Changed after calling its Import method even
+*       when that method reports failure. Export returns the editor result;
+*       optional icon loading/writing failures do not change it. No multi-file
+*       transaction or rollback is provided.
+*
+*/
+/****** SystemPrefsWindow.mcc/MUIM_PrefsWindow_Test ************
+*
+*   NAME
+*       MUIM_PrefsWindow_Test
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_PrefsWindow_Test);
+*
+*   FUNCTION
+*       Invoke the editor Test operation.
+*
+*   INPUTS
+*       obj - Live SystemPrefsWindow with a valid editor and Application/Window
+*       context.
+*       No payload arguments.
+*
+*   RESULT
+*       Return TRUE if the editor returns nonzero, otherwise FALSE.
+*
+*   NOTES
+*       Does not request application exit. The base PrefsEditor implementation
+*       exports to ENV:, then clears Changed and sets Testing on success. This
+*       is temporary application of preferences, not a dry run. No CanTest check
+*       is performed by this method.
+*
+*/
+/****** SystemPrefsWindow.mcc/MUIM_PrefsWindow_Revert ************
+*
+*   NAME
+*       MUIM_PrefsWindow_Revert
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_PrefsWindow_Revert);
+*
+*   FUNCTION
+*       Invoke the editor Revert operation.
+*
+*   INPUTS
+*       obj - Live SystemPrefsWindow with a valid editor and Application/Window
+*       context.
+*       No payload arguments.
+*
+*   RESULT
+*       Return TRUE if the editor returns nonzero, otherwise FALSE.
+*
+*   NOTES
+*       Does not request application exit. Base PrefsEditor seeks its setup
+*       backup, imports it, and exports the restored settings to ENV: before
+*       clearing Changed and Testing. Partial work is not rolled back if a later
+*       step fails. No capability check or error requester is provided here.
+*
+*/
+/****** SystemPrefsWindow.mcc/MUIM_PrefsWindow_Save ************
+*
+*   NAME
+*       MUIM_PrefsWindow_Save
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_PrefsWindow_Save);
+*
+*   FUNCTION
+*       Save preferences through the editor and request application exit on
+*       success.
+*
+*   INPUTS
+*       obj - Live SystemPrefsWindow with a valid editor and Application/Window
+*       context.
+*       No payload arguments.
+*
+*   RESULT
+*       TRUE after editor success and sending Quit; FALSE after editor failure.
+*
+*   NOTES
+*       Base PrefsEditor first performs Use, writing ENV: and clearing
+*       Changed/Testing, then exports to ENVARC:. A later ENVARC: failure can
+*       therefore leave temporary settings applied and flags cleared even though
+*       Save returns FALSE. This wrapper does not check CanSave or perform
+*       rollback. Quit is an Application return ID, not proof that the
+*       application has terminated.
+*
+*/
+/****** SystemPrefsWindow.mcc/MUIM_PrefsWindow_Use ************
+*
+*   NAME
+*       MUIM_PrefsWindow_Use
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_PrefsWindow_Use);
+*
+*   FUNCTION
+*       Apply preferences through the editor and request application exit on
+*       success.
+*
+*   INPUTS
+*       obj - Live SystemPrefsWindow with a valid editor and Application/Window
+*       context.
+*       No payload arguments.
+*
+*   RESULT
+*       TRUE after editor success and sending Quit; FALSE after editor failure.
+*
+*   NOTES
+*       Base PrefsEditor exports to ENV: and clears Changed/Testing on success.
+*       This does not archive to ENVARC:. This wrapper does not check CanUse,
+*       close the window directly, or show an error requester.
+*
+*/
+/****** SystemPrefsWindow.mcc/MUIM_PrefsWindow_Cancel ************
+*
+*   NAME
+*       MUIM_PrefsWindow_Cancel
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_PrefsWindow_Cancel);
+*
+*   FUNCTION
+*       Cancel through the editor and request application exit on success.
+*
+*   INPUTS
+*       obj - Live SystemPrefsWindow with a valid editor and Application/Window
+*       context.
+*       No payload arguments.
+*
+*   RESULT
+*       TRUE after editor success and sending Quit; FALSE after editor failure.
+*
+*   NOTES
+*       Base PrefsEditor calls Revert only when Testing is true; otherwise it
+*       returns TRUE without restoring edited values. Do not interpret this as
+*       unconditional restoration of editor contents. A failed revert prevents
+*       the Quit request. Window_CloseRequest reaches this action through
+*       PrefsWindow.
+*
+*/
+/****** SystemPrefsWindow.mcc/MUIM_PrefsWindow_Import ************
+*
+*   NAME
+*       MUIM_PrefsWindow_Import
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_PrefsWindow_Import);
+*
+*   FUNCTION
+*       Ask for a preset file and import it through the editor.
+*
+*   INPUTS
+*       obj - Live SystemPrefsWindow with a valid editor and Application/Window
+*       context.
+*       No payload arguments.
+*
+*   RESULT
+*       Editor Import result, or FALSE if the requester is absent/cancelled or
+*       path preparation fails.
+*
+*   NOTES
+*       After a successful selection, allocate and compose the path, call
+*       PrefsEditor_Import synchronously, then set Changed TRUE even if the
+*       editor returned failure. Free the temporary path after the call; an
+*       overriding editor must not retain it. Base PrefsEditor opens the file,
+*       delegates to ImportFH, and closes it. No automatic Test/Use or
+*       application exit follows. Reused requester save mode is not explicitly
+*       reset.
+*
+*/
+/****** SystemPrefsWindow.mcc/MUIM_PrefsWindow_Export ************
+*
+*   NAME
+*       MUIM_PrefsWindow_Export
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_PrefsWindow_Export, withIcon);
+*
+*   FUNCTION
+*       Ask for a destination and export preferences, optionally writing an
+*       icon.
+*
+*   INPUTS
+*       obj - Live SystemPrefsWindow with a valid editor and Application/Window
+*       context.
+*       withIcon - ULONG; zero omits icon creation, nonzero requests it.
+*
+*   RESULT
+*       Editor Export result, or FALSE if requester/path preparation fails. Icon
+*       failure does not alter this result.
+*
+*   NOTES
+*       The requester uses save mode. The selected file can be created or
+*       overwritten by the editor; base PrefsEditor uses MODE_NEWFILE and may
+*       create missing directories. Failure does not guarantee preservation of
+*       prior file contents.
+*       With nonzero withIcon and a successful export, load ENVARC:sys/def_Pref,
+*       temporarily use editor IconTool as DefaultTool and ACTION=USE as the
+*       only tooltype, call PutDiskObject, restore fields, and free the icon.
+*       Missing default icon and failed icon write are ignored. The temporary
+*       destination path is freed after all operations. No application exit
+*       follows.
+*
+*/
+/****** SystemPrefsWindow.mcc/MUIM_PrefsWindow_SetDefaults ************
+*
+*   NAME
+*       MUIM_PrefsWindow_SetDefaults
+*
+*   SYNOPSIS
+*       IPTR result = DoMethod(obj, MUIM_PrefsWindow_SetDefaults);
+*
+*   FUNCTION
+*       Load defaults through the editor and mark successful changes.
+*
+*   INPUTS
+*       obj - Live SystemPrefsWindow with a valid editor and Application/Window
+*       context.
+*       No payload arguments.
+*
+*   RESULT
+*       TRUE if editor SetDefaults succeeds, otherwise FALSE.
+*
+*   NOTES
+*       Set Changed TRUE only after success. PrefsEditor declares SetDefaults
+*       abstract, so the concrete editor must implement it. This wrapper does
+*       not automatically apply, archive, or quit. Failed implementations can
+*       leave partial editor changes; no rollback is added.
+*
 */
 
 #define MUIMASTER_YES_INLINE_STDARG
@@ -38,6 +318,11 @@
 #define SETUP_INST_DATA struct SystemPrefsWindow_DATA *data = INST_DATA(CLASS, self)
 
 /*** Locale functions *******************************************************/
+/* Return a borrowed catalog string for a valid CatCompArray index, falling
+ * back to the compiled default when no catalog is open. No range validation
+ * or allocation occurs; catalog-backed storage must not outlive its
+ * catalog.
+ */
 CONST_STRPTR MSG(struct Catalog *catalog, ULONG id)
 {
     if (catalog != NULL)
@@ -54,6 +339,11 @@ CONST_STRPTR MSG(struct Catalog *catalog, ULONG id)
 #define __(id) (IPTR) MSG(catalog, (id))
 
 /*** Utility functions ******************************************************/
+/* Construct a menu item from NM_BARLABEL or a readable encoded label. If
+ * byte one is NUL, use the first character as shortcut and text after byte
+ * two as title; otherwise use the whole string without shortcut. Require
+ * sufficient valid input bytes and return the created object or NULL.
+ */
 Object *MakeMenuitem(CONST_STRPTR text)
 {
     CONST_STRPTR title    = NULL,
@@ -78,6 +368,11 @@ Object *MakeMenuitem(CONST_STRPTR text)
     End;
 }
 
+/* ASL message hook: on IDCMP_REFRESHWINDOW, ask the Application stored in
+ * requester UserData to check refresh. Ignore other message classes.
+ * Require valid requester, message, and Application while the synchronous
+ * requester is active; no preference operation or ownership change occurs.
+ */
 AROS_UFH3(static void, IMsgHook,
     AROS_UFHA(struct Hook *, hook, A0),
     AROS_UFHA(struct FileRequester *, req, A2),
@@ -92,6 +387,12 @@ AROS_UFH3(static void, IMsgHook,
 }
 
 /*** Methods ****************************************************************/
+/* Require a non-NULL first WindowContents editor, open the optional
+ * catalog, and build the preferences menu through PrefsWindow. Allocate the
+ * reusable requester without failing construction if allocation fails.
+ * Store the borrowed child reference, apply tags, force four action buttons
+ * disabled, and install state/menu notifications. Return object or NULL.
+ */
 Object *SystemPrefsWindow__OM_NEW
 (
     Class *CLASS, Object *self, struct opSet *message
@@ -238,6 +539,11 @@ Object *SystemPrefsWindow__OM_NEW
     return self;
 }
 
+/* Close the catalog and free the reusable ASL requester, then delegate
+ * disposal through PrefsWindow. The editor is owned by the inherited
+ * content hierarchy, not independently disposed here. Return superclass
+ * disposal result.
+ */
 IPTR SystemPrefsWindow__OM_DISPOSE
 (
     Class *CLASS, Object *self, Msg message
@@ -251,6 +557,11 @@ IPTR SystemPrefsWindow__OM_DISPOSE
     return DoSuperMethodA(CLASS, self, message);
 }
 
+/* Private notification target: read editor Changed and Testing; disable
+ * Test unless changed, Revert unless testing, and Save/Use unless either.
+ * Send attributes through this class so capabilities can force further
+ * disabling. Do not change Cancel or menu items. Return zero.
+ */
 IPTR SystemPrefsWindow__MUIM_SystemPrefsWindow_UpdateButtons
 (
     Class *CLASS, Object *self, Msg message
@@ -270,6 +581,12 @@ IPTR SystemPrefsWindow__MUIM_SystemPrefsWindow_UpdateButtons
     return 0;
 }
 
+/* Inspect action Disabled tags and overwrite their values with TRUE if
+ * editor capabilities prohibit the corresponding button. CanTest controls
+ * Test/Revert, CanSave Save, CanUse Use. Caller tag values are not
+ * restored. Delegate to PrefsWindow and return its result; this is not a
+ * method-dispatch guard.
+ */
 IPTR SystemPrefsWindow__OM_SET
 (
     Class *CLASS, Object *self, struct opSet *message
@@ -310,6 +627,12 @@ IPTR SystemPrefsWindow__OM_SET
     return DoSuperMethodA(CLASS, self, (Msg) message);
 }
 
+/* Invoke the editor Test operation. Return TRUE if the editor returns
+ * nonzero, otherwise FALSE. Does not request application exit. The base
+ * PrefsEditor implementation exports to ENV:, then clears Changed and sets
+ * Testing on success. This is temporary application of preferences, not a
+ * dry run. No CanTest check is performed by this method.
+ */
 IPTR SystemPrefsWindow__MUIM_PrefsWindow_Test
 (
     Class *CLASS, Object *self, Msg message
@@ -326,6 +649,13 @@ IPTR SystemPrefsWindow__MUIM_PrefsWindow_Test
     return TRUE;
 }
 
+/* Invoke the editor Revert operation. Return TRUE if the editor returns
+ * nonzero, otherwise FALSE. Does not request application exit. Base
+ * PrefsEditor seeks its setup backup, imports it, and exports the restored
+ * settings to ENV: before clearing Changed and Testing. Partial work is not
+ * rolled back if a later step fails. No capability check or error requester
+ * is provided here.
+ */
 IPTR SystemPrefsWindow__MUIM_PrefsWindow_Revert
 (
     Class *CLASS, Object *self, Msg message
@@ -342,6 +672,15 @@ IPTR SystemPrefsWindow__MUIM_PrefsWindow_Revert
     return TRUE;
 }
 
+/* Save preferences through the editor and request application exit on
+ * success. TRUE after editor success and sending Quit; FALSE after editor
+ * failure. Base PrefsEditor first performs Use, writing ENV: and clearing
+ * Changed/Testing, then exports to ENVARC:. A later ENVARC: failure can
+ * therefore leave temporary settings applied and flags cleared even though
+ * Save returns FALSE. This wrapper does not check CanSave or perform
+ * rollback. Quit is an Application return ID, not proof that the
+ * application has terminated.
+ */
 IPTR SystemPrefsWindow__MUIM_PrefsWindow_Save
 (
     Class *CLASS, Object *self, Msg message
@@ -363,6 +702,12 @@ IPTR SystemPrefsWindow__MUIM_PrefsWindow_Save
     return TRUE;
 }
 
+/* Apply preferences through the editor and request application exit on
+ * success. TRUE after editor success and sending Quit; FALSE after editor
+ * failure. Base PrefsEditor exports to ENV: and clears Changed/Testing on
+ * success. This does not archive to ENVARC:. This wrapper does not check
+ * CanUse, close the window directly, or show an error requester.
+ */
 IPTR SystemPrefsWindow__MUIM_PrefsWindow_Use
 (
     Class *CLASS, Object *self, Msg message
@@ -384,6 +729,14 @@ IPTR SystemPrefsWindow__MUIM_PrefsWindow_Use
     return TRUE;
 }
 
+/* Cancel through the editor and request application exit on success. TRUE
+ * after editor success and sending Quit; FALSE after editor failure. Base
+ * PrefsEditor calls Revert only when Testing is true; otherwise it returns
+ * TRUE without restoring edited values. Do not interpret this as
+ * unconditional restoration of editor contents. A failed revert prevents
+ * the Quit request. Window_CloseRequest reaches this action through
+ * PrefsWindow.
+ */
 IPTR SystemPrefsWindow__MUIM_PrefsWindow_Cancel
 (
     Class *CLASS, Object *self, Msg message
@@ -405,6 +758,16 @@ IPTR SystemPrefsWindow__MUIM_PrefsWindow_Cancel
     return TRUE;
 }
 
+/* Ask for a preset file and import it through the editor. Editor Import
+ * result, or FALSE if the requester is absent/cancelled or path preparation
+ * fails. After a successful selection, allocate and compose the path, call
+ * PrefsEditor_Import synchronously, then set Changed TRUE even if the
+ * editor returned failure. Free the temporary path after the call; an
+ * overriding editor must not retain it. Base PrefsEditor opens the file,
+ * delegates to ImportFH, and closes it. No automatic Test/Use or
+ * application exit follows. Reused requester save mode is not explicitly
+ * reset.
+ */
 IPTR SystemPrefsWindow__MUIM_PrefsWindow_Import
 (
     Class *CLASS, Object *self, Msg message
@@ -452,6 +815,18 @@ IPTR SystemPrefsWindow__MUIM_PrefsWindow_Import
     return result;
 }
 
+/* Ask for a destination and export preferences, optionally writing an icon.
+ * Editor Export result, or FALSE if requester/path preparation fails. Icon
+ * failure does not alter this result. The requester uses save mode. The
+ * selected file can be created or overwritten by the editor; base
+ * PrefsEditor uses MODE_NEWFILE and may create missing directories. Failure
+ * does not guarantee preservation of prior file contents. With nonzero
+ * withIcon and a successful export, load ENVARC:sys/def_Pref, temporarily
+ * use editor IconTool as DefaultTool and ACTION=USE as the only tooltype,
+ * call PutDiskObject, restore fields, and free the icon. Missing default
+ * icon and failed icon write are ignored. The temporary destination path is
+ * freed after all operations. No application exit follows.
+ */
 IPTR SystemPrefsWindow__MUIM_PrefsWindow_Export
 (
     Class *CLASS, Object *self, struct MUIP_PrefsWindow_Export *message
@@ -518,6 +893,13 @@ IPTR SystemPrefsWindow__MUIM_PrefsWindow_Export
     return result;
 }
 
+/* Load defaults through the editor and mark successful changes. TRUE if
+ * editor SetDefaults succeeds, otherwise FALSE. Set Changed TRUE only after
+ * success. PrefsEditor declares SetDefaults abstract, so the concrete
+ * editor must implement it. This wrapper does not automatically apply,
+ * archive, or quit. Failed implementations can leave partial editor
+ * changes; no rollback is added.
+ */
 IPTR SystemPrefsWindow__MUIM_PrefsWindow_SetDefaults
 (
     Class *CLASS, Object *self, Msg message

@@ -1,0 +1,405 @@
+TABLE OF CONTENTS
+
+Listtree.mcc/Listtree.mcc
+Listtree.mcc/MUIA_Listtree_Active
+Listtree.mcc/MUIA_Listtree_Quiet
+Listtree.mcc/MUIA_Listtree_DoubleClick
+Listtree.mcc/MUIA_Listtree_ConstructHook
+Listtree.mcc/MUIA_Listtree_DestructHook
+Listtree.mcc/MUIA_Listtree_DisplayHook
+Listtree.mcc/MUIA_Listtree_SortHook
+Listtree.mcc/MUIA_Listtree_Title
+Listtree.mcc/MUIA_Listtree_Format
+Listtree.mcc/MUIA_Listtree_DragDropSort
+Listtree.mcc/MUIM_Listtree_Insert
+Listtree.mcc/MUIM_Listtree_GetEntry
+Listtree.mcc/MUIM_Listtree_FindName
+Listtree.mcc/MUIM_Listtree_GetNr
+Listtree.mcc/MUIM_Listtree_Remove
+Listtree.mcc/MUIM_Listtree_Rename
+Listtree.mcc/MUIM_Listtree_Open
+Listtree.mcc/MUIM_Listtree_Close
+Listtree.mcc/MUIM_Listtree_TestPos
+Listtree.mcc/MUIM_Listtree_SetDropMark
+Listtree.mcc/Listtree.mcc
+
+    NAME
+        Listtree.mcc -- Display a tree through an NListtree adapter.
+
+    SUPERCLASS
+        List.mui
+
+    INPUTS
+        Create Listtree.mcc with the supported construction attributes below.
+        The pinned class configuration declares version 0.11.
+
+    FUNCTION
+        This List subclass uses an internal NListtree object. Its public nodes
+        are MUIS_Listtree_TreeNode proxies, not MUI_NListtree_TreeNode
+        pointers. Use nodes returned by Insert, GetEntry, FindName or TestPos
+        with the same object. Do not copy, free or fabricate them. Removal and
+        disposal invalidate them.
+        tn_Name is borrowed from the backend; tn_User is application data or
+        the construct-hook result. tn_Private1 and tn_Private2 are private.
+        TNF_LIST marks a branch and TNF_OPEN its expanded state. Flags are
+        synchronized only at selected adapter calls and hooks; they are not a
+        continuously updated state view.
+        Active has an inconsistent representation: the getter returns an
+        internal pointer, whereas setter/method inputs use proxies and Active
+        notifications translate to proxies. Obtain the active proxy with
+        GetEntry using Position_Active.
+        Only the documented construction subset is forwarded. ContextMenu goes
+        to List; Frame, List_Title, List_DragSortable and List_MinLineHeight
+        also have explicit child forwarding. This is not a complete Listtree
+        compatibility implementation. SetDropMark is a stub. List_First is
+        ignored on set and does not provide working notifications here.
+        Keep hook structures, hook data and borrowed payloads valid until
+        their final use, including disposal. Use the owning application
+        context. Hooks are synchronous; avoid reentrant mutation that
+        invalidates nodes being processed.
+        Failure handling is incomplete for child/pool/proxy/image allocation.
+        Image text conversion requires valid writable strings and matching
+        handles. No general low-memory recovery or arbitrary-input validation
+        guarantee is provided.
+Listtree.mcc/MUIA_Listtree_Active
+
+    NAME
+        MUIA_Listtree_Active -- Set or read the active tree node.
+
+    INPUTS
+        Set/get; a live same-object proxy on set. Not initialized by this
+        constructor.
+
+    FUNCTION
+        Set dereferences the supplied proxy without NULL/sentinel handling.
+        Get returns the raw internal NListtree node, not the public proxy.
+        Forwarded Active notifications carry the proxy or zero. Do not feed
+        the getter result back into the setter.
+Listtree.mcc/MUIA_Listtree_Quiet
+
+    NAME
+        MUIA_Listtree_Quiet -- Set or read quiet mode.
+
+    INPUTS
+        Set/get; BOOL. Not initialized by this constructor.
+
+    FUNCTION
+        Forward to NListtree_Quiet and bridge its notifications. Use it to
+        batch display changes; this adapter does not promise suppression of
+        all notifications or balanced nesting. NoNotify on the outer set is
+        not propagated into separate child set calls.
+Listtree.mcc/MUIA_Listtree_DoubleClick
+
+    NAME
+        MUIA_Listtree_DoubleClick -- Read the double-click state.
+
+    INPUTS
+        Get/notification; the header labels this set/get BOOL.
+
+    FUNCTION
+        Read the backend DoubleClick value and bridge its notifications
+        unchanged. The local setter does not forward this attribute to
+        NListtree; do not use it to configure backend double-click behavior.
+        Construction does not process it.
+Listtree.mcc/MUIA_Listtree_ConstructHook
+
+    NAME
+        MUIA_Listtree_ConstructHook -- Provide the node construction hook at initialization.
+
+    INPUTS
+        Initialize only; struct Hook * or NULL.
+
+    FUNCTION
+        Borrow the hook. CallHookPkt receives the instance pool as object and
+        incoming User as message. Store the returned payload in proxy tn_User.
+        NULL hook retains incoming User. A NULL hook result is not treated as
+        an insertion rejection. The adapter allocates the proxy separately.
+        Pair payload ownership with DestructHook.
+Listtree.mcc/MUIA_Listtree_DestructHook
+
+    NAME
+        MUIA_Listtree_DestructHook -- Provide the node destruction hook at initialization.
+
+    INPUTS
+        Initialize only; struct Hook * or NULL.
+
+    FUNCTION
+        Borrow the hook and call it with pool as object and proxy tn_User as
+        message before releasing each proxy. Without a hook, the adapter does
+        not free application payloads. The pool remains live during child
+        disposal. Do not free the proxy itself in the hook.
+Listtree.mcc/MUIA_Listtree_DisplayHook
+
+    NAME
+        MUIA_Listtree_DisplayHook -- Provide the display hook at initialization.
+
+    INPUTS
+        Initialize only; struct Hook * or NULL.
+
+    FUNCTION
+        CallHookPkt receives the column-string array as object and public
+        proxy as message, or NULL for a title row. Return the display result.
+        Provide valid column strings and the terminating NULL pointer expected
+        by the adapter. It may rewrite image escape text in place, so such
+        strings must be writable and contain valid matching CreateImage
+        handles. It handles only the first image escape per column and does
+        not guarantee every address width.
+Listtree.mcc/MUIA_Listtree_SortHook
+
+    NAME
+        MUIA_Listtree_SortHook -- Provide the sort hook at initialization.
+
+    INPUTS
+        Initialize only; struct Hook * or NULL.
+
+    FUNCTION
+        Invoke the borrowed hook with first proxy as object and second proxy
+        as message after synchronizing flags. Return the comparison result to
+        the backend. Without this hook, NListtree retains its own comparison
+        behavior. Do not invalidate nodes during comparison.
+Listtree.mcc/MUIA_Listtree_Title
+
+    NAME
+        MUIA_Listtree_Title -- Select title display at initialization.
+
+    INPUTS
+        Initialize only; BOOL.
+
+    FUNCTION
+        Translate to NListtree_Title during child construction. No local
+        set/get forwarding is implemented. The backend determines layout and
+        default.
+Listtree.mcc/MUIA_Listtree_Format
+
+    NAME
+        MUIA_Listtree_Format -- Specify the column format at initialization.
+
+    INPUTS
+        Initialize only; readable STRPTR.
+
+    FUNCTION
+        Translate the column-format string to NListtree_Format during
+        construction. No local setter/getter or independent storage contract
+        is added; use the backend format syntax and lifetime rules.
+Listtree.mcc/MUIA_Listtree_DragDropSort
+
+    NAME
+        MUIA_Listtree_DragDropSort -- Select drag-and-drop sorting at initialization.
+
+    INPUTS
+        Initialize only; BOOL.
+
+    FUNCTION
+        Translate to NListtree_DragDropSort during construction. It controls
+        backend sorting by drag and drop; it does not implement SetDropMark.
+        No local set/get forwarding.
+Listtree.mcc/MUIM_Listtree_Insert
+
+    NAME
+        MUIM_Listtree_Insert -- Insert a node.
+
+    INPUTS
+        Name, User, ListNode, PrevNode, Flags. Use live proxies from this
+        object, or only the named selectors for this method. Other integer
+        values are not validated.
+
+    FUNCTION
+        ListNode accepts Root (0), Active (-2), or a proxy. PrevNode accepts
+        Head (0), Tail (-1), Active (-2), Sorted (-4), or a proxy to insert
+        after. The backend defaults to copying names; the adapter installs no
+        alternative name-ownership setting.
+        TNF_LIST creates a branch; TNF_OPEN marks it open. Flags_Active
+        activates the new node and can open its parents. The header also
+        defines Flags_NextNode, but the pinned backend Insert does not test
+        that bit. Do not assume insertion-before behavior from it.
+        The constructor hook receives User. The backend node is created before
+        the adapter finishes the proxy name, flags and back-reference. Hooks
+        or notifications during insertion must not assume that proxy
+        initialization has finished.
+
+    RESULT
+        Borrowed new proxy or NULL on a reported failure. Allocation failures
+        are not uniformly handled; this is not an atomic-operation guarantee.
+Listtree.mcc/MUIM_Listtree_GetEntry
+
+    NAME
+        MUIM_Listtree_GetEntry -- Find a node by position.
+
+    INPUTS
+        Node, Position, Flags. Use live proxies from this object, or only the
+        named selectors for this method. Other integer values are not
+        validated.
+
+    FUNCTION
+        Node accepts Root (0), Active (-2), or a proxy. Position accepts Head
+        (0), Tail (-1), Active (-2), Next (-3), Previous (-4), Parent (-5), or
+        a nonnegative traversal index. Next/Previous refer to siblings of
+        Node; Parent asks for its parent.
+        Flags_Visible and Flags_SameLevel are forwarded for indexed traversal.
+        Direct special-position cases do not apply those filters. The hidden
+        root has no public proxy, so a top-level parent is returned as NULL.
+        Flags on a found proxy are synchronized.
+
+    RESULT
+        Borrowed proxy or NULL.
+Listtree.mcc/MUIM_Listtree_FindName
+
+    NAME
+        MUIM_Listtree_FindName -- Find a named node.
+
+    INPUTS
+        ListNode, Name, Flags. Use live proxies from this object, or only the
+        named selectors for this method. Other integer values are not
+        validated.
+
+    FUNCTION
+        ListNode accepts Root (0), Active (-2), or a proxy. Supply a readable
+        name. Delegate the name comparison and depth-first search to
+        NListtree. Flags_Visible restricts candidates to visible nodes;
+        Flags_SameLevel prevents descent. The adapter supplies no own
+        name-comparison hook and does not synchronize returned proxy flags.
+
+    RESULT
+        Borrowed proxy or NULL.
+Listtree.mcc/MUIM_Listtree_GetNr
+
+    NAME
+        MUIM_Listtree_GetNr -- Get a position or count.
+
+    INPUTS
+        TreeNode, Flags. Supply a real proxy or Active (-2); NULL is not a
+        root selector in this adapter.
+
+    FUNCTION
+        With no count flags, return the backend tree position, or -1 when not
+        found. Flags_ListEmpty returns whether a branch is empty; a leaf gives
+        zero. Flags_CountList returns entries in the branch, CountLevel
+        entries in its parent list, and CountAll all entries.
+        The backend tests ListEmpty, CountList, applicable CountLevel, then
+        CountAll in that order; flags are not independent output requests.
+        Active requires an existing active node on dereferencing paths.
+
+    RESULT
+        Backend position, count or boolean; zero has different meanings
+        according to Flags.
+Listtree.mcc/MUIM_Listtree_Remove
+
+    NAME
+        MUIM_Listtree_Remove -- Remove nodes.
+
+    INPUTS
+        ListNode, TreeNode, Flags. Use live proxies from this object, or only
+        the named selectors for this method. Other integer values are not
+        validated.
+
+    FUNCTION
+        ListNode accepts Root (0), Active (-2), or a proxy. TreeNode accepts
+        Head (0), Tail (-1), Active (-2), All (-3), or a proxy. Forward flags
+        unchanged; Visible and Nr flags are explicitly unsupported in the
+        Listtree header.
+        Removing nodes releases their proxies and runs the optional payload
+        destructor. Removed branch contents are also invalidated. Do not
+        retain or reuse removed-node pointers.
+
+    RESULT
+        The pinned backend returns zero; this is not a success or
+        removed-count report.
+Listtree.mcc/MUIM_Listtree_Rename
+
+    NAME
+        MUIM_Listtree_Rename -- Change node data.
+
+    INPUTS
+        TreeNode, NewName, Flags. Supply a proxy or Active (-2).
+
+    FUNCTION
+        Without Flags_User, rename the backend node and update the returned
+        proxy name. Supply a readable NUL-terminated NewName. Flags_NoRefresh
+        suppresses the backend redraw.
+        Flags_User is defined but does not preserve a usable proxy here:
+        backend destruction frees the old proxy, construction allocates a
+        replacement, and this wrapper updates only tn_Name, not its backend
+        reference or flags. Existing aliases become invalid. This path is not
+        a supported replacement for assigning application payload through a
+        stable node.
+
+    RESULT
+        Returned proxy or NULL; return alone does not establish a valid proxy
+        after Flags_User.
+Listtree.mcc/MUIM_Listtree_Open
+
+    NAME
+        MUIM_Listtree_Open -- Open branches.
+
+    INPUTS
+        ListNode, TreeNode, Flags. Use live proxies from this object, or only
+        the named selectors for this method. Other integer values are not
+        validated.
+
+    FUNCTION
+        ListNode accepts Root (0), Parent (-1), Active (-2), or a proxy.
+        TreeNode accepts Head (0), Tail (-1), Active (-2), All (-3), or a
+        proxy. Parent starts at the root and also opens ancestors of the
+        target. All requests recursive expansion. Flags pass unchanged;
+        Visible and Nr flags are unsupported in the header. Cached public
+        tn_Flags are not refreshed by this wrapper.
+
+    RESULT
+        Zero from the pinned backend, not a success report.
+Listtree.mcc/MUIM_Listtree_Close
+
+    NAME
+        MUIM_Listtree_Close -- Close branches.
+
+    INPUTS
+        ListNode, TreeNode, Flags. Use live proxies from this object, or only
+        the named selectors for this method. Other integer values are not
+        validated.
+
+    FUNCTION
+        ListNode accepts Root (0), Parent (-1), Active (-2), or a proxy.
+        TreeNode accepts Head (0), Tail (-1), Active (-2), All (-3), or a
+        proxy. Parent resolves the parent of the active list and requires
+        valid active-list state. All requests recursive collapse. Flags pass
+        unchanged; Visible and Nr flags are unsupported in the header. Cached
+        public tn_Flags are not refreshed by this wrapper.
+
+    RESULT
+        Zero from the pinned backend, not a success report.
+Listtree.mcc/MUIM_Listtree_TestPos
+
+    NAME
+        MUIM_Listtree_TestPos -- Identify the node at a position.
+
+    INPUTS
+        X, Y, Result. Result must point to writable
+        MUIS_Listtree_TestPos_Result storage.
+
+    FUNCTION
+        Forward coordinates to backend hit testing. Translate the node to its
+        public proxy and copy placement into tpr_Flags, plus list entry and
+        list flags. Placement values are None (0), Above (1), Below (2), Onto
+        (3); Sorted (4) is defined but not produced by the reviewed backend
+        path.
+        A hit synchronizes node flags. No hit sets node NULL, entry -1 and
+        flags zero through the backend result. The result node is borrowed; it
+        does not keep the node alive.
+
+    RESULT
+        TRUE for a found node, otherwise FALSE. This differs from the backend
+        method return value, which is ignored.
+Listtree.mcc/MUIM_Listtree_SetDropMark
+
+    NAME
+        MUIM_Listtree_SetDropMark -- Report an unsupported operation.
+
+    INPUTS
+        Entry, Values. The header defines Values_None (0).
+
+    FUNCTION
+        The adapter only prints a diagnostic. It does not create, move or
+        clear a drop mark.
+
+    RESULT
+        Always FALSE.
+

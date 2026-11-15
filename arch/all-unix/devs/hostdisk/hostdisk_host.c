@@ -106,19 +106,19 @@ ULONG Host_Open(struct unit *Unit)
     int err;
 
     D(bug("hostdisk: Host_Open(%s)\n", Unit->filename));
-    Unit->flags = 0;
+    Unit->flags &= ~UNIT_READONLY;
 
     HostLib_Lock();
 
-    Unit->file = hdskBase->iface->open(Unit->filename, O_RDWR, 0755, &err);
+    Unit->file = hdskBase->iface->open(Unit->filename, O_RDWR, 0755);
     AROS_HOST_BARRIER
     err = *hdskBase->errnoPtr;
 
-    if (err == EBUSY || err == EROFS)
+    if (Unit->file == -1 && (err == EBUSY || err == EROFS || err == EACCES))
     {
         /* This allows to work on Darwin, at least in read-only mode */
         D(bug("hostdisk: EBUSY, retrying with read-only access\n", Unit->filename, Unit->file, err));
-        Unit->flags = UNIT_READONLY;
+        Unit->flags |= UNIT_READONLY;
 
         Unit->file = hdskBase->iface->open(Unit->filename, O_RDONLY, 0755);
         AROS_HOST_BARRIER
@@ -150,6 +150,25 @@ void Host_Close(struct unit *Unit)
     AROS_HOST_BARRIER
 
     HostLib_Unlock();
+}
+
+ULONG Host_Flush(struct unit *Unit)
+{
+    struct HostDiskBase *hdskBase = Unit->hdskBase;
+    int ret, err;
+
+    if (Unit->flags & UNIT_READONLY)
+        return 0;
+
+    HostLib_Lock();
+    do {
+        ret = hdskBase->iface->fsync(Unit->file);
+        AROS_HOST_BARRIER
+        err = *hdskBase->errnoPtr;
+    } while (ret == -1 && err == EINTR);
+    HostLib_Unlock();
+
+    return ret == -1 ? error(err) : 0;
 }
 
 LONG Host_Read(struct unit *Unit, APTR buf, ULONG size, ULONG *ioerr)
@@ -202,7 +221,14 @@ ULONG Host_Seek(struct unit *Unit, ULONG pos)
 ULONG Host_Seek64(struct unit *Unit, ULONG pos, ULONG pos_hi)
 {
     struct HostDiskBase *hdskBase = Unit->hdskBase;
-    int res;
+    off_t res;
+
+#ifndef HOST_LONG_ALIGNED
+    /* The ordinary lseek prototype must represent the full offset.
+     * The split-argument ABI already passes both halves explicitly. */
+    if (sizeof(off_t) < 8 && (pos_hi || pos > 0x7fffffffUL))
+        return TDERR_SeekError;
+#endif
 
     D(bug("hostdisk: Seek to block 0x%08X%08X (%llu)\n", pos_hi, pos, (((UQUAD)pos_hi) << 32) + pos));
 
@@ -244,7 +270,7 @@ static ULONG InternalGetGeometry(int file, struct DriveGeometry *dg, struct Host
 
            /* If this routine is not implemented, use fstat() (worst case) */
            if (err != ENOSYS)
-               return error(err);
+               return err;
         }
 
         D(bug("hostdisk: Image file length: %ld\n", st.st_size));
@@ -315,6 +341,7 @@ static const char *libcSymbols[] =
     "fstat64" INODE64_SUFFIX,
     "stat64" INODE64_SUFFIX,
 #endif
+    "fsync",
     NULL
 };
 

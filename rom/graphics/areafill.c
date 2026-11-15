@@ -53,7 +53,8 @@ BOOL areafillpolygon(struct RastPort *rp, struct Rectangle *bounds,
     struct AreaInfo *ai = rp->AreaInfo;
     UWORD edges = last_idx - first_idx;
     WORD *crossings;
-    WORD y;
+    /* wider than the WORD bounds, so that the loops end at a MaxY of 32767 */
+    LONG y;
 
     /* Filled hands, arrows, diamonds and many other classic UI shapes are
      * convex quadrilaterals.  Drawing their four edges into TmpRas first
@@ -201,11 +202,13 @@ void areaoutlinepolygonmask(struct RastPort *rp, struct Rectangle *bounds,
         WORD y = v[idx * 2 + 1];
         WORD x2 = v[(idx + 1) * 2];
         WORD y2 = v[(idx + 1) * 2 + 1];
-        WORD dx = x2 >= x ? x2 - x : x - x2;
-        WORD dy = y2 >= y ? y2 - y : y - y2;
+        /* The error term reaches one and a half times the longer span and
+         * is doubled below, which a WORD holds only up to a span of 10923. */
+        LONG dx = x2 >= x ? x2 - x : x - x2;
+        LONG dy = y2 >= y ? y2 - y : y - y2;
         WORD sx = x < x2 ? 1 : -1;
         WORD sy = y < y2 ? 1 : -1;
-        WORD error = dx - dy;
+        LONG error = dx - dy;
 
         for (;;) {
             ULONG rx = (UWORD)(x - bounds->MinX);
@@ -217,7 +220,7 @@ void areaoutlinepolygonmask(struct RastPort *rp, struct Rectangle *bounds,
             if (x == x2 && y == y2)
                 break;
             {
-                WORD twice = error << 1;
+                LONG twice = error * 2;
                 if (twice > -dy) {
                     error -= dy;
                     x += sx;

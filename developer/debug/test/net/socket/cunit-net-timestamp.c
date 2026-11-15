@@ -144,7 +144,7 @@ void testTIMESTAMP_LAYOUT(void)
  * give EOPNOTSUPP, those that do not exist EINVAL. */
 void testTIMESTAMP_OPTIONS(void)
 {
-    int s = socket(AF_INET, SOCK_DGRAM, 0);
+    int s = socket(st_any_family(), SOCK_DGRAM, 0);
 
     CU_ASSERT_FATAL(s >= 0);
     CU_ASSERT_EQUAL(geti(s, SO_TIMESTAMP), 0);
@@ -175,7 +175,7 @@ void testTIMESTAMP_OFF(void)
     long long us;
     int r, s;
 
-    CU_ASSERT_EQUAL_FATAL(pair(AF_INET, &r, &s, &dst, &dlen), 0);
+    CU_ASSERT_EQUAL_FATAL(pair(st_any_family(), &r, &s, &dst, &dlen), 0);
     CU_ASSERT_EQUAL(sendto(s, "x", 1, 0, (struct sockaddr *)&dst, dlen), 1);
     CU_ASSERT(sock_wait(r, 0, 2) > 0);
     CU_ASSERT_EQUAL(recv_stamp(r, &us), 0);
@@ -224,7 +224,7 @@ void testTIMESTAMP_DISTINCT(void)
     long long a, b;
     int r, s;
 
-    CU_ASSERT_EQUAL_FATAL(pair(AF_INET6, &r, &s, &dst, &dlen), 0);
+    CU_ASSERT_EQUAL_FATAL(pair(st_prefer_family(AF_INET6), &r, &s, &dst, &dlen), 0);
     CU_ASSERT_EQUAL(seti(r, SO_TIMESTAMP, 1), 0);
     CU_ASSERT_EQUAL(seti(r, SO_TS_CLOCK, SO_TS_MONOTONIC), 0);
     CU_ASSERT_EQUAL(sendto(s, "1", 1, 0, (struct sockaddr *)&dst, dlen), 1);
@@ -247,7 +247,7 @@ void testTIMESTAMP_PER_DATAGRAM(void)
     long long us;
     int r, s;
 
-    CU_ASSERT_EQUAL_FATAL(pair(AF_INET, &r, &s, &dst, &dlen), 0);
+    CU_ASSERT_EQUAL_FATAL(pair(st_any_family(), &r, &s, &dst, &dlen), 0);
     CU_ASSERT_EQUAL(seti(r, SO_TIMESTAMP, 1), 0);
     CU_ASSERT_EQUAL(sendto(s, "1", 1, 0, (struct sockaddr *)&dst, dlen), 1);
     CU_ASSERT(sock_wait(r, 0, 2) > 0);
@@ -276,14 +276,14 @@ int main(void)
     p = CU_add_suite("TIMESTAMP_Suite", init_suite, clean_suite);
     if (p == NULL ||
         !CU_add_test(p, "timeval and timespec layout", testTIMESTAMP_LAYOUT) ||
-        !CU_add_test(p, "the options, their defaults and errors", testTIMESTAMP_OPTIONS) ||
-        !CU_add_test(p, "no stamp without SO_TIMESTAMP", testTIMESTAMP_OFF) ||
-        !CU_add_test(p, "SCM_TIMESTAMP at reception (IPv4)", testTIMESTAMP_REALTIME4) ||
-        !CU_add_test(p, "SCM_TIMESTAMP at reception (IPv6)", testTIMESTAMP_REALTIME6) ||
-        !CU_add_test(p, "SCM_MONOTONIC at reception (IPv4)", testTIMESTAMP_MONOTONIC4) ||
-        !CU_add_test(p, "SCM_MONOTONIC at reception (IPv6)", testTIMESTAMP_MONOTONIC6) ||
-        !CU_add_test(p, "datagrams received apart, stamps apart", testTIMESTAMP_DISTINCT) ||
-        !CU_add_test(p, "each datagram keeps its kind of stamp", testTIMESTAMP_PER_DATAGRAM))
+        !st_add_test(p, "the options, their defaults and errors", testTIMESTAMP_OPTIONS, ST_ANY) ||
+        !st_add_test(p, "no stamp without SO_TIMESTAMP", testTIMESTAMP_OFF, ST_ANY) ||
+        !st_add_test(p, "SCM_TIMESTAMP at reception (IPv4)", testTIMESTAMP_REALTIME4, ST_V4) ||
+        !st_add_test(p, "SCM_TIMESTAMP at reception (IPv6)", testTIMESTAMP_REALTIME6, ST_V6) ||
+        !st_add_test(p, "SCM_MONOTONIC at reception (IPv4)", testTIMESTAMP_MONOTONIC4, ST_V4) ||
+        !st_add_test(p, "SCM_MONOTONIC at reception (IPv6)", testTIMESTAMP_MONOTONIC6, ST_V6) ||
+        !st_add_test(p, "datagrams received apart, stamps apart", testTIMESTAMP_DISTINCT, ST_ANY) ||
+        !st_add_test(p, "each datagram keeps its kind of stamp", testTIMESTAMP_PER_DATAGRAM, ST_ANY))
     {
         CU_cleanup_registry();
         CloseLibrary(SocketBase);

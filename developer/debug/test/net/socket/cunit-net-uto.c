@@ -66,7 +66,7 @@ int clean_suite(void)
 /* 0 until set; what was set; a negative value refused. */
 void testUTO_OPTION(void)
 {
-    int s = socket(AF_INET6, SOCK_STREAM, 0);
+    int s = socket(st_prefer_family(AF_INET6), SOCK_STREAM, 0);
 
     CU_ASSERT_FATAL(s >= 0);
     CU_ASSERT_EQUAL(geti(s, TCP_USER_TIMEOUT), 0);
@@ -85,17 +85,17 @@ void testUTO_INHERITED(void)
     struct sockaddr_storage ss;
     socklen_t len;
     unsigned short port;
-    int l, c, a;
+    int l, c, a, family = st_any_family();
 
-    l = st_bound(AF_INET, SOCK_STREAM, &port);
+    l = st_bound(family, SOCK_STREAM, &port);
     CU_ASSERT_FATAL(l >= 0);
     CU_ASSERT_EQUAL(seti(l, TCP_USER_TIMEOUT, 7000), 0);
     CU_ASSERT_EQUAL(listen(l, 1), 0);
-    c = socket(AF_INET, SOCK_STREAM, 0);
+    c = socket(family, SOCK_STREAM, 0);
     CU_ASSERT_FATAL(c >= 0);
-    len = st_loopback(AF_INET, &ss, port);
-    CU_ASSERT_EQUAL(connect(c, (struct sockaddr *)&ss, len), 0);
-    CU_ASSERT(sock_wait(l, 0, 3) > 0);
+    len = st_loopback(family, &ss, port);
+    CU_ASSERT_EQUAL_FATAL(connect(c, (struct sockaddr *)&ss, len), 0);
+    CU_ASSERT_FATAL(sock_wait(l, 0, 3) > 0);        /* else accept() waits for ever */
     a = accept(l, NULL, NULL);
     CU_ASSERT_FATAL(a >= 0);
     CU_ASSERT_EQUAL(geti(a, TCP_USER_TIMEOUT), 7000);
@@ -159,8 +159,8 @@ static void idle(int family, int before)
     if (before)
         CU_ASSERT_EQUAL(seti(c, TCP_USER_TIMEOUT, 1000), 0);
     len = st_loopback(family, &ss, port);
-    CU_ASSERT_EQUAL(connect(c, (struct sockaddr *)&ss, len), 0);
-    CU_ASSERT(sock_wait(l, 0, 3) > 0);
+    CU_ASSERT_EQUAL_FATAL(connect(c, (struct sockaddr *)&ss, len), 0);
+    CU_ASSERT_FATAL(sock_wait(l, 0, 3) > 0);        /* else accept() waits for ever */
     a = accept(l, NULL, NULL);
     CU_ASSERT_FATAL(a >= 0);
     if (!before) {
@@ -177,8 +177,10 @@ static void idle(int family, int before)
     CloseSocket(l);
 }
 
-void testUTO_IDLE_BEFORE4(void) { idle(AF_INET, 1); }
-void testUTO_IDLE_AFTER6(void) { idle(AF_INET6, 0); }
+/* Not about a family: one case over each when the stack has both, both
+ * over the one it has otherwise. */
+void testUTO_IDLE_BEFORE4(void) { idle(st_prefer_family(AF_INET), 1); }
+void testUTO_IDLE_AFTER6(void) { idle(st_prefer_family(AF_INET6), 0); }
 
 /* A user timeout of 2 s drops it at about 2 s, with ETIMEDOUT. */
 static void zero_window_drops(int family)
@@ -198,7 +200,7 @@ void testUTO_ZERO_WINDOW_OFF(void)
 {
     long waited;
 
-    CU_ASSERT_EQUAL(zero_window(AF_INET, 0, 5, &waited), 0);
+    CU_ASSERT_EQUAL(zero_window(st_any_family(), 0, 5, &waited), 0);
 }
 
 int main(void)
@@ -216,13 +218,13 @@ int main(void)
     }
     p = CU_add_suite("UTO_Suite", init_suite, clean_suite);
     if (p == NULL ||
-        !CU_add_test(p, "the option: 0, what was set, no negative", testUTO_OPTION) ||
-        !CU_add_test(p, "an accepted connection has the listener's", testUTO_INHERITED) ||
-        !CU_add_test(p, "an idle connection outlives it, set before connect() (IPv4)", testUTO_IDLE_BEFORE4) ||
-        !CU_add_test(p, "an idle connection outlives it, set after connect() (IPv6)", testUTO_IDLE_AFTER6) ||
-        !CU_add_test(p, "a shut window drops the connection at the timeout (IPv4)", testUTO_ZERO_WINDOW4) ||
-        !CU_add_test(p, "a shut window drops the connection at the timeout (IPv6)", testUTO_ZERO_WINDOW6) ||
-        !CU_add_test(p, "without one, a shut window does not", testUTO_ZERO_WINDOW_OFF))
+        !st_add_test(p, "the option: 0, what was set, no negative", testUTO_OPTION, ST_ANY) ||
+        !st_add_test(p, "an accepted connection has the listener's", testUTO_INHERITED, ST_ANY) ||
+        !st_add_test(p, "an idle connection outlives it, set before connect()", testUTO_IDLE_BEFORE4, ST_ANY) ||
+        !st_add_test(p, "an idle connection outlives it, set after connect()", testUTO_IDLE_AFTER6, ST_ANY) ||
+        !st_add_test(p, "a shut window drops the connection at the timeout (IPv4)", testUTO_ZERO_WINDOW4, ST_V4) ||
+        !st_add_test(p, "a shut window drops the connection at the timeout (IPv6)", testUTO_ZERO_WINDOW6, ST_V6) ||
+        !st_add_test(p, "without one, a shut window does not", testUTO_ZERO_WINDOW_OFF, ST_ANY))
     {
         CU_cleanup_registry();
         CloseLibrary(SocketBase);

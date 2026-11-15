@@ -31,6 +31,10 @@
 
 #include "private.h"
 
+/* Map one raw-key code using zero qualifiers and no event-address data.
+ * Return the zero-initialized byte, ignoring MapRawKey status. Borrow the
+ * message; this is not multi-byte conversion.
+ */
 static ULONG ConvertKey (struct IntuiMessage *imsg)
 {
   struct InputEvent event;
@@ -54,6 +58,12 @@ static ULONG ConvertKey (struct IntuiMessage *imsg)
 #undef  IECODE_KEY_CODE_LAST
 #define  IECODE_KEY_CODE_LAST 0x7e
 
+/* Build a bounded textual description from accepted qualifier-only or raw-
+ * key input. Set Contents synchronously, toggle repeated Backspace
+ * clearing, and consume accepted unmapped keys without text changes.
+ * Require a valid borrowed event. Return Eat or zero, not conversion
+ * success; no masks or global binding are implemented.
+ */
 IPTR HandleInput(struct IClass *cl, Object *obj, struct MUIP_HandleEvent *msg)
 {
   struct InstData *data = (struct InstData *)INST_DATA(cl, obj);

@@ -777,6 +777,10 @@ AROS_UFH0(void, nHidTask)
                     {
                         len = psdGetPipeActual(pp);
                         nParseMidi(nch, buf, len);
+                    } else {
+                        /* don't spin on a failing interrupt pipe */
+                        KPRINTF(1, ("Int Pipe failed %ld\n", ioerr));
+                        psdDelayMS(20);
                     }
                     psdSendPipe(nch->nch_EPInPipe, buf, 1024);
                     break;

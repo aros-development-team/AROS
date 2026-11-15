@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2025, The AROS Development Team.
+    Copyright (C) 2025-2026, The AROS Development Team.
 */
 
 #include <aros/debug.h>
@@ -72,7 +72,7 @@ static int telemetryenum_init(struct SysexpTelemetryBase *SeTelemetryBase)
 
 ADD2INITLIB(telemetryenum_init, 10);
 
-/*****************************************************************************
+/*****i telemetry/ModuleInit
     NAME
         void ModuleInit(
 

@@ -1,0 +1,54 @@
+#
+#   vulkan.library: the Vulkan loader, dispatch and window system integration
+#
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM- workbench-libs-complete : workbench-libs-vulkan
+#MM workbench-libs-vulkan : includes hidd-vulkan workbench-libs-vulkan-includes-copy linklibs-surfacetrack
+#MM workbench-libs-vulkan-includes : workbench-libs-vulkan-includes-copy
+#MM- includes-copy : workbench-libs-vulkan-includes-copy
+#MM- core-linklibs : workbench-libs-vulkan-linklib
+
+# vulkan.conf, vulkan_dispatch.h and vulkan_tramp.c come from the Vulkan
+# registry through vulkan_gen.py and are committed. To regenerate them
+# after a Vulkan header update:
+#   python3 vulkan_gen.py <mesa>/src/vulkan/registry/vk.xml .
+
+VULKAN_FILES := \
+            vulkan_init \
+            vulkan_instance \
+            vulkan_device \
+            vulkan_wsi \
+            vulkan_flip \
+            vulkan_tramp
+
+USER_INCLUDES := -iquote $(SRCDIR)/$(CURDIR)
+USER_LDFLAGS := -static
+# the entry points are found by address through vkGet*ProcAddr
+USER_CFLAGS := -fno-strict-aliasing
+
+%build_module mmake=workbench-libs-vulkan \
+    modname=vulkan modtype=library \
+    files="$(VULKAN_FILES)" \
+    linklibfiles="vulkan_varargs" \
+    uselibs="surfacetrack"
+
+# libvulkan.a used to be the static loader (vulkan_loader.o, built in
+# workbench/hidds/vulkan). The archiver adds to an existing archive, and
+# that object would then shadow the library's stubs: drop an archive that
+# still holds it.
+#MM workbench-libs-vulkan-linklib : workbench-libs-vulkan-oldloader
+#MM workbench-libs-vulkan : workbench-libs-vulkan-oldloader
+#MM
+workbench-libs-vulkan-oldloader :
+	@for lib in $(AROS_LIB)/libvulkan.a $(AROS_LIB)/libvulkan_rel.a; do \
+	    if [ -f $$lib ] && grep -q "vulkan_loader\.o" $$lib; then \
+	        $(ECHO) "Removing the old static Vulkan loader $$lib"; \
+	        $(RM) $$lib; \
+	    fi; \
+	done
+
+%copy_includes mmake=workbench-libs-vulkan-includes-copy path=vulkan dir=include includes=vulkan_aros.h
+
+%common

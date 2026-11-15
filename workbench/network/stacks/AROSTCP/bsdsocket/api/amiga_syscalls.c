@@ -49,6 +49,8 @@
 #include <kern/uipc_socket_protos.h>
 #include <kern/uipc_socket2_protos.h>
 
+#include <net/netmodule.h>          /* netfamily_running(), net/netdemand.h */
+
 #if defined(ENABLE_FDLIBRARY)
 #include <libraries/fd.h>
 #include <proto/fd.h>
@@ -86,6 +88,23 @@ LONG __socket(LONG domain, LONG type, LONG protocol, struct SocketBase *libPtr)
 
     ObtainSyscallSemaphore(libPtr);
     error = socreate(domain, &so, type, protocol);
+    if(error == EPROTONOSUPPORT && !netfamily_running(domain)) {
+        struct netdemand *nd = netdomain_demand(domain);
+
+        /*
+         * No domain of the family: one a module attaches when it is
+         * started on demand (net/netdemand.h; the routing socket). Its
+         * start is the stack task's, which takes the fence for it: the
+         * fence is given up meanwhile. Not to be had: EPROTONOSUPPORT, as
+         * for any family the stack does not have.
+         */
+        if(nd != NULL) {
+            ReleaseSyscallSemaphore(libPtr);
+            error = netdemand_load(nd->nd_module);
+            ObtainSyscallSemaphore(libPtr);
+            error = (error == 0) ? socreate(domain, &so, type, protocol) : EPROTONOSUPPORT;
+        }
+    }
     if(! error && (flags & SOCK_NONBLOCK))
         so->so_state |= SS_NBIO;
 

@@ -450,7 +450,15 @@ AROS_UFH0(void, GM_UNIQUENAME(nHubTask))
                 psdSendPipe(nch->nch_EP1Pipe, nch->nch_PortChanges, (nch->nch_NumPorts+8)>>3);
                 nch->nch_IOStarted = TRUE;
             }
-            sigs = Wait(sigmask);
+            if(nch->nch_DisablePort || nch->nch_ClassScan)
+            {
+                /* Don't sleep on queued port work: the wake-up Signal may have
+                   been consumed by a pipe wait inside a concurrent enumeration
+                   (e.g. a disable/class-scan request arriving mid-nConfigurePort). */
+                sigs = SetSignal(0, 0) & SIGBREAKF_CTRL_C;
+            } else {
+                sigs = Wait(sigmask);
+            }
             while((nhm = (struct NepHubMsg *) GetMsg(nch->nch_CtrlMsgPort)))
             {
                 GM_UNIQUENAME(nHandleHubMethod)(nch, nhm);
@@ -617,18 +625,39 @@ AROS_UFH0(void, GM_UNIQUENAME(nHubTask))
                         {
                             if(nch->nch_PortChanges[num>>3] & (1L<<(num & 7)))
                             {
-                                psdPipeSetup(nch->nch_EP0Pipe, URTF_IN|URTF_CLASS|URTF_OTHER,
-                                             USR_GET_STATUS, 0, (ULONG) num);
-                                ioerr = psdDoPipe(nch->nch_EP0Pipe, &uhps, sizeof(struct UsbPortStatus));
-                                uhps.wPortStatus = AROS_WORD2LE(uhps.wPortStatus);
-                                uhps.wPortChange = AROS_WORD2LE(uhps.wPortChange);
-                                if(ioerr == UHIOERR_TIMEOUT)
+                                IPTR isconnected = 0;
+
+                                psdGetAttrs(PGA_DEVICE, nch->nch_Device,
+                                            DA_IsConnected, &isconnected, TAG_END);
+                                if(!isconnected)
                                 {
+                                    /* The hub is gone: psdDoPipe() short-circuits every request on a
+                                       disconnected device (50 ms, manufactured UHIOERR_TIMEOUT). The
+                                       only thing known is that the child is unreachable, which is what
+                                       the connection arm concludes - synthesise that and nothing else.
+                                       A blanket 0xffff also fires the suspend arm (resuming bindings of
+                                       a device freed a few lines later) and logs a bogus suspend change
+                                       for every empty port. */
                                     uhps.wPortStatus = 0;
-                                    uhps.wPortChange = 0xffff;
+                                    uhps.wPortChange = UPSF_PORT_CONNECTION;
                                     ioerr = 0;
                                 } else {
-                                    GM_UNIQUENAME(nClearPortStatus)(nch, num);
+                                    psdPipeSetup(nch->nch_EP0Pipe, URTF_IN|URTF_CLASS|URTF_OTHER,
+                                                 USR_GET_STATUS, 0, (ULONG) num);
+                                    ioerr = psdDoPipe(nch->nch_EP0Pipe, &uhps, sizeof(struct UsbPortStatus));
+                                    uhps.wPortStatus = AROS_WORD2LE(uhps.wPortStatus);
+                                    uhps.wPortChange = AROS_WORD2LE(uhps.wPortChange);
+                                    if(ioerr == UHIOERR_TIMEOUT)
+                                    {
+                                        /* a live hub that did not answer within the pipe's 1s NAK
+                                           timeout is a real transfer failure, not a disconnect:
+                                           assume every change is pending */
+                                        uhps.wPortStatus = 0;
+                                        uhps.wPortChange = 0xffff;
+                                        ioerr = 0;
+                                    } else {
+                                        GM_UNIQUENAME(nClearPortStatus)(nch, num);
+                                    }
                                 }
                                 if(!ioerr)
                                 {
@@ -680,12 +709,25 @@ AROS_UFH0(void, GM_UNIQUENAME(nHubTask))
                                         }
                                         else if((uhps.wPortStatus & UPSF_PORT_SUSPEND) && pd)
                                         {
-                                            psdSetAttrs(PGA_DEVICE, pd, DA_IsSuspended, FALSE, TAG_END);
+                                            /* The port is parked, not waking. The device flag is the
+                                               stack's mirror of that: psdDoPipe()/psdSendPipe() auto-
+                                               resume off it and the idle sweep skips devices already
+                                               suspended, so clearing it here would strand the device
+                                               on a suspended port. nHubSuspendDevice() has set it on
+                                               our own suspend path - this only re-syncs a port that
+                                               was parked behind the stack's back. */
+                                            IPTR oldsusp = 0;
+                                            psdGetAttrs(PGA_DEVICE, pd, DA_IsSuspended, &oldsusp, TAG_END);
+                                            psdSetAttrs(PGA_DEVICE, pd, DA_IsSuspended, TRUE, TAG_END);
                                             psdGetAttrs(PGA_DEVICE, pd, DA_ProductName, &devname, TAG_END);
                                             if (!devname) devname = devunknown;
                                             psdAddErrorMsg(RETURN_OK, (STRPTR) libname,
                                                            "Device '%s' at port %ld suspended!",
                                                            devname, num);
+                                            if(!oldsusp)
+                                            {
+                                                psdSendEvent(EHMB_DEVSUSPENDED, pd, NULL);
+                                            }
                                         } else {
                                             psdAddErrorMsg(RETURN_WARN, (STRPTR) libname,
                                                            "Bogus suspend/resume change on port %ld.",
@@ -778,6 +820,7 @@ struct NepClassHub * GM_UNIQUENAME(nAllocHub)(void)
     UBYTE buf;
 #endif
     IPTR ishighspeed = 0;
+    IPTR ifproto = 0;
     IPTR prodid;
     IPTR vendid;
     BOOL overcurrent = FALSE;
@@ -879,14 +922,35 @@ struct NepClassHub * GM_UNIQUENAME(nAllocHub)(void)
                                     nch->nch_NumPorts = uhd->bNbrPorts;
                                     nch->nch_HubAttr = AROS_WORD2LE(uhd->wHubCharacteristics);
                                     nch->nch_PwrGoodTime = uhd->bPwrOn2PwrGood<<1;
+                                    /* A device has 100ms to draw power and signal
+                                       attach, and the hub debounces the connection
+                                       for that long before reporting it. Hubs that
+                                       claim a power-good time shorter than that -
+                                       including the ones claiming zero - still owe
+                                       the device those 100ms, and scanning sooner
+                                       silently misses whatever is slowest to come
+                                       up, usually the largest device present.
+                                       Clamp the stored value so every wait that
+                                       reads it (initial power-up, port power-cycle)
+                                       is covered. */
+                                    if(nch->nch_PwrGoodTime < 100)
+                                    {
+                                        nch->nch_PwrGoodTime = 100;
+                                    }
                                     nch->nch_HubCurrent = uhd->bHubContrCurrent;
                                     nch->nch_Removable = 0;
-                                    if(nch->nch_HubAttr & UHCM_THINK_TIME)
-                                    {
-                                        psdSetAttrs(PGA_DEVICE, nch->nch_Device,
-                                                    DA_HubThinkTime, (nch->nch_HubAttr & UHCM_THINK_TIME)>>UHCS_THINK_TIME,
-                                                    TAG_END);
-                                    }
+                                    /* Multi-TT is active iff the protocol-2 alternate
+                                       was selected above. Read it back from the selected
+                                       interface - the class-only fallback can land on a
+                                       protocol-2 interface too. The library keys
+                                       pGetTTInfo()/UHFF_TT_MULTI off DA_IsMultiTT. */
+                                    psdGetAttrs(PGA_INTERFACE, nch->nch_Interface,
+                                                IFA_Protocol, &ifproto,
+                                                TAG_END);
+                                    psdSetAttrs(PGA_DEVICE, nch->nch_Device,
+                                                DA_HubThinkTime, (nch->nch_HubAttr & UHCM_THINK_TIME)>>UHCS_THINK_TIME,
+                                                DA_IsMultiTT, (ifproto == 2) ? TRUE : FALSE,
+                                                TAG_END);
 
                                     for(num = 0; num < ((nch->nch_NumPorts + 7)>>3); num++)
                                     {
@@ -959,21 +1023,7 @@ struct NepClassHub * GM_UNIQUENAME(nAllocHub)(void)
                                                     KPRINTF(1, ("PORT_POWER for port %ld failed %ld!\n", num, ioerr));
                                                 }
                                             }
-                                            {
-                                                /* A device has 100ms to draw power and signal
-                                                   attach, and the hub debounces the connection
-                                                   for that long before reporting it. Hubs that
-                                                   claim a power-good time shorter than that -
-                                                   including the ones claiming zero - still owe
-                                                   the device those 100ms, and scanning sooner
-                                                   silently misses whatever is slowest to come
-                                                   up, usually the largest device present. */
-                                                ULONG settle = (ULONG) nch->nch_PwrGoodTime;
-
-                                                if(settle < 100)
-                                                    settle = 100;
-                                                psdDelayMS(settle + 15);
-                                            }
+                                            psdDelayMS((ULONG) nch->nch_PwrGoodTime + 15);
 
                                             psdAddErrorMsg(RETURN_OK, (STRPTR) libname,
                                                            "Hub with %ld ports successfully configured.",
@@ -1448,12 +1498,10 @@ void GM_UNIQUENAME(nHandleHubMethod)(struct NepClassHub *nch, struct NepHubMsg *
         }
 
         case UCM_AttemptResumeDevice:
-            if(!nch->nch_Running)
-            {
-                psdWaitPipe(nch->nch_EP1Pipe);
-                psdSendPipe(nch->nch_EP1Pipe, nch->nch_PortChanges, (nch->nch_NumPorts+8)>>3);
-                nch->nch_Running = TRUE;
-            }
+            /* The main loop owns the EP1 pipe: with nch_Running set it will
+               resubmit once the aborted request has drained (nch_IOStarted).
+               Submitting here as well put the same request in flight twice. */
+            nch->nch_Running = TRUE;
             nhm->nhm_Result = TRUE;
             for(num = 1; num <= nch->nch_NumPorts; num++)
             {

@@ -15,345 +15,420 @@ BetterString.mcc/MUIM_BetterString_ClearSelected
 BetterString.mcc/MUIM_BetterString_DoAction
 BetterString.mcc/MUIM_BetterString_FileNameStart
 BetterString.mcc/MUIM_BetterString_Insert
+
 BetterString.mcc/BetterString.mcc
 
-    *******************************************************************
-    Copyright (C) 2005-2018 BetterString.mcc Open Source Team
-    $Id$
+    NAME
+        BetterString.mcc -- Single-line text editing with selection and
+        actions.
 
-    BetterString is a stringgadget replacement. It is created for MUI,
-    so using it should eliminate the problems with the original BOOPSI
-    stringclass. The class offers the user to do number arithmetic, like
-    increase, decrease and bin<->hex conversion. It has filename
-    completion, ability to mark, cut, copy and paste text - Both via
-    mouse and keyboard. The length of the contents buffer will
-    dynamically be expanded to hold all of what the user type (unless
-    a maximum length is given)
+    SUPERCLASS
+        Area.mui
 
-    The gadget was originally written in 1997 by Allan Odgaard. As of
-    version 11.7, released in July 2005, the gadget is maintained by
-    the BetterString.mcc Open Source team.
+    DESCRIPTION
+        Provide an editable byte string with dynamic storage, selection,
+        clipboard operations, and filename completion. This AROS source
+        defines version 11.33. BetterString derives from Area, not String; it
+        implements selected MUIA_String attributes itself. Positions and
+        lengths refer to bytes, not Unicode characters.
+        Use the normal MUI Application, Window, and Area lifecycle. Editing
+        and actions run synchronously in the calling task. Clipboard
+        operations wait for a server reply; completion locks and enumerates
+        DOS directories or DOS-list entries. No operation timeout is exposed
+        by this class.
+        MUIA_String_Contents copies supplied text; NULL clears it. Get returns
+        borrowed internal storage, which editing or reallocation can
+        invalidate. Never free or modify that storage. Keep borrowed
+        Accept/Reject strings, EditHook, popup/list/focus objects, and
+        InactiveContents valid while configured. The class does not take
+        ownership of those inputs.
 
-    It is released and distributed under the terms of the GNU Lesser
-    General Public License (LGPL) and available free of charge.
+    NOTES
+        The initial content buffer is empty; construction processes supplied
+        attributes and then resets BufferPos to zero. MaxLen defaults to zero
+        (no configured limit). A nonzero MaxLen includes the terminator.
+        Several length and position fields are 16-bit; zero does not promise
+        unlimited representable text. Use bounded application inputs.
+        The setter can change caller tag IDs to TAG_IGNORE, including
+        redundant or suppressed Contents tags and Integer tags. Use writable
+        tag storage. Setting Contents does not create a general undo history.
+        Redraw requests and contents notifications are separate; action
+        success is not proof that the content changed.
+        NoInput and NoShortcuts affect particular input paths; neither is an
+        access-control boundary. Programmatic edits and standard MUI key
+        actions have separate handling. Secret suppresses clipboard copying,
+        but display masking depends on successful temporary allocation. It is
+        not a reliable confidentiality guarantee under allocation failure.
+        Contents remains readable and no explicit memory-wiping guarantee is
+        provided.
 
-    Please visit http://www.sf.net/projects/bstring-mcc/ for
-    the very latest version and information regarding BetterString.mcc
-    *******************************************************************
+    BUGS
+        The Revert snapshot taken on activation uses an incorrect copy length
+        and can be incomplete. Revert is not a reliable exact restoration
+        operation in this source. HexToDec also has an incorrect accumulation
+        expression and must not be relied on for multi-digit conversion.
+        Allocation and completion failures are not uniformly propagated. The
+        method-specific entries describe the observable result rather than
+        promising transactional edits or complete error reporting.
 
+    COPYRIGHT
+        Copyright (C) 2005-2018 BetterString.mcc Open Source Team
+        $Id$
+        Distributed under the GNU Lesser General Public License. Third-party
+        copyright is retained.
 BetterString.mcc/MUIA_BetterString_Columns
 
     NAME
-        MUIA_BetterString_Columns -- [I..], ULONG
+        MUIA_BetterString_Columns
 
     FUNCTION
-        Set the width of the stringgadget (in characters)
+        Set the width used when calculating layout.
 
+    INPUTS
+        Initialize, set; ULONG, stored as UWORD. Default zero.
+
+    NOTES
+        A nonzero value contributes Columns times the current font width of n
+        to minimum, default, and maximum width. It is not a content-length
+        limit. Zero uses flexible width contributions of 10, 100, and
+        MBQ_MUI_MAXMAX. OM_SET also stores this value but does not request relayout;
+        supply it at construction for initial layout. No local getter exists.
 BetterString.mcc/MUIA_BetterString_InactiveContents
 
     NAME
-        MUIA_BetterString_InactiveContents -- [ISG], STRPTR
+        MUIA_BetterString_InactiveContents
 
     FUNCTION
-        Set the text which will be displayed if no other text is to be displayed
-        and the string gadget is inactive. The text will be shown in an italic
-        style. The supplied text will NOT be copied by BetterString.mcc!! Upon
-        OM_GET the returned pointer is READ-ONLY!!
+        Display placeholder text while the object is inactive and its content
+        is empty.
 
+    INPUTS
+        Initialize, set, get; STRPTR. Default NULL.
+
+    NOTES
+        The pointer is borrowed, not copied. Keep the NUL-terminated string
+        valid until replacement or disposal; Get returns the same read-only
+        borrowed pointer. It does not become String_Contents. Set requests
+        redraw. Rendering uses a reduced-intensity color on true-color
+        displays; the other path requests italic style and a shadow pen.
+        Italic rendering is not universal.
 BetterString.mcc/MUIA_BetterString_KeyUpFocus
 
     NAME
-        MUIA_BetterString_KeyUpFocus -- [ISG], Object *
+        MUIA_BetterString_KeyUpFocus
 
     FUNCTION
-        Allows to specify a specific object that will be set as the new
-        window's default object in case the user pressed the UP cursor key.
+        Move active focus on the UP MUI key.
 
-    SEE ALSO
-        MUIA_BetterString_KeyDownFocus
+    INPUTS
+        Initialize, set, get; Object *. Default NULL.
 
+    NOTES
+        When the target and current window exist, set Window_ActiveObject to
+        the target and consume the event. This changes Window_ActiveObject, not Window_DefaultObject. The pointer is
+        borrowed: keep the target alive and appropriate for the same window.
+        NULL leaves that handling to other input paths. Get returns the
+        configured pointer.
 BetterString.mcc/MUIA_BetterString_KeyDownFocus
 
     NAME
-        MUIA_BetterString_KeyDownFocus -- [ISG], Object *
+        MUIA_BetterString_KeyDownFocus
 
     FUNCTION
-        Allows to specify a specific object that will be set as the new
-        window's default object in case the user pressed the DOWN cursor key.
+        Move active focus on the DOWN MUI key.
 
-    SEE ALSO
-        MUIA_BetterString_KeyUpFocus
+    INPUTS
+        Initialize, set, get; Object *. Default NULL.
 
+    NOTES
+        When the target and current window exist, set Window_ActiveObject to
+        the target and consume the event. This changes Window_ActiveObject, not Window_DefaultObject. The pointer is
+        borrowed: keep the target alive and appropriate for the same window.
+        NULL leaves that handling to other input paths. Get returns the
+        configured pointer.
 BetterString.mcc/MUIA_BetterString_NoInput
 
     NAME
-        MUIA_BetterString_NoInput -- [ISG], BOOL
+        MUIA_BetterString_NoInput
 
     FUNCTION
-        Effectively turns the gadget into read-only mode.
+        Restrict ordinary raw-key editing.
 
+    INPUTS
+        Initialize, set, get; BOOL. Default FALSE.
+
+    NOTES
+        TRUE blocks typed-character insertion and raw-key Tab completion,
+        Backspace, and Delete, while allowing navigation, selection, copying,
+        and acknowledgement. It is not a comprehensive read-only mode:
+        standard MUI key actions are handled before this check, and Contents,
+        Insert, and DoAction do not consult it. Setting it alone does not
+        request redraw.
 BetterString.mcc/MUIA_BetterString_NoNotify
 
     NAME
-        MUIA_BetterString_NoNotify -- [ISG], BOOL
+        MUIA_BetterString_NoNotify
 
     FUNCTION
-        If set to TRUE, BetterString will omit to send out notifies for
-        MUIA_String_Contents changes. However, as soon as this flag is
-        set back to FALSE a notification will be triggered in case during
-        the lifetime of NoNotify a notification event was prevented.
+        Defer BetterString contents notifications.
 
-    NOTE
-        This could be particularly helpful if certain consecutive 
-        operations need to be performed on a betterstring object and
-        the application wants to make sure that only one notification
-        will be triggered.
+    INPUTS
+        Initialize, set, get; BOOL. Default FALSE.
 
+    NOTES
+        TRUE queues a pending-notification flag instead of forwarding
+        notifications from TriggerNotify. Contents setting also suppresses its
+        tag when a change would notify. When the flag is cleared and a
+        notification is pending, the class forwards one String_Contents
+        notification with current content and clears the pending flag.
+        Repeated changes are coalesced, not recorded individually. This
+        affects contents notification paths, not all attributes or
+        String_Acknowledge. It is distinct from MUIA_NoNotify. Keep batched
+        changes and the final reset in separate calls when notification
+        ordering matters.
 BetterString.mcc/MUIA_BetterString_NoShortcuts
 
     NAME
-        MUIA_BetterString_NoShortcuts -- [ISG], BOOL
+        MUIA_BetterString_NoShortcuts
 
     FUNCTION
-        Per default a BetterString object comes with certain enabled
-        shortcuts for operations like copy & paste. By setting this
-        attribute to FALSE, a developer can define that these default
-        shortcuts should not be enabled.
+        Disable the built-in raw-key command shortcuts.
 
-    NOTE
-        The default shorcuts which can be disabled by this attribute
-        are:
+    INPUTS
+        Initialize, set, get; BOOL. Default FALSE.
 
-        Amiga + c   = Copy, either what is selected or the complete string.
-        Amiga + x   = Cut, either what is selected or the complete string.
-        Amiga + v   = Paste from clipboard.
-        Amiga + z   = Undo until the last deletion (only one level)
-        Amiga + Z   = Redo the last undo.
-        Amiga + q   = Revert to original string, press it again to go back
-                      to the modified string.
-        Amiga + g   = Toggle case on current character.
-        Amiga + G   = Toggle case from cursor to start of next word.
-        Amiga + i   = Increase the nearest number.
-        Amiga + d   = Decrease the nearest number.
-        Amiga + #   = Convert current hexadecimal number to decimal.
-        Amiga + $   = Convert nearest number to hexadecimal.
-        Amiga + Tab = Complete the current volume, assign or paths name.
-                      You can step thru the various matches by pressing
-                      Amiga+Tab again. Use Amiga+Shift+Tab to go backwards.
-
-        In addition, there are shortcuts which will always be available,
-        no matter if this attribute is set to TRUE or FALSE:
-
-        Ctrl + left      = Navigate to start of line.
-        Ctrl + right     = Navigate to end of line.
-        Alt  + left      = Navigate to start of next word.
-        Alt  + right     = Navigate to start of current or previous word.
-        Ctrl + Delete    = Delete to start of line.
-        Ctrl + Backspace = Delete to end of line.
-        Alt  + Delete    = Delete to start of next word.
-        Alt  + Backspace = Delete to start of current or previous word.
-        Delete           = Delete the marked block, or current character.
-        Backspace        = Delete the marked block, or the character to
-                           the left.
-
-    SEE ALSO
-        MUIM_BetterString_DoAction
-
+    NOTES
+        TRUE disables these shortcuts; FALSE enables them. Standard
+        MUIKEY_COPY/CUT/PASTE/UNDO/REDO handling remains available, as do
+        navigation and direct DoAction calls.
+        With shortcuts enabled, the command-key actions include c/x/v for
+        copy/cut/paste, z/Z for undo/redo, q for revert, g/G for case
+        conversion, i/d for number adjustment, #/$ for hexadecimal/decimal
+        conversion, and right-command Tab (Shift for reverse) for completion.
+        The action limitations also apply to shortcuts.
+        Raw-key navigation uses Shift-Left/Right for line start/end and
+        Alt-Left/Right for previous/next word. Control with cursor movement
+        extends a selection. Shift or Control with Backspace deletes toward
+        the start; with Delete it deletes toward the end. Alt-Backspace/Delete
+        deletes toward the previous/next word. Home and End also move to the
+        respective line boundary.
 BetterString.mcc/MUIA_BetterString_SelectOnActive
 
     NAME
-        MUIA_BetterString_SelectOnActive -- [ISG], BOOL
+        MUIA_BetterString_SelectOnActive
 
     FUNCTION
-        Allows to override the default settings for the preference setting
-        to directly select all text in case a BetterString object will be
-        the new active object of a window (via Tab-key switching or via
-        using the mouse to make the object active.
+        Control selecting all content when the object becomes active.
 
-    NOTE
-        If this attribute is not explicitly set on object creation or later,
-        the default setting a user has configured is used. This attribute
-        should only be manually set if you are *absolutely* sure you require
-        it. Please don't force a user to use this type of functionality and
-        let him choose himself. However, there might be rare cases where 
-        setting this attribute might be required and thus the reason for it
-        to be there.
+    INPUTS
+        Initialize, set, get; BOOL. Without an explicit override, use the user
+        preference (compiled default FALSE).
 
-    SEE ALSO
-
-
+    NOTES
+        Keyboard/application activation selects immediately; mouse activation
+        cooperates with click/drag selection and mouse-button release. FALSE
+        forces selection off; TRUE forces it on. No public value restores the
+        unspecified preference state. Get reports the effective flag
+        combination. Setup manages a Window_Sleep notification through a
+        private attribute, so sleeping/waking can change the effective
+        override. Prefer the user preference unless the application requires
+        different behavior.
 BetterString.mcc/MUIA_BetterString_SelectSize
 
     NAME
-        MUIA_BetterString_SelectSize -- [.SG], LONG
+        MUIA_BetterString_SelectSize
 
     FUNCTION
-        Get or set the number of selected characters.
-        A negative value indicates that the marking has happend right to left.
-        A 0 means nothing is marked.
+        Set or read the signed selection length.
 
-    SEE ALSO
-        MUIA_String_BufferPos (MUIA_String.Doc)
+    INPUTS
+        Initialize, set, get in this implementation; LONG. Default zero.
 
+    NOTES
+        Set anchors the selection at the current BufferPos and places the
+        other endpoint at BufferPos plus the supplied value, clamped to the
+        content bounds. Positive extends right, negative left. Get returns
+        endpoint minus anchor when selection is enabled, otherwise zero. Zero
+        has no visible selected span. Set requests redraw. BufferPos changes
+        clear selection; tag order therefore matters. Construction accepts
+        this tag but later resets BufferPos to zero.
 BetterString.mcc/MUIA_BetterString_StayActive
 
     NAME
-        MUIA_BetterString_StayActive -- [ISG], BOOL
+        MUIA_BetterString_StayActive
 
     FUNCTION
-        Setting this attribute to TRUE will let the stringgadget stay active,
-        even when the user hits return, or clicks outside the gadgets area.
+        Suppress this handler's normal deactivation on Return and an outside
+        click.
 
+    INPUTS
+        Initialize, set, get; BOOL. Default FALSE.
+
+    NOTES
+        Return still sends String_Acknowledge. When FALSE, Return advances to
+        the next/previous object if String_AdvanceOnCR is set, otherwise
+        clears the active object. TRUE skips that focus change. This does not
+        prevent explicit focus changes by the application, Window, or other
+        controls. No local redraw is requested merely by setting the flag.
 BetterString.mcc/MUIM_BetterString_ClearSelected
 
     NAME
         MUIM_BetterString_ClearSelected
 
     SYNOPSIS
-        DoMethod(obj, MUIM_BetterString_ClearSelected);
+        IPTR result = DoMethod(obj, MUIM_BetterString_ClearSelected);
 
     FUNCTION
-        Clears all currently marked text. This method is in fact doing
-        the very same like the MUIV_BetterString_DoAction_Delete action of
-        MUIM_BetterString_DoAction.
+        Delete the selected span through DoAction(Delete).
+
+    INPUTS
+        obj - Live BetterString object. No payload arguments.
 
     RESULT
-        NONE
+        Always TRUE after dispatching the action; the delegated result is
+        ignored.
 
-    SEE ALSO
-        MUIM_BetterString_DoAction
-
+    NOTES
+        Without a nonempty selection, no character is deleted. The action
+        still saves an undo snapshot, clears selection, requests redraw, and
+        triggers or queues a contents notification. NoInput is not checked.
+        This is not the raw Delete key, which can delete the character at the
+        cursor.
 BetterString.mcc/MUIM_BetterString_DoAction
 
     NAME
         MUIM_BetterString_DoAction
 
     SYNOPSIS
-        DoMethod(obj, MUIM_BetterString_DoAction, ULONG action);
+        IPTR result = DoMethod(obj, MUIM_BetterString_DoAction, action);
 
     FUNCTION
-        Allows to manually perform actions like copy, paste, etc. on a
-        BetterString object. This can be used in case you want to trigger an
-        action from your application with other shortcuts or if you want to
-        perform some batched processing on a BetterString object.
+        Perform a selection, editing, clipboard, or completion action.
 
-        The allowed actions are:
-
-          MUIV_BetterString_DoAction_Cut
-            Cut out the currently selected text and put it into the
-            clipboard
-
-          MUIV_BetterString_DoAction_Copy
-            Copy the currently selected text into the clipboard and
-            deselect it accordingly.
-
-          MUIV_BetterString_DoAction_Paste
-            Paste text from the clipboard at the current cursor position
-
-          MUIV_BetterString_DoAction_Delete
-            Deletes the currently selected content in the gadget
-
-          MUIV_BetterString_DoAction_SelectAll
-            Select all available text in the string gadget
-
-          MUIV_BetterString_DoAction_SelectNone
-            Select no text at all
-
-          MUIV_BetterString_DoAction_Undo
-            Perform an undo operation and reset the text to what
-            was present at the last change.
-
-          MUIV_BetterString_DoAction_Redo
-            After having performed an undo operation
-
-          MUIV_BetterString_DoAction_Revert
-            Revert to original string, calling it again will revert
-            to the modified string again.
-
-          MUIV_BetterString_DoAction_ToggleCase
-            Toggle case on current character.
-
-          MUIV_BetterString_DoAction_ToggleCaseWord
-            Toggle case from cursor to start of next word.
-
-          MUIV_BetterString_DoAction_IncreaseNum
-            Increase the nearest number.
-
-          MUIV_BetterString_DoAction_DecreaseNum
-            Decrease the nearest number.
-
-          MUIV_BetterString_DoAction_HexToDec
-            Convert current hexadecimal number to decimal.
-
-          MUIV_BetterString_DoAction_DecToHex
-            Convert nearest number to hexadecimal.
-
-          MUIV_BetterString_DoAction_NextFileComp
-            Set the string gadget to the next file completion result
-
-          MUIV_BetterString_DoAction_PrevFileComp
-            Set the string gadget to the previous file completion result
-
-    NOTE
-        This functionality may become especially usefull in case you
-        want to have your own shortcuts in your application. In that case
-        you may disable the default shortcuts via MUIA_BetterString_NoShortcuts
-        and call the DoAction method accordingly.
+    INPUTS
+        action - One MUIV_BetterString_DoAction_* constant from the public
+        enumeration.
+        obj - Live BetterString in the normal GUI lifecycle. Revert requires
+        an available activation snapshot; completion requires valid DOS-path
+        content.
 
     RESULT
-        Returns TRUE if the action/request succeeded, or FALSE if the
-        action couldn't be executed or an error occurred.
+        Action-dependent TRUE/FALSE. Unknown action values return FALSE. TRUE
+        does not consistently mean that data changed or all underlying
+        operations succeeded.
+
+    NOTES
+        Cut (1): with a selected span, attempt to copy it and delete it;
+        without a selection, clear the entire string without copying it to the
+        clipboard. Return TRUE.
+        Copy (2): copy the selected span or the whole string when unselected,
+        then clear selection. Secret content is not copied. Return TRUE even
+        when copying is suppressed or fails.
+        Paste (3): read the clipboard, delete a selected span, and insert at
+        the cursor. MaxLen can truncate and beep. Accept/Reject are not
+        applied. Return TRUE even if reading or allocation fails; selection is
+        cleared. There is no rollback of a selection deleted before a later
+        failure.
+        SelectAll (4) and SelectNone (5): enable a full-content selection or
+        clear selection. Return TRUE without a contents notification.
+        Undo (6) and Redo (7): swap one saved content buffer and cursor
+        position when that direction is available; otherwise return FALSE.
+        This is one alternating undo/redo slot, not a complete edit history.
+        Revert (8): swap current content with the activation snapshot, clear
+        selection, and put the cursor at the end. Return TRUE. The snapshot
+        must exist; the incorrect activation copy length means exact
+        restoration is not guaranteed.
+        ToggleCase (9): change case at the cursor and advance one byte; return
+        FALSE at the terminator. ToggleCaseWord (10): change case through the
+        start of the next word, advancing the cursor; return FALSE if nothing
+        is traversed. Locale character functions operate on bytes.
+        IncreaseNum (11) and DecreaseNum (12): find a digit run at the cursor,
+        then to its right, then to its left; parse it and adjust an unsigned
+        value, preserving minimum field width. Decrement returns FALSE for
+        zero. These are not arbitrary-precision operations; replacement
+        failure is not propagated reliably.
+        HexToDec (13): intended to replace the hexadecimal run around the
+        cursor with decimal text. The accumulation is defective in this
+        source; do not rely on numeric correctness. DecToHex (14): locate a
+        decimal run and replace it with lowercase hexadecimal text. Both
+        return FALSE when no applicable run is found; TRUE does not verify the
+        replacement.
+        NextFileComp (15) and PrevFileComp (16): perform synchronous DOS
+        completion, cycling cached directory matches forward/backward. The
+        first directory match is chosen by direction. Volume completion picks
+        the first matching DOS-list entry rather than cycling a result list.
+        Completion uses bounded legacy filename buffers and does not guarantee
+        full long-name preservation. FALSE means no reported edit; failure
+        does not imply an unchanged buffer or fully cleared completion state.
+        Delete (17): remove only a nonempty selected span and clear selection.
+        Return TRUE even when nothing was selected. This differs from pressing
+        the Delete key.
+        All actions request redraw, including unknown ones. Actions marked as
+        edits trigger or queue Contents notifications, sometimes even when
+        text did not change. Copy and selection-only actions do not. NoInput
+        and NoShortcuts are not checked by this method.
 
     SEE ALSO
-        MUIA_BetterString_NoShortcuts
-
+        MUIA_BetterString_NoNotify, MUIA_BetterString_NoShortcuts
 BetterString.mcc/MUIM_BetterString_FileNameStart
 
     NAME
         MUIM_BetterString_FileNameStart
 
     SYNOPSIS
-        DoMethod(obj, MUIM_BetterString_FileNameStart, STRPTR buffer, LONG pos);
+        LONG start = (LONG)DoMethod(obj, MUIM_BetterString_FileNameStart,
+        (IPTR)buffer, pos);
 
     FUNCTION
-        When the user press Amiga+TAB, then BetterString will call this
-        method, with a pointer to the current buffer, and a cursor position.
-        It expects the method to return the start position of the partial
-        file, which the cursor is currently at.
+        Locate the start of a DOS path for filename completion.
 
-        Generally BetterString's own implementation is clever enough to find
-        it, but if for example you use the stringgadget in a webbrowser, where
-        the file is prefixed with "file://", then it isn't.
+    INPUTS
+        buffer - Readable NUL-terminated byte string.
+        pos - LONG offset from zero through the string length. The method does
+        not modify or retain buffer.
 
     RESULT
-        The start of the file or MUIR_BetterString_FileNameStart_Volume if no
-        file is found, this will make BetterString treat the string as the
-        beginning of a volumne, and make it do volume-completion instead.
+        The beginning of the path containing the colon found at or before pos,
+        or MUIR_BetterString_FileNameStart_Volume (-1) if no colon is found.
 
+    NOTES
+        Scan backward for a colon. If found, scan farther back to a double
+        quote, greater-than sign, space, equals sign, or the start of the
+        string. This is a simple delimiter scan, not a general URL or shell
+        parser. Completion calls this method through dispatch, allowing a
+        subclass to override it. An override must return a valid path-start
+        offset for the caller's DOS-path handling or the volume sentinel; it
+        must not return an unrelated index.
 BetterString.mcc/MUIM_BetterString_Insert
 
     NAME
         MUIM_BetterString_Insert
 
     SYNOPSIS
-        DoMethod(obj, MUIM_BetterString_Insert, STRPTR text, LONG pos);
+        IPTR result = DoMethod(obj, MUIM_BetterString_Insert, (IPTR)text,
+        pos);
 
     FUNCTION
-        This will insert the given text.
-        The position of the inserted text can either be a real position, or:
+        Insert text at a specified byte position.
 
-          MUIV_BetterString_Insert_StartOfString
-          MUIV_BetterString_Insert_EndOfString
-          MUIV_BetterString_Insert_BufferPos
-
-        If there isn't enough room to fit the complete string, then it will be
-        truncated, and the user will get a DisplayBeep().
-        If the cursor is to the right if the insertion place, then it will be
-        moved.
+    INPUTS
+        text - Non-NULL readable NUL-terminated string, independent of the
+        internal content buffer.
+        pos - LONG byte offset within the current content, including its end;
+        or MUIV_BetterString_Insert_StartOfString (0), EndOfString (-2), or
+        BufferPos (-1). Use the full constant names from the public header.
 
     RESULT
-        NONE
+        Always TRUE after calling the overwrite helper. Its truncation result
+        is not propagated.
 
-    SEE ALSO
-        MUIA_String_Contents (MUIA_String.Doc)
+    NOTES
+        The helper copies the text and shifts following bytes. It moves
+        BufferPos when the cursor is at or after the insertion point. MaxLen
+        can truncate insertion and cause DisplayBeep. The method clears
+        selection without replacing its span, requests redraw, and triggers or
+        queues a Contents notification. It does not check NoInput or
+        Accept/Reject and does not save an undo snapshot. Supply valid
+        offsets; arbitrary out-of-range positions are not clamped. Allocation
+        failure is not handled as an atomic failed edit.
 

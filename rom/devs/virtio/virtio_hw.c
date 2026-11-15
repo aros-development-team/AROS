@@ -18,34 +18,25 @@
 #define PCI_STATUS              0x06
 #define PCI_STATUS_CAP_LIST     0x10
 
-/*
- * Read a base address out of the PCI device by index, masking off the
- * type bits (we only support memory BARs for modern virtio).
- */
-static APTR virtio_get_bar(struct VirtIOBase *VirtIOBase, OOP_Object *pciDev, UBYTE bar)
+void virtio_hw_unmap(device_t dev)
 {
-    static const ULONG base_attrs[6] = {
-        aoHidd_PCIDevice_Base0,
-        aoHidd_PCIDevice_Base1,
-        aoHidd_PCIDevice_Base2,
-        aoHidd_PCIDevice_Base3,
-        aoHidd_PCIDevice_Base4,
-        aoHidd_PCIDevice_Base5,
-    };
-    IPTR base = 0;
-
-    if (bar > 5) return NULL;
-
-    OOP_GetAttr(pciDev, HiddPCIDeviceAttrBase + base_attrs[bar], &base);
-
-    /* Mask off type bits, just in case. */
-    return (APTR)(base & ~(IPTR)0xF);
+    struct VirtIOBase *VirtIOBase = dev->dev_VirtIOBase;
+    ULONG i;
+    for (i = 0; i < 4; i++) {
+        if (dev->dev_Windows[i]) {
+            HIDD_PCIDriver_UnmapPCI(dev->dev_PCIDriverObject,
+                                   dev->dev_Windows[i], dev->dev_WindowSizes[i]);
+            dev->dev_Windows[i] = NULL;
+        }
+    }
+    dev->dev_CommonCfg = NULL;
+    dev->dev_NotifyBase = dev->dev_DeviceCfg = dev->dev_ISR = NULL;
 }
 
 BOOL virtio_hw_map(device_t dev)
 {
     struct VirtIOBase *VirtIOBase = dev ? dev->dev_VirtIOBase : NULL;
-    OOP_Object *pdev = dev->dev_Object;
+    OOP_Object *pdev = dev ? dev->dev_Object : NULL;
     UBYTE cap_ptr;
     UBYTE i;
 
@@ -56,7 +47,7 @@ BOOL virtio_hw_map(device_t dev)
     /* Walk the cap chain. */
     for (i = 0; cap_ptr && i < 64; i++) {
         struct virtio_pci_cap cap;
-        APTR    bar_base;
+        IPTR base, size, type;
         UBYTE   *region;
         UBYTE   ctype;
         UBYTE   cur = cap_ptr;
@@ -71,18 +62,39 @@ BOOL virtio_hw_map(device_t dev)
         }
 
         cap.cap_len  = HIDD_PCIDevice_ReadConfigByte(pdev, cur + 2);
+        if (cur < 0x40 || (cur & 3) || cap.cap_len < sizeof(cap) ||
+            cap.cap_len > 256U - cur)
+            goto next_cap;
         cap.cfg_type = HIDD_PCIDevice_ReadConfigByte(pdev, cur + 3);
         cap.bar      = HIDD_PCIDevice_ReadConfigByte(pdev, cur + 4);
         cap.offset   = HIDD_PCIDevice_ReadConfigLong(pdev, cur + 8);
         cap.length   = HIDD_PCIDevice_ReadConfigLong(pdev, cur + 12);
 
-        bar_base = virtio_get_bar(VirtIOBase, pdev, cap.bar);
-        if (!bar_base) {
+        ctype = cap.cfg_type;
+        if (ctype < VIRTIO_PCI_CAP_COMMON_CFG || ctype > VIRTIO_PCI_CAP_DEVICE_CFG ||
+            cap.bar > 5 || dev->dev_Windows[ctype - 1]) {
             cap_ptr = cap.cap_next;
             continue;
         }
-        region = (UBYTE *)bar_base + cap.offset;
-        ctype  = cap.cfg_type;
+        if (!cap.length ||
+            (ctype == VIRTIO_PCI_CAP_COMMON_CFG && cap.length < sizeof(struct virtio_pci_common_cfg)) ||
+            (ctype == VIRTIO_PCI_CAP_DEVICE_CFG && cap.length < 8) ||
+            (ctype == VIRTIO_PCI_CAP_NOTIFY_CFG && (cap.length < 2 || cap.cap_len < sizeof(struct virtio_pci_notify_cap))))
+            goto next_cap;
+        OOP_GetAttr(pdev, HiddPCIDeviceAttrBase + aoHidd_PCIDevice_Base0 + cap.bar * 3, &base);
+        OOP_GetAttr(pdev, HiddPCIDeviceAttrBase + aoHidd_PCIDevice_Size0 + cap.bar * 3, &size);
+        OOP_GetAttr(pdev, HiddPCIDeviceAttrBase + aoHidd_PCIDevice_Type0 + cap.bar * 3, &type);
+        if ((type & 1) || cap.offset > size || cap.length > size - cap.offset ||
+            base > (IPTR)-1 - cap.offset ||
+            ((ctype == VIRTIO_PCI_CAP_COMMON_CFG || ctype == VIRTIO_PCI_CAP_DEVICE_CFG) && (cap.offset & 3)) ||
+            (ctype == VIRTIO_PCI_CAP_NOTIFY_CFG && (cap.offset & 1)))
+            goto next_cap;
+        region = HIDD_PCIDriver_MapPCI(dev->dev_PCIDriverObject,
+                                      (APTR)(base + cap.offset), cap.length);
+        if (!region || region == (APTR)-1)
+            goto next_cap;
+        dev->dev_Windows[ctype - 1] = region;
+        dev->dev_WindowSizes[ctype - 1] = cap.length;
 
         switch (ctype) {
         case VIRTIO_PCI_CAP_COMMON_CFG:
@@ -106,6 +118,7 @@ BOOL virtio_hw_map(device_t dev)
             break;
         }
 
+next_cap:
         cap_ptr = cap.cap_next;
     }
 
@@ -114,11 +127,12 @@ BOOL virtio_hw_map(device_t dev)
         return TRUE;
     }
 
+    virtio_hw_unmap(dev);
     D(bug("[VIRTIO:HW] %s: missing one or more required capabilities (legacy device?)\n", __func__);)
     return FALSE;
 }
 
-BOOL virtio_hw_reset(device_t dev)
+BOOL virtio_hw_stop(device_t dev)
 {
     if (!dev->dev_CommonCfg) return FALSE;
 
@@ -126,10 +140,17 @@ BOOL virtio_hw_reset(device_t dev)
     /* Wait for status to read back as 0 */
     {
         ULONG spin = 1000000;
-        while (dev->dev_CommonCfg->device_status != 0 && spin--)
-            ;
-        if (!spin) return FALSE;
+        while (dev->dev_CommonCfg->device_status != 0) {
+            if (spin-- == 0) return FALSE;
+        }
     }
+
+    return TRUE;
+}
+
+BOOL virtio_hw_reset(device_t dev)
+{
+    if (!virtio_hw_stop(dev)) return FALSE;
 
     dev->dev_CommonCfg->device_status = VIRTIO_CONFIG_S_ACKNOWLEDGE;
     dev->dev_CommonCfg->device_status =
@@ -218,13 +239,24 @@ BOOL virtio_hw_setup_queue(device_t dev, UWORD qid, struct virtio_queue *vq)
     /* Tell the device our chosen size */
     dev->dev_CommonCfg->queue_size = vq->q_Size;
 
-    dev->dev_CommonCfg->queue_desc   = vq->q_DescPhys;
-    dev->dev_CommonCfg->queue_driver = vq->q_AvailPhys;
-    dev->dev_CommonCfg->queue_device = vq->q_UsedPhys;
+    /* The PCI transport defines 64-bit fields as two 32-bit accesses. */
+    {
+        volatile ULONG *addr = (volatile ULONG *)&dev->dev_CommonCfg->queue_desc;
+        addr[0] = (ULONG)vq->q_DescPhys;
+        addr[1] = (ULONG)(vq->q_DescPhys >> 32);
+        addr[2] = (ULONG)vq->q_AvailPhys;
+        addr[3] = (ULONG)(vq->q_AvailPhys >> 32);
+        addr[4] = (ULONG)vq->q_UsedPhys;
+        addr[5] = (ULONG)(vq->q_UsedPhys >> 32);
+    }
 
     notify_off = dev->dev_CommonCfg->queue_notify_off;
-    vq->q_Notify = (volatile UWORD *)(dev->dev_NotifyBase +
-                                      (ULONG)notify_off * dev->dev_NotifyOffMultiplier);
+    {
+        UQUAD offset = (UQUAD)notify_off * dev->dev_NotifyOffMultiplier;
+        if ((offset & 1) || offset > dev->dev_WindowSizes[VIRTIO_PCI_CAP_NOTIFY_CFG - 1] - 2)
+            return FALSE;
+        vq->q_Notify = (volatile UWORD *)(dev->dev_NotifyBase + (ULONG)offset);
+    }
 
     /* No MSI-X for first version. */
     dev->dev_CommonCfg->queue_msix_vector = 0xFFFF;
@@ -246,9 +278,10 @@ BOOL virtio_hw_driver_ok(device_t dev)
     return TRUE;
 }
 
-void virtio_hw_read_blk_config(device_t dev)
+BOOL virtio_hw_read_blk_config(device_t dev)
 {
     volatile struct virtio_blk_config *cfg;
+    UBYTE generation;
 
     if (!dev->dev_DeviceCfg) {
         /* Use defaults */
@@ -257,31 +290,49 @@ void virtio_hw_read_blk_config(device_t dev)
         dev->dev_Heads    = 16;
         dev->dev_Sectors  = 63;
         dev->dev_Cylinders = 0;
-        return;
+        return FALSE;
     }
 
     cfg = (volatile struct virtio_blk_config *)dev->dev_DeviceCfg;
-    dev->dev_Capacity = cfg->capacity;     /* in 512-byte sectors */
+    if ((dev->dev_Features & ((UQUAD)1 << VIRTIO_BLK_F_GEOMETRY)) &&
+        dev->dev_WindowSizes[VIRTIO_PCI_CAP_DEVICE_CFG - 1] < 20)
+        return FALSE;
+    if ((dev->dev_Features & ((UQUAD)1 << VIRTIO_BLK_F_BLK_SIZE)) &&
+        dev->dev_WindowSizes[VIRTIO_PCI_CAP_DEVICE_CFG - 1] < 24)
+        return FALSE;
 
-    if (dev->dev_Features & ((UQUAD)1 << VIRTIO_BLK_F_BLK_SIZE)) {
-        dev->dev_BlkSize = cfg->blk_size ? cfg->blk_size : VIRTIO_BLK_SECTOR_SIZE;
-    } else {
-        dev->dev_BlkSize = VIRTIO_BLK_SECTOR_SIZE;
-    }
+    do {
+        volatile ULONG *capacity = (volatile ULONG *)dev->dev_DeviceCfg;
+        ULONG low, high;
+        generation = dev->dev_CommonCfg->config_generation;
+        __sync_synchronize();
+        low = capacity[0];
+        high = capacity[1];
+        dev->dev_Capacity = low | ((UQUAD)high << 32);
 
-    if (dev->dev_Features & ((UQUAD)1 << VIRTIO_BLK_F_GEOMETRY)) {
-        dev->dev_Cylinders = cfg->geometry.cylinders;
-        dev->dev_Heads     = cfg->geometry.heads;
-        dev->dev_Sectors   = cfg->geometry.sectors;
-    } else {
-        dev->dev_Heads     = 16;
-        dev->dev_Sectors   = 63;
-        dev->dev_Cylinders = 0;
-    }
+        if (dev->dev_Features & ((UQUAD)1 << VIRTIO_BLK_F_BLK_SIZE)) {
+            dev->dev_BlkSize = cfg->blk_size ? cfg->blk_size : VIRTIO_BLK_SECTOR_SIZE;
+        } else {
+            dev->dev_BlkSize = VIRTIO_BLK_SECTOR_SIZE;
+        }
+
+        if (dev->dev_Features & ((UQUAD)1 << VIRTIO_BLK_F_GEOMETRY)) {
+            dev->dev_Cylinders = cfg->geometry.cylinders;
+            dev->dev_Heads     = cfg->geometry.heads;
+            dev->dev_Sectors   = cfg->geometry.sectors;
+        } else {
+            dev->dev_Heads     = 16;
+            dev->dev_Sectors   = 63;
+            dev->dev_Cylinders = 0;
+        }
+
+        __sync_synchronize();
+    } while (generation != dev->dev_CommonCfg->config_generation);
 
     dev->dev_ReadOnly = (dev->dev_Features & ((UQUAD)1 << VIRTIO_BLK_F_RO)) ? 1 : 0;
 
     D(bug("[VIRTIO:HW] %s: capacity=%llu sectors, blk_size=%u, geom=%u/%u/%u, RO=%u\n",
           __func__, (unsigned long long)dev->dev_Capacity, dev->dev_BlkSize,
           dev->dev_Cylinders, dev->dev_Heads, dev->dev_Sectors, dev->dev_ReadOnly);)
+    return TRUE;
 }

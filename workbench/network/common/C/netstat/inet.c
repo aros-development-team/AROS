@@ -109,6 +109,12 @@ protopr(off, name)
 
 	for (next = head.lh_first; next != NULL; next = inpcb.inp_list.le_next) {
 		kread((u_long)next, (char *)&inpcb, sizeof (inpcb));
+		/* this listing prints IPv4 addresses: one of another family
+		 * shows as "any", as it always did */
+		if (inpcb.inp_af != AF_INET) {
+			inpcb.inp_laddr.s_addr = INADDR_ANY;
+			inpcb.inp_faddr.s_addr = INADDR_ANY;
+		}
 		if (!aflag &&
 		  inet_lnaof(inpcb.inp_laddr) == INADDR_ANY) {
 			prev = next;

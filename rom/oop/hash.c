@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
    Desc: Common code for handling hashing.
 */
@@ -33,47 +33,27 @@
 
 struct HashTable *NewHash(ULONG entries, UBYTE type, struct IntOOPBase *OOPBase)
 {
-
-
-    ULONG temp = 1;
-    BYTE i;
-    ULONG size;
     struct HashTable *ht;
-    
+    ULONG size;
+
     EnterFunc(bug("NewHash(entries=%ld, type=%ld)\n", entries, type));
 
+    /* A power of two at least twice the number of entries, so the table
+       is never more than half full */
+    for (size = 2; size < (entries << 1); size <<= 1)
+        ;
+
     /* Allocate hashtable struct */
-    
-    
     ht = AllocMem(sizeof (struct HashTable), MEMF_ANY);
     if (ht)
     {
-        /* Allocate table of size 2^n - 1       */
-        /* Find the highest bit in 'initial'    */
-        for (i = 31; i >= 0; i --)
+        /* Allocate the bucket array */
+        ht->Table = AllocVec(size * sizeof (struct Bucket *), MEMF_ANY|MEMF_CLEAR);
+        if (ht->Table)
         {
-            if ((temp << i) & entries)
-                break;
-        }
-    
-        D(bug("i: %d\n", i));
-
-        /* Make sure table is never more than 50% full */
-        i ++;
-    
-        entries = (temp << i);
-        entries --; /* 2^n - 1 */
-    
-        /* Get table size */
-        size = UB( &ht[entries] ) - UB( &ht[0] );
-        
-        /* Allocate the table */
-        ht->Table = AllocVec(size, MEMF_ANY|MEMF_CLEAR);
-        if (ht)
-        {
-            ht->HashMask = entries - 1;
+            ht->HashMask = size - 1;
             ht->Type     = type;
-            
+
             /* Initialize the hashtable's Lookup and CalcHash
             ** accordint to if we want to hash integers or strings
             */
@@ -93,9 +73,7 @@ struct HashTable *NewHash(ULONG entries, UBYTE type, struct IntOOPBase *OOPBase)
                 ht->Lookup = HashLookupUUID;
                 ht->CalcHash = CalcHashUUID;
             }
-        
-        
-        
+
             ReturnPtr ("NewHash", struct HashTable *, ht);
         }
         FreeMem(ht, sizeof (struct HashTable));
@@ -299,7 +277,7 @@ VOID RemoveBucket(struct  HashTable *ht, struct Bucket *b)
 ULONG CalcHashULONG(struct HashTable *ht, IPTR id)
 {
     /* Return idx into hashtable for an integer */
-    return  (id % HashMask(ht));
+    return HashIndexULONG(HashMask(ht), id);
 }
 
 ULONG CalcHashUUID(struct HashTable *ht, IPTR id)
@@ -317,58 +295,21 @@ ULONG CalcHashUUID(struct HashTable *ht, IPTR id)
     val ^= uuid.uval[2];
     val ^= uuid.uval[3];
 
-    return (val & HashSize(ht));
-}
-
-static ULONG CalcHashStr_KR(struct HashTable *ht, IPTR id)
-{
-    STRPTR str = (STRPTR)id;
-    ULONG val, i;
-    /* Return idx into hashtable for a string */
-    for (i = 0, val = 0; (i < MAX_HASH_CHARS) && *str; str ++)
-        {val += *str; i ++; }
-
-    return  (val & HashSize(ht));
-}
-
-#if 0 /* Unused */
-static ULONG CalcHashStr_DJB2(struct HashTable *ht, IPTR id)
-{
-    STRPTR str = (STRPTR)id;
-    ULONG val, i;
-    /* Return idx into hashtable for a string */
-    for (i = 0, val = 0; (i < MAX_HASH_CHARS) && *str; str ++)
-        {val = ((val << 5) + val) ^ *str; i ++; }
-
-    return  (val & HashSize(ht));
-}
-#endif
-
-ULONG CalcHashStr_SDBM(struct HashTable *ht, IPTR id)
-{
-    STRPTR str = (STRPTR)id;
-    ULONG val, i;
-    /* Return idx into hashtable for a string */
-    for (i = 0, val = 0; (i < MAX_HASH_CHARS) && *str; str ++)
-        {val = *str + (val << 6) + (val << 16) - val; i ++; }
-
-    return  (val & HashSize(ht));
-}
-
-ULONG CalcHashStr_Org(struct HashTable *ht, IPTR id)
-{
-    STRPTR str = (STRPTR)id;
-    ULONG val, i;
-    /* Return idx into hashtable for a string */
-    for (i = 0, val = 0; (i < MAX_HASH_CHARS) && *str; str ++)
-        {val += *str; i ++; }
-        
-    return  (val & HashSize(ht));
+    return (val & HashMask(ht));
 }
 
 ULONG CalcHashStr(struct HashTable *ht, IPTR id)
 {
-    return CalcHashStr_KR(ht, id);
+    STRPTR str = (STRPTR)id;
+    ULONG val, i;
+
+    /* Return idx into hashtable for a string (Bernstein's hash, xor form).
+       Interface IDs share long prefixes ("hidd.gfx."), so a hash that only
+       sums the characters puts many of them into the same bucket. */
+    for (i = 0, val = 5381; (i < MAX_HASH_CHARS) && *str; str ++, i ++)
+        val = ((val << 5) + val) ^ (UBYTE)*str;
+
+    return (val & HashMask(ht));
 }
 
 /* Prints contents of a hastable */

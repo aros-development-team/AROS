@@ -57,6 +57,7 @@
 #include <netinet/tcp_cc.h>
 
 #include <conf.h>
+#include <net/netcore_map.h>        /* always the last include */
 
 /*
  * NewReno init — no per-connection state needed beyond the

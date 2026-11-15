@@ -1,8 +1,293 @@
 /*
-    Copyright (C) 2003-2004, The AROS Development Team. All rights reserved.
+    Copyright (C) 2003-2026, The AROS Development Team. All rights reserved.
     This file is part of the AboutWindow class, which is distributed under
     the terms of version 2.1 of the GNU Lesser General Public License.
     
+*/
+
+/****** AboutWindow.mcc/MUIC_AboutWindow ************
+*
+*   NAME
+*       MUIC_AboutWindow
+*
+*   SUPERCLASS
+*       Window.mui
+*
+*   DESCRIPTION
+*       Build an information window containing a logo, version line, copyright,
+*       description, and author/sponsor lists. All local attributes are
+*       initialization-only; there are no local setters or getters. The source
+*       configuration declares version 1.0.
+*       The constructor creates a memory pool, opens AboutWindow.catalog when
+*       available, copies supplied descriptive strings, and constructs the
+*       Window content. Application defaults are resolved during Window_Setup,
+*       after the object belongs to an Application. CloseRequest closes the
+*       window through a notification; construction does not open it.
+*       Recognized constructor tags are changed to TAG_IGNORE in the caller's
+*       list and are not restored. Supply writable tag storage and do not expect
+*       those tags to remain reusable unchanged. Repeated tags use their last
+*       values; repeated descriptive strings can leak earlier copies.
+*       Image becomes a child of the constructed hierarchy. Author/sponsor names
+*       are copied into the private pool during construction. Descriptive
+*       strings are duplicated with StrDup. The six protected object attributes
+*       inside the header's disabled #if 0 block are not implemented or public
+*       at this source stand.
+*
+*   NOTES
+*       Omitting a string attribute permits its corresponding Application value.
+*       Explicit NULL is converted to an internal omission marker; failed StrDup
+*       allocation produces the same marker. No field-specific allocation error
+*       is returned. Omission markers are cleared after successful Window_Setup,
+*       so omission does not persist reliably across later setup cycles.
+*       The generated version line combines bold title, version number,
+*       parenthesized date, and bracketed extra text. Strings are displayed as
+*       supplied, without date parsing or character-set conversion. If title is
+*       absent but another version component exists, its buffer-size calculation
+*       omits the terminator allowance and can truncate the final character.
+*
+*   BUGS
+*       Disposal before successful setup can pass an internal omission marker to
+*       FreeVec. Explicit NULL strings therefore do not have a safe arbitrary
+*       construction/disposal lifecycle. Setup failure does not normalize those
+*       markers.
+*       Constructor failure after creating the pool does not comprehensively
+*       free the pool, copied strings, or intermediate content. Setup removes
+*       some absent/failed content from the group without disposing or
+*       rebuilding it. Repeated setup can allocate another generated window
+*       title without releasing the prior allocation. These paths are not a
+*       robust reopen/recovery contract.
+*       Both author and sponsor listviews are created even when only one or
+*       neither tag list is supplied. Register titles are assembled separately;
+*       a sponsors-only configuration does not establish a clean one-page
+*       sponsor mapping. NamesToList failures are ignored, and its blank
+*       section-separator insertion omits an insertion-position argument.
+*       The default IconImage file path inherits IconImage's missing loaded-icon
+*       release. A NULL Image requests fallback rather than suppressing the
+*       image.
+*
+*/
+/****** AboutWindow.mcc/MUIA_AboutWindow_Image ************
+*
+*   NAME
+*       MUIA_AboutWindow_Image
+*
+*   FUNCTION
+*       Supply the logo object to insert into the window.
+*
+*   INPUTS
+*       Initialize only; Object *, default NULL. No local setter or getter.
+*
+*   NOTES
+*       A non-NULL object is inserted into the image group and follows normal
+*       child ownership; do not dispose it separately after successful
+*       construction. NULL attempts an IconImage for PROGDIR: plus the current
+*       program filename, then uses an empty spacer if that fails. It does not
+*       mean no logo. The class performs no size or object-class validation.
+*       Construction failure has incomplete intermediate-resource cleanup; do
+*       not assume a transactional ownership handoff.
+*
+*/
+/****** AboutWindow.mcc/MUIA_AboutWindow_Title ************
+*
+*   NAME
+*       MUIA_AboutWindow_Title
+*
+*   FUNCTION
+*       Supply the title text.
+*
+*   INPUTS
+*       Initialize only; CONST_STRPTR to a readable NUL-terminated string, or
+*       NULL. No local setter or getter.
+*
+*   NOTES
+*       Omission uses MUIA_Application_Title during setup. Explicit non-NULL
+*       input is copied during construction, so the caller string is not
+*       retained. Explicit NULL requests omission through an internal marker;
+*       allocation failure is indistinguishable. The supplied title appears in
+*       the version line. Automatic Window_Title generation runs only when the
+*       stored Title is NULL, so supplying Title does not generate an
+*       About-prefixed window title. Set the inherited Window_Title separately
+*       if needed.
+*       Read the class lifecycle limitations before using explicit NULL: marker
+*       handling is unsafe if disposed before successful setup and does not
+*       preserve omission across setup cycles. Avoid duplicate tags, which can
+*       leak previous copies.
+*
+*/
+/****** AboutWindow.mcc/MUIA_AboutWindow_Version_Number ************
+*
+*   NAME
+*       MUIA_AboutWindow_Version_Number
+*
+*   FUNCTION
+*       Supply the version number text.
+*
+*   INPUTS
+*       Initialize only; CONST_STRPTR to a readable NUL-terminated string, or
+*       NULL. No local setter or getter.
+*
+*   NOTES
+*       Omission uses MUIA_Application_Version_Number during setup. Explicit
+*       non-NULL input is copied during construction, so the caller string is
+*       not retained. Explicit NULL requests omission through an internal
+*       marker; allocation failure is indistinguishable. Displayed after the
+*       title. No numeric validation or version parsing occurs.
+*       Read the class lifecycle limitations before using explicit NULL: marker
+*       handling is unsafe if disposed before successful setup and does not
+*       preserve omission across setup cycles. Avoid duplicate tags, which can
+*       leak previous copies.
+*
+*/
+/****** AboutWindow.mcc/MUIA_AboutWindow_Version_Date ************
+*
+*   NAME
+*       MUIA_AboutWindow_Version_Date
+*
+*   FUNCTION
+*       Supply the version date text.
+*
+*   INPUTS
+*       Initialize only; CONST_STRPTR to a readable NUL-terminated string, or
+*       NULL. No local setter or getter.
+*
+*   NOTES
+*       Omission uses MUIA_Application_Version_Date during setup. Explicit
+*       non-NULL input is copied during construction, so the caller string is
+*       not retained. Explicit NULL requests omission through an internal
+*       marker; allocation failure is indistinguishable. Displayed in
+*       parentheses. The header suggests YYYY-MM-DD, but the implementation
+*       neither validates nor reformats it.
+*       Read the class lifecycle limitations before using explicit NULL: marker
+*       handling is unsafe if disposed before successful setup and does not
+*       preserve omission across setup cycles. Avoid duplicate tags, which can
+*       leak previous copies.
+*
+*/
+/****** AboutWindow.mcc/MUIA_AboutWindow_Version_Extra ************
+*
+*   NAME
+*       MUIA_AboutWindow_Version_Extra
+*
+*   FUNCTION
+*       Supply the version extra text.
+*
+*   INPUTS
+*       Initialize only; CONST_STRPTR to a readable NUL-terminated string, or
+*       NULL. No local setter or getter.
+*
+*   NOTES
+*       Omission uses MUIA_Application_Version_Extra during setup. Explicit
+*       non-NULL input is copied during construction, so the caller string is
+*       not retained. Explicit NULL requests omission through an internal
+*       marker; allocation failure is indistinguishable. Displayed in square
+*       brackets. No interpretation of build or release labels occurs.
+*       Read the class lifecycle limitations before using explicit NULL: marker
+*       handling is unsafe if disposed before successful setup and does not
+*       preserve omission across setup cycles. Avoid duplicate tags, which can
+*       leak previous copies.
+*
+*/
+/****** AboutWindow.mcc/MUIA_AboutWindow_Copyright ************
+*
+*   NAME
+*       MUIA_AboutWindow_Copyright
+*
+*   FUNCTION
+*       Supply the copyright text.
+*
+*   INPUTS
+*       Initialize only; CONST_STRPTR to a readable NUL-terminated string, or
+*       NULL. No local setter or getter.
+*
+*   NOTES
+*       Omission uses MUIA_Application_Copyright during setup. Explicit non-NULL
+*       input is copied during construction, so the caller string is not
+*       retained. Explicit NULL requests omission through an internal marker;
+*       allocation failure is indistinguishable. Displayed as its own centered
+*       text. The Application fallback is duplicated on setup; no copyright
+*       prefix is added here.
+*       Read the class lifecycle limitations before using explicit NULL: marker
+*       handling is unsafe if disposed before successful setup and does not
+*       preserve omission across setup cycles. Avoid duplicate tags, which can
+*       leak previous copies.
+*
+*/
+/****** AboutWindow.mcc/MUIA_AboutWindow_Description ************
+*
+*   NAME
+*       MUIA_AboutWindow_Description
+*
+*   FUNCTION
+*       Supply the description text.
+*
+*   INPUTS
+*       Initialize only; CONST_STRPTR to a readable NUL-terminated string, or
+*       NULL. No local setter or getter.
+*
+*   NOTES
+*       Omission uses MUIA_Application_Description during setup. Explicit
+*       non-NULL input is copied during construction, so the caller string is
+*       not retained. Explicit NULL requests omission through an internal
+*       marker; allocation failure is indistinguishable. Displayed as centered
+*       italic text. There is no enforced 40-character limit. The Application
+*       fallback is duplicated on setup.
+*       Read the class lifecycle limitations before using explicit NULL: marker
+*       handling is unsafe if disposed before successful setup and does not
+*       preserve omission across setup cycles. Avoid duplicate tags, which can
+*       leak previous copies.
+*
+*/
+/****** AboutWindow.mcc/MUIA_AboutWindow_Authors ************
+*
+*   NAME
+*       MUIA_AboutWindow_Authors
+*
+*   FUNCTION
+*       Supply the authors names and section headings.
+*
+*   INPUTS
+*       Initialize only; struct TagItem * terminated with TAG_DONE. Default
+*       NULL. No local setter or getter.
+*
+*   NOTES
+*       Use SECTION_ID with SID_PROGRAMMING or SID_TRANSLATING for localized
+*       bold headings; SID_NONE and unknown section IDs produce no heading.
+*       NAME_STRING carries a non-NULL readable name string. Names under a
+*       recognized heading gain four leading spaces. The SECTION and NAME macros
+*       construct these tag pairs; terminate the complete list normally.
+*       Tag data is consumed synchronously and names are copied into the private
+*       pool. The list pointer is not retained. NULL supplies no names/title,
+*       but both internal listviews are still constructed. List population
+*       errors are ignored by the constructor; a valid window is not proof of
+*       complete contents. See the class notes for register-page mapping and
+*       separator limitations.
+*
+*/
+/****** AboutWindow.mcc/MUIA_AboutWindow_Sponsors ************
+*
+*   NAME
+*       MUIA_AboutWindow_Sponsors
+*
+*   FUNCTION
+*       Supply the sponsors names and section headings.
+*
+*   INPUTS
+*       Initialize only; struct TagItem * terminated with TAG_DONE. Default
+*       NULL. No local setter or getter.
+*
+*   NOTES
+*       Use SECTION_ID with SID_PROGRAMMING or SID_TRANSLATING for localized
+*       bold headings; SID_NONE and unknown section IDs produce no heading.
+*       NAME_STRING carries a non-NULL readable name string. Names under a
+*       recognized heading gain four leading spaces. The SECTION and NAME macros
+*       construct these tag pairs; terminate the complete list normally.
+*       Tag data is consumed synchronously and names are copied into the private
+*       pool. The list pointer is not retained. NULL supplies no names/title,
+*       but both internal listviews are still constructed. List population
+*       errors are ignored by the constructor; a valid window is not proof of
+*       complete contents. See the class notes for register-page mapping and
+*       separator limitations.
+*
 */
 
 #define MUIMASTER_YES_INLINE_STDARG
@@ -31,6 +316,11 @@
 #include "strings.h"
 
 /*** Locale Functions *******************************************************/
+/* Return the catalog string for a valid CatCompArray index, using its
+ * compiled default, or return that default directly when no catalog is
+ * open. The result is borrowed; catalog-backed storage must not outlive the
+ * catalog. No index validation or allocation occurs.
+ */
 CONST_STRPTR MSG(struct Catalog *catalog, ULONG id)
 {
     if (catalog != NULL)
@@ -49,6 +339,10 @@ CONST_STRPTR MSG(struct Catalog *catalog, ULONG id)
 #define IGNORE ((APTR)(1UL))
 
 /*** Utility ****************************************************************/
+/* Map programming and translating section IDs to borrowed localized labels.
+ * Return NULL for SID_NONE or any unrecognized value. The catalog may be
+ * NULL for compiled defaults; no string ownership is transferred.
+ */
 CONST_STRPTR Section2Name(struct Catalog *catalog, ULONG section)
 {
     switch (section)
@@ -64,6 +358,12 @@ CONST_STRPTR Section2Name(struct Catalog *catalog, ULONG section)
     }
 }
 
+/* Consume name/section tags and allocate formatted strings in the instance
+ * pool for list insertion. Return FALSE for NULL tags or allocation failure
+ * and TRUE after processing; insertion results are ignored. NAME_STRING
+ * must be non-NULL. The blank separator call omits its position argument.
+ * Partial list content is retained on failure.
+ */
 BOOL NamesToList
 (
     Object *list, struct TagItem *tags, struct AboutWindow_DATA *data
@@ -150,6 +450,12 @@ BOOL NamesToList
 }
 
 /*** Methods ****************************************************************/
+/* Create a pool and optional catalog, consume and permanently ignore
+ * recognized caller tags, duplicate strings or store omission markers, then
+ * build the Window hierarchy. Populate both listviews and install close
+ * notification. Return object or NULL; failure cleanup only closes the
+ * catalog and is incomplete for other acquired resources.
+ */
 Object *AboutWindow__OM_NEW
 (
     Class *CLASS, Object *self, struct opSet *message
@@ -376,6 +682,13 @@ error:
     return NULL;
 }
 
+/* Set up Window, resolve omitted fields from Application and populate text.
+ * Generate Window_Title only on the stored-Title-NULL path. Remove
+ * absent/failed text members without disposal, then convert omission
+ * markers to NULL. Return FALSE only on superclass setup failure; other
+ * failures can leave partial content. Repeated setup has no complete
+ * rebuild/cleanup contract.
+ */
 IPTR AboutWindow__MUIM_Window_Setup
 (
     Class *CLASS, Object *self, Msg message
@@ -592,6 +905,12 @@ IPTR AboutWindow__MUIM_Window_Setup
     return TRUE;
 }
 
+/* Free each non-NULL stored string pointer, the pool and catalog before
+ * delegating disposal. This assumes setup already cleared omission markers;
+ * it does not guard those sentinel values. Detached content is not
+ * separately disposed and the routine does not repair constructor/setup
+ * leaks.
+ */
 IPTR AboutWindow__OM_DISPOSE
 (
     Class *CLASS, Object *self, Msg message

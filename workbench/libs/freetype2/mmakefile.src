@@ -8,7 +8,7 @@ include $(SRCDIR)/config/aros.cfg
 #MM workbench-libs-freetype-module : freetype2-fetch
 
 FT2NAME         := freetype
-FT2VERS         := 2.14.3
+FT2VERS         := 2.15.0
 ARCHBASE        := $(FT2NAME)-$(FT2VERS)
 
 FT2SRCDIR       := $(PORTSDIR)/$(FT2NAME)2/$(ARCHBASE)
@@ -43,6 +43,7 @@ FT2RASTFILES := \
 
 FT2FONTFILES := \
     cff/cff \
+    hvf/hvf \
     sfnt/sfnt \
     truetype/truetype \
     type1/type1 \
@@ -136,12 +137,26 @@ workbench-libs-freetype-pkgconfig : $(AROS_LIB)/pkgconfig/freetype2.pc
 # freetype instead. Read it from the source, as upstream's configure
 # does, so it stays right across version bumps.
 #
-$(AROS_LIB)/pkgconfig/freetype2.pc : $(FT2SRCDIR)/builds/unix/freetype2.in
+# This mmakefile is a prerequisite on purpose. The version is produced by
+# the recipe rather than copied from a file, so without it a tree that
+# already had a freetype2.pc keeps the one it has - freetype2.in comes
+# from the tarball and is always older than the generated file, so make
+# never re-runs a corrected recipe. That is how trees built before the
+# libtool version was published kept failing cairo's fontconfig test.
+#
+$(AROS_LIB)/pkgconfig/freetype2.pc : $(FT2SRCDIR)/builds/unix/freetype2.in \
+                                     $(FT2SRCDIR)/builds/unix/configure.raw \
+                                     $(SRCDIR)/$(CURDIR)/mmakefile.src
 	@$(ECHO) "Generating /Developer/lib/pkgconfig/freetype2.pc ..."
 	%mkdir_q dir=$(AROS_LIB)/pkgconfig
 	@ft_vers=`$(SED) -n "s|^version_info='\([0-9:]*\)'.*|\1|p" \
 	             $(FT2SRCDIR)/builds/unix/configure.raw | tr ':' '.'`; \
-	 [ -n "$$ft_vers" ] || ft_vers=$(FT2VERS); \
+	 if [ -z "$$ft_vers" ]; then \
+	     $(ECHO) "ERROR: no version_info in $(FT2SRCDIR)/builds/unix/configure.raw;" >&2 ; \
+	     $(ECHO) "       freetype2.pc would claim $(FT2VERS), which every consumer" >&2 ; \
+	     $(ECHO) "       comparing against the libtool version rejects." >&2 ; \
+	     exit 1 ; \
+	 fi; \
 	 $(SED) -e 's|%exec_prefix%|$${prefix}|' \
 	       -e "s|%ft_version%|$$ft_vers|" \
 	       -e 's|%includedir%|$${prefix}/include|' \

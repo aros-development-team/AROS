@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2011, The AROS Development Team. All rights reserved.
+    Copyright (C) 2011-2026, The AROS Development Team. All rights reserved.
 */
 
 #define MUIMASTER_YES_INLINE_STDARG
@@ -42,7 +42,174 @@ const static ULONG defaultcolors[][3] =
 };
 
 
+/****** Lamp.mcc/MUIC_Lamp ************
+*
+*   NAME
+*       MUIC_Lamp
+*
+*   SUPERCLASS
+*       Area.mui
+*
+*   DESCRIPTION
+*       Draw a colored status lamp from a preset, RGB components or a MUI
+*       pen specification. Defaults: Type_Medium and Color_Off.
+*
+*   NOTES
+*       Color and PenSpec inputs are copied. Getter pointers into instance
+*       storage are borrowed and valid only while the object remains alive.
+*
+*   BUGS
+*       An initial PenSpec does not select its pen for the first draw; set
+*       PenSpec again after creation. Type is an unchecked 0..4 index and Set
+*       does not relayout. Pen acquisition can fail without an error result;
+*       Cleanup can overwrite a pending color acquisition kind.
+*
+*/
+/****** Lamp.mcc/MUIA_Lamp_Type ************
+*
+*   NAME
+*       MUIA_Lamp_Type
+*
+*   FUNCTION
+*       Select the status lamp size.
+*
+*   INPUTS
+*       Initialize/set/get; ULONG. Tiny (0), Small (1), Medium (2, default),
+*       Big (3), Huge (4).
+*
+*   NOTES
+*       Only 0..4 are safe: the size table is not range-checked. The
+*       table sizes (5..9) augment layout bounds; Set does not relayout.
+*
+*/
+/****** Lamp.mcc/MUIA_Lamp_Color ************
+*
+*   NAME
+*       MUIA_Lamp_Color
+*
+*   FUNCTION
+*       Select one of 12 status colors, or copy three ULONG RGB values.
+*
+*   INPUTS
+*       Initialize/set/get; IPTR. Values 0..11 are MUIV_Lamp_Color_* presets;
+*       other values are pointers to three readable ULONGs. Default Off (0).
+*
+*   NOTES
+*       The getter returns a preset index in UserDefined mode, a borrowed
+*       RGB array pointer in Color mode, or zero in PenSpec mode. Query ColorType
+*       before interpreting it. Input RGB arrays are copied immediately; no
+*       separate RGB-component or ColorType notifications are generated.
+*
+*/
+/****** Lamp.mcc/MUIA_Lamp_ColorType ************
+*
+*   NAME
+*       MUIA_Lamp_ColorType
+*
+*   FUNCTION
+*       Identify the current color representation.
+*
+*   INPUTS
+*       Get only; ULONG: UserDefined (0), Color/RGB (1), PenSpec (2).
+*
+*   NOTES
+*       Indicates representation, not successful pen acquisition.
+*
+*/
+/****** Lamp.mcc/MUIA_Lamp_Red ************
+*
+*   NAME
+*       MUIA_Lamp_Red
+*
+*   FUNCTION
+*       Set or read the stored red RGB component.
+*
+*   INPUTS
+*       Initialize/set/get; ULONG, default 0.
+*
+*   NOTES
+*       Set selects RGB mode, preserves the other components and redraws.
+*       Get returns the saved value, even while PenSpec mode is selected.
+*       No separate Color/ColorType notification is generated.
+*
+*/
+/****** Lamp.mcc/MUIA_Lamp_Green ************
+*
+*   NAME
+*       MUIA_Lamp_Green
+*
+*   FUNCTION
+*       Set or read the stored green RGB component.
+*
+*   INPUTS
+*       Initialize/set/get; ULONG, default 0.
+*
+*   NOTES
+*       Set selects RGB mode, preserves the other components and redraws.
+*       Get returns the saved value, even while PenSpec mode is selected.
+*       No separate Color/ColorType notification is generated.
+*
+*/
+/****** Lamp.mcc/MUIA_Lamp_Blue ************
+*
+*   NAME
+*       MUIA_Lamp_Blue
+*
+*   FUNCTION
+*       Set or read the stored blue RGB component.
+*
+*   INPUTS
+*       Initialize/set/get; ULONG, default 0.
+*
+*   NOTES
+*       Set selects RGB mode, preserves the other components and redraws.
+*       Get returns the saved value, even while PenSpec mode is selected.
+*       No separate Color/ColorType notification is generated.
+*
+*/
+/****** Lamp.mcc/MUIA_Lamp_PenSpec ************
+*
+*   NAME
+*       MUIA_Lamp_PenSpec
+*
+*   FUNCTION
+*       Set a MUI pen specification.
+*
+*   INPUTS
+*       Initialize/set/get; non-NULL struct MUI_PenSpec *.
+*
+*   NOTES
+*       Input is copied. Get returns a borrowed pointer to instance storage.
+*       Set after creation to activate MUI pen acquisition; construction alone
+*       leaves RGB acquisition pending. Pen resolution is not reported.
+*
+*/
+/****** Lamp.mcc/MUIM_Lamp_SetRGB ************
+*
+*   NAME
+*       MUIM_Lamp_SetRGB
+*
+*   SYNOPSIS
+*       DoMethod(obj, MUIM_Lamp_SetRGB, red, green, blue);
+*
+*   FUNCTION
+*       Set three ULONG RGB components together.
+*
+*   RESULT
+*       Zero; setter success is not reported.
+*
+*   NOTES
+*       A Color notification may receive a temporary stack array. Copy its
+*       contents during the callback; never retain that pointer.
+*
+*/
+
 /*** Methods ****************************************************************/
+/* Create the superclass, returning NULL on failure. Initialize Medium size,
+ * black preset, RGB acquisition pending, and no acquired pen. Process tags
+ * in order and copy RGB or PenSpec input. PenSpec changes representation
+ * but does not change the pending RGB acquisition kind.
+ */
 Object *Lamp__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct Lamp_DATA           *data;
@@ -118,6 +285,7 @@ Object *Lamp__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 }
 
 
+/* Process color and size tags in order; color changes redraw, size changes do not relayout. */
 IPTR Lamp__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct Lamp_DATA           *data   = INST_DATA(cl, obj);
@@ -188,6 +356,7 @@ IPTR Lamp__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 }
 
 
+/* Return selectors, stored RGB values or borrowed instance pointers according to ColorType. */
 IPTR Lamp__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 {
     struct Lamp_DATA   *data  = INST_DATA(cl, obj);
@@ -239,6 +408,7 @@ IPTR Lamp__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 }
 
 
+/* Release the acquired pen and restore the old acquisition kind as pending. */
 IPTR Lamp__MUIM_Cleanup(struct IClass *cl, Object *obj, Msg msg)
 {
     struct Lamp_DATA *data = INST_DATA(cl,obj);
@@ -266,6 +436,7 @@ IPTR Lamp__MUIM_Cleanup(struct IClass *cl, Object *obj, Msg msg)
 }
 
 
+/* Acquire a pending pen, redraw the color rectangle, and keep the pen until replaced or cleaned up. */
 IPTR Lamp__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 {
     struct Lamp_DATA *data = INST_DATA(cl, obj);
@@ -346,6 +517,7 @@ IPTR Lamp__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 }
 
 
+/* Add the unchecked Type table entry to superclass dimensions. */
 IPTR Lamp__MUIM_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMax *msg)
 {
     struct Lamp_DATA *data = INST_DATA(cl, obj);
@@ -366,6 +538,7 @@ IPTR Lamp__MUIM_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMax 
 }
 
 
+/* Set Color using a temporary RGB array; notifications may expose the stack pointer. */
 IPTR Lamp__MUIM_Lamp_SetRGB(struct IClass *cl, Object *obj, struct MUIP_Lamp_SetRGB *msg)
 {
     ULONG rgb[3];

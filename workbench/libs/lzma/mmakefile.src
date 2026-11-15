@@ -7,9 +7,12 @@ include $(SRCDIR)/config/aros.cfg
 #MM workbench-libs-lzma-library : xz-fetch workbench-libs-lzma-includes
 #MM- workbench-libs-lzma-includes : workbench-libs-lzma-includes-copy
 
-VERSION := 5.8.3
+VERSION := 5.8.4
+# tukaani.org only carries a redirect stub per release and 5.8.4 has none,
+# so the GitHub release the stubs point at is tried first.
 REPOSITORIES := \
     cache:// \
+    github://tukaani-project/xz/releases/download/v$(VERSION) \
     https://tukaani.org/xz
 ARCHBASE     := xz-$(VERSION)
 ARCHSUFFIX := "tar.gz"

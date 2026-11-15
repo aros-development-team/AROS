@@ -939,6 +939,61 @@ caddr_t cp;
 }
 
 /*
+ * Copy data from a buffer back into the indicated mbuf chain,
+ * starting "off" bytes from the beginning, extending the mbuf
+ * chain if necessary.
+ */
+void
+m_copyback(m0, off, len, cp)
+struct	mbuf *m0;
+register int off;
+register int len;
+caddr_t cp;
+
+{
+    register int mlen;
+    register struct mbuf *m = m0, *n;
+    int totlen = 0;
+
+    if(m0 == 0)
+        return;
+    while(off > (mlen = m->m_len)) {
+        off -= mlen;
+        totlen += mlen;
+        if(m->m_next == 0) {
+            n = m_getclr(M_DONTWAIT, m->m_type);
+            if(n == 0)
+                goto out;
+            n->m_len = MIN(MLEN, len + off);
+            m->m_next = n;
+        }
+        m = m->m_next;
+    }
+    while(len > 0) {
+        mlen = MIN(m->m_len - off, len);
+        bcopy(cp, off + mtod(m, caddr_t), (unsigned)mlen);
+        cp += mlen;
+        len -= mlen;
+        mlen += off;
+        off = 0;
+        totlen += mlen;
+        if(len == 0)
+            break;
+        if(m->m_next == 0) {
+            n = m_get(M_DONTWAIT, m->m_type);
+            if(n == 0)
+                break;
+            n->m_len = MIN(MLEN, len);
+            m->m_next = n;
+        }
+        m = m->m_next;
+    }
+out:
+    if(((m = m0)->m_flags & M_PKTHDR) && (m->m_pkthdr.len < totlen))
+        m->m_pkthdr.len = totlen;
+}
+
+/*
  * Concatenate mbuf chain n to m.
  * Both chains must be of the same type (e.g. MT_DATA).
  * Any m_pkthdr is not updated.

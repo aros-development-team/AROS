@@ -58,6 +58,13 @@ struct MUIS_Listtree_TreeNodeInt
    if (tn && tn->tn_User)                                                       \
       ((struct MUIS_Listtree_TreeNode *)tn->tn_User)->tn_Name = tn->tn_Name;
 
+/* NotifySimulate_Function
+ * Translate Active, DoubleClick or Quiet child notifications into
+ * superclass OM_SET calls on the outer object. Active translates the
+ * internal node to its tn_User proxy. Borrow the two-slot message and live
+ * hook class; return superclass result. This does not fix the raw
+ * internal-node result of OM_GET.
+ */
 static IPTR NotifySimulate_Function(struct Hook *hook, Object *obj, void ** msg)
 {
     struct opSet setmsg;
@@ -93,6 +100,14 @@ static IPTR NotifySimulate_Function(struct Hook *hook, Object *obj, void ** msg)
     return DoSuperMethodA(cl, obj, (Msg) &setmsg);
 }
 
+/* DisplayHook_Proxy
+ * Synchronize flags and invoke the borrowed display hook with the column
+ * array as object and proxy node as message, or NULL for the title. Return
+ * hook result. The adapter then rewrites the first image escape in each
+ * column in place. Require terminated column pointers and writable, valid
+ * image-escape strings with live matching ListImage handles. No generic
+ * string validation or reliable address-width conversion is supplied.
+ */
 static IPTR DisplayHook_Proxy(struct Hook *hook, Object *obj, struct MUIP_NListtree_DisplayMessage *msg)
 {
     struct Hook * displayhook = (struct Hook *)hook->h_Data;
@@ -155,6 +170,12 @@ static IPTR DisplayHook_Proxy(struct Hook *hook, Object *obj, struct MUIP_NListt
     return _ret;
 }
 
+/* SortHook_Proxy
+ * Synchronize both node flags and invoke the borrowed sort hook with proxy
+ * node one as object and proxy node two as message. Return its comparison
+ * result, or zero without a hook. Do not remove or invalidate nodes during
+ * comparison.
+ */
 static IPTR SortHook_Proxy(struct Hook *hook, Object *obj, struct MUIP_NListtree_CompareMessage *msg)
 {
     struct Hook * sorthook = (struct Hook *)hook->h_Data;
@@ -172,6 +193,12 @@ static IPTR SortHook_Proxy(struct Hook *hook, Object *obj, struct MUIP_NListtree
     return CallHookPkt(sorthook, tn1, tn2);
 }
 
+/* DestructHook_Proxy
+ * Invoke the optional borrowed destructor with pool as object and proxy
+ * tn_User as message, then free the proxy from that pool. Require a
+ * matching live proxy and pool. Return zero; caller aliases become invalid.
+ * Payload ownership follows the application hook.
+ */
 static IPTR DestructHook_Proxy(struct Hook *hook, Object *obj, struct MUIP_NListtree_DestructMessage *msg)
 {
     struct Listtree_DATA * data = (struct Listtree_DATA *)hook->h_Data;
@@ -187,6 +214,14 @@ static IPTR DestructHook_Proxy(struct Hook *hook, Object *obj, struct MUIP_NList
     return 0;
 }
 
+/* ConstructHook_Proxy
+ * Allocate a cleared proxy from the instance pool. Invoke the optional
+ * constructor with pool as object and incoming payload as message, storing
+ * its result in tn_User; otherwise retain the payload. Return proxy or NULL
+ * on allocation failure. A NULL application-hook result is stored, not
+ * treated as construction failure. Backend reference, name and flags are
+ * filled only after Insert returns.
+ */
 static IPTR ConstructHook_Proxy(struct Hook *hook, Object *obj, struct MUIP_NListtree_ConstructMessage *msg)
 {
     struct Listtree_DATA * data = (struct Listtree_DATA *)hook->h_Data;
@@ -224,6 +259,14 @@ static IPTR ConstructHook_Proxy(struct Hook *hook, Object *obj, struct MUIP_NLis
         obj, 4, MUIM_CallHook, &data->notifysimulatehook, AATTR, MUIV_TriggerValue);
 
 /*** Methods ****************************************************************/
+/* Listtree__OM_NEW
+ * Create the internal NListtree subclass, pass selected tags to it and
+ * ContextMenu to List, allocate the proxy pool and install
+ * hook/notification bridges. Borrow application hooks until disposal.
+ * Return superclass-created object or NULL. Child creation and pool failure
+ * are not fully checked or unwound; fixed 20-slot tag arrays have no
+ * overflow guard. Do not assume general inherited-tag forwarding.
+ */
 Object *Listtree__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct Listtree_DATA *data = NULL;
@@ -364,6 +407,12 @@ Object *Listtree__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     return obj;
 }
 
+/* Listtree__OM_DISPOSE
+ * Save the pool pointer, dispose the superclass and child first, then
+ * delete the pool. Child destruction hooks need the pool during superclass
+ * disposal. Return superclass result; all proxies and pool allocations
+ * become invalid.
+ */
 IPTR Listtree__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
 {
     struct Listtree_DATA *data = INST_DATA(cl, obj);
@@ -383,6 +432,13 @@ IPTR Listtree__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
         set(data->nlisttree, BATTR, tag->ti_Data);  \
         break;
 
+/* Listtree__OM_SET
+ * Translate Quiet, List_Active and selected scroll attributes to the child.
+ * Active dereferences a real Listtree proxy; it does not handle NULL or
+ * sentinel values. Replace List_First tags with TAG_IGNORE, then forward
+ * the original list to the superclass. Borrow writable tags; NoNotify is
+ * not propagated into separate child set calls.
+ */
 IPTR Listtree__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct Listtree_DATA *data = INST_DATA(cl, obj);
@@ -442,6 +498,12 @@ IPTR Listtree__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
         *(msg->opg_Storage) = XGET(data->nlisttree, BATTR); \
         return TRUE;
 
+/* Listtree__OM_GET
+ * Read supported child attributes into valid storage and return TRUE.
+ * Active is returned as an untranslated internal NListtree pointer. Return
+ * FALSE without a child; delegate other getters. Returned pointers are
+ * borrowed, not new nodes.
+ */
 IPTR Listtree__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 {
     struct Listtree_DATA *data = INST_DATA(cl, obj);
@@ -483,6 +545,13 @@ IPTR Listtree__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
     return DoSuperMethodA(cl, obj, (Msg) msg);
 }
 
+/* Listtree__MUIM_Listtree_Insert
+ * Translate documented parent/predecessor selectors or live same-tree
+ * proxies, then call NListtree_Insert. On a returned node synchronize proxy
+ * name/flags and attach its backend reference. Return proxy or NULL. Proxy
+ * allocation failures are not fully handled by the backend/adapter path; no
+ * complete low-memory recovery guarantee.
+ */
 IPTR Listtree__MUIM_Listtree_Insert(struct IClass *cl, Object *obj, struct MUIP_Listtree_Insert *msg)
 {
     struct Listtree_DATA *data = INST_DATA(cl, obj);
@@ -524,6 +593,12 @@ IPTR Listtree__MUIM_Listtree_Insert(struct IClass *cl, Object *obj, struct MUIP_
         return (IPTR)NULL;
 }
 
+/* Listtree__MUIM_Listtree_GetEntry
+ * Translate Root/Active or a live proxy and delegate position/flags.
+ * Synchronize found flags and return its borrowed proxy or NULL. The hidden
+ * root has no proxy. Do not use the raw Active getter result as an input
+ * proxy.
+ */
 IPTR Listtree__MUIM_Listtree_GetEntry(struct IClass *cl, Object *obj, struct MUIP_Listtree_GetEntry *msg)
 {
     struct Listtree_DATA *data = INST_DATA(cl, obj);
@@ -551,6 +626,12 @@ IPTR Listtree__MUIM_Listtree_GetEntry(struct IClass *cl, Object *obj, struct MUI
         return (IPTR)NULL;
 }
 
+/* Listtree__MUIM_Listtree_Remove
+ * Translate supported list/node selectors or live proxies and delegate
+ * removal. Return backend result, not a count or success guarantee.
+ * Destruction releases proxy and application-owned payload according to the
+ * destructor hook; invalidate all removed-node aliases.
+ */
 IPTR Listtree__MUIM_Listtree_Remove(struct IClass *cl, Object *obj, struct MUIP_Listtree_Remove *msg)
 {
     struct Listtree_DATA *data = INST_DATA(cl, obj);
@@ -583,6 +664,11 @@ IPTR Listtree__MUIM_Listtree_Remove(struct IClass *cl, Object *obj, struct MUIP_
 
 }
 
+/* Listtree__MUIM_List_TestPos
+ * Call the child List_TestPos into temporary storage. On success copy
+ * entry, column, flags and offsets to valid caller storage and return TRUE;
+ * otherwise return FALSE without copying. Borrow object and result storage.
+ */
 IPTR Listtree__MUIM_List_TestPos(struct IClass *cl, Object *obj, struct MUIP_List_TestPos *msg)
 {
     struct Listtree_DATA *data = INST_DATA(cl, obj);
@@ -601,6 +687,12 @@ IPTR Listtree__MUIM_List_TestPos(struct IClass *cl, Object *obj, struct MUIP_Lis
     return FALSE;
 }
 
+/* Listtree__MUIM_Listtree_TestPos
+ * Require writable Result storage. Initialize its node to NULL, delegate
+ * hit testing, copy type/list fields and translate a found node to its
+ * borrowed proxy after flag synchronization. Return whether a node exists,
+ * ignoring backend return value.
+ */
 IPTR Listtree__MUIM_Listtree_TestPos(struct IClass *cl, Object *obj, struct MUIP_Listtree_TestPos *msg)
 {
     struct Listtree_DATA *data = INST_DATA(cl, obj);
@@ -626,6 +718,12 @@ IPTR Listtree__MUIM_Listtree_TestPos(struct IClass *cl, Object *obj, struct MUIP
     return FALSE;
 }
 
+/* Listtree__MUIM_Listtree_GetNr
+ * Translate Active or a real proxy and forward flags. Return backend
+ * position/count/boolean. No NULL/root selector is accepted by this
+ * adapter. Active requires an actual active node for backend paths that
+ * dereference it.
+ */
 IPTR Listtree__MUIM_Listtree_GetNr(struct IClass *cl, Object *obj, struct MUIP_Listtree_GetNr *msg)
 {
     struct Listtree_DATA *data = INST_DATA(cl, obj);
@@ -643,6 +741,12 @@ IPTR Listtree__MUIM_Listtree_GetNr(struct IClass *cl, Object *obj, struct MUIP_L
     return DoMethod(data->nlisttree, MUIM_NListtree_GetNr, tn, msg->Flags);
 }
 
+/* Listtree__MUIM_Listtree_Rename
+ * Translate Active or a live proxy, delegate and synchronize returned name.
+ * Return proxy or NULL. User replacement runs destructor/constructor and
+ * can replace the proxy without restoring its backend reference or flags;
+ * do not treat that path as a supported proxy-preserving operation.
+ */
 IPTR Listtree__MUIM_Listtree_Rename(struct IClass *cl, Object *obj, struct MUIP_Listtree_Rename *msg)
 {
     struct Listtree_DATA *data = INST_DATA(cl, obj);
@@ -669,6 +773,12 @@ IPTR Listtree__MUIM_Listtree_Rename(struct IClass *cl, Object *obj, struct MUIP_
         return (IPTR)NULL;
 }
 
+/* Listtree__MUIM_List_Redraw
+ * Translate a non-NULL entry pointer before examining pos. For Redraw_Entry
+ * call NList_RedrawEntry; otherwise delegate pos to NList_Redraw. Even for
+ * other positions, entry must be NULL or a live proxy. Return backend
+ * result.
+ */
 IPTR Listtree__MUIM_List_Redraw(struct IClass *cl, Object *obj, struct MUIP_List_Redraw *msg)
 {
     struct Listtree_DATA *data = INST_DATA(cl, obj);
@@ -684,6 +794,11 @@ IPTR Listtree__MUIM_List_Redraw(struct IClass *cl, Object *obj, struct MUIP_List
     }
 }
 
+/* Listtree__MUIM_Listtree_Open
+ * Translate Root/Parent/Active and Head/Tail/Active/All selectors or real
+ * proxies, then delegate expansion with unchanged flags. Return backend
+ * result. Do not assume cached proxy flags update immediately.
+ */
 IPTR Listtree__MUIM_Listtree_Open(struct IClass *cl, Object *obj, struct MUIP_Listtree_Open *msg)
 {
     struct Listtree_DATA *data = INST_DATA(cl, obj);
@@ -715,6 +830,11 @@ IPTR Listtree__MUIM_Listtree_Open(struct IClass *cl, Object *obj, struct MUIP_Li
     return DoMethod(data->nlisttree, MUIM_NListtree_Open, ln, tn, msg->Flags);
 }
 
+/* Listtree__MUIM_Listtree_FindName
+ * Translate Root/Active or a live list proxy, delegate name search and
+ * return a found borrowed proxy or NULL. No local flag synchronization
+ * occurs. Require a readable name and valid search base.
+ */
 IPTR Listtree__MUIM_Listtree_FindName(struct IClass *cl, Object *obj, struct MUIP_Listtree_FindName *msg)
 {
     struct Listtree_DATA *data = INST_DATA(cl, obj);
@@ -739,6 +859,11 @@ IPTR Listtree__MUIM_Listtree_FindName(struct IClass *cl, Object *obj, struct MUI
         return (IPTR)NULL;
 }
 
+/* DoSetupMethod
+ * Assign the supplied render information to the object before invoking
+ * MUIM_Setup. Borrow a live object and valid rendering context; return
+ * setup result. Caller owns matched cleanup and lifetime.
+ */
 IPTR DoSetupMethod(Object * obj, struct MUI_RenderInfo * info)
 {
     /* MUI set the correct render info *before* it calls MUIM_Setup so please
@@ -747,6 +872,13 @@ IPTR DoSetupMethod(Object * obj, struct MUI_RenderInfo * info)
     return DoMethod(obj, MUIM_Setup, (IPTR) info);
 }
 
+/* Listtree__MUIM_List_CreateImage
+ * Require the outer object to be set up, otherwise return zero. Create
+ * backend image, allocate a List-compatible wrapper, connect and set up the
+ * borrowed image object. Return the wrapper for matching DeleteImage.
+ * Allocation and setup results are not fully checked; no complete failure
+ * rollback is supplied.
+ */
 IPTR Listtree__MUIM_List_CreateImage(struct IClass *cl, Object *obj, struct MUIP_List_CreateImage *msg)
 {
     struct Listtree_DATA *data = INST_DATA(cl, obj);
@@ -783,6 +915,12 @@ IPTR Listtree__MUIM_List_CreateImage(struct IClass *cl, Object *obj, struct MUIP
     return (IPTR)li;
 }
 
+/* Listtree__MUIM_List_DeleteImage
+ * Accept NULL as a no-op. Otherwise require a live handle from this object,
+ * disconnect its image, free the wrapper and delegate backend deletion.
+ * Return backend result. Do not reuse the handle or delete twice; this
+ * wrapper does not itself dispose the image object.
+ */
 IPTR Listtree__MUIM_List_DeleteImage(struct IClass *cl, Object *obj, struct MUIP_List_DeleteImage *msg)
 {
     struct Listtree_DATA *data = INST_DATA(cl, obj);
@@ -800,6 +938,12 @@ IPTR Listtree__MUIM_List_DeleteImage(struct IClass *cl, Object *obj, struct MUIP
     return DoMethod(data->nlisttree, MUIM_NList_DeleteImage, nlistimg);
 }
 
+/* Listtree__MUIM_Listtree_Close
+ * Translate supported list/node selectors or live proxies, then delegate
+ * collapse with unchanged flags. Return backend result. Parent resolution
+ * differs from Open in the backend; cached proxy flags need later
+ * synchronization.
+ */
 IPTR Listtree__MUIM_Listtree_Close(struct IClass *cl, Object *obj, struct MUIP_Listtree_Close *msg)
 {
     struct Listtree_DATA *data = INST_DATA(cl, obj);
@@ -838,9 +982,23 @@ IPTR Listtree__##methodname(struct IClass *cl, Object *obj, Msg msg)            
     return DoMethodA(data->nlisttree, msg);                                         \
 }
 
+/* MUIM_CreateDragImage
+ * Forward the unchanged drag-image creation message to the child and return
+ * its result. Image ownership follows the child implementation.
+ */
 FORWARDNLISTTREEMETHOD(MUIM_CreateDragImage)
+/* MUIM_DeleteDragImage
+ * Forward the unchanged drag-image deletion message to the child. Require a
+ * matching live drag image; return child result.
+ */
 FORWARDNLISTTREEMETHOD(MUIM_DeleteDragImage)
 
+/* Listtree__MUIM_Notify
+ * Additionally register List_Prop_First notifications on the child, then
+ * register all notifications through the superclass. List_First logs that
+ * notifications are not fired. Return superclass result; no automatic
+ * mapping of every inherited list notification.
+ */
 IPTR Listtree__MUIM_Notify(struct IClass *cl, Object *obj, struct MUIP_Notify *msg)
 {
     struct Listtree_DATA *data = INST_DATA(cl, obj);
@@ -863,4 +1021,8 @@ IPTR Listtree__##methodname(struct IClass *cl, Object *obj, Msg msg)    \
 }
 
 /* SetDropMark has no counterpart in NListtree and no documentation */
+/* MUIM_Listtree_SetDropMark
+ * Unsupported operation: log a diagnostic and return FALSE. Entry and
+ * Values do not change a drop mark.
+ */
 METHODSTUB(MUIM_Listtree_SetDropMark)

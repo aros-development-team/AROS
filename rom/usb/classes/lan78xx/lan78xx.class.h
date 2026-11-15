@@ -146,6 +146,8 @@ struct NepClassEth {
     UWORD ncp_LinkSpeed;
     UBYTE ncp_FullDuplex;
     UBYTE ncp_LinkUp;
+    UBYTE ncp_HwReady;            /* nInitHardware done, MAC known */
+    struct Task *ncp_OpenWaiter;  /* devOpen waiting for ncp_HwReady */
 
     struct Sana2DeviceStats ncp_DeviceStats;
     struct Sana2PacketTypeStats *ncp_TypeStats2048;

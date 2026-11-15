@@ -457,6 +457,12 @@ static IPTR mNL_Export(struct IClass *cl,Object *obj,struct MUIP_Export *msg)
 }
 
 //$$$Sensei
+/* mNL_List_Construct
+ * For non-NULL input call the configured legacy or message hook, or
+ * return the original pointer if no hook exists. Return NULL for NULL
+ * input or hook failure. Pool and input are borrowed during the call; the
+ * returned payload follows the paired destruction policy.
+ */
 static IPTR mNL_List_Construct( struct IClass *cl, Object *obj, struct MUIP_NList_Construct *msg )
 {
     APTR entry = msg->entry;
@@ -482,6 +488,11 @@ static IPTR mNL_List_Construct( struct IClass *cl, Object *obj, struct MUIP_NLis
 }
 
 //$$$Sensei
+/* mNL_List_Destruct
+ * For non-NULL payload invoke the configured legacy or message hook, if
+ * any. With no hook, do not free payload storage. Ignore hook result and
+ * return zero. Called for logical owners, not each wrapped continuation.
+ */
 static IPTR mNL_List_Destruct( struct IClass *cl, Object *obj, struct MUIP_NList_Destruct *msg )
 {
 
@@ -513,6 +524,12 @@ static IPTR mNL_List_Destruct( struct IClass *cl, Object *obj, struct MUIP_NList
 
 //$$$Sensei
 // Function directly stolen from original NList_Compare().
+/* mNL_List_Compare
+ * Call the configured legacy or message comparison hook; otherwise use
+ * Stricmp on two valid strings. Return a signed comparison result carried
+ * in IPTR. Default comparison ignores sort types; only the message hook
+ * receives them directly.
+ */
 static IPTR mNL_List_Compare( struct IClass *cl, Object *obj, struct MUIP_NList_Compare *msg )
 {
   struct NLData *data = INST_DATA(cl, obj);

@@ -236,6 +236,7 @@ void	print_media_word __P((int));
  * Maryland principally by James O'Toole and Chris Torek.
  */
 void	in_status __P((int));
+int	getifconf __P((struct ifconf *));
 void 	in_getaddr __P((char *, int));
 void	at_status __P((int));
 void	at_getaddr __P((char *, int));
@@ -491,22 +492,58 @@ getinfo(ifr)
 	return (0);
 }
 
+int
+getifconf(ifc)
+	struct ifconf *ifc;
+{
+	/*
+	 * SIOCGIFCONF on s into a buffer of its own, ifc->ifc_buf, which the
+	 * caller frees: 0, or -1 with errno and nothing to free. The list is as
+	 * long as the machine has addresses: allocated, not on the stack (a
+	 * command has 8 KB of it on an Amiga), and doubled until the answer
+	 * leaves room for the largest entry - the name and a sockaddr_storage -
+	 * since the stack stops at one that does not fit.
+	 */
+	char *buf = NULL;
+	int len = 4096;
+
+	for (;;) {
+		char *nbuf = realloc(buf, len);
+
+		if (nbuf == NULL) {
+			free(buf);
+			errno = ENOMEM;
+			return (-1);
+		}
+		buf = nbuf;
+		ifc->ifc_len = len;
+		ifc->ifc_buf = buf;
+		if (IoctlSocket(s, SIOCGIFCONF, (char *)ifc) < 0) {
+			free(buf);
+			return (-1);
+		}
+		if (len - ifc->ifc_len >= (int)(sizeof(struct ifreq) +
+		    sizeof(struct sockaddr_storage)))
+			return (0);
+		len *= 2;
+	}
+}
+
 void
 printall()
 {
-	char inbuf[8192];
+	char *inbuf;
 	const struct sockaddr_dl *sdl = NULL;
 	struct ifconf ifc;
 	struct ifreq ifreq, *ifr;
 	int i, idx;
 
-	ifc.ifc_len = sizeof(inbuf);
-	ifc.ifc_buf = inbuf;
 	getsock(af);
 	if (s < 0)
 		err(1, "socket");
-	if (IoctlSocket(s, SIOCGIFCONF, (char *)&ifc) < 0)
+	if (getifconf(&ifc) < 0)
 		err(1, "SIOCGIFCONF");
+	inbuf = ifc.ifc_buf;
 	ifr = ifc.ifc_req;
 	ifreq.ifr_name[0] = '\0';
 	for (i = 0, idx = 0; i < ifc.ifc_len; ) {
@@ -550,6 +587,7 @@ printall()
 	}
 	if (lflag)
 		putchar('\n');
+	free(inbuf);
 }
 
 #define RIDADDR 0
@@ -1147,11 +1185,60 @@ status(ap, alen)
 	}
 }
 
+/*
+ * One IPv4 address of the interface name: its mask, its destination
+ * (point-to-point) or broadcast address, and conflict detection's state,
+ * each asked for that address (SIOCGIF* with it in ifr_addr).
+ */
+static void
+in_status_one(addr)
+	struct in_addr addr;
+{
+	struct ifreq req;
+	struct sockaddr_in *sin = (struct sockaddr_in *)&req.ifr_addr;
+
+#define	IN_ASK(cmd)	(memset(&req, 0, sizeof(req)), \
+	CopyMem(name, req.ifr_name, sizeof(req.ifr_name)), \
+	req.ifr_name[sizeof(req.ifr_name) - 1] = '\0', \
+	sin->sin_len = sizeof(*sin), sin->sin_family = AF_INET, \
+	sin->sin_addr = addr, IoctlSocket(s, (cmd), (caddr_t)&req))
+
+	printf("\tinet %s ", inet_ntoa(addr));
+	netmask.sin_addr.s_addr = 0;
+	if (IN_ASK(SIOCGIFNETMASK) < 0) {
+		if (errno != EADDRNOTAVAIL)
+			warn("SIOCGIFNETMASK");
+	} else
+		netmask.sin_addr = sin->sin_addr;
+	if ((flags & IFF_POINTOPOINT) && IN_ASK(SIOCGIFDSTADDR) == 0)
+		printf("--> %s ", inet_ntoa(((struct sockaddr_in *)&req.ifr_dstaddr)->sin_addr));
+	printf("netmask 0x%x ", (unsigned int)ntohl(netmask.sin_addr.s_addr));
+	if ((flags & IFF_BROADCAST) && IN_ASK(SIOCGIFBRDADDR) == 0 &&
+	    ((struct sockaddr_in *)&req.ifr_broadaddr)->sin_addr.s_addr != 0)
+		printf("broadcast %s", inet_ntoa(((struct sockaddr_in *)&req.ifr_broadaddr)->sin_addr));
+	/* conflict detection's state (RFC 5227; NetBSD's SIOCGIFAFLAG_IN) */
+	if (IN_ASK(SIOCGIFAFLAG_IN) == 0) {
+		if (req.ifr_addrflags & IN_IFF_TENTATIVE)
+			printf(" tentative");
+		if (req.ifr_addrflags & IN_IFF_DUPLICATED)
+			printf(" duplicated");
+	}
+#undef	IN_ASK
+	putchar('\n');
+}
+
+/*
+ * The interface's IPv4 addresses: the first (SIOCGIFADDR), then its
+ * aliases, the other AF_INET entries SIOCGIFCONF lists for it.
+ */
 void
 in_status(force)
 	int force;
 {
-	struct sockaddr_in *sin;
+	struct in_addr first;
+	struct ifconf ifc;
+	char *cp;
+	const char *cplim;
 
 	getsock(AF_INET);
 	if (s < 0) {
@@ -1162,57 +1249,31 @@ in_status(force)
 	(void) memset(&ifr, 0, sizeof(ifr));
 	CopyMem(name, ifr.ifr_name, sizeof (ifr.ifr_name));
 	ifr.ifr_name[sizeof(ifr.ifr_name) - 1] = '\0';
+	first.s_addr = 0;
 	if (IoctlSocket(s, SIOCGIFADDR, (caddr_t)&ifr) < 0) {
 		if (errno == EADDRNOTAVAIL || errno == EAFNOSUPPORT) {
 			if (!force)
 				return;
-			(void) memset(&ifr.ifr_addr, 0, sizeof(ifr.ifr_addr));
 		} else
 			warn("SIOCGIFADDR");
+	} else
+		first = ((struct sockaddr_in *)&ifr.ifr_addr)->sin_addr;
+	in_status_one(first);
+
+	if (first.s_addr == 0 || getifconf(&ifc) < 0)
+		return;
+	for (cp = ifc.ifc_buf, cplim = cp + ifc.ifc_len; cp < cplim; ) {
+		struct ifreq *e = (struct ifreq *)cp;
+		const struct sockaddr_in *sin = (const struct sockaddr_in *)&e->ifr_addr;
+
+		cp += sizeof(e->ifr_name) + (e->ifr_addr.sa_len > sizeof(struct sockaddr) ?
+		    e->ifr_addr.sa_len : sizeof(struct sockaddr));
+		if (e->ifr_addr.sa_family == AF_INET &&
+		    strncmp(e->ifr_name, name, sizeof(e->ifr_name)) == 0 &&
+		    sin->sin_addr.s_addr != first.s_addr)
+			in_status_one(sin->sin_addr);
 	}
-	CopyMem(name, ifr.ifr_name, sizeof (ifr.ifr_name));
-	ifr.ifr_name[sizeof(ifr.ifr_name) - 1] = '\0';
-	sin = (struct sockaddr_in *)&ifr.ifr_addr;
-	printf("\tinet %s ", inet_ntoa(sin->sin_addr));
-	CopyMem(name, ifr.ifr_name, sizeof (ifr.ifr_name));
-	ifr.ifr_name[sizeof(ifr.ifr_name) - 1] = '\0';
-	if (IoctlSocket(s, SIOCGIFNETMASK, (caddr_t)&ifr) < 0) {
-		if (errno != EADDRNOTAVAIL)
-			warn("SIOCGIFNETMASK");
-		(void) memset(&ifr.ifr_addr, 0, sizeof(ifr.ifr_addr));
-	} else {
-		struct sockaddr_in *nm_sin = (struct sockaddr_in *)&ifr.ifr_addr;
-		netmask.sin_addr = nm_sin->sin_addr;
-        }
-	if (flags & IFF_POINTOPOINT) {
-		if (IoctlSocket(s, SIOCGIFDSTADDR, (caddr_t)&ifr) < 0) {
-			if (errno == EADDRNOTAVAIL)
-			    (void) memset(&ifr.ifr_addr, 0,
-				sizeof(ifr.ifr_addr));
-			else
-			    warn("SIOCGIFDSTADDR");
-		}
-		CopyMem(name, ifr.ifr_name, sizeof (ifr.ifr_name));
-		ifr.ifr_name[sizeof(ifr.ifr_name) - 1] = '\0';
-		sin = (struct sockaddr_in *)&ifr.ifr_dstaddr;
-		printf("--> %s ", inet_ntoa(sin->sin_addr));
-	}
-	printf("netmask 0x%x ", (unsigned int)ntohl(netmask.sin_addr.s_addr));
-	if (flags & IFF_BROADCAST) {
-		if (IoctlSocket(s, SIOCGIFBRDADDR, (caddr_t)&ifr) < 0) {
-			if (errno == EADDRNOTAVAIL)
-				(void) memset(&ifr.ifr_addr, 0,
-				    sizeof(ifr.ifr_addr));
-			else
-			    warn("SIOCGIFBRDADDR");
-		}
-		CopyMem(name, ifr.ifr_name, sizeof (ifr.ifr_name));
-		ifr.ifr_name[sizeof(ifr.ifr_name) - 1] = '\0';
-		sin = (struct sockaddr_in *)&ifr.ifr_addr;
-		if (sin->sin_addr.s_addr != 0)
-			printf("broadcast %s", inet_ntoa(sin->sin_addr));
-	}
-	putchar('\n');
+	free(ifc.ifc_buf);
 }
 
 #ifndef INET_ONLY

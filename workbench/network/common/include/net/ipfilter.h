@@ -52,7 +52,7 @@
 #define IPF_PORT_RANGE	7
 #define IPF_PORT_RANGEINCL 8
 
-/* Maximum rules */
+/* Maximum rules: of both families together */
 #define IPF_MAXRULES	256
 #define IPF_MAXIFNAME	16
 
@@ -88,6 +88,68 @@ struct ipf_rule {
 	u_int16_t	sport_hi;
 
 	u_int8_t	dport_op;
+	u_int16_t	dport_lo;
+	u_int16_t	dport_hi;
+
+	u_int8_t	tcp_flags;
+	u_int8_t	tcp_flagmask;
+
+	int16_t		icmp_type;
+	int16_t		icmp_code;
+
+	u_int64_t	hits;
+	u_int64_t	bytes;
+};
+
+/*
+ * IPv6 filter rule - AROSTCP. Added and removed with SIOCADAFR6,
+ * SIOCINAFR6 (insert at the position given in `hits') and SIOCRMAFR6
+ * (sys/ioctl.h); SIOCIPFFL, SIOCFRENB and the statistics act on the rules
+ * of both families. A packet of either family is judged by the rules of
+ * its own family only: a rule set that is to cover IPv6 needs IPv6 rules
+ * (ipf writes a rule that names no address and no family as one rule of
+ * each).
+ *
+ * Fields as in struct ipf_rule, but:
+ *  size	sizeof(struct ipf_rule6) as the program knows it; a rule of
+ *		another size is refused (EINVAL)
+ *  proto	the upper-layer protocol, after the extension headers;
+ *		IPPROTO_ICMPV6 for an icmp_type rule
+ *  *_addr	an IPv6 address, and *_plen its prefix length (0 to 128; 0:
+ *		any address, and the match is skipped as for a zero
+ *		address and mask in struct ipf_rule)
+ *  icmp_type	an ICMPv6 type, -1 any; icmp_code likewise
+ *  rflags	IPF_IPOPTS: the packet has extension headers; IPF_SHORT: the
+ *		TCP or UDP header is shorter than 8 bytes
+ *
+ * A fragment that is not the first carries no upper-layer header: a rule
+ * that names ports, TCP flags or an ICMP type does not match it (in both
+ * families). Neighbour discovery is ICMPv6 (types 133 to 137): a rule set
+ * that blocks all incoming ICMPv6 stops IPv6 on the link.
+ */
+struct ipf_rule6 {
+	struct ipf_rule6 *next;
+
+	u_int16_t	size;
+	u_int8_t	action;
+	u_int8_t	dir;
+	u_int16_t	rflags;
+
+	char		ifname[IPF_MAXIFNAME];
+
+	u_int16_t	proto;
+
+	struct in6_addr	src_addr;
+	struct in6_addr	dst_addr;
+	u_int8_t	src_plen;
+	u_int8_t	src_not;
+	u_int8_t	dst_plen;
+	u_int8_t	dst_not;
+
+	u_int8_t	sport_op;
+	u_int8_t	dport_op;
+	u_int16_t	sport_lo;
+	u_int16_t	sport_hi;
 	u_int16_t	dport_lo;
 	u_int16_t	dport_hi;
 

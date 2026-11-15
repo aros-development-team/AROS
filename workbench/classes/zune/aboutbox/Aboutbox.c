@@ -1,6 +1,6 @@
 /*
     Copyright (C) 2011, Thore Böckelmann. All rights reserved.
-    Copyright (C) 2012, The AROS Development Team. All rights reserved.
+    Copyright (C) 2012-2026, The AROS Development Team. All rights reserved.
 */
 
 
@@ -38,6 +38,11 @@ struct MUI_CustomClass *icon_mcc;
 
 /* ------------------------------------------------------------------------- */
 
+/* Return TRUE only when a non-NULL path can be locked, examined, and
+ * classified as a file. Release the FileInfoBlock and lock on all acquired-
+ * resource paths. FALSE combines missing path, directory, allocation, lock
+ * and examination failures; no diagnostic code is returned.
+ */
 static BOOL FileExists(CONST_STRPTR filename)
 {
     if (filename == NULL)
@@ -68,12 +73,22 @@ static BOOL FileExists(CONST_STRPTR filename)
     return retval;
 }
 
+/* Clear the first byte of an existing expandable string without releasing
+ * its allocation or changing capacity. NULL storage is accepted. The buffer
+ * remains owned by the instance for subsequent appends.
+ */
 static void clearExpandStr(struct ExpandString *es)
 {
     if(es->string != NULL)
         es->string[0] = '\0';
 }
 
+/* Append a non-NULL NUL-terminated string, growing the owned buffer by at
+ * least 128 bytes when needed. Copy prior contents and free old storage
+ * after successful growth. Allocation failure preserves old storage and can
+ * truncate or omit appended text; no status is returned. Length arithmetic
+ * is not overflow checked.
+ */
 static void appendExpandStr(struct ExpandString *es, const char *append)
 {
     // add one for the terminating NUL character
@@ -109,6 +124,10 @@ static void appendExpandStr(struct ExpandString *es, const char *append)
     }
 }
 
+/* Free owned expandable-string storage when present and reset its pointer
+ * to NULL. Capacity is left unchanged. No caller-supplied source string is
+ * freed and repeated calls with a NULL pointer perform no work.
+ */
 static void freeExpandString(struct ExpandString *es)
 {
     if(es->string != NULL)
@@ -118,6 +137,12 @@ static void freeExpandString(struct ExpandString *es)
     }
 }
 
+/* Rebuild owned app-info text from the attached Application and borrowed
+ * Build value. Strip only a leading literal version cookie, append Build
+ * only with a non-NULL version, and add an English Copyright prefix. Return
+ * the instance-owned buffer; allocation failure can yield NULL or partial
+ * output without a separate error.
+ */
 static char *BuildAppInfo(struct IClass *cl, Object *obj)
 {
     struct Data *data = INST_DATA(cl, obj);
@@ -160,6 +185,12 @@ static char *BuildAppInfo(struct IClass *cl, Object *obj)
     return data->appInfo.string;
 }
 
+/* Expand a required non-NULL borrowed credits string into the owned buffer,
+ * starting with newline. Replace tabs and recognized percent placeholders
+ * with fixed English strings; unknown placeholders drop percent and
+ * trailing percent vanishes. Return borrowed generated storage, potentially
+ * partial on allocation failure.
+ */
 static char *ParseCredits(struct IClass *cl, Object *obj)
 {
     struct Data *data = INST_DATA(cl, obj);
@@ -291,16 +322,31 @@ static char *ParseCredits(struct IClass *cl, Object *obj)
 
 // FIXME: is this good for AROS?
 
+/* Non-AROS m68k compatibility wrapper: reinterpret varargs after name as a
+ * TagItem array and forward to GetIconTagList. Return its DiskObject result
+ * and preserve its ownership contract. Excluded from the AROS build by the
+ * surrounding preprocessor guards.
+ */
 struct DiskObject *GetIconTags(MY_CONST_STRPTR name, ... )
 {
     return GetIconTagList(name, (struct TagItem *)(&name+1));
 }
 
+/* Non-AROS m68k compatibility wrapper: forward fixed arguments and the
+ * adjacent varargs tag array to GetIconRectangleA, returning its BOOL
+ * result. Require the guarded ABI and writable rectangle output. This path
+ * is not compiled for AROS.
+ */
 BOOL GetIconRectangle(struct RastPort *rp, CONST struct DiskObject *icon, CONST STRPTR label, struct Rectangle *rectangle, ...)
 {
     return GetIconRectangleA(rp, icon, label, rectangle, (struct TagItem *)(&rectangle+1));
 }
 
+/* Non-AROS m68k compatibility wrapper: forward icon, coordinates, state and
+ * adjacent varargs tags to DrawIconStateA. No result is returned. Validity
+ * and rendering resources belong to the caller; this compatibility path is
+ * excluded on AROS.
+ */
 VOID DrawIconState(struct RastPort *rp,CONST struct DiskObject *icon,CONST STRPTR label,LONG leftEdge,LONG topEdge,ULONG state,...)
 {
     DrawIconStateA(rp, icon, label, leftEdge, topEdge, state, (struct TagItem *)(&state+1));
@@ -318,6 +364,12 @@ VOID DrawIconState(struct RastPort *rp,CONST struct DiskObject *icon,CONST STRPT
 #define MUIA_Icon_File             (MUIB_Icon | 0x00000001) /* I-- CONST_STRPTR        */
 #define MUIA_Icon_Screen           (MUIB_Icon | 0x00000002) /* I-- struct Screen *     */
 
+/* Private logo class: require exactly one non-NULL final DiskObject or File
+ * value. Load a file icon with the supplied screen when needed. Store the
+ * icon on successful superclass construction; otherwise free it, including
+ * a supplied DiskObject. Ownership of an accepted icon is consumed, not
+ * borrowed. Return object or zero.
+ */
 IPTR Icon__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct DiskObject *icon = NULL;
@@ -375,6 +427,10 @@ error:
     return (IPTR)NULL;
 }
 
+/* Free the retained DiskObject when non-NULL, then delegate disposal. Both
+ * file-loaded and directly supplied icons follow this ownership rule. This
+ * private class is distinct from the public IconImage class.
+ */
 IPTR Icon__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
 {
     struct Icon_Data *data = INST_DATA(cl, obj);
@@ -385,6 +441,11 @@ IPTR Icon__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
     return DoSuperMethodA(cl,obj,msg);
 }
 
+/* Delegate measurement and query a frameless, borderless icon rectangle
+ * without a label. Add inclusive dimensions to all six limits only when the
+ * query succeeds. Return the superclass result; no separate rectangle-
+ * failure code is supplied.
+ */
 IPTR Icon__MUIM_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMax *msg)
 {
     struct Icon_Data *data = INST_DATA(cl, obj);
@@ -413,6 +474,11 @@ IPTR Icon__MUIM_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMax 
     return ret;
 }
 
+/* Draw the superclass, then render the retained icon in normal state on
+ * MADF_DRAWOBJECT only. Use inner origin with no border/frame/label or icon
+ * background erasure. Return the superclass result and ignore icon
+ * rendering status.
+ */
 IPTR Icon__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 {
     struct Icon_Data *data = INST_DATA(cl, obj);
@@ -434,6 +500,12 @@ IPTR Icon__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 
 /* ------------------------------------------------------------------------- */
 
+/* Construct the Window hierarchy and store the last supplied local
+ * attributes as borrowed pointers or fallback value. Default fallback is
+ * DEI. Install Application-queued close actions for Ok and CloseRequest.
+ * Return superclass object or NULL; do not parse credits, load logos, or
+ * validate borrowed strings yet.
+ */
 IPTR Aboutbox__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct TagItem *tag, *tstate = msg->ops_AttrList;
@@ -529,6 +601,10 @@ IPTR Aboutbox__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 }
 
 
+/* Free owned generated app-info and parsed-credits buffers, then delegate
+ * disposal. Borrowed Build/Credits/path/image inputs are not freed. The
+ * normal Window cleanup owns removal/disposal of the per-setup logo.
+ */
 IPTR Aboutbox__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
 {
     struct Data *data = INST_DATA(cl, obj);
@@ -540,6 +616,12 @@ IPTR Aboutbox__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
 }
 
 
+/* Try high-to-low fallback bytes until a zero or a non-NULL object. D
+ * constructs the private icon from program/task name, E checks a file then
+ * constructs Dtpic, and I constructs Rawimage from borrowed data. Unknown
+ * bytes are skipped. Return the created object or NULL; creation is not a
+ * rendering-success proof.
+ */
 static Object *BuildLogo(struct IClass *cl, Object *obj)
 {
     struct Data *data = INST_DATA(cl, obj);
@@ -613,6 +695,11 @@ static Object *BuildLogo(struct IClass *cl, Object *obj)
     return logo;
 }
 
+/* Set up Window, then build and insert a logo, populate app-info and
+ * credits, and format the English About title. Require attached
+ * Application, non-NULL title and Credits. Return superclass setup status
+ * even if text growth or logo creation failed; no rollback is supplied.
+ */
 IPTR Aboutbox__MUIM_Window_Setup(struct IClass *cl, Object *obj, Msg msg)
 {
     ULONG ret;
@@ -634,6 +721,11 @@ IPTR Aboutbox__MUIM_Window_Setup(struct IClass *cl, Object *obj, Msg msg)
     return ret;
 }
 
+/* Remove and dispose the generated logo if present, clear generated text
+ * contents while retaining buffers, then delegate Window cleanup. Borrowed
+ * constructor inputs remain stored for later setup cycles and must retain
+ * their lifetimes.
+ */
 IPTR Aboutbox__MUIM_Window_Cleanup(struct IClass *cl, Object *obj, Msg msg)
 {
     struct Data *data = INST_DATA(cl, obj);

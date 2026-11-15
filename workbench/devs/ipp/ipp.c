@@ -164,6 +164,24 @@ static LONG setDestination(struct IPPBase *IPPBase, struct IOStdReq *io)
     return 0;
 }
 
+/* The end of the job and the printer's answer; the unit's status says how it went. */
+static BOOL endJob(struct IPPBase *IPPBase, struct IPPUnit *iu)
+{
+    char done[64] = "printed, ";
+
+    if (!IPP_EndJob(IPPBase, iu)) {
+        IPP_SetStatus(IPPBase, iu, iu->iu_Error);
+        return FALSE;
+    }
+    if (iu->iu_Started) {
+        IPP_AppendNumber(done, iu->iu_Bytes);
+        strcat(done, " bytes");
+    } else
+        strcpy(done, "nothing to print");
+    IPP_SetStatus(IPPBase, iu, done);
+    return TRUE;
+}
+
 AROS_LH1(void, BeginIO,
  AROS_LHA(struct IOStdReq *, io, A1),
           struct IPPBase *, IPPBase, 5, IPP)
@@ -191,21 +209,50 @@ AROS_LH1(void, BeginIO,
         if (len == -1)
             len = io->io_Data ? strlen((const char *)io->io_Data) : 0;
         ObtainSemaphore(&iu->iu_Lock);
-        if (iu->iu_Failed)
-            io->io_Error = PDERR_CANCEL;
+        /* A broken job is gone: it has to be sent again on a new open, unless the printer refused it. */
+        if (iu->iu_Failed || iu->iu_Ended)
+            io->io_Error = iu->iu_Refused ? PDERR_CANCEL : IOERR_ABORTED;
         else if (len > 0) {
             if (IPP_Send(IPPBase, iu, io->io_Data, len))
                 io->io_Actual = len;
             else {
                 iu->iu_Failed = TRUE;
+                IPP_ReadRefusal(IPPBase, iu);
                 IPP_SetStatus(IPPBase, iu, iu->iu_Error);
-                io->io_Error = PDERR_CANCEL;
+                io->io_Error = iu->iu_Refused ? PDERR_CANCEL : IOERR_ABORTED;
             }
         }
         ReleaseSemaphore(&iu->iu_Lock);
         break;
-    case CMD_RESET:
     case CMD_UPDATE:
+        /* The job is finished here, and the answer says whether the printer took it:
+           PDERR_CANCEL when it would not, IOERR_ABORTED when the job was lost - with
+           io_Actual the bytes the printer has in full when all of it went out but the
+           printer never confirmed it, so it may have printed it. */
+        ObtainSemaphore(&iu->iu_Lock);
+        if (!iu->iu_Failed && !iu->iu_Ended) {
+            iu->iu_Ended = TRUE;
+            if (!endJob(IPPBase, iu))
+                iu->iu_Failed = TRUE;
+        }
+        if (iu->iu_Failed) {
+            io->io_Error = iu->iu_Refused ? PDERR_CANCEL : IOERR_ABORTED;
+            if (!iu->iu_Refused && iu->iu_Unconfirmed)
+                io->io_Actual = iu->iu_Bytes;
+        }
+        ReleaseSemaphore(&iu->iu_Lock);
+        break;
+    case CMD_RESET:
+        /* The job is given up: the last close disconnects without ending it, so the
+           printer does not get a complete document. */
+        ObtainSemaphore(&iu->iu_Lock);
+        if (!iu->iu_Failed && !iu->iu_Ended) {
+            iu->iu_Failed = TRUE;
+            if (iu->iu_Started)
+                IPP_SetStatus(IPPBase, iu, "the job was given up");
+        }
+        ReleaseSemaphore(&iu->iu_Lock);
+        break;
     case CMD_CLEAR:
     case CMD_STOP:
     case CMD_START:
@@ -286,6 +333,9 @@ static int GM_UNIQUENAME(Open)(struct IPPBase *IPPBase, struct IOStdReq *io, ULO
         id = ++IPPBase->ib_NextJob;
         Permit();
         iu->iu_Failed = FALSE;
+        iu->iu_Refused = FALSE;
+        iu->iu_Ended = FALSE;
+        iu->iu_Unconfirmed = FALSE;
         iu->iu_Bytes = 0;
         iu->iu_Error[0] = 0;
         if (!IPP_ReadConfig(IPPBase, unitnum, &iu->iu_Config)) {
@@ -317,7 +367,6 @@ static int GM_UNIQUENAME(Open)(struct IPPBase *IPPBase, struct IOStdReq *io, ULO
 static int GM_UNIQUENAME(Close)(struct IPPBase *IPPBase, struct IOStdReq *io)
 {
     struct IPPUnit *iu = (struct IPPUnit *)io->io_Unit;
-    char done[64] = "printed, ";
 
     if (isSettings(IPPBase, io->io_Unit)) {
         io->io_Unit = NULL;
@@ -326,15 +375,9 @@ static int GM_UNIQUENAME(Close)(struct IPPBase *IPPBase, struct IOStdReq *io)
     io->io_Unit = NULL;
     ObtainSemaphore(&iu->iu_Lock);
     if (iu->iu_Opens > 0 && --iu->iu_Opens == 0) {
-        if (!iu->iu_Failed && IPP_EndJob(IPPBase, iu)) {
-            if (iu->iu_Started) {
-                IPP_AppendNumber(done, iu->iu_Bytes);
-                strcat(done, " bytes");
-            } else
-                strcpy(done, "nothing to print");
-            IPP_SetStatus(IPPBase, iu, done);
-        } else if (!iu->iu_Failed)
-            IPP_SetStatus(IPPBase, iu, iu->iu_Error);
+        /* a job nobody finished with CMD_UPDATE (printer.device, a direct writer) */
+        if (!iu->iu_Failed && !iu->iu_Ended)
+            endJob(IPPBase, iu);
         IPP_Disconnect(IPPBase, iu);
     }
     ReleaseSemaphore(&iu->iu_Lock);

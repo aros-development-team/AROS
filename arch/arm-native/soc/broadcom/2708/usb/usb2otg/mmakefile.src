@@ -8,7 +8,8 @@ FILES := \
     usb2otg_core \
     usb2otg_intr \
     usb2otg_hub \
-    usb2otg_schedule
+    usb2otg_schedule \
+    usb2otg_iso
 
 WBUSBHARDWAREDIR := $(AROSDIR)/Devs/USBHardware
 

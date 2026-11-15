@@ -29,6 +29,7 @@ struct MiamiPFBuffer {
 
 #define MIAMIPFBPT_IP		0
 #define MIAMIPFBPT_ARP		1
+#define MIAMIPFBPT_IP6		2	/* AROSTCP: only to a hook added with MIAMITAG_IPV6 */
 
 
 #define MIAMICPU_M68KREG	1
@@ -36,5 +37,11 @@ struct MiamiPFBuffer {
 
 #define MIAMITAG_DUMMY		(TAG_USER+0x570000)
 #define MIAMITAG_HOOKTYPE	(MIAMITAG_DUMMY+1)
+/*
+ * AROSTCP, MiamiPFAddHook(): ti_Data TRUE - the hook is also called for
+ * the interface's IPv6 packets, with ptype MIAMIPFBPT_IP6. Without it a
+ * hook sees IPv4 and ARP packets only, as in Miami.
+ */
+#define MIAMITAG_IPV6		(MIAMITAG_DUMMY+2)
 
 #endif

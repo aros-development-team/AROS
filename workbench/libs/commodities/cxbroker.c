@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc:
 */
@@ -98,8 +98,11 @@ extern struct InputEvent *cxIHandler();
     
     ObtainSemaphore(&GPB(CxBase)->cx_SignalSemaphore);
 
+    if (nb->nb_Version != NB_VERSION)
+        myerr = CBERR_VERSION;
+
     /* No duplicates allowed? */
-    if (nb->nb_Unique & NBU_UNIQUE)
+    if (myerr == CBERR_OK && (nb->nb_Unique & NBU_UNIQUE))
     {
         temp = (CxObj *)FindName(&GPB(CxBase)->cx_BrokerList, nb->nb_Name);
         
@@ -122,6 +125,10 @@ extern struct InputEvent *cxIHandler();
             {
               if (SetupIHandler((struct CommoditiesBase *)CxBase) == FALSE)
                 {
+                  /* The broker is not in the list yet: free it, so that
+                     the caller gets NULL together with CBERR_SYSERR. */
+                  FreeCxStructure(co, CX_OBJECT, CxBase);
+                  co = NULL;
                   goto sysErr;
                 }
               else

@@ -6,9 +6,10 @@
  * published by the Free Software Foundation.
  *
  * Minimal 4.4BSD-style sysctl framework for AROSTCP.  It backs the
- * miami.library MiamiSysCtl() entry point and wires the per-protocol
- * handlers (ip_sysctl here; tcp_sysctl/udp_sysctl in netinet) into the
- * net.inet.{ip,tcp,udp} MIB subtree.  This is deliberately a small MIB, not
+ * miami.library MiamiSysCtl() entry point and wires the variables the
+ * modules register with their sysctl names (net/netmodule.h: IPv4's
+ * net.inet.ip, the transports' net.inet.tcp and net.inet.udp, a loaded
+ * module's) into the net MIB subtree.  This is deliberately a small MIB, not
  * a general kernel sysctl: there is no CTL_KERN/CTL_HW tree and no PF_ROUTE
  * table dump.  Built only when ENABLE_SYSCTL is defined.
  */
@@ -24,9 +25,7 @@
 #include <sys/sysctl.h>
 
 #include <netinet/in.h>
-#include <netinet/in_systm.h>
-#include <netinet/ip.h>
-#include <netinet/ip_var.h>
+#include <net/netmodule.h>
 
 #include <string.h>
 
@@ -84,56 +83,48 @@ sysctl_rdstruct(void *oldp, size_t *oldlenp, void *newp, void *sp, int len)
 }
 
 /*
- * net.inet.ip
+ * net.<family>.<protocol>.<id>
+ *
+ * Every name is a variable a module registered under it (net/netmodule.h):
+ * a family's, a transport's, a loaded module's. The core does not know
+ * which there are. When the module is not part of the running stack the
+ * name is unknown, like any other that does not exist.
  */
-int
-ip_sysctl(int *name, u_int namelen, void *oldp, size_t *oldlenp,
-          void *newp, size_t newlen)
-{
-    extern int ipforwarding;
-    extern int ipsendredirects;
+/* (NVT_SYSCTL, net/netmodule.h: nv_addr is a function that serves the name itself) */
+typedef int netvar_sysctl_t(const struct netvar *, void *oldp, size_t *oldlenp,
+                            void *newp, size_t newlen);
 
-    /* All sysctl names at this level are terminal. */
-    if(namelen != 1)
-        return (ENOTDIR);
-
-    switch(name[0]) {
-    case IPCTL_FORWARDING:
-        return (sysctl_int(oldp, oldlenp, newp, newlen, &ipforwarding));
-    case IPCTL_SENDREDIRECTS:
-        return (sysctl_int(oldp, oldlenp, newp, newlen, &ipsendredirects));
-    case IPCTL_STATS:
-        return (sysctl_rdstruct(oldp, oldlenp, newp, &ipstat, sizeof ipstat));
-    default:
-        return (ENOPROTOOPT);
-    }
-    /* NOTREACHED */
-}
-
-/*
- * net.<family>.<protocol>...  Only the AF_INET protocols are served.
- */
 int
 net_sysctl(int *name, u_int namelen, void *oldp, size_t *oldlenp,
            void *newp, size_t newlen)
 {
+    const struct netvar *nv;
+    int known;
+
     /* Need at least {family, protocol}. */
     if(namelen < 2)
         return (EISDIR);
-    if(name[0] != PF_INET)
-        return (EOPNOTSUPP);
 
-    switch(name[1]) {
-    case IPPROTO_IP:
-        return (ip_sysctl(name + 2, namelen - 2, oldp, oldlenp, newp, newlen));
-    case IPPROTO_TCP:
-        return (tcp_sysctl(name + 2, namelen - 2, oldp, oldlenp, newp, newlen));
-    case IPPROTO_UDP:
-        return (udp_sysctl(name + 2, namelen - 2, oldp, oldlenp, newp, newlen));
-    default:
+    nv = netvar_find_mib(name[0], name[1], namelen == 3 ? name[2] : -1, &known);
+    if(!known)
+        return (name[0] == PF_INET ? ENOPROTOOPT : EOPNOTSUPP);
+    /* All sysctl names at this level are terminal. */
+    if(namelen != 3)
+        return (ENOTDIR);
+    if(nv == NULL)
         return (ENOPROTOOPT);
+
+    switch(nv->nv_type) {
+    case NVT_INT:
+        if(nv->nv_size != sizeof(int))
+            break;
+        return (sysctl_int(oldp, oldlenp, newp, newlen, (int *)nv->nv_addr));
+    case NVT_STATS:
+        return (sysctl_rdstruct(oldp, oldlenp, newp, nv->nv_addr, (int)nv->nv_size));
+    case NVT_SYSCTL:
+        return ((*(netvar_sysctl_t *)nv->nv_addr)(nv, oldp, oldlenp, newp, newlen));
     }
-    /* NOTREACHED */
+    return (ENOPROTOOPT);
 }
 
 /*

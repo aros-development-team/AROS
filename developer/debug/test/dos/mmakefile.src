@@ -53,6 +53,7 @@ FILES := \
     setenv \
     setfilesize \
     strtodate \
+    strtolong \
     systemtags \
     systemtags_slave \
     systemtags2 \

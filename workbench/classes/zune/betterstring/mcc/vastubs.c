@@ -34,18 +34,40 @@
 
 #include <proto/intuition.h>
 
+/* Non-AROS m68k compatibility wrapper: forward a terminated stack-resident
+ * varargs tag list to the corresponding tag-list API and return its result.
+ * Require the specified m68k ABI and valid inputs. Excluded from AROS.
+ */
 APTR NewObject( struct IClass *classPtr, CONST_STRPTR classID, Tag tag1, ... )
 { return NewObjectA(classPtr, classID, (struct TagItem *)&tag1); }
+/* Non-AROS m68k compatibility wrapper: forward a terminated stack-resident
+ * varargs tag list to the corresponding tag-list API and return its result.
+ * Require the specified m68k ABI and valid inputs. Excluded from AROS.
+ */
 ULONG SetAttrs( APTR object, ULONG tag1, ... )
 { return SetAttrsA(object, (struct TagItem *)&tag1); }
+/* Non-AROS m68k compatibility wrapper: forward a terminated stack-resident
+ * varargs tag list to the corresponding tag-list API. No result is
+ * returned. Require the specified m68k ABI and valid inputs. Excluded from
+ * AROS.
+ */
 VOID SetWindowPointer( struct Window *win, Tag tag1, ... )
 { SetWindowPointerA(win, (struct TagItem *)&tag1); }
 
 #include <proto/dos.h>
+/* Non-AROS m68k compatibility wrapper: forward a terminated stack-resident
+ * varargs tag list to the corresponding tag-list API and return its result.
+ * Require the specified m68k ABI and valid inputs. Excluded from AROS.
+ */
 struct Process *CreateNewProcTags( ULONG tag1, ... )
 { return CreateNewProc((struct TagItem *)&tag1); }
 
 #include <proto/graphics.h>
+/* Non-AROS m68k compatibility wrapper: forward a terminated stack-resident
+ * varargs tag list to the corresponding tag-list API. No result is
+ * returned. Require the specified m68k ABI and valid inputs. Excluded from
+ * AROS.
+ */
 VOID SetRPAttrs( struct RastPort *rp, Tag tag1, ... )
 { SetRPAttrsA(rp, (struct TagItem *)&tag1); }
 

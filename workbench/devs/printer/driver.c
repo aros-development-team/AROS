@@ -18,6 +18,7 @@
 #include <proto/dos.h>
 #include <proto/intuition.h>
 #include <proto/utility.h>
+#include <clib/alib_protos.h>
 
 #include <devices/printer.h>
 #include <devices/newstyle.h>
@@ -128,8 +129,11 @@ static void pd_QueryJobInfo(struct PrinterData *pd)
     io->io_Data = &nsd;
     io->io_Length = sizeof(nsd);
     io->io_Message.mn_Length = sizeof(*io);
-    if (DoIO((struct IORequest *)io) != 0 || io->io_Actual < sizeof(nsd) || nsd.SupportedCommands == NULL)
+    if (DoIO((struct IORequest *)io) != 0 || io->io_Actual < sizeof(nsd) || nsd.SupportedCommands == NULL) {
+        /* not an error of anything that was printed */
+        io->io_Error = 0;
         return;
+    }
     for (cmd = nsd.SupportedCommands; *cmd; cmd++)
         if (*cmd == PRD_SETJOBINFO)
             pu->pu_JobInfoSupported = TRUE;
@@ -180,13 +184,17 @@ STATIC AROS_LH3(LONG, OpenDevice,
     if ((mp = CreateMsgPort())) {
         struct IORequest ior = *io;
 
-        pd_SetJobApplication(pu);
+        /* the job is its first opener's */
+        if (pu->pu_Opens <= 1)
+            pd_SetJobApplication(pu);
         ior.io_Message.mn_ReplyPort = mp;
         ior.io_Command = CMD_OPENDEVICE;
         ret = DoIO(&ior);
         DeleteMsgPort(mp);
     }
 
+    /* printer.device's own OpenDevice looks at the caller's request */
+    io->io_Error = ret;
     return ret;
 
     AROS_LIBFUNC_EXIT
@@ -205,10 +213,12 @@ STATIC AROS_LH1(BPTR, CloseDevice,
         struct IORequest ior = *io;
         ior.io_Message.mn_ReplyPort = mp;
         ior.io_Command = CMD_CLOSEDEVICE;
-        DoIO(&ior);
-        ret = AROS_LC1(BPTR, Expunge,
-                   AROS_LCA(struct PrinterUnit *, pu, D0),
-                   struct PrinterUnit *, pu, 3, PrinterUnit);
+        /* The unit task answers IOERR_UNITBUSY while others have the unit
+           open; after the last close it has gone and the unit is freed. */
+        if (DoIO(&ior) == 0)
+            ret = AROS_LC1(BPTR, Expunge,
+                       AROS_LCA(struct PrinterUnit *, pu, D0),
+                       struct PrinterUnit *, pu, 3, PrinterUnit);
         DeleteMsgPort(mp);
     }
 
@@ -256,7 +266,7 @@ STATIC AROS_LH1(void, BeginIO,
 
     D(bug("BeginIO: io_Command = %d, Unit Port %p\n", io->io_Command, &pd->pd_Unit));
 
-    io->io_Flags &= ~IOF_QUICK;
+    io->io_Flags &= ~(IOF_QUICK | IOF_ABORTED);
     PutMsg(&pd->pd_Unit, &io->io_Message);
 
     return;
@@ -264,13 +274,38 @@ STATIC AROS_LH1(void, BeginIO,
     AROS_LIBFUNC_EXIT
 }
 
+/* The request is only marked here: the unit's port and its list of held
+ * requests belong to the unit task, which replies a marked request with
+ * IOERR_ABORTED when it meets it - at once if it is waiting for CMD_START,
+ * at the next row or character if it is the one being printed.
+ */
 STATIC AROS_LH1(LONG, AbortIO,
- AROS_LHA(struct IORequest *, pio, A1),
-          struct PrinterUnit *, pd, 6, PrinterUnit)
+ AROS_LHA(struct IORequest *, io, A1),
+          struct PrinterUnit *, pu, 6, PrinterUnit)
 {
     AROS_LIBFUNC_INIT
-    return IOERR_NOCMD;
+
+    struct PrinterData *pd = &pu->pu_PrinterData;
+    LONG ret = IOERR_NOCMD;
+
+    Forbid();
+    if (io->io_Message.mn_Node.ln_Type == NT_MESSAGE) {
+        io->io_Flags |= IOF_ABORTED;
+        Signal(pd->pd_Unit.mp_SigTask, 1UL << pd->pd_Unit.mp_SigBit);
+        ret = 0;
+    }
+    Permit();
+
+    return ret;
+
     AROS_LIBFUNC_EXIT
+}
+
+BOOL Printer_Aborted(struct PrinterData *pd)
+{
+    struct IORequest *io = (struct IORequest *)pd->pd_PUnit->pu_Current;
+
+    return (io != NULL && (io->io_Flags & IOF_ABORTED)) ? TRUE : FALSE;
 }
 
 /* These wrappers make sure that we don't
@@ -284,11 +319,34 @@ static inline LONG WaitIOStd(struct IOStdReq *io)
     return io->io_Error;
 }
 
+/* For a command that is not a write of the job: its error is the caller's
+ * to look at, and is not left in the request for pd_Collect() to find.
+ */
 static inline LONG DoIOStd(struct IOStdReq *io)
 {
+    LONG err;
+
     DoIO((struct IORequest *)io);
     io->io_Message.mn_Node.ln_Type = 0;
-    return io->io_Error;
+    err = io->io_Error;
+    io->io_Error = 0;
+    return err;
+}
+
+/* Waits for a write to the output device and keeps the first error any of
+ * them gave. pd_PWrite() does not wait for the write it starts, so its
+ * error shows up here at the next write; the unit task collects both
+ * requests before it replies to the command that caused them.
+ */
+static void pd_Collect(struct PrinterData *pd, struct IOStdReq *io)
+{
+    LONG err = WaitIOStd(io);
+
+    if (err != 0) {
+        if (pd->pd_PUnit->pu_IOError == 0)
+            pd->pd_PUnit->pu_IOError = err;
+        io->io_Error = 0;
+    }
 }
 
 static LONG pd_PWrite(APTR data, LONG len)
@@ -302,8 +360,15 @@ static LONG pd_PWrite(APTR data, LONG len)
     io = (pd->pd_Flags & PDF_IOREQ) ?
                 (struct IOStdReq *)&pd->pd_ior1 :
                 (struct IOStdReq *)&pd->pd_ior0;
-    WaitIOStd(io);
-    /* TODO: Call error hook if there is an error */
+    /* A driver has two buffers and fills the other one as soon as we
+     * return, so the write before this one has to be through by then:
+     * only the buffer just handed over may still be on its way.
+     */
+    pd_Collect(pd, (struct IOStdReq *)&pd->pd_ior0);
+    pd_Collect(pd, (struct IOStdReq *)&pd->pd_ior1);
+    /* Nothing more goes out for a command whose output has failed */
+    if (pd->pd_PUnit->pu_IOError != 0)
+        return pd->pd_PUnit->pu_IOError;
     io->io_Command = CMD_WRITE;
     io->io_Flags = 0;
     io->io_Actual = 0;
@@ -326,10 +391,10 @@ static LONG pd_PBothReady(VOID)
     if (pd->pd_Flags & PDF_NOIO)
         return IOERR_OPENFAIL;
 
-    WaitIOStd((struct IOStdReq *)&pd->pd_ior0);
-    WaitIOStd((struct IOStdReq *)&pd->pd_ior1);
+    pd_Collect(pd, (struct IOStdReq *)&pd->pd_ior0);
+    pd_Collect(pd, (struct IOStdReq *)&pd->pd_ior1);
 
-    return 0;
+    return pd->pd_PUnit->pu_IOError;
 }
 
 /* Tells the output device what is being printed; devices that do not know
@@ -346,7 +411,7 @@ static void pd_SendJobInfo(struct PrinterData *pd)
 
     if ((pd->pd_Flags & PDF_NOIO) || !pu->pu_JobInfoSupported)
         return;
-    WaitIOStd(io);
+    pd_Collect(pd, io);
     io->io_Command = PRD_SETJOBINFO;
     io->io_Flags = 0;
     io->io_Data = tags;
@@ -369,8 +434,7 @@ static LONG pd_PRead(char * buffer, LONG *length, struct timeval *tv)
     io = (pd->pd_Flags & PDF_IOREQ) ?
                 (struct IOStdReq *)&pd->pd_ior1 :
                 (struct IOStdReq *)&pd->pd_ior0;
-    WaitIOStd(io);
-    /* TODO: Call error hook if there is an error */
+    pd_Collect(pd, io);
     pd->pd_TIOR.tr_node.io_Command = TR_ADDREQUEST;
     pd->pd_TIOR.tr_node.io_Flags = 0;
     pd->pd_TIOR.tr_node.io_Message.mn_Length = sizeof(pd->pd_TIOR);
@@ -393,8 +457,8 @@ static LONG pd_PRead(char * buffer, LONG *length, struct timeval *tv)
         if (!CheckIO((struct IORequest *)io))
             AbortIO((struct IORequest *)io);
     }
-    WaitIOStd(io);
-    err = io->io_Error;
+    err = WaitIOStd(io);
+    io->io_Error = 0;
     if (err == 0)
         *length = io->io_Actual;
 
@@ -403,10 +467,124 @@ static LONG pd_PRead(char * buffer, LONG *length, struct timeval *tv)
     return err;
 }
 
+/* PD->pd_CallErrHook(): shows an error message through the hook that
+ * PRD_SETERRHOOK set - PDHOOK_STD is a requester, anything else is called
+ * with the request as its object and the message as its parameter.
+ */
 static LONG pd_CallErrHook(struct Hook *hook, union printerIO *ior, struct PrtErrMsg *pem)
 {
-    /* TODO */
-    return 0;
+    TASK_PRINTERDATA(pd);
+
+    if (hook == PDHOOK_NONE || pem == NULL)
+        return 0;
+
+    if (hook == PDHOOK_STD) {
+        struct Library *IntuitionBase;
+        LONG ret = 0;
+
+        if (pem->pe_ES == NULL)
+            return 0;
+        if ((IntuitionBase = TaggedOpenLibrary(TAGGEDOPEN_INTUITION))) {
+            ret = EasyRequestArgs(pem->pe_Window, pem->pe_ES, pem->pe_IDCMP,
+                                  (RAWARG)pem->pe_ArgList);
+            CloseLibrary(IntuitionBase);
+        }
+        return ret;
+    }
+
+    return (LONG)CallHookA(hook, ior, pem);
+}
+
+static CONST_STRPTR pd_ErrorText(LONG err)
+{
+    switch (err) {
+    case PDERR_NOTGRAPHICS:     return "The printer cannot print graphics.";
+    case PDERR_BADDIMENSION:    return "The print dimensions are not valid.";
+    case PDERR_INTERNALMEMORY:  return "Not enough memory to print.";
+    case PDERR_BUFFERMEMORY:    return "Not enough memory for the print buffer.";
+    case PDERR_BADPREFERENCES:  return "The printer preferences are not valid.";
+    case IOERR_NOCMD:           return "The printer does not support this command.";
+    case IOERR_BADLENGTH:       return "The request has a bad length.";
+    default:                    return "The printer driver reported an error.";
+    }
+}
+
+/* Decimal, for messages: EasyRequest() gets strings only, so that the
+   argument array has one layout on every CPU. */
+static void pd_NumberText(STRPTR buf, LONG n)
+{
+    TEXT digits[12];
+    ULONG u = (n < 0) ? -(ULONG)n : (ULONG)n;
+    int i = 0;
+
+    if (n < 0)
+        *buf++ = '-';
+    do {
+        digits[i++] = '0' + u % 10;
+        u /= 10;
+    } while (u);
+    while (i > 0)
+        *buf++ = digits[--i];
+    *buf = 0;
+}
+
+/* A command is about to return an error: tell the hook set by
+ * PRD_SETERRHOOK. ioerr is the output device's error, if that is what
+ * failed. A driver's own error codes are the driver's to explain.
+ */
+static void pd_ReportError(struct PrinterData *pd, union printerIO *pio, LONG err, LONG ioerr)
+{
+    static const struct EasyStruct outputError = {
+        .es_StructSize = sizeof(struct EasyStruct),
+        .es_Title = "Printer error",
+        .es_TextFormat = "%s:\ncannot write to %s unit %s (error %s).",
+        .es_GadgetFormat = "OK",
+    };
+    static const struct EasyStruct commandError = {
+        .es_StructSize = sizeof(struct EasyStruct),
+        .es_Title = "Printer error",
+        .es_TextFormat = "%s:\n%s (error %s)",
+        .es_GadgetFormat = "OK",
+    };
+    struct PrinterUnit *pu = pd->pd_PUnit;
+    struct PrinterExtendedData *ped = &pd->pd_SegmentData->ps_PED;
+    struct Hook *hook = pu->pu_ErrHook;
+    CONST_STRPTR name = pd->pd_Device.dd_Device.lib_Node.ln_Name;
+    TEXT code[16], unit[16];
+    IPTR args[4];
+    struct PrtErrMsg pem = {
+        .pe_Version = PDHOOK_VERSION,
+        .pe_ErrorLevel = RETURN_ERROR,
+        .pe_ArgList = args,
+    };
+
+    if (hook == PDHOOK_NONE)
+        return;
+
+    if (ioerr != 0) {
+        pd_NumberText(code, ioerr);
+        pd_NumberText(unit, pd->pd_Preferences.DefaultPrtUnit);
+        args[0] = (IPTR)name;
+        args[1] = (IPTR)pu->pu_OpenName;
+        args[2] = (IPTR)unit;
+        args[3] = (IPTR)code;
+        pem.pe_ES = (struct EasyStruct *)&outputError;
+    } else {
+        if (err >= PDERR_FIRSTCUSTOM && err <= PDERR_LASTCUSTOM &&
+            pd->pd_SegmentData->ps_Version >= 44 &&
+            (ped->ped_PrinterClass & PPCF_EXTENDED) &&
+            ped->ped_CallErrHook != NULL) {
+            ped->ped_CallErrHook(pio, hook);
+            return;
+        }
+        pd_NumberText(code, err);
+        args[0] = (IPTR)name;
+        args[1] = (IPTR)pd_ErrorText(err);
+        args[2] = (IPTR)code;
+        pem.pe_ES = (struct EasyStruct *)&commandError;
+    }
+
+    pd_CallErrHook(hook, pio, &pem);
 }
 
 /* Only designed to work on the serial port. */
@@ -424,8 +602,7 @@ static LONG pd_PQuery(LONG *numofchars)
     io = (pd->pd_Flags & PDF_IOREQ) ?
                 (struct IOStdReq *)&pd->pd_ior1 :
                 (struct IOStdReq *)&pd->pd_ior0;
-    WaitIOStd(io);
-    /* TODO: Call error hook if there is an error */
+    pd_Collect(pd, io);
     io->io_Command = SDCMD_QUERY;
     io->io_Flags = 0;
     io->io_Actual = 0;
@@ -464,8 +641,7 @@ static LONG pd_Query(struct IOStdReq *sio)
     io = (pd->pd_Flags & PDF_IOREQ) ?
                 (struct IOStdReq *)&pd->pd_ior1 :
                 (struct IOStdReq *)&pd->pd_ior0;
-    WaitIOStd(io);
-    /* TODO: Call error hook if there is an error */
+    pd_Collect(pd, io);
     io->io_Command = SDCMD_QUERY;
     io->io_Flags = 0;
     io->io_Actual = 0;
@@ -536,7 +712,11 @@ static LONG pd_Init(struct PrinterData *pd)
                                             (struct IORequest *)&pd->pd_TIOR, 0)) {
                                     D(bug("%s: open timer.device %d\n", __func__, UNIT_VBLANK));
                                     if (ped->ped_Render) {
-                                        LONG err = ped->ped_Render(0, 0, 0, PRS_PREINIT);
+                                        /* the density the preferences ask for, as in a dump
+                                           that names none (gfx.c) */
+                                        LONG err = ped->ped_Render(0,
+                                                ((LONG)pd->pd_Preferences.PrintDensity << 8) & SPECIAL_DENSITYMASK,
+                                                0, PRS_PREINIT);
                                         if (err == 0)
                                             return 0;
                                     } else {
@@ -561,15 +741,26 @@ static LONG pd_Init(struct PrinterData *pd)
     return -1;
 }
 
+/* The last close of the unit. Called with the unit's pb_UnitLock held, so
+ * that an open of the same unit waits until the job is finished and the
+ * output device is free again, and then gets a new unit.
+ */
 static VOID pd_Close(struct PrinterData *pd, union printerIO *pio)
 {
     struct PrinterBase *PrinterBase = pd->pd_PUnit->pu_PrinterBase;
     struct PrinterExtendedData *ped = &pd->pd_SegmentData->ps_PED;
     LONG unitnum = pd->pd_UnitNumber;
 
-    ped->ped_Close(pio);
+    /* not after a ped_Open that failed */
+    if (pd->pd_PUnit->pu_DriverOpen) {
+        ped->ped_Close(pio);
+        pd->pd_PUnit->pu_DriverOpen = FALSE;
+    }
 
     if (!(pd->pd_Flags & PDF_NOIO)) {
+        /* whatever ped_Close wrote */
+        WaitIOStd((struct IOStdReq *)&pd->pd_ior0);
+        WaitIOStd((struct IOStdReq *)&pd->pd_ior1);
         CloseDevice((struct IORequest *)&pd->pd_TIOR);
         FreeSignal(pd->pd_IORPort.mp_SigBit);
         CloseDevice((struct IORequest *)&pd->pd_ior1);
@@ -582,12 +773,7 @@ static VOID pd_Close(struct PrinterData *pd, union printerIO *pio)
     ped->ped_Expunge();
 
     /* Remove from the parent printer.device */
-    ObtainSemaphore(&PrinterBase->pb_UnitLock[unitnum]);
     PrinterBase->pb_Unit[unitnum] = NULL;
-    Forbid();
-    PrinterBase->pb_Device.dd_Library.lib_OpenCnt--;
-    Permit();
-    ReleaseSemaphore(&PrinterBase->pb_UnitLock[unitnum]);
 }
 
 static LONG pd_DoPreferences(const union printerIO *pio, LONG command)
@@ -618,6 +804,117 @@ static LONG pd_DoPreferences(const union printerIO *pio, LONG command)
     return err;
 }
 
+/* Waits until everything written has reached the output device, and
+ * returns the first error it gave (0 if none).
+ */
+static LONG pd_Drain(struct PrinterData *pd)
+{
+    struct PrinterUnit *pu = pd->pd_PUnit;
+    LONG ioerr;
+
+    if (!(pd->pd_Flags & PDF_NOIO)) {
+        pd_Collect(pd, (struct IOStdReq *)&pd->pd_ior0);
+        pd_Collect(pd, (struct IOStdReq *)&pd->pd_ior1);
+    }
+    ioerr = pu->pu_IOError;
+    pu->pu_IOError = 0;
+
+    return ioerr;
+}
+
+static void pd_ReplyAborted(union printerIO *pio)
+{
+    pio->ios.io_Error = IOERR_ABORTED;
+    ReplyMsg((struct Message *)pio);
+}
+
+/* The requests that print. After CMD_STOP they wait, in order, for CMD_START. */
+static BOOL pd_IsPrintCommand(UWORD cmd)
+{
+    switch (cmd) {
+    case CMD_RESET:
+    case CMD_WRITE:
+    case PRD_RAWWRITE:
+    case PRD_PRTCOMMAND:
+    case PRD_DUMPRPORT:
+    case PRD_DUMPRPORTTAGS:
+    case PRD_TPEXTDUMPRPORT:
+        return TRUE;
+    }
+    return FALSE;
+}
+
+/* Prints one request and replies to it. */
+static void pd_Print(struct PrinterData *pd, union printerIO *pio)
+{
+    struct PrinterUnit *pu = pd->pd_PUnit;
+    LONG err = 0, ioerr, len;
+
+    if (pio->ios.io_Flags & IOF_ABORTED) {
+        pd_ReplyAborted(pio);
+        return;
+    }
+
+    pu->pu_Current = pio;
+    pu->pu_IOError = 0;
+
+    switch (pio->ios.io_Command) {
+    case CMD_RESET:
+        err = Printer_Text_Command(pd, aRIN, 0, 0, 0, 0);
+        break;
+    case CMD_WRITE:
+        len = pio->ios.io_Length;
+        err = Printer_Text_Write(pd, pio->ios.io_Data, len);
+        if (len == -1)
+            len = strlen((char *)pio->ios.io_Data);
+        pio->ios.io_Actual = len;
+        break;
+    case PRD_RAWWRITE:
+        len = pio->ios.io_Length;
+        if (len == -1)
+            len = strlen((char *)pio->ios.io_Data);
+        if (len > 0)
+            err = pd_PWrite(pio->ios.io_Data, len);
+        pio->ios.io_Actual = len;
+        break;
+    case PRD_PRTCOMMAND:
+        err = Printer_Text_Command(pd, pio->iopc.io_PrtCommand,
+                                   pio->iopc.io_Parm0, pio->iopc.io_Parm1,
+                                   pio->iopc.io_Parm2, pio->iopc.io_Parm3);
+        break;
+    case PRD_DUMPRPORTTAGS:
+        err = Printer_Gfx_DumpRPort((struct IODRPReq *)pio, ((struct IODRPTagsReq *)pio)->io_TagList);
+        break;
+    case PRD_DUMPRPORT:
+    case PRD_TPEXTDUMPRPORT:
+        err = Printer_Gfx_DumpRPort((struct IODRPReq *)pio, NULL);
+        break;
+    }
+
+    /* The caller hears only once all of it has reached the output device:
+     * its buffer is its own again, and an error the device gave is this
+     * request's error. The device's own error numbers mean nothing to a
+     * caller of printer.device, so those become PDERR_CANCEL; exec's
+     * (IOERR_xxx, negative) are passed on.
+     */
+    ioerr = pd_Drain(pd);
+    if (Printer_Aborted(pd) && (err != 0 || ioerr != 0)) {
+        err = IOERR_ABORTED;
+    } else if (ioerr != 0) {
+        pd_ReportError(pd, pio, 0, ioerr);
+        err = (ioerr < 0) ? ioerr : PDERR_CANCEL;
+    } else if (err != 0 && err != PDERR_CANCEL && err != IOERR_ABORTED) {
+        pd_ReportError(pd, pio, err, 0);
+    }
+    if (err != 0 && (pio->ios.io_Command == CMD_WRITE || pio->ios.io_Command == PRD_RAWWRITE))
+        pio->ios.io_Actual = 0;
+
+    pu->pu_Current = NULL;
+    pio->ios.io_Error = err;
+    D(bug("%s: Command = %d, Result = %d\n", __func__, pio->ios.io_Command, err));
+    ReplyMsg((struct Message *)pio);
+}
+
 /* A driver task is created on an OpenDevice() call,
  * and is killed by a CloseDevice() call.
  */
@@ -630,7 +927,6 @@ static LONG pd_DriverTask(VOID)
     struct PrinterMessage *msg = NULL;
     union printerIO *pio;
     UWORD cmd;
-    BOOL stopped = FALSE;
     LONG ret;
 
     /* Wait for startup message -
@@ -667,27 +963,56 @@ static LONG pd_DriverTask(VOID)
         return ret;
 
     /* Wait for unit messages on the pd_Unit */
-    do {
+    for (;;) {
+        struct PrinterUnit *pu = pd->pd_PUnit;
+        struct Node *node, *next;
         LONG err = 0;
 
-        D(bug("%s: Waiting for command on port %p\n", __func__, &pd->pd_Unit));
-        WaitPort(&pd->pd_Unit);
+        /* Requests aborted while they waited for CMD_START */
+        ForeachNodeSafe(&pu->pu_Held, node, next) {
+            if (((struct IORequest *)node)->io_Flags & IOF_ABORTED) {
+                Remove(node);
+                pd_ReplyAborted((union printerIO *)node);
+            }
+        }
+
         pio = (union printerIO *)GetMsg(&pd->pd_Unit);
+        if (pio == NULL) {
+            D(bug("%s: Waiting for command on port %p\n", __func__, &pd->pd_Unit));
+            Wait(1UL << pd->pd_Unit.mp_SigBit);
+            continue;
+        }
         cmd = pio->ios.io_Command;
 
         D(bug("%s: Command = %d\n", __func__, cmd));
+        if (pd_IsPrintCommand(cmd)) {
+            if (pu->pu_Stopped)
+                AddTail((struct List *)&pu->pu_Held, (struct Node *)pio);
+            else
+                pd_Print(pd, pio);
+            continue;
+        }
+
         switch (cmd) {
         case CMD_OPENDEVICE:
-            err = ped->ped_Open(pio);
-            if (err == 0) {
-                pd_SendJobInfo(pd);
-                Printer_Text_Write(pd, "\033#1", 3); /* aRIN */
+            /* The job runs from the first open of the unit to its last
+             * close: an open that joins it does not start the driver again.
+             */
+            if (!pu->pu_DriverOpen) {
+                err = ped->ped_Open(pio);
+                if (err == 0) {
+                    pu->pu_DriverOpen = TRUE;
+                    pu->pu_IOError = 0;
+                    pd_SendJobInfo(pd);
+                    Printer_Text_Write(pd, "\033#1", 3); /* aRIN */
+                    /* a printer that is not ready fails the first write, not the open */
+                    pd_Drain(pd);
+                }
             }
             break;
         case PRD_SETJOBINFO:
         {
             struct TagItem *tags = (struct TagItem *)pio->ios.io_Data, *tag;
-            struct PrinterUnit *pu = pd->pd_PUnit;
 
             while ((tag = LibNextTagItem(&tags))) {
                 STRPTR dest = NULL;
@@ -709,68 +1034,69 @@ static LONG pd_DriverTask(VOID)
             break;
         }
         case CMD_CLOSEDEVICE:
-            pd_Close(pd, pio);
-            break;
-        case CMD_FLUSH:
-            AbortIO((struct IORequest *)&pd->pd_ior0);
-            WaitIOStd((struct IOStdReq *)&pd->pd_ior0);
-            AbortIO((struct IORequest *)&pd->pd_ior1);
-            WaitIOStd((struct IOStdReq *)&pd->pd_ior1);
-            break;
-        case CMD_RESET:
-            if (stopped)
-                err = PDERR_CANCEL;
-            else {
-                err = Printer_Text_Command(pd, aRIN, 0, 0, 0, 0);
+        {
+            struct PrinterBase *PrinterBase = pu->pu_PrinterBase;
+            LONG unitnum = pd->pd_UnitNumber;
+
+            ObtainSemaphore(&PrinterBase->pb_UnitLock[unitnum]);
+            /* Every open of a unit is an open of printer.device */
+            Forbid();
+            PrinterBase->pb_Device.dd_Library.lib_OpenCnt--;
+            Permit();
+            if (--pu->pu_Opens > 0) {
+                ReleaseSemaphore(&PrinterBase->pb_UnitLock[unitnum]);
+                err = IOERR_UNITBUSY;
+                break;
             }
+
+            /* The last close: nothing waits for a CMD_START any more */
+            while ((node = RemHead((struct List *)&pu->pu_Held)))
+                pd_ReplyAborted((union printerIO *)node);
+            pd_Close(pd, pio);
+            ReleaseSemaphore(&PrinterBase->pb_UnitLock[unitnum]);
+
+            /* The unit is freed by the closer as soon as it has this reply */
+            pio->ios.io_Error = 0;
+            ReplyMsg((struct Message *)pio);
+            D(bug("%s: Shutting down\n", __func__));
+            return 0;
+        }
+        case CMD_FLUSH:
+            /* What is on its way to the output device, and what waits for CMD_START */
+            if (!(pd->pd_Flags & PDF_NOIO)) {
+                AbortIO((struct IORequest *)&pd->pd_ior0);
+                WaitIOStd((struct IOStdReq *)&pd->pd_ior0);
+                AbortIO((struct IORequest *)&pd->pd_ior1);
+                WaitIOStd((struct IOStdReq *)&pd->pd_ior1);
+                pd->pd_ior0.pd_i0.io_Error = 0;
+                pd->pd_ior1.pd_i1.io_Error = 0;
+            }
+            pu->pu_IOError = 0;
+            while ((node = RemHead((struct List *)&pu->pu_Held)))
+                pd_ReplyAborted((union printerIO *)node);
             break;
         case CMD_STOP:
-            stopped = TRUE;
+            pu->pu_Stopped = TRUE;
             break;
         case CMD_START:
-            stopped = FALSE;
-            break;
-        case CMD_WRITE:
-            if (stopped)
-                err = PDERR_CANCEL;
-            else {
-                err = Printer_Text_Write(pd, pio->ios.io_Data, pio->ios.io_Length);
-                if (err == 0)
-                    pio->ios.io_Actual = pio->ios.io_Length;
-            }
-            break;
-        case PRD_RAWWRITE:
-            if (stopped)
-                err = PDERR_CANCEL;
-            else {
-                err = pd_PWrite(pio->ios.io_Data, pio->ios.io_Length);
-                if (err == 0)
-                    pio->ios.io_Actual = pio->ios.io_Length;
-            }
-            break;
+            pu->pu_Stopped = FALSE;
+            /* An immediate command: answered before the queue is worked off */
+            pio->ios.io_Error = 0;
+            ReplyMsg((struct Message *)pio);
+            while (!pu->pu_Stopped && (node = RemHead((struct List *)&pu->pu_Held)))
+                pd_Print(pd, (union printerIO *)node);
+            continue;
         case PRD_RESETPREFS:
         case PRD_LOADPREFS:
         case PRD_USEPREFS:
         case PRD_SAVEPREFS:
         case PRD_READPREFS:
+        case PRD_WRITEPREFS:
         case PRD_EDITPREFS:
             err = pd_DoPreferences(pio, pio->ios.io_Command);
             break;
         case PRD_SETERRHOOK:
-            pd->pd_PUnit->pu_ErrHook = ((struct IOPrtErrReq *)pio)->io_Hook;
-            break;
-        case PRD_DUMPRPORTTAGS:
-            if (stopped)
-                err = PDERR_CANCEL;
-            else
-                err = Printer_Gfx_DumpRPort((struct IODRPReq *)pio, ((struct IODRPTagsReq *)pio)->io_TagList);
-            break;
-        case PRD_DUMPRPORT:
-        case PRD_TPEXTDUMPRPORT:
-            if (stopped)
-                err = PDERR_CANCEL;
-            else
-                err = Printer_Gfx_DumpRPort((struct IODRPReq *)pio, NULL);
+            pu->pu_ErrHook = ((struct IOPrtErrReq *)pio)->io_Hook;
             break;
         case PRD_QUERY:
             err = pd_Query(&pio->ios);
@@ -783,11 +1109,7 @@ static LONG pd_DriverTask(VOID)
         D(bug("%s: Command = %d, Result = %d\n", __func__, cmd, err));
 
         ReplyMsg((struct Message *)pio);
-    } while (cmd != CMD_CLOSEDEVICE);
-
-    D(bug("%s: Shutting down\n", __func__));
-
-    return 0;
+    }
 }
 
 /* Synchronize old-style prefs with new style prefs
@@ -916,6 +1238,7 @@ struct PrinterUnit *Printer_Unit(struct PrinterBase *PrinterBase, LONG unitnum)
                     /* Loop back to self */
                     pu->pu_PrinterBase = PrinterBase;
                     pd->pd_PUnit = pu;
+                    NEWLIST(&pu->pu_Held);
 
                     /* Duplicate the prefs */
                     CopyMem(&prefs, &pu->pu_Prefs, sizeof(prefs));

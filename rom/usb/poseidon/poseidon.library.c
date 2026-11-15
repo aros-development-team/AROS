@@ -75,7 +75,15 @@ static UWORD pGetMaxStreamsForEndpoint(const struct PsdEndpoint *pep);
 #define DOSBase ps->ps_DosBase
 #define TimerBase ps->ps_TimerIOReq.tr_node.io_Device
 
-/* LibInit */
+/*
+ * Initialize the Poseidon library base.
+ *
+ * Open utility.library (version 39 or later), initialize library-owned lists
+ * and locks, and create the two memory pools. Return TRUE after both pools and
+ * the base/configuration locks are ready. Return FALSE if utility.library or
+ * either pool cannot be obtained; release acquired library/pool resources on
+ * these failure paths.
+ */
 static int GM_UNIQUENAME(libInit)(LIBBASETYPEPTR ps)
 {
     KPRINTF(10, ("libInit ps: 0x%p SysBase: 0x%p\n",
@@ -139,7 +147,17 @@ static int GM_UNIQUENAME(libInit)(LIBBASETYPEPTR ps)
     return FALSE;
 }
 
-/* LibOpen */
+/*
+ * Perform first-open initialization of the Poseidon stack.
+ *
+ * With ps_ReentrantLock held, open timer.device and allocate default global
+ * configuration. After successful setup, mark the stack initialized and
+ * release the lock. Call pStartEventHandler(), then return TRUE without
+ * checking its result; TRUE does not guarantee that the event handler started.
+ * Later opens return TRUE without repeating setup. Return FALSE if the timer
+ * open or configuration allocation fails. If configuration allocation fails
+ * after opening the timer device, this function does not close that device.
+ */
 static int GM_UNIQUENAME(libOpen)(LIBBASETYPEPTR ps)
 {
     struct PsdIFFContext *pic;
@@ -225,6 +243,15 @@ static int GM_UNIQUENAME(libOpen)(LIBBASETYPEPTR ps)
     return TRUE;
 }
 
+/*
+ * Release Poseidon library-owned resources during expunge.
+ *
+ * Remove hardware, classes, error messages, and configuration forms. Signal
+ * the popup and event-handler tasks to stop, then wait for each task pointer
+ * to clear. Free remaining event and popup resources, close the timer device
+ * and libraries, delete the memory pools, unlink the library node, and
+ * return TRUE. The task-shutdown waits have no timeout.
+ */
 int GM_UNIQUENAME(libExpunge)(LIBBASETYPEPTR ps)
 {
     struct PsdHardware *phw = (struct PsdHardware *) ps->ps_Hardware.lh_Head;
@@ -3822,6 +3849,17 @@ pApplyDeviceBosCapabilities(struct PsdDevice *pd, const struct PsdBosCaps *caps)
     }
 }
 
+/*
+ * Extract supported USB BOS capabilities from a descriptor buffer.
+ *
+ * Return FALSE without modifying the output if the input or output pointer
+ * is NULL, or if bosbuflen is shorter than a BOS descriptor header. Otherwise
+ * clear boscaps, set hasBos, and parse recognized USB 2.0 extension,
+ * SuperSpeed, and Container ID capabilities. A zero-length or overrunning
+ * descriptor ends the scan; the function retains any capabilities
+ * already parsed and still returns TRUE. The BOS header's bLength supplies
+ * the initial scan offset; its value is not independently validated here.
+ */
 static BOOL
 pParseBosDescriptor(const UBYTE *bosbuf, UWORD bosbuflen,
                     struct PsdBosCaps *boscaps)
@@ -3932,6 +3970,17 @@ pParseBosDescriptor(const UBYTE *bosbuf, UWORD bosbuflen,
     return TRUE;
 }
 
+/*
+ * Request a device's USB BOS descriptor and decode supported capabilities.
+ *
+ * Use pp to request the BOS header, then request the descriptor again with
+ * its advertised total length, clamped to at least the header's bLength and
+ * at most the 256-byte local buffer. Restore the first header to that buffer
+ * before parsing. Return FALSE if either transfer reports an error; otherwise
+ * return pParseBosDescriptor()'s result. A larger BOS descriptor is truncated,
+ * and successful transfers do not by themselves guarantee complete parsing.
+ * pp must point to a valid device pipe.
+ */
 static BOOL
 pFetchBosCaps(struct PsdPipe *pp, struct PsdBosCaps *boscaps)
 {
@@ -3998,6 +4047,16 @@ pFetchBosCaps(struct PsdPipe *pp, struct PsdBosCaps *boscaps)
     return pParseBosDescriptor(bosbuf, toRead, boscaps);
 }
 
+/*
+ * Compute the default per-transfer USB link-power policy flags.
+ *
+ * Start with USBPWR_POLICY_BALANCED. Allow L1 for LPM-capable USB 2.1 or newer
+ * devices. For SuperSpeed devices, allow U1 when its exit latency is nonzero.
+ * Allow U2 only when its exit latency is nonzero and pep identifies a
+ * non-isochronous endpoint. Leave U3 disabled.
+ * pd must refer to a valid device; pep may be NULL. phw is not used. Return
+ * the policy flags without applying them to the hardware.
+ */
 static UWORD
 pBuildDefaultPowerPolicy(struct PsdHardware *phw, struct PsdDevice *pd,
                          struct PsdEndpoint *pep)
@@ -4058,6 +4117,14 @@ pBuildDefaultPowerPolicy(struct PsdHardware *phw, struct PsdDevice *pd,
     return policy;
 }
 
+/*
+ * Calculate the stream count encoded for a SuperSpeed bulk endpoint.
+ *
+ * Return zero for a NULL endpoint, a non-SuperSpeed device, a non-bulk
+ * endpoint, or a zero stream exponent. Otherwise return 1 << n, where n is
+ * the low five bits of pep_CompAttributes, saturating to 0xffff for n >= 16.
+ * A non-NULL endpoint must have a valid interface, configuration, and device.
+ */
 static UWORD
 pGetMaxStreamsForEndpoint(const struct PsdEndpoint *pep)
 {
@@ -4663,7 +4730,9 @@ fail:
 
     KPRINTF(5, ("psdSuspendBindings(%p)\n", pd));
     if(pd) {
-        if(ps->ps_GlobalCfg->pgc_ForceSuspend && (pd->pd_CurrentConfig->pc_Attr & USCAF_REMOTE_WAKEUP)) {
+        /* pd_CurrentConfig is NULL for an enumerated but unconfigured device */
+        if(ps->ps_GlobalCfg->pgc_ForceSuspend && pd->pd_CurrentConfig &&
+           (pd->pd_CurrentConfig->pc_Attr & USCAF_REMOTE_WAKEUP)) {
             force = TRUE;
         }
         // ask existing bindings to go to suspend first -- if they don't support it, break off
@@ -4709,8 +4778,8 @@ fail:
             }
         }
         pc = pd->pd_CurrentConfig;
-        pif = (struct PsdInterface *) pc->pc_Interfaces.lh_Head;
-        while(pif->pif_Node.ln_Succ) {
+        pif = pc ? (struct PsdInterface *) pc->pc_Interfaces.lh_Head : NULL;
+        while(pif && pif->pif_Node.ln_Succ) {
             if(pif->pif_IfBinding) {
                 if((puc = pif->pif_ClsBinding)) {
                     suspendable = 0;
@@ -4870,15 +4939,13 @@ fail:
         Sends UCM_AttemptResumeDevice to a device class binding. Application
         bindings are left alone. A failed class callback requests release of
         that binding and schedules a stack-wide psdClassScan(). The same
-        handling is applied to the first bound interface in the current
+        handling is applied to every bound interface in the current
         configuration. A rescan can create new bindings; it does not guarantee
-        replacement of each released binding.
+        replacement of each released binding. A device without a current
+        configuration has no interface bindings to resume.
 
     BUGS
-        Interface traversal stops at the first binding, even if its class
-        pointer is absent. Later bound interfaces are not resumed. Failures
-        are not returned and release completion is not checked. A non-NULL
-        device without a current configuration can cause a NULL dereference.
+        Failures are not returned and release completion is not checked.
 
     SEE ALSO
         psdResumeDevice(), psdSuspendBindings(), psdClassScan()
@@ -4910,19 +4977,21 @@ fail:
                 }
             }
         }
+        /* walk every bound interface, the same way psdSuspendBindings() does:
+           stopping at the first one left the remaining bindings of a composite
+           device (two-interface HID receivers, headsets) stopped after a resume */
         pc = pd->pd_CurrentConfig;
-        pif = (struct PsdInterface *) pc->pc_Interfaces.lh_Head;
-        while(pif->pif_Node.ln_Succ) {
+        pif = pc ? (struct PsdInterface *) pc->pc_Interfaces.lh_Head : NULL;
+        while(pif && pif->pif_Node.ln_Succ) {
             if(pif->pif_IfBinding) {
                 if((puc = pif->pif_ClsBinding)) {
                     res = usbDoMethod(UCM_AttemptResumeDevice, pif->pif_IfBinding);
                     if(!res) {
-                        // didn't want to suspend
+                        // didn't want to resume, so rebind
                         psdReleaseIfBinding(pif);
                         rescan = TRUE;
                     }
                 }
-                break;
             }
             pif = (struct PsdInterface *) pif->pif_Node.ln_Succ;
         }
@@ -6184,6 +6253,12 @@ static VOID pFreeDevAndBindings(LIBBASETYPEPTR ps, struct PsdDevice *pd)
         cancellation request to complete and releases the temporary object.
         It does not wait for or remove the original pipe's completion reply.
         Call psdWaitPipe() before reusing or releasing the original pipe.
+
+        Must be called from the task that owns the pipe's message port: the
+        cancellation request replies to that port and the wait blocks on its
+        signal bit, so another task would never be woken by the reply. A
+        class that needs to abort from a different context (e.g. from
+        usbDoMethodA()) should signal its own task to do the abort.
 
     BUGS
         If allocation of the temporary cancellation request fails, no
@@ -8590,11 +8665,14 @@ static void pReleaseAfterDOSBindings(LIBBASETYPEPTR ps)
         first when no interface binding exists. A configured forced name
         suppresses ordinary fallback even when that class is absent or refuses.
 
-        Without that forced-device path, tries unbound interfaces across eligible
-        configurations and alternate settings. Existing interface bindings
-        restrict configuration selection. Forced interface names restrict class
-        selection; otherwise classes are tried in list order. If no interface
-        binds, attempts a device-level binding.
+        Without that forced-device path, classes are offered the device one
+        binding-priority tier at a time (see UCCA_Priority), highest first.
+        Each tier is first tried on the unbound interfaces across eligible
+        configurations and alternate settings, in configuration and class
+        order, and then, if the device has no interface binding at all, at
+        device level. A lower-priority tier only sees what the higher tiers
+        declined. Existing interface bindings restrict configuration
+        selection. Forced interface names restrict class selection.
 
         Successful bindings update class use counts and send EHMB_ADDBINDING.
         Configuration and alternate-setting selection can change even when no
@@ -8626,6 +8704,8 @@ static void pReleaseAfterDOSBindings(LIBBASETYPEPTR ps)
 {
     AROS_LIBFUNC_INIT
     struct PsdUsbClass *puc;
+    struct PsdUsbClass *tierpuc;
+    struct PsdUsbClass *tierend;
     struct PsdConfig *pc;
     struct PsdInterface *pif;
     struct PsdInterface *firstpif;
@@ -8635,8 +8715,9 @@ static void pReleaseAfterDOSBindings(LIBBASETYPEPTR ps)
     UWORD hasifbinding;
     BOOL mainif;
     STRPTR owner;
+    BYTE tierpri;
 
-    KPRINTF(5, ("psdClassScan()\n"));
+    KPRINTF(5, ("psdHubClassScan()\n"));
 
     if(!(mp = CreateMsgPort())) {
         return;
@@ -8686,153 +8767,156 @@ static void pReleaseAfterDOSBindings(LIBBASETYPEPTR ps)
             break;
         }
 
-        /* Second attempt */
-        pc = (struct PsdConfig *) pd->pd_Configs.lh_Head;
-        while(pc->pc_Node.ln_Succ) {
-            if((!hasifbinding) || (hasifbinding == pc->pc_CfgNum)) {
-                /* If the current config is not the one selected, change it */
-                if(pd->pd_CurrCfg != pc->pc_CfgNum) {
-                    psdSetDeviceConfig(pp, pc->pc_CfgNum);
-                }
-                KPRINTF(5, ("  Config %ld\n", pc->pc_CfgNum));
-                /* If something went wrong above, we must exclude this config */
-                if(pd->pd_CurrCfg == pc->pc_CfgNum) {
-                    pif = (struct PsdInterface *) pc->pc_Interfaces.lh_Head;
-                    while(pif->pif_Node.ln_Succ) {
-                        KPRINTF(5, ("    Interface %ld\n", pif->pif_IfNum));
-                        firstpif = pif;
-                        mainif = TRUE;
-                        if(!pif->pif_IfBinding) {
-                            binding = NULL;
-                            do {
-                                if(!psdSetAltInterface(pp, pif)) {
-                                    pif->pif_IfBinding = NULL;
-                                    /* Okay, this alternate setting failed. Try to get next one */
-                                    if(!mainif) {
-                                        pif = (struct PsdInterface *) pif->pif_Node.ln_Succ;
-                                        if(pif->pif_Node.ln_Succ) {
-                                            KPRINTF(5, ("CONT!\n"));
-                                            continue;
-                                        } else {
-                                            KPRINTF(5, ("BREAK!\n"));
-                                            pif = firstpif;
-                                            break;
-                                        }
-                                    }
-                                }
-                                owner = psdGetForcedBinding(pd->pd_IDString, pif->pif_IDString);
-                                puc = (struct PsdUsbClass *) ps->ps_Classes.lh_Head;
-                                while(puc->puc_Node.ln_Succ) {
-                                    KPRINTF(5, (">>>PING %s!\n", puc->puc_ClassName));
-                                    if(owner) {
-                                        if(!strcmp(owner, puc->puc_ClassName)) {
-                                            binding = (APTR) usbDoMethod(UCM_ForceInterfaceBinding, pif);
-                                            if(!binding) {
-                                                psdAddErrorMsg(RETURN_ERROR, (STRPTR) GM_UNIQUENAME(libname),
-                                                               "Forced interface binding of %s to %s failed.", pd->pd_ProductStr, owner);
-                                            }
-                                        }
-                                        if(!binding) {
-                                            puc = (struct PsdUsbClass *) puc->puc_Node.ln_Succ;
-                                            continue;
-                                        }
-                                    } else {
-                                        binding = (APTR) usbDoMethod(UCM_AttemptInterfaceBinding, pif);
-                                    }
-                                    Forbid();
-                                    KPRINTF(5, ("<<<PONG!!\n"));
-                                    if(binding) {
-                                        KPRINTF(5, ("Got binding!\n"));
-                                        /* Find root config structure */
-                                        pif = (struct PsdInterface *) pc->pc_Interfaces.lh_Head;
-                                        while(pif->pif_Node.ln_Succ) {
-                                            if(pif->pif_IfNum == firstpif->pif_IfNum) {
+        /* The class list is kept sorted by binding priority (UCCA_Priority).
+           Walk it one priority tier at a time: a class only gets to see the
+           device once every class of a higher priority has declined it, at
+           device level as well as at interface level. Within a tier the
+           historical order holds: interface bindings first, in configuration
+           and class order, then device bindings. */
+        tierpuc = (struct PsdUsbClass *) ps->ps_Classes.lh_Head;
+        while(tierpuc->puc_Node.ln_Succ) {
+            tierpri = tierpuc->puc_Node.ln_Pri;
+            tierend = tierpuc;
+            while(tierend->puc_Node.ln_Succ && (tierend->puc_Node.ln_Pri == tierpri)) {
+                tierend = (struct PsdUsbClass *) tierend->puc_Node.ln_Succ;
+            }
+            KPRINTF(5, ("  Classes with priority %ld\n", (LONG) tierpri));
+
+            /* Interface bindings for this tier */
+            pc = (struct PsdConfig *) pd->pd_Configs.lh_Head;
+            while(pc->pc_Node.ln_Succ) {
+                if((!hasifbinding) || (hasifbinding == pc->pc_CfgNum)) {
+                    /* If the current config is not the one selected, change it */
+                    if(pd->pd_CurrCfg != pc->pc_CfgNum) {
+                        psdSetDeviceConfig(pp, pc->pc_CfgNum);
+                    }
+                    KPRINTF(5, ("  Config %ld\n", pc->pc_CfgNum));
+                    /* If something went wrong above, we must exclude this config */
+                    if(pd->pd_CurrCfg == pc->pc_CfgNum) {
+                        pif = (struct PsdInterface *) pc->pc_Interfaces.lh_Head;
+                        while(pif->pif_Node.ln_Succ) {
+                            KPRINTF(5, ("    Interface %ld\n", pif->pif_IfNum));
+                            firstpif = pif;
+                            mainif = TRUE;
+                            if(!pif->pif_IfBinding) {
+                                binding = NULL;
+                                do {
+                                    if(!psdSetAltInterface(pp, pif)) {
+                                        pif->pif_IfBinding = NULL;
+                                        /* Okay, this alternate setting failed. Try to get next one */
+                                        if(!mainif) {
+                                            pif = (struct PsdInterface *) pif->pif_Node.ln_Succ;
+                                            if(pif->pif_Node.ln_Succ) {
+                                                KPRINTF(5, ("CONT!\n"));
+                                                continue;
+                                            } else {
+                                                KPRINTF(5, ("BREAK!\n"));
+                                                pif = firstpif;
                                                 break;
                                             }
-                                            pif = (struct PsdInterface *) pif->pif_Node.ln_Succ;
                                         }
-                                        if(!pif->pif_Node.ln_Succ) {
-                                            KPRINTF(5, ("Fucked it up!\n"));
-                                            psdAddErrorMsg0(RETURN_FAIL, (STRPTR) GM_UNIQUENAME(libname), "Something incredibly stupid happend. I've given up.");
+                                    }
+                                    owner = psdGetForcedBinding(pd->pd_IDString, pif->pif_IDString);
+                                    puc = tierpuc;
+                                    while(puc != tierend) {
+                                        KPRINTF(5, (">>>PING %s!\n", puc->puc_ClassName));
+                                        if(owner) {
+                                            if(!strcmp(owner, puc->puc_ClassName)) {
+                                                binding = (APTR) usbDoMethod(UCM_ForceInterfaceBinding, pif);
+                                                if(!binding) {
+                                                    psdAddErrorMsg(RETURN_ERROR, (STRPTR) GM_UNIQUENAME(libname),
+                                                                   "Forced interface binding of %s to %s failed.", pd->pd_ProductStr, owner);
+                                                }
+                                            }
+                                            if(!binding) {
+                                                puc = (struct PsdUsbClass *) puc->puc_Node.ln_Succ;
+                                                continue;
+                                            }
+                                        } else {
+                                            binding = (APTR) usbDoMethod(UCM_AttemptInterfaceBinding, pif);
+                                        }
+                                        Forbid();
+                                        KPRINTF(5, ("<<<PONG!!\n"));
+                                        if(binding) {
+                                            KPRINTF(5, ("Got binding!\n"));
+                                            /* Find root config structure */
+                                            pif = (struct PsdInterface *) pc->pc_Interfaces.lh_Head;
+                                            while(pif->pif_Node.ln_Succ) {
+                                                if(pif->pif_IfNum == firstpif->pif_IfNum) {
+                                                    break;
+                                                }
+                                                pif = (struct PsdInterface *) pif->pif_Node.ln_Succ;
+                                            }
+                                            if(!pif->pif_Node.ln_Succ) {
+                                                KPRINTF(5, ("Fucked it up!\n"));
+                                                psdAddErrorMsg0(RETURN_FAIL, (STRPTR) GM_UNIQUENAME(libname), "Something incredibly stupid happend. I've given up.");
+                                                Permit();
+                                                break;
+                                            }
+                                            pif->pif_IfBinding = binding;
+                                            pif->pif_ClsBinding = puc;
+                                            hasifbinding = pc->pc_CfgNum;
+                                            puc->puc_UseCnt++;
+                                            psdSendEvent(EHMB_ADDBINDING, pd, NULL);
                                             Permit();
                                             break;
                                         }
-                                        pif->pif_IfBinding = binding;
-                                        pif->pif_ClsBinding = puc;
-                                        hasifbinding = pc->pc_CfgNum;
-                                        puc->puc_UseCnt++;
-                                        psdSendEvent(EHMB_ADDBINDING, pd, NULL);
                                         Permit();
+                                        puc = (struct PsdUsbClass *) puc->puc_Node.ln_Succ;
+                                    }
+                                    if(binding) {
                                         break;
                                     }
-                                    Permit();
-                                    puc = (struct PsdUsbClass *) puc->puc_Node.ln_Succ;
+                                    //break; /* FIXME: DISABLED ALTSCANNING */
+                                    /* Check alternate setting */
+                                    if(pif->pif_AlterIfs.lh_Head->ln_Succ) {
+                                        /* There are some alternative interfaces, start at top */
+                                        pif = (struct PsdInterface *) pif->pif_AlterIfs.lh_Head;
+                                        mainif = FALSE;
+                                    }
+                                } while(pif != firstpif);
+                                //pif->pif_IfBinding = binding;
+                                if(!binding) {
+                                    psdSetAltInterface(pp, pif);
                                 }
-                                if(binding) {
-                                    break;
+                                /* Hohum, search current main interface then */
+                                pif = (struct PsdInterface *) pc->pc_Interfaces.lh_Head;
+                                while(pif->pif_Node.ln_Succ) {
+                                    if(pif->pif_IfNum == firstpif->pif_IfNum) {
+                                        break;
+                                    }
+                                    pif = (struct PsdInterface *) pif->pif_Node.ln_Succ;
                                 }
-                                //break; /* FIXME: DISABLED ALTSCANNING */
-                                /* Check alternate setting */
-                                if(pif->pif_AlterIfs.lh_Head->ln_Succ) {
-                                    /* There are some alternative interfaces, start at top */
-                                    pif = (struct PsdInterface *) pif->pif_AlterIfs.lh_Head;
-                                    mainif = FALSE;
-                                }
-                            } while(pif != firstpif);
-                            //pif->pif_IfBinding = binding;
-                            if(!binding) {
-                                psdSetAltInterface(pp, pif);
                             }
-                            /* Hohum, search current main interface then */
-                            pif = (struct PsdInterface *) pc->pc_Interfaces.lh_Head;
-                            while(pif->pif_Node.ln_Succ) {
-                                if(pif->pif_IfNum == firstpif->pif_IfNum) {
-                                    break;
-                                }
-                                pif = (struct PsdInterface *) pif->pif_Node.ln_Succ;
-                            }
+                            pif = (struct PsdInterface *) pif->pif_Node.ln_Succ;
                         }
-                        pif = (struct PsdInterface *) pif->pif_Node.ln_Succ;
                     }
                 }
+                KPRINTF(5, ("End, next ConfigCheck!\n"));
+                pc = (struct PsdConfig *) pc->pc_Node.ln_Succ;
             }
-            KPRINTF(5, ("End, next ConfigCheck!\n"));
-            pc = (struct PsdConfig *) pc->pc_Node.ln_Succ;
-        }
-        /* Could not establish interface binding, try device binding then */
-        //psdUnlockPBase();
-        if(!hasifbinding) {
-            //pd->pd_DevBinding = (APTR) ~0UL;
-            binding = NULL;
-            owner = psdGetForcedBinding(pd->pd_IDString, NULL);
-            puc = (struct PsdUsbClass *) ps->ps_Classes.lh_Head;
-            while(puc->puc_Node.ln_Succ) {
+            /* No interface binding so far, offer the whole device to this tier.
+               A forced device owner was handled before the tier loop, so only
+               ordinary attempts are made here. */
+            if(!hasifbinding) {
                 binding = NULL;
-                if(owner) {
-                    if(!strcmp(owner, puc->puc_ClassName)) {
-                        binding = (APTR) usbDoMethod(UCM_ForceDeviceBinding, pd, TAG_END);
-                        if(!binding) {
-                            psdAddErrorMsg(RETURN_ERROR, (STRPTR) GM_UNIQUENAME(libname),
-                                           "Forced device binding of %s to %s failed.", pd->pd_ProductStr, owner);
-                        }
-                    }
-                    if(!binding) {
-                        puc = (struct PsdUsbClass *) puc->puc_Node.ln_Succ;
-                        continue;
-                    }
-                } else {
+                puc = tierpuc;
+                while(puc != tierend) {
                     binding = (APTR) usbDoMethod(UCM_AttemptDeviceBinding, pd);
+                    if(binding) {
+                        pd->pd_DevBinding = binding;
+                        pd->pd_ClsBinding = puc;
+                        puc->puc_UseCnt++;
+                        psdSendEvent(EHMB_ADDBINDING, pd, NULL);
+                        break;
+                    }
+                    puc = (struct PsdUsbClass *) puc->puc_Node.ln_Succ;
                 }
                 if(binding) {
-                    pd->pd_DevBinding = binding;
-                    pd->pd_ClsBinding = puc;
-                    puc->puc_UseCnt++;
-                    psdSendEvent(EHMB_ADDBINDING, pd, NULL);
                     break;
                 }
-                puc = (struct PsdUsbClass *) puc->puc_Node.ln_Succ;
             }
-            pd->pd_DevBinding = binding;
+            tierpuc = tierend;
         }
         break;
     }

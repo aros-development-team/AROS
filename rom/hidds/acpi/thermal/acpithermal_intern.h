@@ -1,6 +1,11 @@
 #ifndef HWACPITHERMAL_INTERN_H
 #define HWACPITHERMAL_INTERN_H
 
+#include <exec/libraries.h>
+
+/* Opened by the init code; no autoinit base is used (__ACPICA_NOLIBBASE__) */
+extern struct Library *ACPICABase;
+
 #include <proto/acpica.h>
 
 #include <exec/libraries.h>
@@ -9,26 +14,15 @@
 
 #include <hidd/hidd.h>
 #include <hidd/telemetry.h>
+#include <hidd/thermal.h>
 #include <hidd/acpithermal.h>
 
 #include <acpica/acnames.h>
 #include <acpica/accommon.h>
 
-#define ACPITHERMAL_ACTIVE_MAX 10
-
-enum
-{
-    ACPITHERMAL_FLAG_CRT = 1 << 0,
-    ACPITHERMAL_FLAG_HOT = 1 << 1,
-    ACPITHERMAL_FLAG_PSV = 1 << 2
-};
-
 struct HWACPIThermalData
 {
     ACPI_HANDLE                 acpithermal_Handle;
-    ULONG                       acpithermal_TelemetryCount;
-    ULONG                       acpithermal_Flags;
-    ULONG                       acpithermal_ActiveMask;
 };
 
 struct ACPIThermalNode
@@ -52,6 +46,7 @@ struct acpithermalclass_staticdata
     OOP_AttrBase                hwAB;
     OOP_AttrBase                hiddAB;
     OOP_AttrBase                hiddTelemetryAB;
+    OOP_AttrBase                hiddThermalAB;
     OOP_AttrBase                hwACPIThermalAB;
 };
 
@@ -69,6 +64,7 @@ struct HWACPIThermalIntBase
 #define __IHW                 (_csd->hwAB)
 #define __IHidd               (_csd->hiddAB)
 #define __IHidd_Telemetry     (_csd->hiddTelemetryAB)
+#define __IHidd_Thermal       (_csd->hiddThermalAB)
 
 #define OOPBase                 (_csd->cs_OOPBase)
 

@@ -28,11 +28,6 @@
 #include "__dos64.h"
 #include "__upath.h"
 
-#ifdef errno
-#undef errno
-#endif
-#define errno (*(&((struct PosixCBase *)PosixCBase)->StdCBase->_errno))
-
 static int __fdlib_available(struct PosixCIntBase *PosixCBase)
 {
     if (PosixCBase->PosixCFDBase == NULL)
@@ -41,6 +36,11 @@ static int __fdlib_available(struct PosixCIntBase *PosixCBase)
     return PosixCBase->PosixCFDBase != NULL;
 }
 
+/*
+    errno is the calling thread's (__stdc_geterrnoptr()), which need not be
+    the errno of the stdc base this posixc base holds. While the library is
+    being opened StdCBase is not set yet and errno cannot be reached.
+*/
 static void __set_errno(struct PosixCIntBase *PosixCBase, int enval)
 {
     if (((struct PosixCBase *)PosixCBase)->StdCBase) {

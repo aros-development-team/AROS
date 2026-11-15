@@ -61,7 +61,6 @@
 #include <netinet/tcp_seq.h>
 #include <netinet/tcp_timer.h>
 #include <netinet/tcp_var.h>
-#include <netinet/tcpip.h>
 
 #include <conf.h>
 #include <netinet/tcp_cc.h>
@@ -73,6 +72,7 @@ int	tcp_maxidle;
 
 #include "tcp_compat.h"
 #include "tcp_syncache.h"
+#include <net/netcore_map.h>        /* always the last include */
 
 void tcp_pmtud_blackhole(struct tcpcb *);   /* tcp_subr.c */
 
@@ -92,22 +92,21 @@ tcp_ms(void)
 }
 
 /*
- * Fast timeout routine, every fast tick: the retransmission timers whose
- * deadline has come (so that the RTO is not rounded to the 500 ms of the
- * slow one), then the delayed ACKs.
+ * The connections whose retransmission deadline (RTO or loss probe) has
+ * come, from the deadline timer (kern/amiga_time.c) or the fast tick. The
+ * earliest deadline still set, *any set if there is one.
  */
-void
-tcp_fasttimo()
+u_int32_t
+tcp_rexmt_due(int *any)
 {
     register struct inpcb *inp, *inpnxt;
     register struct tcpcb *tp;
+    u_int32_t now, next = 0;
     int s;
 
-    u_int32_t now;
-
+    *any = 0;
     s = splnet();
     now = tcp_ms();
-
     for(inp = tcb.lh_first; inp != NULL; inp = inpnxt) {
         inpnxt = inp->inp_list.le_next;
         if((tp = (struct tcpcb *)inp->inp_ppcb) == NULL)
@@ -117,6 +116,34 @@ tcp_fasttimo()
             if((tp = tcp_timers(tp, TCPT_REXMT)) == NULL)
                 continue;       /* dropped */
         }
+        if(tp->t_timer[TCPT_REXMT] && (!*any || (int)(tp->t_rexmt_at - next) < 0)) {
+            next = tp->t_rexmt_at;
+            *any = 1;
+        }
+    }
+    splx(s);
+    return next;
+}
+
+/*
+ * Fast timeout routine, every fast tick: the retransmission deadlines
+ * that have come (should the deadline timer be late), then the delayed
+ * ACKs.
+ */
+void
+tcp_fasttimo()
+{
+    register struct inpcb *inp, *inpnxt;
+    int s, any;
+
+    (void) tcp_rexmt_due(&any);
+    s = splnet();
+    for(inp = tcb.lh_first; inp != NULL; inp = inpnxt) {
+        register struct tcpcb *tp;
+
+        inpnxt = inp->inp_list.le_next;
+        if((tp = (struct tcpcb *)inp->inp_ppcb) == NULL)
+            continue;
         if(tp->t_flags & TF_DELACK) {
             tp->t_flags &= ~TF_DELACK;
             tp->t_flags |= TF_ACKNOW;
@@ -219,6 +246,82 @@ int	tcp_backoff[TCP_MAXRXTSHIFT + 1] =
 { 1, 2, 4, 8, 16, 32, 64, 64, 64, 64, 64, 64, 64 };
 
 /*
+ * Tail Loss Probe (RFC 8985 section 7). A loss at the end of a flight - the
+ * last segments of a reply - brings no duplicate ACKs, only the RTO (at
+ * least 200 ms, many RTTs on a LAN). With SACK, a connection with data in
+ * flight, not in loss recovery and with no probe out, arms the probe
+ * timeout instead when it comes first: 2 * SRTT, plus the worst delayed ACK
+ * (200 ms) when one segment is in flight, and no later than the RTO: the
+ * probe then takes the first RTO's place, and a loss it repairs reduces
+ * cwnd once instead of to one segment. tcp_tlp_arm() runs right after the
+ * RTO is armed (from now): the probe timeout replaces it, TF_PTO says which
+ * it is.
+ */
+int	tcp_do_tlp = 1;			/* net.inet.tcp.tlp */
+
+/* TCP stops (tcp_deinit()): this file's variables as the file has them */
+void
+tcp_timer_defaults(void)
+{
+    tcp_keepidle = TCPTV_KEEP_IDLE;
+    tcp_keepintvl = TCPTV_KEEPINTVL;
+    tcp_maxidle = 0;
+    tcp_do_tlp = 1;
+}
+
+#define	TCP_WCDELACKT_MS	200	/* worst-case delayed ACK (RFC 8985) */
+
+void
+tcp_tlp_arm(struct tcpcb *tp)
+{
+    u_int32_t pto;
+
+    tp->t_flagsext &= ~TF_PTO;
+    if(!tcp_do_tlp || tp->t_timer[TCPT_REXMT] == 0 ||
+            (tp->t_state != TCPS_ESTABLISHED && tp->t_state != TCPS_CLOSE_WAIT) ||
+            !(tp->t_flags & TF_SACK_PERMIT) || (tp->t_flagsext & (TF_IN_FASTRECOV | TF_TLP)) ||
+            tp->t_rxtshift || tp->t_srtt == 0 || tp->snd_max == tp->snd_una)
+        return;
+    pto = 2 * (u_int32_t)(tp->t_srtt >> TCP_RTT_SHIFT);
+    if(tp->snd_max - tp->snd_una <= tp->t_maxseg)
+        pto += TCP_WCDELACKT_MS;
+    if(pto < 10)
+        pto = 10;
+    if(pto > (u_int32_t)tp->t_rxtcur)
+        pto = tp->t_rxtcur;             /* the probe takes the RTO's place */
+    tp->t_rexmt_at = tcp_ms() + pto;
+    tp->t_flagsext |= TF_PTO;
+    tcp_timer_want(tp->t_rexmt_at);
+}
+
+/*
+ * The probe timeout fired: send the last segment again (RFC 8985 section
+ * 7.3; it would rather send new data, but the tail case has none), whatever
+ * cwnd says, mark the probe out and arm the RTO. tcp_input() decides from
+ * the ACKs whether it repaired a loss (cwnd is reduced once) or both copies
+ * arrived (a D-SACK).
+ */
+static void
+tcp_tlp_send(struct tcpcb *tp)
+{
+    u_long flight = tp->snd_max - tp->snd_una, cwnd = tp->snd_cwnd;
+    tcp_seq nxt = tp->snd_nxt;
+
+    if(flight == 0)
+        return;
+    tp->t_flagsext |= TF_TLP;
+    tp->t_tlp_end = tp->snd_max;
+    tp->snd_nxt = tp->snd_max - MIN(flight, tp->t_maxseg);
+    tp->snd_cwnd = flight;              /* lets out just that segment */
+    (void) tcp_output(tp);
+    tp->snd_cwnd = cwnd;
+    if(SEQ_GT(nxt, tp->snd_nxt))
+        tp->snd_nxt = nxt;
+    if(tp->t_timer[TCPT_REXMT] == 0)
+        tp->t_timer[TCPT_REXMT] = TCPT_REXMT_ARM(tp);
+}
+
+/*
  * TCP timer processing.
  */
 struct tcpcb *
@@ -250,6 +353,13 @@ int timer;
      * to a longer retransmit interval and retransmit one segment.
      */
     case TCPT_REXMT:
+        if(tp->t_flagsext & TF_PTO) {       /* the loss probe's, not the RTO */
+            tcp_tlp_send(tp);
+            break;
+        }
+        tp->t_flagsext &= ~TF_TLP;          /* an RTO ends the probe's episode */
+        tcp_rack_reset(tp);
+        tp->t_flagsext &= ~TF_UNDO;         /* an RTO is not undone here */
         D(bug("[AROSTCP:TCP] %s: REXMT timer fired: tp=0x%p state=%d "
               "rxtshift=%d snd_una=%lu snd_nxt=%lu snd_max=%lu\n",
               __func__, tp, tp->t_state, tp->t_rxtshift,
@@ -397,13 +507,13 @@ int timer;
              * The keepalive packet must have nonzero length
              * to get a 4.2 host to respond.
              */
-            tcp_respond(tp, tp->t_template, (struct mbuf *)NULL,
-                        tp->rcv_nxt - 1, tp->snd_una - 1, 0,
-                        0, NULL, NULL);
+            tcp_respond(tp, tp->t_inpcb->inp_family, &tp->t_inpcb->inp_la,
+                        &tp->t_inpcb->inp_fa, tp->t_template,
+                        (struct mbuf *)NULL, tp->rcv_nxt - 1, tp->snd_una - 1, 0);
 #else
-            tcp_respond(tp, tp->t_template, (struct mbuf *)NULL,
-                        tp->rcv_nxt, tp->snd_una - 1, 0,
-                        0, NULL, NULL);
+            tcp_respond(tp, tp->t_inpcb->inp_family, &tp->t_inpcb->inp_la,
+                        &tp->t_inpcb->inp_fa, tp->t_template,
+                        (struct mbuf *)NULL, tp->rcv_nxt, tp->snd_una - 1, 0);
 #endif
             tp->t_timer[TCPT_KEEP] = TP_KEEPINTVL(tp);
         } else

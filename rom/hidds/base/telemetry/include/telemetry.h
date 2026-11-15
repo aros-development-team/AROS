@@ -25,7 +25,13 @@ enum {
     vHW_TelemetryUnit_Celsius,
     vHW_TelemetryUnit_Volts,
     vHW_TelemetryUnit_Amps,
-    vHW_TelemetryUnit_Watts
+    vHW_TelemetryUnit_Watts,
+    /* Thousandths, for readings a whole unit is too coarse for: a GPU core
+       runs at 0.95 V, a thermal zone reports tenths of a degree. */
+    vHW_TelemetryUnit_MilliCelsius,
+    vHW_TelemetryUnit_MilliVolts,
+    vHW_TelemetryUnit_MilliAmps,
+    vHW_TelemetryUnit_MilliWatts
 };
 
 #endif /* !HIDD_TELEMETRY_H */

@@ -444,6 +444,7 @@ AROS_UFH0(void, bootkbd_HidTask)
     UBYTE *buf;
     LONG ioerr;
 
+    nApplyInputTaskPriFloor();
     if((nch = bootkbd_AllocHid()))
     {
         Forbid();
@@ -560,7 +561,8 @@ void nParseKeys(struct NepClassHid *nch, UBYTE *buf)
                             while(node->ln_Succ)
                             {
                                 KPRINTF(20, ("Kicking %s\n", node->ln_Name));
-                                Cause((struct Interrupt *) node);
+                                AROS_INTC1(((struct Interrupt *) node)->is_Code,
+                                           ((struct Interrupt *) node)->is_Data);
                                 node = node->ln_Succ;
                             }
                             KPRINTF(20, ("Done... awaiting doom\n"));
@@ -578,6 +580,17 @@ void nParseKeys(struct NepClassHid *nch, UBYTE *buf)
         ColdReboot();
     }
     KPRINTF(1, ("Qualifier %08lx\n", qualifier));
+    /* HID usage 07:01 ErrorRollOver: more keys down than the keyboard can
+       report, the key array is meaningless. Keep the previous state (as
+       hid.class and Linux hid-core do); diffing it would release every held
+       key and press it again when it clears. */
+    for(nkey = 2; nkey < 8; nkey++)
+    {
+        if(buf[nkey] == 0x01)
+        {
+            return;
+        }
+    }
     for(nkey = 2; nkey < 8; nkey++)
     {
         keycode = nch->nch_OldKeyArray[nkey];
@@ -641,6 +654,10 @@ void nParseKeys(struct NepClassHid *nch, UBYTE *buf)
                 }
             } else {
                 bonuskey = FALSE;
+            }
+            if(iecode == 0xff) /* no Amiga key for this usage (0xff|IECODE_UP_PREFIX == 0xff) */
+            {
+                continue;
             }
             nch->nch_FakeEvent.ie_Class = IECLASS_RAWKEY;
             nch->nch_FakeEvent.ie_SubClass = 0;
@@ -720,6 +737,10 @@ void nParseKeys(struct NepClassHid *nch, UBYTE *buf)
                         qualifier |= IEQUALIFIER_CONTROL;
                         break;
                 }
+            }
+            if(iecode == 0xff) /* no Amiga key for this usage */
+            {
+                continue;
             }
             if(keycode == 0x39) /* Caps Lock */
             {

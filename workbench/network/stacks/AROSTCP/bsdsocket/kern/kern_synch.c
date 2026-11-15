@@ -31,8 +31,11 @@
 #include <kern/amiga_includes.h>
 
 #include <api/amiga_api.h>
+#include <kern/netdiag.h>
 
 #include <proto/exec.h>
+
+extern struct Task *AROSTCP_Task;
 
 /*
  * Note about spl-functions: this implementation does NOT check for software
@@ -337,8 +340,18 @@ tsleep(struct SocketBase *p,  /* Library base through which this call came */
     D(bug("[AROSTCP](kern_synch.c) tsleep()\n"));
 #endif
 
+    /*
+     * The stack's task must never sleep here: it would wait on another
+     * base's signals with the stack's work undone, and give up a
+     * syscall_semaphore it does not hold. Counted always, so that a stack
+     * that stopped can be asked whether this is why (kern/netdiag.h).
+     */
+    if(FindTask(NULL) == AROSTCP_Task) {
+        netdiag.tsleep_stack++;
+        netdiag.tsleep_wmesg = wmesg;
+    }
+
 #if DIAGNOSTIC
-    extern struct Task *AROSTCP_Task;
     if(FindTask(NULL) == AROSTCP_Task) {
         log(LOG_ERR, "TCP/IP stack did tsleep() itself!");
         return (EINVAL);

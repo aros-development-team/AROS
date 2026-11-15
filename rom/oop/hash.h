@@ -1,7 +1,7 @@
 #ifndef HASH_H
 #define HASH_H
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2026, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Demo of new OOP system - General hashing definitions.
@@ -16,9 +16,18 @@
 #endif
 
 /* Macros */
+/* The table has HashSize() buckets, a power of two, and HashMask() is
+   HashSize() - 1, so that a hash value ANDed with it is a bucket index. */
 #define HashMask(ht) ( (ht)->HashMask )
 #define HashSize(ht)  ( HashMask(ht) + 1 )
 #define MAX_HASH_CHARS 50
+
+/* Bucket index of an integer key. The integer keys are interface method
+   bases, whose low NUM_METHOD_BITS bits are always zero, so the bits above
+   them are folded in. Every lookup of an integer table, including the
+   method dispatch in metaclass.c, uses this. */
+#define HashIndexULONG(mask, id) \
+    ((ULONG)(((id) >> NUM_METHOD_BITS) ^ (id)) & (mask))
 
 /* Types of hashtables. Can hash integers or strings */
 #define HT_INTEGER	1
@@ -60,7 +69,7 @@ struct HashTable
     
     ULONG (*CalcHash)(struct HashTable *ht, IPTR id);
     
-    /* Mask used by CalcHash()	*/
+    /* Number of buckets - 1. The number of buckets is a power of two. */
     ULONG HashMask;
     
     /* Hash table type: HT_STRING or HT_INTEGER */
@@ -69,7 +78,8 @@ struct HashTable
 
 /* Protos */
 
-/* Create a new empty hashtable. Type can be HT_STRING or HT_INTEGER */
+/* Create a new empty hashtable for about 'entries' items, with at least
+   twice as many buckets. Type can be HT_STRING, HT_INTEGER or HT_UUID */
 struct HashTable *NewHash(ULONG entries, UBYTE type, struct IntOOPBase *OOPBase);
 
 /* Free a hashtable previously allocated with NewHash().

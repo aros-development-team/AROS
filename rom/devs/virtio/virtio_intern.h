@@ -133,6 +133,8 @@ typedef struct {
     volatile UBYTE                        *dev_NotifyBase;
     volatile UBYTE                        *dev_ISR;
     ULONG                                  dev_NotifyOffMultiplier;
+    APTR                                   dev_Windows[4];
+    ULONG                                  dev_WindowSizes[4];
 
     UQUAD               dev_Features;
 
@@ -189,10 +191,12 @@ struct virtio_queue {
     volatile UWORD          *q_Notify;
 
     struct Interrupt        q_IntHandler;
+    BOOL                    q_IntInstalled;
 
     struct Task             *q_IOTask;
 
     struct SignalSemaphore  q_Lock;
+    struct List             q_Pending;
 };
 
 struct virtio_Controller
@@ -202,6 +206,8 @@ struct virtio_Controller
     OOP_Object          *ac_Object;
     struct Interrupt    ac_ResetHandler;
     device_t            ac_dev;
+    BOOL                ac_Registered;
+    char                ac_BusName[40];
 };
 
 struct virtio_Bus

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2017-2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 2017-2026, The AROS Development Team. All rights reserved.
 */
 
 #define DEBUG 0
@@ -22,6 +22,13 @@
 #include "acpibutton_intern.h"
 
 #include LC_LIBDEFS_FILE
+
+/*
+ * Provide our own base, so that the autoinit code from the acpica linklib
+ * is not pulled in. acpica.library is opened in the init code instead, which
+ * quietly fails on systems without ACPI.
+ */
+struct Library *ACPICABase = NULL;
 
 AROS_UFH3(IPTR, ACPIButton_PowerEventHandle,
     AROS_UFHA(struct Hook *, hook, A0),
@@ -195,7 +202,7 @@ static int ACPIButton_Init(LIBBASETYPEPTR LIBBASE)
     D(bug("[HWACPIButton] %s()\n", __func__));
     D(bug("[HWACPIButton] %s: OOPBase @ 0x%p\n", __func__, OOPBase));
 
-    _csd->cs_ACPICABase = OpenLibrary("acpica.library", 0);
+    ACPICABase = _csd->cs_ACPICABase = OpenLibrary("acpica.library", 0);
     if (!_csd->cs_ACPICABase)
         return FALSE;
 

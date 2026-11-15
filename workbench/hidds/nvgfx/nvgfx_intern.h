@@ -10,6 +10,9 @@
 #include <hidd/i2c.h>
 #include <hidd/gallium.h>
 #include <hidd/vulkan_hidd.h>
+#include <hidd/telemetry.h>
+#include <hidd/thermal.h>
+#include <hidd/fan.h>
 
 #include <nouveau.h>
 
@@ -239,6 +242,24 @@ struct HIDDNVGfxBitMapData
 #define NOUVEAU_DECSTATE_COPYING    2   /* copy-out issued, not waited for */
 #define NOUVEAU_DECSTATE_ERROR      3   /* the decoder reported an error */
 
+/*
+ * The card's sensors as telemetry objects (nvgfx_telemetry.c). The class IDs
+ * are the driver's own: users find the objects through the system tree and
+ * the relations, and talk to them through the telemetry interfaces.
+ */
+#define CLID_Hidd_Thermal_NVGfx     "hidd.telemetry.thermal.nvgfx"
+#define CLID_Hidd_Fan_NVGfx         "hidd.telemetry.fan.nvgfx"
+#define CLID_Hidd_Telemetry_NVGfx   "hidd.telemetry.nvgfx"
+
+struct HIDDNVGfxSensorData
+{
+    ULONG entries;              /* power class: bits of the entries present */
+};
+
+/* Create the telemetry objects of the card 'gfx' drives; 'pcidev' is its pci.hidd object */
+VOID HIDDNVGfxTelemetryInit(OOP_Class *cl, OOP_Object *gfx, OOP_Object *pcidev);
+IPTR HIDDNVGfxDrmCall(APTR func, IPTR a0, IPTR a1, IPTR a2, IPTR a3);
+
 /* class and interface IDs, shared with drm-compat/linux_i2c.c */
 #include <nvgfx_i2c.h>
 
@@ -317,6 +338,9 @@ struct staticdata
     OOP_Class       *displayclass;
     OOP_Class       *bmclass;
     OOP_Class       *i2cclass;
+    OOP_Class       *thermalclass;      /* the card's sensors (nvgfx_telemetry.c) */
+    OOP_Class       *fanclass;
+    OOP_Class       *powerclass;
 
     /* the 3D parts opened on demand (nvgfx_nvdd.c) */
     struct SignalSemaphore nvddLock;

@@ -47,6 +47,11 @@
 #define YOFF  0
 
 #if defined(__amigaos3__)
+/* AmigaOS 3-only helper: rewrite alpha in a writable ARGB array from
+ * text/background color differences. Require valid dimensions and usable
+ * channel differences; no division or range validation is added. Excluded
+ * on AROS.
+ */
 static void reconstructAlpha(ULONG *pix, ULONG width, ULONG height, ULONG text, ULONG back)
 {
   LONG tr = (text >> 16) & 0xff;
@@ -89,6 +94,11 @@ static void reconstructAlpha(ULONG *pix, ULONG width, ULONG height, ULONG text, 
   }
 }
 
+/* AmigaOS 3-only helper: render into a temporary bitmap, reconstruct alpha,
+ * transfer pixels and free temporary storage. Advance text position even if
+ * allocation fails. Require live graphics resources; no success result.
+ * Excluded on AROS.
+ */
 static void AlphaText(struct RastPort *rp, const char *txt, LONG len, ULONG fgcolor, ULONG alpha)
 {
   struct TextExtent te;
@@ -128,6 +138,13 @@ static void AlphaText(struct RastPort *rp, const char *txt, LONG len, ULONG fgco
 }
 #endif
 
+/* Render content, selection, cursor and placeholder into the instance
+ * bitmap, blit it, and optionally draw the disabled pattern. Require valid
+ * font/render/bitmap state and bounded positions. May adjust DisplayPos.
+ * Secret masking needs temporary pool storage; allocation failure is not a
+ * confidentiality-safe rendering failure. Free temporary storage; no text-
+ * change notification is emitted.
+ */
 VOID PrintString(struct IClass *cl, Object *obj)
 {
   struct InstData *data     = (struct InstData *)INST_DATA(cl, obj);

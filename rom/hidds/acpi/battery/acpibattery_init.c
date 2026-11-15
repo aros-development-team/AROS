@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2022, The AROS Development Team. All rights reserved.
+    Copyright (C) 2022-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <aros/debug.h>
@@ -22,6 +22,13 @@
 #include "acpibattery_intern.h"
 
 #include LC_LIBDEFS_FILE
+
+/*
+ * Provide our own base, so that the autoinit code from the acpica linklib
+ * is not pulled in. acpica.library is opened in the init code instead, which
+ * quietly fails on systems without ACPI.
+ */
+struct Library *ACPICABase = NULL;
 
 #define DSCAN(x)
 
@@ -94,7 +101,7 @@ static int ACPIBattery_Init(LIBBASETYPEPTR LIBBASE)
     D(bug("[HWACPIBattery] %s()\n", __func__));
     D(bug("[HWACPIBattery] %s: OOPBase @ 0x%p\n", __func__, OOPBase));
 
-    _csd->cs_ACPICABase = OpenLibrary("acpica.library", 0);
+    ACPICABase = _csd->cs_ACPICABase = OpenLibrary("acpica.library", 0);
     if (!_csd->cs_ACPICABase)
         return FALSE;
 

@@ -53,7 +53,7 @@ AROS_LH3(spinlock_t *, KrnSpinLock,
                 prevwait = tls->SpinWait;
                 prevcaller = tls->SpinCaller;
                 prevsince = tls->SpinSince;
-                asm volatile("rdtime %0" : "=r"(tls->SpinSince));
+                tls->SpinSince = krnRVReadTime();
                 tls->SpinCaller = __builtin_return_address(0);
                 tls->SpinWait = lock;
             }
@@ -75,7 +75,7 @@ AROS_LH3(spinlock_t *, KrnSpinLock,
                 prevwait = tls->SpinWait;
                 prevcaller = tls->SpinCaller;
                 prevsince = tls->SpinSince;
-                asm volatile("rdtime %0" : "=r"(tls->SpinSince));
+                tls->SpinSince = krnRVReadTime();
                 tls->SpinCaller = __builtin_return_address(0);
                 tls->SpinWait = lock;
             }

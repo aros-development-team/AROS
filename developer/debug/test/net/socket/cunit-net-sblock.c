@@ -48,7 +48,7 @@ static int helper_waitall(LONG id, int len)
         free(buf);
         return 20;
     }
-    if ((s = ObtainSocket(id, AF_INET, SOCK_STREAM, 0)) >= 0) {
+    if ((s = ObtainSocket(id, st_any_family(), SOCK_STREAM, 0)) >= 0) {
         recv(s, buf, len, MSG_WAITALL);
         CloseSocket(s);
     }
@@ -67,7 +67,7 @@ static int helper_send(LONG id, int first, int later)
         free(buf);
         return 20;
     }
-    if ((s = ObtainSocket(id, AF_INET, SOCK_STREAM, 0)) >= 0) {
+    if ((s = ObtainSocket(id, st_any_family(), SOCK_STREAM, 0)) >= 0) {
         memset(buf, 'x', first > later ? first : later);
         send(s, buf, first, 0);
         Delay(SEND_DELAY * TICKS_PER_SECOND);
@@ -96,27 +96,42 @@ static int spawn(const char *args)
 
 /* ---- the tests -------------------------------------------------------- */
 
-/* A connected TCP pair over the loopback: *a the client, *b the server. */
+/* A connected TCP pair over the loopback: *a the client, *b the server.
+ * Not about a family: IPv4, or IPv6 where the stack has no IPv4 (the
+ * helpers ask the same question and get the same answer). On failure
+ * nothing is left open and both are -1. */
 static int tcp_pair(int *a, int *b)
 {
-    struct sockaddr_in sa;
-    socklen_t len = sizeof(sa);
-    int l = socket(AF_INET, SOCK_STREAM, 0);
+    struct sockaddr_storage sa;
+    int family = st_any_family();
+    socklen_t alen = st_loopback(family, &sa, 0), len = sizeof(sa);
+    int l = socket(family, SOCK_STREAM, 0);
 
-    bzero(&sa, sizeof(sa));
-    sa.sin_len = sizeof(sa);
-    sa.sin_family = AF_INET;
-    sa.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
-    if (l < 0 || bind(l, (struct sockaddr *)&sa, sizeof(sa)) != 0 || listen(l, 1) != 0 ||
-            getsockname(l, (struct sockaddr *)&sa, &len) != 0)
+    *a = *b = -1;
+    if (l < 0)
         return -1;
-    *a = socket(AF_INET, SOCK_STREAM, 0);
-    if (*a < 0 || connect(*a, (struct sockaddr *)&sa, sizeof(sa)) != 0)
+    if (bind(l, (struct sockaddr *)&sa, alen) != 0 || listen(l, 1) != 0 ||
+            getsockname(l, (struct sockaddr *)&sa, &len) != 0) {
+        CloseSocket(l);
         return -1;
+    }
+    *a = socket(family, SOCK_STREAM, 0);
+    if (*a < 0 || connect(*a, (struct sockaddr *)&sa, alen) != 0) {
+        if (*a >= 0)
+            CloseSocket(*a);
+        *a = -1;
+        CloseSocket(l);
+        return -1;
+    }
     len = sizeof(sa);
     *b = accept(l, (struct sockaddr *)&sa, &len);
     CloseSocket(l);
-    return *b >= 0 ? 0 : -1;
+    if (*b < 0) {
+        CloseSocket(*a);
+        *a = -1;
+        return -1;
+    }
+    return 0;
 }
 
 /* DOS ticks since t0. */
@@ -172,7 +187,7 @@ void testSBLOCK_DONTWAIT(void)
 {
     struct DateStamp t0;
     char c;
-    int a, r;
+    int a = -1, r;
 
     CU_ASSERT_EQUAL_FATAL(held(&a, 0), 0);
     DateStamp(&t0);
@@ -190,7 +205,7 @@ void testSBLOCK_NBIO(void)
     struct DateStamp t0;
     long on = 1;
     char c;
-    int a, r;
+    int a = -1, r;
 
     CU_ASSERT_EQUAL_FATAL(held(&a, 0), 0);
     CU_ASSERT_EQUAL(IoctlSocket(a, FIONBIO, (char *)&on), 0);
@@ -203,19 +218,23 @@ void testSBLOCK_NBIO(void)
     CloseSocket(a);
 }
 
-/* A blocking call waits for the other one, then gets its data. */
+/* A blocking call waits for the other one, then gets its data. The data
+ * comes SEND_DELAY s after the sending helper started, which held() returns
+ * 1 s after starting (TICKS_PER_SECOND / 2 after the receiving one): about
+ * SEND_DELAY - 1 s from t0, less by however late held()'s Delay() returned,
+ * so the call is checked to have waited half of that. */
 void testSBLOCK_BLOCKING_WAITS(void)
 {
     struct DateStamp t0;
     char c = 0;
-    int a, r;
+    int a = -1, r;
 
     CU_ASSERT_EQUAL_FATAL(held(&a, 1), 0);
     DateStamp(&t0);
     r = recv(a, &c, 1, 0);
     CU_ASSERT_EQUAL(r, 1);
     CU_ASSERT_EQUAL(c, 'x');
-    CU_ASSERT(ticks_since(&t0) >= (SEND_DELAY - 1) * TICKS_PER_SECOND);
+    CU_ASSERT(ticks_since(&t0) >= (SEND_DELAY - 1) * TICKS_PER_SECOND / 2);
     Delay(2 * TICKS_PER_SECOND);
     CloseSocket(a);
 }
@@ -247,9 +266,9 @@ int main(int argc, char **argv)
     }
     p = CU_add_suite("SBLOCK_Suite", init_suite, clean_suite);
     if (p == NULL ||
-        !CU_add_test(p, "MSG_DONTWAIT does not wait for a held buffer", testSBLOCK_DONTWAIT) ||
-        !CU_add_test(p, "nor does a non-blocking socket", testSBLOCK_NBIO) ||
-        !CU_add_test(p, "a blocking call waits, then gets its data", testSBLOCK_BLOCKING_WAITS))
+        !st_add_test(p, "MSG_DONTWAIT does not wait for a held buffer", testSBLOCK_DONTWAIT, ST_ANY) ||
+        !st_add_test(p, "nor does a non-blocking socket", testSBLOCK_NBIO, ST_ANY) ||
+        !st_add_test(p, "a blocking call waits, then gets its data", testSBLOCK_BLOCKING_WAITS, ST_ANY))
     {
         CU_cleanup_registry();
         CloseLibrary(SocketBase);

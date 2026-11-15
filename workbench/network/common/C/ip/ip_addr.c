@@ -40,63 +40,94 @@ addr_usage(void)
 /*
  * Print IPv4 addresses for an interface.
  */
+/* An ioctl on name with addr in ifr_addr: that address's answer. */
+static int
+inet_ask(int s, const char *name, struct in_addr addr, int cmd, struct ifreq *ifr)
+{
+	struct sockaddr_in *sin = (struct sockaddr_in *)&ifr->ifr_addr;
+
+	memset(ifr, 0, sizeof(*ifr));
+	snprintf(ifr->ifr_name, sizeof(ifr->ifr_name), "%s", name);
+	sin->sin_len = sizeof(*sin);
+	sin->sin_family = AF_INET;
+	sin->sin_addr = addr;
+	return IoctlSocket(s, cmd, (caddr_t)ifr);
+}
+
+/* One IPv4 address of name, its prefix and broadcast asked for it. */
 static void
-show_inet_addr(const char *name, int s)
+show_inet_one(const char *name, int s, struct in_addr addr)
 {
 	struct ifreq ifr;
-	struct sockaddr_in *sin;
 	char buf[INET_ADDRSTRLEN];
-	int prefix;
+	int prefix = 32;
 
-	memset(&ifr, 0, sizeof(ifr));
-	strncpy(ifr.ifr_name, name, IFNAMSIZ - 1);
-
-	if (IoctlSocket(s, SIOCGIFADDR, (caddr_t)&ifr) < 0)
-		return;
-	sin = (struct sockaddr_in *)&ifr.ifr_addr;
-	if (sin->sin_family != AF_INET)
-		return;
-	inet_ntop(AF_INET, &sin->sin_addr, buf, sizeof(buf));
-
-	/* Get netmask for prefix length */
-	prefix = 32;
-	{
-		struct ifreq mifr;
-		memset(&mifr, 0, sizeof(mifr));
-		strncpy(mifr.ifr_name, name, IFNAMSIZ - 1);
-		if (IoctlSocket(s, SIOCGIFNETMASK, (caddr_t)&mifr) >= 0) {
-			int p = mask2prefix(&mifr.ifr_addr);
-			if (p >= 0)
-				prefix = p;
-		}
+	inet_ntop(AF_INET, &addr, buf, sizeof(buf));
+	if (inet_ask(s, name, addr, SIOCGIFNETMASK, &ifr) >= 0) {
+		int p = mask2prefix(&ifr.ifr_addr, AF_INET);
+		if (p >= 0)
+			prefix = p;
 	}
-
 	printf("    inet %s/%d", buf, prefix);
-
-	/* Broadcast */
-	{
-		struct ifreq bifr;
-		memset(&bifr, 0, sizeof(bifr));
-		strncpy(bifr.ifr_name, name, IFNAMSIZ - 1);
-		if (IoctlSocket(s, SIOCGIFBRDADDR, (caddr_t)&bifr) >= 0) {
-			struct sockaddr_in *bsin =
-			    (struct sockaddr_in *)&bifr.ifr_broadaddr;
-			if (bsin->sin_family == AF_INET &&
-			    bsin->sin_addr.s_addr != 0) {
-				char bbuf[INET_ADDRSTRLEN];
-				inet_ntop(AF_INET, &bsin->sin_addr,
-				    bbuf, sizeof(bbuf));
-				printf(" brd %s", bbuf);
-			}
+	if (inet_ask(s, name, addr, SIOCGIFBRDADDR, &ifr) >= 0) {
+		struct sockaddr_in *bsin =
+		    (struct sockaddr_in *)&ifr.ifr_broadaddr;
+		if (bsin->sin_family == AF_INET &&
+		    bsin->sin_addr.s_addr != 0) {
+			char bbuf[INET_ADDRSTRLEN];
+			inet_ntop(AF_INET, &bsin->sin_addr,
+			    bbuf, sizeof(bbuf));
+			printf(" brd %s", bbuf);
 		}
 	}
-
 	printf(" scope global %s\n", name);
 
 	/* Show valid/preferred lifetime if detailed */
 	if (opts.detail) {
 		printf("       valid_lft forever preferred_lft forever\n");
 	}
+}
+
+/*
+ * The interface's IPv4 addresses: the first (SIOCGIFADDR), then its
+ * aliases, the other AF_INET entries SIOCGIFCONF lists for it.
+ */
+static void
+show_inet_addr(const char *name, int s)
+{
+	struct ifreq ifr;
+	const struct sockaddr_in *sin;
+	struct in_addr first;
+	struct ifconf ifc;
+	char *cp;
+	const char *cplim;
+
+	memset(&ifr, 0, sizeof(ifr));
+	strncpy(ifr.ifr_name, name, IFNAMSIZ - 1);
+
+	if (IoctlSocket(s, SIOCGIFADDR, (caddr_t)&ifr) < 0)
+		return;
+	sin = (const struct sockaddr_in *)&ifr.ifr_addr;
+	if (sin->sin_family != AF_INET)
+		return;
+	first = sin->sin_addr;
+	show_inet_one(name, s, first);
+
+	if (ip_getifconf(s, &ifc) < 0)
+		return;
+	for (cp = ifc.ifc_buf, cplim = cp + ifc.ifc_len; cp < cplim; ) {
+		struct ifreq *e = (struct ifreq *)cp;
+		const struct sockaddr_in *esin =
+		    (const struct sockaddr_in *)&e->ifr_addr;
+		int sz = sizeof(e->ifr_name) + e->ifr_addr.sa_len;
+
+		cp += sz < (int)sizeof(*e) ? (int)sizeof(*e) : sz;
+		if (e->ifr_addr.sa_family == AF_INET &&
+		    strcmp(e->ifr_name, name) == 0 &&
+		    esin->sin_addr.s_addr != first.s_addr)
+			show_inet_one(name, s, esin->sin_addr);
+	}
+	free(ifc.ifc_buf);
 }
 
 /*
@@ -109,7 +140,6 @@ show_inet6_addr(const char *name, int s4)
 {
 	int s6;
 	struct ifconf ifc;
-	char buf[8192];
 	struct ifreq *ifr;
 	char *cp, *cplim;
 
@@ -122,9 +152,7 @@ show_inet6_addr(const char *name, int s4)
 	 * as AF_INET6 sockaddrs when queried on an AF_INET6 socket.
 	 * Walk them to find addresses for our interface.
 	 */
-	ifc.ifc_len = sizeof(buf);
-	ifc.ifc_buf = buf;
-	if (IoctlSocket(s6, SIOCGIFCONF, (char *)&ifc) < 0) {
+	if (ip_getifconf(s6, &ifc) < 0) {
 		/* Fallback: try SIOCGIFADDR_IN6 for single address */
 		struct in6_ifreq ifr6;
 		char addr[INET6_ADDRSTRLEN];
@@ -188,7 +216,8 @@ show_inet6_addr(const char *name, int s4)
 				if (IoctlSocket(s6, SIOCGIFNETMASK_IN6,
 				    (caddr_t)&nmifr6) >= 0) {
 					int p = mask2prefix(
-					    (struct sockaddr *)&nmifr6.ifr_ifru);
+					    (struct sockaddr *)&nmifr6.ifr_ifru,
+					    AF_INET6);
 					if (p >= 0)
 						prefix = p;
 				}
@@ -218,6 +247,7 @@ show_inet6_addr(const char *name, int s4)
 		}
 	}
 
+	free(ifc.ifc_buf);
 	CloseSocket(s6);
 }
 
@@ -263,7 +293,6 @@ static int
 show_addrs(const char *dev)
 {
 	struct ifconf ifc;
-	char buf[4096];
 	struct ifreq *ifr;
 	int s, idx;
 	char *cp, *cplim;
@@ -278,9 +307,7 @@ show_addrs(const char *dev)
 	if (s < 0)
 		return 1;
 
-	ifc.ifc_len = sizeof(buf);
-	ifc.ifc_buf = buf;
-	if (IoctlSocket(s, SIOCGIFCONF, (char *)&ifc) < 0) {
+	if (ip_getifconf(s, &ifc) < 0) {
 		perror("ip: SIOCGIFCONF");
 		CloseSocket(s);
 		return 1;
@@ -357,6 +384,7 @@ show_addrs(const char *dev)
 			show_inet6_addr(ifr->ifr_name, s);
 	}
 
+	free(ifc.ifc_buf);
 	CloseSocket(s);
 	return 0;
 }

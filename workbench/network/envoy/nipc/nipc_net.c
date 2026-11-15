@@ -21,9 +21,19 @@
 
 #define SocketBase              (NIPCBase->SocketBase)
 
+/*
+ * A stack with only the AmiTCP vectors, such as WinUAE's emulated
+ * bsdsocket.library, has no QueryInterfaceTagList() (vector 78, a Roadshow and
+ * AROSTCP extension), and WinUAE 6.0's emulation crashes the emulator on
+ * SIOCGIFMTU. Ask such a stack only for addresses and flags.
+ */
+#define NetFullStack(NIPCBase)  (SocketBase->lib_NegSize >= 78 * LIB_VECTSIZE)
+
 /* Not every SDK exports a stub for this one; call the vector directly */
 static long QueryIface(struct NIPCBase *NIPCBase, STRPTR name, struct TagItem *tags)
 {
+    if (!NetFullStack(NIPCBase))
+        return -1;
     return AROS_LC2(long, QueryInterfaceTagList, AROS_LCA(STRPTR, name, A0), AROS_LCA(struct TagItem *, tags, A1),
                     struct Library *, SocketBase, 78, BSDSocket);
 }
@@ -172,7 +182,8 @@ void NetRefreshIfaces(struct NIPCBase *NIPCBase)
             ifa->Broadcast = SockAddrIP(&req.ifr_broadaddr);
         if (!ifa->Broadcast)
             ifa->Broadcast = ifa->Address | ~ifa->Netmask;
-        if (IoctlSocket(NIPCBase->UdpSock, SIOCGIFMTU, (char *)&req) == 0)
+        if (NetFullStack(NIPCBase) &&
+            IoctlSocket(NIPCBase->UdpSock, SIOCGIFMTU, (char *)&req) == 0)
             ifa->Mtu = req.ifr_mtu;
         if (!ifa->Mtu)
             ifa->Mtu = 1500;

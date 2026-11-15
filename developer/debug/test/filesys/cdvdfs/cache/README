@@ -5,7 +5,9 @@ filesystem test component, or invoke python3 host_test.py here.
 
 The host harness compiles the production cache/reclamation/read functions
 from CDVDFS cdrom.c. Its adapter supplies deterministic drive data and
-bounded optional allocations. ASan/UBSan check the real buffer accesses.
+bounded optional allocations. ASan/UBSan check the real buffer accesses
+when the host compiler can link and run them. Otherwise the harness prints
+a notice and runs without them; --require-sanitizers makes that an error.
 No game image or hardware is required. The host pointer width is printed.
 This is a cache-core test, not a boot test of a complete 64-bit AROS system.
 
