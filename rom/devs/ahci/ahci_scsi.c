@@ -345,13 +345,17 @@ BOOL ahci_scsi_disk_io(struct IORequest *io, struct SCSICmd *scsi)
     union {
         struct scsi_inquiry_data inquiry_data;
         struct scsi_read_capacity_data read_capacity_data;
-    } *rdata = (APTR)scsi->scsi_Command;
-    ULONG rdata_len = scsi->scsi_CmdLength;
+    } response, *rdata = &response;
+    ULONG rdata_len = scsi->scsi_Length;
     u_int64_t capacity;
     u_int64_t lba;
     u_int32_t count;
     BOOL done = FALSE;
     scsi_cdb_t cdb = (APTR)scsi->scsi_Command;
+
+    scsi->scsi_Actual = 0;
+    scsi->scsi_Status = SCSI_GOOD;
+    scsi->scsi_SenseActual = 0;
 
     /* Emulated queries must remain available while all hardware slots
        are busy, particularly TEST UNIT READY from the media monitor. */
@@ -386,29 +390,22 @@ BOOL ahci_scsi_disk_io(struct IORequest *io, struct SCSICmd *scsi)
         if (cdb->inquiry.byte2 & SI_EVPD) {
             io->io_Error = ahci_scsi_page_inquiry(ap, at, scsi);
         } else {
-            memset(rdata, 0, rdata_len);
-            if (rdata_len < SHORT_INQUIRY_LENGTH) {
-                io->io_Error = IOERR_BADLENGTH;
+            if (rdata_len > cdb->inquiry.length)
+                rdata_len = cdb->inquiry.length;
+            if (rdata_len > SHORT_INQUIRY_LENGTH)
+                rdata_len = SHORT_INQUIRY_LENGTH;
+            if (rdata_len && !scsi->scsi_Data) {
+                io->io_Error = IOERR_BADADDRESS;
                 break;
             }
-            if (rdata_len > sizeof(rdata->inquiry_data))
-                rdata_len = sizeof(rdata->inquiry_data);
+            memset(rdata, 0, SHORT_INQUIRY_LENGTH);
             rdata->inquiry_data.device = T_DIRECT;
             /* Mark as removable if ATA has the 'removable' tag */
-            rdata->inquiry_data.dev_qual2 = (at->at_identify.config ? 0x80 : 0);
+            rdata->inquiry_data.dev_qual2 = ((at->at_identify.config & (1 << 7)) ? 0x80 : 0);
             rdata->inquiry_data.version = SCSI_REV_SPC2;
             rdata->inquiry_data.response_format = 2;
             rdata->inquiry_data.additional_length = 32;
 
-            /*
-             * Use the vendor specific area to set the TRIM status
-             */
-            if (at->at_identify.support_dsm) {
-                rdata->inquiry_data.vendor_specific[0] =
-                    at->at_identify.support_dsm &ATA_SUPPORT_DSM_TRIM;
-                rdata->inquiry_data.vendor_specific[1] =
-                    at->at_identify.max_dsm_blocks;
-            }
             CopyMem("SATA    ", rdata->inquiry_data.vendor, 8);
             CopyMem(at->at_identify.model,
                   rdata->inquiry_data.product,
@@ -416,6 +413,9 @@ BOOL ahci_scsi_disk_io(struct IORequest *io, struct SCSICmd *scsi)
             CopyMem(at->at_identify.firmware,
                   rdata->inquiry_data.revision,
                   sizeof(rdata->inquiry_data.revision));
+            if (rdata_len)
+                CopyMem(rdata, scsi->scsi_Data, rdata_len);
+            scsi->scsi_Actual = rdata_len;
         }
         break;
     case SCSI_DA_READ_CAPACITY:
@@ -425,16 +425,22 @@ BOOL ahci_scsi_disk_io(struct IORequest *io, struct SCSICmd *scsi)
             break;
         }
 
-        capacity = at->at_capacity;
+        if (!scsi->scsi_Data) {
+            io->io_Error = IOERR_BADADDRESS;
+            break;
+        }
+        capacity = at->at_capacity ? at->at_capacity - 1 : 0;
 
-        memset(rdata, 0, rdata_len);
         rdata_len = sizeof(rdata->read_capacity_data);
         if (capacity > 0xFFFFFFFFU)
             capacity = 0xFFFFFFFFU;
         memset(&rdata->read_capacity_data, 0, rdata_len);
-        scsi_ulto4b((u_int32_t)capacity - 1,
+        scsi_ulto4b((u_int32_t)capacity,
                 rdata->read_capacity_data.addr);
-        scsi_ulto4b(512, rdata->read_capacity_data.length);
+        scsi_ulto4b(at->at_identify.sector_size,
+                rdata->read_capacity_data.length);
+        CopyMem(rdata, scsi->scsi_Data, rdata_len);
+        scsi->scsi_Actual = rdata_len;
         break;
     case SCSI_DA_SYNCHRONIZE_CACHE:
         /*
