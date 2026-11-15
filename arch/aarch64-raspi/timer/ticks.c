@@ -9,6 +9,7 @@
 
 #include "timer_intern.h"
 #include "timer_macros.h"
+#include "systimer.h"
 
 /*
  * Bring the clock up to date from the hardware, so time sources are not
@@ -22,19 +23,10 @@
  */
 void EClockUpdate(struct TimerBase *TimerBase)
 {
-    unsigned int chi, clo;
     UQUAD now, last, delta;
     struct timeval tv;
 
-    /* CLO wraps every ~71 minutes, so CHI is re-read to be sure it did
-     * not carry between the two loads. */
-    do
-    {
-        chi = *((volatile unsigned int *)(SYSTIMER_CHI));
-        clo = *((volatile unsigned int *)(SYSTIMER_CLO));
-    } while (chi != *((volatile unsigned int *)(SYSTIMER_CHI)));
-
-    now = ((UQUAD)chi << 32) | clo;
+    now = SysTimer_Read(TimerBase);
 
     do
     {

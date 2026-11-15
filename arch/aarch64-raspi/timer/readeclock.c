@@ -9,11 +9,18 @@
 #include <proto/exec.h>
 
 #include "timer_intern.h"
+#include "systimer.h"
 
 /*
  * Scale the 1MHz system timer to tb_eclock_rate rather than counting tick
  * interrupts: the compare is re-armed for MICROHZ requests and VBlank also
  * ticks on BCM2711/2712, so an interrupt count runs fast under load.
+ *
+ * The value counts from the counter's zero and does not follow
+ * SetSysTime(), unlike the generic tb_ticks_total path. EClock values are
+ * taken as differences, so a clock change must not land in an interval.
+ * Reading the counter alone also keeps this out of the shared state that
+ * EClockUpdate() books on SMP. Keep it off the generic path.
  */
 AROS_LH1(ULONG, ReadEClock,
          AROS_LHA(struct EClockVal *, dest, A0),
@@ -22,20 +29,17 @@ AROS_LH1(ULONG, ReadEClock,
     AROS_LIBFUNC_INIT
 
     ULONG rate = TimerBase->tb_eclock_rate;
-    unsigned int chi, clo;
-    UQUAD now, ticks;
+    UQUAD now = SysTimer_Read(TimerBase);
+    UQUAD ticks;
 
-    /* Re-read CHI in case CLO carried between the two loads. */
-    do
+    if (rate == SYSTIMER_RATE)
+        ticks = now;
+    else
     {
-        chi = *((volatile unsigned int *)(SYSTIMER_CHI));
-        clo = *((volatile unsigned int *)(SYSTIMER_CLO));
-    } while (chi != *((volatile unsigned int *)(SYSTIMER_CHI)));
-
-    now = ((UQUAD)chi << 32) | clo;
-
-    /* Split at whole seconds so now * rate cannot overflow. */
-    ticks = (now / 1000000) * rate + (now % 1000000) * rate / 1000000;
+        /* Split at whole seconds so now * rate cannot overflow. */
+        ticks = (now / SYSTIMER_RATE) * rate
+              + (now % SYSTIMER_RATE) * rate / SYSTIMER_RATE;
+    }
 
     dest->ev_hi = (ULONG)(ticks >> 32);
     dest->ev_lo = (ULONG)ticks;

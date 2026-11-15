@@ -29,6 +29,7 @@
 
 #include "timer_intern.h"
 #include "timer_macros.h"
+#include "systimer.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -41,7 +42,8 @@
  */
 static void timer_ProcessTick(struct TimerBase *TimerBase, struct ExecBase *SysBase)
 {
-    /* EClockUpdate() (ticks.c) owns the counter arithmetic. */
+    /* EClockUpdate() (ticks.c) owns the counter arithmetic. tb_ticks_total
+     * is not kept here: ReadEClock() (readeclock.c) reads the counter. */
     EClockUpdate(TimerBase);
 
     D(bug("[Timer] %s: Processing events.. \n", __func__));
@@ -135,7 +137,7 @@ static int Timer_Init(struct TimerBase *TimerBase)
     D(bug("[Timer] Timer_Init: TimerIRQHandle @ 0x%p\n", TimerBase->tb_TimerIRQHandle));
 
     /* EClock is scaled from the 1MHz counter (readeclock.c) */
-    TimerBase->tb_eclock_rate = 1000000;
+    TimerBase->tb_eclock_rate = SYSTIMER_RATE;
 
     /*
      * Since we are software-driven, we can just ask the user which
@@ -156,7 +158,10 @@ static int Timer_Init(struct TimerBase *TimerBase)
                 {
                     int rate = atoi(&node->ln_Name[7]);
 
-                    /* A zero rate would stop the EClock */
+                    /* A zero rate would stop the EClock, and the
+                     * counter has nothing finer than its own rate */
+                    if (rate > SYSTIMER_RATE)
+                        rate = SYSTIMER_RATE;
                     if (rate > 0)
                         TimerBase->tb_eclock_rate = rate;
                     break;
