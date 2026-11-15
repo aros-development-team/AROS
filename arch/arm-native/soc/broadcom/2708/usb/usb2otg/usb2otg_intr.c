@@ -337,9 +337,9 @@ static BOOL usb2otg_core_reset_recover(struct USB2OTGUnit *USBUnit, int wedged_c
     }
 
     /* AHB: DMA + global IRQs (cleared by core reset). */
-    regval = rd32le(USB2OTG_AHB);
+    regval = rd32le(USB2OTG_AHB) & ~0x1f;
     regval |= USB2OTG_AHB_DMAENABLE
-            | USB2OTG_AHB_AXIBURSTLENGTH
+            | USB2OTG_AHB_WAITFORAXIWRITES
             | USB2OTG_AHB_INTENABLE
             | USB2OTG_AHB_TRANSFEREMPTYLEVEL;
     wr32le(USB2OTG_AHB, regval);

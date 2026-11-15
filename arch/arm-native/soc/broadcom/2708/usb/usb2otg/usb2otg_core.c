@@ -77,9 +77,10 @@ struct Unit * FNAME_DEV(OpenUnit)(struct IOUsbHWReq *ioreq,
              * NPTxFEmpLvl=1 → NPTXFEMP only fires when fully drained, so
              * OUT-arming code doesn't queue while stale data is in FIFO.
              */
-            otg_RegVal = rd32le(USB2OTG_AHB);
+            /* As at device init (and dwc2 on BCM2835): wait for AXI writes */
+            otg_RegVal = rd32le(USB2OTG_AHB) & ~0x1f;
             otg_RegVal |= USB2OTG_AHB_DMAENABLE
-                        | USB2OTG_AHB_AXIBURSTLENGTH
+                        | USB2OTG_AHB_WAITFORAXIWRITES
                         | USB2OTG_AHB_INTENABLE
                         | USB2OTG_AHB_TRANSFEREMPTYLEVEL;  /* NPTxFEmpLvl = fully empty */
             wr32le(USB2OTG_AHB, otg_RegVal);
