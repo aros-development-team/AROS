@@ -506,6 +506,9 @@ static BOOL iso_kick(struct USB2OTGUnit *unit, struct USB2OTGIso *is, UWORD now)
 
     if (!is->is_Split)
     {
+        /* Room in the periodic request queue, or the next SOF */
+        if (((rd32le(USB2OTG_HOSTFIFOSTATUS) >> 16) & 0xff) < 2)
+            return TRUE;
         /* Behind (a slow start or a stall): restart from here, no burst */
         if (!iso_frame_le(target, is->is_Next))
             is->is_Next = target;
@@ -561,15 +564,17 @@ void usb2otg_iso_sof(struct USB2OTGUnit *unit, ULONG hfnum)
         /* A transaction whose halt never came must not stop the stream */
         if (is->is_Armed && ++is->is_Age >= USB2OTG_ISO_STUCK)
         {
-            if (is->is_Age == USB2OTG_ISO_STUCK)
+            /* Direct periodic channels halt on their own; CHDIS only for splits */
+            if (is->is_Age == USB2OTG_ISO_STUCK && is->is_Split)
                 wr32le(USB2OTG_CHANNEL_REG(is->is_Chan, CHARBASE),
                     rd32le(USB2OTG_CHANNEL_REG(is->is_Chan, CHARBASE)) |
                     USB2OTG_HOSTCHAR_ENABLE | USB2OTG_HOSTCHAR_DISABLE);
             else if (is->is_Age >= 2 * USB2OTG_ISO_STUCK)
             {
-                bug("[USB2OTG:ISO] chan %d never halted, packet dropped\n", (int)is->is_Chan);
+                bug("[USB2OTG:ISO] chan %d never halted, packet dropped (HPTX %08x)\n", (int)is->is_Chan,
+                    rd32le(USB2OTG_HOSTFIFOSTATUS));
                 is->is_Armed = FALSE;
-                if (iso_split_drop(unit, is))
+                if (is->is_Split ? iso_split_drop(unit, is) : iso_packet_done(unit, is, FALSE, 0))
                     wake = TRUE;
             }
             continue;

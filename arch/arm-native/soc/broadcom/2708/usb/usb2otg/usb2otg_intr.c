@@ -122,12 +122,26 @@ static void usb2otg_halt_channel_preserve_char(int chan)
             asm volatile("yield\n");
         if (timeout <= 0)
         {
+            int other;
+
             HALT_SNAP(chan, "timeout-pre-flush");
 
-            bug("[USB2OTG] halt-channel timeout chan=%d CHAR=%08x INTR=%08x\n",
+            bug("[USB2OTG] halt-channel timeout chan=%d CHAR=%08x INTR=%08x HPTX=%08x\n",
                 chan,
                 rd32le(USB2OTG_CHANNEL_REG(chan, CHARBASE)),
-                rd32le(USB2OTG_CHANNEL_REG(chan, INTR)));
+                rd32le(USB2OTG_CHANNEL_REG(chan, INTR)),
+                rd32le(USB2OTG_HOSTFIFOSTATUS));
+
+            /* A flush with other channels enabled corrupts the request queues */
+            for (other = 0; other < 8; other++)
+                if (other != chan &&
+                    (rd32le(USB2OTG_CHANNEL_REG(other, CHARBASE)) & USB2OTG_HOSTCHAR_ENABLE))
+                    break;
+            if (other < 8)
+            {
+                bug("[USB2OTG] no TX FIFO flush, chan %d enabled\n", other);
+                return;
+            }
 
             /*
              * CHENA refuses to drop — usually a stale TX FIFO packet
@@ -1104,10 +1118,12 @@ static void handle_SOF(struct USB2OTGUnit *USBUnit, struct ExecBase *SysBase, UL
                         interval = 2;
 
                     if (++USBUnit->hu_LogStallCount <= 5 || (USBUnit->hu_LogStallCount & 0xff) == 0)
-                        bug("[USB2OTG] SOF: int split never ran, %lu uframes chan=%d dev=%d ep=%d — exorcise+requeue (#%lu)\n",
+                        bug("[USB2OTG] SOF: int split never ran, %lu uframes chan=%d dev=%d ep=%d — exorcise+requeue (#%lu) CHAR=%08x HPTX=%08x\n",
                             (unsigned long)elapsed, chan,
                             (int)sreq->iouh_DevAddr, (int)sreq->iouh_Endpoint,
-                            (unsigned long)USBUnit->hu_LogStallCount);
+                            (unsigned long)USBUnit->hu_LogStallCount,
+                            rd32le(USB2OTG_CHANNEL_REG(chan, CHARBASE)),
+                            rd32le(USB2OTG_HOSTFIFOSTATUS));
 
 
                     wr32le(USB2OTG_CHANNEL_REG(chan, INTR), USB2OTG_INTR_CLEAR_ALL);
