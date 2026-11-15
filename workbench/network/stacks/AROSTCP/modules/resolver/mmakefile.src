@@ -11,7 +11,9 @@ include $(SRCDIR)/config/aros.cfg
 #
 # resolver.atcp - the resolver (module "resolver"): the DNS
 # resolver and its cache, host look-ups by name and by address, and the one
-# getaddrinfo()/getnameinfo() of bsdsocket.library and miami.library. Loaded
+# getaddrinfo()/getnameinfo() of bsdsocket.library and miami.library, and
+# .local names by mDNS (api/res_mdns.c: dnssd.library, found by its name
+# when a look-up needs it; nothing of mDNS is needed to build). Loaded
 # by the stack on the first name look-up (bsdsocket/api/resolver_ops.h), or
 # at start with MODULES=RESOLVER. Needs no other module.
 #

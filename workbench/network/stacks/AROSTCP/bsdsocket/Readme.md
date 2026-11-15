@@ -86,6 +86,18 @@ taken as it is, and a localhost name (RFC 6761 section 6.3: `localhost` and the 
 `.localhost`, any case, with or without the final dot) is the loopback address - 127.0.0.1, or
 `::1` for AF_INET6 - without the host table or the DNS; `getaddrinfo()` with AF_UNSPEC gives both.
 Anything else goes to the host table and the resolver in the configured order.
+A name in `.local` (any case, the final dot optional) is the links': it goes to multicast DNS in
+place of the DNS, never to a name server nor the resolver's cache (RFC 6762 section 3;
+`api/res_mdns.c`). The resolver asks mdnsd through `dnssd.library`, which it opens for the look-up
+and closes after it, in the calling task; nothing links against it. A look-up waits at most 3 s in
+all, and ends a quarter of a second after the first address. `getaddrinfo()` asks once for both
+families and gives an IPv6 link-local address with its zone, the interface it was learned on
+(`sin6_scope_id`, section 6.6), after the addresses that need none; `gethostbyname2()` leaves
+link-local addresses out, as a `hostent` has no room for their zone (`NO_DATA` when they are all
+there is). A name no host on the links has is `HOST_NOT_FOUND` (`EAI_NONAME`); with no mdnsd
+running it is `TRY_AGAIN` (`EAI_AGAIN`) at once, and a look-up broken off with Ctrl-C is
+`TRY_AGAIN` with `errno` `EINTR`, as for the DNS. Without `dnssd.library` a `.local` name is not
+found, and nothing else changes. Names made `.local` by the search list are not affected.
 The resolver (`res_search()`) searches as BIND 4.9's and resolv.conf(5) say, with `ndots` 1: a name
 with a dot is first tried as it is, and one not found that way, or one without a dot, is tried in
 each domain of the search list in turn (`RES_DNSRCH` is in `RES_DEFAULT`) - the static `DOMAIN`

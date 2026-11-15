@@ -91,6 +91,7 @@ static char sccsid[] = "@(#)gethostnamadr.c	6.45 (Berkeley) 2/24/91";
 #include <api/dns_cache.h>         /* dns_cache_lookup/insert, dns_cache_enabled */
 #include <kern/amiga_netdb.h>      /* NDB, LOCK_R_NDB, HostentNode */
 #include <api/resolver_ops.h>
+#include <api/res_mdns.h>          /* .local names by mDNS */
 
 #include <net/netcore_map.h>        /* always the last include */
 
@@ -145,6 +146,65 @@ struct hoststruct {
 static struct hostent *makehostent(struct SocketBase *libPtr,
                                    struct hoststruct *HS,
                                    char *ptr);
+
+/*
+ * A .local name's addresses of family af by mDNS (api/res_mdns.c), into HS
+ * as getanswer() puts a DNS answer there: the end of what it wrote, or
+ * NULL with h_errno set. An IPv6 link-local address is left out: a hostent
+ * has no room for its zone, without which it names no one link -
+ * getaddrinfo() gives it with its zone.
+ */
+/* the addresses go where a DNS answer would, after HS: idle here */
+typedef char mdns_answer_room[sizeof(querybuf) >=
+    RES_MDNS_ADDRESSES * sizeof(struct DNSSDAddress) ? 1 : -1];
+
+static char *
+mdns_answer(struct SocketBase *libPtr, const char *name, int af,
+            struct hoststruct *HS)
+{
+    struct DNSSDAddress *found = (struct DNSSDAddress *)(HS + 1);
+    int len = af == AF_INET ? 4 : 16;
+    size_t namelen = strnlen(name, sizeof(HS->hostbuf) / 2) + 1;
+    char *bp = HS->hostbuf;
+    const char *end = HS->hostbuf + sizeof(HS->hostbuf);
+    char **hap = HS->h_addr_ptrs;
+    int n, i, herr;
+
+    if((n = res_mdns_lookup(libPtr, name, af, found, &herr)) == 0) {
+        h_errno = herr;
+        return NULL;
+    }
+    if(namelen > sizeof(HS->hostbuf) / 2) {
+        h_errno = NO_RECOVERY;
+        return NULL;
+    }
+    memcpy(bp, name, namelen);
+    HS->host.h_name = bp;
+    bp = (char *)ALIGN(bp + namelen);
+    /* the counts take in each list's final NULL, as getanswer()'s do:
+     * makehostent() sizes the hostent by them */
+    HS->host_aliases[0] = NULL;
+    HS->host_alias_count = 1;
+    HS->h_addr_count = 1;
+    for(i = 0; i < n; i++) {
+        if(res_mdns_linklocal6(&found[i]))
+            continue;
+        if(HS->h_addr_count >= MAXADDRS || bp + len > end)
+            break;
+        memcpy(bp, found[i].da_Bytes, len);
+        *hap++ = bp;
+        bp += len;
+        HS->h_addr_count++;
+    }
+    *hap = NULL;
+    if(HS->h_addr_count == 1) {
+        h_errno = NO_DATA;              /* the name is there, link-local only */
+        return NULL;
+    }
+    HS->host.h_addrtype = af;
+    HS->host.h_length = len;
+    return bp;
+}
 
 static char *
 getanswer(struct SocketBase *libPtr, querybuf *answer, int anslen, int iquery,
@@ -447,6 +507,23 @@ struct hostent *res_gethostbyname(const char *name, struct SocketBase *libPtr)
     buf = (querybuf *)(HS + 1);
 
     /*
+     * A .local name is the links' (RFC 6762 section 3): mDNS, never the
+     * DNS nor its cache. Not found, it is looked for in the host table
+     * afterwards if that comes second, as for the DNS.
+     */
+    if(res_mdns_name(name)) {
+        if((ptr = mdns_answer(libPtr, name, AF_INET, HS)) != NULL) {
+            if((anshost = makehostent(libPtr, HS, ptr)) != NULL) {
+                anshost->h_addrtype = HS->host.h_addrtype;
+                anshost->h_length = HS->host.h_length;
+            }
+        } else if(usens != 2)
+            anshost = _gethtbyname(libPtr, name);
+        bsd_free(HS, M_TEMP);
+        return anshost;
+    }
+
+    /*
      * Cache probe: replay a stored raw response through the very same
      * getanswer() path a fresh query would use. Any miss or parse failure
      * simply falls through to the normal resolver query below.
@@ -550,6 +627,19 @@ struct hostent *res_gethostbyname2(const char *name, int af, struct SocketBase *
         return NULL;
     }
     buf = (querybuf *)(HS + 1);
+
+    /* a .local name: as in res_gethostbyname() */
+    if(res_mdns_name(name)) {
+        if((ptr = mdns_answer(libPtr, name, AF_INET6, HS)) != NULL) {
+            if((anshost = makehostent(libPtr, HS, ptr)) != NULL) {
+                anshost->h_addrtype = HS->host.h_addrtype;
+                anshost->h_length = HS->host.h_length;
+            }
+        } else if(usens != 2)
+            anshost = _gethtbyname2(libPtr, name, AF_INET6);
+        bsd_free(HS, M_TEMP);
+        return anshost;
+    }
 
     /*
      * Cache probe (AAAA). A hit is replayed through getanswer(); anything
@@ -1002,6 +1092,38 @@ res_gethostbyname_r(const char *name, struct hostent *result,
         return NULL;
     }
     qbuf = (querybuf *)(HS + 1);
+
+    /* a .local name: as in res_gethostbyname() */
+    if (res_mdns_name(name)) {
+        if ((ptr = mdns_answer(libPtr, name, AF_INET, HS)) != NULL) {
+            rc = makehostent_r(HS, ptr, result, buf, buflen);
+            bsd_free(HS, M_TEMP);
+            if (rc == 0) {
+                result->h_addrtype = AF_INET;
+                result->h_length = 4;
+                if (h_errnop) *h_errnop = 0;
+                return result;
+            }
+            writeErrnoValue(libPtr, ERANGE);
+            if (h_errnop) *h_errnop = NETDB_INTERNAL;
+            return NULL;
+        }
+        bsd_free(HS, M_TEMP);
+        if (usens != 2) {
+            rc = _gethtbyname_r(libPtr, name, result, buf, buflen);
+            if (rc == 0) {
+                if (h_errnop) *h_errnop = 0;
+                return result;
+            }
+            if (rc == ERANGE) {
+                writeErrnoValue(libPtr, ERANGE);
+                if (h_errnop) *h_errnop = NETDB_INTERNAL;
+                return NULL;
+            }
+        }
+        if (h_errnop) *h_errnop = h_errno;
+        return NULL;
+    }
 
     n = res_search(libPtr, name, C_IN, T_A, qbuf->buf, sizeof(querybuf));
     if (n >= 0) {
