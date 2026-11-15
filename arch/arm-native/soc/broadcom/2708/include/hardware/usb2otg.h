@@ -84,7 +84,7 @@
 #define USB2OTG_HOSTCHAN_DMABUFF                        (0x1c)
 #define USB2OTG_HOST_CHANREGSIZE                        (0x20)
 
-#define USB2OTG_HOSTCHAR_MAXPACKETSIZE(x)               ((x) & 1023)
+#define USB2OTG_HOSTCHAR_MAXPACKETSIZE(x)               ((x) & 0x7ff)
 #define USB2OTG_HOSTCHAR_EPNO(x)                        (((x) & 0x0f) << 11)
 #define USB2OTG_HOSTCHAR_EPDIR(x)                       (((x) & 1) << 15)
 #define USB2OTG_HOSTCHAR_ADDR(x)                        (((x) & 0x7f) << 22)
