@@ -175,9 +175,8 @@ static int ahci_RegisterPort(struct ahci_port *ap)
     InitSemaphore(&unit->sim_Lock);
     NEWLIST(&unit->sim_IOs);
 
-    AddTail((struct List *)&AHCIBase->ahci_Units, (struct Node *)unit);
-
-    /* Now that this device is in the unit list, start the disk change monitor */
+    /* The monitor uses the unit directly; publish it only after startup
+       succeeds, so OpenDevice cannot retain a failed registration. */
     snprintf(name, sizeof(name), "ahci.device %d [media]", unit->sim_Unit);
     unit->sim_Monitor = NewCreateTask(TASKTAG_NAME, name,
                                       TASKTAG_PC, ahci_PortMonitor,
@@ -186,8 +185,17 @@ static int ahci_RegisterPort(struct ahci_port *ap)
                                       TASKTAG_ARG3, unit,
                                       TAG_END);
 
+    if (!unit->sim_Monitor) {
+        ap->ap_sim = NULL;
+        FreePooled(AHCIBase->ahci_MemPool, unit, sizeof(*unit));
+        return ENOMEM;
+    }
+
     Wait(SIGBREAKF_CTRL_C);
 
+    Forbid();
+    AddTail((struct List *)&AHCIBase->ahci_Units, (struct Node *)unit);
+    Permit();
     return 0;
 }
 
