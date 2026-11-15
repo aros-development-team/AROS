@@ -694,6 +694,25 @@ in6_ifaof_ifpforlinklocal(struct ifnet *ifp)
  */
 typedef char in6_ifaddr_fits_mbuf[(sizeof(struct in6_ifaddr_priv) <= MLEN) ? 1 : -1];
 
+/*
+ * Has ifp a link-local address, in whatever state - still tentative while
+ * duplicate address detection runs, or duplicated? (KAME's
+ * in6ifa_ifpforlinklocal(ifp, 0).) in6_ifaof_ifpforlinklocal() leaves those
+ * out, rightly for a source address; for "is there one already" it made a
+ * second interface-up during the first one's DAD - which every boot has -
+ * add the same address again.
+ */
+static int
+in6_has_linklocal(const struct ifnet *ifp)
+{
+    const struct in6_ifaddr *ia;
+
+    for(ia = in6_ifaddr; ia; ia = ia->ia_next)
+        if(ia->ia6_ifp == ifp && IN6_IS_ADDR_LINKLOCAL(&ia->ia_addr.sin6_addr))
+            return 1;
+    return 0;
+}
+
 void
 in6_if_up(struct ifnet *ifp)
 {
@@ -710,8 +729,8 @@ in6_if_up(struct ifnet *ifp)
         return;
     }
 
-    /* check if link-local already configured */
-    if(in6_ifaof_ifpforlinklocal(ifp)) {
+    /* check if link-local already configured, in whatever state */
+    if(in6_has_linklocal(ifp)) {
         D(bug("[AROSTCP:IN6] %s: link-local already configured\n", __func__));
         return;
     }
