@@ -191,6 +191,7 @@ struct MDNSDaemon
     struct DNSSDServer     *md_DNSSD;   /* dnssd.library's sessions */
     struct MsgPort         *md_DNSSDPort;
     ULONG                   md_DaemonID;
+    IPTR                    md_Memory;      /* AvailMem(MEMF_ANY) at start */
     struct List             md_Services;    /* MDNSRegisteredService */
     ULONG                   md_NextHandle;
     ULONG                   md_PacketSerial; /* counts received queries */
@@ -228,15 +229,25 @@ mdnsTextCopy(char *to, LONG size, const char *from)
     to[n] = '\0';
 }
 
+/*
+ * What mdnsd may take of a kind of memory: a share of the memory free as it
+ * started (md_Memory), within floor and cap - the machine's memory, not its
+ * CPU, says how much there is.
+ */
+static inline ULONG
+mdnsShare(const struct MDNSDaemon *md, ULONG divisor, ULONG floor, ULONG cap)
+{
+    /* AvailMem() is an IPTR: past 4 GB on 64-bit, kept whole */
+    IPTR share = md->md_Memory / divisor;
+
+    return share < floor ? floor : share > cap ? cap : (ULONG)share;
+}
+
 /* mdns_cache.c: the records heard on the links and the questions that
- * keep them. */
-#ifndef MDNS_CACHE_BYTES
-#if defined(__mc68000__)
-#define MDNS_CACHE_BYTES    (24 * 1024)
-#else
-#define MDNS_CACHE_BYTES    (128 * 1024)
-#endif
-#endif
+ * keep them, within 1/128 of the free memory (16 KB to 256 KB) */
+#define MDNS_CACHE_SHARE    128
+#define MDNS_CACHE_FLOOR    (16 * 1024)
+#define MDNS_CACHE_CAP      (256 * 1024)
 #define MDNS_CACHE_LOCAL    1       /* one of the host's own records */
 
 struct MDNSCacheEntry

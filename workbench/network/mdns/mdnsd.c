@@ -302,6 +302,7 @@ main(void)
     md->md_SendIf = -1;
     md->md_NextHandle = 1;
     md->md_DaemonID = GetETaskID(FindTask(NULL));
+    md->md_Memory = AvailMem(MEMF_ANY);
     if (dnssd_link_inventory_init(&md->md_LinkInventory,
             md->md_Links, md->md_LinkScratch, MDNS_IFS_MAX,
             md->md_Addresses, md->md_AddressScratch,

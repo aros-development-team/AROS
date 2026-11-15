@@ -22,7 +22,7 @@
  * host no longer holds - lost to another host, which gets no goodbye from
  * it, or given up - has its own records dropped (mdnsCacheDropLocal()).
  *
- * Memory: each record is allocated by itself, within MDNS_CACHE_BYTES; when
+ * Memory: each record is allocated by itself, within mc_Limit; when
  * that is full, a record nobody watches goes first, the one nearest its end;
  * then, only if none is left, a watched one.
  *
@@ -80,6 +80,7 @@ struct MDNSCache
     struct MinList  mc_Records;
     struct MinList  mc_Questions;
     ULONG           mc_Bytes;
+    ULONG           mc_Limit;       /* mc_Bytes at most */
     ULONG           mc_Seed;
     BOOL            mc_Notifying;
 };
@@ -212,7 +213,7 @@ static BOOL watched(const struct MDNSCache *c, const struct MDNSCacheEntry *e);
 static void
 make_room(struct MDNSCache *c, ULONG bytes)
 {
-    while (c->mc_Bytes + bytes > MDNS_CACHE_BYTES) {
+    while (c->mc_Bytes + bytes > c->mc_Limit) {
         struct MDNSCacheEntry *e, *oldest = NULL;
         BOOL oldestWatched = TRUE;
 
@@ -708,6 +709,8 @@ mdnsCacheInit(struct MDNSDaemon *md)
     }
     NEWLIST((struct List *)&c->mc_Records);
     NEWLIST((struct List *)&c->mc_Questions);
+    c->mc_Limit = mdnsShare(md, MDNS_CACHE_SHARE, MDNS_CACHE_FLOOR,
+        MDNS_CACHE_CAP);
     c->mc_Seed = mdnsTicks() ^ (ULONG)(IPTR)c;
     md->md_Cache = c;
     return TRUE;

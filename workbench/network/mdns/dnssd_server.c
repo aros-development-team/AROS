@@ -48,17 +48,20 @@
 #include "dnssd_model.h"
 
 #define SERVER_SESSIONS         16
-/* Operations at a time, in all and of one session: a browse that follows
- * what it finds has a resolve for each instance. Each costs memory only
- * while it runs; the bounds keep one program from taking it all. */
-#if defined(__mc68000__)
-#define SERVER_OPERATIONS       48
-#define SESSION_OPERATIONS      24
-#else
+/* Operations at a time, in all (1/128 of the free memory, 16 to
+ * SERVER_OPERATIONS of them) and half that of one session: a browse that
+ * follows what it finds has a resolve for each instance. Each costs memory
+ * only while it runs; the bounds keep one program from taking it all. */
 #define SERVER_OPERATIONS       128
-#define SESSION_OPERATIONS      64
-#endif
-#define SESSION_EVENTS          64     /* queued for one session */
+#define OPERATIONS_SHARE        128
+#define OPERATIONS_FLOOR        16
+/* Events queued for one session: 64 at most, in 1/512 of the free memory
+ * (8 KB to 64 KB) - an event can be 9 KB, and comes from the network. The
+ * first always queues. */
+#define SESSION_EVENTS          64
+#define EVENTS_SHARE            512
+#define EVENTS_FLOOR            (8 * 1024)
+#define EVENTS_CAP              (64 * 1024)
 #define LOOKUP_ADDRESSES        16     /* distinct addresses one lookup reports */
 
 #define OP_LOOKUP               1
@@ -85,6 +88,7 @@ struct ServerSession
     struct Message *ss_Notify;          /* lent, not yet replied to */
     struct MinList  ss_Queue;
     ULONG           ss_Queued;
+    ULONG           ss_QueuedBytes;
     ULONG           ss_Operations;
     ULONG           ss_Sequence;        /* events queued for it so far */
 };
@@ -133,6 +137,8 @@ struct DNSSDServer
     struct Task            *sv_Daemon;
     ULONG                   sv_GoneMask;    /* signals sv_Daemon */
     ULONG                   sv_Removed;     /* sessions the hook marked gone */
+    ULONG                   sv_OperationLimit;  /* in all; of a session half */
+    ULONG                   sv_EventBytes;  /* queued for a session at most */
 };
 
 APTR TaskResBase;
@@ -198,6 +204,7 @@ drop_queue(struct ServerSession *ss)
         FreeVec(qe);
     }
     ss->ss_Queued = 0;
+    ss->ss_QueuedBytes = 0;
 }
 
 
@@ -257,6 +264,8 @@ push_event(struct DNSSDServer *sv, struct ServerOperation *op,
     m->sequence = ss->ss_Sequence + 1;
     if (ss->ss_Queued >= SESSION_EVENTS ||
         dnssd_model_measure(m, &required) != DNSSD_MODEL_OK ||
+        (ss->ss_Queued != 0 &&
+         ss->ss_QueuedBytes + required > sv->sv_EventBytes) ||
         (qe = AllocVec(sizeof(*qe) + required, MEMF_ANY)) == NULL ||
         dnssd_model_build(m, qe + 1, required, &written) != DNSSD_MODEL_OK) {
         if (qe != NULL) {
@@ -269,6 +278,7 @@ push_event(struct DNSSDServer *sv, struct ServerOperation *op,
     }
     ss->ss_Sequence++;
     qe->qe_Size = (ULONG)written;
+    ss->ss_QueuedBytes += qe->qe_Size;
     AddTail((struct List *)&ss->ss_Queue, (struct Node *)qe);
     if (ss->ss_Queued++ == 0) {
         notify(ss);
@@ -810,12 +820,13 @@ start_operation(struct MDNSDaemon *md, struct ServerSession *ss, LONG sslot,
             return DNSSD_ERR_BADPARAM;
         }
     }
-    if (ss->ss_Operations >= SESSION_OPERATIONS) {
+    if (ss->ss_Operations >= sv->sv_OperationLimit / 2) {
         return DNSSD_ERR_BUSY;
     }
-    for (i = 0; i < SERVER_OPERATIONS && sv->sv_Operations[i] != NULL; i++) {
+    for (i = 0; i < sv->sv_OperationLimit && sv->sv_Operations[i] != NULL;
+         i++) {
     }
-    if (i == SERVER_OPERATIONS) {
+    if (i == sv->sv_OperationLimit) {
         return DNSSD_ERR_BUSY;
     }
     op = AllocVec(sizeof(*op), MEMF_ANY | MEMF_CLEAR);
@@ -997,6 +1008,7 @@ read_event(struct ServerSession *ss, struct DNSSDIPCMsg *msg, ULONG incarnation)
     memcpy(room, qe + 1, qe->qe_Size);
     r->reply.size = qe->qe_Size;
     Remove((struct Node *)qe);
+    ss->ss_QueuedBytes -= qe->qe_Size;
     FreeVec(qe);
     ss->ss_Queued--;
     return DNSSD_OK;
@@ -1189,6 +1201,11 @@ dnssdServerInit(struct MDNSDaemon *md, ULONG gone)
     for (i = 0; i < SERVER_SESSIONS; i++) {
         NEWLIST((struct List *)&sv->sv_Sessions[i].ss_Queue);
     }
+    sv->sv_OperationLimit = mdnsShare(md, OPERATIONS_SHARE,
+        OPERATIONS_FLOOR * sizeof(struct ServerOperation),
+        SERVER_OPERATIONS * sizeof(struct ServerOperation)) /
+        sizeof(struct ServerOperation);
+    sv->sv_EventBytes = mdnsShare(md, EVENTS_SHARE, EVENTS_FLOOR, EVENTS_CAP);
     sv->sv_Daemon = FindTask(NULL);
     sv->sv_GoneMask = gone;
     md->md_DNSSD = sv;
