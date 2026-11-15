@@ -771,6 +771,10 @@ int netmidi_discovery_next(struct netmidi_discovery *discovery,
                again when it is back */
             forget(discovery);
             discovery->last_attempt = 0;
+        } else if (result != DNSSD_ERR_EMPTY) {
+            /* DNSSD_ERR_NOMEM and the like: the notification is lent again
+               only on EMPTY, so the next periodic turn reads again */
+            return 0;
         }
         /* DNSSD_ERR_EMPTY: the session's port is told of the next one */
         break;
