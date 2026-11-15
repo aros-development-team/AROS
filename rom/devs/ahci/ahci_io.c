@@ -413,9 +413,23 @@ AROS_LH1(void, BeginIO,
         break;
 
     case CMD_UPDATE:
-        // FIXME: Implement cache flush
-        done = TRUE;
+    {
+        struct SCSICmd scsi = {0};
+        union scsi_cdb cdb = {0};
+
+        cdb.generic.opcode = SCSI_DA_SYNCHRONIZE_CACHE;
+        scsi.scsi_Command = (APTR)&cdb;
+        scsi.scsi_CmdLength = 10;
+        IOStdReq(io)->io_Actual = 0;
+        if (ap->ap_type == ATA_PORT_T_DISK)
+            done = ahci_scsi_disk_io(io, &scsi);
+        else if (ap->ap_type == ATA_PORT_T_ATAPI)
+            /* Trackdisk exposes these units as read-only. */
+            done = TRUE;
+        else
+            goto bad_cmd;
         break;
+    }
 
     default:
         ahciDebug("ahci.device %d: Unknown IO command %d\n", unit->sim_Unit, io->io_Command);

@@ -454,10 +454,9 @@ BOOL ahci_scsi_disk_io(struct IORequest *io, struct SCSICmd *scsi)
         fis->flags = ATA_H2D_FLAGS_CMD;
         fis->command = ATA_C_FLUSH_CACHE;
         fis->device = 0;
-        if (xa->timeout < 45000)
-            xa->timeout = 45000;
+        xa->timeout = 45000;
         xa->datalen = 0;
-        xa->flags = 0;
+        xa->flags = ATA_F_EXCLUSIVE;
         xa->complete = ahci_io_complete;
         break;
     case SCSI_TEST_UNIT_READY:
