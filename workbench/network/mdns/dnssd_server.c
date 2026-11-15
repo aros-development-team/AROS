@@ -1043,15 +1043,19 @@ dnssdServerMessage(struct MDNSDaemon *md, struct DNSSDIPCMsg *msg)
         for (i = 0; i < SERVER_SESSIONS; i++) {
             ss = &sv->sv_Sessions[i];
             if (!ss->ss_Active) {
-                ss->ss_Active = 1;
+                /* filled whole before the TNA_REMOVED hook sees it active */
+                Forbid();
                 ss->ss_Lost = 0;
                 ss->ss_Gone = 0;
                 ss->ss_Generation = next_generation(sv);
                 ss->ss_Task = r->task;
                 ss->ss_Notify = msg->dm_Notify;
                 ss->ss_Queued = 0;
+                ss->ss_QueuedBytes = 0;
                 ss->ss_Sequence = 0;
                 ss->ss_Operations = 0;
+                ss->ss_Active = 1;
+                Permit();
                 r->session = make_id(ss->ss_Generation, i);
                 r->incarnation = md->md_DaemonID;
                 r->result = DNSSD_OK;
