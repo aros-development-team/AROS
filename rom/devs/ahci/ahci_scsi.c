@@ -347,7 +347,19 @@ BOOL ahci_scsi_disk_io(struct IORequest *io, struct SCSICmd *scsi)
     BOOL done = FALSE;
     scsi_cdb_t cdb = (APTR)scsi->scsi_Command;
 
-    xa = ahci_ata_get_xfer(ap, at);
+    /* Emulated queries must remain available while all hardware slots
+       are busy, particularly TEST UNIT READY from the media monitor. */
+    xa = NULL;
+    if (cdb->generic.opcode != SCSI_TEST_UNIT_READY &&
+        cdb->generic.opcode != SCSI_REQUEST_SENSE &&
+        cdb->generic.opcode != SCSI_INQUIRY &&
+        cdb->generic.opcode != SCSI_DA_READ_CAPACITY) {
+        xa = ahci_ata_get_xfer(ap, at);
+        if (xa == NULL) {
+            io->io_Error = IOERR_UNITBUSY;
+            return TRUE;
+        }
+    }
 
     switch(cdb->generic.opcode) {
     case SCSI_REQUEST_SENSE:
@@ -567,7 +579,8 @@ BOOL ahci_scsi_disk_io(struct IORequest *io, struct SCSICmd *scsi)
         ahci_os_unlock_port(ap);
     } else {
         IOStdReq(io)->io_Actual = sizeof(*scsi);
-        ahci_ata_put_xfer(xa);
+        if (xa)
+            ahci_ata_put_xfer(xa);
     }
 
     return done;

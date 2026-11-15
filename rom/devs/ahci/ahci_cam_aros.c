@@ -25,6 +25,8 @@
 #include <scsi/commands.h>
 #include <scsi/values.h>
 
+#include <exec/errors.h>
+
 #include "ahci.h"
 #include "ahci_scsi.h"
 #include "timer.h"
@@ -107,6 +109,11 @@ static void ahci_PortMonitor(struct Task *parent, struct Device *device, struct 
                 scsi.scsi_SenseActual = 0;
 
                 DoIO(io);
+
+                /* A full hardware queue is not a media change. The loop
+                   condition still waits before the next probe. */
+                if (io->io_Error == IOERR_UNITBUSY)
+                    continue;
 
                 is_present = (io->io_Error == 0) && (scsi.scsi_Status == SCSI_GOOD);
                 // TODO: Check sense for additional information
