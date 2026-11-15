@@ -125,6 +125,12 @@ static BOOL ahci_sector_rw(struct IORequest *io, UQUAD off64, BOOL is_write)
     len /= sector_size;
     off64 /= sector_size;
 
+    if (ap->ap_type == ATA_PORT_T_DISK &&
+        (off64 >= at->at_capacity || len > at->at_capacity - off64)) {
+        io->io_Error = IOERR_BADADDRESS;
+        return TRUE;
+    }
+
     /* Set up the CDB, based on what the transfer size is */
     scsi.scsi_Command = (APTR)&cdb;
 
@@ -324,22 +330,14 @@ AROS_LH1(void, BeginIO,
         break;
 
     case TD_FORMAT:
-        if (len > (at->at_identify.nsectors * at->at_identify.sector_size - 1))
-            goto bad_length;
         off64  = iotd->iotd_Req.io_Offset;
-        if (off64 > (at->at_identify.nsectors * at->at_identify.sector_size - 1))
-            goto bad_address;
         done = ahci_sector_rw(io, off64, TRUE);
         break;
 
     case TD_FORMAT64:
     case NSCMD_TD_FORMAT64:
-        if (len > (at->at_identify.nsectors * at->at_identify.sector_size - 1))
-            goto bad_length;
         off64  = iotd->iotd_Req.io_Offset;
         off64 |= ((UQUAD)iotd->iotd_Req.io_Actual)<<32;
-        if (off64 > (at->at_identify.nsectors * at->at_identify.sector_size - 1))
-            goto bad_address;
         done = ahci_sector_rw(io, off64, TRUE);
         break;
 
