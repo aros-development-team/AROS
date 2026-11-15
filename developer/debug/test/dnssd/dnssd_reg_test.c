@@ -198,6 +198,41 @@ int main(void)
     dnssd_reg_init(&r, &p);
     dnssd_reg_rename(&r);
     CHECK(instance_is(&r, "Name (10)"), "Name (9) -> Name (10)");
+    p = base("Name (999999999)");
+    dnssd_reg_init(&r, &p);
+    dnssd_reg_rename(&r);
+    CHECK(instance_is(&r, "Name (1000000000)"), "nine digits count on: Name (1000000000)");
+    p = base("x (10000000000000000000)");
+    dnssd_reg_init(&r, &p);
+    dnssd_reg_rename(&r);
+    CHECK(instance_is(&r, "x (10000000000000000000) (2)"),
+          "a suffix of more than nine digits is part of the name");
+    {
+        /* a domain that leaves the instance 10 bytes of the 255 */
+        uint8_t dom[DNSSD_REG_NAME_MAX];
+        size_t at = 0, left;
+
+        p = base("Abcdefghij");
+        left = DNSSD_REG_NAME_MAX - (p.type_len - 1u) - 1u - 10u;
+        while (left - 1 > 61) {         /* labels of 60, ended by the root */
+            dom[at] = 60;
+            memset(dom + at + 1, 'd', 60);
+            at += 61;
+            left -= 61;
+        }
+        dom[at] = (uint8_t)(left - 2);
+        memset(dom + at + 1, 'e', left - 2);
+        at += left - 1;
+        dom[at++] = 0;
+        p.domain = dom;
+        p.domain_len = (uint32_t)at;
+        CHECK(dnssd_reg_init(&r, &p) == DNSSD_REG_OK, "an instance of 10 bytes, its name 255");
+        CHECK(dnssd_reg_rename(&r) == DNSSD_REG_OK && instance_is(&r, "Abcdef (2)"),
+              "the rename cut to the service name's 255 bytes");
+        p.instance = r.instance;
+        p.instance_len = r.instance_len;
+        CHECK(dnssd_reg_init(&r2, &p) == DNSSD_REG_OK, "and it is a valid service");
+    }
     p = base("Name (x)");
     dnssd_reg_init(&r, &p);
     dnssd_reg_rename(&r);

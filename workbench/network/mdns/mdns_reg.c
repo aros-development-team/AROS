@@ -815,7 +815,9 @@ service_forget(struct MDNSDaemon *md, const struct MDNSRegisteredService *rs)
     mdnsCacheDropLocal(md, rs->rs_Name, rs->rs_Name);
 }
 
-static void
+/* The next free name for a service whose name another host has; FALSE if
+ * none fits 255 bytes. */
+static BOOL
 service_rename(struct MDNSDaemon *md, struct MDNSRegisteredService *rs)
 {
     BOOL used;
@@ -825,7 +827,9 @@ service_rename(struct MDNSDaemon *md, struct MDNSRegisteredService *rs)
     do {
         struct Node *n;
 
-        dnssd_reg_rename(&rs->rs_Reg);
+        if (dnssd_reg_rename(&rs->rs_Reg) != DNSSD_REG_OK) {
+            return FALSE;
+        }
         used = FALSE;
         FOR_SERVICES(md, n) {
             const struct MDNSRegisteredService *other =
@@ -838,6 +842,7 @@ service_rename(struct MDNSDaemon *md, struct MDNSRegisteredService *rs)
         }
     } while (used);
     names_build(rs);
+    return TRUE;
 }
 
 /*
@@ -894,7 +899,8 @@ mdnsRegHandleRecord(struct MDNSDaemon *md, const struct MDNSRecord *r,
     FOR_SERVICES(md, n) {
         struct MDNSRegisteredService *rs = (struct MDNSRegisteredService *)n;
 
-        if (!names_equal(rs->rs_Name, r->wire)) {
+        if (rs->rs_State == MDNS_NAME_CONFLICT ||
+            !names_equal(rs->rs_Name, r->wire)) {
             continue;
         }
         if (r->type == DNS_TYPE_SRV) {
@@ -926,7 +932,14 @@ mdnsRegHandleRecord(struct MDNSDaemon *md, const struct MDNSRecord *r,
                 continue;
             }
         }
-        service_rename(md, rs);
+        if (!service_rename(md, rs)) {
+            /* no name left to take: the registration ends (mdnsRegTick()
+             * tells its client) */
+            rs->rs_State = MDNS_NAME_CONFLICT;
+            rs->rs_Reg.state = DNSSD_REG_CONFLICT;
+            rs->rs_NextTick = mdnsTicks();
+            continue;
+        }
         rs->rs_State = MDNS_NAME_PROBING;
         rs->rs_Reg.state = DNSSD_REG_PENDING;
         rs->rs_Step = 0;

@@ -85,9 +85,10 @@ size_t dnssd_reg_subtype_name(const struct dnssd_reg *reg, unsigned subtype, uin
 size_t dnssd_reg_host_name(const struct dnssd_reg *reg, uint8_t *out);
 
 /* The next name after a conflict: "Name" becomes "Name (2)", "Name (2)"
- * "Name (3)"; what does not fit 63 bytes is cut before the suffix, at a
- * character's start (UTF-8). */
-void dnssd_reg_rename(struct dnssd_reg *reg);
+ * "Name (3)"; what does not fit 63 bytes, or the service's name 255, is cut
+ * before the suffix, at a character's start (UTF-8). DNSSD_REG_OK, or
+ * DNSSD_REG_TOO_LONG, the name unchanged, when not even the suffix fits. */
+int dnssd_reg_rename(struct dnssd_reg *reg);
 
 /* The same service: instance, type and domain, ASCII letters in either case. */
 int dnssd_reg_same_service(const struct dnssd_reg *a, const struct dnssd_reg *b);

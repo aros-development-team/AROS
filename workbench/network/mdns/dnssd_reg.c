@@ -254,27 +254,32 @@ dnssd_reg_host_name(const struct dnssd_reg *reg, uint8_t *out)
     return compose(reg, label, 1u + reg->host_len, 0, out);
 }
 
-void
+int
 dnssd_reg_rename(struct dnssd_reg *reg)
 {
     uint8_t *name = reg->instance;
     size_t len = reg->instance_len, cut = len;
-    unsigned long number = 1;
-    char digits[12];
+    /* the instance label's room: 63 bytes, and the service's whole name
+     * (its length byte, the type without its root, the domain) 255 */
+    size_t room = DNSSD_REG_NAME_MAX - (reg->type_len - 1u) - reg->domain_len - 1u;
+    uint32_t number = 1;
+    char digits[10];
     size_t n = 0;
 
-    /* a " (n)" it has already */
+    /* a " (n)" it has already; n of more than 9 digits, which a 32-bit
+     * counter does not hold, is part of the name */
     if (len >= 4 && name[len - 1] == ')') {
         size_t i = len - 2;
 
         while (i > 0 && name[i] >= '0' && name[i] <= '9')
             i--;
-        if (i < len - 2 && i > 0 && name[i] == '(' && name[i - 1] == ' ') {
+        if (i < len - 2 && len - 2 - i <= 9 && i > 0 && name[i] == '(' &&
+            name[i - 1] == ' ') {
             size_t d;
 
             number = 0;
             for (d = i + 1; d < len - 1; d++)
-                number = number * 10 + (unsigned long)(name[d] - '0');
+                number = number * 10 + (uint32_t)(name[d] - '0');
             cut = i - 1;
         }
     }
@@ -283,9 +288,13 @@ dnssd_reg_rename(struct dnssd_reg *reg)
         digits[n++] = (char)('0' + number % 10);
         number /= 10;
     } while (number != 0);
+    if (room > DNSSD_REG_LABEL_MAX)
+        room = DNSSD_REG_LABEL_MAX;
+    if (3 + n > room)
+        return DNSSD_REG_TOO_LONG;
     /* room for " (" digits ")": cut the name before, at a character's start */
-    if (cut + 3 + n > DNSSD_REG_LABEL_MAX) {
-        cut = DNSSD_REG_LABEL_MAX - 3 - n;
+    if (cut + 3 + n > room) {
+        cut = room - 3 - n;
         while (cut > 0 && (name[cut] & 0xc0) == 0x80)
             cut--;
     }
@@ -295,6 +304,7 @@ dnssd_reg_rename(struct dnssd_reg *reg)
         name[cut++] = (uint8_t)digits[--n];
     name[cut++] = ')';
     reg->instance_len = (uint8_t)cut;
+    return DNSSD_REG_OK;
 }
 
 int
