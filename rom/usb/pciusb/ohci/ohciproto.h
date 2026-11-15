@@ -14,6 +14,7 @@ WORD ohciQueueIsochIO(struct PCIController *hc, struct RTIsoNode *rtn);
 void ohciFreeIsochIO(struct PCIController *hc, struct RTIsoNode *rtn);
 void ohciStartIsochIO(struct PCIController *hc, struct RTIsoNode *rtn);
 void ohciHandleZeroIsochTDs(struct PCIController *hc);
+void ohciRetireZeroIsochBefore(struct PCIController *hc, struct RTIsoNode *rtn, struct PTDNode *ptd);
 void ohciStopIsochIO(struct PCIController *hc, struct RTIsoNode *rtn);
 void ohciScheduleIsoTDs(struct PCIController *hc);
 

@@ -592,92 +592,120 @@ void ohciStopIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
         ohciDisableInt(hc, OISF_SOF);
 }
 
+/*
+ * Retire pending zero-length requests of one stream with a zero-length done
+ * hook, oldest scheduled frame first, and queue their replacements.
+ *
+ * before == NULL: retire those whose frame has been reached (SOF pass).
+ * before != NULL: retire those scheduled earlier than this IsoTD, whose done
+ *                 hook is about to be delivered from the DoneQueue.
+ *
+ * Either way a request waits while an IsoTD of the stream with an earlier
+ * frame is still in flight, so done hooks stay in scheduled-frame order even
+ * when one interrupt covers several frames.
+ */
+static void ohciRetireZeroIsoch(struct PCIController *hc, struct RTIsoNode *rtn,
+                                struct PTDNode *before)
+{
+    UWORD curframe = (UWORD)(hc->hc_FrameCounter & 0xffff);
+    UWORD budget;
+
+    if(!rtn->rtn_PTDs || !rtn->rtn_RTIso)
+        return;
+
+    /* A replacement queued below is always scheduled in a later frame, so the
+       rounds end; the budget only guards against a frame counter wrap. */
+    for(budget = rtn->rtn_PTDCount; budget; budget--) {
+        struct IOUsbHWRTIso *urti = rtn->rtn_RTIso;
+        struct PTDNode *ptd = NULL;
+        struct IOUsbHWBufferReq *bufreq;
+        LONG age = 0;
+        UWORD idx;
+
+        /* The pending zero-length request with the oldest frame. */
+        for(idx = 0; idx < rtn->rtn_PTDCount; idx++) {
+            struct PTDNode *cand = rtn->rtn_PTDs[idx];
+            LONG delta;
+
+            if(!cand || !(cand->ptd_Flags & PTDF_ZERO_PENDING))
+                continue;
+
+            delta = (LONG)(UWORD)(curframe - (UWORD)cand->ptd_FrameIdx);
+            if(delta & 0x8000)
+                delta -= 0x10000;
+            if(!ptd || delta > age) {
+                ptd = cand;
+                age = delta;
+            }
+        }
+
+        if(!ptd)
+            return;
+
+        if(before) {
+            LONG delta = (LONG)(UWORD)((UWORD)ptd->ptd_FrameIdx - (UWORD)before->ptd_FrameIdx);
+
+            if(delta & 0x8000)
+                delta -= 0x10000;
+            if(delta >= 0)
+                return;     /* not older than the IsoTD being completed */
+        } else if(age < 0) {
+            return;         /* not its frame yet */
+        }
+
+        /* Every other pending request is newer still, so stop at the first
+           one that has to wait for an earlier IsoTD. */
+        for(idx = 0; idx < rtn->rtn_PTDCount; idx++) {
+            struct PTDNode *other = rtn->rtn_PTDs[idx];
+            LONG delta;
+
+            if(!other || !(other->ptd_Flags & PTDF_ACTIVE))
+                continue;
+
+            delta = (LONG)(UWORD)((UWORD)other->ptd_FrameIdx - (UWORD)ptd->ptd_FrameIdx);
+            if(delta & 0x8000)
+                delta -= 0x10000;
+            if(delta < 0)
+                return;
+        }
+
+        bufreq = &ohciPTDPrivate(ptd)->ptd_BufferReq;
+        bufreq->ubr_Length = 0;
+        bufreq->ubr_Frame = ptd->ptd_FrameIdx;
+        ptd->ptd_Flags &= ~(PTDF_ACTIVE|PTDF_BUFFER_VALID|PTDF_ZERO_PENDING);
+
+        if(rtn->rtn_IOReq.iouh_Dir == UHDIR_IN) {
+            if(urti->urti_InDoneHook)
+                CallHookPkt(urti->urti_InDoneHook, rtn, bufreq);
+        } else {
+            if(urti->urti_OutDoneHook)
+                CallHookPkt(urti->urti_OutDoneHook, rtn, bufreq);
+        }
+
+        if(ohciQueueIsochIO(hc, rtn) == RC_OK)
+            ohciStartIsochIO(hc, rtn);
+    }
+}
+
+/* SOF pass: retire the zero-length requests whose frame has been reached. */
 void ohciHandleZeroIsochTDs(struct PCIController *hc)
 {
     struct RTIsoNode *rtn = (struct RTIsoNode *)hc->hc_RTIsoHandlers.mlh_Head;
-    UWORD curframe = (UWORD)(hc->hc_FrameCounter & 0xffff);
 
     while(rtn->rtn_Node.mln_Succ) {
         struct RTIsoNode *next = (struct RTIsoNode *)rtn->rtn_Node.mln_Succ;
 
-        if(rtn->rtn_PTDs && rtn->rtn_RTIso) {
-            UWORD idx;
-
-            for(idx = 0; idx < rtn->rtn_PTDCount; idx++) {
-                struct PTDNode *ptd = rtn->rtn_PTDs[idx];
-                struct OhciPTDPrivate *ptdpriv;
-                struct IOUsbHWBufferReq *bufreq;
-                struct IOUsbHWRTIso *urti;
-                LONG delta;
-
-                if(!ptd || !(ptd->ptd_Flags & PTDF_ZERO_PENDING))
-                    continue;
-
-                delta = (LONG)((UWORD)curframe - (UWORD)ptd->ptd_FrameIdx);
-                if(delta & 0x8000)
-                    delta -= 0x10000;
-                if(delta < 0)
-                    continue;   /* not its frame yet */
-
-                /* Keep done hooks in scheduled-frame order.  An IsoTD of this
-                   stream with an earlier frame may still be in flight (its
-                   done hook is delivered from the DoneQueue, possibly in a
-                   later interrupt).  Retiring this zero-length request first
-                   would hand the client its zero-length done hook - the image
-                   end for SonixcamTool - before the data of the earlier frame.
-                   Wait until no earlier-frame IsoTD of this stream is active. */
-                {
-                    UWORD scan;
-                    BOOL earlier = FALSE;
-
-                    for(scan = 0; scan < rtn->rtn_PTDCount; scan++) {
-                        struct PTDNode *other = rtn->rtn_PTDs[scan];
-                        LONG other_delta;
-
-                        if(!other || other == ptd)
-                            continue;
-                        if(!(other->ptd_Flags & PTDF_ACTIVE))
-                            continue;
-
-                        other_delta = (LONG)((UWORD)other->ptd_FrameIdx -
-                                             (UWORD)ptd->ptd_FrameIdx);
-                        if(other_delta & 0x8000)
-                            other_delta -= 0x10000;
-                        if(other_delta < 0) {
-                            earlier = TRUE;
-                            break;
-                        }
-                    }
-
-                    if(earlier)
-                        continue;
-                }
-
-                ptdpriv = ohciPTDPrivate(ptd);
-                bufreq = &ptdpriv->ptd_BufferReq;
-                urti = rtn->rtn_RTIso;
-
-                bufreq->ubr_Length = 0;
-                bufreq->ubr_Frame = ptd->ptd_FrameIdx;
-                ptd->ptd_Flags &= ~(PTDF_ACTIVE|PTDF_BUFFER_VALID|PTDF_ZERO_PENDING);
-
-                if(urti) {
-                    if(rtn->rtn_IOReq.iouh_Dir == UHDIR_IN) {
-                        if(urti->urti_InDoneHook)
-                            CallHookPkt(urti->urti_InDoneHook, rtn, bufreq);
-                    } else {
-                        if(urti->urti_OutDoneHook)
-                            CallHookPkt(urti->urti_OutDoneHook, rtn, bufreq);
-                    }
-                }
-
-                if(ohciQueueIsochIO(hc, rtn) == RC_OK)
-                    ohciStartIsochIO(hc, rtn);
-            }
-        }
-
+        ohciRetireZeroIsoch(hc, rtn, NULL);
         rtn = next;
     }
+}
+
+/* DoneQueue: called before the done hook of a completed IsoTD, so pending
+   zero-length requests scheduled before it are delivered first. */
+void ohciRetireZeroIsochBefore(struct PCIController *hc, struct RTIsoNode *rtn,
+                               struct PTDNode *ptd)
+{
+    ohciRetireZeroIsoch(hc, rtn, ptd);
 }
 
 void ohciFreeIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)

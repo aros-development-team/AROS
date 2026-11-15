@@ -513,6 +513,11 @@ static void ohciHandleFinishedTDs(struct PCIController *hc)
                 struct IOUsbHWRTIso *urti = rtn->rtn_RTIso;
                 struct IOUsbHWBufferReq *donebuf = bufreq ? bufreq : &rtn->rtn_BufferReq;
 
+                /* Zero-length requests scheduled before this IsoTD come
+                   first, even if the SOF pass has not reached them yet. */
+                if (ptd)
+                    ohciRetireZeroIsochBefore(hc, rtn, ptd);
+
                 if (ioreq->iouh_Dir == UHDIR_IN) {
                     if (urti->urti_InDoneHook)
                         CallHookPkt(urti->urti_InDoneHook, rtn, donebuf);
