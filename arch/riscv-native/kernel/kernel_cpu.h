@@ -2,11 +2,11 @@
     Copyright (c) 2026, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: sbi-riscv64 kernel CPU definitions.
+    Desc: native riscv kernel CPU definitions.
 */
 
-#ifndef KERNEL_CPU_RISCV64_H_
-#define KERNEL_CPU_RISCV64_H_
+#ifndef KERNEL_CPU_RISCV_H_
+#define KERNEL_CPU_RISCV_H_
 
 #include <inttypes.h>
 
@@ -18,13 +18,13 @@
 #define AROSCPUContext ExceptionContext
 
 /*
- * Context switch protocol for the extension state (see asm/cpu.h for the
- * sstatus FS/VS fields):
+ * Context switch protocol for the extension state (see asm/riscv/csr.h
+ * for the status FS/VS fields):
  *
- *  - FPU (FS): the kernel runs with FS enabled (LP64D code may use FP
- *    registers anywhere). On dispatch the scheduler sets FS=CLEAN; on
- *    switch-out it saves f0-f31/fcsr into ctx->fpuContext (setting
- *    ECF_FPU) only when FS reads back DIRTY.
+ *  - FPU (FS): the kernel runs with FS enabled (code built for a core
+ *    with F may use FP registers anywhere). On dispatch the scheduler
+ *    sets FS=CLEAN; on switch-out it saves f0-f31/fcsr into
+ *    ctx->fpuContext (setting ECF_FPU) only when FS reads back DIRTY.
  *
  *  - Vector (VS): presence is detected at runtime (__riscv_vlenb != 0,
  *    see cpu_init.c) and ctx->vecContext is only laid out then. Tasks
@@ -47,11 +47,12 @@
 #define goUser()
 
 /*
- * Kernel syscall entry. ecall from S-mode always traps to M-mode - it
- * is the SBI call mechanism and SBI firmware does not (and must not)
- * delegate it. Breakpoints ARE delegated to S-mode, so the scheduler
- * syscalls use ebreak with the function code in a7; the trap handler
- * distinguishes them from real breakpoints by a7.
+ * Kernel syscall entry. Under SBI firmware, ecall from S-mode always
+ * traps to M-mode - it is the SBI call mechanism and the firmware does
+ * not (and must not) delegate it. Breakpoints ARE delegated to S-mode,
+ * so the scheduler syscalls use ebreak with the function code in a7;
+ * the trap handler distinguishes them from real breakpoints by a7. A
+ * machine-mode kernel takes ebreak the same way.
  */
 #undef krnSysCall
 #define krnSysCall(n) \
@@ -60,4 +61,4 @@
     "\tebreak\n" \
     : : [swi_no] "I" (n) : "a7", "memory");
 
-#endif /* KERNEL_CPU_RISCV64_H_ */
+#endif /* KERNEL_CPU_RISCV_H_ */

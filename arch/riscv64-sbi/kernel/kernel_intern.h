@@ -50,9 +50,8 @@ static inline uint64_t krnReadTime(void)
     return v;
 }
 
-/* CPU load accounting (kernel_timer.c): time the boot hart spent in
-   the dispatcher's wfi, and the load computed from it once a second */
-extern volatile uint64_t __cpu_sleeptime;
+/* CPU load accounting (kernel_timer.c): the load computed once a second
+   from the boot hart's idle time (__riscv_cpu_idletime, kernel_riscv.h) */
 extern volatile uint32_t __cpu_load;
 
 /* /cpus timebase-frequency, for time <-> seconds (kernel_timer.c) */

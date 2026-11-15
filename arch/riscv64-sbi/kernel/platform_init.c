@@ -218,6 +218,7 @@ static int Platform_Init(struct KernelBase *LIBBASE)
     LIBBASE->kb_PlatformData = pdata;
 
     __riscv_arosintern.RVI_TimebaseFreq = fdt->tb_freq;
+    __riscv_arosintern.RVI_TimerTick = krnTimerTick;
 
 #if defined(__AROSEXEC_SMP__)
     rv_pdata = pdata;

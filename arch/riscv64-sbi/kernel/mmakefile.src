@@ -30,7 +30,6 @@ CFILES := \
         kernel_timer \
         kernel_watchdog \
         kernel_mmu \
-        kernel_cpu \
         kernel_elf \
         getcpuattr \
         getsystemattr \
