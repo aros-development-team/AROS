@@ -384,7 +384,11 @@ mdnsHostHandleProbe(struct MDNSDaemon *md, const struct MDNSRecord *theirs,
         UWORD type;
         UWORD length;
         UBYTE data[16];
-    } mine[MDNS_ADDRESS_MAX], other[MDNS_PROPOSED_MAX];
+    } other[MDNS_PROPOSED_MAX];
+    /* every address of the link, 5 KB: not on the stack of a 68000's task.
+     * Static: only mdnsd's own task calls this (handle_packet()), one call
+     * at a time, and nothing of it outlives the call */
+    static struct AddressRecord mine[MDNS_ADDRESS_MAX];
     char fqdn[256];
     LONG i, j, index, mineCount = 0, otherCount = 0, difference = 0;
 
