@@ -11002,6 +11002,9 @@ printf '%s\n' "$darwin_sdk_path" >&6; }
                 # Apple's ar does not understand. Use the toolchain's ar, like aros_kernel_rs.
                 aros_kernel_ar="$toolchain_ar"
                 aros_kernel_ld="$toolchain_ld -arch arm64"
+                # The Cocoa HIDD is the display driver here. Building the X11 HIDD as
+                # well registers a second driver that competes for the display.
+                need_x11=no
                 aros_kernel_as="$toolchain_as -arch arm64"
                 aros_kernel_ranlib="ranlib"
                 aros_kernel_nm="nm"
