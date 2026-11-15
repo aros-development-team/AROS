@@ -144,7 +144,7 @@ struct DNSSDEvent
 #define DNSSD_Subtype       (DNSSD_Dummy + 6)   /* Browse: only instances of this subtype ("_printer");
                                                  * Register: a subtype it has (repeatable) */
 #define DNSSD_TXT           (DNSSD_Dummy + 7)   /* Register, Update: TXT data, length-prefixed strings */
-#define DNSSD_TXTLength     (DNSSD_Dummy + 8)   /* its length in bytes, at most 1300 */
+#define DNSSD_TXTLength     (DNSSD_Dummy + 8)   /* its length in bytes, at most DNSSD_TXT_MAX */
 #define DNSSD_Port          (DNSSD_Dummy + 9)   /* Update: another port */
 #define DNSSD_Host          (DNSSD_Dummy + 10)  /* Register for another host: its name ("printer") */
 #define DNSSD_HostAddress   (DNSSD_Dummy + 11)  /* Register, Update: one of its addresses, struct

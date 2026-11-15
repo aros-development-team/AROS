@@ -538,11 +538,11 @@ instance_part(CONST_STRPTR instance, struct dnssd_ipc_parts *parts)
         struct DNSSDIntern *, DNSSDBase, 9, DNSSD)
 
 /*  FUNCTION
-        Looks the addresses of name up over multicast DNS (a name with no
-        dot is taken in "local."). Each address found is an event
-        DNSSD_EVENT_ADDRESS with the address, its family and the index of
-        the interface it was learned on; the same address is not reported
-        twice. When the time is up the operation ends with DNSSD_EVENT_END:
+        Looks the addresses of name, a whole name such as "arosbox.local",
+        up over multicast DNS; nothing is added to it. Each address found
+        is an event DNSSD_EVENT_ADDRESS with the address, its family and
+        the index of the interface it was learned on; the same address is
+        not reported twice. When the time is up the operation ends with DNSSD_EVENT_END:
         DNSSD_OK if an address was found, DNSSD_ERR_TIMEOUT if not.
 
     INPUTS
@@ -947,9 +947,10 @@ out:
 
 /*  FUNCTION
         The records of a name and type (255 for every type) on the links:
-        DNSSD_EVENT_ADD for each (de_RRType, de_RData with the names in it
-        uncompressed, de_TTL, de_Interface), DNSSD_EVENT_REMOVE when it
-        goes - until cancelled, or until DNSSD_Timeout.
+        DNSSD_EVENT_RECORD for each (de_RRType, de_RData with the names in
+        it uncompressed, de_TTL, de_Interface), and again with
+        DNSSD_EVENTF_REMOVED in de_Flags when it goes - until cancelled, or
+        until DNSSD_Timeout.
 
     INPUTS
         DNSSD_Interface - only on this interface index

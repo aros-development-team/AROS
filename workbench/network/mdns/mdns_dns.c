@@ -428,4 +428,3 @@ mdnsBuildQueryWire(UBYTE *pkt, LONG pktmax, UWORD id, const UBYTE *qname,
     *pktlen = pos;
     return 0;
 }
-
