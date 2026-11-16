@@ -530,7 +530,6 @@ IPTR Stepper__MUIM_HandleEvent(struct IClass *cl, Object *obj,
     struct Stepper_DATA *data = INST_DATA(cl, obj);
     IPTR disabled = FALSE;
     UBYTE side;
-    UBYTE pressed;
 
     get(obj, MUIA_Disabled, &disabled);
 
@@ -584,6 +583,8 @@ IPTR Stepper__MUIM_HandleEvent(struct IClass *cl, Object *obj,
     else if (msg->imsg->Code == SELECTUP
         && data->st_PressedSide != STEPPER_SIDE_NONE)
     {
+        UBYTE pressed;
+
         pressed = data->st_PressedSide;
         side = Stepper_SideAt(obj, msg->imsg->MouseX, msg->imsg->MouseY);
         data->st_PressedSide = STEPPER_SIDE_NONE;
