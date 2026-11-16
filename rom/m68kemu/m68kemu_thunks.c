@@ -68,6 +68,7 @@ extern const ULONG m68kemu_thunks_locale_manual_count;
 /* Forward declarations for shadow helpers defined below */
 ULONG shadow_register(struct M68KEmuContext *ctx, ULONG m68k_addr, void *native, UWORD type);
 void *shadow_lookup(struct M68KEmuContext *ctx, ULONG m68k_addr);
+void shadow_remove(struct M68KEmuContext *ctx, ULONG m68k_addr);
 static ULONG setup_window_shadow(struct M68KEmuContext *ctx, struct Window *w);
 static void window_flags_in(struct M68KEmuContext *ctx);
 static void rp_state_out(struct M68KEmuContext *ctx, ULONG mrp, struct RastPort *rp, BOOL font);
@@ -403,6 +404,7 @@ ULONG m68k_process_of(struct M68KEmuContext *ctx, struct Task *task)
                 ctx->shadow_map[i].native_ptr = task;
         shadow_sync(ctx, layout, ctx->m68k_proc, task);
         m68k_task_stack(ctx, ctx->m68k_proc, task);
+        m68k_process_streams(ctx, ctx->m68k_proc, task);
         if (task->tc_Node.ln_Type == NT_PROCESS && !shadow_lookup(ctx, ctx->m68k_proc + M68K_PR_MSGPORT))
             shadow_register(ctx, ctx->m68k_proc + M68K_PR_MSGPORT, &((struct Process *)task)->pr_MsgPort,
                             shadow_find_layout("MsgPort")->shadow_type);
@@ -414,18 +416,38 @@ ULONG m68k_process_of(struct M68KEmuContext *ctx, struct Task *task)
         {
             shadow_sync(ctx, layout, ctx->shadow_map[i].m68k_addr, task);
             m68k_task_stack(ctx, ctx->shadow_map[i].m68k_addr, task);
+            m68k_process_streams(ctx, ctx->shadow_map[i].m68k_addr, task);
             return ctx->shadow_map[i].m68k_addr;
         }
     ULONG m68k = M68KEmu_HeapAlloc(ctx, M68K_SIZEOF_PROCESS, 0); /* m68k Process size */
     if (!m68k) return 0;
     memset(ctx->mem + m68k, 0, M68K_SIZEOF_PROCESS);
-    shadow_register(ctx, m68k, task, layout->shadow_type);
+    /* a Process that is not in the registry could not keep what belongs
+       to it, and one whose port is not there could not be sent a message:
+       then there is none, as when there is no memory for it */
+    if (!shadow_register(ctx, m68k, task, layout->shadow_type))
+    {
+        M68KEmu_HeapFree(ctx, m68k, M68K_SIZEOF_PROCESS);
+        return 0;
+    }
+    if (task->tc_Node.ln_Type == NT_PROCESS)
+    {
+        const struct M68KStructLayout *port = shadow_find_layout("MsgPort");
+
+        if (!port || !shadow_register(ctx, m68k + M68K_PR_MSGPORT, &((struct Process *)task)->pr_MsgPort,
+                                      port->shadow_type))
+        {
+            shadow_remove(ctx, m68k);
+            M68KEmu_HeapFree(ctx, m68k, M68K_SIZEOF_PROCESS);
+            return 0;
+        }
+    }
     shadow_sync(ctx, layout, m68k, task);
     m68k_task_stack(ctx, m68k, task);
+    m68k_process_streams(ctx, m68k, task);
     if (task->tc_Node.ln_Type == NT_PROCESS)
     {
         struct Process *proc = (struct Process *)task;
-        shadow_register(ctx, m68k + M68K_PR_MSGPORT, &proc->pr_MsgPort, shadow_find_layout("MsgPort")->shadow_type);
         if (proc->pr_CLI)
         {
             ULONG m68k_cli = M68KEmu_HeapAlloc(ctx, M68K_SIZEOF_CLI, 0);
@@ -923,6 +945,8 @@ static IPTR thunk_exec_AvailMem(struct M68KEmuContext *ctx, void *cpu)
 ULONG shadow_register(struct M68KEmuContext *ctx, ULONG m68k_addr, void *native, UWORD type)
 {
     if (ctx->num_shadows < M68KEMU_MAX_SHADOWS) {
+        /* a slot that a removal vacated carries nothing over */
+        memset(&ctx->shadow_map[ctx->num_shadows], 0, sizeof(ctx->shadow_map[0]));
         ctx->shadow_map[ctx->num_shadows].m68k_addr = m68k_addr;
         ctx->shadow_map[ctx->num_shadows].native_ptr = native;
         ctx->shadow_map[ctx->num_shadows].type = type;
@@ -2089,6 +2113,89 @@ static IPTR thunk_dos_Seek(struct M68KEmuContext *ctx, void *cpu)
     return (IPTR)Seek(fh, pos, mode);
 }
 
+/* Argument strings belong to the emulated Process of the task that calls,
+   not to its native host and not to the program's first Process: a process
+   the program started has its own, as FindTask(NULL) shows it. Guest code
+   can change pr_Arguments directly as well as through SetArgStr. */
+static ULONG m68k_argument_field(struct M68KEmuContext *ctx)
+{
+    ULONG proc = m68k_process_of(ctx, FindTask(NULL));
+
+    return m68k_in_mem(ctx, proc, M68K_PR_ARGUMENTS + 4)
+        ? proc + M68K_PR_ARGUMENTS : 0;
+}
+
+static BOOL m68k_argument_string(struct M68KEmuContext *ctx, ULONG addr)
+{
+    return !addr || (m68k_in_mem(ctx, addr, 1) &&
+        memchr(ctx->mem + addr, 0, ctx->mem_size - addr) != NULL);
+}
+
+/* -534: GetArgStr() -> D0=current guest argument string */
+static IPTR thunk_dos_GetArgStr_m(struct M68KEmuContext *ctx, void *cpu)
+{
+    ULONG field = m68k_argument_field(ctx), addr;
+
+    (void)cpu;
+    if (!field)
+    {
+        SetIoErr(ERROR_BAD_NUMBER);
+        return 0;
+    }
+    addr = m68k_read32(ctx, field);
+    if (!m68k_argument_string(ctx, addr))
+    {
+        SetIoErr(ERROR_BAD_NUMBER);
+        return 0;
+    }
+    return addr;
+}
+
+/* -540: SetArgStr(D1=string) -> D0=old guest string; NULL is legal. */
+static IPTR thunk_dos_SetArgStr_m(struct M68KEmuContext *ctx, void *cpu)
+{
+    ULONG field = m68k_argument_field(ctx), addr = THUNK_D(1), old;
+
+    if (!field || !m68k_write_allowed(ctx, field) ||
+        !m68k_argument_string(ctx, addr))
+    {
+        SetIoErr(ERROR_BAD_NUMBER);
+        return 0;
+    }
+    old = m68k_read32(ctx, field);
+    if (!m68k_argument_string(ctx, old))
+    {
+        SetIoErr(ERROR_BAD_NUMBER);
+        return 0;
+    }
+    m68k_write32(ctx, field, addr);
+    /* The startup registers and native ReadArgs source keep their lifetime. */
+    return old;
+}
+
+/* -294: SelectInput(D1=fh) and -300: SelectOutput(D1=fh) -> D0=the stream
+   before. The native Process changes its stream, and the program's own
+   Process shows the choice at once (m68k_process_stream_selected). */
+static IPTR thunk_dos_SelectInput_m(struct M68KEmuContext *ctx, void *cpu)
+{
+    struct Task *me = FindTask(NULL);
+    BPTR stream = m68k_bptr_in(ctx, THUNK_D(1));
+    BPTR old = SelectInput(stream);
+
+    m68k_process_stream_selected(ctx, m68k_process_of(ctx, me), me, 0, stream);
+    return (IPTR)m68k_bptr_out(ctx, old);
+}
+
+static IPTR thunk_dos_SelectOutput_m(struct M68KEmuContext *ctx, void *cpu)
+{
+    struct Task *me = FindTask(NULL);
+    BPTR stream = m68k_bptr_in(ctx, THUNK_D(1));
+    BPTR old = SelectOutput(stream);
+
+    m68k_process_stream_selected(ctx, m68k_process_of(ctx, me), me, 1, stream);
+    return (IPTR)m68k_bptr_out(ctx, old);
+}
+
 /* -132: IoErr() -> D0=result */
 static IPTR thunk_dos_IoErr(struct M68KEmuContext *ctx, void *cpu)
 {
@@ -2652,10 +2759,12 @@ static IPTR thunk_dos_ExNext(struct M68KEmuContext *ctx, void *cpu)
 }
 
 /* ExAll with the program's ExAllControl (16 bytes in its memory, a native
-   one behind it, shadow type 35) and its buffer, filled with ExAllData in
+   one behind it, shadow type 18) and its buffer, filled with ExAllData in
    68k layout: ed_Next 0, ed_Name 4, ed_Type 8, ed_Size 12, ed_Prot 16,
-   ed_Days 20, ed_Mins 24, ed_Ticks 28, ed_Comment 32, ed_OwnerUID/GID 36 */
-#define SHADOW_EXALL 35
+   ed_Days 20, ed_Mins 24, ed_Ticks 28, ed_Comment 32, ed_OwnerUID/GID 36.
+   The tag is one of those below the generated layouts': it was 35, the
+   number of the BitMap layout, which FreeBitMap() tells its bitmaps by. */
+#define SHADOW_EXALL 18
 
 static ULONG exall_control_new(struct M68KEmuContext *ctx)
 {
@@ -3337,6 +3446,10 @@ static IPTR thunk_dos_StrToDate_m(struct M68KEmuContext *ctx, void *cpu)
 }
 
 const struct M68KThunkEntry m68kemu_thunks_dos[] = {
+    { 534, thunk_dos_GetArgStr_m },
+    { 540, thunk_dos_SetArgStr_m },
+    { 294, thunk_dos_SelectInput_m },
+    { 300, thunk_dos_SelectOutput_m },
     { 192, thunk_dos_DateStamp_m },
     { 816, thunk_dos_StrToLong_m },
     { 738, thunk_dos_CompareDates_m },
@@ -6048,8 +6161,42 @@ static IPTR thunk_gfx_BltTemplate_m(struct M68KEmuContext *ctx, void *cpu)
 static IPTR thunk_gfx_AllocBitMap_m(struct M68KEmuContext *ctx, void *cpu)
 {
     struct BitMap scratch, *friend = m68k_bitmap_in(ctx, THUNK_A(0), &scratch);
+    struct BitMap *bitmap;
+    ULONG result;
 
-    return (IPTR)AllocBitMap(THUNK_D(0), THUNK_D(1), THUNK_D(2), THUNK_D(3), friend);
+    bitmap = AllocBitMap(THUNK_D(0), THUNK_D(1), THUNK_D(2), THUNK_D(3), friend);
+    if (!bitmap)
+        return 0;
+    /* As in the generated thunk, return a guest struct, not a native pointer. */
+    result = shadow_create_by_name(ctx, "BitMap", bitmap);
+    if (!result)
+        FreeBitMap(bitmap);
+    return result;
+}
+
+/* -924: FreeBitMap(A0=bm): what AllocBitMap() above gave the program, and
+   nothing else. The guest BitMap leaves the registry and the program's
+   memory together with its native bitmap. NULL, a handle, a screen's
+   bitmap, a BitMap in the program's own memory and an address freed before
+   are not the program's to free here, and are not passed on. */
+static IPTR thunk_gfx_FreeBitMap_m(struct M68KEmuContext *ctx, void *cpu)
+{
+    const struct M68KStructLayout *layout = shadow_find_layout("BitMap");
+    ULONG mb = THUNK_A(0);
+
+    for (UWORD i = 0; mb && layout && i < ctx->num_shadows; i++)
+        if (ctx->shadow_map[i].m68k_addr == mb)
+        {
+            if (ctx->shadow_map[i].type == layout->shadow_type)
+            {
+                struct BitMap *bitmap = (struct BitMap *)ctx->shadow_map[i].native_ptr;
+
+                shadow_destroy(ctx, layout, mb);
+                FreeBitMap(bitmap);
+            }
+            break;
+        }
+    return 0;
 }
 
 /* ── calls whose arguments point at small structures or arrays in the
@@ -6962,6 +7109,7 @@ const struct M68KThunkEntry m68kemu_thunks_graphics_manual[] = {
     { 390, thunk_gfx_InitBitMap_m },
     { 36,  thunk_gfx_BltTemplate_m },
     { 918, thunk_gfx_AllocBitMap_m },
+    { 924, thunk_gfx_FreeBitMap_m },
     { 882, thunk_gfx_LoadRGB32 },
     { 240, thunk_gfx_Move },
     { 60,  thunk_gfx_Text },

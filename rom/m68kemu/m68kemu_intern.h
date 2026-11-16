@@ -283,9 +283,16 @@ struct M68KEmuContext
 
     BOOL    running;
     LONG    exit_code;
-    /* Shadow struct mapping: m68k addr <-> native ptr */
+    /* Shadow struct mapping: m68k addr <-> native ptr. The entry of a
+       Process also keeps what m68k_process_streams() last wrote into its
+       three stream fields: the native streams and the handles they had. */
     #define M68KEMU_MAX_SHADOWS 1024
-    struct { ULONG m68k_addr; void *native_ptr; UWORD type; } shadow_map[M68KEMU_MAX_SHADOWS];
+    struct {
+        ULONG m68k_addr; void *native_ptr; UWORD type;
+        UBYTE streams_valid;
+        BPTR  stream_native[3];
+        ULONG stream_handle[3];
+    } shadow_map[M68KEMU_MAX_SHADOWS];
     UWORD num_shadows;
 
     /* Program name for GetProgramName */
@@ -473,6 +480,8 @@ extern "C" {
 #endif
 
 struct M68KEmuContext *M68KEmu_CreateContext(struct M68KEmuLibBase *base);
+struct M68KEmuContext *M68KEmu_CreateContextWithStack(struct M68KEmuLibBase *base,
+                                                  ULONG requested_stack);
 void   M68KEmu_DestroyContext(struct M68KEmuContext *ctx);
 LONG   M68KEmu_Execute(struct M68KEmuContext *ctx);
 ULONG  M68KEmu_HeapAlloc(struct M68KEmuContext *ctx, ULONG size, ULONG requirements);

@@ -59,12 +59,18 @@ from emulated code. The m68k stack, hunk segments, and all dynamically allocated
 memory reside within this block.
 
 ```plain
-Address Map (32 MB):
+Address Map (32 MB, default stack):
 0x000000 - 0x0003FF  Exception vectors (1 KB)
 0x000400 - 0x0103FF  Library base region (64 KB) — fake jump tables
 0x010400 - 0x01FEFFFF  Heap (grows upward, first-fit with coalescing)
-0x01FF0000 - 0x01FFFFFF  Stack (64 KB, grows downward)
+0x01FF0000 - 0x01FFFFFF  Stack (64 KB minimum, grows downward)
 ```
+
+`RunHunk` and `RunFile` reserve their requested root stack before loading
+code, with a minimum of 64 KB and longword alignment. A larger stack reduces
+the heap below it. Requests that would reach the ROM area or leave less than
+one free heap chunk above it fail. A zero stack size retains direct execution
+with the default stack; nonzero sizes retain the native-process launch path.
 
 ### Custom Chip Register Emulation
 
@@ -301,7 +307,7 @@ within the emulator.
 
 ### Memory
 
-- Fixed 32 MB containment, fixed 64 KB stack (RunHunk ignores stackSize parameter)
+- Fixed 32 MB containment; requested root stacks must fit above the ROM and a free heap chunk
 - No MEMF_CHIP/MEMF_FAST distinction (requirements parameter ignored)
 - No memory protection within containment
 

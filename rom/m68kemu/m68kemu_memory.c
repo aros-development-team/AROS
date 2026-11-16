@@ -26,11 +26,23 @@
 #include "m68kemu_shadow.h"
 extern ULONG shadow_register(struct M68KEmuContext *ctx, ULONG m68k_addr, void *native, UWORD type);
 
-struct M68KEmuContext *M68KEmu_CreateContext(struct M68KEmuLibBase *base)
+struct M68KEmuContext *M68KEmu_CreateContextWithStack(struct M68KEmuLibBase *base,
+                                                  ULONG requested_stack)
 {
     UBYTE *mem;
     struct M68KEmuContext *ctx;
     ULONG heap_size;
+    ULONG stack_size = requested_stack;
+
+    /* Reserve the root stack before loading code or allocating from the
+       heap. Keep the historical minimum, and leave the ROM and at least
+       one free chunk below the stack. Validate before rounding or taking
+       any native allocation. The heap's chunks are longword-aligned. */
+    if (stack_size < M68KEMU_STACK_SIZE)
+        stack_size = M68KEMU_STACK_SIZE;
+    if (stack_size > M68KEMU_MEM_SIZE - M68KEMU_ROM_END - M68KEMU_HEAP_MIN_SPLIT)
+        return NULL;
+    stack_size = (stack_size + 3) & ~3UL;
 
     mem = (UBYTE *)AllocMem(M68KEMU_MEM_SIZE, MEMF_CLEAR | MEMF_31BIT);
     if (!mem)
@@ -59,7 +71,7 @@ struct M68KEmuContext *M68KEmu_CreateContext(struct M68KEmuLibBase *base)
     ctx->cacr     = CACRF_EnableI | CACRF_EnableD | CACRF_CopyBack;
 
     ctx->stack_top    = M68KEMU_MEM_SIZE;
-    ctx->stack_bottom = M68KEMU_MEM_SIZE - M68KEMU_STACK_SIZE;
+    ctx->stack_bottom = M68KEMU_MEM_SIZE - stack_size;
 
     ctx->heap_start = M68KEMU_HEAP_BASE;
     ctx->heap_end   = ctx->stack_bottom;
@@ -100,6 +112,11 @@ struct M68KEmuContext *M68KEmu_CreateContext(struct M68KEmuLibBase *base)
     m68k_write32(ctx, M68KEMU_ROM_END - 20, M68KEMU_ROM_SIZE);     /* ROM size, as at $FFFFEC */
 
     return ctx;
+}
+
+struct M68KEmuContext *M68KEmu_CreateContext(struct M68KEmuLibBase *base)
+{
+    return M68KEmu_CreateContextWithStack(base, 0);
 }
 
 void M68KEmu_DestroyContext(struct M68KEmuContext *ctx)

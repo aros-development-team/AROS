@@ -71,6 +71,9 @@ containment becomes its m68k address, anything else a handle.
 
 ### Address Map
 
+The ranges below show the default 64 KB root stack. A larger requested root
+stack lowers `stack_bottom` and the Fast region's end together.
+
 ```plain
 0x000000 - 0x0003FF   Exception vectors (M68KEMU_VECTORS_SIZE)
   0x000004              AbsExecBase (restored every instruction if a program changes it)
@@ -87,7 +90,7 @@ containment becomes its m68k address, anything else a handle.
 0x010400 - 0x1FFFFF   Heap, "chip memory" region (M68KEMU_HEAP_BASE .. M68KEMU_CHIP_END)
 0x200000 - 0x1FEFFFF  Heap, "expansion fast memory" region (M68KEMU_CHIP_END .. stack_bottom)
   0xF80000 - 0xFFFFFF   Kickstart ROM area, left out of the Fast region (M68KEMU_ROM_BASE/SIZE)
-0x01FF0000 - 0x01FFFFFF Supervisor stack of the program (M68KEMU_STACK_SIZE 64 KB, grows downward)
+0x01FF0000 - 0x01FFFFFF Supervisor stack of the program (M68KEMU_STACK_SIZE 64 KB minimum, grows downward)
 0x7F000000 + 4n       Native BPTR handles (M68KEMU_HANDLE_BASE)
 0xFFDEAD00            Return address of the program (SENTINEL_ADDR), outside memory
 0xFFDEAE00            Return address of a nested call (NEST_SENTINEL), outside memory
@@ -98,6 +101,15 @@ at `M68KEMU_FAULT_STUB`. The ROM area holds a ROM header (`0x11144ef9`,
 `0x00f80002`, `0x0000ffff`, exec's `lib_Version`/`lib_Revision`), the ROM size at
 `M68KEMU_ROM_END - 20` and a copy of exec's `lib_IdString` at `ROM_BASE + 0x100`,
 so programs that read the Kickstart version find one.
+
+`M68KEmu_CreateContextWithStack()` reserves the requested root stack before
+any HUNK or heap allocation. Sizes below `M68KEMU_STACK_SIZE` use that minimum;
+other sizes round up to four bytes, matching the heap's chunk alignment.
+The size is checked before rounding and before native allocations. The stack
+must leave the ROM and a terminal free chunk of at least
+`M68KEMU_HEAP_MIN_SPLIT` bytes below it. `M68KEmu_CreateContext()` retains the
+old minimum for callers without a request. The root task shadow publishes
+these context bounds through `tc_SPLower` and `tc_SPUpper`.
 
 `M68KEmu_Execute()` also allocates from the heap a 16 KB user stack (USP), an
 8 KB interrupt stack (`irq_stack_top`), and, on first use by `M68KEmu_Call68k()`
@@ -138,7 +150,7 @@ MemHeaders' chunk lists, so a program that walks `MemList` sees the real state;
 | Resource | Limit | Constant / location |
 |----------|-------|---------------------|
 | Containment memory | 32 MB | `M68KEMU_MEM_SIZE` |
-| Program stack | 64 KB | `M68KEMU_STACK_SIZE` |
+| Root program stack | Requested size, 64 KB minimum | `M68KEMU_STACK_SIZE` |
 | Chip RAM region | 0x010400–0x1FFFFF | `M68KEMU_CHIP_END` |
 | Library bases | 64 | `M68KEMU_MAX_LIBS` |
 | LVOs per library | 512 | `M68KEMU_MAX_LVO` |
@@ -213,8 +225,10 @@ M68KEmu_Execute(ctx):
 `setup_and_execute()` in `m68kemu_run.c` runs this either inline (`stackSize ==
 0`) or in a child process created with `CreateNewProc(NP_Synchronous)`, named
 "m68kemu", inheriting Input/Output, current directory, `PROGDIR:` (RunFile) and
-the caller's CLI status. `stackSize` only selects between the two; the 68k stack
-is always `M68KEMU_STACK_SIZE`.
+the caller's CLI status. `stackSize` retains that launch-mode choice and is
+also forwarded to context creation to reserve the root 68k stack before
+loading code. The native process stack and the separately allocated user,
+interrupt, callback and child stacks are unchanged.
 
 ### Other CPUs
 
@@ -375,6 +389,20 @@ hold on the context (below). `Cli()` returns the `pr_CLI` of the caller's m68k
 Process; `FindTask()` returns one m68k Process stand-in per native task, re-synced
 on every call, with `pr_MsgPort` registered as a shadow of the native port and a
 68k CLI structure when the task has one.
+
+A process just created gets an m68k Process of its own: the registry entries
+that an ended process left for the same native address, its Process and its
+port, are forgotten first (`m68k_process_forget`); the ended one's structure
+stays in the program's memory. `GetArgStr` and `SetArgStr` act on the m68k
+Process of the task that calls them. A child's argument field starts NULL:
+`NP_Arguments` is not passed on.
+
+When no m68k Process can be made for a new 68k child (no room in the program's
+memory or in the registry), `CreateNewProc` returns 0 although its native
+process exists already. `create_proc` then cancels the child while it still
+waits for the lock: its entry and its exit code are cleared, and `child_entry`
+runs nothing of the program for it, makes no m68k Process for it, and gives
+back its stack, its count in `ctx->num_children` and its hold on the context.
 
 ### Context Lifetime
 
@@ -646,7 +674,9 @@ a gadget.
   screen's `sc_BitMap`, or planes in the program's memory, for which a native
   planar BitMap is built; `BltBitMap`, `BltBitMapRastPort`,
   `BltMaskBitMapRastPort`, `ClipBlit`, `BltTemplate`, `AllocBitMap`, `InitBitMap`,
-  `InitRastPort`, `GetBitMapAttr`
+  `InitRastPort`, `GetBitMapAttr`. `FreeBitMap` frees only the guest BitMap
+  that `AllocBitMap` returned, with its registry entry and its guest
+  structure; any other argument is not passed to the native call
 - Text and fonts: `Text`, `TextLength`, `TextExtent`, `TextFit`, `SetFont`,
   `OpenFont`, `AskFont` (and diskfont `OpenDiskFont`); `TextAttr` is read from
   the program's memory, `TextExtent` written back
@@ -781,30 +811,50 @@ enum { SF_END=0, SF_BYTE, SF_WORD, SF_LONG, SF_PTR };
 A flat array in `M68KEmuContext`:
 
 ```c
-struct { ULONG m68k_addr; void *native_ptr; UWORD type; } shadow_map[M68KEMU_MAX_SHADOWS];  /* 1024 */
+struct {
+    ULONG m68k_addr; void *native_ptr; UWORD type;
+    UBYTE streams_valid;        /* a Process entry: its streams were written once */
+    BPTR  stream_native[3];     /* the native pr_CIS, pr_COS, pr_CES last written ... */
+    ULONG stream_handle[3];     /* ... and the handles they had */
+} shadow_map[M68KEMU_MAX_SHADOWS];  /* 1024 */
 UWORD num_shadows;
 ```
 
-- **Register**: O(1) append; a full table is reported once through `m68k_log()`
-  ("more than 1024 live library objects (messages not replied?)") and further
-  registrations fail
+- **Register**: O(1) append of a cleared entry; a full table is reported once
+  through `m68k_log()` ("more than 1024 live library objects (messages not
+  replied?)") and further registrations fail. A guest Process is only
+  published when it was registered; otherwise its guest block is released
+  and there is none. One that `m68k_process_of` makes for another native
+  Process is registered together with its port, or not at all. The
+  program's first Process is registered by `shadow_init_execbase`, and its
+  port on a later lookup
 - **Lookup**: O(n) scan by m68k address (`m68k_to_host_or_shadow` does the same
   scan inline)
-- **Remove**: O(n) scan + swap-with-last
+- **Remove**: O(n) scan + swap-with-last; the whole entry moves, with its
+  stream state
+- **Process streams**: `m68k_process_streams()` writes `pr_CIS`, `pr_COS` and
+  `pr_CES` of a guest Process when it is first seen, and again only when the
+  native stream or its handle is no longer the one last written, so a value
+  the program stores in a field stays; `SelectInput` and `SelectOutput` write
+  their field at once. `Input()`, `Output()` and the native DOS calls keep
+  using the native Process: a value stored directly in a field is kept and
+  read back, it does not redirect native input or output
 - **Dedup**: `shadow_create` and `sync_fields` look for an existing entry with the
   same native pointer and type
 
 Hand-assigned type tags: 1 Window, 3 RastPort, 4 MsgPort, 5 Screen, 6 ViewPort,
 9 DrawInfo pen table, 12 DosList copy, 13 font glyph block, 14 program-owned
-RastPort twin, 17 ExecBase list, 30 Layer, 31 BOOPSI object, 32 BOOPSI class,
-33 BOOPSI label node, 34 DiskObject, 35 ExAllControl, 36 DevProc, 40 AreaInfo,
+RastPort twin, 17 ExecBase list, 18 ExAllControl, 30 Layer, 31 BOOPSI object,
+32 BOOPSI class, 33 BOOPSI label node, 34 DiskObject, 36 DevProc, 40 AreaInfo,
 41 TmpRas, 42 TextAttr. The generated layouts are numbered 20–316 in table order
 (`gen_shadow_layouts.py` reserves 0–19), so the hand-assigned tags from 30 up
 share their numbers with generated layouts (30 is also `AppWindowDropZoneMsg`,
-31 `AreaInfo`, 32 `AssignList`, 33 `BadBlockBlock`, 34 `BadBlockEntry`, 40
-`BootNode`, 41 `Border`, 42 `CDInfo`). Lookups by address are unaffected; the
-dedup by `(native_ptr, type)` would only be confused if the same native object
-were registered under both.
+31 `AreaInfo`, 32 `AssignList`, 33 `BadBlockBlock`, 34 `BadBlockEntry`, 36
+`BitMapHeader`, 40 `BootNode`, 41 `Border`, 42 `CDInfo`). Lookups by address
+are unaffected; the dedup by `(native_ptr, type)` would only be confused if the
+same native object were registered under both. No hand-assigned tag may share
+the number of a layout whose entries a thunk tells by their type: `BitMap` (35,
+`FreeBitMap`), `Task` (258) and `MsgPort` (193, the Process and its port).
 
 ### Recursive Sub-Shadows
 
@@ -1166,8 +1216,8 @@ Further limitations visible in the code:
   AppMessage is ever delivered.
 - `FindSemaphore` on a system semaphore returns a handle whose fields the
   program cannot read.
-- The 68k stack is always 64 KB; `RunHunk`'s `stackSize` only decides whether the
-  program runs in a child process.
+- The root stack must fit above the ROM area while leaving the terminal heap
+  chunk. User, interrupt, callback and child stack policies are separate.
 - A program screen opens in the Workbench screen's mode, size and depth; its
   `sc_BitMap` has at most 8 planes.
 - `m68k_to_native_struct()` sizes the native copy as 3 × the m68k size rather
