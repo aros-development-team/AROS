@@ -480,8 +480,10 @@ AROS_UFH0(void, nEthTask)
             // start transmitting read request if online...
             if((ncp->ncp_StateFlags & DDF_ONLINE) && (ncp->ncp_ReadPending == NULL))
             {
+                /* A new chain of reads: nothing to complete from before */
+                ncp->ncp_RxCarryLen = 0;
                 ncp->ncp_ReadPending = ncp->ncp_ReadBuffer[ncp->ncp_ReadBufNum];
-                psdSendPipe(ncp->ncp_EPInPipe, ncp->ncp_ReadPending, RNDIS_BUFSZ );
+                psdSendPipe(ncp->ncp_EPInPipe, ncp->ncp_ReadPending, RNDIS_SLOTSZ );
                 ncp->ncp_ReadBufNum ^= 1;
             }
             while((pp = (struct PsdPipe *) GetMsg(ncp->ncp_TaskMsgPort)))
@@ -530,7 +532,7 @@ AROS_UFH0(void, nEthTask)
                         if(ncp->ncp_StateFlags & DDF_ONLINE)
                         {
                             ncp->ncp_ReadPending = ncp->ncp_ReadBuffer[ncp->ncp_ReadBufNum];
-                            psdSendPipe(ncp->ncp_EPInPipe, ncp->ncp_ReadPending, RNDIS_BUFSZ );
+                            psdSendPipe(ncp->ncp_EPInPipe, ncp->ncp_ReadPending, RNDIS_SLOTSZ );
                             ncp->ncp_ReadBufNum ^= 1;
                         } else {
                             ncp->ncp_ReadPending = NULL;
@@ -553,11 +555,13 @@ AROS_UFH0(void, nEthTask)
                                 }
                             }
                             lastioerr = ioerr;
+                            /* The next read starts at a fresh message */
+                            ncp->ncp_RxCarryLen = 0;
                             psdDelayMS(50);
                             break;
                         } else {
                             KPRINTF(1, ("Pkt %ld received\n", pktlen));
-                            urndis_decap(ncp, pktptr, pktlen);
+                            urndis_rx(ncp, pktptr, pktlen);
                         }
                     }
                 }
@@ -668,14 +672,16 @@ struct NepClassEth * nAllocEth(void)
         ncp->ncp_ReadPending = NULL;
         ncp->ncp_WritePending[0] = NULL;
         ncp->ncp_WritePending[1] = NULL;
-        if(!(ncp->ncp_ReadBuffer[0] = AllocVec(ETHER_MAX_LEN * 4, MEMF_PUBLIC|MEMF_CLEAR)))
+        if(!(ncp->ncp_ReadBuffer[0] = AllocVec(RNDIS_SLOTSZ * 6, MEMF_PUBLIC|MEMF_CLEAR)))
         {
             KPRINTF(1, ("Out of memory for read buffer\n"));
             break;
         }
-        ncp->ncp_ReadBuffer[1] = ncp->ncp_ReadBuffer[0] + ETHER_MAX_LEN;
-        ncp->ncp_WriteBuffer[0] = ncp->ncp_ReadBuffer[1] + ETHER_MAX_LEN;
-        ncp->ncp_WriteBuffer[1] = ncp->ncp_WriteBuffer[0] + ETHER_MAX_LEN;
+        ncp->ncp_ReadBuffer[1] = ncp->ncp_ReadBuffer[0] + RNDIS_SLOTSZ;
+        ncp->ncp_WriteBuffer[0] = ncp->ncp_ReadBuffer[1] + RNDIS_SLOTSZ;
+        ncp->ncp_WriteBuffer[1] = ncp->ncp_WriteBuffer[0] + RNDIS_SLOTSZ;
+        ncp->ncp_RxCarry = ncp->ncp_WriteBuffer[1] + RNDIS_SLOTSZ; /* two slots */
+        ncp->ncp_RxCarryLen = 0;
         ncp->ncp_Unit.unit_MsgPort.mp_SigBit = AllocSignal(-1);
         ncp->ncp_Unit.unit_MsgPort.mp_SigTask = thistask;
         ncp->ncp_Unit.unit_MsgPort.mp_Node.ln_Type = NT_MSGPORT;
