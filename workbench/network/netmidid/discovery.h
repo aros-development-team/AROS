@@ -23,9 +23,10 @@
                                            and its end (M2-124-UM 4.4) */
 #define NETMIDI_DISCOVERY_PEERS 16      /* instances followed at a time: with
                                            the registrations and searches,
-                                           2 + 2 + 16 = 20 of the 24
-                                           operations mdnsd allows a session
-                                           on the 68k */
+                                           2 + 2 + 16 = 20 of the
+                                           DNSSD_SESSION_OPERATIONS (24) a
+                                           session can always have
+                                           (discovery.c checks it) */
 
 #define NETMIDI_DISCOVERY_ADDRESSES 4
 

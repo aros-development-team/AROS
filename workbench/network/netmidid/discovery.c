@@ -14,6 +14,11 @@
 #include <proto/dnssd.h>
 #include <dnssd/dnssd.h>
 
+#if NETMIDI_DISCOVERY_SERVICES + NETMIDI_DISCOVERY_BROWSES + NETMIDI_DISCOVERY_PEERS > \
+    DNSSD_SESSION_OPERATIONS
+#error "discovery needs more operations than a session is promised"
+#endif
+
 /* The library's calls take their base from this name. */
 struct Library *DNSSDBase;
 

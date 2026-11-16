@@ -153,9 +153,12 @@ struct SDService
 #define SD_FINDER_FOLLOWED  16  /* followed at a time */
 #define SD_FINDER_RESOLVES  4   /* resolved once at a time; the others wait */
 /* The browse, the followed and those resolved once: 1 + 16 + 4 = 21
- * operations at most, within the 24 mdnsd allows a session on the 68k (an
- * operation that ends or is cancelled gives its room back at once). One
- * mdnsd refuses (DNSSD_ERR_BUSY) waits for the next room. */
+ * operations at most, within the DNSSD_SESSION_OPERATIONS a session can
+ * always have (an operation that ends or is cancelled gives its room back at
+ * once). One mdnsd refuses (DNSSD_ERR_BUSY) waits for the next room. */
+#if 1 + SD_FINDER_FOLLOWED + SD_FINDER_RESOLVES > DNSSD_SESSION_OPERATIONS
+#error "the finder needs more operations than a session is promised"
+#endif
 
 struct SDFinderInstance;
 

@@ -45,6 +45,9 @@
 
 #define DNSSD_TXT_MAX           8900    /* bytes of TXT data a service may have */
 #define DNSSD_HOST_ADDRESSES    8       /* addresses of a host registered for */
+#define DNSSD_SESSION_OPERATIONS 24     /* operations (registrations included) a session
+                                           can always have at once; more where mdnsd has
+                                           the memory, past that DNSSD_ERR_BUSY */
 
 /* Address families of struct DNSSDAddress (and of DNSSD_Family). */
 #define DNSSD_FAMILY_ANY    0

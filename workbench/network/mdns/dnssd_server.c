@@ -48,13 +48,15 @@
 #include "dnssd_model.h"
 
 #define SERVER_SESSIONS         16
-/* Operations at a time, in all (1/128 of the free memory, 16 to
- * SERVER_OPERATIONS of them) and half that of one session: a browse that
+/* Operations at a time, in all (1/128 of the free memory, OPERATIONS_FLOOR
+ * to SERVER_OPERATIONS of them) and half that of one session: a browse that
  * follows what it finds has a resolve for each instance. Each costs memory
- * only while it runs; the bounds keep one program from taking it all. */
+ * only while it runs; the bounds keep one program from taking it all. The
+ * floor keeps the DNSSD_SESSION_OPERATIONS a session is promised, whatever
+ * the memory: the in-tree clients are sized to it. */
 #define SERVER_OPERATIONS       128
 #define OPERATIONS_SHARE        128
-#define OPERATIONS_FLOOR        16
+#define OPERATIONS_FLOOR        (2 * DNSSD_SESSION_OPERATIONS)
 /* Events queued for one session: 64 at most, in 1/512 of the free memory
  * (8 KB to 64 KB) - an event can be 9 KB, and comes from the network. The
  * first always queues. */
