@@ -9,7 +9,9 @@
     request left (a program asking SIOCGIFADDR, SIOCGIFNETMASK and
     SIOCGIFBRDADDR with one ifreq has the mask in it by the third), or with
     an address of another interface. SIOCGIFADDR is the first address
-    whatever ifr_addr holds.
+    whatever ifr_addr holds. A broadcast address the stack computes is the
+    address's own subnet with the host bits set, whatever other addresses
+    of the same classful network have as masks.
 
     The test adds 10.77.0.1/16 as an alias of IFNAME and deletes it at the
     end. Usage:  cunit-net-ifalias [IFNAME]  (default eth0; skipped without
@@ -53,6 +55,39 @@ static int ask(int req, const struct in_addr *a, struct in_addr *out)
     if (r == 0)
         *out = req == SIOCGIFBRDADDR ? ((struct sockaddr_in *)&ifr.ifr_broadaddr)->sin_addr
                                      : sin->sin_addr;
+    CloseSocket(s);
+    return r;
+}
+
+/* Add (1) or delete (0) a with mask m and no broadcast address: the stack
+ * computes it. */
+static int alias_nobrd(int add, const char *a, const char *m)
+{
+    int s = socket(AF_INET, SOCK_DGRAM, 0), r;
+
+    if (s < 0)
+        return -1;
+    if (add) {
+        struct in_aliasreq ifra;
+
+        bzero(&ifra, sizeof(ifra));
+        snprintf(ifra.ifra_name, sizeof(ifra.ifra_name), "%s", ifname);
+        ifra.ifra_addr.sin_len = ifra.ifra_mask.sin_len = sizeof(struct sockaddr_in);
+        ifra.ifra_addr.sin_family = ifra.ifra_mask.sin_family = AF_INET;
+        ifra.ifra_addr.sin_addr.s_addr = inet_addr(a);
+        ifra.ifra_mask.sin_addr.s_addr = inet_addr(m);
+        r = IoctlSocket(s, SIOCAIFADDR, (char *)&ifra);
+    } else {
+        struct ifreq ifr;
+        struct sockaddr_in *sin = (struct sockaddr_in *)&ifr.ifr_addr;
+
+        bzero(&ifr, sizeof(ifr));
+        snprintf(ifr.ifr_name, sizeof(ifr.ifr_name), "%s", ifname);
+        sin->sin_len = sizeof(*sin);
+        sin->sin_family = AF_INET;
+        sin->sin_addr.s_addr = inet_addr(a);
+        r = IoctlSocket(s, SIOCDIFADDR, (char *)&ifr);
+    }
     CloseSocket(s);
     return r;
 }
@@ -159,6 +194,25 @@ void testIFALIAS_OTHER(void)
     CU_ASSERT_EQUAL(m.s_addr, firstmask.s_addr);
 }
 
+/* A computed broadcast is the address's own: 172.20.0.2/32, then
+ * 172.20.128.1/17 (one classful network, 172.20, with no other address of
+ * the suite in it), the second's is 172.20.255.255, not 172.20.128.0 from
+ * the first's mask. */
+void testIFALIAS_BROADCAST(void)
+{
+    struct in_addr a, b;
+
+    NEED_IF();
+    CU_ASSERT_EQUAL_FATAL(alias_nobrd(1, "172.20.0.2", "255.255.255.255"), 0);
+    CU_ASSERT_EQUAL(alias_nobrd(1, "172.20.128.1", "255.255.128.0"), 0);
+    a.s_addr = inet_addr("172.20.128.1");
+    CU_ASSERT_EQUAL(ask(SIOCGIFBRDADDR, &a, &b), 0);
+    printf("\n    172.20.128.1/17 after 172.20.0.2/32: broadcast %s\n", inet_ntoa(b));
+    CU_ASSERT_EQUAL(b.s_addr, inet_addr("172.20.255.255"));
+    alias_nobrd(0, "172.20.128.1", NULL);
+    alias_nobrd(0, "172.20.0.2", NULL);
+}
+
 /* SIOCGIFADDR is the first address whatever ifr_addr names. */
 void testIFALIAS_ADDR(void)
 {
@@ -193,7 +247,8 @@ int main(int argc, char **argv)
         !CU_add_test(p, "an alias named: its own mask and broadcast", testIFALIAS_NAMED) ||
         !CU_add_test(p, "the first address named, or none: the first's", testIFALIAS_FIRST) ||
         !CU_add_test(p, "a mask or another interface's address: the first's", testIFALIAS_OTHER) ||
-        !CU_add_test(p, "SIOCGIFADDR: the first address", testIFALIAS_ADDR))
+        !CU_add_test(p, "SIOCGIFADDR: the first address", testIFALIAS_ADDR) ||
+        !CU_add_test(p, "a computed broadcast is the address's own", testIFALIAS_BROADCAST))
     {
         CU_cleanup_registry();
         CloseLibrary(SocketBase);
