@@ -424,9 +424,9 @@ main(void)
 
         /* the cache first: what it drops is told to the operations that
          * watch it, which then look again in their own turn */
-        mdnsCacheTick(md);
+        soonest = mdnsCacheTick(md);
         /* what is due next, as this turn left it */
-        soonest = dnssdServerTick(md);
+        soonest = mdnsSooner(soonest, dnssdServerTick(md));
         probing = FALSE;
         if (running && md->md_Socket >= 0) {
             /* the host's name first: no service is announced before it */

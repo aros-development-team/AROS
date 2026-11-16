@@ -278,7 +278,7 @@ BOOL mdnsCacheInit(struct MDNSDaemon *md);
 void mdnsCacheFree(struct MDNSDaemon *md);
 void mdnsCacheRecord(const struct MDNSDaemon *md, const UBYTE *pkt, LONG length,
     LONG offset, ULONG link, BOOL local);
-void mdnsCacheTick(struct MDNSDaemon *md);
+ULONG mdnsCacheTick(struct MDNSDaemon *md);
 void mdnsCacheLinksChanged(const struct MDNSDaemon *md);
 APTR mdnsCacheWatch(const struct MDNSDaemon *md, const UBYTE *name, UWORD type,
     ULONG link, MDNSCacheNotify notify, APTR data);

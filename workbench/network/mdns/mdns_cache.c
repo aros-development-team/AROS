@@ -485,18 +485,40 @@ refresh_at(struct MDNSCache *c, const struct MDNSCacheEntry *e)
         random_ticks(c, 0, life / 50 + 1);
 }
 
-void
+/* When the next of the questions is to be asked (0: none). */
+static ULONG
+questions_next(const struct MDNSCache *c)
+{
+    const struct CacheQuestion *q;
+    ULONG soonest = 0;
+
+    for (q = (const struct CacheQuestion *)c->mc_Questions.mlh_Head;
+         q->cq_Node.mln_Succ != NULL;
+         q = (const struct CacheQuestion *)q->cq_Node.mln_Succ) {
+        soonest = mdnsSooner(soonest, q->cq_Next);
+    }
+    return soonest;
+}
+
+/*
+ * The records whose time is up go, those due for a refresh are asked for
+ * again with the questions due, on each link in one query. Returns when the
+ * next of those is (mdnsTicks(), 0 for none), as this turn left them:
+ * mdnsd wakes for it - a question's first query 20-120 ms after it is
+ * asked (RFC 6762 section 5.2) - not on its next second.
+ */
+ULONG
 mdnsCacheTick(struct MDNSDaemon *md)
 {
     struct MDNSCache *c = md->md_Cache;
     struct MDNSCacheEntry *e, *next;
     struct CacheQuestion *q;
-    ULONG now = mdnsTicks();
+    ULONG now = mdnsTicks(), soonest = 0;
     BOOL asking = FALSE;
     LONG i;
 
     if (c == NULL) {
-        return;
+        return 0;
     }
     for (e = (struct MDNSCacheEntry *)c->mc_Records.mlh_Head;
          (next = (struct MDNSCacheEntry *)e->ce_Node.mln_Succ) != NULL; e = next) {
@@ -505,6 +527,9 @@ mdnsCacheTick(struct MDNSDaemon *md)
         if (!link_active(md, e->ce_Link) || !alive(e, now)) {
             drop(c, e);
             continue;
+        }
+        if (!(e->ce_Flags & MDNS_CACHE_LOCAL) || e->ce_TTL == 0) {
+            soonest = mdnsSooner(soonest, e->ce_Expires);
         }
         if (e->ce_Flags & MDNS_CACHE_LOCAL || e->ce_Refresh >= 4 ||
             e->ce_TTL < 2) {
@@ -520,6 +545,8 @@ mdnsCacheTick(struct MDNSDaemon *md)
                 e->ce_Flags |= CACHE_ASKING;
                 asking = TRUE;
             }
+        } else {
+            soonest = mdnsSooner(soonest, e->ce_Next);
         }
     }
     if (md->md_Socket < 0) {
@@ -528,7 +555,7 @@ mdnsCacheTick(struct MDNSDaemon *md)
              e = (struct MDNSCacheEntry *)e->ce_Node.mln_Succ) {
             e->ce_Flags &= ~CACHE_ASKING;
         }
-        return;
+        return soonest;                 /* no question asked without a socket */
     }
     for (q = (struct CacheQuestion *)c->mc_Questions.mlh_Head;
          q->cq_Node.mln_Succ != NULL;
@@ -537,7 +564,7 @@ mdnsCacheTick(struct MDNSDaemon *md)
         asking |= q->cq_Asking;
     }
     if (!asking) {
-        return;
+        return mdnsSooner(soonest, questions_next(c));
     }
     /* what is due on each link, together */
     for (i = 0; i < md->md_IfCount; i++) {
@@ -578,6 +605,7 @@ mdnsCacheTick(struct MDNSDaemon *md)
         q->cq_Interval = q->cq_Interval * 2 > QUERY_MAX_INTERVAL ?
             QUERY_MAX_INTERVAL : q->cq_Interval * 2;
     }
+    return mdnsSooner(soonest, questions_next(c));
 }
 
 /* The host no longer holds a name (wire labels): its own records owned by
