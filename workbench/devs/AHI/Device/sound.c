@@ -112,9 +112,7 @@
 *       AHI_SetEffect(), AHI_SetFreq(), AHI_SetSound(), AHI_LoadSound()
 *
 *
-****************************************************************************
-*
-*/
+****************************************************************************/
 
 ULONG
 _AHI_SetVol(UWORD                    channel,
@@ -244,9 +242,7 @@ _AHI_SetVol(UWORD                    channel,
 *   SEE ALSO
 *       AHI_SetEffect(),  AHI_SetSound(), AHI_SetVol(), AHI_LoadSound()
 *
-****************************************************************************
-*
-*/
+****************************************************************************/
 
 ULONG
 _AHI_SetFreq(UWORD                    channel,
@@ -397,9 +393,7 @@ _AHI_SetFreq(UWORD                    channel,
 *   SEE ALSO
 *       AHI_SetEffect(),  AHI_SetFreq(), AHI_SetVol(), AHI_LoadSound()
 *
-****************************************************************************
-*
-*/
+****************************************************************************/
 
 ULONG
 _AHI_SetSound(UWORD                    channel,
@@ -672,9 +666,7 @@ _AHI_SetSound(UWORD                    channel,
 *       AHI_SetFreq(), AHI_SetSound(), AHI_SetVol(), AHI_LoadSound(),
 *       <devices/ahi.h>
 *
-****************************************************************************
-*
-*/
+****************************************************************************/
 
 
 ULONG
@@ -866,9 +858,7 @@ _AHI_SetEffect(APTR                   effect,
 *       AHI_UnloadSound(), AHI_SetEffect(), AHI_SetFreq(), AHI_SetSound(),
 *       AHI_SetVol(), <devices/ahi.h>
 *
-****************************************************************************
-*
-*/
+****************************************************************************/
 
 ULONG
 _AHI_LoadSound(UWORD                    sound,
@@ -975,9 +965,7 @@ _AHI_LoadSound(UWORD                    sound,
 *   SEE ALSO
 *       AHI_LoadSound()
 *
-****************************************************************************
-*
-*/
+****************************************************************************/
 
 ULONG
 _AHI_UnloadSound(UWORD                    sound,
@@ -1091,9 +1079,7 @@ _AHI_UnloadSound(UWORD                    sound,
 *   SEE ALSO
 *       AHI_SetFreq(), AHI_SetSound(), AHI_SetVol()
 *
-****************************************************************************
-*
-*/
+****************************************************************************/
 
 ULONG
 _AHI_PlayA(struct AHIPrivAudioCtrl *audioctrl,
@@ -1206,7 +1192,7 @@ _AHI_PlayA(struct AHIPrivAudioCtrl *audioctrl,
 /****** ahi.device/AHI_SampleFrameSize **************************************
 *
 *   NAME
-*       AHI_SampleFrameSize -- get the size of a sample frame (V4)
+*       AHI_SampleFrameSize()
 *
 *   SYNOPSIS
 *       size = AHI_SampleFrameSize( sampletype );
@@ -1227,6 +1213,7 @@ _AHI_PlayA(struct AHIPrivAudioCtrl *audioctrl,
 *   EXAMPLE
 *
 *   NOTES
+*       Introduced in V4.
 *
 *   BUGS
 *       This function returned trash for invalid sample types
@@ -1235,9 +1222,7 @@ _AHI_PlayA(struct AHIPrivAudioCtrl *audioctrl,
 *   SEE ALSO
 *      <devices/ahi.h>
 *
-****************************************************************************
-*
-*/
+****************************************************************************/
 
 static const UBYTE type2bytes[] = {
     1,    // AHIST_M8S  (0)
