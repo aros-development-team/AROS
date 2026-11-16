@@ -53,7 +53,13 @@ struct MDNSInterface
 #define MDNS_NAME_PROBING       0
 #define MDNS_NAME_ANNOUNCED     1
 #define MDNS_PROBE_COUNT        3
-#define MDNS_PROBE_TICKS        13      /* 250 ms in 1/50 s */
+/* Times in mdnsTicks(), fiftieths of a second, from the tick something
+ * went out in: a span of n ticks is (n - 1) to n of them. So that it is
+ * never shorter than RFC 6762 asks: 250 ms between probes and after the
+ * last one before announcing (section 8.1), a second between announcements
+ * (section 8.3) and before probing again after a tie (section 8.2). */
+#define MDNS_PROBE_TICKS        14      /* 260-280 ms */
+#define MDNS_SECOND_TICKS       51      /* 1000-1020 ms */
 #define MDNS_ANNOUNCE_COUNT     2
 #define MDNS_PROPOSED_MAX       8
 
@@ -345,7 +351,7 @@ void mdnsNetSendAll(struct MDNSDaemon *md, const UBYTE *pkt, LONG pktlen);
 
 /* mdns_host.c */
 void mdnsHostRestart(struct MDNSDaemon *md);
-BOOL mdnsHostTick(struct MDNSDaemon *md);
+ULONG mdnsHostTick(struct MDNSDaemon *md);
 void mdnsHostGoodbye(struct MDNSDaemon *md);
 void mdnsHostRename(struct MDNSDaemon *md, const char *base);
 void mdnsHostSetName(struct MDNSDaemon *md, const char *base, ULONG suffix);
@@ -368,7 +374,7 @@ LONG mdnsRegUpdateRef(struct MDNSDaemon *md, APTR ref, const UBYTE *txt,
     LONG addrCount, ULONG ttl);
 void mdnsRegRemoveRef(struct MDNSDaemon *md, APTR ref);
 void mdnsRegFree(struct MDNSDaemon *md);
-BOOL mdnsRegTick(struct MDNSDaemon *md);
+ULONG mdnsRegTick(struct MDNSDaemon *md);
 void mdnsRegAnnounceAll(struct MDNSDaemon *md);
 void mdnsRegRestartAll(struct MDNSDaemon *md);
 void mdnsRegGoodbyeAll(struct MDNSDaemon *md);

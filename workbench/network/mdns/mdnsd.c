@@ -185,18 +185,17 @@ receive4(struct MDNSDaemon *md, struct Library *SocketBase)
 }
 
 /* Waits for a signal, a datagram on any interface, or a second to pass: a
- * quarter of one while a name is being probed, a fiftieth while an answer
- * is waiting to be sent, and no longer than until the next thing due
+ * fiftieth of one while an answer is waiting to be sent, and no longer than
+ * until the next thing due - a probe, an announcement, a query, a deadline
  * (soonest, mdnsTicks(); 0 for nothing) - none if it is due already. */
 static ULONG
-wait_and_receive(struct MDNSDaemon *md, ULONG sigmask, BOOL probing,
-    ULONG soonest)
+wait_and_receive(struct MDNSDaemon *md, ULONG sigmask, ULONG soonest)
 {
     struct Library *SocketBase = md->md_SocketBase;
     struct timeval tv;
     fd_set readfds;
     LONG top = -1;
-    ULONG micros = md->md_AnswerPending ? 20000 : probing ? 250000 : 1000000;
+    ULONG micros = md->md_AnswerPending ? 20000 : 1000000;
 
     if (SocketBase == NULL) {
         /* Between "reconfigure begin" and "end" there is no stack to ask. */
@@ -306,7 +305,7 @@ main(void)
     ULONG lastScan = 0, lastReap = 0;
     ULONG addressMask = 0, hostMask = 0, goneMask = 0;
     BYTE addressSignal = -1, hostSignal = -1, goneSignal = -1;
-    BOOL running = TRUE, probing = FALSE;
+    BOOL running = TRUE;
     ULONG soonest = 0;
 
     /* One responder owns the host's names. */
@@ -378,8 +377,7 @@ main(void)
     while (running) {
         ULONG got = wait_and_receive(md,
             dportmask | sig.ms_Stop | sig.ms_Begin | sig.ms_End |
-            addressMask | hostMask | goneMask | SIGBREAKF_CTRL_C, probing,
-            soonest);
+            addressMask | hostMask | goneMask | SIGBREAKF_CTRL_C, soonest);
 
         if (got & (sig.ms_Stop | SIGBREAKF_CTRL_C)) {
             running = FALSE;
@@ -427,13 +425,10 @@ main(void)
         soonest = mdnsCacheTick(md);
         /* what is due next, as this turn left it */
         soonest = mdnsSooner(soonest, dnssdServerTick(md));
-        probing = FALSE;
         if (running && md->md_Socket >= 0) {
             /* the host's name first: no service is announced before it */
-            probing = mdnsHostTick(md);
-            if (mdnsRegTick(md)) {
-                probing = TRUE;
-            }
+            soonest = mdnsSooner(soonest, mdnsHostTick(md));
+            soonest = mdnsSooner(soonest, mdnsRegTick(md));
         }
     }
 

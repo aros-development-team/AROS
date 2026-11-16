@@ -305,17 +305,17 @@ mdnsHostGoodbye(struct MDNSDaemon *md)
 }
 
 /*
- * Moves the name along: three probes, then two announcements. Returns TRUE
- * while it is being probed, so that the caller comes back in a quarter of
- * a second.
+ * Moves the name along: three probes, then two announcements. Returns when
+ * the next of them is due (mdnsTicks(), 0 for none), for the main loop to
+ * wake then.
  */
-BOOL
+ULONG
 mdnsHostTick(struct MDNSDaemon *md)
 {
     ULONG now = mdnsTicks();
 
     if (md->md_IfCount == 0) {
-        return FALSE;
+        return 0;
     }
     if (md->md_HostState == MDNS_NAME_PROBING) {
         if ((LONG)(now - md->md_HostNextTick) >= 0) {
@@ -330,19 +330,19 @@ mdnsHostTick(struct MDNSDaemon *md)
                 md->md_HostState = MDNS_NAME_ANNOUNCED;
                 md->md_HostAnnounced = TRUE;
                 md->md_HostStep = 1;
-                md->md_HostNextTick = now + 50;
+                md->md_HostNextTick = now + MDNS_SECOND_TICKS;
                 host_send_addr(md, FALSE, DNS_TYPE_ANY);
                 mdnsRegAnnounceAll(md);
             }
         }
-        return md->md_HostState == MDNS_NAME_PROBING;
+        return md->md_HostNextTick;
     }
     if (md->md_HostStep < MDNS_ANNOUNCE_COUNT &&
         (LONG)(now - md->md_HostNextTick) >= 0) {
         md->md_HostStep++;
         host_send_addr(md, FALSE, DNS_TYPE_ANY);
     }
-    return FALSE;
+    return md->md_HostStep < MDNS_ANNOUNCE_COUNT ? md->md_HostNextTick : 0;
 }
 
 /*
@@ -485,7 +485,7 @@ mdnsHostHandleProbe(struct MDNSDaemon *md, const struct MDNSRecord *theirs,
         difference = mineCount - otherCount;
     }
     if (otherCount > 0 && difference < 0) {
-        host_probe_from(md, 50);
+        host_probe_from(md, MDNS_SECOND_TICKS);
     }
 }
 
