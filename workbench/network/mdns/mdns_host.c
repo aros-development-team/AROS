@@ -228,6 +228,7 @@ mdnsHostSetName(struct MDNSDaemon *md, const char *base, ULONG suffix)
     LONG n = 0, len;
 
     host_forget(md);
+    md->md_HostAnnounced = FALSE;       /* nothing said under the new one yet */
     if (base != NULL) {
         mdnsTextCopy(md->md_HostBase, (LONG)sizeof(md->md_HostBase), base);
     }
@@ -271,12 +272,35 @@ mdnsHostRestart(struct MDNSDaemon *md)
     host_probe_from(md, 0);
 }
 
-/* Before the sockets go away: nobody should keep this host's address. */
+/*
+ * The system's name changed while the host runs (the stack's host name
+ * signal): what was announced under the old name goes with a goodbye, and
+ * the new one is asked for from the first probe; its services follow it
+ * once it is the host's (mdnsHostTick()). The same name changes nothing.
+ */
+void
+mdnsHostRename(struct MDNSDaemon *md, const char *base)
+{
+    if (strcmp(base, md->md_HostBase) == 0) {
+        return;
+    }
+    mdnsHostGoodbye(md);
+    mdnsHostSetName(md, base, 0);
+    host_probe_from(md, 0);
+}
+
+/*
+ * Nobody should keep this host's address under its name: before the sockets
+ * go away, or the name changes. Whether the name was announced, not whether
+ * it is now: after the links change it is probed again (mdnsHostRestart()),
+ * and what other hosts heard before is still in their caches.
+ */
 void
 mdnsHostGoodbye(struct MDNSDaemon *md)
 {
-    if (md->md_Socket >= 0 && md->md_HostState == MDNS_NAME_ANNOUNCED) {
+    if (md->md_Socket >= 0 && md->md_HostAnnounced) {
         host_send_addr(md, TRUE, DNS_TYPE_ANY);
+        md->md_HostAnnounced = FALSE;
     }
 }
 
@@ -304,6 +328,7 @@ mdnsHostTick(struct MDNSDaemon *md)
                  * announced under an earlier name or address are
                  * announced again with this one. */
                 md->md_HostState = MDNS_NAME_ANNOUNCED;
+                md->md_HostAnnounced = TRUE;
                 md->md_HostStep = 1;
                 md->md_HostNextTick = now + 50;
                 host_send_addr(md, FALSE, DNS_TYPE_ANY);

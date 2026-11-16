@@ -17,7 +17,11 @@ one cache of what it hears on the links.
 - **The name.** The first label of what the system calls itself
   (`gethostname()`), in `.local`. Before using it mdnsd asks the link for it
   three times, 250 ms apart, with the address record it would publish in the
-  authority section, and announces it twice when nobody objects.
+  authority section, and announces it twice when nobody objects. When the
+  system's name changes while it runs (the stack's
+  `SBTC_SIG_HOSTNAME_CHANGE_MASK` signal), what it announced under the old one
+  goes with a goodbye and the new one is probed for; the services follow it.
+  One signal may stand for several changes: the name is read as it is then.
 - **Conflicts.** If another host answers a probe, or later sends an address
   record for the name with an address that is not this host's, mdnsd takes
   `name-2`, then `name-3`, and probes for that. When two hosts probe for the

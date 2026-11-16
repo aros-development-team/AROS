@@ -76,13 +76,15 @@ net_down(struct MDNSDaemon *md)
     if (SocketBase != NULL) {
         SocketBaseTags(SBTM_SETVAL(SBTC_SIG_ADDRESS_CHANGE_MASK), 0,
             TAG_END);
+        SocketBaseTags(SBTM_SETVAL(SBTC_SIG_HOSTNAME_CHANGE_MASK), 0,
+            TAG_END);
         CloseLibrary(SocketBase);
         md->md_SocketBase = NULL;
     }
 }
 
 static void
-net_up(struct MDNSDaemon *md, ULONG addressMask)
+net_up(struct MDNSDaemon *md, ULONG addressMask, ULONG hostMask)
 {
     struct Library *SocketBase;
 
@@ -97,6 +99,11 @@ net_up(struct MDNSDaemon *md, ULONG addressMask)
             (IPTR)&daemonErrno,
             SBTM_SETREF(SBTC_LOGTAGPTR), (IPTR)"mdnsd",
             SBTM_SETVAL(SBTC_SIG_ADDRESS_CHANGE_MASK), addressMask,
+            TAG_END);
+        /* apart: a stack from before the host name signal refuses the tag,
+         * and stops at it; without it the name is read again only when
+         * the links change */
+        SocketBaseTags(SBTM_SETVAL(SBTC_SIG_HOSTNAME_CHANGE_MASK), hostMask,
             TAG_END);
     }
     /* An interface came, went or changed its address: the name is asked
@@ -283,8 +290,8 @@ main(void)
     struct DNSSDIPCMsg *dmsg;
     struct MsgPort *dport;
     ULONG lastScan = 0, lastReap = 0;
-    ULONG addressMask = 0, goneMask = 0;
-    BYTE addressSignal = -1, goneSignal = -1;
+    ULONG addressMask = 0, hostMask = 0, goneMask = 0;
+    BYTE addressSignal = -1, hostSignal = -1, goneSignal = -1;
     BOOL running = TRUE, probing = FALSE;
 
     /* One responder owns the host's names. */
@@ -336,7 +343,11 @@ main(void)
     if (addressSignal >= 0) {
         addressMask = 1UL << addressSignal;
     }
-    net_up(md, addressMask);
+    hostSignal = AllocSignal(-1);
+    if (hostSignal >= 0) {
+        hostMask = 1UL << hostSignal;
+    }
+    net_up(md, addressMask, hostMask);
     /* dnssd.library's sessions, and the signal that a client task went */
     goneSignal = AllocSignal(-1);
     if (goneSignal >= 0) {
@@ -352,7 +363,7 @@ main(void)
     while (running) {
         ULONG got = wait_and_receive(md,
             dportmask | sig.ms_Stop | sig.ms_Begin | sig.ms_End |
-            addressMask | goneMask | SIGBREAKF_CTRL_C, probing);
+            addressMask | hostMask | goneMask | SIGBREAKF_CTRL_C, probing);
 
         if (got & (sig.ms_Stop | SIGBREAKF_CTRL_C)) {
             running = FALSE;
@@ -371,8 +382,16 @@ main(void)
             mdnsNow() - lastScan >= MDNSD_RESCAN_SECONDS) {
             lastScan = mdnsNow();
             if (md->md_SocketBase != NULL || (got & sig.ms_End)) {
-                net_up(md, addressMask);
+                net_up(md, addressMask, hostMask);
             }
+        }
+        /* The system's name changed: read as it is now, however many
+         * changes the one signal stands for. */
+        if ((got & hostMask) && md->md_SocketBase != NULL) {
+            char base[MDNSD_HOST_MAX + 1];
+
+            mdnsNetSystemName(md->md_SocketBase, base);
+            mdnsHostRename(md, base);
         }
 
         if (got & goneMask) {
@@ -425,6 +444,9 @@ main(void)
     mdnsdServiceClose();
     if (addressSignal >= 0) {
         FreeSignal(addressSignal);
+    }
+    if (hostSignal >= 0) {
+        FreeSignal(hostSignal);
     }
     if (goneSignal >= 0) {
         FreeSignal(goneSignal);         /* the hook is off (dnssdServerFree()) */

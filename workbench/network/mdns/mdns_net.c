@@ -248,6 +248,26 @@ join_links(struct Library *SocketBase, struct MDNSDaemon *md)
     }
 }
 
+/*
+ * The system's host name as mDNS has it: its first label, "aros" when it has
+ * none (base: MDNSD_HOST_MAX + 1 bytes).
+ */
+void
+mdnsNetSystemName(struct Library *SocketBase, char *base)
+{
+    char *dot;
+
+    base[0] = '\0';
+    if (gethostname(base, MDNSD_HOST_MAX) != 0 || base[0] == '\0') {
+        mdnsTextCopy(base, MDNSD_HOST_MAX + 1, "aros");
+    }
+    base[MDNSD_HOST_MAX] = '\0';
+    /* over mDNS a host is its first label, in the mDNS domain */
+    if ((dot = strchr(base, '.')) != NULL) {
+        *dot = '\0';
+    }
+}
+
 static void
 set_primary(struct Library *SocketBase, struct MDNSDaemon *md)
 {
@@ -262,21 +282,12 @@ set_primary(struct Library *SocketBase, struct MDNSDaemon *md)
 
     {
         char base[MDNSD_HOST_MAX + 1];
-        char *dot;
 
-        base[0] = '\0';
-        if (gethostname(base, MDNSD_HOST_MAX) != 0 || base[0] == '\0') {
-            mdnsTextCopy(base, (LONG)sizeof(base), "aros");
-        }
-        base[MDNSD_HOST_MAX] = '\0';
-        /* over mDNS a host is its first label, in the mDNS domain */
-        if ((dot = strchr(base, '.')) != NULL) {
-            *dot = '\0';
-        }
-        /* another name from the system starts without a number again */
-        if (strcmp(base, md->md_HostBase) != 0) {
-            mdnsHostSetName(md, base, 0);
-        }
+        mdnsNetSystemName(SocketBase, base);
+        /* another name from the system starts without a number again, and
+         * what was announced under the old one goes with a goodbye - the
+         * links may change in the same turn as the name (mdnsHostRename()) */
+        mdnsHostRename(md, base);
     }
 }
 

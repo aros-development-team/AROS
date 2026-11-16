@@ -161,6 +161,8 @@ struct MDNSDaemon
     ULONG                   md_HostSuffix;  /* 0, or the number after it */
     UWORD                   md_HostState;   /* MDNS_NAME_* */
     UWORD                   md_HostStep;    /* probes or announcements sent */
+    BOOL                    md_HostAnnounced; /* md_HostName was announced: others
+                                               * may keep it until its goodbye */
     ULONG                   md_HostNextTick;
     ULONG                   md_HostMulticast; /* mdnsNow() when the address
                                              * last went to the group */
@@ -312,6 +314,7 @@ void mdnsdServiceClose(void);
 /* mdns_net.c */
 BOOL mdnsNetRescan(struct MDNSDaemon *md);
 void mdnsNetClose(struct MDNSDaemon *md);
+void mdnsNetSystemName(struct Library *SocketBase, char *base);
 BOOL mdnsNetIsOwn(struct MDNSDaemon *md, ULONG addr);
 BOOL mdnsNetIsOwn6(struct MDNSDaemon *md, const struct in6_addr *addr);
 const struct dnssd_address_entry *mdnsNetAddressAt(
@@ -327,6 +330,7 @@ void mdnsNetSendAll(struct MDNSDaemon *md, const UBYTE *pkt, LONG pktlen);
 void mdnsHostRestart(struct MDNSDaemon *md);
 BOOL mdnsHostTick(struct MDNSDaemon *md);
 void mdnsHostGoodbye(struct MDNSDaemon *md);
+void mdnsHostRename(struct MDNSDaemon *md, const char *base);
 void mdnsHostSetName(struct MDNSDaemon *md, const char *base, ULONG suffix);
 void mdnsHostHandleQuery(struct MDNSDaemon *md, struct MDNSQuestion *q);
 void mdnsHostHandleProbe(struct MDNSDaemon *md,
