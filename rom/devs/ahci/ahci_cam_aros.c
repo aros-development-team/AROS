@@ -169,6 +169,7 @@ static int ahci_RegisterPort(struct ahci_port *ap)
     unit->sim_Unit = ap->ap_sc->sc_dev->dev_HostID * 32 + ap->ap_num;
     InitSemaphore(&unit->sim_Lock);
     NEWLIST(&unit->sim_IOs);
+    NEWLIST(&unit->sim_PendingIO);
 
     /* The monitor uses the unit directly; publish it only after startup
        succeeds, so OpenDevice cannot retain a failed registration. */
@@ -207,6 +208,8 @@ static int ahci_UnregisterPort(struct ahci_port *ap)
         return 0;
     }
 
+    ahci_stop_pending_io(ap);
+
     /* Stop the monitor, and wait for IOs to drain,
      * and users to CloseDevice() the unit.
      */
@@ -215,6 +218,9 @@ static int ahci_UnregisterPort(struct ahci_port *ap)
     ObtainSemaphore(&unit->sim_Lock);
     while (unit->sim_UseCount) {
         ReleaseSemaphore(&unit->sim_Lock);
+        /* Detach holds the port lock, so the worker cannot service
+           submitted commands while their callers close the unit. */
+        ahci_port_thread_core(ap, AP_SIGF_PORTINT | AP_SIGF_TIMEOUT);
         ahci_os_sleep(100);
         ObtainSemaphore(&unit->sim_Lock);
     }
@@ -225,6 +231,7 @@ static int ahci_UnregisterPort(struct ahci_port *ap)
     Remove((struct Node *)unit);
     Permit();
 
+    ap->ap_sim = NULL;
     FreePooled(AHCIBase->ahci_MemPool, unit, sizeof(*unit));
 
     return 0;
@@ -381,6 +388,7 @@ void ahci_cam_detach(struct ahci_port *ap)
 
     ahciDebug("[AHCI] ahci_cam_detach: port %p\n", ap);
 
+    ahci_os_lock_port(ap);
     lockmgr(&ap->ap_sim_lock, LK_EXCLUSIVE);
     if (ap->ap_flags & AP_F_BUS_REGISTERED) {
             ap->ap_flags &= ~AP_F_BUS_REGISTERED;
@@ -390,6 +398,7 @@ void ahci_cam_detach(struct ahci_port *ap)
     }
     lockmgr(&ap->ap_sim_lock, LK_RELEASE);
     ap->ap_flags &= ~AP_F_CAM_ATTACHED;
+    ahci_os_unlock_port(ap);
 }
 
 /*

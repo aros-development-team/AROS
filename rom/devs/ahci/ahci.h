@@ -472,6 +472,7 @@ struct ahci_port {
 #define AP_SIGF_TIMEOUT		0x0002
 #define AP_SIGF_PORTINT		0x0004
 #define AP_SIGF_THREAD_SYNC	0x0008
+#define AP_SIGF_IO             0x0010
 #define AP_SIGF_STOP		0x8000
 	struct cam_sim		*ap_sim;
 
@@ -702,3 +703,6 @@ extern u_int32_t AhciStartDelay;
 
 enum {AHCI_LINK_PWR_MGMT_NONE, AHCI_LINK_PWR_MGMT_MEDIUM,
       AHCI_LINK_PWR_MGMT_AGGR};
+
+void ahci_process_pending_io(struct ahci_port *ap);
+void ahci_stop_pending_io(struct ahci_port *ap);

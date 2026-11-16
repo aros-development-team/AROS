@@ -193,12 +193,8 @@ static BOOL ahci_sector_rw(struct IORequest *io, UQUAD off64, BOOL is_write)
     will be handled slow, that is they will be passed to bus task which will
     execute them as soon as hardware will be free.
 */
-AROS_LH1(void, BeginIO,
-    AROS_LHA(struct IORequest *, io, A1),
-    struct AHCIBase *, AHCIBase, 5, ahci)
+static BOOL ahci_handle_io(struct IORequest *io)
 {
-    AROS_LIBFUNC_INIT
-
     static const UWORD NSDSupported[] = {
         CMD_READ,
         CMD_WRITE,
@@ -227,6 +223,7 @@ AROS_LH1(void, BeginIO,
     };
     struct IOExtTD *iotd = (struct IOExtTD *)io;
     struct cam_sim *unit = (struct cam_sim *)io->io_Unit;
+    struct AHCIBase *AHCIBase = unit->sim_Port->ap_sc->sc_dev->dev_Base;
     struct ahci_port *ap = unit->sim_Port;
     struct ata_port  *at = ap->ap_ata[0];
     APTR data = iotd->iotd_Req.io_Data;
@@ -243,13 +240,9 @@ AROS_LH1(void, BeginIO,
 
     ahciDebug("[AHCI%02ld]" AHCI_IO_STR " Start, io_Flags = %d, io_Command = %d\n", unit->sim_Unit AHCI_IO_DBG, io->io_Flags, io->io_Command);
 
-    /* Unit going offline? Don't permit new commands. */
-    if ((unit->sim_Flags & SIMF_OffLine) && io->io_Command != TD_REMCHANGEINT) {
+    if ((unit->sim_Flags & (SIMF_OffLine | SIMF_Stopping)) && io->io_Command != TD_REMCHANGEINT) {
         io->io_Error = IOERR_OPENFAIL;
-        if (!(io->io_Flags & IOF_QUICK))
-            ReplyMsg(&io->io_Message);
-        ahciDebug("[AHCI%02ld] %s: WARN - unit is offline\n", unit->sim_Unit, __func__);
-        return;
+        return TRUE;
     }
 
     switch (io->io_Command) {
@@ -465,13 +458,125 @@ bad_address:
         break;
     }
 
-    /* Submission may already have replied on another CPU. Do not touch
-       an asynchronous request after handing it to the completion path. */
-    if (!done)
-        return;
+    return done;
+}
 
-    ahciDebug("[AHCI%02ld] synchronous IO complete\n", unit->sim_Unit);
-    if (!(io->io_Flags & IOF_QUICK))
+/* Preserve FIFO order for hardware commands, including a flush behind writes.
+   Pure metadata queries need neither a transfer slot nor worker dispatch. */
+static BOOL ahci_queue_command(struct IORequest *io)
+{
+    struct cam_sim *unit = (struct cam_sim *)io->io_Unit;
+
+    switch (io->io_Command) {
+    case CMD_READ:
+    case CMD_WRITE:
+    case TD_READ64:
+    case TD_WRITE64:
+    case NSCMD_TD_READ64:
+    case NSCMD_TD_WRITE64:
+    case TD_FORMAT:
+    case TD_FORMAT64:
+    case NSCMD_TD_FORMAT64:
+        return TRUE;
+    case CMD_UPDATE:
+        return unit->sim_Port->ap_type == ATA_PORT_T_DISK;
+    case HD_SCSICMD:
+        if (unit->sim_Port->ap_type == ATA_PORT_T_DISK &&
+            IOStdReq(io)->io_Data && IOStdReq(io)->io_Length == sizeof(struct SCSICmd)) {
+            struct SCSICmd *scsi = IOStdReq(io)->io_Data;
+            if (scsi->scsi_Command && scsi->scsi_CmdLength) {
+                switch (scsi->scsi_Command[0]) {
+                case SCSI_TEST_UNIT_READY:
+                case SCSI_REQUEST_SENSE:
+                case SCSI_INQUIRY:
+                case SCSI_DA_READ_CAPACITY:
+                    return FALSE;
+                }
+            }
+        }
+        return TRUE;
+    default:
+        return FALSE;
+    }
+}
+
+/* Called with the port lock held, by the worker or during teardown. Once
+   submitted, completion owns the request and may reply before this returns. */
+void ahci_process_pending_io(struct ahci_port *ap)
+{
+    struct cam_sim *unit = ap->ap_sim;
+    struct AHCIBase *AHCIBase = ap->ap_sc->sc_dev->dev_Base;
+    struct IORequest *io;
+
+    if (!unit)
+        return;
+    for (;;) {
+        ObtainSemaphore(&unit->sim_Lock);
+        io = (struct IORequest *)RemHead(&unit->sim_PendingIO);
+        ReleaseSemaphore(&unit->sim_Lock);
+        if (!io)
+            return;
+
+        if (ahci_handle_io(io)) {
+            if (io->io_Error == IOERR_UNITBUSY) {
+                /* A slot returned by either I/O or an internal command
+                   wakes this worker. Keep the oldest request first. */
+                io->io_Error = 0;
+                ObtainSemaphore(&unit->sim_Lock);
+                AddHead(&unit->sim_PendingIO, &io->io_Message.mn_Node);
+                ReleaseSemaphore(&unit->sim_Lock);
+                return;
+            }
+            ReplyMsg(&io->io_Message);
+        }
+    }
+}
+
+/* Called with the port lock held. Admission uses sim_Lock too, so no
+   request can be added after the offline flag is set and the list drained. */
+void ahci_stop_pending_io(struct ahci_port *ap)
+{
+    struct cam_sim *unit = ap->ap_sim;
+    struct AHCIBase *AHCIBase = ap->ap_sc->sc_dev->dev_Base;
+
+    if (unit) {
+        ObtainSemaphore(&unit->sim_Lock);
+        unit->sim_Flags |= SIMF_OffLine | SIMF_Stopping;
+        ReleaseSemaphore(&unit->sim_Lock);
+        ahci_process_pending_io(ap);
+    }
+}
+
+AROS_LH1(void, BeginIO,
+    AROS_LHA(struct IORequest *, io, A1),
+    struct AHCIBase *, AHCIBase, 5, ahci)
+{
+    AROS_LIBFUNC_INIT
+
+    struct cam_sim *unit = (struct cam_sim *)io->io_Unit;
+    struct ahci_port *ap = unit->sim_Port;
+
+    if (ahci_queue_command(io)) {
+        io->io_Message.mn_Node.ln_Type = NT_MESSAGE;
+        io->io_Error = 0;
+        ObtainSemaphore(&unit->sim_Lock);
+        if ((unit->sim_Flags & (SIMF_OffLine | SIMF_Stopping)) || !ap->ap_thread) {
+            ReleaseSemaphore(&unit->sim_Lock);
+            io->io_Error = IOERR_OPENFAIL;
+            if (!(io->io_Flags & IOF_QUICK))
+                ReplyMsg(&io->io_Message);
+            return;
+        }
+        io->io_Flags &= ~IOF_QUICK;
+        AddTail(&unit->sim_PendingIO, &io->io_Message.mn_Node);
+        /* Signal before releasing admission: shutdown cannot retire the
+           worker between publishing this request and waking it. */
+        ahci_os_signal_port_thread(ap, AP_SIGF_IO);
+        ReleaseSemaphore(&unit->sim_Lock);
+        return;
+    }
+
+    if (ahci_handle_io(io) && !(io->io_Flags & IOF_QUICK))
         ReplyMsg(&io->io_Message);
 
     AROS_LIBFUNC_EXIT
@@ -486,8 +591,26 @@ AROS_LH1(LONG, AbortIO,
     struct cam_sim *unit = (struct cam_sim *)io->io_Unit;
     ahciDebug("[AHCI%02ld] %s(0x%p)\n", unit->sim_Unit, __func__, io);
 
-    /* Aborting IOs is not (yet) supported */
-    return 0;
+    struct Node *node;
+    BOOL removed = FALSE;
+
+    ObtainSemaphore(&unit->sim_Lock);
+    for (node = unit->sim_PendingIO.lh_Head; node->ln_Succ; node = node->ln_Succ) {
+        if (node == &io->io_Message.mn_Node) {
+            Remove(node);
+            removed = TRUE;
+            break;
+        }
+    }
+    ReleaseSemaphore(&unit->sim_Lock);
+    if (removed) {
+        io->io_Error = IOERR_ABORTED;
+        IOStdReq(io)->io_Actual = 0;
+        ReplyMsg(&io->io_Message);
+        return 0;
+    }
+    /* Commands already submitted to hardware must complete normally. */
+    return IOERR_NOCMD;
 
     AROS_LIBFUNC_EXIT
 }
