@@ -29,6 +29,7 @@
 
 #include "timer_intern.h"
 #include "timer_macros.h"
+#include "systimer.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -41,10 +42,9 @@
  */
 static void timer_ProcessTick(struct TimerBase *TimerBase, struct ExecBase *SysBase)
 {
-    /* EClockUpdate() (ticks.c) owns the counter arithmetic. */
+    /* EClockUpdate() (ticks.c) owns the counter arithmetic. tb_ticks_total
+     * is not kept here: ReadEClock() (readeclock.c) reads the counter. */
     EClockUpdate(TimerBase);
-
-    TimerBase->tb_ticks_total++;
 
     D(bug("[Timer] %s: Processing events.. \n", __func__));
 
@@ -136,8 +136,8 @@ static int Timer_Init(struct TimerBase *TimerBase)
 
     D(bug("[Timer] Timer_Init: TimerIRQHandle @ 0x%p\n", TimerBase->tb_TimerIRQHandle));
 
-    /* By default we want 100 Hz EClock */
-    TimerBase->tb_eclock_rate = 100;
+    /* EClock is scaled from the 1MHz counter (readeclock.c) */
+    TimerBase->tb_eclock_rate = SYSTIMER_RATE;
 
     /*
      * Since we are software-driven, we can just ask the user which
@@ -156,7 +156,14 @@ static int Timer_Init(struct TimerBase *TimerBase)
             {
                 if (strncasecmp(node->ln_Name, "eclock=", 7) == 0)
                 {
-                    TimerBase->tb_eclock_rate = atoi(&node->ln_Name[7]);
+                    int rate = atoi(&node->ln_Name[7]);
+
+                    /* A zero rate would stop the EClock, and the
+                     * counter has nothing finer than its own rate */
+                    if (rate > SYSTIMER_RATE)
+                        rate = SYSTIMER_RATE;
+                    if (rate > 0)
+                        TimerBase->tb_eclock_rate = rate;
                     break;
                 }
             }
@@ -167,9 +174,9 @@ static int Timer_Init(struct TimerBase *TimerBase)
     SysBase->ex_EClockFrequency = TimerBase->tb_eclock_rate;
     D(bug("[Timer] Timer frequency is %d\n", TimerBase->tb_eclock_rate));
 
-    /* Calculate timer period in us */
+    /* 100Hz periodic tick, independent of the EClock rate */
     TimerBase->tb_Platform.tbp_TickRate.tv_secs  = 0;
-    TimerBase->tb_Platform.tbp_TickRate.tv_micro = 1000000 / TimerBase->tb_eclock_rate;
+    TimerBase->tb_Platform.tbp_TickRate.tv_micro = 10000;
 
     /* Start up GPU timer #TICK_TIMER */
     Forbid();
