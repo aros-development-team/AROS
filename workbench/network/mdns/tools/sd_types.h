@@ -2,7 +2,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  * Copyright 2026 amigazen project
  *
- * ba_types.h - plain-English service-type aliases shared by the friendly mDNS
+ * sd_types.h - plain-English service-type aliases shared by the friendly mDNS
  * front-end tools (Nearby / Handshake / Share).
  *
  * The point of these tools is that a user should never have to type or read
@@ -10,8 +10,8 @@
  * words to the real service type, and real types back to a human description.
  */
 
-#ifndef BONAMI_SDK_BA_TYPES_H
-#define BONAMI_SDK_BA_TYPES_H
+#ifndef MDNS_TOOLS_SD_TYPES_H
+#define MDNS_TOOLS_SD_TYPES_H
 
 #include <exec/types.h>
 
@@ -22,15 +22,15 @@
  *   - anything else is returned unchanged so full/unknown types still work.
  * The returned pointer is either the input pointer or a static string.
  */
-CONST_STRPTR BATypeFromAlias(CONST_STRPTR word);
+CONST_STRPTR SDTypeFromAlias(CONST_STRPTR word);
 
 /*
  * Human description for a real service type, e.g. "_http._tcp" -> "Web server".
  * Returns the type itself when it is not in the table.
  */
-CONST_STRPTR BATypeFriendly(CONST_STRPTR type);
+CONST_STRPTR SDTypeFriendly(CONST_STRPTR type);
 
 /* Case-insensitive string equality (native, no utility.library). */
-BOOL BAStrEqualCI(const char *a, const char *b);
+BOOL SDStrEqualCI(const char *a, const char *b);
 
-#endif /* BONAMI_SDK_BA_TYPES_H */
+#endif /* MDNS_TOOLS_SD_TYPES_H */

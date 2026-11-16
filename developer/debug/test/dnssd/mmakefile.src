@@ -1,0 +1,48 @@
+# Copyright (C) 2026, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+
+USER_CFLAGS := $(CFLAGS_GNU99) -Wall -Wextra -Werror
+USER_INCLUDES := -I$(SRCDIR)/workbench/network/mdns
+
+#MM- test : test-dnssd-model test-dnssd-ipc test-dnssd-link test-dnssd-link-aros test-dnssd-reg
+#MM- test-quick : test-dnssd-model test-dnssd-ipc test-dnssd-link test-dnssd-link-aros test-dnssd-reg
+#MM test-dnssd-model : includes linklibs
+#MM test-dnssd-model-quick : test-dnssd-model
+#MM test-dnssd-ipc : includes linklibs
+#MM test-dnssd-ipc-quick : test-dnssd-ipc
+#MM test-dnssd-link : includes linklibs
+#MM test-dnssd-link-quick : test-dnssd-link
+#MM test-dnssd-link-aros : includes linklibs
+#MM test-dnssd-link-aros-quick : test-dnssd-link-aros
+#MM test-dnssd-reg : includes linklibs
+#MM test-dnssd-reg-quick : test-dnssd-reg
+
+%build_prog mmake=test-dnssd-model \
+    progname=dnssdmodeltest \
+    files="dnssd_model_test $(SRCDIR)/workbench/network/mdns/dnssd_model" \
+    targetdir=$(AROS_TESTS)/dnssd
+
+%build_prog mmake=test-dnssd-ipc \
+    progname=dnssdipctest \
+    files="dnssd_ipc_test $(SRCDIR)/workbench/network/mdns/dnssd_ipc $(SRCDIR)/workbench/network/mdns/dnssd_model" \
+    targetdir=$(AROS_TESTS)/dnssd
+
+%build_prog mmake=test-dnssd-link \
+    progname=dnssdlinktest \
+    files="dnssd_link_test $(SRCDIR)/workbench/network/mdns/dnssd_link" \
+    targetdir=$(AROS_TESTS)/dnssd
+
+%build_prog mmake=test-dnssd-link-aros \
+    progname=dnssdlinkarostest \
+    files="dnssd_link_aros_test \
+        $(SRCDIR)/workbench/network/mdns/dnssd_link \
+        $(SRCDIR)/workbench/network/mdns/dnssd_link_aros" \
+    targetdir=$(AROS_TESTS)/dnssd
+
+%build_prog mmake=test-dnssd-reg \
+    progname=dnssdregtest \
+    files="dnssd_reg_test $(SRCDIR)/workbench/network/mdns/dnssd_reg" \
+    targetdir=$(AROS_TESTS)/dnssd
+
+%common

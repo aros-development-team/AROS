@@ -80,11 +80,10 @@ handle_packet(struct MDNSDaemon *md, const UBYTE *pkt, LONG pktlen,
             if (record.type == DNS_TYPE_PTR &&
                 (record.rclass & 0x7fff) == DNS_CLASS_IN &&
                 nknown < MDNS_KNOWN_MAX &&
-                mdnsWireToName(pkt, pktlen, record.rdoffset, pkt, pktlen,
-                    known[nknown].target,
-                    (LONG)sizeof(known[nknown].target)) >= 0) {
-                mdnsTextCopy(known[nknown].owner,
-                    (LONG)sizeof(known[nknown].owner), record.name);
+                mdnsWireNameRead(pkt, pktlen, record.rdoffset,
+                    known[nknown].target) >= 0) {
+                memcpy(known[nknown].owner, record.wire,
+                    (size_t)mdnsWireNameLength(record.wire));
                 known[nknown].ttl = record.ttl;
                 nknown++;
             }
@@ -156,8 +155,9 @@ handle_packet(struct MDNSDaemon *md, const UBYTE *pkt, LONG pktlen,
         if (i < answers || i >= (UWORD)(answers + authorities)) {
             mdnsRegHandleRecord(md, &record, pkt, pktlen);
             if (srcport == MDNS_DNS_PORT && ntohs(hdr->id) == 0) {
-                mdnsDiscoveryRecord(md, &record, pkt, pktlen, offset);
-                mdnsQueryRecord(md, &record, pkt, pktlen);
+                mdnsCacheRecord(md, pkt, pktlen, offset,
+                    md->md_SendIf >= 0 ? md->md_Ifs[md->md_SendIf].mi_Index : 0,
+                    FALSE);
             }
         }
         offset += consumed;
@@ -180,12 +180,13 @@ mdnsHandlePacket6(struct MDNSDaemon *md, const UBYTE *pkt, LONG pktlen,
     }
 }
 
-/* Feed records produced by this daemon to its discovery/query clients.
- * Multicast loopback is deliberately ignored by mdnsHandlePacket(), so local
- * registrations otherwise exist on the wire but not in the local API view. */
+/* The records this daemon sends to the group, into its own cache, where
+ * dnssd.library's operations see them as they see other hosts'. Multicast
+ * loopback is ignored by mdnsHandlePacket(), so the host's own services
+ * would otherwise be on the wire but not in the cache. */
 void
 mdnsReflectPacket(struct MDNSDaemon *md, const UBYTE *pkt, LONG pktlen,
-    LONG ifindex, UWORD consumers, APTR queryHandle)
+    LONG ifindex)
 {
     const struct MDNSHeader *hdr;
     struct MDNSQuestion q;
@@ -193,8 +194,7 @@ mdnsReflectPacket(struct MDNSDaemon *md, const UBYTE *pkt, LONG pktlen,
     UWORD i, flags, answers, authorities, additionals;
 
     if (pktlen < (LONG)sizeof(struct MDNSHeader) || ifindex < 0 ||
-        ifindex >= md->md_IfCount || (consumers &
-            (MDNS_REFLECT_DISCOVERY | MDNS_REFLECT_QUERY)) == 0) {
+        ifindex >= md->md_IfCount) {
         return;
     }
     hdr = (const struct MDNSHeader *)pkt;
@@ -219,12 +219,8 @@ mdnsReflectPacket(struct MDNSDaemon *md, const UBYTE *pkt, LONG pktlen,
             break;
         }
         if (i < answers || i >= (UWORD)(answers + authorities)) {
-            if (consumers & MDNS_REFLECT_DISCOVERY) {
-                mdnsDiscoveryRecord(md, &record, pkt, pktlen, offset);
-            }
-            if (consumers & MDNS_REFLECT_QUERY) {
-                mdnsQueryLocalRecord(md, &record, pkt, pktlen, queryHandle);
-            }
+            mdnsCacheRecord(md, pkt, pktlen, offset,
+                md->md_Ifs[ifindex].mi_Index, TRUE);
         }
         offset += consumed;
     }

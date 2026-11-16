@@ -1,4 +1,8 @@
 /*
+ * SPDX-License-Identifier: BSD-2-Clause
+ * Copyright 2026 amigazen project
+ * Copyright 2026 Jaime Dias
+ *
  * mdns_dns.h - DNS wire format helpers (RFC 1035 / mDNS)
  */
 
@@ -42,14 +46,16 @@ struct MDNSHeader
 
 struct MDNSQuestion
 {
-    char  qname[256];
+    char  qname[256];   /* as text, for presentation */
+    UBYTE qwire[256];   /* as wire labels, uncompressed: what is compared */
     UWORD qtype;
     UWORD qclass;
 };
 
 struct MDNSRecord
 {
-    char  name[256];
+    char  name[256];    /* as text, for presentation */
+    UBYTE wire[256];    /* as wire labels, uncompressed: what is compared */
     UWORD type;
     UWORD rclass;
     ULONG ttl;
@@ -58,10 +64,15 @@ struct MDNSRecord
                          * required to resolve DNS name-compression pointers in
                          * PTR/SRV targets, which reference earlier packet bytes
                          * that are not present in the rdata[] copy below */
-    UBYTE rdata[512];
+    UBYTE rdata[512];   /* the first 512 bytes of rdata: a longer record's
+                         * whole data is at rdoffset in the packet */
 };
 
 LONG mdnsNameToWire(const char *name, UBYTE *buf, LONG buflen, LONG *used);
+/* wire names (mdns_dns.c) */
+LONG mdnsWireNameLength(const UBYTE *name);
+BOOL mdnsWireNameEqual(const UBYTE *a, const UBYTE *b);
+LONG mdnsWireNameRead(const UBYTE *pkt, LONG length, LONG offset, UBYTE *name);
 LONG mdnsWireToName(const UBYTE *wire, LONG wirelen, LONG offset,
     const UBYTE *pkt, LONG pktlen, char *name, LONG namelen);
 LONG mdnsSkipName(const UBYTE *pkt, LONG pktlen, LONG offset);
@@ -71,21 +82,14 @@ LONG mdnsParseQuestion(const UBYTE *pkt, LONG pktlen, LONG offset,
     struct MDNSQuestion *q, LONG *consumed);
 LONG mdnsParseRecord(const UBYTE *pkt, LONG pktlen, LONG offset,
     struct MDNSRecord *r, LONG *consumed);
+LONG mdnsAppendRecordWire(UBYTE *pkt, LONG pktmax, LONG *pos, UWORD *ancount,
+    const UBYTE *name, UWORD type, UWORD rclass, ULONG ttl,
+    const UBYTE *rdata, UWORD rdlength);
+LONG mdnsBuildQueryWire(UBYTE *pkt, LONG pktmax, UWORD id, const UBYTE *qname,
+    UWORD qtype, UWORD qclass, LONG *pktlen);
 LONG mdnsAppendRecord(UBYTE *pkt, LONG pktmax, LONG *pos, UWORD *ancount,
     const char *name, UWORD type, UWORD rclass, ULONG ttl,
     const UBYTE *rdata, UWORD rdlength);
 void mdnsInitHeader(struct MDNSHeader *hdr, UWORD flags, UWORD qdcount);
-
-/*
- * A service's text, as clients give it, is one string of "key=value" items
- * with a space between them. A space that belongs to an item is written
- * with a backslash before it, and a backslash as two; in the TXT record
- * each item is a string of its own with neither (RFC 6763 section 6).
- *
- * mdnsTxtNext() takes the next item of text from *pos, without its
- * backslashes, into item (max bytes, no terminator added) and moves *pos
- * past it. It returns the item's length, cut at max, or -1 at the end.
- */
-LONG mdnsTxtNext(const char *text, LONG *pos, UBYTE *item, LONG max);
 
 #endif /* MDNSD_MDNS_DNS_H */

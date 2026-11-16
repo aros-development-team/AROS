@@ -138,7 +138,7 @@ int netmidi_network_receive(const struct netmidi_network_runtime *runtime,
 }
 
 int netmidi_network_wait(const struct netmidi_network_runtime *runtime,
-                         long timeout_us, int wake_signal_bit,
+                         long timeout_us, unsigned long wake_signals,
                          unsigned int *events)
 {
     struct timeval timeout;
@@ -160,8 +160,7 @@ int netmidi_network_wait(const struct netmidi_network_runtime *runtime,
         }
     timeout.tv_sec = timeout_us / 1000000;
     timeout.tv_usec = timeout_us % 1000000;
-    if (wake_signal_bit >= 0)
-        signal_mask |= 1UL << wake_signal_bit;
+    signal_mask |= wake_signals;
     ready = WaitSelect(maximum + 1, &read_set, NULL, NULL, &timeout,
                        &signal_mask);
     if (signal_mask & SIGBREAKF_CTRL_C)

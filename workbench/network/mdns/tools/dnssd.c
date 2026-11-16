@@ -4,51 +4,98 @@
  * Copyright 2026 Jaime Dias
  *
  * dnssd - a DNS-SD command-line tool in the spirit of Apple's dns-sd and
- *         Avahi's avahi-browse, on bonami.library.
- *
- *   dnssd -E                              list domains for registering
- *   dnssd -F                              list domains for browsing
- *   dnssd -R name type domain port [-t seconds] [k=v ...]
- *                                         register (advertise) a service
- *   dnssd -P name type domain port host ip [k=v ...]
- *                                         register for another host
- *   dnssd -B type [domain]                browse for instances of a type
- *   dnssd -L name type [domain]           look up (resolve) one instance
- *   dnssd -Z type [domain]                browse, as available zone records
- *   dnssd -q name rrtype                  ask for any DNS record
- *   dnssd -G v4 hostname                  look up a host's IPv4 address
- *   dnssd -V                              show the bonami.library version
- *   dnssd -h                              this help
- *
- * The domain may be omitted or given as "." for the default, which is the
- * only one bonami.library serves: the multicast "local" domain.
- *
- * -R, -P, -B, -Z and -q run until Ctrl-C; -L until the instance is resolved
- * or mdnsd gives up on it, five seconds later. Browse, resolve and record
- * query use queues (DISCOVERY.md): events are read in this task, which sleeps
- * on a request lent to mdnsd until there are some.
- *
- *   dnssd -B _http._tcp
- *   dnssd -B _services._dns-sd._udp     (the service types on the link)
- *   dnssd -L "My Mac" _companion-link._tcp
- *   dnssd -R AmigaShare _http._tcp . 80 path=/ vers=1
+ *         Avahi's avahi-browse, on dnssd.library.
  */
+
+/******************************************************************************
+
+    NAME
+
+        dnssd -B|-Z <type> [<domain>]
+        dnssd -L <name> <type> [<domain>]
+        dnssd -R <name> <type> <domain> <port> [-t <seconds>] [<key=value> ...]
+        dnssd -P <name> <type> <domain> <port> <host> <ip> [<key=value> ...]
+        dnssd -q <name> <rrtype>
+        dnssd -G v4|v6|v4v6 <hostname>
+        dnssd -E | -F | -V | -h
+
+    SYNOPSIS
+
+    LOCATION
+
+        C:
+
+    FUNCTION
+
+        Finds and publishes services on the local network with DNS Service
+        Discovery over multicast DNS (RFC 6763, RFC 6762), through
+        dnssd.library and the system's responder, mdnsd.
+
+        -B browses for the instances of a service type and resolves each:
+        a line for each one as it comes (ADD, with its address, port and
+        TXT items), when what it says changes (UPDATE) and when it goes
+        (REMOVE). Up to 16 instances are followed at a time; past them the
+        others are resolved once, and followed when room is made. The type "_services._dns-sd._udp"
+        lists the service types on the link instead (TYPE, NO TYPE). A
+        subtype is browsed as "_printer._sub._ipp._tcp".
+
+        -Z browses as -B and writes what it finds as zone records: PTR, SRV,
+        TXT and the host's A record.
+
+        -L resolves one instance: its host, port, TXT items and every
+        address, IPv4 and IPv6, or "Not resolved." after five seconds. -B
+        shows one address of each instance, IPv4 if it has one; -Z writes A
+        and AAAA records for them all.
+
+        -R publishes a service of this computer until Ctrl-C; -t sets the
+        time to live of its records (1-4500 seconds). -P publishes it for
+        another host, one that does not speak mDNS itself, with that host's
+        name and address: IPv4, or IPv6 ("fe80::1%2", a link-local one with
+        its interface). A TXT value may be binary: "\xNN" in an item is the
+        byte NN and "\\" a backslash. TXT data is shown so too, with "\ "
+        for a space inside an item.
+
+        -q asks for any record (A, AAAA, PTR, TXT, SRV, ANY or a number)
+        until Ctrl-C. -G looks a host's addresses up. A name without a dot
+        is taken to be in "local".
+
+        -E and -F list the domains for registering and browsing: only
+        "local", which is what multicast DNS serves. The domain may be
+        given as "." or "local" for it. -V shows dnssd.library's version.
+
+    INPUTS
+
+    RESULT
+
+        0, 5 for bad arguments or nothing found, 20 for an error.
+
+    EXAMPLE
+
+        dnssd -B _http._tcp
+        dnssd -B _services._dns-sd._udp
+        dnssd -L "My Mac" _companion-link._tcp
+        dnssd -R AmigaShare _http._tcp . 80 path=/ vers=1
+        dnssd -q _http._tcp.local PTR
+        dnssd -G v4 printer.local
+
+    SEE ALSO
+
+        Nearby, Share, Handshake
+
+******************************************************************************/
 
 #include <exec/types.h>
 #include <exec/libraries.h>
 #include <dos/dos.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
+#include <proto/dnssd.h>
 #include <utility/tagitem.h>
 
-#include <libraries/bonamibase.h>
-#include <bonami/mdns.h>
-#include <proto/bonami.h>
-
-#include "ba_common.h"
+#include "sd_common.h"
 
 static const char version_tag[] __attribute__((used)) =
-    "\0$VER: dnssd 41.2 (25.10.2026)";
+    "\0$VER: dnssd 42.0 (13.11.2026)";
 
 #define DS_DNS_A       1
 #define DS_DNS_PTR     12
@@ -61,10 +108,9 @@ static const char version_tag[] __attribute__((used)) =
 /* Helpers */
 
 /*
- * bonami.library serves only the multicast "local" domain. dns-sd's
- * spellings of the default ("", ".") and "local"/"local." are taken; for
- * anything else a note is printed and "local" is used, so that a script is
- * not misled.
+ * Multicast DNS serves the "local" domain only. dns-sd's spellings of the
+ * default ("", ".") and "local"/"local." are taken; for anything else a
+ * note is printed and "local" is used, so that a script is not misled.
  */
 static int
 DSDomainLocal(CONST_STRPTR domain)
@@ -72,45 +118,77 @@ DSDomainLocal(CONST_STRPTR domain)
     if (domain == NULL) {
         return 1;
     }
-    return BAStrEqual((const char *)domain, "") ||
-           BAStrEqual((const char *)domain, ".") ||
-           BAStrEqual((const char *)domain, "local") ||
-           BAStrEqual((const char *)domain, "local.");
+    return SDStrEqual((const char *)domain, "") ||
+           SDStrEqual((const char *)domain, ".") ||
+           SDStrEqual((const char *)domain, "local") ||
+           SDStrEqual((const char *)domain, "local.");
 }
 
 static void
 DSDomainNote(CONST_STRPTR domain)
 {
     if (!DSDomainLocal(domain)) {
-        BAPrintf("(note: domain \"%s\" is not served; using local)\n", domain);
+        SDPrintf("(note: domain \"%s\" is not served; using local)\n", domain);
     }
 }
 
-/* What a watch ended with, said the way a user can act on. */
+/* What a session ended with, said the way a user can act on. */
 static int
-DSWatchEnded(struct BAWatch *watch, CONST_STRPTR what)
+DSEnded(CONST_STRPTR what, LONG rc)
 {
-    if (watch->bw_Result == MDNSERR_BUSY) {
-        BAPrintf("\n%s: more answers came than could be kept; run it again.\n",
+    if (rc == DNSSD_ERR_BUSY) {
+        SDPrintf("\n%s: more answers came than could be kept; run it again.\n",
             what);
-    } else if (watch->bw_Result == MDNSERR_NOENGINE) {
-        BAPrintf("\n%s: mdnsd ended.\n", what);
+    } else if (rc == DNSSD_ERR_STALE || rc == DNSSD_ERR_NOENGINE) {
+        SDPrintf("\n%s: mdnsd ended.\n", what);
     } else {
-        BAAppPrintMDNSError(what, watch->bw_Result);
+        SDAppPrintError(what, rc);
     }
     return 20;
 }
 
+/* A name as the library takes it: one without a dot is in "local". */
+static void
+DSLocalName(CONST_STRPTR name, char *out, LONG max)
+{
+    LONG i;
+
+    SDStrCopy(out, (const char *)name, max);
+    for (i = 0; out[i] != '\0' && out[i] != '.'; i++) {
+    }
+    if (out[i] == '\0') {
+        SDStrAppend(out, ".local", max);
+    }
+}
+
+/* One line for an instance: action, name, type, an address (IPv4 if it
+ * has one, else IPv6: -L lists them all), port and the TXT record's items. */
+static void
+DSPrintService(CONST_STRPTR action, const struct SDService *sv)
+{
+    char address[64];
+
+    SDPrintf("%-8s %-28s %-22s ", action, sv->sv_Name, sv->sv_Type);
+    if (sv->sv_AddressCount != 0) {
+        SDAddressText(&sv->sv_Addresses[0], address, (LONG)sizeof(address));
+    } else {
+        SDStrCopy(address, "-", (LONG)sizeof(address));
+    }
+    SDPrintf("%-15s %5ld  ", address, (LONG)sv->sv_Port);
+    SDPrintTXT(sv->sv_TXT, sv->sv_TXTLength);
+    SDPrintf("\n");
+}
+
 /*------------------------------------------------------------------------*/
-/* -E / -F : bonami.library serves only the link-local mDNS domain, so both
- * lists hold "local" alone. */
+/* -E / -F : multicast DNS serves the link-local domain only, so both lists
+ * hold "local" alone. */
 
 static int
 DSEnumDomains(CONST_STRPTR which)
 {
-    BAPrintf("Domains for %s:\n", which);
-    BAPrintf("  Added     local\n");
-    BAPrintf("\n(bonami.library serves only the multicast local domain)\n");
+    SDPrintf("Domains for %s:\n", which);
+    SDPrintf("  Added     local\n");
+    SDPrintf("\n(multicast DNS serves only the local domain)\n");
     return 0;
 }
 
@@ -120,26 +198,9 @@ DSEnumDomains(CONST_STRPTR which)
 static int
 DSVersion(void)
 {
-    struct Library *lib = (struct Library *)BonamiBase;
-
-    BAPrintf("%s %ld.%ld\n", BONAMINAME,
-        (LONG)lib->lib_Version, (LONG)lib->lib_Revision);
+    SDPrintf("%s %ld.%ld\n", DNSSDNAME,
+        (LONG)DNSSDBase->lib_Version, (LONG)DNSSDBase->lib_Revision);
     return 0;
-}
-
-/* LVOs 22 through 25 were appended in bonami.library 41.3. Opening version
- * 41 alone is not enough to make those vectors callable. */
-#define DS_RECORD_API_VERSION  41
-#define DS_RECORD_API_REVISION 3
-
-static BOOL
-DSHasRecordAPI(void)
-{
-    struct Library *lib = (struct Library *)BonamiBase;
-
-    return lib->lib_Version > DS_RECORD_API_VERSION ||
-        (lib->lib_Version == DS_RECORD_API_VERSION &&
-         lib->lib_Revision >= DS_RECORD_API_REVISION);
 }
 
 static UWORD
@@ -147,413 +208,364 @@ DSRecordType(CONST_STRPTR word)
 {
     LONG value;
 
-    if (BAStrEqual(word, "A")) {
+    if (SDStrEqual(word, "A")) {
         return DS_DNS_A;
     }
-    if (BAStrEqual(word, "PTR")) {
+    if (SDStrEqual(word, "PTR")) {
         return DS_DNS_PTR;
     }
-    if (BAStrEqual(word, "TXT")) {
+    if (SDStrEqual(word, "TXT")) {
         return DS_DNS_TXT;
     }
-    if (BAStrEqual(word, "AAAA")) {
+    if (SDStrEqual(word, "AAAA")) {
         return DS_DNS_AAAA;
     }
-    if (BAStrEqual(word, "SRV")) {
+    if (SDStrEqual(word, "SRV")) {
         return DS_DNS_SRV;
     }
-    if (BAStrEqual(word, "ANY")) {
+    if (SDStrEqual(word, "ANY")) {
         return DS_DNS_ANY;
     }
-    if (!BAParseNum(word, &value) || value < 1 || value > 65535) {
+    if (!SDParseNum(word, &value) || value < 1 || value > 65535) {
         return 0;
     }
     return (UWORD)value;
 }
 
-/* An uncompressed wire name from a record event, with a final dot. Literal
- * dots and backslashes inside labels are escaped for readable zone output. */
+/* A wire name within a record's data as text, with a final dot. */
 static BOOL
-DSRecordName(const UBYTE *data, LONG pos, LONG length, char *out, LONG outmax,
-    LONG *end)
+DSDataName(const UBYTE *data, LONG length, char *out, LONG outmax)
 {
-    LONG at = 0;
-
-    while (pos < length) {
-        LONG n = data[pos++];
-        LONG i;
-
-        if (n == 0) {
-            if (at == 0) {
-                if (outmax < 2) {
-                    return FALSE;
-                }
-                out[at++] = '.';
-            } else {
-                if (at >= outmax - 1) {
-                    return FALSE;
-                }
-                out[at++] = '.';
-            }
-            out[at] = '\0';
-            if (end != NULL) {
-                *end = pos;
-            }
-            return TRUE;
-        }
-        if (n > 63 || n > length - pos) {
-            return FALSE;
-        }
-        if (at != 0) {
-            if (at >= outmax - 1) {
-                return FALSE;
-            }
-            out[at++] = '.';
-        }
-        for (i = 0; i < n; i++) {
-            UBYTE c = data[pos++];
-
-            if (c == '.' || c == '\\') {
-                if (at >= outmax - 2) {
-                    return FALSE;
-                }
-                out[at++] = '\\';
-            } else if (c < 0x20 || c >= 0x7f) {
-                c = '?';
-            }
-            if (at >= outmax - 1) {
-                return FALSE;
-            }
-            out[at++] = (char)c;
-        }
+    if (DNSSD_NameToText(data, (ULONG)length, (STRPTR)out, (ULONG)outmax - 1) < 0) {
+        return FALSE;
     }
-    return FALSE;
+    SDStrAppend(out, ".", outmax);
+    return TRUE;
 }
 
 static void
-DSPrintRecord(const struct MDNSRecordEvent *record)
+DSPrintAddress(const struct DNSSDAddress *a)
 {
-    LONG length = record->re_DataLength;
+    char text[64];
+
+    SDAddressText(a, text, (LONG)sizeof(text));
+    SDPrintf("%s", text);
+}
+
+static void
+DSPrintRecord(const struct DNSSDEvent *e)
+{
+    const UBYTE *data = SDEventPart(e, &e->de_RData);
+    LONG length = (LONG)e->de_RData.dr_Size;
     char name[512];
 
-    if (length > MDNS_RECORD_DATA_MAX) {
-        length = MDNS_RECORD_DATA_MAX;
+    SDEventName(e, &e->de_Name, name, (LONG)sizeof(name));
+    SDPrintf("%s%s.  type %ld  ttl %ld  ", (CONST_STRPTR)
+        ((e->de_Flags & DNSSD_EVENTF_REMOVED) ? "(gone) " : ""), name,
+        (LONG)e->de_RRType, (LONG)e->de_TTL);
+    if (data == NULL) {
+        length = 0;
     }
-    BAPrintf("%s.  type %ld  ttl %ld  ", record->re_Name,
-        (LONG)record->re_Type, (LONG)record->re_TTL);
-    if (record->re_Type == DS_DNS_A && length == 4) {
-        BAPrintf("%ld.%ld.%ld.%ld", (LONG)record->re_Data[0],
-            (LONG)record->re_Data[1], (LONG)record->re_Data[2],
-            (LONG)record->re_Data[3]);
-    } else if (record->re_Type == DS_DNS_PTR &&
-               DSRecordName(record->re_Data, 0, length, name,
-                   (LONG)sizeof(name), NULL)) {
-        BAPrintf("%s", name);
-    } else if (record->re_Type == DS_DNS_SRV && length > 6 &&
-               DSRecordName(record->re_Data, 6, length, name,
-                   (LONG)sizeof(name), NULL)) {
-        BAPrintf("%ld %ld %ld %s",
-            (LONG)((record->re_Data[0] << 8) | record->re_Data[1]),
-            (LONG)((record->re_Data[2] << 8) | record->re_Data[3]),
-            (LONG)((record->re_Data[4] << 8) | record->re_Data[5]), name);
-    } else if (record->re_Type == DS_DNS_TXT) {
-        BAPrintTXT(record->re_Data, length);
+    if (e->de_RRType == DS_DNS_A && length == 4) {
+        SDPrintf("%ld.%ld.%ld.%ld", (LONG)data[0], (LONG)data[1],
+            (LONG)data[2], (LONG)data[3]);
+    } else if (e->de_RRType == DS_DNS_PTR &&
+               DSDataName(data, length, name, (LONG)sizeof(name))) {
+        SDPrintf("%s", name);
+    } else if (e->de_RRType == DS_DNS_SRV && length > 6 &&
+               DSDataName(data + 6, length - 6, name, (LONG)sizeof(name))) {
+        SDPrintf("%ld %ld %ld %s",
+            (LONG)((data[0] << 8) | data[1]), (LONG)((data[2] << 8) | data[3]),
+            (LONG)((data[4] << 8) | data[5]), name);
+    } else if (e->de_RRType == DS_DNS_AAAA && length == 16) {
+        struct DNSSDAddress a;
+
+        a.da_Family = DNSSD_FAMILY_IPV6;
+        a.da_Length = 16;
+        a.da_Interface = 0;
+        CopyMem((APTR)data, a.da_Bytes, 16);
+        DSPrintAddress(&a);
+    } else if (e->de_RRType == DS_DNS_TXT) {
+        SDPrintTXT(data, length);
     } else {
         LONG i;
 
         for (i = 0; i < length && i < 32; i++) {
-            BAPrintf("%02lx", (LONG)record->re_Data[i]);
+            SDPrintf("%02lx", (LONG)data[i]);
         }
     }
-    BAPrintf("\n");
-}
-
-/* Ask for the SRV whose browse snapshot refers to. The browse operation has
- * already resolved it, but its compatible event intentionally has no target
- * field. A bounded record query obtains that name without changing the event
- * ABI. */
-static BOOL
-DSZoneSRV(const struct MDNSDiscoveryEvent *discovery, char *target,
-    LONG targetmax, UWORD *priority, UWORD *weight, UWORD *port)
-{
-    MDNSQueryRef ref = NULL;
-    struct TagItem tags[] = {
-        { MDNS_EventMode, MDNS_EVENT_QUEUE },
-        { MDNS_QueryRef, (IPTR)&ref },
-        { TAG_END, 0 }
-    };
-    struct BAWatch watch;
-    struct MDNSRecordEvent record;
-    char owner[256];
-    LONG rc;
-    LONG why = BA_WAIT_EVENTS;
-    BOOL found = FALSE;
-
-    BAStrCopy(owner, discovery->de_Name, (LONG)sizeof(owner));
-    BAStrAppend(owner, ".", (LONG)sizeof(owner));
-    BAStrAppend(owner, discovery->de_Type, (LONG)sizeof(owner));
-    BAStrAppend(owner, ".local", (LONG)sizeof(owner));
-    rc = QueryRecordA(owner, DS_DNS_SRV, tags);
-    if (rc != MDNS_OK) {
-        return FALSE;
-    }
-    rc = BAWatchStart(&watch, ref, 3);
-    if (rc != MDNS_OK) {
-        StopQuery(ref);
-        return FALSE;
-    }
-    while (!found && (why = BAWatchWait(&watch)) == BA_WAIT_EVENTS) {
-        while (ReadMDNSRecordEvent(ref, &record) == MDNS_OK) {
-            LONG end;
-
-            if (record.re_Type != DS_DNS_SRV ||
-                record.re_Interface != discovery->de_Interface ||
-                record.re_DataLength <= 6 ||
-                !DSRecordName(record.re_Data, 6, record.re_DataLength,
-                    target, targetmax, &end) || end != record.re_DataLength) {
-                continue;
-            }
-            *priority = (UWORD)((record.re_Data[0] << 8) | record.re_Data[1]);
-            *weight = (UWORD)((record.re_Data[2] << 8) | record.re_Data[3]);
-            *port = (UWORD)((record.re_Data[4] << 8) | record.re_Data[5]);
-            found = TRUE;
-            break;
-        }
-    }
-    StopQuery(ref);
-    BAWatchEnd(&watch);
-    if (why == BA_WAIT_BREAK) {
-        SetSignal(SIGBREAKF_CTRL_C, SIGBREAKF_CTRL_C);
-    }
-    return found;
+    SDPrintf("\n");
 }
 
 /*------------------------------------------------------------------------*/
-/* -B / -Z : browse. Zone output obtains the real SRV target through the
- * generic record queue before it writes an SRV record or names the A owner. */
+/* -B / -Z : browse, and resolve each instance found. */
 
 static void
-DSPrintZone(const struct MDNSDiscoveryEvent *ev)
+DSPrintZone(const struct SDService *sv)
 {
-    LONG length = ev->de_TXTLength;
-    UWORD priority, weight, port;
-    char target[512];
-    BOOL haveSRV;
+    SDPrintf("%s.local.\tPTR\t%s.%s.local.\n", sv->sv_Type, sv->sv_Name,
+        sv->sv_Type);
+    SDPrintf("%s.%s.local.\tSRV\t0 0 %ld %s.\n", sv->sv_Name, sv->sv_Type,
+        (LONG)sv->sv_Port, sv->sv_Target);
+    if (sv->sv_TXTLength > 0) {
+        SDPrintf("%s.%s.local.\tTXT\t", sv->sv_Name, sv->sv_Type);
+        SDPrintTXT(sv->sv_TXT, sv->sv_TXTLength);
+        SDPrintf("\n");
+    }
+    {
+        UWORD i;
 
-    haveSRV = DSZoneSRV(ev, target, (LONG)sizeof(target), &priority, &weight,
-        &port);
-    BAPrintf("%s.local.\tPTR\t%s.%s.local.\n", ev->de_Type, ev->de_Name,
-        ev->de_Type);
-    if (haveSRV) {
-        BAPrintf("%s.%s.local.\tSRV\t%ld %ld %ld %s\n", ev->de_Name,
-            ev->de_Type, (LONG)priority, (LONG)weight, (LONG)port, target);
-    } else {
-        BAPrintf("; %s.%s.local.: SRV target unavailable\n", ev->de_Name,
-            ev->de_Type);
-    }
-    if (length > 0) {
-        if (length > MDNS_DISCOVERY_TXT_MAX) {
-            length = MDNS_DISCOVERY_TXT_MAX;
+        for (i = 0; i < sv->sv_AddressCount; i++) {
+            char text[64];
+            struct DNSSDAddress a = sv->sv_Addresses[i];
+
+            a.da_Interface = 0;             /* a zone is no part of the record */
+            SDAddressText(&a, text, (LONG)sizeof(text));
+            SDPrintf("%s.\t%s\t%s\n", sv->sv_Target, (CONST_STRPTR)
+                (a.da_Family == DNSSD_FAMILY_IPV4 ? "A" : "AAAA"), text);
         }
-        BAPrintf("%s.%s.local.\tTXT\t", ev->de_Name, ev->de_Type);
-        BAPrintTXT(ev->de_TXT, length);
-        BAPrintf("\n");
-    }
-    if (haveSRV && ev->de_Address != 0) {
-        BAPrintf("%s\tA\t%ld.%ld.%ld.%ld\n", target,
-            BA_IP_ARGS(ev->de_Address));
     }
 }
 
 static int
 DSBrowse(CONST_STRPTR type, CONST_STRPTR domain, int zone)
 {
-    MDNSBrowseRef ref = NULL;
-    struct TagItem tags[] = {
-        { MDNS_EventMode, MDNS_EVENT_QUEUE },
-        { MDNS_BrowseRef, (IPTR)&ref },
-        { TAG_END, 0 }
-    };
-    struct BAWatch watch;
-    struct MDNSDiscoveryEvent ev;
-    LONG rc;
-    LONG why;
-    int result = 0;
+    struct SDSession session;
+    struct SDFinder finder;
+    struct SDService *sv;
+    LONG rc, why;
+    int result = -1;
 
     DSDomainNote(domain);
-    rc = BrowseServiceTypeA((STRPTR)type, NULL, tags);
-    if (rc != MDNS_OK) {
-        BAAppPrintMDNSError("BrowseServiceTypeA", rc);
+    sv = AllocVec(sizeof(*sv), MEMF_ANY | MEMF_CLEAR);
+    if (sv == NULL) {
+        SDAppPrintError("browse", DNSSD_ERR_NOMEM);
         return 20;
     }
-    rc = BAWatchStart(&watch, ref, 0);
-    if (rc != MDNS_OK) {
-        StopBrowse(ref);
-        BAAppPrintMDNSError("RequestMDNSEvent", rc);
+    if ((rc = SDSessionOpen(&session, 0)) != DNSSD_OK) {
+        FreeVec(sv);
+        SDAppPrintError("browse", rc);
+        return 20;
+    }
+    if ((rc = SDFinderStart(&finder, &session, type)) != DNSSD_OK) {
+        SDSessionClose(&session);
+        FreeVec(sv);
+        SDAppPrintError("browse", rc);
         return 20;
     }
     if (zone) {
-        BAPrintf("; browsing %s (Ctrl-C to stop)\n\n", type);
+        SDPrintf("; browsing %s (Ctrl-C to stop)\n\n", type);
     } else {
-        BAPrintf("Browsing %s (Ctrl-C to stop)...\n\n", type);
-        BAPrintf("%-8s %-28s %-22s %-15s %5s  TXT\n",
+        SDPrintf("Browsing %s (Ctrl-C to stop)...\n\n", type);
+        SDPrintf("%-8s %-28s %-22s %-15s %5s  TXT\n",
             "Event", "Instance", "Type", "Address", "Port");
     }
-    while ((why = BAWatchWait(&watch)) == BA_WAIT_EVENTS) {
-        while (ReadMDNSEvent(ref, &ev) == MDNS_OK) {
-            if (ev.de_Name[0] == '\0') {
-                /* type enumeration: a type, not an instance */
-                if (ev.de_Code == MEVENT_ADD || ev.de_Code == MEVENT_REMOVE) {
-                    BAPrintf("%-8s %s\n", (CONST_STRPTR)(ev.de_Code ==
-                        MEVENT_ADD ? "TYPE" : "NO TYPE"), ev.de_Type);
-                }
-            } else if (ev.de_Code == MEVENT_ADD) {
+    while (result < 0 && (why = SDSessionWait(&session)) == SD_WAIT_EVENTS) {
+        const struct DNSSDEvent *e;
+
+        while (result < 0 && (e = SDSessionRead(&session, &rc)) != NULL) {
+            switch (SDFinderEvent(&finder, e, sv, &rc)) {
+            case SD_FOUND_TYPE:
+                SDPrintf("%-8s %s\n", "TYPE", sv->sv_Type);
+                break;
+            case SD_FOUND_NOTYPE:
+                SDPrintf("%-8s %s\n", "NO TYPE", sv->sv_Type);
+                break;
+            case SD_FOUND_ADD:
                 if (zone) {
-                    DSPrintZone(&ev);
+                    DSPrintZone(sv);
                 } else {
-                    BAPrintEvent((CONST_STRPTR)"ADD", &ev);
+                    DSPrintService((CONST_STRPTR)"ADD", sv);
                 }
-            } else if (ev.de_Code == MEVENT_REMOVE) {
+                break;
+            case SD_FOUND_UPDATE:
+                /* what it says changed: addresses, port, host or TXT */
                 if (zone) {
-                    BAPrintf("; remove %s.%s.local.\n", ev.de_Name,
-                        ev.de_Type);
+                    SDPrintf("; update %s.%s.local.\n", sv->sv_Name, sv->sv_Type);
+                    DSPrintZone(sv);
                 } else {
-                    BAPrintEvent((CONST_STRPTR)"REMOVE", &ev);
+                    DSPrintService((CONST_STRPTR)"UPDATE", sv);
                 }
+                break;
+            case SD_FOUND_REMOVE:
+                if (zone) {
+                    SDPrintf("; remove %s.%s.local.\n", sv->sv_Name, sv->sv_Type);
+                } else {
+                    DSPrintService((CONST_STRPTR)"REMOVE", sv);
+                }
+                break;
+            case SD_FOUND_END:
+                result = DSEnded((CONST_STRPTR)"browse", rc);
+                break;
             }
         }
+        if (result < 0 && rc != DNSSD_ERR_EMPTY) {
+            result = DSEnded((CONST_STRPTR)"browse", rc);
+        }
     }
-    if (why == BA_WAIT_END) {
-        result = DSWatchEnded(&watch, (CONST_STRPTR)"browse");
-    } else {
-        BAPrintf("\n(Ctrl-C)\n");
+    if (result < 0) {
+        SDPrintf("\n(Ctrl-C)\n");
+        result = 0;
     }
-    StopBrowse(ref);
-    BAWatchEnd(&watch);
+    SDFinderStop(&finder);
+    SDSessionClose(&session);
+    FreeVec(sv);
     return result;
 }
 
 /*------------------------------------------------------------------------*/
 /* -L : resolve one instance. mdnsd asks for its SRV, TXT and address
- * records and reports it resolved, or failed after five seconds. */
+ * records and reports it resolved, or gives up after five seconds. */
 
 static int
 DSResolve(CONST_STRPTR name, CONST_STRPTR type, CONST_STRPTR domain)
 {
-    MDNSResolveRef ref = NULL;
-    struct TagItem tags[] = {
-        { MDNS_EventMode, MDNS_EVENT_QUEUE },
-        { MDNS_ResolveRef, (IPTR)&ref },
-        { TAG_END, 0 }
-    };
-    struct BAWatch watch;
-    struct MDNSDiscoveryEvent ev;
-    LONG rc;
-    LONG why = BA_WAIT_EVENTS;
+    struct SDSession session;
+    DNSSDOperationRef op;
+    LONG rc, why = SD_WAIT_EVENTS;
     int result = -1;
 
     DSDomainNote(domain);
-    rc = ResolveServiceA((STRPTR)name, (STRPTR)type, NULL, tags);
-    if (rc != MDNS_OK) {
-        BAAppPrintMDNSError("ResolveServiceA", rc);
+    if ((rc = SDSessionOpen(&session, 0)) != DNSSD_OK) {
+        SDAppPrintError("resolve", rc);
         return 20;
     }
-    rc = BAWatchStart(&watch, ref, 0);
-    if (rc != MDNS_OK) {
-        StopResolve(ref);
-        BAAppPrintMDNSError("RequestMDNSEvent", rc);
+    rc = DNSSD_Resolve(session.bs_Session, name, type, &op, TAG_DONE);
+    if (rc != DNSSD_OK) {
+        SDSessionClose(&session);
+        SDAppPrintError("resolve", rc);
         return 20;
     }
-    BAPrintf("Resolving \"%s\" %s (Ctrl-C to stop)...\n", name, type);
-    while (result < 0 && (why = BAWatchWait(&watch)) == BA_WAIT_EVENTS) {
-        while (result < 0 && ReadMDNSEvent(ref, &ev) == MDNS_OK) {
-            if (ev.de_Code == MEVENT_RESOLVED) {
-                BAPrintEvent((CONST_STRPTR)"RESOLVED", &ev);
+    SDPrintf("Resolving \"%s\" %s (Ctrl-C to stop)...\n", name, type);
+    while (result < 0 && (why = SDSessionWait(&session)) == SD_WAIT_EVENTS) {
+        const struct DNSSDEvent *e;
+
+        while (result < 0 && (e = SDSessionRead(&session, &rc)) != NULL) {
+            if (e->de_Kind == DNSSD_EVENT_RESOLVED) {
+                const struct DNSSDAddress *a = (const struct DNSSDAddress *)
+                    SDEventPart(e, &e->de_Addresses);
+                char target[256];
+                ULONG i;
+
+                SDEventName(e, &e->de_Target, target, (LONG)sizeof(target));
+                SDPrintf("%-8s %-28s %s:%ld\n", "RESOLVED", name, target,
+                    (LONG)e->de_Port);
+                for (i = 0; a != NULL && i < e->de_AddressCount; i++) {
+                    SDPrintf("         address ");
+                    DSPrintAddress(&a[i]);
+                    SDPrintf("\n");
+                }
+                if (e->de_TXT.dr_Size != 0) {
+                    SDPrintf("         TXT     ");
+                    SDPrintTXT(SDEventPart(e, &e->de_TXT), (LONG)e->de_TXT.dr_Size);
+                    SDPrintf("\n");
+                }
                 result = 0;
-            } else if (ev.de_Code == MEVENT_RESOLVE_FAILED) {
-                BAPrintf("Not resolved.\n");
+            } else if (e->de_Kind == DNSSD_EVENT_END) {
+                SDPrintf("Not resolved.\n");
                 result = 5;
             }
         }
+        if (result < 0 && rc != DNSSD_ERR_EMPTY) {
+            result = DSEnded((CONST_STRPTR)"resolve", rc);
+        }
     }
     if (result < 0) {
-        result = why == BA_WAIT_END ?
-            DSWatchEnded(&watch, (CONST_STRPTR)"resolve") : 5;
+        result = 5;
     }
-    StopResolve(ref);
-    BAWatchEnd(&watch);
+    DNSSD_Cancel(op);
+    SDSessionClose(&session);
     return result;
 }
 
 /*------------------------------------------------------------------------*/
-/* -G : a bounded IPv4 host lookup. */
+/* -G : a bounded host lookup. */
 
 static int
 DSLookup(CONST_STRPTR family, CONST_STRPTR host)
 {
-    ULONG address = 0;
+    struct DNSSDAddress addresses[16];
+    ULONG count = 16, i, which;
+    char name[256];
     LONG rc;
 
-    if (!BAStrEqual(family, "v4")) {
-        BAPrintf("dnssd -G: only v4 is supported\n");
+    if (SDStrEqual(family, "v4")) {
+        which = DNSSD_FAMILY_IPV4;
+    } else if (SDStrEqual(family, "v6")) {
+        which = DNSSD_FAMILY_IPV6;
+    } else if (SDStrEqual(family, "v4v6")) {
+        which = DNSSD_FAMILY_ANY;
+    } else {
+        SDPrintf("dnssd -G: v4, v6 or v4v6\n");
         return 5;
     }
-    rc = LookupHostA((STRPTR)host, &address, NULL);
-    if (rc != MDNS_OK) {
-        BAAppPrintMDNSError("LookupHostA", rc);
-        return rc == MDNSERR_TIMEOUT ? 5 : 20;
+    DSLocalName(host, name, (LONG)sizeof(name));
+    rc = DNSSD_LookupAddressSync((CONST_STRPTR)name, addresses, &count,
+        DNSSD_Family, which, TAG_DONE);
+    if (rc != DNSSD_OK) {
+        SDAppPrintError("lookup", rc);
+        return rc == DNSSD_ERR_TIMEOUT ? 5 : 20;
     }
-    BAPrintf("%s  %ld.%ld.%ld.%ld\n", host, BA_IP_ARGS(address));
+    for (i = 0; i < count; i++) {
+        SDPrintf("%s  ", host);
+        DSPrintAddress(&addresses[i]);
+        SDPrintf("\n");
+    }
     return 0;
 }
 
 /*------------------------------------------------------------------------*/
-/* -q : a standing queued query, stopped by Ctrl-C. */
+/* -q : a standing record query, stopped by Ctrl-C. */
 
 static int
 DSQuery(CONST_STRPTR name, CONST_STRPTR typeWord)
 {
-    MDNSQueryRef ref = NULL;
-    struct TagItem tags[] = {
-        { MDNS_EventMode, MDNS_EVENT_QUEUE },
-        { MDNS_QueryRef, (IPTR)&ref },
-        { TAG_END, 0 }
-    };
-    struct BAWatch watch;
-    struct MDNSRecordEvent record;
+    struct SDSession session;
+    DNSSDOperationRef op;
     UWORD type = DSRecordType(typeWord);
-    LONG rc;
-    LONG why;
-    int result = 0;
+    char owner[256];
+    LONG rc, why;
+    int result = -1;
 
     if (type == 0) {
-        BAPrintf("dnssd -q: unknown record type \"%s\"\n", typeWord);
+        SDPrintf("dnssd -q: unknown record type \"%s\"\n", typeWord);
         return 5;
     }
-    rc = QueryRecordA((STRPTR)name, type, tags);
-    if (rc != MDNS_OK) {
-        BAAppPrintMDNSError("QueryRecordA", rc);
+    DSLocalName(name, owner, (LONG)sizeof(owner));
+    if ((rc = SDSessionOpen(&session, 0)) != DNSSD_OK) {
+        SDAppPrintError("query", rc);
         return 20;
     }
-    rc = BAWatchStart(&watch, ref, 0);
-    if (rc != MDNS_OK) {
-        StopQuery(ref);
-        BAAppPrintMDNSError("RequestMDNSEvent", rc);
+    rc = DNSSD_QueryRecord(session.bs_Session, (CONST_STRPTR)owner, type, &op,
+        TAG_DONE);
+    if (rc != DNSSD_OK) {
+        SDSessionClose(&session);
+        SDAppPrintError("query", rc);
         return 20;
     }
-    BAPrintf("Asking for %s %s (Ctrl-C to stop)...\n\n", name, typeWord);
-    while ((why = BAWatchWait(&watch)) == BA_WAIT_EVENTS) {
-        while (ReadMDNSRecordEvent(ref, &record) == MDNS_OK) {
-            DSPrintRecord(&record);
+    SDPrintf("Asking for %s %s (Ctrl-C to stop)...\n\n", owner, typeWord);
+    while (result < 0 && (why = SDSessionWait(&session)) == SD_WAIT_EVENTS) {
+        const struct DNSSDEvent *e;
+
+        while (result < 0 && (e = SDSessionRead(&session, &rc)) != NULL) {
+            if (e->de_Kind == DNSSD_EVENT_RECORD) {
+                DSPrintRecord(e);
+            } else if (e->de_Kind == DNSSD_EVENT_END ||
+                       e->de_Kind == DNSSD_EVENT_LOST) {
+                result = DSEnded((CONST_STRPTR)"query",
+                    e->de_Kind == DNSSD_EVENT_LOST ? DNSSD_ERR_BUSY : e->de_Result);
+            }
+        }
+        if (result < 0 && rc != DNSSD_ERR_EMPTY) {
+            result = DSEnded((CONST_STRPTR)"query", rc);
         }
     }
-    if (why == BA_WAIT_END) {
-        result = DSWatchEnded(&watch, (CONST_STRPTR)"query");
-    } else {
-        BAPrintf("\n(Ctrl-C)\n");
+    if (result < 0) {
+        SDPrintf("\n(Ctrl-C)\n");
+        result = 0;
     }
-    StopQuery(ref);
-    BAWatchEnd(&watch);
+    DNSSD_Cancel(op);
+    SDSessionClose(&session);
     return result;
 }
 
@@ -562,137 +574,132 @@ DSQuery(CONST_STRPTR name, CONST_STRPTR typeWord)
 
 static int
 DSRegister(CONST_STRPTR name, CONST_STRPTR type, CONST_STRPTR domain,
-    UWORD port, CONST_STRPTR proxyHost, ULONG proxyAddr,
+    UWORD port, CONST_STRPTR proxyHost, const struct DNSSDAddress *proxyAddr,
     int txtArgc, char **txtArgv)
 {
-    struct TagItem tags[10];
-    char txt[MDNS_MAX_TXT + 1];
-    MDNSRegisterRef ref = NULL;
-    LONG rc;
-    LONG ttl = 0;
-    BOOL haveTtl = FALSE;
-    int nt = 0;
+    struct SDSession session;
+    struct TagItem tags[6];
+    DNSSDOperationRef op;
+    UBYTE txt[1300];
+    char items[400];
+    LONG txtLength, rc, why, ttl = 0;
+    int nt = 0, result = -1;
 
     /* "-t seconds" before the text: how long the records may live */
-    if (txtArgc >= 2 && BAStrEqual(txtArgv[0], "-t")) {
-        if (!BAParseNum(txtArgv[1], &ttl) || ttl < 1 || ttl > 4500) {
-            BAPrintf("dnssd: TTL must be 1-4500 seconds.\n");
+    if (txtArgc >= 2 && SDStrEqual(txtArgv[0], "-t")) {
+        if (!SDParseNum(txtArgv[1], &ttl) || ttl < 1 || ttl > 4500) {
+            SDPrintf("dnssd: TTL must be 1-4500 seconds.\n");
             return 5;
         }
-        haveTtl = TRUE;
         txtArgv += 2;
     }
     if (!DSDomainLocal(domain)) {
-        BAPrintf("(note: domain \"%s\" is not served; registering in local)\n",
+        SDPrintf("(note: domain \"%s\" is not served; registering in local)\n",
             domain);
     }
-
-    if (!BAEncodeTXT(txt, (LONG)sizeof(txt), txtArgv)) {
-        BAPrintf("dnssd: TXT record is too long.\n");
+    txtLength = SDTXTFromItems(txt, (LONG)sizeof(txt), txtArgv);
+    if (txtLength < 0) {
+        SDPrintf("dnssd: TXT record is too long, or an escape is not \\xNN.\n");
         return 5;
     }
+    SDItemsText(items, (LONG)sizeof(items), txtArgv);
 
-    tags[nt].ti_Tag = MDNS_ServiceName;
-    tags[nt++].ti_Data = (IPTR)name;
-    tags[nt].ti_Tag = MDNS_ServiceType;
-    tags[nt++].ti_Data = (IPTR)type;
-    tags[nt].ti_Tag = MDNS_Port;
-    tags[nt++].ti_Data = (IPTR)port;
-    if (txt[0] != '\0') {
-        tags[nt].ti_Tag = MDNS_TXTRecord;
+    if (txtLength != 0) {
+        tags[nt].ti_Tag = DNSSD_TXT;
         tags[nt++].ti_Data = (IPTR)txt;
+        tags[nt].ti_Tag = DNSSD_TXTLength;
+        tags[nt++].ti_Data = (IPTR)txtLength;
     }
     if (proxyHost != NULL) {
-        tags[nt].ti_Tag = MDNS_HostName;
+        tags[nt].ti_Tag = DNSSD_Host;
         tags[nt++].ti_Data = (IPTR)proxyHost;
-        tags[nt].ti_Tag = MDNS_HostAddr;
+        tags[nt].ti_Tag = DNSSD_HostAddress;
         tags[nt++].ti_Data = (IPTR)proxyAddr;
     }
-    if (haveTtl) {
-        tags[nt].ti_Tag = MDNS_TimeToLive;
+    if (ttl != 0) {
+        tags[nt].ti_Tag = DNSSD_TimeToLive;
         tags[nt++].ti_Data = (IPTR)ttl;
     }
-    tags[nt].ti_Tag = MDNS_RegisterRef;
-    tags[nt++].ti_Data = (IPTR)&ref;
-    tags[nt].ti_Tag = TAG_END;
+    tags[nt].ti_Tag = TAG_DONE;
     tags[nt].ti_Data = 0;
 
-    rc = RegisterServiceA(tags);
-    if (rc != MDNS_OK) {
-        BAAppPrintMDNSError("RegisterServiceA", rc);
+    if ((rc = SDSessionOpen(&session, 0)) != DNSSD_OK) {
+        SDAppPrintError("register", rc);
         return 20;
     }
-    BAPrintf("Registered \"%s\" %s port %ld", name, type, (LONG)port);
-    if (txt[0] != '\0') {
-        BAPrintf(" txt=\"%s\"", txt);
+    rc = DNSSD_RegisterA(session.bs_Session, name, type, port, &op, tags);
+    if (rc != DNSSD_OK) {
+        SDSessionClose(&session);
+        SDAppPrintError("register", rc);
+        return 20;
     }
-    BAPrintf("\nPress Ctrl-C to deregister...\n");
-    Wait(SIGBREAKF_CTRL_C);
-    DeregisterService(ref);
-    BAPrintf("Deregistered.\n");
-    return 0;
-}
+    while (result < 0 && (why = SDSessionWait(&session)) == SD_WAIT_EVENTS) {
+        const struct DNSSDEvent *e;
 
-/* "192.168.1.20" as an address in network byte order; 0 if it is not one. */
-static ULONG
-DSParseAddr(const char *s)
-{
-    ULONG addr = 0;
-    UBYTE *b = (UBYTE *)&addr;
-    LONG part;
+        while (result < 0 && (e = SDSessionRead(&session, &rc)) != NULL) {
+            if (e->de_Kind == DNSSD_EVENT_REGISTERED) {
+                char instance[64];
+                const UBYTE *label = SDEventPart(e, &e->de_Instance);
+                ULONG i;
 
-    for (part = 0; part < 4; part++) {
-        LONG value = 0;
-
-        if (*s < '0' || *s > '9') {
-            return 0;
-        }
-        for (; *s >= '0' && *s <= '9'; s++) {
-            value = value * 10 + (*s - '0');
-            if (value > 255) {
-                return 0;
+                for (i = 0; label != NULL && i < e->de_Instance.dr_Size && i < 63; i++) {
+                    instance[i] = (char)label[i];
+                }
+                instance[i] = '\0';
+                /* the name it has: another one ("Name (2)") if another
+                 * host had it */
+                SDPrintf("Registered \"%s\" %s port %ld", instance, type,
+                    (LONG)port);
+                if (items[0] != '\0') {
+                    SDPrintf(" txt=\"%s\"", items);
+                }
+                SDPrintf("\nPress Ctrl-C to deregister...\n");
+            } else if (e->de_Kind == DNSSD_EVENT_END) {
+                result = DSEnded((CONST_STRPTR)"register", e->de_Result);
             }
         }
-        if (part < 3 && *s++ != '.') {
-            return 0;
+        if (result < 0 && rc != DNSSD_ERR_EMPTY) {
+            result = DSEnded((CONST_STRPTR)"register", rc);
         }
-        b[part] = (UBYTE)value;
     }
-    return *s == '\0' ? addr : 0;
+    DNSSD_Cancel(op);
+    SDSessionClose(&session);
+    if (result < 0) {
+        SDPrintf("Deregistered.\n");
+        result = 0;
+    }
+    return result;
 }
 
 static void
 DSUsage(void)
 {
-    BAPrintf("dnssd - DNS-SD tool (bonami.library)\n\n");
-    BAPrintf("  dnssd -E                      list registration domains\n");
-    BAPrintf("  dnssd -F                      list browsing domains\n");
-    BAPrintf("  dnssd -R name type dom port [-t seconds] [k=v ...]  register a service\n");
-    BAPrintf("  dnssd -P name type dom port host ip [k=v ...]  register for another host\n");
-    BAPrintf("  dnssd -B type [domain]        browse a service type\n");
-    BAPrintf("  dnssd -L name type [domain]   look up (resolve) an instance\n");
-    BAPrintf("  dnssd -Z type [domain]        browse, complete zone records\n");
-    BAPrintf("  dnssd -q name rrtype          ask for any DNS record\n");
-    BAPrintf("  dnssd -G v4 hostname          look up an IPv4 address\n");
-    BAPrintf("  dnssd -V                      show library version\n");
-    BAPrintf("  dnssd -h                      this help\n\n");
-    BAPrintf("Examples:\n");
-    BAPrintf("  dnssd -B _http._tcp\n");
-    BAPrintf("  dnssd -B _services._dns-sd._udp     (list service types)\n");
-    BAPrintf("  dnssd -L \"My Mac\" _companion-link._tcp\n");
-    BAPrintf("  dnssd -q _http._tcp.local PTR\n");
-    BAPrintf("  dnssd -G v4 printer.local\n");
-    BAPrintf("  dnssd -R AmigaShare _http._tcp . 80 path=/ vers=1\n");
+    SDPrintf("dnssd - DNS-SD tool (dnssd.library)\n\n");
+    SDPrintf("  dnssd -E                      list registration domains\n");
+    SDPrintf("  dnssd -F                      list browsing domains\n");
+    SDPrintf("  dnssd -R name type dom port [-t seconds] [k=v ...]  register a service\n");
+    SDPrintf("  dnssd -P name type dom port host ip [k=v ...]  register for another host\n");
+    SDPrintf("                                (ip: IPv4, or IPv6 - fe80::1%%2 with its interface)\n");
+    SDPrintf("  dnssd -B type [domain]        browse a service type\n");
+    SDPrintf("  dnssd -L name type [domain]   look up (resolve) an instance\n");
+    SDPrintf("  dnssd -Z type [domain]        browse, complete zone records\n");
+    SDPrintf("  dnssd -q name rrtype          ask for any DNS record\n");
+    SDPrintf("  dnssd -G v4|v6|v4v6 hostname  look up a host's addresses\n");
+    SDPrintf("  dnssd -V                      show library version\n");
+    SDPrintf("  dnssd -h                      this help\n\n");
+    SDPrintf("Examples:\n");
+    SDPrintf("  dnssd -B _http._tcp\n");
+    SDPrintf("  dnssd -B _services._dns-sd._udp     (list service types)\n");
+    SDPrintf("  dnssd -L \"My Mac\" _companion-link._tcp\n");
+    SDPrintf("  dnssd -q _http._tcp.local PTR\n");
+    SDPrintf("  dnssd -G v4 printer.local\n");
+    SDPrintf("  dnssd -R AmigaShare _http._tcp . 80 path=/ vers=1\n");
 }
 
-/*
- * The modes that need no engine (-E, -F, -V, -h) are answered before it is
- * opened; the others open the shared engine.
- */
 int
 main(int argc, char **argv)
 {
-    LONG rc;
+    struct DNSSDAddress proxyAddr;
     LONG port = 0;
     int result;
 
@@ -700,91 +707,82 @@ main(int argc, char **argv)
         DSUsage();
         return 5;
     }
-    if (BAStrEqual(argv[1], "-h") || BAStrEqual(argv[1], "-?")) {
+    if (SDStrEqual(argv[1], "-h") || SDStrEqual(argv[1], "-?")) {
         DSUsage();
         return 0;
     }
-    if ((BAStrEqual(argv[1], "-B") || BAStrEqual(argv[1], "-Z")) &&
+    if ((SDStrEqual(argv[1], "-B") || SDStrEqual(argv[1], "-Z")) &&
         argc < 3) {
-        BAPrintf("dnssd %s needs a <type>\n", argv[1]);
+        SDPrintf("dnssd %s needs a <type>\n", argv[1]);
         return 5;
     }
-    if (BAStrEqual(argv[1], "-L") && argc < 4) {
-        BAPrintf("dnssd -L needs <name> <type> [domain]\n");
+    if (SDStrEqual(argv[1], "-L") && argc < 4) {
+        SDPrintf("dnssd -L needs <name> <type> [domain]\n");
         return 5;
     }
-    if (BAStrEqual(argv[1], "-q") && argc < 4) {
-        BAPrintf("dnssd -q needs <name> <rrtype>\n");
+    if (SDStrEqual(argv[1], "-q") && argc < 4) {
+        SDPrintf("dnssd -q needs <name> <rrtype>\n");
         return 5;
     }
-    if (BAStrEqual(argv[1], "-G") && argc < 4) {
-        BAPrintf("dnssd -G needs v4 <hostname>\n");
+    if (SDStrEqual(argv[1], "-G") && argc < 4) {
+        SDPrintf("dnssd -G needs v4|v6|v4v6 <hostname>\n");
         return 5;
     }
-    if (BAStrEqual(argv[1], "-R") && argc < 6) {
-        BAPrintf("dnssd -R needs <name> <type> <domain> <port>\n");
+    if (SDStrEqual(argv[1], "-R") && argc < 6) {
+        SDPrintf("dnssd -R needs <name> <type> <domain> <port>\n");
         return 5;
     }
-    if (BAStrEqual(argv[1], "-P") &&
-        (argc < 8 || DSParseAddr(argv[7]) == 0)) {
-        BAPrintf("dnssd -P needs <name> <type> <domain> <port> <host> <ip>\n");
+    if (SDStrEqual(argv[1], "-P") &&
+        (argc < 8 || !SDParseAddress(argv[7], &proxyAddr))) {
+        SDPrintf("dnssd -P needs <name> <type> <domain> <port> <host> <ip>\n");
         return 5;
     }
-    if ((BAStrEqual(argv[1], "-R") || BAStrEqual(argv[1], "-P")) &&
-        (!BAParseNum(argv[5], &port) || port < 1 || port > 65535)) {
-        BAPrintf("dnssd: port must be 1-65535.\n");
+    if ((SDStrEqual(argv[1], "-R") || SDStrEqual(argv[1], "-P")) &&
+        (!SDParseNum(argv[5], &port) || port < 1 || port > 65535)) {
+        SDPrintf("dnssd: port must be 1-65535.\n");
         return 5;
     }
-    if (!BAStrEqual(argv[1], "-B") && !BAStrEqual(argv[1], "-Z") &&
-        !BAStrEqual(argv[1], "-L") && !BAStrEqual(argv[1], "-R") &&
-        !BAStrEqual(argv[1], "-P") && !BAStrEqual(argv[1], "-E") &&
-        !BAStrEqual(argv[1], "-F") && !BAStrEqual(argv[1], "-V") &&
-        !BAStrEqual(argv[1], "-q") && !BAStrEqual(argv[1], "-G")) {
-        BAPrintf("Unknown mode: %s\n", argv[1]);
+    if (!SDStrEqual(argv[1], "-B") && !SDStrEqual(argv[1], "-Z") &&
+        !SDStrEqual(argv[1], "-L") && !SDStrEqual(argv[1], "-R") &&
+        !SDStrEqual(argv[1], "-P") && !SDStrEqual(argv[1], "-E") &&
+        !SDStrEqual(argv[1], "-F") && !SDStrEqual(argv[1], "-V") &&
+        !SDStrEqual(argv[1], "-q") && !SDStrEqual(argv[1], "-G")) {
+        SDPrintf("Unknown mode: %s\n", argv[1]);
         DSUsage();
         return 5;
     }
 
-    if (!BAAppOpen()) {
-        BAPrintf("Cannot open %s version %ld\n", BONAMINAME,
-            (LONG)BONAMI_LIB_VERSION);
+    if (!SDAppOpen()) {
+        SDPrintf("Cannot open %s version %ld\n", DNSSDNAME, (LONG)DNSSD_VERSION);
         return 20;
     }
-    if (BAStrEqual(argv[1], "-V")) {
+    if (SDStrEqual(argv[1], "-V")) {
         result = DSVersion();
-    } else if (BAStrEqual(argv[1], "-E")) {
+    } else if (SDStrEqual(argv[1], "-E")) {
         result = DSEnumDomains((CONST_STRPTR)"registration");
-    } else if (BAStrEqual(argv[1], "-F")) {
+    } else if (SDStrEqual(argv[1], "-F")) {
         result = DSEnumDomains((CONST_STRPTR)"browsing");
-    } else if ((BAStrEqual(argv[1], "-q") ||
-                BAStrEqual(argv[1], "-G") ||
-                BAStrEqual(argv[1], "-Z")) && !DSHasRecordAPI()) {
-        BAPrintf("dnssd %s needs bonami.library 41.3 or newer\n", argv[1]);
-        result = 20;
-    } else if ((rc = BAAppOpenEngine()) != MDNS_OK) {
-        BAAppPrintMDNSError("OpenMDNSEngine", rc);
-        result = 20;
-    } else if (BAStrEqual(argv[1], "-B") || BAStrEqual(argv[1], "-Z")) {
+    } else if (SDStrEqual(argv[1], "-B") || SDStrEqual(argv[1], "-Z")) {
         result = DSBrowse((CONST_STRPTR)argv[2],
             argc > 3 ? (CONST_STRPTR)argv[3] : NULL,
-            BAStrEqual(argv[1], "-Z"));
-    } else if (BAStrEqual(argv[1], "-L")) {
+            SDStrEqual(argv[1], "-Z"));
+    } else if (SDStrEqual(argv[1], "-L")) {
         result = DSResolve((CONST_STRPTR)argv[2], (CONST_STRPTR)argv[3],
             argc > 4 ? (CONST_STRPTR)argv[4] : NULL);
-    } else if (BAStrEqual(argv[1], "-q")) {
+    } else if (SDStrEqual(argv[1], "-q")) {
         result = DSQuery((CONST_STRPTR)argv[2], (CONST_STRPTR)argv[3]);
-    } else if (BAStrEqual(argv[1], "-G")) {
+    } else if (SDStrEqual(argv[1], "-G")) {
         result = DSLookup((CONST_STRPTR)argv[2], (CONST_STRPTR)argv[3]);
-    } else if (BAStrEqual(argv[1], "-P")) {
+    } else if (SDStrEqual(argv[1], "-P")) {
         result = DSRegister((CONST_STRPTR)argv[2], (CONST_STRPTR)argv[3],
             (CONST_STRPTR)argv[4], (UWORD)port,
-            (CONST_STRPTR)argv[6], DSParseAddr(argv[7]),
+            (CONST_STRPTR)argv[6], &proxyAddr,
             argc - 8, &argv[8]);
     } else {
         result = DSRegister((CONST_STRPTR)argv[2], (CONST_STRPTR)argv[3],
-            (CONST_STRPTR)argv[4], (UWORD)port, NULL, 0,
+            (CONST_STRPTR)argv[4], (UWORD)port, NULL, NULL,
             argc - 6, &argv[6]);
     }
-    BAAppClose();
+    SDAppClose();
     return result;
 }

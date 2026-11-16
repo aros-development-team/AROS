@@ -852,17 +852,25 @@ static void applemidi_discovered(struct netmidid *d, void *self,
     int wanted = rt->wanted[0] && strcmp(seen->name, rt->wanted) == 0;
 
     (void)d;
-    if (seen->present)
+    if (seen->present && seen->address)
         printf(TAG "session \"%s\" found at %u.%u.%u.%u port %u\n",
                seen->name, (unsigned int)(seen->address >> 24),
                (unsigned int)((seen->address >> 16) & 255),
                (unsigned int)((seen->address >> 8) & 255),
                (unsigned int)(seen->address & 255),
                (unsigned int)seen->port);
-    else
+    else if (!seen->present)
         printf(TAG "session \"%s\" is gone\n", seen->name);
+    if (seen->present && !seen->address)
+        printf("%ssession \"%s\" has IPv6 addresses only, which this "
+               "transport does not reach yet\n", TAG, seen->name);
     if (!wanted)
         return;
+    if (seen->present && !seen->address) {
+        /* nothing to invite over IPv4 */
+        rt->wanted_present = 0;
+        return;
+    }
     if (seen->present) {
         rt->configured = 1;
         rt->configured_address = seen->address;
