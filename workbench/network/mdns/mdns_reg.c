@@ -24,6 +24,7 @@
 #include <exec/memory.h>
 #include <exec/lists.h>
 #include <string.h>
+#include <stdlib.h>                     /* arc4random() */
 
 #include <proto/exec.h>
 #include <proto/utility.h>
@@ -507,7 +508,7 @@ answer_delay(const struct MDNSDaemon *md)
     static ULONG seed;
 
     if (seed == 0) {
-        seed = mdnsTicks() ^ md->md_HostAddr ^ 0x5bd1e995UL;
+        seed = arc4random();            /* the C runtime: entropy.resource */
     }
     seed = seed * 1103515245UL + 12345UL;
     /* in fiftieths of a second, counted from the tick the question came

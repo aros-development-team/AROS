@@ -35,6 +35,7 @@
 #include <exec/memory.h>
 #include <proto/exec.h>
 #include <string.h>
+#include <stdlib.h>                     /* arc4random() */
 #include <netinet/in.h>
 #include "mdnsd.h"
 
@@ -740,7 +741,7 @@ mdnsCacheInit(struct MDNSDaemon *md)
     NEWLIST((struct List *)&c->mc_Questions);
     c->mc_Limit = mdnsShare(md, MDNS_CACHE_SHARE, MDNS_CACHE_FLOOR,
         MDNS_CACHE_CAP);
-    c->mc_Seed = mdnsTicks() ^ (ULONG)(IPTR)c;
+    c->mc_Seed = arc4random();         /* the C runtime: entropy.resource */
     md->md_Cache = c;
     return TRUE;
 }

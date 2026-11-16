@@ -24,8 +24,10 @@
 #include <string.h>
 #include <sys/socket.h>
 
+#include <devices/timer.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
+#include <proto/timer.h>
 #include <proto/bsdsocket.h>
 #include <libraries/bsdsocket.h>
 #include <netinet/in.h>
@@ -42,26 +44,36 @@
 
 static LONG daemonErrno;
 
+/*
+ * mdnsd's clock: timer.device's GetUpTime(), the time since the machine
+ * started, which setting the time of day (TR_SETSYSTIME: timesyncd, Date)
+ * does not move - as AROSTCP keeps its own timers. Only differences of its
+ * times mean anything; in ticks they wrap after 994 days, which the
+ * comparisons by difference do not mind.
+ */
+struct Device *TimerBase;
+static struct timerequest timerReq;
+
+/* Seconds. */
 ULONG
 mdnsNow(void)
 {
-    struct DateStamp ds;
+    struct timeval tv;
 
-    DateStamp(&ds);
-    return (ULONG)ds.ds_Days * 86400UL + (ULONG)ds.ds_Minute * 60UL +
-        (ULONG)(ds.ds_Tick / 50);
+    GetUpTime(&tv);
+    return (ULONG)tv.tv_secs;
 }
 
-/* Fiftieths of a second; only differences mean anything. */
+/* Fiftieths of a second. */
 ULONG
 mdnsTicks(void)
 {
-    struct DateStamp ds;
+    struct timeval tv;
 
-    DateStamp(&ds);
-    return (ULONG)ds.ds_Days * 4320000UL + (ULONG)ds.ds_Minute * 3000UL +
-        (ULONG)ds.ds_Tick;
+    GetUpTime(&tv);
+    return (ULONG)tv.tv_secs * 50UL + (ULONG)tv.tv_micro / 20000UL;
 }
+
 
 /* The stack's base and the sockets belong to this task and go away
  * together: around a reconfiguration, and for good at the end. */
@@ -316,6 +328,12 @@ main(void)
         PutStr("mdnsd: already running\n");
         return RETURN_WARN;
     }
+    if (OpenDevice((CONST_STRPTR)TIMERNAME, UNIT_MICROHZ,
+            (struct IORequest *)&timerReq, 0) != 0) {
+        PutStr("mdnsd: no timer.device\n");
+        return RETURN_FAIL;
+    }
+    TimerBase = timerReq.tr_node.io_Device;
 
     md->md_Socket = -1;
     md->md_Socket4 = -1;
@@ -328,6 +346,7 @@ main(void)
             md->md_Links, md->md_LinkScratch, MDNS_IFS_MAX,
             md->md_Addresses, md->md_AddressScratch,
             MDNS_ADDRESS_MAX) != DNSSD_LINK_OK) {
+        CloseDevice((struct IORequest *)&timerReq);
         return RETURN_FAIL;
     }
     NEWLIST(&md->md_Services);
@@ -345,6 +364,7 @@ main(void)
         if (dport != NULL) {
             DeleteMsgPort(dport);
         }
+        CloseDevice((struct IORequest *)&timerReq);
         return RETURN_FAIL;
     }
     md->md_DNSSDPort = dport;
@@ -465,5 +485,6 @@ main(void)
     }
     FreeMem(md->md_RxBuf, MDNS_MAX_PACKET);
     FreeMem(md->md_TxBuf, MDNS_MAX_PACKET);
+    CloseDevice((struct IORequest *)&timerReq);
     return RETURN_OK;
 }
