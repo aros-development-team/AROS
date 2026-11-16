@@ -146,7 +146,7 @@ struct cam_sim {
     ULONG                   sim_UseCount;
     struct SignalSemaphore  sim_Lock;
     unsigned int            sim_Timeout;
-    struct List             sim_IOs;
+    struct List             sim_IOs; /* Retained change-interrupt requests only. */
     ULONG                   sim_Flags;
 #define SIMB_MediaPresent       0                   /* Media is present                 */
 #define SIMB_OffLine            1                   /* No new IOs are permitted         */

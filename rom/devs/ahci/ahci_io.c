@@ -244,17 +244,13 @@ AROS_LH1(void, BeginIO,
     ahciDebug("[AHCI%02ld]" AHCI_IO_STR " Start, io_Flags = %d, io_Command = %d\n", unit->sim_Unit AHCI_IO_DBG, io->io_Flags, io->io_Command);
 
     /* Unit going offline? Don't permit new commands. */
-    if (unit->sim_Flags & SIMF_OffLine) {
+    if ((unit->sim_Flags & SIMF_OffLine) && io->io_Command != TD_REMCHANGEINT) {
         io->io_Error = IOERR_OPENFAIL;
         if (!(io->io_Flags & IOF_QUICK))
             ReplyMsg(&io->io_Message);
         ahciDebug("[AHCI%02ld] %s: WARN - unit is offline\n", unit->sim_Unit, __func__);
         return;
     }
-
-    ObtainSemaphore(&unit->sim_Lock);
-    AddHead(&unit->sim_IOs, &io->io_Message.mn_Node);
-    ReleaseSemaphore(&unit->sim_Lock);
 
     switch (io->io_Command) {
     case NSCMD_DEVICEQUERY:
@@ -395,17 +391,36 @@ AROS_LH1(void, BeginIO,
         break;
 
     case TD_ADDCHANGEINT:
-        ahciDebug("[AHCI%02ld]" AHCI_IO_STR " TD_ADDCHANGEINT\n", unit->sim_Unit AHCI_IO_DBG);
-        if (io->io_Flags & IOF_QUICK)
-            goto bad_cmd;
-        break;
+    {
+        struct Node *node;
 
+        ObtainSemaphore(&unit->sim_Lock);
+        for (node = unit->sim_IOs.lh_Head; node->ln_Succ; node = node->ln_Succ)
+            if (node == &io->io_Message.mn_Node)
+                break;
+        io->io_Flags &= ~IOF_QUICK;
+        if (!node->ln_Succ)
+            AddHead(&unit->sim_IOs, &io->io_Message.mn_Node);
+        ReleaseSemaphore(&unit->sim_Lock);
+        done = FALSE;
+        break;
+    }
     case TD_REMCHANGEINT:
-        ahciDebug("[AHCI%02ld]" AHCI_IO_STR " TD_REMCHANGEINT\n", unit->sim_Unit AHCI_IO_DBG);
-        if (io->io_Flags & IOF_QUICK)
-            goto bad_cmd;
+    {
+        struct Node *node;
+
+        ObtainSemaphore(&unit->sim_Lock);
+        for (node = unit->sim_IOs.lh_Head; node->ln_Succ; node = node->ln_Succ) {
+            if (node == &io->io_Message.mn_Node) {
+                Remove(node);
+                break;
+            }
+        }
+        ReleaseSemaphore(&unit->sim_Lock);
+        IOStdReq(io)->io_Actual = 0;
         done = TRUE;
         break;
+    }
 
     case CMD_CLEAR:
         // FIXME: Implemennt cache invalidate
@@ -454,10 +469,6 @@ bad_address:
        an asynchronous request after handing it to the completion path. */
     if (!done)
         return;
-
-    ObtainSemaphore(&unit->sim_Lock);
-    Remove(&io->io_Message.mn_Node);
-    ReleaseSemaphore(&unit->sim_Lock);
 
     ahciDebug("[AHCI%02ld] synchronous IO complete\n", unit->sim_Unit);
     if (!(io->io_Flags & IOF_QUICK))

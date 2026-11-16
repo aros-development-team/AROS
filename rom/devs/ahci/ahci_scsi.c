@@ -254,9 +254,6 @@ static void ahci_io_complete(struct ata_xfer *xa)
 
     ahci_ata_put_xfer(xa);
 
-    ObtainSemaphore(&unit->sim_Lock);
-    Remove(&io->io_Message.mn_Node);
-    ReleaseSemaphore(&unit->sim_Lock);
 #if !defined(AROS_USE_LOGRES)
     KKASSERT(!(io->io_Flags & IOF_QUICK));
 #endif

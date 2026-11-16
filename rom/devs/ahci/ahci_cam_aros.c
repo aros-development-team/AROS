@@ -132,15 +132,10 @@ static void ahci_PortMonitor(struct Task *parent, struct Device *device, struct 
 
                     ahciDebug("%s: Media change detected on ahci.device %d (%s => %s)\n", __func__, unit->sim_Unit, media_present ? "TRUE" : "FALSE", is_present ? "TRUE" : "FALSE");
 
-                    Forbid();
-                    ForeachNode((struct Node *)&unit->sim_IOs, msg) {
-                        ahciDebug("%s %d: io_Command = 0x%04x\n", ((struct Node *)device)->ln_Name, unit->sim_Unit, msg->io_Command);
-                        if (msg->io_Command == TD_ADDCHANGEINT) {
-                            ahciDebug("%s %d: Interrupt = 0x%p\n", ((struct Node *)device)->ln_Name, unit->sim_Unit, IOStdReq(msg)->io_Data);
-                            Cause((struct Interrupt *)IOStdReq(msg)->io_Data);
-                        }
-                    }
-                    Permit();
+                    ObtainSemaphore(&unit->sim_Lock);
+                    ForeachNode((struct Node *)&unit->sim_IOs, msg)
+                        Cause((struct Interrupt *)IOStdReq(msg)->io_Data);
+                    ReleaseSemaphore(&unit->sim_Lock);
                 }
                 media_present = is_present;
 
