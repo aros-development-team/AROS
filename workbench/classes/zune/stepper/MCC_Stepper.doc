@@ -1,0 +1,173 @@
+TABLE OF CONTENTS
+
+Stepper.mcc/Stepper.mcc
+Stepper.mcc/MUIA_Numeric_Value
+Stepper.mcc/MUIA_Numeric_Min
+Stepper.mcc/MUIA_Numeric_Max
+Stepper.mcc/MUIA_Numeric_Default
+Stepper.mcc/MUIA_Numeric_Format
+Stepper.mcc/MUIA_Numeric_CheckAllSizes
+Stepper.mcc/MUIA_Numeric_Reverse
+Stepper.mcc/MUIA_Numeric_RevLeftRight
+Stepper.mcc/MUIA_Numeric_RevUpDown
+Stepper.mcc/MUIM_Numeric_Increase
+Stepper.mcc/MUIM_Numeric_Decrease
+Stepper.mcc/MUIM_Numeric_SetDefault
+Stepper.mcc/MUIM_Numeric_Stringify
+Stepper.mcc/MUIM_Numeric_ScaleToValue
+Stepper.mcc/MUIM_Numeric_ValueToScale
+
+
+Stepper.mcc/Stepper.mcc
+
+   Stepper.mcc is a compact Zune custom class derived from String.mui. It edits
+   a signed decimal value between two unit-step buttons. The normal arrangement
+   is a minus button on the left, an editable number field in the middle, and a
+   plus button on the right.
+
+   Stepper implements the ordinary Numeric attributes and methods listed in
+   this document. It adds no class-specific public IDs. String.mui owns text
+   editing, cursor movement, selection and refresh; Stepper owns the numeric
+   range, committed value, button actions and Numeric notifications.
+
+   Press Return to commit typed text. Clicking either step button first commits
+   the current editor value and then changes it by one when the corresponding
+   bound permits it. Mouse-wheel input also changes the committed value by one.
+
+   MUIA_Numeric_Reverse exchanges the visible plus and minus actions. The
+   editable field always contains plain signed decimal text so it can be edited
+   directly. MUIA_Numeric_Format remains available through
+   MUIM_Numeric_Stringify and does not decorate the editor contents.
+
+   The initial Min and Max determine a fixed editor width from their decimal
+   representations, with a minimum of three character columns. This keeps the
+   control compact instead of accepting arbitrary horizontal expansion. Later
+   range changes retain that width; String.mui scrolls longer values as needed.
+
+
+Stepper.mcc/MUIA_Numeric_Value
+
+   MUIA_Numeric_Value -- [ISG], LONG
+
+   Stores the committed value. Stepper clamps assignments to Min and Max and
+   mirrors the result into the String editor. A changed value uses ordinary MUI
+   notifications for MUIA_Numeric_Value.
+
+   Typing changes the editor first. Return commits the parsed signed decimal
+   value. A step-button or wheel action also commits the editor before stepping.
+
+
+Stepper.mcc/MUIA_Numeric_Min
+
+   MUIA_Numeric_Min -- [ISG], LONG
+
+   Sets the lower bound. Changing Min clamps the committed value when necessary
+   and refreshes the editor. Keep Min no greater than Max.
+
+
+Stepper.mcc/MUIA_Numeric_Max
+
+   MUIA_Numeric_Max -- [ISG], LONG
+
+   Sets the upper bound. Changing Max clamps the committed value when necessary
+   and refreshes the editor. Keep Max no less than Min.
+
+
+Stepper.mcc/MUIA_Numeric_Default
+
+   MUIA_Numeric_Default -- [ISG], LONG
+
+   Stores the value used by MUIM_Numeric_SetDefault and by construction when no
+   explicit Value is supplied. Setting Default alone does not change Value.
+
+
+Stepper.mcc/MUIA_Numeric_Format
+
+   MUIA_Numeric_Format -- [ISG], STRPTR
+
+   Supplies the borrowed format string used by MUIM_Numeric_Stringify. The
+   editable field deliberately remains plain signed decimal text so formatting
+   cannot make it non-editable. Keep the format valid for one long argument.
+
+
+Stepper.mcc/MUIA_Numeric_CheckAllSizes
+
+   MUIA_Numeric_CheckAllSizes -- [ISG], BOOL
+
+   Retained for Numeric API compatibility. Stepper does not scan its range for
+   layout sizes. Its editor width is fixed from the initial Min and Max decimal
+   widths and String.mui scrolls longer text when necessary.
+
+
+Stepper.mcc/MUIA_Numeric_Reverse
+
+   MUIA_Numeric_Reverse -- [ISG], BOOL
+
+   FALSE shows minus on the left and plus on the right. TRUE exchanges those
+   actions and reverses mouse-wheel direction. Changing Reverse redraws both
+   button zones completely.
+
+
+Stepper.mcc/MUIA_Numeric_RevLeftRight
+
+   MUIA_Numeric_RevLeftRight -- [ISG], BOOL
+
+   Retained for Numeric API compatibility. String.mui owns cursor-navigation
+   keys in the editable field, so this flag does not reverse text cursor keys.
+
+
+Stepper.mcc/MUIA_Numeric_RevUpDown
+
+   MUIA_Numeric_RevUpDown -- [ISG], BOOL
+
+   Retained for Numeric API compatibility. String.mui owns editor key handling;
+   this flag does not alter the Stepper button or wheel actions.
+
+
+Stepper.mcc/MUIM_Numeric_Increase
+
+   MUIM_Numeric_Increase -- increase the committed value by amount.
+
+   The result is clamped to Min and Max and mirrored into the editor. The
+   calculation uses a wider intermediate so a LONG endpoint cannot overflow
+   before clamping.
+
+
+Stepper.mcc/MUIM_Numeric_Decrease
+
+   MUIM_Numeric_Decrease -- decrease the committed value by amount.
+
+   The result is clamped to Min and Max and mirrored into the editor. The
+   calculation uses a wider intermediate so a LONG endpoint cannot overflow
+   before clamping.
+
+
+Stepper.mcc/MUIM_Numeric_SetDefault
+
+   MUIM_Numeric_SetDefault -- set Value to Default, clamped to Min and Max.
+
+
+Stepper.mcc/MUIM_Numeric_Stringify
+
+   MUIM_Numeric_Stringify -- format a supplied LONG with MUIA_Numeric_Format.
+
+   The returned pointer is borrowed from the Stepper instance and remains valid
+   until the next Stringify call on that instance.
+
+
+Stepper.mcc/MUIM_Numeric_ScaleToValue
+
+   MUIM_Numeric_ScaleToValue -- map an external scale position to the Stepper
+   numeric range without changing Value.
+
+   Stepper follows Numeric.mui's scale arithmetic and Reverse interpretation.
+   Callers must keep intermediate differences and products representable.
+
+
+Stepper.mcc/MUIM_Numeric_ValueToScale
+
+   MUIM_Numeric_ValueToScale -- map the committed Value to an external scale
+   without changing Value.
+
+   Stepper follows Numeric.mui's scale arithmetic and Reverse interpretation.
+   Callers must keep intermediate differences and products representable.
