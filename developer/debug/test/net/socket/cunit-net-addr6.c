@@ -10,7 +10,9 @@
     Deleting an address while it is still being checked stops the check, and
     deleting it removes the host routes cloned from its prefix as well. An
     interface has one link-local address, though it comes up more than once
-    (for IPv4, then for IPv6) while that address is still tentative.
+    (for IPv4, then for IPv6) while that address is still tentative; with
+    net.inet6.ip6.dad_count raised, the test brings it up again inside that
+    window.
 
     Routes are read with RTM_GET on a routing socket; the solicitations are
     watched with the bsdsocket BPF calls. The test needs a multicast-capable
@@ -28,8 +30,11 @@
 #include <net/bpf.h>
 #include <netinet/in_var.h>
 #include <netinet/icmp6.h>
+#include <defines/miami.h>      /* MiamiSysCtl() alone: proto/miami.h and __CONFIG_ROADSHOW__ clash */
+#include <sys/sysctl.h>
 
 struct Library *SocketBase = NULL;
+struct Library *MiamiBase = NULL;
 
 static const char *ifname = "eth0";
 static int ready;
@@ -298,6 +303,83 @@ void testADDR6_ONE_LINKLOCAL_AFTER_UP(void)
     CU_ASSERT_EQUAL(linklocal_count(&most, NULL), 1);
 }
 
+/* net.inet6.ip6.dad_count: read *val, and set *nval when given. */
+static int dadctl(LONG *val, LONG *nval)
+{
+    LONG mib[4] = { CTL_NET, PF_INET6, IPPROTO_IPV6, IPV6CTL_DAD_COUNT };
+    LONG len = sizeof(*val);
+
+    if (MiamiBase == NULL)
+        return -1;
+    return MiamiSysCtl(mib, 4, val, &len, nval, nval ? sizeof(*nval) : 0, 0);
+}
+
+/* The IN6_IFF_* flags of ll on ifname, or -1. */
+static int ll_flags(const struct sockaddr_in6 *ll)
+{
+    struct in6_ifreq ifr;
+    int s = socket(AF_INET6, SOCK_DGRAM, 0), r;
+
+    if (s < 0)
+        return -1;
+    bzero(&ifr, sizeof(ifr));
+    snprintf(ifr.ifr_name, sizeof(ifr.ifr_name), "%s", ifname);
+    ifr.ifr_ifru.ifru_addr = *ll;
+    r = IoctlSocket(s, SIOCGIFAFLAG_IN6, (char *)&ifr);
+    CloseSocket(s);
+    return r == 0 ? ifr.ifr_ifru.ifru_flags6 : -1;
+}
+
+/*
+ * Brought up again while its link-local address is tentative - as at boot,
+ * where it comes up for IPv4 and then for IPv6 - the interface keeps that
+ * one address. Taken down and up, it makes the address at once
+ * (SIOCSIFFLAGS, in6_if_up()); dad_count 10 holds it in DAD for about 11 s,
+ * the test takes the interface down and up a second time inside that, and
+ * watches it until its DAD is over.
+ */
+void testADDR6_ONE_LINKLOCAL_UP_WHILE_TENTATIVE(void)
+{
+    struct sockaddr_in6 ll;
+    struct in6_ifreq ifr;
+    LONG old = 1, ten = 10;
+    int s, k, most, worst = 0, f;
+
+    NEED_IF();
+    CU_ASSERT_FATAL(linklocal_count(&most, &ll) >= 1);
+    CU_ASSERT_EQUAL_FATAL(dadctl(&old, &ten), 0);
+    s = socket(AF_INET6, SOCK_DGRAM, 0);
+    for (k = 0; s >= 0 && k < 4 && linklocal_count(&most, NULL) > 0; k++) {
+        bzero(&ifr, sizeof(ifr));
+        snprintf(ifr.ifr_name, sizeof(ifr.ifr_name), "%s", ifname);
+        ifr.ifr_ifru.ifru_addr = ll;
+        IoctlSocket(s, SIOCDIFADDR_IN6, (char *)&ifr);
+    }
+    if (s >= 0)
+        CloseSocket(s);
+    CU_ASSERT_EQUAL(linklocal_count(&most, NULL), 0);
+    CU_ASSERT(down_up() == 0);
+    f = ll_flags(&ll);
+    CU_ASSERT(f >= 0 && (f & IN6_IFF_TENTATIVE));
+    CU_ASSERT(down_up() == 0);              /* inside its DAD */
+    /* every quarter second until its DAD is over (15 s at most) */
+    for (k = 0; k < 60; k++) {
+        int n = linklocal_count(&most, NULL);
+
+        if (n > worst)
+            worst = n;
+        f = ll_flags(&ll);
+        if (k > 0 && (f < 0 || !(f & IN6_IFF_TENTATIVE)))
+            break;
+        Delay(12);
+    }
+    printf("\n    DAD over after about %d ms; at most %d link-local entries\n", k * 250, worst);
+    CU_ASSERT(k >= 20);                     /* the window was dad_count 10's */
+    CU_ASSERT_EQUAL(worst, 1);
+    CU_ASSERT_EQUAL(dadctl(&ten, &old), 0);
+    CU_ASSERT_EQUAL(linklocal_count(&most, NULL), 1);
+}
+
 /* Deleting an address takes the route to its prefix with it. */
 void testADDR6_DELETE_REMOVES_PREFIX_ROUTE(void)
 {
@@ -381,7 +463,10 @@ int main(int argc, char **argv)
         printf("bsdsocket.library not available - skipping ADDR6 tests\n");
         return 0;
     }
+    MiamiBase = OpenLibrary("miami.library", 0);
     if (st_skip_program("cunit-net-addr6", ST_V6)) {
+        if (MiamiBase)
+            CloseLibrary(MiamiBase);
         CloseLibrary(SocketBase);
         return 0;
     }
@@ -398,6 +483,8 @@ int main(int argc, char **argv)
         CloseSocket(s);
 
     if (CU_initialize_registry() != CUE_SUCCESS) {
+        if (MiamiBase)
+            CloseLibrary(MiamiBase);
         CloseLibrary(SocketBase);
         return CU_get_error();
     }
@@ -409,9 +496,12 @@ int main(int argc, char **argv)
         !CU_add_test(p, "a new address goes through DAD", testADDR6_DAD) ||
         !CU_add_test(p, "deleting an address stops its DAD", testADDR6_DELETE_STOPS_DAD) ||
         !CU_add_test(p, "adding an address solicits no routers", testADDR6_NO_ROUTER_SOLICITATION) ||
-        !CU_add_test(p, "taken down and up, an interface makes its link-local address again, once", testADDR6_ONE_LINKLOCAL_AFTER_UP))
+        !CU_add_test(p, "taken down and up, an interface makes its link-local address again, once", testADDR6_ONE_LINKLOCAL_AFTER_UP) ||
+        !CU_add_test(p, "brought up while its link-local is tentative, an interface keeps one", testADDR6_ONE_LINKLOCAL_UP_WHILE_TENTATIVE))
     {
         CU_cleanup_registry();
+        if (MiamiBase)
+            CloseLibrary(MiamiBase);
         CloseLibrary(SocketBase);
         return CU_get_error();
     }
@@ -425,6 +515,8 @@ int main(int argc, char **argv)
     CU_cleanup_registry();
     if (bpf >= 0)
         bpf_close(bpf);
+    if (MiamiBase)
+        CloseLibrary(MiamiBase);
     CloseLibrary(SocketBase);
     return CU_get_error();
 }

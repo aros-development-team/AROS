@@ -167,7 +167,8 @@ int nd6_maxheld    = ND6_MAXNBRS;	/* packets held by all entries: likewise */
 
 /*
  * The netvars (ip6_input.c's table): net.inet6.icmp6.nd6_maxqlen, as
- * BSD's, and AROS's nd6_maxnbrs and nd6_maxheld; each checked when set.
+ * BSD's, and AROS's nd6_maxnbrs and nd6_maxheld; net.inet6.ip6.dad_count,
+ * as BSD's (nd6_nbr.c's ip6_dad_count). Each checked when set.
  */
 static int
 nd6_sysctl_range(void *oldp, size_t *oldlenp, void *newp, size_t newlen,
@@ -202,6 +203,14 @@ nd6_sysctl_maxheld(const struct netvar *nv, void *oldp, size_t *oldlenp,
     void *newp, size_t newlen)
 {
     return nd6_sysctl_range(oldp, oldlenp, newp, newlen, &nd6_maxheld, 1, 4096);
+}
+
+/* 0 (no DAD) to 10 probes, as net.inet.ip.dad_count */
+int
+nd6_sysctl_dad_count(const struct netvar *nv, void *oldp, size_t *oldlenp,
+    void *newp, size_t newlen)
+{
+    return nd6_sysctl_range(oldp, oldlenp, newp, newlen, &ip6_dad_count, 0, 10);
 }
 
 #define ND6_NBRHASH 64			/* a power of two */

@@ -41,6 +41,9 @@
 #define IPCTL_DAD_COUNT         5       /* RFC 5227 probes for a new address (0: none) */
 #define IPCTL_MAXID             6
 
+/* net.inet6.ip6 (IPPROTO_IPV6) leaves, numbered as KAME's */
+#define IPV6CTL_DAD_COUNT       16      /* DAD probes for a new address (0: none) */
+
 /* net.inet.tcp (TCPCTL_*) leaves live in <netinet/tcp_var.h>. */
 /* net.inet.udp (UDPCTL_*) leaves live in <netinet/udp_var.h>. */
 

@@ -34,7 +34,7 @@
 #define ND6_MAX_DEFROUTERS	8	/* max tracked default routers */
 #define ND6_MAX_RTINFO		32	/* max tracked (prefix, router) routes, RFC 4191 */
 #define ND6_MAX_PREFIXES	16	/* max tracked prefixes */
-#define ND6_MAX_DAD_NS		1	/* DAD NS transmissions */
+#define ND6_DAD_COUNT		1	/* DAD NS transmissions (RFC 4862 DupAddrDetectTransmits) */
 
 /* Neighbor Cache Entry states (RFC 4861 §7.3.2) */
 #define ND6_LLINFO_NOSTATE	-1
@@ -179,6 +179,7 @@ struct dadq {
 	struct in6_ifaddr *ia;		/* address being verified */
 	struct ifnet *ifp;
 	int count;			/* NS probes sent */
+	int dad_count;			/* to send (ip6_dad_count at the start) */
 	int ns_icount;			/* NS received (duplicate!) */
 	int ns_ocount;			/* NS sent */
 	long timer;			/* next probe time (seconds) */
@@ -244,10 +245,12 @@ extern int nd6_maxndopt;
 extern int nd6_maxqueuelen;		/* packets held per entry */
 extern int nd6_maxnbrs;			/* entries per interface */
 extern int nd6_maxheld;			/* packets held by all entries */
+extern int ip6_dad_count;		/* DAD probes for a new address (0: none) */
 struct netvar;
 int nd6_sysctl_maxqueuelen(const struct netvar *, void *, size_t *, void *, size_t);
 int nd6_sysctl_maxnbrs(const struct netvar *, void *, size_t *, void *, size_t);
 int nd6_sysctl_maxheld(const struct netvar *, void *, size_t *, void *, size_t);
+int nd6_sysctl_dad_count(const struct netvar *, void *, size_t *, void *, size_t);
 extern struct nd6stat nd6stat;
 
 /* --- nd6.c: core neighbor cache and NUD --- */

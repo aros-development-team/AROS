@@ -672,7 +672,10 @@ Every new unicast address, not only the link-local, is tentative until duplicate
 finishes (RFC 4862 §5.4): `in6_if_up()` starts it for the link-local and `in6_control()` for an
 address added with `SIOCAIFADDR_IN6` - SLAAC, temporary or configured by hand - on an interface that
 can multicast. The first Router Solicitation follows the link-local's DAD; later addresses do not
-send another. An address's `IN6_IFF_*` flags are kept in `ia6_ifaflags`, apart from the generic
+send another. `net.inet6.ip6.dad_count` (KAME's; RFC 4862 DupAddrDetectTransmits) is the number
+of Neighbor Solicitations DAD sends, 1, taken when an address's DAD starts; 0 to 10, and 0 turns DAD
+off: a new address is usable at once and announced as one that passed (the link-local then followed
+by the Router Solicitation). An address's `IN6_IFF_*` flags are kept in `ia6_ifaflags`, apart from the generic
 `ifa_flags` (`ia6_flags`) where `IFA_ROUTE` records the prefix route `in6_ifscrub()` removes with
 the address. Applications read them with `SIOCGIFAFLAG_IN6` (KAME; `ifru_flags6`, `EADDRNOTAVAIL` for
 an address the interface does not have). When DAD ends, passed or duplicated, the address is
