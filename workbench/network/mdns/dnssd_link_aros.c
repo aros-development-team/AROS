@@ -230,6 +230,31 @@ static int add_link(struct Library *SocketBase, int sock,
     return (int)(*count)++;
 }
 
+/*
+ * An IPv4 address's state as an IPv6 one's (SIOCGIFAFLAG_IN, NetBSD's): one
+ * still in conflict detection (RFC 5227) or found duplicated is not usable,
+ * and its becoming ready is a change of the links - the host's name is then
+ * probed for and announced over IPv4 too (RFC 6762 section 8.3). A stack
+ * without the request takes every address as ready, as before.
+ */
+static uint32_t address4_flags(struct Library *SocketBase, int sock,
+                               const struct ifreq *source)
+{
+    struct ifreq request;
+    uint32_t result = 0u;
+
+    memset(&request, 0, sizeof(request));
+    memcpy(request.ifr_name, source->ifr_name, IFNAMSIZ);
+    request.ifr_addr = source->ifr_addr;
+    if (IoctlSocket(sock, SIOCGIFAFLAG_IN, (char *)&request) != 0)
+        return 0u;
+    if ((request.ifr_addrflags & IN_IFF_TENTATIVE) != 0)
+        result |= DNSSD_ADDRESS_TENTATIVE;
+    if ((request.ifr_addrflags & IN_IFF_DUPLICATED) != 0)
+        result |= DNSSD_ADDRESS_DUPLICATED;
+    return result;
+}
+
 static int address6_flags(struct Library *SocketBase, int sock,
                           const struct in6_ifreq *source)
 {
@@ -275,6 +300,7 @@ static int build_specs(struct Library *SocketBase, int query_socket,
         address = &addresses[(*address_count)++];
         memset(address, 0, sizeof(*address));
         address->interface_index = links[link].interface_index;
+        address->flags = address4_flags(SocketBase, query_socket, request);
         address->family = DNSSD_ADDRESS_IPV4;
         address->length = 4u;
         memcpy(address->bytes, &source->sin_addr, 4u);
