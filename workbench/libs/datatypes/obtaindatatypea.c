@@ -75,6 +75,10 @@ static inline struct DataType *DataTypeFromANode(struct Node *aNode)
     and close its own file handle.  Keep the supplied handle valid for the
     duration of the call.  Group filtering and continuation follow the
     matching lists; an unmatched prior descriptor need not produce a result.
+    For an ASCII-classified source, the binary list is also searched if no
+    ASCII descriptor matched or the match was the generic "ascii" type.
+    A specific binary match may supersede "ascii"; continuation from that
+    binary descriptor does not subsequently enumerate "ascii".
 
     EXAMPLE
 

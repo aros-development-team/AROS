@@ -52,13 +52,8 @@ UBYTE const BinaryTable[256]=
 
 
 
-/*
- * Internal: Return the shared DataTypesList named object, creating it when
- * absent.  Creation initializes its semaphore and the sorted, binary,
- * ASCII, IFF, and miscellaneous lists before registering the object.
- * DataTypesBase is the owning library.  The returned list belongs to the
- * shared named object; callers do not free it.  NULL indicates failure.
- */
+/* Return the named, shared descriptor list.  Its storage is not
+ * owned by the caller; NULL indicates failure. */
 struct DataTypesList *GetDataTypesList(struct DataTypesBase *DataTypesBase)
 {
     struct NamedObject   *no;
@@ -113,12 +108,8 @@ struct DataTypesList *GetDataTypesList(struct DataTypesBase *DataTypesBase)
 }
 
 
-/*
- * Internal: Find the first node whose name matches name without regard to
- * case in the supplied list.  DataTypesBase is not otherwise consulted.
- * Requires a valid list and name strings.  Returns a borrowed list node or
- * NULL; the caller does not acquire ownership of the node.
- */
+/* Return a borrowed node by case-insensitive name, or NULL.
+ * The supplied list and name must be valid. */
 struct Node *FindNameNoCase(struct Library *DataTypesBase, struct List *list,
                             STRPTR name)
 {
@@ -138,12 +129,8 @@ struct Node *FindNameNoCase(struct Library *DataTypesBase, struct List *list,
 }
 
 
-/*
- * Internal: Open name for reading through DOS Open().  SourceType and Length
- * do not change the active implementation.  Returns a DOS file handle on
- * success or BNULL on failure.  The caller must Close() a returned handle.
- * This helper does not currently perform XPK decoding.
- */
+/* Open a DOS file for reading; the caller closes a returned handle.
+ * SourceType and Length are currently unused; no XPK decoding occurs. */
 BPTR NewOpen(struct Library *DataTypesBase, STRPTR name, ULONG SourceType,
              ULONG Length)
 {
@@ -214,15 +201,8 @@ BPTR NewOpen(struct Library *DataTypesBase, STRPTR name, ULONG SourceType,
 #define getDTLIST (GPB(DataTypesBase)->dtb_DTList)
 
 /*
- * Internal: Examine a DOS lock and locate a matching registered datatype.
- * The caller owns lock and the supplied FileInfoBlock.  For directories,
- * return the registered "directory" type.  For ordinary files, open the
- * path resolved from the lock and read the recognition prefix.  Only a
- * strictly positive signed Read() result enters ExamineData().  Pass the
- * prior datatype and group filter through to matching, close temporary
- * DOS resources, and release the shared datatype-list semaphore.
- * Returns a borrowed CompoundDataType or NULL.  A NULL result does not
- * necessarily set IoErr().  The caller must not free the returned object.
+ * Search a DOS lock; caller retains the lock.  Only a positive Read()
+ * result is passed to ExamineData().  Returns a borrowed descriptor or NULL.
  */
 struct CompoundDataType *ExamineLock(BPTR lock, struct FileInfoBlock *fib, const struct DataType *prevdt,
                                      ULONG grpid, struct Library *DataTypesBase)
@@ -354,16 +334,26 @@ struct CompoundDataType *ExamineLock(BPTR lock, struct FileInfoBlock *fib, const
 }
 
 
+/* Restore the input position after a descriptor checker. */
+static void ResetStream(const struct DTHookContext *dthc)
+{
+    if (dthc->dthc_IFF)
+    {
+        CloseIFF(dthc->dthc_IFF);
+        OpenIFF(dthc->dthc_IFF, IFFF_READ);
+    }
+    else
+    {
+        Seek(dthc->dthc_FileHandle, 0, OFFSET_BEGINNING);
+    }
+}
+
+
 /*
- * Internal: Search a datatype category list using the supplied data prefix,
- * filename, optional previous datatype, and group filter.  A non-NULL
- * prevdt skips list entries through that exact entry; a nonzero grpid
- * excludes descriptors from other groups.  A zero-length mask with a
- * checker function is evaluated once, not followed by a second validation
- * of the same descriptor.  Masked matches may additionally check the name
- * pattern and an optional function; that function's stream is reset for
- * further matching.  Returns a borrowed descriptor or NULL.
- * The caller owns the surrounding datatype-list synchronization.
+ * Search one descriptor list.  prevdt skips through the matching entry;
+ * grpid limits matches to one group.  A checker is called once per
+ * descriptor and the stream is reset after its call, including FALSE.
+ * Returns a borrowed descriptor; callers hold the list semaphore.
  */
 struct CompoundDataType *FindDtInList(struct Library *DataTypesBase,
                                       struct DTHookContext *dthc,
@@ -398,6 +388,7 @@ struct CompoundDataType *FindDtInList(struct Library *DataTypesBase,
             {
                 D(bug("[FindDtInList] *** Calling %s Match Function @ 0x%p\n", cur->DT.dtn_Node1.ln_Name, cur->Function));
                 found = (cur->Function)(dthc);
+                ResetStream(dthc);
             }
 
             else if (CheckSize >= cur->DTH.dth_MaskLen)
@@ -465,17 +456,7 @@ struct CompoundDataType *FindDtInList(struct Library *DataTypesBase,
                             D(bug("[FindDtInList] *** Calling %s Validation Function @ 0x%p\n", cur->DT.dtn_Node1.ln_Name, cur->Function));
 
                             found = (cur->Function)(dthc);
-
-                            if (dthc->dthc_IFF)
-                            {
-                                CloseIFF(dthc->dthc_IFF);
-                                OpenIFF(dthc->dthc_IFF, IFFF_READ);
-                            }
-                            else
-                            {
-                                Seek(dthc->dthc_FileHandle, 0,
-                                        OFFSET_BEGINNING);
-                            }
+                            ResetStream(dthc);
                         }
                     }
                 }
@@ -492,15 +473,10 @@ struct CompoundDataType *FindDtInList(struct Library *DataTypesBase,
 
 
 /*
- * Internal: Classify the supplied prefix and search the applicable datatype
- * lists.  IFF signatures and the supplied IFF context select the IFF list;
- * otherwise the ASCII/binary heuristic selects the initial list, with a
- * binary-specific search after the generic ASCII descriptor where required.
- * prevdt and grpid constrain continuation and group matching.  CheckArray
- * must provide at least eight readable bytes for the initial IFF header
- * inspection even if CheckSize is smaller.  The data buffer and DTHookContext
- * remain caller-owned.  Returns a borrowed CompoundDataType or NULL; this
- * helper does not acquire or release the shared datatype-list semaphore.
+ * Classify the available prefix and search the applicable descriptor lists.
+ * The IFF signature is read only when CheckSize is at least eight; list
+ * traversal honors prevdt and grpid.  Input buffers remain caller-owned.
+ * Returns a borrowed descriptor or NULL with no semaphore acquisition.
  */
 struct CompoundDataType *ExamineData(struct Library *DataTypesBase,
                                      struct DTHookContext *dthc,
@@ -516,8 +492,14 @@ struct CompoundDataType *ExamineData(struct Library *DataTypesBase,
 
     D(UWORD        type);
 
-    ULONG IFF_ID   = AROS_BE2LONG(*((ULONG*)CheckArray));
-    ULONG IFF_Size = AROS_BE2LONG(*((ULONG*)(CheckArray+4)));
+    ULONG IFF_ID = 0;
+    ULONG IFF_Size = 0;
+
+    if (CheckSize >= 8)
+    {
+        IFF_ID   = AROS_BE2LONG(*((ULONG*)CheckArray));
+        IFF_Size = AROS_BE2LONG(*((ULONG*)(CheckArray+4)));
+    }
 
     if(((!dthc->dthc_FileHandle) && (dthc->dthc_IFF)) ||
         (((IFF_Size + 8 == Size) && (Size > 21)) &&
@@ -569,7 +551,7 @@ struct CompoundDataType *ExamineData(struct Library *DataTypesBase,
                     D(bug("[ExamineData] Trying binary list\n"));
                     cdt_bin = FindDtInList(DataTypesBase, dthc, &getDTLIST->dtl_BinaryList,
                                            NULL, grpid, CheckArray, CheckSize, Filename);
-                    D(bug("[[ExamineData] Binary datatype: 0x%p\n"));
+                    D(bug("[ExamineData] Binary datatype: 0x%p\n", cdt_bin));
                     if (cdt_bin && strcmp(cdt_bin->DTH.dth_Name, "binary"))
                         cdt = cdt_bin;
                 }
