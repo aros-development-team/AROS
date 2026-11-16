@@ -183,15 +183,7 @@ static void usb2otg_halt_channel_preserve_char(int chan)
             }
         }
     }
-    else if (hcchar != 0)
-    {
-        hcchar |= USB2OTG_HOSTCHAR_DISABLE;
-        wr32le(USB2OTG_CHANNEL_REG(chan, CHARBASE), hcchar);
-    }
-    else
-    {
-        wr32le(USB2OTG_CHANNEL_REG(chan, CHARBASE), USB2OTG_HOSTCHAR_DISABLE);
-    }
+    /* Already halted: a CHDIS written now would cancel the next transfer */
 }
 
 static inline BOOL usb2otg_trace_bulk_ep2(int chan, struct IOUsbHWReq *req)
@@ -2657,6 +2649,8 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
                                                     (unsigned long)USBUnit->hu_LogGiveupCount);
                                         }
                                         req->iouh_Req.io_Error = UHIOERR_TIMEOUT;
+                                        /* As for control: or the next transfer on this channel halts bare too */
+                                        usb2otg_exorcise_channel(chan);
                                         /* Flush NPTxFIFO so next CBW lands clean —
                                          * only with all channels idle (flush with an
                                          * active channel corrupts the request queue). */
