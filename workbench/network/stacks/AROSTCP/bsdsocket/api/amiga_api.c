@@ -1193,14 +1193,18 @@ VOID api_sendreconfig(BOOL begin)
 }
 
 /*
- * Signal every consumer subscribed to SBTC_SIG_ADDRESS_CHANGE_MASK that an
- * interface address was added or removed.  Fired centrally from rt_newaddrmsg()
- * on RTM_NEWADDR/RTM_DELADDR, so it covers both IPv4 and IPv6.  A woken consumer
- * re-reads interface addresses (e.g. SIOCGIFCONF).
+ * Change notifications: signal every consumer subscribed to
+ * SBTC_SIG_ADDRESS_CHANGE_MASK that an interface address was added or
+ * removed (fired centrally from rt_newaddrmsg() on RTM_NEWADDR/RTM_DELADDR,
+ * so it covers both IPv4 and IPv6), or to SBTC_SIG_HOSTNAME_CHANGE_MASK that
+ * the host name changed (sethostname()). A woken consumer reads the state
+ * again (SIOCGIFCONF, gethostname()).
  */
-static BOOL api_addrchange_pending;
+#define API_CHANGE_ADDRESS  0x1
+#define API_CHANGE_HOSTNAME 0x2
+static ULONG api_change_pending;        /* API_CHANGE_* not sent yet */
 
-VOID api_sendaddrchange(VOID)
+static VOID api_sendchange(ULONG which)
 {
     extern struct List socketBaseList; /* :/ */
     struct Node *libNode;
@@ -1210,32 +1214,50 @@ VOID api_sendaddrchange(VOID)
 
     /*
      * The stack task (SLAAC, the end of duplicate address detection) does
-     * not wait for the list: a task opening or closing the library holds it
-     * and may wait for the stack. Without it the signal is left pending, and
-     * api_addrchange_retry() sends it from the stack's next timer tick.
+     * not wait for the list: a task opening or
+     * closing the library holds it and may wait for the stack. Without it
+     * the signal is left pending, and api_addrchange_retry() sends it from
+     * the stack's next timer tick.
      */
     if(FindTask(NULL) == AROSTCP_Task) {
         if(!AttemptSemaphoreShared(&baselist_semaphore)) {
-            api_addrchange_pending = TRUE;
+            api_change_pending |= which;
             return;
         }
     } else
         ObtainSemaphoreShared(&baselist_semaphore);
-    api_addrchange_pending = FALSE;
+    which |= api_change_pending;
+    api_change_pending = 0;
     for(libNode = socketBaseList.lh_Head; libNode->ln_Succ;
             libNode = libNode->ln_Succ) {
         struct SocketBase *sb = (struct SocketBase *)libNode;
-        if(sb->thisTask && sb->thisTask != Nettrace_Task && sb->sigAddrChangeMask)
-            Signal(sb->thisTask, sb->sigAddrChangeMask);
+        ULONG mask = 0;
+
+        if(which & API_CHANGE_ADDRESS)
+            mask |= sb->sigAddrChangeMask;
+        if(which & API_CHANGE_HOSTNAME)
+            mask |= sb->sigHostChangeMask;
+        if(sb->thisTask && sb->thisTask != Nettrace_Task && mask)
+            Signal(sb->thisTask, mask);
     }
     ReleaseSemaphore(&baselist_semaphore);
 }
 
-/* A change signal the stack task could not send yet (api_sendaddrchange()). */
+VOID api_sendaddrchange(VOID)
+{
+    api_sendchange(API_CHANGE_ADDRESS);
+}
+
+VOID api_sendhostchange(VOID)
+{
+    api_sendchange(API_CHANGE_HOSTNAME);
+}
+
+/* A change signal the stack task could not send yet (api_sendchange()). */
 VOID api_addrchange_retry(VOID)
 {
-    if(api_addrchange_pending)
-        api_sendaddrchange();
+    if(api_change_pending)
+        api_sendchange(0);
 }
 
 /*

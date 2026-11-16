@@ -146,6 +146,7 @@ struct SocketBase {
   ULONG			sigEventMask;
   ULONG			sigReconfigMask;   /* SBTC_SIG_RECONFIG_MASK: reload begin/end */
   ULONG			sigAddrChangeMask; /* SBTC_SIG_ADDRESS_CHANGE_MASK: address change */
+  ULONG			sigHostChangeMask; /* SBTC_SIG_HOSTNAME_CHANGE_MASK: host name change */
 /* -- the opener's tsleep()/wakeup()/WaitSelect() state -- */
   struct SocketWaiter	waiter;
 /* -- per process fields used by various 'library' functions -- */
@@ -244,6 +245,7 @@ VOID api_logopeners(VOID);
  */
 VOID api_sendreconfig(BOOL begin);
 VOID api_sendaddrchange(VOID);
+VOID api_sendhostchange(VOID);
 extern ULONG api_reconfig_state;        /* NETRC_ONLINE / NETRC_RECONFIGURING */
 extern ULONG api_reconfig_generation;   /* bumped after each completed reload  */
 extern ULONG api_reconfig_expected;     /* consumers signalled at reconfigure-begin */

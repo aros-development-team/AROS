@@ -763,6 +763,8 @@ AROS_LH1(ULONG, SocketBaseTagList,
 
                 CASE_LONG(SBTC_SIG_ADDRESS_CHANGE_MASK, sigAddrChangeMask);
 
+                CASE_LONG(SBTC_SIG_HOSTNAME_CHANGE_MASK, sigHostChangeMask);
+
             case(SBTC_RECONFIG_STATE << SBTB_CODE):  /* get */
                 *tagData = (IPTR)api_reconfig_state;
                 break;

@@ -53,7 +53,7 @@
 #include <kern/amiga_netdb.h>
 #include <kern/amiga_includes.h>        /* AvailMem() */
 #include <sys/sysctl.h>                 /* sysctl_int() */
-#include <net/netmodule.h>          /* api_addrchange_retry() */
+#include <net/netmodule.h>          /* struct netvar */
 #include <protos/net/route_protos.h>
 #include <net/netcore_map.h>        /* always the last include */
 
@@ -1106,7 +1106,6 @@ nd6_timer(void *arg)
     D(bug("[AROSTCP:ND6] %s: calling nd6_prefix_timer\n", __func__));
     nd6_prefix_timer();
     ndb_ra_timer();             /* DNS servers and domains from RAs */
-    api_addrchange_retry();     /* an address change signal still to send */
     D(bug("[AROSTCP:ND6] %s: sub-timers done\n", __func__));
 
     /* RS retransmission for interfaces still soliciting */

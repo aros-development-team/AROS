@@ -61,6 +61,16 @@ task created — gives that task a minimal base for the call (`api_hookbase_open
 timer, no descriptor table) and uses it as the sleep context, so the operation sleeps on the
 **caller's** base rather than the socket owner's. §3.2 explains why that is required.
 
+A base can ask to be signalled of changes, each with a signal mask of its own (`SocketBaseTags()`):
+`SBTC_SIG_ADDRESS_CHANGE_MASK` (Roadshow's) when an interface address is added, removed or ends its
+duplicate address detection, `SBTC_SIG_HOSTNAME_CHANGE_MASK` (74) when the host name changes
+(`sethostname()`: `Miami_sethostname()`, the `HOSTNAME` variable, the name first learnt from the
+host's address; setting the same name again is no change), and `SBTC_SIG_RECONFIG_MASK` at an
+in-place reload. A signal says only "read it again": it is not tied to one address or one change,
+changes made before the consumer runs come as one, and what it reads then (`SIOCGIFCONF`,
+`SIOCGIFAFLAG_IN6`, `gethostname()`) is the state as it is. The stack task does not wait for the
+list of bases to send one; a signal it cannot send yet goes from the next slow tick of the core.
+
 The API layer (`amiga_syscalls.c`) implements the Berkeley calls: each builds the necessary
 `mbuf`s (for example, an address `mbuf` with `m_len = addrlen` and `sa_len` set) and invokes the
 socket-layer entry points (`sobind`, `soconnect`, `sosend`, `soreceive`, …), which in turn dispatch
@@ -683,7 +693,7 @@ announced again as when it was added (`nd6_dad_announce()`: `RTM_NEWADDR` and th
 `SBTC_SIG_ADDRESS_CHANGE_MASK` signal), after its flags have changed, so a program woken by it finds
 it usable or `IN6_IFF_DUPLICATED`. The stack task does not wait to send that signal
 (`api_sendaddrchange()`): a task opening or closing the library may hold the list it walks and wait
-for the stack; the signal then goes from the next `nd6_timer()` tick. A prefix gets one temporary address (RFC 4941) at a time: another is made when a Router
+for the stack; the signal then goes from the next slow tick of the core (§3.1). A prefix gets one temporary address (RFC 4941) at a time: another is made when a Router
 Advertisement repeats the prefix after the current one is deprecated.
 
 A prefix is on-link on the link it is advertised on: the prefix list has an entry per (prefix,
