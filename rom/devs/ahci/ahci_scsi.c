@@ -179,7 +179,8 @@ static void ahci_ata_sense(struct ata_xfer *xa,
         }
     }
 
-    memset(sense_data, 0, sizeof(*sense_data));
+    memset(sense_data, 0, offsetof(struct scsi_sense_data, extra_bytes));
+    sense_data->extra_len = SSD_MIN_SIZE - 8;
 
     sense_data->error_code = SSD_ERRCODE_VALID | SSD_CURRENT_ERROR;
 
@@ -195,16 +196,21 @@ static void ahci_io_complete(struct ata_xfer *xa)
     struct IORequest *io = xa->atascsi_private;
     const int sense_length = offsetof(struct scsi_sense_data, extra_bytes[0]);
     struct cam_sim *unit = (struct cam_sim *)io->io_Unit;
+    /* ATA disk commands transfer their full length on success. Some
+       controllers do not provide a usable PRDBC for those commands. */
+    ULONG actual = xa->datalen;
+    if (xa->flags & ATA_F_PACKET)
+        actual = xa->resid <= xa->datalen ? xa->datalen - xa->resid : 0;
 
     switch (xa->state) {
     case ATA_S_COMPLETE:
         if (io->io_Command == HD_SCSICMD) {
             struct SCSICmd *scsi = IOStdReq(io)->io_Data;
             scsi->scsi_Status = SCSI_GOOD;
-            scsi->scsi_Actual = xa->datalen;
+            scsi->scsi_Actual = actual;
             IOStdReq(io)->io_Actual = sizeof(*scsi);
         } else {
-            IOStdReq(io)->io_Actual = xa->datalen;
+            IOStdReq(io)->io_Actual = actual;
         }
         break;
     case ATA_S_ERROR:
@@ -269,7 +275,7 @@ static BYTE ahci_scsi_page_inquiry(struct ahci_port *ap, struct ata_port *at, st
         struct scsi_vpd_supported_page_list    list;
         struct scsi_vpd_unit_serial_number    serno;
         UBYTE                    buf[256];
-    } page;
+    } page = {0};
     scsi_cdb_t cdb;
     int i;
     int j;
@@ -285,7 +291,7 @@ static BYTE ahci_scsi_page_inquiry(struct ahci_port *ap, struct ata_port *at, st
         page.list.list[i++] = SVPD_SUPPORTED_PAGE_LIST;
         page.list.list[i++] = SVPD_UNIT_SERIAL_NUMBER;
         page.list.length = i;
-        len = offsetof(struct scsi_vpd_supported_page_list, list[3]);
+        len = offsetof(struct scsi_vpd_supported_page_list, list[2]);
         break;
     case SVPD_UNIT_SERIAL_NUMBER:
         i = 0;
@@ -307,11 +313,14 @@ static BYTE ahci_scsi_page_inquiry(struct ahci_port *ap, struct ata_port *at, st
         break;
     }
 
+    if (len > cdb->inquiry.length)
+        len = cdb->inquiry.length;
     if (len > scsi->scsi_Length)
-        return IOERR_BADLENGTH;
-
-    memset(scsi->scsi_Data + len, 0, scsi->scsi_Length - len);
-    CopyMem(&page, scsi->scsi_Data, len);
+        len = scsi->scsi_Length;
+    if (len && !scsi->scsi_Data)
+        return IOERR_BADADDRESS;
+    if (len)
+        CopyMem(&page, scsi->scsi_Data, len);
     scsi->scsi_Actual = len;
 
     return 0;
@@ -339,15 +348,31 @@ BOOL ahci_scsi_disk_io(struct IORequest *io, struct SCSICmd *scsi)
     union {
         struct scsi_inquiry_data inquiry_data;
         struct scsi_read_capacity_data read_capacity_data;
-    } *rdata = (APTR)scsi->scsi_Command;
-    ULONG rdata_len = scsi->scsi_CmdLength;
+    } response, *rdata = &response;
+    ULONG rdata_len = scsi->scsi_Length;
     u_int64_t capacity;
     u_int64_t lba;
     u_int32_t count;
     BOOL done = FALSE;
     scsi_cdb_t cdb = (APTR)scsi->scsi_Command;
 
-    xa = ahci_ata_get_xfer(ap, at);
+    scsi->scsi_Actual = 0;
+    scsi->scsi_Status = SCSI_GOOD;
+    scsi->scsi_SenseActual = 0;
+
+    /* Emulated queries must remain available while all hardware slots
+       are busy, particularly TEST UNIT READY from the media monitor. */
+    xa = NULL;
+    if (cdb->generic.opcode != SCSI_TEST_UNIT_READY &&
+        cdb->generic.opcode != SCSI_REQUEST_SENSE &&
+        cdb->generic.opcode != SCSI_INQUIRY &&
+        cdb->generic.opcode != SCSI_DA_READ_CAPACITY) {
+        xa = ahci_ata_get_xfer(ap, at);
+        if (xa == NULL) {
+            io->io_Error = IOERR_UNITBUSY;
+            return TRUE;
+        }
+    }
 
     switch(cdb->generic.opcode) {
     case SCSI_REQUEST_SENSE:
@@ -368,29 +393,22 @@ BOOL ahci_scsi_disk_io(struct IORequest *io, struct SCSICmd *scsi)
         if (cdb->inquiry.byte2 & SI_EVPD) {
             io->io_Error = ahci_scsi_page_inquiry(ap, at, scsi);
         } else {
-            memset(rdata, 0, rdata_len);
-            if (rdata_len < SHORT_INQUIRY_LENGTH) {
-                io->io_Error = IOERR_BADLENGTH;
+            if (rdata_len > cdb->inquiry.length)
+                rdata_len = cdb->inquiry.length;
+            if (rdata_len > SHORT_INQUIRY_LENGTH)
+                rdata_len = SHORT_INQUIRY_LENGTH;
+            if (rdata_len && !scsi->scsi_Data) {
+                io->io_Error = IOERR_BADADDRESS;
                 break;
             }
-            if (rdata_len > sizeof(rdata->inquiry_data))
-                rdata_len = sizeof(rdata->inquiry_data);
+            memset(rdata, 0, SHORT_INQUIRY_LENGTH);
             rdata->inquiry_data.device = T_DIRECT;
             /* Mark as removable if ATA has the 'removable' tag */
-            rdata->inquiry_data.dev_qual2 = (at->at_identify.config ? 0x80 : 0);
+            rdata->inquiry_data.dev_qual2 = ((at->at_identify.config & (1 << 7)) ? 0x80 : 0);
             rdata->inquiry_data.version = SCSI_REV_SPC2;
             rdata->inquiry_data.response_format = 2;
             rdata->inquiry_data.additional_length = 32;
 
-            /*
-             * Use the vendor specific area to set the TRIM status
-             */
-            if (at->at_identify.support_dsm) {
-                rdata->inquiry_data.vendor_specific[0] =
-                    at->at_identify.support_dsm &ATA_SUPPORT_DSM_TRIM;
-                rdata->inquiry_data.vendor_specific[1] =
-                    at->at_identify.max_dsm_blocks;
-            }
             CopyMem("SATA    ", rdata->inquiry_data.vendor, 8);
             CopyMem(at->at_identify.model,
                   rdata->inquiry_data.product,
@@ -398,6 +416,9 @@ BOOL ahci_scsi_disk_io(struct IORequest *io, struct SCSICmd *scsi)
             CopyMem(at->at_identify.firmware,
                   rdata->inquiry_data.revision,
                   sizeof(rdata->inquiry_data.revision));
+            if (rdata_len)
+                CopyMem(rdata, scsi->scsi_Data, rdata_len);
+            scsi->scsi_Actual = rdata_len;
         }
         break;
     case SCSI_DA_READ_CAPACITY:
@@ -407,16 +428,22 @@ BOOL ahci_scsi_disk_io(struct IORequest *io, struct SCSICmd *scsi)
             break;
         }
 
-        capacity = at->at_capacity;
+        if (!scsi->scsi_Data) {
+            io->io_Error = IOERR_BADADDRESS;
+            break;
+        }
+        capacity = at->at_capacity ? at->at_capacity - 1 : 0;
 
-        memset(rdata, 0, rdata_len);
         rdata_len = sizeof(rdata->read_capacity_data);
         if (capacity > 0xFFFFFFFFU)
             capacity = 0xFFFFFFFFU;
         memset(&rdata->read_capacity_data, 0, rdata_len);
-        scsi_ulto4b((u_int32_t)capacity - 1,
+        scsi_ulto4b((u_int32_t)capacity,
                 rdata->read_capacity_data.addr);
-        scsi_ulto4b(512, rdata->read_capacity_data.length);
+        scsi_ulto4b(at->at_identify.sector_size,
+                rdata->read_capacity_data.length);
+        CopyMem(rdata, scsi->scsi_Data, rdata_len);
+        scsi->scsi_Actual = rdata_len;
         break;
     case SCSI_DA_SYNCHRONIZE_CACHE:
         /*
@@ -427,10 +454,9 @@ BOOL ahci_scsi_disk_io(struct IORequest *io, struct SCSICmd *scsi)
         fis->flags = ATA_H2D_FLAGS_CMD;
         fis->command = ATA_C_FLUSH_CACHE;
         fis->device = 0;
-        if (xa->timeout < 45000)
-            xa->timeout = 45000;
+        xa->timeout = 45000;
         xa->datalen = 0;
-        xa->flags = 0;
+        xa->flags = ATA_F_EXCLUSIVE;
         xa->complete = ahci_io_complete;
         break;
     case SCSI_TEST_UNIT_READY:
@@ -567,7 +593,8 @@ BOOL ahci_scsi_disk_io(struct IORequest *io, struct SCSICmd *scsi)
         ahci_os_unlock_port(ap);
     } else {
         IOStdReq(io)->io_Actual = sizeof(*scsi);
-        ahci_ata_put_xfer(xa);
+        if (xa)
+            ahci_ata_put_xfer(xa);
     }
 
     return done;

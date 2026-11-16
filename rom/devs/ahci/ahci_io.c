@@ -125,6 +125,12 @@ static BOOL ahci_sector_rw(struct IORequest *io, UQUAD off64, BOOL is_write)
     len /= sector_size;
     off64 /= sector_size;
 
+    if (ap->ap_type == ATA_PORT_T_DISK &&
+        (off64 >= at->at_capacity || len > at->at_capacity - off64)) {
+        io->io_Error = IOERR_BADADDRESS;
+        return TRUE;
+    }
+
     /* Set up the CDB, based on what the transfer size is */
     scsi.scsi_Command = (APTR)&cdb;
 
@@ -193,7 +199,7 @@ AROS_LH1(void, BeginIO,
 {
     AROS_LIBFUNC_INIT
 
-    const UWORD NSDSupported[] = {
+    static const UWORD NSDSupported[] = {
         CMD_READ,
         CMD_WRITE,
         CMD_UPDATE,
@@ -324,22 +330,14 @@ AROS_LH1(void, BeginIO,
         break;
 
     case TD_FORMAT:
-        if (len > (at->at_identify.nsectors * at->at_identify.sector_size - 1))
-            goto bad_length;
         off64  = iotd->iotd_Req.io_Offset;
-        if (off64 > (at->at_identify.nsectors * at->at_identify.sector_size - 1))
-            goto bad_address;
         done = ahci_sector_rw(io, off64, TRUE);
         break;
 
     case TD_FORMAT64:
     case NSCMD_TD_FORMAT64:
-        if (len > (at->at_identify.nsectors * at->at_identify.sector_size - 1))
-            goto bad_length;
         off64  = iotd->iotd_Req.io_Offset;
         off64 |= ((UQUAD)iotd->iotd_Req.io_Actual)<<32;
-        if (off64 > (at->at_identify.nsectors * at->at_identify.sector_size - 1))
-            goto bad_address;
         done = ahci_sector_rw(io, off64, TRUE);
         break;
 
@@ -415,9 +413,23 @@ AROS_LH1(void, BeginIO,
         break;
 
     case CMD_UPDATE:
-        // FIXME: Implement cache flush
-        done = TRUE;
+    {
+        struct SCSICmd scsi = {0};
+        union scsi_cdb cdb = {0};
+
+        cdb.generic.opcode = SCSI_DA_SYNCHRONIZE_CACHE;
+        scsi.scsi_Command = (APTR)&cdb;
+        scsi.scsi_CmdLength = 10;
+        IOStdReq(io)->io_Actual = 0;
+        if (ap->ap_type == ATA_PORT_T_DISK)
+            done = ahci_scsi_disk_io(io, &scsi);
+        else if (ap->ap_type == ATA_PORT_T_ATAPI)
+            /* Trackdisk exposes these units as read-only. */
+            done = TRUE;
+        else
+            goto bad_cmd;
         break;
+    }
 
     default:
         ahciDebug("ahci.device %d: Unknown IO command %d\n", unit->sim_Unit, io->io_Command);
@@ -438,22 +450,18 @@ bad_address:
         break;
     }
 
-    /* The IO is finished, so no need to keep it around anymore */
-    if (done) {
-        ObtainSemaphore(&unit->sim_Lock);
-        Remove(&io->io_Message.mn_Node);
-        ReleaseSemaphore(&unit->sim_Lock);
-    } else
-        io->io_Flags &= ~IOF_QUICK;
-        
+    /* Submission may already have replied on another CPU. Do not touch
+       an asynchronous request after handing it to the completion path. */
+    if (!done)
+        return;
 
-    /* Need a reply now? */
-    if (done && !(io->io_Flags & IOF_QUICK))
+    ObtainSemaphore(&unit->sim_Lock);
+    Remove(&io->io_Message.mn_Node);
+    ReleaseSemaphore(&unit->sim_Lock);
+
+    ahciDebug("[AHCI%02ld] synchronous IO complete\n", unit->sim_Unit);
+    if (!(io->io_Flags & IOF_QUICK))
         ReplyMsg(&io->io_Message);
-
-    if (done)
-        ahciDebug("[AHCI%02ld]" AHCI_IO_STR " Quick, io_Flags = %d, io_Comand = %d, io_Error = %d\n", unit->sim_Unit AHCI_IO_DBG, io->io_Flags, io->io_Command, io->io_Error);
-    ahciDebug("[AHCI%02ld] %s:" AHCI_IO_STR " finished\n", unit->sim_Unit, __func__ AHCI_IO_DBG);
 
     AROS_LIBFUNC_EXIT
 }

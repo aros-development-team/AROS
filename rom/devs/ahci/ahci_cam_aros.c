@@ -25,6 +25,8 @@
 #include <scsi/commands.h>
 #include <scsi/values.h>
 
+#include <exec/errors.h>
+
 #include "ahci.h"
 #include "ahci_scsi.h"
 #include "timer.h"
@@ -108,6 +110,11 @@ static void ahci_PortMonitor(struct Task *parent, struct Device *device, struct 
 
                 DoIO(io);
 
+                /* A full hardware queue is not a media change. The loop
+                   condition still waits before the next probe. */
+                if (io->io_Error == IOERR_UNITBUSY)
+                    continue;
+
                 is_present = (io->io_Error == 0) && (scsi.scsi_Status == SCSI_GOOD);
                 // TODO: Check sense for additional information
 
@@ -168,9 +175,8 @@ static int ahci_RegisterPort(struct ahci_port *ap)
     InitSemaphore(&unit->sim_Lock);
     NEWLIST(&unit->sim_IOs);
 
-    AddTail((struct List *)&AHCIBase->ahci_Units, (struct Node *)unit);
-
-    /* Now that this device is in the unit list, start the disk change monitor */
+    /* The monitor uses the unit directly; publish it only after startup
+       succeeds, so OpenDevice cannot retain a failed registration. */
     snprintf(name, sizeof(name), "ahci.device %d [media]", unit->sim_Unit);
     unit->sim_Monitor = NewCreateTask(TASKTAG_NAME, name,
                                       TASKTAG_PC, ahci_PortMonitor,
@@ -179,8 +185,17 @@ static int ahci_RegisterPort(struct ahci_port *ap)
                                       TASKTAG_ARG3, unit,
                                       TAG_END);
 
+    if (!unit->sim_Monitor) {
+        ap->ap_sim = NULL;
+        FreePooled(AHCIBase->ahci_MemPool, unit, sizeof(*unit));
+        return ENOMEM;
+    }
+
     Wait(SIGBREAKF_CTRL_C);
 
+    Forbid();
+    AddTail((struct List *)&AHCIBase->ahci_Units, (struct Node *)unit);
+    Permit();
     return 0;
 }
 
