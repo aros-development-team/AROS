@@ -24,10 +24,16 @@ AROS_LH1(void, GetUpTime,
     struct TimerBase *timerBase = (struct TimerBase *)TimerBase;
     ULONG tb_eclock_to_usec;
 
+    /*
+     * The seconds and the e-clock count are read together: an e-clock
+     * interrupt pending now is counted in GetEClock()'s result, so the
+     * seconds must be the ones from before it is handled (whenever that
+     * is, it adds the second it ends itself).
+     */
     Disable();
     tb_eclock_to_usec = timerBase->tb_eclock_to_usec + GetEClock(timerBase);
-    Enable();
     dest->tv_secs = timerBase->tb_Elapsed.tv_secs;
+    Enable();
     dest->tv_micro = (ULONG)(((long long)tb_eclock_to_usec * timerBase->tb_eclock_micro_mult) >> 16);
 
     // can only overflow once, e-clock interrupts happen more than once a second

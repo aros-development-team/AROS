@@ -24,10 +24,11 @@ AROS_LH1(void, GetSysTime,
     struct TimerBase *timerBase = (struct TimerBase *)TimerBase;
     ULONG tb_eclock_to_usec;
 
+    /* The seconds and the e-clock count read together, as in GetUpTime() */
     Disable();
     tb_eclock_to_usec = timerBase->tb_eclock_to_usec + GetEClock(timerBase);
-    Enable();
     dest->tv_secs = timerBase->tb_CurrentTime.tv_secs;
+    Enable();
     dest->tv_micro = (ULONG)(((long long)tb_eclock_to_usec * timerBase->tb_eclock_micro_mult) >> 16);
     if (dest->tv_micro > timerBase->tb_lastsystime.tv_secs + timerBase->lastsystimetweak) {
         timerBase->lastsystimetweak = 0;
