@@ -286,12 +286,29 @@ void mdnsCacheUnwatch(const struct MDNSDaemon *md, APTR watch);
 void mdnsCacheDropLocal(const struct MDNSDaemon *md, const UBYTE *owner,
     const UBYTE *target);
 
+/*
+ * The sooner of two mdnsTicks() times, 0 standing for none: what each part
+ * says is due next, for the main loop's wait (wait_and_receive()). Ticks
+ * are compared as a difference, so their wrapping does not matter.
+ */
+static inline ULONG
+mdnsSooner(ULONG a, ULONG b)
+{
+    if (a == 0) {
+        return b;
+    }
+    if (b == 0) {
+        return a;
+    }
+    return (LONG)(a - b) <= 0 ? a : b;
+}
+
 /* dnssd_server.c: dnssd.library's sessions and operations. */
 BOOL dnssdServerInit(struct MDNSDaemon *md, ULONG gone);
 void dnssdServerGone(struct MDNSDaemon *md);
 void dnssdServerMessage(struct MDNSDaemon *md, struct DNSSDIPCMsg *msg);
 void dnssdServerReap(struct MDNSDaemon *md);
-void dnssdServerTick(struct MDNSDaemon *md);
+ULONG dnssdServerTick(struct MDNSDaemon *md);
 void dnssdServerCancel(struct MDNSDaemon *md);
 void dnssdServerFree(struct MDNSDaemon *md);
 

@@ -185,15 +185,18 @@ receive4(struct MDNSDaemon *md, struct Library *SocketBase)
 }
 
 /* Waits for a signal, a datagram on any interface, or a second to pass: a
- * quarter of one while a name is being probed, and a fiftieth while an
- * answer is waiting to be sent. */
+ * quarter of one while a name is being probed, a fiftieth while an answer
+ * is waiting to be sent, and no longer than until the next thing due
+ * (soonest, mdnsTicks(); 0 for nothing) - none if it is due already. */
 static ULONG
-wait_and_receive(struct MDNSDaemon *md, ULONG sigmask, BOOL probing)
+wait_and_receive(struct MDNSDaemon *md, ULONG sigmask, BOOL probing,
+    ULONG soonest)
 {
     struct Library *SocketBase = md->md_SocketBase;
     struct timeval tv;
     fd_set readfds;
     LONG top = -1;
+    ULONG micros = md->md_AnswerPending ? 20000 : probing ? 250000 : 1000000;
 
     if (SocketBase == NULL) {
         /* Between "reconfigure begin" and "end" there is no stack to ask. */
@@ -201,8 +204,19 @@ wait_and_receive(struct MDNSDaemon *md, ULONG sigmask, BOOL probing)
     }
 
     FD_ZERO(&readfds);
-    tv.tv_sec = (probing || md->md_AnswerPending) ? 0 : 1;
-    tv.tv_usec = md->md_AnswerPending ? 20000 : probing ? 250000 : 0;
+    if (soonest != 0) {
+        /* ticks are fiftieths of a second (mdnsTicks()) */
+        LONG until = (LONG)(soonest - mdnsTicks());
+
+        if (until <= 0) {
+            micros = 0;
+        } else if (until < (LONG)(micros / 20000)) {
+            /* compared in ticks: the soonest can be hours away */
+            micros = (ULONG)until * 20000;
+        }
+    }
+    tv.tv_sec = micros / 1000000;
+    tv.tv_usec = micros % 1000000;
     if (md->md_Socket4 >= 0) {
         FD_SET(md->md_Socket4, &readfds);
         top = md->md_Socket4;
@@ -293,6 +307,7 @@ main(void)
     ULONG addressMask = 0, hostMask = 0, goneMask = 0;
     BYTE addressSignal = -1, hostSignal = -1, goneSignal = -1;
     BOOL running = TRUE, probing = FALSE;
+    ULONG soonest = 0;
 
     /* One responder owns the host's names. */
     Forbid();
@@ -363,7 +378,8 @@ main(void)
     while (running) {
         ULONG got = wait_and_receive(md,
             dportmask | sig.ms_Stop | sig.ms_Begin | sig.ms_End |
-            addressMask | hostMask | goneMask | SIGBREAKF_CTRL_C, probing);
+            addressMask | hostMask | goneMask | SIGBREAKF_CTRL_C, probing,
+            soonest);
 
         if (got & (sig.ms_Stop | SIGBREAKF_CTRL_C)) {
             running = FALSE;
@@ -409,7 +425,8 @@ main(void)
         /* the cache first: what it drops is told to the operations that
          * watch it, which then look again in their own turn */
         mdnsCacheTick(md);
-        dnssdServerTick(md);
+        /* what is due next, as this turn left it */
+        soonest = dnssdServerTick(md);
         probing = FALSE;
         if (running && md->md_Socket >= 0) {
             /* the host's name first: no service is announced before it */

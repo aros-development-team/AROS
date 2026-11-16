@@ -908,16 +908,17 @@ start_operation(struct MDNSDaemon *md, struct ServerSession *ss, LONG sslot,
 
 /* Operations whose time is up end: a lookup or resolve that found
  * something with DNSSD_OK, else DNSSD_ERR_TIMEOUT; a query with
- * DNSSD_ERR_TIMEOUT. */
-void
+ * DNSSD_ERR_TIMEOUT. Returns the time the next of those still running is
+ * up (mdnsTicks(), 0 for none): mdnsd wakes for it, not a second later. */
+ULONG
 dnssdServerTick(struct MDNSDaemon *md)
 {
     struct DNSSDServer *sv = md->md_DNSSD;
-    ULONG now = mdnsTicks();
+    ULONG now = mdnsTicks(), soonest = 0;
     LONG i;
 
     if (sv == NULL) {
-        return;
+        return 0;
     }
     for (i = 0; i < SERVER_OPERATIONS; i++) {
         struct ServerOperation *op = sv->sv_Operations[i];
@@ -937,8 +938,11 @@ dnssdServerTick(struct MDNSDaemon *md)
                 FALSE;
 
             end_with(sv, op, found ? DNSSD_OK : DNSSD_ERR_TIMEOUT);
+        } else if (op != NULL) {
+            soonest = mdnsSooner(soonest, op->so_Deadline);
         }
     }
+    return soonest;
 }
 
 static void
