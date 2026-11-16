@@ -344,19 +344,26 @@ static BOOL hvs_cursor_entry(struct VideoCoreGfx_staticdata *xsd, ULONG *w)
 {
     struct vc4_hvs_state *st = &xsd->vcsd_HVS;
     LONG cx, cy, cw, ch;
+    LONG sw = st->hvs_SrcW, sh = st->hvs_SrcH;
     ULONG pitch, ptr;
 
     if (!xsd->vcsd_CurVisible || !xsd->vcsd_CurBuf
         || !xsd->vcsd_CurWidth || !xsd->vcsd_CurHeight)
         return FALSE;
 
+    /* Screens as planes: the pointer moves in the shown screen's mode,
+     * which the fb does not follow here. */
+    if (xsd->vcsd_PlanesMode && xsd->vcsd_DispW && xsd->vcsd_DispH)
+    {
+        sw = xsd->vcsd_DispW;
+        sh = xsd->vcsd_DispH;
+    }
+
     /* vcsd_CurX/Y are fb coords; when the fb plane is scaled, map the
      * cursor position into output coords (the cursor plane itself
      * stays unity-sized, like the firmware cursor). */
-    cx = (LONG)st->hvs_FBX
-       + (LONG)(xsd->vcsd_CurX * (LONG)st->hvs_DestW) / (LONG)st->hvs_SrcW;
-    cy = (LONG)st->hvs_FBY
-       + (LONG)(xsd->vcsd_CurY * (LONG)st->hvs_DestH) / (LONG)st->hvs_SrcH;
+    cx = (LONG)st->hvs_FBX + (LONG)(xsd->vcsd_CurX * (LONG)st->hvs_DestW) / sw;
+    cy = (LONG)st->hvs_FBY + (LONG)(xsd->vcsd_CurY * (LONG)st->hvs_DestH) / sh;
     cw = xsd->vcsd_CurWidth;
     ch = xsd->vcsd_CurHeight;
     pitch = xsd->vcsd_CurWidth * 4;
