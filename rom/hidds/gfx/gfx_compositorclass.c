@@ -1662,9 +1662,15 @@ restart:
     nreq = nok = 0;
     ForeachNode(&compdata->bitmapstack, n)
     {
+        /* A restart drops the planes of the pass before: a demoted screen kept its own */
         n->promoted = FALSE;
+        n->plane    = -1;
+        n->underlaid = FALSE;
         ForeachNode(&n->surfaces, sn)
         {
+            sn->plane    = -1;
+            sn->pflags   = 0;
+            sn->underlay = FALSE;
             if (sn->candidate)
             {
                 if (SNREQ(sn)->Flags & CRF_PLANE_REQUIRED)
