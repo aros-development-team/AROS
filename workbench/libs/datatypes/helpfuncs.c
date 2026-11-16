@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 
 //#define DEBUG 1
@@ -52,6 +52,8 @@ UBYTE const BinaryTable[256]=
 
 
 
+/* Return the named, shared descriptor list.  Its storage is not
+ * owned by the caller; NULL indicates failure. */
 struct DataTypesList *GetDataTypesList(struct DataTypesBase *DataTypesBase)
 {
     struct NamedObject   *no;
@@ -106,6 +108,8 @@ struct DataTypesList *GetDataTypesList(struct DataTypesBase *DataTypesBase)
 }
 
 
+/* Return a borrowed node by case-insensitive name, or NULL.
+ * The supplied list and name must be valid. */
 struct Node *FindNameNoCase(struct Library *DataTypesBase, struct List *list,
                             STRPTR name)
 {
@@ -125,6 +129,8 @@ struct Node *FindNameNoCase(struct Library *DataTypesBase, struct List *list,
 }
 
 
+/* Open a DOS file for reading; the caller closes a returned handle.
+ * SourceType and Length are currently unused; no XPK decoding occurs. */
 BPTR NewOpen(struct Library *DataTypesBase, STRPTR name, ULONG SourceType,
              ULONG Length)
 {
@@ -194,8 +200,12 @@ BPTR NewOpen(struct Library *DataTypesBase, STRPTR name, ULONG SourceType,
 
 #define getDTLIST (GPB(DataTypesBase)->dtb_DTList)
 
-struct CompoundDataType *ExamineLock(BPTR lock, struct FileInfoBlock *fib, struct DataType *prevdt,
-                                     struct Library *DataTypesBase)
+/*
+ * Search a DOS lock; caller retains the lock.  Only a positive Read()
+ * result is passed to ExamineData().  Returns a borrowed descriptor or NULL.
+ */
+struct CompoundDataType *ExamineLock(BPTR lock, struct FileInfoBlock *fib, const struct DataType *prevdt,
+                                     ULONG grpid, struct Library *DataTypesBase)
 {
     struct CompoundDataType *cdt = NULL;
 
@@ -209,9 +219,14 @@ struct CompoundDataType *ExamineLock(BPTR lock, struct FileInfoBlock *fib, struc
         if (fib->fib_DirEntryType > 0)
         {
             D(bug("datatypes.library/ExamineLock: is a directory\n"));
-            cdt = (struct CompoundDataType *)FindNameNoCase(DataTypesBase,
-                                                            &getDTLIST->dtl_MiscList,
-                                                            "directory");
+            if (!prevdt)
+            {
+                cdt = (struct CompoundDataType *)FindNameNoCase(DataTypesBase,
+                                                                &getDTLIST->dtl_MiscList,
+                                                                "directory");
+                if (cdt && grpid && cdt->DTH.dth_GroupID != grpid)
+                    cdt = NULL;
+            }
         }
         else
         {
@@ -230,6 +245,7 @@ struct CompoundDataType *ExamineLock(BPTR lock, struct FileInfoBlock *fib, struc
                     if((file = NewOpen(DataTypesBase, namebuf, DTST_FILE, 0)))
                     {
                         UBYTE *CheckArray;
+                        LONG ReadSize;
                         UWORD CheckSize = (getDTLIST->dtl_LongestMask > 64) ?
                             getDTLIST->dtl_LongestMask : 64;
                         
@@ -240,11 +256,13 @@ struct CompoundDataType *ExamineLock(BPTR lock, struct FileInfoBlock *fib, struc
                         {
                             D(bug("datatypes.library/ExamineLock: Allocated CheckArray\n"));
                             
-                            if((CheckSize = Read(file, CheckArray,
-                                                 (ULONG)CheckSize)) > 0)
+                            if((ReadSize = Read(file, CheckArray,
+                                                (ULONG)CheckSize)) > 0)
                             {
                                 struct DTHookContext dthc;
                                 struct IFFHandle *iff;
+
+                                CheckSize = (UWORD)ReadSize;
                                 
                                 D(bug("datatypes.library/ExamineLock: Read in CheckArray size = %d\n", CheckSize));
                                 
@@ -276,6 +294,7 @@ struct CompoundDataType *ExamineLock(BPTR lock, struct FileInfoBlock *fib, struc
                                         cdt = ExamineData(DataTypesBase,
                                                           &dthc,
                                                           prevdt,
+                                                          grpid,
                                                           CheckArray,
                                                           CheckSize,
                                                           fib->fib_FileName,
@@ -315,9 +334,31 @@ struct CompoundDataType *ExamineLock(BPTR lock, struct FileInfoBlock *fib, struc
 }
 
 
+/* Restore the input position after a descriptor checker. */
+static void ResetStream(const struct DTHookContext *dthc)
+{
+    if (dthc->dthc_IFF)
+    {
+        CloseIFF(dthc->dthc_IFF);
+        OpenIFF(dthc->dthc_IFF, IFFF_READ);
+    }
+    else
+    {
+        Seek(dthc->dthc_FileHandle, 0, OFFSET_BEGINNING);
+    }
+}
+
+
+/*
+ * Search one descriptor list.  prevdt skips through the matching entry;
+ * grpid limits matches to one group.  A checker is called once per
+ * descriptor and the stream is reset after its call, including FALSE.
+ * Returns a borrowed descriptor; callers hold the list semaphore.
+ */
 struct CompoundDataType *FindDtInList(struct Library *DataTypesBase,
                                       struct DTHookContext *dthc,
                                       struct List *list,
+                                      const struct DataType *prevdt, ULONG grpid,
                                       UBYTE *CheckArray,
                                       UWORD CheckSize,
                                       UBYTE *Filename)
@@ -333,14 +374,24 @@ struct CompoundDataType *FindDtInList(struct Library *DataTypesBase,
                 cur->DT.dtn_Node1.ln_Succ;
                 cur = (struct CompoundDataType *)cur->DT.dtn_Node1.ln_Succ)
         {
+            if (prevdt)
+            {
+                if (&cur->DT == prevdt)
+                    prevdt = NULL;
+                continue;
+            }
+
+            if (grpid && cur->DTH.dth_GroupID != grpid)
+                continue;
             
             if (!found && !(cur->DTH.dth_MaskLen) && (cur->Function))
             {
                 D(bug("[FindDtInList] *** Calling %s Match Function @ 0x%p\n", cur->DT.dtn_Node1.ln_Name, cur->Function));
                 found = (cur->Function)(dthc);
+                ResetStream(dthc);
             }
 
-            if (!found && CheckSize >= cur->DTH.dth_MaskLen)
+            else if (CheckSize >= cur->DTH.dth_MaskLen)
             {
                 WORD *msk = cur->DTH.dth_Mask;
                 UBYTE *cmp = CheckArray;
@@ -405,17 +456,7 @@ struct CompoundDataType *FindDtInList(struct Library *DataTypesBase,
                             D(bug("[FindDtInList] *** Calling %s Validation Function @ 0x%p\n", cur->DT.dtn_Node1.ln_Name, cur->Function));
 
                             found = (cur->Function)(dthc);
-
-                            if (dthc->dthc_IFF)
-                            {
-                                CloseIFF(dthc->dthc_IFF);
-                                OpenIFF(dthc->dthc_IFF, IFFF_READ);
-                            }
-                            else
-                            {
-                                Seek(dthc->dthc_FileHandle, 0,
-                                        OFFSET_BEGINNING);
-                            }
+                            ResetStream(dthc);
                         }
                     }
                 }
@@ -431,20 +472,34 @@ struct CompoundDataType *FindDtInList(struct Library *DataTypesBase,
 }
 
 
+/*
+ * Classify the available prefix and search the applicable descriptor lists.
+ * The IFF signature is read only when CheckSize is at least eight; list
+ * traversal honors prevdt and grpid.  Input buffers remain caller-owned.
+ * Returns a borrowed descriptor or NULL with no semaphore acquisition.
+ */
 struct CompoundDataType *ExamineData(struct Library *DataTypesBase,
                                      struct DTHookContext *dthc,
-                                     struct DataType *prevdt,
+                                     const struct DataType *prevdt, ULONG grpid,
                                      UBYTE *CheckArray, UWORD CheckSize,
                                      UBYTE *Filename, ULONG Size)
 {
     struct CompoundDataType *cdt = NULL;
     struct CompoundDataType *cdt_bin = NULL;
     struct CompoundDataType *cdt_asc = NULL;
+    UWORD prevtype = prevdt && prevdt->dtn_Header ?
+        prevdt->dtn_Header->dth_Flags & DTF_TYPE_MASK : 0;
 
     D(UWORD        type);
 
-    ULONG IFF_ID   = AROS_BE2LONG(*((ULONG*)CheckArray));
-    ULONG IFF_Size = AROS_BE2LONG(*((ULONG*)(CheckArray+4)));
+    ULONG IFF_ID = 0;
+    ULONG IFF_Size = 0;
+
+    if (CheckSize >= 8)
+    {
+        IFF_ID   = AROS_BE2LONG(*((ULONG*)CheckArray));
+        IFF_Size = AROS_BE2LONG(*((ULONG*)(CheckArray+4)));
+    }
 
     if(((!dthc->dthc_FileHandle) && (dthc->dthc_IFF)) ||
         (((IFF_Size + 8 == Size) && (Size > 21)) &&
@@ -452,7 +507,9 @@ struct CompoundDataType *ExamineData(struct Library *DataTypesBase,
     {
         D(bug("[ExamineData] IFF detected\n"));
         D(type = DTF_IFF);
-        cdt = FindDtInList(DataTypesBase, dthc, &getDTLIST->dtl_IFFList, CheckArray, CheckSize, Filename);
+        if (!prevdt || prevtype == DTF_IFF)
+            cdt = FindDtInList(DataTypesBase, dthc, &getDTLIST->dtl_IFFList,
+                               prevdt, grpid, CheckArray, CheckSize, Filename);
     }
     else
     {
@@ -481,27 +538,39 @@ struct CompoundDataType *ExamineData(struct Library *DataTypesBase,
         {
             D(bug("[ExamineData] Recognized as ASCII\n"));
             D(type = DTF_ASCII);
-            cdt_asc = FindDtInList(DataTypesBase, dthc, &getDTLIST->dtl_ASCIIList, CheckArray, CheckSize, Filename);
-            D(bug("[ExamineData] ASCII datatype: 0x%p\n", cdt_asc));
-            cdt = cdt_asc;
-            /* if the found datatype is 'only' ascii we have to look additionally in the binary list */
-            if (cdt_asc && !strcmp(cdt_asc->DTH.dth_Name, "ascii"))
+            if (!prevdt || prevtype == DTF_ASCII)
             {
-                D(bug("[ExamineData] Trying binary list\n"));
-                cdt_bin = FindDtInList(DataTypesBase, dthc, &getDTLIST->dtl_BinaryList, CheckArray, CheckSize, Filename);
-                D(bug("[[ExamineData] Binary datatype: 0x%p\n"));
-                /* if we find in the binary list something which is better than just 'binary' we use it */
-                if (cdt_bin && strcmp(cdt_bin->DTH.dth_Name, "binary"))
+                cdt_asc = FindDtInList(DataTypesBase, dthc, &getDTLIST->dtl_ASCIIList,
+                                       prevdt, grpid, CheckArray, CheckSize, Filename);
+                D(bug("[ExamineData] ASCII datatype: 0x%p\n", cdt_asc));
+                cdt = cdt_asc;
+
+                /* After ASCII matches, continue with more specific binary matches. */
+                if (!cdt_asc || !strcmp(cdt_asc->DTH.dth_Name, "ascii"))
                 {
-                    cdt = cdt_bin;
+                    D(bug("[ExamineData] Trying binary list\n"));
+                    cdt_bin = FindDtInList(DataTypesBase, dthc, &getDTLIST->dtl_BinaryList,
+                                           NULL, grpid, CheckArray, CheckSize, Filename);
+                    D(bug("[ExamineData] Binary datatype: 0x%p\n", cdt_bin));
+                    if (cdt_bin && strcmp(cdt_bin->DTH.dth_Name, "binary"))
+                        cdt = cdt_bin;
                 }
+            }
+            else if (prevtype == DTF_BINARY)
+            {
+                cdt_bin = FindDtInList(DataTypesBase, dthc, &getDTLIST->dtl_BinaryList,
+                                       prevdt, grpid, CheckArray, CheckSize, Filename);
+                if (cdt_bin && strcmp(cdt_bin->DTH.dth_Name, "binary"))
+                    cdt = cdt_bin;
             }
         }
         else
         {
             D(bug("[ExamineData] Recognized as binary\n"));
             D(type = DTF_BINARY);
-            cdt = FindDtInList(DataTypesBase, dthc, &getDTLIST->dtl_BinaryList, CheckArray, CheckSize, Filename);
+            if (!prevdt || prevtype == DTF_BINARY)
+                cdt = FindDtInList(DataTypesBase, dthc, &getDTLIST->dtl_BinaryList,
+                                   prevdt, grpid, CheckArray, CheckSize, Filename);
         }
     }
 
@@ -513,8 +582,13 @@ struct CompoundDataType *ExamineData(struct Library *DataTypesBase,
 #undef getDTLIST
 
 
-/* Putchar procedure needed by RawDoFmt() */
 
+
+/*
+ * Internal RawDoFmt() output callback: append chr at the byte pointer held
+ * in p and advance that pointer.  The caller provides the destination
+ * storage and sufficient capacity; this callback does not add a terminator.
+ */
 AROS_UFH2(void, putchr,
     AROS_UFHA(UBYTE,    chr, D0),
     AROS_UFHA(STRPTR *, p,   A3))

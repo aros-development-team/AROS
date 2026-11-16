@@ -2,7 +2,7 @@
 #define DATATYPES_INTERN_H
 
 /*
-    Copyright © 1995-2020, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2026, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Internal datatypes.library definitions.
@@ -83,6 +83,9 @@ struct CompoundDataType
     UBYTE	    *DTCDChunk;
     ULONG	     DTCDSize;
     BPTR	     SegList;
+    /* Optional descriptor checker/validator loaded by AddDataTypes.
+     * Receives the current stream context and returns match status.
+     * The descriptor owns the callback; callers must not free it. */
     BOOL (*Function)(struct DTHookContext *dthc);
     ULONG	     OpenCount;
     struct DataTypeHeader DTH;
@@ -179,17 +182,19 @@ struct IntDataTypesList
 #define INTDTLt(dtl)   ((struct IntDataTypesList *)(dtl))
 
 
-/* Prototypes for help functions */
+/* Private datatypes.library helpers: helpfuncs.c owns the search and
+ * recognition functions; classfuncs.c owns class installation/removal.
+ * These declarations are not exported public entrypoints. */
 struct Node *FindNameNoCase(struct Library *DataTypesBase, struct List *list,
                             STRPTR name);
 struct DataTypesList *GetDataTypesList(struct DataTypesBase *DataTypesBase);
 struct CompoundDataType *ExamineData(struct Library *DataTypesBase,
                                      struct DTHookContext *dthc,
-                                     struct DataType *prevdt,
+                                     const struct DataType *prevdt, ULONG grpid,
                                      UBYTE *CheckArray, UWORD CheckSize,
                                      UBYTE *Filename, ULONG Size);
 struct CompoundDataType *ExamineLock(BPTR lock, struct FileInfoBlock *fib,
-                                     struct DataType *prevdt,
+                                     const struct DataType *prevdt, ULONG grpid,
                                      struct Library *DataTypesBase);
 
 BPTR NewOpen(struct Library *DataTypesBase, STRPTR name, ULONG SourceType,
