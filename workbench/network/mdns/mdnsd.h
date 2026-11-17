@@ -407,6 +407,8 @@ void mdnsFamilyStart(struct MDNSFamilyPub *fp, ULONG next);
 BOOL mdnsFamilyAnswers(const struct MDNSFamilyPub *fp);
 UWORD mdnsFamilyStep(struct MDNSFamilyPub *fp, ULONG now, ULONG *soonest);
 BOOL mdnsPubAnswers(const struct MDNSPub *pub);
+BOOL mdnsPubAsked(const struct MDNSPub *pub);
+void mdnsPubDefer(struct MDNSPub *pub, ULONG next);
 void mdnsPubUpdate(struct MDNSPub *pub, ULONG now);
 void mdnsNetSendAll(struct MDNSDaemon *md, const UBYTE *pkt, LONG pktlen);
 

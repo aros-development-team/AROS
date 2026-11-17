@@ -656,8 +656,10 @@ mdnsHostHandleQuery(struct MDNSDaemon *md, struct MDNSQuestion *q)
     const struct MDNSFamilyPub *fp;
     UWORD saved;
 
-    if (md->md_IfCount == 0 ||
-        !mdnsHostAnswersOn(md, md->md_SendIf, md->md_QueryFamily) ||
+    /* the name answers on the link by either family: a question by the
+     * other, still probing there, is answered too - a probe of another
+     * host's among them, in the name's defence (section 8.1, 9) */
+    if (md->md_IfCount == 0 || !mdnsHostAnswersOn(md, md->md_SendIf, 0) ||
         (q->qtype != DNS_TYPE_ANY && q->qtype != DNS_TYPE_A &&
          q->qtype != DNS_TYPE_AAAA)) {
         return;
@@ -680,8 +682,8 @@ mdnsHostHandleQuery(struct MDNSDaemon *md, struct MDNSQuestion *q)
         md->md_ReplyLegacy = legacy;
         md->md_ReplyQuestion = q;
     }
-    /* to the group, by the family the question came by: the name may be
-     * still probed for by the other (struct MDNSPub) */
+    /* to the group, by the family the question came by: whoever asked
+     * listens there */
     saved = md->md_SendFamily;
     md->md_SendFamily = md->md_QueryFamily;
     host_answer(md, q->qtype);
@@ -702,6 +704,14 @@ mdnsHostHandleQuery(struct MDNSDaemon *md, struct MDNSQuestion *q)
  *
  * The record of this host is the address of the interface the probe came
  * in on. An equal record is this same host seen from somewhere else.
+ *
+ * The claim is the link's, whichever family the probe came by: the other
+ * host is on that segment, whatever its listeners speak. So when the name
+ * already answers on the link by either family it is the host's there, and
+ * there is no tie to break - the probe is a question, answered in its
+ * defence (mdnsHostHandleQuery()); and a tie lost puts every family still
+ * probing on the link back by a second, not the one the probe came by
+ * alone. Other links are other segments, and go on.
  */
 void
 mdnsHostHandleProbe(struct MDNSDaemon *md, const struct MDNSRecord *theirs,
@@ -718,12 +728,15 @@ mdnsHostHandleProbe(struct MDNSDaemon *md, const struct MDNSRecord *theirs,
     static struct AddressRecord mine[MDNS_ADDRESS_MAX];
     char fqdn[256];
     LONG i, j, index, mineCount = 0, otherCount = 0, difference = 0;
-    struct MDNSFamilyPub *fp;
+    struct MDNSPub *pub = NULL;
 
-    index = md->md_SendIf >= 0 ? md->md_SendIf : 0;
-    fp = host_family(md, index, mdnsFamOf(md->md_QueryFamily));
-    if (fp == NULL || fp->fp_State != MDNS_PUB_PROBING || fp->fp_Step == 0) {
-        return;         /* not probing here, or has not asked yet */
+    index = md->md_SendIf;
+    if (index >= 0 && index < md->md_IfCount) {
+        pub = mdnsPubFind(md->md_HostPubs, md->md_HostPubCount,
+            md->md_Ifs[index].mi_Index);
+    }
+    if (pub == NULL || !mdnsPubAsked(pub)) {
+        return;         /* the host's here already, or not asked yet */
     }
     mdnsHostFqdn(md, fqdn, (LONG)sizeof(fqdn));
     for (i = 0; i < 2; ++i) {
@@ -788,8 +801,9 @@ mdnsHostHandleProbe(struct MDNSDaemon *md, const struct MDNSRecord *theirs,
         difference = mineCount - otherCount;
     }
     if (otherCount > 0 && difference < 0) {
-        /* this link and family wait a second and probe again */
-        mdnsFamilyStart(fp, mdnsTicks() + MDNS_SECOND_TICKS);
+        /* every family probing on this link waits a second and probes
+         * again (section 8.2) */
+        mdnsPubDefer(pub, mdnsTicks() + MDNS_SECOND_TICKS);
     }
 }
 

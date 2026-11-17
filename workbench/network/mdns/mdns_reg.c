@@ -1367,9 +1367,8 @@ mdnsRegHandleQuery(struct MDNSDaemon *md, struct MDNSQuestion *q,
             continue;
         }
         /* a service of this host waits while the host's name is in doubt
-         * on the link and family the question came by */
-        if (!PROXY(rs) &&
-            !mdnsHostAnswersOn(md, md->md_SendIf, md->md_QueryFamily)) {
+         * on the link the question came by */
+        if (!PROXY(rs) && !mdnsHostAnswersOn(md, md->md_SendIf, 0)) {
             continue;
         }
 

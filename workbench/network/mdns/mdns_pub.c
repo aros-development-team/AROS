@@ -9,8 +9,8 @@
  * and on each link per address family (mdnsd.h, struct MDNSPub). These are
  * the pieces every owner uses: finding, adding and removing a link's
  * publication; a family's round - three probes, two announcements, and two
- * more when its data change. What goes out at each step is the owner's
- * (mdns_host.c).
+ * more when its data change; and the claim of the name on a link, which its
+ * families share. What goes out at each step is the owner's (mdns_host.c).
  */
 
 #include <exec/types.h>
@@ -198,13 +198,49 @@ mdnsFamilyStep(struct MDNSFamilyPub *fp, ULONG now, ULONG *soonest)
 }
 
 /*
- * The name answers on the link when any family does.
+ * The claim of a name on a link is the link's, whichever family: another
+ * host on the segment is there for all of them (RFC 6762 sections 8.2, 9,
+ * 14). The name answers on the link when any family does.
  */
 BOOL
 mdnsPubAnswers(const struct MDNSPub *pub)
 {
     return mdnsFamilyAnswers(&pub->p_Family[MDNS_FAM_IPV4]) ||
         mdnsFamilyAnswers(&pub->p_Family[MDNS_FAM_IPV6]);
+}
+
+/* Is the name probed for on the link, a probe out already, and not yet
+ * the owner's there by any family - where a tie with another host's probe
+ * is to be broken (section 8.2)? */
+BOOL
+mdnsPubAsked(const struct MDNSPub *pub)
+{
+    UWORD fam;
+    BOOL asked = FALSE;
+
+    for (fam = 0; fam < MDNS_FAMS; fam++) {
+        const struct MDNSFamilyPub *fp = &pub->p_Family[fam];
+
+        if (mdnsFamilyAnswers(fp)) {
+            return FALSE;
+        }
+        asked |= fp->fp_State == MDNS_PUB_PROBING && fp->fp_Step != 0;
+    }
+    return asked;
+}
+
+/* A tie lost on the link: every family still probing there starts again
+ * at next (section 8.2, a second later). */
+void
+mdnsPubDefer(struct MDNSPub *pub, ULONG next)
+{
+    UWORD fam;
+
+    for (fam = 0; fam < MDNS_FAMS; fam++) {
+        if (pub->p_Family[fam].fp_State == MDNS_PUB_PROBING) {
+            mdnsFamilyStart(&pub->p_Family[fam], next);
+        }
+    }
 }
 
 /* The owner's data changed, the name already its own: announced again,
