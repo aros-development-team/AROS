@@ -316,9 +316,186 @@ int dnssd_link_inventory_init(struct dnssd_link_inventory *inventory,
     return DNSSD_LINK_OK;
 }
 
+/* Is an address usable with these links' state (as
+ * dnssd_link_address_usable(), on entries not yet published)? */
+static int usable_among(const struct dnssd_link_entry *links, size_t link_count,
+                        const struct dnssd_address_spec *address)
+{
+    uint32_t unusable = DNSSD_ADDRESS_TENTATIVE | DNSSD_ADDRESS_DUPLICATED |
+        DNSSD_ADDRESS_DETACHED | DNSSD_ADDRESS_DEPRECATED;
+    size_t i;
+
+    if ((address->flags & unusable) != 0u)
+        return 0;
+    for (i = 0; i < link_count; ++i) {
+        if (links[i].value.interface_index == address->interface_index)
+            return (links[i].value.flags & (DNSSD_LINK_UP |
+                    DNSSD_LINK_MULTICAST | DNSSD_LINK_LOOPBACK)) ==
+                (DNSSD_LINK_UP | DNSSD_LINK_MULTICAST);
+    }
+    return 0;
+}
+
+/* The usable addresses of one link and family among entries. */
+static size_t usable_count(const struct dnssd_link_entry *links,
+    size_t link_count, const struct dnssd_address_entry *addresses,
+    size_t address_count, uint32_t index, uint16_t family)
+{
+    size_t i, count = 0;
+
+    for (i = 0; i < address_count; ++i) {
+        if (addresses[i].value.interface_index == index &&
+            addresses[i].value.family == family &&
+            usable_among(links, link_count, &addresses[i].value))
+            ++count;
+    }
+    return count;
+}
+
+/* Is address usable among the entries (the same address, usable there)? */
+static int usable_in(const struct dnssd_link_entry *links, size_t link_count,
+    const struct dnssd_address_entry *addresses, size_t address_count,
+    const struct dnssd_address_spec *address)
+{
+    size_t i;
+
+    for (i = 0; i < address_count; ++i) {
+        if (same_address_key(&addresses[i].value, address))
+            return usable_among(links, link_count, &addresses[i].value);
+    }
+    return 0;
+}
+
+static void add_change(struct dnssd_link_changes *changes, uint32_t index,
+    uint16_t family, uint16_t kind, const struct dnssd_address_spec *address)
+{
+    struct dnssd_link_change *change;
+
+    if (changes->count >= changes->capacity) {
+        changes->overflow = 1;
+        return;
+    }
+    change = &changes->items[changes->count++];
+    memset(change, 0, sizeof(*change));
+    change->interface_index = index;
+    change->family = family;
+    change->kind = kind;
+    if (address != NULL)
+        memcpy(change->bytes, address->bytes, address->length);
+}
+
+/* Is a usable address of one link and family among the first entries not
+ * usable among the second? */
+static int usable_gone(uint32_t index, uint16_t family,
+    const struct dnssd_link_entry *links, size_t link_count,
+    const struct dnssd_address_entry *addresses, size_t address_count,
+    const struct dnssd_link_entry *other_links, size_t other_link_count,
+    const struct dnssd_address_entry *others, size_t other_count)
+{
+    size_t i;
+
+    for (i = 0; i < address_count; ++i) {
+        const struct dnssd_address_spec *a = &addresses[i].value;
+
+        if (a->interface_index == index && a->family == family &&
+            usable_among(links, link_count, a) &&
+            !usable_in(other_links, other_link_count, others, other_count, a))
+            return 1;
+    }
+    return 0;
+}
+
+/* One link and family: what changed between the published entries (old)
+ * and the scratch ones (new). */
+static void link_family_changes(const struct dnssd_link_inventory *inventory,
+    size_t links, size_t addresses, uint32_t index, uint16_t family,
+    struct dnssd_link_changes *changes)
+{
+    const struct dnssd_link_entry *old_links = inventory->links;
+    const struct dnssd_link_entry *new_links = inventory->link_scratch;
+    const struct dnssd_address_entry *old_addresses = inventory->addresses;
+    const struct dnssd_address_entry *new_addresses =
+        inventory->address_scratch;
+    size_t before = usable_count(old_links, inventory->link_count,
+        old_addresses, inventory->address_count, index, family);
+    size_t after = usable_count(new_links, links, new_addresses, addresses,
+        index, family);
+
+    if (before == 0u && after == 0u)
+        return;
+    if (before == 0u) {
+        add_change(changes, index, family, DNSSD_LINK_FAMILY_UP, NULL);
+    } else if (after == 0u) {
+        size_t i;
+
+        add_change(changes, index, family, DNSSD_LINK_FAMILY_DOWN, NULL);
+        for (i = 0; i < inventory->address_count; ++i) {
+            const struct dnssd_address_spec *a = &old_addresses[i].value;
+
+            if (a->interface_index == index && a->family == family &&
+                usable_among(old_links, inventory->link_count, a))
+                add_change(changes, index, family, DNSSD_LINK_ADDRESS_LOST, a);
+        }
+    } else if (usable_gone(index, family, old_links, inventory->link_count,
+                   old_addresses, inventory->address_count,
+                   new_links, links, new_addresses, addresses) ||
+               usable_gone(index, family, new_links, links, new_addresses,
+                   addresses, old_links, inventory->link_count,
+                   old_addresses, inventory->address_count)) {
+        add_change(changes, index, family, DNSSD_LINK_ADDRESSES, NULL);
+    }
+}
+
+/* Every link either snapshot has, each family. */
+static void inventory_changes(const struct dnssd_link_inventory *inventory,
+    size_t links, size_t addresses, struct dnssd_link_changes *changes)
+{
+    static const uint16_t families[2] = {
+        DNSSD_ADDRESS_IPV4, DNSSD_ADDRESS_IPV6
+    };
+    size_t i, j, f;
+
+    for (f = 0; f < 2u; ++f) {
+        for (i = 0; i < inventory->link_count; ++i)
+            link_family_changes(inventory, links, addresses,
+                inventory->links[i].value.interface_index, families[f],
+                changes);
+        for (i = 0; i < links; ++i) {
+            uint32_t index = inventory->link_scratch[i].value.interface_index;
+
+            for (j = 0; j < inventory->link_count; ++j) {
+                if (inventory->links[j].value.interface_index == index)
+                    break;
+            }
+            if (j == inventory->link_count)     /* a link only new has */
+                link_family_changes(inventory, links, addresses, index,
+                    families[f], changes);
+        }
+    }
+}
+
+/* A change per link and family at most - of the links published and those
+ * to come, as many as there is room for - and an ADDRESS_LOST for each
+ * address published. */
+size_t dnssd_link_changes_bound(const struct dnssd_link_inventory *inventory)
+{
+    return 2u * (inventory->link_count + inventory->link_capacity) +
+        inventory->address_count;
+}
+
 int dnssd_link_inventory_reconcile(struct dnssd_link_inventory *inventory,
     const struct dnssd_link_spec *links, size_t link_count,
     const struct dnssd_address_spec *addresses, size_t address_count)
+{
+    return dnssd_link_inventory_reconcile_changes(inventory, links,
+        link_count, addresses, address_count, NULL);
+}
+
+int dnssd_link_inventory_reconcile_changes(
+    struct dnssd_link_inventory *inventory,
+    const struct dnssd_link_spec *links, size_t link_count,
+    const struct dnssd_address_spec *addresses, size_t address_count,
+    struct dnssd_link_changes *changes)
 {
     size_t unique_links, unique_addresses;
     int result;
@@ -326,6 +503,10 @@ int dnssd_link_inventory_reconcile(struct dnssd_link_inventory *inventory,
     if (inventory == NULL || (link_count != 0u && links == NULL) ||
         (address_count != 0u && addresses == NULL))
         return DNSSD_LINK_BAD_ARGUMENT;
+    if (changes != NULL) {
+        changes->count = 0u;
+        changes->overflow = 0;
+    }
     result = count_links(links, link_count, &unique_links);
     if (result != DNSSD_LINK_OK)
         return result;
@@ -342,6 +523,8 @@ int dnssd_link_inventory_reconcile(struct dnssd_link_inventory *inventory,
     build_addresses(inventory, addresses, address_count);
     if (!inventory_changed(inventory, unique_links, unique_addresses))
         return DNSSD_LINK_OK;
+    if (changes != NULL)
+        inventory_changes(inventory, unique_links, unique_addresses, changes);
     memset(inventory->links, 0,
            inventory->link_capacity * sizeof(*inventory->links));
     memset(inventory->addresses, 0,

@@ -23,9 +23,11 @@ enum dnssd_link_aros_result {
  * Read one complete AROSTCP interface/address snapshot and reconcile it.
  * snapshot_limit is the maximum temporary byte buffer used for either
  * address family. Saturated snapshots grow up to that limit; a partial
- * snapshot is never passed to the inventory.
+ * snapshot is never passed to the inventory. changes, when not NULL, gets
+ * what the snapshot changed (dnssd_link_inventory_reconcile_changes()).
  */
 int dnssd_link_aros_reconcile(struct dnssd_link_inventory *inventory,
-    struct Library *SocketBase, size_t snapshot_limit);
+    struct Library *SocketBase, size_t snapshot_limit,
+    struct dnssd_link_changes *changes);
 
 #endif

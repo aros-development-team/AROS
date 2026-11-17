@@ -309,7 +309,7 @@ mdnsNetRescan(struct MDNSDaemon *md)
     SocketBase = md->md_SocketBase;
     previous_revision = md->md_LinkInventory.revision;
     result = dnssd_link_aros_reconcile(&md->md_LinkInventory, SocketBase,
-                                       MDNS_LINK_SNAPSHOT_MAX);
+                                       MDNS_LINK_SNAPSHOT_MAX, NULL);
     if (result != DNSSD_LINK_OK ||
         md->md_LinkInventory.revision == previous_revision)
         return FALSE;

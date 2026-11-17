@@ -57,6 +57,121 @@ static void set_v6(struct dnssd_address_spec *address, uint32_t index,
     address->bytes[15] = last;
 }
 
+/* Whether changes has this one (index, family, kind, and for an address
+ * lost the last byte of the address). */
+static int has(const struct dnssd_link_changes *changes, uint32_t index,
+               uint16_t family, uint16_t kind, uint8_t last)
+{
+    size_t i;
+
+    for (i = 0; i < changes->count; ++i) {
+        const struct dnssd_link_change *c = &changes->items[i];
+        size_t length = family == DNSSD_ADDRESS_IPV4 ? 4u : 16u;
+
+        if (c->interface_index == index && c->family == family &&
+            c->kind == kind &&
+            (kind != DNSSD_LINK_ADDRESS_LOST || c->bytes[length - 1u] == last))
+            return 1;
+    }
+    return 0;
+}
+
+/* What a reconcile tells changed, per link and family. */
+static void test_changes(void)
+{
+    struct dnssd_link_inventory inv;
+    struct dnssd_link_entry links[4], link_scratch[4];
+    struct dnssd_address_entry addresses[8], address_scratch[8];
+    struct dnssd_link_change items[8], one[1];
+    struct dnssd_link_changes changes, small;
+    struct dnssd_link_spec l[3];
+    struct dnssd_address_spec a[6];
+    uint32_t revision;
+    size_t bound;
+
+    changes.items = items;
+    changes.capacity = 8u;
+    dnssd_link_inventory_init(&inv, links, link_scratch, 4u, addresses,
+        address_scratch, 8u);
+    set_link(&l[0], 7u, "eth0", DNSSD_LINK_UP | DNSSD_LINK_MULTICAST);
+    set_link(&l[1], 9u, "eth1", DNSSD_LINK_UP | DNSSD_LINK_MULTICAST);
+    set_link(&l[2], 1000u, "lo0", DNSSD_LINK_UP | DNSSD_LINK_LOOPBACK);
+    set_v4(&a[0], 7u, 10u, 0u);
+    set_v6(&a[1], 7u, 2u, 0u);
+    set_v6(&a[2], 9u, 3u, 0u);
+    set_v4(&a[3], 1000u, 1u, 0u);
+
+    CHECK(dnssd_link_inventory_reconcile_changes(&inv, l, 3u, a, 4u,
+              &changes) == DNSSD_LINK_OK && changes.count == 3u &&
+              !changes.overflow &&
+              has(&changes, 7u, DNSSD_ADDRESS_IPV4, DNSSD_LINK_FAMILY_UP, 0u) &&
+              has(&changes, 7u, DNSSD_ADDRESS_IPV6, DNSSD_LINK_FAMILY_UP, 0u) &&
+              has(&changes, 9u, DNSSD_ADDRESS_IPV6, DNSSD_LINK_FAMILY_UP, 0u),
+          "changes: each link and family that came; none for a loopback");
+    CHECK(dnssd_link_inventory_reconcile_changes(&inv, l, 3u, a, 4u,
+              &changes) == DNSSD_LINK_OK && changes.count == 0u,
+          "changes: none when nothing changed");
+
+    revision = inv.revision;
+    set_v4(&a[4], 9u, 40u, DNSSD_ADDRESS_TENTATIVE);
+    CHECK(dnssd_link_inventory_reconcile_changes(&inv, l, 3u, a, 5u,
+              &changes) == DNSSD_LINK_OK && inv.revision == revision + 1u &&
+              changes.count == 0u,
+          "changes: a tentative address is published but changes nothing");
+    a[4].flags = 0u;
+    CHECK(dnssd_link_inventory_reconcile_changes(&inv, l, 3u, a, 5u,
+              &changes) == DNSSD_LINK_OK && changes.count == 1u &&
+              has(&changes, 9u, DNSSD_ADDRESS_IPV4, DNSSD_LINK_FAMILY_UP, 0u),
+          "changes: it becoming ready brings IPv4 to that link alone");
+
+    set_v4(&a[5], 7u, 20u, 0u);
+    CHECK(dnssd_link_inventory_reconcile_changes(&inv, l, 3u, a, 6u,
+              &changes) == DNSSD_LINK_OK && changes.count == 1u &&
+              has(&changes, 7u, DNSSD_ADDRESS_IPV4, DNSSD_LINK_ADDRESSES, 0u),
+          "changes: a second address of a family changes its addresses");
+    a[0] = a[5];                                /* .10 goes */
+    CHECK(dnssd_link_inventory_reconcile_changes(&inv, l, 3u, a, 5u,
+              &changes) == DNSSD_LINK_OK && changes.count == 1u &&
+              has(&changes, 7u, DNSSD_ADDRESS_IPV4, DNSSD_LINK_ADDRESSES, 0u),
+          "changes: an address removed while another of its family stays");
+    set_v4(&a[0], 7u, 30u, 0u);                 /* .20 replaced by .30 */
+    CHECK(dnssd_link_inventory_reconcile_changes(&inv, l, 3u, a, 5u,
+              &changes) == DNSSD_LINK_OK && changes.count == 1u &&
+              has(&changes, 7u, DNSSD_ADDRESS_IPV4, DNSSD_LINK_ADDRESSES, 0u),
+          "changes: a replaced address is one change of the family's");
+    a[0].flags = DNSSD_ADDRESS_DUPLICATED;
+    CHECK(dnssd_link_inventory_reconcile_changes(&inv, l, 3u, a, 5u,
+              &changes) == DNSSD_LINK_OK && changes.count == 2u &&
+              has(&changes, 7u, DNSSD_ADDRESS_IPV4, DNSSD_LINK_FAMILY_DOWN, 0u) &&
+              has(&changes, 7u, DNSSD_ADDRESS_IPV4,
+                  DNSSD_LINK_ADDRESS_LOST, 30u),
+          "changes: the last usable address going takes the family, named");
+
+    l[1].flags = DNSSD_LINK_MULTICAST;          /* eth1 down */
+    bound = dnssd_link_changes_bound(&inv);
+    CHECK(dnssd_link_inventory_reconcile_changes(&inv, l, 3u, a, 5u,
+              &changes) == DNSSD_LINK_OK && changes.count == 4u &&
+              changes.count <= bound && !changes.overflow &&
+              has(&changes, 9u, DNSSD_ADDRESS_IPV4, DNSSD_LINK_FAMILY_DOWN, 0u) &&
+              has(&changes, 9u, DNSSD_ADDRESS_IPV6, DNSSD_LINK_FAMILY_DOWN, 0u) &&
+              has(&changes, 9u, DNSSD_ADDRESS_IPV4,
+                  DNSSD_LINK_ADDRESS_LOST, 40u) &&
+              has(&changes, 9u, DNSSD_ADDRESS_IPV6,
+                  DNSSD_LINK_ADDRESS_LOST, 3u),
+          "changes: a link going down takes both its families, named, "
+          "within the bound");
+    l[1].flags = DNSSD_LINK_UP | DNSSD_LINK_MULTICAST;
+
+    small.items = one;
+    small.capacity = 1u;
+    CHECK(dnssd_link_inventory_reconcile_changes(&inv, l, 3u, a, 5u,
+              &small) == DNSSD_LINK_OK && small.count == 1u && small.overflow,
+          "changes: more than the room there is sets overflow");
+    CHECK(dnssd_link_inventory_reconcile_changes(&inv, l, 3u, a, 5u,
+              &small) == DNSSD_LINK_OK && small.count == 0u && !small.overflow,
+          "changes: emptied again on the next reconcile");
+}
+
 int main(void)
 {
     struct dnssd_link_inventory inventory, small;
@@ -208,6 +323,8 @@ int main(void)
               small.last_required_links == 2u &&
               small.last_required_addresses == 5u,
           "report capacity pressure without mutating active state");
+
+    test_changes();
 
     if (failures == 0)
         printf("DNS-SD link inventory: 0 failures\n");
