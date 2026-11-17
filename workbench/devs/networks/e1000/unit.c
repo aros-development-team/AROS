@@ -1134,6 +1134,9 @@ void DeleteUnit(struct e1000Base *e1KBase, struct e1000Unit *unit)
         if (unit->e1ku_name)
             FreeVec(unit->e1ku_name);
 
+        if (unit->e1ku_rx_scratch)
+            FreeMem(unit->e1ku_rx_scratch, unit->rx_buffer_len);
+
         FreeMem(unit, sizeof(struct e1000Unit));
     }
 }

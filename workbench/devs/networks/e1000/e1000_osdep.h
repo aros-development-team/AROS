@@ -362,6 +362,19 @@ struct e1000Unit {
     ULONG                   e1ku_frame_max;
     ULONG                   e1ku_frame_min;
 
+	/* Scratch buffer used to reassemble frames split across several
+	 * receive descriptors (QEMU's e1000e model puts the 4 byte FCS in a
+	 * descriptor of its own). Allocated with the Rx resources and only
+	 * touched from e1000func_clean_rx_irq(). */
+	APTR                    e1ku_rx_scratch;
+	/* Reassembly state. Kept in the unit, not on the stack, because the
+	 * trailing descriptor of a split frame may complete after
+	 * e1000func_clean_rx_irq() has returned. Reset with the Rx resources. */
+	ULONG                   e1ku_rx_frag_len;
+	ULONG                   e1ku_rx_frag_errors;
+	BOOL                    e1ku_rx_assembling;
+	BOOL                    e1ku_rx_frag_ok;
+
 	ULONG                   e1ku_tx_fifo_head;
 	ULONG                   e1ku_tx_head_addr;
 	ULONG                   e1ku_tx_fifo_size;

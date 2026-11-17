@@ -833,6 +833,23 @@ int e1000func_setup_all_rx_resources(struct net_device *unit)
 
     D(bug("[%s] %s(0x%p)\n", unit->e1ku_name, __func__, unit);)
 
+    /* One assembly buffer per unit, used by e1000func_clean_rx_irq() when a
+     * frame arrives spread over several descriptors. */
+    if (unit->e1ku_rx_scratch == NULL)
+    {
+        unit->e1ku_rx_scratch = AllocMem(unit->rx_buffer_len, MEMF_PUBLIC | MEMF_CLEAR);
+        if (unit->e1ku_rx_scratch == NULL)
+        {
+            D(bug("[%s] %s: Unable to allocate the Rx assembly buffer\n", unit->e1ku_name, __func__);)
+            return E1000_ERR_CONFIG;
+        }
+        D(bug("[%s] %s: Rx assembly buffer @ %p [%d bytes]\n", unit->e1ku_name, __func__, unit->e1ku_rx_scratch, unit->rx_buffer_len);)
+    }
+    unit->e1ku_rx_frag_len = 0;
+    unit->e1ku_rx_frag_errors = 0;
+    unit->e1ku_rx_assembling = FALSE;
+    unit->e1ku_rx_frag_ok = FALSE;
+
     for (i = 0; i < unit->e1ku_rxRing_QueueSize; i++)
     {
         err = e1000func_setup_rx_resources(unit, &unit->e1ku_rxRing[i]);
@@ -1283,9 +1300,11 @@ BOOL e1000func_clean_rx_irq(struct net_device *unit,
     unsigned int i, total_rx_bytes=0, total_rx_packets=0;
     int cleaned_count = 0;
     UBYTE status = 0;
-    ULONG length;
+    ULONG length, errors = 0;
+    ULONG frag_len = unit->e1ku_rx_frag_len, frag_errors = unit->e1ku_rx_frag_errors;
     UWORD packet_type;	/* unsigned: IPv6 ethertype 0x86dd must not sign-extend */
     BOOL accepted, is_orphan, cleaned = FALSE, update = FALSE;
+    BOOL assembling = unit->e1ku_rx_assembling, frag_ok = unit->e1ku_rx_frag_ok;
 
     i = rx_ring->next_to_clean;
     rx_desc = E1000_RX_DESC(rx_ring, i);
@@ -1311,23 +1330,78 @@ BOOL e1000func_clean_rx_irq(struct net_device *unit,
         cleaned_count++;
 
         length = AROS_LE2WORD(rx_desc->length);
+        errors = rx_desc->errors;
 
-        /* !EOP means multiple descriptors were used to store a single
-         * packet, also make sure the frame isn't just CRC only */
-        if (!(status & E1000_RXD_STAT_EOP) || (length <= ETH_CRCSIZE)) {
-            /* All receives must fit into a single buffer */
-            D(bug("[%s] %s: Receive packet consumed multiple buffers - recycling\n", unit->e1ku_name, __func__);)
-            /* recycle */
-            goto next_desc;
+        /* A frame may be spread over several receive descriptors. QEMU's
+         * e1000e model (hw/net/e1000e_core.c, e1000e_write_packet_to_guest)
+         * always writes the 4 byte FCS into a descriptor of its own when
+         * RCTL.SECRC is clear, so the payload descriptor has DD but no EOP.
+         * Real hardware writes the FCS inline; the reassembly is generic. Accumulate every fragment up to the EOP descriptor in
+         * the per unit assembly buffer and hand the frame to the stack from
+         * there. A frame that fits in one descriptor keeps using the zero
+         * copy path below. */
+        if (assembling || !(status & E1000_RXD_STAT_EOP))
+        {
+            if (!assembling)
+            {
+                assembling = TRUE;
+                frag_len = 0;
+                frag_errors = 0;
+                frag_ok = (unit->e1ku_rx_scratch != NULL);
+            }
+
+            if (frag_ok && ((frag_len + length) <= unit->rx_buffer_len))
+            {
+                CopyMem((APTR)(IPTR)rx_desc->buffer_addr,
+                        (UBYTE *)unit->e1ku_rx_scratch + frag_len, length);
+                frag_len += length;
+                frag_errors |= errors;
+            }
+            else
+            {
+                frag_ok = FALSE;
+            }
+
+            if (!(status & E1000_RXD_STAT_EOP))
+            {
+                /* Wait for the remaining fragments of this frame */
+                D(bug("[%s] %s: Frame fragment %d bytes, %d assembled so far\n", unit->e1ku_name, __func__, length, frag_len);)
+                goto next_desc;
+            }
+
+            /* EOP reached - the frame is complete */
+            assembling = FALSE;
+
+            /* Make sure the assembled frame isn't just CRC only */
+            if (!frag_ok || (frag_len <= ETH_CRCSIZE))
+            {
+                D(bug("[%s] %s: Assembled frame (%d bytes) invalid - recycling\n", unit->e1ku_name, __func__, frag_len);)
+                goto next_desc;
+            }
+
+            frame = (struct eth_frame *)unit->e1ku_rx_scratch;
+            length = frag_len;
+            errors = frag_errors;
+        }
+        else
+        {
+            /* All receives must fit into a single buffer,
+             * also make sure the frame isn't just CRC only */
+            if (length <= ETH_CRCSIZE)
+            {
+                D(bug("[%s] %s: Receive packet consumed multiple buffers - recycling\n", unit->e1ku_name, __func__);)
+                /* recycle */
+                goto next_desc;
+            }
+
+            frame = (struct eth_frame *)(IPTR)rx_desc->buffer_addr;
         }
 
-        frame = (struct eth_frame *)(IPTR)rx_desc->buffer_addr;
-
-        if (rx_desc->errors & E1000_RXD_ERR_FRAME_ERR_MASK){
+        if (errors & E1000_RXD_ERR_FRAME_ERR_MASK){
             UBYTE last_byte = *(frame->eth_packet_data + length - 1);
-            D(bug("[%s] %s: Frame Error %d (last byte %x)\n", unit->e1ku_name, __func__, rx_desc->errors, last_byte);)
+            D(bug("[%s] %s: Frame Error %d (last byte %x)\n", unit->e1ku_name, __func__, errors, last_byte);)
             if (TBI_ACCEPT((struct e1000_hw *)unit->e1ku_Private00, status,
-                          rx_desc->errors, length, last_byte,
+                          errors, length, last_byte,
                           unit->e1ku_frame_min,
                           unit->e1ku_frame_max))
             {
@@ -1359,7 +1433,7 @@ BOOL e1000func_clean_rx_irq(struct net_device *unit,
         /* Receive Checksum Offload */
         e1000func_rx_checksum(unit,
                           (ULONG)(status) |
-                          ((ULONG)(rx_desc->errors) << 24),
+                          ((ULONG)(errors) << 24),
                           AROS_LE2WORD(rx_desc->csum), frame);
 
         /* Dump contents of frame if DEBUG enabled */
@@ -1470,6 +1544,12 @@ next_desc:
         D(buffer_info = next_buffer);
     }
     rx_ring->next_to_clean = i;
+
+    /* A frame whose EOP descriptor has not completed yet carries over */
+    unit->e1ku_rx_frag_len = frag_len;
+    unit->e1ku_rx_frag_errors = frag_errors;
+    unit->e1ku_rx_assembling = assembling;
+    unit->e1ku_rx_frag_ok = frag_ok;
 
     cleaned_count = E1000_DESC_UNUSED(rx_ring);
     if (cleaned_count)
