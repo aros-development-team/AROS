@@ -231,6 +231,179 @@ reply_to_group(struct MDNSDaemon *md)
 }
 
 /*
+ * A service's name is one, and its own (rs_State: a conflict on any link
+ * gives it up on all of them, RFC 6762 section 14); it is published on
+ * each link apart, and on each link by each address family apart (struct
+ * MDNSPub, mdns_pub.c), as the host's name is (mdns_host.c). A service
+ * registered on one interface (its interface_index) is published there
+ * alone.
+ */
+static BOOL
+service_scope(const struct MDNSRegisteredService *rs, ULONG link)
+{
+    return rs->rs_Reg.interface_index == 0 ||
+        rs->rs_Reg.interface_index == link;
+}
+
+/* The service's publication on the link of a slot, or NULL. */
+static struct MDNSServicePub *
+service_spub(const struct MDNSDaemon *md,
+    const struct MDNSRegisteredService *rs, LONG slot)
+{
+    return slot >= 0 && slot < md->md_IfCount ?
+        mdnsServicePubFind(rs->rs_Pubs, rs->rs_PubCount,
+            md->md_Ifs[slot].mi_Index) : NULL;
+}
+
+static struct MDNSPub *
+service_pub_find(const struct MDNSRegisteredService *rs, ULONG link)
+{
+    struct MDNSServicePub *sp = mdnsServicePubFind(rs->rs_Pubs,
+        rs->rs_PubCount, link);
+
+    return sp != NULL ? &sp->sp_Pub : NULL;
+}
+
+static struct MDNSPub *
+service_pub(const struct MDNSDaemon *md, const struct MDNSRegisteredService *rs,
+    LONG slot)
+{
+    struct MDNSServicePub *sp = service_spub(md, rs, slot);
+
+    return sp != NULL ? &sp->sp_Pub : NULL;
+}
+
+/* Does the name answer on the link of the slot, by any family? */
+static BOOL
+service_answers_on(const struct MDNSDaemon *md,
+    const struct MDNSRegisteredService *rs, LONG slot)
+{
+    const struct MDNSPub *pub = service_pub(md, rs, slot);
+
+    return pub != NULL && mdnsPubAnswers(pub);
+}
+
+/* The service's publication on a link, a new one (both families off) if it
+ * had none; NULL with no memory. */
+static struct MDNSPub *
+service_pub_add(struct MDNSRegisteredService *rs, ULONG link)
+{
+    struct MDNSServicePub *sp = mdnsServicePubAdd(&rs->rs_Pubs,
+        &rs->rs_PubCount, &rs->rs_PubMax, link);
+
+    return sp != NULL ? &sp->sp_Pub : NULL;
+}
+
+/* Published anew: on every link of its scope, by every family usable
+ * there, probed for from next on (a new name, or the links not known any
+ * more). */
+static void
+service_pubs_start(struct MDNSDaemon *md, struct MDNSRegisteredService *rs,
+    ULONG next)
+{
+    LONG i;
+    UWORD fam;
+
+    rs->rs_PubCount = 0;
+    for (i = 0; i < md->md_IfCount; i++) {
+        struct MDNSPub *pub;
+
+        if (!service_scope(rs, md->md_Ifs[i].mi_Index)) {
+            continue;
+        }
+        if ((pub = service_pub_add(rs, md->md_Ifs[i].mi_Index)) == NULL) {
+            md->md_RegPubsShort = TRUE;         /* made up for later */
+            continue;
+        }
+        for (fam = 0; fam < MDNS_FAMS; fam++) {
+            if (mdnsNetHasFamily(md, i, fam)) {
+                mdnsFamilyStart(&pub->p_Family[fam], next);
+            }
+        }
+    }
+}
+
+/* A publication that found no memory is made up for: on every link of its
+ * scope, every usable family not published there is probed for from now.
+ * TRUE when nothing is missing any more. */
+static BOOL
+service_complete(struct MDNSDaemon *md, struct MDNSRegisteredService *rs,
+    ULONG now)
+{
+    LONG i;
+    UWORD fam;
+
+    for (i = 0; i < md->md_IfCount; i++) {
+        for (fam = 0; service_scope(rs, md->md_Ifs[i].mi_Index) &&
+                fam < MDNS_FAMS; fam++) {
+            struct MDNSPub *pub;
+
+            if (!mdnsNetHasFamily(md, i, fam)) {
+                continue;
+            }
+            if ((pub = service_pub_add(rs, md->md_Ifs[i].mi_Index)) == NULL) {
+                return FALSE;
+            }
+            if (pub->p_Family[fam].fp_State == MDNS_PUB_OFF) {
+                mdnsFamilyStart(&pub->p_Family[fam], now);
+            }
+        }
+    }
+    return TRUE;
+}
+
+/* Its records went to the group on the link of the slot by af (AF_INET,
+ * AF_INET6; 0: both): no sooner again there than a second from now (RFC
+ * 6762 section 6), and an asker may be answered alone a while (5.4). */
+static void
+service_multicast(const struct MDNSDaemon *md,
+    const struct MDNSRegisteredService *rs, LONG slot, UWORD af, ULONG now)
+{
+    struct MDNSPub *pub = service_pub(md, rs, slot);
+    UWORD fam;
+
+    for (fam = 0; pub != NULL && fam < MDNS_FAMS; fam++) {
+        if (af == 0 || mdnsFamOf(af) == fam) {
+            pub->p_Family[fam].fp_Multicast = now | 1;
+        }
+    }
+}
+
+/* Did they go to the group on the link and by the family a question came
+ * by a quarter of their life ago or less - so that its asker may be
+ * answered alone (section 5.4)? */
+static BOOL
+service_recently_multicast(const struct MDNSDaemon *md,
+    const struct MDNSRegisteredService *rs, ULONG now)
+{
+    const struct MDNSPub *pub = service_pub(md, rs, md->md_SendIf);
+    ULONG sent = pub != NULL ?
+        pub->p_Family[mdnsFamOf(md->md_QueryFamily)].fp_Multicast : 0;
+
+    return sent != 0 && now - sent <= MDNS_UNICAST_SECONDS * 50UL;
+}
+
+/* Did they go to the group there by af (0: either) less than a second
+ * ago? */
+static BOOL
+service_recent(const struct MDNSDaemon *md,
+    const struct MDNSRegisteredService *rs, LONG slot, UWORD af, ULONG now)
+{
+    const struct MDNSPub *pub = service_pub(md, rs, slot);
+    UWORD fam;
+
+    for (fam = 0; pub != NULL && fam < MDNS_FAMS; fam++) {
+        ULONG sent = pub->p_Family[fam].fp_Multicast;
+
+        if ((af == 0 || mdnsFamOf(af) == fam) && sent != 0 &&
+            (LONG)(now - sent) < MDNS_SECOND_TICKS - 1) {
+            return TRUE;
+        }
+    }
+    return FALSE;
+}
+
+/*
  * Appends a service's records to a response that is being built: PTR, SRV,
  * TXT and, with withAddr, the address record of its host. As a goodbye
  * their time to live is zero, which withdraws them from every cache on the
@@ -474,8 +647,7 @@ service_send(struct MDNSDaemon *md, struct MDNSRegisteredService *rs,
             hdr->ancount = htons(ancount);
             mdnsNetSendOn(md, i, pkt, pos);
             if (!mdnsReplyIsUnicast(md) && !goodbye) {
-                rs->rs_Multicast = mdnsNow();
-                rs->rs_MulticastTick[i] = mdnsTicks();
+                service_multicast(md, rs, i, md->md_SendFamily, mdnsTicks());
             }
             /* what goes to the group, the host's own cache has too */
             if (!mdnsReplyIsUnicast(md)) {
@@ -486,11 +658,45 @@ service_send(struct MDNSDaemon *md, struct MDNSRegisteredService *rs,
     }
 }
 
-static BOOL
-sent_recently(ULONG sent, ULONG now)
+/* The service's records on the link of a slot by one family alone
+ * (MDNS_FAM_*): its announcements and goodbyes go by each family apart. */
+static void
+service_emit(struct MDNSDaemon *md, struct MDNSRegisteredService *rs,
+    LONG slot, UWORD fam, BOOL goodbye)
 {
-    return sent != 0 && (LONG)(now - sent) < 50;
+    LONG savedIf = md->md_SendIf;
+    UWORD savedFamily = md->md_SendFamily;
+
+    md->md_SendIf = slot;
+    md->md_SendFamily = fam == MDNS_FAM_IPV6 ? AF_INET6 : AF_INET;
+    service_send(md, rs, goodbye, all_subtypes(rs));
+    md->md_SendFamily = savedFamily;
+    md->md_SendIf = savedIf;
 }
+
+/* Goodbyes wherever, by whichever family, the service answers; nothing is
+ * published any more. */
+static void
+service_goodbye(struct MDNSDaemon *md, struct MDNSRegisteredService *rs)
+{
+    UWORD i, fam;
+
+    for (i = 0; i < rs->rs_PubCount; i++) {
+        struct MDNSPub *pub = &rs->rs_Pubs[i].sp_Pub;
+        LONG slot = mdnsNetSlot(md, pub->p_Link);
+
+        for (fam = 0; fam < MDNS_FAMS; fam++) {
+            if (slot >= 0 && mdnsFamilyAnswers(&pub->p_Family[fam])) {
+                service_emit(md, rs, slot, fam, TRUE);
+            }
+            pub->p_Family[fam].fp_State = MDNS_PUB_OFF;
+        }
+    }
+}
+
+/* The families pending for a delayed answer (ANSWER_FAMILY*), as the
+ * address family to send by: 0 for both. */
+static UWORD answer_af(UWORD families);
 
 static void types_send(struct MDNSDaemon *md, LONG ifindex, BOOL multicast);
 
@@ -518,6 +724,13 @@ answer_delay(const struct MDNSDaemon *md)
 
 #define ANSWER_FAMILY4 1
 #define ANSWER_FAMILY6 2
+
+static UWORD
+answer_af(UWORD families)
+{
+    return families == (ANSWER_FAMILY4 | ANSWER_FAMILY6) ? 0 :
+        (families & ANSWER_FAMILY6) ? AF_INET6 : AF_INET;
+}
 
 static UWORD
 answer_family(const struct MDNSDaemon *md)
@@ -588,7 +801,9 @@ answers_flush(struct MDNSDaemon *md, ULONG now)
 
             if (rs->rs_AnswerTick == 0 ||
                 (rs->rs_AnswerIf >= 0 && rs->rs_AnswerIf != i) ||
-                sent_recently(rs->rs_MulticastTick[i], now)) {
+                !service_answers_on(md, rs, i) ||
+                service_recent(md, rs, i, answer_af(rs->rs_AnswerFamilies),
+                    now)) {
                 continue;
             }
             families |= rs->rs_AnswerFamilies;
@@ -613,8 +828,8 @@ answers_flush(struct MDNSDaemon *md, ULONG now)
             if (!PROXY(rs)) {
                 addrDone = TRUE;
             }
-            rs->rs_Multicast = mdnsNow();
-            rs->rs_MulticastTick[i] = now;
+            service_multicast(md, rs, i, answer_af(rs->rs_AnswerFamilies),
+                now);
         }
         if (ancount != 0) {
             hdr->ancount = htons(ancount);
@@ -624,7 +839,7 @@ answers_flush(struct MDNSDaemon *md, ULONG now)
             struct MDNSRegisteredService *rs =
                 (struct MDNSRegisteredService *)n;
 
-            if (rs->rs_State == MDNS_NAME_ANNOUNCED &&
+            if (service_answers_on(md, rs, i) &&
                 rs->rs_AnswerTick != 0 &&
                 (LONG)(now - rs->rs_AnswerTick) >= 0 &&
                 (rs->rs_AnswerIf < 0 || rs->rs_AnswerIf == i) &&
@@ -686,75 +901,174 @@ mdnsRegGoodbyeAll(struct MDNSDaemon *md)
         return;
     }
     FOR_SERVICES(md, n) {
-        struct MDNSRegisteredService *rs = (struct MDNSRegisteredService *)n;
+        service_goodbye(md, (struct MDNSRegisteredService *)n);
+    }
+}
 
-        if (rs->rs_State == MDNS_NAME_ANNOUNCED) {
-            service_send(md, rs, TRUE, all_subtypes(rs));
+/* The host's name changed and is its own on every link: the records of its
+ * services point at it (the SRV's target), changed data announced again
+ * where they answer (RFC 6762 section 8.4). A service that stands in for
+ * another host points at that one, and has nothing to say. */
+void
+mdnsRegAnnounceAll(const struct MDNSDaemon *md)
+{
+    ULONG now = mdnsTicks();
+    struct Node *n;
+
+    FOR_SERVICES(md, n) {
+        const struct MDNSRegisteredService *rs =
+            (const struct MDNSRegisteredService *)n;
+        UWORD i;
+
+        for (i = 0; !PROXY(rs) && i < rs->rs_PubCount; i++) {
+            mdnsPubUpdate(&rs->rs_Pubs[i].sp_Pub, now);
         }
     }
 }
 
-/* The host's name is its own, perhaps a new one or with a new address:
- * what was announced before is announced again with it. */
-void
-mdnsRegAnnounceAll(struct MDNSDaemon *md)
+static void
+answers_clear(struct MDNSDaemon *md)
 {
     struct Node *n;
 
     FOR_SERVICES(md, n) {
         struct MDNSRegisteredService *rs = (struct MDNSRegisteredService *)n;
 
-        if (rs->rs_State == MDNS_NAME_ANNOUNCED) {
-            service_send(md, rs, FALSE, all_subtypes(rs));
-        }
-    }
-}
-
-/* An interface came up or changed: claim each service name again before
- * announcing it on the new link (RFC 6762 section 8.1). */
-void
-mdnsRegRestartAll(struct MDNSDaemon *md)
-{
-    struct Node *n;
-
-    FOR_SERVICES(md, n) {
-        struct MDNSRegisteredService *rs = (struct MDNSRegisteredService *)n;
-
-        rs->rs_State = MDNS_NAME_PROBING;
-        rs->rs_Reg.state = DNSSD_REG_PENDING;
-        rs->rs_Step = 0;
-        rs->rs_NextTick = mdnsTicks();
         rs->rs_AnswerTick = 0;
         rs->rs_AnswerFamilies = 0;
         rs->rs_AnswerSubtypes = 0;
-        memset(rs->rs_MulticastTick, 0, sizeof(rs->rs_MulticastTick));
-        memset(rs->rs_TypeTick, 0, sizeof(rs->rs_TypeTick));
     }
     md->md_TypesAnswerTick = 0;
     md->md_TypesAnswerFamilies = 0;
     md->md_AnswerPending = FALSE;
 }
 
+/* The links are not known any more - more changed than mdnsd could follow,
+ * which only a lack of memory for the list of changes brings: every service
+ * is published anew, from its first probe, on every link (RFC 6762 section
+ * 8.1). Recovery only; changes otherwise move what changed alone
+ * (mdnsRegLinksChanged()). */
+static void
+services_restart(struct MDNSDaemon *md)
+{
+    struct Node *n;
+
+    FOR_SERVICES(md, n) {
+        struct MDNSRegisteredService *rs = (struct MDNSRegisteredService *)n;
+
+        if (rs->rs_State == MDNS_NAME_CONFLICT) {
+            continue;
+        }
+        rs->rs_State = MDNS_NAME_PROBING;
+        rs->rs_Reg.state = DNSSD_REG_PENDING;
+        service_pubs_start(md, rs, mdnsTicks());
+    }
+    answers_clear(md);
+}
+
 /*
- * Asks whether anyone already has the instance's name, with the SRV record
- * this host would publish in the authority section (RFC 6762 section 8.1).
- * The first probe asks for a unicast answer.
+ * The links changed (mdnsNetRescan()), as the inventory tells per link and
+ * family (dnssd_link.h); the host's name has followed (mdnsHostLinksChanged()).
+ * A service follows only where connectivity changed:
+ * - a family that came on a link of its scope: probed for and announced
+ *   there by that family alone (RFC 6762 section 8.3) - a service that stands
+ *   in for another host too: the link is new to it as well;
+ * - a family a link lost: nothing goes by it any more; the others answer on;
+ * - a link that went, or has no family left: its publication goes;
+ * - an address of the host added or removed: nothing - a service's records
+ *   name the host, whose address records the host announces again; one that
+ *   stands in for another host has that host's addresses.
+ * When more changed than the list holds, every service starts again.
+ */
+void
+mdnsRegLinksChanged(struct MDNSDaemon *md,
+    const struct dnssd_link_changes *changes)
+{
+    ULONG now = mdnsTicks();
+    struct Node *n;
+    size_t k;
+
+    if (changes == NULL || changes->overflow) {
+        services_restart(md);
+        return;
+    }
+    FOR_SERVICES(md, n) {
+        struct MDNSRegisteredService *rs = (struct MDNSRegisteredService *)n;
+        UWORD i;
+
+        if (rs->rs_State == MDNS_NAME_CONFLICT) {
+            continue;
+        }
+        for (k = 0; k < changes->count; k++) {
+            const struct dnssd_link_change *c = &changes->items[k];
+            LONG slot = mdnsNetSlot(md, c->interface_index);
+            UWORD fam = mdnsFamOfDnssd(c->family);
+            struct MDNSPub *pub;
+
+            if (!service_scope(rs, c->interface_index)) {
+                continue;
+            }
+            if (c->kind == DNSSD_LINK_FAMILY_UP && slot >= 0 &&
+                mdnsNetHasFamily(md, slot, fam)) {
+                if ((pub = service_pub_add(rs, c->interface_index)) == NULL) {
+                    md->md_RegPubsShort = TRUE;
+                } else if (pub->p_Family[fam].fp_State == MDNS_PUB_OFF) {
+                    mdnsFamilyStart(&pub->p_Family[fam], now);
+                }
+            } else if (c->kind == DNSSD_LINK_FAMILY_DOWN &&
+                (pub = service_pub_find(rs, c->interface_index)) != NULL) {
+                pub->p_Family[fam].fp_State = MDNS_PUB_OFF;
+            }
+        }
+        for (i = 0; i < rs->rs_PubCount; ) {
+            struct MDNSPub *pub = &rs->rs_Pubs[i].sp_Pub;
+
+            if (mdnsNetSlot(md, pub->p_Link) < 0 ||
+                (pub->p_Family[MDNS_FAM_IPV4].fp_State == MDNS_PUB_OFF &&
+                 pub->p_Family[MDNS_FAM_IPV6].fp_State == MDNS_PUB_OFF)) {
+                mdnsServicePubRemove(rs->rs_Pubs, &rs->rs_PubCount,
+                    pub->p_Link);
+            } else {
+                i++;
+            }
+        }
+        /* the name answers nowhere now: until it does again, it is asked
+         * for (its probes went on another link, or come with the family) */
+        if (rs->rs_State == MDNS_NAME_ANNOUNCED) {
+            BOOL answers = FALSE;
+
+            for (i = 0; i < rs->rs_PubCount; i++) {
+                answers |= mdnsPubAnswers(&rs->rs_Pubs[i].sp_Pub);
+            }
+            if (!answers) {
+                rs->rs_State = MDNS_NAME_PROBING;
+                rs->rs_Reg.state = DNSSD_REG_PENDING;
+            }
+        }
+    }
+}
+
+/*
+ * Asks the link of a slot, by one family, whether anyone already has the
+ * instance's name, with the SRV record this host would publish in the
+ * authority section (RFC 6762 section 8.1). The first probe asks for a
+ * unicast answer.
  */
 static void
-service_probe(struct MDNSDaemon *md, const struct MDNSRegisteredService *rs)
+service_probe(struct MDNSDaemon *md, const struct MDNSRegisteredService *rs,
+    LONG slot, UWORD fam, BOOL first)
 {
     UBYTE *pkt = md->md_TxBuf;
     struct MDNSHeader *hdr = (struct MDNSHeader *)pkt;
-    UBYTE data[6 + 256];
     const UBYTE *txt;
-    LONG pos, slot;
-    UWORD qclass = (UWORD)(DNS_CLASS_IN | (rs->rs_Step == 0 ? DNS_QU_BIT : 0));
-    UWORD saved = md->md_SendFamily;
+    LONG pos;
+    UWORD qclass = (UWORD)(DNS_CLASS_IN | (first ? DNS_QU_BIT : 0));
 
     /* every record that is to be unique is probed for (RFC 6762 section
      * 8.1): the instance's SRV and TXT, and the addresses of a host it
      * stands in for - those of a link only on that link */
-    for (slot = 0; slot < md->md_IfCount; slot++) {
+    {
+        UBYTE data[6 + 256];
         UWORD nscount = 0, i;
         LONG length = srv_data(md, rs, data, (LONG)sizeof(data));
 
@@ -800,9 +1114,7 @@ service_probe(struct MDNSDaemon *md, const struct MDNSRegisteredService *rs)
             }
         }
         hdr->nscount = htons(nscount);
-        md->md_SendFamily = 0;
-        mdnsNetSendOn(md, slot, pkt, pos);
-        md->md_SendFamily = saved;
+        mdnsNetSendOnFamily(md, slot, fam, pkt, pos);
     }
 }
 
@@ -888,7 +1200,6 @@ mdnsRegHandleRecord(struct MDNSDaemon *md, const struct MDNSRecord *r,
                 mdnsCacheDropLocal(md, rs->rs_HostName, NULL);
                 rs->rs_State = MDNS_NAME_CONFLICT;
                 rs->rs_Reg.state = DNSSD_REG_CONFLICT;
-                rs->rs_NextTick = mdnsTicks();
             }
         }
         return;
@@ -938,13 +1249,14 @@ mdnsRegHandleRecord(struct MDNSDaemon *md, const struct MDNSRecord *r,
              * tells its client) */
             rs->rs_State = MDNS_NAME_CONFLICT;
             rs->rs_Reg.state = DNSSD_REG_CONFLICT;
-            rs->rs_NextTick = mdnsTicks();
             continue;
         }
+        /* another host has the name, on whichever link: the next one, on
+         * every link (sections 9, 14) */
         rs->rs_State = MDNS_NAME_PROBING;
         rs->rs_Reg.state = DNSSD_REG_PENDING;
-        rs->rs_Step = 0;
-        rs->rs_NextTick = mdnsTicks() + MDNS_PROBE_TICKS;
+        rs->rs_Told = FALSE;
+        service_pubs_start(md, rs, mdnsTicks() + MDNS_PROBE_TICKS);
     }
 }
 
@@ -1104,7 +1416,10 @@ probe_tiebreak(struct ProbeRecord *mine, LONG n, const UBYTE *name,
  * name of the host it stands in for - the two sets are compared and the
  * host whose set is later keeps going; this one, if it loses, waits a
  * second and probes again, by which time the winner has announced and the
- * usual conflict decides (RFC 6762 section 8.2).
+ * usual conflict decides (RFC 6762 section 8.2). The claim is the link's
+ * the probe came by, whichever family (mdnsPubAsked(), mdnsPubDefer()): a
+ * name that answers there already is no tie, but a question answered in
+ * its defence (mdnsRegHandleQuery()).
  */
 void
 mdnsRegHandleProbe(const struct MDNSDaemon *md,
@@ -1116,10 +1431,12 @@ mdnsRegHandleProbe(const struct MDNSDaemon *md,
 
     FOR_SERVICES(md, n) {
         struct MDNSRegisteredService *rs = (struct MDNSRegisteredService *)n;
+        struct MDNSPub *pub = service_pub(md, rs, md->md_SendIf);
         struct ProbeRecord mine[PROBE_SET_MAX];
         LONG k;
 
-        if (rs->rs_State != MDNS_NAME_PROBING || rs->rs_Step == 0) {
+        if (rs->rs_State == MDNS_NAME_CONFLICT || pub == NULL ||
+            !mdnsPubAsked(pub)) {
             continue;
         }
         /* the instance: its TXT and SRV, the SRV's name in lower case */
@@ -1134,8 +1451,7 @@ mdnsRegHandleProbe(const struct MDNSDaemon *md,
         mine[1].pr_Type = DNS_TYPE_SRV;
         mine[1].pr_Data = srv;
         if (probe_tiebreak(mine, 2, rs->rs_Name, theirs, count, pkt, pktlen) < 0) {
-            rs->rs_Step = 0;
-            rs->rs_NextTick = mdnsTicks() + MDNS_SECOND_TICKS;
+            mdnsPubDefer(pub, mdnsTicks() + MDNS_SECOND_TICKS);
             continue;
         }
         /* the host it stands in for: its addresses */
@@ -1149,26 +1465,27 @@ mdnsRegHandleProbe(const struct MDNSDaemon *md,
             mine[k].pr_Data = rs->rs_Reg.addresses[k].bytes;
         }
         if (probe_tiebreak(mine, k, rs->rs_HostName, theirs, count, pkt, pktlen) < 0) {
-            rs->rs_Step = 0;
-            rs->rs_NextTick = mdnsTicks() + MDNS_SECOND_TICKS;
+            mdnsPubDefer(pub, mdnsTicks() + MDNS_SECOND_TICKS);
         }
     }
 }
 
 /*
- * Moves each service along: three probes, then two announcements. Returns
- * when the next of them is due (mdnsTicks(), 0 for none) - for a service
- * that can go on: one waits for the host's name, which the host's own time
- * covers (mdnsHostTick()).
+ * Moves each service along on each link, by each family (mdnsFamilyStep()):
+ * three probes, then two announcements, and the announcements of changed
+ * data. A service of this host's goes on a link only where the host's name
+ * is the host's: its records point at the name, and carry its addresses;
+ * one that stands in for another host does not wait. The client is told
+ * once the name first answers somewhere - again under a new name after a
+ * conflict. Returns when the next step is due (mdnsTicks(), 0 for none);
+ * a service waiting for the host's name is woken by the host's time
+ * (mdnsHostTick()).
  */
 ULONG
 mdnsRegTick(struct MDNSDaemon *md)
 {
     struct Node *n, *next;
     ULONG now = mdnsTicks(), soonest = 0;
-    /* A service's records point at the host's name and carry its address,
-     * so none is announced before the name is this host's. */
-    BOOL hostReady = mdnsHostReady(md);
 
     if (md->md_IfCount == 0 || md->md_Socket < 0) {
         return 0;
@@ -1176,9 +1493,28 @@ mdnsRegTick(struct MDNSDaemon *md)
     if (md->md_AnswerPending) {
         answers_flush(md, now);
     }
+    /* what found no memory, once a second, until every service has all
+     * its publications: those that are there go on meanwhile */
+    if (md->md_RegPubsShort && (LONG)(now - md->md_RegPubsRetry) >= 0) {
+        BOOL done = TRUE;
+
+        FOR_SERVICES(md, n) {
+            struct MDNSRegisteredService *rs = (struct MDNSRegisteredService *)n;
+
+            if (rs->rs_State != MDNS_NAME_CONFLICT) {
+                done &= service_complete(md, rs, now);
+            }
+        }
+        md->md_RegPubsShort = !done;
+        md->md_RegPubsRetry = now + MDNS_SECOND_TICKS;
+    }
+    if (md->md_RegPubsShort) {
+        soonest = mdnsSooner(soonest, md->md_RegPubsRetry);
+    }
 
     for (n = md->md_Services.lh_Head; n->ln_Succ != NULL; n = next) {
         struct MDNSRegisteredService *rs = (struct MDNSRegisteredService *)n;
+        UWORD i, fam;
 
         /* its client may withdraw it while it is told */
         next = n->ln_Succ;
@@ -1191,38 +1527,36 @@ mdnsRegTick(struct MDNSDaemon *md)
             }
             continue;
         }
-        if (rs->rs_State == MDNS_NAME_PROBING) {
-            if (!hostReady) {
+        for (i = 0; i < rs->rs_PubCount; i++) {
+            struct MDNSPub *pub = &rs->rs_Pubs[i].sp_Pub;
+            LONG slot = mdnsNetSlot(md, pub->p_Link);
+
+            if (slot < 0 || (!PROXY(rs) && !mdnsHostAnswersOn(md, slot, 0))) {
                 continue;
             }
-            if ((LONG)(now - rs->rs_NextTick) < 0) {
-                soonest = mdnsSooner(soonest, rs->rs_NextTick);
-                continue;
+            for (fam = 0; fam < MDNS_FAMS; fam++) {
+                switch (mdnsFamilyStep(&pub->p_Family[fam], now, &soonest)) {
+                case MDNS_STEP_PROBE_FIRST:
+                    service_probe(md, rs, slot, fam, TRUE);
+                    break;
+                case MDNS_STEP_PROBE:
+                    service_probe(md, rs, slot, fam, FALSE);
+                    break;
+                case MDNS_STEP_ANNOUNCE:
+                    if (rs->rs_State != MDNS_NAME_ANNOUNCED) {
+                        /* nobody objected: the name is this host's */
+                        rs->rs_State = MDNS_NAME_ANNOUNCED;
+                        rs->rs_Reg.state = DNSSD_REG_ESTABLISHED;
+                    }
+                    service_emit(md, rs, slot, fam, FALSE);
+                    break;
+                }
             }
-            if (rs->rs_Step < MDNS_PROBE_COUNT) {
-                service_probe(md, rs);
-                rs->rs_Step++;
-                rs->rs_NextTick = now + MDNS_PROBE_TICKS;
-                soonest = mdnsSooner(soonest, rs->rs_NextTick);
-                continue;
-            }
-            /* Nobody objected: the name is this host's. */
-            rs->rs_State = MDNS_NAME_ANNOUNCED;
-            rs->rs_Reg.state = DNSSD_REG_ESTABLISHED;
-            rs->rs_Step = 1;
-            rs->rs_NextTick = now + MDNS_SECOND_TICKS;
-            soonest = mdnsSooner(soonest, rs->rs_NextTick);
-            service_send(md, rs, FALSE, all_subtypes(rs));
+        }
+        if (rs->rs_State == MDNS_NAME_ANNOUNCED && !rs->rs_Told) {
+            rs->rs_Told = TRUE;
             if (rs->rs_Notify != NULL) {
                 rs->rs_Notify(rs->rs_NotifyData, rs, MDNSD_OK);
-            }
-        } else if (rs->rs_Step < MDNS_ANNOUNCE_COUNT &&
-                   (hostReady || PROXY(rs))) {
-            if ((LONG)(now - rs->rs_NextTick) >= 0) {
-                rs->rs_Step++;
-                service_send(md, rs, FALSE, all_subtypes(rs));
-            } else {
-                soonest = mdnsSooner(soonest, rs->rs_NextTick);
             }
         }
     }
@@ -1234,13 +1568,15 @@ mdnsRegTick(struct MDNSDaemon *md)
 static void
 type_sent(const struct MDNSDaemon *md, const UBYTE *typeName, LONG ifindex, ULONG now)
 {
-    struct Node *n;
+    const struct Node *n;
 
     FOR_SERVICES(md, n) {
-        struct MDNSRegisteredService *rs = (struct MDNSRegisteredService *)n;
+        const struct MDNSRegisteredService *rs =
+            (const struct MDNSRegisteredService *)n;
+        struct MDNSServicePub *sp = service_spub(md, rs, ifindex);
 
-        if (names_equal(rs->rs_TypeName, typeName)) {
-            rs->rs_TypeTick[ifindex] = now;
+        if (sp != NULL && names_equal(rs->rs_TypeName, typeName)) {
+            sp->sp_TypeTick = now | 1;
         }
     }
 }
@@ -1261,12 +1597,15 @@ types_send(struct MDNSDaemon *md, LONG ifindex, BOOL multicast)
     FOR_SERVICES(md, n) {
         const struct MDNSRegisteredService *rs =
             (const struct MDNSRegisteredService *)n;
+        const struct MDNSServicePub *sp = service_spub(md, rs, ifindex);
         const struct Node *m;
 
-        if (rs->rs_State != MDNS_NAME_ANNOUNCED) {
+        /* the types of the services that answer on the link */
+        if (sp == NULL || !mdnsPubAnswers(&sp->sp_Pub)) {
             continue;
         }
-        if (multicast && sent_recently(rs->rs_TypeTick[ifindex], now)) {
+        if (multicast && sp->sp_TypeTick != 0 &&
+            (LONG)(now - sp->sp_TypeTick) < MDNS_SECOND_TICKS - 1) {
             continue;
         }
         /* once per type */
@@ -1274,7 +1613,7 @@ types_send(struct MDNSDaemon *md, LONG ifindex, BOOL multicast)
             const struct MDNSRegisteredService *earlier =
                 (const struct MDNSRegisteredService *)m;
 
-            if (earlier->rs_State == MDNS_NAME_ANNOUNCED &&
+            if (service_answers_on(md, earlier, ifindex) &&
                 names_equal(earlier->rs_TypeName, rs->rs_TypeName)) {
                 break;
             }
@@ -1339,7 +1678,7 @@ mdnsRegHandleQuery(struct MDNSDaemon *md, struct MDNSQuestion *q,
     BOOL legacyAddrDone = FALSE;
     LONG legacyPos = 0;
     UWORD legacyAnswers = 0;
-    ULONG now = mdnsNow();
+    ULONG now = mdnsTicks();
 
     if ((any || q->qtype == DNS_TYPE_PTR) && names_equal(q->qwire, services_name)) {
         if (legacy) {
@@ -1362,7 +1701,10 @@ mdnsRegHandleQuery(struct MDNSDaemon *md, struct MDNSQuestion *q,
         BOOL answer = FALSE, shared = FALSE;
         UWORD subtypeMask = 0;
 
-        if (rs->rs_State != MDNS_NAME_ANNOUNCED ||
+        /* where its name is its own: on the link the question came by,
+         * by either family (a probe of another host's among the questions,
+         * answered in the name's defence) */
+        if (!service_answers_on(md, rs, md->md_SendIf) ||
             rs->rs_Answered == md->md_PacketSerial) {
             continue;
         }
@@ -1440,8 +1782,7 @@ mdnsRegHandleQuery(struct MDNSDaemon *md, struct MDNSQuestion *q,
             if (!PROXY(rs)) {
                 legacyAddrDone = TRUE;
             }
-        } else if (direct && rs->rs_Multicast != 0 &&
-                now - rs->rs_Multicast <= MDNS_UNICAST_SECONDS) {
+        } else if (direct && service_recently_multicast(md, rs, now)) {
             /* to the asker alone, and at once: nobody else is waiting to
              * answer on a channel of two */
             reply_to_asker(md, q, FALSE);
@@ -1545,8 +1886,7 @@ mdnsRegAddCanonical(struct MDNSDaemon *md, const struct dnssd_reg *reg,
     rs->rs_NotifyData = data;
     rs->rs_ClientRef = (APTR)(IPTR)md->md_NextHandle++;
     rs->rs_State = MDNS_NAME_PROBING;
-    rs->rs_Step = 0;
-    rs->rs_NextTick = mdnsTicks();
+    service_pubs_start(md, rs, mdnsTicks());
     AddTail(&md->md_Services, &rs->rs_Node);
     *ref = rs->rs_ClientRef;
     return MDNSD_OK;
@@ -1574,7 +1914,8 @@ addresses_goodbye(struct MDNSDaemon *md, const struct MDNSRegisteredService *rs,
                     break;
                 }
             }
-            if (j < count || !address_on_link(md, a, slot)) {
+            if (j < count || !address_on_link(md, a, slot) ||
+                !service_answers_on(md, rs, slot)) {
                 continue;
             }
             mdnsAppendRecordWire(pkt, MDNS_RESPONSE_MAX, &pos, &ancount,
@@ -1655,10 +1996,14 @@ mdnsRegUpdateRef(struct MDNSDaemon *md, APTR ref, const UBYTE *txt,
         rs->rs_Reg.address_count = (UBYTE)addrCount;
         changed = TRUE;
     }
-    if (changed && rs->rs_State == MDNS_NAME_ANNOUNCED) {
-        service_send(md, rs, FALSE, all_subtypes(rs));
-        rs->rs_Step = 1;
-        rs->rs_NextTick = mdnsTicks() + MDNS_SECOND_TICKS;
+    if (changed) {
+        /* announced again, twice, where the name answers (section 8.4) */
+        ULONG now = mdnsTicks();
+        UWORD i;
+
+        for (i = 0; i < rs->rs_PubCount; i++) {
+            mdnsPubUpdate(&rs->rs_Pubs[i].sp_Pub, now);
+        }
     }
     return MDNSD_OK;
 }
@@ -1668,7 +2013,7 @@ service_remove(struct MDNSDaemon *md, struct MDNSRegisteredService *rs)
 {
     Remove(&rs->rs_Node);
     if (rs->rs_State == MDNS_NAME_ANNOUNCED) {
-        service_send(md, rs, TRUE, all_subtypes(rs));
+        service_goodbye(md, rs);
     } else {
         /* no goodbye, which would end them: its own records go now */
         service_forget(md, rs);
@@ -1678,6 +2023,9 @@ service_remove(struct MDNSDaemon *md, struct MDNSRegisteredService *rs)
     }
     rs->rs_Reg.state = DNSSD_REG_REMOVED;
     txt_set(rs, NULL, 0);
+    if (rs->rs_Pubs != NULL) {
+        FreeVec(rs->rs_Pubs);
+    }
     FreeMem(rs, sizeof(*rs));
 }
 
@@ -1699,7 +2047,12 @@ mdnsRegFree(struct MDNSDaemon *md)
     struct Node *n;
 
     while ((n = RemHead(&md->md_Services)) != NULL) {
-        txt_set((struct MDNSRegisteredService *)n, NULL, 0);
-        FreeMem(n, sizeof(struct MDNSRegisteredService));
+        struct MDNSRegisteredService *rs = (struct MDNSRegisteredService *)n;
+
+        txt_set(rs, NULL, 0);
+        if (rs->rs_Pubs != NULL) {
+            FreeVec(rs->rs_Pubs);
+        }
+        FreeMem(rs, sizeof(*rs));
     }
 }

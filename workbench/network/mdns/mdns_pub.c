@@ -10,7 +10,8 @@
  * the pieces every owner uses: finding, adding and removing a link's
  * publication; a family's round - three probes, two announcements, and two
  * more when its data change; and the claim of the name on a link, which its
- * families share. What goes out at each step is the owner's (mdns_host.c).
+ * families share. What goes out at each step is the owner's (mdns_host.c,
+ * mdns_reg.c).
  */
 
 #include <exec/types.h>
@@ -40,8 +41,8 @@ mdnsFamOfDnssd(UWORD family)
 
 /*
  * An owner's publications are an array, one per link, found by the link -
- * the first field of each. These work on an array of any such element, by
- * its size.
+ * the first field of each (struct MDNSPub, and of struct MDNSServicePub,
+ * whose first is a struct MDNSPub). These work on either, by its size.
  */
 static APTR
 pubs_find(APTR pubs, UWORD count, ULONG size, ULONG link)
@@ -118,6 +119,25 @@ mdnsPubAdd(struct MDNSPub **pubs, UWORD *count, UWORD *max, ULONG link)
 
 void
 mdnsPubRemove(struct MDNSPub *pubs, UWORD *count, ULONG link)
+{
+    pubs_remove(pubs, count, sizeof(*pubs), link);
+}
+
+struct MDNSServicePub *
+mdnsServicePubFind(struct MDNSServicePub *pubs, UWORD count, ULONG link)
+{
+    return pubs_find(pubs, count, sizeof(*pubs), link);
+}
+
+struct MDNSServicePub *
+mdnsServicePubAdd(struct MDNSServicePub **pubs, UWORD *count, UWORD *max,
+    ULONG link)
+{
+    return pubs_add((APTR *)pubs, count, max, sizeof(**pubs), link);
+}
+
+void
+mdnsServicePubRemove(struct MDNSServicePub *pubs, UWORD *count, ULONG link)
 {
     pubs_remove(pubs, count, sizeof(*pubs), link);
 }

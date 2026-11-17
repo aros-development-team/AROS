@@ -82,6 +82,14 @@ struct MDNSPub
     struct MDNSFamilyPub    p_Family[MDNS_FAMS];
 };
 
+/* A service's publication on a link: the name's, and when the PTR of its
+ * type (RFC 6763 section 9) last went to the group there. */
+struct MDNSServicePub
+{
+    struct MDNSPub          sp_Pub;     /* first: found by its link */
+    ULONG                   sp_TypeTick; /* mdnsTicks(), or 0 */
+};
+
 /* what a family's publication sends now (mdnsFamilyStep()) */
 #define MDNS_STEP_NONE          0
 #define MDNS_STEP_PROBE         1       /* a probe */
@@ -142,18 +150,16 @@ struct MDNSRegisteredService
     UBYTE          *rs_TXT;         /* AllocVec()'d, rs_TXTLength bytes, or NULL */
     MDNSRegNotify   rs_Notify;      /* or NULL */
     APTR            rs_NotifyData;
-    UWORD           rs_State;       /* MDNS_NAME_* */
-    UWORD           rs_Step;        /* probes or announcements sent */
+    UWORD           rs_State;       /* MDNS_NAME_*: the name's, on all links -
+                                     * probing until it first answers on one */
+    BOOL            rs_Told;        /* its client was told of the name now */
     ULONG           rs_TTL;         /* of its records, 0 for the defaults */
     APTR            rs_ClientRef;   /* the handle the client has */
-    ULONG           rs_NextTick;    /* mdnsTicks() of the next step */
     ULONG           rs_Answered;    /* md_PacketSerial it last answered */
-    ULONG           rs_Multicast;   /* mdnsNow() when its records last went
-                                     * to the group */
-    ULONG           rs_MulticastTick[MDNS_IFS_MAX];
-                                    /* exact send tick on each interface */
-    ULONG           rs_TypeTick[MDNS_IFS_MAX];
-                                    /* the service-type PTR on each link */
+    struct MDNSServicePub *rs_Pubs; /* AllocVec()'d: the name on each link it
+                                     * is published on (struct MDNSPub) */
+    UWORD           rs_PubCount;
+    UWORD           rs_PubMax;
     ULONG           rs_AnswerTick;  /* when an answer to a browse question
                                      * is due, or 0 for none */
     LONG            rs_AnswerIf;    /* to which interface, or -1 for all */
@@ -212,6 +218,8 @@ struct MDNSDaemon
     BOOL                    md_HostPubsShort; /* a publication of the host's
                                              * found no memory (mdnsHostTick()) */
     ULONG                   md_HostPubsRetry; /* mdnsTicks() it is tried again */
+    BOOL                    md_RegPubsShort; /* one of a service's did */
+    ULONG                   md_RegPubsRetry;
     BOOL                    md_HostRenamed; /* a new name: its services are
                                              * announced again once it is the
                                              * host's on every link */
@@ -403,6 +411,12 @@ struct MDNSPub *mdnsPubFind(struct MDNSPub *pubs, UWORD count, ULONG link);
 struct MDNSPub *mdnsPubAdd(struct MDNSPub **pubs, UWORD *count, UWORD *max,
     ULONG link);
 void mdnsPubRemove(struct MDNSPub *pubs, UWORD *count, ULONG link);
+struct MDNSServicePub *mdnsServicePubFind(struct MDNSServicePub *pubs,
+    UWORD count, ULONG link);
+struct MDNSServicePub *mdnsServicePubAdd(struct MDNSServicePub **pubs,
+    UWORD *count, UWORD *max, ULONG link);
+void mdnsServicePubRemove(struct MDNSServicePub *pubs, UWORD *count,
+    ULONG link);
 void mdnsFamilyStart(struct MDNSFamilyPub *fp, ULONG next);
 BOOL mdnsFamilyAnswers(const struct MDNSFamilyPub *fp);
 UWORD mdnsFamilyStep(struct MDNSFamilyPub *fp, ULONG now, ULONG *soonest);
@@ -442,8 +456,9 @@ LONG mdnsRegUpdateRef(struct MDNSDaemon *md, APTR ref, const UBYTE *txt,
 void mdnsRegRemoveRef(struct MDNSDaemon *md, APTR ref);
 void mdnsRegFree(struct MDNSDaemon *md);
 ULONG mdnsRegTick(struct MDNSDaemon *md);
-void mdnsRegAnnounceAll(struct MDNSDaemon *md);
-void mdnsRegRestartAll(struct MDNSDaemon *md);
+void mdnsRegAnnounceAll(const struct MDNSDaemon *md);
+void mdnsRegLinksChanged(struct MDNSDaemon *md,
+    const struct dnssd_link_changes *changes);
 void mdnsRegGoodbyeAll(struct MDNSDaemon *md);
 void mdnsRegHandleQuery(struct MDNSDaemon *md, struct MDNSQuestion *q,
     const struct MDNSKnownAnswer *known, LONG knownCount);
