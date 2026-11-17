@@ -1233,7 +1233,8 @@ AROS_INTH1(FNAME_DEV(SofGateInt), struct USB2OTGUnit *, USBUnit)
         UBYTE bit = (tr == &USBUnit->hu_SofGateReq[1]) ? 2 : 1;
 
         Disable();
-        USBUnit->hu_SofGateBusy &= ~bit;
+        /* Atomic: the worker sets bits from CPU 0 */
+        AROS_ATOMIC_AND(USBUnit->hu_SofGateBusy, (UBYTE)~bit);
         usb2otg_sof_gate_wake(USBUnit);
         Enable();
     }
@@ -1516,7 +1517,15 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
                         USBUnit->hu_Channel[chan].hc_SplitState = USB2OTG_SPLIT_CS;
 
                         if (req->iouh_Req.io_Command == UHCMD_BULKXFER)
+                        {
+#if defined(__AROSEXEC_SMP__)
+                            KrnSpinLock(&USBUnit->hu_Lock, NULL, SPINLOCK_MODE_WRITE);
+#endif
                             usb2otg_remove_bulk_queue_duplicates(USBUnit, req, chan);
+#if defined(__AROSEXEC_SMP__)
+                            KrnSpinUnLock(&USBUnit->hu_Lock);
+#endif
+                        }
 
                         D(bug("[USB2OTG] Completing split transaction in interrupt: chan=%d intr=%04x SPLITCTRL=%08x\n",
                               chan, intr, tmp));
@@ -1636,8 +1645,9 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
                                     req->iouh_DriverPrivate1 = (APTR)(IPTR)((frnm << 16) | next);
                                     /* TT responded (NYETs) = liveness — reset wedge counter. */
                                     req->iouh_DriverPrivate2 = (APTR)0;
-                                    ADDHEAD(&USBUnit->hu_IntXFerQueue, req);
-                                    USBUnit->hu_Channel[chan].hc_Request = NULL;
+                                    /* The queue is shared with other CPUs. */
+                                    usb2otg_irq_finish_or_requeue(USBUnit, chan, req,
+                                        &USBUnit->hu_IntXFerQueue, TRUE);
                                     req = NULL;
                                 }
                             }
@@ -1711,7 +1721,13 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
                                  */
                                 {
                                     BOOL was_dev0 = (req->iouh_DevAddr == 0);
+#if defined(__AROSEXEC_SMP__)
+                                    KrnSpinLock(&USBUnit->hu_Lock, NULL, SPINLOCK_MODE_WRITE);
+#endif
                                     usb2otg_queue_clear_tt_buffer(USBUnit, req);
+#if defined(__AROSEXEC_SMP__)
+                                    KrnSpinUnLock(&USBUnit->hu_Lock);
+#endif
                                     usb2otg_irq_finish_or_requeue(USBUnit, chan, req,
                                         &USBUnit->hu_FinishedXfers, FALSE);
                                     if (was_dev0)
@@ -1794,7 +1810,10 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
                                 if (usb2otg_trace_bulk_ep2(chan, req))
                                     bug("[USB2OTG:TRACE] REQUEUE-BEGIN-BULKQ chan=%d req=%p\n", chan, req);
                             )
-                            usb2otg_requeue(USBUnit, &USBUnit->hu_BulkXFerQueue, req, TRUE);
+                            /* The queue is shared with other CPUs. */
+                            usb2otg_irq_finish_or_requeue(USBUnit, chan, req,
+                                &USBUnit->hu_BulkXFerQueue, TRUE);
+                            req = NULL;
                         }
 
                         /* Mark channel free (ctrl path did it via helper). */
@@ -2107,7 +2126,13 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
                                  * buffer here too (the ctrl give-up sites
                                  * only cover the control endpoint).
                                  */
+#if defined(__AROSEXEC_SMP__)
+                                KrnSpinLock(&USBUnit->hu_Lock, NULL, SPINLOCK_MODE_WRITE);
+#endif
                                 usb2otg_queue_clear_tt_buffer(USBUnit, req);
+#if defined(__AROSEXEC_SMP__)
+                                KrnSpinUnLock(&USBUnit->hu_Lock);
+#endif
                                 /* Give-up teardown poisons the channel;
                                  * XactErr is a wire error, not an engine
                                  * fault - do not count it toward burning.

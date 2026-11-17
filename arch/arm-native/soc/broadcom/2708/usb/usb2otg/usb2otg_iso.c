@@ -457,9 +457,10 @@ static BOOL iso_halted(struct USB2OTGUnit *unit, struct USB2OTGIso *is, ULONG in
  * Move the bound endpoint on, from the SOF or the previous halt: start a
  * packet that is due, or (split) issue the sequence's next transaction.
  * is_Next keeps it to one packet an interval; ODDFRM holds the channel to
- * the target. hu_Lock held. FALSE if nothing is queued.
+ * the target. hu_Lock held. FALSE if nothing is queued; *done is set if a
+ * request finished.
  */
-static BOOL iso_kick(struct USB2OTGUnit *unit, struct USB2OTGIso *is, UWORD now)
+static BOOL iso_kick(struct USB2OTGUnit *unit, struct USB2OTGIso *is, UWORD now, BOOL *done)
 {
     UWORD target = (now + 1) & USB2OTG_HFNUM_MASK;
 
@@ -484,8 +485,9 @@ static BOOL iso_kick(struct USB2OTGUnit *unit, struct USB2OTGIso *is, UWORD now)
         if ((now >> 3) != is->is_Frame)
         {
             is->is_DropLate++;
+            /* The caller Causes once hu_Lock is released */
             if (iso_split_drop(unit, is))
-                FNAME_DEV(Cause)(unit->hu_USB2OTGBase, &unit->hu_PendingInt);
+                *done = TRUE;
             return TRUE;
         }
         iso_arm_split(is);
@@ -580,7 +582,7 @@ void usb2otg_iso_sof(struct USB2OTGUnit *unit, ULONG hfnum)
             continue;
         }
 
-        if (!iso_kick(unit, is, now) && ++is->is_Idle > USB2OTG_ISO_LINGER)
+        if (!iso_kick(unit, is, now, &wake) && ++is->is_Idle > USB2OTG_ISO_LINGER)
         {
             /* Not just a slow requeue: hand the channel back, split state cleared */
             bug("[USB2OTG:ISO] dev %d ep %d %s%s: %u packets, %u lost (split: out %u, in-ss %u, in-cs %u, late %u)\n",
@@ -631,7 +633,7 @@ void usb2otg_iso_chan_irq(struct USB2OTGUnit *unit, int chan, ULONG intr)
     done = iso_halted(unit, is, is->is_Pending, now);
     /* Direct: the next packet now, in case the SOF that would arm it is late */
     if (!is->is_Split)
-        iso_kick(unit, is, now);
+        iso_kick(unit, is, now, &done);
 #if defined(__AROSEXEC_SMP__)
     KrnSpinUnLock(&unit->hu_Lock);
 #endif

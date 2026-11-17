@@ -8,6 +8,7 @@
 #include LC_LIBDEFS_FILE
 
 #include <aros/debug.h>
+#include <aros/atomic.h>
 #include <aros/libcall.h>
 #include <aros/asmcall.h>
 #include <aros/symbolsets.h>
@@ -911,7 +912,8 @@ static inline BOOL usb2otg_sof_gate_arm(struct USB2OTGUnit *unit, ULONG frames)
         tr->tr_node.io_Command = TR_ADDREQUEST;
         tr->tr_time.tv_secs = frames / 1000;
         tr->tr_time.tv_micro = (frames % 1000) * 1000;
-        unit->hu_SofGateBusy |= 1 << i;
+        /* Atomic: the gate softint clears bits from any CPU */
+        AROS_ATOMIC_OR(unit->hu_SofGateBusy, 1 << i);
         unit->hu_SofGateDue[i] = due;
         SendIO(&tr->tr_node);
         return TRUE;
