@@ -294,9 +294,10 @@ set_primary(struct Library *SocketBase, struct MDNSDaemon *md)
 static void close_sockets(struct Library *SocketBase, struct MDNSDaemon *md);
 
 /* The links after a complete canonical snapshot changed: the sockets are
- * opened the first time, and each link joins the groups. */
+ * opened the first time, and each link joins the groups. What changed is in
+ * changes, whose items the caller frees (FreeVec()). */
 BOOL
-mdnsNetRescan(struct MDNSDaemon *md)
+mdnsNetRescan(struct MDNSDaemon *md, struct dnssd_link_changes *changes)
 {
     struct Library *SocketBase;
     uint32_t previous_revision;
@@ -308,8 +309,16 @@ mdnsNetRescan(struct MDNSDaemon *md)
     }
     SocketBase = md->md_SocketBase;
     previous_revision = md->md_LinkInventory.revision;
+    /* room for whatever this rescan can change; without it, the changes
+     * overflow, and everything is taken as changed */
+    changes->capacity = dnssd_link_changes_bound(&md->md_LinkInventory);
+    changes->items = AllocVec(changes->capacity * sizeof(*changes->items),
+        MEMF_ANY);
+    if (changes->items == NULL) {
+        changes->capacity = 0;
+    }
     result = dnssd_link_aros_reconcile(&md->md_LinkInventory, SocketBase,
-                                       MDNS_LINK_SNAPSHOT_MAX, NULL);
+                                       MDNS_LINK_SNAPSHOT_MAX, changes);
     if (result != DNSSD_LINK_OK ||
         md->md_LinkInventory.revision == previous_revision)
         return FALSE;
@@ -365,6 +374,7 @@ mdnsNetClose(struct MDNSDaemon *md)
     close_sockets(md->md_SocketBase, md);
     dnssd_link_inventory_reconcile(&md->md_LinkInventory, NULL, 0u,
                                    NULL, 0u);
+    mdnsHostLinksClear(md);
     md->md_Socket = -1;
     md->md_HostAddr = 0;
 }
@@ -522,6 +532,43 @@ send_on6(struct Library *SocketBase, struct MDNSDaemon *md, LONG index,
     }
     md->md_TxPackets++;
     return TRUE;
+}
+
+/* Out by one family alone on this link (MDNS_FAM_*): a name's publication
+ * there goes by each family on its own. */
+BOOL
+mdnsNetSendOnFamily(struct MDNSDaemon *md, LONG index, UWORD fam,
+    const UBYTE *pkt, LONG pktlen)
+{
+    if (md == NULL || md->md_SocketBase == NULL || pkt == NULL ||
+        pktlen <= 0 || index < 0 || index >= md->md_IfCount) {
+        return FALSE;
+    }
+    return fam == MDNS_FAM_IPV6 ?
+        send_on6(md->md_SocketBase, md, index, pkt, pktlen) :
+        send_on4(md->md_SocketBase, md, index, pkt, pktlen);
+}
+
+/* The slot (md_Ifs[]) of the link with this interface index, or -1. */
+LONG
+mdnsNetSlot(const struct MDNSDaemon *md, ULONG link)
+{
+    LONG i;
+
+    for (i = 0; link != 0 && i < md->md_IfCount; i++) {
+        if (md->md_Ifs[i].mi_Index == link) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+/* Does the link in this slot have a usable address of the family? */
+BOOL
+mdnsNetHasFamily(const struct MDNSDaemon *md, LONG index, UWORD fam)
+{
+    return mdnsNetAddressAt(md, index, mdnsDnssdFamily(fam), 0) != NULL &&
+        (fam == MDNS_FAM_IPV6 ? md->md_Socket6 >= 0 : md->md_Socket4 >= 0);
 }
 
 BOOL

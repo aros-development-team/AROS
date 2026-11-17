@@ -1168,7 +1168,7 @@ mdnsRegTick(struct MDNSDaemon *md)
     ULONG now = mdnsTicks(), soonest = 0;
     /* A service's records point at the host's name and carry its address,
      * so none is announced before the name is this host's. */
-    BOOL hostReady = md->md_HostState == MDNS_NAME_ANNOUNCED;
+    BOOL hostReady = mdnsHostReady(md);
 
     if (md->md_IfCount == 0 || md->md_Socket < 0) {
         return 0;
@@ -1366,8 +1366,10 @@ mdnsRegHandleQuery(struct MDNSDaemon *md, struct MDNSQuestion *q,
             rs->rs_Answered == md->md_PacketSerial) {
             continue;
         }
-        /* a service of this host waits while the host's name is in doubt */
-        if (!PROXY(rs) && md->md_HostState != MDNS_NAME_ANNOUNCED) {
+        /* a service of this host waits while the host's name is in doubt
+         * on the link and family the question came by */
+        if (!PROXY(rs) &&
+            !mdnsHostAnswersOn(md, md->md_SendIf, md->md_QueryFamily)) {
             continue;
         }
 

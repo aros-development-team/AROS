@@ -95,9 +95,24 @@ net_down(struct MDNSDaemon *md)
     }
 }
 
+/* Did a link or family come, or more change than the list could hold? */
+static BOOL
+links_came(const struct dnssd_link_changes *changes)
+{
+    size_t k;
+
+    for (k = 0; k < changes->count; k++) {
+        if (changes->items[k].kind == DNSSD_LINK_FAMILY_UP) {
+            return TRUE;
+        }
+    }
+    return changes->overflow != 0;
+}
+
 static void
 net_up(struct MDNSDaemon *md, ULONG addressMask, ULONG hostMask)
 {
+    struct dnssd_link_changes changes = { NULL, 0, 0, 0 };
     struct Library *SocketBase;
 
     if (md->md_SocketBase == NULL) {
@@ -118,12 +133,21 @@ net_up(struct MDNSDaemon *md, ULONG addressMask, ULONG hostMask)
         SocketBaseTags(SBTM_SETVAL(SBTC_SIG_HOSTNAME_CHANGE_MASK), hostMask,
             TAG_END);
     }
-    /* An interface came, went or changed its address: the name is asked
-     * for again with the addresses as they are now. */
-    if (mdnsNetRescan(md)) {
+    /* An interface came, went or changed its addresses: the host's name
+     * follows on each link and family as it changed (mdnsHostLinksChanged());
+     * the services are claimed again where a link or family came - for now
+     * everywhere, a service's publications are not per link yet. An address
+     * alone changes nothing of theirs: the host's records are announced
+     * again by the host. */
+    if (mdnsNetRescan(md, &changes)) {
         mdnsCacheLinksChanged(md);
-        mdnsHostRestart(md);
-        mdnsRegRestartAll(md);
+        mdnsHostLinksChanged(md, &changes);
+        if (links_came(&changes)) {
+            mdnsRegRestartAll(md);
+        }
+    }
+    if (changes.items != NULL) {
+        FreeVec(changes.items);
     }
 }
 

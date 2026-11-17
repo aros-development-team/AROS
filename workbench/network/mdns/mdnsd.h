@@ -48,6 +48,46 @@ struct MDNSInterface
     ULONG   mi_Index;           /* stack interface index: link identity */
 };
 
+/*
+ * A name's publication on one link (RFC 6762 sections 8 and 14). The name
+ * and its data are their owner's - the host, a service - and the same on
+ * every link; where the name is in probing and announcing is the link's,
+ * and on it each address family's apart: IPv4 and IPv6 reach different
+ * listeners, so a family that comes is probed for alone while the other
+ * keeps answering. A family not usable on the link is off.
+ */
+#define MDNS_FAM_IPV4           0
+#define MDNS_FAM_IPV6           1
+#define MDNS_FAMS               2
+
+#define MDNS_PUB_OFF            0
+#define MDNS_PUB_PROBING        1
+#define MDNS_PUB_ANNOUNCING     2
+#define MDNS_PUB_ANNOUNCED      3
+
+struct MDNSFamilyPub
+{
+    UBYTE   fp_State;           /* MDNS_PUB_* */
+    UBYTE   fp_Step;            /* probes, or announcements, sent this round */
+    UBYTE   fp_Updates;         /* announcements due for changed data (8.4) */
+    UBYTE   fp_Pad;
+    ULONG   fp_Next;            /* mdnsTicks() of the next step, when one is due */
+    ULONG   fp_Multicast;       /* mdnsTicks() the records last went to the
+                                 * group by this family on this link, or 0 */
+};
+
+struct MDNSPub
+{
+    ULONG                   p_Link;     /* interface index: the link's identity */
+    struct MDNSFamilyPub    p_Family[MDNS_FAMS];
+};
+
+/* what a family's publication sends now (mdnsFamilyStep()) */
+#define MDNS_STEP_NONE          0
+#define MDNS_STEP_PROBE         1       /* a probe */
+#define MDNS_STEP_PROBE_FIRST   2       /* the first, asking for a unicast answer */
+#define MDNS_STEP_ANNOUNCE      3       /* its records, to the group */
+
 /* A name is asked for three times, 250 ms apart, before it is announced
  * (RFC 6762 section 8.1), and then announced twice, a second apart. */
 #define MDNS_NAME_PROBING       0
@@ -165,13 +205,16 @@ struct MDNSDaemon
     char                    md_HostBase[MDNSD_HOST_MAX + 1];
                                             /* what the system calls itself */
     ULONG                   md_HostSuffix;  /* 0, or the number after it */
-    UWORD                   md_HostState;   /* MDNS_NAME_* */
-    UWORD                   md_HostStep;    /* probes or announcements sent */
-    BOOL                    md_HostAnnounced; /* md_HostName was announced: others
-                                               * may keep it until its goodbye */
-    ULONG                   md_HostNextTick;
-    ULONG                   md_HostMulticast; /* mdnsNow() when the address
-                                             * last went to the group */
+    struct MDNSPub         *md_HostPubs;    /* AllocVec()'d: the host's name
+                                             * on each link it is published on */
+    UWORD                   md_HostPubCount;
+    UWORD                   md_HostPubMax;
+    BOOL                    md_HostPubsShort; /* a publication of the host's
+                                             * found no memory (mdnsHostTick()) */
+    ULONG                   md_HostPubsRetry; /* mdnsTicks() it is tried again */
+    BOOL                    md_HostRenamed; /* a new name: its services are
+                                             * announced again once it is the
+                                             * host's on every link */
 
     /*
      * Where the answer being sent goes when it is not for the group: to
@@ -335,7 +378,7 @@ BOOL mdnsdServiceOpen(struct MDNSDSignals *sig);
 void mdnsdServiceClose(void);
 
 /* mdns_net.c */
-BOOL mdnsNetRescan(struct MDNSDaemon *md);
+BOOL mdnsNetRescan(struct MDNSDaemon *md, struct dnssd_link_changes *changes);
 void mdnsNetClose(struct MDNSDaemon *md);
 void mdnsNetSystemName(struct Library *SocketBase, char *base);
 BOOL mdnsNetIsOwn(struct MDNSDaemon *md, ULONG addr);
@@ -347,10 +390,32 @@ BOOL mdnsNetAddress6(const struct MDNSDaemon *md, LONG index,
     struct in6_addr *address);
 BOOL mdnsNetSendOn(struct MDNSDaemon *md, LONG index, const UBYTE *pkt,
     LONG pktlen);
+BOOL mdnsNetSendOnFamily(struct MDNSDaemon *md, LONG index, UWORD fam,
+    const UBYTE *pkt, LONG pktlen);
+LONG mdnsNetSlot(const struct MDNSDaemon *md, ULONG link);
+BOOL mdnsNetHasFamily(const struct MDNSDaemon *md, LONG index, UWORD fam);
+
+/* mdns_pub.c: publications per link and family */
+UWORD mdnsFamOf(UWORD af);              /* AF_INET/AF_INET6 -> MDNS_FAM_* */
+UWORD mdnsDnssdFamily(UWORD fam);       /* MDNS_FAM_* -> DNSSD_ADDRESS_* */
+UWORD mdnsFamOfDnssd(UWORD family);     /* DNSSD_ADDRESS_* -> MDNS_FAM_* */
+struct MDNSPub *mdnsPubFind(struct MDNSPub *pubs, UWORD count, ULONG link);
+struct MDNSPub *mdnsPubAdd(struct MDNSPub **pubs, UWORD *count, UWORD *max,
+    ULONG link);
+void mdnsPubRemove(struct MDNSPub *pubs, UWORD *count, ULONG link);
+void mdnsFamilyStart(struct MDNSFamilyPub *fp, ULONG next);
+BOOL mdnsFamilyAnswers(const struct MDNSFamilyPub *fp);
+UWORD mdnsFamilyStep(struct MDNSFamilyPub *fp, ULONG now, ULONG *soonest);
+BOOL mdnsPubAnswers(const struct MDNSPub *pub);
+void mdnsPubUpdate(struct MDNSPub *pub, ULONG now);
 void mdnsNetSendAll(struct MDNSDaemon *md, const UBYTE *pkt, LONG pktlen);
 
 /* mdns_host.c */
-void mdnsHostRestart(struct MDNSDaemon *md);
+void mdnsHostLinksChanged(struct MDNSDaemon *md,
+    const struct dnssd_link_changes *changes);
+void mdnsHostLinksClear(struct MDNSDaemon *md);
+BOOL mdnsHostReady(const struct MDNSDaemon *md);
+BOOL mdnsHostAnswersOn(const struct MDNSDaemon *md, LONG index, UWORD af);
 ULONG mdnsHostTick(struct MDNSDaemon *md);
 void mdnsHostGoodbye(struct MDNSDaemon *md);
 void mdnsHostRename(struct MDNSDaemon *md, const char *base);

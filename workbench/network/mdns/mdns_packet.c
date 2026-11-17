@@ -67,6 +67,8 @@ handle_packet(struct MDNSDaemon *md, const UBYTE *pkt, LONG pktlen,
     if ((flags & DNS_FLAG_QR) == 0) {
         LONG nknown = 0;
 
+        md->md_QueryFamily = family;    /* the family a probe came by */
+
         /*
          * The answers of a query are what the asker already knows (RFC
          * 6762 section 7.1): a PTR record it holds, with more than half
