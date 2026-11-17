@@ -9,11 +9,16 @@
     as it is written: the connection is made at the open (so an unreachable
     printer fails the open), each write is sent, and the close ends the job and
     reads the printer's answer. ENV:IPP/Status says how the last job went.
+
+    A job may bring its own Print-Job request (PRD_SETJOBINFO), which is sent
+    in place of the one made here. It goes to the unit's printer; on a unit
+    that has none, to the printer the request names.
 */
 
 #include <aros/debug.h>
 
 #include <exec/errors.h>
+#include <exec/memory.h>
 #include <devices/printer.h>
 #include <devices/newstyle.h>
 
@@ -29,7 +34,7 @@
 
 static const UWORD commands[] = {
     CMD_WRITE, CMD_RESET, CMD_UPDATE, CMD_CLEAR, CMD_STOP, CMD_START, CMD_FLUSH,
-    PRD_GETDESTINATION, PRD_SETDESTINATION, NSCMD_DEVICEQUERY, 0
+    PRD_SETJOBINFO, PRD_GETDESTINATION, PRD_SETDESTINATION, NSCMD_DEVICEQUERY, 0
 };
 
 /* What PRD_GETDESTINATION and PRD_SETDESTINATION carry for a unit */
@@ -164,10 +169,96 @@ static LONG setDestination(struct IPPBase *IPPBase, struct IOStdReq *io)
     return 0;
 }
 
+/* PRD_SETJOBINFO: the job's own request, copied with the unit's printer as its
+   printer-uri. The connection made at the open is dropped: whoever sends a
+   request may have asked the user for it, so the first write connects. */
+static LONG setJobInfo(struct IPPBase *IPPBase, struct IPPUnit *iu, struct IOStdReq *io)
+{
+    struct TagItem *tags = io->io_Data, *tag;
+    const UBYTE *data = NULL;
+    const char *uri = iu->iu_Config.ic_URI;
+    struct IPPTarget *t = NULL;
+    BOOL *accepted = NULL;
+    ULONG size = 0, at, len, ulen;
+    UBYTE *req;
+
+    while ((tag = LibNextTagItem(&tags)) != NULL) {
+        if (tag->ti_Tag == PJIA_IPPAttributes)
+            data = (const UBYTE *)tag->ti_Data;
+        else if (tag->ti_Tag == PJIA_IPPAttributesSize)
+            size = tag->ti_Data;
+        else if (tag->ti_Tag == PJIA_IPPAttributesAccepted)
+            accepted = (BOOL *)tag->ti_Data;
+    }
+    if (accepted != NULL)
+        *accepted = FALSE;
+    if (data == NULL)
+        return 0;
+    if (accepted == NULL || size > IPP_REQUEST_MAX || !IPP_FindPrinterURI(data, size, &at, &len))
+        return IOERR_BADADDRESS;
+    if (iu->iu_Started || iu->iu_Failed || iu->iu_Ended)
+        return IOERR_UNITBUSY;
+    if (uri[0]) {
+        if (!iu->iu_Target.it_IPP)
+            return IOERR_BADADDRESS;
+        ulen = strlen(uri);
+    } else {
+        /* no printer set for the unit: the request's own, if it is one this device reaches */
+        if (len >= IPP_URI_MAX)
+            return IOERR_BADADDRESS;
+        if (!(t = AllocVec(sizeof(*t) + IPP_URI_MAX, MEMF_CLEAR)))
+            return PDERR_BUFFERMEMORY;
+        memcpy(t + 1, data + at, len);
+        if (!IPP_ParseURI((const char *)(t + 1), t) || !t->it_IPP) {
+            FreeVec(t);
+            return IOERR_BADADDRESS;
+        }
+        uri = (const char *)(t + 1);
+        ulen = len;
+    }
+    if (!(req = AllocVec(size - len + ulen, MEMF_ANY))) {
+        FreeVec(t);
+        return PDERR_BUFFERMEMORY;
+    }
+    memcpy(req, data, at - 2);
+    req[at - 2] = ulen >> 8;
+    req[at - 1] = ulen;
+    memcpy(req + at, uri, ulen);
+    memcpy(req + at + ulen, data + at + len, size - at - len);
+    if (t != NULL) {
+        iu->iu_Target = *t;
+        FreeVec(t);
+    }
+    FreeVec(iu->iu_Request);
+    iu->iu_Request = req;
+    iu->iu_RequestSize = size - len + ulen;
+    IPP_Disconnect(IPPBase, iu);
+    *accepted = TRUE;
+    return 0;
+}
+
+/* The connection for a job that has none at its first write: a unit without a
+   printer may have got one since the open. */
+static BOOL connectJob(struct IPPBase *IPPBase, struct IPPUnit *iu)
+{
+    if (iu->iu_Request == NULL && iu->iu_Config.ic_URI[0] == 0) {
+        if (!IPP_ReadConfig(IPPBase, iu->iu_Number, &iu->iu_Config)) {
+            strcpy(iu->iu_Error, "no printer set for this unit (FindPrinters UNIT n)");
+            return FALSE;
+        }
+        if (!IPP_ParseURI(iu->iu_Config.ic_URI, &iu->iu_Target)) {
+            strcpy(iu->iu_Error, "the printer address is not an ipp:// or socket:// URI");
+            return FALSE;
+        }
+    }
+    return IPP_BeginJob(IPPBase, iu, iu->iu_JobId);
+}
+
 /* The end of the job and the printer's answer; the unit's status says how it went. */
 static BOOL endJob(struct IPPBase *IPPBase, struct IPPUnit *iu)
 {
     char done[64] = "printed, ";
+    const char *text = done;
 
     if (!IPP_EndJob(IPPBase, iu)) {
         IPP_SetStatus(IPPBase, iu, iu->iu_Error);
@@ -177,8 +268,8 @@ static BOOL endJob(struct IPPBase *IPPBase, struct IPPUnit *iu)
         IPP_AppendNumber(done, iu->iu_Bytes);
         strcat(done, " bytes");
     } else
-        strcpy(done, "nothing to print");
-    IPP_SetStatus(IPPBase, iu, done);
+        text = iu->iu_Error[0] ? iu->iu_Error : "nothing to print";
+    IPP_SetStatus(IPPBase, iu, text);
     return TRUE;
 }
 
@@ -204,6 +295,13 @@ AROS_LH1(void, BeginIO,
     case PRD_SETDESTINATION:
         io->io_Error = setDestination(IPPBase, io);
         break;
+    case PRD_SETJOBINFO:
+        if (io->io_Data != NULL) {
+            ObtainSemaphore(&iu->iu_Lock);
+            io->io_Error = setJobInfo(IPPBase, iu, io);
+            ReleaseSemaphore(&iu->iu_Lock);
+        }
+        break;
     case CMD_WRITE:
         len = io->io_Length;
         if (len == -1)
@@ -213,7 +311,11 @@ AROS_LH1(void, BeginIO,
         if (iu->iu_Failed || iu->iu_Ended)
             io->io_Error = iu->iu_Refused ? PDERR_CANCEL : IOERR_ABORTED;
         else if (len > 0) {
-            if (IPP_Send(IPPBase, iu, io->io_Data, len))
+            if (iu->iu_SocketBase == NULL && !connectJob(IPPBase, iu)) {
+                /* nothing has gone out: the job is not lost, the write can be done again */
+                IPP_SetStatus(IPPBase, iu, iu->iu_Error);
+                io->io_Error = IOERR_OPENFAIL;
+            } else if (IPP_Send(IPPBase, iu, io->io_Data, len))
                 io->io_Actual = len;
             else {
                 iu->iu_Failed = TRUE;
@@ -338,9 +440,11 @@ static int GM_UNIQUENAME(Open)(struct IPPBase *IPPBase, struct IOStdReq *io, ULO
         iu->iu_Unconfirmed = FALSE;
         iu->iu_Bytes = 0;
         iu->iu_Error[0] = 0;
+        iu->iu_JobId = id;
+        iu->iu_Started = FALSE;
         if (!IPP_ReadConfig(IPPBase, unitnum, &iu->iu_Config)) {
-            strcpy(iu->iu_Error, "no printer set for this unit (FindPrinters UNIT n)");
-            ok = FALSE;
+            /* no printer set: the job's own request names one, or its first write fails */
+            memset(&iu->iu_Target, 0, sizeof(iu->iu_Target));
         } else if (!IPP_ParseURI(iu->iu_Config.ic_URI, &iu->iu_Target)) {
             strcpy(iu->iu_Error, "the printer address is not an ipp:// or socket:// URI");
             ok = FALSE;
@@ -379,6 +483,8 @@ static int GM_UNIQUENAME(Close)(struct IPPBase *IPPBase, struct IOStdReq *io)
         if (!iu->iu_Failed && !iu->iu_Ended)
             endJob(IPPBase, iu);
         IPP_Disconnect(IPPBase, iu);
+        FreeVec(iu->iu_Request);
+        iu->iu_Request = NULL;
     }
     ReleaseSemaphore(&iu->iu_Lock);
     return TRUE;
