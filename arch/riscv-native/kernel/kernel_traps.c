@@ -1,7 +1,10 @@
 /*
     Copyright (c) 2026, The AROS Development Team. All rights reserved.
 
-    Desc: S-mode trap handling for the sbi-riscv64 target.
+    Desc: Trap dispatch for native RISC-V kernels; the platform's
+          traps.S calls krnTrapHandler(). Everything is printed through
+          the platform's krnPutC(), which must work from the first
+          trap on, before KernelBase exists.
 */
 
 #define __KERNEL_NOLIBBASE__
@@ -11,12 +14,14 @@
 #include <exec/types.h>
 #include <exec/execbase.h>
 #include <proto/exec.h>
-#include <aros/riscv64/cpucontext.h>
+#include <aros/riscv/cpucontext.h>
 #include <asm/cpu.h>
 
-#include "kernel_intern.h"
+#include "kernel_riscv.h"
 #include "kernel_cpu.h"
 
+#include <kernel_base.h>
+#include <kernel_debug.h>
 #include <kernel_globals.h>
 #include <kernel_interrupts.h>
 #include <kernel_intr.h>
@@ -28,8 +33,7 @@
 #include "kernel_ipi.h"
 #endif
 
-#define SCAUSE_INTERRUPT    (1UL << 63)
-#define SCAUSE_BREAKPOINT   3
+#define CAUSE_BREAKPOINT    3
 
 /* a7 carries the syscall number (see krnSysCall in kernel_cpu.h) */
 #define CTX_REG_A7          14
@@ -48,7 +52,7 @@ static const char * const exc_names[] =
     "Environment call from U-mode",     /*  8 */
     "Environment call from S-mode",     /*  9 */
     NULL,                               /* 10 */
-    NULL,                               /* 11 */
+    "Environment call from M-mode",     /* 11 */
     "Instruction page fault",           /* 12 */
     "Load page fault",                  /* 13 */
     NULL,                               /* 14 */
@@ -56,16 +60,16 @@ static const char * const exc_names[] =
 };
 
 /*
- * scause exception code -> m68k trap number, the currency core_Trap()
+ * Exception code -> m68k trap number, the currency core_Trap()
  * and exec's trap handler deal in (exec ORs in AT_DeadEnd to form the
  * ACPU_* alert). -1 is never forwarded. Explicitly signed: plain char
- * is unsigned on riscv64, which would turn -1 into 255.
+ * is unsigned on riscv, which would turn -1 into 255.
  */
 static const signed char exc_trap[] =
 {
      3,  2,  4,  4,     /* misaligned/access ifetch, illegal insn, ebreak */
      3,  2,  3,  2,     /* load/store misalign + access faults            */
-     8,  8, -1, -1,     /* environment calls                              */
+     8,  8, -1,  8,     /* environment calls (11: M-mode kernels only)    */
      2,  2, -1,  2,     /* page faults                                    */
 };
 
@@ -82,27 +86,23 @@ static void krnDumpContext(struct ExceptionContext *ctx)
 
     for (i = 0; i < RISCV_REGSAVE_CNT; i++)
     {
-        krnSBIPutStr(regnames[i]);
-        krnSBIPutStr("=");
-        krnSBIPutHex(ctx->x[i]);
-        krnSBIPutStr(((i % 3) == 2) ? "\n" : "  ");
+        nbug("%s=0x%p%s", regnames[i], (APTR)ctx->x[i],
+             ((i % 3) == 2) ? "\n" : "  ");
     }
-    krnSBIPutStr("\npc =");
-    krnSBIPutHex(ctx->pc);
-    krnSBIPutStr("\n");
+    nbug("\npc =0x%p\n", (APTR)ctx->pc);
 }
 
 /* Trap/interrupt nesting depth, reported through KrnIsSuper():
    KRN_TRAPDEPTH (kernel_riscv.h) - per hart on SMP */
 
-/* Instruction-side faults: sepc itself may not be readable */
-#define SCAUSE_IS_IFETCH(c) ((c) == 0 || (c) == 1 || (c) == 12)
+/* Instruction-side faults: the faulting pc itself may not be readable */
+#define CAUSE_IS_IFETCH(c)  ((c) == 0 || (c) == 1 || (c) == 12)
 
 /*
- * The instruction stream around sepc, as 16-bit units (the parcel size
- * both compressed and full-size instructions are built from), with the
- * faulting parcel marked. Enough to disassemble the crash site offline
- * without the binary at hand.
+ * The instruction stream around the faulting pc, as 16-bit units (the
+ * parcel size both compressed and full-size instructions are built
+ * from), with the faulting parcel marked. Enough to disassemble the
+ * crash site offline without the binary at hand.
  */
 static void krnDumpCode(struct ExceptionContext *ctx)
 {
@@ -112,23 +112,22 @@ static void krnDumpCode(struct ExceptionContext *ctx)
     if (!pc)
         return;
 
-    krnSBIPutStr("[trap] code  ");
+    nbug("[trap] code  ");
     for (i = -16; i < 16; i++)
     {
         if (i == 0)
-            krnSBIPutStr("\n[trap] sepc> ");
-        krnSBIPutHex8(pc[i]);
-        if ((i & 1) && i != 15)
-            krnSBIPutStr(" ");
+            nbug("\n[trap] " rv_csr_name(RV_CSR_EPC) "> ");
+        nbug(((i & 1) && i != 15) ? "%02x " : "%02x", pc[i]);
     }
-    krnSBIPutStr("\n");
+    nbug("\n");
 }
 
 /*
- * Name sepc, ra and every stack word the symbol resolver can attribute
- * to a module. With no frame chain to walk (this port omits frame
- * pointers) the scan overreports, but the real call chain is in there,
- * each entry as module+symbol+offset - no load-address log needed.
+ * Name the faulting pc, ra and every stack word the symbol resolver can
+ * attribute to a module. With no frame chain to rely on (the code may
+ * omit frame pointers) the scan overreports, but the real call chain is
+ * in there, each entry as module+symbol+offset - no load-address log
+ * needed.
  */
 static void krnDumpBacktrace(struct ExceptionContext *ctx)
 {
@@ -153,16 +152,16 @@ static void krnDumpBacktrace(struct ExceptionContext *ctx)
 #define TRAP_RESCHEDULE 1
 #define TRAP_SYSCALL    2
 
-static int krnTrapDispatch(struct ExceptionContext *ctx, unsigned long scause,
-                           unsigned long stval);
+static int krnTrapDispatch(struct ExceptionContext *ctx, unsigned long cause,
+                           unsigned long tval);
 
-void krnTrapHandler(struct ExceptionContext *ctx, unsigned long scause,
-                    unsigned long stval)
+void krnTrapHandler(struct ExceptionContext *ctx, unsigned long cause,
+                    unsigned long tval)
 {
     int action;
 
     KRN_TRAPDEPTH++;
-    action = krnTrapDispatch(ctx, scause, stval);
+    action = krnTrapDispatch(ctx, cause, tval);
 
     /*
      * Only the outermost trap enters the scheduler, the same rule other
@@ -183,7 +182,7 @@ void krnTrapHandler(struct ExceptionContext *ctx, unsigned long scause,
 
     /*
      * The depth is released at the very end of the assembly exit
-     * in traps.S (after the register restore, immediately before sret), NOT
+     * in traps.S (after the register restore, just before mret/sret), NOT
      * here: decrementing it now would leave the whole exit sequence running
      * at depth 0, so a trap taken mid-exit would be treated as the outermost
      * one, reschedule, and snapshot this half-restored exit state as a task
@@ -191,60 +190,57 @@ void krnTrapHandler(struct ExceptionContext *ctx, unsigned long scause,
      */
 }
 
-static int krnTrapDispatch(struct ExceptionContext *ctx, unsigned long scause,
-                           unsigned long stval)
+static int krnTrapDispatch(struct ExceptionContext *ctx, unsigned long cause,
+                           unsigned long tval)
 {
-    if (scause & SCAUSE_INTERRUPT)
+    if (cause & RV_CAUSE_INTERRUPT)
     {
-        unsigned long irq = scause & ~SCAUSE_INTERRUPT;
+        unsigned long irq = cause & ~RV_CAUSE_INTERRUPT;
 
         switch (irq)
         {
-        case SCAUSE_IRQ_STI:
-            krnTimerTick(ctx);
+        case RV_IRQ_TIMER:
+            if (!__riscv_arosintern.RVI_TimerTick)
+                break;
+            __riscv_arosintern.RVI_TimerTick(ctx);
             /* Run the scheduler on the way out if a switch is pending */
             return TRAP_RESCHEDULE;
 
-        case SCAUSE_IRQ_SEI:
-        {
+        case RV_IRQ_EXT:
             /*
-             * A device. Which one has to be claimed from the PLIC,
-             * and it must be completed afterwards or it never fires
-             * again. Several can be pending at once.
+             * A device. The platform claims it from its interrupt
+             * controller and completes it, or it never fires again;
+             * several can be pending at once.
              */
-            krnHandleExternalIRQ();
+            if (!__riscv_arosintern.RVI_ExternalIRQ)
+                break;
+            __riscv_arosintern.RVI_ExternalIRQ();
             return TRAP_RESCHEDULE;
-        }
 
 #if defined(__AROSEXEC_SMP__)
-        case SCAUSE_IRQ_SSI:
-            /* An inter-processor interrupt (riscv-native kernel_ipi.c) */
+        case RV_IRQ_SOFT:
+            /* An inter-processor interrupt (kernel_ipi.c) */
             core_IPIHandle();
             return TRAP_RESCHEDULE;
 #endif
-
-        default:
-            krnSBIPutStr("\n[trap] unexpected interrupt, code ");
-            krnSBIPutDec(irq);
-            krnSBIPutStr("\n");
-            break;
         }
+        nbug("\n[trap] unexpected interrupt, code %lu\n", irq);
     }
-    else if (scause == SCAUSE_BREAKPOINT && SysBase &&
+    else if (cause == CAUSE_BREAKPOINT && SysBase &&
              ctx->x[CTX_REG_A7] <= SC_MAX)
     {
         /*
          * Scheduler syscall (KrnDispatch/KrnSwitch/KrnSchedule/...):
-         * ebreak with the function code in a7 (ecall belongs to SBI,
-         * see kernel_cpu.h). Step over the ebreak - 2 bytes for the
-         * compressed form, 4 otherwise.
+         * ebreak with the function code in a7 (see kernel_cpu.h). Step
+         * over the ebreak - 2 bytes for the compressed form, 4
+         * otherwise.
          */
         ctx->pc += (*(uint16_t *)ctx->pc == 0x9002) ? 2 : 4;
         return TRAP_SYSCALL;
     }
     else
     {
-        unsigned long code = scause;
+        unsigned long code = cause;
         const char *name = (code < sizeof(exc_names)/sizeof(exc_names[0]))
                             ? exc_names[code] : NULL;
 
@@ -271,34 +267,22 @@ static int krnTrapDispatch(struct ExceptionContext *ctx, unsigned long scause,
              */
             struct Task *t = SysBase ? FindTask(NULL) : NULL;
 
-            krnSBIPutStr("[trap] task '");
-            krnSBIPutStr((t && t->tc_Node.ln_Name) ? t->tc_Node.ln_Name : "<unknown>");
-            krnSBIPutStr("' ");
-            krnSBIPutStr(name ? name : "exception");
-            krnSBIPutStr(" sepc=");
-            krnSBIPutHex(ctx->pc);
-            krnSBIPutStr(" stval=");
-            krnSBIPutHex(stval);
-            krnSBIPutStr(" ra=");
-            krnSBIPutHex(ctx->x[0]);
-            krnSBIPutStr(" -> exec\n");
+            nbug("[trap] task '%s' %s " rv_csr_name(RV_CSR_EPC) "=0x%p "
+                 rv_csr_name(RV_CSR_TVAL) "=0x%p ra=0x%p -> exec\n",
+                 (t && t->tc_Node.ln_Name) ? t->tc_Node.ln_Name : "<unknown>",
+                 name ? name : "exception", (APTR)ctx->pc, (APTR)tval,
+                 (APTR)ctx->x[0]);
             if (core_Trap(exc_trap[code], ctx))
                 return TRAP_DONE;
         }
 
-        krnSBIPutStr("\n[trap] ");
         if (name)
-            krnSBIPutStr(name);
+            nbug("\n[trap] %s", name);
         else
-        {
-            krnSBIPutStr("Unknown exception ");
-            krnSBIPutDec(code);
-        }
-        krnSBIPutStr("\n       sepc  = ");
-        krnSBIPutHex(ctx->pc);
-        krnSBIPutStr("\n       stval = ");
-        krnSBIPutHex(stval);
-        krnSBIPutStr("\n");
+            nbug("\n[trap] Unknown exception %lu", code);
+        nbug("\n       %-5s = 0x%p\n       %-5s = 0x%p\n",
+             rv_csr_name(RV_CSR_EPC), (APTR)ctx->pc,
+             rv_csr_name(RV_CSR_TVAL), (APTR)tval);
     }
 
     krnDumpContext(ctx);
@@ -311,32 +295,25 @@ static int krnTrapDispatch(struct ExceptionContext *ctx, unsigned long scause,
         struct Task *t = FindTask(NULL);
         if (t)
         {
-            krnSBIPutStr("[trap] task '");
-            krnSBIPutStr(t->tc_Node.ln_Name ? t->tc_Node.ln_Name :
-                         "<unnamed>");
-            krnSBIPutStr("' @ ");
-            krnSBIPutHex((IPTR)t);
-            krnSBIPutStr("\n");
+            nbug("[trap] task '%s' @ 0x%p\n",
+                 t->tc_Node.ln_Name ? t->tc_Node.ln_Name : "<unnamed>", t);
 
             /* The owner's stack bounds, and whether sp had left them -
              * a runaway stack explains a trap frame landing anywhere */
-            krnSBIPutStr("[trap] stack ");
-            krnSBIPutHex((IPTR)t->tc_SPLower);
-            krnSBIPutStr(" - ");
-            krnSBIPutHex((IPTR)t->tc_SPUpper);
-            krnSBIPutStr(" sp ");
-            krnSBIPutHex(ctx->x[1]);            /* regnames[1] is sp */
-            krnSBIPutStr(((IPTR)ctx->x[1] < (IPTR)t->tc_SPLower ||
-                          (IPTR)ctx->x[1] > (IPTR)t->tc_SPUpper)
-                         ? " OUTSIDE\n" : " in bounds\n");
+            nbug("[trap] stack 0x%p - 0x%p sp 0x%p%s",
+                 t->tc_SPLower, t->tc_SPUpper,
+                 (APTR)ctx->x[1],               /* regnames[1] is sp */
+                 ((IPTR)ctx->x[1] < (IPTR)t->tc_SPLower ||
+                  (IPTR)ctx->x[1] > (IPTR)t->tc_SPUpper)
+                 ? " OUTSIDE\n" : " in bounds\n");
         }
     }
 
-    if (!SCAUSE_IS_IFETCH(scause))
+    if (!CAUSE_IS_IFETCH(cause))
         krnDumpCode(ctx);
     krnDumpBacktrace(ctx);
 
-    krnSBIPutStr("[trap] fatal - halting hart.\n");
+    nbug("[trap] fatal - halting hart.\n");
     for (;;)
         asm volatile("wfi");
 
