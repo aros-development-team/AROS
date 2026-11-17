@@ -22,7 +22,6 @@ CFILES := \
         kernel_startup \
         kernel_console \
         kernel_debug \
-        kernel_traps \
         kernel_fdt \
         kernel_acpi \
         kernel_plic \

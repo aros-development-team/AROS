@@ -71,11 +71,8 @@ void krnSBIPutHex32(uint32_t val);
 void krnSBIPutHex8(unsigned char val);
 void krnSBIPutDec(uint64_t val);
 
-/* S-mode trap handling (traps.S / kernel_traps.c) */
+/* S-mode trap entry (traps.S; the dispatch is riscv-native's) */
 extern void __trap_entry(void);
-struct ExceptionContext;
-void krnTrapHandler(struct ExceptionContext *ctx, unsigned long scause,
-                    unsigned long stval);
 
 /*
  * Per-hart data, modeled on the x86 APICData/CPUData pair: one entry
