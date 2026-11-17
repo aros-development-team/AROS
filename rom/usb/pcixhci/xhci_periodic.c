@@ -75,7 +75,7 @@ void xhciScheduleIntTDs(struct PCIController *hc)
 
         /* is endpoint already in use or do we have to wait for next transaction */
         if(unit->hu_DevBusyReq[devadrep]) {
-            pciusbWarn("xHCI", "DevEP %02lx in use!\n", devadrep);
+            pciusbXHCIDebugV("xHCI", "DevEP %02lx in use!\n", devadrep);
             continue;
         }
 
