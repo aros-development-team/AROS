@@ -96,6 +96,23 @@ struct MDNSServicePub
 #define MDNS_STEP_PROBE_FIRST   2       /* the first, asking for a unicast answer */
 #define MDNS_STEP_ANNOUNCE      3       /* its records, to the group */
 
+/*
+ * A packet mdnsd sent to the group (mdns_net.c), as long as it may still
+ * come back by another of its interfaces on the same segment: the link it
+ * went out by, its signature (two 32-bit sums and its length) and when it
+ * went. Kept only with two links or more.
+ */
+struct MDNSSent
+{
+    ULONG   s_Link;             /* interface index it went out by */
+    ULONG   s_Tick;             /* mdnsTicks() it went */
+    ULONG   s_Hash;             /* FNV-1a of its bytes */
+    ULONG   s_Sum;              /* Fletcher-like sum of them */
+    UWORD   s_Length;           /* its length; MDNS_SENT_IPV6 for the socket
+                                 * it comes back to, else IPv4 */
+};
+#define MDNS_SENT_IPV6          0x8000
+
 /* A name is asked for three times, 250 ms apart, before it is announced
  * (RFC 6762 section 8.1), and then announced twice, a second apart. */
 #define MDNS_NAME_PROBING       0
@@ -202,6 +219,13 @@ struct MDNSDaemon
     ULONG                   md_HostAddr;    /* the first interface's */
     ULONG                   md_RxPackets;
     ULONG                   md_TxPackets;
+    ULONG                   md_RxEchoes;    /* own packets heard by another link */
+    struct MDNSSent        *md_Sent;        /* a ring, oldest first */
+    UWORD                   md_SentMax;
+    UWORD                   md_SentFirst;
+    UWORD                   md_SentCount;
+    ULONG                   md_Idle4;       /* mdnsTicks() each socket was last */
+    ULONG                   md_Idle6;       /* seen with nothing to read */
     ULONG                   md_RxAnswers;
 
     char                    md_HostName[MDNSD_HOST_MAX + 1];
@@ -391,6 +415,9 @@ void mdnsNetClose(struct MDNSDaemon *md);
 void mdnsNetSystemName(struct Library *SocketBase, char *base);
 BOOL mdnsNetIsOwn(struct MDNSDaemon *md, ULONG addr);
 BOOL mdnsNetIsOwn6(struct MDNSDaemon *md, const struct in6_addr *addr);
+BOOL mdnsNetIsOwnPacket(struct MDNSDaemon *md, LONG slot, UWORD af,
+    const UBYTE *source, const UBYTE *pkt, LONG pktlen);
+void mdnsNetIdle(struct MDNSDaemon *md, UWORD af);
 const struct dnssd_address_entry *mdnsNetAddressAt(
     const struct MDNSDaemon *md, LONG index, UWORD family, size_t ordinal);
 ULONG mdnsNetAddress4(const struct MDNSDaemon *md, LONG index);
