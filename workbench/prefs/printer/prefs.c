@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc:
 */
@@ -403,14 +403,15 @@ BOOL Prefs_Default(int PrinterUnit)
     devunit->pd_UnitNum = PrinterUnit;
     snprintf(devunit->pd_UnitName, sizeof(devunit->pd_UnitName), "Unit %d", PrinterUnit);
 
-    gfx->pg_Aspect = PA_VERTICAL;
+    gfx->pg_Aspect = PA_HORIZONTAL;
     gfx->pg_Shade = PS_COLOR;
     gfx->pg_Image = PI_POSITIVE;
-    gfx->pg_Threshold = 256;
+    gfx->pg_Threshold = 7;
     gfx->pg_ColorCorrect = 0;   /* No color correction enabled */
     gfx->pg_Dimensions = PD_IGNORE;
-    gfx->pg_GraphicFlags = PGFB_CENTER_IMAGE;
-    gfx->pg_PrintDensity = PD_FLOYD;
+    gfx->pg_Dithering = PD_FLOYD;
+    gfx->pg_GraphicFlags = PGFF_CENTER_IMAGE;
+    gfx->pg_PrintDensity = 2;
     gfx->pg_PrintMaxWidth = 0;       /* Will be set by driver */
     gfx->pg_PrintMaxHeight = 0;      /* Will be set by driver */
     gfx->pg_PrintXOffset = 0;
