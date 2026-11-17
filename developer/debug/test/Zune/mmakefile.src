@@ -9,6 +9,7 @@ FILES  := test             \
           volumelist       \
           dirlist          \
           disable          \
+          disabledgroup    \
           dtpic            \
           font             \
           string           \

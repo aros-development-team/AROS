@@ -3,7 +3,7 @@
 
 /*
     Copyright © 1999, David Le Corfec.
-    Copyright © 2002-2025, The AROS Development Team.
+    Copyright © 2002-2026, The AROS Development Team.
     All rights reserved.
 
     $Id$
@@ -415,6 +415,7 @@ struct MUI_RenderInfo
 #define MUIMRI_TRUECOLOR (1<<1)
 #define MUIMRI_THINFRAMES (1<<2)
 #define MUIMRI_REFRESHMODE (1<<3)
+#define MUIMRI_GHOSTED (1U<<31) /* Zune internal, not a MUI flag */
 
 /**************************************************************************
  MUI_EventHandlerNode as used by
