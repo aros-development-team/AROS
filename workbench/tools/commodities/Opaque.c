@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2006, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <aros/symbolsets.h>
@@ -50,7 +50,7 @@
 
 /************************************************************************************/
 
-UBYTE version[] = "$VER: Opaque 0.6 (25.5.2010)";
+UBYTE version[] = "$VER: Opaque 0.7 (18.11.2026)";
 
 #define ARG_TEMPLATE "CX_PRIORITY=PRI/N/K"
 
@@ -79,6 +79,7 @@ static struct NewBroker nb =
 static struct Catalog *catalog;
 static struct MsgPort *cxport;
 static struct Window *actionwin;
+static struct Screen *actionscr;
 static struct Task *maintask;
 
 static struct RDArgs *myargs;
@@ -490,6 +491,7 @@ static void OpaqueAction(CxMsg *msg,CxObj *obj)
                         opaque_active = TRUE;
                         if (IntuitionBase->ActiveWindow != win) ActivateWindow(win);
                         actionwin = win;
+                        actionscr = win->WScreen;
                         winoffx   = win->WScreen->MouseX - win->LeftEdge;
                         winoffy   = win->WScreen->MouseY - win->TopEdge;
                         winwidth  = win->Width;
@@ -501,7 +503,7 @@ static void OpaqueAction(CxMsg *msg,CxObj *obj)
                         DisposeCxMsg(msg);
                         /* reset mouse bounds */
                         SetMouseBounds(actionwin);
-                        if (!offScreenLayersFlag) SetPointerBounds(actionwin->WScreen, &mousebounds, 0, NULL);
+                        if (!offScreenLayersFlag) SetPointerBounds(actionscr, &mousebounds, 0, NULL);
 
                         //Signal(maintask, icontrolmask);
                     }
@@ -513,7 +515,7 @@ static void OpaqueAction(CxMsg *msg,CxObj *obj)
                 if (opaque_active)
                 {
                     opaque_active = FALSE;
-                    if (!offScreenLayersFlag) SetPointerBounds(actionwin->WScreen, NULL, 0, NULL);
+                    if (!offScreenLayersFlag) SetPointerBounds(actionscr, NULL, 0, NULL);
                     DisposeCxMsg(msg);
                 }
                 break;
@@ -521,7 +523,7 @@ static void OpaqueAction(CxMsg *msg,CxObj *obj)
             case IECODE_NOBUTTON:
                 if (opaque_active)
                 {
-                    if (!offScreenLayersFlag) SetPointerBounds(actionwin->WScreen, &mousebounds, 0, NULL);
+                    if (!offScreenLayersFlag) SetPointerBounds(actionscr, &mousebounds, 0, NULL);
 
 #if CALL_WINDOWFUNCS_IN_INPUTHANDLER
                     HandleAction();
@@ -538,7 +540,7 @@ static void OpaqueAction(CxMsg *msg,CxObj *obj)
     {
         if (opaque_active && !offScreenLayersFlag)
         {
-            SetPointerBounds(actionwin->WScreen, &mousebounds, 0, NULL);
+            SetPointerBounds(actionscr, &mousebounds, 0, NULL);
         }
     }
 }
@@ -584,32 +586,80 @@ static void HandleIControl(void)
 
 /************************************************************************************/
 
+/* The dragged window can be closed while the button is still down */
+static BOOL WindowIsOpen(struct Window *win)
+{
+    struct Screen *scr;
+    struct Window *w;
+
+    for (scr = IntuitionBase->FirstScreen; scr; scr = scr->NextScreen)
+    {
+        for (w = scr->FirstWindow; w; w = w->NextWindow)
+        {
+            if (w == win) return TRUE;
+        }
+    }
+
+    return FALSE;
+}
+
+/************************************************************************************/
+
 /* Move window to absolute position newWindowX, newWindowY */
 static void HandleAction(void)
 {
+    struct Window *win = actionwin;
+    WORD mousex = 0, mousey = 0, winx = 0, winy = 0, winw = 0, winh = 0;
+    BOOL open = FALSE;
+    ULONG lock;
+
+    if (!win) return;
+
+    lock = LockIBase(0);
+    if (WindowIsOpen(win))
+    {
+        open   = TRUE;
+        mousex = win->WScreen->MouseX;
+        mousey = win->WScreen->MouseY;
+        winx   = win->LeftEdge;
+        winy   = win->TopEdge;
+        winw   = win->Width;
+        winh   = win->Height;
+    }
+    UnlockIBase(lock);
+
+    if (!open)
+    {
+        /* Ignore the rest of this drag, unless the input handler has started a new one */
+        Forbid();
+        if (actionwin == win) actionwin = NULL;
+        Permit();
+        return;
+    }
+
     if (actiontype == ACTIONTYPE_DRAGGING)
     {
-        WORD newx = actionwin->WScreen->MouseX - winoffx;
-        WORD newy = actionwin->WScreen->MouseY - winoffy;
+        WORD newx = mousex - winoffx;
+        WORD newy = mousey - winoffy;
 
-        /* MoveWindow(actionwin, newx - actionwin->LeftEdge, newy - actionwin->TopEdge); */
+        /* MoveWindow(win, newx - winx, newy - winy); */
 #if USE_CHANGEWINDOWBOX
-        ChangeWindowBox(actionwin, newx, newy, actionwin->Width, actionwin->Height);
+        ChangeWindowBox(win, newx, newy, winw, winh);
 #else
-        MoveWindow(actionwin, newx - actionstart_winx, newy - actionstart_winy);
+        MoveWindow(win, newx - actionstart_winx, newy - actionstart_winy);
         actionstart_winx = newx;
         actionstart_winy = newy;
 #endif
     }
     else
     {
-        LONG neww = winwidth  + actionwin->WScreen->MouseX - actionwin->LeftEdge - winoffx;
-        LONG newh = winheight + actionwin->WScreen->MouseY - actionwin->TopEdge  - winoffy;
+        LONG neww = winwidth  + mousex - winx - winoffx;
+        LONG newh = winheight + mousey - winy - winoffy;
 
-        if ((neww != actionwin->Width) || (newh != actionwin->Height))
+        if ((neww != winw) || (newh != winh))
         {
-            /* SizeWindow(actionwin, neww - actionwin->Width, newh - actionwin->Height); */
-            ChangeWindowBox(actionwin, actionwin->LeftEdge, actionwin->TopEdge, neww, newh);
+            /* SizeWindow(win, neww - winw, newh - winh); */
+            ChangeWindowBox(win, winx, winy, neww, newh);
         }
     }
 }
