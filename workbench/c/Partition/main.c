@@ -63,33 +63,33 @@
 
     INPUTS
 
-        DEVICE -- Device driver name (ata.device by default)
-        UNIT -- The drive's unit number (0 by default, which is the primary
-            master when using ata.device)
-        SYSSIZE -- The System (boot) partition size in megabytes.
-        SYSTYPE -- The file system to use for the system partition, either
-            "SFS" (the default) or "FFSIntl".
-        SYSNAME -- The name to use for the system partition (defaults to DH0).
+        DEVICE   -- Device driver name (ata.device by default)
+        UNIT     -- The drive's unit number (0 by default, which is the primary
+                    master when using ata.device)
+        SYSSIZE  -- The System (boot) partition size in megabytes.
+        SYSTYPE  -- The file system to use for the system partition, either
+                    "SFS" (the default) or "FFSIntl".
+        SYSNAME  -- The name to use for the system partition (defaults to DH0).
         WORKSIZE -- The Work (secondary) partition size in megabytes. To use
-            this option, SYSSIZE must also be specified.
-        MAXWORK -- Make the Work partition as large as possible. To use this
-            option, SYSSIZE must also be specified.
+                    this option, SYSSIZE must also be specified.
+        MAXWORK  -- Make the Work partition as large as possible. To use this
+                    option, SYSSIZE must also be specified.
         WORKTYPE -- The file system to use for the work partition, either
-            "SFS" (the default) or "FFSIntl".
+                    "SFS" (the default) or "FFSIntl".
         WORKNAME -- The name to use for the work partition (defaults to DH1).
-        WIPE -- Destroy all other partitions on the drive, including those
-            used by other operating systems (CAUTION!).
-        FORCE -- Do not ask for confirmation before partitioning the drive.
-        QUIET -- Do not print any output. This option can only be used when
-            FORCE is also specified.
+        WIPE     -- Destroy all other partitions on the drive, including those
+                    used by other operating systems (CAUTION!).
+        FORCE    -- Do not ask for confirmation before partitioning the drive.
+        QUIET    -- Do not print any output. This option can only be used when
+                    FORCE is also specified.
         BOOTSIZE -- Size in megabytes of an optional boot partition.
         BOOTTYPE -- "fat32" for an EFI system partition: type 0xEF on
-            MBR, or the EFI system partition GUID on GPT.
-        SCHEME -- Specify the partition scheme to use 
-                             mbr - (default)
-                             gpt - 
-                             rdb - Create only RDB partitions, no MBR or EBR
-                                   partitions will be created.
+                    MBR, or the EFI system partition GUID on GPT.
+        SCHEME   -- Specify the partition scheme to use 
+                        mbr - (default)
+                        gpt - 
+                        rdb - Create only RDB partitions, no MBR or EBR
+                              partitions will be created.
 
     RESULT
 
