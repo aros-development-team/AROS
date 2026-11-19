@@ -3353,9 +3353,8 @@ static IPTR event_motion(Class *cl, Object *obj, struct IntuiMessage *imsg)
 
         if (in) {
             if ((data->mad_Flags & MADF_DRAGGABLE) &&
-                    ((abs(data->mad_ClickX - imsg->MouseX) >= 3) ||
-                     (abs(data->mad_ClickY - imsg->MouseY) >= 3)))
-                /* should be user configurable */
+                    ((abs(data->mad_ClickX - imsg->MouseX) >= MUI_DRAG_THRESHOLD) ||
+                     (abs(data->mad_ClickY - imsg->MouseY) >= MUI_DRAG_THRESHOLD)))
             {
                 if (data->mad_InputMode == MUIV_InputMode_RelVerify)
                     set(obj, MUIA_Selected, FALSE);

@@ -46,6 +46,9 @@
 #include "prefs.h"
 #include "penspec.h"
 
+/* Pointer movement in pixels that turns a press into a drag (Area, List);
+   should be user configurable */
+#define MUI_DRAG_THRESHOLD  3
 
 struct MUIMasterBase_intern
 {
