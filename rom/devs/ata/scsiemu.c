@@ -35,7 +35,7 @@ static void ww(UBYTE *p, UWORD v)
 
 static ULONG rl(UBYTE *p)
 {
-    return (p[0] << 24) | (p[1] << 16) | (p[2] << 8) | (p[3]);
+    return ((ULONG)p[0] << 24) | (p[1] << 16) | (p[2] << 8) | (p[3]);
 }
 
 static UBYTE scsi_read32(struct ata_Unit *unit, APTR data, ULONG offset, ULONG len, ULONG *outlen)
@@ -129,27 +129,29 @@ static UBYTE scsi_modesense(struct ata_Unit *unit, struct SCSICmd *cmd, ULONG *o
 static UBYTE scsi_readcapacity(struct ata_Unit *unit, struct SCSICmd *cmd, ULONG *outlen)
 {
     UBYTE *cmdbuf = cmd->scsi_Command;
-    UBYTE *out = (UBYTE*)cmd->scsi_Data;
-    BOOL pmi;
-    ULONG lba, blocks;
+    UBYTE out[8];
+    UQUAD blocks = unit->au_Capacity48;
+    UQUAD last;
+    ULONG lba = rl(cmdbuf + 2);
 
-    blocks = unit->au_Capacity;
-    pmi = cmdbuf[8] & 1;
-    lba = (cmdbuf[2] << 24) | (cmdbuf[3] << 16) | (cmdbuf[4] << 8) | cmdbuf[5];
-    if (pmi == 0 && lba != 0)
+    if (!blocks || (!(cmdbuf[8] & 1) && lba))
         return 0xff;
-    if (pmi) {
-        UWORD cylsize = unit->au_Heads * unit->au_Sectors;
-        lba += cylsize;
-        lba /= cylsize;
-        lba *= cylsize;
-        if (lba > blocks)
-            lba = blocks;
-        blocks = lba;
+    last = blocks - 1;
+    if (cmdbuf[8] & 1) {
+        ULONG cylsize = (ULONG)unit->au_Heads * unit->au_Sectors;
+        if (lba >= blocks)
+            return 0xff;
+        if (cylsize) {
+            UQUAD end = (UQUAD)lba + cylsize - (lba % cylsize) - 1;
+            if (end < last)
+                last = end;
+        }
     }
-    wl (out + 0, blocks);
-    wl (out + 4, 1 << unit->au_SectorShift);
-    *outlen = 8;
+    wl(out, last > 0xffffffffULL ? 0xffffffffUL : (ULONG)last);
+    wl(out + 4, 1UL << unit->au_SectorShift);
+    *outlen = cmd->scsi_Length < sizeof(out) ? cmd->scsi_Length : sizeof(out);
+    if (*outlen)
+        CopyMem(out, cmd->scsi_Data, *outlen);
     return 0;
 }
 
