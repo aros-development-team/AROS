@@ -57,12 +57,9 @@ const static ULONG defaultcolors[][3] =
 *   NOTES
 *       Color and PenSpec inputs are copied. Getter pointers into instance
 *       storage are borrowed and valid only while the object remains alive.
-*
-*   BUGS
-*       An initial PenSpec does not select its pen for the first draw; set
-*       PenSpec again after creation. Type is an unchecked 0..4 index and Set
-*       does not relayout. Pen acquisition can fail without an error result;
-*       Cleanup can overwrite a pending color acquisition kind.
+*       Pen acquisition failures are not reported by the attribute API. If no
+*       pen can be acquired, drawing falls back to the MUI text pen and the
+*       requested acquisition remains pending for a later draw.
 *
 */
 /****** Lamp.mcc/MUIA_Lamp_Type ************
@@ -78,8 +75,9 @@ const static ULONG defaultcolors[][3] =
 *       Big (3), Huge (4).
 *
 *   NOTES
-*       Only 0..4 are safe: the size table is not range-checked. The
-*       table sizes (5..9) augment layout bounds; Set does not relayout.
+*       Values outside 0..4 are ignored. The table sizes (5..9) augment
+*       layout bounds. Changing Type while the object is set up requests
+*       parent-group relayout.
 *
 */
 /****** Lamp.mcc/MUIA_Lamp_Color ************
@@ -180,8 +178,8 @@ const static ULONG defaultcolors[][3] =
 *
 *   NOTES
 *       Input is copied. Get returns a borrowed pointer to instance storage.
-*       Set after creation to activate MUI pen acquisition; construction alone
-*       leaves RGB acquisition pending. Pen resolution is not reported.
+*       Initial and later PenSpec values select MUI pen acquisition. Pen
+*       resolution is not reported; failed acquisition remains pending.
 *
 */
 /****** Lamp.mcc/MUIM_Lamp_SetRGB ************
@@ -199,16 +197,16 @@ const static ULONG defaultcolors[][3] =
 *       Zero; setter success is not reported.
 *
 *   NOTES
-*       A Color notification may receive a temporary stack array. Copy its
-*       contents during the callback; never retain that pointer.
+*       Color notification receives a pointer to object-owned RGB storage.
+*       The pointer is borrowed and remains valid only while the object lives.
 *
 */
 
 /*** Methods ****************************************************************/
 /* Create the superclass, returning NULL on failure. Initialize Medium size,
  * black preset, RGB acquisition pending, and no acquired pen. Process tags
- * in order and copy RGB or PenSpec input. PenSpec changes representation
- * but does not change the pending RGB acquisition kind.
+ * in order, range-check Type, and copy RGB or PenSpec input. PenSpec selects
+ * the matching pending acquisition kind.
  */
 Object *Lamp__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
@@ -237,7 +235,8 @@ Object *Lamp__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
         switch (tag->ti_Tag)
         {
             case MUIA_Lamp_Type:
-                data->lmp_Type = tag->ti_Data;
+                if (tag->ti_Data <= MUIV_Lamp_Type_Huge)
+                    data->lmp_Type = tag->ti_Data;
                 break;
 
             case MUIA_Lamp_Color:
@@ -275,8 +274,12 @@ Object *Lamp__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
                 break;
 
             case MUIA_Lamp_PenSpec:
-                data->lmp_PenSpec = *((struct MUI_PenSpec *)tag->ti_Data);
-                data->lmp_ColorType = MUIV_Lamp_ColorType_PenSpec;
+                if (tag->ti_Data)
+                {
+                    data->lmp_PenSpec = *((struct MUI_PenSpec *)tag->ti_Data);
+                    data->lmp_ColorType = MUIV_Lamp_ColorType_PenSpec;
+                    data->lmp_PenChanged = PCH_NEWSPEC;
+                }
                 break;
         }
     }
@@ -285,20 +288,26 @@ Object *Lamp__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 }
 
 
-/* Process color and size tags in order; color changes redraw, size changes do not relayout. */
+/* Process color and size tags in order; valid size changes redraw and relayout. */
 IPTR Lamp__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct Lamp_DATA           *data   = INST_DATA(cl, obj);
     struct TagItem             *tstate = msg->ops_AttrList;
     struct TagItem             *tag;
+    BOOL                        relayout = FALSE;
 
     while ((tag = NextTagItem(&tstate)) != NULL)
     {
         switch (tag->ti_Tag)
         {
             case MUIA_Lamp_Type:
-                data->lmp_Type = tag->ti_Data;
-                MUI_Redraw(obj, MADF_DRAWUPDATE);
+                if (tag->ti_Data <= MUIV_Lamp_Type_Huge &&
+                    data->lmp_Type != tag->ti_Data)
+                {
+                    data->lmp_Type = tag->ti_Data;
+                    relayout = TRUE;
+                    MUI_Redraw(obj, MADF_DRAWUPDATE);
+                }
                 break;
 
             case MUIA_Lamp_Color:
@@ -344,15 +353,28 @@ IPTR Lamp__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
                 break;
 
             case MUIA_Lamp_PenSpec:
-                data->lmp_PenSpec = *((struct MUI_PenSpec *)tag->ti_Data);
-                data->lmp_ColorType = MUIV_Lamp_ColorType_PenSpec;
-                data->lmp_PenChanged = PCH_NEWSPEC;
-                MUI_Redraw(obj, MADF_DRAWUPDATE);
+                if (tag->ti_Data)
+                {
+                    data->lmp_PenSpec = *((struct MUI_PenSpec *)tag->ti_Data);
+                    data->lmp_ColorType = MUIV_Lamp_ColorType_PenSpec;
+                    data->lmp_PenChanged = PCH_NEWSPEC;
+                    MUI_Redraw(obj, MADF_DRAWUPDATE);
+                }
                 break;
         }
     }
 
-    return DoSuperMethodA(cl, obj, (Msg) msg);
+    {
+        IPTR result = DoSuperMethodA(cl, obj, (Msg) msg);
+
+        if (relayout && XGET(obj, MUIA_WindowObject) && _parent(obj))
+        {
+            DoMethod(_parent(obj), MUIM_Group_InitChange);
+            DoMethod(_parent(obj), MUIM_Group_ExitChange);
+        }
+
+        return result;
+    }
 }
 
 
@@ -408,29 +430,25 @@ IPTR Lamp__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 }
 
 
-/* Release the acquired pen and restore the old acquisition kind as pending. */
+/* Release the acquired pen and keep the selected color kind pending. */
 IPTR Lamp__MUIM_Cleanup(struct IClass *cl, Object *obj, Msg msg)
 {
     struct Lamp_DATA *data = INST_DATA(cl,obj);
 
-    if (data->lmp_PenChangedOld == PCH_NEWPEN)
+    if (data->lmp_PenNr != -1)
     {
-        if (data->lmp_PenNr != -1)
-        {
+        if (data->lmp_PenChangedOld == PCH_NEWPEN)
             ReleasePen(_screen(obj)->ViewPort.ColorMap, data->lmp_PenNr);
-            data->lmp_PenNr = -1;
-        }
-    }
-    else if (data->lmp_PenChangedOld == PCH_NEWSPEC)
-    {
-        MUI_ReleasePen(muiRenderInfo(obj), data->lmp_PenNr);
+        else if (data->lmp_PenChangedOld == PCH_NEWSPEC)
+            MUI_ReleasePen(muiRenderInfo(obj), data->lmp_PenNr);
+
+        data->lmp_PenNr = -1;
     }
 
-    if (data->lmp_PenChangedOld != PCH_NONE)
-    {
-        data->lmp_PenChanged = data->lmp_PenChangedOld;
-        data->lmp_PenChangedOld = PCH_NONE;
-    }
+    data->lmp_PenChangedOld = PCH_NONE;
+    data->lmp_PenChanged =
+        data->lmp_ColorType == MUIV_Lamp_ColorType_PenSpec ?
+        PCH_NEWSPEC : PCH_NEWPEN;
 
     return DoSuperMethodA(cl, obj, msg);
 }
@@ -450,22 +468,27 @@ IPTR Lamp__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 
     if (data->lmp_PenChanged)
     {
-        if (data->lmp_PenChangedOld == PCH_NEWPEN)
+        ULONG pending = data->lmp_PenChanged;
+
+        if (data->lmp_PenNr != -1)
         {
-            if (data->lmp_PenNr != -1)
+            if (data->lmp_PenChangedOld == PCH_NEWPEN)
             {
                 ReleasePen(_screen(obj)->ViewPort.ColorMap, data->lmp_PenNr);
                 D(bug("[Lamp/Draw] released pen %u\n", data->lmp_PenNr));
-                data->lmp_PenNr = -1;
             }
-        }
-        else if (data->lmp_PenChangedOld == PCH_NEWSPEC)
-        {
-            MUI_ReleasePen(muiRenderInfo(obj), data->lmp_PenNr);
-            D(bug("[Lamp/Draw] released MUI pen %u\n", data->lmp_PenNr));
+            else if (data->lmp_PenChangedOld == PCH_NEWSPEC)
+            {
+                MUI_ReleasePen(muiRenderInfo(obj), data->lmp_PenNr);
+                D(bug("[Lamp/Draw] released MUI pen %u\n", data->lmp_PenNr));
+            }
+
+            data->lmp_PenNr = -1;
         }
 
-        if (data->lmp_PenChanged == PCH_NEWPEN)
+        data->lmp_PenChangedOld = PCH_NONE;
+
+        if (pending == PCH_NEWPEN)
         {
             data->lmp_PenNr = ObtainBestPen
             (
@@ -478,21 +501,18 @@ IPTR Lamp__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
             );
             D(bug("[Lamp/Draw] obtained pen %u r %u g %u b %u\n", data->lmp_PenNr,
             data->lmp_Color[0], data->lmp_Color[1], data->lmp_Color[2]));
-
-            if (data->lmp_PenNr != -1)
-            {
-                SetAPen(_rp(obj), data->lmp_PenNr);
-            }
         }
-        else if (data->lmp_PenChanged == PCH_NEWSPEC)
+        else if (pending == PCH_NEWSPEC)
         {
             data->lmp_PenNr = MUI_ObtainPen(muiRenderInfo(obj), &data->lmp_PenSpec, 0);
             D(bug("[Lamp/Draw] obtained MUI pen %u\n", data->lmp_PenNr));
-            SetAPen(_rp(obj), MUIPEN(data->lmp_PenNr));
         }
 
-        data->lmp_PenChangedOld = data->lmp_PenChanged;
-        data->lmp_PenChanged = PCH_NONE;
+        if (data->lmp_PenNr != -1)
+        {
+            data->lmp_PenChangedOld = pending;
+            data->lmp_PenChanged = PCH_NONE;
+        }
     }
 
     right = _mleft(obj) + lampsizes[data->lmp_Type];
@@ -506,10 +526,17 @@ IPTR Lamp__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 
     /* Every draw, not just the one that obtained the pen: whoever drew last
      * (a list row's text, say) has left its own pen in the rastport. */
-    if (data->lmp_PenChangedOld == PCH_NEWSPEC)
-        SetAPen(_rp(obj), MUIPEN(data->lmp_PenNr));
-    else if (data->lmp_PenChangedOld == PCH_NEWPEN && data->lmp_PenNr != -1)
-        SetAPen(_rp(obj), data->lmp_PenNr);
+    if (data->lmp_PenNr != -1)
+    {
+        if (data->lmp_PenChangedOld == PCH_NEWSPEC)
+            SetAPen(_rp(obj), MUIPEN(data->lmp_PenNr));
+        else if (data->lmp_PenChangedOld == PCH_NEWPEN)
+            SetAPen(_rp(obj), data->lmp_PenNr);
+    }
+    else if (_pens(obj))
+        SetAPen(_rp(obj), _pens(obj)[MPEN_TEXT]);
+    else
+        return 0;
 
     RectFill(_rp(obj), _mleft(obj), _mtop(obj), right, bottom);
 
@@ -517,7 +544,7 @@ IPTR Lamp__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 }
 
 
-/* Add the unchecked Type table entry to superclass dimensions. */
+/* Add the validated Type table entry to superclass dimensions. */
 IPTR Lamp__MUIM_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMax *msg)
 {
     struct Lamp_DATA *data = INST_DATA(cl, obj);
@@ -538,16 +565,16 @@ IPTR Lamp__MUIM_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMax 
 }
 
 
-/* Set Color using a temporary RGB array; notifications may expose the stack pointer. */
+/* Set Color using persistent instance storage for notification safety. */
 IPTR Lamp__MUIM_Lamp_SetRGB(struct IClass *cl, Object *obj, struct MUIP_Lamp_SetRGB *msg)
 {
-    ULONG rgb[3];
+    struct Lamp_DATA *data = INST_DATA(cl, obj);
 
-    rgb[0] = msg->red;
-    rgb[1] = msg->green;
-    rgb[2] = msg->blue;
+    data->lmp_Color[0] = msg->red;
+    data->lmp_Color[1] = msg->green;
+    data->lmp_Color[2] = msg->blue;
 
-    SET(obj, MUIA_Lamp_Color, rgb);
+    SET(obj, MUIA_Lamp_Color, data->lmp_Color);
 
     return 0;
 }
