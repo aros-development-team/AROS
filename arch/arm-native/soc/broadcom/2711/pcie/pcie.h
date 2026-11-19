@@ -201,6 +201,7 @@ struct pci_staticdata {
     uint32_t        msi_irq;
     APTR            msi_handle;
     uint32_t        msi_used;           /* one bit per handed-out vector */
+    struct Interrupt *msi_int[32];      /* device handler per vector */
 
 };
 

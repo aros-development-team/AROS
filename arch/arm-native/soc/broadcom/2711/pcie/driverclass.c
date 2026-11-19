@@ -302,13 +302,56 @@ VOID PCIBcm2711__Hidd_PCIDriver__FreePCIMem(OOP_Class *cl, OOP_Object *o,
 }
 
 /*
+ * A device signalling by message is not given a handler of its own on the
+ * shared INTID: PCIeMSIHandler() calls it, after acknowledging its vector.
+ */
+BOOL PCIBcm2711__Hidd_PCIDriver__AddInterrupt(OOP_Class *cl, OOP_Object *o,
+    struct pHidd_PCIDriver_AddInterrupt *msg)
+{
+    struct pci_staticdata *psd = PSD(cl);
+    struct PCIBcm2711DevData *data = OOP_INST_DATA(psd->deviceClass, msg->device);
+    ULONG vector = data->msiVector;
+
+    if (!vector)
+        return (BOOL)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+
+    if (psd->msi_int[vector - 1])
+        return FALSE;
+
+    Disable();
+    psd->msi_int[vector - 1] = msg->interrupt;
+    Enable();
+    msg->interrupt->is_Node.ln_Succ = NULL;
+
+    return TRUE;
+}
+
+VOID PCIBcm2711__Hidd_PCIDriver__RemoveInterrupt(OOP_Class *cl, OOP_Object *o,
+    struct pHidd_PCIDriver_RemoveInterrupt *msg)
+{
+    struct pci_staticdata *psd = PSD(cl);
+    ULONG v;
+
+    for (v = 0; v < 32; v++)
+    {
+        if (psd->msi_int[v] == msg->interrupt)
+        {
+            Disable();
+            psd->msi_int[v] = NULL;
+            Enable();
+            return;
+        }
+    }
+    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+}
+
+/*
  * Message signalled interrupts for a device on this bus.
  *
  * The bridge funnels every vector into one interrupt output and records
  * which vector arrived in INTR2_INT_STATUS, so the "interrupt" a driver
- * is handed is that single output. Drivers sharing it tell themselves
- * apart by looking at their own hardware, exactly as they would on a
- * shared pin.
+ * is handed is that single output. Its handler is called for its own
+ * vector only (see AddInterrupt above).
  */
 BOOL PCIBcm2711Dev__Hidd_PCIDevice__ObtainVectors(OOP_Class *cl, OOP_Object *o,
     struct pHidd_PCIDevice_ObtainVectors *msg)
