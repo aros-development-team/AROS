@@ -207,6 +207,14 @@ BOOL NeedAffInfo(struct NLData *data,WORD niask)
 }
 
 
+/* NL_GetDisplayArray
+ * Resolve a display row to its stored payload, or use the title for an
+ * invalid index. Wrapped continuations normally use their owning row.
+ * Populate and cache borrowed string/preparse pointers through
+ * MUIM_NList_Display when payload or position changes, or the cache is
+ * invalid. A NULL title suppresses the title callback. The callback
+ * result is ignored; output storage belongs to the object.
+ */
 void NL_GetDisplayArray(struct NLData *data, SIPTR ent)
 {
   char *useptr;
@@ -280,6 +288,15 @@ void NL_GetDisplayArray(struct NLData *data, SIPTR ent)
 }
 
 
+/* ParseColumn
+ * Parse one visible column using format preparse, entry preparse and
+ * display text into internal rendering records. Uses the current display
+ * array and layout; returned text remains borrowed. Wrapped continuations
+ * skip preparses and use the stored slice. Ordinary text is initially
+ * limited to 300 bytes and each preparse to 100; escape argument scanning
+ * can extend beyond those parsing windows. Allocation failure can leave a
+ * partial record sequence; no status is returned.
+ */
 void ParseColumn(struct NLData *data,WORD column,IPTR mypen)
 {
   struct colinfo *cinfo = data->cols[column].c;

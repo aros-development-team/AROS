@@ -222,6 +222,12 @@ struct parse_format
 };
 
 
+/* NL_Free_Format
+ * Free pooled column preparses and descriptors, clear both column counts
+ * and mark the format changed. Does not free the borrowed NList_Format
+ * string or display-hook strings. Requires a consistent descriptor array
+ * and owning pool.
+ */
 void NL_Free_Format(struct NLData *data)
 {
   if (data->cols)
@@ -241,6 +247,15 @@ void NL_Free_Format(struct NLData *data)
 }
 
 
+/* NL_Read_Format
+ * Parse a borrowed comma-separated format into pooled column descriptors.
+ * Return FALSE for NULL input, an unsupported column count or required
+ * allocation failure. A descriptor allocation succeeds before the old
+ * format is released; individual ReadArgs or preparse allocation failures
+ * do not cause FALSE. Success resets column order and user widths and
+ * invalidates display/layout state. The constructor checks this result;
+ * the attribute setter does not.
+ */
 BOOL NL_Read_Format(struct NLData *data,char *strformat,BOOL oldlist)
 {
   LONG column,colmax,pos1,pos2,col = 0;

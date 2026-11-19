@@ -54,6 +54,14 @@ static struct NewMenu MenuData[] =
 };
 
 
+/* NL_SetCols
+ * Recompute visible column widths and positions when pending. Apply user
+ * widths before fixed format widths and weighted layout. Content
+ * measurement can invoke display callbacks. Geometry changes invalidate
+ * wrapping, drawing and character selection. Requires initialized
+ * descriptors, font metrics and viewport geometry; does not return a
+ * success status.
+ */
 void NL_SetCols(struct NLData *data)
 {
   if (data->do_setcols)
@@ -1108,6 +1116,11 @@ void ScrollHoriz(struct NLData *data,WORD dx,LONG LPVisible)
 }
 
 
+/* NL_ColToColumn
+ * Find the visible position of a display-array index in the current
+ * descriptor order. Return -1 for an out-of-range or unused index. Does
+ * not change order or ownership.
+ */
 LONG  NL_ColToColumn(struct NLData *data,LONG col)
 {
   LONG column;
@@ -1124,6 +1137,10 @@ LONG  NL_ColToColumn(struct NLData *data,LONG col)
 }
 
 
+/* NL_ColumnToCol
+ * Read the display-array index assigned to a visible column position.
+ * Return -1 for an invalid position. No mutation or ownership transfer.
+ */
 LONG  NL_ColumnToCol(struct NLData *data,LONG column)
 {
   if ((column >= 0) && (column < data->numcols))
@@ -1132,6 +1149,13 @@ LONG  NL_ColumnToCol(struct NLData *data,LONG column)
 }
 
 
+/* NL_SetCol
+ * Swap column descriptors to assign a display-array index to a visible
+ * position, or restore default format order using the -1 selectors.
+ * Invalid or already-satisfied requests do nothing. Request column
+ * notification and redraw when needed; always return zero. Does not
+ * enforce the mouse-only MinColSortable threshold.
+ */
 LONG  NL_SetCol(struct NLData *data,LONG column,LONG col)
 { LONG column2d = -1;
   if ((column == MUIV_NList_SetColumnCol_Default) && (col == MUIV_NList_SetColumnCol_Default))
@@ -1190,6 +1214,14 @@ LONG  NL_SetCol(struct NLData *data,LONG column,LONG col)
 }
 
 
+/* NL_ColWidth
+ * Query or change a column user-width override by display-array index.
+ * Set values are narrowed to WORD before normalization: below four
+ * resets, above 2000 clamps. Return a valid queried override, a changed
+ * single-column override, or zero for invalid, unchanged and all-column
+ * requests. The result is not the rendered width or a general success
+ * flag.
+ */
 LONG NL_ColWidth(struct NLData *data,LONG col,LONG width)
 {
   LONG column = NL_ColToColumn(data,col);
@@ -1234,6 +1266,13 @@ LONG NL_ColWidth(struct NLData *data,LONG col,LONG width)
 }
 
 
+/* NL_Columns
+ * Apply a borrowed signed BYTE order array until -1 or the column count,
+ * then refresh and return the object-owned order array terminated by -1.
+ * Each input assignment swaps descriptors, so omitted columns remain and
+ * later assignments can affect earlier positions. NULL only refreshes the
+ * array; no input storage is retained.
+ */
 BYTE *NL_Columns(struct NLData *data,BYTE *columns)
 { LONG column;
   if (columns)
@@ -1252,6 +1291,10 @@ BYTE *NL_Columns(struct NLData *data,BYTE *columns)
 }
 
 
+/* mNL_ColToColumn
+ * Return the current visible position for the supplied display-array
+ * index, or -1. No list or payload mutation.
+ */
 IPTR mNL_ColToColumn(struct IClass *cl,Object *obj,struct MUIP_NList_ColToColumn *msg)
 {
   struct NLData *data = INST_DATA(cl,obj);
@@ -1259,6 +1302,10 @@ IPTR mNL_ColToColumn(struct IClass *cl,Object *obj,struct MUIP_NList_ColToColumn
 }
 
 
+/* mNL_ColumnToCol
+ * Return the display-array index for the supplied visible position, or
+ * -1. No list or payload mutation.
+ */
 IPTR mNL_ColumnToCol(struct IClass *cl,Object *obj,struct MUIP_NList_ColumnToCol *msg)
 {
   struct NLData *data = INST_DATA(cl,obj);
@@ -1266,6 +1313,11 @@ IPTR mNL_ColumnToCol(struct IClass *cl,Object *obj,struct MUIP_NList_ColumnToCol
 }
 
 
+/* mNL_SetColumnCol
+ * Delegate column swapping/restoration, then clear the pending Columns
+ * notification bit. Always return zero; this is not a success result or a
+ * guarantee that observers were notified.
+ */
 IPTR mNL_SetColumnCol(struct IClass *cl,Object *obj,struct MUIP_NList_SetColumnCol *msg)
 {
   struct NLData *data = INST_DATA(cl,obj);
@@ -1276,6 +1328,11 @@ IPTR mNL_SetColumnCol(struct IClass *cl,Object *obj,struct MUIP_NList_SetColumnC
 }
 
 
+/* mNL_List_ColWidth
+ * Delegate width query or change by display-array index. Return the
+ * helper result, including zero for unchanged valid assignments. No
+ * payload ownership transfer.
+ */
 IPTR mNL_List_ColWidth(struct IClass *cl,Object *obj,struct MUIP_NList_ColWidth *msg)
 {
   struct NLData *data = INST_DATA(cl,obj);

@@ -406,30 +406,38 @@ NList.mcc/MUIM_NList_UseImage
 NList.mcc/MUIA_NList_Columns
 
     NAME
-        MUIA_NList_Columns -- [ISGN], BYTE *
+        MUIA_NList_Columns -- Read or set the visible column order.
+
+    INPUTS
+        Initialize/set/get/notify; BYTE * containing display-array indices
+        in visible order, terminated by signed -1. NULL leaves the order
+        unchanged.
 
     FUNCTION
-        With this tag you can set/get the visible order of columns (as if changed
-        by the user). It work for all columns in one time (use MUIM_NList_SetColumnCol
-        if you want to exchange 2 columns).
+        Supply a valid signed-byte array ending in -1 or containing at least
+        one element for every current column. NList reads no more than its
+        current column count. Each index identifies an existing COL from
+        Format; applying it swaps that descriptor into the corresponding
+        visible position. A shorter array changes only its prefix, but swaps
+        can move other columns. Invalid or absent indices do nothing; values
+        below -1 do not hide columns.
 
-        The value is a pointer on an BYTE array, each byte is for a column
-        (in the visible order) and have the value of the display hook col
-        which have to be displayed in it.
+        Get returns an object-owned array with a trailing -1. Do not free it
+        or retain it beyond the object lifetime. Its contents are refreshed
+        by later column queries or notifications. You may edit this array
+        and set it back, or supply your own array; setting copies the order
+        into descriptor associations and retains no input pointer.
 
-        The array must be ended with a -1 value.
-
-    NOTE
-        The returned array is always the same :  it's its contents which change.
-
-        You can set your own array or modify the returned one and set it, both
-        is ok.
-
-        In future it will be possible to have <-1 values for hidden columns
-        (it's not yet implemented but you should skip those values).
+        User reordering requests Columns notification. Programmatic
+        setter/method paths clear the pending Columns bit after applying the
+        order; do not rely on receiving a notification for every
+        programmatic assignment. Query the resulting order when confirmation
+        is required.
 
     SEE ALSO
-        MUIM_NList_SetColumnCol, MUIM_NList_ColToColumn, MUIM_NList_ColumnToCol
+        MUIM_NList_SetColumnCol, MUIM_NList_ColToColumn,
+        MUIM_NList_ColumnToCol
+
 NList.mcc/MUIA_NList_CompareHook
 
     NAME
@@ -669,13 +677,29 @@ NList.mcc/MUIM_NList_UseImage
 NList.mcc/MUIA_NList_DefClickColumn
 
     NAME
-        MUIA_NList_DefClickColumn -- [ISG], LONG
+        MUIA_NList_DefClickColumn -- Choose the column used for keyboard
+        activation coordinates.
+
+    INPUTS
+        Initialize/set/get; LONG visible-column position, default 0.
+        MUIA_Listview_DefClickColumn is a compatibility alias.
 
     FUNCTION
-        Same function as Listview.mui/MUIA_Listview_DefClickColumn.
+        For MUIKEY_PRESS with Input enabled, line-selection mode and a valid
+        Active row, NList synthesizes click coordinates using this visible
+        column. Values outside the current range fall back to column zero.
+        The horizontal coordinate is clipped to the viewport; the reported
+        hit need not remain in an offscreen requested column.
+
+        This is a visible position, not a display-array COL index. Keyboard
+        activation requests DoubleClick/Listview DoubleClick and, when
+        neither is wanted, EntryClick. It does not simulate a title-button
+        click. Setting the attribute stores the value without validation or
+        activation.
 
     SEE ALSO
-        MUIA_Listview_DefClickColumn, MUIA_NList_ClickColumn
+        MUIA_NList_ClickColumn, MUIM_NList_ColumnToCol
+
 NList.mcc/MUIA_NList_DestructHook
 
     NAME
@@ -742,143 +766,169 @@ NList.mcc/MUIM_NList_UseImage
 NList.mcc/MUIA_NList_DisplayHook
 
     NAME
-        MUIA_NList_DisplayHook -- [IS.], struct Hook *
+        MUIA_NList_DisplayHook -- Supply column text through a legacy
+        display hook.
+
+    INPUTS
+        Initialize/set; borrowed struct Hook *, default NULL.
+        MUIA_List_DisplayHook is a compatibility alias. No class-specific
+        getter.
 
     FUNCTION
-        Same function as List.mui/MUIA_List_DisplayHook.
+        The hook receives the string array as its object argument and the
+        stored entry payload as its message argument. These correspond to A2
+        and A1 in the classic hook convention; use the target AROS hook ABI.
+        For a title, the payload is NULL. If h_Data is NULL, NList
+        temporarily sets it to the NList object during this legacy callback,
+        then restores NULL.
 
-        Do not modify the buffers you return in the hook anywhere
-        else than in the hook when called by NList.
-        (if you do so you MUST set MUIA_NList_DisplayRecall)
+        The string array has DISPLAY_ARRAY_MAX (64) text slots followed by
+        64 preparse slots. Fill strings[col] and, optionally,
+        strings[64+col] for each COL used by Format, even after visible
+        reordering. The used slots start as NULL and slot zero initially
+        contains the payload or title pointer. With no hook or subclass
+        override, that pointer is interpreted as the first column's text.
 
+        The implementation stores position in the pointer-sized slot
+        strings[-1], and PrivateData in strings[-2] for the legacy call.
+        Position is a zero-based owner row or -1 for the title. Do not read
+        an assumed 32-bit word immediately before strings on every target.
+        Writing the position slot to pointer-sized -2 prevents reuse on the
+        next lookup. Prefer DisplayRecall when invalidating from outside the
+        callback.
 
-        You should return the same thing if its called another
-        time with the same inputs !
-        The hook will be called with a pointer to the
-        entry to be displayed in A1 and a pointer to
-        a string array containing as many entries as
-        your list may have cols in A2.
-        You must fill this array with the strings that
-        you want to display.
-        The array is DISPLAY_ARRAY_MAX*2 large.
-        In the DISPLAY_ARRAY_MAX+col element you can set a
-        preparse string for the corresponding col element.
-        Using it you'll be able to avoid copying the string in
-        a buffer to add something in the beginning of the col
-        string.
+        Text and preparses remain owned by the application. Keep them valid
+        and unchanged while NList can reuse them, including after the
+        callback returns. NList caches pointers and calls the hook for
+        measurement as well as drawing; it does not promise one call per
+        repaint. Return consistent text for the same state. If buffers
+        change outside the callback, set DisplayRecall before the next use
+        and request Redraw when geometry or pixels must be refreshed.
 
-        The display hook also gets the position of the current entry
-        as additional parameter. It is stored in the longword
-        preceding the col array (don't forget it's a LONG).
-        (setting that LONG value to -2 is another way to tell the object
-        to not consider the return string pointeur as valid next time
-        he will want to use it, and he will recall the hook).
+        Installing a hook invalidates the display cache and schedules
+        column, scrollbar and wrapping work. At construction, DisplayHook2
+        takes precedence if both forms are supplied. Later setters share one
+        hook pointer; the last processed form selects the calling
+        convention. The callback result is ignored by the internal display-
+        array caller.
 
-        When the hook function will be called to get the title strings,
-        you'll get NULL in A1, and -1 as position of current entry.
+    TEXT FORMAT
+        ESC denotes byte 27, written "\033" in a C string. Text processing
+        normally stops at NUL, LF or CR. The initial ordinary-text parsing
+        window is 300 bytes; each preparse window is 100 bytes. Wrapped
+        continuations use their recorded slice and skip preparses. Escape-
+        argument scans can extend beyond those windows; they are not a
+        general input-length guarantee.
 
+        ESC u, b and i enable underline, bold and italic; ESC n restores
+        normal style. ESC l, c, r and j select left, centered, right and
+        justified alignment. Put alignment codes at the beginning of the
+        text or preparse. ESC - disables subsequent escape interpretation;
+        tab and fixed-space processing still applies. Unknown escape
+        commands are consumed without producing their command character.
 
-        The hook function will be called each time a line (or a part of
-        it) need to be drawn (and when NList need to compute lenght of
-        columns contents).
+        Tab advances to a tab boundary (TabSize defaults to 8). Byte 0xA0 is
+        a fixed-width space unless IgnoreSpecialChars disables its special
+        treatment. ESC 2 through ESC 9 select the corresponding DrawInfo pen
+        while shown. ESC P[n] selects a direct pen number; ESC P[] restores
+        the supplied default pen. The caller owns any pen allocation
+        required for direct pen numbers.
 
+        ESC T, C, B and E request horizontal lines at the top, center,
+        bottom, or beside the text. ESC t selects thick-line styling with
+        the fill pen. ESC t[n], t[Mn] and t[In] select a direct pen, MUI pen
+        0..8, or DrawInfo pen 0..11; DrawInfo indices 9..11 map to index 2.
+        Prefix N inside the brackets for a thin line; t[N] uses the shadow
+        pen, not an unconditional black pen.
 
-        Here are the escape sequence known by the parsing of NList :
-              (If you use C, ESC b can be written "\033b")
+        ESC I[spec] passes the bracket contents as an image specification.
+        This path does not parse the size or button suffixes described
+        below. ESC O[p] uses a valid CreateImage handle represented in
+        hexadecimal; ESC o[n] uses a decimal UseImage index. Keep referenced
+        images valid. Do not assume an eight-digit pointer representation on
+        every AROS target.
 
-        \t          Tabulation. Go to the next tab boundary of the col.
-                    tab positions are separated by 8 spaces by default.
-        ESC -       Disable text engine, following chars will be printed
-                    without further parsing.
-        ESC u       Set the soft style to underline.
-        ESC b       Set the soft style to bold.
-        ESC i       Set the soft style to italic.
-        ESC n       Set the soft style back to normal.
-        ESC <n>     Use pen number n (2..9) as front pen. n must be a valid
-                    DrawInfo pen as specified in "intuition/screens.h".
-        ESC c       Center current line. only valid at the beginning.
-        ESC r       Right justify current line. only valid at the beginning.
-        ESC l       Left justify current line. only valid at the beginning.
+        O/o suffixes are parsed in order: optional @button, optional
+        ;tag;value in hexadecimal, optional ,minimum, optional |width or
+        |width|height, and optional ,minimum after the size. Width, height,
+        minimum and button are decimal. Minimum reserves horizontal space. A
+        repeated minimum after the size replaces the earlier one. The tag-
+        field scanner does not stop at a vertical bar, so separate tag
+        fields from size fields with a comma/minimum field; directly
+        appended size fields can be skipped.
 
-        These ones are new or modified :
-
-        ESC j       Justify left and right current line. only at beginning.
-        ESC I[<s>]  Draw MUI image with specification <s>.
-                    See Image.mui/MUIA_Image_Spec for image spec definition.
-        ESC O[<p>]                     (ESC O[<s>|<width>|<height>,<minwidth>])
-                    Draw the MUIM_NList_CreateImage at adress <p>.
-                    (<p> should be an 8 hex digits number).
-        ESC o[<n>]                     (ESC o[<s>|<width>|<height>,<minwidth>])
-                    Draw the MUIM_NList_UseImage number <n>. If the <n> UseImage
-                    don't exist or has been set to NULL, no image is drawn.
-        ESC P[]     Use default front pen.
-        ESC P[<n>]  Use pen number <n>. (it's a direct pen number, so you must
-                    make MUI_ObtainPen and MUI_ReleasePen for it yourself,
-                    best to do it is in Setup() and Cleanup() of a subclass).
-        ESC T       Draw horizontal line on top of the entry for the col.
-        ESC C       Draw horizontal line centered in the entry for the col.
-        ESC B       Draw horizontal line on bottom of the entry for the col.
-        ESC E       Draw horizontal line centered in the entry for the col,
-                    but only on the left and right of the line contents.
-        ESC t , ESC t[<n>] , ESC t[M<n>] , ESC t[I<n>]
-                    Make the ESC C and ESC E horizontal line become thick and filled
-                    with some color :
-                    default is MPEN_FILL.
-                    [<n>]  means than <n> is a direct pen color, like for ESC P[<n>]
-                    [M<n>] means that <n> is MUI pen color number (MPEN_xxx ie 0..8)
-                    [I<n>] means that <n> is Intuition dri pen number 0..11 (see
-                            "intuition/screens.h")
-        ESC t[N], ESC t[N<n>], ESC t[NM<n>], ESC t[NI<n>]
-                    Make the ESC T, ESC C,ESC B, ESC E become a single black line,
-                    or not black when using a <n>, M<n> or I<n> pen color.
-                    ('N' is for Not thick ;)
-
-        with ESC O[] and ESC o[], you can add [...@<n>] which will make the image/object
-        act as a relverify button. When this "button" is released NList will notify
-        MUIA_NList_ButtonClick with the value <n>.
-
-        with ESC I[], ESC O[] and ESC o[], you can add [...|<width>] or
-        [...|<width>|<height>] or [...|<width>|<height>,<minwidth>] or
-        [...,<minwidth>] where :
-          <width> will be the width in pixels of the image/object.
-                  -1  means default image width unless <minwidth> is set.
-                   0  means default image width.
-          <height> will be the height in pixels of the image/object.
-                  -1  means default image height (entry height is max).
-                   0  means entry height.
-          <minwidth> will be the min width in pixels before the next char/string/image.
-                  when present, default height become entry height and
-                  width become minwidth (if minwdith is bigger than image default
-                  width), unless you set <width> and/or <height>.
-          <minwidth> <width> and <height> must be a decimal number (%ld).
+        For object-backed images, width <= 0 uses the natural width and
+        negative height uses natural height; height 0 uses the row height.
+        With a minimum and default width -1, the minimum can enlarge width
+        and select row height unless height -1 was explicit. For bitmap-
+        backed images, width is the bitmap width regardless of the requested
+        width; height is limited to bitmap height except that 0 requests row
+        height. Button/tag metadata applies to the object-backed path;
+        bitmap records discard it. An unresolved o index draws no bitmap,
+        but a positive minimum can still reserve space. Use only valid image
+        handles and well-formed escape sequences.
 
     SEE ALSO
-        MUIA_NList_Format, MUIA_Text_Contents, MUIA_List_DisplayHook,
-        MUIA_NList_DisplayRecall
+        MUIA_NList_DisplayHook2, MUIM_NList_Display,
+        MUIA_NList_DisplayRecall, MUIA_NList_Format
+
 NList.mcc/MUIA_NList_DisplayHook2
 
     NAME
-        MUIA_NList_DisplayHook2 -- [IS.], struct Hook *
+        MUIA_NList_DisplayHook2 -- Supply column text with the NList object
+        as hook context.
+
+    INPUTS
+        Initialize/set; borrowed struct Hook *, default NULL. No class-
+        specific getter.
 
     FUNCTION
-        Same function as MUIA_NList_DisplayHook but A2 will be the object
-        and A1 a NList_DisplayMessage struct pointer.
+        Uses the same text, lifetime, caching and formatting contract as
+        DisplayHook. The object argument is the NList object; the message is
+        the internal display-message storage corresponding to
+        NList_DisplayMessage: entry, entry_pos, strings[64] and
+        preparses[64]. Entry is NULL and position -1 for a title. This form
+        does not temporarily replace h_Data.
+
+        NList passes its internal pointer array directly, not a separately
+        populated structure. Use the target AROS header/ABI; do not
+        substitute a host-defined packed structure. The internal layout and
+        calling convention must match the target. To override display
+        through a typed method message instead, implement
+        MUIM_NList_Display.
+
+        This form overrides DisplayHook during construction. Later setting
+        either attribute replaces the common hook pointer and selects that
+        form. Output strings remain borrowed, and the internal caller
+        ignores the return value.
 
     SEE ALSO
-        MUIA_NList_DisplayHook
+        MUIA_NList_DisplayHook, MUIM_NList_Display
+
 NList.mcc/MUIA_NList_DisplayRecall
 
     NAME
-        MUIA_NList_DisplayRecall -- [.S.], BOOL
+        MUIA_NList_DisplayRecall -- Invalidate cached display pointers.
+
+    INPUTS
+        Set only; BOOL conventionally TRUE. The implementation ignores the
+        supplied value.
 
     FUNCTION
-        If for some unusual reason you modify one of the buffer that
-        your DisplayHook function usually return anywhere else than
-        in the DisplayHook function when called by the NList object,
-        you must set it to TRUE, so the object will know it.
+        Clears the cached payload pointer so the next display-array lookup
+        invokes the display callback again when a payload or title is
+        available. FALSE has the same invalidating effect as TRUE. This
+        setter does not call the hook immediately, redraw the list, or
+        invalidate every geometry cache.
+
+        Use it before NList reuses buffers changed outside a display
+        callback. Request MUIM_NList_Redraw for affected entries when
+        changed text requires measurement or repainting. It does not
+        transfer or extend buffer ownership.
 
     SEE ALSO
-        MUIA_NList_DisplayHook
+        MUIA_NList_DisplayHook, MUIM_NList_Redraw
+
 NList.mcc/MUIA_NList_DoubleClick
 
     NAME
@@ -1114,183 +1164,104 @@ NList.mcc/MUIM_NList_UseImage
 NList.mcc/MUIA_NList_Format
 
     NAME
-        MUIA_NList_Format -- [ISG], STRPTR
+        MUIA_NList_Format -- Define the columns and their layout.
+
+    INPUTS
+        Initialize/set/get; borrowed NUL-terminated STRPTR. Omission creates
+        one default column. MUIA_List_Format is a compatibility form with a
+        different one-column width default.
 
     FUNCTION
-        NList is able to handle multi column lists. To define
-        how many columns should be displayed and how they
-        should be formatted, you specify a format string.
+        Separate column descriptions with commas. Empty descriptions are
+        allowed. NList counts commas before parsing; there is no quoted-
+        comma escape at this stage. The count must be less than
+        DISPLAY_ARRAY_MAX (64), so this implementation accepts at most 63
+        columns. Use distinct COL indices from 0 through 63. A visible
+        column is a position in the list; a COL index selects a string in
+        the display callback array. Reordering changes the former, not the
+        latter.
 
-        This format string must contain one entry for each column
-        you want to see. Entries are seperated by commas, one
-        entry is parsed via dos.library/ReadArgs().
+        The class retains the Format pointer for get; it does not copy or
+        free that string. Keep it valid while installed. Parsed column
+        descriptors and PREPARSE strings are separate pooled copies. Setting
+        Format reparses it even when unchanged and resets the column order
+        and user-width overrides. Set a new format before inserting entries
+        to avoid repeated measurement and wrapping.
 
-        The template for a single entry looks like this:
+        At construction, explicit NULL fails; omitting the tag uses an empty
+        format. Setting NULL later parses an empty format and stores NULL
+        for get. Construction fails when the parser reports allocation/count
+        failure. The setter ignores that result: get can return the newly
+        supplied pointer while the old layout remains. A per-column ReadArgs
+        failure does not reject the whole format; defaults can remain.
+        Preparse allocation failure can omit that preparse. Use a valid
+        format; this API is not a format-validation service.
 
-        DELTA=D/N,PREPARSE=P/K,COL=C/N,BAR/S,TBAR/S,NOBAR=NB/S,
-        SIMPLEBAR=SBAR/S,NOTITLEBUTTON=NOTB/S,
-        WEIGHT=W/N,MINWIDTH=MIW/N,MAXWIDTH=MAW/N,
-        COLWIDTH=CW/N,MINCOLWIDTH=MICW/N,MAXCOLWIDTH=MACW/N,
-        PIXWIDTH=PW/N,MINPIXWIDTH=MIPW/N,MAXPIXWIDTH=MAPW/N,
-        PARTCOLSUBST=PCS/K
+    TEMPLATE
+        DELTA=D/N,PREPARSE=P/K,COL=C/N,BAR/S,TBAR/S,NOBAR=NB/S,SIMPLEBAR=SBA
+        R/S,NOTITLEBUTTON=NOTB/S,WEIGHT=W/N,MINWIDTH=MIW/N,MAXWIDTH=MAW/N,CO
+        LWIDTH=CW/N,MINCOLWIDTH=MICW/N,MAXCOLWIDTH=MACW/N,PIXWIDTH=PW/N,MINP
+        IXWIDTH=MIPW/N,MAXPIXWIDTH=MAPW/N,PARTCOLSUBST=PCS/K
 
-    First ones are like (or nearly) MUIA_List_Format ones :
+    OPTIONS
+        DELTA (D): Gap in pixels after a column, default 4; ignored after
+        the last visible column. Negative values become zero. A bar raises a
+        gap below 2 by 2.
 
-        DELTA
-           Space in pixel between this column and the next.
-           the last displayed column ignores this setting.
-           Defaults to 4.
+        PREPARSE (P): Text parsed before each column string and its entry-
+        specific preparse. COL (C): Display-array index, default the
+        original column position. Duplicate indices are reassigned by the
+        parser; do not rely on the resulting order. Out-of-range indices are
+        not validated as safe display-array indices.
 
-        PREPARSE
-           A preparse string for this column.
+        TBAR: Separator in the title only, the default. BAR: Separator
+        through the column. NOBAR (NB): No separator; overrides BAR and
+        TBAR. SIMPLEBAR (SBAR): Adds the simple-line flag. NOTITLEBUTTON
+        (NOTB): Disables title-button behavior for this descriptor.
 
-        COL
-           This value adjusts the col number of the current column.
-           Defaults to current column number (0,1,...)
-           You can't use identical COL values for 2 or more columns.
+        WEIGHT (W): Relative share of the space left after fixed/content
+        widths and gaps. Positive values are weights, not unconditional
+        percentages of total list width. Negative values select content
+        measurement. The last original column defaults to 100; WEIGHT=-1
+        there is also converted to 100, while -2 requests content width.
+        Other columns default to content width. The legacy List_Format one-
+        column case keeps content width.
 
-        BAR
-           Will draw a vertical bar between this and the next column.
+        COLWIDTH (CW): Fixed width in font increments, at least 1. PIXWIDTH
+        (PW): Fixed width in pixels, at least 4. PIXWIDTH takes precedence
+        over COLWIDTH, which takes precedence over WEIGHT, regardless of
+        their order in the string.
 
-        WEIGHT
-           The weight of the column. As for MUI's group.
+        MINWIDTH/MAXWIDTH (MIW/MAW): Percentage limits.
+        MINCOLWIDTH/MAXCOLWIDTH (MICW/MACW): Limits in font increments, with
+        one pixel added by layout. MINPIXWIDTH/MAXPIXWIDTH (MIPW/MAPW):
+        Pixel limits. These limits apply to positive weighted widths; user
+        overrides, fixed widths and content-width columns bypass them.
+        Layout takes the greatest minimum and smallest maximum, applies a
+        maximum only when it exceeds 10 pixels, then enforces the minimum
+        and at least 6 pixels.
 
-        MINWIDTH
-           Minimum percentage of the list width for the current column.
+        For parsed descriptions, MINWIDTH defaults to 5; values below 1
+        become the content-width minimum (-1), so MINWIDTH=0 does not
+        disable the minimum. MAXWIDTH defaults to 1000 after normalization,
+        not 10000. MINCOLWIDTH defaults to 0 and MAXCOLWIDTH to 5000;
+        MINPIXWIDTH defaults to 6 and MAXPIXWIDTH to 20000. A final empty
+        description retains initial zero maximum fields because it is not
+        passed through normalization.
 
-        MAXWIDTH
-           Maximum percentage of the list width for the current column.
+        PARTCOLSUBST (PCS): DISABLED, LEFT, CENTER or RIGHT. The parser
+        selects by the first letter, ignoring case. When enabled in user
+        preferences, the renderer can replace clipped text with an ellipsis
+        at that position. The default is DISABLED.
 
-        TBAR
-           Will draw a vertical bar between this and the next column
-           but only in the title (ignored if BAR is set).
-           THIS IS A DEFAULT !
-
-        NOBAR
-           Don't draw a vertical bar between this and the next column at all.
-
-        SIMPLEBAR
-           Make te vertical bar a simple black one.
-
-        NOTITLEBUTTON
-           Will prevent the title of the column to act as a relverify
-           button when you set MUIA_NList_TitleClick (or make a notify
-           on it).
-
-        COLWIDTH
-           Wanted number of chars for the current column.
-           You will get as PIXWIDTH with number*font_with.
-           Possibly more than number chars will fit in the
-           column if you use proportional font, anyway you
-           are sure than number non italic chars will fit.
-
-        MINCOLWIDTH
-           Minimum number of chars for the current column.
-
-        MAXCOLWIDTH
-           Maximum number of chars for the current column.
-
-        PIXWIDTH
-           Wanted number of chars for the current column.
-
-        MINPIXWIDTH
-           Minimum number of chars for the current column.
-
-        MAXPIXWIDTH
-           Maximum number of chars for the current column.
-
-        PARTCOLSUBST
-           If the partial column feature is turned on by the
-           user (in his configuration) and the application
-           developer has specified this option for a particular
-           column, then a "..." text is displayed at the
-           defined position if not all text fits into the
-           column rather than showing a dotted vertical line
-           at the end of the column. Possible values for
-           this option are:
-
-              DISABLED
-                explicitly disables this feature for this
-                column
-
-              LEFT
-                put "..." on the left side and strip text
-                left aligned.
-
-              CENTER
-                put "..." at the center of the column and
-                strip text on both sides around it.
-
-              RIGHT
-                put "..." on the right side and strip text
-                right aligned.
-
-
-        Note: You will have as many columns in your list as
-              entries in the format string (i.e. number of
-              commas + 1). Empty entries, e.g. with a format
-              string of ",,,," are perfectly ok.
-
-        MINPIXWIDTH, MAXPIXWIDTH, MINCOLWIDTH, MAXCOLWIDTH,
-        MINWIDTH and MAXWIDTH will not be used if PIXWIDTH,
-        or COLWIDTH is used.
-
-        Only one of PIXWIDTH, COLWIDTH and WEIGHT will be
-        used, the first find in this order.
-        Biggest of MINPIXWIDTH, MINCOLWIDTH and MINWIDTH.
-        Smallest of MAXPIXWIDTH, MAXCOLWIDTH and MAXWIDTH.
-        If the min is bigger than the max the min will be used.
-
-        You should used PIX ones only for columns with images,
-        and COL ones when you want to be sure to get as many
-        chars you want.
-
-        All chars/images will be drawn for the last column
-        always, you should specify some width for it anyway
-        as it will be used for centered and right aligned texts !
-
-        Default values : WEIGHT=-1, MINWIDTH=5, MAXWIDTH=10000.
-
-        Use MINWIDTH=0 if you don't use PIXWIDTH or COLWIDTH and
-        don't want any min value.
-
-        If you want to use WEIGHT values as percentage of the list
-        width, just choose them to have their total being 100.
-
-        WEIGHT = -1 mean that you want the column to have
-        the width of the largest entry's column contents.
-        MINWIDTH = -1 have the same meaning as for WEIGHT but for
-        the min value.
-        Default will be 100 for the last column, set it to -1 or
-        -2 if you want to force it when more than one column, and
-        to -2 to force it when only one column.
-
-        Be aware that it can take long time to do that when there
-        are many entries since this need a call to the dislpayhook,
-        parse and find real length of all entries.
-        Anyway using such stuff for one or more column has the
-        same overhead.
-
-        The default list format is an empty string (""), this
-        means a one column list without special formatting.
-
-    NOTE
-        Actually MUIA_NList_Format will not try to see if the new
-        format is similar to previous one. It means that all
-        column width will be re-computed (and all entries parsed
-        if WEIGHT or MINWIDTH is -1), same for wrapping
-        which will be recomputed for all entries.
-        So, it's better to do it before inserting entries
-        if you want to do both.
-        If you want to clear, insert, and set the format, the
-        best is to set the format after the clear (fastest, no
-        entry to parse) and before the insert.
-
-    BUGS (FEATURE)
-        Currently there is a maximum of 64 columns for a list.
+    EXAMPLE
+        Format "COL=0 PW=24,COL=1 W=100" assigns a 24-pixel first column and
+        a weighted second column. Fill strings[0] and strings[1] in the
+        display callback; visible reordering does not change those indices.
 
     SEE ALSO
-        MUIA_NList_DisplayHook, MUIA_NList_TitleSeparator.
+        MUIA_NList_DisplayHook, MUIA_NList_Columns, MUIM_NList_ColWidth
+
 NList.mcc/MUIA_NList_Horiz_DeltaFactor
 
     NAME
@@ -1544,16 +1515,26 @@ NList.mcc/MUIM_NList_UseImage
 NList.mcc/MUIA_NList_MinColSortable
 
     NAME
-        MUIA_NList_MinColSortable -- [ISG], LONG
+        MUIA_NList_MinColSortable -- Limit interactive column reordering.
+
+    INPUTS
+        Initialize/set/get; LONG first eligible visible-column position,
+        default 1.
 
     FUNCTION
-        Sets the number of the first visible column which
-        can be sorted, ie exchanged with some other one.
+        This threshold applies to mouse-driven column reordering, not entry
+        sorting. The default keeps visible column zero outside the
+        reorderable range. Setting it to the column count or greater
+        prevents that drag path; at least two columns must remain eligible.
 
-        Default is 1, making the leftmost (0) column not sortable.
+        The setter only stores the value. Columns and SetColumnCol do not
+        enforce this threshold, so applications can still reorder
+        programmatically. This attribute does not sort entries or install a
+        comparison hook.
 
-        Just set it to a big number (100 for example) to forbid
-        the columns sorting.
+    SEE ALSO
+        MUIA_NList_Columns, MUIM_NList_SetColumnCol
+
 NList.mcc/MUIA_NList_MinLineHeight
 
     NAME
@@ -1944,144 +1925,168 @@ NList.mcc/MUIM_NList_UseImage
 NList.mcc/MUIA_NList_Title
 
     NAME
-        MUIA_NList_Title -- [ISG], char *
+        MUIA_NList_Title -- Enable and supply the title row.
+
+    INPUTS
+        Initialize/set/get; borrowed STRPTR, default NULL. MUIA_List_Title
+        is a compatibility alias.
 
     FUNCTION
-        Same function as List.mui/MUIA_List_Title.
+        NULL disables the title. Without a display hook or subclass
+        override, a non-NULL value must point to valid NUL-terminated text
+        for column zero. With a callback that replaces all used text slots,
+        a non-NULL value can serve as an enable marker; do not leave that
+        marker in a slot that will be parsed as text.
 
-        The title will be redraw each time you set it.
+        The title callback receives entry NULL and position -1, not the
+        Title value as its entry. The value remains the initial text in slot
+        zero. Get returns the stored pointer, not the text returned by a
+        callback. NList does not copy or free the supplied text.
 
-        When you use a display hook, its value is used as a BOOL/LONG
-        which can have any value (just not NULL if you want to see it).
-
-        The value returned by get() will be the same than the last one
-        given in the set() or at init.
+        Setting a non-NULL value invalidates display state, updates title
+        measurements and requests redraw, including when the pointer is
+        unchanged. Removing a present title removes its measurement
+        contribution and requests full redraw. Redraw can be deferred by
+        display state.
 
     SEE ALSO
-        MUIA_NList_DisplayHook, MUIA_NList_TitleSeparator
+        MUIA_NList_TitleSeparator, MUIA_NList_DisplayHook
+
 NList.mcc/MUIA_NList_TitleClick
 
     NAME
-        MUIA_NList_TitleClick -- [ISGN], LONG
+        MUIA_NList_TitleClick -- Observe primary title-button clicks.
+
+    INPUTS
+        Initialize/set/get/notify; LONG. The stored value starts at -1. Any
+        init/set value enables interest; it does not assign that value as
+        the last click.
 
     FUNCTION
-        You'll get a notify on it each time the user
-        clicks one the title (only if on a column, so not on the
-        vertical bar column separator which is used to modify the
-        column width with mouse).
+        Registering notification or setting the attribute enables title-
+        button handling for descriptors without NOTITLEBUTTON. The event
+        value is the display-array COL index, not its visible position. Get
+        reads the stored last index. The handler can update that field on
+        press before it emits the release notification; get is not proof
+        that a completed click was notified.
 
-        The returned value is the col number (display hook col number).
+        At release, the secondary path is chosen when TitleClick2 is wanted
+        and either the configured title-click qualifier matches or
+        TitleClick is not wanted. Thus TitleClick2 can fire without the
+        qualifier when it is the only requested form. Otherwise the primary
+        path is used. The qualifier comes from NList key preferences, not a
+        hard-coded modifier.
 
-        If you get that value later, it will still be the latest
-        *title* click col that you'll get.
-
-        If you ask for a notify on that tag, or if you set it (with any
-        value) the title will act as if each of its column titles were
-        separated buttons, notifying that tag when there are released.
-
-        The (released) look for those title "buttons" will be better
-        if you use MUIA_NList_TitleSeparator and BAR or TBAR for each
-        column in the MUIA_NList_Format string.
-
-        There is no shortkeys for these custom buttons and never be,
-        so think to give another way to access the related stuffs.
-
-        Don't ask for customized frames for them :  there are not real
-        MUI and separated buttons but directly handled by NList, and i
-        found it nice as is.
-
-    NOTE
-        When you use MUIA_NList_TitleClick, you'll not receive
-        MUIA_NList_DoubleClick and MUIA_NList_MultiClick when clicking
-        on the title any more.
-
-    EXAMPLES
-        See NList-Demo program.
+        A qualifying title-button interaction uses its dedicated handling
+        instead of ordinary entry multi/double-click handling. Column-bar
+        dragging and NOTITLEBUTTON columns are separate paths. The callback
+        does not sort entries or change title marks automatically. Provide
+        another application control for actions that must be accessible
+        without a title click.
 
     SEE ALSO
-        MUIA_NList_TitleMark, MUIA_NList_TitleMark2, MUIA_NList_SortType,
-        MUIA_NList_SortType2, MUIM_NList_Sort3, MUIA_NList_TitleClick,
-        MUIA_NList_TitleClick2.
+        MUIA_NList_TitleMark, MUIA_NList_TitleMark2, MUIM_NList_Sort3
+
 NList.mcc/MUIA_NList_TitleClick2
 
     NAME
-        MUIA_NList_TitleClick2 -- [ISGN], LONG
+        MUIA_NList_TitleClick2 -- Observe secondary title-button clicks.
+
+    INPUTS
+        Initialize/set/get/notify; LONG. The stored value starts at -1. Any
+        init/set value enables interest; it does not assign that value as
+        the last click.
 
     FUNCTION
-        Works like MUIA_NList_TitleClick but when the qualifier is press while clicking
+        Registering notification or setting the attribute enables title-
+        button handling for descriptors without NOTITLEBUTTON. The event
+        value is the display-array COL index, not its visible position. Get
+        reads the stored last index. The handler can update that field on
+        press before it emits the release notification; get is not proof
+        that a completed click was notified.
 
-    EXAMPLES
-        See NList-Demo program.
+        At release, the secondary path is chosen when TitleClick2 is wanted
+        and either the configured title-click qualifier matches or
+        TitleClick is not wanted. Thus TitleClick2 can fire without the
+        qualifier when it is the only requested form. Otherwise the primary
+        path is used. The qualifier comes from NList key preferences, not a
+        hard-coded modifier.
+
+        A qualifying title-button interaction uses its dedicated handling
+        instead of ordinary entry multi/double-click handling. Column-bar
+        dragging and NOTITLEBUTTON columns are separate paths. The callback
+        does not sort entries or change title marks automatically. Provide
+        another application control for actions that must be accessible
+        without a title click.
 
     SEE ALSO
-        MUIA_NList_TitleClick, MUIA_NList_TitleMark, MUIA_NList_TitleMark2
+        MUIA_NList_TitleMark, MUIA_NList_TitleMark2, MUIM_NList_Sort3
+
 NList.mcc/MUIA_NList_TitleMark
 
     NAME
-        MUIA_NList_TitleMark -- [ISG], LONG
+        MUIA_NList_TitleMark -- Set the primary title mark.
+
+    INPUTS
+        Initialize/set/get; LONG, default MUIV_NList_TitleMark_None.
 
     FUNCTION
-        Draw a mark on the corresponding display hook column.
+        Combine a display-array COL index with Down, Up, Box or Circle using
+        the MUIV_NList_TitleMark_ prefix. None disables the mark. ColMask is
+        0x000000FF and TypeMask is 0xF0000000. The mark follows that
+        descriptor when visible columns are reordered.
 
-        The value give 2 informations :  the column and the type of mark.
-
-        Usually set to the MUIA_NList_SortType value (which is set by
-        MUIM_NList_Sort3, this one called from a MUIA_NList_TitleClick notify).
-
-    SPECIAL INPUTS
-        MUIV_NList_TitleMark_None
-        MUIV_NList_TitleMark_Down   | col
-        MUIV_NList_TitleMark_Up     | col
-        MUIV_NList_TitleMark_Box    | col
-        MUIV_NList_TitleMark_Circle | col
-
-    EXAMPLES
-        See NList-Demo program.
+        Changing the value invalidates title display state and requests
+        redraw. Enabling the first of the two marks also invalidates
+        automatic width measurements. The attribute does not validate a
+        matching column, enable the title, sort entries, or update SortType.
+        Maintain marks and sort policy explicitly in the application.
 
     SEE ALSO
-        MUIA_NList_TitleMark2, MUIA_NList_SortType, MUIA_NList_SortType2, MUIM_NList_Sort3,
-        MUIA_NList_TitleClick, MUIA_NList_TitleClick2
+        MUIA_NList_TitleClick, MUIA_NList_TitleClick2, MUIA_NList_SortType,
+        MUIA_NList_SortType2
+
 NList.mcc/MUIA_NList_TitleMark2
 
     NAME
-        MUIA_NList_TitleMark2 -- [ISG], LONG
+        MUIA_NList_TitleMark2 -- Set the secondary title mark.
+
+    INPUTS
+        Initialize/set/get; LONG, default MUIV_NList_TitleMark2_None.
 
     FUNCTION
-        Draw a secondary mark on the corresponding display hook column.
+        Combine a display-array COL index with Down, Up, Box or Circle using
+        the MUIV_NList_TitleMark2_ prefix. None disables the mark. ColMask
+        is 0x000000FF and TypeMask is 0xF0000000. The mark follows that
+        descriptor when visible columns are reordered.
 
-        The value give 2 informations :  the column and the type of mark.
-
-        Usually set to the MUIA_NList_SortType2 value (which is set by
-        MUIM_NList_Sort3, this one called from a MUIA_NList_TitleClick/2 notify).
-
-    SPECIAL INPUTS
-        MUIV_NList_TitleMark2_None
-        MUIV_NList_TitleMark2_Down   | col
-        MUIV_NList_TitleMark2_Up     | col
-        MUIV_NList_TitleMark2_Box    | col
-        MUIV_NList_TitleMark2_Circle | col
-
-    EXAMPLES
-        See NList-Demo program.
+        Changing the value invalidates title display state and requests
+        redraw. Enabling the first of the two marks also invalidates
+        automatic width measurements. The attribute does not validate a
+        matching column, enable the title, sort entries, or update SortType.
+        Maintain marks and sort policy explicitly in the application.
 
     SEE ALSO
-        MUIA_NList_TitleMark, MUIA_NList_SortType, MUIA_NList_SortType2, MUIM_NList_Sort3,
-        MUIA_NList_TitleClick, MUIA_NList_TitleClick2
+        MUIA_NList_TitleClick, MUIA_NList_TitleClick2, MUIA_NList_SortType,
+        MUIA_NList_SortType2
+
 NList.mcc/MUIA_NList_TitleSeparator
 
     NAME
-        MUIA_NList_TitleSeparator -- [ISG], BOOL
+        MUIA_NList_TitleSeparator -- Control the horizontal title separator.
+
+    INPUTS
+        Initialize/set/get; BOOL, default TRUE.
 
     FUNCTION
-        If you set it, you get an horizontal bar between the
-        title and the first visible entry (only when some title
-        is visible).
-
-    DEFAULT
-        TRUE
+        TRUE requests a horizontal separator below an enabled title. FALSE
+        removes it. The setter invalidates the display cache and requests
+        full redraw. This does not create a title, control vertical column
+        bars, or enable title-click notifications.
 
     SEE ALSO
-        MUIA_NList_Title
+        MUIA_NList_Title, MUIA_NList_Format
+
 NList.mcc/MUIA_NList_TypeSelect
 
     NAME
@@ -2189,73 +2194,85 @@ NList.mcc/MUIM_NList_UseImage
 NList.mcc/MUIM_NList_ColWidth
 
     NAME
-        MUIM_NList_ColWidth --
+        MUIM_NList_ColWidth -- Query or set a user-width override.
 
     SYNOPSIS
-        DoMethod(obj,MUIM_NList_ColWidth,LONG col,LONG width);
-
-    FUNCTION
-        Set a width for a col as if changed by the user with mouse, or
-        reset it to its default size.
-        Permit to get the user width of a col too.
+        DoMethod(obj, MUIM_NList_ColWidth, col, width);
 
     INPUTS
-        col     number of the col (numbered as in display hook).
+        col -- Display-array COL index, or MUIV_NList_ColWidth_All (-1).
+        width -- Pixel width 4..2000, Default (-1), or Get (-2), with the
+        MUIV_NList_ColWidth_ prefix.
 
-                special value :
-              MUIV_NList_ColWidth_All     will set it for all columns.
+    FUNCTION
+        A user-width override takes precedence over format width calculation
+        and moves with the descriptor when columns are reordered. Default
+        clears the override and invalidates the cached content measurement.
+        Get reads the override, not the final rendered width; -1 means that
+        format rules apply.
 
-        width   width to set (4 is the minimum width accepted).
-
-                special values :
-              MUIV_NList_ColWidth_Default reset to default.
-              MUIV_NList_ColWidth_Get     set nothing, only return current.
+        Set values are narrowed to signed WORD before range handling. Values
+        below 4 reset to default; values above 2000 after narrowing clamp to
+        2000. Use the documented range rather than relying on large LONG
+        values. Changes request column layout and redraw, which may be
+        deferred. Get with All does not return an array and does not modify
+        widths.
 
     RESULT
-        When a col is specified (ie not MUIV_NList_ColWidth_All), the current
-        *user* width of the col will be returned :
-        o -1 mean that the col has its default width, ie not set by the user
-          or with this method.
-        o 0  mean that the specified col is not valid.
-          When MUIV_NList_ColWidth_All you'll get always 0.
+        Get for a valid col returns the stored override. A changed single-
+        column set returns the normalized override, including -1 for reset.
+        An unchanged valid set, invalid col, All set, or All/Get returns
+        zero. Zero therefore does not uniquely mean an invalid column. Use
+        Get separately when the current override is needed.
+
+    SEE ALSO
+        MUIA_NList_Format, MUIM_NList_ColumnToCol
+
 NList.mcc/MUIM_NList_ColToColumn
 
     NAME
-        MUIM_NList_ColToColumn --
+        MUIM_NList_ColToColumn -- Convert a display index to a visible
+        position.
 
     SYNOPSIS
-        DoMethod(obj,MUIM_NList_ColToColumn,LONG col);
-
-    FUNCTION
-        converts display hook col number to visible column number.
+        DoMethod(obj, MUIM_NList_ColToColumn, col);
 
     INPUTS
-        col     number of the col (numbered as in display hook).
+        col -- Display-array COL index from 0 through 63.
+
+    FUNCTION
+        Search the current descriptor order for the column using col. The
+        result changes when the user or application reorders columns.
 
     RESULT
-        column number, -1 if no column use that col number.
+        Zero-based visible position, or -1 for an invalid or unused index.
 
     SEE ALSO
-        MUIM_NList_ColumnToCol, MUIM_NList_SetColumnCol, MUIA_NList_Columns
+        MUIA_NList_Columns, MUIM_NList_SetColumnCol
+
 NList.mcc/MUIM_NList_ColumnToCol
 
     NAME
-        MUIM_NList_ColumnToCol --
+        MUIM_NList_ColumnToCol -- Convert a visible position to a display
+        index.
 
     SYNOPSIS
-        DoMethod(obj,MUIM_NList_ColumnToCol,LONG column);
-
-    FUNCTION
-        converts visible column number to display hook col number.
+        DoMethod(obj, MUIM_NList_ColumnToCol, column);
 
     INPUTS
-        column   number of the column (visible).
+        column -- Zero-based visible-column position.
+
+    FUNCTION
+        Read the display-array COL index assigned to column. Use this
+        conversion before passing a visible position to APIs such as
+        ColWidth that expect a COL index.
 
     RESULT
-        col number, -1 if the column is not valid.
+        Display-array index, or -1 for an invalid visible position.
 
     SEE ALSO
-        MUIM_NList_ColToColumn, MUIM_NList_SetColumnCol, MUIA_NList_Columns
+        MUIA_NList_Columns, MUIM_NList_SetColumnCol
+
 NList.mcc/MUIM_NList_Compare
 
     NAME
@@ -2687,52 +2704,40 @@ NList.mcc/MUIM_NList_UseImage
 
 NList.mcc/MUIM_NList_Display
 
-	NAME
-		MUIM_NList_Display --
+    NAME
+        MUIM_NList_Display -- Fill display text from a subclass callback.
 
-	SYNOPSIS
-		DoMethod(obj,MUIM_NList_Display,APTR entry,ULONG entry_pos,
-		    STRPTR *strings,STRPTR *preparses);
-
-    FUNCTION
-        This method is called  ONLY  by  NList.mcc  when  application  is
-        displaying  entry  f.e.  when  MUI_Redraw(), MUIM_NList_Redraw or
-        MUIM_NList_RedrawEntry are called. So, this method is only useful
-        within  NList.mcc  subclass,  function  method  should looks like
-        normal  MUIA_NList_DisplayHook  or  MUIA_NList_DisplayHook2  hook
-        function.   If  your  subclass  will  not  override  this  method
-        NList.mcc  implementation  will   be   used,   and   it'll   call
-        MUIA_NList_DisplayHook  or  MUIA_NList_DisplayHook2  hook in that
-        case.
+    SYNOPSIS
+        Subclass handler: struct MUIP_NList_Display *msg;
 
     INPUTS
-		entry - Entry  pointer  returned  by  f.e.  MUIM_NList_Construct,
-				MUIA_NList_ConstructHook or MUIA_NList_ConstructHook2
-				hooks.
+        entry -- Stored payload, or NULL for the title. entry_pos -- LONG
+        owner-row position, or -1 for the title. strings, preparses --
+        Object-owned arrays of borrowed STRPTR values, indexed by Format
+        COL.
 
-		entry_pos - Entry position.
+    FUNCTION
+        NList invokes this method to obtain text for measurement or drawing
+        after a display-cache miss. Wrapped continuations normally resolve
+        to their owning entry; this is not a dense logical-entry ordinal.
+        Fill the arrays with stable text using the same ownership and
+        formatting rules as DisplayHook. A non-NULL Title enables title
+        callbacks; NULL disables them.
 
-		strings   - Pointer to strings table.
-
-		preparses - Pointer to preparse strings table.
+        Override the method in a subclass, or let the superclass select the
+        installed display hook. When delegating, pass the original method
+        message. The default implementation ignores its fields and uses
+        internal DisplayArray state, so calling this method directly with
+        arbitrary application arrays is not a supported way to format an
+        entry.
 
     RESULT
-        Currently undefined. If you are overriding it completely,  please
-        return 0, if not use the value returned by super class!
+        The default returns the selected hook result, or zero with no hook.
+        NList ignores this result when collecting display strings. A
+        complete subclass override should return zero.
 
-	NOTE
-        Do not even think about calling it by yourself! Method parameters
-        structure might grow in the future! Be warned.
-
-        Internal implementation of this method can use internal or passed
-        arguments,  so  please  do  not  cheating  and  if  you  are  not
-		overriding it, pass the original arguments to super class.
-
-	SEE ALSO
-		MUIA_NList_ConstructHook, MUIA_NList_ConstructHook2,
-		MUIA_NList_DisplayHook, MUIA_NList_DisplayHook2,
-		MUIM_NList_Insert, MUIM_NList_InsertSingle, MUIM_NList_Replace,
-		MUIM_NList_Construct, MUIM_NList_Destruct, MUIM_NList_Compare
+    SEE ALSO
+        MUIA_NList_DisplayHook, MUIA_NList_DisplayHook2, MUIA_NList_Title
 
 NList.mcc/MUIM_NList_DoMethod
 
@@ -3630,36 +3635,40 @@ NList.mcc/MUIM_NList_UseImage
 NList.mcc/MUIM_NList_SetColumnCol
 
     NAME
-        MUIM_NList_SetColumnCol --
+        MUIM_NList_SetColumnCol -- Swap column positions or restore format
+        order.
 
     SYNOPSIS
-        DoMethod(obj,MUIM_NList_SetColumnCol,LONG column,LONG col);
-
-    FUNCTION
-        set which displayhook col is at the visible column.
+        DoMethod(obj, MUIM_NList_SetColumnCol, column, col);
 
     INPUTS
-        column  number of the column (visible).
-                if MUIV_NList_SetColumnCol_Default then the given (diplayhook) col
-                will come back to its default/original (from List_Format) position.
+        column -- Visible position. col -- Display-array COL index. Either
+        or both may be MUIV_NList_SetColumnCol_Default (-1).
 
-        col     col number (displayhook one).
-                if MUIV_NList_SetColumnCol_Default then the given visible column
-                will come back to its default/original (from List_Format) position.
+    FUNCTION
+        Place the descriptor identified by col at column by swapping with
+        the descriptor already there. No columns are inserted, removed or
+        hidden. Invalid indices and requests already satisfied do nothing.
+        MinColSortable does not restrict this method.
 
+        With column=Default, move col back to its original Format position.
+        With col=Default, move the descriptor currently at column back to
+        its own original Format position; this need not restore the named
+        visible slot to its original occupant. With both Default, restore
+        the complete original order. Resetting order does not reset user
+        widths.
 
-                both set to MUIV_NList_SetColumnCol_Default make all columns
-                come back to their default/original (from List_Format) position.
+        Changes request layout and redraw. The wrapper clears the pending
+        Columns notification bit after the helper returns; query Columns to
+        confirm the result instead of assuming a notification will follow.
 
     RESULT
-        None.
-
-    NOTE
-        MUIM_NList_SetColumnCol always exchange the moved column with the column
-        which was were it move.
+        Always zero, including successful changes. Not a BOOL success
+        result.
 
     SEE ALSO
-        MUIM_NList_ColToColumn, MUIM_NList_ColumnToCol, MUIA_NList_Columns
+        MUIA_NList_Columns, MUIM_NList_ColToColumn, MUIM_NList_ColumnToCol
+
 NList.mcc/MUIM_NList_Sort
 
     NAME

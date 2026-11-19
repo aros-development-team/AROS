@@ -546,6 +546,14 @@ static IPTR mNL_List_Compare( struct IClass *cl, Object *obj, struct MUIP_NList_
 }
 
 //$$$Sensei
+/* mNL_List_Display
+ * Dispatch the currently installed display hook using the internal
+ * DisplayArray, not the supplied message fields. Hook2 receives the NList
+ * object and the raw display-message storage. The legacy hook receives
+ * the string array and payload, with PrivateData in strings[-2] and a
+ * temporary object h_Data when originally NULL. Return the hook result or
+ * zero; the internal caller ignores it.
+ */
 static IPTR mNL_List_Display( struct IClass *cl, Object *obj, UNUSED struct MUIP_NList_Display *msg )
 {
   struct NLData *data = INST_DATA( cl, obj );
