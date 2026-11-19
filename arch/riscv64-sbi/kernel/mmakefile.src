@@ -91,6 +91,14 @@ $(OSGENDIR)/boot/Image: $(OSGENDIR)/boot/core.elf
 
 #MM kernel-kernel-sbi-riscv64 : includes
 
+# The sbi platform invokes the native RISC-V code (riscv-native) from
+# its own targets, as the pc target invokes all-native; they are on
+# the sbi ARCH, so every sbi CPU builds it.
+#MM- kernel-kernel-sbi : kernel-kernel-native-riscv
+#MM- kernel-kernel-sbi-quick : kernel-kernel-native-riscv-quick
+#MM- kernel-kernel-sbi-linklib : kernel-kernel-native-riscv-linklib
+#MM- kernel-kernel-sbi-set-archincludes : kernel-kernel-native-riscv-set-archincludes
+
 USER_INCLUDES := $(PRIV_KERNEL_INCLUDES) -I$(GENINCDIR) -I$(AROS_DEVELOPER)/include
 # startup.S and traps.S read aros/config.h and the TLS offsets (tls.h)
 USER_AFLAGS := $(PRIV_KERNEL_INCLUDES) -I$(GENINCDIR)

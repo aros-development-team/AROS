@@ -4,6 +4,14 @@ include $(SRCDIR)/config/aros.cfg
 CFILES          := \
         superstate cpu_init platform_init
 
+# The sbi platform invokes the native RISC-V code (riscv-native) from
+# its own targets, as the pc target invokes all-native; they are on
+# the sbi ARCH, so every sbi CPU builds it.
+#MM- kernel-exec-sbi : kernel-exec-native-riscv
+#MM- kernel-exec-sbi-quick : kernel-exec-native-riscv-quick
+#MM- kernel-exec-sbi-linklib : kernel-exec-native-riscv-linklib
+#MM- kernel-exec-sbi-set-archincludes : kernel-exec-native-riscv-set-archincludes
+
 %set_archincludes mainmmake=kernel-exec maindir=rom/exec \
   modname=exec pri=2 arch=sbi-riscv64 \
   includes="-I$(SRCDIR)/$(CURDIR)"
