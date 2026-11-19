@@ -247,8 +247,8 @@ static void cmd_TestChanged(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
 
 static void cmd_Update(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
 {
-    /* Do nothing now. In near future there should be drive cache flush though */
-    D(bug("[ATA%02ld] %s()\n", ((struct ata_Unit*)io->io_Unit)->au_UnitNum, __func__));
+    IOStdReq(io)->io_Actual = 0;
+    io->io_Error = ata_FlushCache((struct ata_Unit *)io->io_Unit);
 }
 
 static void cmd_Remove(struct IORequest *io, LIBBASETYPEPTR LIBBASE)

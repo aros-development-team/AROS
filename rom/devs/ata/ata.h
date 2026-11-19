@@ -454,6 +454,7 @@ BOOL ata_RegisterVolume(ULONG StartCyl, ULONG EndCyl, struct ata_Unit *unit);
 void BusTaskCode(struct ataBase *ATABase, struct ata_Bus *bus);
 void DaemonCode(struct ataBase *LIBBASE, struct ata_Controller *ataNode);
 
+BYTE ata_FlushCache(struct ata_Unit *unit);
 BYTE SCSIEmu(struct ata_Unit*, struct SCSICmd*);
 
 void ata_SMARTCmd(struct IOStdReq *io);

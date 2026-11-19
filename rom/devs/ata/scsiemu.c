@@ -243,7 +243,9 @@ BYTE SCSIEmu(struct ata_Unit *unit, struct SCSICmd *cmd)
         break;
 
         case 0x1d: /* SEND DIAGNOSTICS */
+        break;
         case 0x35: /* SYNCHRONIZE CACHE */
+        err = ata_FlushCache(unit);
         break;
         
         default:
