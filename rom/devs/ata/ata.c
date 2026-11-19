@@ -624,6 +624,15 @@ static void HandleIO(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
         */
         case NSCMD_DEVICEQUERY:
             {
+                IOStdReq(io)->io_Actual = 0;
+                if (IOStdReq(io)->io_Length < sizeof(struct NSDeviceQueryResult)) {
+                    io->io_Error = IOERR_BADLENGTH;
+                    break;
+                }
+                if (!IOStdReq(io)->io_Data) {
+                    io->io_Error = IOERR_BADADDRESS;
+                    break;
+                }
                 struct NSDeviceQueryResult *nsdq = (struct NSDeviceQueryResult *)IOStdReq(io)->io_Data;
                 nsdq->DevQueryFormat    = 0;
                 nsdq->SizeAvailable     = sizeof(struct NSDeviceQueryResult);
