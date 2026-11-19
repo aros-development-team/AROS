@@ -92,14 +92,39 @@ AROS_LH1(void, BeginIO,
             break;
         
         case TR_SETSYSTIME:
+        {
+            struct timeval now, any = { 0, 0 };
+            ULONG secs = timereq->tr_time.tv_secs;
+            ULONG given = timereq->tr_time.tv_micro;
+            LONG micro;
+
+            while (given >= 1000000) {
+                given -= 1000000;
+                secs++;
+            }
+            micro = given;
+            /*
+             * GetSysTime() reads the seconds and the e-clock's fraction of
+             * the current one, plus tb_CurrentTime.tv_micro: that is what
+             * is set, so the time reads back as given from now on
+             */
             Disable();
-            TimerBase->tb_CurrentTime.tv_secs = timereq->tr_time.tv_secs;
-            TimerBase->tb_CurrentTime.tv_micro = timereq->tr_time.tv_micro;
-            /* a time set back is read back: GetSysTime() starts again */
-            TimerBase->tb_lastsystime.tv_secs = TimerBase->tb_lastsystime.tv_micro = 0;
+            ClockRead(TimerBase, 0, &now, &any, FALSE);
+            micro -= ClockMicros(TimerBase, now.tv_micro);
+            if (micro < 0) {
+                micro += 1000000;
+                secs--;
+            }
+            /* now.tv_secs: the e-clock's fraction a second over */
+            TimerBase->tb_CurrentTime.tv_secs = secs - now.tv_secs;
+            TimerBase->tb_CurrentTime.tv_micro = micro;
+            /* a time set back is read back: GetSysTime() starts from here */
+            TimerBase->tb_lastsystime.tv_secs = secs;
+            TimerBase->tb_lastsystime.tv_micro = now.tv_micro;
             Enable();
             replyit = TRUE;
             break;
+        }
         
         case TR_ADDREQUEST:
             switch(unitNum)

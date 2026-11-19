@@ -37,7 +37,9 @@ struct TimerBase
     /* Required by the system */
     struct Device tb_Device;
 
-    struct timeval tb_CurrentTime;	/* system time */
+    struct timeval tb_CurrentTime;	/* system time: the seconds, and in tv_micro the
+                                           fraction TR_SETSYSTIME set, added to the
+                                           e-clock's (GetSysTime()) */
     struct timeval tb_Elapsed;
     struct timeval tb_lastsystime;	/* the last readings (ClockRead()): the */
     struct timeval tb_lastuptime;	/* seconds and the e-clock ticks into them */

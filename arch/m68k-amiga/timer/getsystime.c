@@ -23,13 +23,20 @@ AROS_LH1(void, GetSysTime,
 
     struct TimerBase *timerBase = (struct TimerBase *)TimerBase;
     struct timeval now;
+    ULONG set;
 
     /* each call a later time than the one before, as AmigaOS's */
     Disable();
     ClockRead(timerBase, timerBase->tb_CurrentTime.tv_secs, &now, &timerBase->tb_lastsystime, TRUE);
+    set = timerBase->tb_CurrentTime.tv_micro;
     Enable();
+    /* the e-clock's fraction, and the one TR_SETSYSTIME set */
     dest->tv_secs = now.tv_secs;
-    dest->tv_micro = ClockMicros(timerBase, now.tv_micro);
+    dest->tv_micro = ClockMicros(timerBase, now.tv_micro) + set;
+    if (dest->tv_micro >= 1000000) {
+        dest->tv_micro -= 1000000;
+        dest->tv_secs++;
+    }
     D(bug("systime=%d/%d\n", dest->tv_secs, dest->tv_micro));
 
     AROS_LIBFUNC_EXIT
