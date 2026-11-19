@@ -1827,7 +1827,7 @@ static BYTE ata_Identify(struct ata_Unit *unit)
     supportLBA48 = supportLBA && (unit->au_Drive->id_Commands5 & (1 << 10)) != 0;
 
     unit->au_Capacity = unit->au_Drive->id_LBASectors;
-    if (supportLBA48)
+    if (supportLBA48 && unit->au_Drive->id_LBA48Sectors)
         unit->au_Capacity48 = unit->au_Drive->id_LBA48Sectors;
     else
         unit->au_Capacity48 = unit->au_Capacity;

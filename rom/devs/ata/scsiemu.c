@@ -78,54 +78,51 @@ static UBYTE scsi_inquiry(struct ata_Unit *unit, struct SCSICmd *cmd, ULONG *out
 static UBYTE scsi_modesense(struct ata_Unit *unit, struct SCSICmd *cmd, ULONG *outlen)
 {
     UBYTE *cmdbuf = cmd->scsi_Command;
-    UBYTE *out = (UBYTE*)cmd->scsi_Data;
+    UBYTE out[36] = {0};
     UBYTE pcode = cmdbuf[2] & 0x3f;
-    UBYTE dbd = cmdbuf[1] & 8;
-    UWORD blocksize = 1 << unit->au_SectorShift;
+    ULONG blocksize = 1UL << unit->au_SectorShift;
+    ULONG len = 4;
     UBYTE *p;
-    
-    p = out;
-    p[0] = 4 - 1;
-    p[1] = 0;
-    p[2] = 0;
-    p[3] = 0;
-    p += 4;
-    if (!dbd) {
-        p[-1] = 8;
-        wl(out + 0, unit->au_Capacity);
-        wl(out + 4, blocksize);
-        p += 8;
+
+    if (!(cmdbuf[1] & 8)) {
+        UQUAD blocks = unit->au_Capacity48;
+        out[3] = 8;
+        wl(out + 4, blocks > 0xffffff ? 0xffffff : (ULONG)blocks);
+        wl(out + 8, blocksize);
+        len += 8;
     }
+    p = out + len;
     if (pcode == 0) {
-        p[0] = 0;
-        p[1] = 0;
         p[2] = 0x20;
-        p[3] = 0;
-        out[0] += 4;
+        len += 4;
     } else if (pcode == 3) {
         p[0] = 3;
-        p[1] = 24;
+        p[1] = 22;
         p[3] = 1;
-        p[10] = unit->au_Sectors >> 8;
-        p[11] = unit->au_Sectors;
-        p[12] = blocksize >> 8;
-        p[13] = blocksize;
-        p[15] = 1; // interleave
+        ww(p + 10, unit->au_Sectors);
+        ww(p + 12, blocksize);
+        p[15] = 1; /* interleave */
         p[20] = 0x80;
-        out[0] += p[1];
+        len += 24;
     } else if (pcode == 4) {
         p[0] = 4;
         wl(p + 1, unit->au_Cylinders);
-        p[1] = 24;
+        p[1] = 22;
         p[5] = unit->au_Heads;
         wl(p + 13, unit->au_Cylinders);
         ww(p + 20, 5400);
-        out[0] += p[1];
+        len += 24;
     } else {
         return 0xff;
     }
-    out[0] += out[3];
-    *outlen = out[0] + 1;
+    out[0] = len - 1;
+    if (len > cmdbuf[4])
+        len = cmdbuf[4];
+    if (len > cmd->scsi_Length)
+        len = cmd->scsi_Length;
+    if (len)
+        CopyMem(out, cmd->scsi_Data, len);
+    *outlen = len;
     return 0;
 }
 
