@@ -38,6 +38,10 @@
         !=0 if all went well, 0 in case of an error. IoErr() will
         give additional information in that case.
 
+    NOTES
+        The lock is duplicated first. Most file systems can't duplicate
+        an exclusive lock, so for one this function fails with their error.
+
 *****************************************************************************/
 
 {
@@ -77,6 +81,8 @@
 
     
     lock2 = DupLock(lock);
+    if (lock2 == BNULL)
+        return DOSFALSE; /* IoErr() is DupLock()'s; BNULL would name the boot volume */
     res = namefrom_internal(DOSBase, lock2, buffer, length);
     err = IoErr(); /* UnLock() clears pr_Result2 */
     UnLock(lock2);
