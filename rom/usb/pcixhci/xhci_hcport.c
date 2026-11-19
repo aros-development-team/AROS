@@ -196,6 +196,7 @@ BOOL xhciSetFeature(struct PCIUnit *unit, struct PCIController *hc,
     ULONG writeval = 0;
     ULONG tmpval;
     struct pciusbXHCIDevice *devCtx;
+    BOOL  devlocked = FALSE;
 
     pciusbXHCIDebug("xHCI",
                     DEBUGFUNCCOLOR_SET "xHCI: %s(0x%p, 0x%p, %04x, %04x, %04x, 0x%p)"
@@ -274,8 +275,12 @@ BOOL xhciSetFeature(struct PCIUnit *unit, struct PCIController *hc,
         /*
          * Address Device ran with BSR=0, so the device holds an address even
          * while dc_DevAddr is 0. The reset returns it to address 0 and a slot
-         * kept across it fails every transfer with cc=4. Always drop it.
+         * kept across it fails every transfer with cc=4. Always drop it, and
+         * hold xhc_DevLock until the reset has started, so the port task
+         * cannot create a slot on the still enabled port in between.
          */
+        ObtainSemaphore(&xhcic->xhc_DevLock);
+        devlocked = TRUE;
         devCtx = xhciFindPortDevice(hc, hciport);
         if(devCtx) {
             pciusbXHCIDebug("xHCI",
@@ -354,6 +359,9 @@ BOOL xhciSetFeature(struct PCIUnit *unit, struct PCIController *hc,
                         DEBUGCOLOR_RESET " \n",
                         idx, oldval);
     }
+
+    if(devlocked)
+        ReleaseSemaphore(&xhcic->xhc_DevLock);
 
     return cmdgood;
 }
