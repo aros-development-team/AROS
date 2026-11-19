@@ -378,6 +378,7 @@ static void krnFillVBEFromGOP(void)
 }
 
 #define SBI_IMPL_OPENSBI 1
+#define SBI_IMPL_RUSTSBI 4
 
 static const char *krnSBIImplementationName(long implid)
 {
@@ -443,18 +444,31 @@ static const char *krnBootLoaderName(void)
     }
     krnBootLoaderAppend(&pos, krnSBIImplementationName(implid));
 
-    /* The version encoding is up to each implementation; OpenSBI's is
-       major << 16 | minor */
-    if (implid == SBI_IMPL_OPENSBI)
+    /* OpenSBI uses major << 16 | minor; RustSBI uses
+       major << 16 | minor << 8 | patch. */
+    if (implid == SBI_IMPL_OPENSBI || implid == SBI_IMPL_RUSTSBI)
     {
         ret = sbi_ecall(SBI_EXT_BASE, SBI_BASE_GET_IMPL_VERSION,
                         0, 0, 0, 0, 0, 0);
         if (ret.error == SBI_SUCCESS)
         {
+            unsigned long version = (unsigned long)ret.value;
+            unsigned long major = version >> 16;
+
+            if (implid == SBI_IMPL_RUSTSBI)
+                major &= 0xff;
+
             krnBootLoaderAppend(&pos, " ");
-            krnBootLoaderAppendDec(&pos, (unsigned long)ret.value >> 16);
+            krnBootLoaderAppendDec(&pos, major);
             krnBootLoaderAppend(&pos, ".");
-            krnBootLoaderAppendDec(&pos, (unsigned long)ret.value & 0xffff);
+            if (implid == SBI_IMPL_RUSTSBI)
+            {
+                krnBootLoaderAppendDec(&pos, (version >> 8) & 0xff);
+                krnBootLoaderAppend(&pos, ".");
+                krnBootLoaderAppendDec(&pos, version & 0xff);
+            }
+            else
+                krnBootLoaderAppendDec(&pos, version & 0xffff);
         }
     }
 
