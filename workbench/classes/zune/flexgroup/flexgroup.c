@@ -15,8 +15,9 @@
 *       Arrange visible children in one row or column using their existing MUI
 *       size limits and weights. The class installs its own Group layout hook
 *       and implements the MUILM_MINMAX and MUILM_LAYOUT protocol. It does not
-*       implement wrapping or a CSS property interface. The source configuration
-*       declares version 1.0.
+*       implement a CSS property interface. With MUIA_Flexgroup_Wrap the
+*       children go into several lines. The source configuration declares
+*       version 1.1.
 *       Only children with MUIA_ShowMe true participate. A child's starting
 *       main-axis size is its default size clamped between minimum and maximum.
 *       Positive weights share extra space in proportion to weight and shrink in
@@ -80,7 +81,7 @@
 *   NOTES
 *       Row lays out left to right and uses horizontal weights; Column lays out
 *       top to bottom and uses vertical weights. Child order is preserved;
-*       reverse directions and wrapping are not implemented. Stored as UBYTE.
+*       reverse directions are not implemented. Stored as UBYTE.
 *       Any stored value other than Row takes the column path; unsupported input
 *       is not rejected. See the class notes for setter notification and
 *       tag-list behavior.
@@ -158,6 +159,27 @@
 *       notification behavior.
 *
 */
+/****** Flexgroup.mcc/MUIA_Flexgroup_Wrap ************
+*
+*   NAME
+*       MUIA_Flexgroup_Wrap
+*
+*   FUNCTION
+*       Put the children into lines, like CSS flex-wrap: wrap.
+*
+*   INPUTS
+*       Initialize, set, get; BOOL. Default FALSE.
+*
+*   NOTES
+*       A line takes children as long as their natural sizes and the gaps fit,
+*       and at least one. Every line gets grow, shrink, Justify and Align of
+*       its own, and the lines are stacked along the cross axis, Gap apart.
+*       The cross size the lines need depends on the main size, which MINMAX
+*       does not know: it uses the main size of the last layout, and a layout
+*       that ends up with another cross size asks for a second pass. Make the
+*       group virtual (MUIA_Group_Virtual) to put it in a Scrollgroup.
+*
+*/
 
 #include <exec/types.h>
 #include <clib/macros.h>
@@ -180,7 +202,8 @@ static const Tag flex_attrs[] =
     MUIA_Flexgroup_Direction,
     MUIA_Flexgroup_Justify,
     MUIA_Flexgroup_Align,
-    MUIA_Flexgroup_Gap
+    MUIA_Flexgroup_Gap,
+    MUIA_Flexgroup_Wrap
 };
 #define FLEX_ATTRS (sizeof(flex_attrs) / sizeof(flex_attrs[0]))
 
@@ -266,11 +289,56 @@ static LONG flex_gather(struct Flexgroup_DATA *data, struct MinList *children)
     return i;
 }
 
+/* The cross size of a line: its tallest child at its natural size. */
+static LONG flex_line_cross(struct FlexCalc *calc, LONG n)
+{
+    LONG i, cross = 0;
+
+    for (i = 0; i < n; i++)
+        cross = MAX(cross, CLAMP(calc[i].cdef, calc[i].cmin, calc[i].cmax));
+    return cross;
+}
+
+/* How many children from calc on go into one line of mainavail: as many as
+   their natural sizes and the gaps fit, and at least one. */
+static LONG flex_line_count(struct Flexgroup_DATA *data,
+    struct FlexCalc *calc, LONG n, LONG mainavail)
+{
+    LONG i, used = calc[0].basis;
+
+    for (i = 1; i < n; i++)
+    {
+        if (used + data->gap + calc[i].basis > mainavail)
+            break;
+        used += data->gap + calc[i].basis;
+    }
+    return i;
+}
+
+/* The cross size all the lines of a wrapped layout take, gaps included. */
+static LONG flex_wrapped_cross(struct Flexgroup_DATA *data,
+    struct FlexCalc *calc, LONG n, LONG mainavail)
+{
+    LONG from = 0, cross = 0;
+
+    while (from < n)
+    {
+        LONG count = flex_line_count(data, calc + from, n - from, mainavail);
+
+        if (from > 0)
+            cross += data->gap;
+        cross += flex_line_cross(calc + from, count);
+        from += count;
+    }
+    return cross;
+}
+
 /* Initialize empty-content bounds, then gather visible children. On no
  * children or allocation failure, leave those bounds. Sum main minima or
  * fixed bases and gaps, take largest cross minima/defaults, and constrain
- * cross maximum only for Stretch. Map axes into the hook message. No
- * separate error return exists.
+ * cross maximum only for Stretch. A wrapped group asks for the cross size
+ * of its lines at the last layout's main size. Map axes into the hook
+ * message. No separate error return exists.
  */
 static void flex_minmax(struct Flexgroup_DATA *data,
     struct MUI_LayoutMsg *lm)
@@ -309,6 +377,25 @@ static void flex_minmax(struct Flexgroup_DATA *data,
     minmain += gaps;
     defmain += gaps;
 
+    if (data->wrap)
+    {
+        /* Wrapped, one child to a line is the narrowest it gets, and all of
+           them in one line its natural size.  Across, it needs the room of
+           the lines it had at the last layout's size; before the first
+           one, of a single line. */
+        LONG main = (data->lastmain > 0) ? data->lastmain : defmain;
+
+        minmain = 0;
+        for (i = 0; i < n; i++)
+            minmain = MAX(minmain, (calc[i].weight > 0) ? calc[i].min
+                : calc[i].basis);
+
+        mincross = flex_wrapped_cross(data, calc, n, main);
+        defcross = mincross;
+        data->reportedcross = mincross;
+        data->relayout = FALSE;
+    }
+
     /* A flex container takes its size from its parent, not from the sum
        of its children - justify-content exists precisely to distribute
        the surplus.  Reporting sum(basis) here would make group.c hand us
@@ -316,8 +403,9 @@ static void flex_minmax(struct Flexgroup_DATA *data,
     maxmain = MUI_MAXMAX;
 
     /* Same reasoning on the cross axis: without stretch no child caps
-       us, and without headroom there is nothing to align within. */
-    if (data->align != MUIV_Flexgroup_Align_Stretch)
+       us, and without headroom there is nothing to align within.  Wrapped
+       lines take their own cross size, so nothing caps them either. */
+    if (data->align != MUIV_Flexgroup_Align_Stretch || data->wrap)
         maxcross = MUI_MAXMAX;
 
     maxcross = MIN(MAX(maxcross, mincross), MUI_MAXMAX);
@@ -483,36 +571,13 @@ static void flex_shrink(struct FlexCalc *calc, LONG n, LONG deficit)
     }
 }
 
-/* Gather visible children, returning FALSE on table allocation failure and
- * TRUE for an empty group. Start at each basis, grow or shrink, distribute
- * nonnegative remaining slack by Justify, and size the cross axis by Align.
- * Call MUI_Layout for each child but ignore its result. Return TRUE even if
- * limits force content beyond available space.
- */
-static ULONG flex_layout(struct Flexgroup_DATA *data,
-    struct MUI_LayoutMsg *lm)
+/* Lays out one line of n children: mainavail long, crossavail across,
+   crosspos down (or along) from the group's edge. */
+static void flex_layout_line(struct Flexgroup_DATA *data,
+    struct FlexCalc *calc, LONG n, LONG mainavail, LONG crosspos,
+    LONG crossavail)
 {
-    struct FlexCalc *calc;
-    LONG n, i, gaps, content, total = 0, slack, pos, between;
-    LONG mainavail, crossavail;
-
-    n = flex_gather(data, lm->lm_Children);
-    if (n < 0)
-        return FALSE;
-    if (n == 0)
-        return TRUE;
-    calc = data->calc;
-
-    if (data->direction == MUIV_Flexgroup_Direction_Row)
-    {
-        mainavail = lm->lm_Layout.Width;
-        crossavail = lm->lm_Layout.Height;
-    }
-    else
-    {
-        mainavail = lm->lm_Layout.Height;
-        crossavail = lm->lm_Layout.Width;
-    }
+    LONG i, gaps, content, total = 0, slack, pos, between;
 
     gaps = (n - 1) * data->gap;
     content = mainavail - gaps;
@@ -594,12 +659,91 @@ static ULONG flex_layout(struct Flexgroup_DATA *data,
                 cpos = 0;
         }
 
+        cpos += crosspos;
         if (data->direction == MUIV_Flexgroup_Direction_Row)
             MUI_Layout(c->child, pos, cpos, c->size, csize, 0);
         else
             MUI_Layout(c->child, cpos, pos, csize, c->size, 0);
 
         pos += c->size + between;
+    }
+}
+
+/* Gather visible children, returning FALSE on table allocation failure and
+ * TRUE for an empty group. Lay out one line, or with Wrap as many lines as
+ * the children need (flex_layout_line()), and queue another pass when the
+ * lines' cross size differs from what MINMAX reported.
+ * Call MUI_Layout for each child but ignore its result. Return TRUE even if
+ * limits force content beyond available space.
+ */
+static ULONG flex_layout(struct Flexgroup_DATA *data, Object *obj,
+    struct MUI_LayoutMsg *lm)
+{
+    struct FlexCalc *calc;
+    LONG n, from, crosspos;
+    LONG mainavail, crossavail;
+
+    n = flex_gather(data, lm->lm_Children);
+    if (n < 0)
+        return FALSE;
+    if (n == 0)
+        return TRUE;
+    calc = data->calc;
+
+    if (data->direction == MUIV_Flexgroup_Direction_Row)
+    {
+        mainavail = lm->lm_Layout.Width;
+        crossavail = lm->lm_Layout.Height;
+    }
+    else
+    {
+        mainavail = lm->lm_Layout.Height;
+        crossavail = lm->lm_Layout.Width;
+    }
+
+    if (!data->wrap)
+    {
+        flex_layout_line(data, calc, n, mainavail, 0, crossavail);
+        return TRUE;
+    }
+
+    for (from = 0, crosspos = 0; from < n;)
+    {
+        LONG count = flex_line_count(data, calc + from, n - from, mainavail);
+        LONG cross = flex_line_cross(calc + from, count);
+
+        flex_layout_line(data, calc + from, count, mainavail, crosspos,
+            cross);
+        crosspos += cross + data->gap;
+        from += count;
+    }
+    crosspos -= data->gap;
+
+    /* For a virtual group this is the virtual size. */
+    if (data->direction == MUIV_Flexgroup_Direction_Row)
+    {
+        lm->lm_Layout.Width = mainavail;
+        lm->lm_Layout.Height = crosspos;
+    }
+    else
+    {
+        lm->lm_Layout.Width = crosspos;
+        lm->lm_Layout.Height = mainavail;
+    }
+
+    /* MINMAX asked for the room of the lines at the last layout's size.  If
+       this size makes other lines, ask for another pass - queued, as a
+       group must not change while it is being laid out.  It settles: the
+       next pass is laid out at a size MINMAX has now seen. */
+    data->lastmain = mainavail;
+    if (crosspos != data->reportedcross && !data->relayout
+        && muiRenderInfo(obj) != NULL)
+    {
+        data->relayout = TRUE;
+        DoMethod(_app(obj), MUIM_Application_PushMethod, (IPTR) obj, 1,
+            MUIM_Group_InitChange);
+        DoMethod(_app(obj), MUIM_Application_PushMethod, (IPTR) obj, 1,
+            MUIM_Group_ExitChange);
     }
 
     return TRUE;
@@ -622,7 +766,7 @@ static ULONG Flexgroup_LayoutFunc(struct Hook *hook, Object *obj,
         return 0;
 
     case MUILM_LAYOUT:
-        return flex_layout(data, lm);
+        return flex_layout(data, obj, lm);
     }
 
     return MUILM_UNKNOWN;
@@ -684,6 +828,8 @@ IPTR Flexgroup__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     data->align = GetTagData(MUIA_Flexgroup_Align,
         MUIV_Flexgroup_Align_Stretch, msg->ops_AttrList);
     data->gap = GetTagData(MUIA_Flexgroup_Gap, 0, msg->ops_AttrList);
+    data->wrap = GetTagData(MUIA_Flexgroup_Wrap, FALSE, msg->ops_AttrList)
+        ? TRUE : FALSE;
 
     flex_claim_hook(cl, obj, data);
 
@@ -714,7 +860,7 @@ IPTR Flexgroup__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
 IPTR Flexgroup__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct Flexgroup_DATA *data = INST_DATA(cl, obj);
-    struct TagItem *mine[FLEX_ATTRS] = { NULL, NULL, NULL, NULL };
+    struct TagItem *mine[FLEX_ATTRS] = { NULL, NULL, NULL, NULL, NULL };
     struct TagItem *tags = msg->ops_AttrList;
     struct TagItem *tag;
     BOOL stolen = FALSE;
@@ -744,6 +890,12 @@ IPTR Flexgroup__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
         case MUIA_Flexgroup_Gap:
             data->gap = tag->ti_Data;
             mine[3] = tag;
+            break;
+
+        case MUIA_Flexgroup_Wrap:
+            data->wrap = tag->ti_Data ? TRUE : FALSE;
+            data->lastmain = 0;
+            mine[4] = tag;
             break;
 
         case MUIA_Group_LayoutHook:
@@ -836,6 +988,9 @@ IPTR Flexgroup__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
         return TRUE;
     case MUIA_Flexgroup_Gap:
         STORE = data->gap;
+        return TRUE;
+    case MUIA_Flexgroup_Wrap:
+        STORE = data->wrap;
         return TRUE;
     }
 

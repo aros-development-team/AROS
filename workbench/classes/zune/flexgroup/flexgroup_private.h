@@ -32,6 +32,10 @@ struct Flexgroup_DATA
     UBYTE justify;
     UBYTE align;
     WORD gap;
+    BOOL wrap;
+    BOOL relayout;              /* a layout pass has been asked for */
+    LONG lastmain;              /* main axis size of the last layout */
+    LONG reportedcross;         /* cross size the last MINMAX asked for */
 };
 
 #endif /* _FLEXGROUP_PRIVATE_H */

@@ -5,6 +5,7 @@
 
     The upper group is a Flexgroup driven by the controls above it.  The
     lower one holds equivalent children in a plain HGroup, for comparison.
+    With flex-wrap set, make the window narrow to see the lines wrap.
 */
 
 #include <exec/types.h>
@@ -31,6 +32,7 @@ static const char *align_entries[] =
 {
     "stretch", "start", "end", "center", NULL
 };
+static const char *wrap_entries[] = { "nowrap", "wrap", NULL };
 static const char *weight_entries[] =
 {
     "0 - all fixed", "100 - all equal", "0,1,2,0 - graded", NULL
@@ -83,7 +85,7 @@ static Object *MakeChild(const char *label, LONG fixheight)
 int main(void)
 {
     Object *application, *window;
-    Object *justify_cycle, *align_cycle, *gap_slider;
+    Object *justify_cycle, *align_cycle, *gap_slider, *wrap_cycle;
 
     children[0] = MakeChild("One", 0);
     children[1] = MakeChild("Two", 0);
@@ -116,6 +118,10 @@ int main(void)
                         MUIA_Numeric_Min, 0,
                         MUIA_Numeric_Max, 32,
                         MUIA_Numeric_Value, 4,
+                    End),
+                    Child, (IPTR)Label("flex-wrap:"),
+                    Child, (IPTR)(wrap_cycle = CycleObject,
+                        MUIA_Cycle_Entries, (IPTR)wrap_entries,
                     End),
                     Child, (IPTR)Label("child weight (= flex-grow):"),
                     Child, (IPTR)(weight_cycle = CycleObject,
@@ -168,6 +174,8 @@ int main(void)
         MUIV_TriggerValue);
     DoMethod(gap_slider, MUIM_Notify, MUIA_Numeric_Value, MUIV_EveryTime,
         (IPTR)flexobj, 3, MUIM_Set, MUIA_Flexgroup_Gap, MUIV_TriggerValue);
+    DoMethod(wrap_cycle, MUIM_Notify, MUIA_Cycle_Active, MUIV_EveryTime,
+        (IPTR)flexobj, 3, MUIM_Set, MUIA_Flexgroup_Wrap, MUIV_TriggerValue);
     DoMethod(weight_cycle, MUIM_Notify, MUIA_Cycle_Active, MUIV_EveryTime,
         (IPTR)application, 2, MUIM_CallHook, (IPTR)&weighthook);
 
