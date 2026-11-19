@@ -214,27 +214,16 @@ int __getfirstfd(register int startfd)
     struct PosixCIntBase *PosixCBase =
         (struct PosixCIntBase *)__aros_getbase_PosixCBase();
 
-    /* FIXME: Check if fd is in valid range... */
-    if (!__fdlib_available(PosixCBase)) {
-        for (
-            ;
-            startfd < FD_SLOTS(PosixCBase) && FD_ARRAY(PosixCBase)[startfd];
-            startfd++
-        );
+    FD_LOCK(PosixCBase);
+    struct Library *FDBase =
+        __fdlib_available(PosixCBase) ? PosixCBase->PosixCFDBase : NULL;
 
-        return startfd;
-    }
-
-    struct Library *FDBase = PosixCBase->PosixCFDBase;
-    for (;;) {
-        if (startfd < FD_SLOTS(PosixCBase) && FD_ARRAY(PosixCBase)[startfd]) {
-            startfd++;
-            continue;
-        }
-        if (FD_Check(startfd) == 0)
-            return startfd;
+    while ((startfd < FD_SLOTS(PosixCBase) && FD_ARRAY(PosixCBase)[startfd]) ||
+           (FDBase && FD_Check(startfd) != 0))
         startfd++;
-    }
+
+    FD_UNLOCK(PosixCBase);
+    return startfd;
 }
 
 static int __getfdslot_from(int wanted_fd, int startfd)

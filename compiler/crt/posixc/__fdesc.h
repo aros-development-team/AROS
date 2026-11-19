@@ -95,6 +95,7 @@ int __getfdslot(int wanted_fd);
 #define __FD_FIRSTFREE (-2)
 /* The same for the lowest free fd that is not below startfd */
 int __getfreefdslot(int startfd);
+int __dupfd_from(int oldfd, int minimum);
 int __getfirstfd(register int startfd);
 int __open(int wanted_fd, const char *pathname, int flags, int mode);
 void __updatestdio(void);

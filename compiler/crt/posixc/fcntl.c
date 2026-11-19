@@ -144,7 +144,7 @@
                     va_start(ap, cmd);
                     arg = va_arg(ap, int);
                     va_end(ap);
-                    return dup2(fd, __getfirstfd(arg));
+                    return __dupfd_from(fd, arg);
                 }
                 default:
                     errno = EINVAL;
@@ -171,7 +171,7 @@
                        is supported (related to F_GETFD and F_SETFD).
             */
             
-            return dup2(fd, __getfirstfd(arg));
+            return __dupfd_from(fd, arg);
         }
         case F_DUPFD_CLOEXEC:
         {
@@ -183,7 +183,7 @@
             arg = va_arg(ap, int);
             va_end(ap);
 
-            newfd = dup2(fd, __getfirstfd(arg));
+            newfd = __dupfd_from(fd, arg);
             if (newfd >= 0 && (newdesc = __getfdesc(newfd)) != NULL)
                 newdesc->fdflags |= FD_CLOEXEC;
 
