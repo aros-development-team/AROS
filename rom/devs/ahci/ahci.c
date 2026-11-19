@@ -2699,6 +2699,7 @@ ahci_port_thread_core(struct ahci_port *ap, int mask)
         ahci_port_intr(ap, 1);
         ahci_port_interrupt_enable(ap);
     }
+    ahci_process_pending_io(ap);
     ahci_os_unlock_port(ap);
 }
 
@@ -3897,6 +3898,8 @@ ahci_ata_put_xfer(struct ata_xfer *xa)
     DPRINTF(AHCI_D_XFER, "ahci_ata_put_xfer slot %d\n", ccb->ccb_slot);
 
     ahci_put_ccb(ccb);
+    if (ccb->ccb_port->ap_sim && ccb->ccb_port->ap_thread)
+        ahci_os_signal_port_thread(ccb->ccb_port, AP_SIGF_IO);
 }
 
 int

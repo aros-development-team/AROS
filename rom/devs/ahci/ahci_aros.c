@@ -208,6 +208,10 @@ static void ahci_port_thread(void *arg)
             atomic_clear_int(&ap->ap_signal, mask);
             // lockmgr(&ap->ap_sig_lock, LK_RELEASE);
     }
+    ahci_os_lock_port(ap);
+    ahci_stop_pending_io(ap);
+    ahci_os_unlock_port(ap);
+    /* Publish exit only after the last access protected by the port lock. */
     ap->ap_thread = NULL;
 }
 
