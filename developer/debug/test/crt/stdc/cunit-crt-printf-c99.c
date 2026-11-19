@@ -122,6 +122,71 @@ void test_snprintf_float(void)
     CU_ASSERT_STRING_EQUAL(buf, "1.500000");
 }
 
+/* Floating point conversions give the value of the double rounded once, to
+   nearest and half-way cases to even. */
+void test_snprintf_float_rounding(void)
+{
+    char buf[64];
+
+    /* Values a binary double holds just below the decimal half-way point. */
+    snprintf(buf, sizeof(buf), "%.2f", 0.995);
+    CU_ASSERT_STRING_EQUAL(buf, "0.99");
+
+    snprintf(buf, sizeof(buf), "%.2f", 9.995);
+    CU_ASSERT_STRING_EQUAL(buf, "9.99");
+
+    snprintf(buf, sizeof(buf), "%e", 9.9999995);
+    CU_ASSERT_STRING_EQUAL(buf, "9.999999e+00");
+
+    /* Exact ties go to the even digit. */
+    snprintf(buf, sizeof(buf), "%.0f", 0.5);
+    CU_ASSERT_STRING_EQUAL(buf, "0");
+
+    snprintf(buf, sizeof(buf), "%.0f", 1.5);
+    CU_ASSERT_STRING_EQUAL(buf, "2");
+
+    snprintf(buf, sizeof(buf), "%.0f", 2.5);
+    CU_ASSERT_STRING_EQUAL(buf, "2");
+
+    snprintf(buf, sizeof(buf), "%.2f", 0.125);
+    CU_ASSERT_STRING_EQUAL(buf, "0.12");
+
+    snprintf(buf, sizeof(buf), "%.2f", 0.375);
+    CU_ASSERT_STRING_EQUAL(buf, "0.38");
+
+    snprintf(buf, sizeof(buf), "%.0e", 2.5);
+    CU_ASSERT_STRING_EQUAL(buf, "2e+00");
+
+    snprintf(buf, sizeof(buf), "%.3e", 123350.0);
+    CU_ASSERT_STRING_EQUAL(buf, "1.234e+05");
+
+    /* Rounding up may add a digit or change the style %g chooses. */
+    snprintf(buf, sizeof(buf), "%.2f", 9.9951);
+    CU_ASSERT_STRING_EQUAL(buf, "10.00");
+
+    snprintf(buf, sizeof(buf), "%g", 999999.5);
+    CU_ASSERT_STRING_EQUAL(buf, "1e+06");
+
+    snprintf(buf, sizeof(buf), "%#.2g", 99.79845);
+    CU_ASSERT_STRING_EQUAL(buf, "1.0e+02");
+
+    snprintf(buf, sizeof(buf), "%.0g", 2.5);
+    CU_ASSERT_STRING_EQUAL(buf, "2");
+
+    /* All 17 significant digits, and both ends of the range. */
+    snprintf(buf, sizeof(buf), "%.17g", 0.1);
+    CU_ASSERT_STRING_EQUAL(buf, "0.10000000000000001");
+
+    snprintf(buf, sizeof(buf), "%f", 123456789012345678.0);
+    CU_ASSERT_STRING_EQUAL(buf, "123456789012345680.000000");
+
+    snprintf(buf, sizeof(buf), "%.16e", 1.7976931348623157e308);
+    CU_ASSERT_STRING_EQUAL(buf, "1.7976931348623157e+308");
+
+    snprintf(buf, sizeof(buf), "%.3e", 4.9406564584124654e-324);
+    CU_ASSERT_STRING_EQUAL(buf, "4.941e-324");
+}
+
 /* ---- wide swprintf ---------------------------------------------------- */
 
 /* General wide formatting must work - a regression guard against the wide
@@ -188,6 +253,12 @@ void test_swprintf_float(void)
 
     swprintf(buf, 64, L"%.2f", 1.5);
     CU_ASSERT_TRUE(wcscmp(buf, L"1.50") == 0);
+
+    swprintf(buf, 64, L"%.2f", 0.995);
+    CU_ASSERT_TRUE(wcscmp(buf, L"0.99") == 0);
+
+    swprintf(buf, 64, L"%.0f", 2.5);
+    CU_ASSERT_TRUE(wcscmp(buf, L"2") == 0);
 }
 
 int main(void)
@@ -209,6 +280,7 @@ int main(void)
         (NULL == CU_add_test(pSuite, "snprintf_wide_char", test_snprintf_wide_char)) ||
         (NULL == CU_add_test(pSuite, "snprintf_longlong", test_snprintf_longlong)) ||
         (NULL == CU_add_test(pSuite, "snprintf_float", test_snprintf_float)) ||
+        (NULL == CU_add_test(pSuite, "snprintf_float_rounding", test_snprintf_float_rounding)) ||
         (NULL == CU_add_test(pSuite, "swprintf_basic", test_swprintf_basic)) ||
         (NULL == CU_add_test(pSuite, "swprintf_strings", test_swprintf_strings)) ||
         (NULL == CU_add_test(pSuite, "swprintf_chars", test_swprintf_chars)) ||
