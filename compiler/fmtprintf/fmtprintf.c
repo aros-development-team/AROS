@@ -446,55 +446,38 @@
                             sign = FMTPRINTF_STR(' ');
                     }
 
-                    ex1 = 0;
-                    if (FMTPRINTF_TOLOWER(type) != FMTPRINTF_STR('a'))
-                    {
-                        if (subtype != FMTPRINTF_STR('L'))
-                        {
-                            if (fparg.dbl != 0.0)
-                            {
-                                ex1 = log10(fparg.dbl);
-                                if (fparg.dbl < 1.0)
-                                    fparg.dbl = fparg.dbl * pow(10,- --ex1); /* Caution: (int)log10(.5)!=-1 */
-                                else
-                                    fparg.dbl=fparg.dbl / pow(10, ex1);
-                                if (fparg.dbl < 1.0)    /* adjust if we are too low (log10(.1)=-.999999999) */
-                                {
-                                    fparg.dbl *= 10.0;  /* luckily this cannot happen with FLT_MAX and FLT_MIN */
-                                    ex1--;              /* The case too high (log(10.)=.999999999) is done later */
-                                }
-                            }
-                        } else {
-                            if (fparg.ldbl != 0.0)
-                            {
-                                ex1 = log10l(fparg.ldbl);
-                                if (fparg.ldbl < 1.0)
-                                    fparg.ldbl= fparg.ldbl * powl(10,- --ex1);
-                                else
-                                    fparg.ldbl=fparg.ldbl / powl(10, ex1);
-                                if (fparg.ldbl < 1.0)
-                                {
-                                    fparg.ldbl *= 10.0;
-                                    ex1--;
-                                }
-                            }
-                        }
-                    }
+                    if (FMTPRINTF_TOLOWER(type) == FMTPRINTF_STR('g') && preci == 0)
+                        preci = 1;
 
-                    ex2 = preci;
-                    if (FMTPRINTF_TOLOWER(type) == FMTPRINTF_STR('f'))
-                        ex2 += ex1;
-                    if (FMTPRINTF_TOLOWER(type) == FMTPRINTF_STR('g'))
-                        ex2--;
-                    if (subtype != FMTPRINTF_STR('L'))
+                    ex1 = 0;
+                    dnum = 0;
+                    if (FMTPRINTF_TOLOWER(type) != FMTPRINTF_STR('a') && subtype != FMTPRINTF_STR('L'))
                     {
-                        fparg.dbl += .5 / pow(10, ex2 < MINFLOATSIZE ? ex2 : MINFLOATSIZE); /* Round up */
-                        if (fparg.dbl >= 10.0)          /* Adjusts log10(10.)=.999999999 too */
+                        ex1 = format_double(buffer, &dnum, fparg.dbl,
+                                            FMTPRINTF_TOLOWER(type) == FMTPRINTF_STR('f'),
+                                            FMTPRINTF_TOLOWER(type) == FMTPRINTF_STR('e') ? preci + 1 : preci);
+                    }
+                    else if (subtype == FMTPRINTF_STR('L'))
+                    {
+                        if (FMTPRINTF_TOLOWER(type) != FMTPRINTF_STR('a') && fparg.ldbl != 0.0)
                         {
-                            fparg.dbl /= 10.0;
-                            ex1++;
+                            ex1 = log10l(fparg.ldbl);
+                            if (fparg.ldbl < 1.0)
+                                fparg.ldbl= fparg.ldbl * powl(10,- --ex1); /* Caution: (int)log10(.5)!=-1 */
+                            else
+                                fparg.ldbl=fparg.ldbl / powl(10, ex1);
+                            if (fparg.ldbl < 1.0)       /* adjust if we are too low (log10(.1)=-.999999999) */
+                            {
+                                fparg.ldbl *= 10.0;
+                                ex1--;                  /* The case too high (log(10.)=.999999999) is done later */
+                            }
                         }
-                    } else {
+
+                        ex2 = preci;
+                        if (FMTPRINTF_TOLOWER(type) == FMTPRINTF_STR('f'))
+                            ex2 += ex1;
+                        if (FMTPRINTF_TOLOWER(type) == FMTPRINTF_STR('g'))
+                            ex2--;
                         fparg.ldbl += .5 / powl(10, ex2 < MINFLOATSIZE ? ex2 : MINFLOATSIZE); /* Round up */
                         if (fparg.ldbl >= 10.0)         /* Adjusts log10(10.)=.999999999 too */
                         {
@@ -520,18 +503,12 @@
                     if (type == FMTPRINTF_STR('f'))
                         dreq += ex1;                    /* even more before the decimal point */
 
-                    dnum = 0;
-                    while (dnum < dreq && dnum < MINFLOATSIZE) /* Calculate all decimal places needed */
-                    {
-                        if (subtype != FMTPRINTF_STR('L'))
+                    if (subtype == FMTPRINTF_STR('L'))
+                        while (dnum < dreq && dnum < MINFLOATSIZE) /* Calculate all decimal places needed */
                         {
-                            buffer[dnum++] = (FMTPRINTF_TYPE)fparg.dbl + FMTPRINTF_STR('0');
-                            fparg.dbl = (fparg.dbl - (double)(FMTPRINTF_TYPE)fparg.dbl) * 10.0;
-                        } else {
                             buffer[dnum++] = (FMTPRINTF_TYPE)fparg.ldbl + FMTPRINTF_STR('0');
                             fparg.ldbl = (fparg.ldbl - (long double)(FMTPRINTF_TYPE)fparg.ldbl) * 10.0;
                         }
-                    }
                     if (killzeros)                      /* Kill trailing zeros if possible */
                         while(preci && (dreq-- > dnum || buffer[dreq] == FMTPRINTF_STR('0')))
                             preci--;
