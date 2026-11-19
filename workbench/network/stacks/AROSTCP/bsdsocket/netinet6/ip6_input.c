@@ -38,6 +38,7 @@
 #include <netinet/inetfamily.h>
 #include <net/route.h>
 #include <net/pfil.h>
+#include <sys/sysctl.h>			/* IPV6CTL_xxx */
 
 #include <netinet/in.h>
 #include <netinet/in_systm.h>
@@ -471,6 +472,9 @@ static const struct netvar ip6_netvars[] = {
       PF_INET6, IPPROTO_ICMPV6, ICMPV6CTL_ND6_MAXNBRS },
     { "nd6_maxheld",     (void *)nd6_sysctl_maxheld, 0, NVT_SYSCTL,
       PF_INET6, IPPROTO_ICMPV6, ICMPV6CTL_ND6_MAXHELD },
+    /* the probes duplicate address detection sends (nd6_nbr.c) */
+    { "ip6_dad_count",   (void *)nd6_sysctl_dad_count, 0, NVT_SYSCTL,
+      PF_INET6, IPPROTO_IPV6, IPV6CTL_DAD_COUNT },
 };
 
 /* ------------------------------------------------------------------

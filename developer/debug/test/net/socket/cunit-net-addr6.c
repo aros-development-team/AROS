@@ -8,7 +8,11 @@
     unspecified address - and adding it does not make the host solicit routers
     again (RFC 4861 section 6.3.7: that is for an interface coming up).
     Deleting an address while it is still being checked stops the check, and
-    deleting it removes the host routes cloned from its prefix as well.
+    deleting it removes the host routes cloned from its prefix as well. An
+    interface has one link-local address, though it comes up more than once
+    (for IPv4, then for IPv6) while that address is still tentative; with
+    net.inet6.ip6.dad_count raised, the test brings it up again inside that
+    window.
 
     Routes are read with RTM_GET on a routing socket; the solicitations are
     watched with the bsdsocket BPF calls. The test needs a multicast-capable
@@ -26,8 +30,11 @@
 #include <net/bpf.h>
 #include <netinet/in_var.h>
 #include <netinet/icmp6.h>
+#include <defines/miami.h>      /* MiamiSysCtl() alone: proto/miami.h and __CONFIG_ROADSHOW__ clash */
+#include <sys/sysctl.h>
 
 struct Library *SocketBase = NULL;
+struct Library *MiamiBase = NULL;
 
 static const char *ifname = "eth0";
 static int ready;
@@ -168,6 +175,211 @@ static void watch(const char *target, int secs, int *dad_ns, int *rs)
 int init_suite(void) { return (SocketBase != NULL) ? 0 : -1; }
 int clean_suite(void) { return 0; }
 
+/* The SIOCGIFCONF entry after cp: its name and address, at least an ifreq. */
+static char *next_ifreq(char *cp)
+{
+    struct ifreq *r = (struct ifreq *)cp;
+    int sz = sizeof(r->ifr_name) + r->ifr_addr.sa_len;
+
+    return cp + (sz < (int)sizeof(*r) ? (int)sizeof(*r) : sz);
+}
+
+/*
+ * The link-local entries in SIOCGIFCONF (an AF_INET6 socket), keyed by
+ * interface name: how many ifname has (the first copied to *ll), and in
+ * *most the most any one interface has. Entries are counted, not distinct
+ * addresses: the same address twice on one interface counts 2; the same
+ * address on two interfaces counts once on each.
+ */
+static int linklocal_count(int *most, struct sockaddr_in6 *ll)
+{
+    static char buf[8192];
+    struct ifconf ifc;
+    char *cp, *cq;
+    const char *lim;
+    int s, n = 0;
+
+    *most = 0;
+    s = socket(AF_INET6, SOCK_DGRAM, 0);
+    if (s < 0)
+        return -1;
+    ifc.ifc_len = sizeof(buf);
+    ifc.ifc_buf = buf;
+    if (IoctlSocket(s, SIOCGIFCONF, (char *)&ifc) != 0) {
+        CloseSocket(s);
+        return -1;
+    }
+    CloseSocket(s);
+    lim = buf + ifc.ifc_len;
+#define NEXT(c) next_ifreq(c)
+#define LL(r) ((r)->ifr_addr.sa_family == AF_INET6 && \
+    IN6_IS_ADDR_LINKLOCAL(&((struct sockaddr_in6 *)&(r)->ifr_addr)->sin6_addr))
+    for (cp = buf; cp < lim; cp = NEXT(cp)) {
+        struct ifreq *r = (struct ifreq *)cp;
+        int k = 0;
+
+        if (!LL(r))
+            continue;
+        for (cq = buf; cq < lim; cq = NEXT(cq)) {
+            struct ifreq *o = (struct ifreq *)cq;
+
+            if (LL(o) && strncmp(o->ifr_name, r->ifr_name, sizeof(o->ifr_name)) == 0)
+                k++;
+        }
+        if (k > *most)
+            *most = k;
+        if (k > 1)
+            printf("  %s: %d link-local entries\n", r->ifr_name, k);
+        if (strncmp(r->ifr_name, ifname, sizeof(r->ifr_name)) == 0) {
+            if (n == 0 && ll != NULL)
+                *ll = *(struct sockaddr_in6 *)&r->ifr_addr;
+            n++;
+        }
+    }
+#undef LL
+#undef NEXT
+    return n;
+}
+
+/* ifname taken down and brought up */
+static int down_up(void)
+{
+    struct ifreq ifr;
+    int s, r;
+
+    s = socket(AF_INET, SOCK_DGRAM, 0);
+    if (s < 0)
+        return -1;
+    bzero(&ifr, sizeof(ifr));
+    snprintf(ifr.ifr_name, sizeof(ifr.ifr_name), "%s", ifname);
+    r = IoctlSocket(s, SIOCGIFFLAGS, (char *)&ifr);
+    if (r == 0) {
+        ifr.ifr_flags &= ~IFF_UP;
+        r = IoctlSocket(s, SIOCSIFFLAGS, (char *)&ifr);
+    }
+    if (r == 0) {
+        ifr.ifr_flags |= IFF_UP;
+        r = IoctlSocket(s, SIOCSIFFLAGS, (char *)&ifr);
+    }
+    CloseSocket(s);
+    return r;
+}
+
+/* The interface has its link-local address once, and no interface more. */
+void testADDR6_ONE_LINKLOCAL(void)
+{
+    int most;
+    NEED_IF();
+    CU_ASSERT_EQUAL(linklocal_count(&most, NULL), 1);
+    CU_ASSERT(most <= 1);
+}
+
+/*
+ * Its link-local address removed, the interface taken down and brought up
+ * makes it again (in6_if_up(), when the device is back online), once.
+ */
+void testADDR6_ONE_LINKLOCAL_AFTER_UP(void)
+{
+    struct sockaddr_in6 ll;
+    struct in6_ifreq ifr;
+    int s, k, most;
+    NEED_IF();
+    CU_ASSERT_FATAL(linklocal_count(&most, &ll) >= 1);
+    s = socket(AF_INET6, SOCK_DGRAM, 0);
+    CU_ASSERT_FATAL(s >= 0);
+    for (k = 0; k < 4 && linklocal_count(&most, NULL) > 0; k++) {
+        bzero(&ifr, sizeof(ifr));
+        snprintf(ifr.ifr_name, sizeof(ifr.ifr_name), "%s", ifname);
+        ifr.ifr_ifru.ifru_addr = ll;
+        IoctlSocket(s, SIOCDIFADDR_IN6, (char *)&ifr);
+    }
+    CloseSocket(s);
+    CU_ASSERT_FATAL(linklocal_count(&most, NULL) == 0);
+    CU_ASSERT(down_up() == 0);
+    for (k = 0; k < 50 && linklocal_count(&most, NULL) == 0; k++)
+        Delay(10);                          /* the device back online */
+    CU_ASSERT_EQUAL(linklocal_count(&most, NULL), 1);
+    Delay(3 * 50);                          /* its DAD over */
+    CU_ASSERT_EQUAL(linklocal_count(&most, NULL), 1);
+}
+
+/* net.inet6.ip6.dad_count: read *val, and set *nval when given. */
+static int dadctl(LONG *val, LONG *nval)
+{
+    LONG mib[4] = { CTL_NET, PF_INET6, IPPROTO_IPV6, IPV6CTL_DAD_COUNT };
+    LONG len = sizeof(*val);
+
+    if (MiamiBase == NULL)
+        return -1;
+    return MiamiSysCtl(mib, 4, val, &len, nval, nval ? sizeof(*nval) : 0, 0);
+}
+
+/* The IN6_IFF_* flags of ll on ifname, or -1. */
+static int ll_flags(const struct sockaddr_in6 *ll)
+{
+    struct in6_ifreq ifr;
+    int s = socket(AF_INET6, SOCK_DGRAM, 0), r;
+
+    if (s < 0)
+        return -1;
+    bzero(&ifr, sizeof(ifr));
+    snprintf(ifr.ifr_name, sizeof(ifr.ifr_name), "%s", ifname);
+    ifr.ifr_ifru.ifru_addr = *ll;
+    r = IoctlSocket(s, SIOCGIFAFLAG_IN6, (char *)&ifr);
+    CloseSocket(s);
+    return r == 0 ? ifr.ifr_ifru.ifru_flags6 : -1;
+}
+
+/*
+ * Brought up again while its link-local address is tentative - as at boot,
+ * where it comes up for IPv4 and then for IPv6 - the interface keeps that
+ * one address. Taken down and up, it makes the address at once
+ * (SIOCSIFFLAGS, in6_if_up()); dad_count 10 holds it in DAD for about 11 s,
+ * the test takes the interface down and up a second time inside that, and
+ * watches it until its DAD is over.
+ */
+void testADDR6_ONE_LINKLOCAL_UP_WHILE_TENTATIVE(void)
+{
+    struct sockaddr_in6 ll;
+    struct in6_ifreq ifr;
+    LONG old = 1, ten = 10;
+    int s, k, most, worst = 0, f;
+
+    NEED_IF();
+    CU_ASSERT_FATAL(linklocal_count(&most, &ll) >= 1);
+    CU_ASSERT_EQUAL_FATAL(dadctl(&old, &ten), 0);
+    s = socket(AF_INET6, SOCK_DGRAM, 0);
+    for (k = 0; s >= 0 && k < 4 && linklocal_count(&most, NULL) > 0; k++) {
+        bzero(&ifr, sizeof(ifr));
+        snprintf(ifr.ifr_name, sizeof(ifr.ifr_name), "%s", ifname);
+        ifr.ifr_ifru.ifru_addr = ll;
+        IoctlSocket(s, SIOCDIFADDR_IN6, (char *)&ifr);
+    }
+    if (s >= 0)
+        CloseSocket(s);
+    CU_ASSERT_EQUAL(linklocal_count(&most, NULL), 0);
+    CU_ASSERT(down_up() == 0);
+    f = ll_flags(&ll);
+    CU_ASSERT(f >= 0 && (f & IN6_IFF_TENTATIVE));
+    CU_ASSERT(down_up() == 0);              /* inside its DAD */
+    /* every quarter second until its DAD is over (15 s at most) */
+    for (k = 0; k < 60; k++) {
+        int n = linklocal_count(&most, NULL);
+
+        if (n > worst)
+            worst = n;
+        f = ll_flags(&ll);
+        if (k > 0 && (f < 0 || !(f & IN6_IFF_TENTATIVE)))
+            break;
+        Delay(12);
+    }
+    printf("\n    DAD over after about %d ms; at most %d link-local entries\n", k * 250, worst);
+    CU_ASSERT(k >= 20);                     /* the window was dad_count 10's */
+    CU_ASSERT_EQUAL(worst, 1);
+    CU_ASSERT_EQUAL(dadctl(&ten, &old), 0);
+    CU_ASSERT_EQUAL(linklocal_count(&most, NULL), 1);
+}
+
 /* Deleting an address takes the route to its prefix with it. */
 void testADDR6_DELETE_REMOVES_PREFIX_ROUTE(void)
 {
@@ -251,7 +463,10 @@ int main(int argc, char **argv)
         printf("bsdsocket.library not available - skipping ADDR6 tests\n");
         return 0;
     }
+    MiamiBase = OpenLibrary("miami.library", 0);
     if (st_skip_program("cunit-net-addr6", ST_V6)) {
+        if (MiamiBase)
+            CloseLibrary(MiamiBase);
         CloseLibrary(SocketBase);
         return 0;
     }
@@ -268,18 +483,25 @@ int main(int argc, char **argv)
         CloseSocket(s);
 
     if (CU_initialize_registry() != CUE_SUCCESS) {
+        if (MiamiBase)
+            CloseLibrary(MiamiBase);
         CloseLibrary(SocketBase);
         return CU_get_error();
     }
     p = CU_add_suite("ADDR6_Suite", init_suite, clean_suite);
     if (p == NULL ||
+        !CU_add_test(p, "an interface has one link-local address", testADDR6_ONE_LINKLOCAL) ||
         !CU_add_test(p, "deleting an address removes its prefix route", testADDR6_DELETE_REMOVES_PREFIX_ROUTE) ||
         !CU_add_test(p, "deleting an address removes the routes cloned from it", testADDR6_DELETE_REMOVES_CLONED_ROUTES) ||
         !CU_add_test(p, "a new address goes through DAD", testADDR6_DAD) ||
         !CU_add_test(p, "deleting an address stops its DAD", testADDR6_DELETE_STOPS_DAD) ||
-        !CU_add_test(p, "adding an address solicits no routers", testADDR6_NO_ROUTER_SOLICITATION))
+        !CU_add_test(p, "adding an address solicits no routers", testADDR6_NO_ROUTER_SOLICITATION) ||
+        !CU_add_test(p, "taken down and up, an interface makes its link-local address again, once", testADDR6_ONE_LINKLOCAL_AFTER_UP) ||
+        !CU_add_test(p, "brought up while its link-local is tentative, an interface keeps one", testADDR6_ONE_LINKLOCAL_UP_WHILE_TENTATIVE))
     {
         CU_cleanup_registry();
+        if (MiamiBase)
+            CloseLibrary(MiamiBase);
         CloseLibrary(SocketBase);
         return CU_get_error();
     }
@@ -293,6 +515,8 @@ int main(int argc, char **argv)
     CU_cleanup_registry();
     if (bpf >= 0)
         bpf_close(bpf);
+    if (MiamiBase)
+        CloseLibrary(MiamiBase);
     CloseLibrary(SocketBase);
     return CU_get_error();
 }

@@ -8,6 +8,9 @@
     detection ends, after the flags have changed - so a program woken by it
     finds a new address no longer tentative, or a duplicated one
     IN6_IFF_DUPLICATED. An address no one has gives EADDRNOTAVAIL.
+    net.inet6.ip6.dad_count (RFC 4862 DupAddrDetectTransmits, 1; 0 to 10)
+    says how many probes DAD sends: 0 makes a new address usable at once,
+    more keep it tentative longer.
 
     The test adds addresses on the interface and deletes them again; the
     duplicate is made by a Neighbor Advertisement for the tentative address,
@@ -24,8 +27,11 @@
 #include <net/if.h>
 #include <netinet/in_var.h>
 #include <netinet/icmp6.h>
+#include <defines/miami.h>      /* MiamiSysCtl() alone: proto/miami.h and __CONFIG_ROADSHOW__ clash */
+#include <sys/sysctl.h>
 
 struct Library *SocketBase = NULL;
+struct Library *MiamiBase = NULL;
 
 static const char *ifname = "eth0";
 static unsigned ifindex;
@@ -147,6 +153,33 @@ static int wait_signal(int secs)
     return 0;
 }
 
+/*
+ * The address-change signal that ends a's DAD: one that comes with a no
+ * longer tentative, within secs. The signal is the same for every address
+ * change (just after boot others are still ending theirs: another
+ * interface's link-local, SLAAC); one that comes with a still tentative is
+ * not the end of a's DAD. Returns a's flags then, or -1.
+ */
+static int wait_dad_end(const struct in6_addr *a, int secs)
+{
+    int i;
+
+    for (i = 0; i < secs * 10; i++) {
+        if (SetSignal(0, sigmask) & sigmask) {
+            int f;
+
+            SetSignal(0, sigmask);
+            f = aflags(a);
+            if (f < 0 || !(f & IN6_IFF_TENTATIVE))
+                return f;
+            printf("\n    a signal %d ms in, the address still tentative: not its DAD's end",
+                i * 100);
+        }
+        Delay(5);
+    }
+    return -1;
+}
+
 /* A Neighbor Advertisement for target, from our link-local to itself:
  * someone else has the address. */
 static int send_na(const struct in6_addr *target)
@@ -202,8 +235,7 @@ void testADDRFLAGS6_DAD_PASSES(void)
     f = aflags(&a);
     CU_ASSERT(f >= 0 && (f & IN6_IFF_TENTATIVE));
     SetSignal(0, sigmask);              /* the one for adding it */
-    CU_ASSERT(wait_signal(5));
-    f = aflags(&a);
+    f = wait_dad_end(&a, 5);
     CU_ASSERT(f >= 0 && !(f & (IN6_IFF_TENTATIVE | IN6_IFF_DUPLICATED)));
     addr6(0, &a);
 }
@@ -219,10 +251,73 @@ void testADDRFLAGS6_DAD_DUPLICATE(void)
     CU_ASSERT_EQUAL_FATAL(addr6(1, &a), 0);
     SetSignal(0, sigmask);
     CU_ASSERT_EQUAL(send_na(&a), 0);
-    CU_ASSERT(wait_signal(5));
-    f = aflags(&a);
+    f = wait_dad_end(&a, 5);
     CU_ASSERT(f >= 0 && (f & IN6_IFF_DUPLICATED) && !(f & IN6_IFF_TENTATIVE));
     addr6(0, &a);
+}
+
+/* net.inet6.ip6.dad_count: read *val, and set *nval when given. */
+static int dadctl(LONG *val, LONG *nval)
+{
+    LONG mib[4] = { CTL_NET, PF_INET6, IPPROTO_IPV6, IPV6CTL_DAD_COUNT };
+    LONG len = sizeof(*val);
+
+    if (MiamiBase == NULL)
+        return -1;
+    return MiamiSysCtl(mib, 4, val, &len, nval, nval ? sizeof(*nval) : 0, 0);
+}
+
+/* dad_count is 1 (RFC 4862), and takes 0 to 10. */
+void testADDRFLAGS6_DAD_COUNT_LIMITS(void)
+{
+    LONG v = -1, big = 11, neg = -1;
+
+    CU_ASSERT_EQUAL_FATAL(dadctl(&v, NULL), 0);
+    CU_ASSERT_EQUAL(v, 1);
+    CU_ASSERT_NOT_EQUAL(dadctl(&v, &big), 0);
+    CU_ASSERT_NOT_EQUAL(dadctl(&v, &neg), 0);
+    CU_ASSERT_EQUAL(dadctl(&v, NULL), 0);
+    CU_ASSERT_EQUAL(v, 1);
+}
+
+/* dad_count 0: a new address is usable at once, and announced. */
+void testADDRFLAGS6_DAD_OFF(void)
+{
+    struct in6_addr a;
+    LONG old = 1, zero = 0;
+    int f;
+
+    NEED_IF();
+    CU_ASSERT_EQUAL_FATAL(dadctl(&old, &zero), 0);
+    inet_pton(AF_INET6, "2001:db8:4d54:c0::3", &a);
+    SetSignal(0, sigmask);
+    CU_ASSERT_EQUAL(addr6(1, &a), 0);
+    f = aflags(&a);
+    CU_ASSERT(f >= 0 && !(f & (IN6_IFF_TENTATIVE | IN6_IFF_DUPLICATED)));
+    CU_ASSERT(wait_signal(1));
+    addr6(0, &a);
+    CU_ASSERT_EQUAL(dadctl(&zero, &old), 0);
+}
+
+/* dad_count 3: tentative past the time one probe takes (about 2 s). */
+void testADDRFLAGS6_DAD_LONGER(void)
+{
+    struct in6_addr a;
+    LONG old = 1, three = 3;
+    int f;
+
+    NEED_IF();
+    CU_ASSERT_EQUAL_FATAL(dadctl(&old, &three), 0);
+    inet_pton(AF_INET6, "2001:db8:4d54:c0::4", &a);
+    CU_ASSERT_EQUAL(addr6(1, &a), 0);
+    SetSignal(0, sigmask);              /* the one for adding it */
+    Delay(125);                         /* 2.5 s */
+    f = aflags(&a);
+    CU_ASSERT(f >= 0 && (f & IN6_IFF_TENTATIVE));
+    f = wait_dad_end(&a, 4);
+    CU_ASSERT(f >= 0 && !(f & (IN6_IFF_TENTATIVE | IN6_IFF_DUPLICATED)));
+    addr6(0, &a);
+    CU_ASSERT_EQUAL(dadctl(&three, &old), 0);
 }
 
 /* An address no one has: EADDRNOTAVAIL. */
@@ -248,7 +343,10 @@ int main(int argc, char **argv)
         printf("bsdsocket.library 4 not available - skipping ADDRFLAGS6 tests\n");
         return 0;
     }
+    MiamiBase = OpenLibrary("miami.library", 0);
     if (st_skip_program("cunit-net-addrflags6", ST_V6)) {
+        if (MiamiBase)
+            CloseLibrary(MiamiBase);
         CloseLibrary(SocketBase);
         return 0;
     }
@@ -267,7 +365,10 @@ int main(int argc, char **argv)
         !CU_add_test(p, "the link-local is settled", testADDRFLAGS6_LINKLOCAL) ||
         !CU_add_test(p, "a new address: tentative, the signal, usable", testADDRFLAGS6_DAD_PASSES) ||
         !CU_add_test(p, "a duplicate: the signal, duplicated", testADDRFLAGS6_DAD_DUPLICATE) ||
-        !CU_add_test(p, "an address no one has: EADDRNOTAVAIL", testADDRFLAGS6_UNKNOWN))
+        !CU_add_test(p, "an address no one has: EADDRNOTAVAIL", testADDRFLAGS6_UNKNOWN) ||
+        !CU_add_test(p, "dad_count is 1, and 0 to 10", testADDRFLAGS6_DAD_COUNT_LIMITS) ||
+        !CU_add_test(p, "dad_count 0: usable at once", testADDRFLAGS6_DAD_OFF) ||
+        !CU_add_test(p, "dad_count 3: tentative longer", testADDRFLAGS6_DAD_LONGER))
     {
         CU_cleanup_registry();
         goto out;
@@ -285,6 +386,8 @@ out:
         SocketBaseTags(SBTM_SETVAL(SBTC_SIG_ADDRESS_CHANGE_MASK), 0, TAG_END);
         FreeSignal(sig);
     }
+    if (MiamiBase)
+        CloseLibrary(MiamiBase);
     CloseLibrary(SocketBase);
     return CU_get_error();
 }

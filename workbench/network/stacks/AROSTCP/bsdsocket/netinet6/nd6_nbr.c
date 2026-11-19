@@ -54,6 +54,13 @@
 static struct dadq *dadq_head = NULL;
 
 /*
+ * net.inet6.ip6.dad_count: the Neighbor Solicitations duplicate address
+ * detection sends for a new address (RFC 4862 DupAddrDetectTransmits, 1),
+ * taken when its DAD starts; 0 turns DAD off (FreeBSD, KAME).
+ */
+int ip6_dad_count = ND6_DAD_COUNT;
+
+/*
  * Duplicate address detection has ended for ia, passed or duplicated: say
  * so as when the address was added (RTM_NEWADDR, and the
  * SBTC_SIG_ADDRESS_CHANGE_MASK signal), as Linux does, so that a program
@@ -619,6 +626,19 @@ nd6_dad_start(struct in6_ifaddr *ia)
         }
     }
 
+    /*
+     * No DAD (dad_count 0): the address is ready at once, and ends its DAD
+     * as one that passed - announced, and the link-local followed by the
+     * interface's Router Solicitation.
+     */
+    if(ip6_dad_count == 0) {
+        ia->ia6_ifaflags &= ~IN6_IFF_TENTATIVE;
+        nd6_dad_announce(ia);
+        if(IN6_IS_ADDR_LINKLOCAL(&ia->ia_addr.sin6_addr))
+            nd6_rs_output(ifp);
+        return;
+    }
+
     /* allocate DAD queue entry */
     MALLOC(dp, struct dadq *, sizeof(*dp), M_PCB, M_NOWAIT);
     if(dp == NULL) {
@@ -631,6 +651,7 @@ nd6_dad_start(struct in6_ifaddr *ia)
     dp->ia  = ia;
     dp->ifp = ifp;
     dp->count = 0;
+    dp->dad_count = ip6_dad_count;
     dp->ns_icount = 0;
     dp->ns_ocount = 0;
 
@@ -721,7 +742,7 @@ nd6_dad_timer(void)
             continue;
         }
 
-        if(dp->count >= ND6_MAX_DAD_NS) {
+        if(dp->count >= dp->dad_count) {
             /* DAD complete — no duplicates detected */
             D(bug("[AROSTCP:ND6] %s: DAD complete for %s%d, sending RS\n",
                   __func__, dp->ifp->if_name, dp->ifp->if_unit));
