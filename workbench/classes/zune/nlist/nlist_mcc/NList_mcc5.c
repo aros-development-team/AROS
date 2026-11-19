@@ -913,6 +913,13 @@ void NL_DrawQuietBG(struct NLData *data,LONG dowhat,IPTR bg)
    (MyCallHookPkt(data->this,FALSE,data->NList_MultiTestHook,data->this,data->EntriesArray[ent]->Entry)))
 
 
+/* NL_Select
+ * Apply internal selection/active updates and emit SelectChange callbacks
+ * when values change. On paths consult MultiTestHook; Off paths bypass
+ * it. Multi marks the redraw-aware helper path, including programmatic
+ * selection, not necessarily a mouse gesture. Active updates bypass the
+ * TypeSelect guard used by line selection; default callback returns zero.
+ */
 void NL_Select(struct NLData *data,LONG dowhat,LONG ent,BYTE sel)
 {
 /* D(bug("%lx dowhat=%ld ent=%ld sel=%ld\n",obj,dowhat,ent,sel));*/

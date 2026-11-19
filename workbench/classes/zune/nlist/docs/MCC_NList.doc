@@ -202,22 +202,45 @@ NList.mcc/MUIM_NList_UseImage
 NList.mcc/MUIA_NList_Active
 
     NAME
-        MUIA_NList_Active -- [ISGN], LONG
+        MUIA_NList_Active -- Read or change the active display row.
 
-    SPECIAL INPUTS
-        MUIV_NList_Active_Off
-        MUIV_NList_Active_Top
-        MUIV_NList_Active_Bottom
-        MUIV_NList_Active_Up
-        MUIV_NList_Active_Down
-        MUIV_NList_Active_PageUp
-        MUIV_NList_Active_PageDown
+    INPUTS
+        Initialize/set/get/notify; LONG, default MUIV_NList_Active_Off (-1).
+        List_Active is a compatibility alias with the MUIA_ prefix.
+
+    VALUES
+        Zero-based display index, or MUIV_NList_Active_Off (-1), Top (-2),
+        Bottom (-3), Up (-4), Down (-5), PageUp (-6), PageDown (-7).
+        Abbreviated names use the MUIV_NList_Active_ prefix.
 
     FUNCTION
-        Same function as List.mui/MUIA_List_Active.
+        In ordinary input-enabled line mode, set the active row and bring it
+        into view. Top/Bottom select the first/last row; Up/Down move one
+        row. PageUp/PageDown first move to the visible edge and then move by
+        Visible minus one. Invalid numeric positions are ignored. Off clears
+        the active position; in single-selection mode it also deselects the
+        previous active row.
+
+        Active and selected are distinct in multiselect mode. Selection
+        changes follow the current list-selection preference and
+        MultiTestHook; activation does not prove that the row became
+        selected. Repeating the same active value normally does nothing.
+
+        In character mode or with Input FALSE, the implementation uses a
+        separate navigation position and does not establish a normal active
+        row. Some selectors differ: the attribute's Bottom path derives from
+        that stored position instead of the final row. Do not use these
+        modes to obtain ordinary activation semantics. Get reads the actual
+        Active field.
+
+        Constructor Active is applied only within the SourceInsert,
+        SourceString or SourceArray initialization branch. A later set
+        rewrites the tag to a resolved value or TAG_IGNORE; supply writable
+        tags.
 
     SEE ALSO
-        MUIA_NList_Entries, MUIA_NList_First, MUIA_NList_Visible
+        MUIM_NList_SetActive, MUIM_NList_Jump, MUIA_NList_TypeSelect
+
 NList.mcc/MUIA_NList_ActiveObjectOnClick
 
     NAME
@@ -332,19 +355,26 @@ NList.mcc/MUIM_NList_UseImage
 NList.mcc/MUIA_NList_AutoVisible
 
     NAME
-        MUIA_NList_AutoVisible -- [ISG], BOOL
+        MUIA_NList_AutoVisible -- Keep a valid active row visible during
+        list updates.
+
+    INPUTS
+        Initialize/set/get; BOOL, default FALSE. MUIA_List_AutoVisible is a
+        compatibility alias.
 
     FUNCTION
-        Same function as List.mui/MUIA_List_AutoVisible.
+        When an operation invokes the class active-visibility helper, TRUE
+        moves First only as needed to include a valid Active row. It does
+        not center the row. Setting this flag merely stores it; the setter
+        does not itself jump or redraw.
 
-        Seting this to TRUE, the NList object will automatically and
-        always jump to show the active entry.
+        Active and SetActive also have their own jump handling. FALSE does
+        not disable every scroll caused by activation. This is not a promise
+        to continuously enforce visibility after every external scroll.
 
-    DEFAULT
-        FALSE
+    SEE ALSO
+        MUIA_NList_Active, MUIM_NList_Jump, MUIM_NList_SetActive
 
-   SEE ALSO
-        MUIA_List_AutoVisible, MUIA_NList_Active
 NList.mcc/MUIA_NList_ButtonClick
 
     NAME
@@ -1037,22 +1067,32 @@ NList.mcc/MUIM_NList_UseImage
 NList.mcc/MUIA_NList_First
 
     NAME
-        MUIA_NList_First -- [ISGN], LONG
+        MUIA_NList_First -- Read or set the first visible display row.
 
-    SPECIAL INPUTS
-        MUIV_NList_First_Top
-        MUIV_NList_First_Bottom
-        MUIV_NList_First_Up
-        MUIV_NList_First_Down
-        MUIV_NList_First_PageUp
-        MUIV_NList_First_PageDown
+    INPUTS
+        Initialize/set/get/notify; LONG, initial value zero. MUIA_List_First
+        is an alias.
+
+    VALUES
+        Zero-based display index or MUIV_NList_First_Top (-2), Bottom (-3),
+        Up (-4), Down (-5), PageUp (-6), PageDown (-7), Up2 (-8), Down2
+        (-9), Up4 (-10), Down4 (-11).
 
     FUNCTION
-        Get the number of the first visible entry.
-        You can set it to change the first entry you want to be visible.
+        Scroll without changing Active. Bottom uses Entries minus Visible,
+        bounded at zero. Page steps use Visible minus one; Up/Down variants
+        step one, two or four rows. An explicit in-range index is accepted
+        without clamping to the last full page. Empty lists, invalid indices
+        and unchanged values do not scroll.
+
+        Constructor First is applied only in a source-data initialization
+        branch. Get returns the stored index even when the object is hidden;
+        it is not a visibility test. Set may rewrite the tag to the resolved
+        index or TAG_IGNORE. Use completed layout for meaningful page sizes.
 
     SEE ALSO
-        MUIA_NList_Visible, MUIA_NList_Entries, MUIA_NList_Active
+        MUIA_NList_Visible, MUIM_NList_Jump
+
 NList.mcc/MUIA_NList_ForcePen
 
     NAME
@@ -1283,19 +1323,35 @@ NList.mcc/MUIM_NList_UseImage
 NList.mcc/MUIA_NList_Horiz_First
 
     NAME
-        MUIA_NList_Horiz_First -- [.SGN], LONG
+        MUIA_NList_Horiz_First -- Read or set horizontal scroll offset.
+
+    INPUTS
+        Set/get/notify; LONG pixel offset, initially zero.
+
+    VALUES
+        Pixel position or MUIV_NList_Horiz_First_Start (-2), End (-3), Left
+        (-4), Right (-5), PageLeft (-6), PageRight (-7), Left2 (-8), Right2
+        (-9), Left4 (-10), Right4 (-11).
 
     FUNCTION
-        Used for NListview. You can make a notification on it
-        if you want to attach your own horizontal scrollbar :
+        Start requests zero; End uses content width minus visible width.
+        Left/Right use one font X-size step, with the numbered forms
+        multiplying that step. PageLeft/PageRight use half the visible
+        width. Accepted offsets are constrained against the content and
+        viewport widths.
 
-        DoMethod(NLobj, MUIM_Notify, MUIA_NList_Horiz_First,MUIV_EveryTime,
-          SBobj, 3, MUIM_NoNotifySet,MUIA_Prop_First,MUIV_TriggerValue);
-        DoMethod(SBobj, MUIM_Notify, MUIA_Prop_First,MUIV_EveryTime,
-          NLobj, 3, MUIM_NoNotifySet,MUIA_NList_Horiz_First,MUIV_TriggerValue);
+        Use valid laid-out font and width data. The implementation does not
+        consistently clamp the final subtraction to zero when content is
+        narrower than the viewport; do not assume every accepted value
+        remains nonnegative. Set can rewrite tags and request redraw.
+
+        For an external scrollbar, connect this attribute to Prop_First
+        using NoNotifySet in both directions. NListview already provides
+        this connection while its horizontal scrollbar is attached.
 
     SEE ALSO
-        MUIA_NList_Horiz_DeltaFactor, MUIA_NList_Horiz_Entries, MUIA_NList_Horiz_Visible
+        MUIA_NList_Horiz_Entries, MUIA_NList_Horiz_Visible
+
 NList.mcc/MUIA_NList_Horiz_Visible
 
     NAME
@@ -1353,16 +1409,26 @@ NList.mcc/MUIM_NList_UseImage
 NList.mcc/MUIA_NList_Input
 
     NAME
-        MUIA_NList_Input -- [ISG], BOOL
+        MUIA_NList_Input -- Enable ordinary interactive entry selection.
+
+    INPUTS
+        Initialize/set/get; BOOL, default TRUE. MUIA_Listview_Input is a
+        compatibility alias.
 
     FUNCTION
-        Same function as NListview.mcc/MUIA_Listview_Input.
+        A transition to FALSE clears Active and line-selection flags,
+        selects the read-list frame and requests redraw. A transition to
+        TRUE selects the input-list frame and requests redraw. This does not
+        alter payload ownership.
 
-    DEFAULT
-        TRUE
+        FALSE is not a universal interaction lock: navigation has a separate
+        read-only path, and character-range Select handling is chosen by
+        TypeSelect. Use the selection mode appropriate to the content. Get
+        returns the stored input flag.
 
     SEE ALSO
-        MUIA_NList_MultiSelect
+        MUIA_NList_TypeSelect, MUIA_NList_MultiSelect
+
 NList.mcc/MUIA_NList_InsertPosition
 
     NAME
@@ -1558,32 +1624,63 @@ NList.mcc/MUIM_NList_UseImage
 NList.mcc/MUIA_NList_MultiSelect
 
     NAME
-        MUIA_NList_MultiSelect -- (V7 ) [I..], LONG
+        MUIA_NList_MultiSelect -- Choose the line-selection policy.
 
-    SPECIAL INPUTS
-        MUIV_NList_MultiSelect_None
-        MUIV_NList_MultiSelect_Default
-        MUIV_NList_MultiSelect_Shifted
-        MUIV_NList_MultiSelect_Always
+    INPUTS
+        Initialize/set; LONG. Default MUIV_NList_MultiSelect_None (0). No
+        local getter.
+
+    VALUES
+        MUIV_NList_MultiSelect_None (0), Default (1), Shifted (2), Always
+        (3). Default resolves the preferences value during setup, or falls
+        back to Shifted. It is not permanently equivalent to Shifted.
 
     FUNCTION
-        Same function as Listview.mui/MUIA_Listview_MultiSelect.
+        None uses single-entry selection. Shifted enables qualifier-
+        controlled multiple selection; Always enables that path without the
+        qualifier. These modes apply to ordinary line selection, not the
+        character range.
 
-        < At the moment MultiSelect_Default is the same
-        as MultiSelect_Shifted >
+        The local setter implements changes despite the older documentation
+        marking this attribute as initialize-only. Setting None clears
+        Active and all line-selection flags. Enabling multiselection from
+        None may reapply the active row's selection. Setting Default before
+        setup falls back to Shifted; after setup it reads the configured low
+        three bits. Use the declared values.
+
+        MUIA_Listview_MultiSelect is a compatibility alias. Construction
+        prefers the NList tag when both exist.
 
     SEE ALSO
-        MUIA_NList_MultiTestHook
+        MUIA_NList_MultiTestHook, MUIM_NList_Select
+
 NList.mcc/MUIA_NList_MultiTestHook
 
     NAME
-        MUIA_NList_MultiTestHook -- [IS.], struct Hook *
+        MUIA_NList_MultiTestHook -- Decide whether a line-selection request
+        is accepted.
+
+    INPUTS
+        Initialize/set; borrowed struct Hook *, default NULL.
+        MUIA_List_MultiTestHook is a compatibility alias. No local getter.
 
     FUNCTION
-        Same function as List.mui/MUIA_List_MultiTestHook.
+        Selection-on helper paths call the hook with the NList object as
+        hook object and the stored row payload as message. Nonzero accepts
+        selection; zero rejects it. The helper does not supply a missing
+        h_Data value. Keep the hook, code and referenced state valid while
+        installed.
+
+        Deselect and active-position updates bypass this test; character
+        selection uses a separate path. It is not a general permission check
+        for all list operations. A Select output state or attempted count
+        may reflect the request even when this hook rejects it; query actual
+        state afterward when needed. Construction prefers the NList tag over
+        the legacy alias.
 
     SEE ALSO
-        MUIA_NList_ConstructHook, MUIA_NList_DestructHook
+        MUIM_NList_Select, MUIM_NList_SelectChange
+
 NList.mcc/MUIA_NList_Pool
 
     NAME
@@ -1710,20 +1807,26 @@ NList.mcc/MUIM_NList_UseImage
 NList.mcc/MUIA_NList_SelectChange
 
     NAME
-        MUIA_NList_SelectChange -- [...N], BOOL
+        MUIA_NList_SelectChange -- Receive a selection-change notification.
+
+    INPUTS
+        Notification trigger; BOOL. The local getter returns TRUE, not a
+        stored selection state.
 
     FUNCTION
-        Same function as Listview.mui/MUIA_Listview_SelectChange.
+        NList emits TRUE when pending line-selection changes are delivered.
+        Notifications can be coalesced by the class notification machinery;
+        one notification does not identify one particular row. Use Select or
+        NextSelected to inspect state.
 
-        A set(NLobj,MUIA_NList_SelectChange,TRUE) is made by NList
-        whenever the selection state of one or more items in the
-        list is changing.
-
-    DEFAULT
-        FALSE
+        Setting the attribute yourself does not select entries. Character
+        selection does not use all the same line-selection helper paths. For
+        subclass callbacks with row and state arguments, use
+        MUIM_NList_SelectChange; its default handler returns zero.
 
     SEE ALSO
-        MUIA_NList_MultiSelect
+        MUIM_NList_SelectChange, MUIM_NList_Select, MUIM_NList_NextSelected
+
 NList.mcc/MUIA_NList_ShowDropMarks
 
     NAME
@@ -1982,36 +2085,49 @@ NList.mcc/MUIM_NList_UseImage
 NList.mcc/MUIA_NList_TypeSelect
 
     NAME
-        MUIA_NList_TypeSelect -- [IS.], LONG
+        MUIA_NList_TypeSelect -- Choose line or character-range selection.
 
-    SPECIAL INPUTS
-        MUIV_NList_TypeSelect_Line
-        MUIV_NList_TypeSelect_Char
+    INPUTS
+        Initialize/set; LONG. MUIV_NList_TypeSelect_Line (0, default) or
+        Char (1). No local getter.
 
     FUNCTION
-        Setting this tag you can choose between the classic
-        list selection by line, or using a char precision
-        selection.
+        Line mode uses per-row selection flags and an active entry. Char
+        mode uses text-range endpoints and supports partial displayed text,
+        including wrapped rows. It does not establish ordinary Active
+        semantics.
 
-        This should be used only for textviewer like stuff,
-        and never for standard lists.
-        Anyway its the only way to make direct copytoclip
-        of a part of a line...
-
-        Default is MUIV_NList_TypeSelect_Line of course.
+        Changing the mode clears Active and attempts to reset both selection
+        representations. The line-clearing calls pass FALSE as the exception
+        index, so row zero is skipped; do not assume every old line flag is
+        cleared. Character reset is also suppressed while scrollbar updates
+        are in progress. Use the public modes; internal selection variants
+        are not additional declared inputs.
 
     SEE ALSO
-        MUIM_NList_Select, MUIM_List_Select
+        MUIM_NList_Select, MUIM_NList_GetSelectInfo, MUIM_NList_NextSelected
+
 NList.mcc/MUIA_NList_Visible
 
     NAME
-        MUIA_NList_Visible -- [..G], LONG
+        MUIA_NList_Visible -- Read the current visible-row count.
+
+    INPUTS
+        Get; LONG. MUIA_List_Visible is an alias.
 
     FUNCTION
-        Same function as List.mui/MUIA_List_Visible.
+        Return the stored visible-row count while SHOW is true; return -1
+        while hidden. The count describes display rows, including wrapping,
+        and is not the total entry count. Use it after layout. It is an
+        internal geometry value, not an application-settable count.
+
+        The local setter consumes this own tag and suppresses some
+        subsequent work in that tag list; do not set it as a way to resize
+        or scroll the list.
 
     SEE ALSO
-        MUIA_NList_First, MUIA_NList_Entries, MUIA_NList_Active
+        MUIA_NList_First, MUIA_NList_Entries
+
 NList.mcc/MUIA_NList_XXXBackground
 
     NAME
@@ -2902,61 +3018,77 @@ NList.mcc/MUIM_NList_UseImage
 NList.mcc/MUIM_NList_GetPos
 
     NAME
-        MUIM_NList_GetPos --
+        MUIM_NList_GetPos -- Find the next stored payload pointer match.
 
     SYNOPSIS
-        DoMethod(obj,MUIM_NList_GetPos,APTR entry,LONG *pos);
-
-    FUNCTION
-        Give the (next) entry number which have the given entry number.
-        It's the entry ptr which is stored in the list, ie the one returned
-        by the ConstructHook if any.
+        DoMethod(obj, MUIM_NList_GetPos, entry, &pos);
 
     INPUTS
-        entry - Entry ptr of the entry you want to get the pos.
+        entry -- Borrowed stored payload pointer. pos -- Writable LONG
+        cursor, initialized to MUIV_NList_GetPos_Start (-1) or a valid
+        previous result.
 
-        pos - a pointer to longword that will hold the next entry number
-              of the given entry ptr. Must be set to MUIV_NList_GetPos_Start
-              if you want to search from the beginning of the list.
-              Is set to MUIV_NList_GetPos_End no more is found.
+    FUNCTION
+        Search after pos for pointer identity, not content equality. Use the
+        pointer retained by Construct. NULL is not found. The scan inspects
+        stored display records without normalizing wrapped continuations to
+        their owner. No payload is copied or owned by this call.
 
+        The implementation also recognizes entry pointer -2 as an internal
+        last-inserted query; it can return TRUE with position -1 in an empty
+        list. This is not a declared public selector. Application code
+        should use ordinary payload pointers and the public cursor
+        constants.
+
+    RESULT
+        TRUE and the matching index, or FALSE and MUIV_NList_GetPos_End
+        (-1). Stop at End; another call using -1 restarts the search.
+
+    SEE ALSO
+        MUIM_NList_GetEntry, MUIM_NList_SetActive
 
 NList.mcc/MUIM_NList_GetSelectInfo
 
     NAME
-        MUIM_NList_GetSelectInfo --
+        MUIM_NList_GetSelectInfo -- Read selection-range fields.
 
     SYNOPSIS
-        DoMethod(obj,MUIM_NList_GetSelectInfo,struct MUI_NList_GetSelectInfo *res);
-
-    FUNCTION
-        You get usefull informations about selected entries state.
+        DoMethod(obj, MUIM_NList_GetSelectInfo, &res);
 
     INPUTS
-        res - pointer to a MUI_NList_GetSelectInfo struct :
-            LONG start        num of first selected *REAL* entry/line (first of wrapped from which start is issued)
-            LONG end          num of last selected *REAL* entry/line (first of wrapped from which start is issued)
-            LONG num          not used
-            LONG start_column column of start of selection in 'start' entry
-            LONG end_column   column of end of selection in 'end' entry
-            LONG start_pos    char pos of start of selection in 'start_column' entry
-            LONG end_pos      char pos of end of selection in 'end_column' entry
-            LONG vstart       num of first visually selected entry (ie can be the 2nd or 3rd line of a word wrap entry)
-            LONG vend         num of last visually selected entry (ie can be the 2nd or 3rd line of a word wrap entry)
-            LONG vnum         number of visually selected entries
+        res -- Valid writable struct MUI_NList_GetSelectInfo; NULL is not
+        accepted.
 
-    NOTE
-        If no entry is selected, then start, end, vstart, vend are -1, vnum is 0.
+    FUNCTION
+        The structure contains start/end logical-owner row positions,
+        vstart/vend display-row positions, vnum, num,
+        start_column/end_column and start_pos/end_pos. num is unused and is
+        always set to -1. Logical-owner adjustment maps wrapped continuation
+        indices back to their first row; it is not conversion to a dense
+        logical-entry ordinal.
 
-        When start_column, end_column, start_pos, end_pos are -1 then the whole line/entry/column
-        is selected.
+        In line mode, vnum counts selected display records and end tracks
+        the last selected row. However, start is initialized to 1 and the
+        scan tests for -1 before assigning it, so the first-selected
+        position is not captured. vstart inherits 1; start may then be
+        adjusted if row 1 is a continuation. With no selection, end and vend
+        also remain 1, while vnum is zero. The previous guarantee of -1
+        bounds for no selection is not implemented.
 
-        start_column, end_columb, start_pos and end_pos have the same meaning than
-        parameters passed to the MUIA_NList_CopyEntryToClipHook.
+        In character mode, endpoints and column/character positions are
+        copied from the selection state. vnum includes both endpoint rows
+        when their indices are ordered; it does not subtract a boundary-only
+        final row. Invalid endpoints are not fully normalized. Use
+        NextSelected for row traversal and inspect these limitations before
+        relying on bounds.
 
-        remember than in case of automatically added word wrapped entries, only
-        the concerned column have any contents. You get that case for 'vstart'
-        when 'start' is different, and for 'end' when 'vend' is different.
+    RESULT
+        Always TRUE. It does not validate the selection or guarantee correct
+        normalized bounds.
+
+    SEE ALSO
+        MUIM_NList_NextSelected, MUIM_NList_Select
+
 NList.mcc/MUIM_NList_Insert
 
     NAME
@@ -3111,23 +3243,33 @@ NList.mcc/MUIM_NList_UseImage
 NList.mcc/MUIM_NList_Jump
 
     NAME
-        MUIM_NList_Jump --
+        MUIM_NList_Jump -- Request that a display row be visible.
 
     SYNOPSIS
-        DoMethod(obj,MUIM_NList_Jump,LONG pos);
-
-    FUNCTION
-        Same function as List.mui/MUIM_List_Jump.
+        DoMethod(obj, MUIM_NList_Jump, pos);
 
     INPUTS
-        pos - Number of the entry that should be made visible.
-              Use MUIV_NList_Jump_Active to jump to the active
-              entry. And use MUIV_NList_Jump_Active_Center to
-              make the active entry visible centered in the
-              listview.
+        pos -- Display-row index or MUIV_NList_Jump_Top (0), Active (-1),
+        Bottom (-2), Down (-3), Up (-4), Active_Center (-5).
+
+    FUNCTION
+        Ordinary requests change First only when a valid row lies outside
+        the visible range. Up targets First minus one; Down targets First
+        plus Visible. They do not change Active or select entries. Use valid
+        completed layout; the calculation uses the stored visible-row count.
+
+        Active_Center assigns a first-row position around Active,
+        constrained at the list edges. This branch does not require a valid
+        active row and reports work even if First remains unchanged. Invalid
+        ordinary requests do nothing.
+
+    RESULT
+        Always TRUE from the method wrapper, including invalid or already-
+        visible requests. It does not prove that scrolling occurred.
 
     SEE ALSO
-        MUIA_NList_Active, MUIA_NList_First
+        MUIA_NList_First, MUIA_NList_Visible, MUIM_NList_SetActive
+
 NList.mcc/MUIM_NList_Move
 
     NAME
@@ -3174,87 +3316,128 @@ NList.mcc/MUIM_NList_UseImage
 NList.mcc/MUIM_NList_NextSelected
 
     NAME
-        MUIM_NList_NextSelected --
+        MUIM_NList_NextSelected -- Iterate forward through selected display
+        rows.
 
     SYNOPSIS
-        DoMethod(obj,MUIM_NList_NextSelected,LONG *pos);
-
-    FUNCTION
-        Same function as List.mui/MUIM_List_NextSelected.
-
-        In TypeSelect_Char mode you'll get all entries of the selected
-        area, even the first and last which can be very partially selected.
+        DoMethod(obj, MUIM_NList_NextSelected, &pos);
 
     INPUTS
-        pos - a pointer to longword that will hold the number
-              of the returned entry. Must be set to
-              MUIV_NList_NextSelected_Start at start of iteration.
-              Is set to MUIV_NList_NextSelected_End when iteration
-              is finished.
+        pos -- Writable LONG cursor. Initialize with
+        MUIV_NList_NextSelected_Start (-1). End is also -1.
+
+    FUNCTION
+        Advance after the previous row, scanning line-selection flags or the
+        character-selection range. Negative input restarts at the beginning.
+        Character-range traversal excludes an end row when the endpoint is
+        exactly its beginning.
+
+        Each returned index is a display row; wrapped rows can share a
+        logical payload. Stop when pos equals End. Calling again with End
+        restarts traversal. Do not mutate the list while retaining
+        positional iteration state.
+
+    RESULT
+        Always TRUE. Read pos to detect exhaustion; it is not a BOOL has-
+        next result.
 
     SEE ALSO
-        MUIM_NList_Select, MUIM_NList_PrevSelected
+        MUIM_NList_Select, MUIM_NList_GetEntry, MUIM_NList_PrevSelected
+
 NList.mcc/MUIM_NList_PrevSelected
 
     NAME
-        MUIM_NList_PrevSelected --
+        MUIM_NList_PrevSelected -- Iterate backward through selected display
+        rows.
 
     SYNOPSIS
-        DoMethod(obj,MUIM_NList_PrevSelected,LONG *pos);
-
-    FUNCTION
-        Work like MUIM_NList_NextSelected but give previous selected entry.
-
-        In TypeSelect_Char mode you'll get all entries of the selected
-        area, even the first and last which can be very partially selected.
+        DoMethod(obj, MUIM_NList_PrevSelected, &pos);
 
     INPUTS
-        pos - a pointer to longword that will hold the number
-              of the returned entry. Must be set to
-              MUIV_NList_PrevSelected_Start at start of iteration.
-              Is set to MUIV_NList_PrevSelected_End when iteration
-              is finished.
+        pos -- Writable LONG cursor. Initialize with
+        MUIV_NList_PrevSelected_Start (-1). End is also -1.
+
+    FUNCTION
+        Scan backward before the previous row. Negative or out-of-range
+        input starts at the last row. In line mode, the scan stops at row
+        zero without testing whether it is selected: zero can be a false
+        match. Use forward iteration or verify that row with Select_Ask when
+        accurate membership is required.
+
+        In character mode, clamping from above the range can return the end
+        row even when the endpoint is at that row's beginning. The reverse
+        and forward paths do not normalize that boundary identically.
+
+        Each returned index is a display row; wrapped rows can share a
+        logical payload. Stop when pos equals End. Calling again with End
+        restarts traversal. Do not mutate the list while retaining
+        positional iteration state.
+
+    RESULT
+        Always TRUE. Read pos to detect exhaustion; it is not a BOOL has-
+        next result.
 
     SEE ALSO
-        MUIM_NList_Select, MUIM_NList_NextSelected
+        MUIM_NList_Select, MUIM_NList_GetEntry, MUIM_NList_NextSelected
+
 NList.mcc/MUIM_NList_Redraw
 
     NAME
-        MUIM_NList_Redraw --
+        MUIM_NList_Redraw -- Invalidate display data and request redraw.
 
     SYNOPSIS
-        DoMethod(obj,MUIM_NList_Redraw,LONG pos);
-
-    FUNCTION
-        Same function as List.mui/MUIM_List_Redraw.
-        Redraw some entry or all.
+        DoMethod(obj, MUIM_NList_Redraw, pos);
 
     INPUTS
-        pos - Number of the line to redraw. When the line is not
-              currently visible, nothing will happen. Specials:
-              MUIV_NList_Redraw_Active   redraw the active line (if any),
-              MUIV_NList_Redraw_All      redraw all lines.
-              MUIV_NList_Redraw_Title    redraw the title.
+        pos -- Display-row index or MUIV_NList_Redraw_Active (-1), All (-2),
+        Title (-3), Selected (-4), VisibleCols (-5).
+
+    FUNCTION
+        Clear display/parse caches and process the requested scope. All
+        requests parsing, column, scrollbar and wrapping updates as well as
+        redraw; Title updates title state. Selected uses line flags or the
+        character-range bounds. Some per-row/column processing occurs only
+        while drawing is enabled. Invalid row indices perform no row redraw.
+
+        Nested drawing can queue the operation on the application.
+        Completion is therefore not synchronous. MUIM_List_Redraw shares the
+        handler, but its All request is rewritten to an internal deferred
+        path; that message must be writable. Use the NList method for its
+        documented scope.
+
+    RESULT
+        Always TRUE, including no-op or deferred requests. It is not proof
+        that pixels were drawn.
 
     SEE ALSO
         MUIM_NList_RedrawEntry
+
 NList.mcc/MUIM_NList_RedrawEntry
 
     NAME
-        MUIM_NList_RedrawEntry --
+        MUIM_NList_RedrawEntry -- Request redraw for matching stored payload
+        pointers.
 
     SYNOPSIS
-        DoMethod(obj,MUIM_NList_RedrawEntry,APTR entry);
-
-    FUNCTION
-        Redraw some entry, like MUIM_NList_Redraw, but using the entry
-        pointer instead of the entry number.
+        DoMethod(obj, MUIM_NList_RedrawEntry, entry);
 
     INPUTS
-        entry - Entry ptr of the entry (entries) you want to be redraw.
+        entry -- Non-NULL borrowed stored payload pointer.
+
+    FUNCTION
+        Scan all display records for pointer identity, invalidate pixel
+        lengths for matches and request redraw. Multiple records with the
+        same pointer are all considered. The method does not copy, replace
+        or destroy payloads, and does not normalize each wrapped row to an
+        owner before comparison.
+
+    RESULT
+        TRUE if a record matched; FALSE for NULL or no match. TRUE does not
+        prove immediate rendering.
 
     SEE ALSO
-        MUIM_NList_Redraw
+        MUIM_NList_Redraw, MUIM_NList_GetPos
+
 NList.mcc/MUIM_NList_Remove
 
     NAME
@@ -3333,108 +3516,117 @@ NList.mcc/MUIM_NList_UseImage
 NList.mcc/MUIM_NList_Select
 
     NAME
-        MUIM_NList_Select --
+        MUIM_NList_Select -- Change or query selection.
 
     SYNOPSIS
-        DoMethod(obj,MUIM_NList_Select,LONG pos, LONG seltype, LONG *state);
-
-    FUNCTION
-        Same function as List.mui/MUIM_List_Select when in TypeSelect_Line mode.
-
-        In TypeSelect_Char mode, MUIV_NList_Select_Off will clear the selected
-        area (don't look what is pos). MUIV_NList_Select_On will select the
-        pos entry only (can be MUIV_NList_Select_Active or MUIV_NList_Select_All).
-        MUIV_NList_Select_Ask will give the number off entry in the selected area.
+        DoMethod(obj, MUIM_NList_Select, pos, seltype, state);
 
     INPUTS
+        pos -- Display-row index, MUIV_NList_Select_Active (-1), or All
+        (-2). seltype -- MUIV_NList_Select_Off (0), On (1), Toggle (2), Ask
+        (3). state -- Optional writable LONG pointer; initialize it before
+        calling.
 
-        pos     - Number of the entry or
-                  MUIV_NList_Select_Active  for the active entry.
-                  MUIV_NList_Select_All     for all entries.
+    FUNCTION
+        In line mode, On/Off/Toggle require effective multiselection; Ask
+        can query one row without it. All with multiselection returns a
+        count rather than one row's state. Under the list-selection
+        preference, All/Off or All/Toggle can retain the active row. With
+        Input FALSE the helper returns TRUE without updating state. Invalid
+        single targets return FALSE. MultiTestHook can reject On while the
+        output still reports the requested state or attempted count; Ask
+        reads the stored flags.
 
-        seltype - MUIV_NList_Select_Off     unselect entry.
-                  MUIV_NList_Select_On      select entry.
-                  MUIV_NList_Select_Toggle  toggle entry.
-                  MUIV_NList_Select_Ask     just ask about the state.
+        In character mode, Off clears the whole range regardless of pos. On
+        selects whole display rows: All selects the entire list, otherwise
+        the resolved position is clamped to the list. Ask writes the
+        covered-row span and ignores pos. Toggle has no implementation but
+        returns TRUE. Only Ask writes state in this mode. The endpoint
+        calculation is not a reliable empty-selection test for uninitialized
+        or invalidated ranges.
 
-        state   - Pointer to a longword. If not NULL, this will
-                  be filled with the current selection state.
+    RESULT
+        Path-specific BOOL. TRUE does not guarantee a change or a written
+        state value. Line Ask returns On/Off through state for one row; All
+        returns a count when supported. Character Ask returns a span count.
 
     SEE ALSO
-        MUIA_NList_TypeSelect, MUIA_NList_MultiTestHook
+        MUIA_NList_TypeSelect, MUIA_NList_MultiTestHook,
+        MUIM_NList_NextSelected
+
 NList.mcc/MUIM_NList_SelectChange
 
     NAME
-        MUIM_NList_SelectChange -- Called on every selection change (V19.98)
+        MUIM_NList_SelectChange -- Handle an internal selection or active-
+        position callback.
 
     SYNOPSIS
-        DoMethod(obj,MUIM_NList_SelectChange,LONG pos, LONG state, ULONG flags);
-
-    FUNCTION
-        This method cannot/should not be called. It's purpose is only to indicate
-        selection state changes of entries in a more powerfull form than
-        MUIA_NList_SelectChange does.
-        It is only called when you are in line mode ie. MUIA_NList_TypeSelect is
-        set to MUIV_NList_TypeSelect_Line, which is the default.
-
-        pos     - The position of the (un)selected entry. Can be
-                  MUIV_NList_Active_Off or something.
-        state   - The resulting state of the entry which can be MUIV_NList_Select_On,
-                  MUIV_NList_Select_Off or MUIV_NList_Select_Active.
-        flags   - Can be MUIV_NList_SelectChange_Flag_Multi for now which means
-                  that the entry was selected while holding down the mouse button.
+        Subclass handler: struct MUIP_NList_SelectChange *msg;
 
     INPUTS
+        pos -- Affected display row, or Active_Off for a cleared active
+        position. state -- Select_On, Select_Off or Select_Active, with the
+        MUIV_NList_ prefix. flags -- May include
+        MUIV_NList_SelectChange_Flag_Multi.
+
+    FUNCTION
+        Override this callback in an NList subclass to observe the changes
+        emitted by internal selection helpers. Do not call it to change
+        selection; the default dispatcher performs no action.
+
+        The Multi bit identifies the helper path that also marks changed
+        rows. Programmatic Select calls use that path too, so this bit does
+        not prove the mouse button was held. On/Off callbacks arise from
+        line-selection helpers; active-position callbacks have no TypeSelect
+        guard and can occur while selection mode changes. It is not
+        exclusively a line-mode callback in every case.
+
+    RESULT
+        Zero from the default dispatcher. Selection helpers ignore the
+        callback result.
 
     SEE ALSO
-        MUIA_NList_SelectChange, MUIA_NList_TypeSelect, MUIM_NList_Select
+        MUIA_NList_SelectChange, MUIM_NList_Select
+
 NList.mcc/MUIM_NList_SetActive
 
     NAME
-        MUIM_NList_SetActive -- make a specific entry the active one (v20.125)
+        MUIM_NList_SetActive -- Set an active row by index or payload
+        pointer.
 
     SYNOPSIS
-        DoMethod(obj, MUIM_NList_SetActive, LONG pos, ULONG flags);
-
-    FUNCTION
-        This method is a replacement function for the old-style way of making an
-        entry active via a simple set(obj, MUIA_NList_Active, pos) call. While the
-        old method still works, this new function has the advantage that it allows
-        to set an entry active together with making it immediately visible in the
-        listview.
-        Previously, a developer had to do a combination of a set() call to set
-        MUIA_NList_Active and then immediately perform a MUIM_NList_Jump function
-        call so that the entry becomes visible at the specific position. With this
-        new function both operations are combined, potentially allowing future
-        enhancements to be added via the additional 'flags' variable.
+        DoMethod(obj, MUIM_NList_SetActive, pos, flags);
 
     INPUTS
-        The parameter description is as followed:
+        pos -- SIPTR index/Active selector, or payload pointer when Entry is
+        set. flags -- ULONG, zero or a combination of
+        MUIV_NList_SetActive_Entry (1) and Jump_Center (2).
 
-        pos     - The position (int) of the entry which should be made the new
-                  active entry. This can also be MUIV_NList_Active_XXXX values as
-                  explained in the MUIA_NList_Active documentation. Furthermore,
-                  pos might also be perfectly a pointer to the entry directly in
-                  case you have specified the correct flag.
+    FUNCTION
+        Entry searches for the first stored pointer identical to pos. It
+        does not compare content or the original input pointer when
+        Construct returned a different payload. A failed lookup becomes
+        Active_Off; it can clear the current active entry.
 
-        flags   - Can be a combination of the following flags:
+        In ordinary line mode, activation also brings the row into view.
+        Jump_Center requests centering when activation proceeds. Repeating
+        the current active row normally skips the entire update, including
+        centering; use Jump_Active_Center for an independent centering
+        request.
 
-                  MUIV_NList_SetActive_Entry:
+        In character mode or with Input FALSE, the separate navigation path
+        does not establish a normal active row. Negative selectors passed
+        through this method can be interpreted as First selectors. Do not
+        assume equivalence with the attribute setter in these modes.
 
-                    the parameter 'pos' will be a pointer to the entry rather
-                    than the position (int) of the entry to be made active. If
-                    this flag is set NList will perform an internal GetPos()
-                    operation to first obtain the position and then set
-                    this entry active.
-
-                  MUIV_NList_SetActive_Jump_Center:
-
-                    Together with making the specified entry the new active one
-                    the listview will also be scrolled so that the new entry
-                    will be shown centered instead of having it simply visible.
+    RESULT
+        The activation helper result. TRUE can mean clearing Active or
+        navigation work, not necessarily selecting the requested payload;
+        FALSE can mean the same row was already active.
 
     SEE ALSO
-        MUIA_NList_Active, MUIM_NList_Jump
+        MUIA_NList_Active, MUIM_NList_GetPos, MUIM_NList_Jump
+
 NList.mcc/MUIM_NList_SetColumnCol
 
     NAME
@@ -3560,38 +3752,45 @@ NList.mcc/MUIM_NList_UseImage
 NList.mcc/MUIM_NList_TestPos
 
     NAME
-        MUIM_NList_TestPos --
+        MUIM_NList_TestPos -- Hit-test displayed list geometry.
 
     SYNOPSIS
-        DoMethod(obj,MUIM_NList_TestPos,LONG x, LONG y, struct MUI_NList_TestPos_Result *res);
+        DoMethod(obj, MUIM_NList_TestPos, x, y, &res);
+
+    INPUTS
+        x, y -- Window-relative coordinates for a laid-out, displayed list.
+        Both MUI_MAXMAX use the stored last click; x=MUI_MAXMAX and y=0 use
+        the stored mouse position. res -- Initialized struct
+        MUI_NList_TestPos_Result.
 
     FUNCTION
-        Find out which informations of a list which is currently
-        displayed at a certain position.
+        Return a display-row index, visible-column index, region flags and
+        offsets. entry is -1 without a valid row; column may identify a
+        title column even then. Flags describe ABOVE, BELOW, LEFT, RIGHT,
+        BAR, TITLE and ONTOP regions. xoffset is relative to the column;
+        yoffset is relative to the row center. Character fields refer to
+        parsed display text, including preparse text, not necessarily raw
+        payload bytes.
 
-        You must give a pointer to a valid MUI_NList_TestPos_Result struct.
+        Preset char_number to -2 to skip character lookup. The later
+        preparse adjustment can change this sentinel and preparse even when
+        lookup was skipped; do not rely on the old promise that -2 survives.
+        Set it again before each skipped lookup and ignore the
+        character/preparse outputs from that call.
 
-        Set x AND y to MUI_MAXMAX to get infos about the last click position !
+        Require valid layout and a nonzero line height; this method does not
+        validate setup. MUIM_List_TestPos instead requires the smaller
+        MUI_List_TestPos_Result and uses a separate handler without these
+        stored-coordinate shortcuts.
 
-        See NList_mcc.h to know what values will be set in the struct.
+    RESULT
+        TRUE for non-NULL output, including positions outside entries. FALSE
+        for NULL output. Inspect entry, column and flags to determine the
+        hit.
 
-        Preset char_number to -2 in the struct to not get char_number and char_xoffset
-        informations. It's usefull if you don't need them because it will be
-        faster for the method without finding them. the -2 value will stay valid
-        for next call.
+    SEE ALSO
+        MUIM_NList_GetEntry, MUIM_NList_GetEntryInfo
 
-        You'll get char number from what you return from the DisplayHook if there is
-        one, else from the beginning of the string/entry ptr.
-
-        Be aware: if you use MUIM_List_TestPos you have to give a pointer to a
-        struct MUI_List_TestPos_Result, and you'll get same infos as using a List object.
-        It wasn't done as is before, makeing enforcer hits when trying to use NList
-        or NFloattext with a Listview instead of a NListview (avoid it please, it's not
-        done for it as Listview try to make many things itself, with possible conficts),
-        because struct MUI_NList_TestPos_Result is bigger !!!
-
-    NOTE
-        column in the struct MUI_NList_TestPos_Result is the visible column number !
 NList.mcc/MUIM_NList_UseImage
 
     NAME

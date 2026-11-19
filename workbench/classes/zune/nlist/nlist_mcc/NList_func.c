@@ -34,8 +34,12 @@
 static BOOL NL_List_Jump(struct NLData *data, LONG pos);
 static BOOL NL_List_GetPos(struct NLData *data, APTR entry, LONG *pos);
 
-/* Extent the selection between ent1 and ent2.
-   Make the first_change and last_change optimal for redrawing optimiztion */
+/* Track the visible portion of the changed entry range. */
+/* NL_SegChanged
+ * Expand the pending redraw interval for the supplied entry range,
+ * clipped to the current visible interval. This changes redraw
+ * bookkeeping, not selection state. Requires valid list geometry.
+ */
 void NL_SegChanged(struct NLData *data,LONG ent1,LONG ent2)
 {
 // D(bug("ent1=%ld ent2=%ld\n",ent1,ent2));
@@ -67,7 +71,12 @@ void NL_SegChanged(struct NLData *data,LONG ent1,LONG ent2)
 // D(bug("NL_SegChanged: first_change=%ld last_change=%ld\n",data->first_change,data->last_change));
 }
 
-/* Extent the selection by this entry optimal */
+/* Track a changed visible entry. */
+/* NL_Changed
+ * Include one visible entry in pending redraw bookkeeping. Does not
+ * select the entry or draw immediately; out-of-view indices do not extend
+ * the interval.
+ */
 void NL_Changed(struct NLData *data,LONG ent)
 {
 // D(bug("ent=%ld\n",ent));
@@ -86,6 +95,11 @@ void NL_Changed(struct NLData *data,LONG ent)
 }
 
 
+/* NL_UnSelectAll
+ * Clear line-selection flags except the supplied untouch_ent index and
+ * request redraw. A negative exception clears all rows. Selection helpers
+ * do nothing in character mode; this is not the character-range reset.
+ */
 void NL_UnSelectAll(struct NLData *data,LONG untouch_ent)
 {
   LONG ent;
@@ -105,6 +119,12 @@ void NL_UnSelectAll(struct NLData *data,LONG untouch_ent)
 }
 
 
+/* UnSelectCharSel
+ * Invalidate the character selection only when TypeSelect is nonzero and
+ * scrollbar updates are not in progress. Mark the old range for redraw
+ * and optionally request redraw. No line-selection flags or payloads are
+ * changed.
+ */
 void UnSelectCharSel(struct NLData *data,BOOL redraw)
 {
   if (data->NList_TypeSelect && !data->UpdatingScrollbars)
@@ -506,6 +526,12 @@ void SelectSecondPoint(struct NLData *data,WORD x,WORD y)
 }
 
 
+/* NL_List_First
+ * Resolve vertical scroll selectors and update First for a nonempty list.
+ * Return whether First changed; rewrite a supplied writable tag to the
+ * resolved value or TAG_IGNORE. Explicit in-range indices are not clamped
+ * to a full last page.
+ */
 BOOL NL_List_First(struct NLData *data,LONG lf,struct TagItem *tag)
 {
   struct TagItem ltag;
@@ -629,6 +655,14 @@ BOOL NL_List_First(struct NLData *data,LONG lf,struct TagItem *tag)
 }
 
 
+/* NL_List_Active
+ * Update line-mode active position/selection and visibility, or use the
+ * separate navigation path in character/read-only mode. Optional tags are
+ * rewritten. Return the path-specific change result; Off on the non-line
+ * path returns TRUE without establishing a new active entry. Repeating
+ * the same entry normally skips centering. Payload ownership is
+ * unchanged.
+ */
 BOOL NL_List_Active(struct NLData *data, LONG la, struct TagItem *tag, LONG newactsel, LONG acceptsame, ULONG flags)
 {
   struct TagItem ltag;
@@ -957,6 +991,13 @@ BOOL NL_List_Active(struct NLData *data, LONG la, struct TagItem *tag, LONG newa
 }
 
 
+/* NL_List_Horiz_First
+ * Resolve horizontal pixel/step selectors using current font and
+ * geometry; clamp accepted values against content minus viewport width
+ * and request redraw. Return the local scroll result and rewrite optional
+ * tags. Range arithmetic is not consistently clamped to zero for short
+ * content.
+ */
 BOOL NL_List_Horiz_First(struct NLData *data,LONG hf,struct TagItem *tag)
 {
   BOOL scrolled = FALSE;
@@ -1081,6 +1122,12 @@ BOOL NL_List_Horiz_First(struct NLData *data,LONG hf,struct TagItem *tag)
 }
 
 
+/* NL_List_SelectChar
+ * Handle character selection: On selects whole display rows, Off clears
+ * the range, Ask computes covered row span. Toggle has no implementation
+ * but returns TRUE. Optional state is written only by Ask; invalid/no-
+ * selection endpoints are not fully normalized.
+ */
 ULONG NL_List_SelectChar(struct NLData *data,LONG pos,LONG seltype,LONG *state)
 {
   LONG ent,ent2;
@@ -1142,6 +1189,13 @@ ULONG NL_List_SelectChar(struct NLData *data,LONG pos,LONG seltype,LONG *state)
 }
 
 
+/* NL_List_Select
+ * Select or query line rows using current input/multiselect policy. All
+ * returns a count; one row returns a state, but selection hooks may
+ * reject requested On despite that output. Return TRUE for several no-op
+ * paths, FALSE for rejected targets/policy. No payload ownership
+ * transfer.
+ */
 ULONG NL_List_Select(struct NLData *data,LONG pos,LONG pos2,LONG seltype,LONG *state)
 {
   LONG ent,ent2,ent3;
@@ -1273,6 +1327,13 @@ ULONG NL_List_Select(struct NLData *data,LONG pos,LONG pos2,LONG seltype,LONG *s
 }
 
 
+/* NL_List_TestPos
+ * Hit-test current laid-out list geometry from window-relative
+ * coordinates, or stored click/mouse coordinates. Require nonzero line
+ * height and initialized writable result. Return TRUE for any non-NULL
+ * result, not only hits. Character lookup can be skipped with input -2,
+ * but later preparse adjustment can alter that sentinel.
+ */
 ULONG NL_List_TestPos(struct NLData *data,LONG x,LONG y,struct MUI_NList_TestPos_Result *res)
 {
   if ((x == MUI_MAXMAX) && (y == MUI_MAXMAX))
@@ -1404,6 +1465,12 @@ ULONG NL_List_TestPos(struct NLData *data,LONG x,LONG y,struct MUI_NList_TestPos
 }
 
 
+/* NL_List_TestPosOld
+ * Hit-test current geometry into the smaller legacy List result. Require
+ * valid layout and nonzero line height. No NList stored-coordinate
+ * shortcuts or character fields. Return TRUE for non-NULL output even
+ * outside an entry; FALSE for NULL.
+ */
 ULONG NL_List_TestPosOld(struct NLData *data,LONG x,LONG y,struct MUI_List_TestPos_Result *res)
 {
   if (res)
@@ -1582,6 +1649,12 @@ IPTR mNL_List_GetEntryInfo(struct IClass *cl,Object *obj,struct  MUIP_NList_GetE
   return (TRUE);
 }
 
+/* NL_List_Jump
+ * Make a display row visible or center Active using current Visible
+ * geometry. Ordinary invalid/already-visible requests return FALSE;
+ * Active_Center always returns TRUE after assigning First, even without a
+ * valid active entry. Does not change Active or payloads.
+ */
 static BOOL NL_List_Jump(struct NLData *data, LONG pos)
 {
   BOOL result = FALSE;
@@ -1667,6 +1740,11 @@ static BOOL NL_List_Jump(struct NLData *data, LONG pos)
   return result;
 }
 
+/* mNL_List_Jump
+ * Call the jump helper, notify First and request redraw when it reports
+ * work. Always return TRUE, including invalid/no-op requests; this is not
+ * proof of scrolling.
+ */
 IPTR mNL_List_Jump(struct IClass *cl, Object *obj, struct MUIP_NList_Jump *msg)
 {
   struct NLData *data = INST_DATA(cl,obj);
@@ -1685,6 +1763,12 @@ IPTR mNL_List_Jump(struct IClass *cl, Object *obj, struct MUIP_NList_Jump *msg)
   return TRUE;
 }
 
+/* mNL_List_SetActive
+ * Interpret pos as a signed index/selector or, with Entry flag, look up
+ * the first identical payload pointer. Failed lookup becomes Active_Off.
+ * Delegate activation with optional centering and return its path-
+ * specific result. Same-entry activation normally does not recenter.
+ */
 IPTR mNL_List_SetActive(struct IClass *cl, Object *obj, struct MUIP_NList_SetActive *msg)
 {
   BOOL result = FALSE;
@@ -1711,6 +1795,12 @@ IPTR mNL_List_SetActive(struct IClass *cl, Object *obj, struct MUIP_NList_SetAct
   return result;
 }
 
+/* mNL_List_Select
+ * Dispatch to character-range or line-selection handling according to
+ * TypeSelect. Borrow optional LONG state storage. Result and whether
+ * state is written depend on the selected path; TRUE is not universal
+ * mutation proof.
+ */
 IPTR mNL_List_Select(struct IClass *cl,Object *obj,struct MUIP_NList_Select *msg)
 {
   struct NLData *data = INST_DATA(cl,obj);
@@ -1723,6 +1813,11 @@ IPTR mNL_List_Select(struct IClass *cl,Object *obj,struct MUIP_NList_Select *msg
 }
 
 
+/* mNL_List_TestPos
+ * Delegate NList coordinates/result unchanged to the extended hit-test
+ * helper. The result must use MUI_NList_TestPos_Result, not the smaller
+ * legacy structure.
+ */
 IPTR mNL_List_TestPos(struct IClass *cl,Object *obj,struct MUIP_NList_TestPos *msg)
 {
   struct NLData *data = INST_DATA(cl,obj);
@@ -1731,6 +1826,11 @@ IPTR mNL_List_TestPos(struct IClass *cl,Object *obj,struct MUIP_NList_TestPos *m
 }
 
 
+/* mNL_List_TestPosOld
+ * Delegate legacy List coordinates/result to the legacy helper. The
+ * result must use MUI_List_TestPos_Result; no extended field writes are
+ * made.
+ */
 IPTR mNL_List_TestPosOld(struct IClass *cl,Object *obj,struct MUIP_List_TestPos *msg)
 {
   struct NLData *data = INST_DATA(cl,obj);
@@ -1739,6 +1839,13 @@ IPTR mNL_List_TestPosOld(struct IClass *cl,Object *obj,struct MUIP_List_TestPos 
 }
 
 
+/* mNL_List_Redraw
+ * Invalidate display caches and request redraw by row/selector. Queue
+ * work during nested drawing; legacy List_Redraw All rewrites msg->pos
+ * and follows a deferred path. Return TRUE even for invalid rows or
+ * suppressed work. Require writable message storage for the legacy
+ * rewrite.
+ */
 IPTR mNL_List_Redraw(struct IClass *cl,Object *obj,struct MUIP_NList_Redraw *msg)
 {
   struct NLData *data = INST_DATA(cl,obj);
@@ -1887,6 +1994,12 @@ IPTR mNL_List_Redraw(struct IClass *cl,Object *obj,struct MUIP_NList_Redraw *msg
 }
 
 
+/* mNL_List_RedrawEntry
+ * Find all rows with the identical non-NULL stored payload pointer,
+ * invalidate their pixel length and request redraw. Return TRUE if any
+ * record matches, FALSE for NULL or no match; no payload copy or
+ * ownership change.
+ */
 IPTR mNL_List_RedrawEntry(struct IClass *cl,Object *obj,struct MUIP_NList_RedrawEntry *msg)
 {
   struct NLData *data = INST_DATA(cl,obj);
@@ -1916,6 +2029,12 @@ IPTR mNL_List_RedrawEntry(struct IClass *cl,Object *obj,struct MUIP_NList_Redraw
 }
 
 
+/* mNL_List_NextSelected
+ * Advance caller-owned LONG position through line flags or the character-
+ * selection range. Negative input starts traversal. Write End on
+ * exhaustion and always return TRUE. Stop on End rather than calling
+ * again, which restarts traversal.
+ */
 IPTR mNL_List_NextSelected(struct IClass *cl,Object *obj,struct MUIP_NList_NextSelected *msg)
 {
   struct NLData *data = INST_DATA(cl,obj);
@@ -1947,6 +2066,13 @@ IPTR mNL_List_NextSelected(struct IClass *cl,Object *obj,struct MUIP_NList_NextS
 }
 
 
+/* mNL_List_PrevSelected
+ * Walk backward from caller-owned position through line flags or
+ * character range, always returning TRUE. In line mode the scan stops at
+ * row zero without testing its selection flag, so zero may be unselected.
+ * In character mode an upper-bound clamp can include a boundary-only end
+ * row.
+ */
 IPTR mNL_List_PrevSelected(struct IClass *cl,Object *obj,struct MUIP_NList_PrevSelected *msg)
 {
   struct NLData *data = INST_DATA(cl,obj);
@@ -1978,6 +2104,13 @@ IPTR mNL_List_PrevSelected(struct IClass *cl,Object *obj,struct MUIP_NList_PrevS
 }
 
 
+/* mNL_List_GetSelectInfo
+ * Fill a writable selection-info structure and return TRUE. num remains
+ * -1. In line mode start is initialized to 1 but tested against -1, so it
+ * never records the first selected row; vstart inherits that error.
+ * Character vnum includes an end row even at a start-of-row boundary. Do
+ * not promise normalized selection bounds.
+ */
 IPTR mNL_List_GetSelectInfo(struct IClass *cl,Object *obj,struct MUIP_NList_GetSelectInfo *msg)
 {
   struct NLData *data = INST_DATA(cl,obj);
@@ -2154,6 +2287,13 @@ IPTR mNL_List_DoMethod(struct IClass *cl,Object *obj,struct MUIP_NList_DoMethod 
   return (TRUE);
 }
 
+/* NL_List_GetPos
+ * Search stored payload pointer identity after the caller-supplied
+ * previous index. Require Start (-1) or a valid prior index and writable
+ * LONG storage. Return TRUE and position on match, otherwise FALSE and
+ * End. Internal entry pointer -2 returns tracked insertion position even
+ * when no row exists.
+ */
 static BOOL NL_List_GetPos(struct NLData *data, APTR entry, LONG *pos)
 {
   BOOL result = FALSE;
@@ -2198,6 +2338,11 @@ static BOOL NL_List_GetPos(struct NLData *data, APTR entry, LONG *pos)
   return result;
 }
 
+/* mNL_List_GetPos
+ * Delegate borrowed payload pointer and caller-owned LONG cursor to
+ * pointer-identity lookup. Return BOOL; no payload copy or ownership
+ * transfer.
+ */
 IPTR mNL_List_GetPos(struct IClass *cl,Object *obj,struct MUIP_NList_GetPos *msg)
 {
   struct NLData *data = INST_DATA(cl,obj);
