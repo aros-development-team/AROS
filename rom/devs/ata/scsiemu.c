@@ -52,8 +52,8 @@ static UBYTE scsi_inquiry(struct ata_Unit *unit, struct SCSICmd *cmd, ULONG *out
 {
     struct Library *UtilityBase = unit->au_Bus->ab_Base->ata_UtilityBase;
     UBYTE *cmdbuf = cmd->scsi_Command;
-    UBYTE *out = (UBYTE*)cmd->scsi_Data;
-    UBYTE len;
+    UBYTE out[36] = {0};
+    ULONG len;
     
     if ((cmdbuf[1] & 1) || cmdbuf[2] != 0)
         return 0xff;
@@ -62,12 +62,16 @@ static UBYTE scsi_inquiry(struct ata_Unit *unit, struct SCSICmd *cmd, ULONG *out
         return 0xff; /* no lun supported */
     out[2] = 2; /* supports SCSI-2 */
     out[3] = 2; /* response data format */
-    out[4] = 32; /* additional length */
+    out[4] = sizeof(out) - 5; /* additional length */
     out[7] = 0x20; /* 16 bit bus */
-    *outlen = len < 36 ? len : 36;
+    if (len > cmd->scsi_Length)
+        len = cmd->scsi_Length;
+    *outlen = len < sizeof(out) ? len : sizeof(out);
     SetMem(out + 8, ' ', 8 + 16 + 4);
     CopyMem(unit->au_Model, out + 8, strlen(unit->au_Model) > 16 + 8 ? 16 + 8 : strlen(unit->au_Model));
     CopyMem(unit->au_FirmwareRev, out + 8 + 16, strlen(unit->au_FirmwareRev) > 4 ? 4 : strlen(unit->au_FirmwareRev));
+    if (*outlen)
+        CopyMem(out, cmd->scsi_Data, *outlen);
     return 0;
 }
 
