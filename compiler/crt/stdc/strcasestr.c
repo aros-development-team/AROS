@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     C extension function strcasestr().
 */
@@ -26,7 +26,7 @@
 
     RESULT
         A pointer to the first occurrence of search in str or NULL if search
-        is not found in str.
+        is not found in str. If search is empty, str is returned.
 
     NOTES
 
@@ -53,6 +53,10 @@
     size_t       done;
     size_t       len_s = strlen (search);
     const char * t;
+
+    /* An empty search string matches at the start of str */
+    if (!len_s)
+        return ((char *)str);
 
     do
     {
