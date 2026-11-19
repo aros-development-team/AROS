@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: ReadEClock() - read the base frequency of timers.
 */
@@ -18,18 +18,26 @@ AROS_LH1(ULONG, ReadEClock,
 {
     AROS_LIBFUNC_INIT
 
-    ULONG eclock, old;
+    struct EClockVal *last = &TimerBase->tb_lasteclock;
+    ULONG hi, lo;
 
     Disable();
-    old = dest->ev_lo = TimerBase->tb_eclock.ev_lo;
-    dest->ev_hi = TimerBase->tb_eclock.ev_hi;
-    eclock = GetEClock(TimerBase);
+    hi = TimerBase->tb_eclock.ev_hi;
+    lo = TimerBase->tb_eclock.ev_lo + GetEClock(TimerBase);
+    if (lo < TimerBase->tb_eclock.ev_lo)
+        hi++;
+    /* never before the last one: see ClockRead() */
+    if (hi < last->ev_hi || (hi == last->ev_hi && lo < last->ev_lo)) {
+        hi = last->ev_hi;
+        lo = last->ev_lo;
+    }
+    last->ev_hi = hi;
+    last->ev_lo = lo;
     Enable();
-    dest->ev_lo += eclock;
-    if (old > dest->ev_lo)
-        dest->ev_hi++;
+    dest->ev_hi = hi;
+    dest->ev_lo = lo;
 
     return TimerBase->tb_eclock_rate;
 
     AROS_LIBFUNC_EXIT
-} /* CmpTime */
+} /* ReadEClock */

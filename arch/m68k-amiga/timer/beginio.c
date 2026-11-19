@@ -95,6 +95,8 @@ AROS_LH1(void, BeginIO,
             Disable();
             TimerBase->tb_CurrentTime.tv_secs = timereq->tr_time.tv_secs;
             TimerBase->tb_CurrentTime.tv_micro = timereq->tr_time.tv_micro;
+            /* a time set back is read back: GetSysTime() starts again */
+            TimerBase->tb_lastsystime.tv_secs = TimerBase->tb_lastsystime.tv_micro = 0;
             Enable();
             replyit = TRUE;
             break;
