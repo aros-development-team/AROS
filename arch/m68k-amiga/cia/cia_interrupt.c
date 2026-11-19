@@ -28,6 +28,12 @@ AROS_INTH1(Cia_Handler, struct CIABase *, CiaBase)
                 if (iv->iv_Code) {
                     AROS_INTC1(iv->iv_Code, iv->iv_Data);
                 }
+                /*
+                 * Handled: SetICR() shows the bit to its own handler, not
+                 * to the ones after it in this round (timer.device's
+                 * e-clock would count its period a second time)
+                 */
+                CiaBase->executing_mask &= ~(1 << i);
             }
         }
         CiaBase->executing_mask = 0;
