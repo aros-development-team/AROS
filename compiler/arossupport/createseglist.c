@@ -10,12 +10,19 @@
 #include <aros/kernel.h>
 #include <proto/exec.h>
 #include <proto/kernel.h>
+#include <stddef.h>
 
 struct phony_segment
 {
+#if __WORDSIZE > 32
+    ULONG Pad;  /* Keep Size just before the native-aligned seglist link. */
+#endif
     ULONG Size; /* Length of segment in # of bytes */
     BPTR  Next; /* Next segment (always 0 for this) */
 } __attribute__((packed));
+
+_Static_assert(offsetof(struct phony_segment, Next) == sizeof(BPTR),
+               "_ilsFreeVec expects one BPTR before the seglist link");
 
 /*****************************************************************************
 
