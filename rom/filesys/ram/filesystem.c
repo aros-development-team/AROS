@@ -1325,9 +1325,10 @@ BOOL SetName(struct Handler *handler, struct Object *object,
    struct Locale *locale;
    PINT block_diff;
 
-   /* Check name isn't too long */
+   /* Check name isn't empty (SetString() would store it as NULL) or too
+      long */
 
-   if(StrSize(name) > MAX_NAME_SIZE)
+   if(*name == '\0' || StrSize(name) > MAX_NAME_SIZE)
       error = ERROR_INVALID_COMPONENT_NAME;
 
    /* Check name doesn't have any strange characters in it */
