@@ -13,6 +13,7 @@
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <proto/intuition.h>
+#include <proto/graphics.h>
 #include <proto/layers.h>
 #include <proto/commodities.h>
 #include <proto/locale.h>
@@ -712,7 +713,15 @@ static void HandleAll(void)
         sigs = Wait(cxmask | actionmask | icontrolmask | SIGBREAKF_CTRL_C);
 
         if (sigs & cxmask) HandleCx();
-        if (sigs & actionmask) HandleAction(); /* "Action" == window moving or resizing */
+        if (sigs & actionmask)
+        {
+            HandleAction(); /* "Action" == window moving or resizing */
+
+            /* One move or resize per frame. Mouse events that arrive during the
+               wait set the signal again, and the next pass takes the pointer
+               position of that moment, so the last position is never lost. */
+            WaitTOF();
+        }
         if (sigs & icontrolmask) HandleIControl();
         if (sigs & SIGBREAKF_CTRL_C) quitme = TRUE;
     } /* while(!quitme) */
