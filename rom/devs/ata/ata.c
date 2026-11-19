@@ -491,29 +491,9 @@ static void cmd_SMART(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
 
 static void cmd_TRIM(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
 {
-    struct ata_Unit *unit = (struct ata_Unit *)io->io_Unit;
-
-    D(bug("[ATA%02ld] %s()\n", ((struct ata_Unit*)io->io_Unit)->au_UnitNum, __func__));
-
-    if ((unit->au_Drive->id_ATAVersion >= 7) && (unit->au_Drive->id_DSManagement & 1))
-    {
-        D(bug("[ATA%02ld] %s: Unit supports TRIM\n", ((struct ata_Unit*)io->io_Unit)->au_UnitNum, __func__));
-#if (0)
-        if (IOStdReq(io)->io_Reserved1 == ATAFEATURE_TEST_AVAIL)
-        {
-            if (IOStdReq(io)->io_Length >= sizeof(ULONG))
-            {
-                *((ULONG *)IOStdReq(io)->io_Data) = TRIM_MAGIC_ID;
-                IOStdReq(io)->io_Actual = sizeof(ULONG);
-            }
-            io->io_Error = 0;
-            return;
-        }
-        ata_TRIMCmd(IOStdReq(io));
-#endif
-    }
-    else
-        io->io_Error = IOERR_NOCMD;
+    /* Hardware capability does not make the unimplemented command succeed. */
+    IOStdReq(io)->io_Actual = 0;
+    io->io_Error = IOERR_NOCMD;
 }
 
 //-----------------------------------------------------------------------------
@@ -602,8 +582,6 @@ static UWORD const NSDSupported[] = {
     NSCMD_TD_WRITE64,
     NSCMD_TD_SEEK64,
     NSCMD_TD_FORMAT64,
-    HD_SMARTCMD,
-    HD_TRIMCMD,
     0
 };
 
