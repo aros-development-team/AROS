@@ -386,6 +386,13 @@ static void cmd_DirectScsi(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
 
     D(bug("[ATA%02ld] %s()\n", ((struct ata_Unit*)io->io_Unit)->au_UnitNum, __func__));
 
+    IOStdReq(io)->io_Actual = 0;
+    if (IOStdReq(io)->io_Length < sizeof(struct SCSICmd))
+    {
+        io->io_Error = IOERR_BADLENGTH;
+        return;
+    }
+
     if (IOStdReq(io)->io_Data == NULL)
     {
         io->io_Error = IOERR_BADADDRESS;

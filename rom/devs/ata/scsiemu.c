@@ -38,16 +38,6 @@ static ULONG rl(UBYTE *p)
     return ((ULONG)p[0] << 24) | (p[1] << 16) | (p[2] << 8) | (p[3]);
 }
 
-static UBYTE scsi_read32(struct ata_Unit *unit, APTR data, ULONG offset, ULONG len, ULONG *outlen)
-{
-     return unit->au_Read32(unit, offset, len, data, outlen);
-}
-
-static UBYTE scsi_write32(struct ata_Unit *unit, APTR data, ULONG offset, ULONG len, ULONG *outlen)
-{
-     return unit->au_Write32(unit, offset, len, data, outlen);
-}
-
 static UBYTE scsi_inquiry(struct ata_Unit *unit, struct SCSICmd *cmd, ULONG *outlen)
 {
     struct Library *UtilityBase = unit->au_Bus->ab_Base->ata_UtilityBase;
@@ -159,6 +149,7 @@ BYTE SCSIEmu(struct ata_Unit *unit, struct SCSICmd *cmd)
 {
     struct Library *UtilityBase = unit->au_Bus->ab_Base->ata_UtilityBase;
     ULONG len, offset;
+    UQUAD end;
     ULONG scsi_len;
     UWORD scsi_sense_len = (cmd->scsi_Flags & (1 << SCSIB_OLDAUTOSENSE)) ? 4 :
         (cmd->scsi_Flags & (1 << SCSIB_AUTOSENSE)) ? cmd->scsi_SenseLength : 0;
@@ -168,7 +159,26 @@ BYTE SCSIEmu(struct ata_Unit *unit, struct SCSICmd *cmd)
     UBYTE err, status;
     UBYTE key = 0, asc = 0;
  
-    /* bug("SCSIEMU CMD=%02x\n", cmdbuf[0]); */
+    cmd->scsi_Actual = 0;
+    cmd->scsi_CmdActual = 0;
+    cmd->scsi_SenseActual = 0;
+    cmd->scsi_Status = 0;
+    if (!cmdbuf || (cmd->scsi_Length && !cmd->scsi_Data) ||
+        (scsi_sense_len && !cmd->scsi_SenseData))
+        return IOERR_BADADDRESS;
+    if (!cmd->scsi_CmdLength)
+        return IOERR_BADLENGTH;
+    /* Check the command group before reading any operands. */
+    switch (cmdbuf[0] >> 5) {
+    case 0: len = 6; break;
+    case 1:
+    case 2: len = 10; break;
+    case 5: len = 12; break;
+    default: len = 1; break;
+    }
+    if (cmd->scsi_CmdLength < len)
+        return IOERR_BADLENGTH;
+
     err = 0;
     status = 0;
     scsi_len = 0;
@@ -198,11 +208,23 @@ BYTE SCSIEmu(struct ata_Unit *unit, struct SCSICmd *cmd)
             else
                 len = rl(cmdbuf + 6);
         }
-        /* bit 1 of the operation code tells WRITE from READ in all three sizes */
-        if (cmdbuf[0] & 0x02)
-            err = scsi_write32(unit, cmd->scsi_Data, offset, len, &scsi_len);
-        else
-            err = scsi_read32(unit, cmd->scsi_Data, offset, len, &scsi_len);
+        if (!len)
+            break;
+        if (len > (cmd->scsi_Length >> unit->au_SectorShift))
+            return IOERR_BADLENGTH;
+        end = (UQUAD)offset + len;
+        if (end > unit->au_Capacity48)
+            return IOERR_BADADDRESS;
+        /* Words 60-61 report a sector count, capped at 0x0fffffff. */
+        if (end <= unit->au_Capacity && end <= 0x0fffffffUL) {
+            err = (cmdbuf[0] & 2 ? unit->au_Write32 : unit->au_Read32)
+                (unit, offset, len, cmd->scsi_Data, &scsi_len);
+        } else {
+            if (!(unit->au_UseModes & AF_XFER_48BIT))
+                return IOERR_BADADDRESS;
+            err = (cmdbuf[0] & 2 ? unit->au_Write64 : unit->au_Read64)
+                (unit, offset, len, cmd->scsi_Data, &scsi_len);
+        }
         break;
 
         case 0x37: /* READ DEFECT DATA */
