@@ -39,6 +39,25 @@ struct uvc_streaming_control
     UBYTE dwMaxPayloadTransferSize[4];
 };
 
+struct NepClassUVC;
+
+/* The VHI library of one camera, uvc<unit>.vhi. It is kept until the class is expunged; the unit comes from
+ * Poseidon's config for the camera's interface. */
+struct NepUVCVHIBase
+{
+    struct Library        nvb_Library;
+    struct NepUVCVHIBase *nvb_Next;        /* nh_VHIBases */
+    struct NepUVCBase    *nvb_ClsBase;
+    struct NepClassUVC   *nvb_Binding;     /* NULL while the camera is unplugged */
+    BOOL                  nvb_Listed;      /* in exec's library list */
+    ULONG                 nvb_Unit;
+    char                  nvb_LibName[16];
+    char                  nvb_CardName[128];
+    char                  nvb_VersString[176];
+    STRPTR                nvb_IfIDString;  /* Poseidon's interface ID string, after nvb_IDString */
+    char                  nvb_IDString[1]; /* Poseidon's device ID string, allocated with the base */
+};
+
 /* One bound UVC camera. Descriptor pointers remain owned by Poseidon. */
 struct NepClassUVC
 {
@@ -77,6 +96,7 @@ struct NepClassUVC
     struct UVCRates      ncu_Rates[UVC_MAX_FRAMES];
     ULONG                ncu_MaxFrameBuf;  /* dwMaxVideoFrameBuf from the frame desc */
     struct UVCStream    *ncu_Stream;       /* the running stream, NULL when idle */
+    struct NepUVCVHIBase *ncu_VHIBase;
 };
 
 struct NepUVCBase
@@ -85,6 +105,7 @@ struct NepUVCBase
     struct List          nh_Cameras;
     struct SignalSemaphore nh_Lock;
     ULONG                nh_NextId;
+    struct NepUVCVHIBase *nh_VHIBases;
     UWORD                nh_Flags;         /* various flags */
 
     struct Library      *nh_UtilityBase;   /* Utility base */

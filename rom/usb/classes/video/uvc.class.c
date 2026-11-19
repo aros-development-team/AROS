@@ -62,6 +62,8 @@ static int libInit(LIBBASETYPEPTR nh)
 static int libExpunge(LIBBASETYPEPTR nh)
 {
     KPRINTF(10, ("libExpunge nh: 0x%08lx\n", nh));
+    if (!uvc_vhi_expunge(nh))
+        return(FALSE);
     if (nh->nh_LogRHandle)
         logFinalise(nh->nh_LogRHandle);
     CloseLibrary((struct Library *) UtilityBase);
@@ -905,7 +907,7 @@ static ULONG uvc_stream_frame(struct NepUVCBase *nh, struct UVCStream *st, UBYTE
     return result;
 }
 
-static IPTR uvc_method(struct NepUVCBase *nh, ULONG method, IPTR *args)
+IPTR uvc_method(struct NepUVCBase *nh, ULONG method, IPTR *args)
 {
     struct NepClassUVC *nch, snapshot;
     struct Library *ps = NULL;
@@ -1101,6 +1103,7 @@ struct NepClassUVC * usbForceInterfaceBinding(struct NepUVCBase *nh, struct PsdI
     STRPTR devname;
     STRPTR ifidstr;
     STRPTR devidstr;
+    STRPTR vhiname;
     IPTR ifnum;
     IPTR hubport;
 
@@ -1168,6 +1171,10 @@ struct NepClassUVC * usbForceInterfaceBinding(struct NepUVCBase *nh, struct PsdI
             UVCLOG(LOGF_Flag_Type_Information, "bound id=%lu '%s' (interface %lu, hub port %lu) video %lux%lu",
                    (IPTR)nch->ncu_Id, devname, (IPTR)ifnum, (IPTR)hubport,
                    (IPTR)nch->ncu_Width, (IPTR)nch->ncu_Height);
+            if ((vhiname = uvc_vhi_bind(nch, ps)))
+                psdAddErrorMsg(RETURN_OK, (STRPTR) libname, "'%s' is VHI device '%s'.", devname, vhiname);
+            else
+                psdAddErrorMsg(RETURN_WARN, (STRPTR) libname, "No VHI library for '%s': out of memory.", devname);
             CloseLibrary(ps);
             return(nch);
         }
@@ -1193,6 +1200,7 @@ void usbReleaseInterfaceBinding(struct NepUVCBase *nh, struct NepClassUVC *nch)
         psdGetAttrs(PGA_DEVICE, pd, DA_ProductName, &devname, TAG_END);
         psdAddErrorMsg(RETURN_OK, (STRPTR) libname,
                        "Released USB Video device '%s'!", devname);
+        uvc_vhi_release(nch);
         ObtainSemaphore(&nh->nh_Lock);
         Remove(&nch->ncu_Node);
         ReleaseSemaphore(&nh->nh_Lock);
@@ -1298,6 +1306,10 @@ AROS_LH2(IPTR, usbDoMethodA,
 
         case UCM_ReleaseInterfaceBinding:
             usbReleaseInterfaceBinding(nh, (struct NepClassUVC *) methoddata[0]);
+            return(TRUE);
+
+        case UCM_ConfigChangedEvent:
+            uvc_vhi_config(nh);
             return(TRUE);
 
         default:
