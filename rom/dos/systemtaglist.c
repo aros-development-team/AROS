@@ -123,6 +123,8 @@
     LONG cliType       = CLI_INVALID;
     ULONG commandlen;
     LONG rc            = -1;
+    BPTR currdir;
+    BPTR dupdir        = BNULL;
 
     struct TagItem *tags2 = (struct TagItem *)tags;
     struct TagItem *newtags, *tag;
@@ -208,6 +210,16 @@
     default:
         /* invalid */
         goto end;
+    }
+
+    /* Current directory - either provided or inherited. Duplicate it
+       before anything is set up: BNULL would start the shell in the boot volume */
+    currdir = (BPTR)GetTagData(NP_CurrentDir, (IPTR)BNULL, tags);
+    if (currdir == BNULL && me->pr_CurrentDir)
+    {
+        currdir = dupdir = DupLock(me->pr_CurrentDir);
+        if (currdir == BNULL)
+            goto end;
     }
 
     /* Set up the streams */
@@ -415,10 +427,8 @@
         };
 
         struct DosPacket *dp;
-        BPTR currdir = BNULL;
 
         FilterTagItems(newtags, (Tag *)filterList, TAGFILTER_NOT);
-        currdir = (BPTR)GetTagData(NP_CurrentDir, (IPTR)BNULL, newtags);
 
         proctags[NUM_PROCTAGS].ti_Tag  = TAG_MORE;
         proctags[NUM_PROCTAGS].ti_Data = (IPTR)newtags;
@@ -470,9 +480,7 @@
                 dp->dp_Arg3 = (IPTR)sos;        /* Output */
                 dp->dp_Arg7 = (IPTR)ea;         /* AROS extension information*/
                 dp->dp_Arg4 = (IPTR)cis;        /* Arguments & Script*/
-
-                /* Current directory - either provided or inherited */
-                if (currdir == BNULL && me->pr_CurrentDir) currdir = DupLock(me->pr_CurrentDir);
+                dupdir = BNULL;                 /* the shell owns it now */
 
                 /* The rest of the packet depends on the cliType. */
                 if (cliType == CLI_NEWCLI) {
@@ -529,6 +537,13 @@
     }
 
 end:
+    if (dupdir)
+    {
+        LONG err = IoErr(); /* UnLock() clears pr_Result2 */
+
+        UnLock(dupdir);
+        SetIoErr(err);
+    }
     if (sis_opened)    Close(sis);
     if (cis_opened)    Close(cis);
     if (sos_opened)    Close(sos);
