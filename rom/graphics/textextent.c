@@ -54,6 +54,10 @@
     RESULT
 
     NOTES
+        te_Extent covers the glyphs of all the characters, wherever
+        kerning, a negative TxSpacing or a glyph wider than tf_XSize puts
+        them. Where they reach past the range of a WORD, MinX and MaxX stop
+        at -32768 and 32767; te_Width is what TextLength() gives.
 
     EXAMPLE
 
@@ -68,70 +72,81 @@
     AROS_LIBFUNC_INIT
 
     struct TextFont *tf = rp->Font;
+    QUAD minx, maxx;
 
     textExtent->te_Width = TextLength(rp, string, count);
     textExtent->te_Height = tf->tf_YSize;
     textExtent->te_Extent.MinY = -tf->tf_Baseline;
     textExtent->te_Extent.MaxY = textExtent->te_Height - 1 - tf->tf_Baseline;
 
-    /* MinX/MaxX can be a bit more complicated if there are kerning/space
-     * tables */
+    /* MinX/MaxX follow the glyphs, which kerning, a negative TxSpacing or a
+     * glyph wider than tf_XSize can place outside te_Width; a font without
+     * kerning or space tables works as one with kerning 0 and spaces of
+     * tf_XSize, as Text() draws it. They are worked out in QUADs, since
+     * 32767 characters can reach further than a LONG, and end up within
+     * the range of a WORD. */
 
-    if((tf->tf_Flags & FPF_PROPORTIONAL) || tf->tf_CharKern
-            || tf->tf_CharSpace) {
+    if(count > 0) {
         WORD  idx;
         WORD  defaultidx = NUMCHARS(tf) - 1; /* Last glyph is default glyph */
-        WORD  x, x2;
+        QUAD  x, x2;
         UBYTE c;
 
-        textExtent->te_Extent.MinX = 0;
-        textExtent->te_Extent.MaxX = 0;
+        minx = 0;
+        maxx = 0;
         x = 0;
 
-        if(count) {
-            while(count--) {
-                c = *string++;
+        while(count--) {
+            c = *string++;
 
-                if(c < tf->tf_LoChar || c > tf->tf_HiChar) {
-                    idx = defaultidx;
-                } else {
-                    idx = c - tf->tf_LoChar;
-                }
+            if(c < tf->tf_LoChar || c > tf->tf_HiChar) {
+                idx = defaultidx;
+            } else {
+                idx = c - tf->tf_LoChar;
+            }
 
 #define CHECK_MINMAX(x) \
-                    if ((x) < textExtent->te_Extent.MinX) \
-                        textExtent->te_Extent.MinX = (x); \
-                    if ((x) > textExtent->te_Extent.MaxX) \
-                        textExtent->te_Extent.MaxX = (x);
+                if ((x) < minx) \
+                    minx = (x); \
+                if ((x) > maxx) \
+                    maxx = (x);
 
+            if(tf->tf_CharKern) {
                 x += ((WORD *)tf->tf_CharKern)[idx];
-                CHECK_MINMAX(x);
+            }
+            CHECK_MINMAX(x);
 
-                x2 = x + ((((ULONG *)tf->tf_CharLoc)[idx]) & 0xFFFF);
-                CHECK_MINMAX(x2);
+            x2 = x + ((((ULONG *)tf->tf_CharLoc)[idx]) & 0xFFFF);
+            CHECK_MINMAX(x2);
 
+            if(tf->tf_CharSpace) {
                 x += ((WORD *)tf->tf_CharSpace)[idx];
-                CHECK_MINMAX(x);
+            } else {
+                x += tf->tf_XSize;
+            }
+            CHECK_MINMAX(x);
 
-                x += rp->TxSpacing;
-                CHECK_MINMAX(x);
+            x += rp->TxSpacing;
+            CHECK_MINMAX(x);
 
-            } /* while(count--) */
+        } /* while(count--) */
 
-            textExtent->te_Extent.MaxX--;
+        maxx--;
 
-        } /* if (count) */
-
-    } /* if ((tf->tf_Flags & FPF_PROPORTIONAL) || tf->tf_CharKern
-       * || tf->tf_CharSpace) */
+    } /* if (count > 0) */
+    else if((tf->tf_Flags & FPF_PROPORTIONAL) || tf->tf_CharKern
+            || tf->tf_CharSpace) {
+        minx = 0;
+        maxx = 0;
+    }
     else {
         /* Normal non-proportional Font */
-        textExtent->te_Extent.MinX = 0;
-        textExtent->te_Extent.MaxX = textExtent->te_Width - 1;
+        minx = 0;
+        maxx = textExtent->te_Width - 1;
     }
 
     if(rp->AlgoStyle & FSF_BOLD) {
-        textExtent->te_Extent.MaxX += tf->tf_BoldSmear;
+        maxx += tf->tf_BoldSmear;
     }
 
     if(rp->AlgoStyle & FSF_ITALIC) {
@@ -145,9 +160,12 @@
         **  ######         ######
         */
 
-        textExtent->te_Extent.MaxX += tf->tf_Baseline / 2;
-        textExtent->te_Extent.MinX -= (tf->tf_YSize - tf->tf_Baseline) / 2;
+        maxx += tf->tf_Baseline / 2;
+        minx -= (tf->tf_YSize - tf->tf_Baseline) / 2;
     }
+
+    textExtent->te_Extent.MinX = minx < -32768 ? -32768 : minx > 32767 ? 32767 : minx;
+    textExtent->te_Extent.MaxX = maxx < -32768 ? -32768 : maxx > 32767 ? 32767 : maxx;
 
     AROS_LIBFUNC_EXIT
 
