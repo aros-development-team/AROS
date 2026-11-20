@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (C) 2026, The AROS Development Team. All rights reserved.
-"""
-Run the production DOS process entry and cleanup with controlled collaborators.
-"""
+"""Run the production DOS process entry and cleanup with controlled collaborators."""
 import argparse
 import os
 from pathlib import Path
