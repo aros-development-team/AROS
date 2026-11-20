@@ -221,7 +221,11 @@ struct SegList
     BPTR bptr() const { return segs.empty() ? nullptr : segs[0].link; }
     /* the low 32 bits of the host address of a segment's data, which is
        what dos added to the relocated longwords */
-    ULONG base32(size_t i) const { return static_cast<ULONG>(reinterpret_cast<IPTR>(segs[i].data())); }
+    ULONG base32(size_t i) const
+    {
+        const IPTR address = reinterpret_cast<IPTR>(segs[i].data());
+        return static_cast<ULONG>(address & 0xFFFFFFFFu);
+    }
     void put32(size_t i, ULONG off, ULONG v) const
     {
         UBYTE *p = segs[i].data() + off;

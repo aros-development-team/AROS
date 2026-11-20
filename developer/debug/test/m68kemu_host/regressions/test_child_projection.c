@@ -1395,7 +1395,7 @@ static const char *const dup_labels[4][2] = {
 static void duplicate_case(struct M68KEmuContext *ctx, unsigned which)
 {
     const char *const *label = dup_labels[which];
-    ULONG first = (which & 1) ? 1 : 0, second = first ? 0 : 1, r, stack, published;
+    ULONG first = (which & 1) ? 1 : 0, second = first ? 0 : 1, r, stack;
     BOOL more = which >= 2;
     unsigned row, srow, live0;
 
@@ -1419,7 +1419,8 @@ static void duplicate_case(struct M68KEmuContext *ctx, unsigned which)
               blocks[row].holder == &pool[0].pr_Task && heap_live() == live0 + 1 && no_double_free(), label[1]);
     else
     {
-        published = blocks[row].addr + 8 + RELOC_AT;
+        ULONG published = blocks[row].addr + 8 + RELOC_AT;
+
         check(blocks[row].live && blocks[row + 1].live && blocks[row].frees == 0 && blocks[row + 1].frees == 0 && stack && freed_once(stack) &&
               m68k_read32(ctx, published) == blocks[row + 1].addr + 8 + RELOC_ORIGINAL && no_double_free(), label[1]);
     }
