@@ -22,6 +22,68 @@ void BltTemplateAlphaBasedText(struct RastPort *rp, CONST_STRPTR text, ULONG len
 void ColorFontBasedText(struct RastPort *rp, CONST_STRPTR text, ULONG len,
                         struct GfxBase *GfxBase);
 
+/* The functions above work out the extent of what they draw with
+   TextExtent(), into WORDs, and size their raster and count its columns in
+   WORDs too, so Text() hands them a text a piece at a time. */
+#define TEXT_PIECE 16384
+
+struct text_piece
+{
+    ULONG count;            /* characters */
+    LONG advance;           /* what TextLength() gives for them */
+    LONG minx, maxx;        /* their te_Extent, as TextExtent() works it out */
+};
+
+#define EXTEND(lo, hi, x) do { if ((x) < (lo)) (lo) = (x); if ((x) > (hi)) (hi) = (x); } while (0)
+
+/* The characters of a text from which one piece is drawn at pos: their
+   extent, worked out as TextExtent() does, stays within TEXT_PIECE pixels
+   and within the coordinates of a WORD. A first character whose extent
+   alone does not fit makes a piece of its own, which Text() does not
+   draw. */
+static void text_piece(struct RastPort *rp, CONST_STRPTR text, ULONG len, QUAD pos,
+                       struct text_piece *p)
+{
+    struct TextFont *tf = rp->Font;
+    LONG x = 0, lo = 0, hi = 0, left = 0, right = 0;
+    ULONG n;
+
+    if (rp->AlgoStyle & FSF_BOLD)
+        right += tf->tf_BoldSmear;
+    if (rp->AlgoStyle & FSF_ITALIC)
+    {
+        right += tf->tf_Baseline / 2;
+        left += (tf->tf_YSize - tf->tf_Baseline) / 2;
+    }
+    for (n = 0; n < len; n++)
+    {
+        UBYTE c = text[n];
+        ULONG idx = (c < tf->tf_LoChar || c > tf->tf_HiChar) ? NUMCHARS(tf) - 1 : c - tf->tf_LoChar;
+        LONG nx = x, nlo = lo, nhi = hi, minx, maxx;
+
+        if (tf->tf_CharKern)
+            nx += ((WORD *)tf->tf_CharKern)[idx];
+        EXTEND(nlo, nhi, nx);
+        EXTEND(nlo, nhi, nx + (LONG)(((ULONG *)tf->tf_CharLoc)[idx] & 0xFFFF));
+        nx += tf->tf_CharSpace ? ((WORD *)tf->tf_CharSpace)[idx] : tf->tf_XSize;
+        EXTEND(nlo, nhi, nx);
+        nx += rp->TxSpacing;
+        EXTEND(nlo, nhi, nx);
+        minx = nlo - left;
+        maxx = nhi - 1 + right;
+        if (n && (maxx < minx || maxx - minx >= TEXT_PIECE ||
+                  pos + minx < -32768 || pos + maxx > 32767))
+            break;
+        x = nx;
+        lo = nlo;
+        hi = nhi;
+        p->minx = minx;
+        p->maxx = maxx;
+    }
+    p->count = n;
+    p->advance = x;
+}
+
 /*****************************************************************************
 
     NAME */
@@ -50,6 +112,13 @@ void ColorFontBasedText(struct RastPort *rp, CONST_STRPTR text, ULONG len,
     RESULT
 
     NOTES
+        A count of 0 or less draws nothing. A text wider than 16384 pixels
+        is drawn a piece at a time, and where two pieces meet, a JAM2
+        background, an underline or the overhang of bold or italic is
+        worked out for each piece on its own. A character that reaches past
+        the coordinates of a WORD is not drawn, and neither is one wider
+        than 16384 pixels alone, or any of a font taller than that or with
+        its baseline lower; the pen moves past them all the same.
 
     EXAMPLE
 
@@ -67,10 +136,17 @@ void ColorFontBasedText(struct RastPort *rp, CONST_STRPTR text, ULONG len,
 {
     AROS_LIBFUNC_INIT
 
-    if(count) {
+    if(count > 0) {
         struct ColorTextFont *ctf = (struct ColorTextFont *)rp->Font;
         BOOL                  antialias;
         BOOL                  colorfont;
+        /* the renderers keep the height and the baseline, and the italic
+           offsets from them, in WORDs too */
+        BOOL                  tall = ctf->ctf_TF.tf_YSize > TEXT_PIECE ||
+                                     ctf->ctf_TF.tf_Baseline > TEXT_PIECE;
+        struct text_piece     piece;
+        /* 32767 characters can advance further than a LONG reaches */
+        QUAD                  pos = rp->cp_x;
 
         antialias = (ctf->ctf_TF.tf_Style & FSF_COLORFONT) &&
                     ((ctf->ctf_Flags & CT_COLORMASK) == CT_ANTIALIAS) &&
@@ -79,13 +155,27 @@ void ColorFontBasedText(struct RastPort *rp, CONST_STRPTR text, ULONG len,
         colorfont = (ctf->ctf_TF.tf_Style & FSF_COLORFONT) &&
                     (((ctf->ctf_Flags & CT_COLORMASK) == CT_COLORFONT) || ((ctf->ctf_Flags & CT_COLORMASK) == CT_GREYFONT));
 
-        if(antialias) {
-            BltTemplateAlphaBasedText(rp, string, count, GfxBase);
-        } else if(colorfont) {
-            ColorFontBasedText(rp, string, count, GfxBase);
-        } else {
-            BltTemplateBasedText(rp, string, count, GfxBase);
+        for (; count > 0; string += piece.count, count -= piece.count) {
+            text_piece(rp, string, count, pos, &piece);
+            /* A piece too wide or too tall for a raster of WORDs, or that
+               reaches past the coordinates of a WORD, is not drawn: no
+               bitmap has pixels out there. */
+            if (!tall && piece.maxx >= piece.minx && piece.maxx - piece.minx < TEXT_PIECE &&
+                pos >= -32768 && pos <= 32767 &&
+                pos + piece.minx >= -32768 && pos + piece.maxx <= 32767) {
+                if (rp->cp_x != pos)
+                    Move(rp, (WORD)pos, rp->cp_y);
+                if(antialias) {
+                    BltTemplateAlphaBasedText(rp, string, piece.count, GfxBase);
+                } else if(colorfont) {
+                    ColorFontBasedText(rp, string, piece.count, GfxBase);
+                } else {
+                    BltTemplateBasedText(rp, string, piece.count, GfxBase);
+                }
+            }
+            pos += piece.advance;
         }
+        Move(rp, (WORD)pos, rp->cp_y);
     }
 
     AROS_LIBFUNC_EXIT
