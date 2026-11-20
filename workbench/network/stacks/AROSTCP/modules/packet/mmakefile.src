@@ -24,7 +24,7 @@ include $(SRCDIR)/config/aros.cfg
 include $(SRCDIR)/workbench/network/stacks/AROSTCP/bsdsocket/stack.cfg
 
 #MM- workbench-network-stacks-arostcp-modules : workbench-network-stacks-arostcp-modules-packet
-#MM workbench-network-stacks-arostcp-modules-packet : includes linklibs network-includes-copy
+#MM workbench-network-stacks-arostcp-modules-packet : includes linklibs linklibs-stdc-static network-includes-copy
 
 USER_INCLUDES := $(STACK_INCLUDES)
 USER_CPPFLAGS := $(STACK_MODULE_CPPFLAGS)
@@ -34,6 +34,7 @@ USER_LDFLAGS  := $(STACK_MODULE_LDFLAGS)
 %build_module_library mmake=workbench-network-stacks-arostcp-modules-packet \
     modname=packet modtype=library modsuffix=$(STACK_MODULE_ATCP) \
     conffile=$(STACK_MODULE_CONF) \
+    uselibs="stdc.static $(STACK_MODULE_RTLIBS)" \
     files="$(addprefix $(STACK_SRC_REL)/,$(STACK_PACKET_C) $(STACK_MODULE_GLUE))" \
     moduledir=$(STACK_MODULE_DIR)
 

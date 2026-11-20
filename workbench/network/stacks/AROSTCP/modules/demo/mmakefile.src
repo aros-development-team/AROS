@@ -23,6 +23,7 @@ USER_LDFLAGS  := $(STACK_MODULE_LDFLAGS)
 %build_module_library mmake=workbench-network-stacks-arostcp-modules-demo \
     modname=demo modtype=library modsuffix=$(STACK_MODULE_ATCP) \
     conffile=$(STACK_MODULE_CONF) \
+    uselibs="$(STACK_MODULE_RTLIBS)" \
     files="demo $(STACK_SRC_REL)/$(STACK_MODULE_GLUE)" \
     moduledir=$(STACK_MODULE_DIR)
 
