@@ -562,13 +562,13 @@ void *m68k_to_native_struct(struct M68KEmuContext *ctx,
 
 /* ── ExecBase shadow init ── */
 
-/* ExecBase embedded list offsets (m68k -> AROS) */
+/* Map the 68k list offsets to the target's native ExecBase layout. */
 static const struct { UWORD m68k_off; UWORD native_off; const char *name; } execbase_lists[] = {
-    { M68K_EXECBASE_INTRLIST,      720, "IntrList" },
-    { M68K_EXECBASE_PORTLIST,      784, "PortList" },
-    { M68K_EXECBASE_TASKREADY,     816, "TaskReady" },
-    { M68K_EXECBASE_TASKWAIT,      848, "TaskWait" },
-    { M68K_EXECBASE_SEMAPHORELIST, 1104, "SemaphoreList" },
+    { M68K_EXECBASE_INTRLIST,      offsetof(struct ExecBase, IntrList), "IntrList" },
+    { M68K_EXECBASE_PORTLIST,      offsetof(struct ExecBase, PortList), "PortList" },
+    { M68K_EXECBASE_TASKREADY,     offsetof(struct ExecBase, TaskReady), "TaskReady" },
+    { M68K_EXECBASE_TASKWAIT,      offsetof(struct ExecBase, TaskWait), "TaskWait" },
+    { M68K_EXECBASE_SEMAPHORELIST, offsetof(struct ExecBase, SemaphoreList), "SemaphoreList" },
     {   0,    0, NULL },
 };
 
