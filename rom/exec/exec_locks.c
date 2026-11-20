@@ -28,6 +28,19 @@
 #include "exec_intern.h"
 #include "exec_locks.h"
 
+/* Scheduler lists are also acquired in IRQ/dispatch context. A task-side
+ * holder must not be interrupted and then spin against itself on this CPU.
+ * Apply the same effective flag on both obtain and release. */
+static inline ULONG execlock_SchedListFlags(spinlock_t *lock, ULONG flags)
+{
+    if (lock == &PrivExecBase(SysBase)->TaskReadySpinLock ||
+        lock == &PrivExecBase(SysBase)->TaskWaitSpinLock ||
+        lock == &PrivExecBase(SysBase)->TaskRunningSpinLock ||
+        lock == &PrivExecBase(SysBase)->TaskSpinningLock)
+        flags |= LOCKF_DISABLE;
+    return flags;
+}
+
 int ExecLock__InternObtainSystemLock(struct List *systemList, ULONG mode, ULONG flags)
 {
     spinlock_t *sysListLock = NULL;
@@ -83,6 +96,7 @@ int ExecLock__InternObtainSystemLock(struct List *systemList, ULONG mode, ULONG 
     D(bug("[Exec:Lock] %s(), List='%s' (%p), mode=%s, flags=%d\n", __func__, name, systemList, mode == SPINLOCK_MODE_WRITE ? "write":"read", flags));
     if (sysListLock)
     {
+        flags = execlock_SchedListFlags(sysListLock, flags);
         if (flags & LOCKF_DISABLE)
             Disable();
         if (flags & LOCKF_FORBID)
@@ -150,6 +164,7 @@ void ExecLock__InternReleaseSystemLock(struct List *systemList, ULONG flags)
     D(bug("[Exec:Lock] %s(), list='%s' (%p), flags=%d\n", __func__, name, systemList, flags));
     if (sysListLock)
     {
+        flags = execlock_SchedListFlags(sysListLock, flags);
         EXEC_SPINLOCK_UNLOCK(sysListLock);
 
         if (flags & LOCKF_FORBID)
