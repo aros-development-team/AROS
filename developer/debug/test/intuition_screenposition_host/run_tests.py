@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (C) 2026, The AROS Development Team. All rights reserved.
-"""
-Run the production Intuition ScreenPosition and MoveScreen bodies with controlled collaborators.
-"""
+"""Run the production Intuition ScreenPosition and MoveScreen bodies with controlled collaborators."""
 import argparse
 import os
 from pathlib import Path

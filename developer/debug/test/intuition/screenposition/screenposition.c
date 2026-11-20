@@ -144,8 +144,6 @@ int main(void)
     if (exact)
     {
         LONG vw = 0, vh = 0;
-        WORD init_x = exact->LeftEdge;
-        WORD init_y = exact->TopEdge;
         WORD exp_x = 0, exp_y = 0;
         struct Rectangle visible;
         struct Rectangle pulled_visible;
@@ -156,6 +154,8 @@ int main(void)
 
         if (visible_rect(exact, vw, vh, &visible))
         {
+            WORD init_x = exact->LeftEdge;
+            WORD init_y = exact->TopEdge;
             LONG cx1 = visible.MinX +
                 ((visible.MaxX - visible.MinX > 40) ? 40 : visible.MaxX - visible.MinX);
             LONG cy1 = visible.MinY +
@@ -230,8 +230,6 @@ int main(void)
     if (over)
     {
         LONG vw = 0, vh = 0;
-        WORD init_x = over->LeftEdge;
-        WORD init_y = over->TopEdge;
         WORD exp_x = 0, exp_y = 0;
         struct Rectangle visible;
 
@@ -241,6 +239,9 @@ int main(void)
 
         if (visible_rect(over, vw, vh, &visible))
         {
+            WORD init_x = over->LeftEdge;
+            WORD init_y = over->TopEdge;
+
             ScreenPosition(over, SPOS_MAKEVISIBLE,
                            visible.MinX, visible.MinY, visible.MaxX, visible.MaxY);
             check(over->LeftEdge == init_x && over->TopEdge == init_y,
