@@ -870,27 +870,32 @@ RastPort, ColorMap, BitMap), `m68k_drawinfo_extras()` (pens, font),
 ## Shadow Struct Layouts
 
 `m68kemu_shadow_layouts.h` is generated and holds 297 layouts
-(`SHADOW_GEN_LAYOUT_COUNT`) with 3,171 field mappings: 1,296 `SF_PTR`, 574
-`SF_LONG`, 754 `SF_WORD`, 547 `SF_BYTE`. The native offsets are those of the
-x86_64 build (see `mmakefile.src`). Format of the header comments: Name
-(m68k size → AROS size, field count).
+(`SHADOW_GEN_LAYOUT_COUNT`) with 3,171 field mappings; on a 64-bit target 1,297
+are `SF_PTR`, 573 `SF_LONG`, 754 `SF_WORD` and 547 `SF_BYTE`. Only the m68k
+offsets are numbers. Each row is `SHADOW_FIELD(m68k offset, m68k size, Struct,
+member)`, and the compiler of the target fills in the native side: the offset by
+`offsetof()`, and for a 4-byte field whether the native member has 8 bytes and
+so is a pointer. A structure that embeds a `spinlock_t` (Library, Task,
+MemHeader, MsgPort, SemaphoreRequest, SoftIntList, and whatever contains one of
+them) thereby has the layout of the build. Format of the header comments: Name
+(m68k size, field count).
 
 ### Most Thoroughly Mapped
 
-| Struct | m68k | AROS | Fields | Domain |
-|--------|------|------|--------|--------|
-| GfxBase | 552B | 1040B | 102 | graphics |
-| ExecBase | 632B | 1320B | 65 | exec |
-| Screen | 346B | 1408B | 62 | intuition |
-| Process | 228B | 768B | 56 | exec |
-| Preferences | 232B | 232B | 46 | intuition |
-| Locale | 168B | 312B | 42 | locale |
-| ConUnit | 296B | 640B | 42 | devices |
-| MonitorSpec | 160B | 896B | 41 | graphics |
-| PrtInfo | 128B | 208B | 34 | devices |
-| PrinterData | 6842B | 7808B | 31 | devices |
-| ColorTextFont | 96B | 184B | 29 | graphics |
-| Task | 92B | 176B | 28 | exec |
+| Struct | m68k | Fields | Domain |
+|--------|------|--------|--------|
+| GfxBase | 552B | 102 | graphics |
+| ExecBase | 632B | 65 | exec |
+| Screen | 346B | 62 | intuition |
+| Process | 228B | 56 | exec |
+| Preferences | 232B | 48 | intuition |
+| Locale | 168B | 42 | locale |
+| ConUnit | 296B | 42 | devices |
+| MonitorSpec | 160B | 41 | graphics |
+| PrtInfo | 128B | 37 | devices |
+| PrinterData | 6842B | 31 | devices |
+| ColorTextFont | 96B | 29 | graphics |
+| Task | 92B | 28 | exec |
 
 ### Complete List
 
@@ -899,9 +904,9 @@ The full list is the `shadow_gen_layouts[]` table at the end of
 
 ### Missing Structs
 
-`m68k_offsets.txt` describes 298 structs (3,273 field lines); 1 of them lacks a
-layout: **RegionRectangle**, whose only field is `bounds` (an embedded
-`struct Rectangle`) with no scalar leaf fields to map.
+`m68k_offsets.txt` describes 298 structs in 3,314 field lines. 3,171 of them name
+a native member and are mapped; the other 143 are not, among them the six of
+**RegionRectangle**, the one struct without a layout.
 
 ## 68k Libraries and Relocations
 
@@ -1111,13 +1116,25 @@ writes are ignored. No CIA interrupt is ever raised.
 `graphics`, `utility`, `workbench`, `devices`, `libraries`, `resources`,
 `datatypes`; some headers, structs and fields are skipped because their layouts
 differ or cannot be probed) and writes a C file that emits `OFF|Struct|field|
-offset|size|` and `SIZ|Struct|size|` lines through `offsetof()`/`sizeof()`,
-recursing into embedded structs so every scalar leaf field is listed. Compiled
-once with the m68k compiler (`m68k_offsets.txt`, checked in) and once with the
-target compiler, the two outputs feed `gen_shadow_layouts.py`, which emits
-`m68kemu_shadow_layouts.h`. It treats a field as a pointer only when the native
-field is 8 bytes wide, so the checked-in header is valid for 64-bit targets only
-(`mmakefile.src` builds the library for x86_64, aarch64 and riscv64).
+offset|size|member|` and `SIZ|Struct|size|header|` lines through
+`offsetof()`/`sizeof()`, recursing into embedded structs so every scalar leaf
+field is listed. `member` is the path the field was probed by
+(`lib_Node.ln_Name`), `header` the file that declares the struct. Compiled with
+the m68k compiler this gives `m68k_offsets.txt`, which is checked in.
+
+`gen_shadow_layouts.py` writes `m68kemu_shadow_layouts.h` from that file alone.
+A field of 1, 2 or 4 bytes that names a member becomes a `SHADOW_FIELD()` row;
+a field without a member has no native counterpart and gets none. The header
+includes the files the `SIZ` lines name, and the compiler of the target resolves
+each member, so nothing in it has to be generated again for another target or
+after a change to a public struct. A 4-byte field is a pointer only where the
+native member is 8 bytes wide, so on a 32-bit target no field would be one;
+`mmakefile.src` builds the library for x86_64, aarch64 and riscv64.
+
+The checked-in file is not one run of the extractor. 41 of its lines were rows
+of the header before they were lines of the file, and 143 lines name no member
+because the header never carried them. New lines are merged into it; a plain
+replacement would change which fields a program sees.
 
 ## Diagnostics
 
@@ -1226,7 +1243,7 @@ Further limitations visible in the code:
   (see [Registry](#registry)).
 - The shadow registry holds 1024 entries; a program that never replies its
   messages fills it, and further native objects are refused with a log message.
-- The checked-in shadow layouts carry x86_64 native offsets; 32-bit targets
-  need regenerated layouts and a generator that recognises 4-byte pointers.
+- The shadow layouts tell a pointer by a native member of 8 bytes; 32-bit
+  targets need a generator that recognises 4-byte pointers.
 - No FPU: the CPU is an LC040, and a program without its own FPU emulator
   faults on F-line instructions.

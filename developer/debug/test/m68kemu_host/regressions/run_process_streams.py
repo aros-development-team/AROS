@@ -77,8 +77,10 @@ def prepare(source, output):
         assert len(found) == 1, (name, found)
         constants.append('#define ' + name + ' ' + found[0])
     # The independent generated layout places pr_CES; it is not derived
-    # from the helper under test.
-    assert re.search(r'\{\s*224,\s*712,.*?/\* pr_CES \*/', layouts.read_text())
+    # from the helper under test. A tree whose layouts follow the target
+    # writes the row with SHADOW_FIELD(), an earlier one with two numbers.
+    assert re.search(r'SHADOW_FIELD\(\s*224, 4, Process, pr_CES\)'
+                     r'|\{\s*224,\s*712,.*?/\* pr_CES \*/', layouts.read_text())
     ces = re.findall(r'^#define\s+M68K_PR_CES\s+(\d+)', offsets.read_text(), re.M)
     assert not ces or ces == ['224'], ces
     constants.append('#define M68K_PR_CES 224')

@@ -2,6 +2,12 @@
 # Copyright (C) 2026, The AROS Development Team. All rights reserved.
 # Author: Fabian Schmieder (@metaneutrons)
 """Scan NDK headers, generate C that emits offsets — recurse into embedded structs."""
+#
+# The C file emits, through offsetof()/sizeof():
+#   OFF|Struct|field|offset|size|member|   SIZ|Struct|size|header|
+# member is the path the field was probed by ("lib_Node.ln_Name"), header the
+# file that declares the struct. gen_shadow_layouts.py takes the native side of
+# a field from those two, see there.
 import re, os
 
 NDK = os.environ.get("NDK", "/opt/amiga/m68k-amigaos/ndk-include")
@@ -149,10 +155,10 @@ for sname in sorted(n for n in structs if n in output):
         if display_name in seen_names:
             continue
         seen_names.add(display_name)
-        print(f'__asm__ volatile (".ascii \\"OFF|{sname}|{display_name}|%0|%1|\\"" '
+        print(f'__asm__ volatile (".ascii \\"OFF|{sname}|{display_name}|%0|%1|{access_path}|\\"" '
               f':: "n" ((int)offsetof(struct {sname}, {access_path})), '
               f'"n" ((int)sizeof(((struct {sname}*)0)->{access_path})));')
-    print(f'__asm__ volatile (".ascii \\"SIZ|{sname}|%0|\\"" '
+    print(f'__asm__ volatile (".ascii \\"SIZ|{sname}|%0|{structs[sname][0]}|\\"" '
           f':: "n" ((int)sizeof(struct {sname})));')
 
 print('}')

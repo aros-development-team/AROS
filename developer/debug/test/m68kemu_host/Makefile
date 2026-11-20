@@ -121,6 +121,18 @@ test-bitmap-result-sanitize:
 
 .PHONY: test-bitmap-result test-bitmap-result-sanitize
 
+# Generated shadow layouts follow the build: ordinary fixture in test, sanitizer optional.
+SHADOW_LAYOUTS_ARGS ?=
+test: test-shadow-layouts
+
+test-shadow-layouts:
+	$(PYTHON) "$(TEST_DIR)/regressions/run_shadow_layouts.py" --cc "$(CC)" $(SHADOW_LAYOUTS_ARGS)
+
+test-shadow-layouts-sanitize:
+	$(PYTHON) "$(TEST_DIR)/regressions/run_shadow_layouts.py" --cc "$(CC)" --sanitize $(SHADOW_LAYOUTS_ARGS)
+
+.PHONY: test-shadow-layouts test-shadow-layouts-sanitize
+
 # A 68k child without a guest Process: ordinary fixture in test, sanitizer optional.
 CHILD_PROJECTION_ARGS ?=
 test: test-child-projection
