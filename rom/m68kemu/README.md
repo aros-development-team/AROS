@@ -308,6 +308,7 @@ within the emulator.
 ### Memory
 
 - Fixed 32 MB containment; requested root stacks must fit above the ROM and a free heap chunk
+- A 68k seglist copied for a child started with `NP_FreeSeglist` FALSE, or by `CreateProc`, stays allocated until the program ends
 - No MEMF_CHIP/MEMF_FAST distinction (requirements parameter ignored)
 - No memory protection within containment
 
