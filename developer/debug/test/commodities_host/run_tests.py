@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (C) 2026, The AROS Development Team. All rights reserved.
-"""
-Compile and run the production AllocCxStructure() over a standalone C99 fixture.
-"""
+"""Compile and run the production AllocCxStructure() over a standalone C99 fixture."""
 import argparse
 import os
 from pathlib import Path
