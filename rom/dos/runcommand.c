@@ -181,7 +181,16 @@
     {
         struct FileHandle *in = (struct FileHandle *)BADDR(Input());
         if (in->fh_Func3 != -1)
+        {
+            /* IoErr() is the command's secondary result. The flush seeks
+             * back over arguments the command did not read, and on a
+             * stream that cannot seek it fails with an error of its own.
+             */
+            LONG result2 = IoErr();
+
             Flush(Input());
+            SetIoErr(result2);
+        }
     }
 
     if (stack)

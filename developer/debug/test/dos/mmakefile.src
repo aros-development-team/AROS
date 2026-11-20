@@ -63,7 +63,8 @@ FILES := \
 
 PURE_FILES := \
     exit \
-    isfilesystem
+    isfilesystem \
+    runcommandioerr
 
 CUNITSTDCTESTFILES := \
     cunit-dos-fileseek \
