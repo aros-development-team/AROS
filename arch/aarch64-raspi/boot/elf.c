@@ -55,8 +55,19 @@ static inline elf_uintptr_t elf_read_uintptr(const void *p)
 uint32_t        int_shnum;
 uint32_t        int_shstrndx;
 
-int checkHeader(struct elfheader *eh)
+int checkHeader(struct elfheader *eh_file)
 {
+        /*
+         * Inside the BSP package an ELF header is only 4-byte aligned, and
+         * the MMU is still off, so any unaligned load faults. Read the
+         * header from an aligned copy: the compiler may otherwise merge its
+         * byte fields into wider loads based on the structure's alignment.
+         */
+        struct elfheader ehdr;
+        struct elfheader *eh = &ehdr;
+
+        elf_memcpy(eh, eh_file, sizeof(ehdr));
+
         if (eh->ident[0] != 0x7f || eh->ident[1] != 'E'  ||
                         eh->ident[2] != 'L'  || eh->ident[3] != 'F')
         {
@@ -69,7 +80,7 @@ int checkHeader(struct elfheader *eh)
         DELF(kprintf("[BOOT:ELF] shnum=%d\n", eh->shnum));
         DELF(kprintf("[BOOT:ELF] shstrndx=%d\n", eh->shstrndx));
         DELF({
-                volatile uint32_t *raw = (volatile uint32_t *)((uint8_t *)eh + 40);
+                volatile uint32_t *raw = (volatile uint32_t *)((uint8_t *)eh_file + 40);
                 kprintf("[BOOT:ELF] shoff raw: %08x %08x\n", raw[0], raw[1]);
         });
 
@@ -83,14 +94,17 @@ int checkHeader(struct elfheader *eh)
                         return 0;
                 }
 
-                struct sheader *sh = (struct sheader *)((intptr_t)eh + elf_read_uintptr(&eh->shoff));
-                DELF(kprintf("[BOOT:ELF] extended: sh=%p\n", sh));
+                struct sheader sh0;
+                void *sh_file = (void *)((intptr_t)eh_file + elf_read_uintptr(&eh->shoff));
+                DELF(kprintf("[BOOT:ELF] extended: sh=%p\n", sh_file));
+
+                elf_memcpy(&sh0, sh_file, sizeof(sh0));
 
                 if (int_shnum == 0)
-                        int_shnum = sh->size;
+                        int_shnum = sh0.size;
 
                 if (int_shstrndx == SHN_XINDEX)
-                        int_shstrndx = sh->link;
+                        int_shstrndx = sh0.link;
 
                 if (int_shnum == 0 || int_shstrndx == SHN_XINDEX)
                 {
@@ -278,7 +292,12 @@ static int relocate(struct elfheader *eh, struct sheader *sh, long shrel_idx,
         struct sheader *shsymtab = &sh[shrel->link];
         struct sheader *toreloc = &sh[shrel->info];
         uintptr_t orig_addr = deltas[shrel->info];
-        int is_exec = (eh->type == ET_EXEC);
+        uint16_t e_type;
+        int is_exec;
+
+        /* eh points into the package, which is only 4-byte aligned */
+        elf_memcpy(&e_type, &eh->type, sizeof(e_type));
+        is_exec = (e_type == ET_EXEC);
 
         struct symbol *symtab =
                         (struct symbol *)((uintptr_t)shsymtab->addr);
@@ -354,7 +373,7 @@ static int relocate(struct elfheader *eh, struct sheader *sh, long shrel_idx,
                         ("[BOOT:ELF] Undefined symbol '%s' in section '%s'\n",
                                         (char *)((uintptr_t) sh[shsymtab->link].addr) +
                                         sym->name,
-                                        (char *)((uintptr_t) sh[eh->shstrndx].addr) +
+                                        (char *)((uintptr_t) sh[int_shstrndx].addr) +
                                         toreloc->name);
                         return 0;
 
@@ -363,7 +382,7 @@ static int relocate(struct elfheader *eh, struct sheader *sh, long shrel_idx,
                         ("[BOOT:ELF] COMMON symbol '%s' in section '%s'\n",
                                         (char *)((uintptr_t) sh[shsymtab->link].addr) +
                                         sym->name,
-                                        (char *)((uintptr_t) sh[eh->shstrndx].addr) +
+                                        (char *)((uintptr_t) sh[int_shstrndx].addr) +
                                         toreloc->name);
                         return 0;
 
