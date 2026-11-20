@@ -45,7 +45,6 @@ static UQUAD copycount = 0;
 #define SSE_REG_MASK 0xF
 
 #define MEMFENCE __asm__ __volatile__ ("sfence":::"memory")
-#define MMENABLE __asm__ __volatile__ ("emms":::"memory")
 
 #define __byte_memcpy(src,dst,size)                             \
 {                                                               \
@@ -217,10 +216,7 @@ D(bug("[Exec] CopyMem: Copy remaining %ld bytes.\n", size));
         FENCE Memory to re-order again since movntq is weakly-ordered ?
     */
     MEMFENCE;
-    /*
-        enable FPU use ?
-    */
-    MMENABLE;
+    /* SSE/XMM copies do not use MMX; preserve the caller x87 state. */
 
     D(bug("[Exec] CopyMem: Finished.\n"));
 
