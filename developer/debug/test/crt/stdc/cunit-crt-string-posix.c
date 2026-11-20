@@ -66,6 +66,16 @@ void testSTRNDUP(void)
         CU_ASSERT_STRING_EQUAL(e, "hi");
         free(e);
     }
+
+    /* s does not have to be terminated within the first n bytes */
+    char nonterm[3] = { 'a', 'b', 'c' };
+    char *f = strndup(nonterm, sizeof(nonterm));
+    CU_ASSERT_PTR_NOT_NULL(f);
+    if (f)
+    {
+        CU_ASSERT_STRING_EQUAL(f, "abc");
+        free(f);
+    }
 }
 
 void testSTRNLEN(void)
