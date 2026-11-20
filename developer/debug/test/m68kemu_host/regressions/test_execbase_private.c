@@ -132,7 +132,8 @@ static ULONG get32(ULONG at)
     return (ULONG)arena[at] << 24 | (ULONG)arena[at+1] << 16 | (ULONG)arena[at+2] << 8 | arena[at+3];
 }
 static UWORD get16(ULONG at) { return (UWORD)(arena[at] << 8 | arena[at+1]); }
-static ULONG name_at(ULONG at, const char *s) { memcpy(arena + at, s, strlen(s) + 1); return at; }
+/* s is a string literal: its size is known, terminator included */
+#define name_at(at, s) (memcpy(arena + (at), (s), sizeof(s)), (ULONG)(at))
 static void reset(void)
 {
     memset(arena, 0xA5, sizeof(arena));
@@ -144,8 +145,10 @@ static void reset(void)
     openlibrary_calls = 0;
     findport_name = shadow_struct = NULL; shadow_native = NULL; findport_result = NULL; findsem_result = 0;
 }
-static int id(void) { return (BYTE)arena[BASE + M68K_EXECBASE_IDNESTCNT]; }
-static int td(void) { return (BYTE)arena[BASE + M68K_EXECBASE_TDNESTCNT]; }
+/* the two counts are signed bytes */
+static int nest_count(ULONG at) { int v = arena[at]; return v < 128 ? v : v - 256; }
+static int id(void) { return nest_count(BASE + M68K_EXECBASE_IDNESTCNT); }
+static int td(void) { return nest_count(BASE + M68K_EXECBASE_TDNESTCNT); }
 static IPTR find_name(ULONG list, ULONG name)
 {
     struct TestCPU cpu = {{0},{0}}; cpu.a[0] = list; cpu.a[1] = name;
@@ -257,7 +260,7 @@ static void lookup(void)
     unsigned i, before = checks, failed = failures;
 
     reset(); m68k_execbase_private(&context, BASE);
-    rexx = name_at(NAMES, "REXX"); absent = name_at(NAMES + 16, "no such port");
+    rexx = name_at(NAMES, "REXX");
     findport_result = &the_port;
     r = find_name(BASE + M68K_EXECBASE_PORTLIST, rexx);
     check(findport_calls == 1 && findport_name && !strcmp(findport_name, "REXX"), "PortList: the name goes to FindPort() once");
