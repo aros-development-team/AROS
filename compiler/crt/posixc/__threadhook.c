@@ -77,6 +77,13 @@ extern APTR TaskResBase;
 static LONG __posixc_threadbase_slot;
 #define POSIXC_THREAD_OPENING ((IPTR)1)
 
+/* A CLI-less Workbench Process is not necessarily a pthread worker. */
+BOOL __posixc_is_thread_worker(void)
+{
+    return __posixc_threadbase_slot > 0 &&
+           GetTaskStorageSlot(__posixc_threadbase_slot) != 0;
+}
+
 static void posixc_thread_enter(void)
 {
     /* Runs in a freshly-created pthread worker: give it its own per-task
