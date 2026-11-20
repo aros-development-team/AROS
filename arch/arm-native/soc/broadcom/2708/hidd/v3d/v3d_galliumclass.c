@@ -38,6 +38,8 @@
 
 #include "pipe/p_state.h"
 #include "pipe/p_screen.h"
+#include "pipe/p_context.h"
+#include "util/os_time.h"
 #include "util/u_inlines.h"
 #include "broadcom/common/v3d_limits.h"
 #include "v3d_screen.h"
@@ -255,6 +257,9 @@ APTR HiddV3D__Hidd_Gallium__CreatePipeScreen(OOP_Class *cl, OOP_Object *o,
         sd->sessions[i].vs_Dead   = FALSE;
         sd->sessions[i].vs_Screen = NULL;
         sd->sessions[i].vs_Task   = FindTask(NULL);
+        sd->sessions[i].vs_Pipe   = NULL;
+        sd->sessions[i].vs_Dst    = NULL;
+        sd->sessions[i].vs_DstAddr = 0;
     }
     ReleaseSemaphore(&sd->bo_lock);
     if (i == V3D_MAX_SESSIONS)
@@ -304,6 +309,19 @@ VOID HiddV3D__Hidd_Gallium__DestroyPipeScreen(OOP_Class *cl, OOP_Object *o,
     /* Quiesce first: context teardown can flush a trailing job, and
      * the screen is about to free the memory it renders from. */
     v3d_wait_idle(sd);
+
+    if (sid)
+    {
+        struct V3DSession *vs = &sd->sessions[sid - 1];
+        struct pipe_resource *dst = vs->vs_Dst;
+        struct pipe_context *pipe = vs->vs_Pipe;
+
+        pipe_resource_reference(&dst, NULL);
+        if (pipe)
+            pipe->destroy(pipe);
+        vs->vs_Dst = NULL;
+        vs->vs_Pipe = NULL;
+    }
 
     screen->destroy(screen);
 
@@ -447,6 +465,217 @@ VOID HiddV3D__Hidd_Gallium__DisplayResource(OOP_Class *cl, OOP_Object *o,
         FreeVec(detiled);
 }
 
+/* A HIDD standard pixel format as a pipe format, NONE when V3D has none */
+static enum pipe_format v3d_pipe_format(IPTR stdpf)
+{
+    switch (stdpf)
+    {
+    case vHidd_StdPixFmt_BGRA32:
+        return PIPE_FORMAT_B8G8R8A8_UNORM;
+    case vHidd_StdPixFmt_BGR032:
+        return PIPE_FORMAT_B8G8R8X8_UNORM;
+    case vHidd_StdPixFmt_RGB16_LE:
+        return PIPE_FORMAT_B5G6R5_UNORM;
+    default:
+        return PIPE_FORMAT_NONE;
+    }
+}
+
+/*
+ * Display memory at addr as a linear render target of pscreen: published as
+ * a GEM_OPEN name and imported by Mesa with its pitch. Scanout memory is
+ * identity mapped, so the address is the page's.
+ */
+static struct pipe_resource *v3d_import_linear(struct V3DData *sd, struct pipe_screen *pscreen,
+                                               IPTR addr, ULONG pitch, ULONG width, ULONG height,
+                                               enum pipe_format format)
+{
+    struct winsys_handle wh;
+    struct pipe_resource templ;
+    ULONG name = (ULONG)addr, i;
+
+    ObtainSemaphore(&sd->bo_lock);
+    for (i = 0; i < V3D_EXT_NAMES; i++)
+        if (sd->ext_name[i] == name)
+            break;
+    if (i == V3D_EXT_NAMES)
+    {
+        i = sd->ext_next;
+        sd->ext_next = (sd->ext_next + 1) % V3D_EXT_NAMES;
+    }
+    sd->ext_name[i] = name;
+    sd->ext_size[i] = pitch * height;
+    ReleaseSemaphore(&sd->bo_lock);
+
+    memset(&wh, 0, sizeof(wh));
+    wh.type     = WINSYS_HANDLE_TYPE_SHARED;
+    wh.handle   = name;
+    wh.stride   = pitch;
+    wh.modifier = DRM_FORMAT_MOD_LINEAR;
+
+    memset(&templ, 0, sizeof(templ));
+    templ.target     = PIPE_TEXTURE_2D;
+    templ.format     = format;
+    templ.width0     = width;
+    templ.height0    = height;
+    templ.depth0     = 1;
+    templ.array_size = 1;
+    templ.bind       = PIPE_BIND_RENDER_TARGET | PIPE_BIND_SAMPLER_VIEW
+                     | PIPE_BIND_SCANOUT | PIPE_BIND_LINEAR | PIPE_BIND_SHARED;
+    templ.usage      = PIPE_USAGE_DEFAULT;
+
+    return pscreen->resource_from_handle(pscreen, &templ, &wh,
+                                         PIPE_HANDLE_USAGE_FRAMEBUFFER_WRITE);
+}
+
+/* The screen bitmap bm as a resource of the session's screen, kept while
+ * it stays the same; NULL unless it is a vcgfx screen in scanout memory */
+static struct pipe_resource *v3d_screen_target(struct V3DData *sd, struct V3DSession *vs,
+                                               struct pipe_screen *pscreen, OOP_Object *bm)
+{
+    IPTR inscan = 0, addr = 0, pitch = 0, width = 0, height = 0, stdpf = 0;
+    OOP_Object *pf = NULL;
+    struct pipe_resource *dst = vs->vs_Dst;
+    enum pipe_format format;
+
+    if (!bm || !sd->hiddVCGfxBMAB || !sd->hiddBitMapAB || !sd->hiddPixFmtAB)
+        return NULL;
+    OOP_GetAttr(bm, sd->hiddVCGfxBMAB + aoVCGfxBM_ScanoutMem, &inscan);
+    if (!inscan)
+        return NULL;
+    OOP_GetAttr(bm, sd->hiddVCGfxBMAB + aoVCGfxBM_Drawable, &addr);
+    OOP_GetAttr(bm, sd->hiddBitMapAB + aoHidd_BitMap_BytesPerRow, &pitch);
+    OOP_GetAttr(bm, sd->hiddBitMapAB + aoHidd_BitMap_Width, &width);
+    OOP_GetAttr(bm, sd->hiddBitMapAB + aoHidd_BitMap_Height, &height);
+    OOP_GetAttr(bm, sd->hiddBitMapAB + aoHidd_BitMap_PixFmt, (IPTR *)&pf);
+    if (pf)
+        OOP_GetAttr(pf, sd->hiddPixFmtAB + aoHidd_PixFmt_StdPixFmt, &stdpf);
+    format = v3d_pipe_format(stdpf);
+    if (!addr || !pitch || !width || !height
+        || (format != PIPE_FORMAT_B8G8R8A8_UNORM && format != PIPE_FORMAT_B8G8R8X8_UNORM))
+        return NULL;
+
+    /* The same bitmap: what the last import gave, a failure included */
+    if (vs->vs_DstAddr == addr && vs->vs_DstPitch == pitch && vs->vs_DstWidth == width
+        && vs->vs_DstHeight == height && vs->vs_DstFormat == (IPTR)format)
+        return dst;
+
+    pipe_resource_reference(&dst, NULL);
+    dst = v3d_import_linear(sd, pscreen, addr, pitch, width, height, format);
+    bug("[V3D] present: screen bitmap at 0x%lx (%lux%lu) %s for GPU blits\n", (unsigned long)addr,
+        (unsigned long)width, (unsigned long)height, dst ? "imported" : "cannot be imported");
+    vs->vs_Dst = dst;
+    vs->vs_DstAddr = addr;
+    vs->vs_DstPitch = pitch;
+    vs->vs_DstWidth = width;
+    vs->vs_DstHeight = height;
+    vs->vs_DstFormat = format;
+    return dst;
+}
+
+/*
+ * The GPU copies the rectangle straight into the screen bitmap, one blit
+ * per visible cliprect, while the layer is locked and until it is done.
+ * FALSE when the target is not a screen the GPU can render into.
+ */
+static BOOL v3d_present_gpu(struct V3DData *sd, struct v3d_resource *rsc, struct RastPort *rp,
+                            LONG xSrc, LONG ySrc, LONG xDest, LONG yDest, LONG xSize, LONG ySize)
+{
+    struct pipe_screen *pscreen = rsc->base.screen;
+    struct Layer *L = rp->Layer;
+    struct V3DSession *vs;
+    struct pipe_context *pipe;
+    struct pipe_resource *dst;
+    struct pipe_fence_handle *fence = NULL;
+    struct Rectangle area, result;
+    struct ClipRect *CR;
+    ULONG sid = v3d_session_of(sd, pscreen);
+    BOOL copied = FALSE;
+
+    if (!sid || !IS_HIDD_BM(rp->BitMap))
+        return FALSE;
+    vs = &sd->sessions[sid - 1];
+    if (!vs->vs_Pipe)
+        vs->vs_Pipe = pscreen->context_create(pscreen, NULL, 0);
+    if (!(pipe = vs->vs_Pipe))
+        return FALSE;
+
+    LockLayerRom(L);
+    if (!(dst = v3d_screen_target(sd, vs, pscreen, HIDD_BM_OBJ(rp->BitMap))))
+    {
+        UnlockLayerRom(L);
+        return FALSE;
+    }
+
+    area.MinX = L->bounds.MinX + xDest;
+    area.MinY = L->bounds.MinY + yDest;
+    area.MaxX = area.MinX + xSize - 1;
+    area.MaxY = area.MinY + ySize - 1;
+    if (area.MaxX > L->bounds.MaxX)
+        area.MaxX = L->bounds.MaxX;
+    if (area.MaxY > L->bounds.MaxY)
+        area.MaxY = L->bounds.MaxY;
+
+    for (CR = L->ClipRect; CR; CR = CR->Next)
+    {
+        struct pipe_blit_info blit;
+
+        if (CR->lobs || !AndRectRect(&area, &CR->bounds, &result))
+            continue;
+
+        memset(&blit, 0, sizeof(blit));
+        blit.src.resource = &rsc->base;
+        blit.src.format = rsc->base.format;
+        blit.src.box.x = xSrc + result.MinX - area.MinX;
+        blit.src.box.y = ySrc + result.MinY - area.MinY;
+        blit.src.box.width = result.MaxX - result.MinX + 1;
+        blit.src.box.height = result.MaxY - result.MinY + 1;
+        blit.src.box.depth = 1;
+        blit.dst.resource = dst;
+        blit.dst.format = dst->format;
+        blit.dst.box.x = result.MinX;
+        blit.dst.box.y = result.MinY;
+        blit.dst.box.width = blit.src.box.width;
+        blit.dst.box.height = blit.src.box.height;
+        blit.dst.box.depth = 1;
+        blit.mask = PIPE_MASK_RGBA;
+        blit.filter = PIPE_TEX_FILTER_NEAREST;
+        /* The blitter's viewport is the whole screen: without a scissor the
+         * job loads and stores every tile of it */
+        blit.scissor_enable = TRUE;
+        blit.scissor.minx = result.MinX;
+        blit.scissor.miny = result.MinY;
+        blit.scissor.maxx = result.MaxX + 1;
+        blit.scissor.maxy = result.MaxY + 1;
+        pipe->blit(pipe, &blit);
+        copied = TRUE;
+    }
+
+    if (copied)
+    {
+        struct pHidd_BitMap_UpdateRect urmsg =
+        {
+            .mID    = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_UpdateRect),
+            .x      = area.MinX,
+            .y      = area.MinY,
+            .width  = area.MaxX - area.MinX + 1,
+            .height = area.MaxY - area.MinY + 1,
+        };
+
+        /* Done before the layer may move */
+        pipe->flush(pipe, &fence, 0);
+        if (fence)
+        {
+            pscreen->fence_finish(pscreen, NULL, fence, OS_TIMEOUT_INFINITE);
+            pscreen->fence_reference(pscreen, &fence, NULL);
+        }
+        OOP_DoMethod(HIDD_BM_OBJ(rp->BitMap), (OOP_Msg)&urmsg);
+    }
+
+    UnlockLayerRom(L);
+    return TRUE;
+}
+
 /*
  * Whole-window present: a per-cliprect WritePixelArray from the raster
  * resource. GL that renders straight into display memory goes through
@@ -476,10 +705,6 @@ IPTR HiddV3D__Hidd_Gallium__DisplayResourceRP(OOP_Class *cl, OOP_Object *o,
 
     if (!sd->powered || !rsc || !rsc->bo || !rp)
         return FALSE;
-    /* Tiled or exotic sources go through the detiling DisplayResource. */
-    if (rsc->slices[0].tiling != V3D_TILING_RASTER || rsc->cpp != 4
-        || rsc->slices[0].offset != 0)
-        return FALSE;
     if (!(L = rp->Layer))
         return FALSE;
     if (!IsLayerVisible(L))
@@ -493,6 +718,14 @@ IPTR HiddV3D__Hidd_Gallium__DisplayResourceRP(OOP_Class *cl, OOP_Object *o,
         xSize = (LONG)rsc->base.width0 - xSrc;
     if (ySize > (LONG)rsc->base.height0 - ySrc)
         ySize = (LONG)rsc->base.height0 - ySrc;
+
+    if (v3d_present_gpu(sd, rsc, rp, xSrc, ySrc, xDest, yDest, xSize, ySize))
+        return TRUE;
+
+    /* Tiled or exotic sources go through the detiling DisplayResource. */
+    if (rsc->slices[0].tiling != V3D_TILING_RASTER || rsc->cpp != 4
+        || rsc->slices[0].offset != 0)
+        return FALSE;
 
     stride = rsc->slices[0].stride;
 
@@ -598,11 +831,9 @@ APTR HiddV3D__Hidd_Gallium__ResourceFromBitMap(OOP_Class *cl, OOP_Object *o,
     struct pHidd_BitMap_LockBuffer lmsg;
     struct pHidd_BitMap_UnlockBuffer umsg;
     struct Rectangle none = { 0, 0, -1, -1 };
-    struct winsys_handle wh;
-    struct pipe_resource templ;
     enum pipe_format format;
     UBYTE *addr = NULL;
-    ULONG pitch = 0, name, i;
+    ULONG pitch = 0;
 
     if (!pscreen || !pscreen->resource_from_handle || !bm
         || !sd->hiddBitMapAB || !sd->hiddPixFmtAB)
@@ -617,20 +848,8 @@ APTR HiddV3D__Hidd_Gallium__ResourceFromBitMap(OOP_Class *cl, OOP_Object *o,
     if (!scanout || !width || !height)
         return NULL;
 
-    switch (stdpf)
-    {
-    case vHidd_StdPixFmt_BGRA32:
-        format = PIPE_FORMAT_B8G8R8A8_UNORM;
-        break;
-    case vHidd_StdPixFmt_BGR032:
-        format = PIPE_FORMAT_B8G8R8X8_UNORM;
-        break;
-    case vHidd_StdPixFmt_RGB16_LE:
-        format = PIPE_FORMAT_B5G6R5_UNORM;
-        break;
-    default:
+    if ((format = v3d_pipe_format(stdpf)) == PIPE_FORMAT_NONE)
         return NULL;
-    }
 
     lmsg.mID           = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_LockBuffer);
     lmsg.buffer        = msg->buffer;
@@ -644,38 +863,5 @@ APTR HiddV3D__Hidd_Gallium__ResourceFromBitMap(OOP_Class *cl, OOP_Object *o,
     umsg.dirty  = &none;
     OOP_DoMethod(bm, (OOP_Msg)&umsg);
 
-    /* Scanout memory is identity mapped: the address is the page's */
-    name = (ULONG)(IPTR)addr;
-    ObtainSemaphore(&sd->bo_lock);
-    for (i = 0; i < V3D_EXT_NAMES; i++)
-        if (sd->ext_name[i] == name)
-            break;
-    if (i == V3D_EXT_NAMES)
-    {
-        i = sd->ext_next;
-        sd->ext_next = (sd->ext_next + 1) % V3D_EXT_NAMES;
-    }
-    sd->ext_name[i] = name;
-    sd->ext_size[i] = pitch * height;
-    ReleaseSemaphore(&sd->bo_lock);
-
-    memset(&wh, 0, sizeof(wh));
-    wh.type     = WINSYS_HANDLE_TYPE_SHARED;
-    wh.handle   = name;
-    wh.stride   = pitch;
-    wh.modifier = DRM_FORMAT_MOD_LINEAR;
-
-    memset(&templ, 0, sizeof(templ));
-    templ.target     = PIPE_TEXTURE_2D;
-    templ.format     = format;
-    templ.width0     = width;
-    templ.height0    = height;
-    templ.depth0     = 1;
-    templ.array_size = 1;
-    templ.bind       = PIPE_BIND_RENDER_TARGET | PIPE_BIND_SAMPLER_VIEW
-                     | PIPE_BIND_SCANOUT | PIPE_BIND_LINEAR | PIPE_BIND_SHARED;
-    templ.usage      = PIPE_USAGE_DEFAULT;
-
-    return pscreen->resource_from_handle(pscreen, &templ, &wh,
-                                         PIPE_HANDLE_USAGE_FRAMEBUFFER_WRITE);
+    return v3d_import_linear(sd, pscreen, (IPTR)addr, pitch, width, height, format);
 }
