@@ -92,6 +92,7 @@ static int devInit(LIBBASETYPEPTR base)
                                       16384, 4096);
         if(base->hd_MemPool) {
             NewList(&base->hd_Units);
+            usbInitBuffers();
 
             KPRINTF(10, "Ok\n");
         } else {
@@ -173,6 +174,7 @@ static int devExpunge(LIBBASETYPEPTR base)
 {
     pciExpunge(base);
 
+    usbFreeBuffers();
     DeletePool(base->hd_MemPool);
 
     KPRINTF(5, "closelibrary utilitybase 0x%p\n",

@@ -7,8 +7,14 @@
 
 #if (__WORDSIZE == 64)
 
+void usbInitBuffers(void);
+void usbFreeBuffers(void);
+BOOL usbBufferFits(APTR data, ULONG len);
 APTR usbGetBuffer(APTR data, ULONG len, UWORD dir);
 void usbReleaseBuffer(APTR buffer, APTR data, ULONG len, UWORD dir);
+
+/* usbGetBuffer() had no room for a bounce buffer: leave the request queued and try again later */
+#define usbBufferFailed(buffer, len) (!(buffer) && (len))
 
 #else
 
@@ -16,6 +22,10 @@ void usbReleaseBuffer(APTR buffer, APTR data, ULONG len, UWORD dir);
 
 #define usbGetBuffer(data, len, dir) ({ (void)(len); (void)(dir); (data);})
 #define usbReleaseBuffer(buffer, data, len, dir) do { (void)(buffer); (void)(data); (void)(len); (void)(dir); } while (0)
+#define usbInitBuffers() do { } while (0)
+#define usbFreeBuffers() do { } while (0)
+#define usbBufferFits(data, len) ({ (void)(data); (void)(len); TRUE; })
+#define usbBufferFailed(buffer, len) ({ (void)(buffer); (void)(len); FALSE; })
 
 #endif
 

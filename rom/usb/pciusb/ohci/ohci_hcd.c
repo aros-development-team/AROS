@@ -895,6 +895,13 @@ static ULONG ohciScheduleCtrlTDs(struct PCIController *hc)
 
         /* CHECKME: As i can understand, setup packet is always sent TO the device. Is this true? */
         oed->oed_SetupData = usbGetBuffer(&ioreq->iouh_SetupData, len, UHDIR_OUT);
+        if(usbBufferFailed(oed->oed_SetupData, len)) {
+            // no bounce buffer? try again later
+            ohciFreeTD(hc, setupotd);
+            ohciFreeTD(hc, termotd);
+            ohciFreeED(hc, oed);
+            break;
+        }
         ohciPrepareDMABuffer(hc, setupotd, oed->oed_SetupData, len, DMA_ReadFromRAM);
 
         pciusbOHCIDebug("OHCI", "TD send: %08lx - %08lx\n", READMEM32_LE(&setupotd->otd_BufferPtr),
@@ -905,6 +912,14 @@ static ULONG ohciScheduleCtrlTDs(struct PCIController *hc)
         predotd = setupotd;
         if (ioreq->iouh_Length) {
             oed->oed_Buffer = usbGetBuffer(ioreq->iouh_Data, ioreq->iouh_Length, (ioreq->iouh_SetupData.bmRequestType & URTF_IN) ? UHDIR_IN : UHDIR_OUT);
+            if(usbBufferFailed(oed->oed_Buffer, ioreq->iouh_Length)) {
+                // no bounce buffer? try again later
+                usbReleaseBuffer(oed->oed_SetupData, &ioreq->iouh_SetupData, 0, 0);
+                ohciFreeTD(hc, setupotd);
+                ohciFreeTD(hc, termotd);
+                ohciFreeED(hc, oed);
+                break;
+            }
             actual = 0;
             do {
                 dataotd = ohciAllocTD(hc);
@@ -1065,6 +1080,11 @@ static void ohciScheduleIntTDs(struct PCIController *hc)
 
         predotd = NULL;
         oed->oed_Buffer = usbGetBuffer(ioreq->iouh_Data, ioreq->iouh_Length, ioreq->iouh_Dir);
+        if(usbBufferFailed(oed->oed_Buffer, ioreq->iouh_Length)) {
+            // no bounce buffer? try again later
+            ohciFreeED(hc, oed);
+            break;
+        }
         actual = 0;
         do {
             otd = ohciAllocTD(hc);
@@ -1208,6 +1228,11 @@ static ULONG ohciScheduleBulkTDs(struct PCIController *hc)
 
         predotd = NULL;
         oed->oed_Buffer = usbGetBuffer(ioreq->iouh_Data, ioreq->iouh_Length, ioreq->iouh_Dir);
+        if(usbBufferFailed(oed->oed_Buffer, ioreq->iouh_Length)) {
+            // no bounce buffer? try again later
+            ohciFreeED(hc, oed);
+            break;
+        }
         actual = 0;
         do {
             if((actual >= OHCI_TD_BULK_LIMIT) && (actual < ioreq->iouh_Length)) {
