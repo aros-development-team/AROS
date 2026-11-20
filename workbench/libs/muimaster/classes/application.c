@@ -2472,6 +2472,48 @@ static IPTR Application__MUIM_RemInputHandler(struct IClass *cl,
  */
 void _zune_window_message(struct IntuiMessage *imsg);   /* from window.c */
 
+/* Take the next message from the windows port. A size change makes its
+ * window lay out and redraw everything, which can take long; a refresh only
+ * redraws the damaged part. When a size change is first in the queue and a
+ * refresh for another window waits behind it, take the refresh first, so
+ * that the other window does not show what the resized one left on it for
+ * the whole time of the layout. The order of the messages of one window is
+ * kept.
+ */
+static struct IntuiMessage *application_get_window_message(struct MsgPort
+    *port)
+{
+    struct IntuiMessage *imsg, *found = NULL;
+
+    Forbid();
+    imsg = (struct IntuiMessage *)port->mp_MsgList.lh_Head;
+    if (imsg->ExecMessage.mn_Node.ln_Succ
+        && (imsg->Class == IDCMP_NEWSIZE
+            || imsg->Class == IDCMP_CHANGEWINDOW))
+    {
+        struct IntuiMessage *next;
+
+        for (next = (struct IntuiMessage *)imsg->ExecMessage.mn_Node.ln_Succ;
+            next->ExecMessage.mn_Node.ln_Succ;
+            next = (struct IntuiMessage *)next->ExecMessage.mn_Node.ln_Succ)
+        {
+            if (next->Class == IDCMP_REFRESHWINDOW
+                && next->IDCMPWindow != imsg->IDCMPWindow)
+            {
+                found = next;
+                Remove(&found->ExecMessage.mn_Node);
+                break;
+            }
+        }
+    }
+    Permit();
+
+    if (found)
+        return found;
+
+    return (struct IntuiMessage *)GetMsg(port);
+}
+
 /****** Application.mui/MUIM_Application_InputBuffered ************
 *
 *   NAME
@@ -2509,7 +2551,7 @@ static IPTR Application__MUIM_InputBuffered(struct IClass *cl, Object *obj,
         ;
 
     imsg =
-        (struct IntuiMessage *)GetMsg(data->app_GlobalInfo.mgi_WindowsPort);
+        application_get_window_message(data->app_GlobalInfo.mgi_WindowsPort);
     if (imsg != NULL)
     {
         /* Let window object process message */
@@ -2617,7 +2659,7 @@ static IPTR Application__MUIM_NewInput(struct IClass *cl, Object *obj,
             /* process all pushed methods */
 
             while ((imsg =
-                    (struct IntuiMessage *)GetMsg(data->app_GlobalInfo.
+                    application_get_window_message(data->app_GlobalInfo.
                         mgi_WindowsPort)))
             {
                 /* Let window object process message */
