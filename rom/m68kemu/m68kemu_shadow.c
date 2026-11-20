@@ -562,15 +562,62 @@ void *m68k_to_native_struct(struct M68KEmuContext *ctx,
 
 /* ── ExecBase shadow init ── */
 
-/* Map the 68k list offsets to the target's native ExecBase layout. */
-static const struct { UWORD m68k_off; UWORD native_off; const char *name; } execbase_lists[] = {
-    { M68K_EXECBASE_INTRLIST,      offsetof(struct ExecBase, IntrList), "IntrList" },
-    { M68K_EXECBASE_PORTLIST,      offsetof(struct ExecBase, PortList), "PortList" },
-    { M68K_EXECBASE_TASKREADY,     offsetof(struct ExecBase, TaskReady), "TaskReady" },
-    { M68K_EXECBASE_TASKWAIT,      offsetof(struct ExecBase, TaskWait), "TaskWait" },
-    { M68K_EXECBASE_SEMAPHORELIST, offsetof(struct ExecBase, SemaphoreList), "SemaphoreList" },
-    {   0,    0, NULL },
-};
+/* IDNestCnt and TDNestCnt of the program's ExecBase show its own Disable()
+   and Forbid() nesting, -1 when there is none. Inside the emulator a
+   Disable() also counts as a Forbid(); the program sees the two apart. */
+static void m68k_nest_counts_at(struct M68KEmuContext *ctx, ULONG m68k_base)
+{
+    LONG forbid = ctx->forbid - ctx->disable;
+
+    if (forbid < 0)
+        forbid = 0;
+    ctx->mem[m68k_base + M68K_EXECBASE_IDNESTCNT] = (UBYTE)(ctx->disable - 1);
+    ctx->mem[m68k_base + M68K_EXECBASE_TDNESTCNT] = (UBYTE)(forbid - 1);
+}
+
+void m68k_nest_counts(struct M68KEmuContext *ctx)
+{
+    if (ctx->m68k_sysbase && ctx->mem)
+        m68k_nest_counts_at(ctx, ctx->m68k_sysbase);
+}
+
+/* What exec keeps for one CPU or for its scheduler alone is not in the
+   native SysBase of an SMP build, and its interrupt, port, task and
+   semaphore lists are guarded by locks the program never takes. None of
+   that is taken from the native ExecBase: the five lists are empty lists
+   in the program's memory, and the scheduler fields hold values the
+   emulator owns. FindName() on PortList and SemaphoreList goes through
+   FindPort() and FindSemaphore(), which take the locks (see the FindName
+   thunk). */
+static void m68k_execbase_private(struct M68KEmuContext *ctx, ULONG m68k_base)
+{
+    static const struct { UWORD off; UBYTE type; } lists[] =
+    {
+        { M68K_EXECBASE_INTRLIST,      NT_INTERRUPT },
+        { M68K_EXECBASE_PORTLIST,      NT_MSGPORT },
+        { M68K_EXECBASE_TASKREADY,     NT_TASK },
+        { M68K_EXECBASE_TASKWAIT,      NT_TASK },
+        { M68K_EXECBASE_SEMAPHORELIST, NT_SEMAPHORE },
+    };
+
+    for (int i = 0; i < 5; i++)
+    {
+        ULONG l = m68k_base + lists[i].off;
+
+        m68k_write32(ctx, l + 0, l + 4);        /* lh_Head: the tail node */
+        m68k_write32(ctx, l + 4, 0);            /* lh_Tail */
+        m68k_write32(ctx, l + 8, l);            /* lh_TailPred: the head node */
+        ctx->mem[l + 12] = lists[i].type;
+        ctx->mem[l + 13] = 0;
+    }
+    m68k_write32(ctx, m68k_base + M68K_EXECBASE_IDLECOUNT, 0);
+    m68k_write32(ctx, m68k_base + M68K_EXECBASE_DISPCOUNT, 0);
+    m68k_write16(ctx, m68k_base + M68K_EXECBASE_QUANTUM, 4);    /* exec's time slice, in ticks */
+    m68k_write16(ctx, m68k_base + M68K_EXECBASE_ELAPSED, 4);
+    m68k_write16(ctx, m68k_base + M68K_EXECBASE_SYSFLAGS, 0);
+    m68k_write16(ctx, m68k_base + M68K_EXECBASE_ATTNRESCHED, 0);
+    m68k_nest_counts_at(ctx, m68k_base);
+}
 
 /* Name a library, device or resource base and add it to its ExecBase list */
 void m68k_publish_base(struct M68KEmuContext *ctx, ULONG base, const char *name)
@@ -767,11 +814,9 @@ ULONG shadow_init_execbase(struct M68KEmuContext *ctx, ULONG m68k_base, void *na
             m68k_publish_base(ctx, ctx->libs[i].m68k_addr, ctx->libs[i].name);
     }
 
-    /* Embedded lists: register each native list as a shadow */
-    for (int i = 0; execbase_lists[i].name; i++) {
-        struct List *native_list = (struct List *)((UBYTE *)native_sysbase + execbase_lists[i].native_off);
-        shadow_register(ctx, m68k_base + execbase_lists[i].m68k_off, native_list, 17);
-    }
+    /* The lists and fields that are not the program's to see on an SMP
+       build: nothing of them comes from the native ExecBase */
+    m68k_execbase_private(ctx, m68k_base);
 
     return m68k_base;
 }

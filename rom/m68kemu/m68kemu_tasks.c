@@ -314,6 +314,7 @@ void m68k_gil_obtain(struct M68KEmuContext *ctx)
     ctx->forbid = ts->forbid;
     ctx->disable = ts->disable;
     ts->forbid = ts->disable = 0;
+    m68k_nest_counts(ctx);      /* the program's ExecBase shows the nesting of the task that runs */
 }
 
 void m68k_gil_release(struct M68KEmuContext *ctx)

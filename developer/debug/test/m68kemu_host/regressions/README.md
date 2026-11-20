@@ -604,3 +604,70 @@ leak detection by default; `ASAN_OPTIONS` can override it.
 production includes without compiling or executing a test. These focused
 checks do not create a native process, take a real lock, execute the CPU or
 any guest code, or qualify a complete library or application.
+
+## ExecBase lists and scheduler fields of the program
+
+Run from the repository root:
+
+```sh
+make -C developer/debug/test/m68kemu_host test-execbase-private
+make -C developer/debug/test/m68kemu_host test-execbase-private-sanitize
+```
+
+The ordinary fixture is part of the host Makefile's `test` target. It needs
+Python 3.9+ and a C99 compiler; ASan/UBSan are optional. `PYTHON` and `CC`
+select those tools. `EXECBASE_PRIVATE_ARGS` passes runner options such as
+`--source-root /path/to/AROS` and `--build-dir /tmp/execbase-private`.
+Use a fresh build directory; the default temporary directory is removed.
+The fixture is built with `-std=c99 -Wall -Wextra -Werror`, so a compiler
+warning fails the target; the sanitizer target adds ASan and UBSan without
+recovery.
+
+On an SMP build exec keeps `IntrList`, `PortList`, `TaskReady`, `TaskWait`
+and `SemaphoreList` behind private locks, the running tasks on a private
+list, and `ThisTask`, `Quantum`, `Elapsed`, `IDNestCnt`, `TDNestCnt`,
+`IdleCount`, `DispCount`, `SysFlags` and `AttnResched` per CPU or for its
+scheduler alone. A 68k program takes none of those locks, so its ExecBase
+gets none of this from the native one: the five lists are empty lists in its
+own memory, the scheduler fields hold values the emulator owns, the two
+nesting counts follow the program's own `Forbid()` and `Disable()`, and
+`FindName()` on `PortList` and `SemaphoreList` goes through `FindPort()` and
+`FindSemaphore()`.
+
+The runner extracts the actual `m68k_nest_counts_at`, `m68k_nest_counts` and
+`m68k_execbase_private` from `m68kemu_shadow.c`, the `Forbid`, `Permit`,
+`Disable`, `Enable` and `FindName` thunks from `m68kemu_thunks.c`,
+`m68k_gil_obtain` from `m68kemu_tasks.c`, five accessors from
+`m68kemu_intern.h`, the ExecBase offsets and the `ML_NATIVE` test. It also
+reads `shadow_init_execbase` and stops when that function still registers one
+of the five lists as a shadow. The fixture supplies the context fields these
+functions use and records what they would ask of the bridge and of exec: the
+shadow lookup, `FindPort`, the `FindSemaphore` thunk, the native `FindName`,
+a shadow made for a result, and a pointer handed to a native call.
+
+The 31 layout checks cover the five lists (head, tail, tail predecessor, node
+type, and no shadow registered for the header), the six scheduler fields, the
+two nesting counts, and that nothing else in the ExecBase or around it is
+written. The 24 nesting checks cover eight combinations of the two counters,
+including a `Disable()` alone and a `Permit()` too many under `Disable()`, a
+sequence of twelve calls through the four thunks, a task that takes the
+program's lock with its own nesting and one without, and a context without
+an ExecBase. The 14 lookup checks cover `PortList` with a known name, an
+unknown name and no name, `SemaphoreList`, the three lists that stay empty,
+and the unchanged cases: `LibList`, `DeviceList` and `ResourceList`, and a
+list in the program's memory.
+
+The fixture prints a `FAIL:` line for a failed check, the `layout`, `nesting`
+and `lookup` group lines and a final `execbase private: 69 checks, <n> failed`
+line. Its exit status is 1 when any check failed, which make reports as an
+error. On a tree that maps the five lists to the native ExecBase, the runner
+prepares the functions that exist, the fixture stands in for the missing ones
+the way that tree behaves (the lists registered as shadows, nothing written,
+no count kept), and 62 of the 69 checks fail. Sanitized runs disable leak
+detection by default; `ASAN_OPTIONS` can override it.
+
+`--prepare-only --build-dir /tmp/execbase-private` emits the actual
+production includes without compiling or executing a test. These focused
+checks do not set up a whole ExecBase, run the CPU or any guest code, take a
+real lock, call exec, or qualify a complete library or application; in
+particular they do not show what a program does with the empty lists.

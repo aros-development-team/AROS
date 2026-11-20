@@ -365,6 +365,8 @@ void  m68k_sem_list(struct M68KEmuContext *ctx, ULONG list, BOOL obtain);
 void  m68k_gfx_disown(struct M68KEmuContext *ctx, APTR p);
 void  m68k_gil_init(struct M68KEmuContext *ctx);
 void  m68k_gil_obtain(struct M68KEmuContext *ctx);
+/* IDNestCnt and TDNestCnt of the program's ExecBase follow ctx->disable and ctx->forbid */
+void  m68k_nest_counts(struct M68KEmuContext *ctx);
 void  m68k_gil_release(struct M68KEmuContext *ctx);
 void  m68k_gil_yield(struct M68KEmuContext *ctx);
 BOOL  m68k_port_is_68k(struct M68KEmuContext *ctx, ULONG mport);

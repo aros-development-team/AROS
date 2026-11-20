@@ -484,19 +484,20 @@ static IPTR thunk_exec_FindTask(struct M68KEmuContext *ctx, void *cpu)
 }
 
 /* -132: Forbid() */
-static IPTR thunk_exec_Forbid(struct M68KEmuContext *ctx, void *cpu) { ctx->forbid++; return 0; }
+static IPTR thunk_exec_Forbid(struct M68KEmuContext *ctx, void *cpu) { ctx->forbid++; m68k_nest_counts(ctx); return 0; }
 
 /* -120: Disable() / -126: Enable(): the program's own tasks and its
    vertical blank wait; native interrupts are never turned off for it */
-static IPTR thunk_exec_Disable_m(struct M68KEmuContext *ctx, void *cpu) { ctx->forbid++; ctx->disable++; return 0; }
+static IPTR thunk_exec_Disable_m(struct M68KEmuContext *ctx, void *cpu) { ctx->forbid++; ctx->disable++; m68k_nest_counts(ctx); return 0; }
 static IPTR thunk_exec_Enable_m(struct M68KEmuContext *ctx, void *cpu)
 {
     if (ctx->disable > 0) { ctx->disable--; if (ctx->forbid > 0) ctx->forbid--; }
+    m68k_nest_counts(ctx);
     return 0;
 }
 
 /* -138: Permit() */
-static IPTR thunk_exec_Permit(struct M68KEmuContext *ctx, void *cpu) { if (ctx->forbid > 0) ctx->forbid--; return 0; }
+static IPTR thunk_exec_Permit(struct M68KEmuContext *ctx, void *cpu) { if (ctx->forbid > 0) ctx->forbid--; m68k_nest_counts(ctx); return 0; }
 
 /* -624: CopyMem(A0=source, A1=dest, D0=size) */
 static IPTR thunk_exec_CopyMem(struct M68KEmuContext *ctx, void *cpu)
@@ -1913,6 +1914,19 @@ static IPTR thunk_exec_FindName(struct M68KEmuContext *ctx, void *cpu)
     if (m68k_list == ctx->m68k_sysbase + M68K_EXECBASE_DEVICELIST ||
         m68k_list == ctx->m68k_sysbase + M68K_EXECBASE_RESOURCELIST)
         return 0;
+    /* PortList and SemaphoreList are empty in the fake ExecBase as well:
+       exec guards the native lists with locks the program does not take,
+       so a name is looked up through the calls that take them */
+    if (m68k_list == ctx->m68k_sysbase + M68K_EXECBASE_PORTLIST)
+    {
+        struct MsgPort *port;
+
+        name = (CONST_STRPTR)m68k_to_host(ctx, THUNK_A(1));
+        port = name ? FindPort(name) : NULL;
+        return port ? shadow_create_by_name(ctx, "MsgPort", port) : 0;
+    }
+    if (m68k_list == ctx->m68k_sysbase + M68K_EXECBASE_SEMAPHORELIST)
+        return thunk_exec_FindSemaphore(ctx, cpu);
 
     if (!ML_NATIVE(m68k_list))
     {
