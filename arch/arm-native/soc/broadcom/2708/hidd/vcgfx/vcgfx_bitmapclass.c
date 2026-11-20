@@ -306,6 +306,10 @@ VOID MNAME_ROOT(Get)(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
         case aoHidd_VideoCoreGfxBitMap_Drawable:
             *msg->storage = (IPTR)data->VideoData;
             break;
+        case aoHidd_VideoCoreGfxBitMap_ScanoutMem:
+            /* Identity mapped, contiguous and uncached: the GPU can render into it */
+            *msg->storage = !data->nbufs && data->scan[0].sb_Raw && data->VideoData == data->scan[0].sb_Pixels;
+            break;
         default:
             OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
         }
