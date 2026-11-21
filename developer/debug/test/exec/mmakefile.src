@@ -11,6 +11,7 @@ USER_CPPFLAGS := -D__AROS_GIMME_DEPRECATED_STACKSWAP__
 
 EXECPUBLICFILES :=		\
     alert		\
+    allocabs		\
     allocmem		\
     allocxxx        \
     childstatus		\
