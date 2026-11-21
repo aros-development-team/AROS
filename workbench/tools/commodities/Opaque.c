@@ -95,6 +95,12 @@ static LONG  gadgetLeft, gadgetTop;
 static LONG  gadgetWidth, gadgetHeight;
 static BYTE  actionsig, icontrolsig;
 static UBYTE actiontype;
+static BOOL  opaque_active;
+static WORD  endmousex, endmousey;
+static UBYTE sizewaits;
+
+/* Frames to wait for a program that does not take its IDCMP_NEWSIZE */
+#define MAXSIZEWAITS 25
 static BOOL quitme, disabled;
 static BOOL offScreenLayersFlag;
 static struct NotifyRequest *IControlChangeNR;
@@ -102,7 +108,7 @@ static struct NotifyRequest *IControlChangeNR;
 static IPTR args[NUM_ARGS];
 static char s[256];
 
-static void HandleAction(void);
+static BOOL HandleAction(void);
 static void HandleIControl(void);
 
 /**********************************************************************************************/
@@ -410,8 +416,6 @@ static void GetArguments(int argc, char **argv)
 
 static void OpaqueAction(CxMsg *msg,CxObj *obj)
 {
-    static BOOL opaque_active = FALSE;
-
     struct InputEvent *ie = (struct InputEvent *)CxMsgData(msg);
     struct Screen *scr;
 
@@ -515,6 +519,9 @@ static void OpaqueAction(CxMsg *msg,CxObj *obj)
             case SELECTUP:
                 if (opaque_active)
                 {
+                    /* The window ends where the pointer was on release */
+                    endmousex = actionscr->MouseX;
+                    endmousey = actionscr->MouseY;
                     opaque_active = FALSE;
                     if (!offScreenLayersFlag) SetPointerBounds(actionscr, NULL, 0, NULL);
                     DisposeCxMsg(msg);
@@ -606,15 +613,45 @@ static BOOL WindowIsOpen(struct Window *win)
 
 /************************************************************************************/
 
-/* Move window to absolute position newWindowX, newWindowY */
-static void HandleAction(void)
+/* Has the owner of the window not yet taken the IDCMP_NEWSIZE of an earlier
+   resize? Call with IntuitionBase locked. */
+static BOOL SizePending(struct Window *win)
+{
+    struct MsgPort *port = win->UserPort;
+    struct Node *node;
+    BOOL pending = FALSE;
+
+    if (!port) return FALSE;
+
+    Forbid();
+    ForeachNode(&port->mp_MsgList, node)
+    {
+        struct IntuiMessage *im = (struct IntuiMessage *)node;
+
+        if ((im->ExecMessage.mn_Length >= sizeof(struct IntuiMessage)) &&
+            (im->Class == IDCMP_NEWSIZE) && (im->IDCMPWindow == win))
+        {
+            pending = TRUE;
+            break;
+        }
+    }
+    Permit();
+
+    return pending;
+}
+
+/************************************************************************************/
+
+/* Move or resize the window to where the pointer is. Returns TRUE when the
+   request was put off and has to be tried again. */
+static BOOL HandleAction(void)
 {
     struct Window *win = actionwin;
     WORD mousex = 0, mousey = 0, winx = 0, winy = 0, winw = 0, winh = 0;
-    BOOL open = FALSE;
+    BOOL open = FALSE, busy = FALSE;
     ULONG lock;
 
-    if (!win) return;
+    if (!win) return FALSE;
 
     lock = LockIBase(0);
     if (WindowIsOpen(win))
@@ -626,8 +663,15 @@ static void HandleAction(void)
         winy   = win->TopEdge;
         winw   = win->Width;
         winh   = win->Height;
+        busy   = SizePending(win);
     }
     UnlockIBase(lock);
+
+    if (!opaque_active)
+    {
+        mousex = endmousex;
+        mousey = endmousey;
+    }
 
     if (!open)
     {
@@ -635,7 +679,7 @@ static void HandleAction(void)
         Forbid();
         if (actionwin == win) actionwin = NULL;
         Permit();
-        return;
+        return FALSE;
     }
 
     if (actiontype == ACTIONTYPE_DRAGGING)
@@ -659,10 +703,22 @@ static void HandleAction(void)
 
         if ((neww != winw) || (newh != winh))
         {
+            /* A program that has not yet seen the last size cannot keep up:
+               every further resize uncovers more of the screen before anything
+               is redrawn. Wait for it, but not for ever. */
+            if (busy && (sizewaits < MAXSIZEWAITS))
+            {
+                sizewaits++;
+                return TRUE;
+            }
+
             /* SizeWindow(win, neww - winw, newh - winh); */
             ChangeWindowBox(win, winx, winy, neww, newh);
         }
+        sizewaits = 0;
     }
+
+    return FALSE;
 }
 
 /************************************************************************************/
@@ -715,7 +771,8 @@ static void HandleAll(void)
         if (sigs & cxmask) HandleCx();
         if (sigs & actionmask)
         {
-            HandleAction(); /* "Action" == window moving or resizing */
+            /* "Action" == window moving or resizing */
+            if (HandleAction()) Signal(maintask, actionmask);
 
             /* One move or resize per frame. Mouse events that arrive during the
                wait set the signal again, and the next pass takes the pointer
