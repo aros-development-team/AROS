@@ -2648,6 +2648,9 @@
 # /workbench/network/WirelessManager/wpa_supplicant/
 /workbench/network/WirelessManager/wpa_supplicant/mmakefile
 
+# /workbench/network/mdns/
+/workbench/network/mdns/strings.h
+
 # /workbench/network/smbfs/
 /workbench/network/smbfs/mmakefile
 

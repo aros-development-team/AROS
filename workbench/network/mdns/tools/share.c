@@ -74,6 +74,10 @@
 #include "sd_common.h"
 #include "sd_types.h"
 
+#define CATCOMP_NUMBERS
+#define CATCOMP_STRINGS
+#include "../strings.h"
+
 #define ARG_NAME    0
 #define ARG_TYPE    1
 #define ARG_PORT    2
@@ -85,7 +89,7 @@
 static const char *ShareTemplate =
     "NAME/A,TYPE/A,PORT/N/A,DOMAIN/K,TEXT/M,QUIET/S";
 static const char version_tag[] __attribute__((used)) =
-    "\0$VER: Share 42.1 (20.11.2026)";
+    "\0$VER: Share 42.2 (21.11.2026)";
 
 static int
 ShareRun(CONST_STRPTR name, CONST_STRPTR word, UWORD port,
@@ -102,12 +106,12 @@ ShareRun(CONST_STRPTR name, CONST_STRPTR word, UWORD port,
 
     txtLength = SDTXTFromItems(txt, (LONG)sizeof(txt), (char **)textv);
     if (txtLength < 0) {
-        SDPrintf("Share: TEXT is too long, or an escape is not \\xNN.\n");
+        SDPrintf(SDMsg(MSG_SHARE_TXT));
         return 20;
     }
     SDItemsText(items, (LONG)sizeof(items), (char **)textv);
     if ((rc = SDSessionOpen(&session, 0)) != DNSSD_OK) {
-        SDAppPrintError("advertise", rc);
+        SDAppPrintError(SDMsg(MSG_OP_ADVERTISE), rc);
         return 20;
     }
     if (txtLength != 0) {
@@ -118,7 +122,7 @@ ShareRun(CONST_STRPTR name, CONST_STRPTR word, UWORD port,
     }
     if (rc != DNSSD_OK) {
         SDSessionClose(&session);
-        SDAppPrintError("advertise", rc);
+        SDAppPrintError(SDMsg(MSG_OP_ADVERTISE), rc);
         return 20;
     }
     while (result < 0 && (why = SDSessionWait(&session)) == SD_WAIT_EVENTS) {
@@ -134,20 +138,20 @@ ShareRun(CONST_STRPTR name, CONST_STRPTR word, UWORD port,
                     as[i] = (char)label[i];
                 }
                 as[i] = '\0';
-                SDPrintf("Now sharing \"%s\" (%s) on port %ld.\n",
+                SDPrintf(SDMsg(MSG_SHARE_SHARING),
                     as, SDTypeFriendly(type), (LONG)port);
-                SDPrintf("Others see it as: %s.%s.local\n", as, type);
+                SDPrintf(SDMsg(MSG_SHARE_SEEN_AS), as, type);
                 if (items[0] != '\0') {
-                    SDPrintf("Info advertised:  %s\n", items);
+                    SDPrintf(SDMsg(MSG_SHARE_INFO), items);
                 }
-                SDPrintf("\nSharing... press Ctrl-C to stop.\n");
+                SDPrintf(SDMsg(MSG_SHARE_CTRL_C));
             } else if (e->de_Kind == DNSSD_EVENT_END) {
-                SDAppPrintError("advertise", e->de_Result);
+                SDAppPrintError(SDMsg(MSG_OP_ADVERTISE), e->de_Result);
                 result = 20;
             }
         }
         if (result < 0 && rc != DNSSD_ERR_EMPTY) {
-            SDAppPrintError("advertise", rc);
+            SDAppPrintError(SDMsg(MSG_OP_ADVERTISE), rc);
             result = 20;
         }
     }
@@ -155,7 +159,7 @@ ShareRun(CONST_STRPTR name, CONST_STRPTR word, UWORD port,
     SDSessionClose(&session);
     if (result < 0) {
         if (!quiet) {
-            SDPrintf("Stopped sharing \"%s\".\n", name);
+            SDPrintf(SDMsg(MSG_SHARE_STOPPED), name);
         }
         result = 0;
     }
@@ -174,25 +178,31 @@ main(void)
     for (i = 0; i < ARG_COUNT; i++) {
         args[i] = 0;
     }
+    /* the catalog first: what is said about the arguments is translated */
+    SDLocaleOpen();
     rda = ReadArgs((STRPTR)ShareTemplate, args, NULL);
     if (rda == NULL) {
+        SDLocaleClose();
         PrintFault(IoErr(), (CONST_STRPTR)"Share");
         return 20;
     }
     portNum = (args[ARG_PORT] != 0) ? *((LONG *)args[ARG_PORT]) : 0;
     if (portNum < 1 || portNum > 65535) {
-        SDPrintf("Share: PORT must be 1-65535.\n");
+        SDPrintf(SDMsg(MSG_SHARE_PORT));
         FreeArgs(rda);
+        SDLocaleClose();
         return 20;
     }
     if (!SDAppOpen()) {
-        SDPrintf("Cannot open %s version %ld.\n", DNSSDNAME, (LONG)DNSSD_VERSION);
+        SDAppPrintNoLibrary();
         FreeArgs(rda);
+        SDLocaleClose();
         return 20;
     }
     result = ShareRun((CONST_STRPTR)args[ARG_NAME], (CONST_STRPTR)args[ARG_TYPE],
         (UWORD)portNum, (STRPTR *)args[ARG_TEXT], args[ARG_QUIET] != 0);
     SDAppClose();
     FreeArgs(rda);
+    SDLocaleClose();
     return result;
 }

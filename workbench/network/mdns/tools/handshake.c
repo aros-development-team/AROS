@@ -63,6 +63,10 @@
 #include "sd_common.h"
 #include "sd_types.h"
 
+#define CATCOMP_NUMBERS
+#define CATCOMP_STRINGS
+#include "../strings.h"
+
 #define ARG_NAME    0
 #define ARG_TYPE    1
 #define ARG_DOMAIN  2
@@ -71,7 +75,7 @@
 
 static const char *HandshakeTemplate = "NAME/A,TYPE/A,DOMAIN/K,TIME/N/K";
 static const char version_tag[] __attribute__((used)) =
-    "\0$VER: Handshake 42.1 (20.11.2026)";
+    "\0$VER: Handshake 42.2 (21.11.2026)";
 
 static void
 HandshakeReport(CONST_STRPTR name, const struct DNSSDEvent *e)
@@ -81,17 +85,17 @@ HandshakeReport(CONST_STRPTR name, const struct DNSSDEvent *e)
     char target[256];
 
     SDEventName(e, &e->de_Target, target, (LONG)sizeof(target));
-    SDPrintf("\nReached \"%s\":\n", name);
-    SDPrintf("  Host:  %s\n", target);
+    SDPrintf(SDMsg(MSG_HANDSHAKE_REACHED), name);
+    SDPrintf(SDMsg(MSG_HANDSHAKE_HOST), target);
     for (i = 0; i < count; i++) {
         char text[64];
 
         SDAddressText(&addresses[i], text, (LONG)sizeof(text));
-        SDPrintf("  IP:    %s\n", text);
+        SDPrintf(SDMsg(MSG_HANDSHAKE_IP), text);
     }
-    SDPrintf("  Port:  %ld\n", (LONG)e->de_Port);
+    SDPrintf(SDMsg(MSG_HANDSHAKE_PORT), (LONG)e->de_Port);
     if (e->de_TXT.dr_Size > 1) {
-        SDPrintf("  Info:  ");
+        SDPrintf(SDMsg(MSG_HANDSHAKE_INFO));
         SDPrintTXT(SDEventPart(e, &e->de_TXT), (LONG)e->de_TXT.dr_Size);
         SDPrintf("\n");
     }
@@ -113,17 +117,17 @@ HandshakeRun(CONST_STRPTR name, CONST_STRPTR word, LONG timeSecs)
         timeSecs = 60;
     }
     if ((rc = SDSessionOpen(&session, 0)) != DNSSD_OK) {
-        SDAppPrintError("contact", rc);
+        SDAppPrintError(SDMsg(MSG_OP_CONTACT), rc);
         return 20;
     }
     rc = DNSSD_Resolve(session.bs_Session, name, type, &op,
         DNSSD_Timeout, timeSecs, TAG_DONE);
     if (rc != DNSSD_OK) {
         SDSessionClose(&session);
-        SDAppPrintError("contact", rc);
+        SDAppPrintError(SDMsg(MSG_OP_CONTACT), rc);
         return 20;
     }
-    SDPrintf("Contacting \"%s\" (%s)...\n", name, SDTypeFriendly(type));
+    SDPrintf(SDMsg(MSG_HANDSHAKE_CONTACTING), name, SDTypeFriendly(type));
     while (result < 0 && (why = SDSessionWait(&session)) == SD_WAIT_EVENTS) {
         const struct DNSSDEvent *e;
 
@@ -136,13 +140,12 @@ HandshakeRun(CONST_STRPTR name, CONST_STRPTR word, LONG timeSecs)
             }
         }
         if (result < 0 && rc != DNSSD_ERR_EMPTY) {
-            SDAppPrintError("contact", rc);
+            SDAppPrintError(SDMsg(MSG_OP_CONTACT), rc);
             result = 20;
         }
     }
     if (result == 5) {
-        SDPrintf("\nCould not reach \"%s\".  Is it switched on and "
-            "advertising?\n", name);
+        SDPrintf(SDMsg(MSG_HANDSHAKE_NOT_REACHED), name);
     }
     DNSSD_Cancel(op);
     SDSessionClose(&session);
@@ -161,8 +164,11 @@ main(void)
     for (i = 0; i < ARG_COUNT; i++) {
         args[i] = 0;
     }
+    /* the catalog first: what is said about the arguments is translated */
+    SDLocaleOpen();
     rda = ReadArgs((STRPTR)HandshakeTemplate, args, NULL);
     if (rda == NULL) {
+        SDLocaleClose();
         PrintFault(IoErr(), (CONST_STRPTR)"Handshake");
         return 20;
     }
@@ -170,13 +176,15 @@ main(void)
         timeSecs = *((LONG *)args[ARG_TIME]);
     }
     if (!SDAppOpen()) {
-        SDPrintf("Cannot open %s version %ld.\n", DNSSDNAME, (LONG)DNSSD_VERSION);
+        SDAppPrintNoLibrary();
         FreeArgs(rda);
+        SDLocaleClose();
         return 20;
     }
     result = HandshakeRun((CONST_STRPTR)args[ARG_NAME],
         (CONST_STRPTR)args[ARG_TYPE], timeSecs);
     SDAppClose();
     FreeArgs(rda);
+    SDLocaleClose();
     return result;
 }

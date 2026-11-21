@@ -1,0 +1,433 @@
+; DNSSD.cd - the words of NetServices and the mDNS tools (dnssd, Nearby,
+; Handshake, Share), one catalog for all of them
+;
+MSG_ERR_NOENGINE (//)
+mdnsd is not running
+;
+MSG_ERR_BADPARAM (//)
+bad argument
+;
+MSG_ERR_NOMEM (//)
+out of memory
+;
+MSG_ERR_BUSY (//)
+too much at once; run it again
+;
+MSG_ERR_STALE (//)
+mdnsd restarted
+;
+MSG_ERR_TIMEOUT (//)
+timed out
+;
+MSG_ERR_NOTFOUND (//)
+not found
+;
+MSG_ERR_CANCELLED (//)
+stopped
+;
+MSG_ERR_BADNAME (//)
+not a name DNS can carry
+;
+MSG_ERR_EXISTS (//)
+name already in use here
+;
+MSG_ERR_CONFLICT (//)
+another host has the name
+;
+MSG_ERR_OTHER (//)
+error
+;
+MSG_CANT_OPEN_LIBRARY (//)
+Cannot open %s version %ld.\n
+;
+MSG_OP_BROWSE (//)
+browse
+;
+MSG_OP_RESOLVE (//)
+resolve
+;
+MSG_OP_LOOKUP (//)
+lookup
+;
+MSG_OP_QUERY (//)
+query
+;
+MSG_OP_REGISTER (//)
+register
+;
+MSG_OP_CONTACT (//)
+contact
+;
+MSG_OP_ADVERTISE (//)
+advertise
+;
+MSG_DNSSD_DOMAIN_NOTE (//)
+(note: domain "%s" is not served; using local)\n
+;
+MSG_DNSSD_DOMAIN_NOTE_REGISTER (//)
+(note: domain "%s" is not served; registering in local)\n
+;
+MSG_DNSSD_TOO_MANY (//)
+\n%s: more answers came than could be kept; run it again.\n
+;
+MSG_DNSSD_ENGINE_ENDED (//)
+\n%s: mdnsd ended.\n
+;
+MSG_DNSSD_DOMAINS (//)
+Domains for %s:\n
+;
+MSG_DNSSD_FOR_REGISTRATION (//)
+registration
+;
+MSG_DNSSD_FOR_BROWSING (//)
+browsing
+;
+MSG_DNSSD_ONLY_LOCAL (//)
+\n(multicast DNS serves only the local domain)\n
+;
+MSG_DNSSD_BROWSING (//)
+Browsing %s (Ctrl-C to stop)...\n\n
+;
+MSG_DNSSD_RESOLVING (//)
+Resolving "%s" %s (Ctrl-C to stop)...\n
+;
+MSG_DNSSD_NOT_RESOLVED (//)
+Not resolved.\n
+;
+MSG_DNSSD_FAMILY (//)
+dnssd -G: v4, v6 or v4v6\n
+;
+MSG_DNSSD_RRTYPE (//)
+dnssd -q: unknown record type "%s"\n
+;
+MSG_DNSSD_ASKING (//)
+Asking for %s %s (Ctrl-C to stop)...\n\n
+;
+MSG_DNSSD_TTL (//)
+dnssd: TTL must be 1-4500 seconds.\n
+;
+MSG_DNSSD_TXT (//)
+dnssd: TXT record is too long, or an escape in it is not two hex digits.\n
+;
+MSG_DNSSD_DEREGISTER_HINT (//)
+Press Ctrl-C to deregister...\n
+;
+MSG_DNSSD_DEREGISTERED (//)
+Deregistered.\n
+;
+MSG_DNSSD_NEEDS_TYPE (//)
+dnssd %s needs a <type>\n
+;
+MSG_DNSSD_NEEDS_L (//)
+dnssd -L needs <name> <type> [domain]\n
+;
+MSG_DNSSD_NEEDS_Q (//)
+dnssd -q needs <name> <rrtype>\n
+;
+MSG_DNSSD_NEEDS_G (//)
+dnssd -G needs v4|v6|v4v6 <hostname>\n
+;
+MSG_DNSSD_NEEDS_R (//)
+dnssd -R needs <name> <type> <domain> <port>\n
+;
+MSG_DNSSD_NEEDS_P (//)
+dnssd -P needs <name> <type> <domain> <port> <host> <ip>\n
+;
+MSG_DNSSD_PORT (//)
+dnssd: port must be 1-65535.\n
+;
+MSG_DNSSD_UNKNOWN_MODE (//)
+Unknown mode: %s\n
+;
+MSG_DNSSD_USAGE (//)
+dnssd - DNS-SD tool (dnssd.library)\n\n\
+  dnssd -E                      list registration domains\n\
+  dnssd -F                      list browsing domains\n\
+  dnssd -R name type dom port [-t seconds] [k=v ...]  register a service\n\
+  dnssd -P name type dom port host ip [k=v ...]  register for another host\n\
+                                (ip: IPv4, or IPv6 - fe80::1%%2 with its interface)\n\
+  dnssd -B type [domain]        browse a service type\n\
+  dnssd -L name type [domain]   look up (resolve) an instance\n\
+  dnssd -Z type [domain]        browse, complete zone records\n\
+  dnssd -q name rrtype          ask for any DNS record\n\
+  dnssd -G v4|v6|v4v6 hostname  look up a host's addresses\n\
+  dnssd -V                      show library version\n\
+  dnssd -h                      this help\n\n\
+Examples:\n\
+  dnssd -B _http._tcp\n\
+  dnssd -B _services._dns-sd._udp     (list service types)\n\
+  dnssd -L "My Mac" _companion-link._tcp\n\
+  dnssd -q _http._tcp.local PTR\n\
+  dnssd -G v4 printer.local\n\
+  dnssd -R AmigaShare _http._tcp . 80 path=/ vers=1\n
+;
+MSG_NEARBY_GONE (//)
+  gone: %s\n
+;
+MSG_NEARBY_PORT (//)
+  %-26s port %ld
+;
+MSG_NEARBY_INFO (//)
+      info: 
+;
+MSG_NEARBY_KINDS (//)
+Kinds of service on your local network
+;
+MSG_NEARBY_LOOKING (//)
+Looking for %s
+;
+MSG_NEARBY_SECONDS (//)
+ (%ld seconds)...\n\n
+;
+MSG_NEARBY_CTRL_C (//)
+ (Ctrl-C to stop)...\n\n
+;
+MSG_NEARBY_DONE (//)
+\nDone.\n
+;
+MSG_HANDSHAKE_CONTACTING (//)
+Contacting "%s" (%s)...\n
+;
+MSG_HANDSHAKE_REACHED (//)
+\nReached "%s":\n
+;
+MSG_HANDSHAKE_HOST (//)
+  Host:  %s\n
+;
+MSG_HANDSHAKE_IP (//)
+  IP:    %s\n
+;
+MSG_HANDSHAKE_PORT (//)
+  Port:  %ld\n
+;
+MSG_HANDSHAKE_INFO (//)
+  Info:  
+;
+MSG_HANDSHAKE_NOT_REACHED (//)
+\nCould not reach "%s".  Is it switched on and advertising?\n
+;
+MSG_SHARE_TXT (//)
+Share: TEXT is too long, or an escape in it is not two hex digits.\n
+;
+MSG_SHARE_PORT (//)
+Share: PORT must be 1-65535.\n
+;
+MSG_SHARE_SHARING (//)
+Now sharing "%s" (%s) on port %ld.\n
+;
+MSG_SHARE_SEEN_AS (//)
+Others see it as: %s.%s.local\n
+;
+MSG_SHARE_INFO (//)
+Info advertised:  %s\n
+;
+MSG_SHARE_CTRL_C (//)
+\nSharing... press Ctrl-C to stop.\n
+;
+MSG_SHARE_STOPPED (//)
+Stopped sharing "%s".\n
+;
+MSG_TYPE_HTTP (//)
+Web server (HTTP)
+;
+MSG_TYPE_HTTPS (//)
+Secure web (HTTPS)
+;
+MSG_TYPE_AFP (//)
+Apple file share
+;
+MSG_TYPE_SMB (//)
+Windows file share (SMB)
+;
+MSG_TYPE_NFS (//)
+NFS share
+;
+MSG_TYPE_WEBDAV (//)
+WebDAV share
+;
+MSG_TYPE_FTP (//)
+FTP server
+;
+MSG_TYPE_SSH (//)
+SSH login
+;
+MSG_TYPE_SFTP (//)
+SFTP (SSH file transfer)
+;
+MSG_TYPE_TELNET (//)
+Telnet login
+;
+MSG_TYPE_RFB (//)
+Screen sharing (VNC)
+;
+MSG_TYPE_IPP (//)
+Printer (IPP)
+;
+MSG_TYPE_IPPS (//)
+Secure printer (IPPS)
+;
+MSG_TYPE_LPR (//)
+Printer (LPR)
+;
+MSG_TYPE_SCANNER (//)
+Scanner
+;
+MSG_TYPE_AIRPLAY (//)
+AirPlay
+;
+MSG_TYPE_RAOP (//)
+AirPlay audio (RAOP)
+;
+MSG_TYPE_CAST (//)
+Chromecast
+;
+MSG_TYPE_SPOTIFY (//)
+Spotify Connect
+;
+MSG_TYPE_COMPANION (//)
+Apple companion device
+;
+MSG_TYPE_HAP (//)
+HomeKit accessory
+;
+MSG_TYPE_WORKSTATION (//)
+Workstation
+;
+MSG_TYPE_DEVICE (//)
+Device info
+;
+MSG_TYPE_TIME (//)
+Time/date service
+;
+MSG_TYPE_ENVOY (//)
+Envoy host
+;
+MSG_NS_CX_TITLE (//)
+Network services
+;
+MSG_NS_CX_DESCRIPTION (//)
+Find, reach and share services on the network
+;
+MSG_NS_WINDOW_TITLE (//)
+NetServices: Hot Key = <%s>
+;
+MSG_NS_MENU_PROJECT (//)
+Project
+;
+MSG_NS_MENU_HIDE (//)
+H\0Hide
+;
+MSG_NS_MENU_QUIT (//)
+Q\0Quit
+;
+MSG_NS_NEARBY_TITLE (//)
+Nearby: services on the network
+;
+MSG_NS_HANDSHAKE_TITLE (//)
+Handshake: how to reach a service
+;
+MSG_NS_SHARE_TITLE (//)
+Share: a service of this computer
+;
+MSG_NS_ALL_KINDS (//)
+All kinds
+;
+MSG_NS_BROWSE (//)
+Browse
+;
+MSG_NS_STOP (//)
+Stop
+;
+MSG_NS_REACH (//)
+Handshake
+;
+MSG_NS_SHARE (//)
+Share
+;
+MSG_NS_NAME (//)
+Name
+;
+MSG_NS_KIND (//)
+Kind
+;
+MSG_NS_PORT_LABEL (//)
+Port
+;
+MSG_NS_INFO_LABEL (//)
+Info
+;
+MSG_NS_SHARE_DEFAULT (//)
+Amiga
+;
+MSG_NS_ROW (//)
+%s  (%s)
+;
+MSG_NS_ROW_PORT (//)
+%s  (port %ld)
+;
+MSG_NS_HOST (//)
+Host: %s
+;
+MSG_NS_ADDRESS (//)
+Address: %s
+;
+MSG_NS_PORT (//)
+Port: %ld
+;
+MSG_NS_INFO (//)
+Info: %s
+;
+MSG_NS_INFO_MORE (//)
+      %s
+;
+MSG_NS_READY (//)
+Ready.
+;
+MSG_NS_NO_LIBRARY (//)
+Cannot open %s.
+;
+MSG_NS_BROWSING_KINDS (//)
+Looking for the kinds of service on the network...
+;
+MSG_NS_BROWSING (//)
+Looking for %s...
+;
+MSG_NS_STOPPED (//)
+Stopped looking.
+;
+MSG_NS_BROWSE_FAILED (//)
+Cannot look: %s.
+;
+MSG_NS_REACHING (//)
+Contacting "%s"...
+;
+MSG_NS_REACHED (//)
+Reached "%s".
+;
+MSG_NS_NOT_REACHED (//)
+Could not reach "%s". Is it switched on and advertising?
+;
+MSG_NS_REACH_FAILED (//)
+Cannot contact: %s.
+;
+MSG_NS_SHARING (//)
+Announcing "%s"...
+;
+MSG_NS_SHARED (//)
+Sharing "%s" (%s) on port %ld.
+;
+MSG_NS_UNSHARED (//)
+Stopped sharing.
+;
+MSG_NS_SHARE_FAILED (//)
+Cannot share: %s.
+;
+MSG_NS_BAD_PORT (//)
+The port must be 1-65535.
+;
+MSG_NS_BAD_INFO (//)
+Info is too long, or one of its escapes is wrong.
+;
+MSG_NS_SESSION_FAILED (//)
+Lost contact with mdnsd: %s.
+;

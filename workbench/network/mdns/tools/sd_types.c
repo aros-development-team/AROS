@@ -1,58 +1,67 @@
 /*
  * SPDX-License-Identifier: BSD-2-Clause
  * Copyright 2026 amigazen project
+ * Copyright 2026 Jaime Dias
  *
  * sd_types.c - plain-English service-type aliases (see sd_types.h).
  */
 
 #include <exec/types.h>
 
+#include "sd_common.h"
 #include "sd_types.h"
+
+#define CATCOMP_NUMBERS
+#define CATCOMP_STRINGS
+#include "../strings.h"
 
 struct SDServiceType
 {
-    const char *bt_Alias;       /* short word the user may type (or NULL) */
+    const char *bt_Alias;       /* short word the user may type */
     const char *bt_Type;        /* DNS-SD service type */
-    const char *bt_Friendly;    /* human description */
+    LONG        bt_Friendly;    /* its description: a catalog message */
+    const char *bt_English;     /* and its English */
 };
 
+#define SD_TYPE(alias, type, msg)   { alias, type, msg, msg##_STR }
+
 /*
- * Ordered so the first entry for a given type carries the description used by
- * SDTypeFriendly().  Several aliases may point at the same type.
+ * The first entry of a type is the one SDTypeAt() counts; several aliases
+ * may point at the same type.
  */
 static const struct SDServiceType SDServiceTypes[] =
 {
-    { "web",         "_http._tcp",           "Web server (HTTP)" },
-    { "http",        "_http._tcp",           "Web server (HTTP)" },
-    { "https",       "_https._tcp",          "Secure web (HTTPS)" },
-    { "files",       "_afpovertcp._tcp",     "Apple file share" },
-    { "afp",         "_afpovertcp._tcp",     "Apple file share" },
-    { "smb",         "_smb._tcp",            "Windows file share (SMB)" },
-    { "nfs",         "_nfs._tcp",            "NFS share" },
-    { "webdav",      "_webdav._tcp",         "WebDAV share" },
-    { "ftp",         "_ftp._tcp",            "FTP server" },
-    { "ssh",         "_ssh._tcp",            "SSH login" },
-    { "sftp",        "_sftp-ssh._tcp",       "SFTP (SSH file transfer)" },
-    { "telnet",      "_telnet._tcp",         "Telnet login" },
-    { "vnc",         "_rfb._tcp",            "Screen sharing (VNC)" },
-    { "rfb",         "_rfb._tcp",            "Screen sharing (VNC)" },
-    { "printer",     "_ipp._tcp",            "Printer (IPP)" },
-    { "ipp",         "_ipp._tcp",            "Printer (IPP)" },
-    { "ipps",        "_ipps._tcp",           "Secure printer (IPPS)" },
-    { "lpr",         "_printer._tcp",        "Printer (LPR)" },
-    { "scanner",     "_scanner._tcp",        "Scanner" },
-    { "airplay",     "_airplay._tcp",        "AirPlay" },
-    { "airtunes",    "_raop._tcp",           "AirPlay audio (RAOP)" },
-    { "cast",        "_googlecast._tcp",     "Chromecast" },
-    { "chromecast",  "_googlecast._tcp",     "Chromecast" },
-    { "spotify",     "_spotify-connect._tcp","Spotify Connect" },
-    { "companion",   "_companion-link._tcp", "Apple companion device" },
-    { "homekit",     "_hap._tcp",            "HomeKit accessory" },
-    { "workstation", "_workstation._tcp",    "Workstation" },
-    { "device",      "_device-info._tcp",    "Device info" },
-    { "time",        "_timedate._tcp",       "Time/date service" },
-    { "envoy",       "_envoy-nipc._tcp",     "Envoy host" },
-    { NULL,          NULL,                   NULL }
+    SD_TYPE("web",         "_http._tcp",            MSG_TYPE_HTTP),
+    SD_TYPE("http",        "_http._tcp",            MSG_TYPE_HTTP),
+    SD_TYPE("https",       "_https._tcp",           MSG_TYPE_HTTPS),
+    SD_TYPE("files",       "_afpovertcp._tcp",      MSG_TYPE_AFP),
+    SD_TYPE("afp",         "_afpovertcp._tcp",      MSG_TYPE_AFP),
+    SD_TYPE("smb",         "_smb._tcp",             MSG_TYPE_SMB),
+    SD_TYPE("nfs",         "_nfs._tcp",             MSG_TYPE_NFS),
+    SD_TYPE("webdav",      "_webdav._tcp",          MSG_TYPE_WEBDAV),
+    SD_TYPE("ftp",         "_ftp._tcp",             MSG_TYPE_FTP),
+    SD_TYPE("ssh",         "_ssh._tcp",             MSG_TYPE_SSH),
+    SD_TYPE("sftp",        "_sftp-ssh._tcp",        MSG_TYPE_SFTP),
+    SD_TYPE("telnet",      "_telnet._tcp",          MSG_TYPE_TELNET),
+    SD_TYPE("vnc",         "_rfb._tcp",             MSG_TYPE_RFB),
+    SD_TYPE("rfb",         "_rfb._tcp",             MSG_TYPE_RFB),
+    SD_TYPE("printer",     "_ipp._tcp",             MSG_TYPE_IPP),
+    SD_TYPE("ipp",         "_ipp._tcp",             MSG_TYPE_IPP),
+    SD_TYPE("ipps",        "_ipps._tcp",            MSG_TYPE_IPPS),
+    SD_TYPE("lpr",         "_printer._tcp",         MSG_TYPE_LPR),
+    SD_TYPE("scanner",     "_scanner._tcp",         MSG_TYPE_SCANNER),
+    SD_TYPE("airplay",     "_airplay._tcp",         MSG_TYPE_AIRPLAY),
+    SD_TYPE("airtunes",    "_raop._tcp",            MSG_TYPE_RAOP),
+    SD_TYPE("cast",        "_googlecast._tcp",      MSG_TYPE_CAST),
+    SD_TYPE("chromecast",  "_googlecast._tcp",      MSG_TYPE_CAST),
+    SD_TYPE("spotify",     "_spotify-connect._tcp", MSG_TYPE_SPOTIFY),
+    SD_TYPE("companion",   "_companion-link._tcp",  MSG_TYPE_COMPANION),
+    SD_TYPE("homekit",     "_hap._tcp",             MSG_TYPE_HAP),
+    SD_TYPE("workstation", "_workstation._tcp",     MSG_TYPE_WORKSTATION),
+    SD_TYPE("device",      "_device-info._tcp",     MSG_TYPE_DEVICE),
+    SD_TYPE("time",        "_timedate._tcp",        MSG_TYPE_TIME),
+    SD_TYPE("envoy",       "_envoy-nipc._tcp",      MSG_TYPE_ENVOY),
+    { NULL,          NULL,                    0, NULL }
 };
 
 BOOL
@@ -114,8 +123,28 @@ SDTypeFriendly(CONST_STRPTR type)
     }
     for (i = 0; SDServiceTypes[i].bt_Type != NULL; i++) {
         if (SDStrEqualCI((const char *)type, SDServiceTypes[i].bt_Type)) {
-            return (CONST_STRPTR)SDServiceTypes[i].bt_Friendly;
+            return SDMsgText(SDServiceTypes[i].bt_Friendly,
+                (CONST_STRPTR)SDServiceTypes[i].bt_English);
         }
     }
     return type;
+}
+
+CONST_STRPTR
+SDTypeAt(LONG n)
+{
+    LONG i, j;
+
+    for (i = 0; SDServiceTypes[i].bt_Type != NULL; i++) {
+        BOOL first = TRUE;
+
+        for (j = 0; j < i && first; j++) {
+            first = !SDStrEqualCI(SDServiceTypes[j].bt_Type,
+                SDServiceTypes[i].bt_Type);
+        }
+        if (first && n-- == 0) {
+            return (CONST_STRPTR)SDServiceTypes[i].bt_Type;
+        }
+    }
+    return NULL;
 }
