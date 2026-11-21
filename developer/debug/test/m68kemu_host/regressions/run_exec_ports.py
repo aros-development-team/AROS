@@ -15,7 +15,7 @@ import subprocess  # nosec B404 - the developer selects a compiler
 import sys
 import tempfile
 
-THUNKS = ('copy_span_ok', 'thunk_exec_CopyMem', 'thunk_exec_AddPort', 'thunk_exec_RemPort',
+THUNKS = ('thunk_exec_CopyMem', 'thunk_exec_AddPort', 'thunk_exec_RemPort',
           'thunk_exec_FindPort', 'thunk_exec_CreateIORequest_m', 'thunk_exec_DeleteIORequest_m',
           'thunk_exec_AddTask_m', 'thunk_exec_RemTask_m', 'thunk_exec_NewMinList_m')
 ACCESSORS = ('m68k_to_host', 'm68k_to_host_or_shadow', 'm68k_in_mem', 'm68k_read16', 'm68k_read32',

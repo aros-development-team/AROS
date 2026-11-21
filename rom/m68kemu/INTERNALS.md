@@ -636,8 +636,9 @@ The library tables together hold 395 entries.
   containment heap; `Allocate`/`Deallocate` on a program `MemHeader`;
   `AllocEntry`/`FreeEntry`; pools as described above; `TypeOfMem` answers from
   the region's `MemHeader` attributes (0 for the ROM area and outside memory);
-  `CopyMem` and `CopyMemQuick`, refused with a line in the log when a span in
-  the program's memory would run past its end; `CacheClearU` no-op;
+  `CopyMem` and `CopyMemQuick` within the program's memory: both spans must
+  lie wholly in it, or the copy is refused with a line in the log (a shadow is
+  copied as the program's own copy, a handle is refused); `CacheClearU` no-op;
   `CacheControl` keeps the bits in `ctx->cacr`
 - Lists: `Insert`..`Enqueue`, `NewMinList`, `FindName` in the program's memory (`FindName` on
   the ExecBase `LibList` opens the named library and returns its base; on

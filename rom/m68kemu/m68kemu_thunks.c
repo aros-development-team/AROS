@@ -499,35 +499,28 @@ static IPTR thunk_exec_Enable_m(struct M68KEmuContext *ctx, void *cpu)
 /* -138: Permit() */
 static IPTR thunk_exec_Permit(struct M68KEmuContext *ctx, void *cpu) { if (ctx->forbid > 0) ctx->forbid--; m68k_nest_counts(ctx); return 0; }
 
-/* An address of the program's memory, not a shadow: the whole of [a, a + size)
-   must be in it */
-static BOOL copy_span_ok(struct M68KEmuContext *ctx, ULONG a, ULONG size)
-{
-    if (a < ctx->mem_size && !shadow_lookup(ctx, a))
-        return m68k_in_mem(ctx, a, size);
-    return TRUE;
-}
-
 /* -624: CopyMem(A0=source, A1=dest, D0=size), and -630: CopyMemQuick with
-   the same registers. A span in the program's memory must lie inside it:
-   the copy is refused, with a line in the log, when it would run past its
-   end. */
+   the same registers. Both spans must lie wholly in the program's memory,
+   or the copy is refused with a line in the log. The addresses are taken as
+   they are: a shadow is copied as the program's own copy of the structure,
+   which is there, and the native object behind a shadow or a handle is
+   never read or written. */
 static IPTR thunk_exec_CopyMem(struct M68KEmuContext *ctx, void *cpu)
 {
-    void *src = THUNK_PTR(0);
-    void *dst = THUNK_PTR(1);
+    ULONG from = THUNK_A(0);
+    ULONG to = THUNK_A(1);
     ULONG size = THUNK_D(0);
 
-    if (!src || !dst || !size)
+    if (!size)
         return 0;
-    if (!copy_span_ok(ctx, THUNK_A(0), size) || !copy_span_ok(ctx, THUNK_A(1), size))
+    if (!m68k_in_mem(ctx, from, size) || !m68k_in_mem(ctx, to, size))
     {
-        m68k_log(ctx, "%s: CopyMem of %lu bytes from %08lx to %08lx runs past the program's memory: not copied",
+        m68k_log(ctx, "%s: CopyMem of %lu bytes from %08lx to %08lx is not wholly in the program's memory: not copied",
                  ctx->program_name[0] ? ctx->program_name : "68k program", (unsigned long)size,
-                 (unsigned long)THUNK_A(0), (unsigned long)THUNK_A(1));
+                 (unsigned long)from, (unsigned long)to);
         return 0;
     }
-    memmove(dst, src, size);
+    memmove(ctx->mem + to, ctx->mem + from, size);
     return 0;
 }
 

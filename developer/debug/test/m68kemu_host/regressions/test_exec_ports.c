@@ -292,6 +292,78 @@ static void copies(struct M68KEmuContext *ctx)
     cpu.d[0] = 0;
     thunk_exec_CopyMem(ctx, &cpu);
     check(logs == 2 && m68k_read32(ctx, 0x3000) == 0, "CopyMem of 0 bytes: nothing");
+    cpu.a[0] = 0x1000;
+    cpu.a[1] = end - 4;
+    cpu.d[0] = 4;
+    thunk_exec_CopyMem(ctx, &cpu);
+    check(memcmp(arena + end - 4, "0101", 4) == 0 && logs == 2, "CopyMem that ends at the end of the program's memory copies");
+    cpu.a[0] = 0;
+    cpu.a[1] = 0x3000;
+    cpu.d[0] = 4;
+    thunk_exec_CopyMem(ctx, &cpu);
+    check(m68k_read32(ctx, 0x3000) == 0 && logs == 3, "CopyMem from NULL: refused, a line in the log");
+}
+
+/* every byte of a native object still holds v */
+static int untouched(const UBYTE *p, size_t n, UBYTE v)
+{
+    for (size_t i = 0; i < n; i++)
+        if (p[i] != v)
+            return 0;
+    return 1;
+}
+
+/* a shadow is copied as the program's copy of the structure, a handle is
+   refused: the native objects behind them are never read or written */
+static void copies_of_shadows(struct M68KEmuContext *ctx)
+{
+    struct Cpu cpu = {{0}, {0}};
+    const ULONG S = 0x4000;
+    BPTR handles[1];
+
+    reset(ctx);
+    memcpy(arena + 0x1000, "0123456789", 10);
+    ctx->shadow_map[0].m68k_addr = S;
+    ctx->shadow_map[0].native_ptr = native_port;
+    ctx->num_shadows = 1;
+    memset(native_port, 0xAB, sizeof(native_port));
+    memset(arena + S, 'P', 34);
+    cpu.a[0] = S;
+    cpu.a[1] = 0x5000;
+    cpu.d[0] = 34;
+    thunk_exec_CopyMem(ctx, &cpu);
+    check(arena[0x5000] == 'P' && arena[0x5000 + 33] == 'P' && logs == 0, "CopyMem from a shadow copies the program's copy of it");
+    cpu.a[0] = 0x1000;
+    cpu.a[1] = S;
+    cpu.d[0] = 10;
+    thunk_exec_CopyMem(ctx, &cpu);
+    check(memcmp(arena + S, "0123456789", 10) == 0 && untouched(native_port, sizeof(native_port), 0xAB) && logs == 0,
+          "CopyMem to a shadow writes the program's copy, not the native object");
+    cpu.a[0] = 0x1000;
+    cpu.a[1] = S;
+    cpu.d[0] = sizeof(native_port) + 64;
+    thunk_exec_CopyMem(ctx, &cpu);
+    check(untouched(native_port, sizeof(native_port), 0xAB) && logs == 0,
+          "CopyMem to a shadow of more than the native object's size: the native object untouched");
+
+    handles[0] = (BPTR)native_io;
+    ctx->handles = handles;
+    ctx->num_handles = 1;
+    memset(native_io, 0xCD, sizeof(native_io));
+    cpu.a[0] = 0x1000;
+    cpu.a[1] = M68KEMU_HANDLE_BASE;
+    cpu.d[0] = 8;
+    thunk_exec_CopyMem(ctx, &cpu);
+    check(untouched(native_io, sizeof(native_io), 0xCD) && logs == 1,
+          "CopyMem to a handle: refused, a line in the log, the native object untouched");
+    memset(native_io, 'N', sizeof(native_io));
+    cpu.a[0] = M68KEMU_HANDLE_BASE;
+    cpu.a[1] = 0x6000;
+    cpu.d[0] = 8;
+    thunk_exec_CopyMem(ctx, &cpu);
+    check(m68k_read32(ctx, 0x6000) == 0 && logs == 2, "CopyMem from a handle: refused, a line in the log");
+    ctx->handles = NULL;
+    ctx->num_handles = 0;
 }
 
 static void lists(struct M68KEmuContext *ctx)
@@ -325,6 +397,7 @@ int main(void)
     requests(ctx);
     tasks(ctx);
     copies(ctx);
+    copies_of_shadows(ctx);
     lists(ctx);
     printf("exec ports, requests, tasks, copies and lists: %u checks, %u failed\n", checks, failures);
     return failures != 0;
