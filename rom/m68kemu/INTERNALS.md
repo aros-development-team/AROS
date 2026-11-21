@@ -363,6 +363,10 @@ The emulator's state (memory, shadow registry, maps) is shared, so a CPU runs
 - `Forbid`/`Permit` count `ctx->forbid`; `Disable`/`Enable` count both
   `ctx->forbid` and `ctx->disable`. `Disable()` also suspends the vertical blank.
   Native interrupts are never turned off for the program.
+- `IDNestCnt` and `TDNestCnt` in the program's ExecBase follow these counts
+  (`m68k_nest_counts()`): -1 with no nesting, `Disable()` and `Forbid()` shown
+  apart. The four calls write them, and `m68k_gil_obtain()` writes them for the
+  task that takes the lock.
 
 ### Processes of the Program
 
@@ -562,7 +566,9 @@ The library tables together hold 395 entries.
   `CopyMem`; `CacheClearU` no-op; `CacheControl` keeps the bits in `ctx->cacr`
 - Lists: `Insert`..`Enqueue`, `FindName` in the program's memory (`FindName` on
   the ExecBase `LibList` opens the named library and returns its base; on
-  `DeviceList`/`ResourceList` it returns 0, since those have no m68k base)
+  `DeviceList`/`ResourceList` it returns 0, since those have no m68k base; on
+  `PortList` it is `FindPort()` and on `SemaphoreList` `FindSemaphore()`, which
+  take exec's locks; `IntrList`, `TaskReady` and `TaskWait` are empty lists)
 - Tasks: `FindTask`, `Forbid`/`Permit`/`Disable`/`Enable`, `Wait`, `SetSignal`,
   `StackSwap`, `SuperState`/`UserState`, `Supervisor`
 - Messages: `PutMsg`, `GetMsg`, `ReplyMsg`, `WaitPort`; `AddPort`/`RemPort` no-ops
@@ -772,7 +778,7 @@ private ones) are left out.
 | `shadow_destroy(ctx, layout, m68k_addr)` | Remove from the registry, free the m68k block. |
 | `shadow_find_layout(name)` | Linear scan of `shadow_gen_layouts[]`. |
 | `shadow_create_by_name(ctx, name, native)` | `shadow_find_layout` + `shadow_create`. |
-| `shadow_init_execbase(ctx, m68k_base, native)` | ExecBase init: syncs the layout, sets `AttnFlags`, `VBlankFrequency`/`PowerSupplyFrequency` = 50, `ThisTask` → a 228-byte Process stand-in with a 64-byte CLI (`cli_DefaultStack` 4096, `cli_CommandName`), `pr_CIS`/`pr_COS`, `ex_EClockFrequency`, `lib_IdString` → ROM copy, the `MemList` with the two region MemHeaders, empty `LibList`/`DeviceList`/`ResourceList` (then publishes the bases made so far), and registers 5 embedded native lists (`IntrList`, `PortList`, `TaskReady`, `TaskWait`, `SemaphoreList`) as type 17. |
+| `shadow_init_execbase(ctx, m68k_base, native)` | ExecBase init: syncs the layout, sets `AttnFlags`, `VBlankFrequency`/`PowerSupplyFrequency` = 50, `ThisTask` → a 228-byte Process stand-in with a 64-byte CLI (`cli_DefaultStack` 4096, `cli_CommandName`), `pr_CIS`/`pr_COS`, `ex_EClockFrequency`, `lib_IdString` → ROM copy, the `MemList` with the two region MemHeaders, empty `LibList`/`DeviceList`/`ResourceList` (then publishes the bases made so far), and, through `m68k_execbase_private()`, five empty lists in the program's memory (`IntrList`, `PortList`, `TaskReady`, `TaskWait`, `SemaphoreList`) and the scheduler fields with values the emulator owns (`IdleCount`, `DispCount` 0, `Quantum`, `Elapsed` 4, `SysFlags`, `AttnResched` 0, `IDNestCnt`, `TDNestCnt`). Exec keeps these per CPU, for its scheduler alone or behind its own locks, so nothing of them comes from the native ExecBase. |
 | `shadow_register(ctx, m68k_addr, native, type)` | Append to `shadow_map[]`; when full, logs once which two types fill it and returns 0. |
 | `shadow_lookup(ctx, m68k_addr)` | Linear scan by m68k address, returns the native pointer or NULL. |
 | `shadow_remove(ctx, m68k_addr)` | Linear scan + swap-with-last removal. |

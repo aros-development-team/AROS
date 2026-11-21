@@ -132,3 +132,15 @@ test-child-projection-sanitize:
 	$(PYTHON) "$(TEST_DIR)/regressions/run_child_projection.py" --cc "$(CC)" --sanitize $(CHILD_PROJECTION_ARGS)
 
 .PHONY: test-child-projection test-child-projection-sanitize
+
+# ExecBase lists and scheduler fields kept out of the native SysBase: ordinary fixture in test, sanitizer optional.
+EXECBASE_PRIVATE_ARGS ?=
+test: test-execbase-private
+
+test-execbase-private:
+	$(PYTHON) "$(TEST_DIR)/regressions/run_execbase_private.py" --cc "$(CC)" $(EXECBASE_PRIVATE_ARGS)
+
+test-execbase-private-sanitize:
+	$(PYTHON) "$(TEST_DIR)/regressions/run_execbase_private.py" --cc "$(CC)" --sanitize $(EXECBASE_PRIVATE_ARGS)
+
+.PHONY: test-execbase-private test-execbase-private-sanitize
