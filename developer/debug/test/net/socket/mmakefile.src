@@ -26,6 +26,7 @@ CUNITSOCKETTESTFILES := \
     cunit-net-dontwait \
     cunit-net-filter6 \
     cunit-net-frag6 \
+    cunit-net-hostname \
     cunit-net-icmp6err \
     cunit-net-ifalias \
     cunit-net-iflist \

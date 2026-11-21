@@ -1,13 +1,14 @@
 
 include $(SRCDIR)/config/aros.cfg
 
-INCLUDES      := $(call WILDCARD, *.h arpa/*.h bsdsocket/*.h clib/*.h defines/*.h libraries/*.h net/*.h netinet/*.h proto/*.h sys/*.h)
+INCLUDES      := $(call WILDCARD, *.h arpa/*.h bsdsocket/*.h clib/*.h defines/*.h dnssd/*.h libraries/*.h net/*.h netinet/*.h proto/*.h sys/*.h)
 DEST_INCLUDES := $(foreach f,$(INCLUDES),$(AROS_INCLUDES)/$(f))
 DIRS          := $(AROS_INCLUDES) \
                  $(AROS_INCLUDES)/arpa \
                  $(AROS_INCLUDES)/bsdsocket \
                  $(AROS_INCLUDES)/clib \
                  $(AROS_INCLUDES)/defines \
+                 $(AROS_INCLUDES)/dnssd \
                  $(AROS_INCLUDES)/libraries \
                  $(AROS_INCLUDES)/net \
                  $(AROS_INCLUDES)/netinet \

@@ -24,6 +24,7 @@
 #include <exec/memory.h>
 #include <exec/lists.h>
 #include <string.h>
+#include <stdlib.h>                     /* arc4random() */
 
 #include <proto/exec.h>
 #include <proto/utility.h>
@@ -507,7 +508,7 @@ answer_delay(const struct MDNSDaemon *md)
     static ULONG seed;
 
     if (seed == 0) {
-        seed = mdnsTicks() ^ md->md_HostAddr ^ 0x5bd1e995UL;
+        seed = arc4random();            /* the C runtime: entropy.resource */
     }
     seed = seed * 1103515245UL + 12345UL;
     /* in fiftieths of a second, counted from the tick the question came
@@ -1134,7 +1135,7 @@ mdnsRegHandleProbe(const struct MDNSDaemon *md,
         mine[1].pr_Data = srv;
         if (probe_tiebreak(mine, 2, rs->rs_Name, theirs, count, pkt, pktlen) < 0) {
             rs->rs_Step = 0;
-            rs->rs_NextTick = mdnsTicks() + 50;
+            rs->rs_NextTick = mdnsTicks() + MDNS_SECOND_TICKS;
             continue;
         }
         /* the host it stands in for: its addresses */
@@ -1149,28 +1150,28 @@ mdnsRegHandleProbe(const struct MDNSDaemon *md,
         }
         if (probe_tiebreak(mine, k, rs->rs_HostName, theirs, count, pkt, pktlen) < 0) {
             rs->rs_Step = 0;
-            rs->rs_NextTick = mdnsTicks() + 50;
+            rs->rs_NextTick = mdnsTicks() + MDNS_SECOND_TICKS;
         }
     }
 }
 
 /*
  * Moves each service along: three probes, then two announcements. Returns
- * TRUE while a service is being probed, so that the caller comes back in a
- * quarter of a second.
+ * when the next of them is due (mdnsTicks(), 0 for none) - for a service
+ * that can go on: one waits for the host's name, which the host's own time
+ * covers (mdnsHostTick()).
  */
-BOOL
+ULONG
 mdnsRegTick(struct MDNSDaemon *md)
 {
     struct Node *n, *next;
-    ULONG now = mdnsTicks();
-    BOOL probing = FALSE;
+    ULONG now = mdnsTicks(), soonest = 0;
     /* A service's records point at the host's name and carry its address,
      * so none is announced before the name is this host's. */
     BOOL hostReady = md->md_HostState == MDNS_NAME_ANNOUNCED;
 
     if (md->md_IfCount == 0 || md->md_Socket < 0) {
-        return FALSE;
+        return 0;
     }
     if (md->md_AnswerPending) {
         answers_flush(md, now);
@@ -1191,33 +1192,41 @@ mdnsRegTick(struct MDNSDaemon *md)
             continue;
         }
         if (rs->rs_State == MDNS_NAME_PROBING) {
-            probing = TRUE;
-            if (!hostReady || (LONG)(now - rs->rs_NextTick) < 0) {
+            if (!hostReady) {
+                continue;
+            }
+            if ((LONG)(now - rs->rs_NextTick) < 0) {
+                soonest = mdnsSooner(soonest, rs->rs_NextTick);
                 continue;
             }
             if (rs->rs_Step < MDNS_PROBE_COUNT) {
                 service_probe(md, rs);
                 rs->rs_Step++;
                 rs->rs_NextTick = now + MDNS_PROBE_TICKS;
+                soonest = mdnsSooner(soonest, rs->rs_NextTick);
                 continue;
             }
             /* Nobody objected: the name is this host's. */
             rs->rs_State = MDNS_NAME_ANNOUNCED;
             rs->rs_Reg.state = DNSSD_REG_ESTABLISHED;
             rs->rs_Step = 1;
-            rs->rs_NextTick = now + 50;
+            rs->rs_NextTick = now + MDNS_SECOND_TICKS;
+            soonest = mdnsSooner(soonest, rs->rs_NextTick);
             service_send(md, rs, FALSE, all_subtypes(rs));
             if (rs->rs_Notify != NULL) {
                 rs->rs_Notify(rs->rs_NotifyData, rs, MDNSD_OK);
             }
         } else if (rs->rs_Step < MDNS_ANNOUNCE_COUNT &&
-                   (LONG)(now - rs->rs_NextTick) >= 0 &&
                    (hostReady || PROXY(rs))) {
-            rs->rs_Step++;
-            service_send(md, rs, FALSE, all_subtypes(rs));
+            if ((LONG)(now - rs->rs_NextTick) >= 0) {
+                rs->rs_Step++;
+                service_send(md, rs, FALSE, all_subtypes(rs));
+            } else {
+                soonest = mdnsSooner(soonest, rs->rs_NextTick);
+            }
         }
     }
-    return probing;
+    return soonest;
 }
 
 /* Marks every registration of one type. If its first registration goes away,
@@ -1648,7 +1657,7 @@ mdnsRegUpdateRef(struct MDNSDaemon *md, APTR ref, const UBYTE *txt,
     if (changed && rs->rs_State == MDNS_NAME_ANNOUNCED) {
         service_send(md, rs, FALSE, all_subtypes(rs));
         rs->rs_Step = 1;
-        rs->rs_NextTick = mdnsTicks() + 50;
+        rs->rs_NextTick = mdnsTicks() + MDNS_SECOND_TICKS;
     }
     return MDNSD_OK;
 }

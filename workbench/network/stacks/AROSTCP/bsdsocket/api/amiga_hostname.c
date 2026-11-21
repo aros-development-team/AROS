@@ -133,7 +133,9 @@ size_t host_namelen = 0;
 *       int sethostname(const char *, size_t);
 *
 *   FUNCTION
-*       Set the name of the host to the given 'name' of length 'namelen'.
+*       Set the name of the host to the given 'name' of length 'namelen'
+*       (it ends at its first NUL, if that comes before). When the name
+*       changes, consumers of SBTC_SIG_HOSTNAME_CHANGE_MASK are signalled.
 *
 *   INPUTS
 *       name    - Pointer to the name string.
@@ -162,11 +164,15 @@ int sethostname(const char *name, size_t namelen)
 
     if(namelen > MAXHOSTNAMELEN)
         namelen = MAXHOSTNAMELEN;
+    namelen = strnlen(name, namelen);
 
+    if(namelen == host_namelen && memcmp(host_name, name, namelen) == 0)
+        return 0;               /* the same name: nothing changes */
     memcpy(host_name, name, namelen);
     host_name[namelen] = '\0';
     host_namelen = namelen;
-    SetVar("HOSTNAME", name, namelen, GVF_GLOBAL_ONLY);
+    SetVar("HOSTNAME", host_name, namelen, GVF_GLOBAL_ONLY);
+    api_sendhostchange();
 
     return 0;
 }

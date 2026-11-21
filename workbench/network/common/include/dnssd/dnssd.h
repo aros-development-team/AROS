@@ -17,6 +17,10 @@
  * Every structure here has a fixed layout of fixed-width fields, the same on
  * every CPU, and no pointer. Events say their own size and version; a
  * program reads only what its version has.
+ *
+ * The library is built with mDNS (workbench/network/mdns); this header is
+ * one of the network's common includes, so that a client - the stack's
+ * resolver among them - needs nothing of mDNS to build.
  */
 #ifndef DNSSD_DNSSD_H
 #define DNSSD_DNSSD_H

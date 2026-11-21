@@ -45,6 +45,8 @@
 #include <api/amiga_api.h>
 #include <kern/amiga_netdb.h>
 #include <api/resolver_ops.h>
+#include <api/gethtbynamadr.h>  /* _gethtbyname(), _gethtbyname2() */
+#include <api/res_mdns.h>       /* .local names by mDNS */
 #include <net/netcore.h>        /* __inet_ntop(), __inet_pton(), findServentNode() */
 
 #include <string.h>
@@ -132,6 +134,89 @@ res_freelist(struct addrinfo *ai)
             FreeVec(ai->ai_canonname);
         FreeVec(ai);
     }
+}
+
+/*
+ * The addresses of a .local name of family af (PF_INET or PF_INET6) into
+ * addrs, up to max: how many. The host table comes first or second as
+ * usens says, as for the DNS; mDNS is asked once for the whole call (*ms
+ * keeps its answer for the other family, in memory of its own the caller
+ * frees: *mn is -1 until it is asked), of the family wanted, or of both
+ * (mfamily AF_UNSPEC). An IPv6 link-local
+ * address gets its zone, the interface it was learned on (RFC 4007).
+ */
+static int
+mdns_addrinfo(struct SocketBase *libPtr, const char *hostname, int af,
+              int mfamily, struct DNSSDAddress **ms, int *mn, int *mherr,
+              struct sockaddr_storage *addrs, int max)
+{
+    int naddrs = 0, i, pass;
+
+    for (pass = 0; pass < 2 && naddrs == 0; pass++) {
+        /* the host table first, unless the name service comes first */
+        if (pass == (usens == 1 ? 1 : 0)) {
+            const struct hostent *hp = af == PF_INET ?
+                _gethtbyname(libPtr, hostname) :
+                _gethtbyname2(libPtr, hostname, AF_INET6);
+            for (i = 0; hp != NULL && hp->h_addr_list[i] && naddrs < max; i++) {
+                if (af == PF_INET) {
+                    struct sockaddr_in *sin = (struct sockaddr_in *)&addrs[naddrs];
+                    memset(sin, 0, sizeof(*sin));
+                    sin->sin_len = sizeof(*sin);
+                    sin->sin_family = AF_INET;
+                    memcpy(&sin->sin_addr, hp->h_addr_list[i], 4);
+                } else {
+                    struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *)&addrs[naddrs];
+                    memset(sin6, 0, sizeof(*sin6));
+                    sin6->sin6_len = sizeof(*sin6);
+                    sin6->sin6_family = AF_INET6;
+                    memcpy(&sin6->sin6_addr, hp->h_addr_list[i], 16);
+                }
+                naddrs++;
+            }
+            continue;
+        }
+        if (usens == 0)
+            continue;                   /* the host table alone */
+        if (*mn < 0) {
+            /* off the stack: on a 68000 a program's is small */
+            if ((*ms = bsd_malloc(RES_MDNS_ADDRESSES * sizeof(**ms), M_TEMP,
+                                  M_WAITOK)) == NULL) {
+                writeErrnoValue(libPtr, ENOMEM);
+                *mherr = NETDB_INTERNAL;
+                *mn = 0;
+            } else
+                *mn = res_mdns_lookup(libPtr, hostname, mfamily, *ms, mherr);
+        }
+        /* those that need no zone first, as a global address is the one
+         * that reaches the host from any link */
+        for (int ll = 0; ll < 2; ll++) {
+            for (i = 0; i < *mn && naddrs < max; i++) {
+                const struct DNSSDAddress *a = &(*ms)[i];
+
+                if ((a->da_Family == DNSSD_FAMILY_IPV4) != (af == PF_INET) ||
+                    res_mdns_linklocal6(a) != ll)
+                    continue;
+                if (af == PF_INET) {
+                    struct sockaddr_in *sin = (struct sockaddr_in *)&addrs[naddrs];
+                    memset(sin, 0, sizeof(*sin));
+                    sin->sin_len = sizeof(*sin);
+                    sin->sin_family = AF_INET;
+                    memcpy(&sin->sin_addr, a->da_Bytes, 4);
+                } else {
+                    struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *)&addrs[naddrs];
+                    memset(sin6, 0, sizeof(*sin6));
+                    sin6->sin6_len = sizeof(*sin6);
+                    sin6->sin6_family = AF_INET6;
+                    memcpy(&sin6->sin6_addr, a->da_Bytes, 16);
+                    if (ll)
+                        sin6->sin6_scope_id = a->da_Interface;
+                }
+                naddrs++;
+            }
+        }
+    }
+    return naddrs;
 }
 
 /*
@@ -234,6 +319,12 @@ res_getaddrinfo(const char *hostname, const char *servname,
         if (run4) families[nfamilies++] = PF_INET;
     }
 
+    /* a .local name's mDNS answer, asked once for both families */
+    struct DNSSDAddress *mfound = NULL;
+    int mcount = -1, mherr = HOST_NOT_FOUND;
+    int mlocal = hostname != NULL && !(flags & AI_NUMERICHOST) &&
+                 res_mdns_name(hostname);
+
     for (int fi = 0; fi < nfamilies; fi++) {
         int af = families[fi];
         struct sockaddr_storage addrs[16];
@@ -292,7 +383,11 @@ res_getaddrinfo(const char *hostname, const char *servname,
                     naddrs = 1; numeric_ok = 1;
                 }
             }
-            if (!numeric_ok) {
+            if (!numeric_ok && mlocal) {
+                naddrs = mdns_addrinfo(libPtr, hostname, af,
+                                       nfamilies == 1 ? af : AF_UNSPEC,
+                                       &mfound, &mcount, &mherr, addrs, 16);
+            } else if (!numeric_ok) {
                 struct hostent *hp;
                 if (af == PF_INET)
                     hp = res_gethostbyname(hostname, libPtr);
@@ -369,13 +464,25 @@ res_getaddrinfo(const char *hostname, const char *servname,
         }
     }
 
-    if (sentinel.ai_next == NULL)
+    if (mfound != NULL)
+        bsd_free(mfound, M_TEMP);
+    if (sentinel.ai_next == NULL) {
+        /* a .local name mDNS could not look up: why, if not "no such name" */
+        if (mlocal && mcount == 0) {
+            if (mherr == TRY_AGAIN)
+                return EAI_AGAIN;
+            if (mherr == NETDB_INTERNAL)
+                return EAI_MEMORY;
+        }
         return EAI_NONAME;
+    }
 
     *result = sentinel.ai_next;
     return 0;
 
 fail:
+    if (mfound != NULL)
+        bsd_free(mfound, M_TEMP);
     res_freelist(sentinel.ai_next);
     return error;
 }

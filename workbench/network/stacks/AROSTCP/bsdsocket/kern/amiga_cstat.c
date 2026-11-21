@@ -517,8 +517,6 @@ cstat_rtflags(struct CSource *res, const char *format, register int f)
     }
 }
 
-extern char *host_name;
-extern size_t host_namelen;
 extern int sethostname(const char *name, size_t namelen);
 extern struct Library *SocketBase; /* base opened by NETTRACE */
 
@@ -541,6 +539,6 @@ rexx_sethostname(struct CSource *args, UBYTE **errstrp, struct CSource *res)
         return RETURN_ERROR;
     }
 
-    sethostname(Buffer, sizeof(Buffer));
+    sethostname(Buffer, strnlen(Buffer, sizeof(Buffer)));
     return RETURN_OK;
 }

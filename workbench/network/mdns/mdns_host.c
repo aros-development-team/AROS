@@ -228,6 +228,7 @@ mdnsHostSetName(struct MDNSDaemon *md, const char *base, ULONG suffix)
     LONG n = 0, len;
 
     host_forget(md);
+    md->md_HostAnnounced = FALSE;       /* nothing said under the new one yet */
     if (base != NULL) {
         mdnsTextCopy(md->md_HostBase, (LONG)sizeof(md->md_HostBase), base);
     }
@@ -271,27 +272,50 @@ mdnsHostRestart(struct MDNSDaemon *md)
     host_probe_from(md, 0);
 }
 
-/* Before the sockets go away: nobody should keep this host's address. */
+/*
+ * The system's name changed while the host runs (the stack's host name
+ * signal): what was announced under the old name goes with a goodbye, and
+ * the new one is asked for from the first probe; its services follow it
+ * once it is the host's (mdnsHostTick()). The same name changes nothing.
+ */
+void
+mdnsHostRename(struct MDNSDaemon *md, const char *base)
+{
+    if (strcmp(base, md->md_HostBase) == 0) {
+        return;
+    }
+    mdnsHostGoodbye(md);
+    mdnsHostSetName(md, base, 0);
+    host_probe_from(md, 0);
+}
+
+/*
+ * Nobody should keep this host's address under its name: before the sockets
+ * go away, or the name changes. Whether the name was announced, not whether
+ * it is now: after the links change it is probed again (mdnsHostRestart()),
+ * and what other hosts heard before is still in their caches.
+ */
 void
 mdnsHostGoodbye(struct MDNSDaemon *md)
 {
-    if (md->md_Socket >= 0 && md->md_HostState == MDNS_NAME_ANNOUNCED) {
+    if (md->md_Socket >= 0 && md->md_HostAnnounced) {
         host_send_addr(md, TRUE, DNS_TYPE_ANY);
+        md->md_HostAnnounced = FALSE;
     }
 }
 
 /*
- * Moves the name along: three probes, then two announcements. Returns TRUE
- * while it is being probed, so that the caller comes back in a quarter of
- * a second.
+ * Moves the name along: three probes, then two announcements. Returns when
+ * the next of them is due (mdnsTicks(), 0 for none), for the main loop to
+ * wake then.
  */
-BOOL
+ULONG
 mdnsHostTick(struct MDNSDaemon *md)
 {
     ULONG now = mdnsTicks();
 
     if (md->md_IfCount == 0) {
-        return FALSE;
+        return 0;
     }
     if (md->md_HostState == MDNS_NAME_PROBING) {
         if ((LONG)(now - md->md_HostNextTick) >= 0) {
@@ -304,20 +328,21 @@ mdnsHostTick(struct MDNSDaemon *md)
                  * announced under an earlier name or address are
                  * announced again with this one. */
                 md->md_HostState = MDNS_NAME_ANNOUNCED;
+                md->md_HostAnnounced = TRUE;
                 md->md_HostStep = 1;
-                md->md_HostNextTick = now + 50;
+                md->md_HostNextTick = now + MDNS_SECOND_TICKS;
                 host_send_addr(md, FALSE, DNS_TYPE_ANY);
                 mdnsRegAnnounceAll(md);
             }
         }
-        return md->md_HostState == MDNS_NAME_PROBING;
+        return md->md_HostNextTick;
     }
     if (md->md_HostStep < MDNS_ANNOUNCE_COUNT &&
         (LONG)(now - md->md_HostNextTick) >= 0) {
         md->md_HostStep++;
         host_send_addr(md, FALSE, DNS_TYPE_ANY);
     }
-    return FALSE;
+    return md->md_HostStep < MDNS_ANNOUNCE_COUNT ? md->md_HostNextTick : 0;
 }
 
 /*
@@ -460,7 +485,7 @@ mdnsHostHandleProbe(struct MDNSDaemon *md, const struct MDNSRecord *theirs,
         difference = mineCount - otherCount;
     }
     if (otherCount > 0 && difference < 0) {
-        host_probe_from(md, 50);
+        host_probe_from(md, MDNS_SECOND_TICKS);
     }
 }
 

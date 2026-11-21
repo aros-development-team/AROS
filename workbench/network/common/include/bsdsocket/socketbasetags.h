@@ -83,6 +83,16 @@
 #define SBTC_RECONFIG_GENERATION 72          /* get: ULONG, bumped after each reload */
 #define SBTC_RECONFIG_ACK        73          /* set: consumer acks reconfigure-begin (quiesced) */
 
+/*
+ * SBTC_SIG_HOSTNAME_CHANGE_MASK: signalled when the host's name changes
+ * (sethostname(): Miami_sethostname(), the HOSTNAME configuration variable,
+ * the name first learnt from the host's address), and only then - not for an
+ * address change, which has SBTC_SIG_ADDRESS_CHANGE_MASK. Like it, the signal
+ * says "read it again": changes made before the consumer runs come as one
+ * signal, and gethostname() gives the name as it is now.
+ */
+#define SBTC_SIG_HOSTNAME_CHANGE_MASK 74     /* set/get: signal on host name change */
+
 #define NETRC_ONLINE        0                /* stack configured and running */
 #define NETRC_RECONFIGURING 1                /* an in-place reload is in progress */
 

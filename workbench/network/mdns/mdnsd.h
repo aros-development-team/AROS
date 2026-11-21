@@ -53,7 +53,13 @@ struct MDNSInterface
 #define MDNS_NAME_PROBING       0
 #define MDNS_NAME_ANNOUNCED     1
 #define MDNS_PROBE_COUNT        3
-#define MDNS_PROBE_TICKS        13      /* 250 ms in 1/50 s */
+/* Times in mdnsTicks(), fiftieths of a second, from the tick something
+ * went out in: a span of n ticks is (n - 1) to n of them. So that it is
+ * never shorter than RFC 6762 asks: 250 ms between probes and after the
+ * last one before announcing (section 8.1), a second between announcements
+ * (section 8.3) and before probing again after a tie (section 8.2). */
+#define MDNS_PROBE_TICKS        14      /* 260-280 ms */
+#define MDNS_SECOND_TICKS       51      /* 1000-1020 ms */
 #define MDNS_ANNOUNCE_COUNT     2
 #define MDNS_PROPOSED_MAX       8
 
@@ -161,6 +167,8 @@ struct MDNSDaemon
     ULONG                   md_HostSuffix;  /* 0, or the number after it */
     UWORD                   md_HostState;   /* MDNS_NAME_* */
     UWORD                   md_HostStep;    /* probes or announcements sent */
+    BOOL                    md_HostAnnounced; /* md_HostName was announced: others
+                                               * may keep it until its goodbye */
     ULONG                   md_HostNextTick;
     ULONG                   md_HostMulticast; /* mdnsNow() when the address
                                              * last went to the group */
@@ -276,7 +284,7 @@ BOOL mdnsCacheInit(struct MDNSDaemon *md);
 void mdnsCacheFree(struct MDNSDaemon *md);
 void mdnsCacheRecord(const struct MDNSDaemon *md, const UBYTE *pkt, LONG length,
     LONG offset, ULONG link, BOOL local);
-void mdnsCacheTick(struct MDNSDaemon *md);
+ULONG mdnsCacheTick(struct MDNSDaemon *md);
 void mdnsCacheLinksChanged(const struct MDNSDaemon *md);
 APTR mdnsCacheWatch(const struct MDNSDaemon *md, const UBYTE *name, UWORD type,
     ULONG link, MDNSCacheNotify notify, APTR data);
@@ -284,12 +292,29 @@ void mdnsCacheUnwatch(const struct MDNSDaemon *md, APTR watch);
 void mdnsCacheDropLocal(const struct MDNSDaemon *md, const UBYTE *owner,
     const UBYTE *target);
 
+/*
+ * The sooner of two mdnsTicks() times, 0 standing for none: what each part
+ * says is due next, for the main loop's wait (wait_and_receive()). Ticks
+ * are compared as a difference, so their wrapping does not matter.
+ */
+static inline ULONG
+mdnsSooner(ULONG a, ULONG b)
+{
+    if (a == 0) {
+        return b;
+    }
+    if (b == 0) {
+        return a;
+    }
+    return (LONG)(a - b) <= 0 ? a : b;
+}
+
 /* dnssd_server.c: dnssd.library's sessions and operations. */
 BOOL dnssdServerInit(struct MDNSDaemon *md, ULONG gone);
 void dnssdServerGone(struct MDNSDaemon *md);
 void dnssdServerMessage(struct MDNSDaemon *md, struct DNSSDIPCMsg *msg);
 void dnssdServerReap(struct MDNSDaemon *md);
-void dnssdServerTick(struct MDNSDaemon *md);
+ULONG dnssdServerTick(struct MDNSDaemon *md);
 void dnssdServerCancel(struct MDNSDaemon *md);
 void dnssdServerFree(struct MDNSDaemon *md);
 
@@ -312,6 +337,7 @@ void mdnsdServiceClose(void);
 /* mdns_net.c */
 BOOL mdnsNetRescan(struct MDNSDaemon *md);
 void mdnsNetClose(struct MDNSDaemon *md);
+void mdnsNetSystemName(struct Library *SocketBase, char *base);
 BOOL mdnsNetIsOwn(struct MDNSDaemon *md, ULONG addr);
 BOOL mdnsNetIsOwn6(struct MDNSDaemon *md, const struct in6_addr *addr);
 const struct dnssd_address_entry *mdnsNetAddressAt(
@@ -325,8 +351,9 @@ void mdnsNetSendAll(struct MDNSDaemon *md, const UBYTE *pkt, LONG pktlen);
 
 /* mdns_host.c */
 void mdnsHostRestart(struct MDNSDaemon *md);
-BOOL mdnsHostTick(struct MDNSDaemon *md);
+ULONG mdnsHostTick(struct MDNSDaemon *md);
 void mdnsHostGoodbye(struct MDNSDaemon *md);
+void mdnsHostRename(struct MDNSDaemon *md, const char *base);
 void mdnsHostSetName(struct MDNSDaemon *md, const char *base, ULONG suffix);
 void mdnsHostHandleQuery(struct MDNSDaemon *md, struct MDNSQuestion *q);
 void mdnsHostHandleProbe(struct MDNSDaemon *md,
@@ -347,7 +374,7 @@ LONG mdnsRegUpdateRef(struct MDNSDaemon *md, APTR ref, const UBYTE *txt,
     LONG addrCount, ULONG ttl);
 void mdnsRegRemoveRef(struct MDNSDaemon *md, APTR ref);
 void mdnsRegFree(struct MDNSDaemon *md);
-BOOL mdnsRegTick(struct MDNSDaemon *md);
+ULONG mdnsRegTick(struct MDNSDaemon *md);
 void mdnsRegAnnounceAll(struct MDNSDaemon *md);
 void mdnsRegRestartAll(struct MDNSDaemon *md);
 void mdnsRegGoodbyeAll(struct MDNSDaemon *md);

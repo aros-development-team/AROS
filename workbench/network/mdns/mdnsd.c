@@ -24,8 +24,10 @@
 #include <string.h>
 #include <sys/socket.h>
 
+#include <devices/timer.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
+#include <proto/timer.h>
 #include <proto/bsdsocket.h>
 #include <libraries/bsdsocket.h>
 #include <netinet/in.h>
@@ -42,26 +44,36 @@
 
 static LONG daemonErrno;
 
+/*
+ * mdnsd's clock: timer.device's GetUpTime(), the time since the machine
+ * started, which setting the time of day (TR_SETSYSTIME: timesyncd, Date)
+ * does not move - as AROSTCP keeps its own timers. Only differences of its
+ * times mean anything; in ticks they wrap after 994 days, which the
+ * comparisons by difference do not mind.
+ */
+struct Device *TimerBase;
+static struct timerequest timerReq;
+
+/* Seconds. */
 ULONG
 mdnsNow(void)
 {
-    struct DateStamp ds;
+    struct timeval tv;
 
-    DateStamp(&ds);
-    return (ULONG)ds.ds_Days * 86400UL + (ULONG)ds.ds_Minute * 60UL +
-        (ULONG)(ds.ds_Tick / 50);
+    GetUpTime(&tv);
+    return (ULONG)tv.tv_secs;
 }
 
-/* Fiftieths of a second; only differences mean anything. */
+/* Fiftieths of a second. */
 ULONG
 mdnsTicks(void)
 {
-    struct DateStamp ds;
+    struct timeval tv;
 
-    DateStamp(&ds);
-    return (ULONG)ds.ds_Days * 4320000UL + (ULONG)ds.ds_Minute * 3000UL +
-        (ULONG)ds.ds_Tick;
+    GetUpTime(&tv);
+    return (ULONG)tv.tv_secs * 50UL + (ULONG)tv.tv_micro / 20000UL;
 }
+
 
 /* The stack's base and the sockets belong to this task and go away
  * together: around a reconfiguration, and for good at the end. */
@@ -76,13 +88,15 @@ net_down(struct MDNSDaemon *md)
     if (SocketBase != NULL) {
         SocketBaseTags(SBTM_SETVAL(SBTC_SIG_ADDRESS_CHANGE_MASK), 0,
             TAG_END);
+        SocketBaseTags(SBTM_SETVAL(SBTC_SIG_HOSTNAME_CHANGE_MASK), 0,
+            TAG_END);
         CloseLibrary(SocketBase);
         md->md_SocketBase = NULL;
     }
 }
 
 static void
-net_up(struct MDNSDaemon *md, ULONG addressMask)
+net_up(struct MDNSDaemon *md, ULONG addressMask, ULONG hostMask)
 {
     struct Library *SocketBase;
 
@@ -97,6 +111,11 @@ net_up(struct MDNSDaemon *md, ULONG addressMask)
             (IPTR)&daemonErrno,
             SBTM_SETREF(SBTC_LOGTAGPTR), (IPTR)"mdnsd",
             SBTM_SETVAL(SBTC_SIG_ADDRESS_CHANGE_MASK), addressMask,
+            TAG_END);
+        /* apart: a stack from before the host name signal refuses the tag,
+         * and stops at it; without it the name is read again only when
+         * the links change */
+        SocketBaseTags(SBTM_SETVAL(SBTC_SIG_HOSTNAME_CHANGE_MASK), hostMask,
             TAG_END);
     }
     /* An interface came, went or changed its address: the name is asked
@@ -178,15 +197,17 @@ receive4(struct MDNSDaemon *md, struct Library *SocketBase)
 }
 
 /* Waits for a signal, a datagram on any interface, or a second to pass: a
- * quarter of one while a name is being probed, and a fiftieth while an
- * answer is waiting to be sent. */
+ * fiftieth of one while an answer is waiting to be sent, and no longer than
+ * until the next thing due - a probe, an announcement, a query, a deadline
+ * (soonest, mdnsTicks(); 0 for nothing) - none if it is due already. */
 static ULONG
-wait_and_receive(struct MDNSDaemon *md, ULONG sigmask, BOOL probing)
+wait_and_receive(struct MDNSDaemon *md, ULONG sigmask, ULONG soonest)
 {
     struct Library *SocketBase = md->md_SocketBase;
     struct timeval tv;
     fd_set readfds;
     LONG top = -1;
+    ULONG micros = md->md_AnswerPending ? 20000 : 1000000;
 
     if (SocketBase == NULL) {
         /* Between "reconfigure begin" and "end" there is no stack to ask. */
@@ -194,8 +215,19 @@ wait_and_receive(struct MDNSDaemon *md, ULONG sigmask, BOOL probing)
     }
 
     FD_ZERO(&readfds);
-    tv.tv_sec = (probing || md->md_AnswerPending) ? 0 : 1;
-    tv.tv_usec = md->md_AnswerPending ? 20000 : probing ? 250000 : 0;
+    if (soonest != 0) {
+        /* ticks are fiftieths of a second (mdnsTicks()) */
+        LONG until = (LONG)(soonest - mdnsTicks());
+
+        if (until <= 0) {
+            micros = 0;
+        } else if (until < (LONG)(micros / 20000)) {
+            /* compared in ticks: the soonest can be hours away */
+            micros = (ULONG)until * 20000;
+        }
+    }
+    tv.tv_sec = micros / 1000000;
+    tv.tv_usec = micros % 1000000;
     if (md->md_Socket4 >= 0) {
         FD_SET(md->md_Socket4, &readfds);
         top = md->md_Socket4;
@@ -283,9 +315,10 @@ main(void)
     struct DNSSDIPCMsg *dmsg;
     struct MsgPort *dport;
     ULONG lastScan = 0, lastReap = 0;
-    ULONG addressMask = 0, goneMask = 0;
-    BYTE addressSignal = -1, goneSignal = -1;
-    BOOL running = TRUE, probing = FALSE;
+    ULONG addressMask = 0, hostMask = 0, goneMask = 0;
+    BYTE addressSignal = -1, hostSignal = -1, goneSignal = -1;
+    BOOL running = TRUE;
+    ULONG soonest = 0;
 
     /* One responder owns the host's names. */
     Forbid();
@@ -295,6 +328,12 @@ main(void)
         PutStr("mdnsd: already running\n");
         return RETURN_WARN;
     }
+    if (OpenDevice((CONST_STRPTR)TIMERNAME, UNIT_MICROHZ,
+            (struct IORequest *)&timerReq, 0) != 0) {
+        PutStr("mdnsd: no timer.device\n");
+        return RETURN_FAIL;
+    }
+    TimerBase = timerReq.tr_node.io_Device;
 
     md->md_Socket = -1;
     md->md_Socket4 = -1;
@@ -307,6 +346,7 @@ main(void)
             md->md_Links, md->md_LinkScratch, MDNS_IFS_MAX,
             md->md_Addresses, md->md_AddressScratch,
             MDNS_ADDRESS_MAX) != DNSSD_LINK_OK) {
+        CloseDevice((struct IORequest *)&timerReq);
         return RETURN_FAIL;
     }
     NEWLIST(&md->md_Services);
@@ -324,6 +364,7 @@ main(void)
         if (dport != NULL) {
             DeleteMsgPort(dport);
         }
+        CloseDevice((struct IORequest *)&timerReq);
         return RETURN_FAIL;
     }
     md->md_DNSSDPort = dport;
@@ -336,7 +377,11 @@ main(void)
     if (addressSignal >= 0) {
         addressMask = 1UL << addressSignal;
     }
-    net_up(md, addressMask);
+    hostSignal = AllocSignal(-1);
+    if (hostSignal >= 0) {
+        hostMask = 1UL << hostSignal;
+    }
+    net_up(md, addressMask, hostMask);
     /* dnssd.library's sessions, and the signal that a client task went */
     goneSignal = AllocSignal(-1);
     if (goneSignal >= 0) {
@@ -352,7 +397,7 @@ main(void)
     while (running) {
         ULONG got = wait_and_receive(md,
             dportmask | sig.ms_Stop | sig.ms_Begin | sig.ms_End |
-            addressMask | goneMask | SIGBREAKF_CTRL_C, probing);
+            addressMask | hostMask | goneMask | SIGBREAKF_CTRL_C, soonest);
 
         if (got & (sig.ms_Stop | SIGBREAKF_CTRL_C)) {
             running = FALSE;
@@ -371,8 +416,16 @@ main(void)
             mdnsNow() - lastScan >= MDNSD_RESCAN_SECONDS) {
             lastScan = mdnsNow();
             if (md->md_SocketBase != NULL || (got & sig.ms_End)) {
-                net_up(md, addressMask);
+                net_up(md, addressMask, hostMask);
             }
+        }
+        /* The system's name changed: read as it is now, however many
+         * changes the one signal stands for. */
+        if ((got & hostMask) && md->md_SocketBase != NULL) {
+            char base[MDNSD_HOST_MAX + 1];
+
+            mdnsNetSystemName(md->md_SocketBase, base);
+            mdnsHostRename(md, base);
         }
 
         if (got & goneMask) {
@@ -389,15 +442,13 @@ main(void)
 
         /* the cache first: what it drops is told to the operations that
          * watch it, which then look again in their own turn */
-        mdnsCacheTick(md);
-        dnssdServerTick(md);
-        probing = FALSE;
+        soonest = mdnsCacheTick(md);
+        /* what is due next, as this turn left it */
+        soonest = mdnsSooner(soonest, dnssdServerTick(md));
         if (running && md->md_Socket >= 0) {
             /* the host's name first: no service is announced before it */
-            probing = mdnsHostTick(md);
-            if (mdnsRegTick(md)) {
-                probing = TRUE;
-            }
+            soonest = mdnsSooner(soonest, mdnsHostTick(md));
+            soonest = mdnsSooner(soonest, mdnsRegTick(md));
         }
     }
 
@@ -426,10 +477,14 @@ main(void)
     if (addressSignal >= 0) {
         FreeSignal(addressSignal);
     }
+    if (hostSignal >= 0) {
+        FreeSignal(hostSignal);
+    }
     if (goneSignal >= 0) {
         FreeSignal(goneSignal);         /* the hook is off (dnssdServerFree()) */
     }
     FreeMem(md->md_RxBuf, MDNS_MAX_PACKET);
     FreeMem(md->md_TxBuf, MDNS_MAX_PACKET);
+    CloseDevice((struct IORequest *)&timerReq);
     return RETURN_OK;
 }

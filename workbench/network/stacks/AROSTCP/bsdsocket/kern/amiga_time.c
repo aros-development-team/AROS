@@ -115,6 +115,9 @@ proto_slowtimo(void)
 {
     net_slowticks++;
     pfslowtimo();
+    /* a change signal the stack task could not send yet (api_sendchange()):
+     * here, whichever families are loaded */
+    api_addrchange_retry();
 }
 
 /*
