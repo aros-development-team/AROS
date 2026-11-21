@@ -6,8 +6,9 @@ TARGETDIR       := $(GENDIR)/$(CURDIR)
 FILES           := startup64 boot mmu kprintf support vc_mb serialdebug elf devicetree \
                    bc/vars bc/font8x14 bc/screen_fb vc_fb
 # The bootstrap runs with the MMU off, where every access is Device memory
-# and an unaligned load or store faults, so the compiler must not create one.
-USER_CFLAGS     := -Wall $(CFLAGS_NO_BUILTIN) $(CFLAGS_NO_VECTORIZE) -mstrict-align
+# and an unaligned load or store faults. Package data is read through
+# elf_memcpy(); this stops the compiler adding unaligned accesses of its own.
+USER_CFLAGS     := -Wall $(CFLAGS_NO_BUILTIN) $(CFLAGS_NO_VECTORIZE) $(CFLAGS_STRICT_ALIGN)
 KERNEL_LDFLAGS  =
 USER_INCLUDES   := -isystem $(SRCDIR)/$(CURDIR)/include -I$(SRCDIR)/rom/openfirmware
 USER_CPPFLAGS   := -DTARGET_SECTION_COMMENT=\"$(AROS_SECTION_COMMENT)\"
