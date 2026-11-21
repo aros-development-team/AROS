@@ -3,13 +3,15 @@ include $(SRCDIR)/config/aros.cfg
 
 #
 # Native RISC-V exec code shared by the platforms:
-# exec_platform.h (per-hart TLS scheduler state on SMP), the idle task
-# and exec's SMP support. See ../kernel/mmakefile.src for the layering.
+# exec_platform.h (per-hart TLS scheduler state on SMP), the idle task,
+# SuperState() and exec's SMP support. See ../kernel/mmakefile.src for
+# the layering.
 #
 
 CFILES := \
         exec_idle \
-        exec_smp
+        exec_smp \
+        superstate
 
 %set_archincludes mainmmake=kernel-exec maindir=rom/exec \
   modname=exec pri=4 arch=native-riscv \

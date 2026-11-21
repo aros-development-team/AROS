@@ -786,6 +786,14 @@ void __attribute__((noreturn)) kernel_cstart(unsigned long hartid, void *fdt)
      */
     if (!fdtinfo.plic_base)
         krnACPIPLICInfo(&fdtinfo);
+
+    /*
+     * Where the trap dispatch sends the timer and the PLIC's interrupts:
+     * needed before either is enabled (a warm kick clears .bss, and this
+     * fills them again).
+     */
+    __riscv_arosintern.RVI_TimerTick = krnTimerTick;
+    __riscv_arosintern.RVI_ExternalIRQ = krnHandleExternalIRQ;
     krnPLICInit(&fdtinfo);
 
     /*

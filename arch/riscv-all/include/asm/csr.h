@@ -50,11 +50,17 @@ extern "C" {
 
 /* sip interrupt-pending bits */
 #define SIP_SSIP            0x00000002UL /* Supervisor software (IPI) */
+#define SIP_STIP            0x00000020UL /* Supervisor timer          */
 
 /* scause interrupt codes (with the top bit set) */
 #define SCAUSE_IRQ_SSI      1
 #define SCAUSE_IRQ_STI      5
 #define SCAUSE_IRQ_SEI      9
+
+/* mcause interrupt codes (with the top bit set) */
+#define MCAUSE_IRQ_MSI      3
+#define MCAUSE_IRQ_MTI      7
+#define MCAUSE_IRQ_MEI      11
 
 /* mstatus fields; FS and VS sit at the same bits as in sstatus */
 #define MSTATUS_MIE         0x00000008UL
@@ -63,6 +69,9 @@ extern "C" {
 
 /* mie interrupt-enable bits */
 #define MIE_MSIE            0x00000008UL /* Machine software (IPI)    */
+
+/* mip interrupt-pending bits */
+#define MIP_MTIP            0x00000080UL /* Machine timer             */
 
 /*
  * The CSRs and bits of the privilege mode the kernel runs in, chosen at
@@ -74,23 +83,43 @@ extern "C" {
 #if defined(__AROSPLATFORM_RISCV_MMODE__)
 #define RV_CSR_STATUS           mstatus
 #define RV_CSR_IE               mie
+#define RV_CSR_IP               mip
+#define RV_CSR_EPC              mepc
+#define RV_CSR_TVAL             mtval
 #define RV_STATUS_IE            MSTATUS_MIE
 #define RV_STATUS_PIE           MSTATUS_MPIE
 #define RV_STATUS_PP_KERNEL     MSTATUS_MPP
 #define RV_IE_SOFT              MIE_MSIE
+#define RV_IP_TIMER             MIP_MTIP
+#define RV_IRQ_SOFT             MCAUSE_IRQ_MSI
+#define RV_IRQ_TIMER            MCAUSE_IRQ_MTI
+#define RV_IRQ_EXT              MCAUSE_IRQ_MEI
 #else
 #define RV_CSR_STATUS           sstatus
 #define RV_CSR_IE               sie
+#define RV_CSR_IP               sip
+#define RV_CSR_EPC              sepc
+#define RV_CSR_TVAL             stval
 #define RV_STATUS_IE            SSTATUS_SIE
 #define RV_STATUS_PIE           SSTATUS_SPIE
 #define RV_STATUS_PP_KERNEL     SSTATUS_SPP
 #define RV_IE_SOFT              SIE_SSIE
+#define RV_IP_TIMER             SIP_STIP
+#define RV_IRQ_SOFT             SCAUSE_IRQ_SSI
+#define RV_IRQ_TIMER            SCAUSE_IRQ_STI
+#define RV_IRQ_EXT              SCAUSE_IRQ_SEI
 #endif
+
+/* The cause register's interrupt bit, its top bit in either mode */
+#define RV_CAUSE_INTERRUPT      (1UL << (__riscv_xlen - 1))
 
 /* FPU and vector state fields, the same in both modes */
 #define RV_STATUS_VS            SSTATUS_VS
 #define RV_STATUS_VS_INITIAL    SSTATUS_VS_INITIAL
+#define RV_STATUS_FS            SSTATUS_FS
 #define RV_STATUS_FS_INITIAL    SSTATUS_FS_INITIAL
+#define RV_STATUS_FS_CLEAN      SSTATUS_FS_CLEAN
+#define RV_STATUS_FS_DIRTY      SSTATUS_FS_DIRTY
 
 /*
  * Vector extension CSR numbers. Numeric so they assemble without V in

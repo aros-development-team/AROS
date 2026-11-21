@@ -6,12 +6,14 @@
     Desc: Shared declarations for native RISC-V kernels.
 
     riscv-native holds the firmware-independent part of the kernel:
-    per-hart TLS, the CPU numbering and masks, spinlocks, the SMP
-    scheduler and the IPI core. Whatever needs the firmware - starting
-    a hart, raising an inter-processor interrupt, remote TLB fences - is
-    reached through the hook table below, which the platform (e.g.
-    riscv64-sbi over SBI) fills in. It follows the ARM_Implementation
-    / ARMI_* hooks of the ARM ports.
+    the context switch, the trap dispatch, per-hart TLS, the CPU
+    numbering and masks, spinlocks, the SMP scheduler and the IPI core.
+    Whatever needs the firmware or the platform's devices - starting a
+    hart, raising an inter-processor interrupt, remote TLB fences, the
+    timer tick, the interrupt controller - is reached through the hook
+    table below, which the platform (e.g. riscv64-sbi over SBI) fills
+    in. It follows the ARM_Implementation / ARMI_* hooks of the ARM
+    ports.
 */
 
 #include <aros/config.h>
@@ -22,6 +24,7 @@
 
 struct KernelBase;
 struct ExecBase;
+struct ExceptionContext;
 
 /*
  * The most harts a native RISC-V kernel numbers. CPU masks are a fixed
@@ -54,6 +57,13 @@ struct RISCV_Implementation
     void    (*RVI_StopCPU)(void);
     /* rdtime ticks per second */
     UQUAD   RVI_TimebaseFreq;
+    /* The scheduler tick: from the trap dispatch (kernel_traps.c) on a
+       timer interrupt, and from the dispatcher (kernel_cpu.c) when it
+       finds the timer pending while it waits for a task (NULL context) */
+    void    (*RVI_TimerTick)(struct ExceptionContext *ctx);
+    /* Claim and complete every pending device interrupt (kernel_traps.c);
+       NULL if the platform expects none - one arriving then is fatal */
+    void    (*RVI_ExternalIRQ)(void);
 };
 
 #if defined(__AROSEXEC_SMP__)
@@ -165,6 +175,10 @@ static inline uint32_t krnRVCPUNumber(void)
 extern int __riscv64_trap_depth;
 #define KRN_TRAPDEPTH   __riscv64_trap_depth
 #endif
+
+/* The trap dispatch (kernel_traps.c), called by the platform's traps.S */
+void krnTrapHandler(struct ExceptionContext *ctx, unsigned long cause,
+                    unsigned long tval);
 
 /* Spin-wait hint (Zihintpause, part of RVA22; a nop elsewhere) */
 static inline void krnRVPause(void)
