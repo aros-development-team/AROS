@@ -10,6 +10,8 @@
 
 #include <exec/types.h>
 #include <exec/memory.h>
+#include <exec/interrupts.h>
+#include <aros/asmcall.h>
 #include <hidd/pci.h>
 #include <oop/oop.h>
 
@@ -247,9 +249,9 @@ static inline void wr32(volatile uint8_t *regs, uint32_t reg, uint32_t val)
 
 /*
  * All 32 vectors funnel into this one interrupt; what distinguishes them
- * is the bit the bridge set in INTR2_INT_STATUS. The status is cleared
- * here - the endpoint handlers hang off the same interrupt and run after
- * us, and a level output nobody clears never falls.
+ * is the bit the bridge set in INTR2_INT_STATUS. A vector is acknowledged
+ * before its device handler runs: a message the device sends while the
+ * handler works sets the bit again, where clearing afterwards would lose it.
  */
 static void PCIeMSIHandler(void *data, void *unused)
 {
@@ -270,6 +272,14 @@ static void PCIeMSIHandler(void *data, void *unused)
             bug("[PCIBcm2711] MSI vectors %08x (%u)\n", (unsigned)status, (unsigned)seen);
         }
 #endif
+        while (status)
+        {
+            struct Interrupt *is = psd->msi_int[__builtin_ctz(status)];
+
+            status &= status - 1;
+            if (is)
+                AROS_INTC1(is->is_Code, is->is_Data);
+        }
     }
 }
 
@@ -706,9 +716,8 @@ static int PCIBcm2711_InitClass(LIBBASETYPEPTR LIBBASE)
         return TRUE;    /* no link; nothing to drive, but do not stop boot */
 
     /*
-     * Own the bridge's MSI output. This handler only acknowledges; the
-     * device handlers that care about the event join the same interrupt
-     * and run after it.
+     * Own the bridge's MSI output. Device handlers for message vectors are
+     * called from it (PCIDriver::AddInterrupt), after the acknowledge.
      */
     psd->msi_handle = KrnAddIRQHandler(psd->msi_irq, PCIeMSIHandler, psd, NULL);
     BRINGUP(bug("[PCIBcm2711] MSI target %08x%08x, INTID %u, handler @ 0x%p\n",
