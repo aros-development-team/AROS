@@ -22,5 +22,9 @@ static inline struct Node *RemHead(struct List *l) { struct Node *n = l->lh_Head
 #define CACRF_CopyBack 4
 #define OpenLibrary(name, ver) ((struct Library *)0)
 #define CloseLibrary(lib) ((void)0)
+/* one task */
+struct Task;
+extern struct Task *m68kemu_host_task;
+#define FindTask(name) (m68kemu_host_task)
 #define GetVar(name, buf, len, flags) (-1)
 #define IsMinListEmpty(l) (((struct MinList *)(l))->mlh_TailPred == (struct MinNode *)(l))

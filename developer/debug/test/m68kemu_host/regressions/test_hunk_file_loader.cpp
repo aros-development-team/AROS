@@ -62,6 +62,7 @@ struct M68KEmuContext
 static M68KEmuContext *active;
 
 static void m68k_log(M68KEmuContext *, const char *, ...) {}
+static void m68k_engine_invalidate(M68KEmuContext *) {}    /* no engine here */
 static void m68k_low_write_trap(M68KEmuContext *, ULONG, const char *) { throw Failure{"write into the low memory guard"}; }
 static APTR AllocMem(size_t size, ULONG) { return std::calloc(1, size); }
 static void FreeMem(APTR ptr, size_t) { std::free(ptr); }

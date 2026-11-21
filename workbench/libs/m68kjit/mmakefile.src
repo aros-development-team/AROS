@@ -1,0 +1,24 @@
+# Copyright (C) 2026, The AROS Development Team. All rights reserved.
+#
+# m68kjit.library: an optional 68k execution engine for
+# m68kemu.library, behind the interface of rom/m68kemu/m68kemu_engine.h.
+#
+# The translator emits AArch64 code, so the library is built for AArch64
+# targets only. m68kemu.library runs without it.
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM- workbench-libs : workbench-libs-m68kjit-$(AROS_TARGET_CPU)
+#MM- workbench-libs-m68kjit-aarch64 : workbench-libs-m68kjit
+
+FILES := m68kjit_library m68kjit_engine m68kjit_translate m68kjit_platform
+
+# the interface the engine implements is m68kemu's
+USER_CPPFLAGS := -I$(SRCDIR)/rom/m68kemu
+USER_LDFLAGS := -static
+
+%build_module mmake=workbench-libs-m68kjit \
+    modname=m68kjit modtype=library \
+    files="$(FILES)"
+
+%common

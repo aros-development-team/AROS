@@ -76,6 +76,7 @@ static unsigned info_calls;     /* calls of GetSegListInfo() */
 
 static void bug(const char *, ...) { if (active) ++active->messages; }
 static void m68k_low_write_trap(M68KEmuContext *, ULONG, const char *) { throw Failure{"write into the low memory guard"}; }
+static void m68k_engine_invalidate(M68KEmuContext *) {}    /* no engine here */
 
 /* AllocVec() gives a pointer that C assigns to any pointer; the production
    line has no cast. */

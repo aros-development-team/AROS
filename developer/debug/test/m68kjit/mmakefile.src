@@ -1,0 +1,23 @@
+# Copyright (C) 2026, The AROS Development Team. All rights reserved.
+#
+# A native probe of m68kjit.library through its interface alone.
+# The library is built for AArch64 targets only, and so is the probe.
+
+include $(SRCDIR)/config/aros.cfg
+
+FILES := m68kjitprobe
+
+EXEDIR := $(AROS_TESTS)/m68kjit
+
+# the interface is m68kemu's
+USER_CPPFLAGS := -I$(SRCDIR)/rom/m68kemu
+
+#MM test-m68kjit : includes linklibs workbench-libs-m68kjit
+
+#MM- test : test-m68kjit-$(AROS_TARGET_CPU)
+#MM- test-m68kjit-aarch64 : test-m68kjit
+
+%build_progs mmake=test-m68kjit \
+    files=$(FILES) targetdir=$(EXEDIR)
+
+%common

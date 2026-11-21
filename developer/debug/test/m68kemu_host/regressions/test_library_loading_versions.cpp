@@ -60,6 +60,7 @@ static M68KEmuContext *active;
 static void fixture_bug(const char *, ...) {}
 #define bug(...) fixture_bug(__VA_ARGS__)
 static void m68k_log(M68KEmuContext *, const char *, ...) {}
+static void m68k_engine_invalidate(M68KEmuContext *) {}    /* no engine here */
 static void m68k_low_write_trap(M68KEmuContext *, ULONG, const char *) { std::abort(); }
 static M68KTaskState *m68k_ts(M68KEmuContext *ctx) { return &ctx->task; }
 static APTR FindTask(APTR) { return &process; }
