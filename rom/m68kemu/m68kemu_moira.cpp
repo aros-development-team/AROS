@@ -1172,7 +1172,7 @@ LONG M68KEmu_Execute(struct M68KEmuContext *ctx)
         }
         if (ctx->jit_run)
             m68k_jit_say(ctx, "%s runs on %s, interface %lu.%lu, with the interpreter for what it leaves (M68KEMU_CPU is %s)",
-                name, (const char *)ctx->jit_ops->name, (unsigned long)ctx->jit_ops->abi_major,
+                name, reinterpret_cast<const char *>(ctx->jit_ops->name), (unsigned long)ctx->jit_ops->abi_major,
                 (unsigned long)ctx->jit_ops->abi_minor, mode);
         else if (!jit_refused)
             m68k_jit_say(ctx, "%s runs on the interpreter (M68KEMU_CPU is %s%s%s)", name, mode,

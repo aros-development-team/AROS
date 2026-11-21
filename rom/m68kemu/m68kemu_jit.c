@@ -178,7 +178,9 @@ static LONG jit_select(struct M68KEmuContext *ctx)
         m68k_jit_say(ctx, "M68KEMU_CPU starts \"%s\" and is too long: it can be interpreter, jit or auto; the program is not run", v);
         return -1;
     }
-    n = (LONG)strlen(v);
+    /* its length, up to the end set above */
+    for (n = 0; v[n]; n++)
+        ;
     while (n > 0 && (v[n - 1] == '\n' || v[n - 1] == '\r' || v[n - 1] == ' '))
         v[--n] = 0;
     if (!n)
@@ -228,8 +230,10 @@ LONG m68k_jit_select(struct M68KEmuContext *ctx)
 /* the program's name for a line: the end of it when it is a long path */
 const char *m68k_jit_name(struct M68KEmuContext *ctx)
 {
-    ULONG len = strlen(ctx->program_name);
+    ULONG len = 0;
 
+    while (len < sizeof(ctx->program_name) - 1 && ctx->program_name[len])
+        len++;
     if (!len)
         return "68k program";
     return ctx->program_name + (len > 48 ? len - 48 : 0);
