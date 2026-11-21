@@ -81,8 +81,6 @@ FUNCTIONS := abortpkt addbuffers adddosentry addpart addsegment \
 	     vprintf waitforchar waitpkt write writechars runhandler
 
 #MM kernel-dos-linklib : workbench-libs-dos-catalogs
-# dos.library calls security.library (setuid executables, per-user assigns):
-# its objects need security.library's current includes
 #MM kernel-dos-kobj : workbench-libs-dos-catalogs kernel-security-includes
 #MM kernel-dos : workbench-libs-dos-catalogs kernel-security-includes
 
@@ -108,6 +106,8 @@ $(GENDIR)/$(CURDIR)/dos/errorlist.d : $(GENDIR)/$(CURDIR)/dos/errorlist.h
 $(GENDIR)/$(CURDIR)/dos/errorlist.h : $(SRCDIR)/$(CURDIR)/catalogs/dos.cd $(SRCDIR)/$(CURDIR)/genstrings.py
 	@$(ECHO) Generating $@...
 	@$(PYTHON) $(SRCDIR)/$(CURDIR)/genstrings.py $< > $@
+
+#MM linklibs-loadseg : kernel-security-includes
 
 %build_linklib mmake=linklibs-loadseg libname=loadseg files="$(LOADSEG_FILES)" objdir=$(OBJDIR)/loadseg libdir=$(GENDIR)/lib
 
