@@ -21,7 +21,10 @@
     that is being sent between chunks; <job>.stop stops it and holds it, kept;
     <job>.restart sends it again from the start. What
     printer.device says is being printed (PRD_SETJOBINFO) is kept in <job>.info
-    as Application= and Document= lines.
+    as Application= and Document= lines. A job's own IPP request, from the same
+    command, is kept in <job>.ipp and given to the output device before the
+    job's first byte; the job is held when the device does not take it.
+    CMD_RESET gives up the job being written: nothing of it is printed.
 */
 
 #include <aros/debug.h>
@@ -60,6 +63,9 @@ struct FinishedJob
     TEXT fj_Name[64];
     TEXT fj_Application[64];
     TEXT fj_Document[128];
+    UBYTE *fj_Request;
+    ULONG fj_RequestSize;
+    BOOL fj_GivenUp;
 };
 
 static struct MinList finished;
@@ -256,10 +262,11 @@ static BOOL hold_job(struct PrintSpoolBase *PrintSpoolBase, CONST_STRPTR name, C
     return Close(file) && ok;
 }
 
-/* Whether the device answers for a whole job (CMD_UPDATE, CMD_RESET): only such a
-   device's IOERR_ABORTED and PDERR_CANCEL mean a dropped or refused job; the port
-   devices have error numbers of their own. */
-static BOOL knows_jobs(struct IOStdReq *io)
+/* Whether the device lists the command. One that lists CMD_UPDATE answers for a
+   whole job (CMD_UPDATE, CMD_RESET): only such a device's IOERR_ABORTED and
+   PDERR_CANCEL mean a dropped or refused job; the port devices have error numbers
+   of their own. */
+static BOOL knows(struct IOStdReq *io, UWORD command)
 {
     struct NSDeviceQueryResult q;
     UWORD *c;
@@ -272,9 +279,49 @@ static BOOL knows_jobs(struct IOStdReq *io)
     if (DoIO((struct IORequest *)io) != 0 || io->io_Actual < 16 || q.SupportedCommands == NULL)
         return FALSE;
     for (c = q.SupportedCommands; *c; c++)
-        if (*c == CMD_UPDATE)
+        if (*c == command)
             return TRUE;
     return FALSE;
+}
+
+/* The job's own IPP request, from <job>.ipp: its size, 0 for a job without one,
+   -1 when it is there and cannot be used. */
+static LONG job_request(struct PrintSpoolBase *PrintSpoolBase, CONST_STRPTR name, UBYTE *request)
+{
+    TEXT path[300];
+    UBYTE more;
+    LONG size;
+    BPTR fh;
+
+    job_path(PrintSpoolBase, name, ".ipp", path, sizeof(path));
+    if ((fh = Open(path, MODE_OLDFILE)) == BNULL)
+        return IoErr() == ERROR_OBJECT_NOT_FOUND ? 0 : -1;
+    size = Read(fh, request, REQUEST_MAX);
+    if (size <= 0 || Read(fh, &more, 1) != 0)
+        size = -1;
+    Close(fh);
+    return size;
+}
+
+/* Gives the output device the job's request. FALSE when it does not take it. */
+static BOOL send_request(struct IOStdReq *io, UBYTE *request, LONG size)
+{
+    BOOL accepted = FALSE;
+    struct TagItem tags[] =
+    {
+        { PJIA_IPPAttributes, (IPTR)request },
+        { PJIA_IPPAttributesSize, size },
+        { PJIA_IPPAttributesAccepted, (IPTR)&accepted },
+        { TAG_END, 0 }
+    };
+
+    if (!knows(io, PRD_SETJOBINFO))
+        return FALSE;
+    io->io_Command = PRD_SETJOBINFO;
+    io->io_Data = tags;
+    io->io_Length = 0;
+    io->io_Flags = 0;
+    return DoIO((struct IORequest *)io) == 0 && accepted;
 }
 
 /* A job that will not be finished: the device gives it up instead of ending it on close. */
@@ -336,8 +383,44 @@ static void publish_finished(struct PrintSpoolBase *PrintSpoolBase)
     ObtainSemaphore(&PrintSpoolBase->ps_Lock);
     while ((fj = (struct FinishedJob *)REMHEAD((struct List *)&finished)) != NULL)
     {
+        BOOL ok = TRUE;
+
         ReleaseSemaphore(&PrintSpoolBase->ps_Lock);
         Close(fj->fj_File);
+        job_path(PrintSpoolBase, fj->fj_Name, TMP_SUFFIX, from, sizeof(from));
+        if (fj->fj_GivenUp)
+        {
+            DeleteFile(from);
+            FreeVec(fj->fj_Request);
+            __sprintf(to, "%s: given up by its sender", fj->fj_Name);
+            set_status(PrintSpoolBase, to);
+            FreeMem(fj, sizeof(*fj));
+            ObtainSemaphore(&PrintSpoolBase->ps_Lock);
+            continue;
+        }
+        if (fj->fj_Request != NULL)
+        {
+            BPTR fh;
+
+            job_path(PrintSpoolBase, fj->fj_Name, ".ipp", to, sizeof(to));
+            if ((ok = (fh = Open(to, MODE_NEWFILE)) != BNULL))
+            {
+                ok = Write(fh, fj->fj_Request, fj->fj_RequestSize) == (LONG)fj->fj_RequestSize;
+                ok = Close(fh) && ok;
+            }
+            FreeVec(fj->fj_Request);
+        }
+        if (!ok)
+        {
+            /* It would print as the printer pleases without its request: it is not published. */
+            DeleteFile(to);
+            DeleteFile(from);
+            __sprintf(to, "%s: lost, its request for the printer could not be written", fj->fj_Name);
+            set_status(PrintSpoolBase, to);
+            FreeMem(fj, sizeof(*fj));
+            ObtainSemaphore(&PrintSpoolBase->ps_Lock);
+            continue;
+        }
         if (fj->fj_Application[0] != '\0' || fj->fj_Document[0] != '\0')
         {
             BPTR info;
@@ -353,7 +436,6 @@ static void publish_finished(struct PrintSpoolBase *PrintSpoolBase)
                 Close(info);
             }
         }
-        job_path(PrintSpoolBase, fj->fj_Name, TMP_SUFFIX, from, sizeof(from));
         job_path(PrintSpoolBase, fj->fj_Name, JOB_SUFFIX, to, sizeof(to));
         Rename(from, to);
         FreeMem(fj, sizeof(*fj));
@@ -368,7 +450,7 @@ static void publish_finished(struct PrintSpoolBase *PrintSpoolBase)
    before anything is deleted, as ExNext() is not safe across a delete. */
 static void housekeep(struct PrintSpoolBase *PrintSpoolBase, CONST_STRPTR active)
 {
-    static const char *const suffixes[] = { JOB_SUFFIX, ".info", ".hold", ".stop", ".restart", ".cancel" };
+    static const char *const suffixes[] = { JOB_SUFFIX, ".info", ".ipp", ".hold", ".stop", ".restart", ".cancel" };
     TEXT dir[256], names[8][64], path[300];
     struct FileInfoBlock *fib;
     LONG count = 0, i, k;
@@ -407,6 +489,7 @@ static void spooler_main(void)
 {
     struct PrintSpoolBase *PrintSpoolBase = FindTask(NULL)->tc_UserData;
     UBYTE *chunk = AllocMem(CHUNK_SIZE, MEMF_ANY);
+    UBYTE *request = AllocMem(REQUEST_MAX, MEMF_ANY);
     struct MsgPort *port = CreateMsgPort();
     struct IOStdReq *io = (struct IOStdReq *)CreateIORequest(port,
         sizeof(struct IOExtPar) > sizeof(struct IOExtSer) ?
@@ -438,11 +521,13 @@ static void spooler_main(void)
         /* the device dropped the job (send it whole again), refused it (hold it), or sent
            all of it without the printer confirming it (hold it: it may have printed) */
         BOOL dropped = FALSE, refused = FALSE, unconfirmed = FALSE, jobs = FALSE, updated = FALSE;
-        LONG failure = 0, taken;
+        /* the job has a request of its own that is unreadable, or that the device does not take */
+        BOOL unsent = FALSE;
+        LONG failure = 0, taken, request_size;
 
         housekeep(PrintSpoolBase, NULL);
 
-        if (chunk == NULL || io == NULL || !next_job(PrintSpoolBase, name, sizeof(name)))
+        if (chunk == NULL || request == NULL || io == NULL || !next_job(PrintSpoolBase, name, sizeof(name)))
         {
             ULONG tsig = 0, got;
 
@@ -477,11 +562,17 @@ static void spooler_main(void)
             continue;
         }
         job_info(PrintSpoolBase, name, app, sizeof(app), doc, sizeof(doc));
+        request_size = job_request(PrintSpoolBase, name, request);
 
         while (!done)
         {
             if (cancelled(PrintSpoolBase, name))
                 break;
+            if (request_size < 0)
+            {
+                unsent = TRUE;
+                break;
+            }
             /* held or stopped from the spooler UI before it got going: left as it is */
             if (held(PrintSpoolBase, name) || has_flag(PrintSpoolBase, name, ".stop"))
             {
@@ -491,7 +582,14 @@ static void spooler_main(void)
             io->io_Device = NULL;
             if (OpenDevice(device, devunit, (struct IORequest *)io, 0) == 0)
             {
-                jobs = knows_jobs(io);
+                jobs = knows(io, CMD_UPDATE);
+                if (request_size > 0 && !send_request(io, request, request_size))
+                {
+                    give_up(io, jobs);
+                    CloseDevice((struct IORequest *)io);
+                    io->io_Device = NULL;
+                    unsent = TRUE;
+                }
                 break;
             }
             __sprintf(status, "%s: waiting, cannot open %s unit %ld", name, device, (long)devunit);
@@ -514,6 +612,21 @@ static void spooler_main(void)
                 set_flag(PrintSpoolBase, name, ".stop", FALSE);
             }
             Close(file);
+            continue;
+        }
+        if (unsent)
+        {
+            /* Sent without its request it would print as the printer pleases: it is held. */
+            CONST_STRPTR why = request_size < 0 ? "its request for the printer could not be read"
+                                                : "the output device does not take its request for the printer";
+
+            __sprintf(status, "%s: held, %s", name, why);
+            set_status(PrintSpoolBase, status);
+            job_event(PrintSpoolBase, name, unit, device, devunit, "held",
+                request_size < 0 ? "unreadable" : "refused", app, doc);
+            Close(file);
+            if (!hold_job(PrintSpoolBase, name, why))
+                Delay(RETRY_TICKS);
             continue;
         }
         if (cancelled(PrintSpoolBase, name))
@@ -757,6 +870,8 @@ static void spooler_main(void)
         DeleteFile(path);
         job_path(PrintSpoolBase, name, ".info", path, sizeof(path));
         DeleteFile(path);
+        job_path(PrintSpoolBase, name, ".ipp", path, sizeof(path));
+        DeleteFile(path);
         set_flag(PrintSpoolBase, name, ".hold", FALSE);
         D(bug("[printspool] %s done\n", name));
     }
@@ -772,6 +887,8 @@ static void spooler_main(void)
     DeleteMsgPort(port);
     if (chunk != NULL)
         FreeMem(chunk, CHUNK_SIZE);
+    if (request != NULL)
+        FreeMem(request, REQUEST_MAX);
 }
 
 /* The spooler process, started on the first job. */
@@ -839,6 +956,11 @@ static LONG write_job(struct PrintSpoolBase *PrintSpoolBase, struct IOStdReq *io
     {
         ReleaseSemaphore(&PrintSpoolBase->ps_Lock);
         return IOERR_OPENFAIL;
+    }
+    if (pu->pu_GivenUp)
+    {
+        ReleaseSemaphore(&PrintSpoolBase->ps_Lock);
+        return PDERR_CANCEL;
     }
     if (pu->pu_Job == BNULL)
     {
@@ -1076,6 +1198,10 @@ AROS_LH1(void, BeginIO,
     {
         struct PrintSpoolUnit *pu = (struct PrintSpoolUnit *)io->io_Unit;
         struct TagItem *tags = io->io_Data, *tag;
+        const UBYTE *request = NULL;
+        ULONG request_size = 0;
+        BOOL *accepted = NULL;
+        UBYTE *copy;
 
         ObtainSemaphore(&PrintSpoolBase->ps_Lock);
         while ((tag = LibNextTagItem(&tags)) != NULL)
@@ -1083,6 +1209,12 @@ AROS_LH1(void, BeginIO,
             STRPTR dest = NULL;
             LONG size = 0;
 
+            if (tag->ti_Tag == PJIA_IPPAttributes)
+                request = (const UBYTE *)tag->ti_Data;
+            else if (tag->ti_Tag == PJIA_IPPAttributesSize)
+                request_size = tag->ti_Data;
+            else if (tag->ti_Tag == PJIA_IPPAttributesAccepted)
+                accepted = (BOOL *)tag->ti_Data;
             if (tag->ti_Tag == PJIA_Application)
             {
                 dest = pu->pu_Application;
@@ -1099,13 +1231,33 @@ AROS_LH1(void, BeginIO,
                 dest[size - 1] = '\0';
             }
         }
+        if (accepted != NULL)
+        {
+            *accepted = FALSE;
+            /* The request is the whole job's: it is taken before the first byte only. */
+            if (request != NULL && request_size > 0 && request_size <= REQUEST_MAX && pu->pu_Job == BNULL
+                && (copy = AllocVec(request_size, MEMF_ANY)) != NULL)
+            {
+                CopyMem(request, copy, request_size);
+                FreeVec(pu->pu_Request);
+                pu->pu_Request = copy;
+                pu->pu_RequestSize = request_size;
+                *accepted = TRUE;
+            }
+        }
         ReleaseSemaphore(&PrintSpoolBase->ps_Lock);
         io->io_Error = 0;
         break;
     }
+    case CMD_RESET:
+        /* the writer gives its job up, as the spooler tells an output device to */
+        ObtainSemaphore(&PrintSpoolBase->ps_Lock);
+        ((struct PrintSpoolUnit *)io->io_Unit)->pu_GivenUp = TRUE;
+        ReleaseSemaphore(&PrintSpoolBase->ps_Lock);
+        io->io_Error = 0;
+        break;
     case CMD_FLUSH:
     case CMD_UPDATE:
-    case CMD_RESET:
         io->io_Error = 0;
         break;
     default:
@@ -1178,7 +1330,12 @@ static int GM_UNIQUENAME(Close)(struct PrintSpoolBase *PrintSpoolBase, struct IO
     if (pu->pu_Openers > 0)
         pu->pu_Openers--;
     if (pu->pu_Openers == 0 && pu->pu_Job == BNULL)
+    {
         pu->pu_Application[0] = pu->pu_Document[0] = '\0';
+        FreeVec(pu->pu_Request);
+        pu->pu_Request = NULL;
+        pu->pu_GivenUp = FALSE;
+    }
     if (pu->pu_Openers == 0 && pu->pu_Job != BNULL)
     {
         fj = AllocMem(sizeof(*fj), MEMF_ANY);
@@ -1190,6 +1347,11 @@ static int GM_UNIQUENAME(Close)(struct PrintSpoolBase *PrintSpoolBase, struct IO
             strcpy(fj->fj_Name, pu->pu_Name);
             strcpy(fj->fj_Application, pu->pu_Application);
             strcpy(fj->fj_Document, pu->pu_Document);
+            fj->fj_Request = pu->pu_Request;
+            fj->fj_RequestSize = pu->pu_RequestSize;
+            fj->fj_GivenUp = pu->pu_GivenUp;
+            pu->pu_Request = NULL;
+            pu->pu_GivenUp = FALSE;
             ADDTAIL((struct List *)&finished, (struct Node *)fj);
             pu->pu_Job = BNULL;
             pu->pu_Application[0] = pu->pu_Document[0] = '\0';

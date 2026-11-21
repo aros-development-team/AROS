@@ -10,6 +10,7 @@
 #include <dos/dos.h>
 
 #define PRINTSPOOL_UNITS    10      /* as many as printer.device has */
+#define REQUEST_MAX         16384   /* a job's own IPP request (PRD_SETJOBINFO) */
 
 struct PrintSpoolBase
 {
@@ -22,6 +23,9 @@ struct PrintSpoolBase
         TEXT pu_Name[64];           /* its file name, without the suffix */
         TEXT pu_Application[64];    /* PRD_SETJOBINFO from printer.device */
         TEXT pu_Document[128];
+        UBYTE *pu_Request;          /* the job's own IPP request, or NULL */
+        ULONG pu_RequestSize;
+        BOOL pu_GivenUp;            /* CMD_RESET: nothing of the job is printed */
     } ps_Unit[PRINTSPOOL_UNITS];
 
     /* Opened with PRDOF_SETTINGS: no job, does not hold a job back from the spooler. */
