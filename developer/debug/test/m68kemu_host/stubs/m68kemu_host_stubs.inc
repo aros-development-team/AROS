@@ -1,5 +1,5 @@
 /* Definitions for what m68kemu_memory.c reaches outside itself; the host
-   tests have no tasks, shadows, screens or log. Included after
+   tests have no tasks, shadows, screens, sound or log. Included after
    m68kemu_intern.h by each test. */
 #include <proto/exec.h>
 #include "m68kemu_shadow.h"
@@ -16,12 +16,14 @@ void  m68k_log(struct M68KEmuContext *, const char *, ...) {}
 void  m68k_gil_init(struct M68KEmuContext *) {}
 void  m68k_context_hold(struct M68KEmuContext *) {}
 void  m68k_boopsi_cleanup(struct M68KEmuContext *) {}
+void  m68k_paula_free(struct M68KEmuContext *) {}
 }
 ULONG shadow_register(struct M68KEmuContext *, ULONG, void *, UWORD) { return 0; }
 void  shadow_sync(struct M68KEmuContext *, const struct M68KStructLayout *, ULONG, void *) {}
 const struct M68KStructLayout *shadow_find_layout(const char *) { return nullptr; }
 #ifdef M68KEMU_HOST_WITH_MOIRA
-/* the CPU driver's task, time and window hooks: one task, no clock, no windows */
+/* the CPU driver's task, time, window and chip hooks: one task, no clock,
+   no windows, no CIA timers, no Paula */
 extern "C" {
 struct M68KTaskState *m68k_ts(struct M68KEmuContext *ctx) { return &ctx->orphan; }
 void  m68k_ts_main(struct M68KEmuContext *) {}
@@ -38,5 +40,9 @@ void  m68k_watchdog_start(struct M68KEmuContext *) {}
 void  m68k_watchdog_stop(struct M68KEmuContext *) {}
 void  m68k_sync_windowptr(struct M68KEmuContext *) {}
 void  m68k_dump_callring(struct M68KEmuContext *) {}
+void  m68k_cia_timer_control(struct M68KEmuContext *, int, int, UBYTE) {}
+BOOL  m68k_cia_due(struct M68KEmuContext *, ULONG *, ULONG *) { return FALSE; }
+void  m68k_paula_write(struct M68KEmuContext *, UWORD, UWORD) {}
+UWORD m68k_paula_dmacon(struct M68KEmuContext *) { return 0; }
 }
 #endif
