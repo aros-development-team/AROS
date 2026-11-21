@@ -12,6 +12,7 @@ FILES := \
     assignlocks \
     auxstartup \
     clicreatenewproc \
+    congeometry \
     consolemodes \
     dosentry68k \
     doslist \
