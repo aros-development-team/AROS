@@ -78,7 +78,6 @@
 #include <netinet/in_protos.h>
 #include <netinet/in_pcb.h>
 
-void arp_fasttimo(void);              /* net/sana2arp.c: RFC 5227 */
 #include <kern/amiga_dhcp.h>
 #include <sys/syslog.h>
 #include <net/if.h>

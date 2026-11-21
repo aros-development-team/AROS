@@ -83,7 +83,6 @@ BOOL sana_poll(void);
  */
 struct Task *AROSTCP_Task;
 
-extern struct ExecBase *SysBase;
 extern struct Library *MasterSocketBase;
 extern WORD nthLibrary;
 
@@ -459,7 +458,6 @@ main(int argc, char *argv[])
  */
 static LONG control_module(struct NetControlModuleMsg *mm)
 {
-    extern struct SignalSemaphore syscall_semaphore;
     struct netmodule *nm = NULL;
     LONG error = 0;
 
@@ -873,8 +871,6 @@ deinit_all(void)
      * a fence yet.)
      */
     if(netmodules != NULL) {
-        extern struct SignalSemaphore syscall_semaphore;
-
         ObtainSemaphore(&syscall_semaphore);
         netmodule_stop_all();
         ReleaseSemaphore(&syscall_semaphore);

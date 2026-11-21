@@ -57,8 +57,6 @@
 #include <protos/kern/uipc_socket_protos.h>
 #include <net/netcore_map.h>        /* always the last include */
 
-extern int tcp_do_pmtud;
-
 /* Negotiated/observed options carried for a half-open connection. */
 #define SCF_WINSCALE	0x01		/* peer offered window scaling */
 #define SCF_TIMESTAMP	0x02		/* peer offered RFC 1323 timestamps */

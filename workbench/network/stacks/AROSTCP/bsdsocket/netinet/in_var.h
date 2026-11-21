@@ -125,4 +125,9 @@ struct in_multi *in_addmulti(struct in_addr *, struct ifnet *);
 void in_delmulti(struct in_multi *);
 #endif /* ENABLE_MULTICAST */
 
+/* IPv4's interface operations (netinet/in.c), registered by ip_init() and
+ * unregistered by ip_deinit() (net/netmodule.h) */
+struct netfamily_ifops;
+extern const struct netfamily_ifops in_ifops;
+
 #endif /* !AROSTCP_NETINET_IN_VAR_H */

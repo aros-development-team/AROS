@@ -54,17 +54,6 @@ extern void bpf_rotate(struct bpf_d *d);
 extern int  bpf_setif(struct bpf_d *d, const char *ifname);
 extern int  bpf_setf(struct bpf_d *d, struct bpf_program *fp);
 
-extern struct ifnet *ifnet;
-
-extern struct hostent *__gethostbyname(const char *name, struct SocketBase *);
-extern struct hostent *__gethostbyname2(const char *name, int af, struct SocketBase *);
-extern struct hostent *__gethostbyname_r(const char *name,
-    struct hostent *result, char *buf, LONG buflen, LONG *h_errnop,
-    struct SocketBase *libPtr);
-extern struct hostent *__gethostbyaddr_r(const char *addr, LONG len, LONG type,
-    struct hostent *result, char *buf, LONG buflen, LONG *h_errnop,
-    struct SocketBase *libPtr);
-
 /* Internal implementation functions */
 extern const char *__inet_ntop(int af, const void *src, char *dst,
                                socklen_t size, struct SocketBase *SocketBase);
@@ -87,10 +76,6 @@ in_addr_ask(int what, ULONG address)
     sin.sin_addr.s_addr = address;
     return (LONG)(netfamily_addrquery(AF_INET, what, (struct sockaddr *)&sin, NULL) > 0);
 }
-
-extern struct ServentNode *findServentNode(struct NetDataBase *ndb,
-                                           const char *name, const char *proto);
-
 
 // setnetent/endnetent/getnetent defined in amiga_ndbent.c
 // setprotoent defined in amiga_ndbent.c

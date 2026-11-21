@@ -182,6 +182,10 @@ extern int ip6_defhlim;
 extern int ip6_forwarding;
 extern int ip6_v6only;
 extern struct in6_multi *in6_multihead;	/* global IPv6 multicast list */
+/* IPv6's interface operations (netinet6/in6.c), registered by ip6_init()
+ * and unregistered by ip6_deinit() (net/netmodule.h) */
+struct netfamily_ifops;
+extern const struct netfamily_ifops in6_ifops;
 
 int  in6_control(struct socket *, int, caddr_t, struct ifnet *);
 void in6_ifscrub(struct ifnet *, struct in6_ifaddr *);

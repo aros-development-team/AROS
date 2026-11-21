@@ -42,8 +42,6 @@
 
 #include <api/gethtbynamadr.h> /* prototypes (NO MORE BUGS HERE) */
 
-int strcasecmp(const char *, const char *);
-
 #if __SASC
 #define strcasecmp stricmp
 #endif

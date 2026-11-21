@@ -8,7 +8,6 @@
 #include <stdio.h>
 
 extern UBYTE InitFlags;
-extern TEXT db_path[];
 extern struct Task *AROSTCP_Task;   /* the stack's main task (kern/amiga_main.c) */
 UBYTE RcCommand[FILENAME_MAX];
 UBYTE RcStartDone = 0;
