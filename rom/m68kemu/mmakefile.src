@@ -16,6 +16,12 @@ include $(SRCDIR)/config/aros.cfg
 #MM- kernel-m68kemu-aarch64 : kernel-m68kemu-library
 #MM- kernel-m68kemu-riscv64 : kernel-m68kemu-library
 
+# The C++ link adds $(TARGET_CXX_LIBS), which is -latomic when configure sets
+# use_libatomic. core-linklibs builds that library only with the llvm
+# toolchain, so ask for it as the Mesa modules do; linklibs-libatomic builds
+# the toolchain's own library, and nothing when -latomic is not used.
+#MM kernel-m68kemu-library : linklibs-libatomic
+
 #MM kernel-m68kemu-library-includes : \
 #MM     kernel-expansion-includes \
 #MM     kernel-keymap-includes \
