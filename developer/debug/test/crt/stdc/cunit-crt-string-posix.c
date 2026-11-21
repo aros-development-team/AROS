@@ -3,7 +3,7 @@
 
     CUnit tests for the POSIX / BSD <string.h> extensions provided by the
     AROS C runtime: strdup, strndup, strnlen, stpcpy, strcasecmp,
-    strncasecmp, strlcpy, strlcat and strsep.
+    strncasecmp, strcasestr, strlcpy, strlcat and strsep.
 
     These are not part of ISO C; they are exposed through POSIX / _GNU_SOURCE
     (or as historical BSD extensions).
@@ -65,6 +65,16 @@ void testSTRNDUP(void)
     {
         CU_ASSERT_STRING_EQUAL(e, "hi");
         free(e);
+    }
+
+    /* s does not have to be terminated within the first n bytes */
+    char nonterm[3] = { 'a', 'b', 'c' };
+    char *f = strndup(nonterm, sizeof(nonterm));
+    CU_ASSERT_PTR_NOT_NULL(f);
+    if (f)
+    {
+        CU_ASSERT_STRING_EQUAL(f, "abc");
+        free(f);
     }
 }
 
@@ -167,6 +177,19 @@ void testSTRSEP(void)
     CU_ASSERT_PTR_NULL(t);
 }
 
+void testSTRCASESTR(void)
+{
+    const char *s = "Hello World";
+
+    CU_ASSERT_PTR_EQUAL(strcasestr(s, "WORLD"), s + 6);
+    CU_ASSERT_PTR_EQUAL(strcasestr(s, "lo w"), s + 3);
+    CU_ASSERT_PTR_NULL(strcasestr(s, "worlds"));
+
+    /* an empty search string matches at the start, also of an empty string */
+    CU_ASSERT_PTR_EQUAL(strcasestr(s, ""), s);
+    CU_ASSERT_PTR_EQUAL(strcasestr(s + 11, ""), s + 11);
+}
+
 int main(void)
 {
     CU_pSuite pSuite = NULL;
@@ -186,6 +209,7 @@ int main(void)
         (NULL == CU_add_test(pSuite, "stpcpy()", testSTPCPY)) ||
         (NULL == CU_add_test(pSuite, "strcasecmp()", testSTRCASECMP)) ||
         (NULL == CU_add_test(pSuite, "strncasecmp()", testSTRNCASECMP)) ||
+        (NULL == CU_add_test(pSuite, "strcasestr()", testSTRCASESTR)) ||
         (NULL == CU_add_test(pSuite, "strlcpy()", testSTRLCPY)) ||
         (NULL == CU_add_test(pSuite, "strlcat()", testSTRLCAT)) ||
         (NULL == CU_add_test(pSuite, "strsep()", testSTRSEP)))

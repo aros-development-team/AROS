@@ -23,9 +23,18 @@ def run(args, output):
         raise ValueError('Initialize rom/m68kemu/Moira before running this CPU test')
     output.mkdir(parents=True, exist_ok=True)
     source = (bridge / 'm68kemu_m68klib.c').read_text()
-    (output / 'library_loading.inc').write_text('\n'.join(
-        helper.extract_function(source, name, 'm68kemu_m68klib.c')
-        for name in ('m68k_init_struct', 'M68KEmu_LoadM68KLibrary')))
+    memory = (bridge / 'm68kemu_memory.c').read_text()
+    # A loader that walks and gives back the image it placed takes the two
+    # image helpers of m68kemu_memory.c and its own rollback helper; a tree
+    # from before has none of them, and the same fixture serves both.
+    functions = [helper.extract_function(memory, name, 'm68kemu_memory.c')
+                 for name in ('M68KEmu_ImageHunk', 'M68KEmu_FreeImage')
+                 if re.search(r'\b' + name + r'\s*\(', memory)]
+    functions += [helper.extract_function(source, name, 'm68kemu_m68klib.c')
+                  for name in ('m68k_init_struct', 'm68k_library_abandon',
+                               'M68KEmu_LoadM68KLibrary')
+                  if re.search(r'\b' + name + r'\s*\(', source)]
+    (output / 'library_loading.inc').write_text('\n'.join(functions))
     # The production offsets header also includes native DOS types. Retain
     # just the actual constant definitions this function-level fixture uses.
     fixture = (here / 'test_library_loading_versions.cpp').read_text()
@@ -45,7 +54,7 @@ def run(args, output):
     (output / 'library_constants.inc').write_text(
         '\n'.join(definitions[name] for name in sorted(required)) + '\n')
     source = (bridge / 'm68kemu_intern.h').read_text()
-    names = ['m68k_read16', 'm68k_read32']
+    names = ['m68k_in_mem', 'm68k_read16', 'm68k_read32']
     if re.search(r'^static inline BOOL m68k_write_allowed\s*\(', source, re.M):
         names.append('m68k_write_allowed')
     names += ['m68k_write16', 'm68k_write32']

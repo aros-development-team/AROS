@@ -871,8 +871,14 @@ static void DosEntry(void)
             if (M68KEmuBase) {
                 result = RunHunk(segArray[3], me->pr_StackSize, me->pr_Arguments, argSize);
                 CloseLibrary(M68KEmuBase);
-                goto skip_native_entry;
             }
+            else
+            {
+                result = RETURN_FAIL;
+                SetIoErr(ERROR_INVALID_RESIDENT_LIBRARY);
+            }
+            /* A known 68k hunk must never reach the native entry point. */
+            goto skip_native_entry;
         }
     }
 #endif

@@ -6,4659 +6,4767 @@
 #ifndef M68KEMU_SHADOW_LAYOUTS_H
 #define M68KEMU_SHADOW_LAYOUTS_H
 
-/* AChain: m68k=274B, aros=296B, 15 fields */
+#include <stddef.h>
+#include <datatypes/animationclass.h>
+#include <datatypes/datatypes.h>
+#include <datatypes/datatypesclass.h>
+#include <datatypes/pictureclass.h>
+#include <datatypes/soundclass.h>
+#include <datatypes/textclass.h>
+#include <devices/audio.h>
+#include <devices/bootblock.h>
+#include <devices/cd.h>
+#include <devices/clipboard.h>
+#include <devices/conunit.h>
+#include <devices/gameport.h>
+#include <devices/hardblocks.h>
+#include <devices/inputevent.h>
+#include <devices/keymap.h>
+#include <devices/parallel.h>
+#include <devices/printer.h>
+#include <devices/prtbase.h>
+#include <devices/prtgfx.h>
+#include <devices/serial.h>
+#include <devices/timer.h>
+#include <devices/trackdisk.h>
+#include <dos/datetime.h>
+#include <dos/dos.h>
+#include <dos/dosasl.h>
+#include <dos/dosextens.h>
+#include <dos/exall.h>
+#include <dos/filehandler.h>
+#include <dos/notify.h>
+#include <dos/rdargs.h>
+#include <dos/record.h>
+#include <dos/var.h>
+#include <exec/devices.h>
+#include <exec/execbase.h>
+#include <exec/interrupts.h>
+#include <exec/io.h>
+#include <exec/libraries.h>
+#include <exec/lists.h>
+#include <exec/memory.h>
+#include <exec/nodes.h>
+#include <exec/ports.h>
+#include <exec/resident.h>
+#include <exec/semaphores.h>
+#include <exec/tasks.h>
+#include <graphics/clip.h>
+#include <graphics/copper.h>
+#include <graphics/displayinfo.h>
+#include <graphics/gels.h>
+#include <graphics/gfx.h>
+#include <graphics/gfxbase.h>
+#include <graphics/gfxnodes.h>
+#include <graphics/layers.h>
+#include <graphics/monitor.h>
+#include <graphics/rastport.h>
+#include <graphics/regions.h>
+#include <graphics/scale.h>
+#include <graphics/sprite.h>
+#include <graphics/text.h>
+#include <graphics/view.h>
+#include <intuition/cghooks.h>
+#include <intuition/classes.h>
+#include <intuition/classusr.h>
+#include <intuition/gadgetclass.h>
+#include <intuition/imageclass.h>
+#include <intuition/intuition.h>
+#include <intuition/intuitionbase.h>
+#include <intuition/preferences.h>
+#include <intuition/screens.h>
+#include <intuition/sghooks.h>
+#include <libraries/amigaguide.h>
+#include <libraries/asl.h>
+#include <libraries/commodities.h>
+#include <libraries/configregs.h>
+#include <libraries/configvars.h>
+#include <libraries/expansionbase.h>
+#include <libraries/gadtools.h>
+#include <libraries/iffparse.h>
+#include <libraries/locale.h>
+#include <libraries/lowlevel.h>
+#include <libraries/nonvolatile.h>
+#include <libraries/realtime.h>
+#include <resources/card.h>
+#include <resources/disk.h>
+#include <resources/filesysres.h>
+#include <utility/date.h>
+#include <utility/hooks.h>
+#include <utility/name.h>
+#include <utility/tagitem.h>
+#include <utility/utility.h>
+#include <workbench/icon.h>
+#include <workbench/startup.h>
+#include <workbench/workbench.h>
+
+/*
+ * The native side of a field. A structure that embeds a spinlock_t, such as
+ * Library, Task or MsgPort, has another layout on every target, so the offset
+ * is offsetof() on the member. A 4-byte m68k field is a pointer where the
+ * native member has 8 bytes, and a LONG otherwise.
+ */
+#define SHADOW_FIELD_TYPE(m68k_size, native_size) \
+    ((m68k_size) == 1 ? SF_BYTE : (m68k_size) == 2 ? SF_WORD : \
+     (native_size) == 8 ? SF_PTR : SF_LONG)
+#define SHADOW_FIELD(m68k_off, m68k_size, name, member) \
+    { m68k_off, offsetof(struct name, member), \
+      SHADOW_FIELD_TYPE(m68k_size, sizeof(((struct name *)0)->member)), \
+      0, 0, NULL }
+
+/* AChain: m68k=274B, 15 fields */
 static const struct M68KFieldMap shadow_fields_AChain[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* an_Child */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* an_Parent */
-    {    8,   16, SF_PTR  , 0, 0, NULL },  /* an_Lock */
-    {   12,   24, SF_PTR  , 0, 0, NULL },  /* fib_DiskKey */
-    {  128,  144, SF_LONG , 0, 0, NULL },  /* fib_Protection */
-    {  132,  148, SF_LONG , 0, 0, NULL },  /* fib_EntryType */
-    {  136,  152, SF_LONG , 0, 0, NULL },  /* fib_Size */
-    {  140,  156, SF_LONG , 0, 0, NULL },  /* fib_NumBlocks */
-    {  144,  160, SF_LONG , 0, 0, NULL },  /* ds_Days */
-    {  148,  164, SF_LONG , 0, 0, NULL },  /* ds_Minute */
-    {  152,  168, SF_LONG , 0, 0, NULL },  /* ds_Tick */
-    {  236,  252, SF_WORD , 0, 0, NULL },  /* fib_OwnerUID */
-    {  238,  254, SF_WORD , 0, 0, NULL },  /* fib_OwnerGID */
-    {  272,  288, SF_BYTE , 0, 0, NULL },  /* an_Flags */
-    {  273,  289, SF_BYTE , 0, 0, NULL },  /* an_String */
+    SHADOW_FIELD(   0, 4, AChain, an_Child),
+    SHADOW_FIELD(   4, 4, AChain, an_Parent),
+    SHADOW_FIELD(   8, 4, AChain, an_Lock),
+    SHADOW_FIELD(  12, 4, AChain, an_Info.fib_DiskKey),
+    SHADOW_FIELD( 128, 4, AChain, an_Info.fib_Protection),
+    SHADOW_FIELD( 132, 4, AChain, an_Info.fib_EntryType),
+    SHADOW_FIELD( 136, 4, AChain, an_Info.fib_Size),
+    SHADOW_FIELD( 140, 4, AChain, an_Info.fib_NumBlocks),
+    SHADOW_FIELD( 144, 4, AChain, an_Info.fib_Date.ds_Days),
+    SHADOW_FIELD( 148, 4, AChain, an_Info.fib_Date.ds_Minute),
+    SHADOW_FIELD( 152, 4, AChain, an_Info.fib_Date.ds_Tick),
+    SHADOW_FIELD( 236, 2, AChain, an_Info.fib_OwnerUID),
+    SHADOW_FIELD( 238, 2, AChain, an_Info.fib_OwnerGID),
+    SHADOW_FIELD( 272, 1, AChain, an_Flags),
+    SHADOW_FIELD( 273, 1, AChain, an_String),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* AmigaGuideHost: m68k=40B, aros=72B, 8 fields */
+/* AmigaGuideHost: m68k=40B, 10 fields */
 static const struct M68KFieldMap shadow_fields_AmigaGuideHost[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* mln_Succ */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* mln_Pred */
-    {    8,   16, SF_PTR  , 0, 0, NULL },  /* h_Entry */
-    {   12,   24, SF_PTR  , 0, 0, NULL },  /* h_SubEntry */
-    {   16,   32, SF_PTR  , 0, 0, NULL },  /* h_Data */
-    {   20,   40, SF_LONG , 0, 0, NULL },  /* agh_Reserved */
-    {   24,   44, SF_LONG , 0, 0, NULL },  /* agh_Flags */
-    {   28,   48, SF_LONG , 0, 0, NULL },  /* agh_UseCnt */
-    {   32,   56, SF_PTR  , 0, 0, NULL },  /* agh_SystemData */
-    {   36,   64, SF_PTR  , 0, 0, NULL },  /* agh_UserData */
+    SHADOW_FIELD(   0, 4, AmigaGuideHost, agh_Dispatcher.h_MinNode.mln_Succ),
+    SHADOW_FIELD(   4, 4, AmigaGuideHost, agh_Dispatcher.h_MinNode.mln_Pred),
+    SHADOW_FIELD(   8, 4, AmigaGuideHost, agh_Dispatcher.h_Entry),
+    SHADOW_FIELD(  12, 4, AmigaGuideHost, agh_Dispatcher.h_SubEntry),
+    SHADOW_FIELD(  16, 4, AmigaGuideHost, agh_Dispatcher.h_Data),
+    SHADOW_FIELD(  20, 4, AmigaGuideHost, agh_Reserved),
+    SHADOW_FIELD(  24, 4, AmigaGuideHost, agh_Flags),
+    SHADOW_FIELD(  28, 4, AmigaGuideHost, agh_UseCnt),
+    SHADOW_FIELD(  32, 4, AmigaGuideHost, agh_SystemData),
+    SHADOW_FIELD(  36, 4, AmigaGuideHost, agh_UserData),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* AmigaGuideMsg: m68k=52B, aros=96B, 15 fields */
+/* AmigaGuideMsg: m68k=52B, 15 fields */
 static const struct M68KFieldMap shadow_fields_AmigaGuideMsg[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* ln_Succ */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* ln_Pred */
-    {    8,   16, SF_BYTE , 0, 0, NULL },  /* ln_Type */
-    {    9,   17, SF_BYTE , 0, 0, NULL },  /* ln_Pri */
-    {   10,   24, SF_PTR  , 0, 0, NULL },  /* ln_Name */
-    {   14,   32, SF_PTR  , 0, 0, NULL },  /* mn_ReplyPort */
-    {   18,   40, SF_WORD , 0, 0, NULL },  /* mn_Length */
-    {   20,   48, SF_LONG , 0, 0, NULL },  /* agm_Type */
-    {   24,   56, SF_PTR  , 0, 0, NULL },  /* agm_Data */
-    {   28,   64, SF_LONG , 0, 0, NULL },  /* agm_DSize */
-    {   32,   68, SF_LONG , 0, 0, NULL },  /* agm_DType */
-    {   36,   72, SF_LONG , 0, 0, NULL },  /* agm_Pri_Ret */
-    {   40,   76, SF_LONG , 0, 0, NULL },  /* agm_Sec_Ret */
-    {   44,   80, SF_PTR  , 0, 0, NULL },  /* agm_System1 */
-    {   48,   88, SF_PTR  , 0, 0, NULL },  /* agm_System2 */
+    SHADOW_FIELD(   0, 4, AmigaGuideMsg, agm_Msg.mn_Node.ln_Succ),
+    SHADOW_FIELD(   4, 4, AmigaGuideMsg, agm_Msg.mn_Node.ln_Pred),
+    SHADOW_FIELD(   8, 1, AmigaGuideMsg, agm_Msg.mn_Node.ln_Type),
+    SHADOW_FIELD(   9, 1, AmigaGuideMsg, agm_Msg.mn_Node.ln_Pri),
+    SHADOW_FIELD(  10, 4, AmigaGuideMsg, agm_Msg.mn_Node.ln_Name),
+    SHADOW_FIELD(  14, 4, AmigaGuideMsg, agm_Msg.mn_ReplyPort),
+    SHADOW_FIELD(  18, 2, AmigaGuideMsg, agm_Msg.mn_Length),
+    SHADOW_FIELD(  20, 4, AmigaGuideMsg, agm_Type),
+    SHADOW_FIELD(  24, 4, AmigaGuideMsg, agm_Data),
+    SHADOW_FIELD(  28, 4, AmigaGuideMsg, agm_DSize),
+    SHADOW_FIELD(  32, 4, AmigaGuideMsg, agm_DType),
+    SHADOW_FIELD(  36, 4, AmigaGuideMsg, agm_Pri_Ret),
+    SHADOW_FIELD(  40, 4, AmigaGuideMsg, agm_Sec_Ret),
+    SHADOW_FIELD(  44, 4, AmigaGuideMsg, agm_System1),
+    SHADOW_FIELD(  48, 4, AmigaGuideMsg, agm_System2),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* AnalogSignalInterval: m68k=4B, aros=4B, 2 fields */
+/* AnalogSignalInterval: m68k=4B, 2 fields */
 static const struct M68KFieldMap shadow_fields_AnalogSignalInterval[] = {
-    {    0,    0, SF_WORD , 0, 0, NULL },  /* asi_Start */
-    {    2,    2, SF_WORD , 0, 0, NULL },  /* asi_Stop */
+    SHADOW_FIELD(   0, 2, AnalogSignalInterval, asi_Start),
+    SHADOW_FIELD(   2, 2, AnalogSignalInterval, asi_Stop),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* AnchorPath: m68k=282B, aros=304B, 18 fields */
+/* AnchorPath: m68k=282B, 18 fields */
 static const struct M68KFieldMap shadow_fields_AnchorPath[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* ap_Base */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* ap_Last */
-    {    8,   16, SF_LONG , 0, 0, NULL },  /* ap_BreakBits */
-    {   12,   20, SF_LONG , 0, 0, NULL },  /* ap_FoundBreak */
-    {   16,   24, SF_BYTE , 0, 0, NULL },  /* ap_Flags */
-    {   17,   25, SF_BYTE , 0, 0, NULL },  /* ap_Reserved */
-    {   18,   26, SF_WORD , 0, 0, NULL },  /* ap_Strlen */
-    {   20,   32, SF_PTR  , 0, 0, NULL },  /* fib_DiskKey */
-    {  136,  152, SF_LONG , 0, 0, NULL },  /* fib_Protection */
-    {  140,  156, SF_LONG , 0, 0, NULL },  /* fib_EntryType */
-    {  144,  160, SF_LONG , 0, 0, NULL },  /* fib_Size */
-    {  148,  164, SF_LONG , 0, 0, NULL },  /* fib_NumBlocks */
-    {  152,  168, SF_LONG , 0, 0, NULL },  /* ds_Days */
-    {  156,  172, SF_LONG , 0, 0, NULL },  /* ds_Minute */
-    {  160,  176, SF_LONG , 0, 0, NULL },  /* ds_Tick */
-    {  244,  260, SF_WORD , 0, 0, NULL },  /* fib_OwnerUID */
-    {  246,  262, SF_WORD , 0, 0, NULL },  /* fib_OwnerGID */
-    {  280,  296, SF_BYTE , 0, 0, NULL },  /* ap_Buf */
+    SHADOW_FIELD(   0, 4, AnchorPath, ap_Base),
+    SHADOW_FIELD(   4, 4, AnchorPath, ap_Last),
+    SHADOW_FIELD(   8, 4, AnchorPath, ap_BreakBits),
+    SHADOW_FIELD(  12, 4, AnchorPath, ap_FoundBreak),
+    SHADOW_FIELD(  16, 1, AnchorPath, ap_Flags),
+    SHADOW_FIELD(  17, 1, AnchorPath, ap_Reserved),
+    SHADOW_FIELD(  18, 2, AnchorPath, ap_Strlen),
+    SHADOW_FIELD(  20, 4, AnchorPath, ap_Info.fib_DiskKey),
+    SHADOW_FIELD( 136, 4, AnchorPath, ap_Info.fib_Protection),
+    SHADOW_FIELD( 140, 4, AnchorPath, ap_Info.fib_EntryType),
+    SHADOW_FIELD( 144, 4, AnchorPath, ap_Info.fib_Size),
+    SHADOW_FIELD( 148, 4, AnchorPath, ap_Info.fib_NumBlocks),
+    SHADOW_FIELD( 152, 4, AnchorPath, ap_Info.fib_Date.ds_Days),
+    SHADOW_FIELD( 156, 4, AnchorPath, ap_Info.fib_Date.ds_Minute),
+    SHADOW_FIELD( 160, 4, AnchorPath, ap_Info.fib_Date.ds_Tick),
+    SHADOW_FIELD( 244, 2, AnchorPath, ap_Info.fib_OwnerUID),
+    SHADOW_FIELD( 246, 2, AnchorPath, ap_Info.fib_OwnerGID),
+    SHADOW_FIELD( 280, 1, AnchorPath, ap_Buf),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* AnimComp: m68k=38B, aros=72B, 10 fields */
+/* AnimComp: m68k=38B, 10 fields */
 static const struct M68KFieldMap shadow_fields_AnimComp[] = {
-    {    2,    2, SF_WORD , 0, 0, NULL },  /* Timer */
-    {    4,    4, SF_WORD , 0, 0, NULL },  /* TimeSet */
-    {    6,    8, SF_PTR  , 0, 0, NULL },  /* NextComp */
-    {   10,   16, SF_PTR  , 0, 0, NULL },  /* PrevComp */
-    {   14,   24, SF_PTR  , 0, 0, NULL },  /* NextSeq */
-    {   18,   32, SF_PTR  , 0, 0, NULL },  /* PrevSeq */
-    {   26,   48, SF_WORD , 0, 0, NULL },  /* YTrans */
-    {   28,   50, SF_WORD , 0, 0, NULL },  /* XTrans */
-    {   30,   56, SF_PTR  , 0, 0, NULL },  /* HeadOb */
-    {   34,   64, SF_PTR  , 0, 0, NULL },  /* AnimBob */
+    SHADOW_FIELD(   2, 2, AnimComp, Timer),
+    SHADOW_FIELD(   4, 2, AnimComp, TimeSet),
+    SHADOW_FIELD(   6, 4, AnimComp, NextComp),
+    SHADOW_FIELD(  10, 4, AnimComp, PrevComp),
+    SHADOW_FIELD(  14, 4, AnimComp, NextSeq),
+    SHADOW_FIELD(  18, 4, AnimComp, PrevSeq),
+    SHADOW_FIELD(  26, 2, AnimComp, YTrans),
+    SHADOW_FIELD(  28, 2, AnimComp, XTrans),
+    SHADOW_FIELD(  30, 4, AnimComp, HeadOb),
+    SHADOW_FIELD(  34, 4, AnimComp, AnimBob),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* AnimHeader: m68k=40B, aros=40B, 5 fields */
+/* AnimHeader: m68k=40B, 11 fields */
 static const struct M68KFieldMap shadow_fields_AnimHeader[] = {
-    {    0,    0, SF_BYTE , 0, 0, NULL },  /* ah_Operation */
-    {    1,    1, SF_BYTE , 0, 0, NULL },  /* ah_Mask */
-    {    2,    2, SF_WORD , 0, 0, NULL },  /* ah_Width */
-    {    4,    4, SF_WORD , 0, 0, NULL },  /* ah_Height */
-    {    6,    6, SF_WORD , 0, 0, NULL },  /* ah_Left */
-    {    8,    8, SF_WORD , 0, 0, NULL },  /* ah_Top */
-    {   10,   10, SF_LONG , 0, 0, NULL },  /* ah_AbsTime */
-    {   14,   14, SF_LONG , 0, 0, NULL },  /* ah_RelTime */
-    {   18,   18, SF_BYTE , 0, 0, NULL },  /* ah_Interleave */
-    {   19,   19, SF_BYTE , 0, 0, NULL },  /* ah_Pad0 */
-    {   20,   20, SF_LONG , 0, 0, NULL },  /* ah_Flags */
+    SHADOW_FIELD(   0, 1, AnimHeader, ah_Operation),
+    SHADOW_FIELD(   1, 1, AnimHeader, ah_Mask),
+    SHADOW_FIELD(   2, 2, AnimHeader, ah_Width),
+    SHADOW_FIELD(   4, 2, AnimHeader, ah_Height),
+    SHADOW_FIELD(   6, 2, AnimHeader, ah_Left),
+    SHADOW_FIELD(   8, 2, AnimHeader, ah_Top),
+    SHADOW_FIELD(  10, 4, AnimHeader, ah_AbsTime),
+    SHADOW_FIELD(  14, 4, AnimHeader, ah_RelTime),
+    SHADOW_FIELD(  18, 1, AnimHeader, ah_Interleave),
+    SHADOW_FIELD(  19, 1, AnimHeader, ah_Pad0),
+    SHADOW_FIELD(  20, 4, AnimHeader, ah_Flags),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* AnimOb: m68k=42B, aros=64B, 3 fields */
+/* AnimOb: m68k=42B, 15 fields */
 static const struct M68KFieldMap shadow_fields_AnimOb[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* NextOb */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* PrevOb */
-    {    8,   16, SF_LONG , 0, 0, NULL },  /* Clock */
-    {   12,   20, SF_WORD , 0, 0, NULL },  /* AnOldY */
-    {   14,   22, SF_WORD , 0, 0, NULL },  /* AnOldX */
-    {   16,   24, SF_WORD , 0, 0, NULL },  /* AnY */
-    {   18,   26, SF_WORD , 0, 0, NULL },  /* AnX */
-    {   20,   28, SF_WORD , 0, 0, NULL },  /* YVel */
-    {   22,   30, SF_WORD , 0, 0, NULL },  /* XVel */
-    {   24,   32, SF_WORD , 0, 0, NULL },  /* YAccel */
-    {   26,   34, SF_WORD , 0, 0, NULL },  /* XAccel */
-    {   28,   36, SF_WORD , 0, 0, NULL },  /* RingYTrans */
-    {   30,   38, SF_WORD , 0, 0, NULL },  /* RingXTrans */
-    {   36,   48, SF_PTR  , 0, 0, NULL },  /* HeadComp */
-    {   40,   56, SF_WORD , 0, 0, NULL },  /* AUserExt */
+    SHADOW_FIELD(   0, 4, AnimOb, NextOb),
+    SHADOW_FIELD(   4, 4, AnimOb, PrevOb),
+    SHADOW_FIELD(   8, 4, AnimOb, Clock),
+    SHADOW_FIELD(  12, 2, AnimOb, AnOldY),
+    SHADOW_FIELD(  14, 2, AnimOb, AnOldX),
+    SHADOW_FIELD(  16, 2, AnimOb, AnY),
+    SHADOW_FIELD(  18, 2, AnimOb, AnX),
+    SHADOW_FIELD(  20, 2, AnimOb, YVel),
+    SHADOW_FIELD(  22, 2, AnimOb, XVel),
+    SHADOW_FIELD(  24, 2, AnimOb, YAccel),
+    SHADOW_FIELD(  26, 2, AnimOb, XAccel),
+    SHADOW_FIELD(  28, 2, AnimOb, RingYTrans),
+    SHADOW_FIELD(  30, 2, AnimOb, RingXTrans),
+    SHADOW_FIELD(  36, 4, AnimOb, HeadComp),
+    SHADOW_FIELD(  40, 2, AnimOb, AUserExt),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* AppIconRenderMsg: m68k=28B, aros=48B, 6 fields */
+/* AppIconRenderMsg: m68k=28B, 9 fields */
 static const struct M68KFieldMap shadow_fields_AppIconRenderMsg[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* arm_RastPort */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* arm_Icon */
-    {    8,   16, SF_PTR  , 0, 0, NULL },  /* arm_Label */
-    {   12,   24, SF_PTR  , 0, 0, NULL },  /* arm_Tags */
-    {   16,   32, SF_WORD , 0, 0, NULL },  /* arm_Left */
-    {   18,   34, SF_WORD , 0, 0, NULL },  /* arm_Top */
-    {   20,   36, SF_WORD , 0, 0, NULL },  /* arm_Width */
-    {   22,   38, SF_WORD , 0, 0, NULL },  /* arm_Height */
-    {   24,   40, SF_LONG , 0, 0, NULL },  /* arm_State */
+    SHADOW_FIELD(   0, 4, AppIconRenderMsg, arm_RastPort),
+    SHADOW_FIELD(   4, 4, AppIconRenderMsg, arm_Icon),
+    SHADOW_FIELD(   8, 4, AppIconRenderMsg, arm_Label),
+    SHADOW_FIELD(  12, 4, AppIconRenderMsg, arm_Tags),
+    SHADOW_FIELD(  16, 2, AppIconRenderMsg, arm_Left),
+    SHADOW_FIELD(  18, 2, AppIconRenderMsg, arm_Top),
+    SHADOW_FIELD(  20, 2, AppIconRenderMsg, arm_Width),
+    SHADOW_FIELD(  22, 2, AppIconRenderMsg, arm_Height),
+    SHADOW_FIELD(  24, 4, AppIconRenderMsg, arm_State),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* AppMessage: m68k=86B, aros=136B, 18 fields */
+/* AppMessage: m68k=86B, 18 fields */
 static const struct M68KFieldMap shadow_fields_AppMessage[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* ln_Succ */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* ln_Pred */
-    {    8,   16, SF_BYTE , 0, 0, NULL },  /* ln_Type */
-    {    9,   17, SF_BYTE , 0, 0, NULL },  /* ln_Pri */
-    {   10,   24, SF_PTR  , 0, 0, NULL },  /* ln_Name */
-    {   14,   32, SF_PTR  , 0, 0, NULL },  /* mn_ReplyPort */
-    {   18,   40, SF_WORD , 0, 0, NULL },  /* mn_Length */
-    {   20,   48, SF_WORD , 0, 0, NULL },  /* am_Type */
-    {   22,   56, SF_PTR  , 0, 0, NULL },  /* am_UserData */
-    {   26,   64, SF_PTR  , 0, 0, NULL },  /* am_ID */
-    {   30,   72, SF_LONG , 0, 0, NULL },  /* am_NumArgs */
-    {   34,   80, SF_PTR  , 0, 0, NULL },  /* am_ArgList */
-    {   38,   88, SF_WORD , 0, 0, NULL },  /* am_Version */
-    {   40,   90, SF_WORD , 0, 0, NULL },  /* am_Class */
-    {   42,   92, SF_WORD , 0, 0, NULL },  /* am_MouseX */
-    {   44,   94, SF_WORD , 0, 0, NULL },  /* am_MouseY */
-    {   46,   96, SF_LONG , 0, 0, NULL },  /* am_Seconds */
-    {   50,  100, SF_LONG , 0, 0, NULL },  /* am_Micros */
+    SHADOW_FIELD(   0, 4, AppMessage, am_Message.mn_Node.ln_Succ),
+    SHADOW_FIELD(   4, 4, AppMessage, am_Message.mn_Node.ln_Pred),
+    SHADOW_FIELD(   8, 1, AppMessage, am_Message.mn_Node.ln_Type),
+    SHADOW_FIELD(   9, 1, AppMessage, am_Message.mn_Node.ln_Pri),
+    SHADOW_FIELD(  10, 4, AppMessage, am_Message.mn_Node.ln_Name),
+    SHADOW_FIELD(  14, 4, AppMessage, am_Message.mn_ReplyPort),
+    SHADOW_FIELD(  18, 2, AppMessage, am_Message.mn_Length),
+    SHADOW_FIELD(  20, 2, AppMessage, am_Type),
+    SHADOW_FIELD(  22, 4, AppMessage, am_UserData),
+    SHADOW_FIELD(  26, 4, AppMessage, am_ID),
+    SHADOW_FIELD(  30, 4, AppMessage, am_NumArgs),
+    SHADOW_FIELD(  34, 4, AppMessage, am_ArgList),
+    SHADOW_FIELD(  38, 2, AppMessage, am_Version),
+    SHADOW_FIELD(  40, 2, AppMessage, am_Class),
+    SHADOW_FIELD(  42, 2, AppMessage, am_MouseX),
+    SHADOW_FIELD(  44, 2, AppMessage, am_MouseY),
+    SHADOW_FIELD(  46, 4, AppMessage, am_Seconds),
+    SHADOW_FIELD(  50, 4, AppMessage, am_Micros),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* AppWindowDropZoneMsg: m68k=24B, aros=40B, 5 fields */
+/* AppWindowDropZoneMsg: m68k=24B, 6 fields */
 static const struct M68KFieldMap shadow_fields_AppWindowDropZoneMsg[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* adzm_RastPort */
-    {    4,    8, SF_WORD , 0, 0, NULL },  /* Left */
-    {    6,   10, SF_WORD , 0, 0, NULL },  /* Top */
-    {   12,   16, SF_PTR  , 0, 0, NULL },  /* adzm_ID */
-    {   16,   24, SF_PTR  , 0, 0, NULL },  /* adzm_UserData */
-    {   20,   32, SF_LONG , 0, 0, NULL },  /* adzm_Action */
+    SHADOW_FIELD(   0, 4, AppWindowDropZoneMsg, adzm_RastPort),
+    SHADOW_FIELD(   4, 2, AppWindowDropZoneMsg, adzm_DropZoneBox.Left),
+    SHADOW_FIELD(   6, 2, AppWindowDropZoneMsg, adzm_DropZoneBox.Top),
+    SHADOW_FIELD(  12, 4, AppWindowDropZoneMsg, adzm_ID),
+    SHADOW_FIELD(  16, 4, AppWindowDropZoneMsg, adzm_UserData),
+    SHADOW_FIELD(  20, 4, AppWindowDropZoneMsg, adzm_Action),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* AreaInfo: m68k=24B, aros=40B, 6 fields */
+/* AreaInfo: m68k=24B, 8 fields */
 static const struct M68KFieldMap shadow_fields_AreaInfo[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* VctrTbl */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* VctrPtr */
-    {    8,   16, SF_PTR  , 0, 0, NULL },  /* FlagTbl */
-    {   12,   24, SF_PTR  , 0, 0, NULL },  /* FlagPtr */
-    {   16,   32, SF_WORD , 0, 0, NULL },  /* Count */
-    {   18,   34, SF_WORD , 0, 0, NULL },  /* MaxCount */
-    {   20,   36, SF_WORD , 0, 0, NULL },  /* FirstX */
-    {   22,   38, SF_WORD , 0, 0, NULL },  /* FirstY */
+    SHADOW_FIELD(   0, 4, AreaInfo, VctrTbl),
+    SHADOW_FIELD(   4, 4, AreaInfo, VctrPtr),
+    SHADOW_FIELD(   8, 4, AreaInfo, FlagTbl),
+    SHADOW_FIELD(  12, 4, AreaInfo, FlagPtr),
+    SHADOW_FIELD(  16, 2, AreaInfo, Count),
+    SHADOW_FIELD(  18, 2, AreaInfo, MaxCount),
+    SHADOW_FIELD(  20, 2, AreaInfo, FirstX),
+    SHADOW_FIELD(  22, 2, AreaInfo, FirstY),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* AssignList: m68k=8B, aros=16B, 2 fields */
+/* AssignList: m68k=8B, 2 fields */
 static const struct M68KFieldMap shadow_fields_AssignList[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* al_Next */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* al_Lock */
+    SHADOW_FIELD(   0, 4, AssignList, al_Next),
+    SHADOW_FIELD(   4, 4, AssignList, al_Lock),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* BadBlockBlock: m68k=512B, aros=512B, 6 fields */
+/* BadBlockBlock: m68k=512B, 6 fields */
 static const struct M68KFieldMap shadow_fields_BadBlockBlock[] = {
-    {    0,    0, SF_LONG , 0, 0, NULL },  /* bbb_ID */
-    {    4,    4, SF_LONG , 0, 0, NULL },  /* bbb_SummedLongs */
-    {    8,    8, SF_LONG , 0, 0, NULL },  /* bbb_ChkSum */
-    {   12,   12, SF_LONG , 0, 0, NULL },  /* bbb_HostID */
-    {   16,   16, SF_LONG , 0, 0, NULL },  /* bbb_Next */
-    {   20,   20, SF_LONG , 0, 0, NULL },  /* bbb_Reserved */
+    SHADOW_FIELD(   0, 4, BadBlockBlock, bbb_ID),
+    SHADOW_FIELD(   4, 4, BadBlockBlock, bbb_SummedLongs),
+    SHADOW_FIELD(   8, 4, BadBlockBlock, bbb_ChkSum),
+    SHADOW_FIELD(  12, 4, BadBlockBlock, bbb_HostID),
+    SHADOW_FIELD(  16, 4, BadBlockBlock, bbb_Next),
+    SHADOW_FIELD(  20, 4, BadBlockBlock, bbb_Reserved),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* BadBlockEntry: m68k=8B, aros=8B, 2 fields */
+/* BadBlockEntry: m68k=8B, 2 fields */
 static const struct M68KFieldMap shadow_fields_BadBlockEntry[] = {
-    {    0,    0, SF_LONG , 0, 0, NULL },  /* bbe_BadBlock */
-    {    4,    4, SF_LONG , 0, 0, NULL },  /* bbe_GoodBlock */
+    SHADOW_FIELD(   0, 4, BadBlockEntry, bbe_BadBlock),
+    SHADOW_FIELD(   4, 4, BadBlockEntry, bbe_GoodBlock),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* BitMap: m68k=40B, aros=72B, 3 fields */
+/* BitMap: m68k=40B, 3 fields */
 static const struct M68KFieldMap shadow_fields_BitMap[] = {
-    {    0,    0, SF_WORD , 0, 0, NULL },  /* BytesPerRow */
-    {    2,    2, SF_WORD , 0, 0, NULL },  /* Rows */
-    {    6,    6, SF_WORD , 0, 0, NULL },  /* pad */
+    SHADOW_FIELD(   0, 2, BitMap, BytesPerRow),
+    SHADOW_FIELD(   2, 2, BitMap, Rows),
+    SHADOW_FIELD(   6, 2, BitMap, pad),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* BitMapHeader: m68k=20B, aros=20B, 13 fields */
+/* BitMapHeader: m68k=20B, 13 fields */
 static const struct M68KFieldMap shadow_fields_BitMapHeader[] = {
-    {    0,    0, SF_WORD , 0, 0, NULL },  /* bmh_Width */
-    {    2,    2, SF_WORD , 0, 0, NULL },  /* bmh_Height */
-    {    4,    4, SF_WORD , 0, 0, NULL },  /* bmh_Left */
-    {    6,    6, SF_WORD , 0, 0, NULL },  /* bmh_Top */
-    {    8,    8, SF_BYTE , 0, 0, NULL },  /* bmh_Depth */
-    {    9,    9, SF_BYTE , 0, 0, NULL },  /* bmh_Masking */
-    {   10,   10, SF_BYTE , 0, 0, NULL },  /* bmh_Compression */
-    {   11,   11, SF_BYTE , 0, 0, NULL },  /* bmh_Pad */
-    {   12,   12, SF_WORD , 0, 0, NULL },  /* bmh_Transparent */
-    {   14,   14, SF_BYTE , 0, 0, NULL },  /* bmh_XAspect */
-    {   15,   15, SF_BYTE , 0, 0, NULL },  /* bmh_YAspect */
-    {   16,   16, SF_WORD , 0, 0, NULL },  /* bmh_PageWidth */
-    {   18,   18, SF_WORD , 0, 0, NULL },  /* bmh_PageHeight */
+    SHADOW_FIELD(   0, 2, BitMapHeader, bmh_Width),
+    SHADOW_FIELD(   2, 2, BitMapHeader, bmh_Height),
+    SHADOW_FIELD(   4, 2, BitMapHeader, bmh_Left),
+    SHADOW_FIELD(   6, 2, BitMapHeader, bmh_Top),
+    SHADOW_FIELD(   8, 1, BitMapHeader, bmh_Depth),
+    SHADOW_FIELD(   9, 1, BitMapHeader, bmh_Masking),
+    SHADOW_FIELD(  10, 1, BitMapHeader, bmh_Compression),
+    SHADOW_FIELD(  11, 1, BitMapHeader, bmh_Pad),
+    SHADOW_FIELD(  12, 2, BitMapHeader, bmh_Transparent),
+    SHADOW_FIELD(  14, 1, BitMapHeader, bmh_XAspect),
+    SHADOW_FIELD(  15, 1, BitMapHeader, bmh_YAspect),
+    SHADOW_FIELD(  16, 2, BitMapHeader, bmh_PageWidth),
+    SHADOW_FIELD(  18, 2, BitMapHeader, bmh_PageHeight),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* BitScaleArgs: m68k=48B, aros=56B, 5 fields */
+/* BitScaleArgs: m68k=48B, 19 fields */
 static const struct M68KFieldMap shadow_fields_BitScaleArgs[] = {
-    {    0,    0, SF_WORD , 0, 0, NULL },  /* bsa_SrcX */
-    {    2,    2, SF_WORD , 0, 0, NULL },  /* bsa_SrcY */
-    {    4,    4, SF_WORD , 0, 0, NULL },  /* bsa_SrcWidth */
-    {    6,    6, SF_WORD , 0, 0, NULL },  /* bsa_SrcHeight */
-    {    8,    8, SF_WORD , 0, 0, NULL },  /* bsa_XSrcFactor */
-    {   10,   10, SF_WORD , 0, 0, NULL },  /* bsa_YSrcFactor */
-    {   12,   12, SF_WORD , 0, 0, NULL },  /* bsa_DestX */
-    {   14,   14, SF_WORD , 0, 0, NULL },  /* bsa_DestY */
-    {   16,   16, SF_WORD , 0, 0, NULL },  /* bsa_DestWidth */
-    {   18,   18, SF_WORD , 0, 0, NULL },  /* bsa_DestHeight */
-    {   20,   20, SF_WORD , 0, 0, NULL },  /* bsa_XDestFactor */
-    {   22,   22, SF_WORD , 0, 0, NULL },  /* bsa_YDestFactor */
-    {   24,   24, SF_PTR  , 0, 0, NULL },  /* bsa_SrcBitMap */
-    {   28,   32, SF_PTR  , 0, 0, NULL },  /* bsa_DestBitMap */
-    {   32,   40, SF_LONG , 0, 0, NULL },  /* bsa_Flags */
-    {   36,   44, SF_WORD , 0, 0, NULL },  /* bsa_XDDA */
-    {   38,   46, SF_WORD , 0, 0, NULL },  /* bsa_YDDA */
-    {   40,   48, SF_LONG , 0, 0, NULL },  /* bsa_Reserved1 */
-    {   44,   52, SF_LONG , 0, 0, NULL },  /* bsa_Reserved2 */
+    SHADOW_FIELD(   0, 2, BitScaleArgs, bsa_SrcX),
+    SHADOW_FIELD(   2, 2, BitScaleArgs, bsa_SrcY),
+    SHADOW_FIELD(   4, 2, BitScaleArgs, bsa_SrcWidth),
+    SHADOW_FIELD(   6, 2, BitScaleArgs, bsa_SrcHeight),
+    SHADOW_FIELD(   8, 2, BitScaleArgs, bsa_XSrcFactor),
+    SHADOW_FIELD(  10, 2, BitScaleArgs, bsa_YSrcFactor),
+    SHADOW_FIELD(  12, 2, BitScaleArgs, bsa_DestX),
+    SHADOW_FIELD(  14, 2, BitScaleArgs, bsa_DestY),
+    SHADOW_FIELD(  16, 2, BitScaleArgs, bsa_DestWidth),
+    SHADOW_FIELD(  18, 2, BitScaleArgs, bsa_DestHeight),
+    SHADOW_FIELD(  20, 2, BitScaleArgs, bsa_XDestFactor),
+    SHADOW_FIELD(  22, 2, BitScaleArgs, bsa_YDestFactor),
+    SHADOW_FIELD(  24, 4, BitScaleArgs, bsa_SrcBitMap),
+    SHADOW_FIELD(  28, 4, BitScaleArgs, bsa_DestBitMap),
+    SHADOW_FIELD(  32, 4, BitScaleArgs, bsa_Flags),
+    SHADOW_FIELD(  36, 2, BitScaleArgs, bsa_XDDA),
+    SHADOW_FIELD(  38, 2, BitScaleArgs, bsa_YDDA),
+    SHADOW_FIELD(  40, 4, BitScaleArgs, bsa_Reserved1),
+    SHADOW_FIELD(  44, 4, BitScaleArgs, bsa_Reserved2),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* BoolInfo: m68k=10B, aros=24B, 1 fields */
+/* BoolInfo: m68k=10B, 2 fields */
 static const struct M68KFieldMap shadow_fields_BoolInfo[] = {
-    {    2,    8, SF_PTR  , 0, 0, NULL },  /* Mask */
-    {    6,   16, SF_LONG , 0, 0, NULL },  /* Reserved */
+    SHADOW_FIELD(   2, 4, BoolInfo, Mask),
+    SHADOW_FIELD(   6, 4, BoolInfo, Reserved),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* BootBlock: m68k=12B, aros=12B, 3 fields */
+/* BootBlock: m68k=12B, 3 fields */
 static const struct M68KFieldMap shadow_fields_BootBlock[] = {
-    {    0,    0, SF_LONG , 0, 0, NULL },  /* bb_id */
-    {    4,    4, SF_LONG , 0, 0, NULL },  /* bb_chksum */
-    {    8,    8, SF_LONG , 0, 0, NULL },  /* bb_dosblock */
+    SHADOW_FIELD(   0, 4, BootBlock, bb_id),
+    SHADOW_FIELD(   4, 4, BootBlock, bb_chksum),
+    SHADOW_FIELD(   8, 4, BootBlock, bb_dosblock),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* BootNode: m68k=20B, aros=48B, 7 fields */
+/* BootNode: m68k=20B, 7 fields */
 static const struct M68KFieldMap shadow_fields_BootNode[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* ln_Succ */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* ln_Pred */
-    {    8,   16, SF_BYTE , 0, 0, NULL },  /* ln_Type */
-    {    9,   17, SF_BYTE , 0, 0, NULL },  /* ln_Pri */
-    {   10,   24, SF_PTR  , 0, 0, NULL },  /* ln_Name */
-    {   14,   32, SF_WORD , 0, 0, NULL },  /* bn_Flags */
-    {   16,   40, SF_PTR  , 0, 0, NULL },  /* bn_DeviceNode */
+    SHADOW_FIELD(   0, 4, BootNode, bn_Node.ln_Succ),
+    SHADOW_FIELD(   4, 4, BootNode, bn_Node.ln_Pred),
+    SHADOW_FIELD(   8, 1, BootNode, bn_Node.ln_Type),
+    SHADOW_FIELD(   9, 1, BootNode, bn_Node.ln_Pri),
+    SHADOW_FIELD(  10, 4, BootNode, bn_Node.ln_Name),
+    SHADOW_FIELD(  14, 2, BootNode, bn_Flags),
+    SHADOW_FIELD(  16, 4, BootNode, bn_DeviceNode),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* Border: m68k=16B, aros=24B, 4 fields */
+/* Border: m68k=16B, 8 fields */
 static const struct M68KFieldMap shadow_fields_Border[] = {
-    {    0,    0, SF_WORD , 0, 0, NULL },  /* LeftEdge */
-    {    2,    2, SF_WORD , 0, 0, NULL },  /* TopEdge */
-    {    4,    4, SF_BYTE , 0, 0, NULL },  /* FrontPen */
-    {    5,    5, SF_BYTE , 0, 0, NULL },  /* BackPen */
-    {    6,    6, SF_BYTE , 0, 0, NULL },  /* DrawMode */
-    {    7,    7, SF_BYTE , 0, 0, NULL },  /* Count */
-    {    8,    8, SF_PTR  , 0, 0, NULL },  /* XY */
-    {   12,   16, SF_PTR  , 0, 0, NULL },  /* NextBorder */
+    SHADOW_FIELD(   0, 2, Border, LeftEdge),
+    SHADOW_FIELD(   2, 2, Border, TopEdge),
+    SHADOW_FIELD(   4, 1, Border, FrontPen),
+    SHADOW_FIELD(   5, 1, Border, BackPen),
+    SHADOW_FIELD(   6, 1, Border, DrawMode),
+    SHADOW_FIELD(   7, 1, Border, Count),
+    SHADOW_FIELD(   8, 4, Border, XY),
+    SHADOW_FIELD(  12, 4, Border, NextBorder),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* CDInfo: m68k=34B, aros=34B, 9 fields */
+/* CDInfo: m68k=34B, 9 fields */
 static const struct M68KFieldMap shadow_fields_CDInfo[] = {
-    {    0,    0, SF_WORD , 0, 0, NULL },  /* PlaySpeed */
-    {    2,    2, SF_WORD , 0, 0, NULL },  /* ReadSpeed */
-    {    4,    4, SF_WORD , 0, 0, NULL },  /* ReadXLSpeed */
-    {    6,    6, SF_WORD , 0, 0, NULL },  /* SectorSize */
-    {    8,    8, SF_WORD , 0, 0, NULL },  /* XLECC */
-    {   10,   10, SF_WORD , 0, 0, NULL },  /* EjectReset */
-    {   20,   20, SF_WORD , 0, 0, NULL },  /* MaxSpeed */
-    {   22,   22, SF_WORD , 0, 0, NULL },  /* AudioPrecision */
-    {   24,   24, SF_WORD , 0, 0, NULL },  /* Status */
+    SHADOW_FIELD(   0, 2, CDInfo, PlaySpeed),
+    SHADOW_FIELD(   2, 2, CDInfo, ReadSpeed),
+    SHADOW_FIELD(   4, 2, CDInfo, ReadXLSpeed),
+    SHADOW_FIELD(   6, 2, CDInfo, SectorSize),
+    SHADOW_FIELD(   8, 2, CDInfo, XLECC),
+    SHADOW_FIELD(  10, 2, CDInfo, EjectReset),
+    SHADOW_FIELD(  20, 2, CDInfo, MaxSpeed),
+    SHADOW_FIELD(  22, 2, CDInfo, AudioPrecision),
+    SHADOW_FIELD(  24, 2, CDInfo, Status),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* CDXL: m68k=28B, aros=48B, 6 fields */
+/* CDXL: m68k=28B, 7 fields */
 static const struct M68KFieldMap shadow_fields_CDXL[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* mln_Succ */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* mln_Pred */
-    {    8,   16, SF_PTR  , 0, 0, NULL },  /* Buffer */
-    {   12,   24, SF_LONG , 0, 0, NULL },  /* Length */
-    {   16,   28, SF_LONG , 0, 0, NULL },  /* Actual */
-    {   20,   32, SF_PTR  , 0, 0, NULL },  /* IntData */
-    {   24,   40, SF_PTR  , 0, 0, NULL },  /* IntCode */
+    SHADOW_FIELD(   0, 4, CDXL, Node.mln_Succ),
+    SHADOW_FIELD(   4, 4, CDXL, Node.mln_Pred),
+    SHADOW_FIELD(   8, 4, CDXL, Buffer),
+    SHADOW_FIELD(  12, 4, CDXL, Length),
+    SHADOW_FIELD(  16, 4, CDXL, Actual),
+    SHADOW_FIELD(  20, 4, CDXL, IntData),
+    SHADOW_FIELD(  24, 4, CDXL, IntCode),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* CSource: m68k=12B, aros=16B, 3 fields */
+/* CSource: m68k=12B, 3 fields */
 static const struct M68KFieldMap shadow_fields_CSource[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* CS_Buffer */
-    {    4,    8, SF_LONG , 0, 0, NULL },  /* CS_Length */
-    {    8,   12, SF_LONG , 0, 0, NULL },  /* CS_CurChr */
+    SHADOW_FIELD(   0, 4, CSource, CS_Buffer),
+    SHADOW_FIELD(   4, 4, CSource, CS_Length),
+    SHADOW_FIELD(   8, 4, CSource, CS_CurChr),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* CardHandle: m68k=28B, aros=64B, 9 fields */
+/* CardHandle: m68k=28B, 9 fields */
 static const struct M68KFieldMap shadow_fields_CardHandle[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* ln_Succ */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* ln_Pred */
-    {    8,   16, SF_BYTE , 0, 0, NULL },  /* ln_Type */
-    {    9,   17, SF_BYTE , 0, 0, NULL },  /* ln_Pri */
-    {   10,   24, SF_PTR  , 0, 0, NULL },  /* ln_Name */
-    {   14,   32, SF_PTR  , 0, 0, NULL },  /* cah_CardRemoved */
-    {   18,   40, SF_PTR  , 0, 0, NULL },  /* cah_CardInserted */
-    {   22,   48, SF_PTR  , 0, 0, NULL },  /* cah_CardStatus */
-    {   26,   56, SF_BYTE , 0, 0, NULL },  /* cah_CardFlags */
+    SHADOW_FIELD(   0, 4, CardHandle, cah_CardNode.ln_Succ),
+    SHADOW_FIELD(   4, 4, CardHandle, cah_CardNode.ln_Pred),
+    SHADOW_FIELD(   8, 1, CardHandle, cah_CardNode.ln_Type),
+    SHADOW_FIELD(   9, 1, CardHandle, cah_CardNode.ln_Pri),
+    SHADOW_FIELD(  10, 4, CardHandle, cah_CardNode.ln_Name),
+    SHADOW_FIELD(  14, 4, CardHandle, cah_CardRemoved),
+    SHADOW_FIELD(  18, 4, CardHandle, cah_CardInserted),
+    SHADOW_FIELD(  22, 4, CardHandle, cah_CardStatus),
+    SHADOW_FIELD(  26, 1, CardHandle, cah_CardFlags),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* CardMemoryMap: m68k=24B, aros=40B, 6 fields */
+/* CardMemoryMap: m68k=24B, 6 fields */
 static const struct M68KFieldMap shadow_fields_CardMemoryMap[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* cmm_CommonMemory */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* cmm_AttributeMemory */
-    {    8,   16, SF_PTR  , 0, 0, NULL },  /* cmm_IOMemory */
-    {   12,   24, SF_LONG , 0, 0, NULL },  /* cmm_CommonMemSize */
-    {   16,   28, SF_LONG , 0, 0, NULL },  /* cmm_AttributeMemSize */
-    {   20,   32, SF_LONG , 0, 0, NULL },  /* cmm_IOMemSize */
+    SHADOW_FIELD(   0, 4, CardMemoryMap, cmm_CommonMemory),
+    SHADOW_FIELD(   4, 4, CardMemoryMap, cmm_AttributeMemory),
+    SHADOW_FIELD(   8, 4, CardMemoryMap, cmm_IOMemory),
+    SHADOW_FIELD(  12, 4, CardMemoryMap, cmm_CommonMemSize),
+    SHADOW_FIELD(  16, 4, CardMemoryMap, cmm_AttributeMemSize),
+    SHADOW_FIELD(  20, 4, CardMemoryMap, cmm_IOMemSize),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* Catalog: m68k=28B, aros=56B, 10 fields */
+/* Catalog: m68k=28B, 10 fields */
 static const struct M68KFieldMap shadow_fields_Catalog[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* ln_Succ */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* ln_Pred */
-    {    8,   16, SF_BYTE , 0, 0, NULL },  /* ln_Type */
-    {    9,   17, SF_BYTE , 0, 0, NULL },  /* ln_Pri */
-    {   10,   24, SF_PTR  , 0, 0, NULL },  /* ln_Name */
-    {   14,   32, SF_WORD , 0, 0, NULL },  /* cat_Pad */
-    {   16,   40, SF_PTR  , 0, 0, NULL },  /* cat_Language */
-    {   20,   48, SF_LONG , 0, 0, NULL },  /* cat_CodeSet */
-    {   24,   52, SF_WORD , 0, 0, NULL },  /* cat_Version */
-    {   26,   54, SF_WORD , 0, 0, NULL },  /* cat_Revision */
+    SHADOW_FIELD(   0, 4, Catalog, cat_Link.ln_Succ),
+    SHADOW_FIELD(   4, 4, Catalog, cat_Link.ln_Pred),
+    SHADOW_FIELD(   8, 1, Catalog, cat_Link.ln_Type),
+    SHADOW_FIELD(   9, 1, Catalog, cat_Link.ln_Pri),
+    SHADOW_FIELD(  10, 4, Catalog, cat_Link.ln_Name),
+    SHADOW_FIELD(  14, 2, Catalog, cat_Pad),
+    SHADOW_FIELD(  16, 4, Catalog, cat_Language),
+    SHADOW_FIELD(  20, 4, Catalog, cat_CodeSet),
+    SHADOW_FIELD(  24, 2, Catalog, cat_Version),
+    SHADOW_FIELD(  26, 2, Catalog, cat_Revision),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* ClassLibrary: m68k=40B, aros=80B, 16 fields */
+/* ClassLibrary: m68k=40B, 16 fields */
 static const struct M68KFieldMap shadow_fields_ClassLibrary[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* ln_Succ */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* ln_Pred */
-    {    8,   16, SF_BYTE , 0, 0, NULL },  /* ln_Type */
-    {    9,   17, SF_BYTE , 0, 0, NULL },  /* ln_Pri */
-    {   10,   24, SF_PTR  , 0, 0, NULL },  /* ln_Name */
-    {   14,   32, SF_BYTE , 0, 0, NULL },  /* lib_Flags */
-    {   15,   33, SF_BYTE , 0, 0, NULL },  /* lib_pad */
-    {   16,   34, SF_WORD , 0, 0, NULL },  /* lib_NegSize */
-    {   18,   36, SF_WORD , 0, 0, NULL },  /* lib_PosSize */
-    {   20,   38, SF_WORD , 0, 0, NULL },  /* lib_Version */
-    {   22,   40, SF_WORD , 0, 0, NULL },  /* lib_Revision */
-    {   24,   48, SF_PTR  , 0, 0, NULL },  /* lib_IdString */
-    {   28,   56, SF_LONG , 0, 0, NULL },  /* lib_Sum */
-    {   32,   60, SF_WORD , 0, 0, NULL },  /* lib_OpenCnt */
-    {   34,   64, SF_WORD , 0, 0, NULL },  /* cl_Pad */
-    {   36,   72, SF_PTR  , 0, 0, NULL },  /* cl_Class */
+    SHADOW_FIELD(   0, 4, ClassLibrary, cl_Lib.lib_Node.ln_Succ),
+    SHADOW_FIELD(   4, 4, ClassLibrary, cl_Lib.lib_Node.ln_Pred),
+    SHADOW_FIELD(   8, 1, ClassLibrary, cl_Lib.lib_Node.ln_Type),
+    SHADOW_FIELD(   9, 1, ClassLibrary, cl_Lib.lib_Node.ln_Pri),
+    SHADOW_FIELD(  10, 4, ClassLibrary, cl_Lib.lib_Node.ln_Name),
+    SHADOW_FIELD(  14, 1, ClassLibrary, cl_Lib.lib_Flags),
+    SHADOW_FIELD(  15, 1, ClassLibrary, cl_Lib.lib_pad),
+    SHADOW_FIELD(  16, 2, ClassLibrary, cl_Lib.lib_NegSize),
+    SHADOW_FIELD(  18, 2, ClassLibrary, cl_Lib.lib_PosSize),
+    SHADOW_FIELD(  20, 2, ClassLibrary, cl_Lib.lib_Version),
+    SHADOW_FIELD(  22, 2, ClassLibrary, cl_Lib.lib_Revision),
+    SHADOW_FIELD(  24, 4, ClassLibrary, cl_Lib.lib_IdString),
+    SHADOW_FIELD(  28, 4, ClassLibrary, cl_Lib.lib_Sum),
+    SHADOW_FIELD(  32, 2, ClassLibrary, cl_Lib.lib_OpenCnt),
+    SHADOW_FIELD(  34, 2, ClassLibrary, cl_Pad),
+    SHADOW_FIELD(  36, 4, ClassLibrary, cl_Class),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* ClipHookMsg: m68k=12B, aros=12B, 3 fields */
+/* ClipHookMsg: m68k=12B, 3 fields */
 static const struct M68KFieldMap shadow_fields_ClipHookMsg[] = {
-    {    0,    0, SF_LONG , 0, 0, NULL },  /* chm_Type */
-    {    4,    4, SF_LONG , 0, 0, NULL },  /* chm_ChangeCmd */
-    {    8,    8, SF_LONG , 0, 0, NULL },  /* chm_ClipID */
+    SHADOW_FIELD(   0, 4, ClipHookMsg, chm_Type),
+    SHADOW_FIELD(   4, 4, ClipHookMsg, chm_ChangeCmd),
+    SHADOW_FIELD(   8, 4, ClipHookMsg, chm_ClipID),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* ClipRect: m68k=36B, aros=64B, 2 fields */
+/* ClipRect: m68k=36B, 6 fields */
 static const struct M68KFieldMap shadow_fields_ClipRect[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* Next */
-    {   16,   32, SF_WORD , 0, 0, NULL },  /* MinX */
-    {   18,   34, SF_WORD , 0, 0, NULL },  /* MinY */
-    {   20,   36, SF_WORD , 0, 0, NULL },  /* MaxX */
-    {   22,   38, SF_WORD , 0, 0, NULL },  /* MaxY */
-    {   32,   56, SF_LONG , 0, 0, NULL },  /* reserved */
+    SHADOW_FIELD(   0, 4, ClipRect, Next),
+    SHADOW_FIELD(  16, 2, ClipRect, bounds.MinX),
+    SHADOW_FIELD(  18, 2, ClipRect, bounds.MinY),
+    SHADOW_FIELD(  20, 2, ClipRect, bounds.MaxX),
+    SHADOW_FIELD(  22, 2, ClipRect, bounds.MaxY),
+    SHADOW_FIELD(  32, 4, ClipRect, reserved),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* ClipboardHandle: m68k=120B, aros=640B, 25 fields */
+/* ClipboardHandle: m68k=120B, 25 fields */
 static const struct M68KFieldMap shadow_fields_ClipboardHandle[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* ln_Succ */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* ln_Pred */
-    {    8,   16, SF_BYTE , 0, 0, NULL },  /* ln_Type */
-    {    9,   17, SF_BYTE , 0, 0, NULL },  /* ln_Pri */
-    {   10,   24, SF_PTR  , 0, 0, NULL },  /* ln_Name */
-    {   14,   32, SF_PTR  , 0, 0, NULL },  /* mn_ReplyPort */
-    {   18,   40, SF_WORD , 0, 0, NULL },  /* mn_Length */
-    {   20,   48, SF_PTR  , 0, 0, NULL },  /* io_Device */
-    {   24,   56, SF_PTR  , 0, 0, NULL },  /* io_Unit */
-    {   28,   64, SF_WORD , 0, 0, NULL },  /* io_Command */
-    {   30,   66, SF_BYTE , 0, 0, NULL },  /* io_Flags */
-    {   31,   67, SF_BYTE , 0, 0, NULL },  /* io_Error */
-    {   32,   68, SF_LONG , 0, 0, NULL },  /* io_Actual */
-    {   36,   72, SF_LONG , 0, 0, NULL },  /* io_Length */
-    {   40,   80, SF_PTR  , 0, 0, NULL },  /* io_Data */
-    {   44,   88, SF_LONG , 0, 0, NULL },  /* io_Offset */
-    {   48,   92, SF_LONG , 0, 0, NULL },  /* io_ClipID */
-    {   66,  160, SF_BYTE , 0, 0, NULL },  /* mp_Flags */
-    {   67,  161, SF_BYTE , 0, 0, NULL },  /* mp_SigBit */
-    {   68,  168, SF_PTR  , 0, 0, NULL },  /* mp_SigTask */
-    {   72,  176, SF_PTR  , 0, 0, NULL },  /* lh_Head */
-    {   76,  184, SF_PTR  , 0, 0, NULL },  /* lh_Tail */
-    {   80,  192, SF_PTR  , 0, 0, NULL },  /* lh_TailPred */
-    {   84,  200, SF_BYTE , 0, 0, NULL },  /* lh_Type */
-    {   85,  201, SF_BYTE , 0, 0, NULL },  /* l_pad */
+    SHADOW_FIELD(   0, 4, ClipboardHandle, cbh_Req.io_Message.mn_Node.ln_Succ),
+    SHADOW_FIELD(   4, 4, ClipboardHandle, cbh_Req.io_Message.mn_Node.ln_Pred),
+    SHADOW_FIELD(   8, 1, ClipboardHandle, cbh_Req.io_Message.mn_Node.ln_Type),
+    SHADOW_FIELD(   9, 1, ClipboardHandle, cbh_Req.io_Message.mn_Node.ln_Pri),
+    SHADOW_FIELD(  10, 4, ClipboardHandle, cbh_Req.io_Message.mn_Node.ln_Name),
+    SHADOW_FIELD(  14, 4, ClipboardHandle, cbh_Req.io_Message.mn_ReplyPort),
+    SHADOW_FIELD(  18, 2, ClipboardHandle, cbh_Req.io_Message.mn_Length),
+    SHADOW_FIELD(  20, 4, ClipboardHandle, cbh_Req.io_Device),
+    SHADOW_FIELD(  24, 4, ClipboardHandle, cbh_Req.io_Unit),
+    SHADOW_FIELD(  28, 2, ClipboardHandle, cbh_Req.io_Command),
+    SHADOW_FIELD(  30, 1, ClipboardHandle, cbh_Req.io_Flags),
+    SHADOW_FIELD(  31, 1, ClipboardHandle, cbh_Req.io_Error),
+    SHADOW_FIELD(  32, 4, ClipboardHandle, cbh_Req.io_Actual),
+    SHADOW_FIELD(  36, 4, ClipboardHandle, cbh_Req.io_Length),
+    SHADOW_FIELD(  40, 4, ClipboardHandle, cbh_Req.io_Data),
+    SHADOW_FIELD(  44, 4, ClipboardHandle, cbh_Req.io_Offset),
+    SHADOW_FIELD(  48, 4, ClipboardHandle, cbh_Req.io_ClipID),
+    SHADOW_FIELD(  66, 1, ClipboardHandle, cbh_CBport.mp_Flags),
+    SHADOW_FIELD(  67, 1, ClipboardHandle, cbh_CBport.mp_SigBit),
+    SHADOW_FIELD(  68, 4, ClipboardHandle, cbh_CBport.mp_SigTask),
+    SHADOW_FIELD(  72, 4, ClipboardHandle, cbh_CBport.mp_MsgList.lh_Head),
+    SHADOW_FIELD(  76, 4, ClipboardHandle, cbh_CBport.mp_MsgList.lh_Tail),
+    SHADOW_FIELD(  80, 4, ClipboardHandle, cbh_CBport.mp_MsgList.lh_TailPred),
+    SHADOW_FIELD(  84, 1, ClipboardHandle, cbh_CBport.mp_MsgList.lh_Type),
+    SHADOW_FIELD(  85, 1, ClipboardHandle, cbh_CBport.mp_MsgList.l_pad),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* ClipboardUnitPartial: m68k=18B, aros=40B, 6 fields */
+/* ClipboardUnitPartial: m68k=18B, 6 fields */
 static const struct M68KFieldMap shadow_fields_ClipboardUnitPartial[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* ln_Succ */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* ln_Pred */
-    {    8,   16, SF_BYTE , 0, 0, NULL },  /* ln_Type */
-    {    9,   17, SF_BYTE , 0, 0, NULL },  /* ln_Pri */
-    {   10,   24, SF_PTR  , 0, 0, NULL },  /* ln_Name */
-    {   14,   32, SF_LONG , 0, 0, NULL },  /* cu_UnitNum */
+    SHADOW_FIELD(   0, 4, ClipboardUnitPartial, cu_Node.ln_Succ),
+    SHADOW_FIELD(   4, 4, ClipboardUnitPartial, cu_Node.ln_Pred),
+    SHADOW_FIELD(   8, 1, ClipboardUnitPartial, cu_Node.ln_Type),
+    SHADOW_FIELD(   9, 1, ClipboardUnitPartial, cu_Node.ln_Pri),
+    SHADOW_FIELD(  10, 4, ClipboardUnitPartial, cu_Node.ln_Name),
+    SHADOW_FIELD(  14, 4, ClipboardUnitPartial, cu_UnitNum),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* ClockData: m68k=14B, aros=14B, 7 fields */
+/* ClockData: m68k=14B, 7 fields */
 static const struct M68KFieldMap shadow_fields_ClockData[] = {
-    {    0,    0, SF_WORD , 0, 0, NULL },  /* sec */
-    {    2,    2, SF_WORD , 0, 0, NULL },  /* min */
-    {    4,    4, SF_WORD , 0, 0, NULL },  /* hour */
-    {    6,    6, SF_WORD , 0, 0, NULL },  /* mday */
-    {    8,    8, SF_WORD , 0, 0, NULL },  /* month */
-    {   10,   10, SF_WORD , 0, 0, NULL },  /* year */
-    {   12,   12, SF_WORD , 0, 0, NULL },  /* wday */
+    SHADOW_FIELD(   0, 2, ClockData, sec),
+    SHADOW_FIELD(   2, 2, ClockData, min),
+    SHADOW_FIELD(   4, 2, ClockData, hour),
+    SHADOW_FIELD(   6, 2, ClockData, mday),
+    SHADOW_FIELD(   8, 2, ClockData, month),
+    SHADOW_FIELD(  10, 2, ClockData, year),
+    SHADOW_FIELD(  12, 2, ClockData, wday),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* CollectionItem: m68k=12B, aros=24B, 3 fields */
+/* CollectionItem: m68k=12B, 3 fields */
 static const struct M68KFieldMap shadow_fields_CollectionItem[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* ci_Next */
-    {    4,    8, SF_LONG , 0, 0, NULL },  /* ci_Size */
-    {    8,   16, SF_PTR  , 0, 0, NULL },  /* ci_Data */
+    SHADOW_FIELD(   0, 4, CollectionItem, ci_Next),
+    SHADOW_FIELD(   4, 4, CollectionItem, ci_Size),
+    SHADOW_FIELD(   8, 4, CollectionItem, ci_Data),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* ColorFontColors: m68k=8B, aros=16B, 3 fields */
+/* ColorFontColors: m68k=8B, 3 fields */
 static const struct M68KFieldMap shadow_fields_ColorFontColors[] = {
-    {    0,    0, SF_WORD , 0, 0, NULL },  /* cfc_Reserved */
-    {    2,    2, SF_WORD , 0, 0, NULL },  /* cfc_Count */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* cfc_ColorTable */
+    SHADOW_FIELD(   0, 2, ColorFontColors, cfc_Reserved),
+    SHADOW_FIELD(   2, 2, ColorFontColors, cfc_Count),
+    SHADOW_FIELD(   4, 4, ColorFontColors, cfc_ColorTable),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* ColorMap: m68k=52B, aros=96B, 19 fields */
+/* ColorMap: m68k=52B, 19 fields */
 static const struct M68KFieldMap shadow_fields_ColorMap[] = {
-    {    1,    1, SF_BYTE , 0, 0, NULL },  /* Type */
-    {    2,    2, SF_WORD , 0, 0, NULL },  /* Count */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* ColorTable */
-    {    8,   16, SF_PTR  , 0, 0, NULL },  /* cm_vpe */
-    {   12,   24, SF_PTR  , 0, 0, NULL },  /* LowColorBits */
-    {   16,   32, SF_BYTE , 0, 0, NULL },  /* TransparencyPlane */
-    {   17,   33, SF_BYTE , 0, 0, NULL },  /* SpriteResolution */
-    {   18,   34, SF_BYTE , 0, 0, NULL },  /* SpriteResDefault */
-    {   19,   35, SF_BYTE , 0, 0, NULL },  /* AuxFlags */
-    {   20,   40, SF_PTR  , 0, 0, NULL },  /* cm_vp */
-    {   24,   48, SF_PTR  , 0, 0, NULL },  /* NormalDisplayInfo */
-    {   28,   56, SF_PTR  , 0, 0, NULL },  /* CoerceDisplayInfo */
-    {   32,   64, SF_PTR  , 0, 0, NULL },  /* cm_batch_items */
-    {   36,   72, SF_LONG , 0, 0, NULL },  /* VPModeID */
-    {   40,   80, SF_PTR  , 0, 0, NULL },  /* PalExtra */
-    {   44,   88, SF_WORD , 0, 0, NULL },  /* SpriteBase_Even */
-    {   46,   90, SF_WORD , 0, 0, NULL },  /* SpriteBase_Odd */
-    {   48,   92, SF_WORD , 0, 0, NULL },  /* Bp_0_base */
-    {   50,   94, SF_WORD , 0, 0, NULL },  /* Bp_1_base */
+    SHADOW_FIELD(   1, 1, ColorMap, Type),
+    SHADOW_FIELD(   2, 2, ColorMap, Count),
+    SHADOW_FIELD(   4, 4, ColorMap, ColorTable),
+    SHADOW_FIELD(   8, 4, ColorMap, cm_vpe),
+    SHADOW_FIELD(  12, 4, ColorMap, LowColorBits),
+    SHADOW_FIELD(  16, 1, ColorMap, TransparencyPlane),
+    SHADOW_FIELD(  17, 1, ColorMap, SpriteResolution),
+    SHADOW_FIELD(  18, 1, ColorMap, SpriteResDefault),
+    SHADOW_FIELD(  19, 1, ColorMap, AuxFlags),
+    SHADOW_FIELD(  20, 4, ColorMap, cm_vp),
+    SHADOW_FIELD(  24, 4, ColorMap, NormalDisplayInfo),
+    SHADOW_FIELD(  28, 4, ColorMap, CoerceDisplayInfo),
+    SHADOW_FIELD(  32, 4, ColorMap, cm_batch_items),
+    SHADOW_FIELD(  36, 4, ColorMap, VPModeID),
+    SHADOW_FIELD(  40, 4, ColorMap, PalExtra),
+    SHADOW_FIELD(  44, 2, ColorMap, SpriteBase_Even),
+    SHADOW_FIELD(  46, 2, ColorMap, SpriteBase_Odd),
+    SHADOW_FIELD(  48, 2, ColorMap, Bp_0_base),
+    SHADOW_FIELD(  50, 2, ColorMap, Bp_1_base),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* ColorSpec: m68k=8B, aros=8B, 4 fields */
+/* ColorSpec: m68k=8B, 4 fields */
 static const struct M68KFieldMap shadow_fields_ColorSpec[] = {
-    {    0,    0, SF_WORD , 0, 0, NULL },  /* ColorIndex */
-    {    2,    2, SF_WORD , 0, 0, NULL },  /* Red */
-    {    4,    4, SF_WORD , 0, 0, NULL },  /* Green */
-    {    6,    6, SF_WORD , 0, 0, NULL },  /* Blue */
+    SHADOW_FIELD(   0, 2, ColorSpec, ColorIndex),
+    SHADOW_FIELD(   2, 2, ColorSpec, Red),
+    SHADOW_FIELD(   4, 2, ColorSpec, Green),
+    SHADOW_FIELD(   6, 2, ColorSpec, Blue),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* ColorTextFont: m68k=96B, aros=184B, 29 fields */
+/* ColorTextFont: m68k=96B, 29 fields */
 static const struct M68KFieldMap shadow_fields_ColorTextFont[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* ln_Succ */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* ln_Pred */
-    {    8,   16, SF_BYTE , 0, 0, NULL },  /* ln_Type */
-    {    9,   17, SF_BYTE , 0, 0, NULL },  /* ln_Pri */
-    {   10,   24, SF_PTR  , 0, 0, NULL },  /* ln_Name */
-    {   14,   32, SF_PTR  , 0, 0, NULL },  /* mn_ReplyPort */
-    {   18,   40, SF_WORD , 0, 0, NULL },  /* mn_Length */
-    {   20,   48, SF_WORD , 0, 0, NULL },  /* tf_YSize */
-    {   22,   50, SF_BYTE , 0, 0, NULL },  /* tf_Style */
-    {   23,   51, SF_BYTE , 0, 0, NULL },  /* tf_Flags */
-    {   24,   52, SF_WORD , 0, 0, NULL },  /* tf_XSize */
-    {   26,   54, SF_WORD , 0, 0, NULL },  /* tf_Baseline */
-    {   28,   56, SF_WORD , 0, 0, NULL },  /* tf_BoldSmear */
-    {   30,   58, SF_WORD , 0, 0, NULL },  /* tf_Accessors */
-    {   32,   60, SF_BYTE , 0, 0, NULL },  /* tf_LoChar */
-    {   33,   61, SF_BYTE , 0, 0, NULL },  /* tf_HiChar */
-    {   34,   64, SF_PTR  , 0, 0, NULL },  /* tf_CharData */
-    {   38,   72, SF_WORD , 0, 0, NULL },  /* tf_Modulo */
-    {   40,   80, SF_PTR  , 0, 0, NULL },  /* tf_CharLoc */
-    {   44,   88, SF_PTR  , 0, 0, NULL },  /* tf_CharSpace */
-    {   48,   96, SF_PTR  , 0, 0, NULL },  /* tf_CharKern */
-    {   52,  104, SF_WORD , 0, 0, NULL },  /* ctf_Flags */
-    {   54,  106, SF_BYTE , 0, 0, NULL },  /* ctf_Depth */
-    {   55,  107, SF_BYTE , 0, 0, NULL },  /* ctf_FgColor */
-    {   56,  108, SF_BYTE , 0, 0, NULL },  /* ctf_Low */
-    {   57,  109, SF_BYTE , 0, 0, NULL },  /* ctf_High */
-    {   58,  110, SF_BYTE , 0, 0, NULL },  /* ctf_PlanePick */
-    {   59,  111, SF_BYTE , 0, 0, NULL },  /* ctf_PlaneOnOff */
-    {   60,  112, SF_PTR  , 0, 0, NULL },  /* ctf_ColorFontColors */
+    SHADOW_FIELD(   0, 4, ColorTextFont, ctf_TF.tf_Message.mn_Node.ln_Succ),
+    SHADOW_FIELD(   4, 4, ColorTextFont, ctf_TF.tf_Message.mn_Node.ln_Pred),
+    SHADOW_FIELD(   8, 1, ColorTextFont, ctf_TF.tf_Message.mn_Node.ln_Type),
+    SHADOW_FIELD(   9, 1, ColorTextFont, ctf_TF.tf_Message.mn_Node.ln_Pri),
+    SHADOW_FIELD(  10, 4, ColorTextFont, ctf_TF.tf_Message.mn_Node.ln_Name),
+    SHADOW_FIELD(  14, 4, ColorTextFont, ctf_TF.tf_Message.mn_ReplyPort),
+    SHADOW_FIELD(  18, 2, ColorTextFont, ctf_TF.tf_Message.mn_Length),
+    SHADOW_FIELD(  20, 2, ColorTextFont, ctf_TF.tf_YSize),
+    SHADOW_FIELD(  22, 1, ColorTextFont, ctf_TF.tf_Style),
+    SHADOW_FIELD(  23, 1, ColorTextFont, ctf_TF.tf_Flags),
+    SHADOW_FIELD(  24, 2, ColorTextFont, ctf_TF.tf_XSize),
+    SHADOW_FIELD(  26, 2, ColorTextFont, ctf_TF.tf_Baseline),
+    SHADOW_FIELD(  28, 2, ColorTextFont, ctf_TF.tf_BoldSmear),
+    SHADOW_FIELD(  30, 2, ColorTextFont, ctf_TF.tf_Accessors),
+    SHADOW_FIELD(  32, 1, ColorTextFont, ctf_TF.tf_LoChar),
+    SHADOW_FIELD(  33, 1, ColorTextFont, ctf_TF.tf_HiChar),
+    SHADOW_FIELD(  34, 4, ColorTextFont, ctf_TF.tf_CharData),
+    SHADOW_FIELD(  38, 2, ColorTextFont, ctf_TF.tf_Modulo),
+    SHADOW_FIELD(  40, 4, ColorTextFont, ctf_TF.tf_CharLoc),
+    SHADOW_FIELD(  44, 4, ColorTextFont, ctf_TF.tf_CharSpace),
+    SHADOW_FIELD(  48, 4, ColorTextFont, ctf_TF.tf_CharKern),
+    SHADOW_FIELD(  52, 2, ColorTextFont, ctf_Flags),
+    SHADOW_FIELD(  54, 1, ColorTextFont, ctf_Depth),
+    SHADOW_FIELD(  55, 1, ColorTextFont, ctf_FgColor),
+    SHADOW_FIELD(  56, 1, ColorTextFont, ctf_Low),
+    SHADOW_FIELD(  57, 1, ColorTextFont, ctf_High),
+    SHADOW_FIELD(  58, 1, ColorTextFont, ctf_PlanePick),
+    SHADOW_FIELD(  59, 1, ColorTextFont, ctf_PlaneOnOff),
+    SHADOW_FIELD(  60, 4, ColorTextFont, ctf_ColorFontColors),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* CommandLineInterface: m68k=64B, aros=128B, 16 fields */
+/* CommandLineInterface: m68k=64B, 16 fields */
 static const struct M68KFieldMap shadow_fields_CommandLineInterface[] = {
-    {    0,    0, SF_LONG , 0, 0, NULL },  /* cli_Result2 */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* cli_SetName */
-    {    8,   16, SF_PTR  , 0, 0, NULL },  /* cli_CommandDir */
-    {   12,   24, SF_LONG , 0, 0, NULL },  /* cli_ReturnCode */
-    {   16,   32, SF_PTR  , 0, 0, NULL },  /* cli_CommandName */
-    {   20,   40, SF_LONG , 0, 0, NULL },  /* cli_FailLevel */
-    {   24,   48, SF_PTR  , 0, 0, NULL },  /* cli_Prompt */
-    {   28,   56, SF_PTR  , 0, 0, NULL },  /* cli_StandardInput */
-    {   32,   64, SF_PTR  , 0, 0, NULL },  /* cli_CurrentInput */
-    {   36,   72, SF_PTR  , 0, 0, NULL },  /* cli_CommandFile */
-    {   40,   80, SF_LONG , 0, 0, NULL },  /* cli_Interactive */
-    {   44,   84, SF_LONG , 0, 0, NULL },  /* cli_Background */
-    {   48,   88, SF_PTR  , 0, 0, NULL },  /* cli_CurrentOutput */
-    {   52,   96, SF_LONG , 0, 0, NULL },  /* cli_DefaultStack */
-    {   56,  104, SF_PTR  , 0, 0, NULL },  /* cli_StandardOutput */
-    {   60,  112, SF_PTR  , 0, 0, NULL },  /* cli_Module */
+    SHADOW_FIELD(   0, 4, CommandLineInterface, cli_Result2),
+    SHADOW_FIELD(   4, 4, CommandLineInterface, cli_SetName),
+    SHADOW_FIELD(   8, 4, CommandLineInterface, cli_CommandDir),
+    SHADOW_FIELD(  12, 4, CommandLineInterface, cli_ReturnCode),
+    SHADOW_FIELD(  16, 4, CommandLineInterface, cli_CommandName),
+    SHADOW_FIELD(  20, 4, CommandLineInterface, cli_FailLevel),
+    SHADOW_FIELD(  24, 4, CommandLineInterface, cli_Prompt),
+    SHADOW_FIELD(  28, 4, CommandLineInterface, cli_StandardInput),
+    SHADOW_FIELD(  32, 4, CommandLineInterface, cli_CurrentInput),
+    SHADOW_FIELD(  36, 4, CommandLineInterface, cli_CommandFile),
+    SHADOW_FIELD(  40, 4, CommandLineInterface, cli_Interactive),
+    SHADOW_FIELD(  44, 4, CommandLineInterface, cli_Background),
+    SHADOW_FIELD(  48, 4, CommandLineInterface, cli_CurrentOutput),
+    SHADOW_FIELD(  52, 4, CommandLineInterface, cli_DefaultStack),
+    SHADOW_FIELD(  56, 4, CommandLineInterface, cli_StandardOutput),
+    SHADOW_FIELD(  60, 4, CommandLineInterface, cli_Module),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* ConUnit: m68k=296B, aros=640B, 42 fields */
+/* ConUnit: m68k=296B, 42 fields */
 static const struct M68KFieldMap shadow_fields_ConUnit[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* ln_Succ */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* ln_Pred */
-    {    8,   16, SF_BYTE , 0, 0, NULL },  /* ln_Type */
-    {    9,   17, SF_BYTE , 0, 0, NULL },  /* ln_Pri */
-    {   10,   24, SF_PTR  , 0, 0, NULL },  /* ln_Name */
-    {   14,   32, SF_BYTE , 0, 0, NULL },  /* mp_Flags */
-    {   15,   33, SF_BYTE , 0, 0, NULL },  /* mp_SigBit */
-    {   16,   40, SF_PTR  , 0, 0, NULL },  /* mp_SigTask */
-    {   20,   48, SF_PTR  , 0, 0, NULL },  /* lh_Head */
-    {   24,   56, SF_PTR  , 0, 0, NULL },  /* lh_Tail */
-    {   28,   64, SF_PTR  , 0, 0, NULL },  /* lh_TailPred */
-    {   32,   72, SF_BYTE , 0, 0, NULL },  /* lh_Type */
-    {   33,   73, SF_BYTE , 0, 0, NULL },  /* l_pad */
-    {   34,  256, SF_PTR  , 0, 0, NULL },  /* cu_Window */
-    {   38,  264, SF_WORD , 0, 0, NULL },  /* cu_XCP */
-    {   40,  266, SF_WORD , 0, 0, NULL },  /* cu_YCP */
-    {   42,  268, SF_WORD , 0, 0, NULL },  /* cu_XMax */
-    {   44,  270, SF_WORD , 0, 0, NULL },  /* cu_YMax */
-    {   46,  272, SF_WORD , 0, 0, NULL },  /* cu_XRSize */
-    {   48,  274, SF_WORD , 0, 0, NULL },  /* cu_YRSize */
-    {   50,  276, SF_WORD , 0, 0, NULL },  /* cu_XROrigin */
-    {   52,  278, SF_WORD , 0, 0, NULL },  /* cu_YROrigin */
-    {   54,  280, SF_WORD , 0, 0, NULL },  /* cu_XRExtant */
-    {   56,  282, SF_WORD , 0, 0, NULL },  /* cu_YRExtant */
-    {   58,  284, SF_WORD , 0, 0, NULL },  /* cu_XMinShrink */
-    {   60,  286, SF_WORD , 0, 0, NULL },  /* cu_YMinShrink */
-    {   62,  288, SF_WORD , 0, 0, NULL },  /* cu_XCCP */
-    {   64,  290, SF_WORD , 0, 0, NULL },  /* cu_YCCP */
-    {  258,  520, SF_BYTE , 0, 0, NULL },  /* cu_Mask */
-    {  259,  521, SF_BYTE , 0, 0, NULL },  /* cu_FgPen */
-    {  260,  522, SF_BYTE , 0, 0, NULL },  /* cu_BgPen */
-    {  261,  523, SF_BYTE , 0, 0, NULL },  /* cu_AOLPen */
-    {  262,  524, SF_BYTE , 0, 0, NULL },  /* cu_DrawMode */
-    {  263,  525, SF_BYTE , 0, 0, NULL },  /* cu_Obsolete1 */
-    {  264,  528, SF_PTR  , 0, 0, NULL },  /* cu_Obsolete2 */
-    {  276,  544, SF_PTR  , 0, 0, NULL },  /* cu_Font */
-    {  280,  552, SF_BYTE , 0, 0, NULL },  /* cu_AlgoStyle */
-    {  281,  553, SF_BYTE , 0, 0, NULL },  /* cu_TxFlags */
-    {  282,  554, SF_WORD , 0, 0, NULL },  /* cu_TxHeight */
-    {  284,  556, SF_WORD , 0, 0, NULL },  /* cu_TxWidth */
-    {  286,  558, SF_WORD , 0, 0, NULL },  /* cu_TxBaseline */
-    {  288,  560, SF_WORD , 0, 0, NULL },  /* cu_TxSpacing */
+    SHADOW_FIELD(   0, 4, ConUnit, cu_MP.mp_Node.ln_Succ),
+    SHADOW_FIELD(   4, 4, ConUnit, cu_MP.mp_Node.ln_Pred),
+    SHADOW_FIELD(   8, 1, ConUnit, cu_MP.mp_Node.ln_Type),
+    SHADOW_FIELD(   9, 1, ConUnit, cu_MP.mp_Node.ln_Pri),
+    SHADOW_FIELD(  10, 4, ConUnit, cu_MP.mp_Node.ln_Name),
+    SHADOW_FIELD(  14, 1, ConUnit, cu_MP.mp_Flags),
+    SHADOW_FIELD(  15, 1, ConUnit, cu_MP.mp_SigBit),
+    SHADOW_FIELD(  16, 4, ConUnit, cu_MP.mp_SigTask),
+    SHADOW_FIELD(  20, 4, ConUnit, cu_MP.mp_MsgList.lh_Head),
+    SHADOW_FIELD(  24, 4, ConUnit, cu_MP.mp_MsgList.lh_Tail),
+    SHADOW_FIELD(  28, 4, ConUnit, cu_MP.mp_MsgList.lh_TailPred),
+    SHADOW_FIELD(  32, 1, ConUnit, cu_MP.mp_MsgList.lh_Type),
+    SHADOW_FIELD(  33, 1, ConUnit, cu_MP.mp_MsgList.l_pad),
+    SHADOW_FIELD(  34, 4, ConUnit, cu_Window),
+    SHADOW_FIELD(  38, 2, ConUnit, cu_XCP),
+    SHADOW_FIELD(  40, 2, ConUnit, cu_YCP),
+    SHADOW_FIELD(  42, 2, ConUnit, cu_XMax),
+    SHADOW_FIELD(  44, 2, ConUnit, cu_YMax),
+    SHADOW_FIELD(  46, 2, ConUnit, cu_XRSize),
+    SHADOW_FIELD(  48, 2, ConUnit, cu_YRSize),
+    SHADOW_FIELD(  50, 2, ConUnit, cu_XROrigin),
+    SHADOW_FIELD(  52, 2, ConUnit, cu_YROrigin),
+    SHADOW_FIELD(  54, 2, ConUnit, cu_XRExtant),
+    SHADOW_FIELD(  56, 2, ConUnit, cu_YRExtant),
+    SHADOW_FIELD(  58, 2, ConUnit, cu_XMinShrink),
+    SHADOW_FIELD(  60, 2, ConUnit, cu_YMinShrink),
+    SHADOW_FIELD(  62, 2, ConUnit, cu_XCCP),
+    SHADOW_FIELD(  64, 2, ConUnit, cu_YCCP),
+    SHADOW_FIELD( 258, 1, ConUnit, cu_Mask),
+    SHADOW_FIELD( 259, 1, ConUnit, cu_FgPen),
+    SHADOW_FIELD( 260, 1, ConUnit, cu_BgPen),
+    SHADOW_FIELD( 261, 1, ConUnit, cu_AOLPen),
+    SHADOW_FIELD( 262, 1, ConUnit, cu_DrawMode),
+    SHADOW_FIELD( 263, 1, ConUnit, cu_Obsolete1),
+    SHADOW_FIELD( 264, 4, ConUnit, cu_Obsolete2),
+    SHADOW_FIELD( 276, 4, ConUnit, cu_Font),
+    SHADOW_FIELD( 280, 1, ConUnit, cu_AlgoStyle),
+    SHADOW_FIELD( 281, 1, ConUnit, cu_TxFlags),
+    SHADOW_FIELD( 282, 2, ConUnit, cu_TxHeight),
+    SHADOW_FIELD( 284, 2, ConUnit, cu_TxWidth),
+    SHADOW_FIELD( 286, 2, ConUnit, cu_TxBaseline),
+    SHADOW_FIELD( 288, 2, ConUnit, cu_TxSpacing),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* Conductor: m68k=54B, aros=640B, 17 fields */
+/* Conductor: m68k=54B, 17 fields */
 static const struct M68KFieldMap shadow_fields_Conductor[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* ln_Succ */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* ln_Pred */
-    {    8,   16, SF_BYTE , 0, 0, NULL },  /* ln_Type */
-    {    9,   17, SF_BYTE , 0, 0, NULL },  /* ln_Pri */
-    {   10,   24, SF_PTR  , 0, 0, NULL },  /* ln_Name */
-    {   14,   32, SF_WORD , 0, 0, NULL },  /* cdt_Reserved0 */
-    {   16,   40, SF_PTR  , 0, 0, NULL },  /* mlh_Head */
-    {   20,   48, SF_PTR  , 0, 0, NULL },  /* mlh_Tail */
-    {   24,   56, SF_PTR  , 0, 0, NULL },  /* mlh_TailPred */
-    {   28,   64, SF_LONG , 0, 0, NULL },  /* cdt_ClockTime */
-    {   32,   68, SF_LONG , 0, 0, NULL },  /* cdt_StartTime */
-    {   36,   72, SF_LONG , 0, 0, NULL },  /* cdt_ExternalTime */
-    {   40,   76, SF_LONG , 0, 0, NULL },  /* cdt_MaxExternalTime */
-    {   44,   80, SF_LONG , 0, 0, NULL },  /* cdt_Metronome */
-    {   48,   84, SF_WORD , 0, 0, NULL },  /* cdt_Reserved1 */
-    {   50,   86, SF_WORD , 0, 0, NULL },  /* cdt_Flags */
-    {   52,   88, SF_BYTE , 0, 0, NULL },  /* cdt_State */
+    SHADOW_FIELD(   0, 4, Conductor, cdt_Link.ln_Succ),
+    SHADOW_FIELD(   4, 4, Conductor, cdt_Link.ln_Pred),
+    SHADOW_FIELD(   8, 1, Conductor, cdt_Link.ln_Type),
+    SHADOW_FIELD(   9, 1, Conductor, cdt_Link.ln_Pri),
+    SHADOW_FIELD(  10, 4, Conductor, cdt_Link.ln_Name),
+    SHADOW_FIELD(  14, 2, Conductor, cdt_Reserved0),
+    SHADOW_FIELD(  16, 4, Conductor, cdt_Players.mlh_Head),
+    SHADOW_FIELD(  20, 4, Conductor, cdt_Players.mlh_Tail),
+    SHADOW_FIELD(  24, 4, Conductor, cdt_Players.mlh_TailPred),
+    SHADOW_FIELD(  28, 4, Conductor, cdt_ClockTime),
+    SHADOW_FIELD(  32, 4, Conductor, cdt_StartTime),
+    SHADOW_FIELD(  36, 4, Conductor, cdt_ExternalTime),
+    SHADOW_FIELD(  40, 4, Conductor, cdt_MaxExternalTime),
+    SHADOW_FIELD(  44, 4, Conductor, cdt_Metronome),
+    SHADOW_FIELD(  48, 2, Conductor, cdt_Reserved1),
+    SHADOW_FIELD(  50, 2, Conductor, cdt_Flags),
+    SHADOW_FIELD(  52, 1, Conductor, cdt_State),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* ConfigDev: m68k=68B, aros=112B, 23 fields */
+/* ConfigDev: m68k=68B, 24 fields */
 static const struct M68KFieldMap shadow_fields_ConfigDev[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* ln_Succ */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* ln_Pred */
-    {    8,   16, SF_BYTE , 0, 0, NULL },  /* ln_Type */
-    {    9,   17, SF_BYTE , 0, 0, NULL },  /* ln_Pri */
-    {   10,   24, SF_PTR  , 0, 0, NULL },  /* ln_Name */
-    {   14,   32, SF_BYTE , 0, 0, NULL },  /* cd_Flags */
-    {   15,   33, SF_BYTE , 0, 0, NULL },  /* cd_Pad */
-    {   16,   40, SF_BYTE , 0, 0, NULL },  /* er_Type */
-    {   17,   41, SF_BYTE , 0, 0, NULL },  /* er_Product */
-    {   18,   42, SF_BYTE , 0, 0, NULL },  /* er_Flags */
-    {   19,   43, SF_BYTE , 0, 0, NULL },  /* er_Reserved03 */
-    {   20,   44, SF_WORD , 0, 0, NULL },  /* er_Manufacturer */
-    {   22,   48, SF_LONG , 0, 0, NULL },  /* er_SerialNumber */
-    {   26,   52, SF_WORD , 0, 0, NULL },  /* er_InitDiagVec */
-    {   28,   56, SF_BYTE , 0, 0, NULL },  /* er_Reserved0c */
-    {   29,   57, SF_BYTE , 0, 0, NULL },  /* er_Reserved0d */
-    {   30,   58, SF_BYTE , 0, 0, NULL },  /* er_Reserved0e */
-    {   31,   59, SF_BYTE , 0, 0, NULL },  /* er_Reserved0f */
-    {   32,   64, SF_PTR  , 0, 0, NULL },  /* cd_BoardAddr */
-    {   36,   72, SF_LONG , 0, 0, NULL },  /* cd_BoardSize */
-    {   40,   76, SF_WORD , 0, 0, NULL },  /* cd_SlotAddr */
-    {   42,   78, SF_WORD , 0, 0, NULL },  /* cd_SlotSize */
-    {   44,   80, SF_PTR  , 0, 0, NULL },  /* cd_Driver */
-    {   48,   88, SF_PTR  , 0, 0, NULL },  /* cd_NextCD */
+    SHADOW_FIELD(   0, 4, ConfigDev, cd_Node.ln_Succ),
+    SHADOW_FIELD(   4, 4, ConfigDev, cd_Node.ln_Pred),
+    SHADOW_FIELD(   8, 1, ConfigDev, cd_Node.ln_Type),
+    SHADOW_FIELD(   9, 1, ConfigDev, cd_Node.ln_Pri),
+    SHADOW_FIELD(  10, 4, ConfigDev, cd_Node.ln_Name),
+    SHADOW_FIELD(  14, 1, ConfigDev, cd_Flags),
+    SHADOW_FIELD(  15, 1, ConfigDev, cd_Pad),
+    SHADOW_FIELD(  16, 1, ConfigDev, cd_Rom.er_Type),
+    SHADOW_FIELD(  17, 1, ConfigDev, cd_Rom.er_Product),
+    SHADOW_FIELD(  18, 1, ConfigDev, cd_Rom.er_Flags),
+    SHADOW_FIELD(  19, 1, ConfigDev, cd_Rom.er_Reserved03),
+    SHADOW_FIELD(  20, 2, ConfigDev, cd_Rom.er_Manufacturer),
+    SHADOW_FIELD(  22, 4, ConfigDev, cd_Rom.er_SerialNumber),
+    SHADOW_FIELD(  26, 2, ConfigDev, cd_Rom.er_InitDiagVec),
+    SHADOW_FIELD(  28, 1, ConfigDev, cd_Rom.er_Reserved0c),
+    SHADOW_FIELD(  29, 1, ConfigDev, cd_Rom.er_Reserved0d),
+    SHADOW_FIELD(  30, 1, ConfigDev, cd_Rom.er_Reserved0e),
+    SHADOW_FIELD(  31, 1, ConfigDev, cd_Rom.er_Reserved0f),
+    SHADOW_FIELD(  32, 4, ConfigDev, cd_BoardAddr),
+    SHADOW_FIELD(  36, 4, ConfigDev, cd_BoardSize),
+    SHADOW_FIELD(  40, 2, ConfigDev, cd_SlotAddr),
+    SHADOW_FIELD(  42, 2, ConfigDev, cd_SlotSize),
+    SHADOW_FIELD(  44, 4, ConfigDev, cd_Driver),
+    SHADOW_FIELD(  48, 4, ConfigDev, cd_NextCD),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* ContextNode: m68k=24B, aros=32B, 6 fields */
+/* ContextNode: m68k=24B, 6 fields */
 static const struct M68KFieldMap shadow_fields_ContextNode[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* mln_Succ */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* mln_Pred */
-    {    8,   16, SF_LONG , 0, 0, NULL },  /* cn_ID */
-    {   12,   20, SF_LONG , 0, 0, NULL },  /* cn_Type */
-    {   16,   24, SF_LONG , 0, 0, NULL },  /* cn_Size */
-    {   20,   28, SF_LONG , 0, 0, NULL },  /* cn_Scan */
+    SHADOW_FIELD(   0, 4, ContextNode, cn_Node.mln_Succ),
+    SHADOW_FIELD(   4, 4, ContextNode, cn_Node.mln_Pred),
+    SHADOW_FIELD(   8, 4, ContextNode, cn_ID),
+    SHADOW_FIELD(  12, 4, ContextNode, cn_Type),
+    SHADOW_FIELD(  16, 4, ContextNode, cn_Size),
+    SHADOW_FIELD(  20, 4, ContextNode, cn_Scan),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* CopIns: m68k=6B, aros=16B, 1 fields */
+/* CopIns: m68k=6B, 1 fields */
 static const struct M68KFieldMap shadow_fields_CopIns[] = {
-    {    0,    0, SF_WORD , 0, 0, NULL },  /* OpCode */
+    SHADOW_FIELD(   0, 2, CopIns, OpCode),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* CopList: m68k=38B, aros=72B, 11 fields */
+/* CopList: m68k=38B, 11 fields */
 static const struct M68KFieldMap shadow_fields_CopList[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* Next */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* _CopList */
-    {    8,   16, SF_PTR  , 0, 0, NULL },  /* _ViewPort */
-    {   12,   24, SF_PTR  , 0, 0, NULL },  /* CopIns */
-    {   16,   32, SF_PTR  , 0, 0, NULL },  /* CopPtr */
-    {   20,   40, SF_PTR  , 0, 0, NULL },  /* CopLStart */
-    {   24,   48, SF_PTR  , 0, 0, NULL },  /* CopSStart */
-    {   28,   56, SF_WORD , 0, 0, NULL },  /* Count */
-    {   30,   58, SF_WORD , 0, 0, NULL },  /* MaxCount */
-    {   32,   60, SF_WORD , 0, 0, NULL },  /* DyOffset */
-    {   34,   62, SF_WORD , 0, 0, NULL },  /* SLRepeat */
+    SHADOW_FIELD(   0, 4, CopList, Next),
+    SHADOW_FIELD(   4, 4, CopList, _CopList),
+    SHADOW_FIELD(   8, 4, CopList, _ViewPort),
+    SHADOW_FIELD(  12, 4, CopList, CopIns),
+    SHADOW_FIELD(  16, 4, CopList, CopPtr),
+    SHADOW_FIELD(  20, 4, CopList, CopLStart),
+    SHADOW_FIELD(  24, 4, CopList, CopSStart),
+    SHADOW_FIELD(  28, 2, CopList, Count),
+    SHADOW_FIELD(  30, 2, CopList, MaxCount),
+    SHADOW_FIELD(  32, 2, CopList, DyOffset),
+    SHADOW_FIELD(  34, 2, CopList, SLRepeat),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* CopyBeginMsg: m68k=16B, aros=24B, 4 fields */
+/* CopyBeginMsg: m68k=16B, 4 fields */
 static const struct M68KFieldMap shadow_fields_CopyBeginMsg[] = {
-    {    0,    0, SF_LONG , 0, 0, NULL },  /* cbm_Length */
-    {    4,    4, SF_LONG , 0, 0, NULL },  /* cbm_Action */
-    {    8,    8, SF_PTR  , 0, 0, NULL },  /* cbm_SourceDrawer */
-    {   12,   16, SF_PTR  , 0, 0, NULL },  /* cbm_DestinationDrawer */
+    SHADOW_FIELD(   0, 4, CopyBeginMsg, cbm_Length),
+    SHADOW_FIELD(   4, 4, CopyBeginMsg, cbm_Action),
+    SHADOW_FIELD(   8, 4, CopyBeginMsg, cbm_SourceDrawer),
+    SHADOW_FIELD(  12, 4, CopyBeginMsg, cbm_DestinationDrawer),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* CopyDataMsg: m68k=32B, aros=48B, 4 fields */
+/* CopyDataMsg: m68k=32B, 8 fields */
 static const struct M68KFieldMap shadow_fields_CopyDataMsg[] = {
-    {    0,    0, SF_LONG , 0, 0, NULL },  /* cdm_Length */
-    {    4,    4, SF_LONG , 0, 0, NULL },  /* cdm_Action */
-    {    8,    8, SF_PTR  , 0, 0, NULL },  /* cdm_SourceLock */
-    {   12,   16, SF_PTR  , 0, 0, NULL },  /* cdm_SourceName */
-    {   16,   24, SF_PTR  , 0, 0, NULL },  /* cdm_DestinationLock */
-    {   20,   32, SF_PTR  , 0, 0, NULL },  /* cdm_DestinationName */
-    {   24,   40, SF_LONG , 0, 0, NULL },  /* cdm_DestinationX */
-    {   28,   44, SF_LONG , 0, 0, NULL },  /* cdm_DestinationY */
+    SHADOW_FIELD(   0, 4, CopyDataMsg, cdm_Length),
+    SHADOW_FIELD(   4, 4, CopyDataMsg, cdm_Action),
+    SHADOW_FIELD(   8, 4, CopyDataMsg, cdm_SourceLock),
+    SHADOW_FIELD(  12, 4, CopyDataMsg, cdm_SourceName),
+    SHADOW_FIELD(  16, 4, CopyDataMsg, cdm_DestinationLock),
+    SHADOW_FIELD(  20, 4, CopyDataMsg, cdm_DestinationName),
+    SHADOW_FIELD(  24, 4, CopyDataMsg, cdm_DestinationX),
+    SHADOW_FIELD(  28, 4, CopyDataMsg, cdm_DestinationY),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* CopyEndMsg: m68k=8B, aros=8B, 2 fields */
+/* CopyEndMsg: m68k=8B, 2 fields */
 static const struct M68KFieldMap shadow_fields_CopyEndMsg[] = {
-    {    0,    0, SF_LONG , 0, 0, NULL },  /* cem_Length */
-    {    4,    4, SF_LONG , 0, 0, NULL },  /* cem_Action */
+    SHADOW_FIELD(   0, 4, CopyEndMsg, cem_Length),
+    SHADOW_FIELD(   4, 4, CopyEndMsg, cem_Action),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* CurrentBinding: m68k=16B, aros=32B, 2 fields */
+/* CurrentBinding: m68k=16B, 3 fields */
 static const struct M68KFieldMap shadow_fields_CurrentBinding[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* cb_ConfigDev */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* cb_FileName */
-    {    8,   16, SF_PTR  , 0, 0, NULL },  /* cb_ProductString */
+    SHADOW_FIELD(   0, 4, CurrentBinding, cb_ConfigDev),
+    SHADOW_FIELD(   4, 4, CurrentBinding, cb_FileName),
+    SHADOW_FIELD(   8, 4, CurrentBinding, cb_ProductString),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* DBufInfo: m68k=84B, aros=184B, 19 fields */
+/* DBufInfo: m68k=84B, 19 fields */
 static const struct M68KFieldMap shadow_fields_DBufInfo[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* dbi_Link1 */
-    {    4,    8, SF_LONG , 0, 0, NULL },  /* dbi_Count1 */
-    {    8,   16, SF_PTR  , 0, 0, NULL },  /* ln_Succ */
-    {   12,   24, SF_PTR  , 0, 0, NULL },  /* ln_Pred */
-    {   16,   32, SF_BYTE , 0, 0, NULL },  /* ln_Type */
-    {   17,   33, SF_BYTE , 0, 0, NULL },  /* ln_Pri */
-    {   18,   40, SF_PTR  , 0, 0, NULL },  /* ln_Name */
-    {   22,   48, SF_PTR  , 0, 0, NULL },  /* mn_ReplyPort */
-    {   26,   56, SF_WORD , 0, 0, NULL },  /* mn_Length */
-    {   28,   64, SF_PTR  , 0, 0, NULL },  /* dbi_UserData1 */
-    {   32,   72, SF_PTR  , 0, 0, NULL },  /* dbi_Link2 */
-    {   36,   80, SF_LONG , 0, 0, NULL },  /* dbi_Count2 */
-    {   60,  136, SF_PTR  , 0, 0, NULL },  /* dbi_UserData2 */
-    {   64,  144, SF_LONG , 0, 0, NULL },  /* dbi_MatchLong */
-    {   68,  152, SF_PTR  , 0, 0, NULL },  /* dbi_CopPtr1 */
-    {   72,  160, SF_PTR  , 0, 0, NULL },  /* dbi_CopPtr2 */
-    {   76,  168, SF_PTR  , 0, 0, NULL },  /* dbi_CopPtr3 */
-    {   80,  176, SF_WORD , 0, 0, NULL },  /* dbi_BeamPos1 */
-    {   82,  178, SF_WORD , 0, 0, NULL },  /* dbi_BeamPos2 */
+    SHADOW_FIELD(   0, 4, DBufInfo, dbi_Link1),
+    SHADOW_FIELD(   4, 4, DBufInfo, dbi_Count1),
+    SHADOW_FIELD(   8, 4, DBufInfo, dbi_SafeMessage.mn_Node.ln_Succ),
+    SHADOW_FIELD(  12, 4, DBufInfo, dbi_SafeMessage.mn_Node.ln_Pred),
+    SHADOW_FIELD(  16, 1, DBufInfo, dbi_SafeMessage.mn_Node.ln_Type),
+    SHADOW_FIELD(  17, 1, DBufInfo, dbi_SafeMessage.mn_Node.ln_Pri),
+    SHADOW_FIELD(  18, 4, DBufInfo, dbi_SafeMessage.mn_Node.ln_Name),
+    SHADOW_FIELD(  22, 4, DBufInfo, dbi_SafeMessage.mn_ReplyPort),
+    SHADOW_FIELD(  26, 2, DBufInfo, dbi_SafeMessage.mn_Length),
+    SHADOW_FIELD(  28, 4, DBufInfo, dbi_UserData1),
+    SHADOW_FIELD(  32, 4, DBufInfo, dbi_Link2),
+    SHADOW_FIELD(  36, 4, DBufInfo, dbi_Count2),
+    SHADOW_FIELD(  60, 4, DBufInfo, dbi_UserData2),
+    SHADOW_FIELD(  64, 4, DBufInfo, dbi_MatchLong),
+    SHADOW_FIELD(  68, 4, DBufInfo, dbi_CopPtr1),
+    SHADOW_FIELD(  72, 4, DBufInfo, dbi_CopPtr2),
+    SHADOW_FIELD(  76, 4, DBufInfo, dbi_CopPtr3),
+    SHADOW_FIELD(  80, 2, DBufInfo, dbi_BeamPos1),
+    SHADOW_FIELD(  82, 2, DBufInfo, dbi_BeamPos2),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* DBufPacket: m68k=12B, aros=24B, 2 fields */
+/* DBufPacket: m68k=12B, 4 fields */
 static const struct M68KFieldMap shadow_fields_DBufPacket[] = {
-    {    0,    0, SF_WORD , 0, 0, NULL },  /* BufY */
-    {    2,    2, SF_WORD , 0, 0, NULL },  /* BufX */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* BufPath */
-    {    8,   16, SF_PTR  , 0, 0, NULL },  /* BufBuffer */
+    SHADOW_FIELD(   0, 2, DBufPacket, BufY),
+    SHADOW_FIELD(   2, 2, DBufPacket, BufX),
+    SHADOW_FIELD(   4, 4, DBufPacket, BufPath),
+    SHADOW_FIELD(   8, 4, DBufPacket, BufBuffer),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* DRPSourceMsg: m68k=20B, aros=24B, 5 fields */
+/* DRPSourceMsg: m68k=20B, 5 fields */
 static const struct M68KFieldMap shadow_fields_DRPSourceMsg[] = {
-    {    0,    0, SF_LONG , 0, 0, NULL },  /* x */
-    {    4,    4, SF_LONG , 0, 0, NULL },  /* y */
-    {    8,    8, SF_LONG , 0, 0, NULL },  /* width */
-    {   12,   12, SF_LONG , 0, 0, NULL },  /* height */
-    {   16,   16, SF_PTR  , 0, 0, NULL },  /* buf */
+    SHADOW_FIELD(   0, 4, DRPSourceMsg, x),
+    SHADOW_FIELD(   4, 4, DRPSourceMsg, y),
+    SHADOW_FIELD(   8, 4, DRPSourceMsg, width),
+    SHADOW_FIELD(  12, 4, DRPSourceMsg, height),
+    SHADOW_FIELD(  16, 4, DRPSourceMsg, buf),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* DTHookContext: m68k=40B, aros=80B, 10 fields */
+/* DTHookContext: m68k=40B, 10 fields */
 static const struct M68KFieldMap shadow_fields_DTHookContext[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* dthc_SysBase */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* dthc_DOSBase */
-    {    8,   16, SF_PTR  , 0, 0, NULL },  /* dthc_IFFParseBase */
-    {   12,   24, SF_PTR  , 0, 0, NULL },  /* dthc_UtilityBase */
-    {   16,   32, SF_PTR  , 0, 0, NULL },  /* dthc_Lock */
-    {   20,   40, SF_PTR  , 0, 0, NULL },  /* dthc_FIB */
-    {   24,   48, SF_PTR  , 0, 0, NULL },  /* dthc_FileHandle */
-    {   28,   56, SF_PTR  , 0, 0, NULL },  /* dthc_IFF */
-    {   32,   64, SF_PTR  , 0, 0, NULL },  /* dthc_Buffer */
-    {   36,   72, SF_LONG , 0, 0, NULL },  /* dthc_BufferLength */
+    SHADOW_FIELD(   0, 4, DTHookContext, dthc_SysBase),
+    SHADOW_FIELD(   4, 4, DTHookContext, dthc_DOSBase),
+    SHADOW_FIELD(   8, 4, DTHookContext, dthc_IFFParseBase),
+    SHADOW_FIELD(  12, 4, DTHookContext, dthc_UtilityBase),
+    SHADOW_FIELD(  16, 4, DTHookContext, dthc_Lock),
+    SHADOW_FIELD(  20, 4, DTHookContext, dthc_FIB),
+    SHADOW_FIELD(  24, 4, DTHookContext, dthc_FileHandle),
+    SHADOW_FIELD(  28, 4, DTHookContext, dthc_IFF),
+    SHADOW_FIELD(  32, 4, DTHookContext, dthc_Buffer),
+    SHADOW_FIELD(  36, 4, DTHookContext, dthc_BufferLength),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* DTMethod: m68k=12B, aros=24B, 3 fields */
+/* DTMethod: m68k=12B, 3 fields */
 static const struct M68KFieldMap shadow_fields_DTMethod[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* dtm_Label */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* dtm_Command */
-    {    8,   16, SF_LONG , 0, 0, NULL },  /* dtm_Method */
+    SHADOW_FIELD(   0, 4, DTMethod, dtm_Label),
+    SHADOW_FIELD(   4, 4, DTMethod, dtm_Command),
+    SHADOW_FIELD(   8, 4, DTMethod, dtm_Method),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* DTSpecialInfo: m68k=90B, aros=640B, 25 fields */
+/* DTSpecialInfo: m68k=90B, 25 fields */
 static const struct M68KFieldMap shadow_fields_DTSpecialInfo[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* ln_Succ */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* ln_Pred */
-    {    8,   16, SF_BYTE , 0, 0, NULL },  /* ln_Type */
-    {    9,   17, SF_BYTE , 0, 0, NULL },  /* ln_Pri */
-    {   10,   24, SF_PTR  , 0, 0, NULL },  /* ln_Name */
-    {   14,   32, SF_WORD , 0, 0, NULL },  /* ss_NestCount */
-    {   16,   40, SF_PTR  , 0, 0, NULL },  /* mlh_Head */
-    {   20,   48, SF_PTR  , 0, 0, NULL },  /* mlh_Tail */
-    {   24,   56, SF_PTR  , 0, 0, NULL },  /* mlh_TailPred */
-    {   28,  128, SF_PTR  , 0, 0, NULL },  /* mln_Succ */
-    {   32,  136, SF_PTR  , 0, 0, NULL },  /* mln_Pred */
-    {   36,  144, SF_PTR  , 0, 0, NULL },  /* sr_Waiter */
-    {   40,  384, SF_PTR  , 0, 0, NULL },  /* ss_Owner */
-    {   44,  392, SF_WORD , 0, 0, NULL },  /* ss_QueueCount */
-    {   46,  512, SF_LONG , 0, 0, NULL },  /* si_Flags */
-    {   50,  516, SF_LONG , 0, 0, NULL },  /* si_TopVert */
-    {   54,  520, SF_LONG , 0, 0, NULL },  /* si_VisVert */
-    {   58,  524, SF_LONG , 0, 0, NULL },  /* si_TotVert */
-    {   62,  528, SF_LONG , 0, 0, NULL },  /* si_OTopVert */
-    {   66,  532, SF_LONG , 0, 0, NULL },  /* si_VertUnit */
-    {   70,  536, SF_LONG , 0, 0, NULL },  /* si_TopHoriz */
-    {   74,  540, SF_LONG , 0, 0, NULL },  /* si_VisHoriz */
-    {   78,  544, SF_LONG , 0, 0, NULL },  /* si_TotHoriz */
-    {   82,  548, SF_LONG , 0, 0, NULL },  /* si_OTopHoriz */
-    {   86,  552, SF_LONG , 0, 0, NULL },  /* si_HorizUnit */
+    SHADOW_FIELD(   0, 4, DTSpecialInfo, si_Lock.ss_Link.ln_Succ),
+    SHADOW_FIELD(   4, 4, DTSpecialInfo, si_Lock.ss_Link.ln_Pred),
+    SHADOW_FIELD(   8, 1, DTSpecialInfo, si_Lock.ss_Link.ln_Type),
+    SHADOW_FIELD(   9, 1, DTSpecialInfo, si_Lock.ss_Link.ln_Pri),
+    SHADOW_FIELD(  10, 4, DTSpecialInfo, si_Lock.ss_Link.ln_Name),
+    SHADOW_FIELD(  14, 2, DTSpecialInfo, si_Lock.ss_NestCount),
+    SHADOW_FIELD(  16, 4, DTSpecialInfo, si_Lock.ss_WaitQueue.mlh_Head),
+    SHADOW_FIELD(  20, 4, DTSpecialInfo, si_Lock.ss_WaitQueue.mlh_Tail),
+    SHADOW_FIELD(  24, 4, DTSpecialInfo, si_Lock.ss_WaitQueue.mlh_TailPred),
+    SHADOW_FIELD(  28, 4, DTSpecialInfo, si_Lock.ss_MultipleLink.sr_Link.mln_Succ),
+    SHADOW_FIELD(  32, 4, DTSpecialInfo, si_Lock.ss_MultipleLink.sr_Link.mln_Pred),
+    SHADOW_FIELD(  36, 4, DTSpecialInfo, si_Lock.ss_MultipleLink.sr_Waiter),
+    SHADOW_FIELD(  40, 4, DTSpecialInfo, si_Lock.ss_Owner),
+    SHADOW_FIELD(  44, 2, DTSpecialInfo, si_Lock.ss_QueueCount),
+    SHADOW_FIELD(  46, 4, DTSpecialInfo, si_Flags),
+    SHADOW_FIELD(  50, 4, DTSpecialInfo, si_TopVert),
+    SHADOW_FIELD(  54, 4, DTSpecialInfo, si_VisVert),
+    SHADOW_FIELD(  58, 4, DTSpecialInfo, si_TotVert),
+    SHADOW_FIELD(  62, 4, DTSpecialInfo, si_OTopVert),
+    SHADOW_FIELD(  66, 4, DTSpecialInfo, si_VertUnit),
+    SHADOW_FIELD(  70, 4, DTSpecialInfo, si_TopHoriz),
+    SHADOW_FIELD(  74, 4, DTSpecialInfo, si_VisHoriz),
+    SHADOW_FIELD(  78, 4, DTSpecialInfo, si_TotHoriz),
+    SHADOW_FIELD(  82, 4, DTSpecialInfo, si_OTopHoriz),
+    SHADOW_FIELD(  86, 4, DTSpecialInfo, si_HorizUnit),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* DataType: m68k=58B, aros=128B, 14 fields */
+/* DataType: m68k=58B, 14 fields */
 static const struct M68KFieldMap shadow_fields_DataType[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* ln_Succ */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* ln_Pred */
-    {    8,   16, SF_BYTE , 0, 0, NULL },  /* ln_Type */
-    {    9,   17, SF_BYTE , 0, 0, NULL },  /* ln_Pri */
-    {   10,   24, SF_PTR  , 0, 0, NULL },  /* ln_Name */
-    {   28,   64, SF_PTR  , 0, 0, NULL },  /* dtn_Header */
-    {   32,   72, SF_PTR  , 0, 0, NULL },  /* lh_Head */
-    {   36,   80, SF_PTR  , 0, 0, NULL },  /* lh_Tail */
-    {   40,   88, SF_PTR  , 0, 0, NULL },  /* lh_TailPred */
-    {   44,   96, SF_BYTE , 0, 0, NULL },  /* lh_Type */
-    {   45,   97, SF_BYTE , 0, 0, NULL },  /* l_pad */
-    {   46,  104, SF_PTR  , 0, 0, NULL },  /* dtn_FunctionName */
-    {   50,  112, SF_PTR  , 0, 0, NULL },  /* dtn_AttrList */
-    {   54,  120, SF_LONG , 0, 0, NULL },  /* dtn_Length */
+    SHADOW_FIELD(   0, 4, DataType, dtn_Node1.ln_Succ),
+    SHADOW_FIELD(   4, 4, DataType, dtn_Node1.ln_Pred),
+    SHADOW_FIELD(   8, 1, DataType, dtn_Node1.ln_Type),
+    SHADOW_FIELD(   9, 1, DataType, dtn_Node1.ln_Pri),
+    SHADOW_FIELD(  10, 4, DataType, dtn_Node1.ln_Name),
+    SHADOW_FIELD(  28, 4, DataType, dtn_Header),
+    SHADOW_FIELD(  32, 4, DataType, dtn_ToolList.lh_Head),
+    SHADOW_FIELD(  36, 4, DataType, dtn_ToolList.lh_Tail),
+    SHADOW_FIELD(  40, 4, DataType, dtn_ToolList.lh_TailPred),
+    SHADOW_FIELD(  44, 1, DataType, dtn_ToolList.lh_Type),
+    SHADOW_FIELD(  45, 1, DataType, dtn_ToolList.l_pad),
+    SHADOW_FIELD(  46, 4, DataType, dtn_FunctionName),
+    SHADOW_FIELD(  50, 4, DataType, dtn_AttrList),
+    SHADOW_FIELD(  54, 4, DataType, dtn_Length),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* DataTypeHeader: m68k=32B, aros=48B, 10 fields */
+/* DataTypeHeader: m68k=32B, 10 fields */
 static const struct M68KFieldMap shadow_fields_DataTypeHeader[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* dth_Name */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* dth_BaseName */
-    {    8,   16, SF_PTR  , 0, 0, NULL },  /* dth_Pattern */
-    {   12,   24, SF_PTR  , 0, 0, NULL },  /* dth_Mask */
-    {   16,   32, SF_LONG , 0, 0, NULL },  /* dth_GroupID */
-    {   20,   36, SF_LONG , 0, 0, NULL },  /* dth_ID */
-    {   24,   40, SF_WORD , 0, 0, NULL },  /* dth_MaskLen */
-    {   26,   42, SF_WORD , 0, 0, NULL },  /* dth_Pad */
-    {   28,   44, SF_WORD , 0, 0, NULL },  /* dth_Flags */
-    {   30,   46, SF_WORD , 0, 0, NULL },  /* dth_Priority */
+    SHADOW_FIELD(   0, 4, DataTypeHeader, dth_Name),
+    SHADOW_FIELD(   4, 4, DataTypeHeader, dth_BaseName),
+    SHADOW_FIELD(   8, 4, DataTypeHeader, dth_Pattern),
+    SHADOW_FIELD(  12, 4, DataTypeHeader, dth_Mask),
+    SHADOW_FIELD(  16, 4, DataTypeHeader, dth_GroupID),
+    SHADOW_FIELD(  20, 4, DataTypeHeader, dth_ID),
+    SHADOW_FIELD(  24, 2, DataTypeHeader, dth_MaskLen),
+    SHADOW_FIELD(  26, 2, DataTypeHeader, dth_Pad),
+    SHADOW_FIELD(  28, 2, DataTypeHeader, dth_Flags),
+    SHADOW_FIELD(  30, 2, DataTypeHeader, dth_Priority),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* DateStamp: m68k=12B, aros=12B, 3 fields */
+/* DateStamp: m68k=12B, 3 fields */
 static const struct M68KFieldMap shadow_fields_DateStamp[] = {
-    {    0,    0, SF_LONG , 0, 0, NULL },  /* ds_Days */
-    {    4,    4, SF_LONG , 0, 0, NULL },  /* ds_Minute */
-    {    8,    8, SF_LONG , 0, 0, NULL },  /* ds_Tick */
+    SHADOW_FIELD(   0, 4, DateStamp, ds_Days),
+    SHADOW_FIELD(   4, 4, DateStamp, ds_Minute),
+    SHADOW_FIELD(   8, 4, DateStamp, ds_Tick),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* DateTime: m68k=26B, aros=40B, 8 fields */
+/* DateTime: m68k=26B, 8 fields */
 static const struct M68KFieldMap shadow_fields_DateTime[] = {
-    {    0,    0, SF_LONG , 0, 0, NULL },  /* ds_Days */
-    {    4,    4, SF_LONG , 0, 0, NULL },  /* ds_Minute */
-    {    8,    8, SF_LONG , 0, 0, NULL },  /* ds_Tick */
-    {   12,   12, SF_BYTE , 0, 0, NULL },  /* dat_Format */
-    {   13,   13, SF_BYTE , 0, 0, NULL },  /* dat_Flags */
-    {   14,   16, SF_PTR  , 0, 0, NULL },  /* dat_StrDay */
-    {   18,   24, SF_PTR  , 0, 0, NULL },  /* dat_StrDate */
-    {   22,   32, SF_PTR  , 0, 0, NULL },  /* dat_StrTime */
+    SHADOW_FIELD(   0, 4, DateTime, dat_Stamp.ds_Days),
+    SHADOW_FIELD(   4, 4, DateTime, dat_Stamp.ds_Minute),
+    SHADOW_FIELD(   8, 4, DateTime, dat_Stamp.ds_Tick),
+    SHADOW_FIELD(  12, 1, DateTime, dat_Format),
+    SHADOW_FIELD(  13, 1, DateTime, dat_Flags),
+    SHADOW_FIELD(  14, 4, DateTime, dat_StrDay),
+    SHADOW_FIELD(  18, 4, DateTime, dat_StrDate),
+    SHADOW_FIELD(  22, 4, DateTime, dat_StrTime),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* DeleteBeginMsg: m68k=8B, aros=8B, 1 fields */
+/* DeleteBeginMsg: m68k=8B, 2 fields */
 static const struct M68KFieldMap shadow_fields_DeleteBeginMsg[] = {
-    {    0,    0, SF_LONG , 0, 0, NULL },  /* dbm_Length */
-    {    4,    4, SF_LONG , 0, 0, NULL },  /* dbm_Action */
+    SHADOW_FIELD(   0, 4, DeleteBeginMsg, dbm_Length),
+    SHADOW_FIELD(   4, 4, DeleteBeginMsg, dbm_Action),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* DeleteDataMsg: m68k=16B, aros=24B, 1 fields */
+/* DeleteDataMsg: m68k=16B, 4 fields */
 static const struct M68KFieldMap shadow_fields_DeleteDataMsg[] = {
-    {    0,    0, SF_LONG , 0, 0, NULL },  /* ddm_Length */
-    {    4,    4, SF_LONG , 0, 0, NULL },  /* ddm_Action */
-    {    8,    8, SF_PTR  , 0, 0, NULL },  /* ddm_Lock */
-    {   12,   16, SF_PTR  , 0, 0, NULL },  /* ddm_Name */
+    SHADOW_FIELD(   0, 4, DeleteDataMsg, ddm_Length),
+    SHADOW_FIELD(   4, 4, DeleteDataMsg, ddm_Action),
+    SHADOW_FIELD(   8, 4, DeleteDataMsg, ddm_Lock),
+    SHADOW_FIELD(  12, 4, DeleteDataMsg, ddm_Name),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* DeleteEndMsg: m68k=8B, aros=8B, 2 fields */
+/* DeleteEndMsg: m68k=8B, 2 fields */
 static const struct M68KFieldMap shadow_fields_DeleteEndMsg[] = {
-    {    0,    0, SF_LONG , 0, 0, NULL },  /* dem_Length */
-    {    4,    4, SF_LONG , 0, 0, NULL },  /* dem_Action */
+    SHADOW_FIELD(   0, 4, DeleteEndMsg, dem_Length),
+    SHADOW_FIELD(   4, 4, DeleteEndMsg, dem_Action),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* DevInfo: m68k=44B, aros=80B, 11 fields */
+/* DevInfo: m68k=44B, 11 fields */
 static const struct M68KFieldMap shadow_fields_DevInfo[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* dvi_Next */
-    {    4,    8, SF_LONG , 0, 0, NULL },  /* dvi_Type */
-    {    8,   16, SF_PTR  , 0, 0, NULL },  /* dvi_Task */
-    {   12,   24, SF_PTR  , 0, 0, NULL },  /* dvi_Lock */
-    {   16,   32, SF_PTR  , 0, 0, NULL },  /* dvi_Handler */
-    {   20,   40, SF_LONG , 0, 0, NULL },  /* dvi_StackSize */
-    {   24,   44, SF_LONG , 0, 0, NULL },  /* dvi_Priority */
-    {   28,   48, SF_PTR  , 0, 0, NULL },  /* dvi_Startup */
-    {   32,   56, SF_PTR  , 0, 0, NULL },  /* dvi_SegList */
-    {   36,   64, SF_PTR  , 0, 0, NULL },  /* dvi_GlobVec */
-    {   40,   72, SF_PTR  , 0, 0, NULL },  /* dvi_Name */
+    SHADOW_FIELD(   0, 4, DevInfo, dvi_Next),
+    SHADOW_FIELD(   4, 4, DevInfo, dvi_Type),
+    SHADOW_FIELD(   8, 4, DevInfo, dvi_Task),
+    SHADOW_FIELD(  12, 4, DevInfo, dvi_Lock),
+    SHADOW_FIELD(  16, 4, DevInfo, dvi_Handler),
+    SHADOW_FIELD(  20, 4, DevInfo, dvi_StackSize),
+    SHADOW_FIELD(  24, 4, DevInfo, dvi_Priority),
+    SHADOW_FIELD(  28, 4, DevInfo, dvi_Startup),
+    SHADOW_FIELD(  32, 4, DevInfo, dvi_SegList),
+    SHADOW_FIELD(  36, 4, DevInfo, dvi_GlobVec),
+    SHADOW_FIELD(  40, 4, DevInfo, dvi_Name),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* DevProc: m68k=16B, aros=32B, 4 fields */
+/* DevProc: m68k=16B, 4 fields */
 static const struct M68KFieldMap shadow_fields_DevProc[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* dvp_Port */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* dvp_Lock */
-    {    8,   16, SF_LONG , 0, 0, NULL },  /* dvp_Flags */
-    {   12,   24, SF_PTR  , 0, 0, NULL },  /* dvp_DevNode */
+    SHADOW_FIELD(   0, 4, DevProc, dvp_Port),
+    SHADOW_FIELD(   4, 4, DevProc, dvp_Lock),
+    SHADOW_FIELD(   8, 4, DevProc, dvp_Flags),
+    SHADOW_FIELD(  12, 4, DevProc, dvp_DevNode),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* Device: m68k=34B, aros=64B, 14 fields */
+/* Device: m68k=34B, 14 fields */
 static const struct M68KFieldMap shadow_fields_Device[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* ln_Succ */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* ln_Pred */
-    {    8,   16, SF_BYTE , 0, 0, NULL },  /* ln_Type */
-    {    9,   17, SF_BYTE , 0, 0, NULL },  /* ln_Pri */
-    {   10,   24, SF_PTR  , 0, 0, NULL },  /* ln_Name */
-    {   14,   32, SF_BYTE , 0, 0, NULL },  /* lib_Flags */
-    {   15,   33, SF_BYTE , 0, 0, NULL },  /* lib_pad */
-    {   16,   34, SF_WORD , 0, 0, NULL },  /* lib_NegSize */
-    {   18,   36, SF_WORD , 0, 0, NULL },  /* lib_PosSize */
-    {   20,   38, SF_WORD , 0, 0, NULL },  /* lib_Version */
-    {   22,   40, SF_WORD , 0, 0, NULL },  /* lib_Revision */
-    {   24,   48, SF_PTR  , 0, 0, NULL },  /* lib_IdString */
-    {   28,   56, SF_LONG , 0, 0, NULL },  /* lib_Sum */
-    {   32,   60, SF_WORD , 0, 0, NULL },  /* lib_OpenCnt */
+    SHADOW_FIELD(   0, 4, Device, dd_Library.lib_Node.ln_Succ),
+    SHADOW_FIELD(   4, 4, Device, dd_Library.lib_Node.ln_Pred),
+    SHADOW_FIELD(   8, 1, Device, dd_Library.lib_Node.ln_Type),
+    SHADOW_FIELD(   9, 1, Device, dd_Library.lib_Node.ln_Pri),
+    SHADOW_FIELD(  10, 4, Device, dd_Library.lib_Node.ln_Name),
+    SHADOW_FIELD(  14, 1, Device, dd_Library.lib_Flags),
+    SHADOW_FIELD(  15, 1, Device, dd_Library.lib_pad),
+    SHADOW_FIELD(  16, 2, Device, dd_Library.lib_NegSize),
+    SHADOW_FIELD(  18, 2, Device, dd_Library.lib_PosSize),
+    SHADOW_FIELD(  20, 2, Device, dd_Library.lib_Version),
+    SHADOW_FIELD(  22, 2, Device, dd_Library.lib_Revision),
+    SHADOW_FIELD(  24, 4, Device, dd_Library.lib_IdString),
+    SHADOW_FIELD(  28, 4, Device, dd_Library.lib_Sum),
+    SHADOW_FIELD(  32, 2, Device, dd_Library.lib_OpenCnt),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* DeviceData: m68k=52B, aros=104B, 19 fields */
+/* DeviceData: m68k=52B, 19 fields */
 static const struct M68KFieldMap shadow_fields_DeviceData[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* ln_Succ */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* ln_Pred */
-    {    8,   16, SF_BYTE , 0, 0, NULL },  /* ln_Type */
-    {    9,   17, SF_BYTE , 0, 0, NULL },  /* ln_Pri */
-    {   10,   24, SF_PTR  , 0, 0, NULL },  /* ln_Name */
-    {   14,   32, SF_BYTE , 0, 0, NULL },  /* lib_Flags */
-    {   15,   33, SF_BYTE , 0, 0, NULL },  /* lib_pad */
-    {   16,   34, SF_WORD , 0, 0, NULL },  /* lib_NegSize */
-    {   18,   36, SF_WORD , 0, 0, NULL },  /* lib_PosSize */
-    {   20,   38, SF_WORD , 0, 0, NULL },  /* lib_Version */
-    {   22,   40, SF_WORD , 0, 0, NULL },  /* lib_Revision */
-    {   24,   48, SF_PTR  , 0, 0, NULL },  /* lib_IdString */
-    {   28,   56, SF_LONG , 0, 0, NULL },  /* lib_Sum */
-    {   32,   60, SF_WORD , 0, 0, NULL },  /* lib_OpenCnt */
-    {   34,   64, SF_PTR  , 0, 0, NULL },  /* dd_Segment */
-    {   38,   72, SF_PTR  , 0, 0, NULL },  /* dd_ExecBase */
-    {   42,   80, SF_PTR  , 0, 0, NULL },  /* dd_CmdVectors */
-    {   46,   88, SF_PTR  , 0, 0, NULL },  /* dd_CmdBytes */
-    {   50,   96, SF_WORD , 0, 0, NULL },  /* dd_NumCommands */
+    SHADOW_FIELD(   0, 4, DeviceData, dd_Device.lib_Node.ln_Succ),
+    SHADOW_FIELD(   4, 4, DeviceData, dd_Device.lib_Node.ln_Pred),
+    SHADOW_FIELD(   8, 1, DeviceData, dd_Device.lib_Node.ln_Type),
+    SHADOW_FIELD(   9, 1, DeviceData, dd_Device.lib_Node.ln_Pri),
+    SHADOW_FIELD(  10, 4, DeviceData, dd_Device.lib_Node.ln_Name),
+    SHADOW_FIELD(  14, 1, DeviceData, dd_Device.lib_Flags),
+    SHADOW_FIELD(  15, 1, DeviceData, dd_Device.lib_pad),
+    SHADOW_FIELD(  16, 2, DeviceData, dd_Device.lib_NegSize),
+    SHADOW_FIELD(  18, 2, DeviceData, dd_Device.lib_PosSize),
+    SHADOW_FIELD(  20, 2, DeviceData, dd_Device.lib_Version),
+    SHADOW_FIELD(  22, 2, DeviceData, dd_Device.lib_Revision),
+    SHADOW_FIELD(  24, 4, DeviceData, dd_Device.lib_IdString),
+    SHADOW_FIELD(  28, 4, DeviceData, dd_Device.lib_Sum),
+    SHADOW_FIELD(  32, 2, DeviceData, dd_Device.lib_OpenCnt),
+    SHADOW_FIELD(  34, 4, DeviceData, dd_Segment),
+    SHADOW_FIELD(  38, 4, DeviceData, dd_ExecBase),
+    SHADOW_FIELD(  42, 4, DeviceData, dd_CmdVectors),
+    SHADOW_FIELD(  46, 4, DeviceData, dd_CmdBytes),
+    SHADOW_FIELD(  50, 2, DeviceData, dd_NumCommands),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* DeviceList: m68k=44B, aros=80B, 10 fields */
+/* DeviceList: m68k=44B, 11 fields */
 static const struct M68KFieldMap shadow_fields_DeviceList[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* dl_Next */
-    {    4,    8, SF_LONG , 0, 0, NULL },  /* dl_Type */
-    {    8,   16, SF_PTR  , 0, 0, NULL },  /* dl_Task */
-    {   12,   24, SF_PTR  , 0, 0, NULL },  /* dl_Lock */
-    {   16,   32, SF_LONG , 0, 0, NULL },  /* ds_Days */
-    {   20,   36, SF_LONG , 0, 0, NULL },  /* ds_Minute */
-    {   24,   40, SF_LONG , 0, 0, NULL },  /* ds_Tick */
-    {   28,   48, SF_PTR  , 0, 0, NULL },  /* dl_LockList */
-    {   32,   56, SF_LONG , 0, 0, NULL },  /* dl_DiskType */
-    {   36,   64, SF_PTR  , 0, 0, NULL },  /* dl_unused */
-    {   40,   72, SF_PTR  , 0, 0, NULL },  /* dl_Name */
+    SHADOW_FIELD(   0, 4, DeviceList, dl_Next),
+    SHADOW_FIELD(   4, 4, DeviceList, dl_Type),
+    SHADOW_FIELD(   8, 4, DeviceList, dl_Task),
+    SHADOW_FIELD(  12, 4, DeviceList, dl_Lock),
+    SHADOW_FIELD(  16, 4, DeviceList, dl_VolumeDate.ds_Days),
+    SHADOW_FIELD(  20, 4, DeviceList, dl_VolumeDate.ds_Minute),
+    SHADOW_FIELD(  24, 4, DeviceList, dl_VolumeDate.ds_Tick),
+    SHADOW_FIELD(  28, 4, DeviceList, dl_LockList),
+    SHADOW_FIELD(  32, 4, DeviceList, dl_DiskType),
+    SHADOW_FIELD(  36, 4, DeviceList, dl_unused),
+    SHADOW_FIELD(  40, 4, DeviceList, dl_Name),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* DeviceNode: m68k=44B, aros=80B, 8 fields */
+/* DeviceNode: m68k=44B, 11 fields */
 static const struct M68KFieldMap shadow_fields_DeviceNode[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* dn_Next */
-    {    4,    8, SF_LONG , 0, 0, NULL },  /* dn_Type */
-    {    8,   16, SF_PTR  , 0, 0, NULL },  /* dn_Task */
-    {   12,   24, SF_PTR  , 0, 0, NULL },  /* dn_Lock */
-    {   16,   32, SF_PTR  , 0, 0, NULL },  /* dn_Handler */
-    {   20,   40, SF_LONG , 0, 0, NULL },  /* dn_StackSize */
-    {   24,   44, SF_LONG , 0, 0, NULL },  /* dn_Priority */
-    {   28,   48, SF_PTR  , 0, 0, NULL },  /* dn_Startup */
-    {   32,   56, SF_PTR  , 0, 0, NULL },  /* dn_SegList */
-    {   36,   64, SF_PTR  , 0, 0, NULL },  /* dn_GlobalVec */
-    {   40,   72, SF_PTR  , 0, 0, NULL },  /* dn_Name */
+    SHADOW_FIELD(   0, 4, DeviceNode, dn_Next),
+    SHADOW_FIELD(   4, 4, DeviceNode, dn_Type),
+    SHADOW_FIELD(   8, 4, DeviceNode, dn_Task),
+    SHADOW_FIELD(  12, 4, DeviceNode, dn_Lock),
+    SHADOW_FIELD(  16, 4, DeviceNode, dn_Handler),
+    SHADOW_FIELD(  20, 4, DeviceNode, dn_StackSize),
+    SHADOW_FIELD(  24, 4, DeviceNode, dn_Priority),
+    SHADOW_FIELD(  28, 4, DeviceNode, dn_Startup),
+    SHADOW_FIELD(  32, 4, DeviceNode, dn_SegList),
+    SHADOW_FIELD(  36, 4, DeviceNode, dn_GlobalVec),
+    SHADOW_FIELD(  40, 4, DeviceNode, dn_Name),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* DeviceTData: m68k=10B, aros=12B, 4 fields */
+/* DeviceTData: m68k=10B, 4 fields */
 static const struct M68KFieldMap shadow_fields_DeviceTData[] = {
-    {    0,    0, SF_LONG , 0, 0, NULL },  /* dtd_DTsize */
-    {    4,    4, SF_LONG , 0, 0, NULL },  /* dtd_DTspeed */
-    {    8,    8, SF_BYTE , 0, 0, NULL },  /* dtd_DTtype */
-    {    9,    9, SF_BYTE , 0, 0, NULL },  /* dtd_DTflags */
+    SHADOW_FIELD(   0, 4, DeviceTData, dtd_DTsize),
+    SHADOW_FIELD(   4, 4, DeviceTData, dtd_DTspeed),
+    SHADOW_FIELD(   8, 1, DeviceTData, dtd_DTtype),
+    SHADOW_FIELD(   9, 1, DeviceTData, dtd_DTflags),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* DiagArea: m68k=14B, aros=14B, 8 fields */
+/* DiagArea: m68k=14B, 8 fields */
 static const struct M68KFieldMap shadow_fields_DiagArea[] = {
-    {    0,    0, SF_BYTE , 0, 0, NULL },  /* da_Config */
-    {    1,    1, SF_BYTE , 0, 0, NULL },  /* da_Flags */
-    {    2,    2, SF_WORD , 0, 0, NULL },  /* da_Size */
-    {    4,    4, SF_WORD , 0, 0, NULL },  /* da_DiagPoint */
-    {    6,    6, SF_WORD , 0, 0, NULL },  /* da_BootPoint */
-    {    8,    8, SF_WORD , 0, 0, NULL },  /* da_Name */
-    {   10,   10, SF_WORD , 0, 0, NULL },  /* da_Reserved01 */
-    {   12,   12, SF_WORD , 0, 0, NULL },  /* da_Reserved02 */
+    SHADOW_FIELD(   0, 1, DiagArea, da_Config),
+    SHADOW_FIELD(   1, 1, DiagArea, da_Flags),
+    SHADOW_FIELD(   2, 2, DiagArea, da_Size),
+    SHADOW_FIELD(   4, 2, DiagArea, da_DiagPoint),
+    SHADOW_FIELD(   6, 2, DiagArea, da_BootPoint),
+    SHADOW_FIELD(   8, 2, DiagArea, da_Name),
+    SHADOW_FIELD(  10, 2, DiagArea, da_Reserved01),
+    SHADOW_FIELD(  12, 2, DiagArea, da_Reserved02),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* DimensionInfo: m68k=88B, aros=96B, 9 fields */
+/* DimensionInfo: m68k=88B, 13 fields */
 static const struct M68KFieldMap shadow_fields_DimensionInfo[] = {
-    {    0,    0, SF_LONG , 0, 0, NULL },  /* StructID */
-    {    4,    4, SF_LONG , 0, 0, NULL },  /* DisplayID */
-    {    8,    8, SF_LONG , 0, 0, NULL },  /* SkipID */
-    {   12,   12, SF_LONG , 0, 0, NULL },  /* Length */
-    {   16,   16, SF_WORD , 0, 0, NULL },  /* MaxDepth */
-    {   18,   18, SF_WORD , 0, 0, NULL },  /* MinRasterWidth */
-    {   20,   20, SF_WORD , 0, 0, NULL },  /* MinRasterHeight */
-    {   22,   22, SF_WORD , 0, 0, NULL },  /* MaxRasterWidth */
-    {   24,   24, SF_WORD , 0, 0, NULL },  /* MaxRasterHeight */
-    {   26,   26, SF_WORD , 0, 0, NULL },  /* MinX */
-    {   28,   28, SF_WORD , 0, 0, NULL },  /* MinY */
-    {   30,   30, SF_WORD , 0, 0, NULL },  /* MaxX */
-    {   32,   32, SF_WORD , 0, 0, NULL },  /* MaxY */
+    SHADOW_FIELD(   0, 4, DimensionInfo, Header.StructID),
+    SHADOW_FIELD(   4, 4, DimensionInfo, Header.DisplayID),
+    SHADOW_FIELD(   8, 4, DimensionInfo, Header.SkipID),
+    SHADOW_FIELD(  12, 4, DimensionInfo, Header.Length),
+    SHADOW_FIELD(  16, 2, DimensionInfo, MaxDepth),
+    SHADOW_FIELD(  18, 2, DimensionInfo, MinRasterWidth),
+    SHADOW_FIELD(  20, 2, DimensionInfo, MinRasterHeight),
+    SHADOW_FIELD(  22, 2, DimensionInfo, MaxRasterWidth),
+    SHADOW_FIELD(  24, 2, DimensionInfo, MaxRasterHeight),
+    SHADOW_FIELD(  26, 2, DimensionInfo, Nominal.MinX),
+    SHADOW_FIELD(  28, 2, DimensionInfo, Nominal.MinY),
+    SHADOW_FIELD(  30, 2, DimensionInfo, Nominal.MaxX),
+    SHADOW_FIELD(  32, 2, DimensionInfo, Nominal.MaxY),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* DiscResource: m68k=148B, aros=296B, 25 fields */
+/* DiscResource: m68k=148B, 25 fields */
 static const struct M68KFieldMap shadow_fields_DiscResource[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* ln_Succ */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* ln_Pred */
-    {    8,   16, SF_BYTE , 0, 0, NULL },  /* ln_Type */
-    {    9,   17, SF_BYTE , 0, 0, NULL },  /* ln_Pri */
-    {   10,   24, SF_PTR  , 0, 0, NULL },  /* ln_Name */
-    {   14,   32, SF_BYTE , 0, 0, NULL },  /* lib_Flags */
-    {   15,   33, SF_BYTE , 0, 0, NULL },  /* lib_pad */
-    {   16,   34, SF_WORD , 0, 0, NULL },  /* lib_NegSize */
-    {   18,   36, SF_WORD , 0, 0, NULL },  /* lib_PosSize */
-    {   20,   38, SF_WORD , 0, 0, NULL },  /* lib_Version */
-    {   22,   40, SF_WORD , 0, 0, NULL },  /* lib_Revision */
-    {   24,   48, SF_PTR  , 0, 0, NULL },  /* lib_IdString */
-    {   28,   56, SF_LONG , 0, 0, NULL },  /* lib_Sum */
-    {   32,   60, SF_WORD , 0, 0, NULL },  /* lib_OpenCnt */
-    {   34,   64, SF_PTR  , 0, 0, NULL },  /* dr_Current */
-    {   38,   72, SF_BYTE , 0, 0, NULL },  /* dr_Flags */
-    {   40,   80, SF_PTR  , 0, 0, NULL },  /* dr_SysLib */
-    {   44,   88, SF_PTR  , 0, 0, NULL },  /* dr_CiaResource */
-    {   64,  112, SF_PTR  , 0, 0, NULL },  /* lh_Head */
-    {   68,  120, SF_PTR  , 0, 0, NULL },  /* lh_Tail */
-    {   72,  128, SF_PTR  , 0, 0, NULL },  /* lh_TailPred */
-    {   76,  136, SF_BYTE , 0, 0, NULL },  /* lh_Type */
-    {   77,  137, SF_BYTE , 0, 0, NULL },  /* l_pad */
-    {   92,  176, SF_PTR  , 0, 0, NULL },  /* is_Data */
-    {  144,  288, SF_PTR  , 0, 0, NULL },  /* dr_CurrTask */
+    SHADOW_FIELD(   0, 4, DiscResource, dr_Library.lib_Node.ln_Succ),
+    SHADOW_FIELD(   4, 4, DiscResource, dr_Library.lib_Node.ln_Pred),
+    SHADOW_FIELD(   8, 1, DiscResource, dr_Library.lib_Node.ln_Type),
+    SHADOW_FIELD(   9, 1, DiscResource, dr_Library.lib_Node.ln_Pri),
+    SHADOW_FIELD(  10, 4, DiscResource, dr_Library.lib_Node.ln_Name),
+    SHADOW_FIELD(  14, 1, DiscResource, dr_Library.lib_Flags),
+    SHADOW_FIELD(  15, 1, DiscResource, dr_Library.lib_pad),
+    SHADOW_FIELD(  16, 2, DiscResource, dr_Library.lib_NegSize),
+    SHADOW_FIELD(  18, 2, DiscResource, dr_Library.lib_PosSize),
+    SHADOW_FIELD(  20, 2, DiscResource, dr_Library.lib_Version),
+    SHADOW_FIELD(  22, 2, DiscResource, dr_Library.lib_Revision),
+    SHADOW_FIELD(  24, 4, DiscResource, dr_Library.lib_IdString),
+    SHADOW_FIELD(  28, 4, DiscResource, dr_Library.lib_Sum),
+    SHADOW_FIELD(  32, 2, DiscResource, dr_Library.lib_OpenCnt),
+    SHADOW_FIELD(  34, 4, DiscResource, dr_Current),
+    SHADOW_FIELD(  38, 1, DiscResource, dr_Flags),
+    SHADOW_FIELD(  40, 4, DiscResource, dr_SysLib),
+    SHADOW_FIELD(  44, 4, DiscResource, dr_CiaResource),
+    SHADOW_FIELD(  64, 4, DiscResource, dr_Waiting.lh_Head),
+    SHADOW_FIELD(  68, 4, DiscResource, dr_Waiting.lh_Tail),
+    SHADOW_FIELD(  72, 4, DiscResource, dr_Waiting.lh_TailPred),
+    SHADOW_FIELD(  76, 1, DiscResource, dr_Waiting.lh_Type),
+    SHADOW_FIELD(  77, 1, DiscResource, dr_Waiting.l_pad),
+    SHADOW_FIELD(  92, 4, DiscResource, dr_DiscBlock.is_Data),
+    SHADOW_FIELD( 144, 4, DiscResource, dr_CurrTask),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* DiscResourceUnit: m68k=86B, aros=192B, 8 fields */
+/* DiscResourceUnit: m68k=86B, 8 fields */
 static const struct M68KFieldMap shadow_fields_DiscResourceUnit[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* ln_Succ */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* ln_Pred */
-    {    8,   16, SF_BYTE , 0, 0, NULL },  /* ln_Type */
-    {    9,   17, SF_BYTE , 0, 0, NULL },  /* ln_Pri */
-    {   10,   24, SF_PTR  , 0, 0, NULL },  /* ln_Name */
-    {   14,   32, SF_PTR  , 0, 0, NULL },  /* mn_ReplyPort */
-    {   18,   40, SF_WORD , 0, 0, NULL },  /* mn_Length */
-    {   34,   80, SF_PTR  , 0, 0, NULL },  /* is_Data */
+    SHADOW_FIELD(   0, 4, DiscResourceUnit, dru_Message.mn_Node.ln_Succ),
+    SHADOW_FIELD(   4, 4, DiscResourceUnit, dru_Message.mn_Node.ln_Pred),
+    SHADOW_FIELD(   8, 1, DiscResourceUnit, dru_Message.mn_Node.ln_Type),
+    SHADOW_FIELD(   9, 1, DiscResourceUnit, dru_Message.mn_Node.ln_Pri),
+    SHADOW_FIELD(  10, 4, DiscResourceUnit, dru_Message.mn_Node.ln_Name),
+    SHADOW_FIELD(  14, 4, DiscResourceUnit, dru_Message.mn_ReplyPort),
+    SHADOW_FIELD(  18, 2, DiscResourceUnit, dru_Message.mn_Length),
+    SHADOW_FIELD(  34, 4, DiscResourceUnit, dru_DiscBlock.is_Data),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* DiskObject: m68k=78B, aros=144B, 18 fields */
+/* DiskObject: m68k=78B, 22 fields */
 static const struct M68KFieldMap shadow_fields_DiskObject[] = {
-    {    0,    0, SF_WORD , 0, 0, NULL },  /* do_Magic */
-    {    2,    2, SF_WORD , 0, 0, NULL },  /* do_Version */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* NextGadget */
-    {    8,   16, SF_WORD , 0, 0, NULL },  /* LeftEdge */
-    {   10,   18, SF_WORD , 0, 0, NULL },  /* TopEdge */
-    {   18,   26, SF_WORD , 0, 0, NULL },  /* Activation */
-    {   20,   28, SF_WORD , 0, 0, NULL },  /* GadgetType */
-    {   22,   32, SF_PTR  , 0, 0, NULL },  /* GadgetRender */
-    {   26,   40, SF_PTR  , 0, 0, NULL },  /* SelectRender */
-    {   30,   48, SF_PTR  , 0, 0, NULL },  /* GadgetText */
-    {   34,   56, SF_PTR  , 0, 0, NULL },  /* MutualExclude */
-    {   38,   64, SF_PTR  , 0, 0, NULL },  /* SpecialInfo */
-    {   42,   72, SF_WORD , 0, 0, NULL },  /* GadgetID */
-    {   44,   80, SF_PTR  , 0, 0, NULL },  /* UserData */
-    {   48,   88, SF_BYTE , 0, 0, NULL },  /* do_Type */
-    {   50,   96, SF_PTR  , 0, 0, NULL },  /* do_DefaultTool */
-    {   54,  104, SF_PTR  , 0, 0, NULL },  /* do_ToolTypes */
-    {   58,  112, SF_LONG , 0, 0, NULL },  /* do_CurrentX */
-    {   62,  116, SF_LONG , 0, 0, NULL },  /* do_CurrentY */
-    {   66,  120, SF_PTR  , 0, 0, NULL },  /* do_DrawerData */
-    {   70,  128, SF_PTR  , 0, 0, NULL },  /* do_ToolWindow */
-    {   74,  136, SF_LONG , 0, 0, NULL },  /* do_StackSize */
+    SHADOW_FIELD(   0, 2, DiskObject, do_Magic),
+    SHADOW_FIELD(   2, 2, DiskObject, do_Version),
+    SHADOW_FIELD(   4, 4, DiskObject, do_Gadget.NextGadget),
+    SHADOW_FIELD(   8, 2, DiskObject, do_Gadget.LeftEdge),
+    SHADOW_FIELD(  10, 2, DiskObject, do_Gadget.TopEdge),
+    SHADOW_FIELD(  18, 2, DiskObject, do_Gadget.Activation),
+    SHADOW_FIELD(  20, 2, DiskObject, do_Gadget.GadgetType),
+    SHADOW_FIELD(  22, 4, DiskObject, do_Gadget.GadgetRender),
+    SHADOW_FIELD(  26, 4, DiskObject, do_Gadget.SelectRender),
+    SHADOW_FIELD(  30, 4, DiskObject, do_Gadget.GadgetText),
+    SHADOW_FIELD(  34, 4, DiskObject, do_Gadget.MutualExclude),
+    SHADOW_FIELD(  38, 4, DiskObject, do_Gadget.SpecialInfo),
+    SHADOW_FIELD(  42, 2, DiskObject, do_Gadget.GadgetID),
+    SHADOW_FIELD(  44, 4, DiskObject, do_Gadget.UserData),
+    SHADOW_FIELD(  48, 1, DiskObject, do_Type),
+    SHADOW_FIELD(  50, 4, DiskObject, do_DefaultTool),
+    SHADOW_FIELD(  54, 4, DiskObject, do_ToolTypes),
+    SHADOW_FIELD(  58, 4, DiskObject, do_CurrentX),
+    SHADOW_FIELD(  62, 4, DiskObject, do_CurrentY),
+    SHADOW_FIELD(  66, 4, DiskObject, do_DrawerData),
+    SHADOW_FIELD(  70, 4, DiskObject, do_ToolWindow),
+    SHADOW_FIELD(  74, 4, DiskObject, do_StackSize),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* DisplayInfo: m68k=56B, aros=72B, 15 fields */
+/* DisplayInfo: m68k=56B, 15 fields */
 static const struct M68KFieldMap shadow_fields_DisplayInfo[] = {
-    {    0,    0, SF_LONG , 0, 0, NULL },  /* StructID */
-    {    4,    4, SF_LONG , 0, 0, NULL },  /* DisplayID */
-    {    8,    8, SF_LONG , 0, 0, NULL },  /* SkipID */
-    {   12,   12, SF_LONG , 0, 0, NULL },  /* Length */
-    {   16,   16, SF_WORD , 0, 0, NULL },  /* NotAvailable */
-    {   18,   20, SF_LONG , 0, 0, NULL },  /* PropertyFlags */
-    {   22,   24, SF_LONG , 0, 0, NULL },  /* Resolution */
-    {   26,   28, SF_WORD , 0, 0, NULL },  /* PixelSpeed */
-    {   28,   30, SF_WORD , 0, 0, NULL },  /* NumStdSprites */
-    {   30,   32, SF_WORD , 0, 0, NULL },  /* PaletteRange */
-    {   32,   34, SF_LONG , 0, 0, NULL },  /* SpriteResolution */
-    {   36,   38, SF_LONG , 0, 0, NULL },  /* pad */
-    {   40,   42, SF_BYTE , 0, 0, NULL },  /* RedBits */
-    {   41,   43, SF_BYTE , 0, 0, NULL },  /* GreenBits */
-    {   42,   44, SF_BYTE , 0, 0, NULL },  /* BlueBits */
+    SHADOW_FIELD(   0, 4, DisplayInfo, Header.StructID),
+    SHADOW_FIELD(   4, 4, DisplayInfo, Header.DisplayID),
+    SHADOW_FIELD(   8, 4, DisplayInfo, Header.SkipID),
+    SHADOW_FIELD(  12, 4, DisplayInfo, Header.Length),
+    SHADOW_FIELD(  16, 2, DisplayInfo, NotAvailable),
+    SHADOW_FIELD(  18, 4, DisplayInfo, PropertyFlags),
+    SHADOW_FIELD(  22, 4, DisplayInfo, Resolution),
+    SHADOW_FIELD(  26, 2, DisplayInfo, PixelSpeed),
+    SHADOW_FIELD(  28, 2, DisplayInfo, NumStdSprites),
+    SHADOW_FIELD(  30, 2, DisplayInfo, PaletteRange),
+    SHADOW_FIELD(  32, 4, DisplayInfo, SpriteResolution),
+    SHADOW_FIELD(  36, 4, DisplayInfo, pad),
+    SHADOW_FIELD(  40, 1, DisplayInfo, RedBits),
+    SHADOW_FIELD(  41, 1, DisplayInfo, GreenBits),
+    SHADOW_FIELD(  42, 1, DisplayInfo, BlueBits),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* DisplayMode: m68k=106B, aros=136B, 15 fields */
+/* DisplayMode: m68k=106B, 19 fields */
 static const struct M68KFieldMap shadow_fields_DisplayMode[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* ln_Succ */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* ln_Pred */
-    {    8,   16, SF_BYTE , 0, 0, NULL },  /* ln_Type */
-    {    9,   17, SF_BYTE , 0, 0, NULL },  /* ln_Pri */
-    {   10,   24, SF_PTR  , 0, 0, NULL },  /* ln_Name */
-    {   14,   32, SF_LONG , 0, 0, NULL },  /* StructID */
-    {   18,   36, SF_LONG , 0, 0, NULL },  /* DisplayID */
-    {   22,   40, SF_LONG , 0, 0, NULL },  /* SkipID */
-    {   26,   44, SF_LONG , 0, 0, NULL },  /* Length */
-    {   30,   48, SF_WORD , 0, 0, NULL },  /* MaxDepth */
-    {   32,   50, SF_WORD , 0, 0, NULL },  /* MinRasterWidth */
-    {   34,   52, SF_WORD , 0, 0, NULL },  /* MinRasterHeight */
-    {   36,   54, SF_WORD , 0, 0, NULL },  /* MaxRasterWidth */
-    {   38,   56, SF_WORD , 0, 0, NULL },  /* MaxRasterHeight */
-    {   40,   58, SF_WORD , 0, 0, NULL },  /* MinX */
-    {   42,   60, SF_WORD , 0, 0, NULL },  /* MinY */
-    {   44,   62, SF_WORD , 0, 0, NULL },  /* MaxX */
-    {   46,   64, SF_WORD , 0, 0, NULL },  /* MaxY */
-    {  102,  128, SF_LONG , 0, 0, NULL },  /* dm_PropertyFlags */
+    SHADOW_FIELD(   0, 4, DisplayMode, dm_Node.ln_Succ),
+    SHADOW_FIELD(   4, 4, DisplayMode, dm_Node.ln_Pred),
+    SHADOW_FIELD(   8, 1, DisplayMode, dm_Node.ln_Type),
+    SHADOW_FIELD(   9, 1, DisplayMode, dm_Node.ln_Pri),
+    SHADOW_FIELD(  10, 4, DisplayMode, dm_Node.ln_Name),
+    SHADOW_FIELD(  14, 4, DisplayMode, dm_DimensionInfo.Header.StructID),
+    SHADOW_FIELD(  18, 4, DisplayMode, dm_DimensionInfo.Header.DisplayID),
+    SHADOW_FIELD(  22, 4, DisplayMode, dm_DimensionInfo.Header.SkipID),
+    SHADOW_FIELD(  26, 4, DisplayMode, dm_DimensionInfo.Header.Length),
+    SHADOW_FIELD(  30, 2, DisplayMode, dm_DimensionInfo.MaxDepth),
+    SHADOW_FIELD(  32, 2, DisplayMode, dm_DimensionInfo.MinRasterWidth),
+    SHADOW_FIELD(  34, 2, DisplayMode, dm_DimensionInfo.MinRasterHeight),
+    SHADOW_FIELD(  36, 2, DisplayMode, dm_DimensionInfo.MaxRasterWidth),
+    SHADOW_FIELD(  38, 2, DisplayMode, dm_DimensionInfo.MaxRasterHeight),
+    SHADOW_FIELD(  40, 2, DisplayMode, dm_DimensionInfo.Nominal.MinX),
+    SHADOW_FIELD(  42, 2, DisplayMode, dm_DimensionInfo.Nominal.MinY),
+    SHADOW_FIELD(  44, 2, DisplayMode, dm_DimensionInfo.Nominal.MaxX),
+    SHADOW_FIELD(  46, 2, DisplayMode, dm_DimensionInfo.Nominal.MaxY),
+    SHADOW_FIELD( 102, 4, DisplayMode, dm_PropertyFlags),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* DosEnvec: m68k=80B, aros=160B, 19 fields */
+/* DosEnvec: m68k=80B, 19 fields */
 static const struct M68KFieldMap shadow_fields_DosEnvec[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* de_TableSize */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* de_SizeBlock */
-    {    8,   16, SF_PTR  , 0, 0, NULL },  /* de_SecOrg */
-    {   12,   24, SF_PTR  , 0, 0, NULL },  /* de_Surfaces */
-    {   16,   32, SF_PTR  , 0, 0, NULL },  /* de_SectorPerBlock */
-    {   20,   40, SF_PTR  , 0, 0, NULL },  /* de_BlocksPerTrack */
-    {   24,   48, SF_PTR  , 0, 0, NULL },  /* de_Reserved */
-    {   28,   56, SF_PTR  , 0, 0, NULL },  /* de_PreAlloc */
-    {   32,   64, SF_PTR  , 0, 0, NULL },  /* de_Interleave */
-    {   36,   72, SF_PTR  , 0, 0, NULL },  /* de_LowCyl */
-    {   40,   80, SF_PTR  , 0, 0, NULL },  /* de_HighCyl */
-    {   44,   88, SF_PTR  , 0, 0, NULL },  /* de_NumBuffers */
-    {   48,   96, SF_PTR  , 0, 0, NULL },  /* de_BufMemType */
-    {   52,  104, SF_PTR  , 0, 0, NULL },  /* de_MaxTransfer */
-    {   56,  112, SF_PTR  , 0, 0, NULL },  /* de_Mask */
-    {   60,  120, SF_PTR  , 0, 0, NULL },  /* de_BootPri */
-    {   68,  136, SF_PTR  , 0, 0, NULL },  /* de_Baud */
-    {   72,  144, SF_PTR  , 0, 0, NULL },  /* de_Control */
-    {   76,  152, SF_PTR  , 0, 0, NULL },  /* de_BootBlocks */
+    SHADOW_FIELD(   0, 4, DosEnvec, de_TableSize),
+    SHADOW_FIELD(   4, 4, DosEnvec, de_SizeBlock),
+    SHADOW_FIELD(   8, 4, DosEnvec, de_SecOrg),
+    SHADOW_FIELD(  12, 4, DosEnvec, de_Surfaces),
+    SHADOW_FIELD(  16, 4, DosEnvec, de_SectorPerBlock),
+    SHADOW_FIELD(  20, 4, DosEnvec, de_BlocksPerTrack),
+    SHADOW_FIELD(  24, 4, DosEnvec, de_Reserved),
+    SHADOW_FIELD(  28, 4, DosEnvec, de_PreAlloc),
+    SHADOW_FIELD(  32, 4, DosEnvec, de_Interleave),
+    SHADOW_FIELD(  36, 4, DosEnvec, de_LowCyl),
+    SHADOW_FIELD(  40, 4, DosEnvec, de_HighCyl),
+    SHADOW_FIELD(  44, 4, DosEnvec, de_NumBuffers),
+    SHADOW_FIELD(  48, 4, DosEnvec, de_BufMemType),
+    SHADOW_FIELD(  52, 4, DosEnvec, de_MaxTransfer),
+    SHADOW_FIELD(  56, 4, DosEnvec, de_Mask),
+    SHADOW_FIELD(  60, 4, DosEnvec, de_BootPri),
+    SHADOW_FIELD(  68, 4, DosEnvec, de_Baud),
+    SHADOW_FIELD(  72, 4, DosEnvec, de_Control),
+    SHADOW_FIELD(  76, 4, DosEnvec, de_BootBlocks),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* DosInfo: m68k=158B, aros=1664B, 19 fields */
+/* DosInfo: m68k=158B, 19 fields */
 static const struct M68KFieldMap shadow_fields_DosInfo[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* di_McName */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* di_DevInfo */
-    {    8,   16, SF_PTR  , 0, 0, NULL },  /* di_Devices */
-    {   12,   24, SF_PTR  , 0, 0, NULL },  /* di_Handlers */
-    {   16,   32, SF_PTR  , 0, 0, NULL },  /* di_NetHand */
-    {   20,  128, SF_PTR  , 0, 0, NULL },  /* ln_Succ */
-    {   24,  136, SF_PTR  , 0, 0, NULL },  /* ln_Pred */
-    {   28,  144, SF_BYTE , 0, 0, NULL },  /* ln_Type */
-    {   29,  145, SF_BYTE , 0, 0, NULL },  /* ln_Pri */
-    {   30,  152, SF_PTR  , 0, 0, NULL },  /* ln_Name */
-    {   34,  160, SF_WORD , 0, 0, NULL },  /* ss_NestCount */
-    {   36,  168, SF_PTR  , 0, 0, NULL },  /* mlh_Head */
-    {   40,  176, SF_PTR  , 0, 0, NULL },  /* mlh_Tail */
-    {   44,  184, SF_PTR  , 0, 0, NULL },  /* mlh_TailPred */
-    {   48,  256, SF_PTR  , 0, 0, NULL },  /* mln_Succ */
-    {   52,  264, SF_PTR  , 0, 0, NULL },  /* mln_Pred */
-    {   56,  272, SF_PTR  , 0, 0, NULL },  /* sr_Waiter */
-    {   60,  512, SF_PTR  , 0, 0, NULL },  /* ss_Owner */
-    {   64,  520, SF_WORD , 0, 0, NULL },  /* ss_QueueCount */
+    SHADOW_FIELD(   0, 4, DosInfo, di_McName),
+    SHADOW_FIELD(   4, 4, DosInfo, di_DevInfo),
+    SHADOW_FIELD(   8, 4, DosInfo, di_Devices),
+    SHADOW_FIELD(  12, 4, DosInfo, di_Handlers),
+    SHADOW_FIELD(  16, 4, DosInfo, di_NetHand),
+    SHADOW_FIELD(  20, 4, DosInfo, di_DevLock.ss_Link.ln_Succ),
+    SHADOW_FIELD(  24, 4, DosInfo, di_DevLock.ss_Link.ln_Pred),
+    SHADOW_FIELD(  28, 1, DosInfo, di_DevLock.ss_Link.ln_Type),
+    SHADOW_FIELD(  29, 1, DosInfo, di_DevLock.ss_Link.ln_Pri),
+    SHADOW_FIELD(  30, 4, DosInfo, di_DevLock.ss_Link.ln_Name),
+    SHADOW_FIELD(  34, 2, DosInfo, di_DevLock.ss_NestCount),
+    SHADOW_FIELD(  36, 4, DosInfo, di_DevLock.ss_WaitQueue.mlh_Head),
+    SHADOW_FIELD(  40, 4, DosInfo, di_DevLock.ss_WaitQueue.mlh_Tail),
+    SHADOW_FIELD(  44, 4, DosInfo, di_DevLock.ss_WaitQueue.mlh_TailPred),
+    SHADOW_FIELD(  48, 4, DosInfo, di_DevLock.ss_MultipleLink.sr_Link.mln_Succ),
+    SHADOW_FIELD(  52, 4, DosInfo, di_DevLock.ss_MultipleLink.sr_Link.mln_Pred),
+    SHADOW_FIELD(  56, 4, DosInfo, di_DevLock.ss_MultipleLink.sr_Waiter),
+    SHADOW_FIELD(  60, 4, DosInfo, di_DevLock.ss_Owner),
+    SHADOW_FIELD(  64, 2, DosInfo, di_DevLock.ss_QueueCount),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* DosLibrary: m68k=70B, aros=136B, 23 fields */
+/* DosLibrary: m68k=70B, 23 fields */
 static const struct M68KFieldMap shadow_fields_DosLibrary[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* ln_Succ */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* ln_Pred */
-    {    8,   16, SF_BYTE , 0, 0, NULL },  /* ln_Type */
-    {    9,   17, SF_BYTE , 0, 0, NULL },  /* ln_Pri */
-    {   10,   24, SF_PTR  , 0, 0, NULL },  /* ln_Name */
-    {   14,   32, SF_BYTE , 0, 0, NULL },  /* lib_Flags */
-    {   15,   33, SF_BYTE , 0, 0, NULL },  /* lib_pad */
-    {   16,   34, SF_WORD , 0, 0, NULL },  /* lib_NegSize */
-    {   18,   36, SF_WORD , 0, 0, NULL },  /* lib_PosSize */
-    {   20,   38, SF_WORD , 0, 0, NULL },  /* lib_Version */
-    {   22,   40, SF_WORD , 0, 0, NULL },  /* lib_Revision */
-    {   24,   48, SF_PTR  , 0, 0, NULL },  /* lib_IdString */
-    {   28,   56, SF_LONG , 0, 0, NULL },  /* lib_Sum */
-    {   32,   60, SF_WORD , 0, 0, NULL },  /* lib_OpenCnt */
-    {   34,   64, SF_PTR  , 0, 0, NULL },  /* dl_Root */
-    {   38,   72, SF_PTR  , 0, 0, NULL },  /* dl_GV */
-    {   42,   80, SF_PTR  , 0, 0, NULL },  /* dl_A2 */
-    {   46,   88, SF_PTR  , 0, 0, NULL },  /* dl_A5 */
-    {   50,   96, SF_PTR  , 0, 0, NULL },  /* dl_A6 */
-    {   54,  104, SF_PTR  , 0, 0, NULL },  /* dl_Errors */
-    {   58,  112, SF_PTR  , 0, 0, NULL },  /* dl_TimeReq */
-    {   62,  120, SF_PTR  , 0, 0, NULL },  /* dl_UtilityBase */
-    {   66,  128, SF_PTR  , 0, 0, NULL },  /* dl_IntuitionBase */
+    SHADOW_FIELD(   0, 4, DosLibrary, dl_lib.lib_Node.ln_Succ),
+    SHADOW_FIELD(   4, 4, DosLibrary, dl_lib.lib_Node.ln_Pred),
+    SHADOW_FIELD(   8, 1, DosLibrary, dl_lib.lib_Node.ln_Type),
+    SHADOW_FIELD(   9, 1, DosLibrary, dl_lib.lib_Node.ln_Pri),
+    SHADOW_FIELD(  10, 4, DosLibrary, dl_lib.lib_Node.ln_Name),
+    SHADOW_FIELD(  14, 1, DosLibrary, dl_lib.lib_Flags),
+    SHADOW_FIELD(  15, 1, DosLibrary, dl_lib.lib_pad),
+    SHADOW_FIELD(  16, 2, DosLibrary, dl_lib.lib_NegSize),
+    SHADOW_FIELD(  18, 2, DosLibrary, dl_lib.lib_PosSize),
+    SHADOW_FIELD(  20, 2, DosLibrary, dl_lib.lib_Version),
+    SHADOW_FIELD(  22, 2, DosLibrary, dl_lib.lib_Revision),
+    SHADOW_FIELD(  24, 4, DosLibrary, dl_lib.lib_IdString),
+    SHADOW_FIELD(  28, 4, DosLibrary, dl_lib.lib_Sum),
+    SHADOW_FIELD(  32, 2, DosLibrary, dl_lib.lib_OpenCnt),
+    SHADOW_FIELD(  34, 4, DosLibrary, dl_Root),
+    SHADOW_FIELD(  38, 4, DosLibrary, dl_GV),
+    SHADOW_FIELD(  42, 4, DosLibrary, dl_A2),
+    SHADOW_FIELD(  46, 4, DosLibrary, dl_A5),
+    SHADOW_FIELD(  50, 4, DosLibrary, dl_A6),
+    SHADOW_FIELD(  54, 4, DosLibrary, dl_Errors),
+    SHADOW_FIELD(  58, 4, DosLibrary, dl_TimeReq),
+    SHADOW_FIELD(  62, 4, DosLibrary, dl_UtilityBase),
+    SHADOW_FIELD(  66, 4, DosLibrary, dl_IntuitionBase),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* DosList: m68k=44B, aros=80B, 4 fields */
+/* DosList: m68k=44B, 4 fields */
 static const struct M68KFieldMap shadow_fields_DosList[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* dol_Next */
-    {    4,    8, SF_LONG , 0, 0, NULL },  /* dol_Type */
-    {    8,   16, SF_PTR  , 0, 0, NULL },  /* dol_Task */
-    {   12,   24, SF_PTR  , 0, 0, NULL },  /* dol_Lock */
+    SHADOW_FIELD(   0, 4, DosList, dol_Next),
+    SHADOW_FIELD(   4, 4, DosList, dol_Type),
+    SHADOW_FIELD(   8, 4, DosList, dol_Task),
+    SHADOW_FIELD(  12, 4, DosList, dol_Lock),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* DosPacket: m68k=48B, aros=96B, 9 fields */
+/* DosPacket: m68k=48B, 11 fields */
 static const struct M68KFieldMap shadow_fields_DosPacket[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* dp_Link */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* dp_Port */
-    {    8,   16, SF_LONG , 0, 0, NULL },  /* dp_Type */
-    {   12,   24, SF_PTR  , 0, 0, NULL },  /* dp_Res1 */
-    {   20,   40, SF_PTR  , 0, 0, NULL },  /* dp_Arg1 */
-    {   24,   48, SF_PTR  , 0, 0, NULL },  /* dp_Arg2 */
-    {   28,   56, SF_PTR  , 0, 0, NULL },  /* dp_Arg3 */
-    {   32,   64, SF_PTR  , 0, 0, NULL },  /* dp_Arg4 */
-    {   36,   72, SF_PTR  , 0, 0, NULL },  /* dp_Arg5 */
-    {   40,   80, SF_PTR  , 0, 0, NULL },  /* dp_Arg6 */
-    {   44,   88, SF_PTR  , 0, 0, NULL },  /* dp_Arg7 */
+    SHADOW_FIELD(   0, 4, DosPacket, dp_Link),
+    SHADOW_FIELD(   4, 4, DosPacket, dp_Port),
+    SHADOW_FIELD(   8, 4, DosPacket, dp_Type),
+    SHADOW_FIELD(  12, 4, DosPacket, dp_Res1),
+    SHADOW_FIELD(  20, 4, DosPacket, dp_Arg1),
+    SHADOW_FIELD(  24, 4, DosPacket, dp_Arg2),
+    SHADOW_FIELD(  28, 4, DosPacket, dp_Arg3),
+    SHADOW_FIELD(  32, 4, DosPacket, dp_Arg4),
+    SHADOW_FIELD(  36, 4, DosPacket, dp_Arg5),
+    SHADOW_FIELD(  40, 4, DosPacket, dp_Arg6),
+    SHADOW_FIELD(  44, 4, DosPacket, dp_Arg7),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* DrawInfo: m68k=50B, aros=96B, 5 fields */
+/* DrawInfo: m68k=50B, 5 fields */
 static const struct M68KFieldMap shadow_fields_DrawInfo[] = {
-    {    0,    0, SF_WORD , 0, 0, NULL },  /* dri_Version */
-    {    2,    2, SF_WORD , 0, 0, NULL },  /* dri_NumPens */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* dri_Pens */
-    {    8,   16, SF_PTR  , 0, 0, NULL },  /* dri_Font */
-    {   12,   24, SF_WORD , 0, 0, NULL },  /* dri_Depth */
+    SHADOW_FIELD(   0, 2, DrawInfo, dri_Version),
+    SHADOW_FIELD(   2, 2, DrawInfo, dri_NumPens),
+    SHADOW_FIELD(   4, 4, DrawInfo, dri_Pens),
+    SHADOW_FIELD(   8, 4, DrawInfo, dri_Font),
+    SHADOW_FIELD(  12, 2, DrawInfo, dri_Depth),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* DrawerData: m68k=62B, aros=96B, 10 fields */
+/* DrawerData: m68k=62B, 16 fields */
 static const struct M68KFieldMap shadow_fields_DrawerData[] = {
-    {    0,    0, SF_WORD , 0, 0, NULL },  /* LeftEdge */
-    {    2,    2, SF_WORD , 0, 0, NULL },  /* TopEdge */
-    {   10,   12, SF_LONG , 0, 0, NULL },  /* IDCMPFlags */
-    {   18,   24, SF_PTR  , 0, 0, NULL },  /* FirstGadget */
-    {   22,   32, SF_PTR  , 0, 0, NULL },  /* CheckMark */
-    {   26,   40, SF_PTR  , 0, 0, NULL },  /* Title */
-    {   30,   48, SF_PTR  , 0, 0, NULL },  /* Screen */
-    {   38,   64, SF_WORD , 0, 0, NULL },  /* MinWidth */
-    {   40,   66, SF_WORD , 0, 0, NULL },  /* MinHeight */
-    {   42,   68, SF_WORD , 0, 0, NULL },  /* MaxWidth */
-    {   44,   70, SF_WORD , 0, 0, NULL },  /* MaxHeight */
-    {   46,   72, SF_WORD , 0, 0, NULL },  /* Type */
-    {   48,   80, SF_LONG , 0, 0, NULL },  /* dd_CurrentX */
-    {   52,   84, SF_LONG , 0, 0, NULL },  /* dd_CurrentY */
-    {   56,   88, SF_LONG , 0, 0, NULL },  /* dd_Flags */
-    {   60,   92, SF_WORD , 0, 0, NULL },  /* dd_ViewModes */
+    SHADOW_FIELD(   0, 2, DrawerData, dd_NewWindow.LeftEdge),
+    SHADOW_FIELD(   2, 2, DrawerData, dd_NewWindow.TopEdge),
+    SHADOW_FIELD(  10, 4, DrawerData, dd_NewWindow.IDCMPFlags),
+    SHADOW_FIELD(  18, 4, DrawerData, dd_NewWindow.FirstGadget),
+    SHADOW_FIELD(  22, 4, DrawerData, dd_NewWindow.CheckMark),
+    SHADOW_FIELD(  26, 4, DrawerData, dd_NewWindow.Title),
+    SHADOW_FIELD(  30, 4, DrawerData, dd_NewWindow.Screen),
+    SHADOW_FIELD(  38, 2, DrawerData, dd_NewWindow.MinWidth),
+    SHADOW_FIELD(  40, 2, DrawerData, dd_NewWindow.MinHeight),
+    SHADOW_FIELD(  42, 2, DrawerData, dd_NewWindow.MaxWidth),
+    SHADOW_FIELD(  44, 2, DrawerData, dd_NewWindow.MaxHeight),
+    SHADOW_FIELD(  46, 2, DrawerData, dd_NewWindow.Type),
+    SHADOW_FIELD(  48, 4, DrawerData, dd_CurrentX),
+    SHADOW_FIELD(  52, 4, DrawerData, dd_CurrentY),
+    SHADOW_FIELD(  56, 4, DrawerData, dd_Flags),
+    SHADOW_FIELD(  60, 2, DrawerData, dd_ViewModes),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* DriveGeometry: m68k=32B, aros=32B, 10 fields */
+/* DriveGeometry: m68k=32B, 10 fields */
 static const struct M68KFieldMap shadow_fields_DriveGeometry[] = {
-    {    0,    0, SF_LONG , 0, 0, NULL },  /* dg_SectorSize */
-    {    4,    4, SF_LONG , 0, 0, NULL },  /* dg_TotalSectors */
-    {    8,    8, SF_LONG , 0, 0, NULL },  /* dg_Cylinders */
-    {   12,   12, SF_LONG , 0, 0, NULL },  /* dg_CylSectors */
-    {   16,   16, SF_LONG , 0, 0, NULL },  /* dg_Heads */
-    {   20,   20, SF_LONG , 0, 0, NULL },  /* dg_TrackSectors */
-    {   24,   24, SF_LONG , 0, 0, NULL },  /* dg_BufMemType */
-    {   28,   28, SF_BYTE , 0, 0, NULL },  /* dg_DeviceType */
-    {   29,   29, SF_BYTE , 0, 0, NULL },  /* dg_Flags */
-    {   30,   30, SF_WORD , 0, 0, NULL },  /* dg_Reserved */
+    SHADOW_FIELD(   0, 4, DriveGeometry, dg_SectorSize),
+    SHADOW_FIELD(   4, 4, DriveGeometry, dg_TotalSectors),
+    SHADOW_FIELD(   8, 4, DriveGeometry, dg_Cylinders),
+    SHADOW_FIELD(  12, 4, DriveGeometry, dg_CylSectors),
+    SHADOW_FIELD(  16, 4, DriveGeometry, dg_Heads),
+    SHADOW_FIELD(  20, 4, DriveGeometry, dg_TrackSectors),
+    SHADOW_FIELD(  24, 4, DriveGeometry, dg_BufMemType),
+    SHADOW_FIELD(  28, 1, DriveGeometry, dg_DeviceType),
+    SHADOW_FIELD(  29, 1, DriveGeometry, dg_Flags),
+    SHADOW_FIELD(  30, 2, DriveGeometry, dg_Reserved),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* EClockVal: m68k=8B, aros=8B, 2 fields */
+/* EClockVal: m68k=8B, 2 fields */
 static const struct M68KFieldMap shadow_fields_EClockVal[] = {
-    {    0,    0, SF_LONG , 0, 0, NULL },  /* ev_hi */
-    {    4,    4, SF_LONG , 0, 0, NULL },  /* ev_lo */
+    SHADOW_FIELD(   0, 4, EClockVal, ev_hi),
+    SHADOW_FIELD(   4, 4, EClockVal, ev_lo),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* EasyStruct: m68k=20B, aros=32B, 5 fields */
+/* EasyStruct: m68k=20B, 5 fields */
 static const struct M68KFieldMap shadow_fields_EasyStruct[] = {
-    {    0,    0, SF_LONG , 0, 0, NULL },  /* es_StructSize */
-    {    4,    4, SF_LONG , 0, 0, NULL },  /* es_Flags */
-    {    8,    8, SF_PTR  , 0, 0, NULL },  /* es_Title */
-    {   12,   16, SF_PTR  , 0, 0, NULL },  /* es_TextFormat */
-    {   16,   24, SF_PTR  , 0, 0, NULL },  /* es_GadgetFormat */
+    SHADOW_FIELD(   0, 4, EasyStruct, es_StructSize),
+    SHADOW_FIELD(   4, 4, EasyStruct, es_Flags),
+    SHADOW_FIELD(   8, 4, EasyStruct, es_Title),
+    SHADOW_FIELD(  12, 4, EasyStruct, es_TextFormat),
+    SHADOW_FIELD(  16, 4, EasyStruct, es_GadgetFormat),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* ErrorString: m68k=8B, aros=16B, 1 fields */
+/* ErrorString: m68k=8B, 2 fields */
 static const struct M68KFieldMap shadow_fields_ErrorString[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* estr_Nums */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* estr_Strings */
+    SHADOW_FIELD(   0, 4, ErrorString, estr_Nums),
+    SHADOW_FIELD(   4, 4, ErrorString, estr_Strings),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* ExAllControl: m68k=16B, aros=32B, 4 fields */
+/* ExAllControl: m68k=16B, 4 fields */
 static const struct M68KFieldMap shadow_fields_ExAllControl[] = {
-    {    0,    0, SF_LONG , 0, 0, NULL },  /* eac_Entries */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* eac_LastKey */
-    {    8,   16, SF_PTR  , 0, 0, NULL },  /* eac_MatchString */
-    {   12,   24, SF_PTR  , 0, 0, NULL },  /* eac_MatchFunc */
+    SHADOW_FIELD(   0, 4, ExAllControl, eac_Entries),
+    SHADOW_FIELD(   4, 4, ExAllControl, eac_LastKey),
+    SHADOW_FIELD(   8, 4, ExAllControl, eac_MatchString),
+    SHADOW_FIELD(  12, 4, ExAllControl, eac_MatchFunc),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* ExAllData: m68k=40B, aros=56B, 11 fields */
+/* ExAllData: m68k=40B, 11 fields */
 static const struct M68KFieldMap shadow_fields_ExAllData[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* ed_Next */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* ed_Name */
-    {    8,   16, SF_LONG , 0, 0, NULL },  /* ed_Type */
-    {   12,   20, SF_LONG , 0, 0, NULL },  /* ed_Size */
-    {   16,   24, SF_LONG , 0, 0, NULL },  /* ed_Prot */
-    {   20,   28, SF_LONG , 0, 0, NULL },  /* ed_Days */
-    {   24,   32, SF_LONG , 0, 0, NULL },  /* ed_Mins */
-    {   28,   36, SF_LONG , 0, 0, NULL },  /* ed_Ticks */
-    {   32,   40, SF_PTR  , 0, 0, NULL },  /* ed_Comment */
-    {   36,   48, SF_WORD , 0, 0, NULL },  /* ed_OwnerUID */
-    {   38,   50, SF_WORD , 0, 0, NULL },  /* ed_OwnerGID */
+    SHADOW_FIELD(   0, 4, ExAllData, ed_Next),
+    SHADOW_FIELD(   4, 4, ExAllData, ed_Name),
+    SHADOW_FIELD(   8, 4, ExAllData, ed_Type),
+    SHADOW_FIELD(  12, 4, ExAllData, ed_Size),
+    SHADOW_FIELD(  16, 4, ExAllData, ed_Prot),
+    SHADOW_FIELD(  20, 4, ExAllData, ed_Days),
+    SHADOW_FIELD(  24, 4, ExAllData, ed_Mins),
+    SHADOW_FIELD(  28, 4, ExAllData, ed_Ticks),
+    SHADOW_FIELD(  32, 4, ExAllData, ed_Comment),
+    SHADOW_FIELD(  36, 2, ExAllData, ed_OwnerUID),
+    SHADOW_FIELD(  38, 2, ExAllData, ed_OwnerGID),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* ExecBase: m68k=632B, aros=1320B, 65 fields */
+/* ExecBase: m68k=632B, 65 fields */
 static const struct M68KFieldMap shadow_fields_ExecBase[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* ln_Succ */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* ln_Pred */
-    {    8,   16, SF_BYTE , 0, 0, NULL },  /* ln_Type */
-    {    9,   17, SF_BYTE , 0, 0, NULL },  /* ln_Pri */
-    {   10,   24, SF_PTR  , 0, 0, NULL },  /* ln_Name */
-    {   14,   32, SF_BYTE , 0, 0, NULL },  /* lib_Flags */
-    {   15,   33, SF_BYTE , 0, 0, NULL },  /* lib_pad */
-    {   16,   34, SF_WORD , 0, 0, NULL },  /* lib_NegSize */
-    {   18,   36, SF_WORD , 0, 0, NULL },  /* lib_PosSize */
-    {   20,   38, SF_WORD , 0, 0, NULL },  /* lib_Version */
-    {   22,   40, SF_WORD , 0, 0, NULL },  /* lib_Revision */
-    {   24,   48, SF_PTR  , 0, 0, NULL },  /* lib_IdString */
-    {   28,   56, SF_LONG , 0, 0, NULL },  /* lib_Sum */
-    {   32,   60, SF_WORD , 0, 0, NULL },  /* lib_OpenCnt */
-    {   34,   64, SF_WORD , 0, 0, NULL },  /* SoftVer */
-    {   36,   66, SF_WORD , 0, 0, NULL },  /* LowMemChkSum */
-    {   38,   72, SF_PTR  , 0, 0, NULL },  /* ChkBase */
-    {   42,   80, SF_PTR  , 0, 0, NULL },  /* ColdCapture */
-    {   46,   88, SF_PTR  , 0, 0, NULL },  /* CoolCapture */
-    {   50,   96, SF_PTR  , 0, 0, NULL },  /* WarmCapture */
-    {   54,  104, SF_PTR  , 0, 0, NULL },  /* SysStkUpper */
-    {   58,  112, SF_PTR  , 0, 0, NULL },  /* SysStkLower */
-    {   62,  120, SF_PTR  , 0, 0, NULL },  /* MaxLocMem */
-    {   66,  128, SF_PTR  , 0, 0, NULL },  /* DebugEntry */
-    {   70,  136, SF_PTR  , 0, 0, NULL },  /* DebugData */
-    {   74,  144, SF_PTR  , 0, 0, NULL },  /* AlertData */
-    {   78,  152, SF_PTR  , 0, 0, NULL },  /* MaxExtMem */
-    {   82,  160, SF_WORD , 0, 0, NULL },  /* ChkSum */
-    {  276,  552, SF_PTR  , 0, 0, NULL },  /* ThisTask */
-    {  280,  560, SF_LONG , 0, 0, NULL },  /* IdleCount */
-    {  284,  564, SF_LONG , 0, 0, NULL },  /* DispCount */
-    {  288,  568, SF_WORD , 0, 0, NULL },  /* Quantum */
-    {  290,  570, SF_WORD , 0, 0, NULL },  /* Elapsed */
-    {  292,  572, SF_WORD , 0, 0, NULL },  /* SysFlags */
-    {  294,  574, SF_BYTE , 0, 0, NULL },  /* IDNestCnt */
-    {  295,  575, SF_BYTE , 0, 0, NULL },  /* TDNestCnt */
-    {  296,  576, SF_WORD , 0, 0, NULL },  /* AttnFlags */
-    {  298,  578, SF_WORD , 0, 0, NULL },  /* AttnResched */
-    {  300,  584, SF_PTR  , 0, 0, NULL },  /* ResModules */
-    {  304,  592, SF_PTR  , 0, 0, NULL },  /* TaskTrapCode */
-    {  308,  600, SF_PTR  , 0, 0, NULL },  /* TaskExceptCode */
-    {  312,  608, SF_PTR  , 0, 0, NULL },  /* TaskExitCode */
-    {  316,  616, SF_LONG , 0, 0, NULL },  /* TaskSigAlloc */
-    {  320,  620, SF_WORD , 0, 0, NULL },  /* TaskTrapAlloc */
-    {  322,  624, SF_PTR  , 0, 0, NULL },  /* lh_Head */
-    {  326,  632, SF_PTR  , 0, 0, NULL },  /* lh_Tail */
-    {  330,  640, SF_PTR  , 0, 0, NULL },  /* lh_TailPred */
-    {  334,  648, SF_BYTE , 0, 0, NULL },  /* lh_Type */
-    {  335,  649, SF_BYTE , 0, 0, NULL },  /* l_pad */
-    {  530, 1096, SF_BYTE , 0, 0, NULL },  /* VBlankFrequency */
-    {  531, 1097, SF_BYTE , 0, 0, NULL },  /* PowerSupplyFrequency */
-    {  546, 1136, SF_PTR  , 0, 0, NULL },  /* KickMemPtr */
-    {  550, 1144, SF_PTR  , 0, 0, NULL },  /* KickTagPtr */
-    {  554, 1152, SF_PTR  , 0, 0, NULL },  /* KickCheckSum */
-    {  558, 1160, SF_WORD , 0, 0, NULL },  /* ex_Pad0 */
-    {  560, 1168, SF_PTR  , 0, 0, NULL },  /* ex_LaunchPoint */
-    {  564, 1176, SF_PTR  , 0, 0, NULL },  /* ex_RamLibPrivate */
-    {  568, 1184, SF_LONG , 0, 0, NULL },  /* ex_EClockFrequency */
-    {  572, 1188, SF_LONG , 0, 0, NULL },  /* ex_CacheControl */
-    {  576, 1192, SF_LONG , 0, 0, NULL },  /* ex_TaskID */
-    {  600, 1240, SF_PTR  , 0, 0, NULL },  /* ex_MMULock */
-    {  616, 1272, SF_PTR  , 0, 0, NULL },  /* mlh_Head */
-    {  620, 1280, SF_PTR  , 0, 0, NULL },  /* mlh_Tail */
-    {  624, 1288, SF_PTR  , 0, 0, NULL },  /* mlh_TailPred */
-    {  628, 1296, SF_PTR  , 0, 0, NULL },  /* ex_MemHandler */
+    SHADOW_FIELD(   0, 4, ExecBase, LibNode.lib_Node.ln_Succ),
+    SHADOW_FIELD(   4, 4, ExecBase, LibNode.lib_Node.ln_Pred),
+    SHADOW_FIELD(   8, 1, ExecBase, LibNode.lib_Node.ln_Type),
+    SHADOW_FIELD(   9, 1, ExecBase, LibNode.lib_Node.ln_Pri),
+    SHADOW_FIELD(  10, 4, ExecBase, LibNode.lib_Node.ln_Name),
+    SHADOW_FIELD(  14, 1, ExecBase, LibNode.lib_Flags),
+    SHADOW_FIELD(  15, 1, ExecBase, LibNode.lib_pad),
+    SHADOW_FIELD(  16, 2, ExecBase, LibNode.lib_NegSize),
+    SHADOW_FIELD(  18, 2, ExecBase, LibNode.lib_PosSize),
+    SHADOW_FIELD(  20, 2, ExecBase, LibNode.lib_Version),
+    SHADOW_FIELD(  22, 2, ExecBase, LibNode.lib_Revision),
+    SHADOW_FIELD(  24, 4, ExecBase, LibNode.lib_IdString),
+    SHADOW_FIELD(  28, 4, ExecBase, LibNode.lib_Sum),
+    SHADOW_FIELD(  32, 2, ExecBase, LibNode.lib_OpenCnt),
+    SHADOW_FIELD(  34, 2, ExecBase, SoftVer),
+    SHADOW_FIELD(  36, 2, ExecBase, LowMemChkSum),
+    SHADOW_FIELD(  38, 4, ExecBase, ChkBase),
+    SHADOW_FIELD(  42, 4, ExecBase, ColdCapture),
+    SHADOW_FIELD(  46, 4, ExecBase, CoolCapture),
+    SHADOW_FIELD(  50, 4, ExecBase, WarmCapture),
+    SHADOW_FIELD(  54, 4, ExecBase, SysStkUpper),
+    SHADOW_FIELD(  58, 4, ExecBase, SysStkLower),
+    SHADOW_FIELD(  62, 4, ExecBase, MaxLocMem),
+    SHADOW_FIELD(  66, 4, ExecBase, DebugEntry),
+    SHADOW_FIELD(  70, 4, ExecBase, DebugData),
+    SHADOW_FIELD(  74, 4, ExecBase, AlertData),
+    SHADOW_FIELD(  78, 4, ExecBase, MaxExtMem),
+    SHADOW_FIELD(  82, 2, ExecBase, ChkSum),
+    SHADOW_FIELD( 276, 4, ExecBase, ThisTask),
+    SHADOW_FIELD( 280, 4, ExecBase, IdleCount),
+    SHADOW_FIELD( 284, 4, ExecBase, DispCount),
+    SHADOW_FIELD( 288, 2, ExecBase, Quantum),
+    SHADOW_FIELD( 290, 2, ExecBase, Elapsed),
+    SHADOW_FIELD( 292, 2, ExecBase, SysFlags),
+    SHADOW_FIELD( 294, 1, ExecBase, IDNestCnt),
+    SHADOW_FIELD( 295, 1, ExecBase, TDNestCnt),
+    SHADOW_FIELD( 296, 2, ExecBase, AttnFlags),
+    SHADOW_FIELD( 298, 2, ExecBase, AttnResched),
+    SHADOW_FIELD( 300, 4, ExecBase, ResModules),
+    SHADOW_FIELD( 304, 4, ExecBase, TaskTrapCode),
+    SHADOW_FIELD( 308, 4, ExecBase, TaskExceptCode),
+    SHADOW_FIELD( 312, 4, ExecBase, TaskExitCode),
+    SHADOW_FIELD( 316, 4, ExecBase, TaskSigAlloc),
+    SHADOW_FIELD( 320, 2, ExecBase, TaskTrapAlloc),
+    SHADOW_FIELD( 322, 4, ExecBase, MemList.lh_Head),
+    SHADOW_FIELD( 326, 4, ExecBase, MemList.lh_Tail),
+    SHADOW_FIELD( 330, 4, ExecBase, MemList.lh_TailPred),
+    SHADOW_FIELD( 334, 1, ExecBase, MemList.lh_Type),
+    SHADOW_FIELD( 335, 1, ExecBase, MemList.l_pad),
+    SHADOW_FIELD( 530, 1, ExecBase, VBlankFrequency),
+    SHADOW_FIELD( 531, 1, ExecBase, PowerSupplyFrequency),
+    SHADOW_FIELD( 546, 4, ExecBase, KickMemPtr),
+    SHADOW_FIELD( 550, 4, ExecBase, KickTagPtr),
+    SHADOW_FIELD( 554, 4, ExecBase, KickCheckSum),
+    SHADOW_FIELD( 558, 2, ExecBase, ex_Pad0),
+    SHADOW_FIELD( 560, 4, ExecBase, ex_LaunchPoint),
+    SHADOW_FIELD( 564, 4, ExecBase, ex_RamLibPrivate),
+    SHADOW_FIELD( 568, 4, ExecBase, ex_EClockFrequency),
+    SHADOW_FIELD( 572, 4, ExecBase, ex_CacheControl),
+    SHADOW_FIELD( 576, 4, ExecBase, ex_TaskID),
+    SHADOW_FIELD( 600, 4, ExecBase, ex_MMULock),
+    SHADOW_FIELD( 616, 4, ExecBase, ex_MemHandlers.mlh_Head),
+    SHADOW_FIELD( 620, 4, ExecBase, ex_MemHandlers.mlh_Tail),
+    SHADOW_FIELD( 624, 4, ExecBase, ex_MemHandlers.mlh_TailPred),
+    SHADOW_FIELD( 628, 4, ExecBase, ex_MemHandler),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* ExpansionBase: m68k=88B, aros=184B, 24 fields */
+/* ExpansionBase: m68k=88B, 24 fields */
 static const struct M68KFieldMap shadow_fields_ExpansionBase[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* ln_Succ */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* ln_Pred */
-    {    8,   16, SF_BYTE , 0, 0, NULL },  /* ln_Type */
-    {    9,   17, SF_BYTE , 0, 0, NULL },  /* ln_Pri */
-    {   10,   24, SF_PTR  , 0, 0, NULL },  /* ln_Name */
-    {   14,   32, SF_BYTE , 0, 0, NULL },  /* lib_Flags */
-    {   15,   33, SF_BYTE , 0, 0, NULL },  /* lib_pad */
-    {   16,   34, SF_WORD , 0, 0, NULL },  /* lib_NegSize */
-    {   18,   36, SF_WORD , 0, 0, NULL },  /* lib_PosSize */
-    {   20,   38, SF_WORD , 0, 0, NULL },  /* lib_Version */
-    {   22,   40, SF_WORD , 0, 0, NULL },  /* lib_Revision */
-    {   24,   48, SF_PTR  , 0, 0, NULL },  /* lib_IdString */
-    {   28,   56, SF_LONG , 0, 0, NULL },  /* lib_Sum */
-    {   32,   60, SF_WORD , 0, 0, NULL },  /* lib_OpenCnt */
-    {   35,   65, SF_BYTE , 0, 0, NULL },  /* eb_Private01 */
-    {   36,   72, SF_PTR  , 0, 0, NULL },  /* eb_Private02 */
-    {   40,   80, SF_PTR  , 0, 0, NULL },  /* eb_Private03 */
-    {   48,   96, SF_PTR  , 0, 0, NULL },  /* cb_FileName */
-    {   52,  104, SF_PTR  , 0, 0, NULL },  /* cb_ProductString */
-    {   74,  152, SF_PTR  , 0, 0, NULL },  /* lh_Head */
-    {   78,  160, SF_PTR  , 0, 0, NULL },  /* lh_Tail */
-    {   82,  168, SF_PTR  , 0, 0, NULL },  /* lh_TailPred */
-    {   86,  176, SF_BYTE , 0, 0, NULL },  /* lh_Type */
-    {   87,  177, SF_BYTE , 0, 0, NULL },  /* l_pad */
+    SHADOW_FIELD(   0, 4, ExpansionBase, LibNode.lib_Node.ln_Succ),
+    SHADOW_FIELD(   4, 4, ExpansionBase, LibNode.lib_Node.ln_Pred),
+    SHADOW_FIELD(   8, 1, ExpansionBase, LibNode.lib_Node.ln_Type),
+    SHADOW_FIELD(   9, 1, ExpansionBase, LibNode.lib_Node.ln_Pri),
+    SHADOW_FIELD(  10, 4, ExpansionBase, LibNode.lib_Node.ln_Name),
+    SHADOW_FIELD(  14, 1, ExpansionBase, LibNode.lib_Flags),
+    SHADOW_FIELD(  15, 1, ExpansionBase, LibNode.lib_pad),
+    SHADOW_FIELD(  16, 2, ExpansionBase, LibNode.lib_NegSize),
+    SHADOW_FIELD(  18, 2, ExpansionBase, LibNode.lib_PosSize),
+    SHADOW_FIELD(  20, 2, ExpansionBase, LibNode.lib_Version),
+    SHADOW_FIELD(  22, 2, ExpansionBase, LibNode.lib_Revision),
+    SHADOW_FIELD(  24, 4, ExpansionBase, LibNode.lib_IdString),
+    SHADOW_FIELD(  28, 4, ExpansionBase, LibNode.lib_Sum),
+    SHADOW_FIELD(  32, 2, ExpansionBase, LibNode.lib_OpenCnt),
+    SHADOW_FIELD(  35, 1, ExpansionBase, eb_Private01),
+    SHADOW_FIELD(  36, 4, ExpansionBase, eb_Private02),
+    SHADOW_FIELD(  40, 4, ExpansionBase, eb_Private03),
+    SHADOW_FIELD(  48, 4, ExpansionBase, eb_Private04.cb_FileName),
+    SHADOW_FIELD(  52, 4, ExpansionBase, eb_Private04.cb_ProductString),
+    SHADOW_FIELD(  74, 4, ExpansionBase, MountList.lh_Head),
+    SHADOW_FIELD(  78, 4, ExpansionBase, MountList.lh_Tail),
+    SHADOW_FIELD(  82, 4, ExpansionBase, MountList.lh_TailPred),
+    SHADOW_FIELD(  86, 1, ExpansionBase, MountList.lh_Type),
+    SHADOW_FIELD(  87, 1, ExpansionBase, MountList.l_pad),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* ExpansionControl: m68k=16B, aros=16B, 16 fields */
+/* ExpansionControl: m68k=16B, 16 fields */
 static const struct M68KFieldMap shadow_fields_ExpansionControl[] = {
-    {    0,    0, SF_BYTE , 0, 0, NULL },  /* ec_Interrupt */
-    {    1,    1, SF_BYTE , 0, 0, NULL },  /* ec_Z3_HighBase */
-    {    2,    2, SF_BYTE , 0, 0, NULL },  /* ec_BaseAddress */
-    {    3,    3, SF_BYTE , 0, 0, NULL },  /* ec_Shutup */
-    {    4,    4, SF_BYTE , 0, 0, NULL },  /* ec_Reserved14 */
-    {    5,    5, SF_BYTE , 0, 0, NULL },  /* ec_Reserved15 */
-    {    6,    6, SF_BYTE , 0, 0, NULL },  /* ec_Reserved16 */
-    {    7,    7, SF_BYTE , 0, 0, NULL },  /* ec_Reserved17 */
-    {    8,    8, SF_BYTE , 0, 0, NULL },  /* ec_Reserved18 */
-    {    9,    9, SF_BYTE , 0, 0, NULL },  /* ec_Reserved19 */
-    {   10,   10, SF_BYTE , 0, 0, NULL },  /* ec_Reserved1a */
-    {   11,   11, SF_BYTE , 0, 0, NULL },  /* ec_Reserved1b */
-    {   12,   12, SF_BYTE , 0, 0, NULL },  /* ec_Reserved1c */
-    {   13,   13, SF_BYTE , 0, 0, NULL },  /* ec_Reserved1d */
-    {   14,   14, SF_BYTE , 0, 0, NULL },  /* ec_Reserved1e */
-    {   15,   15, SF_BYTE , 0, 0, NULL },  /* ec_Reserved1f */
+    SHADOW_FIELD(   0, 1, ExpansionControl, ec_Interrupt),
+    SHADOW_FIELD(   1, 1, ExpansionControl, ec_Z3_HighBase),
+    SHADOW_FIELD(   2, 1, ExpansionControl, ec_BaseAddress),
+    SHADOW_FIELD(   3, 1, ExpansionControl, ec_Shutup),
+    SHADOW_FIELD(   4, 1, ExpansionControl, ec_Reserved14),
+    SHADOW_FIELD(   5, 1, ExpansionControl, ec_Reserved15),
+    SHADOW_FIELD(   6, 1, ExpansionControl, ec_Reserved16),
+    SHADOW_FIELD(   7, 1, ExpansionControl, ec_Reserved17),
+    SHADOW_FIELD(   8, 1, ExpansionControl, ec_Reserved18),
+    SHADOW_FIELD(   9, 1, ExpansionControl, ec_Reserved19),
+    SHADOW_FIELD(  10, 1, ExpansionControl, ec_Reserved1a),
+    SHADOW_FIELD(  11, 1, ExpansionControl, ec_Reserved1b),
+    SHADOW_FIELD(  12, 1, ExpansionControl, ec_Reserved1c),
+    SHADOW_FIELD(  13, 1, ExpansionControl, ec_Reserved1d),
+    SHADOW_FIELD(  14, 1, ExpansionControl, ec_Reserved1e),
+    SHADOW_FIELD(  15, 1, ExpansionControl, ec_Reserved1f),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* ExpansionRom: m68k=16B, aros=24B, 11 fields */
+/* ExpansionRom: m68k=16B, 11 fields */
 static const struct M68KFieldMap shadow_fields_ExpansionRom[] = {
-    {    0,    0, SF_BYTE , 0, 0, NULL },  /* er_Type */
-    {    1,    1, SF_BYTE , 0, 0, NULL },  /* er_Product */
-    {    2,    2, SF_BYTE , 0, 0, NULL },  /* er_Flags */
-    {    3,    3, SF_BYTE , 0, 0, NULL },  /* er_Reserved03 */
-    {    4,    4, SF_WORD , 0, 0, NULL },  /* er_Manufacturer */
-    {    6,    8, SF_LONG , 0, 0, NULL },  /* er_SerialNumber */
-    {   10,   12, SF_WORD , 0, 0, NULL },  /* er_InitDiagVec */
-    {   12,   16, SF_BYTE , 0, 0, NULL },  /* er_Reserved0c */
-    {   13,   17, SF_BYTE , 0, 0, NULL },  /* er_Reserved0d */
-    {   14,   18, SF_BYTE , 0, 0, NULL },  /* er_Reserved0e */
-    {   15,   19, SF_BYTE , 0, 0, NULL },  /* er_Reserved0f */
+    SHADOW_FIELD(   0, 1, ExpansionRom, er_Type),
+    SHADOW_FIELD(   1, 1, ExpansionRom, er_Product),
+    SHADOW_FIELD(   2, 1, ExpansionRom, er_Flags),
+    SHADOW_FIELD(   3, 1, ExpansionRom, er_Reserved03),
+    SHADOW_FIELD(   4, 2, ExpansionRom, er_Manufacturer),
+    SHADOW_FIELD(   6, 4, ExpansionRom, er_SerialNumber),
+    SHADOW_FIELD(  10, 2, ExpansionRom, er_InitDiagVec),
+    SHADOW_FIELD(  12, 1, ExpansionRom, er_Reserved0c),
+    SHADOW_FIELD(  13, 1, ExpansionRom, er_Reserved0d),
+    SHADOW_FIELD(  14, 1, ExpansionRom, er_Reserved0e),
+    SHADOW_FIELD(  15, 1, ExpansionRom, er_Reserved0f),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* ExtGadget: m68k=56B, aros=96B, 15 fields */
+/* ExtGadget: m68k=56B, 17 fields */
 static const struct M68KFieldMap shadow_fields_ExtGadget[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* NextGadget */
-    {    4,    8, SF_WORD , 0, 0, NULL },  /* LeftEdge */
-    {    6,   10, SF_WORD , 0, 0, NULL },  /* TopEdge */
-    {   14,   18, SF_WORD , 0, 0, NULL },  /* Activation */
-    {   16,   20, SF_WORD , 0, 0, NULL },  /* GadgetType */
-    {   18,   24, SF_PTR  , 0, 0, NULL },  /* GadgetRender */
-    {   22,   32, SF_PTR  , 0, 0, NULL },  /* SelectRender */
-    {   26,   40, SF_PTR  , 0, 0, NULL },  /* GadgetText */
-    {   30,   48, SF_PTR  , 0, 0, NULL },  /* MutualExclude */
-    {   34,   56, SF_PTR  , 0, 0, NULL },  /* SpecialInfo */
-    {   38,   64, SF_WORD , 0, 0, NULL },  /* GadgetID */
-    {   40,   72, SF_PTR  , 0, 0, NULL },  /* UserData */
-    {   44,   80, SF_LONG , 0, 0, NULL },  /* MoreFlags */
-    {   48,   84, SF_WORD , 0, 0, NULL },  /* BoundsLeftEdge */
-    {   50,   86, SF_WORD , 0, 0, NULL },  /* BoundsTopEdge */
-    {   52,   88, SF_WORD , 0, 0, NULL },  /* BoundsWidth */
-    {   54,   90, SF_WORD , 0, 0, NULL },  /* BoundsHeight */
+    SHADOW_FIELD(   0, 4, ExtGadget, NextGadget),
+    SHADOW_FIELD(   4, 2, ExtGadget, LeftEdge),
+    SHADOW_FIELD(   6, 2, ExtGadget, TopEdge),
+    SHADOW_FIELD(  14, 2, ExtGadget, Activation),
+    SHADOW_FIELD(  16, 2, ExtGadget, GadgetType),
+    SHADOW_FIELD(  18, 4, ExtGadget, GadgetRender),
+    SHADOW_FIELD(  22, 4, ExtGadget, SelectRender),
+    SHADOW_FIELD(  26, 4, ExtGadget, GadgetText),
+    SHADOW_FIELD(  30, 4, ExtGadget, MutualExclude),
+    SHADOW_FIELD(  34, 4, ExtGadget, SpecialInfo),
+    SHADOW_FIELD(  38, 2, ExtGadget, GadgetID),
+    SHADOW_FIELD(  40, 4, ExtGadget, UserData),
+    SHADOW_FIELD(  44, 4, ExtGadget, MoreFlags),
+    SHADOW_FIELD(  48, 2, ExtGadget, BoundsLeftEdge),
+    SHADOW_FIELD(  50, 2, ExtGadget, BoundsTopEdge),
+    SHADOW_FIELD(  52, 2, ExtGadget, BoundsWidth),
+    SHADOW_FIELD(  54, 2, ExtGadget, BoundsHeight),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* ExtIntuiMessage: m68k=56B, aros=104B, 14 fields */
+/* ExtIntuiMessage: m68k=56B, 18 fields */
 static const struct M68KFieldMap shadow_fields_ExtIntuiMessage[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* ln_Succ */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* ln_Pred */
-    {    8,   16, SF_BYTE , 0, 0, NULL },  /* ln_Type */
-    {    9,   17, SF_BYTE , 0, 0, NULL },  /* ln_Pri */
-    {   10,   24, SF_PTR  , 0, 0, NULL },  /* ln_Name */
-    {   14,   32, SF_PTR  , 0, 0, NULL },  /* mn_ReplyPort */
-    {   18,   40, SF_WORD , 0, 0, NULL },  /* mn_Length */
-    {   20,   48, SF_LONG , 0, 0, NULL },  /* Class */
-    {   24,   52, SF_WORD , 0, 0, NULL },  /* Code */
-    {   26,   54, SF_WORD , 0, 0, NULL },  /* Qualifier */
-    {   28,   56, SF_PTR  , 0, 0, NULL },  /* IAddress */
-    {   32,   64, SF_WORD , 0, 0, NULL },  /* MouseX */
-    {   34,   66, SF_WORD , 0, 0, NULL },  /* MouseY */
-    {   36,   68, SF_LONG , 0, 0, NULL },  /* Seconds */
-    {   40,   72, SF_LONG , 0, 0, NULL },  /* Micros */
-    {   44,   80, SF_PTR  , 0, 0, NULL },  /* IDCMPWindow */
-    {   48,   88, SF_PTR  , 0, 0, NULL },  /* SpecialLink */
-    {   52,   96, SF_PTR  , 0, 0, NULL },  /* eim_TabletData */
+    SHADOW_FIELD(   0, 4, ExtIntuiMessage, eim_IntuiMessage.ExecMessage.mn_Node.ln_Succ),
+    SHADOW_FIELD(   4, 4, ExtIntuiMessage, eim_IntuiMessage.ExecMessage.mn_Node.ln_Pred),
+    SHADOW_FIELD(   8, 1, ExtIntuiMessage, eim_IntuiMessage.ExecMessage.mn_Node.ln_Type),
+    SHADOW_FIELD(   9, 1, ExtIntuiMessage, eim_IntuiMessage.ExecMessage.mn_Node.ln_Pri),
+    SHADOW_FIELD(  10, 4, ExtIntuiMessage, eim_IntuiMessage.ExecMessage.mn_Node.ln_Name),
+    SHADOW_FIELD(  14, 4, ExtIntuiMessage, eim_IntuiMessage.ExecMessage.mn_ReplyPort),
+    SHADOW_FIELD(  18, 2, ExtIntuiMessage, eim_IntuiMessage.ExecMessage.mn_Length),
+    SHADOW_FIELD(  20, 4, ExtIntuiMessage, eim_IntuiMessage.Class),
+    SHADOW_FIELD(  24, 2, ExtIntuiMessage, eim_IntuiMessage.Code),
+    SHADOW_FIELD(  26, 2, ExtIntuiMessage, eim_IntuiMessage.Qualifier),
+    SHADOW_FIELD(  28, 4, ExtIntuiMessage, eim_IntuiMessage.IAddress),
+    SHADOW_FIELD(  32, 2, ExtIntuiMessage, eim_IntuiMessage.MouseX),
+    SHADOW_FIELD(  34, 2, ExtIntuiMessage, eim_IntuiMessage.MouseY),
+    SHADOW_FIELD(  36, 4, ExtIntuiMessage, eim_IntuiMessage.Seconds),
+    SHADOW_FIELD(  40, 4, ExtIntuiMessage, eim_IntuiMessage.Micros),
+    SHADOW_FIELD(  44, 4, ExtIntuiMessage, eim_IntuiMessage.IDCMPWindow),
+    SHADOW_FIELD(  48, 4, ExtIntuiMessage, eim_IntuiMessage.SpecialLink),
+    SHADOW_FIELD(  52, 4, ExtIntuiMessage, eim_TabletData),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* ExtNewScreen: m68k=36B, aros=56B, 7 fields */
+/* ExtNewScreen: m68k=36B, 9 fields */
 static const struct M68KFieldMap shadow_fields_ExtNewScreen[] = {
-    {    0,    0, SF_WORD , 0, 0, NULL },  /* LeftEdge */
-    {    2,    2, SF_WORD , 0, 0, NULL },  /* TopEdge */
-    {   12,   12, SF_WORD , 0, 0, NULL },  /* ViewModes */
-    {   14,   14, SF_WORD , 0, 0, NULL },  /* Type */
-    {   16,   16, SF_PTR  , 0, 0, NULL },  /* Font */
-    {   20,   24, SF_PTR  , 0, 0, NULL },  /* DefaultTitle */
-    {   24,   32, SF_PTR  , 0, 0, NULL },  /* Gadgets */
-    {   28,   40, SF_PTR  , 0, 0, NULL },  /* CustomBitMap */
-    {   32,   48, SF_PTR  , 0, 0, NULL },  /* Extension */
+    SHADOW_FIELD(   0, 2, ExtNewScreen, LeftEdge),
+    SHADOW_FIELD(   2, 2, ExtNewScreen, TopEdge),
+    SHADOW_FIELD(  12, 2, ExtNewScreen, ViewModes),
+    SHADOW_FIELD(  14, 2, ExtNewScreen, Type),
+    SHADOW_FIELD(  16, 4, ExtNewScreen, Font),
+    SHADOW_FIELD(  20, 4, ExtNewScreen, DefaultTitle),
+    SHADOW_FIELD(  24, 4, ExtNewScreen, Gadgets),
+    SHADOW_FIELD(  28, 4, ExtNewScreen, CustomBitMap),
+    SHADOW_FIELD(  32, 4, ExtNewScreen, Extension),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* ExtNewWindow: m68k=52B, aros=88B, 7 fields */
+/* ExtNewWindow: m68k=52B, 13 fields */
 static const struct M68KFieldMap shadow_fields_ExtNewWindow[] = {
-    {    0,    0, SF_WORD , 0, 0, NULL },  /* LeftEdge */
-    {    2,    2, SF_WORD , 0, 0, NULL },  /* TopEdge */
-    {   10,   12, SF_LONG , 0, 0, NULL },  /* IDCMPFlags */
-    {   18,   24, SF_PTR  , 0, 0, NULL },  /* FirstGadget */
-    {   22,   32, SF_PTR  , 0, 0, NULL },  /* CheckMark */
-    {   26,   40, SF_PTR  , 0, 0, NULL },  /* Title */
-    {   30,   48, SF_PTR  , 0, 0, NULL },  /* Screen */
-    {   38,   64, SF_WORD , 0, 0, NULL },  /* MinWidth */
-    {   40,   66, SF_WORD , 0, 0, NULL },  /* MinHeight */
-    {   42,   68, SF_WORD , 0, 0, NULL },  /* MaxWidth */
-    {   44,   70, SF_WORD , 0, 0, NULL },  /* MaxHeight */
-    {   46,   72, SF_WORD , 0, 0, NULL },  /* Type */
-    {   48,   80, SF_PTR  , 0, 0, NULL },  /* Extension */
+    SHADOW_FIELD(   0, 2, ExtNewWindow, LeftEdge),
+    SHADOW_FIELD(   2, 2, ExtNewWindow, TopEdge),
+    SHADOW_FIELD(  10, 4, ExtNewWindow, IDCMPFlags),
+    SHADOW_FIELD(  18, 4, ExtNewWindow, FirstGadget),
+    SHADOW_FIELD(  22, 4, ExtNewWindow, CheckMark),
+    SHADOW_FIELD(  26, 4, ExtNewWindow, Title),
+    SHADOW_FIELD(  30, 4, ExtNewWindow, Screen),
+    SHADOW_FIELD(  38, 2, ExtNewWindow, MinWidth),
+    SHADOW_FIELD(  40, 2, ExtNewWindow, MinHeight),
+    SHADOW_FIELD(  42, 2, ExtNewWindow, MaxWidth),
+    SHADOW_FIELD(  44, 2, ExtNewWindow, MaxHeight),
+    SHADOW_FIELD(  46, 2, ExtNewWindow, Type),
+    SHADOW_FIELD(  48, 4, ExtNewWindow, Extension),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* ExtSprite: m68k=16B, aros=32B, 5 fields */
+/* ExtSprite: m68k=16B, 7 fields */
 static const struct M68KFieldMap shadow_fields_ExtSprite[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* posctldata */
-    {    4,    8, SF_WORD , 0, 0, NULL },  /* height */
-    {    6,   10, SF_WORD , 0, 0, NULL },  /* x */
-    {    8,   12, SF_WORD , 0, 0, NULL },  /* y */
-    {   10,   14, SF_WORD , 0, 0, NULL },  /* num */
-    {   12,   16, SF_WORD , 0, 0, NULL },  /* es_wordwidth */
-    {   14,   18, SF_WORD , 0, 0, NULL },  /* es_flags */
+    SHADOW_FIELD(   0, 4, ExtSprite, es_SimpleSprite.posctldata),
+    SHADOW_FIELD(   4, 2, ExtSprite, es_SimpleSprite.height),
+    SHADOW_FIELD(   6, 2, ExtSprite, es_SimpleSprite.x),
+    SHADOW_FIELD(   8, 2, ExtSprite, es_SimpleSprite.y),
+    SHADOW_FIELD(  10, 2, ExtSprite, es_SimpleSprite.num),
+    SHADOW_FIELD(  12, 2, ExtSprite, es_wordwidth),
+    SHADOW_FIELD(  14, 2, ExtSprite, es_flags),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* ExtendedNode: m68k=24B, aros=56B, 8 fields */
+/* ExtendedNode: m68k=24B, 8 fields */
 static const struct M68KFieldMap shadow_fields_ExtendedNode[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* xln_Succ */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* xln_Pred */
-    {    8,   16, SF_BYTE , 0, 0, NULL },  /* xln_Type */
-    {    9,   17, SF_BYTE , 0, 0, NULL },  /* xln_Pri */
-    {   10,   24, SF_PTR  , 0, 0, NULL },  /* xln_Name */
-    {   14,   32, SF_BYTE , 0, 0, NULL },  /* xln_Subsystem */
-    {   15,   33, SF_BYTE , 0, 0, NULL },  /* xln_Subtype */
-    {   16,   40, SF_PTR  , 0, 0, NULL },  /* xln_Library */
+    SHADOW_FIELD(   0, 4, ExtendedNode, xln_Succ),
+    SHADOW_FIELD(   4, 4, ExtendedNode, xln_Pred),
+    SHADOW_FIELD(   8, 1, ExtendedNode, xln_Type),
+    SHADOW_FIELD(   9, 1, ExtendedNode, xln_Pri),
+    SHADOW_FIELD(  10, 4, ExtendedNode, xln_Name),
+    SHADOW_FIELD(  14, 1, ExtendedNode, xln_Subsystem),
+    SHADOW_FIELD(  15, 1, ExtendedNode, xln_Subtype),
+    SHADOW_FIELD(  16, 4, ExtendedNode, xln_Library),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* FileHandle: m68k=44B, aros=88B, 8 fields */
+/* FileHandle: m68k=44B, 8 fields */
 static const struct M68KFieldMap shadow_fields_FileHandle[] = {
-    {   12,   16, SF_PTR  , 0, 0, NULL },  /* fh_Buf */
-    {   16,   24, SF_LONG , 0, 0, NULL },  /* fh_Pos */
-    {   20,   28, SF_LONG , 0, 0, NULL },  /* fh_End */
-    {   24,   32, SF_PTR  , 0, 0, NULL },  /* fh_Funcs */
-    {   28,   40, SF_PTR  , 0, 0, NULL },  /* fh_Func2 */
-    {   32,   48, SF_PTR  , 0, 0, NULL },  /* fh_Func3 */
-    {   36,   56, SF_PTR  , 0, 0, NULL },  /* fh_Args */
-    {   40,   64, SF_PTR  , 0, 0, NULL },  /* fh_Arg2 */
+    SHADOW_FIELD(  12, 4, FileHandle, fh_Buf),
+    SHADOW_FIELD(  16, 4, FileHandle, fh_Pos),
+    SHADOW_FIELD(  20, 4, FileHandle, fh_End),
+    SHADOW_FIELD(  24, 4, FileHandle, fh_Funcs),
+    SHADOW_FIELD(  28, 4, FileHandle, fh_Func2),
+    SHADOW_FIELD(  32, 4, FileHandle, fh_Func3),
+    SHADOW_FIELD(  36, 4, FileHandle, fh_Args),
+    SHADOW_FIELD(  40, 4, FileHandle, fh_Arg2),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* FileInfoBlock: m68k=260B, aros=264B, 10 fields */
+/* FileInfoBlock: m68k=260B, 10 fields */
 static const struct M68KFieldMap shadow_fields_FileInfoBlock[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* fib_DiskKey */
-    {  116,  120, SF_LONG , 0, 0, NULL },  /* fib_Protection */
-    {  120,  124, SF_LONG , 0, 0, NULL },  /* fib_EntryType */
-    {  124,  128, SF_LONG , 0, 0, NULL },  /* fib_Size */
-    {  128,  132, SF_LONG , 0, 0, NULL },  /* fib_NumBlocks */
-    {  132,  136, SF_LONG , 0, 0, NULL },  /* ds_Days */
-    {  136,  140, SF_LONG , 0, 0, NULL },  /* ds_Minute */
-    {  140,  144, SF_LONG , 0, 0, NULL },  /* ds_Tick */
-    {  224,  228, SF_WORD , 0, 0, NULL },  /* fib_OwnerUID */
-    {  226,  230, SF_WORD , 0, 0, NULL },  /* fib_OwnerGID */
+    SHADOW_FIELD(   0, 4, FileInfoBlock, fib_DiskKey),
+    SHADOW_FIELD( 116, 4, FileInfoBlock, fib_Protection),
+    SHADOW_FIELD( 120, 4, FileInfoBlock, fib_EntryType),
+    SHADOW_FIELD( 124, 4, FileInfoBlock, fib_Size),
+    SHADOW_FIELD( 128, 4, FileInfoBlock, fib_NumBlocks),
+    SHADOW_FIELD( 132, 4, FileInfoBlock, fib_Date.ds_Days),
+    SHADOW_FIELD( 136, 4, FileInfoBlock, fib_Date.ds_Minute),
+    SHADOW_FIELD( 140, 4, FileInfoBlock, fib_Date.ds_Tick),
+    SHADOW_FIELD( 224, 2, FileInfoBlock, fib_OwnerUID),
+    SHADOW_FIELD( 226, 2, FileInfoBlock, fib_OwnerGID),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* FileLock: m68k=20B, aros=40B, 4 fields */
+/* FileLock: m68k=20B, 5 fields */
 static const struct M68KFieldMap shadow_fields_FileLock[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* fl_Link */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* fl_Key */
-    {    8,   16, SF_LONG , 0, 0, NULL },  /* fl_Access */
-    {   12,   24, SF_PTR  , 0, 0, NULL },  /* fl_Task */
-    {   16,   32, SF_PTR  , 0, 0, NULL },  /* fl_Volume */
+    SHADOW_FIELD(   0, 4, FileLock, fl_Link),
+    SHADOW_FIELD(   4, 4, FileLock, fl_Key),
+    SHADOW_FIELD(   8, 4, FileLock, fl_Access),
+    SHADOW_FIELD(  12, 4, FileLock, fl_Task),
+    SHADOW_FIELD(  16, 4, FileLock, fl_Volume),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* FileRequester: m68k=56B, aros=80B, 12 fields */
+/* FileRequester: m68k=56B, 12 fields */
 static const struct M68KFieldMap shadow_fields_FileRequester[] = {
-    {    0,    0, SF_LONG , 0, 0, NULL },  /* fr_Reserved0 */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* fr_File */
-    {    8,   16, SF_PTR  , 0, 0, NULL },  /* fr_Drawer */
-    {   22,   34, SF_WORD , 0, 0, NULL },  /* fr_LeftEdge */
-    {   24,   36, SF_WORD , 0, 0, NULL },  /* fr_TopEdge */
-    {   26,   38, SF_WORD , 0, 0, NULL },  /* fr_Width */
-    {   28,   40, SF_WORD , 0, 0, NULL },  /* fr_Height */
-    {   30,   42, SF_WORD , 0, 0, NULL },  /* fr_Reserved2 */
-    {   32,   44, SF_LONG , 0, 0, NULL },  /* fr_NumArgs */
-    {   36,   48, SF_PTR  , 0, 0, NULL },  /* fr_ArgList */
-    {   40,   56, SF_PTR  , 0, 0, NULL },  /* fr_UserData */
-    {   52,   72, SF_PTR  , 0, 0, NULL },  /* fr_Pattern */
+    SHADOW_FIELD(   0, 4, FileRequester, fr_Reserved0),
+    SHADOW_FIELD(   4, 4, FileRequester, fr_File),
+    SHADOW_FIELD(   8, 4, FileRequester, fr_Drawer),
+    SHADOW_FIELD(  22, 2, FileRequester, fr_LeftEdge),
+    SHADOW_FIELD(  24, 2, FileRequester, fr_TopEdge),
+    SHADOW_FIELD(  26, 2, FileRequester, fr_Width),
+    SHADOW_FIELD(  28, 2, FileRequester, fr_Height),
+    SHADOW_FIELD(  30, 2, FileRequester, fr_Reserved2),
+    SHADOW_FIELD(  32, 4, FileRequester, fr_NumArgs),
+    SHADOW_FIELD(  36, 4, FileRequester, fr_ArgList),
+    SHADOW_FIELD(  40, 4, FileRequester, fr_UserData),
+    SHADOW_FIELD(  52, 4, FileRequester, fr_Pattern),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* FileSysEntry: m68k=62B, aros=104B, 17 fields */
+/* FileSysEntry: m68k=62B, 17 fields */
 static const struct M68KFieldMap shadow_fields_FileSysEntry[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* ln_Succ */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* ln_Pred */
-    {    8,   16, SF_BYTE , 0, 0, NULL },  /* ln_Type */
-    {    9,   17, SF_BYTE , 0, 0, NULL },  /* ln_Pri */
-    {   10,   24, SF_PTR  , 0, 0, NULL },  /* ln_Name */
-    {   14,   32, SF_LONG , 0, 0, NULL },  /* fse_DosType */
-    {   18,   36, SF_LONG , 0, 0, NULL },  /* fse_Version */
-    {   22,   40, SF_LONG , 0, 0, NULL },  /* fse_PatchFlags */
-    {   26,   44, SF_LONG , 0, 0, NULL },  /* fse_Type */
-    {   30,   48, SF_PTR  , 0, 0, NULL },  /* fse_Task */
-    {   34,   56, SF_PTR  , 0, 0, NULL },  /* fse_Lock */
-    {   38,   64, SF_PTR  , 0, 0, NULL },  /* fse_Handler */
-    {   42,   72, SF_LONG , 0, 0, NULL },  /* fse_StackSize */
-    {   46,   76, SF_LONG , 0, 0, NULL },  /* fse_Priority */
-    {   50,   80, SF_PTR  , 0, 0, NULL },  /* fse_Startup */
-    {   54,   88, SF_PTR  , 0, 0, NULL },  /* fse_SegList */
-    {   58,   96, SF_PTR  , 0, 0, NULL },  /* fse_GlobalVec */
+    SHADOW_FIELD(   0, 4, FileSysEntry, fse_Node.ln_Succ),
+    SHADOW_FIELD(   4, 4, FileSysEntry, fse_Node.ln_Pred),
+    SHADOW_FIELD(   8, 1, FileSysEntry, fse_Node.ln_Type),
+    SHADOW_FIELD(   9, 1, FileSysEntry, fse_Node.ln_Pri),
+    SHADOW_FIELD(  10, 4, FileSysEntry, fse_Node.ln_Name),
+    SHADOW_FIELD(  14, 4, FileSysEntry, fse_DosType),
+    SHADOW_FIELD(  18, 4, FileSysEntry, fse_Version),
+    SHADOW_FIELD(  22, 4, FileSysEntry, fse_PatchFlags),
+    SHADOW_FIELD(  26, 4, FileSysEntry, fse_Type),
+    SHADOW_FIELD(  30, 4, FileSysEntry, fse_Task),
+    SHADOW_FIELD(  34, 4, FileSysEntry, fse_Lock),
+    SHADOW_FIELD(  38, 4, FileSysEntry, fse_Handler),
+    SHADOW_FIELD(  42, 4, FileSysEntry, fse_StackSize),
+    SHADOW_FIELD(  46, 4, FileSysEntry, fse_Priority),
+    SHADOW_FIELD(  50, 4, FileSysEntry, fse_Startup),
+    SHADOW_FIELD(  54, 4, FileSysEntry, fse_SegList),
+    SHADOW_FIELD(  58, 4, FileSysEntry, fse_GlobalVec),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* FileSysHeaderBlock: m68k=256B, aros=256B, 18 fields */
+/* FileSysHeaderBlock: m68k=256B, 18 fields */
 static const struct M68KFieldMap shadow_fields_FileSysHeaderBlock[] = {
-    {    0,    0, SF_LONG , 0, 0, NULL },  /* fhb_ID */
-    {    4,    4, SF_LONG , 0, 0, NULL },  /* fhb_SummedLongs */
-    {    8,    8, SF_LONG , 0, 0, NULL },  /* fhb_ChkSum */
-    {   12,   12, SF_LONG , 0, 0, NULL },  /* fhb_HostID */
-    {   16,   16, SF_LONG , 0, 0, NULL },  /* fhb_Next */
-    {   20,   20, SF_LONG , 0, 0, NULL },  /* fhb_Flags */
-    {   32,   32, SF_LONG , 0, 0, NULL },  /* fhb_DosType */
-    {   36,   36, SF_LONG , 0, 0, NULL },  /* fhb_Version */
-    {   40,   40, SF_LONG , 0, 0, NULL },  /* fhb_PatchFlags */
-    {   44,   44, SF_LONG , 0, 0, NULL },  /* fhb_Type */
-    {   48,   48, SF_LONG , 0, 0, NULL },  /* fhb_Task */
-    {   52,   52, SF_LONG , 0, 0, NULL },  /* fhb_Lock */
-    {   56,   56, SF_LONG , 0, 0, NULL },  /* fhb_Handler */
-    {   60,   60, SF_LONG , 0, 0, NULL },  /* fhb_StackSize */
-    {   64,   64, SF_LONG , 0, 0, NULL },  /* fhb_Priority */
-    {   68,   68, SF_LONG , 0, 0, NULL },  /* fhb_Startup */
-    {   72,   72, SF_LONG , 0, 0, NULL },  /* fhb_SegListBlocks */
-    {   76,   76, SF_LONG , 0, 0, NULL },  /* fhb_GlobalVec */
+    SHADOW_FIELD(   0, 4, FileSysHeaderBlock, fhb_ID),
+    SHADOW_FIELD(   4, 4, FileSysHeaderBlock, fhb_SummedLongs),
+    SHADOW_FIELD(   8, 4, FileSysHeaderBlock, fhb_ChkSum),
+    SHADOW_FIELD(  12, 4, FileSysHeaderBlock, fhb_HostID),
+    SHADOW_FIELD(  16, 4, FileSysHeaderBlock, fhb_Next),
+    SHADOW_FIELD(  20, 4, FileSysHeaderBlock, fhb_Flags),
+    SHADOW_FIELD(  32, 4, FileSysHeaderBlock, fhb_DosType),
+    SHADOW_FIELD(  36, 4, FileSysHeaderBlock, fhb_Version),
+    SHADOW_FIELD(  40, 4, FileSysHeaderBlock, fhb_PatchFlags),
+    SHADOW_FIELD(  44, 4, FileSysHeaderBlock, fhb_Type),
+    SHADOW_FIELD(  48, 4, FileSysHeaderBlock, fhb_Task),
+    SHADOW_FIELD(  52, 4, FileSysHeaderBlock, fhb_Lock),
+    SHADOW_FIELD(  56, 4, FileSysHeaderBlock, fhb_Handler),
+    SHADOW_FIELD(  60, 4, FileSysHeaderBlock, fhb_StackSize),
+    SHADOW_FIELD(  64, 4, FileSysHeaderBlock, fhb_Priority),
+    SHADOW_FIELD(  68, 4, FileSysHeaderBlock, fhb_Startup),
+    SHADOW_FIELD(  72, 4, FileSysHeaderBlock, fhb_SegListBlocks),
+    SHADOW_FIELD(  76, 4, FileSysHeaderBlock, fhb_GlobalVec),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* FileSysResource: m68k=32B, aros=72B, 11 fields */
+/* FileSysResource: m68k=32B, 11 fields */
 static const struct M68KFieldMap shadow_fields_FileSysResource[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* ln_Succ */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* ln_Pred */
-    {    8,   16, SF_BYTE , 0, 0, NULL },  /* ln_Type */
-    {    9,   17, SF_BYTE , 0, 0, NULL },  /* ln_Pri */
-    {   10,   24, SF_PTR  , 0, 0, NULL },  /* ln_Name */
-    {   14,   32, SF_PTR  , 0, 0, NULL },  /* fsr_Creator */
-    {   18,   40, SF_PTR  , 0, 0, NULL },  /* lh_Head */
-    {   22,   48, SF_PTR  , 0, 0, NULL },  /* lh_Tail */
-    {   26,   56, SF_PTR  , 0, 0, NULL },  /* lh_TailPred */
-    {   30,   64, SF_BYTE , 0, 0, NULL },  /* lh_Type */
-    {   31,   65, SF_BYTE , 0, 0, NULL },  /* l_pad */
+    SHADOW_FIELD(   0, 4, FileSysResource, fsr_Node.ln_Succ),
+    SHADOW_FIELD(   4, 4, FileSysResource, fsr_Node.ln_Pred),
+    SHADOW_FIELD(   8, 1, FileSysResource, fsr_Node.ln_Type),
+    SHADOW_FIELD(   9, 1, FileSysResource, fsr_Node.ln_Pri),
+    SHADOW_FIELD(  10, 4, FileSysResource, fsr_Node.ln_Name),
+    SHADOW_FIELD(  14, 4, FileSysResource, fsr_Creator),
+    SHADOW_FIELD(  18, 4, FileSysResource, fsr_FileSysEntries.lh_Head),
+    SHADOW_FIELD(  22, 4, FileSysResource, fsr_FileSysEntries.lh_Tail),
+    SHADOW_FIELD(  26, 4, FileSysResource, fsr_FileSysEntries.lh_TailPred),
+    SHADOW_FIELD(  30, 1, FileSysResource, fsr_FileSysEntries.lh_Type),
+    SHADOW_FIELD(  31, 1, FileSysResource, fsr_FileSysEntries.l_pad),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* FileSysStartupMsg: m68k=16B, aros=32B, 4 fields */
+/* FileSysStartupMsg: m68k=16B, 4 fields */
 static const struct M68KFieldMap shadow_fields_FileSysStartupMsg[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* fssm_Unit */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* fssm_Device */
-    {    8,   16, SF_PTR  , 0, 0, NULL },  /* fssm_Environ */
-    {   12,   24, SF_LONG , 0, 0, NULL },  /* fssm_Flags */
+    SHADOW_FIELD(   0, 4, FileSysStartupMsg, fssm_Unit),
+    SHADOW_FIELD(   4, 4, FileSysStartupMsg, fssm_Device),
+    SHADOW_FIELD(   8, 4, FileSysStartupMsg, fssm_Environ),
+    SHADOW_FIELD(  12, 4, FileSysStartupMsg, fssm_Flags),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* FontRequester: m68k=44B, aros=72B, 17 fields */
+/* FontRequester: m68k=44B, 18 fields */
 static const struct M68KFieldMap shadow_fields_FontRequester[] = {
-    {    8,    8, SF_PTR  , 0, 0, NULL },  /* ta_Name */
-    {   12,   16, SF_WORD , 0, 0, NULL },  /* ta_YSize */
-    {   14,   18, SF_BYTE , 0, 0, NULL },  /* ta_Style */
-    {   15,   19, SF_BYTE , 0, 0, NULL },  /* ta_Flags */
-    {   16,   24, SF_BYTE , 0, 0, NULL },  /* fo_FrontPen */
-    {   17,   25, SF_BYTE , 0, 0, NULL },  /* fo_BackPen */
-    {   18,   26, SF_BYTE , 0, 0, NULL },  /* fo_DrawMode */
-    {   19,   27, SF_BYTE , 0, 0, NULL },  /* fo_Reserved1 */
-    {   20,   32, SF_PTR  , 0, 0, NULL },  /* fo_UserData */
-    {   24,   40, SF_WORD , 0, 0, NULL },  /* fo_LeftEdge */
-    {   26,   42, SF_WORD , 0, 0, NULL },  /* fo_TopEdge */
-    {   28,   44, SF_WORD , 0, 0, NULL },  /* fo_Width */
-    {   30,   46, SF_WORD , 0, 0, NULL },  /* fo_Height */
-    {   32,   48, SF_PTR  , 0, 0, NULL },  /* tta_Name */
-    {   36,   56, SF_WORD , 0, 0, NULL },  /* tta_YSize */
-    {   38,   58, SF_BYTE , 0, 0, NULL },  /* tta_Style */
-    {   39,   59, SF_BYTE , 0, 0, NULL },  /* tta_Flags */
-    {   40,   64, SF_PTR  , 0, 0, NULL },  /* tta_Tags */
+    SHADOW_FIELD(   8, 4, FontRequester, fo_Attr.ta_Name),
+    SHADOW_FIELD(  12, 2, FontRequester, fo_Attr.ta_YSize),
+    SHADOW_FIELD(  14, 1, FontRequester, fo_Attr.ta_Style),
+    SHADOW_FIELD(  15, 1, FontRequester, fo_Attr.ta_Flags),
+    SHADOW_FIELD(  16, 1, FontRequester, fo_FrontPen),
+    SHADOW_FIELD(  17, 1, FontRequester, fo_BackPen),
+    SHADOW_FIELD(  18, 1, FontRequester, fo_DrawMode),
+    SHADOW_FIELD(  19, 1, FontRequester, fo_Reserved1),
+    SHADOW_FIELD(  20, 4, FontRequester, fo_UserData),
+    SHADOW_FIELD(  24, 2, FontRequester, fo_LeftEdge),
+    SHADOW_FIELD(  26, 2, FontRequester, fo_TopEdge),
+    SHADOW_FIELD(  28, 2, FontRequester, fo_Width),
+    SHADOW_FIELD(  30, 2, FontRequester, fo_Height),
+    SHADOW_FIELD(  32, 4, FontRequester, fo_TAttr.tta_Name),
+    SHADOW_FIELD(  36, 2, FontRequester, fo_TAttr.tta_YSize),
+    SHADOW_FIELD(  38, 1, FontRequester, fo_TAttr.tta_Style),
+    SHADOW_FIELD(  39, 1, FontRequester, fo_TAttr.tta_Flags),
+    SHADOW_FIELD(  40, 4, FontRequester, fo_TAttr.tta_Tags),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* FrameInfo: m68k=36B, aros=48B, 5 fields */
+/* FrameInfo: m68k=36B, 5 fields */
 static const struct M68KFieldMap shadow_fields_FrameInfo[] = {
-    {    0,    0, SF_LONG , 0, 0, NULL },  /* fri_PropertyFlags */
-    {    4,    4, SF_LONG , 0, 0, NULL },  /* fri_Resolution */
-    {    8,    8, SF_BYTE , 0, 0, NULL },  /* fri_RedBits */
-    {    9,    9, SF_BYTE , 0, 0, NULL },  /* fri_GreenBits */
-    {   10,   10, SF_BYTE , 0, 0, NULL },  /* fri_BlueBits */
+    SHADOW_FIELD(   0, 4, FrameInfo, fri_PropertyFlags),
+    SHADOW_FIELD(   4, 4, FrameInfo, fri_Resolution),
+    SHADOW_FIELD(   8, 1, FrameInfo, fri_RedBits),
+    SHADOW_FIELD(   9, 1, FrameInfo, fri_GreenBits),
+    SHADOW_FIELD(  10, 1, FrameInfo, fri_BlueBits),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* FreeList: m68k=16B, aros=40B, 6 fields */
+/* FreeList: m68k=16B, 6 fields */
 static const struct M68KFieldMap shadow_fields_FreeList[] = {
-    {    0,    0, SF_WORD , 0, 0, NULL },  /* fl_NumFree */
-    {    2,    8, SF_PTR  , 0, 0, NULL },  /* lh_Head */
-    {    6,   16, SF_PTR  , 0, 0, NULL },  /* lh_Tail */
-    {   10,   24, SF_PTR  , 0, 0, NULL },  /* lh_TailPred */
-    {   14,   32, SF_BYTE , 0, 0, NULL },  /* lh_Type */
-    {   15,   33, SF_BYTE , 0, 0, NULL },  /* l_pad */
+    SHADOW_FIELD(   0, 2, FreeList, fl_NumFree),
+    SHADOW_FIELD(   2, 4, FreeList, fl_MemList.lh_Head),
+    SHADOW_FIELD(   6, 4, FreeList, fl_MemList.lh_Tail),
+    SHADOW_FIELD(  10, 4, FreeList, fl_MemList.lh_TailPred),
+    SHADOW_FIELD(  14, 1, FreeList, fl_MemList.lh_Type),
+    SHADOW_FIELD(  15, 1, FreeList, fl_MemList.l_pad),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* Gadget: m68k=44B, aros=80B, 10 fields */
+/* Gadget: m68k=44B, 12 fields */
 static const struct M68KFieldMap shadow_fields_Gadget[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* NextGadget */
-    {    4,    8, SF_WORD , 0, 0, NULL },  /* LeftEdge */
-    {    6,   10, SF_WORD , 0, 0, NULL },  /* TopEdge */
-    {   14,   18, SF_WORD , 0, 0, NULL },  /* Activation */
-    {   16,   20, SF_WORD , 0, 0, NULL },  /* GadgetType */
-    {   18,   24, SF_PTR  , 0, 0, NULL },  /* GadgetRender */
-    {   22,   32, SF_PTR  , 0, 0, NULL },  /* SelectRender */
-    {   26,   40, SF_PTR  , 0, 0, NULL },  /* GadgetText */
-    {   30,   48, SF_PTR  , 0, 0, NULL },  /* MutualExclude */
-    {   34,   56, SF_PTR  , 0, 0, NULL },  /* SpecialInfo */
-    {   38,   64, SF_WORD , 0, 0, NULL },  /* GadgetID */
-    {   40,   72, SF_PTR  , 0, 0, NULL },  /* UserData */
+    SHADOW_FIELD(   0, 4, Gadget, NextGadget),
+    SHADOW_FIELD(   4, 2, Gadget, LeftEdge),
+    SHADOW_FIELD(   6, 2, Gadget, TopEdge),
+    SHADOW_FIELD(  14, 2, Gadget, Activation),
+    SHADOW_FIELD(  16, 2, Gadget, GadgetType),
+    SHADOW_FIELD(  18, 4, Gadget, GadgetRender),
+    SHADOW_FIELD(  22, 4, Gadget, SelectRender),
+    SHADOW_FIELD(  26, 4, Gadget, GadgetText),
+    SHADOW_FIELD(  30, 4, Gadget, MutualExclude),
+    SHADOW_FIELD(  34, 4, Gadget, SpecialInfo),
+    SHADOW_FIELD(  38, 2, Gadget, GadgetID),
+    SHADOW_FIELD(  40, 4, Gadget, UserData),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* GadgetInfo: m68k=58B, aros=88B, 7 fields */
+/* GadgetInfo: m68k=58B, 7 fields */
 static const struct M68KFieldMap shadow_fields_GadgetInfo[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* gi_Screen */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* gi_Window */
-    {    8,   16, SF_PTR  , 0, 0, NULL },  /* gi_Requester */
-    {   12,   24, SF_PTR  , 0, 0, NULL },  /* gi_RastPort */
-    {   16,   32, SF_PTR  , 0, 0, NULL },  /* gi_Layer */
-    {   20,   40, SF_WORD , 0, 0, NULL },  /* Left */
-    {   22,   42, SF_WORD , 0, 0, NULL },  /* Top */
+    SHADOW_FIELD(   0, 4, GadgetInfo, gi_Screen),
+    SHADOW_FIELD(   4, 4, GadgetInfo, gi_Window),
+    SHADOW_FIELD(   8, 4, GadgetInfo, gi_Requester),
+    SHADOW_FIELD(  12, 4, GadgetInfo, gi_RastPort),
+    SHADOW_FIELD(  16, 4, GadgetInfo, gi_Layer),
+    SHADOW_FIELD(  20, 2, GadgetInfo, gi_Domain.Left),
+    SHADOW_FIELD(  22, 2, GadgetInfo, gi_Domain.Top),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* GamePortTrigger: m68k=8B, aros=8B, 4 fields */
+/* GamePortTrigger: m68k=8B, 4 fields */
 static const struct M68KFieldMap shadow_fields_GamePortTrigger[] = {
-    {    0,    0, SF_WORD , 0, 0, NULL },  /* gpt_Keys */
-    {    2,    2, SF_WORD , 0, 0, NULL },  /* gpt_Timeout */
-    {    4,    4, SF_WORD , 0, 0, NULL },  /* gpt_XDelta */
-    {    6,    6, SF_WORD , 0, 0, NULL },  /* gpt_YDelta */
+    SHADOW_FIELD(   0, 2, GamePortTrigger, gpt_Keys),
+    SHADOW_FIELD(   2, 2, GamePortTrigger, gpt_Timeout),
+    SHADOW_FIELD(   4, 2, GamePortTrigger, gpt_XDelta),
+    SHADOW_FIELD(   6, 2, GamePortTrigger, gpt_YDelta),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* GelsInfo: m68k=38B, aros=72B, 2 fields */
+/* GelsInfo: m68k=38B, 11 fields */
 static const struct M68KFieldMap shadow_fields_GelsInfo[] = {
-    {    0,    0, SF_BYTE , 0, 0, NULL },  /* sprRsrvd */
-    {    2,    8, SF_PTR  , 0, 0, NULL },  /* gelHead */
-    {    6,   16, SF_PTR  , 0, 0, NULL },  /* gelTail */
-    {   10,   24, SF_PTR  , 0, 0, NULL },  /* nextLine */
-    {   18,   40, SF_PTR  , 0, 0, NULL },  /* collHandler */
-    {   22,   48, SF_WORD , 0, 0, NULL },  /* leftmost */
-    {   24,   50, SF_WORD , 0, 0, NULL },  /* rightmost */
-    {   26,   52, SF_WORD , 0, 0, NULL },  /* topmost */
-    {   28,   54, SF_WORD , 0, 0, NULL },  /* bottommost */
-    {   30,   56, SF_PTR  , 0, 0, NULL },  /* firstBlissObj */
-    {   34,   64, SF_PTR  , 0, 0, NULL },  /* lastBlissObj */
+    SHADOW_FIELD(   0, 1, GelsInfo, sprRsrvd),
+    SHADOW_FIELD(   2, 4, GelsInfo, gelHead),
+    SHADOW_FIELD(   6, 4, GelsInfo, gelTail),
+    SHADOW_FIELD(  10, 4, GelsInfo, nextLine),
+    SHADOW_FIELD(  18, 4, GelsInfo, collHandler),
+    SHADOW_FIELD(  22, 2, GelsInfo, leftmost),
+    SHADOW_FIELD(  24, 2, GelsInfo, rightmost),
+    SHADOW_FIELD(  26, 2, GelsInfo, topmost),
+    SHADOW_FIELD(  28, 2, GelsInfo, bottommost),
+    SHADOW_FIELD(  30, 4, GelsInfo, firstBlissObj),
+    SHADOW_FIELD(  34, 4, GelsInfo, lastBlissObj),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* GfxBase: m68k=552B, aros=1040B, 102 fields */
+/* GfxBase: m68k=552B, 102 fields */
 static const struct M68KFieldMap shadow_fields_GfxBase[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* ln_Succ */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* ln_Pred */
-    {    8,   16, SF_BYTE , 0, 0, NULL },  /* ln_Type */
-    {    9,   17, SF_BYTE , 0, 0, NULL },  /* ln_Pri */
-    {   10,   24, SF_PTR  , 0, 0, NULL },  /* ln_Name */
-    {   14,   32, SF_BYTE , 0, 0, NULL },  /* lib_Flags */
-    {   15,   33, SF_BYTE , 0, 0, NULL },  /* lib_pad */
-    {   16,   34, SF_WORD , 0, 0, NULL },  /* lib_NegSize */
-    {   18,   36, SF_WORD , 0, 0, NULL },  /* lib_PosSize */
-    {   20,   38, SF_WORD , 0, 0, NULL },  /* lib_Version */
-    {   22,   40, SF_WORD , 0, 0, NULL },  /* lib_Revision */
-    {   24,   48, SF_PTR  , 0, 0, NULL },  /* lib_IdString */
-    {   28,   56, SF_LONG , 0, 0, NULL },  /* lib_Sum */
-    {   32,   60, SF_WORD , 0, 0, NULL },  /* lib_OpenCnt */
-    {   34,   64, SF_PTR  , 0, 0, NULL },  /* ActiView */
-    {   38,   72, SF_PTR  , 0, 0, NULL },  /* copinit */
-    {   42,   80, SF_PTR  , 0, 0, NULL },  /* cia */
-    {   46,   88, SF_PTR  , 0, 0, NULL },  /* blitter */
-    {   50,   96, SF_PTR  , 0, 0, NULL },  /* LOFlist */
-    {   54,  104, SF_PTR  , 0, 0, NULL },  /* SHFlist */
-    {  140,  288, SF_PTR  , 0, 0, NULL },  /* lh_Head */
-    {  144,  296, SF_PTR  , 0, 0, NULL },  /* lh_Tail */
-    {  148,  304, SF_PTR  , 0, 0, NULL },  /* lh_TailPred */
-    {  152,  312, SF_BYTE , 0, 0, NULL },  /* lh_Type */
-    {  153,  313, SF_BYTE , 0, 0, NULL },  /* l_pad */
-    {  154,  320, SF_PTR  , 0, 0, NULL },  /* DefaultFont */
-    {  158,  328, SF_WORD , 0, 0, NULL },  /* Modes */
-    {  160,  330, SF_BYTE , 0, 0, NULL },  /* VBlank */
-    {  161,  331, SF_BYTE , 0, 0, NULL },  /* Debug */
-    {  162,  332, SF_WORD , 0, 0, NULL },  /* BeamSync */
-    {  164,  334, SF_WORD , 0, 0, NULL },  /* system_bplcon0 */
-    {  166,  336, SF_BYTE , 0, 0, NULL },  /* SpriteReserved */
-    {  167,  337, SF_BYTE , 0, 0, NULL },  /* bytereserved */
-    {  170,  340, SF_WORD , 0, 0, NULL },  /* BlitLock */
-    {  172,  342, SF_WORD , 0, 0, NULL },  /* BlitNest */
-    {  188,  376, SF_PTR  , 0, 0, NULL },  /* BlitOwner */
-    {  206,  416, SF_WORD , 0, 0, NULL },  /* DisplayFlags */
-    {  212,  432, SF_WORD , 0, 0, NULL },  /* MaxDisplayRow */
-    {  214,  434, SF_WORD , 0, 0, NULL },  /* MaxDisplayColumn */
-    {  216,  436, SF_WORD , 0, 0, NULL },  /* NormalDisplayRows */
-    {  218,  438, SF_WORD , 0, 0, NULL },  /* NormalDisplayColumns */
-    {  220,  440, SF_WORD , 0, 0, NULL },  /* NormalDPMX */
-    {  222,  442, SF_WORD , 0, 0, NULL },  /* NormalDPMY */
-    {  224,  448, SF_PTR  , 0, 0, NULL },  /* LastChanceMemory */
-    {  228,  456, SF_PTR  , 0, 0, NULL },  /* LCMptr */
-    {  232,  464, SF_WORD , 0, 0, NULL },  /* MicrosPerLine */
-    {  234,  466, SF_WORD , 0, 0, NULL },  /* MinDisplayColumn */
-    {  236,  468, SF_BYTE , 0, 0, NULL },  /* ChipRevBits0 */
-    {  237,  469, SF_BYTE , 0, 0, NULL },  /* MemType */
-    {  238,  470, SF_LONG , 0, 0, NULL },  /* crb_reserved */
-    {  242,  474, SF_WORD , 0, 0, NULL },  /* monitor_id */
-    {  340,  672, SF_WORD , 0, 0, NULL },  /* hedley_count */
-    {  342,  674, SF_WORD , 0, 0, NULL },  /* hedley_flags */
-    {  344,  676, SF_WORD , 0, 0, NULL },  /* hedley_tmp */
-    {  346,  680, SF_PTR  , 0, 0, NULL },  /* hash_table */
-    {  350,  688, SF_WORD , 0, 0, NULL },  /* current_tot_rows */
-    {  352,  690, SF_WORD , 0, 0, NULL },  /* current_tot_cclks */
-    {  354,  692, SF_BYTE , 0, 0, NULL },  /* hedley_hint */
-    {  355,  693, SF_BYTE , 0, 0, NULL },  /* hedley_hint2 */
-    {  372,  712, SF_PTR  , 0, 0, NULL },  /* a2024_sync_raster */
-    {  376,  720, SF_WORD , 0, 0, NULL },  /* control_delta_pal */
-    {  378,  722, SF_WORD , 0, 0, NULL },  /* control_delta_ntsc */
-    {  380,  728, SF_PTR  , 0, 0, NULL },  /* current_monitor */
-    {  398,  768, SF_PTR  , 0, 0, NULL },  /* default_monitor */
-    {  402,  776, SF_PTR  , 0, 0, NULL },  /* MonitorListSemaphore */
-    {  406,  784, SF_PTR  , 0, 0, NULL },  /* DisplayInfoDataBase */
-    {  410,  792, SF_WORD , 0, 0, NULL },  /* TopLine */
-    {  412,  800, SF_PTR  , 0, 0, NULL },  /* ActiViewCprSemaphore */
-    {  416,  808, SF_PTR  , 0, 0, NULL },  /* UtilBase */
-    {  420,  816, SF_PTR  , 0, 0, NULL },  /* ExecBase */
-    {  424,  824, SF_PTR  , 0, 0, NULL },  /* bwshifts */
-    {  428,  832, SF_PTR  , 0, 0, NULL },  /* StrtFetchMasks */
-    {  432,  840, SF_PTR  , 0, 0, NULL },  /* StopFetchMasks */
-    {  436,  848, SF_PTR  , 0, 0, NULL },  /* Overrun */
-    {  440,  856, SF_PTR  , 0, 0, NULL },  /* RealStops */
-    {  444,  864, SF_WORD , 0, 0, NULL },  /* SpriteWidth */
-    {  446,  866, SF_WORD , 0, 0, NULL },  /* SpriteFMode */
-    {  448,  868, SF_BYTE , 0, 0, NULL },  /* SoftSprites */
-    {  449,  869, SF_BYTE , 0, 0, NULL },  /* arraywidth */
-    {  450,  870, SF_WORD , 0, 0, NULL },  /* DefaultSpriteWidth */
-    {  452,  872, SF_BYTE , 0, 0, NULL },  /* SprMoveDisable */
-    {  453,  873, SF_BYTE , 0, 0, NULL },  /* WantChips */
-    {  454,  874, SF_BYTE , 0, 0, NULL },  /* BoardMemType */
-    {  455,  875, SF_BYTE , 0, 0, NULL },  /* Bugs */
-    {  456,  880, SF_PTR  , 0, 0, NULL },  /* gb_LayersBase */
-    {  460,  888, SF_LONG , 0, 0, NULL },  /* ColorMask */
-    {  464,  896, SF_PTR  , 0, 0, NULL },  /* IVector */
-    {  468,  904, SF_PTR  , 0, 0, NULL },  /* IData */
-    {  472,  912, SF_LONG , 0, 0, NULL },  /* SpecialCounter */
-    {  476,  920, SF_PTR  , 0, 0, NULL },  /* DBList */
-    {  480,  928, SF_WORD , 0, 0, NULL },  /* MonitorFlags */
-    {  482,  930, SF_BYTE , 0, 0, NULL },  /* ScanDoubledSprites */
-    {  483,  931, SF_BYTE , 0, 0, NULL },  /* BP3Bits */
-    {  484,  932, SF_WORD , 0, 0, NULL },  /* asi_Start */
-    {  486,  934, SF_WORD , 0, 0, NULL },  /* asi_Stop */
-    {  488,  936, SF_PTR  , 0, 0, NULL },  /* natural_monitor */
-    {  492,  944, SF_PTR  , 0, 0, NULL },  /* ProgData */
-    {  496,  952, SF_BYTE , 0, 0, NULL },  /* ExtSprites */
-    {  497,  953, SF_BYTE , 0, 0, NULL },  /* pad3 */
-    {  498,  954, SF_WORD , 0, 0, NULL },  /* GfxFlags */
-    {  500,  956, SF_LONG , 0, 0, NULL },  /* VBCounter */
-    {  504,  960, SF_PTR  , 0, 0, NULL },  /* HashTableSemaphore */
+    SHADOW_FIELD(   0, 4, GfxBase, LibNode.lib_Node.ln_Succ),
+    SHADOW_FIELD(   4, 4, GfxBase, LibNode.lib_Node.ln_Pred),
+    SHADOW_FIELD(   8, 1, GfxBase, LibNode.lib_Node.ln_Type),
+    SHADOW_FIELD(   9, 1, GfxBase, LibNode.lib_Node.ln_Pri),
+    SHADOW_FIELD(  10, 4, GfxBase, LibNode.lib_Node.ln_Name),
+    SHADOW_FIELD(  14, 1, GfxBase, LibNode.lib_Flags),
+    SHADOW_FIELD(  15, 1, GfxBase, LibNode.lib_pad),
+    SHADOW_FIELD(  16, 2, GfxBase, LibNode.lib_NegSize),
+    SHADOW_FIELD(  18, 2, GfxBase, LibNode.lib_PosSize),
+    SHADOW_FIELD(  20, 2, GfxBase, LibNode.lib_Version),
+    SHADOW_FIELD(  22, 2, GfxBase, LibNode.lib_Revision),
+    SHADOW_FIELD(  24, 4, GfxBase, LibNode.lib_IdString),
+    SHADOW_FIELD(  28, 4, GfxBase, LibNode.lib_Sum),
+    SHADOW_FIELD(  32, 2, GfxBase, LibNode.lib_OpenCnt),
+    SHADOW_FIELD(  34, 4, GfxBase, ActiView),
+    SHADOW_FIELD(  38, 4, GfxBase, copinit),
+    SHADOW_FIELD(  42, 4, GfxBase, cia),
+    SHADOW_FIELD(  46, 4, GfxBase, blitter),
+    SHADOW_FIELD(  50, 4, GfxBase, LOFlist),
+    SHADOW_FIELD(  54, 4, GfxBase, SHFlist),
+    SHADOW_FIELD( 140, 4, GfxBase, TextFonts.lh_Head),
+    SHADOW_FIELD( 144, 4, GfxBase, TextFonts.lh_Tail),
+    SHADOW_FIELD( 148, 4, GfxBase, TextFonts.lh_TailPred),
+    SHADOW_FIELD( 152, 1, GfxBase, TextFonts.lh_Type),
+    SHADOW_FIELD( 153, 1, GfxBase, TextFonts.l_pad),
+    SHADOW_FIELD( 154, 4, GfxBase, DefaultFont),
+    SHADOW_FIELD( 158, 2, GfxBase, Modes),
+    SHADOW_FIELD( 160, 1, GfxBase, VBlank),
+    SHADOW_FIELD( 161, 1, GfxBase, Debug),
+    SHADOW_FIELD( 162, 2, GfxBase, BeamSync),
+    SHADOW_FIELD( 164, 2, GfxBase, system_bplcon0),
+    SHADOW_FIELD( 166, 1, GfxBase, SpriteReserved),
+    SHADOW_FIELD( 167, 1, GfxBase, bytereserved),
+    SHADOW_FIELD( 170, 2, GfxBase, BlitLock),
+    SHADOW_FIELD( 172, 2, GfxBase, BlitNest),
+    SHADOW_FIELD( 188, 4, GfxBase, BlitOwner),
+    SHADOW_FIELD( 206, 2, GfxBase, DisplayFlags),
+    SHADOW_FIELD( 212, 2, GfxBase, MaxDisplayRow),
+    SHADOW_FIELD( 214, 2, GfxBase, MaxDisplayColumn),
+    SHADOW_FIELD( 216, 2, GfxBase, NormalDisplayRows),
+    SHADOW_FIELD( 218, 2, GfxBase, NormalDisplayColumns),
+    SHADOW_FIELD( 220, 2, GfxBase, NormalDPMX),
+    SHADOW_FIELD( 222, 2, GfxBase, NormalDPMY),
+    SHADOW_FIELD( 224, 4, GfxBase, LastChanceMemory),
+    SHADOW_FIELD( 228, 4, GfxBase, LCMptr),
+    SHADOW_FIELD( 232, 2, GfxBase, MicrosPerLine),
+    SHADOW_FIELD( 234, 2, GfxBase, MinDisplayColumn),
+    SHADOW_FIELD( 236, 1, GfxBase, ChipRevBits0),
+    SHADOW_FIELD( 237, 1, GfxBase, MemType),
+    SHADOW_FIELD( 238, 4, GfxBase, crb_reserved),
+    SHADOW_FIELD( 242, 2, GfxBase, monitor_id),
+    SHADOW_FIELD( 340, 2, GfxBase, hedley_count),
+    SHADOW_FIELD( 342, 2, GfxBase, hedley_flags),
+    SHADOW_FIELD( 344, 2, GfxBase, hedley_tmp),
+    SHADOW_FIELD( 346, 4, GfxBase, hash_table),
+    SHADOW_FIELD( 350, 2, GfxBase, current_tot_rows),
+    SHADOW_FIELD( 352, 2, GfxBase, current_tot_cclks),
+    SHADOW_FIELD( 354, 1, GfxBase, hedley_hint),
+    SHADOW_FIELD( 355, 1, GfxBase, hedley_hint2),
+    SHADOW_FIELD( 372, 4, GfxBase, a2024_sync_raster),
+    SHADOW_FIELD( 376, 2, GfxBase, control_delta_pal),
+    SHADOW_FIELD( 378, 2, GfxBase, control_delta_ntsc),
+    SHADOW_FIELD( 380, 4, GfxBase, current_monitor),
+    SHADOW_FIELD( 398, 4, GfxBase, default_monitor),
+    SHADOW_FIELD( 402, 4, GfxBase, MonitorListSemaphore),
+    SHADOW_FIELD( 406, 4, GfxBase, DisplayInfoDataBase),
+    SHADOW_FIELD( 410, 2, GfxBase, TopLine),
+    SHADOW_FIELD( 412, 4, GfxBase, ActiViewCprSemaphore),
+    SHADOW_FIELD( 416, 4, GfxBase, UtilBase),
+    SHADOW_FIELD( 420, 4, GfxBase, ExecBase),
+    SHADOW_FIELD( 424, 4, GfxBase, bwshifts),
+    SHADOW_FIELD( 428, 4, GfxBase, StrtFetchMasks),
+    SHADOW_FIELD( 432, 4, GfxBase, StopFetchMasks),
+    SHADOW_FIELD( 436, 4, GfxBase, Overrun),
+    SHADOW_FIELD( 440, 4, GfxBase, RealStops),
+    SHADOW_FIELD( 444, 2, GfxBase, SpriteWidth),
+    SHADOW_FIELD( 446, 2, GfxBase, SpriteFMode),
+    SHADOW_FIELD( 448, 1, GfxBase, SoftSprites),
+    SHADOW_FIELD( 449, 1, GfxBase, arraywidth),
+    SHADOW_FIELD( 450, 2, GfxBase, DefaultSpriteWidth),
+    SHADOW_FIELD( 452, 1, GfxBase, SprMoveDisable),
+    SHADOW_FIELD( 453, 1, GfxBase, WantChips),
+    SHADOW_FIELD( 454, 1, GfxBase, BoardMemType),
+    SHADOW_FIELD( 455, 1, GfxBase, Bugs),
+    SHADOW_FIELD( 456, 4, GfxBase, gb_LayersBase),
+    SHADOW_FIELD( 460, 4, GfxBase, ColorMask),
+    SHADOW_FIELD( 464, 4, GfxBase, IVector),
+    SHADOW_FIELD( 468, 4, GfxBase, IData),
+    SHADOW_FIELD( 472, 4, GfxBase, SpecialCounter),
+    SHADOW_FIELD( 476, 4, GfxBase, DBList),
+    SHADOW_FIELD( 480, 2, GfxBase, MonitorFlags),
+    SHADOW_FIELD( 482, 1, GfxBase, ScanDoubledSprites),
+    SHADOW_FIELD( 483, 1, GfxBase, BP3Bits),
+    SHADOW_FIELD( 484, 2, GfxBase, MonitorVBlank.asi_Start),
+    SHADOW_FIELD( 486, 2, GfxBase, MonitorVBlank.asi_Stop),
+    SHADOW_FIELD( 488, 4, GfxBase, natural_monitor),
+    SHADOW_FIELD( 492, 4, GfxBase, ProgData),
+    SHADOW_FIELD( 496, 1, GfxBase, ExtSprites),
+    SHADOW_FIELD( 497, 1, GfxBase, pad3),
+    SHADOW_FIELD( 498, 2, GfxBase, GfxFlags),
+    SHADOW_FIELD( 500, 4, GfxBase, VBCounter),
+    SHADOW_FIELD( 504, 4, GfxBase, HashTableSemaphore),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* Hook: m68k=20B, aros=40B, 3 fields */
+/* Hook: m68k=20B, 5 fields */
 static const struct M68KFieldMap shadow_fields_Hook[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* mln_Succ */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* mln_Pred */
-    {    8,   16, SF_PTR  , 0, 0, NULL },  /* h_Entry */
-    {   12,   24, SF_PTR  , 0, 0, NULL },  /* h_SubEntry */
-    {   16,   32, SF_PTR  , 0, 0, NULL },  /* h_Data */
+    SHADOW_FIELD(   0, 4, Hook, h_MinNode.mln_Succ),
+    SHADOW_FIELD(   4, 4, Hook, h_MinNode.mln_Pred),
+    SHADOW_FIELD(   8, 4, Hook, h_Entry),
+    SHADOW_FIELD(  12, 4, Hook, h_SubEntry),
+    SHADOW_FIELD(  16, 4, Hook, h_Data),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* IBox: m68k=8B, aros=8B, 2 fields */
+/* IBox: m68k=8B, 2 fields */
 static const struct M68KFieldMap shadow_fields_IBox[] = {
-    {    0,    0, SF_WORD , 0, 0, NULL },  /* Left */
-    {    2,    2, SF_WORD , 0, 0, NULL },  /* Top */
+    SHADOW_FIELD(   0, 2, IBox, Left),
+    SHADOW_FIELD(   2, 2, IBox, Top),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* IClass: m68k=52B, aros=104B, 12 fields */
+/* IClass: m68k=52B, 12 fields */
 static const struct M68KFieldMap shadow_fields_IClass[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* mln_Succ */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* mln_Pred */
-    {   16,   32, SF_PTR  , 0, 0, NULL },  /* h_Data */
-    {   20,   40, SF_LONG , 0, 0, NULL },  /* cl_Reserved */
-    {   24,   48, SF_PTR  , 0, 0, NULL },  /* cl_Super */
-    {   28,   56, SF_PTR  , 0, 0, NULL },  /* cl_ID */
-    {   32,   64, SF_WORD , 0, 0, NULL },  /* cl_InstOffset */
-    {   34,   66, SF_WORD , 0, 0, NULL },  /* cl_InstSize */
-    {   36,   72, SF_PTR  , 0, 0, NULL },  /* cl_UserData */
-    {   40,   80, SF_LONG , 0, 0, NULL },  /* cl_SubclassCount */
-    {   44,   84, SF_LONG , 0, 0, NULL },  /* cl_ObjectCount */
-    {   48,   88, SF_LONG , 0, 0, NULL },  /* cl_Flags */
+    SHADOW_FIELD(   0, 4, IClass, cl_Dispatcher.h_MinNode.mln_Succ),
+    SHADOW_FIELD(   4, 4, IClass, cl_Dispatcher.h_MinNode.mln_Pred),
+    SHADOW_FIELD(  16, 4, IClass, cl_Dispatcher.h_Data),
+    SHADOW_FIELD(  20, 4, IClass, cl_Reserved),
+    SHADOW_FIELD(  24, 4, IClass, cl_Super),
+    SHADOW_FIELD(  28, 4, IClass, cl_ID),
+    SHADOW_FIELD(  32, 2, IClass, cl_InstOffset),
+    SHADOW_FIELD(  34, 2, IClass, cl_InstSize),
+    SHADOW_FIELD(  36, 4, IClass, cl_UserData),
+    SHADOW_FIELD(  40, 4, IClass, cl_SubclassCount),
+    SHADOW_FIELD(  44, 4, IClass, cl_ObjectCount),
+    SHADOW_FIELD(  48, 4, IClass, cl_Flags),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* IENewTablet: m68k=32B, aros=40B, 2 fields */
+/* IENewTablet: m68k=32B, 10 fields */
 static const struct M68KFieldMap shadow_fields_IENewTablet[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* ient_CallBack */
-    {    4,    8, SF_WORD , 0, 0, NULL },  /* ient_ScaledX */
-    {    6,   10, SF_WORD , 0, 0, NULL },  /* ient_ScaledY */
-    {    8,   12, SF_WORD , 0, 0, NULL },  /* ient_ScaledXFraction */
-    {   10,   14, SF_WORD , 0, 0, NULL },  /* ient_ScaledYFraction */
-    {   12,   16, SF_LONG , 0, 0, NULL },  /* ient_TabletX */
-    {   16,   20, SF_LONG , 0, 0, NULL },  /* ient_TabletY */
-    {   20,   24, SF_LONG , 0, 0, NULL },  /* ient_RangeX */
-    {   24,   28, SF_LONG , 0, 0, NULL },  /* ient_RangeY */
-    {   28,   32, SF_PTR  , 0, 0, NULL },  /* ient_TagList */
+    SHADOW_FIELD(   0, 4, IENewTablet, ient_CallBack),
+    SHADOW_FIELD(   4, 2, IENewTablet, ient_ScaledX),
+    SHADOW_FIELD(   6, 2, IENewTablet, ient_ScaledY),
+    SHADOW_FIELD(   8, 2, IENewTablet, ient_ScaledXFraction),
+    SHADOW_FIELD(  10, 2, IENewTablet, ient_ScaledYFraction),
+    SHADOW_FIELD(  12, 4, IENewTablet, ient_TabletX),
+    SHADOW_FIELD(  16, 4, IENewTablet, ient_TabletY),
+    SHADOW_FIELD(  20, 4, IENewTablet, ient_RangeX),
+    SHADOW_FIELD(  24, 4, IENewTablet, ient_RangeY),
+    SHADOW_FIELD(  28, 4, IENewTablet, ient_TagList),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* IEPointerPixel: m68k=8B, aros=16B, 1 fields */
+/* IEPointerPixel: m68k=8B, 1 fields */
 static const struct M68KFieldMap shadow_fields_IEPointerPixel[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* iepp_Screen */
+    SHADOW_FIELD(   0, 4, IEPointerPixel, iepp_Screen),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* IFFHandle: m68k=12B, aros=16B, 3 fields */
+/* IFFHandle: m68k=12B, 3 fields */
 static const struct M68KFieldMap shadow_fields_IFFHandle[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* iff_Stream */
-    {    4,    8, SF_LONG , 0, 0, NULL },  /* iff_Flags */
-    {    8,   12, SF_LONG , 0, 0, NULL },  /* iff_Depth */
+    SHADOW_FIELD(   0, 4, IFFHandle, iff_Stream),
+    SHADOW_FIELD(   4, 4, IFFHandle, iff_Flags),
+    SHADOW_FIELD(   8, 4, IFFHandle, iff_Depth),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* IFFStreamCmd: m68k=12B, aros=24B, 3 fields */
+/* IFFStreamCmd: m68k=12B, 3 fields */
 static const struct M68KFieldMap shadow_fields_IFFStreamCmd[] = {
-    {    0,    0, SF_LONG , 0, 0, NULL },  /* sc_Command */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* sc_Buf */
-    {    8,   16, SF_LONG , 0, 0, NULL },  /* sc_NBytes */
+    SHADOW_FIELD(   0, 4, IFFStreamCmd, sc_Command),
+    SHADOW_FIELD(   4, 4, IFFStreamCmd, sc_Buf),
+    SHADOW_FIELD(   8, 4, IFFStreamCmd, sc_NBytes),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* IOAudio: m68k=68B, aros=152B, 18 fields */
+/* IOAudio: m68k=68B, 18 fields */
 static const struct M68KFieldMap shadow_fields_IOAudio[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* ln_Succ */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* ln_Pred */
-    {    8,   16, SF_BYTE , 0, 0, NULL },  /* ln_Type */
-    {    9,   17, SF_BYTE , 0, 0, NULL },  /* ln_Pri */
-    {   10,   24, SF_PTR  , 0, 0, NULL },  /* ln_Name */
-    {   14,   32, SF_PTR  , 0, 0, NULL },  /* mn_ReplyPort */
-    {   18,   40, SF_WORD , 0, 0, NULL },  /* mn_Length */
-    {   20,   48, SF_PTR  , 0, 0, NULL },  /* io_Device */
-    {   24,   56, SF_PTR  , 0, 0, NULL },  /* io_Unit */
-    {   28,   64, SF_WORD , 0, 0, NULL },  /* io_Command */
-    {   30,   66, SF_BYTE , 0, 0, NULL },  /* io_Flags */
-    {   31,   67, SF_BYTE , 0, 0, NULL },  /* io_Error */
-    {   32,   72, SF_WORD , 0, 0, NULL },  /* ioa_AllocKey */
-    {   34,   80, SF_PTR  , 0, 0, NULL },  /* ioa_Data */
-    {   38,   88, SF_LONG , 0, 0, NULL },  /* ioa_Length */
-    {   42,   92, SF_WORD , 0, 0, NULL },  /* ioa_Period */
-    {   44,   94, SF_WORD , 0, 0, NULL },  /* ioa_Volume */
-    {   46,   96, SF_WORD , 0, 0, NULL },  /* ioa_Cycles */
+    SHADOW_FIELD(   0, 4, IOAudio, ioa_Request.io_Message.mn_Node.ln_Succ),
+    SHADOW_FIELD(   4, 4, IOAudio, ioa_Request.io_Message.mn_Node.ln_Pred),
+    SHADOW_FIELD(   8, 1, IOAudio, ioa_Request.io_Message.mn_Node.ln_Type),
+    SHADOW_FIELD(   9, 1, IOAudio, ioa_Request.io_Message.mn_Node.ln_Pri),
+    SHADOW_FIELD(  10, 4, IOAudio, ioa_Request.io_Message.mn_Node.ln_Name),
+    SHADOW_FIELD(  14, 4, IOAudio, ioa_Request.io_Message.mn_ReplyPort),
+    SHADOW_FIELD(  18, 2, IOAudio, ioa_Request.io_Message.mn_Length),
+    SHADOW_FIELD(  20, 4, IOAudio, ioa_Request.io_Device),
+    SHADOW_FIELD(  24, 4, IOAudio, ioa_Request.io_Unit),
+    SHADOW_FIELD(  28, 2, IOAudio, ioa_Request.io_Command),
+    SHADOW_FIELD(  30, 1, IOAudio, ioa_Request.io_Flags),
+    SHADOW_FIELD(  31, 1, IOAudio, ioa_Request.io_Error),
+    SHADOW_FIELD(  32, 2, IOAudio, ioa_AllocKey),
+    SHADOW_FIELD(  34, 4, IOAudio, ioa_Data),
+    SHADOW_FIELD(  38, 4, IOAudio, ioa_Length),
+    SHADOW_FIELD(  42, 2, IOAudio, ioa_Period),
+    SHADOW_FIELD(  44, 2, IOAudio, ioa_Volume),
+    SHADOW_FIELD(  46, 2, IOAudio, ioa_Cycles),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* IOClipReq: m68k=52B, aros=96B, 17 fields */
+/* IOClipReq: m68k=52B, 17 fields */
 static const struct M68KFieldMap shadow_fields_IOClipReq[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* ln_Succ */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* ln_Pred */
-    {    8,   16, SF_BYTE , 0, 0, NULL },  /* ln_Type */
-    {    9,   17, SF_BYTE , 0, 0, NULL },  /* ln_Pri */
-    {   10,   24, SF_PTR  , 0, 0, NULL },  /* ln_Name */
-    {   14,   32, SF_PTR  , 0, 0, NULL },  /* mn_ReplyPort */
-    {   18,   40, SF_WORD , 0, 0, NULL },  /* mn_Length */
-    {   20,   48, SF_PTR  , 0, 0, NULL },  /* io_Device */
-    {   24,   56, SF_PTR  , 0, 0, NULL },  /* io_Unit */
-    {   28,   64, SF_WORD , 0, 0, NULL },  /* io_Command */
-    {   30,   66, SF_BYTE , 0, 0, NULL },  /* io_Flags */
-    {   31,   67, SF_BYTE , 0, 0, NULL },  /* io_Error */
-    {   32,   68, SF_LONG , 0, 0, NULL },  /* io_Actual */
-    {   36,   72, SF_LONG , 0, 0, NULL },  /* io_Length */
-    {   40,   80, SF_PTR  , 0, 0, NULL },  /* io_Data */
-    {   44,   88, SF_LONG , 0, 0, NULL },  /* io_Offset */
-    {   48,   92, SF_LONG , 0, 0, NULL },  /* io_ClipID */
+    SHADOW_FIELD(   0, 4, IOClipReq, io_Message.mn_Node.ln_Succ),
+    SHADOW_FIELD(   4, 4, IOClipReq, io_Message.mn_Node.ln_Pred),
+    SHADOW_FIELD(   8, 1, IOClipReq, io_Message.mn_Node.ln_Type),
+    SHADOW_FIELD(   9, 1, IOClipReq, io_Message.mn_Node.ln_Pri),
+    SHADOW_FIELD(  10, 4, IOClipReq, io_Message.mn_Node.ln_Name),
+    SHADOW_FIELD(  14, 4, IOClipReq, io_Message.mn_ReplyPort),
+    SHADOW_FIELD(  18, 2, IOClipReq, io_Message.mn_Length),
+    SHADOW_FIELD(  20, 4, IOClipReq, io_Device),
+    SHADOW_FIELD(  24, 4, IOClipReq, io_Unit),
+    SHADOW_FIELD(  28, 2, IOClipReq, io_Command),
+    SHADOW_FIELD(  30, 1, IOClipReq, io_Flags),
+    SHADOW_FIELD(  31, 1, IOClipReq, io_Error),
+    SHADOW_FIELD(  32, 4, IOClipReq, io_Actual),
+    SHADOW_FIELD(  36, 4, IOClipReq, io_Length),
+    SHADOW_FIELD(  40, 4, IOClipReq, io_Data),
+    SHADOW_FIELD(  44, 4, IOClipReq, io_Offset),
+    SHADOW_FIELD(  48, 4, IOClipReq, io_ClipID),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* IODRPReq: m68k=62B, aros=120B, 22 fields */
+/* IODRPReq: m68k=62B, 22 fields */
 static const struct M68KFieldMap shadow_fields_IODRPReq[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* ln_Succ */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* ln_Pred */
-    {    8,   16, SF_BYTE , 0, 0, NULL },  /* ln_Type */
-    {    9,   17, SF_BYTE , 0, 0, NULL },  /* ln_Pri */
-    {   10,   24, SF_PTR  , 0, 0, NULL },  /* ln_Name */
-    {   14,   32, SF_PTR  , 0, 0, NULL },  /* mn_ReplyPort */
-    {   18,   40, SF_WORD , 0, 0, NULL },  /* mn_Length */
-    {   20,   48, SF_PTR  , 0, 0, NULL },  /* io_Device */
-    {   24,   56, SF_PTR  , 0, 0, NULL },  /* io_Unit */
-    {   28,   64, SF_WORD , 0, 0, NULL },  /* io_Command */
-    {   30,   66, SF_BYTE , 0, 0, NULL },  /* io_Flags */
-    {   31,   67, SF_BYTE , 0, 0, NULL },  /* io_Error */
-    {   32,   72, SF_PTR  , 0, 0, NULL },  /* io_RastPort */
-    {   36,   80, SF_PTR  , 0, 0, NULL },  /* io_ColorMap */
-    {   40,   88, SF_PTR  , 0, 0, NULL },  /* io_Modes */
-    {   44,   96, SF_WORD , 0, 0, NULL },  /* io_SrcX */
-    {   46,   98, SF_WORD , 0, 0, NULL },  /* io_SrcY */
-    {   48,  100, SF_WORD , 0, 0, NULL },  /* io_SrcWidth */
-    {   50,  102, SF_WORD , 0, 0, NULL },  /* io_SrcHeight */
-    {   52,  104, SF_LONG , 0, 0, NULL },  /* io_DestCols */
-    {   56,  108, SF_LONG , 0, 0, NULL },  /* io_DestRows */
-    {   60,  112, SF_WORD , 0, 0, NULL },  /* io_Special */
+    SHADOW_FIELD(   0, 4, IODRPReq, io_Message.mn_Node.ln_Succ),
+    SHADOW_FIELD(   4, 4, IODRPReq, io_Message.mn_Node.ln_Pred),
+    SHADOW_FIELD(   8, 1, IODRPReq, io_Message.mn_Node.ln_Type),
+    SHADOW_FIELD(   9, 1, IODRPReq, io_Message.mn_Node.ln_Pri),
+    SHADOW_FIELD(  10, 4, IODRPReq, io_Message.mn_Node.ln_Name),
+    SHADOW_FIELD(  14, 4, IODRPReq, io_Message.mn_ReplyPort),
+    SHADOW_FIELD(  18, 2, IODRPReq, io_Message.mn_Length),
+    SHADOW_FIELD(  20, 4, IODRPReq, io_Device),
+    SHADOW_FIELD(  24, 4, IODRPReq, io_Unit),
+    SHADOW_FIELD(  28, 2, IODRPReq, io_Command),
+    SHADOW_FIELD(  30, 1, IODRPReq, io_Flags),
+    SHADOW_FIELD(  31, 1, IODRPReq, io_Error),
+    SHADOW_FIELD(  32, 4, IODRPReq, io_RastPort),
+    SHADOW_FIELD(  36, 4, IODRPReq, io_ColorMap),
+    SHADOW_FIELD(  40, 4, IODRPReq, io_Modes),
+    SHADOW_FIELD(  44, 2, IODRPReq, io_SrcX),
+    SHADOW_FIELD(  46, 2, IODRPReq, io_SrcY),
+    SHADOW_FIELD(  48, 2, IODRPReq, io_SrcWidth),
+    SHADOW_FIELD(  50, 2, IODRPReq, io_SrcHeight),
+    SHADOW_FIELD(  52, 4, IODRPReq, io_DestCols),
+    SHADOW_FIELD(  56, 4, IODRPReq, io_DestRows),
+    SHADOW_FIELD(  60, 2, IODRPReq, io_Special),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* IODRPTagsReq: m68k=66B, aros=128B, 23 fields */
+/* IODRPTagsReq: m68k=66B, 23 fields */
 static const struct M68KFieldMap shadow_fields_IODRPTagsReq[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* ln_Succ */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* ln_Pred */
-    {    8,   16, SF_BYTE , 0, 0, NULL },  /* ln_Type */
-    {    9,   17, SF_BYTE , 0, 0, NULL },  /* ln_Pri */
-    {   10,   24, SF_PTR  , 0, 0, NULL },  /* ln_Name */
-    {   14,   32, SF_PTR  , 0, 0, NULL },  /* mn_ReplyPort */
-    {   18,   40, SF_WORD , 0, 0, NULL },  /* mn_Length */
-    {   20,   48, SF_PTR  , 0, 0, NULL },  /* io_Device */
-    {   24,   56, SF_PTR  , 0, 0, NULL },  /* io_Unit */
-    {   28,   64, SF_WORD , 0, 0, NULL },  /* io_Command */
-    {   30,   66, SF_BYTE , 0, 0, NULL },  /* io_Flags */
-    {   31,   67, SF_BYTE , 0, 0, NULL },  /* io_Error */
-    {   32,   72, SF_PTR  , 0, 0, NULL },  /* io_RastPort */
-    {   36,   80, SF_PTR  , 0, 0, NULL },  /* io_ColorMap */
-    {   40,   88, SF_PTR  , 0, 0, NULL },  /* io_Modes */
-    {   44,   96, SF_WORD , 0, 0, NULL },  /* io_SrcX */
-    {   46,   98, SF_WORD , 0, 0, NULL },  /* io_SrcY */
-    {   48,  100, SF_WORD , 0, 0, NULL },  /* io_SrcWidth */
-    {   50,  102, SF_WORD , 0, 0, NULL },  /* io_SrcHeight */
-    {   52,  104, SF_LONG , 0, 0, NULL },  /* io_DestCols */
-    {   56,  108, SF_LONG , 0, 0, NULL },  /* io_DestRows */
-    {   60,  112, SF_WORD , 0, 0, NULL },  /* io_Special */
-    {   62,  120, SF_PTR  , 0, 0, NULL },  /* io_TagList */
+    SHADOW_FIELD(   0, 4, IODRPTagsReq, io_Message.mn_Node.ln_Succ),
+    SHADOW_FIELD(   4, 4, IODRPTagsReq, io_Message.mn_Node.ln_Pred),
+    SHADOW_FIELD(   8, 1, IODRPTagsReq, io_Message.mn_Node.ln_Type),
+    SHADOW_FIELD(   9, 1, IODRPTagsReq, io_Message.mn_Node.ln_Pri),
+    SHADOW_FIELD(  10, 4, IODRPTagsReq, io_Message.mn_Node.ln_Name),
+    SHADOW_FIELD(  14, 4, IODRPTagsReq, io_Message.mn_ReplyPort),
+    SHADOW_FIELD(  18, 2, IODRPTagsReq, io_Message.mn_Length),
+    SHADOW_FIELD(  20, 4, IODRPTagsReq, io_Device),
+    SHADOW_FIELD(  24, 4, IODRPTagsReq, io_Unit),
+    SHADOW_FIELD(  28, 2, IODRPTagsReq, io_Command),
+    SHADOW_FIELD(  30, 1, IODRPTagsReq, io_Flags),
+    SHADOW_FIELD(  31, 1, IODRPTagsReq, io_Error),
+    SHADOW_FIELD(  32, 4, IODRPTagsReq, io_RastPort),
+    SHADOW_FIELD(  36, 4, IODRPTagsReq, io_ColorMap),
+    SHADOW_FIELD(  40, 4, IODRPTagsReq, io_Modes),
+    SHADOW_FIELD(  44, 2, IODRPTagsReq, io_SrcX),
+    SHADOW_FIELD(  46, 2, IODRPTagsReq, io_SrcY),
+    SHADOW_FIELD(  48, 2, IODRPTagsReq, io_SrcWidth),
+    SHADOW_FIELD(  50, 2, IODRPTagsReq, io_SrcHeight),
+    SHADOW_FIELD(  52, 4, IODRPTagsReq, io_DestCols),
+    SHADOW_FIELD(  56, 4, IODRPTagsReq, io_DestRows),
+    SHADOW_FIELD(  60, 2, IODRPTagsReq, io_Special),
+    SHADOW_FIELD(  62, 4, IODRPTagsReq, io_TagList),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* IOExtPar: m68k=62B, aros=112B, 21 fields */
+/* IOExtPar: m68k=62B, 21 fields */
 static const struct M68KFieldMap shadow_fields_IOExtPar[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* ln_Succ */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* ln_Pred */
-    {    8,   16, SF_BYTE , 0, 0, NULL },  /* ln_Type */
-    {    9,   17, SF_BYTE , 0, 0, NULL },  /* ln_Pri */
-    {   10,   24, SF_PTR  , 0, 0, NULL },  /* ln_Name */
-    {   14,   32, SF_PTR  , 0, 0, NULL },  /* mn_ReplyPort */
-    {   18,   40, SF_WORD , 0, 0, NULL },  /* mn_Length */
-    {   20,   48, SF_PTR  , 0, 0, NULL },  /* io_Device */
-    {   24,   56, SF_PTR  , 0, 0, NULL },  /* io_Unit */
-    {   28,   64, SF_WORD , 0, 0, NULL },  /* io_Command */
-    {   30,   66, SF_BYTE , 0, 0, NULL },  /* io_Flags */
-    {   31,   67, SF_BYTE , 0, 0, NULL },  /* io_Error */
-    {   32,   68, SF_LONG , 0, 0, NULL },  /* io_Actual */
-    {   36,   72, SF_LONG , 0, 0, NULL },  /* io_Length */
-    {   40,   80, SF_PTR  , 0, 0, NULL },  /* io_Data */
-    {   44,   88, SF_LONG , 0, 0, NULL },  /* io_Offset */
-    {   48,   96, SF_LONG , 0, 0, NULL },  /* io_PExtFlags */
-    {   52,  100, SF_BYTE , 0, 0, NULL },  /* io_Status */
-    {   53,  101, SF_BYTE , 0, 0, NULL },  /* io_ParFlags */
-    {   54,  104, SF_LONG , 0, 0, NULL },  /* PTermArray0 */
-    {   58,  108, SF_LONG , 0, 0, NULL },  /* PTermArray1 */
+    SHADOW_FIELD(   0, 4, IOExtPar, IOPar.io_Message.mn_Node.ln_Succ),
+    SHADOW_FIELD(   4, 4, IOExtPar, IOPar.io_Message.mn_Node.ln_Pred),
+    SHADOW_FIELD(   8, 1, IOExtPar, IOPar.io_Message.mn_Node.ln_Type),
+    SHADOW_FIELD(   9, 1, IOExtPar, IOPar.io_Message.mn_Node.ln_Pri),
+    SHADOW_FIELD(  10, 4, IOExtPar, IOPar.io_Message.mn_Node.ln_Name),
+    SHADOW_FIELD(  14, 4, IOExtPar, IOPar.io_Message.mn_ReplyPort),
+    SHADOW_FIELD(  18, 2, IOExtPar, IOPar.io_Message.mn_Length),
+    SHADOW_FIELD(  20, 4, IOExtPar, IOPar.io_Device),
+    SHADOW_FIELD(  24, 4, IOExtPar, IOPar.io_Unit),
+    SHADOW_FIELD(  28, 2, IOExtPar, IOPar.io_Command),
+    SHADOW_FIELD(  30, 1, IOExtPar, IOPar.io_Flags),
+    SHADOW_FIELD(  31, 1, IOExtPar, IOPar.io_Error),
+    SHADOW_FIELD(  32, 4, IOExtPar, IOPar.io_Actual),
+    SHADOW_FIELD(  36, 4, IOExtPar, IOPar.io_Length),
+    SHADOW_FIELD(  40, 4, IOExtPar, IOPar.io_Data),
+    SHADOW_FIELD(  44, 4, IOExtPar, IOPar.io_Offset),
+    SHADOW_FIELD(  48, 4, IOExtPar, io_PExtFlags),
+    SHADOW_FIELD(  52, 1, IOExtPar, io_Status),
+    SHADOW_FIELD(  53, 1, IOExtPar, io_ParFlags),
+    SHADOW_FIELD(  54, 4, IOExtPar, io_PTermArray.PTermArray0),
+    SHADOW_FIELD(  58, 4, IOExtPar, io_PTermArray.PTermArray1),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* IOExtSer: m68k=82B, aros=136B, 28 fields */
+/* IOExtSer: m68k=82B, 28 fields */
 static const struct M68KFieldMap shadow_fields_IOExtSer[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* ln_Succ */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* ln_Pred */
-    {    8,   16, SF_BYTE , 0, 0, NULL },  /* ln_Type */
-    {    9,   17, SF_BYTE , 0, 0, NULL },  /* ln_Pri */
-    {   10,   24, SF_PTR  , 0, 0, NULL },  /* ln_Name */
-    {   14,   32, SF_PTR  , 0, 0, NULL },  /* mn_ReplyPort */
-    {   18,   40, SF_WORD , 0, 0, NULL },  /* mn_Length */
-    {   20,   48, SF_PTR  , 0, 0, NULL },  /* io_Device */
-    {   24,   56, SF_PTR  , 0, 0, NULL },  /* io_Unit */
-    {   28,   64, SF_WORD , 0, 0, NULL },  /* io_Command */
-    {   30,   66, SF_BYTE , 0, 0, NULL },  /* io_Flags */
-    {   31,   67, SF_BYTE , 0, 0, NULL },  /* io_Error */
-    {   32,   68, SF_LONG , 0, 0, NULL },  /* io_Actual */
-    {   36,   72, SF_LONG , 0, 0, NULL },  /* io_Length */
-    {   40,   80, SF_PTR  , 0, 0, NULL },  /* io_Data */
-    {   44,   88, SF_LONG , 0, 0, NULL },  /* io_Offset */
-    {   48,   96, SF_LONG , 0, 0, NULL },  /* io_CtlChar */
-    {   52,  100, SF_LONG , 0, 0, NULL },  /* io_RBufLen */
-    {   56,  104, SF_LONG , 0, 0, NULL },  /* io_ExtFlags */
-    {   60,  108, SF_LONG , 0, 0, NULL },  /* io_Baud */
-    {   64,  112, SF_LONG , 0, 0, NULL },  /* io_BrkTime */
-    {   68,  116, SF_LONG , 0, 0, NULL },  /* TermArray0 */
-    {   72,  120, SF_LONG , 0, 0, NULL },  /* TermArray1 */
-    {   76,  124, SF_BYTE , 0, 0, NULL },  /* io_ReadLen */
-    {   77,  125, SF_BYTE , 0, 0, NULL },  /* io_WriteLen */
-    {   78,  126, SF_BYTE , 0, 0, NULL },  /* io_StopBits */
-    {   79,  127, SF_BYTE , 0, 0, NULL },  /* io_SerFlags */
-    {   80,  128, SF_WORD , 0, 0, NULL },  /* io_Status */
+    SHADOW_FIELD(   0, 4, IOExtSer, IOSer.io_Message.mn_Node.ln_Succ),
+    SHADOW_FIELD(   4, 4, IOExtSer, IOSer.io_Message.mn_Node.ln_Pred),
+    SHADOW_FIELD(   8, 1, IOExtSer, IOSer.io_Message.mn_Node.ln_Type),
+    SHADOW_FIELD(   9, 1, IOExtSer, IOSer.io_Message.mn_Node.ln_Pri),
+    SHADOW_FIELD(  10, 4, IOExtSer, IOSer.io_Message.mn_Node.ln_Name),
+    SHADOW_FIELD(  14, 4, IOExtSer, IOSer.io_Message.mn_ReplyPort),
+    SHADOW_FIELD(  18, 2, IOExtSer, IOSer.io_Message.mn_Length),
+    SHADOW_FIELD(  20, 4, IOExtSer, IOSer.io_Device),
+    SHADOW_FIELD(  24, 4, IOExtSer, IOSer.io_Unit),
+    SHADOW_FIELD(  28, 2, IOExtSer, IOSer.io_Command),
+    SHADOW_FIELD(  30, 1, IOExtSer, IOSer.io_Flags),
+    SHADOW_FIELD(  31, 1, IOExtSer, IOSer.io_Error),
+    SHADOW_FIELD(  32, 4, IOExtSer, IOSer.io_Actual),
+    SHADOW_FIELD(  36, 4, IOExtSer, IOSer.io_Length),
+    SHADOW_FIELD(  40, 4, IOExtSer, IOSer.io_Data),
+    SHADOW_FIELD(  44, 4, IOExtSer, IOSer.io_Offset),
+    SHADOW_FIELD(  48, 4, IOExtSer, io_CtlChar),
+    SHADOW_FIELD(  52, 4, IOExtSer, io_RBufLen),
+    SHADOW_FIELD(  56, 4, IOExtSer, io_ExtFlags),
+    SHADOW_FIELD(  60, 4, IOExtSer, io_Baud),
+    SHADOW_FIELD(  64, 4, IOExtSer, io_BrkTime),
+    SHADOW_FIELD(  68, 4, IOExtSer, io_TermArray.TermArray0),
+    SHADOW_FIELD(  72, 4, IOExtSer, io_TermArray.TermArray1),
+    SHADOW_FIELD(  76, 1, IOExtSer, io_ReadLen),
+    SHADOW_FIELD(  77, 1, IOExtSer, io_WriteLen),
+    SHADOW_FIELD(  78, 1, IOExtSer, io_StopBits),
+    SHADOW_FIELD(  79, 1, IOExtSer, io_SerFlags),
+    SHADOW_FIELD(  80, 2, IOExtSer, io_Status),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* IOExtTD: m68k=56B, aros=104B, 18 fields */
+/* IOExtTD: m68k=56B, 18 fields */
 static const struct M68KFieldMap shadow_fields_IOExtTD[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* ln_Succ */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* ln_Pred */
-    {    8,   16, SF_BYTE , 0, 0, NULL },  /* ln_Type */
-    {    9,   17, SF_BYTE , 0, 0, NULL },  /* ln_Pri */
-    {   10,   24, SF_PTR  , 0, 0, NULL },  /* ln_Name */
-    {   14,   32, SF_PTR  , 0, 0, NULL },  /* mn_ReplyPort */
-    {   18,   40, SF_WORD , 0, 0, NULL },  /* mn_Length */
-    {   20,   48, SF_PTR  , 0, 0, NULL },  /* io_Device */
-    {   24,   56, SF_PTR  , 0, 0, NULL },  /* io_Unit */
-    {   28,   64, SF_WORD , 0, 0, NULL },  /* io_Command */
-    {   30,   66, SF_BYTE , 0, 0, NULL },  /* io_Flags */
-    {   31,   67, SF_BYTE , 0, 0, NULL },  /* io_Error */
-    {   32,   68, SF_LONG , 0, 0, NULL },  /* io_Actual */
-    {   36,   72, SF_LONG , 0, 0, NULL },  /* io_Length */
-    {   40,   80, SF_PTR  , 0, 0, NULL },  /* io_Data */
-    {   44,   88, SF_LONG , 0, 0, NULL },  /* io_Offset */
-    {   48,   96, SF_LONG , 0, 0, NULL },  /* iotd_Count */
-    {   52,  100, SF_LONG , 0, 0, NULL },  /* iotd_SecLabel */
+    SHADOW_FIELD(   0, 4, IOExtTD, iotd_Req.io_Message.mn_Node.ln_Succ),
+    SHADOW_FIELD(   4, 4, IOExtTD, iotd_Req.io_Message.mn_Node.ln_Pred),
+    SHADOW_FIELD(   8, 1, IOExtTD, iotd_Req.io_Message.mn_Node.ln_Type),
+    SHADOW_FIELD(   9, 1, IOExtTD, iotd_Req.io_Message.mn_Node.ln_Pri),
+    SHADOW_FIELD(  10, 4, IOExtTD, iotd_Req.io_Message.mn_Node.ln_Name),
+    SHADOW_FIELD(  14, 4, IOExtTD, iotd_Req.io_Message.mn_ReplyPort),
+    SHADOW_FIELD(  18, 2, IOExtTD, iotd_Req.io_Message.mn_Length),
+    SHADOW_FIELD(  20, 4, IOExtTD, iotd_Req.io_Device),
+    SHADOW_FIELD(  24, 4, IOExtTD, iotd_Req.io_Unit),
+    SHADOW_FIELD(  28, 2, IOExtTD, iotd_Req.io_Command),
+    SHADOW_FIELD(  30, 1, IOExtTD, iotd_Req.io_Flags),
+    SHADOW_FIELD(  31, 1, IOExtTD, iotd_Req.io_Error),
+    SHADOW_FIELD(  32, 4, IOExtTD, iotd_Req.io_Actual),
+    SHADOW_FIELD(  36, 4, IOExtTD, iotd_Req.io_Length),
+    SHADOW_FIELD(  40, 4, IOExtTD, iotd_Req.io_Data),
+    SHADOW_FIELD(  44, 4, IOExtTD, iotd_Req.io_Offset),
+    SHADOW_FIELD(  48, 4, IOExtTD, iotd_Count),
+    SHADOW_FIELD(  52, 4, IOExtTD, iotd_SecLabel),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* IOPArray: m68k=8B, aros=8B, 2 fields */
+/* IOPArray: m68k=8B, 2 fields */
 static const struct M68KFieldMap shadow_fields_IOPArray[] = {
-    {    0,    0, SF_LONG , 0, 0, NULL },  /* PTermArray0 */
-    {    4,    4, SF_LONG , 0, 0, NULL },  /* PTermArray1 */
+    SHADOW_FIELD(   0, 4, IOPArray, PTermArray0),
+    SHADOW_FIELD(   4, 4, IOPArray, PTermArray1),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* IOPrefsReq: m68k=48B, aros=104B, 16 fields */
+/* IOPrefsReq: m68k=48B, 16 fields */
 static const struct M68KFieldMap shadow_fields_IOPrefsReq[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* ln_Succ */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* ln_Pred */
-    {    8,   16, SF_BYTE , 0, 0, NULL },  /* ln_Type */
-    {    9,   17, SF_BYTE , 0, 0, NULL },  /* ln_Pri */
-    {   10,   24, SF_PTR  , 0, 0, NULL },  /* ln_Name */
-    {   14,   32, SF_PTR  , 0, 0, NULL },  /* mn_ReplyPort */
-    {   18,   40, SF_WORD , 0, 0, NULL },  /* mn_Length */
-    {   20,   48, SF_PTR  , 0, 0, NULL },  /* io_Device */
-    {   24,   56, SF_PTR  , 0, 0, NULL },  /* io_Unit */
-    {   28,   64, SF_WORD , 0, 0, NULL },  /* io_Command */
-    {   30,   66, SF_BYTE , 0, 0, NULL },  /* io_Flags */
-    {   31,   67, SF_BYTE , 0, 0, NULL },  /* io_Error */
-    {   32,   72, SF_PTR  , 0, 0, NULL },  /* io_TxtPrefs */
-    {   36,   80, SF_PTR  , 0, 0, NULL },  /* io_UnitPrefs */
-    {   40,   88, SF_PTR  , 0, 0, NULL },  /* io_DevUnitPrefs */
-    {   44,   96, SF_PTR  , 0, 0, NULL },  /* io_GfxPrefs */
+    SHADOW_FIELD(   0, 4, IOPrefsReq, io_Message.mn_Node.ln_Succ),
+    SHADOW_FIELD(   4, 4, IOPrefsReq, io_Message.mn_Node.ln_Pred),
+    SHADOW_FIELD(   8, 1, IOPrefsReq, io_Message.mn_Node.ln_Type),
+    SHADOW_FIELD(   9, 1, IOPrefsReq, io_Message.mn_Node.ln_Pri),
+    SHADOW_FIELD(  10, 4, IOPrefsReq, io_Message.mn_Node.ln_Name),
+    SHADOW_FIELD(  14, 4, IOPrefsReq, io_Message.mn_ReplyPort),
+    SHADOW_FIELD(  18, 2, IOPrefsReq, io_Message.mn_Length),
+    SHADOW_FIELD(  20, 4, IOPrefsReq, io_Device),
+    SHADOW_FIELD(  24, 4, IOPrefsReq, io_Unit),
+    SHADOW_FIELD(  28, 2, IOPrefsReq, io_Command),
+    SHADOW_FIELD(  30, 1, IOPrefsReq, io_Flags),
+    SHADOW_FIELD(  31, 1, IOPrefsReq, io_Error),
+    SHADOW_FIELD(  32, 4, IOPrefsReq, io_TxtPrefs),
+    SHADOW_FIELD(  36, 4, IOPrefsReq, io_UnitPrefs),
+    SHADOW_FIELD(  40, 4, IOPrefsReq, io_DevUnitPrefs),
+    SHADOW_FIELD(  44, 4, IOPrefsReq, io_GfxPrefs),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* IOPrtCmdReq: m68k=38B, aros=80B, 17 fields */
+/* IOPrtCmdReq: m68k=38B, 17 fields */
 static const struct M68KFieldMap shadow_fields_IOPrtCmdReq[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* ln_Succ */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* ln_Pred */
-    {    8,   16, SF_BYTE , 0, 0, NULL },  /* ln_Type */
-    {    9,   17, SF_BYTE , 0, 0, NULL },  /* ln_Pri */
-    {   10,   24, SF_PTR  , 0, 0, NULL },  /* ln_Name */
-    {   14,   32, SF_PTR  , 0, 0, NULL },  /* mn_ReplyPort */
-    {   18,   40, SF_WORD , 0, 0, NULL },  /* mn_Length */
-    {   20,   48, SF_PTR  , 0, 0, NULL },  /* io_Device */
-    {   24,   56, SF_PTR  , 0, 0, NULL },  /* io_Unit */
-    {   28,   64, SF_WORD , 0, 0, NULL },  /* io_Command */
-    {   30,   66, SF_BYTE , 0, 0, NULL },  /* io_Flags */
-    {   31,   67, SF_BYTE , 0, 0, NULL },  /* io_Error */
-    {   32,   68, SF_WORD , 0, 0, NULL },  /* io_PrtCommand */
-    {   34,   70, SF_BYTE , 0, 0, NULL },  /* io_Parm0 */
-    {   35,   71, SF_BYTE , 0, 0, NULL },  /* io_Parm1 */
-    {   36,   72, SF_BYTE , 0, 0, NULL },  /* io_Parm2 */
-    {   37,   73, SF_BYTE , 0, 0, NULL },  /* io_Parm3 */
+    SHADOW_FIELD(   0, 4, IOPrtCmdReq, io_Message.mn_Node.ln_Succ),
+    SHADOW_FIELD(   4, 4, IOPrtCmdReq, io_Message.mn_Node.ln_Pred),
+    SHADOW_FIELD(   8, 1, IOPrtCmdReq, io_Message.mn_Node.ln_Type),
+    SHADOW_FIELD(   9, 1, IOPrtCmdReq, io_Message.mn_Node.ln_Pri),
+    SHADOW_FIELD(  10, 4, IOPrtCmdReq, io_Message.mn_Node.ln_Name),
+    SHADOW_FIELD(  14, 4, IOPrtCmdReq, io_Message.mn_ReplyPort),
+    SHADOW_FIELD(  18, 2, IOPrtCmdReq, io_Message.mn_Length),
+    SHADOW_FIELD(  20, 4, IOPrtCmdReq, io_Device),
+    SHADOW_FIELD(  24, 4, IOPrtCmdReq, io_Unit),
+    SHADOW_FIELD(  28, 2, IOPrtCmdReq, io_Command),
+    SHADOW_FIELD(  30, 1, IOPrtCmdReq, io_Flags),
+    SHADOW_FIELD(  31, 1, IOPrtCmdReq, io_Error),
+    SHADOW_FIELD(  32, 2, IOPrtCmdReq, io_PrtCommand),
+    SHADOW_FIELD(  34, 1, IOPrtCmdReq, io_Parm0),
+    SHADOW_FIELD(  35, 1, IOPrtCmdReq, io_Parm1),
+    SHADOW_FIELD(  36, 1, IOPrtCmdReq, io_Parm2),
+    SHADOW_FIELD(  37, 1, IOPrtCmdReq, io_Parm3),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* IOPrtErrReq: m68k=36B, aros=80B, 13 fields */
+/* IOPrtErrReq: m68k=36B, 13 fields */
 static const struct M68KFieldMap shadow_fields_IOPrtErrReq[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* ln_Succ */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* ln_Pred */
-    {    8,   16, SF_BYTE , 0, 0, NULL },  /* ln_Type */
-    {    9,   17, SF_BYTE , 0, 0, NULL },  /* ln_Pri */
-    {   10,   24, SF_PTR  , 0, 0, NULL },  /* ln_Name */
-    {   14,   32, SF_PTR  , 0, 0, NULL },  /* mn_ReplyPort */
-    {   18,   40, SF_WORD , 0, 0, NULL },  /* mn_Length */
-    {   20,   48, SF_PTR  , 0, 0, NULL },  /* io_Device */
-    {   24,   56, SF_PTR  , 0, 0, NULL },  /* io_Unit */
-    {   28,   64, SF_WORD , 0, 0, NULL },  /* io_Command */
-    {   30,   66, SF_BYTE , 0, 0, NULL },  /* io_Flags */
-    {   31,   67, SF_BYTE , 0, 0, NULL },  /* io_Error */
-    {   32,   72, SF_PTR  , 0, 0, NULL },  /* io_Hook */
+    SHADOW_FIELD(   0, 4, IOPrtErrReq, io_Message.mn_Node.ln_Succ),
+    SHADOW_FIELD(   4, 4, IOPrtErrReq, io_Message.mn_Node.ln_Pred),
+    SHADOW_FIELD(   8, 1, IOPrtErrReq, io_Message.mn_Node.ln_Type),
+    SHADOW_FIELD(   9, 1, IOPrtErrReq, io_Message.mn_Node.ln_Pri),
+    SHADOW_FIELD(  10, 4, IOPrtErrReq, io_Message.mn_Node.ln_Name),
+    SHADOW_FIELD(  14, 4, IOPrtErrReq, io_Message.mn_ReplyPort),
+    SHADOW_FIELD(  18, 2, IOPrtErrReq, io_Message.mn_Length),
+    SHADOW_FIELD(  20, 4, IOPrtErrReq, io_Device),
+    SHADOW_FIELD(  24, 4, IOPrtErrReq, io_Unit),
+    SHADOW_FIELD(  28, 2, IOPrtErrReq, io_Command),
+    SHADOW_FIELD(  30, 1, IOPrtErrReq, io_Flags),
+    SHADOW_FIELD(  31, 1, IOPrtErrReq, io_Error),
+    SHADOW_FIELD(  32, 4, IOPrtErrReq, io_Hook),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* IOPrtPrefsReq: m68k=36B, aros=80B, 13 fields */
+/* IOPrtPrefsReq: m68k=36B, 13 fields */
 static const struct M68KFieldMap shadow_fields_IOPrtPrefsReq[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* ln_Succ */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* ln_Pred */
-    {    8,   16, SF_BYTE , 0, 0, NULL },  /* ln_Type */
-    {    9,   17, SF_BYTE , 0, 0, NULL },  /* ln_Pri */
-    {   10,   24, SF_PTR  , 0, 0, NULL },  /* ln_Name */
-    {   14,   32, SF_PTR  , 0, 0, NULL },  /* mn_ReplyPort */
-    {   18,   40, SF_WORD , 0, 0, NULL },  /* mn_Length */
-    {   20,   48, SF_PTR  , 0, 0, NULL },  /* io_Device */
-    {   24,   56, SF_PTR  , 0, 0, NULL },  /* io_Unit */
-    {   28,   64, SF_WORD , 0, 0, NULL },  /* io_Command */
-    {   30,   66, SF_BYTE , 0, 0, NULL },  /* io_Flags */
-    {   31,   67, SF_BYTE , 0, 0, NULL },  /* io_Error */
-    {   32,   72, SF_PTR  , 0, 0, NULL },  /* io_TagList */
+    SHADOW_FIELD(   0, 4, IOPrtPrefsReq, io_Message.mn_Node.ln_Succ),
+    SHADOW_FIELD(   4, 4, IOPrtPrefsReq, io_Message.mn_Node.ln_Pred),
+    SHADOW_FIELD(   8, 1, IOPrtPrefsReq, io_Message.mn_Node.ln_Type),
+    SHADOW_FIELD(   9, 1, IOPrtPrefsReq, io_Message.mn_Node.ln_Pri),
+    SHADOW_FIELD(  10, 4, IOPrtPrefsReq, io_Message.mn_Node.ln_Name),
+    SHADOW_FIELD(  14, 4, IOPrtPrefsReq, io_Message.mn_ReplyPort),
+    SHADOW_FIELD(  18, 2, IOPrtPrefsReq, io_Message.mn_Length),
+    SHADOW_FIELD(  20, 4, IOPrtPrefsReq, io_Device),
+    SHADOW_FIELD(  24, 4, IOPrtPrefsReq, io_Unit),
+    SHADOW_FIELD(  28, 2, IOPrtPrefsReq, io_Command),
+    SHADOW_FIELD(  30, 1, IOPrtPrefsReq, io_Flags),
+    SHADOW_FIELD(  31, 1, IOPrtPrefsReq, io_Error),
+    SHADOW_FIELD(  32, 4, IOPrtPrefsReq, io_TagList),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* IORequest: m68k=32B, aros=72B, 12 fields */
+/* IORequest: m68k=32B, 12 fields */
 static const struct M68KFieldMap shadow_fields_IORequest[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* ln_Succ */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* ln_Pred */
-    {    8,   16, SF_BYTE , 0, 0, NULL },  /* ln_Type */
-    {    9,   17, SF_BYTE , 0, 0, NULL },  /* ln_Pri */
-    {   10,   24, SF_PTR  , 0, 0, NULL },  /* ln_Name */
-    {   14,   32, SF_PTR  , 0, 0, NULL },  /* mn_ReplyPort */
-    {   18,   40, SF_WORD , 0, 0, NULL },  /* mn_Length */
-    {   20,   48, SF_PTR  , 0, 0, NULL },  /* io_Device */
-    {   24,   56, SF_PTR  , 0, 0, NULL },  /* io_Unit */
-    {   28,   64, SF_WORD , 0, 0, NULL },  /* io_Command */
-    {   30,   66, SF_BYTE , 0, 0, NULL },  /* io_Flags */
-    {   31,   67, SF_BYTE , 0, 0, NULL },  /* io_Error */
+    SHADOW_FIELD(   0, 4, IORequest, io_Message.mn_Node.ln_Succ),
+    SHADOW_FIELD(   4, 4, IORequest, io_Message.mn_Node.ln_Pred),
+    SHADOW_FIELD(   8, 1, IORequest, io_Message.mn_Node.ln_Type),
+    SHADOW_FIELD(   9, 1, IORequest, io_Message.mn_Node.ln_Pri),
+    SHADOW_FIELD(  10, 4, IORequest, io_Message.mn_Node.ln_Name),
+    SHADOW_FIELD(  14, 4, IORequest, io_Message.mn_ReplyPort),
+    SHADOW_FIELD(  18, 2, IORequest, io_Message.mn_Length),
+    SHADOW_FIELD(  20, 4, IORequest, io_Device),
+    SHADOW_FIELD(  24, 4, IORequest, io_Unit),
+    SHADOW_FIELD(  28, 2, IORequest, io_Command),
+    SHADOW_FIELD(  30, 1, IORequest, io_Flags),
+    SHADOW_FIELD(  31, 1, IORequest, io_Error),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* IOStdReq: m68k=48B, aros=96B, 16 fields */
+/* IOStdReq: m68k=48B, 16 fields */
 static const struct M68KFieldMap shadow_fields_IOStdReq[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* ln_Succ */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* ln_Pred */
-    {    8,   16, SF_BYTE , 0, 0, NULL },  /* ln_Type */
-    {    9,   17, SF_BYTE , 0, 0, NULL },  /* ln_Pri */
-    {   10,   24, SF_PTR  , 0, 0, NULL },  /* ln_Name */
-    {   14,   32, SF_PTR  , 0, 0, NULL },  /* mn_ReplyPort */
-    {   18,   40, SF_WORD , 0, 0, NULL },  /* mn_Length */
-    {   20,   48, SF_PTR  , 0, 0, NULL },  /* io_Device */
-    {   24,   56, SF_PTR  , 0, 0, NULL },  /* io_Unit */
-    {   28,   64, SF_WORD , 0, 0, NULL },  /* io_Command */
-    {   30,   66, SF_BYTE , 0, 0, NULL },  /* io_Flags */
-    {   31,   67, SF_BYTE , 0, 0, NULL },  /* io_Error */
-    {   32,   68, SF_LONG , 0, 0, NULL },  /* io_Actual */
-    {   36,   72, SF_LONG , 0, 0, NULL },  /* io_Length */
-    {   40,   80, SF_PTR  , 0, 0, NULL },  /* io_Data */
-    {   44,   88, SF_LONG , 0, 0, NULL },  /* io_Offset */
+    SHADOW_FIELD(   0, 4, IOStdReq, io_Message.mn_Node.ln_Succ),
+    SHADOW_FIELD(   4, 4, IOStdReq, io_Message.mn_Node.ln_Pred),
+    SHADOW_FIELD(   8, 1, IOStdReq, io_Message.mn_Node.ln_Type),
+    SHADOW_FIELD(   9, 1, IOStdReq, io_Message.mn_Node.ln_Pri),
+    SHADOW_FIELD(  10, 4, IOStdReq, io_Message.mn_Node.ln_Name),
+    SHADOW_FIELD(  14, 4, IOStdReq, io_Message.mn_ReplyPort),
+    SHADOW_FIELD(  18, 2, IOStdReq, io_Message.mn_Length),
+    SHADOW_FIELD(  20, 4, IOStdReq, io_Device),
+    SHADOW_FIELD(  24, 4, IOStdReq, io_Unit),
+    SHADOW_FIELD(  28, 2, IOStdReq, io_Command),
+    SHADOW_FIELD(  30, 1, IOStdReq, io_Flags),
+    SHADOW_FIELD(  31, 1, IOStdReq, io_Error),
+    SHADOW_FIELD(  32, 4, IOStdReq, io_Actual),
+    SHADOW_FIELD(  36, 4, IOStdReq, io_Length),
+    SHADOW_FIELD(  40, 4, IOStdReq, io_Data),
+    SHADOW_FIELD(  44, 4, IOStdReq, io_Offset),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* IOTArray: m68k=8B, aros=8B, 2 fields */
+/* IOTArray: m68k=8B, 2 fields */
 static const struct M68KFieldMap shadow_fields_IOTArray[] = {
-    {    0,    0, SF_LONG , 0, 0, NULL },  /* TermArray0 */
-    {    4,    4, SF_LONG , 0, 0, NULL },  /* TermArray1 */
+    SHADOW_FIELD(   0, 4, IOTArray, TermArray0),
+    SHADOW_FIELD(   4, 4, IOTArray, TermArray1),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* IconIdentifyMsg: m68k=36B, aros=72B, 2 fields */
+/* IconIdentifyMsg: m68k=36B, 8 fields */
 static const struct M68KFieldMap shadow_fields_IconIdentifyMsg[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* iim_SysBase */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* iim_DOSBase */
-    {    8,   16, SF_PTR  , 0, 0, NULL },  /* iim_UtilityBase */
-    {   12,   24, SF_PTR  , 0, 0, NULL },  /* iim_IconBase */
-    {   16,   32, SF_PTR  , 0, 0, NULL },  /* iim_FileLock */
-    {   20,   40, SF_PTR  , 0, 0, NULL },  /* iim_ParentLock */
-    {   24,   48, SF_PTR  , 0, 0, NULL },  /* iim_FIB */
-    {   32,   64, SF_PTR  , 0, 0, NULL },  /* iim_Tags */
+    SHADOW_FIELD(   0, 4, IconIdentifyMsg, iim_SysBase),
+    SHADOW_FIELD(   4, 4, IconIdentifyMsg, iim_DOSBase),
+    SHADOW_FIELD(   8, 4, IconIdentifyMsg, iim_UtilityBase),
+    SHADOW_FIELD(  12, 4, IconIdentifyMsg, iim_IconBase),
+    SHADOW_FIELD(  16, 4, IconIdentifyMsg, iim_FileLock),
+    SHADOW_FIELD(  20, 4, IconIdentifyMsg, iim_ParentLock),
+    SHADOW_FIELD(  24, 4, IconIdentifyMsg, iim_FIB),
+    SHADOW_FIELD(  32, 4, IconIdentifyMsg, iim_Tags),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* IconSelectMsg: m68k=36B, aros=64B, 9 fields */
+/* IconSelectMsg: m68k=36B, 12 fields */
 static const struct M68KFieldMap shadow_fields_IconSelectMsg[] = {
-    {    0,    0, SF_LONG , 0, 0, NULL },  /* ism_Length */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* ism_Drawer */
-    {    8,   16, SF_PTR  , 0, 0, NULL },  /* ism_Name */
-    {   12,   24, SF_WORD , 0, 0, NULL },  /* ism_Type */
-    {   14,   26, SF_WORD , 0, 0, NULL },  /* ism_Selected */
-    {   16,   32, SF_PTR  , 0, 0, NULL },  /* ism_Tags */
-    {   20,   40, SF_PTR  , 0, 0, NULL },  /* ism_DrawerWindow */
-    {   24,   48, SF_PTR  , 0, 0, NULL },  /* ism_ParentWindow */
-    {   28,   56, SF_WORD , 0, 0, NULL },  /* ism_Left */
-    {   30,   58, SF_WORD , 0, 0, NULL },  /* ism_Top */
-    {   32,   60, SF_WORD , 0, 0, NULL },  /* ism_Width */
-    {   34,   62, SF_WORD , 0, 0, NULL },  /* ism_Height */
+    SHADOW_FIELD(   0, 4, IconSelectMsg, ism_Length),
+    SHADOW_FIELD(   4, 4, IconSelectMsg, ism_Drawer),
+    SHADOW_FIELD(   8, 4, IconSelectMsg, ism_Name),
+    SHADOW_FIELD(  12, 2, IconSelectMsg, ism_Type),
+    SHADOW_FIELD(  14, 2, IconSelectMsg, ism_Selected),
+    SHADOW_FIELD(  16, 4, IconSelectMsg, ism_Tags),
+    SHADOW_FIELD(  20, 4, IconSelectMsg, ism_DrawerWindow),
+    SHADOW_FIELD(  24, 4, IconSelectMsg, ism_ParentWindow),
+    SHADOW_FIELD(  28, 2, IconSelectMsg, ism_Left),
+    SHADOW_FIELD(  30, 2, IconSelectMsg, ism_Top),
+    SHADOW_FIELD(  32, 2, IconSelectMsg, ism_Width),
+    SHADOW_FIELD(  34, 2, IconSelectMsg, ism_Height),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* Image: m68k=20B, aros=40B, 4 fields */
+/* Image: m68k=20B, 6 fields */
 static const struct M68KFieldMap shadow_fields_Image[] = {
-    {    0,    0, SF_WORD , 0, 0, NULL },  /* LeftEdge */
-    {    2,    2, SF_WORD , 0, 0, NULL },  /* TopEdge */
-    {   10,   16, SF_PTR  , 0, 0, NULL },  /* ImageData */
-    {   14,   24, SF_BYTE , 0, 0, NULL },  /* PlanePick */
-    {   15,   25, SF_BYTE , 0, 0, NULL },  /* PlaneOnOff */
-    {   16,   32, SF_PTR  , 0, 0, NULL },  /* NextImage */
+    SHADOW_FIELD(   0, 2, Image, LeftEdge),
+    SHADOW_FIELD(   2, 2, Image, TopEdge),
+    SHADOW_FIELD(  10, 4, Image, ImageData),
+    SHADOW_FIELD(  14, 1, Image, PlanePick),
+    SHADOW_FIELD(  15, 1, Image, PlaneOnOff),
+    SHADOW_FIELD(  16, 4, Image, NextImage),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* InfoData: m68k=36B, aros=48B, 9 fields */
+/* InfoData: m68k=36B, 9 fields */
 static const struct M68KFieldMap shadow_fields_InfoData[] = {
-    {    0,    0, SF_LONG , 0, 0, NULL },  /* id_NumSoftErrors */
-    {    4,    4, SF_LONG , 0, 0, NULL },  /* id_UnitNumber */
-    {    8,    8, SF_LONG , 0, 0, NULL },  /* id_DiskState */
-    {   12,   12, SF_LONG , 0, 0, NULL },  /* id_NumBlocks */
-    {   16,   16, SF_LONG , 0, 0, NULL },  /* id_NumBlocksUsed */
-    {   20,   20, SF_LONG , 0, 0, NULL },  /* id_BytesPerBlock */
-    {   24,   24, SF_LONG , 0, 0, NULL },  /* id_DiskType */
-    {   28,   32, SF_PTR  , 0, 0, NULL },  /* id_VolumeNode */
-    {   32,   40, SF_PTR  , 0, 0, NULL },  /* id_InUse */
+    SHADOW_FIELD(   0, 4, InfoData, id_NumSoftErrors),
+    SHADOW_FIELD(   4, 4, InfoData, id_UnitNumber),
+    SHADOW_FIELD(   8, 4, InfoData, id_DiskState),
+    SHADOW_FIELD(  12, 4, InfoData, id_NumBlocks),
+    SHADOW_FIELD(  16, 4, InfoData, id_NumBlocksUsed),
+    SHADOW_FIELD(  20, 4, InfoData, id_BytesPerBlock),
+    SHADOW_FIELD(  24, 4, InfoData, id_DiskType),
+    SHADOW_FIELD(  28, 4, InfoData, id_VolumeNode),
+    SHADOW_FIELD(  32, 4, InfoData, id_InUse),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* InputEvent: m68k=22B, aros=32B, 5 fields */
+/* InputEvent: m68k=22B, 5 fields */
 static const struct M68KFieldMap shadow_fields_InputEvent[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* ie_NextEvent */
-    {    4,    8, SF_BYTE , 0, 0, NULL },  /* ie_Class */
-    {    5,    9, SF_BYTE , 0, 0, NULL },  /* ie_SubClass */
-    {    6,   10, SF_WORD , 0, 0, NULL },  /* ie_Code */
-    {    8,   12, SF_WORD , 0, 0, NULL },  /* ie_Qualifier */
+    SHADOW_FIELD(   0, 4, InputEvent, ie_NextEvent),
+    SHADOW_FIELD(   4, 1, InputEvent, ie_Class),
+    SHADOW_FIELD(   5, 1, InputEvent, ie_SubClass),
+    SHADOW_FIELD(   6, 2, InputEvent, ie_Code),
+    SHADOW_FIELD(   8, 2, InputEvent, ie_Qualifier),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* InputXpression: m68k=12B, aros=12B, 5 fields */
+/* InputXpression: m68k=12B, 7 fields */
 static const struct M68KFieldMap shadow_fields_InputXpression[] = {
-    {    0,    0, SF_BYTE , 0, 0, NULL },  /* ix_Version */
-    {    1,    1, SF_BYTE , 0, 0, NULL },  /* ix_Class */
-    {    2,    2, SF_WORD , 0, 0, NULL },  /* ix_Code */
-    {    4,    4, SF_WORD , 0, 0, NULL },  /* ix_CodeMask */
-    {    6,    6, SF_WORD , 0, 0, NULL },  /* ix_Qualifier */
-    {    8,    8, SF_WORD , 0, 0, NULL },  /* ix_QualMask */
-    {   10,   10, SF_WORD , 0, 0, NULL },  /* ix_QualSame */
+    SHADOW_FIELD(   0, 1, InputXpression, ix_Version),
+    SHADOW_FIELD(   1, 1, InputXpression, ix_Class),
+    SHADOW_FIELD(   2, 2, InputXpression, ix_Code),
+    SHADOW_FIELD(   4, 2, InputXpression, ix_CodeMask),
+    SHADOW_FIELD(   6, 2, InputXpression, ix_Qualifier),
+    SHADOW_FIELD(   8, 2, InputXpression, ix_QualMask),
+    SHADOW_FIELD(  10, 2, InputXpression, ix_QualSame),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* IntVector: m68k=12B, aros=24B, 2 fields */
+/* IntVector: m68k=12B, 2 fields */
 static const struct M68KFieldMap shadow_fields_IntVector[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* iv_Data */
-    {    8,   16, SF_PTR  , 0, 0, NULL },  /* iv_Node */
+    SHADOW_FIELD(   0, 4, IntVector, iv_Data),
+    SHADOW_FIELD(   8, 4, IntVector, iv_Node),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* Interrupt: m68k=22B, aros=48B, 6 fields */
+/* Interrupt: m68k=22B, 6 fields */
 static const struct M68KFieldMap shadow_fields_Interrupt[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* ln_Succ */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* ln_Pred */
-    {    8,   16, SF_BYTE , 0, 0, NULL },  /* ln_Type */
-    {    9,   17, SF_BYTE , 0, 0, NULL },  /* ln_Pri */
-    {   10,   24, SF_PTR  , 0, 0, NULL },  /* ln_Name */
-    {   14,   32, SF_PTR  , 0, 0, NULL },  /* is_Data */
+    SHADOW_FIELD(   0, 4, Interrupt, is_Node.ln_Succ),
+    SHADOW_FIELD(   4, 4, Interrupt, is_Node.ln_Pred),
+    SHADOW_FIELD(   8, 1, Interrupt, is_Node.ln_Type),
+    SHADOW_FIELD(   9, 1, Interrupt, is_Node.ln_Pri),
+    SHADOW_FIELD(  10, 4, Interrupt, is_Node.ln_Name),
+    SHADOW_FIELD(  14, 4, Interrupt, is_Data),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* IntuiMessage: m68k=52B, aros=96B, 13 fields */
+/* IntuiMessage: m68k=52B, 17 fields */
 static const struct M68KFieldMap shadow_fields_IntuiMessage[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* ln_Succ */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* ln_Pred */
-    {    8,   16, SF_BYTE , 0, 0, NULL },  /* ln_Type */
-    {    9,   17, SF_BYTE , 0, 0, NULL },  /* ln_Pri */
-    {   10,   24, SF_PTR  , 0, 0, NULL },  /* ln_Name */
-    {   14,   32, SF_PTR  , 0, 0, NULL },  /* mn_ReplyPort */
-    {   18,   40, SF_WORD , 0, 0, NULL },  /* mn_Length */
-    {   20,   48, SF_LONG , 0, 0, NULL },  /* Class */
-    {   24,   52, SF_WORD , 0, 0, NULL },  /* Code */
-    {   26,   54, SF_WORD , 0, 0, NULL },  /* Qualifier */
-    {   28,   56, SF_PTR  , 0, 0, NULL },  /* IAddress */
-    {   32,   64, SF_WORD , 0, 0, NULL },  /* MouseX */
-    {   34,   66, SF_WORD , 0, 0, NULL },  /* MouseY */
-    {   36,   68, SF_LONG , 0, 0, NULL },  /* Seconds */
-    {   40,   72, SF_LONG , 0, 0, NULL },  /* Micros */
-    {   44,   80, SF_PTR  , 0, 0, NULL },  /* IDCMPWindow */
-    {   48,   88, SF_PTR  , 0, 0, NULL },  /* SpecialLink */
+    SHADOW_FIELD(   0, 4, IntuiMessage, ExecMessage.mn_Node.ln_Succ),
+    SHADOW_FIELD(   4, 4, IntuiMessage, ExecMessage.mn_Node.ln_Pred),
+    SHADOW_FIELD(   8, 1, IntuiMessage, ExecMessage.mn_Node.ln_Type),
+    SHADOW_FIELD(   9, 1, IntuiMessage, ExecMessage.mn_Node.ln_Pri),
+    SHADOW_FIELD(  10, 4, IntuiMessage, ExecMessage.mn_Node.ln_Name),
+    SHADOW_FIELD(  14, 4, IntuiMessage, ExecMessage.mn_ReplyPort),
+    SHADOW_FIELD(  18, 2, IntuiMessage, ExecMessage.mn_Length),
+    SHADOW_FIELD(  20, 4, IntuiMessage, Class),
+    SHADOW_FIELD(  24, 2, IntuiMessage, Code),
+    SHADOW_FIELD(  26, 2, IntuiMessage, Qualifier),
+    SHADOW_FIELD(  28, 4, IntuiMessage, IAddress),
+    SHADOW_FIELD(  32, 2, IntuiMessage, MouseX),
+    SHADOW_FIELD(  34, 2, IntuiMessage, MouseY),
+    SHADOW_FIELD(  36, 4, IntuiMessage, Seconds),
+    SHADOW_FIELD(  40, 4, IntuiMessage, Micros),
+    SHADOW_FIELD(  44, 4, IntuiMessage, IDCMPWindow),
+    SHADOW_FIELD(  48, 4, IntuiMessage, SpecialLink),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* IntuiText: m68k=20B, aros=32B, 5 fields */
+/* IntuiText: m68k=20B, 8 fields */
 static const struct M68KFieldMap shadow_fields_IntuiText[] = {
-    {    0,    0, SF_BYTE , 0, 0, NULL },  /* FrontPen */
-    {    1,    1, SF_BYTE , 0, 0, NULL },  /* BackPen */
-    {    2,    2, SF_BYTE , 0, 0, NULL },  /* DrawMode */
-    {    4,    4, SF_WORD , 0, 0, NULL },  /* LeftEdge */
-    {    6,    6, SF_WORD , 0, 0, NULL },  /* TopEdge */
-    {    8,    8, SF_PTR  , 0, 0, NULL },  /* ITextFont */
-    {   12,   16, SF_PTR  , 0, 0, NULL },  /* IText */
-    {   16,   24, SF_PTR  , 0, 0, NULL },  /* NextText */
+    SHADOW_FIELD(   0, 1, IntuiText, FrontPen),
+    SHADOW_FIELD(   1, 1, IntuiText, BackPen),
+    SHADOW_FIELD(   2, 1, IntuiText, DrawMode),
+    SHADOW_FIELD(   4, 2, IntuiText, LeftEdge),
+    SHADOW_FIELD(   6, 2, IntuiText, TopEdge),
+    SHADOW_FIELD(   8, 4, IntuiText, ITextFont),
+    SHADOW_FIELD(  12, 4, IntuiText, IText),
+    SHADOW_FIELD(  16, 4, IntuiText, NextText),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* IntuitionBase: m68k=80B, aros=136B, 23 fields */
+/* IntuitionBase: m68k=80B, 23 fields */
 static const struct M68KFieldMap shadow_fields_IntuitionBase[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* ln_Succ */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* ln_Pred */
-    {    8,   16, SF_BYTE , 0, 0, NULL },  /* ln_Type */
-    {    9,   17, SF_BYTE , 0, 0, NULL },  /* ln_Pri */
-    {   10,   24, SF_PTR  , 0, 0, NULL },  /* ln_Name */
-    {   14,   32, SF_BYTE , 0, 0, NULL },  /* lib_Flags */
-    {   15,   33, SF_BYTE , 0, 0, NULL },  /* lib_pad */
-    {   16,   34, SF_WORD , 0, 0, NULL },  /* lib_NegSize */
-    {   18,   36, SF_WORD , 0, 0, NULL },  /* lib_PosSize */
-    {   20,   38, SF_WORD , 0, 0, NULL },  /* lib_Version */
-    {   22,   40, SF_WORD , 0, 0, NULL },  /* lib_Revision */
-    {   24,   48, SF_PTR  , 0, 0, NULL },  /* lib_IdString */
-    {   28,   56, SF_LONG , 0, 0, NULL },  /* lib_Sum */
-    {   32,   60, SF_WORD , 0, 0, NULL },  /* lib_OpenCnt */
-    {   34,   64, SF_PTR  , 0, 0, NULL },  /* ViewPort */
-    {   38,   72, SF_PTR  , 0, 0, NULL },  /* LOFCprList */
-    {   42,   80, SF_PTR  , 0, 0, NULL },  /* SHFCprList */
-    {   50,   92, SF_WORD , 0, 0, NULL },  /* Modes */
-    {   52,   96, SF_PTR  , 0, 0, NULL },  /* ActiveWindow */
-    {   56,  104, SF_PTR  , 0, 0, NULL },  /* ActiveScreen */
-    {   60,  112, SF_PTR  , 0, 0, NULL },  /* FirstScreen */
-    {   72,  128, SF_LONG , 0, 0, NULL },  /* Seconds */
-    {   76,  132, SF_LONG , 0, 0, NULL },  /* Micros */
+    SHADOW_FIELD(   0, 4, IntuitionBase, LibNode.lib_Node.ln_Succ),
+    SHADOW_FIELD(   4, 4, IntuitionBase, LibNode.lib_Node.ln_Pred),
+    SHADOW_FIELD(   8, 1, IntuitionBase, LibNode.lib_Node.ln_Type),
+    SHADOW_FIELD(   9, 1, IntuitionBase, LibNode.lib_Node.ln_Pri),
+    SHADOW_FIELD(  10, 4, IntuitionBase, LibNode.lib_Node.ln_Name),
+    SHADOW_FIELD(  14, 1, IntuitionBase, LibNode.lib_Flags),
+    SHADOW_FIELD(  15, 1, IntuitionBase, LibNode.lib_pad),
+    SHADOW_FIELD(  16, 2, IntuitionBase, LibNode.lib_NegSize),
+    SHADOW_FIELD(  18, 2, IntuitionBase, LibNode.lib_PosSize),
+    SHADOW_FIELD(  20, 2, IntuitionBase, LibNode.lib_Version),
+    SHADOW_FIELD(  22, 2, IntuitionBase, LibNode.lib_Revision),
+    SHADOW_FIELD(  24, 4, IntuitionBase, LibNode.lib_IdString),
+    SHADOW_FIELD(  28, 4, IntuitionBase, LibNode.lib_Sum),
+    SHADOW_FIELD(  32, 2, IntuitionBase, LibNode.lib_OpenCnt),
+    SHADOW_FIELD(  34, 4, IntuitionBase, ViewLord.ViewPort),
+    SHADOW_FIELD(  38, 4, IntuitionBase, ViewLord.LOFCprList),
+    SHADOW_FIELD(  42, 4, IntuitionBase, ViewLord.SHFCprList),
+    SHADOW_FIELD(  50, 2, IntuitionBase, ViewLord.Modes),
+    SHADOW_FIELD(  52, 4, IntuitionBase, ActiveWindow),
+    SHADOW_FIELD(  56, 4, IntuitionBase, ActiveScreen),
+    SHADOW_FIELD(  60, 4, IntuitionBase, FirstScreen),
+    SHADOW_FIELD(  72, 4, IntuitionBase, Seconds),
+    SHADOW_FIELD(  76, 4, IntuitionBase, Micros),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* KeyMapResource: m68k=28B, aros=64B, 10 fields */
+/* KeyMapResource: m68k=28B, 10 fields */
 static const struct M68KFieldMap shadow_fields_KeyMapResource[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* ln_Succ */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* ln_Pred */
-    {    8,   16, SF_BYTE , 0, 0, NULL },  /* ln_Type */
-    {    9,   17, SF_BYTE , 0, 0, NULL },  /* ln_Pri */
-    {   10,   24, SF_PTR  , 0, 0, NULL },  /* ln_Name */
-    {   14,   32, SF_PTR  , 0, 0, NULL },  /* lh_Head */
-    {   18,   40, SF_PTR  , 0, 0, NULL },  /* lh_Tail */
-    {   22,   48, SF_PTR  , 0, 0, NULL },  /* lh_TailPred */
-    {   26,   56, SF_BYTE , 0, 0, NULL },  /* lh_Type */
-    {   27,   57, SF_BYTE , 0, 0, NULL },  /* l_pad */
+    SHADOW_FIELD(   0, 4, KeyMapResource, kr_Node.ln_Succ),
+    SHADOW_FIELD(   4, 4, KeyMapResource, kr_Node.ln_Pred),
+    SHADOW_FIELD(   8, 1, KeyMapResource, kr_Node.ln_Type),
+    SHADOW_FIELD(   9, 1, KeyMapResource, kr_Node.ln_Pri),
+    SHADOW_FIELD(  10, 4, KeyMapResource, kr_Node.ln_Name),
+    SHADOW_FIELD(  14, 4, KeyMapResource, kr_List.lh_Head),
+    SHADOW_FIELD(  18, 4, KeyMapResource, kr_List.lh_Tail),
+    SHADOW_FIELD(  22, 4, KeyMapResource, kr_List.lh_TailPred),
+    SHADOW_FIELD(  26, 1, KeyMapResource, kr_List.lh_Type),
+    SHADOW_FIELD(  27, 1, KeyMapResource, kr_List.l_pad),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* KeyQuery: m68k=4B, aros=4B, 2 fields */
+/* KeyQuery: m68k=4B, 2 fields */
 static const struct M68KFieldMap shadow_fields_KeyQuery[] = {
-    {    0,    0, SF_WORD , 0, 0, NULL },  /* kq_KeyCode */
-    {    2,    2, SF_WORD , 0, 0, NULL },  /* kq_Pressed */
+    SHADOW_FIELD(   0, 2, KeyQuery, kq_KeyCode),
+    SHADOW_FIELD(   2, 2, KeyQuery, kq_Pressed),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* LVDrawMsg: m68k=24B, aros=40B, 4 fields */
+/* LVDrawMsg: m68k=24B, 8 fields */
 static const struct M68KFieldMap shadow_fields_LVDrawMsg[] = {
-    {    0,    0, SF_LONG , 0, 0, NULL },  /* lvdm_MethodID */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* lvdm_RastPort */
-    {    8,   16, SF_PTR  , 0, 0, NULL },  /* lvdm_DrawInfo */
-    {   12,   24, SF_WORD , 0, 0, NULL },  /* MinX */
-    {   14,   26, SF_WORD , 0, 0, NULL },  /* MinY */
-    {   16,   28, SF_WORD , 0, 0, NULL },  /* MaxX */
-    {   18,   30, SF_WORD , 0, 0, NULL },  /* MaxY */
-    {   20,   32, SF_LONG , 0, 0, NULL },  /* lvdm_State */
+    SHADOW_FIELD(   0, 4, LVDrawMsg, lvdm_MethodID),
+    SHADOW_FIELD(   4, 4, LVDrawMsg, lvdm_RastPort),
+    SHADOW_FIELD(   8, 4, LVDrawMsg, lvdm_DrawInfo),
+    SHADOW_FIELD(  12, 2, LVDrawMsg, lvdm_Bounds.MinX),
+    SHADOW_FIELD(  14, 2, LVDrawMsg, lvdm_Bounds.MinY),
+    SHADOW_FIELD(  16, 2, LVDrawMsg, lvdm_Bounds.MaxX),
+    SHADOW_FIELD(  18, 2, LVDrawMsg, lvdm_Bounds.MaxY),
+    SHADOW_FIELD(  20, 4, LVDrawMsg, lvdm_State),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* Layer: m68k=160B, aros=896B, 24 fields */
+/* Layer: m68k=160B, 24 fields */
 static const struct M68KFieldMap shadow_fields_Layer[] = {
-    {    8,   16, SF_PTR  , 0, 0, NULL },  /* ClipRect */
-    {   12,   24, SF_PTR  , 0, 0, NULL },  /* rp */
-    {   32,   56, SF_PTR  , 0, 0, NULL },  /* SuperBitMap */
-    {   36,   64, SF_PTR  , 0, 0, NULL },  /* SuperClipRect */
-    {   40,   72, SF_PTR  , 0, 0, NULL },  /* Window */
-    {   60,  112, SF_PTR  , 0, 0, NULL },  /* SuperSaveClipRects */
-    {   68,  128, SF_PTR  , 0, 0, NULL },  /* LayerInfo */
-    {   72,  256, SF_PTR  , 0, 0, NULL },  /* ln_Succ */
-    {   76,  264, SF_PTR  , 0, 0, NULL },  /* ln_Pred */
-    {   80,  272, SF_BYTE , 0, 0, NULL },  /* ln_Type */
-    {   81,  273, SF_BYTE , 0, 0, NULL },  /* ln_Pri */
-    {   82,  280, SF_PTR  , 0, 0, NULL },  /* ln_Name */
-    {   86,  288, SF_WORD , 0, 0, NULL },  /* ss_NestCount */
-    {   88,  296, SF_PTR  , 0, 0, NULL },  /* mlh_Head */
-    {   92,  304, SF_PTR  , 0, 0, NULL },  /* mlh_Tail */
-    {   96,  312, SF_PTR  , 0, 0, NULL },  /* mlh_TailPred */
-    {  100,  384, SF_PTR  , 0, 0, NULL },  /* mln_Succ */
-    {  104,  392, SF_PTR  , 0, 0, NULL },  /* mln_Pred */
-    {  108,  400, SF_PTR  , 0, 0, NULL },  /* sr_Waiter */
-    {  112,  640, SF_PTR  , 0, 0, NULL },  /* ss_Owner */
-    {  116,  648, SF_WORD , 0, 0, NULL },  /* ss_QueueCount */
-    {  118,  768, SF_PTR  , 0, 0, NULL },  /* BackFill */
-    {  126,  784, SF_PTR  , 0, 0, NULL },  /* ClipRegion */
-    {  156,  840, SF_PTR  , 0, 0, NULL },  /* DamageList */
+    SHADOW_FIELD(   8, 4, Layer, ClipRect),
+    SHADOW_FIELD(  12, 4, Layer, rp),
+    SHADOW_FIELD(  32, 4, Layer, SuperBitMap),
+    SHADOW_FIELD(  36, 4, Layer, SuperClipRect),
+    SHADOW_FIELD(  40, 4, Layer, Window),
+    SHADOW_FIELD(  60, 4, Layer, SuperSaveClipRects),
+    SHADOW_FIELD(  68, 4, Layer, LayerInfo),
+    SHADOW_FIELD(  72, 4, Layer, Lock.ss_Link.ln_Succ),
+    SHADOW_FIELD(  76, 4, Layer, Lock.ss_Link.ln_Pred),
+    SHADOW_FIELD(  80, 1, Layer, Lock.ss_Link.ln_Type),
+    SHADOW_FIELD(  81, 1, Layer, Lock.ss_Link.ln_Pri),
+    SHADOW_FIELD(  82, 4, Layer, Lock.ss_Link.ln_Name),
+    SHADOW_FIELD(  86, 2, Layer, Lock.ss_NestCount),
+    SHADOW_FIELD(  88, 4, Layer, Lock.ss_WaitQueue.mlh_Head),
+    SHADOW_FIELD(  92, 4, Layer, Lock.ss_WaitQueue.mlh_Tail),
+    SHADOW_FIELD(  96, 4, Layer, Lock.ss_WaitQueue.mlh_TailPred),
+    SHADOW_FIELD( 100, 4, Layer, Lock.ss_MultipleLink.sr_Link.mln_Succ),
+    SHADOW_FIELD( 104, 4, Layer, Lock.ss_MultipleLink.sr_Link.mln_Pred),
+    SHADOW_FIELD( 108, 4, Layer, Lock.ss_MultipleLink.sr_Waiter),
+    SHADOW_FIELD( 112, 4, Layer, Lock.ss_Owner),
+    SHADOW_FIELD( 116, 2, Layer, Lock.ss_QueueCount),
+    SHADOW_FIELD( 118, 4, Layer, BackFill),
+    SHADOW_FIELD( 126, 4, Layer, ClipRegion),
+    SHADOW_FIELD( 156, 4, Layer, DamageList),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* Layer_Info: m68k=102B, aros=768B, 19 fields */
+/* Layer_Info: m68k=102B, 19 fields */
 static const struct M68KFieldMap shadow_fields_Layer_Info[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* top_layer */
-    {   24,  128, SF_PTR  , 0, 0, NULL },  /* ln_Succ */
-    {   28,  136, SF_PTR  , 0, 0, NULL },  /* ln_Pred */
-    {   32,  144, SF_BYTE , 0, 0, NULL },  /* ln_Type */
-    {   33,  145, SF_BYTE , 0, 0, NULL },  /* ln_Pri */
-    {   34,  152, SF_PTR  , 0, 0, NULL },  /* ln_Name */
-    {   38,  160, SF_WORD , 0, 0, NULL },  /* ss_NestCount */
-    {   40,  168, SF_PTR  , 0, 0, NULL },  /* mlh_Head */
-    {   44,  176, SF_PTR  , 0, 0, NULL },  /* mlh_Tail */
-    {   48,  184, SF_PTR  , 0, 0, NULL },  /* mlh_TailPred */
-    {   52,  256, SF_PTR  , 0, 0, NULL },  /* mln_Succ */
-    {   56,  264, SF_PTR  , 0, 0, NULL },  /* mln_Pred */
-    {   60,  272, SF_PTR  , 0, 0, NULL },  /* sr_Waiter */
-    {   64,  512, SF_PTR  , 0, 0, NULL },  /* ss_Owner */
-    {   68,  520, SF_WORD , 0, 0, NULL },  /* ss_QueueCount */
-    {   82,  664, SF_WORD , 0, 0, NULL },  /* PrivateReserve3 */
-    {   84,  672, SF_PTR  , 0, 0, NULL },  /* PrivateReserve4 */
-    {   92,  684, SF_BYTE , 0, 0, NULL },  /* PrivateReserve5 */
-    {   94,  688, SF_PTR  , 0, 0, NULL },  /* BlankHook */
+    SHADOW_FIELD(   0, 4, Layer_Info, top_layer),
+    SHADOW_FIELD(  24, 4, Layer_Info, Lock.ss_Link.ln_Succ),
+    SHADOW_FIELD(  28, 4, Layer_Info, Lock.ss_Link.ln_Pred),
+    SHADOW_FIELD(  32, 1, Layer_Info, Lock.ss_Link.ln_Type),
+    SHADOW_FIELD(  33, 1, Layer_Info, Lock.ss_Link.ln_Pri),
+    SHADOW_FIELD(  34, 4, Layer_Info, Lock.ss_Link.ln_Name),
+    SHADOW_FIELD(  38, 2, Layer_Info, Lock.ss_NestCount),
+    SHADOW_FIELD(  40, 4, Layer_Info, Lock.ss_WaitQueue.mlh_Head),
+    SHADOW_FIELD(  44, 4, Layer_Info, Lock.ss_WaitQueue.mlh_Tail),
+    SHADOW_FIELD(  48, 4, Layer_Info, Lock.ss_WaitQueue.mlh_TailPred),
+    SHADOW_FIELD(  52, 4, Layer_Info, Lock.ss_MultipleLink.sr_Link.mln_Succ),
+    SHADOW_FIELD(  56, 4, Layer_Info, Lock.ss_MultipleLink.sr_Link.mln_Pred),
+    SHADOW_FIELD(  60, 4, Layer_Info, Lock.ss_MultipleLink.sr_Waiter),
+    SHADOW_FIELD(  64, 4, Layer_Info, Lock.ss_Owner),
+    SHADOW_FIELD(  68, 2, Layer_Info, Lock.ss_QueueCount),
+    SHADOW_FIELD(  82, 2, Layer_Info, PrivateReserve3),
+    SHADOW_FIELD(  84, 4, Layer_Info, PrivateReserve4),
+    SHADOW_FIELD(  92, 1, Layer_Info, PrivateReserve5),
+    SHADOW_FIELD(  94, 4, Layer_Info, BlankHook),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* Library: m68k=34B, aros=64B, 14 fields */
+/* Library: m68k=34B, 14 fields */
 static const struct M68KFieldMap shadow_fields_Library[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* ln_Succ */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* ln_Pred */
-    {    8,   16, SF_BYTE , 0, 0, NULL },  /* ln_Type */
-    {    9,   17, SF_BYTE , 0, 0, NULL },  /* ln_Pri */
-    {   10,   24, SF_PTR  , 0, 0, NULL },  /* ln_Name */
-    {   14,   32, SF_BYTE , 0, 0, NULL },  /* lib_Flags */
-    {   15,   33, SF_BYTE , 0, 0, NULL },  /* lib_pad */
-    {   16,   34, SF_WORD , 0, 0, NULL },  /* lib_NegSize */
-    {   18,   36, SF_WORD , 0, 0, NULL },  /* lib_PosSize */
-    {   20,   38, SF_WORD , 0, 0, NULL },  /* lib_Version */
-    {   22,   40, SF_WORD , 0, 0, NULL },  /* lib_Revision */
-    {   24,   48, SF_PTR  , 0, 0, NULL },  /* lib_IdString */
-    {   28,   56, SF_LONG , 0, 0, NULL },  /* lib_Sum */
-    {   32,   60, SF_WORD , 0, 0, NULL },  /* lib_OpenCnt */
+    SHADOW_FIELD(   0, 4, Library, lib_Node.ln_Succ),
+    SHADOW_FIELD(   4, 4, Library, lib_Node.ln_Pred),
+    SHADOW_FIELD(   8, 1, Library, lib_Node.ln_Type),
+    SHADOW_FIELD(   9, 1, Library, lib_Node.ln_Pri),
+    SHADOW_FIELD(  10, 4, Library, lib_Node.ln_Name),
+    SHADOW_FIELD(  14, 1, Library, lib_Flags),
+    SHADOW_FIELD(  15, 1, Library, lib_pad),
+    SHADOW_FIELD(  16, 2, Library, lib_NegSize),
+    SHADOW_FIELD(  18, 2, Library, lib_PosSize),
+    SHADOW_FIELD(  20, 2, Library, lib_Version),
+    SHADOW_FIELD(  22, 2, Library, lib_Revision),
+    SHADOW_FIELD(  24, 4, Library, lib_IdString),
+    SHADOW_FIELD(  28, 4, Library, lib_Sum),
+    SHADOW_FIELD(  32, 2, Library, lib_OpenCnt),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* Line: m68k=36B, aros=56B, 13 fields */
+/* Line: m68k=36B, 13 fields */
 static const struct M68KFieldMap shadow_fields_Line[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* mln_Succ */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* mln_Pred */
-    {    8,   16, SF_PTR  , 0, 0, NULL },  /* ln_Text */
-    {   12,   24, SF_LONG , 0, 0, NULL },  /* ln_TextLen */
-    {   16,   28, SF_WORD , 0, 0, NULL },  /* ln_XOffset */
-    {   18,   30, SF_WORD , 0, 0, NULL },  /* ln_YOffset */
-    {   20,   32, SF_WORD , 0, 0, NULL },  /* ln_Width */
-    {   22,   34, SF_WORD , 0, 0, NULL },  /* ln_Height */
-    {   24,   36, SF_WORD , 0, 0, NULL },  /* ln_Flags */
-    {   26,   38, SF_BYTE , 0, 0, NULL },  /* ln_FgPen */
-    {   27,   39, SF_BYTE , 0, 0, NULL },  /* ln_BgPen */
-    {   28,   40, SF_LONG , 0, 0, NULL },  /* ln_Style */
-    {   32,   48, SF_PTR  , 0, 0, NULL },  /* ln_Data */
+    SHADOW_FIELD(   0, 4, Line, ln_Link.mln_Succ),
+    SHADOW_FIELD(   4, 4, Line, ln_Link.mln_Pred),
+    SHADOW_FIELD(   8, 4, Line, ln_Text),
+    SHADOW_FIELD(  12, 4, Line, ln_TextLen),
+    SHADOW_FIELD(  16, 2, Line, ln_XOffset),
+    SHADOW_FIELD(  18, 2, Line, ln_YOffset),
+    SHADOW_FIELD(  20, 2, Line, ln_Width),
+    SHADOW_FIELD(  22, 2, Line, ln_Height),
+    SHADOW_FIELD(  24, 2, Line, ln_Flags),
+    SHADOW_FIELD(  26, 1, Line, ln_FgPen),
+    SHADOW_FIELD(  27, 1, Line, ln_BgPen),
+    SHADOW_FIELD(  28, 4, Line, ln_Style),
+    SHADOW_FIELD(  32, 4, Line, ln_Data),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* List: m68k=14B, aros=32B, 5 fields */
+/* List: m68k=14B, 5 fields */
 static const struct M68KFieldMap shadow_fields_List[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* lh_Head */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* lh_Tail */
-    {    8,   16, SF_PTR  , 0, 0, NULL },  /* lh_TailPred */
-    {   12,   24, SF_BYTE , 0, 0, NULL },  /* lh_Type */
-    {   13,   25, SF_BYTE , 0, 0, NULL },  /* l_pad */
+    SHADOW_FIELD(   0, 4, List, lh_Head),
+    SHADOW_FIELD(   4, 4, List, lh_Tail),
+    SHADOW_FIELD(   8, 4, List, lh_TailPred),
+    SHADOW_FIELD(  12, 1, List, lh_Type),
+    SHADOW_FIELD(  13, 1, List, l_pad),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* LoadSegBlock: m68k=512B, aros=512B, 5 fields */
+/* LoadSegBlock: m68k=512B, 5 fields */
 static const struct M68KFieldMap shadow_fields_LoadSegBlock[] = {
-    {    0,    0, SF_LONG , 0, 0, NULL },  /* lsb_ID */
-    {    4,    4, SF_LONG , 0, 0, NULL },  /* lsb_SummedLongs */
-    {    8,    8, SF_LONG , 0, 0, NULL },  /* lsb_ChkSum */
-    {   12,   12, SF_LONG , 0, 0, NULL },  /* lsb_HostID */
-    {   16,   16, SF_LONG , 0, 0, NULL },  /* lsb_Next */
+    SHADOW_FIELD(   0, 4, LoadSegBlock, lsb_ID),
+    SHADOW_FIELD(   4, 4, LoadSegBlock, lsb_SummedLongs),
+    SHADOW_FIELD(   8, 4, LoadSegBlock, lsb_ChkSum),
+    SHADOW_FIELD(  12, 4, LoadSegBlock, lsb_HostID),
+    SHADOW_FIELD(  16, 4, LoadSegBlock, lsb_Next),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* LocalContextItem: m68k=20B, aros=32B, 5 fields */
+/* LocalContextItem: m68k=20B, 5 fields */
 static const struct M68KFieldMap shadow_fields_LocalContextItem[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* mln_Succ */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* mln_Pred */
-    {    8,   16, SF_LONG , 0, 0, NULL },  /* lci_ID */
-    {   12,   20, SF_LONG , 0, 0, NULL },  /* lci_Type */
-    {   16,   24, SF_LONG , 0, 0, NULL },  /* lci_Ident */
+    SHADOW_FIELD(   0, 4, LocalContextItem, lci_Node.mln_Succ),
+    SHADOW_FIELD(   4, 4, LocalContextItem, lci_Node.mln_Pred),
+    SHADOW_FIELD(   8, 4, LocalContextItem, lci_ID),
+    SHADOW_FIELD(  12, 4, LocalContextItem, lci_Type),
+    SHADOW_FIELD(  16, 4, LocalContextItem, lci_Ident),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* LocalVar: m68k=24B, aros=56B, 8 fields */
+/* LocalVar: m68k=24B, 8 fields */
 static const struct M68KFieldMap shadow_fields_LocalVar[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* ln_Succ */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* ln_Pred */
-    {    8,   16, SF_BYTE , 0, 0, NULL },  /* ln_Type */
-    {    9,   17, SF_BYTE , 0, 0, NULL },  /* ln_Pri */
-    {   10,   24, SF_PTR  , 0, 0, NULL },  /* ln_Name */
-    {   14,   32, SF_WORD , 0, 0, NULL },  /* lv_Flags */
-    {   16,   40, SF_PTR  , 0, 0, NULL },  /* lv_Value */
-    {   20,   48, SF_LONG , 0, 0, NULL },  /* lv_Len */
+    SHADOW_FIELD(   0, 4, LocalVar, lv_Node.ln_Succ),
+    SHADOW_FIELD(   4, 4, LocalVar, lv_Node.ln_Pred),
+    SHADOW_FIELD(   8, 1, LocalVar, lv_Node.ln_Type),
+    SHADOW_FIELD(   9, 1, LocalVar, lv_Node.ln_Pri),
+    SHADOW_FIELD(  10, 4, LocalVar, lv_Node.ln_Name),
+    SHADOW_FIELD(  14, 2, LocalVar, lv_Flags),
+    SHADOW_FIELD(  16, 4, LocalVar, lv_Value),
+    SHADOW_FIELD(  20, 4, LocalVar, lv_Len),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* Locale: m68k=168B, aros=312B, 42 fields */
+/* Locale: m68k=168B, 42 fields */
 static const struct M68KFieldMap shadow_fields_Locale[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* loc_LocaleName */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* loc_LanguageName */
-    {   48,   96, SF_LONG , 0, 0, NULL },  /* loc_Flags */
-    {   52,  100, SF_LONG , 0, 0, NULL },  /* loc_CodeSet */
-    {   56,  104, SF_LONG , 0, 0, NULL },  /* loc_CountryCode */
-    {   60,  108, SF_LONG , 0, 0, NULL },  /* loc_TelephoneCode */
-    {   64,  112, SF_LONG , 0, 0, NULL },  /* loc_GMTOffset */
-    {   68,  116, SF_BYTE , 0, 0, NULL },  /* loc_MeasuringSystem */
-    {   69,  117, SF_BYTE , 0, 0, NULL },  /* loc_CalendarType */
-    {   70,  118, SF_WORD , 0, 0, NULL },  /* loc_Reserved0 */
-    {   72,  120, SF_PTR  , 0, 0, NULL },  /* loc_DateTimeFormat */
-    {   76,  128, SF_PTR  , 0, 0, NULL },  /* loc_DateFormat */
-    {   80,  136, SF_PTR  , 0, 0, NULL },  /* loc_TimeFormat */
-    {   84,  144, SF_PTR  , 0, 0, NULL },  /* loc_ShortDateTimeFormat */
-    {   88,  152, SF_PTR  , 0, 0, NULL },  /* loc_ShortDateFormat */
-    {   92,  160, SF_PTR  , 0, 0, NULL },  /* loc_ShortTimeFormat */
-    {   96,  168, SF_PTR  , 0, 0, NULL },  /* loc_DecimalPoint */
-    {  100,  176, SF_PTR  , 0, 0, NULL },  /* loc_GroupSeparator */
-    {  104,  184, SF_PTR  , 0, 0, NULL },  /* loc_FracGroupSeparator */
-    {  108,  192, SF_PTR  , 0, 0, NULL },  /* loc_Grouping */
-    {  112,  200, SF_PTR  , 0, 0, NULL },  /* loc_FracGrouping */
-    {  116,  208, SF_PTR  , 0, 0, NULL },  /* loc_MonDecimalPoint */
-    {  120,  216, SF_PTR  , 0, 0, NULL },  /* loc_MonGroupSeparator */
-    {  124,  224, SF_PTR  , 0, 0, NULL },  /* loc_MonFracGroupSeparator */
-    {  128,  232, SF_PTR  , 0, 0, NULL },  /* loc_MonGrouping */
-    {  132,  240, SF_PTR  , 0, 0, NULL },  /* loc_MonFracGrouping */
-    {  136,  248, SF_BYTE , 0, 0, NULL },  /* loc_MonFracDigits */
-    {  137,  249, SF_BYTE , 0, 0, NULL },  /* loc_MonIntFracDigits */
-    {  138,  250, SF_WORD , 0, 0, NULL },  /* loc_Reserved1 */
-    {  140,  256, SF_PTR  , 0, 0, NULL },  /* loc_MonCS */
-    {  144,  264, SF_PTR  , 0, 0, NULL },  /* loc_MonSmallCS */
-    {  148,  272, SF_PTR  , 0, 0, NULL },  /* loc_MonIntCS */
-    {  152,  280, SF_PTR  , 0, 0, NULL },  /* loc_MonPositiveSign */
-    {  156,  288, SF_BYTE , 0, 0, NULL },  /* loc_MonPositiveSpaceSep */
-    {  157,  289, SF_BYTE , 0, 0, NULL },  /* loc_MonPositiveSignPos */
-    {  158,  290, SF_BYTE , 0, 0, NULL },  /* loc_MonPositiveCSPos */
-    {  159,  291, SF_BYTE , 0, 0, NULL },  /* loc_Reserved2 */
-    {  160,  296, SF_PTR  , 0, 0, NULL },  /* loc_MonNegativeSign */
-    {  164,  304, SF_BYTE , 0, 0, NULL },  /* loc_MonNegativeSpaceSep */
-    {  165,  305, SF_BYTE , 0, 0, NULL },  /* loc_MonNegativeSignPos */
-    {  166,  306, SF_BYTE , 0, 0, NULL },  /* loc_MonNegativeCSPos */
-    {  167,  307, SF_BYTE , 0, 0, NULL },  /* loc_Reserved3 */
+    SHADOW_FIELD(   0, 4, Locale, loc_LocaleName),
+    SHADOW_FIELD(   4, 4, Locale, loc_LanguageName),
+    SHADOW_FIELD(  48, 4, Locale, loc_Flags),
+    SHADOW_FIELD(  52, 4, Locale, loc_CodeSet),
+    SHADOW_FIELD(  56, 4, Locale, loc_CountryCode),
+    SHADOW_FIELD(  60, 4, Locale, loc_TelephoneCode),
+    SHADOW_FIELD(  64, 4, Locale, loc_GMTOffset),
+    SHADOW_FIELD(  68, 1, Locale, loc_MeasuringSystem),
+    SHADOW_FIELD(  69, 1, Locale, loc_CalendarType),
+    SHADOW_FIELD(  70, 2, Locale, loc_Reserved0),
+    SHADOW_FIELD(  72, 4, Locale, loc_DateTimeFormat),
+    SHADOW_FIELD(  76, 4, Locale, loc_DateFormat),
+    SHADOW_FIELD(  80, 4, Locale, loc_TimeFormat),
+    SHADOW_FIELD(  84, 4, Locale, loc_ShortDateTimeFormat),
+    SHADOW_FIELD(  88, 4, Locale, loc_ShortDateFormat),
+    SHADOW_FIELD(  92, 4, Locale, loc_ShortTimeFormat),
+    SHADOW_FIELD(  96, 4, Locale, loc_DecimalPoint),
+    SHADOW_FIELD( 100, 4, Locale, loc_GroupSeparator),
+    SHADOW_FIELD( 104, 4, Locale, loc_FracGroupSeparator),
+    SHADOW_FIELD( 108, 4, Locale, loc_Grouping),
+    SHADOW_FIELD( 112, 4, Locale, loc_FracGrouping),
+    SHADOW_FIELD( 116, 4, Locale, loc_MonDecimalPoint),
+    SHADOW_FIELD( 120, 4, Locale, loc_MonGroupSeparator),
+    SHADOW_FIELD( 124, 4, Locale, loc_MonFracGroupSeparator),
+    SHADOW_FIELD( 128, 4, Locale, loc_MonGrouping),
+    SHADOW_FIELD( 132, 4, Locale, loc_MonFracGrouping),
+    SHADOW_FIELD( 136, 1, Locale, loc_MonFracDigits),
+    SHADOW_FIELD( 137, 1, Locale, loc_MonIntFracDigits),
+    SHADOW_FIELD( 138, 2, Locale, loc_Reserved1),
+    SHADOW_FIELD( 140, 4, Locale, loc_MonCS),
+    SHADOW_FIELD( 144, 4, Locale, loc_MonSmallCS),
+    SHADOW_FIELD( 148, 4, Locale, loc_MonIntCS),
+    SHADOW_FIELD( 152, 4, Locale, loc_MonPositiveSign),
+    SHADOW_FIELD( 156, 1, Locale, loc_MonPositiveSpaceSep),
+    SHADOW_FIELD( 157, 1, Locale, loc_MonPositiveSignPos),
+    SHADOW_FIELD( 158, 1, Locale, loc_MonPositiveCSPos),
+    SHADOW_FIELD( 159, 1, Locale, loc_Reserved2),
+    SHADOW_FIELD( 160, 4, Locale, loc_MonNegativeSign),
+    SHADOW_FIELD( 164, 1, Locale, loc_MonNegativeSpaceSep),
+    SHADOW_FIELD( 165, 1, Locale, loc_MonNegativeSignPos),
+    SHADOW_FIELD( 166, 1, Locale, loc_MonNegativeCSPos),
+    SHADOW_FIELD( 167, 1, Locale, loc_Reserved3),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* LocaleBase: m68k=36B, aros=72B, 15 fields */
+/* LocaleBase: m68k=36B, 15 fields */
 static const struct M68KFieldMap shadow_fields_LocaleBase[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* ln_Succ */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* ln_Pred */
-    {    8,   16, SF_BYTE , 0, 0, NULL },  /* ln_Type */
-    {    9,   17, SF_BYTE , 0, 0, NULL },  /* ln_Pri */
-    {   10,   24, SF_PTR  , 0, 0, NULL },  /* ln_Name */
-    {   14,   32, SF_BYTE , 0, 0, NULL },  /* lib_Flags */
-    {   15,   33, SF_BYTE , 0, 0, NULL },  /* lib_pad */
-    {   16,   34, SF_WORD , 0, 0, NULL },  /* lib_NegSize */
-    {   18,   36, SF_WORD , 0, 0, NULL },  /* lib_PosSize */
-    {   20,   38, SF_WORD , 0, 0, NULL },  /* lib_Version */
-    {   22,   40, SF_WORD , 0, 0, NULL },  /* lib_Revision */
-    {   24,   48, SF_PTR  , 0, 0, NULL },  /* lib_IdString */
-    {   28,   56, SF_LONG , 0, 0, NULL },  /* lib_Sum */
-    {   32,   60, SF_WORD , 0, 0, NULL },  /* lib_OpenCnt */
-    {   34,   64, SF_WORD , 0, 0, NULL },  /* lb_SysPatches */
+    SHADOW_FIELD(   0, 4, LocaleBase, lb_LibNode.lib_Node.ln_Succ),
+    SHADOW_FIELD(   4, 4, LocaleBase, lb_LibNode.lib_Node.ln_Pred),
+    SHADOW_FIELD(   8, 1, LocaleBase, lb_LibNode.lib_Node.ln_Type),
+    SHADOW_FIELD(   9, 1, LocaleBase, lb_LibNode.lib_Node.ln_Pri),
+    SHADOW_FIELD(  10, 4, LocaleBase, lb_LibNode.lib_Node.ln_Name),
+    SHADOW_FIELD(  14, 1, LocaleBase, lb_LibNode.lib_Flags),
+    SHADOW_FIELD(  15, 1, LocaleBase, lb_LibNode.lib_pad),
+    SHADOW_FIELD(  16, 2, LocaleBase, lb_LibNode.lib_NegSize),
+    SHADOW_FIELD(  18, 2, LocaleBase, lb_LibNode.lib_PosSize),
+    SHADOW_FIELD(  20, 2, LocaleBase, lb_LibNode.lib_Version),
+    SHADOW_FIELD(  22, 2, LocaleBase, lb_LibNode.lib_Revision),
+    SHADOW_FIELD(  24, 4, LocaleBase, lb_LibNode.lib_IdString),
+    SHADOW_FIELD(  28, 4, LocaleBase, lb_LibNode.lib_Sum),
+    SHADOW_FIELD(  32, 2, LocaleBase, lb_LibNode.lib_OpenCnt),
+    SHADOW_FIELD(  34, 2, LocaleBase, lb_SysPatches),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* MemChunk: m68k=8B, aros=16B, 2 fields */
+/* MemChunk: m68k=8B, 2 fields */
 static const struct M68KFieldMap shadow_fields_MemChunk[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* mc_Next */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* mc_Bytes */
+    SHADOW_FIELD(   0, 4, MemChunk, mc_Next),
+    SHADOW_FIELD(   4, 4, MemChunk, mc_Bytes),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* MemHandlerData: m68k=12B, aros=16B, 3 fields */
+/* MemHandlerData: m68k=12B, 3 fields */
 static const struct M68KFieldMap shadow_fields_MemHandlerData[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* memh_RequestSize */
-    {    4,    8, SF_LONG , 0, 0, NULL },  /* memh_RequestFlags */
-    {    8,   12, SF_LONG , 0, 0, NULL },  /* memh_Flags */
+    SHADOW_FIELD(   0, 4, MemHandlerData, memh_RequestSize),
+    SHADOW_FIELD(   4, 4, MemHandlerData, memh_RequestFlags),
+    SHADOW_FIELD(   8, 4, MemHandlerData, memh_Flags),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* MemHeader: m68k=32B, aros=72B, 10 fields */
+/* MemHeader: m68k=32B, 10 fields */
 static const struct M68KFieldMap shadow_fields_MemHeader[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* ln_Succ */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* ln_Pred */
-    {    8,   16, SF_BYTE , 0, 0, NULL },  /* ln_Type */
-    {    9,   17, SF_BYTE , 0, 0, NULL },  /* ln_Pri */
-    {   10,   24, SF_PTR  , 0, 0, NULL },  /* ln_Name */
-    {   14,   32, SF_WORD , 0, 0, NULL },  /* mh_Attributes */
-    {   16,   40, SF_PTR  , 0, 0, NULL },  /* mh_First */
-    {   20,   48, SF_PTR  , 0, 0, NULL },  /* mh_Lower */
-    {   24,   56, SF_PTR  , 0, 0, NULL },  /* mh_Upper */
-    {   28,   64, SF_PTR  , 0, 0, NULL },  /* mh_Free */
+    SHADOW_FIELD(   0, 4, MemHeader, mh_Node.ln_Succ),
+    SHADOW_FIELD(   4, 4, MemHeader, mh_Node.ln_Pred),
+    SHADOW_FIELD(   8, 1, MemHeader, mh_Node.ln_Type),
+    SHADOW_FIELD(   9, 1, MemHeader, mh_Node.ln_Pri),
+    SHADOW_FIELD(  10, 4, MemHeader, mh_Node.ln_Name),
+    SHADOW_FIELD(  14, 2, MemHeader, mh_Attributes),
+    SHADOW_FIELD(  16, 4, MemHeader, mh_First),
+    SHADOW_FIELD(  20, 4, MemHeader, mh_Lower),
+    SHADOW_FIELD(  24, 4, MemHeader, mh_Upper),
+    SHADOW_FIELD(  28, 4, MemHeader, mh_Free),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* MemList: m68k=24B, aros=56B, 6 fields */
+/* MemList: m68k=24B, 6 fields */
 static const struct M68KFieldMap shadow_fields_MemList[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* ln_Succ */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* ln_Pred */
-    {    8,   16, SF_BYTE , 0, 0, NULL },  /* ln_Type */
-    {    9,   17, SF_BYTE , 0, 0, NULL },  /* ln_Pri */
-    {   10,   24, SF_PTR  , 0, 0, NULL },  /* ln_Name */
-    {   14,   32, SF_WORD , 0, 0, NULL },  /* ml_NumEntries */
+    SHADOW_FIELD(   0, 4, MemList, ml_Node.ln_Succ),
+    SHADOW_FIELD(   4, 4, MemList, ml_Node.ln_Pred),
+    SHADOW_FIELD(   8, 1, MemList, ml_Node.ln_Type),
+    SHADOW_FIELD(   9, 1, MemList, ml_Node.ln_Pri),
+    SHADOW_FIELD(  10, 4, MemList, ml_Node.ln_Name),
+    SHADOW_FIELD(  14, 2, MemList, ml_NumEntries),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* Menu: m68k=30B, aros=48B, 3 fields */
+/* Menu: m68k=30B, 9 fields */
 static const struct M68KFieldMap shadow_fields_Menu[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* NextMenu */
-    {    4,    8, SF_WORD , 0, 0, NULL },  /* LeftEdge */
-    {    6,   10, SF_WORD , 0, 0, NULL },  /* TopEdge */
-    {   14,   24, SF_PTR  , 0, 0, NULL },  /* MenuName */
-    {   18,   32, SF_PTR  , 0, 0, NULL },  /* FirstItem */
-    {   22,   40, SF_WORD , 0, 0, NULL },  /* JazzX */
-    {   24,   42, SF_WORD , 0, 0, NULL },  /* JazzY */
-    {   26,   44, SF_WORD , 0, 0, NULL },  /* BeatX */
-    {   28,   46, SF_WORD , 0, 0, NULL },  /* BeatY */
+    SHADOW_FIELD(   0, 4, Menu, NextMenu),
+    SHADOW_FIELD(   4, 2, Menu, LeftEdge),
+    SHADOW_FIELD(   6, 2, Menu, TopEdge),
+    SHADOW_FIELD(  14, 4, Menu, MenuName),
+    SHADOW_FIELD(  18, 4, Menu, FirstItem),
+    SHADOW_FIELD(  22, 2, Menu, JazzX),
+    SHADOW_FIELD(  24, 2, Menu, JazzY),
+    SHADOW_FIELD(  26, 2, Menu, BeatX),
+    SHADOW_FIELD(  28, 2, Menu, BeatY),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* MenuItem: m68k=34B, aros=64B, 7 fields */
+/* MenuItem: m68k=34B, 9 fields */
 static const struct M68KFieldMap shadow_fields_MenuItem[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* NextItem */
-    {    4,    8, SF_WORD , 0, 0, NULL },  /* LeftEdge */
-    {    6,   10, SF_WORD , 0, 0, NULL },  /* TopEdge */
-    {   14,   20, SF_LONG , 0, 0, NULL },  /* MutualExclude */
-    {   18,   24, SF_PTR  , 0, 0, NULL },  /* ItemFill */
-    {   22,   32, SF_PTR  , 0, 0, NULL },  /* SelectFill */
-    {   26,   40, SF_BYTE , 0, 0, NULL },  /* Command */
-    {   28,   48, SF_PTR  , 0, 0, NULL },  /* SubItem */
-    {   32,   56, SF_WORD , 0, 0, NULL },  /* NextSelect */
+    SHADOW_FIELD(   0, 4, MenuItem, NextItem),
+    SHADOW_FIELD(   4, 2, MenuItem, LeftEdge),
+    SHADOW_FIELD(   6, 2, MenuItem, TopEdge),
+    SHADOW_FIELD(  14, 4, MenuItem, MutualExclude),
+    SHADOW_FIELD(  18, 4, MenuItem, ItemFill),
+    SHADOW_FIELD(  22, 4, MenuItem, SelectFill),
+    SHADOW_FIELD(  26, 1, MenuItem, Command),
+    SHADOW_FIELD(  28, 4, MenuItem, SubItem),
+    SHADOW_FIELD(  32, 2, MenuItem, NextSelect),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* Message: m68k=20B, aros=48B, 7 fields */
+/* Message: m68k=20B, 7 fields */
 static const struct M68KFieldMap shadow_fields_Message[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* ln_Succ */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* ln_Pred */
-    {    8,   16, SF_BYTE , 0, 0, NULL },  /* ln_Type */
-    {    9,   17, SF_BYTE , 0, 0, NULL },  /* ln_Pri */
-    {   10,   24, SF_PTR  , 0, 0, NULL },  /* ln_Name */
-    {   14,   32, SF_PTR  , 0, 0, NULL },  /* mn_ReplyPort */
-    {   18,   40, SF_WORD , 0, 0, NULL },  /* mn_Length */
+    SHADOW_FIELD(   0, 4, Message, mn_Node.ln_Succ),
+    SHADOW_FIELD(   4, 4, Message, mn_Node.ln_Pred),
+    SHADOW_FIELD(   8, 1, Message, mn_Node.ln_Type),
+    SHADOW_FIELD(   9, 1, Message, mn_Node.ln_Pri),
+    SHADOW_FIELD(  10, 4, Message, mn_Node.ln_Name),
+    SHADOW_FIELD(  14, 4, Message, mn_ReplyPort),
+    SHADOW_FIELD(  18, 2, Message, mn_Length),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* MinList: m68k=12B, aros=24B, 3 fields */
+/* MinList: m68k=12B, 3 fields */
 static const struct M68KFieldMap shadow_fields_MinList[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* mlh_Head */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* mlh_Tail */
-    {    8,   16, SF_PTR  , 0, 0, NULL },  /* mlh_TailPred */
+    SHADOW_FIELD(   0, 4, MinList, mlh_Head),
+    SHADOW_FIELD(   4, 4, MinList, mlh_Tail),
+    SHADOW_FIELD(   8, 4, MinList, mlh_TailPred),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* MinNode: m68k=8B, aros=16B, 2 fields */
+/* MinNode: m68k=8B, 2 fields */
 static const struct M68KFieldMap shadow_fields_MinNode[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* mln_Succ */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* mln_Pred */
+    SHADOW_FIELD(   0, 4, MinNode, mln_Succ),
+    SHADOW_FIELD(   4, 4, MinNode, mln_Pred),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* MonitorInfo: m68k=96B, aros=112B, 14 fields */
+/* MonitorInfo: m68k=96B, 18 fields */
 static const struct M68KFieldMap shadow_fields_MonitorInfo[] = {
-    {    0,    0, SF_LONG , 0, 0, NULL },  /* StructID */
-    {    4,    4, SF_LONG , 0, 0, NULL },  /* DisplayID */
-    {    8,    8, SF_LONG , 0, 0, NULL },  /* SkipID */
-    {   12,   12, SF_LONG , 0, 0, NULL },  /* Length */
-    {   16,   16, SF_PTR  , 0, 0, NULL },  /* Mspc */
-    {   20,   24, SF_LONG , 0, 0, NULL },  /* ViewPosition */
-    {   24,   28, SF_LONG , 0, 0, NULL },  /* ViewResolution */
-    {   28,   32, SF_WORD , 0, 0, NULL },  /* MinX */
-    {   30,   34, SF_WORD , 0, 0, NULL },  /* MinY */
-    {   32,   36, SF_WORD , 0, 0, NULL },  /* MaxX */
-    {   34,   38, SF_WORD , 0, 0, NULL },  /* MaxY */
-    {   36,   40, SF_WORD , 0, 0, NULL },  /* TotalRows */
-    {   38,   42, SF_WORD , 0, 0, NULL },  /* TotalColorClocks */
-    {   40,   44, SF_WORD , 0, 0, NULL },  /* MinRow */
-    {   42,   46, SF_WORD , 0, 0, NULL },  /* Compatibility */
-    {   76,   80, SF_LONG , 0, 0, NULL },  /* MouseTicks */
-    {   80,   84, SF_LONG , 0, 0, NULL },  /* DefaultViewPosition */
-    {   84,   88, SF_LONG , 0, 0, NULL },  /* PreferredModeID */
+    SHADOW_FIELD(   0, 4, MonitorInfo, Header.StructID),
+    SHADOW_FIELD(   4, 4, MonitorInfo, Header.DisplayID),
+    SHADOW_FIELD(   8, 4, MonitorInfo, Header.SkipID),
+    SHADOW_FIELD(  12, 4, MonitorInfo, Header.Length),
+    SHADOW_FIELD(  16, 4, MonitorInfo, Mspc),
+    SHADOW_FIELD(  20, 4, MonitorInfo, ViewPosition),
+    SHADOW_FIELD(  24, 4, MonitorInfo, ViewResolution),
+    SHADOW_FIELD(  28, 2, MonitorInfo, ViewPositionRange.MinX),
+    SHADOW_FIELD(  30, 2, MonitorInfo, ViewPositionRange.MinY),
+    SHADOW_FIELD(  32, 2, MonitorInfo, ViewPositionRange.MaxX),
+    SHADOW_FIELD(  34, 2, MonitorInfo, ViewPositionRange.MaxY),
+    SHADOW_FIELD(  36, 2, MonitorInfo, TotalRows),
+    SHADOW_FIELD(  38, 2, MonitorInfo, TotalColorClocks),
+    SHADOW_FIELD(  40, 2, MonitorInfo, MinRow),
+    SHADOW_FIELD(  42, 2, MonitorInfo, Compatibility),
+    SHADOW_FIELD(  76, 4, MonitorInfo, MouseTicks),
+    SHADOW_FIELD(  80, 4, MonitorInfo, DefaultViewPosition),
+    SHADOW_FIELD(  84, 4, MonitorInfo, PreferredModeID),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* MonitorSpec: m68k=160B, aros=896B, 41 fields */
+/* MonitorSpec: m68k=160B, 41 fields */
 static const struct M68KFieldMap shadow_fields_MonitorSpec[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* xln_Succ */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* xln_Pred */
-    {    8,   16, SF_BYTE , 0, 0, NULL },  /* xln_Type */
-    {    9,   17, SF_BYTE , 0, 0, NULL },  /* xln_Pri */
-    {   10,   24, SF_PTR  , 0, 0, NULL },  /* xln_Name */
-    {   14,   32, SF_BYTE , 0, 0, NULL },  /* xln_Subsystem */
-    {   15,   33, SF_BYTE , 0, 0, NULL },  /* xln_Subtype */
-    {   16,   40, SF_PTR  , 0, 0, NULL },  /* xln_Library */
-    {   24,   56, SF_WORD , 0, 0, NULL },  /* ms_Flags */
-    {   26,   60, SF_LONG , 0, 0, NULL },  /* ratioh */
-    {   30,   64, SF_LONG , 0, 0, NULL },  /* ratiov */
-    {   34,   68, SF_WORD , 0, 0, NULL },  /* total_rows */
-    {   36,   70, SF_WORD , 0, 0, NULL },  /* total_colorclocks */
-    {   38,   72, SF_WORD , 0, 0, NULL },  /* DeniseMaxDisplayColumn */
-    {   40,   74, SF_WORD , 0, 0, NULL },  /* BeamCon0 */
-    {   42,   76, SF_WORD , 0, 0, NULL },  /* min_row */
-    {   44,   80, SF_PTR  , 0, 0, NULL },  /* ms_Special */
-    {   48,   88, SF_WORD , 0, 0, NULL },  /* ms_OpenCount */
-    {   62,  120, SF_WORD , 0, 0, NULL },  /* ms_xoffset */
-    {   64,  122, SF_WORD , 0, 0, NULL },  /* ms_yoffset */
-    {   82,  152, SF_WORD , 0, 0, NULL },  /* DeniseMinDisplayColumn */
-    {   84,  156, SF_LONG , 0, 0, NULL },  /* DisplayCompatible */
-    {   88,  160, SF_PTR  , 0, 0, NULL },  /* lh_Head */
-    {   92,  168, SF_PTR  , 0, 0, NULL },  /* lh_Tail */
-    {   96,  176, SF_PTR  , 0, 0, NULL },  /* lh_TailPred */
-    {  100,  184, SF_BYTE , 0, 0, NULL },  /* lh_Type */
-    {  101,  185, SF_BYTE , 0, 0, NULL },  /* l_pad */
-    {  102,  256, SF_PTR  , 0, 0, NULL },  /* ln_Succ */
-    {  106,  264, SF_PTR  , 0, 0, NULL },  /* ln_Pred */
-    {  110,  272, SF_BYTE , 0, 0, NULL },  /* ln_Type */
-    {  111,  273, SF_BYTE , 0, 0, NULL },  /* ln_Pri */
-    {  112,  280, SF_PTR  , 0, 0, NULL },  /* ln_Name */
-    {  116,  288, SF_WORD , 0, 0, NULL },  /* ss_NestCount */
-    {  118,  296, SF_PTR  , 0, 0, NULL },  /* mlh_Head */
-    {  122,  304, SF_PTR  , 0, 0, NULL },  /* mlh_Tail */
-    {  126,  312, SF_PTR  , 0, 0, NULL },  /* mlh_TailPred */
-    {  130,  384, SF_PTR  , 0, 0, NULL },  /* mln_Succ */
-    {  134,  392, SF_PTR  , 0, 0, NULL },  /* mln_Pred */
-    {  138,  400, SF_PTR  , 0, 0, NULL },  /* sr_Waiter */
-    {  142,  640, SF_PTR  , 0, 0, NULL },  /* ss_Owner */
-    {  146,  648, SF_WORD , 0, 0, NULL },  /* ss_QueueCount */
+    SHADOW_FIELD(   0, 4, MonitorSpec, ms_Node.xln_Succ),
+    SHADOW_FIELD(   4, 4, MonitorSpec, ms_Node.xln_Pred),
+    SHADOW_FIELD(   8, 1, MonitorSpec, ms_Node.xln_Type),
+    SHADOW_FIELD(   9, 1, MonitorSpec, ms_Node.xln_Pri),
+    SHADOW_FIELD(  10, 4, MonitorSpec, ms_Node.xln_Name),
+    SHADOW_FIELD(  14, 1, MonitorSpec, ms_Node.xln_Subsystem),
+    SHADOW_FIELD(  15, 1, MonitorSpec, ms_Node.xln_Subtype),
+    SHADOW_FIELD(  16, 4, MonitorSpec, ms_Node.xln_Library),
+    SHADOW_FIELD(  24, 2, MonitorSpec, ms_Flags),
+    SHADOW_FIELD(  26, 4, MonitorSpec, ratioh),
+    SHADOW_FIELD(  30, 4, MonitorSpec, ratiov),
+    SHADOW_FIELD(  34, 2, MonitorSpec, total_rows),
+    SHADOW_FIELD(  36, 2, MonitorSpec, total_colorclocks),
+    SHADOW_FIELD(  38, 2, MonitorSpec, DeniseMaxDisplayColumn),
+    SHADOW_FIELD(  40, 2, MonitorSpec, BeamCon0),
+    SHADOW_FIELD(  42, 2, MonitorSpec, min_row),
+    SHADOW_FIELD(  44, 4, MonitorSpec, ms_Special),
+    SHADOW_FIELD(  48, 2, MonitorSpec, ms_OpenCount),
+    SHADOW_FIELD(  62, 2, MonitorSpec, ms_xoffset),
+    SHADOW_FIELD(  64, 2, MonitorSpec, ms_yoffset),
+    SHADOW_FIELD(  82, 2, MonitorSpec, DeniseMinDisplayColumn),
+    SHADOW_FIELD(  84, 4, MonitorSpec, DisplayCompatible),
+    SHADOW_FIELD(  88, 4, MonitorSpec, DisplayInfoDataBase.lh_Head),
+    SHADOW_FIELD(  92, 4, MonitorSpec, DisplayInfoDataBase.lh_Tail),
+    SHADOW_FIELD(  96, 4, MonitorSpec, DisplayInfoDataBase.lh_TailPred),
+    SHADOW_FIELD( 100, 1, MonitorSpec, DisplayInfoDataBase.lh_Type),
+    SHADOW_FIELD( 101, 1, MonitorSpec, DisplayInfoDataBase.l_pad),
+    SHADOW_FIELD( 102, 4, MonitorSpec, DisplayInfoDataBaseSemaphore.ss_Link.ln_Succ),
+    SHADOW_FIELD( 106, 4, MonitorSpec, DisplayInfoDataBaseSemaphore.ss_Link.ln_Pred),
+    SHADOW_FIELD( 110, 1, MonitorSpec, DisplayInfoDataBaseSemaphore.ss_Link.ln_Type),
+    SHADOW_FIELD( 111, 1, MonitorSpec, DisplayInfoDataBaseSemaphore.ss_Link.ln_Pri),
+    SHADOW_FIELD( 112, 4, MonitorSpec, DisplayInfoDataBaseSemaphore.ss_Link.ln_Name),
+    SHADOW_FIELD( 116, 2, MonitorSpec, DisplayInfoDataBaseSemaphore.ss_NestCount),
+    SHADOW_FIELD( 118, 4, MonitorSpec, DisplayInfoDataBaseSemaphore.ss_WaitQueue.mlh_Head),
+    SHADOW_FIELD( 122, 4, MonitorSpec, DisplayInfoDataBaseSemaphore.ss_WaitQueue.mlh_Tail),
+    SHADOW_FIELD( 126, 4, MonitorSpec, DisplayInfoDataBaseSemaphore.ss_WaitQueue.mlh_TailPred),
+    SHADOW_FIELD( 130, 4, MonitorSpec, DisplayInfoDataBaseSemaphore.ss_MultipleLink.sr_Link.mln_Succ),
+    SHADOW_FIELD( 134, 4, MonitorSpec, DisplayInfoDataBaseSemaphore.ss_MultipleLink.sr_Link.mln_Pred),
+    SHADOW_FIELD( 138, 4, MonitorSpec, DisplayInfoDataBaseSemaphore.ss_MultipleLink.sr_Waiter),
+    SHADOW_FIELD( 142, 4, MonitorSpec, DisplayInfoDataBaseSemaphore.ss_Owner),
+    SHADOW_FIELD( 146, 2, MonitorSpec, DisplayInfoDataBaseSemaphore.ss_QueueCount),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* MsgPort: m68k=34B, aros=256B, 13 fields */
+/* MsgPort: m68k=34B, 13 fields */
 static const struct M68KFieldMap shadow_fields_MsgPort[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* ln_Succ */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* ln_Pred */
-    {    8,   16, SF_BYTE , 0, 0, NULL },  /* ln_Type */
-    {    9,   17, SF_BYTE , 0, 0, NULL },  /* ln_Pri */
-    {   10,   24, SF_PTR  , 0, 0, NULL },  /* ln_Name */
-    {   14,   32, SF_BYTE , 0, 0, NULL },  /* mp_Flags */
-    {   15,   33, SF_BYTE , 0, 0, NULL },  /* mp_SigBit */
-    {   16,   40, SF_PTR  , 0, 0, NULL },  /* mp_SigTask */
-    {   20,   48, SF_PTR  , 0, 0, NULL },  /* lh_Head */
-    {   24,   56, SF_PTR  , 0, 0, NULL },  /* lh_Tail */
-    {   28,   64, SF_PTR  , 0, 0, NULL },  /* lh_TailPred */
-    {   32,   72, SF_BYTE , 0, 0, NULL },  /* lh_Type */
-    {   33,   73, SF_BYTE , 0, 0, NULL },  /* l_pad */
+    SHADOW_FIELD(   0, 4, MsgPort, mp_Node.ln_Succ),
+    SHADOW_FIELD(   4, 4, MsgPort, mp_Node.ln_Pred),
+    SHADOW_FIELD(   8, 1, MsgPort, mp_Node.ln_Type),
+    SHADOW_FIELD(   9, 1, MsgPort, mp_Node.ln_Pri),
+    SHADOW_FIELD(  10, 4, MsgPort, mp_Node.ln_Name),
+    SHADOW_FIELD(  14, 1, MsgPort, mp_Flags),
+    SHADOW_FIELD(  15, 1, MsgPort, mp_SigBit),
+    SHADOW_FIELD(  16, 4, MsgPort, mp_SigTask),
+    SHADOW_FIELD(  20, 4, MsgPort, mp_MsgList.lh_Head),
+    SHADOW_FIELD(  24, 4, MsgPort, mp_MsgList.lh_Tail),
+    SHADOW_FIELD(  28, 4, MsgPort, mp_MsgList.lh_TailPred),
+    SHADOW_FIELD(  32, 1, MsgPort, mp_MsgList.lh_Type),
+    SHADOW_FIELD(  33, 1, MsgPort, mp_MsgList.l_pad),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* NVEntry: m68k=20B, aros=32B, 5 fields */
+/* NVEntry: m68k=20B, 5 fields */
 static const struct M68KFieldMap shadow_fields_NVEntry[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* mln_Succ */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* mln_Pred */
-    {    8,   16, SF_PTR  , 0, 0, NULL },  /* nve_Name */
-    {   12,   24, SF_LONG , 0, 0, NULL },  /* nve_Size */
-    {   16,   28, SF_LONG , 0, 0, NULL },  /* nve_Protection */
+    SHADOW_FIELD(   0, 4, NVEntry, nve_Node.mln_Succ),
+    SHADOW_FIELD(   4, 4, NVEntry, nve_Node.mln_Pred),
+    SHADOW_FIELD(   8, 4, NVEntry, nve_Name),
+    SHADOW_FIELD(  12, 4, NVEntry, nve_Size),
+    SHADOW_FIELD(  16, 4, NVEntry, nve_Protection),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* NVInfo: m68k=8B, aros=8B, 2 fields */
+/* NVInfo: m68k=8B, 2 fields */
 static const struct M68KFieldMap shadow_fields_NVInfo[] = {
-    {    0,    0, SF_LONG , 0, 0, NULL },  /* nvi_MaxStorage */
-    {    4,    4, SF_LONG , 0, 0, NULL },  /* nvi_FreeStorage */
+    SHADOW_FIELD(   0, 4, NVInfo, nvi_MaxStorage),
+    SHADOW_FIELD(   4, 4, NVInfo, nvi_FreeStorage),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* NameInfo: m68k=56B, aros=64B, 4 fields */
+/* NameInfo: m68k=56B, 4 fields */
 static const struct M68KFieldMap shadow_fields_NameInfo[] = {
-    {    0,    0, SF_LONG , 0, 0, NULL },  /* StructID */
-    {    4,    4, SF_LONG , 0, 0, NULL },  /* DisplayID */
-    {    8,    8, SF_LONG , 0, 0, NULL },  /* SkipID */
-    {   12,   12, SF_LONG , 0, 0, NULL },  /* Length */
+    SHADOW_FIELD(   0, 4, NameInfo, Header.StructID),
+    SHADOW_FIELD(   4, 4, NameInfo, Header.DisplayID),
+    SHADOW_FIELD(   8, 4, NameInfo, Header.SkipID),
+    SHADOW_FIELD(  12, 4, NameInfo, Header.Length),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* NamedObject: m68k=4B, aros=8B, 1 fields */
+/* NamedObject: m68k=4B, 1 fields */
 static const struct M68KFieldMap shadow_fields_NamedObject[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* no_Object */
+    SHADOW_FIELD(   0, 4, NamedObject, no_Object),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* NewAmigaGuide: m68k=52B, aros=104B, 13 fields */
+/* NewAmigaGuide: m68k=52B, 13 fields */
 static const struct M68KFieldMap shadow_fields_NewAmigaGuide[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* nag_Lock */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* nag_Name */
-    {    8,   16, SF_PTR  , 0, 0, NULL },  /* nag_Screen */
-    {   12,   24, SF_PTR  , 0, 0, NULL },  /* nag_PubScreen */
-    {   16,   32, SF_PTR  , 0, 0, NULL },  /* nag_HostPort */
-    {   20,   40, SF_PTR  , 0, 0, NULL },  /* nag_ClientPort */
-    {   24,   48, SF_PTR  , 0, 0, NULL },  /* nag_BaseName */
-    {   28,   56, SF_LONG , 0, 0, NULL },  /* nag_Flags */
-    {   32,   64, SF_PTR  , 0, 0, NULL },  /* nag_Context */
-    {   36,   72, SF_PTR  , 0, 0, NULL },  /* nag_Node */
-    {   40,   80, SF_LONG , 0, 0, NULL },  /* nag_Line */
-    {   44,   88, SF_PTR  , 0, 0, NULL },  /* nag_Extens */
-    {   48,   96, SF_PTR  , 0, 0, NULL },  /* nag_Client */
+    SHADOW_FIELD(   0, 4, NewAmigaGuide, nag_Lock),
+    SHADOW_FIELD(   4, 4, NewAmigaGuide, nag_Name),
+    SHADOW_FIELD(   8, 4, NewAmigaGuide, nag_Screen),
+    SHADOW_FIELD(  12, 4, NewAmigaGuide, nag_PubScreen),
+    SHADOW_FIELD(  16, 4, NewAmigaGuide, nag_HostPort),
+    SHADOW_FIELD(  20, 4, NewAmigaGuide, nag_ClientPort),
+    SHADOW_FIELD(  24, 4, NewAmigaGuide, nag_BaseName),
+    SHADOW_FIELD(  28, 4, NewAmigaGuide, nag_Flags),
+    SHADOW_FIELD(  32, 4, NewAmigaGuide, nag_Context),
+    SHADOW_FIELD(  36, 4, NewAmigaGuide, nag_Node),
+    SHADOW_FIELD(  40, 4, NewAmigaGuide, nag_Line),
+    SHADOW_FIELD(  44, 4, NewAmigaGuide, nag_Extens),
+    SHADOW_FIELD(  48, 4, NewAmigaGuide, nag_Client),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* NewBroker: m68k=26B, aros=56B, 9 fields */
+/* NewBroker: m68k=26B, 9 fields */
 static const struct M68KFieldMap shadow_fields_NewBroker[] = {
-    {    0,    0, SF_BYTE , 0, 0, NULL },  /* nb_Version */
-    {    2,    8, SF_PTR  , 0, 0, NULL },  /* nb_Name */
-    {    6,   16, SF_PTR  , 0, 0, NULL },  /* nb_Title */
-    {   10,   24, SF_PTR  , 0, 0, NULL },  /* nb_Descr */
-    {   14,   32, SF_WORD , 0, 0, NULL },  /* nb_Unique */
-    {   16,   34, SF_WORD , 0, 0, NULL },  /* nb_Flags */
-    {   18,   36, SF_BYTE , 0, 0, NULL },  /* nb_Pri */
-    {   20,   40, SF_PTR  , 0, 0, NULL },  /* nb_Port */
-    {   24,   48, SF_WORD , 0, 0, NULL },  /* nb_ReservedChannel */
+    SHADOW_FIELD(   0, 1, NewBroker, nb_Version),
+    SHADOW_FIELD(   2, 4, NewBroker, nb_Name),
+    SHADOW_FIELD(   6, 4, NewBroker, nb_Title),
+    SHADOW_FIELD(  10, 4, NewBroker, nb_Descr),
+    SHADOW_FIELD(  14, 2, NewBroker, nb_Unique),
+    SHADOW_FIELD(  16, 2, NewBroker, nb_Flags),
+    SHADOW_FIELD(  18, 1, NewBroker, nb_Pri),
+    SHADOW_FIELD(  20, 4, NewBroker, nb_Port),
+    SHADOW_FIELD(  24, 2, NewBroker, nb_ReservedChannel),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* NewGadget: m68k=30B, aros=48B, 5 fields */
+/* NewGadget: m68k=30B, 10 fields */
 static const struct M68KFieldMap shadow_fields_NewGadget[] = {
-    {    0,    0, SF_WORD , 0, 0, NULL },  /* ng_LeftEdge */
-    {    2,    2, SF_WORD , 0, 0, NULL },  /* ng_TopEdge */
-    {    4,    4, SF_WORD , 0, 0, NULL },  /* ng_Width */
-    {    6,    6, SF_WORD , 0, 0, NULL },  /* ng_Height */
-    {    8,    8, SF_PTR  , 0, 0, NULL },  /* ng_GadgetText */
-    {   12,   16, SF_PTR  , 0, 0, NULL },  /* ng_TextAttr */
-    {   16,   24, SF_WORD , 0, 0, NULL },  /* ng_GadgetID */
-    {   18,   28, SF_LONG , 0, 0, NULL },  /* ng_Flags */
-    {   22,   32, SF_PTR  , 0, 0, NULL },  /* ng_VisualInfo */
-    {   26,   40, SF_PTR  , 0, 0, NULL },  /* ng_UserData */
+    SHADOW_FIELD(   0, 2, NewGadget, ng_LeftEdge),
+    SHADOW_FIELD(   2, 2, NewGadget, ng_TopEdge),
+    SHADOW_FIELD(   4, 2, NewGadget, ng_Width),
+    SHADOW_FIELD(   6, 2, NewGadget, ng_Height),
+    SHADOW_FIELD(   8, 4, NewGadget, ng_GadgetText),
+    SHADOW_FIELD(  12, 4, NewGadget, ng_TextAttr),
+    SHADOW_FIELD(  16, 2, NewGadget, ng_GadgetID),
+    SHADOW_FIELD(  18, 4, NewGadget, ng_Flags),
+    SHADOW_FIELD(  22, 4, NewGadget, ng_VisualInfo),
+    SHADOW_FIELD(  26, 4, NewGadget, ng_UserData),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* NewMenu: m68k=20B, aros=40B, 6 fields */
+/* NewMenu: m68k=20B, 6 fields */
 static const struct M68KFieldMap shadow_fields_NewMenu[] = {
-    {    0,    0, SF_BYTE , 0, 0, NULL },  /* nm_Type */
-    {    2,    8, SF_PTR  , 0, 0, NULL },  /* nm_Label */
-    {    6,   16, SF_PTR  , 0, 0, NULL },  /* nm_CommKey */
-    {   10,   24, SF_WORD , 0, 0, NULL },  /* nm_Flags */
-    {   12,   28, SF_LONG , 0, 0, NULL },  /* nm_MutualExclude */
-    {   16,   32, SF_PTR  , 0, 0, NULL },  /* nm_UserData */
+    SHADOW_FIELD(   0, 1, NewMenu, nm_Type),
+    SHADOW_FIELD(   2, 4, NewMenu, nm_Label),
+    SHADOW_FIELD(   6, 4, NewMenu, nm_CommKey),
+    SHADOW_FIELD(  10, 2, NewMenu, nm_Flags),
+    SHADOW_FIELD(  12, 4, NewMenu, nm_MutualExclude),
+    SHADOW_FIELD(  16, 4, NewMenu, nm_UserData),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* NewScreen: m68k=32B, aros=48B, 6 fields */
+/* NewScreen: m68k=32B, 8 fields */
 static const struct M68KFieldMap shadow_fields_NewScreen[] = {
-    {    0,    0, SF_WORD , 0, 0, NULL },  /* LeftEdge */
-    {    2,    2, SF_WORD , 0, 0, NULL },  /* TopEdge */
-    {   12,   12, SF_WORD , 0, 0, NULL },  /* ViewModes */
-    {   14,   14, SF_WORD , 0, 0, NULL },  /* Type */
-    {   16,   16, SF_PTR  , 0, 0, NULL },  /* Font */
-    {   20,   24, SF_PTR  , 0, 0, NULL },  /* DefaultTitle */
-    {   24,   32, SF_PTR  , 0, 0, NULL },  /* Gadgets */
-    {   28,   40, SF_PTR  , 0, 0, NULL },  /* CustomBitMap */
+    SHADOW_FIELD(   0, 2, NewScreen, LeftEdge),
+    SHADOW_FIELD(   2, 2, NewScreen, TopEdge),
+    SHADOW_FIELD(  12, 2, NewScreen, ViewModes),
+    SHADOW_FIELD(  14, 2, NewScreen, Type),
+    SHADOW_FIELD(  16, 4, NewScreen, Font),
+    SHADOW_FIELD(  20, 4, NewScreen, DefaultTitle),
+    SHADOW_FIELD(  24, 4, NewScreen, Gadgets),
+    SHADOW_FIELD(  28, 4, NewScreen, CustomBitMap),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* NewWindow: m68k=48B, aros=80B, 6 fields */
+/* NewWindow: m68k=48B, 12 fields */
 static const struct M68KFieldMap shadow_fields_NewWindow[] = {
-    {    0,    0, SF_WORD , 0, 0, NULL },  /* LeftEdge */
-    {    2,    2, SF_WORD , 0, 0, NULL },  /* TopEdge */
-    {   10,   12, SF_LONG , 0, 0, NULL },  /* IDCMPFlags */
-    {   18,   24, SF_PTR  , 0, 0, NULL },  /* FirstGadget */
-    {   22,   32, SF_PTR  , 0, 0, NULL },  /* CheckMark */
-    {   26,   40, SF_PTR  , 0, 0, NULL },  /* Title */
-    {   30,   48, SF_PTR  , 0, 0, NULL },  /* Screen */
-    {   38,   64, SF_WORD , 0, 0, NULL },  /* MinWidth */
-    {   40,   66, SF_WORD , 0, 0, NULL },  /* MinHeight */
-    {   42,   68, SF_WORD , 0, 0, NULL },  /* MaxWidth */
-    {   44,   70, SF_WORD , 0, 0, NULL },  /* MaxHeight */
-    {   46,   72, SF_WORD , 0, 0, NULL },  /* Type */
+    SHADOW_FIELD(   0, 2, NewWindow, LeftEdge),
+    SHADOW_FIELD(   2, 2, NewWindow, TopEdge),
+    SHADOW_FIELD(  10, 4, NewWindow, IDCMPFlags),
+    SHADOW_FIELD(  18, 4, NewWindow, FirstGadget),
+    SHADOW_FIELD(  22, 4, NewWindow, CheckMark),
+    SHADOW_FIELD(  26, 4, NewWindow, Title),
+    SHADOW_FIELD(  30, 4, NewWindow, Screen),
+    SHADOW_FIELD(  38, 2, NewWindow, MinWidth),
+    SHADOW_FIELD(  40, 2, NewWindow, MinHeight),
+    SHADOW_FIELD(  42, 2, NewWindow, MaxWidth),
+    SHADOW_FIELD(  44, 2, NewWindow, MaxHeight),
+    SHADOW_FIELD(  46, 2, NewWindow, Type),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* Node: m68k=14B, aros=32B, 5 fields */
+/* Node: m68k=14B, 5 fields */
 static const struct M68KFieldMap shadow_fields_Node[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* ln_Succ */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* ln_Pred */
-    {    8,   16, SF_BYTE , 0, 0, NULL },  /* ln_Type */
-    {    9,   17, SF_BYTE , 0, 0, NULL },  /* ln_Pri */
-    {   10,   24, SF_PTR  , 0, 0, NULL },  /* ln_Name */
+    SHADOW_FIELD(   0, 4, Node, ln_Succ),
+    SHADOW_FIELD(   4, 4, Node, ln_Pred),
+    SHADOW_FIELD(   8, 1, Node, ln_Type),
+    SHADOW_FIELD(   9, 1, Node, ln_Pri),
+    SHADOW_FIELD(  10, 4, Node, ln_Name),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* NotifyMessage: m68k=38B, aros=80B, 12 fields */
+/* NotifyMessage: m68k=38B, 12 fields */
 static const struct M68KFieldMap shadow_fields_NotifyMessage[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* ln_Succ */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* ln_Pred */
-    {    8,   16, SF_BYTE , 0, 0, NULL },  /* ln_Type */
-    {    9,   17, SF_BYTE , 0, 0, NULL },  /* ln_Pri */
-    {   10,   24, SF_PTR  , 0, 0, NULL },  /* ln_Name */
-    {   14,   32, SF_PTR  , 0, 0, NULL },  /* mn_ReplyPort */
-    {   18,   40, SF_WORD , 0, 0, NULL },  /* mn_Length */
-    {   20,   48, SF_LONG , 0, 0, NULL },  /* nm_Class */
-    {   24,   52, SF_WORD , 0, 0, NULL },  /* nm_Code */
-    {   26,   56, SF_PTR  , 0, 0, NULL },  /* nm_NReq */
-    {   30,   64, SF_PTR  , 0, 0, NULL },  /* nm_DoNotTouch */
-    {   34,   72, SF_PTR  , 0, 0, NULL },  /* nm_DoNotTouch2 */
+    SHADOW_FIELD(   0, 4, NotifyMessage, nm_ExecMessage.mn_Node.ln_Succ),
+    SHADOW_FIELD(   4, 4, NotifyMessage, nm_ExecMessage.mn_Node.ln_Pred),
+    SHADOW_FIELD(   8, 1, NotifyMessage, nm_ExecMessage.mn_Node.ln_Type),
+    SHADOW_FIELD(   9, 1, NotifyMessage, nm_ExecMessage.mn_Node.ln_Pri),
+    SHADOW_FIELD(  10, 4, NotifyMessage, nm_ExecMessage.mn_Node.ln_Name),
+    SHADOW_FIELD(  14, 4, NotifyMessage, nm_ExecMessage.mn_ReplyPort),
+    SHADOW_FIELD(  18, 2, NotifyMessage, nm_ExecMessage.mn_Length),
+    SHADOW_FIELD(  20, 4, NotifyMessage, nm_Class),
+    SHADOW_FIELD(  24, 2, NotifyMessage, nm_Code),
+    SHADOW_FIELD(  26, 4, NotifyMessage, nm_NReq),
+    SHADOW_FIELD(  30, 4, NotifyMessage, nm_DoNotTouch),
+    SHADOW_FIELD(  34, 4, NotifyMessage, nm_DoNotTouch2),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* NotifyRequest: m68k=48B, aros=96B, 4 fields */
+/* NotifyRequest: m68k=48B, 4 fields */
 static const struct M68KFieldMap shadow_fields_NotifyRequest[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* nr_Name */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* nr_FullName */
-    {    8,   16, SF_PTR  , 0, 0, NULL },  /* nr_UserData */
-    {   12,   24, SF_LONG , 0, 0, NULL },  /* nr_Flags */
+    SHADOW_FIELD(   0, 4, NotifyRequest, nr_Name),
+    SHADOW_FIELD(   4, 4, NotifyRequest, nr_FullName),
+    SHADOW_FIELD(   8, 4, NotifyRequest, nr_UserData),
+    SHADOW_FIELD(  12, 4, NotifyRequest, nr_Flags),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* OldDrawerData: m68k=56B, aros=88B, 8 fields */
+/* OldDrawerData: m68k=56B, 14 fields */
 static const struct M68KFieldMap shadow_fields_OldDrawerData[] = {
-    {    0,    0, SF_WORD , 0, 0, NULL },  /* LeftEdge */
-    {    2,    2, SF_WORD , 0, 0, NULL },  /* TopEdge */
-    {   10,   12, SF_LONG , 0, 0, NULL },  /* IDCMPFlags */
-    {   18,   24, SF_PTR  , 0, 0, NULL },  /* FirstGadget */
-    {   22,   32, SF_PTR  , 0, 0, NULL },  /* CheckMark */
-    {   26,   40, SF_PTR  , 0, 0, NULL },  /* Title */
-    {   30,   48, SF_PTR  , 0, 0, NULL },  /* Screen */
-    {   38,   64, SF_WORD , 0, 0, NULL },  /* MinWidth */
-    {   40,   66, SF_WORD , 0, 0, NULL },  /* MinHeight */
-    {   42,   68, SF_WORD , 0, 0, NULL },  /* MaxWidth */
-    {   44,   70, SF_WORD , 0, 0, NULL },  /* MaxHeight */
-    {   46,   72, SF_WORD , 0, 0, NULL },  /* Type */
-    {   48,   80, SF_LONG , 0, 0, NULL },  /* dd_CurrentX */
-    {   52,   84, SF_LONG , 0, 0, NULL },  /* dd_CurrentY */
+    SHADOW_FIELD(   0, 2, OldDrawerData, dd_NewWindow.LeftEdge),
+    SHADOW_FIELD(   2, 2, OldDrawerData, dd_NewWindow.TopEdge),
+    SHADOW_FIELD(  10, 4, OldDrawerData, dd_NewWindow.IDCMPFlags),
+    SHADOW_FIELD(  18, 4, OldDrawerData, dd_NewWindow.FirstGadget),
+    SHADOW_FIELD(  22, 4, OldDrawerData, dd_NewWindow.CheckMark),
+    SHADOW_FIELD(  26, 4, OldDrawerData, dd_NewWindow.Title),
+    SHADOW_FIELD(  30, 4, OldDrawerData, dd_NewWindow.Screen),
+    SHADOW_FIELD(  38, 2, OldDrawerData, dd_NewWindow.MinWidth),
+    SHADOW_FIELD(  40, 2, OldDrawerData, dd_NewWindow.MinHeight),
+    SHADOW_FIELD(  42, 2, OldDrawerData, dd_NewWindow.MaxWidth),
+    SHADOW_FIELD(  44, 2, OldDrawerData, dd_NewWindow.MaxHeight),
+    SHADOW_FIELD(  46, 2, OldDrawerData, dd_NewWindow.Type),
+    SHADOW_FIELD(  48, 4, OldDrawerData, dd_CurrentX),
+    SHADOW_FIELD(  52, 4, OldDrawerData, dd_CurrentY),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* PGX: m68k=16B, aros=16B, 2 fields */
+/* PGX: m68k=16B, 2 fields */
 static const struct M68KFieldMap shadow_fields_PGX[] = {
-    {    0,    0, SF_WORD , 0, 0, NULL },  /* Left */
-    {    2,    2, SF_WORD , 0, 0, NULL },  /* Top */
+    SHADOW_FIELD(   0, 2, PGX, pgx_Container.Left),
+    SHADOW_FIELD(   2, 2, PGX, pgx_Container.Top),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* PartitionBlock: m68k=256B, aros=256B, 7 fields */
+/* PartitionBlock: m68k=256B, 7 fields */
 static const struct M68KFieldMap shadow_fields_PartitionBlock[] = {
-    {    0,    0, SF_LONG , 0, 0, NULL },  /* pb_ID */
-    {    4,    4, SF_LONG , 0, 0, NULL },  /* pb_SummedLongs */
-    {    8,    8, SF_LONG , 0, 0, NULL },  /* pb_ChkSum */
-    {   12,   12, SF_LONG , 0, 0, NULL },  /* pb_HostID */
-    {   16,   16, SF_LONG , 0, 0, NULL },  /* pb_Next */
-    {   20,   20, SF_LONG , 0, 0, NULL },  /* pb_Flags */
-    {   32,   32, SF_LONG , 0, 0, NULL },  /* pb_DevFlags */
+    SHADOW_FIELD(   0, 4, PartitionBlock, pb_ID),
+    SHADOW_FIELD(   4, 4, PartitionBlock, pb_SummedLongs),
+    SHADOW_FIELD(   8, 4, PartitionBlock, pb_ChkSum),
+    SHADOW_FIELD(  12, 4, PartitionBlock, pb_HostID),
+    SHADOW_FIELD(  16, 4, PartitionBlock, pb_Next),
+    SHADOW_FIELD(  20, 4, PartitionBlock, pb_Flags),
+    SHADOW_FIELD(  32, 4, PartitionBlock, pb_DevFlags),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* Player: m68k=44B, aros=88B, 15 fields */
+/* Player: m68k=44B, 15 fields */
 static const struct M68KFieldMap shadow_fields_Player[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* ln_Succ */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* ln_Pred */
-    {    8,   16, SF_BYTE , 0, 0, NULL },  /* ln_Type */
-    {    9,   17, SF_BYTE , 0, 0, NULL },  /* ln_Pri */
-    {   10,   24, SF_PTR  , 0, 0, NULL },  /* ln_Name */
-    {   14,   32, SF_BYTE , 0, 0, NULL },  /* pl_Reserved0 */
-    {   15,   33, SF_BYTE , 0, 0, NULL },  /* pl_Reserved1 */
-    {   16,   40, SF_PTR  , 0, 0, NULL },  /* pl_Hook */
-    {   20,   48, SF_PTR  , 0, 0, NULL },  /* pl_Source */
-    {   24,   56, SF_PTR  , 0, 0, NULL },  /* pl_Task */
-    {   28,   64, SF_LONG , 0, 0, NULL },  /* pl_MetricTime */
-    {   32,   68, SF_LONG , 0, 0, NULL },  /* pl_AlarmTime */
-    {   36,   72, SF_PTR  , 0, 0, NULL },  /* pl_UserData */
-    {   40,   80, SF_WORD , 0, 0, NULL },  /* pl_PlayerID */
-    {   42,   82, SF_WORD , 0, 0, NULL },  /* pl_Flags */
+    SHADOW_FIELD(   0, 4, Player, pl_Link.ln_Succ),
+    SHADOW_FIELD(   4, 4, Player, pl_Link.ln_Pred),
+    SHADOW_FIELD(   8, 1, Player, pl_Link.ln_Type),
+    SHADOW_FIELD(   9, 1, Player, pl_Link.ln_Pri),
+    SHADOW_FIELD(  10, 4, Player, pl_Link.ln_Name),
+    SHADOW_FIELD(  14, 1, Player, pl_Reserved0),
+    SHADOW_FIELD(  15, 1, Player, pl_Reserved1),
+    SHADOW_FIELD(  16, 4, Player, pl_Hook),
+    SHADOW_FIELD(  20, 4, Player, pl_Source),
+    SHADOW_FIELD(  24, 4, Player, pl_Task),
+    SHADOW_FIELD(  28, 4, Player, pl_MetricTime),
+    SHADOW_FIELD(  32, 4, Player, pl_AlarmTime),
+    SHADOW_FIELD(  36, 4, Player, pl_UserData),
+    SHADOW_FIELD(  40, 2, Player, pl_PlayerID),
+    SHADOW_FIELD(  42, 2, Player, pl_Flags),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* Preferences: m68k=232B, aros=232B, 46 fields */
+/* Preferences: m68k=232B, 48 fields */
 static const struct M68KFieldMap shadow_fields_Preferences[] = {
-    {    0,    0, SF_BYTE , 0, 0, NULL },  /* FontHeight */
-    {    1,    1, SF_BYTE , 0, 0, NULL },  /* PrinterPort */
-    {    2,    2, SF_WORD , 0, 0, NULL },  /* BaudRate */
-    {  100,  100, SF_BYTE , 0, 0, NULL },  /* XOffset */
-    {  101,  101, SF_BYTE , 0, 0, NULL },  /* YOffset */
-    {  102,  102, SF_WORD , 0, 0, NULL },  /* color17 */
-    {  104,  104, SF_WORD , 0, 0, NULL },  /* color18 */
-    {  106,  106, SF_WORD , 0, 0, NULL },  /* color19 */
-    {  108,  108, SF_WORD , 0, 0, NULL },  /* PointerTicks */
-    {  110,  110, SF_WORD , 0, 0, NULL },  /* color0 */
-    {  112,  112, SF_WORD , 0, 0, NULL },  /* color1 */
-    {  114,  114, SF_WORD , 0, 0, NULL },  /* color2 */
-    {  116,  116, SF_WORD , 0, 0, NULL },  /* color3 */
-    {  118,  118, SF_BYTE , 0, 0, NULL },  /* ViewXOffset */
-    {  119,  119, SF_BYTE , 0, 0, NULL },  /* ViewYOffset */
-    {  120,  120, SF_WORD , 0, 0, NULL },  /* ViewInitX */
-    {  122,  122, SF_WORD , 0, 0, NULL },  /* ViewInitY */
-    {  124,  124, SF_WORD , 0, 0, NULL },  /* EnableCLI */
-    {  126,  126, SF_WORD , 0, 0, NULL },  /* PrinterType */
-    {  158,  158, SF_WORD , 0, 0, NULL },  /* PrintPitch */
-    {  160,  160, SF_WORD , 0, 0, NULL },  /* PrintQuality */
-    {  162,  162, SF_WORD , 0, 0, NULL },  /* PrintSpacing */
-    {  164,  164, SF_WORD , 0, 0, NULL },  /* PrintLeftMargin */
-    {  166,  166, SF_WORD , 0, 0, NULL },  /* PrintRightMargin */
-    {  168,  168, SF_WORD , 0, 0, NULL },  /* PrintImage */
-    {  170,  170, SF_WORD , 0, 0, NULL },  /* PrintAspect */
-    {  172,  172, SF_WORD , 0, 0, NULL },  /* PrintShade */
-    {  174,  174, SF_WORD , 0, 0, NULL },  /* PrintThreshold */
-    {  176,  176, SF_WORD , 0, 0, NULL },  /* PaperSize */
-    {  178,  178, SF_WORD , 0, 0, NULL },  /* PaperLength */
-    {  180,  180, SF_WORD , 0, 0, NULL },  /* PaperType */
-    {  182,  182, SF_BYTE , 0, 0, NULL },  /* SerRWBits */
-    {  183,  183, SF_BYTE , 0, 0, NULL },  /* SerStopBuf */
-    {  184,  184, SF_BYTE , 0, 0, NULL },  /* SerParShk */
-    {  185,  185, SF_BYTE , 0, 0, NULL },  /* LaceWB */
-    {  214,  214, SF_BYTE , 0, 0, NULL },  /* DefaultPrtUnit */
-    {  215,  215, SF_BYTE , 0, 0, NULL },  /* DefaultSerUnit */
-    {  216,  216, SF_BYTE , 0, 0, NULL },  /* RowSizeChange */
-    {  217,  217, SF_BYTE , 0, 0, NULL },  /* ColumnSizeChange */
-    {  218,  218, SF_WORD , 0, 0, NULL },  /* PrintFlags */
-    {  220,  220, SF_WORD , 0, 0, NULL },  /* PrintMaxWidth */
-    {  222,  222, SF_WORD , 0, 0, NULL },  /* PrintMaxHeight */
-    {  224,  224, SF_BYTE , 0, 0, NULL },  /* PrintDensity */
-    {  225,  225, SF_BYTE , 0, 0, NULL },  /* PrintXOffset */
-    {  226,  226, SF_WORD , 0, 0, NULL },  /* wb_Width */
-    {  228,  228, SF_WORD , 0, 0, NULL },  /* wb_Height */
-    {  230,  230, SF_BYTE , 0, 0, NULL },  /* wb_Depth */
-    {  231,  231, SF_BYTE , 0, 0, NULL },  /* ext_size */
+    SHADOW_FIELD(   0, 1, Preferences, FontHeight),
+    SHADOW_FIELD(   1, 1, Preferences, PrinterPort),
+    SHADOW_FIELD(   2, 2, Preferences, BaudRate),
+    SHADOW_FIELD( 100, 1, Preferences, XOffset),
+    SHADOW_FIELD( 101, 1, Preferences, YOffset),
+    SHADOW_FIELD( 102, 2, Preferences, color17),
+    SHADOW_FIELD( 104, 2, Preferences, color18),
+    SHADOW_FIELD( 106, 2, Preferences, color19),
+    SHADOW_FIELD( 108, 2, Preferences, PointerTicks),
+    SHADOW_FIELD( 110, 2, Preferences, color0),
+    SHADOW_FIELD( 112, 2, Preferences, color1),
+    SHADOW_FIELD( 114, 2, Preferences, color2),
+    SHADOW_FIELD( 116, 2, Preferences, color3),
+    SHADOW_FIELD( 118, 1, Preferences, ViewXOffset),
+    SHADOW_FIELD( 119, 1, Preferences, ViewYOffset),
+    SHADOW_FIELD( 120, 2, Preferences, ViewInitX),
+    SHADOW_FIELD( 122, 2, Preferences, ViewInitY),
+    SHADOW_FIELD( 124, 2, Preferences, EnableCLI),
+    SHADOW_FIELD( 126, 2, Preferences, PrinterType),
+    SHADOW_FIELD( 158, 2, Preferences, PrintPitch),
+    SHADOW_FIELD( 160, 2, Preferences, PrintQuality),
+    SHADOW_FIELD( 162, 2, Preferences, PrintSpacing),
+    SHADOW_FIELD( 164, 2, Preferences, PrintLeftMargin),
+    SHADOW_FIELD( 166, 2, Preferences, PrintRightMargin),
+    SHADOW_FIELD( 168, 2, Preferences, PrintImage),
+    SHADOW_FIELD( 170, 2, Preferences, PrintAspect),
+    SHADOW_FIELD( 172, 2, Preferences, PrintShade),
+    SHADOW_FIELD( 174, 2, Preferences, PrintThreshold),
+    SHADOW_FIELD( 176, 2, Preferences, PaperSize),
+    SHADOW_FIELD( 178, 2, Preferences, PaperLength),
+    SHADOW_FIELD( 180, 2, Preferences, PaperType),
+    SHADOW_FIELD( 182, 1, Preferences, SerRWBits),
+    SHADOW_FIELD( 183, 1, Preferences, SerStopBuf),
+    SHADOW_FIELD( 184, 1, Preferences, SerParShk),
+    SHADOW_FIELD( 185, 1, Preferences, LaceWB),
+    SHADOW_FIELD( 214, 1, Preferences, DefaultPrtUnit),
+    SHADOW_FIELD( 215, 1, Preferences, DefaultSerUnit),
+    SHADOW_FIELD( 216, 1, Preferences, RowSizeChange),
+    SHADOW_FIELD( 217, 1, Preferences, ColumnSizeChange),
+    SHADOW_FIELD( 218, 2, Preferences, PrintFlags),
+    SHADOW_FIELD( 220, 2, Preferences, PrintMaxWidth),
+    SHADOW_FIELD( 222, 2, Preferences, PrintMaxHeight),
+    SHADOW_FIELD( 224, 1, Preferences, PrintDensity),
+    SHADOW_FIELD( 225, 1, Preferences, PrintXOffset),
+    SHADOW_FIELD( 226, 2, Preferences, wb_Width),
+    SHADOW_FIELD( 228, 2, Preferences, wb_Height),
+    SHADOW_FIELD( 230, 1, Preferences, wb_Depth),
+    SHADOW_FIELD( 231, 1, Preferences, ext_size),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* PrinterData: m68k=6842B, aros=7808B, 31 fields */
+/* PrinterData: m68k=6842B, 31 fields */
 static const struct M68KFieldMap shadow_fields_PrinterData[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* ln_Succ */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* ln_Pred */
-    {    8,   16, SF_BYTE , 0, 0, NULL },  /* ln_Type */
-    {    9,   17, SF_BYTE , 0, 0, NULL },  /* ln_Pri */
-    {   10,   24, SF_PTR  , 0, 0, NULL },  /* ln_Name */
-    {   14,   32, SF_BYTE , 0, 0, NULL },  /* lib_Flags */
-    {   15,   33, SF_BYTE , 0, 0, NULL },  /* lib_pad */
-    {   16,   34, SF_WORD , 0, 0, NULL },  /* lib_NegSize */
-    {   18,   36, SF_WORD , 0, 0, NULL },  /* lib_PosSize */
-    {   20,   38, SF_WORD , 0, 0, NULL },  /* lib_Version */
-    {   22,   40, SF_WORD , 0, 0, NULL },  /* lib_Revision */
-    {   24,   48, SF_PTR  , 0, 0, NULL },  /* lib_IdString */
-    {   28,   56, SF_LONG , 0, 0, NULL },  /* lib_Sum */
-    {   32,   60, SF_WORD , 0, 0, NULL },  /* lib_OpenCnt */
-    {   34,   64, SF_PTR  , 0, 0, NULL },  /* dd_Segment */
-    {   38,   72, SF_PTR  , 0, 0, NULL },  /* dd_ExecBase */
-    {   42,   80, SF_PTR  , 0, 0, NULL },  /* dd_CmdVectors */
-    {   46,   88, SF_PTR  , 0, 0, NULL },  /* dd_CmdBytes */
-    {   50,   96, SF_WORD , 0, 0, NULL },  /* dd_NumCommands */
-    {   66,  160, SF_BYTE , 0, 0, NULL },  /* mp_Flags */
-    {   67,  161, SF_BYTE , 0, 0, NULL },  /* mp_SigBit */
-    {   68,  168, SF_PTR  , 0, 0, NULL },  /* mp_SigTask */
-    {   72,  176, SF_PTR  , 0, 0, NULL },  /* lh_Head */
-    {   76,  184, SF_PTR  , 0, 0, NULL },  /* lh_Tail */
-    {   80,  192, SF_PTR  , 0, 0, NULL },  /* lh_TailPred */
-    {   84,  200, SF_BYTE , 0, 0, NULL },  /* lh_Type */
-    {   85,  201, SF_BYTE , 0, 0, NULL },  /* l_pad */
-    {   86,  384, SF_PTR  , 0, 0, NULL },  /* pd_PrinterSegment */
-    {   90,  392, SF_WORD , 0, 0, NULL },  /* pd_PrinterType */
-    {   92,  400, SF_PTR  , 0, 0, NULL },  /* pd_SegmentData */
-    {   96,  408, SF_PTR  , 0, 0, NULL },  /* pd_PrintBuf */
+    SHADOW_FIELD(   0, 4, PrinterData, pd_Device.dd_Device.lib_Node.ln_Succ),
+    SHADOW_FIELD(   4, 4, PrinterData, pd_Device.dd_Device.lib_Node.ln_Pred),
+    SHADOW_FIELD(   8, 1, PrinterData, pd_Device.dd_Device.lib_Node.ln_Type),
+    SHADOW_FIELD(   9, 1, PrinterData, pd_Device.dd_Device.lib_Node.ln_Pri),
+    SHADOW_FIELD(  10, 4, PrinterData, pd_Device.dd_Device.lib_Node.ln_Name),
+    SHADOW_FIELD(  14, 1, PrinterData, pd_Device.dd_Device.lib_Flags),
+    SHADOW_FIELD(  15, 1, PrinterData, pd_Device.dd_Device.lib_pad),
+    SHADOW_FIELD(  16, 2, PrinterData, pd_Device.dd_Device.lib_NegSize),
+    SHADOW_FIELD(  18, 2, PrinterData, pd_Device.dd_Device.lib_PosSize),
+    SHADOW_FIELD(  20, 2, PrinterData, pd_Device.dd_Device.lib_Version),
+    SHADOW_FIELD(  22, 2, PrinterData, pd_Device.dd_Device.lib_Revision),
+    SHADOW_FIELD(  24, 4, PrinterData, pd_Device.dd_Device.lib_IdString),
+    SHADOW_FIELD(  28, 4, PrinterData, pd_Device.dd_Device.lib_Sum),
+    SHADOW_FIELD(  32, 2, PrinterData, pd_Device.dd_Device.lib_OpenCnt),
+    SHADOW_FIELD(  34, 4, PrinterData, pd_Device.dd_Segment),
+    SHADOW_FIELD(  38, 4, PrinterData, pd_Device.dd_ExecBase),
+    SHADOW_FIELD(  42, 4, PrinterData, pd_Device.dd_CmdVectors),
+    SHADOW_FIELD(  46, 4, PrinterData, pd_Device.dd_CmdBytes),
+    SHADOW_FIELD(  50, 2, PrinterData, pd_Device.dd_NumCommands),
+    SHADOW_FIELD(  66, 1, PrinterData, pd_Unit.mp_Flags),
+    SHADOW_FIELD(  67, 1, PrinterData, pd_Unit.mp_SigBit),
+    SHADOW_FIELD(  68, 4, PrinterData, pd_Unit.mp_SigTask),
+    SHADOW_FIELD(  72, 4, PrinterData, pd_Unit.mp_MsgList.lh_Head),
+    SHADOW_FIELD(  76, 4, PrinterData, pd_Unit.mp_MsgList.lh_Tail),
+    SHADOW_FIELD(  80, 4, PrinterData, pd_Unit.mp_MsgList.lh_TailPred),
+    SHADOW_FIELD(  84, 1, PrinterData, pd_Unit.mp_MsgList.lh_Type),
+    SHADOW_FIELD(  85, 1, PrinterData, pd_Unit.mp_MsgList.l_pad),
+    SHADOW_FIELD(  86, 4, PrinterData, pd_PrinterSegment),
+    SHADOW_FIELD(  90, 2, PrinterData, pd_PrinterType),
+    SHADOW_FIELD(  92, 4, PrinterData, pd_SegmentData),
+    SHADOW_FIELD(  96, 4, PrinterData, pd_PrintBuf),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* PrinterExtendedData: m68k=78B, aros=144B, 13 fields */
+/* PrinterExtendedData: m68k=78B, 15 fields */
 static const struct M68KFieldMap shadow_fields_PrinterExtendedData[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* ped_PrinterName */
-    {   20,   40, SF_BYTE , 0, 0, NULL },  /* ped_PrinterClass */
-    {   21,   41, SF_BYTE , 0, 0, NULL },  /* ped_ColorClass */
-    {   22,   42, SF_BYTE , 0, 0, NULL },  /* ped_MaxColumns */
-    {   23,   43, SF_BYTE , 0, 0, NULL },  /* ped_NumCharSets */
-    {   24,   44, SF_WORD , 0, 0, NULL },  /* ped_NumRows */
-    {   26,   48, SF_LONG , 0, 0, NULL },  /* ped_MaxXDots */
-    {   30,   52, SF_LONG , 0, 0, NULL },  /* ped_MaxYDots */
-    {   34,   56, SF_WORD , 0, 0, NULL },  /* ped_XDotsInch */
-    {   36,   58, SF_WORD , 0, 0, NULL },  /* ped_YDotsInch */
-    {   38,   64, SF_PTR  , 0, 0, NULL },  /* ped_Commands */
-    {   50,   88, SF_LONG , 0, 0, NULL },  /* ped_TimeoutSecs */
-    {   54,   96, SF_PTR  , 0, 0, NULL },  /* ped_8BitChars */
-    {   58,  104, SF_LONG , 0, 0, NULL },  /* ped_PrintMode */
-    {   66,  120, SF_PTR  , 0, 0, NULL },  /* ped_TagList */
+    SHADOW_FIELD(   0, 4, PrinterExtendedData, ped_PrinterName),
+    SHADOW_FIELD(  20, 1, PrinterExtendedData, ped_PrinterClass),
+    SHADOW_FIELD(  21, 1, PrinterExtendedData, ped_ColorClass),
+    SHADOW_FIELD(  22, 1, PrinterExtendedData, ped_MaxColumns),
+    SHADOW_FIELD(  23, 1, PrinterExtendedData, ped_NumCharSets),
+    SHADOW_FIELD(  24, 2, PrinterExtendedData, ped_NumRows),
+    SHADOW_FIELD(  26, 4, PrinterExtendedData, ped_MaxXDots),
+    SHADOW_FIELD(  30, 4, PrinterExtendedData, ped_MaxYDots),
+    SHADOW_FIELD(  34, 2, PrinterExtendedData, ped_XDotsInch),
+    SHADOW_FIELD(  36, 2, PrinterExtendedData, ped_YDotsInch),
+    SHADOW_FIELD(  38, 4, PrinterExtendedData, ped_Commands),
+    SHADOW_FIELD(  50, 4, PrinterExtendedData, ped_TimeoutSecs),
+    SHADOW_FIELD(  54, 4, PrinterExtendedData, ped_8BitChars),
+    SHADOW_FIELD(  58, 4, PrinterExtendedData, ped_PrintMode),
+    SHADOW_FIELD(  66, 4, PrinterExtendedData, ped_TagList),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* PrinterSegment: m68k=90B, aros=160B, 17 fields */
+/* PrinterSegment: m68k=90B, 19 fields */
 static const struct M68KFieldMap shadow_fields_PrinterSegment[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* ps_NextSegment */
-    {    4,    8, SF_LONG , 0, 0, NULL },  /* ps_runAlert */
-    {    8,   12, SF_WORD , 0, 0, NULL },  /* ps_Version */
-    {   10,   14, SF_WORD , 0, 0, NULL },  /* ps_Revision */
-    {   12,   16, SF_PTR  , 0, 0, NULL },  /* ped_PrinterName */
-    {   32,   56, SF_BYTE , 0, 0, NULL },  /* ped_PrinterClass */
-    {   33,   57, SF_BYTE , 0, 0, NULL },  /* ped_ColorClass */
-    {   34,   58, SF_BYTE , 0, 0, NULL },  /* ped_MaxColumns */
-    {   35,   59, SF_BYTE , 0, 0, NULL },  /* ped_NumCharSets */
-    {   36,   60, SF_WORD , 0, 0, NULL },  /* ped_NumRows */
-    {   38,   64, SF_LONG , 0, 0, NULL },  /* ped_MaxXDots */
-    {   42,   68, SF_LONG , 0, 0, NULL },  /* ped_MaxYDots */
-    {   46,   72, SF_WORD , 0, 0, NULL },  /* ped_XDotsInch */
-    {   48,   74, SF_WORD , 0, 0, NULL },  /* ped_YDotsInch */
-    {   50,   80, SF_PTR  , 0, 0, NULL },  /* ped_Commands */
-    {   62,  104, SF_LONG , 0, 0, NULL },  /* ped_TimeoutSecs */
-    {   66,  112, SF_PTR  , 0, 0, NULL },  /* ped_8BitChars */
-    {   70,  120, SF_LONG , 0, 0, NULL },  /* ped_PrintMode */
-    {   78,  136, SF_PTR  , 0, 0, NULL },  /* ped_TagList */
+    SHADOW_FIELD(   0, 4, PrinterSegment, ps_NextSegment),
+    SHADOW_FIELD(   4, 4, PrinterSegment, ps_runAlert),
+    SHADOW_FIELD(   8, 2, PrinterSegment, ps_Version),
+    SHADOW_FIELD(  10, 2, PrinterSegment, ps_Revision),
+    SHADOW_FIELD(  12, 4, PrinterSegment, ps_PED.ped_PrinterName),
+    SHADOW_FIELD(  32, 1, PrinterSegment, ps_PED.ped_PrinterClass),
+    SHADOW_FIELD(  33, 1, PrinterSegment, ps_PED.ped_ColorClass),
+    SHADOW_FIELD(  34, 1, PrinterSegment, ps_PED.ped_MaxColumns),
+    SHADOW_FIELD(  35, 1, PrinterSegment, ps_PED.ped_NumCharSets),
+    SHADOW_FIELD(  36, 2, PrinterSegment, ps_PED.ped_NumRows),
+    SHADOW_FIELD(  38, 4, PrinterSegment, ps_PED.ped_MaxXDots),
+    SHADOW_FIELD(  42, 4, PrinterSegment, ps_PED.ped_MaxYDots),
+    SHADOW_FIELD(  46, 2, PrinterSegment, ps_PED.ped_XDotsInch),
+    SHADOW_FIELD(  48, 2, PrinterSegment, ps_PED.ped_YDotsInch),
+    SHADOW_FIELD(  50, 4, PrinterSegment, ps_PED.ped_Commands),
+    SHADOW_FIELD(  62, 4, PrinterSegment, ps_PED.ped_TimeoutSecs),
+    SHADOW_FIELD(  66, 4, PrinterSegment, ps_PED.ped_8BitChars),
+    SHADOW_FIELD(  70, 4, PrinterSegment, ps_PED.ped_PrintMode),
+    SHADOW_FIELD(  78, 4, PrinterSegment, ps_PED.ped_TagList),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* Process: m68k=228B, aros=768B, 56 fields */
+/* Process: m68k=228B, 56 fields */
 static const struct M68KFieldMap shadow_fields_Process[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* ln_Succ */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* ln_Pred */
-    {    8,   16, SF_BYTE , 0, 0, NULL },  /* ln_Type */
-    {    9,   17, SF_BYTE , 0, 0, NULL },  /* ln_Pri */
-    {   10,   24, SF_PTR  , 0, 0, NULL },  /* ln_Name */
-    {   14,   32, SF_BYTE , 0, 0, NULL },  /* tc_Flags */
-    {   15,   33, SF_BYTE , 0, 0, NULL },  /* tc_State */
-    {   16,   34, SF_BYTE , 0, 0, NULL },  /* tc_IDNestCnt */
-    {   17,   35, SF_BYTE , 0, 0, NULL },  /* tc_TDNestCnt */
-    {   18,   36, SF_LONG , 0, 0, NULL },  /* tc_SigAlloc */
-    {   22,   40, SF_LONG , 0, 0, NULL },  /* tc_SigWait */
-    {   26,   44, SF_LONG , 0, 0, NULL },  /* tc_SigRecvd */
-    {   30,   48, SF_LONG , 0, 0, NULL },  /* tc_SigExcept */
-    {   34,   56, SF_WORD , 0, 0, NULL },  /* tc_TrapAlloc */
-    {   36,   58, SF_WORD , 0, 0, NULL },  /* tc_TrapAble */
-    {   38,   64, SF_PTR  , 0, 0, NULL },  /* tc_ExceptData */
-    {   42,   72, SF_PTR  , 0, 0, NULL },  /* tc_ExceptCode */
-    {   46,   80, SF_PTR  , 0, 0, NULL },  /* tc_TrapData */
-    {   50,   88, SF_PTR  , 0, 0, NULL },  /* tc_TrapCode */
-    {   54,   96, SF_PTR  , 0, 0, NULL },  /* tc_SPReg */
-    {   58,  104, SF_PTR  , 0, 0, NULL },  /* tc_SPLower */
-    {   62,  112, SF_PTR  , 0, 0, NULL },  /* tc_SPUpper */
-    {   74,  136, SF_PTR  , 0, 0, NULL },  /* lh_Head */
-    {   78,  144, SF_PTR  , 0, 0, NULL },  /* lh_Tail */
-    {   82,  152, SF_PTR  , 0, 0, NULL },  /* lh_TailPred */
-    {   86,  160, SF_BYTE , 0, 0, NULL },  /* lh_Type */
-    {   87,  161, SF_BYTE , 0, 0, NULL },  /* l_pad */
-    {   88,  168, SF_PTR  , 0, 0, NULL },  /* tc_UserData */
-    {  106,  288, SF_BYTE , 0, 0, NULL },  /* mp_Flags */
-    {  107,  289, SF_BYTE , 0, 0, NULL },  /* mp_SigBit */
-    {  108,  296, SF_PTR  , 0, 0, NULL },  /* mp_SigTask */
-    {  126,  512, SF_WORD , 0, 0, NULL },  /* pr_Pad */
-    {  128,  520, SF_PTR  , 0, 0, NULL },  /* pr_SegList */
-    {  132,  528, SF_LONG , 0, 0, NULL },  /* pr_StackSize */
-    {  136,  536, SF_PTR  , 0, 0, NULL },  /* pr_GlobVec */
-    {  140,  544, SF_LONG , 0, 0, NULL },  /* pr_TaskNum */
-    {  144,  552, SF_PTR  , 0, 0, NULL },  /* pr_StackBase */
-    {  148,  560, SF_PTR  , 0, 0, NULL },  /* pr_Result2 */
-    {  152,  568, SF_PTR  , 0, 0, NULL },  /* pr_CurrentDir */
-    {  156,  576, SF_PTR  , 0, 0, NULL },  /* pr_CIS */
-    {  160,  584, SF_PTR  , 0, 0, NULL },  /* pr_COS */
-    {  164,  592, SF_PTR  , 0, 0, NULL },  /* pr_ConsoleTask */
-    {  168,  600, SF_PTR  , 0, 0, NULL },  /* pr_FileSystemTask */
-    {  172,  608, SF_PTR  , 0, 0, NULL },  /* pr_CLI */
-    {  176,  616, SF_PTR  , 0, 0, NULL },  /* pr_ReturnAddr */
-    {  180,  624, SF_PTR  , 0, 0, NULL },  /* pr_PktWait */
-    {  184,  632, SF_PTR  , 0, 0, NULL },  /* pr_WindowPtr */
-    {  188,  640, SF_PTR  , 0, 0, NULL },  /* pr_HomeDir */
-    {  192,  648, SF_LONG , 0, 0, NULL },  /* pr_Flags */
-    {  200,  664, SF_PTR  , 0, 0, NULL },  /* pr_ExitData */
-    {  204,  672, SF_PTR  , 0, 0, NULL },  /* pr_Arguments */
-    {  208,  680, SF_PTR  , 0, 0, NULL },  /* mlh_Head */
-    {  212,  688, SF_PTR  , 0, 0, NULL },  /* mlh_Tail */
-    {  216,  696, SF_PTR  , 0, 0, NULL },  /* mlh_TailPred */
-    {  220,  704, SF_LONG , 0, 0, NULL },  /* pr_ShellPrivate */
-    {  224,  712, SF_PTR  , 0, 0, NULL },  /* pr_CES */
+    SHADOW_FIELD(   0, 4, Process, pr_Task.tc_Node.ln_Succ),
+    SHADOW_FIELD(   4, 4, Process, pr_Task.tc_Node.ln_Pred),
+    SHADOW_FIELD(   8, 1, Process, pr_Task.tc_Node.ln_Type),
+    SHADOW_FIELD(   9, 1, Process, pr_Task.tc_Node.ln_Pri),
+    SHADOW_FIELD(  10, 4, Process, pr_Task.tc_Node.ln_Name),
+    SHADOW_FIELD(  14, 1, Process, pr_Task.tc_Flags),
+    SHADOW_FIELD(  15, 1, Process, pr_Task.tc_State),
+    SHADOW_FIELD(  16, 1, Process, pr_Task.tc_IDNestCnt),
+    SHADOW_FIELD(  17, 1, Process, pr_Task.tc_TDNestCnt),
+    SHADOW_FIELD(  18, 4, Process, pr_Task.tc_SigAlloc),
+    SHADOW_FIELD(  22, 4, Process, pr_Task.tc_SigWait),
+    SHADOW_FIELD(  26, 4, Process, pr_Task.tc_SigRecvd),
+    SHADOW_FIELD(  30, 4, Process, pr_Task.tc_SigExcept),
+    SHADOW_FIELD(  34, 2, Process, pr_Task.tc_TrapAlloc),
+    SHADOW_FIELD(  36, 2, Process, pr_Task.tc_TrapAble),
+    SHADOW_FIELD(  38, 4, Process, pr_Task.tc_ExceptData),
+    SHADOW_FIELD(  42, 4, Process, pr_Task.tc_ExceptCode),
+    SHADOW_FIELD(  46, 4, Process, pr_Task.tc_TrapData),
+    SHADOW_FIELD(  50, 4, Process, pr_Task.tc_TrapCode),
+    SHADOW_FIELD(  54, 4, Process, pr_Task.tc_SPReg),
+    SHADOW_FIELD(  58, 4, Process, pr_Task.tc_SPLower),
+    SHADOW_FIELD(  62, 4, Process, pr_Task.tc_SPUpper),
+    SHADOW_FIELD(  74, 4, Process, pr_Task.tc_MemEntry.lh_Head),
+    SHADOW_FIELD(  78, 4, Process, pr_Task.tc_MemEntry.lh_Tail),
+    SHADOW_FIELD(  82, 4, Process, pr_Task.tc_MemEntry.lh_TailPred),
+    SHADOW_FIELD(  86, 1, Process, pr_Task.tc_MemEntry.lh_Type),
+    SHADOW_FIELD(  87, 1, Process, pr_Task.tc_MemEntry.l_pad),
+    SHADOW_FIELD(  88, 4, Process, pr_Task.tc_UserData),
+    SHADOW_FIELD( 106, 1, Process, pr_MsgPort.mp_Flags),
+    SHADOW_FIELD( 107, 1, Process, pr_MsgPort.mp_SigBit),
+    SHADOW_FIELD( 108, 4, Process, pr_MsgPort.mp_SigTask),
+    SHADOW_FIELD( 126, 2, Process, pr_Pad),
+    SHADOW_FIELD( 128, 4, Process, pr_SegList),
+    SHADOW_FIELD( 132, 4, Process, pr_StackSize),
+    SHADOW_FIELD( 136, 4, Process, pr_GlobVec),
+    SHADOW_FIELD( 140, 4, Process, pr_TaskNum),
+    SHADOW_FIELD( 144, 4, Process, pr_StackBase),
+    SHADOW_FIELD( 148, 4, Process, pr_Result2),
+    SHADOW_FIELD( 152, 4, Process, pr_CurrentDir),
+    SHADOW_FIELD( 156, 4, Process, pr_CIS),
+    SHADOW_FIELD( 160, 4, Process, pr_COS),
+    SHADOW_FIELD( 164, 4, Process, pr_ConsoleTask),
+    SHADOW_FIELD( 168, 4, Process, pr_FileSystemTask),
+    SHADOW_FIELD( 172, 4, Process, pr_CLI),
+    SHADOW_FIELD( 176, 4, Process, pr_ReturnAddr),
+    SHADOW_FIELD( 180, 4, Process, pr_PktWait),
+    SHADOW_FIELD( 184, 4, Process, pr_WindowPtr),
+    SHADOW_FIELD( 188, 4, Process, pr_HomeDir),
+    SHADOW_FIELD( 192, 4, Process, pr_Flags),
+    SHADOW_FIELD( 200, 4, Process, pr_ExitData),
+    SHADOW_FIELD( 204, 4, Process, pr_Arguments),
+    SHADOW_FIELD( 208, 4, Process, pr_LocalVars.mlh_Head),
+    SHADOW_FIELD( 212, 4, Process, pr_LocalVars.mlh_Tail),
+    SHADOW_FIELD( 216, 4, Process, pr_LocalVars.mlh_TailPred),
+    SHADOW_FIELD( 220, 4, Process, pr_ShellPrivate),
+    SHADOW_FIELD( 224, 4, Process, pr_CES),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* PropInfo: m68k=22B, aros=22B, 8 fields */
+/* PropInfo: m68k=22B, 10 fields */
 static const struct M68KFieldMap shadow_fields_PropInfo[] = {
-    {    2,    2, SF_WORD , 0, 0, NULL },  /* HorizPot */
-    {    4,    4, SF_WORD , 0, 0, NULL },  /* VertPot */
-    {    6,    6, SF_WORD , 0, 0, NULL },  /* HorizBody */
-    {    8,    8, SF_WORD , 0, 0, NULL },  /* VertBody */
-    {   10,   10, SF_WORD , 0, 0, NULL },  /* CWidth */
-    {   12,   12, SF_WORD , 0, 0, NULL },  /* CHeight */
-    {   14,   14, SF_WORD , 0, 0, NULL },  /* HPotRes */
-    {   16,   16, SF_WORD , 0, 0, NULL },  /* VPotRes */
-    {   18,   18, SF_WORD , 0, 0, NULL },  /* LeftBorder */
-    {   20,   20, SF_WORD , 0, 0, NULL },  /* TopBorder */
+    SHADOW_FIELD(   2, 2, PropInfo, HorizPot),
+    SHADOW_FIELD(   4, 2, PropInfo, VertPot),
+    SHADOW_FIELD(   6, 2, PropInfo, HorizBody),
+    SHADOW_FIELD(   8, 2, PropInfo, VertBody),
+    SHADOW_FIELD(  10, 2, PropInfo, CWidth),
+    SHADOW_FIELD(  12, 2, PropInfo, CHeight),
+    SHADOW_FIELD(  14, 2, PropInfo, HPotRes),
+    SHADOW_FIELD(  16, 2, PropInfo, VPotRes),
+    SHADOW_FIELD(  18, 2, PropInfo, LeftBorder),
+    SHADOW_FIELD(  20, 2, PropInfo, TopBorder),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* PrtErrMsg: m68k=24B, aros=40B, 6 fields */
+/* PrtErrMsg: m68k=24B, 6 fields */
 static const struct M68KFieldMap shadow_fields_PrtErrMsg[] = {
-    {    0,    0, SF_LONG , 0, 0, NULL },  /* pe_Version */
-    {    4,    4, SF_LONG , 0, 0, NULL },  /* pe_ErrorLevel */
-    {    8,    8, SF_PTR  , 0, 0, NULL },  /* pe_Window */
-    {   12,   16, SF_PTR  , 0, 0, NULL },  /* pe_ES */
-    {   16,   24, SF_PTR  , 0, 0, NULL },  /* pe_IDCMP */
-    {   20,   32, SF_PTR  , 0, 0, NULL },  /* pe_ArgList */
+    SHADOW_FIELD(   0, 4, PrtErrMsg, pe_Version),
+    SHADOW_FIELD(   4, 4, PrtErrMsg, pe_ErrorLevel),
+    SHADOW_FIELD(   8, 4, PrtErrMsg, pe_Window),
+    SHADOW_FIELD(  12, 4, PrtErrMsg, pe_ES),
+    SHADOW_FIELD(  16, 4, PrtErrMsg, pe_IDCMP),
+    SHADOW_FIELD(  20, 4, PrtErrMsg, pe_ArgList),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* PrtInfo: m68k=128B, aros=208B, 34 fields */
+/* PrtInfo: m68k=128B, 37 fields */
 static const struct M68KFieldMap shadow_fields_PrtInfo[] = {
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* pi_rp */
-    {    8,   16, SF_PTR  , 0, 0, NULL },  /* pi_temprp */
-    {   12,   24, SF_PTR  , 0, 0, NULL },  /* pi_RowBuf */
-    {   16,   32, SF_PTR  , 0, 0, NULL },  /* pi_HamBuf */
-    {   40,   80, SF_PTR  , 0, 0, NULL },  /* pi_ScaleX */
-    {   44,   88, SF_PTR  , 0, 0, NULL },  /* pi_ScaleXAlt */
-    {   48,   96, SF_PTR  , 0, 0, NULL },  /* pi_dmatrix */
-    {   52,  104, SF_PTR  , 0, 0, NULL },  /* pi_TopBuf */
-    {   56,  112, SF_PTR  , 0, 0, NULL },  /* pi_BotBuf */
-    {   60,  120, SF_WORD , 0, 0, NULL },  /* pi_RowBufSize */
-    {   62,  122, SF_WORD , 0, 0, NULL },  /* pi_HamBufSize */
-    {   64,  124, SF_WORD , 0, 0, NULL },  /* pi_ColorMapSize */
-    {   66,  126, SF_WORD , 0, 0, NULL },  /* pi_ColorIntSize */
-    {   68,  128, SF_WORD , 0, 0, NULL },  /* pi_HamIntSize */
-    {   70,  130, SF_WORD , 0, 0, NULL },  /* pi_Dest1IntSize */
-    {   72,  132, SF_WORD , 0, 0, NULL },  /* pi_Dest2IntSize */
-    {   74,  134, SF_WORD , 0, 0, NULL },  /* pi_ScaleXSize */
-    {   76,  136, SF_WORD , 0, 0, NULL },  /* pi_ScaleXAltSize */
-    {   78,  138, SF_WORD , 0, 0, NULL },  /* pi_PrefsFlags */
-    {   80,  140, SF_LONG , 0, 0, NULL },  /* pi_special */
-    {   84,  144, SF_WORD , 0, 0, NULL },  /* pi_xstart */
-    {   86,  146, SF_WORD , 0, 0, NULL },  /* pi_ystart */
-    {   88,  148, SF_WORD , 0, 0, NULL },  /* pi_width */
-    {   90,  150, SF_WORD , 0, 0, NULL },  /* pi_height */
-    {   92,  152, SF_LONG , 0, 0, NULL },  /* pi_pc */
-    {   96,  156, SF_LONG , 0, 0, NULL },  /* pi_pr */
-    {  100,  160, SF_WORD , 0, 0, NULL },  /* pi_ymult */
-    {  102,  162, SF_WORD , 0, 0, NULL },  /* pi_ymod */
-    {  104,  164, SF_WORD , 0, 0, NULL },  /* pi_ety */
-    {  106,  166, SF_WORD , 0, 0, NULL },  /* pi_xpos */
-    {  108,  168, SF_WORD , 0, 0, NULL },  /* pi_threshold */
-    {  110,  170, SF_WORD , 0, 0, NULL },  /* pi_tempwidth */
-    {  112,  172, SF_WORD , 0, 0, NULL },  /* pi_flags */
-    {  114,  176, SF_PTR  , 0, 0, NULL },  /* pi_ReduceBuf */
-    {  118,  184, SF_WORD , 0, 0, NULL },  /* pi_ReduceBufSize */
-    {  120,  192, SF_PTR  , 0, 0, NULL },  /* pi_SourceHook */
-    {  124,  200, SF_PTR  , 0, 0, NULL },  /* pi_InvertHookBuf */
+    SHADOW_FIELD(   4, 4, PrtInfo, pi_rp),
+    SHADOW_FIELD(   8, 4, PrtInfo, pi_temprp),
+    SHADOW_FIELD(  12, 4, PrtInfo, pi_RowBuf),
+    SHADOW_FIELD(  16, 4, PrtInfo, pi_HamBuf),
+    SHADOW_FIELD(  40, 4, PrtInfo, pi_ScaleX),
+    SHADOW_FIELD(  44, 4, PrtInfo, pi_ScaleXAlt),
+    SHADOW_FIELD(  48, 4, PrtInfo, pi_dmatrix),
+    SHADOW_FIELD(  52, 4, PrtInfo, pi_TopBuf),
+    SHADOW_FIELD(  56, 4, PrtInfo, pi_BotBuf),
+    SHADOW_FIELD(  60, 2, PrtInfo, pi_RowBufSize),
+    SHADOW_FIELD(  62, 2, PrtInfo, pi_HamBufSize),
+    SHADOW_FIELD(  64, 2, PrtInfo, pi_ColorMapSize),
+    SHADOW_FIELD(  66, 2, PrtInfo, pi_ColorIntSize),
+    SHADOW_FIELD(  68, 2, PrtInfo, pi_HamIntSize),
+    SHADOW_FIELD(  70, 2, PrtInfo, pi_Dest1IntSize),
+    SHADOW_FIELD(  72, 2, PrtInfo, pi_Dest2IntSize),
+    SHADOW_FIELD(  74, 2, PrtInfo, pi_ScaleXSize),
+    SHADOW_FIELD(  76, 2, PrtInfo, pi_ScaleXAltSize),
+    SHADOW_FIELD(  78, 2, PrtInfo, pi_PrefsFlags),
+    SHADOW_FIELD(  80, 4, PrtInfo, pi_special),
+    SHADOW_FIELD(  84, 2, PrtInfo, pi_xstart),
+    SHADOW_FIELD(  86, 2, PrtInfo, pi_ystart),
+    SHADOW_FIELD(  88, 2, PrtInfo, pi_width),
+    SHADOW_FIELD(  90, 2, PrtInfo, pi_height),
+    SHADOW_FIELD(  92, 4, PrtInfo, pi_pc),
+    SHADOW_FIELD(  96, 4, PrtInfo, pi_pr),
+    SHADOW_FIELD( 100, 2, PrtInfo, pi_ymult),
+    SHADOW_FIELD( 102, 2, PrtInfo, pi_ymod),
+    SHADOW_FIELD( 104, 2, PrtInfo, pi_ety),
+    SHADOW_FIELD( 106, 2, PrtInfo, pi_xpos),
+    SHADOW_FIELD( 108, 2, PrtInfo, pi_threshold),
+    SHADOW_FIELD( 110, 2, PrtInfo, pi_tempwidth),
+    SHADOW_FIELD( 112, 2, PrtInfo, pi_flags),
+    SHADOW_FIELD( 114, 4, PrtInfo, pi_ReduceBuf),
+    SHADOW_FIELD( 118, 2, PrtInfo, pi_ReduceBufSize),
+    SHADOW_FIELD( 120, 4, PrtInfo, pi_SourceHook),
+    SHADOW_FIELD( 124, 4, PrtInfo, pi_InvertHookBuf),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* PubScreenNode: m68k=30B, aros=64B, 11 fields */
+/* PubScreenNode: m68k=30B, 11 fields */
 static const struct M68KFieldMap shadow_fields_PubScreenNode[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* ln_Succ */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* ln_Pred */
-    {    8,   16, SF_BYTE , 0, 0, NULL },  /* ln_Type */
-    {    9,   17, SF_BYTE , 0, 0, NULL },  /* ln_Pri */
-    {   10,   24, SF_PTR  , 0, 0, NULL },  /* ln_Name */
-    {   14,   32, SF_PTR  , 0, 0, NULL },  /* psn_Screen */
-    {   18,   40, SF_WORD , 0, 0, NULL },  /* psn_Flags */
-    {   20,   42, SF_WORD , 0, 0, NULL },  /* psn_Size */
-    {   22,   44, SF_WORD , 0, 0, NULL },  /* psn_VisitorCount */
-    {   24,   48, SF_PTR  , 0, 0, NULL },  /* psn_SigTask */
-    {   28,   56, SF_BYTE , 0, 0, NULL },  /* psn_SigBit */
+    SHADOW_FIELD(   0, 4, PubScreenNode, psn_Node.ln_Succ),
+    SHADOW_FIELD(   4, 4, PubScreenNode, psn_Node.ln_Pred),
+    SHADOW_FIELD(   8, 1, PubScreenNode, psn_Node.ln_Type),
+    SHADOW_FIELD(   9, 1, PubScreenNode, psn_Node.ln_Pri),
+    SHADOW_FIELD(  10, 4, PubScreenNode, psn_Node.ln_Name),
+    SHADOW_FIELD(  14, 4, PubScreenNode, psn_Screen),
+    SHADOW_FIELD(  18, 2, PubScreenNode, psn_Flags),
+    SHADOW_FIELD(  20, 2, PubScreenNode, psn_Size),
+    SHADOW_FIELD(  22, 2, PubScreenNode, psn_VisitorCount),
+    SHADOW_FIELD(  24, 4, PubScreenNode, psn_SigTask),
+    SHADOW_FIELD(  28, 1, PubScreenNode, psn_SigBit),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* QCode: m68k=12B, aros=12B, 4 fields */
+/* QCode: m68k=12B, 4 fields */
 static const struct M68KFieldMap shadow_fields_QCode[] = {
-    {    0,    0, SF_BYTE , 0, 0, NULL },  /* CtlAdr */
-    {    1,    1, SF_BYTE , 0, 0, NULL },  /* Track */
-    {    2,    2, SF_BYTE , 0, 0, NULL },  /* Index */
-    {    3,    3, SF_BYTE , 0, 0, NULL },  /* Zero */
+    SHADOW_FIELD(   0, 1, QCode, CtlAdr),
+    SHADOW_FIELD(   1, 1, QCode, Track),
+    SHADOW_FIELD(   2, 1, QCode, Index),
+    SHADOW_FIELD(   3, 1, QCode, Zero),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* QueryHeader: m68k=16B, aros=16B, 4 fields */
+/* QueryHeader: m68k=16B, 4 fields */
 static const struct M68KFieldMap shadow_fields_QueryHeader[] = {
-    {    0,    0, SF_LONG , 0, 0, NULL },  /* StructID */
-    {    4,    4, SF_LONG , 0, 0, NULL },  /* DisplayID */
-    {    8,    8, SF_LONG , 0, 0, NULL },  /* SkipID */
-    {   12,   12, SF_LONG , 0, 0, NULL },  /* Length */
+    SHADOW_FIELD(   0, 4, QueryHeader, StructID),
+    SHADOW_FIELD(   4, 4, QueryHeader, DisplayID),
+    SHADOW_FIELD(   8, 4, QueryHeader, SkipID),
+    SHADOW_FIELD(  12, 4, QueryHeader, Length),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* RDArgs: m68k=32B, aros=56B, 8 fields */
+/* RDArgs: m68k=32B, 8 fields */
 static const struct M68KFieldMap shadow_fields_RDArgs[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* CS_Buffer */
-    {    4,    8, SF_LONG , 0, 0, NULL },  /* CS_Length */
-    {    8,   12, SF_LONG , 0, 0, NULL },  /* CS_CurChr */
-    {   12,   16, SF_PTR  , 0, 0, NULL },  /* RDA_DAList */
-    {   16,   24, SF_PTR  , 0, 0, NULL },  /* RDA_Buffer */
-    {   20,   32, SF_LONG , 0, 0, NULL },  /* RDA_BufSiz */
-    {   24,   40, SF_PTR  , 0, 0, NULL },  /* RDA_ExtHelp */
-    {   28,   48, SF_LONG , 0, 0, NULL },  /* RDA_Flags */
+    SHADOW_FIELD(   0, 4, RDArgs, RDA_Source.CS_Buffer),
+    SHADOW_FIELD(   4, 4, RDArgs, RDA_Source.CS_Length),
+    SHADOW_FIELD(   8, 4, RDArgs, RDA_Source.CS_CurChr),
+    SHADOW_FIELD(  12, 4, RDArgs, RDA_DAList),
+    SHADOW_FIELD(  16, 4, RDArgs, RDA_Buffer),
+    SHADOW_FIELD(  20, 4, RDArgs, RDA_BufSiz),
+    SHADOW_FIELD(  24, 4, RDArgs, RDA_ExtHelp),
+    SHADOW_FIELD(  28, 4, RDArgs, RDA_Flags),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* RMSF: m68k=4B, aros=4B, 4 fields */
+/* RMSF: m68k=4B, 4 fields */
 static const struct M68KFieldMap shadow_fields_RMSF[] = {
-    {    0,    0, SF_BYTE , 0, 0, NULL },  /* Reserved */
-    {    1,    1, SF_BYTE , 0, 0, NULL },  /* Minute */
-    {    2,    2, SF_BYTE , 0, 0, NULL },  /* Second */
-    {    3,    3, SF_BYTE , 0, 0, NULL },  /* Frame */
+    SHADOW_FIELD(   0, 1, RMSF, Reserved),
+    SHADOW_FIELD(   1, 1, RMSF, Minute),
+    SHADOW_FIELD(   2, 1, RMSF, Second),
+    SHADOW_FIELD(   3, 1, RMSF, Frame),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* RastPort: m68k=100B, aros=176B, 24 fields */
+/* RastPort: m68k=100B, 26 fields */
 static const struct M68KFieldMap shadow_fields_RastPort[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* Layer */
-    {    8,   16, SF_PTR  , 0, 0, NULL },  /* AreaPtrn */
-    {   12,   24, SF_PTR  , 0, 0, NULL },  /* TmpRas */
-    {   16,   32, SF_PTR  , 0, 0, NULL },  /* AreaInfo */
-    {   20,   40, SF_PTR  , 0, 0, NULL },  /* GelsInfo */
-    {   24,   48, SF_BYTE , 0, 0, NULL },  /* Mask */
-    {   25,   49, SF_BYTE , 0, 0, NULL },  /* FgPen */
-    {   26,   50, SF_BYTE , 0, 0, NULL },  /* BgPen */
-    {   27,   51, SF_BYTE , 0, 0, NULL },  /* AOlPen */
-    {   28,   52, SF_BYTE , 0, 0, NULL },  /* DrawMode */
-    {   29,   53, SF_BYTE , 0, 0, NULL },  /* AreaPtSz */
-    {   30,   54, SF_BYTE , 0, 0, NULL },  /* linpatcnt */
-    {   31,   55, SF_BYTE , 0, 0, NULL },  /* dummy */
-    {   34,   58, SF_WORD , 0, 0, NULL },  /* LinePtrn */
-    {   36,   60, SF_WORD , 0, 0, NULL },  /* cp_x */
-    {   38,   62, SF_WORD , 0, 0, NULL },  /* cp_y */
-    {   48,   72, SF_WORD , 0, 0, NULL },  /* PenWidth */
-    {   50,   74, SF_WORD , 0, 0, NULL },  /* PenHeight */
-    {   52,   80, SF_PTR  , 0, 0, NULL },  /* Font */
-    {   56,   88, SF_BYTE , 0, 0, NULL },  /* AlgoStyle */
-    {   57,   89, SF_BYTE , 0, 0, NULL },  /* TxFlags */
-    {   58,   90, SF_WORD , 0, 0, NULL },  /* TxHeight */
-    {   60,   92, SF_WORD , 0, 0, NULL },  /* TxWidth */
-    {   62,   94, SF_WORD , 0, 0, NULL },  /* TxBaseline */
-    {   64,   96, SF_WORD , 0, 0, NULL },  /* TxSpacing */
-    {   66,  104, SF_PTR  , 0, 0, NULL },  /* RP_User */
+    SHADOW_FIELD(   0, 4, RastPort, Layer),
+    SHADOW_FIELD(   8, 4, RastPort, AreaPtrn),
+    SHADOW_FIELD(  12, 4, RastPort, TmpRas),
+    SHADOW_FIELD(  16, 4, RastPort, AreaInfo),
+    SHADOW_FIELD(  20, 4, RastPort, GelsInfo),
+    SHADOW_FIELD(  24, 1, RastPort, Mask),
+    SHADOW_FIELD(  25, 1, RastPort, FgPen),
+    SHADOW_FIELD(  26, 1, RastPort, BgPen),
+    SHADOW_FIELD(  27, 1, RastPort, AOlPen),
+    SHADOW_FIELD(  28, 1, RastPort, DrawMode),
+    SHADOW_FIELD(  29, 1, RastPort, AreaPtSz),
+    SHADOW_FIELD(  30, 1, RastPort, linpatcnt),
+    SHADOW_FIELD(  31, 1, RastPort, dummy),
+    SHADOW_FIELD(  34, 2, RastPort, LinePtrn),
+    SHADOW_FIELD(  36, 2, RastPort, cp_x),
+    SHADOW_FIELD(  38, 2, RastPort, cp_y),
+    SHADOW_FIELD(  48, 2, RastPort, PenWidth),
+    SHADOW_FIELD(  50, 2, RastPort, PenHeight),
+    SHADOW_FIELD(  52, 4, RastPort, Font),
+    SHADOW_FIELD(  56, 1, RastPort, AlgoStyle),
+    SHADOW_FIELD(  57, 1, RastPort, TxFlags),
+    SHADOW_FIELD(  58, 2, RastPort, TxHeight),
+    SHADOW_FIELD(  60, 2, RastPort, TxWidth),
+    SHADOW_FIELD(  62, 2, RastPort, TxBaseline),
+    SHADOW_FIELD(  64, 2, RastPort, TxSpacing),
+    SHADOW_FIELD(  66, 4, RastPort, RP_User),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* RealTimeBase: m68k=48B, aros=80B, 19 fields */
+/* RealTimeBase: m68k=48B, 19 fields */
 static const struct M68KFieldMap shadow_fields_RealTimeBase[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* ln_Succ */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* ln_Pred */
-    {    8,   16, SF_BYTE , 0, 0, NULL },  /* ln_Type */
-    {    9,   17, SF_BYTE , 0, 0, NULL },  /* ln_Pri */
-    {   10,   24, SF_PTR  , 0, 0, NULL },  /* ln_Name */
-    {   14,   32, SF_BYTE , 0, 0, NULL },  /* lib_Flags */
-    {   15,   33, SF_BYTE , 0, 0, NULL },  /* lib_pad */
-    {   16,   34, SF_WORD , 0, 0, NULL },  /* lib_NegSize */
-    {   18,   36, SF_WORD , 0, 0, NULL },  /* lib_PosSize */
-    {   20,   38, SF_WORD , 0, 0, NULL },  /* lib_Version */
-    {   22,   40, SF_WORD , 0, 0, NULL },  /* lib_Revision */
-    {   24,   48, SF_PTR  , 0, 0, NULL },  /* lib_IdString */
-    {   28,   56, SF_LONG , 0, 0, NULL },  /* lib_Sum */
-    {   32,   60, SF_WORD , 0, 0, NULL },  /* lib_OpenCnt */
-    {   34,   64, SF_WORD , 0, 0, NULL },  /* rtb_Reserved0 */
-    {   36,   68, SF_LONG , 0, 0, NULL },  /* rtb_Time */
-    {   40,   72, SF_LONG , 0, 0, NULL },  /* rtb_TimeFrac */
-    {   44,   76, SF_WORD , 0, 0, NULL },  /* rtb_Reserved1 */
-    {   46,   78, SF_WORD , 0, 0, NULL },  /* rtb_TickErr */
+    SHADOW_FIELD(   0, 4, RealTimeBase, rtb_LibNode.lib_Node.ln_Succ),
+    SHADOW_FIELD(   4, 4, RealTimeBase, rtb_LibNode.lib_Node.ln_Pred),
+    SHADOW_FIELD(   8, 1, RealTimeBase, rtb_LibNode.lib_Node.ln_Type),
+    SHADOW_FIELD(   9, 1, RealTimeBase, rtb_LibNode.lib_Node.ln_Pri),
+    SHADOW_FIELD(  10, 4, RealTimeBase, rtb_LibNode.lib_Node.ln_Name),
+    SHADOW_FIELD(  14, 1, RealTimeBase, rtb_LibNode.lib_Flags),
+    SHADOW_FIELD(  15, 1, RealTimeBase, rtb_LibNode.lib_pad),
+    SHADOW_FIELD(  16, 2, RealTimeBase, rtb_LibNode.lib_NegSize),
+    SHADOW_FIELD(  18, 2, RealTimeBase, rtb_LibNode.lib_PosSize),
+    SHADOW_FIELD(  20, 2, RealTimeBase, rtb_LibNode.lib_Version),
+    SHADOW_FIELD(  22, 2, RealTimeBase, rtb_LibNode.lib_Revision),
+    SHADOW_FIELD(  24, 4, RealTimeBase, rtb_LibNode.lib_IdString),
+    SHADOW_FIELD(  28, 4, RealTimeBase, rtb_LibNode.lib_Sum),
+    SHADOW_FIELD(  32, 2, RealTimeBase, rtb_LibNode.lib_OpenCnt),
+    SHADOW_FIELD(  34, 2, RealTimeBase, rtb_Reserved0),
+    SHADOW_FIELD(  36, 4, RealTimeBase, rtb_Time),
+    SHADOW_FIELD(  40, 4, RealTimeBase, rtb_TimeFrac),
+    SHADOW_FIELD(  44, 2, RealTimeBase, rtb_Reserved1),
+    SHADOW_FIELD(  46, 2, RealTimeBase, rtb_TickErr),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* RecordLock: m68k=16B, aros=24B, 4 fields */
+/* RecordLock: m68k=16B, 4 fields */
 static const struct M68KFieldMap shadow_fields_RecordLock[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* rec_FH */
-    {    4,    8, SF_LONG , 0, 0, NULL },  /* rec_Offset */
-    {    8,   12, SF_LONG , 0, 0, NULL },  /* rec_Length */
-    {   12,   16, SF_LONG , 0, 0, NULL },  /* rec_Mode */
+    SHADOW_FIELD(   0, 4, RecordLock, rec_FH),
+    SHADOW_FIELD(   4, 4, RecordLock, rec_Offset),
+    SHADOW_FIELD(   8, 4, RecordLock, rec_Length),
+    SHADOW_FIELD(  12, 4, RecordLock, rec_Mode),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* Region: m68k=12B, aros=16B, 1 fields */
+/* Region: m68k=12B, 5 fields */
 static const struct M68KFieldMap shadow_fields_Region[] = {
-    {    0,    0, SF_WORD , 0, 0, NULL },  /* MinX */
-    {    2,    2, SF_WORD , 0, 0, NULL },  /* MinY */
-    {    4,    4, SF_WORD , 0, 0, NULL },  /* MaxX */
-    {    6,    6, SF_WORD , 0, 0, NULL },  /* MaxY */
-    {    8,    8, SF_PTR  , 0, 0, NULL },  /* RegionRectangle */
+    SHADOW_FIELD(   0, 2, Region, bounds.MinX),
+    SHADOW_FIELD(   2, 2, Region, bounds.MinY),
+    SHADOW_FIELD(   4, 2, Region, bounds.MaxX),
+    SHADOW_FIELD(   6, 2, Region, bounds.MaxY),
+    SHADOW_FIELD(   8, 4, Region, RegionRectangle),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* Remember: m68k=12B, aros=24B, 3 fields */
+/* Remember: m68k=12B, 3 fields */
 static const struct M68KFieldMap shadow_fields_Remember[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* NextRemember */
-    {    4,    8, SF_LONG , 0, 0, NULL },  /* RememberSize */
-    {    8,   16, SF_PTR  , 0, 0, NULL },  /* Memory */
+    SHADOW_FIELD(   0, 4, Remember, NextRemember),
+    SHADOW_FIELD(   4, 4, Remember, RememberSize),
+    SHADOW_FIELD(   8, 4, Remember, Memory),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* Requester: m68k=112B, aros=152B, 9 fields */
+/* Requester: m68k=112B, 13 fields */
 static const struct M68KFieldMap shadow_fields_Requester[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* OlderRequest */
-    {    4,    8, SF_WORD , 0, 0, NULL },  /* LeftEdge */
-    {    6,   10, SF_WORD , 0, 0, NULL },  /* TopEdge */
-    {   12,   16, SF_WORD , 0, 0, NULL },  /* RelLeft */
-    {   14,   18, SF_WORD , 0, 0, NULL },  /* RelTop */
-    {   16,   24, SF_PTR  , 0, 0, NULL },  /* ReqGadget */
-    {   20,   32, SF_PTR  , 0, 0, NULL },  /* ReqBorder */
-    {   24,   40, SF_PTR  , 0, 0, NULL },  /* ReqText */
-    {   30,   50, SF_BYTE , 0, 0, NULL },  /* BackFill */
-    {   32,   56, SF_PTR  , 0, 0, NULL },  /* ReqLayer */
-    {   68,   96, SF_PTR  , 0, 0, NULL },  /* ImageBMap */
-    {   72,  104, SF_PTR  , 0, 0, NULL },  /* RWindow */
-    {   76,  112, SF_PTR  , 0, 0, NULL },  /* ReqImage */
+    SHADOW_FIELD(   0, 4, Requester, OlderRequest),
+    SHADOW_FIELD(   4, 2, Requester, LeftEdge),
+    SHADOW_FIELD(   6, 2, Requester, TopEdge),
+    SHADOW_FIELD(  12, 2, Requester, RelLeft),
+    SHADOW_FIELD(  14, 2, Requester, RelTop),
+    SHADOW_FIELD(  16, 4, Requester, ReqGadget),
+    SHADOW_FIELD(  20, 4, Requester, ReqBorder),
+    SHADOW_FIELD(  24, 4, Requester, ReqText),
+    SHADOW_FIELD(  30, 1, Requester, BackFill),
+    SHADOW_FIELD(  32, 4, Requester, ReqLayer),
+    SHADOW_FIELD(  68, 4, Requester, ImageBMap),
+    SHADOW_FIELD(  72, 4, Requester, RWindow),
+    SHADOW_FIELD(  76, 4, Requester, ReqImage),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* Resident: m68k=26B, aros=72B, 10 fields */
+/* Resident: m68k=26B, 10 fields */
 static const struct M68KFieldMap shadow_fields_Resident[] = {
-    {    0,    0, SF_WORD , 0, 0, NULL },  /* rt_MatchWord */
-    {    2,    8, SF_PTR  , 0, 0, NULL },  /* rt_MatchTag */
-    {    6,   16, SF_PTR  , 0, 0, NULL },  /* rt_EndSkip */
-    {   10,   24, SF_BYTE , 0, 0, NULL },  /* rt_Flags */
-    {   11,   25, SF_BYTE , 0, 0, NULL },  /* rt_Version */
-    {   12,   26, SF_BYTE , 0, 0, NULL },  /* rt_Type */
-    {   13,   27, SF_BYTE , 0, 0, NULL },  /* rt_Pri */
-    {   14,   32, SF_PTR  , 0, 0, NULL },  /* rt_Name */
-    {   18,   40, SF_PTR  , 0, 0, NULL },  /* rt_IdString */
-    {   22,   48, SF_PTR  , 0, 0, NULL },  /* rt_Init */
+    SHADOW_FIELD(   0, 2, Resident, rt_MatchWord),
+    SHADOW_FIELD(   2, 4, Resident, rt_MatchTag),
+    SHADOW_FIELD(   6, 4, Resident, rt_EndSkip),
+    SHADOW_FIELD(  10, 1, Resident, rt_Flags),
+    SHADOW_FIELD(  11, 1, Resident, rt_Version),
+    SHADOW_FIELD(  12, 1, Resident, rt_Type),
+    SHADOW_FIELD(  13, 1, Resident, rt_Pri),
+    SHADOW_FIELD(  14, 4, Resident, rt_Name),
+    SHADOW_FIELD(  18, 4, Resident, rt_IdString),
+    SHADOW_FIELD(  22, 4, Resident, rt_Init),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* RigidDiskBlock: m68k=256B, aros=256B, 28 fields */
+/* RigidDiskBlock: m68k=256B, 28 fields */
 static const struct M68KFieldMap shadow_fields_RigidDiskBlock[] = {
-    {    0,    0, SF_LONG , 0, 0, NULL },  /* rdb_ID */
-    {    4,    4, SF_LONG , 0, 0, NULL },  /* rdb_SummedLongs */
-    {    8,    8, SF_LONG , 0, 0, NULL },  /* rdb_ChkSum */
-    {   12,   12, SF_LONG , 0, 0, NULL },  /* rdb_HostID */
-    {   16,   16, SF_LONG , 0, 0, NULL },  /* rdb_BlockBytes */
-    {   20,   20, SF_LONG , 0, 0, NULL },  /* rdb_Flags */
-    {   24,   24, SF_LONG , 0, 0, NULL },  /* rdb_BadBlockList */
-    {   28,   28, SF_LONG , 0, 0, NULL },  /* rdb_PartitionList */
-    {   32,   32, SF_LONG , 0, 0, NULL },  /* rdb_FileSysHeaderList */
-    {   36,   36, SF_LONG , 0, 0, NULL },  /* rdb_DriveInit */
-    {   64,   64, SF_LONG , 0, 0, NULL },  /* rdb_Cylinders */
-    {   68,   68, SF_LONG , 0, 0, NULL },  /* rdb_Sectors */
-    {   72,   72, SF_LONG , 0, 0, NULL },  /* rdb_Heads */
-    {   76,   76, SF_LONG , 0, 0, NULL },  /* rdb_Interleave */
-    {   80,   80, SF_LONG , 0, 0, NULL },  /* rdb_Park */
-    {   96,   96, SF_LONG , 0, 0, NULL },  /* rdb_WritePreComp */
-    {  100,  100, SF_LONG , 0, 0, NULL },  /* rdb_ReducedWrite */
-    {  104,  104, SF_LONG , 0, 0, NULL },  /* rdb_StepRate */
-    {  128,  128, SF_LONG , 0, 0, NULL },  /* rdb_RDBBlocksLo */
-    {  132,  132, SF_LONG , 0, 0, NULL },  /* rdb_RDBBlocksHi */
-    {  136,  136, SF_LONG , 0, 0, NULL },  /* rdb_LoCylinder */
-    {  140,  140, SF_LONG , 0, 0, NULL },  /* rdb_HiCylinder */
-    {  144,  144, SF_LONG , 0, 0, NULL },  /* rdb_CylBlocks */
-    {  148,  148, SF_LONG , 0, 0, NULL },  /* rdb_AutoParkSeconds */
-    {  152,  152, SF_LONG , 0, 0, NULL },  /* rdb_HighRDSKBlock */
-    {  156,  156, SF_LONG , 0, 0, NULL },  /* rdb_Reserved4 */
-    {  184,  184, SF_LONG , 0, 0, NULL },  /* rdb_DiskRevision */
-    {  212,  212, SF_LONG , 0, 0, NULL },  /* rdb_ControllerRevision */
+    SHADOW_FIELD(   0, 4, RigidDiskBlock, rdb_ID),
+    SHADOW_FIELD(   4, 4, RigidDiskBlock, rdb_SummedLongs),
+    SHADOW_FIELD(   8, 4, RigidDiskBlock, rdb_ChkSum),
+    SHADOW_FIELD(  12, 4, RigidDiskBlock, rdb_HostID),
+    SHADOW_FIELD(  16, 4, RigidDiskBlock, rdb_BlockBytes),
+    SHADOW_FIELD(  20, 4, RigidDiskBlock, rdb_Flags),
+    SHADOW_FIELD(  24, 4, RigidDiskBlock, rdb_BadBlockList),
+    SHADOW_FIELD(  28, 4, RigidDiskBlock, rdb_PartitionList),
+    SHADOW_FIELD(  32, 4, RigidDiskBlock, rdb_FileSysHeaderList),
+    SHADOW_FIELD(  36, 4, RigidDiskBlock, rdb_DriveInit),
+    SHADOW_FIELD(  64, 4, RigidDiskBlock, rdb_Cylinders),
+    SHADOW_FIELD(  68, 4, RigidDiskBlock, rdb_Sectors),
+    SHADOW_FIELD(  72, 4, RigidDiskBlock, rdb_Heads),
+    SHADOW_FIELD(  76, 4, RigidDiskBlock, rdb_Interleave),
+    SHADOW_FIELD(  80, 4, RigidDiskBlock, rdb_Park),
+    SHADOW_FIELD(  96, 4, RigidDiskBlock, rdb_WritePreComp),
+    SHADOW_FIELD( 100, 4, RigidDiskBlock, rdb_ReducedWrite),
+    SHADOW_FIELD( 104, 4, RigidDiskBlock, rdb_StepRate),
+    SHADOW_FIELD( 128, 4, RigidDiskBlock, rdb_RDBBlocksLo),
+    SHADOW_FIELD( 132, 4, RigidDiskBlock, rdb_RDBBlocksHi),
+    SHADOW_FIELD( 136, 4, RigidDiskBlock, rdb_LoCylinder),
+    SHADOW_FIELD( 140, 4, RigidDiskBlock, rdb_HiCylinder),
+    SHADOW_FIELD( 144, 4, RigidDiskBlock, rdb_CylBlocks),
+    SHADOW_FIELD( 148, 4, RigidDiskBlock, rdb_AutoParkSeconds),
+    SHADOW_FIELD( 152, 4, RigidDiskBlock, rdb_HighRDSKBlock),
+    SHADOW_FIELD( 156, 4, RigidDiskBlock, rdb_Reserved4),
+    SHADOW_FIELD( 184, 4, RigidDiskBlock, rdb_DiskRevision),
+    SHADOW_FIELD( 212, 4, RigidDiskBlock, rdb_ControllerRevision),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* RootNode: m68k=56B, aros=640B, 13 fields */
+/* RootNode: m68k=56B, 13 fields */
 static const struct M68KFieldMap shadow_fields_RootNode[] = {
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* rn_ConsoleSegment */
-    {    8,   16, SF_LONG , 0, 0, NULL },  /* ds_Days */
-    {   12,   20, SF_LONG , 0, 0, NULL },  /* ds_Minute */
-    {   16,   24, SF_LONG , 0, 0, NULL },  /* ds_Tick */
-    {   20,   32, SF_PTR  , 0, 0, NULL },  /* rn_RestartSeg */
-    {   24,   40, SF_PTR  , 0, 0, NULL },  /* rn_Info */
-    {   28,   48, SF_PTR  , 0, 0, NULL },  /* rn_FileHandlerSegment */
-    {   32,   56, SF_PTR  , 0, 0, NULL },  /* mlh_Head */
-    {   36,   64, SF_PTR  , 0, 0, NULL },  /* mlh_Tail */
-    {   40,   72, SF_PTR  , 0, 0, NULL },  /* mlh_TailPred */
-    {   44,   80, SF_PTR  , 0, 0, NULL },  /* rn_BootProc */
-    {   48,   88, SF_PTR  , 0, 0, NULL },  /* rn_ShellSegment */
-    {   52,   96, SF_LONG , 0, 0, NULL },  /* rn_Flags */
+    SHADOW_FIELD(   4, 4, RootNode, rn_ConsoleSegment),
+    SHADOW_FIELD(   8, 4, RootNode, rn_Time.ds_Days),
+    SHADOW_FIELD(  12, 4, RootNode, rn_Time.ds_Minute),
+    SHADOW_FIELD(  16, 4, RootNode, rn_Time.ds_Tick),
+    SHADOW_FIELD(  20, 4, RootNode, rn_RestartSeg),
+    SHADOW_FIELD(  24, 4, RootNode, rn_Info),
+    SHADOW_FIELD(  28, 4, RootNode, rn_FileHandlerSegment),
+    SHADOW_FIELD(  32, 4, RootNode, rn_CliList.mlh_Head),
+    SHADOW_FIELD(  36, 4, RootNode, rn_CliList.mlh_Tail),
+    SHADOW_FIELD(  40, 4, RootNode, rn_CliList.mlh_TailPred),
+    SHADOW_FIELD(  44, 4, RootNode, rn_BootProc),
+    SHADOW_FIELD(  48, 4, RootNode, rn_ShellSegment),
+    SHADOW_FIELD(  52, 4, RootNode, rn_Flags),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* SGWork: m68k=44B, aros=80B, 13 fields */
+/* SGWork: m68k=44B, 13 fields */
 static const struct M68KFieldMap shadow_fields_SGWork[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* Gadget */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* StringInfo */
-    {    8,   16, SF_PTR  , 0, 0, NULL },  /* WorkBuffer */
-    {   12,   24, SF_PTR  , 0, 0, NULL },  /* PrevBuffer */
-    {   16,   32, SF_LONG , 0, 0, NULL },  /* Modes */
-    {   20,   40, SF_PTR  , 0, 0, NULL },  /* IEvent */
-    {   24,   48, SF_WORD , 0, 0, NULL },  /* Code */
-    {   26,   50, SF_WORD , 0, 0, NULL },  /* BufferPos */
-    {   28,   52, SF_WORD , 0, 0, NULL },  /* NumChars */
-    {   30,   56, SF_LONG , 0, 0, NULL },  /* Actions */
-    {   34,   60, SF_LONG , 0, 0, NULL },  /* LongInt */
-    {   38,   64, SF_PTR  , 0, 0, NULL },  /* GadgetInfo */
-    {   42,   72, SF_WORD , 0, 0, NULL },  /* EditOp */
+    SHADOW_FIELD(   0, 4, SGWork, Gadget),
+    SHADOW_FIELD(   4, 4, SGWork, StringInfo),
+    SHADOW_FIELD(   8, 4, SGWork, WorkBuffer),
+    SHADOW_FIELD(  12, 4, SGWork, PrevBuffer),
+    SHADOW_FIELD(  16, 4, SGWork, Modes),
+    SHADOW_FIELD(  20, 4, SGWork, IEvent),
+    SHADOW_FIELD(  24, 2, SGWork, Code),
+    SHADOW_FIELD(  26, 2, SGWork, BufferPos),
+    SHADOW_FIELD(  28, 2, SGWork, NumChars),
+    SHADOW_FIELD(  30, 4, SGWork, Actions),
+    SHADOW_FIELD(  34, 4, SGWork, LongInt),
+    SHADOW_FIELD(  38, 4, SGWork, GadgetInfo),
+    SHADOW_FIELD(  42, 2, SGWork, EditOp),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* SatisfyMsg: m68k=26B, aros=56B, 9 fields */
+/* SatisfyMsg: m68k=26B, 9 fields */
 static const struct M68KFieldMap shadow_fields_SatisfyMsg[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* ln_Succ */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* ln_Pred */
-    {    8,   16, SF_BYTE , 0, 0, NULL },  /* ln_Type */
-    {    9,   17, SF_BYTE , 0, 0, NULL },  /* ln_Pri */
-    {   10,   24, SF_PTR  , 0, 0, NULL },  /* ln_Name */
-    {   14,   32, SF_PTR  , 0, 0, NULL },  /* mn_ReplyPort */
-    {   18,   40, SF_WORD , 0, 0, NULL },  /* mn_Length */
-    {   20,   48, SF_WORD , 0, 0, NULL },  /* sm_Unit */
-    {   22,   52, SF_LONG , 0, 0, NULL },  /* sm_ClipID */
+    SHADOW_FIELD(   0, 4, SatisfyMsg, sm_Msg.mn_Node.ln_Succ),
+    SHADOW_FIELD(   4, 4, SatisfyMsg, sm_Msg.mn_Node.ln_Pred),
+    SHADOW_FIELD(   8, 1, SatisfyMsg, sm_Msg.mn_Node.ln_Type),
+    SHADOW_FIELD(   9, 1, SatisfyMsg, sm_Msg.mn_Node.ln_Pri),
+    SHADOW_FIELD(  10, 4, SatisfyMsg, sm_Msg.mn_Node.ln_Name),
+    SHADOW_FIELD(  14, 4, SatisfyMsg, sm_Msg.mn_ReplyPort),
+    SHADOW_FIELD(  18, 2, SatisfyMsg, sm_Msg.mn_Length),
+    SHADOW_FIELD(  20, 2, SatisfyMsg, sm_Unit),
+    SHADOW_FIELD(  22, 4, SatisfyMsg, sm_ClipID),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* Screen: m68k=346B, aros=1408B, 62 fields */
+/* Screen: m68k=346B, 62 fields */
 static const struct M68KFieldMap shadow_fields_Screen[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* NextScreen */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* FirstWindow */
-    {   22,   32, SF_PTR  , 0, 0, NULL },  /* Title */
-    {   26,   40, SF_PTR  , 0, 0, NULL },  /* DefaultTitle */
-    {   40,   64, SF_PTR  , 0, 0, NULL },  /* Font */
-    {   44,   72, SF_PTR  , 0, 0, NULL },  /* Next */
-    {   48,   80, SF_PTR  , 0, 0, NULL },  /* ColorMap */
-    {   52,   88, SF_PTR  , 0, 0, NULL },  /* DspIns */
-    {   56,   96, SF_PTR  , 0, 0, NULL },  /* SprIns */
-    {   60,  104, SF_PTR  , 0, 0, NULL },  /* ClrIns */
-    {   64,  112, SF_PTR  , 0, 0, NULL },  /* UCopIns */
-    {   76,  128, SF_WORD , 0, 0, NULL },  /* Modes */
-    {   78,  130, SF_BYTE , 0, 0, NULL },  /* SpritePriorities */
-    {   79,  131, SF_BYTE , 0, 0, NULL },  /* ExtendedModes */
-    {   80,  136, SF_PTR  , 0, 0, NULL },  /* RasInfo */
-    {   84,  144, SF_PTR  , 0, 0, NULL },  /* Layer */
-    {   92,  160, SF_PTR  , 0, 0, NULL },  /* AreaPtrn */
-    {   96,  168, SF_PTR  , 0, 0, NULL },  /* TmpRas */
-    {  100,  176, SF_PTR  , 0, 0, NULL },  /* AreaInfo */
-    {  104,  184, SF_PTR  , 0, 0, NULL },  /* GelsInfo */
-    {  108,  192, SF_BYTE , 0, 0, NULL },  /* Mask */
-    {  109,  193, SF_BYTE , 0, 0, NULL },  /* FgPen */
-    {  110,  194, SF_BYTE , 0, 0, NULL },  /* BgPen */
-    {  111,  195, SF_BYTE , 0, 0, NULL },  /* AOlPen */
-    {  112,  196, SF_BYTE , 0, 0, NULL },  /* DrawMode */
-    {  113,  197, SF_BYTE , 0, 0, NULL },  /* AreaPtSz */
-    {  114,  198, SF_BYTE , 0, 0, NULL },  /* linpatcnt */
-    {  115,  199, SF_BYTE , 0, 0, NULL },  /* dummy */
-    {  118,  202, SF_WORD , 0, 0, NULL },  /* LinePtrn */
-    {  132,  216, SF_WORD , 0, 0, NULL },  /* PenWidth */
-    {  134,  218, SF_WORD , 0, 0, NULL },  /* PenHeight */
-    {  140,  232, SF_BYTE , 0, 0, NULL },  /* AlgoStyle */
-    {  141,  233, SF_BYTE , 0, 0, NULL },  /* TxFlags */
-    {  142,  234, SF_WORD , 0, 0, NULL },  /* TxHeight */
-    {  144,  236, SF_WORD , 0, 0, NULL },  /* TxWidth */
-    {  146,  238, SF_WORD , 0, 0, NULL },  /* TxBaseline */
-    {  148,  240, SF_WORD , 0, 0, NULL },  /* TxSpacing */
-    {  150,  248, SF_PTR  , 0, 0, NULL },  /* RP_User */
-    {  224,  512, SF_PTR  , 0, 0, NULL },  /* top_layer */
-    {  248,  640, SF_PTR  , 0, 0, NULL },  /* ln_Succ */
-    {  252,  648, SF_PTR  , 0, 0, NULL },  /* ln_Pred */
-    {  256,  656, SF_BYTE , 0, 0, NULL },  /* ln_Type */
-    {  257,  657, SF_BYTE , 0, 0, NULL },  /* ln_Pri */
-    {  258,  664, SF_PTR  , 0, 0, NULL },  /* ln_Name */
-    {  262,  672, SF_WORD , 0, 0, NULL },  /* ss_NestCount */
-    {  264,  680, SF_PTR  , 0, 0, NULL },  /* mlh_Head */
-    {  268,  688, SF_PTR  , 0, 0, NULL },  /* mlh_Tail */
-    {  272,  696, SF_PTR  , 0, 0, NULL },  /* mlh_TailPred */
-    {  276,  768, SF_PTR  , 0, 0, NULL },  /* mln_Succ */
-    {  280,  776, SF_PTR  , 0, 0, NULL },  /* mln_Pred */
-    {  284,  784, SF_PTR  , 0, 0, NULL },  /* sr_Waiter */
-    {  288, 1024, SF_PTR  , 0, 0, NULL },  /* ss_Owner */
-    {  292, 1032, SF_WORD , 0, 0, NULL },  /* ss_QueueCount */
-    {  306, 1176, SF_WORD , 0, 0, NULL },  /* PrivateReserve3 */
-    {  308, 1184, SF_PTR  , 0, 0, NULL },  /* PrivateReserve4 */
-    {  316, 1196, SF_BYTE , 0, 0, NULL },  /* PrivateReserve5 */
-    {  318, 1200, SF_PTR  , 0, 0, NULL },  /* BlankHook */
-    {  326, 1280, SF_PTR  , 0, 0, NULL },  /* FirstGadget */
-    {  332, 1290, SF_WORD , 0, 0, NULL },  /* SaveColor0 */
-    {  334, 1296, SF_PTR  , 0, 0, NULL },  /* BarLayer */
-    {  338, 1304, SF_PTR  , 0, 0, NULL },  /* ExtData */
-    {  342, 1312, SF_PTR  , 0, 0, NULL },  /* UserData */
+    SHADOW_FIELD(   0, 4, Screen, NextScreen),
+    SHADOW_FIELD(   4, 4, Screen, FirstWindow),
+    SHADOW_FIELD(  22, 4, Screen, Title),
+    SHADOW_FIELD(  26, 4, Screen, DefaultTitle),
+    SHADOW_FIELD(  40, 4, Screen, Font),
+    SHADOW_FIELD(  44, 4, Screen, ViewPort.Next),
+    SHADOW_FIELD(  48, 4, Screen, ViewPort.ColorMap),
+    SHADOW_FIELD(  52, 4, Screen, ViewPort.DspIns),
+    SHADOW_FIELD(  56, 4, Screen, ViewPort.SprIns),
+    SHADOW_FIELD(  60, 4, Screen, ViewPort.ClrIns),
+    SHADOW_FIELD(  64, 4, Screen, ViewPort.UCopIns),
+    SHADOW_FIELD(  76, 2, Screen, ViewPort.Modes),
+    SHADOW_FIELD(  78, 1, Screen, ViewPort.SpritePriorities),
+    SHADOW_FIELD(  79, 1, Screen, ViewPort.ExtendedModes),
+    SHADOW_FIELD(  80, 4, Screen, ViewPort.RasInfo),
+    SHADOW_FIELD(  84, 4, Screen, RastPort.Layer),
+    SHADOW_FIELD(  92, 4, Screen, RastPort.AreaPtrn),
+    SHADOW_FIELD(  96, 4, Screen, RastPort.TmpRas),
+    SHADOW_FIELD( 100, 4, Screen, RastPort.AreaInfo),
+    SHADOW_FIELD( 104, 4, Screen, RastPort.GelsInfo),
+    SHADOW_FIELD( 108, 1, Screen, RastPort.Mask),
+    SHADOW_FIELD( 109, 1, Screen, RastPort.FgPen),
+    SHADOW_FIELD( 110, 1, Screen, RastPort.BgPen),
+    SHADOW_FIELD( 111, 1, Screen, RastPort.AOlPen),
+    SHADOW_FIELD( 112, 1, Screen, RastPort.DrawMode),
+    SHADOW_FIELD( 113, 1, Screen, RastPort.AreaPtSz),
+    SHADOW_FIELD( 114, 1, Screen, RastPort.linpatcnt),
+    SHADOW_FIELD( 115, 1, Screen, RastPort.dummy),
+    SHADOW_FIELD( 118, 2, Screen, RastPort.LinePtrn),
+    SHADOW_FIELD( 132, 2, Screen, RastPort.PenWidth),
+    SHADOW_FIELD( 134, 2, Screen, RastPort.PenHeight),
+    SHADOW_FIELD( 140, 1, Screen, RastPort.AlgoStyle),
+    SHADOW_FIELD( 141, 1, Screen, RastPort.TxFlags),
+    SHADOW_FIELD( 142, 2, Screen, RastPort.TxHeight),
+    SHADOW_FIELD( 144, 2, Screen, RastPort.TxWidth),
+    SHADOW_FIELD( 146, 2, Screen, RastPort.TxBaseline),
+    SHADOW_FIELD( 148, 2, Screen, RastPort.TxSpacing),
+    SHADOW_FIELD( 150, 4, Screen, RastPort.RP_User),
+    SHADOW_FIELD( 224, 4, Screen, LayerInfo.top_layer),
+    SHADOW_FIELD( 248, 4, Screen, LayerInfo.Lock.ss_Link.ln_Succ),
+    SHADOW_FIELD( 252, 4, Screen, LayerInfo.Lock.ss_Link.ln_Pred),
+    SHADOW_FIELD( 256, 1, Screen, LayerInfo.Lock.ss_Link.ln_Type),
+    SHADOW_FIELD( 257, 1, Screen, LayerInfo.Lock.ss_Link.ln_Pri),
+    SHADOW_FIELD( 258, 4, Screen, LayerInfo.Lock.ss_Link.ln_Name),
+    SHADOW_FIELD( 262, 2, Screen, LayerInfo.Lock.ss_NestCount),
+    SHADOW_FIELD( 264, 4, Screen, LayerInfo.Lock.ss_WaitQueue.mlh_Head),
+    SHADOW_FIELD( 268, 4, Screen, LayerInfo.Lock.ss_WaitQueue.mlh_Tail),
+    SHADOW_FIELD( 272, 4, Screen, LayerInfo.Lock.ss_WaitQueue.mlh_TailPred),
+    SHADOW_FIELD( 276, 4, Screen, LayerInfo.Lock.ss_MultipleLink.sr_Link.mln_Succ),
+    SHADOW_FIELD( 280, 4, Screen, LayerInfo.Lock.ss_MultipleLink.sr_Link.mln_Pred),
+    SHADOW_FIELD( 284, 4, Screen, LayerInfo.Lock.ss_MultipleLink.sr_Waiter),
+    SHADOW_FIELD( 288, 4, Screen, LayerInfo.Lock.ss_Owner),
+    SHADOW_FIELD( 292, 2, Screen, LayerInfo.Lock.ss_QueueCount),
+    SHADOW_FIELD( 306, 2, Screen, LayerInfo.PrivateReserve3),
+    SHADOW_FIELD( 308, 4, Screen, LayerInfo.PrivateReserve4),
+    SHADOW_FIELD( 316, 1, Screen, LayerInfo.PrivateReserve5),
+    SHADOW_FIELD( 318, 4, Screen, LayerInfo.BlankHook),
+    SHADOW_FIELD( 326, 4, Screen, FirstGadget),
+    SHADOW_FIELD( 332, 2, Screen, SaveColor0),
+    SHADOW_FIELD( 334, 4, Screen, BarLayer),
+    SHADOW_FIELD( 338, 4, Screen, ExtData),
+    SHADOW_FIELD( 342, 4, Screen, UserData),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* ScreenBuffer: m68k=8B, aros=16B, 2 fields */
+/* ScreenBuffer: m68k=8B, 2 fields */
 static const struct M68KFieldMap shadow_fields_ScreenBuffer[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* sb_BitMap */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* sb_DBufInfo */
+    SHADOW_FIELD(   0, 4, ScreenBuffer, sb_BitMap),
+    SHADOW_FIELD(   4, 4, ScreenBuffer, sb_DBufInfo),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* ScreenModeRequester: m68k=48B, aros=56B, 18 fields */
+/* ScreenModeRequester: m68k=48B, 18 fields */
 static const struct M68KFieldMap shadow_fields_ScreenModeRequester[] = {
-    {    0,    0, SF_LONG , 0, 0, NULL },  /* sm_DisplayID */
-    {    4,    4, SF_LONG , 0, 0, NULL },  /* sm_DisplayWidth */
-    {    8,    8, SF_LONG , 0, 0, NULL },  /* sm_DisplayHeight */
-    {   12,   12, SF_WORD , 0, 0, NULL },  /* sm_DisplayDepth */
-    {   14,   14, SF_WORD , 0, 0, NULL },  /* sm_OverscanType */
-    {   16,   16, SF_WORD , 0, 0, NULL },  /* sm_AutoScroll */
-    {   18,   20, SF_LONG , 0, 0, NULL },  /* sm_BitMapWidth */
-    {   22,   24, SF_LONG , 0, 0, NULL },  /* sm_BitMapHeight */
-    {   26,   28, SF_WORD , 0, 0, NULL },  /* sm_LeftEdge */
-    {   28,   30, SF_WORD , 0, 0, NULL },  /* sm_TopEdge */
-    {   30,   32, SF_WORD , 0, 0, NULL },  /* sm_Width */
-    {   32,   34, SF_WORD , 0, 0, NULL },  /* sm_Height */
-    {   34,   36, SF_WORD , 0, 0, NULL },  /* sm_InfoOpened */
-    {   36,   38, SF_WORD , 0, 0, NULL },  /* sm_InfoLeftEdge */
-    {   38,   40, SF_WORD , 0, 0, NULL },  /* sm_InfoTopEdge */
-    {   40,   42, SF_WORD , 0, 0, NULL },  /* sm_InfoWidth */
-    {   42,   44, SF_WORD , 0, 0, NULL },  /* sm_InfoHeight */
-    {   44,   48, SF_PTR  , 0, 0, NULL },  /* sm_UserData */
+    SHADOW_FIELD(   0, 4, ScreenModeRequester, sm_DisplayID),
+    SHADOW_FIELD(   4, 4, ScreenModeRequester, sm_DisplayWidth),
+    SHADOW_FIELD(   8, 4, ScreenModeRequester, sm_DisplayHeight),
+    SHADOW_FIELD(  12, 2, ScreenModeRequester, sm_DisplayDepth),
+    SHADOW_FIELD(  14, 2, ScreenModeRequester, sm_OverscanType),
+    SHADOW_FIELD(  16, 2, ScreenModeRequester, sm_AutoScroll),
+    SHADOW_FIELD(  18, 4, ScreenModeRequester, sm_BitMapWidth),
+    SHADOW_FIELD(  22, 4, ScreenModeRequester, sm_BitMapHeight),
+    SHADOW_FIELD(  26, 2, ScreenModeRequester, sm_LeftEdge),
+    SHADOW_FIELD(  28, 2, ScreenModeRequester, sm_TopEdge),
+    SHADOW_FIELD(  30, 2, ScreenModeRequester, sm_Width),
+    SHADOW_FIELD(  32, 2, ScreenModeRequester, sm_Height),
+    SHADOW_FIELD(  34, 2, ScreenModeRequester, sm_InfoOpened),
+    SHADOW_FIELD(  36, 2, ScreenModeRequester, sm_InfoLeftEdge),
+    SHADOW_FIELD(  38, 2, ScreenModeRequester, sm_InfoTopEdge),
+    SHADOW_FIELD(  40, 2, ScreenModeRequester, sm_InfoWidth),
+    SHADOW_FIELD(  42, 2, ScreenModeRequester, sm_InfoHeight),
+    SHADOW_FIELD(  44, 4, ScreenModeRequester, sm_UserData),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* Segment: m68k=16B, aros=32B, 4 fields */
+/* Segment: m68k=16B, 4 fields */
 static const struct M68KFieldMap shadow_fields_Segment[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* seg_Next */
-    {    4,    8, SF_LONG , 0, 0, NULL },  /* seg_UC */
-    {    8,   16, SF_PTR  , 0, 0, NULL },  /* seg_Seg */
-    {   12,   24, SF_LONG , 0, 0, NULL },  /* seg_Name */
+    SHADOW_FIELD(   0, 4, Segment, seg_Next),
+    SHADOW_FIELD(   4, 4, Segment, seg_UC),
+    SHADOW_FIELD(   8, 4, Segment, seg_Seg),
+    SHADOW_FIELD(  12, 4, Segment, seg_Name),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* SemaphoreMessage: m68k=24B, aros=56B, 8 fields */
+/* SemaphoreMessage: m68k=24B, 8 fields */
 static const struct M68KFieldMap shadow_fields_SemaphoreMessage[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* ln_Succ */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* ln_Pred */
-    {    8,   16, SF_BYTE , 0, 0, NULL },  /* ln_Type */
-    {    9,   17, SF_BYTE , 0, 0, NULL },  /* ln_Pri */
-    {   10,   24, SF_PTR  , 0, 0, NULL },  /* ln_Name */
-    {   14,   32, SF_PTR  , 0, 0, NULL },  /* mn_ReplyPort */
-    {   18,   40, SF_WORD , 0, 0, NULL },  /* mn_Length */
-    {   20,   48, SF_PTR  , 0, 0, NULL },  /* ssm_Semaphore */
+    SHADOW_FIELD(   0, 4, SemaphoreMessage, ssm_Message.mn_Node.ln_Succ),
+    SHADOW_FIELD(   4, 4, SemaphoreMessage, ssm_Message.mn_Node.ln_Pred),
+    SHADOW_FIELD(   8, 1, SemaphoreMessage, ssm_Message.mn_Node.ln_Type),
+    SHADOW_FIELD(   9, 1, SemaphoreMessage, ssm_Message.mn_Node.ln_Pri),
+    SHADOW_FIELD(  10, 4, SemaphoreMessage, ssm_Message.mn_Node.ln_Name),
+    SHADOW_FIELD(  14, 4, SemaphoreMessage, ssm_Message.mn_ReplyPort),
+    SHADOW_FIELD(  18, 2, SemaphoreMessage, ssm_Message.mn_Length),
+    SHADOW_FIELD(  20, 4, SemaphoreMessage, ssm_Semaphore),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* SemaphoreRequest: m68k=12B, aros=256B, 3 fields */
+/* SemaphoreRequest: m68k=12B, 3 fields */
 static const struct M68KFieldMap shadow_fields_SemaphoreRequest[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* mln_Succ */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* mln_Pred */
-    {    8,   16, SF_PTR  , 0, 0, NULL },  /* sr_Waiter */
+    SHADOW_FIELD(   0, 4, SemaphoreRequest, sr_Link.mln_Succ),
+    SHADOW_FIELD(   4, 4, SemaphoreRequest, sr_Link.mln_Pred),
+    SHADOW_FIELD(   8, 4, SemaphoreRequest, sr_Waiter),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* SetupCleanupHookMsg: m68k=8B, aros=8B, 2 fields */
+/* SetupCleanupHookMsg: m68k=8B, 2 fields */
 static const struct M68KFieldMap shadow_fields_SetupCleanupHookMsg[] = {
-    {    0,    0, SF_LONG , 0, 0, NULL },  /* schm_Length */
-    {    4,    4, SF_LONG , 0, 0, NULL },  /* schm_State */
+    SHADOW_FIELD(   0, 4, SetupCleanupHookMsg, schm_Length),
+    SHADOW_FIELD(   4, 4, SetupCleanupHookMsg, schm_State),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* SignalSemaphore: m68k=46B, aros=512B, 14 fields */
+/* SignalSemaphore: m68k=46B, 14 fields */
 static const struct M68KFieldMap shadow_fields_SignalSemaphore[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* ln_Succ */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* ln_Pred */
-    {    8,   16, SF_BYTE , 0, 0, NULL },  /* ln_Type */
-    {    9,   17, SF_BYTE , 0, 0, NULL },  /* ln_Pri */
-    {   10,   24, SF_PTR  , 0, 0, NULL },  /* ln_Name */
-    {   14,   32, SF_WORD , 0, 0, NULL },  /* ss_NestCount */
-    {   16,   40, SF_PTR  , 0, 0, NULL },  /* mlh_Head */
-    {   20,   48, SF_PTR  , 0, 0, NULL },  /* mlh_Tail */
-    {   24,   56, SF_PTR  , 0, 0, NULL },  /* mlh_TailPred */
-    {   28,  128, SF_PTR  , 0, 0, NULL },  /* mln_Succ */
-    {   32,  136, SF_PTR  , 0, 0, NULL },  /* mln_Pred */
-    {   36,  144, SF_PTR  , 0, 0, NULL },  /* sr_Waiter */
-    {   40,  384, SF_PTR  , 0, 0, NULL },  /* ss_Owner */
-    {   44,  392, SF_WORD , 0, 0, NULL },  /* ss_QueueCount */
+    SHADOW_FIELD(   0, 4, SignalSemaphore, ss_Link.ln_Succ),
+    SHADOW_FIELD(   4, 4, SignalSemaphore, ss_Link.ln_Pred),
+    SHADOW_FIELD(   8, 1, SignalSemaphore, ss_Link.ln_Type),
+    SHADOW_FIELD(   9, 1, SignalSemaphore, ss_Link.ln_Pri),
+    SHADOW_FIELD(  10, 4, SignalSemaphore, ss_Link.ln_Name),
+    SHADOW_FIELD(  14, 2, SignalSemaphore, ss_NestCount),
+    SHADOW_FIELD(  16, 4, SignalSemaphore, ss_WaitQueue.mlh_Head),
+    SHADOW_FIELD(  20, 4, SignalSemaphore, ss_WaitQueue.mlh_Tail),
+    SHADOW_FIELD(  24, 4, SignalSemaphore, ss_WaitQueue.mlh_TailPred),
+    SHADOW_FIELD(  28, 4, SignalSemaphore, ss_MultipleLink.sr_Link.mln_Succ),
+    SHADOW_FIELD(  32, 4, SignalSemaphore, ss_MultipleLink.sr_Link.mln_Pred),
+    SHADOW_FIELD(  36, 4, SignalSemaphore, ss_MultipleLink.sr_Waiter),
+    SHADOW_FIELD(  40, 4, SignalSemaphore, ss_Owner),
+    SHADOW_FIELD(  44, 2, SignalSemaphore, ss_QueueCount),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* SimpleSprite: m68k=12B, aros=16B, 3 fields */
+/* SimpleSprite: m68k=12B, 5 fields */
 static const struct M68KFieldMap shadow_fields_SimpleSprite[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* posctldata */
-    {    4,    8, SF_WORD , 0, 0, NULL },  /* height */
-    {    6,   10, SF_WORD , 0, 0, NULL },  /* x */
-    {    8,   12, SF_WORD , 0, 0, NULL },  /* y */
-    {   10,   14, SF_WORD , 0, 0, NULL },  /* num */
+    SHADOW_FIELD(   0, 4, SimpleSprite, posctldata),
+    SHADOW_FIELD(   4, 2, SimpleSprite, height),
+    SHADOW_FIELD(   6, 2, SimpleSprite, x),
+    SHADOW_FIELD(   8, 2, SimpleSprite, y),
+    SHADOW_FIELD(  10, 2, SimpleSprite, num),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* SoftIntList: m68k=16B, aros=40B, 6 fields */
+/* SoftIntList: m68k=16B, 6 fields */
 static const struct M68KFieldMap shadow_fields_SoftIntList[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* lh_Head */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* lh_Tail */
-    {    8,   16, SF_PTR  , 0, 0, NULL },  /* lh_TailPred */
-    {   12,   24, SF_BYTE , 0, 0, NULL },  /* lh_Type */
-    {   13,   25, SF_BYTE , 0, 0, NULL },  /* l_pad */
-    {   14,   32, SF_WORD , 0, 0, NULL },  /* sh_Pad */
+    SHADOW_FIELD(   0, 4, SoftIntList, sh_List.lh_Head),
+    SHADOW_FIELD(   4, 4, SoftIntList, sh_List.lh_Tail),
+    SHADOW_FIELD(   8, 4, SoftIntList, sh_List.lh_TailPred),
+    SHADOW_FIELD(  12, 1, SoftIntList, sh_List.lh_Type),
+    SHADOW_FIELD(  13, 1, SoftIntList, sh_List.l_pad),
+    SHADOW_FIELD(  14, 2, SoftIntList, sh_Pad),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* SpecialMonitor: m68k=58B, aros=112B, 11 fields */
+/* SpecialMonitor: m68k=58B, 11 fields */
 static const struct M68KFieldMap shadow_fields_SpecialMonitor[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* xln_Succ */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* xln_Pred */
-    {    8,   16, SF_BYTE , 0, 0, NULL },  /* xln_Type */
-    {    9,   17, SF_BYTE , 0, 0, NULL },  /* xln_Pri */
-    {   10,   24, SF_PTR  , 0, 0, NULL },  /* xln_Name */
-    {   14,   32, SF_BYTE , 0, 0, NULL },  /* xln_Subsystem */
-    {   15,   33, SF_BYTE , 0, 0, NULL },  /* xln_Subtype */
-    {   16,   40, SF_PTR  , 0, 0, NULL },  /* xln_Library */
-    {   24,   56, SF_WORD , 0, 0, NULL },  /* spm_Flags */
-    {   42,   96, SF_WORD , 0, 0, NULL },  /* asi_Start */
-    {   44,   98, SF_WORD , 0, 0, NULL },  /* asi_Stop */
+    SHADOW_FIELD(   0, 4, SpecialMonitor, spm_Node.xln_Succ),
+    SHADOW_FIELD(   4, 4, SpecialMonitor, spm_Node.xln_Pred),
+    SHADOW_FIELD(   8, 1, SpecialMonitor, spm_Node.xln_Type),
+    SHADOW_FIELD(   9, 1, SpecialMonitor, spm_Node.xln_Pri),
+    SHADOW_FIELD(  10, 4, SpecialMonitor, spm_Node.xln_Name),
+    SHADOW_FIELD(  14, 1, SpecialMonitor, spm_Node.xln_Subsystem),
+    SHADOW_FIELD(  15, 1, SpecialMonitor, spm_Node.xln_Subtype),
+    SHADOW_FIELD(  16, 4, SpecialMonitor, spm_Node.xln_Library),
+    SHADOW_FIELD(  24, 2, SpecialMonitor, spm_Flags),
+    SHADOW_FIELD(  42, 2, SpecialMonitor, hblank.asi_Start),
+    SHADOW_FIELD(  44, 2, SpecialMonitor, hblank.asi_Stop),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* StackSwapStruct: m68k=12B, aros=24B, 3 fields */
+/* StackSwapStruct: m68k=12B, 3 fields */
 static const struct M68KFieldMap shadow_fields_StackSwapStruct[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* stk_Lower */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* stk_Upper */
-    {    8,   16, SF_PTR  , 0, 0, NULL },  /* stk_Pointer */
+    SHADOW_FIELD(   0, 4, StackSwapStruct, stk_Lower),
+    SHADOW_FIELD(   4, 4, StackSwapStruct, stk_Upper),
+    SHADOW_FIELD(   8, 4, StackSwapStruct, stk_Pointer),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* StandardPacket: m68k=68B, aros=144B, 16 fields */
+/* StandardPacket: m68k=68B, 18 fields */
 static const struct M68KFieldMap shadow_fields_StandardPacket[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* ln_Succ */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* ln_Pred */
-    {    8,   16, SF_BYTE , 0, 0, NULL },  /* ln_Type */
-    {    9,   17, SF_BYTE , 0, 0, NULL },  /* ln_Pri */
-    {   10,   24, SF_PTR  , 0, 0, NULL },  /* ln_Name */
-    {   14,   32, SF_PTR  , 0, 0, NULL },  /* mn_ReplyPort */
-    {   18,   40, SF_WORD , 0, 0, NULL },  /* mn_Length */
-    {   20,   48, SF_PTR  , 0, 0, NULL },  /* dp_Link */
-    {   24,   56, SF_PTR  , 0, 0, NULL },  /* dp_Port */
-    {   28,   64, SF_LONG , 0, 0, NULL },  /* dp_Type */
-    {   32,   72, SF_PTR  , 0, 0, NULL },  /* dp_Res1 */
-    {   40,   88, SF_PTR  , 0, 0, NULL },  /* dp_Arg1 */
-    {   44,   96, SF_PTR  , 0, 0, NULL },  /* dp_Arg2 */
-    {   48,  104, SF_PTR  , 0, 0, NULL },  /* dp_Arg3 */
-    {   52,  112, SF_PTR  , 0, 0, NULL },  /* dp_Arg4 */
-    {   56,  120, SF_PTR  , 0, 0, NULL },  /* dp_Arg5 */
-    {   60,  128, SF_PTR  , 0, 0, NULL },  /* dp_Arg6 */
-    {   64,  136, SF_PTR  , 0, 0, NULL },  /* dp_Arg7 */
+    SHADOW_FIELD(   0, 4, StandardPacket, sp_Msg.mn_Node.ln_Succ),
+    SHADOW_FIELD(   4, 4, StandardPacket, sp_Msg.mn_Node.ln_Pred),
+    SHADOW_FIELD(   8, 1, StandardPacket, sp_Msg.mn_Node.ln_Type),
+    SHADOW_FIELD(   9, 1, StandardPacket, sp_Msg.mn_Node.ln_Pri),
+    SHADOW_FIELD(  10, 4, StandardPacket, sp_Msg.mn_Node.ln_Name),
+    SHADOW_FIELD(  14, 4, StandardPacket, sp_Msg.mn_ReplyPort),
+    SHADOW_FIELD(  18, 2, StandardPacket, sp_Msg.mn_Length),
+    SHADOW_FIELD(  20, 4, StandardPacket, sp_Pkt.dp_Link),
+    SHADOW_FIELD(  24, 4, StandardPacket, sp_Pkt.dp_Port),
+    SHADOW_FIELD(  28, 4, StandardPacket, sp_Pkt.dp_Type),
+    SHADOW_FIELD(  32, 4, StandardPacket, sp_Pkt.dp_Res1),
+    SHADOW_FIELD(  40, 4, StandardPacket, sp_Pkt.dp_Arg1),
+    SHADOW_FIELD(  44, 4, StandardPacket, sp_Pkt.dp_Arg2),
+    SHADOW_FIELD(  48, 4, StandardPacket, sp_Pkt.dp_Arg3),
+    SHADOW_FIELD(  52, 4, StandardPacket, sp_Pkt.dp_Arg4),
+    SHADOW_FIELD(  56, 4, StandardPacket, sp_Pkt.dp_Arg5),
+    SHADOW_FIELD(  60, 4, StandardPacket, sp_Pkt.dp_Arg6),
+    SHADOW_FIELD(  64, 4, StandardPacket, sp_Pkt.dp_Arg7),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* StoredProperty: m68k=8B, aros=16B, 2 fields */
+/* StoredProperty: m68k=8B, 2 fields */
 static const struct M68KFieldMap shadow_fields_StoredProperty[] = {
-    {    0,    0, SF_LONG , 0, 0, NULL },  /* sp_Size */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* sp_Data */
+    SHADOW_FIELD(   0, 4, StoredProperty, sp_Size),
+    SHADOW_FIELD(   4, 4, StoredProperty, sp_Data),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* StringExtend: m68k=36B, aros=48B, 6 fields */
+/* StringExtend: m68k=36B, 6 fields */
 static const struct M68KFieldMap shadow_fields_StringExtend[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* Font */
-    {    4,    8, SF_WORD , 0, 0, NULL },  /* Pens */
-    {    6,   10, SF_WORD , 0, 0, NULL },  /* ActivePens */
-    {    8,   12, SF_LONG , 0, 0, NULL },  /* InitialModes */
-    {   12,   16, SF_PTR  , 0, 0, NULL },  /* EditHook */
-    {   16,   24, SF_PTR  , 0, 0, NULL },  /* WorkBuffer */
+    SHADOW_FIELD(   0, 4, StringExtend, Font),
+    SHADOW_FIELD(   4, 2, StringExtend, Pens),
+    SHADOW_FIELD(   6, 2, StringExtend, ActivePens),
+    SHADOW_FIELD(   8, 4, StringExtend, InitialModes),
+    SHADOW_FIELD(  12, 4, StringExtend, EditHook),
+    SHADOW_FIELD(  16, 4, StringExtend, WorkBuffer),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* StringInfo: m68k=36B, aros=56B, 11 fields */
+/* StringInfo: m68k=36B, 13 fields */
 static const struct M68KFieldMap shadow_fields_StringInfo[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* Buffer */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* UndoBuffer */
-    {    8,   16, SF_WORD , 0, 0, NULL },  /* BufferPos */
-    {   10,   18, SF_WORD , 0, 0, NULL },  /* MaxChars */
-    {   12,   20, SF_WORD , 0, 0, NULL },  /* DispPos */
-    {   14,   22, SF_WORD , 0, 0, NULL },  /* UndoPos */
-    {   16,   24, SF_WORD , 0, 0, NULL },  /* NumChars */
-    {   18,   26, SF_WORD , 0, 0, NULL },  /* DispCount */
-    {   20,   28, SF_WORD , 0, 0, NULL },  /* CLeft */
-    {   22,   30, SF_WORD , 0, 0, NULL },  /* CTop */
-    {   24,   32, SF_PTR  , 0, 0, NULL },  /* Extension */
-    {   28,   40, SF_LONG , 0, 0, NULL },  /* LongInt */
-    {   32,   48, SF_PTR  , 0, 0, NULL },  /* AltKeyMap */
+    SHADOW_FIELD(   0, 4, StringInfo, Buffer),
+    SHADOW_FIELD(   4, 4, StringInfo, UndoBuffer),
+    SHADOW_FIELD(   8, 2, StringInfo, BufferPos),
+    SHADOW_FIELD(  10, 2, StringInfo, MaxChars),
+    SHADOW_FIELD(  12, 2, StringInfo, DispPos),
+    SHADOW_FIELD(  14, 2, StringInfo, UndoPos),
+    SHADOW_FIELD(  16, 2, StringInfo, NumChars),
+    SHADOW_FIELD(  18, 2, StringInfo, DispCount),
+    SHADOW_FIELD(  20, 2, StringInfo, CLeft),
+    SHADOW_FIELD(  22, 2, StringInfo, CTop),
+    SHADOW_FIELD(  24, 4, StringInfo, Extension),
+    SHADOW_FIELD(  28, 4, StringInfo, LongInt),
+    SHADOW_FIELD(  32, 4, StringInfo, AltKeyMap),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* TOCEntry: m68k=6B, aros=8B, 2 fields */
+/* TOCEntry: m68k=6B, 2 fields */
 static const struct M68KFieldMap shadow_fields_TOCEntry[] = {
-    {    0,    0, SF_BYTE , 0, 0, NULL },  /* CtlAdr */
-    {    1,    1, SF_BYTE , 0, 0, NULL },  /* Track */
+    SHADOW_FIELD(   0, 1, TOCEntry, CtlAdr),
+    SHADOW_FIELD(   1, 1, TOCEntry, Track),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* TOCSummary: m68k=6B, aros=8B, 2 fields */
+/* TOCSummary: m68k=6B, 2 fields */
 static const struct M68KFieldMap shadow_fields_TOCSummary[] = {
-    {    0,    0, SF_BYTE , 0, 0, NULL },  /* FirstTrack */
-    {    1,    1, SF_BYTE , 0, 0, NULL },  /* LastTrack */
+    SHADOW_FIELD(   0, 1, TOCSummary, FirstTrack),
+    SHADOW_FIELD(   1, 1, TOCSummary, LastTrack),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* TP_AmigaXIP: m68k=8B, aros=8B, 5 fields */
+/* TP_AmigaXIP: m68k=8B, 5 fields */
 static const struct M68KFieldMap shadow_fields_TP_AmigaXIP[] = {
-    {    0,    0, SF_BYTE , 0, 0, NULL },  /* TPL_CODE */
-    {    1,    1, SF_BYTE , 0, 0, NULL },  /* TPL_LINK */
-    {    2,    2, SF_LONG , 0, 0, NULL },  /* TP_XIPLOC */
-    {    6,    6, SF_BYTE , 0, 0, NULL },  /* TP_XIPFLAGS */
-    {    7,    7, SF_BYTE , 0, 0, NULL },  /* TP_XIPRESRV */
+    SHADOW_FIELD(   0, 1, TP_AmigaXIP, TPL_CODE),
+    SHADOW_FIELD(   1, 1, TP_AmigaXIP, TPL_LINK),
+    SHADOW_FIELD(   2, 4, TP_AmigaXIP, TP_XIPLOC),
+    SHADOW_FIELD(   6, 1, TP_AmigaXIP, TP_XIPFLAGS),
+    SHADOW_FIELD(   7, 1, TP_AmigaXIP, TP_XIPRESRV),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* TTextAttr: m68k=12B, aros=24B, 5 fields */
+/* TTextAttr: m68k=12B, 5 fields */
 static const struct M68KFieldMap shadow_fields_TTextAttr[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* tta_Name */
-    {    4,    8, SF_WORD , 0, 0, NULL },  /* tta_YSize */
-    {    6,   10, SF_BYTE , 0, 0, NULL },  /* tta_Style */
-    {    7,   11, SF_BYTE , 0, 0, NULL },  /* tta_Flags */
-    {    8,   16, SF_PTR  , 0, 0, NULL },  /* tta_Tags */
+    SHADOW_FIELD(   0, 4, TTextAttr, tta_Name),
+    SHADOW_FIELD(   4, 2, TTextAttr, tta_YSize),
+    SHADOW_FIELD(   6, 1, TTextAttr, tta_Style),
+    SHADOW_FIELD(   7, 1, TTextAttr, tta_Flags),
+    SHADOW_FIELD(   8, 4, TTextAttr, tta_Tags),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* TabletData: m68k=24B, aros=32B, 1 fields */
+/* TabletData: m68k=24B, 7 fields */
 static const struct M68KFieldMap shadow_fields_TabletData[] = {
-    {    0,    0, SF_WORD , 0, 0, NULL },  /* td_XFraction */
-    {    2,    2, SF_WORD , 0, 0, NULL },  /* td_YFraction */
-    {    4,    4, SF_LONG , 0, 0, NULL },  /* td_TabletX */
-    {    8,    8, SF_LONG , 0, 0, NULL },  /* td_TabletY */
-    {   12,   12, SF_LONG , 0, 0, NULL },  /* td_RangeX */
-    {   16,   16, SF_LONG , 0, 0, NULL },  /* td_RangeY */
-    {   20,   24, SF_PTR  , 0, 0, NULL },  /* td_TagList */
+    SHADOW_FIELD(   0, 2, TabletData, td_XFraction),
+    SHADOW_FIELD(   2, 2, TabletData, td_YFraction),
+    SHADOW_FIELD(   4, 4, TabletData, td_TabletX),
+    SHADOW_FIELD(   8, 4, TabletData, td_TabletY),
+    SHADOW_FIELD(  12, 4, TabletData, td_RangeX),
+    SHADOW_FIELD(  16, 4, TabletData, td_RangeY),
+    SHADOW_FIELD(  20, 4, TabletData, td_TagList),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* TabletHookData: m68k=16B, aros=24B, 4 fields */
+/* TabletHookData: m68k=16B, 4 fields */
 static const struct M68KFieldMap shadow_fields_TabletHookData[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* thd_Screen */
-    {    4,    8, SF_LONG , 0, 0, NULL },  /* thd_Width */
-    {    8,   12, SF_LONG , 0, 0, NULL },  /* thd_Height */
-    {   12,   16, SF_LONG , 0, 0, NULL },  /* thd_ScreenChanged */
+    SHADOW_FIELD(   0, 4, TabletHookData, thd_Screen),
+    SHADOW_FIELD(   4, 4, TabletHookData, thd_Width),
+    SHADOW_FIELD(   8, 4, TabletHookData, thd_Height),
+    SHADOW_FIELD(  12, 4, TabletHookData, thd_ScreenChanged),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* TagItem: m68k=8B, aros=16B, 2 fields */
+/* TagItem: m68k=8B, 2 fields */
 static const struct M68KFieldMap shadow_fields_TagItem[] = {
-    {    0,    0, SF_LONG , 0, 0, NULL },  /* ti_Tag */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* ti_Data */
+    SHADOW_FIELD(   0, 4, TagItem, ti_Tag),
+    SHADOW_FIELD(   4, 4, TagItem, ti_Data),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* Task: m68k=92B, aros=176B, 28 fields */
+/* Task: m68k=92B, 28 fields */
 static const struct M68KFieldMap shadow_fields_Task[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* ln_Succ */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* ln_Pred */
-    {    8,   16, SF_BYTE , 0, 0, NULL },  /* ln_Type */
-    {    9,   17, SF_BYTE , 0, 0, NULL },  /* ln_Pri */
-    {   10,   24, SF_PTR  , 0, 0, NULL },  /* ln_Name */
-    {   14,   32, SF_BYTE , 0, 0, NULL },  /* tc_Flags */
-    {   15,   33, SF_BYTE , 0, 0, NULL },  /* tc_State */
-    {   16,   34, SF_BYTE , 0, 0, NULL },  /* tc_IDNestCnt */
-    {   17,   35, SF_BYTE , 0, 0, NULL },  /* tc_TDNestCnt */
-    {   18,   36, SF_LONG , 0, 0, NULL },  /* tc_SigAlloc */
-    {   22,   40, SF_LONG , 0, 0, NULL },  /* tc_SigWait */
-    {   26,   44, SF_LONG , 0, 0, NULL },  /* tc_SigRecvd */
-    {   30,   48, SF_LONG , 0, 0, NULL },  /* tc_SigExcept */
-    {   34,   56, SF_WORD , 0, 0, NULL },  /* tc_TrapAlloc */
-    {   36,   58, SF_WORD , 0, 0, NULL },  /* tc_TrapAble */
-    {   38,   64, SF_PTR  , 0, 0, NULL },  /* tc_ExceptData */
-    {   42,   72, SF_PTR  , 0, 0, NULL },  /* tc_ExceptCode */
-    {   46,   80, SF_PTR  , 0, 0, NULL },  /* tc_TrapData */
-    {   50,   88, SF_PTR  , 0, 0, NULL },  /* tc_TrapCode */
-    {   54,   96, SF_PTR  , 0, 0, NULL },  /* tc_SPReg */
-    {   58,  104, SF_PTR  , 0, 0, NULL },  /* tc_SPLower */
-    {   62,  112, SF_PTR  , 0, 0, NULL },  /* tc_SPUpper */
-    {   74,  136, SF_PTR  , 0, 0, NULL },  /* lh_Head */
-    {   78,  144, SF_PTR  , 0, 0, NULL },  /* lh_Tail */
-    {   82,  152, SF_PTR  , 0, 0, NULL },  /* lh_TailPred */
-    {   86,  160, SF_BYTE , 0, 0, NULL },  /* lh_Type */
-    {   87,  161, SF_BYTE , 0, 0, NULL },  /* l_pad */
-    {   88,  168, SF_PTR  , 0, 0, NULL },  /* tc_UserData */
+    SHADOW_FIELD(   0, 4, Task, tc_Node.ln_Succ),
+    SHADOW_FIELD(   4, 4, Task, tc_Node.ln_Pred),
+    SHADOW_FIELD(   8, 1, Task, tc_Node.ln_Type),
+    SHADOW_FIELD(   9, 1, Task, tc_Node.ln_Pri),
+    SHADOW_FIELD(  10, 4, Task, tc_Node.ln_Name),
+    SHADOW_FIELD(  14, 1, Task, tc_Flags),
+    SHADOW_FIELD(  15, 1, Task, tc_State),
+    SHADOW_FIELD(  16, 1, Task, tc_IDNestCnt),
+    SHADOW_FIELD(  17, 1, Task, tc_TDNestCnt),
+    SHADOW_FIELD(  18, 4, Task, tc_SigAlloc),
+    SHADOW_FIELD(  22, 4, Task, tc_SigWait),
+    SHADOW_FIELD(  26, 4, Task, tc_SigRecvd),
+    SHADOW_FIELD(  30, 4, Task, tc_SigExcept),
+    SHADOW_FIELD(  34, 2, Task, tc_TrapAlloc),
+    SHADOW_FIELD(  36, 2, Task, tc_TrapAble),
+    SHADOW_FIELD(  38, 4, Task, tc_ExceptData),
+    SHADOW_FIELD(  42, 4, Task, tc_ExceptCode),
+    SHADOW_FIELD(  46, 4, Task, tc_TrapData),
+    SHADOW_FIELD(  50, 4, Task, tc_TrapCode),
+    SHADOW_FIELD(  54, 4, Task, tc_SPReg),
+    SHADOW_FIELD(  58, 4, Task, tc_SPLower),
+    SHADOW_FIELD(  62, 4, Task, tc_SPUpper),
+    SHADOW_FIELD(  74, 4, Task, tc_MemEntry.lh_Head),
+    SHADOW_FIELD(  78, 4, Task, tc_MemEntry.lh_Tail),
+    SHADOW_FIELD(  82, 4, Task, tc_MemEntry.lh_TailPred),
+    SHADOW_FIELD(  86, 1, Task, tc_MemEntry.lh_Type),
+    SHADOW_FIELD(  87, 1, Task, tc_MemEntry.l_pad),
+    SHADOW_FIELD(  88, 4, Task, tc_UserData),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* TextAttr: m68k=8B, aros=16B, 4 fields */
+/* TextAttr: m68k=8B, 4 fields */
 static const struct M68KFieldMap shadow_fields_TextAttr[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* ta_Name */
-    {    4,    8, SF_WORD , 0, 0, NULL },  /* ta_YSize */
-    {    6,   10, SF_BYTE , 0, 0, NULL },  /* ta_Style */
-    {    7,   11, SF_BYTE , 0, 0, NULL },  /* ta_Flags */
+    SHADOW_FIELD(   0, 4, TextAttr, ta_Name),
+    SHADOW_FIELD(   4, 2, TextAttr, ta_YSize),
+    SHADOW_FIELD(   6, 1, TextAttr, ta_Style),
+    SHADOW_FIELD(   7, 1, TextAttr, ta_Flags),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* TextExtent: m68k=12B, aros=12B, 2 fields */
+/* TextExtent: m68k=12B, 6 fields */
 static const struct M68KFieldMap shadow_fields_TextExtent[] = {
-    {    0,    0, SF_WORD , 0, 0, NULL },  /* te_Width */
-    {    2,    2, SF_WORD , 0, 0, NULL },  /* te_Height */
-    {    4,    4, SF_WORD , 0, 0, NULL },  /* MinX */
-    {    6,    6, SF_WORD , 0, 0, NULL },  /* MinY */
-    {    8,    8, SF_WORD , 0, 0, NULL },  /* MaxX */
-    {   10,   10, SF_WORD , 0, 0, NULL },  /* MaxY */
+    SHADOW_FIELD(   0, 2, TextExtent, te_Width),
+    SHADOW_FIELD(   2, 2, TextExtent, te_Height),
+    SHADOW_FIELD(   4, 2, TextExtent, te_Extent.MinX),
+    SHADOW_FIELD(   6, 2, TextExtent, te_Extent.MinY),
+    SHADOW_FIELD(   8, 2, TextExtent, te_Extent.MaxX),
+    SHADOW_FIELD(  10, 2, TextExtent, te_Extent.MaxY),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* TextFont: m68k=52B, aros=104B, 21 fields */
+/* TextFont: m68k=52B, 21 fields */
 static const struct M68KFieldMap shadow_fields_TextFont[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* ln_Succ */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* ln_Pred */
-    {    8,   16, SF_BYTE , 0, 0, NULL },  /* ln_Type */
-    {    9,   17, SF_BYTE , 0, 0, NULL },  /* ln_Pri */
-    {   10,   24, SF_PTR  , 0, 0, NULL },  /* ln_Name */
-    {   14,   32, SF_PTR  , 0, 0, NULL },  /* mn_ReplyPort */
-    {   18,   40, SF_WORD , 0, 0, NULL },  /* mn_Length */
-    {   20,   48, SF_WORD , 0, 0, NULL },  /* tf_YSize */
-    {   22,   50, SF_BYTE , 0, 0, NULL },  /* tf_Style */
-    {   23,   51, SF_BYTE , 0, 0, NULL },  /* tf_Flags */
-    {   24,   52, SF_WORD , 0, 0, NULL },  /* tf_XSize */
-    {   26,   54, SF_WORD , 0, 0, NULL },  /* tf_Baseline */
-    {   28,   56, SF_WORD , 0, 0, NULL },  /* tf_BoldSmear */
-    {   30,   58, SF_WORD , 0, 0, NULL },  /* tf_Accessors */
-    {   32,   60, SF_BYTE , 0, 0, NULL },  /* tf_LoChar */
-    {   33,   61, SF_BYTE , 0, 0, NULL },  /* tf_HiChar */
-    {   34,   64, SF_PTR  , 0, 0, NULL },  /* tf_CharData */
-    {   38,   72, SF_WORD , 0, 0, NULL },  /* tf_Modulo */
-    {   40,   80, SF_PTR  , 0, 0, NULL },  /* tf_CharLoc */
-    {   44,   88, SF_PTR  , 0, 0, NULL },  /* tf_CharSpace */
-    {   48,   96, SF_PTR  , 0, 0, NULL },  /* tf_CharKern */
+    SHADOW_FIELD(   0, 4, TextFont, tf_Message.mn_Node.ln_Succ),
+    SHADOW_FIELD(   4, 4, TextFont, tf_Message.mn_Node.ln_Pred),
+    SHADOW_FIELD(   8, 1, TextFont, tf_Message.mn_Node.ln_Type),
+    SHADOW_FIELD(   9, 1, TextFont, tf_Message.mn_Node.ln_Pri),
+    SHADOW_FIELD(  10, 4, TextFont, tf_Message.mn_Node.ln_Name),
+    SHADOW_FIELD(  14, 4, TextFont, tf_Message.mn_ReplyPort),
+    SHADOW_FIELD(  18, 2, TextFont, tf_Message.mn_Length),
+    SHADOW_FIELD(  20, 2, TextFont, tf_YSize),
+    SHADOW_FIELD(  22, 1, TextFont, tf_Style),
+    SHADOW_FIELD(  23, 1, TextFont, tf_Flags),
+    SHADOW_FIELD(  24, 2, TextFont, tf_XSize),
+    SHADOW_FIELD(  26, 2, TextFont, tf_Baseline),
+    SHADOW_FIELD(  28, 2, TextFont, tf_BoldSmear),
+    SHADOW_FIELD(  30, 2, TextFont, tf_Accessors),
+    SHADOW_FIELD(  32, 1, TextFont, tf_LoChar),
+    SHADOW_FIELD(  33, 1, TextFont, tf_HiChar),
+    SHADOW_FIELD(  34, 4, TextFont, tf_CharData),
+    SHADOW_FIELD(  38, 2, TextFont, tf_Modulo),
+    SHADOW_FIELD(  40, 4, TextFont, tf_CharLoc),
+    SHADOW_FIELD(  44, 4, TextFont, tf_CharSpace),
+    SHADOW_FIELD(  48, 4, TextFont, tf_CharKern),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* TextFontExtension: m68k=24B, aros=48B, 8 fields */
+/* TextFontExtension: m68k=24B, 8 fields */
 static const struct M68KFieldMap shadow_fields_TextFontExtension[] = {
-    {    0,    0, SF_WORD , 0, 0, NULL },  /* tfe_MatchWord */
-    {    2,    2, SF_BYTE , 0, 0, NULL },  /* tfe_Flags0 */
-    {    3,    3, SF_BYTE , 0, 0, NULL },  /* tfe_Flags1 */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* tfe_BackPtr */
-    {    8,   16, SF_PTR  , 0, 0, NULL },  /* tfe_OrigReplyPort */
-    {   12,   24, SF_PTR  , 0, 0, NULL },  /* tfe_Tags */
-    {   16,   32, SF_PTR  , 0, 0, NULL },  /* tfe_OFontPatchS */
-    {   20,   40, SF_PTR  , 0, 0, NULL },  /* tfe_OFontPatchK */
+    SHADOW_FIELD(   0, 2, TextFontExtension, tfe_MatchWord),
+    SHADOW_FIELD(   2, 1, TextFontExtension, tfe_Flags0),
+    SHADOW_FIELD(   3, 1, TextFontExtension, tfe_Flags1),
+    SHADOW_FIELD(   4, 4, TextFontExtension, tfe_BackPtr),
+    SHADOW_FIELD(   8, 4, TextFontExtension, tfe_OrigReplyPort),
+    SHADOW_FIELD(  12, 4, TextFontExtension, tfe_Tags),
+    SHADOW_FIELD(  16, 4, TextFontExtension, tfe_OFontPatchS),
+    SHADOW_FIELD(  20, 4, TextFontExtension, tfe_OFontPatchK),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* TmpRas: m68k=8B, aros=16B, 2 fields */
+/* TmpRas: m68k=8B, 2 fields */
 static const struct M68KFieldMap shadow_fields_TmpRas[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* RasPtr */
-    {    4,    8, SF_LONG , 0, 0, NULL },  /* Size */
+    SHADOW_FIELD(   0, 4, TmpRas, RasPtr),
+    SHADOW_FIELD(   4, 4, TmpRas, Size),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* Tool: m68k=8B, aros=16B, 3 fields */
+/* Tool: m68k=8B, 3 fields */
 static const struct M68KFieldMap shadow_fields_Tool[] = {
-    {    0,    0, SF_WORD , 0, 0, NULL },  /* tn_Which */
-    {    2,    2, SF_WORD , 0, 0, NULL },  /* tn_Flags */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* tn_Program */
+    SHADOW_FIELD(   0, 2, Tool, tn_Which),
+    SHADOW_FIELD(   2, 2, Tool, tn_Flags),
+    SHADOW_FIELD(   4, 4, Tool, tn_Program),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* ToolNode: m68k=26B, aros=56B, 9 fields */
+/* ToolNode: m68k=26B, 9 fields */
 static const struct M68KFieldMap shadow_fields_ToolNode[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* ln_Succ */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* ln_Pred */
-    {    8,   16, SF_BYTE , 0, 0, NULL },  /* ln_Type */
-    {    9,   17, SF_BYTE , 0, 0, NULL },  /* ln_Pri */
-    {   10,   24, SF_PTR  , 0, 0, NULL },  /* ln_Name */
-    {   14,   32, SF_WORD , 0, 0, NULL },  /* tn_Which */
-    {   16,   34, SF_WORD , 0, 0, NULL },  /* tn_Flags */
-    {   18,   40, SF_PTR  , 0, 0, NULL },  /* tn_Program */
-    {   22,   48, SF_LONG , 0, 0, NULL },  /* tn_Length */
+    SHADOW_FIELD(   0, 4, ToolNode, tn_Node.ln_Succ),
+    SHADOW_FIELD(   4, 4, ToolNode, tn_Node.ln_Pred),
+    SHADOW_FIELD(   8, 1, ToolNode, tn_Node.ln_Type),
+    SHADOW_FIELD(   9, 1, ToolNode, tn_Node.ln_Pri),
+    SHADOW_FIELD(  10, 4, ToolNode, tn_Node.ln_Name),
+    SHADOW_FIELD(  14, 2, ToolNode, tn_Tool.tn_Which),
+    SHADOW_FIELD(  16, 2, ToolNode, tn_Tool.tn_Flags),
+    SHADOW_FIELD(  18, 4, ToolNode, tn_Tool.tn_Program),
+    SHADOW_FIELD(  22, 4, ToolNode, tn_Length),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* UCopList: m68k=12B, aros=24B, 3 fields */
+/* UCopList: m68k=12B, 3 fields */
 static const struct M68KFieldMap shadow_fields_UCopList[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* Next */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* FirstCopList */
-    {    8,   16, SF_PTR  , 0, 0, NULL },  /* CopList */
+    SHADOW_FIELD(   0, 4, UCopList, Next),
+    SHADOW_FIELD(   4, 4, UCopList, FirstCopList),
+    SHADOW_FIELD(   8, 4, UCopList, CopList),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* Unit: m68k=38B, aros=384B, 16 fields */
+/* Unit: m68k=38B, 16 fields */
 static const struct M68KFieldMap shadow_fields_Unit[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* ln_Succ */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* ln_Pred */
-    {    8,   16, SF_BYTE , 0, 0, NULL },  /* ln_Type */
-    {    9,   17, SF_BYTE , 0, 0, NULL },  /* ln_Pri */
-    {   10,   24, SF_PTR  , 0, 0, NULL },  /* ln_Name */
-    {   14,   32, SF_BYTE , 0, 0, NULL },  /* mp_Flags */
-    {   15,   33, SF_BYTE , 0, 0, NULL },  /* mp_SigBit */
-    {   16,   40, SF_PTR  , 0, 0, NULL },  /* mp_SigTask */
-    {   20,   48, SF_PTR  , 0, 0, NULL },  /* lh_Head */
-    {   24,   56, SF_PTR  , 0, 0, NULL },  /* lh_Tail */
-    {   28,   64, SF_PTR  , 0, 0, NULL },  /* lh_TailPred */
-    {   32,   72, SF_BYTE , 0, 0, NULL },  /* lh_Type */
-    {   33,   73, SF_BYTE , 0, 0, NULL },  /* l_pad */
-    {   34,  256, SF_BYTE , 0, 0, NULL },  /* unit_flags */
-    {   35,  257, SF_BYTE , 0, 0, NULL },  /* unit_pad */
-    {   36,  258, SF_WORD , 0, 0, NULL },  /* unit_OpenCnt */
+    SHADOW_FIELD(   0, 4, Unit, unit_MsgPort.mp_Node.ln_Succ),
+    SHADOW_FIELD(   4, 4, Unit, unit_MsgPort.mp_Node.ln_Pred),
+    SHADOW_FIELD(   8, 1, Unit, unit_MsgPort.mp_Node.ln_Type),
+    SHADOW_FIELD(   9, 1, Unit, unit_MsgPort.mp_Node.ln_Pri),
+    SHADOW_FIELD(  10, 4, Unit, unit_MsgPort.mp_Node.ln_Name),
+    SHADOW_FIELD(  14, 1, Unit, unit_MsgPort.mp_Flags),
+    SHADOW_FIELD(  15, 1, Unit, unit_MsgPort.mp_SigBit),
+    SHADOW_FIELD(  16, 4, Unit, unit_MsgPort.mp_SigTask),
+    SHADOW_FIELD(  20, 4, Unit, unit_MsgPort.mp_MsgList.lh_Head),
+    SHADOW_FIELD(  24, 4, Unit, unit_MsgPort.mp_MsgList.lh_Tail),
+    SHADOW_FIELD(  28, 4, Unit, unit_MsgPort.mp_MsgList.lh_TailPred),
+    SHADOW_FIELD(  32, 1, Unit, unit_MsgPort.mp_MsgList.lh_Type),
+    SHADOW_FIELD(  33, 1, Unit, unit_MsgPort.mp_MsgList.l_pad),
+    SHADOW_FIELD(  34, 1, Unit, unit_flags),
+    SHADOW_FIELD(  35, 1, Unit, unit_pad),
+    SHADOW_FIELD(  36, 2, Unit, unit_OpenCnt),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* UtilityBase: m68k=36B, aros=72B, 16 fields */
+/* UtilityBase: m68k=36B, 16 fields */
 static const struct M68KFieldMap shadow_fields_UtilityBase[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* ln_Succ */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* ln_Pred */
-    {    8,   16, SF_BYTE , 0, 0, NULL },  /* ln_Type */
-    {    9,   17, SF_BYTE , 0, 0, NULL },  /* ln_Pri */
-    {   10,   24, SF_PTR  , 0, 0, NULL },  /* ln_Name */
-    {   14,   32, SF_BYTE , 0, 0, NULL },  /* lib_Flags */
-    {   15,   33, SF_BYTE , 0, 0, NULL },  /* lib_pad */
-    {   16,   34, SF_WORD , 0, 0, NULL },  /* lib_NegSize */
-    {   18,   36, SF_WORD , 0, 0, NULL },  /* lib_PosSize */
-    {   20,   38, SF_WORD , 0, 0, NULL },  /* lib_Version */
-    {   22,   40, SF_WORD , 0, 0, NULL },  /* lib_Revision */
-    {   24,   48, SF_PTR  , 0, 0, NULL },  /* lib_IdString */
-    {   28,   56, SF_LONG , 0, 0, NULL },  /* lib_Sum */
-    {   32,   60, SF_WORD , 0, 0, NULL },  /* lib_OpenCnt */
-    {   34,   64, SF_BYTE , 0, 0, NULL },  /* ub_Language */
-    {   35,   65, SF_BYTE , 0, 0, NULL },  /* ub_Reserved */
+    SHADOW_FIELD(   0, 4, UtilityBase, ub_LibNode.lib_Node.ln_Succ),
+    SHADOW_FIELD(   4, 4, UtilityBase, ub_LibNode.lib_Node.ln_Pred),
+    SHADOW_FIELD(   8, 1, UtilityBase, ub_LibNode.lib_Node.ln_Type),
+    SHADOW_FIELD(   9, 1, UtilityBase, ub_LibNode.lib_Node.ln_Pri),
+    SHADOW_FIELD(  10, 4, UtilityBase, ub_LibNode.lib_Node.ln_Name),
+    SHADOW_FIELD(  14, 1, UtilityBase, ub_LibNode.lib_Flags),
+    SHADOW_FIELD(  15, 1, UtilityBase, ub_LibNode.lib_pad),
+    SHADOW_FIELD(  16, 2, UtilityBase, ub_LibNode.lib_NegSize),
+    SHADOW_FIELD(  18, 2, UtilityBase, ub_LibNode.lib_PosSize),
+    SHADOW_FIELD(  20, 2, UtilityBase, ub_LibNode.lib_Version),
+    SHADOW_FIELD(  22, 2, UtilityBase, ub_LibNode.lib_Revision),
+    SHADOW_FIELD(  24, 4, UtilityBase, ub_LibNode.lib_IdString),
+    SHADOW_FIELD(  28, 4, UtilityBase, ub_LibNode.lib_Sum),
+    SHADOW_FIELD(  32, 2, UtilityBase, ub_LibNode.lib_OpenCnt),
+    SHADOW_FIELD(  34, 1, UtilityBase, ub_Language),
+    SHADOW_FIELD(  35, 1, UtilityBase, ub_Reserved),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* VSprite: m68k=60B, aros=104B, 12 fields */
+/* VSprite: m68k=60B, 16 fields */
 static const struct M68KFieldMap shadow_fields_VSprite[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* NextVSprite */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* PrevVSprite */
-    {    8,   16, SF_PTR  , 0, 0, NULL },  /* IntVSprite */
-    {   12,   24, SF_PTR  , 0, 0, NULL },  /* ClearPath */
-    {   16,   32, SF_WORD , 0, 0, NULL },  /* OldY */
-    {   18,   34, SF_WORD , 0, 0, NULL },  /* OldX */
-    {   32,   48, SF_WORD , 0, 0, NULL },  /* MeMask */
-    {   34,   50, SF_WORD , 0, 0, NULL },  /* HitMask */
-    {   36,   56, SF_PTR  , 0, 0, NULL },  /* ImageData */
-    {   40,   64, SF_PTR  , 0, 0, NULL },  /* BorderLine */
-    {   44,   72, SF_PTR  , 0, 0, NULL },  /* CollMask */
-    {   48,   80, SF_PTR  , 0, 0, NULL },  /* SprColors */
-    {   52,   88, SF_PTR  , 0, 0, NULL },  /* VSBob */
-    {   56,   96, SF_BYTE , 0, 0, NULL },  /* PlanePick */
-    {   57,   97, SF_BYTE , 0, 0, NULL },  /* PlaneOnOff */
-    {   58,   98, SF_WORD , 0, 0, NULL },  /* VUserExt */
+    SHADOW_FIELD(   0, 4, VSprite, NextVSprite),
+    SHADOW_FIELD(   4, 4, VSprite, PrevVSprite),
+    SHADOW_FIELD(   8, 4, VSprite, IntVSprite),
+    SHADOW_FIELD(  12, 4, VSprite, ClearPath),
+    SHADOW_FIELD(  16, 2, VSprite, OldY),
+    SHADOW_FIELD(  18, 2, VSprite, OldX),
+    SHADOW_FIELD(  32, 2, VSprite, MeMask),
+    SHADOW_FIELD(  34, 2, VSprite, HitMask),
+    SHADOW_FIELD(  36, 4, VSprite, ImageData),
+    SHADOW_FIELD(  40, 4, VSprite, BorderLine),
+    SHADOW_FIELD(  44, 4, VSprite, CollMask),
+    SHADOW_FIELD(  48, 4, VSprite, SprColors),
+    SHADOW_FIELD(  52, 4, VSprite, VSBob),
+    SHADOW_FIELD(  56, 1, VSprite, PlanePick),
+    SHADOW_FIELD(  57, 1, VSprite, PlaneOnOff),
+    SHADOW_FIELD(  58, 2, VSprite, VUserExt),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* VecInfo: m68k=40B, aros=56B, 7 fields */
+/* VecInfo: m68k=40B, 7 fields */
 static const struct M68KFieldMap shadow_fields_VecInfo[] = {
-    {    0,    0, SF_LONG , 0, 0, NULL },  /* StructID */
-    {    4,    4, SF_LONG , 0, 0, NULL },  /* DisplayID */
-    {    8,    8, SF_LONG , 0, 0, NULL },  /* SkipID */
-    {   12,   12, SF_LONG , 0, 0, NULL },  /* Length */
-    {   16,   16, SF_PTR  , 0, 0, NULL },  /* Vec */
-    {   20,   24, SF_PTR  , 0, 0, NULL },  /* Data */
-    {   24,   32, SF_WORD , 0, 0, NULL },  /* Type */
+    SHADOW_FIELD(   0, 4, VecInfo, Header.StructID),
+    SHADOW_FIELD(   4, 4, VecInfo, Header.DisplayID),
+    SHADOW_FIELD(   8, 4, VecInfo, Header.SkipID),
+    SHADOW_FIELD(  12, 4, VecInfo, Header.Length),
+    SHADOW_FIELD(  16, 4, VecInfo, Vec),
+    SHADOW_FIELD(  20, 4, VecInfo, Data),
+    SHADOW_FIELD(  24, 2, VecInfo, Type),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* View: m68k=18B, aros=32B, 4 fields */
+/* View: m68k=18B, 6 fields */
 static const struct M68KFieldMap shadow_fields_View[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* ViewPort */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* LOFCprList */
-    {    8,   16, SF_PTR  , 0, 0, NULL },  /* SHFCprList */
-    {   12,   24, SF_WORD , 0, 0, NULL },  /* DyOffset */
-    {   14,   26, SF_WORD , 0, 0, NULL },  /* DxOffset */
-    {   16,   28, SF_WORD , 0, 0, NULL },  /* Modes */
+    SHADOW_FIELD(   0, 4, View, ViewPort),
+    SHADOW_FIELD(   4, 4, View, LOFCprList),
+    SHADOW_FIELD(   8, 4, View, SHFCprList),
+    SHADOW_FIELD(  12, 2, View, DyOffset),
+    SHADOW_FIELD(  14, 2, View, DxOffset),
+    SHADOW_FIELD(  16, 2, View, Modes),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* ViewExtra: m68k=34B, aros=80B, 11 fields */
+/* ViewExtra: m68k=34B, 11 fields */
 static const struct M68KFieldMap shadow_fields_ViewExtra[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* xln_Succ */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* xln_Pred */
-    {    8,   16, SF_BYTE , 0, 0, NULL },  /* xln_Type */
-    {    9,   17, SF_BYTE , 0, 0, NULL },  /* xln_Pri */
-    {   10,   24, SF_PTR  , 0, 0, NULL },  /* xln_Name */
-    {   14,   32, SF_BYTE , 0, 0, NULL },  /* xln_Subsystem */
-    {   15,   33, SF_BYTE , 0, 0, NULL },  /* xln_Subtype */
-    {   16,   40, SF_PTR  , 0, 0, NULL },  /* xln_Library */
-    {   24,   56, SF_PTR  , 0, 0, NULL },  /* View */
-    {   28,   64, SF_PTR  , 0, 0, NULL },  /* Monitor */
-    {   32,   72, SF_WORD , 0, 0, NULL },  /* TopLine */
+    SHADOW_FIELD(   0, 4, ViewExtra, n.xln_Succ),
+    SHADOW_FIELD(   4, 4, ViewExtra, n.xln_Pred),
+    SHADOW_FIELD(   8, 1, ViewExtra, n.xln_Type),
+    SHADOW_FIELD(   9, 1, ViewExtra, n.xln_Pri),
+    SHADOW_FIELD(  10, 4, ViewExtra, n.xln_Name),
+    SHADOW_FIELD(  14, 1, ViewExtra, n.xln_Subsystem),
+    SHADOW_FIELD(  15, 1, ViewExtra, n.xln_Subtype),
+    SHADOW_FIELD(  16, 4, ViewExtra, n.xln_Library),
+    SHADOW_FIELD(  24, 4, ViewExtra, View),
+    SHADOW_FIELD(  28, 4, ViewExtra, Monitor),
+    SHADOW_FIELD(  32, 2, ViewExtra, TopLine),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* ViewPort: m68k=40B, aros=72B, 10 fields */
+/* ViewPort: m68k=40B, 14 fields */
 static const struct M68KFieldMap shadow_fields_ViewPort[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* Next */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* ColorMap */
-    {    8,   16, SF_PTR  , 0, 0, NULL },  /* DspIns */
-    {   12,   24, SF_PTR  , 0, 0, NULL },  /* SprIns */
-    {   16,   32, SF_PTR  , 0, 0, NULL },  /* ClrIns */
-    {   20,   40, SF_PTR  , 0, 0, NULL },  /* UCopIns */
-    {   24,   48, SF_WORD , 0, 0, NULL },  /* DWidth */
-    {   26,   50, SF_WORD , 0, 0, NULL },  /* DHeight */
-    {   28,   52, SF_WORD , 0, 0, NULL },  /* DxOffset */
-    {   30,   54, SF_WORD , 0, 0, NULL },  /* DyOffset */
-    {   32,   56, SF_WORD , 0, 0, NULL },  /* Modes */
-    {   34,   58, SF_BYTE , 0, 0, NULL },  /* SpritePriorities */
-    {   35,   59, SF_BYTE , 0, 0, NULL },  /* ExtendedModes */
-    {   36,   64, SF_PTR  , 0, 0, NULL },  /* RasInfo */
+    SHADOW_FIELD(   0, 4, ViewPort, Next),
+    SHADOW_FIELD(   4, 4, ViewPort, ColorMap),
+    SHADOW_FIELD(   8, 4, ViewPort, DspIns),
+    SHADOW_FIELD(  12, 4, ViewPort, SprIns),
+    SHADOW_FIELD(  16, 4, ViewPort, ClrIns),
+    SHADOW_FIELD(  20, 4, ViewPort, UCopIns),
+    SHADOW_FIELD(  24, 2, ViewPort, DWidth),
+    SHADOW_FIELD(  26, 2, ViewPort, DHeight),
+    SHADOW_FIELD(  28, 2, ViewPort, DxOffset),
+    SHADOW_FIELD(  30, 2, ViewPort, DyOffset),
+    SHADOW_FIELD(  32, 2, ViewPort, Modes),
+    SHADOW_FIELD(  34, 1, ViewPort, SpritePriorities),
+    SHADOW_FIELD(  35, 1, ViewPort, ExtendedModes),
+    SHADOW_FIELD(  36, 4, ViewPort, RasInfo),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* ViewPortExtra: m68k=66B, aros=120B, 12 fields */
+/* ViewPortExtra: m68k=66B, 16 fields */
 static const struct M68KFieldMap shadow_fields_ViewPortExtra[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* xln_Succ */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* xln_Pred */
-    {    8,   16, SF_BYTE , 0, 0, NULL },  /* xln_Type */
-    {    9,   17, SF_BYTE , 0, 0, NULL },  /* xln_Pri */
-    {   10,   24, SF_PTR  , 0, 0, NULL },  /* xln_Name */
-    {   14,   32, SF_BYTE , 0, 0, NULL },  /* xln_Subsystem */
-    {   15,   33, SF_BYTE , 0, 0, NULL },  /* xln_Subtype */
-    {   16,   40, SF_PTR  , 0, 0, NULL },  /* xln_Library */
-    {   24,   56, SF_PTR  , 0, 0, NULL },  /* ViewPort */
-    {   28,   64, SF_WORD , 0, 0, NULL },  /* MinX */
-    {   30,   66, SF_WORD , 0, 0, NULL },  /* MinY */
-    {   32,   68, SF_WORD , 0, 0, NULL },  /* MaxX */
-    {   34,   70, SF_WORD , 0, 0, NULL },  /* MaxY */
-    {   36,   72, SF_PTR  , 0, 0, NULL },  /* VecTable */
-    {   58,  108, SF_LONG , 0, 0, NULL },  /* cop1ptr */
-    {   62,  112, SF_LONG , 0, 0, NULL },  /* cop2ptr */
+    SHADOW_FIELD(   0, 4, ViewPortExtra, n.xln_Succ),
+    SHADOW_FIELD(   4, 4, ViewPortExtra, n.xln_Pred),
+    SHADOW_FIELD(   8, 1, ViewPortExtra, n.xln_Type),
+    SHADOW_FIELD(   9, 1, ViewPortExtra, n.xln_Pri),
+    SHADOW_FIELD(  10, 4, ViewPortExtra, n.xln_Name),
+    SHADOW_FIELD(  14, 1, ViewPortExtra, n.xln_Subsystem),
+    SHADOW_FIELD(  15, 1, ViewPortExtra, n.xln_Subtype),
+    SHADOW_FIELD(  16, 4, ViewPortExtra, n.xln_Library),
+    SHADOW_FIELD(  24, 4, ViewPortExtra, ViewPort),
+    SHADOW_FIELD(  28, 2, ViewPortExtra, DisplayClip.MinX),
+    SHADOW_FIELD(  30, 2, ViewPortExtra, DisplayClip.MinY),
+    SHADOW_FIELD(  32, 2, ViewPortExtra, DisplayClip.MaxX),
+    SHADOW_FIELD(  34, 2, ViewPortExtra, DisplayClip.MaxY),
+    SHADOW_FIELD(  36, 4, ViewPortExtra, VecTable),
+    SHADOW_FIELD(  58, 4, ViewPortExtra, cop1ptr),
+    SHADOW_FIELD(  62, 4, ViewPortExtra, cop2ptr),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* VoiceHeader: m68k=20B, aros=20B, 6 fields */
+/* VoiceHeader: m68k=20B, 7 fields */
 static const struct M68KFieldMap shadow_fields_VoiceHeader[] = {
-    {    0,    0, SF_LONG , 0, 0, NULL },  /* vh_OneShotHiSamples */
-    {    4,    4, SF_LONG , 0, 0, NULL },  /* vh_RepeatHiSamples */
-    {    8,    8, SF_LONG , 0, 0, NULL },  /* vh_SamplesPerHiCycle */
-    {   12,   12, SF_WORD , 0, 0, NULL },  /* vh_SamplesPerSec */
-    {   14,   14, SF_BYTE , 0, 0, NULL },  /* vh_Octaves */
-    {   15,   15, SF_BYTE , 0, 0, NULL },  /* vh_Compression */
-    {   16,   16, SF_LONG , 0, 0, NULL },  /* vh_Volume */
+    SHADOW_FIELD(   0, 4, VoiceHeader, vh_OneShotHiSamples),
+    SHADOW_FIELD(   4, 4, VoiceHeader, vh_RepeatHiSamples),
+    SHADOW_FIELD(   8, 4, VoiceHeader, vh_SamplesPerHiCycle),
+    SHADOW_FIELD(  12, 2, VoiceHeader, vh_SamplesPerSec),
+    SHADOW_FIELD(  14, 1, VoiceHeader, vh_Octaves),
+    SHADOW_FIELD(  15, 1, VoiceHeader, vh_Compression),
+    SHADOW_FIELD(  16, 4, VoiceHeader, vh_Volume),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* WBArg: m68k=8B, aros=16B, 2 fields */
+/* WBArg: m68k=8B, 2 fields */
 static const struct M68KFieldMap shadow_fields_WBArg[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* wa_Lock */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* wa_Name */
+    SHADOW_FIELD(   0, 4, WBArg, wa_Lock),
+    SHADOW_FIELD(   4, 4, WBArg, wa_Name),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* WBStartup: m68k=40B, aros=88B, 10 fields */
+/* WBStartup: m68k=40B, 12 fields */
 static const struct M68KFieldMap shadow_fields_WBStartup[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* ln_Succ */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* ln_Pred */
-    {    8,   16, SF_BYTE , 0, 0, NULL },  /* ln_Type */
-    {    9,   17, SF_BYTE , 0, 0, NULL },  /* ln_Pri */
-    {   10,   24, SF_PTR  , 0, 0, NULL },  /* ln_Name */
-    {   14,   32, SF_PTR  , 0, 0, NULL },  /* mn_ReplyPort */
-    {   18,   40, SF_WORD , 0, 0, NULL },  /* mn_Length */
-    {   20,   48, SF_PTR  , 0, 0, NULL },  /* sm_Process */
-    {   24,   56, SF_PTR  , 0, 0, NULL },  /* sm_Segment */
-    {   28,   64, SF_LONG , 0, 0, NULL },  /* sm_NumArgs */
-    {   32,   72, SF_PTR  , 0, 0, NULL },  /* sm_ToolWindow */
-    {   36,   80, SF_PTR  , 0, 0, NULL },  /* sm_ArgList */
+    SHADOW_FIELD(   0, 4, WBStartup, sm_Message.mn_Node.ln_Succ),
+    SHADOW_FIELD(   4, 4, WBStartup, sm_Message.mn_Node.ln_Pred),
+    SHADOW_FIELD(   8, 1, WBStartup, sm_Message.mn_Node.ln_Type),
+    SHADOW_FIELD(   9, 1, WBStartup, sm_Message.mn_Node.ln_Pri),
+    SHADOW_FIELD(  10, 4, WBStartup, sm_Message.mn_Node.ln_Name),
+    SHADOW_FIELD(  14, 4, WBStartup, sm_Message.mn_ReplyPort),
+    SHADOW_FIELD(  18, 2, WBStartup, sm_Message.mn_Length),
+    SHADOW_FIELD(  20, 4, WBStartup, sm_Process),
+    SHADOW_FIELD(  24, 4, WBStartup, sm_Segment),
+    SHADOW_FIELD(  28, 4, WBStartup, sm_NumArgs),
+    SHADOW_FIELD(  32, 4, WBStartup, sm_ToolWindow),
+    SHADOW_FIELD(  36, 4, WBStartup, sm_ArgList),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* Window: m68k=136B, aros=272B, 26 fields */
+/* Window: m68k=136B, 44 fields */
 static const struct M68KFieldMap shadow_fields_Window[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* NextWindow */
-    {    4,    8, SF_WORD , 0, 0, NULL },  /* LeftEdge */
-    {    6,   10, SF_WORD , 0, 0, NULL },  /* TopEdge */
-    {   12,   16, SF_WORD , 0, 0, NULL },  /* MouseY */
-    {   14,   18, SF_WORD , 0, 0, NULL },  /* MouseX */
-    {   16,   20, SF_WORD , 0, 0, NULL },  /* MinWidth */
-    {   18,   22, SF_WORD , 0, 0, NULL },  /* MinHeight */
-    {   20,   24, SF_WORD , 0, 0, NULL },  /* MaxWidth */
-    {   22,   26, SF_WORD , 0, 0, NULL },  /* MaxHeight */
-    {   28,   32, SF_PTR  , 0, 0, NULL },  /* MenuStrip */
-    {   32,   40, SF_PTR  , 0, 0, NULL },  /* Title */
-    {   36,   48, SF_PTR  , 0, 0, NULL },  /* FirstRequest */
-    {   40,   56, SF_PTR  , 0, 0, NULL },  /* DMRequest */
-    {   44,   64, SF_WORD , 0, 0, NULL },  /* ReqCount */
-    {   46,   72, SF_PTR  , 0, 0, NULL },  /* WScreen */
-    {   50,   80, SF_PTR  , 0, 0, NULL },  /* RPort */
-    {   54,   88, SF_BYTE , 0, 0, NULL },  /* BorderLeft */
-    {   55,   89, SF_BYTE , 0, 0, NULL },  /* BorderTop */
-    {   56,   90, SF_BYTE , 0, 0, NULL },  /* BorderRight */
-    {   57,   91, SF_BYTE , 0, 0, NULL },  /* BorderBottom */
-    {   58,   96, SF_PTR  , 0, 0, NULL },  /* BorderRPort */
-    {   62,  104, SF_PTR  , 0, 0, NULL },  /* FirstGadget */
-    {   66,  112, SF_PTR  , 0, 0, NULL },  /* Parent */
-    {   70,  120, SF_PTR  , 0, 0, NULL },  /* Descendant */
-    {   74,  128, SF_PTR  , 0, 0, NULL },  /* Pointer */
-    {   78,  136, SF_BYTE , 0, 0, NULL },  /* PtrHeight */
-    {   79,  137, SF_BYTE , 0, 0, NULL },  /* PtrWidth */
-    {   80,  138, SF_BYTE , 0, 0, NULL },  /* XOffset */
-    {   81,  139, SF_BYTE , 0, 0, NULL },  /* YOffset */
-    {   82,  140, SF_LONG , 0, 0, NULL },  /* IDCMPFlags */
-    {   86,  144, SF_PTR  , 0, 0, NULL },  /* UserPort */
-    {   90,  152, SF_PTR  , 0, 0, NULL },  /* WindowPort */
-    {   94,  160, SF_PTR  , 0, 0, NULL },  /* MessageKey */
-    {  100,  176, SF_PTR  , 0, 0, NULL },  /* CheckMark */
-    {  104,  184, SF_PTR  , 0, 0, NULL },  /* ScreenTitle */
-    {  108,  192, SF_WORD , 0, 0, NULL },  /* GZZMouseX */
-    {  110,  194, SF_WORD , 0, 0, NULL },  /* GZZMouseY */
-    {  112,  196, SF_WORD , 0, 0, NULL },  /* GZZWidth */
-    {  114,  198, SF_WORD , 0, 0, NULL },  /* GZZHeight */
-    {  116,  200, SF_PTR  , 0, 0, NULL },  /* ExtData */
-    {  120,  208, SF_PTR  , 0, 0, NULL },  /* UserData */
-    {  124,  216, SF_PTR  , 0, 0, NULL },  /* WLayer */
-    {  128,  224, SF_PTR  , 0, 0, NULL },  /* IFont */
-    {  132,  232, SF_LONG , 0, 0, NULL },  /* MoreFlags */
+    SHADOW_FIELD(   0, 4, Window, NextWindow),
+    SHADOW_FIELD(   4, 2, Window, LeftEdge),
+    SHADOW_FIELD(   6, 2, Window, TopEdge),
+    SHADOW_FIELD(  12, 2, Window, MouseY),
+    SHADOW_FIELD(  14, 2, Window, MouseX),
+    SHADOW_FIELD(  16, 2, Window, MinWidth),
+    SHADOW_FIELD(  18, 2, Window, MinHeight),
+    SHADOW_FIELD(  20, 2, Window, MaxWidth),
+    SHADOW_FIELD(  22, 2, Window, MaxHeight),
+    SHADOW_FIELD(  28, 4, Window, MenuStrip),
+    SHADOW_FIELD(  32, 4, Window, Title),
+    SHADOW_FIELD(  36, 4, Window, FirstRequest),
+    SHADOW_FIELD(  40, 4, Window, DMRequest),
+    SHADOW_FIELD(  44, 2, Window, ReqCount),
+    SHADOW_FIELD(  46, 4, Window, WScreen),
+    SHADOW_FIELD(  50, 4, Window, RPort),
+    SHADOW_FIELD(  54, 1, Window, BorderLeft),
+    SHADOW_FIELD(  55, 1, Window, BorderTop),
+    SHADOW_FIELD(  56, 1, Window, BorderRight),
+    SHADOW_FIELD(  57, 1, Window, BorderBottom),
+    SHADOW_FIELD(  58, 4, Window, BorderRPort),
+    SHADOW_FIELD(  62, 4, Window, FirstGadget),
+    SHADOW_FIELD(  66, 4, Window, Parent),
+    SHADOW_FIELD(  70, 4, Window, Descendant),
+    SHADOW_FIELD(  74, 4, Window, Pointer),
+    SHADOW_FIELD(  78, 1, Window, PtrHeight),
+    SHADOW_FIELD(  79, 1, Window, PtrWidth),
+    SHADOW_FIELD(  80, 1, Window, XOffset),
+    SHADOW_FIELD(  81, 1, Window, YOffset),
+    SHADOW_FIELD(  82, 4, Window, IDCMPFlags),
+    SHADOW_FIELD(  86, 4, Window, UserPort),
+    SHADOW_FIELD(  90, 4, Window, WindowPort),
+    SHADOW_FIELD(  94, 4, Window, MessageKey),
+    SHADOW_FIELD( 100, 4, Window, CheckMark),
+    SHADOW_FIELD( 104, 4, Window, ScreenTitle),
+    SHADOW_FIELD( 108, 2, Window, GZZMouseX),
+    SHADOW_FIELD( 110, 2, Window, GZZMouseY),
+    SHADOW_FIELD( 112, 2, Window, GZZWidth),
+    SHADOW_FIELD( 114, 2, Window, GZZHeight),
+    SHADOW_FIELD( 116, 4, Window, ExtData),
+    SHADOW_FIELD( 120, 4, Window, UserData),
+    SHADOW_FIELD( 124, 4, Window, WLayer),
+    SHADOW_FIELD( 128, 4, Window, IFont),
+    SHADOW_FIELD( 132, 4, Window, MoreFlags),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* _Object: m68k=12B, aros=32B, 3 fields */
+/* _Object: m68k=12B, 3 fields */
 static const struct M68KFieldMap shadow_fields__Object[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* mln_Succ */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* mln_Pred */
-    {    8,   16, SF_PTR  , 0, 0, NULL },  /* o_Class */
+    SHADOW_FIELD(   0, 4, _Object, o_Node.mln_Succ),
+    SHADOW_FIELD(   4, 4, _Object, o_Node.mln_Pred),
+    SHADOW_FIELD(   8, 4, _Object, o_Class),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* adtFrame: m68k=40B, aros=80B, 10 fields */
+/* adtFrame: m68k=40B, 10 fields */
 static const struct M68KFieldMap shadow_fields_adtFrame[] = {
-    {    0,    0, SF_LONG , 0, 0, NULL },  /* MethodID */
-    {    4,    8, SF_LONG , 0, 0, NULL },  /* alf_TimeStamp */
-    {    8,   16, SF_LONG , 0, 0, NULL },  /* alf_Frame */
-    {   12,   24, SF_LONG , 0, 0, NULL },  /* alf_Duration */
-    {   16,   32, SF_PTR  , 0, 0, NULL },  /* alf_BitMap */
-    {   20,   40, SF_PTR  , 0, 0, NULL },  /* alf_CMap */
-    {   24,   48, SF_PTR  , 0, 0, NULL },  /* alf_Sample */
-    {   28,   56, SF_LONG , 0, 0, NULL },  /* alf_SampleLength */
-    {   32,   64, SF_LONG , 0, 0, NULL },  /* alf_Period */
-    {   36,   72, SF_PTR  , 0, 0, NULL },  /* alf_UserData */
+    SHADOW_FIELD(   0, 4, adtFrame, MethodID),
+    SHADOW_FIELD(   4, 4, adtFrame, alf_TimeStamp),
+    SHADOW_FIELD(   8, 4, adtFrame, alf_Frame),
+    SHADOW_FIELD(  12, 4, adtFrame, alf_Duration),
+    SHADOW_FIELD(  16, 4, adtFrame, alf_BitMap),
+    SHADOW_FIELD(  20, 4, adtFrame, alf_CMap),
+    SHADOW_FIELD(  24, 4, adtFrame, alf_Sample),
+    SHADOW_FIELD(  28, 4, adtFrame, alf_SampleLength),
+    SHADOW_FIELD(  32, 4, adtFrame, alf_Period),
+    SHADOW_FIELD(  36, 4, adtFrame, alf_UserData),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* adtNewFormatFrame: m68k=56B, aros=112B, 9 fields */
+/* adtNewFormatFrame: m68k=56B, 9 fields */
 static const struct M68KFieldMap shadow_fields_adtNewFormatFrame[] = {
-    {    0,    0, SF_LONG , 0, 0, NULL },  /* MethodID */
-    {    4,    8, SF_LONG , 0, 0, NULL },  /* alf_TimeStamp */
-    {    8,   16, SF_LONG , 0, 0, NULL },  /* alf_Frame */
-    {   12,   24, SF_LONG , 0, 0, NULL },  /* alf_Duration */
-    {   28,   56, SF_LONG , 0, 0, NULL },  /* alf_SampleLength */
-    {   32,   64, SF_LONG , 0, 0, NULL },  /* alf_Period */
-    {   36,   72, SF_PTR  , 0, 0, NULL },  /* alf_UserData */
-    {   40,   80, SF_LONG , 0, 0, NULL },  /* alf_Size */
-    {   52,  104, SF_LONG , 0, 0, NULL },  /* alf_SamplesPerSec */
+    SHADOW_FIELD(   0, 4, adtNewFormatFrame, MethodID),
+    SHADOW_FIELD(   4, 4, adtNewFormatFrame, alf_TimeStamp),
+    SHADOW_FIELD(   8, 4, adtNewFormatFrame, alf_Frame),
+    SHADOW_FIELD(  12, 4, adtNewFormatFrame, alf_Duration),
+    SHADOW_FIELD(  28, 4, adtNewFormatFrame, alf_SampleLength),
+    SHADOW_FIELD(  32, 4, adtNewFormatFrame, alf_Period),
+    SHADOW_FIELD(  36, 4, adtNewFormatFrame, alf_UserData),
+    SHADOW_FIELD(  40, 4, adtNewFormatFrame, alf_Size),
+    SHADOW_FIELD(  52, 4, adtNewFormatFrame, alf_SamplesPerSec),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* adtStart: m68k=8B, aros=16B, 2 fields */
+/* adtStart: m68k=8B, 2 fields */
 static const struct M68KFieldMap shadow_fields_adtStart[] = {
-    {    0,    0, SF_LONG , 0, 0, NULL },  /* MethodID */
-    {    4,    8, SF_LONG , 0, 0, NULL },  /* asa_Frame */
+    SHADOW_FIELD(   0, 4, adtStart, MethodID),
+    SHADOW_FIELD(   4, 4, adtStart, asa_Frame),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* copinit: m68k=192B, aros=192B, 6 fields */
+/* copinit: m68k=192B, 6 fields */
 static const struct M68KFieldMap shadow_fields_copinit[] = {
-    {    0,    0, SF_LONG , 0, 0, NULL },  /* vsync_hblank */
-    {   28,   28, SF_LONG , 0, 0, NULL },  /* fm0 */
-    {   52,   52, SF_LONG , 0, 0, NULL },  /* bplcon2 */
-    {  152,  152, SF_LONG , 0, 0, NULL },  /* wait14 */
-    {  156,  156, SF_LONG , 0, 0, NULL },  /* norm_hblank */
-    {  160,  160, SF_LONG , 0, 0, NULL },  /* jump */
+    SHADOW_FIELD(   0, 4, copinit, vsync_hblank),
+    SHADOW_FIELD(  28, 4, copinit, fm0),
+    SHADOW_FIELD(  52, 4, copinit, bplcon2),
+    SHADOW_FIELD( 152, 4, copinit, wait14),
+    SHADOW_FIELD( 156, 4, copinit, norm_hblank),
+    SHADOW_FIELD( 160, 4, copinit, jump),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* cprlist: m68k=10B, aros=24B, 3 fields */
+/* cprlist: m68k=10B, 3 fields */
 static const struct M68KFieldMap shadow_fields_cprlist[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* Next */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* start */
-    {    8,   16, SF_WORD , 0, 0, NULL },  /* MaxCount */
+    SHADOW_FIELD(   0, 4, cprlist, Next),
+    SHADOW_FIELD(   4, 4, cprlist, start),
+    SHADOW_FIELD(   8, 2, cprlist, MaxCount),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* dtDraw: m68k=36B, aros=72B, 9 fields */
+/* dtDraw: m68k=36B, 9 fields */
 static const struct M68KFieldMap shadow_fields_dtDraw[] = {
-    {    0,    0, SF_LONG , 0, 0, NULL },  /* MethodID */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* dtd_RPort */
-    {    8,   16, SF_LONG , 0, 0, NULL },  /* dtd_Left */
-    {   12,   24, SF_LONG , 0, 0, NULL },  /* dtd_Top */
-    {   16,   32, SF_LONG , 0, 0, NULL },  /* dtd_Width */
-    {   20,   40, SF_LONG , 0, 0, NULL },  /* dtd_Height */
-    {   24,   48, SF_LONG , 0, 0, NULL },  /* dtd_TopHoriz */
-    {   28,   56, SF_LONG , 0, 0, NULL },  /* dtd_TopVert */
-    {   32,   64, SF_PTR  , 0, 0, NULL },  /* dtd_AttrList */
+    SHADOW_FIELD(   0, 4, dtDraw, MethodID),
+    SHADOW_FIELD(   4, 4, dtDraw, dtd_RPort),
+    SHADOW_FIELD(   8, 4, dtDraw, dtd_Left),
+    SHADOW_FIELD(  12, 4, dtDraw, dtd_Top),
+    SHADOW_FIELD(  16, 4, dtDraw, dtd_Width),
+    SHADOW_FIELD(  20, 4, dtDraw, dtd_Height),
+    SHADOW_FIELD(  24, 4, dtDraw, dtd_TopHoriz),
+    SHADOW_FIELD(  28, 4, dtDraw, dtd_TopVert),
+    SHADOW_FIELD(  32, 4, dtDraw, dtd_AttrList),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* dtFrameBox: m68k=24B, aros=48B, 6 fields */
+/* dtFrameBox: m68k=24B, 6 fields */
 static const struct M68KFieldMap shadow_fields_dtFrameBox[] = {
-    {    0,    0, SF_LONG , 0, 0, NULL },  /* MethodID */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* dtf_GInfo */
-    {    8,   16, SF_PTR  , 0, 0, NULL },  /* dtf_ContentsInfo */
-    {   12,   24, SF_PTR  , 0, 0, NULL },  /* dtf_FrameInfo */
-    {   16,   32, SF_LONG , 0, 0, NULL },  /* dtf_SizeFrameInfo */
-    {   20,   40, SF_LONG , 0, 0, NULL },  /* dtf_FrameFlags */
+    SHADOW_FIELD(   0, 4, dtFrameBox, MethodID),
+    SHADOW_FIELD(   4, 4, dtFrameBox, dtf_GInfo),
+    SHADOW_FIELD(   8, 4, dtFrameBox, dtf_ContentsInfo),
+    SHADOW_FIELD(  12, 4, dtFrameBox, dtf_FrameInfo),
+    SHADOW_FIELD(  16, 4, dtFrameBox, dtf_SizeFrameInfo),
+    SHADOW_FIELD(  20, 4, dtFrameBox, dtf_FrameFlags),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* dtGeneral: m68k=8B, aros=16B, 2 fields */
+/* dtGeneral: m68k=8B, 2 fields */
 static const struct M68KFieldMap shadow_fields_dtGeneral[] = {
-    {    0,    0, SF_LONG , 0, 0, NULL },  /* MethodID */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* dtg_GInfo */
+    SHADOW_FIELD(   0, 4, dtGeneral, MethodID),
+    SHADOW_FIELD(   4, 4, dtGeneral, dtg_GInfo),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* dtGoto: m68k=16B, aros=32B, 4 fields */
+/* dtGoto: m68k=16B, 4 fields */
 static const struct M68KFieldMap shadow_fields_dtGoto[] = {
-    {    0,    0, SF_LONG , 0, 0, NULL },  /* MethodID */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* dtg_GInfo */
-    {    8,   16, SF_PTR  , 0, 0, NULL },  /* dtg_NodeName */
-    {   12,   24, SF_PTR  , 0, 0, NULL },  /* dtg_AttrList */
+    SHADOW_FIELD(   0, 4, dtGoto, MethodID),
+    SHADOW_FIELD(   4, 4, dtGoto, dtg_GInfo),
+    SHADOW_FIELD(   8, 4, dtGoto, dtg_NodeName),
+    SHADOW_FIELD(  12, 4, dtGoto, dtg_AttrList),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* dtPrint: m68k=16B, aros=32B, 3 fields */
+/* dtPrint: m68k=16B, 3 fields */
 static const struct M68KFieldMap shadow_fields_dtPrint[] = {
-    {    0,    0, SF_LONG , 0, 0, NULL },  /* MethodID */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* dtp_GInfo */
-    {   12,   24, SF_PTR  , 0, 0, NULL },  /* dtp_AttrList */
+    SHADOW_FIELD(   0, 4, dtPrint, MethodID),
+    SHADOW_FIELD(   4, 4, dtPrint, dtp_GInfo),
+    SHADOW_FIELD(  12, 4, dtPrint, dtp_AttrList),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* dtSelect: m68k=16B, aros=24B, 2 fields */
+/* dtSelect: m68k=16B, 2 fields */
 static const struct M68KFieldMap shadow_fields_dtSelect[] = {
-    {    0,    0, SF_LONG , 0, 0, NULL },  /* MethodID */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* dts_GInfo */
+    SHADOW_FIELD(   0, 4, dtSelect, MethodID),
+    SHADOW_FIELD(   4, 4, dtSelect, dts_GInfo),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* dtTrigger: m68k=16B, aros=32B, 4 fields */
+/* dtTrigger: m68k=16B, 4 fields */
 static const struct M68KFieldMap shadow_fields_dtTrigger[] = {
-    {    0,    0, SF_LONG , 0, 0, NULL },  /* MethodID */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* dtt_GInfo */
-    {    8,   16, SF_LONG , 0, 0, NULL },  /* dtt_Function */
-    {   12,   24, SF_PTR  , 0, 0, NULL },  /* dtt_Data */
+    SHADOW_FIELD(   0, 4, dtTrigger, MethodID),
+    SHADOW_FIELD(   4, 4, dtTrigger, dtt_GInfo),
+    SHADOW_FIELD(   8, 4, dtTrigger, dtt_Function),
+    SHADOW_FIELD(  12, 4, dtTrigger, dtt_Data),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* dtWrite: m68k=20B, aros=40B, 5 fields */
+/* dtWrite: m68k=20B, 5 fields */
 static const struct M68KFieldMap shadow_fields_dtWrite[] = {
-    {    0,    0, SF_LONG , 0, 0, NULL },  /* MethodID */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* dtw_GInfo */
-    {    8,   16, SF_PTR  , 0, 0, NULL },  /* dtw_FileHandle */
-    {   12,   24, SF_LONG , 0, 0, NULL },  /* dtw_Mode */
-    {   16,   32, SF_PTR  , 0, 0, NULL },  /* dtw_AttrList */
+    SHADOW_FIELD(   0, 4, dtWrite, MethodID),
+    SHADOW_FIELD(   4, 4, dtWrite, dtw_GInfo),
+    SHADOW_FIELD(   8, 4, dtWrite, dtw_FileHandle),
+    SHADOW_FIELD(  12, 4, dtWrite, dtw_Mode),
+    SHADOW_FIELD(  16, 4, dtWrite, dtw_AttrList),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* gpDomain: m68k=28B, aros=48B, 7 fields */
+/* gpDomain: m68k=28B, 7 fields */
 static const struct M68KFieldMap shadow_fields_gpDomain[] = {
-    {    0,    0, SF_LONG , 0, 0, NULL },  /* MethodID */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* gpd_GInfo */
-    {    8,   16, SF_PTR  , 0, 0, NULL },  /* gpd_RPort */
-    {   12,   24, SF_LONG , 0, 0, NULL },  /* gpd_Which */
-    {   16,   32, SF_WORD , 0, 0, NULL },  /* Left */
-    {   18,   34, SF_WORD , 0, 0, NULL },  /* Top */
-    {   24,   40, SF_PTR  , 0, 0, NULL },  /* gpd_Attrs */
+    SHADOW_FIELD(   0, 4, gpDomain, MethodID),
+    SHADOW_FIELD(   4, 4, gpDomain, gpd_GInfo),
+    SHADOW_FIELD(   8, 4, gpDomain, gpd_RPort),
+    SHADOW_FIELD(  12, 4, gpDomain, gpd_Which),
+    SHADOW_FIELD(  16, 2, gpDomain, gpd_Domain.Left),
+    SHADOW_FIELD(  18, 2, gpDomain, gpd_Domain.Top),
+    SHADOW_FIELD(  24, 4, gpDomain, gpd_Attrs),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* gpGoInactive: m68k=12B, aros=24B, 2 fields */
+/* gpGoInactive: m68k=12B, 2 fields */
 static const struct M68KFieldMap shadow_fields_gpGoInactive[] = {
-    {    0,    0, SF_LONG , 0, 0, NULL },  /* MethodID */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* gpgi_GInfo */
+    SHADOW_FIELD(   0, 4, gpGoInactive, MethodID),
+    SHADOW_FIELD(   4, 4, gpGoInactive, gpgi_GInfo),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* gpHitTest: m68k=12B, aros=32B, 2 fields */
+/* gpHitTest: m68k=12B, 2 fields */
 static const struct M68KFieldMap shadow_fields_gpHitTest[] = {
-    {    0,    0, SF_LONG , 0, 0, NULL },  /* MethodID */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* gpht_GInfo */
+    SHADOW_FIELD(   0, 4, gpHitTest, MethodID),
+    SHADOW_FIELD(   4, 4, gpHitTest, gpht_GInfo),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* gpInput: m68k=24B, aros=56B, 4 fields */
+/* gpInput: m68k=24B, 4 fields */
 static const struct M68KFieldMap shadow_fields_gpInput[] = {
-    {    0,    0, SF_LONG , 0, 0, NULL },  /* MethodID */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* gpi_GInfo */
-    {    8,   16, SF_PTR  , 0, 0, NULL },  /* gpi_IEvent */
-    {   12,   24, SF_PTR  , 0, 0, NULL },  /* gpi_Termination */
+    SHADOW_FIELD(   0, 4, gpInput, MethodID),
+    SHADOW_FIELD(   4, 4, gpInput, gpi_GInfo),
+    SHADOW_FIELD(   8, 4, gpInput, gpi_IEvent),
+    SHADOW_FIELD(  12, 4, gpInput, gpi_Termination),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* gpLayout: m68k=12B, aros=24B, 2 fields */
+/* gpLayout: m68k=12B, 2 fields */
 static const struct M68KFieldMap shadow_fields_gpLayout[] = {
-    {    0,    0, SF_LONG , 0, 0, NULL },  /* MethodID */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* gpl_GInfo */
+    SHADOW_FIELD(   0, 4, gpLayout, MethodID),
+    SHADOW_FIELD(   4, 4, gpLayout, gpl_GInfo),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* gpRender: m68k=16B, aros=32B, 4 fields */
+/* gpRender: m68k=16B, 4 fields */
 static const struct M68KFieldMap shadow_fields_gpRender[] = {
-    {    0,    0, SF_LONG , 0, 0, NULL },  /* MethodID */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* gpr_GInfo */
-    {    8,   16, SF_PTR  , 0, 0, NULL },  /* gpr_RPort */
-    {   12,   24, SF_LONG , 0, 0, NULL },  /* gpr_Redraw */
+    SHADOW_FIELD(   0, 4, gpRender, MethodID),
+    SHADOW_FIELD(   4, 4, gpRender, gpr_GInfo),
+    SHADOW_FIELD(   8, 4, gpRender, gpr_RPort),
+    SHADOW_FIELD(  12, 4, gpRender, gpr_Redraw),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* impDraw: m68k=24B, aros=64B, 2 fields */
+/* impDraw: m68k=24B, 2 fields */
 static const struct M68KFieldMap shadow_fields_impDraw[] = {
-    {    0,    0, SF_LONG , 0, 0, NULL },  /* MethodID */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* imp_RPort */
+    SHADOW_FIELD(   0, 4, impDraw, MethodID),
+    SHADOW_FIELD(   4, 4, impDraw, imp_RPort),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* impErase: m68k=16B, aros=48B, 2 fields */
+/* impErase: m68k=16B, 2 fields */
 static const struct M68KFieldMap shadow_fields_impErase[] = {
-    {    0,    0, SF_LONG , 0, 0, NULL },  /* MethodID */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* imp_RPort */
+    SHADOW_FIELD(   0, 4, impErase, MethodID),
+    SHADOW_FIELD(   4, 4, impErase, imp_RPort),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* impFrameBox: m68k=20B, aros=40B, 5 fields */
+/* impFrameBox: m68k=20B, 5 fields */
 static const struct M68KFieldMap shadow_fields_impFrameBox[] = {
-    {    0,    0, SF_LONG , 0, 0, NULL },  /* MethodID */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* imp_ContentsBox */
-    {    8,   16, SF_PTR  , 0, 0, NULL },  /* imp_FrameBox */
-    {   12,   24, SF_PTR  , 0, 0, NULL },  /* imp_DrInfo */
-    {   16,   32, SF_LONG , 0, 0, NULL },  /* imp_FrameFlags */
+    SHADOW_FIELD(   0, 4, impFrameBox, MethodID),
+    SHADOW_FIELD(   4, 4, impFrameBox, imp_ContentsBox),
+    SHADOW_FIELD(   8, 4, impFrameBox, imp_FrameBox),
+    SHADOW_FIELD(  12, 4, impFrameBox, imp_DrInfo),
+    SHADOW_FIELD(  16, 4, impFrameBox, imp_FrameFlags),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* impHitTest: m68k=12B, aros=40B, 1 fields */
+/* impHitTest: m68k=12B, 1 fields */
 static const struct M68KFieldMap shadow_fields_impHitTest[] = {
-    {    0,    0, SF_LONG , 0, 0, NULL },  /* MethodID */
+    SHADOW_FIELD(   0, 4, impHitTest, MethodID),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* opAddTail: m68k=8B, aros=16B, 2 fields */
+/* opAddTail: m68k=8B, 2 fields */
 static const struct M68KFieldMap shadow_fields_opAddTail[] = {
-    {    0,    0, SF_LONG , 0, 0, NULL },  /* MethodID */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* opat_List */
+    SHADOW_FIELD(   0, 4, opAddTail, MethodID),
+    SHADOW_FIELD(   4, 4, opAddTail, opat_List),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* opExpungeNode: m68k=8B, aros=16B, 2 fields */
+/* opExpungeNode: m68k=8B, 2 fields */
 static const struct M68KFieldMap shadow_fields_opExpungeNode[] = {
-    {    0,    0, SF_LONG , 0, 0, NULL },  /* MethodID */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* oen_Attrs */
+    SHADOW_FIELD(   0, 4, opExpungeNode, MethodID),
+    SHADOW_FIELD(   4, 4, opExpungeNode, oen_Attrs),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* opFindHost: m68k=28B, aros=56B, 7 fields */
+/* opFindHost: m68k=28B, 7 fields */
 static const struct M68KFieldMap shadow_fields_opFindHost[] = {
-    {    0,    0, SF_LONG , 0, 0, NULL },  /* MethodID */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* ofh_Attrs */
-    {    8,   16, SF_PTR  , 0, 0, NULL },  /* ofh_Node */
-    {   12,   24, SF_PTR  , 0, 0, NULL },  /* ofh_TOC */
-    {   16,   32, SF_PTR  , 0, 0, NULL },  /* ofh_Title */
-    {   20,   40, SF_PTR  , 0, 0, NULL },  /* ofh_Next */
-    {   24,   48, SF_PTR  , 0, 0, NULL },  /* ofh_Prev */
+    SHADOW_FIELD(   0, 4, opFindHost, MethodID),
+    SHADOW_FIELD(   4, 4, opFindHost, ofh_Attrs),
+    SHADOW_FIELD(   8, 4, opFindHost, ofh_Node),
+    SHADOW_FIELD(  12, 4, opFindHost, ofh_TOC),
+    SHADOW_FIELD(  16, 4, opFindHost, ofh_Title),
+    SHADOW_FIELD(  20, 4, opFindHost, ofh_Next),
+    SHADOW_FIELD(  24, 4, opFindHost, ofh_Prev),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* opGet: m68k=12B, aros=24B, 2 fields */
+/* opGet: m68k=12B, 2 fields */
 static const struct M68KFieldMap shadow_fields_opGet[] = {
-    {    0,    0, SF_LONG , 0, 0, NULL },  /* MethodID */
-    {    4,    8, SF_LONG , 0, 0, NULL },  /* opg_AttrID */
+    SHADOW_FIELD(   0, 4, opGet, MethodID),
+    SHADOW_FIELD(   4, 4, opGet, opg_AttrID),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* opMember: m68k=8B, aros=16B, 2 fields */
+/* opMember: m68k=8B, 2 fields */
 static const struct M68KFieldMap shadow_fields_opMember[] = {
-    {    0,    0, SF_LONG , 0, 0, NULL },  /* MethodID */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* opam_Object */
+    SHADOW_FIELD(   0, 4, opMember, MethodID),
+    SHADOW_FIELD(   4, 4, opMember, opam_Object),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* opNodeIO: m68k=28B, aros=48B, 7 fields */
+/* opNodeIO: m68k=28B, 7 fields */
 static const struct M68KFieldMap shadow_fields_opNodeIO[] = {
-    {    0,    0, SF_LONG , 0, 0, NULL },  /* MethodID */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* onm_Attrs */
-    {    8,   16, SF_PTR  , 0, 0, NULL },  /* onm_Node */
-    {   12,   24, SF_PTR  , 0, 0, NULL },  /* onm_FileName */
-    {   16,   32, SF_PTR  , 0, 0, NULL },  /* onm_DocBuffer */
-    {   20,   40, SF_LONG , 0, 0, NULL },  /* onm_BuffLen */
-    {   24,   44, SF_LONG , 0, 0, NULL },  /* onm_Flags */
+    SHADOW_FIELD(   0, 4, opNodeIO, MethodID),
+    SHADOW_FIELD(   4, 4, opNodeIO, onm_Attrs),
+    SHADOW_FIELD(   8, 4, opNodeIO, onm_Node),
+    SHADOW_FIELD(  12, 4, opNodeIO, onm_FileName),
+    SHADOW_FIELD(  16, 4, opNodeIO, onm_DocBuffer),
+    SHADOW_FIELD(  20, 4, opNodeIO, onm_BuffLen),
+    SHADOW_FIELD(  24, 4, opNodeIO, onm_Flags),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* opSet: m68k=12B, aros=24B, 2 fields */
+/* opSet: m68k=12B, 2 fields */
 static const struct M68KFieldMap shadow_fields_opSet[] = {
-    {    0,    0, SF_LONG , 0, 0, NULL },  /* MethodID */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* ops_AttrList */
+    SHADOW_FIELD(   0, 4, opSet, MethodID),
+    SHADOW_FIELD(   4, 4, opSet, ops_AttrList),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* opUpdate: m68k=16B, aros=32B, 3 fields */
+/* opUpdate: m68k=16B, 3 fields */
 static const struct M68KFieldMap shadow_fields_opUpdate[] = {
-    {    0,    0, SF_LONG , 0, 0, NULL },  /* MethodID */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* opu_AttrList */
-    {   12,   24, SF_LONG , 0, 0, NULL },  /* opu_Flags */
+    SHADOW_FIELD(   0, 4, opUpdate, MethodID),
+    SHADOW_FIELD(   4, 4, opUpdate, opu_AttrList),
+    SHADOW_FIELD(  12, 4, opUpdate, opu_Flags),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* pdtBlitPixelArray: m68k=32B, aros=64B, 8 fields */
+/* pdtBlitPixelArray: m68k=32B, 8 fields */
 static const struct M68KFieldMap shadow_fields_pdtBlitPixelArray[] = {
-    {    0,    0, SF_LONG , 0, 0, NULL },  /* MethodID */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* pbpa_PixelData */
-    {    8,   16, SF_LONG , 0, 0, NULL },  /* pbpa_PixelFormat */
-    {   12,   24, SF_LONG , 0, 0, NULL },  /* pbpa_PixelArrayMod */
-    {   16,   32, SF_LONG , 0, 0, NULL },  /* pbpa_Left */
-    {   20,   40, SF_LONG , 0, 0, NULL },  /* pbpa_Top */
-    {   24,   48, SF_LONG , 0, 0, NULL },  /* pbpa_Width */
-    {   28,   56, SF_LONG , 0, 0, NULL },  /* pbpa_Height */
+    SHADOW_FIELD(   0, 4, pdtBlitPixelArray, MethodID),
+    SHADOW_FIELD(   4, 4, pdtBlitPixelArray, pbpa_PixelData),
+    SHADOW_FIELD(   8, 4, pdtBlitPixelArray, pbpa_PixelFormat),
+    SHADOW_FIELD(  12, 4, pdtBlitPixelArray, pbpa_PixelArrayMod),
+    SHADOW_FIELD(  16, 4, pdtBlitPixelArray, pbpa_Left),
+    SHADOW_FIELD(  20, 4, pdtBlitPixelArray, pbpa_Top),
+    SHADOW_FIELD(  24, 4, pdtBlitPixelArray, pbpa_Width),
+    SHADOW_FIELD(  28, 4, pdtBlitPixelArray, pbpa_Height),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* pdtScale: m68k=16B, aros=32B, 4 fields */
+/* pdtScale: m68k=16B, 4 fields */
 static const struct M68KFieldMap shadow_fields_pdtScale[] = {
-    {    0,    0, SF_LONG , 0, 0, NULL },  /* MethodID */
-    {    4,    8, SF_LONG , 0, 0, NULL },  /* ps_NewWidth */
-    {    8,   16, SF_LONG , 0, 0, NULL },  /* ps_NewHeight */
-    {   12,   24, SF_LONG , 0, 0, NULL },  /* ps_Flags */
+    SHADOW_FIELD(   0, 4, pdtScale, MethodID),
+    SHADOW_FIELD(   4, 4, pdtScale, ps_NewWidth),
+    SHADOW_FIELD(   8, 4, pdtScale, ps_NewHeight),
+    SHADOW_FIELD(  12, 4, pdtScale, ps_Flags),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* pmState: m68k=8B, aros=16B, 2 fields */
+/* pmState: m68k=8B, 2 fields */
 static const struct M68KFieldMap shadow_fields_pmState[] = {
-    {    0,    0, SF_LONG , 0, 0, NULL },  /* pms_Method */
-    {    4,    8, SF_LONG , 0, 0, NULL },  /* pms_OldState */
+    SHADOW_FIELD(   0, 4, pmState, pms_Method),
+    SHADOW_FIELD(   4, 4, pmState, pms_OldState),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* pmTime: m68k=8B, aros=16B, 2 fields */
+/* pmTime: m68k=8B, 2 fields */
 static const struct M68KFieldMap shadow_fields_pmTime[] = {
-    {    0,    0, SF_LONG , 0, 0, NULL },  /* pmt_Method */
-    {    4,    8, SF_LONG , 0, 0, NULL },  /* pmt_Time */
+    SHADOW_FIELD(   0, 4, pmTime, pmt_Method),
+    SHADOW_FIELD(   4, 4, pmTime, pmt_Time),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* timerequest: m68k=40B, aros=80B, 14 fields */
+/* timerequest: m68k=40B, 14 fields */
 static const struct M68KFieldMap shadow_fields_timerequest[] = {
-    {    0,    0, SF_PTR  , 0, 0, NULL },  /* ln_Succ */
-    {    4,    8, SF_PTR  , 0, 0, NULL },  /* ln_Pred */
-    {    8,   16, SF_BYTE , 0, 0, NULL },  /* ln_Type */
-    {    9,   17, SF_BYTE , 0, 0, NULL },  /* ln_Pri */
-    {   10,   24, SF_PTR  , 0, 0, NULL },  /* ln_Name */
-    {   14,   32, SF_PTR  , 0, 0, NULL },  /* mn_ReplyPort */
-    {   18,   40, SF_WORD , 0, 0, NULL },  /* mn_Length */
-    {   20,   48, SF_PTR  , 0, 0, NULL },  /* io_Device */
-    {   24,   56, SF_PTR  , 0, 0, NULL },  /* io_Unit */
-    {   28,   64, SF_WORD , 0, 0, NULL },  /* io_Command */
-    {   30,   66, SF_BYTE , 0, 0, NULL },  /* io_Flags */
-    {   31,   67, SF_BYTE , 0, 0, NULL },  /* io_Error */
-    {   32,   72, SF_LONG , 0, 0, NULL },  /* tv_sec */
-    {   32,   72, SF_LONG , 0, 0, NULL },  /* tv_secs */
+    SHADOW_FIELD(   0, 4, timerequest, tr_node.io_Message.mn_Node.ln_Succ),
+    SHADOW_FIELD(   4, 4, timerequest, tr_node.io_Message.mn_Node.ln_Pred),
+    SHADOW_FIELD(   8, 1, timerequest, tr_node.io_Message.mn_Node.ln_Type),
+    SHADOW_FIELD(   9, 1, timerequest, tr_node.io_Message.mn_Node.ln_Pri),
+    SHADOW_FIELD(  10, 4, timerequest, tr_node.io_Message.mn_Node.ln_Name),
+    SHADOW_FIELD(  14, 4, timerequest, tr_node.io_Message.mn_ReplyPort),
+    SHADOW_FIELD(  18, 2, timerequest, tr_node.io_Message.mn_Length),
+    SHADOW_FIELD(  20, 4, timerequest, tr_node.io_Device),
+    SHADOW_FIELD(  24, 4, timerequest, tr_node.io_Unit),
+    SHADOW_FIELD(  28, 2, timerequest, tr_node.io_Command),
+    SHADOW_FIELD(  30, 1, timerequest, tr_node.io_Flags),
+    SHADOW_FIELD(  31, 1, timerequest, tr_node.io_Error),
+    SHADOW_FIELD(  32, 4, timerequest, tr_time.tv_sec),
+    SHADOW_FIELD(  32, 4, timerequest, tr_time.tv_secs),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* timeval: m68k=8B, aros=8B, 2 fields */
+/* timeval: m68k=8B, 2 fields */
 static const struct M68KFieldMap shadow_fields_timeval[] = {
-    {    0,    0, SF_LONG , 0, 0, NULL },  /* tv_sec */
-    {    0,    0, SF_LONG , 0, 0, NULL },  /* tv_secs */
+    SHADOW_FIELD(   0, 4, timeval, tv_sec),
+    SHADOW_FIELD(   0, 4, timeval, tv_secs),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 

@@ -484,19 +484,20 @@ static IPTR thunk_exec_FindTask(struct M68KEmuContext *ctx, void *cpu)
 }
 
 /* -132: Forbid() */
-static IPTR thunk_exec_Forbid(struct M68KEmuContext *ctx, void *cpu) { ctx->forbid++; return 0; }
+static IPTR thunk_exec_Forbid(struct M68KEmuContext *ctx, void *cpu) { ctx->forbid++; m68k_nest_counts(ctx); return 0; }
 
 /* -120: Disable() / -126: Enable(): the program's own tasks and its
    vertical blank wait; native interrupts are never turned off for it */
-static IPTR thunk_exec_Disable_m(struct M68KEmuContext *ctx, void *cpu) { ctx->forbid++; ctx->disable++; return 0; }
+static IPTR thunk_exec_Disable_m(struct M68KEmuContext *ctx, void *cpu) { ctx->forbid++; ctx->disable++; m68k_nest_counts(ctx); return 0; }
 static IPTR thunk_exec_Enable_m(struct M68KEmuContext *ctx, void *cpu)
 {
     if (ctx->disable > 0) { ctx->disable--; if (ctx->forbid > 0) ctx->forbid--; }
+    m68k_nest_counts(ctx);
     return 0;
 }
 
 /* -138: Permit() */
-static IPTR thunk_exec_Permit(struct M68KEmuContext *ctx, void *cpu) { if (ctx->forbid > 0) ctx->forbid--; return 0; }
+static IPTR thunk_exec_Permit(struct M68KEmuContext *ctx, void *cpu) { if (ctx->forbid > 0) ctx->forbid--; m68k_nest_counts(ctx); return 0; }
 
 /* -624: CopyMem(A0=source, A1=dest, D0=size) */
 static IPTR thunk_exec_CopyMem(struct M68KEmuContext *ctx, void *cpu)
@@ -1850,7 +1851,7 @@ static IPTR thunk_exec_RemHead_m(struct M68KEmuContext *ctx, void *cpu)
 {
     ULONG l = THUNK_A(0), head;
     if (ML_NATIVE(l))
-        return (IPTR)RemHead(THUNK_PTR(0));
+        return m68k_native_out(ctx, RemHead(THUNK_PTR(0)));
     head = m68k_read32(ctx, l);
     if (!m68k_read32(ctx, head))
         return 0;
@@ -1863,7 +1864,7 @@ static IPTR thunk_exec_RemTail_m(struct M68KEmuContext *ctx, void *cpu)
 {
     ULONG l = THUNK_A(0), tail;
     if (ML_NATIVE(l))
-        return (IPTR)RemTail(THUNK_PTR(0));
+        return m68k_native_out(ctx, RemTail(THUNK_PTR(0)));
     tail = m68k_read32(ctx, l + 8);
     if (!m68k_read32(ctx, tail + 4))
         return 0;
@@ -1913,6 +1914,19 @@ static IPTR thunk_exec_FindName(struct M68KEmuContext *ctx, void *cpu)
     if (m68k_list == ctx->m68k_sysbase + M68K_EXECBASE_DEVICELIST ||
         m68k_list == ctx->m68k_sysbase + M68K_EXECBASE_RESOURCELIST)
         return 0;
+    /* PortList and SemaphoreList are empty in the fake ExecBase as well:
+       exec guards the native lists with locks the program does not take,
+       so a name is looked up through the calls that take them */
+    if (m68k_list == ctx->m68k_sysbase + M68K_EXECBASE_PORTLIST)
+    {
+        struct MsgPort *port;
+
+        name = (CONST_STRPTR)m68k_to_host(ctx, THUNK_A(1));
+        port = name ? FindPort(name) : NULL;
+        return port ? shadow_create_by_name(ctx, "MsgPort", port) : 0;
+    }
+    if (m68k_list == ctx->m68k_sysbase + M68K_EXECBASE_SEMAPHORELIST)
+        return thunk_exec_FindSemaphore(ctx, cpu);
 
     if (!ML_NATIVE(m68k_list))
     {
@@ -3028,7 +3042,17 @@ static IPTR thunk_dos_AllocDosObject(struct M68KEmuContext *ctx, void *cpu)
         FreeDosObject(DOS_EXALLCONTROL, obj);
         return exall_control_new(ctx);
     }
-    return (IPTR)obj;
+    return m68k_native_out(ctx, obj);
+}
+
+/* An object, packet or port that native DOS may be given: a native object
+   the program holds as a handle or as a 68k copy. NULL for anything in the
+   program's own memory, whose 68k layout native DOS cannot read. */
+static APTR dos_native_object(struct M68KEmuContext *ctx, ULONG addr)
+{
+    if (!addr || (addr < ctx->mem_size && !shadow_lookup(ctx, addr)))
+        return NULL;
+    return m68k_to_host_or_shadow(ctx, addr);
 }
 
 /* a FileInfoBlock from AllocDosObject is a shadow: free the native one and its 68k copy */
@@ -3055,7 +3079,14 @@ static IPTR thunk_dos_FreeDosObject(struct M68KEmuContext *ctx, void *cpu)
         }
         return 0;
     }
-    FreeDosObject(type, THUNK_PTR(2));
+    if (!(obj = dos_native_object(ctx, m)))
+    {
+        if (m)
+            m68k_log(ctx, "%s: FreeDosObject of type %lu with an object in the program's memory is not supported yet",
+                     ctx->program_name[0] ? ctx->program_name : "68k program", (unsigned long)type);
+        return 0;
+    }
+    FreeDosObject(type, obj);
     return 0;
 }
 
@@ -3273,21 +3304,40 @@ static IPTR thunk_dos_FreeDeviceProc_m(struct M68KEmuContext *ctx, void *cpu)
     return 0;
 }
 
+/* -246: SendPkt(D1=packet, D2=port, D3=replyport) */
 static IPTR thunk_dos_SendPkt(struct M68KEmuContext *ctx, void *cpu)
 {
-    SendPkt((struct DosPacket *)THUNK_PTR(1),
-            (struct MsgPort *)THUNK_PTR(2), (struct MsgPort *)THUNK_PTR(3));
+    struct DosPacket *dp = (struct DosPacket *)dos_native_object(ctx, THUNK_D(1));
+    struct MsgPort *port = (struct MsgPort *)dos_native_object(ctx, THUNK_D(2));
+    struct MsgPort *reply = (struct MsgPort *)dos_native_object(ctx, THUNK_D(3));
+
+    if (!dp || !port || !reply)
+    {
+        m68k_log(ctx, "%s: SendPkt of a packet or port in the program's memory is not supported yet",
+                 ctx->program_name[0] ? ctx->program_name : "68k program");
+        return 0;
+    }
+    SendPkt(dp, port, reply);
     return 0;
 }
 
 static IPTR thunk_dos_WaitPkt(struct M68KEmuContext *ctx, void *cpu)
 {
-    return (IPTR)WaitPkt();
+    return m68k_native_out(ctx, WaitPkt());
 }
 
+/* -258: ReplyPkt(D1=packet, D2=result1, D3=result2) */
 static IPTR thunk_dos_ReplyPkt(struct M68KEmuContext *ctx, void *cpu)
 {
-    ReplyPkt((struct DosPacket *)THUNK_PTR(1), THUNK_D(2), THUNK_D(3));
+    struct DosPacket *dp = (struct DosPacket *)dos_native_object(ctx, THUNK_D(1));
+
+    if (!dp)
+    {
+        m68k_log(ctx, "%s: ReplyPkt of a packet in the program's memory is not supported yet",
+                 ctx->program_name[0] ? ctx->program_name : "68k program");
+        return 0;
+    }
+    ReplyPkt(dp, (SIPTR)(LONG)THUNK_D(2), (LONG)THUNK_D(3));
     return 0;
 }
 
@@ -3471,7 +3521,7 @@ const struct M68KThunkEntry m68kemu_thunks_dos[] = {
     { 888, thunk_dos_StartNotify_m },
     { 894, thunk_dos_EndNotify_m },
     { 222, thunk_dos_Execute },
-    { 604, thunk_dos_SystemTagList },
+    { 606, thunk_dos_SystemTagList },
     { 504, thunk_dos_RunCommand },
     { 498, m68k_dos_CreateNewProc },
     { 198, thunk_dos_Delay_m },
@@ -3492,8 +3542,8 @@ const struct M68KThunkEntry m68kemu_thunks_dos[] = {
     { 246, thunk_dos_SendPkt },
     { 252, thunk_dos_WaitPkt },
     { 258, thunk_dos_ReplyPkt },
-    { 348, thunk_dos_VFPrintf },
-    { 354, thunk_dos_VFWritef },
+    { 348, thunk_dos_VFWritef },
+    { 354, thunk_dos_VFPrintf },
     {  54, thunk_dos_Input },
     {  60, thunk_dos_Output },
     { 948, thunk_dos_PutStr },

@@ -50,6 +50,10 @@ variables:
   AROSTOOLCHAINGCCVER:   $[ coalesce(variables['arosbuild.gcc.version'], 'default') ]
   AROSTOOLCHAINLLVMVER:  $[ coalesce(variables['arosbuild.llvm.version'], 'default') ]
   AROSTOOLCHAINRUSTVER:  $[ coalesce(variables['arosbuild.rust.version'], 'none') ]
+  # CMake 4 removed compatibility with cmake_minimum_required() below 3.5,
+  # which the older LLVM releases (and some ports) still declare. This only
+  # raises the policy floor for such projects; newer ones are unaffected.
+  CMAKE_POLICY_VERSION_MINIMUM: '3.5'
 
 stages:
 # =============================================================================
@@ -89,12 +93,32 @@ stages:
     # fails with a tar error if it is missing.
     - script: mkdir -p '$(Agent.TempDirectory)/toolchain-cache'
       displayName: 'Prepare toolchain cache directory'
+    # A cached toolchain only works on the kind of host it was built on, at
+    # the path it was built at: it embeds absolute paths (collect-aros runs
+    # the linker by its full path, GCC bakes its --prefix, LLVM's cmake
+    # package files name its build tree) and its host binaries link against
+    # the host's libraries. Both are read from the running agent and go into
+    # the cache key, so a new image or work path rebuilds the toolchain
+    # instead of restoring a broken one. ('ubuntu-latest' moved from 24.04 to
+    # 26.04 in Nov 2026, changing the work path from /home/vsts to
+    # /home/runner; the old key restored the 24.04 toolchains there and every
+    # build failed.)
+    - script: |
+        if [ -r /etc/os-release ]; then
+          . /etc/os-release
+          host="${ID}-${VERSION_ID}"
+        else
+          host="$(uname -s)-$(sw_vers -productVersion 2>/dev/null || uname -r)"
+        fi
+        echo "Toolchain host: ${host}, path: $(AZBUILDPATH)"
+        echo "##vso[task.setvariable variable=AROSTOOLCHAINHOST]${host}"
+      displayName: 'Identify toolchain host'
     - task: Cache@2
       inputs:
         # collect-aros is installed into the toolchain directory and travels
         # in the cached tarball, so a change to it has to miss the cache the
         # way a change under tools/crosstools does.
-        key: 'aros-toolchain | "$(arosbuild.name)" | "$(AROSTOOLCHAINFAMILY)" | "$(AROSTOOLCHAINGCCVER)" | "$(AROSTOOLCHAINLLVMVER)" | "$(AROSTOOLCHAINRUSTVER)" | tools/crosstools/** | tools/collect-aros/**'
+        key: 'aros-toolchain | "$(arosbuild.name)" | "$(AROSTOOLCHAINHOST)" | "$(AZBUILDPATH)" | "$(AROSTOOLCHAINFAMILY)" | "$(AROSTOOLCHAINGCCVER)" | "$(AROSTOOLCHAINLLVMVER)" | "$(AROSTOOLCHAINRUSTVER)" | tools/crosstools/** | tools/collect-aros/**'
         path: '$(Agent.TempDirectory)/toolchain-cache'
         cacheHitVar: TOOLCHAIN_RESTORED
       displayName: 'Restore cached toolchain'

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     POSIX.1-2008 function strndup().
 */
@@ -41,10 +41,7 @@
 ******************************************************************************/
 {
     char * copy;
-    int len = strlen(s);
-
-    if (len > n)
-        len = n;
+    size_t len = strnlen(s, n);
 
     if ((copy = malloc (len+1)))
     {

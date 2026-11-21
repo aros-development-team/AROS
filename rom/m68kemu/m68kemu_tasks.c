@@ -314,6 +314,7 @@ void m68k_gil_obtain(struct M68KEmuContext *ctx)
     ctx->forbid = ts->forbid;
     ctx->disable = ts->disable;
     ts->forbid = ts->disable = 0;
+    m68k_nest_counts(ctx);      /* the program's ExecBase shows the nesting of the task that runs */
 }
 
 void m68k_gil_release(struct M68KEmuContext *ctx)
@@ -864,6 +865,7 @@ struct M68KChild
 {
     struct M68KEmuContext *ctx;
     ULONG entry, stack, stacksize, exitcode, exitdata;
+    ULONG copy;         /* a seglist copied for this child that it gives back at its end, or 0 */
     struct Task *parent;
 };
 
@@ -890,6 +892,14 @@ static LONG child_entry(void)
             regs[1] = ch->exitdata;
             M68KEmu_RunTask(ctx, ch->exitcode, ch->stack + ch->stacksize, regs);
         }
+    }
+    /* A copy this child owns: its entry and its exit code have returned,
+       nothing of it runs any more. Given back while the lock is held,
+       before the stack and the rest. */
+    if (ch->copy)
+    {
+        M68KEmu_FreeHunks(ctx, ch->copy);
+        ch->copy = 0;
     }
     M68KEmu_HeapFree(ctx, ch->stack, ch->stacksize);
     ctx->num_children--;
@@ -970,15 +980,20 @@ static void m68k_process_forget(struct M68KEmuContext *ctx, struct Task *task)
 }
 
 /* A process of the program: from CreateNewProc tags, or CreateProc's name,
-   priority, seglist and stack; NP_Entry or the seglist is 68k code */
+   priority, seglist and stack; NP_Entry or the seglist is 68k code.
+   freeseg: NP_FreeSeglist when the program does not give it, as dos has
+   it: TRUE for CreateNewProc, FALSE for CreateProc */
 static IPTR create_proc(struct M68KEmuContext *ctx, void *cpu, ULONG state,
-                        ULONG name68k, LONG pri, ULONG seglist, ULONG stacksize)
+                        ULONG name68k, LONG pri, ULONG seglist, ULONG stacksize,
+                        BOOL freeseg)
 {
     ULONG ti, tags = state;
     struct M68KChild *ch;
     struct TagItem t[20];
     struct Process *p;
     char *name = NULL;
+    ULONG copy = 0;     /* the entry of a seglist copied here for this process */
+    BOOL freeseg_given = FALSE;
     int n = 0;
 
     if (!(ch = AllocVec(sizeof(*ch), MEMF_CLEAR)))
@@ -1020,11 +1035,20 @@ static IPTR create_proc(struct M68KEmuContext *ctx, void *cpu, ULONG state,
         case NP_HomeDir:
             t[n].ti_Tag = tag; t[n++].ti_Data = (IPTR)m68k_bptr_in(ctx, data);
             break;
+        case NP_FreeSeglist:
+            /* passed on as before, every one; a copy made below follows
+               the first, the one dos goes by (FindTagItem) */
+            if (!freeseg_given)
+            {
+                freeseg = data != 0;
+                freeseg_given = TRUE;
+            }
+            t[n].ti_Tag = tag; t[n++].ti_Data = data;
+            break;
         case NP_CloseInput:
         case NP_CloseOutput:
         case NP_CloseError:
         case NP_Cli:
-        case NP_FreeSeglist:
             t[n].ti_Tag = tag; t[n++].ti_Data = data;
             break;
         }
@@ -1080,7 +1104,7 @@ static IPTR create_proc(struct M68KEmuContext *ctx, void *cpu, ULONG state,
         if (seg)
         {
             ULONG ep = ctx->entry_point, ss = ctx->seg_start;
-            ch->entry = M68KEmu_LoadHunks(ctx, seg);
+            ch->entry = copy = M68KEmu_LoadHunks(ctx, seg);
             ctx->entry_point = ep;
             ctx->seg_start = ss;
         }
@@ -1094,6 +1118,9 @@ static IPTR create_proc(struct M68KEmuContext *ctx, void *cpu, ULONG state,
             while (st && (t2 = m68k_next_tag(ctx, &st)))
                 bug("[m68kemu]   %08lx = %08lx\n", (unsigned long)m68k_read32(ctx, t2), (unsigned long)m68k_read32(ctx, t2 + 4));
         }
+        /* a seglist copied for a process that is not started */
+        if (copy)
+            M68KEmu_FreeHunks(ctx, copy);
         FreeVec(ch);
         FreeVec(name);
         return 0;
@@ -1113,32 +1140,50 @@ static IPTR create_proc(struct M68KEmuContext *ctx, void *cpu, ULONG state,
         ctx->num_children--;
         m68k_context_release(ctx);
         M68KEmu_HeapFree(ctx, ch->stack, ch->stacksize);
+        if (copy)
+            M68KEmu_FreeHunks(ctx, copy);
         FreeVec(ch);
         return 0;
     }
     /* the child waits for the program's lock before it does anything */
     m68k_process_forget(ctx, &p->pr_Task);
     ULONG mproc = m68k_process_of(ctx, &p->pr_Task);
+    /* A copy of a seglist that dos would unload when the process ends
+       (NP_FreeSeglist TRUE) belongs to the child from here, which gives it
+       back after its last use; set while the parent holds the lock, before
+       the child can run. With NP_FreeSeglist FALSE, as CreateProc has it,
+       the program keeps the seglist and whatever it published of it (an
+       interrupt, a timer vector, a semaphore) after the process: the copy
+       stays in the program's memory then, as before. */
+    if (mproc && copy && freeseg)
+        ch->copy = copy;
     /* No m68k Process for it: the program is told that there is no child.
        The native process exists already, so it is cancelled while it still
        waits for the lock: it will run neither its entry nor its exit code,
        and gives back its stack, its count and its hold itself. */
     if (!mproc)
+    {
         ch->entry = ch->exitcode = 0;
+        /* a seglist copied for a process that is cancelled: it is not
+           going to be run, so it is given back now, while the child still
+           waits for the lock */
+        if (copy)
+            M68KEmu_FreeHunks(ctx, copy);
+    }
     return mproc;
 }
 
 /* dos -498: CreateNewProc(D1=tags) */
 IPTR m68k_dos_CreateNewProc(struct M68KEmuContext *ctx, void *cpu)
 {
-    return create_proc(ctx, cpu, M68KEmu_GetD(cpu, 1), 0, 0, 0, 0);
+    return create_proc(ctx, cpu, M68KEmu_GetD(cpu, 1), 0, 0, 0, 0, TRUE);
 }
 
 /* dos -138: CreateProc(D1=name, D2=pri, D3=seglist, D4=stack) -> the process's port */
 IPTR m68k_dos_CreateProc(struct M68KEmuContext *ctx, void *cpu)
 {
     IPTR proc = create_proc(ctx, cpu, 0, M68KEmu_GetD(cpu, 1), (LONG)M68KEmu_GetD(cpu, 2),
-                            M68KEmu_GetD(cpu, 3), M68KEmu_GetD(cpu, 4));
+                            M68KEmu_GetD(cpu, 3), M68KEmu_GetD(cpu, 4), FALSE);
     return proc ? proc + M68K_PR_MSGPORT : 0;
 }
 

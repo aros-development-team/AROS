@@ -47,7 +47,8 @@ struct M68KEmuContext
     std::vector<UBYTE> storage = std::vector<UBYTE>(65536);
     UBYTE *mem = storage.data();
     ULONG mem_size = 65536, load_lo = 0, load_hi = 0, heap = 0x4000;
-    ULONG opens = 0, heap_calls = 0, file_pos = 0;
+    ULONG entry_point = 0, seg_start = 0;
+    ULONG opens = 0, heap_calls = 0, heap_frees = 0, file_pos = 0;
     bool trace_calls = false, low_guard = false;
     M68KTaskState task;
     struct { char name[64]; ULONG base, reopen; } m68klibs[16] = {};
@@ -83,14 +84,21 @@ static STRPTR FilePart(STRPTR name)
     const char *p = std::strrchr(name, ':');
     return const_cast<char *>(p ? p + 1 : name);
 }
+/* One hunk at 0x1000, laid out as the loader places it: the size of its
+   block and the link to the next hunk (none) are the two words before it. */
 static ULONG M68KEmu_LoadHunksFromMemory(M68KEmuContext *ctx, UBYTE *, LONG)
-{ ctx->load_lo = 0x1000; ctx->load_hi = 0x2000; return 0x1000; }
+{
+    const UBYTE words[8] = {0, 0, 0x10, 0x08, 0, 0, 0, 0};
+    std::memcpy(ctx->mem + 0x0FF8, words, sizeof(words));
+    ctx->load_lo = 0x1000; ctx->load_hi = 0x2000; return 0x1000;
+}
 static ULONG M68KEmu_HeapAlloc(M68KEmuContext *ctx, ULONG size, ULONG)
 {
     ++ctx->heap_calls;
     CHECK(size <= ctx->mem_size - ctx->heap, "fixture heap request fits");
     ULONG result = ctx->heap; ctx->heap += (size + 7) & ~7u; return result;
 }
+static void M68KEmu_HeapFree(M68KEmuContext *ctx, ULONG, ULONG) { ++ctx->heap_frees; }
 #include "accessors.inc"
 #include "library_loading.inc"
 
@@ -167,6 +175,7 @@ static void run_case(UBYTE resident, int data_version, int init_version,
         return;
     }
     CHECK(base && ctx.num_m68klibs == 1, "loader prepared one reusable library");
+    CHECK(!ctx.heap_frees, "a library that loads gives nothing back to the heap");
     UWORD final_version = static_cast<UWORD>(init_version >= 0 ? init_version :
                                            data_version >= 0 ? data_version : resident);
     bool accepted = !init_fails && final_version >= requested;

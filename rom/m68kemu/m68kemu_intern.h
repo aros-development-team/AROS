@@ -323,6 +323,7 @@ APTR  m68k_image_cached(struct M68KEmuContext *ctx, ULONG mi);
 void  m68k_image_cache_free(struct M68KEmuContext *ctx);
 BPTR  m68k_bptr_in(struct M68KEmuContext *ctx, ULONG v);
 void  m68k_bptr_drop(struct M68KEmuContext *ctx, ULONG v);
+ULONG m68k_native_out(struct M68KEmuContext *ctx, APTR p);
 void  m68k_low_write_trap(struct M68KEmuContext *ctx, ULONG addr, const char *who);
 void  m68k_planar_touch(struct M68KEmuContext *ctx, ULONG addr, ULONG nbytes);
 void  m68k_cia_timer_control(struct M68KEmuContext *ctx, int chip, int timer, UBYTE cr);
@@ -365,6 +366,8 @@ void  m68k_sem_list(struct M68KEmuContext *ctx, ULONG list, BOOL obtain);
 void  m68k_gfx_disown(struct M68KEmuContext *ctx, APTR p);
 void  m68k_gil_init(struct M68KEmuContext *ctx);
 void  m68k_gil_obtain(struct M68KEmuContext *ctx);
+/* IDNestCnt and TDNestCnt of the program's ExecBase follow ctx->disable and ctx->forbid */
+void  m68k_nest_counts(struct M68KEmuContext *ctx);
 void  m68k_gil_release(struct M68KEmuContext *ctx);
 void  m68k_gil_yield(struct M68KEmuContext *ctx);
 BOOL  m68k_port_is_68k(struct M68KEmuContext *ctx, ULONG mport);
@@ -493,6 +496,9 @@ ULONG  M68KEmu_HeapAllocAbs(struct M68KEmuContext *ctx, ULONG size, ULONG addr);
 void   m68k_publish_base(struct M68KEmuContext *ctx, ULONG base, const char *name);
 ULONG  M68KEmu_LoadHunks(struct M68KEmuContext *ctx, BPTR segList);
 ULONG  M68KEmu_LoadHunksFromMemory(struct M68KEmuContext *ctx, UBYTE *data, LONG size);
+BOOL   M68KEmu_ImageHunk(struct M68KEmuContext *ctx, ULONG data, ULONG *size, ULONG *next);
+void   M68KEmu_FreeImage(struct M68KEmuContext *ctx, ULONG entry);
+void   M68KEmu_FreeHunks(struct M68KEmuContext *ctx, ULONG entry);
 ULONG  M68KEmu_LoadM68KLibrary(struct M68KEmuContext *ctx, const char *name, ULONG version);
 ULONG  M68KEmu_SetupLibBase(struct M68KEmuContext *ctx, UWORD lib_id,
                              const char *name, UWORD num_vectors,

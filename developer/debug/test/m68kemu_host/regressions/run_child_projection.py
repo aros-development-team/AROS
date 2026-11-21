@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Compile the actual 68k child creation and child entry with a recording C fixture."""
+"""Compile the actual 68k child creation, child entry and seglist copy with a recording C fixture."""
 # Copyright (C) 2026, The AROS Development Team. All rights reserved.
 # Adapted from the focused guest argument API regression runner.
 # No native SDK, CPU backend or application binary is needed.
@@ -57,8 +57,10 @@ def prepare(source, output):
     thunks = path('m68kemu_thunks.c')
     tasks = path('m68kemu_tasks.c')
     tags = path('m68kemu_tags.c')
+    memory = path('m68kemu_memory.c')
     native = [source / 'compiler/include' / name for name in (
         'dos/dostags.h', 'utility/tagitem.h', 'exec/nodes.h', 'exec/memory.h')]
+    doshunks = source / 'compiler/include/dos/doshunks.h'
     # The official headers retain Latin-1 bytes. Keep their raw source
     # unchanged; only ASCII macro lines enter the fixture.
     text = '\n'.join(f.read_text(encoding='latin1')
@@ -72,7 +74,7 @@ def prepare(source, output):
              'NP_Output', 'NP_CloseInput', 'NP_CloseOutput', 'NP_Error',
              'NP_CloseError', 'NP_CurrentDir', 'NP_StackSize', 'NP_Name',
              'NP_Priority', 'NP_HomeDir', 'NP_Cli', 'NP_ExitCode', 'NP_ExitData',
-             'NP_UserData', 'GSLI_Dummy', 'GSLI_68KHUNK', 'NT_PROCESS',
+             'NP_UserData', 'GSLI_Dummy', 'GSLI_68KHUNK', 'GSLI_68KRELOCS', 'NT_PROCESS',
              'MEMF_ANY', 'MEMB_CLEAR', 'MEMF_CLEAR')
     constants = []
     for name in names:
@@ -99,23 +101,60 @@ def prepare(source, output):
     walker = ['item_ok', 'next_item', 'm68k_next_tag']
     (output / 'tags.inc').write_text('\n'.join(
         extract_function(tags, name) for name in walker))
-    # The record of a child, what its native process runs, and its creation.
-    children = ['child_entry', 'proc_name', 'create_proc']
+    # The record of a child, what its native process runs, its creation, and
+    # the two dos entries that make one, each with its own default for
+    # NP_FreeSeglist.
+    children = ['child_entry', 'proc_name', 'create_proc', 'm68k_dos_CreateNewProc', 'm68k_dos_CreateProc']
     (output / 'children.inc').write_text(
         extract_struct(tasks, 'M68KChild') + '\n' + '\n'.join(
             extract_function(tasks, name) for name in children))
+    # A child whose code is a seglist that dos loaded: the actual copy into
+    # the program's memory, and, in a tree that gives a copy back, the walk
+    # of the copy and its release. A tree from before that has neither; its
+    # create_proc does not ask for them.
+    seglist = {}
+    for name in ('M68KEmu_ImageHunk', 'M68KEmu_LoadHunks', 'M68KEmu_FreeHunks'):
+        try:
+            seglist[name] = extract_function(memory, name)
+        except ValueError:
+            if name == 'M68KEmu_LoadHunks':
+                raise
+    (output / 'seglist.inc').write_text('\n'.join(seglist.values()))
+    # The relocation list dos keeps for a 68k seglist, as the tree's header
+    # has it: the HUNKRELOC_* kinds, struct HunkRelocGroup and struct
+    # HunkRelocTable, each taken by itself. A kind the header defines more
+    # than once must be defined alike. Only plain ASCII enters the fixture.
+    hunks = doshunks.read_text(encoding='latin1')
+    relocs = []
+    for kind in ('HUNKRELOC_ABS', 'HUNKRELOC_REL', 'HUNKRELOC_BASE'):
+        found = {d.split('/*')[0].rstrip() for d in re.findall(
+            r'(?m)^[ \t]*#define\s+' + kind + r'\s+[^\n]+', hunks)}
+        if len(found) != 1:
+            raise ValueError(f'{doshunks}: one definition of {kind} expected')
+        relocs.append(found.pop().strip())
+    for name in ('HunkRelocGroup', 'HunkRelocTable'):
+        found = re.findall(r'(?ms)^struct ' + name + r'\s*\{.*?^\};', hunks)
+        if len(found) != 1:
+            raise ValueError(f'{doshunks}: one struct {name} expected')
+        relocs.append(found[0])
+    if not all(part.isascii() for part in relocs):
+        raise ValueError(f'{doshunks}: the relocation list is not plain ASCII')
+    (output / 'relocs.inc').write_text('\n'.join(relocs) + '\n')
 
     def sha(p):
         return hashlib.sha256(p.read_bytes()).hexdigest()
     record = dict(
-        source_inputs={str(p): sha(p) for p in (header, offsets, thunks, tasks, tags, *native)},
-        actual_functions=children + ['m68k_process_of'] + registry + lifetime + walker,
+        source_inputs={str(p): sha(p) for p in (header, offsets, thunks, tasks, tags, memory,
+                                                *native, doshunks)},
+        actual_functions=children + ['m68k_process_of'] + registry + lifetime + walker + list(seglist),
         actual_structure='struct M68KChild',
+        relocation_list='struct HunkRelocGroup, HUNKRELOC_*, struct HunkRelocTable',
         generated={p.name: sha(p) for p in output.glob('*.inc')},
-        scope='Actual create_proc, child_entry, Process lookup, registry, tag walker '
-              'and accessor bodies; controlled native process creation, scheduling, '
-              'lock, heaps, layouts and a recording stand-in for the run of guest '
-              'code; no native SDK/ABI, CPU, lock or native process')
+        scope='Actual create_proc, child_entry, the CreateNewProc and CreateProc entries, Process lookup, registry, tag walker, '
+              'seglist copy and release and accessor bodies; controlled native process '
+              'creation, scheduling, lock, heaps, layouts, a native seglist with the '
+              'relocation list dos keeps for it, and a recording stand-in for the run of '
+              'guest code; no native SDK/ABI, CPU, lock, native process or LoadSeg()')
     (output / 'source-record.local.json').write_text(json.dumps(record, indent=2) + '\n')
 
 

@@ -22,7 +22,29 @@
 #include "internalloadseg.h"
 #include "include/loadseg.h"
 
-#define GETHUNKPTR(x) ((UBYTE*)(BADDR(hunktab[x]) + sizeof(BPTR)))
+/* A 68k relocation can start at a word offset. m68k can access it
+   directly; other targets must not assume ULONG alignment. */
+static inline ULONG hunk_read_long(const void *src)
+{
+#ifdef __mc68000
+    return *(const ULONG *)src;
+#else
+    ULONG value;
+    __builtin_memcpy(&value, src, sizeof(value));
+    return value;
+#endif
+}
+
+static inline void hunk_write_long(void *dest, ULONG value)
+{
+#ifdef __mc68000
+    *(ULONG *)dest = value;
+#else
+    __builtin_memcpy(dest, &value, sizeof(value));
+#endif
+}
+
+#define GETHUNKPTR(x) ((UBYTE *)BADDR(hunktab[x]) + sizeof(BPTR))
 
 #ifndef __mc68000
 /* The relocations applied so far, for GSLI_68KRELOCS. An allocation failure
@@ -318,7 +340,7 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
          pointer to the next hunk is located)
        */
     if (prevhunk)
-      ((BPTR *)(BADDR(prevhunk)))[0] = hunktab[i];
+      *(BPTR *)BADDR(prevhunk) = hunktab[i];
     prevhunk = hunktab[i];
   }
 
@@ -394,7 +416,8 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
         D(bug("HUNK_RELOC32:\n"));
         while (1)
         {
-          ULONG *addr, val;
+          UBYTE *addr;
+          ULONG val;
           ULONG offset;
 
           if (hunk_long(&hr, &lcount))
@@ -420,14 +443,14 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
             offset = AROS_BE2LONG(offset);
 
             //D(bug("\t\t0x%06lx\n", offset));
-            addr = (ULONG *)(GETHUNKPTR(lasthunk) + offset);
+            addr = GETHUNKPTR(lasthunk) + offset;
             NOTE_OFFSET(offset);
 
-            val = AROS_BE2LONG(*addr) + (IPTR)GETHUNKPTR(lcount);
+            val = AROS_BE2LONG(hunk_read_long(addr)) + (IPTR)GETHUNKPTR(lcount);
 
-            D(bug("\t %08x:    %08x ->", addr, *addr));
-            *addr = (ULONG)AROS_LONG2BE(val);
-            D(bug(" %08x (%08x)\n", *addr, val));
+            D(bug("\t %08x:    %08x ->", addr, hunk_read_long(addr)));
+            hunk_write_long(addr, (ULONG)AROS_LONG2BE(val));
+            D(bug(" %08x (%08x)\n", hunk_read_long(addr), val));
 
             --i;
           }
@@ -448,7 +471,8 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
           D(if (reltype == HUNK_RELRELOC32) bug("HUNK_RELRELOC32:\n"));
           while (1)
           {
-            ULONG *addr, val;
+            UBYTE *addr;
+            ULONG val;
             ULONG offset;
 
             Wordcount++;
@@ -485,11 +509,11 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
 
               D(if (reltype != HUNK_RELRELOC32)
                   bug("\t\t0x%06lx += 0x%lx\n", offset, GETHUNKPTR(lcount)));
-              addr = (ULONG *)(GETHUNKPTR(lasthunk) + offset);
+              addr = GETHUNKPTR(lasthunk) + offset;
               NOTE_OFFSET(offset);
 
               /* The address of the target hunk ... */
-              val = AROS_BE2LONG(*addr) + (IPTR)GETHUNKPTR(lcount);
+              val = AROS_BE2LONG(hunk_read_long(addr)) + (IPTR)GETHUNKPTR(lcount);
               if (reltype == HUNK_RELRELOC32)
               {
                 /* ... relative to this hunk */
@@ -500,7 +524,7 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
                 /* ... relative to the relocated longword */
                 val -= (IPTR)GETHUNKPTR(lasthunk) + offset;
               }
-              *addr = (ULONG)AROS_LONG2BE(val);
+              hunk_write_long(addr, (ULONG)AROS_LONG2BE(val));
 
               --i;
             } /* while (i > 0)*/
@@ -616,7 +640,7 @@ done:
     if (last > first && hunksize >= 32 / 4)
     {
       /* NOTE: HUNK_OVERLAY is not required for overlay mode. */
-      ULONG *h = (ULONG*)(BADDR(hunktab[first]));
+      ULONG *h = (ULONG*)BADDR(hunktab[first]);
 
       if (h[2] == 0x0000abcd)
       {

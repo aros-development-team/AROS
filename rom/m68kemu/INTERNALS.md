@@ -69,6 +69,15 @@ treats values outside the handle range as m68k BPTRs into containment
 thunk result whose upper 32 bits are neither 0 nor all ones: a pointer into
 containment becomes its m68k address, anything else a handle.
 
+That test cannot tell a pointer from a number when native memory lies below
+4 GB, as on raspi-aarch64, so a thunk whose native function returns a pointer
+translates it itself with `m68k_native_out()`: a pointer into containment
+becomes its m68k address, anything else a handle, at any address. The
+generated thunks do so for every pointer the native function returns, except
+a shadow copy, a BPTR and the functions of `returns_arg_pointer()`; the
+hand-written ones for `RemHead`/`RemTail` of a native list, `AllocDosObject`,
+`WaitPkt`, `CxBroker` and `CreateCxObj`.
+
 ### Address Map
 
 The ranges below show the default 64 KB root stack. A larger requested root
@@ -363,6 +372,10 @@ The emulator's state (memory, shadow registry, maps) is shared, so a CPU runs
 - `Forbid`/`Permit` count `ctx->forbid`; `Disable`/`Enable` count both
   `ctx->forbid` and `ctx->disable`. `Disable()` also suspends the vertical blank.
   Native interrupts are never turned off for the program.
+- `IDNestCnt` and `TDNestCnt` in the program's ExecBase follow these counts
+  (`m68k_nest_counts()`): -1 with no nesting, `Disable()` and `Forbid()` shown
+  apart. The four calls write them, and `m68k_gil_obtain()` writes them for the
+  task that takes the lock.
 
 ### Processes of the Program
 
@@ -376,13 +389,23 @@ program's memory (up to 12 tags are passed on):
   run as 68k code afterwards unless the program faulted.
 - `NP_Seglist`: a seglist the program got from `LoadSeg()`. If
   `GetSegListInfo(GSLI_68KHUNK)` says it is a hunk file, `M68KEmu_LoadHunks()`
-  copies it into this program's memory and it runs as above. Otherwise it is a
-  native program (Directory Opus starting the WBStartup programs): it is started
+  copies it into this program's memory and it runs as above. The copy is given
+  back at once when the child cannot be started, and inside the call when the
+  child is cancelled (below). Otherwise the child owns it when the first active
+  `NP_FreeSeglist` is TRUE, the one dos goes by (`FindTagItem`), and
+  `CreateNewProc` defaults to TRUE: `child_entry` gives it back after the entry
+  and the exit code, still holding the program lock, before its stack. With
+  `NP_FreeSeglist` FALSE, and always for `CreateProc`, the copy stays in the
+  program's memory until the context ends, since the program may have
+  published addresses inside it (an interrupt server, a timer vector, a
+  semaphore). The native seglist itself is not unloaded on this path.
+  Otherwise it is a native program (Directory Opus starting the WBStartup programs): it is started
   natively with `NP_Seglist`, a stack of at least 65536, `NP_ExitCode =
   m68k_native_proc_exit`, and recorded in `ctx->native_procs[8]`.
 - `NP_Name` is copied; `NP_Input/Output/Error/CurrentDir/HomeDir` are translated
   with `m68k_bptr_in()`; `NP_Priority`, `NP_Close*`, `NP_Cli` and
-  `NP_FreeSeglist` pass through.
+  `NP_FreeSeglist` pass through (every `NP_FreeSeglist`, in its order; only the
+  first active one decides who owns a copied 68k seglist).
 
 The parent counts the child in `ctx->num_children` before it runs and takes a
 hold on the context (below). `Cli()` returns the `pr_CLI` of the caller's m68k
@@ -403,6 +426,8 @@ process exists already. `create_proc` then cancels the child while it still
 waits for the lock: its entry and its exit code are cleared, and `child_entry`
 runs nothing of the program for it, makes no m68k Process for it, and gives
 back its stack, its count in `ctx->num_children` and its hold on the context.
+A 68k seglist copied for it is given back inside the call, before
+`CreateNewProc` returns.
 
 ### Context Lifetime
 
@@ -562,7 +587,9 @@ The library tables together hold 395 entries.
   `CopyMem`; `CacheClearU` no-op; `CacheControl` keeps the bits in `ctx->cacr`
 - Lists: `Insert`..`Enqueue`, `FindName` in the program's memory (`FindName` on
   the ExecBase `LibList` opens the named library and returns its base; on
-  `DeviceList`/`ResourceList` it returns 0, since those have no m68k base)
+  `DeviceList`/`ResourceList` it returns 0, since those have no m68k base; on
+  `PortList` it is `FindPort()` and on `SemaphoreList` `FindSemaphore()`, which
+  take exec's locks; `IntrList`, `TaskReady` and `TaskWait` are empty lists)
 - Tasks: `FindTask`, `Forbid`/`Permit`/`Disable`/`Enable`, `Wait`, `SetSignal`,
   `StackSwap`, `SuperState`/`UserState`, `Supervisor`
 - Messages: `PutMsg`, `GetMsg`, `ReplyMsg`, `WaitPort`; `AddPort`/`RemPort` no-ops
@@ -603,7 +630,11 @@ The library tables together hold 395 entries.
 - `ReadArgs`/`FreeArgs`: the result array is built natively and copied into a
   containment block (`rdargs_blocks[M68KEMU_MAX_RDARGS]`); strings and arrays are
   copied by template kind
-- Packets: `DoPkt`, `SendPkt`, `WaitPkt`, `ReplyPkt`, `GetDeviceProc`/`FreeDeviceProc`
+- Packets: `DoPkt`, `SendPkt`, `WaitPkt`, `ReplyPkt`, `GetDeviceProc`/`FreeDeviceProc`.
+  `SendPkt`, `ReplyPkt` and `FreeDosObject` (for types other than
+  `DOS_FIB` and `DOS_EXALLCONTROL`) hand native DOS only native objects (a
+  handle or a 68k copy); an object, packet or port in the program's memory
+  has the 68k layout, so the call is refused with a line in the log
 
 **intuition.library** (`m68kemu_thunks.c`, `m68kemu_boopsi.c`)
 
@@ -772,7 +803,7 @@ private ones) are left out.
 | `shadow_destroy(ctx, layout, m68k_addr)` | Remove from the registry, free the m68k block. |
 | `shadow_find_layout(name)` | Linear scan of `shadow_gen_layouts[]`. |
 | `shadow_create_by_name(ctx, name, native)` | `shadow_find_layout` + `shadow_create`. |
-| `shadow_init_execbase(ctx, m68k_base, native)` | ExecBase init: syncs the layout, sets `AttnFlags`, `VBlankFrequency`/`PowerSupplyFrequency` = 50, `ThisTask` → a 228-byte Process stand-in with a 64-byte CLI (`cli_DefaultStack` 4096, `cli_CommandName`), `pr_CIS`/`pr_COS`, `ex_EClockFrequency`, `lib_IdString` → ROM copy, the `MemList` with the two region MemHeaders, empty `LibList`/`DeviceList`/`ResourceList` (then publishes the bases made so far), and registers 5 embedded native lists (`IntrList`, `PortList`, `TaskReady`, `TaskWait`, `SemaphoreList`) as type 17. |
+| `shadow_init_execbase(ctx, m68k_base, native)` | ExecBase init: syncs the layout, sets `AttnFlags`, `VBlankFrequency`/`PowerSupplyFrequency` = 50, `ThisTask` → a 228-byte Process stand-in with a 64-byte CLI (`cli_DefaultStack` 4096, `cli_CommandName`), `pr_CIS`/`pr_COS`, `ex_EClockFrequency`, `lib_IdString` → ROM copy, the `MemList` with the two region MemHeaders, empty `LibList`/`DeviceList`/`ResourceList` (then publishes the bases made so far), and, through `m68k_execbase_private()`, five empty lists in the program's memory (`IntrList`, `PortList`, `TaskReady`, `TaskWait`, `SemaphoreList`) and the scheduler fields with values the emulator owns (`IdleCount`, `DispCount` 0, `Quantum`, `Elapsed` 4, `SysFlags`, `AttnResched` 0, `IDNestCnt`, `TDNestCnt`). Exec keeps these per CPU, for its scheduler alone or behind its own locks, so nothing of them comes from the native ExecBase. |
 | `shadow_register(ctx, m68k_addr, native, type)` | Append to `shadow_map[]`; when full, logs once which two types fill it and returns 0. |
 | `shadow_lookup(ctx, m68k_addr)` | Linear scan by m68k address, returns the native pointer or NULL. |
 | `shadow_remove(ctx, m68k_addr)` | Linear scan + swap-with-last removal. |
@@ -870,27 +901,32 @@ RastPort, ColorMap, BitMap), `m68k_drawinfo_extras()` (pens, font),
 ## Shadow Struct Layouts
 
 `m68kemu_shadow_layouts.h` is generated and holds 297 layouts
-(`SHADOW_GEN_LAYOUT_COUNT`) with 3,171 field mappings: 1,296 `SF_PTR`, 574
-`SF_LONG`, 754 `SF_WORD`, 547 `SF_BYTE`. The native offsets are those of the
-x86_64 build (see `mmakefile.src`). Format of the header comments: Name
-(m68k size → AROS size, field count).
+(`SHADOW_GEN_LAYOUT_COUNT`) with 3,171 field mappings; on a 64-bit target 1,297
+are `SF_PTR`, 573 `SF_LONG`, 754 `SF_WORD` and 547 `SF_BYTE`. Only the m68k
+offsets are numbers. Each row is `SHADOW_FIELD(m68k offset, m68k size, Struct,
+member)`, and the compiler of the target fills in the native side: the offset by
+`offsetof()`, and for a 4-byte field whether the native member has 8 bytes and
+so is a pointer. A structure that embeds a `spinlock_t` (Library, Task,
+MemHeader, MsgPort, SemaphoreRequest, SoftIntList, and whatever contains one of
+them) thereby has the layout of the build. Format of the header comments: Name
+(m68k size, field count).
 
 ### Most Thoroughly Mapped
 
-| Struct | m68k | AROS | Fields | Domain |
-|--------|------|------|--------|--------|
-| GfxBase | 552B | 1040B | 102 | graphics |
-| ExecBase | 632B | 1320B | 65 | exec |
-| Screen | 346B | 1408B | 62 | intuition |
-| Process | 228B | 768B | 56 | exec |
-| Preferences | 232B | 232B | 46 | intuition |
-| Locale | 168B | 312B | 42 | locale |
-| ConUnit | 296B | 640B | 42 | devices |
-| MonitorSpec | 160B | 896B | 41 | graphics |
-| PrtInfo | 128B | 208B | 34 | devices |
-| PrinterData | 6842B | 7808B | 31 | devices |
-| ColorTextFont | 96B | 184B | 29 | graphics |
-| Task | 92B | 176B | 28 | exec |
+| Struct | m68k | Fields | Domain |
+|--------|------|--------|--------|
+| GfxBase | 552B | 102 | graphics |
+| ExecBase | 632B | 65 | exec |
+| Screen | 346B | 62 | intuition |
+| Process | 228B | 56 | exec |
+| Preferences | 232B | 48 | intuition |
+| Locale | 168B | 42 | locale |
+| ConUnit | 296B | 42 | devices |
+| MonitorSpec | 160B | 41 | graphics |
+| PrtInfo | 128B | 37 | devices |
+| PrinterData | 6842B | 31 | devices |
+| ColorTextFont | 96B | 29 | graphics |
+| Task | 92B | 28 | exec |
 
 ### Complete List
 
@@ -899,9 +935,9 @@ The full list is the `shadow_gen_layouts[]` table at the end of
 
 ### Missing Structs
 
-`m68k_offsets.txt` describes 298 structs (3,273 field lines); 1 of them lacks a
-layout: **RegionRectangle**, whose only field is `bounds` (an embedded
-`struct Rectangle`) with no scalar leaf fields to map.
+`m68k_offsets.txt` describes 298 structs in 3,314 field lines. 3,171 of them name
+a native member and are mapped; the other 143 are not, among them the six of
+**RegionRectangle**, the one struct without a layout.
 
 ## 68k Libraries and Relocations
 
@@ -1111,13 +1147,25 @@ writes are ignored. No CIA interrupt is ever raised.
 `graphics`, `utility`, `workbench`, `devices`, `libraries`, `resources`,
 `datatypes`; some headers, structs and fields are skipped because their layouts
 differ or cannot be probed) and writes a C file that emits `OFF|Struct|field|
-offset|size|` and `SIZ|Struct|size|` lines through `offsetof()`/`sizeof()`,
-recursing into embedded structs so every scalar leaf field is listed. Compiled
-once with the m68k compiler (`m68k_offsets.txt`, checked in) and once with the
-target compiler, the two outputs feed `gen_shadow_layouts.py`, which emits
-`m68kemu_shadow_layouts.h`. It treats a field as a pointer only when the native
-field is 8 bytes wide, so the checked-in header is valid for 64-bit targets only
-(`mmakefile.src` builds the library for x86_64, aarch64 and riscv64).
+offset|size|member|` and `SIZ|Struct|size|header|` lines through
+`offsetof()`/`sizeof()`, recursing into embedded structs so every scalar leaf
+field is listed. `member` is the path the field was probed by
+(`lib_Node.ln_Name`), `header` the file that declares the struct. Compiled with
+the m68k compiler this gives `m68k_offsets.txt`, which is checked in.
+
+`gen_shadow_layouts.py` writes `m68kemu_shadow_layouts.h` from that file alone.
+A field of 1, 2 or 4 bytes that names a member becomes a `SHADOW_FIELD()` row;
+a field without a member has no native counterpart and gets none. The header
+includes the files the `SIZ` lines name, and the compiler of the target resolves
+each member, so nothing in it has to be generated again for another target or
+after a change to a public struct. A 4-byte field is a pointer only where the
+native member is 8 bytes wide, so on a 32-bit target no field would be one;
+`mmakefile.src` builds the library for x86_64, aarch64 and riscv64.
+
+The checked-in file is not one run of the extractor. 41 of its lines were rows
+of the header before they were lines of the file, and 143 lines name no member
+because the header never carried them. New lines are merged into it; a plain
+replacement would change which fields a program sees.
 
 ## Diagnostics
 
@@ -1155,6 +1203,10 @@ production sources directly.
 | t_exec_loop | test_moira_exec.cpp | loop summing 1..10 → 55 |
 | t_exec_memory_access | test_moira_exec.cpp | `MOVE.L` store/load round trip |
 | (integration) | test_hello_thunks.cpp | A-line trap → `OpenLibrary` and `PutStr` thunks → return |
+| library loading bounds | regressions/run_library_loading_bounds.py, test_library_loading_bounds.cpp | the 68k disk library loader and its image helpers extracted from the sources, on well-formed libraries and malformed images (sizes, init tables, function tables, a Resident outside its hunk); a refused attempt gives back every block it took and no other; 27 cases |
+| hunk file loader | regressions/run_hunk_file_loader.py, test_hunk_file_loader.cpp | `M68KEmu_LoadHunksFromMemory()` and `rd32()` extracted from the sources, on well-formed and malformed hunk files; 33 cases |
+| seglist copy | regressions/run_seglist_copy.py, test_seglist_copy.cpp | `M68KEmu_LoadHunks()`, `M68KEmu_ImageHunk()` and `M68KEmu_FreeHunks()` extracted from the sources, on seglists in order and not, with the relocation list of `dos/doshunks.h`; 22 cases |
+| child projection | regressions/run_child_projection.py, test_child_projection.c | `create_proc`, `child_entry`, the `CreateNewProc` and `CreateProc` entries, the tag walker, the Process registry and the seglist copy extracted from the sources with a recording fixture: 151 checks in seven groups, among them a cancelled child, an owned copy and duplicate `NP_FreeSeglist` tags |
 | memory bounds | regressions/run_memory_bounds.py, test_memory_bounds.cpp | compiles `m68k_read16/32`, `m68k_write16/32` and `AROSMoira::read16/write16/read16OnReset/read16Dasm` extracted verbatim from the sources against a fixture; arenas of 0, 1, 2, 3, 4 and 17 bytes, the last complete word/longword, partial accesses, wrapping addresses near `UINT32_MAX`; rejected writes leave memory unchanged; custom-register dispatch, both sentinels and the low-vector guard; `--sanitize` adds ASan/UBSan |
 
 `make test` runs all of them; `make test-memory-bounds` and
@@ -1176,7 +1228,8 @@ production sources directly.
 - No tests for the custom chip registers, the CIA model or beam advancement
 - No tests for `Supervisor()`, the MOVEC skip or the 68040 instruction emulation
 - No tests for the generated thunk fallback or for unimplemented LVOs
-- No tests for the hunk loaders, the seglist relocation path or the 68k library loader
+- The hunk loaders, the seglist copy and the 68k library loader are tested on the
+  host only, through the extracted functions above, not on AROS
 - No tests for the heap regions, `AllocAbs`, pools or heap exhaustion
 - No tests for tasks, the program lock, 68k semaphores or ports
 - No tests for the shadow engine, the taglist translation or device I/O
@@ -1216,6 +1269,9 @@ Further limitations visible in the code:
   AppMessage is ever delivered.
 - `FindSemaphore` on a system semaphore returns a handle whose fields the
   program cannot read.
+- A 68k seglist that `CreateNewProc` copied for a child started with
+  `NP_FreeSeglist` FALSE, or by `CreateProc`, stays in the program's memory
+  until the context ends; the native seglist is not unloaded on that path.
 - The root stack must fit above the ROM area while leaving the terminal heap
   chunk. User, interrupt, callback and child stack policies are separate.
 - A program screen opens in the Workbench screen's mode, size and depth; its
@@ -1226,7 +1282,7 @@ Further limitations visible in the code:
   (see [Registry](#registry)).
 - The shadow registry holds 1024 entries; a program that never replies its
   messages fills it, and further native objects are refused with a log message.
-- The checked-in shadow layouts carry x86_64 native offsets; 32-bit targets
-  need regenerated layouts and a generator that recognises 4-byte pointers.
+- The shadow layouts tell a pointer by a native member of 8 bytes; 32-bit
+  targets need a generator that recognises 4-byte pointers.
 - No FPU: the CPU is an LC040, and a program without its own FPU emulator
   faults on F-line instructions.

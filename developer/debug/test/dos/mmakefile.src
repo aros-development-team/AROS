@@ -13,6 +13,7 @@ FILES := \
     auxstartup \
     clicreatenewproc \
     consolemodes \
+    dosentry68k \
     doslist \
     dosvartest \
     examine \
@@ -23,6 +24,7 @@ FILES := \
     fread \
     fstest \
     getenv \
+    hunkalignment \
     inhibit \
     isinteractive \
     lockrelative \

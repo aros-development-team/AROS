@@ -308,6 +308,7 @@ within the emulator.
 ### Memory
 
 - Fixed 32 MB containment; requested root stacks must fit above the ROM and a free heap chunk
+- A 68k seglist copied for a child started with `NP_FreeSeglist` FALSE, or by `CreateProc`, stays allocated until the program ends
 - No MEMF_CHIP/MEMF_FAST distinction (requirements parameter ignored)
 - No memory protection within containment
 
@@ -372,40 +373,52 @@ within the emulator.
 |------|-------------|
 | `m68kemu_shadow.h` | Field type enums (SF_BYTE/WORD/LONG/PTR), M68KFieldMap, M68KStructLayout |
 | `m68kemu_shadow.c` | Generic shadow engine: create/sync/destroy with recursive sub-layouts |
-| `m68kemu_shadow_layouts.h` | **Generated**: 297 struct layouts, 2,918 field mappings |
+| `m68kemu_shadow_layouts.h` | **Generated**: 297 struct layouts, 3,171 field mappings; native offsets by `offsetof()` |
 
 ### Shadow Layout Toolchain
 
 | File | Description |
 |------|-------------|
 | `gen_offset_extractor.py` | Scans NDK headers → emits C file with `offsetof()` + `sizeof()` for every struct field |
-| `gen_shadow_layouts.py` | Reads m68k + AROS offset files → emits `m68kemu_shadow_layouts.h` |
-| `m68k_offsets.txt` | Static m68k struct offsets (3,017 fields, 298 structs) — checked in, never changes |
+| `gen_shadow_layouts.py` | Reads `m68k_offsets.txt` and emits `m68kemu_shadow_layouts.h` |
+| `m68k_offsets.txt` | m68k struct offsets (3,314 field lines, 298 structs), each mapped field with its native member; checked in |
 
 #### Regenerating Shadow Layouts
 
-The m68k offsets are fixed (AmigaOS binary compatibility) and checked into the
-repository. Only the AROS offsets need to be regenerated when targeting a
-different architecture:
+The header is written from `m68k_offsets.txt` alone:
 
 ```bash
-# Generate AROS offsets for the current target (done at build time)
-python3 gen_offset_extractor.py > offsets_src.c
-sed 's/"n"/"i"/g; s/%0/%c0/g; s/%1/%c1/g' offsets_src.c > offsets_aros.c
-gcc -S -o aros_offsets.s offsets_aros.c -isystem $AROS_SDK/include ...
-grep -oP '(OFF|SIZ)\|[^"]*' aros_offsets.s > aros_offsets.txt
-
-# Merge into header
-python3 gen_shadow_layouts.py m68k_offsets.txt aros_offsets.txt > m68kemu_shadow_layouts.h
+python3 gen_shadow_layouts.py m68k_offsets.txt > m68kemu_shadow_layouts.h
 ```
+
+The m68k offsets are fixed (AmigaOS binary compatibility) and are the only
+numbers in it. Each row names the native member, and the compiler of the target
+fills in the rest: the offset by `offsetof()`, and for a 4-byte field whether
+the native member has 8 bytes and so is a pointer. The header therefore needs
+no regeneration for another target, or when a public struct changes.
+
+An `OFF` line of `m68k_offsets.txt` ends in the native member, a `SIZ` line in
+the header that declares the struct:
+
+```
+OFF|Library|ln_Name|10|4|lib_Node.ln_Name|
+SIZ|Library|34|exec/libraries.h|
+```
+
+A field without a member is not mapped.
 
 To add new structs to the m68k side (requires `m68k-amigaos-gcc`):
 
 ```bash
 python3 gen_offset_extractor.py > offsets_src.c
 m68k-amigaos-gcc -S -o m68k.s offsets_src.c -I $NDK_INCLUDE
-grep -oP '(OFF|SIZ)\|[^"]*' m68k.s | sed 's/#//g' > m68k_offsets.txt
+grep -oP '(OFF|SIZ)\|[^"]*' m68k.s | sed 's/#//g' > new_offsets.txt
 ```
+
+Merge the new lines into `m68k_offsets.txt` instead of replacing it (see
+INTERNALS.md). The extractor writes the member as the NDK headers have it. Where
+AROS names or nests it differently, or lacks it, the build of `m68kemu_shadow.c`
+stops at that row: correct the member, or remove it to leave the field unmapped.
 
 ### m68k Library Loader
 

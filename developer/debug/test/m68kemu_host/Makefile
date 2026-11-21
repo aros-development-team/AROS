@@ -38,6 +38,18 @@ test-openlibrary-versions:
 test-openlibrary-versions-sanitize:
 	$(PYTHON) "$(TEST_DIR)/regressions/run_openlibrary_versions.py" --cxx "$(CXX)" --sanitize $(OPENLIBRARY_ARGS)
 
+# How the pointers native functions return reach the program
+NATIVE_RETURNS_ARGS ?=
+test: test-native-returns
+
+test-native-returns:
+	$(PYTHON) "$(TEST_DIR)/regressions/run_native_returns.py" --cc "$(CC)" $(NATIVE_RETURNS_ARGS)
+
+test-native-returns-sanitize:
+	$(PYTHON) "$(TEST_DIR)/regressions/run_native_returns.py" --cc "$(CC)" --sanitize $(NATIVE_RETURNS_ARGS)
+
+.PHONY: test-native-returns test-native-returns-sanitize
+
 test-memheader:
 	$(PYTHON) "$(TEST_DIR)/regressions/run_memheader.py" --cc "$(CC)" $(MEMHEADER_ARGS)
 
@@ -48,6 +60,14 @@ clean:
 	rm -f $(TESTS)
 
 .PHONY: all test test-memheader test-memheader-sanitize test-openlibrary-versions test-openlibrary-versions-sanitize test-memory-bounds test-memory-bounds-sanitize clean
+
+# The thunk tables against the library interfaces; no compiler is needed.
+test: test-thunk-tables
+
+test-thunk-tables:
+	$(PYTHON) "$(TEST_DIR)/regressions/run_thunk_tables.py"
+
+.PHONY: test-thunk-tables
 
 # The full host suite already requires this Moira checkout.
 LIBRARY_LOADING_ARGS ?=
@@ -109,6 +129,42 @@ test-argument-apis-sanitize:
 
 .PHONY: test-argument-apis test-argument-apis-sanitize
 
+# 68k disk library loading on well-formed and malformed images: ordinary fixture in test, sanitizer optional.
+LIBRARY_LOADING_BOUNDS_ARGS ?=
+test: test-library-loading-bounds
+
+test-library-loading-bounds:
+	$(PYTHON) "$(TEST_DIR)/regressions/run_library_loading_bounds.py" --cxx "$(CXX)" $(LIBRARY_LOADING_BOUNDS_ARGS)
+
+test-library-loading-bounds-sanitize:
+	$(PYTHON) "$(TEST_DIR)/regressions/run_library_loading_bounds.py" --cxx "$(CXX)" --sanitize $(LIBRARY_LOADING_BOUNDS_ARGS)
+
+.PHONY: test-library-loading-bounds test-library-loading-bounds-sanitize
+
+# Hunk files read into containment, well-formed and malformed: ordinary fixture in test, sanitizer optional.
+HUNK_FILE_LOADER_ARGS ?=
+test: test-hunk-file-loader
+
+test-hunk-file-loader:
+	$(PYTHON) "$(TEST_DIR)/regressions/run_hunk_file_loader.py" --cxx "$(CXX)" $(HUNK_FILE_LOADER_ARGS)
+
+test-hunk-file-loader-sanitize:
+	$(PYTHON) "$(TEST_DIR)/regressions/run_hunk_file_loader.py" --cxx "$(CXX)" --sanitize $(HUNK_FILE_LOADER_ARGS)
+
+.PHONY: test-hunk-file-loader test-hunk-file-loader-sanitize
+
+# Copy of a LoadSeg() seglist into containment, and its release: ordinary fixture in test, sanitizer optional.
+SEGLIST_COPY_ARGS ?=
+test: test-seglist-copy
+
+test-seglist-copy:
+	$(PYTHON) "$(TEST_DIR)/regressions/run_seglist_copy.py" --cxx "$(CXX)" $(SEGLIST_COPY_ARGS)
+
+test-seglist-copy-sanitize:
+	$(PYTHON) "$(TEST_DIR)/regressions/run_seglist_copy.py" --cxx "$(CXX)" --sanitize $(SEGLIST_COPY_ARGS)
+
+.PHONY: test-seglist-copy test-seglist-copy-sanitize
+
 # AllocBitMap result projection: ordinary fixture in test, sanitizer optional.
 BITMAP_RESULT_ARGS ?=
 test: test-bitmap-result
@@ -121,6 +177,18 @@ test-bitmap-result-sanitize:
 
 .PHONY: test-bitmap-result test-bitmap-result-sanitize
 
+# Generated shadow layouts follow the build: ordinary fixture in test, sanitizer optional.
+SHADOW_LAYOUTS_ARGS ?=
+test: test-shadow-layouts
+
+test-shadow-layouts:
+	$(PYTHON) "$(TEST_DIR)/regressions/run_shadow_layouts.py" --cc "$(CC)" $(SHADOW_LAYOUTS_ARGS)
+
+test-shadow-layouts-sanitize:
+	$(PYTHON) "$(TEST_DIR)/regressions/run_shadow_layouts.py" --cc "$(CC)" --sanitize $(SHADOW_LAYOUTS_ARGS)
+
+.PHONY: test-shadow-layouts test-shadow-layouts-sanitize
+
 # A 68k child without a guest Process: ordinary fixture in test, sanitizer optional.
 CHILD_PROJECTION_ARGS ?=
 test: test-child-projection
@@ -132,3 +200,15 @@ test-child-projection-sanitize:
 	$(PYTHON) "$(TEST_DIR)/regressions/run_child_projection.py" --cc "$(CC)" --sanitize $(CHILD_PROJECTION_ARGS)
 
 .PHONY: test-child-projection test-child-projection-sanitize
+
+# ExecBase lists and scheduler fields kept out of the native SysBase: ordinary fixture in test, sanitizer optional.
+EXECBASE_PRIVATE_ARGS ?=
+test: test-execbase-private
+
+test-execbase-private:
+	$(PYTHON) "$(TEST_DIR)/regressions/run_execbase_private.py" --cc "$(CC)" $(EXECBASE_PRIVATE_ARGS)
+
+test-execbase-private-sanitize:
+	$(PYTHON) "$(TEST_DIR)/regressions/run_execbase_private.py" --cc "$(CC)" --sanitize $(EXECBASE_PRIVATE_ARGS)
+
+.PHONY: test-execbase-private test-execbase-private-sanitize
