@@ -24,6 +24,10 @@ struct Lamp_DATA
     ULONG               lmp_Color[3];
     ULONG               lmp_ColorType;
     struct MUI_PenSpec  lmp_PenSpec;
+    ULONG               lmp_Style;
+    ULONG               lmp_Diameter;
+    ULONG               lmp_Intensity;
+    LONG                lmp_EffectPen[4];
 };
 
 #endif /* _LAMP_PRIVATE_H_ */

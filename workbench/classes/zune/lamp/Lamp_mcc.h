@@ -52,4 +52,11 @@ struct MUIP_Lamp_SetRGB                 {STACKED ULONG methodid; STACKED ULONG r
 #define MUIV_Lamp_Color_LoadingData     10
 #define MUIV_Lamp_Color_SavingData      11
 
+/* Additive LED presentation controls; existing attribute values are unchanged. */
+#define MUIA_Lamp_Style                 0x85b90009ul /* [ISG] ULONG */
+#define MUIA_Lamp_Diameter              0x85b9000aul /* [ISG] ULONG */
+#define MUIA_Lamp_Intensity             0x85b9000bul /* [ISG] ULONG */
+#define MUIV_Lamp_Style_Flat            0
+#define MUIV_Lamp_Style_LED             1
+
 #endif /* LAMP_MCC_H */
