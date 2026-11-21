@@ -145,6 +145,9 @@ int main(void)
     SetFont(&rp, &both);
     measure(&rp, "a", -1, 0, 0, 0, "both tables: a count of -1 measures nothing");
     measure(&rp, "a", -32768, 0, 0, 0, "both tables: a count of -32768 measures nothing");
+    SetFont(&rp, &fixed);
+    measure(&rp, "a", -1, 0, 0, -1, "fixed, no tables: a count of -1 is 0 long, from 0 to -1, as a count of 0");
+    measure(&rp, "a", -32767, 0, 0, -1, "fixed, no tables: a count of -32767 is 0 long, from 0 to -1");
 
     Printf("textextents: %ld checks, %ld failures\n", (LONG)checks, (LONG)failures);
     Flush(Output());

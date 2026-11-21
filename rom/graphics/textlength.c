@@ -37,6 +37,7 @@
 
     NOTES
         Use the newer TextExtent() to get more information.
+        A count of 0 or less gives 0.
 
     EXAMPLE
 
@@ -54,7 +55,10 @@
     struct TextFont *tf = rp->Font;
     WORD strlen;
 
-    if((tf->tf_Flags & FPF_PROPORTIONAL) || tf->tf_CharKern
+    if(count <= 0) {
+        /* nothing to measure, whatever the font */
+        strlen = 0;
+    } else if((tf->tf_Flags & FPF_PROPORTIONAL) || tf->tf_CharKern
             || tf->tf_CharSpace) {
         WORD  idx;
         WORD  defaultidx = NUMCHARS(tf) - 1; /* Last glyph is default glyph */
