@@ -1,9 +1,10 @@
 /*
-    Copyright (C) 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: 
 */
 
+#include <aros/atomic.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
 
@@ -65,6 +66,7 @@ BOOL PutSysEx2Link(struct MidiLink *midilink,UBYTE data){
 				if(mymidinode->sysex_write==mymidinode->sysex_read){
 					SetMidiError(mymidinode,mymidinode->sysex_started_empty ?
 						CMEF_SysExTooBig : CMEF_SysExFull);
+					AROS_ATOMIC_INC(((struct MyMidiCluster *)midilink->ml_Location)->sysexdropped);
 					mymidinode->sysex_write=mymidinode->sysex_laststart;
 					mymidinode->sysex_discarding=TRUE;
 					ReleaseSemaphore(&mymidinode->sysexsemaphore2);
@@ -78,7 +80,7 @@ BOOL PutSysEx2Link(struct MidiLink *midilink,UBYTE data){
 				msg2.data1=sysex[2];
 				msg2.data2=sysex[3];
 				msg2.len=3;
-				PutMidi2Link(midilink,&msg2,*mymidinode->midinode.mi_TimeStamp);
+				PutMidi2Link(midilink,&msg2,NodeTimeStamp(mymidinode));
 				ReleaseSemaphore(&mymidinode->sysexsemaphore);
 				return FALSE;
 			}

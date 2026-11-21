@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: 
 */
@@ -16,17 +16,47 @@
 #endif
 
 /*
- *  Signal every ClusterNotifyNode. CLSemaphore must be obtained.
+ *  Tells the watchers about a cluster event: every StartClusterWatchA()
+ *  handle gets it, and the StartClusterNotify() nodes are signalled for
+ *  clusters coming and going only, as in 41.1.
+ *  CLSemaphore must be obtained.
  */
-void SignalClusterNotify(struct CamdBase *CamdBase){
+void SignalClusterNotify(struct CamdBase *CamdBase,ULONG event,struct MidiCluster *cluster){
   struct Node *node;
   struct ClusterNotifyNode *cn;
+  struct ClusterWatch *watch;
+  struct ClusterWatchEvent *slot;
+  char *name=cluster->mcl_Node.ln_Name;
+  ULONG i;
 
   ObtainSemaphore(&CB(CamdBase)->NotifySemaphore);
-  for(node=CB(CamdBase)->clusnotifynodes.lh_Head; node->ln_Succ; node=node->ln_Succ)
-    {                           // notify everyone
-      cn=(struct ClusterNotifyNode *)node;
-      Signal(cn->cnn_Task, 1L << cn->cnn_SigBit);
+  if(event!=CWE_Participants){
+    for(node=CB(CamdBase)->clusnotifynodes.lh_Head; node->ln_Succ; node=node->ln_Succ)
+      {                           // notify everyone
+        cn=(struct ClusterNotifyNode *)node;
+        Signal(cn->cnn_Task, 1L << cn->cnn_SigBit);
+      }
+  }
+  for(watch=(struct ClusterWatch *)CB(CamdBase)->clusterwatches.mlh_Head;
+      watch->node.mln_Succ;
+      watch=(struct ClusterWatch *)watch->node.mln_Succ)
+    {
+      if(watch->lost){
+        /* Drop events until the client has observed CWE_Lost. This keeps
+           pre-overflow history from being replayed after its rescan. */
+      }else if(watch->count==CLUSTERWATCH_QUEUE){
+        watch->lost=TRUE;
+        watch->first=0;
+        watch->count=0;
+      }else{
+        slot=&watch->events[(watch->first+watch->count)%CLUSTERWATCH_QUEUE];
+        slot->cwe_Type=event;
+        for(i=0; name!=NULL && name[i]!=0 && i<CWE_NAMESIZE-1; i++)
+          slot->cwe_Name[i]=name[i];
+        slot->cwe_Name[i]=0;
+        watch->count++;
+      }
+      Signal(watch->task, 1L << watch->sigbit);
     }
   ReleaseSemaphore(&CB(CamdBase)->NotifySemaphore);
 }
@@ -34,8 +64,9 @@ void SignalClusterNotify(struct CamdBase *CamdBase){
 /*
  *  A link or a driver port joined or left the cluster. Counts the
  *  participants again and tells every other node with a link in it,
- *  through its MIDI_PartSignal and MIDI_PartHook. changer is the node
- *  whose link changed, NULL for a driver port.
+ *  through its MIDI_PartSignal and MIDI_PartHook, and the cluster
+ *  watchers. changer is the node whose link changed, NULL for a driver
+ *  port.
  *  CLSemaphore must be exclusive obtained. The hook runs in the changing
  *  task with CLSemaphore held, as a receive hook runs, so it must not add,
  *  remove or move links.
@@ -92,6 +123,47 @@ void ClusterParticipantsChanged(struct MidiCluster *cluster,struct MidiNode *cha
       }
     }
   }
+
+  SignalClusterNotify(CamdBase,CWE_Participants,cluster);
+}
+
+/*
+ * Copies the highest-priority link comment into the cluster's private
+ * storage. Receiver comments win ties over sender comments. Driver ports
+ * do not carry MLINK_Comment and are skipped.
+ * CLSemaphore must be exclusively obtained.
+ */
+void UpdateClusterComment(struct MidiCluster *cluster){
+  struct MyMidiCluster *mycluster=(struct MyMidiCluster *)cluster;
+  struct List *lists[2];
+  struct Node *node;
+  struct MidiLink *midilink;
+  struct MidiLink *best=NULL;
+  ULONG i;
+  int l;
+
+  lists[0]=&cluster->mcl_Receivers;
+  lists[1]=&cluster->mcl_Senders;
+
+  for(l=0;l<2;l++){
+    for(node=lists[l]->lh_Head;node->ln_Succ;node=node->ln_Succ){
+      if(node->ln_Type==NT_USER-MLTYPE_NTypes) continue;
+      midilink=(struct MidiLink *)node;
+      if(midilink->ml_ClusterComment!=NULL &&
+         (best==NULL || node->ln_Pri>best->ml_Node.ln_Pri)){
+        best=midilink;
+      }
+    }
+  }
+
+  if(best==NULL){
+    mycluster->comment[0]=0;
+    return;
+  }
+
+  for(i=0;i<sizeof(mycluster->comment)-1 && best->ml_ClusterComment[i]!=0;i++)
+    mycluster->comment[i]=best->ml_ClusterComment[i];
+  mycluster->comment[i]=0;
 }
 
 /*
@@ -103,7 +175,7 @@ void RemoveCluster(struct MidiCluster *cluster,struct CamdBase *CamdBase){
   
   Remove(&cluster->mcl_Node);
 
-  SignalClusterNotify(CamdBase);
+  SignalClusterNotify(CamdBase,CWE_Removed,cluster);
   
   
   if(cluster->mcl_Node.ln_Name!=NULL){
@@ -238,7 +310,7 @@ struct MidiCluster *NewCluster(char *name,struct CamdBase *CamdBase){
 #endif
 	AddTail(&CB(CamdBase)->midiclusters,&midicluster->mcl_Node);
 
-	SignalClusterNotify(CamdBase);
+	SignalClusterNotify(CamdBase,CWE_Added,midicluster);
 
 
 	return midicluster;
@@ -320,6 +392,7 @@ BOOL AddClusterReceiver(
 
 	Enqueue(&cluster->mcl_Receivers,node);
 	ReleaseSemaphore(&mycluster->semaphore);
+	UpdateClusterComment(cluster);
 
 	ClusterParticipantsChanged(
 		cluster,
@@ -359,6 +432,7 @@ BOOL AddClusterSender(
 	}
 
 	Enqueue(&cluster->mcl_Senders,node);
+	UpdateClusterComment(cluster);
 
 	ClusterParticipantsChanged(
 		cluster,

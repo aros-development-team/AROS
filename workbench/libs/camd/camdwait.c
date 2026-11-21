@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2004, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <proto/dos.h>
@@ -159,7 +159,10 @@ BOOL InitCamdTimer(void){
 		NP_Priority,5,
 		TAG_END
 	);
-	if(process==NULL) return FALSE;
+	if(process==NULL){
+		camdwaitprocstatus=2;
+		return FALSE;
+	}
 
 	while(camdwaitprocstatus==0) Delay(1);
 
@@ -170,7 +173,7 @@ BOOL InitCamdTimer(void){
 
 void UninitCamdTimer(void){
 
-  if(camdwaitprocstatus==2) return;
+  if(camdwaitprocstatus==2 || camdwaitprocstatus==3) return;
 
   Signal(camdwaittask,SIGBREAKF_CTRL_C);
   while(camdwaitprocstatus!=3) Delay(1);
