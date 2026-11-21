@@ -191,6 +191,11 @@ SHADOW_RETURNS = {
     "FindTaskByPID": "Task",
 }
 
+# Functions that return one of their arguments: the dispatcher turns the
+# native address back into the program's (returns_arg_pointer() in
+# m68kemu_moira.cpp), so their thunks return it as it is
+ARG_POINTER_RETURNS = {"FGets", "FilePart", "PathPart", "IDtoStr", "NextPubScreen", "BumpRevision"}
+
 # ── D-register args that are pointers (fallback when no proto info) ──
 DPTR_OVERRIDES = {
     "Open": {"d1"}, "DeleteFile": {"d1"}, "Rename": {"d1", "d2"},
@@ -414,11 +419,18 @@ def validate_regs(regs):
     return True
 
 
+def returns_pointer(rtype):
+    """True when a return type is a pointer, which does not fit a 68k register as it is."""
+    clean = re.sub(r"\bCONST\b|\bconst\b", "", rtype).strip()
+    return "*" in clean or clean in POINTER_TYPES or clean in ("STRPTR", "CONST_STRPTR")
+
+
 def get_func_properties(funcname, proto):
-    """Determine void status, shadow return type and BPTR return for a function."""
+    """Determine void status, shadow return type, BPTR return and pointer return for a function."""
     is_void = funcname in VOID_FUNCTIONS
     shadow_ret = SHADOW_RETURNS.get(funcname)
     bptr_ret = False
+    ptr_ret = False
     if proto:
         ret_class = classify_return_type(proto[0])
         if not is_void and ret_class[0] == "void":
@@ -427,7 +439,9 @@ def get_func_properties(funcname, proto):
             shadow_ret = ret_class[1]
         if re.sub(r"\bCONST\b|\bconst\b", "", proto[0]).strip() in BPTR_TYPES:
             bptr_ret = True
-    return is_void, shadow_ret, bptr_ret
+        elif not is_void and not shadow_ret and funcname not in ARG_POINTER_RETURNS:
+            ptr_ret = returns_pointer(proto[0])
+    return is_void, shadow_ret, bptr_ret, ptr_ret
 
 
 def gen_typed_param(ctype, arg, rtype, rnum, sname):
@@ -474,7 +488,7 @@ def gen_param_line(funcname, arg, reg, ptype):
     return f"    ULONG arg_{arg} = THUNK_D({rnum});", False
 
 
-def gen_return_block(call, is_void, shadow_ret, cleanup, bptr_ret=False):
+def gen_return_block(call, is_void, shadow_ret, cleanup, bptr_ret=False, ptr_ret=False):
     """Generate return and cleanup statements for thunk."""
     lines = []
     if is_void:
@@ -490,6 +504,13 @@ def gen_return_block(call, is_void, shadow_ret, cleanup, bptr_ret=False):
         lines.append(f"    BPTR _ret = {call};")
         lines.extend(cleanup)
         lines.append("    return (IPTR)m68k_bptr_out(ctx, _ret);")
+    elif ptr_ret and cleanup:
+        # a native pointer: the program's own address, or a handle
+        lines.append(f"    APTR _ret = (APTR){call};")
+        lines.extend(cleanup)
+        lines.append("    return m68k_native_out(ctx, _ret);")
+    elif ptr_ret:
+        lines.append(f"    return m68k_native_out(ctx, (APTR){call});")
     elif cleanup:
         lines.append(f"    IPTR _ret = (IPTR){call};")
         lines.extend(cleanup)
@@ -505,7 +526,7 @@ def gen_thunk(libname, funcname, bias, args, regs, protos):
         return None
 
     proto = protos.get(funcname)
-    is_void, shadow_ret, bptr_ret = get_func_properties(funcname, proto)
+    is_void, shadow_ret, bptr_ret, ptr_ret = get_func_properties(funcname, proto)
     proto_params = proto[1] if proto and len(proto) > 1 else None
 
     sig_parts = ", ".join(f"{a}={r}" for a, r in zip(args, regs))
@@ -545,7 +566,7 @@ def gen_thunk(libname, funcname, bias, args, regs, protos):
         call_args.append(f"arg_{arg}")
 
     call = f"{funcname}({', '.join(call_args)})"
-    lines.extend(gen_return_block(call, is_void, shadow_ret, cleanup, bptr_ret))
+    lines.extend(gen_return_block(call, is_void, shadow_ret, cleanup, bptr_ret, ptr_ret))
     lines.append("}\n")
     return "\n".join(lines)
 

@@ -69,6 +69,15 @@ treats values outside the handle range as m68k BPTRs into containment
 thunk result whose upper 32 bits are neither 0 nor all ones: a pointer into
 containment becomes its m68k address, anything else a handle.
 
+That test cannot tell a pointer from a number when native memory lies below
+4 GB, as on raspi-aarch64, so a thunk whose native function returns a pointer
+translates it itself with `m68k_native_out()`: a pointer into containment
+becomes its m68k address, anything else a handle, at any address. The
+generated thunks do so for every pointer the native function returns, except
+a shadow copy, a BPTR and the functions of `returns_arg_pointer()`; the
+hand-written ones for `RemHead`/`RemTail` of a native list, `AllocDosObject`,
+`WaitPkt`, `CxBroker` and `CreateCxObj`.
+
 ### Address Map
 
 The ranges below show the default 64 KB root stack. A larger requested root

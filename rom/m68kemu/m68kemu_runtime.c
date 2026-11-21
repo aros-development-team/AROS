@@ -71,6 +71,20 @@ BPTR m68k_bptr_in(struct M68KEmuContext *ctx, ULONG v)
     return MKBADDR(m68k_to_host(ctx, v << 2));
 }
 
+/* A pointer that a native function returned, as the program holds it: its
+   address when it points into the program's memory, otherwise a handle. A
+   native address does not fit a 32-bit register on every target, and where
+   it does, as on targets whose memory lies below 4 GB, it can look like an
+   address of the program; so the value is never handed out as it is. */
+ULONG m68k_native_out(struct M68KEmuContext *ctx, APTR p)
+{
+    if (!p)
+        return 0;
+    if ((UBYTE *)p >= ctx->mem && (UBYTE *)p < ctx->mem + ctx->mem_size)
+        return (ULONG)((UBYTE *)p - ctx->mem);
+    return m68k_bptr_out(ctx, (BPTR)p);
+}
+
 void m68k_bptr_drop(struct M68KEmuContext *ctx, ULONG v)
 {
     if (v >= M68KEMU_HANDLE_BASE && v < M68KEMU_HANDLE_BASE + M68KEMU_MAX_HANDLES * 4)

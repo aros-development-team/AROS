@@ -195,6 +195,42 @@ compile the native launch translation unit, model native struct layouts or
 locks, execute the CPU, or qualify a complete library or application.
 
 
+## Pointers returned by native functions
+
+Run from the repository root:
+
+```sh
+make -C developer/debug/test/m68kemu_host test-native-returns
+make -C developer/debug/test/m68kemu_host test-native-returns-sanitize
+```
+
+The check is also a prerequisite of the host Makefile's `test` target. It
+needs Python 3.9+ and a C99 compiler, with ASan/UBSan for the sanitizer
+target. `PYTHON` and `CC` select them; `NATIVE_RETURNS_ARGS` passes runner
+options such as `--build-dir /tmp/native-returns` or `--static-only`.
+
+A native pointer does not fit a 32-bit register on every target, and on a
+target whose memory lies below 4 GB, such as raspi-aarch64, it fits but can
+look like an address of the program. The dispatcher's test of the upper 32
+bits cannot tell such a pointer from a number, so the thunks translate the
+pointers they return with `m68k_native_out()`.
+
+The runner first reads `m68kemu_thunks_gen.c`: no generated thunk whose
+native function returns a pointer, by the return type in the library's
+`.conf`, may return the value of the native call as it is. The functions
+that `returns_arg_pointer()` in `m68kemu_moira.cpp` lists are left to the
+dispatcher. It checks itself first on two thunks that are right and one
+that is not. On a tree before this check, 120 of the 155 such thunks return
+the native value as it is.
+
+It then compiles `m68k_native_out()`, `m68k_bptr_out()`, `m68k_bptr_in()`,
+`m68k_to_host()` and `m68k_to_host_or_shadow()`, taken verbatim from the
+sources, with `test_native_returns.c`: a pointer into the program's memory
+becomes its address; native pointers at 0x003FEC70, 0x7FFF0000, just past
+the program's memory and above 4 GB become handles that lead back to them;
+the same pointer gives the same handle. No pointer is dereferenced. The
+check does not run a thunk or a 68k program.
+
 ## Process streams
 
 Run from the repository root:
