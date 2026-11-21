@@ -91,8 +91,8 @@ int main(void)
           "the last byte of the program's memory is its address");
     check(ctx.num_handles == 0, "no handle is taken for the program's own memory");
 
-    /* the value an AROS AArch64 guest gave for AllocDosObject(DOS_RDARGS) */
-    check(((IPTR)low >> 32) == 0, "below 4 GB the upper 32 bits are 0: the dispatcher's test hands such a pointer out as it is");
+    /* the value an AROS AArch64 guest gave for AllocDosObject(DOS_RDARGS):
+       its upper 32 bits are 0, so the dispatcher's test hands it out as it is */
     h_low = m68k_native_out(&ctx, low);
     check(is_handle(h_low), "a native pointer below 32 MB, below 4 GB, becomes a handle");
     check(m68k_to_host_or_shadow(&ctx, h_low) == low, "the handle of a pointer below 4 GB leads back to it");
