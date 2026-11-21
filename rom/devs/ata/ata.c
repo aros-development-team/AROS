@@ -247,8 +247,8 @@ static void cmd_TestChanged(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
 
 static void cmd_Update(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
 {
-    /* Do nothing now. In near future there should be drive cache flush though */
-    D(bug("[ATA%02ld] %s()\n", ((struct ata_Unit*)io->io_Unit)->au_UnitNum, __func__));
+    IOStdReq(io)->io_Actual = 0;
+    io->io_Error = ata_FlushCache((struct ata_Unit *)io->io_Unit);
 }
 
 static void cmd_Remove(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
@@ -386,6 +386,13 @@ static void cmd_DirectScsi(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
 
     D(bug("[ATA%02ld] %s()\n", ((struct ata_Unit*)io->io_Unit)->au_UnitNum, __func__));
 
+    IOStdReq(io)->io_Actual = 0;
+    if (IOStdReq(io)->io_Length < sizeof(struct SCSICmd))
+    {
+        io->io_Error = IOERR_BADLENGTH;
+        return;
+    }
+
     if (IOStdReq(io)->io_Data == NULL)
     {
         io->io_Error = IOERR_BADADDRESS;
@@ -484,29 +491,9 @@ static void cmd_SMART(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
 
 static void cmd_TRIM(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
 {
-    struct ata_Unit *unit = (struct ata_Unit *)io->io_Unit;
-
-    D(bug("[ATA%02ld] %s()\n", ((struct ata_Unit*)io->io_Unit)->au_UnitNum, __func__));
-
-    if ((unit->au_Drive->id_ATAVersion >= 7) && (unit->au_Drive->id_DSManagement & 1))
-    {
-        D(bug("[ATA%02ld] %s: Unit supports TRIM\n", ((struct ata_Unit*)io->io_Unit)->au_UnitNum, __func__));
-#if (0)
-        if (IOStdReq(io)->io_Reserved1 == ATAFEATURE_TEST_AVAIL)
-        {
-            if (IOStdReq(io)->io_Length >= sizeof(ULONG))
-            {
-                *((ULONG *)IOStdReq(io)->io_Data) = TRIM_MAGIC_ID;
-                IOStdReq(io)->io_Actual = sizeof(ULONG);
-            }
-            io->io_Error = 0;
-            return;
-        }
-        ata_TRIMCmd(IOStdReq(io));
-#endif
-    }
-    else
-        io->io_Error = IOERR_NOCMD;
+    /* Hardware capability does not make the unimplemented command succeed. */
+    IOStdReq(io)->io_Actual = 0;
+    io->io_Error = IOERR_NOCMD;
 }
 
 //-----------------------------------------------------------------------------
@@ -595,8 +582,6 @@ static UWORD const NSDSupported[] = {
     NSCMD_TD_WRITE64,
     NSCMD_TD_SEEK64,
     NSCMD_TD_FORMAT64,
-    HD_SMARTCMD,
-    HD_TRIMCMD,
     0
 };
 
@@ -617,6 +602,15 @@ static void HandleIO(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
         */
         case NSCMD_DEVICEQUERY:
             {
+                IOStdReq(io)->io_Actual = 0;
+                if (IOStdReq(io)->io_Length < sizeof(struct NSDeviceQueryResult)) {
+                    io->io_Error = IOERR_BADLENGTH;
+                    break;
+                }
+                if (!IOStdReq(io)->io_Data) {
+                    io->io_Error = IOERR_BADADDRESS;
+                    break;
+                }
                 struct NSDeviceQueryResult *nsdq = (struct NSDeviceQueryResult *)IOStdReq(io)->io_Data;
                 nsdq->DevQueryFormat    = 0;
                 nsdq->SizeAvailable     = sizeof(struct NSDeviceQueryResult);

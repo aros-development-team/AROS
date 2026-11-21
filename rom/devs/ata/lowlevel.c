@@ -1827,7 +1827,7 @@ static BYTE ata_Identify(struct ata_Unit *unit)
     supportLBA48 = supportLBA && (unit->au_Drive->id_Commands5 & (1 << 10)) != 0;
 
     unit->au_Capacity = unit->au_Drive->id_LBASectors;
-    if (supportLBA48)
+    if (supportLBA48 && unit->au_Drive->id_LBA48Sectors)
         unit->au_Capacity48 = unit->au_Drive->id_LBA48Sectors;
     else
         unit->au_Capacity48 = unit->au_Capacity;
@@ -2104,6 +2104,32 @@ static BYTE ata_WriteDMA64(struct ata_Unit *unit, UQUAD block,
 /*
  * ata miscellaneous commands
  */
+BYTE ata_FlushCache(struct ata_Unit *unit)
+{
+    ata_CommandBlock acb = {0};
+    UWORD commands = unit->au_Drive->id_Commands2;
+
+    /* Read-only packet media keep their existing UPDATE behaviour. */
+    if (unit->au_XferModes & AF_XFER_PACKET)
+        return 0;
+    /* Old disks and CF cards may not advertise a flush command. */
+    if ((commands & 0xc000) != 0x4000 ||
+        !(unit->au_Drive->id_Commands1 & (1 << 5)))
+        return 0;
+    if ((unit->au_Drive->id_Commands6 & 0xc000) == 0x4000 &&
+        !(unit->au_Drive->id_Commands4 & (1 << 5)))
+        return 0;
+    if ((commands & (1 << 13)) && (unit->au_UseModes & AF_XFER_48BIT))
+        acb.command = ATA_FLUSH_CACHE_EXT;
+    else if (commands & (1 << 12))
+        acb.command = ATA_FLUSH_CACHE;
+    else
+        return 0;
+    acb.method = CM_NoData;
+    acb.type = CT_NoBlock;
+    return ata_exec_cmd(unit, &acb);
+}
+
 static BYTE ata_Eject(struct ata_Unit *unit)
 {
     ata_CommandBlock acb =

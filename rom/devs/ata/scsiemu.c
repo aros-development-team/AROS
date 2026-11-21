@@ -35,25 +35,15 @@ static void ww(UBYTE *p, UWORD v)
 
 static ULONG rl(UBYTE *p)
 {
-    return (p[0] << 24) | (p[1] << 16) | (p[2] << 8) | (p[3]);
-}
-
-static UBYTE scsi_read32(struct ata_Unit *unit, APTR data, ULONG offset, ULONG len, ULONG *outlen)
-{
-     return unit->au_Read32(unit, offset, len, data, outlen);
-}
-
-static UBYTE scsi_write32(struct ata_Unit *unit, APTR data, ULONG offset, ULONG len, ULONG *outlen)
-{
-     return unit->au_Write32(unit, offset, len, data, outlen);
+    return ((ULONG)p[0] << 24) | (p[1] << 16) | (p[2] << 8) | (p[3]);
 }
 
 static UBYTE scsi_inquiry(struct ata_Unit *unit, struct SCSICmd *cmd, ULONG *outlen)
 {
     struct Library *UtilityBase = unit->au_Bus->ab_Base->ata_UtilityBase;
     UBYTE *cmdbuf = cmd->scsi_Command;
-    UBYTE *out = (UBYTE*)cmd->scsi_Data;
-    UBYTE len;
+    UBYTE out[36] = {0};
+    ULONG len;
     
     if ((cmdbuf[1] & 1) || cmdbuf[2] != 0)
         return 0xff;
@@ -62,93 +52,96 @@ static UBYTE scsi_inquiry(struct ata_Unit *unit, struct SCSICmd *cmd, ULONG *out
         return 0xff; /* no lun supported */
     out[2] = 2; /* supports SCSI-2 */
     out[3] = 2; /* response data format */
-    out[4] = 32; /* additional length */
+    out[4] = sizeof(out) - 5; /* additional length */
     out[7] = 0x20; /* 16 bit bus */
-    *outlen = len < 36 ? len : 36;
+    if (len > cmd->scsi_Length)
+        len = cmd->scsi_Length;
+    *outlen = len < sizeof(out) ? len : sizeof(out);
     SetMem(out + 8, ' ', 8 + 16 + 4);
     CopyMem(unit->au_Model, out + 8, strlen(unit->au_Model) > 16 + 8 ? 16 + 8 : strlen(unit->au_Model));
     CopyMem(unit->au_FirmwareRev, out + 8 + 16, strlen(unit->au_FirmwareRev) > 4 ? 4 : strlen(unit->au_FirmwareRev));
+    if (*outlen)
+        CopyMem(out, cmd->scsi_Data, *outlen);
     return 0;
 }
 
 static UBYTE scsi_modesense(struct ata_Unit *unit, struct SCSICmd *cmd, ULONG *outlen)
 {
     UBYTE *cmdbuf = cmd->scsi_Command;
-    UBYTE *out = (UBYTE*)cmd->scsi_Data;
+    UBYTE out[36] = {0};
     UBYTE pcode = cmdbuf[2] & 0x3f;
-    UBYTE dbd = cmdbuf[1] & 8;
-    UWORD blocksize = 1 << unit->au_SectorShift;
+    ULONG blocksize = 1UL << unit->au_SectorShift;
+    ULONG len = 4;
     UBYTE *p;
-    
-    p = out;
-    p[0] = 4 - 1;
-    p[1] = 0;
-    p[2] = 0;
-    p[3] = 0;
-    p += 4;
-    if (!dbd) {
-        p[-1] = 8;
-        wl(out + 0, unit->au_Capacity);
-        wl(out + 4, blocksize);
-        p += 8;
+
+    if (!(cmdbuf[1] & 8)) {
+        UQUAD blocks = unit->au_Capacity48;
+        out[3] = 8;
+        wl(out + 4, blocks > 0xffffff ? 0xffffff : (ULONG)blocks);
+        wl(out + 8, blocksize);
+        len += 8;
     }
+    p = out + len;
     if (pcode == 0) {
-        p[0] = 0;
-        p[1] = 0;
         p[2] = 0x20;
-        p[3] = 0;
-        out[0] += 4;
+        len += 4;
     } else if (pcode == 3) {
         p[0] = 3;
-        p[1] = 24;
+        p[1] = 22;
         p[3] = 1;
-        p[10] = unit->au_Sectors >> 8;
-        p[11] = unit->au_Sectors;
-        p[12] = blocksize >> 8;
-        p[13] = blocksize;
-        p[15] = 1; // interleave
+        ww(p + 10, unit->au_Sectors);
+        ww(p + 12, blocksize);
+        p[15] = 1; /* interleave */
         p[20] = 0x80;
-        out[0] += p[1];
+        len += 24;
     } else if (pcode == 4) {
         p[0] = 4;
         wl(p + 1, unit->au_Cylinders);
-        p[1] = 24;
+        p[1] = 22;
         p[5] = unit->au_Heads;
         wl(p + 13, unit->au_Cylinders);
         ww(p + 20, 5400);
-        out[0] += p[1];
+        len += 24;
     } else {
         return 0xff;
     }
-    out[0] += out[3];
-    *outlen = out[0] + 1;
+    out[0] = len - 1;
+    if (len > cmdbuf[4])
+        len = cmdbuf[4];
+    if (len > cmd->scsi_Length)
+        len = cmd->scsi_Length;
+    if (len)
+        CopyMem(out, cmd->scsi_Data, len);
+    *outlen = len;
     return 0;
 }
 
 static UBYTE scsi_readcapacity(struct ata_Unit *unit, struct SCSICmd *cmd, ULONG *outlen)
 {
     UBYTE *cmdbuf = cmd->scsi_Command;
-    UBYTE *out = (UBYTE*)cmd->scsi_Data;
-    BOOL pmi;
-    ULONG lba, blocks;
+    UBYTE out[8];
+    UQUAD blocks = unit->au_Capacity48;
+    UQUAD last;
+    ULONG lba = rl(cmdbuf + 2);
 
-    blocks = unit->au_Capacity;
-    pmi = cmdbuf[8] & 1;
-    lba = (cmdbuf[2] << 24) | (cmdbuf[3] << 16) | (cmdbuf[4] << 8) | cmdbuf[5];
-    if (pmi == 0 && lba != 0)
+    if (!blocks || (!(cmdbuf[8] & 1) && lba))
         return 0xff;
-    if (pmi) {
-        UWORD cylsize = unit->au_Heads * unit->au_Sectors;
-        lba += cylsize;
-        lba /= cylsize;
-        lba *= cylsize;
-        if (lba > blocks)
-            lba = blocks;
-        blocks = lba;
+    last = blocks - 1;
+    if (cmdbuf[8] & 1) {
+        ULONG cylsize = (ULONG)unit->au_Heads * unit->au_Sectors;
+        if (lba >= blocks)
+            return 0xff;
+        if (cylsize) {
+            UQUAD end = (UQUAD)lba + cylsize - (lba % cylsize) - 1;
+            if (end < last)
+                last = end;
+        }
     }
-    wl (out + 0, blocks);
-    wl (out + 4, 1 << unit->au_SectorShift);
-    *outlen = 8;
+    wl(out, last > 0xffffffffULL ? 0xffffffffUL : (ULONG)last);
+    wl(out + 4, 1UL << unit->au_SectorShift);
+    *outlen = cmd->scsi_Length < sizeof(out) ? cmd->scsi_Length : sizeof(out);
+    if (*outlen)
+        CopyMem(out, cmd->scsi_Data, *outlen);
     return 0;
 }
 
@@ -156,6 +149,7 @@ BYTE SCSIEmu(struct ata_Unit *unit, struct SCSICmd *cmd)
 {
     struct Library *UtilityBase = unit->au_Bus->ab_Base->ata_UtilityBase;
     ULONG len, offset;
+    UQUAD end;
     ULONG scsi_len;
     UWORD scsi_sense_len = (cmd->scsi_Flags & (1 << SCSIB_OLDAUTOSENSE)) ? 4 :
         (cmd->scsi_Flags & (1 << SCSIB_AUTOSENSE)) ? cmd->scsi_SenseLength : 0;
@@ -165,7 +159,26 @@ BYTE SCSIEmu(struct ata_Unit *unit, struct SCSICmd *cmd)
     UBYTE err, status;
     UBYTE key = 0, asc = 0;
  
-    /* bug("SCSIEMU CMD=%02x\n", cmdbuf[0]); */
+    cmd->scsi_Actual = 0;
+    cmd->scsi_CmdActual = 0;
+    cmd->scsi_SenseActual = 0;
+    cmd->scsi_Status = 0;
+    if (!cmdbuf || (cmd->scsi_Length && !cmd->scsi_Data) ||
+        (scsi_sense_len && !cmd->scsi_SenseData))
+        return IOERR_BADADDRESS;
+    if (!cmd->scsi_CmdLength)
+        return IOERR_BADLENGTH;
+    /* Check the command group before reading any operands. */
+    switch (cmdbuf[0] >> 5) {
+    case 0: len = 6; break;
+    case 1:
+    case 2: len = 10; break;
+    case 5: len = 12; break;
+    default: len = 1; break;
+    }
+    if (cmd->scsi_CmdLength < len)
+        return IOERR_BADLENGTH;
+
     err = 0;
     status = 0;
     scsi_len = 0;
@@ -195,11 +208,23 @@ BYTE SCSIEmu(struct ata_Unit *unit, struct SCSICmd *cmd)
             else
                 len = rl(cmdbuf + 6);
         }
-        /* bit 1 of the operation code tells WRITE from READ in all three sizes */
-        if (cmdbuf[0] & 0x02)
-            err = scsi_write32(unit, cmd->scsi_Data, offset, len, &scsi_len);
-        else
-            err = scsi_read32(unit, cmd->scsi_Data, offset, len, &scsi_len);
+        if (!len)
+            break;
+        if (len > (cmd->scsi_Length >> unit->au_SectorShift))
+            return IOERR_BADLENGTH;
+        end = (UQUAD)offset + len;
+        if (end > unit->au_Capacity48)
+            return IOERR_BADADDRESS;
+        /* Words 60-61 report a sector count, capped at 0x0fffffff. */
+        if (end <= unit->au_Capacity && end <= 0x0fffffffUL) {
+            err = (cmdbuf[0] & 2 ? unit->au_Write32 : unit->au_Read32)
+                (unit, offset, len, cmd->scsi_Data, &scsi_len);
+        } else {
+            if (!(unit->au_UseModes & AF_XFER_48BIT))
+                return IOERR_BADADDRESS;
+            err = (cmdbuf[0] & 2 ? unit->au_Write64 : unit->au_Read64)
+                (unit, offset, len, cmd->scsi_Data, &scsi_len);
+        }
         break;
 
         case 0x37: /* READ DEFECT DATA */
@@ -218,7 +243,9 @@ BYTE SCSIEmu(struct ata_Unit *unit, struct SCSICmd *cmd)
         break;
 
         case 0x1d: /* SEND DIAGNOSTICS */
+        break;
         case 0x35: /* SYNCHRONIZE CACHE */
+        err = ata_FlushCache(unit);
         break;
         
         default:
