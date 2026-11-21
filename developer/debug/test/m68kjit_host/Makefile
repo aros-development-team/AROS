@@ -6,6 +6,7 @@
 # the checks are and what a run of this Makefile gave.
 
 CC     ?= cc
+CXX    ?= c++
 BUILD  ?= build
 ENGINE ?= ../../../../workbench/libs/m68kjit
 
@@ -16,9 +17,14 @@ DEFS    = -DM68KJIT_TEST_SEAMS -DM68KJIT_PLAT_RUNS=1 -I include -I $(ENGINE) -I 
 SAN     = -fsanitize=address,undefined -fno-sanitize-recover=undefined
 ASANFL  = $(COMMON) -O1 -fno-omit-frame-pointer $(SAN) $(DEFS)
 O2FL    = $(COMMON) -O2 $(DEFS)
+# the comparison with Moira is C++, as Moira is; Moira's own warnings are not this directory's
+CXXFL   = -std=c++20 -O2 -g -w $(DEFS) -I $(M68KEMU)/Moira
 
 HEADERS = $(M68KEMU)/m68kemu_engine.h $(ENGINE)/m68kjit_intern.h $(ENGINE)/m68kjit_platform.h include/exec/types.h
 NAMES   = m68kjit_engine m68kjit_translate m68kjit_platform_host m68kjit_host_tests
+ENGINE_NAMES = m68kjit_engine m68kjit_translate m68kjit_platform_host
+# how many instructions "make check" compares with Moira
+COMPARE ?= 2000000
 
 # The translator keeps a temporary in x18, which is an ordinary caller-saved
 # register in the AROS ABI. Darwin does not keep x18 across a context
@@ -40,7 +46,7 @@ vpath %.c $(ENGINE) .
 
 .PHONY: all check clean
 
-all: $(BUILD)/asan/m68kjit_host_tests $(BUILD)/o2/m68kjit_host_tests
+all: $(BUILD)/asan/m68kjit_host_tests $(BUILD)/o2/m68kjit_host_tests $(BUILD)/o2/m68kjit_moira_compare
 
 $(BUILD)/asan/m68kjit_translate.o: $(TRANSLATE) $(HEADERS)
 	@mkdir -p $(@D)
@@ -58,17 +64,25 @@ $(BUILD)/o2/%.o: %.c $(HEADERS)
 	@mkdir -p $(@D)
 	$(CC) $(O2FL) -c $< -o $@
 
+$(BUILD)/o2/m68kjit_moira_compare.o: m68kjit_moira_compare.cpp $(HEADERS)
+	@mkdir -p $(@D)
+	$(CXX) $(CXXFL) -c $< -o $@
+
 $(BUILD)/asan/m68kjit_host_tests: $(NAMES:%=$(BUILD)/asan/%.o)
 	$(CC) $(SAN) -o $@ $^
 
 $(BUILD)/o2/m68kjit_host_tests: $(NAMES:%=$(BUILD)/o2/%.o)
 	$(CC) -o $@ $^
 
+$(BUILD)/o2/m68kjit_moira_compare: $(ENGINE_NAMES:%=$(BUILD)/o2/%.o) $(BUILD)/o2/m68kjit_moira_compare.o
+	$(CXX) -o $@ $^
+
 check: all
 	ASAN_OPTIONS=halt_on_error=1:abort_on_error=0:detect_leaks=0 \
 	UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 \
 	$(BUILD)/asan/m68kjit_host_tests
 	$(BUILD)/o2/m68kjit_host_tests
+	$(BUILD)/o2/m68kjit_moira_compare $(COMPARE)
 
 clean:
 	rm -rf $(BUILD)

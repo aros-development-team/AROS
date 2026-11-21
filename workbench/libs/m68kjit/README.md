@@ -89,6 +89,11 @@ memory.
   and the self test of the encoder). On an AArch64 Mac (Apple clang 21.0.0): 71636 checks, 0
   failed, at `-O1` with the address and undefined behaviour sanitizers and
   at `-O2`.
+- **Against Moira.** The same directory compares the engine with Moira,
+  the interpreter of `m68kemu.library`, one random instruction at a time:
+  registers, flags and memory. Two million cases in `make check`, and
+  fifty million more with other seeds: none differs. Its README says what
+  the engine declines and where the reference is the manual.
 - **Native probe.** `developer/debug/test/m68kjit/m68kjitprobe` opens
   the library and runs small 68k programs through the interface, without
   `m68kemu.library`: 23 checks.
