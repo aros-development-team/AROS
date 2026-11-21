@@ -229,8 +229,6 @@ int main(void)
     struct KJ68Domain *domain = NULL;
     struct KJ68CPU *cpu = NULL;
     UBYTE *mem;
-    ULONG i;
-    LONG rc;
 
     base = OpenLibrary(KJ68_LIBNAME, KJ68_LIBVERSION);
     check(base != NULL, "kaffeine-jit68.library opens");
@@ -253,6 +251,9 @@ int main(void)
     check(mem != NULL, "64 KiB of guest memory");
     if (ops && ops->name && mem)
     {
+        ULONG i;
+        LONG rc;
+
         Printf("     %s, interface %ld.%ld, blocks of at most %ld instructions\n", ops->name, (LONG)ops->abi_major,
                (LONG)ops->abi_minor, (LONG)ops->max_block_insns);
         for (i = 0; i < GUEST_SIZE; i++)

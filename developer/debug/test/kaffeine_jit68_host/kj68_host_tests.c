@@ -383,10 +383,12 @@ static ULONG call_hook(struct M *m, struct KJ68CPU *caller)
    call these checks do not know. */
 static int dispatch(struct M *m, struct KJ68CPU *c, ULONG pc)
 {
-    ULONG sp = reg(c, R_A(7)), ret = get32(m, sp), d0 = reg(c, R_D(0)), r;
+    ULONG sp = reg(c, R_A(7)), ret = get32(m, sp), d0 = reg(c, R_D(0));
 
     if (pc == L_PROBE - 36)            /* the probe's snapshot: D0 back */
     {
+        ULONG r;
+
         for (r = 0; r < 8; r++)
         {
             snap.d[r] = reg(c, R_D(r));
@@ -461,6 +463,25 @@ static struct KJ68Exit one(struct M *m, const UWORD *code, unsigned n, ULONG bud
     x.size_of = sizeof(x);
     CHECK(ops->run(m->c, budget, &x) == KJ68_OK);
     return x;
+}
+
+/* the run went to the A-line that ends the words of one() */
+static int ended(const struct KJ68Exit *x)
+{
+    return x->reason == KJ68_STOP_ALINE;
+}
+
+/* a text starts with the words expected of it */
+static int starts(const char *text, const char *with)
+{
+    if (!text)
+        return 0;
+    while (*with)
+    {
+        if (*text++ != *with++)
+            return 0;
+    }
+    return 1;
 }
 
 static int logged(const struct Host *h, unsigned i, int write, ULONG addr, ULONG width)
@@ -922,38 +943,40 @@ static void t_routing(void)
 
     set(m.c, R_A(0), 0xDFF006u);
     x = one(&m, move_w_load, 1, 64);
-    CHECK(m.h.nlog == 1 && logged(&m.h, 0, 0, 0xDFF006u, 2) && reg(m.c, R_D(1)) == 0x77770000u);
+    CHECK(ended(&x) && m.h.nlog == 1 && logged(&m.h, 0, 0, 0xDFF006u, 2) && reg(m.c, R_D(1)) == 0x77770000u);
 
     set(m.c, R_A(0), 0xDFF000u);
     x = one(&m, move_l, 1, 64);
-    CHECK(m.h.nlog == 2 && logged(&m.h, 0, 1, 0xDFF000u, 2) && logged(&m.h, 1, 1, 0xDFF002u, 2));
+    CHECK(ended(&x) && m.h.nlog == 2 && logged(&m.h, 0, 1, 0xDFF000u, 2) && logged(&m.h, 1, 1, 0xDFF002u, 2));
     CHECK(m.h.log[0].value == 0x1122 && m.h.log[1].value == 0x3344);
 
     set(m.c, R_A(0), 0xDFEFFEu);                          /* the first word direct */
     x = one(&m, move_l, 1, 64);
-    CHECK(m.h.nlog == 1 && logged(&m.h, 0, 1, 0xDFF000u, 2) && get16(&m, 0xDFEFFEu) == 0x1122);
+    CHECK(ended(&x) && m.h.nlog == 1 && logged(&m.h, 0, 1, 0xDFF000u, 2) && get16(&m, 0xDFEFFEu) == 0x1122);
 
     set(m.c, R_A(0), 0x10001u);                           /* misaligned, direct */
     x = one(&m, move_l, 1, 64);
-    CHECK(m.h.nlog == 0 && get32(&m, 0x10001u) == 0x11223344u);
+    CHECK(ended(&x) && m.h.nlog == 0 && get32(&m, 0x10001u) == 0x11223344u);
 
     put32(&m, 4, 0xCAFEF00Du);
     x = one(&m, guard_store, 2, 64);
-    CHECK(m.h.nlog == 2 && logged(&m.h, 0, 1, 4, 2) && logged(&m.h, 1, 1, 6, 2) && get32(&m, 4) == 0xCAFEF00Du);
+    CHECK(ended(&x) && m.h.nlog == 2 && logged(&m.h, 0, 1, 4, 2) && logged(&m.h, 1, 1, 6, 2) && get32(&m, 4) == 0xCAFEF00Du);
     x = one(&m, guard_load, 2, 64);
-    CHECK(m.h.nlog == 0 && reg(m.c, R_D(3)) == 0xCAFEF00Du);
+    CHECK(ended(&x) && m.h.nlog == 0 && reg(m.c, R_D(3)) == 0xCAFEF00Du);
 
     set(m.c, R_A(0), 0xDFF010u);
     x = one(&m, rmw, 1, 64);
-    CHECK(m.h.nlog == 2 && logged(&m.h, 0, 0, 0xDFF010u, 2) && logged(&m.h, 1, 1, 0xDFF010u, 2) && m.h.log[1].value == 1);
+    CHECK(ended(&x) && m.h.nlog == 2 && logged(&m.h, 0, 0, 0xDFF010u, 2) && logged(&m.h, 1, 1, 0xDFF010u, 2) &&
+          m.h.log[1].value == 1);
 
     set(m.c, R_A(0), 0xDFF020u);
     x = one(&m, movem, 2, 64);
-    CHECK(m.h.nlog == 4 && logged(&m.h, 0, 1, 0xDFF020u, 2) && logged(&m.h, 1, 1, 0xDFF022u, 2) &&
+    CHECK(ended(&x) && m.h.nlog == 4 && logged(&m.h, 0, 1, 0xDFF020u, 2) && logged(&m.h, 1, 1, 0xDFF022u, 2) &&
           logged(&m.h, 2, 1, 0xDFF024u, 2) && logged(&m.h, 3, 1, 0xDFF026u, 2));
 
     x = one(&m, far_load, 3, 64);
-    CHECK(m.h.nlog == 2 && logged(&m.h, 0, 0, 32 * MIB, 2) && logged(&m.h, 1, 0, 32 * MIB + 2, 2) && reg(m.c, R_D(4)) == 0);
+    CHECK(ended(&x) && m.h.nlog == 2 && logged(&m.h, 0, 0, 32 * MIB, 2) && logged(&m.h, 1, 0, 32 * MIB + 2, 2) &&
+          reg(m.c, R_D(4)) == 0);
 
     /* a bitplane range the host adds, then moves */
     m.h.map.ranges[4] = m.h.map.ranges[3];
@@ -963,12 +986,12 @@ static void t_routing(void)
     m.h.map.generation++;
     set(m.c, R_A(0), 0x200000u);
     x = one(&m, move_w, 1, 64);
-    CHECK(m.h.nlog == 1 && logged(&m.h, 0, 1, 0x200000u, 2) && get16(&m, 0x200000u) == 0x3344);
+    CHECK(ended(&x) && m.h.nlog == 1 && logged(&m.h, 0, 1, 0x200000u, 2) && get16(&m, 0x200000u) == 0x3344);
     m.h.map.ranges[2].lo = 0x300000u; m.h.map.ranges[2].hi = 0x301000u;
     m.h.map.generation++;
     set(m.c, R_D(2), 0x55556666u);
     x = one(&m, move_w, 1, 64);
-    CHECK(m.h.nlog == 0 && get16(&m, 0x200000u) == 0x6666);
+    CHECK(ended(&x) && m.h.nlog == 0 && get16(&m, 0x200000u) == 0x6666);
     set(m.c, R_A(0), 0x300000u);
     x = one(&m, move_w, 1, 64);
     CHECK(m.h.nlog == 1 && logged(&m.h, 0, 1, 0x300000u, 2));
@@ -1434,7 +1457,7 @@ static void t_exceptions(void)
         CHECK(x.reason == e->reason && x.pc == L_ENTRY + 2 && x.opcode == e->code[0] && x.retired == 1);
         if (e->reason == KJ68_STOP_EXCEPTION)
             CHECK(x.vector == e->vector);
-        CHECK(strncmp(x.text, e->text, strlen(e->text)) == 0);
+        CHECK(starts(x.text, e->text));
         CHECK(reg(m.c, R_D(0)) == 5 && reg(m.c, KJ68_REG_PC) == L_ENTRY + 2 && reg(m.c, R_A(0)) == L_SCRATCH);
         CHECK(reg(m.c, KJ68_REG_SR) == 0x2700);
         if (x.reason != e->reason)
@@ -1565,7 +1588,7 @@ static void t_faults(void)
         memcpy(code + 1, cases[i].code, cases[i].n * sizeof(UWORD));
         x = one(&m, code, cases[i].n + 1, 64);
         CHECK(x.reason == cases[i].reason && x.pc == L_ENTRY + 2 && x.retired == 1);
-        CHECK(strncmp(x.text, cases[i].text, strlen(cases[i].text)) == 0);
+        CHECK(starts(x.text, cases[i].text));
         if (cases[i].reason == KJ68_STOP_EXCEPTION)
             CHECK(x.vector == cases[i].vector);
     }
