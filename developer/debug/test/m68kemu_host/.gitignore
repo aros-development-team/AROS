@@ -2,3 +2,4 @@ test_m68kemu
 test_moira_exec
 test_hello_thunks
 *.dSYM
+test_engine

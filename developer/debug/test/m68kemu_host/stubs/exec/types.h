@@ -3,6 +3,7 @@ typedef unsigned char UBYTE; typedef unsigned short UWORD;
 typedef signed char BYTE; typedef signed short WORD;
 typedef unsigned int ULONG; typedef signed int LONG;
 typedef unsigned long IPTR; typedef signed long SIPTR;
+typedef unsigned long long UQUAD; typedef signed long long QUAD;
 typedef int BOOL; typedef void *APTR; typedef char *STRPTR;
 typedef const char *CONST_STRPTR;
 #define TRUE 1

@@ -685,6 +685,7 @@ static ULONG fmt_stub(struct M68KEmuContext *ctx)
         return 0;
     for (i = 0; i < sizeof(code) / sizeof(code[0]); i++)
         m68k_write16(ctx, s + i * 2, code[i]);
+    m68k_engine_invalidate(ctx);
     ctx->fmt_stub = s;
     return s;
 }
@@ -6748,6 +6749,7 @@ static ULONG pch_stub(struct M68KEmuContext *ctx)
     m68k_write32(ctx, s + 20, s + PCH_DATA);
     m68k_write32(ctx, s + 26, s + PCH_DATA + 4);
     m68k_write32(ctx, s + 46, s + PCH_DATA + 8);
+    m68k_engine_invalidate(ctx);
     ctx->pch_stub = s;
     return s;
 }

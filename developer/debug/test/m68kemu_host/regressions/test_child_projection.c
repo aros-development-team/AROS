@@ -107,6 +107,7 @@ static unsigned gil_obtains, gil_releases, lock_violations, ts_drops, holds, rel
 
 static void m68k_low_write_trap(struct M68KEmuContext *ctx, ULONG addr, const char *why) { (void)ctx; (void)addr; (void)why; ++low_traps; }
 static void m68k_log(struct M68KEmuContext *ctx, const char *fmt, ...) { (void)ctx; (void)fmt; ++logs; }
+static void m68k_engine_invalidate(struct M68KEmuContext *ctx) { (void)ctx; }    /* no engine here */
 static void bug(const char *fmt, ...) { (void)fmt; ++bugs; }
 #include "accessors.inc"
 #include "registry.inc"
