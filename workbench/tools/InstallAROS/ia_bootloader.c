@@ -48,7 +48,6 @@
 
 extern char *source_Path;
 
-extern Object   *cycle_drivetype;
 extern Object   *optObjCycleGrub2Mode;
 BOOL            gfx_font_exists;
 
@@ -690,7 +689,7 @@ void BOOTLOADER_DoInstall(Class * CLASS, Object * self)
             /* Add entry to boot MS Windows if present */
             if ((part_no =
                     FindWindowsPartition(data->bl_TargetDevice, data->bl_TargetUnit)) != -1
-                && XGET(cycle_drivetype, MUIA_Cycle_Active) != 2)
+                && strcmp(data->bl_TargetDevice, "ata.device") != 0)
             {
                 TEXT cmd[256];
                 sprintf(tmp, "%s", dstPath);

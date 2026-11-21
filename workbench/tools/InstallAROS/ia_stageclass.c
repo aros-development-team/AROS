@@ -36,6 +36,7 @@
 #include "ia_stage_intern.h"
 #include "ia_option.h"
 #include "ia_diskio.h"
+#include "ia_driveselect.h"
 #include "ia_log.h"
 #include "ia_packages.h"
 #include "ia_bootloader.h"
@@ -64,6 +65,7 @@ extern Object *optObjWorkDestLabel;
 
 extern Object *optObjDestDevice;
 extern Object *optObjDestUnit;
+extern Object *driveObjSelect;
 
 extern Object *optObjCheckEFI;
 #if defined(INSTALL_BL_EFI)
@@ -813,8 +815,24 @@ IPTR InstallStage__MUIM_IC_NextStep(Class * CLASS, Object * self, Msg message)
         break;
 
     case EPartitioningStage:
+        get(data->instc_options_main->opt_partmethod,
+            MUIA_Radio_Active, &option);
+
+        /*
+         * Last target gate before installation proceeds.
+         *
+         * Partition methods 0/1 enter C:Partition and therefore require
+         * partition.library to open the exact Device + Unit pair.
+         * Method 2 uses existing partitions and requires only the base
+         * target capability.
+         */
+        if (!driveObjSelect ||
+            !DoMethod(driveObjSelect,
+                      MUIM_DriveSelect_ValidateTarget, FALSE,
+                      ((int)option == 0 || (int)option == 1)))
+            return 0;
+
         D(bug("[InstallAROS:Stage] %s: EPartitioningStage\n", __func__));
-        get(data->instc_options_main->opt_partmethod, MUIA_Radio_Active, &option);
         BOOL insttousb = isUSBDevice((char *)XGET(optObjDestDevice, MUIA_InstallOption_Value));
 
         if ((int)option == 0 || (int)option == 1)
