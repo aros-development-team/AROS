@@ -138,7 +138,7 @@ static BOOL FindSymbol(module_t *mod, char **function, void **funstart, void **f
                                          no segment names provided for the module.
             DL_SegmentPointer (BPTR)   - DOS pointer to the corresponding segment.
                                          Note that it will be different from
-                                         KDL_SegmentStart value
+                                         DL_SegmentStart value
             
             DL_SegmentNumber  (unsigned int) - Order number of the segment in the
                                                module
@@ -164,6 +164,10 @@ static BOOL FindSymbol(module_t *mod, char **function, void **funstart, void **f
     NOTES
         If the function fails values pointed to by taglist will not be changed.
 
+        Module, segment and symbol name pointers are borrowed from the debug
+        database and become invalid when the corresponding module is
+        unregistered.
+
     EXAMPLE
 
     BUGS
@@ -176,6 +180,36 @@ static BOOL FindSymbol(module_t *mod, char **function, void **funstart, void **f
 {
     AROS_LIBFUNC_INIT
 
+    struct DebugBase *debugBase = DBGBASE(DebugBase);
+    BOOL super = KrnIsSuper();
+    int ret;
+
+    /*
+     * Keep the public API's existing supervisor behavior. Its returned name
+     * pointers have no release handle, so a reader lease cannot extend beyond
+     * this function. The kernel resolver uses the private helper below while
+     * holding its explicit result lease.
+     */
+    if (!super)
+        ObtainSemaphoreShared(&debugBase->db_ModSem);
+
+    ret = Debug_DecodeLocationAInternal(addr, tags, DebugBase);
+
+    if (!super)
+        ReleaseSemaphore(&debugBase->db_ModSem);
+
+    return ret;
+
+    AROS_LIBFUNC_EXIT
+}
+
+/*
+ * Perform one DecodeLocationA lookup while the caller already owns the
+ * appropriate database protection.
+ */
+int Debug_DecodeLocationAInternal(void *addr, struct TagItem *tags,
+        struct Library *DebugBase)
+{
     struct segment *seg;
     void *dummy;
     char **module   = (char **)&dummy;
@@ -191,7 +225,6 @@ static BOOL FindSymbol(module_t *mod, char **function, void **funstart, void **f
     struct TagItem *tag, *tstate = tags;
     void *symaddr = NULL;
     int ret = 0;
-    int super;
 
     D(bug("[Debug] DecodeLocationA(0x%p)\n", addr));
 
@@ -245,11 +278,6 @@ static BOOL FindSymbol(module_t *mod, char **function, void **funstart, void **f
         }
     }
 
-    /* We can be called in supervisor mode. No semaphores in the case! */
-    super = KrnIsSuper();
-    if (!super)
-        ObtainSemaphoreShared(&DBGBASE(DebugBase)->db_ModSem);
-
     seg = FindSegment(addr, DebugBase);
     if (seg)
     {
@@ -269,10 +297,5 @@ static BOOL FindSymbol(module_t *mod, char **function, void **funstart, void **f
         ret = 1;
     }
 
-    if (!super)
-        ReleaseSemaphore(&DBGBASE(DebugBase)->db_ModSem);
-
     return ret;
-
-    AROS_LIBFUNC_EXIT
 }

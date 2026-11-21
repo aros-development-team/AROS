@@ -119,6 +119,15 @@ AROS_UFH3S(struct KernelBase *, Kernel_Init,
     KernelBase->kb_IntrSpinLock.s_Owner = NULL;
 #endif
 
+#if defined(__i386__) || defined(__x86_64__)
+    KernelBase->kb_gResolverGeneration = 0;
+    KernelBase->kb_gResolverReaders = 0;
+#if defined(__AROSEXEC_SMP__)
+    KernelBase->kb_gResolverSpinLock.lock = SPINLOCK_UNLOCKED;
+    KernelBase->kb_gResolverSpinLock.s_Owner = NULL;
+#endif
+#endif
+
     /*
      * Everything is ok, add our resource.
      * exec.library catches this call and sets up its memory management.
