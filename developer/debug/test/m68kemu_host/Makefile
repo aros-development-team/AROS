@@ -8,7 +8,7 @@ MEMORY_BOUNDS_ARGS ?=
 CXXFLAGS = -std=c++20 -Wall -Wextra -Wno-unused-parameter -g \
            -I$(TEST_DIR)/stubs -I$(M68KEMU_DIR) -I$(M68KEMU_DIR)/Moira
 
-TESTS = test_m68kemu test_moira_exec test_hello_thunks
+TESTS = test_m68kemu test_moira_exec test_hello_thunks test_engine
 
 all: $(TESTS)
 
@@ -21,10 +21,14 @@ test_moira_exec: $(TEST_DIR)/test_moira_exec.cpp
 test_hello_thunks: $(TEST_DIR)/test_hello_thunks.cpp
 	$(CXX) $(CXXFLAGS) -o $@ $<
 
+test_engine: $(TEST_DIR)/test_engine.cpp
+	$(CXX) $(CXXFLAGS) -o $@ $<
+
 test: all test-memory-bounds test-openlibrary-versions test-memheader
 	./test_m68kemu
 	./test_moira_exec
 	./test_hello_thunks
+	./test_engine
 
 test-memory-bounds:
 	$(PYTHON) "$(TEST_DIR)/regressions/run_memory_bounds.py" --cxx "$(CXX)" $(MEMORY_BOUNDS_ARGS)
