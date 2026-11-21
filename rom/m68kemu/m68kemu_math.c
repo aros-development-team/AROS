@@ -335,7 +335,7 @@ static IPTR cx_Broker(struct M68KEmuContext *ctx, void *cpu)
     n.nb_ReservedChannel = (WORD)m68k_read16(ctx, nb + 24);
     co = CxBroker(&n, &err);
     if (errp && errp < ctx->mem_size) m68k_write32(ctx, errp, (ULONG)err);
-    return (IPTR)co;           /* a CxObj is opaque to the program: the handle goes back as is */
+    return m68k_native_out(ctx, co);   /* a CxObj is opaque to the program: it gets a handle */
 }
 
 /* -30: CreateCxObj(D0=type, A0=arg1, A1=arg2) */
@@ -345,16 +345,16 @@ static IPTR cx_Create(struct M68KEmuContext *ctx, void *cpu)
 
     switch (type)
     {
-    case CX_FILTER:     return (IPTR)CreateCxObj(type, (IPTR)cx_str(ctx, a1), a2);
-    case CX_TYPEFILTER: return (IPTR)CreateCxObj(type, a1, a2);
+    case CX_FILTER:     return m68k_native_out(ctx, CreateCxObj(type, (IPTR)cx_str(ctx, a1), a2));
+    case CX_TYPEFILTER: return m68k_native_out(ctx, CreateCxObj(type, a1, a2));
     case CX_SEND:
     {
         BOOL own;
-        return (IPTR)CreateCxObj(type, (IPTR)m68k_port_twin(ctx, a1, &own), a2);
+        return m68k_native_out(ctx, CreateCxObj(type, (IPTR)m68k_port_twin(ctx, a1, &own), a2));
     }
-    case CX_SIGNAL:     return (IPTR)CreateCxObj(type, (IPTR)FindTask(NULL), a2);   /* the program's task is this process */
-    case CX_TRANSLATE:  return (IPTR)CreateCxObj(type, 0, 0);                        /* NULL translation: swallow */
-    case CX_DEBUG:      return (IPTR)CreateCxObj(type, a1, 0);
+    case CX_SIGNAL:     return m68k_native_out(ctx, CreateCxObj(type, (IPTR)FindTask(NULL), a2));   /* the program's task is this process */
+    case CX_TRANSLATE:  return m68k_native_out(ctx, CreateCxObj(type, 0, 0));                        /* NULL translation: swallow */
+    case CX_DEBUG:      return m68k_native_out(ctx, CreateCxObj(type, a1, 0));
     default:
         m68k_log(ctx, "%s: commodities object type %lu needs a 68k callback, not supported yet",
                  ctx->program_name[0] ? ctx->program_name : "68k program", (unsigned long)type);

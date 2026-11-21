@@ -323,6 +323,7 @@ APTR  m68k_image_cached(struct M68KEmuContext *ctx, ULONG mi);
 void  m68k_image_cache_free(struct M68KEmuContext *ctx);
 BPTR  m68k_bptr_in(struct M68KEmuContext *ctx, ULONG v);
 void  m68k_bptr_drop(struct M68KEmuContext *ctx, ULONG v);
+ULONG m68k_native_out(struct M68KEmuContext *ctx, APTR p);
 void  m68k_low_write_trap(struct M68KEmuContext *ctx, ULONG addr, const char *who);
 void  m68k_planar_touch(struct M68KEmuContext *ctx, ULONG addr, ULONG nbytes);
 void  m68k_cia_timer_control(struct M68KEmuContext *ctx, int chip, int timer, UBYTE cr);

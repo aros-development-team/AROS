@@ -38,6 +38,18 @@ test-openlibrary-versions:
 test-openlibrary-versions-sanitize:
 	$(PYTHON) "$(TEST_DIR)/regressions/run_openlibrary_versions.py" --cxx "$(CXX)" --sanitize $(OPENLIBRARY_ARGS)
 
+# How the pointers native functions return reach the program
+NATIVE_RETURNS_ARGS ?=
+test: test-native-returns
+
+test-native-returns:
+	$(PYTHON) "$(TEST_DIR)/regressions/run_native_returns.py" --cc "$(CC)" $(NATIVE_RETURNS_ARGS)
+
+test-native-returns-sanitize:
+	$(PYTHON) "$(TEST_DIR)/regressions/run_native_returns.py" --cc "$(CC)" --sanitize $(NATIVE_RETURNS_ARGS)
+
+.PHONY: test-native-returns test-native-returns-sanitize
+
 test-memheader:
 	$(PYTHON) "$(TEST_DIR)/regressions/run_memheader.py" --cc "$(CC)" $(MEMHEADER_ARGS)
 

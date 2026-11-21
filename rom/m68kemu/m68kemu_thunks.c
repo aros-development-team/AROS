@@ -1850,7 +1850,7 @@ static IPTR thunk_exec_RemHead_m(struct M68KEmuContext *ctx, void *cpu)
 {
     ULONG l = THUNK_A(0), head;
     if (ML_NATIVE(l))
-        return (IPTR)RemHead(THUNK_PTR(0));
+        return m68k_native_out(ctx, RemHead(THUNK_PTR(0)));
     head = m68k_read32(ctx, l);
     if (!m68k_read32(ctx, head))
         return 0;
@@ -1863,7 +1863,7 @@ static IPTR thunk_exec_RemTail_m(struct M68KEmuContext *ctx, void *cpu)
 {
     ULONG l = THUNK_A(0), tail;
     if (ML_NATIVE(l))
-        return (IPTR)RemTail(THUNK_PTR(0));
+        return m68k_native_out(ctx, RemTail(THUNK_PTR(0)));
     tail = m68k_read32(ctx, l + 8);
     if (!m68k_read32(ctx, tail + 4))
         return 0;
@@ -3028,7 +3028,7 @@ static IPTR thunk_dos_AllocDosObject(struct M68KEmuContext *ctx, void *cpu)
         FreeDosObject(DOS_EXALLCONTROL, obj);
         return exall_control_new(ctx);
     }
-    return (IPTR)obj;
+    return m68k_native_out(ctx, obj);
 }
 
 /* a FileInfoBlock from AllocDosObject is a shadow: free the native one and its 68k copy */
@@ -3282,7 +3282,7 @@ static IPTR thunk_dos_SendPkt(struct M68KEmuContext *ctx, void *cpu)
 
 static IPTR thunk_dos_WaitPkt(struct M68KEmuContext *ctx, void *cpu)
 {
-    return (IPTR)WaitPkt();
+    return m68k_native_out(ctx, WaitPkt());
 }
 
 static IPTR thunk_dos_ReplyPkt(struct M68KEmuContext *ctx, void *cpu)
