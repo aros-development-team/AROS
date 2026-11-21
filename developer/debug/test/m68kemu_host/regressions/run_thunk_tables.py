@@ -153,8 +153,9 @@ const struct M68KThunkEntry m68kemu_thunks_dos[] = {
 
 
 def self_test():
-    """The checker must find an offset that is no multiple of 6, a function
-    at another function's offset and a register the function does not take."""
+    """Check the checker on a small table with one fault of each kind."""
+    # It must find an offset that is no multiple of 6, a function at another
+    # function's offset and a register the function does not take.
     problems = check({'self-test.c': masked(SELF_TEST_SOURCE)}, SELF_TEST_CONF)
     want = ('offset 244, which is not a positive multiple of 6',
             'thunk_dos_Open at offset 252: dos.conf has no function there',
