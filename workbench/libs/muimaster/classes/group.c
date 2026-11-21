@@ -586,11 +586,11 @@ struct MUI_GroupData
 *       Selected is not explicitly filtered, but Area may already suppress an
 *       unchanged Selected tag. Unfiltered group tags such as spacing can also
 *       reach child groups.
-*       Disabled is delayed: child forwarding prepends a NestedDisabled
-*       operation and also passes Disabled, then the superclass applies the
-*       group's Disabled tag. Repeated TRUE calls can accumulate child nesting
-*       even though Disabled itself is Boolean. Forward FALSE omits that child
-*       propagation.
+*       Disabled is delayed: child forwarding passes Disabled, with a
+*       NestedDisabled operation before it when the group's own Disabled flag
+*       changes, then the superclass applies the group's Disabled tag. A
+*       repeated value does not change the children's nesting. Forward FALSE
+*       omits that child propagation.
 *
 *   BUGS
 *       Multiple Disabled tags are initially changed to TAG_IGNORE, but only the
@@ -1124,8 +1124,13 @@ IPTR Group__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
             switch (tag->ti_Tag)
             {
             case MUIA_Disabled:
-                nestedAttrs[0].ti_Data = tag->ti_Data;
-                msg->ops_AttrList = nestedAttrs;
+                /* the children count the changes of the group's state */
+                if (((muiAreaData(obj)->mad_DisableCount & (1 << 31)) != 0)
+                    != (tag->ti_Data != 0))
+                {
+                    nestedAttrs[0].ti_Data = tag->ti_Data;
+                    msg->ops_AttrList = nestedAttrs;
+                }
                 break;
             case MUIA_HelpLine:
             case MUIA_HelpNode:

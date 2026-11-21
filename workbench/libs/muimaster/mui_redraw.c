@@ -35,7 +35,11 @@
         Account for enclosing virtual groups, update the rendering context's
         clip rectangle, store the requested drawing flags, and dispatch
         MUIM_Draw. Apply the disabled overlay when required and copy a
-        buffered result to the window when buffering is active.
+        buffered result to the window when buffering is active. The overlay
+        of a disabled group covers its children; a child that is redrawn on
+        its own gets the overlay itself. The overlay is blended on a true
+        colour screen, so an object that gets it is drawn as a whole: its
+        MADF_DRAWUPDATE is drawn as MADF_DRAWOBJECT.
 
     INPUTS
         obj - Non-NULL Area-derived object. A drawable object must have a
@@ -61,6 +65,8 @@
 
     APTR clip = (APTR)-1;
     IPTR disabled = 0;
+    ULONG ghosted;
+    BOOL ghost = FALSE;
 
     if (!(_flags(obj) & MADF_CANDRAW)) return;
 
@@ -141,9 +147,23 @@
         }
     }
     
+    /* A child of a disabled group is covered by the group's pattern,
+       unless it is redrawn on its own. The pattern is blended, so what
+       gets it is drawn as a whole */
+    ghosted = muiRenderInfo(obj)->mri_Flags & MUIMRI_GHOSTED;
+    if (!ghosted && XGET(obj, MUIA_Disabled))
+    {
+        ghost = TRUE;
+        flags = (flags & ~MADF_DRAWUPDATE) | MADF_DRAWOBJECT;
+        muiRenderInfo(obj)->mri_Flags |= MUIMRI_GHOSTED;
+    }
+
     _flags(obj) = (_flags(obj) & ~MADF_DRAWFLAGS) | (flags & MADF_DRAWFLAGS);
 
     DoMethod(obj, MUIM_Draw, 0);
+
+    if (!ghosted)
+        muiRenderInfo(obj)->mri_Flags &= ~MUIMRI_GHOSTED;
 
     if (get(obj, MUIA_Disabled, &disabled))
     {
@@ -163,7 +183,7 @@
         }
 #endif
 
-        if ((disabled) && (XGET(obj, MUIA_NestedDisabled) != TRUE))
+        if ((disabled) && ghost)
         {
 #ifdef __AROS__
 #if 0
