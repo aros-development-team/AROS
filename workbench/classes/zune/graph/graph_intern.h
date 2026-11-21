@@ -16,6 +16,8 @@ struct Graph_SourceDATA
     WORD    	    	    	        gs_PlotPen;
     WORD    	    	    	        gs_PlotFillPen;
     IPTR                                *gs_Entries;
+    UBYTE                               gs_PlotPenOwned;     // ObtainBestPen reservation
+    UBYTE                               gs_PlotFillPenOwned; // independent reservation
 };
 
 /*** Instance data **********************************************************/
@@ -31,7 +33,7 @@ struct Graph_DATA
     IPTR                                graph_SourceCount;      // Number of data sources 
     IPTR                                graph_EntryCount;       // Total number of entries in a source's array
     IPTR                                graph_EntryPtr;         // "current" entry in the source's array
-    struct Graph_SourceDATA             *graph_Sources;         // Data sources ...
+    struct Graph_SourceDATA             **graph_Sources;        // Stable borrowed source handles
 
     /* Settings for Input values .. */
     IPTR                                graph_ValCeiling;
@@ -55,6 +57,11 @@ struct Graph_DATA
     IPTR                                graph_Tick;             // tick counter used in periodic rendering
     float    	    	    	        graph_SegmentSize;      // size of a segment in pixels
     float    	    	    	        graph_PeriodSize;      // size of a segment in pixels
+
+    APTR                                graph_FillTmp;
+    IPTR                                graph_FillTmpBytes;
+    APTR                                graph_FillVectors;
+    IPTR                                graph_FillVectorBytes;
 };
 
 #define GRAPHF_SETUP    (1 << 0)
