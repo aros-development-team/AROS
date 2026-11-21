@@ -16,6 +16,7 @@
 #include <proto/exec.h>
 
 #include <inttypes.h>
+#include <stdbool.h>
 
 #include "boot_utils.h"
 #include "kernel_base.h"
