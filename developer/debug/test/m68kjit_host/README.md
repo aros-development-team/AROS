@@ -26,7 +26,7 @@ host.
 
 ## What is checked
 
-27 groups. A stub host owns the guest memory (1 MiB in most groups, 16 or
+28 groups. A stub host owns the guest memory (1 MiB in most groups, 16 or
 32 MiB where a check needs it), answers the accesses
 the engine sends it as `m68kemu.library` does for its ranges (CIA and
 custom chip pages, the low-memory guard, the bitplane mirror, reads outside
@@ -42,12 +42,12 @@ memory as 0), and dispatches the few library calls the test programs make.
 | `memory-routing`, `custom-page`, `endian`, `map-change-fetch` | which accesses go to the host and which do not, at every width and alignment, and a changed map |
 | `invalidation`, `code-changes`, `code-reset` | changed code after `invalidate`, and more blocks than the engine's code memory keeps, with a nested call on a second CPU |
 | `growth` | the code memory, the block table and the guest bytes doubling up to their largest sizes and no further, with each allocation of the next size made to fail once; no growth for a program that only translates the same code again |
-| `word-division`, `zero-divisor-state`, `div-host-read` | divisions, a zero divisor, and a divisor the engine would have to read through the host |
+| `word-division`, `long-division`, `zero-divisor-state`, `div-host-read` | the word and the long divisions against an oracle worked out in the checks, their overflows among them; a zero divisor; and a divisor the engine would have to read through the host |
 | `dbcc-targets`, `full-index`, `encoder`, `output-buffers-and-counters` | DBcc and its branch targets, the full index addressing modes, the self test of the AArch64 encoder, the exit and counter buffers |
 
 ## Result
 
-On an AArch64 Mac with Apple clang 21.0.0, 21 November 2026: 46010 checks,
+On an AArch64 Mac with Apple clang 21.0.0, 21 November 2026: 71636 checks,
 0 failed, in each of the two builds.
 
 Not shown by these checks: a build without the test seams, another

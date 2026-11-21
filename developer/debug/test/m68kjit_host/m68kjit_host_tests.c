@@ -1900,6 +1900,108 @@ static void div_case(const struct DivCase *c, unsigned *executed)
     m_close(&m);
 }
 
+/* DIVU.L and DIVS.L against an oracle worked out here: a dividend of 32
+   and of 64 bits, the remainder in a register of its own or dropped. On
+   overflow the registers, X, N and Z stay as they were, V is set and C
+   cleared; among the cases is 0x80000000 / -1 with a dividend of 32 bits,
+   whose quotient does not fit. */
+static void t_long_division(void)
+{
+    static const ULONG lows[] = { 0, 1, 2, 0x7FFFFFFFu, 0x80000000u, 0x80000001u, 0xFFFFFFFFu, 0x12345678u };
+    static const ULONG highs[] = { 0, 1, 0x7FFFFFFFu, 0x80000000u, 0xFFFFFFFFu, 0x00000123u };
+    static const ULONG divisors[] = { 1, 2, 3, 0x7FFFFFFFu, 0x80000000u, 0xFFFFFFFFu, 0xFFFFFFFEu, 0x00010000u };
+    /* the extension word of each form: Dq is D0, Dr is D2 or D0 */
+    static const UWORD ext[6] = { 0x0002, 0x0802, 0x0402, 0x0C02, 0x0000, 0x0800 };
+    const unsigned table = 8 * 6 * 8 * 6, random = 4096;
+    struct M m;
+    ULONG seed = 0x4C444956u;
+    unsigned k, form, overflows = 0, bad = 0;
+
+    CHECK(m_open(&m, MIB, 0xA5, 0));
+    for (form = 0; form < 6; form++)
+    {
+        m.pc = L_ENTRY + 16 * form;
+        w(&m, 0x4C41);                      /* DIVU.L or DIVS.L D1 into D2:D0 or D0 */
+        w(&m, ext[form]);
+        rts(&m);
+    }
+    m_start(&m, L_ENTRY, L_EXEC);
+    for (k = 0; k < table + random; k++)
+    {
+        ULONG lo, hi, divisor, flags, q = 0, r = 0, want0, want2, wantccr, sp = L_STACK - 4;
+        int is_signed, quad, split, overflow = 0;
+
+        if (k < table)
+        {
+            lo = lows[k % 8]; hi = highs[(k / 8) % 6]; divisor = divisors[(k / 48) % 8]; form = (k / 384) % 6;
+            flags = (k * 11) & 31;
+        }
+        else
+        {
+            seed ^= seed << 13; seed ^= seed >> 17; seed ^= seed << 5; lo = seed;
+            seed ^= seed << 13; seed ^= seed >> 17; seed ^= seed << 5; hi = (seed & 3) ? seed : (ULONG)((LONG)lo < 0 ? -1 : 0);
+            seed ^= seed << 13; seed ^= seed >> 17; seed ^= seed << 5; divisor = (seed & 4) ? seed : seed >> 16;
+            if (!divisor)
+                divisor = 1;
+            seed ^= seed << 13; seed ^= seed >> 17; seed ^= seed << 5; form = (seed >> 8) % 6; flags = seed & 31;
+        }
+        is_signed = (ext[form] & 0x0800) != 0;
+        quad = (ext[form] & 0x0400) != 0;
+        split = (ext[form] & 7) != 0;
+        if (is_signed)
+        {
+            int64_t num = quad ? (int64_t)(((uint64_t)hi << 32) | lo) : (int64_t)(LONG)lo;
+            int64_t den = (int64_t)(LONG)divisor;
+
+            if (num == INT64_MIN && den == -1)
+                overflow = 1;
+            else if (num / den < INT32_MIN || num / den > INT32_MAX)
+                overflow = 1;
+            else
+            {
+                q = (ULONG)(num / den);
+                r = (ULONG)(num % den);
+            }
+        }
+        else
+        {
+            uint64_t num = quad ? (((uint64_t)hi << 32) | lo) : (uint64_t)lo;
+
+            if (num / divisor > 0xFFFFFFFFu)
+                overflow = 1;
+            else
+            {
+                q = (ULONG)(num / divisor);
+                r = (ULONG)(num % divisor);
+            }
+        }
+        want0 = overflow ? lo : q;
+        want2 = (overflow || !split) ? hi : r;
+        wantccr = overflow ? ((flags & 0x1C) | 0x02) : ((flags & 0x10) | ((q & 0x80000000u) ? 8u : 0u) | (q ? 0u : 4u));
+        overflows += (unsigned)overflow;
+
+        if (ops->set_reg(m.c, R_D(0), lo) != M68KENG_OK || ops->set_reg(m.c, R_D(1), divisor) != M68KENG_OK ||
+            ops->set_reg(m.c, R_D(2), hi) != M68KENG_OK || ops->set_reg(m.c, R_A(7), sp) != M68KENG_OK ||
+            ops->set_reg(m.c, M68KENG_REG_SR, 0x2700 | flags) != M68KENG_OK ||
+            ops->set_reg(m.c, M68KENG_REG_PC, L_ENTRY + 16 * form) != M68KENG_OK)
+            bad++;
+        else if ((ULONG)program(&m) != want0 || reg(m.c, R_D(2)) != want2 || reg(m.c, R_D(1)) != divisor ||
+                 (reg(m.c, M68KENG_REG_SR) & 0x1F) != wantccr)
+        {
+            if (!bad++)
+                printf("  form %u: %08lx:%08lx / %08lx, flags %02lx: D0 %08lx D2 %08lx CCR %02lx; the oracle has %08lx %08lx %02lx\n",
+                       form, (unsigned long)hi, (unsigned long)lo, (unsigned long)divisor, (unsigned long)flags,
+                       (unsigned long)reg(m.c, R_D(0)), (unsigned long)reg(m.c, R_D(2)),
+                       (unsigned long)(reg(m.c, M68KENG_REG_SR) & 0x1F), (unsigned long)want0, (unsigned long)want2,
+                       (unsigned long)wantccr);
+        }
+    }
+    CHECK(bad == 0);
+    CHECK(overflows > 100);
+    printf("  %u long-division cases against the oracle, %u of them an overflow\n", table + random, overflows);
+    m_close(&m);
+}
+
 static void t_word_division(void)
 {
     static const ULONG dividends[] = { 0, 1, 2, 0x7F, 0x80, 0xFF, 0x100, 0x7FFF,
@@ -2346,6 +2448,7 @@ int main(void)
     group("program", t_program);                     /* 13, legacy */
     group("dbcc-targets", t_dbcc_targets);           /* 13, legacy */
     group("word-division", t_word_division);         /* 13, legacy */
+    group("long-division", t_long_division);         /* 13 */
     group("full-index", t_full_index);               /* 13, legacy */
     group("div-host-read", t_div_host_read);         /* 12, revision 3 */
     printf("m68kjit host checks (%s): %u checks, %u failed\n", mj_tr_exec_memory_kind(), checks, failures);

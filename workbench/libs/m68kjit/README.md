@@ -84,9 +84,9 @@ memory.
 ## Checks
 
 - **On a host.** `developer/debug/test/m68kjit_host` compiles the two
-  engine files with test seams and runs 27 groups of checks through the
+  engine files with test seams and runs 28 groups of checks through the
   interface (and, from `m68kjit_intern.h`, the table of operations, the seams
-  and the self test of the encoder). On an AArch64 Mac (Apple clang 21.0.0): 46010 checks, 0
+  and the self test of the encoder). On an AArch64 Mac (Apple clang 21.0.0): 71636 checks, 0
   failed, at `-O1` with the address and undefined behaviour sanitizers and
   at `-O2`.
 - **Native probe.** `developer/debug/test/m68kjit/m68kjitprobe` opens

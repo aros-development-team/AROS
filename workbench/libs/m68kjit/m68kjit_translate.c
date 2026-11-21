@@ -1887,10 +1887,10 @@ static void emit_div_probe(struct HJTrans *t, const struct HJInsn *in, int size)
     patch(e, br_direct, e->n);
 }
 
-/* Dn / <ea>.W into remainder:quotient. Widen signed division so that
-   INT32_MIN / -1 is checked as a guest quotient overflow. The manual
-   specifies C clear even on overflow; the pinned Musashi-mimic reference
-   retains it. N/Z are undefined on overflow and kept here. */
+/* Dn / <ea>.W into remainder:quotient. The signed division is made in 64
+   bits, so that 0x80000000 / -1 shows as a quotient that does not fit in a
+   word, like any other. On overflow V is set and C cleared, and Dn, N and
+   Z stay as they were. */
 static void emit_divw(struct HJTrans *t, const struct HJInsn *in)
 {
     struct HJEmit *e = &t->e;
@@ -1938,6 +1938,9 @@ static void emit_divw(struct HJTrans *t, const struct HJInsn *in)
     patch(e, br_done, e->n);
 }
 
+/* Dr:Dq / <ea>.L, or Dq / <ea>.L, into Dq with the remainder in Dr. Only
+   the unsigned division of 32 bits by 32 cannot overflow; the others are
+   made in 64 bits and their quotient checked. */
 static void emit_divl(struct HJTrans *t, const struct HJInsn *in)
 {
     struct HJEmit *e = &t->e;
@@ -1954,9 +1957,10 @@ static void emit_divl(struct HJTrans *t, const struct HJInsn *in)
     emit_undo_step(t, &in->src, 4);
     emit_exit_reason(t, in->pc, HJ_EXIT_FAULT);
     patch(e, br_nz, e->n);
-    if (!quad)
+    if (!quad && !is_signed)
     {
-        put(e, a64_div(0, is_signed, R_SCR, dq, v));
+        /* 32 bits by 32 bits, unsigned: the quotient always fits */
+        put(e, a64_div(0, 0, R_SCR, dq, v));
         put(e, a64_msub(0, R_F1, R_SCR, v, dq));
         put(e, a64_mov(dr, R_F1));
         put(e, a64_mov(dq, R_SCR));
@@ -1964,8 +1968,15 @@ static void emit_divl(struct HJTrans *t, const struct HJInsn *in)
             emit_flags_logic(e, dq, 4);
         return;
     }
-    put(e, a64_mov(R_RES, dq));
-    put(e, a64_bitfield(1, 1, R_RES, dr, 32, 31));
+    if (quad)
+    {
+        put(e, a64_mov(R_RES, dq));
+        put(e, a64_bitfield(1, 1, R_RES, dr, 32, 31));
+    }
+    else
+        /* a signed dividend of 32 bits, divided in 64 like the long one:
+           0x80000000 / -1 then shows as the quotient that does not fit */
+        put(e, a64_bitfield(1, 0, R_RES, dq, 0, 31));
     if (is_signed)
         put(e, a64_bitfield(1, 0, R_SRC, v, 0, 31));
     else
@@ -1991,6 +2002,10 @@ static void emit_divl(struct HJTrans *t, const struct HJInsn *in)
     br_done = e->n;
     put(e, a64_b(0));
     patch(e, br_ovf, e->n);
+    /* overflow, as in the word division: V set and C cleared; the
+       registers, N and Z stay as they were */
+    if (in->need & HJF_C)
+        put(e, a64_logic_const(0, R_FLAGS, R_FLAGS, ~HJF_C));
     if (in->need & HJF_V)
         put(e, a64_logic_const(1, R_FLAGS, R_FLAGS, HJF_V));
     patch(e, br_done, e->n);
