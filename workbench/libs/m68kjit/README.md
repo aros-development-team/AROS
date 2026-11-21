@@ -91,7 +91,7 @@ memory.
   at `-O2`.
 - **Native probe.** `developer/debug/test/m68kjit/m68kjitprobe` opens
   the library and runs small 68k programs through the interface, without
-  `m68kemu.library`: 22 checks.
+  `m68kemu.library`: 23 checks.
 - **With m68kemu.library.** See `rom/m68kemu/INTERNALS.md`, The Optional
   Engine.
 

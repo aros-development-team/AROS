@@ -45,6 +45,17 @@ memory as 0), and dispatches the few library calls the test programs make.
 | `word-division`, `long-division`, `zero-divisor-state`, `div-host-read` | the word and the long divisions against an oracle worked out in the checks, their overflows among them; a zero divisor; and a divisor the engine would have to read through the host |
 | `dbcc-targets`, `full-index`, `encoder`, `output-buffers-and-counters` | DBcc and its branch targets, the full index addressing modes, the self test of the AArch64 encoder, the exit and counter buffers |
 
+## On a Mac: x18
+
+The translator keeps a temporary in x18, an ordinary caller-saved register
+in the AROS ABI. Darwin does not keep x18 across a context switch: on the
+Mac of these runs a value left in x18 was found changed 2451 times in 8
+seconds of a loop that was preempted. So on a Mac the Makefile builds the
+translator from a copy with that one temporary in x23, a register the
+trampolines save and the translator does not use. On Linux it builds the
+file as it is. What a Mac cannot show, the native probe does: its
+callbacks change x16, x17 and x18.
+
 ## Result
 
 On an AArch64 Mac with Apple clang 21.0.0, 21 November 2026: 71636 checks,

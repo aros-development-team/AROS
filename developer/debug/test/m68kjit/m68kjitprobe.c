@@ -11,7 +11,9 @@
       - a DBRA loop of 1000 turns, in one run and in runs of 100
         instructions;
       - RTS to an address outside memory;
-      - a word read and a word written in the range of the callbacks;
+      - a word read and a word written in the range of the callbacks,
+        and an addition to a word there, with callbacks that change the
+        registers the ABI lets them change;
       - changed code, before and after invalidate;
       - a division by zero and ILLEGAL, which the engine reports and does
         not execute;
@@ -58,6 +60,15 @@ static void check(BOOL ok, CONST_STRPTR what)
     Flush(Output());
 }
 
+/* The ABI lets a C function change x16, x17 and x18. These callbacks do,
+   so the engine has to keep what it needs of them around the call. */
+static void change_scratch_registers(void)
+{
+#if defined(__aarch64__)
+    __asm__ volatile("mov x16, #0x5a5a\n\tmov x17, #0x5a5a\n\tmov x18, #0x5a5a" : : : "x16", "x17", "x18");
+#endif
+}
+
 static ULONG host_read(APTR host_domain, APTR host_cpu, ULONG addr, ULONG width, ULONG pc, ULONG *value)
 {
     (void)host_domain;
@@ -67,6 +78,7 @@ static ULONG host_read(APTR host_domain, APTR host_cpu, ULONG addr, ULONG width,
     read_addr = addr;
     read_width = width;
     *value = 0x1234;
+    change_scratch_registers();
     return 0;
 }
 
@@ -79,6 +91,7 @@ static ULONG host_write(APTR host_domain, APTR host_cpu, ULONG addr, ULONG width
     write_addr = addr;
     write_width = width;
     write_value = value;
+    change_scratch_registers();
     return 0;
 }
 
@@ -120,6 +133,8 @@ static void programs(const struct M68KEngOps *ops, struct M68KEngDomain *domain,
     static const UWORD rts[] = { 0x4E75 };
     /* move.w ($8000).l,d0; move.w d0,($8002).l; A-line */
     static const UWORD ranged[] = { 0x3039, 0x0000, 0x8000, 0x33C0, 0x0000, 0x8002, 0xA000 };
+    /* addi.w #$0101,($8000).l; A-line */
+    static const UWORD addi[] = { 0x0679, 0x0101, 0x0000, 0x8000, 0xA000 };
     static const UWORD one[] = { 0x7001, 0xA000 };      /* moveq #1,d0; A-line */
     static const UWORD two[] = { 0x7002, 0xA000 };      /* moveq #2,d0; A-line */
     /* moveq #10,d0; moveq #0,d1; divu.w d1,d0 */
@@ -192,6 +207,17 @@ static void programs(const struct M68KEngOps *ops, struct M68KEngDomain *domain,
           "a word written in the host range goes to the callback, once, and not to memory");
     Printf("     reads %ld at %lx, writes %ld at %lx value %lx\n", (LONG)reads, (LONG)read_addr, (LONG)writes,
            (LONG)write_addr, (LONG)write_value);
+
+    /* an immediate operand kept across the read and the write, whose
+       callbacks change x16, x17 and x18 */
+    put_words(mem, 0x1400, addi, 5);
+    reads = 0;
+    writes = 0;
+    rc = run_from(ops, cpu, 0x1400, 1000, &ex);
+    check(rc == M68KENG_OK && ex.reason == M68KENG_STOP_ALINE && reads == 1 && writes == 1 && write_addr == 0x8000 &&
+          (write_value & 0xFFFF) == 0x1335,
+          "ADDI.W to a word in the host range adds its operand to what the callback gave");
+    Printf("     written %lx\n", (LONG)write_value);
 
     /* changed code: the new bytes run once the host has said so */
     put_words(mem, 0x2000, one, 2);

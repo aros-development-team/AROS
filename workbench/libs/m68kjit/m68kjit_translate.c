@@ -337,17 +337,20 @@ static void emit_mov32(struct HJEmit *e, int rd, uint32_t v)
    ------------------------------------------------------------------ */
 
 /* Host registers inside translated code. D0-D7 live in w0-w7 and A0-A7 in
-   w8-w15 from the enter trampoline to the exit trampoline. x18, the
-   platform register that Darwin reserves, is never used. */
+   w8-w15 from the enter trampoline to the exit trampoline. x16, x17 and
+   x18 are caller-saved: C code called from translated code may change
+   them, so the slow path glue keeps x16 and x18 around its call and takes
+   the result in x17. x19 to x28 are callee-saved and the trampolines save
+   them; x23 is saved with x24 and has no use. */
 #define REG_D(n)  (n)
 #define REG_A(n)  (8 + (n))
 #define R_ADDR    16  /* guest address of an access; the slow path keeps it */
 #define R_VAL     17  /* value loaded, or to be stored */
+#define R_SRC     18  /* immediate operand; the slow path keeps it */
 #define R_STATE   19
 #define R_MEM     20
 #define R_FLAGS   21  /* X N Z C V in bits 4..0: NZCV in the order of A64 */
 #define R_BUDGET  22
-#define R_SRC     23  /* immediate operand */
 #define R_LIMIT   24  /* mem_size - 4 */
 #define R_SCR     25  /* scratch inside an access; slow path kind */
 #define R_F1      26  /* flag scratch */
@@ -3051,6 +3054,7 @@ static void emit_glue(struct HJBackend *b, struct HJEmit *e)
     put(e, a64_ldstp(1, 0, 3, 29, 30, SP, -32));
     put(e, a64_addsub_imm(1, 0, 0, 29, SP, 0, 0));
     put(e, a64_ldst_uimm(3, 0, R_ADDR, SP, 16));
+    put(e, a64_ldst_uimm(3, 0, R_SRC, SP, 24));
     glue_regs(e, 0);
     put(e, a64_mov64(0, R_STATE));
     put(e, a64_mov(1, R_ADDR));
@@ -3065,6 +3069,7 @@ static void emit_glue(struct HJBackend *b, struct HJEmit *e)
     abort_at = e->n;
     put(e, a64_cbz(0, 1, R_ADDR, 0));
     put(e, a64_ldst_uimm(3, 1, R_ADDR, SP, 16));
+    put(e, a64_ldst_uimm(3, 1, R_SRC, SP, 24));
     put(e, a64_ldstp(1, 1, 1, 29, 30, SP, 32));
     put(e, A64_RET);
     patch(e, abort_at, e->n);
