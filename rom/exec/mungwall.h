@@ -29,5 +29,5 @@ struct MungwallHeader
 struct TraceLocation;
 
 APTR MungWall_Build(APTR res, APTR pool, IPTR origSize, ULONG requirements, struct TraceLocation *trace, struct ExecBase *SysBase);
-APTR MungWall_Check(APTR memoryBlock, IPTR byteSize, struct TraceLocation *trace, struct ExecBase *SysBase);
+APTR MungWall_Check(APTR memoryBlock, IPTR *byteSize, struct TraceLocation *trace, struct ExecBase *SysBase);
 void MungWall_Scan(APTR pool, struct TraceLocation *trace, struct ExecBase *SysBase);
