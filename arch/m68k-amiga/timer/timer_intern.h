@@ -37,9 +37,13 @@ struct TimerBase
     /* Required by the system */
     struct Device tb_Device;
 
-    struct timeval tb_CurrentTime;	/* system time */
+    struct timeval tb_CurrentTime;	/* system time: the seconds, and in tv_micro the
+                                           fraction TR_SETSYSTIME set, added to the
+                                           e-clock's (GetSysTime()) */
     struct timeval tb_Elapsed;
-    struct timeval tb_lastsystime;
+    struct timeval tb_lastsystime;	/* the last readings (ClockRead()): the */
+    struct timeval tb_lastuptime;	/* seconds and the e-clock ticks into them */
+    struct EClockVal tb_lasteclock;	/* the last ReadEClock() */
 
     struct MinList tb_Lists[NUM_LISTS];
 
@@ -72,10 +76,11 @@ struct TimerBase
 
     ULONG tb_eclock_micro_mult;
     UWORD tb_micro_eclock_mult;
-    ULONG  lastsystimetweak;
 };
 
 ULONG GetEClock(struct TimerBase *TimerBase);
+void ClockRead(struct TimerBase *TimerBase, ULONG secs, struct timeval *now, struct timeval *last, BOOL unique);
+ULONG ClockMicros(struct TimerBase *TimerBase, ULONG ticks);
 void CheckTimer(struct TimerBase *TimerBase, UWORD unitnum);
 void addmicro(struct TimerBase *TimerBase, struct timeval *tv);
 BOOL cmp64(struct timeval *tv1, struct timeval *tv2);

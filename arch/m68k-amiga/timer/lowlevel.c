@@ -167,6 +167,48 @@ ULONG GetEClock(struct TimerBase *TimerBase)
         return diff;
 }
 
+/*
+ * A reading of one of the clocks, GetUpTime()'s or GetSysTime()'s: secs is
+ * its seconds, now gets them and the e-clock ticks into them. Disable()
+ * assumed, from reading the clock's seconds to here, so that it is one
+ * reading: an e-clock interrupt pending now is counted in it (GetEClock()),
+ * and when the interrupt is handled it brings the counters to where this
+ * reading already is.
+ *
+ * The reading is never before *last, which it then becomes: a Disable()
+ * that the counter wraps in twice (it can be one just over an e-clock
+ * period, 92 ms, and is any over two) loses a period, since only one
+ * interrupt is pending, and that would take the clock back; it stands
+ * still instead until it is past *last, and stays that period behind.
+ * With unique, a reading not after *last is a tick after it.
+ */
+void ClockRead(struct TimerBase *TimerBase, ULONG secs, struct timeval *now, struct timeval *last, BOOL unique)
+{
+        ULONG ticks = TimerBase->tb_eclock_to_usec + GetEClock(TimerBase);
+
+        /* at most one second over: GetEClock() < 2 * ECLOCK_BASE */
+        if (ticks >= TimerBase->tb_eclock_rate) {
+                ticks -= TimerBase->tb_eclock_rate;
+                secs++;
+        }
+        now->tv_secs = secs;
+        now->tv_micro = ticks;
+        if (!cmp64(now, last) || (unique && equ64(now, last))) {
+                *now = *last;
+                if (unique && ++now->tv_micro >= TimerBase->tb_eclock_rate) {
+                        now->tv_micro = 0;
+                        now->tv_secs++;
+                }
+        }
+        *last = *now;
+}
+
+/* e-clock ticks into a second, in microseconds */
+ULONG ClockMicros(struct TimerBase *TimerBase, ULONG ticks)
+{
+        return (ULONG)(((long long)ticks * TimerBase->tb_eclock_micro_mult) >> 16);
+}
+
 AROS_INTH1(ciab_eclock, struct TimerBase *, TimerBase)
 {
         AROS_INTFUNC_INIT

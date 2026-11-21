@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2018-2019, The AROS Development Team. All rights reserved.
+    Copyright (C) 2018-2026, The AROS Development Team. All rights reserved.
 
     Desc: GetUpTime() - Get time since machine was powered on.
 */
@@ -22,19 +22,13 @@ AROS_LH1(void, GetUpTime,
     AROS_LIBFUNC_INIT
 
     struct TimerBase *timerBase = (struct TimerBase *)TimerBase;
-    ULONG tb_eclock_to_usec;
+    struct timeval now;
 
     Disable();
-    tb_eclock_to_usec = timerBase->tb_eclock_to_usec + GetEClock(timerBase);
+    ClockRead(timerBase, timerBase->tb_Elapsed.tv_secs, &now, &timerBase->tb_lastuptime, FALSE);
     Enable();
-    dest->tv_secs = timerBase->tb_Elapsed.tv_secs;
-    dest->tv_micro = (ULONG)(((long long)tb_eclock_to_usec * timerBase->tb_eclock_micro_mult) >> 16);
-
-    // can only overflow once, e-clock interrupts happen more than once a second
-    if (dest->tv_micro >= 1000000) {
-        dest->tv_micro -= 1000000;
-        dest->tv_secs++;
-    }
+    dest->tv_secs = now.tv_secs;
+    dest->tv_micro = ClockMicros(timerBase, now.tv_micro);
     D(bug("uptime=%d/%d\n", dest->tv_secs, dest->tv_micro));
 
     AROS_LIBFUNC_EXIT

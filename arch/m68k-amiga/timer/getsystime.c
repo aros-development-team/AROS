@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2013, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: GetSysTime() - Find out what time it is.
 */
@@ -22,22 +22,17 @@ AROS_LH1(void, GetSysTime,
     AROS_LIBFUNC_INIT
 
     struct TimerBase *timerBase = (struct TimerBase *)TimerBase;
-    ULONG tb_eclock_to_usec;
+    struct timeval now;
+    ULONG set;
 
+    /* each call a later time than the one before, as AmigaOS's */
     Disable();
-    tb_eclock_to_usec = timerBase->tb_eclock_to_usec + GetEClock(timerBase);
+    ClockRead(timerBase, timerBase->tb_CurrentTime.tv_secs, &now, &timerBase->tb_lastsystime, TRUE);
+    set = timerBase->tb_CurrentTime.tv_micro;
     Enable();
-    dest->tv_secs = timerBase->tb_CurrentTime.tv_secs;
-    dest->tv_micro = (ULONG)(((long long)tb_eclock_to_usec * timerBase->tb_eclock_micro_mult) >> 16);
-    if (dest->tv_micro > timerBase->tb_lastsystime.tv_secs + timerBase->lastsystimetweak) {
-        timerBase->lastsystimetweak = 0;
-    } else {
-        timerBase->lastsystimetweak++;
-    }
-    timerBase->tb_lastsystime.tv_secs = dest->tv_secs;
-    timerBase->tb_lastsystime.tv_micro = dest->tv_micro;
-    dest->tv_micro += timerBase->lastsystimetweak;
-    // can only overflow once, e-clock interrupts happen more than once a second
+    /* the e-clock's fraction, and the one TR_SETSYSTIME set */
+    dest->tv_secs = now.tv_secs;
+    dest->tv_micro = ClockMicros(timerBase, now.tv_micro) + set;
     if (dest->tv_micro >= 1000000) {
         dest->tv_micro -= 1000000;
         dest->tv_secs++;
