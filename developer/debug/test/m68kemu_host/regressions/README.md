@@ -130,6 +130,35 @@ Sanitized runs default to disabling leak detection; `ASAN_OPTIONS` can
 override that choice.
 
 
+## Thunk tables
+
+Run from the repository root:
+
+```sh
+make -C developer/debug/test/m68kemu_host test-thunk-tables
+```
+
+The check is also a prerequisite of the host Makefile's `test` target. It
+needs Python 3.9+ and no compiler; `PYTHON` selects the interpreter, and
+`--source-root` checks another AROS source tree when the runner is invoked
+directly.
+
+A 68k program calls a library function by its offset, and the thunk tables
+of `m68kemu.library` map each offset to the code that converts the call. The
+runner reads every `M68KThunkEntry` table in `rom/m68kemu` and requires each
+offset to be a positive multiple of 6. For the hand-written dos.library
+table it also requires, at each offset, the function that `rom/dos/dos.conf`
+has there, and it lets each thunk read only the registers that function
+takes (A6 and A7 aside). `dos.conf` follows the AmigaOS dos.library layout,
+the one 68k programs are built for. Before it reads the tree, the runner
+checks itself on a small table with one fault of each kind.
+
+The register check reads the body of each thunk, not the helpers it calls,
+and the name and register checks cover the dos.library table only: the
+`.conf` files of some other libraries do not follow the AmigaOS offsets for
+every function. A pass says nothing about what a thunk does with the values
+it reads.
+
 ## Requested root-stack reservation
 
 Run from the repository root:

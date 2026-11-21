@@ -109,7 +109,8 @@ def prepare(source, output):
         'allocation.inc': [(thunks, 'thunk_gfx_AllocBitMap_m')],
         'free-consumer.inc': [(free_source, free_name)],
         'dos-objects.inc': [(thunks, n) for n in (
-            'exall_control_new', 'exall_control', 'thunk_dos_FreeDosObject')],
+            'exall_control_new', 'exall_control', 'dos_native_object',
+            'thunk_dos_FreeDosObject')],
     }
     for name, items in groups.items():
         (output / name).write_text(
