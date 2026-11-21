@@ -60,7 +60,7 @@
         WORD  defaultidx = NUMCHARS(tf) - 1; /* Last glyph is default glyph */
         UBYTE c;
 
-        for(strlen = 0; count; count--) {
+        for(strlen = 0; count > 0; count--) {
             c = *string++;
 
             if(c < tf->tf_LoChar || c > tf->tf_HiChar) {
@@ -69,8 +69,16 @@
                 idx = c - tf->tf_LoChar;
             }
 
-            strlen += ((WORD *)tf->tf_CharKern)[idx];
-            strlen += ((WORD *)tf->tf_CharSpace)[idx];
+            /* Text() draws without either table as with kerning 0 and
+               spaces of tf_XSize */
+            if(tf->tf_CharKern) {
+                strlen += ((WORD *)tf->tf_CharKern)[idx];
+            }
+            if(tf->tf_CharSpace) {
+                strlen += ((WORD *)tf->tf_CharSpace)[idx];
+            } else {
+                strlen += tf->tf_XSize;
+            }
             strlen += rp->TxSpacing;
         }
     } else {
