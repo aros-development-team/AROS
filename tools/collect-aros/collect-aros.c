@@ -392,8 +392,144 @@ int main(int argc, char *argv[])
        * remaining work
        */
     backend_init(ldargs[0]);
+
+    /*
+     * The GCC LTO linker plugin only resolves "pass-through" libraries (the
+     * standard AROS link sequence) during the relocatable stage above. Symbols
+     * that are provided by direct, non pass-through static archives passed on
+     * the command line (e.g. -lpthread) can therefore be left undefined in the
+     * intermediate object, even though the archive was present. Re-supply the
+     * libraries (and all -L search paths) to the final link so ld can pull the
+     * required members and resolve those symbols (including any further symbols
+     * those members pull from the standard libraries). The compiler's own
+     * support libraries go back too: a member pulled in here can reference
+     * one of their helpers - libstdc++'s aligned operator new calls
+     * __popcountsi2 on a target with no popcount instruction - and the
+     * driver passes their search paths as -L, so ld finds them again.
+     */
+    char **libargv = xmalloc(sizeof(char *) * (argc + 2));
+    int libargc = 0;
+    /*
+     * Only perform the re-supply when the relocatable object actually has
+     * undefined symbols left over from the plugin stage. Clean links - which
+     * is every core AROS module and by far the common case - then take exactly
+     * the original final-link path and are completely unaffected by this fixup
+     * (no extra libraries, no --allow-multiple-definition).
+     */
+    if (has_undefined_symbols(tempoutput))
+    {
+        if (getenv("COLLECT_AROS_DEBUG") != NULL)
+            fprintf(stderr, "[collect-aros] relocatable object has undefined symbols;"
+                            " re-supplying libraries to the final link\n");
+        /*
+         * Members of the re-supplied archives may already have been pulled into the
+         * relocatable object during the plugin stage (e.g. when only some of a
+         * library's symbols were left undefined). Allow the resulting identical
+         * duplicate definitions rather than erroring on them.
+         */
+        libargv[libargc++] = "--allow-multiple-definition";
+        for (i = 1; i < argc; i++)
+        {
+            if (argv[i][0] != '-')
+            {
+                /* re-supply explicit static archives (e.g. libtool convenience
+                   libraries) - a member defining a symbol that is only referenced
+                   by a later -l library may not have been pulled during the plugin
+                   stage */
+                size_t l = strlen(argv[i]);
+                if (l > 2 && strcmp(&argv[i][l - 2], ".a") == 0)
+                    libargv[libargc++] = argv[i];
+                continue;
+            }
+
+            if (argv[i][1] == 'L')
+            {
+                /* keep all library search paths, including the separate "-L" "path"
+                   form */
+                libargv[libargc++] = argv[i];
+                if (argv[i][2] == '\0' && (i + 1) < argc)
+                    libargv[libargc++] = argv[++i];
+            }
+            else if (argv[i][1] == 'l')
+            {
+                /* keep every library, including the separate "-l" "name"
+                   form */
+                libargv[libargc++] = argv[i];
+                if (argv[i][2] == '\0' && (i + 1) < argc)
+                    libargv[libargc++] = argv[++i];
+            }
+        }
+    }
+
+    /*
+     * The set and library lists that go into the linker script are read from
+     * the relocatable object. What the final link adds to it is not in them:
+     * the files collect_extra() finds (libpthread, the C++ pure virtual
+     * handler) and members of the re-supplied libraries. An .aros.set.*
+     * section of such a member then stays out of its list whenever no other
+     * input has an entry for the same set and priority, and the init or exit
+     * function in it is never called. So link those inputs into the
+     * relocatable object first and read the lists from the result. A member
+     * added here can need one of the extra files itself, so look again, a
+     * few times at most.
+     */
+    {
+#if defined(TARGET_FORMAT_EXE)
+        /* the final link of these targets does not take the libraries */
+        int mergelibs = 0;
+#elif defined(OBJECT_FORMAT_EXTRA_FINAL)
+        int mergelibs = (incremental != 0);
+#else
+        int mergelibs = 1;
+#endif
+        int pass;
+
+        for (pass = 0; pass < 3; pass++)
+        {
+            struct setnode *n;
+            char *merged, **mergeargv;
+            int mergeargc = 0, extracnt = 0, li;
+
+            extralist = NULL;
+            collect_extra(tempoutput, &extralist);
+            for (n = extralist; n; n = n->next)
+                extracnt++;
+
+            if (extracnt == 0 && (pass > 0 || !mergelibs || libargc == 0))
+                break;
+
+            if (!(merged = make_temp_file(NULL)))
+                fatal("make_temp_file()", strerror(errno));
+
+            mergeargv = xmalloc(sizeof(char *) * (extracnt + libargc + 7));
+            mergeargv[mergeargc++] = ld_name;
+            mergeargv[mergeargc++] = OBJECT_FORMAT;
+            mergeargv[mergeargc++] = "-r";
+            mergeargv[mergeargc++] = "-o";
+            mergeargv[mergeargc++] = merged;
+            mergeargv[mergeargc++] = tempoutput;
+            for (n = extralist; n; n = n->next)
+                mergeargv[mergeargc++] = n->secname;
+            if (mergelibs)
+            {
+                for (li = 0; li < libargc; li++)
+                    mergeargv[mergeargc++] = libargv[li];
+            }
+            mergeargv[mergeargc] = NULL;
+
+            docommand_ld(ld_name, mergeargv);
+            free(mergeargv);
+
+            if (getenv("COLLECT_AROS_DEBUG") == NULL)
+                remove(tempoutput);
+            tempoutput = merged;
+        }
+
+        /* they are part of the relocatable object now */
+        extralist = NULL;
+    }
+
     collect_sets(tempoutput, &setlist);
-    collect_extra(tempoutput, &extralist);
     collect_libs(tempoutput, &liblist);
 
     if (linkAddress != NULL)
@@ -546,74 +682,6 @@ int main(int argc, char *argv[])
 
     fclose(ldscriptfile);
     ldscriptfile = NULL;
-
-    /*
-     * The GCC LTO linker plugin only resolves "pass-through" libraries (the
-     * standard AROS link sequence) during the relocatable stage above. Symbols
-     * that are provided by direct, non pass-through static archives passed on
-     * the command line (e.g. -lpthread) can therefore be left undefined in the
-     * intermediate object, even though the archive was present. Re-supply the
-     * libraries (and all -L search paths) to the final link so ld can pull the
-     * required members and resolve those symbols (including any further symbols
-     * those members pull from the standard libraries). The compiler's own
-     * support libraries go back too: a member pulled in here can reference
-     * one of their helpers - libstdc++'s aligned operator new calls
-     * __popcountsi2 on a target with no popcount instruction - and the
-     * driver passes their search paths as -L, so ld finds them again.
-     */
-    char **libargv = xmalloc(sizeof(char *) * (argc + 2));
-    int libargc = 0;
-    /*
-     * Only perform the re-supply when the relocatable object actually has
-     * undefined symbols left over from the plugin stage. Clean links - which
-     * is every core AROS module and by far the common case - then take exactly
-     * the original final-link path and are completely unaffected by this fixup
-     * (no extra libraries, no --allow-multiple-definition).
-     */
-    if (has_undefined_symbols(tempoutput))
-    {
-        if (getenv("COLLECT_AROS_DEBUG") != NULL)
-            fprintf(stderr, "[collect-aros] relocatable object has undefined symbols;"
-                            " re-supplying libraries to the final link\n");
-        /*
-         * Members of the re-supplied archives may already have been pulled into the
-         * relocatable object during the plugin stage (e.g. when only some of a
-         * library's symbols were left undefined). Allow the resulting identical
-         * duplicate definitions rather than erroring on them.
-         */
-        libargv[libargc++] = "--allow-multiple-definition";
-        for (i = 1; i < argc; i++)
-        {
-            if (argv[i][0] != '-')
-            {
-                /* re-supply explicit static archives (e.g. libtool convenience
-                   libraries) - a member defining a symbol that is only referenced
-                   by a later -l library may not have been pulled during the plugin
-                   stage */
-                size_t l = strlen(argv[i]);
-                if (l > 2 && strcmp(&argv[i][l - 2], ".a") == 0)
-                    libargv[libargc++] = argv[i];
-                continue;
-            }
-
-            if (argv[i][1] == 'L')
-            {
-                /* keep all library search paths, including the separate "-L" "path"
-                   form */
-                libargv[libargc++] = argv[i];
-                if (argv[i][2] == '\0' && (i + 1) < argc)
-                    libargv[libargc++] = argv[++i];
-            }
-            else if (argv[i][1] == 'l')
-            {
-                /* keep every library, including the separate "-l" "name"
-                   form */
-                libargv[libargc++] = argv[i];
-                if (argv[i][2] == '\0' && (i + 1) < argc)
-                    libargv[libargc++] = argv[++i];
-            }
-        }
-    }
 
     char **cmdargv;
     int argallocs = libargc;
