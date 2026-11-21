@@ -384,6 +384,7 @@ ULONG M68KEmu_LoadM68KLibrary(struct M68KEmuContext *ctx, const char *name, ULON
         m68k_write32(ctx, t + 4, initFunc);
         m68k_write32(ctx, t + 16, version);
         m68k_write32(ctx, r + 4, base);
+        m68k_engine_invalidate(ctx);       /* the jump table and the two pieces of 68k code above */
         ts = m68k_ts(ctx);
         if (initFunc)
             ts->tail_pc = t;

@@ -133,6 +133,8 @@ void M68KEmu_DestroyContext(struct M68KEmuContext *ctx)
         FreeMem(ts, sizeof(*ts));
     }
     M68KEmu_FreeNestCpus(ctx, &ctx->orphan);
+    /* the engine goes after the last CPU and before the program's memory */
+    m68k_engine_close(ctx);
     /* notifications the program left running would signal a port that is gone */
     for (UWORD i = 0; i < ctx->num_notify; i++)
     {
@@ -164,6 +166,9 @@ void M68KEmu_DestroyContext(struct M68KEmuContext *ctx)
     for (int i = 0; i < 32; i++)
         if (ctx->own_rps[i])
             FreeVec(ctx->own_rps[i]);
+    /* an engine that kept its domain still points into the memory and the map */
+    if (ctx->eng_kept)
+        return;
     if (ctx->mem) FreeMem(ctx->mem, ctx->mem_size);
     FreeMem(ctx, sizeof(struct M68KEmuContext));
 }
@@ -600,6 +605,7 @@ ULONG M68KEmu_LoadHunks(struct M68KEmuContext *ctx, BPTR segList)
         ctx->entry_point = entry_point;
         ctx->seg_start   = entry_point;
         FreeVec(host);
+        m68k_engine_invalidate(ctx);       /* 68k code was written: what an engine translated there is void */
         return entry_point;
     }
 
@@ -609,6 +615,7 @@ fail:
         if (cont[i])
             M68KEmu_HeapFree(ctx, cont[i] - 8, size[i] + 8);
     }
+    m68k_engine_invalidate(ctx);           /* what was written is given back */
 refuse:
     FreeVec(host);
     return 0;
@@ -715,6 +722,7 @@ ULONG M68KEmu_SetupLibBase(struct M68KEmuContext *ctx, UWORD lib_id,
     ctx->num_libs++;
     m68k_publish_base(ctx, base_addr, name);
 
+    m68k_engine_invalidate(ctx);       /* 68k code was written: what an engine translated there is void */
     return base_addr;
 }
 
@@ -974,6 +982,7 @@ ULONG M68KEmu_LoadHunksFromMemory(struct M68KEmuContext *ctx, UBYTE *data, LONG 
     FreeMem(hunk_sizes, hunks * sizeof(ULONG));
     FreeMem(hunk_addrs, hunks * sizeof(ULONG));
     FreeMem(hunk_reqs, hunks * sizeof(ULONG));
+    m68k_engine_invalidate(ctx);       /* 68k code was written: what an engine translated there is void */
     return entry_point;
 
 fail:
@@ -986,6 +995,7 @@ fail:
     }
     if (hunk_sizes) FreeMem(hunk_sizes, hunks * sizeof(ULONG));
     if (hunk_reqs) FreeMem(hunk_reqs, hunks * sizeof(ULONG));
+    m68k_engine_invalidate(ctx);           /* what was written is given back */
     return 0;
 }
 

@@ -12,6 +12,8 @@
 #include <exec/ports.h>
 #include <dos/bptr.h>
 
+#include "m68kemu_engine.h"            /* the interface of the optional engine (m68kemu_engine.c) */
+
 struct M68KEmuLibBase
 {
     struct Library          lib;
@@ -303,6 +305,29 @@ struct M68KEmuContext
     UWORD   beam_v;     /* vertical position 0-312 */
     UBYTE   beam_h;     /* horizontal position 0-226 */
     UBYTE   beam_lof;   /* long frame flag (toggled each frame) */
+
+    /* The optional engine (m68kemu_engine.c): it runs the program's code
+       between the instructions the interpreter has to take. All of this
+       stays 0 without M68KEMU_CPU. */
+    #define M68KCPU_INTERPRETER 1   /* M68KEMU_CPU=interpreter */
+    #define M68KCPU_ENGINE      2   /* jit: the engine, or the program is not run */
+    #define M68KCPU_AUTO        3   /* auto: the engine when it is there and works */
+    UBYTE   eng_mode;               /* what M68KEMU_CPU asked for, 0 when it is not set */
+    BOOL    eng_run;                /* this run uses the engine */
+    BOOL    eng_fault;              /* the engine failed: the result of the run is 20 */
+    BOOL    eng_map_ok;             /* the map tells the engine all the host has to see */
+    BOOL    eng_cpu_said;           /* "no engine CPU for a task" was reported */
+    BOOL    eng_refused;            /* jit, and the program's own engine CPU could not be made: no run */
+    BOOL    eng_kept;               /* the engine did not let its domain go: nothing it points into is freed */
+    LONG    eng_status;             /* what domain_create answered */
+    const char *eng_why;            /* auto: why the interpreter runs the program */
+    struct Library *eng_base;
+    const struct M68KEngOps *eng_ops;
+    struct M68KEngDomain *eng_domain;
+    struct M68KEngHost eng_host;
+    struct M68KEngMap eng_map;
+    ULONG   eng_plane_lo, eng_plane_hi;     /* the bitplane range the map has */
+    UQUAD   eng_interp;             /* instructions the interpreter ran in a run on the engine */
 };
 
 
@@ -348,6 +373,17 @@ void  M68KEmu_FreeNestCpus(struct M68KEmuContext *ctx, struct M68KTaskState *ts)
 void  M68KEmu_StopCpu(struct M68KEmuContext *ctx, void *cpu);
 void  m68k_restore_windowptr(struct M68KEmuContext *ctx);
 void  m68k_dump_callring(struct M68KEmuContext *ctx);
+/* m68kemu_engine.c: the optional engine */
+LONG  m68k_engine_select(struct M68KEmuContext *ctx);      /* M68KEMU_CPU; -1: the program is not run */
+void  m68k_engine_close(struct M68KEmuContext *ctx);
+void  m68k_engine_invalidate(struct M68KEmuContext *ctx);  /* 68k code was written */
+BOOL  m68k_engine_map(struct M68KEmuContext *ctx);
+void  m68k_engine_report(struct M68KEmuContext *ctx);
+void  m68k_engine_say(struct M68KEmuContext *ctx, const char *fmt, ...);
+const char *m68k_engine_name(struct M68KEmuContext *ctx);  /* the program, short enough for a line */
+/* m68kemu_moira.cpp: the engine's accesses to the ranges the host has to see */
+ULONG M68KEmu_EngineRead(APTR host_domain, APTR host_cpu, ULONG addr, ULONG width, ULONG pc, ULONG *value);
+ULONG M68KEmu_EngineWrite(APTR host_domain, APTR host_cpu, ULONG addr, ULONG width, ULONG value, ULONG pc);
 /* m68kemu_tasks.c */
 struct M68KTaskState *m68k_ts(struct M68KEmuContext *ctx);       /* this task's state, made on first use */
 struct M68KTaskState *m68k_ts_find(struct M68KEmuContext *ctx, struct Task *task);   /* NULL: not a task of the program */
