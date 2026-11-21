@@ -109,6 +109,42 @@ test-argument-apis-sanitize:
 
 .PHONY: test-argument-apis test-argument-apis-sanitize
 
+# 68k disk library loading on well-formed and malformed images: ordinary fixture in test, sanitizer optional.
+LIBRARY_LOADING_BOUNDS_ARGS ?=
+test: test-library-loading-bounds
+
+test-library-loading-bounds:
+	$(PYTHON) "$(TEST_DIR)/regressions/run_library_loading_bounds.py" --cxx "$(CXX)" $(LIBRARY_LOADING_BOUNDS_ARGS)
+
+test-library-loading-bounds-sanitize:
+	$(PYTHON) "$(TEST_DIR)/regressions/run_library_loading_bounds.py" --cxx "$(CXX)" --sanitize $(LIBRARY_LOADING_BOUNDS_ARGS)
+
+.PHONY: test-library-loading-bounds test-library-loading-bounds-sanitize
+
+# Hunk files read into containment, well-formed and malformed: ordinary fixture in test, sanitizer optional.
+HUNK_FILE_LOADER_ARGS ?=
+test: test-hunk-file-loader
+
+test-hunk-file-loader:
+	$(PYTHON) "$(TEST_DIR)/regressions/run_hunk_file_loader.py" --cxx "$(CXX)" $(HUNK_FILE_LOADER_ARGS)
+
+test-hunk-file-loader-sanitize:
+	$(PYTHON) "$(TEST_DIR)/regressions/run_hunk_file_loader.py" --cxx "$(CXX)" --sanitize $(HUNK_FILE_LOADER_ARGS)
+
+.PHONY: test-hunk-file-loader test-hunk-file-loader-sanitize
+
+# Copy of a LoadSeg() seglist into containment, and its release: ordinary fixture in test, sanitizer optional.
+SEGLIST_COPY_ARGS ?=
+test: test-seglist-copy
+
+test-seglist-copy:
+	$(PYTHON) "$(TEST_DIR)/regressions/run_seglist_copy.py" --cxx "$(CXX)" $(SEGLIST_COPY_ARGS)
+
+test-seglist-copy-sanitize:
+	$(PYTHON) "$(TEST_DIR)/regressions/run_seglist_copy.py" --cxx "$(CXX)" --sanitize $(SEGLIST_COPY_ARGS)
+
+.PHONY: test-seglist-copy test-seglist-copy-sanitize
+
 # AllocBitMap result projection: ordinary fixture in test, sanitizer optional.
 BITMAP_RESULT_ARGS ?=
 test: test-bitmap-result

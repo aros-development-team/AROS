@@ -417,6 +417,94 @@ or application. They do not cover how the initial arguments reach the
 guest Process, which has its own regression above.
 
 
+## 68k library loading bounds
+
+Run from the repository root:
+
+```sh
+make -C developer/debug/test/m68kemu_host test-library-loading-bounds
+make -C developer/debug/test/m68kemu_host test-library-loading-bounds-sanitize
+```
+
+The ordinary fixture is part of the host Makefile's `test` target; the
+sanitizer target is optional. `PYTHON` and `CXX` select the tools and
+`LIBRARY_LOADING_BOUNDS_ARGS` passes runner options such as
+`--build-dir /tmp/loading-bounds` or `--prepare-only`, which writes the
+extracted sources and stops before the compiler.
+
+The runner extracts `M68KEmu_LoadM68KLibrary`, `m68k_init_struct` and
+`m68k_library_abandon` from `m68kemu_m68klib.c`, `M68KEmu_ImageHunk` and
+`M68KEmu_FreeImage` from `m68kemu_memory.c`, the memory accessors from
+`m68kemu_intern.h` and the `M68K_*` constants they use from
+`m68kemu_offsets.h`. DOS, the heap and the placement of the hunks of a
+library image are recording fixtures; no CPU runs. The 27 cases load
+well-formed libraries (relative function tables, a Resident in the second
+hunk, every init table command, a base filled to its last byte, a function
+table cut at 1000) and malformed ones: data sizes that wrap or exceed
+containment, init tables and items outside the base or containment, an
+init command with size code 3, pointer and function tables that run out of
+containment, a Resident that is not whole inside its hunk or lies between
+two hunks of the image, and each refusal on the way, which must give back
+exactly the blocks of the attempt and nothing of the running program. The
+program's entry point, segment start and load span must be its own again
+after a library was loaded or refused. The fixture prints `ok` or `FAIL`
+for each case and `m68kemu 68k library loading bounds: <cases> cases,
+<n> failed, <checks> checks`; it exits with 1 when a case failed.
+
+## Hunk file loader
+
+Run from the repository root:
+
+```sh
+make -C developer/debug/test/m68kemu_host test-hunk-file-loader
+make -C developer/debug/test/m68kemu_host test-hunk-file-loader-sanitize
+```
+
+`HUNK_FILE_LOADER_ARGS` passes runner options as above. The runner extracts
+`M68KEmu_LoadHunksFromMemory` and `rd32` from `m68kemu_memory.c`, the
+accessors from `m68kemu_intern.h` and the `HUNK_*` numbers from
+`compiler/include/dos/doshunks.h` and `m68kemu_offsets.h`. The heap is a
+recording fixture; no CPU runs. The 33 cases read well-formed hunk files
+(relocations between hunks and on the last longword, the 16-bit and
+relative relocation forms, empty, attributed, symbol and debug blocks,
+headers that number their hunks from 1) and malformed ones: hunks larger
+than containment or with sizes that wrap, relocations to no hunk or past
+their hunk, blocks after the last hunk ended, unsupported blocks, files cut
+inside a block and a heap that answers outside containment. Every refusal
+must give back every block of the load, write nothing outside the blocks
+the heap handed out and leave the context's fields as they were. The
+fixture prints one line for each case and
+`m68kemu hunk file loader: <cases> cases, <n> failed, <checks> checks`.
+
+## Seglist copy
+
+Run from the repository root:
+
+```sh
+make -C developer/debug/test/m68kemu_host test-seglist-copy
+make -C developer/debug/test/m68kemu_host test-seglist-copy-sanitize
+```
+
+`SEGLIST_COPY_ARGS` passes runner options as above. The runner extracts
+`M68KEmu_LoadHunks` and, where the tree has them, `M68KEmu_ImageHunk` and
+`M68KEmu_FreeHunks` from `m68kemu_memory.c`, the accessors from
+`m68kemu_intern.h`, and `Tag`, `struct TagItem`, `TAG_DONE`, `TAG_USER`,
+`GSLI_68KRELOCS` and the relocation list from `compiler/include`. A double
+of `GetSegListInfo()` answers the relocation list; the heap is a recording
+fixture; no CPU runs. The 22 cases copy seglists in order (relocations of
+the three kinds, an empty segment, several groups) and refuse ones that are
+not: a segment larger than containment or smaller than its own two words,
+more segments than containment holds, a seglist dos has no node or list
+for, a lost list, an unknown kind, a group or target the seglist does not
+have, an offset past its segment, a bad group after a good one; a failed
+allocation gives back what was placed. Two cases give a copy back, one of
+more than a hundred segments. The fixture prints one line for each case
+and `m68kemu seglist copy: <cases> cases, <n> failed, <checks> checks`.
+
+These three fixtures, like the others here, are function-level host tests:
+they do not run a CPU, load a real file or seglist through dos, or qualify
+a complete library, emulator or application.
+
 ## AllocBitMap result projection
 
 Run from the repository root:
@@ -599,26 +687,43 @@ recovery.
 `CreateNewProc` with `NP_Entry` starts a native process first and only then
 makes the guest Process that the program is given. When that Process cannot
 be made, the program is told that there is no child, and the native process,
-which exists already, must not run anything of the program.
+which exists already, must not run anything of the program. With
+`NP_Seglist` naming a seglist that dos loaded as 68k code, the child's code
+is a copy of that seglist in the program's memory; a cancelled child is
+going to run none of it, so the copy is given back at once. A child that
+runs owns its copy when dos would unload the seglist at its end
+(`NP_FreeSeglist`, TRUE unless the program gives FALSE; FALSE for the old
+`CreateProc`) and gives it back after its last use; otherwise the copy
+stays in the program's memory, as what the child published of it may.
 
 The runner extracts the actual `create_proc` and `child_entry` with the
-record they share (`struct M68KChild`) and `proc_name`, the Process lookup
+record they share (`struct M68KChild`), `proc_name`, the two dos entries
+`m68k_dos_CreateNewProc` and `m68k_dos_CreateProc`, the Process lookup
 `m68k_process_of`, the registry (`shadow_register`, `shadow_lookup`,
 `shadow_remove`), the forgetting of an ended process
 (`m68k_forget_entry`, `m68k_process_forget`), the tag walker
-(`item_ok`, `next_item`, `m68k_next_tag`) and five memory accessors. It
-reads the registry limit, the handle base and the guest Process offsets
-from the same source tree, and the tags and two memory flags from its
-public headers. The recording C fixture supplies the native side: a
-`CreateNewProc` that makes a native process and does not run it, the
-program's lock with its owner, the guest heap and the native heap with
-every block and its frees, the layout lookup, and a stand-in for the run of
-guest code that records each call and runs nothing. The test itself calls
+(`item_ok`, `next_item`, `m68k_next_tag`), the copy of a seglist
+(`M68KEmu_LoadHunks`) with, where the tree has them, the walk of a copy and
+its release (`M68KEmu_ImageHunk`, `M68KEmu_FreeHunks`), and five memory
+accessors. It reads the registry limit, the handle base and the guest
+Process offsets from the same source tree, the tags and two memory flags
+from its public headers, and the relocation list dos keeps for a 68k
+seglist (`struct HunkRelocGroup`, the `HUNKRELOC_*` kinds and
+`struct HunkRelocTable`) from `compiler/include/dos/doshunks.h`. The
+recording C fixture supplies the native side: a `CreateNewProc` that makes
+a native process and does not run it, the program's lock with its owner,
+the guest heap and the native heap with every block and its frees, the
+layout lookup, a native seglist of two segments laid out as `LoadSeg()`
+leaves it, with one longword dos relocated, a `GetSegListInfo()` double
+that answers whether it is 68k code and its relocation list, and a stand-in
+for the run of guest code that records each call and runs nothing. The test itself calls
 the native entry that `create_proc` handed to `CreateNewProc`, after
 `create_proc` has returned, as the scheduler runs the child once the parent
-lets the lock go. Guest `ULONG` is 32-bit and native pointers are 64-bit.
+lets the lock go. That order is modelled cooperatively, one task at a
+time; it is not a test of real SMP or of the native runtime. Guest `ULONG`
+is 32-bit and native pointers are 64-bit.
 
-The fixture runs 80 checks in three groups. The 18 creation checks follow
+The fixture runs 151 checks in seven groups. The 18 creation checks follow
 one child with an exit code from the call to its end: the guest Process
 returned and registered with its port, one native process with the
 module's entry and the child's record, the name copied, the count, the
@@ -648,15 +753,75 @@ gives a child that runs. Two more checks count the registry's own report
 of a full table for each case by itself, once in the two registry cases and
 never in the first, and the paths that must not be reached in any case.
 
+The 13 seglist checks follow a child whose code is a copy of the seglist:
+the copy, one block for each segment, chained and relocated for the
+program's memory, dos asked once for each answer and the handle translated
+once, the child started, run on the copy as itself, and its stack, count,
+hold and record given back once, while the native seglist and the parent's
+own segment fields stay as they were. A seglist that cannot be copied is refused before any native
+process or allocation. When the guest stack or the native process cannot
+be made after the copy, the copy is given back once with everything else.
+A seglist that is not 68k code starts a native program with its own exit
+hook and makes no copy, guest stack or 68k child.
+
+The 33 cancelled-copy checks are two cases of a child whose code is a copy
+of the seglist and whose guest Process cannot be made: no memory for it,
+and a full registry. Each case has 16 checks with the case's name in front.
+The copy was made and the native process waits; inside the call the copy
+is given back, each block exactly once, so that of the call only the
+child's stack is left in the program's heap, while the record, the stack,
+the count and the hold, which the child owns, stay. Then room is made and
+the child runs: it runs neither the copy nor its exit code, ends with 0,
+frees its stack once and no block twice, gives back its count, its hold
+and its record once, and afterwards the program's heap holds exactly the
+blocks it held before the call; the parent's entries and memory, the
+earlier child's and the native seglist are as before. One more check
+counts the registry's report of a full table and the paths that must not
+be reached.
+
+The 17 owned-copy checks are about who gives a copy back. Through the
+actual `m68k_dos_CreateNewProc`, a child of the copy without
+`NP_FreeSeglist` owns it: its entry and its exit code run while the copy
+is allocated, then the child gives it back, each block once, holding the
+program's lock, before its stack, and the heap holds what it held before
+plus the child's guest Process. The same with `NP_FreeSeglist` TRUE, which
+is passed on to dos as given; after a fault no exit code runs and the copy
+is given back all the same; three children one after another leave no
+copy behind. With `NP_FreeSeglist` FALSE, and through the actual
+`m68k_dos_CreateProc`, the child owns nothing: after it the copy is still
+allocated and an address it published inside the copy reads as before,
+as an interrupt, a timer vector or a semaphore it installed would need. A
+segment in the program's own memory runs in place, and a child of
+`NP_Entry` owns nothing either. A child that owns its copy keeps it when
+another child is cancelled, and gives it back once when it runs.
+
+The 8 duplicate-freeseglist checks give a child two `NP_FreeSeglist`
+tags, FALSE then TRUE and TRUE then FALSE, each in one list and with the
+second behind `TAG_MORE`. As dos goes by the first (`FindTagItem`), so
+does the child: both tags are passed on to dos in their order, the first
+is the one recorded, and the child owns its copy exactly when the first is
+TRUE; after it, a FALSE-first copy is still allocated with what the child
+published of it, and a TRUE-first copy was given back once, holding the
+lock, before the stack.
+
 The fixture prints a `FAIL:` line for a failed check, the `creation`,
-`refusal` and `projection` group lines and a final
-`child projection: 80 checks, <n> failed` line. Its exit status is 1 when
-any check failed, which make reports as an error. On a tree whose
+`refusal`, `projection`, `seglist`, `cancelled-copy`, `owned-copy` and
+`duplicate-freeseglist` group lines and a final
+`child projection: 151 checks, <n> failed` line. Its exit status is 1
+when any check failed, which make reports as an error. On a tree whose
 `create_proc` returns 0 in these cases and leaves the child as it was, the
 runner prepares the same functions, the creation and refusal groups pass,
 and checks of the projection group fail: the child runs its entry and its
-exit code and makes a guest Process for itself. Sanitized runs disable
-leak detection by default; `ASAN_OPTIONS` can override it.
+exit code and makes a guest Process for itself. On a tree whose
+`create_proc` copies a seglist and never gives the copy back, the check of
+each refusal after the copy and the two checks of each cancelled-copy case
+that look at the copy in the heap fail: its blocks stay allocated in the
+program's heap. On a tree whose child never gives its copy back, the
+owned-copy checks that expect the release fail with the copy still
+allocated; on one whose child gives back every copy whatever
+`NP_FreeSeglist` says, the checks of the FALSE and `CreateProc` children
+fail: their copy is gone. Sanitized runs disable leak detection by default;
+`ASAN_OPTIONS` can override it.
 
 `--prepare-only --build-dir /tmp/child-projection` emits the actual
 production includes without compiling or executing a test. These focused

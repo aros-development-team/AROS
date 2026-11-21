@@ -495,6 +495,9 @@ ULONG  M68KEmu_HeapAllocAbs(struct M68KEmuContext *ctx, ULONG size, ULONG addr);
 void   m68k_publish_base(struct M68KEmuContext *ctx, ULONG base, const char *name);
 ULONG  M68KEmu_LoadHunks(struct M68KEmuContext *ctx, BPTR segList);
 ULONG  M68KEmu_LoadHunksFromMemory(struct M68KEmuContext *ctx, UBYTE *data, LONG size);
+BOOL   M68KEmu_ImageHunk(struct M68KEmuContext *ctx, ULONG data, ULONG *size, ULONG *next);
+void   M68KEmu_FreeImage(struct M68KEmuContext *ctx, ULONG entry);
+void   M68KEmu_FreeHunks(struct M68KEmuContext *ctx, ULONG entry);
 ULONG  M68KEmu_LoadM68KLibrary(struct M68KEmuContext *ctx, const char *name, ULONG version);
 ULONG  M68KEmu_SetupLibBase(struct M68KEmuContext *ctx, UWORD lib_id,
                              const char *name, UWORD num_vectors,

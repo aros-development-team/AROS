@@ -380,13 +380,23 @@ program's memory (up to 12 tags are passed on):
   run as 68k code afterwards unless the program faulted.
 - `NP_Seglist`: a seglist the program got from `LoadSeg()`. If
   `GetSegListInfo(GSLI_68KHUNK)` says it is a hunk file, `M68KEmu_LoadHunks()`
-  copies it into this program's memory and it runs as above. Otherwise it is a
-  native program (Directory Opus starting the WBStartup programs): it is started
+  copies it into this program's memory and it runs as above. The copy is given
+  back at once when the child cannot be started, and inside the call when the
+  child is cancelled (below). Otherwise the child owns it when the first active
+  `NP_FreeSeglist` is TRUE, the one dos goes by (`FindTagItem`), and
+  `CreateNewProc` defaults to TRUE: `child_entry` gives it back after the entry
+  and the exit code, still holding the program lock, before its stack. With
+  `NP_FreeSeglist` FALSE, and always for `CreateProc`, the copy stays in the
+  program's memory until the context ends, since the program may have
+  published addresses inside it (an interrupt server, a timer vector, a
+  semaphore). The native seglist itself is not unloaded on this path.
+  Otherwise it is a native program (Directory Opus starting the WBStartup programs): it is started
   natively with `NP_Seglist`, a stack of at least 65536, `NP_ExitCode =
   m68k_native_proc_exit`, and recorded in `ctx->native_procs[8]`.
 - `NP_Name` is copied; `NP_Input/Output/Error/CurrentDir/HomeDir` are translated
   with `m68k_bptr_in()`; `NP_Priority`, `NP_Close*`, `NP_Cli` and
-  `NP_FreeSeglist` pass through.
+  `NP_FreeSeglist` pass through (every `NP_FreeSeglist`, in its order; only the
+  first active one decides who owns a copied 68k seglist).
 
 The parent counts the child in `ctx->num_children` before it runs and takes a
 hold on the context (below). `Cli()` returns the `pr_CLI` of the caller's m68k
@@ -407,6 +417,8 @@ process exists already. `create_proc` then cancels the child while it still
 waits for the lock: its entry and its exit code are cleared, and `child_entry`
 runs nothing of the program for it, makes no m68k Process for it, and gives
 back its stack, its count in `ctx->num_children` and its hold on the context.
+A 68k seglist copied for it is given back inside the call, before
+`CreateNewProc` returns.
 
 ### Context Lifetime
 
@@ -1178,6 +1190,10 @@ production sources directly.
 | t_exec_loop | test_moira_exec.cpp | loop summing 1..10 → 55 |
 | t_exec_memory_access | test_moira_exec.cpp | `MOVE.L` store/load round trip |
 | (integration) | test_hello_thunks.cpp | A-line trap → `OpenLibrary` and `PutStr` thunks → return |
+| library loading bounds | regressions/run_library_loading_bounds.py, test_library_loading_bounds.cpp | the 68k disk library loader and its image helpers extracted from the sources, on well-formed libraries and malformed images (sizes, init tables, function tables, a Resident outside its hunk); a refused attempt gives back every block it took and no other; 27 cases |
+| hunk file loader | regressions/run_hunk_file_loader.py, test_hunk_file_loader.cpp | `M68KEmu_LoadHunksFromMemory()` and `rd32()` extracted from the sources, on well-formed and malformed hunk files; 33 cases |
+| seglist copy | regressions/run_seglist_copy.py, test_seglist_copy.cpp | `M68KEmu_LoadHunks()`, `M68KEmu_ImageHunk()` and `M68KEmu_FreeHunks()` extracted from the sources, on seglists in order and not, with the relocation list of `dos/doshunks.h`; 22 cases |
+| child projection | regressions/run_child_projection.py, test_child_projection.c | `create_proc`, `child_entry`, the `CreateNewProc` and `CreateProc` entries, the tag walker, the Process registry and the seglist copy extracted from the sources with a recording fixture: 151 checks in seven groups, among them a cancelled child, an owned copy and duplicate `NP_FreeSeglist` tags |
 | memory bounds | regressions/run_memory_bounds.py, test_memory_bounds.cpp | compiles `m68k_read16/32`, `m68k_write16/32` and `AROSMoira::read16/write16/read16OnReset/read16Dasm` extracted verbatim from the sources against a fixture; arenas of 0, 1, 2, 3, 4 and 17 bytes, the last complete word/longword, partial accesses, wrapping addresses near `UINT32_MAX`; rejected writes leave memory unchanged; custom-register dispatch, both sentinels and the low-vector guard; `--sanitize` adds ASan/UBSan |
 
 `make test` runs all of them; `make test-memory-bounds` and
@@ -1199,7 +1215,8 @@ production sources directly.
 - No tests for the custom chip registers, the CIA model or beam advancement
 - No tests for `Supervisor()`, the MOVEC skip or the 68040 instruction emulation
 - No tests for the generated thunk fallback or for unimplemented LVOs
-- No tests for the hunk loaders, the seglist relocation path or the 68k library loader
+- The hunk loaders, the seglist copy and the 68k library loader are tested on the
+  host only, through the extracted functions above, not on AROS
 - No tests for the heap regions, `AllocAbs`, pools or heap exhaustion
 - No tests for tasks, the program lock, 68k semaphores or ports
 - No tests for the shadow engine, the taglist translation or device I/O
@@ -1239,6 +1256,9 @@ Further limitations visible in the code:
   AppMessage is ever delivered.
 - `FindSemaphore` on a system semaphore returns a handle whose fields the
   program cannot read.
+- A 68k seglist that `CreateNewProc` copied for a child started with
+  `NP_FreeSeglist` FALSE, or by `CreateProc`, stays in the program's memory
+  until the context ends; the native seglist is not unloaded on that path.
 - The root stack must fit above the ROM area while leaving the terminal heap
   chunk. User, interrupt, callback and child stack policies are separate.
 - A program screen opens in the Workbench screen's mode, size and depth; its

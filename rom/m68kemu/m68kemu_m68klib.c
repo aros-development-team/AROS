@@ -30,40 +30,81 @@
 /* exec InitStruct() on m68k memory: command byte ddssnnnn - dd 00 copy n+1
    items here, 01 repeat one item n+1 times, 10 byte offset follows, 11
    24-bit offset follows; ss 00 LONG, 01 WORD, 10 BYTE; WORD/LONG data is
-   word aligned; a zero command ends the table. */
-static void m68k_init_struct(struct M68KEmuContext *ctx, ULONG tab, ULONG mem)
+   word aligned; a zero command ends the table.
+   The table comes from the file and is not trusted. FALSE, with the
+   structure partly written, when a command or one of its items lies
+   outside containment, when the size code is 3, or when an item would be
+   written outside the size bytes of the structure at mem. */
+static BOOL m68k_init_struct(struct M68KEmuContext *ctx, ULONG tab, ULONG mem, ULONG size)
 {
-    ULONG dst = mem, p = tab;
+    ULONG off = 0, p = tab;     /* off: where the next item goes, from mem */
     int guard = 0;
+
+    if (!m68k_in_mem(ctx, mem, size))
+        return FALSE;
 
     while (guard++ < 4096)
     {
-        UBYTE cmd = ctx->mem[p++];
-        UBYTE kind = cmd >> 6, size = (cmd >> 4) & 3;
-        ULONG count = (cmd & 15) + 1, i, sz;
+        UBYTE cmd, kind, esize;
+        ULONG count, i, sz, bytes;
+
+        if (!m68k_in_mem(ctx, p, 1))
+            return FALSE;
+        cmd = ctx->mem[p++];
+        kind = cmd >> 6;
+        esize = (cmd >> 4) & 3;
+        count = (cmd & 15) + 1;
 
         if (!cmd) break;
-        if (size == 3) break;
-        sz = size == 0 ? 4 : size == 1 ? 2 : 1;
+        if (esize == 3) return FALSE;
+        sz = esize == 0 ? 4 : esize == 1 ? 2 : 1;
         if (kind == 2)
-            dst = mem + ctx->mem[p++];
+        {
+            if (!m68k_in_mem(ctx, p, 1))
+                return FALSE;
+            off = ctx->mem[p++];
+        }
         else if (kind == 3)
         {
-            dst = mem + ((ULONG)ctx->mem[p] << 16 | (ULONG)ctx->mem[p + 1] << 8 | ctx->mem[p + 2]);
+            if (!m68k_in_mem(ctx, p, 3))
+                return FALSE;
+            off = (ULONG)ctx->mem[p] << 16 | (ULONG)ctx->mem[p + 1] << 8 | ctx->mem[p + 2];
             p += 3;
         }
         if (sz > 1 && (p & 1)) p++;
+
+        /* the items of this command, and the place they go to */
+        bytes = count * sz;
+        if (!m68k_in_mem(ctx, p, kind == 1 ? sz : bytes))
+            return FALSE;
+        if (off > size || bytes > size - off)
+            return FALSE;
         for (i = 0; i < count; i++)
         {
             ULONG src = (kind == 1) ? p : p + i * sz;
+            ULONG dst = mem + off;
             if (sz == 4) m68k_write32(ctx, dst, m68k_read32(ctx, src));
             else if (sz == 2) m68k_write16(ctx, dst, m68k_read16(ctx, src));
             else ctx->mem[dst] = ctx->mem[src];
-            dst += sz;
+            off += sz;
         }
-        p += (kind == 1) ? sz : count * sz;
+        p += (kind == 1) ? sz : bytes;
         if (p & 1) p++;
     }
+    return TRUE;
+}
+
+/* Nothing of an attempt that did not get as far as a usable library is
+   kept. What goes back is exactly what that attempt took from the heap: the
+   base with its jump table, when it was allocated already, and the hunks of
+   the image, through the chain the loader gave them. Nothing is derived
+   from a span of addresses, and nothing of the running program is touched. */
+static ULONG m68k_library_abandon(struct M68KEmuContext *ctx, ULONG entry, ULONG region, ULONG total)
+{
+    if (region)
+        M68KEmu_HeapFree(ctx, region, total);
+    M68KEmu_FreeImage(ctx, entry);
+    return 0;
 }
 
 ULONG M68KEmu_LoadM68KLibrary(struct M68KEmuContext *ctx, const char *name, ULONG version)
@@ -72,7 +113,7 @@ ULONG M68KEmu_LoadM68KLibrary(struct M68KEmuContext *ctx, const char *name, ULON
     BPTR fh;
     LONG fileSize;
     UBYTE *fileData;
-    ULONG entry, base = 0;
+    ULONG entry, base = 0, region = 0, total = 0;
     struct M68KTaskState *ts;
     /* The internal API keeps its full-width version parameter. */
     if (version > 0xFFFFu) return 0;
@@ -125,9 +166,20 @@ ULONG M68KEmu_LoadM68KLibrary(struct M68KEmuContext *ctx, const char *name, ULON
     { FreeMem(fileData, fileSize); Close(fh); return 0; }
     Close(fh);
 
-    /* Load hunks into containment */
+    /* Load hunks into containment. The loader describes the image it places
+       in the fields that describe the running program. They are the
+       program's again as soon as it returns, on every path out of here; the
+       image of the library is known from here on by its entry point and by
+       the chain of its hunks alone. */
+    ULONG own_entry = ctx->entry_point, own_seg = ctx->seg_start;
+    ULONG own_lo = ctx->load_lo, own_hi = ctx->load_hi;
+
     entry = M68KEmu_LoadHunksFromMemory(ctx, fileData, fileSize);
     FreeMem(fileData, fileSize);
+    ctx->entry_point = own_entry;
+    ctx->seg_start   = own_seg;
+    ctx->load_lo     = own_lo;
+    ctx->load_hi     = own_hi;
 
     if (!entry)
     {
@@ -135,27 +187,40 @@ ULONG M68KEmu_LoadM68KLibrary(struct M68KEmuContext *ctx, const char *name, ULON
         return 0;
     }
 
-    /* Scan containment for M68K_RTC_MATCHWORD (0x4AFC) */
+    /* Scan the hunks of the library for M68K_RTC_MATCHWORD (0x4AFC), in
+       their order: the Resident can live in its data hunk. The hunks are
+       taken from the image itself, as M68KEmu_LoadHunksFromMemory() chained
+       them (at most 100), not from the span between the lowest and the
+       highest one, which also holds whatever else lies between them. Only
+       a Resident that is whole inside one hunk counts: its fields are read
+       below. This is how LDInit() of rom/lddemon looks for the Resident of
+       a native library: segment by segment, the first one that fits. */
     ULONG rt_addr = 0;
-    /* Scan every hunk of the library: the Resident can live in its data hunk */
-    for (ULONG addr = ctx->load_lo & ~1; addr + M68K_RT_MATCHTAG + 4 <= ctx->load_hi; addr += 2)
     {
-        if (m68k_read16(ctx, addr) == M68K_RTC_MATCHWORD)
+        ULONG data = entry, size = 0, next = 0, hunks = 0;
+
+        while (data && !rt_addr && hunks++ < 100 && M68KEmu_ImageHunk(ctx, data, &size, &next))
         {
-            /* Verify rt_MatchTag points back to itself */
-            ULONG mt = m68k_read32(ctx, addr + M68K_RT_MATCHTAG);
-            if (mt == addr)
+            for (ULONG addr = (data + 1) & ~1u;
+                 size >= M68K_SIZEOF_RESIDENT && addr - data <= size - M68K_SIZEOF_RESIDENT;
+                 addr += 2)
             {
-                rt_addr = addr;
-                break;
+                /* Verify rt_MatchTag points back to itself */
+                if (m68k_read16(ctx, addr) == M68K_RTC_MATCHWORD &&
+                    m68k_read32(ctx, addr + M68K_RT_MATCHTAG) == addr)
+                {
+                    rt_addr = addr;
+                    break;
+                }
             }
+            data = next;
         }
     }
 
     if (!rt_addr)
     {
         m68k_log(ctx, "68k library %s has no Resident tag", name);
-        return 0;
+        return m68k_library_abandon(ctx, entry, 0, 0);
     }
 
     /* Read Resident struct fields */
@@ -171,11 +236,17 @@ ULONG M68KEmu_LoadM68KLibrary(struct M68KEmuContext *ctx, const char *name, ULON
         /* Non-AUTOINIT: rt_Init is a function pointer.
            For now, we'd need to call it. Skip for now. */
         bug("[m68kemu] m68klib: %s is not M68K_RTF_AUTOINIT, not supported yet\n", name);
-        return 0;
+        return m68k_library_abandon(ctx, entry, 0, 0);
     }
 
     /* M68K_RTF_AUTOINIT: rt_Init points to init table:
-       ULONG dataSize, APTR funcTable, APTR dataInit, APTR initFunc */
+       ULONG dataSize, APTR funcTable, APTR dataInit, APTR initFunc.
+       Its four longwords have to lie in containment. */
+    if (!m68k_in_mem(ctx, rt_Init, 16))
+    {
+        m68k_log(ctx, "68k library %s: its init table is outside memory", name);
+        return m68k_library_abandon(ctx, entry, 0, 0);
+    }
     ULONG dataSize  = m68k_read32(ctx, rt_Init + M68K_AUTOINIT_DATASIZE);
     ULONG funcTable = m68k_read32(ctx, rt_Init + M68K_AUTOINIT_FUNCTABLE);
     ULONG dataInit  = m68k_read32(ctx, rt_Init + M68K_AUTOINIT_DATAINIT);
@@ -184,20 +255,30 @@ ULONG M68KEmu_LoadM68KLibrary(struct M68KEmuContext *ctx, const char *name, ULON
     if (ctx->trace_calls) bug("[m68kemu] m68klib: dataSize=%lu funcTable=0x%lx dataInit=0x%lx initFunc=0x%lx\n",
         (unsigned long)dataSize, (unsigned long)funcTable, (unsigned long)dataInit, (unsigned long)initFunc);
 
-    if (!funcTable) return 0;
+    if (!funcTable) return m68k_library_abandon(ctx, entry, 0, 0);
 
     /* Function table: absolute LONGs ending in -1, or - when it starts with
-       the WORD -1 - WORD offsets from the table ending in -1 */
+       the WORD -1 - WORD offsets from the table ending in -1. Every entry
+       that counts has to lie in containment: a table that runs out of it
+       before its end is not one. */
+    if (!m68k_in_mem(ctx, funcTable, 2)) return m68k_library_abandon(ctx, entry, 0, 0);
     BOOL rel = m68k_read16(ctx, funcTable) == 0xFFFF;
     UWORD numFuncs = 0;
-    if (rel)
-        while (m68k_read16(ctx, funcTable + 2 + numFuncs * 2) != 0xFFFF && numFuncs < 1000)
-            numFuncs++;
-    else
-        while (m68k_read32(ctx, funcTable + numFuncs * 4) != M68K_FUNCTABLE_END && numFuncs < 1000)
-            numFuncs++;
+    while (numFuncs < 1000)
+    {
+        ULONG at = rel ? funcTable + 2 + numFuncs * 2 : funcTable + numFuncs * 4;
 
-    if (numFuncs == 0) return 0;
+        if (!m68k_in_mem(ctx, at, rel ? 2 : 4))
+        {
+            m68k_log(ctx, "68k library %s: its function table runs out of memory", name);
+            return m68k_library_abandon(ctx, entry, 0, 0);
+        }
+        if (rel ? m68k_read16(ctx, at) == 0xFFFF : m68k_read32(ctx, at) == M68K_FUNCTABLE_END)
+            break;
+        numFuncs++;
+    }
+
+    if (numFuncs == 0) return m68k_library_abandon(ctx, entry, 0, 0);
 
     if (ctx->trace_calls) bug("[m68kemu] m68klib: %s has %d functions\n", name, numFuncs);
 
@@ -207,9 +288,26 @@ ULONG M68KEmu_LoadM68KLibrary(struct M68KEmuContext *ctx, const char *name, ULON
        Base itself: dataSize bytes for the library data. */
     if (dataSize < M68K_SIZEOF_LIBRARY) dataSize = M68K_SIZEOF_LIBRARY;  /* minimum Library struct */
     ULONG jt_size = (ULONG)numFuncs * M68K_JT_SLOT_SIZE;
-    ULONG total = jt_size + dataSize;
-    ULONG region = M68KEmu_HeapAlloc(ctx, total, 0);
-    if (!region) return 0;
+    /* The size is the file's. A base that cannot lie in containment is
+       refused here, before the sum below can wrap and before anything is
+       cleared with that size. */
+    if (jt_size > ctx->mem_size || dataSize > ctx->mem_size - jt_size)
+    {
+        m68k_log(ctx, "68k library %s: a base of %lu bytes does not fit", name, (unsigned long)dataSize);
+        return m68k_library_abandon(ctx, entry, 0, 0);
+    }
+    total = jt_size + dataSize;
+    region = M68KEmu_HeapAlloc(ctx, total, 0);
+    if (!region) return m68k_library_abandon(ctx, entry, 0, 0);
+    /* The base is cleared and written below without the accessors. Where
+       the block lies is the heap's word, and the heap keeps its lists in
+       memory that a 68k program can write: what is not a span of
+       containment is not used, and not given back as if it were a block. */
+    if (!m68k_in_mem(ctx, region, total))
+    {
+        m68k_log(ctx, "68k library %s: the heap gave a base outside memory", name);
+        return m68k_library_abandon(ctx, entry, 0, 0);
+    }
 
     base = region + jt_size;  /* base is after the jump table */
 
@@ -237,8 +335,11 @@ ULONG M68KEmu_LoadM68KLibrary(struct M68KEmuContext *ctx, const char *name, ULON
     m68k_write16(ctx, base + M68K_LIB_VERSION, rt_Version);
     m68k_write32(ctx, base + 24, m68k_read32(ctx, rt_addr + 18));   /* lib_IdString = rt_IdString */
 
-    if (dataInit)
-        m68k_init_struct(ctx, dataInit, base);
+    if (dataInit && !m68k_init_struct(ctx, dataInit, base, dataSize))
+    {
+        m68k_log(ctx, "68k library %s: its init table is not usable", name);
+        return m68k_library_abandon(ctx, entry, region, total);
+    }
 
     /* As exec does, the library's init function runs, then its Open
        vector; both as 68k code when the program's OpenLibrary returns, and
@@ -274,7 +375,7 @@ ULONG M68KEmu_LoadM68KLibrary(struct M68KEmuContext *ctx, const char *name, ULON
         ULONG t = M68KEmu_HeapAlloc(ctx, sizeof(first) + sizeof(again), 0), r;
 
         if (!t)
-            return 0;
+            return m68k_library_abandon(ctx, entry, region, total);
         r = t + sizeof(first);
         for (ULONG i = 0; i < sizeof(first) / sizeof(first[0]); i++)
             m68k_write16(ctx, t + 2 * i, first[i]);
