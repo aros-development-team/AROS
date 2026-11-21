@@ -11,61 +11,49 @@
 *       Area.mui
 *
 *   DESCRIPTION
-*       Display one or more sampled value series with filled plots, grid
-*       divisions, and optional centered information text. Sampling uses
-*       caller-supplied hooks and an Application timer handler. The source
-*       configuration declares version 0.9.
-*       Defaults are ValueCeiling 100, ValueStep 10, PeriodCeiling 10000
-*       milliseconds, PeriodStep 1000 milliseconds, and a stored PeriodInterval
-*       of 1000 milliseconds. Periodic sampling is initially disabled. One
-*       source record is requested at construction, but no sample capacity is
-*       allocated by default. Configure valid sample storage and sources before
-*       displaying or sampling; a default object is not a ready-to-draw graph.
-*       The constructor supplies four-pixel inner margins, initializes its
-*       state, then applies caller attributes through OM_SET. Tag order matters.
-*       Setup registers an enabled timer; Cleanup removes it. Hide releases
-*       display pens but does not stop sampling. Timer delivery follows
-*       Application event processing, not elapsed wall-clock measurement.
-*       The class owns source records, sample arrays, and copied
-*       information-text lines. Hooks and RGB source arrays are borrowed.
-*       Complete Hide/Cleanup before disposal; disposal frees data but does not
-*       independently remove the timer or release shown-screen pens.
+*       Display time-ordered sampled values from one or more sources as
+*       line plots with optional filled areas, grid divisions, and centered
+*       information text. Applications supply samples through AROS Hook
+*       callbacks. Automatic sampling uses an Application input handler.
+*       Manual applications may invoke MUIM_Graph_Timer explicitly.
+*
+*       The class initially requests one source, but contains no recorded
+*       samples. The default value ceiling/step are 100/10; the period
+*       ceiling/step are 10000/1000 milliseconds. Automatic sampling is
+*       disabled until PeriodInterval is set to a nonzero value. Initial
+*       inner margins are four pixels on each side.
 *
 *   NOTES
-*       Use positive, representable period/value scales and steps. Keep sample
-*       counts, source counts, values, and display dimensions within the integer
-*       ranges used by drawing. Values are not clamped to ValueCeiling.
-*       Minimum/default sizes are derived from ceiling/step ratios; scale
-*       changes do not themselves request relayout.
-*       For multiple sources, create consecutive indices before obtaining
-*       handles for configuration. Adding a source reallocates the record array,
-*       invalidating earlier handles. Configure stable sources and capacity
-*       before use. Callback code must not dispose the graph or change
-*       source/storage structure while sampling is in progress.
-*       OM_SET returns the number of recognized tags plus the superclass result,
-*       not a reliable success indicator. Source creation, sample allocation,
-*       information-text allocation, pen acquisition, and drawing failures do
-*       not share a checked error-reporting contract.
+*       Source handles returned by MUIM_Graph_GetSourceHandle are pointers
+*       to individually allocated records. Adding sources does not move
+*       existing records. The handles become invalid when the object is
+*       disposed. Keep supplied Hook and RGB data alive as long as used.
+*       The class owns sample storage, the copied information-text lines,
+*       and screen pens that it explicitly obtains. Numeric pen values
+*       provided by the caller are borrowed, not released by the class.
 *
-*   BUGS
-*       Aggregate stores a flag that neither sampling nor drawing uses. Reset is
-*       a no-op. ManualRefresh does not dynamically add or remove the redraw
-*       notification installed during construction.
-*       Source-array growth initializes only the final new record; skipping
-*       source indices leaves intermediate records uninitialized. Allocation
-*       failure is not checked before GetSourceHandle returns an address.
-*       Entry-array growth and logical capacity updates are not transactional;
-*       shrinking capacity changes the recorded size without resizing
-*       allocations.
-*       Drawing assumes usable source arrays and scale divisors and can access
-*       samples even before a successful read. Unhooked sources are not
-*       automatically populated. The information-text parser dereferences
-*       allocation results without checking them.
-*       Pen handling has lifecycle limits: source pen numbers are not reset on
-*       Hide, and equal line/fill pen numbers share a release path regardless of
-*       how reservations were acquired. SetSourceAttrib's FillPenSrc case writes
-*       the line-pen field instead of the fill RGB pointer. These are existing
-*       implementation limits, not supported alternate behaviors.
+*       A nonzero PeriodInterval enables periodic sampling and configures
+*       the history capacity from PeriodCeiling/PeriodInterval. Configure
+*       positive, representable scales and steps. Setter calls report tag
+*       recognition rather than allocation success; unchanged values may
+*       also mean an allocation failure. Only the attributes documented as
+*       gettable have local OM_GET implementations.
+*
+*       The graph updates on the Application task; a callback must not
+*       dispose the object or restructure its sources while a sample is
+*       being taken. Hide releases screen pens; Cleanup removes the timer;
+*       Dispose also stops an outstanding handler and releases owned data.
+*       Failed area-buffer allocations or histories exceeding the
+*       WORD-sized InitArea vector limit omit the filled area; line plots
+*       and other graph elements can still be drawn.
+*
+*   LIMITATIONS
+*       Aggregate mode renders the integer mean of all source samples as
+*       one series. This class does not implement bar, pie, or scatter
+*       diagrams, export, interaction, zooming, or hardware sampling.
+*       Source colour acquisition depends on the active screen. Native
+*       AROS redraw and resource-lifetime behaviour must be qualified on
+*       the actual target; source-level tests are not runtime evidence.
 *
 */
 /****** Graph.mcc/MUIA_Graph_InfoText ************
@@ -74,23 +62,18 @@
 *       MUIA_Graph_InfoText
 *
 *   FUNCTION
-*       Replace the centered text drawn over the graph.
+*       Set multiline text centered over the plotted area.
 *
 *   INPUTS
-*       Initialize, set; CONST_STRPTR to a readable NUL-terminated string, or
-*       NULL. Default NULL. No local getter.
+*       Initialize, set; pointer to a NUL-terminated string or NULL.
+*       Default NULL. No Graph-specific getter.
 *
 *   NOTES
-*       The parser first frees all old text nodes, then copies text into
-*       per-line allocations. NULL clears the text; source storage is not
-*       retained. Empty strings and consecutive or trailing newlines do not have
-*       a consistent blank-line layout contract. This uses graphics Text, not
-*       MUI text escape processing.
-*       Setting while shown requests an update redraw. Allocation failure is
-*       unchecked and previous text is not restored. Use bounded
-*       application-owned text. The original pointer is forwarded in the
-*       attribute tag; a notification recipient must not assume it points to
-*       retained line storage.
+*       The text is split on newline boundaries and copied into owned
+*       per-line storage. NULL clears the text. On allocation failure the
+*       existing text remains intact. Lines containing no characters are
+*       omitted. No MUI escape interpretation is performed. A shown graph
+*       requests an update redraw after the setter.
 *
 */
 /****** Graph.mcc/MUIA_Graph_EntryCount ************
@@ -99,26 +82,19 @@
 *       MUIA_Graph_EntryCount
 *
 *   FUNCTION
-*       Select fixed history capacity or disable fixed-length mode.
+*       Set or query the number of history slots per source.
 *
 *   INPUTS
-*       Initialize, set, get; IPTR. Initial stored count zero. A positive value
-*       enables fixed-length mode; zero disables that mode.
+*       Initialize, set, get; IPTR. Initially zero.
 *
 *   NOTES
-*       A positive value grows each existing source array only when larger than
-*       the stored count, then records the requested count regardless of
-*       allocation success. Full fixed histories shift older samples before
-*       writing the newest slot. Get reports the stored count, not the number of
-*       populated samples.
-*       Zero clears the fixed-length flag without clearing the count, arrays, or
-*       write position. In nonfixed mode, Timer grows arrays for hooked sources
-*       as needed. There is no public setter for individual samples.
-*       Changing capacity does not reset history. Smaller positive counts do not
-*       resize arrays, yet later copying and freeing use the changed logical
-*       count. Growth failures can leave capacity and allocations inconsistent.
-*       Set a suitable capacity before use; this is not a safe arbitrary resize
-*       or clear operation.
+*       Positive values resize every source transactionally and enable
+*       fixed-length history. Existing recent samples are retained up to
+*       the new capacity. A failed allocation preserves the old capacity
+*       and arrays. Zero disables fixed-length mode without deleting the
+*       existing storage or sample history. In nonfixed mode a sampling
+*       tick grows history as required. The getter reports capacity, not
+*       the number of valid recorded samples. Reset clears recorded values.
 *
 */
 /****** Graph.mcc/MUIA_Graph_Aggregate ************
@@ -127,16 +103,18 @@
 *       MUIA_Graph_Aggregate
 *
 *   FUNCTION
-*       Store the aggregate-mode flag.
+*       Toggle the combined mean-value plot.
 *
 *   INPUTS
-*       Initialize, set; BOOL, default FALSE. No local getter.
+*       Initialize, set; BOOL. Default FALSE. No local getter.
 *
 *   NOTES
-*       Nonzero enables GRAPHF_AGGR and zero clears it. No code in the sampling
-*       or drawing paths consumes this flag. It does not sum or average the
-*       sources and does not alter displayed series. The setter comment
-*       describes an intention, not implemented aggregation.
+*       FALSE plots each source separately. TRUE plots one series whose
+*       sampled values are the integer arithmetic mean of the available
+*       source records at each time index. It does not sum measurements,
+*       alter source histories, or change the sampling callbacks. The
+*       combined series uses source zero's plot and fill pens. Toggling
+*       requests a redraw while the graph is shown.
 *
 */
 /****** Graph.mcc/MUIA_Graph_PeriodCeiling ************
@@ -145,20 +123,18 @@
 *       MUIA_Graph_PeriodCeiling
 *
 *   FUNCTION
-*       Set the horizontal time scale.
+*       Set the visible horizontal period in milliseconds.
 *
 *   INPUTS
-*       Initialize, set; IPTR milliseconds, default 10000. No local getter.
+*       Initialize, set; positive IPTR. Default 10000 ms.
+*       No Graph-specific getter.
 *
 *   NOTES
-*       Drawing scales sample spacing using PeriodInterval/PeriodCeiling;
-*       measurement uses PeriodCeiling/PeriodStep. Supply a positive value with
-*       representable calculations. No validation, redraw, or relayout is
-*       requested by this setter alone.
-*       Changing this value does not recalculate EntryCount. When enabling
-*       PeriodInterval, the setter uses the ceiling already stored at that point
-*       to request ceiling/interval entries. Put PeriodCeiling before
-*       PeriodInterval when configuring both in one tag list.
+*       Zero is ignored. In periodic mode this setter attempts to resize
+*       history from the new period and current sample interval before
+*       storing the new period. A resize failure preserves the old period.
+*       In manual mode it changes only the period. Scale changes request
+*       redraw while shown, but do not themselves request MUI relayout.
 *
 */
 /****** Graph.mcc/MUIA_Graph_PeriodStep ************
@@ -167,20 +143,16 @@
 *       MUIA_Graph_PeriodStep
 *
 *   FUNCTION
-*       Set the horizontal grid and tick-step value.
+*       Set horizontal grid spacing and tick phase in milliseconds.
 *
 *   INPUTS
-*       Initialize, set; IPTR milliseconds, default 1000. No local getter.
+*       Initialize, set; positive IPTR. Default 1000 ms.
+*       No Graph-specific getter.
 *
 *   NOTES
-*       Measurement divides PeriodCeiling by this value; drawing uses it for
-*       vertical divisions. Timer adds the stored interval to its tick counter
-*       and subtracts PeriodStep once only when the result is greater than
-*       PeriodStep. This is not a general modulo reduction or a wall-clock
-*       timestamp.
-*       Use a positive value and suitable scale ratios. The setter does not
-*       validate divisors or request redraw or relayout. Changing PeriodStep
-*       does not change the Application timer interval or sample capacity.
+*       Zero is ignored. Grid spacing is constrained to a finite number
+*       of rendered divisions, even for small requested steps. This tag
+*       does not change the sampling interval or sample capacity.
 *
 */
 /****** Graph.mcc/MUIA_Graph_PeriodInterval ************
@@ -189,26 +161,21 @@
 *       MUIA_Graph_PeriodInterval
 *
 *   FUNCTION
-*       Enable periodic sampling with the specified interval, or disable it.
+*       Enable, configure, or disable automatic sampling.
 *
 *   INPUTS
-*       Initialize, set, get; IPTR milliseconds. Initial stored interval 1000,
-*       but periodic mode initially disabled. Zero disables periodic mode.
+*       Initialize, set, get; IPTR milliseconds. Get returns zero when
+*       periodic sampling is disabled. Initially disabled.
 *
 *   NOTES
-*       A nonzero value enables periodic mode, assigns the timer-node interval,
-*       and sets EntryCount to the integer quotient PeriodCeiling/interval. If
-*       already set up and not registered, it adds the Application handler.
-*       Configure a ceiling and interval that yield a positive, usable capacity.
-*       Zero removes an active handler while set up and clears periodic mode,
-*       but preserves the stored interval. Get therefore returns the previous
-*       interval after disabling; it does not report whether sampling is
-*       enabled.
-*       Changing a nonzero interval while already registered edits the node
-*       without removing and re-adding it. No rescheduling guarantee is
-*       provided. EntryCount updates are nested attribute sets and can notify
-*       separately. Disabling does not clear samples or reset the write
-*       position.
+*       A positive interval enables periodic sampling, selects fixed
+*       capacity based on PeriodCeiling/interval, and registers an input
+*       handler after Setup. Changing the interval clears sample history;
+*       repeating the existing active interval preserves history and does
+*       not re-register the timer. An allocation failure leaves the old
+*       live configuration unchanged. Zero removes the timer and disables
+*       sampling without deleting stored samples. Timer callbacks execute
+*       through the MUI Application event-processing context.
 *
 */
 /****** Graph.mcc/MUIA_Graph_ValueCeiling ************
@@ -217,20 +184,15 @@
 *       MUIA_Graph_ValueCeiling
 *
 *   FUNCTION
-*       Set the value represented by the full graph height.
+*       Set the vertical plot ceiling.
 *
 *   INPUTS
-*       Initialize, set, get; IPTR, default 100.
+*       Initialize, set, get; positive IPTR. Default 100.
 *
 *   NOTES
-*       Drawing scales samples by object height divided by this ceiling;
-*       measurement divides it by ValueStep. Supply a positive ceiling and
-*       values appropriate to that scale. No clamping, auto-ranging, or
-*       validation occurs.
-*       The getter returns the stored ceiling. Setting it alone requests neither
-*       redraw nor relayout; the next draw uses the new scale. Large
-*       intermediate products and coordinates are not protected against
-*       overflow.
+*       Zero is ignored. Values at or above the ceiling are clipped to
+*       the upper rendering edge. This changes the representation of
+*       existing values, not the recorded sample history.
 *
 */
 /****** Graph.mcc/MUIA_Graph_ValueStep ************
@@ -239,18 +201,15 @@
 *       MUIA_Graph_ValueStep
 *
 *   FUNCTION
-*       Set the spacing of horizontal value divisions.
+*       Set vertical grid-division spacing.
 *
 *   INPUTS
-*       Initialize, set; IPTR, default 10. No local getter.
+*       Initialize, set; positive IPTR. Default 10.
+*       No Graph-specific getter.
 *
 *   NOTES
-*       Measurement derives minimum/default height from ValueCeiling/ValueStep.
-*       Drawing derives grid spacing from object height times ValueStep divided
-*       by ValueCeiling, with a two-pixel lower bound. Supply a positive step
-*       and representable ratios.
-*       This does not round incoming samples or alter stored values. No redraw
-*       or relayout is requested by the setter alone.
+*       Zero is ignored. Rendering bounds the number of grid lines and
+*       uses the current ValueCeiling to establish relative spacing.
 *
 */
 /****** Graph.mcc/MUIA_Graph_ManualRefresh ************
@@ -259,20 +218,17 @@
 *       MUIA_Graph_ManualRefresh
 *
 *   FUNCTION
-*       Choose whether construction installs the automatic tick-redraw
-*       notification.
+*       Control automatic redraws following sampling ticks.
 *
 *   INPUTS
-*       Initialize, set; BOOL, default FALSE. No local getter.
+*       Initialize, set; BOOL. Default FALSE. No local getter.
 *
 *   NOTES
-*       At the end of construction, FALSE causes a notification on
-*       PeriodicTick=TRUE to call an internal redraw hook. TRUE skips
-*       installation. The flag is writable later, but setting it does not add or
-*       remove that notification. Choose the mode at construction.
-*       Manual refresh does not disable sampling. Request drawing through the
-*       normal MUI redraw mechanism when needed. InfoText changes can still
-*       request redraw directly while shown.
+*       FALSE enables an installed PeriodicTick notification that requests
+*       MADF_DRAWUPDATE; TRUE suppresses that callback's redraw. Changes
+*       take effect on the next notification, including after Setup.
+*       This flag does not stop sampling. Applications can request an
+*       explicit redraw through the normal MUI interface.
 *
 */
 /****** Graph.mcc/MUIA_Graph_PeriodicTick ************
@@ -281,20 +237,16 @@
 *       MUIA_Graph_PeriodicTick
 *
 *   FUNCTION
-*       Provide an attribute notification trigger after periodic sampling.
+*       Provide a MUI notification trigger for completed sampling ticks.
 *
 *   INPUTS
-*       Notification/set tag with BOOL. No stored value or local getter.
+*       Set; BOOL trigger value. No Graph-specific getter.
 *
 *   NOTES
-*       Timer sends TRUE after its periodic sampling pass. The setter only
-*       counts this recognized tag and forwards it; manually setting it does not
-*       sample data. The constructor normally installs a TRUE-triggered redraw
-*       notification unless ManualRefresh was TRUE.
-*       A tick notification is not evidence that every hook supplied a value or
-*       that storage allocation succeeded. Zero sources still permits the
-*       trigger while periodic mode is enabled. There is no separate accumulated
-*       tick count exposed by this attribute.
+*       MUIM_Graph_Timer sets this attribute after processing sources.
+*       Its installed notification may request a redraw unless
+*       ManualRefresh is enabled. The attribute is not a history buffer
+*       and does not provide a measurement value.
 *
 */
 /****** Graph.mcc/MUIM_Graph_GetSourceHandle ************
@@ -302,31 +254,21 @@
 *   NAME
 *       MUIM_Graph_GetSourceHandle
 *
-*   SYNOPSIS
-*       APTR handle = (APTR)DoMethod(obj, MUIM_Graph_GetSourceHandle, SourceNo);
-*
 *   FUNCTION
-*       Return an internal source record, growing the source array when needed.
+*       Return a borrowed source record handle, creating sources if needed.
 *
 *   INPUTS
-*       obj - Live Graph object.
-*       SourceNo - ULONG, zero-based index. The constructor requests source
-*       zero.
+*       SourceNo: ULONG zero-based source index.
 *
 *   RESULT
-*       Borrowed pointer to the requested source record. There is no reliable
-*       NULL-on-allocation-failure contract.
+*       Nonzero pointer to the source record, or zero on failure.
 *
 *   NOTES
-*       The handle is opaque to callers and is intended for SetSourceAttrib.
-*       Never free it. Any later growth of the source array can invalidate every
-*       earlier handle, even when sample buffers remain allocated. Disposal
-*       invalidates all handles.
-*       Create consecutive indices: growth initializes only the last new record,
-*       not skipped indices. Request all needed sources before fetching handles
-*       used for configuration. Avoid source growth while shown or while a
-*       sampling callback is active. The method does not validate allocation
-*       success before forming the returned address.
+*       New records and their history are zero-initialized. Source-array
+*       growth is transactional; existing returned handles remain valid
+*       when other sources are added. A handle remains owned by the graph
+*       and is invalid after object disposal. Do not store handles across
+*       object lifetimes or pass them to another graph instance.
 *
 */
 /****** Graph.mcc/MUIM_Graph_SetSourceAttrib ************
@@ -334,49 +276,24 @@
 *   NAME
 *       MUIM_Graph_SetSourceAttrib
 *
-*   SYNOPSIS
-*       IPTR result = DoMethod(obj, MUIM_Graph_SetSourceAttrib, handle, attrib,
-*       value);
-*
 *   FUNCTION
-*       Assign a read hook or pen setting to an existing source record.
+*       Configure a source read hook or its line/fill colour.
 *
 *   INPUTS
-*       handle - Current source handle belonging to this object; not validated.
-*       attrib - One of MUIV_Graph_Source_ReadHook, PenSrc, Pen, FillPenSrc, or
-*       FillPen.
-*       value - IPTR interpreted according to attrib.
-*
-*   RESULT
-*       Always zero, including unknown selectors. No validation or acquisition
-*       status is returned.
+*       SourceHandle: borrowed handle from GetSourceHandle.
+*       Attrib: MUIV_Graph_Source_ReadHook, _PenSrc, _Pen,
+*           _FillPenSrc, or _FillPen.
+*       AttribVal: Hook pointer, RGB triplet pointer, or WORD pen number.
 *
 *   NOTES
-*       ReadHook stores a borrowed struct Hook pointer; NULL disables reading
-*       that source. Timer calls it synchronously with the destination IPTR
-*       sample slot as the hook object and hook->h_Data as the message. Write
-*       the sample through that destination; the hook return value is ignored.
-*       Keep the hook and its data valid, and do not retain the sample-slot
-*       pointer or reconfigure/dispose the graph during the callback.
-*       PenSrc stores a borrowed pointer to three ULONG RGB components used by
-*       Show for the line pen. Each component ranges from zero to 0xffffffff.
-*       The array must remain valid across relevant Show calls. Setting it does
-*       not immediately reacquire a pen or redraw.
-*       Pen and FillPen replace stored WORD pen numbers. If the previous
-*       pen number is not -1, release it against the current screen
-*       colormap before assigning the replacement. Supply an
-*       appropriate acquired reservation for that same screen; the class
-*       releases retained pen numbers during Hide. This is not a
-*       borrowed-color-index API. These setters require usable screen state when
-*       releasing an old pen.
-*       FillPenSrc is incorrectly implemented: it assigns the value to the
-*       line-pen field instead of the fill RGB source pointer, without releasing
-*       the previous line pen. Do not use it to provide RGB storage. No public
-*       working fill-RGB-source assignment is implemented here.
-*       Hide does not reset source pen fields, and equal line/fill numbers are
-*       not released independently. Do not infer arbitrary repeated assignment
-*       or lifecycle safety from these low-level selectors. No setter here
-*       requests redraw.
+*       Foreign, NULL and stale handles are rejected without dereference.
+*       Hook and RGB pointers are borrowed. Numeric pen numbers belong to
+*       the caller. RGB-based pens are acquired on the shown screen and
+*       released by Graph.mcc when replaced or hidden. The line and fill
+*       RGB attributes are independent. A failed RGB reservation does not
+*       leave an obsolete borrowed pen active. Requests to change a shown
+*       source trigger a redraw. The method returns zero; its return value
+*       is not a successful-acquisition or modification indicator.
 *
 */
 /****** Graph.mcc/MUIM_Graph_Reset ************
@@ -384,23 +301,17 @@
 *   NAME
 *       MUIM_Graph_Reset
 *
-*   SYNOPSIS
-*       IPTR result = DoMethod(obj, MUIM_Graph_Reset);
-*
 *   FUNCTION
-*       Accept a reset request without changing graph state.
+*       Clear recorded measurements without changing source configuration.
 *
 *   INPUTS
-*       obj - Live Graph object. No payload arguments.
-*
-*   RESULT
-*       Always zero.
+*       No method-specific arguments.
 *
 *   NOTES
-*       The implementation is a TODO stub. It does not clear samples, reset the
-*       write position or tick counter, remove sources, change attributes, or
-*       redraw. Recreating the object is distinct from calling this method; no
-*       reset behavior is implemented.
+*       Clears every source's sample storage, the valid-sample count and
+*       grid-phase tick counter. Configured sources, pens, capacity and
+*       timer settings remain in place. A shown graph is redrawn. Return
+*       value is zero; callers must not interpret it as a Boolean result.
 *
 */
 /****** Graph.mcc/MUIM_Graph_Timer ************
@@ -408,35 +319,22 @@
 *   NAME
 *       MUIM_Graph_Timer
 *
-*   SYNOPSIS
-*       IPTR result = DoMethod(obj, MUIM_Graph_Timer);
-*
 *   FUNCTION
-*       Advance the internal tick phase and, when periodic mode is enabled,
-*       sample each hooked source.
+*       Sample every available source and advance the graph's history.
 *
 *   INPUTS
-*       obj - Live Graph with valid configured source storage and hooks. No
-*       payload arguments.
-*
-*   RESULT
-*       Always zero; sampling and allocation failures are not returned.
+*       No method-specific arguments. Normally invoked by an Application
+*       timer input handler; manual invocation is also possible.
 *
 *   NOTES
-*       Add the stored interval to the internal tick counter and subtract
-*       PeriodStep once when exceeded. When periodic mode is disabled, stop
-*       after that phase update. Manual invocation does not bypass the mode
-*       check or measure elapsed time.
-*       In periodic mode, shift full fixed histories or grow nonfixed hooked
-*       sources as needed, then call each read hook with its destination sample
-*       slot and h_Data. Increment the common write position once per pass, not
-*       once per hook. Unhooked sources are skipped but still share that
-*       position and are still drawn.
-*       Send PeriodicTick=TRUE after the pass. Hooks must write a valid sample
-*       synchronously. No locking, deferred callback queue, source-lifetime
-*       guard, or checked allocation rollback is supplied. Use through the
-*       Application GUI lifecycle and do not mutate graph storage during
-*       callbacks.
+*       Requires an enabled nonzero PeriodInterval and valid source
+*       storage. Each hooked source receives a writable IPTR sample slot
+*       and its Hook data. Unhooked sources receive zero for that tick.
+*       Fixed-length histories shift their oldest values when full;
+*       nonfixed histories may grow transactionally. After sampling the
+*       method emits PeriodicTick so listeners can observe progress.
+*       It does not perform hardware measurements itself. A callback must
+*       not reconfigure or dispose its graph while running.
 *
 */
 
@@ -468,94 +366,117 @@
 #include "graph.h"
 #include "graph_intern.h"
 
-/* Resize the owned source-record array when count changes. Copy the common
- * prefix and free the old array only after successful allocation. Growth
- * initializes only the final record and optionally allocates its zeroed
- * sample array. Return the new/current pointer or NULL on allocation
- * failure; neither skipped records nor removed-record resources are fully
- * managed. Existing record handles become stale on successful resize.
- */
+/* Individual source records never move: a returned handle survives growth. */
 IPTR Graph__UpdateSourceArray(struct Graph_DATA *data, IPTR count)
 {
-    struct Graph_SourceDATA *newSourceArray = data->graph_Sources;
+    struct Graph_SourceDATA **newSources;
+    IPTR i;
 
-    D(bug("[Graph] %s(%d)\n", __func__, count);)
+    if (count <= data->graph_SourceCount)
+        return (IPTR)data->graph_Sources;
+    if (count > ((IPTR)-1) / sizeof(*newSources))
+        return 0;
 
-    if (data->graph_SourceCount != count)
+    newSources = AllocMem(count * sizeof(*newSources), MEMF_ANY | MEMF_CLEAR);
+    if (!newSources)
+        return 0;
+    if (data->graph_Sources)
+        CopyMem(data->graph_Sources, newSources,
+                data->graph_SourceCount * sizeof(*newSources));
+
+    for (i = data->graph_SourceCount; i < count; i++)
     {
-        IPTR copycnt;
-
-        if (count > data->graph_SourceCount)
-            copycnt = data->graph_SourceCount;
-        else
-            copycnt = count;
-
-        newSourceArray = AllocMem(sizeof(struct Graph_SourceDATA) * count, MEMF_ANY);
-        if (newSourceArray)
+        newSources[i] = AllocMem(sizeof(**newSources), MEMF_ANY | MEMF_CLEAR);
+        if (!newSources[i])
+            break;
+        newSources[i]->gs_PlotPen = -1;
+        newSources[i]->gs_PlotFillPen = -1;
+        if (data->graph_EntryCount)
         {
-
-            if (data->graph_Sources)
+            newSources[i]->gs_Entries = AllocMem(
+                data->graph_EntryCount * sizeof(IPTR), MEMF_ANY | MEMF_CLEAR);
+            if (!newSources[i]->gs_Entries)
             {
-                CopyMem(data->graph_Sources, newSourceArray, sizeof(struct Graph_SourceDATA) * copycnt);
-                FreeMem(data->graph_Sources, sizeof(struct Graph_SourceDATA) * data->graph_SourceCount);
+                FreeMem(newSources[i], sizeof(**newSources));
+                break;
             }
-
-            if (count > data->graph_SourceCount)
-            {
-                D(bug("[Graph] %s: initializing new source\n", __func__);)
-                memset(&newSourceArray[count - 1], 0, sizeof(struct Graph_SourceDATA));
-                newSourceArray[count - 1].gs_PlotPen = -1;
-                newSourceArray[count - 1].gs_PlotFillPen = -1;
-                if (data->graph_EntryCount > 0)
-                    newSourceArray[count - 1].gs_Entries = AllocMem(sizeof(IPTR) * data->graph_EntryCount, MEMF_CLEAR|MEMF_ANY);
-            }
-
-            data->graph_Sources = newSourceArray;
-            data->graph_SourceCount = count;
         }
     }
+    if (i != count)
+    {
+        while (i > data->graph_SourceCount)
+        {
+            --i;
+            if (newSources[i]->gs_Entries)
+                FreeMem(newSources[i]->gs_Entries,
+                        data->graph_EntryCount * sizeof(IPTR));
+            FreeMem(newSources[i], sizeof(**newSources));
+        }
+        FreeMem(newSources, count * sizeof(*newSources));
+        return 0;
+    }
 
-    return (IPTR)newSourceArray;
+    if (data->graph_Sources)
+        FreeMem(data->graph_Sources,
+                data->graph_SourceCount * sizeof(*newSources));
+    data->graph_Sources = newSources;
+    data->graph_SourceCount = count;
+    return (IPTR)newSources;
 }
 
-/* For count greater than the shared recorded capacity, select sourceNo and
- * allocate a larger array. Copy and free the old array using the shared
- * capacity, then install the replacement if allocation succeeded. New tail
- * bytes are uninitialized. Return the source record even on allocation
- * failure, or NULL when no growth was requested. Do not change shared
- * capacity here.
- */
-IPTR Graph__UpdateSourceEntries(struct Graph_DATA *data, IPTR sourceNo, IPTR count)
+/* Replace every source's sample storage before changing the shared capacity. */
+BOOL Graph__ResizeEntries(struct Graph_DATA *data, IPTR count)
 {
-    struct Graph_SourceDATA *dataSource = NULL;
+    IPTR **arrays;
+    IPTR oldValid, copyCount, start, i;
 
-    D(bug("[Graph] %s(%d:%d)\n", __func__, sourceNo, count);)
+    if (count == data->graph_EntryCount)
+        return TRUE;
+    if (!count || count > ((IPTR)-1) / sizeof(IPTR) ||
+        !data->graph_SourceCount ||
+        data->graph_SourceCount > ((IPTR)-1) / sizeof(*arrays))
+        return FALSE;
 
-    if (count > data->graph_EntryCount)
+    arrays = AllocMem(data->graph_SourceCount * sizeof(*arrays), MEMF_ANY | MEMF_CLEAR);
+    if (!arrays)
+        return FALSE;
+
+    oldValid = data->graph_EntryPtr;
+    if (oldValid > data->graph_EntryCount)
+        oldValid = data->graph_EntryCount;
+    copyCount = oldValid < count ? oldValid : count;
+    start = oldValid - copyCount;
+    for (i = 0; i < data->graph_SourceCount; i++)
     {
-        IPTR *newEntries;
-
-        dataSource = &data->graph_Sources[sourceNo];
-
-        newEntries =  AllocMem(sizeof(IPTR) * count, MEMF_ANY);
-        if (newEntries)
-        {
-            if (dataSource->gs_Entries)
-            {
-                CopyMem(dataSource->gs_Entries, newEntries, sizeof(IPTR) * data->graph_EntryCount);
-                FreeMem(dataSource->gs_Entries, sizeof(IPTR) * data->graph_EntryCount);
-            }
-            dataSource->gs_Entries = newEntries;
-        }
+        arrays[i] = AllocMem(count * sizeof(IPTR), MEMF_ANY | MEMF_CLEAR);
+        if (!arrays[i])
+            break;
+        if (data->graph_Sources[i]->gs_Entries && copyCount)
+            CopyMem(data->graph_Sources[i]->gs_Entries + start,
+                    arrays[i], copyCount * sizeof(IPTR));
+    }
+    if (i != data->graph_SourceCount)
+    {
+        while (i > 0)
+            FreeMem(arrays[--i], count * sizeof(IPTR));
+        FreeMem(arrays, data->graph_SourceCount * sizeof(*arrays));
+        return FALSE;
     }
 
-    return (IPTR)dataSource;
+    for (i = 0; i < data->graph_SourceCount; i++)
+    {
+        if (data->graph_Sources[i]->gs_Entries)
+            FreeMem(data->graph_Sources[i]->gs_Entries,
+                    data->graph_EntryCount * sizeof(IPTR));
+        data->graph_Sources[i]->gs_Entries = arrays[i];
+    }
+    FreeMem(arrays, data->graph_SourceCount * sizeof(*arrays));
+    data->graph_EntryCount = count;
+    data->graph_EntryPtr = copyCount;
+    return TRUE;
 }
 
-/* Remove and free every owned information-text node, resetting the stored
- * line count to zero. Require an initialized list in a live instance. No
- * caller string is freed and no redraw or error result is produced.
- */
+/* Remove and free every copied text node before replacing it or disposing the object. */
 void Graph__FreeInfoText(Class *cl, Object *obj)
 {
     struct Graph_DATA *data = INST_DATA(cl, obj);
@@ -572,72 +493,226 @@ void Graph__FreeInfoText(Class *cl, Object *obj)
     data->graph_ITHeight = 0;
 }
 
-/* Discard prior information text, then allocate and copy delimited
- * fragments of a readable NUL-terminated input. NULL leaves an empty list.
- * Terminator handling can add empty nodes and consecutive newlines are not
- * consistently split as blank lines. Allocation results are unchecked.
- * Return the stored node count; no rollback or reliable allocation error is
- * provided.
- */
+/* Build replacement text nodes transactionally; retain prior text if allocation fails. */
 IPTR Graph__ParseInfoText(Class *cl, Object *obj, char *infoTxt)
 {
     struct Graph_DATA *data = INST_DATA(cl, obj);
+    struct List parsed;
+    struct Node *line, *next;
+    IPTR height = 0;
+    size_t i, start = 0, length = infoTxt ? strlen(infoTxt) : 0;
 
-    int i, srcLen, start = 0;
-    struct Node *infoLine;
-
-    D(bug("[Graph] %s(0x%p)\n", __func__, infoTxt);)
-
-    Graph__FreeInfoText(cl, obj);
-
+    NEWLIST(&parsed);
     if (infoTxt)
     {
-        srcLen = strlen(infoTxt);
-
-        for (i = 0; i < (srcLen + 1); i ++)
+        for (i = 0; i <= length; i++)
         {
-            if (((i - start) > 0) && (infoTxt[i] == '\n') || (infoTxt[i] == '\0'))
+            if (infoTxt[i] == '\n' || infoTxt[i] == '\0')
             {
-                infoLine = (struct Node *)AllocVec(sizeof(struct Node) + 1 + (i - start), MEMF_ANY|MEMF_CLEAR);
-                infoLine->ln_Name = (char *)&infoLine[1];
-
-                CopyMem(&infoTxt[start], infoLine->ln_Name, (i - start));
-
-                D(bug("[Graph] %s: New infotext line @ 0x%p - '%s'\n", __func__, infoLine, infoLine->ln_Name);)
-                AddTail(&data->graph_InfoText, infoLine);
-
-                data->graph_ITHeight += 1;
+                size_t count = i - start;
+                if (count)
+                {
+                    if (count > ((size_t)-1) - sizeof(*line) - 1)
+                        goto failed;
+                    line = AllocVec(sizeof(*line) + count + 1,
+                                    MEMF_ANY | MEMF_CLEAR);
+                    if (!line)
+                        goto failed;
+                    line->ln_Name = (char *)(line + 1);
+                    CopyMem(&infoTxt[start], line->ln_Name, count);
+                    AddTail(&parsed, line);
+                    height++;
+                }
                 start = i + 1;
             }
         }
     }
-    D(bug("[Graph] %s: InfoText>  %d lines\n", __func__, data->graph_ITHeight);)
+
+    Graph__FreeInfoText(cl, obj);
+    while ((line = RemHead(&parsed)) != NULL)
+        AddTail(&data->graph_InfoText, line);
+    data->graph_ITHeight = height;
+    return height;
+
+failed:
+    ForeachNodeSafe(&parsed, line, next)
+    {
+        Remove(line);
+        FreeVec(line);
+    }
     return data->graph_ITHeight;
 }
 
-/* Sum count readable IPTR entries and divide a positive sum by count,
- * returning an integer mean rather than a source aggregate. A zero sum
- * returns zero; count zero performs no reads. Arithmetic is unchecked.
- * Drawing currently passes span one, so the result is a single sample.
- */
-IPTR Graph__SumValues(IPTR *start, int count)
+/* The exact average, without overflowing IPTR while summing sources. */
+static IPTR Graph__SampleAt(struct Graph_DATA *data, IPTR sourceNo, IPTR index)
 {
-    IPTR retVal = 0;
-    int i;
+    IPTR value = 0, remaining = 0, i, count;
+
+    if (!(data->graph_Flags & GRAPHF_AGGR))
+    {
+        struct Graph_SourceDATA *source = data->graph_Sources[sourceNo];
+        return source->gs_Entries ? source->gs_Entries[index] : 0;
+    }
+    count = data->graph_SourceCount;
+    if (!count)
+        return 0;
     for (i = 0; i < count; i++)
     {
-        retVal += start[i];
+        struct Graph_SourceDATA *source = data->graph_Sources[i];
+        IPTR sample = source->gs_Entries ? source->gs_Entries[index] : 0;
+        IPTR fraction = sample % count;
+        value += sample / count;
+        if (remaining >= count - fraction)
+        {
+            value++;
+            remaining -= count - fraction;
+        }
+        else
+            remaining += fraction;
     }
-    if (retVal > 0)
-        retVal /= count;
-    return retVal;
+    return value;
 }
 
-/* Receive the installed PeriodicTick notification through the AROS hook ABI
- * and request MADF_DRAWUPDATE for the supplied object. Ignore hook and
- * message arguments. No sampling, allocation, or manual-refresh flag test
- * occurs here; callback lifetime follows the object notification.
- */
+/* Clamp first, then scale: width * raw_sample may overflow on i386. */
+static LONG Graph__SampleY(const struct Graph_DATA *data,
+                           LONG height, IPTR value)
+{
+    if (value >= data->graph_ValCeiling)
+        return height;
+    return (LONG)(((double)value * height) / data->graph_ValCeiling);
+}
+
+/* Persist area work buffers across redraws and change them atomically. */
+static BOOL Graph__EnsureFillBuffers(struct Graph_DATA *data,
+                                    ULONG width, ULONG height, IPTR vectors)
+{
+    IPTR bytes, vectorBytes;
+    APTR newTmp = data->graph_FillTmp, newVectors = data->graph_FillVectors;
+
+    /* AROS InitArea takes a signed WORD MaxVectors (up to 32767). */
+    if (!width || !height || !vectors || vectors > 32767)
+        return FALSE;
+    /* RASSIZE expands width to a 16-pixel boundary before multiplying.
+     * Avoid an overflowing macro expression on the 32-bit target. */
+    if (width > ((ULONG)-1) - 15 ||
+        height > ((ULONG)-1) / (width + 15))
+        return FALSE;
+    bytes = RASSIZE(width, height);
+    vectorBytes = vectors * 5;
+    if (!bytes)
+        return FALSE;
+
+    if (bytes > data->graph_FillTmpBytes)
+    {
+        newTmp = AllocMem(bytes, MEMF_CHIP | MEMF_CLEAR);
+        if (!newTmp)
+            return FALSE;
+    }
+    if (vectorBytes > data->graph_FillVectorBytes)
+    {
+        newVectors = AllocVec(vectorBytes, MEMF_ANY | MEMF_CLEAR);
+        if (!newVectors)
+        {
+            if (newTmp != data->graph_FillTmp)
+                FreeMem(newTmp, bytes);
+            return FALSE;
+        }
+    }
+
+    if (newTmp != data->graph_FillTmp)
+    {
+        if (data->graph_FillTmp)
+            FreeMem(data->graph_FillTmp, data->graph_FillTmpBytes);
+        data->graph_FillTmp = newTmp;
+        data->graph_FillTmpBytes = bytes;
+    }
+    if (newVectors != data->graph_FillVectors)
+    {
+        if (data->graph_FillVectors)
+            FreeVec(data->graph_FillVectors);
+        data->graph_FillVectors = newVectors;
+        data->graph_FillVectorBytes = vectorBytes;
+    }
+    return TRUE;
+}
+
+static void Graph__ReleasePenReservation(Object *obj, WORD *pen, UBYTE *owned)
+{
+    if (*owned && *pen >= 0)
+        ReleasePen(_screen(obj)->ViewPort.ColorMap, *pen);
+    if (*owned)
+        *pen = -1;
+    *owned = FALSE;
+}
+
+static void Graph__AcquireSourcePens(Object *obj, struct Graph_SourceDATA *source)
+{
+    ULONG *rgb;
+    LONG pen;
+
+    if (source->gs_PlotPenSrc && !source->gs_PlotPenOwned)
+    {
+        rgb = (ULONG *)source->gs_PlotPenSrc;
+        pen = ObtainBestPen(_screen(obj)->ViewPort.ColorMap,
+                            rgb[0], rgb[1], rgb[2],
+                            OBP_Precision, PRECISION_GUI,
+                            OBP_FailIfBad, FALSE, TAG_DONE);
+        if (pen >= 0)
+        {
+            source->gs_PlotPen = pen;
+            source->gs_PlotPenOwned = TRUE;
+        }
+    }
+    if (source->gs_PlotFillPenSrc && !source->gs_PlotFillPenOwned)
+    {
+        rgb = (ULONG *)source->gs_PlotFillPenSrc;
+        pen = ObtainBestPen(_screen(obj)->ViewPort.ColorMap,
+                            rgb[0], rgb[1], rgb[2],
+                            OBP_Precision, PRECISION_GUI,
+                            OBP_FailIfBad, FALSE, TAG_DONE);
+        if (pen >= 0)
+        {
+            source->gs_PlotFillPen = pen;
+            source->gs_PlotFillPenOwned = TRUE;
+        }
+    }
+}
+
+static void Graph__ClearEntries(struct Graph_DATA *data)
+{
+    IPTR i;
+    data->graph_EntryPtr = 0;
+    data->graph_Tick = 0;
+    for (i = 0; i < data->graph_SourceCount; i++)
+        if (data->graph_Sources[i]->gs_Entries && data->graph_EntryCount)
+            memset(data->graph_Sources[i]->gs_Entries, 0,
+                   data->graph_EntryCount * sizeof(IPTR));
+}
+
+static void Graph__StopTimer(Object *obj, struct Graph_DATA *data)
+{
+    if (data->graph_Flags & GRAPHF_HANDLER)
+    {
+        DoMethod(_app(obj), MUIM_Application_RemInputHandler,
+                 (IPTR)&data->graph_IHN);
+        data->graph_Flags &= ~GRAPHF_HANDLER;
+    }
+}
+
+static void Graph__StartTimer(Object *obj, struct Graph_DATA *data)
+{
+    if ((data->graph_Flags & (GRAPHF_SETUP | GRAPHF_PERIODIC)) ==
+        (GRAPHF_SETUP | GRAPHF_PERIODIC) &&
+        !(data->graph_Flags & GRAPHF_HANDLER) &&
+        data->graph_IHN.ihn_Millis)
+    {
+        DoMethod(_app(obj), MUIM_Application_AddInputHandler,
+                 (IPTR)&data->graph_IHN);
+        data->graph_Flags |= GRAPHF_HANDLER;
+    }
+}
+
+/* Forward completed periodic ticks to the enabled MUI redraw notification. */
 AROS_UFH3(
     void, Graph__HookFunc_DrawUpdateFunc,
     AROS_UFHA(struct Hook *,    hook,   A0),
@@ -649,19 +724,14 @@ AROS_UFH3(
 
     D(bug("[Graph] %s(0x%p)\n", __func__, obj));
 
-    MUI_Redraw(obj, MADF_DRAWUPDATE);
+    if (((struct Graph_DATA *)hook->h_Data)->graph_Flags & GRAPHF_REDRAWUPDATE)
+        MUI_Redraw(obj, MADF_DRAWUPDATE);
 
     AROS_USERFUNC_EXIT
 }
 
 /*** Methods ****************************************************************/
-/* Create the superclass with default inner margins, initialize
- * text/state/pens, request source zero, and initialize timer defaults with
- * periodic mode off. Apply the original tags through SetAttrsA. Install the
- * tick redraw hook only if automatic refresh is selected at that moment.
- * Return superclass object or NULL; subordinate allocation failures are not
- * comprehensively checked.
- */
+/* Initialize a source and default settings, then install a live-configurable redraw notification. */
 IPTR Graph__OM_NEW(Class *cl, Object *obj, struct opSet *msg)
 {
     struct Graph_DATA *data;
@@ -696,8 +766,12 @@ IPTR Graph__OM_NEW(Class *cl, Object *obj, struct opSet *msg)
         data->graph_AxisPen = -1;
         data->graph_SegmentPen = -1;
 
-        /* We always have atleast one source .. */
-        Graph__UpdateSourceArray(data, 1);
+        /* A graph without source storage must not reach drawing or sampling. */
+        if (!Graph__UpdateSourceArray(data, 1))
+        {
+            MUI_DisposeObject(obj);
+            return 0;
+        }
 
         data->graph_IHN.ihn_Flags  = MUIIHNF_TIMER;
         data->graph_IHN.ihn_Method = MUIM_Graph_Timer;
@@ -712,58 +786,65 @@ IPTR Graph__OM_NEW(Class *cl, Object *obj, struct opSet *msg)
 
         SetAttrsA(obj, msg->ops_AttrList);
 
-        if (data->graph_Flags & GRAPHF_REDRAWUPDATE)
-        {
-            D(bug("[Graph] %s: Configuring notification ... \n", __func__);)
-            data->graph_DrawUpdateHook.h_Entry = ( HOOKFUNC )Graph__HookFunc_DrawUpdateFunc;
-            DoMethod
-              (
-                obj, MUIM_Notify, MUIA_Graph_PeriodicTick, TRUE,
-                (IPTR) obj, 3,
-                MUIM_CallHook, &data->graph_DrawUpdateHook, (IPTR)NULL
-              );
-        }
+        /* Keep the notification installed. The callback consults the live
+         * ManualRefresh setting instead of relying on constructor state. */
+        data->graph_DrawUpdateHook.h_Entry = (HOOKFUNC)Graph__HookFunc_DrawUpdateFunc;
+        data->graph_DrawUpdateHook.h_Data = data;
+        DoMethod(obj, MUIM_Notify, MUIA_Graph_PeriodicTick, TRUE,
+                 (IPTR)obj, 3,
+                 MUIM_CallHook, &data->graph_DrawUpdateHook, (IPTR)NULL);
     }
 
     return (IPTR)obj;
 }
 
-/* Free each recorded sample array using shared EntryCount, then the source
- * array and copied text nodes. Delegate disposal and return its result.
- * Require prior Hide/Cleanup for pens and timer; this method does not
- * independently release those resources or repair mismatched capacities.
- */
+/* Stop a remaining input handler, release owned source memory, pens and drawing buffers. */
 IPTR Graph__OM_DISPOSE(Class *cl, Object *obj, Msg msg)
 {
     struct Graph_DATA *data = INST_DATA(cl, obj);
-    int i;
+    IPTR i;
 
-    D(bug("[Graph] %s()\n", __func__);)
-
-    if (data->graph_SourceCount > 0)
+    Graph__StopTimer(obj, data);
+    if (data->graph_Flags & GRAPHF_SHOW)
     {
-        if (data->graph_EntryCount > 0)
-        {
-            for (i = 0; i < data->graph_SourceCount; i ++)
-            {
-                FreeMem(data->graph_Sources[i].gs_Entries, sizeof(IPTR) * data->graph_EntryCount);
-            }
-        }
-        FreeMem(data->graph_Sources, sizeof(struct Graph_SourceDATA) * data->graph_SourceCount);
+        if (data->graph_BackPen >= 0)
+            ReleasePen(_screen(obj)->ViewPort.ColorMap, data->graph_BackPen);
+        if (data->graph_AxisPen >= 0)
+            ReleasePen(_screen(obj)->ViewPort.ColorMap, data->graph_AxisPen);
+        if (data->graph_SegmentPen >= 0)
+            ReleasePen(_screen(obj)->ViewPort.ColorMap, data->graph_SegmentPen);
     }
+    if (data->graph_SourceCount)
+    {
+        for (i = 0; i < data->graph_SourceCount; i++)
+        {
+            struct Graph_SourceDATA *source = data->graph_Sources[i];
+            if (data->graph_Flags & GRAPHF_SHOW)
+            {
+                Graph__ReleasePenReservation(obj, &source->gs_PlotPen,
+                                             &source->gs_PlotPenOwned);
+                Graph__ReleasePenReservation(obj, &source->gs_PlotFillPen,
+                                             &source->gs_PlotFillPenOwned);
+            }
+            if (source->gs_Entries)
+                FreeMem(source->gs_Entries,
+                        data->graph_EntryCount * sizeof(IPTR));
+            FreeMem(source, sizeof(*source));
+        }
+        FreeMem(data->graph_Sources,
+                data->graph_SourceCount * sizeof(*data->graph_Sources));
+    }
+    if (data->graph_FillTmp)
+        FreeMem(data->graph_FillTmp, data->graph_FillTmpBytes);
+    if (data->graph_FillVectors)
+        FreeVec(data->graph_FillVectors);
 
     Graph__FreeInfoText(cl, obj);
-
     return DoSuperMethodA(cl, obj, msg);
 }
 
 
-/* Process recognized tags sequentially and count them. Interval can issue a
- * nested EntryCount set and register/remove the timer. Text alone marks
- * direct redraw while shown. Forward original tags and return recognized
- * count plus superclass result. Allocation failures are not represented by
- * that total and no change is transactional.
- */
+/* Apply Graph tags in order; recognize each tag without promising allocation-success status. */
 IPTR Graph__OM_SET(Class *cl, Object *obj, struct opSet *msg)
 {
     struct Graph_DATA *data = INST_DATA(cl, obj);
@@ -782,11 +863,12 @@ IPTR Graph__OM_SET(Class *cl, Object *obj, struct opSet *msg)
                 count++;
                 break;
 
-            /* Aggreagte mode plots the sum of source entries/no of sources */
+            /* Aggregate mode plots the mean of the available source values. */
             case MUIA_Graph_Aggregate:
                 data->graph_Flags &= ~GRAPHF_AGGR;
                 if (tag->ti_Data)
                     data->graph_Flags |= GRAPHF_AGGR;
+                redraw = TRUE;
                 count++;
                 break;
 
@@ -799,47 +881,82 @@ IPTR Graph__OM_SET(Class *cl, Object *obj, struct opSet *msg)
 
             /* Set the input value ceiling and stepping */
             case MUIA_Graph_ValueCeiling:
-                data->graph_ValCeiling = tag->ti_Data;
+                if (tag->ti_Data)
+                {
+                    data->graph_ValCeiling = tag->ti_Data;
+                    redraw = TRUE;
+                }
                 count++;
                 break;
 
             case MUIA_Graph_ValueStep:
-                data->graph_ValStepping = tag->ti_Data;
+                if (tag->ti_Data)
+                {
+                    data->graph_ValStepping = tag->ti_Data;
+                    redraw = TRUE;
+                }
                 count++;
                 break;
 
             /* Set the period ceiling and stepping */
             case MUIA_Graph_PeriodCeiling:
-                data->graph_PeriodCeiling = tag->ti_Data;
+                if (tag->ti_Data)
+                {
+                    IPTR entries = data->graph_IHN.ihn_Millis ?
+                        tag->ti_Data / data->graph_IHN.ihn_Millis : 0;
+                    if (!entries)
+                        entries = 1;
+                    if (!(data->graph_Flags & GRAPHF_PERIODIC) ||
+                        Graph__ResizeEntries(data, entries))
+                    {
+                        data->graph_PeriodCeiling = tag->ti_Data;
+                        redraw = TRUE;
+                    }
+                }
                 count++;
                 break;
 
             case MUIA_Graph_PeriodStep:
-                data->graph_PeriodStepping = tag->ti_Data;
+                if (tag->ti_Data)
+                {
+                    data->graph_PeriodStepping = tag->ti_Data;
+                    redraw = TRUE;
+                }
                 count++;
                 break;
 
-            /* Set or turn off periodic update mode */
             case MUIA_Graph_PeriodInterval:
-                if (tag->ti_Data)
+                if (tag->ti_Data &&
+                    (data->graph_Flags & GRAPHF_PERIODIC) &&
+                    data->graph_IHN.ihn_Millis == tag->ti_Data)
                 {
-                    data->graph_Flags |= GRAPHF_PERIODIC;
-                    data->graph_IHN.ihn_Millis = tag->ti_Data;
-                    SET(obj, MUIA_Graph_EntryCount, (data->graph_PeriodCeiling/ data->graph_IHN.ihn_Millis));
-                    if ((data->graph_Flags & GRAPHF_SETUP) && !(data->graph_Flags & GRAPHF_HANDLER))
+                    /* No change: avoid unhooking/reinstalling a live timer. */
+                }
+                else if (tag->ti_Data)
+                {
+                    IPTR entries = data->graph_PeriodCeiling / tag->ti_Data;
+                    if (!entries)
+                        entries = 1;
+                    if (Graph__ResizeEntries(data, entries))
                     {
-                        data->graph_Flags |= GRAPHF_HANDLER;
-                        DoMethod(_app(obj), MUIM_Application_AddInputHandler, (IPTR) &data->graph_IHN);
+                        /* Stop before changing the live handler node. A changed
+                         * sample interval invalidates old timestamps. */
+                        Graph__StopTimer(obj, data);
+                        if (data->graph_IHN.ihn_Millis != tag->ti_Data)
+                            Graph__ClearEntries(data);
+                        data->graph_IHN.ihn_Millis = tag->ti_Data;
+                        data->graph_Flags |= GRAPHF_PERIODIC | GRAPHF_FIXEDLEN;
+                        Graph__StartTimer(obj, data);
+                        redraw = TRUE;
                     }
                 }
                 else
                 {
+                    Graph__StopTimer(obj, data);
                     data->graph_Flags &= ~GRAPHF_PERIODIC;
-                    if ((data->graph_Flags & GRAPHF_SETUP) && (data->graph_Flags & GRAPHF_HANDLER))
-                    {
-                        DoMethod(_app(obj), MUIM_Application_RemInputHandler, (IPTR) &data->graph_IHN);
-                        data->graph_Flags &= ~GRAPHF_HANDLER;
-                    }
+                    data->graph_IHN.ihn_Millis = 0;
+                    data->graph_Tick = 0;
+                    redraw = TRUE;
                 }
                 count++;
                 break;
@@ -848,17 +965,16 @@ IPTR Graph__OM_SET(Class *cl, Object *obj, struct opSet *msg)
             case MUIA_Graph_EntryCount:
                 if (tag->ti_Data)
                 {
-                    int i;
-                    for (i = 0; i < data->graph_SourceCount; i ++)
+                    if (Graph__ResizeEntries(data, tag->ti_Data))
                     {
-                        Graph__UpdateSourceEntries(data, i, tag->ti_Data);
+                        data->graph_Flags |= GRAPHF_FIXEDLEN;
+                        redraw = TRUE;
                     }
-                    data->graph_EntryCount = tag->ti_Data;
-                    data->graph_Flags |= GRAPHF_FIXEDLEN;
                 }
                 else
                 {
                     data->graph_Flags &= ~GRAPHF_FIXEDLEN;
+                    redraw = TRUE;
                 }
                 count++;
                 break;
@@ -884,11 +1000,7 @@ IPTR Graph__OM_SET(Class *cl, Object *obj, struct opSet *msg)
 }
 
 
-/* Return ValueCeiling, stored EntryCount, or stored PeriodInterval with
- * TRUE; delegate all other attributes. Counts do not describe initialized
- * sample population, and the interval remains stored after disabling
- * periodic mode. No other Graph attribute has a local getter.
- */
+/* Handle only ValueCeiling, EntryCount and PeriodInterval locally; delegate other attributes. */
 IPTR Graph__OM_GET(Class *cl, Object *obj, struct opGet *msg)
 {
     struct Graph_DATA *data = INST_DATA(cl, obj);
@@ -907,7 +1019,8 @@ IPTR Graph__OM_GET(Class *cl, Object *obj, struct opGet *msg)
             break;
 
         case MUIA_Graph_PeriodInterval:
-            *(msg->opg_Storage) = data->graph_IHN.ihn_Millis;
+            *(msg->opg_Storage) = (data->graph_Flags & GRAPHF_PERIODIC) ?
+                                   data->graph_IHN.ihn_Millis : 0;
             break;
 
         default:
@@ -918,11 +1031,7 @@ IPTR Graph__OM_GET(Class *cl, Object *obj, struct opGet *msg)
     return retval;
 }
 
-/* Set up the superclass, returning FALSE on its failure. Register the
- * Application timer if periodic and not already marked registered, then set
- * the setup flag. Return TRUE without checking registration success.
- * Hidden-state transitions do not own this timer.
- */
+/* Complete superclass Setup before registering an enabled periodic input handler. */
 IPTR Graph__MUIM_Setup(Class *cl, Object *obj, struct MUIP_Setup *msg)
 {
     struct Graph_DATA *data = INST_DATA(cl, obj);
@@ -931,592 +1040,493 @@ IPTR Graph__MUIM_Setup(Class *cl, Object *obj, struct MUIP_Setup *msg)
 
     if (!DoSuperMethodA(cl, obj, (Msg)msg)) return FALSE;
 
-    if ((data->graph_Flags & GRAPHF_PERIODIC) && !(data->graph_Flags & GRAPHF_HANDLER))
-    {
-        data->graph_Flags |= GRAPHF_HANDLER;
-        DoMethod(_app(obj), MUIM_Application_AddInputHandler, (IPTR) &data->graph_IHN);
-    }
-
+    /* Register the handler only after the superclass has completed setup. */
     data->graph_Flags |= GRAPHF_SETUP;
+    Graph__StartTimer(obj, data);
 
     return TRUE;
 }
 
 
-/* Show the superclass and return FALSE on its failure. Obtain
- * background/axis/grid pens and source pens from borrowed RGB arrays, then
- * mark shown. Acquisition failure does not make Show fail. Equal line/fill
- * source pointers skip fill acquisition without assigning a shared pen
- * number. Return TRUE.
- */
+/* Acquire background and source colour reservations for the active screen. */
 IPTR Graph__MUIM_Show(Class *cl, Object *obj, struct MUIP_Setup *msg)
 {
     struct Graph_DATA *data = INST_DATA(cl, obj);
-    int i;
+    IPTR i;
 
-    D(bug("[Graph] %s()\n", __func__);)
-
-    if (!DoSuperMethodA(cl, obj, (Msg)msg)) return FALSE;
+    if (!DoSuperMethodA(cl, obj, (Msg)msg))
+        return FALSE;
 
     data->graph_BackPen = ObtainBestPen(_screen(obj)->ViewPort.ColorMap,
-                                  0xF2F2F2F2,
-                                  0xF8F8F8F8,
-                                  0xFAFAFAFA,
-                                  OBP_Precision, PRECISION_GUI,
-                                  OBP_FailIfBad, FALSE,
-                                  TAG_DONE);
-
+                              0xF2F2F2F2, 0xF8F8F8F8, 0xFAFAFAFA,
+                              OBP_Precision, PRECISION_GUI,
+                              OBP_FailIfBad, FALSE, TAG_DONE);
     data->graph_AxisPen = ObtainBestPen(_screen(obj)->ViewPort.ColorMap,
-                                  0x7A7A7A7A,
-                                  0xC5C5C5C5,
-                                  0xDEDEDEDE,
-                                  OBP_Precision, PRECISION_GUI,
-                                  OBP_FailIfBad, FALSE,
-                                  TAG_DONE);
-
+                              0x7A7A7A7A, 0xC5C5C5C5, 0xDEDEDEDE,
+                              OBP_Precision, PRECISION_GUI,
+                              OBP_FailIfBad, FALSE, TAG_DONE);
     data->graph_SegmentPen = ObtainBestPen(_screen(obj)->ViewPort.ColorMap,
-                                  0x85858585,
-                                  0xD3D3D3D3,
-                                  0xEDEDEDED,
-                                  OBP_Precision, PRECISION_GUI,
-                                  OBP_FailIfBad, FALSE,
-                                  TAG_DONE);
-
-    for (i = 0; i < data->graph_SourceCount; i ++)
-    {
-        ULONG *penSrc;
-        if (((penSrc = (ULONG *)data->graph_Sources[i].gs_PlotFillPenSrc) != NULL) &&
-            (data->graph_Sources[i].gs_PlotFillPenSrc != data->graph_Sources[i].gs_PlotPenSrc))
-            data->graph_Sources[i].gs_PlotFillPen = ObtainBestPen(_screen(obj)->ViewPort.ColorMap,
-                                  penSrc[0],
-                                  penSrc[1],
-                                  penSrc[2],
-                                  OBP_Precision, PRECISION_GUI,
-                                  OBP_FailIfBad, FALSE,
-                                  TAG_DONE);
-
-        if ((penSrc = (ULONG *)data->graph_Sources[i].gs_PlotPenSrc) != NULL)
-            data->graph_Sources[i].gs_PlotPen = ObtainBestPen(_screen(obj)->ViewPort.ColorMap,
-                                  penSrc[0],
-                                  penSrc[1],
-                                  penSrc[2],
-                                  OBP_Precision, PRECISION_GUI,
-                                  OBP_FailIfBad, FALSE,
-                                  TAG_DONE);
-    }
+                              0x85858585, 0xD3D3D3D3, 0xEDEDEDED,
+                              OBP_Precision, PRECISION_GUI,
+                              OBP_FailIfBad, FALSE, TAG_DONE);
+    for (i = 0; i < data->graph_SourceCount; i++)
+        Graph__AcquireSourcePens(obj, data->graph_Sources[i]);
 
     data->graph_Flags |= GRAPHF_SHOW;
-
     return TRUE;
 }
 
-/* Clear shown, release background/axis/grid pens and reset their sentinels.
- * Release source fill pens only when distinct from line pens, then release
- * line pens; source fields remain unchanged. Delegate Hide. This does not
- * unregister the sampling timer or reconcile independent equal-index
- * reservations.
- */
+/* Release owned screen pens and preserve caller-owned numeric pen values. */
 IPTR Graph__MUIM_Hide(Class *cl, Object *obj, struct MUIP_Cleanup *msg)
 {
     struct Graph_DATA *data = INST_DATA(cl, obj);
-    int i;
-
-    D(bug("[Graph] %s()\n", __func__);)
+    IPTR i;
 
     data->graph_Flags &= ~GRAPHF_SHOW;
-
-    if (data->graph_SegmentPen != -1)
-    {
+    if (data->graph_SegmentPen >= 0)
         ReleasePen(_screen(obj)->ViewPort.ColorMap, data->graph_SegmentPen);
-        data->graph_SegmentPen = -1;
-    }
-
-    if (data->graph_AxisPen != -1)
-    {
+    if (data->graph_AxisPen >= 0)
         ReleasePen(_screen(obj)->ViewPort.ColorMap, data->graph_AxisPen);
-        data->graph_AxisPen = -1;
-    }
-
-    if (data->graph_BackPen != -1)
-    {
+    if (data->graph_BackPen >= 0)
         ReleasePen(_screen(obj)->ViewPort.ColorMap, data->graph_BackPen);
-        data->graph_BackPen = -1;
-    }
+    data->graph_SegmentPen = -1;
+    data->graph_AxisPen = -1;
+    data->graph_BackPen = -1;
 
-    for (i = 0; i < data->graph_SourceCount; i ++)
+    for (i = 0; i < data->graph_SourceCount; i++)
     {
-        if ((data->graph_Sources[i].gs_PlotFillPen != -1) &&
-            (data->graph_Sources[i].gs_PlotFillPen != data->graph_Sources[i].gs_PlotPen))
-                ReleasePen(_screen(obj)->ViewPort.ColorMap, data->graph_Sources[i].gs_PlotFillPen);
-        if (data->graph_Sources[i].gs_PlotPen != -1)
-                ReleasePen(_screen(obj)->ViewPort.ColorMap, data->graph_Sources[i].gs_PlotPen);
+        struct Graph_SourceDATA *source = data->graph_Sources[i];
+        Graph__ReleasePenReservation(obj, &source->gs_PlotPen,
+                                     &source->gs_PlotPenOwned);
+        Graph__ReleasePenReservation(obj, &source->gs_PlotFillPen,
+                                     &source->gs_PlotFillPenOwned);
     }
-    
     return DoSuperMethodA(cl, obj, (Msg)msg);
 }
 
-/* Clear setup and remove the timer only when both periodic and handler
- * flags are set, then clear the handler flag. Delegate Cleanup and return
- * its result. Screen pens belong to Hide and are not released here.
- */
+/* Stop the input handler before delegating to superclass Cleanup. */
 IPTR Graph__MUIM_Cleanup(Class *cl, Object *obj, struct MUIP_Cleanup *msg)
 {
     struct Graph_DATA *data = INST_DATA(cl, obj);
 
-    D(bug("[Graph] %s()\n", __func__);)
-
+    Graph__StopTimer(obj, data);
     data->graph_Flags &= ~GRAPHF_SETUP;
-
-    if ((data->graph_Flags & GRAPHF_PERIODIC) && (data->graph_Flags & GRAPHF_HANDLER))
-    {
-        DoMethod(_app(obj), MUIM_Application_RemInputHandler, (IPTR) &data->graph_IHN);
-        data->graph_Flags &= ~GRAPHF_HANDLER;
-    }
-    
     return DoSuperMethodA(cl, obj, (Msg)msg);
 }
 
 
-/* Delegate measurement, then add two pixels per ceiling/step division to
- * minima and ten to defaults, using period for width and value for height.
- * Set maxima MUI_MAXMAX and return TRUE. Require nonzero steps and
- * representable products; there is no validation or text-size contribution.
- */
+/* Compute bounded preferred dimensions from the configured scale ratios. */
 IPTR Graph__MUIM_AskMinMax(Class *cl, Object *obj, struct MUIP_AskMinMax *msg)
 {
     struct Graph_DATA *data = INST_DATA(cl, obj);
-
-    D(bug("[Graph] %s()\n", __func__);)
+    IPTR x, y;
 
     DoSuperMethodA(cl, obj, (Msg)msg);
-    
-    msg->MinMaxInfo->MinWidth  += (data->graph_PeriodCeiling / data->graph_PeriodStepping) * 2;
-    msg->MinMaxInfo->MinHeight += (data->graph_ValCeiling / data->graph_ValStepping) * 2;
-    msg->MinMaxInfo->DefWidth  += (data->graph_PeriodCeiling / data->graph_PeriodStepping) * 10;
-    msg->MinMaxInfo->DefHeight += (data->graph_ValCeiling / data->graph_ValStepping) * 10;
+    x = data->graph_PeriodStepping ?
+        data->graph_PeriodCeiling / data->graph_PeriodStepping : 1;
+    y = data->graph_ValStepping ?
+        data->graph_ValCeiling / data->graph_ValStepping : 1;
+    if (x > 64) x = 64;
+    if (y > 64) y = 64;
+    if (x < 1) x = 1;
+    if (y < 1) y = 1;
+    msg->MinMaxInfo->MinWidth  += x * 2;
+    msg->MinMaxInfo->MinHeight += y * 2;
+    msg->MinMaxInfo->DefWidth  += x * 10;
+    msg->MinMaxInfo->DefHeight += y * 10;
     msg->MinMaxInfo->MaxWidth   = MUI_MAXMAX;
     msg->MinMaxInfo->MaxHeight  = MUI_MAXMAX;
-
     return TRUE;
 }
 
-/* Add a clip region when available, call the superclass, and render
- * relevant object/update requests. Draw filled series, divisions, frame,
- * line series, and centered text using configured scales and source
- * storage. Temporary fill buffers are freed on completed allocation paths.
- * Remove the added clip and return zero. Allocation failures can skip fill
- * without an error; usable arrays, positive scale divisors and valid pens
- * remain preconditions.
- */
+/* Draw bounded history, area fill, grid, frame and copied information text. */
 IPTR Graph__MUIM_Draw(Class *cl, Object *obj, struct MUIP_Draw *msg)
 {
-    struct Graph_DATA           *data = INST_DATA(cl, obj);
-    struct Graph_SourceDATA     *sourceData;
-    struct Region               *region;
-    struct Node                 *infoLine;
-    struct RastPort             *renderPort;
-    struct Rectangle            rect;
-    APTR                        clip = NULL;
-    UWORD                       pos, span = 1, offset = 0, src, objHeight, objWidth;
-
-    D(bug("[Graph] %s()\n", __func__);)
+    struct Graph_DATA *data = INST_DATA(cl, obj);
+    struct RastPort *renderPort;
+    struct Region *region;
+    struct Node *line;
+    struct Rectangle rect;
+    APTR clip = NULL;
+    IPTR sourceNo, sourceLimit, start, i, valid;
+    LONG width, height, y, x, pos;
+    double pixelsPerSample, gridPixels, phase;
+    BOOL hasData;
 
     rect.MinX = _left(obj);
     rect.MinY = _top(obj);
     rect.MaxX = _right(obj);
     rect.MaxY = _bottom(obj);
-
     region = NewRegion();
     if (region)
     {
         OrRectRegion(region, &rect);
-
         clip = MUI_AddClipRegion(muiRenderInfo(obj), region);
     }
-    
     DoSuperMethodA(cl, obj, (Msg)msg);
+    if (!(msg->flags & (MADF_DRAWOBJECT | MADF_DRAWUPDATE)))
+        goto finished;
 
-    /* Render our graph.. */
-    if ((msg->flags & (MADF_DRAWOBJECT | MADF_DRAWUPDATE)))
+    renderPort = data->graph_RastPort ? data->graph_RastPort : _rp(obj);
+    if (data->graph_RastPort)
     {
-        if (data->graph_RastPort)
+        rect.MinX = rect.MinY = 0;
+        rect.MaxX = _right(obj) - _left(obj);
+        rect.MaxY = _bottom(obj) - _top(obj);
+    }
+    width = (LONG)rect.MaxX - rect.MinX + 1;
+    height = (LONG)rect.MaxY - rect.MinY + 1;
+    if (width <= 0 || height <= 0 || !data->graph_PeriodCeiling ||
+        !data->graph_ValCeiling)
+        goto finished;
+
+    pixelsPerSample = ((double)width *
+        (data->graph_IHN.ihn_Millis ? data->graph_IHN.ihn_Millis :
+                                     data->graph_PeriodStepping)) /
+        data->graph_PeriodCeiling;
+    data->graph_PeriodSize = pixelsPerSample;
+    valid = data->graph_EntryPtr;
+    if (valid > data->graph_EntryCount)
+        valid = data->graph_EntryCount;
+    hasData = data->graph_Sources && valid && pixelsPerSample > 0.0;
+    start = 0;
+    if (hasData && ((double)valid * pixelsPerSample > width + pixelsPerSample))
+        start = valid - (IPTR)((double)width / pixelsPerSample) - 2;
+    if (start > valid)
+        start = 0;
+    sourceLimit = (data->graph_Flags & GRAPHF_AGGR) ? 1 : data->graph_SourceCount;
+
+    if (data->graph_Flags & GRAPHF_CLEAR)
+    {
+        SetAPen(renderPort, data->graph_BackPen >= 0 ? data->graph_BackPen :
+                            _pens(obj)[MPEN_BACKGROUND]);
+        RectFill(renderPort, rect.MinX, rect.MinY, rect.MaxX, rect.MaxY);
+    }
+
+    if (hasData && valid - start >= 2 &&
+        (data->graph_Flags & GRAPHF_FILL) &&
+        valid - start <= ((IPTR)-1) - 4 &&
+        Graph__EnsureFillBuffers(data, width, height, valid - start + 4))
+    {
+        struct RastPort *areaPort = CloneRastPort(renderPort);
+        if (areaPort)
         {
-            renderPort = data->graph_RastPort;
-            rect.MinX = 0;
-            rect.MinY = 0;
-            rect.MaxX = _right(obj) - _left(obj);
-            rect.MaxY = _bottom(obj) - _top(obj);
-        }
-        else
-            renderPort = _rp(obj);
+            struct AreaInfo info;
+            struct TmpRas tmp;
+            UWORD dither[] = { 0x5555, 0xAAAA };
 
-        objHeight = rect.MaxY - rect.MinY + 1;
-        objWidth = rect.MaxX - rect.MinX + 1;
+            memset(&info, 0, sizeof(info));
+            memset(data->graph_FillTmp, 0, RASSIZE(width, height));
+            memset(data->graph_FillVectors, 0, (valid - start + 4) * 5);
+            InitArea(&info, data->graph_FillVectors, valid - start + 4);
+            InitTmpRas(&tmp, data->graph_FillTmp, data->graph_FillTmpBytes);
+            areaPort->AreaInfo = &info;
+            areaPort->TmpRas = &tmp;
 
-        data->graph_PeriodSize = ((float)objWidth / data->graph_PeriodCeiling) * data->graph_IHN.ihn_Millis;
-
-        if (data->graph_Flags & GRAPHF_PERIODIC)
-            offset = data->graph_Tick / data->graph_IHN.ihn_Millis;
-
-        D(
-            bug("[Graph] %s: dimensions %d,%d\n", __func__, objWidth, objHeight);
-            bug("[Graph] %s: period size %d, span %d\n", __func__, (int)data->graph_PeriodSize, span);
-            bug("[Graph] %s: offset %d\n", __func__, offset);
-        )
-
-        // First fill the background ..
-        if (data->graph_Flags & GRAPHF_CLEAR)
-        {
-            if (data->graph_BackPen != -1)
-                SetAPen(renderPort, data->graph_BackPen);
-            RectFill(renderPort, rect.MinX, rect.MinY, rect.MaxX, rect.MaxY);
-        }
-
-        // fill the Area if wanted ...
-        if ((data->graph_Flags & GRAPHF_FILL) && (data->graph_Sources))
-        {
-            struct RastPort *drp;
-            if ((drp = CloneRastPort(renderPort)))
+            for (sourceNo = 0; sourceNo < sourceLimit; sourceNo++)
             {
-                IPTR dispDepth = GetCyberMapAttr(drp->BitMap, CYBRMATTR_DEPTH);
-                APTR tmpbuf;
-
-                if ((tmpbuf = (APTR)AllocMem(objWidth * objHeight * dispDepth, MEMF_CHIP | MEMF_CLEAR)))
+                struct Graph_SourceDATA *source = data->graph_Sources[sourceNo];
+                BOOL first = TRUE;
+                LONG firstX = 0, lastX = 0;
+                if (!source->gs_Entries)
+                    continue;
+                if (source->gs_PlotFillPen >= 0)
                 {
-                    APTR vectors;
-                    if ((vectors = AllocVec((data->graph_EntryCount + 5) * 5, MEMF_ANY | MEMF_CLEAR)))
-                    {
-                        struct AreaInfo fAInfo = {0};
-                        struct TmpRas fRasTmp;
-                        UWORD dither[] =
-                        {
-                            0x5555, 0xAAAA
-                        };
-
-                        D(bug("[Graph] %s: Filling area ...\n", __func__);)
-
-                        drp->AreaInfo = &fAInfo;
-
-                        InitTmpRas(&fRasTmp, tmpbuf, objWidth * objHeight * dispDepth);
-                        drp->TmpRas = &fRasTmp;
-
-                        InitArea( &fAInfo, vectors, data->graph_EntryCount  + 4);
-
-                        for (src = 0; src < data->graph_SourceCount; src ++)
-                        {
-                            UWORD xpos, ypos, lastpos;
-                            LONG start;
-
-                            if (data->graph_Sources[src].gs_PlotFillPen != -1)
-                                SetAPen(drp, data->graph_Sources[src].gs_PlotFillPen);
-                            else
-                            {
-                                SetAPen(drp, data->graph_Sources[src].gs_PlotPen);
-                                SetAfPt(drp, dither, 1);
-                            }
-
-                            sourceData = &data->graph_Sources[src];
-
-                            if ((start = data->graph_EntryPtr - (objWidth / data->graph_PeriodSize)) < 0)
-                                start = 0;
-
-                            ypos = (objHeight * Graph__SumValues(&sourceData->gs_Entries[start], span))/ data->graph_ValCeiling;
-                            start += span;
-
-                            if (data->graph_Flags & GRAPHF_PERIODIC)
-                                xpos = rect.MaxX - (data->graph_EntryPtr * data->graph_PeriodSize);
-                            else
-                                xpos = rect.MinX - (offset * data->graph_PeriodSize);
-
-                            AreaMove(drp, xpos, rect.MaxY);
-                            AreaDraw(drp, xpos, rect.MaxY - ypos);
-
-                            lastpos = start;
-                            for (pos = start; pos < data->graph_EntryPtr; pos += span)
-                            {
-                                ypos = (objHeight * Graph__SumValues(&sourceData->gs_Entries[pos], span))/ data->graph_ValCeiling;
-
-                                AreaDraw(drp,
-                                    xpos + (pos * data->graph_PeriodSize),
-                                    rect.MaxY - ypos);
-                                lastpos = pos;
-                            }
-                            AreaDraw(drp,
-                                    xpos + (lastpos * data->graph_PeriodSize),
-                                    rect.MaxY);
-                            AreaDraw(drp,
-                                 xpos, rect.MaxY);
-                            AreaEnd(drp);
-                        }
-                        FreeVec(vectors);
-                    }
-                    FreeMem(tmpbuf, objWidth * objHeight * dispDepth);
+                    SetAPen(areaPort, source->gs_PlotFillPen);
+                    SetAfPt(areaPort, NULL, 0);
                 }
-                drp->AreaInfo = NULL;
-                drp->TmpRas = NULL;
-                FreeRastPort(drp);
-            }
-        }
-
-        if (data->graph_Flags & GRAPHF_DRAWSEGS)
-        {
-            // Draw the segment divisions..
-            if (data->graph_SegmentPen != -1)
-                SetAPen(renderPort, data->graph_SegmentPen);
-            data->graph_SegmentSize = (objWidth * data->graph_PeriodStepping) / data->graph_PeriodCeiling;
-            if (data->graph_SegmentSize < 2.0)
-                data->graph_SegmentSize = 2.0;
-            for (pos = 0; pos <= ((data->graph_PeriodCeiling / data->graph_PeriodStepping) + 1); pos++)
-            {
-                Move(renderPort, rect.MinX + (pos * data->graph_SegmentSize) - (offset * data->graph_PeriodSize), rect.MinY);
-                Draw(renderPort, rect.MinX + (pos * data->graph_SegmentSize) - (offset * data->graph_PeriodSize), rect.MaxY);
-            }
-            data->graph_SegmentSize = (objHeight * data->graph_ValStepping) / data->graph_ValCeiling;
-            if (data->graph_SegmentSize < 2.0)
-                data->graph_SegmentSize = 2.0;
-            for (pos = rect.MaxY; pos >= rect.MinY; pos -= data->graph_SegmentSize)
-            {
-                Move(renderPort, rect.MinX, pos);
-                Draw(renderPort, rect.MaxX, pos);
-            }
-        }
-
-        if (data->graph_Flags & GRAPHF_DRAWAXIS)
-        {
-            // Draw the Axis..
-            if (data->graph_AxisPen != -1)
-                SetAPen(renderPort, data->graph_AxisPen);
-            Move(renderPort, rect.MinX, rect.MinY);
-            Draw(renderPort, rect.MaxX, rect.MinY);
-            Draw(renderPort, rect.MaxX, rect.MaxY);
-            Draw(renderPort, rect.MinX, rect.MaxY);
-            Draw(renderPort, rect.MinX, rect.MinY);
-        }
-
-        // Plot the entries..
-        if (data->graph_Sources)
-        {
-            for (src = 0; src < data->graph_SourceCount; src ++)
-            {
-                UWORD xpos, ypos;
-                LONG start;
-
-                SetAPen(renderPort, data->graph_Sources[src].gs_PlotPen);
-                sourceData = &data->graph_Sources[src];
-
-                if ((start = data->graph_EntryPtr - (objWidth / data->graph_PeriodSize)) < 0)
-                    start = 0;
-
-                ypos = (objHeight * Graph__SumValues(&sourceData->gs_Entries[start], span))/ data->graph_ValCeiling;
-                start += span;
-
-                if (data->graph_Flags & GRAPHF_PERIODIC)
-                    xpos = rect.MaxX - (data->graph_EntryPtr * data->graph_PeriodSize);
                 else
-                    xpos = rect.MinX - (offset * data->graph_PeriodSize);
-
-                if (start == 1)
-                    WritePixel(renderPort, xpos, rect.MaxY - ypos);
-
-               Move(renderPort, xpos, rect.MaxY - ypos);
-
-                for (pos = start; pos < data->graph_EntryPtr; pos += span)
                 {
-                    ypos = (objHeight * Graph__SumValues(&sourceData->gs_Entries[pos], span))/ data->graph_ValCeiling;
-
-                    Draw(renderPort,
-                        xpos + (pos * data->graph_PeriodSize),
-                        rect.MaxY - ypos);
+                    SetAPen(areaPort, source->gs_PlotPen >= 0 ?
+                            source->gs_PlotPen : _pens(obj)[MPEN_TEXT]);
+                    SetAfPt(areaPort, dither, 1);
+                }
+                for (i = start; i < valid; i++)
+                {
+                    {
+                        double sampleX = rect.MaxX -
+                            (double)(valid - i) * pixelsPerSample;
+                        x = sampleX <= rect.MinX ? rect.MinX :
+                            (sampleX >= rect.MaxX ? rect.MaxX : (LONG)sampleX);
+                    }
+                    y = rect.MaxY - Graph__SampleY(data, height - 1,
+                                                   Graph__SampleAt(data, sourceNo, i));
+                    if (first)
+                    {
+                        firstX = x;
+                        AreaMove(areaPort, x, rect.MaxY);
+                        AreaDraw(areaPort, x, y);
+                        first = FALSE;
+                    }
+                    else
+                        AreaDraw(areaPort, x, y);
+                    lastX = x;
+                }
+                if (!first)
+                {
+                    AreaDraw(areaPort, lastX, rect.MaxY);
+                    AreaDraw(areaPort, firstX, rect.MaxY);
+                    AreaEnd(areaPort);
                 }
             }
+            areaPort->AreaInfo = NULL;
+            areaPort->TmpRas = NULL;
+            FreeRastPort(areaPort);
         }
+    }
 
-        // Add the InfoText
-        pos = ((rect.MinY + rect.MaxY) /2) - ((_font(obj)->tf_YSize * data->graph_ITHeight) /2) + _font(obj)->tf_Baseline;
-
-        if (!IsListEmpty(&data->graph_InfoText))
-            SetFont(renderPort, _font(obj));
-
-        SetAPen(renderPort, _pens(obj)[MPEN_TEXT]);
-        ForeachNode(&data->graph_InfoText, infoLine)
+    if (data->graph_Flags & GRAPHF_DRAWSEGS)
+    {
+        SetAPen(renderPort, data->graph_SegmentPen >= 0 ?
+                           data->graph_SegmentPen : _pens(obj)[MPEN_SHADOW]);
+        gridPixels = (double)width * data->graph_PeriodStepping /
+                     data->graph_PeriodCeiling;
+        if (gridPixels < 2.0) gridPixels = 2.0;
+        if (gridPixels > width) gridPixels = width;
+        /* Normalize the scrolling offset to one rendered grid step.
+         * Handles steps larger than the visible period without losing lines. */
+        phase = ((data->graph_Flags & GRAPHF_PERIODIC) &&
+                 data->graph_PeriodStepping) ?
+            (gridPixels * (double)(data->graph_Tick %
+                                   data->graph_PeriodStepping) /
+             data->graph_PeriodStepping) : 0.0;
+        for (pos = 0; pos <= width / gridPixels + 1; pos++)
         {
-            UWORD txtLen = strlen(infoLine->ln_Name);
-            UWORD textWidth = TextLength(renderPort, infoLine->ln_Name, txtLen);
-
-            D(bug("[Graph] %s: pos = %d, strlen = %d, wid = %d\n", __func__, pos, txtLen, textWidth);)
-
-            if (textWidth > 0)
+            x = rect.MinX + (LONG)(pos * gridPixels - phase);
+            if (x >= rect.MinX && x <= rect.MaxX)
             {
-                Move(renderPort, ((rect.MinX + rect.MaxX) /2) - (textWidth / 2), pos);
-                Text(renderPort, (CONST_STRPTR)infoLine->ln_Name, txtLen);
-                pos += _font(obj)->tf_YSize;
+                Move(renderPort, x, rect.MinY);
+                Draw(renderPort, x, rect.MaxY);
             }
         }
-        if (renderPort != _rp(obj))
+        gridPixels = (double)height * data->graph_ValStepping /
+                     data->graph_ValCeiling;
+        if (gridPixels < 2.0) gridPixels = 2.0;
+        if (gridPixels > height) gridPixels = height;
+        for (pos = 0; pos <= height / gridPixels; pos++)
         {
-            BltBitMapRastPort(
-                renderPort->BitMap,
-                0,
-                0,
-                _rp(obj),
-                _left(obj),
-                _top(obj),
-                _right(obj) - _left(obj) + 1,
-                _bottom(obj) - _top(obj) + 1,
-                0x0C0 );
+            y = rect.MaxY - (LONG)(pos * gridPixels);
+            Move(renderPort, rect.MinX, y);
+            Draw(renderPort, rect.MaxX, y);
         }
     }
-    if (region)
+
+    if (data->graph_Flags & GRAPHF_DRAWAXIS)
     {
-        MUI_RemoveClipRegion(muiRenderInfo(obj), clip);
+        SetAPen(renderPort, data->graph_AxisPen >= 0 ?
+                           data->graph_AxisPen : _pens(obj)[MPEN_TEXT]);
+        Move(renderPort, rect.MinX, rect.MinY);
+        Draw(renderPort, rect.MaxX, rect.MinY);
+        Draw(renderPort, rect.MaxX, rect.MaxY);
+        Draw(renderPort, rect.MinX, rect.MaxY);
+        Draw(renderPort, rect.MinX, rect.MinY);
     }
 
-    D(bug("[Graph] %s: done\n", __func__);)
+    if (hasData)
+    {
+        for (sourceNo = 0; sourceNo < sourceLimit; sourceNo++)
+        {
+            struct Graph_SourceDATA *source = data->graph_Sources[sourceNo];
+            BOOL first = TRUE;
+            if (!source->gs_Entries)
+                continue;
+            SetAPen(renderPort, source->gs_PlotPen >= 0 ?
+                               source->gs_PlotPen : _pens(obj)[MPEN_TEXT]);
+            for (i = start; i < valid; i++)
+            {
+                {
+                    double sampleX = rect.MaxX -
+                        (double)(valid - i) * pixelsPerSample;
+                    x = sampleX <= rect.MinX ? rect.MinX :
+                        (sampleX >= rect.MaxX ? rect.MaxX : (LONG)sampleX);
+                }
+                y = rect.MaxY - Graph__SampleY(data, height - 1,
+                                               Graph__SampleAt(data, sourceNo, i));
+                if (first)
+                {
+                    WritePixel(renderPort, x, y);
+                    Move(renderPort, x, y);
+                    first = FALSE;
+                }
+                else
+                    Draw(renderPort, x, y);
+            }
+        }
+    }
 
+    if (!IsListEmpty(&data->graph_InfoText))
+        SetFont(renderPort, _font(obj));
+    SetAPen(renderPort, _pens(obj)[MPEN_TEXT]);
+    pos = rect.MinY + (height - _font(obj)->tf_YSize * data->graph_ITHeight)/2
+          + _font(obj)->tf_Baseline;
+    ForeachNode(&data->graph_InfoText, line)
+    {
+        LONG length = strlen(line->ln_Name);
+        LONG textWidth = TextLength(renderPort, line->ln_Name, length);
+        if (textWidth > 0)
+        {
+            Move(renderPort, rect.MinX + (width - textWidth)/2, pos);
+            Text(renderPort, (CONST_STRPTR)line->ln_Name, length);
+            pos += _font(obj)->tf_YSize;
+        }
+    }
+
+    if (renderPort != _rp(obj))
+    {
+        BltBitMapRastPort(renderPort->BitMap, 0, 0, _rp(obj),
+                          _left(obj), _top(obj), width, height, 0x0C0);
+    }
+
+finished:
+    if (region)
+        MUI_RemoveClipRegion(muiRenderInfo(obj), clip);
     return 0;
 }
 
-/* Grow the source array to SourceNo+1 when needed, then return the indexed
- * internal record address. Do not check growth success or validate
- * intermediate initialization. The borrowed handle is invalidated by later
- * successful array reallocation or disposal; it is not a stable external
- * identifier.
- */
-IPTR Graph__MUIM_Graph_GetSourceHandle(Class *cl, Object *obj, struct MUIP_Graph_GetSourceHandle *msg)
+/* Grow records transactionally and return a stable, borrowed source pointer. */
+IPTR Graph__MUIM_Graph_GetSourceHandle(Class *cl, Object *obj,
+                                     struct MUIP_Graph_GetSourceHandle *msg)
 {
-    struct Graph_DATA *data;
-    IPTR retVal = 0;
+    struct Graph_DATA *data = INST_DATA(cl, obj);
 
-    D(bug("[Graph] %s(%d)\n", __func__, msg->SourceNo);)
+    if (msg->SourceNo == (ULONG)-1)
+        return 0;
+    if (msg->SourceNo >= data->graph_SourceCount &&
+        !Graph__UpdateSourceArray(data, (IPTR)msg->SourceNo + 1))
+        return 0;
 
-    data = INST_DATA(cl, obj);
-    if (msg->SourceNo >= data->graph_SourceCount)
-        Graph__UpdateSourceArray(data, (msg->SourceNo + 1));
-
-    retVal = (IPTR)&data->graph_Sources[msg->SourceNo];
-
-    return retVal;
+    return (IPTR)data->graph_Sources[msg->SourceNo];
 }
 
-/* Assign the selected hook, RGB pointer, or WORD pen directly through an
- * unchecked source handle. Pen replacements release prior reservations
- * using the current screen. FillPenSrc incorrectly writes the line-pen
- * field. Return zero for all selectors without requesting redraw or
- * reporting failure.
- */
-IPTR Graph__MUIM_Graph_SetSourceAttrib(Class *cl, Object *obj, struct MUIP_Graph_SetSourceAttrib *msg)
+/* Validate borrowed handle identity before changing Hook or pen configuration. */
+IPTR Graph__MUIM_Graph_SetSourceAttrib(Class *cl, Object *obj,
+                                     struct MUIP_Graph_SetSourceAttrib *msg)
 {
-    struct Graph_SourceDATA *dataSource = (struct Graph_SourceDATA *)msg->SourceHandle;
+    struct Graph_DATA *data = INST_DATA(cl, obj);
+    struct Graph_SourceDATA *source = (struct Graph_SourceDATA *)msg->SourceHandle;
+    IPTR i;
 
-    D(bug("[Graph] %s()\n", __func__);)
+    /* Reject stale, foreign or null borrowed handles without dereferencing. */
+    for (i = 0; i < data->graph_SourceCount; i++)
+        if (source && data->graph_Sources[i] == source)
+            break;
+    if (i == data->graph_SourceCount)
+        return 0;
 
     switch (msg->Attrib)
     {
         case MUIV_Graph_Source_ReadHook:
-            dataSource->gs_ReadHook = (struct Hook *)msg->AttribVal;
+            source->gs_ReadHook = (struct Hook *)msg->AttribVal;
             break;
         case MUIV_Graph_Source_PenSrc:
-            dataSource->gs_PlotPenSrc = msg->AttribVal;
+            if (data->graph_Flags & GRAPHF_SHOW)
+                Graph__ReleasePenReservation(obj, &source->gs_PlotPen,
+                                             &source->gs_PlotPenOwned);
+            /* The former borrowed pen must not survive a mode switch, even
+             * when RGB pen acquisition later fails. */
+            source->gs_PlotPen = -1;
+            source->gs_PlotPenSrc = msg->AttribVal;
+            if ((data->graph_Flags & GRAPHF_SHOW) && msg->AttribVal)
+                Graph__AcquireSourcePens(obj, source);
             break;
         case MUIV_Graph_Source_Pen:
-            if (dataSource->gs_PlotPen != -1)
-                ReleasePen(_screen(obj)->ViewPort.ColorMap, dataSource->gs_PlotPen);
-            dataSource->gs_PlotPen = (WORD)msg->AttribVal;
+            if (data->graph_Flags & GRAPHF_SHOW)
+                Graph__ReleasePenReservation(obj, &source->gs_PlotPen,
+                                             &source->gs_PlotPenOwned);
+            source->gs_PlotPenSrc = 0;
+            source->gs_PlotPen = (WORD)msg->AttribVal;
             break;
         case MUIV_Graph_Source_FillPenSrc:
-            dataSource->gs_PlotPen = msg->AttribVal;
+            if (data->graph_Flags & GRAPHF_SHOW)
+                Graph__ReleasePenReservation(obj, &source->gs_PlotFillPen,
+                                             &source->gs_PlotFillPenOwned);
+            source->gs_PlotFillPen = -1;
+            source->gs_PlotFillPenSrc = msg->AttribVal;
+            if ((data->graph_Flags & GRAPHF_SHOW) && msg->AttribVal)
+                Graph__AcquireSourcePens(obj, source);
             break;
         case MUIV_Graph_Source_FillPen:
-            if (dataSource->gs_PlotFillPen != -1)
-                ReleasePen(_screen(obj)->ViewPort.ColorMap, dataSource->gs_PlotFillPen);
-            dataSource->gs_PlotFillPen = (WORD)msg->AttribVal;
+            if (data->graph_Flags & GRAPHF_SHOW)
+                Graph__ReleasePenReservation(obj, &source->gs_PlotFillPen,
+                                             &source->gs_PlotFillPenOwned);
+            source->gs_PlotFillPenSrc = 0;
+            source->gs_PlotFillPen = (WORD)msg->AttribVal;
             break;
     }
-
+    if (data->graph_Flags & GRAPHF_SHOW)
+        MUI_Redraw(obj, MADF_DRAWUPDATE);
     return 0;
 }
 
-/* Return zero without changing any instance state. This TODO method does
- * not clear history, rewind indices, free sources, stop timers, or request
- * drawing; callers must not interpret its return as successful reset.
- */
+/* Clear all recorded values and tick phase without disposing source configuration. */
 IPTR Graph__MUIM_Graph_Reset(Class *cl, Object *obj, Msg msg)
 {
     D(bug("[Graph] %s()\n", __func__);)
 
-    //TODO: Implement Graph Reset
+    struct Graph_DATA *data = INST_DATA(cl, obj);
 
+    Graph__ClearEntries(data);
+    if (data->graph_Flags & GRAPHF_SHOW)
+        MUI_Redraw(obj, MADF_DRAWUPDATE);
     return 0;
 }
 
-/* Advance tick phase by the stored interval, with a single strict-greater-
- * than step subtraction. If periodic, prepare fixed/nonfixed slots, call
- * each read hook synchronously, advance shared position and send
- * PeriodicTick TRUE. Storage growth failures are ignored. Return zero;
- * require stable source/storage lifetimes throughout callbacks.
- */
+/* Read active source hooks into bounded history and dispatch PeriodicTick. */
 IPTR Graph__MUIM_Graph_Timer(Class *cl, Object *obj, Msg msg)
 {
-    struct Graph_DATA *data;
-    int i;
+    struct Graph_DATA *data = INST_DATA(cl, obj);
+    IPTR i;
+    BOOL move = FALSE;
 
-    D(bug("[Graph] %s()\n", __func__);)
+    if (!(data->graph_Flags & GRAPHF_PERIODIC) ||
+        !data->graph_IHN.ihn_Millis || !data->graph_SourceCount ||
+        !data->graph_Sources || !data->graph_PeriodStepping)
+        return 0;
 
-    data = INST_DATA(cl, obj);
+    if (data->graph_IHN.ihn_Millis >= data->graph_PeriodStepping ||
+        data->graph_Tick >= data->graph_PeriodStepping - data->graph_IHN.ihn_Millis)
+        data->graph_Tick = 0;
+    else
+        data->graph_Tick += data->graph_IHN.ihn_Millis;
 
-    if ((data->graph_Tick += data->graph_IHN.ihn_Millis) > data->graph_PeriodStepping)
-        data->graph_Tick -= data->graph_PeriodStepping;
-
-    if (data->graph_Flags & GRAPHF_PERIODIC)
+    if (data->graph_Flags & GRAPHF_FIXEDLEN)
     {
-        if (data->graph_SourceCount > 0)
+        if (!data->graph_EntryCount)
+            return 0;
+        if (data->graph_EntryPtr >= data->graph_EntryCount)
         {
-            BOOL updateEntries = FALSE, updated = FALSE, move = FALSE;
-
-            if (data->graph_Flags & GRAPHF_FIXEDLEN)
-            {
-                if (data->graph_EntryPtr >= data->graph_EntryCount)
-                {
-                    data->graph_EntryPtr = data->graph_EntryCount - 1;
-                    move = TRUE;
-                }
-            }
-            else
-            {
-                if (!(data->graph_EntryCount) || (data->graph_EntryPtr >= data->graph_EntryCount))
-                    updateEntries = TRUE;
-            }
-
-            D(bug("[Graph] %s: reading entry %d\n", __func__, data->graph_EntryPtr);)
-
-            for (i = 0; i < data->graph_SourceCount; i ++)
-            {
-                if (data->graph_Sources[i].gs_ReadHook)
-                {
-                    if (updateEntries)
-                    {
-                        Graph__UpdateSourceEntries(data, i, (data->graph_EntryPtr + 1));
-                        updated = TRUE;
-                    }
-
-                    if (move)
-                    {
-                        CopyMem(&data->graph_Sources[i].gs_Entries[1], &data->graph_Sources[i].gs_Entries[0], sizeof(IPTR) * (data->graph_EntryCount - 1));
-                    }
-
-                    D(bug("[Graph] %s: source %d entries @ 0x%p\n", __func__, i, data->graph_Sources[i].gs_Entries);)
-                    CALLHOOKPKT(data->graph_Sources[i].gs_ReadHook,
-                        (APTR)&data->graph_Sources[i].gs_Entries[data->graph_EntryPtr],
-                        data->graph_Sources[i].gs_ReadHook->h_Data);
-                }
-            }
-            if (updated)
-                data->graph_EntryCount++;
-            data->graph_EntryPtr++;
+            data->graph_EntryPtr = data->graph_EntryCount - 1;
+            move = TRUE;
         }
-
-        SET(obj, MUIA_Graph_PeriodicTick, TRUE);
     }
-    
+    else if (data->graph_EntryPtr >= data->graph_EntryCount)
+    {
+        IPTR next = data->graph_EntryCount ? data->graph_EntryCount : 16;
+        if (next == data->graph_EntryCount)
+        {
+            if (next > ((IPTR)-1) / 2)
+                return 0;
+            next *= 2;
+        }
+        if (!Graph__ResizeEntries(data, next))
+            return 0;
+    }
+
+    for (i = 0; i < data->graph_SourceCount; i++)
+    {
+        struct Graph_SourceDATA *source = data->graph_Sources[i];
+        if (!source->gs_Entries)
+            continue;
+        if (move && data->graph_EntryCount > 1)
+            memmove(source->gs_Entries, source->gs_Entries + 1,
+                    (data->graph_EntryCount - 1) * sizeof(IPTR));
+        source->gs_Entries[data->graph_EntryPtr] = 0;
+        if (source->gs_ReadHook)
+            CALLHOOKPKT(source->gs_ReadHook,
+                        (APTR)&source->gs_Entries[data->graph_EntryPtr],
+                        source->gs_ReadHook->h_Data);
+    }
+    data->graph_EntryPtr++;
+    SET(obj, MUIA_Graph_PeriodicTick, TRUE);
     return 0;
 }
