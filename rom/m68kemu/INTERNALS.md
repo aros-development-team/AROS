@@ -621,7 +621,11 @@ The library tables together hold 395 entries.
 - `ReadArgs`/`FreeArgs`: the result array is built natively and copied into a
   containment block (`rdargs_blocks[M68KEMU_MAX_RDARGS]`); strings and arrays are
   copied by template kind
-- Packets: `DoPkt`, `SendPkt`, `WaitPkt`, `ReplyPkt`, `GetDeviceProc`/`FreeDeviceProc`
+- Packets: `DoPkt`, `SendPkt`, `WaitPkt`, `ReplyPkt`, `GetDeviceProc`/`FreeDeviceProc`.
+  `SendPkt`, `ReplyPkt` and `FreeDosObject` (for types other than
+  `DOS_FIB` and `DOS_EXALLCONTROL`) hand native DOS only native objects (a
+  handle or a 68k copy); an object, packet or port in the program's memory
+  has the 68k layout, so the call is refused with a line in the log
 
 **intuition.library** (`m68kemu_thunks.c`, `m68kemu_boopsi.c`)
 

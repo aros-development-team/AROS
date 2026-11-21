@@ -49,6 +49,14 @@ clean:
 
 .PHONY: all test test-memheader test-memheader-sanitize test-openlibrary-versions test-openlibrary-versions-sanitize test-memory-bounds test-memory-bounds-sanitize clean
 
+# The thunk tables against the library interfaces; no compiler is needed.
+test: test-thunk-tables
+
+test-thunk-tables:
+	$(PYTHON) "$(TEST_DIR)/regressions/run_thunk_tables.py"
+
+.PHONY: test-thunk-tables
+
 # The full host suite already requires this Moira checkout.
 LIBRARY_LOADING_ARGS ?=
 test: test-library-loading-versions
