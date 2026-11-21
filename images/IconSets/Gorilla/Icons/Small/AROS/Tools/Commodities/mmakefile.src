@@ -3,7 +3,7 @@
 include $(SRCDIR)/config/aros.cfg
 
 ICONS := AltKeyQ ASCIITable AutoPoint Blanker ClickToFront DepthMenu Exchange \
-         FKey NoCapsLock Opaque  
+         FKey NetServices NoCapsLock Opaque
 
 #MM- iconset-GorillaSmall-wbench-icons-aros-clean : iconset-GorillaSmall-wbench-icons-aros-tools-commodities-clean
 #MM- iconset-GorillaSmall-wbench-icons-aros : iconset-GorillaSmall-wbench-icons-aros-tools-commodities
