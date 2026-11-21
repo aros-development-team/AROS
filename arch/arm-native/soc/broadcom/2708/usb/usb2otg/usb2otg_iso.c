@@ -457,9 +457,10 @@ static BOOL iso_halted(struct USB2OTGUnit *unit, struct USB2OTGIso *is, ULONG in
  * Move the bound endpoint on, from the SOF or the previous halt: start a
  * packet that is due, or (split) issue the sequence's next transaction.
  * is_Next keeps it to one packet an interval; ODDFRM holds the channel to
- * the target. hu_Lock held. FALSE if nothing is queued.
+ * the target. hu_Lock held. FALSE if nothing is queued; *done is set if a
+ * request finished.
  */
-static BOOL iso_kick(struct USB2OTGUnit *unit, struct USB2OTGIso *is, UWORD now)
+static BOOL iso_kick(struct USB2OTGUnit *unit, struct USB2OTGIso *is, UWORD now, BOOL *done)
 {
     UWORD target = (now + 1) & USB2OTG_HFNUM_MASK;
 
@@ -484,8 +485,9 @@ static BOOL iso_kick(struct USB2OTGUnit *unit, struct USB2OTGIso *is, UWORD now)
         if ((now >> 3) != is->is_Frame)
         {
             is->is_DropLate++;
+            /* The caller Causes once hu_Lock is released */
             if (iso_split_drop(unit, is))
-                FNAME_DEV(Cause)(unit->hu_USB2OTGBase, &unit->hu_PendingInt);
+                *done = TRUE;
             return TRUE;
         }
         iso_arm_split(is);
@@ -506,6 +508,9 @@ static BOOL iso_kick(struct USB2OTGUnit *unit, struct USB2OTGIso *is, UWORD now)
 
     if (!is->is_Split)
     {
+        /* Room in the periodic request queue, or the next SOF */
+        if (((rd32le(USB2OTG_HOSTFIFOSTATUS) >> 16) & 0xff) < 2)
+            return TRUE;
         /* Behind (a slow start or a stall): restart from here, no burst */
         if (!iso_frame_le(target, is->is_Next))
             is->is_Next = target;
@@ -561,21 +566,23 @@ void usb2otg_iso_sof(struct USB2OTGUnit *unit, ULONG hfnum)
         /* A transaction whose halt never came must not stop the stream */
         if (is->is_Armed && ++is->is_Age >= USB2OTG_ISO_STUCK)
         {
-            if (is->is_Age == USB2OTG_ISO_STUCK)
+            /* Direct periodic channels halt on their own; CHDIS only for splits */
+            if (is->is_Age == USB2OTG_ISO_STUCK && is->is_Split)
                 wr32le(USB2OTG_CHANNEL_REG(is->is_Chan, CHARBASE),
                     rd32le(USB2OTG_CHANNEL_REG(is->is_Chan, CHARBASE)) |
                     USB2OTG_HOSTCHAR_ENABLE | USB2OTG_HOSTCHAR_DISABLE);
             else if (is->is_Age >= 2 * USB2OTG_ISO_STUCK)
             {
-                bug("[USB2OTG:ISO] chan %d never halted, packet dropped\n", (int)is->is_Chan);
+                bug("[USB2OTG:ISO] chan %d never halted, packet dropped (HPTX %08x)\n", (int)is->is_Chan,
+                    rd32le(USB2OTG_HOSTFIFOSTATUS));
                 is->is_Armed = FALSE;
-                if (iso_split_drop(unit, is))
+                if (is->is_Split ? iso_split_drop(unit, is) : iso_packet_done(unit, is, FALSE, 0))
                     wake = TRUE;
             }
             continue;
         }
 
-        if (!iso_kick(unit, is, now) && ++is->is_Idle > USB2OTG_ISO_LINGER)
+        if (!iso_kick(unit, is, now, &wake) && ++is->is_Idle > USB2OTG_ISO_LINGER)
         {
             /* Not just a slow requeue: hand the channel back, split state cleared */
             bug("[USB2OTG:ISO] dev %d ep %d %s%s: %u packets, %u lost (split: out %u, in-ss %u, in-cs %u, late %u)\n",
@@ -626,7 +633,7 @@ void usb2otg_iso_chan_irq(struct USB2OTGUnit *unit, int chan, ULONG intr)
     done = iso_halted(unit, is, is->is_Pending, now);
     /* Direct: the next packet now, in case the SOF that would arm it is late */
     if (!is->is_Split)
-        iso_kick(unit, is, now);
+        iso_kick(unit, is, now, &done);
 #if defined(__AROSEXEC_SMP__)
     KrnSpinUnLock(&unit->hu_Lock);
 #endif
