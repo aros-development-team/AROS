@@ -867,6 +867,7 @@ aros_cxxflags_gnu03
 aros_cxxflags_cxx03
 aros_cxxflags_gnu98
 aros_cxxflags_cxx98
+aros_cflags_strict_align
 aros_cflags_no_jump_tables
 aros_cflags_gnu17
 aros_cflags_c17
@@ -4026,6 +4027,34 @@ rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
 printf "%s\n" "$aros_cgnu17" >&6; }
 if test "x-$aros_cgnu17" = "x-yes" ; then
     aros_cflags_gnu17=-std=gnu17
+fi
+
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether ${CC} supports -mstrict-align" >&5
+printf %s "checking whether ${CC} supports -mstrict-align... " >&6; }
+CFLAGS=-mstrict-align
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main (void)
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"
+then :
+  aros_strict_align="yes"
+else case e in #(
+  e) aros_strict_align="no" ;;
+esac
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $aros_strict_align" >&5
+printf "%s\n" "$aros_strict_align" >&6; }
+if test "x-$aros_strict_align" = "x-yes" ; then
+    aros_cflags_strict_align=-mstrict-align
 fi
 
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether ${CC} supports -fno-jump-tables" >&5
@@ -9192,6 +9221,7 @@ fi
 rm -f $AROS_DEVELOPER/include/__testsincdir.h
 
 #
+
 
 
 

@@ -55,8 +55,19 @@ static inline elf_uintptr_t elf_read_uintptr(const void *p)
 uint32_t        int_shnum;
 uint32_t        int_shstrndx;
 
-int checkHeader(struct elfheader *eh)
+int checkHeader(struct elfheader *eh_file)
 {
+        /*
+         * Inside the BSP package an ELF header is only 4-byte aligned, and
+         * the MMU is still off, so any unaligned load faults. Read the
+         * header from an aligned copy: the compiler may otherwise merge its
+         * byte fields into wider loads based on the structure's alignment.
+         */
+        struct elfheader ehdr;
+        struct elfheader *eh = &ehdr;
+
+        elf_memcpy(eh, eh_file, sizeof(ehdr));
+
         if (eh->ident[0] != 0x7f || eh->ident[1] != 'E'  ||
                         eh->ident[2] != 'L'  || eh->ident[3] != 'F')
         {
@@ -69,7 +80,7 @@ int checkHeader(struct elfheader *eh)
         DELF(kprintf("[BOOT:ELF] shnum=%d\n", eh->shnum));
         DELF(kprintf("[BOOT:ELF] shstrndx=%d\n", eh->shstrndx));
         DELF({
-                volatile uint32_t *raw = (volatile uint32_t *)((uint8_t *)eh + 40);
+                volatile uint32_t *raw = (volatile uint32_t *)((uint8_t *)eh_file + 40);
                 kprintf("[BOOT:ELF] shoff raw: %08x %08x\n", raw[0], raw[1]);
         });
 
@@ -83,14 +94,17 @@ int checkHeader(struct elfheader *eh)
                         return 0;
                 }
 
-                struct sheader *sh = (struct sheader *)((intptr_t)eh + elf_read_uintptr(&eh->shoff));
-                DELF(kprintf("[BOOT:ELF] extended: sh=%p\n", sh));
+                struct sheader sh0;
+                void *sh_file = (void *)((intptr_t)eh_file + elf_read_uintptr(&eh->shoff));
+                DELF(kprintf("[BOOT:ELF] extended: sh=%p\n", sh_file));
+
+                elf_memcpy(&sh0, sh_file, sizeof(sh0));
 
                 if (int_shnum == 0)
-                        int_shnum = sh->size;
+                        int_shnum = sh0.size;
 
                 if (int_shstrndx == SHN_XINDEX)
-                        int_shstrndx = sh->link;
+                        int_shstrndx = sh0.link;
 
                 if (int_shnum == 0 || int_shstrndx == SHN_XINDEX)
                 {
@@ -278,7 +292,12 @@ static int relocate(struct elfheader *eh, struct sheader *sh, long shrel_idx,
         struct sheader *shsymtab = &sh[shrel->link];
         struct sheader *toreloc = &sh[shrel->info];
         uintptr_t orig_addr = deltas[shrel->info];
-        int is_exec = (eh->type == ET_EXEC);
+        uint16_t e_type;
+        int is_exec;
+
+        /* eh points into the package, which is only 4-byte aligned */
+        elf_memcpy(&e_type, &eh->type, sizeof(e_type));
+        is_exec = (e_type == ET_EXEC);
 
         struct symbol *symtab =
                         (struct symbol *)((uintptr_t)shsymtab->addr);
@@ -354,7 +373,7 @@ static int relocate(struct elfheader *eh, struct sheader *sh, long shrel_idx,
                         ("[BOOT:ELF] Undefined symbol '%s' in section '%s'\n",
                                         (char *)((uintptr_t) sh[shsymtab->link].addr) +
                                         sym->name,
-                                        (char *)((uintptr_t) sh[eh->shstrndx].addr) +
+                                        (char *)((uintptr_t) sh[int_shstrndx].addr) +
                                         toreloc->name);
                         return 0;
 
@@ -363,7 +382,7 @@ static int relocate(struct elfheader *eh, struct sheader *sh, long shrel_idx,
                         ("[BOOT:ELF] COMMON symbol '%s' in section '%s'\n",
                                         (char *)((uintptr_t) sh[shsymtab->link].addr) +
                                         sym->name,
-                                        (char *)((uintptr_t) sh[eh->shstrndx].addr) +
+                                        (char *)((uintptr_t) sh[int_shstrndx].addr) +
                                         toreloc->name);
                         return 0;
 
@@ -741,401 +760,6 @@ static int relocate(struct elfheader *eh, struct sheader *sh, long shrel_idx,
                                         " - module built as PIC/small code model?\n",
                                         rtype);
                         return 0;
-
-                default:
-                        s = sym_secaddr + sym->value - sym_secdelta;
-                }
-
-                /*
-                 * Data relocations (ABS/PREL) can target ANY alignment --
-                 * a .quad in packed rodata may sit on a 4-byte boundary.
-                 * The bootstrap runs with the MMU off, so every access is
-                 * Device memory and an unaligned str/ldr faults; go through
-                 * elf_memcpy for the value. Instruction relocations are
-                 * safe: instructions are always 4-byte aligned.
-                 */
-                switch (rtype) {
-                case R_AARCH64_ABS64:
-                {
-                        uint64_t val;
-                        elf_memcpy(&val, (void *)p, 8);
-                        if (is_exec)
-                                val += sym_secaddr - (uintptr_t)sym_secdelta + virtoff;
-                        else
-                                val = s + addend + virtoff;
-                        elf_memcpy((void *)p, &val, 8);
-                }
-                break;
-
-                case R_AARCH64_ABS32:
-                {
-                        uint32_t val;
-                        elf_memcpy(&val, (void *)p, 4);
-                        if (is_exec)
-                                val += (uint32_t)(sym_secaddr - (uintptr_t)sym_secdelta + virtoff);
-                        else
-                                val = (uint32_t)(s + addend + virtoff);
-                        elf_memcpy((void *)p, &val, 4);
-                }
-                break;
-
-                case R_AARCH64_PREL32:
-                {
-                        uint32_t val;
-                        elf_memcpy(&val, (void *)p, 4);
-                        if (is_exec)
-                        {
-                                if (shrel->info != sym->shindex)
-                                {
-                                        intptr_t expected_delta = sym_secdelta - deltas[shrel->info];
-                                        intptr_t actual_delta = sym_secaddr - (uintptr_t)sh[shrel->info].addr;
-                                        val += (uint32_t)(actual_delta - expected_delta);
-                                }
-                        }
-                        else
-                        {
-                                val = (uint32_t)(s + addend - p);
-                        }
-                        elf_memcpy((void *)p, &val, 4);
-                }
-                break;
-
-                case R_AARCH64_CALL26:
-                case R_AARCH64_JUMP26:
-                {
-                        uint32_t *loc = (uint32_t *)p;
-                        int64_t offset;
-
-                        if (is_exec)
-                        {
-                                if (shrel->info != sym->shindex)
-                                {
-                                        intptr_t expected_delta = sym_secdelta - deltas[shrel->info];
-                                        intptr_t actual_delta = sym_secaddr - (uintptr_t)sh[shrel->info].addr;
-
-                                        offset = (int64_t)(int32_t)((*loc & 0x03ffffff) << 6) >> 4;
-                                        offset += actual_delta - expected_delta;
-                                        *loc = (*loc & 0xfc000000) | ((uint32_t)(offset >> 2) & 0x03ffffff);
-                                }
-                        }
-                        else
-                        {
-                                offset = (int64_t)(s + addend) - (int64_t)p;
-                                *loc = (*loc & 0xfc000000) | ((uint32_t)(offset >> 2) & 0x03ffffff);
-                        }
-                }
-                break;
-
-                case R_AARCH64_ADR_PREL_PG_HI21:
-                case R_AARCH64_ADR_PREL_PG_HI21_NC:
-                {
-                        uint32_t *loc = (uint32_t *)p;
-                        int64_t offset;
-
-                        if (is_exec)
-                        {
-                                if (shrel->info != sym->shindex)
-                                {
-                                        /* ADRP: page-relative, need to recompute */
-                                        uintptr_t target = s + addend + virtoff;
-                                        uintptr_t pc_virt = p + virtoff;
-                                        offset = ((target & ~0xFFFUL) - (pc_virt & ~0xFFFUL)) >> 12;
-                                        /* Re-encode immhi:immlo in ADRP instruction */
-                                        *loc = (*loc & 0x9F00001F) |
-                                               ((uint32_t)(offset & 0x3) << 29) |
-                                               ((uint32_t)((offset >> 2) & 0x7FFFF) << 5);
-                                }
-                        }
-                        else
-                        {
-                                uintptr_t target = s + addend + virtoff;
-                                uintptr_t pc_virt = p + virtoff;
-                                offset = ((int64_t)((target & ~0xFFFUL) - (pc_virt & ~0xFFFUL))) >> 12;
-                                *loc = (*loc & 0x9F00001F) |
-                                       ((uint32_t)(offset & 0x3) << 29) |
-                                       ((uint32_t)((offset >> 2) & 0x7FFFF) << 5);
-                        }
-                }
-                break;
-
-                case R_AARCH64_ADD_ABS_LO12_NC:
-                case R_AARCH64_LDST8_ABS_LO12_NC:
-                {
-                        uint32_t *loc = (uint32_t *)p;
-                        uintptr_t target;
-                        if (is_exec)
-                                target = sym_secaddr + sym->value - sym_secdelta + addend + virtoff;
-                        else
-                                target = s + addend + virtoff;
-                        *loc = (*loc & ~(0xFFF << 10)) | (((uint32_t)(target & 0xFFF)) << 10);
-                }
-                break;
-
-                case R_AARCH64_LDST16_ABS_LO12_NC:
-                {
-                        uint32_t *loc = (uint32_t *)p;
-                        uintptr_t target;
-                        if (is_exec)
-                                target = sym_secaddr + sym->value - sym_secdelta + addend + virtoff;
-                        else
-                                target = s + addend + virtoff;
-                        *loc = (*loc & ~(0xFFF << 10)) | (((uint32_t)((target & 0xFFF) >> 1)) << 10);
-                }
-                break;
-
-                case R_AARCH64_LDST32_ABS_LO12_NC:
-                {
-                        uint32_t *loc = (uint32_t *)p;
-                        uintptr_t target;
-                        if (is_exec)
-                                target = sym_secaddr + sym->value - sym_secdelta + addend + virtoff;
-                        else
-                                target = s + addend + virtoff;
-                        *loc = (*loc & ~(0xFFF << 10)) | (((uint32_t)((target & 0xFFF) >> 2)) << 10);
-                }
-                break;
-
-                case R_AARCH64_LDST64_ABS_LO12_NC:
-                {
-                        uint32_t *loc = (uint32_t *)p;
-                        uintptr_t target;
-                        if (is_exec)
-                                target = sym_secaddr + sym->value - sym_secdelta + addend + virtoff;
-                        else
-                                target = s + addend + virtoff;
-                        *loc = (*loc & ~(0xFFF << 10)) | (((uint32_t)((target & 0xFFF) >> 3)) << 10);
-                }
-                break;
-
-                case R_AARCH64_LDST128_ABS_LO12_NC:
-                {
-                        uint32_t *loc = (uint32_t *)p;
-                        uintptr_t target;
-                        if (is_exec)
-                                target = sym_secaddr + sym->value - sym_secdelta + addend + virtoff;
-                        else
-                                target = s + addend + virtoff;
-                        *loc = (*loc & ~(0xFFF << 10)) | (((uint32_t)((target & 0xFFF) >> 4)) << 10);
-                }
-                break;
-
-                case R_AARCH64_MOVW_UABS_G0:
-                case R_AARCH64_MOVW_UABS_G0_NC:
-                {
-                        /* MOVZ/MOVK: bits [15:0] of S + A */
-                        uint32_t *loc = (uint32_t *)p;
-                        uintptr_t target;
-                        if (is_exec)
-                                target = sym_secaddr + sym->value - sym_secdelta + addend + virtoff;
-                        else
-                                target = s + addend + virtoff;
-                        *loc = (*loc & ~(0xFFFF << 5)) | (((uint32_t)(target & 0xFFFF)) << 5);
-                }
-                break;
-
-                case R_AARCH64_MOVW_UABS_G1:
-                case R_AARCH64_MOVW_UABS_G1_NC:
-                {
-                        /* MOVZ/MOVK: bits [31:16] of S + A */
-                        uint32_t *loc = (uint32_t *)p;
-                        uintptr_t target;
-                        if (is_exec)
-                                target = sym_secaddr + sym->value - sym_secdelta + addend + virtoff;
-                        else
-                                target = s + addend + virtoff;
-                        *loc = (*loc & ~(0xFFFF << 5)) | (((uint32_t)((target >> 16) & 0xFFFF)) << 5);
-                }
-                break;
-
-                case R_AARCH64_MOVW_UABS_G2:
-                case R_AARCH64_MOVW_UABS_G2_NC:
-                {
-                        /* MOVZ/MOVK: bits [47:32] of S + A */
-                        uint32_t *loc = (uint32_t *)p;
-                        uintptr_t target;
-                        if (is_exec)
-                                target = sym_secaddr + sym->value - sym_secdelta + addend + virtoff;
-                        else
-                                target = s + addend + virtoff;
-                        *loc = (*loc & ~(0xFFFF << 5)) | (((uint32_t)((target >> 32) & 0xFFFF)) << 5);
-                }
-                break;
-
-                case R_AARCH64_MOVW_UABS_G3:
-                {
-                        /* MOVZ/MOVK: bits [63:48] of S + A */
-                        uint32_t *loc = (uint32_t *)p;
-                        uintptr_t target;
-                        if (is_exec)
-                                target = sym_secaddr + sym->value - sym_secdelta + addend + virtoff;
-                        else
-                                target = s + addend + virtoff;
-                        *loc = (*loc & ~(0xFFFF << 5)) | (((uint32_t)((target >> 48) & 0xFFFF)) << 5);
-                }
-                break;
-
-                case R_AARCH64_LD_PREL_LO19:
-                {
-                        /* LDR (literal): S + A - P, imm19 in bits [23:5], scaled by 4 */
-                        uint32_t *loc = (uint32_t *)p;
-                        int64_t offset;
-                        if (is_exec)
-                        {
-                                if (shrel->info != sym->shindex)
-                                {
-                                        intptr_t expected_delta = sym_secdelta - deltas[shrel->info];
-                                        intptr_t actual_delta = sym_secaddr - (uintptr_t)sh[shrel->info].addr;
-                                        offset = (int64_t)(int32_t)((*loc >> 5) & 0x7FFFF) << 2;
-                                        offset += actual_delta - expected_delta;
-                                        *loc = (*loc & ~(0x7FFFF << 5)) | (((uint32_t)((offset >> 2) & 0x7FFFF)) << 5);
-                                }
-                        }
-                        else
-                        {
-                                offset = (int64_t)(s + addend) - (int64_t)p;
-                                *loc = (*loc & ~(0x7FFFF << 5)) | (((uint32_t)((offset >> 2) & 0x7FFFF)) << 5);
-                        }
-                }
-                break;
-
-                case R_AARCH64_ADR_PREL_LO21:
-                {
-                        /*
-                         * ADR: S + A - P, immhi in [23:5], immlo in [30:29]
-                         * ADR is PC-relative: at runtime PC is virtual,
-                         * so use virtual addresses for both target and PC.
-                         */
-                        uint32_t *loc = (uint32_t *)p;
-                        int64_t offset;
-                        uintptr_t pc_virt = p + virtoff;
-                        if (is_exec)
-                        {
-                                if (shrel->info != sym->shindex)
-                                {
-                                        uintptr_t target = s + addend + virtoff;
-                                        offset = (int64_t)target - (int64_t)pc_virt;
-                                        *loc = (*loc & 0x9F00001F) |
-                                               ((uint32_t)(offset & 0x3) << 29) |
-                                               ((uint32_t)((offset >> 2) & 0x7FFFF) << 5);
-                                }
-                        }
-                        else
-                        {
-                                offset = (int64_t)(s + addend + virtoff) - (int64_t)pc_virt;
-                                *loc = (*loc & 0x9F00001F) |
-                                       ((uint32_t)(offset & 0x3) << 29) |
-                                       ((uint32_t)((offset >> 2) & 0x7FFFF) << 5);
-                        }
-                }
-                break;
-
-                case R_AARCH64_CONDBR19:
-                {
-                        /* B.cond/CBZ/CBNZ: S + A - P, imm19 in bits [23:5], scaled by 4 */
-                        uint32_t *loc = (uint32_t *)p;
-                        int64_t offset;
-                        if (is_exec)
-                        {
-                                if (shrel->info != sym->shindex)
-                                {
-                                        intptr_t expected_delta = sym_secdelta - deltas[shrel->info];
-                                        intptr_t actual_delta = sym_secaddr - (uintptr_t)sh[shrel->info].addr;
-                                        offset = (int64_t)(int32_t)((*loc >> 5) & 0x7FFFF) << 2;
-                                        offset += actual_delta - expected_delta;
-                                        *loc = (*loc & ~(0x7FFFF << 5)) | (((uint32_t)((offset >> 2) & 0x7FFFF)) << 5);
-                                }
-                        }
-                        else
-                        {
-                                offset = (int64_t)(s + addend) - (int64_t)p;
-                                *loc = (*loc & ~(0x7FFFF << 5)) | (((uint32_t)((offset >> 2) & 0x7FFFF)) << 5);
-                        }
-                }
-                break;
-
-                case R_AARCH64_TSTBR14:
-                {
-                        /* TBZ/TBNZ: S + A - P, imm14 in bits [18:5], scaled by 4 */
-                        uint32_t *loc = (uint32_t *)p;
-                        int64_t offset;
-                        if (is_exec)
-                        {
-                                if (shrel->info != sym->shindex)
-                                {
-                                        intptr_t expected_delta = sym_secdelta - deltas[shrel->info];
-                                        intptr_t actual_delta = sym_secaddr - (uintptr_t)sh[shrel->info].addr;
-                                        offset = (int64_t)(int32_t)((*loc >> 5) & 0x3FFF) << 2;
-                                        offset += actual_delta - expected_delta;
-                                        *loc = (*loc & ~(0x3FFF << 5)) | (((uint32_t)((offset >> 2) & 0x3FFF)) << 5);
-                                }
-                        }
-                        else
-                        {
-                                offset = (int64_t)(s + addend) - (int64_t)p;
-                                *loc = (*loc & ~(0x3FFF << 5)) | (((uint32_t)((offset >> 2) & 0x3FFF)) << 5);
-                        }
-                }
-                break;
-
-                case R_AARCH64_PREL64:
-                {
-                        /* Data relocation: alignment-safe store, see ABS64 */
-                        uint64_t val = s + addend - p;
-                        elf_memcpy((void *)p, &val, 8);
-                }
-                break;
-
-                case R_AARCH64_ADR_GOT_PAGE:
-                {
-                        /*
-                         * GOT relaxation: rewrite ADRP to point at the symbol
-                         * page directly instead of through a GOT entry.
-                         * The boot loader resolves all addresses statically,
-                         * so no GOT indirection is needed.
-                         *
-                         * ADRP is PC-relative: at runtime PC is virtual,
-                         * so we must use virtual address for both target
-                         * and instruction location.
-                         */
-                        uint32_t *loc = (uint32_t *)p;
-                        uintptr_t target;
-                        if (is_exec)
-                                target = sym_secaddr + sym->value
-                                         - sym_secdelta + addend + virtoff;
-                        else
-                                target = s + addend + virtoff;
-                        uintptr_t pc_virt = p + virtoff;
-                        int64_t offset = ((int64_t)((target & ~0xFFFUL) - (pc_virt & ~0xFFFUL))) >> 12;
-                        *loc = (*loc & 0x9F00001F) |
-                               ((uint32_t)(offset & 0x3) << 29) |
-                               ((uint32_t)((offset >> 2) & 0x7FFFF) << 5);
-                }
-                break;
-
-                case R_AARCH64_LD64_GOT_LO12_NC:
-                {
-                        /*
-                         * GOT relaxation: convert LDR (load from GOT) to ADD
-                         * (compute address directly). The ADRP from the paired
-                         * ADR_GOT_PAGE already points at the symbol page, so
-                         * we just need the low 12 bits as an immediate.
-                         */
-                        uint32_t *loc = (uint32_t *)p;
-                        uintptr_t target;
-                        if (is_exec)
-                                target = sym_secaddr + sym->value
-                                         - sym_secdelta + addend + virtoff;
-                        else
-                                target = s + addend + virtoff;
-                        /* Extract Rd and Rn from original LDR instruction */
-                        uint32_t insn = *loc;
-                        uint32_t Rd = insn & 0x1F;
-                        uint32_t Rn = (insn >> 5) & 0x1F;
-                        /* Build ADD Xd, Xn, #imm12 */
-                        uint32_t imm12 = (uint32_t)(target & 0xFFF);
-                        *loc = 0x91000000 | (imm12 << 10) | (Rn << 5) | Rd;
-                }
-                break;
 
                 default:
                         kprintf("[BOOT:ELF] Unknown relocation %d in ELF file\n",

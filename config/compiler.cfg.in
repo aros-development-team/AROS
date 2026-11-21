@@ -47,6 +47,9 @@ CFLAGS_NO_EXCEPTIONS                    := @aros_cflags_noexceptions@
 # where the (d8,PC,Xn) addressing mode used to index them reaches only 128
 # bytes and larger functions fail to assemble.
 CFLAGS_NO_JUMP_TABLES                   := @aros_cflags_no_jump_tables@
+# Never generate an unaligned load or store, for code that runs where an
+# unaligned access faults, such as with the MMU off.
+CFLAGS_STRICT_ALIGN                     := @aros_cflags_strict_align@
 
 #
 CFLAGS_FAST_MATH                        := @aros_cflags_fast_math@

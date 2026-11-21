@@ -152,6 +152,14 @@ if test "x-$aros_cgnu17" = "x-yes" ; then
     aros_cflags_gnu17=-std=gnu17
 fi
 
+AC_MSG_CHECKING([whether ${CC} supports -mstrict-align])
+CFLAGS=-mstrict-align
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_strict_align="yes"],[aros_strict_align="no"])
+AC_MSG_RESULT($aros_strict_align)
+if test "x-$aros_strict_align" = "x-yes" ; then
+    aros_cflags_strict_align=-mstrict-align
+fi
+
 AC_MSG_CHECKING([whether ${CC} supports -fno-jump-tables])
 CFLAGS=-fno-jump-tables
 AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_no_jump_tables="yes"],[aros_no_jump_tables="no"])
@@ -1749,6 +1757,7 @@ AC_SUBST(aros_cflags_gnu11)
 AC_SUBST(aros_cflags_c17)
 AC_SUBST(aros_cflags_gnu17)
 AC_SUBST(aros_cflags_no_jump_tables)
+AC_SUBST(aros_cflags_strict_align)
 
 AC_SUBST(aros_cxxflags_cxx98)
 AC_SUBST(aros_cxxflags_gnu98)
