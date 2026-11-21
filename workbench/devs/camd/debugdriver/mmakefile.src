@@ -10,4 +10,10 @@ EXEDIR := $(AROS_DEVS)/Midi
     progname=debugdriver targetdir=$(EXEDIR) \
     files=$(FILES)
 
+#MM workbench-devs-camd-loopback : includes linklibs
+
+%build_prog mmake=workbench-devs-camd-loopback \
+    progname=loopback targetdir=$(EXEDIR) \
+    files=loopback
+
 %common

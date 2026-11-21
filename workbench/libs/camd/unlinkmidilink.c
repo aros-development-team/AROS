@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: 
 */
@@ -37,6 +37,7 @@ void UnlinkMidiLink(
 		if(type==NT_USER-MLTYPE_Receiver){
 			ReleaseSemaphore(&mycluster->semaphore);
 		}
+		UpdateClusterComment(cluster);
 		ClusterParticipantsChanged(cluster,midilink->ml_MidiNode,CamdBase);
 		LinkHasBeenRemovedFromCluster(cluster,CamdBase);
 	}

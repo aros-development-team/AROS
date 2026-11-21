@@ -1,0 +1,107 @@
+#ifndef CAMD_APP_ENDPOINT_H
+#define CAMD_APP_ENDPOINT_H
+
+/*
+ * Private backend of an endpoint a program publishes.
+ *
+ * Clients' output sessions each own a bounded native MIDI 1.0 queue; the
+ * publisher takes messages from them in turn. What the publisher emits goes
+ * straight to the sinks of the clients' receiving input sessions. No MIDI 1.0
+ * event is converted to UMP. The object outlives its publisher until the last
+ * client session has closed.
+ */
+
+#include "native_event_worker.h"
+
+#include <stddef.h>
+#include <stdint.h>
+
+struct CAMDAppEndpointConfigV1 {
+    uint32_t Size;
+    uint32_t Version;
+    uint32_t Directions;        /* as clients see them */
+    uint32_t MaxQueueCapacity;  /* per output session */
+    uint32_t MaxSysExBytes;     /* a session's limit unless it asks */
+    uint32_t LimitSysExBytes;   /* the most a session may ask for and the
+                                   publisher may emit; 0 for MaxSysExBytes */
+    uint32_t MaxSessions;
+    /* What every session carries. Both 0 for native MIDI 1.0; with UMP
+     * MaxSysExBytes is not used and there is no legacy side. */
+    uint32_t DataFormat;
+    uint32_t Protocol;
+    /* With Now, a MIDI 1.0 endpoint keeps each client message that has a
+     * time until that time has come: the publisher is notified and can take
+     * it only then, in time order per session. Each output session then has
+     * a worker of its own. NULL hands every message over as it arrives,
+     * with its time for the publisher to keep. */
+    uint32_t (*Now)(void *context);
+    void *NowContext;
+    /* Called, outside the endpoint's lock, each time the publisher took a
+     * message, for whoever waits for a session to be drained. May be NULL. */
+    void (*Taken)(void *context);
+    void *TakenContext;
+    /* Called, outside the endpoint's lock, when a client queued something
+     * the publisher can take. May be NULL. */
+    void (*Notify)(void *context);
+    void *NotifyContext;
+};
+
+struct CAMDAppEndpoint;
+
+enum CAMDProviderResult camd_app_endpoint_create(
+    const struct CAMDAppEndpointConfigV1 *config,
+    struct CAMDAppEndpoint **endpoint);
+
+/* The returned table and provider context remain owned by the endpoint. */
+const struct CAMDProviderOpsV1 *camd_app_endpoint_ops(
+    struct CAMDAppEndpoint *endpoint);
+void *camd_app_endpoint_context(struct CAMDAppEndpoint *endpoint);
+
+/* The publisher's side. emit gives a message to every receiving input
+ * session; *dropped, when given, counts the sinks that had no room. take
+ * removes the oldest message of the next output session that has one:
+ * *sysex_count is 0 for a short message. TOO_LARGE leaves a SysEx message
+ * queued and reports its size; QUEUE_FULL means nothing is waiting. */
+enum CAMDProviderResult camd_app_endpoint_emit_midi1(
+    struct CAMDAppEndpoint *endpoint, const struct CAMDMIDI1EventV1 *events,
+    size_t event_count, uint32_t *dropped);
+enum CAMDProviderResult camd_app_endpoint_emit_sysex(
+    struct CAMDAppEndpoint *endpoint, const uint8_t *bytes, size_t byte_count,
+    uint32_t *dropped);
+enum CAMDProviderResult camd_app_endpoint_take(
+    struct CAMDAppEndpoint *endpoint, struct CAMDMIDI1EventV1 *event,
+    uint8_t *sysex, size_t sysex_capacity, size_t *sysex_count);
+
+/* The same for a UMP endpoint, one complete message at a time. */
+enum CAMDProviderResult camd_app_endpoint_emit_ump(
+    struct CAMDAppEndpoint *endpoint, const struct CAMDUMPEventV1 *events,
+    size_t event_count, uint32_t *dropped);
+enum CAMDProviderResult camd_app_endpoint_take_ump(
+    struct CAMDAppEndpoint *endpoint, struct CAMDUMPEventV1 *event);
+
+/* The legacy side of the endpoint, for CAMD's cluster projection. inject
+ * queues what a legacy sender sent, on a queue of MaxQueueCapacity records of
+ * its own that take serves in turn with the sessions; it needs the output
+ * direction. The projection sink gets everything emit gives to the input
+ * sessions, with the endpoint locked; NULL removes it. */
+enum CAMDProviderResult camd_app_endpoint_inject_midi1(
+    struct CAMDAppEndpoint *endpoint, const struct CAMDMIDI1EventV1 *event);
+enum CAMDProviderResult camd_app_endpoint_inject_sysex(
+    struct CAMDAppEndpoint *endpoint, const uint8_t *bytes,
+    size_t byte_count);
+enum CAMDProviderResult camd_app_endpoint_set_projection(
+    struct CAMDAppEndpoint *endpoint,
+    const struct CAMDProviderReceiveSinkV1 *sink);
+
+/* Saturating counts since the endpoint was created. */
+enum CAMDProviderResult camd_app_endpoint_stats(
+    struct CAMDAppEndpoint *endpoint, struct CAMDPublishedStatsV1 *stats);
+
+/* The publisher is gone: Notify is not called any more. */
+void camd_app_endpoint_detach(struct CAMDAppEndpoint *endpoint);
+
+/* Fails with STATE while a session is still open. */
+enum CAMDProviderResult camd_app_endpoint_destroy(
+    struct CAMDAppEndpoint *endpoint);
+
+#endif

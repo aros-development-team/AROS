@@ -20,6 +20,41 @@
 
 BOOL isPointerInSeglist(APTR pointer,BPTR seglist,ULONG minsize);
 
+static BOOL stringInSeglist(CONST_STRPTR string, BPTR seglist, ULONG limit)
+{
+    ULONG i;
+
+    if (string == NULL) return FALSE;
+    for (i = 0; i < limit; ++i) {
+        if (!isPointerInSeglist((APTR)(string + i), seglist, 1)) return FALSE;
+        if (string[i] == '\0') return i != 0;
+    }
+    return FALSE;
+}
+
+static BOOL umpExtensionInSeglist(struct MidiDeviceData *device, BPTR seglist)
+{
+    struct MidiUMPDriverExtensionV1 *extension;
+
+    if ((device->Flags & MDD_F_UMP_EXTENSION) == 0)
+        return TRUE;
+    extension = MDD_UMP_EXTENSION(device);
+    if (!isPointerInSeglist(extension, seglist, sizeof(*extension)) ||
+        extension->Size != sizeof(*extension) || extension->Version != 1 ||
+        !stringInSeglist(extension->Transport, seglist,
+                         CAMD_ENDPOINT_TRANSPORT_BYTES) ||
+        extension->Attach == NULL || extension->Detach == NULL ||
+        extension->OpenPortUMP == NULL || extension->ClosePortUMP == NULL ||
+        extension->SendUMP == NULL || extension->QueryPort == NULL)
+        return FALSE;
+    return isPointerInSeglist((APTR)extension->Attach, seglist, 4) &&
+           isPointerInSeglist((APTR)extension->Detach, seglist, 4) &&
+           isPointerInSeglist((APTR)extension->OpenPortUMP, seglist, 4) &&
+           isPointerInSeglist((APTR)extension->ClosePortUMP, seglist, 4) &&
+           isPointerInSeglist((APTR)extension->SendUMP, seglist, 4) &&
+           isPointerInSeglist((APTR)extension->QueryPort, seglist, 4);
+}
+
 /*****************************************************************************
 
     NAME */
@@ -157,7 +192,8 @@ BOOL isPointerInSeglist(APTR pointer,BPTR seglist,ULONG minsize);
 			    )
 			   &&
 			   mididevicedata->IDString!=NULL &&
-			   isPointerInSeglist(mididevicedata->IDString,seglist,4)
+			   isPointerInSeglist(mididevicedata->IDString,seglist,4) &&
+			   umpExtensionInSeglist(mididevicedata,seglist)
 
 			   )
 			  {

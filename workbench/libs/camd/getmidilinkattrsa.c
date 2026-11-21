@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 
 
@@ -75,7 +75,12 @@
 				*where=(IPTR)midilink->ml_UserData;
 				break;
 			case MLINK_Comment:
-				ret--;
+				if(midilink->ml_Location!=NULL){
+					struct MyMidiCluster *mycluster=(struct MyMidiCluster *)midilink->ml_Location;
+					*where=(IPTR)(mycluster->comment[0]!=0 ? mycluster->comment : NULL);
+				}else{
+					*where=(IPTR)midilink->ml_ClusterComment;
+				}
 				break;
 			case MLINK_PortID:
 				*where=(IPTR)midilink->ml_PortID;
