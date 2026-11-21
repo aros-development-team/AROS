@@ -228,7 +228,6 @@ void core_Switch(void)
 struct Task *core_Dispatch(void)
 {
     struct Task *newtask;
-    struct Task *task = GET_THIS_TASK;
     BOOL taskStateLocked = FALSE;
 #if defined(__AROSEXEC_SMP__) || defined(DEBUG)
     int cpunum = GetCPUNumber();
@@ -241,6 +240,8 @@ struct Task *core_Dispatch(void)
      * locks and tc_SpinLock, which the IPI and the timer IRQ also take.
      * Nestable across the recursive call below. */
     unsigned int __if = EXEC_IRQFIQ_DISABLE();
+#else
+    struct Task *task = GET_THIS_TASK;
 #endif
 
     DSCHED(bug("[Kernel:%02d] core_Dispatch()\n", cpunum));
@@ -279,10 +280,12 @@ dispatch_rescan:
      * than idle with runnable work on the list. */
     if (!newtask && sawContended)
         goto dispatch_rescan;
-#endif
-
+#else
+    /* Only a single CPU can reuse its outgoing task without claiming it
+     * from TaskReady. On SMP another CPU may already be running it. */
     if ((!newtask) && (task) && (task->tc_State != TS_WAIT))
         newtask = task;
+#endif
 
     if (newtask != NULL)
     {
