@@ -141,7 +141,8 @@ static void reset(struct M68KEmuContext *ctx)
     logs = low_traps = stops = native_findport = native_deleteio = native_newminlist = shadows_made = shadows_destroyed = 0;
 }
 
-static void put_string(ULONG at, const char *s) { memcpy(arena + at, s, strlen(s) + 1); }
+/* a string constant and its NUL into the program's memory */
+#define put_string(at, s) memcpy(arena + (at), (s), sizeof(s))
 
 static void ports(struct M68KEmuContext *ctx)
 {
