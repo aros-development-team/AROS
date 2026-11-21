@@ -1662,9 +1662,15 @@ restart:
     nreq = nok = 0;
     ForeachNode(&compdata->bitmapstack, n)
     {
+        /* A restart drops the planes of the pass before: a demoted screen kept its own */
         n->promoted = FALSE;
+        n->plane    = -1;
+        n->underlaid = FALSE;
         ForeachNode(&n->surfaces, sn)
         {
+            sn->plane    = -1;
+            sn->pflags   = 0;
+            sn->underlay = FALSE;
             if (sn->candidate)
             {
                 if (SNREQ(sn)->Flags & CRF_PLANE_REQUIRED)
@@ -3325,7 +3331,7 @@ static void HIDDCompositorReplan(struct HIDDCompositorData *compdata, struct Cli
 {
     struct StackBitMapNode *n, *topnode;
     struct SurfaceNode *sn;
-    BOOL changed = FALSE, demoted = FALSE;
+    BOOL changed = FALSE, demoted = FALSE, gained = FALSE, lost = FALSE;
 
     if (IsListEmpty(&compdata->bitmapstack))
     {
@@ -3346,6 +3352,10 @@ static void HIDDCompositorReplan(struct HIDDCompositorData *compdata, struct Cli
     {
         if (n->plane != n->lastplane)
             changed = TRUE;
+        if ((n->plane >= 0) && (n->lastplane < 0))
+            gained = TRUE;
+        else if ((n->plane < 0) && (n->lastplane >= 0))
+            lost = TRUE;
         /*
          * A surface that lost its plane: nothing was drawn under the plane,
          * so its area holds whatever the display showed before it came and
@@ -3365,6 +3375,10 @@ static void HIDDCompositorReplan(struct HIDDCompositorData *compdata, struct Cli
     if (cs && cs->sn && cs->sn->region && dirty)
         OrRegionRegion(cs->sn->region, dirty);
 
+    /* A screen back on its plane goes up before the primary stops showing it, else the one behind flashes */
+    gained = gained && !lost;
+    if (gained)
+        HIDDCompositorCommitPlanes(compdata, 0, fires);
     topnode = HIDDCompositorFirstComposedNode(compdata);
     if (changed || (topnode && (HIDDCompositorNeedsComposition(compdata, topnode) != (compdata->displaybitmap != NULL))))
         HIDDCompositorToggleCompositing(compdata, FALSE);       /* redraws everything when composing */
@@ -3375,7 +3389,8 @@ static void HIDDCompositorReplan(struct HIDDCompositorData *compdata, struct Cli
         else
             HIDDCompositorRedrawVisibleRegions(compdata, NULL);
     }
-    HIDDCompositorCommitPlanes(compdata, 0, fires);
+    if (!gained)
+        HIDDCompositorCommitPlanes(compdata, 0, fires);
     HIDDCompositorStampKeys(compdata);
     if (demoted && !compdata->displaybitmap && compdata->passthroughbm)
     {
