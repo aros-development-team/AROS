@@ -19,6 +19,9 @@ using namespace moira;
 #define RTE_ADDR      0x000100u   /* address of our RTE instruction */
 #define SV_TRAMP_ADDR 0x000108u   /* supervisor trampoline: skip frame + JMP (A5) */
 
+#define JIT_SLICE     1024        /* instructions an engine run may retire before the loop looks around */
+#define JIT_LOW       0x1000u     /* below: vectors and the host's stubs, the interpreter's */
+
 /* generated calls whose result points into a buffer or string the program
    passed: the result is that address in the program's memory */
 static bool returns_arg_pointer(const char *lib, ULONG lvo)
@@ -45,6 +48,168 @@ public:
     bool nested = false, nested_done = false;
 
     explicit AROSMoira(struct M68KEmuContext *c) : ctx(c), ts(m68k_ts(c)) {}
+
+    /* ── The optional engine (m68kemu_jit.c) ─────────────────────── */
+
+    /*
+     * With M68KEMU_CPU=jit or auto every CPU still is this object: it keeps
+     * the registers the thunks use, takes every exception and interrupt and
+     * makes every library call. The engine gets the registers for a slice
+     * of plain 68k code and gives them back; whatever instruction it stops
+     * at without executing it (an A-line call, one it declines, one that
+     * raises an exception, one it cannot fetch) is one execute() here.
+     */
+    struct KJ68CPU *jcpu = nullptr; /* the engine's CPU for these registers */
+    bool jit_none = false;          /* it could not be made: this CPU stays with the interpreter */
+    bool jit_hold = false;          /* the instruction at PC is the interpreter's */
+
+    ~AROSMoira() override { jitDrop(); }
+    AROSMoira(const AROSMoira &) = delete;          /* the engine CPU has one owner */
+    AROSMoira &operator=(const AROSMoira &) = delete;
+
+    /* by the task that holds the program's lock, as every engine call */
+    void jitDrop()
+    {
+        if (jcpu && ctx->jit_ops)
+            ctx->jit_ops->cpu_destroy(jcpu);
+        jcpu = nullptr;
+    }
+
+    bool jitAttach()
+    {
+        if (jcpu)
+            return true;
+        if (jit_none || !ctx->jit_domain)
+            return false;
+        if (ctx->jit_ops->cpu_create(ctx->jit_domain, static_cast<APTR>(this), &jcpu) != KJ68_OK || !jcpu)
+        {
+            jcpu = nullptr;
+            jit_none = true;
+            return false;
+        }
+        return true;
+    }
+
+    /* the PC as an instruction boundary has it: both prefetch words read
+       the way the core reads them, so that a return to one of the sentinel
+       addresses ends the run as it does in the interpreter */
+    void jitSetPC(u32 pc)
+    {
+        setPC0(pc);
+        setPC(pc);
+        setIRD(read16(pc));
+        setIRC(read16(pc + 2));
+    }
+
+    void jitFault(const char *what, u32 pc, u32 opcode, const char *text)
+    {
+        m68k_jit_say(ctx, "%s: the engine %s at PC %08lx (opcode %04lx%s%s), program stopped",
+            m68k_jit_name(ctx), what,
+            (unsigned long)pc, (unsigned long)opcode, text[0] ? ": " : "", text);
+        ctx->jit_fault = TRUE;
+        m68k_program_stop(ctx, TRUE);
+    }
+
+    /* The interpreter takes the next instruction: counted, so that a run on
+       the engine says how much of it the engine did */
+    bool jitNo()
+    {
+        ctx->jit_interp++;
+        return false;
+    }
+
+    /*
+     * Run the program on the engine from here, when it can take over at
+     * this point: true when it ran, with the instructions it retired; the
+     * loop then looks at its conditions again. False: one execute() is due.
+     *
+     * The engine takes over only at a plain instruction boundary: nothing
+     * pending in the core (stopped, trace, an interrupt to check), no
+     * interrupt level asserted or raised and not yet taken (the engine
+     * does not poll it), the status register inside the
+     * engine's model (supervisor, no trace, interrupt stack), the PC in the
+     * program's memory above the first page, and the program's lock held.
+     */
+    bool jitSlice(bool irq_pending, ULONG &retired)
+    {
+        const struct KJ68EngineOps *ops = ctx->jit_ops;
+        struct KJ68Exit ex;
+        ULONG v = 0;
+        u32 pc = getPC0();
+        u16 sr = getSR();
+
+        retired = 0;
+        if (jit_hold)
+        {
+            jit_hold = false;
+            return jitNo();
+        }
+        if (flags || getIPL() || irq_pending || pc < JIT_LOW || (pc & 1) || pc >= ctx->mem_size ||
+            (sr & KJ68_SR_MODEL_MASK) != KJ68_SR_MODEL_VALUE)
+            return jitNo();
+        /* one engine call at a time for the program: only the task that
+           holds the program's lock makes one */
+        if (ctx->gil.ss_Owner != FindTask(NULL))
+            return jitNo();
+        if (!jitAttach())
+        {
+            if (!ctx->jit_cpu_said)
+            {
+                ctx->jit_cpu_said = TRUE;
+                m68k_jit_say(ctx, "%s: the engine has no CPU for one of its tasks or calls: the interpreter runs it",
+                    m68k_jit_name(ctx));
+            }
+            return jitNo();
+        }
+        if (!m68k_jit_map(ctx))
+            return jitNo();
+
+        for (int i = 0; i < 8; i++)
+        {
+            ops->set_reg(jcpu, KJ68_REG_D0 + i, getD(i));
+            ops->set_reg(jcpu, KJ68_REG_A0 + i, getA(i));
+        }
+        if (ops->set_reg(jcpu, KJ68_REG_SR, sr) != KJ68_OK || ops->set_reg(jcpu, KJ68_REG_PC, pc) != KJ68_OK)
+            return jitNo();
+
+        memset(&ex, 0, sizeof(ex));
+        ex.size_of = sizeof(ex);
+        if (ops->run(jcpu, JIT_SLICE, &ex) != KJ68_OK)
+        {
+            /* nothing ran and nothing changed; the host did something the
+               interface does not allow */
+            jitFault("refused to run", pc, m68k_read16(ctx, pc), "");
+            return true;                    /* the program is stopped: nothing more of it runs */
+        }
+
+        /* the status register first: it decides which stack pointer A7 is */
+        ops->get_reg(jcpu, KJ68_REG_SR, &v);
+        if ((v ^ sr) & 0xFF00)
+            setSR((u16)v);
+        else
+            setCCR((u8)v);
+        for (int i = 0; i < 8; i++)
+        {
+            ops->get_reg(jcpu, KJ68_REG_D0 + i, &v);
+            setD(i, (u32)v);
+            ops->get_reg(jcpu, KJ68_REG_A0 + i, &v);
+            setA(i, (u32)v);
+        }
+        retired = ex.retired;
+        if (ex.reason == KJ68_STOP_HOST || ex.reason == KJ68_STOP_FAULT)
+        {
+            /* the end of the program: its PC is not fetched from again */
+            ex.text[KJ68_TEXT_SIZE - 1] = 0;
+            jitFault(ex.reason == KJ68_STOP_FAULT ? "failed" : "stopped on a host access", ex.pc,
+                     m68k_read16(ctx, ex.pc), ex.text);
+            return true;
+        }
+        ops->get_reg(jcpu, KJ68_REG_PC, &v);
+        jitSetPC((u32)v);
+        if (ex.reason != KJ68_STOP_BUDGET || !ex.retired)
+            jit_hold = true;                /* A-line, declined, exception, no fetch: Moira's */
+        return true;
+    }
 
     /* ── Custom chip register emulation ──────────────────────────── */
 
@@ -168,7 +333,10 @@ public:
             op = m68k_read16(ctx, pc -= 2);
 
         if ((op & 0xFF00) == 0xF400)                /* CINV, CPUSH */
+        {
             len = 2;
+            m68k_jit_invalidate(ctx);               /* an engine's translations are the cache there is */
+        }
         else if ((op & 0xFFF8) == 0xF620)           /* MOVE16 (Ax)+,(Ay)+ */
         {
             u16 ext = m68k_read16(ctx, pc + 2);
@@ -534,6 +702,12 @@ public:
 
                 m68k_sync_windowptr(ctx);
 
+                /* CacheClearU(), CacheClearE(), CacheControl(): the program
+                   says it wrote code, an engine translates it again */
+                if (ctx->jit_domain && (lvo_offset == 636 || lvo_offset == 642 || lvo_offset == 648) &&
+                    !strcmp(lib->name, "exec.library"))
+                    m68k_jit_invalidate(ctx);
+
                 /* Search thunk table */
                 for (ULONG j = 0; j < lib->num_thunks; j++)
                 {
@@ -680,6 +854,32 @@ public:
 
 extern "C" {
 
+/* The engine's accesses to the ranges of the map the host has to see: what
+   the interpreter's own accesses do, on the CPU that makes them. pc is the
+   instruction, for the messages of those functions. */
+ULONG M68KEmu_JitRead(APTR host_domain, APTR host_cpu, ULONG addr, ULONG width, ULONG pc, ULONG *value)
+{
+    AROSMoira *c = static_cast<AROSMoira *>(host_cpu);
+
+    (void)host_domain;
+    c->setPC0(pc);
+    *value = (width == 1) ? c->read8(addr) : c->read16(addr);
+    return 0;
+}
+
+ULONG M68KEmu_JitWrite(APTR host_domain, APTR host_cpu, ULONG addr, ULONG width, ULONG value, ULONG pc)
+{
+    AROSMoira *c = static_cast<AROSMoira *>(host_cpu);
+
+    (void)host_domain;
+    c->setPC0(pc);
+    if (width == 1)
+        c->write8(addr, (u8)value);
+    else
+        c->write16(addr, (u16)value);
+    return 0;
+}
+
 ULONG M68KEmu_GetD(void *cpu, int n) { return static_cast<AROSMoira *>(cpu)->getD(n); }
 ULONG M68KEmu_GetA(void *cpu, int n) { return static_cast<AROSMoira *>(cpu)->getA(n); }
 
@@ -725,6 +925,7 @@ ULONG M68KEmu_Call68k(struct M68KEmuContext *ctx, void *outer_cpu, ULONG entry, 
     c.reset();
     c.setSR(0x2000);
     c.nested_done = false;
+    c.jit_hold = false;
     for (int i = 0; i < 8; i++)
         c.setD(i, regs[i]);
     for (int i = 0; i < 7; i++)
@@ -750,6 +951,12 @@ ULONG M68KEmu_Call68k(struct M68KEmuContext *ctx, void *outer_cpu, ULONG entry, 
             return 0;
         }
         ctx->pc_ring[ctx->pc_ring_pos++ & 511] = pc;
+        if (ctx->jit_run)
+        {
+            ULONG done;
+            if (c.jitSlice(false, done))
+                continue;
+        }
         c.execute();
     }
     ts->nest_depth--;
@@ -798,6 +1005,18 @@ ULONG M68KEmu_RunTask(struct M68KEmuContext *ctx, ULONG entry, ULONG stacktop, c
                      ctx->program_name[0] ? ctx->program_name : "68k program", (unsigned long)pc);
             m68k_program_stop(ctx, TRUE);
             break;
+        }
+        if (ctx->jit_run)
+        {
+            ULONG done;
+            if (c.jitSlice(false, done))
+            {
+                unsigned long before = n;
+                n += done;
+                if ((before >> 16) != (n >> 16))
+                    m68k_gil_yield(ctx);
+                continue;
+            }
         }
         c.execute();
         if ((++n & 0xFFFF) == 0)
@@ -931,11 +1150,41 @@ LONG M68KEmu_Execute(struct M68KEmuContext *ctx)
     ctx->low_guard = TRUE;
     m68k_gil_obtain(ctx);
 
+    /* M68KEMU_CPU is set: say what runs the program. With "jit" the program
+       does not run without an engine CPU; with "auto" the interpreter does. */
+    bool jit_refused = false;
+    if (ctx->jit_mode)
+    {
+        const char *name = m68k_jit_name(ctx);
+        const char *mode = ctx->jit_mode == M68KJIT_JIT ? "jit" : ctx->jit_mode == M68KJIT_AUTO ? "auto" : "interpreter";
+
+        if (ctx->jit_run && !cpu.jitAttach())
+        {
+            ctx->jit_run = FALSE;
+            ctx->jit_why = "the engine could not make a CPU";
+            if (ctx->jit_mode == M68KJIT_JIT)
+            {
+                m68k_jit_say(ctx, "%s: M68KEMU_CPU is jit and %s; the program is not run", name, ctx->jit_why);
+                ctx->running = FALSE;
+                ctx->jit_refused = TRUE;            /* RunHunk and RunFile give the error code */
+                jit_refused = true;
+            }
+        }
+        if (ctx->jit_run)
+            m68k_jit_say(ctx, "%s runs on %s, interface %lu.%lu, with the interpreter for what it leaves (M68KEMU_CPU is %s)",
+                name, (const char *)ctx->jit_ops->name, (unsigned long)ctx->jit_ops->abi_major,
+                (unsigned long)ctx->jit_ops->abi_minor, mode);
+        else if (!jit_refused)
+            m68k_jit_say(ctx, "%s runs on the interpreter (M68KEMU_CPU is %s%s%s)", name, mode,
+                ctx->jit_why ? ": " : "", ctx->jit_why ? ctx->jit_why : "");
+    }
+
     if (ctx->trace_calls) bug("[m68kemu] TRACE core " __DATE__ " " __TIME__ " start entry %08x sp %08x argptr %08x argsize %u sysbase %08x\n",
         (unsigned)ctx->entry_point, (unsigned)sp, (unsigned)ctx->m68k_argptr,
         (unsigned)ctx->m68k_argsize, (unsigned)ctx->m68k_sysbase);
     {
         unsigned long icount = 0;
+        bool jit_poll = false;              /* an engine slice went past a multiple of 1024: the polls below are due */
         while (ctx->running)
         {
             ULONG pc = cpu.getPC0();
@@ -953,7 +1202,7 @@ LONG M68KEmu_Execute(struct M68KEmuContext *ctx)
                                 (unsigned)cpu.getSR(), (unsigned)cpu.getA(7));
                     }
                 }
-                else if ((icount & 0x3FF) == 0 && !ctx->disable && m68k_vbl_due(ctx))
+                else if (((icount & 0x3FF) == 0 || jit_poll) && !ctx->disable && m68k_vbl_due(ctx))
                 {
                     if (!(cpu.getSR() & 0x2000) && ctx->irq_stack_top)
                         cpu.setISP(ctx->irq_stack_top);
@@ -972,7 +1221,7 @@ LONG M68KEmu_Execute(struct M68KEmuContext *ctx)
                     ctx->cia_irq = FALSE;
                 }
             }
-            else if ((icount & 0x3FF) == 0 && !ctx->disable && !ctx->vbl_irq)
+            else if (((icount & 0x3FF) == 0 || jit_poll) && !ctx->disable && !ctx->vbl_irq)
             {
                 ULONG code, data;
                 if (m68k_cia_due(ctx, &code, &data))
@@ -1027,6 +1276,22 @@ LONG M68KEmu_Execute(struct M68KEmuContext *ctx)
                 m68k_program_stop(ctx, TRUE);
                 break;
             }
+            jit_poll = false;
+            if (ctx->jit_run)
+            {
+                ULONG done;
+                if (cpu.jitSlice(ctx->vbl_irq || ctx->cia_irq, done))
+                {
+                    unsigned long before = icount;
+                    icount += done;
+                    ctx->icount_lo = (ULONG)icount;
+                    if ((before >> 10) != (icount >> 10))
+                        jit_poll = true;
+                    if ((before >> 16) != (icount >> 16))
+                        m68k_gil_yield(ctx);
+                    continue;
+                }
+            }
             ctx->icount_lo = (ULONG)icount;
             cpu.execute();
             if ((icount & 0xFFFF) == 0)
@@ -1046,6 +1311,12 @@ LONG M68KEmu_Execute(struct M68KEmuContext *ctx)
     }
 
     ctx->exit_code = (LONG)cpu.getD(0);
+    if (ctx->jit_fault)
+        ctx->exit_code = 20;                /* the engine failed: not whatever D0 held */
+    if (jit_refused)
+        ctx->exit_code = -1;
+    cpu.jitDrop();                          /* the engine's CPU goes before this task's state */
+    m68k_jit_report(ctx);
     m68k_ts_drop(ctx);
     m68k_gil_release(ctx);
     if (ctx->trace_end)

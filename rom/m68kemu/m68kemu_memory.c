@@ -133,6 +133,8 @@ void M68KEmu_DestroyContext(struct M68KEmuContext *ctx)
         FreeMem(ts, sizeof(*ts));
     }
     M68KEmu_FreeNestCpus(ctx, &ctx->orphan);
+    /* the engine goes after the last CPU and before the program's memory */
+    m68k_jit_close(ctx);
     /* notifications the program left running would signal a port that is gone */
     for (UWORD i = 0; i < ctx->num_notify; i++)
     {
@@ -164,6 +166,9 @@ void M68KEmu_DestroyContext(struct M68KEmuContext *ctx)
     for (int i = 0; i < 32; i++)
         if (ctx->own_rps[i])
             FreeVec(ctx->own_rps[i]);
+    /* an engine that kept its domain still points into the memory and the map */
+    if (ctx->jit_kept)
+        return;
     if (ctx->mem) FreeMem(ctx->mem, ctx->mem_size);
     FreeMem(ctx, sizeof(struct M68KEmuContext));
 }
@@ -543,6 +548,7 @@ ULONG M68KEmu_LoadHunks(struct M68KEmuContext *ctx, BPTR segList)
     }
 
     FreeVec(host);
+    m68k_jit_invalidate(ctx);       /* 68k code was written: what an engine translated there is void */
     return entry_point;
 }
 
@@ -647,6 +653,7 @@ ULONG M68KEmu_SetupLibBase(struct M68KEmuContext *ctx, UWORD lib_id,
     ctx->num_libs++;
     m68k_publish_base(ctx, base_addr, name);
 
+    m68k_jit_invalidate(ctx);       /* 68k code was written: what an engine translated there is void */
     return base_addr;
 }
 
@@ -869,6 +876,7 @@ ULONG M68KEmu_LoadHunksFromMemory(struct M68KEmuContext *ctx, UBYTE *data, LONG 
     FreeMem(hunk_sizes, num_hunks * sizeof(ULONG));
     FreeMem(hunk_addrs, num_hunks * sizeof(ULONG));
     FreeMem(hunk_reqs, num_hunks * sizeof(ULONG));
+    m68k_jit_invalidate(ctx);       /* 68k code was written: what an engine translated there is void */
     return entry_point;
 
 fail:

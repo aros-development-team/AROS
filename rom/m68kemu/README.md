@@ -50,6 +50,12 @@ mode, enabling CPU detection code used by programs like SysInfo.
 
 **Not emulated**: Interrupts, DMA.
 
+An optional engine, `kaffeine-jit68.library` (`workbench/libs/kaffeine-jit68`,
+AArch64 only), can run the 68k code between library calls under the
+interpreter: `M68KEMU_CPU` set to `jit` or `auto` selects it. Without the
+variable the interpreter runs everything, as before. See `INTERNALS.md`, The
+Optional Engine.
+
 ### Containment Memory Model
 
 All m68k code and data lives inside a 32 MB memory block ("containment memory").
@@ -352,6 +358,7 @@ within the emulator.
 | `m68kemu_intern.h` | Context struct, fake lib bases, inline helpers, memory accessors |
 | `m68kemu_moira.cpp` | Moira subclass, A-line exception handler, sentinel detection |
 | `m68kemu_run.c` | RunHunk/RunFile entry points, process creation, ExecBase shadow init |
+| `m68kemu_jit.c` | The optional engine: selection by `M68KEMU_CPU`, its map of the program's memory, invalidation, the end |
 | `m68kemu_memory.c` | Containment memory allocation, heap allocator, hunk loaders |
 | `m68kemu_init.c` | Library init/open/close |
 | `m68kemu_stubs.c` | AROS library stubs |

@@ -209,6 +209,7 @@ static LONG setup_and_execute(struct M68KEmuContext *ctx, ULONG entry,
     struct Message *wb = NULL;
     ULONG entry;
     LONG result = -1;
+    BOOL refused;
 
     /* started from Workbench: its startup message is taken before the
        first DOS call of this process, as the native startup code does */
@@ -236,7 +237,9 @@ static LONG setup_and_execute(struct M68KEmuContext *ctx, ULONG entry,
         }
     }
 
-    entry = M68KEmu_LoadHunks(ctx, segList);
+    /* M68KEMU_CPU: the interpreter, or an engine under it (m68kemu_jit.c) */
+    refused = m68k_jit_select(ctx) < 0;
+    entry = refused ? 0 : M68KEmu_LoadHunks(ctx, segList);
     if (ctx->trace_calls) bug("[m68kemu] TRACE build " __DATE__ " " __TIME__ " RunHunk seglist %p stack %u args %u -> entry %08x\n",
         BADDR(segList), (unsigned)stackSize, (unsigned)argSize, (unsigned)entry);
     if (entry)
@@ -252,7 +255,11 @@ static LONG setup_and_execute(struct M68KEmuContext *ctx, ULONG entry,
                                    stackSize, name[0] ? name : NULL, BNULL, M68KEmuBase);
     }
     m68k_wbstartup_done(ctx);
+    if (ctx->jit_refused)                               /* found when the program's CPU was made */
+        refused = TRUE;
     m68k_context_release(ctx);
+    if (refused)
+        SetIoErr(ERROR_INVALID_RESIDENT_LIBRARY);       /* M68KEMU_CPU asked for what is not there */
     return result;
 
     AROS_LIBFUNC_EXIT
@@ -278,6 +285,7 @@ static LONG setup_and_execute(struct M68KEmuContext *ctx, ULONG entry,
     UBYTE *fileData;
     ULONG entry;
     LONG result = -1;
+    BOOL refused;
 
     fh = Open(fileName, MODE_OLDFILE);
     if (!fh) return -1;
@@ -296,7 +304,8 @@ static LONG setup_and_execute(struct M68KEmuContext *ctx, ULONG entry,
     ctx = M68KEmu_CreateContextWithStack(M68KEmuBase, stackSize);
     if (!ctx) { FreeMem(fileData, fileSize); return -1; }
 
-    entry = M68KEmu_LoadHunksFromMemory(ctx, fileData, fileSize);
+    refused = m68k_jit_select(ctx) < 0;
+    entry = refused ? 0 : M68KEmu_LoadHunksFromMemory(ctx, fileData, fileSize);
     FreeMem(fileData, fileSize);
 
     if (entry)
@@ -308,7 +317,11 @@ static LONG setup_and_execute(struct M68KEmuContext *ctx, ULONG entry,
                                    stackSize, fileName, homeDir, M68KEmuBase);
     }
 
+    if (ctx->jit_refused)
+        refused = TRUE;
     m68k_context_release(ctx);
+    if (refused)
+        SetIoErr(ERROR_INVALID_RESIDENT_LIBRARY);
     return result;
 
     AROS_LIBFUNC_EXIT

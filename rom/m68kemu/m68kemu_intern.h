@@ -12,6 +12,8 @@
 #include <exec/ports.h>
 #include <dos/bptr.h>
 
+#include "kaffeine-jit68-abi-v1.h"     /* the optional engine (m68kemu_jit.c); in workbench/libs/kaffeine-jit68 */
+
 struct M68KEmuLibBase
 {
     struct Library          lib;
@@ -303,6 +305,29 @@ struct M68KEmuContext
     UWORD   beam_v;     /* vertical position 0-312 */
     UBYTE   beam_h;     /* horizontal position 0-226 */
     UBYTE   beam_lof;   /* long frame flag (toggled each frame) */
+
+    /* The optional engine (m68kemu_jit.c): it runs the program's code
+       between the instructions the interpreter has to take. All of this
+       stays 0 without M68KEMU_CPU. */
+    #define M68KJIT_INTERPRETER 1   /* M68KEMU_CPU=interpreter */
+    #define M68KJIT_JIT         2   /* jit: the engine, or the program is not run */
+    #define M68KJIT_AUTO        3   /* auto: the engine when it is there and works */
+    UBYTE   jit_mode;               /* what M68KEMU_CPU asked for, 0 when it is not set */
+    BOOL    jit_run;                /* this run uses the engine */
+    BOOL    jit_fault;              /* the engine failed: the result of the run is 20 */
+    BOOL    jit_map_ok;             /* the map tells the engine all the host has to see */
+    BOOL    jit_cpu_said;           /* "no engine CPU for a task" was reported */
+    BOOL    jit_refused;            /* jit, and the program's own engine CPU could not be made: no run */
+    BOOL    jit_kept;               /* the engine did not let its domain go: nothing it points into is freed */
+    LONG    jit_status;             /* what domain_create answered */
+    const char *jit_why;            /* auto: why the interpreter runs the program */
+    struct Library *jit_base;
+    const struct KJ68EngineOps *jit_ops;
+    struct KJ68Domain *jit_domain;
+    struct KJ68HostServices jit_host;
+    struct KJ68MemoryMap jit_map;
+    ULONG   jit_plane_lo, jit_plane_hi;     /* the bitplane range the map has */
+    UQUAD   jit_interp;             /* instructions the interpreter ran in a run on the engine */
 };
 
 
@@ -347,6 +372,17 @@ void  M68KEmu_FreeNestCpus(struct M68KEmuContext *ctx, struct M68KTaskState *ts)
 void  M68KEmu_StopCpu(struct M68KEmuContext *ctx, void *cpu);
 void  m68k_restore_windowptr(struct M68KEmuContext *ctx);
 void  m68k_dump_callring(struct M68KEmuContext *ctx);
+/* m68kemu_jit.c: the optional engine */
+LONG  m68k_jit_select(struct M68KEmuContext *ctx);      /* M68KEMU_CPU; -1: the program is not run */
+void  m68k_jit_close(struct M68KEmuContext *ctx);
+void  m68k_jit_invalidate(struct M68KEmuContext *ctx);  /* 68k code was written */
+BOOL  m68k_jit_map(struct M68KEmuContext *ctx);
+void  m68k_jit_report(struct M68KEmuContext *ctx);
+void  m68k_jit_say(struct M68KEmuContext *ctx, const char *fmt, ...);
+const char *m68k_jit_name(struct M68KEmuContext *ctx);  /* the program, short enough for a line */
+/* m68kemu_moira.cpp: the engine's accesses to the ranges the host has to see */
+ULONG M68KEmu_JitRead(APTR host_domain, APTR host_cpu, ULONG addr, ULONG width, ULONG pc, ULONG *value);
+ULONG M68KEmu_JitWrite(APTR host_domain, APTR host_cpu, ULONG addr, ULONG width, ULONG value, ULONG pc);
 /* m68kemu_tasks.c */
 struct M68KTaskState *m68k_ts(struct M68KEmuContext *ctx);       /* this task's state, made on first use */
 struct M68KTaskState *m68k_ts_find(struct M68KEmuContext *ctx, struct Task *task);   /* NULL: not a task of the program */

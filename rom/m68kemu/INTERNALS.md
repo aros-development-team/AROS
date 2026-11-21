@@ -244,6 +244,58 @@ interrupt, callback and child stacks are unchanged.
 - `M68KEmu_StopCpu()` implements dos `Exit()`: a nested CPU finishes, the main
   CPU stops the program.
 
+### The Optional Engine
+
+`M68KEMU_CPU` can put an engine under the interpreter: `kaffeine-jit68.library`
+(`workbench/libs/kaffeine-jit68`, built for AArch64 only), reached through the
+interface of `kaffeine-jit68-abi-v1.h` there. `m68kemu_jit.c` has the selection,
+the engine's map of the program's memory and the end; the slice is in
+`m68kemu_moira.cpp`. Without the variable none of it runs.
+
+- **Selection** (`m68k_jit_select()`, called by `RunHunk` and `RunFile` before
+  the loader, local variable first, then global): unset or empty is the
+  interpreter and nothing else, the caller's `IoErr()` included; `interpreter`
+  says so in a line; `jit` is the engine, or the call returns -1 with
+  `ERROR_INVALID_RESIDENT_LIBRARY` and a line, before any 68k instruction;
+  `auto` is the engine when the library opens and takes the program, the
+  interpreter otherwise, with the reason in the line; anything else, or a value
+  of 31 characters or more, is -1.
+- **Every CPU stays an `AROSMoira`.** It keeps the registers the thunks use and
+  takes every exception, interrupt and library call. With the engine it also has
+  an engine CPU (`jcpu`), made by the task that holds the program lock.
+- **The slice** (`AROSMoira::jitSlice()`), tried by the three loops before
+  `execute()`: only when nothing is pending in the core (`flags == 0`), no
+  interrupt level is asserted or raised and not yet taken, SR is supervisor
+  without trace and master bit, the PC is even, at or above 0x1000 and inside
+  memory, and the task holds the program lock. D0-D7, A0-A7, SR and PC go to the
+  engine, it runs with a budget of 1024 instructions, and they come back. The PC
+  comes back through `read16()`, so a return to a sentinel ends the loop as
+  without the engine.
+- **What the engine does not execute is the interpreter's**: an A-line opcode
+  (a library call, through `willExecute` with its frame and RTE), an instruction
+  the engine declines, one that raises an exception, a fetch outside memory. So
+  `Supervisor()`, RTE, exception handlers of the program, MOVEC, the 68040 cache
+  instructions and the interrupts are the code of this chapter, unchanged.
+- **Memory**: the engine reads and writes the containment buffer itself except
+  in the ranges of its map, where it calls `M68KEmu_JitRead()` and
+  `M68KEmu_JitWrite()`, which call `read8/read16/write8/write16` of that CPU:
+  the first page (writes), the CIA and custom chip pages (reads and writes) and
+  the bitplanes of a mirrored screen (writes; `m68k_jit_map()` follows the
+  range).
+- **Changed code**: `m68k_jit_invalidate()` after the loaders have written, when
+  a library base or a stub is written, at exec `CacheClearU`, `CacheClearE` and
+  `CacheControl`, and at CINV and CPUSH. Stores into code that already ran,
+  without one of those, are not seen by the engine.
+- **Failure**: an engine `run()` that fails or ends with a fault stops the
+  program (`m68k_program_stop(ctx, TRUE)`) with a line, and the result is 20.
+- **The end**: an engine CPU is destroyed with its `AROSMoira`, the program's
+  own before `m68k_ts_drop()`. `M68KEmu_DestroyContext()` destroys the engine's
+  domain after the last CPU and before the memory is freed, then closes the
+  library.
+- **Lines**: with the variable set, one line (`m68k_log()`) says what runs the
+  program; after a run on the engine one more gives the engine's counters and
+  the number of instructions the interpreter ran.
+
 ### Termination
 
 - **Sentinel**: an RTS to `SENTINEL_ADDR` makes `read16()` return the STOP opcode
@@ -1129,6 +1181,8 @@ field is 8 bytes wide, so the checked-in header is valid for 64-bit targets only
   prints them when the program ends, after 10 seconds in one call, or at 60
   seconds.
 - `M68KEMU_CLASSICBORDERS 0` turns off the window growth for the decoration.
+- `M68KEMU_CPU jit` or `auto` runs the program on the optional engine, with one
+  line saying so and one with its counters (The Optional Engine, above).
 - `m68k_log()` sends messages about a program (unsupported function, library
   missing, unhandled exception, shadow table full) to `log.resource`, so
   LogDump and the log viewers show them; with tracing on they also go to the
