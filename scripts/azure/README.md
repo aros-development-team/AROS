@@ -59,7 +59,10 @@ follows both (it needs the toolchain artifact and the Core base manifest).
 ## Key mechanisms
 
 * **Toolchain caching (`Cache@2`).** The toolchain is restored from a cache keyed
-  on `arosbuild.name | family | gcc.version | llvm.version | hashFiles('tools/crosstools/**')`.
+  on `arosbuild.name | host OS release | build path | family | gcc.version |
+  llvm.version | rust.version | hashFiles('tools/crosstools/**', 'tools/collect-aros/**')`.
+  The host release and build path are part of the key because the toolchain
+  only works on the kind of host, and at the path, it was built on (see below).
   The cache holds the toolchain **tarball** (preserving filesystem
   permissions/attributes) in a temporary location; on a hit it is unpacked to
   the canonical toolchain path (and the tarball removed) and `make crosstools`
@@ -70,6 +73,14 @@ follows both (it needs the toolchain artifact and the Core base manifest).
   toolchain is always restored to the **same** absolute path
   (`$(Build.BinariesDirectory)/toolchain`) and `configure` is re-run pointing at
   it in the Core/Contrib stages.
+* **Agent image changes.** The per-flavour `arosbuild.vmimage` settings say
+  `ubuntu-latest`, which Microsoft moves to new Ubuntu releases without notice.
+  The toolchain job reads the OS release from the running agent and keys the
+  cache on it together with the build path, so an image change rebuilds the
+  toolchain once instead of restoring one that cannot run. In Nov 2026
+  `ubuntu-latest` moved from 24.04 to 26.04, which changed the agent work path
+  from `/home/vsts` to `/home/runner`; before the key included these, every
+  build that restored a cached toolchain failed.
 * **Contrib packaging without the second tree copy.** The Core stage publishes a
   tiny `*-base.manifest` (a `find` path list of the fully-built base tree). The
   Contrib stage packages exactly the files **not** in that manifest. This is the
