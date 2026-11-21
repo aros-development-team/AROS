@@ -85,6 +85,7 @@ FUNCTIONS := abortpkt addbuffers adddosentry addpart addsegment \
 # its objects need security.library's current includes
 #MM kernel-dos-kobj : workbench-libs-dos-catalogs kernel-security-includes
 #MM kernel-dos : workbench-libs-dos-catalogs kernel-security-includes
+#MM linklibs-loadseg : kernel-security-includes
 
 #MM kernel-dos-includes : \
 #MM     kernel-utility-includes \
