@@ -31,9 +31,12 @@
 
 #define LONGTEXT 8193
 
+/* a glyph in the font's data: the bit it starts at and its width in bits */
+#define GLYPH(start, width) (((ULONG)(start) << 16) + (width))
+
 static const ULONG charloc[5] =
 {
-    (0UL << 16) | 4, (4UL << 16) | 6, (10UL << 16) | 8, (18UL << 16) | 10, (28UL << 16) | 5
+    GLYPH(0, 4), GLYPH(4, 6), GLYPH(10, 8), GLYPH(18, 10), GLYPH(28, 5)
 };
 static const WORD charspace[5] = { 5, 7, 9, 11, 6 };
 static const WORD charkern[5] = { 1, 0, -2, 2, 0 };
