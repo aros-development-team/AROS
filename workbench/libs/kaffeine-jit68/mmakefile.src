@@ -1,0 +1,22 @@
+# Copyright (C) 2026, The AROS Development Team. All rights reserved.
+#
+# kaffeine-jit68.library: an optional 68k execution engine for
+# m68kemu.library, behind the interface of kaffeine-jit68-abi-v1.h.
+#
+# The translator emits AArch64 code, so the library is built for AArch64
+# targets only. m68kemu.library runs without it.
+
+include $(SRCDIR)/config/aros.cfg
+
+#MM- workbench-libs : workbench-libs-kaffeine-jit68-$(AROS_TARGET_CPU)
+#MM- workbench-libs-kaffeine-jit68-aarch64 : workbench-libs-kaffeine-jit68
+
+FILES := kj68_library kj68_engine kj68_translate
+
+USER_LDFLAGS := -static
+
+%build_module mmake=workbench-libs-kaffeine-jit68 \
+    modname=kaffeine-jit68 modtype=library \
+    files="$(FILES)"
+
+%common

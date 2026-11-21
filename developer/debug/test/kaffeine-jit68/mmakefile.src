@@ -1,0 +1,22 @@
+# Copyright (C) 2026, The AROS Development Team. All rights reserved.
+#
+# A native probe of kaffeine-jit68.library through its interface alone.
+# The library is built for AArch64 targets only, and so is the probe.
+
+include $(SRCDIR)/config/aros.cfg
+
+FILES := kj68probe
+
+EXEDIR := $(AROS_TESTS)/kaffeine-jit68
+
+USER_CPPFLAGS := -I$(SRCDIR)/workbench/libs/kaffeine-jit68
+
+#MM test-kaffeine-jit68 : includes linklibs
+
+#MM- test : test-kaffeine-jit68-$(AROS_TARGET_CPU)
+#MM- test-kaffeine-jit68-aarch64 : test-kaffeine-jit68
+
+%build_progs mmake=test-kaffeine-jit68 \
+    files=$(FILES) targetdir=$(EXEDIR)
+
+%common
