@@ -13,6 +13,7 @@ FILES := \
     auxstartup \
     clicreatenewproc \
     consolemodes \
+    dosentry68k \
     doslist \
     dosvartest \
     examine \
