@@ -65,6 +65,10 @@ volatile BOOL __pthread_exiting;
 // program whose threads all come from pthread_create() never needs one.
 static struct Library *tlstaskres;
 static LONG tlsslot;
+// Such a task has no entry in threads[], so pthread_self() hands it an
+// identifier above the table instead, counted up and kept in a second slot.
+static LONG idslot;
+static pthread_t foreignids;
 #endif
 
 //
@@ -142,6 +146,55 @@ void **GetTLSValues(BOOL create)
     }
 #else
     return GetThreadInfo(0)->tlsvalues;
+#endif
+}
+
+// The record the calling task works on: its own, or the initial task's if
+// it is not a pthread.
+ThreadInfo *GetSelfInfo(void)
+{
+    pthread_t thread = GetThreadId(GET_THIS_TASK);
+
+    return GetThreadInfo(thread == PTHREAD_THREADS_MAX ? 0 : thread);
+}
+
+// The identifier of a calling task that is not a pthread: the same value on
+// every call, different from every other task's and never below
+// PTHREAD_THREADS_MAX. 0 if it cannot be stored.
+pthread_t GetForeignThreadId(void)
+{
+#if defined(__AROS__)
+    struct Library *TaskResBase;
+    pthread_t id;
+
+    if (!idslot)
+    {
+        ObtainSemaphore(&tls_sem);
+        if (!tlstaskres)
+            tlstaskres = OpenResource("task.resource");
+        if (!idslot && (TaskResBase = tlstaskres))
+            idslot = AllocTaskStorageSlot();
+        ReleaseSemaphore(&tls_sem);
+        if (!idslot)
+            return 0;
+    }
+
+    TaskResBase = tlstaskres;
+    id = (pthread_t)GetTaskStorageSlot(idslot);
+    if (!id)
+    {
+        ObtainSemaphore(&tls_sem);
+        do
+            id = PTHREAD_THREADS_MAX + ++foreignids;
+        while (id < PTHREAD_THREADS_MAX); // the counter wrapped
+        ReleaseSemaphore(&tls_sem);
+        if (!SetTaskStorageSlot(idslot, id))
+            return 0;
+    }
+
+    return id;
+#else
+    return 0;
 #endif
 }
 
@@ -2094,13 +2147,11 @@ AROS_UFH3S(ULONG, CancelHandler,
 
 *****************************************************************************/
 {
-    pthread_t thread;
     ThreadInfo *inf;
 
     D(bug("%s()\n", __FUNCTION__));
 
-    thread = pthread_self();
-    inf = GetThreadInfo(thread);
+    inf = GetSelfInfo();
 
     if (inf->canceled)
     {
@@ -2566,7 +2617,6 @@ static void OnceCleanup(void *arg)
 
 *****************************************************************************/
 {
-    pthread_t thread;
     ThreadInfo *inf;
     CleanupHandler *handler;
 
@@ -2580,8 +2630,7 @@ static void OnceCleanup(void *arg)
     if (handler == NULL)
         return;
 
-    thread = pthread_self();
-    inf = GetThreadInfo(thread);
+    inf = GetSelfInfo();
 
     handler->routine = routine;
     handler->arg = arg;
@@ -2621,14 +2670,12 @@ static void OnceCleanup(void *arg)
 
 *****************************************************************************/
 {
-    pthread_t thread;
     ThreadInfo *inf;
     CleanupHandler *handler;
 
     D(bug("%s(%d)\n", __FUNCTION__, execute));
 
-    thread = pthread_self();
-    inf = GetThreadInfo(thread);
+    inf = GetSelfInfo();
     handler = (CleanupHandler *)RemTail((struct List *)&inf->cleanup);
 
     if (handler && handler->routine && execute)
@@ -2771,6 +2818,14 @@ void __pthread_Exit_Func(void)
         }
         FreeTaskStorageSlot(tlsslot);
         tlsslot = 0;
+    }
+    if (idslot)
+    {
+        struct Library *TaskResBase = tlstaskres;
+
+        SetTaskStorageSlot(idslot, 0);
+        FreeTaskStorageSlot(idslot);
+        idslot = 0;
     }
 #endif
 }

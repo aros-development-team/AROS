@@ -62,7 +62,6 @@
 
 *****************************************************************************/
 {
-    pthread_t thread;
     ThreadInfo *inf;
 
     D(bug("%s(%d, %p)\n", __FUNCTION__, type, oldtype));
@@ -70,8 +69,7 @@
     if (type != PTHREAD_CANCEL_DEFERRED && type != PTHREAD_CANCEL_ASYNCHRONOUS)
         return EINVAL;
 
-    thread = pthread_self();
-    inf = GetThreadInfo(thread);
+    inf = GetSelfInfo();
 
     if (oldtype)
         *oldtype = inf->canceltype;

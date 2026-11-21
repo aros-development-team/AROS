@@ -72,14 +72,12 @@
 
 *****************************************************************************/
 {
-    pthread_t thread;
     ThreadInfo *inf;
     CleanupHandler *handler;
 
     D(bug("%s(%p)\n", __FUNCTION__, value_ptr));
 
-    thread = pthread_self();
-    inf = GetThreadInfo(thread);
+    inf = GetSelfInfo();
     inf->ret = value_ptr;
 
     // execute the clean-up handlers
