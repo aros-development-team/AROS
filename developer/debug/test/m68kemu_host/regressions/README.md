@@ -520,6 +520,64 @@ includes without compiling or executing a test. These focused checks do not
 call graphics.library, model native struct layouts, execute the CPU, or
 qualify a complete library or application.
 
+## Generated shadow layouts
+
+Run from the repository root:
+
+```sh
+make -C developer/debug/test/m68kemu_host test-shadow-layouts
+make -C developer/debug/test/m68kemu_host test-shadow-layouts-sanitize
+```
+
+The ordinary fixture is part of the host Makefile's `test` target. It needs
+Python 3.9+ and a C99 compiler; ASan/UBSan are optional. `PYTHON` and `CC`
+select those tools. `SHADOW_LAYOUTS_ARGS` passes runner options such as
+`--source-root /path/to/AROS` and `--build-dir /tmp/shadow-layouts`.
+Use a fresh build directory; the default temporary directory is removed.
+The fixture is built with `-std=c99 -Wall -Wextra -Werror`, so a compiler
+warning fails the target.
+
+`m68kemu_shadow_layouts.h` writes the m68k offset of a field as a number and
+leaves the native side to the compiler of the target. The runner checks that
+in three steps.
+
+The checked-in header must be, byte for byte, what `gen_shadow_layouts.py`
+writes from `m68k_offsets.txt`, and every row of its tables must be a
+`SHADOW_FIELD()` row or the end entry, so that no native offset is a number.
+
+`gen_offset_extractor.py`, run over the sample header as its NDK, must name
+in each probe the member it probes and in each size line the header of the
+struct. These are the two columns the generator reads the native side from.
+
+The generator's output for `shadow_layouts_sample.txt` is then compiled four
+times around the structures of `shadow_layouts_sample.h`, without any change
+to that output. The sample library node ends in a lock, as `struct Library`
+ends in a `spinlock_t`, and the base that embeds it has four fields behind
+it. The four builds give the lock 16 or 128 bytes and one value 4 or 8 bytes.
+The fixture takes the SF_ types and the two table structs from
+`m68kemu_shadow.h` and compares every row with an expectation that does not
+use the generator's macros: the m68k offset, the native offset of this build,
+the type, and that nothing else is set; then the end entries, the names, the
+m68k sizes, the type numbers from 20 on, and the count. One struct of the
+sample has no member and must get no layout; a field of 14 bytes and a field
+without a member must get no row.
+
+Across the builds the runner checks that the m68k offsets are those of the
+sample file everywhere, that the four fields behind the lock lie 112 bytes
+further with the larger lock while the other 25 do not move, and that the
+value is `SF_PTR` with 8 bytes and `SF_LONG` with 4. A pointer member is
+`SF_PTR` where the host's pointers have 8 bytes.
+
+Each build prints `shadow layouts: 160 checks, <n> failed`; a failed check
+prints a `FAILED` line and ends the run with status 1. On a tree whose
+generator still takes two offset files the runner stops at the first step
+and says so.
+
+These checks compile the sample only. The real header needs the AROS headers
+of a target, so that every member it names exists is shown by the build of
+`m68kemu_shadow.c`, not here. The shadow engine itself does not run.
+
+
 ## A 68k child without a guest Process
 
 Run from the repository root:

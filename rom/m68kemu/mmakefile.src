@@ -5,9 +5,9 @@
 #
 # Skip on m68k targets — no need to emulate m68k on m68k
 #
-# The checked-in m68kemu_shadow_layouts.h holds the native struct offsets of a
-# 64bit build (an_Parent is at 8 there, but at 4 on a 32bit target), so only
-# build where those are valid until the layouts are generated per target.
+# m68kemu_shadow_layouts.h takes its native struct offsets from offsetof(), so
+# they follow the target. It tells a pointer from a LONG by a native member of
+# 8 bytes, though, so only build where pointers have that size.
 
 include $(SRCDIR)/config/aros.cfg
 
@@ -71,12 +71,12 @@ M68KEMU_CXXFILES := \
 
 %common
 
-# ── Shadow layout regeneration (needed for any new target architecture) ──
-# The checked-in m68kemu_shadow_layouts.h was generated for x86_64.
-# To regenerate it, compile the probe gen_offset_extractor.py writes with both
-# the m68k and the target compiler, then feed the two offset dumps to
-#   gen_shadow_layouts.py m68k.txt aros.txt > m68kemu_shadow_layouts.h
-# Requires: python3 and the AmigaOS NDK headers for the m68k side.
+# ── Shadow layout regeneration ──
+# The checked-in m68kemu_shadow_layouts.h is the same for every target: it
+# names the native members and the compiler places them. It is written by
+#   gen_shadow_layouts.py m68k_offsets.txt > m68kemu_shadow_layouts.h
+# Requires: python3. The AmigaOS NDK headers and an m68k compiler are only
+# needed to add structs to m68k_offsets.txt (gen_offset_extractor.py).
 # Note that gen_shadow_layouts.py only treats a field as a pointer when the
 # native one is 8 bytes wide, so it needs fixing before it can serve a
 # 32bit target.
