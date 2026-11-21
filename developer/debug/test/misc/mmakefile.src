@@ -22,6 +22,7 @@ FILES := \
     joystick \
     mathtest \
     partition \
+    pthreadselftest \
     pthreadspintest \
     pthreadtest \
     simplepng \

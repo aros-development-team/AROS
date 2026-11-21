@@ -42,8 +42,10 @@
 
     RESULT
         The registered worker identifier, or 0 for the initial program task.
-        This implementation also returns 0 for an unregistered task; there is
-        no separate failure result.
+        A task that this pthread runtime did not create gets an identifier of
+        its own, not below PTHREAD_THREADS_MAX: the same value on every call
+        and different from every other task's. There is no separate failure
+        result; if that identifier cannot be stored, 0 is returned.
 
     NOTES
         Include <pthread.h>; link with pthread. The call does not wait for a
@@ -51,11 +53,14 @@
         pthread_equal(). A worker identifier is valid only for that worker's
         lifetime, including any joinable completion record.
 
+        The identifier of a task this runtime did not create only tells
+        callers apart. The task has no entry in the thread table, so functions
+        that take a pthread_t treat it like any identifier outside the table
+        and fail.
+
     BUGS
-        Tasks created outside this pthread runtime are not registered by this
-        call. Their fallback value aliases the initial task, so it must not be
-        used to access cancellation state or thread-specific storage from an
-        arbitrary Exec task.
+        Cancellation state and cleanup handlers of a task this runtime did
+        not create are still those of the initial task.
 
     SEE ALSO
         pthread_equal(),
@@ -73,7 +78,7 @@
     thread = GetThreadId(task);
 
     if (thread == PTHREAD_THREADS_MAX)
-        return 0;
+        return GetForeignThreadId();
 
     return thread;
 }

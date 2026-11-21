@@ -135,6 +135,8 @@ extern int SemaphoreIsInvalid(struct SignalSemaphore *sem);
 extern int SemaphoreIsMine(struct SignalSemaphore *sem);
 extern ThreadInfo *GetThreadInfo(pthread_t thread);
 extern pthread_t GetThreadId(struct Task *task);
+extern ThreadInfo *GetSelfInfo(void);
+extern pthread_t GetForeignThreadId(void);
 extern void **GetTLSValues(BOOL create);
 
 /* .c */

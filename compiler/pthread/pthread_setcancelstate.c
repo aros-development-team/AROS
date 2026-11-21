@@ -60,7 +60,6 @@
 
 *****************************************************************************/
 {
-    pthread_t thread;
     ThreadInfo *inf;
 
     D(bug("%s(%d, %p)\n", __FUNCTION__, state, oldstate));
@@ -68,8 +67,7 @@
     if (state != PTHREAD_CANCEL_ENABLE && state != PTHREAD_CANCEL_DISABLE)
         return EINVAL;
 
-    thread = pthread_self();
-    inf = GetThreadInfo(thread);
+    inf = GetSelfInfo();
 
     if (oldstate)
         *oldstate = inf->cancelstate;
