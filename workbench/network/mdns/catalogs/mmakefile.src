@@ -1,0 +1,10 @@
+# Copyright (C) 2026, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+
+# One catalog for NetServices and the mDNS tools: they share the words of
+# sd_common and sd_types (the kinds of service, the errors). strings.h, the
+# message numbers and built-in English, is made in the directory above.
+# Translations (*.ct) are picked up when they are added
+%build_catalogs mmake=workbench-network-mdns-catalogs \
+    name=DNSSD subdir=System/C

@@ -69,6 +69,10 @@
 #include "sd_common.h"
 #include "sd_types.h"
 
+#define CATCOMP_NUMBERS
+#define CATCOMP_STRINGS
+#include "../strings.h"
+
 #define ARG_TYPE    0
 #define ARG_ALL     1
 #define ARG_DOMAIN  2
@@ -79,13 +83,13 @@
 
 static const char *NearbyTemplate = "TYPE,ALL/S,DOMAIN/K,TIME/N/K,RAW/S,PORTS/S";
 static const char version_tag[] __attribute__((used)) =
-    "\0$VER: Nearby 42.0 (13.11.2026)";
+    "\0$VER: Nearby 42.2 (21.11.2026)";
 
 static void
 NearbyPrintKind(const struct SDService *sv, BOOL gone, BOOL raw)
 {
     if (gone) {
-        SDPrintf("  gone: %s\n", SDTypeFriendly((CONST_STRPTR)sv->sv_Type));
+        SDPrintf(SDMsg(MSG_NEARBY_GONE), SDTypeFriendly((CONST_STRPTR)sv->sv_Type));
     } else if (raw) {
         SDPrintf("  %-26s  %s\n", SDTypeFriendly((CONST_STRPTR)sv->sv_Type),
             sv->sv_Type);
@@ -98,7 +102,7 @@ static void
 NearbyPrint(const struct SDService *sv, BOOL gone, BOOL raw, BOOL ports)
 {
     if (gone) {
-        SDPrintf("  gone: %s\n", sv->sv_Name);
+        SDPrintf(SDMsg(MSG_NEARBY_GONE), sv->sv_Name);
         return;
     }
     if (!ports) {
@@ -109,7 +113,7 @@ NearbyPrint(const struct SDService *sv, BOOL gone, BOOL raw, BOOL ports)
         }
         return;
     }
-    SDPrintf("  %-26s port %ld", sv->sv_Name, (LONG)sv->sv_Port);
+    SDPrintf(SDMsg(MSG_NEARBY_PORT), sv->sv_Name, (LONG)sv->sv_Port);
     if (sv->sv_AddressCount != 0) {
         UWORD i;
 
@@ -125,7 +129,7 @@ NearbyPrint(const struct SDService *sv, BOOL gone, BOOL raw, BOOL ports)
     }
     SDPrintf("\n");
     if (sv->sv_TXTLength > 1) {
-        SDPrintf("      info: ");
+        SDPrintf(SDMsg(MSG_NEARBY_INFO));
         SDPrintTXT(sv->sv_TXT, sv->sv_TXTLength);
         SDPrintf("\n");
     }
@@ -145,29 +149,29 @@ NearbyRun(CONST_STRPTR word, BOOL all, LONG timeSecs, BOOL raw, BOOL ports)
 
     sv = AllocVec(sizeof(*sv), MEMF_ANY | MEMF_CLEAR);
     if (sv == NULL) {
-        SDAppPrintError("browse", DNSSD_ERR_NOMEM);
+        SDAppPrintError(SDMsg(MSG_OP_BROWSE), DNSSD_ERR_NOMEM);
         return 20;
     }
     if ((rc = SDSessionOpen(&session, timeSecs)) != DNSSD_OK) {
         FreeVec(sv);
-        SDAppPrintError("browse", rc);
+        SDAppPrintError(SDMsg(MSG_OP_BROWSE), rc);
         return 20;
     }
     if ((rc = SDFinderStart(&finder, &session, type)) != DNSSD_OK) {
         SDSessionClose(&session);
         FreeVec(sv);
-        SDAppPrintError("browse", rc);
+        SDAppPrintError(SDMsg(MSG_OP_BROWSE), rc);
         return 20;
     }
     if (kinds) {
-        SDPrintf("Kinds of service on your local network");
+        SDPrintf(SDMsg(MSG_NEARBY_KINDS));
     } else {
-        SDPrintf("Looking for %s", SDTypeFriendly(type));
+        SDPrintf(SDMsg(MSG_NEARBY_LOOKING), SDTypeFriendly(type));
     }
     if (timeSecs > 0) {
-        SDPrintf(" (%ld seconds)...\n\n", timeSecs);
+        SDPrintf(SDMsg(MSG_NEARBY_SECONDS), timeSecs);
     } else {
-        SDPrintf(" (Ctrl-C to stop)...\n\n");
+        SDPrintf(SDMsg(MSG_NEARBY_CTRL_C));
     }
     while (result < 0 && SDSessionWait(&session) == SD_WAIT_EVENTS) {
         const struct DNSSDEvent *e;
@@ -188,18 +192,18 @@ NearbyRun(CONST_STRPTR word, BOOL all, LONG timeSecs, BOOL raw, BOOL ports)
                 NearbyPrint(sv, TRUE, raw, ports);
                 break;
             case SD_FOUND_END:
-                SDAppPrintError("browse", rc);
+                SDAppPrintError(SDMsg(MSG_OP_BROWSE), rc);
                 result = 20;
                 break;
             }
         }
         if (result < 0 && rc != DNSSD_ERR_EMPTY) {
-            SDAppPrintError("browse", rc);
+            SDAppPrintError(SDMsg(MSG_OP_BROWSE), rc);
             result = 20;
         }
     }
     if (result < 0) {
-        SDPrintf("\nDone.\n");
+        SDPrintf(SDMsg(MSG_NEARBY_DONE));
         result = 0;
     }
     SDFinderStop(&finder);
@@ -220,8 +224,11 @@ main(void)
     for (i = 0; i < ARG_COUNT; i++) {
         args[i] = 0;
     }
+    /* the catalog first: what is said about the arguments is translated */
+    SDLocaleOpen();
     rda = ReadArgs((STRPTR)NearbyTemplate, args, NULL);
     if (rda == NULL) {
+        SDLocaleClose();
         PrintFault(IoErr(), (CONST_STRPTR)"Nearby");
         return 20;
     }
@@ -229,13 +236,15 @@ main(void)
         timeSecs = *((LONG *)args[ARG_TIME]);
     }
     if (!SDAppOpen()) {
-        SDPrintf("Cannot open %s version %ld.\n", DNSSDNAME, (LONG)DNSSD_VERSION);
+        SDAppPrintNoLibrary();
         FreeArgs(rda);
+        SDLocaleClose();
         return 20;
     }
     result = NearbyRun((CONST_STRPTR)args[ARG_TYPE], args[ARG_ALL] != 0,
         timeSecs, args[ARG_RAW] != 0, args[ARG_PORTS] != 0);
     SDAppClose();
     FreeArgs(rda);
+    SDLocaleClose();
     return result;
 }
