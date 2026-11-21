@@ -254,15 +254,16 @@ static void ata_IRQPIORead(struct ata_Unit *unit, UBYTE status)
 
 static void ata_PIOWriteBlk(struct ata_Unit *unit)
 {
-    Unit_OutS(unit, unit->au_cmd_data, unit->au_cmd_length);
+    APTR data = unit->au_cmd_data;
+    ULONG length = unit->au_cmd_length;
 
-    /*
-     * Adjust data pointer and counter
-     */
-    unit->au_cmd_data += unit->au_cmd_length;
-    unit->au_cmd_total -= unit->au_cmd_length;
+    /* Adjust data pointer and counter first: the device may interrupt right after the last word */
+    unit->au_cmd_data += length;
+    unit->au_cmd_total -= length;
     if (unit->au_cmd_length > unit->au_cmd_total)
         unit->au_cmd_length = unit->au_cmd_total;
+
+    Unit_OutS(unit, data, length);
 }
 
 static void ata_IRQPIOWrite(struct ata_Unit *unit, UBYTE status)
