@@ -95,7 +95,7 @@
 #include "sd_common.h"
 
 static const char version_tag[] __attribute__((used)) =
-    "\0$VER: dnssd 42.0 (13.11.2026)";
+    "\0$VER: dnssd 42.1 (20.11.2026)";
 
 #define DS_DNS_A       1
 #define DS_DNS_PTR     12
@@ -257,7 +257,8 @@ DSPrintRecord(const struct DNSSDEvent *e)
 {
     const UBYTE *data = SDEventPart(e, &e->de_RData);
     LONG length = (LONG)e->de_RData.dr_Size;
-    char name[512];
+    /* static, off the stack: the tool runs as one task */
+    static char name[512];
 
     SDEventName(e, &e->de_Name, name, (LONG)sizeof(name));
     SDPrintf("%s%s.  type %ld  ttl %ld  ", (CONST_STRPTR)
@@ -580,8 +581,9 @@ DSRegister(CONST_STRPTR name, CONST_STRPTR type, CONST_STRPTR domain,
     struct SDSession session;
     struct TagItem tags[6];
     DNSSDOperationRef op;
-    UBYTE txt[1300];
-    char items[400];
+    /* static, off the stack: the tool runs as one task */
+    static UBYTE txt[1300];
+    static char items[400];
     LONG txtLength, rc, why, ttl = 0;
     int nt = 0, result = -1;
 
