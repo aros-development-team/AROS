@@ -46,7 +46,7 @@ memory as 0), and dispatches the few library calls the test programs make.
 
 ## Result
 
-On an AArch64 Mac with Apple clang 21.0.0, 21 November 2026: 40861 checks,
+On an AArch64 Mac with Apple clang 21.0.0, 21 November 2026: 40860 checks,
 0 failed, in each of the two builds.
 
 Not shown by these checks: a build without the test seams, another

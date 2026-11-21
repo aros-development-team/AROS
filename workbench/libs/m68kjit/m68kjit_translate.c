@@ -373,10 +373,9 @@ struct HJState
     uint32_t limit;             /*  80 */
     uint32_t slice_budget;      /*  84 */
     UBYTE *mem;                 /*  88 */
-    void *fast;                 /*  96 */
-    void *slow;                 /* 104 */
-    struct HJCpu *backend;      /* 112 */
-    uint64_t reserved;          /* 120 */
+    void *slow;                 /*  96 */
+    struct HJCpu *backend;      /* 104 */
+    uint64_t reserved[2];       /* 112 */
     UBYTE pages[];              /* 128: M68KJIT_PAGE_* of each 4 KiB guest page */
 };
 
@@ -387,8 +386,7 @@ struct HJState
 #define ST_LIMIT  80
 #define ST_BUDGET 84
 #define ST_MEM    88
-#define ST_FAST   96
-#define ST_SLOW  104
+#define ST_SLOW   96
 #define ST_PAGES 128
 
 #if UINTPTR_MAX == 0xFFFFFFFFFFFFFFFFu
@@ -399,7 +397,6 @@ _Static_assert(offsetof(struct HJState, abort) == ST_ABORT, "state layout");
 _Static_assert(offsetof(struct HJState, limit) == ST_LIMIT, "state layout");
 _Static_assert(offsetof(struct HJState, slice_budget) == ST_BUDGET, "state layout");
 _Static_assert(offsetof(struct HJState, mem) == ST_MEM, "state layout");
-_Static_assert(offsetof(struct HJState, fast) == ST_FAST, "state layout");
 _Static_assert(offsetof(struct HJState, slow) == ST_SLOW, "state layout");
 _Static_assert(offsetof(struct HJState, pages) == ST_PAGES, "state layout");
 #endif
@@ -408,8 +405,6 @@ _Static_assert(offsetof(struct HJState, pages) == ST_PAGES, "state layout");
    divisor: no access, only whether the read would reach the host. */
 enum { SLOW_R8, SLOW_R16, SLOW_R32, SLOW_W8, SLOW_W16, SLOW_W32, SLOW_P16, SLOW_P32, SLOW_KINDS };
 
-#define HJ_FAST_BITS 12
-#define HJ_FAST_SIZE (1u << HJ_FAST_BITS)
 #define HJ_BUCKETS 4096u
 #define HJ_CODE_BYTES (16u << 20)
 #define HJ_MAX_INSNS 64
@@ -418,13 +413,6 @@ enum { SLOW_R8, SLOW_R16, SLOW_R32, SLOW_W8, SLOW_W16, SLOW_W32, SLOW_P16, SLOW_
 #define HJ_MAX_BLOCKS 32768u
 #define HJ_GUEST_BYTES (4u << 20)
 #define HJ_BUDGET 65535u
-#define HJ_EMPTY_TAG (~(uint64_t)0)
-
-struct HJFast
-{
-    uint64_t pc;
-    uint64_t entry;
-};
 
 struct HJBlock
 {
@@ -441,7 +429,7 @@ struct HJBlock
 /* Exit reasons of translated code, as counted in HJStats.exits[]. */
 enum
 {
-    HJ_EXIT_LOOKUP = 1, /* next block not in the fast table */
+    HJ_EXIT_LOOKUP = 1, /* the block ended: the run loop finds the next one */
     HJ_EXIT_BUDGET,     /* back edges and lookups used up for this slice */
     HJ_EXIT_LINEA,      /* A-line opcode: to the bridge dispatcher */
     HJ_EXIT_FAULT,      /* instruction outside the subset, ILLEGAL, Line-F */
@@ -475,7 +463,7 @@ struct HJBackend
     struct M68KEngDomain *dom;
     uint32_t *code;
     size_t code_words, code_used, glue_words;
-    uintptr_t g_enter, g_exit, g_lookup, g_budget, g_miss, g_slow[SLOW_KINDS];
+    uintptr_t g_enter, g_exit, g_lookup, g_budget, g_slow[SLOW_KINDS];
     uint32_t (*enter)(struct HJState *, const uint32_t *);
     struct HJBlock *buckets[HJ_BUCKETS];
     struct HJBlock *blocks;
@@ -483,22 +471,20 @@ struct HJBackend
     UBYTE *guest_bytes;
     size_t guest_used;
     uint32_t epoch;
-    uint32_t fast_generation;   /* a CPU empties its fast table when it changes */
     uint32_t *scratch;
     struct HJTrans *trans;
     struct HJStats stats;
 };
 
 /* The translator state of a CPU: its registers and page flags, which
-   translated code reads through R_STATE, and its fast table. */
+   translated code reads through R_STATE. */
 struct HJCpu
 {
     struct HJState *st;
     size_t st_bytes;
     struct M68KEngCPU *owner;
     struct HJBackend *b;
-    struct HJFast *fast;
-    uint32_t fast_generation, pages_generation;
+    uint32_t pages_generation;
     int declined;               /* a divisor probe found a host read */
 };
 
@@ -2973,26 +2959,13 @@ static void code_free(void *code)
 }
 #endif
 
-static void fast_clear(struct HJCpu *c)
-{
-    unsigned i;
-
-    for (i = 0; i < HJ_FAST_SIZE; i++)
-    {
-        c->fast[i].pc = HJ_EMPTY_TAG;
-        c->fast[i].entry = 0;
-    }
-}
-
-/* Empties the code memory of the domain; every CPU empties its fast table
-   before it enters translated code again. */
+/* Empties the code memory of the domain. */
 static void reset_code(struct HJBackend *b)
 {
     b->code_used = b->glue_words;
     memset(b->buckets, 0, sizeof(b->buckets));
     b->nblocks = 0;
     b->guest_used = 0;
-    b->fast_generation++;
     b->stats.resets++;
     mj_count(&b->dom->counters.code_resets, 1);
 }
@@ -3039,21 +3012,17 @@ static void emit_glue(struct HJBackend *b, struct HJEmit *e)
     b->g_budget = e->origin + 4u * e->n;
     emit_mov32(e, R_VAL, HJ_EXIT_BUDGET);
     put(e, a64_b(words_to(e, b->g_exit)));
-    b->g_miss = e->origin + 4u * e->n;
-    emit_mov32(e, R_VAL, HJ_EXIT_LOOKUP);
-    put(e, a64_b(words_to(e, b->g_exit)));
 
-    /* lookup: w16 = guest PC; one probe of the fast table */
+    /* lookup: w16 = guest PC. The block ended at an address it does not
+       continue at by itself: back to the run loop, which finds or
+       translates the block there. With a slice budget of 1
+       (mj_tr_cpu_create) every block ends its slice here or at its back
+       edge, so the run loop sees each block and counts its instructions. */
     b->g_lookup = e->origin + 4u * e->n;
     put(e, a64_addsub_imm(0, 1, 1, R_BUDGET, R_BUDGET, 1, 0));
     put(e, a64_bcond(A64_EQ, words_to(e, b->g_budget)));
-    put(e, a64_ldst_uimm(3, 1, R_VAL, R_STATE, ST_FAST));
-    put(e, a64_bitfield(1, 2, R_SCR, R_ADDR, 1, HJ_FAST_BITS));
-    put(e, a64_addsub_reg(1, 0, 0, R_VAL, R_VAL, R_SCR, 0, 4));
-    put(e, a64_ldstp(1, 1, 2, R_SCR, R_VAL, R_VAL, 0));
-    put(e, a64_addsub_reg(1, 1, 1, ZR, R_SCR, R_ADDR, 0, 0));
-    put(e, a64_bcond(A64_NE, words_to(e, b->g_miss)));
-    put(e, a64_br(R_VAL));
+    emit_mov32(e, R_VAL, HJ_EXIT_LOOKUP);
+    put(e, a64_b(words_to(e, b->g_exit)));
 
     /* slow access: w16 address (kept), w17 value, w25 kind, w27 guest PC */
     common = e->origin + 4u * e->n;
@@ -3183,14 +3152,6 @@ static uint32_t slow_access(struct HJState *st, uint32_t addr, uint32_t value, u
 
 static unsigned bucket_of(uint32_t pc) { return (pc >> 1) & (HJ_BUCKETS - 1); }
 
-static void fast_insert(struct HJCpu *c, const struct HJBlock *blk)
-{
-    struct HJFast *f = &c->fast[(blk->pc >> 1) & (HJ_FAST_SIZE - 1)];
-
-    f->pc = blk->pc;
-    f->entry = (uint64_t)(uintptr_t)blk->code;
-}
-
 /* Called only from mj_tr_run(), between blocks: no translated code is
    running, so the code memory can be emptied here. Not reentrant. */
 static struct HJBlock *translate(struct HJBackend *b, uint32_t pc)
@@ -3284,13 +3245,6 @@ static struct HJBlock *get_block(struct HJCpu *c, uint32_t pc)
     }
     if (!blk)
         blk = translate(b, pc);
-    if (c->fast_generation != b->fast_generation)
-    {
-        fast_clear(c);
-        c->fast_generation = b->fast_generation;
-    }
-    if (blk)
-        fast_insert(c, blk);
     return blk;
 }
 
@@ -3426,7 +3380,7 @@ static int HJ_EncoderSelfTest(char *message, unsigned long size)
         { 0xb9404675, a64_ldst_uimm(2, 1, 21, 19, 68), "ldr w21, [x19, #68]" },
         { 0xb9004270, a64_ldst_uimm(2, 0, 16, 19, 64), "str w16, [x19, #64]" },
         { 0xf9000bf0, a64_ldst_uimm(3, 0, 16, SP, 16), "str x16, [sp, #16]" },
-        { 0xf9403670, a64_ldst_uimm(3, 1, 16, 19, 104), "ldr x16, [x19, #104]" },
+        { 0xf9403270, a64_ldst_uimm(3, 1, 16, 19, 96), "ldr x16, [x19, #96]" },
         { 0xb9404a7b, a64_ldst_uimm(2, 1, 27, 19, 72), "ldr w27, [x19, #72]" },
         { 0xb9004a7a, a64_ldst_uimm(2, 0, 26, 19, 72), "str w26, [x19, #72]" },
         { 0xa9ba7bfd, a64_ldstp(1, 0, 3, 29, 30, SP, -96), "stp x29, x30, [sp, #-96]!" },
@@ -3592,11 +3546,8 @@ LONG mj_tr_cpu_create(struct M68KEngCPU *owner)
         return M68KENG_ERR_NOMEM;
     c->st_bytes = sizeof(struct HJState) + dom->npages;
     c->st = mj_alloc(c->st_bytes);
-    c->fast = mj_alloc(HJ_FAST_SIZE * sizeof(*c->fast));
-    if (!c->st || !c->fast)
+    if (!c->st)
     {
-        mj_free(c->fast, HJ_FAST_SIZE * sizeof(*c->fast));
-        mj_free(c->st, c->st_bytes);
         mj_free(c, sizeof(*c));
         return M68KENG_ERR_NOMEM;
     }
@@ -3605,15 +3556,12 @@ LONG mj_tr_cpu_create(struct M68KEngCPU *owner)
     c->b = dom->code;
     st->mem = dom->base;
     st->limit = dom->size - 4;
-    st->fast = c->fast;
     st->slow = (void *)(uintptr_t)slow_access;
     st->backend = c;
     st->slice_budget = 1;      /* one block per entry: the run loop counts */
     st->sr_high = (M68KENG_SR_AT_CREATE >> 8) & 0x27u;
     memcpy(st->pages, dom->pages, dom->npages);
     c->pages_generation = dom->pages_generation;
-    fast_clear(c);
-    c->fast_generation = c->b->fast_generation;
     owner->tr = c;
     return M68KENG_OK;
 }
@@ -3624,7 +3572,6 @@ void mj_tr_cpu_destroy(struct M68KEngCPU *owner)
 
     if (!c)
         return;
-    mj_free(c->fast, HJ_FAST_SIZE * sizeof(*c->fast));
     mj_free(c->st, c->st_bytes);
     mj_free(c, sizeof(*c));
     owner->tr = NULL;
@@ -3664,15 +3611,14 @@ LONG mj_tr_set_reg(struct M68KEngCPU *owner, ULONG reg, ULONG value)
     return M68KENG_OK;
 }
 
-/* As the flush of that library: a new epoch makes every block compare its guest
-   bytes before it runs again, and every CPU empties its fast table. */
+/* A new epoch makes every block compare its guest bytes before it runs
+   again. */
 void mj_tr_invalidate(struct M68KEngDomain *dom)
 {
     struct HJBackend *b = dom->code;
 
     if (++b->epoch == 0)
         reset_code(b);
-    b->fast_generation++;
     b->stats.flushes++;
 }
 

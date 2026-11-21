@@ -64,7 +64,7 @@ not seen: the engine behaves as a 68040 with its instruction cache on.
 - **On a host.** `developer/debug/test/m68kjit_host` compiles the two
   engine files with test seams and runs 26 groups of checks through the
   interface (and, from `m68kjit_intern.h`, the table of operations, the seams
-  and the self test of the encoder). On an AArch64 Mac (Apple clang 21.0.0): 40861 checks, 0
+  and the self test of the encoder). On an AArch64 Mac (Apple clang 21.0.0): 40860 checks, 0
   failed, at `-O1` with the address and undefined behaviour sanitizers and
   at `-O2`.
 - **Native probe.** `developer/debug/test/m68kjit/m68kjitprobe` opens

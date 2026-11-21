@@ -14,7 +14,7 @@
 #include "m68kemu_engine.h"         /* the interface, in rom/m68kemu */
 
 /* The translator's state of a domain (code memory, glue, blocks) and of a
-   CPU (registers, page flags, fast table); m68kjit_translate.c defines them. */
+   CPU (registers, page flags); m68kjit_translate.c defines them. */
 struct HJBackend;
 struct HJCpu;
 

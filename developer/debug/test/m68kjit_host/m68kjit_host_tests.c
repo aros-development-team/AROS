@@ -655,7 +655,7 @@ static void t_alloc_failure(void)
     }
     m68kjit_test_fail_alloc_at = 0;
     printf("  cpu_create: %ld allocations\n", found - 1);
-    CHECK(found == 5 && c != NULL);
+    CHECK(found == 4 && c != NULL);
     if (c)
         CHECK(ops->cpu_destroy(c) == M68KENG_OK);
     if (d)
