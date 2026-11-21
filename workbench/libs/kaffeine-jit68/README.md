@@ -43,15 +43,18 @@ engine stops at without executing it is one step of the interpreter.
 The checks are in `developer/debug/test/kaffeine_jit68_host` (on a host) and
 `developer/debug/test/kaffeine-jit68` (a native probe).
 
-## Where the translator comes from
+## Author and origin
 
-The translator is the one of `kaffeine.library`, the earlier library of the
-Kaffeine project (https://github.com/kaffeine1/kaffeine), adapted to this
-interface: guest memory through the host's map, exits to the host where
-that library dispatched calls itself, translations shared by the CPUs of a
-program. A script in that repository generates `kj68_translate.c` from that
-library's translator and records which definitions it keeps, adapts, adds
-and leaves out. It contains no Emu68 code.
+The library, its interface and its checks were written by Michele Dipace
+(@kaffeine1) in the Kaffeine project (https://github.com/kaffeine1/kaffeine).
+
+The translator is the one of `kaffeine.library`, the earlier library of
+that project, adapted to this interface: guest memory through the host's
+map, exits to the host where that library dispatched calls itself,
+translations shared by the CPUs of a program. A script in that repository
+generates `kj68_translate.c` from that library's translator and records
+which definitions it keeps, adapts, adds and leaves out. It contains no
+Emu68 code.
 
 ## What it covers
 
