@@ -166,6 +166,7 @@ struct M68KEmuContext
     #define M68KEMU_MAX_IOREQS 64
     struct M68KIoMap { ULONG m68k; struct IORequest *native; UBYTE kind; BOOL pending; struct MsgPort *ownport; } ioreqs[M68KEMU_MAX_IOREQS];
     ULONG   pubsems[16];           /* AddSemaphore()d m68k semaphores, for FindSemaphore */
+    ULONG   pubports[16];          /* AddPort()ed m68k message ports, for FindPort */
 
     /* native BOOPSI classes used from m68k code (m68kemu_boopsi.c) */
     #define M68KEMU_MAX_BOBJS    512

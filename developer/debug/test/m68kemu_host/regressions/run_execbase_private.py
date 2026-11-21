@@ -94,10 +94,14 @@ def prepare(source, output):
     (output / 'accessors.inc').write_text('\n'.join(
         extract_function(header, name) for name in (
             'm68k_to_host', 'm68k_read32', 'm68k_write_allowed', 'm68k_write16', 'm68k_write32')))
+    # FindName() on PortList goes through FindPort(): a tree with a
+    # hand-written FindPort thunk calls it, and the fixture compiles it too
+    findport = ['thunk_exec_FindPort'] if re.search(
+        r'^static IPTR thunk_exec_FindPort\(', thunks.read_text(), re.M) else []
     (output / 'thunks.inc').write_text('\n'.join(
         extract_function(thunks, name) for name in (
             'thunk_exec_Forbid', 'thunk_exec_Disable_m', 'thunk_exec_Enable_m', 'thunk_exec_Permit',
-            'thunk_exec_FindName')))
+            *findport, 'thunk_exec_FindName')))
     (output / 'tasks.inc').write_text(extract_function(tasks, 'm68k_gil_obtain'))
 
 

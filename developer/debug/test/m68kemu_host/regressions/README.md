@@ -386,6 +386,47 @@ native child, or qualify a complete library or application. `GetArgStr`
 and `SetArgStr` have their own regression below.
 
 
+## Exec ports, I/O requests, tasks, CopyMem and NewMinList
+
+Run from the repository root:
+
+```sh
+make -C developer/debug/test/m68kemu_host test-exec-ports
+make -C developer/debug/test/m68kemu_host test-exec-ports-sanitize
+```
+
+The ordinary regression is also a prerequisite of the host Makefile's `test`
+target. It needs Python 3.9+ and a C99 compiler, with ASan/UBSan for the
+sanitizer target. `PYTHON` and `CC` select them; `EXEC_PORTS_ARGS` passes
+runner options such as `--build-dir /tmp/exec-ports`.
+
+The runner checks that the exec table of `m68kemu_thunks.c` names the
+hand-written thunks at -282 (`AddTask`), -288 (`RemTask`), -354 (`AddPort`),
+-360 (`RemPort`), -390 (`FindPort`), -630 (`CopyMemQuick`), -654
+(`CreateIORequest`), -660 (`DeleteIORequest`) and -828 (`NewMinList`), then
+takes those thunks, `CopyMem` and the accessors they use verbatim and
+compiles them with `test_exec_ports.c`. The fixture supplies the context
+fields, the CPU registers, a heap and the native calls the thunks reach, and
+records them.
+
+The 34 checks: `AddPort` makes the message list of a port in the program's
+memory empty, sets its type and names it for `FindPort`, once; a shadow port
+and a port past the end of memory are left alone; a seventeenth port gets a
+line in the log. `FindPort` finds the program's port without asking the
+system, a system port as a shadow, an unknown name as 0, and no longer
+finds a port after `RemPort`. `CreateIORequest` gives the size asked for,
+cleared, in the program's memory, with `ln_Type`, `mn_ReplyPort` and
+`mn_Length` set, and NULL without a port or below 32 bytes;
+`DeleteIORequest` frees `mn_Length` bytes, or gives a system request back.
+`AddTask` returns NULL with a line in the log; `RemTask` of NULL or of the
+calling task stops that CPU, of another task only logs. `CopyMem` copies
+inside the program's memory, overlapping spans as `memmove`, and refuses a
+span that would run past the end. `NewMinList` writes an empty list of 12
+bytes in the program's memory and calls the native one for a system list.
+
+On a tree without these thunks the runner stops at the table check. The
+fixture does not run a 68k program, a native exec function or a device.
+
 ## Guest argument APIs
 
 Run from the repository root:

@@ -499,13 +499,35 @@ static IPTR thunk_exec_Enable_m(struct M68KEmuContext *ctx, void *cpu)
 /* -138: Permit() */
 static IPTR thunk_exec_Permit(struct M68KEmuContext *ctx, void *cpu) { if (ctx->forbid > 0) ctx->forbid--; m68k_nest_counts(ctx); return 0; }
 
-/* -624: CopyMem(A0=source, A1=dest, D0=size) */
+/* An address of the program's memory, not a shadow: the whole of [a, a + size)
+   must be in it */
+static BOOL copy_span_ok(struct M68KEmuContext *ctx, ULONG a, ULONG size)
+{
+    if (a < ctx->mem_size && !shadow_lookup(ctx, a))
+        return m68k_in_mem(ctx, a, size);
+    return TRUE;
+}
+
+/* -624: CopyMem(A0=source, A1=dest, D0=size), and -630: CopyMemQuick with
+   the same registers. A span in the program's memory must lie inside it:
+   the copy is refused, with a line in the log, when it would run past its
+   end. */
 static IPTR thunk_exec_CopyMem(struct M68KEmuContext *ctx, void *cpu)
 {
     void *src = THUNK_PTR(0);
     void *dst = THUNK_PTR(1);
     ULONG size = THUNK_D(0);
-    if (src && dst && size) memcpy(dst, src, size);
+
+    if (!src || !dst || !size)
+        return 0;
+    if (!copy_span_ok(ctx, THUNK_A(0), size) || !copy_span_ok(ctx, THUNK_A(1), size))
+    {
+        m68k_log(ctx, "%s: CopyMem of %lu bytes from %08lx to %08lx runs past the program's memory: not copied",
+                 ctx->program_name[0] ? ctx->program_name : "68k program", (unsigned long)size,
+                 (unsigned long)THUNK_A(0), (unsigned long)THUNK_A(1));
+        return 0;
+    }
+    memmove(dst, src, size);
     return 0;
 }
 
@@ -825,11 +847,126 @@ static IPTR thunk_exec_FindSemaphore(struct M68KEmuContext *ctx, void *cpu)
     return ss ? m68k_bptr_out(ctx, (BPTR)ss) : 0;
 }
 
-/* -306: AddPort(A1=port) */
-static IPTR thunk_exec_AddPort(struct M68KEmuContext *ctx, void *cpu) { return 0; }
+/* -354: AddPort(A1=port): a port in the program's memory becomes a public
+   one of the program: its message list is made empty, as exec does, and
+   its name goes to a table for FindPort. A port the program got from the
+   system is left as it is. */
+static IPTR thunk_exec_AddPort(struct M68KEmuContext *ctx, void *cpu)
+{
+    ULONG mp = THUNK_A(1), l = mp + 20;
+    int i;
 
-/* -312: RemPort(A1=port) */
-static IPTR thunk_exec_RemPort(struct M68KEmuContext *ctx, void *cpu) { return 0; }
+    if (!m68k_in_mem(ctx, mp, 34) || shadow_lookup(ctx, mp))
+        return 0;
+    ctx->mem[mp + 8] = NT_MSGPORT;              /* ln_Type */
+    m68k_write32(ctx, l + 0, l + 4);            /* mp_MsgList: lh_Head */
+    m68k_write32(ctx, l + 4, 0);                /* lh_Tail */
+    m68k_write32(ctx, l + 8, l);                /* lh_TailPred */
+    ctx->mem[l + 12] = NT_MESSAGE;              /* lh_Type */
+    for (i = 0; i < 16; i++)
+        if (ctx->pubports[i] == mp)
+            return 0;
+    for (i = 0; i < 16; i++)
+        if (!ctx->pubports[i]) { ctx->pubports[i] = mp; return 0; }
+    m68k_log(ctx, "%s: more than 16 public ports: FindPort will not find the next one",
+             ctx->program_name[0] ? ctx->program_name : "68k program");
+    return 0;
+}
+
+/* -360: RemPort(A1=port) */
+static IPTR thunk_exec_RemPort(struct M68KEmuContext *ctx, void *cpu)
+{
+    int i;
+    for (i = 0; i < 16; i++)
+        if (ctx->pubports[i] == THUNK_A(1)) ctx->pubports[i] = 0;
+    return 0;
+}
+
+/* -390: FindPort(A1=name): the program's own first, then the system's */
+static IPTR thunk_exec_FindPort(struct M68KEmuContext *ctx, void *cpu)
+{
+    const char *name = (const char *)m68k_to_host(ctx, THUNK_A(1));
+    struct MsgPort *port;
+    int i;
+
+    if (!name) return 0;
+    for (i = 0; i < 16; i++)
+        if (ctx->pubports[i])
+        {
+            ULONG np = m68k_read32(ctx, ctx->pubports[i] + 10);  /* ln_Name */
+            const char *pn = np ? (const char *)m68k_to_host(ctx, np) : NULL;
+            if (pn && strcmp(pn, name) == 0) return ctx->pubports[i];
+        }
+    port = FindPort((CONST_STRPTR)name);
+    return port ? shadow_create_by_name(ctx, "MsgPort", port) : 0;
+}
+
+/* -654: CreateIORequest(A0=port, D0=size): the request is the program's,
+   of the size it asks for, in its memory, where OpenDevice takes it */
+static IPTR thunk_exec_CreateIORequest_m(struct M68KEmuContext *ctx, void *cpu)
+{
+    ULONG port = THUNK_A(0), size = THUNK_D(0), io;
+
+    if (!port || size < 32 || size > 0xFFFF)
+        return 0;
+    if (!(io = M68KEmu_HeapAlloc(ctx, size, MEMF_PUBLIC | MEMF_CLEAR)))
+        return 0;
+    ctx->mem[io + 8] = NT_REPLYMSG;             /* ln_Type */
+    m68k_write32(ctx, io + 14, port);           /* mn_ReplyPort */
+    m68k_write16(ctx, io + 18, (UWORD)size);    /* mn_Length */
+    return io;
+}
+
+/* -660: DeleteIORequest(A0=ioRequest): one of CreateIORequest, by its
+   mn_Length; a request the program got from the system goes back to it */
+static IPTR thunk_exec_DeleteIORequest_m(struct M68KEmuContext *ctx, void *cpu)
+{
+    ULONG io = THUNK_A(0);
+    APTR native;
+
+    if (!io)
+        return 0;
+    if ((native = shadow_lookup(ctx, io)))
+    {
+        DeleteIORequest(native);
+        shadow_destroy(ctx, shadow_find_layout("IORequest"), io);
+        return 0;
+    }
+    if (m68k_in_mem(ctx, io, 32))
+    {
+        ULONG size = m68k_read16(ctx, io + 18);
+        if (size >= 32 && m68k_in_mem(ctx, io, size))
+            M68KEmu_HeapFree(ctx, io, size);
+    }
+    return 0;
+}
+
+/* -282: AddTask(A1=task, A2=initialPC, A3=finalPC): a task of the program
+   would need a CPU of its own; native exec would take the 68k structure
+   for a native one. Refused: NULL, as an AddTask that failed. */
+static IPTR thunk_exec_AddTask_m(struct M68KEmuContext *ctx, void *cpu)
+{
+    m68k_log(ctx, "%s: AddTask is not supported yet: use CreateNewProc()",
+             ctx->program_name[0] ? ctx->program_name : "68k program");
+    return 0;
+}
+
+/* -288: RemTask(A1=task): the calling task of the program ends, as with
+   Exit(); native exec would remove the emulator's own process inside this
+   call. Another task is not removed. */
+static IPTR thunk_exec_RemTask_m(struct M68KEmuContext *ctx, void *cpu)
+{
+    ULONG t = THUNK_A(1);
+
+    if (!t || t == m68k_process_of(ctx, FindTask(NULL)))
+    {
+        M68KEmu_StopCpu(ctx, cpu);
+        return 0;
+    }
+    m68k_log(ctx, "%s: RemTask of another task is not supported yet",
+             ctx->program_name[0] ? ctx->program_name : "68k program");
+    return 0;
+}
 
 
 /* Pools come from the containment heap. The header keeps the pool's memory
@@ -1786,6 +1923,25 @@ static void ml_remove(struct M68KEmuContext *ctx, ULONG n)
     m68k_write32(ctx, succ + 4, pred);
 }
 
+/* exec -828: NewMinList(A0=list) */
+static IPTR thunk_exec_NewMinList_m(struct M68KEmuContext *ctx, void *cpu)
+{
+    ULONG l = THUNK_A(0);
+
+    if (ML_NATIVE(l))
+    {
+        if (l)
+            NewMinList(THUNK_PTR(0));
+        return 0;
+    }
+    if (!m68k_in_mem(ctx, l, 12))
+        return 0;
+    m68k_write32(ctx, l + 0, l + 4);            /* mlh_Head */
+    m68k_write32(ctx, l + 4, 0);                /* mlh_Tail */
+    m68k_write32(ctx, l + 8, l);                /* mlh_TailPred */
+    return 0;
+}
+
 /* exec -234: Insert(A0=list, A1=node, A2=pred) */
 static IPTR thunk_exec_Insert_m(struct M68KEmuContext *ctx, void *cpu)
 {
@@ -1917,15 +2073,10 @@ static IPTR thunk_exec_FindName(struct M68KEmuContext *ctx, void *cpu)
         return 0;
     /* PortList and SemaphoreList are empty in the fake ExecBase as well:
        exec guards the native lists with locks the program does not take,
-       so a name is looked up through the calls that take them */
+       so a name is looked up through the calls that take them, which look
+       at the program's own ports and semaphores first */
     if (m68k_list == ctx->m68k_sysbase + M68K_EXECBASE_PORTLIST)
-    {
-        struct MsgPort *port;
-
-        name = (CONST_STRPTR)m68k_to_host(ctx, THUNK_A(1));
-        port = name ? FindPort(name) : NULL;
-        return port ? shadow_create_by_name(ctx, "MsgPort", port) : 0;
-    }
+        return thunk_exec_FindPort(ctx, cpu);
     if (m68k_list == ctx->m68k_sysbase + M68K_EXECBASE_SEMAPHORELIST)
         return thunk_exec_FindSemaphore(ctx, cpu);
 
@@ -2062,6 +2213,13 @@ const struct M68KThunkEntry m68kemu_thunks_exec[] = {
     { 720, thunk_exec_AttemptSemaphoreShared },
     { 354, thunk_exec_AddPort },
     { 360, thunk_exec_RemPort },
+    { 390, thunk_exec_FindPort },
+    { 630, thunk_exec_CopyMem },
+    { 654, thunk_exec_CreateIORequest_m },
+    { 660, thunk_exec_DeleteIORequest_m },
+    { 282, thunk_exec_AddTask_m },
+    { 288, thunk_exec_RemTask_m },
+    { 828, thunk_exec_NewMinList_m },
     { 0, NULL }
 };
 const ULONG m68kemu_thunks_exec_count = sizeof(m68kemu_thunks_exec) / sizeof(m68kemu_thunks_exec[0]);
