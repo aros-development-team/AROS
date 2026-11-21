@@ -59,17 +59,39 @@ Code that a program stores into memory it already ran, without a cache
 call (`CacheClearU()`, `CacheClearE()`, `CacheControl()`, CINV, CPUSH), is
 not seen: the engine behaves as a 68040 with its instruction cache on.
 
+## Memory
+
+A domain (one for each program) starts with about 1.5 MiB: 1 MiB of code
+memory, a table for 2048 blocks (112 KiB), 256 KiB for the guest bytes of
+the translated blocks, and about 105 KiB of fixed buffers. When the code
+memory, the block table or the guest bytes are full, all three double and
+the translations made so far are dropped (a code reset). They double four
+times at most, to 16 MiB of code, 32768 blocks and 4 MiB of guest bytes:
+about 22 MiB. While they double, the old and the new ones are held
+together. They double only when at least half of the blocks are still in
+use: a program that changes a little code again and again fills them with
+translations nothing finds any more, and for it they are only emptied. If
+there is no memory for the next size, the engine also keeps the size it
+has and only drops the translations.
+
+The engine allocates and frees this memory inside `run()`. A host calls
+`run()` from a task, as `m68kemu.library` does under its program lock, not
+from an interrupt.
+
+A CPU takes about 200 bytes and one byte for each 4 KiB page of guest
+memory.
+
 ## Checks
 
 - **On a host.** `developer/debug/test/m68kjit_host` compiles the two
-  engine files with test seams and runs 26 groups of checks through the
+  engine files with test seams and runs 27 groups of checks through the
   interface (and, from `m68kjit_intern.h`, the table of operations, the seams
-  and the self test of the encoder). On an AArch64 Mac (Apple clang 21.0.0): 40860 checks, 0
+  and the self test of the encoder). On an AArch64 Mac (Apple clang 21.0.0): 46010 checks, 0
   failed, at `-O1` with the address and undefined behaviour sanitizers and
   at `-O2`.
 - **Native probe.** `developer/debug/test/m68kjit/m68kjitprobe` opens
   the library and runs small 68k programs through the interface, without
-  `m68kemu.library`: 20 checks.
+  `m68kemu.library`: 22 checks.
 - **With m68kemu.library.** See `rom/m68kemu/INTERNALS.md`, The Optional
   Engine.
 

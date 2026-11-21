@@ -688,8 +688,9 @@ static void t_lifecycle(void)
             CHECK(ops->cpu_create(d, NULL, &c[i]) == M68KENG_OK);
         memset(&s, 0, sizeof(s));
         s.size_of = sizeof(s);
-        CHECK(ops->get_stats(d, &s) == M68KENG_OK && s.cpus == 4 && s.code_bytes == (16u << 20));
-        CHECK(m68kjit_test_exec_live == (16 << 20));
+        /* a domain starts with 1 MiB of code memory */
+        CHECK(ops->get_stats(d, &s) == M68KENG_OK && s.cpus == 4 && s.code_bytes == (1u << 20));
+        CHECK(m68kjit_test_exec_live == (1 << 20));
         CHECK(ops->domain_destroy(d) == M68KENG_ERR_STATE);
         CHECK(ops->get_stats(d, &s) == M68KENG_OK && s.cpus == 4);
         for (i = 0; i < 4; i++)
@@ -1411,6 +1412,91 @@ static void t_code_reset(void)
     printf("  %u chained blocks in a nested call: %lu blocks, %lu code resets\n", units,
            (unsigned long)s.blocks_translated, (unsigned long)s.code_resets);
     m_close(&m);
+}
+
+/* The code memory, the block table and the guest-byte store double
+   together when one of them is full, up to 16 MiB of code: here the block
+   table fills first, four times before it has its largest size and once
+   more at that size, where nothing grows any more. A failed allocation of
+   the next size leaves the sizes as they are, and the program still gives
+   its result. fail_at: which allocation of the first growth fails (the
+   code memory, the block table, the guest bytes), 0 for none. */
+static void growth_run(long fail_at)
+{
+    struct M m;
+    struct M68KEngStats s;
+    const unsigned units = 70000;
+    unsigned i;
+    long live;
+
+    CHECK(m_open(&m, MIB, 0xA5, 0));
+    m.pc = 0x50000;
+    w(&m, 0x7000);                          /* MOVEQ #0,D0 */
+    for (i = 0; i < units; i++)
+    {
+        w(&m, 0x5280);                      /* ADDQ.L #1,D0 */
+        w(&m, 0x6002); w(&m, 0x4E71);       /* BRA.S +2; NOP */
+    }
+    rts(&m);
+    m_start(&m, 0x50000, L_EXEC);
+    memset(&s, 0, sizeof(s));
+    s.size_of = sizeof(s);
+    CHECK(ops->get_stats(m.d, &s) == M68KENG_OK && s.code_bytes == (1u << 20) && s.code_resets == 0);
+    live = m68kjit_test_allocs_live;
+    m68kjit_test_fail_alloc_at = fail_at;
+    CHECK(program(&m) == (LONG)units);
+    CHECK(m68kjit_test_fail_alloc_at == 0);                 /* the allocation that was to fail was made */
+    m68kjit_test_fail_alloc_at = 0;
+    CHECK(ops->get_stats(m.d, &s) == M68KENG_OK && s.code_bytes == (16u << 20));
+    /* a code reset at each of the four growths and one at the largest size, and one more where the first try failed */
+    CHECK(s.code_resets == (fail_at ? 6u : 5u));
+    CHECK(m68kjit_test_exec_live == (16 << 20) && m68kjit_test_allocs_live == live);
+    printf("  %u blocks, first growth %s: %lu bytes of code memory, %lu code resets\n", units,
+           fail_at ? "failed" : "made", (unsigned long)s.code_bytes, (unsigned long)s.code_resets);
+    m_close(&m);
+    CHECK(m68kjit_test_allocs_live == 0 && m68kjit_test_exec_live == 0);
+}
+
+/* A program that changes the same code again and again fills the block
+   table with blocks nothing finds any more: the table is emptied, twice
+   in 5000 turns, and nothing grows. */
+static void growth_retranslate(void)
+{
+    struct M m;
+    struct M68KEngStats s;
+    unsigned i, bad = 0;
+
+    CHECK(m_open(&m, MIB, 0xA5, 0));
+    m_start(&m, L_ENTRY, L_EXEC);
+    for (i = 0; i < 5000; i++)
+    {
+        m.pc = L_ENTRY;
+        w(&m, 0x7000 + (i & 0x7F));          /* MOVEQ #i,D0 */
+        rts(&m);
+        /* the stack and the PC as m_start() left them: the RTS only reads the sentinel */
+        if (ops->invalidate(m.d, L_ENTRY, 4) != M68KENG_OK || ops->set_reg(m.c, R_A(7), L_STACK - 4) != M68KENG_OK ||
+            ops->set_reg(m.c, M68KENG_REG_PC, L_ENTRY) != M68KENG_OK)
+            bad++;
+        if (program(&m) != (LONG)(i & 0x7F))
+            bad++;
+    }
+    CHECK(bad == 0);
+    memset(&s, 0, sizeof(s));
+    s.size_of = sizeof(s);
+    CHECK(ops->get_stats(m.d, &s) == M68KENG_OK && s.code_bytes == (1u << 20) && s.code_resets == 2 &&
+          s.invalidations == 5000 && s.blocks_translated == 5000);
+    printf("  5000 translations of the same code: %lu bytes of code memory, %lu code resets\n",
+           (unsigned long)s.code_bytes, (unsigned long)s.code_resets);
+    m_close(&m);
+}
+
+static void t_growth(void)
+{
+    long n;
+
+    for (n = 0; n <= 3; n++)
+        growth_run(n);
+    growth_retranslate();
 }
 
 /* ---- 12. exceptions and unsupported ------------------------------------------------------------- */
@@ -2252,6 +2338,7 @@ int main(void)
     group("invalidation", t_invalidation);           /* 11 */
     group("code-changes", t_code_changes);           /* 11, legacy */
     group("code-reset", t_code_reset);               /* 11, legacy */
+    group("growth", t_growth);                       /* 11 */
     group("exceptions-and-unsupported", t_exceptions);   /* 12 */
     group("zero-divisor-state", t_zero_divisor);     /* 12, revision 2 */
     group("faults", t_faults);                       /* 12, legacy */

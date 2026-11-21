@@ -14,7 +14,9 @@
       - a word read and a word written in the range of the callbacks;
       - changed code, before and after invalidate;
       - a division by zero and ILLEGAL, which the engine reports and does
-        not execute.
+        not execute;
+      - 2500 blocks in a row, more than the engine's block table starts
+        with, so that the engine takes larger memory.
 
     The counters of the engine show that it translated and ran code.
     Output: a line per check and a summary.
@@ -34,6 +36,8 @@
 #define HOST_LO    0x8000UL
 #define HOST_HI    0x9000UL
 #define STACK      0x4000UL
+#define GROW_AT    0xA000UL     /* 2500 blocks of 6 bytes from here end below GUEST_SIZE */
+#define GROW_BLOCKS 2500UL
 #define SENTINEL   0xFFDEAD00UL
 
 static ULONG checks;
@@ -123,6 +127,7 @@ static void programs(const struct M68KEngOps *ops, struct M68KEngDomain *domain,
     static const UWORD illegal[] = { 0x4AFC };
     struct M68KEngExit ex;
     struct M68KEngStats st;
+    ULONG code_bytes, at;
     ULONG total, turns;
     LONG rc;
 
@@ -220,6 +225,30 @@ static void programs(const struct M68KEngOps *ops, struct M68KEngDomain *domain,
     Printf("     blocks %ld, instructions translated %ld, runs %ld, invalidations %ld, code bytes %ld, retired %ld\n",
            (LONG)st.blocks_translated, (LONG)st.insns_translated, (LONG)st.runs, (LONG)st.invalidations,
            (LONG)st.code_bytes, (LONG)st.retired);
+
+    /* More blocks than the block table starts with: the engine takes a
+       larger table and larger code memory when it can have them, drops
+       what it translated, and the program still gives its result. moveq #0,d0; then 2500 times
+       addq.l #1,d0; bra.s to the next one; nop; and an A-line opcode. */
+    code_bytes = st.code_bytes;
+    at = GROW_AT;
+    mem[at] = 0x70; mem[at + 1] = 0x00;
+    for (at += 2; at < GROW_AT + 2 + 6 * GROW_BLOCKS; at += 6)
+    {
+        static const UWORD unit[] = { 0x5280, 0x6002, 0x4E71 };
+
+        put_words(mem, at, unit, 3);
+    }
+    mem[at] = 0xA0; mem[at + 1] = 0x00;
+    rc = run_from(ops, cpu, GROW_AT, 100000, &ex);
+    check(rc == M68KENG_OK && ex.reason == M68KENG_STOP_ALINE && ex.pc == at && reg(ops, cpu, M68KENG_REG_D0) == GROW_BLOCKS,
+          "2500 blocks in a row give 2500");
+    st.size_of = sizeof(st);
+    rc = ops->get_stats(domain, &st);
+    check(rc == M68KENG_OK && st.code_bytes >= code_bytes && st.code_resets >= 1,
+          "the engine made room for them with a code reset");
+    Printf("     code bytes %ld, then %ld (%s); code resets %ld\n", (LONG)code_bytes, (LONG)st.code_bytes,
+           st.code_bytes > code_bytes ? "larger code memory" : "no memory for a larger one", (LONG)st.code_resets);
 }
 
 int main(void)

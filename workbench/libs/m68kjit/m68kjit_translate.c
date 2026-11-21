@@ -406,13 +406,19 @@ _Static_assert(offsetof(struct HJState, pages) == ST_PAGES, "state layout");
 enum { SLOW_R8, SLOW_R16, SLOW_R32, SLOW_W8, SLOW_W16, SLOW_W32, SLOW_P16, SLOW_P32, SLOW_KINDS };
 
 #define HJ_BUCKETS 4096u
-#define HJ_CODE_BYTES (16u << 20)
 #define HJ_MAX_INSNS 64
 #define HJ_SCRATCH_WORDS 12288u
 #define HJ_MAX_STUBS 1024u
-#define HJ_MAX_BLOCKS 32768u
-#define HJ_GUEST_BYTES (4u << 20)
 #define HJ_BUDGET 65535u
+
+/* The code memory, the block table and the guest-byte store of a domain
+   start at these sizes and double together, HJ_GROW_STEPS times at most,
+   whenever one of them is full (grow_code()): from 1 MiB of code, 2048
+   blocks and 256 KiB of guest bytes to 16 MiB, 32768 blocks and 4 MiB. */
+#define HJ_CODE_BYTES_START  (1u << 20)
+#define HJ_MAX_BLOCKS_START  2048u
+#define HJ_GUEST_BYTES_START (256u << 10)
+#define HJ_GROW_STEPS 4
 
 struct HJBlock
 {
@@ -462,14 +468,15 @@ struct HJBackend
 {
     struct M68KEngDomain *dom;
     uint32_t *code;
+    size_t code_bytes;          /* the code memory as it is now */
     size_t code_words, code_used, glue_words;
     uintptr_t g_enter, g_exit, g_lookup, g_budget, g_slow[SLOW_KINDS];
     uint32_t (*enter)(struct HJState *, const uint32_t *);
     struct HJBlock *buckets[HJ_BUCKETS];
     struct HJBlock *blocks;
-    unsigned nblocks;
+    unsigned nblocks, max_blocks;
     UBYTE *guest_bytes;
-    size_t guest_used;
+    size_t guest_used, guest_cap;
     uint32_t epoch;
     uint32_t *scratch;
     struct HJTrans *trans;
@@ -2917,7 +2924,7 @@ static void code_write_begin(struct HJBackend *b)
 {
     b->stats.write_windows++;
 #if HJ_RUNS
-    m68kjit_plat_code_write_begin(b->code, HJ_CODE_BYTES);
+    m68kjit_plat_code_write_begin(b->code, b->code_bytes);
 #endif
 }
 
@@ -2925,14 +2932,14 @@ static void code_write_end(struct HJBackend *b, const uint32_t *start, size_t wo
 {
     b->stats.icache_syncs++;
 #if HJ_RUNS
-    m68kjit_plat_code_write_end(b->code, HJ_CODE_BYTES, (void *)(uintptr_t)start, words * sizeof(*start));
+    m68kjit_plat_code_write_end(b->code, b->code_bytes, (void *)(uintptr_t)start, words * sizeof(*start));
 #else
     (void)start; (void)words;
 #endif
 }
 
 #if HJ_RUNS
-static void *code_alloc(void)
+static void *code_alloc(size_t bytes)
 {
     void *code;
 
@@ -2940,22 +2947,22 @@ static void *code_alloc(void)
     if (mj_test_fail_next())
         return NULL;
 #endif
-    code = m68kjit_plat_code_alloc(HJ_CODE_BYTES);
+    code = m68kjit_plat_code_alloc(bytes);
 #ifdef M68KJIT_TEST_SEAMS
     if (code)
-        m68kjit_test_exec_live += (long)HJ_CODE_BYTES;
+        m68kjit_test_exec_live += (long)bytes;
 #endif
     return code;
 }
 
-static void code_free(void *code)
+static void code_free(void *code, size_t bytes)
 {
     if (!code)
         return;
 #ifdef M68KJIT_TEST_SEAMS
-    m68kjit_test_exec_live -= (long)HJ_CODE_BYTES;
+    m68kjit_test_exec_live -= (long)bytes;
 #endif
-    m68kjit_plat_code_free(code, HJ_CODE_BYTES);
+    m68kjit_plat_code_free(code, bytes);
 }
 #endif
 
@@ -3057,6 +3064,90 @@ static void emit_glue(struct HJBackend *b, struct HJEmit *e)
         put(e, a64_b(words_to(e, common)));
     }
 }
+
+#if HJ_RUNS
+/* The glue for code memory at origin, into the scratch buffer. FALSE when
+   it does not fit there; its size does not depend on origin. */
+static int glue_emit(struct HJBackend *b, struct HJEmit *e, const uint32_t *origin)
+{
+    memset(e, 0, sizeof(*e));
+    e->buf = b->scratch;
+    e->cap = HJ_SCRATCH_WORDS;
+    e->origin = (uintptr_t)origin;
+    emit_glue(b, e);
+    return !e->bad;
+}
+
+/* The glue that glue_emit() left in the scratch buffer goes to the start
+   of the code memory, which holds nothing else after this. */
+static void glue_publish(struct HJBackend *b, const struct HJEmit *e)
+{
+    uintptr_t entry = b->g_enter;
+
+    b->code_words = b->code_bytes / 4;
+    code_write_begin(b);
+    memcpy(b->code, b->scratch, 4u * e->n);
+    code_write_end(b, b->code, e->n);
+    b->glue_words = b->code_used = e->n;
+    memcpy(&b->enter, &entry, sizeof(entry));
+}
+
+/* The blocks of the table that a lookup still finds. A block whose guest
+   bytes changed leaves its chain when it is looked up again (get_block()),
+   and its place in the table stays used until the next reset. */
+static unsigned linked_blocks(const struct HJBackend *b)
+{
+    const struct HJBlock *blk;
+    unsigned i, n = 0;
+
+    for (i = 0; i < HJ_BUCKETS; i++)
+        for (blk = b->buckets[i]; blk; blk = blk->next)
+            n++;
+    return n;
+}
+
+/* The next size of the code memory, the block table and the guest-byte
+   store, when there is one, at least half of the blocks are still in use,
+   and there is memory for all three; otherwise they stay as they are. A
+   program that changes a little code again and again fills them with
+   blocks nothing finds any more: emptying them is enough for it. The
+   caller empties them next (reset_code()), so nothing they held is
+   carried over, and no translated code is running (translate()). */
+static void grow_code(struct HJBackend *b)
+{
+    size_t code_bytes = b->code_bytes * 2, guest_cap = b->guest_cap * 2;
+    unsigned max_blocks = b->max_blocks * 2;
+    uint32_t *code;
+    struct HJBlock *blocks;
+    UBYTE *guest_bytes;
+    struct HJEmit e;
+
+    if (b->code_bytes >= ((size_t)HJ_CODE_BYTES_START << HJ_GROW_STEPS) || linked_blocks(b) * 2 < b->nblocks)
+        return;
+    code = code_alloc(code_bytes);
+    blocks = mj_alloc(max_blocks * sizeof(*blocks));
+    guest_bytes = mj_alloc(guest_cap);
+    if (!code || !blocks || !guest_bytes)
+    {
+        code_free(code, code_bytes);
+        mj_free(blocks, max_blocks * sizeof(*blocks));
+        mj_free(guest_bytes, guest_cap);
+        return;
+    }
+    code_free(b->code, b->code_bytes);
+    mj_free(b->blocks, b->max_blocks * sizeof(*b->blocks));
+    mj_free(b->guest_bytes, b->guest_cap);
+    b->code = code;
+    b->code_bytes = code_bytes;
+    b->blocks = blocks;
+    b->max_blocks = max_blocks;
+    b->guest_bytes = guest_bytes;
+    b->guest_cap = guest_cap;
+    /* the glue has the size it had in mj_tr_domain_create(), where it fit */
+    glue_emit(b, &e, b->code);
+    glue_publish(b, &e);
+}
+#endif
 
 /* ------------------------------------------------------------------
    The C side: slow accesses, blocks
@@ -3164,9 +3255,14 @@ static struct HJBlock *translate(struct HJBackend *b, uint32_t pc)
 
     for (attempt = 0; attempt < 2; attempt++)
     {
-        if (b->code_words - b->code_used < HJ_SCRATCH_WORDS || b->nblocks >= HJ_MAX_BLOCKS ||
-            HJ_GUEST_BYTES - b->guest_used < 4u * HJ_MAX_INSNS * 10u)
+        if (b->code_words - b->code_used < HJ_SCRATCH_WORDS || b->nblocks >= b->max_blocks ||
+            b->guest_cap - b->guest_used < 4u * HJ_MAX_INSNS * 10u)
+        {
+#if HJ_RUNS
+            grow_code(b);
+#endif
             reset_code(b);
+        }
         for (;;)
         {
             memset(&t->e, 0, sizeof(t->e));
@@ -3458,9 +3554,9 @@ int mj_tr_encoder_self_test(char *message, unsigned long size)
 #if HJ_RUNS
 static void hj_free_code(struct HJBackend *b)
 {
-    code_free(b->code);
-    mj_free(b->blocks, HJ_MAX_BLOCKS * sizeof(*b->blocks));
-    mj_free(b->guest_bytes, HJ_GUEST_BYTES);
+    code_free(b->code, b->code_bytes);
+    mj_free(b->blocks, b->max_blocks * sizeof(*b->blocks));
+    mj_free(b->guest_bytes, b->guest_cap);
     mj_free(b->scratch, 4u * HJ_SCRATCH_WORDS);
     mj_free(b->trans, sizeof(*b->trans));
     mj_free(b, sizeof(*b));
@@ -3479,9 +3575,12 @@ LONG mj_tr_domain_create(struct M68KEngDomain *dom)
     if (!b)
         return M68KENG_ERR_NOMEM;
     b->dom = dom;
-    b->code = code_alloc();
-    b->blocks = mj_alloc(HJ_MAX_BLOCKS * sizeof(*b->blocks));
-    b->guest_bytes = mj_alloc(HJ_GUEST_BYTES);
+    b->code_bytes = HJ_CODE_BYTES_START;
+    b->max_blocks = HJ_MAX_BLOCKS_START;
+    b->guest_cap = HJ_GUEST_BYTES_START;
+    b->code = code_alloc(b->code_bytes);
+    b->blocks = mj_alloc(b->max_blocks * sizeof(*b->blocks));
+    b->guest_bytes = mj_alloc(b->guest_cap);
     b->scratch = mj_alloc(4u * HJ_SCRATCH_WORDS);
     b->trans = mj_alloc(sizeof(*b->trans));
     if (!b->code || !b->blocks || !b->guest_bytes || !b->scratch || !b->trans)
@@ -3489,28 +3588,14 @@ LONG mj_tr_domain_create(struct M68KEngDomain *dom)
         hj_free_code(b);
         return M68KENG_ERR_NOMEM;
     }
-    b->code_words = HJ_CODE_BYTES / 4;
-    memset(&e, 0, sizeof(e));
-    e.buf = b->scratch;
-    e.cap = HJ_SCRATCH_WORDS;
-    e.origin = (uintptr_t)b->code;
-    emit_glue(b, &e);
-    if (e.bad)
+    if (!glue_emit(b, &e, b->code))
     {
         /* not reachable with these sizes: the glue fits the scratch buffer */
         hj_free_code(b);
         return M68KENG_ERR_NOMEM;
     }
-    code_write_begin(b);
-    memcpy(b->code, b->scratch, 4u * e.n);
-    code_write_end(b, b->code, e.n);
-    b->glue_words = b->code_used = e.n;
+    glue_publish(b, &e);
     b->stats.write_windows = b->stats.icache_syncs = 0;
-    {
-        uintptr_t entry = b->g_enter;
-
-        memcpy(&b->enter, &entry, sizeof(entry));
-    }
     dom->code = b;
     return M68KENG_OK;
 #else
@@ -3532,7 +3617,7 @@ void mj_tr_domain_destroy(struct M68KEngDomain *dom)
 
 ULONG mj_tr_code_bytes(const struct M68KEngDomain *dom)
 {
-    return dom->code ? HJ_CODE_BYTES : 0;
+    return dom->code ? (ULONG)dom->code->code_bytes : 0;
 }
 
 /* Registers as cpu_create leaves them: 0, PC 0, SR 0x2700. */
