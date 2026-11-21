@@ -38,12 +38,7 @@ handle_packet(struct MDNSDaemon *md, const UBYTE *pkt, LONG pktlen,
     if (pktlen < (LONG)sizeof(struct MDNSHeader)) {
         return;
     }
-    /* The group's traffic may be looped back to the sender. */
-    if ((family == AF_INET && mdnsNetIsOwn(md, srcaddr)) ||
-        (family == AF_INET6 && mdnsNetIsOwn6(md, srcaddr6))) {
-        return;
-    }
-
+    /* the host's own packets are not here: mdnsNetIsOwnPacket() */
     hdr = (const struct MDNSHeader *)pkt;
     flags = ntohs(hdr->flags);
     /* mDNS uses standard queries/responses with no DNS error code. */
@@ -66,6 +61,8 @@ handle_packet(struct MDNSDaemon *md, const UBYTE *pkt, LONG pktlen,
 
     if ((flags & DNS_FLAG_QR) == 0) {
         LONG nknown = 0;
+
+        md->md_QueryFamily = family;    /* the family a probe came by */
 
         /*
          * The answers of a query are what the asker already knows (RFC

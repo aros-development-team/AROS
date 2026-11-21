@@ -184,7 +184,7 @@ int main(void)
     CHECK(dnssd_link_inventory_init(&inventory, links, link_scratch, 32u,
               addresses, address_scratch, 256u) == DNSSD_LINK_OK,
           "initialize native inventory storage");
-    CHECK(dnssd_link_aros_reconcile(NULL, NULL, 65536u) ==
+    CHECK(dnssd_link_aros_reconcile(NULL, NULL, 65536u, NULL) ==
               DNSSD_LINK_BAD_ARGUMENT,
           "reject missing inventory and stack base");
 
@@ -193,14 +193,14 @@ int main(void)
     if (SocketBase == NULL)
         goto done;
 
-    CHECK(dnssd_link_aros_reconcile(&inventory, SocketBase, 65536u) ==
+    CHECK(dnssd_link_aros_reconcile(&inventory, SocketBase, 65536u, NULL) ==
               DNSSD_LINK_OK,
           "collect a complete AROSTCP snapshot");
     CHECK(inventory.link_count != 0u && inventory.address_count != 0u,
           "publish at least one link and address from the running stack");
     revision = inventory.revision;
     CHECK(dnssd_link_aros_reconcile(&inventory, SocketBase,
-              sizeof(struct in6_ifreq)) ==
+              sizeof(struct in6_ifreq), NULL) ==
               DNSSD_LINK_AROS_SNAPSHOT_LIMIT &&
               inventory.revision == revision,
           "reject a saturated snapshot without publishing partial state");
@@ -231,7 +231,7 @@ int main(void)
           "receive address-change notification for IPv6 address");
 
     revision = inventory.revision;
-    CHECK(dnssd_link_aros_reconcile(&inventory, SocketBase, 65536u) ==
+    CHECK(dnssd_link_aros_reconcile(&inventory, SocketBase, 65536u, NULL) ==
               DNSSD_LINK_OK,
           "reconcile the stack after adding both address families");
     CHECK(!added4 || find_address(&inventory, index, DNSSD_ADDRESS_IPV4,
@@ -261,7 +261,7 @@ int main(void)
     CHECK(wait_signal(signal_mask),
           "receive address-change notification for address removal");
     revision = inventory.revision;
-    CHECK(dnssd_link_aros_reconcile(&inventory, SocketBase, 65536u) ==
+    CHECK(dnssd_link_aros_reconcile(&inventory, SocketBase, 65536u, NULL) ==
               DNSSD_LINK_OK,
           "reconcile the stack after removing test addresses");
     CHECK(!find_address(&inventory, index, DNSSD_ADDRESS_IPV4,

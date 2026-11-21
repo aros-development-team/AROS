@@ -35,6 +35,13 @@
 #include "mdnsd.h"
 #include "dnssd_link_aros.h"
 
+/* MDNS_ECHO_DEBUG: the echo journal's growth and evictions to the debug
+ * output (tests: aros-matter tests/mdns/samesegment.sh) */
+#ifdef MDNS_ECHO_DEBUG
+#define DEBUG 1
+#endif
+#include <aros/debug.h>
+
 /* Options both sockets take; FALSE if one is refused. */
 static BOOL
 share_port(struct Library *SocketBase, int sock)
@@ -294,9 +301,10 @@ set_primary(struct Library *SocketBase, struct MDNSDaemon *md)
 static void close_sockets(struct Library *SocketBase, struct MDNSDaemon *md);
 
 /* The links after a complete canonical snapshot changed: the sockets are
- * opened the first time, and each link joins the groups. */
+ * opened the first time, and each link joins the groups. What changed is in
+ * changes, whose items the caller frees (FreeVec()). */
 BOOL
-mdnsNetRescan(struct MDNSDaemon *md)
+mdnsNetRescan(struct MDNSDaemon *md, struct dnssd_link_changes *changes)
 {
     struct Library *SocketBase;
     uint32_t previous_revision;
@@ -308,8 +316,16 @@ mdnsNetRescan(struct MDNSDaemon *md)
     }
     SocketBase = md->md_SocketBase;
     previous_revision = md->md_LinkInventory.revision;
+    /* room for whatever this rescan can change; without it, the changes
+     * overflow, and everything is taken as changed */
+    changes->capacity = dnssd_link_changes_bound(&md->md_LinkInventory);
+    changes->items = AllocVec(changes->capacity * sizeof(*changes->items),
+        MEMF_ANY);
+    if (changes->items == NULL) {
+        changes->capacity = 0;
+    }
     result = dnssd_link_aros_reconcile(&md->md_LinkInventory, SocketBase,
-                                       MDNS_LINK_SNAPSHOT_MAX);
+                                       MDNS_LINK_SNAPSHOT_MAX, changes);
     if (result != DNSSD_LINK_OK ||
         md->md_LinkInventory.revision == previous_revision)
         return FALSE;
@@ -365,6 +381,12 @@ mdnsNetClose(struct MDNSDaemon *md)
     close_sockets(md->md_SocketBase, md);
     dnssd_link_inventory_reconcile(&md->md_LinkInventory, NULL, 0u,
                                    NULL, 0u);
+    mdnsHostLinksClear(md);
+    if (md->md_Sent != NULL) {          /* no echo comes without sockets */
+        FreeVec(md->md_Sent);
+        md->md_Sent = NULL;
+    }
+    md->md_SentMax = md->md_SentFirst = md->md_SentCount = 0;
     md->md_Socket = -1;
     md->md_HostAddr = 0;
 }
@@ -409,6 +431,258 @@ mdnsNetIsOwn6(struct MDNSDaemon *md, const struct in6_addr *addr)
             (link == 0u || address->value.interface_index == link) &&
             memcmp(address->value.bytes, addr, sizeof(*addr)) == 0)
             return TRUE;
+    }
+    return FALSE;
+}
+
+/*
+ * mdnsd's own packets, heard by another of its interfaces (RFC 6762 section
+ * 14: on a segment that two of them share - two cards on one switch, a
+ * bridge - each hears what the other sends). Taken for another host's, the
+ * host's probes lose the tie-break to themselves and its announcements are a
+ * conflict with itself: it never ends probing, or takes another name at each
+ * round (B60).
+ *
+ * By address such a packet cannot be told from one of a host on a separate
+ * network that has an address this host has on another link: that one must
+ * still be heard, and still be a conflict if it claims this host's names.
+ * So by where it went and what it was: what mdnsd sends to the group is kept
+ * with the link it went out by (struct MDNSSent), and a packet is its own
+ * echo only if it comes in by another link, from the address the host has
+ * on the link it went out by, and is the same packet, byte for byte (its
+ * signature). A packet identical to one this host sent carries the same
+ * records, which are no conflict whoever sent them; another, from whatever
+ * address, goes on to the rest of mdnsd. When in doubt - a signature gone,
+ * an echo later than it - a packet is another host's: at worst a conflict
+ * with itself, never one of another host's missed.
+ *
+ * How long a signature is kept is not a count or a time of the clock alone:
+ * an echo is on the receiving socket within a second of its sending, so a
+ * signature goes once that socket has been read past what was there a
+ * second or more after it was sent - seen with nothing to read
+ * (mdnsNetIdle()), or the echo of a packet sent a second or more later
+ * read from it (the socket gives what came in order) - however slowly
+ * mdnsd gets to reading. The ring grows by half when it is full of
+ * signatures still waiting, and shrinks when a quarter of it is used;
+ * past MDNS_ECHO_KEEP_TICKS a signature goes whatever happens. With one
+ * link nothing is kept: nothing can come back by another.
+ */
+#define MDNS_SENT_MIN           32
+#define MDNS_ECHO_TICKS         50      /* 1 s: an echo is on its way by then */
+#define MDNS_ECHO_KEEP_TICKS    1500    /* 30 s at most, whatever happens */
+#ifndef MDNS_SENT_CAP
+#define MDNS_SENT_CAP           0x8000  /* signatures at most: what memory gives */
+#endif
+
+static void
+sent_sign(const UBYTE *pkt, LONG pktlen, ULONG *hash, ULONG *sum)
+{
+    ULONG h = 2166136261UL, a = 1, b = 0;
+    LONG i;
+
+    for (i = 0; i < pktlen; i++) {
+        h = (h ^ pkt[i]) * 16777619UL;
+        a += pkt[i];
+        b += a;
+    }
+    *hash = h;
+    *sum = (b << 16) ^ a;
+}
+
+static struct MDNSSent *
+sent_at(const struct MDNSDaemon *md, UWORD k)
+{
+    return &md->md_Sent[(md->md_SentFirst + k) % md->md_SentMax];
+}
+
+static UWORD
+sent_length(UWORD af, LONG pktlen)
+{
+    return (UWORD)(pktlen | (af == AF_INET6 ? MDNS_SENT_IPV6 : 0));
+}
+
+/* The ring with room for max signatures, the waiting ones kept in order;
+ * FALSE with no memory for it. */
+static BOOL
+sent_resize(struct MDNSDaemon *md, UWORD max)
+{
+    struct MDNSSent *ring = AllocVec((ULONG)max * sizeof(*ring), MEMF_ANY);
+    UWORD k;
+
+    if (ring == NULL) {
+        return FALSE;
+    }
+    for (k = 0; k < md->md_SentCount; k++) {
+        ring[k] = *sent_at(md, k);
+    }
+    if (md->md_Sent != NULL) {
+        FreeVec(md->md_Sent);
+    }
+    md->md_Sent = ring;
+    md->md_SentMax = max;
+    md->md_SentFirst = 0;
+    D(bug("[mdnsd] echo journal: %u signatures (%u waiting)\n", max,
+        md->md_SentCount));
+    return TRUE;
+}
+
+/* Drops the signatures whose echo cannot come any more. */
+static void
+sent_purge(struct MDNSDaemon *md, ULONG now)
+{
+    while (md->md_SentCount > 0) {
+        const struct MDNSSent *s = sent_at(md, 0);
+        ULONG idle = (s->s_Length & MDNS_SENT_IPV6) ? md->md_Idle6 :
+            md->md_Idle4;
+
+        if ((LONG)(idle - (s->s_Tick + MDNS_ECHO_TICKS)) < 0 &&
+            (LONG)(now - (s->s_Tick + MDNS_ECHO_KEEP_TICKS)) < 0) {
+            break;
+        }
+        md->md_SentFirst = (UWORD)((md->md_SentFirst + 1) % md->md_SentMax);
+        md->md_SentCount--;
+    }
+    if (md->md_SentCount == 0 && md->md_SentMax > MDNS_SENT_MIN) {
+        D(bug("[mdnsd] echo journal: empty, %u freed; echoes %lu\n",
+            md->md_SentMax, md->md_RxEchoes));
+        FreeVec(md->md_Sent);           /* back to the least, when needed */
+        md->md_Sent = NULL;
+        md->md_SentMax = 0;
+    } else if (md->md_SentMax > MDNS_SENT_MIN &&
+               md->md_SentCount <= md->md_SentMax / 4) {
+        UWORD half = (UWORD)(md->md_SentMax / 2);
+
+        sent_resize(md, half > MDNS_SENT_MIN ? half : MDNS_SENT_MIN);
+    }
+}
+
+/* Room for one more signature: a ring half as big again when this one is
+ * full of signatures still waiting for their echo; with no memory, the
+ * oldest goes. */
+static BOOL
+sent_room(struct MDNSDaemon *md)
+{
+    ULONG max = md->md_SentMax != 0 ?
+        (ULONG)md->md_SentMax + md->md_SentMax / 2 :
+        (MDNS_SENT_MIN < MDNS_SENT_CAP ? MDNS_SENT_MIN : MDNS_SENT_CAP);
+
+    if (md->md_Sent != NULL && md->md_SentCount < md->md_SentMax) {
+        return TRUE;
+    }
+    if (max > MDNS_SENT_CAP) {
+        max = MDNS_SENT_CAP;
+    }
+    if (max > md->md_SentMax && sent_resize(md, (UWORD)max)) {
+        return TRUE;
+    }
+    if (md->md_Sent == NULL) {
+        return FALSE;
+    }
+    D(bug("[mdnsd] echo journal: full at %u, the oldest dropped\n",
+        md->md_SentMax));
+    md->md_SentFirst = (UWORD)((md->md_SentFirst + 1) % md->md_SentMax);
+    md->md_SentCount--;
+    return TRUE;
+}
+
+/* A packet that went to the group by af: kept until its echo cannot come. */
+static void
+sent_keep(struct MDNSDaemon *md, LONG slot, UWORD af, const UBYTE *pkt,
+    LONG pktlen)
+{
+    ULONG now = mdnsTicks();
+    struct MDNSSent *s;
+
+    if (md->md_IfCount < 2 || mdnsReplyIsUnicast(md)) {
+        return;
+    }
+    sent_purge(md, now);
+    if (!sent_room(md)) {
+        return;
+    }
+    s = sent_at(md, md->md_SentCount++);
+    s->s_Link = md->md_Ifs[slot].mi_Index;
+    s->s_Tick = now;
+    sent_sign(pkt, pktlen, &s->s_Hash, &s->s_Sum);
+    s->s_Length = sent_length(af, pktlen);
+}
+
+/* The socket of af was seen with nothing to read: whatever this host sent
+ * a second or more before cannot come back by it any more. */
+void
+mdnsNetIdle(struct MDNSDaemon *md, UWORD af)
+{
+    ULONG now = mdnsTicks();
+
+    if (af == AF_INET6) {
+        md->md_Idle6 = now;
+    } else {
+        md->md_Idle4 = now;
+    }
+    if (md->md_SentCount > 0) {
+        sent_purge(md, now);
+    }
+}
+
+/* Is source (4 or 16 bytes, by af) an address this host has on the link
+ * with this interface index - or, with other, on any link but that one? */
+static BOOL
+own_address(const struct MDNSDaemon *md, ULONG link, BOOL other, UWORD af,
+    const UBYTE *source)
+{
+    UWORD family = af == AF_INET6 ? DNSSD_ADDRESS_IPV6 : DNSSD_ADDRESS_IPV4;
+    size_t i, length = af == AF_INET6 ? 16u : 4u;
+
+    for (i = 0; i < md->md_LinkInventory.address_count; ++i) {
+        const struct dnssd_address_entry *address =
+            &md->md_LinkInventory.addresses[i];
+
+        if (address->value.family == family &&
+            (address->value.interface_index == link) != other &&
+            memcmp(address->value.bytes, source, length) == 0) {
+            return TRUE;
+        }
+    }
+    return FALSE;
+}
+
+/*
+ * A packet that came in by the link in this slot, by af, from source (the
+ * address as on the wire: 4 or 16 bytes): is it this host's own? From an
+ * address of the host on that link it is - the group's traffic looped back;
+ * from the address of another of its links only if it is a packet the host
+ * sent out by that link (above). Anything else is another host's.
+ */
+BOOL
+mdnsNetIsOwnPacket(struct MDNSDaemon *md, LONG slot, UWORD af,
+    const UBYTE *source, const UBYTE *pkt, LONG pktlen)
+{
+    ULONG link = md->md_Ifs[slot].mi_Index, hash, sum;
+    UWORD k;
+
+    if (own_address(md, link, FALSE, af, source)) {
+        return TRUE;
+    }
+    if (md->md_SentCount == 0 || !own_address(md, link, TRUE, af, source)) {
+        return FALSE;
+    }
+    sent_sign(pkt, pktlen, &hash, &sum);
+    for (k = 0; k < md->md_SentCount; k++) {
+        const struct MDNSSent *s = sent_at(md, k);
+
+        if (s->s_Hash == hash && s->s_Sum == sum &&
+            s->s_Length == sent_length(af, pktlen) && s->s_Link != link &&
+            own_address(md, s->s_Link, FALSE, af, source)) {
+            ULONG *mark = af == AF_INET6 ? &md->md_Idle6 : &md->md_Idle4;
+
+            /* read past what came a second before it went (above) */
+            if ((LONG)(s->s_Tick - *mark) > 0) {
+                *mark = s->s_Tick;
+            }
+            md->md_RxEchoes++;
+            sent_purge(md, mdnsTicks());
+            return TRUE;
+        }
     }
     return FALSE;
 }
@@ -482,6 +756,7 @@ send_on4(struct Library *SocketBase, struct MDNSDaemon *md, LONG index,
         return FALSE;
     }
     md->md_TxPackets++;
+    sent_keep(md, index, AF_INET, pkt, pktlen);
     return TRUE;
 }
 
@@ -521,7 +796,45 @@ send_on6(struct Library *SocketBase, struct MDNSDaemon *md, LONG index,
         return FALSE;
     }
     md->md_TxPackets++;
+    sent_keep(md, index, AF_INET6, pkt, pktlen);
     return TRUE;
+}
+
+/* Out by one family alone on this link (MDNS_FAM_*): a name's publication
+ * there goes by each family on its own. */
+BOOL
+mdnsNetSendOnFamily(struct MDNSDaemon *md, LONG index, UWORD fam,
+    const UBYTE *pkt, LONG pktlen)
+{
+    if (md == NULL || md->md_SocketBase == NULL || pkt == NULL ||
+        pktlen <= 0 || index < 0 || index >= md->md_IfCount) {
+        return FALSE;
+    }
+    return fam == MDNS_FAM_IPV6 ?
+        send_on6(md->md_SocketBase, md, index, pkt, pktlen) :
+        send_on4(md->md_SocketBase, md, index, pkt, pktlen);
+}
+
+/* The slot (md_Ifs[]) of the link with this interface index, or -1. */
+LONG
+mdnsNetSlot(const struct MDNSDaemon *md, ULONG link)
+{
+    LONG i;
+
+    for (i = 0; link != 0 && i < md->md_IfCount; i++) {
+        if (md->md_Ifs[i].mi_Index == link) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+/* Does the link in this slot have a usable address of the family? */
+BOOL
+mdnsNetHasFamily(const struct MDNSDaemon *md, LONG index, UWORD fam)
+{
+    return mdnsNetAddressAt(md, index, mdnsDnssdFamily(fam), 0) != NULL &&
+        (fam == MDNS_FAM_IPV6 ? md->md_Socket6 >= 0 : md->md_Socket4 >= 0);
 }
 
 BOOL

@@ -345,7 +345,8 @@ static int build_specs(struct Library *SocketBase, int query_socket,
 }
 
 int dnssd_link_aros_reconcile(struct dnssd_link_inventory *inventory,
-    struct Library *SocketBase, size_t snapshot_limit)
+    struct Library *SocketBase, size_t snapshot_limit,
+    struct dnssd_link_changes *changes)
 {
     struct raw_snapshot snapshot;
     struct dnssd_link_spec *links = NULL;
@@ -395,8 +396,8 @@ int dnssd_link_aros_reconcile(struct dnssd_link_inventory *inventory,
                          links, candidates, &link_count,
                          addresses, candidates, &address_count);
     if (result == DNSSD_LINK_OK)
-        result = dnssd_link_inventory_reconcile(inventory, links, link_count,
-                                                 addresses, address_count);
+        result = dnssd_link_inventory_reconcile_changes(inventory, links,
+            link_count, addresses, address_count, changes);
 out:
     if (addresses != NULL)
         FreeVec(addresses);
