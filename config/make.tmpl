@@ -158,10 +158,10 @@ endif
 
 #------------------------------------------------------------------------------
 # Create the dependency file %(to) for %(from)
-%define mkdepend_q flags="$(strip $(CFLAGS) $(CPPFLAGS))" from=$< to=$@ cc="$(strip $(AROS_CC) $(TARGET_SYSROOT))"
+%define mkdepend_q flags="$(strip $(CFLAGS) $(CPPFLAGS))" from=$< to=$@ cc="$(strip $(AROS_CC) $(TARGET_SYSROOT))" incextra="$(TOP)/$(CURDIR)"
 	%mkdir_q dir="$(dir %(to))"
 	%fileactionmsg msg="Makedepend" file="%(from)" elipses="..."
-	$(Q)AROS_CC="%(cc)" $(MKDEPEND) %(flags) -I$(TOP)/$(CURDIR) -I$(SRCDIR)/$(CURDIR) %(from) -o %(to)
+	$(Q)AROS_CC="%(cc)" $(MKDEPEND) %(flags) -I%(incextra) -I$(SRCDIR)/$(CURDIR) %(from) -o %(to)
 %end
 #------------------------------------------------------------------------------
 
@@ -402,7 +402,7 @@ ifeq (%(nix),yes)
   $(%(mmake)_TARGETBASE).d : %(mmake)_DFLAGS:=$(strip $(%(mmake)_NIXFLAG) $(%(mmake)_DFLAGS))
 endif
 $(%(mmake)_TARGETBASE).d : %(basename).c
-	%mkdepend_q cc="$(%(mmake)_CMD)" flags="$(strip $(%(mmake)_DFLAGS) $(%(mmake)_C_CPPFLAGS))"
+	%mkdepend_q cc="$(%(mmake)_CMD)" flags="$(strip $(%(mmake)_DFLAGS) $(%(mmake)_C_CPPFLAGS))" incextra="%(incextra)"
 %end
 #------------------------------------------------------------------------------
 
@@ -500,7 +500,7 @@ ifeq (%(nix),yes)
   $(%(mmake)_TARGETBASE).d : %(mmake)_DXXFLAGS:=$(strip $(%(mmake)_NIXFLAG) $(%(mmake)_DXXFLAGS))
 endif
 $(%(mmake)_TARGETBASE).d : %(basename).cpp
-	%mkdepend_q cc=$(%(mmake)_CMD) flags="$(strip $(%(mmake)_DXXFLAGS) $(%(mmake)_CXX_CPPFLAGS))"
+	%mkdepend_q cc=$(%(mmake)_CMD) flags="$(strip $(%(mmake)_DXXFLAGS) $(%(mmake)_CXX_CPPFLAGS))" incextra="%(incextra)"
 
 endif
 
@@ -609,7 +609,7 @@ ifeq (%(nix),yes)
   $(%(mmake)_TARGETBASE).d : %(mmake)_OBJCDFLAGS:=$(strip $(%(mmake)_NIXFLAG) $(%(mmake)_OBJCDFLAGS))
 endif
 $(%(mmake)_TARGETBASE).d : %(basename).m
-	%mkdepend_q cc=$(%(mmake)_CMD) flags="$(strip $(%(mmake)_OBJCDFLAGS) $(%(mmake)_OBJC_CPPFLAGS))"
+	%mkdepend_q cc=$(%(mmake)_CMD) flags="$(strip $(%(mmake)_OBJCDFLAGS) $(%(mmake)_OBJC_CPPFLAGS))" incextra="%(incextra)"
 
 endif
 
@@ -731,7 +731,7 @@ $(%(mmake)_MC_TARGETS) : $(%(mmake)_MC_TGTWILDCARD).o : $(%(mmake)_MC_SRCWILDCAR
 	%compile_q cmd="$(CMD)" iquote="$(%(mmake)_IQUOTE)" iquote_end="$(%(mmake)_IQUOTE_END)" incextra="%(incextra)"
 
 $(%(mmake)_MC_DTARGETS) : $(%(mmake)_MC_TGTWILDCARD).d : $(%(mmake)_MC_SRCWILDCARD).c
-	%mkdepend_q cc="$(CMD)" flags="$(strip $(%(mmake)_DFLAGS) $(%(mmake)_MC_CPPFLAGS))"
+	%mkdepend_q cc="$(CMD)" flags="$(strip $(%(mmake)_DFLAGS) $(%(mmake)_MC_CPPFLAGS))" incextra="%(incextra)"
 %end
 #------------------------------------------------------------------------------
 
@@ -855,7 +855,7 @@ define cxx_multi_recipe_template
  	%compile_q cmd="$(%(mmake)_CXXCMD)" opt="$(strip $(%(mmake)_CXXFLAGS) $(%(mmake)_MCXX_CPPFLAGS))" iquote="$(%(mmake)_CXXIQUOTE)" iquote_end="$(%(mmake)_CXXIQUOTE_END)" from="$(2)" to="$(1).o" incextra="%(incextra)"
 
  $(1).d : $(2)
- 	%mkdepend_q cc="$(%(mmake)_CXXCMD)" flags="$(strip $(%(mmake)_DXXFLAGS) $(%(mmake)_MCXX_CPPFLAGS))" from="$(2)" to="$(1).d"
+ 	%mkdepend_q cc="$(%(mmake)_CXXCMD)" flags="$(strip $(%(mmake)_DXXFLAGS) $(%(mmake)_MCXX_CPPFLAGS))" from="$(2)" to="$(1).d" incextra="%(incextra)"
 endef
 ifeq (%(targetdir),)
   $(foreach %(mmake)_CXXFILE,$(%(mmake)_MCXX_FILES),$(eval $(call cxx_multi_recipe_template,$(notdir $(basename $(%(mmake)_CXXFILE))),$(%(mmake)_CXXFILE))))
@@ -985,7 +985,7 @@ $(%(mmake)_MOBJC_TARGETS) : $(%(mmake)_MOBJC_WILDCARD).o : $(%(mmake)_MOBJC_SRCW
 	%compile_q cmd="$(CMD)" iquote="$(%(mmake)_IQUOTE)" iquote_end="$(%(mmake)_IQUOTE_END)" incextra="%(incextra)"
 
 $(%(mmake)_MOBJC_DTARGETS) : $(%(mmake)_MOBJC_WILDCARD).d : $(%(mmake)_MOBJC_SRCWILDCARD).m
-	%mkdepend_q cc="$(CMD)" flags="$(strip $(%(mmake)_OBJCDFLAGS) $(%(mmake)_MOBJC_CPPFLAGS))"
+	%mkdepend_q cc="$(CMD)" flags="$(strip $(%(mmake)_OBJCDFLAGS) $(%(mmake)_MOBJC_CPPFLAGS))" incextra="%(incextra)"
 
 endif
 
@@ -3431,10 +3431,10 @@ $(BD_DEPS$(BDID)) : TMP_DFLAGS:=%(dflags)
 endif
 ifeq ($(TARGET),$(BD_TARGET))
 $(BD_LIBOBJDIR$(BDID))/%.d : $(SRCDIR)/$(CURDIR)/%.c
-	%mkdepend_q cc="$(TMP_CMD)" flags="$(strip $(TMP_DFLAGS) $(TMP_CPPFLAGS))"
+	%mkdepend_q cc="$(TMP_CMD)" flags="$(strip $(TMP_DFLAGS) $(TMP_CPPFLAGS))" incextra="$(BD_INCEXTRA$(BDID))"
 
 $(BD_OBJDIR$(BDID))/%.d : $(SRCDIR)/$(CURDIR)/%.c
-	%mkdepend_q cc="$(TMP_CMD)" flags="$(strip $(TMP_DFLAGS) $(TMP_CPPFLAGS))"
+	%mkdepend_q cc="$(TMP_CMD)" flags="$(strip $(TMP_DFLAGS) $(TMP_CPPFLAGS))" incextra="$(BD_INCEXTRA$(BDID))"
 endif
 
 $(BD_ASMOBJS$(BDID)) : CPPFLAGS:=%(cppflags)
