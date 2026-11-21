@@ -23,6 +23,7 @@ FILES := \
     fread \
     fstest \
     getenv \
+    hunkalignment \
     inhibit \
     isinteractive \
     lockrelative \
