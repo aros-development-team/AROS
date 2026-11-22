@@ -176,6 +176,7 @@ struct Exec_PlatformData
 #endif /* !__AROSEXEC_SMP__ */
 
 struct Task *Exec_X86CreateIdleTask(APTR);
+void Exec_StackProbe(struct Task *, struct ExecBase *);
 
 #include "kernel_intr.h"
 

@@ -19,7 +19,7 @@ PRIV_EXEC_INCLUDES = \
     $(TARGET_KERNEL_INCLUDES) \
     -I$(SRCDIR)/rom/kernel
 
-FILES := platform_init powerstate_handlers supervisor exec_idle intserver_vblank exec_vlog
+FILES := platform_init powerstate_handlers supervisor exec_idle intserver_vblank exec_vlog stackprobe
 
 # From kernel.resource we need only kernel_syscalls.h
 USER_INCLUDES := $(PRIV_EXEC_INCLUDES)
