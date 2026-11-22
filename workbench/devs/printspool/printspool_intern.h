@@ -35,6 +35,7 @@ struct PrintSpoolBase
     ULONG ps_Sequence;
     struct Process *ps_Spooler;
     ULONG ps_SpoolerSignal;
+    TEXT ps_Status[200];            /* PrintSpool/Status as last written */
     struct Library *ps_DOSBase;
 };
 

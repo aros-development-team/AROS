@@ -27,6 +27,7 @@
 #include <aros/debug.h>
 
 #include <dos/dostags.h>
+#include <dos/notify.h>
 #include <dos/var.h>
 #include <exec/errors.h>
 #include <exec/memory.h>
@@ -85,17 +86,26 @@ static void job_path(struct PrintSpoolBase *PrintSpoolBase, CONST_STRPTR name,
         strcat(buf, suffix);
 }
 
-/* SetVar() makes the variable's file but not its directory. */
-static void set_status(struct PrintSpoolBase *PrintSpoolBase, CONST_STRPTR text)
+/* SetVar() makes the variable's file but not its directory. The state is
+   written when it changes. FALSE when it could not be written: a program that
+   shows it has the file open while it reads. */
+static BOOL set_status(struct PrintSpoolBase *PrintSpoolBase, CONST_STRPTR text)
 {
-    BPTR lock = Lock("ENV:PrintSpool", SHARED_LOCK);
+    BPTR lock;
 
+    if (text != NULL && strcmp(text, PrintSpoolBase->ps_Status) == 0)
+        return TRUE;
+    lock = Lock("ENV:PrintSpool", SHARED_LOCK);
     if (lock == BNULL)
         lock = CreateDir("ENV:PrintSpool");
     if (lock != BNULL)
         UnLock(lock);
-    if (text != NULL)
-        SetVar("PrintSpool/Status", text, -1, GVF_GLOBAL_ONLY);
+    if (text == NULL)
+        return TRUE;
+    if (!SetVar("PrintSpool/Status", text, -1, GVF_GLOBAL_ONLY))
+        return FALSE;
+    strncpy(PrintSpoolBase->ps_Status, text, sizeof(PrintSpoolBase->ps_Status) - 1);
+    return TRUE;
 }
 
 /*
@@ -175,14 +185,16 @@ static ULONG last_sequence(struct PrintSpoolBase *PrintSpoolBase)
 static BOOL held(struct PrintSpoolBase *PrintSpoolBase, CONST_STRPTR name);
 static BOOL has_flag(struct PrintSpoolBase *PrintSpoolBase, CONST_STRPTR name, CONST_STRPTR suffix);
 
-/* Oldest .job file not held: its name without the suffix goes to name. */
-static BOOL next_job(struct PrintSpoolBase *PrintSpoolBase, STRPTR name, LONG size)
+/* Oldest .job file not held: its name without the suffix goes to name. queued
+   says whether there is a .job file at all. */
+static BOOL next_job(struct PrintSpoolBase *PrintSpoolBase, STRPTR name, LONG size, BOOL *queued)
 {
     TEXT dir[256];
     struct FileInfoBlock *fib = AllocDosObject(DOS_FIB, NULL);
     BPTR lock;
     BOOL found = FALSE;
 
+    *queued = FALSE;
     spool_dir(PrintSpoolBase, dir, sizeof(dir));
     lock = Lock(dir, SHARED_LOCK);
     if (lock != BNULL && fib != NULL && Examine(lock, fib))
@@ -196,6 +208,7 @@ static BOOL next_job(struct PrintSpoolBase *PrintSpoolBase, STRPTR name, LONG si
             if (len <= 4 || len - 4 >= size || len - 4 >= (LONG)sizeof(candidate)
                 || strcmp(fib->fib_FileName + len - 4, JOB_SUFFIX) != 0)
                 continue;
+            *queued = TRUE;
             CopyMem(fib->fib_FileName, candidate, len - 4);
             candidate[len - 4] = '\0';
             /* a held job still goes, to be dropped, once it is cancelled */
@@ -403,6 +416,37 @@ static void housekeep(struct PrintSpoolBase *PrintSpoolBase, CONST_STRPTR active
         }
 }
 
+/* The spool directory changing signals the spooler: jobs are released and
+   cancelled there. FALSE when its file system has no notification. */
+static BOOL watch_queue(struct PrintSpoolBase *PrintSpoolBase, struct NotifyRequest *nr, STRPTR watched,
+    LONG size, BOOL notified)
+{
+    TEXT dir[256];
+    BPTR lock;
+
+    spool_dir(PrintSpoolBase, dir, sizeof(dir));
+    if (strcmp(dir, watched) == 0)
+        return notified;
+    if (notified)
+        EndNotify(nr);
+    if ((lock = Lock(dir, SHARED_LOCK)) == BNULL)
+        lock = CreateDir(dir);
+    if (lock == BNULL)
+    {
+        watched[0] = '\0';
+        return FALSE;
+    }
+    UnLock(lock);
+    strncpy(watched, dir, size - 1);
+    watched[size - 1] = '\0';
+    memset(nr, 0, sizeof(*nr));
+    nr->nr_Name = watched;
+    nr->nr_Flags = NRF_SEND_SIGNAL;
+    nr->nr_stuff.nr_Signal.nr_Task = FindTask(NULL);
+    nr->nr_stuff.nr_Signal.nr_SignalNum = PrintSpoolBase->ps_SpoolerSignal;
+    return StartNotify(nr) != DOSFALSE;
+}
+
 static void spooler_main(void)
 {
     struct PrintSpoolBase *PrintSpoolBase = FindTask(NULL)->tc_UserData;
@@ -412,9 +456,12 @@ static void spooler_main(void)
         sizeof(struct IOExtPar) > sizeof(struct IOExtSer) ?
         sizeof(struct IOExtPar) : sizeof(struct IOExtSer));
     ULONG sigmask = 1UL << PrintSpoolBase->ps_SpoolerSignal;
-    TEXT name[64], path[300], status[200];
-    /* Idle, the queue is looked at again now and then: the spooler UI's control
-       files (a release, a cancel) come without a signal. */
+    TEXT name[64], path[300], status[200], watched[256] = "";
+    struct NotifyRequest nr;
+    BOOL notified = FALSE;
+    /* Without notification a queue with jobs in it is looked at again now and
+       then: the spooler UI's control files (a release, a cancel) come without
+       a signal. A state that could not be written is written again likewise. */
     struct MsgPort *tport = CreateMsgPort();
     struct timerequest *tr = tport != NULL ? (struct timerequest *)CreateIORequest(tport, sizeof(*tr)) : NULL;
 
@@ -438,16 +485,18 @@ static void spooler_main(void)
         /* the device dropped the job (send it whole again), refused it (hold it), or sent
            all of it without the printer confirming it (hold it: it may have printed) */
         BOOL dropped = FALSE, refused = FALSE, unconfirmed = FALSE, jobs = FALSE, updated = FALSE;
+        BOOL queued = FALSE;
         LONG failure = 0, taken;
 
+        notified = watch_queue(PrintSpoolBase, &nr, watched, sizeof(watched), notified);
         housekeep(PrintSpoolBase, NULL);
 
-        if (chunk == NULL || io == NULL || !next_job(PrintSpoolBase, name, sizeof(name)))
+        if (chunk == NULL || io == NULL || !next_job(PrintSpoolBase, name, sizeof(name), &queued))
         {
             ULONG tsig = 0, got;
+            BOOL again = !set_status(PrintSpoolBase, "idle") || (queued && !notified);
 
-            set_status(PrintSpoolBase, "idle");
-            if (tr != NULL)
+            if (tr != NULL && again)
             {
                 tr->tr_node.io_Command = TR_ADDREQUEST;
                 tr->tr_time.tv_secs = 2;
@@ -456,11 +505,12 @@ static void spooler_main(void)
                 tsig = 1UL << tport->mp_SigBit;
             }
             got = Wait(sigmask | tsig | SIGBREAKF_CTRL_C);
-            if (tr != NULL)
+            if (tsig != 0)
             {
                 if (!CheckIO((struct IORequest *)tr))
                     AbortIO((struct IORequest *)tr);
                 WaitIO((struct IORequest *)tr);
+                SetSignal(0, tsig);
             }
             if (got & SIGBREAKF_CTRL_C)
                 break;
@@ -761,6 +811,8 @@ static void spooler_main(void)
         D(bug("[printspool] %s done\n", name));
     }
 
+    if (notified)
+        EndNotify(&nr);
     if (tr != NULL)
     {
         CloseDevice((struct IORequest *)tr);
