@@ -1,8 +1,7 @@
 /*
-    Copyright (C) 2017-2023, The AROS Development Team. All rights reserved.
+    Copyright (C) 2017-2026, The AROS Development Team. All rights reserved.
 */
 
-#include <exec/alerts.h>
 #include <exec/execbase.h>
 #include <exec/lists.h>
 #include <proto/exec.h>
@@ -157,6 +156,11 @@ BOOL core_Schedule(void)
     return corereschedule;
 }
 
+/* Overridden by exec's, which reports the overrun; without exec the task is only parked */
+void __attribute__((weak)) Exec_StackProbe(struct Task *task, struct ExecBase *SysBase)
+{
+}
+
 /*
     Switch the currently running task on this cpu
     if it is running , switch it to the ready state
@@ -167,7 +171,6 @@ void core_Switch(void)
 {
     cpuid_t cpuNo;
     struct Task *task;
-    ULONG showAlert = 0;
     BOOL doSwitch = TRUE;
     struct ETask * taskEtask = NULL;
 
@@ -232,10 +235,17 @@ void core_Switch(void)
         bug("[Kernel:%03u]" DEBUGCOLOR_SET "  - Lower Bound = 0x%p, Upper Bound = 0x%p" DEBUGCOLOR_RESET "\n", cpuNo, task->tc_SPLower, task->tc_SPUpper);
         bug("[Kernel:%03u]" DEBUGCOLOR_SET "  - SP = 0x%p" DEBUGCOLOR_RESET "\n", cpuNo, task->tc_SPReg);
 
-        task->tc_SigWait    = 0;
-        task->tc_State      = TS_WAIT;
-
-        showAlert = AN_StackProbe;
+        /* a task on its way out is left as it is */
+        if ((task->tc_State != TS_REMOVED)
+#if defined(__AROSEXEC_SMP__)
+            && (task->tc_State != TS_TOMBSTONED)
+#endif
+           )
+        {
+            task->tc_SigWait    = 0;
+            task->tc_State      = TS_WAIT;
+            Exec_StackProbe(task, SysBase);
+        }
 #if defined(LOWSTACKWARN)
     }
     else if (task->tc_SPReg <= task->tc_SPLower + 1024)
@@ -286,8 +296,6 @@ void core_Switch(void)
         KrnSpinUnLock(&PrivExecBase(SysBase)->TaskWaitSpinLock);
 #endif
     }
-    if (showAlert)
-        Alert(showAlert);
 }
 
 /* Dispatch a "new" ready task on this cpu */
