@@ -55,6 +55,7 @@ struct SRBuffer
     APTR    srb_Buffer;
 };
 
+#if defined(DOS_VERIFYLOADS)
 /*
  * With load verification on, a block just read is read again into scratch
  * memory and the two are compared; on a difference the block is read once
@@ -101,6 +102,9 @@ static int elf_verify_block
         SetIoErr(ERROR_BAD_HUNK);
     return 1;
 }
+#else
+#define elf_verify_block(file, offset, buffer, size, funcarray, DOSBase) 0
+#endif
 
 static int elf_read_block
 (

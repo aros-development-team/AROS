@@ -106,7 +106,7 @@ void register_hunk(BPTR file, BPTR hunks, APTR header, const struct HunkRelocLis
                 struct HunkRelocGroup *g = (struct HunkRelocGroup *)(hsn + 1);
                 ULONG *off = (ULONG *)(g + ng), k = 0, i;
 
-                hsn->hsn_Relocs.hrt_Groups = kept ? ng : ~0UL;
+                hsn->hsn_Relocs.hrt_Groups = kept ? ng : ~(ULONG)0;
                 hsn->hsn_Relocs.hrt_Group  = g;
                 for (i = 0; i < ng; i++)
                 {

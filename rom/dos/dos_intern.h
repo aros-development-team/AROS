@@ -41,6 +41,12 @@ AROS_LC0(BPTR, expunge, struct DosLibrary *, DOSBase, 3, Dos)
 
 /* BCPL compatibility: At least LONG alignment required */
 
+/* Load verification: with "verifyloads" on the boot command line, every
+   block the ELF loader reads is read again and compared. Debug builds only. */
+#if DEBUG > 0
+#define DOS_VERIFYLOADS
+#endif
+
 struct IntDosBase
 {
     struct DosLibrary           pub;
@@ -55,9 +61,16 @@ struct IntDosBase
     BOOL                        arm_VFP;
     BOOL                        arm_VFP_v3;
 #endif
+#if defined(DOS_VERIFYLOADS)
+    /* Last, so a file with its own DEBUG setting sees the same offsets */
+    BOOL                        verifyLoads;
+#endif
 };
 
 #define IDosBase(base) ((struct IntDosBase *)base)
+#if defined(DOS_VERIFYLOADS)
+#define VERIFY_LOADS(base) ((base) != NULL && IDosBase(base)->verifyLoads)
+#endif
 #define DebugBase IDosBase(DOSBase)->debugBase
 /* Multi-user support: NULL unless security.library is part of the ROM */
 #define secBase IDosBase(DOSBase)->securityBase
