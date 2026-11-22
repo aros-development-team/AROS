@@ -14,9 +14,10 @@ executing the child; the test fails on the missing completion file.
 
 Coverage includes RunBack's exact NIL form, distinct outer and child input/output
 files, case-insensitive Run with QUIET, a plain Run with child redirections,
-quoted child paths, failed outer input, ordinary duplicate redirections, and
-subsequent shell usability. Successful runs remove their temporary files;
-failed asynchronous launches retain evidence rather than reuse their paths.
+quoted child paths, '+' continuation lines, failed outer input, ordinary
+duplicate redirections, and subsequent shell usability. Successful runs remove
+their temporary files; failed asynchronous launches retain evidence rather than
+reuse their paths.
 
 Expected result: RUN COMMAND REDIR TEST: 0 failures.
 

@@ -133,6 +133,25 @@ int main(int argc, char **argv)
     if (complete)
     {
         BPTR oldIn = Input(), oldOut = Output();
+
+        /* '+' continuation: every line runs once, in order, reading NIL:. */
+        snprintf(result, sizeof result, "%s/continued-1", directory);
+        snprintf(inner, sizeof inner, "%s/continued-2", directory);
+        snprintf(outer, sizeof outer, "%s/continued-once", directory);
+        snprintf(command, sizeof command,
+                 "Run >NIL: \"%s\" %s +\n\"%s\" %s +\nEcho >>%s ONCE\n",
+                 payload, result, payload, inner, outer);
+        check(SystemTags((CONST_STRPTR)command, SYS_Asynch, FALSE, TAG_DONE) == RETURN_OK,
+              "continued Run launch status");
+        check(waitFor((CONST_STRPTR)result, "EMPTY\n"), "first continued command reads NIL:");
+        check(waitFor((CONST_STRPTR)inner, "EMPTY\n"), "second continued command runs");
+        check(waitFor((CONST_STRPTR)outer, "ONCE\n"), "last continued command runs");
+        Delay(50);
+        check(matches((CONST_STRPTR)outer, "ONCE\n"), "continued commands run once");
+        check(DeleteFile((CONST_STRPTR)result), "remove first continued output");
+        check(DeleteFile((CONST_STRPTR)inner), "remove second continued output");
+        check(DeleteFile((CONST_STRPTR)outer), "remove last continued output");
+
         snprintf(outer, sizeof outer, "%s/failed-outer", directory);
         snprintf(inner, sizeof inner, "%s/should-not-exist", directory);
         snprintf(result, sizeof result, "%s/should-not-run", directory);

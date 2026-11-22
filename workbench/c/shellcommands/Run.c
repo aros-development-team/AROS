@@ -49,6 +49,7 @@
     HISTORY
 
         41.4: Preserve quoting and escapes in the child command line.
+        41.5: Run every '+' continuation line, once.
 
 ******************************************************************************/
 
@@ -73,7 +74,7 @@
 
 #include "run_handle.h"
 
-AROS_SH2H(Run, 41.4,                  "Start a program as a background process\n",
+AROS_SH2H(Run, 41.5,                  "Start a program as a background process\n",
 AROS_SHAH(BOOL  , ,QUIET  ,/S,FALSE,"\tDon't print the background CLI's number"),
 AROS_SHAH(STRPTR, ,COMMAND,/F,NULL ,  "The program (resp. script) to run (arguments allowed)\n") )
 {
@@ -81,12 +82,13 @@ AROS_SHAH(STRPTR, ,COMMAND,/F,NULL ,  "The program (resp. script) to run (argume
 
     struct CommandLineInterface *cli = Cli();
     struct Process *me = (struct Process *)FindTask(NULL);
-    BPTR cis = BNULL, cos = BNULL, ces = BNULL;
+    BPTR cis = BNULL, sis = BNULL, cos = BNULL, ces = BNULL;
     struct FileHandle *fh;
     LONG argsize;
     CONST_STRPTR argbuff;
     STRPTR command = (STRPTR)SHArg(COMMAND);
     LONG cmdsize = 0;
+    STRPTR nl;
 
     if (command)
     {
@@ -142,6 +144,13 @@ AROS_SHAH(STRPTR, ,COMMAND,/F,NULL ,  "The program (resp. script) to run (argume
     fh = BADDR(Input());
     argsize = (fh->fh_End > 0 && fh->fh_Pos > 0) ? (fh->fh_End - fh->fh_Pos) : 0;
 
+    /* The Shell joins the continuation lines into the argument line, which
+     * the command already holds then.
+     */
+    nl = strchr(command, '\n');
+    if (nl && nl[1])
+        argsize = 0;
+
     /* Good, there's some buffered input for us.
      * Append it to the command.
      */
@@ -163,6 +172,21 @@ AROS_SHAH(STRPTR, ,COMMAND,/F,NULL ,  "The program (resp. script) to run (argume
             cmdsize = 0;
         }
     }
+
+    /* The background CLI reads the command lines from cis. Each command it
+     * runs gets its arguments injected into Input(), which is flushed after
+     * the command, so with '+' continuation lines a shared handle loses the
+     * lines not yet read. Give the commands their own input then.
+     */
+    nl = strchr(command, '\n');
+    if (nl && nl[1])
+    {
+        sis = Open("NIL:", MODE_OLDFILE);
+        if (!sis)
+            goto error;
+    }
+    else
+        sis = cis;
 
     cos = DuplicateRunHandle(Output(), DOSBase);
     if (!cos)
@@ -193,7 +217,7 @@ AROS_SHAH(STRPTR, ,COMMAND,/F,NULL ,  "The program (resp. script) to run (argume
         struct TagItem tags[] =
         {
             { SYS_ScriptInput, (IPTR)cis     },
-            { SYS_Input,       (IPTR)cis     },
+            { SYS_Input,       (IPTR)sis     },
             { SYS_Output,      (IPTR)cos     },
             { SYS_Error,       (IPTR)ces     },
             { SYS_CliType,     (IPTR)CLI_RUN },
@@ -206,6 +230,8 @@ AROS_SHAH(STRPTR, ,COMMAND,/F,NULL ,  "The program (resp. script) to run (argume
     }
     else
     {
+        if (sis != cis)
+            Close(sis);
         Close(cis);
         Close(cos);
         Close(ces);
@@ -220,6 +246,7 @@ error:
     {
         LONG error = IoErr();
         PrintFault(error, "Run");
+        if (sis && sis != cis) Close(sis);
         if (cis) Close(cis);
         if (cos) Close(cos);
         if (ces) Close(ces);
