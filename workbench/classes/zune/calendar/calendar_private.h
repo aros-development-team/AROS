@@ -9,6 +9,7 @@
 struct Calendar_DATA
 {
     struct MUI_EventHandlerNode ehn;
+    struct Locale           *locale; /* Keeps GetLocaleStr results alive. */
     struct ClockData	    	clockdata;
     CONST_STRPTR  	    	*daylabels;
     CONST_STRPTR  	    	defdaylabels[7];

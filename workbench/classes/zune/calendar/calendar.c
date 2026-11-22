@@ -25,7 +25,7 @@
 #define CELL_EXTRAWIDTH 6
 #define CELL_EXTRAHEIGHT 4
 
-STRPTR def_daylabels[] =
+static STRPTR def_daylabels[] =
 {
     "Sun",
     "Mon",
@@ -52,15 +52,11 @@ STRPTR def_daylabels[] =
 *
 *   NOTES
 *       Date is copied on input; Get borrows instance data. DayLabels borrows
-*       seven Sunday-first strings, not twelve as the header suggests.
-*       Setup/Cleanup register/remove a Window event handler. Set caps
-*       overlarge day values but does not validate arbitrary months/years.
-*
-*   BUGS
-*       Invalid months are unsafe for Date2Amiga; supply representable dates.
-*       Repeated Setup can increase cell width. Locale label pointers are
-*       retained after CloseLocale. Mouse hit testing requires a valid event
-*       and nonzero rendered cell dimensions.
+*       seven Sunday-first strings. Setup/Cleanup register/remove a
+*       Window event handler. Date fields are checked before conversion.
+*       Invalid initial dates fail object creation; invalid complete-date
+*       updates leave the date unchanged. Component setters can cap an
+*       oversized day. Dates must fit the 32-bit AROS epoch.
 *
 */
 /****** Calendar.mcc/MUIA_Calendar_Date ************
@@ -75,9 +71,12 @@ STRPTR def_daylabels[] =
 *       Initialize, set, get; non-NULL ClockData pointer for input.
 *
 *   NOTES
-*       Input is copied; Get borrows the instance address. Set caps an
-*       oversized month day, round-trips through Date2Amiga/Amiga2Date and
-*       recomputes weekday. Invalid month/date values are not safely rejected.
+*       Input is copied; Get borrows the instance address. A complete date
+*       provided during Set must be valid and representable; it is not
+*       silently capped. Invalid or NULL date inputs leave the current
+*       date unchanged; invalid initial dates fail object construction.
+*       Component setters can cap a day to the end of the month. The
+*       weekday is recomputed from a validated date.
 *       Only date changes redraw; notifications carry original input, not
 *       necessarily normalized data. Mouse/keyboard updates notify MonthDay.
 *
@@ -94,8 +93,8 @@ STRPTR def_daylabels[] =
 *       Set, get; UWORD, 1..number of days in month.
 *
 *   NOTES
-*       An oversized value is capped at month end during Set; input is not
-*       otherwise fully validated. No constructor handling. A changed date
+*       An oversized value is capped at month end during Set; invalid
+*       or unrepresentable values are ignored. No constructor handling. A changed date
 *       redraws; Date and alias notifications are not synthesized.
 *
 */
@@ -112,7 +111,7 @@ STRPTR def_daylabels[] =
 *
 *   NOTES
 *       Set adds one; Get subtracts one. Excessive days are capped during
-*       Set; invalid date inputs are not otherwise fully validated. No
+*       Set; invalid or unrepresentable values are ignored. No
 *       constructor handling or synthesized Date/alias notification.
 *
 */
@@ -129,7 +128,7 @@ STRPTR def_daylabels[] =
 *
 *   NOTES
 *       Day is capped to the selected month length and date reconverted.
-*       Invalid months are unsafe; no complete range validation. No
+*       Out-of-range months are ignored. No
 *       constructor handling or synthesized Date/alias notification.
 *
 */
@@ -146,7 +145,7 @@ STRPTR def_daylabels[] =
 *
 *   NOTES
 *       Set adds one; Get subtracts one. Day is capped to month length
-*       and date reconverted. Invalid months are unsafe; no constructor
+*       and date reconverted. Out-of-range months are ignored; no constructor
 *       handling or synthesized Date/alias notification.
 *
 */
@@ -162,8 +161,8 @@ STRPTR def_daylabels[] =
 *       Set, get; UWORD, representable full year.
 *
 *   NOTES
-*       Day is capped and date reconverted. No general range validation
-*       or constructor handling; no synthesized Date/alias notification.
+*       Day is capped and date reconverted. Unrepresentable years are
+*       ignored; no constructor handling or synthesized Date/alias notification.
 *
 */
 /****** Calendar.mcc/MUIA_Calendar_DayLabels ************
@@ -180,17 +179,23 @@ STRPTR def_daylabels[] =
 *
 *   NOTES
 *       Array and strings are borrowed and must remain valid while used.
-*       NULL elements are not checked. No local setter/getter. The header
-*       incorrectly specifies 12 entries. Custom labels use Sunday-first
+*       NULL elements are not checked. No local setter/getter. Custom labels
+*       use Sunday-first
 *       ordering instead of the default locale-based calendar ordering.
 *
 */
 
 /*** Methods ****************************************************************/
 
+/* Reject unrepresentable dates, then recompute the weekday using AROS utility.
+ * Date2Amiga has a 32-bit result; the round trip also rejects overflow.
+ * CheckDate alone cannot distinguish an invalid date from the epoch (0).
+ */
+static BOOL Calendar_NormalizeDate(struct ClockData *date);
+
 /*
- * Borrow labels, copy Date or use system time, and prepare Window
- * event node. Initial Date is not normalized; registration waits for Setup.
+ * Borrow caller labels or retain the locale for built-in labels.
+ * Validate the initial date and prepare Window events for Setup.
  */
 IPTR Calendar__OM_NEW(Class *cl, Object *obj, struct opSet *msg)
 {
@@ -201,6 +206,8 @@ IPTR Calendar__OM_NEW(Class *cl, Object *obj, struct opSet *msg)
     if (!obj) return 0;
     
     data = INST_DATA(cl, obj);
+    data->firstweekday = 0;
+    data->locale = NULL;
 
     data->daylabels = (CONST_STRPTR *)GetTagData(MUIA_Calendar_DayLabels, 0, msg->ops_AttrList);
     if (!data->daylabels)
@@ -225,13 +232,19 @@ IPTR Calendar__OM_NEW(Class *cl, Object *obj, struct opSet *msg)
             }
         }
         
-        if (locale) CloseLocale(locale);
+        /* GetLocaleStr strings belong to the open Locale. */
+        data->locale = locale;
     }
     
     if ((ti = FindTagItem(MUIA_Calendar_Date, msg->ops_AttrList)))
     {
         struct ClockData *cd = (struct ClockData *)ti->ti_Data;
         
+        if (!cd)
+        {
+            CoerceMethod(cl, obj, OM_DISPOSE);
+            return 0;
+        }
         data->clockdata = *cd;
     }
     else
@@ -241,7 +254,13 @@ IPTR Calendar__OM_NEW(Class *cl, Object *obj, struct opSet *msg)
         GetSysTime(&tv);
         Amiga2Date(tv.tv_secs, &data->clockdata);
     }
-    
+
+    if (!Calendar_NormalizeDate(&data->clockdata))
+    {
+        CoerceMethod(cl, obj, OM_DISPOSE);
+        return 0;
+    }
+
     data->ehn.ehn_Events   = IDCMP_MOUSEBUTTONS | IDCMP_RAWKEY;
     data->ehn.ehn_Priority = 0;
     data->ehn.ehn_Flags    = 0;
@@ -253,129 +272,162 @@ IPTR Calendar__OM_NEW(Class *cl, Object *obj, struct opSet *msg)
 
 
 /*
- * Delegate Area disposal; borrowed label storage remains
- * caller-owned. Requires prior Cleanup.
+ * Close a retained locale and delegate Area disposal. Caller-provided
+ * label storage remains caller-owned. Requires prior Cleanup after Setup.
  */
 IPTR Calendar__OM_DISPOSE(Class *cl, Object *obj, Msg msg)
 {
+    struct Calendar_DATA *data = INST_DATA(cl, obj);
+
+    if (data->locale)
+    {
+        CloseLocale(data->locale);
+        data->locale = NULL;
+    }
     return DoSuperMethodA(cl, obj, msg);
 }
 
 /*
- * Count days by advancing a copied date; requires valid month and
- * representable Date2Amiga arithmetic. No error status.
+ * Return the Gregorian month length, or zero for an invalid month.
  */
 LONG NumMonthDays(struct ClockData *cd)
 {
-    struct ClockData    cd2;
-    ULONG               secs;
-    LONG                monthday = 28;
-    
-    cd2 = *cd;
-    
-    while(monthday < 32)
-    {
-        cd2.mday = monthday;
-    
-        secs = Date2Amiga(&cd2);
-        secs += 24 * 60 * 60; /* day++ */
-        
-        Amiga2Date(secs, &cd2);
-        
-        if (cd2.month != cd->month) break;
-        
-        monthday++;
-    }
-    
-    return monthday;
+    static const UBYTE days[] =
+        { 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
+    LONG count;
+
+    if (!cd || cd->month < 1 || cd->month > 12)
+        return 0;
+
+    count = days[cd->month - 1];
+    if (cd->month == 2 &&
+        (cd->year % 400 == 0 ||
+         (cd->year % 4 == 0 && cd->year % 100 != 0)))
+        ++count;
+    return count;
+}
+
+/* Validate Gregorian fields and the 32-bit AROS date representation. */
+static BOOL Calendar_NormalizeDate(struct ClockData *date)
+{
+    struct ClockData normalized;
+    ULONG seconds;
+
+    if (!date || date->year < 1978 ||
+        date->month < 1 || date->month > 12 ||
+        date->mday < 1 || date->mday > NumMonthDays(date) ||
+        date->hour > 23 || date->min > 59 || date->sec > 59)
+        return FALSE;
+
+    seconds = Date2Amiga(date);
+    Amiga2Date(seconds, &normalized);
+    if (date->year != normalized.year ||
+        date->month != normalized.month ||
+        date->mday != normalized.mday ||
+        date->hour != normalized.hour ||
+        date->min != normalized.min ||
+        date->sec != normalized.sec)
+        return FALSE;
+
+    *date = normalized;
+    return TRUE;
 }
 
 /*
- * Apply date tags, cap oversized day and reconvert. Invalid months
- * are unsafe. Redraw on date change; notifications carry original tags.
+ * Apply valid date tags and recompute weekday. Reject invalid complete
+ * dates without changing state; component setters may cap an oversized
+ * day. Notifications retain original tag values.
  */
 IPTR Calendar__OM_SET(Class *cl, Object *obj, struct opSet *msg)
 {
     struct Calendar_DATA *data = INST_DATA(cl, obj);
-    struct ClockData     old_clockdata;
-    struct TagItem       *tags  = msg->ops_AttrList;
-    struct TagItem       *tag;
-    BOOL                 redraw = FALSE;
-    
-    old_clockdata = data->clockdata;
-    
+    struct ClockData old_clockdata = data->clockdata;
+    struct ClockData new_clockdata = old_clockdata;
+    struct TagItem *tags = msg->ops_AttrList;
+    struct TagItem *tag;
+    BOOL update = FALSE;
+    BOOL valid = TRUE;
+    BOOL full_date = FALSE;
+
     while ((tag = NextTagItem(&tags)) != NULL)
     {
-        switch(tag->ti_Tag)
+        switch (tag->ti_Tag)
         {
             case MUIA_Calendar_Date:
-                data->clockdata = *(struct ClockData *)tag->ti_Data;
-                redraw = TRUE;
+                full_date = TRUE;
+                if (tag->ti_Data)
+                    new_clockdata = *(struct ClockData *)tag->ti_Data;
+                else
+                    valid = FALSE;
+                update = TRUE;
                 break;
-
             case MUIA_Calendar_Year:
-                data->clockdata.year = tag->ti_Data;
-                redraw = TRUE;
+                if (tag->ti_Data > 65535)
+                    valid = FALSE;
+                else
+                    new_clockdata.year = tag->ti_Data;
+                update = TRUE;
                 break;
-
             case MUIA_Calendar_Month:
-                data->clockdata.month = tag->ti_Data;
-                redraw = TRUE;
+                if (tag->ti_Data < 1 || tag->ti_Data > 12)
+                    valid = FALSE;
+                else
+                    new_clockdata.month = tag->ti_Data;
+                update = TRUE;
                 break;
-
             case MUIA_Calendar_Month0:
-                data->clockdata.month = tag->ti_Data + 1;
-                redraw = TRUE;
+                if (tag->ti_Data > 11)
+                    valid = FALSE;
+                else
+                    new_clockdata.month = tag->ti_Data + 1;
+                update = TRUE;
                 break;
-
             case MUIA_Calendar_MonthDay:
-                data->clockdata.mday = tag->ti_Data;
-                redraw = TRUE;
+                if (tag->ti_Data > 65535)
+                    valid = FALSE;
+                else
+                    new_clockdata.mday = tag->ti_Data;
+                update = TRUE;
                 break;
-
             case MUIA_Calendar_MonthDay0:
-                data->clockdata.mday = tag->ti_Data + 1;
-                redraw = TRUE;
+                if (tag->ti_Data > 65534)
+                    valid = FALSE;
+                else
+                    new_clockdata.mday = tag->ti_Data + 1;
+                update = TRUE;
                 break;
-                
-        } /* switch(tag->ti_Tag) */
-        
-    } /* while ((tag = NextTagItem(&tags)) != NULL) */
-    
-    if (redraw)
-    {
-        struct ClockData cd2;
-        ULONG            secs;
-        
-        cd2 = data->clockdata;
-        cd2.mday = 1;
-        
-        if (data->clockdata.mday > NumMonthDays(&cd2))
-        {
-            data->clockdata.mday = NumMonthDays(&cd2);
-        }
-        
-        secs = Date2Amiga(&data->clockdata);
-        
-        Amiga2Date(secs, &data->clockdata);
-        
-        if ((data->clockdata.year != old_clockdata.year) ||
-            (data->clockdata.month != old_clockdata.month) ||
-            (data->clockdata.mday != old_clockdata.mday))
-        {
-            if ((data->clockdata.year == old_clockdata.year) &&
-                (data->clockdata.month == old_clockdata.month))
-            {
-                data->old_mday = old_clockdata.mday;
-            }
-            MUI_Redraw(obj, MADF_DRAWUPDATE);
-            data->old_mday = 0;
         }
     }
-    
+
+    if (update && valid)
+    {
+        LONG days = NumMonthDays(&new_clockdata);
+
+        if (days)
+        {
+            if (!full_date && new_clockdata.mday > days)
+                new_clockdata.mday = days;
+
+            if (Calendar_NormalizeDate(&new_clockdata))
+            {
+                data->clockdata = new_clockdata;
+                if (new_clockdata.year != old_clockdata.year ||
+                    new_clockdata.month != old_clockdata.month ||
+                    new_clockdata.mday != old_clockdata.mday)
+                {
+                    if (new_clockdata.year == old_clockdata.year &&
+                        new_clockdata.month == old_clockdata.month)
+                        data->old_mday = old_clockdata.mday;
+
+                    MUI_Redraw(obj, MADF_DRAWUPDATE);
+                    data->old_mday = 0;
+                }
+            }
+        }
+    }
+
     return DoSuperMethodA(cl, obj, (Msg)msg);
 }
-
 
 /*
  * Return date components or borrowed ClockData; zero-based getters
@@ -423,8 +475,8 @@ IPTR Calendar__OM_GET(Class *cl, Object *obj, struct opGet *msg)
 
 
 /*
- * Measure labels/grid and register Window event handler after Area
- * setup. Repeated Setup does not reset cell width.
+ * Measure labels/grid afresh and register Window events after Area
+ * setup; repeated Setup does not accumulate width.
  */
 IPTR Calendar__MUIM_Setup(Class *cl, Object *obj, struct MUIP_Setup *msg)
 {
@@ -436,6 +488,7 @@ IPTR Calendar__MUIM_Setup(Class *cl, Object *obj, struct MUIP_Setup *msg)
 
     InitRastPort(&rp);
     SetFont(&rp, _font(obj));
+    data->cellwidth = 0;
     
     data->cellheight = _font(obj)->tf_YSize + CELL_EXTRAHEIGHT;
     
@@ -471,15 +524,16 @@ IPTR Calendar__MUIM_Setup(Class *cl, Object *obj, struct MUIP_Setup *msg)
 
 
 /*
- * Remove Window event handler and delegate Cleanup. Does not
- * release borrowed label strings.
+ * Remove Window events, clear drag state, and delegate Cleanup.
+ * Does not release caller-owned label strings.
  */
 IPTR Calendar__MUIM_Cleanup(Class *cl, Object *obj, struct MUIP_Cleanup *msg)
 {
     struct Calendar_DATA *data = INST_DATA(cl, obj);
  
     DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR) &data->ehn);
-    
+    data->ehn.ehn_Events &= ~IDCMP_MOUSEMOVE;
+
     return DoSuperMethodA(cl, obj, (Msg)msg);
 }
 
@@ -507,8 +561,8 @@ IPTR Calendar__MUIM_AskMinMax(Class *cl, Object *obj, struct MUIP_AskMinMax *msg
 
 
 /*
- * Draw and cache the month grid dimensions for hit testing.
- * Requires valid Date and graphics state; returns 0.
+ * Draw and cache month-grid dimensions; suppress drawing for
+ * degenerate geometry, leaving an empty Area background.
  */
 IPTR Calendar__MUIM_Draw(Class *cl, Object *obj, struct MUIP_Draw *msg)
 {
@@ -517,6 +571,15 @@ IPTR Calendar__MUIM_Draw(Class *cl, Object *obj, struct MUIP_Draw *msg)
     struct Rectangle     rect;
     APTR                 clip = NULL;
     WORD                 x, y, offx, offy, day, mdays;
+
+    if (data->base_cellwidth <= 0 || data->base_cellheight <= 0 ||
+        _mwidth(obj) < 9 || _mheight(obj) < 8)
+    {
+        data->cellwidth = 0;
+        data->cellheight = 0;
+        DoSuperMethodA(cl, obj, (Msg)msg);
+        return 0;
+    }
 
     x = (_mwidth(obj) - 2) / 7;
     y = x * data->base_cellheight / data->base_cellwidth;
@@ -529,7 +592,15 @@ IPTR Calendar__MUIM_Draw(Class *cl, Object *obj, struct MUIP_Draw *msg)
         data->cellwidth = x;
         data->cellheight = y;
     }
-        
+
+    if (data->cellwidth <= 0 || data->cellheight <= 0)
+    {
+        data->cellwidth = 0;
+        data->cellheight = 0;
+        DoSuperMethodA(cl, obj, (Msg)msg);
+        return 0;
+    }
+
     offx = _mleft(obj) + (_mwidth(obj) - data->cellwidth * 7 - 2) / 2 + 1;
     offy = _mtop(obj) + (_mheight(obj) - data->cellheight * 7 - 1) / 2;
     
@@ -678,12 +749,15 @@ IPTR Calendar__MUIM_Draw(Class *cl, Object *obj, struct MUIP_Draw *msg)
 
 /*
  * Convert mouse coordinates into a day clamped to current month.
- * Requires valid event and nonzero drawn cell dimensions.
+ * Return zero when the event or rendered grid is unavailable.
  */
 static WORD DayUnderMouse(Object *obj, struct Calendar_DATA *data, struct IntuiMessage *imsg)
 {
     WORD x, y, offx, offy, i;
-    
+
+    if (!imsg || data->cellwidth <= 0 || data->cellheight <= 0)
+        return 0;
+
     offx = (_mwidth(obj) - data->cellwidth * 7 - 2) / 2 + 1;
     offy = (_mheight(obj) - data->cellheight * 7 - 1) / 2 + data->cellheight;
     
@@ -721,8 +795,8 @@ static WORD DayUnderMouse(Object *obj, struct Calendar_DATA *data, struct IntuiM
 
 /*
  * Handle key selection and mouse drag within current month.
- * Non-key events require a valid imsg and drawn grid; handled key
- * movements return MUI_EventHandlerRC_Eat, mouse paths return zero.
+ * Ignore unavailable mouse geometry; release an active drag on mouse-up.
+ * Handled keys return MUI_EventHandlerRC_Eat, mouse paths return zero.
  */
 IPTR Calendar__MUIM_HandleEvent(Class *cl, Object *obj, struct MUIP_HandleEvent *msg)
 {
@@ -797,13 +871,34 @@ IPTR Calendar__MUIM_HandleEvent(Class *cl, Object *obj, struct MUIP_HandleEvent 
     }
     else
     {
-        WORD x1 = _mleft(obj) + (_mwidth(obj)  - data->cellwidth  * 7 - 2) / 2 + 1;
-        WORD y1 = _mtop(obj)  + (_mheight(obj) - data->cellheight * 7 - 1) / 2 + data->cellheight;
-        WORD x2 = x1 + data->cellwidth * 7 - 1;
-        WORD y2 = y1 + data->cellheight * 6 - 1;
-        WORD day;
-        
-        BOOL in = _between(x1, msg->imsg->MouseX, x2) && _between(y1, msg->imsg->MouseY, y2);
+        WORD x1, y1, x2, y2, day;
+        BOOL in;
+
+        if (!msg->imsg)
+            return 0;
+
+        if (data->cellwidth <= 0 || data->cellheight <= 0)
+        {
+            /* Still end a drag if the grid disappeared during resizing. */
+            if (msg->imsg->Class == IDCMP_MOUSEBUTTONS &&
+                msg->imsg->Code == SELECTUP &&
+                (data->ehn.ehn_Events & IDCMP_MOUSEMOVE))
+            {
+                DoMethod(_win(obj), MUIM_Window_RemEventHandler,
+                    (IPTR)&data->ehn);
+                data->ehn.ehn_Events &= ~IDCMP_MOUSEMOVE;
+                DoMethod(_win(obj), MUIM_Window_AddEventHandler,
+                    (IPTR)&data->ehn);
+            }
+            return 0;
+        }
+
+        x1 = _mleft(obj) + (_mwidth(obj)  - data->cellwidth  * 7 - 2) / 2 + 1;
+        y1 = _mtop(obj)  + (_mheight(obj) - data->cellheight * 7 - 1) / 2 + data->cellheight;
+        x2 = x1 + data->cellwidth * 7 - 1;
+        y2 = y1 + data->cellheight * 6 - 1;
+        in = _between(x1, msg->imsg->MouseX, x2) &&
+             _between(y1, msg->imsg->MouseY, y2);
 
         switch(msg->imsg->Class)
         {
