@@ -456,7 +456,7 @@ ULONG M68KEmu_LoadHunks(struct M68KEmuContext *ctx, BPTR segList)
     /* Every copy needs its two words in containment: a list of more
        segments than fit cannot be copied, and one that does not end is not
        followed for ever. */
-    for (seg = segList; seg; seg = *((BPTR *)BADDR(seg)))
+    for (seg = segList; seg; seg = AROS_SEG_NEXT(seg))
     {
         if (++nseg > ctx->mem_size / 8)
         {
@@ -473,24 +473,22 @@ ULONG M68KEmu_LoadHunks(struct M68KEmuContext *ctx, BPTR segList)
     cont = (ULONG *)(host + nseg);
     size = cont + nseg;
 
-    /* The segments as dos allocated them: ULONG size of the allocation,
-       BPTR next, data. */
-    for (seg = segList, i = 0; seg && i < nseg; seg = *((BPTR *)BADDR(seg)), i++)
+    /* The segments as dos allocated them - see dos/bptr.h for the layout */
+    for (seg = segList, i = 0; seg && i < nseg; seg = AROS_SEG_NEXT(seg), i++)
     {
-        ULONG *baddr     = (ULONG *)BADDR(seg);
-        ULONG alloc_size = *(baddr - 1);
+        ULONG alloc_size = AROS_SEG_SIZE(seg);
+        ULONG data_size  = AROS_SEG_DATALEN(seg);
 
-        /* an allocation smaller than its own two words, or data that
+        /* an allocation smaller than its own header, or data that
            cannot lie in containment behind the two words of the copy */
-        if (alloc_size < sizeof(ULONG) + sizeof(BPTR) ||
-            alloc_size - sizeof(ULONG) - sizeof(BPTR) > ctx->mem_size - 8)
+        if (alloc_size < (ULONG)AROS_SEG_HEADER || data_size > ctx->mem_size - 8)
         {
             bug("[m68kemu] segment %lu of seglist %p has an unusable size (%lu), cannot run it\n",
                 (unsigned long)i, BADDR(segList), (unsigned long)alloc_size);
             goto refuse;
         }
-        host[i] = (UBYTE *)baddr + sizeof(BPTR);
-        size[i] = alloc_size - sizeof(ULONG) - sizeof(BPTR);
+        host[i] = AROS_SEG_DATA(seg);
+        size[i] = data_size;
     }
     if (seg || i != nseg)
         goto refuse;

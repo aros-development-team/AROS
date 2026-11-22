@@ -23,20 +23,22 @@ APTR AllocSegment
     struct DiskfontBase *DiskfontBase
 )
 {
-    ULONG *mem;
-    
-    if ((mem = AllocMem(segmentsize + sizeof(ULONG) + sizeof(BPTR), memflags)))
-    {
-        BPTR *membptr;
+    /* dos.library/UnLoadSeg() frees these, so they have to use the common
+       segment layout from dos/bptr.h rather than a private one */
+    ULONG total = AROS_SEG_MEMSIZE4LEN(segmentsize);
+    struct AROSSegment *seg;
 
-        *mem++ = segmentsize + sizeof(ULONG) + sizeof(BPTR);
-        if (prevsegment) prevsegment[-1] = MKBADDR(mem);
-        membptr = (BPTR *) mem;
-        *membptr++ = BNULL;
-        mem = (ULONG *)membptr;
-    }
-    
-    return mem;
+    if (!(seg = AllocMem(total, memflags)))
+        return NULL;
+
+    seg->seg_Size = total;
+    seg->seg_Next = BNULL;
+
+    /* The caller hands us the previous segment as its payload pointer */
+    if (prevsegment)
+        AROS_SEG_FROMDATA(prevsegment)->seg_Next = AROS_SEG_TOBPTR(seg);
+
+    return seg->seg_Data;
 }
 
 /****************************************************************************************/

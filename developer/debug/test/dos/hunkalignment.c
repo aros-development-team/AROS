@@ -45,6 +45,9 @@ static ULONG get32(const UBYTE *p)
            ((ULONG)p[2] << 8) | p[3];
 }
 
+/* This is the oracle for the layout in dos/bptr.h, so it walks the segments
+   with its own arithmetic on purpose. Expressing it with the AROS_SEG_*
+   accessors would only check that they agree with themselves. */
 static BPTR next_segment(BPTR seg)
 {
     return *(BPTR *)BADDR(seg);
@@ -156,12 +159,18 @@ static AROS_UFH3(void, memory_free,
     AROS_USERFUNC_EXIT
 }
 
+/* memory_read() serves the image, so this handle is never read from. It has
+   to be a real one all the same: InternalLoadSeg() rejects a BNULL fh, and
+   dos names the loaded module through ISFILEHANDLE(), which dereferences the
+   handle whenever debug.library is present. */
+static BPTR probe_fh;
+
 static BPTR load_image(void)
 {
     APTR functions[3] = { (APTR)memory_read, (APTR)memory_alloc, (APTR)memory_free };
     position = allocations = free_errors = 0;
     SetIoErr(0);
-    return InternalLoadSeg((BPTR)1, BNULL, (LONG_FUNC *)functions, NULL);
+    return InternalLoadSeg(probe_fh, BNULL, (LONG_FUNC *)functions, NULL);
 }
 
 static void unload_image(BPTR seg)
@@ -223,6 +232,12 @@ int main(void)
     unsigned int i;
     BPTR seg;
     checks = failures = 0;
+    probe_fh = Open("NIL:", MODE_OLDFILE);
+    if (!probe_fh)
+    {
+        printf("HUNKALIGNMENT: cannot open NIL:\n");
+        return RETURN_FAIL;
+    }
     for (i = 0; i < sizeof(kinds) / sizeof(kinds[0]); i++)
     {
         test_relocation(kinds[i], 0);
@@ -249,6 +264,7 @@ int main(void)
     check(live == 0 && free_errors == 0, "truncated payload frees every owned block");
     check(InternalUnLoadSeg(BNULL, (VOID_FUNC)memory_free) == DOSFALSE,
           "NULL seglist remains rejected");
+    Close(probe_fh);
     printf("HUNKALIGNMENT: %u checks, %u failures\n", checks, failures);
     return failures ? RETURN_ERROR : RETURN_OK;
 }

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2014, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: BindDrivers CLI command
 */
@@ -173,13 +173,10 @@ static struct Resident *SearchResident(BPTR seglist)
 
     D(bug("%lx: Search for resident...\n", BADDR(seglist)));
     while (seglist) {
-        APTR addr = (APTR)((IPTR)BADDR(seglist) - sizeof(ULONG));
-        ULONG size = *(ULONG *)addr;
+        APTR addr = AROS_SEG_DATA(seglist);
+        ULONG size = AROS_SEG_DATALEN(seglist);
 
-        for (addr += sizeof(BPTR) + sizeof(ULONG),
-             size -= sizeof(BPTR) + sizeof(ULONG);
-             size >= ressize;
-             size -= 2, addr += 2) {
+        for (; size >= ressize; size -= 2, addr += 2) {
             struct Resident *res = (struct Resident *)addr;
 
             if (res->rt_MatchWord == RTC_MATCHWORD &&
@@ -189,7 +186,7 @@ static struct Resident *SearchResident(BPTR seglist)
             }
         }
         
-        seglist = *(BPTR *)BADDR(seglist);
+        seglist = AROS_SEG_NEXT(seglist);
     }
 
     D(bug("%lx: No resident\n", BADDR(seglist)));

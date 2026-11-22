@@ -161,7 +161,8 @@ struct TextFont *OTAG_ReadOutlineFont(struct TTextAttr *, struct TTextAttr *, st
 
 /* basicfuncs.c */
 
-#define MAKE_REAL_SEGMENT(x) (MKBADDR(((IPTR)(x)) - sizeof(BPTR)))
+/* A segment's BPTR from the payload pointer AllocSegment() returned */
+#define MAKE_REAL_SEGMENT(x) AROS_SEG_TOBPTR(AROS_SEG_FROMDATA(x))
 
 APTR AllocSegment(BPTR *, ULONG, ULONG, struct DiskfontBase *);
 struct TagItem *ReadTags(BPTR, ULONG, struct DiskfontBase *);

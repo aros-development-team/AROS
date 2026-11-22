@@ -53,13 +53,12 @@ static struct Resident *FindRomTag(BPTR seglist)
     const ULONG minsize = offsetof(struct Resident, rt_Init) + sizeof(APTR);
     BPTR seg;
 
-    for (seg = seglist; seg; seg = *(BPTR *)BADDR(seg))
+    for (seg = seglist; seg; seg = AROS_SEG_NEXT(seg))
     {
-        UBYTE *addr = (UBYTE *)BADDR(seg) - sizeof(ULONG);
-        ULONG size = *(ULONG *)addr;
+        UBYTE *addr = AROS_SEG_DATA(seg);
+        ULONG size = AROS_SEG_DATALEN(seg);
 
-        for (addr += sizeof(BPTR) + sizeof(ULONG), size -= sizeof(BPTR) + sizeof(ULONG);
-             size >= minsize; size -= 2, addr += 2)
+        for (; size >= minsize; size -= 2, addr += 2)
         {
             struct Resident *rt = (struct Resident *)addr;
             if (rt->rt_MatchWord == RTC_MATCHWORD && rt->rt_MatchTag == rt)

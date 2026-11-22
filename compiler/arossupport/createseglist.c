@@ -10,19 +10,6 @@
 #include <aros/kernel.h>
 #include <proto/exec.h>
 #include <proto/kernel.h>
-#include <stddef.h>
-
-struct phony_segment
-{
-#if __WORDSIZE > 32
-    ULONG Pad;  /* Keep Size just before the native-aligned seglist link. */
-#endif
-    ULONG Size; /* Length of segment in # of bytes */
-    BPTR  Next; /* Next segment (always 0 for this) */
-} __attribute__((packed));
-
-_Static_assert(offsetof(struct phony_segment, Next) == sizeof(BPTR),
-               "_ilsFreeVec expects one BPTR before the seglist link");
 
 /*****************************************************************************
 
@@ -61,9 +48,11 @@ _Static_assert(offsetof(struct phony_segment, Next) == sizeof(BPTR),
 
 *****************************************************************************/
 {
-    struct phony_segment *segtmp;
+    /* One ordinary DOS segment (dos/bptr.h) holding the jump vector, so
+       that dos.library/UnLoadSeg() can release it again */
+    struct AROSSegment *segtmp;
     struct FullJumpVec *Code;   /* Code to jump to the offset */
-    ULONG segsize = sizeof(*segtmp) + sizeof(*Code);
+    ULONG segsize = AROS_SEG_MEMSIZE4LEN(sizeof(*Code));
 #if defined(__AROSPLATFORM_WXSEG__)
     /*
      * The seg's jump vector is executed, so it must live in executable memory.
@@ -91,9 +80,9 @@ _Static_assert(offsetof(struct phony_segment, Next) == sizeof(BPTR),
     if (!segtmp)
         return BNULL;
 
-    Code = (struct FullJumpVec *)((IPTR)segtmp + sizeof(*segtmp));
-    segtmp->Size = segsize;
-    segtmp->Next = (BPTR)0;
+    Code = (struct FullJumpVec *)segtmp->seg_Data;
+    segtmp->seg_Size = segsize;
+    segtmp->seg_Next = BNULL;
     __AROS_SET_FULLJMP(Code, function);
 
     if (SysBase->LibNode.lib_Version >= 36)
@@ -105,7 +94,7 @@ _Static_assert(offsetof(struct phony_segment, Next) == sizeof(BPTR),
         KrnSetProtection(segtmp, segsize, MAP_Readable | MAP_Executable);
 #endif
 
-    D(bug("[CreateSegList] Created jump segment 0x%p, code 0x%p, target 0x%p\n", MKBADDR(&segtmp->Next), Code, function));
+    D(bug("[CreateSegList] Created jump segment 0x%p, code 0x%p, target 0x%p\n", AROS_SEG_TOBPTR(segtmp), Code, function));
 
-    return MKBADDR(&segtmp->Next);
+    return AROS_SEG_TOBPTR(segtmp);
 }

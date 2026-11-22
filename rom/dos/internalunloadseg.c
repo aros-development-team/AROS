@@ -76,7 +76,7 @@
 
         while (seglist)
         {
-            next = *(BPTR *)BADDR(seglist);
+            next = AROS_SEG_NEXT(seglist);
             ilsFreeVec(BADDR(seglist));
             seglist = next;
         }

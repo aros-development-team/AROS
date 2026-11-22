@@ -54,6 +54,66 @@ typedef AROS_BSTR_TYPE BSTR;
 #   define BNULL                    (0)
 #endif
 
+/* A DOS segment (a "seglist" node) is a single allocation carrying the size of
+ * that allocation, the link to the next segment of the program, and the
+ * segment's payload:
+ *
+ *                <---- AROS_SEG_PREFIX ---->
+ *     +----------+----------+--------------+-------------------+
+ *     | seg_Pad  | seg_Size |   seg_Next   |   seg_Data ...    |
+ *     +----------+----------+--------------+-------------------+
+ *     ^                     ^              ^
+ *     allocation base       BADDR(seg)     AROS_SEG_DATA(seg)
+ *
+ * The size is the ULONG immediately in front of the link, and the link is one
+ * BPTR into the allocation. A BPTR-sized prefix therefore keeps both the link
+ * and the payload at the allocator's natural alignment on 64-bit targets. On
+ * 32-bit targets sizeof(ULONG) == sizeof(BPTR), the pad is absent, and the
+ * layout is the classic BCPL [size][next][data].
+ *
+ * dos.library/UnLoadSeg() releases a segment at its allocation base using the
+ * stored size, so anything that builds or walks a seglist by hand must go
+ * through these definitions instead of open-coding the offsets.
+ *
+ * A stored size of zero marks a segment that does not own its memory - the ELF
+ * loader uses that for hunks carved out of one arena - and UnLoadSeg() leaves
+ * those alone. AROS_SEG_DATALEN() reports no payload for them rather than
+ * wrapping around.
+ *
+ * The accessors evaluate their argument more than once, so pass a plain
+ * lvalue, not an expression with side effects.
+ */
+struct AROSSegment
+{
+#if __WORDSIZE > 32
+    ULONG   seg_Pad;        /* Keeps seg_Size directly in front of seg_Next */
+#endif
+    ULONG   seg_Size;       /* Size of the whole allocation, in bytes       */
+    BPTR    seg_Next;       /* Next segment, BNULL at the end of the list   */
+    char    seg_Data[0];    /* The segment's payload                        */
+} __attribute__((packed));
+
+#define AROS_SEG_PREFIX             ((IPTR)sizeof(BPTR))
+#define AROS_SEG_HEADER             ((IPTR)sizeof(struct AROSSegment))
+#define AROS_SEG_MEMSIZE4LEN(len)   ((len) + AROS_SEG_HEADER)
+
+/* Conversions between a segment, its BPTR, the link that BPTR addresses, and
+ * the payload pointer an allocator hands out.
+ */
+#define AROS_SEG_FROMLINK(link) ((struct AROSSegment *)((UBYTE *)(link) - AROS_SEG_PREFIX))
+#define AROS_SEG_FROMDATA(data) ((struct AROSSegment *)((UBYTE *)(data) - AROS_SEG_HEADER))
+#define AROS_SEG_FROMBPTR(seg)  AROS_SEG_FROMLINK(BADDR(seg))
+#define AROS_SEG_TOLINK(s)      (&(s)->seg_Next)
+#define AROS_SEG_TOBPTR(s)      MKBADDR(AROS_SEG_TOLINK(s))
+
+/* Accessors taking a segment's BPTR */
+#define AROS_SEG_BASE(seg)      ((APTR)AROS_SEG_FROMBPTR(seg))
+#define AROS_SEG_SIZE(seg)      (AROS_SEG_FROMBPTR(seg)->seg_Size)
+#define AROS_SEG_NEXT(seg)      (AROS_SEG_FROMBPTR(seg)->seg_Next)
+#define AROS_SEG_DATA(seg)      ((APTR)AROS_SEG_FROMBPTR(seg)->seg_Data)
+#define AROS_SEG_DATALEN(seg)   ((ULONG)(AROS_SEG_SIZE(seg) > (ULONG)AROS_SEG_HEADER ? \
+                                 AROS_SEG_SIZE(seg) - (ULONG)AROS_SEG_HEADER : 0))
+
 /* BCPL strings used the first byte as the length of the string followed by the string.
  * Strings then also had a maximum length of 255. The normal C convention is to have
  * strings of any length but ended with a byte value of 0

@@ -46,13 +46,22 @@ static struct secPluginHeader *FindPluginHeader(BPTR seglist)
 {
     BPTR thisseg;
 
-    for (thisseg = seglist; thisseg != BNULL; thisseg = *(BPTR *)BADDR(thisseg))
+    for (thisseg = seglist; thisseg != BNULL; thisseg = AROS_SEG_NEXT(thisseg))
     {
-        ULONG *addr = (ULONG *)BADDR(thisseg);
-        ULONG *end = (ULONG *)((UBYTE *)addr + 4096);
-        ULONG *pos;
+        UBYTE *data = AROS_SEG_DATA(thisseg);
+        ULONG len = AROS_SEG_DATALEN(thisseg);
+        ULONG *pos, *end;
 
-        for (pos = addr + sizeof(BPTR) / sizeof(ULONG); pos < end; pos++)
+        /* The header sits near the start of a plugin, and has to lie inside
+           the segment: the fixed 4096-byte window used to run past a shorter
+           one, and past an arena hunk that has no payload at all. */
+        if (len > 4096)
+            len = 4096;
+        if (len < sizeof(struct secPluginHeader))
+            continue;
+        end = (ULONG *)(data + len - sizeof(struct secPluginHeader));
+
+        for (pos = (ULONG *)data; pos <= end; pos++)
         {
             struct secPluginHeader *hdr = (struct secPluginHeader *)pos;
 

@@ -419,7 +419,7 @@ void Transform(register ULONG *buf,register ULONG *in)
 /*==[end md5.c]============================================================*/
 
 
-const TEXT version[] = "$VER: Version 42.3 (20.11.2015)\n";
+const TEXT version[] = "$VER: Version 42.4 (22.11.2026)\n";
 const TEXT ver[] = "$VER:";
 
 static const char ERROR_HEADER[] = "Version";
@@ -1404,21 +1404,19 @@ struct Resident *FindLibResident(BPTR   Segment)
 {
     while (Segment)
     {
-        UBYTE       *MySegment;
         UBYTE       *MyBuffer;
         UBYTE       *EndBuffer;
         ULONG        BufferLen;
 
-        /* ULONG length (counted from itself), BPTR next, data; 0 = unknown */
-        MySegment   = BADDR(Segment);
-        BufferLen   = *(ULONG *)(MySegment - sizeof(ULONG));
-        if (BufferLen < sizeof(ULONG) + sizeof(BPTR) + sizeof(struct Resident))
+        /* A stored size of 0 marks a hunk that does not own its memory */
+        MyBuffer    = AROS_SEG_DATA(Segment);
+        BufferLen   = AROS_SEG_DATALEN(Segment);
+        if (BufferLen < sizeof(struct Resident))
         {
-            Segment = *(BPTR *)MySegment;
+            Segment = AROS_SEG_NEXT(Segment);
             continue;
         }
-        MyBuffer    = MySegment + sizeof(BPTR);
-        EndBuffer   = MySegment - sizeof(ULONG) + BufferLen - sizeof(struct Resident);
+        EndBuffer   = MyBuffer + BufferLen - sizeof(struct Resident);
 
         while (MyBuffer <= EndBuffer)
         {
@@ -1434,7 +1432,7 @@ struct Resident *FindLibResident(BPTR   Segment)
             MyBuffer += sizeof(UWORD);
         }
 
-        Segment = *(BPTR *)MySegment;
+        Segment = AROS_SEG_NEXT(Segment);
     }
 
     SetIoErr(ERROR_OBJECT_NOT_FOUND);
@@ -1450,21 +1448,19 @@ STRPTR FindSegmentVER(BPTR  Segment)
 {
     while (Segment)
     {
-        void        *MySegment;
         CONST_STRPTR    MyBuffer;
         ULONG       BufferLen;
         CONST_STRPTR    EndBuffer;
         CONST_STRPTR    SegmentEnd;
 
-        MySegment   = BADDR(Segment);
-        MyBuffer    = (CONST_STRPTR) (MySegment + sizeof(BPTR));
-        BufferLen   = *(ULONG *)(MySegment - sizeof(ULONG));
-        if (BufferLen < sizeof(BPTR) + 5)
+        MyBuffer    = AROS_SEG_DATA(Segment);
+        BufferLen   = AROS_SEG_DATALEN(Segment);
+        if (BufferLen < 5)
         {
-            Segment = *(BPTR *)MySegment;
+            Segment = AROS_SEG_NEXT(Segment);
             continue;
         }
-        SegmentEnd  = (CONST_STRPTR) (MySegment + (BufferLen - sizeof(BPTR)));
+        SegmentEnd  = MyBuffer + BufferLen;
         EndBuffer   = SegmentEnd - 5;
 
         while (MyBuffer <= EndBuffer)
@@ -1492,7 +1488,7 @@ STRPTR FindSegmentVER(BPTR  Segment)
             MyBuffer++;
         }
 
-        Segment =*(BPTR *)MySegment;
+        Segment = AROS_SEG_NEXT(Segment);
     }
 
     SetIoErr(ERROR_OBJECT_NOT_FOUND);

@@ -29,16 +29,16 @@ AROS_LH2(BOOL, InternalUnLoadSeg,
 
     while (seglist)
     {
-      next = *(BPTR *)BADDR(seglist);
+      next = AROS_SEG_NEXT(seglist);
 
       char *seg = (ULONG)seglist;
-      seg += (*(LONG *)((LONG)BADDR(seglist) - sizeof(ULONG))) / 2;
+      seg += ((LONG)AROS_SEG_SIZE(seglist)) / 2;
       if (KernelBase)
         KrnUnregisterModule(seg);
 
       AROS_CALL2NR(void, freefunc,
-        AROS_LCA(APTR ,  (BPTR *)((LONG)BADDR(seglist) - sizeof(ULONG)), A1),
-        AROS_LCA(ULONG, *(LONG *)((LONG)BADDR(seglist) - sizeof(ULONG)), D0),
+        AROS_LCA(APTR ,  AROS_SEG_BASE(seglist), A1),
+        AROS_LCA(ULONG, AROS_SEG_SIZE(seglist), D0),
         struct Library *, (struct Library *)SysBase
       );
 

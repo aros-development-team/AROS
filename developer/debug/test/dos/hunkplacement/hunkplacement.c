@@ -115,7 +115,7 @@ int main(void)
     for (i = 0; i < 3; i++)
     {
         BPTR segment = LoadSeg(paths[i]);
-        UBYTE *code = segment ? (UBYTE *)BADDR(segment) + sizeof(BPTR) : NULL;
+        UBYTE *code = segment ? (UBYTE *)AROS_SEG_DATA(segment) : NULL;
         BOOL low = code && code >= (UBYTE *)arena &&
             code < (UBYTE *)arena + HOLE_BYTES;
         BOOL high = code && code >= (UBYTE *)arena + arenaSize - HOLE_BYTES;

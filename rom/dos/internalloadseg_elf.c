@@ -34,18 +34,9 @@
 #define ELF_MODULE_ARENA 1
 #endif
 
-struct hunk
-{
-#if __WORDSIZE > 32
-    ULONG pad;
-#endif
-    ULONG size;
-    BPTR  next;
-    char  data[0];
-} __attribute__((packed));
-
-#define BPTR2HUNK(bptr) ((struct hunk *)((char *)bptr - offsetof(struct hunk, next)))
-#define HUNK2BPTR(hunk) MKBADDR(&hunk->next)
+/* ELF hunks are ordinary DOS segments - the layout lives in dos/bptr.h */
+#define BPTR2HUNK(link) AROS_SEG_FROMLINK(link)
+#define HUNK2BPTR(hunk) AROS_SEG_TOBPTR(hunk)
 
 #define LOADSEG_SMALL_READ  4096 /* Size adjusted by profiling in Callgrind */
 
@@ -63,6 +54,53 @@ struct SRBuffer
     ULONG   srb_Len;
     APTR    srb_Buffer;
 };
+
+/*
+ * With load verification on, a block just read is read again into scratch
+ * memory and the two are compared; on a difference the block is read once
+ * more and compared with the scratch copy, until two reads agree. Reads that
+ * never agree fail the load.
+ */
+static int elf_verify_block
+(
+    BPTR               file,
+    ULONG              offset,
+    APTR               buffer,
+    ULONG              size,
+    SIPTR              *funcarray,
+    struct DosLibrary  *DOSBase
+)
+{
+    UBYTE *again;
+    int tries;
+
+    if (!VERIFY_LOADS(DOSBase) || size == 0)
+        return 0;
+    again = ilsAllocMem(size, MEMF_ANY);
+    if (!again)
+        return 0;
+    for (tries = 0; tries < 4; tries++)
+    {
+        APTR into = (tries & 1) ? buffer : (APTR)again;
+
+        if (ilsSeek(file, offset, OFFSET_BEGINNING) < 0 || read_block(file, into, size, funcarray, DOSBase))
+            break;
+        if (!memcmp(buffer, again, size))
+        {
+            if (tries)
+                bug("[DOS] loader: block of %lu bytes at %lu agreed after %d extra reads\n",
+                    (unsigned long)size, (unsigned long)offset, tries + 1);
+            ilsFreeMem(again, size);
+            return 0;
+        }
+        bug("[DOS] loader: block of %lu bytes at %lu differs between reads\n",
+            (unsigned long)size, (unsigned long)offset);
+    }
+    ilsFreeMem(again, size);
+    if (DOSBase)
+        SetIoErr(ERROR_BAD_HUNK);
+    return 1;
+}
 
 static int elf_read_block
 (
@@ -124,13 +162,17 @@ static int elf_read_block
             srb->srb_Len = total;
             if (total < size)
                 return 1;
+            if (elf_verify_block(file, offset, srb->srb_Buffer, total, funcarray, DOSBase))
+                return 1;
 
             /* Re-read, now srb will be used */
             return elf_read_block(file, offset, buffer, size, funcarray, srb, DOSBase);
         }
         else
         {
-            return read_block(file, buffer, size, funcarray, DOSBase);
+            if (read_block(file, buffer, size, funcarray, DOSBase))
+                return 1;
+            return elf_verify_block(file, offset, buffer, size, funcarray, DOSBase);
         }
     }
 }
@@ -242,7 +284,7 @@ static int load_header(BPTR file, struct elfheader *eh, SIPTR *funcarray, struct
    hunk structure, plus the size of the alignment (if necessary). */
 static ULONG elf_hunk_size(struct sheader *sh, BOOL do_align)
 {
-    ULONG hunk_size = sh->size + sizeof(struct hunk);
+    ULONG hunk_size = sh->size + AROS_SEG_HEADER;
 
     if (do_align)
     {
@@ -270,7 +312,7 @@ static int __attribute__ ((noinline)) load_hunk
     struct DosLibrary   *DOSBase
 )
 {
-    struct hunk *hunk;
+    struct AROSSegment *hunk;
     ULONG  hunk_size;
     ULONG  memflags = extra_memflags;
 
@@ -317,19 +359,19 @@ static int __attribute__ ((noinline)) load_hunk
         /* Carve the hunk out of the module's arena. The stored size of 0
            makes ilsFreeVec() skip this node on UnLoadSeg(); the memory
            belongs to the container hunk linked at the end of the chain. */
-        hunk = (struct hunk *)AROS_ROUNDUP2((IPTR)*arena_cur, AROS_WORSTALIGN);
+        hunk = (struct AROSSegment *)AROS_ROUNDUP2((IPTR)*arena_cur, AROS_WORSTALIGN);
         *arena_cur = (UBYTE *)hunk + hunk_size;
-        hunk->next = 0;
-        hunk->size = 0;
+        hunk->seg_Next = 0;
+        hunk->seg_Size = 0;
     }
     else
         hunk = ilsAllocMem(hunk_size, memflags | MEMF_PUBLIC | (sh->type == SHT_NOBITS ? MEMF_CLEAR : 0));
 
     if (hunk)
     {
-        hunk->next = 0;
+        hunk->seg_Next = 0;
         if (!arena_cur)
-            hunk->size = hunk_size;
+            hunk->seg_Size = hunk_size;
 
         /* In case we are required to honour alignment, and If this section contains
            executable code, create a trampoline to its beginning, so that even if the
@@ -341,23 +383,23 @@ static int __attribute__ ((noinline)) load_hunk
             {
                 sh->addr = (char *)AROS_ROUNDUP2
                 (
-                    (IPTR)hunk->data + sizeof(struct FullJumpVec), sh->addralign
+                    (IPTR)hunk->seg_Data + sizeof(struct FullJumpVec), sh->addralign
                 );
-                __AROS_SET_FULLJMP((struct FullJumpVec *)hunk->data, sh->addr);
+                __AROS_SET_FULLJMP((struct FullJumpVec *)hunk->seg_Data, sh->addr);
             }
             else
-                sh->addr = (char *)AROS_ROUNDUP2((IPTR)hunk->data, sh->addralign);
+                sh->addr = (char *)AROS_ROUNDUP2((IPTR)hunk->seg_Data, sh->addralign);
         }
         else
-            sh->addr = hunk->data;
+            sh->addr = hunk->seg_Data;
 
         /* Link the previous one with the new one */
-        BPTR2HUNK(*next_hunk_ptr)->next = HUNK2BPTR(hunk);
+        BPTR2HUNK(*next_hunk_ptr)->seg_Next = HUNK2BPTR(hunk);
 
-        D(bug("[dos] hunk @ %p, size=%08x, addr @ %p\n", hunk, hunk->size, sh->addr));
+        D(bug("[dos] hunk @ %p, size=%08x, addr @ %p\n", hunk, hunk->seg_Size, sh->addr));
 
         /* Update the pointer to the previous one, which is now the current one */
-        *next_hunk_ptr = (APTR)((IPTR)hunk + offsetof(struct hunk, next));
+        *next_hunk_ptr = (APTR)((IPTR)hunk + AROS_SEG_PREFIX);
 
         if (sh->type != SHT_NOBITS)
             return !elf_read_block(file, sh->offset, sh->addr, sh->size, funcarray, srb, DOSBase);
@@ -1755,7 +1797,7 @@ static BPTR load_seg_elf_int
 
     if (arena_size)
     {
-        arena_size += sizeof(struct hunk) + AROS_WORSTALIGN;
+        arena_size += AROS_SEG_HEADER + AROS_WORSTALIGN;
 
         arena = ilsAllocMem(arena_size,
             arena_flags | MEMF_PUBLIC | MEMF_CLEAR | (force31 ? MEMF_31BIT : 0));
@@ -1775,7 +1817,7 @@ static BPTR load_seg_elf_int
         if (arena)
         {
             /* Leave room for the container hunk at the start */
-            arena_cursor = arena + sizeof(struct hunk);
+            arena_cursor = arena + AROS_SEG_HEADER;
         }
     }
 #endif
@@ -1813,13 +1855,13 @@ static BPTR load_seg_elf_int
     {
         /* Link the arena's container hunk as the last segment; freeing it
            on unload releases the whole module. */
-        struct hunk *cont = (struct hunk *)arena;
+        struct AROSSegment *cont = (struct AROSSegment *)arena;
 
-        cont->size = arena_size;
-        cont->next = 0;
+        cont->seg_Size = arena_size;
+        cont->seg_Next = 0;
         /* next_hunk_ptr points at the last hunk's next field */
         *next_hunk_ptr = HUNK2BPTR(cont);
-        next_hunk_ptr = (BPTR *)((IPTR)cont + offsetof(struct hunk, next));
+        next_hunk_ptr = (BPTR *)((IPTR)cont + AROS_SEG_PREFIX);
         arena = NULL; /* now owned by the seg list */
     }
     else if (arena)
@@ -1878,29 +1920,29 @@ end:
 
     while (curr)
     {
-        struct hunk *hunk = BPTR2HUNK(BADDR(curr));
+        struct AROSSegment *hunk = BPTR2HUNK(BADDR(curr));
 
 #if defined(DOCACHECLEAR)
         /* Clear the caches to let the CPU see the new data and instructions. */
-        ils_ClearCache(hunk->data, hunk->size, CACRF_ClearD | CACRF_ClearI);
+        ils_ClearCache(hunk->seg_Data, hunk->seg_Size, CACRF_ClearD | CACRF_ClearI);
 #endif
 #if defined(__AROSPLATFORM_WXSEG__)
         /*
          * Executable hunks were served by KrnAllocPages() as read/write pages
          * outside any MemHeader (TypeOfMem() == 0, as in LoadSeg's FreeFunc
          * and UnLoadSeg). Now that they are populated and relocated, flip
-         * them to read/execute. The base is the hunk itself, not hunk->data:
+         * them to read/execute. The base is the hunk itself, not hunk->seg_Data:
          * the page-granular mapping starts at the struct.
          */
-        if (hunk->size && TypeOfMem(hunk) == 0)
+        if (hunk->seg_Size && TypeOfMem(hunk) == 0)
         {
             if (!KernelBase)
                 KernelBase = OpenResource("kernel.resource");
             if (KernelBase)
-                KrnSetProtection(hunk, hunk->size, MAP_Readable | MAP_Executable);
+                KrnSetProtection(hunk, hunk->seg_Size, MAP_Readable | MAP_Executable);
         }
 #endif
-        curr = hunk->next;
+        curr = hunk->seg_Next;
     }
 #endif
 

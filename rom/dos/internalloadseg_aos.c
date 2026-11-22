@@ -44,7 +44,7 @@ static inline void hunk_write_long(void *dest, ULONG value)
 #endif
 }
 
-#define GETHUNKPTR(x) ((UBYTE *)BADDR(hunktab[x]) + sizeof(BPTR))
+#define GETHUNKPTR(x) ((UBYTE *)AROS_SEG_DATA(hunktab[x]))
 
 #ifndef __mc68000
 /* The relocations applied so far, for GSLI_68KRELOCS. An allocation failure
@@ -266,7 +266,8 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
   D(bug("\tHunk count: %ld\n", numhunks));
 
   if (!hunktab) {
-    hunktab = ilsAllocVec(sizeof(BPTR) * (numhunks + 1 + 1), MEMF_CLEAR);
+    /* Entries 0 .. numhunks, plus the BNULL terminator */
+    hunktab = ilsAllocVec(sizeof(BPTR) * (numhunks + 1), MEMF_CLEAR);
     if (hunktab == NULL)
       ERROR(ERROR_NO_FREE_STORE);
   }
@@ -317,8 +318,8 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
     D(bug(" memory"));
 
     /*
-     * Allocate enough space to store the code, the hunk length, and the
-     * next hunk pointer.
+     * Allocate space for the code. ilsAllocVec() adds the segment header
+     * that carries the hunk length and the link to the next hunk.
      * NB - On 64bit systems, Hunk segments are ALWAYS
      * allocated in the 32bit address space using MEMF_31BIT.
      * This is to make sure that relocatable symbols can correctly be
@@ -326,7 +327,7 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
      * architectures, and so that traditional AmigaOS Font, and
      * Keymap files can be correctly processed and used.
      */
-    hunksize = lcount * 4 + sizeof(ULONG) + sizeof(BPTR);
+    hunksize = lcount * 4;
     hunkptr = ilsAllocVec(hunksize, req | MEMF_31BIT);
     if (!hunkptr)
       ERROR(ERROR_NO_FREE_STORE);
@@ -340,7 +341,7 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
          pointer to the next hunk is located)
        */
     if (prevhunk)
-      *(BPTR *)BADDR(prevhunk) = hunktab[i];
+      AROS_SEG_NEXT(prevhunk) = hunktab[i];
     prevhunk = hunktab[i];
   }
 
@@ -588,11 +589,11 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
         D(bug("Overlay table size: %d\n", lcount));
 
         /* See above for MEMF_31BIT explanation */
-        lcount = lcount * 4 + sizeof(ULONG) + sizeof(ULONG);
+        lcount = lcount * 4 + sizeof(ULONG);
         overlaytable = ilsAllocVec(lcount, MEMF_CLEAR | MEMF_31BIT);
         if (overlaytable == NULL)
           ERROR(ERROR_NO_FREE_STORE);
-        if (hunk_read(&hr, overlaytable, lcount - sizeof(ULONG)))
+        if (hunk_read(&hr, overlaytable, lcount))
             goto end;
         goto done;
       }
@@ -627,16 +628,16 @@ done:
     /* Clear caches */
     for (t = first; t < numhunks && t <= last; t++)
     {
-        hunksize = *((ULONG*)BADDR(hunktab[t]) - 1);
+        hunksize = AROS_SEG_SIZE(hunktab[t]);
         if (hunksize)
-          ils_ClearCache(BADDR(hunktab[t]), hunksize, CACRF_ClearI | CACRF_ClearD);
+          ils_ClearCache(AROS_SEG_BASE(hunktab[t]), hunksize, CACRF_ClearI | CACRF_ClearD);
     }
 #endif
 
     if (table)
       return firsthunk;
 
-    hunksize = *((ULONG*)BADDR(hunktab[0]) - 1);
+    hunksize = AROS_SEG_SIZE(hunktab[0]);
     if (last > first && hunksize >= 32 / 4)
     {
       /* NOTE: HUNK_OVERLAY is not required for overlay mode. */

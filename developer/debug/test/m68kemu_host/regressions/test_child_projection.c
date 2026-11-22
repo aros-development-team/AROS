@@ -862,7 +862,8 @@ static void seglist_make(struct M68KEmuContext *ctx, BOOL hunk, BOOL relocs)
     for (i = 0; i < SEGS; i++)
     {
         UBYTE *base;
-        ULONG total = seg_bytes[i] + (ULONG)(sizeof(ULONG) + sizeof(BPTR));
+        /* dos reserves one BPTR in front of the link - see dos/bptr.h */
+        ULONG total = seg_bytes[i] + (ULONG)(2 * sizeof(BPTR));
 
         if (!seg_alloc[i])
             seg_alloc[i] = calloc(1, SEG_MAX + 16);
