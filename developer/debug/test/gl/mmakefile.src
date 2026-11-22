@@ -10,6 +10,7 @@ GLTESTFILES 	    := \
         gltri \
         gltexfbo \
         glscanout \
+        glnewbuffers \
         glwater
 
 EXEDIR      := $(AROS_TESTS)/graphics/gl

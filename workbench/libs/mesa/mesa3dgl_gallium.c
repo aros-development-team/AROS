@@ -28,6 +28,9 @@
 #include "pipe/p_state.h"
 
 #include "util/u_inlines.h"
+#include "util/box.h"
+#include "util/u_pack_color.h"
+#include "util/u_surface.h"
 
 #include "main/context.h"
 #include "state_tracker/st_manager.h"
@@ -352,6 +355,34 @@ VOID MESA3DGLScanoutSwap(struct mesa3dgl_context * ctx)
     }
 }
 
+/*
+ * A new colour buffer holds whatever its memory held before. OpenGL leaves
+ * that content undefined, but a program that does not paint the whole
+ * window in every frame then shows it: static garbage where the frame is
+ * copied to the window, content that changes from frame to frame where the
+ * display flips between several buffers. Hand every new buffer out black.
+ * Not every driver has clear_texture() (vc4, v3d, SVGA without vgpu10); for
+ * those u_default_clear_texture() clears through clear_render_target().
+ */
+static VOID MESA3DGLClearNewColorBuffer(struct st_context *stctx,
+    struct pipe_resource *res)
+{
+    struct pipe_context *pipe = stctx ? stctx->pipe : NULL;
+    union pipe_color_union black = { .f = { 0.0f, 0.0f, 0.0f, 1.0f } };
+    union util_color packed;
+    struct pipe_box box;
+
+    if (!pipe || !res)
+        return;
+
+    util_pack_color_union(res->format, &packed, &black);
+    u_box_2d(0, 0, res->width0, res->height0, &box);
+    if (pipe->clear_texture)
+        pipe->clear_texture(pipe, res, 0, &box, &packed);
+    else
+        u_default_clear_texture(pipe, res, 0, &box, &packed);
+}
+
 static bool MESA3DGLFrameBufferValidate(struct st_context *stctx,
                        struct pipe_frontend_drawable *stfbi,
                        const enum st_attachment_type *statts,
@@ -388,6 +419,15 @@ static bool MESA3DGLFrameBufferValidate(struct st_context *stctx,
                 {
                     amfb->scanout_tried = TRUE;
                     MESA3DGLScanoutCreate(amfb);
+                    if (amfb->scanout)
+                    {
+                        ULONG buffers = GetScanoutFrameBufferAttr(amfb->scanout, SFBA_Buffers);
+                        ULONG b;
+
+                        for (b = 0; b < buffers; b++)
+                            MESA3DGLClearNewColorBuffer(stctx,
+                                GetScanoutFrameBufferResource(amfb->scanout, b));
+                    }
                 }
                 if (amfb->scanout)
                 {
@@ -397,6 +437,8 @@ static bool MESA3DGLFrameBufferValidate(struct st_context *stctx,
             }
 
             MESA3DGLFrameBufferCreateResource(amfb, statts[i]);
+            if (statts[i] != ST_ATTACHMENT_DEPTH_STENCIL)
+                MESA3DGLClearNewColorBuffer(stctx, amfb->textures[statts[i]]);
             if (statts[i] == ST_ATTACHMENT_FRONT_LEFT)
             {
                 pipe_resource_reference(&amfb->render_resource, amfb->textures[ST_ATTACHMENT_FRONT_LEFT]);
