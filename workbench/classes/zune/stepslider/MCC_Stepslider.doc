@@ -1,0 +1,90 @@
+TABLE OF CONTENTS
+
+Stepslider.mcc/Stepslider.mcc
+Stepslider.mcc/MUIA_Numeric_Value
+Stepslider.mcc/MUIA_Numeric_Min
+Stepslider.mcc/MUIA_Numeric_Max
+Stepslider.mcc/MUIA_Numeric_Default
+Stepslider.mcc/MUIA_Numeric_Reverse
+
+
+Stepslider.mcc/Stepslider.mcc
+
+   Stepslider.mcc is a Zune custom class derived from Numeric.mui. It is a
+   horizontal slider over a few ordered steps, such as the compression levels
+   of an archiver or the quality levels of a preview. A tick under the groove
+   marks every step, so the user sees how many there are.
+
+   The steps are the values from MUIA_Numeric_Min to MUIA_Numeric_Max. The
+   knob only rests on a step: a click or a drag moves it to the step nearest
+   to the pointer. The groove is filled from the Min end of the scale to the
+   knob.
+
+   Stepslider adds no class-specific public IDs. Numeric.mui owns the value,
+   the range, the default value, the notifications, the cursor keys and the
+   mouse wheel; Stepslider owns the drawing, the size and the mouse.
+
+   The slider shows no text. The program shows the name of the chosen step
+   beside it and updates it from a notification on MUIA_Numeric_Value:
+
+      slider = StepsliderObject,
+          MUIA_Numeric_Min, 0,
+          MUIA_Numeric_Max, 3,
+          MUIA_Numeric_Value, 2,
+          MUIA_CycleChain, 1,
+      End;
+
+      DoMethod(slider, MUIM_Notify, MUIA_Numeric_Value, MUIV_EveryTime,
+          app, 2, MUIM_Application_ReturnID, ID_LEVEL);
+
+   Sizes follow the object's font: the knob is a little taller than a line of
+   text. The height is fixed; the width is free, with a minimum that gives
+   every step room for the knob, counted for at most 16 steps. Colours are
+   the pens of the user's preferences.
+
+   Ticks are drawn while they are at least three pixels apart. In a longer
+   range only the two ends are marked; use Slider.mui for such a range.
+
+   Header: <zune/stepslider.h>, which defines MUIC_Stepslider and
+   StepsliderObject.
+
+
+Stepslider.mcc/MUIA_Numeric_Value
+
+   MUIA_Numeric_Value -- [ISG], LONG
+
+   The chosen step. Numeric.mui clamps it to Min and Max. A change from the
+   mouse, the keys, the wheel or the program triggers the ordinary
+   notifications for MUIA_Numeric_Value. While the user drags, there is one
+   notification for every step the knob reaches.
+
+
+Stepslider.mcc/MUIA_Numeric_Min
+
+   MUIA_Numeric_Min -- [ISG], LONG
+
+   The value of the first step. Default 0.
+
+
+Stepslider.mcc/MUIA_Numeric_Max
+
+   MUIA_Numeric_Max -- [ISG], LONG
+
+   The value of the last step. The slider has Max - Min + 1 steps. Default
+   100, so set it. Changing the range of an open slider draws the new ticks
+   and lays the group out again.
+
+
+Stepslider.mcc/MUIA_Numeric_Default
+
+   MUIA_Numeric_Default -- [ISG], LONG
+
+   The step chosen by MUIM_Numeric_SetDefault and by Numeric's Toggle key.
+
+
+Stepslider.mcc/MUIA_Numeric_Reverse
+
+   MUIA_Numeric_Reverse -- [ISG], BOOL
+
+   TRUE puts Min at the right end and Max at the left end. The filled part of
+   the groove then starts at the right.
