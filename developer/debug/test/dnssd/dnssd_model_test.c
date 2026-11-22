@@ -8,6 +8,17 @@
 #include <stdio.h>
 #include <string.h>
 
+/*
+ * A message's storage: aligned for its header, which dnssd_model_build()
+ * writes through a struct pointer (the 68000 faults on a word at an odd
+ * address), and changed as that header (.message) or as bytes (.bytes) -
+ * not through a cast of a byte array, which strict aliasing forbids.
+ */
+union model_buffer {
+    struct dnssd_model_message message;
+    uint8_t bytes[2048];
+};
+
 static int failures;
 
 #define CHECK(condition, text) do { \
@@ -52,7 +63,7 @@ int main(void)
     struct dnssd_model_service service;
     struct dnssd_model_message message;
     struct dnssd_model_address address;
-    uint8_t buffer[2048], malformed[2048];
+    union model_buffer buffer, malformed;
     size_t required = 0, written = 0;
 
     memset(addresses, 0, sizeof(addresses));
@@ -97,16 +108,16 @@ int main(void)
           "serialized layout is fixed across pointer widths");
     CHECK(dnssd_model_measure(&service, &required) == DNSSD_MODEL_OK &&
           required > sizeof(message), "measure valid canonical event");
-    CHECK(dnssd_model_build(&service, buffer, sizeof(message), &written) ==
+    CHECK(dnssd_model_build(&service, buffer.bytes, sizeof(message), &written) ==
               DNSSD_MODEL_TOO_SMALL && written == required,
           "sized builder reports required storage without partial output");
-    CHECK(dnssd_model_build(&service, buffer, sizeof(buffer), &written) ==
+    CHECK(dnssd_model_build(&service, buffer.bytes, sizeof(buffer.bytes), &written) ==
               DNSSD_MODEL_OK && written <= required,
           "build pointer-free canonical event");
-    CHECK(dnssd_model_validate(buffer, written) == DNSSD_MODEL_OK,
+    CHECK(dnssd_model_validate(buffer.bytes, written) == DNSSD_MODEL_OK,
           "validate canonical event envelope and payloads");
 
-    copy_header(&message, buffer);
+    copy_header(&message, buffer.bytes);
     CHECK(message.version == DNSSD_MODEL_VERSION &&
           message.header_size == 116u && message.size == written &&
           message.incarnation == service.incarnation &&
@@ -115,66 +126,66 @@ int main(void)
           message.sequence == service.sequence,
           "versioned envelope correlates daemon session and operation");
     CHECK(message.instance.size == sizeof(instance) &&
-          memcmp(buffer + message.instance.offset, instance,
+          memcmp(buffer.bytes + message.instance.offset, instance,
                  sizeof(instance)) == 0,
           "instance is counted data and preserves dots and backslashes");
     CHECK(message.txt.size == sizeof(txt) &&
-          memcmp(buffer + message.txt.offset, txt, sizeof(txt)) == 0,
+          memcmp(buffer.bytes + message.txt.offset, txt, sizeof(txt)) == 0,
           "TXT remains counted binary data");
     CHECK(message.address_count == 3u &&
           message.addresses.size == 3u *
               sizeof(struct dnssd_model_wire_address),
           "address set is deduplicated without a legacy projection");
-    CHECK(dnssd_model_copy_address(buffer, written, 0, &address) ==
+    CHECK(dnssd_model_copy_address(buffer.bytes, written, 0, &address) ==
               DNSSD_MODEL_OK &&
           address.family == DNSSD_MODEL_ADDR_IPV4 &&
           address.interface_index == 7u && address.bytes[3] == 10u,
           "addresses sort deterministically by interface family and bytes");
-    CHECK(dnssd_model_copy_address(buffer, written, 2, &address) ==
+    CHECK(dnssd_model_copy_address(buffer.bytes, written, 2, &address) ==
               DNSSD_MODEL_OK &&
           address.family == DNSSD_MODEL_ADDR_IPV6 &&
           address.bytes[0] == 0xfe && address.bytes[15] == 2,
           "IPv6 address and link scope survive serialization");
 
-    memcpy(malformed, buffer, written);
-    ((struct dnssd_model_message *)(void *)malformed)->version++;
-    CHECK(dnssd_model_validate(malformed, written) ==
+    memcpy(malformed.bytes, buffer.bytes, written);
+    malformed.message.version++;
+    CHECK(dnssd_model_validate(malformed.bytes, written) ==
               DNSSD_MODEL_BAD_MESSAGE,
           "reject unknown private protocol version");
-    memcpy(malformed, buffer, written);
-    ((struct dnssd_model_message *)(void *)malformed)->kind = 0xffffu;
-    CHECK(dnssd_model_validate(malformed, written) ==
+    memcpy(malformed.bytes, buffer.bytes, written);
+    malformed.message.kind = 0xffffu;
+    CHECK(dnssd_model_validate(malformed.bytes, written) ==
               DNSSD_MODEL_BAD_MESSAGE,
           "reject unknown event kind within a known version");
-    memcpy(malformed, buffer, written);
-    ((struct dnssd_model_message *)(void *)malformed)->txt.offset = 4u;
-    CHECK(dnssd_model_validate(malformed, written) ==
+    memcpy(malformed.bytes, buffer.bytes, written);
+    malformed.message.txt.offset = 4u;
+    CHECK(dnssd_model_validate(malformed.bytes, written) ==
               DNSSD_MODEL_BAD_MESSAGE,
           "reject payload reference into the header");
-    memcpy(malformed, buffer, written);
-    ((struct dnssd_model_message *)(void *)malformed)->domain =
-        ((struct dnssd_model_message *)(void *)malformed)->service_type;
-    CHECK(dnssd_model_validate(malformed, written) ==
+    memcpy(malformed.bytes, buffer.bytes, written);
+    malformed.message.domain =
+        malformed.message.service_type;
+    CHECK(dnssd_model_validate(malformed.bytes, written) ==
               DNSSD_MODEL_BAD_MESSAGE,
           "reject overlapping counted payloads");
-    memcpy(malformed, buffer, written);
-    malformed[((struct dnssd_model_message *)(void *)malformed)->
+    memcpy(malformed.bytes, buffer.bytes, written);
+    malformed.bytes[malformed.message.
         service_type.offset] = 64u;
-    CHECK(dnssd_model_validate(malformed, written) ==
+    CHECK(dnssd_model_validate(malformed.bytes, written) ==
               DNSSD_MODEL_BAD_MESSAGE,
           "reject malformed DNS wire names");
-    memcpy(malformed, buffer, written);
-    malformed[((struct dnssd_model_message *)(void *)malformed)->txt.offset] =
-        (uint8_t)((struct dnssd_model_message *)(void *)malformed)->txt.size;
-    CHECK(dnssd_model_validate(malformed, written) ==
+    memcpy(malformed.bytes, buffer.bytes, written);
+    malformed.bytes[malformed.message.txt.offset] =
+        (uint8_t)malformed.message.txt.size;
+    CHECK(dnssd_model_validate(malformed.bytes, written) ==
               DNSSD_MODEL_BAD_MESSAGE,
           "reject malformed binary TXT lengths");
-    memcpy(malformed, buffer, written);
-    ((struct dnssd_model_message *)(void *)malformed)->address_count++;
-    CHECK(dnssd_model_validate(malformed, written) ==
+    memcpy(malformed.bytes, buffer.bytes, written);
+    malformed.message.address_count++;
+    CHECK(dnssd_model_validate(malformed.bytes, written) ==
               DNSSD_MODEL_BAD_MESSAGE,
           "reject inconsistent address count and extent");
-    CHECK(dnssd_model_copy_address(buffer, written, 3, &address) ==
+    CHECK(dnssd_model_copy_address(buffer.bytes, written, 3, &address) ==
               DNSSD_MODEL_BAD_ARGUMENT,
           "reject address access beyond the counted set");
 
@@ -202,9 +213,9 @@ int main(void)
         other.name = span(host, sizeof(host));
         other.addresses = addresses;
         other.address_count = 1;
-        CHECK(dnssd_model_build(&other, buffer, sizeof(buffer), &written) ==
+        CHECK(dnssd_model_build(&other, buffer.bytes, sizeof(buffer.bytes), &written) ==
                   DNSSD_MODEL_OK &&
-              dnssd_model_validate(buffer, written) == DNSSD_MODEL_OK,
+              dnssd_model_validate(buffer.bytes, written) == DNSSD_MODEL_OK,
               "an ADDRESS event: a name and its addresses, no service");
         other.kind = DNSSD_MODEL_EVENT_RECORD;
         other.address_count = 0;
@@ -214,21 +225,21 @@ int main(void)
               "a RECORD event needs a record type");
         other.rrtype = 1;
         other.flags = DNSSD_MODEL_FLAG_REMOVED;
-        CHECK(dnssd_model_build(&other, buffer, sizeof(buffer), &written) ==
+        CHECK(dnssd_model_build(&other, buffer.bytes, sizeof(buffer.bytes), &written) ==
                   DNSSD_MODEL_OK &&
-              dnssd_model_validate(buffer, written) == DNSSD_MODEL_OK,
+              dnssd_model_validate(buffer.bytes, written) == DNSSD_MODEL_OK,
               "a RECORD event, removed: name, type and data");
-        copy_header(&message, buffer);
+        copy_header(&message, buffer.bytes);
         CHECK(message.rrtype == 1u && message.rdata.size == sizeof(a4) &&
-              memcmp(buffer + message.rdata.offset, a4, sizeof(a4)) == 0,
+              memcmp(buffer.bytes + message.rdata.offset, a4, sizeof(a4)) == 0,
               "the record's type and data are carried");
         memset(&other, 0, sizeof(other));
         other.kind = DNSSD_MODEL_EVENT_END;
         other.result = -8;
-        CHECK(dnssd_model_build(&other, buffer, sizeof(buffer), &written) ==
+        CHECK(dnssd_model_build(&other, buffer.bytes, sizeof(buffer.bytes), &written) ==
                   DNSSD_MODEL_OK && written == sizeof(message),
               "an END event is the header and its result");
-        copy_header(&message, buffer);
+        copy_header(&message, buffer.bytes);
         CHECK(message.result == -8, "the result is carried");
         other.kind = DNSSD_MODEL_EVENT_TYPE;
         other.service_type = span(type, sizeof(type));
