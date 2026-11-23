@@ -447,8 +447,50 @@ void e1000func_reset(struct net_device *unit)
         legacy_pba_adjust = TRUE;
         pba = E1000_PBA_30K;
         break;
-    case e1000_undefined:
-    case e1000_num_macs:
+    /* e1000e families: Rx packet buffer sizes from FreeBSD em_reset()
+     * (sys/dev/e1000/if_em.c). Writing PBA sets the Rx share of the
+     * on-chip packet buffer, the rest is Tx. Left at 0, the MAC has no Rx
+     * FIFO and the flow control watermarks computed below wrap. */
+    case e1000_82571:
+    case e1000_82572:
+    case e1000_80003es2lan:
+        pba = E1000_PBA_32K;    /* 48K total: 32K Rx, 16K Tx */
+        break;
+    case e1000_82573:
+        pba = E1000_PBA_12K;    /* 32K total: 12K Rx, 20K Tx */
+        break;
+    case e1000_82574:
+    case e1000_82583:
+        if (unit->e1ku_frame_max > E1000_RXBUFFER_8192)
+            pba = E1000_PBA_22K;    /* 40K total: 22K Rx, 18K Tx */
+        else
+            pba = E1000_PBA_32K;    /* 40K total: 32K Rx, 8K Tx */
+        break;
+    case e1000_ich8lan:
+        pba = E1000_PBA_8K;
+        break;
+    case e1000_ich9lan:
+    case e1000_ich10lan:
+        if (unit->e1ku_frame_max > E1000_RXBUFFER_4096)
+            pba = E1000_PBA_14K;
+        else
+            pba = E1000_PBA_10K;
+        break;
+    case e1000_pchlan:
+    case e1000_pch2lan:
+    case e1000_pch_lpt:
+    case e1000_pch_spt:
+    case e1000_pch_cnp:
+    case e1000_pch_tgp:
+    case e1000_pch_adp:
+    case e1000_pch_mtp:
+        if (unit->e1ku_mtu > ETH_DATA_LEN)
+            pba = E1000_PBA_12K;
+        else
+            pba = E1000_PBA_26K;
+        break;
+    default:
+        /* 82575 and later (igb) are not probed by this driver */
         break;
     }
 
@@ -532,6 +574,52 @@ void e1000func_reset(struct net_device *unit)
 
     fc->pause_time = E1000_FC_PAUSE_TIME;
     fc->send_xon = 1;
+
+    /* Device specific flow control overrides, from FreeBSD em_reset() */
+    switch (mac->type)
+    {
+    case e1000_pchlan:
+        /* Workaround: no Tx flow control on PCH */
+        if (fc->requested_mode == e1000_fc_full)
+            fc->requested_mode = e1000_fc_rx_pause;
+        else if (fc->requested_mode == e1000_fc_tx_pause)
+            fc->requested_mode = e1000_fc_none;
+        fc->pause_time = 0xFFFF;
+        if (unit->e1ku_mtu > ETH_DATA_LEN) {
+            fc->high_water = 0x3500;
+            fc->low_water = 0x1500;
+        } else {
+            fc->high_water = 0x5000;
+            fc->low_water = 0x3000;
+        }
+        fc->refresh_time = 0x1000;
+        break;
+    case e1000_pch2lan:
+    case e1000_pch_lpt:
+    case e1000_pch_spt:
+    case e1000_pch_cnp:
+    case e1000_pch_tgp:
+    case e1000_pch_adp:
+    case e1000_pch_mtp:
+        fc->high_water = 0x5C20;
+        fc->low_water = 0x5048;
+        fc->pause_time = 0xFFFF;
+        fc->refresh_time = 0xFFFF;
+        break;
+    case e1000_ich9lan:
+    case e1000_ich10lan:
+        if (unit->e1ku_mtu > ETH_DATA_LEN) {
+            fc->high_water = 0x2800;
+            fc->low_water = fc->high_water - 8;
+        }
+        break;
+    case e1000_80003es2lan:
+        fc->pause_time = 0xFFFF;
+        break;
+    default:
+        break;
+    }
+
     fc->current_mode = fc->requested_mode;
 
     /* Allow time for pending master requests to run */
