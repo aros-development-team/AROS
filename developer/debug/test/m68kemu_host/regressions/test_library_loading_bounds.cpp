@@ -76,6 +76,12 @@ struct M68KEmuContext
     /* the fixture's own state */
     ULONG heap = HEAP_BASE, file_pos = 0;
     unsigned heap_calls = 0, fail_call = 0, wild_call = 0, bad_frees = 0, clears_outside = 0;
+    /* the DOS side of the file the loader looks for: Open() fails fail_opens
+       times with probe_err, then finds native_opens files that are no hunk
+       file, then the library; the read can fail on the way */
+    unsigned fail_opens = 0, native_opens = 0, opens = 0, quiet_opens = 0, reads = 0;
+    LONG probe_err = 0;
+    bool seek_fails = false, no_buffer = false, short_read = false;
     std::map<ULONG, Block> live;
     /* the image the next load places: sizes of its blocks (a block that is
        not a hunk of the image stands for something else in the heap), and
@@ -96,22 +102,41 @@ static void m68k_log(M68KEmuContext *, const char *, ...) {}
 static void m68k_engine_invalidate(M68KEmuContext *) {}    /* no engine here */
 static void m68k_low_write_trap(M68KEmuContext *, ULONG, const char *) { throw Failure{"write into the low memory guard"}; }
 static M68KTaskState *m68k_ts(M68KEmuContext *ctx) { return &ctx->task; }
+/* the caller's DOS error, as IoErr() shows it */
+static LONG dos_err;
+static LONG IoErr() { return dos_err; }
+static LONG SetIoErr(LONG err) { LONG old = dos_err; dos_err = err; return old; }
 static APTR FindTask(APTR) { return &process; }
-static BPTR Open(const char *, LONG) { active->file_pos = 0; return 1; }
+static BPTR Open(const char *, LONG)
+{
+    ++active->opens;
+    if (process.pr_WindowPtr == reinterpret_cast<APTR>(-1)) ++active->quiet_opens;
+    if (active->fail_opens) { --active->fail_opens; dos_err = active->probe_err; return 0; }
+    active->file_pos = 0;
+    active->reads = 0;
+    if (active->native_opens) { --active->native_opens; return 2; }
+    return 1;
+}
 static void Close(BPTR) {}
 static LONG Seek(BPTR, LONG, LONG mode)
 {
     LONG old = static_cast<LONG>(active->file_pos);
+    if (active->seek_fails) { dos_err = 219; return -1; }    /* ERROR_SEEK_ERROR */
     active->file_pos = mode == OFFSET_END ? 4 : 0;
     return old;
 }
-static LONG Read(BPTR, APTR out, LONG size)
+static LONG Read(BPTR fh, APTR out, LONG size)
 {
-    const UBYTE hunk[] = {0, 0, 3, 0xF3};
+    const UBYTE hunk[] = {0, 0, 3, 0xF3}, native[] = {0x7F, 'E', 'L', 'F'};
     CHECK(size == 4, "fixture native file read has the expected size");
-    std::memcpy(out, hunk, 4); active->file_pos += 4; return 4;
+    if (active->short_read && active->reads++ == 1) { dos_err = 223; return 2; }    /* the whole file comes short */
+    std::memcpy(out, fh == 2 ? native : hunk, 4); active->file_pos += 4; return 4;
 }
-static APTR AllocMem(ULONG size, ULONG) { return std::malloc(size); }
+static APTR AllocMem(ULONG size, ULONG)
+{
+    if (active->no_buffer) { dos_err = 103; return nullptr; }    /* ERROR_NO_FREE_STORE */
+    return std::malloc(size);
+}
 static void FreeMem(APTR ptr, ULONG) { std::free(ptr); }
 static STRPTR FilePart(STRPTR name)
 {
@@ -252,7 +277,8 @@ static bool beyond_untouched()
 /* Runs the loader once on a fresh context. An allocation made before the
    attempt stands for what the running program owns in the same heap. */
 static Outcome load(M68KEmuContext &ctx, std::vector<M68KEmuContext::Piece> pieces,
-                    std::function<void(M68KEmuContext &, const std::vector<ULONG> &)> fill)
+                    std::function<void(M68KEmuContext &, const std::vector<ULONG> &)> fill,
+                    const char *name = "widget.library")
 {
     std::fill(host.begin(), host.begin() + ARENA, UBYTE(0));
     std::fill(host.begin() + ARENA, host.end(), BEYOND_BYTE);
@@ -263,7 +289,7 @@ static Outcome load(M68KEmuContext &ctx, std::vector<M68KEmuContext::Piece> piec
     ctx.pieces = std::move(pieces);
     ctx.fill = std::move(fill);
     Outcome out;
-    out.base = M68KEmu_LoadM68KLibrary(&ctx, "widget.library", 0);
+    out.base = M68KEmu_LoadM68KLibrary(&ctx, name, 0);
     out.placed = ctx.placed;
     CHECK(process.pr_WindowPtr == reinterpret_cast<APTR>(0x1234), "native window policy restored");
     CHECK(ctx.live.count(own) == 1, "the program's own block is still allocated");
@@ -584,6 +610,88 @@ int main()
         CHECK(out.base == 0, "refused");
         program_state_kept(ctx);
     });
+
+    /* ---- the caller's DOS error: the file search and read are the loader's own ---- */
+
+    /* 7777 stands for an error the program had before it asked for the
+       library: no probe of the fixture produces it */
+    run("a missing library keeps the caller's zero (the observed version.library case)", [&] {
+        M68KEmuContext ctx;
+        ctx.fail_opens = 4; ctx.probe_err = 205;
+        dos_err = 0;
+        Outcome out = load(ctx, one, nullptr, "version.library");
+        refused_cleanly(ctx, out);
+        CHECK(ctx.opens == 4 && ctx.quiet_opens == 4, "four places probed, none with a requester");
+        CHECK(dos_err == 0, "IoErr() is still 0, not the 205 of the probes");
+    });
+
+    run("a missing library keeps the caller's own error", [&] {
+        M68KEmuContext ctx;
+        ctx.fail_opens = 4; ctx.probe_err = 205;
+        dos_err = 7777;
+        Outcome out = load(ctx, one, nullptr, "version.library");
+        refused_cleanly(ctx, out);
+        CHECK(dos_err == 7777, "IoErr() is still the caller's 7777");
+    });
+
+    run("a path name that is missing keeps the caller's error", [&] {
+        M68KEmuContext ctx;
+        ctx.fail_opens = 5; ctx.probe_err = 205;
+        dos_err = 7777;
+        Outcome out = load(ctx, one, nullptr, "PROGDIR:libs/version.library");
+        refused_cleanly(ctx, out);
+        CHECK(ctx.opens == 5 && ctx.quiet_opens == 5, "the path and four places probed, none with a requester");
+        CHECK(dos_err == 7777, "IoErr() is still the caller's 7777");
+    });
+
+    run("found after failed probes, the caller's error is kept", [&] {
+        M68KEmuContext ctx;
+        ctx.fail_opens = 2; ctx.probe_err = 205;
+        dos_err = 7777;
+        Outcome out = load(ctx, one, [](M68KEmuContext &c, const std::vector<ULONG> &a) { standard(c, a[0]); });
+        CHECK(out.base != 0 && ctx.num_m68klibs == 1, "loaded from the third place");
+        CHECK(ctx.opens == 3 && ctx.quiet_opens == 3, "three probes, none with a requester");
+        CHECK(dos_err == 7777, "IoErr() is still the caller's 7777");
+    });
+
+    run("a native library in LIBS: is passed over, the caller's error is kept", [&] {
+        M68KEmuContext ctx;
+        ctx.fail_opens = 3; ctx.probe_err = 205; ctx.native_opens = 1;
+        dos_err = 7777;
+        Outcome out = load(ctx, one, nullptr, "version.library");
+        refused_cleanly(ctx, out);
+        CHECK(ctx.opens == 4, "four places probed");
+        CHECK(dos_err == 7777, "IoErr() is still the caller's 7777");
+    });
+
+    run("a file that cannot be sized keeps the caller's error", [&] {
+        M68KEmuContext ctx;
+        ctx.fail_opens = 1; ctx.probe_err = 205; ctx.seek_fails = true;
+        dos_err = 7777;
+        Outcome out = load(ctx, one, nullptr);
+        refused_cleanly(ctx, out);
+        CHECK(dos_err == 7777, "IoErr() is still the caller's 7777, not 219");
+    });
+
+    run("no buffer for the file keeps the caller's error", [&] {
+        M68KEmuContext ctx;
+        ctx.fail_opens = 1; ctx.probe_err = 205; ctx.no_buffer = true;
+        dos_err = 7777;
+        Outcome out = load(ctx, one, nullptr);
+        refused_cleanly(ctx, out);
+        CHECK(dos_err == 7777, "IoErr() is still the caller's 7777, not 103");
+    });
+
+    run("a short read keeps the caller's error", [&] {
+        M68KEmuContext ctx;
+        ctx.fail_opens = 1; ctx.probe_err = 205; ctx.short_read = true;
+        dos_err = 7777;
+        Outcome out = load(ctx, one, nullptr);
+        refused_cleanly(ctx, out);
+        CHECK(dos_err == 7777, "IoErr() is still the caller's 7777, not 223");
+    });
+
+    dos_err = 0;
 
     std::printf("m68kemu 68k library loading bounds: %u cases, %u failed, %u checks\n", cases, failed, checks);
     return failed ? 1 : 0;
