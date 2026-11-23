@@ -1,4 +1,5 @@
-# Update unittests.html based on remote unit test files
+# Update unittests.html, and its translated copies (<lang>/unittests.html),
+# based on remote unit test files
 # Requires secrets:
 # - SF_RSYNC_USER
 #
@@ -46,9 +47,25 @@ steps:
 
     echo "Found $(wc -l < unittest_file_list.txt) remote unittest files."
 
-    echo "Fetch current unittests.html..."
-    rsync -e "ssh -o StrictHostKeyChecking=yes" \
-      "$(SF_RSYNC_USER)"@$(SF_HOST):$(PROJWEBDIR)/unittests.html .
+    echo "Fetch current unittests.html and its translations (<lang>/unittests.html)..."
+    # The site is built once per language: the default language page lives
+    # in the web root, every other language in <lang>/. All of them carry
+    # the same placeholder content, so all of them have to be updated.
+    mkdir -p pages
+    rsync -r -m -e "ssh -o StrictHostKeyChecking=yes" \
+      --include='/unittests.html' \
+      --include='/*/' \
+      --include='/*/unittests.html' \
+      --exclude='*' \
+      "$(SF_RSYNC_USER)"@$(SF_HOST):$(PROJWEBDIR)/ pages/
+
+    find pages -name unittests.html | sort > unittest_page_list.txt
+    echo "Found $(wc -l < unittest_page_list.txt) unittests.html page(s) to update:"
+    cat unittest_page_list.txt
+    if [ ! -s unittest_page_list.txt ]; then
+      echo "No unittests.html pages found on the remote host." >&2
+      exit 1
+    fi
 
     echo "Run local unittest html update script..."
     cat > update_html.py <<'PYEOF'
@@ -57,9 +74,9 @@ steps:
 
 
     def main():
-        parser = argparse.ArgumentParser(description="Update htmlfile with new unittest list")
+        parser = argparse.ArgumentParser(description="Update html pages with new unittest list")
         parser.add_argument('--filelist', required=True, help='Path to file containing unittest file list')
-        parser.add_argument('--htmlfile', required=True, help='Path to the unittests.html file to update')
+        parser.add_argument('--pagelist', required=True, help='Path to file listing the unittests.html pages to update')
         args = parser.parse_args()
 
         with open(args.filelist, 'r', encoding='utf-8') as f:
@@ -87,31 +104,52 @@ steps:
     </script>
     '''
 
-        with open(args.htmlfile, 'r', encoding='utf-8') as f:
-            html_text = f.read()
+        with open(args.pagelist, 'r', encoding='utf-8') as f:
+            pages = [line.strip() for line in f if line.strip()]
 
         pattern = re.compile(
             r'(<main>.*?<!-- before CONTENT -->)(.*?)(<!-- after CONTENT -->.*?</main>)',
             re.DOTALL | re.IGNORECASE
         )
-        updated_html = pattern.sub(
-            lambda m: m.group(1) + '\n\n' + new_content + '\n\n' + m.group(3),
-            html_text
-        )
 
-        with open(args.htmlfile, 'w', encoding='utf-8') as f:
-            f.write(updated_html)
+        failed = []
+        for page in pages:
+            with open(page, 'r', encoding='utf-8') as f:
+                html_text = f.read()
+
+            updated_html, count = pattern.subn(
+                lambda m: m.group(1) + '\n\n' + new_content + '\n\n' + m.group(3),
+                html_text
+            )
+            if count != 1:
+                print(f'ERROR: content markers not found in {page}')
+                failed.append(page)
+                continue
+
+            with open(page, 'w', encoding='utf-8') as f:
+                f.write(updated_html)
+            print(f'Updated {page}')
+
+        if failed:
+            raise SystemExit(1)
 
 
     if __name__ == '__main__':
         main()
     PYEOF
 
-    python3 update_html.py --filelist unittest_file_list.txt --htmlfile unittests.html
+    # A page that could not be updated is left as it was fetched, so the
+    # upload below is still safe; report the failure once it is done.
+    update_rc=0
+    python3 update_html.py --filelist unittest_file_list.txt --pagelist unittest_page_list.txt || update_rc=$?
 
-    echo "Upload updated unittests.html back to remote..."
-    rsync -e "ssh -o StrictHostKeyChecking=yes" unittests.html \
-      "$(SF_RSYNC_USER)"@$(SF_HOST):$(PROJWEBDIR)/unittests.html
+    echo "Upload updated unittests.html pages back to remote..."
+    # pages/ mirrors the layout of the web root and holds nothing but the
+    # unittests.html files, so a recursive copy puts each one back in place.
+    rsync -r -e "ssh -o StrictHostKeyChecking=yes" pages/ \
+      "$(SF_RSYNC_USER)"@$(SF_HOST):$(PROJWEBDIR)/
+
+    exit $update_rc
   env:
     SF_RSYNC_USER: $(SF_RSYNC_USER)
   displayName: 'Fetch, Update and Upload Unittests.html'
