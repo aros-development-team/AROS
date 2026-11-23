@@ -31,7 +31,8 @@ FILES  := test             \
           flextest         \
           rexxunknown      \
           gaugeclip        \
-          listdrag
+          listdrag         \
+          textshorten
 
 USER_CFLAGS := -I $(SRCDIR)/workbench/system/Wanderer/Classes
 

@@ -30,6 +30,17 @@
     (MUIB_MUI | 0x00424e10)       /* MUI: V4  i.. BOOL   */
 #define MUIA_Text_SetVMax \
     (MUIB_MUI | 0x00420d8b)       /* MUI: V11 i.. BOOL   */
+#define MUIA_Text_Shorten \
+    (MUIB_MUI | 0x00428bbd)       /* MUI: V20 isg LONG   */
+#define MUIA_Text_Shortened \
+    (MUIB_MUI | 0x00425a86)       /* MUI: V20 ..g BOOL   */
+
+#define MUIV_Text_Shorten_Nothing     0
+#define MUIV_Text_Shorten_Cutoff      1
+#define MUIV_Text_Shorten_Hide        2
+#define MUIV_Text_Shorten_ElideLeft   3
+#define MUIV_Text_Shorten_ElideCenter 4
+#define MUIV_Text_Shorten_ElideRight  5
 
 /* Codes which can be used in text strings */
 #define MUIX_L "\033l"          /* justify left */
