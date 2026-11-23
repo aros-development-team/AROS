@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: PrepareContext() - Prepare a task context for dispatch, ARM version.
 */
@@ -41,7 +41,7 @@ BOOL PrepareContext(struct Task *task, APTR entryPoint, APTR fallBack,
         {
 #if defined(__AROSEXEC_SMP__)
             case TASKTAG_AFFINITY:
-                IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuAffinity = t->ti_Data;
+                IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuAffinity = (cpumask_t *)t->ti_Data;
                 break;
 #endif
 #define REGARG(x)                       \

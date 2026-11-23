@@ -222,7 +222,7 @@ cpu_registerfatal:
     /* switch to user mode, and load the bs task stack */
     bug("[Kernel:%02d] Dropping into USER mode ... \n", cpunum);
 
-    uint32_t bs_stack = __tls->ThisTask->tc_SPUpper;
+    uint32_t bs_stack = (uint32_t)__tls->ThisTask->tc_SPUpper;
     asm volatile(
         "cps %[mode_user]\n"
 #if AROS_BIG_ENDIAN

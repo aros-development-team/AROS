@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2015-2017, The AROS Development Team. All rights reserved.
+    Copyright (C) 2015-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <proto/kernel.h>
@@ -121,7 +121,7 @@ struct Task *cpu_InitBootStrap(struct ExecBase *SysBase)
     }
 
     bsctx->r[11] = 0;
-    bsctx->lr = SysBase->TaskExitCode;
+    bsctx->lr = (ULONG)SysBase->TaskExitCode;
     bsctx->Flags = 0;
 
     return bstask;
