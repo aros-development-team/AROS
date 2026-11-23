@@ -104,8 +104,10 @@ static void m68k_log(struct M68KEmuContext *ctx,const char *format,...) {(void)c
 static void shadow_sync(struct M68KEmuContext *ctx,const struct M68KStructLayout *layout,
                         ULONG a,void *native) {
     (void)layout;(void)native;assert(a+92<=sizeof(ctx->mem));
-    /* The actual Task layout ends before every Process stream. */
+    /* The actual Task layout ends before every Process stream. The sync
+       copies the native tc_UserData (offset 88): here a host pointer's bits. */
     memset(ctx->mem+a,0,92);
+    ctx->mem[a+88]=0xde;ctx->mem[a+89]=0xad;ctx->mem[a+90]=0xbe;ctx->mem[a+91]=0xef;
 }
 static void m68k_task_stack(struct M68KEmuContext *ctx,ULONG a,struct Task *task) {(void)ctx;(void)a;(void)task;}
 #include "handles.inc"
@@ -352,8 +354,32 @@ static void test_ownership(void) {
     release(&ctx);
     printf("GROUP ownership: %u failed\n",failures-before);
 }
+/* tc_UserData is the task's own (exec/tasks.h): a value the program puts in
+   its own Task, or in another one's, is still there after FindTask() refreshes
+   the m68k Task from the native one, which keeps its own pointer there. */
+static void test_userdata(void) {
+    struct M68KEmuContext ctx;unsigned before=failures;ULONG a,b,c;
+    a=start(&ctx);
+    m68k_write32(&ctx,a+88,0x13572468);
+    check(m68k_process_of(&ctx,current)==a&&read32(&ctx,a+88)==0x13572468,"own Process keeps its tc_UserData across FindTask");
+    m68k_write32(&ctx,a+88,0);refresh(&ctx,current,2);
+    check(read32(&ctx,a+88)==0,"a value cleared back to 0 stays 0, not the native pointer");
+    m68k_write32(&ctx,a+88,0x13572468);
+    b=m68k_process_of(&ctx,&other.pr_Task);
+    check(b&&read32(&ctx,b+88)==0,"a new shadow of another Process starts with 0, not its native tc_UserData");
+    m68k_write32(&ctx,b+88,0x2468ace0);
+    refresh(&ctx,&other.pr_Task,2);refresh(&ctx,current,2);
+    check(m68k_process_of(&ctx,&other.pr_Task)==b&&read32(&ctx,b+88)==0x2468ace0,"another Process keeps its own value, same identity");
+    check(m68k_process_of(&ctx,current)==a&&read32(&ctx,a+88)==0x13572468,"the own value is unchanged by the other's");
+    c=m68k_process_of(&ctx,&only_task);
+    check(c&&c!=a&&c!=b&&read32(&ctx,c+88)==0,"a plain Task's new shadow starts with 0 too");
+    m68k_write32(&ctx,c+88,0x0badf00d);refresh(&ctx,&only_task,2);
+    check(m68k_process_of(&ctx,&only_task)==c&&read32(&ctx,c+88)==0x0badf00d,"and keeps what the program put there");
+    release(&ctx);
+    printf("GROUP userdata: %u failed\n",failures-before);
+}
 int main(void) {
-    test_launches();test_projections();test_ownership();
+    test_launches();test_projections();test_ownership();test_userdata();
     printf("process streams: %u checks, %u failed\n",checks,failures);
     return failures?1:0;
 }

@@ -402,7 +402,13 @@ ULONG m68k_process_of(struct M68KEmuContext *ctx, struct Task *task)
         for (UWORD i = 0; i < ctx->num_shadows; i++)
             if (ctx->shadow_map[i].m68k_addr == ctx->m68k_proc)
                 ctx->shadow_map[i].native_ptr = task;
-        shadow_sync(ctx, layout, ctx->m68k_proc, task);
+        {   /* tc_UserData (offset 88) is the task's own (exec/tasks.h): the program's, not the native one */
+            UBYTE mine[4];
+
+            memcpy(mine, ctx->mem + ctx->m68k_proc + 88, 4);
+            shadow_sync(ctx, layout, ctx->m68k_proc, task);
+            memcpy(ctx->mem + ctx->m68k_proc + 88, mine, 4);
+        }
         m68k_task_stack(ctx, ctx->m68k_proc, task);
         m68k_process_streams(ctx, ctx->m68k_proc, task);
         if (task->tc_Node.ln_Type == NT_PROCESS && !shadow_lookup(ctx, ctx->m68k_proc + M68K_PR_MSGPORT))
@@ -414,7 +420,11 @@ ULONG m68k_process_of(struct M68KEmuContext *ctx, struct Task *task)
     for (UWORD i = 0; i < ctx->num_shadows; i++)
         if (ctx->shadow_map[i].native_ptr == task && ctx->shadow_map[i].type == layout->shadow_type)
         {
+            UBYTE mine[4];   /* tc_UserData (offset 88), the program's own as above */
+
+            memcpy(mine, ctx->mem + ctx->shadow_map[i].m68k_addr + 88, 4);
             shadow_sync(ctx, layout, ctx->shadow_map[i].m68k_addr, task);
+            memcpy(ctx->mem + ctx->shadow_map[i].m68k_addr + 88, mine, 4);
             m68k_task_stack(ctx, ctx->shadow_map[i].m68k_addr, task);
             m68k_process_streams(ctx, ctx->shadow_map[i].m68k_addr, task);
             return ctx->shadow_map[i].m68k_addr;
@@ -443,6 +453,7 @@ ULONG m68k_process_of(struct M68KEmuContext *ctx, struct Task *task)
         }
     }
     shadow_sync(ctx, layout, m68k, task);
+    memset(ctx->mem + m68k + 88, 0, 4);    /* tc_UserData, the program's own: it starts with 0 */
     m68k_task_stack(ctx, m68k, task);
     m68k_process_streams(ctx, m68k, task);
     if (task->tc_Node.ln_Type == NT_PROCESS)

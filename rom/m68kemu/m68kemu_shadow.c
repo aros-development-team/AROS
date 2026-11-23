@@ -705,6 +705,8 @@ ULONG shadow_init_execbase(struct M68KEmuContext *ctx, ULONG m68k_base, void *na
         if (m68k_proc)
         {
             shadow_sync(ctx, tl, m68k_proc, task);
+            /* tc_UserData is the program's own; the native one is not its business */
+            memset(ctx->mem + m68k_proc + 88, 0, 4);   /* tc_UserData (offset 88) */
             m68k_task_stack(ctx, m68k_proc, task);
             /* Set pr_CLI if running from CLI — build a real m68k CLI struct */
             if (task->tc_Node.ln_Type == NT_PROCESS)

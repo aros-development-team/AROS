@@ -270,7 +270,7 @@ native selectors, the layouts, the allocations and the tag capture; guest
 thunks do not use their CPU argument: the fixture switches the
 unused-parameter warning off around that one include and nowhere else.
 
-The fixture runs 105 checks in three groups. The 32 launch checks cover a
+The fixture runs 112 checks in four groups. The 32 launch checks cover a
 child on the synchronous route that inherits the caller's 64-bit input,
 output and error streams, also when the error stream is NULL or is the
 output stream, with the lifecycle tags unchanged and no stream marked for
@@ -311,9 +311,17 @@ that has no Task layout, is not published and its guest block is released,
 as when there is no guest memory. No check of this group stands inside a
 loop.
 
+The 7 userdata checks cover `tc_UserData`, which belongs to the task
+(exec/tasks.h). The fixture's sync copies a native pointer's bits into it,
+as the shadow sync of a native task does. A value the program stores in its
+own Process, and 0 stored back, stay through `FindTask()` refreshes; a new
+shadow of another Process and of a plain Task starts with 0, not the native
+value, and each keeps what the program stores there, independently of the
+others.
+
 The fixture prints a `FAIL:` line for a failed check, one
 `GROUP <name>: <n> failed` line per group and a final
-`process streams: 105 checks, <n> failed` line. Its exit status is 1 when
+`process streams: 112 checks, <n> failed` line. Its exit status is 1 when
 any check failed, which make reports as an error. The launch and
 projection groups test the behaviour that the Process stream change
 introduces: on a tree without that change the runner still prepares the
@@ -321,7 +329,8 @@ sources, without the stream helper, and checks in both groups fail. The
 ownership group tests the rule that a refresh leaves a stored value alone:
 on a tree whose refresh rewrites the fields every time, and whose
 selectors are the generated ones, checks of that group fail and the other
-two groups pass. Sanitized runs disable leak detection by default;
+two groups pass. On a tree whose refresh copies the native `tc_UserData`,
+the 7 userdata checks fail. Sanitized runs disable leak detection by default;
 `ASAN_OPTIONS` can override it.
 
 `--prepare-only --build-dir /tmp/process-streams` emits the actual
