@@ -147,6 +147,7 @@ VOID dma_StartDMA(struct dma_data *unit)
 {
     port_t port = dma_Command + unit->au_DMAPort;
 
+    *unit->au_DMAStatus = 0;
     outb(inb(port) | DMA_START, port);
 }
 
@@ -154,7 +155,8 @@ ULONG dma_CheckErr(struct dma_data *unit)
 {
     UBYTE stat = inb(dma_Status + unit->au_DMAPort);
 
-    return (stat & DMAF_Error) ? HFERR_DMA : 0;
+    /* Software completion can run before a hardware interrupt. */
+    return ((stat | *unit->au_DMAStatus) & DMAF_Error) ? HFERR_DMA : 0;
 }
 
 const APTR dma_FuncTable[]=

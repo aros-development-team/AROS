@@ -44,6 +44,7 @@ struct PCIATABusData
     void                        (*ata_HandleIRQ)(UBYTE, APTR);
     APTR                        irqData;
     APTR                        irqHandle;
+    volatile UBYTE              dmaStatus;
 };
 
 #endif
