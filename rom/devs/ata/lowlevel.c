@@ -1206,7 +1206,7 @@ static BYTE ata_exec_blk(struct ata_Unit *unit, ata_CommandBlock *blk)
         DATA(bug("[ATA%02ld] ata_exec_blk: ata_exec_cmd returned %lx\n", unit->au_UnitNum, err));
         if (bounce_buffer)
         {
-            if (blk->method == CM_DMARead)
+            if (!err && blk->method == CM_DMARead)
             {
                 DATA(bug("[ATA%02ld] Copy %d bytes from bounce buffer %p to destination %p\n", unit->au_UnitNum, blk->length, bounce_buffer, buffer));
                 CopyMemQuick(bounce_buffer, buffer, part << unit->au_SectorShift);
