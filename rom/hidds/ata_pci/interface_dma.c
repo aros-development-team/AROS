@@ -23,7 +23,7 @@
  */
 static LONG dma_Setup(APTR addr, ULONG len, BOOL read, struct PRDEntry* array)
 {
-    ULONG rem = 0, flg = read ? DMA_ReadFromRAM : 0;
+    ULONG rem = 0, flg = read ? 0 : DMA_ReadFromRAM;
     volatile ULONG tmp = 0;
     LONG items = 0;
     IPTR phy_mem;
@@ -132,7 +132,7 @@ void dma_Cleanup(struct dma_data *unit, APTR addr, IPTR len, BOOL read)
     /* Stop DMA engine */
     outb(inb(port) & ~DMA_START, port);
 
-    flg = read ? DMA_ReadFromRAM : 0;
+    flg = read ? 0 : DMA_ReadFromRAM;
     while (len > 0)
     {
         tmp = len;
