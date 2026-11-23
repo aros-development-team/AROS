@@ -94,6 +94,14 @@ struct pci_device_ids e1000_devices[] =
     {  (E1000_DEV_ID_82546GB_PCIE),             "82546GB (PCI-E)"             },
     {  (E1000_DEV_ID_82546GB_QUAD_COPPER),      "82546GB (Quad Copper)"       },
     {  (E1000_DEV_ID_82546GB_QUAD_COPPER_KSP3), "82546GB (Quad Copper KSP3)"  },
+    {  (E1000_DEV_ID_82574L),                 "82574L (e1000e)"             },
+    {  (E1000_DEV_ID_82574LA),                "82574LA (e1000e)"            },
+    {  (E1000_DEV_ID_PCH2_LV_LM),             "82579LM (e1000e)"            },
+    {  (E1000_DEV_ID_PCH2_LV_V),              "82579V (e1000e)"             },
+    {  (E1000_DEV_ID_PCH_M_HV_LM),             "82577LM (e1000e)"            },
+    {  (E1000_DEV_ID_PCH_D_HV_DM),             "82577V (e1000e)"             },
+    {  (E1000_DEV_ID_PCH_LPT_I217_LM),        "I217-LM (e1000e)"            },
+    {  (E1000_DEV_ID_PCH_LPT_I217_V),         "I217-V (e1000e)"             },
     {  (IPTR)NULL,                              NULL                          }
 };
 

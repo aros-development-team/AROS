@@ -56,6 +56,7 @@ typedef UWORD u16;
 typedef ULONG u32;
 typedef LONG s32;
 typedef UQUAD u64;
+typedef QUAD s64;
 
 typedef UQUAD __le64;
 typedef ULONG __le32;

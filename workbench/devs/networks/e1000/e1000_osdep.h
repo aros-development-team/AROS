@@ -38,6 +38,7 @@
 #define _E1000_OSDEP_H_
 
 #include "e1000.h"
+#include <string.h>
 
 #define ADVERTISED_1000baseT_Full           (1 << 5)
 #define ADVERTISED_Autoneg                  (1 << 6)
@@ -175,6 +176,14 @@ static inline ULONG readl(u8 __iomem *base)
 static inline void writel(ULONG val, u8 __iomem *base)
 {
     mmio_outl(val, base);
+}
+static inline UWORD readw(u8 __iomem *base)
+{
+    return mmio_inw(base);
+}
+static inline void writew(UWORD val, u8 __iomem *base)
+{
+    mmio_outw(val, base);
 }
 
 static inline UBYTE MMIO_R8(u8 __iomem *base)
@@ -424,6 +433,11 @@ void e1000_usec_delay(struct net_device *, ULONG);
 #define msec_delay(msec)     e1000_msec_delay((struct net_device *)hw->back, msec)
 #define msec_delay_irq(msec) e1000_msec_delay_irq((struct net_device *)hw->back, msec)
 #define usec_delay(usec)     e1000_usec_delay((struct net_device *)hw->back, usec)
+#define usec_delay_irq(usec) usec_delay(usec)
+
+/* The FreeBSD shared code asserts on its context lock; AROS has none */
+#define ASSERT_CTX_LOCK_HELD(hw)
+#define ASSERT_NO_LOCKS()
 /* misc */
 int request_irq(struct net_device *);
 void e1000func_irq_disable(struct net_device *);

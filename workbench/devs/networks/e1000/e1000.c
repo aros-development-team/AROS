@@ -1567,6 +1567,18 @@ LONG  e1000_read_pcie_cap_reg(struct e1000_hw *hw, ULONG reg, UWORD *value)
     return 0;
 }
 
+LONG  e1000_write_pcie_cap_reg(struct e1000_hw *hw, ULONG reg, UWORD *value)
+{
+    D(bug("[%s]: %s(reg:%d, %04x)\n", unit->e1ku_name, __func__, reg, *value);)
+    if (unit->e1ku_PCIeCap)
+    {
+        WRITECONFIGWORD(unit, unit->e1ku_PCIDevice, unit->e1ku_PCIeCap + reg, *value);
+        return (E1000_SUCCESS);
+    }
+
+    return 0;
+}
+
 void e1000_read_pci_cfg(struct e1000_hw *hw, ULONG reg, UWORD *value)
 {
     D(bug("[%s]: %s(reg:%d)\n", unit->e1ku_name, __func__, reg);)

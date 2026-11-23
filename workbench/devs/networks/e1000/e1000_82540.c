@@ -1,30 +1,37 @@
-/*******************************************************************************
+/******************************************************************************
+  SPDX-License-Identifier: BSD-3-Clause
 
-  Intel PRO/1000 Linux driver
-  Copyright(c) 1999 - 2010 Intel Corporation.
+  Copyright (c) 2001-2020, Intel Corporation
+  All rights reserved.
 
-  This program is free software; you can redistribute it and/or modify it
-  under the terms and conditions of the GNU General Public License,
-  version 2, as published by the Free Software Foundation.
+  Redistribution and use in source and binary forms, with or without
+  modification, are permitted provided that the following conditions are met:
 
-  This program is distributed in the hope it will be useful, but WITHOUT
-  ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-  FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-  more details.
+   1. Redistributions of source code must retain the above copyright notice,
+      this list of conditions and the following disclaimer.
 
-  You should have received a copy of the GNU General Public License along with
-  this program; if not, write to the Free Software Foundation, Inc.,
-  51 Franklin St - Fifth Floor, Boston, MA 02110-1301 USA.
+   2. Redistributions in binary form must reproduce the above copyright
+      notice, this list of conditions and the following disclaimer in the
+      documentation and/or other materials provided with the distribution.
 
-  The full GNU General Public License is included in this distribution in
-  the file called "COPYING".
+   3. Neither the name of the Intel Corporation nor the names of its
+      contributors may be used to endorse or promote products derived from
+      this software without specific prior written permission.
 
-  Contact Information:
-  Linux NICS <linux.nics@intel.com>
-  e1000-devel Mailing List <e1000-devel@lists.sourceforge.net>
-  Intel Corporation, 5200 N.E. Elam Young Parkway, Hillsboro, OR 97124-6497
+  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+  ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+  LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+  CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+  SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+  INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+  CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+  POSSIBILITY OF SUCH DAMAGE.
 
-*******************************************************************************/
+******************************************************************************/
+/*$FreeBSD$*/
 
 /*
  * 82540EM Gigabit Ethernet Controller
@@ -60,25 +67,25 @@ static s32  e1000_read_mac_addr_82540(struct e1000_hw *hw);
 static s32 e1000_init_phy_params_82540(struct e1000_hw *hw)
 {
 	struct e1000_phy_info *phy = &hw->phy;
-	s32 ret_val = E1000_SUCCESS;
+	s32 ret_val;
 
-	phy->addr                      = 1;
-	phy->autoneg_mask              = AUTONEG_ADVERTISE_SPEED_DEFAULT;
-	phy->reset_delay_us            = 10000;
-	phy->type                      = e1000_phy_m88;
+	phy->addr		= 1;
+	phy->autoneg_mask	= AUTONEG_ADVERTISE_SPEED_DEFAULT;
+	phy->reset_delay_us	= 10000;
+	phy->type		= e1000_phy_m88;
 
 	/* Function Pointers */
-	phy->ops.check_polarity        = e1000_check_polarity_m88;
-	phy->ops.commit                = e1000_phy_sw_reset_generic;
-	phy->ops.force_speed_duplex    = e1000_phy_force_speed_duplex_m88;
-	phy->ops.get_cable_length      = e1000_get_cable_length_m88;
-	phy->ops.get_cfg_done          = e1000_get_cfg_done_generic;
-	phy->ops.read_reg              = e1000_read_phy_reg_m88;
-	phy->ops.reset                 = e1000_phy_hw_reset_generic;
-	phy->ops.write_reg             = e1000_write_phy_reg_m88;
-	phy->ops.get_info              = e1000_get_phy_info_m88;
-	phy->ops.power_up              = e1000_power_up_phy_copper;
-	phy->ops.power_down            = e1000_power_down_phy_copper_82540;
+	phy->ops.check_polarity	= e1000_check_polarity_m88;
+	phy->ops.commit		= e1000_phy_sw_reset_generic;
+	phy->ops.force_speed_duplex = e1000_phy_force_speed_duplex_m88;
+	phy->ops.get_cable_length = e1000_get_cable_length_m88;
+	phy->ops.get_cfg_done	= e1000_get_cfg_done_generic;
+	phy->ops.read_reg	= e1000_read_phy_reg_m88;
+	phy->ops.reset		= e1000_phy_hw_reset_generic;
+	phy->ops.write_reg	= e1000_write_phy_reg_m88;
+	phy->ops.get_info	= e1000_get_phy_info_m88;
+	phy->ops.power_up	= e1000_power_up_phy_copper;
+	phy->ops.power_down	= e1000_power_down_phy_copper_82540;
 
 	ret_val = e1000_get_phy_id(hw);
 	if (ret_val)
@@ -93,7 +100,7 @@ static s32 e1000_init_phy_params_82540(struct e1000_hw *hw)
 	case e1000_82546_rev_3:
 		if (phy->id == M88E1011_I_PHY_ID)
 			break;
-		/* Fall Through */
+		/* FALLTHROUGH */
 	default:
 		ret_val = -E1000_ERR_PHY;
 		goto out;
@@ -115,32 +122,32 @@ static s32 e1000_init_nvm_params_82540(struct e1000_hw *hw)
 
 	DEBUGFUNC("e1000_init_nvm_params_82540");
 
-	nvm->type               = e1000_nvm_eeprom_microwire;
-	nvm->delay_usec         = 50;
-	nvm->opcode_bits        = 3;
+	nvm->type = e1000_nvm_eeprom_microwire;
+	nvm->delay_usec = 50;
+	nvm->opcode_bits = 3;
 	switch (nvm->override) {
 	case e1000_nvm_override_microwire_large:
-		nvm->address_bits       = 8;
-		nvm->word_size          = 256;
+		nvm->address_bits = 8;
+		nvm->word_size = 256;
 		break;
 	case e1000_nvm_override_microwire_small:
-		nvm->address_bits       = 6;
-		nvm->word_size          = 64;
+		nvm->address_bits = 6;
+		nvm->word_size = 64;
 		break;
 	default:
-		nvm->address_bits       = eecd & E1000_EECD_SIZE ? 8 : 6;
-		nvm->word_size          = eecd & E1000_EECD_SIZE ? 256 : 64;
+		nvm->address_bits = eecd & E1000_EECD_SIZE ? 8 : 6;
+		nvm->word_size = eecd & E1000_EECD_SIZE ? 256 : 64;
 		break;
 	}
 
 	/* Function Pointers */
-	nvm->ops.acquire            = e1000_acquire_nvm_generic;
-	nvm->ops.read               = e1000_read_nvm_microwire;
-	nvm->ops.release            = e1000_release_nvm_generic;
-	nvm->ops.update             = e1000_update_nvm_checksum_generic;
-	nvm->ops.valid_led_default  = e1000_valid_led_default_generic;
-	nvm->ops.validate           = e1000_validate_nvm_checksum_generic;
-	nvm->ops.write              = e1000_write_nvm_microwire;
+	nvm->ops.acquire	= e1000_acquire_nvm_generic;
+	nvm->ops.read		= e1000_read_nvm_microwire;
+	nvm->ops.release	= e1000_release_nvm_generic;
+	nvm->ops.update		= e1000_update_nvm_checksum_generic;
+	nvm->ops.valid_led_default = e1000_valid_led_default_generic;
+	nvm->ops.validate	= e1000_validate_nvm_checksum_generic;
+	nvm->ops.write		= e1000_write_nvm_microwire;
 
 	return E1000_SUCCESS;
 }
@@ -192,9 +199,9 @@ static s32 e1000_init_mac_params_82540(struct e1000_hw *hw)
 	mac->ops.setup_link = e1000_setup_link_generic;
 	/* physical interface setup */
 	mac->ops.setup_physical_interface =
-	        (hw->phy.media_type == e1000_media_type_copper)
-	                ? e1000_setup_copper_link_82540
-	                : e1000_setup_fiber_serdes_link_82540;
+		(hw->phy.media_type == e1000_media_type_copper)
+			? e1000_setup_copper_link_82540
+			: e1000_setup_fiber_serdes_link_82540;
 	/* check for link */
 	switch (hw->phy.media_type) {
 	case e1000_media_type_copper:
@@ -213,9 +220,9 @@ static s32 e1000_init_mac_params_82540(struct e1000_hw *hw)
 	}
 	/* link info */
 	mac->ops.get_link_up_info =
-	        (hw->phy.media_type == e1000_media_type_copper)
-	                ? e1000_get_speed_and_duplex_copper_generic
-	                : e1000_get_speed_and_duplex_fiber_serdes_generic;
+		(hw->phy.media_type == e1000_media_type_copper)
+			? e1000_get_speed_and_duplex_copper_generic
+			: e1000_get_speed_and_duplex_fiber_serdes_generic;
 	/* multicast address update */
 	mac->ops.update_mc_addr_list = e1000_update_mc_addr_list_generic;
 	/* writing VFTA */
@@ -323,7 +330,7 @@ static s32 e1000_init_hw_82540(struct e1000_hw *hw)
 {
 	struct e1000_mac_info *mac = &hw->mac;
 	u32 txdctl, ctrl_ext;
-	s32 ret_val = E1000_SUCCESS;
+	s32 ret_val;
 	u16 i;
 
 	DEBUGFUNC("e1000_init_hw_82540");
@@ -368,7 +375,7 @@ static s32 e1000_init_hw_82540(struct e1000_hw *hw)
 
 	txdctl = E1000_READ_REG(hw, E1000_TXDCTL(0));
 	txdctl = (txdctl & ~E1000_TXDCTL_WTHRESH) |
-	         E1000_TXDCTL_FULL_TX_DESC_WB;
+		  E1000_TXDCTL_FULL_TX_DESC_WB;
 	E1000_WRITE_REG(hw, E1000_TXDCTL(0), txdctl);
 
 	/*
@@ -405,7 +412,7 @@ static s32 e1000_init_hw_82540(struct e1000_hw *hw)
 static s32 e1000_setup_copper_link_82540(struct e1000_hw *hw)
 {
 	u32 ctrl;
-	s32 ret_val = E1000_SUCCESS;
+	s32 ret_val;
 	u16 data;
 
 	DEBUGFUNC("e1000_setup_copper_link_82540");
@@ -421,11 +428,13 @@ static s32 e1000_setup_copper_link_82540(struct e1000_hw *hw)
 
 	if (hw->mac.type == e1000_82545_rev_3 ||
 	    hw->mac.type == e1000_82546_rev_3) {
-		ret_val = hw->phy.ops.read_reg(hw, M88E1000_PHY_SPEC_CTRL, &data);
+		ret_val = hw->phy.ops.read_reg(hw, M88E1000_PHY_SPEC_CTRL,
+					       &data);
 		if (ret_val)
 			goto out;
 		data |= 0x00000008;
-		ret_val = hw->phy.ops.write_reg(hw, M88E1000_PHY_SPEC_CTRL, data);
+		ret_val = hw->phy.ops.write_reg(hw, M88E1000_PHY_SPEC_CTRL,
+						data);
 		if (ret_val)
 			goto out;
 	}
@@ -490,7 +499,7 @@ out:
  **/
 static s32 e1000_adjust_serdes_amplitude_82540(struct e1000_hw *hw)
 {
-	s32 ret_val = E1000_SUCCESS;
+	s32 ret_val;
 	u16 nvm_data;
 
 	DEBUGFUNC("e1000_adjust_serdes_amplitude_82540");
@@ -502,9 +511,8 @@ static s32 e1000_adjust_serdes_amplitude_82540(struct e1000_hw *hw)
 	if (nvm_data != NVM_RESERVED_WORD) {
 		/* Adjust serdes output amplitude only. */
 		nvm_data &= NVM_SERDES_AMPLITUDE_MASK;
-		ret_val = hw->phy.ops.write_reg(hw,
-		                             M88E1000_PHY_EXT_CTRL,
-		                             nvm_data);
+		ret_val = hw->phy.ops.write_reg(hw, M88E1000_PHY_EXT_CTRL,
+						nvm_data);
 		if (ret_val)
 			goto out;
 	}
@@ -521,7 +529,7 @@ out:
  **/
 static s32 e1000_set_vco_speed_82540(struct e1000_hw *hw)
 {
-	s32  ret_val = E1000_SUCCESS;
+	s32  ret_val;
 	u16 default_page = 0;
 	u16 phy_data;
 
@@ -529,9 +537,8 @@ static s32 e1000_set_vco_speed_82540(struct e1000_hw *hw)
 
 	/* Set PHY register 30, page 5, bit 8 to 0 */
 
-	ret_val = hw->phy.ops.read_reg(hw,
-	                            M88E1000_PHY_PAGE_SELECT,
-	                            &default_page);
+	ret_val = hw->phy.ops.read_reg(hw, M88E1000_PHY_PAGE_SELECT,
+				       &default_page);
 	if (ret_val)
 		goto out;
 
@@ -564,7 +571,7 @@ static s32 e1000_set_vco_speed_82540(struct e1000_hw *hw)
 		goto out;
 
 	ret_val = hw->phy.ops.write_reg(hw, M88E1000_PHY_PAGE_SELECT,
-	                              default_page);
+					default_page);
 
 out:
 	return ret_val;
@@ -581,7 +588,6 @@ out:
  **/
 static s32 e1000_set_phy_mode_82540(struct e1000_hw *hw)
 {
-	struct e1000_phy_info *phy = &hw->phy;
 	s32 ret_val = E1000_SUCCESS;
 	u16 nvm_data;
 
@@ -598,20 +604,18 @@ static s32 e1000_set_phy_mode_82540(struct e1000_hw *hw)
 
 	if ((nvm_data != NVM_RESERVED_WORD) && (nvm_data & NVM_PHY_CLASS_A)) {
 		ret_val = hw->phy.ops.write_reg(hw, M88E1000_PHY_PAGE_SELECT,
-		                              0x000B);
+						0x000B);
 		if (ret_val) {
 			ret_val = -E1000_ERR_PHY;
 			goto out;
 		}
-		ret_val = hw->phy.ops.write_reg(hw,
-		                              M88E1000_PHY_GEN_CONTROL,
-		                              0x8104);
+		ret_val = hw->phy.ops.write_reg(hw, M88E1000_PHY_GEN_CONTROL,
+						0x8104);
 		if (ret_val) {
 			ret_val = -E1000_ERR_PHY;
 			goto out;
 		}
 
-		phy->reset_disable = false;
 	}
 
 out:
