@@ -1379,9 +1379,14 @@ BOOL e1000func_clean_rx_irq(struct net_device *unit,
             /* Offer packet to every opener */
             while(opener != opener_tail)
             {
+                struct IOSana2Req *taken = NULL;
+
+                accepted = FALSE;
+
+                /* The opener queues reads from other CPUs: walk its port locked */
+                e1000func_lock_port(LIBBASE, &opener->read_port);
                 request = (APTR)opener->read_port.mp_MsgList.lh_Head;
                 request_tail = (APTR)&opener->read_port.mp_MsgList.lh_Tail;
-                accepted = FALSE;
 
                 /* Offer packet to each request until it's accepted */
                 while((request != request_tail) && !accepted)
@@ -1389,11 +1394,17 @@ BOOL e1000func_clean_rx_irq(struct net_device *unit,
                     if (request->ios2_PacketType == packet_type)
                     {
                         D(bug("[%s] %s: copy packet for opener ..\n", unit->e1ku_name, __func__);)
-                        CopyPacket(LIBBASE, unit, request, length, packet_type, frame);
+                        if (CopyPacket(LIBBASE, unit, request, length, packet_type, frame))
+                            taken = request;
                         accepted = TRUE;
                     }
-                    request = (struct IOSana2Req *)request->ios2_Req.io_Message.mn_Node.ln_Succ;
+                    else
+                        request = (struct IOSana2Req *)request->ios2_Req.io_Message.mn_Node.ln_Succ;
                 }
+                e1000func_unlock_port(LIBBASE, &opener->read_port);
+
+                if (taken)
+                    ReplyMsg((struct Message *)taken);
 
                 if(accepted)
                   is_orphan = FALSE;
@@ -1406,13 +1417,21 @@ BOOL e1000func_clean_rx_irq(struct net_device *unit,
             {
                 unit->e1ku_stats.UnknownTypesReceived++;
 
-                if(!IsMsgPortEmpty(unit->e1ku_request_ports[ADOPT_QUEUE]))
+                struct MsgPort *adopt = unit->e1ku_request_ports[ADOPT_QUEUE];
+                struct IOSana2Req *taken = NULL;
+
+                e1000func_lock_port(LIBBASE, adopt);
+                if(!IsMsgPortEmpty(adopt))
                 {
-                    CopyPacket(LIBBASE, unit,
-                        (APTR)unit->e1ku_request_ports[ADOPT_QUEUE]->
-                        mp_MsgList.lh_Head, length, packet_type, frame);
+                    request = (APTR)adopt->mp_MsgList.lh_Head;
+                    if (CopyPacket(LIBBASE, unit, request, length, packet_type, frame))
+                        taken = request;
                     D(bug("[%s] %s: packet copied to orphan queue\n", unit->e1ku_name, __func__);)
                 }
+                e1000func_unlock_port(LIBBASE, adopt);
+
+                if (taken)
+                    ReplyMsg((struct Message *)taken);
             }
         }
 

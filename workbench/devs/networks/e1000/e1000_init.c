@@ -169,6 +169,7 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR LIBBASE)
     }
 
     NEWLIST(&LIBBASE->e1kb_Units);
+    LIBBASE->e1kb_ExecLockBase = OpenResource("execlock.resource");
 #if defined(__OOP_NOLIBBASE__)
     if ((LIBBASE->e1kb_OOPBase = OpenLibrary("oop.library",0)) == NULL)
     {
@@ -486,16 +487,34 @@ AROS_LH1(LONG, abortio,
 
     if ((unit = (APTR)req->ios2_Req.io_Unit) != NULL)
     {
-        Disable();
-        if ((req->ios2_Req.io_Message.mn_Node.ln_Type == NT_MESSAGE) &&
-            (req->ios2_Req.io_Flags & IOF_QUICK) == 0)
+        struct MsgPort *port = e1000func_queue_port(unit, req);
+        struct Node *node;
+        BOOL aborted = FALSE;
+
+        /* Only a request still waiting on its port can be aborted. The
+         * interrupt handler and the Tx soft interrupt take requests off
+         * under the same lock, so a request they own is not found here. */
+        if (port && (req->ios2_Req.io_Flags & IOF_QUICK) == 0)
         {
-            Remove((struct Node *)req);
+            e1000func_lock_port(LIBBASE, port);
+            for (node = port->mp_MsgList.lh_Head; node->ln_Succ; node = node->ln_Succ)
+            {
+                if (node == &req->ios2_Req.io_Message.mn_Node)
+                {
+                    Remove(node);
+                    aborted = TRUE;
+                    break;
+                }
+            }
+            e1000func_unlock_port(LIBBASE, port);
+        }
+
+        if (aborted)
+        {
             req->ios2_Req.io_Error = IOERR_ABORTED;
             req->ios2_WireError = S2WERR_GENERIC_ERROR;
             ReplyMsg((struct Message *)req);
         }
-        Enable();
     }
 
     return 0;

@@ -37,6 +37,10 @@
 
 #include <proto/exec.h>
 #include <proto/oop.h>
+#if defined(__AROSEXEC_SMP__)
+#include <proto/execlock.h>
+#include <resources/execlock.h>
+#endif
 
 #include <oop/oop.h>
 
@@ -83,7 +87,43 @@ struct e1000Base
 #endif
     ULONG                   e1kb_UnitCount;
     struct List             e1kb_Units;
+    APTR                    e1kb_ExecLockBase;  /* execlock.resource, for the port locks */
 };
+
+/*
+ * The request ports are filled by PutMsg() in the caller's context and
+ * emptied by the interrupt handler and the Tx soft interrupt. On SMP builds
+ * Disable() only stops interrupts on the calling CPU, so a Remove() under
+ * Disable() alone races a PutMsg() on another CPU and corrupts the list.
+ * Take the port's own spinlock as well, the one PutMsg()/GetMsg() use.
+ */
+static inline void e1000func_lock_port(struct e1000Base *base, struct MsgPort *port)
+{
+    Disable();
+#if defined(__AROSEXEC_SMP__)
+    if (base->e1kb_ExecLockBase)
+    {
+        APTR ExecLockBase = base->e1kb_ExecLockBase;
+        ObtainLock(&port->mp_SpinLock, SPINLOCK_MODE_WRITE, 0);
+    }
+#else
+    (void)base; (void)port;
+#endif
+}
+
+static inline void e1000func_unlock_port(struct e1000Base *base, struct MsgPort *port)
+{
+#if defined(__AROSEXEC_SMP__)
+    if (base->e1kb_ExecLockBase)
+    {
+        APTR ExecLockBase = base->e1kb_ExecLockBase;
+        ReleaseLock(&port->mp_SpinLock, 0);
+    }
+#else
+    (void)base; (void)port;
+#endif
+    Enable();
+}
 
 struct e1000Startup
 {

@@ -56,15 +56,18 @@
  */
 VOID ReportEvents(struct e1000Base *e1KBase, struct e1000Unit *unit, ULONG events)
 {
+    struct MsgPort *port = unit->e1ku_request_ports[EVENT_QUEUE];
     struct IOSana2Req *request, *tail, *next_request;
-    struct List *list;
+    struct List *list, matched;
 
-    list = &unit->e1ku_request_ports[EVENT_QUEUE]->mp_MsgList;
+    NEWLIST(&matched);
+    list = &port->mp_MsgList;
+
+    /* Go through list of event listeners. Take the ones waiting for one of
+     * these events off the port, and reply them once the port is unlocked */
+    e1000func_lock_port(e1KBase, port);
     next_request = (APTR)list->lh_Head;
     tail = (APTR)&list->lh_Tail;
-
-    /* Go through list of event listeners. If send messages to receivers if event found */
-    Disable();
     while(next_request != tail)
     {
         request = next_request;
@@ -74,10 +77,13 @@ VOID ReportEvents(struct e1000Base *e1KBase, struct e1000Unit *unit, ULONG event
         {
             request->ios2_WireError = events;
             Remove((APTR)request);
-            ReplyMsg((APTR)request);
+            AddTail(&matched, (APTR)request);
         }
     }
-    Enable();
+    e1000func_unlock_port(e1KBase, port);
+
+    while ((request = (APTR)RemHead(&matched)) != NULL)
+        ReplyMsg((APTR)request);
 
     return;
 }
@@ -194,8 +200,11 @@ static AROS_INTH1(e1000func_TX_Int, struct e1000Unit *,  unit)
 
     while(proceed && (!IsMsgPortEmpty(port)))
     {
+        /* GetMsg() takes the port lock: the request is ours from here on */
+        if ((request = (APTR)GetMsg(port)) == NULL)
+            break;
+
         error = 0;
-        request = (APTR)port->mp_MsgList.lh_Head;
         data_size = packet_size = request->ios2_DataLength;
 
         opener = (APTR)request->ios2_BufferManagement;
@@ -280,9 +289,6 @@ static AROS_INTH1(e1000func_TX_Int, struct e1000Unit *,  unit)
         /* Reply packet */
         request->ios2_Req.io_Error = error;
         request->ios2_WireError = wire_error;
-        Disable();
-        Remove((APTR)request);
-        Enable();
         ReplyMsg((APTR)request);
 
         /* Update statistics */
@@ -396,7 +402,11 @@ AROS_INTH1(e1000func_IntHandler,struct e1000Unit *,unit)
    AROS_INTFUNC_EXIT
 }
 
-VOID CopyPacket(struct e1000Base *e1KBase, struct e1000Unit *unit, 
+/*
+ * Called with the request's port locked. Returns TRUE when the request has
+ * been taken off its port: the caller replies it after unlocking the port.
+ */
+BOOL CopyPacket(struct e1000Base *e1KBase, struct e1000Unit *unit, 
     struct IOSana2Req *request, UWORD packet_size, UWORD packet_type,
     struct eth_frame *buffer)
 {
@@ -468,11 +478,27 @@ VOID CopyPacket(struct e1000Base *e1KBase, struct e1000Unit *unit,
         {
             D(bug("SUCCESS!!\n"));
         }
-        Disable();
         Remove((APTR)request);
-        Enable();
-        ReplyMsg((APTR)request);
-        D(bug("[%s] %s: opener notified.\n", unit->e1ku_name, __func__));
+        return TRUE;
+    }
+
+    return FALSE;
+}
+
+/* The port a request waits on, as queued by the command handlers */
+struct MsgPort *e1000func_queue_port(struct e1000Unit *unit, struct IOSana2Req *request)
+{
+    struct Opener *opener = request->ios2_BufferManagement;
+
+    switch (request->ios2_Req.io_Command)
+    {
+    case CMD_READ:          return opener ? &opener->read_port : NULL;
+    case CMD_WRITE:
+    case S2_BROADCAST:
+    case S2_MULTICAST:      return unit->e1ku_request_ports[WRITE_QUEUE];
+    case S2_ONEVENT:        return unit->e1ku_request_ports[EVENT_QUEUE];
+    case S2_READORPHAN:     return unit->e1ku_request_ports[ADOPT_QUEUE];
+    default:                return unit->e1ku_input_port;
     }
 }
 
