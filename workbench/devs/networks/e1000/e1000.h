@@ -327,6 +327,11 @@ struct e1000_tx_ring {
 
 	UWORD tdh;
 	UWORD tdt;
+	/* Size of each preallocated per-descriptor Tx buffer. The buffers are
+	 * allocated once in e1000func_setup_tx_resources (task context) and
+	 * reused for the ring's lifetime: exec AllocMem()/FreeMem() must never
+	 * run in the Tx soft interrupt or the hardware interrupt handler. */
+	ULONG buf_size;
 };
 
 struct e1000_rx_ring {
