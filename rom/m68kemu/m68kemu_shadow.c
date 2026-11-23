@@ -29,7 +29,25 @@ extern void *shadow_lookup(struct M68KEmuContext *ctx, ULONG m68k_addr);
 extern void  shadow_remove(struct M68KEmuContext *ctx, ULONG m68k_addr);
 
 /* ── Generated layout tables (297 structs, 3171 fields) ── */
+/*
+ * An SMP exec keeps the running task, the quantum and the nest counts per
+ * CPU. ExecBase has placeholders of the same size and position there.
+ */
+#if defined(__AROSEXEC_SMP__)
+#define ThisTask    SMPPrivate1
+#define Quantum     SMPPrivate2
+#define Elapsed     SMPPrivate3
+#define IDNestCnt   SMPPrivate4
+#define TDNestCnt   SMPPrivate5
+#endif
 #include "m68kemu_shadow_layouts.h"
+#if defined(__AROSEXEC_SMP__)
+#undef ThisTask
+#undef Quantum
+#undef Elapsed
+#undef IDNestCnt
+#undef TDNestCnt
+#endif
 
 /* ── Engine ── */
 
