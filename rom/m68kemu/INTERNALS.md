@@ -173,7 +173,7 @@ MemHeaders' chunk lists, so a program that walks `MemList` sees the real state;
 | IORequests | 64 | `M68KEMU_MAX_IOREQS` |
 | BOOPSI objects / classes / lists | 512 / 64 / 64 | `M68KEMU_MAX_BOBJS`, `M68KEMU_MAX_BCLASSES`, `M68KEMU_MAX_BLISTS` |
 | Class libraries | 32 | `M68KEMU_MAX_CLIBS` |
-| Classes written in 68k code | 32 | `ctx->m68kclasses` |
+| Classes written in 68k code | 1024 (32 blocks of 32, the first in the context) | `M68KEMU_CLASS_BLOCK`, `M68KEMU_CLASS_BLOCKS` |
 | 68k libraries loaded from disk | 16 | `ctx->m68klibs` |
 | Public 68k semaphores | 16 | `ctx->pubsems` |
 | Native processes started from seglists | 8 | `ctx->native_procs` |

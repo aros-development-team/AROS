@@ -216,3 +216,15 @@ test-execbase-private-sanitize:
 	$(PYTHON) "$(TEST_DIR)/regressions/run_execbase_private.py" --cc "$(CC)" --sanitize $(EXECBASE_PRIVATE_ARGS)
 
 .PHONY: test-execbase-private test-execbase-private-sanitize
+
+# The records of the BOOPSI classes a 68k program makes, across their first block
+CLASS_STORAGE_ARGS ?=
+test: test-class-storage
+
+test-class-storage:
+	$(PYTHON) "$(TEST_DIR)/regressions/run_class_storage.py" --cxx "$(CXX)" $(CLASS_STORAGE_ARGS)
+
+test-class-storage-sanitize:
+	$(PYTHON) "$(TEST_DIR)/regressions/run_class_storage.py" --cxx "$(CXX)" --sanitize $(CLASS_STORAGE_ARGS)
+
+.PHONY: test-class-storage test-class-storage-sanitize

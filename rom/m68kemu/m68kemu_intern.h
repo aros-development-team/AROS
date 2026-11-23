@@ -204,8 +204,14 @@ struct M68KEmuContext
     struct Message *wb_startup; /* the Workbench startup message, until the program replies it */
     BOOL    wb_queued;          /* ... queued at the program's port */
     ULONG   wb_m68k, wb_args, wb_argsize;   /* ... in the program's layout, with its arguments */
-    struct M68KClassRec { struct M68KEmuContext *ctx; ULONG m68k; struct IClass *native; ULONG body; char *id; } m68kclasses[32];
-    UWORD   num_m68kclasses;    /* BOOPSI classes the program made */
+    /* BOOPSI classes the program made: the first block of records here, the
+       others made as it makes more and never moved, since each native class
+       keeps the address of its record in its dispatcher hook */
+    #define M68KEMU_CLASS_BLOCK  32
+    #define M68KEMU_CLASS_BLOCKS 32
+    struct M68KClassRec { struct M68KEmuContext *ctx; ULONG m68k; struct IClass *native; ULONG body; char *id; } m68kclasses[M68KEMU_CLASS_BLOCK];
+    struct M68KClassRec *m68kclass_more[M68KEMU_CLASS_BLOCKS - 1];
+    UWORD   num_m68kclasses;
     struct { APTR native; ULONG m68k; } tagorigin[8];   /* native copies of the program's tag lists in use */
     UWORD   num_tagorigin;
     struct { APTR font; ULONG name; } fontnames[16];   /* 68k copies of font names */
