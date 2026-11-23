@@ -32,8 +32,7 @@
     RESULT
 
     NOTES
-        Initialization is architecture-specific; the generic fallback
-        does not modify the lock.
+        The lock is left unlocked, with no owner.
 
     EXAMPLE
 
@@ -48,7 +47,9 @@
 {
     AROS_LIBFUNC_INIT
 
-    /* The implementation of this function is architecture-specific */
+    lock->lock = SPINLOCK_UNLOCKED;
+    lock->s_Owner = NULL;
+
     return;
 
     AROS_LIBFUNC_EXIT

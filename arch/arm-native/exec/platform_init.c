@@ -105,155 +105,51 @@ int Exec_ARMCPUInit(struct ExecBase *SysBase)
 
 #if defined(__AROSEXEC_SMP__)
 /*
- * NOTE: no TS_SPIN / spinlock-failhook machinery here. arm-native's
- * KrnSpinLock never invokes its failhook parameter, so tasks are never
- * parked in TS_SPIN on this port - spinners just spin. all-pc has the
- * wired-up version (its KrnSpinLock calls the hook).
+ * The hook a caller can pass to KrnSpinLock() for a lock it may have to
+ * wait long for (as on all-pc): the scheduler is told that the task only
+ * spins, and the task gives up the CPU until it is scheduled again.
  */
+struct Hook Exec_TaskSpinLockFailHook;
 
-/*
- * Move task from its current state's list to the list matching newState.
- * Called by krnSysCallReschedTask from rom/exec (signal.c, newaddtask.c,
- * remtask.c, service.c). On arm-native this is a direct function call,
- * not a syscall - the work is just list mutation under spinlocks.
- *
- * Callers MUST NOT hold tc_SpinLock - we take it ourselves so the
- * (state-read -> list-lock-pick -> list-mutate -> state-write) sequence
- * is atomic from any other observer that takes tc_SpinLock. Without this
- * a concurrent migrator could see a stale tc_State, acquire the wrong
- * source list-lock, and Remove from a list the task is not on.
- *
- * Lock order: tc_SpinLock outer, list-locks inner. Matches wait.c's
- * TS_WAIT migration and the exec_TaskRemove / exec_TaskEnqueue helpers.
- */
-void Exec_ReschedTask(struct Task *task, ULONG newState)
+AROS_UFH3(void, Exec_TaskSpinLockFailFunc,
+    AROS_UFHA(struct Hook *, h, A0),
+    AROS_UFHA(spinlock_t *, spinLock, A1),
+    AROS_UFHA(void *, unused, A2))
 {
-    spinlock_t *fromLock = NULL;
-    /*
-     * Raw IRQ+FIQ off for the whole function. tc_SpinLock is held across it
-     * (plus fromLock and the enqueue lists); an IPI (FIQ) or the IRQ-exit
-     * dispatcher re-entering these on this CPU self-deadlocks. We use raw
-     * masking, not Disable()/Enable(): this runs from the FIQ/IPI handler
-     * too, where Disable()'s KrnCli svc would nest an exception on the
-     * FIQ-handler SVC stack. See EXEC_IRQFIQ_DISABLE in exec_platform.h.
-     */
-    unsigned int __if = EXEC_IRQFIQ_DISABLE();
+    AROS_USERFUNC_INIT
 
-    Kernel_52_KrnSpinLock(&task->tc_SpinLock, NULL, SPINLOCK_MODE_WRITE, NULL);
+    struct Task *spinTask = GET_THIS_TASK;
+    struct IntETask *thisET;
 
-    if (newState == TS_READY)
+    if (spinTask)
     {
-        /*
-         * Wake-up semantics: only migrate a task that is actually parked
-         * (TS_WAIT) or being added (TS_INVALID from TaskLaunch).
-         * Callers check the state under tc_SpinLock but must drop it
-         * before calling us, so by now another CPU may already have won
-         * the wake race and made the task READY - or dispatched it
-         * (TS_RUN), or torn it down (terminal states). Migrating in any
-         * of those cases would double-dispatch a running task or
-         * resurrect a corpse. The signal bits are already set, so a
-         * running/ready task will see them - just do nothing.
-         */
-        switch (task->tc_State)
+        thisET = GetIntETask(spinTask);
+        if (thisET)
         {
-            case TS_WAIT:
-            case TS_INVALID:
-            case TS_ADDED:
-                break;
-            default:
-                Kernel_53_KrnSpinUnLock(&task->tc_SpinLock, NULL);
-                EXEC_IRQFIQ_RESTORE(__if);
-                return;
+            /* tell the scheduler that the task is waiting on a spinlock */
+            spinTask->tc_State = TS_SPIN;
+
+            thisET->iet_SpinLock = spinLock;
         }
     }
 
-    switch (task->tc_State)
-    {
-        case TS_RUN:
-            fromLock = &PrivExecBase(SysBase)->TaskRunningSpinLock;
-            break;
-        case TS_READY:
-            fromLock = &PrivExecBase(SysBase)->TaskReadySpinLock;
-            break;
-        case TS_WAIT:
-            fromLock = &PrivExecBase(SysBase)->TaskWaitSpinLock;
-            break;
-        default:
-            /* TS_INVALID, TS_ADDED, TS_REMOVED, TS_TOMBSTONED, TS_EXCEPT:
-             * task is not on a standard scheduler list. Caller (Signal)
-             * also pre-filters out terminal states under tc_SpinLock so
-             * we should not normally reach here with such a state. */
-            break;
-    }
+    /* schedule us away for now .. */
+    Reschedule();
 
-    if (fromLock)
-    {
-        /* IRQ+FIQ already masked for the whole function (see top). */
-        Kernel_52_KrnSpinLock(fromLock, NULL, SPINLOCK_MODE_WRITE, NULL);
-        Remove(&task->tc_Node);
-        Kernel_53_KrnSpinUnLock(fromLock, NULL);
-    }
-
-    task->tc_State = newState;
-
-    switch (newState)
-    {
-        case TS_READY:
-            exec_TaskEnqueueReady(task);
-            break;
-        case TS_WAIT:
-            exec_TaskEnqueueWait(task);
-            break;
-        default:
-            /* TS_REMOVED, TS_TOMBSTONED: no enqueue. */
-            break;
-    }
-
-    Kernel_53_KrnSpinUnLock(&task->tc_SpinLock, NULL);
-    EXEC_IRQFIQ_RESTORE(__if);
-}
-
-/*
- * krnSysCallSwitch() for RemTask's self-removal path. The caller (the
- * task removing itself) has already set TS_REMOVED. Detach it from the
- * TaskRunning list under the list lock and mark it TS_TOMBSTONED so the
- * Exec service task reclaims it, then return - unlike KrnSwitch() this
- * does NOT dispatch, so RemTask resumes on the same context to post
- * itself to the service port and only gives up the CPU at its final
- * KrnDispatch().
- */
-void Exec_SuicideSwitch(void)
-{
-    struct Task *task = GET_THIS_TASK;
-    unsigned int __fiq = EXEC_FIQ_DISABLE();
-
-    Disable();
-    /*
-     * tc_SpinLock outer, list lock inner (the usual order): the state
-     * write must be atomic with the list removal for observers that
-     * check tc_State under tc_SpinLock (Signal's terminal-state check,
-     * Exec_ReschedTask's wake filter).
-     */
-    Kernel_52_KrnSpinLock(&task->tc_SpinLock, NULL, SPINLOCK_MODE_WRITE, NULL);
-    Kernel_52_KrnSpinLock(&PrivExecBase(SysBase)->TaskRunningSpinLock, NULL,
-        SPINLOCK_MODE_WRITE, NULL);
-    Remove(&task->tc_Node);
-    Kernel_53_KrnSpinUnLock(&PrivExecBase(SysBase)->TaskRunningSpinLock, NULL);
-    task->tc_State = TS_TOMBSTONED;
-    Kernel_53_KrnSpinUnLock(&task->tc_SpinLock, NULL);
-    Enable();
-    EXEC_FIQ_RESTORE(__fiq);
+    AROS_USERFUNC_EXIT
 }
 
 int Exec_ARMCPUSMPInit(struct ExecBase *SysBase)
 {
+    /* set up the task spinning hook */
+    Exec_TaskSpinLockFailHook.h_Entry = (HOOKFUNC)Exec_TaskSpinLockFailFunc;
+
     /*
-     * Turn on CPU affinity routing in arch-neutral exec. Without this,
-     * signal.c's cross-CPU paths (KrnScheduleCPU on TS_RUN, the early
-     * core_DoCallIPI tunnel for non-affine CPUs) never fire and remote
-     * task wakes silently fail. The cpumask helpers (alloc/get/in/
-     * clear/free) and core_DoCallIPI must already be functional - this
-     * flag is the gate that exposes them to signal.c and newaddtask.c.
+     * Turn on CPU affinity routing in arch-neutral exec. Without this
+     * flag Signal() never sends a signal to the CPU that owns the task
+     * (core_DoCallIPI), and a task on another CPU is not woken. The
+     * cpumask helpers (alloc/get/in/clear/free) and core_DoCallIPI must
+     * already work when it is set.
      */
     PrivExecBase(SysBase)->IntFlags |= EXECF_CPUAffinity;
 

@@ -60,4 +60,19 @@
     "\tebreak\n" \
     : : [swi_no] "I" (n) : "a7", "memory");
 
+/* The same with two arguments, in a0 and a1 */
+#define krnSysCall2(n, arg1, arg2) \
+    do { \
+        register unsigned long __sc_a0 asm("a0") = (unsigned long)(arg1); \
+        register unsigned long __sc_a1 asm("a1") = (unsigned long)(arg2); \
+        asm volatile ( \
+        "\taddi a7, zero, %[swi_no]\n" \
+        "\tebreak\n" \
+        : "+r"(__sc_a0), "+r"(__sc_a1) : [swi_no] "I" (n) : "a7", "memory"); \
+    } while (0)
+
+/* Where the trap handler finds them (rom/kernel/kernel_intr.c) */
+#define KRNSYSCALL_ARG1(regs)   ((regs)->a0)
+#define KRNSYSCALL_ARG2(regs)   ((regs)->a1)
+
 #endif /* KERNEL_CPU_RISCV64_H_ */

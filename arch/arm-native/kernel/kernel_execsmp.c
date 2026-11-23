@@ -130,7 +130,13 @@ struct Task *cpu_InitBootStrap(struct ExecBase *SysBase)
 
 void cpu_BootStrap(struct Task *bstask, struct ExecBase *SysBase)
 {
+    /* The run list locks are taken with interrupts off, everywhere.
+     * This runs in SVC mode (cpu_Register), with the FIQ already open. */
+    unsigned int __if = EXEC_IRQFIQ_DISABLE();
+
     bstask->tc_State = TS_RUN;
     SET_THIS_TASK(bstask);
+
+    EXEC_IRQFIQ_RESTORE(__if);
 }
 #endif

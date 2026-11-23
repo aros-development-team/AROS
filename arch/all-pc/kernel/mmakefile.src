@@ -35,11 +35,6 @@ FUNCS	 := \
              freecpumask \
              getcpumask \
              cpuinmask \
-             spininit \
-             spinislocked \
-             spintrylock \
-             spinlock \
-             spinunlock \
              schedulecpu \
              getsystemattr \
              getcpuattr \

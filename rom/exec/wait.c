@@ -66,15 +66,23 @@
     ULONG rcvd;
 
     D(bug("[Exec] Wait(%08lX)\n", signalSet);)
-    /* Disable() also masks the FIQ that would re-enter tc_SpinLock. */
     Disable();
-#if defined(__AROSEXEC_SMP__)
-    EXEC_SPINLOCK_LOCK(&thisTask->tc_SpinLock, NULL, SPINLOCK_MODE_WRITE);
-#endif
 
     /* If at least one of the signals is already set do not wait. */
-    while (!(thisTask->tc_SigRecvd & signalSet))
+    for (;;)
     {
+#if defined(__AROSEXEC_SMP__)
+        /*
+         * A Signal() on another CPU sets its bits and then looks at our
+         * state; we were made TS_RUN and now look at the bits. One of the
+         * two must see the other's write, which takes a full barrier on
+         * both sides.
+         */
+        __atomic_thread_fence(__ATOMIC_SEQ_CST);
+#endif
+        if (thisTask->tc_SigRecvd & signalSet)
+            break;
+
         /* Set the wait signal mask */
         thisTask->tc_SigWait = signalSet;
 
@@ -89,25 +97,20 @@
         D(bug("[Exec] Wait: Task TDNestCount = %d\n", thisTask->tc_TDNestCnt);)
         TDNESTCOUNT_SET(-1);
 
-        thisTask->tc_State = TS_WAIT;
-
 #if defined(__AROSEXEC_SMP__)
         /*
-         * Move lists and set the state under tc_SpinLock, so an observer
-         * always sees TS_WAIT together with being on TaskWait.
+         * The scheduler moves us. We stay TS_RUN until it has: the switch
+         * sets TS_WAIT as it puts us on TaskWait, under that list's lock,
+         * so no other CPU ever sees a waiting task that is not on the list.
+         * Until then every other CPU sees a task running here, and sends
+         * its Signal() to this CPU, where it is taken after the switch.
          */
-        exec_TaskRemoveRunning(thisTask);
-        exec_TaskEnqueueWait(thisTask);
+        FLAG_SCHEDPARK_SET;
 #else
+        thisTask->tc_State = TS_WAIT;
         /* Move current task to the waiting list. */
         Enqueue(&SysBase->TaskWait, &thisTask->tc_Node);
 #endif
-
-        /*
-         * Keep tc_SpinLock held across KrnSwitch; cpu_Switch drops it
-         * once the context is saved. Releasing it here would let another
-         * core wake and dispatch the task with a stale register frame.
-         */
 
         /* And switch to the next ready task. */
         KrnSwitch();
@@ -119,9 +122,6 @@
         */
         D(bug("[Exec] Wait: Awoken...\n");)
 
-#if defined(__AROSEXEC_SMP__)
-        EXEC_SPINLOCK_LOCK(&thisTask->tc_SpinLock, NULL, SPINLOCK_MODE_WRITE);
-#endif
         /* Restore TDNestCnt. */
         TDNESTCOUNT_SET(thisTask->tc_TDNestCnt);
     }
@@ -131,7 +131,6 @@
     /* And clear them. */
 #if defined(__AROSEXEC_SMP__)
     __AROS_ATOMIC_AND_L(thisTask->tc_SigRecvd, ~signalSet);
-    EXEC_SPINLOCK_UNLOCK(&thisTask->tc_SpinLock);
 #else
     thisTask->tc_SigRecvd &= ~signalSet;
 #endif

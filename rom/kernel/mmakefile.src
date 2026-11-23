@@ -63,7 +63,7 @@ KERNEL_ALLOCATOR_FILES ?= tlsf
 
 FILES := kernel_init cpu_init kernel_debug kernel_panic                                         \
 	     kernel_cpu kernel_intr kernel_interruptcontroller                                      \
-	     kernel_memory kernel_romtags kernel_scheduler kernel_globals $(KERNEL_ALLOCATOR_FILES)
+	     kernel_memory kernel_romtags kernel_scheduler kernel_globals kernel_ipicall $(KERNEL_ALLOCATOR_FILES)
 
 MMU_FILES := kernel_mm
 # You can replace this with own algorithm

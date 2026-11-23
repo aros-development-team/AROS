@@ -62,10 +62,6 @@ struct PlatformData
     struct APICData     *kb_APIC;
     struct IOAPICData   *kb_IOAPIC;
     struct Interrupt    kb_APICResetHandler;
-    struct List         kb_FreeIPIHooks;
-    struct List         kb_BusyIPIHooks;
-    spinlock_t          kb_FreeIPIHooksLock;
-    spinlock_t          kb_BusyIPIHooksLock;
 
     struct CPUFreqPolicy kb_CPUFreqPolicy;
     cpufreq_setter_t    kb_CPUFreqSet;

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Examine and/or modify the signals which cause an exception.
 */
@@ -12,6 +12,7 @@
 
 #include "exec_intern.h"
 #if defined(__AROSEXEC_SMP__)
+#include <aros/atomic.h>
 #include "etask.h"
 #include "exec_locks.h"
 #endif
@@ -58,12 +59,13 @@
 
     /* Get pointer to current task */
     struct Task *thisTask = GET_THIS_TASK;
+    BOOL resched = FALSE;
     ULONG old;
 
-    /* Disable() also masks the FIQ that would re-enter tc_SpinLock. */
+    /* Protect mask of sent signals and task lists */
     Disable();
 #if defined(__AROSEXEC_SMP__)
-    EXEC_SPINLOCK_LOCK(&thisTask->tc_SpinLock, NULL, SPINLOCK_MODE_WRITE);
+    EXEC_LOCK_WRITE(&IntETask(thisTask->tc_UnionETask.tc_ETask)->iet_TaskLock);
 #endif
 
     /* Get returncode */
@@ -76,14 +78,21 @@
     if (thisTask->tc_SigExcept & thisTask->tc_SigRecvd)
     {
         /* Yes. Set the exception flag. */
+#if defined(__AROSEXEC_SMP__)
+        __AROS_ATOMIC_OR_B(thisTask->tc_Flags, TF_EXCEPT);
+#else
         thisTask->tc_Flags |= TF_EXCEPT;
-
-        /* And order rescheduling */
-        Reschedule();
+#endif
+        resched = TRUE;
     }
 #if defined(__AROSEXEC_SMP__)
-    EXEC_SPINLOCK_UNLOCK(&thisTask->tc_SpinLock);
+    EXEC_UNLOCK(&IntETask(thisTask->tc_UnionETask.tc_ETask)->iet_TaskLock);
 #endif
+
+    /* And order rescheduling, with no lock held */
+    if (resched)
+        Reschedule();
+
     Enable();
 
     return old;

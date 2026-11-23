@@ -60,6 +60,21 @@ typedef uint8_t cpumode_t;
 #undef krnSysCall
 #define krnSysCall(n) asm volatile ("svc %[svc_no]\n\t" : : [svc_no] "I" (n) : "x30");
 
+/* The same with two arguments, in x0 and x1 */
+#define krnSysCall2(n, arg1, arg2) \
+    do { \
+        unsigned long __sc_arg1 = (unsigned long)(arg1); \
+        unsigned long __sc_arg2 = (unsigned long)(arg2); \
+        register unsigned long __sc_x0 asm("x0") = __sc_arg1; \
+        register unsigned long __sc_x1 asm("x1") = __sc_arg2; \
+        asm volatile ("svc %[svc_no]\n\t" \
+            : "+r"(__sc_x0), "+r"(__sc_x1) : [svc_no] "I" (n) : "x30", "memory"); \
+    } while (0)
+
+/* Where the trap handler finds them (rom/kernel/kernel_intr.c) */
+#define KRNSYSCALL_ARG1(regs)   ((regs)->x[0])
+#define KRNSYSCALL_ARG2(regs)   ((regs)->x[1])
+
 void cpu_DumpRegs(regs_t *regs);
 
 /* Logical id from TLS, set by the boot CPU: MPIDR_EL1 is unreliable on

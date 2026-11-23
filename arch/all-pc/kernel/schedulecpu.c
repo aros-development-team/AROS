@@ -54,7 +54,7 @@
 {
     AROS_LIBFUNC_INIT
 
-    core_DoIPI(IPI_RESCHEDULE, cpu_mask, KernelBase);
+    core_RescheduleCPUs(cpu_mask, KernelBase);
 
     AROS_LIBFUNC_EXIT
 }

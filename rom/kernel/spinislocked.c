@@ -46,8 +46,7 @@
 {
     AROS_LIBFUNC_INIT
 
-    /* The implementation of this function is architecture-specific */
-    return 0;
+    return (lock->lock != SPINLOCK_UNLOCKED) ? 1 : 0;
 
     AROS_LIBFUNC_EXIT
 }

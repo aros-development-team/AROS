@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 
 #ifndef __KERNEL_IPI_H_
@@ -31,20 +31,15 @@ int core_IPIHandle(struct ExceptionContext *regs, void *data1, struct KernelBase
 void core_DoIPI(uint8_t ipi_number, void *cpu_mask, struct KernelBase *KernelBase);
 int core_DoCallIPI(struct Hook *hook, void *cpu_mask, int async, int nargs, IPTR *args, APTR _KB);
 
-#define IPI_CALL_HOOK_MAX_ARGS  5
+/* Drop the queued asynchronous calls of hookEntry whose second argument is
+   matchArg, and wait out one that is running. Exec uses it when a task is
+   removed, for the Signal() calls still on their way to it. */
+void core_CancelCallIPIs(APTR hookEntry, IPTR matchArg);
 
-/*
-    IPI Call hook
-*/
-struct IPIHook
-{
-    struct Hook     ih_Hook;
-    IPTR            ih_Args[IPI_CALL_HOOK_MAX_ARGS];
-    uint32_t *      ih_CPUDone;
-    uint32_t *      ih_CPURequested;
-    int             ih_Async;
-    spinlock_t      ih_Lock;
-    spinlock_t      ih_SyncLock;
-};
+/* Ask the CPUs in the mask to reschedule; a pending request is not sent twice */
+void core_RescheduleCPUs(void *cpu_mask, struct KernelBase *KernelBase);
+
+/* struct IPIHook, the call queues and the request bits are shared by all ports */
+#include <kernel_ipicall.h>
 
 #endif /* __KERNEL_IPI_H_ */

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Examine and/or modify the signals of a task.
 */
@@ -59,22 +59,28 @@
 
     if (thisTask)
     {
-        /* Disable() also masks the FIQ that would re-enter tc_SpinLock. */
+        /* Protect the signal mask against access by other tasks. */
         Disable();
-#if defined(__AROSEXEC_SMP__)
-        EXEC_SPINLOCK_LOCK(&thisTask->tc_SpinLock, NULL, SPINLOCK_MODE_WRITE);
-#endif
 
         /* Get address */
         sig = &thisTask->tc_SigRecvd;
 
         /* Change only the bits in 'mask' */
+#if defined(__AROSEXEC_SMP__)
+        /*
+         * Another CPU can set bits in the word at any time, with an atomic
+         * OR in Signal(). Exchange the whole word, or one of them is lost.
+         */
+        old = __atomic_load_n(sig, __ATOMIC_RELAXED);
+        while (!__atomic_compare_exchange_n(sig, &old,
+                    (old & ~signalSet) | (newSignals & signalSet),
+                    FALSE, __ATOMIC_SEQ_CST, __ATOMIC_RELAXED))
+            ;
+#else
         old = *sig;
         *sig = (old & ~signalSet) | (newSignals & signalSet);
-
-#if defined(__AROSEXEC_SMP__)
-        EXEC_SPINLOCK_UNLOCK(&thisTask->tc_SpinLock);
 #endif
+
         Enable();
     }
 

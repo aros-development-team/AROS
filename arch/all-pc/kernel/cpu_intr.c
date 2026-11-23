@@ -483,6 +483,19 @@ SAVE_XMM_INTO_AREA(localarea)
         )
         if (pdata)
             pdata->kb_PDFlags &= ~PLATFORMF_INEXCPT;
+
+        /*
+         * The LAPIC timer and IPIs are the only interrupts an AP takes, so
+         * like a device IRQ they take a pending task switch on the way back
+         * to user mode; the heartbeat only sets the flag. cpu_Trap() has
+         * sent the EOI.
+         */
+        if ((exception_number >= X86_CPU_EXCEPT_COUNT) && (exception_number < APIC_EXCEPT_SYSCALL) &&
+            (SysBase != NULL) && INTR_FROMUSERMODE)
+        {
+            __asm__ __volatile__("cld;");
+            core_ExitInterrupt(regs);
+        }
     }
     else
     {
@@ -544,6 +557,9 @@ SAVE_XMM_INTO_AREA(localarea)
     DIRQ(
         bug("[Kernel]" DEBUGCOLOR_SET " %s(%u): calling LeaveInterrupt...(%08X)" DEBUGCOLOR_RESET "\n", __func__, int_number, regs->Flags);
     )
+
+    /* core_ExitInterrupt() may return with interrupts on (SoftIntDispatch() ends in KrnSti()) */
+    __asm__ __volatile__("cli");
 
 #if (__WORDSIZE==64)
     /* Restore first four XMM registers. They could have been modified by any interrupt handler.

@@ -160,7 +160,7 @@ void handle_syscall(void *regs)
         D(bug("[Kernel] ## SWI : ILLEGAL ACCESS!\n"));
         return;
     }
-    if (swi_no <= SC_GETCPUNUMBER || swi_no == SC_REBOOT)
+    if (swi_no <= SC_REMSWITCH || swi_no == SC_REBOOT)
     {
         DREGS(cpu_DumpRegs(regs));
 
@@ -170,15 +170,13 @@ void handle_syscall(void *regs)
             {
                 D(bug("[Kernel] ## CLI...\n"));
                 /*
-                 * Mask BOTH IRQ (bit 7) and FIQ (bit 6). Tasks run
-                 * unprivileged, so Disable() must come through this syscall
-                 * to touch the interrupt bits - a raw cpsid in task context
-                 * is ignored. The cross-CPU IPI is delivered as an FIQ and
-                 * takes tc_SpinLock / scheduler-list locks via signal_hook;
-                 * if it could fire while a Disable()'d task holds one of
-                 * those it would self-deadlock that CPU. Disabling FIQ here
-                 * keeps the IPI pending (the BCM2836 mailbox latches it) until
-                 * the matching Enable() re-opens both.
+                 * Mask both IRQ (bit 7) and FIQ (bit 6). Tasks run
+                 * unprivileged, where a cpsid is ignored, so Disable()
+                 * comes through this system call. The inter-CPU IPI is an
+                 * FIQ and its handler takes the run list locks, which a
+                 * task may hold under Disable() (SetTaskPri), so Disable()
+                 * has to hold the IPI off as well. The mailbox keeps it
+                 * pending until the matching Enable() opens both again.
                  */
                 ((uint32_t *)regs)[16] |= (1 << 7) | (1 << 6);
                 break;

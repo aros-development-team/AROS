@@ -98,5 +98,21 @@ void core_SysCall(int sc, regs_t *regs)
 #endif
         cpu_Dispatch(regs);
         break;
+
+#if defined(__AROSEXEC_SMP__) && defined(KRNSYSCALL_ARG1)
+    /*
+     * The run list moves exec asks for. They are made here, in kernel
+     * context with interrupts off, under the run list locks. Ports whose
+     * kernel_cpu.h says where a system call's arguments are use these;
+     * all-pc has its own handlers (arch/all-pc/exec/platform_init.c).
+     */
+    case SC_RESCHEDTASK:
+        core_ReschedTask((struct Task *)KRNSYSCALL_ARG1(regs), (ULONG)KRNSYSCALL_ARG2(regs));
+        break;
+
+    case SC_REMSWITCH:
+        cpu_Switch(regs);
+        break;
+#endif
     }
 }

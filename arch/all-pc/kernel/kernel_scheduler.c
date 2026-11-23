@@ -168,13 +168,23 @@ void core_Switch(void)
     cpuid_t cpuNo;
     struct Task *task;
     ULONG showAlert = 0;
+    ULONG newState;
     BOOL doSwitch = TRUE;
-    struct ETask * taskEtask = NULL;
+#if defined(__AROSEXEC_SMP__)
+    BOOL park;
+#endif
 
     DSCHED(bug("[Kernel]" DEBUGFUNCCOLOR_SET " %s()" DEBUGCOLOR_RESET "\n", __func__);)
 
     cpuNo = KrnGetCPUNumber();
     task = GET_THIS_TASK;
+
+#if defined(__AROSEXEC_SMP__)
+    /* Wait() asked for the task to be parked. The request is for this switch only. */
+    park = FLAG_SCHEDPARK_ISSET;
+    if (park)
+        FLAG_SCHEDPARK_CLEAR;
+#endif
 
     DSCHED(
         bug("[Kernel:%03u]" DEBUGCOLOR_SET " %s: Current running Task @ 0x%p" DEBUGCOLOR_RESET "\n", cpuNo, __func__, task);
@@ -202,28 +212,50 @@ void core_Switch(void)
         bug("[Kernel:%03u]" DEBUGCOLOR_SET " %s: Switching away from Task" DEBUGCOLOR_RESET "\n", cpuNo, __func__);
     )
 
+    /*
+     * On SMP builds a task's state and the list it is on change together,
+     * under the locks of both lists. The locks are always taken in the
+     * order TaskRunning, TaskReady, TaskWait, TaskSpinning, so no CPU ever
+     * finds a state that names a list the task is not on. The task's own
+     * hook is called first, with no lock held.
+     */
 #if defined(__AROSEXEC_SMP__)
+    if ((task->tc_State == TS_RUN) && !park && (task->tc_Flags & TF_SWITCH) &&
+        !(task->tc_SPReg <= task->tc_SPLower || task->tc_SPReg > task->tc_SPUpper))
+        AROS_UFC1NR(void, task->tc_Switch, AROS_UFCA(struct ExecBase *, SysBase, A6));
+
     KrnSpinLock(&PrivExecBase(SysBase)->TaskRunningSpinLock, NULL,
                 SPINLOCK_MODE_WRITE);
+
+    /* Under the lock of the list it is on, the state cannot change any more */
+    if ((task->tc_State == TS_TOMBSTONED) || (task->tc_State == TS_INVALID))
+    {
+        /* Removed by another CPU in the meantime, and off TaskRunning */
+        KrnSpinUnLock(&PrivExecBase(SysBase)->TaskRunningSpinLock);
+        return;
+    }
 #else
     if (task->tc_State != TS_RUN && task->tc_State != TS_REMOVED)
 #endif
     REMOVE(&task->tc_Node);
+
+    newState = task->tc_State;
 #if defined(__AROSEXEC_SMP__)
-    KrnSpinUnLock(&PrivExecBase(SysBase)->TaskRunningSpinLock);
-    if (task->tc_State == TS_REMOVED)
-        task->tc_State = TS_TOMBSTONED;
+    if (newState == TS_REMOVED)
+        newState = TS_TOMBSTONED;
+    else if (park && (newState == TS_RUN))
+        newState = TS_WAIT;
 #endif
 
-    DSCHED(bug("[Kernel:%03u]" DEBUGCOLOR_SET " %s: Task removed from list, state = %08X" DEBUGCOLOR_RESET "\n", cpuNo, __func__, task->tc_State);)
+    DSCHED(bug("[Kernel:%03u]" DEBUGCOLOR_SET " %s: Task removed from list, state = %08X" DEBUGCOLOR_RESET "\n", cpuNo, __func__, newState);)
 
-    if ((task->tc_State != TS_WAIT) &&
+    if ((newState != TS_WAIT) &&
 #if defined(__AROSEXEC_SMP__)
-        (task->tc_State != TS_SPIN) &&
-        (task->tc_State != TS_TOMBSTONED) &&
+        (newState != TS_SPIN) &&
+        (newState != TS_TOMBSTONED) &&
 #endif
-        (task->tc_State != TS_REMOVED))
-        task->tc_State = TS_READY;
+        (newState != TS_REMOVED))
+        newState = TS_READY;
 
     /* if the current task has gone out of stack bounds, suspend it to prevent further damage to the system */
     if (task->tc_SPReg <= task->tc_SPLower || task->tc_SPReg > task->tc_SPUpper)
@@ -233,7 +265,7 @@ void core_Switch(void)
         bug("[Kernel:%03u]" DEBUGCOLOR_SET "  - SP = 0x%p" DEBUGCOLOR_RESET "\n", cpuNo, task->tc_SPReg);
 
         task->tc_SigWait    = 0;
-        task->tc_State      = TS_WAIT;
+        newState            = TS_WAIT;
 
         showAlert = AN_StackProbe;
 #if defined(LOWSTACKWARN)
@@ -243,49 +275,65 @@ void core_Switch(void)
         bug("[Kernel:%03u]" DEBUGCOLOR_SET " WARNING - Task (%s) close to stack limits" DEBUGCOLOR_RESET "\n", cpuNo, task->tc_Node.ln_Name);
 #endif
     }
+
     task->tc_IDNestCnt = IDNESTCOUNT_GET;
 
-    if (task->tc_State == TS_READY)
+    if (newState == TS_READY)
     {
+#if !defined(__AROSEXEC_SMP__)
         if (task->tc_Flags & TF_SWITCH)
             AROS_UFC1NR(void, task->tc_Switch, AROS_UFCA(struct ExecBase *, SysBase, A6));
+#endif
 
         DSCHED(bug("[Kernel:%03u]" DEBUGCOLOR_SET " %s: Setting '%s' @ 0x%p as ready" DEBUGCOLOR_RESET "\n", cpuNo, __func__, task->tc_Node.ln_Name, task);)
 #if defined(__AROSEXEC_SMP__)
         KrnSpinLock(&PrivExecBase(SysBase)->TaskReadySpinLock, NULL,
                 SPINLOCK_MODE_WRITE);
 #endif
+        task->tc_State = TS_READY;
         Enqueue(&SysBase->TaskReady, &task->tc_Node);
 #if defined(__AROSEXEC_SMP__)
         KrnSpinUnLock(&PrivExecBase(SysBase)->TaskReadySpinLock);
 #endif
     }
 #if defined(__AROSEXEC_SMP__)
-    else if (task->tc_State == TS_SPIN)
+    else if (newState == TS_SPIN)
     {
         DSCHED(bug("[Kernel:%03u]" DEBUGCOLOR_SET " %s: Setting '%s' @ 0x%p to spin" DEBUGCOLOR_RESET "\n", cpuNo, __func__, task->tc_Node.ln_Name, task);)
         KrnSpinLock(&PrivExecBase(SysBase)->TaskSpinningLock, NULL,
                     SPINLOCK_MODE_WRITE);
+        task->tc_State = TS_SPIN;
         Enqueue(&PrivExecBase(SysBase)->TaskSpinning, &task->tc_Node);
         KrnSpinUnLock(&PrivExecBase(SysBase)->TaskSpinningLock);
     }
 #endif
     else if(
 #if defined(__AROSEXEC_SMP__)
-        (task->tc_State != TS_TOMBSTONED) &&
+        (newState != TS_TOMBSTONED) &&
 #endif
-        (task->tc_State != TS_REMOVED))
+        (newState != TS_REMOVED))
     {
         DSCHED(bug("[Kernel:%03u]" DEBUGCOLOR_SET " %s: Setting '%s' @ 0x%p to wait" DEBUGCOLOR_RESET "\n", cpuNo, __func__, task->tc_Node.ln_Name, task);)
 #if defined(__AROSEXEC_SMP__)
         KrnSpinLock(&PrivExecBase(SysBase)->TaskWaitSpinLock, NULL,
                     SPINLOCK_MODE_WRITE);
 #endif
+        task->tc_State = TS_WAIT;
         Enqueue(&SysBase->TaskWait, &task->tc_Node);
 #if defined(__AROSEXEC_SMP__)
         KrnSpinUnLock(&PrivExecBase(SysBase)->TaskWaitSpinLock);
 #endif
     }
+    else
+    {
+        /* The task is on no list any more */
+        task->tc_State = newState;
+    }
+
+#if defined(__AROSEXEC_SMP__)
+    KrnSpinUnLock(&PrivExecBase(SysBase)->TaskRunningSpinLock);
+#endif
+
     if (showAlert)
         Alert(showAlert);
 }
@@ -295,6 +343,7 @@ struct Task *core_Dispatch(void)
 {
     struct Task *newtask;
     struct Task *task = GET_THIS_TASK;
+    BOOL fromReady = FALSE;
 #if defined(__AROSEXEC_SMP__) || (DEBUG > 0)
     cpuid_t cpuNo = KrnGetCPUNumber();
 #endif
@@ -302,6 +351,14 @@ struct Task *core_Dispatch(void)
     DSCHED(bug("[Kernel:%03u]" DEBUGFUNCCOLOR_SET " %s()" DEBUGCOLOR_RESET "\n", cpuNo, __func__);)
 
 #if defined(__AROSEXEC_SMP__)
+    /*
+     * The task leaves TaskReady, becomes TS_RUN and is put on TaskRunning
+     * in one step, under both locks. From then on it belongs to this CPU,
+     * and other CPUs send their requests for it here, so they are told
+     * where "here" is before they can see TS_RUN.
+     */
+    KrnSpinLock(&PrivExecBase(SysBase)->TaskRunningSpinLock, NULL,
+                SPINLOCK_MODE_WRITE);
     KrnSpinLock(&PrivExecBase(SysBase)->TaskReadySpinLock, NULL,
                 SPINLOCK_MODE_WRITE);
 #endif
@@ -312,6 +369,13 @@ struct Task *core_Dispatch(void)
         {
 #endif
             REMOVE(&newtask->tc_Node);
+#if defined(__AROSEXEC_SMP__)
+            if (GetIntETask(newtask))
+                GetIntETask(newtask)->iet_CpuNumber = cpuNo;
+            __atomic_store_n(&newtask->tc_State, TS_RUN, __ATOMIC_RELEASE);
+            SET_THIS_TASK_LOCKED(newtask);
+            fromReady = TRUE;
+#endif
             break;
 #if defined(__AROSEXEC_SMP__)
         }
@@ -319,23 +383,42 @@ struct Task *core_Dispatch(void)
     }
 #if defined(__AROSEXEC_SMP__)
     KrnSpinUnLock(&PrivExecBase(SysBase)->TaskReadySpinLock);
+    KrnSpinUnLock(&PrivExecBase(SysBase)->TaskRunningSpinLock);
 #endif
 
-    if ((!newtask) && (task) && (task->tc_State != TS_WAIT))
+    /*
+     * Nothing on TaskReady for this CPU: carry on with the outgoing task if
+     * it is still ours. On SMP builds a task that core_Switch() put on
+     * TaskReady or TaskWait is on a list other CPUs take from; if one of
+     * them runs it by now it is TS_RUN again, but with that CPU's number.
+     */
+    if ((!newtask) && (task) && (task->tc_State != TS_WAIT)
+#if defined(__AROSEXEC_SMP__)
+        && (task->tc_State != TS_READY) && (task->tc_State != TS_INVALID)
+        && ((task->tc_State != TS_RUN) || !GetIntETask(task) ||
+            (GetIntETask(task)->iet_CpuNumber == cpuNo))
+#endif
+        )
     {
 #if defined(__AROSEXEC_SMP__)
         if (task->tc_State == TS_SPIN)
         {
             DSCHED(bug("[Kernel:%03u]" DEBUGCOLOR_SET " %s: Waking spinning task '%s' @ 0x%p" DEBUGCOLOR_RESET "\n",
-                cpuNo, __func__newtask->tc_Node.ln_Name, newtask);)
-#if 0
-bug("----> such unspinning should not take place!" DEBUGCOLOR_RESET "\n");
+                cpuNo, __func__, task->tc_Node.ln_Name, task);)
+            /* It has nothing to wait for but the lock: let it try again */
+            KrnSpinLock(&PrivExecBase(SysBase)->TaskRunningSpinLock, NULL,
+                    SPINLOCK_MODE_WRITE);
             KrnSpinLock(&PrivExecBase(SysBase)->TaskSpinningLock, NULL,
                     SPINLOCK_MODE_WRITE);
-            REMOVE(&task->tc_Node);
+            if (task->tc_State == TS_SPIN)
+            {
+                REMOVE(&task->tc_Node);
+                task->tc_State = TS_RUN;
+                SET_THIS_TASK_LOCKED(task);
+                fromReady = TRUE;
+            }
             KrnSpinUnLock(&PrivExecBase(SysBase)->TaskSpinningLock);
-#endif
-            task->tc_State = TS_READY;
+            KrnSpinUnLock(&PrivExecBase(SysBase)->TaskRunningSpinLock);
         }
 #endif
         newtask = task;
@@ -345,13 +428,15 @@ bug("----> such unspinning should not take place!" DEBUGCOLOR_RESET "\n");
     {
         BOOL launchtask = FALSE, sleeptask = FALSE;
 
-        if (newtask->tc_State == TS_READY)
+        if (fromReady || (newtask->tc_State == TS_READY))
         {
             DSCHED(bug("[Kernel:%03u]" DEBUGCOLOR_SET " %s: Preparing to run '%s' @ 0x%p" DEBUGCOLOR_RESET "\n",
                 cpuNo, __func__, newtask->tc_Node.ln_Name, newtask);)
 
             IDNESTCOUNT_SET(newtask->tc_IDNestCnt);
+#if !defined(__AROSEXEC_SMP__)
             SET_THIS_TASK(newtask);
+#endif
             SCHEDELAPSED_SET(SCHEDQUANTUM_GET);
             FLAG_SCHEDQUANTUM_CLEAR;
         }
@@ -361,8 +446,15 @@ bug("----> such unspinning should not take place!" DEBUGCOLOR_RESET "\n");
             if ((newtask->tc_SPReg <= newtask->tc_SPLower) ||
                 (newtask->tc_SPReg > newtask->tc_SPUpper))
             {
+#if !defined(__AROSEXEC_SMP__)
                 newtask->tc_State     = TS_WAIT;
                 sleeptask = TRUE;
+#endif
+                /*
+                 * On SMP builds the task is this CPU's running task by now.
+                 * core_Switch(), called below, makes the same test and puts
+                 * it to wait.
+                 */
             }
             else
             {

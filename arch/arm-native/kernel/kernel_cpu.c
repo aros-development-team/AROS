@@ -384,23 +384,22 @@ void cpu_Switch(regs_t *regs)
         bug("[Kernel:%02d] cpu_Switch()\n", cpunum);
     )
 
+#if defined(__AROSEXEC_SMP__)
+    /*
+     * From here until the next task is installed (cpu_Dispatch) this CPU's
+     * ThisTask names a task that may already be on a list another CPU
+     * takes from. Keep the IPI and every other interrupt out for that
+     * time: a Signal() carried out here would take that task for the one
+     * running on this CPU. The exception return restores the mask of
+     * whatever context is resumed.
+     */
+    asm volatile("cpsid if" ::: "memory");
+#endif
+
     task = GET_THIS_TASK;
 
     /* Cache running task's context */
     STORE_TASKSTATE(task, regs)
-
-#if defined(__AROSEXEC_SMP__)
-    /*
-     * Wait() carries tc_SpinLock across KrnSwitch so no other CPU can
-     * observe (TS_WAIT, on-TaskWait) and dispatch this task before its
-     * context is saved. The context is now stored - release the lock
-     * (see rom/exec/wait.c). Only the Wait path reaches here in TS_WAIT:
-     * interrupts are masked for its whole carry window, so an IRQ/FIQ
-     * entry can never find the current task in TS_WAIT.
-     */
-    if (task->tc_State == TS_WAIT)
-        KrnSpinUnLock(&task->tc_SpinLock);
-#endif
 
     /*
      * iet_private1 == 0 means the task never went through cpu_Dispatch:
@@ -470,15 +469,19 @@ void cpu_Dispatch(regs_t *regs)
     }
 #endif
 
+#if defined(__AROSEXEC_SMP__)
+    /* As in cpu_Switch(): no interrupt while ThisTask is not ours */
+    asm volatile("cpsid if" ::: "memory");
+#endif
+
     while (!(task = core_Dispatch()))
     {
         DSCHED(bug("[Kernel:%02d] cpu_Dispatch: Nothing to run - idling\n", cpunum));
         /*
-         * WFI wakes on pending interrupts even when they are masked (and
-         * they ARE masked here - we are in exception context, and Wait()
-         * paths arrive with FIQ off too). But waking is not enough: the
-         * pending IPI/timer FIQ must be HANDLED to make a task ready, or
-         * this loop spins on a latched mailbox bit forever. Open a brief
+         * WFI wakes on pending interrupts even when they are masked, and
+         * they are masked here. But waking is not enough: the pending
+         * IPI/timer FIQ must be handled to make a task ready, or this
+         * loop spins on a latched mailbox bit forever. Open a brief
          * IRQ+FIQ window after each wake so the handler runs (the FIQ/IRQ
          * exit path never dispatches over this SVC-mode context - see
          * intr.c - it just delivers and returns), then re-mask and rescan.

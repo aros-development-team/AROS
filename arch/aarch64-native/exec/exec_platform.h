@@ -29,17 +29,26 @@ extern void Kernel_53_KrnSpinUnLock(spinlock_t *, void *);
  */
 #define EXEC_MEMORY_BARRIER()   asm volatile("dmb ishst" ::: "memory")
 
-/* No syscall needed: just list mutation under spinlocks. */
-extern void Exec_ReschedTask(struct Task *, ULONG);
-#define krnSysCallReschedTask(task, state) Exec_ReschedTask((task), (state))
+/* special flag to get the scheduling code to unspin tasks */
+#define TS_UNSPIN 0x10
 
-/* Without this RemTask/ServiceTask mutate the scheduler lists unlocked. */
+extern struct Hook Exec_TaskSpinLockFailHook;
+
+/*
+ * The run lists are changed in kernel context: a task asks with a system
+ * call, a caller already in kernel context makes the move directly
+ * (kernel/kernel_scheduler.c).
+ */
+extern void core_SysCallReschedTask(struct Task *, ULONG);
+#define krnSysCallReschedTask(task, state) core_SysCallReschedTask((task), (state))
+
+/* RemTask and the service task go through the kernel for the run lists */
 #define EXEC_REMTASK_NEEDSSWITCH
 
-/* RemTask's suicide path: detach and tombstone, then RETURN so RemTask
- * can finish its teardown (KrnSwitch would never come back). */
-extern void Exec_SuicideSwitch(void);
-#define krnSysCallSwitch() Exec_SuicideSwitch()
+/* RemTask removing the calling task: the kernel switches it away, off
+ * TaskRunning and tombstoned, and returns so RemTask can finish */
+extern void core_SysCallRemSwitch(void);
+#define krnSysCallSwitch() core_SysCallRemSwitch()
 
 #endif
 
@@ -113,6 +122,18 @@ struct Exec_PlatformData
         asm volatile("mrs %0, tpidr_el1":"=r"(__tls)); \
         __tls->ScheduleFlags |= TLSSF_Dispatch; \
     } while(0)
+#define FLAG_SCHEDPARK_CLEAR \
+    do { \
+        tls_t *__tls; \
+        asm volatile("mrs %0, tpidr_el1":"=r"(__tls)); \
+        __tls->ScheduleFlags &= ~TLSSF_Park; \
+    } while(0)
+#define FLAG_SCHEDPARK_SET \
+    do { \
+        tls_t *__tls; \
+        asm volatile("mrs %0, tpidr_el1":"=r"(__tls)); \
+        __tls->ScheduleFlags |= TLSSF_Park; \
+    } while(0)
 #else
 #define IDNESTCOUNT_INC \
     do { \
@@ -174,6 +195,19 @@ struct Exec_PlatformData
         asm volatile("mrs %0, tpidr_el1":"=r"(__tls)); \
         AROS_ATOMIC_OR(__tls->ScheduleFlags, TLSSF_Dispatch); \
     } while(0)
+/* Set by Wait() under Disable(), consumed by the switch it then asks for */
+#define FLAG_SCHEDPARK_CLEAR \
+    do { \
+        tls_t *__tls; \
+        asm volatile("mrs %0, tpidr_el1":"=r"(__tls)); \
+        AROS_ATOMIC_AND(__tls->ScheduleFlags, ~TLSSF_Park); \
+    } while(0)
+#define FLAG_SCHEDPARK_SET \
+    do { \
+        tls_t *__tls; \
+        asm volatile("mrs %0, tpidr_el1":"=r"(__tls)); \
+        AROS_ATOMIC_OR(__tls->ScheduleFlags, TLSSF_Park); \
+    } while(0)
 #endif
 #define IDNESTCOUNT_GET \
     ({ \
@@ -222,8 +256,15 @@ struct Exec_PlatformData
         BOOL __ret = (__tls->ScheduleFlags & TLSSF_Dispatch); \
         __ret;  \
     })
-/* TDNestCnt is per-CPU TLS, so no atomics. Blocks IRQ-exit dispatch
- * without Forbid()/Permit(). */
+#define FLAG_SCHEDPARK_ISSET \
+    ({ \
+        tls_t *__tls; \
+        asm volatile("mrs %0, tpidr_el1":"=r"(__tls)); \
+        BOOL __ret = ((__tls->ScheduleFlags & TLSSF_Park) != 0); \
+        __ret;  \
+    })
+/* TDNestCnt is per-CPU TLS, so no atomics. Blocks the dispatch on
+ * interrupt exit without Forbid()/Permit(); used by this port's IPI code. */
 #define EXEC_BLOCK_DISPATCH_INC \
     do { \
         tls_t *__tls; \
@@ -238,23 +279,13 @@ struct Exec_PlatformData
         __tls->TDNestCnt--; \
     } while(0)
 
-/* Mask FIQ (here: the inter-core IPI) across scheduler-list and
- * tc_SpinLock sections - the IPI re-enters those locks via signal_hook.
- * The pair nests; the mailbox latches the IPI meanwhile. */
-#define EXEC_FIQ_DISABLE() \
-    ({ unsigned long __daif; \
-       asm volatile("mrs %0, daif\n\tmsr daifset, #1" : "=r"(__daif) :: "memory"); \
-       (unsigned int)(__daif & 0x40); })
-
-#define EXEC_FIQ_RESTORE(prevF) \
-    do { if (!(prevF)) asm volatile("msr daifclr, #1" ::: "memory"); } while(0)
-
-/* The Signal IPI arrives as an FIQ, so signal_hook must deliver inline
- * rather than call the full Signal(). */
-#define __AROSEXEC_IPI_RESTRICTED_CTX__
-
-/* Raw masking for code reachable from the FIQ handler, where Disable()'s
- * syscall would nest an exception on the handler's stack. */
+/*
+ * Interrupt masking for the run list sections in this port's own kernel
+ * code. Both IRQ and FIQ are masked: the inter-CPU IPI is an FIQ on the
+ * boards with the BCM2836 mailboxes and an IRQ on those with a GIC, and
+ * its handler takes the run list locks. The pair nests: the disable
+ * returns the previous mask bits for its restore.
+ */
 #define EXEC_IRQFIQ_DISABLE() \
     ({ unsigned long __daif; \
        asm volatile("mrs %0, daif\n\tmsr daifset, #3" : "=r"(__daif) :: "memory"); \
@@ -278,6 +309,12 @@ struct Exec_PlatformData
     KrnSpinLock(&PrivExecBase(SysBase)->TaskRunningSpinLock, NULL, SPINLOCK_MODE_WRITE); \
     AddHead(&PrivExecBase(SysBase)->TaskRunning, (struct Node *)(x)); \
     KrnSpinUnLock(&PrivExecBase(SysBase)->TaskRunningSpinLock)
+/* The same for a caller that holds TaskRunningSpinLock (core_Dispatch) */
+#define SET_THIS_TASK_LOCKED(x) \
+    do { \
+        TLS_SET(ThisTask,(x)); \
+        AddHead(&PrivExecBase(SysBase)->TaskRunning, (struct Node *)(x)); \
+    } while (0)
 #endif
 
 struct Task *Exec_ARMCreateIdleTask(struct ExecBase *);

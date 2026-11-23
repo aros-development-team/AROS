@@ -43,35 +43,36 @@ extern void Kernel_53_KrnSpinUnLock(spinlock_t *, void *);
  */
 #define EXEC_MEMORY_BARRIER()   asm volatile("fence w, w" ::: "memory")
 
-/* No syscall needed: just list mutation under spinlocks */
-extern void Exec_ReschedTask(struct Task *, ULONG);
-#define krnSysCallReschedTask(task, state) Exec_ReschedTask((task), (state))
+/* special flag to get the scheduling code to unspin tasks */
+#define TS_UNSPIN 0x10
 
-/* Without this RemTask/ServiceTask mutate the scheduler lists unlocked */
-#define EXEC_REMTASK_NEEDSSWITCH
-
-/* RemTask's suicide path: detach and tombstone, then RETURN so RemTask
- * can finish its teardown (KrnSwitch would never come back) */
-extern void Exec_SuicideSwitch(void);
-#define krnSysCallSwitch() Exec_SuicideSwitch()
+extern struct Hook Exec_TaskSpinLockFailHook;
 
 /*
- * Interrupt masking around tc_SpinLock / scheduler-list sections. The
- * IPI is an ordinary software interrupt here (SSI, or MSI in M-mode),
- * masked by the status register's IE bit like every other, so the "FIQ"
- * and "IRQ+FIQ" pairs that rom/exec and the scheduler use are the same
- * operation. They nest: each returns the previous enable state for its
- * restore.
- *
- * Because the IPI is an ordinary interrupt, signal_hook may call the
- * full Signal(): __AROSEXEC_IPI_RESTRICTED_CTX__ is not defined.
+ * The run lists are changed in kernel context: a task asks with a system
+ * call, a caller already in kernel context makes the move directly
+ * (kernel/kernel_scheduler.c).
  */
-#define EXEC_FIQ_DISABLE()          rv_intr_disable()
+extern void core_SysCallReschedTask(struct Task *, ULONG);
+#define krnSysCallReschedTask(task, state) core_SysCallReschedTask((task), (state))
 
-#define EXEC_FIQ_RESTORE(prev)      rv_intr_restore(prev)
+/* RemTask and the service task go through the kernel for the run lists */
+#define EXEC_REMTASK_NEEDSSWITCH
 
-#define EXEC_IRQFIQ_DISABLE()       EXEC_FIQ_DISABLE()
-#define EXEC_IRQFIQ_RESTORE(prev)   EXEC_FIQ_RESTORE(prev)
+/* RemTask removing the calling task: the kernel switches it away, off
+ * TaskRunning and tombstoned, and returns so RemTask can finish */
+extern void core_SysCallRemSwitch(void);
+#define krnSysCallSwitch() core_SysCallRemSwitch()
+
+/*
+ * Interrupt masking for the run list sections in this port's own kernel
+ * and exec code. The IPI is an ordinary software interrupt here (SSI, or
+ * MSI in M-mode), masked by the status register's IE bit like every
+ * other. The pair nests: the disable returns the previous enable state
+ * for its restore.
+ */
+#define EXEC_IRQFIQ_DISABLE()       rv_intr_disable()
+#define EXEC_IRQFIQ_RESTORE(prev)   rv_intr_restore(prev)
 
 #include "tls.h"
 
@@ -94,6 +95,8 @@ struct Exec_PlatformData
 #define FLAG_SCHEDSWITCH_SET        do { __RV_TLS()->ScheduleFlags |= TLSSF_Switch; } while(0)
 #define FLAG_SCHEDDISPATCH_CLEAR    do { __RV_TLS()->ScheduleFlags &= ~TLSSF_Dispatch; } while(0)
 #define FLAG_SCHEDDISPATCH_SET      do { __RV_TLS()->ScheduleFlags |= TLSSF_Dispatch; } while(0)
+#define FLAG_SCHEDPARK_CLEAR        do { __RV_TLS()->ScheduleFlags &= ~TLSSF_Park; } while(0)
+#define FLAG_SCHEDPARK_SET          do { __RV_TLS()->ScheduleFlags |= TLSSF_Park; } while(0)
 #else
 #define IDNESTCOUNT_INC             AROS_ATOMIC_INC(__RV_TLS()->IDNestCnt)
 #define IDNESTCOUNT_DEC             AROS_ATOMIC_DEC(__RV_TLS()->IDNestCnt)
@@ -105,6 +108,9 @@ struct Exec_PlatformData
 #define FLAG_SCHEDSWITCH_SET        AROS_ATOMIC_OR(__RV_TLS()->ScheduleFlags, TLSSF_Switch)
 #define FLAG_SCHEDDISPATCH_CLEAR    AROS_ATOMIC_AND(__RV_TLS()->ScheduleFlags, ~TLSSF_Dispatch)
 #define FLAG_SCHEDDISPATCH_SET      AROS_ATOMIC_OR(__RV_TLS()->ScheduleFlags, TLSSF_Dispatch)
+/* Set by Wait() under Disable(), consumed by the switch it then asks for */
+#define FLAG_SCHEDPARK_CLEAR        AROS_ATOMIC_AND(__RV_TLS()->ScheduleFlags, ~TLSSF_Park)
+#define FLAG_SCHEDPARK_SET          AROS_ATOMIC_OR(__RV_TLS()->ScheduleFlags, TLSSF_Park)
 #endif
 
 #define IDNESTCOUNT_GET             ((LONG)__RV_TLS()->IDNestCnt)
@@ -114,9 +120,10 @@ struct Exec_PlatformData
 #define FLAG_SCHEDQUANTUM_ISSET     ((BOOL)((__RV_TLS()->ScheduleFlags & TLSSF_Quantum) != 0))
 #define FLAG_SCHEDSWITCH_ISSET      ((BOOL)((__RV_TLS()->ScheduleFlags & TLSSF_Switch) != 0))
 #define FLAG_SCHEDDISPATCH_ISSET    ((BOOL)((__RV_TLS()->ScheduleFlags & TLSSF_Dispatch) != 0))
+#define FLAG_SCHEDPARK_ISSET        ((BOOL)((__RV_TLS()->ScheduleFlags & TLSSF_Park) != 0))
 
 /* TDNestCnt is per-CPU TLS, so no atomics. Blocks IRQ-exit dispatch
- * without Forbid()/Permit() */
+ * without Forbid()/Permit(); used by this port's IPI code */
 #define EXEC_BLOCK_DISPATCH_INC     do { __RV_TLS()->TDNestCnt++; } while(0)
 #define EXEC_BLOCK_DISPATCH_DEC     do { __RV_TLS()->TDNestCnt--; } while(0)
 
@@ -129,6 +136,12 @@ struct Exec_PlatformData
     KrnSpinLock(&PrivExecBase(SysBase)->TaskRunningSpinLock, NULL, SPINLOCK_MODE_WRITE); \
     AddHead(&PrivExecBase(SysBase)->TaskRunning, (struct Node *)(x)); \
     KrnSpinUnLock(&PrivExecBase(SysBase)->TaskRunningSpinLock)
+/* The same for a caller that holds TaskRunningSpinLock (core_Dispatch) */
+#define SET_THIS_TASK_LOCKED(x) \
+    do { \
+        TLS_SET(ThisTask,(x)); \
+        AddHead(&PrivExecBase(SysBase)->TaskRunning, (struct Node *)(x)); \
+    } while (0)
 
 #endif /* __AROSEXEC_SMP__ */
 

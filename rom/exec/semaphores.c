@@ -138,7 +138,7 @@ void InternalObtainSemaphore(struct SignalSemaphore *sigSem, struct Task *owner,
 
         /*
          * Drop the lock before Wait() so a Release elsewhere can reach
-         * us. Order: semaphore lock outer, tc_SpinLock inner.
+         * us.
          */
 #if defined(__AROSEXEC_SMP__)
         EXEC_SPINLOCK_UNLOCK(&sigSem->ss_MultipleLink.sr_SpinLock);

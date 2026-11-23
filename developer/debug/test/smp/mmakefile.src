@@ -63,6 +63,10 @@ USER_CFLAGS := $(PARANOIA_CFLAGS)
     files=smppthreadsnet targetdir=$(EXEDIR) \
     progname=SMP-PThreads-Net uselibs="pthread"
 
+%build_prog mmake=test-smp-multiwake \
+    files=smpmultiwake targetdir=$(EXEDIR) \
+    progname=SMP-MultiWake uselibs="pthread"
+
 %build_prog mmake=test-smp-timer \
     files=smptimer targetdir=$(EXEDIR) \
     progname=SMP-Timer

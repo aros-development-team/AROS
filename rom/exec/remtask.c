@@ -98,17 +98,13 @@
             task->tc_State = TS_REMOVED;
             Remove(&task->tc_Node);
 #else
-            /* Disable(), not Forbid(): only it masks the FIQ whose
-             * signal_hook would re-enter these same locks. */
-            Disable();
             krnSysCallReschedTask(task, TS_REMOVED);
-            Enable();
 #endif
         }
 
 #if defined(__AROSEXEC_SMP__)
-        /* Terminal now, so no new IPIs can be queued - flush the ones
-         * already in flight before any memory is freed. */
+        /* Drop the Signal() calls still queued for this task on any CPU,
+         * before any of its memory is freed. */
         CancelSignalIPIs(task);
 #endif
 

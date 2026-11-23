@@ -377,13 +377,6 @@ void cpu_Switch(regs_t *regs)
     /* Cache running task's context */
     STORE_TASKSTATE(task, regs)
 
-#if defined(__AROSEXEC_SMP__)
-    /* Wait() carries tc_SpinLock across KrnSwitch so no other CPU can
-     * dispatch this task before its context is saved. Stored now. */
-    if (task->tc_State == TS_WAIT)
-        KrnSpinUnLock(&task->tc_SpinLock);
-#endif
-
     /* iet_private1 == 0 = never dispatched (boot and bootstrap tasks are
      * installed with SET_THIS_TASK); a delta would charge them the whole
      * uptime. */

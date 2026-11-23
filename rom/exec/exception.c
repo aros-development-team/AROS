@@ -63,7 +63,12 @@
     while ((flags = (task->tc_SigExcept & task->tc_SigRecvd)))
     {
         task->tc_SigExcept ^= flags;
+#if defined(__AROSEXEC_SMP__)
+        /* Another CPU can set bits in the word at any time (Signal()) */
+        __atomic_fetch_and(&task->tc_SigRecvd, ~flags, __ATOMIC_SEQ_CST);
+#else
         task->tc_SigRecvd  ^= flags;
+#endif
 
         Enable();
 

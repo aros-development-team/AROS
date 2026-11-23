@@ -40,8 +40,8 @@ AROS_LH1(void, KrnScheduleCPU,
         else
             mask = *(uint32_t *)cpu_mask;
 
-        __arm_arosintern.ARMI_SendIPI((IPI_SCHEDULE & 0x0fffffff) | (srcCpu << 28),
-                                      0, mask);
+        /* A core that has the request pending already is not interrupted again */
+        core_SendIPI(IPI_SCHEDULE, mask);
     }
 #else
     (void)cpu_mask;

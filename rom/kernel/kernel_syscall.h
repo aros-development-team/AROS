@@ -26,6 +26,14 @@
 #define SC_CACHECLEARE  0x00B
 #define SC_GETCPUNUMBER 0x00C
 #define SC_USERSTATE    0x00D
+/*
+ * SMP exec asks the kernel for the run list moves it may not make itself:
+ * SC_RESCHEDTASK moves a task (argument 1) to the list for a state
+ * (argument 2); SC_REMSWITCH switches the calling task away for RemTask(),
+ * without dispatching another one.
+ */
+#define SC_RESCHEDTASK  0x00E
+#define SC_REMSWITCH    0x00F
 #define SC_REBOOT	    0x100
 #define SC_POWEROFF	    0x101
 
