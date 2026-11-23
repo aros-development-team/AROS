@@ -35,6 +35,9 @@ USER_LDFLAGS := -static
 #MM workbench-libs-zstd-library : workbench-libs-zstd-fetch workbench-libs-zstd-includes
 #MM- workbench-libs-zstd-includes : workbench-libs-zstd-includes-copy
 
+# zstd.conf sets norootrellibs (see tools/genmodule/config.h): code that runs
+# with the root base must not call posixc.library or stdc.library. The only
+# root-level code is the exec.library version check.
 %build_module mmake=workbench-libs-zstd-library \
     modname=zstd modtype=library \
     files="$(FILES)"
