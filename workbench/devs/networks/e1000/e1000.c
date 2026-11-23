@@ -260,6 +260,27 @@ static void e1000func_configure_tx(struct net_device *unit)
     E1000_WRITE_REG((struct e1000_hw *)unit->e1ku_Private00, E1000_TCTL, tctl);
 }
 
+/* Size of each Rx buffer as programmed into RCTL.SZ/BSEX by
+ * e1000func_setup_rctl(). The NIC may DMA up to this many bytes into every
+ * receive buffer, so the buffers must be allocated at this size and not at
+ * rx_buffer_len: the standard 1522 byte rx_buffer_len selects the 2048 byte
+ * class. Keep in sync with the switch in e1000func_setup_rctl(). */
+static ULONG e1000func_rx_hw_bufsize(struct net_device *unit)
+{
+    switch (unit->rx_buffer_len)
+    {
+    case E1000_RXBUFFER_256:
+    case E1000_RXBUFFER_512:
+    case E1000_RXBUFFER_1024:
+    case E1000_RXBUFFER_4096:
+    case E1000_RXBUFFER_8192:
+    case E1000_RXBUFFER_16384:
+        return unit->rx_buffer_len;
+    default:
+        return E1000_RXBUFFER_2048;
+    }
+}
+
 static void e1000func_setup_rctl(struct net_device *unit)
 {
     ULONG rctl;
@@ -904,7 +925,7 @@ void e1000func_clean_rx_ring(struct net_device *unit,
         }
         if (buffer_info->buffer)
         {
-            FreeMem(buffer_info->buffer, unit->rx_buffer_len);
+            FreeMem(buffer_info->buffer, e1000func_rx_hw_bufsize(unit));
             buffer_info->buffer = NULL;
         }
     }
@@ -988,9 +1009,9 @@ void e1000func_alloc_rx_buffers(struct net_device *unit,
     {
         buffer_info = (struct e1000_rx_buffer *)&rx_ring->buffer_info[i];
 
-        if ((buffer_info->buffer = AllocMem(unit->rx_buffer_len, MEMF_PUBLIC|MEMF_CLEAR)) != NULL)
+        if ((buffer_info->buffer = AllocMem(e1000func_rx_hw_bufsize(unit), MEMF_PUBLIC|MEMF_CLEAR)) != NULL)
         {
-            D(bug("[%s] %s: Buffer %d Allocated @ %p [%d bytes]\n", unit->e1ku_name, __func__, i, buffer_info->buffer, unit->rx_buffer_len));
+            D(bug("[%s] %s: Buffer %d Allocated @ %p [%d bytes]\n", unit->e1ku_name, __func__, i, buffer_info->buffer, e1000func_rx_hw_bufsize(unit)));
             if ((buffer_info->dma = HIDD_PCIDriver_CPUtoPCI(unit->e1ku_PCIDriver, (APTR)buffer_info->buffer)) == NULL)
             {
                 D(bug("[%s] %s: Failed to Map Buffer %d for DMA!!\n", unit->e1ku_name, __func__, i));
