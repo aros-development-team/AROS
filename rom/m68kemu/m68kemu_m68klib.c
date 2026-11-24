@@ -120,6 +120,11 @@ ULONG M68KEmu_LoadM68KLibrary(struct M68KEmuContext *ctx, const char *name, ULON
 
     struct Process *me = (struct Process *)FindTask(NULL);
     APTR oldwin = me->pr_WindowPtr;
+    /* Looking for the file and reading it are the loader's own business:
+       the caller's IoErr() stays what it was, found or not, as when LDDemon
+       loads a native library in its own process (rom/lddemon). The code of
+       the library may still set it, as the caller's own code. */
+    LONG oldErr = IoErr();
 
     /* A probe for an optional library must not raise a volume requester */
     me->pr_WindowPtr = (APTR)-1;
@@ -153,18 +158,19 @@ ULONG M68KEmu_LoadM68KLibrary(struct M68KEmuContext *ctx, const char *name, ULON
 
     me->pr_WindowPtr = oldwin;
 
-    if (!fh) return 0;
+    if (!fh) { SetIoErr(oldErr); return 0; }
 
     Seek(fh, 0, OFFSET_END);
     fileSize = Seek(fh, 0, OFFSET_BEGINNING);
-    if (fileSize <= 0) { Close(fh); return 0; }
+    if (fileSize <= 0) { Close(fh); SetIoErr(oldErr); return 0; }
 
     fileData = (UBYTE *)AllocMem(fileSize, MEMF_ANY);
-    if (!fileData) { Close(fh); return 0; }
+    if (!fileData) { Close(fh); SetIoErr(oldErr); return 0; }
 
     if (Read(fh, fileData, fileSize) != fileSize)
-    { FreeMem(fileData, fileSize); Close(fh); return 0; }
+    { FreeMem(fileData, fileSize); Close(fh); SetIoErr(oldErr); return 0; }
     Close(fh);
+    SetIoErr(oldErr);
 
     /* Load hunks into containment. The loader describes the image it places
        in the fields that describe the running program. They are the
