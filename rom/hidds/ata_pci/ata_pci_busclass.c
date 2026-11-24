@@ -52,6 +52,9 @@ AROS_INTH1(ata_PCI_Interrupt, struct PCIATABusData *, data)
         if (!(dmastatus & DMAF_Interrupt))
             return FALSE;
 
+        /* DMA completion needs the status before acknowledgement clears it. */
+        data->dmaStatus = dmastatus;
+
         /*
          * Acknowledge interrupt (note that the DMA interrupt bit should be
          * cleared for all interrupt types).
@@ -346,6 +349,7 @@ APTR PCIATABus__Hidd_ATABus__GetDMAInterface(OOP_Class *cl, OOP_Object *o, OOP_M
 
         dma->au_DMAPort = (port_t)data->bus->atapb_DMABase;
         dma->ab_PRD     = data->dmaBuf;
+        dma->au_DMAStatus = &data->dmaStatus;
 
         /* Ensure table does not cross a 4kB boundary (required by VirtualBox,
            if not by real hardware) */

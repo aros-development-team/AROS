@@ -1176,8 +1176,14 @@ static BYTE ata_exec_blk(struct ata_Unit *unit, ata_CommandBlock *blk)
         DATA(bug("[ATA%02ld] ata_exec_blk: attempt to do DMA transfer outside 32bit address space\n", unit->au_UnitNum));
         DATA(bug("[ATA%02ld] ata_exec_blk: ptr %p, length %d, %s\n", unit->au_UnitNum, blk->buffer, count << unit->au_SectorShift, blk->method == CM_DMARead ? "DMARead" : "DMAWrite"));
 
+        APTR pool = unit->au_Bus->ab_BounceBufferPool;
+        if (!pool)
+            return TDERR_NoMem;
+
         bounce_buffer_length = count << unit->au_SectorShift;
-        bounce_buffer = AllocPooled(unit->au_Bus->ab_BounceBufferPool, bounce_buffer_length);
+        bounce_buffer = AllocPooled(pool, bounce_buffer_length);
+        if (!bounce_buffer)
+            return TDERR_NoMem;
         blk->buffer = bounce_buffer;
     }
 
@@ -1200,7 +1206,7 @@ static BYTE ata_exec_blk(struct ata_Unit *unit, ata_CommandBlock *blk)
         DATA(bug("[ATA%02ld] ata_exec_blk: ata_exec_cmd returned %lx\n", unit->au_UnitNum, err));
         if (bounce_buffer)
         {
-            if (blk->method == CM_DMARead)
+            if (!err && blk->method == CM_DMARead)
             {
                 DATA(bug("[ATA%02ld] Copy %d bytes from bounce buffer %p to destination %p\n", unit->au_UnitNum, blk->length, bounce_buffer, buffer));
                 CopyMemQuick(bounce_buffer, buffer, part << unit->au_SectorShift);
