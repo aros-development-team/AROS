@@ -111,7 +111,8 @@ static struct Volume *AFS_open_volume(struct AFSBase *handler, struct DosPacket 
 
 static BOOL AFS_close_volume(struct AFSBase *handler, struct Volume *volume, SIPTR *io_DosError)
 {
-    if (!volume->locklist) {
+    /* Locks parked with an offline volume still name this handler */
+    if (!volume->locklist && IsListEmpty((struct List *)&handler->offlinevols)) {
         if (!flushForRelease(handler, volume)) {
             *io_DosError = ERROR_UNKNOWN;
             return FALSE;
@@ -122,6 +123,17 @@ static BOOL AFS_close_volume(struct AFSBase *handler, struct Volume *volume, SIP
 
     *io_DosError = ERROR_OBJECT_IN_USE;
     return FALSE;
+}
+
+/* DosEntry() unlocks these after the handler returns, and that packet
+ * round trip would end the Forbid() the handler exits in */
+static void AFS_drop_proc_locks(struct AFSBase *afsbase)
+{
+    struct Process *me = (struct Process *)FindTask(NULL);
+
+    if (me->pr_Flags & PRF_FREECURRDIR)
+        UnLock(CurrentDir(BNULL));
+    UnLock(SetProgramDir(BNULL));
 }
 
 static BOOL AFS_protect_volume(struct AFSBase *handler, struct Volume *volume, BOOL on, ULONG key, SIPTR *io_DosError)
@@ -306,6 +318,7 @@ LONG AFS_work(struct ExecBase *SysBase)
     struct Message *mn;
     struct AFSBase *handler;
     struct Volume *volume;
+    struct DeviceNode *dn;
     LONG retval;
     BOOL dead = FALSE;
     BOOL nodisk;
@@ -338,7 +351,8 @@ LONG AFS_work(struct ExecBase *SysBase)
     AddHead(&handler->device_list, &volume->ln);
 
     /* Say that we are going to persist */
-    ((struct DeviceNode *)BADDR(dp->dp_Arg3))->dn_Task = mp;
+    dn = (struct DeviceNode *)BADDR(dp->dp_Arg3);
+    dn->dn_Task = mp;
 
     replypkt(dp, DOSTRUE);
 
@@ -389,6 +403,8 @@ LONG AFS_work(struct ExecBase *SysBase)
                     ok = FALSE;
                     break;
                 }
+                /* No new packets for a handler that is leaving */
+                dn->dn_Task = NULL;
                 dead = DOSTRUE;
                 ok = TRUE;
                 break;
@@ -807,11 +823,18 @@ res2_reply:
 reply:
             afsSecEndPacket(handler);
             replypkt2(dp, ok, res2);
+            if (dead)
+                break;
         }
     }
 
+    AFS_drop_proc_locks(handler);
     AFS_free(handler);
-    replypkt(dp, DOSTRUE);
+
+    /* Packets sent before dn_Task was cleared; exit before any can follow */
+    Forbid();
+    while ((mn = GetMsg(mp)) != NULL)
+        replypkt2((struct DosPacket *)mn->mn_Node.ln_Name, DOSFALSE, ERROR_DEVICE_NOT_MOUNTED);
 
     return RETURN_OK;
 }
