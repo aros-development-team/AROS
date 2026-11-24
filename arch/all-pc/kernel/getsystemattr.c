@@ -29,11 +29,15 @@
         Get value of internal system attributes.
         Currently defined attributes are:
 
-          KATTR_Architecture [.G] (char *)        - Name of architecture the kernel built for.
+          KATTR_Architecture [.G] (char *) - Name of architecture the kernel was built for.
 
-          KATTR_PeripheralBase [.G] IPTR   - IO Base address for ARM peripherals
+          KATTR_AffinityMask [.G] IPTR     - Bitmap of CPUs, indexed by CPU number.
 
-          KATTR_AffinityMask [.G] IPTR     - Bitmap of the CPUs, by CPU number
+          KATTR_CPULoad + n [.G] IPTR      - Load of APIC CPU n when APIC data is available.
+
+          KATTR_ClockSource [.G] APTR      - Active kernel clock source, when present.
+
+          KATTR_SymResolverABI [.G] IPTR   - Symbol-resolver ABI level.
 
     INPUTS
         id - ID of the attribute to get
@@ -84,6 +88,10 @@
     else if ((id == KATTR_ClockSource) && (KernelBase->kb_ClockSource))
     {
         retval = (intptr_t)KernelBase->kb_ClockSource;
+    }
+    else if (id == KATTR_SymResolverABI)
+    {
+        retval = KRN_SYMRESOLVER_ABI_LEASE;
     }
     
     return retval;
