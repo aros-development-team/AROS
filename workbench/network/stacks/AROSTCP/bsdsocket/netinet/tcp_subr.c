@@ -952,8 +952,6 @@ int error;
     sowwakeup(so);
 }
 
-void tcp_mtudisc(struct tcpcb *, u_int32_t);
-
 /*
  * tcp_ctlnotify - what a family's ICMP says about a segment we sent (struct
  * inctlparam, netinet/inetfamily.h). tcp_notify() keeps an error as a soft

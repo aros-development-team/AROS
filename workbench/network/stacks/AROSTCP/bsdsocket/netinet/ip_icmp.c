@@ -256,7 +256,6 @@ icmp_defaults(void)
     bzero((caddr_t)&icmpmask, sizeof(icmpmask));
     icmpmask.sin_len = 8;
 }
-struct in_ifaddr *ifptoia();
 
 /*
  * Path MTU discovery (RFC 1191): a "fragmentation needed" reports the MTU
@@ -310,7 +309,6 @@ void icmp_input(void *arg, ...)
     struct in_ifaddr *ia;
     int code;
     extern struct protodispatch ip_protos;
-    extern struct in_addr in_makeaddr();
     int hlen;
     va_list va;
 
@@ -474,7 +472,6 @@ reflect:
                    (u_long)icp->icmp_gwaddr.s_addr);
 #endif
         if(code == ICMP_REDIRECT_NET || code == ICMP_REDIRECT_TOSNET) {
-            u_long in_netof();
             icmpsrc.sin_addr =
                 in_makeaddr(in_netof(icp->icmp_ip.ip_dst), INADDR_ANY);
             in_sockmaskof(icp->icmp_ip.ip_dst, &icmpmask);

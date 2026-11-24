@@ -517,11 +517,7 @@ ip6_init(void)
 
         (void)netinput_register(&ip6_input_queue);
     }
-    {
-        extern const struct netfamily_ifops in6_ifops;
-
-        (void)netfamily_ifops_register(&in6_ifops);
-    }
+    (void)netfamily_ifops_register(&in6_ifops);
     {
         extern const struct inetfamily in6_family;
         extern const struct inet_transport_if *in6_transports; /* netinet6/in6_proto.c */
@@ -592,8 +588,6 @@ ip6_flush(void)
 void
 ip6_deinit(void)
 {
-    extern const struct netfamily_ifops in6_ifops;
-
     /* neighbour discovery no longer resolves for the SANA-II interfaces */
     (void)sana_linktype_resolver(AF_INET6, NULL);
     (void)netfamily_ifops_unregister(&in6_ifops);

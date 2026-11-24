@@ -110,7 +110,6 @@ extern STRPTR dhclient_name;   /* legacy sysctl slot; DHCP is an external servic
  * before any module is (net/netmodule.h, netmodule_start_builtin()); it
  * can be read back but not set while the stack runs.
  */
-extern char *netmodule_protocols;
 /*
  * MODULES: the optional modules to have running from the start, a list of
  * module names written as PROTOCOLS is - MODULES=RESOLVER,PACKET. Absent
@@ -119,7 +118,6 @@ extern char *netmodule_protocols;
  * set while the stack runs. A name that cannot be had is an error in the
  * log, not a reason not to start.
  */
-extern char *netmodule_modules;
 
 /* Global variables */
 STRPTR KW_Protocols = KW_ROUTES;

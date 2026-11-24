@@ -145,7 +145,6 @@ extern struct icmpstat icmpstat;	/* ip_icmp.c */
 extern int icmpprintfs;			/* ip_icmp.c */
 extern int useloopback;			/* net/sana2arp.c */
 extern int tcp_mssdflt;			/* in_family.c: the MSS IPv4 assumes */
-extern int ip_dad_count;		/* net/sana2arp.c: RFC 5227 probes */
 
 /* net.inet.ip.dad_count: the probes an address gets, 0 (none) to 10 */
 static int
@@ -243,11 +242,7 @@ ip_init()
 
         (void)netinput_register(&ip_input_queue);
     }
-    {
-        extern const struct netfamily_ifops in_ifops;
-
-        (void)netfamily_ifops_register(&in_ifops);
-    }
+    (void)netfamily_ifops_register(&in_ifops);
     {
         extern const struct inetfamily in_family;
         extern const struct inet_transport_if *in_transports;  /* netinet/in_proto.c */
@@ -274,7 +269,6 @@ ip_init()
 #endif
 }
 
-struct	ip *ip_reass();
 struct	sockaddr_in ipaddr = { sizeof(ipaddr), AF_INET };
 struct	route ipforward_rt = { 0 };
 
@@ -341,8 +335,6 @@ ip_flush(void)
 void
 ip_deinit(void)
 {
-    extern const struct netfamily_ifops in_ifops;
-
     (void)netfamily_ifops_unregister(&in_ifops);
     (void)netvar_unregister(ip_netvars);    /* the core keeps what was set for a switch */
     (void)protodispatch_publish(AF_INET, (struct protodispatch *)NULL);
@@ -917,9 +909,6 @@ ip_drain()
         ip_freef(ipq.next);
     }
 }
-
-extern struct in_ifaddr *ifptoia();
-struct in_ifaddr *ip_rtaddr();
 
 /*
  * Do option processing on a datagram,

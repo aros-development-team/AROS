@@ -847,7 +847,6 @@ struct walkarg *w;
 /*
  * Definitions of protocols supported in the ROUTE domain.
  */
-extern	struct domain routedomain;		/* or at least forward */
 
 /*
  * The entries that are functions of the core (raw_input, raw_ctlinput,

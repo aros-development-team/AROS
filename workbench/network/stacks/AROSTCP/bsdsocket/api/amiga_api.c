@@ -94,7 +94,6 @@ struct List	garbageSocketBaseList; /* list of libray bases not active
 struct List	releasedSocketList; /* List for sockets that are in no-one's
 				       context, waiting for Obtain */
 
-extern struct Task *AROSTCP_Task;  /* reference to AmiTCP/IP task information */
 extern f_void UserLibrary_funcTable[];
 
 /*
@@ -590,7 +589,6 @@ static void forgetSocketOwner(struct SocketBase *libPtr)
      * part of the running stack - has no socket to look at.
      */
     static const char *const pcblists[] = { "tcb", "udb" };
-    extern struct rawcb rawcb;
     const struct netvar *nv;
     struct inpcb *inp;
     struct rawcb *rp;
@@ -1118,7 +1116,6 @@ VOID api_setfunctions() /* DOES NOTHING NOW */
  */
 VOID api_sendbreaktotasks()
 {
-    extern struct List socketBaseList; /* :/ */
     struct Node *libNode;
 
 #if defined(__AROS__)
@@ -1160,7 +1157,6 @@ volatile ULONG api_reconfig_acked = 0;    /* how many have acked (SBTC_RECONFIG_
  */
 VOID api_sendreconfig(BOOL begin)
 {
-    extern struct List socketBaseList; /* :/ */
     struct Node *libNode;
 
 #if defined(__AROS__)
@@ -1206,7 +1202,6 @@ static ULONG api_change_pending;        /* API_CHANGE_* not sent yet */
 
 static VOID api_sendchange(ULONG which)
 {
-    extern struct List socketBaseList; /* :/ */
     struct Node *libNode;
 
     if(api_state != API_SHOWN)
@@ -1268,7 +1263,6 @@ VOID api_addrchange_retry(VOID)
  */
 VOID api_logopeners(VOID)
 {
-    extern struct List socketBaseList; /* :/ */
     struct Node *libNode;
     struct { struct Task *task; char name[48]; } held[8];
     int n = 0, i;

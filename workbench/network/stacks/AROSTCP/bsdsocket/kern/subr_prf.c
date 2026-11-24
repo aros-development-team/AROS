@@ -114,7 +114,6 @@ panic(const char *fmt, ...)
     char buffer[PANICBUFFERSIZE];
     va_list ap;
     struct Library *IntuitionBase = NULL; /* local intuitionbase */
-    extern struct Task *AROSTCP_Task;
 
     netdiag.panics++;
     if(!in_panic) {

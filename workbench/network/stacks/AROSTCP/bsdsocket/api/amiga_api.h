@@ -215,8 +215,10 @@ struct SocketBase {
 int readErrnoValue(struct SocketBase *);
 
 extern struct SignalSemaphore syscall_semaphore;
+extern struct Task *AROSTCP_Task;	/* the stack's own task (kern/amiga_main.c) */
 extern struct SignalSemaphore baselist_semaphore;
 extern struct List releasedSocketList;
+extern struct List socketBaseList;
 
 /* A releasedSocketList entry */
 struct SocketNode {
@@ -272,8 +274,6 @@ VOID writeHErrnoValue(struct SocketBase *);
  */
 static inline void ObtainSyscallSemaphore(struct SocketBase *libPtr)
 {
-  extern struct Task *AROSTCP_Task;
-
   ObtainSemaphore(&syscall_semaphore);
   libPtr->myPri = SetTaskPri(FindTask(NULL),
   libPtr->libCallPri = AROSTCP_Task->tc_Node.ln_Pri);
@@ -316,7 +316,6 @@ static inline void ReleaseResolver(struct SocketBase *libPtr)
 
 static inline struct SocketBase *FindSocketBase(struct Task *task)
 {
-  extern struct List socketBaseList;
   struct Node *libNode;
 
   ObtainSemaphoreShared(&baselist_semaphore);

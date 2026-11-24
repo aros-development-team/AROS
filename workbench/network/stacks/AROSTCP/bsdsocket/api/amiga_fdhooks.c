@@ -100,7 +100,6 @@ static BOOL fdh_valid(LONG fd, struct socket *so)
 /* The base whose table holds fd; so_pgid need not be it (FIOSETOWN) */
 static struct SocketBase *fdh_fd_base(LONG fd, struct socket *so)
 {
-    extern struct List socketBaseList;
     struct Node *n;
     struct SocketBase *p = NULL;
 
