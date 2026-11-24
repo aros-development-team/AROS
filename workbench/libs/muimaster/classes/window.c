@@ -2175,6 +2175,41 @@ static VOID RefreshWindow(Object *oWin, struct MUI_WindowData *data)
 }
 
 
+/* Redraw the damage of the application's other windows. Called before a
+ * size change is laid out: the layout and redraw of the resized window can
+ * take long, and until then the other windows would keep showing what the
+ * resized one left on them, although their refresh needs only the damaged
+ * part. No message is taken or moved; the refresh message that waits for
+ * such a window finds no damage later and does nothing.
+ */
+static VOID RefreshOtherWindows(Object *oWin)
+{
+    struct MinList *ChildList = NULL;
+    Object *cstate;
+    Object *child;
+
+    get(_app(oWin), MUIA_Application_WindowList, &ChildList);
+    if (!ChildList)
+        return;
+
+    cstate = (Object *)ChildList->mlh_Head;
+    while ((child = NextObject(&cstate)))
+    {
+        struct MUI_WindowData *data;
+
+        if (child == oWin)
+            continue;
+
+        data = muiWindowData(child);
+        if ((data->wd_Flags & MUIWF_OPENED)
+            && !(data->wd_Flags & MUIWF_RESIZING)
+            && data->wd_RenderInfo.mri_Window
+            && (data->wd_RenderInfo.mri_Window->WLayer->Flags & LAYERREFRESH))
+            RefreshWindow(child, data);
+    }
+}
+
+
 /* Initialize data->wd_X and data->wd_Y for DisplayWindow */
 /* Compute stored X/Y from requests, estimated outer size, screen and
  * optional borrowed reference window. Centered/mouse encodings and
@@ -2896,6 +2931,8 @@ BOOL HandleWindowEvent(Object *oWin, struct MUI_WindowData *data,
         if ((iWin->GZZWidth != data->wd_Width)
             || (iWin->GZZHeight != data->wd_Height))
         {
+            RefreshOtherWindows(oWin);
+
             data->wd_Width = iWin->GZZWidth;
             data->wd_Height = iWin->GZZHeight;
             DoHideMethod(data->wd_RootObject);
