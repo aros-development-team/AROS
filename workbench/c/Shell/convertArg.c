@@ -94,6 +94,7 @@ LONG convertArg(ShellState *ss, Buffer *in, Buffer *out, BOOL *quoted)
         else if (s[len] == ss->dollar) /* default arg */
         {
             arg = s + len + 1;
+            for (q = arg; *q != ss->ket && *q != '\0'; ++q);
             len = q - arg;
         }
         else
