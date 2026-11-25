@@ -125,8 +125,7 @@ static BOOL AFS_close_volume(struct AFSBase *handler, struct Volume *volume, SIP
     return FALSE;
 }
 
-/* DosEntry() unlocks these after the handler returns, and that packet
- * round trip would end the Forbid() the handler exits in */
+/* Called before any client knows pr_MsgPort, where UnLock() waits for its reply */
 static void AFS_drop_proc_locks(struct AFSBase *afsbase)
 {
     struct Process *me = (struct Process *)FindTask(NULL);
@@ -336,6 +335,8 @@ LONG AFS_work(struct ExecBase *SysBase)
         replypkt(dp, DOSFALSE);
         return RETURN_FAIL;
     }
+
+    AFS_drop_proc_locks(handler);
 
     NEWLIST(&handler->offlinevols);
     volume = AFS_open_volume(handler, dp, &retval);
@@ -828,7 +829,6 @@ reply:
         }
     }
 
-    AFS_drop_proc_locks(handler);
     AFS_free(handler);
 
     /* Packets sent before dn_Task was cleared; exit before any can follow */
