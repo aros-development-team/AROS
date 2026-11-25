@@ -729,6 +729,38 @@ setup_tx_desc_die:
 
     D(bug("[%s] %s: Tx Ring Descriptors @ %p [%d bytes]\n", unit->e1ku_name, __func__, tx_ring->desc, tx_ring->size);)
 
+    /* Preallocate one frame buffer per descriptor, here in task context.
+     * The Tx soft interrupt and the interrupt handler only ever reuse them:
+     * exec AllocMem()/FreeMem() are not interrupt-safe (MEM_LOCK is Forbid(),
+     * which does not stop interrupts), and allocating/freeing per packet from
+     * interrupt context corrupted the memory lists under sustained outbound
+     * traffic -- the agent/stack wedges seen on every e1000 lane. */
+    tx_ring->buf_size = unit->e1ku_frame_max;
+    {
+        unsigned int b;
+        for (b = 0; b < tx_ring->count; b++)
+        {
+            struct e1000_buffer *bi = &tx_ring->buffer_info[b];
+
+            if ((bi->buffer = AllocMem(tx_ring->buf_size, MEMF_PUBLIC | MEMF_CLEAR)) == NULL)
+            {
+                D(bug("[%s] %s: Unable to allocate Tx buffer %u\n", unit->e1ku_name, __func__, b);)
+                while (b-- > 0)
+                {
+                    FreeMem(tx_ring->buffer_info[b].buffer, tx_ring->buf_size);
+                    tx_ring->buffer_info[b].buffer = NULL;
+                    tx_ring->buffer_info[b].dma = NULL;
+                }
+                FreeMem(tx_ring->desc, tx_ring->size);
+                tx_ring->dma = tx_ring->desc = NULL;
+                FreeMem(tx_ring->buffer_info, size);
+                tx_ring->buffer_info = NULL;
+                return -E1000_ERR_CONFIG;
+            }
+            bi->dma = HIDD_PCIDriver_CPUtoPCI(unit->e1ku_PCIDriver, bi->buffer);
+        }
+    }
+
     tx_ring->next_to_use = 0;
     tx_ring->next_to_clean = 0;
 
@@ -854,33 +886,42 @@ void e1000func_unmap_and_free_tx_resource(struct net_device *unit,
                                              struct e1000_buffer *buffer_info)
 {
     D(bug("[%s] %s(0x%p)\n", unit->e1ku_name, __func__, unit);)
-    if (buffer_info->dma) {
+    /* The frame buffer and its DMA mapping belong to the descriptor slot for
+     * the ring's lifetime (see e1000func_setup_tx_resources). This runs from
+     * the interrupt handler via e1000func_clean_tx_irq, so it must not free:
+     * it only marks the slot as no longer in flight. */
+    buffer_info->length = 0;
+}
+
+static void e1000func_release_tx_buffers(struct net_device *unit,
+                                         struct e1000_tx_ring *tx_ring)
+{
+    unsigned int i;
+
+    for (i = 0; i < tx_ring->count; i++) {
+        struct e1000_buffer *buffer_info = &tx_ring->buffer_info[i];
+
+        if (buffer_info->buffer)
+            FreeMem(buffer_info->buffer, tx_ring->buf_size);
+        buffer_info->buffer = NULL;
         buffer_info->dma = NULL;
     }
-    if (buffer_info->buffer) {
-        FreeMem(buffer_info->buffer, unit->e1ku_frame_max);
-        buffer_info->buffer = NULL;
-    }
-    /* buffer_info must be completely set up in the transmit path */
 }
 
 void e1000func_clean_tx_ring(struct net_device *unit,
                                 struct e1000_tx_ring *tx_ring)
 {
     struct e1000_buffer *buffer_info;
-    unsigned long size;
     unsigned int i;
 
     D(bug("[%s]: %s()\n", unit->e1ku_name, __func__));
 
-    /* Free all the Tx ring buffers */
+    /* Retire every slot but keep its preallocated buffer */
     for (i = 0; i < tx_ring->count; i++) {
             buffer_info = &tx_ring->buffer_info[i];
             e1000func_unmap_and_free_tx_resource(unit, buffer_info);
+            buffer_info->next_to_watch = 0;
     }
-
-    size = sizeof(struct e1000_buffer) * tx_ring->count;
-    memset(tx_ring->buffer_info, 0, size);
 
     /* Zero out the descriptor ring */
 
@@ -900,6 +941,7 @@ void e1000func_free_tx_resources(struct net_device *unit,
     D(bug("[%s]: %s()\n", unit->e1ku_name, __func__));
 
     e1000func_clean_tx_ring(unit, tx_ring);
+    e1000func_release_tx_buffers(unit, tx_ring);
 
     FreeMem(tx_ring->buffer_info, sizeof(struct e1000_buffer) * tx_ring->count);
     tx_ring->buffer_info = NULL;
@@ -1157,7 +1199,7 @@ BOOL e1000func_clean_tx_irq(struct net_device *unit,
         /* Detect a transmit hang in hardware, this serializes the
          * check with the clearing of time_stamp and movement of i */
         unit->detect_tx_hung = FALSE;
-        if (tx_ring->buffer_info[eop].dma  && !(E1000_READ_REG((struct e1000_hw *)unit->e1ku_Private00, E1000_STATUS) &  E1000_STATUS_TXOFF)) {
+        if (tx_ring->buffer_info[eop].length && !(E1000_READ_REG((struct e1000_hw *)unit->e1ku_Private00, E1000_STATUS) &  E1000_STATUS_TXOFF)) {
             /* detected Tx unit hang */
             D(
                 bug("[%s] %s: Detected Tx Unit Hang -:\n", unit->e1ku_name, __func__);

@@ -200,33 +200,47 @@ static AROS_INTH1(e1000func_TX_Int, struct e1000Unit *,  unit)
 
     while(proceed && (!IsMsgPortEmpty(port)))
     {
+        /* Ring-full guard: never hand the NIC a descriptor it has not given
+         * back yet. Overrunning next_to_clean would reuse a buffer the NIC is
+         * still DMAing from and make TDT pass TDH (the NIC then sees an empty
+         * ring and stops). Leave the rest queued; e1000func_IntHandler causes
+         * this soft interrupt again once e1000func_clean_tx_irq frees slots. */
+        if (((tx_ring->next_to_clean > i) ? 0 : tx_ring->count) +
+            tx_ring->next_to_clean - i - 1 == 0)
+            break;
+
         /* GetMsg() takes the port lock: the request is ours from here on */
         if ((request = (APTR)GetMsg(port)) == NULL)
             break;
 
         error = 0;
+        wire_error = 0;
         data_size = packet_size = request->ios2_DataLength;
 
         opener = (APTR)request->ios2_BufferManagement;
 
         buffer_info = &tx_ring->buffer_info[i];
 
-        if ((buffer_info->buffer = AllocMem(unit->e1ku_frame_max, MEMF_PUBLIC|MEMF_CLEAR)) != NULL)
+        /* Preallocated at ring setup: no AllocMem() in interrupt context */
+        frame = buffer_info->buffer;
+
+        if((request->ios2_Req.io_Flags & SANA2IOF_RAW) == 0)
+            packet_size += ETH_PACKET_DATA;
+
+        if (frame == NULL)
         {
-            frame = buffer_info->buffer;
-
-            if ((buffer_info->dma = HIDD_PCIDriver_CPUtoPCI(unit->e1ku_PCIDriver, buffer_info->buffer)) == NULL)
-            {
-                D(bug("[%s] ## %s: Failed to Map Tx DMA buffer\n", unit->e1ku_name, __func__));
-            }
-            else
-            {
-                D(bug("[%s] ## %s: Tx DMA buffer %d @ %p\n", unit->e1ku_name, __func__, i, buffer_info->dma));
-            }
-
+            error = S2ERR_NO_RESOURCES;
+            wire_error = S2WERR_BUFF_ERROR;
+        }
+        else if (packet_size > tx_ring->buf_size)
+        {
+            error = S2ERR_MTU_EXCEEDED;
+            wire_error = S2WERR_GENERIC_ERROR;
+        }
+        else
+        {
             if((request->ios2_Req.io_Flags & SANA2IOF_RAW) == 0)
             {
-                packet_size += ETH_PACKET_DATA;
                 CopyMem(request->ios2_DstAddr, frame->eth_packet_dest, ETH_ADDRESSSIZE);
                 CopyMem(unit->e1ku_dev_addr, frame->eth_packet_source, ETH_ADDRESSSIZE);
                 frame->eth_packet_type = AROS_WORD2BE(request->ios2_PacketType);
@@ -244,54 +258,36 @@ static AROS_INTH1(e1000func_TX_Int, struct e1000Unit *,  unit)
                     S2EVENT_ERROR | S2EVENT_SOFTWARE | S2EVENT_BUFF
                     | S2EVENT_TX);
             }
-
-            /* Now the packet is already in TX buffer, update flags for NIC */
-            if (error == 0)
-            {
-                Disable();
-                D(bug("[%s] ## %s: packet %d [type = %d] queued for transmission.\n", unit->e1ku_name, __func__, i, AROS_BE2WORD(frame->eth_packet_type)));
-
-              /* DEBUG? Dump frame if so */
-#ifdef DEBUG
-                {
-                    int j;
-                    D(bug("[%s] Tx Buffer %d Packet Dump -:", unit->e1ku_name, i));
-                    for (j = 0; j < packet_size; j++) {
-                        if ((j%16) == 0)
-                        {
-                            D(
-                            bug("\n");
-                            bug("[%s]:     %03x:", unit->e1ku_name, j);
-                            )
-                        }
-                        D(bug(" %02x", ((unsigned char*)frame)[j]));
-                    }
-                    D(bug("\n"));
-                }
-#endif
-                Enable();
-
-                /* Set the ring details for the packet .. */
-                buffer_info->length = packet_size;
-
-                tx_desc = E1000_TX_DESC(tx_ring, i);
-                tx_desc->buffer_addr = (IPTR)buffer_info->dma;
-                tx_desc->lower.data = AROS_LONG2LE(txd_lower | buffer_info->length);
-                tx_desc->upper.data = AROS_LONG2LE(txd_upper);
-                tx_desc->lower.data |= AROS_LONG2LE(unit->txd_cmd);
-            }
         }
 
-        buffer_info->next_to_watch = i;
+        /* Only a fully built frame consumes a descriptor. A failed request
+         * is replied with its error and leaves the slot untouched: advancing
+         * past an unwritten descriptor would resubmit the previous lap's
+         * stale descriptor to the NIC. */
+        if (error == 0)
+        {
+            D(bug("[%s] ## %s: packet %d [type = %d] queued for transmission.\n", unit->e1ku_name, __func__, i, AROS_BE2WORD(frame->eth_packet_type)));
 
-        if (++i == tx_ring->count) i = 0;
+            /* Set the ring details for the packet .. */
+            buffer_info->length = packet_size;
+
+            tx_desc = E1000_TX_DESC(tx_ring, i);
+            tx_desc->buffer_addr = (IPTR)buffer_info->dma;
+            tx_desc->lower.data = AROS_LONG2LE(txd_lower | buffer_info->length);
+            tx_desc->upper.data = AROS_LONG2LE(txd_upper);
+            tx_desc->lower.data |= AROS_LONG2LE(unit->txd_cmd);
+
+            buffer_info->next_to_watch = i;
+
+            if (++i == tx_ring->count) i = 0;
+        }
 
         /* Reply packet */
         request->ios2_Req.io_Error = error;
         request->ios2_WireError = wire_error;
-        ReplyMsg((APTR)request);
 
-        /* Update statistics */
+        /* Update statistics before ReplyMsg(): the request belongs to the
+         * client again once it has been replied */
         if(error == 0)
         {
             tracker = FindTypeStats(LIBBASE, unit, &unit->e1ku_type_trackers, request->ios2_PacketType);
@@ -302,11 +298,16 @@ static AROS_INTH1(e1000func_TX_Int, struct e1000Unit *,  unit)
                 tracker->stats.BytesSent += packet_size;
             }
         }
+
+        ReplyMsg((APTR)request);
     }
 
-    tx_ring->next_to_use = i;
+    if (tx_ring->next_to_use != i)
+    {
+        tx_ring->next_to_use = i;
 
-    MMIO_W32((APTR)(((struct e1000_hw *)unit->e1ku_Private00)->hw_addr + tx_ring->tdt), tx_ring->next_to_use);
+        MMIO_W32((APTR)(((struct e1000_hw *)unit->e1ku_Private00)->hw_addr + tx_ring->tdt), tx_ring->next_to_use);
+    }
 
     return 0;
 
@@ -390,6 +391,11 @@ AROS_INTH1(e1000func_IntHandler,struct e1000Unit *,unit)
 
         if (!rx_cleaned && !tx_cleaned)
             break;
+
+        /* Descriptors were given back: resume any writes the Tx soft
+         * interrupt left queued because the ring was full */
+        if (tx_cleaned && !IsMsgPortEmpty(unit->e1ku_request_ports[WRITE_QUEUE]))
+            Cause(&unit->e1ku_tx_int);
     }
 
 //	if (adapter->itr_setting & 3)
