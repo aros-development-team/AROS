@@ -74,10 +74,12 @@ static struct AFSBase *AFS_alloc(void)
                 }
                 DeleteIORequest((struct IORequest *)handler->timer_request);
             }
+            DeleteMsgPort(handler->timer_mp);
             CloseLibrary((struct Library *)handler->dosbase);
         }
         CloseLibrary((struct Library *)handler->utilitybase);
     }
+    FreeMem(handler, sizeof(*handler));
     return NULL;
 }
 
@@ -89,6 +91,7 @@ static void AFS_free(struct AFSBase *handler)
     }
     CloseDevice((struct IORequest *)handler->timer_request);
     DeleteIORequest((struct IORequest *)handler->timer_request);
+    DeleteMsgPort(handler->timer_mp);
     CloseLibrary((struct Library *)handler->dosbase);
     CloseLibrary((struct Library *)handler->utilitybase);
     FreeMem(handler, sizeof(*handler));
