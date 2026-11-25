@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2009, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Free a signal.
 */
@@ -45,7 +45,13 @@
 {
     AROS_LIBFUNC_INIT
 
-    if(signalNum!=-1)
+    /* A signal number is a byte (-1 = no signal). Callers such as
+       DeleteMsgPort() pass mp_SigBit, a UBYTE, so "no signal" arrives here
+       as 255 and passed the != -1 test: 1 << 255 is undefined (x86 clears
+       bit 31; GCC for 68020+ emits a bit-field clear that writes outside
+       tc_SigAlloc). Only clear bits 0-31. */
+    signalNum = (BYTE)signalNum;
+    if (signalNum >= 0 && signalNum < 32)
     {
         /* No more atomic problem - i beleive THIS is atomic. - sonic */
         struct Task *me = GET_THIS_TASK;
