@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Document the CLI startup packet
 */
@@ -166,6 +166,9 @@
            } \
        } \
        type = dp->dp_Type; \
+       /* CreateNewProc() gave us a DupLock() of the creator's home dir: \
+        * release it here, process exit cannot once pr_HomeDir is BNULL */ \
+       UnLock(me->pr_HomeDir); \
        me->pr_HomeDir = BNULL; \
        segArray = BADDR(me->pr_SegList); \
        segArray[4] = segArray[3]; \
