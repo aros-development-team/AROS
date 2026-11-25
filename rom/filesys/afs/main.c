@@ -183,6 +183,9 @@ static VOID stopFlushMotor(struct AFSBase *handler, struct Volume *volume)
 
 static VOID onFlushTimer(struct AFSBase *handler, struct Volume *volume)
 {
+    /* The reply has to leave the port before the request is sent again */
+    if (GetMsg(handler->timer_mp) == NULL)
+        return;
     handler->timer_flags &= ~TIMER_ACTIVE;
     if (volume->writefailed || volume->cachepending)
     {
