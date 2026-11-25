@@ -37,7 +37,12 @@ BOOL getpacketinfo(struct DosLibrary *DOSBase, CONST_STRPTR name, struct PacketH
         phs->name = bstrname;
         return TRUE;
     } else { /* ":" */
-        BSTR bstrname = C2BSTR(name);
+        /* The handler gets the part after the device name, relative to
+           dvp_Lock, as Lock() and Open() pass it. With the whole name, a
+           handler that resolves "XXX:" from the volume root (fat-handler)
+           looked for "C:Foo" as ":Foo", so these calls failed through an
+           assign of a subdirectory. */
+        BSTR bstrname = C2BSTR(strchr(name, ':') + 1);
         struct DevProc *dvp = NULL;
         if ((dvp = GetDeviceProc(name, dvp))) {
             phs->name = bstrname;
