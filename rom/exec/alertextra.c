@@ -64,7 +64,7 @@ void FormatAlertExtra(char *buffer, APTR stack, UBYTE type, APTR data, struct Ex
         {
             struct TagItem instrTags[4];
             char insPad[(__WORDSIZE/2) + 1];
-            APTR tmpbuf, symaddr, symend = NULL;
+            APTR tmpbuf, symaddr = NULL, symend = NULL;
             char *symname = NULL;
             ULONG x,inslen;
 
@@ -92,6 +92,12 @@ void FormatAlertExtra(char *buffer, APTR stack, UBYTE type, APTR data, struct Ex
             {
                 if (symname)
                     buf = NewRawDoFmt("\n%p <%s>:\n", RAWFMTFUNC_STRING, buf, symaddr, symname) - 1;
+
+                /* DecodeLocation returns TRUE when it finds the segment even if
+                 * no symbol matches, in which case symaddr was forced to NULL.
+                 * Never hand NULL to InitDisassembleCtx() below. */
+                if (!symaddr)
+                    symaddr = (APTR)ctx->PC;
 
                 if (!symend || (symend > (APTR)(ctx->PC + ((sizeof(IPTR) * DISS_DEPTH)))))
                     symend = (APTR)(ctx->PC + (sizeof(IPTR) * DISS_DEPTH));
