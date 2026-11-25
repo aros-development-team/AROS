@@ -83,7 +83,8 @@ void e1000_msec_delay(struct net_device *unit, ULONG msec)
 
 void e1000_msec_delay_irq(struct net_device *unit, ULONG msec)
 {
-    //e1000_usec_delay(unit, 1000 * msec);
+    /* Every caller runs in the unit task, not in the interrupt handler */
+    e1000_usec_delay(unit, 1000 * msec);
 }
 
 static BOOL e1000func_check_64k_bound(struct net_device *unit,
@@ -447,8 +448,50 @@ void e1000func_reset(struct net_device *unit)
         legacy_pba_adjust = TRUE;
         pba = E1000_PBA_30K;
         break;
-    case e1000_undefined:
-    case e1000_num_macs:
+    /* e1000e families: Rx packet buffer sizes from FreeBSD em_reset()
+     * (sys/dev/e1000/if_em.c). Writing PBA sets the Rx share of the
+     * on-chip packet buffer, the rest is Tx. Left at 0, the MAC has no Rx
+     * FIFO and the flow control watermarks computed below wrap. */
+    case e1000_82571:
+    case e1000_82572:
+    case e1000_80003es2lan:
+        pba = E1000_PBA_32K;    /* 48K total: 32K Rx, 16K Tx */
+        break;
+    case e1000_82573:
+        pba = E1000_PBA_12K;    /* 32K total: 12K Rx, 20K Tx */
+        break;
+    case e1000_82574:
+    case e1000_82583:
+        if (unit->e1ku_frame_max > E1000_RXBUFFER_8192)
+            pba = E1000_PBA_22K;    /* 40K total: 22K Rx, 18K Tx */
+        else
+            pba = E1000_PBA_32K;    /* 40K total: 32K Rx, 8K Tx */
+        break;
+    case e1000_ich8lan:
+        pba = E1000_PBA_8K;
+        break;
+    case e1000_ich9lan:
+    case e1000_ich10lan:
+        if (unit->e1ku_frame_max > E1000_RXBUFFER_4096)
+            pba = E1000_PBA_14K;
+        else
+            pba = E1000_PBA_10K;
+        break;
+    case e1000_pchlan:
+    case e1000_pch2lan:
+    case e1000_pch_lpt:
+    case e1000_pch_spt:
+    case e1000_pch_cnp:
+    case e1000_pch_tgp:
+    case e1000_pch_adp:
+    case e1000_pch_mtp:
+        if (unit->e1ku_mtu > ETH_DATA_LEN)
+            pba = E1000_PBA_12K;
+        else
+            pba = E1000_PBA_26K;
+        break;
+    default:
+        /* 82575 and later (igb) are not probed by this driver */
         break;
     }
 
@@ -532,6 +575,52 @@ void e1000func_reset(struct net_device *unit)
 
     fc->pause_time = E1000_FC_PAUSE_TIME;
     fc->send_xon = 1;
+
+    /* Device specific flow control overrides, from FreeBSD em_reset() */
+    switch (mac->type)
+    {
+    case e1000_pchlan:
+        /* Workaround: no Tx flow control on PCH */
+        if (fc->requested_mode == e1000_fc_full)
+            fc->requested_mode = e1000_fc_rx_pause;
+        else if (fc->requested_mode == e1000_fc_tx_pause)
+            fc->requested_mode = e1000_fc_none;
+        fc->pause_time = 0xFFFF;
+        if (unit->e1ku_mtu > ETH_DATA_LEN) {
+            fc->high_water = 0x3500;
+            fc->low_water = 0x1500;
+        } else {
+            fc->high_water = 0x5000;
+            fc->low_water = 0x3000;
+        }
+        fc->refresh_time = 0x1000;
+        break;
+    case e1000_pch2lan:
+    case e1000_pch_lpt:
+    case e1000_pch_spt:
+    case e1000_pch_cnp:
+    case e1000_pch_tgp:
+    case e1000_pch_adp:
+    case e1000_pch_mtp:
+        fc->high_water = 0x5C20;
+        fc->low_water = 0x5048;
+        fc->pause_time = 0xFFFF;
+        fc->refresh_time = 0xFFFF;
+        break;
+    case e1000_ich9lan:
+    case e1000_ich10lan:
+        if (unit->e1ku_mtu > ETH_DATA_LEN) {
+            fc->high_water = 0x2800;
+            fc->low_water = fc->high_water - 8;
+        }
+        break;
+    case e1000_80003es2lan:
+        fc->pause_time = 0xFFFF;
+        break;
+    default:
+        break;
+    }
+
     fc->current_mode = fc->requested_mode;
 
     /* Allow time for pending master requests to run */
@@ -864,6 +953,23 @@ int e1000func_setup_all_rx_resources(struct net_device *unit)
     int i, err = 0;
 
     D(bug("[%s] %s(0x%p)\n", unit->e1ku_name, __func__, unit);)
+
+    /* One assembly buffer per unit, used by e1000func_clean_rx_irq() when a
+     * frame arrives spread over several descriptors. */
+    if (unit->e1ku_rx_scratch == NULL)
+    {
+        unit->e1ku_rx_scratch = AllocMem(unit->rx_buffer_len, MEMF_PUBLIC | MEMF_CLEAR);
+        if (unit->e1ku_rx_scratch == NULL)
+        {
+            D(bug("[%s] %s: Unable to allocate the Rx assembly buffer\n", unit->e1ku_name, __func__);)
+            return E1000_ERR_CONFIG;
+        }
+        D(bug("[%s] %s: Rx assembly buffer @ %p [%d bytes]\n", unit->e1ku_name, __func__, unit->e1ku_rx_scratch, unit->rx_buffer_len);)
+    }
+    unit->e1ku_rx_frag_len = 0;
+    unit->e1ku_rx_frag_errors = 0;
+    unit->e1ku_rx_assembling = FALSE;
+    unit->e1ku_rx_frag_ok = FALSE;
 
     for (i = 0; i < unit->e1ku_rxRing_QueueSize; i++)
     {
@@ -1325,9 +1431,11 @@ BOOL e1000func_clean_rx_irq(struct net_device *unit,
     unsigned int i, total_rx_bytes=0, total_rx_packets=0;
     int cleaned_count = 0;
     UBYTE status = 0;
-    ULONG length;
+    ULONG length, errors = 0;
+    ULONG frag_len = unit->e1ku_rx_frag_len, frag_errors = unit->e1ku_rx_frag_errors;
     UWORD packet_type;	/* unsigned: IPv6 ethertype 0x86dd must not sign-extend */
     BOOL accepted, is_orphan, cleaned = FALSE, update = FALSE;
+    BOOL assembling = unit->e1ku_rx_assembling, frag_ok = unit->e1ku_rx_frag_ok;
 
     i = rx_ring->next_to_clean;
     rx_desc = E1000_RX_DESC(rx_ring, i);
@@ -1353,23 +1461,78 @@ BOOL e1000func_clean_rx_irq(struct net_device *unit,
         cleaned_count++;
 
         length = AROS_LE2WORD(rx_desc->length);
+        errors = rx_desc->errors;
 
-        /* !EOP means multiple descriptors were used to store a single
-         * packet, also make sure the frame isn't just CRC only */
-        if (!(status & E1000_RXD_STAT_EOP) || (length <= ETH_CRCSIZE)) {
-            /* All receives must fit into a single buffer */
-            D(bug("[%s] %s: Receive packet consumed multiple buffers - recycling\n", unit->e1ku_name, __func__);)
-            /* recycle */
-            goto next_desc;
+        /* A frame may be spread over several receive descriptors. QEMU's
+         * e1000e model (hw/net/e1000e_core.c, e1000e_write_packet_to_guest)
+         * always writes the 4 byte FCS into a descriptor of its own when
+         * RCTL.SECRC is clear, so the payload descriptor has DD but no EOP.
+         * Real hardware writes the FCS inline; the reassembly is generic. Accumulate every fragment up to the EOP descriptor in
+         * the per unit assembly buffer and hand the frame to the stack from
+         * there. A frame that fits in one descriptor keeps using the zero
+         * copy path below. */
+        if (assembling || !(status & E1000_RXD_STAT_EOP))
+        {
+            if (!assembling)
+            {
+                assembling = TRUE;
+                frag_len = 0;
+                frag_errors = 0;
+                frag_ok = (unit->e1ku_rx_scratch != NULL);
+            }
+
+            if (frag_ok && ((frag_len + length) <= unit->rx_buffer_len))
+            {
+                CopyMem((APTR)(IPTR)rx_desc->buffer_addr,
+                        (UBYTE *)unit->e1ku_rx_scratch + frag_len, length);
+                frag_len += length;
+                frag_errors |= errors;
+            }
+            else
+            {
+                frag_ok = FALSE;
+            }
+
+            if (!(status & E1000_RXD_STAT_EOP))
+            {
+                /* Wait for the remaining fragments of this frame */
+                D(bug("[%s] %s: Frame fragment %d bytes, %d assembled so far\n", unit->e1ku_name, __func__, length, frag_len);)
+                goto next_desc;
+            }
+
+            /* EOP reached - the frame is complete */
+            assembling = FALSE;
+
+            /* Make sure the assembled frame isn't just CRC only */
+            if (!frag_ok || (frag_len <= ETH_CRCSIZE))
+            {
+                D(bug("[%s] %s: Assembled frame (%d bytes) invalid - recycling\n", unit->e1ku_name, __func__, frag_len);)
+                goto next_desc;
+            }
+
+            frame = (struct eth_frame *)unit->e1ku_rx_scratch;
+            length = frag_len;
+            errors = frag_errors;
+        }
+        else
+        {
+            /* All receives must fit into a single buffer,
+             * also make sure the frame isn't just CRC only */
+            if (length <= ETH_CRCSIZE)
+            {
+                D(bug("[%s] %s: Receive packet consumed multiple buffers - recycling\n", unit->e1ku_name, __func__);)
+                /* recycle */
+                goto next_desc;
+            }
+
+            frame = (struct eth_frame *)(IPTR)rx_desc->buffer_addr;
         }
 
-        frame = (struct eth_frame *)(IPTR)rx_desc->buffer_addr;
-
-        if (rx_desc->errors & E1000_RXD_ERR_FRAME_ERR_MASK){
+        if (errors & E1000_RXD_ERR_FRAME_ERR_MASK){
             UBYTE last_byte = *(frame->eth_packet_data + length - 1);
-            D(bug("[%s] %s: Frame Error %d (last byte %x)\n", unit->e1ku_name, __func__, rx_desc->errors, last_byte);)
+            D(bug("[%s] %s: Frame Error %d (last byte %x)\n", unit->e1ku_name, __func__, errors, last_byte);)
             if (TBI_ACCEPT((struct e1000_hw *)unit->e1ku_Private00, status,
-                          rx_desc->errors, length, last_byte,
+                          errors, length, last_byte,
                           unit->e1ku_frame_min,
                           unit->e1ku_frame_max))
             {
@@ -1401,7 +1564,7 @@ BOOL e1000func_clean_rx_irq(struct net_device *unit,
         /* Receive Checksum Offload */
         e1000func_rx_checksum(unit,
                           (ULONG)(status) |
-                          ((ULONG)(rx_desc->errors) << 24),
+                          ((ULONG)(errors) << 24),
                           AROS_LE2WORD(rx_desc->csum), frame);
 
         /* Dump contents of frame if DEBUG enabled */
@@ -1513,6 +1676,12 @@ next_desc:
     }
     rx_ring->next_to_clean = i;
 
+    /* A frame whose EOP descriptor has not completed yet carries over */
+    unit->e1ku_rx_frag_len = frag_len;
+    unit->e1ku_rx_frag_errors = frag_errors;
+    unit->e1ku_rx_assembling = assembling;
+    unit->e1ku_rx_frag_ok = frag_ok;
+
     cleaned_count = E1000_DESC_UNUSED(rx_ring);
     if (cleaned_count)
         e1000func_alloc_rx_buffers_fake(unit, rx_ring, cleaned_count);
@@ -1603,6 +1772,18 @@ LONG  e1000_read_pcie_cap_reg(struct e1000_hw *hw, ULONG reg, UWORD *value)
     {
         *value = READCONFIGWORD(unit, unit->e1ku_PCIDevice, unit->e1ku_PCIeCap + reg);
         D(bug("[%s] %s: ------> [%04x]\n", unit->e1ku_name, __func__, *value);)
+        return (E1000_SUCCESS);
+    }
+
+    return 0;
+}
+
+LONG  e1000_write_pcie_cap_reg(struct e1000_hw *hw, ULONG reg, UWORD *value)
+{
+    D(bug("[%s]: %s(reg:%d, %04x)\n", unit->e1ku_name, __func__, reg, *value);)
+    if (unit->e1ku_PCIeCap)
+    {
+        WRITECONFIGWORD(unit, unit->e1ku_PCIDevice, unit->e1ku_PCIeCap + reg, *value);
         return (E1000_SUCCESS);
     }
 

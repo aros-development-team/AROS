@@ -1,30 +1,37 @@
-/*******************************************************************************
+/******************************************************************************
+  SPDX-License-Identifier: BSD-3-Clause
 
-  Intel PRO/1000 Linux driver
-  Copyright(c) 1999 - 2010 Intel Corporation.
+  Copyright (c) 2001-2020, Intel Corporation
+  All rights reserved.
 
-  This program is free software; you can redistribute it and/or modify it
-  under the terms and conditions of the GNU General Public License,
-  version 2, as published by the Free Software Foundation.
+  Redistribution and use in source and binary forms, with or without
+  modification, are permitted provided that the following conditions are met:
 
-  This program is distributed in the hope it will be useful, but WITHOUT
-  ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-  FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-  more details.
+   1. Redistributions of source code must retain the above copyright notice,
+      this list of conditions and the following disclaimer.
 
-  You should have received a copy of the GNU General Public License along with
-  this program; if not, write to the Free Software Foundation, Inc.,
-  51 Franklin St - Fifth Floor, Boston, MA 02110-1301 USA.
+   2. Redistributions in binary form must reproduce the above copyright
+      notice, this list of conditions and the following disclaimer in the
+      documentation and/or other materials provided with the distribution.
 
-  The full GNU General Public License is included in this distribution in
-  the file called "COPYING".
+   3. Neither the name of the Intel Corporation nor the names of its
+      contributors may be used to endorse or promote products derived from
+      this software without specific prior written permission.
 
-  Contact Information:
-  Linux NICS <linux.nics@intel.com>
-  e1000-devel Mailing List <e1000-devel@lists.sourceforge.net>
-  Intel Corporation, 5200 N.E. Elam Young Parkway, Hillsboro, OR 97124-6497
+  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+  ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+  LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+  CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+  SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+  INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+  CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+  POSSIBILITY OF SUCH DAMAGE.
 
-*******************************************************************************/
+******************************************************************************/
+/*$FreeBSD$*/
 
 /*
  * 82542 Gigabit Ethernet Controller
@@ -41,7 +48,7 @@ static s32  e1000_init_hw_82542(struct e1000_hw *hw);
 static s32  e1000_setup_link_82542(struct e1000_hw *hw);
 static s32  e1000_led_on_82542(struct e1000_hw *hw);
 static s32  e1000_led_off_82542(struct e1000_hw *hw);
-static void e1000_rar_set_82542(struct e1000_hw *hw, u8 *addr, u32 index);
+static int  e1000_rar_set_82542(struct e1000_hw *hw, u8 *addr, u32 index);
 static void e1000_clear_hw_cntrs_82542(struct e1000_hw *hw);
 static s32  e1000_read_mac_addr_82542(struct e1000_hw *hw);
 
@@ -56,7 +63,7 @@ static s32 e1000_init_phy_params_82542(struct e1000_hw *hw)
 
 	DEBUGFUNC("e1000_init_phy_params_82542");
 
-	phy->type               = e1000_phy_none;
+	phy->type = e1000_phy_none;
 
 	return ret_val;
 }
@@ -71,18 +78,18 @@ static s32 e1000_init_nvm_params_82542(struct e1000_hw *hw)
 
 	DEBUGFUNC("e1000_init_nvm_params_82542");
 
-	nvm->address_bits       =  6;
-	nvm->delay_usec         = 50;
-	nvm->opcode_bits        =  3;
-	nvm->type               = e1000_nvm_eeprom_microwire;
-	nvm->word_size          = 64;
+	nvm->address_bits	=  6;
+	nvm->delay_usec		= 50;
+	nvm->opcode_bits	=  3;
+	nvm->type		= e1000_nvm_eeprom_microwire;
+	nvm->word_size		= 64;
 
 	/* Function Pointers */
-	nvm->ops.read           = e1000_read_nvm_microwire;
-	nvm->ops.release        = e1000_stop_nvm;
-	nvm->ops.write          = e1000_write_nvm_microwire;
-	nvm->ops.update         = e1000_update_nvm_checksum_generic;
-	nvm->ops.validate       = e1000_validate_nvm_checksum_generic;
+	nvm->ops.read		= e1000_read_nvm_microwire;
+	nvm->ops.release	= e1000_stop_nvm;
+	nvm->ops.write		= e1000_write_nvm_microwire;
+	nvm->ops.update		= e1000_update_nvm_checksum_generic;
+	nvm->ops.validate	= e1000_validate_nvm_checksum_generic;
 
 	return E1000_SUCCESS;
 }
@@ -118,7 +125,8 @@ static s32 e1000_init_mac_params_82542(struct e1000_hw *hw)
 	/* link setup */
 	mac->ops.setup_link = e1000_setup_link_82542;
 	/* phy/fiber/serdes setup */
-	mac->ops.setup_physical_interface = e1000_setup_fiber_serdes_link_generic;
+	mac->ops.setup_physical_interface =
+					e1000_setup_fiber_serdes_link_generic;
 	/* check for link */
 	mac->ops.check_for_link = e1000_check_for_fiber_link_generic;
 	/* multicast address update */
@@ -137,7 +145,8 @@ static s32 e1000_init_mac_params_82542(struct e1000_hw *hw)
 	/* clear hardware counters */
 	mac->ops.clear_hw_cntrs = e1000_clear_hw_cntrs_82542;
 	/* link info */
-	mac->ops.get_link_up_info = e1000_get_speed_and_duplex_fiber_serdes_generic;
+	mac->ops.get_link_up_info =
+				e1000_get_speed_and_duplex_fiber_serdes_generic;
 
 	return E1000_SUCCESS;
 }
@@ -309,7 +318,7 @@ static s32 e1000_init_hw_82542(struct e1000_hw *hw)
 static s32 e1000_setup_link_82542(struct e1000_hw *hw)
 {
 	struct e1000_mac_info *mac = &hw->mac;
-	s32 ret_val = E1000_SUCCESS;
+	s32 ret_val;
 
 	DEBUGFUNC("e1000_setup_link_82542");
 
@@ -319,7 +328,7 @@ static s32 e1000_setup_link_82542(struct e1000_hw *hw)
 
 	hw->fc.requested_mode &= ~e1000_fc_tx_pause;
 
-	if (mac->report_tx_early == 1)
+	if (mac->report_tx_early)
 		hw->fc.requested_mode &= ~e1000_fc_rx_pause;
 
 	/*
@@ -329,7 +338,7 @@ static s32 e1000_setup_link_82542(struct e1000_hw *hw)
 	hw->fc.current_mode = hw->fc.requested_mode;
 
 	DEBUGOUT1("After fix-ups FlowControl is now = %x\n",
-	                                             hw->fc.current_mode);
+		  hw->fc.current_mode);
 
 	/* Call the necessary subroutine to configure the link. */
 	ret_val = mac->ops.setup_physical_interface(hw);
@@ -403,7 +412,7 @@ static s32 e1000_led_off_82542(struct e1000_hw *hw)
  *  Sets the receive address array register at index to the address passed
  *  in by addr.
  **/
-static void e1000_rar_set_82542(struct e1000_hw *hw, u8 *addr, u32 index)
+static int e1000_rar_set_82542(struct e1000_hw *hw, u8 *addr, u32 index)
 {
 	u32 rar_low, rar_high;
 
@@ -413,9 +422,8 @@ static void e1000_rar_set_82542(struct e1000_hw *hw, u8 *addr, u32 index)
 	 * HW expects these in little endian so we reverse the byte order
 	 * from network order (big endian) to little endian
 	 */
-	rar_low = ((u32) addr[0] |
-	           ((u32) addr[1] << 8) |
-	           ((u32) addr[2] << 16) | ((u32) addr[3] << 24));
+	rar_low = ((u32) addr[0] | ((u32) addr[1] << 8) |
+		   ((u32) addr[2] << 16) | ((u32) addr[3] << 24));
 
 	rar_high = ((u32) addr[4] | ((u32) addr[5] << 8));
 
@@ -425,6 +433,8 @@ static void e1000_rar_set_82542(struct e1000_hw *hw, u8 *addr, u32 index)
 
 	E1000_WRITE_REG_ARRAY(hw, E1000_RA, (index << 1), rar_low);
 	E1000_WRITE_REG_ARRAY(hw, E1000_RA, ((index << 1) + 1), rar_high);
+
+	return E1000_SUCCESS;
 }
 
 /**

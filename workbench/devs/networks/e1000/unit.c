@@ -661,11 +661,46 @@ AROS_UFH3(void, e1000func_Schedular,
  */
 static ULONG e1000_unit_max_mtu(struct e1000_hw *hw)
 {
-    /* The original 82542 cannot handle jumbo frames; the rest of the 8254x
-     * family can, up to MAX_JUMBO_FRAME_SIZE on the wire. */
-    if (hw->mac.type == e1000_82542)
+    ULONG frame_max;
+
+    switch (hw->mac.type)
+    {
+    /* The 8254x family, except the original 82542 */
+    case e1000_82543:
+    case e1000_82544:
+    case e1000_82540:
+    case e1000_82545:
+    case e1000_82545_rev_3:
+    case e1000_82546:
+    case e1000_82546_rev_3:
+    case e1000_82541:
+    case e1000_82541_rev_2:
+    case e1000_82547:
+    case e1000_82547_rev_2:
+        frame_max = MAX_JUMBO_FRAME_SIZE;
+        break;
+
+    case e1000_82571:
+    case e1000_82572:
+    case e1000_82574:
+    case e1000_80003es2lan:
+    case e1000_ich9lan:
+    case e1000_ich10lan:
+        frame_max = 9234;
+        break;
+
+    case e1000_pchlan:
+        frame_max = 4096;
+        break;
+
+    /* No jumbo frames: 82542, 82573, 82583, ICH8. PCH2 and later could take
+     * 9234 bytes, but only with e1000_lv_jumbo_workaround_ich8lan() and
+     * RCTL.SECRC, which this driver does not use yet. */
+    default:
         return ETH_MTU;
-    return MAX_JUMBO_FRAME_SIZE - ETH_HEADERSIZE - ETH_CRCSIZE;
+    }
+
+    return frame_max - ETH_HEADERSIZE - ETH_CRCSIZE;
 }
 
 static ULONG e1000_unit_rx_bufsize(ULONG frame_max)
@@ -1139,6 +1174,9 @@ void DeleteUnit(struct e1000Base *e1KBase, struct e1000Unit *unit)
 
         if (unit->e1ku_name)
             FreeVec(unit->e1ku_name);
+
+        if (unit->e1ku_rx_scratch)
+            FreeMem(unit->e1ku_rx_scratch, unit->rx_buffer_len);
 
         FreeMem(unit, sizeof(struct e1000Unit));
     }

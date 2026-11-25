@@ -38,6 +38,7 @@
 #define _E1000_OSDEP_H_
 
 #include "e1000.h"
+#include <string.h>
 
 #define ADVERTISED_1000baseT_Full           (1 << 5)
 #define ADVERTISED_Autoneg                  (1 << 6)
@@ -175,6 +176,14 @@ static inline ULONG readl(u8 __iomem *base)
 static inline void writel(ULONG val, u8 __iomem *base)
 {
     mmio_outl(val, base);
+}
+static inline UWORD readw(u8 __iomem *base)
+{
+    return mmio_inw(base);
+}
+static inline void writew(UWORD val, u8 __iomem *base)
+{
+    mmio_outw(val, base);
 }
 
 static inline UBYTE MMIO_R8(u8 __iomem *base)
@@ -353,6 +362,19 @@ struct e1000Unit {
     ULONG                   e1ku_frame_max;
     ULONG                   e1ku_frame_min;
 
+	/* Scratch buffer used to reassemble frames split across several
+	 * receive descriptors (QEMU's e1000e model puts the 4 byte FCS in a
+	 * descriptor of its own). Allocated with the Rx resources and only
+	 * touched from e1000func_clean_rx_irq(). */
+	APTR                    e1ku_rx_scratch;
+	/* Reassembly state. Kept in the unit, not on the stack, because the
+	 * trailing descriptor of a split frame may complete after
+	 * e1000func_clean_rx_irq() has returned. Reset with the Rx resources. */
+	ULONG                   e1ku_rx_frag_len;
+	ULONG                   e1ku_rx_frag_errors;
+	BOOL                    e1ku_rx_assembling;
+	BOOL                    e1ku_rx_frag_ok;
+
 	ULONG                   e1ku_tx_fifo_head;
 	ULONG                   e1ku_tx_head_addr;
 	ULONG                   e1ku_tx_fifo_size;
@@ -424,6 +446,11 @@ void e1000_usec_delay(struct net_device *, ULONG);
 #define msec_delay(msec)     e1000_msec_delay((struct net_device *)hw->back, msec)
 #define msec_delay_irq(msec) e1000_msec_delay_irq((struct net_device *)hw->back, msec)
 #define usec_delay(usec)     e1000_usec_delay((struct net_device *)hw->back, usec)
+#define usec_delay_irq(usec) usec_delay(usec)
+
+/* The FreeBSD shared code asserts on its context lock; AROS has none */
+#define ASSERT_CTX_LOCK_HELD(hw)
+#define ASSERT_NO_LOCKS()
 /* misc */
 int request_irq(struct net_device *);
 void e1000func_irq_disable(struct net_device *);
