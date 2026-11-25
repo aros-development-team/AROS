@@ -127,7 +127,7 @@ AROS_LH1(void, RemTask,
         {
             D(bug("[TaskRes] %s: destroying new entry @ 0x%p\n", __func__, taskEntry));
             Remove(&taskEntry->tle_Node);
-            FreeMem(taskEntry, sizeof(struct TaskListEntry));
+            task_FreeEntry(taskEntry);
             removed = TRUE;
             break;
         }
@@ -144,7 +144,7 @@ AROS_LH1(void, RemTask,
                 {
                     D(bug("[TaskRes] %s: destroying entry\n", __func__));
                     Remove(&taskEntry->tle_Node);
-                    FreeMem(taskEntry, sizeof(struct TaskListEntry));
+                    task_FreeEntry(taskEntry);
                 }
                 else
                 {
