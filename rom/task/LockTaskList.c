@@ -75,8 +75,11 @@
         taskList->tlp_Node.ln_Name = (char *)FindTask(NULL);
         taskList->tlp_Flags = flags;
         taskList->tlp_Tasks = &TaskResBase->trb_TaskList;
+        /* Entries stay put while trb_LockedLists is not empty */
+        task_ListLock(TaskResBase);
         taskList->tlp_Next = (struct TaskListEntry *)GetHead(taskList->tlp_Tasks);
         AddTail(&TaskResBase->trb_LockedLists, &taskList->tlp_Node);
+        task_ListUnlock(TaskResBase);
     }
 #else
     Disable();

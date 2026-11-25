@@ -36,10 +36,12 @@ AROS_UFH3(void, TaskRes_PreLaunch,
         D(bug("[TaskRes] %s: taskentry @ 0x%p for '%s'\n", __func__, newEntry, task->tc_Node.ln_Name));
         newEntry->tle_Task = task;
         NEWLIST(&newEntry->tle_HookTypes);
+        task_ListLock(TaskResBase);
         if (IsListEmpty(&TaskResBase->trb_LockedLists))
             AddTail(&TaskResBase->trb_TaskList, &newEntry->tle_Node);
         else
             AddTail(&TaskResBase->trb_NewTasks, &newEntry->tle_Node);
+        task_ListUnlock(TaskResBase);
     }
 
     AROS_USERFUNC_EXIT
@@ -118,6 +120,7 @@ AROS_LH1(void, RemTask,
     if (!IsMinListEmpty(&TaskResBase->trb_NotifyHooks))
         taskres_NotifyTasks(TaskResBase, TNA_REMOVED, findTask, NULL, NULL);
 
+    task_ListLock(TaskResBase);
     ForeachNodeSafe(&TaskResBase->trb_NewTasks, taskEntry, tmpEntry)
     {
         if (taskEntry->tle_Task == findTask)
@@ -132,12 +135,6 @@ AROS_LH1(void, RemTask,
 
     if (!removed)
     {
-#if !defined(__AROSEXEC_SMP__)
-        /* Don't let any other task interfere with us at the moment */
-        Forbid();
-#else
-        EXEC_SPINLOCK_LOCK(&TaskResBase->TaskListSpinLock, NULL, SPINLOCK_MODE_WRITE);
-#endif
         ForeachNodeSafe(&TaskResBase->trb_TaskList, taskEntry, tmpEntry)
         {
             if (taskEntry->tle_Task == findTask)
@@ -157,12 +154,8 @@ AROS_LH1(void, RemTask,
                 break;
             }
         }
-#if !defined(__AROSEXEC_SMP__)
-        Permit();
-#else
-        EXEC_SPINLOCK_UNLOCK(&TaskResBase->TaskListSpinLock);
-#endif
     }
+    task_ListUnlock(TaskResBase);
 
     struct ETask *et = (struct ETask *)findTask->tc_UnionETask.tc_ETask;
     IPTR *tsstorage = NULL;

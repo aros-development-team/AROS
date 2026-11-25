@@ -258,8 +258,8 @@ __aarch64_vectors:
 .globl __aarch64_halt
 .type __aarch64_halt, %function
 __aarch64_halt:
-    wfi
-    b       __aarch64_halt
+    /* Runs nothing more, but on SMP still answers the other CPUs (rom/kernel/kernel_intr.c) */
+    b       core_HaltCPU
 
 /* ---- EL1 (Kernel) Exception Handlers ---- */
 

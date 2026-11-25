@@ -61,6 +61,7 @@
 #ifdef TASKRES_ENABLE
     ReleaseSemaphore(&TaskResBase->trb_Sem);
 
+    task_ListLock(TaskResBase);
     ForeachNodeSafe(&TaskResBase->trb_LockedLists, taskList, tltmp)
     {
         if (((struct Task *)taskList->tlp_Node.ln_Name == thisTask) &&
@@ -72,6 +73,7 @@
             break;
         }
     }
+    task_ListUnlock(TaskResBase);
 
     /* Purge expired entries from the list... */
     task_CleanList(NULL, TaskResBase);

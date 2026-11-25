@@ -84,6 +84,12 @@ BOOL core_Schedule(void)
 
     FLAG_SCHEDSWITCH_CLEAR;
 
+#if defined(__AROSEXEC_SMP__)
+    /* The last task was evicted: there is none to schedule away from */
+    if (FLAG_SCHEDEVICT_ISSET)
+        return FALSE;
+#endif
+
     if (task)
     {
         if (
@@ -189,6 +195,11 @@ void core_Switch(void)
     DSCHED(
         bug("[Kernel:%03u]" DEBUGCOLOR_SET " %s: Current running Task @ 0x%p" DEBUGCOLOR_RESET "\n", cpuNo, __func__, task);
     )
+#if defined(__AROSEXEC_SMP__)
+    /* The last task was evicted, and may be freed: nothing to switch from */
+    if (FLAG_SCHEDEVICT_ISSET)
+        return;
+#endif
     if ((!task) || (task->tc_State == TS_INVALID))
     {
         bug("[Kernel:%03u]" DEBUGCOLOR_SET " %s: called on invalid task!" DEBUGCOLOR_RESET "\n", cpuNo, __func__);
@@ -258,7 +269,12 @@ void core_Switch(void)
         newState = TS_READY;
 
     /* if the current task has gone out of stack bounds, suspend it to prevent further damage to the system */
-    if (task->tc_SPReg <= task->tc_SPLower || task->tc_SPReg > task->tc_SPUpper)
+    if (
+#if defined(__AROSEXEC_SMP__)
+        /* not one that is being removed: it goes on no list again */
+        (newState != TS_TOMBSTONED) &&
+#endif
+        (task->tc_SPReg <= task->tc_SPLower || task->tc_SPReg > task->tc_SPUpper))
     {
         bug("[Kernel:%03u]" DEBUGCOLOR_SET " ERROR! Task (%s) went out of stack limits" DEBUGCOLOR_RESET "\n", cpuNo, task->tc_Node.ln_Name);
         bug("[Kernel:%03u]" DEBUGCOLOR_SET "  - Lower Bound = 0x%p, Upper Bound = 0x%p" DEBUGCOLOR_RESET "\n", cpuNo, task->tc_SPLower, task->tc_SPUpper);
@@ -357,6 +373,10 @@ struct Task *core_Dispatch(void)
      * and other CPUs send their requests for it here, so they are told
      * where "here" is before they can see TS_RUN.
      */
+    /* An evicted task is not looked at again: its memory may be gone */
+    if (FLAG_SCHEDEVICT_ISSET)
+        task = NULL;
+
     KrnSpinLock(&PrivExecBase(SysBase)->TaskRunningSpinLock, NULL,
                 SPINLOCK_MODE_WRITE);
     KrnSpinLock(&PrivExecBase(SysBase)->TaskReadySpinLock, NULL,
@@ -374,6 +394,7 @@ struct Task *core_Dispatch(void)
                 GetIntETask(newtask)->iet_CpuNumber = cpuNo;
             __atomic_store_n(&newtask->tc_State, TS_RUN, __ATOMIC_RELEASE);
             SET_THIS_TASK_LOCKED(newtask);
+            FLAG_SCHEDEVICT_CLEAR;
             fromReady = TRUE;
 #endif
             break;

@@ -21,10 +21,56 @@ static void Exec_CrashHandler(void)
     struct Task *ThisTask = GET_THIS_TASK;
     struct IntETask *iet = GetIntETask(ThisTask);
 
+    /*
+     * The task is not going back to where it crashed. If that was inside
+     * Forbid() or Disable(), the nesting is dropped and interrupts are let
+     * in again: otherwise its CPU could not switch tasks, or could not
+     * hear the other CPUs, for as long as the requester is up.
+     * Not if what crashed was supervisor code.
+     */
+    if (!KrnIsSuper())
+    {
+        TDNESTCOUNT_SET(-1);
+        IDNESTCOUNT_SET(-1);
+        KrnSti();
+    }
+
     /* Makes Alert() attempting to bring up Intuition requester */
     iet->iet_AlertFlags &= ~AF_Alert;
 
     Alert(iet->iet_AlertCode);
+}
+
+/*
+ * Where a task is sent when it has crashed and cannot be given the
+ * requester: it crashed again while handling the first crash, or it is on
+ * its way out of the system. The crash is reported on the debug output and
+ * the task waits for ever. Its CPU carries on with the other tasks.
+ */
+static void Exec_CrashSuspend(void)
+{
+    struct Task *ThisTask = GET_THIS_TASK;
+    struct IntETask *iet = GetIntETask(ThisTask);
+
+    /*
+     * The trap handler cannot tell whose code crashed. If we are here in
+     * supervisor mode it was not the task's own, and that is not for a
+     * task to sit out: post the alert the old way.
+     */
+    if (KrnIsSuper())
+        Alert(iet->iet_AlertCode);
+
+    Exec_SuspendCrashedTask(iet->iet_AlertCode, iet->iet_AlertLocation, SysBase);
+}
+
+static inline void Exec_TrapRedirect(struct ExceptionContext *ctx, void (*handler)(void))
+{
+    ctx->PC = (IPTR)handler;
+#ifdef __x86_64__
+    /* the value (%rsp + 8) is always a multiple of 16 when control is transferred to the
+       function entry point */
+    if ((ctx->rsp & 0x0F) == 0) ctx->rsp -= 8;
+#endif
 }
 
 /* In original AmigaOS the trap handler is entered in supervisor mode with the
@@ -74,19 +120,43 @@ void Exec_TrapHandler(ULONG trapNum, struct ExceptionContext *ctx)
      * We must have a valid ETask in order to be able
      * to display a requester in user mode.
      */
-    if (ThisTask && (ThisTask->tc_Flags & TF_ETASK) && (ThisTask->tc_State != TS_REMOVED))
+    if (ThisTask && (ThisTask->tc_Flags & TF_ETASK))
     {
         /* Get internal task structure */
         struct IntETask *iet = GetIntETask(ThisTask);
 
-        if (iet->iet_AlertFlags & AF_Alert)
+        if (iet->iet_AlertFlags & AF_Suspend)
         {
             /*
-             * Protection against double-crash. If the task is already in alert state,  we have
-             * a second crash during processing the first one. Then we just pick up initial alert code
-             * and call Alert() with it in supervisor mode.
+             * It crashed on the way to being suspended. Nothing more can
+             * be tried in the task: the alert is posted from here, in
+             * supervisor mode.
              */
-            trapNum = iet->iet_AlertCode;
+            if (iet->iet_AlertFlags & AF_Alert)
+                trapNum = iet->iet_AlertCode;
+        }
+        else if ((iet->iet_AlertFlags & AF_Alert) || (ThisTask->tc_State == TS_REMOVED))
+        {
+            /*
+             * A second crash while the first one is being handled, or a
+             * crash in a task that is being removed. The requester is out
+             * of the question, but this is one task's trouble, not the
+             * system's: it is sent to report the crash on the debug output
+             * and to wait for ever, and its CPU stays in use. (A task that
+             * another CPU is removing leaves the CPU as soon as it gets
+             * there.)
+             */
+            if (!(iet->iet_AlertFlags & AF_Alert))
+            {
+                iet->iet_AlertType     = AT_CPU;
+                iet->iet_AlertCode     = trapNum;
+                iet->iet_AlertLocation = (APTR)ctx->PC;
+                iet->iet_AlertStack    = (APTR)ctx->FP;
+            }
+            iet->iet_AlertFlags |= AF_Alert|AF_Location|AF_Suspend;
+
+            Exec_TrapRedirect(ctx, Exec_CrashSuspend);
+            return;
         }
         else
         {
@@ -115,12 +185,8 @@ void Exec_TrapHandler(ULONG trapNum, struct ExceptionContext *ctx)
              * Make the task to jump to crash handler. We don't care about return address etc because
              * the alert is deadend anyway.
              */
-            ctx->PC = (IPTR)Exec_CrashHandler;
-#ifdef __x86_64__
-            /* the value (%rsp + 8) is always a multiple of 16 when control is transferred to the
-               function entry point */
-            if ((ctx->rsp & 0x0F) == 0) ctx->rsp -= 8;
-#endif
+            Exec_TrapRedirect(ctx, Exec_CrashHandler);
+
             /* Let the task go */
             return;
         }

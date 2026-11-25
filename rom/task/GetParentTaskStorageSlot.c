@@ -55,10 +55,21 @@
     if (!et)
         return (IPTR)NULL;
 
-    Forbid(); /* Accessing other task's et_Reserved[ETASK_RSVD_SLOTID] */
+    /*
+     * Accessing other task's et_Reserved[ETASK_RSVD_SLOTID]. The parent can
+     * be replacing its slot array on another CPU; it does that under its
+     * iet_TaskLock and frees the old array only afterwards.
+     */
+    Forbid();
 
-    if (et->et_Parent)
-        result = TaskGetStorageSlot(et->et_Parent, slotid);
+    if (et->et_Parent && GetETask(et->et_Parent))
+    {
+        struct Task *parent = et->et_Parent;
+
+        task_SlotsLock(parent, FALSE, TaskResBase);
+        result = TaskGetStorageSlot(parent, slotid);
+        task_SlotsUnlock(parent, TaskResBase);
+    }
 
     Permit();
 #endif

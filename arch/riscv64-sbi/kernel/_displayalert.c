@@ -4,9 +4,7 @@
 
     Desc: Alert display for the sbi-riscv64 target.
 
-    A failure that repeats scrolls the first one out of the console
-    before it can be read, and the first one is the one worth having.
-    Print it, say the machine is stopping, and stop.
+    Prints the alert on the SBI console and returns.
 */
 
 #include <kernel_base.h>
@@ -16,12 +14,11 @@
 
 void krnDisplayAlert(const char *text, struct KernelBase *KernelBase)
 {
-    static int reported;
-
-    if (reported)
-        return;
-    reported = 1;
-
+    /*
+     * Print and return, as the other ports do. What follows is the
+     * caller's to decide: a recoverable alert carries on, a dead-end one
+     * goes to ShutdownA(). The hart is not halted here.
+     */
     krnSBIPutStr("\n*** alert ***\n");
 
     while (*text)
@@ -31,8 +28,5 @@ void krnDisplayAlert(const char *text, struct KernelBase *KernelBase)
         text++;
     }
 
-    krnSBIPutStr("\n*** halted on the first alert ***\n");
-
-    for (;;)
-        asm volatile("wfi");
+    krnSBIPutStr("\n*** end of alert ***\n");
 }

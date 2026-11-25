@@ -168,7 +168,16 @@ void Exec_SignalSlow(struct Task *task, ULONG signalSet, struct ExecBase *SysBas
 
 #if defined(__AROSEXEC_SMP__)
     struct KernelBase *KernelBase = __kernelBase;
-    int cpunum = KrnGetCPUNumber();
+    int cpunum;
+
+    /*
+     * Interrupts are off from here to the end. Everything below compares
+     * the task's CPU with this one; a caller that could be moved to another
+     * CPU in between would compare with the wrong one, send nothing, and
+     * leave the task to wait with the signal set.
+     */
+    Disable();
+    cpunum = KrnGetCPUNumber();
 
     /*
         * # If current CPU number is not the task's CPU and the task is running now, send signal to that task
@@ -192,6 +201,7 @@ void Exec_SignalSlow(struct Task *task, ULONG signalSet, struct ExecBase *SysBas
     if ((state == TS_REMOVED) || (state == TS_TOMBSTONED) || (state == TS_INVALID))
     {
         __AROS_ATOMIC_OR_L(task->tc_SigRecvd, signalSet);
+        Enable();
         return;
     }
 
@@ -207,10 +217,16 @@ void Exec_SignalSlow(struct Task *task, ULONG signalSet, struct ExecBase *SysBas
          * task that many CPUs signal keeps its own CPU in the IPI handler.
          */
         if ((task->tc_SigRecvd & signalSet) == signalSet)
+        {
+            Enable();
             return;
+        }
 
         if (signal_Forward(task, signalSet, state, cpunum, SysBase))
+        {
+            Enable();
             return;
+        }
     }
 
     if (cpunum != 0)
@@ -219,9 +235,9 @@ void Exec_SignalSlow(struct Task *task, ULONG signalSet, struct ExecBase *SysBas
     }
 #else
     D(bug("[Exec] %s(0x%p, %08lX)\n", __func__, task, signalSet);)
-#endif
 
     Disable();
+#endif
 
     D(bug("[Exec] %s: Target signal flags : %08x ->", __func__, task->tc_SigRecvd);)
     /* Set the signals in the task structure. */

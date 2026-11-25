@@ -45,7 +45,12 @@ asm (
     ".globl __arm_halt                         \n"
     ".type __arm_halt,%function                \n"
     "__arm_halt:                               \n"
+#if defined(__AROSEXEC_SMP__)
+    /* Runs nothing more, but still answers the other CPUs */
+    "           b       core_HaltCPU           \n"
+#else
     "           b       __arm_halt             \n"
+#endif
     );
 
 /*

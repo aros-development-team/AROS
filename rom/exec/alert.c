@@ -68,6 +68,26 @@ static const ULONG contextSizes[] =
     sizeof(struct MMContext)
 };
 
+/*
+ * The end of a crashed task that cannot have the requester. Does not
+ * return. Called by the task itself, in user mode.
+ */
+void Exec_SuspendCrashedTask(ULONG alertNum, APTR location, struct ExecBase *SysBase)
+{
+    struct Task *task = GET_THIS_TASK;
+
+    /* Whatever nesting it crashed in, it is not going back there */
+    TDNESTCOUNT_SET(-1);
+    IDNESTCOUNT_SET(-1);
+    KrnSti();
+
+    bug("[Exec] Task 0x%p '%s' crashed: alert %08lX at 0x%p. No requester possible, task suspended.\n",
+        task, task->tc_Node.ln_Name ? task->tc_Node.ln_Name : "", (unsigned long)alertNum, location);
+
+    for (;;)
+        Wait(0);
+}
+
 void Exec_ExtAlert(ULONG alertNum, APTR location, APTR stack, UBYTE type, APTR data, struct ExecBase *SysBase)
 {
     struct Task *task = GET_THIS_TASK;
@@ -158,6 +178,17 @@ void Exec_ExtAlert(ULONG alertNum, APTR location, APTR stack, UBYTE type, APTR d
             return;
         }
     }
+
+    /*
+     * A task that crashed (a CPU trap) and cannot be shown the requester:
+     * Intuition is not there, or failed, or this is an alert inside an
+     * alert. That is the task's end, not the system's. It reports on the
+     * debug output and waits for ever; nothing is halted or rebooted.
+     * Supervisor code that crashed, and alerts that system code raises by
+     * itself, go the old way below.
+     */
+    if (!supervisor && iet && (iet->iet_AlertType == AT_CPU))
+        Exec_SuspendCrashedTask(alertNum, location, SysBase);
 
     /* Hint for SystemAlert() - if AlertType is AT_NONE, we don't have AlertData */
     if (type == AT_NONE)

@@ -131,6 +131,7 @@ APTR UnwindFrame(APTR fp, APTR *caller);
 
 void Exec_ExtAlert(ULONG alertNum, APTR location, APTR stack, UBYTE type, APTR data, struct ExecBase *SysBase);
 ULONG Exec_UserAlert(ULONG alertNum, struct ExecBase *SysBase);
+void Exec_SuspendCrashedTask(ULONG alertNum, APTR location, struct ExecBase *SysBase);
 void Exec_SystemAlert(ULONG alertNum, APTR location, APTR stack, UBYTE type, APTR data, struct ExecBase *SysBase);
 void Exec_DoResetCallbacks(struct IntExecBase *SysBase, UBYTE action);
 

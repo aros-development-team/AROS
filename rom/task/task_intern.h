@@ -111,6 +111,54 @@ struct TaskListPrivate
 
 #define KernelBase TaskResBase->trb_KernelBase
 
+/*
+ * Guards trb_TaskList, trb_NewTasks, trb_LockedLists and
+ * trb_TaskStorageSlots.
+ */
+static inline void task_ListLock(struct TaskResBase *TaskResBase)
+{
+    Forbid();
+#if defined(__AROSEXEC_SMP__)
+    EXEC_SPINLOCK_LOCK(&TaskResBase->TaskListSpinLock, NULL, SPINLOCK_MODE_WRITE);
+#endif
+}
+
+static inline void task_ListUnlock(struct TaskResBase *TaskResBase)
+{
+#if defined(__AROSEXEC_SMP__)
+    EXEC_SPINLOCK_UNLOCK(&TaskResBase->TaskListSpinLock);
+#endif
+    Permit();
+}
+
+/*
+ * A task's storage slot array (et_Reserved[ETASK_RSVD_SLOTID]) belongs to
+ * the task, and is under the task's own lock, iet_TaskLock, like its other
+ * per-task data. The task takes it to replace the array; a child reading
+ * its parent's slots (GetParentTaskStorageSlot()) takes the parent's.
+ * The old array is freed after the lock is dropped.
+ */
+static inline void task_SlotsLock(struct Task *task, BOOL write, struct TaskResBase *TaskResBase)
+{
+#if defined(__AROSEXEC_SMP__)
+    Disable();
+    EXEC_SPINLOCK_LOCK(&IntETask(task->tc_UnionETask.tc_ETask)->iet_TaskLock, NULL,
+                       write ? SPINLOCK_MODE_WRITE : SPINLOCK_MODE_READ);
+#else
+    Forbid();
+#endif
+}
+
+static inline void task_SlotsUnlock(struct Task *task, struct TaskResBase *TaskResBase)
+{
+#if defined(__AROSEXEC_SMP__)
+    EXEC_SPINLOCK_UNLOCK(&IntETask(task->tc_UnionETask.tc_ETask)->iet_TaskLock);
+    Enable();
+#else
+    Permit();
+#endif
+}
+
 void task_CleanList(struct Task * task, struct TaskResBase *TaskResBase);
 struct TaskListHookEntry *GetHookTypeEntry(struct List *htList, ULONG thType, BOOL create);
 struct TaskListEntry *GetTaskEntry(struct Task *thisTask, struct TaskResBase *TaskResBase);

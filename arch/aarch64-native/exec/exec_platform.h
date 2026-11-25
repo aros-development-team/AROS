@@ -134,6 +134,18 @@ struct Exec_PlatformData
         asm volatile("mrs %0, tpidr_el1":"=r"(__tls)); \
         __tls->ScheduleFlags |= TLSSF_Park; \
     } while(0)
+#define FLAG_SCHEDEVICT_CLEAR \
+    do { \
+        tls_t *__tls; \
+        asm volatile("mrs %0, tpidr_el1":"=r"(__tls)); \
+        __tls->ScheduleFlags &= ~TLSSF_Evict; \
+    } while(0)
+#define FLAG_SCHEDEVICT_SET \
+    do { \
+        tls_t *__tls; \
+        asm volatile("mrs %0, tpidr_el1":"=r"(__tls)); \
+        __tls->ScheduleFlags |= TLSSF_Evict; \
+    } while(0)
 #else
 #define IDNESTCOUNT_INC \
     do { \
@@ -208,6 +220,18 @@ struct Exec_PlatformData
         asm volatile("mrs %0, tpidr_el1":"=r"(__tls)); \
         AROS_ATOMIC_OR(__tls->ScheduleFlags, TLSSF_Park); \
     } while(0)
+#define FLAG_SCHEDEVICT_CLEAR \
+    do { \
+        tls_t *__tls; \
+        asm volatile("mrs %0, tpidr_el1":"=r"(__tls)); \
+        AROS_ATOMIC_AND(__tls->ScheduleFlags, ~TLSSF_Evict); \
+    } while(0)
+#define FLAG_SCHEDEVICT_SET \
+    do { \
+        tls_t *__tls; \
+        asm volatile("mrs %0, tpidr_el1":"=r"(__tls)); \
+        AROS_ATOMIC_OR(__tls->ScheduleFlags, TLSSF_Evict); \
+    } while(0)
 #endif
 #define IDNESTCOUNT_GET \
     ({ \
@@ -261,6 +285,13 @@ struct Exec_PlatformData
         tls_t *__tls; \
         asm volatile("mrs %0, tpidr_el1":"=r"(__tls)); \
         BOOL __ret = ((__tls->ScheduleFlags & TLSSF_Park) != 0); \
+        __ret;  \
+    })
+#define FLAG_SCHEDEVICT_ISSET \
+    ({ \
+        tls_t *__tls; \
+        asm volatile("mrs %0, tpidr_el1":"=r"(__tls)); \
+        BOOL __ret = ((__tls->ScheduleFlags & TLSSF_Evict) != 0); \
         __ret;  \
     })
 /* TDNestCnt is per-CPU TLS, so no atomics. Blocks the dispatch on

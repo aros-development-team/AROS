@@ -326,6 +326,19 @@ void krnIPICallDrain(void)
 void krnIPICallCancel(APTR hookEntry, IPTR arg1)
 {
     ULONG cpu, i;
+    BOOL again;
+
+    /*
+     * A call that is running can queue another for the same argument (a
+     * forwarded Signal() forwards again if its task has moved), and the
+     * new one may be in a pool this pass has been through already. So the
+     * pools are gone through until a pass meets no call for the argument,
+     * queued or running. The caller has seen to it that no new chain
+     * starts: for Signal() the task is in a terminal state by now.
+     */
+    do
+    {
+    again = FALSE;
 
     for (cpu = 0; cpu < KRN_IPICALL_MAXCPUS; cpu++)
     {
@@ -365,7 +378,10 @@ void krnIPICallCancel(APTR hookEntry, IPTR arg1)
                     /* The target finds it cancelled and gives it back unrun */
                     if (__atomic_compare_exchange_n(&call->kic_State, &state, (state & ~3UL) | KIC_CANCELLED,
                                                     FALSE, __ATOMIC_ACQ_REL, __ATOMIC_RELAXED))
+                    {
+                        again = TRUE;
                         break;
+                    }
                     continue;
                 }
 
@@ -376,10 +392,13 @@ void krnIPICallCancel(APTR hookEntry, IPTR arg1)
                         krnIPIPortServe();
                     krnIPIPortPause();
                 }
+                again = TRUE;
                 break;
             }
         }
     }
+
+    } while (again);
 }
 
 #endif /* KRN_IPICALL */

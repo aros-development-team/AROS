@@ -13,6 +13,7 @@
 #include "exec_platform.h"
 
 /* Main scheduler entry points */
+void core_HaltCPU(void) __attribute__((noreturn));
 void core_ExitInterrupt(regs_t *regs);
 void core_SysCall(int sc, regs_t *regs);
 

@@ -404,6 +404,26 @@ void X86_HandleReschedTask(struct ExceptionContext *regs)
             EXEC_SPINLOCK_UNLOCK(first);
     }
 
+    if ((reschState == TS_REMOVED) && (oldState == TS_RUN) &&
+        (reschTask != GET_THIS_TASK) && GetIntETask(reschTask))
+    {
+        /*
+         * It is running on another CPU, and only that CPU can take it off
+         * itself. It stays on TaskRunning, marked: the CPU drops it the
+         * next time it is about to return to it (core_EvictTask(),
+         * rom/kernel/kernel_intr.c), and then makes it TS_INVALID.
+         * RemTask() asks that CPU to reschedule and waits for that.
+         */
+        GetIntETask(reschTask)->iet_Evict = TRUE;
+        __atomic_store_n(&reschTask->tc_State, TS_REMOVED, __ATOMIC_RELEASE);
+
+        if (second)
+            EXEC_SPINLOCK_UNLOCK(second);
+        if (first)
+            EXEC_SPINLOCK_UNLOCK(first);
+        return;
+    }
+
     if (fromLock)
         Remove(&reschTask->tc_Node);
 

@@ -102,6 +102,14 @@ extern void Kernel_53_KrnSpinUnLock(spinlock_t *, void *);
  */
 #define FLAG_SCHEDPARK_CLEAR            TLS_LOCK_AND_L(Sched.ScheduleFlags, ~TLSSF_Park)
 #define FLAG_SCHEDPARK_SET              TLS_LOCK_OR_L(Sched.ScheduleFlags, TLSSF_Park)
+/*
+ * Set when this CPU has dropped a task another CPU's RemTask() asked for.
+ * ThisTask still names it until the next task is dispatched, but its
+ * memory may be gone: while the flag is set the scheduler has no outgoing
+ * task.
+ */
+#define FLAG_SCHEDEVICT_CLEAR           TLS_LOCK_AND_L(Sched.ScheduleFlags, ~TLSSF_Evict)
+#define FLAG_SCHEDEVICT_SET             TLS_LOCK_OR_L(Sched.ScheduleFlags, TLSSF_Evict)
 
 #define SCHEDQUANTUM_SET(val)           TLS_SET(Sched.Quantum, (UWORD)(val))
 #define SCHEDQUANTUM_GET                TLS_GET(Sched.Quantum)
@@ -115,6 +123,7 @@ extern void Kernel_53_KrnSpinUnLock(spinlock_t *, void *);
 #define FLAG_SCHEDSWITCH_ISSET          ((BOOL)((TLS_GET(Sched.ScheduleFlags) & TLSSF_Switch) != 0))
 #define FLAG_SCHEDDISPATCH_ISSET        ((BOOL)((TLS_GET(Sched.ScheduleFlags) & TLSSF_Dispatch) != 0))
 #define FLAG_SCHEDPARK_ISSET            ((BOOL)((TLS_GET(Sched.ScheduleFlags) & TLSSF_Park) != 0))
+#define FLAG_SCHEDEVICT_ISSET           ((BOOL)((TLS_GET(Sched.ScheduleFlags) & TLSSF_Evict) != 0))
 #define GET_THIS_TASK                   TLS_GET(Sched.RunningTask)
 #define SET_THIS_TASK(x)         \
     ({ \

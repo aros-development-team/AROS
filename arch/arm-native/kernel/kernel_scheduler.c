@@ -84,6 +84,10 @@ BOOL core_Schedule(void)
 
     FLAG_SCHEDSWITCH_CLEAR;
 
+    /* The last task was evicted: there is none to schedule away from */
+    if (FLAG_SCHEDEVICT_ISSET)
+        return FALSE;
+
     if ((task->tc_State == TS_TOMBSTONED) || (task->tc_State == TS_REMOVED))
     {
         /* always let finalising tasks finish... */
@@ -170,6 +174,10 @@ void core_Switch(void)
     park = FLAG_SCHEDPARK_ISSET;
     if (park)
         FLAG_SCHEDPARK_CLEAR;
+
+    /* The last task was evicted, and may be freed: nothing to switch from */
+    if (FLAG_SCHEDEVICT_ISSET)
+        return;
 
     if ((!task) || (task->tc_State == TS_INVALID) || (task->tc_State == TS_TOMBSTONED))
     {
@@ -291,6 +299,10 @@ struct Task *core_Dispatch(void)
      * and other CPUs send their requests for it here, so they are told
      * where "here" is before they can see TS_RUN.
      */
+    /* An evicted task is not looked at again: its memory may be gone */
+    if (FLAG_SCHEDEVICT_ISSET)
+        task = NULL;
+
     KrnSpinLock(&PrivExecBase(SysBase)->TaskRunningSpinLock, NULL,
                 SPINLOCK_MODE_WRITE);
     KrnSpinLock(&PrivExecBase(SysBase)->TaskReadySpinLock, NULL,
@@ -305,6 +317,7 @@ struct Task *core_Dispatch(void)
                 GetIntETask(newtask)->iet_CpuNumber = cpunum;
             __atomic_store_n(&newtask->tc_State, TS_RUN, __ATOMIC_RELEASE);
             SET_THIS_TASK_LOCKED(newtask);
+            FLAG_SCHEDEVICT_CLEAR;
             fromReady = TRUE;
             break;
         }
@@ -539,6 +552,28 @@ void core_ReschedTask(struct Task *task, ULONG newState)
             KrnSpinUnLock(second);
         if (first)
             KrnSpinUnLock(first);
+    }
+
+    if (!toList && (newState == TS_REMOVED) && (oldState == TS_RUN) &&
+        (task != GET_THIS_TASK) && GetIntETask(task))
+    {
+        /*
+         * It is running on another CPU, and only that CPU can take it off
+         * itself. It stays on TaskRunning, marked: the CPU drops it the
+         * next time it is about to return to it (core_EvictTask(),
+         * rom/kernel/kernel_intr.c), and then makes it TS_INVALID.
+         * RemTask() asks that CPU to reschedule and waits for that.
+         */
+        GetIntETask(task)->iet_Evict = TRUE;
+        __atomic_store_n(&task->tc_State, TS_REMOVED, __ATOMIC_RELEASE);
+
+        if (second)
+            KrnSpinUnLock(second);
+        if (first)
+            KrnSpinUnLock(first);
+
+        EXEC_IRQFIQ_RESTORE(__if);
+        return;
     }
 
     if (fromLock)

@@ -97,6 +97,8 @@ struct Exec_PlatformData
 #define FLAG_SCHEDDISPATCH_SET      do { __RV_TLS()->ScheduleFlags |= TLSSF_Dispatch; } while(0)
 #define FLAG_SCHEDPARK_CLEAR        do { __RV_TLS()->ScheduleFlags &= ~TLSSF_Park; } while(0)
 #define FLAG_SCHEDPARK_SET          do { __RV_TLS()->ScheduleFlags |= TLSSF_Park; } while(0)
+#define FLAG_SCHEDEVICT_CLEAR        do { __RV_TLS()->ScheduleFlags &= ~TLSSF_Evict; } while(0)
+#define FLAG_SCHEDEVICT_SET          do { __RV_TLS()->ScheduleFlags |= TLSSF_Evict; } while(0)
 #else
 #define IDNESTCOUNT_INC             AROS_ATOMIC_INC(__RV_TLS()->IDNestCnt)
 #define IDNESTCOUNT_DEC             AROS_ATOMIC_DEC(__RV_TLS()->IDNestCnt)
@@ -111,6 +113,8 @@ struct Exec_PlatformData
 /* Set by Wait() under Disable(), consumed by the switch it then asks for */
 #define FLAG_SCHEDPARK_CLEAR        AROS_ATOMIC_AND(__RV_TLS()->ScheduleFlags, ~TLSSF_Park)
 #define FLAG_SCHEDPARK_SET          AROS_ATOMIC_OR(__RV_TLS()->ScheduleFlags, TLSSF_Park)
+#define FLAG_SCHEDEVICT_CLEAR        AROS_ATOMIC_AND(__RV_TLS()->ScheduleFlags, ~TLSSF_Evict)
+#define FLAG_SCHEDEVICT_SET          AROS_ATOMIC_OR(__RV_TLS()->ScheduleFlags, TLSSF_Evict)
 #endif
 
 #define IDNESTCOUNT_GET             ((LONG)__RV_TLS()->IDNestCnt)
@@ -121,6 +125,7 @@ struct Exec_PlatformData
 #define FLAG_SCHEDSWITCH_ISSET      ((BOOL)((__RV_TLS()->ScheduleFlags & TLSSF_Switch) != 0))
 #define FLAG_SCHEDDISPATCH_ISSET    ((BOOL)((__RV_TLS()->ScheduleFlags & TLSSF_Dispatch) != 0))
 #define FLAG_SCHEDPARK_ISSET        ((BOOL)((__RV_TLS()->ScheduleFlags & TLSSF_Park) != 0))
+#define FLAG_SCHEDEVICT_ISSET        ((BOOL)((__RV_TLS()->ScheduleFlags & TLSSF_Evict) != 0))
 
 /* TDNestCnt is per-CPU TLS, so no atomics. Blocks IRQ-exit dispatch
  * without Forbid()/Permit(); used by this port's IPI code */

@@ -75,6 +75,14 @@ USER_CFLAGS := $(PARANOIA_CFLAGS)
     files=smpmmap targetdir=$(EXEDIR) \
     progname=SMP-MMap
 
+%build_prog mmake=test-smp-remrun \
+    files=smpremrun targetdir=$(EXEDIR) \
+    progname=SMP-RemRun
+
+%build_prog mmake=test-smp-crash \
+    files=smpcrash targetdir=$(EXEDIR) \
+    progname=SMP-Crash
+
 %build_prog mmake=test-smp-intctx \
     files=smpintctx targetdir=$(EXEDIR) \
     progname=SMP-IntCtx
