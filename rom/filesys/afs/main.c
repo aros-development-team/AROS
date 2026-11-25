@@ -112,7 +112,7 @@ static struct Volume *AFS_open_volume(struct AFSBase *handler, struct DosPacket 
 static BOOL AFS_close_volume(struct AFSBase *handler, struct Volume *volume, SIPTR *io_DosError)
 {
     /* Locks parked with an offline volume still name this handler */
-    if (!volume->locklist && IsListEmpty((struct List *)&handler->offlinevols)) {
+    if (!volume->locklist && handler->parkedvols == 0) {
         if (!flushForRelease(handler, volume)) {
             *io_DosError = ERROR_UNKNOWN;
             return FALSE;

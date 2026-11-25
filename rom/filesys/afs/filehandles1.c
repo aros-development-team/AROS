@@ -241,6 +241,7 @@ struct AfsHandle *old = NULL;
                     ah->volumenode->dol_misc.dol_volume.dol_LockList = MKBADDR(ah->next);
                 else {
                     D(bug("[afs 0x%08lX] Last lock removed, removing VolumeNode\n", ah->volume));
+                    afsbase->parkedvols--;
                     remDosNode(afsbase, ah->volumenode);
                 }
             else

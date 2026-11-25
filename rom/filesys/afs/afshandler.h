@@ -30,6 +30,7 @@ struct AFSBase
     struct MsgPort port;	/* sigtask and sigbit for changeint */
     struct List device_list;	/* list of mounted devices (struct Volume) */
     struct MinList offlinevols;	/* offline volume nodes (struct OfflineNode) */
+    ULONG parkedvols;		/* volume nodes parked with locks, also without an OfflineNode */
     struct timerequest *timer_request;
     ULONG timer_flags;
 

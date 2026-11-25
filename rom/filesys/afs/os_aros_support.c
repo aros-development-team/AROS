@@ -191,6 +191,7 @@ UBYTE i;
                 volume->volumenodeadded = on->added;
                 Remove((struct Node *)&on->node);
                 FreeMem(on, sizeof(struct OfflineNode));
+                afsbase->parkedvols--;
                 /* take back the locks that kept the node alive */
                 volume->locklist = BADDR(dl->dol_misc.dol_volume.dol_LockList);
                 dl->dol_misc.dol_volume.dol_LockList = BNULL;
@@ -260,6 +261,7 @@ struct OfflineNode *on;
                         Forbid();
                         dl->dol_Task = NULL;
                         Permit();
+                        afsbase->parkedvols++;
                         on = AllocMem(sizeof(struct OfflineNode), MEMF_PUBLIC | MEMF_CLEAR);
                         if (on != NULL)
                         {
