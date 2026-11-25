@@ -83,7 +83,8 @@ void e1000_msec_delay(struct net_device *unit, ULONG msec)
 
 void e1000_msec_delay_irq(struct net_device *unit, ULONG msec)
 {
-    //e1000_usec_delay(unit, 1000 * msec);
+    /* Every caller runs in the unit task, not in the interrupt handler */
+    e1000_usec_delay(unit, 1000 * msec);
 }
 
 static BOOL e1000func_check_64k_bound(struct net_device *unit,
