@@ -14,9 +14,19 @@
 #define ROUNDS  1500
 #define NUMBERS 256
 
-static volatile unsigned char held[NUMBERS];
-static volatile int duplicates, failures;
+static unsigned char held[NUMBERS];
+static int duplicates, failures;
 static int saved_stdin = -1;
+/* Guards held[] and the counts. A mutex rather than __atomic builtins, which
+   need libatomic on CPUs without atomic instructions (the m68000). */
+static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
+
+static void count(int *counter)
+{
+    pthread_mutex_lock(&lock);
+    (*counter)++;
+    pthread_mutex_unlock(&lock);
+}
 
 /* Note that the calling thread now owns fd. Returns 0 when another thread
    already holds the same number. */
@@ -24,20 +34,26 @@ static int take(int fd)
 {
     if (fd < 0 || fd >= NUMBERS)
     {
-        __atomic_fetch_add(&failures, 1, __ATOMIC_SEQ_CST);
+        count(&failures);
         return 0;
     }
-    if (__atomic_exchange_n(&held[fd], 1, __ATOMIC_SEQ_CST))
+    pthread_mutex_lock(&lock);
+    if (held[fd])
     {
-        __atomic_fetch_add(&duplicates, 1, __ATOMIC_SEQ_CST);
+        duplicates++;
+        pthread_mutex_unlock(&lock);
         return 0;
     }
+    held[fd] = 1;
+    pthread_mutex_unlock(&lock);
     return 1;
 }
 
 static void give(int fd)
 {
-    __atomic_store_n(&held[fd], 0, __ATOMIC_SEQ_CST);
+    pthread_mutex_lock(&lock);
+    held[fd] = 0;
+    pthread_mutex_unlock(&lock);
 }
 
 static void use_file(const char *path, const char *text)
@@ -52,7 +68,7 @@ static void use_file(const char *path, const char *text)
         || lseek(fd, 0, SEEK_SET) != 0
         || read(fd, buf, sizeof buf) != (ssize_t)len
         || memcmp(buf, text, len) != 0)
-        __atomic_fetch_add(&failures, 1, __ATOMIC_SEQ_CST);
+        count(&failures);
     give(fd);
     close(fd);
 }
@@ -64,7 +80,7 @@ static void use_dir(void)
 
     if (!dir)
     {
-        __atomic_fetch_add(&failures, 1, __ATOMIC_SEQ_CST);
+        count(&failures);
         return;
     }
     fd = dirfd(dir);
@@ -80,7 +96,7 @@ static void use_pipe(void)
 
     if (pipe(fds) != 0)
     {
-        __atomic_fetch_add(&failures, 1, __ATOMIC_SEQ_CST);
+        count(&failures);
         return;
     }
     got[0] = take(fds[0]);
