@@ -10,6 +10,7 @@
 #include <proto/exec.h>
  
 #include <kernel_base.h>
+#include <proto/kernel.h>
 #include <kernel_debug.h>
 #include <kernel_intr.h>
 #include <kernel_scheduler.h>
@@ -134,7 +135,11 @@ void core_ExitInterrupt(regs_t *regs)
 
     /* Soft interrupt requested? It's high time to do it */
     if (SysBase->SysFlags & SFF_SoftInt)
+    {
         core_Cause(INTB_SOFTINT, 1L << INTB_SOFTINT);
+        /* SoftIntDispatch() returns with interrupts on; scheduling needs them off */
+        KrnCli();
+    }
 
     /* If task switching is disabled, do nothing */
     if (TDNESTCOUNT_GET < 0)
