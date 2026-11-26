@@ -310,7 +310,37 @@ static BOOL pl011bt_has_rtscts(void)
 }
 
 /*
- * BT_REG_EN from the radio's shutdown-gpios: the expander on a Pi 3B/3B+,
+ * The LPO comes from GPCLK2 when the live bt_pins name GPIO 43 (Pi 3, Zero
+ * 2 W). A Pi 4 has "-" there: its radio has its own clock and GPIO 43 is
+ * left alone. Default: GPCLK2.
+ */
+static BOOL pl011bt_has_gpclk_lpo(void)
+{
+    APTR OpenFirmwareBase = OpenResource("openfirmware.resource");
+    void *key, *prop;
+    const ULONG *pins;
+    ULONG n, i;
+    BOOL lpo = TRUE;
+
+    if (!OpenFirmwareBase ||
+        !(key = OF_OpenKey("/soc/gpio@7e200000/bt_pins")))
+        return TRUE;
+
+    if ((prop = OF_FindProperty(key, "brcm,pins")))
+    {
+        /* "-" is a 2-byte string, not a cell list. */
+        pins = (const ULONG *)OF_GetPropValue(prop);
+        n = OF_GetPropLen(prop) / sizeof(ULONG);
+        for (i = 0; i < n && AROS_BE2LONG(pins[i]) != BT_GPIO_LPO; i++)
+            ;
+        lpo = (i < n);
+    }
+    OF_CloseKey(key);
+    return lpo;
+}
+
+/*
+ * BT_REG_EN from the radio's shutdown-gpios: the expander on a Pi 3B/3B+/4,
  * SoC GPIO 42 on a Zero 2 W. Default: expander pin 0.
  */
 static void pl011bt_find_power(struct PL011BTBase *PL011BTBase)
@@ -369,23 +399,25 @@ static int pl011bt_init(struct PL011BTBase *PL011BTBase)
      * excluding the others.
      *
      * The arrangement this drives -- PL011 on GPIO 30-33 to the radio, the
-     * console pushed onto the AUX mini-UART, the LPO on GPCLK2, BT_REG_EN on
-     * the expander or a SoC GPIO -- is the BCM2835/6/7 one, and IRQ_VC_UART
-     * below is the legacy interrupt controller's numbering. A BCM2711 wires
-     * its radio the same way but presents the GPU interrupts through the GIC
-     * at BCM2711_GPUIRQ_OFFSET, and a BCM2712 does not use this UART for
-     * Bluetooth at all. Neither has been tested, so the resource stands down
-     * there: absent is a state h4bthci.device already handles, present and
-     * wrong is not.
+     * console pushed onto the AUX mini-UART, BT_REG_EN on the expander or a
+     * SoC GPIO -- is shared by the BCM2835/6/7 and the BCM2711. The BCM2711
+     * presents IRQ_VC_UART through the GIC at BCM271X_GPUIRQ_OFFSET. A
+     * BCM2712 does not use this UART for Bluetooth at all, so the resource
+     * stands down there: absent is a state h4bthci.device already handles,
+     * present and wrong is not.
      */
     if (periiobase != BCM2835_PERIPHYSBASE &&
-        periiobase != BCM2836_PERIPHYSBASE)
+        periiobase != BCM2836_PERIPHYSBASE &&
+        periiobase != BCM2711_PERIIOBASE)
     {
-        D(bug("[PL011BT] peripheral window 0x%p is not a BCM283x, standing"
-              " down\n", (void *)periiobase));
+        D(bug("[PL011BT] peripheral window 0x%p is not a BCM283x/2711,"
+              " standing down\n", (void *)periiobase));
         return FALSE;
     }
     PL011BTBase->pl011bt_periiobase = (unsigned int)periiobase;
+    PL011BTBase->pl011bt_IRQ = IRQ_VC_UART;
+    if (periiobase == BCM2711_PERIIOBASE)
+        PL011BTBase->pl011bt_IRQ += BCM271X_GPUIRQ_OFFSET;
 
     if (pl011bt_is_console())
     {
@@ -411,15 +443,18 @@ static int pl011bt_init(struct PL011BTBase *PL011BTBase)
 
     PL011BTBase->pl011bt_ClockHz = query_uart_clock(PL011BTBase);
     PL011BTBase->pl011bt_RTSCTS = pl011bt_has_rtscts();
+    PL011BTBase->pl011bt_LPO = pl011bt_has_gpclk_lpo();
     pl011bt_find_power(PL011BTBase);
     PL011BTBase->pl011bt_Caps = PL011BT_CAP_PRESENT |
         PL011BT_CAP_BAUD_CHANGE | PL011BT_CAP_POWER_CONTROL;
 
-    bug("[PL011BT] ready: PL011=0x%08lx clock=%lu mbox=%s rts/cts=%s"
-        " power=%s%lu\n",
-        (ULONG)PL011_0_BASE, (ULONG)PL011BTBase->pl011bt_ClockHz,
+    bug("[PL011BT] ready: PL011=0x%08lx irq=%lu clock=%lu mbox=%s"
+        " rts/cts=%s lpo=%s power=%s%lu\n",
+        (ULONG)PL011_0_BASE, (ULONG)PL011BTBase->pl011bt_IRQ,
+        (ULONG)PL011BTBase->pl011bt_ClockHz,
         MBoxBase != NULL ? "yes" : "no",
         PL011BTBase->pl011bt_RTSCTS ? "yes" : "no",
+        PL011BTBase->pl011bt_LPO ? "gpclk2" : "board",
         PL011BTBase->pl011bt_PowerSoC ? "gpio" : "fw",
         (ULONG)PL011BTBase->pl011bt_PowerPin);
 
@@ -634,9 +669,10 @@ AROS_LH1(void, PL011BTRelease,
 
     NOTES
         Call in task context with client transfers stopped. May wait for the
-        resource semaphore. Sets up the controller's 32.768 kHz clock and pin
-        routing, then enables 8-bit UART data, no parity, one stop bit and
-        FIFOs. Does not change controller power or negotiate its baud rate.
+        resource semaphore. Sets up the controller's 32.768 kHz clock where
+        the board takes it from GPCLK2, and the pin routing, then enables
+        8-bit UART data, no parity, one stop bit and FIFOs. Does not change
+        controller power or negotiate its baud rate.
         Coordinate baud changes and controller startup with the higher layer.
 
         Reconfiguration discards queued receive data and resets the overflow
@@ -682,7 +718,8 @@ AROS_LH3(long, PL011BTConfigure,
         return PL011BT_ERR_NOT_OWNER;
     }
 
-    if (setup_lpo_clock(PL011BTBase) != PL011BT_OK)
+    if (PL011BTBase->pl011bt_LPO &&
+        setup_lpo_clock(PL011BTBase) != PL011BT_OK)
     {
         bug("[PL011BT] configure: LPO clock timeout\n");
         ReleaseSemaphore(&PL011BTBase->pl011bt_Sem);
@@ -755,17 +792,18 @@ AROS_LH3(long, PL011BTConfigure,
     pl011bt_wr(PL011_0_BASE + PL011_IFLS, PL011_IFLS_RX18);
     if (PL011BTBase->pl011bt_RXIRQ == NULL)
     {
-        PL011BTBase->pl011bt_RXIRQ = KrnAddIRQHandler(IRQ_VC_UART,
-            pl011bt_rx_handler, PL011BTBase, SysBase);
+        PL011BTBase->pl011bt_RXIRQ = KrnAddIRQHandler(
+            PL011BTBase->pl011bt_IRQ, pl011bt_rx_handler, PL011BTBase,
+            SysBase);
         if (PL011BTBase->pl011bt_RXIRQ != NULL)
         {
             PL011BTBase->pl011bt_Caps |= PL011BT_CAP_RX_INTERRUPT;
             D(bug("[PL011BT] rx interrupt armed on irq %lu\n",
-                  (ULONG)IRQ_VC_UART));
+                  (ULONG)PL011BTBase->pl011bt_IRQ));
         }
         else
             bug("[PL011BT] KrnAddIRQHandler(%lu) failed -- receive stays"
-                " polled\n", (ULONG)IRQ_VC_UART);
+                " polled\n", (ULONG)PL011BTBase->pl011bt_IRQ);
     }
     pl011bt_wr(PL011_0_BASE + PL011_ICR, PL011_INT_ALL);
     if (PL011BTBase->pl011bt_RXIRQ != NULL)

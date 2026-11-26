@@ -3,7 +3,7 @@
 AROS has a Bluetooth stack (`rom/bluetooth`), two firmware loaders and one
 HCI device -- and that device is `vbthci`, which is virtual. On real hardware
 the stack has nothing to talk to. These three modules are the missing half for
-the Raspberry Pi 3, 3B+ and Zero 2 W, whose radio hangs off the SoC's PL011.
+the Raspberry Pi 3, 3B+, Zero 2 W and 4, whose radio hangs off the SoC's PL011.
 
 | module | where it lands | what it owns |
 |---|---|---|
@@ -37,15 +37,15 @@ asks the firmware for the UART clock, and stops. The PL011 is not written
 until a client claims the resource and calls `PL011BTConfigure()`, so a
 machine that never opens Bluetooth is left exactly as the firmware set it up.
 
-It binds by naming the SoCs it has been run on rather than by excluding the
-others. The arrangement it drives -- PL011 on GPIO 30-33, console pushed onto
-the mini-UART, LPO on GPCLK2, `BT_REG_EN` on the firmware's GPIO expander --
-is the BCM2835/6/7 one, and `IRQ_VC_UART` is the legacy interrupt
-controller's numbering. A BCM2711 wires its radio the same way but presents
-GPU interrupts through the GIC at `BCM2711_GPUIRQ_OFFSET`, and a BCM2712 does
-not use this UART for Bluetooth at all. Neither has been tested, so the
-resource stands down there: absent is a state `h4bthci.device` already
-handles, present and wrong is not.
+It binds by naming the SoCs it drives rather than by excluding the others.
+The arrangement -- PL011 on GPIO 30-33, console pushed onto the mini-UART,
+`BT_REG_EN` on the firmware's GPIO expander or a SoC GPIO -- is shared by the
+BCM2835/6/7 and the BCM2711. The BCM2711 presents `IRQ_VC_UART` through the
+GIC at `BCM271X_GPUIRQ_OFFSET`, and its radio has its own LPO: the live DT's
+`bt_pins` is `"-"` there instead of GPIO 43, so GPCLK2 is left alone. A
+BCM2712 does not use this UART for Bluetooth at all, so the resource stands
+down there: absent is a state `h4bthci.device` already handles, present and
+wrong is not.
 
 ## Two things that are easy to get wrong here
 
