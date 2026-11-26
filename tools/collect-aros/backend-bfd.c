@@ -127,8 +127,7 @@ static void collect_extrasymbol(asymbol *sym, setnode **liblist_ptr)
              * If the selected libraries didnt provide the symbol,
              * link in the aros static-cxx-cxa-pure-virtual implementation
              */
-        extraobj = xmalloc(strlen(OBJLIBDIR)+strlen(AROSOBJ_CXXPUREVIRT)+2);
-        sprintf(extraobj, "%s/%s", OBJLIBDIR, AROSOBJ_CXXPUREVIRT);
+        extraobj = objlib_path(AROSOBJ_CXXPUREVIRT);
     }
     else if ((strncmp(sym->name, "pthread_", 8) == 0) &&
         bfd_is_und_section(sym->section))
@@ -141,8 +140,7 @@ static void collect_extrasymbol(asymbol *sym, setnode **liblist_ptr)
              * are left undefined. Supply the libpthread archive from the lib/
              * dir so ld can pull the required members on demand.
              */
-        extraobj = xmalloc(strlen(OBJLIBDIR)+strlen(AROSLIB_PTHREAD)+2);
-        sprintf(extraobj, "%s/%s", OBJLIBDIR, AROSLIB_PTHREAD);
+        extraobj = objlib_path(AROSLIB_PTHREAD);
     }
     else
         return;
