@@ -264,6 +264,8 @@ struct BtHWConn
     UWORD               cn_EnumIndex;
     UWORD               cn_EnumCount;
     ULONG               cn_EnumHandles[32];
+    UBYTE              *cn_SDPRecs;    /* records of this enumeration, for bd_SDPCache */
+    ULONG               cn_SDPRecsLen;
     struct bt_gatt_service cn_Services[BT_GATT_CLIENT_MAX_SERVICES];
     struct BtService   *cn_EnumSvc[BT_GATT_CLIENT_MAX_SERVICES]; /* the BtService each discovered service maps to */
     struct BtChannel   *cn_EnumReq;    /* control request waiting for enumeration */

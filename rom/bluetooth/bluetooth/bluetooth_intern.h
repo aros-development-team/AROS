@@ -425,6 +425,14 @@ struct BtHardware
 
 #define BT_ADVDATA_MAX      62            /* adv + scan response */
 
+/* SDP records of a registered classic device, in its DEVC form: a BE32
+   format, then per record the BE32 handle, BE32 length and the raw attribute
+   list. Bump the format when the requested attribute list changes; records
+   of an older list are used until a link we page enumerates again. */
+#define IFFCHNK_SDPCACHE    MAKE_ID('S','D','P','C')
+#define BT_SDPCACHE_FORMATID 0x534443                  /* "SDC", not a record handle */
+#define BT_SDPCACHE_FORMAT  MAKE_ID('S','D','C','1')
+
 /* Bond keys of a device (private; persisted as the KEYS chunk of its DEVC
    form, never handed out through btGetAttrs) */
 struct BtKeyCfg
@@ -495,6 +503,8 @@ struct BtDevice
     struct BtPoPoCfg    bd_PoPoCfg;       /* Inhibit PopUp and Class scan Config */
     UBYTE               bd_AdvData[BT_ADVDATA_MAX];
     struct BtKeyCfg     bd_Keys;          /* bond keys */
+    UBYTE              *bd_SDPCache;      /* SDP records of the last enumeration (SDPC chunk) */
+    ULONG               bd_SDPCacheLen;
     struct BtHWConn    *bd_Conns[2];      /* per-bearer link state: [0]=BR/EDR, [1]=LE (hwconn.c private) */
     /* The address the peer is using right now when it differs from
        bd_Address: a bonded LE peer advertising from a resolvable private

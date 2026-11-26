@@ -1131,6 +1131,12 @@ static void bConnUp(struct BtHWConn *cn, UWORD handle, UBYTE role)
         /* somebody who came for our GATT services: we want nothing of theirs */
         cn->cn_Enumerated = TRUE;
     }
+    if((cn->cn_LinkType == BDLT_ACL) && (bd->bd_Flags & BDFF_REGISTERED) &&
+       (bd->bd_Flags & BDFF_SERVICESKNOWN) && bd->bd_SDPCache) {
+        /* services known from its stored records: a HID device opens its
+           channels at once, and enumerating again would close them */
+        cn->cn_Enumerated = TRUE;
+    }
     /* enumerate this bearer's services once (each bearer of a dual-mode device
        enumerates independently, accumulating onto the one device). A pending
        re-encryption defers this until the Encryption Change event. */
@@ -1264,6 +1270,7 @@ static void bConnDown(struct BtHWConn *cn, LONG error, UBYTE reason)
         bd->bd_NextAttempt = hc->hc_Tick + 10000;
     }
     Remove((struct Node *) cn);
+    btFreeVec(cn->cn_SDPRecs);
     btFreeVec(cn);
     bBgScanSchedule(hc);
 }
@@ -1584,11 +1591,9 @@ static ULONG bReadSDPUint(const struct bt_sdp_element *el)
 
 /* /// "bParseSDPRecord()" */
 /* Builds a BtService (+ endpoints) from one attribute list. */
-static void bParseSDPRecord(struct BtHWConn *cn, ULONG handle, const UBYTE *attrs, ULONG len)
+static void bParseSDPRecord(struct BtBase *BluetoothBase, struct BtDevice *bd, ULONG handle,
+                            const UBYTE *attrs, ULONG len)
 {
-    struct BtHWCore *hc = cn->cn_Core;
-    struct BtBase *BluetoothBase = hc->hc_Base;
-    struct BtDevice *bd = cn->cn_Device;
     struct bt_sdp_element_iter it;
     struct bt_sdp_element id, val;
     struct BtService *bsv;
@@ -1866,6 +1871,63 @@ static void bParseSDPRecord(struct BtHWConn *cn, ULONG handle, const UBYTE *attr
 }
 /* \\\ */
 
+/* /// "bSDPRecAppend()" */
+/* Keeps a raw record of the running enumeration for bd_SDPCache. */
+static void bSDPRecAppend(struct BtHWConn *cn, ULONG handle, const UBYTE *attrs, ULONG len)
+{
+    struct BtBase *BluetoothBase = cn->cn_Core->hc_Base;
+    UBYTE *buf = btAllocVec(cn->cn_SDPRecsLen + 8 + len);
+    ULONG v;
+
+    if(!buf) {
+        return;
+    }
+    if(cn->cn_SDPRecsLen) {
+        CopyMem(cn->cn_SDPRecs, buf, cn->cn_SDPRecsLen);
+    }
+    v = AROS_LONG2BE(handle);
+    CopyMem(&v, buf + cn->cn_SDPRecsLen, 4);
+    v = AROS_LONG2BE(len);
+    CopyMem(&v, buf + cn->cn_SDPRecsLen + 4, 4);
+    CopyMem((APTR) attrs, buf + cn->cn_SDPRecsLen + 8, len);
+    btFreeVec(cn->cn_SDPRecs);
+    cn->cn_SDPRecs = buf;
+    cn->cn_SDPRecsLen += 8 + len;
+}
+/* \\\ */
+
+/* /// "bRestoreSDPCache()" */
+/* Builds the services of a registered device from its stored SDP records, so
+   they are known (and listened on) before the device connects. */
+void bRestoreSDPCache(struct BtBase *BluetoothBase, struct BtDevice *bd)
+{
+    const UBYTE *p = bd->bd_SDPCache;
+    ULONG left = bd->bd_SDPCacheLen;
+
+    if(!p || (bd->bd_Flags & BDFF_SERVICESKNOWN)) {
+        return;
+    }
+    while(left >= 8) {
+        ULONG handle, len;
+        CopyMem((APTR) p, &handle, 4);
+        CopyMem((APTR) (p + 4), &len, 4);
+        handle = AROS_BE2LONG(handle);
+        len = AROS_BE2LONG(len);
+        if(len > left - 8) {
+            break;
+        }
+        bParseSDPRecord(BluetoothBase, bd, handle, p + 8, len);
+        p += 8 + len;
+        left -= 8 + len;
+    }
+    btLockWriteDevice(bd);
+    if(bd->bd_NumServices) {
+        bd->bd_Flags |= BDFF_SERVICESKNOWN;
+    }
+    btUnlockDevice(bd);
+}
+/* \\\ */
+
 /* /// "bClearServices()" */
 static void bClearServices(struct BtHWConn *cn)
 {
@@ -1986,10 +2048,15 @@ static void bSDPEnumCB(struct bt_sdp_client_completion *completion, void *user_d
         }
         cn->cn_EnumIndex = 0;
         bClearServices(cn);
+        btFreeVec(cn->cn_SDPRecs);
+        cn->cn_SDPRecs = NULL;
+        cn->cn_SDPRecsLen = 0;
         cn->cn_EnumState = ENUM_SDP_ATTRS;
         bConnRunEnum(cn);
     } else if(cn->cn_EnumState == ENUM_SDP_ATTRS) {
-        bParseSDPRecord(cn, cn->cn_EnumHandles[cn->cn_EnumIndex], completion->data, completion->data_len);
+        bSDPRecAppend(cn, cn->cn_EnumHandles[cn->cn_EnumIndex], completion->data, completion->data_len);
+        bParseSDPRecord(cn->cn_Core->hc_Base, cn->cn_Device, cn->cn_EnumHandles[cn->cn_EnumIndex],
+                        completion->data, completion->data_len);
         cn->cn_EnumIndex++;
         bConnRunEnum(cn);
     }
@@ -2387,10 +2454,23 @@ static void bConnFinishEnum(struct BtHWConn *cn, LONG error)
     cn->cn_EnumState = ENUM_IDLE;
     if(cn->cn_State == HCNS_CONNECTED) bListenServices(cn);
     if(!error) {
+        BOOL newcache = FALSE;
         cn->cn_Enumerated = TRUE;
         btLockWriteDevice(bd);
         bd->bd_Flags |= BDFF_SERVICESKNOWN;
+        if(cn->cn_SDPRecs) {
+            newcache = (cn->cn_SDPRecsLen != bd->bd_SDPCacheLen) ||
+                       memcmp(cn->cn_SDPRecs, bd->bd_SDPCache, cn->cn_SDPRecsLen);
+            btFreeVec(bd->bd_SDPCache);
+            bd->bd_SDPCache = cn->cn_SDPRecs;
+            bd->bd_SDPCacheLen = cn->cn_SDPRecsLen;
+            cn->cn_SDPRecs = NULL;
+            cn->cn_SDPRecsLen = 0;
+        }
         btUnlockDevice(bd);
+        if(newcache && (bd->bd_Flags & BDFF_REGISTERED)) {
+            bStoreDevConfig(BluetoothBase, bd, TRUE);
+        }
         btAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname),
                        "%s: %ld service(s) found.", bd->bd_Name, bd->bd_NumServices);
         btSendEvent(BEHMB_SERVICESCHG, bd, NULL);
