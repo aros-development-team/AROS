@@ -134,7 +134,20 @@ void core_ExitInterrupt(regs_t *regs)
 
     /* Soft interrupt requested? It's high time to do it */
     if (SysBase->SysFlags & SFF_SoftInt)
+    {
         core_Cause(INTB_SOFTINT, 1L << INTB_SOFTINT);
+#if defined(__AROSEXEC_SMP__)
+        /*
+         * SoftIntDispatch() ends in KrnSti(). The scheduling below takes the
+         * run list spinlocks, and those are also taken by interrupt handlers
+         * on this CPU (a handler that calls Signal() moves the woken task
+         * with krnSysCallReschedTask()). With interrupts on, a device
+         * interrupt that arrives while core_Switch() or core_Dispatch()
+         * holds one of them waits for ever for a lock this CPU already has.
+         */
+        KrnCli();
+#endif
+    }
 
     /* If task switching is disabled, do nothing */
     if (TDNESTCOUNT_GET < 0)
