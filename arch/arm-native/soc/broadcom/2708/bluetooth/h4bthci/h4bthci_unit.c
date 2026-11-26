@@ -380,6 +380,7 @@ void h4bthci_UnitTask(void)
         ((struct Process *)self)->pr_Task.tc_UserData;
     struct Task *waiter;
     BOOL started;
+    BYTE rxsig;
 
     /*
      * Say which step failed.
@@ -442,12 +443,19 @@ void h4bthci_UnitTask(void)
         (ULONG)H4BTHCI_BAUD);
 
     /*
-     * Polled, and that is a known cost rather than a design.
-     * pl011bt.resource's capability bits say whether RX and TX interrupts are
-     * available (PL011BT_CAP_RX_INTERRUPT), and they are zero until that path
-     * is proven -- so until then the honest thing is a poll with a delay
-     * rather than a wait that would never be signalled.
+     * Woken by the receive interrupt when the resource can do that (API 2);
+     * an older one is polled, which costs a tick on every HCI round trip.
      */
+    rxsig = -1;
+    if (PL011BTGetAPIVersion() >= 2 &&
+        (PL011BTGetCapabilities() & PL011BT_CAP_RX_INTERRUPT) &&
+        (rxsig = AllocSignal(-1)) != -1 &&
+        PL011BTSetRxSignal(unit, self, 1UL << rxsig) != PL011BT_OK)
+    {
+        FreeSignal(rxsig);
+        rxsig = -1;
+    }
+
     for (;;)
     {
         LONG got;
@@ -462,12 +470,20 @@ void h4bthci_UnitTask(void)
             unit->hu_RXLen += got;
             h4bthci_Reassemble(unit);
         }
+        else if (rxsig != -1)
+        {
+            /* Wait() clears what it returns, so the top check misses it */
+            if (Wait((1UL << rxsig) | SIGBREAKF_CTRL_C) & SIGBREAKF_CTRL_C)
+                break;
+        }
         else
             Delay(1);
     }
 
     PL011BTSetPower(unit, 0);
     PL011BTRelease(unit);
+    if (rxsig != -1)
+        FreeSignal(rxsig);
 
     Forbid();
     unit->hu_Task = NULL;

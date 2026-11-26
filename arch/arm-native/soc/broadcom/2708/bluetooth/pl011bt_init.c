@@ -215,13 +215,14 @@ static ULONG query_uart_clock(struct PL011BTBase *PL011BTBase)
  * and being called as a plain pointer through that mismatch corrupts
  * registers.
  *
- * Everything here is a store to MMIO or to the ring: no allocation, no lock,
- * no call back into exec. The reader synchronises on the head alone, which
- * this is the only writer of.
+ * Everything here is a store to MMIO or to the ring: no allocation, no lock.
+ * The only exec call is the Signal() that wakes the reader. The reader
+ * synchronises on the head alone, which this is the only writer of.
  */
 static void pl011bt_rx_handler(void *data, void *unused)
 {
     struct PL011BTBase *PL011BTBase = data;
+    struct Task *task;
     ULONG head;
 
     (void)unused;
@@ -254,6 +255,10 @@ static void pl011bt_rx_handler(void *data, void *unused)
      * single lost byte does not latch the condition forever. */
     pl011bt_wr(PL011_0_BASE + PL011_ICR,
                PL011_INT_RX | PL011_INT_RT | PL011_INT_OE);
+
+    task = PL011BTBase->pl011bt_RXTask;
+    if (task != NULL && head != PL011BTBase->pl011bt_RXTail)
+        Signal(task, PL011BTBase->pl011bt_RXSigMask);
 }
 
 /*
@@ -631,6 +636,7 @@ AROS_LH1(void, PL011BTRelease,
     ObtainSemaphore(&PL011BTBase->pl011bt_Sem);
     if (owner != NULL && PL011BTBase->pl011bt_Owner == owner)
     {
+        PL011BTBase->pl011bt_RXTask = NULL;
         pl011bt_wr(PL011_0_BASE + PL011_IMSC, 0);
         pl011bt_wr(PL011_0_BASE + PL011_CR, 0);
         PL011BTBase->pl011bt_Owner = NULL;
@@ -994,8 +1000,8 @@ AROS_LH3(long, PL011BTWrite,
         Returns without waiting for new input. Requires configuration with a
         registered receive interrupt handler; verify PL011BT_CAP_RX_INTERRUPT
         after PL011BTConfigure(). The ring holds at most 8191 unread bytes.
-        Drain it promptly to limit data loss. There is no client notification
-        or wait operation in this interface.
+        Drain it promptly to limit data loss. PL011BTSetRxSignal() wakes the
+        reader when bytes arrive.
 
         Transfers raw bytes without H:4 framing. Consumed bytes are removed
         from the ring. The destination is not retained. Use one reader and
@@ -1010,7 +1016,8 @@ AROS_LH3(long, PL011BTWrite,
         no direct FIFO read fallback.
 
     SEE ALSO
-        PL011BTConfigure(), PL011BTGetCapabilities(), PL011BTWrite()
+        PL011BTConfigure(), PL011BTGetCapabilities(), PL011BTWrite(),
+        PL011BTSetRxSignal()
 
 *****************************************************************************/
 AROS_LH3(long, PL011BTRead,
@@ -1053,6 +1060,63 @@ AROS_LH3(long, PL011BTRead,
         PL011BTBase->pl011bt_RXDropped = 0;
     }
     return (LONG)read;
+
+    AROS_LIBFUNC_EXIT
+}
+
+/*****************************************************************************
+    NAME
+        long PL011BTSetRxSignal(
+
+    SYNOPSIS
+        void *owner, struct Task *task, unsigned long sigmask)
+
+    FUNCTION
+        Have the receive interrupt signal a task whenever it puts bytes in the
+        ring, so the reader can Wait() instead of polling.
+
+    INPUTS
+        owner - Non-NULL token holding the resource claim.
+        task - Task to signal, or NULL to stop signalling.
+        sigmask - Signals to send.
+
+    RESULT
+        PL011BT_OK, PL011BT_ERR_ARGUMENT for a NULL owner, or
+        PL011BT_ERR_NOT_OWNER for a token without the claim.
+
+    NOTES
+        Available from PL011BT_API_VERSION 2. PL011BTRelease() stops the
+        signalling. Read until PL011BTRead() returns zero before waiting:
+        one signal can stand for many bytes.
+
+    SEE ALSO
+        PL011BTRead(), PL011BTGetAPIVersion()
+
+*****************************************************************************/
+AROS_LH3(long, PL011BTSetRxSignal,
+    AROS_LHA(void *, owner, A0),
+    AROS_LHA(struct Task *, task, A1),
+    AROS_LHA(unsigned long, sigmask, D0),
+    struct PL011BTBase *, PL011BTBase, 9, Pl011bt)
+{
+    AROS_LIBFUNC_INIT
+
+    long rc = PL011BT_OK;
+
+    if (owner == NULL)
+        return PL011BT_ERR_ARGUMENT;
+
+    ObtainSemaphore(&PL011BTBase->pl011bt_Sem);
+    if (PL011BTBase->pl011bt_Owner != owner)
+        rc = PL011BT_ERR_NOT_OWNER;
+    else
+    {
+        PL011BTBase->pl011bt_RXTask = NULL;
+        PL011BTBase->pl011bt_RXSigMask = sigmask;
+        PL011BTBase->pl011bt_RXTask = task;
+    }
+    ReleaseSemaphore(&PL011BTBase->pl011bt_Sem);
+    return rc;
 
     AROS_LIBFUNC_EXIT
 }

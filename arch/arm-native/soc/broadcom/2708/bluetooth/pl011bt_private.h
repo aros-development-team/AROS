@@ -77,6 +77,8 @@ struct PL011BTBase
     volatile ULONG              pl011bt_RXTail;     /* written by the reader  */
     volatile ULONG              pl011bt_RXDropped;
     APTR                        pl011bt_RXIRQ;      /* KrnAddIRQHandler handle */
+    struct Task * volatile      pl011bt_RXTask;     /* signalled when bytes arrive */
+    volatile ULONG              pl011bt_RXSigMask;
     UBYTE                       pl011bt_RXRing[PL011BT_RX_RING];
 };
 
