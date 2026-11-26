@@ -267,6 +267,7 @@ struct BtHWConn
     ULONG               cn_EnumHandles[32];
     UBYTE              *cn_SDPRecs;    /* records of this enumeration, for bd_SDPCache */
     ULONG               cn_SDPRecsLen;
+    BOOL                cn_SDPIncomplete; /* a record was skipped: not cached */
     struct bt_gatt_service cn_Services[BT_GATT_CLIENT_MAX_SERVICES];
     struct BtService   *cn_EnumSvc[BT_GATT_CLIENT_MAX_SERVICES]; /* the BtService each discovered service maps to */
     struct BtChannel   *cn_EnumReq;    /* control request waiting for enumeration */

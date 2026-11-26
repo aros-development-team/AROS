@@ -58,6 +58,7 @@ enum {
 
 static void bConnRunEnum(struct BtHWConn *cn);
 static void bConnFinishEnum(struct BtHWConn *cn, LONG error);
+static BOOL bHasClassicServices(struct BtDevice *bd);
 static struct BtEndpoint * bNextDescEndpoint(struct BtHWConn *cn);
 static void bEndpointEvent(struct bt_l2cap_channel_event_info *info, void *user_data);
 static void bRFCOMMWrite(struct BtHWEndpoint *hep, struct BtChannel *bch);
@@ -1133,11 +1134,15 @@ static void bConnUp(struct BtHWConn *cn, UWORD handle, UBYTE role)
         /* somebody who came for our GATT services: we want nothing of theirs */
         cn->cn_Enumerated = TRUE;
     }
-    if((cn->cn_LinkType == BDLT_ACL) && (bd->bd_Flags & BDFF_REGISTERED) &&
-       (bd->bd_Flags & BDFF_SERVICESKNOWN) && bd->bd_SDPCache) {
-        /* services known from its stored records: a HID device opens its
-           channels at once, and enumerating again would close them */
-        cn->cn_Enumerated = TRUE;
+    if((cn->cn_LinkType == BDLT_ACL) && (role == BDR_PERIPHERAL) && (bd->bd_Flags & BDFF_REGISTERED)) {
+        /* services known from its stored records: a HID device that
+           connected to us opens its channels at once, and enumerating
+           again would close them. A link we paged enumerates. */
+        btLockReadDevice(bd);
+        if(bd->bd_SDPCache && bHasClassicServices(bd)) {
+            cn->cn_Enumerated = TRUE;
+        }
+        btUnlockDevice(bd);
     }
     /* enumerate this bearer's services once (each bearer of a dual-mode device
        enumerates independently, accumulating onto the one device). A pending
@@ -1882,6 +1887,7 @@ static void bSDPRecAppend(struct BtHWConn *cn, ULONG handle, const UBYTE *attrs,
     ULONG v;
 
     if(!buf) {
+        cn->cn_SDPIncomplete = TRUE;
         return;
     }
     if(cn->cn_SDPRecsLen) {
@@ -1898,6 +1904,20 @@ static void bSDPRecAppend(struct BtHWConn *cn, ULONG handle, const UBYTE *attrs,
 }
 /* \\\ */
 
+/* /// "bHasClassicServices()" */
+/* the device has BR/EDR services of its own (lock held) */
+static BOOL bHasClassicServices(struct BtDevice *bd)
+{
+    struct BtService *bsv;
+    for(bsv = (struct BtService *) bd->bd_Services.lh_Head; bsv->bsv_Node.ln_Succ; bsv = (struct BtService *) bsv->bsv_Node.ln_Succ) {
+        if(!bsv->bsv_Incoming && ((bsv->bsv_Protocol == BSVP_L2CAP) || (bsv->bsv_Protocol == BSVP_RFCOMM))) {
+            return(TRUE);
+        }
+    }
+    return(FALSE);
+}
+/* \\\ */
+
 /* /// "bRestoreSDPCache()" */
 /* Builds the services of a registered device from its stored SDP records, so
    they are known (and listened on) before the device connects. */
@@ -1905,8 +1925,13 @@ void bRestoreSDPCache(struct BtBase *BluetoothBase, struct BtDevice *bd)
 {
     const UBYTE *p = bd->bd_SDPCache;
     ULONG left = bd->bd_SDPCacheLen;
+    BOOL skip;
 
-    if(!p || (bd->bd_Flags & BDFF_SERVICESKNOWN)) {
+    /* a connected device's services come from its own enumeration */
+    btLockReadDevice(bd);
+    skip = !p || (bd->bd_Flags & (BDFF_CONNECTED|BDFF_CONNECTING)) || bHasClassicServices(bd);
+    btUnlockDevice(bd);
+    if(skip) {
         return;
     }
     while(left >= 8) {
@@ -2032,6 +2057,7 @@ static void bSDPEnumCB(struct bt_sdp_client_completion *completion, void *user_d
                            "%s: SDP record 0x%08lx skipped (%s).",
                            cn->cn_Device->bd_Name,
                            (ULONG) cn->cn_EnumHandles[cn->cn_EnumIndex], reason);
+            cn->cn_SDPIncomplete = TRUE;
             cn->cn_EnumIndex++;
             bConnRunEnum(cn);
             return;
@@ -2053,6 +2079,7 @@ static void bSDPEnumCB(struct bt_sdp_client_completion *completion, void *user_d
         btFreeVec(cn->cn_SDPRecs);
         cn->cn_SDPRecs = NULL;
         cn->cn_SDPRecsLen = 0;
+        cn->cn_SDPIncomplete = FALSE;
         cn->cn_EnumState = ENUM_SDP_ATTRS;
         bConnRunEnum(cn);
     } else if(cn->cn_EnumState == ENUM_SDP_ATTRS) {
@@ -2460,15 +2487,18 @@ static void bConnFinishEnum(struct BtHWConn *cn, LONG error)
         cn->cn_Enumerated = TRUE;
         btLockWriteDevice(bd);
         bd->bd_Flags |= BDFF_SERVICESKNOWN;
-        if(cn->cn_SDPRecs) {
+        /* a search with records lost keeps the old cache; one with none clears it */
+        if((cn->cn_LinkType == BDLT_ACL) && !cn->cn_SDPIncomplete) {
             newcache = (cn->cn_SDPRecsLen != bd->bd_SDPCacheLen) ||
-                       memcmp(cn->cn_SDPRecs, bd->bd_SDPCache, cn->cn_SDPRecsLen);
+                       (cn->cn_SDPRecsLen && memcmp(cn->cn_SDPRecs, bd->bd_SDPCache, cn->cn_SDPRecsLen));
             btFreeVec(bd->bd_SDPCache);
             bd->bd_SDPCache = cn->cn_SDPRecs;
             bd->bd_SDPCacheLen = cn->cn_SDPRecsLen;
-            cn->cn_SDPRecs = NULL;
-            cn->cn_SDPRecsLen = 0;
+        } else {
+            btFreeVec(cn->cn_SDPRecs);
         }
+        cn->cn_SDPRecs = NULL;
+        cn->cn_SDPRecsLen = 0;
         btUnlockDevice(bd);
         if(newcache && (bd->bd_Flags & BDFF_REGISTERED)) {
             bStoreDevConfig(BluetoothBase, bd, TRUE);
