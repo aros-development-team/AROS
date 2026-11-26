@@ -1080,6 +1080,8 @@ static void bConnUp(struct BtHWConn *cn, UWORD handle, UBYTE role)
         bt_l2cap_channel_manager_listen(&cn->cn_L2CAP, 0x0003, BT_L2CAP_DEFAULT_MTU, bRFCOMMListenEvent, cn);
     }
     bListenServices(cn);
+    cn->cn_PeerOpenUntil = ((cn->cn_LinkType == BDLT_ACL) && (role == BDR_PERIPHERAL)) ?
+                           ((hc->hc_Tick + HC_PEEROPEN_MS) | 1) : 0;
 
     btLockWriteDevice(bd);
     bd->bd_Flags &= ~BDFF_CONNECTING;
@@ -4302,7 +4304,10 @@ BOOL bConnHandleRequest(struct BtHWCore *hc, struct BtChannel *bch)
                 bReplyChannel(BluetoothBase, bch, BTIOERR_NOTSUPPORTED, 0);
                 return(TRUE);
             }
-            if(hep->hep_State == HEPS_CLOSED) {
+            /* a device that connected to us opens its channels itself
+               (HIDP): wait for that instead of colliding with it */
+            if((hep->hep_State == HEPS_CLOSED) &&
+               !(cn->cn_PeerOpenUntil && (bep->bep_Type == BEPT_L2CAP))) {
                 if(!bEndpointOpen(hep)) {
                     bReplyChannel(BluetoothBase, bch, BTIOERR_CHANNELFAILED, 0);
                     return(TRUE);
@@ -4615,6 +4620,19 @@ void bConnTick(struct BtHWCore *hc)
             p[0] = cn->cn_Handle & 0xff;
             p[1] = cn->cn_Handle >> 8;
             bSubmitCmd(hc, HC_OP_AUTH_REQUESTED, p, 2, bIgnoreCompletion, hc);
+        }
+        if(cn->cn_PeerOpenUntil && ((LONG) (hc->hc_Tick - cn->cn_PeerOpenUntil) >= 0)) {
+            /* the peer did not open them: open the waited-on channels ourselves */
+            cn->cn_PeerOpenUntil = 0;
+            for(en = cn->cn_Endpoints.mlh_Head; (enext = en->mln_Succ); en = enext) {
+                struct BtHWEndpoint *hep = (struct BtHWEndpoint *) en;
+                if((hep->hep_State == HEPS_CLOSED) && (hep->hep_Endpoint->bep_Type == BEPT_L2CAP) &&
+                   (hep->hep_ReadReqs.mlh_Head->mln_Succ || hep->hep_WriteReqs.mlh_Head->mln_Succ) &&
+                   !bEndpointOpen(hep)) {
+                    bReqQueueFlush(hc->hc_Base, &hep->hep_ReadReqs, BTIOERR_CHANNELFAILED);
+                    bReqQueueFlush(hc->hc_Base, &hep->hep_WriteReqs, BTIOERR_CHANNELFAILED);
+                }
+            }
         }
         bt_l2cap_channel_manager_tick(&cn->cn_L2CAP, now);
         bt_gatt_client_tick(&cn->cn_GATT, now);

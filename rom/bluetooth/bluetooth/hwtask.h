@@ -43,6 +43,7 @@
 #define HC_MAXCONNS     8
 #define HC_RXQUEUE_MAX  8      /* SDUs kept per L2CAP channel when no read request is pending */
 #define HC_CHANCLOSE_MS 2000   /* grace period before an unused L2CAP channel is closed */
+#define HC_PEEROPEN_MS  2000   /* how long an incoming link waits for the peer to open its channels */
 
 /* HCI opcodes */
 #define HC_OP(ogf,ocf) BT_HCI_OPCODE(ogf, ocf)
@@ -304,6 +305,7 @@ struct BtHWConn
     BOOL                cn_PairRetry;     /* restart the pairing from bConnTick() (outside the SMP callback) */
     ULONG               cn_ConnParamSeq;  /* bt_LEConnSeq last asked for as the LE peripheral */
     ULONG               cn_ConnParamAt;   /* hc_Tick before which we do not ask */
+    ULONG               cn_PeerOpenUntil; /* incoming link: the peer opens its L2CAP channels first */
     UBYTE               cn_SMPKeySize;
     UBYTE               cn_SMPLTK[16];    /* key handed to LE Start Encryption (HCI byte order) */
     ULONG               cn_LastActivity;
