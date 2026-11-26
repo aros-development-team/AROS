@@ -37,6 +37,8 @@
 extern APTR KernelBase;
 #include <proto/kernel.h>
 
+#include <string.h>
+
 #include "v3d_intern.h"
 
 /* Big enough for tens rather than hundreds of arenas, small enough that

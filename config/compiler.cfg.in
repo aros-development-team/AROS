@@ -50,6 +50,10 @@ CFLAGS_NO_JUMP_TABLES                   := @aros_cflags_no_jump_tables@
 # Never generate an unaligned load or store, for code that runs where an
 # unaligned access faults, such as with the MMU off.
 CFLAGS_STRICT_ALIGN                     := @aros_cflags_strict_align@
+# Inline atomics on AArch64. The out-of-line __aarch64_* helpers live in
+# libgcc, which the kernel does not link, and choose LSE at run time from
+# getauxval(), which AROS does not have.
+CFLAGS_NO_OUTLINE_ATOMICS               := @aros_cflags_no_outline_atomics@
 
 #
 CFLAGS_FAST_MATH                        := @aros_cflags_fast_math@

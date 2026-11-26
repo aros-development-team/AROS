@@ -867,6 +867,7 @@ aros_cxxflags_gnu03
 aros_cxxflags_cxx03
 aros_cxxflags_gnu98
 aros_cxxflags_cxx98
+aros_cflags_no_outline_atomics
 aros_cflags_strict_align
 aros_cflags_no_jump_tables
 aros_cflags_gnu17
@@ -4055,6 +4056,34 @@ rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
 printf "%s\n" "$aros_strict_align" >&6; }
 if test "x-$aros_strict_align" = "x-yes" ; then
     aros_cflags_strict_align=-mstrict-align
+fi
+
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether ${CC} supports -mno-outline-atomics" >&5
+printf %s "checking whether ${CC} supports -mno-outline-atomics... " >&6; }
+CFLAGS=-mno-outline-atomics
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main (void)
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"
+then :
+  aros_no_outline_atomics="yes"
+else case e in #(
+  e) aros_no_outline_atomics="no" ;;
+esac
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam conftest.$ac_ext
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $aros_no_outline_atomics" >&5
+printf "%s\n" "$aros_no_outline_atomics" >&6; }
+if test "x-$aros_no_outline_atomics" = "x-yes" ; then
+    aros_cflags_no_outline_atomics=-mno-outline-atomics
 fi
 
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether ${CC} supports -fno-jump-tables" >&5
@@ -9221,6 +9250,7 @@ fi
 rm -f $AROS_DEVELOPER/include/__testsincdir.h
 
 #
+
 
 
 

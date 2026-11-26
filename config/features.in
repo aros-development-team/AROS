@@ -160,6 +160,14 @@ if test "x-$aros_strict_align" = "x-yes" ; then
     aros_cflags_strict_align=-mstrict-align
 fi
 
+AC_MSG_CHECKING([whether ${CC} supports -mno-outline-atomics])
+CFLAGS=-mno-outline-atomics
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_no_outline_atomics="yes"],[aros_no_outline_atomics="no"])
+AC_MSG_RESULT($aros_no_outline_atomics)
+if test "x-$aros_no_outline_atomics" = "x-yes" ; then
+    aros_cflags_no_outline_atomics=-mno-outline-atomics
+fi
+
 AC_MSG_CHECKING([whether ${CC} supports -fno-jump-tables])
 CFLAGS=-fno-jump-tables
 AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[]], [[]])],[aros_no_jump_tables="yes"],[aros_no_jump_tables="no"])
@@ -1758,6 +1766,7 @@ AC_SUBST(aros_cflags_c17)
 AC_SUBST(aros_cflags_gnu17)
 AC_SUBST(aros_cflags_no_jump_tables)
 AC_SUBST(aros_cflags_strict_align)
+AC_SUBST(aros_cflags_no_outline_atomics)
 
 AC_SUBST(aros_cxxflags_cxx98)
 AC_SUBST(aros_cxxflags_gnu98)
