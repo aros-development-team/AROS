@@ -2288,10 +2288,12 @@ static void bConnRunEnum(struct BtHWConn *cn)
             /* only the attributes the parser uses - a phone's full records
                (icons, OBEX details, long strings) run to kilobytes:
                ServiceClassIDList, ProtocolDescriptorList,
-               BluetoothProfileDescriptorList, ServiceName, HIDDescriptorList */
-            static const uint8_t attrids[] = { 0x35, 0x0f,
+               BluetoothProfileDescriptorList,
+               AdditionalProtocolDescriptorLists (HID interrupt PSM 0x13),
+               ServiceName, HIDDescriptorList */
+            static const uint8_t attrids[] = { 0x35, 0x12,
                 0x09, 0x00, 0x01, 0x09, 0x00, 0x04, 0x09, 0x00, 0x09,
-                0x09, 0x01, 0x00, 0x09, 0x02, 0x06 };
+                0x09, 0x00, 0x0d, 0x09, 0x01, 0x00, 0x09, 0x02, 0x06 };
             if(bt_sdp_client_get_attributes(&cn->cn_SDP, cn->cn_EnumHandles[cn->cn_EnumIndex], 2048,
                                             attrids, sizeof(attrids), bSDPEnumCB, cn, now) != BT_OK) {
                 bConnFinishEnum(cn, BTIOERR_HOSTERROR);
