@@ -104,12 +104,21 @@ static void TimerTick(struct TimerBase *TimerBase, struct ExecBase *SysBase)
 
     handleMicroHZ(TimerBase, SysBase);
 
+    /*
+     * With the host clock the time no longer advances in steps that meet a
+     * UNIT_VBLANK request's end on a VBlank, so a request checked only on
+     * VBlanks waited one more: check them on every tick, as MICROHZ ones.
+     */
+    if (TimerBase->tb_Platform.clock_gettime)
+        handleVBlank(TimerBase, SysBase);
+
     /* Now handle VBlank emulation via divisor */
     TimerBase->tb_Platform.tb_TimerCount++;
     if (TimerBase->tb_Platform.tb_TimerCount == TimerBase->tb_Platform.tb_VBlankTicks)
     {
         vblank_Cause(SysBase);
-        handleVBlank(TimerBase, SysBase);
+        if (!TimerBase->tb_Platform.clock_gettime)
+            handleVBlank(TimerBase, SysBase);
 
         TimerBase->tb_Platform.tb_TimerCount = 0;
     }
