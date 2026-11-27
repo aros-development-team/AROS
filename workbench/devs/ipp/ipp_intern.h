@@ -13,6 +13,7 @@
 
 #define IPP_URI_MAX     256
 #define IPP_TEXT_MAX    128
+#define IPP_REQUEST_MAX 16384   /* a job's own Print-Job request (PRD_SETJOBINFO) */
 
 /* A unit's printer, from ENV:IPP/Unit<n> (see ipp_config.c). */
 struct IPPConfig {
@@ -33,7 +34,9 @@ struct IPPTarget {
 
 /* One job: it runs from the first open of the unit to the last close. The
    open connects; the request goes out with the first write, so a unit that
-   is opened and closed without writing sends the printer nothing. */
+   is opened and closed without writing sends the printer nothing. A unit
+   without a printer, and a job that brought its own request, connect with
+   the first write. */
 struct IPPUnit {
     struct SignalSemaphore iu_Lock;
     ULONG iu_Opens;
@@ -47,6 +50,8 @@ struct IPPUnit {
     BOOL iu_Ended;                      /* CMD_UPDATE finished the job */
     BOOL iu_Unconfirmed;                /* all of it went out, but the printer did not say it took it */
     ULONG iu_Bytes;
+    UBYTE *iu_Request;                  /* the job's own Print-Job request, or NULL */
+    ULONG iu_RequestSize;
     struct IPPConfig iu_Config;
     struct IPPTarget iu_Target;
     char iu_Error[160];
@@ -83,6 +88,7 @@ BOOL IPP_UpdateConfig(struct IPPBase *IPPBase, ULONG unit, const struct IPPKey *
 BOOL IPP_Resolve(struct IPPBase *IPPBase, struct IPPUnit *iu);
 
 /* ipp_net.c */
+BOOL IPP_FindPrinterURI(const UBYTE *req, ULONG size, ULONG *at, ULONG *len);
 BOOL IPP_BeginJob(struct IPPBase *IPPBase, struct IPPUnit *iu, ULONG id);
 BOOL IPP_Send(struct IPPBase *IPPBase, struct IPPUnit *iu, const UBYTE *data, LONG len);
 BOOL IPP_EndJob(struct IPPBase *IPPBase, struct IPPUnit *iu);

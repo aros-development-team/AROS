@@ -270,6 +270,17 @@ struct DRPSourceMsg
 #define PJIA_Application	(PJIA_Dummy + 1)	/* STRPTR */
 #define PJIA_Document		(PJIA_Dummy + 2)	/* STRPTR */
 
+/* The job's own IPP Print-Job request (RFC 8010), without the document: a
+   device that prints by IPP sends it in place of the one it would make, a
+   spooler keeps it with the job. The three tags go together and are sent
+   before the job's first byte. A receiver that knows PRD_SETJOBINFO but not
+   these tags answers without an error all the same, so the sender clears
+   the BOOL, and the job has its request only when the receiver set it. */
+
+#define PJIA_IPPAttributes	(PJIA_Dummy + 3)	/* UBYTE * */
+#define PJIA_IPPAttributesSize	(PJIA_Dummy + 4)	/* ULONG */
+#define PJIA_IPPAttributesAccepted (PJIA_Dummy + 5)	/* BOOL * */
+
 /* PRD_GETDESTINATION, PRD_SETDESTINATION (AROS): an output device's own settings
    for a unit - where a spooler queue sends its jobs, which network printer a unit
    prints to - so that Printer prefs and a driver's prefs editor show and change

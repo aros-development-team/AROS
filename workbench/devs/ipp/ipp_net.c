@@ -129,6 +129,49 @@ static LONG buildPrintJob(UBYTE *p, LONG size, ULONG id, const char *uri, const 
     return p - start;
 }
 
+/* Where a Print-Job request without its document has the value of its printer-uri.
+   FALSE for anything else: the request is walked to its end. */
+BOOL IPP_FindPrinterURI(const UBYTE *req, ULONG size, ULONG *at, ULONG *len)
+{
+    ULONG i = 8, nl, vl;
+    BOOL operation = FALSE, found = FALSE;
+    const UBYTE *name;
+    UBYTE tag;
+
+    if (size < 9 || req[2] != (IPP_OP_PRINT_JOB >> 8) || req[3] != (IPP_OP_PRINT_JOB & 0xff))
+        return FALSE;
+    while (i < size) {
+        tag = req[i++];
+        if (tag == TAG_END_OF_ATTRIBUTES)
+            return found && i == size;
+        if (tag < 0x10) {
+            operation = tag == TAG_OPERATION_ATTRIBUTES;
+            continue;
+        }
+        if (size - i < 2)
+            return FALSE;
+        nl = (req[i] << 8) | req[i + 1];
+        i += 2;
+        if (size - i < nl + 2)
+            return FALSE;
+        name = req + i;
+        i += nl;
+        vl = (req[i] << 8) | req[i + 1];
+        i += 2;
+        if (size - i < vl)
+            return FALSE;
+        if (operation && tag == TAG_URI && nl == 11 && memcmp(name, "printer-uri", 11) == 0) {
+            if (found)
+                return FALSE;
+            found = TRUE;
+            *at = i;
+            *len = vl;
+        }
+        i += vl;
+    }
+    return FALSE;
+}
+
 BOOL IPP_BeginJob(struct IPPBase *IPPBase, struct IPPUnit *iu, ULONG id)
 {
     struct IPPTarget *t = &iu->iu_Target;
@@ -182,17 +225,22 @@ static BOOL startJob(struct IPPBase *IPPBase, struct IPPUnit *iu)
 {
     struct IPPTarget *t = &iu->iu_Target;
     char head[IPP_URI_MAX * 2 + 160], user[USER_MAX] = "AROS";
-    UBYTE req[REQ_MAX];
-    LONG reqlen;
+    UBYTE built[REQ_MAX];
+    const UBYTE *req = iu->iu_Request;
+    LONG reqlen = iu->iu_RequestSize;
 
     iu->iu_Started = TRUE;
     if (!t->it_IPP)
         return TRUE;
-    GetVar("USER", user, sizeof(user), 0);
-    reqlen = buildPrintJob(req, sizeof(req), iu->iu_JobId, iu->iu_Config.ic_URI, user, iu->iu_Config.ic_Format);
-    if (reqlen < 0) {
-        setError(iu, "the job's attributes do not fit the request", NULL);
-        return FALSE;
+    if (req == NULL) {
+        GetVar("USER", user, sizeof(user), 0);
+        reqlen = buildPrintJob(built, sizeof(built), iu->iu_JobId, iu->iu_Config.ic_URI, user,
+                               iu->iu_Config.ic_Format);
+        if (reqlen < 0) {
+            setError(iu, "the job's attributes do not fit the request", NULL);
+            return FALSE;
+        }
+        req = built;
     }
     strcpy(head, "POST ");
     strcat(head, t->it_Path);
