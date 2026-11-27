@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2012-2023, The AROS Development Team.  All rights reserved.
+ * Copyright (C) 2012-2026, The AROS Development Team.  All rights reserved.
  * Author: Jason S. McMullan <jason.mcmullan@gmail.com>
  *
  * Licensed under the AROS PUBLIC LICENSE (APL) Version 1.1
@@ -132,6 +132,45 @@ int pci_alloc_1intr(device_t dev, int msi_enable,
 
     return 0;
 }
+
+#if defined(__AROSEXEC_SMP__)
+/*
+ * Have the MSI vector obtained by pci_alloc_1intr() delivered to the
+ * least busy CPU.  The PCI device class chooses the CPU and writes the
+ * message address; the caller keeps the controller from raising the
+ * interrupt meanwhile (GHC.IE clear).
+ *
+ * Returns 1 if the vector was given a CPU, 0 if it stays where it was
+ * (the boot CPU), which is not an error.
+ *
+ * NOTE: Once this has been done ahci_intr() can run at the same time as
+ *	 the driver's task code, Disable() does not keep them apart.
+ *	 ahci_intr() may only touch what is safe for that: whole register
+ *	 writes, the atomic ap_signal and Signal().  See
+ *	 ahci_os_lock_port_nb().
+ */
+int pci_intr_affinity_any(device_t dev)
+{
+    struct AHCIBase *AHCIBase = dev->dev_Base;
+    OOP_MethodID HiddPCIDeviceBase = AHCIBase->ahci_HiddPCIDeviceMethodBase;
+    struct TagItem vecAttribs[] =
+    {
+        { tHidd_PCIVector_Affinity, (IPTR)TASKAFFINITY_ANY  },
+        { TAG_DONE,                 0                       }
+    };
+
+    if (!dev->dev_Object)
+        return 0;
+
+    if (!HIDD_PCIDevice_SetVectorAttribs(dev->dev_Object, 0, vecAttribs))
+    {
+        ahciDebug("[AHCI] %s: MSI vector stays on the boot CPU\n", __func__);
+        return 0;
+    }
+
+    return 1;
+}
+#endif
 
 /* AHCI Support Functions */
 void    ahci_os_sleep(int ms)
@@ -284,6 +323,12 @@ void ahci_os_lock_port(struct ahci_port *ap)
  * Conditionally lock the port structure for access.
  *
  * Returns 0 on success, non-zero on failure.
+ *
+ * This is what ahci_intr() asks, and it always fails: the port lock is a
+ * semaphore, and the port state it protects is never touched from the
+ * interrupt.  ahci_intr() masks the port and has the port thread do the
+ * work.  It has to stay that way where the interrupt is delivered to a
+ * CPU other than the one the port thread runs on (pci_intr_affinity_any()).
  */
 int ahci_os_lock_port_nb(struct ahci_port *ap)
 {

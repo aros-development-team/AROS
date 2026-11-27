@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2012-2025, The AROS Development Team.  All rights reserved.
+ * Copyright (C) 2012-2026, The AROS Development Team.  All rights reserved.
  * Author: Jason S. McMullan <jason.mcmullan@gmail.com>
  *
  * Licensed under the AROS PUBLIC LICENSE (APL) Version 1.1
@@ -555,5 +555,8 @@ struct ata_xfer;
 void ahci_ata_io_complete(struct ata_xfer *xa);
 int pci_alloc_1intr(device_t dev, int msi_enable,
         int *rid0, u_int *irq_flags);
+#if defined(__AROSEXEC_SMP__)
+int pci_intr_affinity_any(device_t dev);
+#endif
 
 #endif /* AHCI_AROS_H */
