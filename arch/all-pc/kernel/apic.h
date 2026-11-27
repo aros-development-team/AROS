@@ -19,6 +19,8 @@
  * This is why we have timer frequency here, not globally.
  */
  
+struct IntrNode;
+
 struct CPUMMUConfig
 {
     void                        *mmu_PML4;
@@ -49,6 +51,16 @@ struct CPUData
     UBYTE                       cpu_PerfMaxRatio;
     UBYTE                       cpu_PerfCurRatio;
     UBYTE                       cpu_PerfCapable;
+    /*
+     * What this CPU is doing in core_IRQHandle(). Kept per CPU on SMP, so
+     * that an alert reports the interrupt of the CPU that raised it; the
+     * same-named kb_ fields of PlatformData serve while there is no APIC
+     * data, and on one CPU.
+     */
+    IPTR                        cpu_IntrFlags;  /* PLATFORMF_INIRQ / PLATFORMF_INEXCPT                  */
+    ULONG                       cpu_LastState;
+    struct IntrNode             *cpu_LastIntr;
+    UWORD                       cpu_LastInt;
 };
 
 struct APICData
@@ -98,11 +110,15 @@ struct APICData *core_APIC_Probe(void);
 
 apicid_t core_APIC_GetNumberFromLocal(struct APICData *, apicid_t);
 apicid_t core_APIC_GetNumber(struct APICData *);
+struct CPUData *core_APIC_GetCPUData(struct APICData *);
 void core_APIC_GetMask(struct APICData *, apicid_t, cpumask_t *);
 BOOL core_APIC_CPUInMask(apicid_t, cpumask_t *);
+/* SMP only (smp_exec.c): the CPU has been started and takes interrupts */
+BOOL cpu_IsOnline(cpuid_t);
 
 void core_InvalidateIDT();
 void core_SetupIDT(apicid_t, x86vectgate_t *);
+void core_CopyDeviceGates(x86vectgate_t *, const x86vectgate_t *);
 BOOL core_SetIDTGate(x86vectgate_t *, int, uintptr_t, BOOL, BOOL);
 BOOL core_SetIRQGate(void *, int, uintptr_t);
 void core_SetExGates(void *);

@@ -180,6 +180,9 @@ BOOL APICInt_DisableIRQ(APTR icPrivate, icinstid_t icInstance, irqid_t intNum)
 
     if ((KrnIsSuper()) || ((ssp = SuperState()) != NULL))
     {
+        /* Taken in supervisor mode: see EnableIRQ */
+        IPTR lockState = ictl_Lock();
+
         /* Disable the IDT gate on ALL CPUs (symmetric with EnableIRQ) */
         for (c = 0; c < apicPrivate->apic_count; c++)
         {
@@ -187,6 +190,7 @@ BOOL APICInt_DisableIRQ(APTR icPrivate, icinstid_t icInstance, irqid_t intNum)
             if (IGATES)
                 IGATES[HW_IRQ_BASE + intNum].p = 0;
         }
+        ictl_Unlock(lockState);
         retVal = TRUE;
 
         if (ssp)
@@ -219,13 +223,21 @@ BOOL APICInt_EnableIRQ(APTR icPrivate, icinstid_t icInstance, irqid_t intNum)
          * regardless of which core the IOAPIC routes it to.
          * core_SetupIDT already installed the correct handler; we just
          * need to flip the present bit.
+         *
+         * A CPU that is being started sets its IDT up under this lock and
+         * then copies the boot CPU's gates (smp_Entry), so it either has
+         * the gate from here or picks it up there. The lock is taken once
+         * in supervisor mode, never before entering it.
          */
+        IPTR lockState = ictl_Lock();
+
         for (c = 0; c < apicPrivate->apic_count; c++)
         {
             IGATES = (x86vectgate_t *)apicPrivate->cores[c].cpu_IDT;
             if (IGATES)
                 IGATES[HW_IRQ_BASE + intNum].p = 1;
         }
+        ictl_Unlock(lockState);
         retVal = TRUE;
 
         if (ssp)
@@ -737,15 +749,6 @@ static BOOL APIC_isMSHyperV(void)
                         Driver functions
  **********************************************************/
 
-int APICHeartbeatFinalizer(struct ExceptionContext *regs, struct KernelBase *LIBBASE, struct ExecBase *SysBase)
-{
-    struct PlatformData *pdata = LIBBASE->kb_PlatformData;
-
-    D(bug("[Kernel:APIC] %s(0x%p)\n", __func__, LIBBASE));
-
-    pdata->kb_PDFlags &= ~PLATFORMF_HAVEHEARTBEAT;
-}
-
 static AROS_INTH1(APICResetHandler, struct KernelBase *, KernelBase)
 {
     AROS_INTFUNC_INIT
@@ -757,11 +760,14 @@ static AROS_INTH1(APICResetHandler, struct KernelBase *, KernelBase)
 
     /*
      * End the APIC heartbeat.
+     * The heartbeat server is told that its next run is the last one. The
+     * handler is not replaced: a reset can be asked for from inside an
+     * interrupt handler (the keyboard's), and no handler can be added or
+     * removed there - the chains are locked while they are walked.
      */
     Forbid();
 
-    KrnRemExceptionHandler(pdata->kb_APICHeartBeat);
-    pdata->kb_APICHeartBeat = KrnAddExceptionHandler(APIC_EXCEPT_HEARTBEAT, APICHeartbeatFinalizer, KernelBase, SysBase);
+    pdata->kb_PDFlags |= PLATFORMF_ENDHEARTBEAT;
 
     if ((KrnIsSuper()) || ((ssp = SuperState()) != NULL))
     {

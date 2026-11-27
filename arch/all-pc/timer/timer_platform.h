@@ -24,5 +24,8 @@ struct PlatformTimer
 /* tb_Flags definitions */
 #define PCTIMER_FLAGB_ENABLED   1
 #define PCTIMER_FLAGF_ENABLED   (1 << PCTIMER_FLAGB_ENABLED)
+/* The reset handler ran: the next timer interrupt is the last one */
+#define PCTIMER_FLAGB_SHUTDOWN  2
+#define PCTIMER_FLAGF_SHUTDOWN  (1 << PCTIMER_FLAGB_SHUTDOWN)
 
 #endif /* _PC_TIMER_PLATFORM_H */

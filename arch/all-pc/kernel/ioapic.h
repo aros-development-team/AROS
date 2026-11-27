@@ -72,4 +72,15 @@ struct IOAPICData
 
 extern struct IntrController IOAPICInt_IntrController;
 
+/* What IOAPIC_MoveIRQ() answers (acpi_ioapic.c) */
+#define IOAPIC_MOVE_DONE        0       /* the pin is delivered to the CPU asked for            */
+#define IOAPIC_MOVE_BUSY        1       /* this CPU still has the interrupt to serve: ask again */
+#define IOAPIC_MOVE_ELSEWHERE   2       /* the pin is not delivered to this CPU                 */
+#define IOAPIC_MOVE_FAILED      3       /* not a pin that can be moved                          */
+
+struct KernelBase;
+
+LONG IOAPIC_MoveIRQ(struct KernelBase *, irqid_t, ULONG);
+void IOAPIC_MoveIRQEnd(struct KernelBase *, irqid_t);
+
 #endif /* !KERNEL_IOAPIC_H */

@@ -460,6 +460,11 @@ BOOL IOAPICInt_Init(struct KernelBase *KernelBase, icinstid_t instanceCount)
 
                     if (acquired)
                     {
+                        /*
+                         * The gate goes into the boot CPU's IDT, the only one
+                         * there is yet. The other CPUs copy its device gates
+                         * when they are started (smp_Entry).
+                         */
                         if (irqRoute->vect == 0)
                         {
                             /* High GSI: no vector yet, gate set in EnableIRQ */
@@ -510,17 +515,27 @@ BOOL IOAPICInt_DisableIRQ(APTR icPrivate, icinstid_t icInstance, irqid_t intNum)
 {
     struct IOAPICData *ioapicPrivate = (struct IOAPICData *)icPrivate;
     struct IOAPICCfgData *ioapicData = &ioapicPrivate->ioapics[icInstance];
-    struct IntrMapping *intrMap = krnInterruptMapping(KernelBase, intNum);
+    struct IntrMapping *intrMap;
     struct acpi_ioapic_route *irqRoute;
     UBYTE ioapic_pin;
+    IPTR lockState;
 
     if (ioapicData->ioapic_Flags & IOAPICF_DUMP)
     {
         bug("[Kernel:IOAPIC] %s(%02X)\n", __func__, intNum);
     }
 
+    /*
+     * A register is reached by selecting it and then using the window, and
+     * the routing table shadows what was written. Neither survives another
+     * CPU doing the same in between, an acknowledge included.
+     */
+    lockState = ictl_Lock();
+
+    intrMap = krnInterruptMapping(KernelBase, intNum);
     if (!IOAPIC_IntToPin(ioapicData, intrMap, intNum, &ioapic_pin))
     {
+        ictl_Unlock(lockState);
         return FALSE;
     }
 
@@ -540,6 +555,8 @@ BOOL IOAPICInt_DisableIRQ(APTR icPrivate, icinstid_t icInstance, irqid_t intNum)
         IOAPICREG_REDTBLBASE + (ioapic_pin << 1 ) + 1,
         ((ioapicData->ioapic_RouteTable[ioapic_pin] >> 32) & 0xFFFFFFFF));
 
+    ictl_Unlock(lockState);
+
     return TRUE;
 }
 
@@ -548,18 +565,24 @@ BOOL IOAPICInt_EnableIRQ(APTR icPrivate, icinstid_t icInstance, irqid_t intNum)
     struct PlatformData *kernPlatD = (struct PlatformData *)KernelBase->kb_PlatformData;
     struct IOAPICData *ioapicPrivate = (struct IOAPICData *)icPrivate;
     struct IOAPICCfgData *ioapicData = &ioapicPrivate->ioapics[icInstance];
-    struct IntrMapping *intrMap = krnInterruptMapping(KernelBase, intNum);
+    struct IntrMapping *intrMap;
     struct APICData *apicPrivate = kernPlatD->kb_APIC;
     struct acpi_ioapic_route *irqRoute;
     UBYTE ioapic_pin;
+    IPTR lockState;
 
     if (ioapicData->ioapic_Flags & IOAPICF_DUMP)
     {
         bug("[Kernel:IOAPIC] %s(%02X)\n", __func__, intNum);
     }
 
+    /* See IOAPICInt_DisableIRQ */
+    lockState = ictl_Lock();
+
+    intrMap = krnInterruptMapping(KernelBase, intNum);
     if (!IOAPIC_IntToPin(ioapicData, intrMap, intNum, &ioapic_pin))
     {
+        ictl_Unlock(lockState);
         return FALSE;
     }
 
@@ -574,7 +597,11 @@ BOOL IOAPICInt_EnableIRQ(APTR icPrivate, icinstid_t icInstance, irqid_t intNum)
      * otherwise use the pre-configured one. */
     if (apicPrivate)
     {
-        ULONG cpuNo = KrnGetCPUNumber();
+        /*
+         * A pin nothing has mapped goes to the boot CPU. It used to go to
+         * whichever CPU the caller happened to run on.
+         */
+        ULONG cpuNo = 0;
         if (intrMap)
         {
             cpuNo = intrMap->im_CPU;
@@ -600,37 +627,60 @@ BOOL IOAPICInt_EnableIRQ(APTR icPrivate, icinstid_t icInstance, irqid_t intNum)
      */
     if (irqRoute->vect == 0)
     {
-        UBYTE vector = apicAllocVector(intNum);
+        UBYTE vector = 0;
+        APTR ssp = NULL;
+
+        /*
+         * The gates are written in supervisor mode. That is entered with
+         * a syscall, and none may be made with the lock held (ictl.c):
+         * let go, enter, take it again and look again, as another CPU may
+         * have given the pin its vector meanwhile.
+         */
+        ictl_Unlock(lockState);
+        if (apicPrivate && !KrnIsSuper())
+            ssp = SuperState();
+        lockState = ictl_Lock();
+
+        if (irqRoute->vect == 0)
+        {
+            vector = apicAllocVector(intNum);
+            if (vector != 0)
+            {
+                irqRoute->vect = vector;
+
+                /* Install IDT gate for the newly allocated vector on ALL CPUs */
+                if (apicPrivate && KrnIsSuper())
+                {
+                    int c;
+                    for (c = 0; c < apicPrivate->apic_count; c++)
+                    {
+                        if (apicPrivate->cores[c].cpu_IDT)
+                        {
+                            core_SetIDTGate(
+                                (x86vectgate_t *)apicPrivate->cores[c].cpu_IDT,
+                                vector,
+                                (uintptr_t)IntrDefaultGates[vector],
+                                TRUE, FALSE);
+                        }
+                    }
+                }
+                bug("[Kernel:IOAPIC] %s: IRQ %u allocated vector %u\n", __func__, intNum, vector);
+            }
+        }
+        else
+            vector = irqRoute->vect;
+
+        ictl_Unlock(lockState);
+        if (ssp)
+            UserState(ssp);
+
         if (vector == 0)
         {
             bug("[Kernel:IOAPIC] %s: IRQ %u - no IDT vectors available!\n", __func__, intNum);
             return FALSE;
         }
-        irqRoute->vect = vector;
 
-        /* Install IDT gate for the newly allocated vector on ALL CPUs */
-        if (apicPrivate)
-        {
-            APTR ssp = NULL;
-            if ((KrnIsSuper()) || ((ssp = SuperState()) != NULL))
-            {
-                int c;
-                for (c = 0; c < apicPrivate->apic_count; c++)
-                {
-                    if (apicPrivate->cores[c].cpu_IDT)
-                    {
-                        core_SetIDTGate(
-                            (x86vectgate_t *)apicPrivate->cores[c].cpu_IDT,
-                            vector,
-                            (uintptr_t)IntrDefaultGates[vector],
-                            TRUE, FALSE);
-                    }
-                }
-                if (ssp)
-                    UserState(ssp);
-            }
-        }
-        bug("[Kernel:IOAPIC] %s: IRQ %u allocated vector %u\n", __func__, intNum, vector);
+        lockState = ictl_Lock();
     }
 
     /* Enable the pin (unmask) */
@@ -651,6 +701,8 @@ BOOL IOAPICInt_EnableIRQ(APTR icPrivate, icinstid_t icInstance, irqid_t intNum)
         IOAPICREG_REDTBLBASE + (ioapic_pin << 1),
         (ioapicData->ioapic_RouteTable[ioapic_pin] & 0xFFFFFFFF));
 
+    ictl_Unlock(lockState);
+
     return TRUE;
 }
 
@@ -659,16 +711,28 @@ BOOL IOAPICInt_AckIntr(APTR icPrivate, icinstid_t icInstance, irqid_t intNum)
     struct PlatformData *kernPlatD = (struct PlatformData *)KernelBase->kb_PlatformData;
     struct IOAPICData *ioapicPrivate = (struct IOAPICData *)icPrivate;
     struct IOAPICCfgData *ioapicData = &ioapicPrivate->ioapics[icInstance];
-    struct IntrMapping *intrMap = krnInterruptMapping(KernelBase, intNum);
+    struct IntrMapping *intrMap;
     struct acpi_ioapic_route *irqRoute;
     IPTR apic_base;
     UBYTE ioapic_pin;
+    IPTR lockState;
 
     DINT(bug("[Kernel:IOAPIC] %s(%u)\n", __func__, intNum);)
+
+    /*
+     * This runs on whichever CPU took the interrupt, while another may be
+     * acknowledging or reprogramming a pin of the same IOAPIC: the mapping
+     * lookup, the routing entry and, on an old IOAPIC, the register window
+     * all need the others kept out.
+     */
+    lockState = ictl_Lock();
+
+    intrMap = krnInterruptMapping(KernelBase, intNum);
 
     /* write IOAPIC EIO if necessary .. */
     if (!IOAPIC_IntToPin(ioapicData, intrMap, intNum, &ioapic_pin))
     {
+         ictl_Unlock(lockState);
          return FALSE;
     }
 
@@ -715,6 +779,8 @@ BOOL IOAPICInt_AckIntr(APTR icPrivate, icinstid_t icInstance, irqid_t intNum)
         DINT(bug("[Kernel:IOAPIC] %s(%u): EDGE\n", __func__, intNum);)
     }
 
+    ictl_Unlock(lockState);
+
     /* Write zero to EOI of APIC */
     apic_base = core_APIC_GetBase();
     DINT(bug("[Kernel:IOAPIC] %s(%u): apicBase = %p\n", __func__, intNum, apic_base);)
@@ -722,6 +788,172 @@ BOOL IOAPICInt_AckIntr(APTR icPrivate, icinstid_t icInstance, irqid_t intNum)
 
     return TRUE;
 }
+
+#if defined(__AROSEXEC_SMP__)
+/*
+ * Send a pin to another CPU. Runs on the CPU the pin is delivered to now,
+ * in supervisor mode with interrupts off (KrnModifyIRQA() gets it there
+ * with a call IPI), because only that CPU can tell whether it still has
+ * the interrupt to serve: one it has accepted stays in its local APIC when
+ * the redirection entry changes, and would be served there while the next
+ * one is already being served on the new CPU. A handler is entered on one
+ * CPU at a time today, and drivers rely on it.
+ *
+ * So the entry is changed only when this CPU is not inside the dispatch of
+ * a device interrupt and has this vector neither in service nor requested.
+ * Otherwise the answer is IOAPIC_MOVE_BUSY and the caller asks again, by
+ * when the interrupt has been served. A level triggered pin is masked in
+ * the IOAPIC meanwhile, so that it cannot be raised here again; nothing is
+ * lost, as the line stays asserted and is seen when the mask is taken off.
+ * An edge triggered pin is never masked, an edge on a masked pin being
+ * dropped. The routing table keeps the mask the pin should have, and
+ * IOAPIC_MoveIRQEnd() puts that back if the move is given up.
+ *
+ * Only the destination changes. The vector is the same on every CPU, so an
+ * EOI for an interrupt taken before the move still finds the entry and
+ * clears its remote IRR.
+ */
+LONG IOAPIC_MoveIRQ(struct KernelBase *KernelBase, irqid_t intNum, ULONG cpuNo)
+{
+    struct PlatformData *kernPlatD = (struct PlatformData *)KernelBase->kb_PlatformData;
+    struct IOAPICData *ioapicPrivate = kernPlatD->kb_IOAPIC;
+    struct APICData *apicPrivate = kernPlatD->kb_APIC;
+    struct IOAPICCfgData *ioapicData;
+    struct CPUData *thisCPU;
+    struct IntrMapping *intrMap;
+    struct acpi_ioapic_route *irqRoute;
+    LONG result = IOAPIC_MOVE_FAILED;
+    UBYTE ioapic_pin;
+    IPTR lockState;
+
+    if (!ioapicPrivate || !apicPrivate || (cpuNo >= apicPrivate->apic_count) ||
+        (KERNELIRQ_ICINST(intNum) >= ioapicPrivate->ioapic_count))
+        return IOAPIC_MOVE_FAILED;
+
+    ioapicData = &ioapicPrivate->ioapics[KERNELIRQ_ICINST(intNum)];
+    if (!(ioapicData->ioapic_Flags & IOAPICF_ENABLED))
+        return IOAPIC_MOVE_FAILED;
+
+    thisCPU = core_APIC_GetCPUData(apicPrivate);
+
+    /* See IOAPICInt_DisableIRQ */
+    lockState = ictl_Lock();
+
+    intrMap = krnInterruptMapping(KernelBase, intNum);
+    if (thisCPU && IOAPIC_IntToPin(ioapicData, intrMap, intNum, &ioapic_pin))
+    {
+        ULONG curNo = intrMap ? intrMap->im_CPU : 0;
+        BOOL sync = FALSE;
+
+        irqRoute = (struct acpi_ioapic_route *)&ioapicData->ioapic_RouteTable[ioapic_pin];
+
+        if (curNo == cpuNo)
+        {
+            /* There already; an earlier pass may have left the pin masked */
+            result = IOAPIC_MOVE_DONE;
+            sync = TRUE;
+        }
+        else if (!intrMap)
+        {
+            /* Nowhere to record the CPU: the caller makes the mapping first */
+        }
+        else if (curNo != (ULONG)(thisCPU - apicPrivate->cores))
+        {
+            /* Moved by somebody else since the caller looked */
+            result = IOAPIC_MOVE_ELSEWHERE;
+        }
+        else
+        {
+            UBYTE vector = irqRoute->vect;
+            BOOL pending = FALSE;
+
+            irqRoute->rsvd1 = 0; /* Mask out the bits we shouldnt touch */
+            irqRoute->rsvd2 = 0;
+
+            if ((irqRoute->trig == 1) && !irqRoute->mask)
+            {
+                acpi_IOAPIC_WriteReg(ioapicData->ioapic_Base,
+                    IOAPICREG_REDTBLBASE + (ioapic_pin << 1),
+                    (ULONG)(ioapicData->ioapic_RouteTable[ioapic_pin] & 0xFFFFFFFF) | (1 << 16));
+            }
+
+            if (thisCPU->cpu_IntrFlags & PLATFORMF_INIRQ)
+                pending = TRUE;
+            else if (vector)
+            {
+                IPTR apic_base = core_APIC_GetBase();
+                ULONG regOffs = (vector >> 5) << 4, regBit = 1UL << (vector & 31);
+
+                if ((APIC_REG(apic_base, APIC_IRR + regOffs) | APIC_REG(apic_base, APIC_ISR + regOffs)) & regBit)
+                    pending = TRUE;
+            }
+
+            if (pending)
+                result = IOAPIC_MOVE_BUSY;
+            else
+            {
+                intrMap->im_CPU = cpuNo;
+                irqRoute->dst = apicPrivate->cores[cpuNo].cpu_LocalID;
+                result = IOAPIC_MOVE_DONE;
+                sync = TRUE;
+            }
+        }
+
+        if (sync)
+        {
+            /* The destination first: the other write may take the mask off */
+            irqRoute->rsvd1 = 0;
+            irqRoute->rsvd2 = 0;
+            acpi_IOAPIC_WriteReg(ioapicData->ioapic_Base,
+                IOAPICREG_REDTBLBASE + (ioapic_pin << 1) + 1,
+                ((ioapicData->ioapic_RouteTable[ioapic_pin] >> 32) & 0xFFFFFFFF));
+            acpi_IOAPIC_WriteReg(ioapicData->ioapic_Base,
+                IOAPICREG_REDTBLBASE + (ioapic_pin << 1),
+                (ioapicData->ioapic_RouteTable[ioapic_pin] & 0xFFFFFFFF));
+        }
+    }
+
+    ictl_Unlock(lockState);
+
+    return result;
+}
+
+/*
+ * A move that was given up may have left a level triggered pin masked.
+ * Give the pin the mask the routing table has for it. Runs on any CPU.
+ */
+void IOAPIC_MoveIRQEnd(struct KernelBase *KernelBase, irqid_t intNum)
+{
+    struct PlatformData *kernPlatD = (struct PlatformData *)KernelBase->kb_PlatformData;
+    struct IOAPICData *ioapicPrivate = kernPlatD->kb_IOAPIC;
+    struct IOAPICCfgData *ioapicData;
+    struct acpi_ioapic_route *irqRoute;
+    UBYTE ioapic_pin;
+    IPTR lockState;
+
+    if (!ioapicPrivate || (KERNELIRQ_ICINST(intNum) >= ioapicPrivate->ioapic_count))
+        return;
+
+    ioapicData = &ioapicPrivate->ioapics[KERNELIRQ_ICINST(intNum)];
+    if (!(ioapicData->ioapic_Flags & IOAPICF_ENABLED))
+        return;
+
+    /* See IOAPICInt_DisableIRQ */
+    lockState = ictl_Lock();
+
+    if (IOAPIC_IntToPin(ioapicData, krnInterruptMapping(KernelBase, intNum), intNum, &ioapic_pin))
+    {
+        irqRoute = (struct acpi_ioapic_route *)&ioapicData->ioapic_RouteTable[ioapic_pin];
+
+        irqRoute->rsvd1 = 0; /* Mask out the bits we shouldnt touch */
+        acpi_IOAPIC_WriteReg(ioapicData->ioapic_Base,
+            IOAPICREG_REDTBLBASE + (ioapic_pin << 1),
+            (ioapicData->ioapic_RouteTable[ioapic_pin] & 0xFFFFFFFF));
+    }
+
+    ictl_Unlock(lockState);
+}
+#endif /* __AROSEXEC_SMP__ */
 
 struct IntrController IOAPICInt_IntrController =
 {
@@ -864,7 +1096,8 @@ AROS_UFH3(IPTR, ACPI_hook_Table_Int_Src_Ovr_Parse,
         DPARSE(bug("[Kernel:ACPI-IOAPIC]    %s: new mapping node @ 0x%p\n", __func__, intrMap);)
 
         intrMap->im_DeviceIRQ = intsrc->SourceIrq;
-        intrMap->im_CPU = KrnGetCPUNumber();
+        /* The boot CPU; this is parsed there, but say so */
+        intrMap->im_CPU = 0;
     }
     else
     {
@@ -928,7 +1161,8 @@ AROS_UFH3(IPTR, ACPI_hook_Table_NMI_Src_Parse,
         newRt = TRUE;
 
         DPARSE(bug("[Kernel:ACPI-IOAPIC]    %s: new mapping node @ 0x%p\n", __func__, intrMap);)
-        intrMap->im_CPU = KrnGetCPUNumber();
+        /* The boot CPU, as for an override */
+        intrMap->im_CPU = 0;
     }
     else
     {

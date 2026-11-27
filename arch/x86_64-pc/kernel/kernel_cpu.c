@@ -96,8 +96,8 @@ void cpu_Dispatch(struct ExceptionContext *regs)
 
         __asm__ __volatile__("sti; hlt; cli");
 
-        if (SysBase->SysFlags & SFF_SoftInt)
-            core_Cause(INTB_SOFTINT, 1l << INTB_SOFTINT);
+        /* Returns with interrupts masked: core_Dispatch() is next */
+        core_RunSoftInts();
     }
 
     DSCHED(

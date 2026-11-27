@@ -53,6 +53,7 @@ static void smp_Entry(IPTR stackBase, spinlock_t *apicReadyLock, struct KernelBa
     struct Task *apicBSTask;
 #endif
 #if (__WORDSIZE==64)
+    IPTR lockState;
 
     /* Enable fxsave/fxrstor */
     wrcr(cr4, rdcr(cr4) | _CR4_OSFXSR | _CR4_OSXMMEXCPT);
@@ -94,7 +95,18 @@ static void smp_Entry(IPTR stackBase, spinlock_t *apicReadyLock, struct KernelBa
 
     D(bug("[Kernel:SMP] %s[%03u]: Core IDT @ 0x%p\n", __func__, apicCPUNo, apicCPU->cpu_IDT));
 #if (__WORDSIZE==64)
+    /*
+     * Running CPUs enable and disable device vector gates in every IDT,
+     * this one included, from the moment it was allocated. Setting it up
+     * resets them all, so that and taking over the boot CPU's gates is one
+     * step under the lock those CPUs hold: afterwards this CPU has the gate
+     * of every device vector enabled so far, and gets the later ones with
+     * the rest.
+     */
+    lockState = ictl_Lock();
     core_SetupIDT(apicCPUNo, apicCPU->cpu_IDT);
+    core_CopyDeviceGates((x86vectgate_t *)apicCPU->cpu_IDT, (x86vectgate_t *)apicData->cores[0].cpu_IDT);
+    ictl_Unlock(lockState);
 
     if (!core_SetIDTGate((x86vectgate_t *)apicCPU->cpu_IDT, APIC_CPU_EXCEPT_TO_VECTOR(APIC_EXCEPT_SYSCALL), (uintptr_t)IntrDefaultGates[APIC_CPU_EXCEPT_TO_VECTOR(APIC_EXCEPT_SYSCALL)], TRUE, TRUE))
     {

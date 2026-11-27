@@ -2,6 +2,9 @@
     Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 
+#define __KERNEL_NOLIBBASE__
+#include <proto/kernel.h>
+#include <proto/exec.h>
 #include <proto/arossupport.h>
 
 #include <string.h>
@@ -15,6 +18,73 @@
 #include "pic_i8259a.h"
 
 #define D(x)
+
+/*
+ * One lock for what the interrupt controllers keep for all CPUs: the IOAPIC
+ * register window and routing tables, the 8259A masks, the present bits of
+ * the device vector gates in every CPU's IDT, the vector and MSI allocators
+ * and the interrupt mappings list. The controller code takes it itself.
+ *
+ * It is not kb_IntrSpinLock, and cannot be. That one is held for writing
+ * around ic_IntrDisable by KrnRemIRQHandler(), and for reading only at
+ * interrupt time, while two CPUs acknowledging through one IOAPIC still
+ * have to exclude each other.
+ *
+ * Interrupts are off while it is held, as the acknowledge path takes it.
+ * A task gets that from Disable(), not from a bare cli: KrnSpinLock() may
+ * call SetTaskPri() while the task waits, and the Enable() in there would
+ * turn interrupts back on. In supervisor mode Enable() never turns them
+ * on, so there the flags are saved and restored instead. The mode must be
+ * the same at both ends.
+ *
+ * A syscall is answered through krnRunExceptionHandlers(), which reads
+ * under kb_IntrSpinLock. KrnRemIRQHandler() waits for this lock with that
+ * one held for writing, so a holder of this lock that made a syscall would
+ * wait for it in turn. Code that needs supervisor mode enters it first.
+ */
+#if defined(__AROSEXEC_SMP__)
+static spinlock_t ictl_SpinLock;
+
+IPTR ictl_Lock(void)
+{
+    unsigned long flags = 0;
+
+    if (KrnIsSuper())
+    {
+        /* Never zero: bit 1 of the flags register is always set */
+        __save_flags(flags);
+        __cli();
+    }
+    else
+        Disable();
+
+    KrnSpinLock(&ictl_SpinLock, NULL, SPINLOCK_MODE_WRITE);
+
+    return (IPTR)flags;
+}
+
+void ictl_Unlock(IPTR state)
+{
+    unsigned long flags = (unsigned long)state;
+
+    KrnSpinUnLock(&ictl_SpinLock);
+
+    if (flags)
+        __restore_flags(flags);
+    else
+        Enable();
+}
+#else
+/* One CPU: the callers' own Disable() and the interrupt gate are enough */
+IPTR ictl_Lock(void)
+{
+    return 0;
+}
+
+void ictl_Unlock(IPTR state)
+{
+}
+#endif
 
 void ictl_enable_irq(irqid_t irq, struct KernelBase *KernelBase)
 {

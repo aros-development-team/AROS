@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2023-2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 2023-2026, The AROS Development Team. All rights reserved.
 
     Desc: x86_64 arch specific KrnFmtAlertInfo over-ride
 */
@@ -8,6 +8,8 @@
 
 #include <kernel_base.h>
 #include <kernel_debug.h>
+
+#include "apic.h"
 
 static const char irqstring[] =   "IRQ : #%U - 0x%P";
 
@@ -51,12 +53,20 @@ static const char irqstring[] =   "IRQ : #%U - 0x%P";
 
         if ((pdata = (struct PlatformData *)KernelBase->kb_PlatformData) != NULL)
         {
-            if (pdata->kb_LastState & (PLATFORMF_INIRQ << 16))
+            /*
+             * The state of the CPU this is called on: an alert formatted in
+             * supervisor mode is formatted where the interrupt was taken.
+             */
+            struct CPUData *cpuData = core_APIC_GetCPUData(pdata->kb_APIC);
+            ULONG lastState = cpuData ? cpuData->cpu_LastState : pdata->kb_LastState;
+            struct IntrNode *lastIntr = cpuData ? cpuData->cpu_LastIntr : pdata->kb_LastIntr;
+
+            if (lastState & (PLATFORMF_INIRQ << 16))
             {
                 /* Crashed inside an interrupt handler ... */
                 *TemplatePtr = (STRPTR)irqstring;
-                params[0] = (IPTR)pdata->kb_LastState & 0xFF;
-                params[1] = (IPTR)pdata->kb_LastIntr;
+                params[0] = (IPTR)lastState & 0xFF;
+                params[1] = (IPTR)lastIntr;
             }
         }
     }

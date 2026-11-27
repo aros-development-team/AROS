@@ -23,6 +23,7 @@ FUNCS	 := \
              maygetchar \
              allocirq \
              addirqhandler \
+             remirqhandler \
              getirq \
              modifyirq \
              exitinterrupt \

@@ -87,6 +87,8 @@ struct PlatformData
 #define PLATFORMF_HAVEMSI       (1 << PLATFORMB_HAVEMSI)
 #define PLATFORMB_CPUFREQ       3
 #define PLATFORMF_CPUFREQ       (1 << PLATFORMB_CPUFREQ)
+#define PLATFORMB_ENDHEARTBEAT  4       /* the reset handler asked for the last heartbeat */
+#define PLATFORMF_ENDHEARTBEAT  (1 << PLATFORMB_ENDHEARTBEAT)
 
 /*
  * State flags used to express the current running "context"
@@ -134,6 +136,13 @@ struct PlatformData
 void ictl_enable_irq(irqid_t, struct KernelBase *);
 void ictl_disable_irq(irqid_t, struct KernelBase *);
 BOOL ictl_is_irq_enabled(irqid_t, struct KernelBase *);
+
+/*
+ * Exclusion between CPUs for the state the interrupt controllers share
+ * (see ictl.c). Never make a syscall, SuperState() included, between the two.
+ */
+IPTR ictl_Lock(void);
+void ictl_Unlock(IPTR);
 
 #define IRQINTB_ENABLED 1
 #define IRQINTF_ENABLED (1 << IRQINTB_ENABLED)

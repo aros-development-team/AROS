@@ -246,20 +246,16 @@ int core_IPIHandle(struct ExceptionContext *regs, void *data1, struct KernelBase
             /* The request is taken; another one from here on interrupts again */
             krnIPIAck(KRN_IPIF_RESCHED);
             APIC_REG(__APICBase, APIC_EOI) = 0;
-            // If IPI was called when CPU was in user mode, and not in forbid state,
-            // perform task switch - otherwise set delayed schedule flag.
-            if (INTR_FROMUSERMODE && (TDNESTCOUNT_GET < 0))
-            {
-                if (core_Schedule())
-                {
-                    cpu_Switch(regs);
-                    cpu_Dispatch(regs);
-                }
-            }
-            else
-            {
-                FLAG_SCHEDSWITCH_SET;
-            }
+            /*
+             * Ask for the switch; it is made on the way out. If the CPU was
+             * in user mode core_IRQHandle() goes through core_ExitInterrupt()
+             * next, which switches unless the task has forbidden it;
+             * otherwise the request stays for the next way out. Switching
+             * here instead would leave without passing core_ExitInterrupt(),
+             * and with that without running the software interrupts another
+             * CPU's Cause() sent this request for.
+             */
+            FLAG_SCHEDSWITCH_SET;
             break;
 
         case IPI_CALL_HOOK:

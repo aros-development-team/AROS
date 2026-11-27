@@ -41,6 +41,13 @@ static void TimerInt(struct TimerBase *LIBBASE, struct ExecBase *SysBase)
         bug("[Timer] %s: PrevTick = %p\n", __func__, prevtick);
     )
 
+    /* The terminal interrupt the reset handler asked the PIT for */
+    if (LIBBASE->tb_Platform.tb_Flags & PCTIMER_FLAGF_SHUTDOWN)
+    {
+        LIBBASE->tb_Platform.tb_Flags &= ~PCTIMER_FLAGF_ENABLED;
+        return;
+    }
+
     /*
      * Sync up with the hardware, we need the proper time value in order to
      * process our requests correctly.
@@ -59,14 +66,6 @@ static void TimerInt(struct TimerBase *LIBBASE, struct ExecBase *SysBase)
     Timer0Setup(LIBBASE);
 }
 
-static void TimerShutdownInt(struct TimerBase *LIBBASE, struct ExecBase *SysBase)
-{
-    DINT(
-        bug("[Timer] %s(0x%p)\n", __func__, LIBBASE);
-    )
-    LIBBASE->tb_Platform.tb_Flags &= ~PCTIMER_FLAGF_ENABLED;
-}
-
 /****************************************************************************************/
 
 static AROS_INTH1(ResetHandler, struct TimerBase *, LIBBASE)
@@ -77,17 +76,18 @@ static AROS_INTH1(ResetHandler, struct TimerBase *, LIBBASE)
 
     /*
      * End the timer interrupt(s).
-     * First we make sure multitasking is disabled, and then swap out the
-     * timers interrupt handler with the shutdown handler.
+     * First we make sure multitasking is disabled, and then tell the
+     * timer's interrupt handler that the next interrupt is the last one.
+     * The handler is not replaced: a reset can be asked for from inside an
+     * interrupt handler (the keyboard's), and no IRQ handler can be added
+     * or removed there - the chains are locked while they are walked.
      * we then program the PIT to issue a terminal IRQ , but only set the first byte which stops the counter.
      * we then enable interrupts so that the final Interrupt is handled.
      * (all other interrupts should be disabled by this point)
      */
     Forbid();
 
-    KrnRemIRQHandler(LIBBASE->tb_TimerIRQHandle);
-    LIBBASE->tb_TimerIRQHandle = KrnAddIRQHandler(0, TimerShutdownInt, LIBBASE, SysBase);
-    DINT(bug("[Timer] %s: Shutdown IRQ handle = 0x%p\n", __func__, LIBBASE->tb_TimerIRQHandle));
+    LIBBASE->tb_Platform.tb_Flags |= PCTIMER_FLAGF_SHUTDOWN;
 
     {
         ULONG flags = PITLock(LIBBASE);

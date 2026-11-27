@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2017-2023, The AROS Development Team. All rights reserved.
+    Copyright (C) 2017-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <aros/config.h>
@@ -272,5 +272,19 @@ void cpu_BootStrap(struct Task *bstask)
     Exec_X86CreateIdleTask(SysBase);
 
     D(bug("[Kernel:%03u] %s: Done\n", cpuNo, __func__));
+}
+
+/*
+ * Has this CPU been started? Only then can an interrupt be sent to it: a
+ * core that never came up is still counted by KrnGetCPUCount(). A CPU
+ * marks itself in exec's mask when its local APIC is set up and it is
+ * about to turn its interrupts on (cpu_BootStrap).
+ */
+BOOL cpu_IsOnline(cpuid_t cpuNo)
+{
+    if (cpuNo == 0)
+        return TRUE;
+
+    return core_APIC_CPUInMask(cpuNo, PrivExecBase(SysBase)->CPUMask);
 }
 #endif

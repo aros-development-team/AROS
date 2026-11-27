@@ -196,8 +196,8 @@ void X86_HandleChangePMStateSC(struct ExceptionContext *regs)
 
         D(bug("[Kernel] %s: Woke from idling; checking for softints...\n",
             __func__);)
-        if (SysBase->SysFlags & SFF_SoftInt)
-            core_Cause(INTB_SOFTINT, 1L << INTB_SOFTINT);
+        /* Returns with interrupts masked, as the way out of this trap needs */
+        core_RunSoftInts();
     }
     else
     {
