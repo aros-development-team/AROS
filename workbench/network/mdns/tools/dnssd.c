@@ -94,8 +94,12 @@
 
 #include "sd_common.h"
 
+#define CATCOMP_NUMBERS
+#define CATCOMP_STRINGS
+#include "../strings.h"
+
 static const char version_tag[] __attribute__((used)) =
-    "\0$VER: dnssd 42.0 (13.11.2026)";
+    "\0$VER: dnssd 42.2 (21.11.2026)";
 
 #define DS_DNS_A       1
 #define DS_DNS_PTR     12
@@ -128,7 +132,7 @@ static void
 DSDomainNote(CONST_STRPTR domain)
 {
     if (!DSDomainLocal(domain)) {
-        SDPrintf("(note: domain \"%s\" is not served; using local)\n", domain);
+        SDPrintf(SDMsg(MSG_DNSSD_DOMAIN_NOTE), domain);
     }
 }
 
@@ -137,10 +141,9 @@ static int
 DSEnded(CONST_STRPTR what, LONG rc)
 {
     if (rc == DNSSD_ERR_BUSY) {
-        SDPrintf("\n%s: more answers came than could be kept; run it again.\n",
-            what);
+        SDPrintf(SDMsg(MSG_DNSSD_TOO_MANY), what);
     } else if (rc == DNSSD_ERR_STALE || rc == DNSSD_ERR_NOENGINE) {
-        SDPrintf("\n%s: mdnsd ended.\n", what);
+        SDPrintf(SDMsg(MSG_DNSSD_ENGINE_ENDED), what);
     } else {
         SDAppPrintError(what, rc);
     }
@@ -186,9 +189,9 @@ DSPrintService(CONST_STRPTR action, const struct SDService *sv)
 static int
 DSEnumDomains(CONST_STRPTR which)
 {
-    SDPrintf("Domains for %s:\n", which);
+    SDPrintf(SDMsg(MSG_DNSSD_DOMAINS), which);
     SDPrintf("  Added     local\n");
-    SDPrintf("\n(multicast DNS serves only the local domain)\n");
+    SDPrintf(SDMsg(MSG_DNSSD_ONLY_LOCAL));
     return 0;
 }
 
@@ -257,7 +260,8 @@ DSPrintRecord(const struct DNSSDEvent *e)
 {
     const UBYTE *data = SDEventPart(e, &e->de_RData);
     LONG length = (LONG)e->de_RData.dr_Size;
-    char name[512];
+    /* static, off the stack: the tool runs as one task */
+    static char name[512];
 
     SDEventName(e, &e->de_Name, name, (LONG)sizeof(name));
     SDPrintf("%s%s.  type %ld  ttl %ld  ", (CONST_STRPTR)
@@ -339,24 +343,24 @@ DSBrowse(CONST_STRPTR type, CONST_STRPTR domain, int zone)
     DSDomainNote(domain);
     sv = AllocVec(sizeof(*sv), MEMF_ANY | MEMF_CLEAR);
     if (sv == NULL) {
-        SDAppPrintError("browse", DNSSD_ERR_NOMEM);
+        SDAppPrintError(SDMsg(MSG_OP_BROWSE), DNSSD_ERR_NOMEM);
         return 20;
     }
     if ((rc = SDSessionOpen(&session, 0)) != DNSSD_OK) {
         FreeVec(sv);
-        SDAppPrintError("browse", rc);
+        SDAppPrintError(SDMsg(MSG_OP_BROWSE), rc);
         return 20;
     }
     if ((rc = SDFinderStart(&finder, &session, type)) != DNSSD_OK) {
         SDSessionClose(&session);
         FreeVec(sv);
-        SDAppPrintError("browse", rc);
+        SDAppPrintError(SDMsg(MSG_OP_BROWSE), rc);
         return 20;
     }
     if (zone) {
         SDPrintf("; browsing %s (Ctrl-C to stop)\n\n", type);
     } else {
-        SDPrintf("Browsing %s (Ctrl-C to stop)...\n\n", type);
+        SDPrintf(SDMsg(MSG_DNSSD_BROWSING), type);
         SDPrintf("%-8s %-28s %-22s %-15s %5s  TXT\n",
             "Event", "Instance", "Type", "Address", "Port");
     }
@@ -395,12 +399,12 @@ DSBrowse(CONST_STRPTR type, CONST_STRPTR domain, int zone)
                 }
                 break;
             case SD_FOUND_END:
-                result = DSEnded((CONST_STRPTR)"browse", rc);
+                result = DSEnded(SDMsg(MSG_OP_BROWSE), rc);
                 break;
             }
         }
         if (result < 0 && rc != DNSSD_ERR_EMPTY) {
-            result = DSEnded((CONST_STRPTR)"browse", rc);
+            result = DSEnded(SDMsg(MSG_OP_BROWSE), rc);
         }
     }
     if (result < 0) {
@@ -427,16 +431,16 @@ DSResolve(CONST_STRPTR name, CONST_STRPTR type, CONST_STRPTR domain)
 
     DSDomainNote(domain);
     if ((rc = SDSessionOpen(&session, 0)) != DNSSD_OK) {
-        SDAppPrintError("resolve", rc);
+        SDAppPrintError(SDMsg(MSG_OP_RESOLVE), rc);
         return 20;
     }
     rc = DNSSD_Resolve(session.bs_Session, name, type, &op, TAG_DONE);
     if (rc != DNSSD_OK) {
         SDSessionClose(&session);
-        SDAppPrintError("resolve", rc);
+        SDAppPrintError(SDMsg(MSG_OP_RESOLVE), rc);
         return 20;
     }
-    SDPrintf("Resolving \"%s\" %s (Ctrl-C to stop)...\n", name, type);
+    SDPrintf(SDMsg(MSG_DNSSD_RESOLVING), name, type);
     while (result < 0 && (why = SDSessionWait(&session)) == SD_WAIT_EVENTS) {
         const struct DNSSDEvent *e;
 
@@ -462,12 +466,12 @@ DSResolve(CONST_STRPTR name, CONST_STRPTR type, CONST_STRPTR domain)
                 }
                 result = 0;
             } else if (e->de_Kind == DNSSD_EVENT_END) {
-                SDPrintf("Not resolved.\n");
+                SDPrintf(SDMsg(MSG_DNSSD_NOT_RESOLVED));
                 result = 5;
             }
         }
         if (result < 0 && rc != DNSSD_ERR_EMPTY) {
-            result = DSEnded((CONST_STRPTR)"resolve", rc);
+            result = DSEnded(SDMsg(MSG_OP_RESOLVE), rc);
         }
     }
     if (result < 0) {
@@ -496,14 +500,14 @@ DSLookup(CONST_STRPTR family, CONST_STRPTR host)
     } else if (SDStrEqual(family, "v4v6")) {
         which = DNSSD_FAMILY_ANY;
     } else {
-        SDPrintf("dnssd -G: v4, v6 or v4v6\n");
+        SDPrintf(SDMsg(MSG_DNSSD_FAMILY));
         return 5;
     }
     DSLocalName(host, name, (LONG)sizeof(name));
     rc = DNSSD_LookupAddressSync((CONST_STRPTR)name, addresses, &count,
         DNSSD_Family, which, TAG_DONE);
     if (rc != DNSSD_OK) {
-        SDAppPrintError("lookup", rc);
+        SDAppPrintError(SDMsg(MSG_OP_LOOKUP), rc);
         return rc == DNSSD_ERR_TIMEOUT ? 5 : 20;
     }
     for (i = 0; i < count; i++) {
@@ -528,22 +532,22 @@ DSQuery(CONST_STRPTR name, CONST_STRPTR typeWord)
     int result = -1;
 
     if (type == 0) {
-        SDPrintf("dnssd -q: unknown record type \"%s\"\n", typeWord);
+        SDPrintf(SDMsg(MSG_DNSSD_RRTYPE), typeWord);
         return 5;
     }
     DSLocalName(name, owner, (LONG)sizeof(owner));
     if ((rc = SDSessionOpen(&session, 0)) != DNSSD_OK) {
-        SDAppPrintError("query", rc);
+        SDAppPrintError(SDMsg(MSG_OP_QUERY), rc);
         return 20;
     }
     rc = DNSSD_QueryRecord(session.bs_Session, (CONST_STRPTR)owner, type, &op,
         TAG_DONE);
     if (rc != DNSSD_OK) {
         SDSessionClose(&session);
-        SDAppPrintError("query", rc);
+        SDAppPrintError(SDMsg(MSG_OP_QUERY), rc);
         return 20;
     }
-    SDPrintf("Asking for %s %s (Ctrl-C to stop)...\n\n", owner, typeWord);
+    SDPrintf(SDMsg(MSG_DNSSD_ASKING), owner, typeWord);
     while (result < 0 && (why = SDSessionWait(&session)) == SD_WAIT_EVENTS) {
         const struct DNSSDEvent *e;
 
@@ -552,12 +556,12 @@ DSQuery(CONST_STRPTR name, CONST_STRPTR typeWord)
                 DSPrintRecord(e);
             } else if (e->de_Kind == DNSSD_EVENT_END ||
                        e->de_Kind == DNSSD_EVENT_LOST) {
-                result = DSEnded((CONST_STRPTR)"query",
+                result = DSEnded(SDMsg(MSG_OP_QUERY),
                     e->de_Kind == DNSSD_EVENT_LOST ? DNSSD_ERR_BUSY : e->de_Result);
             }
         }
         if (result < 0 && rc != DNSSD_ERR_EMPTY) {
-            result = DSEnded((CONST_STRPTR)"query", rc);
+            result = DSEnded(SDMsg(MSG_OP_QUERY), rc);
         }
     }
     if (result < 0) {
@@ -580,26 +584,26 @@ DSRegister(CONST_STRPTR name, CONST_STRPTR type, CONST_STRPTR domain,
     struct SDSession session;
     struct TagItem tags[6];
     DNSSDOperationRef op;
-    UBYTE txt[1300];
-    char items[400];
+    /* static, off the stack: the tool runs as one task */
+    static UBYTE txt[1300];
+    static char items[400];
     LONG txtLength, rc, why, ttl = 0;
     int nt = 0, result = -1;
 
     /* "-t seconds" before the text: how long the records may live */
     if (txtArgc >= 2 && SDStrEqual(txtArgv[0], "-t")) {
         if (!SDParseNum(txtArgv[1], &ttl) || ttl < 1 || ttl > 4500) {
-            SDPrintf("dnssd: TTL must be 1-4500 seconds.\n");
+            SDPrintf(SDMsg(MSG_DNSSD_TTL));
             return 5;
         }
         txtArgv += 2;
     }
     if (!DSDomainLocal(domain)) {
-        SDPrintf("(note: domain \"%s\" is not served; registering in local)\n",
-            domain);
+        SDPrintf(SDMsg(MSG_DNSSD_DOMAIN_NOTE_REGISTER), domain);
     }
     txtLength = SDTXTFromItems(txt, (LONG)sizeof(txt), txtArgv);
     if (txtLength < 0) {
-        SDPrintf("dnssd: TXT record is too long, or an escape is not \\xNN.\n");
+        SDPrintf(SDMsg(MSG_DNSSD_TXT));
         return 5;
     }
     SDItemsText(items, (LONG)sizeof(items), txtArgv);
@@ -624,13 +628,13 @@ DSRegister(CONST_STRPTR name, CONST_STRPTR type, CONST_STRPTR domain,
     tags[nt].ti_Data = 0;
 
     if ((rc = SDSessionOpen(&session, 0)) != DNSSD_OK) {
-        SDAppPrintError("register", rc);
+        SDAppPrintError(SDMsg(MSG_OP_REGISTER), rc);
         return 20;
     }
     rc = DNSSD_RegisterA(session.bs_Session, name, type, port, &op, tags);
     if (rc != DNSSD_OK) {
         SDSessionClose(&session);
-        SDAppPrintError("register", rc);
+        SDAppPrintError(SDMsg(MSG_OP_REGISTER), rc);
         return 20;
     }
     while (result < 0 && (why = SDSessionWait(&session)) == SD_WAIT_EVENTS) {
@@ -653,19 +657,20 @@ DSRegister(CONST_STRPTR name, CONST_STRPTR type, CONST_STRPTR domain,
                 if (items[0] != '\0') {
                     SDPrintf(" txt=\"%s\"", items);
                 }
-                SDPrintf("\nPress Ctrl-C to deregister...\n");
+                SDPrintf("\n");
+                SDPrintf(SDMsg(MSG_DNSSD_DEREGISTER_HINT));
             } else if (e->de_Kind == DNSSD_EVENT_END) {
-                result = DSEnded((CONST_STRPTR)"register", e->de_Result);
+                result = DSEnded(SDMsg(MSG_OP_REGISTER), e->de_Result);
             }
         }
         if (result < 0 && rc != DNSSD_ERR_EMPTY) {
-            result = DSEnded((CONST_STRPTR)"register", rc);
+            result = DSEnded(SDMsg(MSG_OP_REGISTER), rc);
         }
     }
     DNSSD_Cancel(op);
     SDSessionClose(&session);
     if (result < 0) {
-        SDPrintf("Deregistered.\n");
+        SDPrintf(SDMsg(MSG_DNSSD_DEREGISTERED));
         result = 0;
     }
     return result;
@@ -674,30 +679,11 @@ DSRegister(CONST_STRPTR name, CONST_STRPTR type, CONST_STRPTR domain,
 static void
 DSUsage(void)
 {
-    SDPrintf("dnssd - DNS-SD tool (dnssd.library)\n\n");
-    SDPrintf("  dnssd -E                      list registration domains\n");
-    SDPrintf("  dnssd -F                      list browsing domains\n");
-    SDPrintf("  dnssd -R name type dom port [-t seconds] [k=v ...]  register a service\n");
-    SDPrintf("  dnssd -P name type dom port host ip [k=v ...]  register for another host\n");
-    SDPrintf("                                (ip: IPv4, or IPv6 - fe80::1%%2 with its interface)\n");
-    SDPrintf("  dnssd -B type [domain]        browse a service type\n");
-    SDPrintf("  dnssd -L name type [domain]   look up (resolve) an instance\n");
-    SDPrintf("  dnssd -Z type [domain]        browse, complete zone records\n");
-    SDPrintf("  dnssd -q name rrtype          ask for any DNS record\n");
-    SDPrintf("  dnssd -G v4|v6|v4v6 hostname  look up a host's addresses\n");
-    SDPrintf("  dnssd -V                      show library version\n");
-    SDPrintf("  dnssd -h                      this help\n\n");
-    SDPrintf("Examples:\n");
-    SDPrintf("  dnssd -B _http._tcp\n");
-    SDPrintf("  dnssd -B _services._dns-sd._udp     (list service types)\n");
-    SDPrintf("  dnssd -L \"My Mac\" _companion-link._tcp\n");
-    SDPrintf("  dnssd -q _http._tcp.local PTR\n");
-    SDPrintf("  dnssd -G v4 printer.local\n");
-    SDPrintf("  dnssd -R AmigaShare _http._tcp . 80 path=/ vers=1\n");
+    SDPrintf(SDMsg(MSG_DNSSD_USAGE));
 }
 
-int
-main(int argc, char **argv)
+static int
+DSRun(int argc, char **argv)
 {
     struct DNSSDAddress proxyAddr;
     LONG port = 0;
@@ -713,33 +699,33 @@ main(int argc, char **argv)
     }
     if ((SDStrEqual(argv[1], "-B") || SDStrEqual(argv[1], "-Z")) &&
         argc < 3) {
-        SDPrintf("dnssd %s needs a <type>\n", argv[1]);
+        SDPrintf(SDMsg(MSG_DNSSD_NEEDS_TYPE), argv[1]);
         return 5;
     }
     if (SDStrEqual(argv[1], "-L") && argc < 4) {
-        SDPrintf("dnssd -L needs <name> <type> [domain]\n");
+        SDPrintf(SDMsg(MSG_DNSSD_NEEDS_L));
         return 5;
     }
     if (SDStrEqual(argv[1], "-q") && argc < 4) {
-        SDPrintf("dnssd -q needs <name> <rrtype>\n");
+        SDPrintf(SDMsg(MSG_DNSSD_NEEDS_Q));
         return 5;
     }
     if (SDStrEqual(argv[1], "-G") && argc < 4) {
-        SDPrintf("dnssd -G needs v4|v6|v4v6 <hostname>\n");
+        SDPrintf(SDMsg(MSG_DNSSD_NEEDS_G));
         return 5;
     }
     if (SDStrEqual(argv[1], "-R") && argc < 6) {
-        SDPrintf("dnssd -R needs <name> <type> <domain> <port>\n");
+        SDPrintf(SDMsg(MSG_DNSSD_NEEDS_R));
         return 5;
     }
     if (SDStrEqual(argv[1], "-P") &&
         (argc < 8 || !SDParseAddress(argv[7], &proxyAddr))) {
-        SDPrintf("dnssd -P needs <name> <type> <domain> <port> <host> <ip>\n");
+        SDPrintf(SDMsg(MSG_DNSSD_NEEDS_P));
         return 5;
     }
     if ((SDStrEqual(argv[1], "-R") || SDStrEqual(argv[1], "-P")) &&
         (!SDParseNum(argv[5], &port) || port < 1 || port > 65535)) {
-        SDPrintf("dnssd: port must be 1-65535.\n");
+        SDPrintf(SDMsg(MSG_DNSSD_PORT));
         return 5;
     }
     if (!SDStrEqual(argv[1], "-B") && !SDStrEqual(argv[1], "-Z") &&
@@ -747,21 +733,21 @@ main(int argc, char **argv)
         !SDStrEqual(argv[1], "-P") && !SDStrEqual(argv[1], "-E") &&
         !SDStrEqual(argv[1], "-F") && !SDStrEqual(argv[1], "-V") &&
         !SDStrEqual(argv[1], "-q") && !SDStrEqual(argv[1], "-G")) {
-        SDPrintf("Unknown mode: %s\n", argv[1]);
+        SDPrintf(SDMsg(MSG_DNSSD_UNKNOWN_MODE), argv[1]);
         DSUsage();
         return 5;
     }
 
     if (!SDAppOpen()) {
-        SDPrintf("Cannot open %s version %ld\n", DNSSDNAME, (LONG)DNSSD_VERSION);
+        SDAppPrintNoLibrary();
         return 20;
     }
     if (SDStrEqual(argv[1], "-V")) {
         result = DSVersion();
     } else if (SDStrEqual(argv[1], "-E")) {
-        result = DSEnumDomains((CONST_STRPTR)"registration");
+        result = DSEnumDomains(SDMsg(MSG_DNSSD_FOR_REGISTRATION));
     } else if (SDStrEqual(argv[1], "-F")) {
-        result = DSEnumDomains((CONST_STRPTR)"browsing");
+        result = DSEnumDomains(SDMsg(MSG_DNSSD_FOR_BROWSING));
     } else if (SDStrEqual(argv[1], "-B") || SDStrEqual(argv[1], "-Z")) {
         result = DSBrowse((CONST_STRPTR)argv[2],
             argc > 3 ? (CONST_STRPTR)argv[3] : NULL,
@@ -784,5 +770,17 @@ main(int argc, char **argv)
             argc - 6, &argv[6]);
     }
     SDAppClose();
+    return result;
+}
+
+int
+main(int argc, char **argv)
+{
+    int result;
+
+    /* the catalog first: what is said about the arguments is translated */
+    SDLocaleOpen();
+    result = DSRun(argc, argv);
+    SDLocaleClose();
     return result;
 }

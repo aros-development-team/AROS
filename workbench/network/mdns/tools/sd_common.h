@@ -31,22 +31,50 @@
 #define SD_TYPE_SERVICES    "_services._dns-sd._udp"
 
 /*------------------------------------------------------------------------*/
+/* The catalog: the words of the tools and the commodity, in the user's
+ * language (catalogs/DNSSD.cd); the message numbers are in "../strings.h". */
+
+#define SD_CATALOG_NAME     "System/C/DNSSD.catalog"
+
+void SDLocaleOpen(void);
+void SDLocaleClose(void);
+/* A message, translated when the catalog has it, else the English given. */
+CONST_STRPTR SDMsgText(LONG id, CONST_STRPTR english);
+/*
+ * SDMsg(MSG_NAME): a message by its name, with "../strings.h" included after
+ * CATCOMP_NUMBERS and CATCOMP_STRINGS. The English comes with each use: a
+ * program carries the text of the messages it uses, not of all of them.
+ */
+#define SDMsg(id)   SDMsgText((id), (CONST_STRPTR)id##_STR)
+
+/*------------------------------------------------------------------------*/
 /* The library */
 
 extern struct Library *DNSSDBase;
 
+/* A tool opens the catalog first (SDLocaleOpen()), so that what it says
+ * about its arguments is translated too; then the library. */
 int  SDAppOpen(void);
 void SDAppClose(void);
+/* What a DNSSD_ERR_* means, in words. */
+CONST_STRPTR SDErrorText(LONG code);
+/* "where: what the error means (code)"; where is a translated word. */
 void SDAppPrintError(CONST_STRPTR where, LONG code);
+/* "Cannot open dnssd.library version 1." */
+void SDAppPrintNoLibrary(void);
 
 /*------------------------------------------------------------------------*/
 /* Native output and string helpers (no stdio / string.h) */
 
 void SDPrintf(CONST_STRPTR fmt, ...);
+/* The same into text, cut to max - 1 bytes and always ended. */
+void SDFormat(char *text, LONG max, CONST_STRPTR fmt, ...);
 /* TXT data, as it is on the wire, as its items with a space between; a
  * space or backslash in an item after a backslash, a byte that cannot be
  * printed as \xNN (binary values are allowed, RFC 6763 section 6.5). */
 void SDPrintTXT(const UBYTE *txt, LONG length);
+/* The same into text, cut to max - 1 bytes and always ended. */
+void SDTXTText(const UBYTE *txt, LONG length, char *text, LONG max);
 /* An address as text: "192.168.1.2", "2001:db8::1", "fe80::1%2" with the
  * interface of a link-local one. */
 void SDAddressText(const struct DNSSDAddress *a, char *text, LONG max);

@@ -14,14 +14,50 @@
 #include <exec/memory.h>
 #include <exec/rawfmt.h>
 #include <dos/dos.h>
+#include <libraries/locale.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
+#include <proto/locale.h>
 #include <proto/dnssd.h>
 #include <stdarg.h>
 
 #include "sd_common.h"
 
+#define CATCOMP_NUMBERS
+#define CATCOMP_STRINGS
+#include "../strings.h"
+#include "../catalogs/catalog_version.h"
+
 struct Library *DNSSDBase = NULL;
+static struct Catalog *SDCatalog;
+
+/*------------------------------------------------------------------------*/
+/* The catalog */
+
+void
+SDLocaleOpen(void)
+{
+    /* without locale.library or the catalog, the built-in English */
+    if (LocaleBase != NULL) {
+        SDCatalog = OpenCatalog(NULL, (CONST_STRPTR)SD_CATALOG_NAME,
+            OC_Version, CATALOG_VERSION, TAG_DONE);
+    }
+}
+
+void
+SDLocaleClose(void)
+{
+    if (SDCatalog != NULL) {
+        CloseCatalog(SDCatalog);
+        SDCatalog = NULL;
+    }
+}
+
+CONST_STRPTR
+SDMsgText(LONG id, CONST_STRPTR english)
+{
+    return SDCatalog != NULL ? GetCatalogStr(SDCatalog, id, english) : english;
+}
 
 /*------------------------------------------------------------------------*/
 /* The library */
@@ -42,37 +78,47 @@ SDAppClose(void)
     }
 }
 
-static CONST_STRPTR
-SDErrorName(LONG code)
+CONST_STRPTR
+SDErrorText(LONG code)
 {
     switch (code) {
-    case DNSSD_ERR_NOENGINE:  return (CONST_STRPTR)"mdnsd is not running";
-    case DNSSD_ERR_BADPARAM:  return (CONST_STRPTR)"bad argument";
-    case DNSSD_ERR_NOMEM:     return (CONST_STRPTR)"out of memory";
-    case DNSSD_ERR_BUSY:      return (CONST_STRPTR)"too much at once; run it again";
-    case DNSSD_ERR_STALE:     return (CONST_STRPTR)"mdnsd restarted";
-    case DNSSD_ERR_TIMEOUT:   return (CONST_STRPTR)"timed out";
-    case DNSSD_ERR_NOTFOUND:  return (CONST_STRPTR)"not found";
-    case DNSSD_ERR_CANCELLED: return (CONST_STRPTR)"stopped";
-    case DNSSD_ERR_BADNAME:   return (CONST_STRPTR)"not a name DNS can carry";
-    case DNSSD_ERR_EXISTS:    return (CONST_STRPTR)"name already in use here";
-    case DNSSD_ERR_CONFLICT:  return (CONST_STRPTR)"another host has the name";
-    default:                  return (CONST_STRPTR)"error";
+    case DNSSD_ERR_NOENGINE:  return SDMsg(MSG_ERR_NOENGINE);
+    case DNSSD_ERR_BADPARAM:  return SDMsg(MSG_ERR_BADPARAM);
+    case DNSSD_ERR_NOMEM:     return SDMsg(MSG_ERR_NOMEM);
+    case DNSSD_ERR_BUSY:      return SDMsg(MSG_ERR_BUSY);
+    case DNSSD_ERR_STALE:     return SDMsg(MSG_ERR_STALE);
+    case DNSSD_ERR_TIMEOUT:   return SDMsg(MSG_ERR_TIMEOUT);
+    case DNSSD_ERR_NOTFOUND:  return SDMsg(MSG_ERR_NOTFOUND);
+    case DNSSD_ERR_CANCELLED: return SDMsg(MSG_ERR_CANCELLED);
+    case DNSSD_ERR_BADNAME:   return SDMsg(MSG_ERR_BADNAME);
+    case DNSSD_ERR_EXISTS:    return SDMsg(MSG_ERR_EXISTS);
+    case DNSSD_ERR_CONFLICT:  return SDMsg(MSG_ERR_CONFLICT);
+    default:                  return SDMsg(MSG_ERR_OTHER);
     }
 }
 
 void
 SDAppPrintError(CONST_STRPTR where, LONG code)
 {
-    SDPrintf("%s: %s (%ld)\n", where, SDErrorName(code), code);
+    SDPrintf("%s: %s (%ld)\n", where, SDErrorText(code), code);
+}
+
+void
+SDAppPrintNoLibrary(void)
+{
+    SDPrintf(SDMsg(MSG_CANT_OPEN_LIBRARY), (CONST_STRPTR)DNSSDNAME, (LONG)DNSSD_VERSION);
 }
 
 /*------------------------------------------------------------------------*/
 /* Native formatted output, streamed to dos.library. */
 
+/* Into a file, through a small buffer; or, with bo_Text, into that text,
+ * cut at bo_Max - 1 bytes and always ended. */
 struct SDOutput
 {
     BPTR  bo_File;
+    char *bo_Text;
+    LONG  bo_Max;
     UBYTE bo_Buffer[128];
     LONG  bo_Length;
 };
@@ -82,6 +128,18 @@ SDPutChar(APTR data, UBYTE c)
 {
     struct SDOutput *out = (struct SDOutput *)data;
 
+    if (out->bo_Text != NULL) {
+        if (c == '\0' || out->bo_Length < out->bo_Max - 1) {
+            out->bo_Text[out->bo_Length] = (char)c;
+        } else {
+            out->bo_Text[out->bo_Length] = '\0';
+            return data;
+        }
+        if (c != '\0') {
+            out->bo_Length++;
+        }
+        return data;
+    }
     if (c != '\0') {
         out->bo_Buffer[out->bo_Length++] = c;
     }
@@ -106,6 +164,7 @@ SDPrintf(CONST_STRPTR fmt, ...)
     va_list args;
 
     out.bo_File = Output();
+    out.bo_Text = NULL;
     out.bo_Length = 0;
     va_start(args, fmt);
     VNewRawDoFmt(fmt, (VOID_FUNC)SDPutChar, &out, args);
@@ -113,38 +172,84 @@ SDPrintf(CONST_STRPTR fmt, ...)
 }
 
 void
-SDPrintTXT(const UBYTE *txt, LONG length)
+SDFormat(char *text, LONG max, CONST_STRPTR fmt, ...)
+{
+    struct SDOutput out;
+    va_list args;
+
+    if (max <= 0) {
+        return;
+    }
+    out.bo_File = BNULL;
+    out.bo_Text = text;
+    out.bo_Max = max;
+    out.bo_Length = 0;
+    va_start(args, fmt);
+    VNewRawDoFmt(fmt, (VOID_FUNC)SDPutChar, &out, args);
+    va_end(args);
+}
+
+/* each string escaped straight into the output, no copy of it */
+static void
+SDPutTXT(struct SDOutput *out, const UBYTE *txt, LONG length)
 {
     static const char hex[] = "0123456789abcdef";
     LONG pos = 0;
 
     while (pos < length) {
         LONG n = txt[pos++];
-        char item[256 * 4 + 1];
-        LONG i, at = 0;
+        LONG i;
 
         if (n > length - pos) {
             break;                  /* a string longer than the record */
+        }
+        if (pos > 1) {
+            SDPutChar(out, ' ');
         }
         for (i = 0; i < n; i++) {
             UBYTE c = txt[pos + i];
 
             if (c == ' ' || c == '\\') {
-                item[at++] = '\\';
-                item[at++] = (char)c;
+                SDPutChar(out, '\\');
+                SDPutChar(out, c);
             } else if (c > 0x20 && c < 0x7f) {
-                item[at++] = (char)c;
+                SDPutChar(out, c);
             } else {
-                item[at++] = '\\';
-                item[at++] = 'x';
-                item[at++] = hex[c >> 4];
-                item[at++] = hex[c & 15];
+                SDPutChar(out, '\\');
+                SDPutChar(out, 'x');
+                SDPutChar(out, hex[c >> 4]);
+                SDPutChar(out, hex[c & 15]);
             }
         }
-        item[at] = '\0';
-        SDPrintf("%s%s", (CONST_STRPTR)(pos > 1 ? " " : ""), item);
         pos += n;
     }
+    SDPutChar(out, '\0');           /* writes, or ends, what is there */
+}
+
+void
+SDPrintTXT(const UBYTE *txt, LONG length)
+{
+    struct SDOutput out;
+
+    out.bo_File = Output();
+    out.bo_Text = NULL;
+    out.bo_Length = 0;
+    SDPutTXT(&out, txt, length);
+}
+
+void
+SDTXTText(const UBYTE *txt, LONG length, char *text, LONG max)
+{
+    struct SDOutput out;
+
+    if (max <= 0) {
+        return;
+    }
+    out.bo_File = BNULL;
+    out.bo_Text = text;
+    out.bo_Max = max;
+    out.bo_Length = 0;
+    SDPutTXT(&out, txt, length);
 }
 
 static LONG

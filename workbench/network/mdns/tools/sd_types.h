@@ -30,6 +30,12 @@ CONST_STRPTR SDTypeFromAlias(CONST_STRPTR word);
  */
 CONST_STRPTR SDTypeFriendly(CONST_STRPTR type);
 
+/*
+ * The n-th type the table knows (from 0), each once, in the table's order;
+ * NULL past the last. For a list to choose from.
+ */
+CONST_STRPTR SDTypeAt(LONG n);
+
 /* Case-insensitive string equality (native, no utility.library). */
 BOOL SDStrEqualCI(const char *a, const char *b);
 

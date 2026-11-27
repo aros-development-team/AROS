@@ -16,13 +16,13 @@ USER_CFLAGS := $(CFLAGS_GNU99)
 #MM      workbench-network-mdns-tools-handshake
 
 #MM workbench-network-mdns-tools-dnssd : workbench-network-mdns-includes \
-#MM      workbench-network-mdns-dnssd-includes
+#MM      workbench-network-mdns-dnssd-includes workbench-network-mdns-catalogs
 #MM workbench-network-mdns-tools-nearby : workbench-network-mdns-includes \
-#MM      workbench-network-mdns-dnssd-includes
+#MM      workbench-network-mdns-dnssd-includes workbench-network-mdns-catalogs
 #MM workbench-network-mdns-tools-share : workbench-network-mdns-includes \
-#MM      workbench-network-mdns-dnssd-includes
+#MM      workbench-network-mdns-dnssd-includes workbench-network-mdns-catalogs
 #MM workbench-network-mdns-tools-handshake : workbench-network-mdns-includes \
-#MM      workbench-network-mdns-dnssd-includes
+#MM      workbench-network-mdns-dnssd-includes workbench-network-mdns-catalogs
 
 %build_prog mmake=workbench-network-mdns-tools-dnssd \
     progname=dnssd targetdir=$(AROS_C) \

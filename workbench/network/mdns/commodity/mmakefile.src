@@ -1,0 +1,20 @@
+include $(SRCDIR)/config/aros.cfg
+
+# NetServices, the commodity: Nearby, Handshake and Share in a window, on
+# dnssd.library, with the tools' helpers (sd_common, sd_types) built in.
+
+# gnu99: strict c99 removes the 'asm' keyword the inline LVO headers need
+USER_CFLAGS := $(CFLAGS_GNU99)
+
+#MM- workbench-network-mdns : workbench-network-mdns-commodity
+#MM workbench-network-mdns-commodity : workbench-network-mdns-includes \
+#MM      workbench-network-mdns-dnssd-includes \
+#MM      workbench-network-mdns-catalogs
+
+FILES := main window discovery ../tools/sd_common ../tools/sd_types
+
+%build_prog mmake=workbench-network-mdns-commodity \
+    progname=NetServices targetdir=$(AROSDIR)/Tools/Commodities \
+    files="$(FILES)" objdir="$(GENDIR)/$(CURDIR)/obj"
+
+%common
