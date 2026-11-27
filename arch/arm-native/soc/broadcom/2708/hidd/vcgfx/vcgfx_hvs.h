@@ -257,6 +257,13 @@ struct vc4_hvs_state
     ULONG       hvs_OutW, hvs_OutH;     /* channel output size */
     ULONG       hvs_FBX, hvs_FBY;       /* fb plane dest position (overscan) */
     ULONG       hvs_DestW, hvs_DestH;   /* fb plane dest size on screen */
+    ULONG       hvs_FrameX, hvs_FrameY; /* where the shown mode goes */
+    ULONG       hvs_FrameW, hvs_FrameH;
+    ULONG       hvs_OvL, hvs_OvR;       /* firmware overscan, if hvs_OvOK */
+    ULONG       hvs_OvT, hvs_OvB;
+    BOOL        hvs_OvOK;
+    ULONG       hvs_AreaX, hvs_AreaY;   /* where modes are fitted */
+    ULONG       hvs_AreaW, hvs_AreaH;
     ULONG       hvs_SrcW, hvs_SrcH;     /* fb plane source (fb) size */
     ULONG       hvs_FBEntry[HVS_FB_ENTRY_MAX]; /* inherited fb entry, verbatim */
     ULONG       hvs_FBWords;            /* its length in words */
