@@ -24,6 +24,9 @@
 #include <dos/dosextens.h>
 #include <dos/filehandler.h>
 #include <exec/errors.h>
+#if defined(__AROSEXEC_SMP__)
+#include <exec/tasks.h>
+#endif
 
 #include <oop/oop.h>
 
@@ -75,6 +78,45 @@ static AROS_INTH1(NVME_IOIntCode, struct nvme_queue *, nvmeq)
 
     AROS_INTFUNC_EXIT
 }
+
+#if defined(USE_MSI) && defined(__AROSEXEC_SMP__)
+/*
+    Have one of the controller's vectors delivered to the least loaded of
+    the CPUs every 'stride'th from 'first' - every CPU for a stride of one.
+    The PCI device class chooses the CPU and addresses the message to it.
+
+    The controller must have no reason to raise the vector meanwhile: the
+    caller has no command outstanding on a queue that completes with it.
+
+    A class that cannot move vectors refuses, and the vector then stays on
+    the boot CPU, where it was.
+*/
+static void nvme_vector_affinity(device_t dev, ULONG vectorno, ULONG first, ULONG stride)
+{
+    struct NVMEBase *NVMEBase = dev->dev_NVMEBase;
+    struct TagItem vecAffinity[] = {
+        {   tHidd_PCIVector_Affinity,   TASKAFFINITY_ANY        },
+        {   TAG_DONE,                   0                       }
+    };
+    void *cpumask = NULL;
+
+    if ((stride > 1) && ((cpumask = KrnAllocCPUMask()) != NULL)) {
+        ULONG cpu;
+
+        KrnClearCPUMask(cpumask);
+        for (cpu = first; cpu < KrnGetCPUCount(); cpu += stride)
+            KrnGetCPUMask(cpu, cpumask);
+        vecAffinity[0].ti_Data = (IPTR)cpumask;
+    }
+
+    if (!HIDD_PCIDevice_SetVectorAttribs(dev->dev_Object, vectorno, vecAffinity)) {
+        DIRQ(bug ("[NVME:Bus] %s: vector #%u stays where it is\n", __func__, vectorno);)
+    }
+
+    if (cpumask)
+        KrnFreeCPUMask(cpumask);
+}
+#endif
 
 static void nvme_iotask(struct nvme_queue *nvmeq)
 {
@@ -351,6 +393,17 @@ BOOL Hidd_NVMEBus_Start(OOP_Object *o, struct NVMEBase *NVMEBase)
                     data->ab_Dev->dev_Queues[0]->q_irq_registered = 2;
                     data->ab_Dev->dev_VectorsOwned = TRUE;
                     Enable();
+#if defined(__AROSEXEC_SMP__)
+                    /*
+                     * Nothing is outstanding on the admin queue - its
+                     * commands are waited for one at a time, here - and no
+                     * IO queue exists yet, so the controller has nothing to
+                     * report with this vector until the next command below.
+                     * The IO queue that completes with the same vector
+                     * serves every CPU, so any of them will do.
+                     */
+                    nvme_vector_affinity(data->ab_Dev, 0, 0, 1);
+#endif
                 } else {
                     HIDD_PCIDevice_ReleaseVectors(data->ab_Dev->dev_Object);
                 }
@@ -402,6 +455,23 @@ BOOL Hidd_NVMEBus_Start(OOP_Object *o, struct NVMEBase *NVMEBase)
 
                     D(bug ("[NVME:Bus] NVMEBus_Start:     IRQ #%u (vect:%u)\n", (unsigned)qIRQ, (unsigned)qVect);)
                     data->ab_Dev->dev_Queues[nn + 1]->q_irq = qIRQ;
+#if defined(__AROSEXEC_SMP__)
+                    /*
+                     * A vector of the queue's own is still unused: its
+                     * completion queue is only created below. Requests are
+                     * put on the queue numbered by the CPU that submits
+                     * them (see nvme_sector_rw()), so have the completions
+                     * delivered to one of the CPUs this queue serves. The
+                     * admin queue's vector has already been placed.
+                     *
+                     * The vectors of a plain MSI capability all move with
+                     * it; they are as quiet, with no command outstanding
+                     * and no unit there yet to be given any.
+                     */
+                    if (data->ab_Dev->dev_VectorsOwned && qIRQ != AdminIntLine)
+                        nvme_vector_affinity(data->ab_Dev,
+                            data->ab_Dev->dev_Queues[nn + 1]->cq_vector, nn, hwqcnt);
+#endif
 #else
                 {
                     UBYTE qIRQ = (UBYTE)AdminIntLine, qVect = (UBYTE)AdminIntLine;
