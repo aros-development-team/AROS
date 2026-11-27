@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2012, The AROS Development Team
+ * Copyright (C) 2012-2026, The AROS Development Team
  * All right reserved.
  * Author: Jason S. McMullan <jason.mcmullan@gmail.com>
  *
@@ -20,18 +20,21 @@ typedef uint32_t cpumode_t;
 #define goUser() do { } while (0)
 #define goBack(val) do { } while (0)
 
-#define krnSysCall(n) \
-    asm volatile("li %%r3,%0; sc"::"i"(n):"memory","r3");
-
 /* Architecture specific syscalls */
 #define SC_IRQ_ENABLE   0x201
 #define SC_IRQ_DISABLE  0x202
 
 #define krnSysCall(n) \
-    asm volatile("li %%r3,%0; sc"::"i"(n):"memory","r3");
+    asm volatile("li %%r3,%0; sc;\n\t"::"i"(n):"memory","r3");
 
+/* widen potentially smaller typed arg to register sized uint32_t to avoid
+ * usage of uninitialized data
+ */
 #define krnSysCall1(n, arg) \
-    asm volatile("lwz %%r4,%1; li %%r3,%0; sc"::"i"(n),"m"(arg):"memory","r3","r4");
+    do { \
+        uint32_t _arg = (uint32_t)(arg); \
+        asm volatile("mr %%r4,%1; li %%r3,%0\n\t; sc"::"i"(n),"r"(_arg):"memory","r3","r4"); \
+    } while (0)
 
 typedef context_t regs_t;
 
