@@ -57,6 +57,38 @@ struct dnssd_address_entry {
     struct dnssd_address_spec value;
 };
 
+/*
+ * What a reconcile changed, per link and family, in the addresses that are
+ * usable (dnssd_link_address_usable()) - one change at most for each:
+ * FAMILY_UP, a family that a link now has its first usable address of;
+ * FAMILY_DOWN, no longer any - followed by an ADDRESS_LOST for each address
+ * it had, so that their records can be withdrawn; ADDRESSES, the family is
+ * there still but its addresses changed. A responder probes on a link and
+ * family that came (RFC 6762 section 8.3) and only announces again where
+ * the addresses changed (section 8.4). Room for
+ * dnssd_link_changes_bound() changes is enough for any reconcile; with
+ * less, overflow may be set: take everything as changed.
+ */
+#define DNSSD_LINK_FAMILY_UP      1u
+#define DNSSD_LINK_FAMILY_DOWN    2u
+#define DNSSD_LINK_ADDRESSES      3u
+#define DNSSD_LINK_ADDRESS_LOST   4u
+
+struct dnssd_link_change {
+    uint32_t interface_index;
+    uint16_t family;            /* DNSSD_ADDRESS_IPV4 or _IPV6 */
+    uint16_t kind;              /* DNSSD_LINK_* */
+    uint8_t bytes[16];          /* _ADDRESS_LOST: the address, 4 bytes for
+                                 * IPv4, 16 for IPv6 */
+};
+
+struct dnssd_link_changes {
+    struct dnssd_link_change *items;
+    size_t capacity;
+    size_t count;
+    int overflow;
+};
+
 struct dnssd_link_inventory {
     struct dnssd_link_entry *links;
     struct dnssd_link_entry *link_scratch;
@@ -86,6 +118,15 @@ int dnssd_link_inventory_init(struct dnssd_link_inventory *inventory,
 int dnssd_link_inventory_reconcile(struct dnssd_link_inventory *inventory,
     const struct dnssd_link_spec *links, size_t link_count,
     const struct dnssd_address_spec *addresses, size_t address_count);
+/* The most changes the next reconcile of inventory can tell. */
+size_t dnssd_link_changes_bound(const struct dnssd_link_inventory *inventory);
+/* The same, telling what changed in changes (may be NULL): emptied first,
+ * filled only when a new snapshot is published. */
+int dnssd_link_inventory_reconcile_changes(
+    struct dnssd_link_inventory *inventory,
+    const struct dnssd_link_spec *links, size_t link_count,
+    const struct dnssd_address_spec *addresses, size_t address_count,
+    struct dnssd_link_changes *changes);
 
 const struct dnssd_link_entry *dnssd_link_inventory_find(
     const struct dnssd_link_inventory *inventory, uint32_t interface_index);

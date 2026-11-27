@@ -98,6 +98,7 @@ net_down(struct MDNSDaemon *md)
 static void
 net_up(struct MDNSDaemon *md, ULONG addressMask, ULONG hostMask)
 {
+    struct dnssd_link_changes changes = { NULL, 0, 0, 0 };
     struct Library *SocketBase;
 
     if (md->md_SocketBase == NULL) {
@@ -118,12 +119,16 @@ net_up(struct MDNSDaemon *md, ULONG addressMask, ULONG hostMask)
         SocketBaseTags(SBTM_SETVAL(SBTC_SIG_HOSTNAME_CHANGE_MASK), hostMask,
             TAG_END);
     }
-    /* An interface came, went or changed its address: the name is asked
-     * for again with the addresses as they are now. */
-    if (mdnsNetRescan(md)) {
+    /* An interface came, went or changed its addresses: the host's name
+     * and each service follow on each link and family as it changed, and
+     * only there. */
+    if (mdnsNetRescan(md, &changes)) {
         mdnsCacheLinksChanged(md);
-        mdnsHostRestart(md);
-        mdnsRegRestartAll(md);
+        mdnsHostLinksChanged(md, &changes);
+        mdnsRegLinksChanged(md, &changes);
+    }
+    if (changes.items != NULL) {
+        FreeVec(changes.items);
     }
 }
 
@@ -187,6 +192,11 @@ receive4(struct MDNSDaemon *md, struct Library *SocketBase)
         return;
     }
     md->md_RxPackets++;
+    /* the host's own, looped back or heard by another of its links */
+    if (mdnsNetIsOwnPacket(md, slot, AF_INET,
+            (const UBYTE *)&from.sin_addr, md->md_RxBuf, (LONG)got)) {
+        return;
+    }
     md->md_SendIf = slot;
     md->md_SendFamily = AF_INET;
     mdnsHandlePacket(md, md->md_RxBuf, (LONG)got,
@@ -238,9 +248,28 @@ wait_and_receive(struct MDNSDaemon *md, ULONG sigmask, ULONG soonest)
             top = md->md_Socket6;
         }
     }
-    if (WaitSelect(top + 1, top >= 0 ? &readfds : NULL, NULL, NULL, &tv,
-            &sigmask) <= 0) {
-        return sigmask;
+    {
+        ULONG wanted = sigmask;
+        LONG ready = WaitSelect(top + 1, top >= 0 ? &readfds : NULL, NULL,
+            NULL, &tv, &sigmask);
+
+        /* A socket the wait found nothing to read on - having looked: it
+         * timed out, or another was ready - has no echo of what went out a
+         * second before it (mdnsNetIdle()). Not when a signal ended it. */
+        if (ready < 0 || (ready == 0 && (sigmask & wanted) != 0)) {
+            return sigmask;
+        }
+        if (md->md_Socket4 >= 0 && (ready == 0 ||
+                !FD_ISSET(md->md_Socket4, &readfds))) {
+            mdnsNetIdle(md, AF_INET);
+        }
+        if (md->md_Socket6 >= 0 && (ready == 0 ||
+                !FD_ISSET(md->md_Socket6, &readfds))) {
+            mdnsNetIdle(md, AF_INET6);
+        }
+        if (ready == 0) {
+            return sigmask;
+        }
     }
 
     if (md->md_Socket4 >= 0 && FD_ISSET(md->md_Socket4, &readfds)) {
@@ -292,6 +321,11 @@ wait_and_receive(struct MDNSDaemon *md, ULONG sigmask, ULONG soonest)
         i = havePacketInfo ? link_slot(md, packetInfo.ipi6_ifindex) : -1;
         if (got > 0 && i >= 0) {
             md->md_RxPackets++;
+        }
+        /* the host's own, looped back or heard by another of its links */
+        if (got > 0 && i >= 0 &&
+            !mdnsNetIsOwnPacket(md, i, AF_INET6,
+                (const UBYTE *)&from6.sin6_addr, md->md_RxBuf, (LONG)got)) {
             /* What this packet causes to be sent goes back to its link
              * and, for unicast, its address family. */
             md->md_SendIf = i;

@@ -16,7 +16,7 @@ USER_CFLAGS := $(CFLAGS_GNU99)
 # The daemon installs alongside the other managed network services.
 %build_prog mmake=workbench-network-mdnsd \
     progname=mdnsd targetdir=$(AROS_SYSTEM)/Network/Services \
-    files="mdnsd mdnsd_service mdns_net mdns_dns mdns_host mdns_packet \
+    files="mdnsd mdnsd_service mdns_net mdns_dns mdns_host mdns_pub mdns_packet \
            mdns_reg dnssd_link \
            dnssd_link_aros dnssd_server mdns_cache dnssd_model dnssd_ipc dnssd_reg"
 
