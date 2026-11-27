@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2018, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Enable() - Allow interrupts to occur after Disable().
 */
@@ -103,7 +103,16 @@
                  * only once interrupts are enabled again) software interrupt,
                  * so we check it manually here in Enable(), similar to Permit().
                  */
-                if (SysBase->SysFlags & SFF_SoftInt)
+                if ((SysBase->SysFlags & SFF_SoftInt)
+#if defined(__AROSEXEC_SMP__)
+                    /*
+                     * Only the boot CPU dispatches software interrupts, and
+                     * Cause() has told it. Any other CPU would ask the
+                     * kernel for nothing, on every Enable() until then.
+                     */
+                    && (KrnGetCPUNumber() == 0)
+#endif
+                    )
                 {
                     /*
                      * First we react on SFF_SoftInt by issuing KrnCause() call. This triggers

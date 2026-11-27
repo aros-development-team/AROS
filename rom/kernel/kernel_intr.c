@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2011-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 2011-2026, The AROS Development Team. All rights reserved.
 
     Desc: High-level scheduler calling code
 */
@@ -132,9 +132,13 @@ void core_ExitInterrupt(regs_t *regs)
     if (core_EvictTask(regs))
         return;
 
-    /* Soft interrupt requested? It's high time to do it */
-    if (SysBase->SysFlags & SFF_SoftInt)
-        core_Cause(INTB_SOFTINT, 1L << INTB_SOFTINT);
+    /*
+     * Soft interrupt requested? It's high time to do it. From here on
+     * interrupts are masked, whether there was one or not: what follows
+     * looks at the run lists, which an interrupt handler's Signal() changes
+     * (and on SMP locks, on this same CPU).
+     */
+    core_RunSoftInts();
 
     /* If task switching is disabled, do nothing */
     if (TDNESTCOUNT_GET < 0)

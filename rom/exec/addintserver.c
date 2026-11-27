@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Add interrupt client to chain of interrupt servers
 */
@@ -46,6 +46,10 @@ static void krnIRQwrapper(void *data1, void *data2)
     NOTES
         This function also enables the corresponding chipset interrupt if
         run on a native Amiga.
+
+        On SMP the chain is locked while its servers run, so this function
+        must not be called from an interrupt server: that would wait for
+        the chain the caller itself keeps locked.
 
     EXAMPLE
 

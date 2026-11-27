@@ -122,6 +122,25 @@
     SysBase->SysFlags |= SFF_SoftInt;
 #endif
 
+#if defined(__AROSEXEC_SMP__)
+    /*
+     * Software interrupts are dispatched by the boot CPU only, so that
+     * they never run beside each other. On any other CPU ask it to look:
+     * the reschedule request takes it through its interrupt exit, where
+     * SFF_SoftInt is tested. After the flag is set, so the boot CPU cannot
+     * have looked too early, and still under Disable(), so this is the CPU
+     * whose Enable() follows.
+     */
+    if (KernelBase && (KrnGetCPUNumber() != 0))
+    {
+        /* A CPU mask large enough for 256 CPUs, as in RemTask() */
+        ULONG mask[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
+
+        KrnGetCPUMask(0, (void *)mask);
+        KrnScheduleCPU((void *)mask);
+    }
+#endif
+
     /*
      * Quick soft int request. For optimal performance m68k-amiga
      * Enable() does not do any extra SFF_SoftInt checks
