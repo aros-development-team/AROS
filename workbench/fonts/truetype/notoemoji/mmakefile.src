@@ -1,0 +1,31 @@
+# Copyright (C) 2026, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+
+NOTOEMOJITAG := v2.051
+NOTOEMOJISRC := $(PORTSSOURCEDIR)/noto-emoji-$(NOTOEMOJITAG)
+NOTOEMOJIURL := https://github.com/googlefonts/noto-emoji/raw/$(NOTOEMOJITAG)/fonts
+
+#MM- fonts-truetype : fonts-truetype-notoemoji
+#MM- fonts-truetype-quick : fonts-truetype-notoemoji
+#MM fonts-truetype-notoemoji : fonts-truetype-notoemoji-fetch fonts-truetype-notoemoji-fetch-license
+#MM fonts-truetype-notoemoji-fetch : fonts-truetype-notoemoji-srcdir
+#MM fonts-truetype-notoemoji-fetch-license : fonts-truetype-notoemoji-srcdir
+
+%fetch mmake=fonts-truetype-notoemoji-fetch archive=NotoColorEmoji.ttf suffixes= \
+    location=$(NOTOEMOJISRC) archive_origins="$(NOTOEMOJIURL)"
+
+%fetch mmake=fonts-truetype-notoemoji-fetch-license archive=LICENSE suffixes= \
+    location=$(NOTOEMOJISRC) archive_origins="$(NOTOEMOJIURL)"
+
+#MM
+fonts-truetype-notoemoji : | $(AROSDIR)/Fonts/TrueType
+	$(CP) $(NOTOEMOJISRC)/NotoColorEmoji.ttf $(AROSDIR)/Fonts/TrueType
+	$(CP) $(NOTOEMOJISRC)/LICENSE $(AROSDIR)/Fonts/TrueType/LICENSE-NotoEmoji.txt
+
+#MM
+fonts-truetype-notoemoji-srcdir : | $(NOTOEMOJISRC)
+
+%rule_makedirs dirs="$(AROSDIR)/Fonts/TrueType $(NOTOEMOJISRC)"
+
+%common
