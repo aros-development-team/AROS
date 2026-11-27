@@ -87,4 +87,20 @@ USER_CFLAGS := $(PARANOIA_CFLAGS)
     files=smpintctx targetdir=$(EXEDIR) \
     progname=SMP-IntCtx
 
+%build_prog mmake=test-smp-irqchurn \
+    files=smpirqchurn targetdir=$(EXEDIR) \
+    progname=SMP-IrqChurn
+
+%build_prog mmake=test-smp-softint \
+    files=smpsoftint targetdir=$(EXEDIR) \
+    progname=SMP-SoftInt
+
+%build_prog mmake=test-smp-irqaff \
+    files=smpirqaff targetdir=$(EXEDIR) \
+    progname=SMP-IrqAffinity
+
+%build_prog mmake=test-smp-msiaff \
+    files=smpmsiaff targetdir=$(EXEDIR) \
+    progname=SMP-MsiAffinity
+
 %common
