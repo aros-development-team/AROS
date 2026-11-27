@@ -49,6 +49,14 @@ def prepare(args, output):
     tagitem = (include / 'utility/tagitem.h').read_text(encoding='latin-1')
     dostags = (include / 'dos/dostags.h').read_text(encoding='latin-1')
     doshunks = (include / 'dos/doshunks.h').read_text(encoding='latin-1')
+    bptr = (include / 'dos/bptr.h').read_text(encoding='latin-1')
+    start = bptr.index('struct AROSSegment\n')
+    layout = bptr[start:bptr.index('/* BCPL strings', start)]
+    if not layout.isascii() or '#define AROS_SEG_DATALEN' not in layout:
+        raise ValueError('Missing ASCII seglist layout in dos/bptr.h')
+    (output / 'seglist_layout.inc').write_text(
+        layout + '\n#ifdef __cplusplus\n#undef AROS_SEG_DATA\n'
+        '#define AROS_SEG_DATA(seg) ((UBYTE *)AROS_SEG_FROMBPTR(seg)->seg_Data)\n#endif\n')
     record = '\n'.join([
         cut(tagitem, r'^typedef ULONG Tag;[^\n]*$', 'Tag'),
         cut(tagitem, r'^struct TagItem\s*\{.*?^\}[^\n;]*;', 'struct TagItem'),

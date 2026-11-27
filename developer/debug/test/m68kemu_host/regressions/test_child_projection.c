@@ -14,6 +14,7 @@
     task at a time: this is not a test of real SMP or of the native runtime.
 */
 #define _POSIX_C_SOURCE 200809L
+#include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -24,7 +25,7 @@ typedef uint16_t UWORD;
 typedef uint32_t ULONG;
 typedef int32_t LONG;
 typedef uintptr_t IPTR;
-typedef uint64_t BPTR;
+typedef IPTR BPTR;
 typedef uint64_t Tag;
 typedef int BOOL;
 typedef void *APTR;
@@ -34,6 +35,15 @@ typedef const char *CONST_STRPTR;
 #define FALSE 0
 /* a BPTR is a plain pointer on every target but m68k (AROS_FAST_BPTR) */
 #define BADDR(x) ((APTR)(IPTR)(x))
+#ifndef __WORDSIZE
+#define __WORDSIZE (__SIZEOF_POINTER__ * 8)
+#endif
+#include "seglist_layout.inc"
+typedef char seg_bptr_matches_ptr[(sizeof(BPTR) == sizeof(void *)) ? 1 : -1];
+typedef char seg_wordsize_matches_bptr[(sizeof(BPTR) * 8 == __WORDSIZE) ? 1 : -1];
+typedef char seg_next_at_prefix[(offsetof(struct AROSSegment, seg_Next) == AROS_SEG_PREFIX) ? 1 : -1];
+typedef char seg_size_before_next[(offsetof(struct AROSSegment, seg_Size) + sizeof(ULONG) == AROS_SEG_PREFIX) ? 1 : -1];
+typedef char seg_data_at_header[(offsetof(struct AROSSegment, seg_Data) == AROS_SEG_HEADER) ? 1 : -1];
 #include "constants.inc"
 /* struct HunkRelocGroup, the HUNKRELOC_* kinds, struct HunkRelocTable */
 #include "relocs.inc"
@@ -374,15 +384,12 @@ static struct Process *CreateNewProc(const struct TagItem *t)
     return p;
 }
 
-/* A seglist that dos loaded, as LoadSeg() leaves it: one allocation for
-   each segment that begins with a ULONG, the size of the allocation, then
-   the BPTR of the next segment, then the data; the BPTR of a segment is the
-   address of that link. dos puts the link four bytes after an eight-byte
-   boundary; here it lies on one, so that reading it through a BPTR pointer,
-   as the copy does, is an aligned read for the sanitizer. Nothing else of
-   the layout differs. Each segment is an allocation of its own, written
-   with memcpy() and read with the types the copy reads it with. Segment 0
-   holds a longword that dos relocated as an absolute reference to segment 1. */
+/* A seglist that dos loaded, as LoadSeg() leaves it: the canonical
+   AROSSegment header from dos/bptr.h, with seg_Size immediately before the
+   BPTR link at AROS_SEG_PREFIX (aligned for the sanitizer) and payload at
+   AROS_SEG_HEADER. Each segment is an allocation of its own, written with
+   memcpy() and read with the types the copy reads it with. Segment 0 holds
+   a longword that dos relocated as an absolute reference to segment 1. */
 #define SEGS 2
 #define SEG_MAX 0x30u
 static const ULONG seg_bytes[SEGS] = { 0x20u, 0x30u };
@@ -862,17 +869,17 @@ static void seglist_make(struct M68KEmuContext *ctx, BOOL hunk, BOOL relocs)
     for (i = 0; i < SEGS; i++)
     {
         UBYTE *base;
-        /* dos reserves one BPTR in front of the link - see dos/bptr.h */
-        ULONG total = seg_bytes[i] + (ULONG)(2 * sizeof(BPTR));
+        /* canonical AROSSegment header - see dos/bptr.h */
+        ULONG total = seg_bytes[i] + (ULONG)AROS_SEG_HEADER;
 
         if (!seg_alloc[i])
-            seg_alloc[i] = calloc(1, SEG_MAX + 16);
+            seg_alloc[i] = calloc(1, SEG_MAX + (size_t)AROS_SEG_HEADER);
         assert(seg_alloc[i]);
         base = seg_alloc[i];
-        memset(base, 0, SEG_MAX + 16);
+        memset(base, 0, SEG_MAX + (size_t)AROS_SEG_HEADER);
 
-        seg_link[i] = base + 8;
-        memcpy(base + 4, &total, sizeof(total));
+        seg_link[i] = base + AROS_SEG_PREFIX;
+        memcpy(seg_link[i] - sizeof(ULONG), &total, sizeof(total));
         for (k = 0; k < seg_bytes[i]; k++)
             seg_data(i)[k] = (UBYTE)(0x40 + 0x40 * i + k);
     }
