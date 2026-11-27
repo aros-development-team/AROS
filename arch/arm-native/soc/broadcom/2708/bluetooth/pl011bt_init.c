@@ -452,6 +452,8 @@ static int pl011bt_init(struct PL011BTBase *PL011BTBase)
     pl011bt_find_power(PL011BTBase);
     PL011BTBase->pl011bt_Caps = PL011BT_CAP_PRESENT |
         PL011BT_CAP_BAUD_CHANGE | PL011BT_CAP_POWER_CONTROL;
+    if (PL011BTBase->pl011bt_RTSCTS)
+        PL011BTBase->pl011bt_Caps |= PL011BT_CAP_RTS_CTS;
 
     bug("[PL011BT] ready: PL011=0x%08lx irq=%lu clock=%lu mbox=%s"
         " rts/cts=%s lpo=%s power=%s%lu\n",
