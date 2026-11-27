@@ -19,7 +19,12 @@
         base + 0x200004 + 0x1000*c      claim / complete for context c
 
     A "context" is one hart in one privilege mode. Which one belongs to
-    us is worked out from the device tree (see kernel_fdt.c).
+    which hart is worked out from the device tree (see kernel_fdt.c).
+
+    A source is delivered to one CPU: it is enabled in that CPU's
+    supervisor context and in no other, and every hart claims from its
+    own context only. That is the boot CPU unless KrnModifyIRQA() was
+    asked for another (KERNELTAG_IRQ_AFFINITY).
 */
 
 #include <inttypes.h>
@@ -36,15 +41,19 @@
 #define PLIC_CLAIM(c)           (0x200004 + 0x1000 * (c))
 
 static unsigned long plic_base;
+/* The boot hart's context as the firmware described it; set once at init */
 static int           plic_context = -1;
 static unsigned int  plic_ndev;
 static uint32_t      plic_quirks;
 
 /*
- * The enable words are read-modify-written by krnPLICEnable from any
- * CPU and, on a controller with the claim quirk, rewritten by the claim
- * path on the interrupt CPU; one tiny lock keeps those apart. Taken with
- * interrupts off so the claim path cannot interrupt its own holder.
+ * The enable words are read-modify-written by krnPLICEnable and
+ * krnPLICSetTarget from any CPU, by a completion that finds its source
+ * masked and, on a controller with the claim quirk, by the claim path
+ * on the interrupt CPU; one tiny lock keeps those apart, and covers the
+ * two tables below with them. Taken with interrupts off so the interrupt
+ * path cannot interrupt its own holder, and nothing else is taken while
+ * it is held.
  */
 static volatile int  plic_lock;
 
@@ -71,16 +80,32 @@ unsigned int krnPLICSourceCount(void)
     return plic_ndev;
 }
 
-/*
- * Every supervisor context, and the one a claim last came from.
- *
- * Which context belongs to the running hart depends on a hart id that
- * S-mode cannot read for itself and that the firmware does not always
- * report correctly. Enabling on all of them, and claiming from
- * whichever actually has something pending, removes the guess.
- */
+/* Every supervisor context the firmware described */
 static int           plic_ctxlist[KRN_MAX_PLIC_CONTEXTS];
 static unsigned int  plic_nctx;
+
+/* The specification numbers sources 1 to 1023 */
+#define PLIC_MAX_SOURCES        1024
+
+/*
+ * The supervisor context of each logical CPU, plus one; 0 for a CPU
+ * that cannot be given a source. Each hart records its own once it is
+ * able to take external interrupts (krnPLICInitCore), so an entry also
+ * says the hart is running. Until the boot hart has recorded its own,
+ * the context worked out for it at boot stands in.
+ */
+static int           plic_cpuctx[RISCV_MAXCPUS];
+
+/* The CPU each source is delivered to. 0 is the boot CPU, which is
+   where a source goes until it is given another target. */
+static UBYTE         plic_irqcpu[PLIC_MAX_SOURCES];
+
+static inline int plic_cpu_context(unsigned int cpu)
+{
+    if (cpu < RISCV_MAXCPUS && plic_cpuctx[cpu])
+        return plic_cpuctx[cpu] - 1;
+    return (cpu == 0) ? plic_context : -1;
+}
 
 static inline uint32_t plic_read(unsigned long off)
 {
@@ -118,6 +143,12 @@ int krnPLICInit(struct krnFDTInfo *info)
     plic_nctx = info->plic_ncontexts;
     for (n = 0; n < plic_nctx; n++)
         plic_ctxlist[n] = info->plic_contexts[n];
+
+    /* A warm restart comes through here with the old kernel's targets */
+    for (n = 0; n < RISCV_MAXCPUS; n++)
+        plic_cpuctx[n] = 0;
+    for (n = 0; n < PLIC_MAX_SOURCES; n++)
+        plic_irqcpu[n] = 0;
 
     /* Nothing described? Fall back to the one worked out for the hart */
     if (!plic_nctx && plic_context >= 0)
@@ -173,40 +204,205 @@ int krnPLICInit(struct krnFDTInfo *info)
 }
 
 /*
- * Unmask a source and give it a usable priority, or mask it again.
- * Priority 1 is enough - the threshold is 0 and this kernel does not
- * rank device interrupts against each other.
+ * The calling hart can take external interrupts from here on, through
+ * the supervisor context given: record it for the CPU, so that sources
+ * can be targeted at it, and open the context and the hart to them. No
+ * source is enabled in a secondary hart's context until one is given
+ * that CPU as its target, so until then nothing arrives.
+ *
+ * On the boot hart this replaces the context worked out at boot with
+ * the one the per-hart table holds (platform_init.c, which has checked
+ * with the firmware which hart that is). It relies on no source having
+ * been unmasked earlier: nothing can be before kernel.resource is up.
+ *
+ * A context another CPU already has is refused, and the hart is left
+ * closed to external interrupts: two harts claiming from one context
+ * would take each other's sources.
  */
-void krnPLICEnable(unsigned int irq, int enable)
+void krnPLICInitCore(int ctx)
 {
-    unsigned int c;
+    unsigned int cpu = krnRVCPUNumber(), n;
+    unsigned long sstatus;
 
-    if (!plic_base || !irq || irq > plic_ndev)
+    if (!plic_base || ctx < 0 || cpu >= RISCV_MAXCPUS)
+        return;
+
+    sstatus = plic_lock_acquire();
+    for (n = 0; n < RISCV_MAXCPUS; n++)
+    {
+        if (n != cpu && plic_cpu_context(n) == ctx)
+        {
+            plic_lock_release(sstatus);
+            return;
+        }
+    }
+    plic_write(PLIC_THRESHOLD(ctx), 0);
+    plic_cpuctx[cpu] = ctx + 1;
+    plic_lock_release(sstatus);
+
+    csr_set(sie, SIE_SEIE);
+}
+
+/*
+ * Unmask a source and give it a usable priority, or mask it again, in
+ * the context of the CPU it is delivered to. Priority 1 is enough - the
+ * threshold is 0 and this kernel does not rank device interrupts
+ * against each other.
+ *
+ * Returns whether the source was unmasked before the call, so a caller
+ * masking it can tell that somebody else already had.
+ */
+int krnPLICEnable(unsigned int irq, int enable)
+{
+    uint32_t bits, bit = 1U << (irq & 31);
+    int ctx, was = 0;
+
+    if (!plic_base || !irq || irq > plic_ndev || irq >= PLIC_MAX_SOURCES)
     {
         krnSBIPutStr("[plic] refusing source ");
         krnSBIPutDec(irq);
         krnSBIPutStr(" (ndev ");
         krnSBIPutDec(plic_ndev);
         krnSBIPutStr(")\n");
-        return;
+        return 0;
     }
-
-    plic_write(PLIC_PRIORITY(irq), enable ? 1 : 0);
 
     unsigned long sstatus = plic_lock_acquire();
 
-    for (c = 0; c < plic_nctx; c++)
+    /* A target always has a context: krnPLICSetTarget() takes no other */
+    ctx = plic_cpu_context(plic_irqcpu[irq]);
+    if (ctx >= 0)
     {
-        uint32_t bits = plic_read(PLIC_ENABLE(plic_ctxlist[c], irq));
-
+        bits = plic_read(PLIC_ENABLE(ctx, irq));
+        was = (bits & bit) ? 1 : 0;
         if (enable)
-            bits |= 1U << (irq & 31);
+            bits |= bit;
         else
-            bits &= ~(1U << (irq & 31));
-        plic_write(PLIC_ENABLE(plic_ctxlist[c], irq), bits);
+            bits &= ~bit;
+        plic_write(PLIC_ENABLE(ctx, irq), bits);
     }
 
+    /*
+     * Under the lock with the enable bits: two CPUs changing the same
+     * source must not leave its priority saying one thing and its
+     * enables the other. And after them, not before: a controller that
+     * does not look at its outputs again when an enable word is written
+     * (see krnPLICSetTarget) does when a priority is, and has to find
+     * the enable bit as it now is. A source that was already pending
+     * when it was unmasked would otherwise not be signalled.
+     */
+    plic_write(PLIC_PRIORITY(irq), enable ? 1 : 0);
+
     plic_lock_release(sstatus);
+
+    return was;
+}
+
+/*
+ * Deliver a source to another CPU. Returns 0, with nothing changed,
+ * when that CPU has no context to take it in (not running, or the
+ * firmware described none for its hart) or irq is not a source of the
+ * controller.
+ *
+ * An unmasked source moves with its enable bit, masked in the old
+ * context before it is unmasked in the new one so that it is never
+ * offered to two harts. One that is pending and not yet claimed is
+ * simply offered to the new hart instead; the old one, if it had
+ * already trapped for it, finds nothing to claim. One the old hart has
+ * claimed stays that hart's until its completion: the controller does
+ * not forward a source again before that, so the new hart cannot be in
+ * its handlers at the same time, and krnPLICComplete() completes in the
+ * claiming context whether or not the source is still enabled there.
+ */
+int krnPLICSetTarget(unsigned int irq, unsigned int cpu)
+{
+    uint32_t bits, bit = 1U << (irq & 31);
+    unsigned long sstatus;
+    int oldctx, newctx;
+
+    if (!plic_base || !irq || irq > plic_ndev || irq >= PLIC_MAX_SOURCES)
+        return 0;
+
+    sstatus = plic_lock_acquire();
+
+    newctx = plic_cpu_context(cpu);
+    if (newctx < 0)
+    {
+        plic_lock_release(sstatus);
+        return 0;
+    }
+
+    oldctx = plic_cpu_context(plic_irqcpu[irq]);
+    if (oldctx >= 0 && oldctx != newctx)
+    {
+        bits = plic_read(PLIC_ENABLE(oldctx, irq));
+        if (bits & bit)
+        {
+            plic_write(PLIC_ENABLE(oldctx, irq), bits & ~bit);
+            plic_write(PLIC_ENABLE(newctx, irq),
+                       plic_read(PLIC_ENABLE(newctx, irq)) | bit);
+
+            /*
+             * A controller need not look at its outputs again because
+             * an enable word was written. QEMU's does so when a source
+             * rises, on a claim or a completion and on a priority or
+             * threshold write, and at no other time: a source already
+             * pending, or one that rose or that its old hart tried to
+             * claim between the two writes above, is left enabled in the
+             * new context and pending, its hart never signalled - and the
+             * device, waiting to be serviced, raises nothing more.
+             * Writing the priority back makes such a controller look;
+             * to any other it is a write that changes nothing. The
+             * value cannot change in between: krnPLICEnable() is its
+             * only writer, under this lock.
+             */
+            plic_write(PLIC_PRIORITY(irq), plic_read(PLIC_PRIORITY(irq)));
+        }
+    }
+    plic_irqcpu[irq] = (UBYTE)cpu;
+
+    plic_lock_release(sstatus);
+
+    return 1;
+}
+
+/* The CPU a source is delivered to, or -1 when it is not a source of
+   the controller */
+/*
+ * How many sources each CPU below 'cpus' has been given. Sources nobody
+ * asked about are on the boot CPU and are not counted for it: the boot
+ * CPU is the last choice among equals anyway.
+ */
+void krnPLICCountTargets(unsigned int *given, unsigned int cpus)
+{
+    unsigned int irq, cpu;
+
+    for (cpu = 0; cpu < cpus; cpu++)
+        given[cpu] = 0;
+
+    if (!plic_base)
+        return;
+
+    for (irq = 1; irq <= plic_ndev && irq < PLIC_MAX_SOURCES; irq++)
+    {
+        cpu = plic_irqcpu[irq];
+        if (cpu && cpu < cpus)
+            given[cpu]++;
+    }
+}
+
+/* Whether a CPU has a context of its own to take interrupts in */
+int krnPLICCPUUsable(unsigned int cpu)
+{
+    return (plic_base && plic_cpu_context(cpu) >= 0);
+}
+
+int krnPLICGetTarget(unsigned int irq)
+{
+    if (!plic_base || !irq || irq > plic_ndev || irq >= PLIC_MAX_SOURCES)
+        return -1;
+
+    return plic_irqcpu[irq];
 }
 
 /*
@@ -277,45 +473,34 @@ static unsigned int plic_claim_ctx(int ctx)
 }
 
 /*
- * Which source is asking. Returns 0 when nothing is pending, which is
- * possible even inside the handler - another hart may have taken it.
+ * Which source is asking the running hart. Returns 0 when nothing is
+ * pending in its context, which is possible even inside the handler -
+ * the source may have been masked or given to another CPU since it
+ * raised the interrupt.
+ *
+ * Only the hart's own context is asked, the one the sources delivered
+ * to this CPU are enabled in (krnPLICEnable() looks it up the same
+ * way). Claiming from another would run a handler on a CPU its source
+ * was not given to.
+ *
+ * *ctx is set to the context the source was claimed from and has to be
+ * handed back to krnPLICComplete(). It lives with the caller, not here:
+ * more than one hart can be between a claim and its completion, and a
+ * completion only counts on the context that made the claim.
  */
-unsigned int krnPLICClaim(void)
+unsigned int krnPLICClaim(int *ctx)
 {
-    unsigned int c;
+    int own;
 
     if (!plic_base)
         return 0;
 
-    /*
-     * Try the context believed to be this hart's first, then the rest.
-     * Only the running hart can have anything pending, so whichever
-     * answers is the right one - and it is remembered so the matching
-     * completion goes back to the same place.
-     */
-    if (plic_context >= 0)
-    {
-        unsigned int src = plic_claim_ctx(plic_context);
+    own = plic_cpu_context(krnRVCPUNumber());
+    if (own < 0)
+        return 0;
 
-        if (src)
-            return src;
-    }
-
-    for (c = 0; c < plic_nctx; c++)
-    {
-        unsigned int src;
-
-        if (plic_ctxlist[c] == plic_context)
-            continue;
-        src = plic_claim_ctx(plic_ctxlist[c]);
-        if (src)
-        {
-            plic_context = plic_ctxlist[c];
-            return src;
-        }
-    }
-
-    return 0;
+    *ctx = own;
+    return plic_claim_ctx(own);
 }
 
 /*
@@ -354,14 +539,45 @@ void krnPLICDumpState(unsigned int irq)
     krnSBIPutHex(csr_read(sip));
     krnSBIPutStr(" threshold ");
     krnSBIPutDec(plic_read(PLIC_THRESHOLD(plic_ctxlist[0])));
+    if (irq && irq < PLIC_MAX_SOURCES)
+    {
+        krnSBIPutStr(" target cpu ");
+        krnSBIPutDec(plic_irqcpu[irq]);
+    }
     krnSBIPutStr("\n");
 }
 
-/* Tell the controller the source has been serviced */
-void krnPLICComplete(unsigned int irq)
+/*
+ * Tell the controller the source has been serviced, on the context
+ * krnPLICClaim() said it was claimed from.
+ *
+ * The controller ignores a completion for a source that is not enabled
+ * on that context, and a source left uncompleted is never raised again.
+ * It can have been masked there since the claim - its last handler
+ * removed, or the source given to another CPU - so one found masked is
+ * unmasked for just the write. Only the hart that owns the context
+ * claims from it, and that is the caller, so nothing can be claimed
+ * through the bit while it is set; the lock keeps the enable word from
+ * changing underneath.
+ */
+void krnPLICComplete(int ctx, unsigned int irq)
 {
-    if (!plic_base || !irq || plic_context < 0)
+    uint32_t      bits, bit = 1U << (irq & 31);
+    unsigned long sstatus;
+
+    if (!plic_base || !irq || ctx < 0)
         return;
 
-    plic_write(PLIC_CLAIM(plic_context), irq);
+    sstatus = plic_lock_acquire();
+
+    bits = plic_read(PLIC_ENABLE(ctx, irq));
+    if (!(bits & bit))
+        plic_write(PLIC_ENABLE(ctx, irq), bits | bit);
+
+    plic_write(PLIC_CLAIM(ctx), irq);
+
+    if (!(bits & bit))
+        plic_write(PLIC_ENABLE(ctx, irq), bits);
+
+    plic_lock_release(sstatus);
 }

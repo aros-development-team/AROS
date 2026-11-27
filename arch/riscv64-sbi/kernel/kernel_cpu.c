@@ -179,8 +179,8 @@ void cpu_Dispatch(regs_t *regs)
         asm volatile("wfi");
         csr_clear(sstatus, SSTATUS_SIE);
 
-        if (SysBase->SysFlags & SFF_SoftInt)
-            core_Cause(INTB_SOFTINT, 1L << INTB_SOFTINT);
+        /* Returns with traps masked: the tick below and core_Dispatch() are next */
+        core_RunSoftInts();
 
 #if defined(__AROSEXEC_SMP__)
         /* The load figure is the boot CPU's (kernel_timer.c) */

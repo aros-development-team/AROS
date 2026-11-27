@@ -125,12 +125,12 @@ static void rv_RemoteSFence(const ULONG *mask, IPTR va, IPTR size)
 }
 
 /*
- * RVI_InitCore. Nothing to set up on a secondary hart beyond what its
- * entry did: device interrupts stay with the boot CPU. The PLIC has
- * every source enabled on every supervisor context (S-mode cannot be
- * sure which context is its own, see kernel_plic.c) and the boot CPU
- * claims from all of them, so a secondary leaves sie.SEIE clear and
- * never takes a device interrupt.
+ * RVI_InitCore. A secondary hart is opened to device interrupts through
+ * its own PLIC context, but none arrives by itself: every source is
+ * delivered to the boot CPU until KrnModifyIRQA() gives it another
+ * (kernel_plic.c), and no source is enabled in this hart's context
+ * before that. A hart the firmware described no context for stays
+ * closed and cannot be given one.
  */
 static void rv_InitCore(struct KernelBase *KernelBase, struct ExecBase *SysBase)
 {
@@ -140,7 +140,10 @@ static void rv_InitCore(struct KernelBase *KernelBase, struct ExecBase *SysBase)
     (void)SysBase;
 
     if (hd)
+    {
         hd->hd_Flags |= HARTF_ONLINE;
+        krnPLICInitCore(hd->hd_PLICContext);
+    }
 }
 #endif /* __AROSEXEC_SMP__ */
 
@@ -215,6 +218,14 @@ static int Platform_Init(struct KernelBase *LIBBASE)
     pdata->kb_CPUHart[0] = pdata->kb_BootHart;
     pdata->kb_Harts[pdata->kb_BootHart].hd_CPUNumber = 0;
 
+    /*
+     * The boot hart's PLIC context. The one the boot parse worked out
+     * stands when it was worked out for the right hart; if the hart was
+     * corrected above, the table's entry for the real one replaces it.
+     */
+    if ((pdata->kb_BootHart == fdt->boot_cpu) && (fdt->plic_context >= 0))
+        pdata->kb_Harts[pdata->kb_BootHart].hd_PLICContext = fdt->plic_context;
+
     LIBBASE->kb_PlatformData = pdata;
 
     __riscv_arosintern.RVI_TimebaseFreq = fdt->tb_freq;
@@ -226,7 +237,12 @@ static int Platform_Init(struct KernelBase *LIBBASE)
     TLS_SET(SysBase, SysBase);
     TLS_SET(KernelBase, (void *)LIBBASE);
     TLS_SET(Platform, &pdata->kb_Harts[pdata->kb_BootHart]);
+#endif
 
+    /* Device interrupts are the boot CPU's unless one is given another */
+    krnPLICInitCore(pdata->kb_Harts[pdata->kb_BootHart].hd_PLICContext);
+
+#if defined(__AROSEXEC_SMP__)
     __riscv_arosintern.RVI_InitCore = rv_InitCore;
     __riscv_arosintern.RVI_InitTimerCore = krnTimerInitCore;
 

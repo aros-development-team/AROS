@@ -12,6 +12,9 @@
 #include <kernel_intern.h>
 
 #include <proto/kernel.h>
+#if defined(__AROSEXEC_SMP__)
+#include <proto/exec.h>
+#endif
 
 #define D(x)
 
@@ -27,6 +30,10 @@ UBYTE __virq_used[HW_IRQ_COUNT];
  * above that are free for things that have no wire: a bridge that
  * receives message interrupts takes one per vector and raises it with
  * KrnRunIRQ() when its status register says that vector arrived.
+ *
+ * Nothing here excludes a second caller: KrnAllocIRQ() and KrnFreeIRQ()
+ * hold kb_IntrSpinLock around these on SMP, and the kernel's own early
+ * call (kernel_timer.c) is made while only the boot hart runs.
  */
 ULONG krnAllocVirtualIRQ(ULONG count)
 {
@@ -113,7 +120,21 @@ void krnFreeVirtualIRQ(ULONG start, ULONG count)
     AROS_LIBFUNC_INIT
 
     if (irq_type == IRQTYPE_MSI)
-        return krnAllocVirtualIRQ(count);
+    {
+        ULONG irq;
+
+#if defined(__AROSEXEC_SMP__)
+        /* Tasks on two CPUs must not be given the same numbers */
+        Disable();
+        KrnSpinLock(&KernelBase->kb_IntrSpinLock, NULL, SPINLOCK_MODE_WRITE);
+#endif
+        irq = krnAllocVirtualIRQ(count);
+#if defined(__AROSEXEC_SMP__)
+        KrnSpinUnLock(&KernelBase->kb_IntrSpinLock);
+        Enable();
+#endif
+        return irq;
+    }
 
     return (ULONG)-1;
 

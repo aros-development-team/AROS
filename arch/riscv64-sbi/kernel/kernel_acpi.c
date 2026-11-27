@@ -375,7 +375,7 @@ int krnACPIPLICInfo(struct krnFDTInfo *info)
 {
     const struct acpi_header *madt = acpi_find("APIC");
     const uint8_t *p, *end;
-    int found = 0;
+    int found = 0, bootctx = -1;
 
     if (!madt)
         return 0;
@@ -427,6 +427,8 @@ int krnACPIPLICInfo(struct krnFDTInfo *info)
             {
                 info->plic_contexts[info->plic_ncontexts++] =
                     (int)(r->ext_intc_id & 0xffff);
+                if (r->hart_id == __boot_hartid)
+                    bootctx = (int)(r->ext_intc_id & 0xffff);
             }
         }
 
@@ -437,11 +439,15 @@ int krnACPIPLICInfo(struct krnFDTInfo *info)
         return 0;
 
     /*
-     * krnPLICInit() enables on every context it is given and claims
-     * from whichever answers, so the one named here only has to be a
-     * real context - the boot hart's is the obvious choice.
+     * The context named here is where every source is enabled until
+     * it is given another CPU (kernel_plic.c), so it has to be the
+     * boot hart's. The first one listed stands in when the firmware
+     * did not say which hart that is; device interrupts then arrive
+     * only if that guess is right.
      */
-    if (info->plic_ncontexts)
+    if (bootctx >= 0)
+        info->plic_context = bootctx;
+    else if (info->plic_ncontexts)
         info->plic_context = info->plic_contexts[0];
 
     krnSBIPutStr("plic:      described by ACPI, ");
