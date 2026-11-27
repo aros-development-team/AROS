@@ -30,6 +30,8 @@ struct ARM_Implementation
     void                (*ARMI_IRQEnable) (int);
     void                (*ARMI_IRQDisable) (int);
     void                (*ARMI_IRQProcess) (void);
+    int                 (*ARMI_IRQSetTarget) (int, int); // delivers an IRQ to a core, non-zero if done; unset: all IRQs stay on core 0
+    int                 (*ARMI_IRQGetTarget) (int); // the core an IRQ is delivered to, -1 if it is private to each core
     void                (*ARMI_FIQProcess) (void);
     void                (*ARMI_LED_Toggle) (int, int);
     void                (*ARMI_Save_VFP_State) (void *);

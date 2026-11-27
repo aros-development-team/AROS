@@ -118,7 +118,8 @@ extern uint64_t aarch64_CPUHwID[AARCH64_MAXCPUS];
 /*
  * Per-core load for KrnGetSystemAttr(KATTR_CPULoad + cpu): the inverse of
  * the idle task's share of the window. Its busy time is already in
- * iet_private2, so only the previous sample is kept here.
+ * iet_private2, so only the previous sample is kept here. A core writes
+ * its own entry, from its tick; cpl_LastLoad is what other cores read.
  */
 struct aarch64_CPULoadData
 {
@@ -127,12 +128,15 @@ struct aarch64_CPULoadData
     ULONG       cpl_LastLoad;       /* the load that sample produced     */
 };
 
-/* Shortest window worth measuring - callers asking again within it are
- * served the previous result. */
-#define CPULOAD_MINWINDOW       100000  /* microseconds */
+/* How long a core's load is measured over, and so how old the figure a
+ * caller gets can be. */
+#define CPULOAD_WINDOW          1000000 /* microseconds */
 
 extern struct Task *aarch64_IdleTask[AARCH64_MAXCPUS];
 extern struct aarch64_CPULoadData aarch64_CPULoad[AARCH64_MAXCPUS];
+
+/* Closes the calling core's window when it is due. From the core's tick. */
+void core_CPULoadTick(void);
 #endif
 
 #endif /* CPU_AARCH64_H_ */

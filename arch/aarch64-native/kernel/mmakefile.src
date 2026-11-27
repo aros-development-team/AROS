@@ -43,6 +43,8 @@ CFILES := \
         maygetchar \
         tags \
         intr \
+        modifyirq \
+        getirq \
         kernel_systimer \
         syscall \
         mmu \

@@ -25,53 +25,77 @@
 
 #if defined(__AROSEXEC_SMP__)
 /*
- * The share of the window the idle task did NOT consume. 32-bit maths
- * throughout, for the counter's ~71 minute wrap; result is fixed point,
- * 0xffffffff == 100%, as on x86.
+ * A core's load: the share of the last window its idle task did NOT
+ * consume. Fixed point, 0xffffffff == 100%, as on x86, and worked out as
+ * there: by each core for itself, from its own tick, about once a second,
+ * whether or not anybody asks. A caller gets the figure of the last full
+ * window, so two callers, or two CPUs that are compared, are measured over
+ * the same length of time and not since each was last asked about.
+ *
+ * Called by a core from its tick, with interrupts masked. Only that core
+ * switches its idle task in and out, and it does so with interrupts
+ * masked, so the task's state, its launch time (iet_private1) and its
+ * busy time (iet_private2) are read here as one: another core could see
+ * the state of the next slice with the times of the last. No lock.
+ *
+ * The busy time is 32-bit maths, for the counter's ~71 minute wrap; the
+ * stamp is whole, so that 0 only ever means no window has begun.
  */
-static intptr_t krnCPULoad(unsigned int cpu)
+void core_CPULoadTick(void)
 {
+    unsigned int cpu = GetCPUNumber();
+    struct aarch64_CPULoadData *cl;
     struct Task *idler;
     struct IntETask *iet;
-    ULONG now, idleNow, window;
-    intptr_t retval = 0;
+    UQUAD now;
+    ULONG idleNow, window, load = 0;
 
     if ((cpu >= AARCH64_MAXCPUS) || !__arm_arosintern.ARMI_GetTime)
-        return 0;
+        return;
 
     /* Pairs with the release store in Exec_ARMCreateIdleTask() */
     idler = __atomic_load_n(&aarch64_IdleTask[cpu], __ATOMIC_ACQUIRE);
     if (!idler || !(iet = GetIntETask(idler)))
-        return 0;
+        return;
 
-    now = (ULONG)__arm_arosintern.ARMI_GetTime();
+    cl = &aarch64_CPULoad[cpu];
+    now = __arm_arosintern.ARMI_GetTime();
+
+    /* The window is still open */
+    if (cl->cpl_LastStamp && ((now - cl->cpl_LastStamp) < CPULOAD_WINDOW))
+        return;
+
+    window = (ULONG)(now - cl->cpl_LastStamp);
     idleNow = (ULONG)iet->iet_private2;
-    window = now - (ULONG)aarch64_CPULoad[cpu].cpl_LastStamp;
-
-    /* Too soon to measure again - reuse the last answer. */
-    if (aarch64_CPULoad[cpu].cpl_LastStamp && (window < CPULOAD_MINWINDOW))
-        return (intptr_t)aarch64_CPULoad[cpu].cpl_LastLoad;
 
     /* An idle core is never preempted, so its idle task can sit in TS_RUN
      * without committing a slice - fold the in-progress part in. */
     if (idler->tc_State == TS_RUN)
-        idleNow += now - (ULONG)iet->iet_private1;
+        idleNow += (ULONG)now - (ULONG)iet->iet_private1;
 
-    if (aarch64_CPULoad[cpu].cpl_LastStamp && window)
+    if (cl->cpl_LastStamp && window)
     {
-        ULONG idle = idleNow - (ULONG)aarch64_CPULoad[cpu].cpl_LastIdle;
+        ULONG idle = idleNow - (ULONG)cl->cpl_LastIdle;
 
-        if (idle >= window)
-            retval = 0;
-        else
-            retval = (intptr_t)(0xffffffff - (ULONG)(((UQUAD)idle << 32) / window));
+        if (idle < window)
+            load = 0xffffffff - (ULONG)(((UQUAD)idle << 32) / window);
+
+        /* Other cores read it, whole */
+        __atomic_store_n(&cl->cpl_LastLoad, load, __ATOMIC_RELAXED);
     }
 
-    aarch64_CPULoad[cpu].cpl_LastIdle = idleNow;
-    aarch64_CPULoad[cpu].cpl_LastStamp = now;
-    aarch64_CPULoad[cpu].cpl_LastLoad = (ULONG)retval;
+    cl->cpl_LastIdle = idleNow;
+    cl->cpl_LastStamp = now;
+}
 
-    return retval;
+/* 0 until the core has ticked through its first window, and for a core
+ * that never started */
+static intptr_t krnCPULoad(unsigned int cpu)
+{
+    if (cpu >= AARCH64_MAXCPUS)
+        return 0;
+
+    return (intptr_t)__atomic_load_n(&aarch64_CPULoad[cpu].cpl_LastLoad, __ATOMIC_RELAXED);
 }
 #endif
 

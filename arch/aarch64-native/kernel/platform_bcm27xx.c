@@ -129,6 +129,9 @@ void bcm27xx_sched_tick(void)
         __tls->Elapsed--;
     if (__tls->Elapsed == 0)
         __tls->ScheduleFlags |= (TLSSF_Quantum | TLSSF_Switch);
+
+    /* Every core ticks here, so every core has a load (KATTR_CPULoad) */
+    core_CPULoadTick();
 }
 
 static void bcm27xx_cntp_tick(void)

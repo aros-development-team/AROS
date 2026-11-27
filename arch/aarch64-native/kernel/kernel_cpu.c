@@ -429,6 +429,12 @@ void cpu_Dispatch(regs_t *regs)
          * HANDLED to make a task ready - open a brief window for it. */
         asm volatile("wfi");
         asm volatile("msr daifclr, #3\n\tisb\n\tmsr daifset, #3" ::: "memory");
+        /*
+         * An interrupt handler in that window may have called Cause(), and
+         * with no task to return to there is no way out of an interrupt to
+         * run it from. Returns with interrupts masked.
+         */
+        core_RunSoftInts();
     }
 
     DSCHED(bug("[Kernel:%02d] cpu_Dispatch: 0x%p [R  ] '%s'\n", cpunum, task, task->tc_Node.ln_Name));

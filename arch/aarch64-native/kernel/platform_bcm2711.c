@@ -96,8 +96,18 @@ static void bcm2711_irq_enable(int irq)
          */
         uint32_t cfg;
 
-        *((volatile uint8_t *)(GICD_BASE + GICD_ITARGETSR + irq)) = 0x01;
+        gic400_irq_route(irq);
 
+        /*
+         * The only read-modify-write of a register shared between
+         * interrupts. Every caller with a shared interrupt comes through
+         * KrnAddIRQHandler(), which holds kb_IntrSpinLock in write mode;
+         * the per-core timer passes a PPI and does not get here. The
+         * priority and target registers are byte accessible and written
+         * whole, the enable registers are write-one. The same lock keeps
+         * the target written above from changing under the enable
+         * (KrnModifyIRQA()).
+         */
         cfg = GICD(GICD_ICFGR + 4 * (irq / 16));
         cfg &= ~(2u << ((irq % 16) * 2));
         GICD(GICD_ICFGR + 4 * (irq / 16)) = cfg;
@@ -115,10 +125,26 @@ static void bcm2711_irq_disable(int irq)
  * A source that is never acknowledged is re-presented as a fresh exception
  * rather than looping inside one dispatch, so the run length has to be
  * tracked across calls to be seen at all.
+ *
+ * It is tracked on the core that takes the interrupt. A shared interrupt
+ * is taken where it is targeted, so its run shows on that core, and two
+ * cores do not reset or tear each other's count. No source is recorded
+ * as INTID 0: that is an SGI, which is never counted.
  */
-static uint32_t irq_last = GIC_SPURIOUS;
-static unsigned int irq_repeats;
-static uint64_t irq_since;
+struct irq_storm
+{
+    uint32_t        last;
+    unsigned int    repeats;
+    uint64_t        since;
+};
+
+#if defined(__AROSEXEC_SMP__)
+static struct irq_storm irq_storm[AARCH64_MAXCPUS];
+#define IRQ_STORM()     (&irq_storm[GetCPUNumber()])
+#else
+static struct irq_storm irq_storm[1];
+#define IRQ_STORM()     (&irq_storm[0])
+#endif
 
 static void bcm2711_gentimer_tick(void);
 
@@ -129,6 +155,7 @@ static void bcm2711_irq_process(void)
         uint32_t iar = GICC(GICC_IAR);
         uint32_t intid = iar & 0x3FF;
         uint64_t now, freq;
+        struct irq_storm *storm;
 
         if (intid >= GIC_SPURIOUS)
             break;
@@ -140,11 +167,11 @@ static void bcm2711_irq_process(void)
         else if (intid == GENTIMER_PPI)
             bcm2711_gentimer_tick();
         else if (KernelBase)
-            krnRunIRQHandlers(KernelBase, intid);
+            gic400_run_irq(KernelBase, intid);
 
         GICC(GICC_EOIR) = iar;
 
-        /* Self-clearing, and the tick repeats by design; only SPIs (all on CPU 0) count */
+        /* Self-clearing, and the tick repeats by design; only SPIs count */
         if (intid < GIC_FIRST_PPI || intid == GENTIMER_PPI)
             continue;
 
@@ -157,18 +184,20 @@ static void bcm2711_irq_process(void)
         asm volatile("mrs %0, cntpct_el0" : "=r"(now));
         asm volatile("mrs %0, cntfrq_el0" : "=r"(freq));
 
+        storm = IRQ_STORM();
+
         /* Only a burst within 250ms counts, not a merely busy source */
-        if ((intid != irq_last) || (now - irq_since > freq / 4))
+        if ((intid != storm->last) || (now - storm->since > freq / 4))
         {
-            irq_last = intid;
-            irq_repeats = 0;
-            irq_since = now;
+            storm->last = intid;
+            storm->repeats = 0;
+            storm->since = now;
         }
-        else if (++irq_repeats > 10000)
+        else if (++storm->repeats > 10000)
         {
             bcm2711_irq_disable(intid);
             bug("[Kernel] IRQ %u not cleared by its handler, masked\n", intid);
-            irq_repeats = 0;
+            storm->repeats = 0;
             break;
         }
     }
@@ -286,6 +315,8 @@ static IPTR bcm2711_probe(struct ARM_Implementation *krnARMImpl, struct TagItem 
     krnARMImpl->ARMI_IRQEnable = &bcm2711_irq_enable;
     krnARMImpl->ARMI_IRQDisable = &bcm2711_irq_disable;
     krnARMImpl->ARMI_IRQProcess = &bcm2711_irq_process;
+    krnARMImpl->ARMI_IRQSetTarget = &gic400_irq_settarget;
+    krnARMImpl->ARMI_IRQGetTarget = &gic400_irq_gettarget;
 
     krnARMImpl->ARMI_Init = &bcm27xx_init;
 
