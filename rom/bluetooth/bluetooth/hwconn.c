@@ -59,6 +59,7 @@ enum {
 static void bConnRunEnum(struct BtHWConn *cn);
 static void bConnFinishEnum(struct BtHWConn *cn, LONG error);
 static BOOL bHasClassicServices(struct BtDevice *bd);
+static BOOL bHasHIDService(struct BtDevice *bd);
 static struct BtEndpoint * bNextDescEndpoint(struct BtHWConn *cn);
 static void bEndpointEvent(struct bt_l2cap_channel_event_info *info, void *user_data);
 static void bRFCOMMWrite(struct BtHWEndpoint *hep, struct BtChannel *bch);
@@ -1042,10 +1043,12 @@ static void bConnUp(struct BtHWConn *cn, UWORD handle, UBYTE role)
     struct BtHardware *bth = hc->hc_Hardware;
     struct BtDevice *bd = cn->cn_Device;
     ULONG fraglen;
+    BOOL hid;
 
     cn->cn_Handle = handle;
     cn->cn_Role = role;
     cn->cn_State = HCNS_CONNECTED;
+    cn->cn_NextAttempt = 0;     /* also the tick's authentication retry: set below */
     cn->cn_LastActivity = hc->hc_Tick;
     if(hc->hc_Connecting == cn) {
         hc->hc_Connecting = NULL;
@@ -1081,7 +1084,11 @@ static void bConnUp(struct BtHWConn *cn, UWORD handle, UBYTE role)
         bt_l2cap_channel_manager_listen(&cn->cn_L2CAP, 0x0003, BT_L2CAP_DEFAULT_MTU, bRFCOMMListenEvent, cn);
     }
     bListenServices(cn);
-    cn->cn_PeerOpenUntil = ((cn->cn_LinkType == BDLT_ACL) && (role == BDR_PERIPHERAL)) ?
+    btLockReadDevice(bd);
+    hid = bHasHIDService(bd);
+    btUnlockDevice(bd);
+    /* a HID device that connected to us opens its channels itself */
+    cn->cn_PeerOpenUntil = ((cn->cn_LinkType == BDLT_ACL) && (role == BDR_PERIPHERAL) && hid) ?
                            ((hc->hc_Tick + HC_PEEROPEN_MS) | 1) : 0;
 
     btLockWriteDevice(bd);
@@ -1126,9 +1133,15 @@ static void bConnUp(struct BtHWConn *cn, UWORD handle, UBYTE role)
         UBYTE p[2];
         cn->cn_EncryptPending = TRUE;
         cn->cn_EncryptSince = hc->hc_Tick;
-        p[0] = handle & 0xff;
-        p[1] = handle >> 8;
-        bSubmitCmd(hc, HC_OP_AUTH_REQUESTED, p, 2, bIgnoreCompletion, hc);
+        if((role == BDR_PERIPHERAL) && hid) {
+            /* a HID device that connected to us secures the link itself:
+               asking at once collides with that, so give it a moment */
+            cn->cn_NextAttempt = (hc->hc_Tick + HC_PEERAUTH_MS) | 1;
+        } else {
+            p[0] = handle & 0xff;
+            p[1] = handle >> 8;
+            bSubmitCmd(hc, HC_OP_AUTH_REQUESTED, p, 2, bIgnoreCompletion, hc);
+        }
     }
     if((cn->cn_LinkType == BDLT_LE) && (role == BDR_PERIPHERAL) && !(bd->bd_Flags & BDFF_REGISTERED)) {
         /* somebody who came for our GATT services: we want nothing of theirs */
@@ -1911,6 +1924,20 @@ static BOOL bHasClassicServices(struct BtDevice *bd)
     struct BtService *bsv;
     for(bsv = (struct BtService *) bd->bd_Services.lh_Head; bsv->bsv_Node.ln_Succ; bsv = (struct BtService *) bsv->bsv_Node.ln_Succ) {
         if(!bsv->bsv_Incoming && ((bsv->bsv_Protocol == BSVP_L2CAP) || (bsv->bsv_Protocol == BSVP_RFCOMM))) {
+            return(TRUE);
+        }
+    }
+    return(FALSE);
+}
+/* \\\ */
+
+/* /// "bHasHIDService()" */
+/* the device has a classic HID service (lock held) */
+static BOOL bHasHIDService(struct BtDevice *bd)
+{
+    struct BtService *bsv;
+    for(bsv = (struct BtService *) bd->bd_Services.lh_Head; bsv->bsv_Node.ln_Succ; bsv = (struct BtService *) bsv->bsv_Node.ln_Succ) {
+        if(!bsv->bsv_Incoming && (bsv->bsv_UUID16 == 0x1124)) {
             return(TRUE);
         }
     }
@@ -3538,10 +3565,10 @@ BOOL bConnHandleEvent(struct BtHWCore *hc, UBYTE code, const UBYTE *params, ULON
         }
         handle = (params[1] | (params[2] << 8)) & 0x0fff;
         cn = bFindConnByHandle(hc, handle);
-        if(cn && (params[0] == 0x23) && (cn->cn_AuthRetries < 2) &&
+        if(cn && ((params[0] == 0x23) || (params[0] == 0x2a)) && (cn->cn_AuthRetries < 2) &&
            ((cn->cn_PairState == PAIR_AUTH) || cn->cn_EncryptPending)) {
-            /* LMP transaction collision: both sides started a security
-               procedure at the same moment - the loser simply retries
+            /* LMP transaction collision (same or different procedure): both
+               sides started a security procedure at the same moment - the loser simply retries
                once the peer's round has finished (bConnTick()) */
             cn->cn_AuthRetries++;
             cn->cn_NextAttempt = hc->hc_Tick + 1200;
@@ -4641,10 +4668,11 @@ void bConnTick(struct BtHWCore *hc)
                 bConnRunEnum(cn);
             }
         }
-        if(cn->cn_AuthRetries && cn->cn_NextAttempt &&
+        if(cn->cn_NextAttempt &&
            ((cn->cn_PairState == PAIR_AUTH) || cn->cn_EncryptPending) &&
            ((LONG) (hc->hc_Tick - cn->cn_NextAttempt) >= 0)) {
-            /* re-issue the authentication that lost an LMP collision */
+            /* the authentication that lost an LMP collision, or that waited
+               for the peer to secure the link itself */
             UBYTE p[2];
             cn->cn_NextAttempt = 0;
             p[0] = cn->cn_Handle & 0xff;

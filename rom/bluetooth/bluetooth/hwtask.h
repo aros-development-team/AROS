@@ -44,6 +44,7 @@
 #define HC_RXQUEUE_MAX  8      /* SDUs kept per L2CAP channel when no read request is pending */
 #define HC_CHANCLOSE_MS 2000   /* grace period before an unused L2CAP channel is closed */
 #define HC_PEEROPEN_MS  2000   /* how long an incoming link waits for the peer to open its channels */
+#define HC_PEERAUTH_MS  2500   /* ... and for a bonded peer to authenticate it */
 
 /* HCI opcodes */
 #define HC_OP(ogf,ocf) BT_HCI_OPCODE(ogf, ocf)
