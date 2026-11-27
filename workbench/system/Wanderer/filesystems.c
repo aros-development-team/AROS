@@ -337,6 +337,43 @@ static BOOL moveFile(CONST_STRPTR sourcePath, CONST_STRPTR destDir, BOOL newDir)
 }
 
 /**
+ * Checks if the last name of a path is a soft link. Lock() and Examine() describe a link's target, so the link's
+ * directory is asked instead.
+ */
+static BOOL isNamedSoftLink(CONST_STRPTR path)
+{
+    CONST_STRPTR file = FilePart(path);
+    STRPTR directory;
+    BPTR lock;
+    LONG len;
+    TEXT target[2];
+    BOOL isLink = FALSE;
+
+    if (*file == '\0')
+    {
+        return FALSE;
+    }
+
+    directory = GetPathPart(path);
+    if (directory != NULL)
+    {
+        lock = Lock(directory, SHARED_LOCK);
+        if (lock)
+        {
+            // -2: a link whose target doesn't fit the buffer
+            len = ReadLink(((struct FileLock *)BADDR(lock))->fl_Task, lock, file, target, sizeof(target));
+            isLink = (len == -2 || (len >= 0 && IoErr() == 0));
+            UnLock(lock);
+        }
+        FreeVec(directory);
+    }
+
+    return isLink;
+}
+
+static BOOL deleteContent(CONST_STRPTR path, struct OpModes *opModes, struct Hook *askHook, struct Hook *displayHook, APTR userdata, BOOL isLink);
+
+/**
  * Helper function called by DeleteContent which calls the DeleteContent function for all files in a directory
  */
 static BOOL deleteDirectoryContents(CONST_STRPTR path, struct OpModes *opModes, struct Hook *askHook, struct FileInfoBlock *fib, struct Hook *displayHook, APTR userdata)
@@ -356,7 +393,7 @@ static BOOL deleteDirectoryContents(CONST_STRPTR path, struct OpModes *opModes, 
         STRPTR nextPath = CombinePath(fib->fib_FileName, path);
         if (nextPath != NULL)
         {
-            stop = DeleteContent(nextPath, opModes, askHook, displayHook, userdata);
+            stop = deleteContent(nextPath, opModes, askHook, displayHook, userdata, fib->fib_DirEntryType == ST_SOFTLINK);
             FreeVec(nextPath);
         }
         success = ExNext(sourceDirectoryLock, fib);
@@ -770,6 +807,7 @@ BOOL CopyContent(CONST_STRPTR sourcePath, CONST_STRPTR targetDir, struct Hook *d
 
 /**
  * Deletes all content from the given path. The path can point to a directory, regular file or info file.
+ * A soft link is deleted itself, without entering it.
  *
  * Params: path        -> File path
  *         opModes     -> Holds data for various user choices
@@ -780,6 +818,11 @@ BOOL CopyContent(CONST_STRPTR sourcePath, CONST_STRPTR targetDir, struct Hook *d
  * Result: FALSE if operation ended successfully, TRUE if it was stopped prematurely
  */
 BOOL DeleteContent(CONST_STRPTR path, struct OpModes *opModes, struct Hook *askHook, struct Hook *displayHook, APTR userdata)
+{
+    return deleteContent(path, opModes, askHook, displayHook, userdata, isNamedSoftLink(path));
+}
+
+static BOOL deleteContent(CONST_STRPTR path, struct OpModes *opModes, struct Hook *askHook, struct Hook *displayHook, APTR userdata, BOOL isLink)
 {
     BOOL stop = FALSE;
     BOOL isDir = FALSE;
@@ -795,7 +838,8 @@ BOOL DeleteContent(CONST_STRPTR path, struct OpModes *opModes, struct Hook *askH
         return TRUE;
     }
 
-    struct FileInfoBlock *sourceFib = GetFileInfoBlock(localPath);
+    // Examine() would describe a link's target, so a link gets an empty FileInfoBlock: not a directory, no protection
+    struct FileInfoBlock *sourceFib = isLink ? AllocDosObject(DOS_FIB, NULL) : GetFileInfoBlock(localPath);
     if (sourceFib != NULL)
     {
         isDir = sourceFib->fib_DirEntryType > 0;
