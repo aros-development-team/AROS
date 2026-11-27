@@ -528,16 +528,19 @@ struct timerequest_ext
 *       hook receives the application and the parsed array, or NULL without a
 *       template. Its return value becomes rm_Result1. RexxMsg exposes the
 *       current request only during the hook.
-*       The dispatcher compares case-insensitively using the length of the
-*       incoming command word, so prefixes can match an earlier longer table
-*       name. Command tables must not assume exact-name matching.
+*       Dispatch matches the entire command name without regard to case; the
+*       first exact table match wins. A NULL template invokes a parameterless
+*       hook. A ReadArgs template requires a positive, valid mc_Parameters count.
+*       Allocation failures return MUI_RXERR_OUTOFMEMORY and parsing failures
+*       return MUI_RXERR_BADSYNTAX without invoking the command hook. Missing
+*       hooks and inconsistent command definitions return MUI_RXERR_BADDEFINITION.
+*       The special MC_TEMPLATE_ID template queues mc_Parameters as a ReturnID
+*       without calling a hook or parsing arguments.
+*       Parsed argument pointers are valid only during the callback.
 *
 *   BUGS
-*       Argument-buffer allocation and ReadArgs failure are not reliably checked
-*       before the hook is called. A non-NULL template requires a valid
-*       parameter count and suitable storage. Do not assume that hook invocation
-*       proves successful parsing or that parsed argument pointers remain valid
-*       after the hook.
+*       Built-in MUI ARexx command handling is not implemented by this path;
+*       this entry covers application command tables only.
 *
 */
 /****** Application.mui/MUIA_Application_RexxHook ************
@@ -595,11 +598,9 @@ struct timerequest_ext
 *       setter. Copy failure leaves no stored string and is not reported by the
 *       setter.
 *
-*   BUGS
-*       The stored result string is not automatically reset for each incoming
-*       command. Set it deliberately in each callback that supplies a result;
-*       otherwise a prior result can be reused. This attribute does not execute
-*       an ARexx command.
+*       The stored result string is cleared before each incoming Rexx
+*       request is dispatched. Callbacks must set a result explicitly for each
+*       request that needs one. This attribute does not execute an ARexx command.
 *
 */
 /****** Application.mui/MUIA_Application_DiskObject ************
@@ -2561,8 +2562,8 @@ static IPTR Application__MUIM_InputBuffered(struct IClass *cl, Object *obj,
 *
 *   BUGS
 *       Do not dispose of this application while NewInput is active. Keep
-*       handler and window traversals valid through callbacks. The command-table
-*       path has unchecked allocation/parsing failures; see Commands.
+*       handler and window traversals valid through callbacks. Command-table
+*       parsing failures do not invoke the corresponding command hook.
 *
 */
 static IPTR Application__MUIM_NewInput(struct IClass *cl, Object *obj,
@@ -2720,65 +2721,109 @@ static IPTR Application__MUIM_NewInput(struct IClass *cl, Object *obj,
                 {
                     STRPTR commandstr = (STRPTR)rmsg->rm_Args[0];
                     struct MUI_Command *cmd = data->app_Commands;
+                    ULONG commandlen = 0;
                     BOOL matched = FALSE;
 
-                    while (cmd != NULL && cmd->mc_Name)
+                    /* A result from an earlier request must not leak into this one. */
+                    FreeVec(data->app_RexxString);
+                    data->app_RexxString = NULL;
+
+                    if (commandstr)
                     {
-                        LONG len = 0;
-                        while ((commandstr[len] != ' ') && (commandstr[len] != '\0')) len++;
+                        while (*commandstr && isspace((unsigned char)*commandstr))
+                            commandstr++;
+                        while (commandstr[commandlen] &&
+                               !isspace((unsigned char)commandstr[commandlen]))
+                            commandlen++;
+                    }
 
-                        if (Strnicmp(commandstr, cmd->mc_Name, len) == 0)
+                    while (cmd && cmd->mc_Name)
+                    {
+                        if (commandlen && strlen(cmd->mc_Name) == commandlen &&
+                            Strnicmp(commandstr, cmd->mc_Name, commandlen) == 0)
                         {
-                            IPTR args[cmd->mc_Parameters];
-                            struct RDArgs *rdargs = NULL, *rdargsret = NULL;
-                            if (cmd->mc_Template)
+                            LONG result = MUI_RXERR_BADDEFINITION;
+                            matched = TRUE;
+
+                            if (cmd->mc_Template == MC_TEMPLATE_ID)
                             {
-                                STRPTR tmp = commandstr + len;
-                                STRPTR arguments;
+                                /* The parameter is a ReturnID, not an array size. */
+                                DoMethod(obj, MUIM_Application_ReturnID,
+                                    (IPTR)cmd->mc_Parameters);
+                                result = 0;
+                            }
+                            else if (cmd->mc_Hook && !cmd->mc_Template &&
+                                     cmd->mc_Parameters == 0)
+                            {
+                                data->app_RexxMsg = rmsg;
+                                result = (LONG)CallHookPkt(cmd->mc_Hook, obj, NULL);
+                                data->app_RexxMsg = NULL;
+                            }
+                            else if (cmd->mc_Hook && cmd->mc_Template &&
+                                     cmd->mc_Parameters > 0 &&
+                                     (ULONG)cmd->mc_Parameters <=
+                                     (~0UL / sizeof(IPTR)))
+                            {
+                                IPTR *args = NULL;
+                                STRPTR arguments = NULL;
+                                struct RDArgs *rdargs = NULL;
+                                struct RDArgs *parsed = NULL;
+                                STRPTR tail = commandstr + commandlen;
+                                ULONG length;
 
-                                while (*tmp == ' ') tmp++;
-                                len = strlen(tmp);
-                                arguments = AllocVec(len + 2, MEMF_ANY);
-                                CopyMem(tmp, arguments, len);
-                                arguments[len]      = '\n';
-                                arguments[len + 1]  = '\0';
+                                while (*tail && isspace((unsigned char)*tail))
+                                    tail++;
+                                length = strlen(tail);
+                                args = AllocVec(cmd->mc_Parameters * sizeof(IPTR),
+                                    MEMF_ANY | MEMF_CLEAR);
+                                if (length < ~0UL - 1)
+                                    arguments = AllocVec(length + 2, MEMF_ANY);
+                                rdargs = AllocDosObject(DOS_RDARGS, NULL);
 
-                                if ((rdargs = AllocDosObject(DOS_RDARGS, NULL)))
+                                if (args && arguments && rdargs)
                                 {
+                                    CopyMem(tail, arguments, length);
+                                    arguments[length] = '\n';
+                                    arguments[length + 1] = '\0';
                                     rdargs->RDA_Source.CS_Buffer = arguments;
-                                    rdargs->RDA_Source.CS_Length = strlen(arguments);
+                                    rdargs->RDA_Source.CS_Length = length + 1;
                                     rdargs->RDA_Source.CS_CurChr = 0;
                                     rdargs->RDA_DAList = 0;
                                     rdargs->RDA_Buffer = NULL;
                                     rdargs->RDA_BufSiz = 0;
                                     rdargs->RDA_ExtHelp = NULL;
                                     rdargs->RDA_Flags = 0;
-
-                                    memset(args, 0, cmd->mc_Parameters * sizeof(IPTR));
-
-                                    rdargsret = ReadArgs(cmd->mc_Template, args, rdargs);
+                                    parsed = ReadArgs(cmd->mc_Template, args, rdargs);
+                                    if (parsed)
+                                    {
+                                        data->app_RexxMsg = rmsg;
+                                        result = (LONG)CallHookPkt(cmd->mc_Hook,
+                                            obj, args);
+                                        data->app_RexxMsg = NULL;
+                                    }
+                                    else
+                                        result = MUI_RXERR_BADSYNTAX;
                                 }
+                                else
+                                    result = MUI_RXERR_OUTOFMEMORY;
 
+                                /* Keep ReadArgs' input alive through FreeArgs. */
+                                if (parsed)
+                                    FreeArgs(parsed);
+                                if (rdargs)
+                                    FreeDosObject(DOS_RDARGS, rdargs);
                                 FreeVec(arguments);
+                                FreeVec(args);
                             }
 
-                            data->app_RexxMsg = rmsg;
-                            IPTR res = CallHookPkt(cmd->mc_Hook, obj, cmd->mc_Template ? args : NULL);
-                            data->app_RexxMsg = NULL;
-
-                            if (rdargsret)
-                                FreeArgs(rdargsret);
-
-                            if (rdargs)
-                                FreeDosObject(DOS_RDARGS, rdargs);
-
-                            rmsg->rm_Result1 = (LONG)res;
-                            if ((rmsg->rm_Action & RXFF_RESULT) && data->app_RexxString)
+                            rmsg->rm_Result1 = result;
+                            if ((rmsg->rm_Action & RXFF_RESULT) &&
+                                data->app_RexxString)
                             {
-                                rmsg->rm_Result2 = (IPTR)CreateArgstring(data->app_RexxString, strlen(data->app_RexxString));
+                                rmsg->rm_Result2 = (IPTR)CreateArgstring(
+                                    data->app_RexxString,
+                                    strlen(data->app_RexxString));
                             }
-
-                            matched = TRUE;
                             break;
                         }
                         cmd++;
