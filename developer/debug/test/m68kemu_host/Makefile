@@ -216,3 +216,15 @@ test-execbase-private-sanitize:
 	$(PYTHON) "$(TEST_DIR)/regressions/run_execbase_private.py" --cc "$(CC)" --sanitize $(EXECBASE_PRIVATE_ARGS)
 
 .PHONY: test-execbase-private test-execbase-private-sanitize
+
+# commodities CreateCxObj object types handed to native code: ordinary fixture in test, sanitizer optional.
+CX_OBJECTS_ARGS ?=
+test: test-cx-objects
+
+test-cx-objects:
+	$(PYTHON) "$(TEST_DIR)/regressions/run_cx_objects.py" --cxx "$(CXX)" $(CX_OBJECTS_ARGS)
+
+test-cx-objects-sanitize:
+	$(PYTHON) "$(TEST_DIR)/regressions/run_cx_objects.py" --cxx "$(CXX)" --sanitize $(CX_OBJECTS_ARGS)
+
+.PHONY: test-cx-objects test-cx-objects-sanitize
