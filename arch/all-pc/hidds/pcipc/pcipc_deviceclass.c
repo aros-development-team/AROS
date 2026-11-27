@@ -14,11 +14,14 @@
 
 #include <aros/cpu.h>
 #include <exec/types.h>
+#include <exec/tasks.h>
 #include <utility/tagitem.h>
 #include <oop/oop.h>
 #include <hidd/hidd.h>
 #include <hidd/pci.h>
 #include <hardware/pci.h>
+#include <aros/kernel.h>
+#include <resources/kernel.h>
 
 #include <acpica/acnames.h>
 #include <acpica/accommon.h>
@@ -259,6 +262,100 @@ APTR pci_get_bar_va(OOP_Class *cl, OOP_Object *o, UBYTE bar)
     return (APTR)base_phys;
 }
 
+/*
+ * A message signalled interrupt goes to the CPU whose local APIC id is in
+ * the message address, and the address is written here. kernel.resource
+ * keeps the CPU for each vector (KrnModifyIRQA(), KERNELTAG_IRQ_AFFINITY),
+ * the boot CPU if none was asked for.
+ */
+/* The CPU kernel.resource has for an interrupt */
+static ULONG PCIPCDev_VectorCPU(OOP_Class *cl, ULONG irq)
+{
+    struct TagItem getAttribs[] =
+    {
+        { KERNELTAG_IRQ_AFFINITY,   0   },
+        { TAG_DONE,                 0   }
+    };
+
+    KrnGetIRQA(irq, getAttribs);
+    return (ULONG)getAttribs[0].ti_Data;
+}
+
+/*
+ * Gives 'count' interrupts from 'irq' on the affinity asked for. They end
+ * up on one CPU, the one chosen for the first: the vectors of an MSI
+ * capability share an address.
+ */
+static BOOL PCIPCDev_SetVectorCPU(OOP_Class *cl, ULONG irq, ULONG count, IPTR affinity)
+{
+    struct TagItem setAttribs[] =
+    {
+        { KERNELTAG_IRQ_AFFINITY,   affinity    },
+        { TAG_DONE,                 0           }
+    };
+    ULONG was = PCIPCDev_VectorCPU(cl, irq), i;
+    BOOL done = TRUE;
+    void *one;
+
+    if (!KrnModifyIRQA(irq, setAttribs))
+        return FALSE;
+
+    /* The message address has eight bits for the local APIC id */
+    if ((UQUAD)KrnGetCPUAttr(KATTR_CPUHardwareID, PCIPCDev_VectorCPU(cl, irq)) > 0xFF)
+    {
+        done = FALSE;
+        count = 1;
+    }
+    else if (count < 2)
+        return TRUE;
+
+    if (!done)
+        ;
+    else if ((one = KrnAllocCPUMask()) == NULL)
+        done = FALSE;
+    else
+    {
+        KrnClearCPUMask(one);
+        KrnGetCPUMask(PCIPCDev_VectorCPU(cl, irq), one);
+        setAttribs[0].ti_Data = (IPTR)one;
+        for (i = 1; done && (i < count); i++)
+            done = KrnModifyIRQA(irq + i, setAttribs) ? TRUE : FALSE;
+        KrnFreeCPUMask(one);
+    }
+
+    if (!done)
+    {
+        /* All of them or none: back where the first was */
+        if ((one = KrnAllocCPUMask()) != NULL)
+        {
+            KrnClearCPUMask(one);
+            KrnGetCPUMask(was, one);
+            setAttribs[0].ti_Data = (IPTR)one;
+            for (i = 0; i < count; i++)
+                KrnModifyIRQA(irq + i, setAttribs);
+            KrnFreeCPUMask(one);
+        }
+    }
+    return done;
+}
+
+/* The local APIC id the message of a vector is addressed to */
+static ULONG PCIPCDev_VectorAPICID(OOP_Class *cl, ULONG irq)
+{
+    struct TagItem getAttribs[] =
+    {
+        { KERNELTAG_IRQ_AFFINITY,   0   },
+        { TAG_DONE,                 0   }
+    };
+    intptr_t apic_id;
+
+    KrnGetIRQA(irq, getAttribs);
+    apic_id = KrnGetCPUAttr(KATTR_CPUHardwareID, (ULONG)getAttribs[0].ti_Data);
+
+    /* The address has eight bits for it */
+    return (apic_id < 0) ? 0 : ((ULONG)apic_id & 0xFF);
+}
+
 VOID PCIPCDev__Hidd_PCIDevice__GetVectorAttribs(
     OOP_Class *cl, OOP_Object *o,
     struct pHidd_PCIDevice_GetVectorAttribs *msg)
@@ -308,6 +405,10 @@ VOID PCIPCDev__Hidd_PCIDevice__GetVectorAttribs(
                     ULONG msg_data = mtab[msg->vectorno].msg_data;
                     ULONG vector   = (msg_data & 0xFF);
 
+                    /* An entry that was never written: nothing to report */
+                    if (vector < HW_IRQ_BASE)
+                        return;
+
                     struct TagItem *tag, *tags = (struct TagItem *)msg->attribs;
                     while ((tag = NextTagItem(&tags)))
                     {
@@ -319,6 +420,10 @@ VOID PCIPCDev__Hidd_PCIDevice__GetVectorAttribs(
 
                             case tHidd_PCIVector_Native:
                                 tag->ti_Data = vector;
+                                break;
+
+                            case tHidd_PCIVector_Affinity:
+                                tag->ti_Data = PCIPCDev_VectorCPU(cl, vector - HW_IRQ_BASE);
                                 break;
 
                             default:
@@ -374,6 +479,9 @@ VOID PCIPCDev__Hidd_PCIDevice__GetVectorAttribs(
 
                 UWORD vector = (msg_data & 0xFF);
 
+                if (vector < HW_IRQ_BASE)
+                    return;
+
                 struct TagItem *tag, *tags = (struct TagItem *)msg->attribs;
                 while ((tag = NextTagItem(&tags)))
                 {
@@ -385,6 +493,10 @@ VOID PCIPCDev__Hidd_PCIDevice__GetVectorAttribs(
 
                         case tHidd_PCIVector_Native:
                             tag->ti_Data = vector;
+                            break;
+
+                        case tHidd_PCIVector_Affinity:
+                            tag->ti_Data = PCIPCDev_VectorCPU(cl, vector - HW_IRQ_BASE);
                             break;
 
                         default:
@@ -404,6 +516,114 @@ VOID PCIPCDev__Hidd_PCIDevice__GetVectorAttribs(
         }
     }
     D(bug("[PCIPC:Device] %s: Device has no active MSI/MSI-X\n", __func__);)
+}
+
+/*
+ * tHidd_PCIVector_Affinity: the request is handed to kernel.resource
+ * (KrnModifyIRQA(), KERNELTAG_IRQ_AFFINITY), which chooses the CPU and
+ * keeps it for the interrupt; the message address is then written again
+ * for that CPU. The driver keeps the device from raising the vector
+ * meanwhile.
+ */
+BOOL PCIPCDev__Hidd_PCIDevice__SetVectorAttribs(
+    OOP_Class *cl, OOP_Object *o,
+    struct pHidd_PCIDevice_SetVectorAttribs *msg)
+{
+    struct TagItem *affinity = FindTagItem(tHidd_PCIVector_Affinity, msg->attribs);
+    IPTR capmsi = 0, capmsix = 0;
+
+    D(bug("[PCIPC:Device] %s()\n", __func__);)
+
+    /* Nothing else can be set */
+    if (!affinity)
+        return FALSE;
+
+    OOP_GetAttr(o, aHidd_PCIDevice_CapabilityMSI,  &capmsi);
+    OOP_GetAttr(o, aHidd_PCIDevice_CapabilityMSIX, &capmsix);
+
+    /* MSI-X, if that is what the device was given: as GetVectorAttribs */
+    if (capmsix)
+    {
+        struct pHidd_PCIDevice_ReadConfigWord rcw;
+        struct pHidd_PCIDevice_ReadConfigLong rcl;
+        UWORD msix_flags;
+
+        rcw.mID = HiddPCIDeviceBase + moHidd_PCIDevice_ReadConfigWord;
+        rcw.reg = capmsix + PCIMSIX_FLAGS;
+        msix_flags = (UWORD)OOP_DoMethod(o, &rcw.mID);
+
+        if (msix_flags & (1 << 15))
+        {
+            ULONG table_dw;
+            APTR bar_va;
+
+            rcl.mID = HiddPCIDeviceBase + moHidd_PCIDevice_ReadConfigLong;
+            rcl.reg = capmsix + PCIMSIX_TABLE;
+            table_dw = (ULONG)OOP_DoMethod(o, &rcl.mID);
+
+            bar_va = pci_get_bar_va(cl, o, (UBYTE)(table_dw & 0x7));
+            if (bar_va && (msg->vectorno < (ULONG)((msix_flags & 0x07FF) + 1)))
+            {
+                volatile struct msix_entry *mtab =
+                    (volatile struct msix_entry *)((UBYTE *)bar_va + (table_dw & ~0x7u));
+                ULONG vector = mtab[msg->vectorno].msg_data & 0xFF;
+
+                if (vector < HW_IRQ_BASE)
+                    return FALSE;
+                if (!PCIPCDev_SetVectorCPU(cl, vector - HW_IRQ_BASE, 1, affinity->ti_Data))
+                    return FALSE;
+
+                mtab[msg->vectorno].msg_addr_lo =
+                    MSI_ADDR_LO(PCIPCDev_VectorAPICID(cl, vector - HW_IRQ_BASE));
+                mtab[msg->vectorno].msg_addr_hi = 0;
+
+                DMSI(bug("[PCIPC:Device] %s: #%u MSI-X message addressed again\n",
+                         __func__, msg->vectorno);)
+                return TRUE;
+            }
+            return FALSE;
+        }
+    }
+
+    if (capmsi)
+    {
+        union {
+            struct pHidd_PCIDevice_ReadConfigWord rcw;
+            struct pHidd_PCIDevice_WriteConfigLong wcl;
+        } cmeth;
+        UWORD msiflags, vector;
+        ULONG count;
+
+        cmeth.rcw.mID = HiddPCIDeviceBase + moHidd_PCIDevice_ReadConfigWord;
+        cmeth.rcw.reg = capmsi + PCIMSI_FLAGS;
+        msiflags = (UWORD)OOP_DoMethod(o, &cmeth.rcw.mID);
+        count = 1 << ((msiflags & PCIMSIF_MMEN_MASK) >> 4);
+
+        if ((msiflags & PCIMSIF_ENABLE) && (msg->vectorno < count))
+        {
+            /* The data holds the first vector; the others follow it */
+            cmeth.rcw.mID = HiddPCIDeviceBase + moHidd_PCIDevice_ReadConfigWord;
+            cmeth.rcw.reg = capmsi + ((msiflags & PCIMSIF_64BIT) ? PCIMSI_DATA64 : PCIMSI_DATA32);
+            vector = (UWORD)OOP_DoMethod(o, &cmeth.rcw.mID) & 0xFF;
+
+            if (vector < HW_IRQ_BASE)
+                return FALSE;
+            /* One address for all the vectors of the capability: all of them move */
+            if (!PCIPCDev_SetVectorCPU(cl, vector - HW_IRQ_BASE, count, affinity->ti_Data))
+                return FALSE;
+
+            cmeth.wcl.mID = HiddPCIDeviceBase + moHidd_PCIDevice_WriteConfigLong;
+            cmeth.wcl.reg = capmsi + PCIMSI_ADDRESSLO;
+            cmeth.wcl.val = MSI_ADDR_LO(PCIPCDev_VectorAPICID(cl, vector - HW_IRQ_BASE));
+            OOP_DoMethod(o, &cmeth.wcl.mID);
+
+            DMSI(bug("[PCIPC:Device] %s: #%u MSI message addressed again\n",
+                     __func__, msg->vectorno);)
+            return TRUE;
+        }
+    }
+
+    return FALSE;
 }
 
 BOOL PCIPCDev__Hidd_PCIDevice__ObtainVectors(OOP_Class *cl, OOP_Object *o,
@@ -480,16 +700,15 @@ BOOL PCIPCDev__Hidd_PCIDevice__ObtainVectors(OOP_Class *cl, OOP_Object *o,
                 cmeth.wcw.val = new_ctl;
                 OOP_DoMethod(o, &cmeth.wcw.mID);
 
-                /* 2) Program N table entries (masked individually) */
-                ULONG apic_id = 0;                                                  /* we currently only handle APIC 0 */
-                ULONG msg_addr_lo = MSI_ADDR_LO(apic_id);
+                /* 2) Program N table entries (masked individually), each to the CPU its vector is on */
                 ULONG msg_addr_hi = MSI_ADDR_HI;
+
 
                 for (UWORD i = 0; i < vectcnt; ++i) {
                     ULONG vector = (ULONG)(apicIRQBase + i + HW_IRQ_BASE);
 
                     mtab[i].vector_ctrl = 1;                                        /* mask this vector during setup */
-                    mtab[i].msg_addr_lo = msg_addr_lo;
+                    mtab[i].msg_addr_lo = MSI_ADDR_LO(PCIPCDev_VectorAPICID(cl, apicIRQBase + i));
                     mtab[i].msg_addr_hi = msg_addr_hi;
                     mtab[i].msg_data    = MSI_DATA(vector);
 
@@ -552,10 +771,11 @@ BOOL PCIPCDev__Hidd_PCIDevice__ObtainVectors(OOP_Class *cl, OOP_Object *o,
             if (apicIRQBase != (ULONG)-1) break;
         }
         if (apicIRQBase != (ULONG)-1) {
-            /* Program message address (xAPIC) */
+            /* Program message address (xAPIC): one for all the vectors, so they are on one CPU */
+
             cmeth.wcl.mID = HiddPCIDeviceBase + moHidd_PCIDevice_WriteConfigLong;
             cmeth.wcl.reg = capmsi + PCIMSI_ADDRESSLO;
-            cmeth.wcl.val = (0xFEEu << 20);                                         /* dest APIC ID = 0 in bits 19:12 */
+            cmeth.wcl.val = MSI_ADDR_LO(PCIPCDev_VectorAPICID(cl, apicIRQBase));    /* dest APIC ID in bits 19:12 */
             OOP_DoMethod(o, &cmeth.wcl.mID);
 
             data->msimsg = (UWORD)apicIRQBase + HW_IRQ_BASE;

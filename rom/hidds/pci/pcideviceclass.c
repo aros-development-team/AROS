@@ -242,6 +242,69 @@ VOID PCIDev__Hidd_PCIDevice__GetVectorAttribs(OOP_Class *cl, OOP_Object *o, stru
 /*****************************************************************************************
 
     NAME
+        moHidd_PCIDevice_SetVectorAttribs
+
+    SYNOPSIS
+        BOOL OOP_DoMethod(OOP_Object *obj, struct pHidd_PCIDevice_SetVectorAttribs *Msg);
+
+        BOOL HIDD_PCIDevice_SetVectorAttribs(OOP_Object *obj, ULONG vectorno, struct TagItem *attribs);
+
+    LOCATION
+        CLID_Hidd_PCIDevice
+
+    FUNCTION
+        Changes attributes of a device MSI vector that has been obtained.
+
+    INPUTS
+        obj   - Pointer to the device object.
+        vectorno - Vector to change, numbered as for GetVectorAttribs.
+        attribs - struct TagItem array of attribs to change.
+
+        supported Tags-:
+                tHidd_PCIVector_Affinity     - The CPUs the vector may be delivered to:
+                                               TASKAFFINITY_BOOT, TASKAFFINITY_ANY or a CPU
+                                               mask from KrnAllocCPUMask(). One CPU is
+                                               chosen, the least loaded of those named.
+
+    RESULT
+        TRUE if everything asked for was done.
+
+    NOTES
+        A vector is delivered to the boot CPU until its affinity is set.
+        GetVectorAttribs returns the number of the CPU a vector is
+        delivered to for tHidd_PCIVector_Affinity.
+
+        The driver must keep the device from raising the vector while it
+        is changed.
+
+        The vectors of an MSI capability, unlike those of MSI-X, share one
+        message address: setting the affinity of one of them moves them
+        all.
+
+        Not every driver class can deliver vectors to a chosen CPU; those
+        that can not return FALSE.
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+        moHidd_PCIDevice_GetVectorAttribs, moHidd_PCIDevice_ObtainVectors
+
+    INTERNALS
+
+*****************************************************************************************/
+BOOL PCIDev__Hidd_PCIDevice__SetVectorAttribs(OOP_Class *cl, OOP_Object *o, struct pHidd_PCIDevice_SetVectorAttribs *msg)
+{
+    D(bug("[PCIDevice] %s()\n", __func__);)
+
+    return FALSE;
+}
+
+
+/*****************************************************************************************
+
+    NAME
         moHidd_PCIDevice_ObtainVectors
 
     SYNOPSIS
