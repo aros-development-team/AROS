@@ -261,7 +261,10 @@ static void __attribute__((used)) kernel_cstart(struct TagItem *msg)
 
         if (tmp->ti_Tag == KRN_CmdLine)
         {
-            strcpy(CmdLine, (char*) msg->ti_Data);
+            if (msg->ti_Data != (IPTR)NULL)
+            {
+                strncpy(CmdLine, (const char*) msg->ti_Data, sizeof(CmdLine) -1);
+            }
             tmp->ti_Data = (STACKIPTR) CmdLine;
             D(bug("[KRN] CmdLine: %s\n", tmp->ti_Data));
         }
