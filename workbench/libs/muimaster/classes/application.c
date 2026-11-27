@@ -530,7 +530,9 @@ struct timerequest_ext
 *       current request only during the hook.
 *       Dispatch matches the entire command name without regard to case; the
 *       first exact table match wins. A NULL template invokes a parameterless
-*       hook. A ReadArgs template requires a positive, valid mc_Parameters count.
+*       hook. A ReadArgs template requires mc_Parameters to be at least the
+*       number of comma-separated template fields. Short definitions are
+*       rejected before ReadArgs writes to the argument array.
 *       Allocation failures return MUI_RXERR_OUTOFMEMORY and parsing failures
 *       return MUI_RXERR_BADSYNTAX without invoking the command hook. Missing
 *       hooks and inconsistent command definitions return MUI_RXERR_BADDEFINITION.
@@ -2528,6 +2530,18 @@ static IPTR Application__MUIM_InputBuffered(struct IClass *cl, Object *obj,
     return TRUE;
 }
 
+static BOOL application_rexx_template_fits(CONST_STRPTR template, ULONG capacity)
+{
+    ULONG fields = 1;
+
+    while (*template)
+    {
+        if (*template++ == ',' && ++fields > capacity)
+            return FALSE;
+    }
+    return fields <= capacity;
+}
+
 /****** Application.mui/MUIM_Application_NewInput ************
 *
 *   NAME
@@ -2762,7 +2776,9 @@ static IPTR Application__MUIM_NewInput(struct IClass *cl, Object *obj,
                             else if (cmd->mc_Hook && cmd->mc_Template &&
                                      cmd->mc_Parameters > 0 &&
                                      (ULONG)cmd->mc_Parameters <=
-                                     (~0UL / sizeof(IPTR)))
+                                     (~0UL / sizeof(IPTR)) &&
+                                     application_rexx_template_fits(cmd->mc_Template,
+                                         (ULONG)cmd->mc_Parameters))
                             {
                                 IPTR *args = NULL;
                                 STRPTR arguments = NULL;
