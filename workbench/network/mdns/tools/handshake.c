@@ -71,7 +71,7 @@
 
 static const char *HandshakeTemplate = "NAME/A,TYPE/A,DOMAIN/K,TIME/N/K";
 static const char version_tag[] __attribute__((used)) =
-    "\0$VER: Handshake 42.0 (13.11.2026)";
+    "\0$VER: Handshake 42.1 (20.11.2026)";
 
 static void
 HandshakeReport(CONST_STRPTR name, const struct DNSSDEvent *e)

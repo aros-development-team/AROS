@@ -79,7 +79,7 @@
 
 static const char *NearbyTemplate = "TYPE,ALL/S,DOMAIN/K,TIME/N/K,RAW/S,PORTS/S";
 static const char version_tag[] __attribute__((used)) =
-    "\0$VER: Nearby 42.0 (13.11.2026)";
+    "\0$VER: Nearby 42.1 (20.11.2026)";
 
 static void
 NearbyPrintKind(const struct SDService *sv, BOOL gone, BOOL raw)

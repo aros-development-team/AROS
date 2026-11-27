@@ -116,35 +116,40 @@ void
 SDPrintTXT(const UBYTE *txt, LONG length)
 {
     static const char hex[] = "0123456789abcdef";
+    struct SDOutput out;
     LONG pos = 0;
 
+    /* each string escaped straight into the output buffer, no copy of it */
+    out.bo_File = Output();
+    out.bo_Length = 0;
     while (pos < length) {
         LONG n = txt[pos++];
-        char item[256 * 4 + 1];
-        LONG i, at = 0;
+        LONG i;
 
         if (n > length - pos) {
             break;                  /* a string longer than the record */
+        }
+        if (pos > 1) {
+            SDPutChar(&out, ' ');
         }
         for (i = 0; i < n; i++) {
             UBYTE c = txt[pos + i];
 
             if (c == ' ' || c == '\\') {
-                item[at++] = '\\';
-                item[at++] = (char)c;
+                SDPutChar(&out, '\\');
+                SDPutChar(&out, c);
             } else if (c > 0x20 && c < 0x7f) {
-                item[at++] = (char)c;
+                SDPutChar(&out, c);
             } else {
-                item[at++] = '\\';
-                item[at++] = 'x';
-                item[at++] = hex[c >> 4];
-                item[at++] = hex[c & 15];
+                SDPutChar(&out, '\\');
+                SDPutChar(&out, 'x');
+                SDPutChar(&out, hex[c >> 4]);
+                SDPutChar(&out, hex[c & 15]);
             }
         }
-        item[at] = '\0';
-        SDPrintf("%s%s", (CONST_STRPTR)(pos > 1 ? " " : ""), item);
         pos += n;
     }
+    SDPutChar(&out, '\0');          /* writes what is left */
 }
 
 static LONG

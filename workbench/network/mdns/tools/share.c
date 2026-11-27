@@ -85,7 +85,7 @@
 static const char *ShareTemplate =
     "NAME/A,TYPE/A,PORT/N/A,DOMAIN/K,TEXT/M,QUIET/S";
 static const char version_tag[] __attribute__((used)) =
-    "\0$VER: Share 42.0 (13.11.2026)";
+    "\0$VER: Share 42.1 (20.11.2026)";
 
 static int
 ShareRun(CONST_STRPTR name, CONST_STRPTR word, UWORD port,
@@ -94,8 +94,9 @@ ShareRun(CONST_STRPTR name, CONST_STRPTR word, UWORD port,
     CONST_STRPTR type = SDTypeFromAlias(word);
     struct SDSession session;
     DNSSDOperationRef op;
-    UBYTE txt[1300];
-    char items[400];
+    /* static, off the stack: the tool runs as one task */
+    static UBYTE txt[1300];
+    static char items[400];
     LONG txtLength, rc, why;
     int result = -1;
 
