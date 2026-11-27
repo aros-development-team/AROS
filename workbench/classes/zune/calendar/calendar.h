@@ -21,7 +21,7 @@
 #define MUIA_Calendar_Month 	(MUIB_Calendar | 0x00000003) /* -SG  UWORD              */
 #define MUIA_Calendar_Month0 	(MUIB_Calendar | 0x00000004) /* -SG  UWORD              */
 #define MUIA_Calendar_Year  	(MUIB_Calendar | 0x00000005) /* -SG  UWORD              */
-#define MUIA_Calendar_DayLabels (MUIB_Calendar | 0x00000006) /* I--  STRPTR [12]        */
+#define MUIA_Calendar_DayLabels (MUIB_Calendar | 0x00000006) /* I--  STRPTR [7]         */
 
 /*** Macros *****************************************************************/
 #define CalendarObject MUIOBJMACRO_START(MUIC_Calendar)
