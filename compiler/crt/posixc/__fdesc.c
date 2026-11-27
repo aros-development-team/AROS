@@ -28,6 +28,9 @@
 #include "__dos64.h"
 #include "__upath.h"
 
+/* Defined by __threadhook.c: true only while executing a pthread worker hook. */
+BOOL __posixc_is_thread_worker(void);
+
 static int __fdlib_available(struct PosixCIntBase *PosixCBase)
 {
     if (PosixCBase->PosixCFDBase == NULL)
@@ -775,7 +778,8 @@ int __init_fd(struct PosixCIntBase *PosixCBase)
         !(pPosixCBase->flags & (VFORK_PARENT | EXEC_PARENT)) &&
         (task->tc_Node.ln_Type == NT_TASK ||
          (task->tc_Node.ln_Type == NT_PROCESS &&
-          ((struct Process *)task)->pr_CLI == BNULL)))
+          ((struct Process *)task)->pr_CLI == BNULL &&
+          __posixc_is_thread_worker())))
     {
         /*
          * pthread workers are implemented by CreateNewProcTags(NP_Entry) and
