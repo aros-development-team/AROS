@@ -374,7 +374,7 @@ BOOL xhciActivateEndpointTransfer(struct PCIController *hc, struct PCIUnit *unit
 {
     BOOL ok = FALSE;
 
-    Disable();
+    xhciUnitLock(unit);
     if((ioreq->iouh_DriverPrivate1 = driprivate) != NULL) {
         unit->hu_DevBusyReq[devadrep] = ioreq;
 
@@ -385,7 +385,7 @@ BOOL xhciActivateEndpointTransfer(struct PCIController *hc, struct PCIUnit *unit
                 ok = TRUE;
         }
     }
-    Enable();
+    xhciUnitUnlock(unit);
 
     if(!ok) {
         Remove(&ioreq->iouh_Req.io_Message.mn_Node);
@@ -421,6 +421,14 @@ WORD xhciQueuePayloadTRBs(struct PCIController *hc, struct IOUsbHWReq *ioreq,
     driprivate->dpBounceLen = dmalen;
     driprivate->dpBounceDir = effdir;
 
+#if defined(__AROSEXEC_SMP__)
+    /*
+     * The TD goes on the ring, and the request learns which TRBs are its
+     * own, in one step: the controller can reach the TD without waiting
+     * for a doorbell, and the interrupt handler works from both.
+     */
+    xhciUnitLock(hc->hc_Unit);
+#endif
     queued = xhciQueueData_IO(hc, epring,
                               (UQUAD)(IPTR)dmaptr,
                               dmalen,
@@ -438,6 +446,9 @@ WORD xhciQueuePayloadTRBs(struct PCIController *hc, struct IOUsbHWReq *ioreq,
         driprivate->dpBounceLen = 0;
         driprivate->dpBounceDir = 0;
     }
+#if defined(__AROSEXEC_SMP__)
+    xhciUnitUnlock(hc->hc_Unit);
+#endif
 
     return queued;
 }

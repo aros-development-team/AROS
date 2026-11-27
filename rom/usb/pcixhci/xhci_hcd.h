@@ -230,14 +230,23 @@ struct pcisusbXHCIRing {
 };
 #define RINGENDCFLAG                            (1 << 15)
 
+/*
+ * On SMP builds a ring's bookkeeping is guarded by the unit lock (see
+ * xhciUnitLock() in pcixhci.h), which whoever queues TRBs or resets a ring
+ * already holds: the lock is not recursive, so nothing is taken here.
+ */
 static inline void xhciRingLock(void)
 {
+#if !defined(__AROSEXEC_SMP__)
     Disable();
+#endif
 }
 
 static inline void xhciRingUnlock(void)
 {
+#if !defined(__AROSEXEC_SMP__)
     Enable();
+#endif
 }
 
 /* Derive the ring base from an in-ring TRB pointer (ring size is power-of-two). */
@@ -294,6 +303,9 @@ struct pciusbXHCIIODevPrivate {
     UBYTE                               dpCC;
     UBYTE                               dpAbort;                                    // abandoned: the event task retires it
     UWORD                               dpRetireTries;
+#if defined(__AROSEXEC_SMP__)
+    struct pciusbXHCIIODevPrivate      *dpFreeNext;                                 // on hu_FreePrivate until the event task frees it
+#endif
 };
 
 /* Misc Stuff */

@@ -1033,6 +1033,10 @@ WORD cmdIntXFerRootHub(struct IOUsbHWReq *ioreq,
         return(UHIOERR_STALL);
     }
 
+#if defined(__AROSEXEC_SMP__)
+    /* the interrupt handler adds to the change map */
+    xhciUnitLock(unit);
+#endif
     if(unit->hu_RootPortChanges) {
         KPRINTF(1, "Immediate Portchange map %04lx\n", unit->hu_RootPortChanges);
         if((unit->hu_RootHubPorts < 8) || (ioreq->iouh_Length == 1)) {
@@ -1049,12 +1053,18 @@ WORD cmdIntXFerRootHub(struct IOUsbHWReq *ioreq,
             ioreq->iouh_Actual = 3;
         }
         unit->hu_RootPortChanges = 0;
+#if defined(__AROSEXEC_SMP__)
+        xhciUnitUnlock(unit);
+#endif
         return(0);
     }
+#if defined(__AROSEXEC_SMP__)
+    xhciUnitUnlock(unit);
+#endif
     ioreq->iouh_Req.io_Flags &= ~IOF_QUICK;
-    Disable();
+    xhciUnitLock(unit);
     AddTail(&unit->hu_RHIOQueue, (struct Node *) ioreq);
-    Enable();
+    xhciUnitUnlock(unit);
     return(RC_DONTREPLY);
 }
 /* \\\ */
@@ -1108,9 +1118,9 @@ WORD cmdControlXFer(struct IOUsbHWReq *ioreq,
             return prep;
     }
 
-    Disable();
+    xhciUnitLock(unit);
     AddTail(&hc->hc_CtrlXFerQueue, (struct Node *) ioreq);
-    Enable();
+    xhciUnitUnlock(unit);
     SureCause(base, &hc->hc_CompleteInt);
 
     KPRINTF(10, "UHCMD_CONTROLXFER processed ioreq: 0x%p\n", ioreq);
@@ -1167,9 +1177,9 @@ WORD cmdBulkXFer(struct IOUsbHWReq *ioreq,
             return prep;
     }
 
-    Disable();
+    xhciUnitLock(unit);
     AddTail(&hc->hc_BulkXFerQueue, (struct Node *) ioreq);
-    Enable();
+    xhciUnitUnlock(unit);
     SureCause(base, &hc->hc_CompleteInt);
 
     KPRINTF(10, "UHCMD_BULKXFER processed ioreq: 0x%p\n", ioreq);
@@ -1226,9 +1236,9 @@ WORD cmdIsoXFer(struct IOUsbHWReq *ioreq,
             return prep;
     }
 
-    Disable();
+    xhciUnitLock(unit);
     AddTail(&hc->hc_IsoXFerQueue, (struct Node *) ioreq);
-    Enable();
+    xhciUnitUnlock(unit);
     SureCause(base, &hc->hc_CompleteInt);
 
     KPRINTF(10, "UHCMD_ISOXFER processed ioreq: 0x%p\n", ioreq);
@@ -1286,9 +1296,9 @@ WORD cmdIntXFer(struct IOUsbHWReq *ioreq,
             return prep;
     }
 
-    Disable();
+    xhciUnitLock(unit);
     AddTail(&hc->hc_IntXFerQueue, (struct Node *) ioreq);
-    Enable();
+    xhciUnitUnlock(unit);
     SureCause(base, &hc->hc_CompleteInt);
 
     KPRINTF(10, "UHCMD_INTXFER processed ioreq: 0x%p\n", ioreq);
@@ -1319,7 +1329,7 @@ WORD cmdFlush(struct IOUsbHWReq *ioreq,
     pciusbDebug("UHW", DEBUGCOLOR_SET "%s(0x%p, 0x%p)" DEBUGCOLOR_RESET "\n", __func__, ioreq, unit);
 
 
-    Disable();
+    xhciUnitLock(unit);
     cmpioreq = (struct IOUsbHWReq *) unit->hu_RHIOQueue.lh_Head;
     while(((struct Node *) cmpioreq)->ln_Succ) {
         Remove(&cmpioreq->iouh_Req.io_Message.mn_Node);
@@ -1373,7 +1383,7 @@ WORD cmdFlush(struct IOUsbHWReq *ioreq,
         }
         hc = (struct PCIController *) hc->hc_Node.ln_Succ;
     }
-    Enable();
+    xhciUnitUnlock(unit);
     /* Return success
     */
     return RC_OK;
@@ -1789,12 +1799,12 @@ BOOL cmdAbortIO(struct IOUsbHWReq *ioreq, struct PCIDevice *base)
 
     pciusbDebug("UHW", DEBUGCOLOR_SET "%s(0x%p)" DEBUGCOLOR_RESET "\n", __func__, ioreq);
 
-    Disable();
+    xhciUnitLock(unit);
     cmpioreq = (struct IOUsbHWReq *) unit->hu_RHIOQueue.lh_Head;
     while(((struct Node *) cmpioreq)->ln_Succ) {
         if(ioreq == cmpioreq) {
             Remove(&ioreq->iouh_Req.io_Message.mn_Node);
-            Enable();
+            xhciUnitUnlock(unit);
             return TRUE;
         }
         cmpioreq = (struct IOUsbHWReq *) cmpioreq->iouh_Req.io_Message.mn_Node.ln_Succ;
@@ -1851,12 +1861,12 @@ BOOL cmdAbortIO(struct IOUsbHWReq *ioreq, struct PCIDevice *base)
                     if(dp) {
                         /* its TD is on the ring: the event task takes it back and replies it */
                         dp->dpAbort = TRUE;
-                        Enable();
+                        xhciUnitUnlock(unit);
                         SureCause(base, &hc->hc_CompleteInt);
                         return TRUE;
                     }
                     xhciFreeAsyncContext(hc, unit, ioreq);
-                    Enable();
+                    xhciUnitUnlock(unit);
                     TermIO(ioreq, base);
                     return TRUE;
                 }
@@ -1869,12 +1879,12 @@ BOOL cmdAbortIO(struct IOUsbHWReq *ioreq, struct PCIDevice *base)
                     ioreq->iouh_Req.io_Error = IOERR_ABORTED;
                     if(dp) {
                         dp->dpAbort = TRUE;
-                        Enable();
+                        xhciUnitUnlock(unit);
                         SureCause(base, &hc->hc_CompleteInt);
                         return TRUE;
                     }
                     xhciFreePeriodicContext(hc, unit, ioreq);
-                    Enable();
+                    xhciUnitUnlock(unit);
                     TermIO(ioreq, base);
                     return TRUE;
                 }
@@ -1887,7 +1897,7 @@ BOOL cmdAbortIO(struct IOUsbHWReq *ioreq, struct PCIDevice *base)
         }
         hc = (struct PCIController *) hc->hc_Node.ln_Succ;
     }
-    Enable();
+    xhciUnitUnlock(unit);
 
     if(foundit) {
         ioreq->iouh_Req.io_Error = IOERR_ABORTED;
@@ -1909,7 +1919,7 @@ void uhwCheckRootHubChanges(struct PCIUnit *unit)
 
     if(unit->hu_RootPortChanges && unit->hu_RHIOQueue.lh_Head->ln_Succ) {
         KPRINTF(1, "Portchange map %04lx\n", unit->hu_RootPortChanges);
-        Disable();
+        xhciUnitLock(unit);
         ioreq = (struct IOUsbHWReq *) unit->hu_RHIOQueue.lh_Head;
         while(((struct Node *) ioreq)->ln_Succ) {
             Remove(&ioreq->iouh_Req.io_Message.mn_Node);
@@ -1930,7 +1940,7 @@ void uhwCheckRootHubChanges(struct PCIUnit *unit)
             ioreq = (struct IOUsbHWReq *) unit->hu_RHIOQueue.lh_Head;
         }
         unit->hu_RootPortChanges = 0;
-        Enable();
+        xhciUnitUnlock(unit);
     }
 }
 /* \\\ */
@@ -2007,6 +2017,14 @@ AROS_INTH1(uhwNakTimeoutInt, struct PCIUnit *,  unit)
             xhciUpdateFrameCounter(hc);
             framecnt = hc->hc_FrameCounter;
 
+#if defined(__AROSEXEC_SMP__)
+            /*
+             * The queues, and the private data of the requests on them, are
+             * changed by tasks on other CPUs: walked under the unit lock,
+             * which xhciAbortRequest() relies on as well.
+             */
+            xhciUnitLock(unit);
+#endif
             for(cnt = 0; cnt < 3; cnt++) {
                 switch(cnt) {
                 case 2:
@@ -2056,6 +2074,9 @@ AROS_INTH1(uhwNakTimeoutInt, struct PCIUnit *,  unit)
                     }
                 }
             }
+#if defined(__AROSEXEC_SMP__)
+            xhciUnitUnlock(unit);
+#endif
         }
         if(causeint) {
             SureCause(base, &hc->hc_CompleteInt);

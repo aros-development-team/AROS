@@ -41,6 +41,11 @@
 
 #include "debug.h"
 
+#if defined(__AROSEXEC_SMP__)
+#include <proto/exec.h>
+#include <proto/kernel.h>
+#endif
+
 #if defined(__OOP_NOLIBBASE__) && defined(__OOP_NOMETHODBASES__)
 #define USE_FAST_PCICFG
 #endif
@@ -165,6 +170,10 @@ struct PCIUnit {
     struct IOUsbHWReq           **hu_DevBusyReq;                    /* pointer to io assigned to the Endpoint                       */
     ULONG                       *hu_NakTimeoutFrame;                /* Nak Timeout framenumber                                      */
     UBYTE                       *hu_DevDataToggle;                  /* Data toggle bit for endpoints                                */
+#endif
+#if defined(__AROSEXEC_SMP__)
+    spinlock_t                  hu_Lock;                            /* The unit lock, see xhciUnitLock()                            */
+    APTR                        hu_FreePrivate;                     /* Request private data the event task is to free               */
 #endif
 };
 
@@ -295,6 +304,9 @@ struct PCIDevice {
     APTR                        hd_LogRHandle;
 #endif
     struct UtilityBase          *hd_UtilityBase;                    /* for tags etc */
+#if defined(__AROSEXEC_SMP__)
+    APTR                        hd_KernelBase;                      /* for the unit locks */
+#endif
 #if defined(__OOP_NOLIBBASE__)
     struct Library              *hd_OOPBase;
 #endif
@@ -320,6 +332,69 @@ struct PCIDevice {
 
     struct List                 hd_Units;                           /* List of units */
 };
+
+/*
+ * The unit lock
+ *
+ * On SMP builds Disable() masks the interrupts of the calling CPU only, and
+ * the controller's interrupt handler, the soft interrupts and the driver's
+ * tasks may all be running on different CPUs. What they share is guarded by
+ * one spinlock per unit:
+ *
+ *  - the bookkeeping of the transfer rings and of the command ring (next,
+ *    end, ringio[], lastshort), and a command's result being armed;
+ *  - a request's ties to the driver: iouh_DriverPrivate1 and what it points
+ *    at, hu_DevBusyReq[], and its place on the controllers' request queues;
+ *  - the device table (xhc_Devices[]), an endpoint's ring pointers and a
+ *    ring's ringio pointer;
+ *  - hc_PortChangeMap[], hu_RootPortChanges and hu_RHIOQueue.
+ *
+ * It belongs to the unit because the root hub state and hu_DevBusyReq[] do.
+ *
+ * xhciUnitLock() disables interrupts before it takes the spinlock: a holder
+ * that is interrupted by the handler on its own CPU leaves the handler
+ * spinning for good. The handler itself runs with interrupts disabled and
+ * uses xhciUnitLockInt(). The lock is not recursive. Nothing that may
+ * Wait() is called with it held (no semaphore, no xHCI command, no timer
+ * delay), and memory is freed after it has been released. A task that
+ * needs xhc_DevLock as well obtains that semaphore first.
+ *
+ * Without SMP it is the Disable()/Enable() pair it replaces.
+ */
+#if defined(__AROSEXEC_SMP__)
+static inline void xhciUnitLock(struct PCIUnit *unit)
+{
+    APTR KernelBase = unit->hu_Device->hd_KernelBase;
+
+    Disable();
+    KrnSpinLock(&unit->hu_Lock, NULL, SPINLOCK_MODE_WRITE);
+}
+
+static inline void xhciUnitUnlock(struct PCIUnit *unit)
+{
+    APTR KernelBase = unit->hu_Device->hd_KernelBase;
+
+    KrnSpinUnLock(&unit->hu_Lock);
+    Enable();
+}
+
+static inline void xhciUnitLockInt(struct PCIUnit *unit)
+{
+    APTR KernelBase = unit->hu_Device->hd_KernelBase;
+
+    KrnSpinLock(&unit->hu_Lock, NULL, SPINLOCK_MODE_WRITE);
+}
+
+static inline void xhciUnitUnlockInt(struct PCIUnit *unit)
+{
+    APTR KernelBase = unit->hu_Device->hd_KernelBase;
+
+    KrnSpinUnLock(&unit->hu_Lock);
+}
+#else
+#define xhciUnitLock(unit)              Disable()
+#define xhciUnitUnlock(unit)            Enable()
+#endif
 
 /** OOP Related **/
 

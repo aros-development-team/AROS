@@ -155,9 +155,16 @@ static BOOL xhciQueueControlStages(struct PCIController *hc, struct IOUsbHWReq *
                         (ULONG)(setupdata_inline        & 0xffffffffUL),
                         (unsigned)sizeof(ioreq->iouh_SetupData));
     /* SETUP stage */
+#if defined(__AROSEXEC_SMP__)
+    /* TRBs are queued with the unit lock held; each stage takes it for itself */
+    xhciUnitLock(hc->hc_Unit);
+#endif
     queued = xhciQueueTRB_IO(hc, epring, setupdata_inline,
                              sizeof(ioreq->iouh_SetupData),
                              sf, &ioreq->iouh_Req);
+#if defined(__AROSEXEC_SMP__)
+    xhciUnitUnlock(hc->hc_Unit);
+#endif
     pciusbXHCIDebugV("xHCI",
                      "xhciQueueTRB (SETUP) -> queued=%d\n",
                      (int)queued);
@@ -219,8 +226,14 @@ static BOOL xhciQueueControlStages(struct PCIController *hc, struct IOUsbHWReq *
         pciusbXHCIDebugTRBV("xHCI",
                             "Queueing STATUS TRB\n");
         ULONG stf = xhciTDStatusFlags(status_tdflags);
+#if defined(__AROSEXEC_SMP__)
+        xhciUnitLock(hc->hc_Unit);
+#endif
         queued = xhciQueueTRB_IO(hc, epring, 0, 0,
                                  stf, &ioreq->iouh_Req);
+#if defined(__AROSEXEC_SMP__)
+        xhciUnitUnlock(hc->hc_Unit);
+#endif
         pciusbXHCIDebugTRBV("xHCI",
                             "xhciQueueTRB (STATUS) -> queued=%d\n",
                             (int)queued);
@@ -309,7 +322,14 @@ void xhciScheduleAsyncTDs(struct PCIController *hc, struct List *txlist, ULONG t
             pciusbError("xHCI",
                         DEBUGWARNCOLOR_SET "xHCI: Missing prepared transfer context for Dev=%u EP=%u" DEBUGCOLOR_RESET" \n",
                         ioreq->iouh_DevAddr, ioreq->iouh_Endpoint);
+#if defined(__AROSEXEC_SMP__)
+            /* the request queues are shared with other tasks and the NAK timeout soft interrupt */
+            xhciUnitLock(unit);
+#endif
             Remove(&ioreq->iouh_Req.io_Message.mn_Node);
+#if defined(__AROSEXEC_SMP__)
+            xhciUnitUnlock(unit);
+#endif
             ioreq->iouh_Req.io_Error = UHIOERR_HOSTERROR;
             ReplyMsg(&ioreq->iouh_Req.io_Message);
             continue;
@@ -326,7 +346,13 @@ void xhciScheduleAsyncTDs(struct PCIController *hc, struct List *txlist, ULONG t
             if((txtype == UHCMD_BULKXFER) && (ioreq->iouh_Dir == UHDIR_IN))
                 trbflags |= TRBF_FLAG_ISP;
 
+#if defined(__AROSEXEC_SMP__)
+            xhciUnitLock(unit);
+#endif
             Remove(&ioreq->iouh_Req.io_Message.mn_Node);
+#if defined(__AROSEXEC_SMP__)
+            xhciUnitUnlock(unit);
+#endif
             unit->hu_NakTimeoutFrame[devadrep] =
                 (ioreq->iouh_Flags & UHFF_NAKTIMEOUT) ? hc->hc_FrameCounter + (ioreq->iouh_NakTimeout << XHCI_NAKTOSHIFT) : 0;
             pciusbXHCIDebugV("xHCI",
@@ -349,8 +375,14 @@ void xhciScheduleAsyncTDs(struct PCIController *hc, struct List *txlist, ULONG t
                 }
 
                 if(txdone) {
+#if defined(__AROSEXEC_SMP__)
+                    xhciUnitLock(unit);
+#endif
                     AddTail(&hc->hc_TDQueue,
                             (struct Node *) ioreq);
+#if defined(__AROSEXEC_SMP__)
+                    xhciUnitUnlock(unit);
+#endif
                     pciusbXHCIDebugTRB("xHCI",
                                        DEBUGCOLOR_SET "Transaction queued in TRB #%u (Dev=%u EP=%u)" DEBUGCOLOR_RESET" \n",
                                        driprivate->dpTxSTRB,
@@ -372,9 +404,9 @@ void xhciScheduleAsyncTDs(struct PCIController *hc, struct List *txlist, ULONG t
                 if(ioreq->iouh_Req.io_Error) {
                     ReplyMsg(&ioreq->iouh_Req.io_Message);
                 } else {
-                    Disable();
+                    xhciUnitLock(unit);
                     AddHead(txlist, (struct Node *) ioreq);
-                    Enable();
+                    xhciUnitUnlock(unit);
                 }
             } else {
                 pciusbXHCIDebugV("xHCI",

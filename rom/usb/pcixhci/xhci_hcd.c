@@ -374,6 +374,10 @@ static void xhciAbortDeviceQueue(struct PCIController *hc,
 {
     struct IOUsbHWReq *ioreq, *ionext;
 
+#if defined(__AROSEXEC_SMP__)
+    /* the queue is walked, and the requests finished, under the unit lock */
+    xhciUnitLock(unit);
+#endif
     ioreq = (struct IOUsbHWReq *)queue->lh_Head;
     while((ionext = (struct IOUsbHWReq *)((struct Node *)ioreq)->ln_Succ)) {
         if(!xhciIOReqMatchesDevice(ioreq, devCtx)) {
@@ -399,6 +403,9 @@ static void xhciAbortDeviceQueue(struct PCIController *hc,
 
         ioreq = ionext;
     }
+#if defined(__AROSEXEC_SMP__)
+    xhciUnitUnlock(unit);
+#endif
 }
 
 void xhciDisconnectDevice(struct PCIController *hc, struct pciusbXHCIDevice *devCtx,
@@ -815,6 +822,10 @@ static BOOL xhciResetEndpointRing(struct PCIController *hc,
     if(!ring)
         return FALSE;
 
+#if defined(__AROSEXEC_SMP__)
+    /* the interrupt handler moves ring->end and follows ringio */
+    xhciUnitLock(hc->hc_Unit);
+#endif
     xhciRingLock();
 
     /*
@@ -832,6 +843,9 @@ static BOOL xhciResetEndpointRing(struct PCIController *hc,
     ring->lastshort = 0;
 
     xhciRingUnlock();
+#if defined(__AROSEXEC_SMP__)
+    xhciUnitUnlock(hc->hc_Unit);
+#endif
 
     CacheClearE((APTR)ring->ring, sizeof(ring->ring), CACRF_ClearD);
 
@@ -1467,8 +1481,15 @@ xhciCreateDeviceCtx(struct PCIController *hc,
     xhciDumpEndpointCtx(hc, devCtx, xhciGetEPID(0, 0), "post-address");
 
     /* Register in slot table */
+#if defined(__AROSEXEC_SMP__)
+    /* from here on the interrupt handler finds the device */
+    xhciUnitLock(hc->hc_Unit);
+#endif
     if(slotid > 0 && slotid < USB_DEV_MAX)
         xhcic->xhc_Devices[slotid] = devCtx;
+#if defined(__AROSEXEC_SMP__)
+    xhciUnitUnlock(hc->hc_Unit);
+#endif
 
     return devCtx;
 }
@@ -1766,10 +1787,26 @@ ULONG xhciInitEP(struct PCIController *hc, struct pciusbXHCIDevice *devCtx,
 
     /* Test if already prepared */
     if(devCtx->dc_EPAllocs[epid].dmaa_Ptr == NULL) {
+#if defined(__AROSEXEC_SMP__)
+        /*
+         * The interrupt handler follows whatever ring the endpoint has, so
+         * a new ring is set up before the endpoint is given it.
+         */
+        APTR ringmem = pciAllocAligned(hc, &devCtx->dc_EPAllocs[epid].dmaa_Entry,
+                                       sizeof(struct pcisusbXHCIRing),
+                                       XHCI_RING_ALIGN, (1 << 16));
+
+        if(ringmem)
+            xhciInitRing(hc, (struct pcisusbXHCIRing *)ringmem);
+        xhciUnitLock(hc->hc_Unit);
+        devCtx->dc_EPAllocs[epid].dmaa_Ptr = ringmem;
+        xhciUnitUnlock(hc->hc_Unit);
+#else
         devCtx->dc_EPAllocs[epid].dmaa_Ptr =
             pciAllocAligned(hc, &devCtx->dc_EPAllocs[epid].dmaa_Entry,
                             sizeof(struct pcisusbXHCIRing),
                             XHCI_RING_ALIGN, (1 << 16));
+#endif
         if(devCtx->dc_EPAllocs[epid].dmaa_Ptr) {
             pciusbXHCIDebugEPV("xHCI",
                                DEBUGCOLOR_SET "Allocated EP Ring @ 0x%p <0x%p, %u>" DEBUGCOLOR_RESET" \n",
@@ -1793,8 +1830,14 @@ ULONG xhciInitEP(struct PCIController *hc, struct pciusbXHCIDevice *devCtx,
         }
     }
     epring = (volatile struct pcisusbXHCIRing *)devCtx->dc_EPAllocs[epid].dmaa_Ptr;
+#if !defined(__AROSEXEC_SMP__)
     if(ring_new)
         xhciInitRing(hc, (struct pcisusbXHCIRing *)epring);
+#else
+    /* a new ring was set up where it was allocated */
+    (void)epring;
+    (void)ring_new;
+#endif
 
     volatile struct xhci_inctx *in =
         (volatile struct xhci_inctx *)devCtx->dc_IN.dmaa_Ptr;
@@ -2082,10 +2125,10 @@ LONG xhciPrepareEndpoint(struct IOUsbHWReq *ioreq)
     if(epctx && !epctx->ectx_Device) {
         /* Left over from a device torn down under it: drop our reference. */
         ioreq->iouh_DriverPrivate2 = NULL;
-        Disable();
+        xhciUnitLock(unit);
         if(epctx->ectx_RefCount)
             epctx->ectx_RefCount--;
-        Enable();
+        xhciUnitUnlock(unit);
         if(!epctx->ectx_RefCount) {
             xhciCloseTaskTimer(&epctx->ectx_TimerPort, &epctx->ectx_TimerReq);
             FreeMem(epctx, sizeof(*epctx));
@@ -2217,9 +2260,9 @@ LONG xhciPrepareEndpoint(struct IOUsbHWReq *ioreq)
         if(!dev_epctx)
             devCtx->dc_EPContexts[epid] = epctx;
         if(ioreq->iouh_DriverPrivate2 != epctx) {
-            Disable();
+            xhciUnitLock(unit);
             epctx->ectx_RefCount++;
-            Enable();
+            xhciUnitUnlock(unit);
         }
     }
 
@@ -2264,12 +2307,12 @@ void xhciDestroyEndpoint(struct IOUsbHWReq *ioreq)
 
         ioreq->iouh_DriverPrivate2 = NULL;
 
-        Disable();
+        xhciUnitLock(unit);
         if(epctx->ectx_RefCount)
             epctx->ectx_RefCount--;
         lastref = (epctx->ectx_RefCount == 0);
         devCtx = epctx->ectx_Device;
-        Enable();
+        xhciUnitUnlock(unit);
 
         if(!lastref) {
             ReleaseSemaphore(&xhciGetHCPrivate(hc)->xhc_DevLock);
@@ -2355,6 +2398,12 @@ static AROS_INTH1(XhciResetHandler, struct PCIController *, hc)
     AROS_INTFUNC_EXIT
 }
 
+/*
+ * Takes a request off its queue and cuts every tie the driver has to it:
+ * the private data, the ring's back-pointers and the endpoint's busy slot.
+ * On SMP builds the caller holds the unit lock, so the interrupt handler is
+ * not in the middle of completing the request and cannot find it afterwards.
+ */
 void xhciFinishRequest(struct PCIController *hc, struct PCIUnit *unit, struct IOUsbHWReq *ioreq)
 {
     struct pciusbXHCIIODevPrivate *driprivate;
@@ -2393,7 +2442,17 @@ void xhciFinishRequest(struct PCIController *hc, struct PCIUnit *unit, struct IO
             driprivate->dpBounceLen = 0;
             driprivate->dpBounceDir = 0;
         }
+#if defined(__AROSEXEC_SMP__)
+        /*
+         * Not freed with the lock held, and the event ring task may be
+         * looking at it in its pass over the queues: it frees the private
+         * data itself, between two passes (xhciFreeDeferredPrivates).
+         */
+        driprivate->dpFreeNext = unit->hu_FreePrivate;
+        unit->hu_FreePrivate = driprivate;
+#else
         FreeMem(driprivate, sizeof(struct pciusbXHCIIODevPrivate));
+#endif
     }
     devadrep = xhciDevEPKey(ioreq);
     pciusbXHCIDebugEPV("xHCI", DEBUGCOLOR_SET "%s: releasing DevEP %02lx" DEBUGCOLOR_RESET" \n", __func__, devadrep);
@@ -2402,6 +2461,32 @@ void xhciFinishRequest(struct PCIController *hc, struct PCIUnit *unit, struct IO
     if(ioreq->iouh_Req.io_Command != UHCMD_ISOXFER)
         unit->hu_NakTimeoutFrame[devadrep] = 0;
 }
+
+#if defined(__AROSEXEC_SMP__)
+/*
+ * Free the request private data xhciFinishRequest() has put aside. Only
+ * the event ring task does this, between two passes over the request
+ * queues, and xhciFree(): a pass is never left with a pointer to freed
+ * private data by a request another CPU finished meanwhile.
+ */
+void xhciFreeDeferredPrivates(struct PCIController *hc)
+{
+    struct PCIUnit *unit = hc->hc_Unit;
+    struct pciusbXHCIIODevPrivate *driprivate;
+
+    xhciUnitLock(unit);
+    driprivate = unit->hu_FreePrivate;
+    unit->hu_FreePrivate = NULL;
+    xhciUnitUnlock(unit);
+
+    while(driprivate) {
+        struct pciusbXHCIIODevPrivate *next = driprivate->dpFreeNext;
+
+        FreeMem(driprivate, sizeof(struct pciusbXHCIIODevPrivate));
+        driprivate = next;
+    }
+}
+#endif
 
 static inline void xhciIOErrfromCC(struct PCIController *hc, struct IOUsbHWReq *ioreq, ULONG cc)
 {
@@ -2592,6 +2677,10 @@ static void xhciHandleClearFeatureEndpointHalt(struct PCIController *hc,
         UWORD devadrep = (devCtx->dc_DevAddr << 5) + (wIndex & 0x0F);
         if(wIndex & 0x80) devadrep |= 0x10;
 
+#if defined(__AROSEXEC_SMP__)
+        /* the interrupt handler completes the busy request as well */
+        xhciUnitLock(unit);
+#endif
         struct IOUsbHWReq *pending = unit->hu_DevBusyReq[devadrep];
         if(pending) {
             pending->iouh_Req.io_Error = UHIOERR_STALL;
@@ -2599,6 +2688,9 @@ static void xhciHandleClearFeatureEndpointHalt(struct PCIController *hc,
             xhciFinishRequest(hc, unit, pending);
             ReplyMsg(&pending->iouh_Req.io_Message);
         }
+#if defined(__AROSEXEC_SMP__)
+        xhciUnitUnlock(unit);
+#endif
     }
 
     pciusbXHCIDebugV("xHCI",
@@ -2731,7 +2823,13 @@ void xhciHandleFinishedTDs(struct PCIController *hc, struct timerequest *timerre
                         CallHookPkt(urti->urti_OutDoneHook, rtn, bufreq);
                 }
 
+#if defined(__AROSEXEC_SMP__)
+                xhciUnitLock(unit);
+#endif
                 xhciFreePeriodicContext(hc, unit, ioreq);
+#if defined(__AROSEXEC_SMP__)
+                xhciUnitUnlock(unit);
+#endif
                 ioreq->iouh_Actual = 0;
                 ioreq->iouh_Req.io_Error = 0;
                 if(ptd)
@@ -2770,7 +2868,13 @@ void xhciHandleFinishedTDs(struct PCIController *hc, struct timerequest *timerre
              * NOTE: do NOT adjust iouh_Actual here - that is done by
              * xhciIntWorkProcess when it decodes the Event TRB.
              */
+#if defined(__AROSEXEC_SMP__)
+            xhciUnitLock(unit);
+#endif
             xhciFreePeriodicContext(hc, unit, ioreq);
+#if defined(__AROSEXEC_SMP__)
+            xhciUnitUnlock(unit);
+#endif
             ReplyMsg(&ioreq->iouh_Req.io_Message);
         }
 
@@ -2852,7 +2956,13 @@ void xhciHandleFinishedTDs(struct PCIController *hc, struct timerequest *timerre
 
             if(transactiondone) {
                 struct pciusbXHCIDevice *clear_dev = driprivate ? driprivate->dpDevice : NULL;
+#if defined(__AROSEXEC_SMP__)
+                xhciUnitLock(unit);
+#endif
                 xhciFreeAsyncContext(hc, unit, ioreq);
+#if defined(__AROSEXEC_SMP__)
+                xhciUnitUnlock(unit);
+#endif
                 if((!ioreq->iouh_Req.io_Error) &&
                         (ioreq->iouh_Req.io_Command == UHCMD_CONTROLXFER)) {
                     xhciHandleClearFeatureEndpointHalt(hc, ioreq, clear_dev, timerreq);
@@ -2909,6 +3019,7 @@ static BOOL xhciTRBCycleMatches(ULONG trbflags, ULONG cycle)
     return (((trbflags & TRBF_FLAG_C) ? 1 : 0) == (cycle ? 1 : 0)) ? TRUE : FALSE;
 }
 
+/* Interrupt handler context; on SMP builds with the unit lock held. */
 BOOL xhciIntWorkProcess(struct PCIController *hc, struct IOUsbHWReq *ioreq, ULONG remaining, ULONG ccode)
 {
     struct pciusbXHCIIODevPrivate *driprivate = NULL;
@@ -3188,6 +3299,7 @@ static struct IOUsbHWReq *xhciNextAbandoned(struct PCIController *hc)
  * it; when a command fails the requests stay marked and are tried again
  * on a later pass. xhc_DevLock is held throughout, so a disconnect cannot
  * reply or free the same requests in the meantime. Event task context.
+ * The unit lock is taken inside xhc_DevLock, and never across a command.
  */
 static void xhciRetireAbandonedRequests(struct PCIController *hc, struct PCIUnit *unit,
                                         struct timerequest *timerreq)
@@ -3198,9 +3310,9 @@ static void xhciRetireAbandonedRequests(struct PCIController *hc, struct PCIUnit
     ULONG q;
 
     /* the common case, nothing abandoned: no lock taken */
-    Disable();
+    xhciUnitLock(unit);
     ioreq = xhciNextAbandoned(hc);
-    Enable();
+    xhciUnitUnlock(unit);
     if(!ioreq)
         return;
 
@@ -3215,10 +3327,10 @@ static void xhciRetireAbandonedRequests(struct PCIController *hc, struct PCIUnit
         ULONG nbatch = 0, epid, b;
         BOOL released = TRUE;
 
-        Disable();
+        xhciUnitLock(unit);
         ioreq = xhciNextAbandoned(hc);
         if(!ioreq) {
-            Enable();
+            xhciUnitUnlock(unit);
             break;
         }
         dp = (struct pciusbXHCIIODevPrivate *)ioreq->iouh_DriverPrivate1;
@@ -3256,7 +3368,7 @@ static void xhciRetireAbandonedRequests(struct PCIController *hc, struct PCIUnit
                 }
             }
         }
-        Enable();
+        xhciUnitUnlock(unit);
 
         if(ring && (AROS_LE2LONG(((volatile struct xhci_hcopr *)xhcic->xhc_XHCIOpR)->usbsts) &
                     (XHCIF_USBSTS_HCH | XHCIF_USBSTS_HCE))) {
@@ -3304,12 +3416,12 @@ static void xhciRetireAbandonedRequests(struct PCIController *hc, struct PCIUnit
                     ULONG cnt, target;
                     BOOL live = FALSE, dcs;
 
-                    Disable();
+                    xhciUnitLock(unit);
                     for(cnt = 0; (cnt < XHCI_EVENT_RING_TRBS) && !live; cnt++)
                         live = (ring->ringio[cnt] != NULL);
                     target = ring->next;
                     dcs = (ring->end & RINGENDCFLAG) != 0;
-                    Enable();
+                    xhciUnitUnlock(unit);
 
                     /* only abandoned TDs on the ring: move the dequeue pointer past all of them */
                     if(!live) {
@@ -3317,9 +3429,9 @@ static void xhciRetireAbandonedRequests(struct PCIController *hc, struct PCIUnit
                                                     (APTR)&ring->ring[target], dcs, timerreq);
                         commanded = commanded || (rc != -1);
                         if(rc == TRB_CC_SUCCESS) {
-                            Disable();
+                            xhciUnitLock(unit);
                             ring->end = (ring->end & RINGENDCFLAG) | (target & ~RINGENDCFLAG);
-                            Enable();
+                            xhciUnitUnlock(unit);
                         } else {
                             released = FALSE;
                         }
@@ -3338,12 +3450,12 @@ static void xhciRetireAbandonedRequests(struct PCIController *hc, struct PCIUnit
                         ULONG target = ring_advance_idx(last);
                         BOOL dcs;
 
-                        Disable();
+                        xhciUnitLock(unit);
                         if(ring->next == target)
                             dcs = (ring->end & RINGENDCFLAG) != 0;
                         else
                             dcs = (AROS_LE2LONG(ring->ring[target].flags) & TRBF_FLAG_C) != 0;
-                        Enable();
+                        xhciUnitUnlock(unit);
 
                         rc = xhciCmdSetTRDequeuePtr(hc, devCtx->dc_SlotID, epid,
                                                     (APTR)&ring->ring[target], dcs, timerreq);
@@ -3352,9 +3464,9 @@ static void xhciRetireAbandonedRequests(struct PCIController *hc, struct PCIUnit
                             released = FALSE;
                             break;
                         }
-                        Disable();
+                        xhciUnitLock(unit);
                         ring->end = (ring->end & RINGENDCFLAG) | (target & ~RINGENDCFLAG);
-                        Enable();
+                        xhciUnitUnlock(unit);
                     } else {
                         xhciRequestToNoOp(ring, first, last);
                     }
@@ -3381,28 +3493,28 @@ static void xhciRetireAbandonedRequests(struct PCIController *hc, struct PCIUnit
         }
 
         for(b = 0; b < nbatch; b++) {
-            Disable();
+            xhciUnitLock(unit);
             if(batchperiodic[b])
                 xhciFreePeriodicContext(hc, unit, batch[b]);
             else
                 xhciFreeAsyncContext(hc, unit, batch[b]);
-            Enable();
+            xhciUnitUnlock(unit);
             ReplyMsg(&batch[b]->iouh_Req.io_Message);
         }
 
         if(ring) {
             BOOL more;
 
-            Disable();
+            xhciUnitLock(unit);
             more = (ring->next != (ring->end & ~RINGENDCFLAG));
-            Enable();
+            xhciUnitUnlock(unit);
             if(more)
                 xhciRingDoorbell(hc, devCtx->dc_SlotID, epid);
         }
     }
 
     /* the ones that could not be released are tried again on the next pass */
-    Disable();
+    xhciUnitLock(unit);
     for(q = 0; q < 2; q++) {
         ForeachNode(queues[q], ioreq) {
             struct pciusbXHCIIODevPrivate *dp = (struct pciusbXHCIIODevPrivate *)ioreq->iouh_DriverPrivate1;
@@ -3411,7 +3523,7 @@ static void xhciRetireAbandonedRequests(struct PCIController *hc, struct PCIUnit
                 dp->dpAbort = 1;
         }
     }
-    Enable();
+    xhciUnitUnlock(unit);
 
     ReleaseSemaphore(&xhcic->xhc_DevLock);
 }
@@ -3487,6 +3599,16 @@ static AROS_INTH1(xhciIntCode, struct PCIController *, hc)
         volatile struct pcisusbXHCIRing *ering =
             (volatile struct pcisusbXHCIRing *)((IPTR)xhcic->xhc_ERSp);
         volatile struct xhci_trb *etrb;
+#if defined(__AROSEXEC_SMP__)
+        /*
+         * Held for the whole pass over the event ring: what the events
+         * lead to (rings, requests and their private data, the device
+         * table, the port change maps) is changed or freed by tasks and
+         * soft interrupts on other CPUs only with this lock held, so none
+         * of it goes away while it is used here.
+         */
+        xhciUnitLockInt(hc->hc_Unit);
+#endif
         ULONG idx   = ering->next;
         ULONG cycle = (ering->end & RINGENDCFLAG) ? 1 : 0;
         ULONG maxwork = XHCI_EVENT_RING_TRBS;
@@ -3949,7 +4071,12 @@ static AROS_INTH1(xhciIntCode, struct PCIController *, hc)
 
                 xhcic->xhc_CmdResults[last].flags   = AROS_LE2LONG(evt->flags);
                 xhcic->xhc_CmdResults[last].tparams = AROS_LE2LONG(evt->tparams);
+#if defined(__AROSEXEC_SMP__)
+                /* xhciCmdSubmit() polls the status without the lock: it goes last, after the rest */
+                __atomic_store_n(&xhcic->xhc_CmdResults[last].status, trbe_ccode, __ATOMIC_RELEASE);
+#else
                 xhcic->xhc_CmdResults[last].status  = trbe_ccode;
+#endif
 
                 struct IOUsbHWReq *req;
                 req = (struct IOUsbHWReq *)ring->ringio[last];
@@ -4033,6 +4160,9 @@ static AROS_INTH1(xhciIntCode, struct PCIController *, hc)
 
             xhciSetPointerMMIO(hc, ir->erdp, (IPTR)(next_dma | (UQUAD)XHCIF_IR_ERDP_EHB));
         }
+#if defined(__AROSEXEC_SMP__)
+        xhciUnitUnlockInt(hc->hc_Unit);
+#endif
 
         if(maxwork == 0) {
             pciusbWarn("xHCI",
@@ -4056,6 +4186,7 @@ static AROS_INTH1(xhciIntCode, struct PCIController *, hc)
     AROS_INTFUNC_EXIT
 }
 
+/* On SMP builds the caller holds the unit lock (xhciFinishRequest). */
 void xhciAbortRequest(struct PCIController *hc, struct IOUsbHWReq *ioreq)
 {
     struct PCIUnit *unit;
@@ -4382,6 +4513,24 @@ BOOL xhciInit(struct PCIController *hc, struct PCIUnit *hu,
     if(hc->hc_Quirks & HCQF_LYNXPOINT)
         xhciLynxPointQuirk(hc, timerreq);
 
+#if defined(__AROSEXEC_SMP__)
+    /*
+     * Have the vector delivered to the least busy CPU. The controller has
+     * been reset and USBCMD.INTE is still clear, so it cannot raise the
+     * vector while it is moved. Where the PCI driver cannot do this the
+     * vector stays on the boot CPU.
+     */
+    if(hc->hc_Flags & HCF_MSI) {
+        struct TagItem vecAffinity[] = {
+            { tHidd_PCIVector_Affinity, TASKAFFINITY_ANY },
+            { TAG_DONE, 0 }
+        };
+
+        if(!HIDD_PCIDevice_SetVectorAttribs(hc->hc_PCIDeviceObject, 0, vecAffinity))
+            pciusbXHCIDebug("xHCI", DEBUGCOLOR_SET "IRQ stays on the boot CPU" DEBUGCOLOR_RESET" \n");
+    }
+#endif
+
     /* Enable interrupts in the xhci */
     {
         /*
@@ -4584,6 +4733,9 @@ void xhciFree(struct PCIController *hc, struct PCIUnit *hu)
 
     if(xhcic) {
         xhciFreeDeferredBounces(hc);
+#if defined(__AROSEXEC_SMP__)
+        xhciFreeDeferredPrivates(hc);
+#endif
         xhciFreeHCMem(hc, xhcic);
         FreeMem(xhcic, sizeof(*xhcic));
         hc->hc_CPrivate = NULL;
@@ -4668,6 +4820,33 @@ static void xhciFreeEndpointContext(struct PCIController *hc,
             }
         }
 
+#if defined(__AROSEXEC_SMP__)
+        /*
+         * Take the ring away from the endpoint under the unit lock: the
+         * interrupt handler, and whoever finishes a request of this
+         * endpoint, then finds no ring. The memory is freed once nothing
+         * can be following it any more, with the lock released.
+         */
+        {
+            volatile struct pcisusbXHCIRing *ring;
+            struct IORequest **ringio = NULL;
+
+            xhciUnitLock(hc->hc_Unit);
+            ring = (volatile struct pcisusbXHCIRing *)devCtx->dc_EPAllocs[epid].dmaa_Ptr;
+            devCtx->dc_EPAllocs[epid].dmaa_Ptr = NULL;
+            devCtx->dc_EPAllocs[epid].dmaa_DMA = NULL;
+            if(ring) {
+                ringio = ring->ringio;
+                ring->ringio = NULL;
+            }
+            xhciUnitUnlock(hc->hc_Unit);
+
+            if(ringio)
+                FreeMem((APTR)ringio, sizeof(*ringio) * XHCI_EVENT_RING_TRBS);
+        }
+
+        pciFreeAligned(hc, &devCtx->dc_EPAllocs[epid].dmaa_Entry);
+#else
         /* Free software-only ring bookkeeping (not DMA-visible) */
         {
             volatile struct pcisusbXHCIRing *ring =
@@ -4681,6 +4860,7 @@ static void xhciFreeEndpointContext(struct PCIController *hc,
         pciFreeAligned(hc, &devCtx->dc_EPAllocs[epid].dmaa_Entry);
         devCtx->dc_EPAllocs[epid].dmaa_Ptr = NULL;
         devCtx->dc_EPAllocs[epid].dmaa_DMA = NULL;
+#endif
     }
 
 }
@@ -4700,10 +4880,21 @@ void xhciFreeDeviceCtx(struct PCIController *hc,
     if(disableSlot && devCtx->dc_SlotID)
         xhciCmdSlotDisable(hc, devCtx->dc_SlotID, timerreq);
 
+#if defined(__AROSEXEC_SMP__)
+    /*
+     * Out of the device table under the unit lock: the interrupt handler
+     * then no longer finds the device, its rings or its contexts, all of
+     * which are freed below.
+     */
+    xhciUnitLock(hc->hc_Unit);
+#endif
     if((devCtx->dc_SlotID > 0) && (devCtx->dc_SlotID < USB_DEV_MAX)) {
         if(xhcic->xhc_Devices[devCtx->dc_SlotID] == devCtx)
             xhcic->xhc_Devices[devCtx->dc_SlotID] = NULL;
     }
+#if defined(__AROSEXEC_SMP__)
+    xhciUnitUnlock(hc->hc_Unit);
+#endif
 
     if(devCtx->dc_SlotID)
         xhciSetPointer(hc, ((volatile struct xhci_address *)xhcic->xhc_DCBAAp)[devCtx->dc_SlotID], 0);
@@ -4713,12 +4904,12 @@ void xhciFreeDeviceCtx(struct PCIController *hc,
 
         xhciFreeEndpointContext(hc, devCtx, epid, FALSE, timerreq);
 
-        Disable();
+        xhciUnitLock(hc->hc_Unit);
         epctx = devCtx->dc_EPContexts[epid];
         devCtx->dc_EPContexts[epid] = NULL;
         if(epctx)
             epctx->ectx_Device = NULL;
-        Enable();
+        xhciUnitUnlock(hc->hc_Unit);
 
         if(epctx) {
             if(epctx->ectx_TimerReq || epctx->ectx_TimerPort) {

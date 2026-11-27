@@ -34,6 +34,12 @@ static int getArguments(struct PCIDevice *base)
         base->hd_LogRHandle = logInitialise(&base->hd_Device.dd_Library.lib_Node);
     }
 #endif
+#if defined(__AROSEXEC_SMP__)
+    /* The unit locks are kernel spinlocks */
+    base->hd_KernelBase = OpenResource("kernel.resource");
+    if(!base->hd_KernelBase)
+        return FALSE;
+#endif
     return TRUE;
 }
 

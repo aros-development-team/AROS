@@ -81,7 +81,14 @@ void xhciScheduleIsoTDs(struct PCIController *hc)
                         ioreq->iouh_DevAddr, ioreq->iouh_Endpoint);
             if(ioreq->iouh_DriverPrivate2)
                 ((struct PTDNode *)ioreq->iouh_DriverPrivate2)->ptd_Flags &= ~(PTDF_ACTIVE | PTDF_BUFFER_VALID | PTDF_QUEUED);
+#if defined(__AROSEXEC_SMP__)
+            /* the request queues are shared with other tasks and the NAK timeout soft interrupt */
+            xhciUnitLock(unit);
+#endif
             Remove(&ioreq->iouh_Req.io_Message.mn_Node);
+#if defined(__AROSEXEC_SMP__)
+            xhciUnitUnlock(unit);
+#endif
             ioreq->iouh_Req.io_Error = UHIOERR_HOSTERROR;
             ReplyMsg(&ioreq->iouh_Req.io_Message);
             continue;
@@ -102,7 +109,13 @@ void xhciScheduleIsoTDs(struct PCIController *hc)
             trbflags |= TRBF_FLAG_SIA;
         trbflags |= TRBF_FLAG_FRAMEID(ioreq->iouh_Frame);
 
+#if defined(__AROSEXEC_SMP__)
+        xhciUnitLock(unit);
+#endif
         Remove(&ioreq->iouh_Req.io_Message.mn_Node);
+#if defined(__AROSEXEC_SMP__)
+        xhciUnitUnlock(unit);
+#endif
         if(ptd)
             ptd->ptd_Flags &= ~PTDF_QUEUED;
 
@@ -114,7 +127,13 @@ void xhciScheduleIsoTDs(struct PCIController *hc)
             queued = xhciQueuePayloadTRBs(hc, ioreq, driprivate, epring, trbflags, TRUE);
 
             if(queued != -1) {
+#if defined(__AROSEXEC_SMP__)
+                xhciUnitLock(unit);
+#endif
                 AddTail(&hc->hc_PeriodicTDQueue, (struct Node *) ioreq);
+#if defined(__AROSEXEC_SMP__)
+                xhciUnitUnlock(unit);
+#endif
                 if(ptd) {
                     ptd->ptd_Flags |= PTDF_ACTIVE;
                     ptd->ptd_Flags &= ~PTDF_BUFFER_VALID;
@@ -129,12 +148,12 @@ void xhciScheduleIsoTDs(struct PCIController *hc)
             driprivate->dpTxETRB = (UWORD)-1;
             driprivate->dpSttTRB = (UWORD)-1;
 
-            Disable();
+            xhciUnitLock(unit);
             pciusbError("xHCI", DEBUGWARNCOLOR_SET "xHCI: Failed to submit ISO transaction" DEBUGCOLOR_RESET" \n");
             if(ptd)
                 ptd->ptd_Flags |= PTDF_QUEUED;  /* restore: ioreq is back on IsoXFerQueue */
             AddHead(&hc->hc_IsoXFerQueue, (struct Node *) ioreq);
-            Enable();
+            xhciUnitUnlock(unit);
         } else {
             xhciRingDoorbell(hc, driprivate->dpDevice->dc_SlotID, driprivate->dpEPID);
         }
@@ -341,7 +360,13 @@ BOOL xhciStartIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
 
     /* Queue it on the ISO path. */
     ptd->ptd_Flags |= PTDF_QUEUED;
+#if defined(__AROSEXEC_SMP__)
+    xhciUnitLock(hc->hc_Unit);
+#endif
     AddTail(&hc->hc_IsoXFerQueue, (struct Node *)&ioreq->iouh_Req.io_Message.mn_Node);
+#if defined(__AROSEXEC_SMP__)
+    xhciUnitUnlock(hc->hc_Unit);
+#endif
     xhciScheduleIsoTDs(hc);
 
     return TRUE;
@@ -436,7 +461,7 @@ void xhciStopIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
     if(!rtn->rtn_PTDs || !rtn->rtn_PTDCount)
         return;
 
-    Disable();
+    xhciUnitLock(hc->hc_Unit);
     for(UWORD idx = 0; idx < rtn->rtn_PTDCount; idx++) {
         struct PTDNode *ptd = rtn->rtn_PTDs[idx];
         if(ptd && ptd->ptd_IOReq.iouh_DriverPrivate1)
@@ -447,7 +472,7 @@ void xhciStopIsochIO(struct PCIController *hc, struct RTIsoNode *rtn)
         if(ptd)
             ptd->ptd_Flags &= ~(PTDF_ACTIVE | PTDF_BUFFER_VALID);
     }
-    Enable();
+    xhciUnitUnlock(hc->hc_Unit);
 
     if(rtn->rtn_BounceBuffer && rtn->rtn_BounceBuffer != rtn->rtn_BufferReq.ubr_Buffer) {
         usbReleaseBuffer(rtn->rtn_BounceBuffer, rtn->rtn_BufferReq.ubr_Buffer,

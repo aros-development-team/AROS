@@ -214,6 +214,13 @@ BOOL pciInit(struct PCIDevice *hd)
         NewList(&hu->hu_Controllers);
         NewList(&hu->hu_RHIOQueue);
         NewMinList(&hu->hu_FreeRTIsoNodes);
+#if defined(__AROSEXEC_SMP__)
+        {
+            APTR KernelBase = hd->hd_KernelBase;
+
+            KrnSpinInit(&hu->hu_Lock);
+        }
+#endif
         for(cnt = 0; cnt < MAX_ROOT_PORTS; cnt++) {
             hu->hu_RTIsoNodes[cnt].rtn_PTDs = NULL;
             hu->hu_RTIsoNodes[cnt].rtn_PTDCount = 0;
