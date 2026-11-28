@@ -91,6 +91,7 @@ void bApplyDevConfig(struct BtBase *BluetoothBase, struct BtDevice *bd);
    (done by the event handler process, which has DOS) */
 void bStoreDevConfig(struct BtBase *BluetoothBase, struct BtDevice *bd, BOOL persist);
 ULONG bRestoreDevices(struct BtBase *BluetoothBase, struct BtHardware *bth);
+void bRestoreSDPCache(struct BtBase *BluetoothBase, struct BtDevice *bd);
 void bRekeyDevice(struct BtBase *BluetoothBase, struct BtDevice *bd, const UBYTE *addr, UBYTE addrtype);
 void bReplyChannel(struct BtBase *BluetoothBase, struct BtChannel *bch, LONG error, ULONG actual);
 BOOL bSubmitCtrl(struct BtBase *BluetoothBase, struct BtHardware *bth, struct BtDevice *bd,

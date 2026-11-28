@@ -43,6 +43,8 @@
 #define HC_MAXCONNS     8
 #define HC_RXQUEUE_MAX  8      /* SDUs kept per L2CAP channel when no read request is pending */
 #define HC_CHANCLOSE_MS 2000   /* grace period before an unused L2CAP channel is closed */
+#define HC_PEEROPEN_MS  2000   /* how long an incoming link waits for the peer to open its channels */
+#define HC_PEERAUTH_MS  2500   /* ... and for a bonded peer to authenticate it */
 
 /* HCI opcodes */
 #define HC_OP(ogf,ocf) BT_HCI_OPCODE(ogf, ocf)
@@ -264,6 +266,9 @@ struct BtHWConn
     UWORD               cn_EnumIndex;
     UWORD               cn_EnumCount;
     ULONG               cn_EnumHandles[32];
+    UBYTE              *cn_SDPRecs;    /* records of this enumeration, for bd_SDPCache */
+    ULONG               cn_SDPRecsLen;
+    BOOL                cn_SDPIncomplete; /* a record was skipped: not cached */
     struct bt_gatt_service cn_Services[BT_GATT_CLIENT_MAX_SERVICES];
     struct BtService   *cn_EnumSvc[BT_GATT_CLIENT_MAX_SERVICES]; /* the BtService each discovered service maps to */
     struct BtChannel   *cn_EnumReq;    /* control request waiting for enumeration */
@@ -302,14 +307,17 @@ struct BtHWConn
     BOOL                cn_PairRetry;     /* restart the pairing from bConnTick() (outside the SMP callback) */
     ULONG               cn_ConnParamSeq;  /* bt_LEConnSeq last asked for as the LE peripheral */
     ULONG               cn_ConnParamAt;   /* hc_Tick before which we do not ask */
+    ULONG               cn_PeerOpenUntil; /* incoming link: the peer opens its L2CAP channels first */
     UBYTE               cn_SMPKeySize;
     UBYTE               cn_SMPLTK[16];    /* key handed to LE Start Encryption (HCI byte order) */
     ULONG               cn_LastActivity;
     /* HCNS_CONNECTING without an HCI connect in flight: a class wants the
-       (bonded, sleeping) LE peer and the background scan connects as soon as
-       it advertises - no 10 s timeout, no controller time wasted paging. */
+       (bonded, sleeping) peer. LE: the background scan connects as soon as
+       it advertises. BR/EDR: the peer connects to us, or is paged at
+       cn_NextAttempt - no 10 s timeout, no controller time wasted paging. */
     BOOL                cn_WaitAdv;
     ULONG               cn_NextAttempt;   /* hc_Tick: while waiting, when to try a direct connect */
+    BOOL                cn_AcceptPending; /* our page is being cancelled for the peer's own */
     /* an unattended page from bConnClassicTick(): failures are expected
        (the peer may simply be away) - keep them out of the log and off the
        device's dead-count */

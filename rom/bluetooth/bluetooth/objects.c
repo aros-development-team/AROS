@@ -514,6 +514,8 @@ void bFreeDevice(LIBBASETYPEPTR BluetoothBase, struct BtDevice *bd)
         }
         btFreeVec(bd->bd_OrigName);
         bd->bd_OrigName = NULL;
+        btFreeVec(bd->bd_SDPCache);
+        bd->bd_SDPCache = NULL;
         btFreeVec(bd->bd_IDString);
         bd->bd_IDString = NULL;
         btUnlockDevice(bd);
@@ -1240,6 +1242,27 @@ void bApplyDevConfig(LIBBASETYPEPTR BluetoothBase, struct BtDevice *bd)
                     bd->bd_Flags |= BDFF_BONDED;
                 }
             }
+            if(!bd->bd_SDPCache && (chnk = bFindCfgChunk(BluetoothBase, pic, IFFCHNK_SDPCACHE))) {
+                ULONG len, fmt = 0, skip = 0;
+                CopyMem(&chnk[1], &len, 4);
+                len = AROS_BE2LONG(len);
+                if(len >= 4) {
+                    CopyMem(&chnk[2], &fmt, 4);
+                    fmt = AROS_BE2LONG(fmt);
+                }
+                /* Records of an older attribute list (no format word) still
+                   bind: a link we page enumerates and replaces them. One of
+                   a format we do not know may be laid out otherwise. */
+                if(fmt == BT_SDPCACHE_FORMAT) {
+                    skip = 4;
+                } else if((fmt >> 8) == BT_SDPCACHE_FORMATID) {
+                    len = 0;
+                }
+                if((len > skip) && (bd->bd_SDPCache = btAllocVec(len - skip))) {
+                    CopyMem(((UBYTE *) &chnk[2]) + skip, bd->bd_SDPCache, len - skip);
+                    bd->bd_SDPCacheLen = len - skip;
+                }
+            }
             break;
         }
         pic = btNextCfgForm(pic);
@@ -1302,6 +1325,7 @@ ULONG bRestoreDevices(LIBBASETYPEPTR BluetoothBase, struct BtHardware *bth)
                     }
                     bd->bd_Node.ln_Name = bd->bd_Name;
                     btUnlockDevice(bd);
+                    bRestoreSDPCache(BluetoothBase, bd);
                     count++;
                     btSendEvent(BEHMB_ADDDEVICE, bd, NULL);
                     btSendEvent(BEHMB_DEVICEREGISTERED, bd, NULL);
@@ -1314,6 +1338,7 @@ ULONG bRestoreDevices(LIBBASETYPEPTR BluetoothBase, struct BtHardware *bth)
                     bd->bd_Flags |= BDFF_REGISTERED;
                     bApplyDevConfig(BluetoothBase, bd);
                     btUnlockDevice(bd);
+                    bRestoreSDPCache(BluetoothBase, bd);
                     count++;
                     btSendEvent(BEHMB_DEVICEREGISTERED, bd, NULL);
                 } else {
@@ -1448,9 +1473,29 @@ void bStoreDevConfig(LIBBASETYPEPTR BluetoothBase, struct BtDevice *bd, BOOL per
             } else {
                 bRemCfgChunk(BluetoothBase, pic, IFFCHNK_KEYS);
             }
+            {
+                /* the hardware task replaces the cache under the device lock;
+                   bAddCfgChunk() copies the length rounded up to even */
+                ULONG *sdpc = NULL;
+                btLockReadDevice(bd);
+                if(bd->bd_SDPCache && (sdpc = btAllocVec(12 + bd->bd_SDPCacheLen + 1))) {
+                    sdpc[0] = AROS_LONG2BE(IFFCHNK_SDPCACHE);
+                    sdpc[1] = AROS_LONG2BE(4 + bd->bd_SDPCacheLen);
+                    sdpc[2] = AROS_LONG2BE(BT_SDPCACHE_FORMAT);
+                    CopyMem(bd->bd_SDPCache, &sdpc[3], bd->bd_SDPCacheLen);
+                }
+                btUnlockDevice(bd);
+                if(sdpc) {
+                    bAddCfgChunk(BluetoothBase, pic, sdpc);
+                    btFreeVec(sdpc);
+                } else {
+                    bRemCfgChunk(BluetoothBase, pic, IFFCHNK_SDPCACHE);
+                }
+            }
         } else {
             bRemCfgChunk(BluetoothBase, pic, IFFCHNK_REGDEVICE);
             bRemCfgChunk(BluetoothBase, pic, IFFCHNK_KEYS);
+            bRemCfgChunk(BluetoothBase, pic, IFFCHNK_SDPCACHE);
         }
     }
     bUnlockSem(BluetoothBase, &BluetoothBase->bt_ConfigLock);
