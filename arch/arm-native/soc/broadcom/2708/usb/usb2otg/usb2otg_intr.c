@@ -122,12 +122,26 @@ static void usb2otg_halt_channel_preserve_char(int chan)
             asm volatile("yield\n");
         if (timeout <= 0)
         {
+            int other;
+
             HALT_SNAP(chan, "timeout-pre-flush");
 
-            bug("[USB2OTG] halt-channel timeout chan=%d CHAR=%08x INTR=%08x\n",
+            bug("[USB2OTG] halt-channel timeout chan=%d CHAR=%08x INTR=%08x HPTX=%08x\n",
                 chan,
                 rd32le(USB2OTG_CHANNEL_REG(chan, CHARBASE)),
-                rd32le(USB2OTG_CHANNEL_REG(chan, INTR)));
+                rd32le(USB2OTG_CHANNEL_REG(chan, INTR)),
+                rd32le(USB2OTG_HOSTFIFOSTATUS));
+
+            /* A flush with other channels enabled corrupts the request queues */
+            for (other = 0; other < 8; other++)
+                if (other != chan &&
+                    (rd32le(USB2OTG_CHANNEL_REG(other, CHARBASE)) & USB2OTG_HOSTCHAR_ENABLE))
+                    break;
+            if (other < 8)
+            {
+                bug("[USB2OTG] no TX FIFO flush, chan %d enabled\n", other);
+                return;
+            }
 
             /*
              * CHENA refuses to drop — usually a stale TX FIFO packet
@@ -169,15 +183,7 @@ static void usb2otg_halt_channel_preserve_char(int chan)
             }
         }
     }
-    else if (hcchar != 0)
-    {
-        hcchar |= USB2OTG_HOSTCHAR_DISABLE;
-        wr32le(USB2OTG_CHANNEL_REG(chan, CHARBASE), hcchar);
-    }
-    else
-    {
-        wr32le(USB2OTG_CHANNEL_REG(chan, CHARBASE), USB2OTG_HOSTCHAR_DISABLE);
-    }
+    /* Already halted: a CHDIS written now would cancel the next transfer */
 }
 
 static inline BOOL usb2otg_trace_bulk_ep2(int chan, struct IOUsbHWReq *req)
@@ -337,9 +343,9 @@ static BOOL usb2otg_core_reset_recover(struct USB2OTGUnit *USBUnit, int wedged_c
     }
 
     /* AHB: DMA + global IRQs (cleared by core reset). */
-    regval = rd32le(USB2OTG_AHB);
+    regval = rd32le(USB2OTG_AHB) & ~0x1f;
     regval |= USB2OTG_AHB_DMAENABLE
-            | USB2OTG_AHB_AXIBURSTLENGTH
+            | USB2OTG_AHB_WAITFORAXIWRITES
             | USB2OTG_AHB_INTENABLE
             | USB2OTG_AHB_TRANSFEREMPTYLEVEL;
     wr32le(USB2OTG_AHB, regval);
@@ -1104,10 +1110,12 @@ static void handle_SOF(struct USB2OTGUnit *USBUnit, struct ExecBase *SysBase, UL
                         interval = 2;
 
                     if (++USBUnit->hu_LogStallCount <= 5 || (USBUnit->hu_LogStallCount & 0xff) == 0)
-                        bug("[USB2OTG] SOF: int split never ran, %lu uframes chan=%d dev=%d ep=%d — exorcise+requeue (#%lu)\n",
+                        bug("[USB2OTG] SOF: int split never ran, %lu uframes chan=%d dev=%d ep=%d — exorcise+requeue (#%lu) CHAR=%08x HPTX=%08x\n",
                             (unsigned long)elapsed, chan,
                             (int)sreq->iouh_DevAddr, (int)sreq->iouh_Endpoint,
-                            (unsigned long)USBUnit->hu_LogStallCount);
+                            (unsigned long)USBUnit->hu_LogStallCount,
+                            rd32le(USB2OTG_CHANNEL_REG(chan, CHARBASE)),
+                            rd32le(USB2OTG_HOSTFIFOSTATUS));
 
 
                     wr32le(USB2OTG_CHANNEL_REG(chan, INTR), USB2OTG_INTR_CLEAR_ALL);
@@ -1225,7 +1233,8 @@ AROS_INTH1(FNAME_DEV(SofGateInt), struct USB2OTGUnit *, USBUnit)
         UBYTE bit = (tr == &USBUnit->hu_SofGateReq[1]) ? 2 : 1;
 
         Disable();
-        USBUnit->hu_SofGateBusy &= ~bit;
+        /* Atomic: the worker sets bits from CPU 0 */
+        AROS_ATOMIC_AND(USBUnit->hu_SofGateBusy, (UBYTE)~bit);
         usb2otg_sof_gate_wake(USBUnit);
         Enable();
     }
@@ -1508,7 +1517,15 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
                         USBUnit->hu_Channel[chan].hc_SplitState = USB2OTG_SPLIT_CS;
 
                         if (req->iouh_Req.io_Command == UHCMD_BULKXFER)
+                        {
+#if defined(__AROSEXEC_SMP__)
+                            KrnSpinLock(&USBUnit->hu_Lock, NULL, SPINLOCK_MODE_WRITE);
+#endif
                             usb2otg_remove_bulk_queue_duplicates(USBUnit, req, chan);
+#if defined(__AROSEXEC_SMP__)
+                            KrnSpinUnLock(&USBUnit->hu_Lock);
+#endif
+                        }
 
                         D(bug("[USB2OTG] Completing split transaction in interrupt: chan=%d intr=%04x SPLITCTRL=%08x\n",
                               chan, intr, tmp));
@@ -1628,8 +1645,9 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
                                     req->iouh_DriverPrivate1 = (APTR)(IPTR)((frnm << 16) | next);
                                     /* TT responded (NYETs) = liveness — reset wedge counter. */
                                     req->iouh_DriverPrivate2 = (APTR)0;
-                                    ADDHEAD(&USBUnit->hu_IntXFerQueue, req);
-                                    USBUnit->hu_Channel[chan].hc_Request = NULL;
+                                    /* The queue is shared with other CPUs. */
+                                    usb2otg_irq_finish_or_requeue(USBUnit, chan, req,
+                                        &USBUnit->hu_IntXFerQueue, TRUE);
                                     req = NULL;
                                 }
                             }
@@ -1703,7 +1721,13 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
                                  */
                                 {
                                     BOOL was_dev0 = (req->iouh_DevAddr == 0);
+#if defined(__AROSEXEC_SMP__)
+                                    KrnSpinLock(&USBUnit->hu_Lock, NULL, SPINLOCK_MODE_WRITE);
+#endif
                                     usb2otg_queue_clear_tt_buffer(USBUnit, req);
+#if defined(__AROSEXEC_SMP__)
+                                    KrnSpinUnLock(&USBUnit->hu_Lock);
+#endif
                                     usb2otg_irq_finish_or_requeue(USBUnit, chan, req,
                                         &USBUnit->hu_FinishedXfers, FALSE);
                                     if (was_dev0)
@@ -1786,7 +1810,10 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
                                 if (usb2otg_trace_bulk_ep2(chan, req))
                                     bug("[USB2OTG:TRACE] REQUEUE-BEGIN-BULKQ chan=%d req=%p\n", chan, req);
                             )
-                            usb2otg_requeue(USBUnit, &USBUnit->hu_BulkXFerQueue, req, TRUE);
+                            /* The queue is shared with other CPUs. */
+                            usb2otg_irq_finish_or_requeue(USBUnit, chan, req,
+                                &USBUnit->hu_BulkXFerQueue, TRUE);
+                            req = NULL;
                         }
 
                         /* Mark channel free (ctrl path did it via helper). */
@@ -2099,7 +2126,13 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
                                  * buffer here too (the ctrl give-up sites
                                  * only cover the control endpoint).
                                  */
+#if defined(__AROSEXEC_SMP__)
+                                KrnSpinLock(&USBUnit->hu_Lock, NULL, SPINLOCK_MODE_WRITE);
+#endif
                                 usb2otg_queue_clear_tt_buffer(USBUnit, req);
+#if defined(__AROSEXEC_SMP__)
+                                KrnSpinUnLock(&USBUnit->hu_Lock);
+#endif
                                 /* Give-up teardown poisons the channel;
                                  * XactErr is a wire error, not an engine
                                  * fault - do not count it toward burning.
@@ -2641,6 +2674,8 @@ void FNAME_DEV(GlobalIRQHandler)(struct USB2OTGUnit *USBUnit, struct ExecBase *S
                                                     (unsigned long)USBUnit->hu_LogGiveupCount);
                                         }
                                         req->iouh_Req.io_Error = UHIOERR_TIMEOUT;
+                                        /* As for control: or the next transfer on this channel halts bare too */
+                                        usb2otg_exorcise_channel(chan);
                                         /* Flush NPTxFIFO so next CBW lands clean —
                                          * only with all channels idle (flush with an
                                          * active channel corrupts the request queue). */
