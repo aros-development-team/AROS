@@ -16,6 +16,27 @@
 #include <exec/types.h>
 #include <libraries/decorator.h>
 
+/* ========== Theme Layout ========== */
+
+/* Version of the theme layout implemented by decortheme.library. A
+   theme states the version it is written for with "DecorVers" in
+   its System/Config; themes written for another version, or stating
+   none, are not loaded.
+
+   Version 2: images are kept in size sets (Images/<size>pt), one file
+              for each state, named after the MUI image they provide. */
+#define DECORTHEME_THEMEVERSION     2
+
+/* Directory of a theme holding its image sets */
+#define DECORTHEME_IMAGEDIR         "Images"
+/* Image size used when neither user nor theme select one */
+#define DECORTHEME_DEFSIZE          16
+/* Most image sizes considered in a theme */
+#define DECORTHEME_MAXSIZES         8
+/* Environment variable holding the image size the user selected for
+   the theme in use */
+#define DECORTHEME_SIZEVAR          "SYS/themesize.var"
+
 /* ========== Theme Configuration ========== */
 
 struct DecorConfig
@@ -161,6 +182,11 @@ struct DecorConfig
     LONG    MenuInnerTop;
     LONG    MenuInnerRight;
     LONG    MenuInnerBottom;
+
+    /* Theme Section */
+    LONG    DecorVers;   /* version of the theme layout the theme is written for */
+    LONG    DefaultSize;    /* image size the theme is meant to be used with */
+    LONG    ImageSize;      /* image size this configuration was loaded for */
 };
 
 /* Holds all images used for screen, window and menu decoration */

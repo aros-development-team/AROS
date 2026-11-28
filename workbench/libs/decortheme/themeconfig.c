@@ -5,6 +5,7 @@
 */
 
 #include <proto/dos.h>
+#include <dos/var.h>
 #include <proto/exec.h>
 
 #include <string.h>
@@ -100,7 +101,9 @@ static BOOL GetBool(STRPTR v, STRPTR id)
     if (strstr(v, id)) return TRUE; else return FALSE;
 }
 
-static void LoadMenuConfig(STRPTR path, struct DecorConfig * dc)
+/* Reads the menu settings found in 'name', a file beneath the theme.
+   With 'defaults' every setting is given its default value first. */
+static void LoadMenuConfig(STRPTR path, CONST_STRPTR name, struct DecorConfig * dc, BOOL defaults)
 {
     TEXT    buffer[256];
     STRPTR  line, v;
@@ -108,6 +111,8 @@ static void LoadMenuConfig(STRPTR path, struct DecorConfig * dc)
     BPTR    lock;
     BPTR    olddir = 0;
 
+    if (defaults)
+    {
     dc->MenuIsTiled = FALSE;
     dc->MenuTileLeft = 0;
     dc->MenuTileTop = 0;
@@ -118,6 +123,7 @@ static void LoadMenuConfig(STRPTR path, struct DecorConfig * dc)
     dc->MenuInnerRight = 0;
     dc->MenuInnerBottom = 0;
     dc->MenuHighlightTint = 0x770044dd;
+    }
 
     lock = Lock(path, ACCESS_READ);
     if (lock)
@@ -125,7 +131,7 @@ static void LoadMenuConfig(STRPTR path, struct DecorConfig * dc)
     else
         return;
 
-    file = Open("Menu/Config", MODE_OLDFILE);
+    file = Open(name, MODE_OLDFILE);
     if (file)
     {
         do
@@ -183,7 +189,10 @@ static void LoadMenuConfig(STRPTR path, struct DecorConfig * dc)
     UnLock(lock);
 }
 
-static void LoadSystemConfig(STRPTR path, struct DecorConfig * dc)
+/* Reads the screen and window settings found in 'name', a file beneath
+   the theme. With 'defaults' every setting is given its default value
+   first. */
+static void LoadSystemConfig(STRPTR path, CONST_STRPTR name, struct DecorConfig * dc, BOOL defaults)
 {
     TEXT    buffer[256];
     STRPTR  line, v;
@@ -191,6 +200,10 @@ static void LoadSystemConfig(STRPTR path, struct DecorConfig * dc)
     BPTR    lock;
     BPTR    olddir = 0;
 
+    if (defaults)
+    {
+    dc->DecorVers = 0;
+    dc->DefaultSize = 0;
     dc->WinFrameStyle = 1;
     dc->BarJoinTB_o = 0;
     dc->BarJoinTB_s = 0;
@@ -311,6 +324,7 @@ static void LoadSystemConfig(STRPTR path, struct DecorConfig * dc)
     dc->LUTBaseColors_d = 0x00888888;
     dc->STitleColorText = 0xFFFFFFFF;
     dc->STitleColorShadow = 0xFFFFFFFF;
+    }
 
     D(bug("Decoration/LoadSystemConfig: dc initialized\n"));
 
@@ -323,7 +337,7 @@ static void LoadSystemConfig(STRPTR path, struct DecorConfig * dc)
 
     D(bug("Decoration/LoadSystemConfig: directory locked\n"));
 
-    file = Open("System/Config", MODE_OLDFILE);
+    file = Open(name, MODE_OLDFILE);
     D(bug("Decoration/LoadSystemConfig: file=%p\n", (void *)file));
     if (file)
     {
@@ -333,7 +347,11 @@ static void LoadSystemConfig(STRPTR path, struct DecorConfig * dc)
             if (line)
             {
                 D(bug("Decoration/ReadSystemConfig: Parsing line '%s'\n", line));
-                if ((v = strstr(line, "NoInactiveSelected ")) == line) {
+                if ((v = strstr(line, "DecorVers ")) == line) {
+                    dc->DecorVers = GetInt(v);
+                } else if ((v = strstr(line, "DefaultSize ")) == line) {
+                    dc->DefaultSize = GetInt(v);
+                } else if ((v = strstr(line, "NoInactiveSelected ")) == line) {
                     dc->GadgetsThreeState = GetBool(v, "Yes");
                 } else if ((v = strstr(line, "FrameStyle ")) == line) {
                     dc->WinFrameStyle = GetInt(v);
@@ -489,26 +507,225 @@ static void LoadSystemConfig(STRPTR path, struct DecorConfig * dc)
     D(bug("Decoration/LoadSystemConfig: directory unlocked\n"));
 }
 
-struct DecorConfig * LoadConfig(STRPTR path)
+/* Parses "<number>pt", returning 0 if the name has another form */
+ULONG ParseSizeName(CONST_STRPTR name)
+{
+    ULONG size = 0;
+
+    if ((*name < '0') || (*name > '9'))
+        return 0;
+
+    while ((*name >= '0') && (*name <= '9'))
+    {
+        size = (size * 10) + (*name - '0');
+        if (size > 1024)
+            return 0;
+        name++;
+    }
+
+    if (((name[0] == 'p') || (name[0] == 'P')) &&
+        ((name[1] == 't') || (name[1] == 'T')) && (name[2] == '\0'))
+        return size;
+
+    return 0;
+}
+
+/* Collects the image sizes a theme provides, smallest first */
+ULONG FindThemeSizes(CONST_STRPTR path, ULONG *sizes, ULONG maxsizes)
+{
+    struct FileInfoBlock   *fib;
+    STRPTR                  dirname;
+    BPTR                    lock;
+    LONG                    len;
+    ULONG                   count = 0, i, j;
+
+    len = strlen(path) + sizeof(DECORTHEME_IMAGEDIR) + 2;
+    dirname = AllocVec(len, MEMF_ANY | MEMF_CLEAR);
+    if (!dirname)
+        return 0;
+    strcpy(dirname, path);
+    AddPart(dirname, DECORTHEME_IMAGEDIR, len);
+
+    lock = Lock(dirname, ACCESS_READ);
+    FreeVec(dirname);
+    if (!lock)
+        return 0;
+
+    fib = AllocDosObject(DOS_FIB, NULL);
+    if (fib)
+    {
+        if (Examine(lock, fib))
+        {
+            while ((count < maxsizes) && ExNext(lock, fib))
+            {
+                ULONG size;
+
+                if (fib->fib_DirEntryType <= 0)
+                    continue;
+                if ((size = ParseSizeName(fib->fib_FileName)) == 0)
+                    continue;
+                sizes[count++] = size;
+            }
+        }
+        FreeDosObject(DOS_FIB, fib);
+    }
+    UnLock(lock);
+
+    for (i = 1; i < count; i++)
+    {
+        ULONG cur = sizes[i];
+
+        for (j = i; (j > 0) && (sizes[j - 1] > cur); j--)
+            sizes[j] = sizes[j - 1];
+        sizes[j] = cur;
+    }
+
+    return count;
+}
+
+/* The size closest to 'wanted' among those given; the larger one if
+   two are equally close. 0 if there are no sizes. */
+ULONG ClosestThemeSize(ULONG wanted, ULONG *sizes, ULONG count)
+{
+    ULONG best = 0, bestdist = ~(ULONG)0, i;
+
+    for (i = 0; i < count; i++)
+    {
+        ULONG dist = (sizes[i] > wanted) ? (sizes[i] - wanted) : (wanted - sizes[i]);
+
+        if ((dist < bestdist) || ((dist == bestdist) && (sizes[i] > best)))
+        {
+            best = sizes[i];
+            bestdist = dist;
+        }
+    }
+
+    return best;
+}
+
+/* The image size selected by the user for the theme in use, or 0 */
+ULONG GetPreferredThemeSize(void)
+{
+    TEXT    buffer[16];
+    LONG    len;
+    ULONG   size = 0, i;
+
+    len = GetVar(DECORTHEME_SIZEVAR, buffer, sizeof(buffer), GVF_GLOBAL_ONLY);
+    if (len <= 0)
+        return 0;
+
+    for (i = 0; (buffer[i] >= '0') && (buffer[i] <= '9'); i++)
+    {
+        size = (size * 10) + (buffer[i] - '0');
+        if (size > 1024)
+            return 0;
+    }
+
+    return size;
+}
+
+/*
+    Loads the configuration of a theme for one of its image sizes.
+
+    'size' selects the size; 0 stands for the size the user selected
+    for the theme in use, and when there is none, or the theme does not
+    have it, for the default size of the theme.
+
+    Settings come from System/Config and Menu/Config. A theme that
+    provides its decoration images in several sizes can change any of
+    them for a size with a file named Config in that image set
+    (Images/<size>pt/Config).
+*/
+struct DecorConfig * LoadConfig(STRPTR path, ULONG size)
 {
     struct DecorConfig * dc = AllocVec(sizeof(struct DecorConfig), MEMF_ANY | MEMF_CLEAR);
+    ULONG sizes[DECORTHEME_MAXSIZES];
+    ULONG count, i;
+    BOOL found = FALSE;
 
     D(bug("LoadConfig: dc=%p\n", dc));
 
+    if (!dc)
+        return NULL;
+
     dc->ThemePath = AllocVec(strlen(path) + 1, MEMF_ANY | MEMF_CLEAR);
+    if (!dc->ThemePath)
+    {
+        FreeVec(dc);
+        return NULL;
+    }
     strcpy(dc->ThemePath, path);
 
     D(bug("Decoration/LoadConfig: dc->ThemePath=%p('%s')\n", dc->ThemePath, dc->ThemePath));
 
-    LoadMenuConfig(path, dc);
+    LoadMenuConfig(path, "Menu/Config", dc, TRUE);
 
     D(bug("Decoration/LoadConfig: menu config loaded\n"));
 
-    LoadSystemConfig(path, dc);
+    LoadSystemConfig(path, "System/Config", dc, TRUE);
 
     D(bug("Decoration/LoadConfig: system config loaded\n"));
 
+    /* settle on the image size */
+    count = FindThemeSizes(path, sizes, DECORTHEME_MAXSIZES);
+    if (dc->DefaultSize == 0)
+        dc->DefaultSize = DECORTHEME_DEFSIZE;
+    dc->DefaultSize = ClosestThemeSize(dc->DefaultSize, sizes, count);
+
+    if (size == 0)
+        size = GetPreferredThemeSize();
+    for (i = 0; i < count; i++)
+    {
+        if (sizes[i] == size)
+            found = TRUE;
+    }
+    dc->ImageSize = found ? size : dc->DefaultSize;
+
+    if (dc->ImageSize)
+    {
+        TEXT name[48];
+
+        snprintf(name, sizeof(name), DECORTHEME_IMAGEDIR "/%lupt/Config", (unsigned long)dc->ImageSize);
+        LoadMenuConfig(path, name, dc, FALSE);
+        LoadSystemConfig(path, name, dc, FALSE);
+    }
+
     return dc;
+}
+
+/* The version of the theme layout a theme is written for; 0 if it does
+   not state one (or is not a theme). Only the configuration is read. */
+ULONG GetDecorVers(STRPTR path)
+{
+    TEXT    buffer[256];
+    STRPTR  line, v, name;
+    BPTR    file;
+    LONG    len;
+    ULONG   version = 0;
+
+    len = strlen(path) + sizeof("System/Config") + 2;
+    name = AllocVec(len, MEMF_ANY | MEMF_CLEAR);
+    if (!name)
+        return 0;
+    strcpy(name, path);
+    AddPart(name, "System/Config", len);
+
+    file = Open(name, MODE_OLDFILE);
+    FreeVec(name);
+    if (!file)
+        return 0;
+
+    while ((line = FGets(file, buffer, sizeof(buffer))) != NULL)
+    {
+        if ((v = strstr(line, "DecorVers ")) == line)
+        {
+            version = GetInt(v);
+            break;
+        }
+    }
+    Close(file);
+
+    return version;
 }
 
 void FreeConfig(struct DecorConfig * dc)

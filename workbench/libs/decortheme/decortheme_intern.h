@@ -21,7 +21,12 @@ struct DecorThemeBase
    can be loaded concurrently by any number of clients. */
 
 /* themeconfig.c */
-struct DecorConfig *LoadConfig(STRPTR path);
+struct DecorConfig *LoadConfig(STRPTR path, ULONG size);
+ULONG GetDecorVers(STRPTR path);
+ULONG ParseSizeName(CONST_STRPTR name);
+ULONG FindThemeSizes(CONST_STRPTR path, ULONG *sizes, ULONG maxsizes);
+ULONG ClosestThemeSize(ULONG wanted, ULONG *sizes, ULONG count);
+ULONG GetPreferredThemeSize(void);
 void FreeConfig(struct DecorConfig *dc);
 
 /* themeimages.c */

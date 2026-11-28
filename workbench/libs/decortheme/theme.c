@@ -19,6 +19,37 @@
 #include <libraries/decortheme.h>
 #include "decortheme_intern.h"
 
+static struct DecorTheme *LoadTheme(STRPTR path, ULONG size)
+{
+    struct DecorTheme *theme;
+
+    /* themes written for another layout cannot be used */
+    if (GetDecorVers(path) != DECORTHEME_THEMEVERSION)
+    {
+        D(bug("[decortheme] %s: '%s' is not a version %d theme\n", __func__, path, DECORTHEME_THEMEVERSION));
+        return NULL;
+    }
+
+    theme = AllocVec(sizeof(struct DecorTheme), MEMF_ANY | MEMF_CLEAR);
+    if (theme)
+    {
+        theme->dt_Config = LoadConfig(path, size);
+        if (theme->dt_Config)
+        {
+            theme->dt_Images = LoadImages(theme->dt_Config);
+            if (theme->dt_Images)
+            {
+                InitThemeElements(theme->dt_Elements, theme->dt_Config, theme->dt_Images);
+                return theme;
+            }
+            FreeConfig(theme->dt_Config);
+        }
+        FreeVec(theme);
+    }
+
+    return NULL;
+}
+
 /*****************************************************************************
     NAME
         struct DecorTheme * DTLoadTheme(
@@ -34,9 +65,10 @@
             copied; it need remain valid only until return.
 
     RESULT
-        Owned DecorTheme, or NULL if allocation of the theme or image-set
-        structure fails. A non-NULL result does not establish that all files
-        were present or that every image is usable.
+        Owned DecorTheme, or NULL if the theme is not written for the theme
+        layout this library implements (see DTCheckTheme()) or allocation of
+        the theme or image-set structure fails. A non-NULL result does not
+        establish that all files were present or that every image is usable.
 
     NOTES
         The loader reads Menu/Config and System/Config beneath path, then
@@ -44,6 +76,21 @@
         Missing configuration files leave defaults in place; unknown settings
         are ignored. Failed image loads leave NULL entries in dt_Images.
         Check each required image and its ok flag before relying on it.
+
+        Images are looked for in the theme's image sets first, which follow
+        the conventions of MUI image sets:
+
+            Images/<size>pt/<Name>.mf0 .. .mfN  one file for each state
+            Images/<size>pt/<Name>.mim          every state in one image
+            Images/<size>pt/<Name>.mbr          a single state
+
+        The set used is the one of the size the user selected for the
+        theme in use (the SYS/themesize.var environment variable), or the
+        theme's default size when none is selected or the theme does not
+        have it. Use DTLoadThemeSize() to load a particular size. A state
+        without a file of its own uses the image of the state it is derived
+        from, so a theme can provide just the normal and selected images
+        (.mf0 and .mf1), or one image for every state.
 
         The returned theme contains configuration, source images and element
         descriptors. It is not installed as the system theme. Independent
@@ -75,27 +122,167 @@ AROS_LH1(struct DecorTheme *, DTLoadTheme,
 {
     AROS_LIBFUNC_INIT
 
-    struct DecorTheme *theme = AllocVec(sizeof(struct DecorTheme), MEMF_ANY | MEMF_CLEAR);
-
     D(bug("[decortheme] %s('%s')\n", __func__, path));
 
-    if (theme)
+    return LoadTheme(path, 0);
+
+    AROS_LIBFUNC_EXIT
+}
+
+/*****************************************************************************
+    NAME
+        struct DecorTheme * DTLoadThemeSize(
+
+    SYNOPSIS
+        STRPTR path, ULONG size)
+
+    FUNCTION
+        Load an independent decoration theme for one of its image sizes.
+
+    INPUTS
+        path - Non-NULL, NUL-terminated theme-directory path, as for
+            DTLoadTheme().
+        size - Size of the image set to use (the number in the name of an
+            Images/<size>pt directory of the theme), or 0 to have it chosen
+            as DTLoadTheme() does.
+
+    RESULT
+        Owned DecorTheme, or NULL under the conditions given for
+        DTLoadTheme().
+
+    NOTES
+        A size the theme does not provide selects the theme's default size.
+        The size in use is found in the ImageSize field of the configuration.
+        Images the selected set lacks are taken from the theme's other sets,
+        closest size first. Settings found in Images/<size>pt/Config replace
+        those of System/Config and Menu/Config for that size.
+
+        Use this to show a theme in a size other than the one selected for
+        the theme in use, for instance when previewing a choice.
+
+    SEE ALSO
+        DTLoadTheme(), DTGetThemeSizes(), DTFreeTheme()
+
+*****************************************************************************/
+AROS_LH2(struct DecorTheme *, DTLoadThemeSize,
+    AROS_LHA(STRPTR, path, A0),
+    AROS_LHA(ULONG, size, D0),
+    struct Library *, DecorThemeBase, 15, Decortheme)
+{
+    AROS_LIBFUNC_INIT
+
+    return LoadTheme(path, size);
+
+    AROS_LIBFUNC_EXIT
+}
+
+/*****************************************************************************
+    NAME
+        ULONG DTCheckTheme(
+
+    SYNOPSIS
+        STRPTR path)
+
+    FUNCTION
+        Tell whether a directory holds a theme this library can load.
+
+    INPUTS
+        path - Non-NULL, NUL-terminated directory path.
+
+    RESULT
+        The version of the theme layout the theme is written for when the
+        library supports it, otherwise 0.
+
+    NOTES
+        A theme states its layout version with "DecorVers" in its
+        System/Config. A directory without that file, a theme stating no
+        version and a theme written for a version other than
+        DECORTHEME_THEMEVERSION all give 0, and are refused by DTLoadTheme().
+        Use this to decide whether to offer a theme for selection.
+
+        Only the configuration file is read; no images are loaded. Call from
+        a DOS process.
+
+    SEE ALSO
+        DTLoadTheme(), DTGetThemeSizes()
+
+*****************************************************************************/
+AROS_LH1(ULONG, DTCheckTheme,
+    AROS_LHA(STRPTR, path, A0),
+    struct Library *, DecorThemeBase, 16, Decortheme)
+{
+    AROS_LIBFUNC_INIT
+
+    ULONG version = GetDecorVers(path);
+
+    return (version == DECORTHEME_THEMEVERSION) ? version : 0;
+
+    AROS_LIBFUNC_EXIT
+}
+
+/*****************************************************************************
+    NAME
+        ULONG DTGetThemeSizes(
+
+    SYNOPSIS
+        STRPTR path, ULONG *sizes, ULONG maxsizes, ULONG *defsize)
+
+    FUNCTION
+        List the image sizes a theme provides.
+
+    INPUTS
+        path - Non-NULL, NUL-terminated theme-directory path.
+        sizes - Array receiving the sizes, smallest first, or NULL.
+        maxsizes - Number of entries in sizes.
+        defsize - Receives the theme's default size, or NULL.
+
+    RESULT
+        The number of sizes stored; 0 if the theme has no image sets.
+
+    NOTES
+        The sizes are the numbers in the names of the theme's
+        Images/<size>pt directories. The default size is the one stated
+        with "DefaultSize" in System/Config, or DECORTHEME_DEFSIZE, replaced
+        by the closest size the theme provides. At most
+        DECORTHEME_MAXSIZES sizes are considered.
+
+    SEE ALSO
+        DTLoadThemeSize(), DTCheckTheme()
+
+*****************************************************************************/
+AROS_LH4(ULONG, DTGetThemeSizes,
+    AROS_LHA(STRPTR, path, A0),
+    AROS_LHA(ULONG *, sizes, A1),
+    AROS_LHA(ULONG, maxsizes, D0),
+    AROS_LHA(ULONG *, defsize, A2),
+    struct Library *, DecorThemeBase, 17, Decortheme)
+{
+    AROS_LIBFUNC_INIT
+
+    ULONG all[DECORTHEME_MAXSIZES];
+    ULONG count = FindThemeSizes(path, all, DECORTHEME_MAXSIZES);
+    ULONG i;
+
+    if (defsize)
     {
-        theme->dt_Config = LoadConfig(path);
-        if (theme->dt_Config)
+        struct DecorConfig *dc = LoadConfig(path, 0);
+
+        *defsize = 0;
+        if (dc)
         {
-            theme->dt_Images = LoadImages(theme->dt_Config);
-            if (theme->dt_Images)
-            {
-                InitThemeElements(theme->dt_Elements, theme->dt_Config, theme->dt_Images);
-                return theme;
-            }
-            FreeConfig(theme->dt_Config);
+            *defsize = dc->DefaultSize;
+            FreeConfig(dc);
         }
-        FreeVec(theme);
     }
 
-    return NULL;
+    if (!sizes)
+        return 0;
+    if (count > maxsizes)
+        count = maxsizes;
+    for (i = 0; i < count; i++)
+        sizes[i] = all[i];
+
+    return count;
 
     AROS_LIBFUNC_EXIT
 }

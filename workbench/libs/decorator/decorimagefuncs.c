@@ -676,10 +676,16 @@ struct DecorImage *CreateDecorImageContainerMatchingScreen(struct DecorImage *in
         /* Allocate decision table, all values are set to FALSE (MEMF_CLEAR) */
         out->subimageinbm = AllocVec(in->subimagescols * in->subimagesrows * sizeof(BOOL), MEMF_ANY | MEMF_CLEAR);
 
-        out->filename = AllocVec(strlen(in->filename) + 5, MEMF_ANY | MEMF_CLEAR); /* size + 5 -> covers all */
-        strcpy(out->filename, in->filename);
+        /* Images composed in memory (e.g. from separate per-state files)
+           have no single backing file, so there is nothing to reload. */
+        if (in->filename != NULL)
+        {
+            out->filename = AllocVec(strlen(in->filename) + 5, MEMF_ANY | MEMF_CLEAR); /* size + 5 -> covers all */
+            if (out->filename != NULL)
+                strcpy(out->filename, in->filename);
+        }
 
-        if (!truecolor)
+        if (!truecolor && (out->filename != NULL))
         {
             /* If this is LUT screen, try to load LUT version of image */
             out->ok = FALSE;
@@ -749,7 +755,7 @@ struct DecorImage *CreateDecorImageContainerMatchingScreen(struct DecorImage *in
             }
 
             /* Check if there was at least one subimage without alpha channel */
-            D(bug("File: %s : ", out->filename));
+            D(bug("File: %s : ", out->filename ? out->filename : (STRPTR)"<composed>"));
             for (row = 0; row < out->subimagesrows; row++)
             {
                 for (col = 0; col < out->subimagescols; col++)
@@ -794,9 +800,10 @@ struct DecorImage *CreateDecorImageContainerMatchingScreen(struct DecorImage *in
         Create an image copy prepared for a target screen.
 
     INPUTS
-        in - Source DecorImage with a valid filename, dimensions and nonzero
-            subimage grid consistent with those dimensions; normally returned
-            by DGetImageFromFile(). NULL requests an empty unusable container.
+        in - Source DecorImage with valid dimensions and a nonzero subimage
+            grid consistent with those dimensions; normally returned by
+            DGetImageFromFile(). Its filename may be NULL for an image that
+            was composed in memory. NULL requests an empty unusable container.
         truecolor - TRUE to use copied ARGB data; FALSE to try palette-matched
             picture loading for the target screen.
         scr - Live, non-NULL Screen with a valid RastPort.BitMap. Keep the
@@ -814,8 +821,9 @@ struct DecorImage *CreateDecorImageContainerMatchingScreen(struct DecorImage *in
 
         The palette path first loads filename with _LUT appended, then tries
         the original file remapped to scr. The true-color path does not reopen
-        the file, but still requires a valid source filename. Relative names
-        use the process's current directory at conversion time.
+        the file. An image without a filename has no file to load a palette
+        version from, so its copied pixels are used on every kind of screen.
+        Relative names use the process's current directory at conversion time.
 
         For copied pixels, fully opaque subimages are recorded in a decision
         table and may receive an auxiliary screen-compatible bitmap. No grid,
