@@ -26,7 +26,7 @@ void task_CleanList(struct Task * task, struct TaskResBase *TaskResBase)
             {
                 D(bug("[TaskRes] RemTask: destroying old taskentry @ 0x%p\n", taskEntry));
                 Remove(&taskEntry->tle_Node);
-                FreeMem(taskEntry, sizeof(struct TaskListEntry));
+                task_FreeEntry(taskEntry);
             }
         }
         ForeachNodeSafe(&TaskResBase->trb_NewTasks, taskEntry, tetmp)
@@ -57,6 +57,19 @@ struct TaskListEntry *GetTaskEntry(struct Task *task, struct TaskResBase *TaskRe
     task_ListUnlock(TaskResBase);
 
     return retval;
+}
+
+/* Free a task entry with its hook type entries. The C startup code calls
+   InitTaskHooks() in every program, which adds a TaskListHookEntry to the
+   task's entry; freeing only the entry leaked it once per process. The
+   hooks in tlhe_Hooks belong to their callers. */
+void task_FreeEntry(struct TaskListEntry *taskEntry)
+{
+    struct TaskListHookEntry *hookType, *tmp;
+
+    ForeachNodeSafe(&taskEntry->tle_HookTypes, hookType, tmp)
+        FreeMem(hookType, sizeof(struct TaskListHookEntry));
+    FreeMem(taskEntry, sizeof(struct TaskListEntry));
 }
 
 /* task hook support */

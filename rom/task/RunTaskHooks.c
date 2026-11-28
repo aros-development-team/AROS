@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2019, The AROS Development Team. All rights reserved.
+    Copyright (C) 2019-2026, The AROS Development Team. All rights reserved.
 */
 
 #define DEBUG 0
@@ -56,7 +56,7 @@
     struct Task *thisTask = FindTask(NULL);
     struct TaskListEntry *thisTEntry;
     struct TaskListHookEntry *typeEntry;
-    struct TaskListHookNode *hookEntry;
+    struct Hook *hook;
 
     thisTEntry = GetTaskEntry(thisTask, TaskResBase);
     if (thisTEntry)
@@ -64,9 +64,9 @@
         typeEntry = GetHookTypeEntry(&thisTEntry->tle_HookTypes, thType, FALSE);
         if (typeEntry)
         {
-            ForeachNode(&typeEntry->tlhe_Hooks, hookEntry)
+            ForeachNode(&typeEntry->tlhe_Hooks, hook)
             {
-                if (! trCallHook(hookEntry->tln_Hook))
+                if (! trCallHook(hook))
                     return FALSE;
             }
             if (typeEntry->tlhe_Node.ln_Pri == 1)

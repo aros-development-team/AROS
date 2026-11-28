@@ -162,6 +162,7 @@ static inline void task_SlotsUnlock(struct Task *task, struct TaskResBase *TaskR
 void task_CleanList(struct Task * task, struct TaskResBase *TaskResBase);
 struct TaskListHookEntry *GetHookTypeEntry(struct List *htList, ULONG thType, BOOL create);
 struct TaskListEntry *GetTaskEntry(struct Task *thisTask, struct TaskResBase *TaskResBase);
+void task_FreeEntry(struct TaskListEntry *taskEntry);
 
 void taskres_NotifyTasks(struct TaskResBase *TaskResBase, ULONG action, struct Task *task, struct Task *parent, struct TagItem *tags);
 

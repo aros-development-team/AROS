@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2019-2023, The AROS Development Team. All rights reserved.
+    Copyright (C) 2019-2026, The AROS Development Team. All rights reserved.
 */
 
 #ifdef DEBUG
@@ -59,7 +59,6 @@
 
     struct TaskListEntry *thisTEntry;
     struct TaskListHookEntry *typeEntry;
-    struct TaskListHookNode *hookEntry;
 
     thisTEntry = GetTaskEntry(thisTask, TaskResBase);
     if (thisTEntry)
@@ -69,9 +68,9 @@
         {
             if (typeEntry->tlhe_Node.ln_Pri >= 0)
             {
-                hookEntry = AllocMem(sizeof(struct TaskListHookNode), MEMF_PUBLIC|MEMF_CLEAR);
-                hookEntry->tln_Hook = tHook;
-                AddTail((struct List *)&typeEntry->tlhe_Hooks, (struct Node *)&hookEntry->tln_Hook->h_MinNode);
+                /* The hook is linked through its own h_MinNode (it stays
+                   the caller's); no node of our own is needed */
+                AddTail((struct List *)&typeEntry->tlhe_Hooks, (struct Node *)&tHook->h_MinNode);
             }
             else
             {
