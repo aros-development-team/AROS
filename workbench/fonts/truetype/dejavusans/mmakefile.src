@@ -1,0 +1,23 @@
+# Copyright (C) 2026, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+
+DEJAVUSANSARCHIVE := dejavu-fonts-ttf-2.37
+DEJAVUSANSSRC := $(PORTSDIR)/dejavusans/$(DEJAVUSANSARCHIVE)
+
+#MM- fonts-truetype : fonts-truetype-dejavusans
+#MM- fonts-truetype-quick : fonts-truetype-dejavusans
+#MM fonts-truetype-dejavusans : fonts-truetype-dejavusans-fetch
+
+%fetch mmake=fonts-truetype-dejavusans-fetch archive=$(DEJAVUSANSARCHIVE) suffixes="tar.bz2" \
+    location=$(PORTSSOURCEDIR) destination=$(PORTSDIR)/dejavusans \
+    archive_origins="https://github.com/dejavu-fonts/dejavu-fonts/releases/download/version_2_37"
+
+#MM
+fonts-truetype-dejavusans : | $(AROSDIR)/Fonts/TrueType
+	$(CP) $(DEJAVUSANSSRC)/ttf/DejaVuSans.ttf $(AROSDIR)/Fonts/TrueType
+	$(CP) $(DEJAVUSANSSRC)/LICENSE $(AROSDIR)/Fonts/TrueType/LICENSE-DejaVuSans.txt
+
+%rule_makedirs dirs=$(AROSDIR)/Fonts/TrueType
+
+%common
