@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2022, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 */
 
 /*********************************************************************************************/
@@ -618,9 +618,9 @@ static struct Screen *MakeGUI(void)
                     MUIA_FixHeight, 1,
                     MUIA_Group_SameWidth, TRUE,
 #endif
-                    Child, saveobj = ImageButton(MSG(MSG_GAD_SAVE), "THEME:Images/Gadgets/Save"),
-                    Child, useobj = ImageButton(MSG(MSG_GAD_USE), "THEME:Images/Gadgets/Use"),
-                    Child, cancelobj = ImageButton(MSG(MSG_GAD_CANCEL), "THEME:Images/Gadgets/Cancel"),
+                    Child, saveobj = ImageButton(MSG(MSG_GAD_SAVE), "THEMEIMAGES:Save"),
+                    Child, useobj = ImageButton(MSG(MSG_GAD_USE), "THEMEIMAGES:Use"),
+                    Child, cancelobj = ImageButton(MSG(MSG_GAD_CANCEL), "THEMEIMAGES:Cancel"),
                 End,
             End,
             End,

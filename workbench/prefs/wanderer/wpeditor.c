@@ -1,5 +1,5 @@
 /*
-    Copyright  2004-2019, The AROS Development Team. All rights reserved.
+    Copyright  2004-2026, The AROS Development Team. All rights reserved.
     This file is part of the Wanderer Preferences program, which is distributed
     under the terms of version 2 of the GNU General Public License.
     
@@ -1248,8 +1248,8 @@ D(bug("[WPEditor] WPEditor__OM_NEW()\n"));
 
 
 
-    _WP_Toolbar_PreviewDirUpObj = ImageButton("", "THEME:Images/Gadgets/DirUp");
-    _WP_Toolbar_PreviewSearchObj = ImageButton("", "THEME:Images/Gadgets/Search");
+    _WP_Toolbar_PreviewDirUpObj = ImageButton("", "THEMEIMAGES:DirUp");
+    _WP_Toolbar_PreviewSearchObj = ImageButton("", "THEMEIMAGES:Search");
 /*END _WP_Toolbar_GroupObj---------------------------------------------------*/
 
 /*Add main objects to main window (self?)------------------------------------*/
@@ -1536,8 +1536,8 @@ D(bug("[WPEditor] WPEditor__OM_NEW()\n"));
 
     /*Button Group-------------------------------------------------------*/
     _WP_AdvancedView_ButtonGrpObj = (Object *)HGroup,
-                    Child, (IPTR)(_WP_AdvancedView_ButtonObj_Use = ImageButton(_(MSG_USE), "THEME:Images/Gadgets/Use")),
-                    Child, (IPTR)(_WP_AdvancedView_ButtonObj_Cancel = ImageButton(_(MSG_CANCEL), "THEME:Images/Gadgets/Cancel")),
+                    Child, (IPTR)(_WP_AdvancedView_ButtonObj_Use = ImageButton(_(MSG_USE), "THEMEIMAGES:Use")),
+                    Child, (IPTR)(_WP_AdvancedView_ButtonObj_Cancel = ImageButton(_(MSG_CANCEL), "THEMEIMAGES:Cancel")),
                 End;
     /*END Button Group--------------------------------------------------*/
 

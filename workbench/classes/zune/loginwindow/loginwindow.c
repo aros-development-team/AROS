@@ -44,7 +44,7 @@
 *       use IMAGES: when that assign exists, otherwise SYS:System/Images/.
 *       Individual missing images become spacers; an existing assign does not
 *       cause a second search in the fallback path. Buttons use
-*       THEME:Images/Gadgets images.
+*       THEMEIMAGES: images.
 *       Use within a live MUI Application. Get returns borrowed pointers
 *       to control contents or stored strings; ownership is not transferred.
 *       Copy values before further editing or object disposal. Password masking affects presentation; this class provides no
@@ -780,7 +780,7 @@ Object *LoginWindow__OM_NEW
     /* The button row: "<space> [Login] [Cancel]", or in system mode (the
      * boot login, nothing to cancel) "[Shutdown] [Reboot] <space> [Login]" */
 /* theme images when present (ImageButton falls back to a text button) */
-#define LWButton(text, image) ImageButton((text), "THEME:Images/Gadgets/" image)
+#define LWButton(text, image) ImageButton((text), "THEMEIMAGES:" image)
     if (systemMode)
     {
         buttonGroup = HGroup,

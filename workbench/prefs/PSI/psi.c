@@ -1,6 +1,6 @@
 /*
     Copyright (C) 1995-1997 Stefan Stuntz.
-    Copyright (C) 2009-2022, The AROS Development Team.
+    Copyright (C) 2009-2026, The AROS Development Team.
     All rights reserved.
 
 */
@@ -30,7 +30,7 @@
 /* Global Vars                                                              */
 /****************************************************************************/
 
-const char VersionString[] = "$VER: PSI 20.1 (10.06.2010)";
+const char VersionString[] = "$VER: PSI 20.2 (28.11.2026)";
 struct Catalog *Catalog;
 
 /****************************************************************************/

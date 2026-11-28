@@ -351,7 +351,7 @@ int main(int argc,char *argv[])
 
     AQPart_gge_Progress = (GaugeObject, MUIA_Gauge_InfoText, "%ld %%", MUIA_Gauge_Horiz, TRUE, MUIA_Gauge_Current, 0, End);
 
-    AQPart_but_Help = ImageButton(NULL, "THEME:Images/Gadgets/Help");
+    AQPart_but_Help = ImageButton(NULL, "THEMEIMAGES:Help");
     GET(AQPart_but_Help, MUIA_Height, &helpHeight);
 
 //    SimpleButton("_?");
@@ -450,7 +450,7 @@ int main(int argc,char *argv[])
 
             AQPart_App = NewObject(mcc_qpapp->mcc_Class, NULL,
                 MUIA_Application_Title,       (IPTR)"AROS Quick Part",
-                MUIA_Application_Version,     (IPTR)"$VER: QuickPart 0.61 (27.05.23)",
+                MUIA_Application_Version,     (IPTR)"$VER: QuickPart 0.62 (28.11.26)",
                 MUIA_Application_Copyright,   (IPTR)"Copyright " ISOASCII_COPYRIGHT " 2003-2026, The AROS Development Team. All rights reserved.",
                 MUIA_Application_Author,      (IPTR)"Nick \"Kalamatee\" Andrews",
                 MUIA_Application_Description, __(MSG_DESCRIPTION),
@@ -519,9 +519,9 @@ int main(int argc,char *argv[])
                                     Child, (IPTR)(VGroup,
                                         MUIA_Weight, 0,
                                         MUIA_Group_SameWidth, TRUE,
-                                        Child, (IPTR) (AQPart_but_Use    = ImageButton((IPTR) "Apply", "THEME:Images/Gadgets/Use")),
-                                        Child, (IPTR) (ImageButton((IPTR) "Undo", "THEME:Images/Gadgets/Revert")),
-                                        Child, (IPTR) (AQPart_but_Cancel = ImageButton(__(WORD_Cancel), "THEME:Images/Gadgets/Cancel")),
+                                        Child, (IPTR) (AQPart_but_Use    = ImageButton((IPTR) "Apply", "THEMEIMAGES:Use")),
+                                        Child, (IPTR) (ImageButton((IPTR) "Undo", "THEMEIMAGES:Revert")),
+                                        Child, (IPTR) (AQPart_but_Cancel = ImageButton(__(WORD_Cancel), "THEMEIMAGES:Cancel")),
                                         Child, HVSpace,
                                     End),
                                 End),
@@ -608,8 +608,8 @@ int main(int argc,char *argv[])
                                                 End),
                                                 Child, (IPTR)HGroup,
                                                 Child, (IPTR)HVSpace,
-                                                Child, (IPTR)(AQPart_but_proceed = ImageButton(__(WORD_Proceed), "THEME:Images/Gadgets/Prefs/Use")),
-                                                Child, (IPTR)(AQPart_but_Cancel2 = ImageButton(__(WORD_Cancel), "THEME:Images/Gadgets/Prefs/Cancel")),
+                                                Child, (IPTR)(AQPart_but_proceed = ImageButton(__(WORD_Proceed), "THEMEIMAGES:Use")),
+                                                Child, (IPTR)(AQPart_but_Cancel2 = ImageButton(__(WORD_Cancel), "THEMEIMAGES:Cancel")),
                                         End),
                                 End),*/
 

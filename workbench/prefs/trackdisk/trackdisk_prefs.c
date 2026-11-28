@@ -60,11 +60,11 @@ int main(void)
     MainGrp.TagChild = MUIA_Group_Child;
     MainGrp.ButtonsGroup = MUI_NewObject("Group.mui", MUIA_Group_Horiz, TRUE,
 	    MUIA_Group_Child,
-        SaveButton = ImageButton(_(MSG_SAVE), "THEME:Images/Gadgets/Save"),
+        SaveButton = ImageButton(_(MSG_SAVE), "THEMEIMAGES:Save"),
 	    MUIA_Group_Child,
-        UseButton = ImageButton(_(MSG_USE), "THEME:Images/Gadgets/Use"),
+        UseButton = ImageButton(_(MSG_USE), "THEMEIMAGES:Use"),
 	    MUIA_Group_Child,
-	    CancelButton = ImageButton(_(MSG_CANCEL), "THEME:Images/Gadgets/Cancel"),
+	    CancelButton = ImageButton(_(MSG_CANCEL), "THEMEIMAGES:Cancel"),
     TAG_DONE);
     MainGrp.TagDone = TAG_DONE;
     App = MUI_NewObject("Application.mui", MUIA_Application_Author, "Pavel Fedin and Team AROS",
@@ -73,7 +73,7 @@ int main(void)
         MUIA_Application_Description, __(MSG_DESCRIPTION),
 	    MUIA_Application_SingleTask, TRUE,
         MUIA_Application_Title, __(MSG_NAME),
-	MUIA_Application_Version, (IPTR)"$VER: Trackdisk 41.5 (30.11.2007) \xa9 2007 Pavel Fedin and Team AROS",
+	MUIA_Application_Version, (IPTR)"$VER: Trackdisk 41.6 (28.11.2026) \xa9 2007 Pavel Fedin and Team AROS",
 	    MUIA_Application_Window,
 	    MainWin = MUI_NewObject("Window.mui", MUIA_Window_ID, MAKE_ID('M', 'A', 'I', 'N'),
             MUIA_Window_Title,__(MSG_WINDOW_TITLE),

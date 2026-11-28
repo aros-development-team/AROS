@@ -602,7 +602,7 @@ struct secPointers
 /* The current S:Security-Startup that AMUInit installs; security.library
  * logs a hint at start-up when the installed one is older */
 #define secSTARTUP_VERSION      (45)
-#define secSTARTUP_REVISION     (12)
+#define secSTARTUP_REVISION     (13)
 
 /*==========================================================================*/
 /*                      FileSystem Authors' API                             */

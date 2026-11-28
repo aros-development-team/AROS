@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2006-2011, The AROS Development Team. All rights reserved.
+    Copyright (C) 2006-2026, The AROS Development Team. All rights reserved.
 */
 
 #define MUIMASTER_YES_INLINE_STDARG
@@ -25,7 +25,7 @@
 #include <stdio.h>
 #include <string.h>
 
-char versionstring[] = "$VER: WBNewDrawer 0.7 (6.4.2011) \xA9 2006-2011 AROS Dev Team";
+char versionstring[] = "$VER: WBNewDrawer 0.8 (28.11.2026) \xA9 2006-2026 AROS Dev Team";
 
 static STRPTR AllocateNameFromLock(BPTR lock);
 static void bt_ok_hook_function(void);
@@ -116,8 +116,8 @@ static void MakeGUI(void)
                     MUIA_FixHeight,      2,
                 End),
                 Child, (IPTR) (HGroup,
-                    Child, (IPTR) (bt_ok = ImageButton(__(MSG_OK), "THEME:Images/Gadgets/OK")),
-                    Child, (IPTR) (bt_cancel = ImageButton(__(MSG_CANCEL),"THEME:Images/Gadgets/Cancel")),
+                    Child, (IPTR) (bt_ok = ImageButton(__(MSG_OK), "THEMEIMAGES:OK")),
+                    Child, (IPTR) (bt_cancel = ImageButton(__(MSG_CANCEL),"THEMEIMAGES:Cancel")),
                     End),
                 End),
         End),

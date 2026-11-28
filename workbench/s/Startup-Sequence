@@ -79,6 +79,24 @@ Else
 EndIf
 If EXISTS "THEME:Images"
     Assign "IMAGES:"  "THEME:Images" PREPEND
+
+    ; THEMEIMAGES: is where the images of the theme are found. It starts with
+    ; the image set of the selected size, followed by the theme's other sets
+    ; for the images that set does not have.
+    Set themesize "16"
+    If EXISTS "ENV:SYS/themesize.var"
+        Set themesize "${SYS/themesize.var}"
+    EndIf
+    If EXISTS "THEME:Images/${themesize}pt"
+        Assign "THEMEIMAGES:" "THEME:Images/${themesize}pt"
+    Else
+        ; the theme does not have that size: its other sets are all there is
+        Assign "THEMEIMAGES:" "THEME:Images"
+    EndIf
+    List "THEME:Images" DIRS PAT "#?pt" NOHEAD TO "T:themeimages" LFORMAT="If NOT %N EQ ${themesize}pt*NAssign >NIL: THEMEIMAGES: *"%P%N*" ADD*NEndIf"
+    Execute "T:themeimages"
+    Delete >NIL: "T:themeimages" QUIET
+    Unset themesize
 EndIf
 
 Touch >NIL: "FONTS:__TEST__"

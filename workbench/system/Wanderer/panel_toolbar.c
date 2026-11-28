@@ -1,5 +1,5 @@
 /*
-  Copyright  2004-2010, The AROS Development Team. All rights reserved.
+  Copyright  2004-2026, The AROS Development Team. All rights reserved.
 */
 #define MUIMASTER_YES_INLINE_STDARG
 
@@ -269,7 +269,7 @@ IPTR panelToolBar__Setup(Class *CLASS, Object *self, struct opSet *message)
         return (IPTR)NULL;
 
 #if !defined(ICONWINDOW_OPTION_NOSEARCHBUTTON)
-    panelToolBar_ButtonSearch = ImageButton("", "THEME:Images/Gadgets/Search");
+    panelToolBar_ButtonSearch = ImageButton("", "THEMEIMAGES:Search");
 #endif
 
     D(bug("[IW.toolbar]: %s()\n", __PRETTY_FUNCTION__));
@@ -315,7 +315,7 @@ IPTR panelToolBar__Setup(Class *CLASS, Object *self, struct opSet *message)
                     MUIA_InnerBottom,(0),
                     MUIA_HorizWeight,   0,
                     MUIA_VertWeight,    100,
-                    Child, (IPTR) (panelToolBar_ButtonDirUp = ImageButton("", "THEME:Images/Gadgets/DirUp")),
+                    Child, (IPTR) (panelToolBar_ButtonDirUp = ImageButton("", "THEMEIMAGES:DirUp")),
                     (panelToolBar_ButtonSearch ? Child : TAG_IGNORE), (IPTR) (panelToolBar_ButtonSearch),
                 TAG_DONE),
             TAG_DONE),

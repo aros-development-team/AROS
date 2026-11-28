@@ -87,7 +87,7 @@
 
 struct Library *secBase;
 
-const TEXT version[] = "$VER: AMUInit 45.9 (19.10.2026)";
+const TEXT version[] = "$VER: AMUInit 45.10 (28.11.2026)";
 
 #define TEMPLATE "ENABLE/S,DISABLE/S,UPGRADE/S,VOLUME/A,FORCE/S"
 enum { ARG_ENABLE, ARG_DISABLE, ARG_UPGRADE, ARG_VOLUME, ARG_FORCE, ARG_COUNT };
@@ -101,7 +101,7 @@ enum { ARG_ENABLE, ARG_DISABLE, ARG_UPGRADE, ARG_VOLUME, ARG_FORCE, ARG_COUNT };
 #define STARTUP_OFF     "S/Security-Startup.disabled"
 
 static const char StartupScript[] =
-    "; $VER: Security-Startup 45.12 (17.10.2026)\n"
+    "; $VER: Security-Startup 45.13 (28.11.2026)\n"
     ";\n"
     "FailAt 21\n"
     "Assign LIBS: SYS:Classes ADD\n"
@@ -119,6 +119,19 @@ static const char StartupScript[] =
     "EndIf\n"
     "If EXISTS \"THEME:Images\"\n"
     "    Assign IMAGES: \"THEME:Images\" PREPEND\n"
+    "    Set themesize \"16\"\n"
+    "    If EXISTS \"ENV:SYS/themesize.var\"\n"
+    "        Set themesize \"${SYS/themesize.var}\"\n"
+    "    EndIf\n"
+    "    If EXISTS \"THEME:Images/${themesize}pt\"\n"
+    "        Assign THEMEIMAGES: \"THEME:Images/${themesize}pt\"\n"
+    "    Else\n"
+    "        Assign THEMEIMAGES: \"THEME:Images\"\n"
+    "    EndIf\n"
+    "    List \"THEME:Images\" DIRS PAT \"#?pt\" NOHEAD TO \"T:themeimages\" LFORMAT=\"If NOT %N EQ ${themesize}pt*NAssign >NIL: THEMEIMAGES: *\"%P%N*\" ADD*NEndIf\"\n"
+    "    Execute \"T:themeimages\"\n"
+    "    Delete >NIL: \"T:themeimages\" QUIET\n"
+    "    Unset themesize\n"
     "EndIf\n"
     "AddDataTypes REFRESH QUIET\n"
     "If EXISTS \"SYS:Classes/USB\"\n"

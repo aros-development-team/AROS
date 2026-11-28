@@ -17,7 +17,7 @@
 *       Build a preferences-window shell around caller-supplied WindowContents,
 *       with Test, Revert, Save, Use, and Cancel buttons. Labels come from
 *       PrefsWindow.catalog when available, otherwise compiled defaults. Button
-*       images use the corresponding THEME:Images/Gadgets paths. The configured
+*       images use the corresponding THEMEIMAGES: paths. The configured
 *       class version is 1.2.
 *       Button release sends the corresponding MUIM_PrefsWindow_* method to the
 *       window. CloseRequest sends Cancel. All eight action methods in the
@@ -485,8 +485,8 @@ Object *PrefsWindow__OM_NEW
                     MUIA_Group_SameWidth, TRUE,
                     MUIA_Weight,             0,
                     
-                    Child, (IPTR) (testButton   = ImageButton(_(MSG_TEST), "THEME:Images/Gadgets/Test")),
-                    Child, (IPTR) (revertButton = ImageButton(_(MSG_REVERT), "THEME:Images/Gadgets/Revert")),
+                    Child, (IPTR) (testButton   = ImageButton(_(MSG_TEST), "THEMEIMAGES:Test")),
+                    Child, (IPTR) (revertButton = ImageButton(_(MSG_REVERT), "THEMEIMAGES:Revert")),
                 End,
                 Child, (IPTR) RectangleObject,
                     MUIA_Weight, 50,
@@ -501,9 +501,9 @@ Object *PrefsWindow__OM_NEW
                     MUIA_Group_SameWidth, TRUE,
                     MUIA_Weight,             0,
                     
-                    Child, (IPTR) (saveButton   = ImageButton(_(MSG_SAVE), "THEME:Images/Gadgets/Save")),
-                    Child, (IPTR) (useButton    = ImageButton(_(MSG_USE), "THEME:Images/Gadgets/Use")),
-                    Child, (IPTR) (cancelButton = ImageButton(_(MSG_CANCEL), "THEME:Images/Gadgets/Cancel")),
+                    Child, (IPTR) (saveButton   = ImageButton(_(MSG_SAVE), "THEMEIMAGES:Save")),
+                    Child, (IPTR) (useButton    = ImageButton(_(MSG_USE), "THEMEIMAGES:Use")),
+                    Child, (IPTR) (cancelButton = ImageButton(_(MSG_CANCEL), "THEMEIMAGES:Cancel")),
                 End,
             End,
         End,

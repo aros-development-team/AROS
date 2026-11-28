@@ -931,7 +931,7 @@ D(bug("[WBInfo] icon type is: %s\n", type));
  
     application = (Object *)ApplicationObject,
         MUIA_Application_Title,  __(MSG_TITLE),
-        MUIA_Application_Version, (IPTR) "$VER: Info 0.9 ("ADATE") " ISOASCII_COPYRIGHT " 2003-2026 The AROS Dev Team",
+        MUIA_Application_Version, (IPTR) "$VER: Info 0.10 ("ADATE") " ISOASCII_COPYRIGHT " 2003-2026 The AROS Dev Team",
         MUIA_Application_Description,  __(MSG_DESCRIPTION),
         MUIA_Application_Base, (IPTR) "INFO",
         MUIA_Application_Menustrip, (IPTR) MenustripObject,
@@ -1096,9 +1096,9 @@ D(bug("[WBInfo] icon type is: %s\n", type));
                 Child, (IPTR) HGroup,
                     MUIA_Group_SameSize, TRUE,
                     Child, (IPTR) (savebutton =
-                     ImageButton(_(MSG_SAVE),"THEME:Images/Gadgets/OK")),
+                     ImageButton(_(MSG_SAVE),"THEMEIMAGES:OK")),
                     Child, (IPTR) (cancelbutton =
-                     ImageButton(_(MSG_CANCEL),"THEME:Images/Gadgets/Cancel")),
+                     ImageButton(_(MSG_CANCEL),"THEMEIMAGES:Cancel")),
                 End,
             End,
         End),

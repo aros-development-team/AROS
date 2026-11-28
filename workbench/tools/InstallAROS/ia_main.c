@@ -347,9 +347,9 @@ int main(int argc, char *argv[])
     opt_grub2mode[0] = _(MSG_TEXT);
     opt_grub2mode[1] = _(MSG_GFX);
 
-    gad_back = ImageButton(_(MSG_BACK), "THEME:Images/Gadgets/Previous");
-    gad_proceed = ImageButton(_(MSG_PROCEED), "THEME:Images/Gadgets/Next");
-    gad_cancel = ImageButton(_(MSG_CANCEL2), "THEME:Images/Gadgets/Cancel");
+    gad_back = ImageButton(_(MSG_BACK), "THEMEIMAGES:ArrowLeft");
+    gad_proceed = ImageButton(_(MSG_PROCEED), "THEMEIMAGES:ArrowRight");
+    gad_cancel = ImageButton(_(MSG_CANCEL2), "THEMEIMAGES:Cancel");
 
     driveObjSelect = NewObject(driveselMcc->mcc_Class, NULL,
             MUIA_DriveSelect_InstallInstance, (IPTR)InstallObj,
@@ -707,7 +707,7 @@ int main(int argc, char *argv[])
 
     Object *app = ApplicationObject,
         MUIA_Application_Title,       __(MSG_TITLE),
-        MUIA_Application_Version,     (IPTR) "$VER: InstallAROS 1.31 (16.12.2024)",
+        MUIA_Application_Version,     (IPTR) "$VER: InstallAROS 1.32 (28.11.2026)",
         MUIA_Application_Copyright,   (IPTR) "Copyright " ISOASCII_COPYRIGHT " 2003-2026, The AROS Development Team. All rights reserved.",
         MUIA_Application_Author,      (IPTR) "John \"Forgoil\" Gustafsson, Nick Andrews & Neil Cafferkey",
         MUIA_Application_Description, __(MSG_DESCRIPTION),

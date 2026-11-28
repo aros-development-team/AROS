@@ -698,7 +698,7 @@ int main(int argc, char *argv[])
                     Child, (IPTR) RectangleObject,
                         MUIA_Weight, 50,
                         End,
-                    Child, (IPTR)(o_applybut = GUIImgButtonObject("Apply", "THEME:Images/Gadgets/Use", "Apply filtering options")),
+                    Child, (IPTR)(o_applybut = GUIImgButtonObject("Apply", "THEMEIMAGES:Use", "Apply filtering options")),
                     End,
                 End,
             End,

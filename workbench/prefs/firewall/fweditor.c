@@ -439,10 +439,10 @@ Object *FWEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 {
     static const STRPTR themeImages[] =
     {
-        "THEME:Images/Gadgets/small/Add",
-        "THEME:Images/Gadgets/small/Delete",
-        "THEME:Images/Gadgets/small/Up",
-        "THEME:Images/Gadgets/small/Down",
+        "THEMEIMAGES:AddSmall.mbr",
+        "THEMEIMAGES:DeleteSmall.mbr",
+        "THEMEIMAGES:UpSmall.mbr",
+        "THEMEIMAGES:DownSmall.mbr",
         NULL
     };
     struct FWEditor_DATA *data;
@@ -578,10 +578,10 @@ Object *FWEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 
             Child, (IPTR)HGroup,
                 Child, (IPTR)(fUseBtn = ImageButton(_(MSG_USE),
-                                "THEME:Images/Gadgets/Use")),
+                                "THEMEIMAGES:Use")),
                 Child, (IPTR)HSpace(0),
                 Child, (IPTR)(fCancelBtn = ImageButton(_(MSG_CANCEL),
-                                "THEME:Images/Gadgets/Cancel")),
+                                "THEMEIMAGES:Cancel")),
             End,
         End,
     End;
@@ -640,10 +640,10 @@ Object *FWEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 
             Child, (IPTR)HGroup,
                 Child, (IPTR)(nUseBtn = ImageButton(_(MSG_USE),
-                                "THEME:Images/Gadgets/Use")),
+                                "THEMEIMAGES:Use")),
                 Child, (IPTR)HSpace(0),
                 Child, (IPTR)(nCancelBtn = ImageButton(_(MSG_CANCEL),
-                                "THEME:Images/Gadgets/Cancel")),
+                                "THEMEIMAGES:Cancel")),
             End,
         End,
     End;

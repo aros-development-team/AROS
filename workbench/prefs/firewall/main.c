@@ -18,7 +18,7 @@
 #include "fweditor.h"
 #include "prefsdata.h"
 
-#define VERSION "$VER: Firewall 1.0 (" __DATE__ ") AROS Dev Team"
+#define VERSION "$VER: Firewall 1.1 (" __DATE__ ") AROS Dev Team"
 
 int main(int argc, char **argv)
 {

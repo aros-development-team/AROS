@@ -1,6 +1,6 @@
 /*
     Copyright (C) 1995-1997 Stefan Stuntz.
-    Copyright (C) 2009-2020, The AROS Development Team.
+    Copyright (C) 2009-2026, The AROS Development Team.
     All rights reserved.
 
 */
@@ -226,9 +226,9 @@ IPTR MainWindow_New(struct IClass *cl, Object *obj, struct opSet *msg)
                     Child, HGroup,
                         MUIA_Group_SameSize, TRUE,
                         MUIA_Weight,             0,
-                        Child, (IPTR) (BT_Save = ImageButton(GetStr(MSG_BUTTON_SAVE), "THEME:Images/Gadgets/Save")),
-                        Child, (IPTR) (BT_Use = ImageButton(GetStr(MSG_BUTTON_USE), "THEME:Images/Gadgets/Use")),
-                        Child, (IPTR) (BT_Cancel = ImageButton(GetStr(MSG_BUTTON_CANCEL), "THEME:Images/Gadgets/Cancel")),
+                        Child, (IPTR) (BT_Save = ImageButton(GetStr(MSG_BUTTON_SAVE), "THEMEIMAGES:Save")),
+                        Child, (IPTR) (BT_Use = ImageButton(GetStr(MSG_BUTTON_USE), "THEMEIMAGES:Use")),
+                        Child, (IPTR) (BT_Cancel = ImageButton(GetStr(MSG_BUTTON_CANCEL), "THEMEIMAGES:Cancel")),
                     End,
 #else
                     MUIA_Group_SameSize, TRUE,

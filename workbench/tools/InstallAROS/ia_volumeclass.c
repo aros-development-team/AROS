@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2023, The AROS Development Team. All rights reserved.
+    Copyright (C) 2023-2026, The AROS Development Team. All rights reserved.
 */
 
 #define INTUITION_NO_INLINE_STDARG
@@ -183,14 +183,16 @@ static IPTR Volume__OM_NEW(Class * CLASS, Object * self, struct opSet *message)
 
     if (volInform)
     {
-        actionObjImgPath ="THEME:Images/Gadgets/Help";
+        actionObjImgPath ="THEMEIMAGES:Help";
     }
     else
     {
-        actionObjImgPath ="THEME:Images/Gadgets/Below";
+        actionObjImgPath ="THEMEIMAGES:ArrowDown";
     }
     imageSpec[0] = '\0';
-    lock = Lock(actionObjImgPath, ACCESS_READ);
+    /* the image itself is located by Zune, in the theme's image set
+       that suits the screen; only check that a theme provides images */
+    lock = Lock("THEMEIMAGES:", ACCESS_READ);
     if (lock != BNULL)
     {
         strlcat(imageSpec, "3:", BUFFERSIZE);

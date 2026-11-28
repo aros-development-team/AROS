@@ -15,7 +15,7 @@
 #include "netpeditor.h"
 #include "prefsdata.h"
 
-#define VERSION "$VER: Network 1.25 (21.02.2026) AROS Dev Team"
+#define VERSION "$VER: Network 1.26 (28.11.2026) AROS Dev Team"
 
 struct NetPrefsBase;
 extern struct NetPrefsBase *NetPrefs_Bootstrap(void);

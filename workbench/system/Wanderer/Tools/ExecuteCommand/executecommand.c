@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2003-2011, The AROS Development Team. All rights reserved.
+    Copyright (C) 2003-2026, The AROS Development Team. All rights reserved.
 */
 
 #define MUIMASTER_YES_INLINE_STDARG
@@ -25,7 +25,7 @@
 #include "locale.h"
 #include "support.h"
 
-#define VERSION "$VER: Execute 0.2 (13.01.2006) \xA9 2006 The AROS Dev Team"
+#define VERSION "$VER: Execute 0.3 (28.11.2026) \xA9 2006-2026 The AROS Dev Team"
 
 /*** Private methods ********************************************************/
 #define MUIM_ExecuteCommand_ExecuteCommand  (TAG_USER | 0x20000000)
@@ -136,8 +136,8 @@ Object *ExecuteCommand__OM_NEW
                         MUIA_Group_SameSize, TRUE,
                         MUIA_Weight,         0,
                         
-                        Child, (IPTR)(executeButton = ImageButton(_(MSG_BUTTON_EXECUTE),"THEME:Images/Gadgets/OK")),
-                        Child, (IPTR)(cancelButton  = ImageButton(_(MSG_BUTTON_CANCEL),"THEME:Images/Gadgets/Cancel")),
+                        Child, (IPTR)(executeButton = ImageButton(_(MSG_BUTTON_EXECUTE),"THEMEIMAGES:OK")),
+                        Child, (IPTR)(cancelButton  = ImageButton(_(MSG_BUTTON_CANCEL),"THEMEIMAGES:Cancel")),
                     End,
                 End,
             End,

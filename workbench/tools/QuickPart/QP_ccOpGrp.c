@@ -1,5 +1,5 @@
 /*
-    Copyright © 2012-2025, The AROS Development Team. All rights reserved.
+    Copyright © 2012-2026, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -132,7 +132,7 @@ static IPTR QPOpGrp__OM_ADDMEMBER
         supermsg.Obj = VGroup,
                 Child, HVSpace,
                 Child, ImageObject,
-                    MUIA_Image_Spec, (IPTR)"3:THEME:Images/Gadgets/Next",
+                    MUIA_Image_Spec, (IPTR)"3:THEMEIMAGES:ArrowRight",
                 End,
                 Child, HVSpace,
             End;

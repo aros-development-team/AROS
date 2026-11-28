@@ -275,9 +275,9 @@ static IPTR PAWin__OM_NEW(Class *cl, Object *obj, struct opSet *msg)
             Child, (IPTR)(content != NULL ? content : HVSpace),
             Child, (IPTR)HGroup,
                 Child, (IPTR)(useBtn    = ImageButton(_(MSG_BUTTON_USE),
-                                "THEME:Images/Gadgets/Use")),
+                                "THEMEIMAGES:Use")),
                 Child, (IPTR)(cancelBtn = ImageButton(_(MSG_BUTTON_CANCEL),
-                                "THEME:Images/Gadgets/Cancel")),
+                                "THEMEIMAGES:Cancel")),
             End,
         End,
         TAG_MORE, (IPTR)msg->ops_AttrList);
