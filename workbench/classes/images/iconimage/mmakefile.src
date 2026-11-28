@@ -1,0 +1,14 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+# Image classes showing icon.library's default icons, for use in MUI
+# image specifications.
+
+#MM- workbench-classes-images : \
+#MM     workbench-classes-images-disk \
+#MM     workbench-classes-images-drawer \
+#MM     workbench-classes-images-harddisk \
+#MM     workbench-classes-images-ram \
+#MM     workbench-classes-images-volume
+
+#MM- workbench-classes-complete : workbench-classes-images

@@ -1,0 +1,13 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+USER_LDFLAGS := -static
+
+#MM workbench-classes-images-ram : includes linklibs
+
+# Installed with the image sets, where MUI keeps its .image files
+%build_module mmake=workbench-classes-images-ram \
+    modname=Ram modtype=image moduledir=System/Images/Zune \
+    files=ramclass
+
+%common

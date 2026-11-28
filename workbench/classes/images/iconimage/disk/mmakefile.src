@@ -1,0 +1,13 @@
+
+include $(SRCDIR)/config/aros.cfg
+
+USER_LDFLAGS := -static
+
+#MM workbench-classes-images-disk : includes linklibs
+
+# Installed with the image sets, where MUI keeps its .image files
+%build_module mmake=workbench-classes-images-disk \
+    modname=Disk modtype=image moduledir=System/Images/Zune \
+    files=diskclass
+
+%common
