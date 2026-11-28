@@ -22,6 +22,7 @@
 #include "filehandles3.h"
 #include "misc.h"
 #include "afs_security.h"
+#include "notify.h"
 #include "volumes.h"
 
 #include "baseredef.h"
@@ -64,16 +65,21 @@ static struct AFSBase *AFS_alloc(void)
 
             /* Port for device commands */
             handler->timer_mp = CreateMsgPort();
+            /* Port for replies to notification messages */
+            NEWLIST(&handler->notifies);
+            handler->notify_mp = CreateMsgPort();
             /* Open timer */
             handler->timer_request = (struct timerequest *)
                 CreateIORequest(handler->timer_mp, sizeof(struct timerequest));
             if (handler->timer_request != NULL) {
-                if (OpenDevice("timer.device", UNIT_VBLANK,
+                if (handler->notify_mp != NULL
+                        && OpenDevice("timer.device", UNIT_VBLANK,
                             (APTR)handler->timer_request, 0) == 0) {
                     return handler;
                 }
                 DeleteIORequest((struct IORequest *)handler->timer_request);
             }
+            DeleteMsgPort(handler->notify_mp);
             DeleteMsgPort(handler->timer_mp);
             CloseLibrary((struct Library *)handler->dosbase);
         }
@@ -91,6 +97,7 @@ static void AFS_free(struct AFSBase *handler)
     }
     CloseDevice((struct IORequest *)handler->timer_request);
     DeleteIORequest((struct IORequest *)handler->timer_request);
+    DeleteMsgPort(handler->notify_mp);
     DeleteMsgPort(handler->timer_mp);
     CloseLibrary((struct Library *)handler->dosbase);
     CloseLibrary((struct Library *)handler->utilitybase);
@@ -114,8 +121,10 @@ static struct Volume *AFS_open_volume(struct AFSBase *handler, struct DosPacket 
 
 static BOOL AFS_close_volume(struct AFSBase *handler, struct Volume *volume, SIPTR *io_DosError)
 {
-    /* Locks parked with an offline volume still name this handler */
-    if (!volume->locklist && handler->parkedvols == 0) {
+    /* Locks parked with an offline volume still name this handler, and so
+     * do notification requests (EndNotify() sends a packet to it) and the
+     * notification messages that are not replied yet */
+    if (!volume->locklist && handler->parkedvols == 0 && afsNotifyIdle(handler)) {
         if (!flushForRelease(handler, volume)) {
             *io_DosError = ERROR_UNKNOWN;
             return FALSE;
@@ -367,15 +376,18 @@ LONG AFS_work(struct ExecBase *SysBase)
         ULONG packetmask = 1L << mp->mp_SigBit;
         ULONG timermask = 1L << handler->timer_mp->mp_SigBit;
         ULONG changemask = 1L << SIGBREAKB_CTRL_F;
+        ULONG notifymask = 1L << handler->notify_mp->mp_SigBit;
         ULONG sigs;
 
-        sigs = Wait(packetmask | timermask | changemask);
+        sigs = Wait(packetmask | timermask | changemask | notifymask);
 
         /* Process a media-change interrupt before touching cached disk data,
          * even when it woke the packet port rather than SIGBREAKB_CTRL_F. */
         checkDeviceFlags(handler);
         if (sigs & timermask)
             onFlushTimer(handler, volume);
+        if (sigs & notifymask)
+            afsNotifyReplies(handler);
 
         if (!(sigs & packetmask))
             continue;
@@ -391,6 +403,7 @@ LONG AFS_work(struct ExecBase *SysBase)
             D(bug("[AFS] packet %p:%d\n", dp, dp->dp_Type));
             if (volume->cachepending && dp->dp_Type != ACTION_END
                     && dp->dp_Type != ACTION_FREE_LOCK
+                    && dp->dp_Type != ACTION_REMOVE_NOTIFY
                     && dp->dp_Type != ACTION_IS_FILESYSTEM
                     && dp->dp_Type != ACTION_IS_SECFS
                     && dp->dp_Type != ACTION_GET_SECFS_VERSION
@@ -428,9 +441,24 @@ LONG AFS_work(struct ExecBase *SysBase)
                 res2 = inhibit(handler, volume, dp->dp_Arg1);
                 goto res2_reply;
             case ACTION_END:
-                closef(handler, (struct AfsHandle *)dp->dp_Arg1);
+            {
+                struct AfsHandle  *ah = (struct AfsHandle *)dp->dp_Arg1;
+
+                /* a file is notified when it is closed, not for each write */
+                if (ah->changed) {
+                    afsNotifyTouch(handler, ah, "");
+                    afsNotifyFlush(handler, TRUE);
+                }
+                closef(handler, ah);
                 ok = DOSTRUE;
                 break;
+            }
+            case ACTION_ADD_NOTIFY:
+                res2 = afsNotifyAdd(handler, volume, (struct NotifyRequest *)dp->dp_Arg1);
+                goto res2_reply;
+            case ACTION_REMOVE_NOTIFY:
+                res2 = afsNotifyRemove(handler, (struct NotifyRequest *)dp->dp_Arg1);
+                goto res2_reply;
             case ACTION_MORE_CACHE:
                 {
                     LONG numbuff = dp->dp_Arg1;
@@ -524,6 +552,9 @@ LONG AFS_work(struct ExecBase *SysBase)
                             break;
                         }
                     }
+                    /* created or emptied, also when nothing gets written */
+                    if (dp->dp_Type == ACTION_FINDOUTPUT)
+                        ah->changed = TRUE;
                     fh->fh_Arg1 = (SIPTR)ah;
                     ok = DOSTRUE;
                 }
@@ -601,6 +632,9 @@ LONG AFS_work(struct ExecBase *SysBase)
                 if (nodisk)
                     goto nodisk_reply;
                 ok = writef(handler, (struct AfsHandle *)(dp->dp_Arg1), (APTR)dp->dp_Arg2, (LONG)dp->dp_Arg3, &res2);
+                /* a failed write may have written some of it */
+                if (ok != 0)
+                    ((struct AfsHandle *)(dp->dp_Arg1))->changed = TRUE;
                 break;
             case ACTION_SEEK:
                 if (nodisk)
@@ -611,6 +645,8 @@ LONG AFS_work(struct ExecBase *SysBase)
                 if (nodisk)
                     goto nodisk_reply;
                 ok = setFileSize(handler, (struct AfsHandle *)(dp->dp_Arg1),(LONG)dp->dp_Arg2, (LONG)dp->dp_Arg3, &res2);
+                if (ok != -1)
+                    ((struct AfsHandle *)(dp->dp_Arg1))->changed = TRUE;
                 break;
             case ACTION_FH_FROM_LOCK:
             {
@@ -735,12 +771,24 @@ LONG AFS_work(struct ExecBase *SysBase)
                 /* multi-user: property access to the object, write access to both directories */
                 if ((res2 = afsSecCheckNameProperty(handler, oh, on)) == 0 &&
                     (res2 = afsSecCheckParent(handler, oh, on, AFS_ACCESS_WRITE)) == 0 &&
-                    (res2 = afsSecCheckParent(handler, oh, nn, AFS_ACCESS_WRITE)) == 0)
+                    (res2 = afsSecCheckParent(handler, oh, nn, AFS_ACCESS_WRITE)) == 0) {
+                    /* the old name and directory, then the new ones */
+                    afsNotifyTouch(handler, oh, on);
                     res2 = renameObject(handler, oh, on, nn);
+                    if (res2 == 0)
+                        afsNotifyTouch(handler, oh, nn);
+                    afsNotifyFlush(handler, res2 == 0);
+                }
                 goto res2_reply;
             }
             case ACTION_RENAME_DISK:
+                /* the requests on the root, which name it by its old label */
+                afsNotifyTouch(handler, &volume->ah, "");
                 ok = relabel(handler, volume, AROS_BSTR_ADDR(dp->dp_Arg1), &res2);
+                /* and those that name it by the new one */
+                if (ok != DOSFALSE)
+                    afsNotifyTouch(handler, &volume->ah, "");
+                afsNotifyFlush(handler, ok != DOSFALSE);
                 break;
             case ACTION_CREATE_DIR:
             {
@@ -761,6 +809,8 @@ LONG AFS_work(struct ExecBase *SysBase)
                         flnew->fl_Task = mp;
                         flnew->fl_Volume = MKBADDR(&volume->devicelist);
                         ok = (SIPTR)MKBADDR(flnew);
+                        afsNotifyTouch(handler, ah, "");
+                        afsNotifyFlush(handler, TRUE);
                     }
                 } else {
                     res2 = ERROR_NO_FREE_STORE;
@@ -774,8 +824,12 @@ LONG AFS_work(struct ExecBase *SysBase)
 
                 /* multi-user: delete access to the object, write access to its directory */
                 if ((res2 = afsSecCheckName(handler, h, n, AFS_ACCESS_DELETE)) == 0 &&
-                    (res2 = afsSecCheckParent(handler, h, n, AFS_ACCESS_WRITE)) == 0)
+                    (res2 = afsSecCheckParent(handler, h, n, AFS_ACCESS_WRITE)) == 0) {
+                    /* afterwards the object cannot be looked up any more */
+                    afsNotifyTouch(handler, h, n);
                     res2 = deleteObject(handler, h, n);
+                    afsNotifyFlush(handler, res2 == 0);
+                }
                 goto res2_reply;
             }
             case ACTION_SET_COMMENT:
@@ -792,6 +846,10 @@ LONG AFS_work(struct ExecBase *SysBase)
                         res2 = setProtect(handler, h, n, dp->dp_Arg4);
                     else
                         res2 = setDate(handler, h, n, (struct DateStamp *)dp->dp_Arg4);
+                    if (res2 == 0) {
+                        afsNotifyTouch(handler, h, n);
+                        afsNotifyFlush(handler, TRUE);
+                    }
                 }
                 goto res2_reply;
             }
@@ -800,6 +858,11 @@ LONG AFS_work(struct ExecBase *SysBase)
                     goto nodisk_reply;
                 res2 = afsSecSetOwner(handler, lockhandle(volume, dp->dp_Arg2),
                     skipdevname(AROS_BSTR_ADDR(dp->dp_Arg3)), (ULONG)dp->dp_Arg4);
+                if (res2 == 0) {
+                    afsNotifyTouch(handler, lockhandle(volume, dp->dp_Arg2),
+                        skipdevname(AROS_BSTR_ADDR(dp->dp_Arg3)));
+                    afsNotifyFlush(handler, TRUE);
+                }
                 goto res2_reply;
             case ACTION_FLUSH:
                 if (volume->inhibitcounter != 0 || nodisk)

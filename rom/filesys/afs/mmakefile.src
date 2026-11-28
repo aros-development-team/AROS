@@ -17,6 +17,7 @@ FILES := main \
 	afs_security \
 	hashing \
 	misc \
+	notify \
 	os_aros_support \
 	volumes \
    	validator

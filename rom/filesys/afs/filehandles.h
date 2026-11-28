@@ -2,7 +2,7 @@
 #define FILEHANDLES_H
 
 /*
-    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2026, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -27,6 +27,7 @@ struct AfsHandle
 	ULONG dirpos;		// current position for ExamineAll
 	struct Volume *volume;	// the volume the handle refers to
 	struct DosList *volumenode;
+	UBYTE changed;		// written, truncated or created: notify when closed
 };
 
 #endif

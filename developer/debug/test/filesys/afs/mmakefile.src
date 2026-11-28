@@ -25,4 +25,13 @@ USER_CPPFLAGS :=
 
 %build_progs mmake=test-filesys-afs-io \
     files=io targetdir=$(AROS_TESTS)/filesys/afs
+
+#MM test-filesys-afs-notify : includes linklibs
+
+USER_INCLUDES :=
+USER_LDFLAGS :=
+USER_CPPFLAGS :=
+
+%build_progs mmake=test-filesys-afs-notify \
+    files=notify targetdir=$(AROS_TESTS)/filesys/afs
 %common

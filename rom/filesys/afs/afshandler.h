@@ -31,6 +31,9 @@ struct AFSBase
     struct List device_list;	/* list of mounted devices (struct Volume) */
     struct MinList offlinevols;	/* offline volume nodes (struct OfflineNode) */
     ULONG parkedvols;		/* volume nodes parked with locks, also without an OfflineNode */
+    struct MinList notifies;	/* notification requests (struct AfsNotify) */
+    struct MsgPort *notify_mp;	/* notification messages are replied here */
+    ULONG notifymsgs;		/* notification messages not yet replied */
     struct timerequest *timer_request;
     ULONG timer_flags;
 
