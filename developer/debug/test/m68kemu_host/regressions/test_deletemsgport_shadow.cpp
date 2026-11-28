@@ -5,7 +5,7 @@
     invalidation, and recycled-native guest-heap balance.
     Compiles verbatim production shadow_register/lookup/remove/create/destroy,
     msgport_is_embedded_proc_port, msgport_invalidate_aliases,
-    m68k_msgport_own, m68k_msgport_destroy, and
+    m68k_msgport_own, m68k_msgport_destroy, m68k_msgport_task_end, and
     thunk_exec_FindPort/CreateMsgPort/DeleteMsgPort to test:
       1. Single CreateMsgPort/DeleteMsgPort cleanup (shadow_map + owned_ports + 68k heap + signal bit)
       2. 1200 (> M68KEMU_MAX_SHADOWS=1024) sequential cycles with distinct native ptrs
@@ -22,6 +22,9 @@
          repeated recycled-native FindPort/CreateMsgPort stress (zero guest-heap leak),
          and preservation of embedded type-4 & Process->pr_MsgPort blocks on native recycle
      12. CreateMsgPort rollback when owned_ports or shadow_map is full
+     13. The end of a task (m68k_msgport_task_end): its empty ports the program did not
+         delete are deleted once with their shadows, guest blocks and signals; a port of
+         another task and a port with a message queued stay as they are
 */
 #include <algorithm>
 #include <cstdarg>
@@ -227,6 +230,15 @@ static void m68k_textfont_extras(struct M68KEmuContext *, ULONG, struct TextFont
 
 /* Recording native Exec MsgPort + FindPort + signal-bit stub */
 static struct Task g_task = { 0x0000FFFFU };
+/* The task that calls: the one every port is made for, unless a test says otherwise. */
+static struct Task g_other_task = { 0x0000FFFFU };
+static struct Task *g_current_task = &g_task;
+static struct Task *FindTask(CONST_STRPTR) { return g_current_task; }
+static int g_disable_depth = 0;
+static int g_disable_calls = 0;
+static void Disable(void) { g_disable_depth++; g_disable_calls++; }
+static void Enable(void) { g_disable_depth--; }
+#define IsListEmpty(l) ((l)->lh_TailPred == reinterpret_cast<struct Node *>(l))
 static std::set<struct MsgPort *> g_live_native_ports;
 static std::vector<struct MsgPort *> g_retired_native_ports;
 static std::map<std::string, struct MsgPort *> g_public_ports;
@@ -338,6 +350,9 @@ static void reset_env(struct M68KEmuContext *ctx, std::vector<UBYTE> &mem)
     g_m68k_bad_free_calls = 0;
     g_log_calls = 0;
     g_task.tc_SigAlloc = 0x0000FFFFU;
+    g_current_task = &g_task;
+    g_disable_depth = 0;
+    g_disable_calls = 0;
     g_recycle_mode = false;
     g_native_create_calls = 0;
     g_native_delete_calls = 0;
@@ -820,6 +835,76 @@ int main(void)
         CHECK(g_task.tc_SigAlloc == 0x0000FFFFU);
         CHECK(ctx.num_owned_ports == 0);
         CHECK(g_m68k_live_allocs == 0 && g_m68k_bad_free_calls == 0);
+    }
+
+    /* 13. The end of a task: the ports it left */
+    {
+        reset_env(&ctx, mem);
+        m68k_msgport_task_end(&ctx);
+        CHECK(g_native_delete_calls == 0 && g_disable_calls == 0 && g_log_calls == 0);
+
+        /* three ports, one of them deleted by the program: the other two go at the end of the task */
+        ULONG e1 = call_CreateMsgPort(&ctx);
+        ULONG e2 = call_CreateMsgPort(&ctx);
+        ULONG e3 = call_CreateMsgPort(&ctx);
+        CHECK(e1 && e2 && e3 && ctx.num_owned_ports == 3 && g_m68k_live_allocs == 3);
+        call_DeleteMsgPort(&ctx, e2);
+        CHECK(g_native_delete_calls == 1 && ctx.num_owned_ports == 2);
+        m68k_msgport_task_end(&ctx);
+        CHECK(g_native_delete_calls == 3);
+        CHECK(g_live_native_ports.empty() && g_double_free_calls == 0 && g_bad_native_delete_calls == 0);
+        CHECK(ctx.num_owned_ports == 0 && ctx.num_shadows == 0);
+        CHECK(g_m68k_live_allocs == 0 && g_m68k_double_free_calls == 0 && g_m68k_bad_free_calls == 0);
+        CHECK(g_task.tc_SigAlloc == 0x0000FFFFU);
+        CHECK(g_disable_depth == 0 && g_disable_calls == 2 && g_log_calls == 0);
+        CHECK(shadow_lookup(&ctx, e1) == nullptr && shadow_lookup(&ctx, e3) == nullptr);
+        /* the program's addresses are stale now: deleting one again reaches nothing */
+        call_DeleteMsgPort(&ctx, e1);
+        m68k_msgport_task_end(&ctx);
+        CHECK(g_native_delete_calls == 3 && g_double_free_calls == 0 && g_m68k_double_free_calls == 0);
+
+        /* a port of another task, and a port with a message queued, stay as they are */
+        reset_env(&ctx, mem);
+        ULONG mine1 = call_CreateMsgPort(&ctx);
+        ULONG theirs = call_CreateMsgPort(&ctx);
+        ULONG busy = call_CreateMsgPort(&ctx);
+        ULONG mine2 = call_CreateMsgPort(&ctx);
+        struct MsgPort *n_theirs = static_cast<struct MsgPort *>(shadow_lookup(&ctx, theirs));
+        struct MsgPort *n_busy = static_cast<struct MsgPort *>(shadow_lookup(&ctx, busy));
+        struct Node queued = {};
+        CHECK(mine1 && theirs && busy && mine2 && n_theirs && n_busy && ctx.num_owned_ports == 4);
+        n_theirs->mp_SigTask = &g_other_task;
+        queued.ln_Succ = reinterpret_cast<struct Node *>(&n_busy->mp_MsgList.lh_Tail);
+        queued.ln_Pred = reinterpret_cast<struct Node *>(&n_busy->mp_MsgList.lh_Head);
+        n_busy->mp_MsgList.lh_Head = &queued;
+        n_busy->mp_MsgList.lh_TailPred = &queued;
+        const ULONG sig_theirs = 1U << n_theirs->mp_SigBit, sig_busy = 1U << n_busy->mp_SigBit;
+        m68k_msgport_task_end(&ctx);
+        CHECK(g_native_delete_calls == 2);
+        CHECK(g_live_native_ports.size() == 2 && g_live_native_ports.count(n_theirs) && g_live_native_ports.count(n_busy));
+        CHECK(ctx.num_owned_ports == 2 && ctx.num_shadows == 2 && g_m68k_live_allocs == 2);
+        CHECK(shadow_lookup(&ctx, theirs) == n_theirs && shadow_lookup(&ctx, busy) == n_busy);
+        CHECK(shadow_lookup(&ctx, mine1) == nullptr && shadow_lookup(&ctx, mine2) == nullptr);
+        CHECK(g_task.tc_SigAlloc == (0x0000FFFFU | sig_theirs | sig_busy));
+        CHECK(n_busy->mp_MsgList.lh_Head == &queued && n_busy->mp_MsgList.lh_TailPred == &queued);
+        CHECK(g_log_calls == 1 && g_disable_depth == 0);
+        CHECK(g_double_free_calls == 0 && g_m68k_double_free_calls == 0 && g_m68k_bad_free_calls == 0);
+        /* again at the same end: nothing more is deleted */
+        m68k_msgport_task_end(&ctx);
+        CHECK(g_native_delete_calls == 2 && ctx.num_owned_ports == 2);
+        /* the other task ends: its port goes, the one with a message stays */
+        g_current_task = &g_other_task;
+        m68k_msgport_task_end(&ctx);
+        CHECK(g_native_delete_calls == 3 && !g_live_native_ports.count(n_theirs) && g_live_native_ports.count(n_busy));
+        CHECK(ctx.num_owned_ports == 1 && ctx.owned_ports[0] == n_busy && shadow_lookup(&ctx, theirs) == nullptr);
+        /* the program can still delete the port it left with a message, once the message is gone */
+        g_current_task = &g_task;
+        n_busy->mp_MsgList.lh_Head = reinterpret_cast<struct Node *>(&n_busy->mp_MsgList.lh_Tail);
+        n_busy->mp_MsgList.lh_TailPred = reinterpret_cast<struct Node *>(&n_busy->mp_MsgList.lh_Head);
+        m68k_msgport_task_end(&ctx);
+        CHECK(g_native_delete_calls == 4 && g_live_native_ports.empty());
+        CHECK(ctx.num_owned_ports == 0 && ctx.num_shadows == 0 && g_m68k_live_allocs == 0);
+        CHECK(g_double_free_calls == 0 && g_bad_native_delete_calls == 0 && g_m68k_bad_free_calls == 0);
     }
 
     cleanup_ports();

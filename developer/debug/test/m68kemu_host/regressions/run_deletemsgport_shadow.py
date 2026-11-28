@@ -97,6 +97,13 @@ def run(args, output):
     gen_src = (root / 'rom/m68kemu/m68kemu_thunks_gen.c').read_text(encoding='latin-1')
     intern_src = (root / 'rom/m68kemu/m68kemu_intern.h').read_text(encoding='latin-1')
     offsets_src = (root / 'rom/m68kemu/m68kemu_offsets.h').read_text(encoding='latin-1')
+    tasks_src = (root / 'rom/m68kemu/m68kemu_tasks.c').read_text(encoding='latin-1')
+
+    # A task of the program ends in m68k_ts_drop(): the ports it left go there,
+    # for every task, also one that has no task state of its own.
+    drop = extract_function(tasks_src, 'm68k_ts_drop', 'm68kemu_tasks.c')
+    if not re.search(r'\n    m68k_msgport_task_end\(ctx\);\n    if \(!ts\)\n', drop):
+        raise ValueError('m68k_ts_drop does not call m68k_msgport_task_end before it looks at the task state')
 
     gen_has_create, gen_has_destroy = check_generator_parity(root, gen_src)
 
@@ -162,6 +169,7 @@ def run(args, output):
         extract_function(shadow_src, 'msgport_invalidate_aliases', 'm68kemu_shadow.c'),
         extract_function(shadow_src, 'm68k_msgport_own', 'm68kemu_shadow.c'),
         extract_function(shadow_src, 'm68k_msgport_destroy', 'm68kemu_shadow.c'),
+        extract_function(shadow_src, 'm68k_msgport_task_end', 'm68kemu_shadow.c'),
         extract_function(shadow_src, 'shadow_create_by_name', 'm68kemu_shadow.c'),
         extract_function(gen_src, 'thunk_exec_FindPort', 'm68kemu_thunks_gen.c'),
         extract_function(gen_src, 'thunk_exec_CreateMsgPort', 'm68kemu_thunks_gen.c'),
