@@ -153,7 +153,7 @@ static void ListDevices(struct Node *bth, BOOL services)
         STRPTR addr = NULL;
         IPTR cod = 0;
         IPTR appearance = 0;
-        LONG rssi = 127;
+        SIPTR rssi = 127;
         IPTR isclassic = 0, isle = 0, isreg = 0, isbonded = 0, isconn = 0, isdisc = 0, isdead = 0;
         IPTR numsvc = 0;
         IPTR addrtype = 0;

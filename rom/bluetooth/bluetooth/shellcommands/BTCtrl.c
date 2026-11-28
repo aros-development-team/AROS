@@ -149,7 +149,7 @@ static void WaitForDiscovery(struct Node *bth)
                 if((ev == BEHMB_ADDDEVICE) || (ev == BEHMB_DEVICEUPDATE))
                 {
                     STRPTR name = NULL, addr = NULL;
-                    LONG rssi = 127;
+                    SIPTR rssi = 127;
                     btLockReadBase();
                     btGetAttrs(BGA_DEVICE, p1, BDA_Name, &name, BDA_AddressString, &addr, BDA_RSSI, &rssi, TAG_END);
                     Printf("  %s %s %s (%ld dBm)\n", (ev == BEHMB_ADDDEVICE) ? (STRPTR) "found  " : (STRPTR) "update ",
