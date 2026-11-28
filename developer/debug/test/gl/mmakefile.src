@@ -6,10 +6,12 @@ GLTESTFILES 	    := \
         glsimplerendering \
         glgetprocaddress \
         glclear \
+        glcurrentcontext \
         glcustomscreen \
         gltri \
         gltexfbo \
         glscanout \
+        glsharecontext \
         glwater
 
 EXEDIR      := $(AROS_TESTS)/graphics/gl

@@ -15,5 +15,6 @@ VOID MESA3DGLScanoutSwap(struct mesa3dgl_context * ctx);
 VOID MESA3DGLScanoutIdle(struct mesa3dgl_framebuffer * amfb, struct st_context * st);
 struct pipe_frontend_screen * MESA3DGLNewStManager(struct pipe_screen *);
 VOID MESA3DGLFreeStManager(APTR pipe, struct pipe_frontend_screen * stmanager);
+VOID MESA3DGLReleaseScreen(struct mesa3dgl_context * ctx);
 
 #endif /* MESA3DGL_GALLIUM_H */

@@ -572,3 +572,32 @@ VOID MESA3DGLFreeStManager(APTR pipe, struct pipe_frontend_screen * stmanager)
         FreeVec(stmanager);
     }
 }
+
+/* Gives up one context's use of the driver and frontend screen, and frees
+ * them when no context is left on them. */
+VOID MESA3DGLReleaseScreen(struct mesa3dgl_context * ctx)
+{
+    D(bug("[MESA3DGL] %s()\n", __func__));
+
+    if (ctx->screen_users)
+    {
+        ULONG users;
+
+        Forbid();
+        users = --(*ctx->screen_users);
+        Permit();
+        if (users)
+        {
+            ctx->stmanager = NULL;
+            ctx->screen_users = NULL;
+            return;
+        }
+        FreeVec(ctx->screen_users);
+        ctx->screen_users = NULL;
+    }
+    if (ctx->stmanager)
+    {
+        MESA3DGLFreeStManager(ctx->driver, ctx->stmanager);
+        ctx->stmanager = NULL;
+    }
+}

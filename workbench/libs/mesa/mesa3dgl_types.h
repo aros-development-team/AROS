@@ -52,6 +52,9 @@ struct mesa3dgl_context
     struct st_context           *st;
     struct st_visual            stvis;
     struct pipe_frontend_screen *stmanager;
+    /* Contexts that share objects (GLA_ShareContext) use one driver and one
+     * frontend screen; this counts them, and the last one frees both. */
+    ULONG                       *screen_users;
 
     struct mesa3dgl_framebuffer *framebuffer;
     struct Window               *window;

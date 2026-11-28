@@ -114,6 +114,12 @@ static inline const void *gallium_core_get_api(void) { return (const void *)0; }
                      the display; 1: every swap waits until its frame is on
                      screen. See glASwapInterval().
 
+        GLA_ShareContext - a GLAContext whose textures, buffers, shaders and
+                     programs the new context shares. Framebuffer and vertex
+                     array objects stay private to a context. Both contexts
+                     must be on the same display. The contexts may be
+                     destroyed in any order.
+
     RESULT
 
         A valid GL context or NULL of creation was not succesfull.
@@ -135,6 +141,7 @@ static inline const void *gallium_core_get_api(void) { return (const void *)0; }
             { TAG_DONE,                 0       }
     };
     struct pipe_screen * pscreen = NULL;
+    struct mesa3dgl_context * share = (struct mesa3dgl_context *)GetTagData(GLA_ShareContext, 0, tagList);
     struct st_context_attribs attribs = {0};
     enum st_context_error st_error = 0;
 
@@ -162,35 +169,61 @@ static inline const void *gallium_core_get_api(void) { return (const void *)0; }
 
     MESA3DGLStandardInit(ctx, tagList);
 
-    pscreen_tags[2].ti_Data = (IPTR)gallium_core_get_api();
-
-    if (CreatePipeV(pscreen_tags))
+    if (share)
     {
-        pscreen = CreatePipeScreen(ctx->driver);
-
-        if (!pscreen)
+        /* Objects can be shared only inside one pipe screen, so the new
+         * context uses the driver and the frontend screen of the other. */
+        if (!share->st || !share->stmanager || !share->screen_users)
         {
-            bug("%s: ERROR -  failed to create gallium pipe screen\n", __func__);
+            bug("%s: ERROR - GLA_ShareContext is not a usable context\n", __func__);
             goto error_out;
         }
+        ctx->driver = share->driver;
+        ctx->stmanager = share->stmanager;
+        ctx->screen_users = share->screen_users;
+        Forbid();
+        (*ctx->screen_users)++;
+        Permit();
     }
     else
     {
-        bug("%s: ERROR -  failed to create gallium pipe\n", __func__);
-        goto error_out;
-    }
+        pscreen_tags[2].ti_Data = (IPTR)gallium_core_get_api();
 
-    D(bug("[MESA3DGL] %s: pipe screen @ 0x%p\n", __func__, pscreen));
-    D(bug("[MESA3DGL] %s: pipe driver @ 0x%p\n", __func__, ctx->driver));
+        if (CreatePipeV(pscreen_tags))
+        {
+            pscreen = CreatePipeScreen(ctx->driver);
 
-    if (!(ctx->stmanager = MESA3DGLNewStManager(pscreen)))
-    {
-        bug("%s: ERROR - failed to create ST Manager\n", __func__);
-        DestroyPipeScreen(ctx->driver, pscreen);
+            if (!pscreen)
+            {
+                bug("%s: ERROR -  failed to create gallium pipe screen\n", __func__);
+                goto error_out;
+            }
+        }
+        else
+        {
+            bug("%s: ERROR -  failed to create gallium pipe\n", __func__);
+            goto error_out;
+        }
+
+        D(bug("[MESA3DGL] %s: pipe screen @ 0x%p\n", __func__, pscreen));
+        D(bug("[MESA3DGL] %s: pipe driver @ 0x%p\n", __func__, ctx->driver));
+
+        if (!(ctx->stmanager = MESA3DGLNewStManager(pscreen)))
+        {
+            bug("%s: ERROR - failed to create ST Manager\n", __func__);
+            DestroyPipeScreen(ctx->driver, pscreen);
 #if (0)
-        DestroyPipe(ctx->driver);
+            DestroyPipe(ctx->driver);
 #endif
-        goto error_out;
+            goto error_out;
+        }
+
+        if (!(ctx->screen_users = (ULONG *)AllocVec(sizeof(ULONG), MEMF_PUBLIC | MEMF_CLEAR)))
+        {
+            bug("%s: ERROR - failed to allocate the screen user count\n", __func__);
+            goto error_out;
+        }
+        *ctx->screen_users = 1;
     }
 
     D(bug("[MESA3DGL] %s: ST Manager @ 0x%p \n", __func__, ctx->stmanager));
@@ -228,12 +261,14 @@ static inline const void *gallium_core_get_api(void) { return (const void *)0; }
      * test and gets pinned at GL 2.1. */
     attribs.options.allow_compressed_fallback = TRUE;
 
-    ctx->st = st_api_create_context(ctx->stmanager, &attribs, &st_error, NULL);
+    ctx->st = st_api_create_context(ctx->stmanager, &attribs, &st_error, share ? share->st : NULL);
     if (!ctx->st)
     {
         bug("%s: ERROR -  failed to create mesa state tracker context\n", __func__);
         goto error_out;
     }
+    /* for glAGetCurrentContext() */
+    ctx->st->frontend_context = ctx;
 
     ctx->framebuffer = MESA3DGLNewFrameBuffer(ctx, &ctx->stvis);
 
@@ -246,7 +281,8 @@ static inline const void *gallium_core_get_api(void) { return (const void *)0; }
     return (GLAContext)ctx;
 
 error_out:
-    if (ctx->stmanager) MESA3DGLFreeStManager(ctx->driver, ctx->stmanager);
-    if (ctx) MESA3DGLFreeContext(ctx);
+    if (ctx->st) st_destroy_context(ctx->st);
+    MESA3DGLReleaseScreen(ctx);
+    MESA3DGLFreeContext(ctx);
     return (GLAContext)NULL;
 }

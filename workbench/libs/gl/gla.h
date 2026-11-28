@@ -110,6 +110,19 @@ typedef APTR GLAContext;
 #define GLA_SwapInterval        (GLA_Dummy + 0x0043)
 
 /*
+ * GLA_ShareContext:        a GLAContext whose objects the new context shares:
+ *                          textures, buffers, shaders and programs, as with
+ *                          the share list of other window systems.
+ *                          Framebuffer and vertex array objects stay private
+ *                          to a context. Both contexts must be on the same
+ *                          display. A library that does not know the tag
+ *                          ignores it; glIsTexture() in the new context for a
+ *                          texture of the other one tells whether sharing is
+ *                          in effect.
+ */
+#define GLA_ShareContext        (GLA_Dummy + 0x0044)
+
+/*
  * GLA API calls
  */
 
