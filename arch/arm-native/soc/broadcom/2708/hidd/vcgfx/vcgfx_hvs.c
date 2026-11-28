@@ -334,6 +334,94 @@ static void vc4_hvs_probe(void)
 /* Phase 2: display-list ownership                                     */
 /* ------------------------------------------------------------------ */
 
+/* Slack, in pixels, for the firmware's rounding of its rectangle. */
+#define HVS_AREA_SLACK  2
+
+/* The part of the output the firmware fits its framebuffer into: inside
+ * the overscan behind a token framebuffer, if the firmware's rectangle
+ * agrees with it, else that rectangle itself. TRUE for the overscan. */
+static BOOL hvs_set_area(struct vc4_hvs_state *st)
+{
+    ULONG ax, ay, aw, ah;
+
+    if (st->hvs_Tiny && st->hvs_OvOK
+        && st->hvs_OvL + st->hvs_OvR < st->hvs_OutW
+        && st->hvs_OvT + st->hvs_OvB < st->hvs_OutH)
+    {
+        ax = st->hvs_OvL;
+        ay = st->hvs_OvT;
+        aw = st->hvs_OutW - st->hvs_OvL - st->hvs_OvR;
+        ah = st->hvs_OutH - st->hvs_OvT - st->hvs_OvB;
+
+        /* Inside the area, and filling it one way, as a fit by aspect does */
+        if (st->hvs_FBX >= ax && st->hvs_FBY >= ay
+            && st->hvs_FBX + st->hvs_DestW <= ax + aw
+            && st->hvs_FBY + st->hvs_DestH <= ay + ah
+            && ((st->hvs_FBX - ax <= HVS_AREA_SLACK
+                 && ax + aw - st->hvs_FBX - st->hvs_DestW <= HVS_AREA_SLACK)
+                || (st->hvs_FBY - ay <= HVS_AREA_SLACK
+                 && ay + ah - st->hvs_FBY - st->hvs_DestH <= HVS_AREA_SLACK)))
+        {
+            st->hvs_AreaX = ax;
+            st->hvs_AreaY = ay;
+            st->hvs_AreaW = aw;
+            st->hvs_AreaH = ah;
+            return TRUE;
+        }
+    }
+    st->hvs_AreaX = st->hvs_FBX;
+    st->hvs_AreaY = st->hvs_FBY;
+    st->hvs_AreaW = st->hvs_DestW;
+    st->hvs_AreaH = st->hvs_DestH;
+    return FALSE;
+}
+
+/* Where a w x h mode is shown. Behind a token framebuffer it is fitted by
+ * aspect and centred in the area, as the firmware places its own;
+ * otherwise it fills the firmware's rectangle. */
+static void hvs_frame_of(const struct vc4_hvs_state *st, ULONG w, ULONG h,
+                         ULONG *x, ULONG *y, ULONG *fw, ULONG *fh)
+{
+    if (!st->hvs_Tiny || !w || !h || !st->hvs_AreaW || !st->hvs_AreaH)
+    {
+        *x = st->hvs_FBX;
+        *y = st->hvs_FBY;
+        *fw = st->hvs_DestW;
+        *fh = st->hvs_DestH;
+        return;
+    }
+    if ((UQUAD)w * st->hvs_AreaH >= (UQUAD)st->hvs_AreaW * h)
+    {
+        *fw = st->hvs_AreaW;
+        *fh = (ULONG)((UQUAD)st->hvs_AreaW * h / w);
+    }
+    else
+    {
+        *fh = st->hvs_AreaH;
+        *fw = (ULONG)((UQUAD)st->hvs_AreaH * w / h);
+    }
+    *x = st->hvs_AreaX + (st->hvs_AreaW - *fw) / 2;
+    *y = st->hvs_AreaY + (st->hvs_AreaH - *fh) / 2;
+}
+
+/* The rectangle the shown mode fills. Screens as planes keep the boot fb,
+ * whose rectangle has the boot mode's shape, so they get their own. */
+static void hvs_set_frame(struct VideoCoreGfx_staticdata *xsd)
+{
+    struct vc4_hvs_state *st = &xsd->vcsd_HVS;
+
+    if (xsd->vcsd_PlanesMode)
+    {
+        hvs_frame_of(st, xsd->vcsd_DispW, xsd->vcsd_DispH,
+                     &st->hvs_FrameX, &st->hvs_FrameY, &st->hvs_FrameW, &st->hvs_FrameH);
+        return;
+    }
+    st->hvs_FrameX = st->hvs_FBX;
+    st->hvs_FrameY = st->hvs_FBY;
+    st->hvs_FrameW = st->hvs_DestW;
+    st->hvs_FrameH = st->hvs_DestH;
+}
+
 /* Compute the cursor plane entry (7 words) from the vcsd_Cur* state.
  * Returns FALSE when no plane should be shown (hidden, no shape, or
  * clipped away entirely). vcsd_CurX/Y are fb coords (hotspot
@@ -362,8 +450,8 @@ static BOOL hvs_cursor_entry(struct VideoCoreGfx_staticdata *xsd, ULONG *w)
     /* vcsd_CurX/Y are fb coords; when the fb plane is scaled, map the
      * cursor position into output coords (the cursor plane itself
      * stays unity-sized, like the firmware cursor). */
-    cx = (LONG)st->hvs_FBX + (LONG)(xsd->vcsd_CurX * (LONG)st->hvs_DestW) / sw;
-    cy = (LONG)st->hvs_FBY + (LONG)(xsd->vcsd_CurY * (LONG)st->hvs_DestH) / sh;
+    cx = (LONG)st->hvs_FrameX + (LONG)(xsd->vcsd_CurX * (LONG)st->hvs_FrameW) / sw;
+    cy = (LONG)st->hvs_FrameY + (LONG)(xsd->vcsd_CurY * (LONG)st->hvs_FrameH) / sh;
     cw = xsd->vcsd_CurWidth;
     ch = xsd->vcsd_CurHeight;
     pitch = xsd->vcsd_CurWidth * 4;
@@ -414,10 +502,10 @@ static BOOL hvs_src_rect(struct vc4_hvs_state *st, const struct hvs_src *s,
     if (!s->cw || !s->ch || !s->w || !s->h)
         return FALSE;
 
-    *dx = (LONG)st->hvs_FBX + s->x * (LONG)st->hvs_DestW / (LONG)s->cw;
-    *dy = (LONG)st->hvs_FBY + s->y * (LONG)st->hvs_DestH / (LONG)s->ch;
-    *dw = s->w * st->hvs_DestW / s->cw;
-    *dh = s->h * st->hvs_DestH / s->ch;
+    *dx = (LONG)st->hvs_FrameX + s->x * (LONG)st->hvs_FrameW / (LONG)s->cw;
+    *dy = (LONG)st->hvs_FrameY + s->y * (LONG)st->hvs_FrameH / (LONG)s->ch;
+    *dw = s->w * st->hvs_FrameW / s->cw;
+    *dh = s->h * st->hvs_FrameH / s->ch;
 
     return (*dw != 0) && (*dh != 0);
 }
@@ -747,9 +835,9 @@ static ULONG hvs_emit_fb(struct vc4_hvs_state *st, ULONG *w, ULONG n, ULONG *lbm
 
         hvs_fb_src(st, &s);
         n = hvs_emit_src(st, w, n, &s, lbm,
-                         (LONG)st->hvs_FBX, (LONG)st->hvs_FBY,
-                         (LONG)(st->hvs_FBX + st->hvs_DestW),
-                         (LONG)(st->hvs_FBY + st->hvs_DestH), &got);
+                         (LONG)st->hvs_FrameX, (LONG)st->hvs_FrameY,
+                         (LONG)(st->hvs_FrameX + st->hvs_FrameW),
+                         (LONG)(st->hvs_FrameY + st->hvs_FrameH), &got);
         st->hvs_FBPtrOff = (got == HVS_SCALED_WORDS) ? HVS_SC_PTR0 : 4;
         return n;
     }
@@ -786,8 +874,8 @@ static ULONG hvs_emit_planes(struct VideoCoreGfx_staticdata *xsd, ULONG *w,
     struct vc4_hvs_state *st = &xsd->vcsd_HVS;
     LONG limit[VCGFX_MAX_PLANES];
     ULONG swords[VCGFX_MAX_PLANES], slbm[VCGFX_MAX_PLANES];
-    LONG left = (LONG)st->hvs_FBX, right = left + (LONG)st->hvs_DestW;
-    LONG top = (LONG)st->hvs_FBY, bottom = top + (LONG)st->hvs_DestH;
+    LONG left = (LONG)st->hvs_FrameX, right = left + (LONG)st->hvs_FrameW;
+    LONG top = (LONG)st->hvs_FrameY, bottom = top + (LONG)st->hvs_FrameH;
     LONG front = (LONG)xsd->vcsd_NumPlanes - 1;
     ULONG room = HVS_OWN_SLOT_STRIDE - n - 1 - HVS_UNITY_WORDS, need = 0;
     ULONG words, lb;
@@ -933,6 +1021,7 @@ static ULONG hvs_build_list(struct VideoCoreGfx_staticdata *xsd)
     ULONG w[HVS_OWN_SLOT_STRIDE];
     ULONG n = 0, i, lbm = 0;
 
+    hvs_set_frame(xsd);
     if (xsd->vcsd_PlanesMode)
         n = hvs_emit_planes(xsd, w, n, &lbm);
     else
@@ -1155,7 +1244,7 @@ BOOL vc4_hvs_takeover(struct VideoCoreGfx_staticdata *xsd,
 #if VC4_HVS_TAKEOVER
     {
         ULONG ctrl, head, idx, our, i;
-        BOOL found = FALSE;
+        BOOL found = FALSE, inov = FALSE;
 
         if (hvs_rd(HVS_ID) == 0 || hvs_rd(HVS_ID) == 0xffffffff)
             return FALSE;
@@ -1254,6 +1343,7 @@ BOOL vc4_hvs_takeover(struct VideoCoreGfx_staticdata *xsd,
         st->hvs_OutW  = (ctrl >> HVS_DISPCTRLX_W_SHIFT) & 0xfff;
         st->hvs_OutH  = (ctrl >> HVS_DISPCTRLX_H_SHIFT) & 0xfff;
         st->hvs_FBPtr = fb_phys & ~HVS_PTR_BUS_ALIAS;
+        inov = hvs_set_area(st);
 
         /* Behind a token framebuffer only its plane's rectangle counts:
          * the fb is ours, as large as the mode, and so is its entry. */
@@ -1321,6 +1411,12 @@ BOOL vc4_hvs_takeover(struct VideoCoreGfx_staticdata *xsd,
                 "%ux%u at %u,%u\n", our, st->hvs_OutW, st->hvs_OutH,
                 st->hvs_SrcW, st->hvs_SrcH, st->hvs_DestW, st->hvs_DestH,
                 st->hvs_FBX, st->hvs_FBY);
+            bug("[VC4HVS] takeover: area %ux%u at %u,%u (%s), overscan %s"
+                " l%u r%u t%u b%u\n",
+                st->hvs_AreaW, st->hvs_AreaH, st->hvs_AreaX, st->hvs_AreaY,
+                inov ? "inside the overscan" : "the firmware's rectangle",
+                st->hvs_OvOK ? "read" : "unread",
+                st->hvs_OvL, st->hvs_OvR, st->hvs_OvT, st->hvs_OvB);
 #if VC4_HVS_VSYNC_IRQ
             hvs_vsync_start(st);
 #endif
@@ -1575,14 +1671,17 @@ BOOL vc4_hvs_planes_ok(void)
     return VC4_HVS_TAKEOVER;
 }
 
-/* The firmware scales the fb to a display mode it never changes, so a
- * screen fits whenever the HVS can scale it up to the fb plane. */
+/* The firmware's display mode never changes, so a screen fits whenever
+ * the HVS can scale it to the rectangle it is shown in. */
 BOOL vc4_hvs_plane_fits(struct VideoCoreGfx_staticdata *xsd, ULONG w, ULONG h)
 {
     struct vc4_hvs_state *st = &xsd->vcsd_HVS;
+    ULONG x, y, fw, fh;
 
-    return st->hvs_DestW && st->hvs_DestH
-        && HVS_PPF_FITS(w, st->hvs_DestW) && HVS_PPF_FITS(h, st->hvs_DestH);
+    if (!w || !h)
+        return FALSE;
+    hvs_frame_of(st, w, h, &x, &y, &fw, &fh);
+    return fw && fh && HVS_PPF_FITS(w, fw) && HVS_PPF_FITS(h, fh);
 }
 
 /* Caller holds the mailbox lock. Armed, so vc4_hvs_latch_wait() tells when the

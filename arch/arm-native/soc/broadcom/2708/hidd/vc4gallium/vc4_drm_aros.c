@@ -301,7 +301,7 @@ static void gpu_mem_report(struct vc4galliumstaticdata *sd, ULONG failed_size)
 
     for (i = 0; i < VC4_NUM_POOL_SETS; i++)
         pool_bytes += sd->pool[i].tile.size + sd->pool[i].exec.size +
-                      sd->pool[i].rcl.size + sd->pool[i].binoverflow.size;
+                      sd->pool[i].rcl.size;
 
     ObtainSemaphore(&sd->bo_lock);
     {
@@ -347,6 +347,27 @@ static void gpu_mem_report(struct vc4galliumstaticdata *sd, ULONG failed_size)
 /* GPU_BUS_ADDR's 0xC0000000 alias only reaches the first 1GB. */
 #define VC4_PA_LIMIT    0x40000000ULL
 
+/* The binner keeps 28-bit pointers into tile alloc and overspill memory and
+ * takes the top 4 bits from the tile state address, so those three must not
+ * straddle a 256MB boundary. No arena does. */
+#define VC4_REGION_MASK 0x0fffffffUL
+
+/* Where in raw an arena of want bytes goes, or 0 if it only fits across a
+ * 256MB boundary */
+static IPTR arena_base(APTR raw, ULONG raw_size, ULONG want)
+{
+    IPTR base = ((IPTR)raw + VC4_BLOCK_MASK) & ~(IPTR)VC4_BLOCK_MASK;
+    IPTR boundary = (base + want - 1) & ~(IPTR)VC4_REGION_MASK;
+
+    if (boundary > base)
+    {
+        base = boundary;
+        if (base + want > (IPTR)raw + raw_size)
+            return 0;
+    }
+    return base;
+}
+
 static void arena_free(struct vc4galliumstaticdata *sd, struct vc4_arena *a)
 {
     /* Back to cacheable for the next owner. */
@@ -369,13 +390,31 @@ static struct vc4_arena *arena_new(struct vc4galliumstaticdata *sd, ULONG want)
 
     if (!(a = AllocMem(sizeof(struct vc4_arena), MEMF_ANY | MEMF_CLEAR)))
         return NULL;
-    if (!(raw = AllocMem(raw_size, MEMF_ANY)))
+    {
+        /* One that straddles is held while trying again, so the next
+         * allocation lands elsewhere */
+        APTR held = NULL;
+        int tries;
+
+        for (tries = 0; tries < 4; tries++)
+        {
+            if (!(raw = AllocMem(raw_size, MEMF_ANY)))
+                break;
+            if ((base = arena_base(raw, raw_size, want)) != 0)
+                break;
+            if (held)
+                FreeMem(held, raw_size);
+            held = raw;
+            raw = NULL;
+        }
+        if (held)
+            FreeMem(held, raw_size);
+    }
+    if (!raw)
     {
         FreeMem(a, sizeof(struct vc4_arena));
         return NULL;
     }
-
-    base = ((IPTR)raw + VC4_BLOCK_MASK) & ~(IPTR)VC4_BLOCK_MASK;
 
     /* Clean first, or a dirty line of the previous owner lands on GPU
      * data once the range is non-cacheable. This relies on the
@@ -678,17 +717,15 @@ static void gpu_mem_reclaim(struct vc4galliumstaticdata *sd)
         struct vc4_frame_bo *pools[] = {
             &sd->pool[i].tile,
             &sd->pool[i].exec,
-            &sd->pool[i].rcl,
-            &sd->pool[i].binoverflow
+            &sd->pool[i].rcl
         };
         int p;
-        for (p = 0; p < 4; p++)
+        for (p = 0; p < 3; p++)
         {
             if (pools[p]->vaddr)
             {
                 D(bug("[VC4Gallium] gpu_mem_reclaim: freeing pool[%d].%s (%d bytes)\n",
-                    i, (p == 0) ? "tile" : (p == 1) ? "exec" :
-                       (p == 2) ? "rcl" : "binoverflow",
+                    i, (p == 0) ? "tile" : (p == 1) ? "exec" : "rcl",
                     pools[p]->size));
                 gpu_mem_free(sd, pools[p]->gpu_handle, pools[p]->size);
                 pools[p]->vaddr = NULL;
@@ -2502,7 +2539,8 @@ static int do_submit_cl(struct vc4galliumstaticdata *sd, struct drm_vc4_submit_c
     tile_state_size = 48 * tile_count;
     ULONG tile_alloc_offset = ROUNDUP(tile_state_size, 4096);
     tile_alloc_size = ROUNDUP(32 * tile_count, 256) + 1024 * 1024;  /* + 1MB overflow */
-    tile_bo_size = tile_alloc_offset + tile_alloc_size;
+    /* The overspill block follows, in the same 256MB as the rest */
+    tile_bo_size = tile_alloc_offset + tile_alloc_size + VC4_BIN_OVERFLOW_SIZE;
 
     tile_vaddr = pool_bo_get(sd, &sd->pool[pi].tile, tile_bo_size, 4096,
                               VCMEM_L1NONALLOCATING | VCMEM_ZERO);
@@ -2787,14 +2825,8 @@ static int do_submit_cl(struct vc4galliumstaticdata *sd, struct drm_vc4_submit_c
      * mailbox (see vc4_v3d_init). Note: ERRSTAT bit 12 (0x00001000) is
      * latched on every submission even when nothing is wrong — don't
      * treat it as a fault. */
-    if (!pool_bo_get(sd, &sd->pool[pi].binoverflow, VC4_BIN_OVERFLOW_SIZE, 4096,
-                     VCMEM_L1NONALLOCATING | VCMEM_ZERO))
-    {
-        bug("[VC4Gallium] submit_cl: failed to alloc binner overflow BO\n");
-        return -1;
-    }
-    v3d->overflow_bus = sd->pool[pi].binoverflow.bus_addr;
-    v3d->overflow_size = sd->pool[pi].binoverflow.size;
+    v3d->overflow_bus = sd->pool[pi].tile.bus_addr + tile_alloc_offset + tile_alloc_size;
+    v3d->overflow_size = VC4_BIN_OVERFLOW_SIZE;
     v3d->overflow_handed = 0;
     V3D_WRITE(v3d, V3D_BPOA, 0);
     V3D_WRITE(v3d, V3D_BPOS, 0);
@@ -3371,11 +3403,10 @@ void vc4_aros_release_all_bos(struct vc4galliumstaticdata *sd)
         struct vc4_frame_bo *pools[] = {
             &sd->pool[i].tile,
             &sd->pool[i].exec,
-            &sd->pool[i].rcl,
-            &sd->pool[i].binoverflow
+            &sd->pool[i].rcl
         };
         int p;
-        for (p = 0; p < 4; p++)
+        for (p = 0; p < 3; p++)
         {
             if (pools[p]->vaddr && pools[p]->gpu_handle)
             {

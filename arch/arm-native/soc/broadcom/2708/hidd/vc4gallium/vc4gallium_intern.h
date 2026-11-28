@@ -240,7 +240,6 @@ struct vc4galliumstaticdata
         struct vc4_frame_bo tile;
         struct vc4_frame_bo exec;
         struct vc4_frame_bo rcl;
-        struct vc4_frame_bo binoverflow;    /* Binner overspill pool (BPOA/BPOS) */
         ULONG               seqno;  /* Seqno of last job using this set (0 = idle) */
     } pool[VC4_NUM_POOL_SETS];
     ULONG                   pool_idx;   /* Current set index */

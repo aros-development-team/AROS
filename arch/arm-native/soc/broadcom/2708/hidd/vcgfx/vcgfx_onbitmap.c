@@ -192,6 +192,36 @@ static BOOL vc4_fballoc(struct VideoCoreGfx_staticdata *xsd,
  * the display by aspect, and that rectangle is the one our planes fill. */
 #define VC4_TOKEN_FB    256
 
+/* The overscan the firmware fits its framebuffer inside. */
+static void vc4_get_overscan(struct VideoCoreGfx_staticdata *xsd)
+{
+    struct vc4_hvs_state *st = &xsd->vcsd_HVS;
+
+    VC4_MBOX_LOCK(xsd);
+    xsd->vcsd_MBoxMessage[0] = AROS_LE2LONG(10 * 4);
+    xsd->vcsd_MBoxMessage[1] = AROS_LE2LONG(VCTAG_REQ);
+    xsd->vcsd_MBoxMessage[2] = AROS_LE2LONG(VCTAG_GETOVERSCAN);
+    xsd->vcsd_MBoxMessage[3] = AROS_LE2LONG(16);
+    xsd->vcsd_MBoxMessage[4] = 0;
+    xsd->vcsd_MBoxMessage[5] = 0;
+    xsd->vcsd_MBoxMessage[6] = 0;
+    xsd->vcsd_MBoxMessage[7] = 0;
+    xsd->vcsd_MBoxMessage[8] = 0;
+    xsd->vcsd_MBoxMessage[9] = 0;
+
+    st->hvs_OvOK = (MBoxCall((void *)VCMB_BASE, VCMB_PROPCHAN, xsd->vcsd_MBoxMessage)
+                        != (volatile unsigned int *)-1)
+                   && (xsd->vcsd_MBoxMessage[4] == AROS_LE2LONG(VCTAG_RESP + 16));
+    if (st->hvs_OvOK)
+    {
+        st->hvs_OvT = AROS_LE2LONG(xsd->vcsd_MBoxMessage[5]);
+        st->hvs_OvB = AROS_LE2LONG(xsd->vcsd_MBoxMessage[6]);
+        st->hvs_OvL = AROS_LE2LONG(xsd->vcsd_MBoxMessage[7]);
+        st->hvs_OvR = AROS_LE2LONG(xsd->vcsd_MBoxMessage[8]);
+    }
+    VC4_MBOX_UNLOCK(xsd);
+}
+
 /*
  * Screens as planes on VC4 and HVS5: a token framebuffer for the firmware - it
  * still sets its mode and builds the list we take over - and the fb
@@ -230,6 +260,8 @@ static BOOL vc4_program_token_fb(struct VideoCoreGfx_staticdata *xsd,
     st->hvs_ShowPitch = pitch;
     st->hvs_ShowW     = aligned_width;
     st->hvs_ShowH     = height;
+    if (xsd->vcsd_HVSGen == VCGFX_HVS_VC4)
+        vc4_get_overscan(xsd);
 
     vc4_hvs_dump(xsd, (ULONG)(IPTR)tptr, tpitch, VC4_TOKEN_FB, th);
     if (!vc4_hvs_takeover(xsd, (ULONG)(IPTR)tptr, tpitch))

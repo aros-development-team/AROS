@@ -232,6 +232,7 @@ static inline ULONG v3d_now_us(void)
 /* vcgfx bitmap interface, mirrored from vcgfx_bitmap.h */
 #define IID_Hidd_BitMap_VideoCore4  "hidd.bitmap.bcmvc4"
 #define aoVCGfxBM_Drawable      0   /* [G] pixels phys addr */
+#define aoVCGfxBM_ScanoutMem    1   /* [G] a screen in scanout memory */
 
 /*
  * GPU wait tiers (vc4gallium's proven values): tight spin for µs-precise
@@ -307,6 +308,11 @@ struct V3DSession
     BOOL                vs_Used;
     volatile BOOL       vs_Dead;    /* its task ended without a teardown */
     APTR                vs_Screen;  /* struct pipe_screen * */
+    /* GPU presents: the session's own context, and the screen bitmap it
+     * last presented into as a resource, with what identifies it */
+    APTR                vs_Pipe;    /* struct pipe_context * */
+    APTR                vs_Dst;     /* struct pipe_resource * */
+    IPTR                vs_DstAddr, vs_DstPitch, vs_DstWidth, vs_DstHeight, vs_DstFormat;
     /* The one that created it. Assumes a screen is destroyed by the task
      * that created it, as mesa3dgl does: its exit marks the session dead
      * and the next sweep frees its objects. */

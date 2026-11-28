@@ -15,10 +15,12 @@
 
 enum {
     aoHidd_VideoCoreGfxBitMap_Drawable,
+    aoHidd_VideoCoreGfxBitMap_ScanoutMem,   /* [G] a screen in scanout memory */
     num_Hidd_VideoCoreGfxBitMap_Attrs
 };
 
 #define aHidd_VideoCoreGfxBitMap_Drawable	(HiddVideoCoreGfxBitMapAttrBase + aoHidd_VideoCoreGfxBitMap_Drawable)
+#define aHidd_VideoCoreGfxBitMap_ScanoutMem	(HiddVideoCoreGfxBitMapAttrBase + aoHidd_VideoCoreGfxBitMap_ScanoutMem)
 
 /* Scan-out bitmap pixel formats besides the screens' own 32bpp one:
  * 16bpp little-endian, and 32bpp in B,G,R,X byte order on an HVS whose

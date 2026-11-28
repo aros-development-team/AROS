@@ -93,6 +93,30 @@ static struct V3DBO *bo_lookup(struct V3DData *sd, ULONG handle)
     return &sd->bo_table[handle];
 }
 
+/*
+ * GPU VA is the physical address, and scan-out buffers are reallocated over
+ * the memory of earlier ones: a new external BO can share pages with an old
+ * one still to be closed. Unmapping the old one would leave the new one
+ * unmapped (writes dropped, reads zero), so its pages are mapped again.
+ */
+static void bo_unmap(struct V3DData *sd, struct V3DBO *bo)
+{
+    ULONG first = bo->gpu_va >> 12, end = (bo->gpu_va + bo->size + 4095) >> 12, h;
+
+    v3d_mmu_unmap(sd, bo->gpu_va, bo->size);
+    if (!bo->external)
+        return;
+    for (h = 1; h < V3D_MAX_BOS; h++)
+    {
+        struct V3DBO *o = &sd->bo_table[h];
+
+        if (o == bo || !o->refcount || !o->external)
+            continue;
+        if ((o->gpu_va >> 12) < end && ((o->gpu_va + o->size + 4095) >> 12) > first)
+            v3d_mmu_map(sd, o->paddr, o->size);
+    }
+}
+
 static void bo_unref(struct V3DData *sd, ULONG handle)
 {
     struct V3DBO *bo = bo_lookup(sd, handle);
@@ -101,7 +125,7 @@ static void bo_unref(struct V3DData *sd, ULONG handle)
         return;
     if (--bo->refcount == 0)
     {
-        v3d_mmu_unmap(sd, bo->gpu_va, bo->size);
+        bo_unmap(sd, bo);
         if (!bo->external)
             v3d_gpu_mem_free(sd, bo->gpu_handle, bo->size);
         bo->gpu_handle = 0;
@@ -129,7 +153,7 @@ void v3d_release_all_bos(struct V3DData *sd)
 
         if (bo->refcount == 0)
             continue;
-        v3d_mmu_unmap(sd, bo->gpu_va, bo->size);
+        bo_unmap(sd, bo);
         if (!bo->external)
             v3d_gpu_mem_free(sd, bo->gpu_handle, bo->size);
         bo->gpu_handle = 0;
@@ -166,7 +190,7 @@ void v3d_release_session(struct V3DData *sd, ULONG sid)
 
         if (!bo->refcount || (bo->owner != sid))
             continue;
-        v3d_mmu_unmap(sd, bo->gpu_va, bo->size);
+        bo_unmap(sd, bo);
         if (!bo->external)
             v3d_gpu_mem_free(sd, bo->gpu_handle, bo->size);
         bo->gpu_handle = 0;
@@ -258,7 +282,15 @@ static int v3d_ioctl_dispatch(struct V3DData *sd, ULONG sid,
                 break;
 
         if (h < V3D_MAX_BOS)
+        {
             sd->bo_table[h].refcount++;
+            /* Reused for a larger buffer at the same address */
+            if (size > sd->bo_table[h].size)
+            {
+                sd->bo_table[h].gpu_va = v3d_mmu_map(sd, name, size);
+                sd->bo_table[h].size   = size;
+            }
+        }
         else
         {
             h = bo_alloc_handle(sd);
