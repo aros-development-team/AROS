@@ -359,11 +359,12 @@ static void call_DeleteMsgPort(struct M68KEmuContext *ctx, ULONG m68k_port)
     (void)thunk_exec_DeleteMsgPort(ctx, &cpu);
 }
 
-static ULONG call_FindPort(struct M68KEmuContext *ctx, const char *name)
+/* The name is a string literal: its size, terminator included, comes from its type. */
+template <std::size_t N>
+static ULONG call_FindPort(struct M68KEmuContext *ctx, const char (&name)[N])
 {
     const ULONG name_addr = 0x1000;
-    std::size_t n = std::strlen(name);
-    std::memcpy(ctx->mem + name_addr, name, n + 1);
+    std::memcpy(ctx->mem + name_addr, name, N);
     FakeCPU cpu = {};
     cpu.a[1] = name_addr;
     return static_cast<ULONG>(thunk_exec_FindPort(ctx, &cpu));
