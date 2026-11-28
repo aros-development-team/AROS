@@ -102,6 +102,7 @@ FILES := \
     locale \
     menu \
     penspec \
+    themeimage \
     support \
     support_aros \
     support_classes \

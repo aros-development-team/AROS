@@ -1,5 +1,5 @@
 /*
-    Copyright  2003, The AROS Development Team.
+    Copyright  2003-2026, The AROS Development Team.
     All rights reserved.
 
 */
@@ -65,12 +65,17 @@ struct MUI_ImageSpec_intern /* _intern */
 	/* IST_BOOPSI */
 	struct {
 	    CONST_STRPTR filename;
-	    Object *obj;
+	    Object *obj;                           /* the image, between setup and cleanup */
+	    struct Library *lib;                   /* the class the image was made from */
+	    WORD minwidth, minheight;
+	    WORD maxwidth, maxheight;
+	    WORD defwidth, defheight;
 	} boopsi;
 	/* IST_BRUSH */
 	struct {
 	    CONST_STRPTR filename[2];
 	    struct dt_node *dt[2];
+	    BOOL mim;                              /* dt[0] holds both states */
 	} brush;
 	/* IST_BITMAP */
 	struct {

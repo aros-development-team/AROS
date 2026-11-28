@@ -1974,7 +1974,8 @@ static void List_HandleScrollerPos(struct IClass *cl, Object *obj)
      * connected */
     if (data->vert && !data->vert_connected)
     {
-        LONG entries = 0, first = 0, visible = 0;
+        /* get() stores an IPTR */
+        IPTR entries = 0, first = 0, visible = 0;
 
         get(obj, MUIA_List_VertProp_First, &first);
         get(obj, MUIA_List_VertProp_Visible, &visible);

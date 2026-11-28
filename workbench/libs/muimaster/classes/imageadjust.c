@@ -30,6 +30,7 @@
 #include "muimaster_intern.h"
 #include "support.h"
 #include "support_classes.h"
+#include "themeimage.h"
 #include "imageadjust_private.h"
 #include "locale.h"
 
@@ -87,16 +88,21 @@
 *       For a 2: color input, Penadjust copies a complete 32-byte MUI_PenSpec
 *       starting at input+2. Provide that much readable storage, not merely a
 *       short terminated string. For 3:/4: external input, matching uses a
-*       relative directory/filename; an input with no path separator can
-*       underflow the directory comparison length. Use a valid relative path
-*       with a separator. Output for external selections always uses 3:,
+*       directory and filename exactly as listed; an input with no path
+*       separator only matches an entry without a directory. Output for
+*       external selections always uses 3:,
 *       including an input originally using 4:.
 *       External entries copy directory and filename into the List pool, but
 *       allocation failure for either string is not rolled back. Enumeration
 *       ignores many errors and insertion failures and can leave a partial list.
-*       Names ending exactly .mf1 or .mb1 are excluded; other files are not
-*       validated as images. Display labels strip recognized lowercase .mf0,
-*       .mb0, .mbr and .image suffixes. Directory recursion follows the ExAll
+*       The External list offers the images of the active theme (named
+*       THEMEIMAGES:<Name>, without size or type, so the selection follows
+*       the theme), then the image sets below the external image directory
+*       and below THEMES:, named relative to those directories. As in MUI
+*       only files ending in lowercase or uppercase .mf0, .mb0, .mbr, .mim,
+*       .mi1 or .image are listed; other files are not validated as images.
+*       Display labels strip lowercase suffixes and show the image set in a
+*       second column. Directory recursion follows the ExAll
 *       type classification without resolving soft-link targets or detecting
 *       cycles.
 *
@@ -377,8 +383,15 @@ static void Imageadjust_External_Display(struct Hook *h, char **strings,
             buf[len - 4] = 0;
         else if (len > 4 && !strcmp(buf + len - 4, ".mbr"))
             buf[len - 4] = 0;
+        else if (len > 4 && !strcmp(buf + len - 4, ".mim"))
+            buf[len - 4] = 0;
+        else if (len > 4 && !strcmp(buf + len - 4, ".mi1"))
+            buf[len - 4] = 0;
         else if (len > 6 && !strcmp(buf + len - 6, ".image"))
             buf[len - 6] = 0;
+
+        /* the image set (and size) the image belongs to */
+        strings[1] = entry->reldir ? entry->reldir : (STRPTR) "";
     }
 }
 
@@ -440,7 +453,7 @@ static void Imageadjust_External_Destruct(struct Hook *h, APTR pool,
  * errors or partial inserts. Frees local buffers/control/lock; no input
  * pumping, recursion/cycle guard or aggregate error propagation.
  */
-static int AddDirectory(Object *list, STRPTR dir, LONG parent)
+static int AddDirectory(Object *list, STRPTR dir, CONST_STRPTR root)
 {
     BPTR lock = Lock(dir, ACCESS_READ);
     struct ExAllControl *eac;
@@ -509,11 +522,12 @@ static int AddDirectory(Object *list, STRPTR dir, LONG parent)
                 strcpy(buf, dir);
                 AddPart(buf, ead->ed_Name, len);
 
-                if (!is_directory && namelen > 4
-                    && !strcmp(ead->ed_Name + namelen - 4, ".mf1"))
-                    add_me = FALSE;
-                if (!is_directory && namelen > 4
-                    && !strcmp(ead->ed_Name + namelen - 4, ".mb1"))
+                /* As in MUI, only files named as external images are
+                   offered: .mbr, .mb0, .mf0, .mim, .mi1 and .image. That
+                   leaves out the selected images of pairs (.mb1, .mf1),
+                   which are never selected on their own. */
+                if (!is_directory
+                    && !zune_themeimage_is_image(ead->ed_Name))
                     add_me = FALSE;
 
                 if (add_me)
@@ -522,7 +536,7 @@ static int AddDirectory(Object *list, STRPTR dir, LONG parent)
                     //bug("AddDirectory: adding image %s\n", buf);
 
 
-                    ele.reldir = dir + strlen(IMSPEC_EXTERNAL_PREFIX);
+                    ele.reldir = dir + strlen(root);
                     ele.dirlen = strlen(ele.reldir);
                     ele.filename = ead->ed_Name;
                     ele.namelen = strlen(ele.filename);
@@ -536,7 +550,7 @@ static int AddDirectory(Object *list, STRPTR dir, LONG parent)
                 }
                 if (num != -1 && is_directory)
                 {
-                    AddDirectory(list, buf, num);
+                    AddDirectory(list, buf, root);
                 }
                 FreeVec(buf);
             }
@@ -553,6 +567,96 @@ static int AddDirectory(Object *list, STRPTR dir, LONG parent)
 }
 
 
+
+#ifdef __AROS__
+/**************************************************************************
+ Adds the images of the active theme to the list
+**************************************************************************/
+/*
+ * Offer every image of the active theme once, under a name that states
+ * neither size nor type ("THEMEIMAGES:<Name>"). Such a specification
+ * follows the theme and the image size selected for it. Return zero if
+ * the theme has no image sets, otherwise one.
+ */
+static int AddThemeImages(Object *list)
+{
+    static const char themedir[] = THEMEIMAGE_PREFIX;
+    ULONG sizes[THEMEIMAGE_MAXSIZES];
+    ULONG count, i;
+    struct FileInfoBlock *fib;
+
+    count = zune_themeimage_sizes(THEMEIMAGE_SETS_DIR, 0, sizes,
+        THEMEIMAGE_MAXSIZES);
+    if (!count)
+        return 0;
+
+    fib = AllocDosObject(DOS_FIB, NULL);
+    if (!fib)
+        return 0;
+
+    for (i = 0; i < count; i++)
+    {
+        char dir[40];
+        BPTR lock;
+
+        snprintf(dir, sizeof(dir), "%s%lupt", THEMEIMAGE_SETS_DIR,
+            (unsigned long)sizes[i]);
+        lock = Lock(dir, ACCESS_READ);
+        if (!lock)
+            continue;
+
+        if (Examine(lock, fib))
+        {
+            while (ExNext(lock, fib))
+            {
+                struct ExternalListEntry ele;
+                struct ExternalListEntry *entry;
+                char name[108];
+                char *ext;
+                IPTR entries = 0, j;
+                BOOL known = FALSE;
+
+                if (fib->fib_DirEntryType > 0
+                    || !zune_themeimage_is_image(fib->fib_FileName))
+                    continue;
+
+                strlcpy(name, fib->fib_FileName, sizeof(name));
+                if ((ext = strrchr(name, '.')) != NULL)
+                    *ext = 0;
+
+                /* the same image is usually found in several sizes */
+                get(list, MUIA_List_Entries, &entries);
+                for (j = 0; j < entries; j++)
+                {
+                    entry = NULL;
+                    DoMethod(list, MUIM_List_GetEntry, j, (IPTR) & entry);
+                    if (entry && entry->reldir && entry->filename
+                        && !strcmp(entry->reldir, themedir)
+                        && !Stricmp(entry->filename, name))
+                    {
+                        known = TRUE;
+                        break;
+                    }
+                }
+                if (known)
+                    continue;
+
+                ele.reldir = (STRPTR) themedir;
+                ele.dirlen = strlen(themedir);
+                ele.filename = name;
+                ele.namelen = strlen(name);
+                ele.type = fib->fib_DirEntryType;
+                DoMethod(list, MUIM_List_InsertSingle, (IPTR) & ele,
+                    MUIV_List_Insert_Bottom);
+            }
+        }
+        UnLock(lock);
+    }
+    FreeDosObject(DOS_FIB, fib);
+
+    return 1;
+}
+#endif
 
 /**************************************************************************
  ...
@@ -625,7 +729,7 @@ STATIC VOID Imageadjust_SetImagespec(Object *obj,
     case '4':
         {
             struct ExternalListEntry *entry = NULL;
-            LONG entries = 0;
+            IPTR entries = 0;
             int i;
 
             set(obj, MUIA_Group_ActivePage, 3);
@@ -639,10 +743,13 @@ STATIC VOID Imageadjust_SetImagespec(Object *obj,
                     && entry->reldir != NULL && entry->filename != NULL)
                 {
                     STRPTR file = FilePart(s + 2);
-                    //bug("entry->reldir = %s, s + 2 = %s, len=%d\n",
-                    //entry->reldir, s + 2, strlen(s + 2) - strlen(file) - 1);
-                    if (!strncmp(entry->reldir, s + 2,
-                            strlen(s + 2) - strlen(file) - 1))
+                    LONG dirlen = (char *) file - (s + 2);
+
+                    /* drop the separator, unless it ends a volume name */
+                    if (dirlen > 0 && s[2 + dirlen - 1] == '/')
+                        dirlen--;
+                    if (dirlen == (LONG) entry->dirlen
+                        && !strncmp(entry->reldir, s + 2, dirlen))
                     {
                         //bug("entry->filename = %s, file = %s\n",
                         //entry->filename, file);
@@ -790,6 +897,7 @@ IPTR Imageadjust__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
         external_group = (Object *) ListviewObject,
             MUIA_Listview_List, (IPTR) (external_list =
                 (Object *) ListObject, InputListFrame,
+                MUIA_List_Format, (IPTR) ",",
                 MUIA_List_ConstructHook, MUIV_List_ConstructHook_String,
                 MUIA_List_DestructHook, MUIV_List_DestructHook_String,
                 End),
@@ -1267,8 +1375,12 @@ IPTR Imageadjust__OM_GET(struct IClass *cl, Object *obj,
                                 strlen(entry->filename) + 1;
                             if ((data->imagespec = AllocVec(len, 0)))
                             {
-                                snprintf(data->imagespec, len, "3:%s/%s",
-                                    entry->reldir, entry->filename);
+                                snprintf(data->imagespec, len, "3:%s%s%s",
+                                    entry->reldir,
+                                    (entry->dirlen == 0
+                                        || entry->reldir[entry->dirlen - 1]
+                                        == ':') ? "" : "/",
+                                    entry->filename);
                                 D(bug("Imageadjust_OM_GET: imspec=%s\n",
                                         data->imagespec));
                             }
@@ -1319,7 +1431,18 @@ IPTR Imageadjust__MUIM_Imageadjust_ReadExternal(struct IClass *cl,
 
     DoMethod(data->external_list, MUIM_List_Clear);
     set(data->external_list, MUIA_List_Quiet, TRUE);
-    AddDirectory(data->external_list, IMSPEC_EXTERNAL_PREFIX, -1);
+#ifdef __AROS__
+    /* the images of the active theme, whatever theme that is */
+    AddThemeImages(data->external_list);
+#endif
+    /* the image sets, named relative to their directory as in MUI */
+    AddDirectory(data->external_list, IMSPEC_EXTERNAL_PREFIX,
+        IMSPEC_EXTERNAL_PREFIX);
+#ifdef __AROS__
+    /* every theme is an image set as well */
+    AddDirectory(data->external_list, THEMEIMAGE_SETS_PREFIX,
+        THEMEIMAGE_SETS_PREFIX);
+#endif
     set(data->external_list, MUIA_List_Quiet, FALSE);
     return 0;
 }

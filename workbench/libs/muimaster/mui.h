@@ -1,5 +1,5 @@
 /*
-    Copyright  2002-2018, The AROS Development Team. All rights reserved.
+    Copyright  2002-2026, The AROS Development Team. All rights reserved.
 */
 
 #ifndef LIBRARIES_MUI_H
@@ -649,6 +649,47 @@ struct MUI_AlphaData
 #define MUII_MARKHALFSHINE     144UL
 #define MUII_MARKBACKGROUND    145UL
 #define MUII_LASTPAT           146UL
+
+
+/**************************************************************************
+ For BOOPSI image implementors
+
+ An external BOOPSI image (an ".image" file used in an image
+ specification) is sent MUIM_BoopsiQuery immediately after it has been
+ created. It can fill in its minimum, maximum and default size, and
+ learns whether it is used in a horizontal or a vertical context. The
+ image must return MUIM_BoopsiQuery to show that it implements the
+ method; an image that does not is given a minimum size of 0 and an
+ unlimited maximum size.
+**************************************************************************/
+#define MUIM_BoopsiQuery 0x80427157
+
+struct MUI_BoopsiQuery
+{
+    STACKED ULONG mbq_MethodID;     /* always MUIM_BoopsiQuery */
+
+    STACKED struct Screen *mbq_Screen;  /* obsolete, use mbq_RenderInfo */
+    STACKED ULONG mbq_Flags;        /* read only, see below */
+
+    STACKED LONG mbq_MinWidth;      /* write only, fill in min width */
+    STACKED LONG mbq_MinHeight;     /* write only, fill in min height */
+    STACKED LONG mbq_MaxWidth;      /* write only, fill in max width */
+    STACKED LONG mbq_MaxHeight;     /* write only, fill in max height */
+    STACKED LONG mbq_DefWidth;      /* write only, fill in def width */
+    STACKED LONG mbq_DefHeight;     /* write only, fill in def height */
+
+    STACKED struct MUI_RenderInfo *mbq_RenderInfo; /* read only */
+
+    /* may grow in future ... */
+};
+
+#define MUIP_BoopsiQuery MUI_BoopsiQuery    /* old structure name */
+
+#define MBQF_HORIZ (1<<0)       /* used in a horizontal context (else
+                                   vertical) */
+
+#define MBQ_MUI_MAXMAX (10000)  /* use this for unlimited
+                                   MaxWidth/Height */
 
 
 /**************************************************************************

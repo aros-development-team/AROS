@@ -20,6 +20,7 @@
 /*  #define MYDEBUG 1 */
 #include "debug.h"
 
+#include "themeimage.h"
 #include "muimaster_intern.h"
 #include "mui.h"
 #include "support.h"
@@ -459,6 +460,9 @@
 
 extern struct Library *MUIMasterBase;
 
+/* number of images that can be supplied by a system image class */
+#define NUM_THEME_IMSPECS       4
+
 struct MUI_ConfigdataData
 {
     Object                      *app;
@@ -469,6 +473,8 @@ struct MUI_ConfigdataData
     struct MUI_InputHandlerNode fsNotifyIHN;
     struct NotifyRequest        fsNotifyRequest;
     struct List                 pubscreens;
+    /* image specifications of the system's image classes, if installed */
+    CONST_STRPTR                themespecs[NUM_THEME_IMSPECS];
 };
 
 /*
@@ -553,6 +559,85 @@ const static struct spec_cfg DefImspecValues[] =
  * Initialize private image slots from borrowed stored/default specs; pointers
  * follow Dataspace lifetime.
  */
+/**************************************************************************
+ Images supplied by the system
+
+ Images are used as they are configured. For some that have not been
+ configured an image class installed with the system takes the place of
+ the builtin image, so that applications show the same imagery as the
+ desktop; the builtin image is what remains when the class is not there.
+
+ Images of a theme are never used on their own account: a configuration
+ names them, either as an image of the theme in use
+ ("3:THEME:Images/<Name>") or as an image of a particular theme.
+**************************************************************************/
+
+struct theme_imspec
+{
+    ULONG cfgid;
+    CONST_STRPTR sysimage;      /* image class installed with the system */
+    CONST_STRPTR sysspec;       /* ... and the specification using it */
+};
+
+#define SYSIMSPEC(n)            #n ".image", "3:" #n ".image"
+
+const static struct theme_imspec ThemeImspecValues[NUM_THEME_IMSPECS] =
+{
+    { MUICFG_Image_Drawer,       SYSIMSPEC(Drawer) },
+    { MUICFG_Image_HardDisk,     SYSIMSPEC(HardDisk) },
+    { MUICFG_Image_Disk,         SYSIMSPEC(Disk) },
+    { MUICFG_Image_Volume,       SYSIMSPEC(Volume) },
+};
+
+/* Establishes which of the images above are available */
+static void init_theme_imspecs(struct MUI_ConfigdataData *data)
+{
+    int i;
+
+    for (i = 0; i < NUM_THEME_IMSPECS; i++)
+    {
+        const struct theme_imspec *tis = ThemeImspecValues + i;
+
+        data->themespecs[i] = NULL;
+#ifdef __AROS__
+        {
+            STRPTR file = zune_themeimage_locate(tis->sysimage, NULL);
+
+            if (file)
+            {
+                data->themespecs[i] = tis->sysspec;
+                FreeVec(file);
+            }
+        }
+#endif
+    }
+}
+
+/* The specification used for an image that has not been configured */
+static CONST_STRPTR default_imspec(struct MUI_ConfigdataData *data,
+    ULONG cfgid)
+{
+    int i;
+
+    for (i = 0; i < NUM_THEME_IMSPECS; i++)
+    {
+        if (ThemeImspecValues[i].cfgid == cfgid)
+        {
+            if (data->themespecs[i])
+                return data->themespecs[i];
+            break;
+        }
+    }
+
+    for (i = 0; DefImspecValues[i].defspec; i++)
+    {
+        if (DefImspecValues[i].cfgid == cfgid)
+            return DefImspecValues[i].defspec;
+    }
+
+    return NULL;
+}
+
 static void init_imspecs(Object *obj, struct MUI_ConfigdataData *data)
 {
     int i;
@@ -1081,6 +1166,7 @@ IPTR Configdata__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 
     /*---------- images stuff ----------*/
 
+    init_theme_imspecs(data);
     init_imspecs(obj, data);
 
     /*---------- frame stuff ----------*/
@@ -1410,11 +1496,8 @@ IPTR Configdata__MUIM_GetString(struct IClass *cl, Object *obj,
             if (DefStrValues[i].id == msg->id)
                 return (IPTR) DefStrValues[i].val;
         }
-        for (i = 0; DefImspecValues[i].defspec; i++)
-        {
-            if (DefImspecValues[i].cfgid == msg->id)
-                return (IPTR) DefImspecValues[i].defspec;
-        }
+        if ((s = default_imspec(INST_DATA(cl, obj), msg->id)) != NULL)
+            return (IPTR) s;
         for (i = 0; DefFramespecValues[i].defspec; i++)
         {
             if (DefFramespecValues[i].cfgid == msg->id)
@@ -1449,16 +1532,15 @@ IPTR Configdata__MUIM_SetImspec(struct IClass *cl, Object *obj,
         return 0;
     }
 
-    for (i = 0; DefImspecValues[i].defspec; i++)
+    /* a specification that is the default one is not stored */
     {
-        if (DefImspecValues[i].cfgid == msg->id)
-            if (!strcmp(DefImspecValues[i].defspec, msg->imspec))
-            {
-/*                  D(bug("Configdata_SetImspec(%p) : set to def, id %08lx, val %s\n", */
-/*                        obj, msg->id, msg->imspec)); */
-                DoMethod(obj, MUIM_Dataspace_Remove, msg->id);
-                return 0;
-            }
+        CONST_STRPTR def = default_imspec(INST_DATA(cl, obj), msg->id);
+
+        if (def && !strcmp(def, msg->imspec))
+        {
+            DoMethod(obj, MUIM_Dataspace_Remove, msg->id);
+            return 0;
+        }
     }
 
     for (i = 0; DefStrValues[i].id; i++)

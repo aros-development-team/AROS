@@ -1,5 +1,5 @@
 /*
-    Copyright  2002-2020, The AROS Development Team.
+    Copyright  2002-2026, The AROS Development Team.
     Copyright  1999, David Le Corfec.
     All rights reserved.
 
@@ -23,11 +23,13 @@
 #include <exec/memory.h>
 
 #include <graphics/gfxmacros.h>
+#include <intuition/imageclass.h>
 
 #include <proto/exec.h>
 #include <proto/graphics.h>
 #include <proto/intuition.h>
 #include <proto/dos.h>
+#include <proto/utility.h>
 #include <clib/alib_protos.h>
 
 //#define MYDEBUG 1
@@ -43,6 +45,7 @@
 #include "prefs.h"
 #include "penspec.h"
 #include "imspec_intern.h"
+#include "themeimage.h"
 
 extern struct Library *MUIMasterBase;
 
@@ -182,8 +185,13 @@ static struct MUI_ImageSpec_intern *get_boopsi_imspec(CONST_STRPTR filename)
 
     if (!filename)
         return NULL;
-    if (!strstr(filename, ".image"))
-        return get_brush_imspec(filename);
+    /* anything but a BOOPSI image class is a brush */
+    {
+        size_t len = strlen(filename);
+
+        if (len <= 6 || Stricmp(filename + len - 6, ".image"))
+            return get_brush_imspec(filename);
+    }
 
     if ((spec = mui_alloc_struct(struct MUI_ImageSpec_intern)))
     {
@@ -458,6 +466,114 @@ static void zune_imspec_free(struct MUI_ImageSpec_intern *spec)
     mui_free(spec);
 }
 
+/*
+ * Creates the image of an external BOOPSI image class. The class is the
+ * library the specification names: an ".image" file of an image set, or
+ * failing that an image class installed in the system. As in MUI the
+ * class is asked for its dimensions with MUIM_BoopsiQuery right after
+ * the image has been created.
+ */
+static void zune_imspec_boopsi_setup(struct MUI_ImageSpec_intern *spec,
+    struct MUI_RenderInfo *mri)
+{
+    struct MUI_BoopsiQuery mbq;
+    CONST_STRPTR file = FilePart(spec->u.boopsi.filename);
+    char classname[64];
+    STRPTR path;
+    char *ext;
+
+    spec->u.boopsi.obj = NULL;
+    spec->u.boopsi.lib = NULL;
+    spec->u.boopsi.minwidth = 0;
+    spec->u.boopsi.minheight = 0;
+    spec->u.boopsi.maxwidth = MUI_MAXMAX;
+    spec->u.boopsi.maxheight = MUI_MAXMAX;
+    spec->u.boopsi.defwidth = 0;
+    spec->u.boopsi.defheight = 0;
+
+    path = zune_themeimage_locate(spec->u.boopsi.filename,
+        mri->mri_Screen);
+    if (path)
+    {
+        spec->u.boopsi.lib = OpenLibrary(path, 0);
+        FreeVec(path);
+    }
+    if (!spec->u.boopsi.lib)
+    {
+        /* a class installed with the system's image classes */
+        char libname[80];
+
+        snprintf(libname, sizeof(libname), "images/%s", file);
+        spec->u.boopsi.lib = OpenLibrary(libname, 0);
+    }
+    if (!spec->u.boopsi.lib)
+        return;
+
+    /* the class is named after its file, with or without the suffix */
+    strlcpy(classname, file, sizeof(classname));
+    spec->u.boopsi.obj = NewObject(NULL, classname,
+        SYSIA_DrawInfo, (IPTR) mri->mri_DrawInfo, TAG_DONE);
+    if (!spec->u.boopsi.obj && (ext = strrchr(classname, '.')) != NULL)
+    {
+        *ext = 0;
+        spec->u.boopsi.obj = NewObject(NULL, classname,
+            SYSIA_DrawInfo, (IPTR) mri->mri_DrawInfo, TAG_DONE);
+    }
+    if (!spec->u.boopsi.obj)
+    {
+        CloseLibrary(spec->u.boopsi.lib);
+        spec->u.boopsi.lib = NULL;
+        return;
+    }
+
+    memset(&mbq, 0, sizeof(mbq));
+    mbq.mbq_MethodID = MUIM_BoopsiQuery;
+    mbq.mbq_Screen = mri->mri_Screen;
+    mbq.mbq_Flags = MBQF_HORIZ;
+    mbq.mbq_MaxWidth = MBQ_MUI_MAXMAX;
+    mbq.mbq_MaxHeight = MBQ_MUI_MAXMAX;
+    mbq.mbq_RenderInfo = mri;
+
+    if (DoMethodA(spec->u.boopsi.obj, (Msg) & mbq) == MUIM_BoopsiQuery)
+    {
+        spec->u.boopsi.minwidth = CLAMP(mbq.mbq_MinWidth, 0, MUI_MAXMAX);
+        spec->u.boopsi.minheight = CLAMP(mbq.mbq_MinHeight, 0, MUI_MAXMAX);
+        spec->u.boopsi.maxwidth = CLAMP(mbq.mbq_MaxWidth,
+            spec->u.boopsi.minwidth, MUI_MAXMAX);
+        spec->u.boopsi.maxheight = CLAMP(mbq.mbq_MaxHeight,
+            spec->u.boopsi.minheight, MUI_MAXMAX);
+        spec->u.boopsi.defwidth = CLAMP(mbq.mbq_DefWidth,
+            spec->u.boopsi.minwidth, spec->u.boopsi.maxwidth);
+        spec->u.boopsi.defheight = CLAMP(mbq.mbq_DefHeight,
+            spec->u.boopsi.minheight, spec->u.boopsi.maxheight);
+    }
+    else
+    {
+        /* an image that does not answer has no limits; start from the
+           size it was created with, if it has one */
+        struct Image *im = (struct Image *)spec->u.boopsi.obj;
+
+        if (im->Width > 0)
+            spec->u.boopsi.defwidth = im->Width;
+        if (im->Height > 0)
+            spec->u.boopsi.defheight = im->Height;
+    }
+}
+
+static void zune_imspec_boopsi_cleanup(struct MUI_ImageSpec_intern *spec)
+{
+    if (spec->u.boopsi.obj)
+    {
+        DisposeObject(spec->u.boopsi.obj);
+        spec->u.boopsi.obj = NULL;
+    }
+    if (spec->u.boopsi.lib)
+    {
+        CloseLibrary(spec->u.boopsi.lib);
+        spec->u.boopsi.lib = NULL;
+    }
+}
+
 struct MUI_ImageSpec_intern *zune_imspec_setup(IPTR s,
     struct MUI_RenderInfo *mri)
 {
@@ -489,45 +605,60 @@ struct MUI_ImageSpec_intern *zune_imspec_setup(IPTR s,
         break;
 
     case IST_BOOPSI:
+        zune_imspec_boopsi_setup(spec, mri);
         break;
 
     case IST_BRUSH:
         {
-            int i;
+            STRPTR path;
 
-            for (i = 0; i < 2; i++)
+            spec->u.brush.dt[0] = NULL;
+            spec->u.brush.dt[1] = NULL;
+            spec->u.brush.mim = FALSE;
+
+            /* find the file the name refers to; this is where names
+               relative to the image sets, and names of images of the
+               active theme, are resolved */
+            path = zune_themeimage_locate(spec->u.brush.filename[0],
+                mri->mri_Screen);
+            if (path)
             {
-                if (spec->u.brush.filename[i])
+                size_t len = strlen(path);
+
+                if (len > 6 && !Stricmp(path + len - 6, ".image"))
                 {
-                    spec->u.brush.dt[i] = dt_load_picture
-                        (spec->u.brush.filename[i], mri->mri_Screen);
-
-                    if (!spec->u.brush.dt[i]
-                        && !strchr(spec->u.brush.filename[i], ':'))
-                    {
-                        int size;
-                        STRPTR fullpath;
-
-                        size = strlen(IMSPEC_EXTERNAL_PREFIX)
-                            + strlen(spec->u.brush.filename[i]) + 1;
-                        fullpath = (STRPTR) AllocVec(size, MEMF_ANY);
-
-                        if (fullpath != NULL)
-                        {
-                            strcpy(fullpath, IMSPEC_EXTERNAL_PREFIX);
-                            strcat(fullpath, spec->u.brush.filename[i]);
-                            fullpath[size - 1] = 0;
-                            spec->u.brush.dt[i] = dt_load_picture
-                                (fullpath, mri->mri_Screen);
-                            FreeVec(fullpath);
-                        }
-                    }
+                    /* the name of a theme image leaves its type open,
+                       and this one turns out to be an image class */
+                    FreeVec((APTR) spec->u.brush.filename[0]);
+                    if (spec->u.brush.filename[1])
+                        FreeVec((APTR) spec->u.brush.filename[1]);
+                    spec->type = IST_BOOPSI;
+                    spec->u.boopsi.filename = path;
+                    zune_imspec_boopsi_setup(spec, mri);
+                    break;
                 }
-                else
+
+                spec->u.brush.dt[0] = dt_load_picture(path, mri->mri_Screen);
+
+                if (len > 4 && !Stricmp(path + len - 4, ".mim"))
                 {
-                    spec->u.brush.dt[i] = spec->u.brush.dt[0];
+                    /* both states are held by the one picture */
+                    spec->u.brush.mim = TRUE;
                 }
+                else if (spec->u.brush.dt[0] && path[len - 1] == '0')
+                {
+                    /* "<name>0" is the normal image of a pair, with the
+                       selected image stored as "<name>1" */
+                    path[len - 1] = '1';
+                    spec->u.brush.dt[1] =
+                        dt_load_picture(path, mri->mri_Screen);
+                }
+                FreeVec(path);
             }
+
+            /* without a selected image the normal one is shown */
+            if (!spec->u.brush.dt[1])
+                spec->u.brush.dt[1] = spec->u.brush.dt[0];
         }
         break;
 
@@ -589,20 +720,20 @@ void zune_imspec_cleanup(struct MUI_ImageSpec_intern *spec)
         break;
 
     case IST_BOOPSI:
+        zune_imspec_boopsi_cleanup(spec);
         break;
 
     case IST_BRUSH:
         {
             int i;
 
+            if (spec->u.brush.dt[1]
+                && spec->u.brush.dt[1] != spec->u.brush.dt[0])
+                dt_dispose_picture(spec->u.brush.dt[1]);
+            if (spec->u.brush.dt[0])
+                dt_dispose_picture(spec->u.brush.dt[0]);
             for (i = 0; i < 2; i++)
-            {
-                if (spec->u.brush.filename[i])
-                {
-                    dt_dispose_picture(spec->u.brush.dt[i]);
-                }
                 spec->u.brush.dt[i] = NULL;
-            }
             break;
         }
     case IST_BITMAP:
@@ -653,28 +784,36 @@ BOOL zune_imspec_askminmax(struct MUI_ImageSpec_intern *spec,
         break;
 
     case IST_BOOPSI:
-        /* ??? */
+        if (!spec->u.boopsi.obj)
+        {
+            minmax->MinWidth = 3;
+            minmax->MinHeight = 3;
+            minmax->DefWidth = 8;
+            minmax->DefHeight = 8;
+            minmax->MaxWidth = MUI_MAXMAX;
+            minmax->MaxHeight = MUI_MAXMAX;
+            return FALSE;
+        }
+        minmax->MinWidth = spec->u.boopsi.minwidth;
+        minmax->MinHeight = spec->u.boopsi.minheight;
+        minmax->MaxWidth = spec->u.boopsi.maxwidth;
+        minmax->MaxHeight = spec->u.boopsi.maxheight;
+        minmax->DefWidth = spec->u.boopsi.defwidth;
+        minmax->DefHeight = spec->u.boopsi.defheight;
         break;
 
     case IST_BRUSH:
         if (spec->u.brush.dt[0])
         {
-            const char *straddr;
-            long len;
-            straddr = *(spec->u.brush.filename);
-            len = strlen(straddr);
-            if (len > 4)
+            if (spec->u.brush.mim)
             {
-                if (strcmp(&straddr[len - 4], ".mim") == 0)
-                {
-                    minmax->MinWidth = dt_width(spec->u.brush.dt[0]) >> 1;
-                    minmax->MinHeight = dt_height(spec->u.brush.dt[0]);
-                    minmax->DefWidth = minmax->MinWidth;
-                    minmax->DefHeight = minmax->MinHeight;
-                    minmax->MaxWidth = minmax->MinWidth;
-                    minmax->MaxHeight = minmax->MinHeight;
-                    break;
-                }
+                minmax->MinWidth = dt_width(spec->u.brush.dt[0]) >> 1;
+                minmax->MinHeight = dt_height(spec->u.brush.dt[0]);
+                minmax->DefWidth = minmax->MinWidth;
+                minmax->DefHeight = minmax->MinHeight;
+                minmax->MaxWidth = minmax->MinWidth;
+                minmax->MaxHeight = minmax->MinHeight;
+                break;
             }
             minmax->MinWidth = dt_width(spec->u.brush.dt[0]);
             minmax->MinHeight = dt_height(spec->u.brush.dt[0]);
@@ -776,7 +915,8 @@ void zune_imspec_drawbuffered(struct MUI_ImageSpec_intern *spec,
     }
 
     if ((spec->type == IST_BITMAP && !spec->u.bitmap.dt)
-        || (spec->type == IST_BRUSH && !spec->u.brush.dt[0]))
+        || (spec->type == IST_BRUSH && !spec->u.brush.dt[0])
+        || (spec->type == IST_BOOPSI && !spec->u.boopsi.obj))
     {
         def.type = IST_COLOR;
         zune_penspec_fill_muipen(&def.u.penspec, MPEN_BACKGROUND);
@@ -812,6 +952,16 @@ void zune_imspec_drawbuffered(struct MUI_ImageSpec_intern *spec,
         break;
 
     case IST_BOOPSI:
+        if (spec->u.boopsi.obj)
+        {
+            /* the image fills the area it is given */
+            SetAttrs(spec->u.boopsi.obj,
+                IA_Width, width, IA_Height, height, TAG_DONE);
+            DrawImageState(rp, (struct Image *)spec->u.boopsi.obj,
+                left - dx, top - dy,
+                (state == 1) ? IDS_SELECTED : IDS_NORMAL,
+                mri->mri_DrawInfo);
+        }
         break;
 
     case IST_BRUSH:
@@ -819,18 +969,11 @@ void zune_imspec_drawbuffered(struct MUI_ImageSpec_intern *spec,
             state = 0;
         if (spec->u.brush.dt[state])
         {
-            const char *straddr;
-            long len;
-            straddr = *(spec->u.brush.filename);
-            len = strlen(straddr);
-            if (len > 4)
+            if (spec->u.brush.mim)
             {
-                if (strcmp(&straddr[len - 4], ".mim") == 0)
-                {
-                    dt_put_mim_on_rastport(spec->u.brush.dt[0],
-                        mri->mri_RastPort, left - dx, top - dy, state);
-                    break;
-                }
+                dt_put_mim_on_rastport(spec->u.brush.dt[0],
+                    mri->mri_RastPort, left - dx, top - dy, state);
+                break;
             }
             dt_put_on_rastport(spec->u.brush.dt[state], mri->mri_RastPort,
                 left - dx, top - dy);

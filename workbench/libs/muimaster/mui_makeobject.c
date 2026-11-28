@@ -19,6 +19,7 @@
 #endif
 
 #include "muimaster_intern.h"
+#include "themeimage.h"
 #include "mui.h"
 
 /* #define MYDEBUG 1 */
@@ -144,10 +145,12 @@ Object *INTERNAL_ImageButton(CONST_STRPTR label, CONST_STRPTR imagePath,
 {
 #   define BUFFERSIZE 512
 
-    BPTR lock = Lock(imagePath, ACCESS_READ);
+    /* The path can name an image of the theme in use without its type
+       ("THEMEIMAGES:<Name>"), so it is located rather than locked. */
+    STRPTR imageFile = zune_themeimage_locate(imagePath, NULL);
 
     D(bug("[ImageButton] Font 0x%p\n", textFont));
-    if (lock != BNULL)
+    if (imageFile != NULL)
     {
 
         TEXT imageSpec[BUFFERSIZE];
@@ -157,7 +160,7 @@ Object *INTERNAL_ImageButton(CONST_STRPTR label, CONST_STRPTR imagePath,
         strlcat(imageSpec, "3:", BUFFERSIZE);
         strlcat(imageSpec, imagePath, BUFFERSIZE);
 
-        UnLock(lock);
+        FreeVec(imageFile);
 
         return (Object *) HGroup,
             ButtonFrame,
