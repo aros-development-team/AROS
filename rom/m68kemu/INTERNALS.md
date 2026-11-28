@@ -638,7 +638,11 @@ The library tables together hold 395 entries.
   the region's `MemHeader` attributes (0 for the ROM area and outside memory);
   `CopyMem` and `CopyMemQuick` within the program's memory: both spans must
   lie wholly in it, or the copy is refused with a line in the log (a shadow is
-  copied as the program's own copy, a handle is refused); `CacheClearU` no-op;
+  copied as the program's own copy, a handle is refused); under `low_guard` the
+  part of the destination below 0x400 follows `m68k_write_allowed()`, the copy
+  counting as long writes from the destination on, then a word and a byte, so
+  a vector the program may write with `MOVE.L` it may also copy to;
+  `CacheClearU` no-op;
   `CacheControl` keeps the bits in `ctx->cacr`
 - Lists: `Insert`..`Enqueue`, `NewMinList`, `FindName` in the program's memory (`FindName` on
   the ExecBase `LibList` opens the named library and returns its base; on
@@ -653,7 +657,10 @@ The library tables together hold 395 entries.
 - Messages: `PutMsg`, `GetMsg`, `ReplyMsg`, `WaitPort`; `AddPort` makes the
   message list of a port in the program's memory empty and names the port in
   `ctx->pubports[16]`, where `FindPort` looks before the system's ports;
-  `RemPort` takes it out
+  a port with a native one behind it, as `CreateMsgPort()` gives, is named
+  there too, by the name the program put in its copy, and its native message
+  list is left alone (native `FindPort()` callers do not see it: that would
+  need a native copy of the name); `RemPort` takes it out
 - Semaphores: 11 functions (see above)
 - Libraries: `OpenLibrary`, `OldOpenLibrary`, `CloseLibrary` (no-op),
   `OpenResource` (only a base that already has thunks; a native resource base

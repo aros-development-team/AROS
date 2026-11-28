@@ -96,8 +96,14 @@ static void *shadow_lookup(struct M68KEmuContext *ctx, ULONG addr)
     return NULL;
 }
 
-static const struct M68KStructLayout io_layout = { SHADOW_TYPE_IOREQUEST };
-static const struct M68KStructLayout *shadow_find_layout(const char *name) { return strcmp(name, "IORequest") == 0 ? &io_layout : NULL; }
+static const struct M68KStructLayout io_layout = { SHADOW_TYPE_IOREQUEST }, port_layout = { SHADOW_TYPE_MSGPORT };
+static BOOL no_port_layout;
+static const struct M68KStructLayout *shadow_find_layout(const char *name)
+{
+    if (strcmp(name, "MsgPort") == 0)
+        return no_port_layout ? NULL : &port_layout;
+    return strcmp(name, "IORequest") == 0 ? &io_layout : NULL;
+}
 static void shadow_destroy(struct M68KEmuContext *ctx, const struct M68KStructLayout *l, ULONG m) { (void)ctx; last_destroy_layout = l; last_destroy_addr = m; shadows_destroyed++; }
 static ULONG shadow_create_by_name(struct M68KEmuContext *ctx, const char *name, void *native) { (void)ctx; (void)name; (void)native; shadows_made++; return 0x6000; }
 
@@ -154,6 +160,7 @@ static void reset(struct M68KEmuContext *ctx)
     last_free_addr = last_free_size = last_destroy_addr = 0;
     last_deleteio_arg = NULL;
     last_destroy_layout = NULL;
+    no_port_layout = FALSE;
 }
 
 /* a string constant and its NUL into the program's memory */
@@ -197,13 +204,75 @@ static void ports(struct M68KEmuContext *ctx)
     cpu.a[1] = name;
     check(thunk_exec_FindPort(ctx, &cpu) == 0, "after RemPort FindPort does not find it");
 
-    /* a port the program got from the system is left as it is */
+    /* a structure the program got from the system that is not a port is left as it is */
     ctx->shadow_map[0].m68k_addr = S;
-    ctx->shadow_map[0].native_ptr = native_port;
+    ctx->shadow_map[0].native_ptr = native_io;
+    ctx->shadow_map[0].type = SHADOW_TYPE_IOREQUEST;
     ctx->num_shadows = 1;
     cpu.a[1] = S;
     thunk_exec_AddPort(ctx, &cpu);
-    check(arena[S + 8] == 0 && m68k_read32(ctx, S + 20) == 0 && ctx->pubports[0] == 0, "AddPort of a shadow: untouched, not named");
+    check(arena[S + 8] == 0 && m68k_read32(ctx, S + 20) == 0 && ctx->pubports[0] == 0,
+          "AddPort of a shadow that is not a port: untouched, not named");
+
+    /* a port with a native one behind it, as CreateMsgPort() gives: the program
+       names its copy and makes it public; FindPort finds it by that name, and
+       neither the copy nor the native port and its message list is written */
+    {
+        static const UWORD kinds[] = { SHADOW_TYPE_MSGPORT, SHADOW_PORT };
+        static const char *const label[2][5] = {
+            { "AddPort of a CreateMsgPort() port: in the table for FindPort, no trap, no log line",
+              "AddPort of a CreateMsgPort() port: the program's copy and the native port are not written",
+              "FindPort finds the CreateMsgPort() port by the name in the program's copy, without asking the system",
+              "AddPort of a CreateMsgPort() port twice: one entry",
+              "after RemPort FindPort does not find the CreateMsgPort() port" },
+            { "AddPort of a port registered by hand: in the table for FindPort, no trap, no log line",
+              "AddPort of a port registered by hand: the program's copy and the native port are not written",
+              "FindPort finds the port registered by hand by the name in the program's copy",
+              "AddPort of a port registered by hand twice: one entry",
+              "after RemPort FindPort does not find the port registered by hand" } };
+        const ULONG C = 0x2400, cname = 0x2500;
+
+        for (int k = 0; k < 2; k++)
+        {
+            UBYTE copy[34];
+            unsigned asked;
+
+            reset(ctx);
+            put_string(cname, "MYPORT");
+            memset(arena + C, 0xAA, 34);
+            m68k_write32(ctx, C + 10, cname);               /* port->mp_Node.ln_Name = "MYPORT" */
+            memcpy(copy, arena + C, 34);
+            memset(native_port, 0x55, sizeof(native_port));
+            ctx->shadow_map[0].m68k_addr = C;
+            ctx->shadow_map[0].native_ptr = native_port;
+            ctx->shadow_map[0].type = kinds[k];
+            ctx->num_shadows = 1;
+            cpu.a[1] = C;
+            thunk_exec_AddPort(ctx, &cpu);
+            check(ctx->pubports[0] == C && low_traps == 0 && logs == 0, label[k][0]);
+            check(memcmp(arena + C, copy, 34) == 0 && untouched(native_port, sizeof(native_port), 0x55), label[k][1]);
+            cpu.a[1] = cname;
+            asked = native_findport;
+            check(thunk_exec_FindPort(ctx, &cpu) == C && native_findport == asked, label[k][2]);
+            cpu.a[1] = C;
+            thunk_exec_AddPort(ctx, &cpu);
+            check(ctx->pubports[0] == C && ctx->pubports[1] == 0, label[k][3]);
+            thunk_exec_RemPort(ctx, &cpu);
+            cpu.a[1] = cname;
+            check(ctx->pubports[0] == 0 && thunk_exec_FindPort(ctx, &cpu) == 0, label[k][4]);
+        }
+        /* without a MsgPort layout a shadow of that type cannot be told from another structure */
+        reset(ctx);
+        no_port_layout = TRUE;
+        ctx->shadow_map[0].m68k_addr = C;
+        ctx->shadow_map[0].native_ptr = native_port;
+        ctx->shadow_map[0].type = SHADOW_TYPE_MSGPORT;
+        ctx->num_shadows = 1;
+        cpu.a[1] = C;
+        thunk_exec_AddPort(ctx, &cpu);
+        check(ctx->pubports[0] == 0 && arena[C + 8] == 0, "AddPort of a shadow without a MsgPort layout: untouched, not named");
+        reset(ctx);
+    }
 
     /* sixteen named ports at most */
     for (int i = 0; i < 17; i++)
@@ -466,14 +535,44 @@ static void copies(struct M68KEmuContext *ctx)
     thunk_exec_CopyMem(ctx, &cpu);
     check(m68k_read32(ctx, 0x3000) == 0 && logs == 3, "CopyMem from NULL: refused, a line in the log");
 
-    /* CopyMem to destinations below 0x400 while low_guard is active: refused before memmove */
+    /* CopyMem to destinations below 0x400 while low_guard is active follows the
+       rule of the accessors, m68k_write_allowed(): the copy counts as long
+       writes from the destination on, then a word and a byte. A write that
+       rule refuses refuses the whole copy, before memmove. */
     {
         static const struct { ULONG to, size; } low_copies[] = {
             { 0x200, 10 },
-            { 0x10, 8 },
-            { 0x140, 10 },
+            { 0x10, 8 },        /* the second long, at 0x14 */
+            { 0x6C, 8 },        /* the second long, at 0x70 */
+            { 0x6E, 2 },        /* a word inside the vector at 0x6C, as MOVE.W there */
+            { 0x6C, 5 },        /* the byte at 0x70 */
+            { 0x13C, 8 },       /* the first long, before 0x140 */
+            { 0x18C, 8 },       /* the second long, at 0x190 */
             { 0x3FC, 8 },
         };
+        static const struct { ULONG to, size; } vector_copies[] = {
+            { 0x6C, 4 },        /* CopyMem(&v, (APTR)0x6C, 4), where MOVE.L works */
+            { 0x10, 4 },
+            { 0x28, 8 },        /* the vectors at 0x28 and 0x2C */
+            { 0x6C, 2 },        /* a word at 0x6C, as MOVE.W there */
+            { 0x140, 10 },      /* two longs and a word in 0x140-0x18F */
+            { 0x140, 0x50 },    /* all of 0x140-0x18F */
+        };
+        for (size_t i = 0; i < sizeof(vector_copies) / sizeof(vector_copies[0]); i++)
+        {
+            ULONG dst = vector_copies[i].to, len = vector_copies[i].size;
+            unsigned traps_before = low_traps, logs_before = logs;
+            memset(arena + 0x4000, 0x30 + (int)i, len);
+            memset(arena + dst - 4, 0xCC, len + 8);
+            cpu.a[0] = 0x4000;
+            cpu.a[1] = dst;
+            cpu.d[0] = len;
+            thunk_exec_CopyMem(ctx, &cpu);
+            check(low_traps == traps_before && logs == logs_before &&
+                  untouched(arena + dst, len, (UBYTE)(0x30 + i)) &&
+                  untouched(arena + dst - 4, 4, 0xCC) && untouched(arena + dst + len, 4, 0xCC),
+                  "CopyMem to a vector the program may write under low_guard: copied, no more");
+        }
         for (size_t i = 0; i < sizeof(low_copies) / sizeof(low_copies[0]); i++)
         {
             ULONG dst = low_copies[i].to, len = low_copies[i].size;

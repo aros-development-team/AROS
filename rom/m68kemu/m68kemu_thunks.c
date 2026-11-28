@@ -501,10 +501,14 @@ static IPTR thunk_exec_Permit(struct M68KEmuContext *ctx, void *cpu) { if (ctx->
 
 /* -624: CopyMem(A0=source, A1=dest, D0=size), and -630: CopyMemQuick with
    the same registers. Both spans must lie wholly in the program's memory,
-   and while low_guard is active the destination must not reach below 0x400,
-   or the copy is refused. The addresses are taken as they are: a shadow is
-   copied as the program's own copy of the structure, which is there, and
-   the native object behind a shadow or a handle is never read or written. */
+   or the copy is refused. While low_guard is active, the part of the
+   destination below 0x400 follows m68k_write_allowed(), the rule of the
+   accessors: the copy counts as the long writes a program would make from
+   the destination on, then a word and a byte for what is left, and one
+   that is not allowed refuses the whole copy. The addresses are taken as
+   they are: a shadow is copied as the program's own copy of the structure,
+   which is there, and the native object behind a shadow or a handle is
+   never read or written. */
 static IPTR thunk_exec_CopyMem(struct M68KEmuContext *ctx, void *cpu)
 {
     ULONG from = THUNK_A(0);
@@ -522,8 +526,20 @@ static IPTR thunk_exec_CopyMem(struct M68KEmuContext *ctx, void *cpu)
     }
     if (ctx->low_guard && to < 0x400)
     {
-        m68k_low_write_trap(ctx, to, "CopyMem");
-        return 0;
+        ULONG at = to, left = size;
+
+        while (left && at < 0x400)
+        {
+            ULONG step = left >= 4 ? 4 : left >= 2 ? 2 : 1;
+
+            if (!m68k_write_allowed(ctx, at))
+            {
+                m68k_low_write_trap(ctx, at, "CopyMem");
+                return 0;
+            }
+            at += step;
+            left -= step;
+        }
     }
     memmove(ctx->mem + to, ctx->mem + from, size);
     return 0;
@@ -845,27 +861,50 @@ static IPTR thunk_exec_FindSemaphore(struct M68KEmuContext *ctx, void *cpu)
     return ss ? m68k_bptr_out(ctx, (BPTR)ss) : 0;
 }
 
+/* a MsgPort registered by hand: a window's UserPort, the native twin of a
+   reply port (m68k_port_twin) */
+#define SHADOW_PORT 4
+
 /* -354: AddPort(A1=port): a port in the program's memory becomes a public
    one of the program: its message list is made empty, as exec does, and
-   its name goes to a table for FindPort. A port the program got from the
-   system, or below 0x400 while low_guard is active, is left as it is. */
+   its name goes to a table for FindPort. A port with a native one behind it,
+   as CreateMsgPort() gives, goes to the same table: FindPort reads the name
+   the program put in its copy. Its messages are in the native list, which
+   stays as it is, and so does the copy. Another structure the program got
+   from the system, or a port below 0x400 while low_guard is active, is left
+   as it is. */
 static IPTR thunk_exec_AddPort(struct M68KEmuContext *ctx, void *cpu)
 {
     ULONG mp = THUNK_A(1), l = mp + 20;
+    BOOL native = FALSE;
     int i;
 
-    if (!m68k_in_mem(ctx, mp, 34) || shadow_lookup(ctx, mp))
+    if (!m68k_in_mem(ctx, mp, 34))
         return 0;
-    if (ctx->low_guard && mp < 0x400)
+    for (UWORD s = 0; s < ctx->num_shadows; s++)
+        if (ctx->shadow_map[s].m68k_addr == mp)
+        {
+            const struct M68KStructLayout *layout = shadow_find_layout("MsgPort");
+
+            if (ctx->shadow_map[s].type != SHADOW_PORT &&
+                (!layout || ctx->shadow_map[s].type != layout->shadow_type))
+                return 0;
+            native = TRUE;
+            break;
+        }
+    if (!native)
     {
-        m68k_low_write_trap(ctx, mp, "AddPort");
-        return 0;
+        if (ctx->low_guard && mp < 0x400)
+        {
+            m68k_low_write_trap(ctx, mp, "AddPort");
+            return 0;
+        }
+        ctx->mem[mp + 8] = NT_MSGPORT;              /* ln_Type */
+        m68k_write32(ctx, l + 0, l + 4);            /* mp_MsgList: lh_Head */
+        m68k_write32(ctx, l + 4, 0);                /* lh_Tail */
+        m68k_write32(ctx, l + 8, l);                /* lh_TailPred */
+        ctx->mem[l + 12] = NT_MESSAGE;              /* lh_Type */
     }
-    ctx->mem[mp + 8] = NT_MSGPORT;              /* ln_Type */
-    m68k_write32(ctx, l + 0, l + 4);            /* mp_MsgList: lh_Head */
-    m68k_write32(ctx, l + 4, 0);                /* lh_Tail */
-    m68k_write32(ctx, l + 8, l);                /* lh_TailPred */
-    ctx->mem[l + 12] = NT_MESSAGE;              /* lh_Type */
     for (i = 0; i < 16; i++)
         if (ctx->pubports[i] == mp)
             return 0;

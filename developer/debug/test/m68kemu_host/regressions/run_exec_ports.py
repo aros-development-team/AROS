@@ -62,6 +62,9 @@ def run(args, output):
     native = re.search(r'^#define ML_NATIVE\(a\).*$', text, re.M)
     if not native:
         raise ValueError('ML_NATIVE not found')
+    port = re.search(r'^#define SHADOW_PORT\s+\d+$', text, re.M)
+    if not port:
+        raise ValueError('SHADOW_PORT not found')
     output.mkdir(parents=True, exist_ok=True)
     head = header.read_text(encoding='latin1')
     layouts = (bridge / 'm68kemu_shadow_layouts.h').read_text(encoding='latin1')
@@ -78,7 +81,7 @@ def run(args, output):
         constants.append('#define %s %s' % (macro, m[1]))
     (output / 'constants.inc').write_text('\n'.join(constants) + '\n')
     (output / 'accessors.inc').write_text(''.join(function(header, n) for n in ACCESSORS))
-    (output / 'thunks.inc').write_text(native[0] + '\n' + ''.join(function(thunks, n) for n in THUNKS))
+    (output / 'thunks.inc').write_text(native[0] + '\n' + port[0] + '\n' + ''.join(function(thunks, n) for n in THUNKS))
     if args.prepare_only:
         return
     command = shlex.split(args.cc) + ['-std=c99', '-Wall', '-Wextra', '-Werror', '-Wno-unused-function',
