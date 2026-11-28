@@ -985,13 +985,9 @@ checked-in `thunk_exec_CreateMsgPort` / `thunk_exec_DeleteMsgPort` in
 `shadow_lookup`, `shadow_remove`, `sync_fields`, `shadow_find_layout`,
 `shadow_create`, `shadow_destroy`, `shadow_create_by_name`,
 `msgport_is_embedded_proc_port`, `msgport_invalidate_aliases`,
-`m68k_msgport_own`, `m68k_msgport_destroy`, `m68k_msgport_task_end`), the
-`MsgPort` layout and `Task`
+`m68k_msgport_own`, `m68k_msgport_destroy`), the `MsgPort` layout and `Task`
 shadow type, and `thunk_exec_CreateMsgPort` / `thunk_exec_DeleteMsgPort` /
 `thunk_exec_FindPort`, and compiles them with `test_deletemsgport_shadow.cpp`.
-It also checks that `m68k_ts_drop()` in `m68kemu_tasks.c`, where a task of the
-program ends, calls `m68k_msgport_task_end()` before it looks at the task
-state.
 
 The checks cover: single `CreateMsgPort`/`DeleteMsgPort` cleanup of
 `shadow_map`, `owned_ports`, 68k heap and signal bit; 1200 sequential
@@ -1009,12 +1005,8 @@ leaving zero dangling pointers on subsequent alias use); ownership refusal for
 foreign `FindPort` ports and embedded `Process->pr_MsgPort`; duplicate guest
 address single-free safety; recycled-native stale `FindPort` guest-heap balance
 (zero guest-heap leak across repeated reuse while preserving embedded `type 4`
-and `Process->pr_MsgPort` blocks); native rollback when `owned_ports` or
-`shadow_map` is full; and the end of a task: its empty ports that the program
-did not delete are deleted once, with their shadows, guest blocks and signals,
-while a port of another task and a port with a message still queued stay as
-they are (one line in the log for the latter) until their own task ends or
-the message is gone.
+and `Process->pr_MsgPort` blocks); and native rollback when `owned_ports` or
+`shadow_map` is full.
 
 `--prepare-only --build-dir /tmp/deletemsgport-shadow` checks generator parity
 and emits the production includes without compiling or running the C++ fixture.

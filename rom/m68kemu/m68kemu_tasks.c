@@ -236,13 +236,11 @@ void m68k_delay_ticks(struct M68KEmuContext *ctx, ULONG ticks)
     wait_core(ctx, 0, (struct IORequest *)ts->delay_req);
 }
 
-/* this task is done with the program: the ports it made and did not
-   delete, its CPUs and its signal go */
+/* this task is done with the program: its CPUs and signal go */
 void m68k_ts_drop(struct M68KEmuContext *ctx)
 {
     struct M68KTaskState *ts = m68k_ts_find(ctx, FindTask(NULL));
 
-    m68k_msgport_task_end(ctx);
     if (!ts)
         return;
     m68k_ts_timers_free(ts);

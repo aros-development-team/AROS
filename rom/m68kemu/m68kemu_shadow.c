@@ -585,46 +585,6 @@ void m68k_msgport_destroy(struct M68KEmuContext *ctx, ULONG m68k_port)
     msgport_invalidate_aliases(ctx, layout, native);
 }
 
-/* The ports CreateMsgPort() made for the calling task and the program did
-   not delete. The task is ending: each of its ports that holds no message is
-   deleted here, with its signal and every shadow of it, as DeleteMsgPort()
-   would have done. A port of another task stays, since DeleteMsgPort() frees
-   the signal of the task that calls it. A port with messages still queued
-   stays too: their senders have them linked into its list. */
-void m68k_msgport_task_end(struct M68KEmuContext *ctx)
-{
-    const struct M68KStructLayout *layout = shadow_find_layout("MsgPort");
-    struct Task *me = FindTask(NULL);
-    BOOL logged = FALSE;
-
-    for (UWORD i = 0; i < ctx->num_owned_ports; )
-    {
-        struct MsgPort *port = ctx->owned_ports[i];
-        BOOL empty;
-
-        if (port->mp_SigTask != me)
-        {
-            i++;
-            continue;
-        }
-        Disable();
-        empty = IsListEmpty(&port->mp_MsgList);
-        Enable();
-        if (!empty)
-        {
-            if (!logged)
-                m68k_log(ctx, "%s: a message port its task did not delete still holds messages: left as it is",
-                         ctx->program_name[0] ? ctx->program_name : "68k program");
-            logged = TRUE;
-            i++;
-            continue;
-        }
-        ctx->owned_ports[i] = ctx->owned_ports[--ctx->num_owned_ports];
-        DeleteMsgPort(port);
-        msgport_invalidate_aliases(ctx, layout, port);
-    }
-}
-
 /* ── Layout lookup by name ── */
 
 const struct M68KStructLayout *shadow_find_layout(const char *name)
