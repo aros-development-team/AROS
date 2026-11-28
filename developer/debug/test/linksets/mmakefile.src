@@ -1,0 +1,30 @@
+#
+#   Makefile for the test of symbol sets in members added by the final link
+
+include $(SRCDIR)/config/aros.cfg
+
+EXEDIR := $(AROS_TESTS)/linksets
+LINKSETSLIBDIR := $(GENDIR)/$(CURDIR)/lib
+
+#MM- test : test-linksets
+#MM- test-quick : test-linksets-quick
+
+#MM test-linksets : includes linklibs \
+#MM     test-linksets-lib-setmember test-linksets-lib-setuser
+#MM test-linksets-quick : \
+#MM     test-linksets-lib-setmember-quick test-linksets-lib-setuser-quick
+
+%build_linklib mmake=test-linksets-lib-setmember \
+    libname=setmember files=setmember libdir=$(LINKSETSLIBDIR)
+
+%build_linklib mmake=test-linksets-lib-setuser \
+    libname=setuser files=setuser libdir=$(LINKSETSLIBDIR)
+
+USER_LDFLAGS := -L$(LINKSETSLIBDIR)
+
+# The order matters: see linksets.c
+%build_prog mmake=test-linksets \
+    progname=linksets files=linksets targetdir=$(EXEDIR) \
+    uselibs="setmember setuser"
+
+%common
