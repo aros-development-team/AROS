@@ -35,8 +35,11 @@
 {
     D(bug("[MESA3DGL] %s()\n", __func__));
 
-    GET_CURRENT_CONTEXT(ctx);
+    /* The state tracker context current in this task names the GLAContext it
+     * belongs to (glACreateContext sets frontend_context). Mesa's own current
+     * context is another object and is not what glAMakeCurrent() takes. */
+    struct st_context *current = st_api_get_current();
 
-    return (GLAContext)ctx;
+    return current ? (GLAContext)current->frontend_context : NULL;
 }
 

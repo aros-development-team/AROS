@@ -6,6 +6,7 @@ GLTESTFILES 	    := \
         glsimplerendering \
         glgetprocaddress \
         glclear \
+        glcurrentcontext \
         glcustomscreen \
         gltri \
         gltexfbo \

@@ -234,6 +234,8 @@ static inline const void *gallium_core_get_api(void) { return (const void *)0; }
         bug("%s: ERROR -  failed to create mesa state tracker context\n", __func__);
         goto error_out;
     }
+    /* for glAGetCurrentContext() */
+    ctx->st->frontend_context = ctx;
 
     ctx->framebuffer = MESA3DGLNewFrameBuffer(ctx, &ctx->stvis);
 
