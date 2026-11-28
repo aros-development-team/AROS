@@ -4546,7 +4546,10 @@ void bConnTick(struct BtHWCore *hc)
         }
         for(en = cn->cn_Endpoints.mlh_Head; (enext = en->mln_Succ); en = enext) {
             struct BtHWEndpoint *hep = (struct BtHWEndpoint *) en;
-            if(hep->hep_CloseTick && !hep->hep_UseCnt && ((LONG) (hc->hc_Tick - hep->hep_CloseTick) >= 0)) {
+            /* hep_UseCnt misses channels allocated before the link came up:
+               one with a request out still uses the endpoint */
+            if(hep->hep_CloseTick && !hep->hep_UseCnt && ((LONG) (hc->hc_Tick - hep->hep_CloseTick) >= 0) &&
+               !hep->hep_ReadReqs.mlh_Head->mln_Succ && !hep->hep_WriteReqs.mlh_Head->mln_Succ) {
                 hep->hep_CloseTick = 0;
                 if((hep->hep_Endpoint->bep_Type == BEPT_L2CAP) ||
                    (hep->hep_Endpoint->bep_Type == BEPT_RFCOMM)) {
