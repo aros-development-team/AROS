@@ -42,7 +42,7 @@ int main(int argc, char *argv[])
     struct Library *BluetoothBase;
     struct List *errmsgs;
     struct Node *pem;
-    ULONG level;
+    IPTR level;
     IPTR origin;
     IPTR errstr;
     STRPTR errmsg = NULL;
