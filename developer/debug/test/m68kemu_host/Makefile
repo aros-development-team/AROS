@@ -216,3 +216,15 @@ test-execbase-private-sanitize:
 	$(PYTHON) "$(TEST_DIR)/regressions/run_execbase_private.py" --cc "$(CC)" --sanitize $(EXECBASE_PRIVATE_ARGS)
 
 .PHONY: test-execbase-private test-execbase-private-sanitize
+
+# DeleteMsgPort shadow lifecycle: ordinary fixture in test, sanitizer optional.
+DELETEMSGPORT_SHADOW_ARGS ?=
+test: test-deletemsgport-shadow
+
+test-deletemsgport-shadow:
+	$(PYTHON) "$(TEST_DIR)/regressions/run_deletemsgport_shadow.py" --cxx "$(CXX)" $(DELETEMSGPORT_SHADOW_ARGS)
+
+test-deletemsgport-shadow-sanitize:
+	$(PYTHON) "$(TEST_DIR)/regressions/run_deletemsgport_shadow.py" --cxx "$(CXX)" --sanitize $(DELETEMSGPORT_SHADOW_ARGS)
+
+.PHONY: test-deletemsgport-shadow test-deletemsgport-shadow-sanitize

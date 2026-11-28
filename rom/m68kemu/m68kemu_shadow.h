@@ -37,6 +37,7 @@ struct M68KStructLayout {
 };
 
 struct M68KEmuContext;
+struct MsgPort;
 
 /* Create a shadow: alloc m68k space, register, sync all fields */
 ULONG shadow_create(struct M68KEmuContext *ctx,
@@ -52,6 +53,12 @@ void shadow_sync(struct M68KEmuContext *ctx,
 void shadow_destroy(struct M68KEmuContext *ctx,
                     const struct M68KStructLayout *layout,
                     ULONG m68k_addr);
+
+/* Track a CreateMsgPort() native port as owned and return its guest shadow */
+ULONG m68k_msgport_own(struct M68KEmuContext *ctx, struct MsgPort *native);
+
+/* Destroy an owned MsgPort and invalidate every shadow alias to it */
+void m68k_msgport_destroy(struct M68KEmuContext *ctx, ULONG m68k_port);
 
 /* Find a generated layout by struct name (e.g. "Window", "Library") */
 const struct M68KStructLayout *shadow_find_layout(const char *name);

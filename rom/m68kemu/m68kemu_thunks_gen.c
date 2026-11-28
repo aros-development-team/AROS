@@ -2321,16 +2321,15 @@ static IPTR thunk_exec_DeleteIORequest(struct M68KEmuContext *ctx, void *cpu)
 /* -666: CreateMsgPort() */
 static IPTR thunk_exec_CreateMsgPort(struct M68KEmuContext *ctx, void *cpu)
 {
-    void *_ret = (void *)CreateMsgPort();
+    struct MsgPort *_ret = (struct MsgPort *)CreateMsgPort();
     if (!_ret) return 0;
-    return shadow_create_by_name(ctx, "MsgPort", _ret);
+    return m68k_msgport_own(ctx, _ret);
 }
 
 /* -672: DeleteMsgPort(port=a0) */
 static IPTR thunk_exec_DeleteMsgPort(struct M68KEmuContext *ctx, void *cpu)
 {
-    struct MsgPort *arg_port = (struct MsgPort *)m68k_to_host_or_shadow(ctx, THUNK_A(0));
-    DeleteMsgPort(arg_port);
+    m68k_msgport_destroy(ctx, THUNK_A(0));
     return 0;
 }
 
