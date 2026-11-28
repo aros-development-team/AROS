@@ -50,6 +50,8 @@ struct PL011BTBase
     ULONG                       pl011bt_ConfigFlags;
     ULONG                       pl011bt_RXErrors;   /* status reports emitted */
     BOOL                        pl011bt_RTSCTS;     /* CTS/RTS wired to GPIO 30/31 */
+    BOOL                        pl011bt_LPO;        /* LPO from GPCLK2 on GPIO 43 */
+    ULONG                       pl011bt_IRQ;        /* PL011 interrupt, GIC on BCM2711 */
     ULONG                       pl011bt_PowerPin;   /* BT_REG_EN */
     BOOL                        pl011bt_PowerSoC;   /* ... on the SoC, not the expander */
     BOOL                        pl011bt_PowerLow;   /* ... active low */
@@ -75,6 +77,8 @@ struct PL011BTBase
     volatile ULONG              pl011bt_RXTail;     /* written by the reader  */
     volatile ULONG              pl011bt_RXDropped;
     APTR                        pl011bt_RXIRQ;      /* KrnAddIRQHandler handle */
+    struct Task * volatile      pl011bt_RXTask;     /* signalled when bytes arrive */
+    volatile ULONG              pl011bt_RXSigMask;
     UBYTE                       pl011bt_RXRing[PL011BT_RX_RING];
 };
 

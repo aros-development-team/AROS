@@ -27,6 +27,13 @@ struct BrcmFwBase
 #define HC_OP_BRCM_DOWNLOAD_MINIDRV BRCM_OP(0x002e)
 #define HC_OP_BRCM_WRITE_RAM        BRCM_OP(0x004c)
 #define HC_OP_BRCM_LAUNCH_RAM       BRCM_OP(0x004e)
+#define HC_OP_BRCM_WRITE_BD_ADDR    BRCM_OP(0x0001)
+
+/* Informational group: Read_BD_ADDR. */
+#define HC_OP_READ_BD_ADDR          ((UWORD)(((UWORD)0x04 << 10) | 0x0009))
+
+/* The Pi's firmware puts the board's address here (HCI byte order). */
+#define BRCM_DT_BTNODE              "/soc/serial@7e201000/bluetooth"
 
 /* Host Control group: HCI_Reset, the smallest command a controller answers. */
 #define HC_OP_HCI_RESET             ((UWORD)(((UWORD)0x03 << 10) | 0x0003))

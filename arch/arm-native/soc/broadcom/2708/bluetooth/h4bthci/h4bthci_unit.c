@@ -157,6 +157,9 @@ static void h4bthci_DeliverACL(struct H4BTHCIUnit *unit,
     ReplyMsg(&ioreq->iobt_Req.io_Message);
 }
 
+static BOOL h4bthci_TrackSpeed(struct H4BTHCIUnit *unit,
+                                 const UBYTE *ev, ULONG length);
+
 static void h4bthci_Reassemble(struct H4BTHCIUnit *unit)
 {
     while (unit->hu_RXLen > 0)
@@ -174,7 +177,8 @@ static void h4bthci_Reassemble(struct H4BTHCIUnit *unit)
         switch (unit->hu_RX[0])
         {
         case H4BTHCI_EVENT:
-            h4bthci_DeliverEvent(unit, unit->hu_RX, want);
+            if (!h4bthci_TrackSpeed(unit, unit->hu_RX, want))
+                h4bthci_DeliverEvent(unit, unit->hu_RX, want);
             break;
         case H4BTHCI_ACL:
             h4bthci_DeliverACL(unit, unit->hu_RX, want);
@@ -246,6 +250,171 @@ static LONG h4bthci_Send(struct H4BTHCIUnit *unit, UBYTE type,
         return h4bthci_WriteAll(unit, data, length);
 
     return 0;
+}
+
+/* Ticks each speed step waits for its reply */
+#define H4SPEED_TICKS       25
+#define H4SPEED_POWER_TICKS 50
+
+/* DOS ticks, wrapping: compare by difference */
+static ULONG h4bthci_Now(void)
+{
+    struct DateStamp ds;
+
+    DateStamp(&ds);
+    return ((ULONG)ds.ds_Days * 24 * 60 + ds.ds_Minute) * 60 * TICKS_PER_SECOND +
+           ds.ds_Tick;
+}
+
+static void h4bthci_SpeedStep(struct H4BTHCIUnit *unit, UBYTE step,
+                                ULONG baud, ULONG ticks)
+{
+    static const UBYTE reset[3] = { 0x03, 0x0c, 0 };
+
+    PL011BTConfigure(unit, baud, PL011BT_CONFIG_RTS_CTS);
+    unit->hu_Baud = baud;
+    unit->hu_Speed = step;
+    unit->hu_SpeedDue = h4bthci_Now() + ticks;
+    h4bthci_Send(unit, H4BTHCI_COMMAND, reset, sizeof(reset));
+}
+
+/* The speed change is over: the stack gets its HCI_Reset reply. */
+static void h4bthci_SpeedDone(struct H4BTHCIUnit *unit)
+{
+    unit->hu_Speed = H4SPEED_IDLE;
+    bug("[h4bthci] line at %lu baud\n", (ULONG)unit->hu_Baud);
+    h4bthci_DeliverEvent(unit, unit->hu_Held, unit->hu_HeldLen);
+}
+
+/*
+ * Move controller and UART to the fast rate. Started from the reader on the
+ * stack's HCI_Reset reply, which is held back until the change is over, so
+ * the stack sends nothing meanwhile. The replies come through the
+ * reassembler (h4bthci_TrackSpeed()), and the reader times the steps out
+ * (h4bthci_SpeedTick()).
+ */
+static void h4bthci_SpeedUp(struct H4BTHCIUnit *unit, const UBYTE *ev,
+                              ULONG length)
+{
+    ULONG fast = (PL011BTGetCapabilities() & PL011BT_CAP_RTS_CTS) ?
+                 H4BTHCI_BAUD_FAST : H4BTHCI_BAUD_NOFLOW;
+    UBYTE cmd[9] = { 0x18, 0xfc, 6, 0, 0, fast & 0xff, (fast >> 8) & 0xff,
+                     (fast >> 16) & 0xff, fast >> 24 };
+
+    CopyMem((APTR)ev, unit->hu_Held, length);
+    unit->hu_HeldLen = length;
+    unit->hu_SpeedFast = fast;
+    unit->hu_Speed = H4SPEED_CHANGE;
+    unit->hu_SpeedDue = h4bthci_Now() + H4SPEED_TICKS;
+    if (h4bthci_Send(unit, H4BTHCI_COMMAND, cmd, sizeof(cmd)) != 0)
+    {
+        unit->hu_NoFast = TRUE;
+        h4bthci_SpeedDone(unit);
+    }
+}
+
+/* Move on when a speed step had no reply in time. */
+static void h4bthci_SpeedTick(struct H4BTHCIUnit *unit)
+{
+    if ((LONG)(h4bthci_Now() - unit->hu_SpeedDue) < 0)
+        return;
+
+    switch (unit->hu_Speed)
+    {
+    case H4SPEED_CHANGE:
+        /* the controller may have moved without saying so */
+        bug("[h4bthci] no reply to the speed change, trying %lu baud\n",
+            (ULONG)unit->hu_SpeedFast);
+        h4bthci_SpeedStep(unit, H4SPEED_PROBE_FAST, unit->hu_SpeedFast,
+                          H4SPEED_TICKS);
+        break;
+    case H4SPEED_PROBE_FAST:
+        bug("[h4bthci] no reply at %lu baud, back to %lu\n",
+            (ULONG)unit->hu_SpeedFast, (ULONG)H4BTHCI_BAUD);
+        h4bthci_SpeedStep(unit, H4SPEED_PROBE_SLOW, H4BTHCI_BAUD,
+                          H4SPEED_TICKS);
+        break;
+    case H4SPEED_PROBE_SLOW:
+        bug("[h4bthci] no reply at either rate, power cycling the controller\n");
+        PL011BTSetPower(unit, 0);
+        Delay(5);
+        PL011BTSetPower(unit, 1);
+        Delay(25);
+        h4bthci_SpeedStep(unit, H4SPEED_POWER, H4BTHCI_BAUD,
+                          H4SPEED_POWER_TICKS);
+        break;
+    default:
+        bug("[h4bthci] the controller does not answer\n");
+        unit->hu_NoFast = TRUE;
+        h4bthci_SpeedDone(unit);
+        break;
+    }
+}
+
+/*
+ * Follow the controller's line rate across HCI_Reset and Launch_RAM, and
+ * take the replies of a speed change. TRUE when the event is consumed here.
+ */
+static BOOL h4bthci_TrackSpeed(struct H4BTHCIUnit *unit,
+                                 const UBYTE *ev, ULONG length)
+{
+    UWORD op;
+
+    if (length < 7 || ev[1] != 0x0e)
+        return FALSE;
+    op = ev[4] | (ev[5] << 8);
+
+    if (unit->hu_Speed == H4SPEED_CHANGE && op == 0xfc18)
+    {
+        if (ev[6] != 0)
+        {
+            bug("[h4bthci] the controller refused %lu baud (status 0x%02lx)\n",
+                (ULONG)unit->hu_SpeedFast, (ULONG)ev[6]);
+            unit->hu_NoFast = TRUE;
+        }
+        else if (PL011BTConfigure(unit, unit->hu_SpeedFast,
+                                  PL011BT_CONFIG_RTS_CTS) == PL011BT_OK)
+            unit->hu_Baud = unit->hu_SpeedFast;
+        else
+        {
+            /* the controller has moved and the UART cannot follow */
+            bug("[h4bthci] the UART cannot run at %lu baud\n",
+                (ULONG)unit->hu_SpeedFast);
+            unit->hu_SpeedDue = h4bthci_Now();
+            unit->hu_Speed = H4SPEED_PROBE_SLOW;
+            h4bthci_SpeedTick(unit);
+            return TRUE;
+        }
+        h4bthci_SpeedDone(unit);
+        return TRUE;
+    }
+    if (unit->hu_Speed != H4SPEED_IDLE && op == 0x0c03)
+    {
+        /* a probe was answered at the rate it was sent at */
+        if (unit->hu_Baud != unit->hu_SpeedFast)
+            unit->hu_NoFast = TRUE;
+        h4bthci_SpeedDone(unit);
+        return TRUE;
+    }
+    if (unit->hu_Speed != H4SPEED_IDLE)
+        return FALSE;
+
+    if (op == 0xfc4e)
+    {
+        /* patchram launched: the controller restarts at 115200 */
+        if (unit->hu_Baud != H4BTHCI_BAUD &&
+            PL011BTConfigure(unit, H4BTHCI_BAUD, PL011BT_CONFIG_RTS_CTS) ==
+                PL011BT_OK)
+            unit->hu_Baud = H4BTHCI_BAUD;
+    }
+    else if (op == 0x0c03 && ev[6] == 0 && unit->hu_Baud == H4BTHCI_BAUD &&
+             !unit->hu_NoFast && PL011BTGetAPIVersion() >= 2 &&
+             length <= sizeof(unit->hu_Held))
+    {
+        h4bthci_SpeedUp(unit, ev, length);
+        return TRUE;
+    }
+    return FALSE;
 }
 
 LONG h4bthci_QueueRequest(struct H4BTHCIUnit *unit, struct IOBTHCIReq *ioreq)
@@ -380,6 +549,7 @@ void h4bthci_UnitTask(void)
         ((struct Process *)self)->pr_Task.tc_UserData;
     struct Task *waiter;
     BOOL started;
+    BYTE rxsig;
 
     /*
      * Say which step failed.
@@ -415,6 +585,7 @@ void h4bthci_UnitTask(void)
                 {
                     bug("[h4bthci] transport up at %lu baud\n",
                         (ULONG)H4BTHCI_BAUD);
+                    unit->hu_Baud = H4BTHCI_BAUD;
                     unit->hu_Task = self;
                 }
             }
@@ -442,12 +613,19 @@ void h4bthci_UnitTask(void)
         (ULONG)H4BTHCI_BAUD);
 
     /*
-     * Polled, and that is a known cost rather than a design.
-     * pl011bt.resource's capability bits say whether RX and TX interrupts are
-     * available (PL011BT_CAP_RX_INTERRUPT), and they are zero until that path
-     * is proven -- so until then the honest thing is a poll with a delay
-     * rather than a wait that would never be signalled.
+     * Woken by the receive interrupt when the resource can do that (API 2);
+     * an older one is polled, which costs a tick on every HCI round trip.
      */
+    rxsig = -1;
+    if (PL011BTGetAPIVersion() >= 2 &&
+        (PL011BTGetCapabilities() & PL011BT_CAP_RX_INTERRUPT) &&
+        (rxsig = AllocSignal(-1)) != -1 &&
+        PL011BTSetRxSignal(unit, self, 1UL << rxsig) != PL011BT_OK)
+    {
+        FreeSignal(rxsig);
+        rxsig = -1;
+    }
+
     for (;;)
     {
         LONG got;
@@ -462,12 +640,32 @@ void h4bthci_UnitTask(void)
             unit->hu_RXLen += got;
             h4bthci_Reassemble(unit);
         }
+        else if (unit->hu_Speed != H4SPEED_IDLE)
+            Delay(1);                   /* a speed step is polled */
+        else if (rxsig != -1)
+        {
+            /* Wait() clears what it returns, so the top check misses it */
+            if (Wait((1UL << rxsig) | SIGBREAKF_CTRL_C) & SIGBREAKF_CTRL_C)
+                break;
+        }
         else
             Delay(1);
+
+        /* timed by the clock, as bytes may keep coming at the wrong rate */
+        if (unit->hu_Speed != H4SPEED_IDLE)
+        {
+            UBYTE step = unit->hu_Speed;
+
+            h4bthci_SpeedTick(unit);
+            if (unit->hu_Speed != step)
+                unit->hu_RXLen = 0;     /* bytes seen at the wrong rate */
+        }
     }
 
     PL011BTSetPower(unit, 0);
     PL011BTRelease(unit);
+    if (rxsig != -1)
+        FreeSignal(rxsig);
 
     Forbid();
     unit->hu_Task = NULL;

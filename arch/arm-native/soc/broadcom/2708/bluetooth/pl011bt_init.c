@@ -215,13 +215,14 @@ static ULONG query_uart_clock(struct PL011BTBase *PL011BTBase)
  * and being called as a plain pointer through that mismatch corrupts
  * registers.
  *
- * Everything here is a store to MMIO or to the ring: no allocation, no lock,
- * no call back into exec. The reader synchronises on the head alone, which
- * this is the only writer of.
+ * Everything here is a store to MMIO or to the ring: no allocation, no lock.
+ * The only exec call is the Signal() that wakes the reader. The reader
+ * synchronises on the head alone, which this is the only writer of.
  */
 static void pl011bt_rx_handler(void *data, void *unused)
 {
     struct PL011BTBase *PL011BTBase = data;
+    struct Task *task;
     ULONG head;
 
     (void)unused;
@@ -254,6 +255,10 @@ static void pl011bt_rx_handler(void *data, void *unused)
      * single lost byte does not latch the condition forever. */
     pl011bt_wr(PL011_0_BASE + PL011_ICR,
                PL011_INT_RX | PL011_INT_RT | PL011_INT_OE);
+
+    task = PL011BTBase->pl011bt_RXTask;
+    if (task != NULL && head != PL011BTBase->pl011bt_RXTail)
+        Signal(task, PL011BTBase->pl011bt_RXSigMask);
 }
 
 /*
@@ -310,7 +315,37 @@ static BOOL pl011bt_has_rtscts(void)
 }
 
 /*
- * BT_REG_EN from the radio's shutdown-gpios: the expander on a Pi 3B/3B+,
+ * The LPO comes from GPCLK2 when the live bt_pins name GPIO 43 (Pi 3, Zero
+ * 2 W). A Pi 4 has "-" there: its radio has its own clock and GPIO 43 is
+ * left alone. Default: GPCLK2.
+ */
+static BOOL pl011bt_has_gpclk_lpo(void)
+{
+    APTR OpenFirmwareBase = OpenResource("openfirmware.resource");
+    void *key, *prop;
+    const ULONG *pins;
+    ULONG n, i;
+    BOOL lpo = TRUE;
+
+    if (!OpenFirmwareBase ||
+        !(key = OF_OpenKey("/soc/gpio@7e200000/bt_pins")))
+        return TRUE;
+
+    if ((prop = OF_FindProperty(key, "brcm,pins")))
+    {
+        /* "-" is a 2-byte string, not a cell list. */
+        pins = (const ULONG *)OF_GetPropValue(prop);
+        n = OF_GetPropLen(prop) / sizeof(ULONG);
+        for (i = 0; i < n && AROS_BE2LONG(pins[i]) != BT_GPIO_LPO; i++)
+            ;
+        lpo = (i < n);
+    }
+    OF_CloseKey(key);
+    return lpo;
+}
+
+/*
+ * BT_REG_EN from the radio's shutdown-gpios: the expander on a Pi 3B/3B+/4,
  * SoC GPIO 42 on a Zero 2 W. Default: expander pin 0.
  */
 static void pl011bt_find_power(struct PL011BTBase *PL011BTBase)
@@ -369,23 +404,25 @@ static int pl011bt_init(struct PL011BTBase *PL011BTBase)
      * excluding the others.
      *
      * The arrangement this drives -- PL011 on GPIO 30-33 to the radio, the
-     * console pushed onto the AUX mini-UART, the LPO on GPCLK2, BT_REG_EN on
-     * the expander or a SoC GPIO -- is the BCM2835/6/7 one, and IRQ_VC_UART
-     * below is the legacy interrupt controller's numbering. A BCM2711 wires
-     * its radio the same way but presents the GPU interrupts through the GIC
-     * at BCM2711_GPUIRQ_OFFSET, and a BCM2712 does not use this UART for
-     * Bluetooth at all. Neither has been tested, so the resource stands down
-     * there: absent is a state h4bthci.device already handles, present and
-     * wrong is not.
+     * console pushed onto the AUX mini-UART, BT_REG_EN on the expander or a
+     * SoC GPIO -- is shared by the BCM2835/6/7 and the BCM2711. The BCM2711
+     * presents IRQ_VC_UART through the GIC at BCM271X_GPUIRQ_OFFSET. A
+     * BCM2712 does not use this UART for Bluetooth at all, so the resource
+     * stands down there: absent is a state h4bthci.device already handles,
+     * present and wrong is not.
      */
     if (periiobase != BCM2835_PERIPHYSBASE &&
-        periiobase != BCM2836_PERIPHYSBASE)
+        periiobase != BCM2836_PERIPHYSBASE &&
+        periiobase != BCM2711_PERIIOBASE)
     {
-        D(bug("[PL011BT] peripheral window 0x%p is not a BCM283x, standing"
-              " down\n", (void *)periiobase));
+        D(bug("[PL011BT] peripheral window 0x%p is not a BCM283x/2711,"
+              " standing down\n", (void *)periiobase));
         return FALSE;
     }
     PL011BTBase->pl011bt_periiobase = (unsigned int)periiobase;
+    PL011BTBase->pl011bt_IRQ = IRQ_VC_UART;
+    if (periiobase == BCM2711_PERIIOBASE)
+        PL011BTBase->pl011bt_IRQ += BCM271X_GPUIRQ_OFFSET;
 
     if (pl011bt_is_console())
     {
@@ -411,15 +448,20 @@ static int pl011bt_init(struct PL011BTBase *PL011BTBase)
 
     PL011BTBase->pl011bt_ClockHz = query_uart_clock(PL011BTBase);
     PL011BTBase->pl011bt_RTSCTS = pl011bt_has_rtscts();
+    PL011BTBase->pl011bt_LPO = pl011bt_has_gpclk_lpo();
     pl011bt_find_power(PL011BTBase);
     PL011BTBase->pl011bt_Caps = PL011BT_CAP_PRESENT |
         PL011BT_CAP_BAUD_CHANGE | PL011BT_CAP_POWER_CONTROL;
+    if (PL011BTBase->pl011bt_RTSCTS)
+        PL011BTBase->pl011bt_Caps |= PL011BT_CAP_RTS_CTS;
 
-    bug("[PL011BT] ready: PL011=0x%08lx clock=%lu mbox=%s rts/cts=%s"
-        " power=%s%lu\n",
-        (ULONG)PL011_0_BASE, (ULONG)PL011BTBase->pl011bt_ClockHz,
+    bug("[PL011BT] ready: PL011=0x%08lx irq=%lu clock=%lu mbox=%s"
+        " rts/cts=%s lpo=%s power=%s%lu\n",
+        (ULONG)PL011_0_BASE, (ULONG)PL011BTBase->pl011bt_IRQ,
+        (ULONG)PL011BTBase->pl011bt_ClockHz,
         MBoxBase != NULL ? "yes" : "no",
         PL011BTBase->pl011bt_RTSCTS ? "yes" : "no",
+        PL011BTBase->pl011bt_LPO ? "gpclk2" : "board",
         PL011BTBase->pl011bt_PowerSoC ? "gpio" : "fw",
         (ULONG)PL011BTBase->pl011bt_PowerPin);
 
@@ -596,6 +638,7 @@ AROS_LH1(void, PL011BTRelease,
     ObtainSemaphore(&PL011BTBase->pl011bt_Sem);
     if (owner != NULL && PL011BTBase->pl011bt_Owner == owner)
     {
+        PL011BTBase->pl011bt_RXTask = NULL;
         pl011bt_wr(PL011_0_BASE + PL011_IMSC, 0);
         pl011bt_wr(PL011_0_BASE + PL011_CR, 0);
         PL011BTBase->pl011bt_Owner = NULL;
@@ -634,9 +677,10 @@ AROS_LH1(void, PL011BTRelease,
 
     NOTES
         Call in task context with client transfers stopped. May wait for the
-        resource semaphore. Sets up the controller's 32.768 kHz clock and pin
-        routing, then enables 8-bit UART data, no parity, one stop bit and
-        FIFOs. Does not change controller power or negotiate its baud rate.
+        resource semaphore. Sets up the controller's 32.768 kHz clock where
+        the board takes it from GPCLK2, and the pin routing, then enables
+        8-bit UART data, no parity, one stop bit and FIFOs. Does not change
+        controller power or negotiate its baud rate.
         Coordinate baud changes and controller startup with the higher layer.
 
         Reconfiguration discards queued receive data and resets the overflow
@@ -682,7 +726,8 @@ AROS_LH3(long, PL011BTConfigure,
         return PL011BT_ERR_NOT_OWNER;
     }
 
-    if (setup_lpo_clock(PL011BTBase) != PL011BT_OK)
+    if (PL011BTBase->pl011bt_LPO &&
+        setup_lpo_clock(PL011BTBase) != PL011BT_OK)
     {
         bug("[PL011BT] configure: LPO clock timeout\n");
         ReleaseSemaphore(&PL011BTBase->pl011bt_Sem);
@@ -755,17 +800,18 @@ AROS_LH3(long, PL011BTConfigure,
     pl011bt_wr(PL011_0_BASE + PL011_IFLS, PL011_IFLS_RX18);
     if (PL011BTBase->pl011bt_RXIRQ == NULL)
     {
-        PL011BTBase->pl011bt_RXIRQ = KrnAddIRQHandler(IRQ_VC_UART,
-            pl011bt_rx_handler, PL011BTBase, SysBase);
+        PL011BTBase->pl011bt_RXIRQ = KrnAddIRQHandler(
+            PL011BTBase->pl011bt_IRQ, pl011bt_rx_handler, PL011BTBase,
+            SysBase);
         if (PL011BTBase->pl011bt_RXIRQ != NULL)
         {
             PL011BTBase->pl011bt_Caps |= PL011BT_CAP_RX_INTERRUPT;
             D(bug("[PL011BT] rx interrupt armed on irq %lu\n",
-                  (ULONG)IRQ_VC_UART));
+                  (ULONG)PL011BTBase->pl011bt_IRQ));
         }
         else
             bug("[PL011BT] KrnAddIRQHandler(%lu) failed -- receive stays"
-                " polled\n", (ULONG)IRQ_VC_UART);
+                " polled\n", (ULONG)PL011BTBase->pl011bt_IRQ);
     }
     pl011bt_wr(PL011_0_BASE + PL011_ICR, PL011_INT_ALL);
     if (PL011BTBase->pl011bt_RXIRQ != NULL)
@@ -956,8 +1002,8 @@ AROS_LH3(long, PL011BTWrite,
         Returns without waiting for new input. Requires configuration with a
         registered receive interrupt handler; verify PL011BT_CAP_RX_INTERRUPT
         after PL011BTConfigure(). The ring holds at most 8191 unread bytes.
-        Drain it promptly to limit data loss. There is no client notification
-        or wait operation in this interface.
+        Drain it promptly to limit data loss. PL011BTSetRxSignal() wakes the
+        reader when bytes arrive.
 
         Transfers raw bytes without H:4 framing. Consumed bytes are removed
         from the ring. The destination is not retained. Use one reader and
@@ -972,7 +1018,8 @@ AROS_LH3(long, PL011BTWrite,
         no direct FIFO read fallback.
 
     SEE ALSO
-        PL011BTConfigure(), PL011BTGetCapabilities(), PL011BTWrite()
+        PL011BTConfigure(), PL011BTGetCapabilities(), PL011BTWrite(),
+        PL011BTSetRxSignal()
 
 *****************************************************************************/
 AROS_LH3(long, PL011BTRead,
@@ -1015,6 +1062,63 @@ AROS_LH3(long, PL011BTRead,
         PL011BTBase->pl011bt_RXDropped = 0;
     }
     return (LONG)read;
+
+    AROS_LIBFUNC_EXIT
+}
+
+/*****************************************************************************
+    NAME
+        long PL011BTSetRxSignal(
+
+    SYNOPSIS
+        void *owner, struct Task *task, unsigned long sigmask)
+
+    FUNCTION
+        Have the receive interrupt signal a task whenever it puts bytes in the
+        ring, so the reader can Wait() instead of polling.
+
+    INPUTS
+        owner - Non-NULL token holding the resource claim.
+        task - Task to signal, or NULL to stop signalling.
+        sigmask - Signals to send.
+
+    RESULT
+        PL011BT_OK, PL011BT_ERR_ARGUMENT for a NULL owner, or
+        PL011BT_ERR_NOT_OWNER for a token without the claim.
+
+    NOTES
+        Available from PL011BT_API_VERSION 2. PL011BTRelease() stops the
+        signalling. Read until PL011BTRead() returns zero before waiting:
+        one signal can stand for many bytes.
+
+    SEE ALSO
+        PL011BTRead(), PL011BTGetAPIVersion()
+
+*****************************************************************************/
+AROS_LH3(long, PL011BTSetRxSignal,
+    AROS_LHA(void *, owner, A0),
+    AROS_LHA(struct Task *, task, A1),
+    AROS_LHA(unsigned long, sigmask, D0),
+    struct PL011BTBase *, PL011BTBase, 9, Pl011bt)
+{
+    AROS_LIBFUNC_INIT
+
+    long rc = PL011BT_OK;
+
+    if (owner == NULL)
+        return PL011BT_ERR_ARGUMENT;
+
+    ObtainSemaphore(&PL011BTBase->pl011bt_Sem);
+    if (PL011BTBase->pl011bt_Owner != owner)
+        rc = PL011BT_ERR_NOT_OWNER;
+    else
+    {
+        PL011BTBase->pl011bt_RXTask = NULL;
+        PL011BTBase->pl011bt_RXSigMask = sigmask;
+        PL011BTBase->pl011bt_RXTask = task;
+    }
+    ReleaseSemaphore(&PL011BTBase->pl011bt_Sem);
+    return rc;
 
     AROS_LIBFUNC_EXIT
 }

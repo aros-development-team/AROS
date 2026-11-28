@@ -34,15 +34,22 @@
 #define H4BTHCI_EVENT      0x04
 
 /*
- * 115200 8N1 with RTS/CTS.
+ * 115200 8N1 with RTS/CTS: what the controller answers to from reset.
  *
- * What a BCM43438 answers to from reset, and it stays there until a firmware
- * upload changes it. This device does not upload firmware -- the Broadcom
- * patchram protocol is brcmbt.fwl beside it -- so the
- * higher rates the controller supports afterwards are not reachable yet and
- * naming one here would be a guess about a state we never enter.
+ * After the first HCI_Reset it is moved to a faster rate (Broadcom
+ * Update_UART_Baud_Rate); Launch_RAM drops it back to 115200.
  */
 #define H4BTHCI_BAUD          115200
+
+#define H4BTHCI_BAUD_FAST     3000000     /* with RTS/CTS */
+#define H4BTHCI_BAUD_NOFLOW   460800
+
+/* Speed change steps */
+#define H4SPEED_IDLE          0
+#define H4SPEED_CHANGE        1   /* 0xfc18 sent, at the old rate */
+#define H4SPEED_PROBE_FAST    2   /* HCI_Reset sent at the new rate */
+#define H4SPEED_PROBE_SLOW    3   /* HCI_Reset sent at 115200 */
+#define H4SPEED_POWER         4   /* power cycled, HCI_Reset at 115200 */
 
 #define H4BTHCI_RXBUF         4096
 
@@ -63,6 +70,13 @@ struct H4BTHCIUnit
     BYTE                     hu_ReadySignal;
     BOOL                     hu_Ready;          /* bring-up finished */
     BOOL                     hu_Open;
+    ULONG                    hu_Baud;           /* current line rate */
+    BOOL                     hu_NoFast;         /* the speed change failed once */
+    UBYTE                    hu_Speed;          /* H4SPEED_*, see SpeedUp() */
+    ULONG                    hu_SpeedFast;      /* the rate being moved to */
+    ULONG                    hu_SpeedDue;       /* DOS tick the step times out at */
+    UBYTE                    hu_Held[16];       /* the stack's HCI_Reset reply */
+    ULONG                    hu_HeldLen;
 
     /* Requests waiting for something to arrive from the controller. */
     struct MinList           hu_EventQueue;

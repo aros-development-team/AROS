@@ -33,10 +33,13 @@
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <proto/bluetooth.h>
+#include <proto/openfirmware.h>
 
 #include "brcmbt.h"
 
 #include LC_LIBDEFS_FILE
+
+static void brcmSetAddress(struct BtFirmwareContext *ctx);
 
 /* /// "brcmFwPath()" */
 /*
@@ -208,6 +211,7 @@ static LONG brcmLoad(struct BtFirmwareLoader *self,
          */
         ctx->fwc_Log(ctx, RETURN_WARN,
             "brcmbt: no %s, continuing without patchram", path);
+        brcmSetAddress(ctx);
         return 0;
     }
 
@@ -258,7 +262,77 @@ static LONG brcmLoad(struct BtFirmwareLoader *self,
     ctx->fwc_Log(ctx, RETURN_OK,
         "brcmbt: %d records applied; controller restarting", (int)records);
 
-    return brcmWaitRestart(ctx);
+    if (brcmWaitRestart(ctx))
+        return -1;
+    brcmSetAddress(ctx);
+    return 0;
+}
+/* \\\ */
+
+/* /// "brcmSetAddress()" */
+/*
+ * A module without an address of its own (Pi 3B+) reports the chip's default,
+ * with or without the patchram, and two boards would share it. Use the one
+ * the Pi's firmware puts in the device tree instead.
+ */
+static void brcmSetAddress(struct BtFirmwareContext *ctx)
+{
+    /*
+     * Chip defaults, in HCI (little-endian) byte order. Seen on our boards:
+     * 43:45:C0:00:1F:AC on a Pi 3B+ after the patchram, AA:AA:AA:AA:AA:AA
+     * from a BCM43430A1 without one. The other two follow the same pattern
+     * and have not been seen yet.
+     */
+    static const UBYTE defaults[][6] =
+    {
+        { 0xac, 0x1f, 0x00, 0xc0, 0x45, 0x43 },     /* BCM4345C0, Pi 3B+ */
+        { 0xac, 0x1f, 0x00, 0xc5, 0x45, 0x43 },     /* BCM4345C5 */
+        { 0xac, 0x1f, 0x12, 0xa1, 0x43, 0x43 },     /* BCM43430A1, patched */
+        { 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa },     /* BCM43430A1, ROM */
+    };
+    APTR OpenFirmwareBase = OpenResource("openfirmware.resource");
+    const UBYTE *dt;
+    UBYTE resp[7], status = 0;
+    UWORD rlen = 0;
+    void *key, *prop;
+    ULONG i, j;
+
+    if (ctx->fwc_HciCommand(ctx, HC_OP_READ_BD_ADDR, NULL, 0,
+                            &status, resp, &rlen, sizeof(resp)) || rlen < 7)
+        return;
+    for (i = 0; i < sizeof(defaults) / sizeof(defaults[0]); i++)
+    {
+        for (j = 0; j < 6 && resp[1 + j] == defaults[i][j]; j++)
+            ;
+        if (j == 6)
+            break;
+    }
+    if (i == sizeof(defaults) / sizeof(defaults[0]))
+        return;                                 /* a real address */
+
+    ctx->fwc_Log(ctx, RETURN_OK,
+        "brcmbt: chip default address %02x:%02x:%02x:%02x:%02x:%02x",
+        resp[6], resp[5], resp[4], resp[3], resp[2], resp[1]);
+
+    if (!OpenFirmwareBase || !(key = OF_OpenKey(BRCM_DT_BTNODE)))
+        return;
+    if ((prop = OF_FindProperty(key, "local-bd-address")) &&
+        OF_GetPropLen(prop) == 6)
+    {
+        dt = OF_GetPropValue(prop);
+        for (i = 0; i < 6 && !dt[i]; i++)
+            ;
+        if (i == 6)
+            ctx->fwc_Log(ctx, RETURN_WARN, "brcmbt: no board address in the device tree");
+        else if (ctx->fwc_HciCommand(ctx, HC_OP_BRCM_WRITE_BD_ADDR, dt, 6,
+                                     &status, NULL, NULL, 0) || status)
+            ctx->fwc_Log(ctx, RETURN_WARN, "brcmbt: setting the board address failed");
+        else
+            ctx->fwc_Log(ctx, RETURN_OK,
+                "brcmbt: board address %02x:%02x:%02x:%02x:%02x:%02x from the device tree",
+                dt[5], dt[4], dt[3], dt[2], dt[1], dt[0]);
+    }
+    OF_CloseKey(key);
 }
 /* \\\ */
 
