@@ -15,6 +15,21 @@
 #include "uhci/uhciproto.h"
 #include "ehci/ehciproto.h"
 
+/*
+ * A buffer that the bounce region can never hold would stay in the transfer
+ * queue for good, so such a request is refused when it comes in.
+ */
+static BOOL uhwBufferFits(struct PCIController *hc, APTR data, ULONG len)
+{
+#if __WORDSIZE == 64
+    if((hc->hc_HCIType == HCITYPE_EHCI) &&
+            ((struct EhciHCPrivate *)hc->hc_CPrivate)->ehc_64BitCapable) {
+        return TRUE;
+    }
+#endif
+    return usbBufferFits(data, len);
+}
+
 static inline void pciusbFreePTDChipset(struct PCIController *hc, struct PTDNode *ptd)
 {
     if(!ptd || !ptd->ptd_Chipset)
@@ -1079,6 +1094,11 @@ WORD cmdControlXFer(struct IOUsbHWReq *ioreq,
         return(UHIOERR_HOSTERROR);
     }
 
+    if(!uhwBufferFits(hc, &ioreq->iouh_SetupData, sizeof(ioreq->iouh_SetupData)) ||
+            !uhwBufferFits(hc, ioreq->iouh_Data, ioreq->iouh_Length)) {
+        return(UHIOERR_OUTOFMEMORY);
+    }
+
     ioreq->iouh_Req.io_Flags &= ~IOF_QUICK;
     ioreq->iouh_Actual = 0;
 
@@ -1128,6 +1148,10 @@ WORD cmdBulkXFer(struct IOUsbHWReq *ioreq,
     if(!hc) {
         KPRINTF(20, "No Host controller assigned to device address %ld\n", ioreq->iouh_DevAddr);
         return(UHIOERR_HOSTERROR);
+    }
+
+    if(!uhwBufferFits(hc, ioreq->iouh_Data, ioreq->iouh_Length)) {
+        return(UHIOERR_OUTOFMEMORY);
     }
 
     ioreq->iouh_Req.io_Flags &= ~IOF_QUICK;
@@ -1233,6 +1257,10 @@ WORD cmdIntXFer(struct IOUsbHWReq *ioreq,
     if(!hc) {
         KPRINTF(20, "No Host controller assigned to device address %ld\n", ioreq->iouh_DevAddr);
         return(UHIOERR_HOSTERROR);
+    }
+
+    if(!uhwBufferFits(hc, ioreq->iouh_Data, ioreq->iouh_Length)) {
+        return(UHIOERR_OUTOFMEMORY);
     }
 
     ioreq->iouh_Req.io_Flags &= ~IOF_QUICK;

@@ -607,6 +607,13 @@ void ehciScheduleCtrlTDs(struct PCIController *hc)
         CONSTWRITEMEM32_LE(&setupetd->etd_CtrlStatus, (8<<ETSS_TRANSLENGTH)|ETCF_3ERRORSLIMIT|ETCF_ACTIVE|ETCF_PIDCODE_SETUP);
 
         eqh->eqh_SetupBuf = ehciGetDMABuffer(ehcihcp, &ioreq->iouh_SetupData, 8, UHDIR_OUT);
+        if(usbBufferFailed(eqh->eqh_SetupBuf, 8)) {
+            // no bounce buffer? try again later
+            ehciFreeTD(hc, setupetd);
+            ehciFreeTD(hc, termetd);
+            ehciFreeQH(hc, eqh);
+            break;
+        }
         phyaddr = (IPTR) pciGetPhysical(hc, eqh->eqh_SetupBuf);
 
         ehciSetPointer(ehcihcp, setupetd->etd_BufferPtr[0], setupetd->etd_ExtBufferPtr[0], phyaddr);
@@ -617,6 +624,15 @@ void ehciScheduleCtrlTDs(struct PCIController *hc)
         predetd = setupetd;
         if(ioreq->iouh_Length) {
             eqh->eqh_Buffer = ehciGetDMABuffer(ehcihcp, ioreq->iouh_Data, ioreq->iouh_Length, (ioreq->iouh_SetupData.bmRequestType & URTF_IN) ? UHDIR_IN : UHDIR_OUT);
+            if(usbBufferFailed(eqh->eqh_Buffer, ioreq->iouh_Length)) {
+                // no bounce buffer? try again later
+                ehciReleaseDMABuffer(eqh->eqh_SetupBuf, &ioreq->iouh_SetupData, 0, 0);
+                eqh->eqh_SetupBuf = NULL;
+                ehciFreeTD(hc, setupetd);
+                ehciFreeTD(hc, termetd);
+                ehciFreeQH(hc, eqh);
+                break;
+            }
             phyaddr = (IPTR)pciGetPhysical(hc, eqh->eqh_Buffer);
             do {
                 dataetd = ehciAllocTD(hc);
@@ -806,6 +822,11 @@ void ehciScheduleIntTDs(struct PCIController *hc)
         }
         predetd = NULL;
         eqh->eqh_Buffer = ehciGetDMABuffer(ehcihcp, ioreq->iouh_Data, ioreq->iouh_Length, ioreq->iouh_Dir);
+        if(usbBufferFailed(eqh->eqh_Buffer, ioreq->iouh_Length)) {
+            // no bounce buffer? try again later
+            ehciFreeQHandTDs(hc, eqh);
+            break;
+        }
         do {
             etd = ehciAllocTD(hc);
             if(!etd) {
@@ -975,6 +996,11 @@ void ehciScheduleBulkTDs(struct PCIController *hc)
         }
         predetd = NULL;
         eqh->eqh_Buffer = ehciGetDMABuffer(ehcihcp, ioreq->iouh_Data, ioreq->iouh_Length, ioreq->iouh_Dir);
+        if(usbBufferFailed(eqh->eqh_Buffer, ioreq->iouh_Length)) {
+            // no bounce buffer? try again later
+            ehciFreeQHandTDs(hc, eqh);
+            break;
+        }
         phyaddr = (ioreq->iouh_Length && eqh->eqh_Buffer) ? (IPTR)pciGetPhysical(hc, eqh->eqh_Buffer) : 0;
         do {
             if((eqh->eqh_Actual >= EHCI_TD_BULK_LIMIT) && (eqh->eqh_Actual < ioreq->iouh_Length)) {

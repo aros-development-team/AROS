@@ -394,6 +394,13 @@ void uhciScheduleCtrlTDs(struct PCIController *hc)
             uqh->uqh_FirstTD = setuputd;
             uqh->uqh_Element = setuputd->utd_Self; // start of queue
             uqh->uqh_SetupBuffer = usbGetBuffer(&ioreq->iouh_SetupData, sizeof(ioreq->iouh_SetupData), UHDIR_OUT);
+            if(usbBufferFailed(uqh->uqh_SetupBuffer, sizeof(ioreq->iouh_SetupData))) {
+                // no bounce buffer? try again later
+                uhciFreeTD(hc, setuputd);
+                uhciFreeTD(hc, termutd);
+                uhciFreeQH(hc, uqh);
+                break;
+            }
             WRITEMEM32_LE(&setuputd->utd_CtrlStatus, ctrlstatus);
             WRITEMEM32_LE(&setuputd->utd_Token, (PID_SETUP<<UTTS_PID)|token|(7<<UTTS_TRANSLENGTH)|UTTF_DATA0);
             WRITEMEM32_LE(&setuputd->utd_BufferPtr, (ULONG) (IPTR) pciGetPhysical(hc, uqh->uqh_SetupBuffer));
@@ -414,6 +421,18 @@ void uhciScheduleCtrlTDs(struct PCIController *hc)
                 ioreq->iouh_Actual=0;
             }
             uqh->uqh_DataBuffer = usbGetBuffer(&(((UBYTE *)ioreq->iouh_Data)[ioreq->iouh_Actual]), ioreq->iouh_Length - actual, (ioreq->iouh_SetupData.bmRequestType & URTF_IN) ? UHDIR_IN : UHDIR_OUT);
+            if(usbBufferFailed(uqh->uqh_DataBuffer, ioreq->iouh_Length - actual)) {
+                // no bounce buffer? try again later
+                if(uqh->uqh_SetupBuffer) {
+                    usbReleaseBuffer(uqh->uqh_SetupBuffer, &ioreq->iouh_SetupData,
+                        sizeof(ioreq->iouh_SetupData), UHDIR_OUT);
+                    uqh->uqh_SetupBuffer = NULL;
+                }
+                uhciFreeTD(hc, setuputd);
+                uhciFreeTD(hc, termutd);
+                uhciFreeQH(hc, uqh);
+                break;
+            }
             phyaddr = (ULONG)(IPTR)pciGetPhysical(hc, uqh->uqh_DataBuffer);
             do {
                 datautd = uhciAllocTD(hc);
@@ -577,6 +596,11 @@ void uhciScheduleIntTDs(struct PCIController *hc)
         predutd = NULL;
         actual = ioreq->iouh_Actual;
         uqh->uqh_DataBuffer = usbGetBuffer(&(((UBYTE *) ioreq->iouh_Data)[ioreq->iouh_Actual]), ioreq->iouh_Length - actual, ioreq->iouh_Dir);
+        if(usbBufferFailed(uqh->uqh_DataBuffer, ioreq->iouh_Length - actual)) {
+            // no bounce buffer? try again later
+            uhciFreeQH(hc, uqh);
+            break;
+        }
         phyaddr = (ULONG) (IPTR) pciGetPhysical(hc, uqh->uqh_DataBuffer);
         if(unit->hu_DevDataToggle[devadrep]) {
             // continue with data toggle 1
@@ -726,6 +750,11 @@ void uhciScheduleBulkTDs(struct PCIController *hc)
 
         // Get a MEMF_31BIT bounce buffer
         uqh->uqh_DataBuffer = usbGetBuffer(&(((UBYTE *) ioreq->iouh_Data)[ioreq->iouh_Actual]), ioreq->iouh_Length - actual, ioreq->iouh_Dir);
+        if(usbBufferFailed(uqh->uqh_DataBuffer, ioreq->iouh_Length - actual)) {
+            // no bounce buffer? try again later
+            uhciFreeQH(hc, uqh);
+            break;
+        }
         phyaddr = (IPTR)pciGetPhysical(hc, uqh->uqh_DataBuffer);
         if(unit->hu_DevDataToggle[devadrep]) {
             // continue with data toggle 1
