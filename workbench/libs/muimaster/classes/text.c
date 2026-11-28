@@ -248,6 +248,57 @@
 
 extern struct Library *MUIMasterBase;
 
+/****** Text.mui/MUIA_Text_Shorten ************
+*
+*   NAME
+*       MUIA_Text_Shorten -- (V20) [ISG], LONG
+*
+*   FUNCTION
+*       Choose what is shown when the object is narrower than its text.
+*
+*   INPUTS
+*       MUIV_Text_Shorten_Nothing     - the text is drawn as it is and
+*                                       clipped (the default).
+*       MUIV_Text_Shorten_Cutoff      - the same drawing; the object reports
+*                                       itself as shortened.
+*       MUIV_Text_Shorten_Hide        - nothing is drawn.
+*       MUIV_Text_Shorten_ElideLeft   - "..." replaces as much of the start
+*       MUIV_Text_Shorten_ElideCenter   of the line, of its middle or of its
+*       MUIV_Text_Shorten_ElideRight    end as needed for the rest to fit.
+*
+*   NOTES
+*       An object is only made narrower than its text when its minimum width
+*       does not include the text: create it with MUIA_Text_SetMin, FALSE.
+*
+*       Each line of a text with several lines is shortened on its own.
+*       Style, colour and alignment codes are kept, also those of a part
+*       that is replaced. An embedded image counts as one character. A line
+*       that switches the text engine off (ESC -) is not elided but cut. If
+*       not even "..." fits, it is clipped. The character MUIA_Text_HiCharIdx
+*       marks is not marked in an elided text, because its index refers to
+*       the whole text.
+*
+*   SEE ALSO
+*       MUIA_Text_Shortened, MUIA_Text_SetMin
+*
+*/
+
+/****** Text.mui/MUIA_Text_Shortened ************
+*
+*   NAME
+*       MUIA_Text_Shortened -- (V20) [..G], BOOL
+*
+*   FUNCTION
+*       Tell whether the object shows less than its whole text: TRUE when
+*       MUIA_Text_Shorten is not MUIV_Text_Shorten_Nothing and the text is
+*       wider than the object. Before the object has a place in an open
+*       window the result is FALSE.
+*
+*   SEE ALSO
+*       MUIA_Text_Shorten
+*
+*/
+
 //#define MYDEBUG 1
 #include "debug.h"
 
@@ -262,6 +313,11 @@ struct MUI_TextData
 
     LONG update;        /* type of update: 1 - everything,
                          * 2 - insert char, no scroll */
+
+    LONG shorten;       /* MUIV_Text_Shorten_... */
+    BOOL shortened;     /* the last drawing showed less than the text */
+    ZText *elided;      /* the text elided for elided_width, or NULL */
+    WORD elided_width;
 };
 
 #define MTDF_SETMIN    (1<<0)
@@ -282,6 +338,309 @@ static const int __revision = 1;
  * owns lifecycle and must destroy parsed text.
  */
 static void setup_text(struct MUI_TextData *data, Object *obj);
+
+/*
+ * Forget the elided form of the text. Called wherever the parsed text is
+ * destroyed or what decides the elision changes; the next drawing makes it
+ * again.
+ */
+static void drop_elided(struct MUI_TextData *data)
+{
+    if (data->elided)
+    {
+        zune_text_destroy(data->elided);
+        data->elided = NULL;
+    }
+}
+
+/*
+ * One unit of a line for elision, starting at s (not at the line's end):
+ * a character, or an escape sequence as the text engine reads it. Returns
+ * the first byte after it and says whether it takes room (a character or an
+ * embedded image) or only changes how what follows is drawn.
+ */
+static CONST_STRPTR text_unit(CONST_STRPTR s, BOOL *visible)
+{
+    *visible = TRUE;
+    if (*s != '\033' || s[1] == 0 || s[1] == '\n')
+        return s + 1;
+
+    switch (s[1])
+    {
+    case 'I':
+    case 'O':
+    case 'A':
+        if (s[2] == '[')
+        {
+            CONST_STRPTR t = strchr(s + 3, ']');
+            if (t)
+                return t + 1;
+        }
+        break;
+    case 'P':
+        if (s[2] == '[')
+        {
+            CONST_STRPTR t = strchr(s + 3, ']');
+            if (t)
+            {
+                *visible = FALSE;
+                return t + 1;
+            }
+        }
+        break;
+    }
+    *visible = FALSE;
+    return s + 2;
+}
+
+static LONG line_length(CONST_STRPTR line)
+{
+    LONG n = 0;
+    while (line[n] && line[n] != '\n')
+        n++;
+    return n;
+}
+
+/* The number of units of a line that take room, or -1 for a line that
+ * switches the text engine off: what follows ESC - is drawn as it is, so it
+ * cannot be told apart into units. */
+static LONG line_units(CONST_STRPTR line)
+{
+    CONST_STRPTR end = line + line_length(line);
+    LONG n = 0;
+
+    while (line < end)
+    {
+        BOOL visible;
+        if (line[0] == '\033' && line[1] == '-')
+            return -1;
+        line = text_unit(line, &visible);
+        if (visible)
+            n++;
+    }
+    return n;
+}
+
+/*
+ * Append to out (when not NULL) the line with only `keep` of its units that
+ * take room, the others replaced by one "...": the first units for
+ * ElideRight, the last for ElideLeft, half of each for ElideCenter. Codes
+ * that take no room are all kept, so that the style of what remains is the
+ * style it had. keep < 0 copies the line unchanged. Returns the number of
+ * bytes (to be) appended.
+ */
+static LONG elide_line(STRPTR out, CONST_STRPTR line, LONG keep, LONG mode)
+{
+    CONST_STRPTR end = line + line_length(line);
+    LONG total, head, tail, seen = 0, len = 0;
+    BOOL dots = FALSE;
+
+    if (keep < 0)
+    {
+        if (out)
+            CopyMem((APTR) line, out, end - line);
+        return end - line;
+    }
+
+    total = line_units(line);
+    if (keep > total)
+        keep = total;
+    if (mode == MUIV_Text_Shorten_ElideLeft)
+        head = 0;
+    else if (mode == MUIV_Text_Shorten_ElideCenter)
+        head = (keep + 1) / 2;
+    else
+        head = keep;
+    tail = keep - head;
+
+    while (line < end)
+    {
+        BOOL visible, copy = TRUE;
+        CONST_STRPTR next = text_unit(line, &visible);
+
+        if (next > end)
+            next = end;
+        if (visible)
+        {
+            copy = seen < head || seen >= total - tail;
+            if (!copy && !dots)
+            {
+                if (out)
+                    CopyMem("...", out + len, 3);
+                len += 3;
+                dots = TRUE;
+            }
+            seen++;
+        }
+        if (copy)
+        {
+            if (out)
+                CopyMem((APTR) line, out + len, next - line);
+            len += next - line;
+        }
+        line = next;
+    }
+    return len;
+}
+
+#define ELIDE_MAXLINES 32
+
+/*
+ * The whole text with line i reduced to keep[i] units (-1: unchanged), as
+ * a new string for FreeVec(), or NULL without memory.
+ */
+static STRPTR elide_text(CONST_STRPTR text, const LONG *keep, LONG lines,
+    LONG mode)
+{
+    CONST_STRPTR s;
+    STRPTR out;
+    LONG i, size = 1;
+
+    for (s = text, i = 0; ; i++)
+    {
+        size += elide_line(NULL, s, i < lines ? keep[i] : -1, mode) + 1;
+        s += line_length(s);
+        if (!*s)
+            break;
+        s++;
+    }
+
+    out = AllocVec(size, MEMF_ANY);
+    if (out)
+    {
+        LONG len = 0;
+        for (s = text, i = 0; ; i++)
+        {
+            len += elide_line(out + len, s, i < lines ? keep[i] : -1, mode);
+            s += line_length(s);
+            if (!*s)
+                break;
+            out[len++] = *s++;
+        }
+        out[len] = 0;
+    }
+    return out;
+}
+
+static ZText *parse_text(struct MUI_TextData *data, Object *obj,
+    CONST_STRPTR contents, BOOL whole)
+{
+    ZText *zt;
+
+    if (data->mtd_Flags & MTDF_HICHAR)
+        zt = zune_text_new(data->preparse, contents, ZTEXT_ARG_HICHAR,
+            data->hichar);
+    else if ((data->mtd_Flags & MTDF_HICHARIDX) && whole)
+        zt = zune_text_new(data->preparse, contents, ZTEXT_ARG_HICHARIDX,
+            data->hichar);
+    else
+        zt = zune_text_new(data->preparse, contents, ZTEXT_ARG_NONE, 0);
+    if (zt)
+        zune_text_get_bounds(zt, obj);
+    return zt;
+}
+
+/* The measured width of line i of a parsed text, or -1 when it has no
+ * such line. */
+static LONG parsed_line_width(ZText *zt, LONG i)
+{
+    ZTextLine *ztl;
+
+    ForeachNode(&zt->lines, ztl)
+    {
+        if (i-- == 0)
+            return ztl->lwidth;
+    }
+    return -1;
+}
+
+/*
+ * Make data->elided: the text with every line that is wider than `width`
+ * elided to the most units that fit, found by halving. Each candidate is
+ * parsed and measured as a whole, so the widths are the ones a drawing
+ * uses, whatever styles the lines carry. Leaves data->elided NULL when
+ * memory runs out or the text has more lines than are followed here; the
+ * caller then draws the whole text clipped.
+ */
+static void make_elided(struct MUI_TextData *data, Object *obj, LONG width)
+{
+    LONG keep[ELIDE_MAXLINES], units[ELIDE_MAXLINES];
+    CONST_STRPTR s;
+    LONG lines = 0, i;
+
+    drop_elided(data);
+    data->elided_width = width;
+
+    for (s = data->contents; ; lines++)
+    {
+        if (lines == ELIDE_MAXLINES)
+            return;
+        units[lines] = line_units(s);
+        keep[lines] = -1;
+        s += line_length(s);
+        if (!*s)
+        {
+            lines++;
+            break;
+        }
+        s++;
+    }
+
+    for (i = 0; i < lines; i++)
+    {
+        LONG low = 0, high = units[i] - 1;
+
+        if (units[i] < 1 || parsed_line_width(data->ztext, i) <= width)
+            continue;
+
+        /* The most units that fit: low is known to be accepted (with
+         * nothing but "..." there is no less to show), high + 1 is known
+         * not to fit. */
+        keep[i] = 0;
+        while (low < high)
+        {
+            LONG mid = (low + high + 1) / 2, w = -1;
+            STRPTR text;
+            ZText *zt;
+
+            keep[i] = mid;
+            text = elide_text(data->contents, keep, lines, data->shorten);
+            if (!text)
+                return;
+            zt = parse_text(data, obj, text, FALSE);
+            if (zt)
+            {
+                w = parsed_line_width(zt, i);
+                zune_text_destroy(zt);
+            }
+            FreeVec(text);
+            if (w < 0)
+                return;
+            if (w <= width)
+                low = mid;
+            else
+                high = mid - 1;
+        }
+        keep[i] = low;
+    }
+
+    {
+        STRPTR text = elide_text(data->contents, keep, lines, data->shorten);
+        if (text)
+        {
+            data->elided = parse_text(data, obj, text, FALSE);
+            FreeVec(text);
+        }
+    }
+}
+
+/* Whether the object is narrower than its text and is to do something
+ * about it. Needs the parsed text and the object's place. */
+static BOOL is_shortened(struct MUI_TextData *data, Object *obj)
+{
+    return data->shorten != MUIV_Text_Shorten_Nothing && data->ztext
+        && data->ztext->width > _mwidth(obj);
+}
 
 /**************************************************************************
 OM_NEW
@@ -339,6 +698,10 @@ IPTR Text__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 
         case MUIA_Text_SetVMax:
             _handle_bool_tag(data->mtd_Flags, tag->ti_Data, MTDF_SETVMAX);
+            break;
+
+        case MUIA_Text_Shorten:
+            data->shorten = tag->ti_Data;
             break;
 
         }
@@ -407,6 +770,7 @@ IPTR Text__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
                         zune_text_destroy(data->ztext);
                         data->ztext = NULL;
                     }
+                    drop_elided(data);
                     FreeVec(data->contents);
                     data->contents = new_contents;
                     if (_flags(obj) & MADF_SETUP)
@@ -428,12 +792,22 @@ IPTR Text__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
                         zune_text_destroy(data->ztext);
                         data->ztext = NULL;
                     }
+                    drop_elided(data);
                     FreeVec((APTR) data->preparse);
                     data->preparse = new_preparse;
                     if (_flags(obj) & MADF_SETUP)
                         setup_text(data, obj);
                     MUI_Redraw(obj, MADF_DRAWOBJECT); /* should be optimized */
                 }
+            }
+            break;
+
+        case MUIA_Text_Shorten:
+            if (data->shorten != (LONG) tag->ti_Data)
+            {
+                data->shorten = tag->ti_Data;
+                drop_elided(data);
+                MUI_Redraw(obj, MADF_DRAWOBJECT);
             }
             break;
 
@@ -470,6 +844,18 @@ IPTR Text__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 
     case MUIA_Text_PreParse:
         STORE = (IPTR) data->preparse;
+        return TRUE;
+
+    case MUIA_Text_Shorten:
+        STORE = data->shorten;
+        return TRUE;
+
+    case MUIA_Text_Shortened:
+        /* As it would be drawn now when the object has its place; else as
+         * it was last drawn. */
+        if (_flags(obj) & MADF_CANDRAW)
+            data->shortened = is_shortened(data, obj);
+        STORE = data->shortened;
         return TRUE;
 
     case MUIA_Version:
@@ -557,6 +943,8 @@ IPTR Text__MUIM_Cleanup(struct IClass *cl, Object *obj,
         zune_text_destroy(data->ztext);
         data->ztext = NULL;
     }
+    drop_elided(data);
+    data->shortened = FALSE;
 
     return (DoSuperMethodA(cl, obj, (Msg) msg));
 }
@@ -687,9 +1075,26 @@ IPTR Text__MUIM_Draw(struct IClass *cl, Object *obj,
     {
         get(_win(obj), MUIA_Window_ActiveObject, &act);
         {
-            int y = (_mheight(obj) - data->ztext->height) / 2;
-            zune_text_draw(data->ztext, obj,
-                _mleft(obj), _mright(obj), _mtop(obj) + y);
+            ZText *zt = data->ztext;
+            int y;
+
+            data->shortened = is_shortened(data, obj);
+            if (data->shortened
+                && data->shorten >= MUIV_Text_Shorten_ElideLeft
+                && data->shorten <= MUIV_Text_Shorten_ElideRight)
+            {
+                if (!data->elided || data->elided_width != _mwidth(obj))
+                    make_elided(data, obj, _mwidth(obj));
+                if (data->elided)
+                    zt = data->elided;
+            }
+            if (!data->shortened
+                || data->shorten != MUIV_Text_Shorten_Hide)
+            {
+                y = (_mheight(obj) - zt->height) / 2;
+                zune_text_draw(zt, obj,
+                    _mleft(obj), _mright(obj), _mtop(obj) + y);
+            }
         }
     }
 
