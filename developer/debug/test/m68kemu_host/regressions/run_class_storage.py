@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""The records of the BOOPSI classes a 68k program makes, across the first block of 32."""
+"""The records of the BOOPSI classes a 68k program makes, across the first block of 32, and MakeClass refused."""
 # Copyright (C) 2026, The AROS Development Team. All rights reserved.
 import argparse
 import os
@@ -10,8 +10,8 @@ import subprocess  # nosec B404 - the developer explicitly selects a compiler
 import tempfile
 
 
-def function(text, name, origin):
-    m = re.search(r'^static [^\n]*\b' + name + r'\(.*?\)\n\{', text, re.M | re.S)
+def function(text, name, origin, storage=r'static [^\n]*'):
+    m = re.search(r'^' + storage + r'\b' + name + r'\(.*?\)\n\{', text, re.M | re.S)
     if not m:
         raise ValueError('%s: no function %s' % (origin, name))
     depth, i = 0, m.end() - 1
@@ -31,9 +31,13 @@ def run(args, output):
     constants = [m.group(0) for m in re.finditer(r'^\s*#define (M68KEMU_CLASS_BLOCKS?)\s+\d+', intern, re.M)]
     if len(constants) != 2:
         raise ValueError('m68kemu_intern.h: the two class block constants')
-    (output / 'class_constants.inc').write_text('\n'.join(c.strip() for c in constants) + '\n')
+    layout = [m.group(0) for m in re.finditer(r'^#define (CL_SIZE|CL_ID|SHADOW_BCLASS)\s+\d+', boopsi, re.M)]
+    if len(layout) != 3:
+        raise ValueError('m68kemu_boopsi.c: the size of a class, the offset of its ID and its shadow type')
+    (output / 'class_constants.inc').write_text('\n'.join(c.strip() for c in constants + layout) + '\n')
     (output / 'class_storage.inc').write_text('\n'.join(
         function(boopsi, name, 'm68kemu_boopsi.c') for name in ('class_slot', 'class_room', 'class_drop', 'class_rec')))
+    (output / 'class_makeclass.inc').write_text(function(boopsi, 'm68k_MakeClass', 'm68kemu_boopsi.c', 'IPTR ') + '\n')
     sanitizer = ['-fsanitize=address,undefined', '-fno-sanitize-recover=all'] if args.sanitize else []
     command = shlex.split(args.cxx) + [
         '-std=c++20', '-Wall', '-Wextra', '-Werror', '-Wno-unused-function', '-g', '-O1', '-I' + str(output),

@@ -915,8 +915,20 @@ limit, checks that a record never moves while the table grows (its native
 class keeps the record's address in its dispatcher hook), that freeing a
 class moves the last record into the freed slot together with its hook, that
 an allocation failure and the limit refuse cleanly, and that the blocks are
-given back. No CPU and no native BOOPSI run. It prints `m68kemu class
-storage: <checks> checks, <n> failed` and exits with 1 when a check failed.
+given back.
+
+The runner also extracts `m68k_MakeClass` itself, with the size of a class,
+the offset of its ID and its shadow type. Every class takes an entry in the
+shadow table, which it shares with objects, ports and tasks. With that table
+full the fixture checks that `MakeClass()` returns 0, that the native class,
+the block of the program's memory and the copy of the name are each freed
+once, that no record is made and the classes made before are unchanged, and
+that the class is made once an entry is free again; the same on the 33rd
+class, where the new block of records is kept and used later. The registers
+are a plain structure and what `MakeClass()` calls counts its calls.
+
+No CPU and no native BOOPSI run. It prints `m68kemu class storage: <checks>
+checks, <n> failed` and exits with 1 when a check failed.
 
 ## ExecBase lists and scheduler fields of the program
 

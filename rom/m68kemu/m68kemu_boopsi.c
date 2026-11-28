@@ -1327,6 +1327,15 @@ IPTR m68k_MakeClass(struct M68KEmuContext *ctx, void *cpu)
     m68k_write16(ctx, mc + 32, off);
     m68k_write16(ctx, mc + 34, size);
 
+    /* the shadow table is shared with objects, ports and tasks and may be full:
+       without its entry the program could neither use nor free the class */
+    if (!shadow_register(ctx, mc, cl, SHADOW_BCLASS))
+    {
+        M68KEmu_HeapFree(ctx, mc, CL_SIZE + 64);
+        FreeClass(cl);
+        FreeVec(id);
+        return 0;
+    }
     rec = class_slot(ctx, ctx->num_m68kclasses++);
     rec->ctx = ctx;
     rec->m68k = mc;
@@ -1335,7 +1344,6 @@ IPTR m68k_MakeClass(struct M68KEmuContext *ctx, void *cpu)
     rec->id = id;
     cl->cl_Dispatcher.h_Entry = (HOOKFUNC)m68k_class_hook;
     cl->cl_Dispatcher.h_Data = rec;
-    shadow_register(ctx, mc, cl, SHADOW_BCLASS);
     return mc;
 }
 
