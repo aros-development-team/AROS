@@ -65,7 +65,7 @@
             }
             st_destroy_context(_ctx->st);
             MESA3DGLFreeFrameBuffer(_ctx->framebuffer);
-            MESA3DGLFreeStManager(_ctx->driver, _ctx->stmanager);
+            MESA3DGLReleaseScreen(_ctx);
             MESA3DGLFreeContext(_ctx);
         }
     }
