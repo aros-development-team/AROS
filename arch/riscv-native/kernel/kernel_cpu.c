@@ -1,19 +1,19 @@
 /*
     Copyright (c) 2026, The AROS Development Team. All rights reserved.
 
-    Desc: CPU-level task switching for the sbi-riscv64 target.
+    Desc: CPU-level task switching for the native riscv kernels.
 
     cpu_Switch() saves the interrupted context (the trap frame) into the
     current task's register frame; cpu_Dispatch() selects the next task
     and loads its register frame into the trap frame - the trap exit
-    path then resumes the new task via sret.
+    path then resumes the new task.
 */
 
 #include <exec/execbase.h>
 #include <exec/tasks.h>
 #include <proto/exec.h>
 
-#include <aros/riscv64/cpucontext.h>
+#include <aros/riscv/cpucontext.h>
 #include <asm/cpu.h>
 
 #include <hardware/intbits.h>
@@ -25,7 +25,7 @@
 
 #include "etask.h"
 
-#include "kernel_intern.h"
+#include "kernel_riscv.h"
 #include "kernel_cpu.h"
 
 #define AROS_NO_ATOMIC_OPERATIONS
@@ -88,22 +88,23 @@ static void krnRestoreFPU(struct FpuContext *fpu)
 }
 
 /* Load the canonical clean FPU state for a task that never used FP -
-   the previous owner's registers must not leak through */
+   the previous owner's registers must not leak through. fcvt.d.w from
+   zero gives +0.0 on rv32 and rv64 alike (fmv.d.x is rv64 only) */
 static void krnInitFPU(void)
 {
     asm volatile(
         "csrw fcsr, zero\n"
-        "fmv.d.x f0,  zero\n fmv.d.x f1,  zero\n fmv.d.x f2,  zero\n"
-        "fmv.d.x f3,  zero\n fmv.d.x f4,  zero\n fmv.d.x f5,  zero\n"
-        "fmv.d.x f6,  zero\n fmv.d.x f7,  zero\n fmv.d.x f8,  zero\n"
-        "fmv.d.x f9,  zero\n fmv.d.x f10, zero\n fmv.d.x f11, zero\n"
-        "fmv.d.x f12, zero\n fmv.d.x f13, zero\n fmv.d.x f14, zero\n"
-        "fmv.d.x f15, zero\n fmv.d.x f16, zero\n fmv.d.x f17, zero\n"
-        "fmv.d.x f18, zero\n fmv.d.x f19, zero\n fmv.d.x f20, zero\n"
-        "fmv.d.x f21, zero\n fmv.d.x f22, zero\n fmv.d.x f23, zero\n"
-        "fmv.d.x f24, zero\n fmv.d.x f25, zero\n fmv.d.x f26, zero\n"
-        "fmv.d.x f27, zero\n fmv.d.x f28, zero\n fmv.d.x f29, zero\n"
-        "fmv.d.x f30, zero\n fmv.d.x f31, zero\n");
+        "fcvt.d.w f0,  zero\n fcvt.d.w f1,  zero\n fcvt.d.w f2,  zero\n"
+        "fcvt.d.w f3,  zero\n fcvt.d.w f4,  zero\n fcvt.d.w f5,  zero\n"
+        "fcvt.d.w f6,  zero\n fcvt.d.w f7,  zero\n fcvt.d.w f8,  zero\n"
+        "fcvt.d.w f9,  zero\n fcvt.d.w f10, zero\n fcvt.d.w f11, zero\n"
+        "fcvt.d.w f12, zero\n fcvt.d.w f13, zero\n fcvt.d.w f14, zero\n"
+        "fcvt.d.w f15, zero\n fcvt.d.w f16, zero\n fcvt.d.w f17, zero\n"
+        "fcvt.d.w f18, zero\n fcvt.d.w f19, zero\n fcvt.d.w f20, zero\n"
+        "fcvt.d.w f21, zero\n fcvt.d.w f22, zero\n fcvt.d.w f23, zero\n"
+        "fcvt.d.w f24, zero\n fcvt.d.w f25, zero\n fcvt.d.w f26, zero\n"
+        "fcvt.d.w f27, zero\n fcvt.d.w f28, zero\n fcvt.d.w f29, zero\n"
+        "fcvt.d.w f30, zero\n fcvt.d.w f31, zero\n");
 }
 
 void cpu_Switch(regs_t *regs)
@@ -123,11 +124,11 @@ void cpu_Switch(regs_t *regs)
      * cpu_Switch() - kernel objects should eventually be built FP-free
      * to guarantee it.
      */
-    if ((ctx->sr & SSTATUS_FS) == SSTATUS_FS_DIRTY)
+    if ((ctx->sr & RV_STATUS_FS) == RV_STATUS_FS_DIRTY)
     {
         krnSaveFPU(ctx->fpuContext);
         ctx->Flags |= ECF_FPU;
-        ctx->sr = (ctx->sr & ~SSTATUS_FS) | SSTATUS_FS_CLEAN;
+        ctx->sr = (ctx->sr & ~RV_STATUS_FS) | RV_STATUS_FS_CLEAN;
     }
 
     /* TODO: save the vector state here when VS reads dirty (the
@@ -135,20 +136,21 @@ void cpu_Switch(regs_t *regs)
 
     /*
      * Account the run segment that just ended: cycles for the usage
-     * window (normalized in krnTimerTick), and wall time for the
-     * task's cumulative CPU time.
+     * window (normalized by the platform's RVI_TimerTick), and wall
+     * time for the task's cumulative CPU time.
      */
     if ((task->tc_Flags & TF_ETASK) && task->tc_UnionETask.tc_ETask &&
-        __timebase_freq)
+        __riscv_arosintern.RVI_TimebaseFreq)
     {
         struct IntETask *iet = IntETask(task->tc_UnionETask.tc_ETask);
-        uint64_t ran = krnReadTime() - iet->iet_private1;
+        uint64_t freq = __riscv_arosintern.RVI_TimebaseFreq;
+        uint64_t ran = krnRVReadTime() - iet->iet_private1;
         uint64_t ns;
 
         iet->iet_private2 += ran;
 
-        ns = (ran / __timebase_freq) * 1000000000ULL +
-             ((ran % __timebase_freq) * 1000000000ULL) / __timebase_freq;
+        ns = (ran / freq) * 1000000000ULL +
+             ((ran % freq) * 1000000000ULL) / freq;
         iet->iet_CpuTime.tv_nsec += ns % 1000000000ULL;
         iet->iet_CpuTime.tv_sec += ns / 1000000000ULL;
         while (iet->iet_CpuTime.tv_nsec >= 1000000000)
@@ -171,25 +173,25 @@ void cpu_Dispatch(regs_t *regs)
          * Nothing to run at all - the idle task should normally keep
          * this from happening, so this is only the window before it
          * exists. Sleep with traps open until one arrives; the time
-         * spent here is what the load accounting counts as idle.
+         * spent here counts as this CPU's idle time, as in
+         * krnRVIdleWait().
          */
-        uint64_t idlefrom = krnReadTime();
+        uint32_t cpu = krnRVCPUNumber();
+        UQUAD idlefrom = krnRVReadTime();
 
-        csr_set(sstatus, SSTATUS_SIE);
+        csr_set(RV_CSR_STATUS, RV_STATUS_IE);
         asm volatile("wfi");
-        csr_clear(sstatus, SSTATUS_SIE);
+        csr_clear(RV_CSR_STATUS, RV_STATUS_IE);
 
         /* Returns with traps masked: the tick below and core_Dispatch() are next */
         core_RunSoftInts();
 
-#if defined(__AROSEXEC_SMP__)
-        /* The load figure is the boot CPU's (kernel_timer.c) */
-        if (krnRVCPUNumber() == 0)
-#endif
-        __cpu_sleeptime += krnReadTime() - idlefrom;
+        if (cpu < RISCV_MAXCPUS)
+            __riscv_cpu_idletime[cpu] += krnRVReadTime() - idlefrom;
 
-        if (csr_read(sip) & SIE_STIE)
-            krnTimerTick(NULL);
+        if ((csr_read(RV_CSR_IP) & RV_IP_TIMER) &&
+            __riscv_arosintern.RVI_TimerTick)
+            __riscv_arosintern.RVI_TimerTick(NULL);
     }
 
     copyContext(regs, task->tc_UnionETask.tc_ETask->et_RegFrame);
@@ -211,7 +213,7 @@ void cpu_Dispatch(regs_t *regs)
     /* The task starts running now - stamp its launch time */
     if ((task->tc_Flags & TF_ETASK) && task->tc_UnionETask.tc_ETask)
     {
-        IntETask(task->tc_UnionETask.tc_ETask)->iet_private1 = krnReadTime();
+        IntETask(task->tc_UnionETask.tc_ETask)->iet_private1 = krnRVReadTime();
 #if defined(__AROSEXEC_SMP__)
         /* Where it runs: Signal()/SetTaskPri() aim their IPIs by this */
         IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuNumber = krnRVCPUNumber();
