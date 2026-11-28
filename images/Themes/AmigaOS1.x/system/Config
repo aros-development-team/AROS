@@ -1,4 +1,5 @@
 /* ===================== AmigaOS 1.x theme =============================== */
+DecorVers           = 2          /* version of the theme layout this theme is written for */
 CloseRight          = No         /* put the Close image to the right */
 
 RightBorderGads     = 16         /* width of the right border when gadgets are used */

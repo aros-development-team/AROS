@@ -1,4 +1,5 @@
 /* ===================== MacOS X theme =============================== */
+DecorVers           = 2          /* version of the theme layout this theme is written for */
 CloseRight          = No         /* put the Close image to the right */
 
 BaseColors = 0x00a1a1a1 0x00a1a1a1  /* base color fore activated and deactivated borderlines ARGB format */

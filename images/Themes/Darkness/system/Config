@@ -1,4 +1,5 @@
 /* ===================== AROS Default theme =============================== */
+DecorVers           = 2          /* version of the theme layout this theme is written for */
 CloseRight          = No         /* put the Close image to the right */
 
 ScreenTitleColors   = 0x00dcdcdc 0x00323232

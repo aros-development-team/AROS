@@ -2,9 +2,21 @@ include $(SRCDIR)/config/aros.cfg
 
 FILES := Test Revert Save Use Cancel
 
+# The images are installed as an image set of the Mason theme, using the
+# layout and naming described in images/Themes.md.
+MASON_IMAGEDIR := $(AROS_THEMES)/Mason/Images/16pt
+MASON_IMAGES   := $(foreach f,$(FILES),$(MASON_IMAGEDIR)/$(f).mbr)
+
 #MM- themes-mason-images-gadgets : themes-mason-images-gadgets-prefs
 
-%copy_files_q mmake=themes-mason-images-gadgets-prefs files=$(FILES) \
-    dst=$(AROS_THEMES)/Mason/Images/Gadgets/Prefs
+#MM
+themes-mason-images-gadgets-prefs : $(MASON_IMAGES)
+
+$(MASON_IMAGEDIR)/%.mbr : $(SRCDIR)/$(CURDIR)/% | $(MASON_IMAGEDIR)
+	@$(ECHO) "Copying    $(notdir $<) to $@"
+	@$(CP) $< $@
+
+$(MASON_IMAGEDIR) :
+	%mkdir_q dir=$@
 
 %common
