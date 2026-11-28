@@ -149,8 +149,7 @@ void collect_extra(const char *file, setnode **liblist_ptr)
         if ((strncmp(secname, "__cxa_pure_virtual", 18) == 0) &&
             (type == 'w'))
         {
-            objname = calloc(strlen(OBJLIBDIR)+strlen(AROSOBJ_CXXPUREVIRT)+2, 1);
-            sprintf(objname, "%s/%s", OBJLIBDIR, AROSOBJ_CXXPUREVIRT);
+            objname = objlib_path(AROSOBJ_CXXPUREVIRT);
         }
         else if ((strncmp(secname, "pthread_", 8) == 0) &&
             (type == 'U') && !pthread_added)
@@ -164,8 +163,7 @@ void collect_extra(const char *file, setnode **liblist_ptr)
              * the libpthread archive from the lib/ dir so ld can pull the
              * required members on demand.
              */
-            objname = calloc(strlen(OBJLIBDIR)+strlen(AROSLIB_PTHREAD)+2, 1);
-            sprintf(objname, "%s/%s", OBJLIBDIR, AROSLIB_PTHREAD);
+            objname = objlib_path(AROSLIB_PTHREAD);
             pthread_added = 1;
 
             if (getenv("COLLECT_AROS_DEBUG") != NULL)

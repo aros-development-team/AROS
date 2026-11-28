@@ -173,6 +173,33 @@ static void write_response_argument(FILE *file, const char *arg)
         fatal(ldresponse, strerror(errno));
 }
 
+/* The argument of --sysroot=, NULL when the linker got none */
+static const char *link_sysroot;
+
+char *objlib_path(const char *name)
+{
+    static const char libsubdir[] = "/lib/";
+    char *path;
+
+    /*
+     * The compiler driver passes the sysroot of the link: its configured one,
+     * or the one the user gave to link against another SDK. Everything else
+     * in the link comes from there, so these files have to as well.
+     */
+    if (link_sysroot != NULL && link_sysroot[0] != '\0')
+    {
+        path = xmalloc(strlen(link_sysroot) + sizeof(libsubdir) + strlen(name));
+        sprintf(path, "%s%s%s", link_sysroot, libsubdir, name);
+        if (access(path, F_OK) == 0)
+            return path;
+        free(path);
+    }
+
+    path = xmalloc(strlen(OBJLIBDIR) + strlen(name) + 2);
+    sprintf(path, "%s/%s", OBJLIBDIR, name);
+    return path;
+}
+
 static void docommand_ld(char *command, char *argv[])
 {
     FILE *response;
@@ -245,6 +272,10 @@ int main(int argc, char *argv[])
             /* Get the output file name */
             if (argv[cnt][1]=='o')
                 output = argv[cnt][2]?&argv[cnt][2]:argv[++cnt];
+            else
+            /* The sysroot of this link; the option itself goes on to ld */
+            if (strncmp(&argv[cnt][1], "-sysroot=", 9) == 0)
+                link_sysroot = &argv[cnt][10];
             else
             /* Incremental linking is requested */
             if ((argv[cnt][1]=='r' || argv[cnt][1]=='i') && argv[cnt][2]=='\0')
