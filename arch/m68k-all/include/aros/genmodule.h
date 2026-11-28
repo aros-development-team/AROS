@@ -15,6 +15,13 @@
 
 /******************* Linklib Side Thunks ******************/
 
+/* The library base travels in %a1, not %a0.
+   GCC m68k passes the hidden result pointer of a function that returns a
+   struct (div_t, double complex ...) in %a0; the old stubs loaded the base
+   into %a0 and so lost it: cexp() wrote its 16-byte result over the start
+   of the stdc base (GCC turns sin(x) and cos(x) of one x into cexp()).
+   Stubs and the library-side thunk below keep %a0 intact. */
+
 /* Macro: AROS_LIBFUNCSTUB(functionname, libbasename, lvo)
    This macro will generate code for a stub function for
    the function 'functionname' of lirary with libbase
@@ -31,8 +38,8 @@
         asm volatile( \
             ".weak " #fname "\n" \
             #fname ":\n" \
-            "\tmove.l   " #libbasename ",%%a0\n" \
-            "\tjmp %%a0@(%c0)\n" \
+            "\tmove.l   " #libbasename ",%%a1\n" \
+            "\tjmp %%a1@(%c0)\n" \
             : : "i" ((-lvo*LIB_VECTSIZE)) \
         ); \
     }
@@ -44,8 +51,9 @@
    the current libbase
 
    For the m68k C ABI, all operands are on the stack, so
-   'scratch' registers d0-d1/a0-a1 are free for use by this
-   stub.
+   'scratch' registers d0-d1/a1 are free for use by this
+   stub; %a0 may hold a struct return pointer and is kept
+   (__aros_getoffsettable is a C function: it may clobber it).
 */
 #define __AROS_GM_RELLIBFUNCSTUB(fname, libbasename, lvo) \
     void __ ## fname ## _ ## libbasename ## _relwrapper(IPTR args) \
@@ -53,10 +61,12 @@
         asm volatile( \
             ".weak " #fname "\n" \
             #fname " :\n" \
+            "\tmove.l %%a0,%%sp@-\n" \
             "\tjsr __aros_getoffsettable\n" \
-            "\tmove.l __aros_rellib_offset_" #libbasename ", %%a0\n" \
-            "\tmove.l %%a0@(%%d0), %%a0\n" \
-            "\tjmp %%a0@(%c0)\n" \
+            "\tmove.l __aros_rellib_offset_" #libbasename ", %%a1\n" \
+            "\tmove.l %%a1@(%%d0), %%a1\n" \
+            "\tmove.l %%sp@+,%%a0\n" \
+            "\tjmp %%a1@(%c0)\n" \
             : : "i" ((-lvo*LIB_VECTSIZE)) \
             : \
         ); \
@@ -79,8 +89,9 @@
 
 /* This macro relies upon the fact that the
  * caller to a stack function will have passed in
- * the base in %a0, instead of %a6, since the caller
+ * the base in %a1, instead of %a6, since the caller
  * will have used the AROS_LIBFUNCSTUB() macro.
+ * %a0 (struct return pointer) is kept across the C call.
  */
 #define __GM_STRINGIZE(x) #x
 #define __AROS_GM_STACKCALL(fname, libbasename, libfuncname) \
@@ -90,8 +101,10 @@
         asm volatile( \
             "\t" __GM_STRINGIZE(libfuncname) " :\n" \
             "\tmove.l %a0,%sp@-\n" \
+            "\tmove.l %a1,%sp@-\n" \
             "\tjsr __aros_setoffsettable\n" \
             "\taddq.l #4,%sp\n"     \
+            "\tmove.l %sp@+,%a0\n" \
             "\tjmp  " #fname "\n"  \
         ); \
     }
