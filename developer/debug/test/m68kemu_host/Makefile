@@ -109,6 +109,18 @@ test-process-streams-sanitize:
 
 .PHONY: test-process-streams test-process-streams-sanitize
 
+# Exec ports, I/O requests, tasks, CopyMem and NewMinList: ordinary fixture in test, sanitizer optional.
+EXEC_PORTS_ARGS ?=
+test: test-exec-ports
+
+test-exec-ports:
+	$(PYTHON) "$(TEST_DIR)/regressions/run_exec_ports.py" --cc "$(CC)" $(EXEC_PORTS_ARGS)
+
+test-exec-ports-sanitize:
+	$(PYTHON) "$(TEST_DIR)/regressions/run_exec_ports.py" --cc "$(CC)" --sanitize $(EXEC_PORTS_ARGS)
+
+.PHONY: test-exec-ports test-exec-ports-sanitize
+
 # Initial Process arguments: ordinary fixture in test, sanitizer optional.
 INITIAL_ARGUMENTS_ARGS ?=
 test: test-initial-arguments

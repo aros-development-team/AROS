@@ -636,15 +636,35 @@ The library tables together hold 395 entries.
   containment heap; `Allocate`/`Deallocate` on a program `MemHeader`;
   `AllocEntry`/`FreeEntry`; pools as described above; `TypeOfMem` answers from
   the region's `MemHeader` attributes (0 for the ROM area and outside memory);
-  `CopyMem`; `CacheClearU` no-op; `CacheControl` keeps the bits in `ctx->cacr`
-- Lists: `Insert`..`Enqueue`, `FindName` in the program's memory (`FindName` on
+  `CopyMem` and `CopyMemQuick` within the program's memory: both spans must
+  lie wholly in it, or the copy is refused with a line in the log (a shadow is
+  copied as the program's own copy, a handle is refused); under `low_guard` the
+  destination follows the rule of the program's own writes
+  (`m68k_guest_write_guarded()`, the two ranges the CPU's `write8`/`write16`
+  drop): a span that touches the reset vectors (0-7) or the emulator's stubs
+  and cells (0x100-0x1BF) is refused whole, any other is copied to, so a vector
+  the program may write with `MOVE.L` it may also copy to;
+  `CacheClearU` no-op;
+  `CacheControl` keeps the bits in `ctx->cacr`
+- Lists: `Insert`..`Enqueue`, `NewMinList`, `FindName` in the program's memory (`FindName` on
   the ExecBase `LibList` opens the named library and returns its base; on
   `DeviceList`/`ResourceList` it returns 0, since those have no m68k base; on
-  `PortList` it is `FindPort()` and on `SemaphoreList` `FindSemaphore()`, which
-  take exec's locks; `IntrList`, `TaskReady` and `TaskWait` are empty lists)
+  `PortList` it is the `FindPort` thunk and on `SemaphoreList` the
+  `FindSemaphore` thunk: the program's own first, then exec's, which take
+  exec's locks; `IntrList`, `TaskReady` and `TaskWait` are empty lists)
 - Tasks: `FindTask`, `Forbid`/`Permit`/`Disable`/`Enable`, `Wait`, `SetSignal`,
-  `StackSwap`, `SuperState`/`UserState`, `Supervisor`
-- Messages: `PutMsg`, `GetMsg`, `ReplyMsg`, `WaitPort`; `AddPort`/`RemPort` no-ops
+  `StackSwap`, `SuperState`/`UserState`, `Supervisor`; `AddTask` returns NULL
+  with a line in the log (a task of the program would need a CPU of its own);
+  `RemTask` of the calling task or NULL ends that task as `Exit()` does
+- Messages: `PutMsg`, `GetMsg`, `ReplyMsg`, `WaitPort`; `AddPort` makes the
+  message list of a port in the program's memory empty and names the port in
+  `ctx->pubports[16]`, where `FindPort` looks before the system's ports;
+  a shadow of the `MsgPort` layout, as `CreateMsgPort()` gives, is named
+  there too, by the name the program put in its copy, and its native message
+  list is left alone (native `FindPort()` callers do not see it: that would
+  need a native copy of the name); a port registered by hand (type 4: a
+  window's `UserPort`, the twin of a reply port) is left alone; `RemPort`
+  takes it out
 - Semaphores: 11 functions (see above)
 - Libraries: `OpenLibrary`, `OldOpenLibrary`, `CloseLibrary` (no-op),
   `OpenResource` (only a base that already has thunks; a native resource base
@@ -1060,8 +1080,8 @@ Up to 16 such libraries are remembered per program (`ctx->m68klibs`).
 ## Device I/O Path
 
 Device I/O lives in `m68kemu_devices.c`. The program's `IORequest` stays in its
-memory in 68k layout (its own allocation, or the 32-byte shadow a generated
-`CreateIORequest` returns); a native twin is kept in `ctx->ioreqs[64]`
+memory in 68k layout (its own allocation, or the one `CreateIORequest` makes
+there, of the size asked for); a native twin is kept in `ctx->ioreqs[64]`
 (`struct M68KIoMap { m68k, native, kind, pending, ownport }`). Fields are copied
 in before each call (`io_in()`: `io_Command`, `io_Flags`, and per kind
 `tr_time`, the `IOAudio` fields, or `io_Length/io_Data/io_Offset`) and out after
@@ -1076,7 +1096,7 @@ programs yet".
 
 ```plain
 m68k: CreateMsgPort()                     generated thunk → MsgPort shadow
-m68k: CreateIORequest(port, size)         generated thunk → IORequest shadow (in containment)
+m68k: CreateIORequest(port, size)         size bytes in containment, mn_ReplyPort and mn_Length set
 m68k: OpenDevice(name, unit, io, flags)   reply port → native port (shadow or twin);
                                           native request of the right size (timerequest,
                                           IOAudio or IOStdReq); native OpenDevice;
@@ -1315,9 +1335,9 @@ Further limitations visible in the code:
 
 - `RawDoFmt` writes the formatted text (at most 1024 bytes) into the `PutChData`
   buffer and does not call the `PutChProc`.
-- `AVL_AddNode`, `AVL_RemNodeByAddress`, `AVL_FindNode` return 0; `AddPort`,
-  `RemPort` and `CloseLibrary` do nothing; `OpenResource` finds only bases that
-  already have thunks.
+- `AVL_AddNode`, `AVL_RemNodeByAddress`, `AVL_FindNode` return 0;
+  `CloseLibrary` does nothing; `OpenResource` finds only bases that already
+  have thunks; `AddTask` is refused.
 - Only the `INTB_VERTB` interrupt server runs; `AddIntServer` ignores other
   interrupts, and no CIA or custom chip interrupt is raised.
 - `workbench.library` App* registrations succeed with a token, but no

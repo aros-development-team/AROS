@@ -166,6 +166,7 @@ struct M68KEmuContext
     #define M68KEMU_MAX_IOREQS 64
     struct M68KIoMap { ULONG m68k; struct IORequest *native; UBYTE kind; BOOL pending; struct MsgPort *ownport; } ioreqs[M68KEMU_MAX_IOREQS];
     ULONG   pubsems[16];           /* AddSemaphore()d m68k semaphores, for FindSemaphore */
+    ULONG   pubports[16];          /* AddPort()ed m68k message ports, for FindPort */
 
     /* native BOOPSI classes used from m68k code (m68kemu_boopsi.c) */
     #define M68KEMU_MAX_BOBJS    512
@@ -481,6 +482,19 @@ static inline BOOL m68k_write_allowed(struct M68KEmuContext *ctx, ULONG addr)
 {
     return !ctx->low_guard || addr >= 0x400 || addr == 0x28 || addr == 0x2C ||
         addr == 0x6C || addr == 0x10 || (addr >= 0x140 && addr < 0x190);
+}
+
+/* The program's own writes while low_guard is active: the reset vectors
+   (0-7) and the emulator's stubs and cells (0x100-0x1BF) are not its to
+   change; the rest of the vector table is. TRUE when a write of size bytes
+   at addr touches one of the two. These are the two ranges that the CPU's
+   write8 and write16 drop (m68kemu_moira.cpp); CopyMem asks about its span.
+   (m68k_write_allowed() above is the rule for the thunks' own writes, and its
+   0x140-0x18F is where the emulator writes those stubs.) */
+static inline BOOL m68k_guest_write_guarded(struct M68KEmuContext *ctx, ULONG addr, ULONG size)
+{
+    return ctx->low_guard && size &&
+        (addr < 8 || (addr < 0x1C0 && (addr >= 0x100 || size > 0x100 - addr)));
 }
 
 static inline void m68k_write16(struct M68KEmuContext *ctx, ULONG addr, UWORD val)

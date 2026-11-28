@@ -33,6 +33,7 @@ struct M68KEmuContext
     LONG forbid, disable;
     ULONG m68k_sysbase;
     struct SignalSemaphore gil;
+    ULONG pubports[16];     /* the program's AddPort()ed ports: none here */
 };
 struct TestCPU { ULONG d[8], a[8]; };
 #define THUNK_A(n) (((struct TestCPU *)cpu)->a[n])
