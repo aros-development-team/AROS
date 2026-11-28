@@ -953,7 +953,7 @@ RastPort, ColorMap, BitMap), `m68k_drawinfo_extras()` (pens, font),
 ## Shadow Struct Layouts
 
 `m68kemu_shadow_layouts.h` is generated and holds 297 layouts
-(`SHADOW_GEN_LAYOUT_COUNT`) with 3,171 field mappings; on a 64-bit target 1,297
+(`SHADOW_GEN_LAYOUT_COUNT`) with 3,169 field mappings; on a 64-bit target 1,295
 are `SF_PTR`, 573 `SF_LONG`, 754 `SF_WORD` and 547 `SF_BYTE`. Only the m68k
 offsets are numbers. Each row is `SHADOW_FIELD(m68k offset, m68k size, Struct,
 member)`, and the compiler of the target fills in the native side: the offset by
@@ -970,7 +970,7 @@ them) thereby has the layout of the build. Format of the header comments: Name
 | GfxBase | 552B | 102 | graphics |
 | ExecBase | 632B | 65 | exec |
 | Screen | 346B | 62 | intuition |
-| Process | 228B | 56 | exec |
+| Process | 228B | 55 | exec |
 | Preferences | 232B | 48 | intuition |
 | Locale | 168B | 42 | locale |
 | ConUnit | 296B | 42 | devices |
@@ -978,7 +978,7 @@ them) thereby has the layout of the build. Format of the header comments: Name
 | PrtInfo | 128B | 37 | devices |
 | PrinterData | 6842B | 31 | devices |
 | ColorTextFont | 96B | 29 | graphics |
-| Task | 92B | 28 | exec |
+| Task | 92B | 27 | exec |
 
 ### Complete List
 
@@ -987,9 +987,15 @@ The full list is the `shadow_gen_layouts[]` table at the end of
 
 ### Missing Structs
 
-`m68k_offsets.txt` describes 298 structs in 3,314 field lines. 3,171 of them name
-a native member and are mapped; the other 143 are not, among them the six of
+`m68k_offsets.txt` describes 298 structs in 3,314 field lines. 3,169 of them name
+a native member and are mapped; the other 145 are not, among them the six of
 **RegionRectangle**, the one struct without a layout.
+
+`tc_UserData` of Task and Process is left without a member on purpose. The field
+belongs to the task: the m68k one is the program's, and the native one of a
+process that runs 68k code is m68kemu's own pointer. With no row, no sync of a
+Task writes it. `shadow_init_execbase()` clears it in the root Process
+(`M68K_TC_USERDATA`), whose block the heap does not clear.
 
 ## 68k Libraries and Relocations
 
@@ -1216,7 +1222,8 @@ native member is 8 bytes wide, so on a 32-bit target no field would be one;
 
 The checked-in file is not one run of the extractor. 41 of its lines were rows
 of the header before they were lines of the file, and 143 lines name no member
-because the header never carried them. New lines are merged into it; a plain
+because the header never carried them; the two `tc_UserData` lines name none on
+purpose (see Missing Structs). New lines are merged into it; a plain
 replacement would change which fields a program sees.
 
 ## Diagnostics

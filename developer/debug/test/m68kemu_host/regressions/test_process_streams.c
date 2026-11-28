@@ -63,7 +63,7 @@ static unsigned captured_count;
 static struct Process third;
 static int dummy[2];
 static unsigned logs,heap_frees,select_in_calls,select_out_calls;
-static BOOL heap_fail,missing_task_layout;
+static BOOL heap_fail,heap_dirty,missing_task_layout;
 static ULONG heap_freed_addr,heap_freed_size,cpu_d[8];
 static BPTR last_selected;
 #define THUNK_D(n) (((ULONG *)cpu)[n])
@@ -86,8 +86,9 @@ static void m68k_write32(struct M68KEmuContext *ctx,ULONG a,ULONG v) {
     ctx->mem[a+2]=(UBYTE)(v>>8);ctx->mem[a+3]=(UBYTE)v;
 }
 static ULONG M68KEmu_HeapAlloc(struct M68KEmuContext *ctx,ULONG n,ULONG flags) {
-    ULONG a=ctx->bump;(void)flags;if(heap_fail)return 0;n=(n+3)&~3u;assert(a+n<=sizeof(ctx->mem));
-    ctx->bump+=n;memset(ctx->mem+a,0,n);return a;
+    ULONG a=ctx->bump;if(heap_fail)return 0;n=(n+3)&~3u;assert(a+n<=sizeof(ctx->mem));
+    /* The actual heap clears a block only when asked to. */
+    ctx->bump+=n;memset(ctx->mem+a,heap_dirty&&!(flags&MEMF_CLEAR)?0xa5:0,n);return a;
 }
 static void M68KEmu_HeapFree(struct M68KEmuContext *ctx,ULONG a,ULONG n) {(void)ctx;++heap_frees;heap_freed_addr=a;heap_freed_size=n;}
 static struct Task *FindTask(const void *name) {(void)name;return current;}
@@ -101,11 +102,20 @@ static const struct M68KStructLayout *shadow_find_layout(const char *name) {
 static void m68k_log(struct M68KEmuContext *ctx,const char *format,...) {(void)ctx;(void)format;++logs;}
 /* The registry is the actual one: its entries carry the stream state. */
 #include "registry.inc"
+/* The rows of the actual generated Task layout, which ends before every
+   Process stream. */
+static const struct {unsigned off,size;} task_rows[]={
+#include "task-rows.inc"
+};
 static void shadow_sync(struct M68KEmuContext *ctx,const struct M68KStructLayout *layout,
                         ULONG a,void *native) {
+    unsigned i;
     (void)layout;(void)native;assert(a+92<=sizeof(ctx->mem));
-    /* The actual Task layout ends before every Process stream. */
-    memset(ctx->mem+a,0,92);
+    /* The sync writes the fields that have a row and no other byte. A
+       native task holds a host pointer in tc_UserData: a layout with a
+       row for it hands the program that pointer's bits on every sync. */
+    for(i=0;i<sizeof(task_rows)/sizeof(task_rows[0]);i++)
+        memset(ctx->mem+a+task_rows[i].off,task_rows[i].off==M68K_TC_USERDATA?0xde:0,task_rows[i].size);
 }
 static void m68k_task_stack(struct M68KEmuContext *ctx,ULONG a,struct Task *task) {(void)ctx;(void)a;(void)task;}
 #include "handles.inc"
@@ -167,7 +177,7 @@ static void reset(struct M68KEmuContext *ctx) {
     creates=executes=unlocks=messages_enqueued=wb_done=restores=newproc_fail=execbase_fail=caller_stream_closes=captured_count=0;
     memset(&third,0,sizeof(third));third.pr_Task.tc_Node.ln_Type=NT_PROCESS;
     third.pr_CIS=UINT64_C(0x1100000110);third.pr_COS=UINT64_C(0x1200000120);third.pr_CES=UINT64_C(0x1300000130);
-    logs=heap_frees=select_in_calls=select_out_calls=0;heap_fail=missing_task_layout=FALSE;
+    logs=heap_frees=select_in_calls=select_out_calls=0;heap_fail=heap_dirty=missing_task_layout=FALSE;
     heap_freed_addr=heap_freed_size=0;last_selected=0;memset(cpu_d,0,sizeof(cpu_d));
 }
 static void release(struct M68KEmuContext *ctx) {free(ctx->handles);ctx->handles=NULL;}
@@ -352,8 +362,37 @@ static void test_ownership(void) {
     release(&ctx);
     printf("GROUP ownership: %u failed\n",failures-before);
 }
+/* tc_UserData is the task's own (exec/tasks.h): a value the program puts in
+   its own Task, or in another one's, is still there after FindTask() refreshes
+   the m68k Task from the native one, which keeps its own pointer there. The
+   Task layout has no row for it, so no sync writes it; the heap hands out
+   blocks it did not clear, as the actual one does. */
+static void test_userdata(void) {
+    struct M68KEmuContext ctx;unsigned before=failures;ULONG a,b,c;
+    reset(&ctx);heap_dirty=TRUE;strcpy(ctx.program_name,"io-fixture");initial_process_projection(&ctx,0x80);a=ctx.m68k_proc;
+    check(a&&read32(&ctx,a+M68K_TC_USERDATA)==0,"the root Process starts with 0 in a block the heap did not clear");
+    release(&ctx);
+    a=start(&ctx);heap_dirty=TRUE;
+    m68k_write32(&ctx,a+M68K_TC_USERDATA,0x13572468);
+    check(m68k_process_of(&ctx,current)==a&&read32(&ctx,a+M68K_TC_USERDATA)==0x13572468,"own Process keeps its tc_UserData across FindTask");
+    m68k_write32(&ctx,a+M68K_TC_USERDATA,0);refresh(&ctx,current,2);
+    check(read32(&ctx,a+M68K_TC_USERDATA)==0,"a value cleared back to 0 stays 0, not the native pointer");
+    m68k_write32(&ctx,a+M68K_TC_USERDATA,0x13572468);
+    b=m68k_process_of(&ctx,&other.pr_Task);
+    check(b&&read32(&ctx,b+M68K_TC_USERDATA)==0,"a new shadow of another Process starts with 0, not its native tc_UserData");
+    m68k_write32(&ctx,b+M68K_TC_USERDATA,0x2468ace0);
+    refresh(&ctx,&other.pr_Task,2);refresh(&ctx,current,2);
+    check(m68k_process_of(&ctx,&other.pr_Task)==b&&read32(&ctx,b+M68K_TC_USERDATA)==0x2468ace0,"another Process keeps its own value, same identity");
+    check(m68k_process_of(&ctx,current)==a&&read32(&ctx,a+M68K_TC_USERDATA)==0x13572468,"the own value is unchanged by the other's");
+    c=m68k_process_of(&ctx,&only_task);
+    check(c&&c!=a&&c!=b&&read32(&ctx,c+M68K_TC_USERDATA)==0,"a plain Task's new shadow starts with 0 too");
+    m68k_write32(&ctx,c+M68K_TC_USERDATA,0x0badf00d);refresh(&ctx,&only_task,2);
+    check(m68k_process_of(&ctx,&only_task)==c&&read32(&ctx,c+M68K_TC_USERDATA)==0x0badf00d,"and keeps what the program put there");
+    release(&ctx);
+    printf("GROUP userdata: %u failed\n",failures-before);
+}
 int main(void) {
-    test_launches();test_projections();test_ownership();
+    test_launches();test_projections();test_ownership();test_userdata();
     printf("process streams: %u checks, %u failed\n",checks,failures);
     return failures?1:0;
 }

@@ -2578,7 +2578,7 @@ OFF|Process|lh_Tail|78|4|pr_Task.tc_MemEntry.lh_Tail|
 OFF|Process|lh_TailPred|82|4|pr_Task.tc_MemEntry.lh_TailPred|
 OFF|Process|lh_Type|86|1|pr_Task.tc_MemEntry.lh_Type|
 OFF|Process|l_pad|87|1|pr_Task.tc_MemEntry.l_pad|
-OFF|Process|tc_UserData|88|4|pr_Task.tc_UserData|
+OFF|Process|tc_UserData|88|4|
 OFF|Process|mp_Flags|106|1|pr_MsgPort.mp_Flags|
 OFF|Process|mp_SigBit|107|1|pr_MsgPort.mp_SigBit|
 OFF|Process|mp_SigTask|108|4|pr_MsgPort.mp_SigTask|
@@ -3151,7 +3151,7 @@ OFF|Task|lh_Tail|78|4|tc_MemEntry.lh_Tail|
 OFF|Task|lh_TailPred|82|4|tc_MemEntry.lh_TailPred|
 OFF|Task|lh_Type|86|1|tc_MemEntry.lh_Type|
 OFF|Task|l_pad|87|1|tc_MemEntry.l_pad|
-OFF|Task|tc_UserData|88|4|tc_UserData|
+OFF|Task|tc_UserData|88|4|
 SIZ|Task|92|exec/tasks.h|
 OFF|TextAttr|ta_Name|0|4|ta_Name|
 OFF|TextAttr|ta_YSize|4|2|ta_YSize|

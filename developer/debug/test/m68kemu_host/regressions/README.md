@@ -270,7 +270,7 @@ native selectors, the layouts, the allocations and the tag capture; guest
 thunks do not use their CPU argument: the fixture switches the
 unused-parameter warning off around that one include and nowhere else.
 
-The fixture runs 105 checks in three groups. The 32 launch checks cover a
+The fixture runs 113 checks in four groups. The 32 launch checks cover a
 child on the synchronous route that inherits the caller's 64-bit input,
 output and error streams, also when the error stream is NULL or is the
 output stream, with the lifecycle tags unchanged and no stream marked for
@@ -311,9 +311,21 @@ that has no Task layout, is not published and its guest block is released,
 as when there is no guest memory. No check of this group stands inside a
 loop.
 
+The 8 userdata checks cover `tc_UserData`, which belongs to the task
+(exec/tasks.h) and has no row in the Task layout. The runner takes the rows
+of the actual generated Task table, and the fixture's sync writes those
+fields and no other byte; a row for `tc_UserData`, where a tree has one, gets
+a native pointer's bits, as the shadow sync of a native task gives it. The
+fixture's heap hands out blocks it did not clear, as the actual one does. The
+root Process starts with 0 there. A value the program stores in its own
+Process, and 0 stored back, stay through `FindTask()` refreshes; a new
+shadow of another Process and of a plain Task starts with 0, not the native
+value, and each keeps what the program stores there, independently of the
+others.
+
 The fixture prints a `FAIL:` line for a failed check, one
 `GROUP <name>: <n> failed` line per group and a final
-`process streams: 105 checks, <n> failed` line. Its exit status is 1 when
+`process streams: 113 checks, <n> failed` line. Its exit status is 1 when
 any check failed, which make reports as an error. The launch and
 projection groups test the behaviour that the Process stream change
 introduces: on a tree without that change the runner still prepares the
@@ -321,7 +333,10 @@ sources, without the stream helper, and checks in both groups fail. The
 ownership group tests the rule that a refresh leaves a stored value alone:
 on a tree whose refresh rewrites the fields every time, and whose
 selectors are the generated ones, checks of that group fail and the other
-two groups pass. Sanitized runs disable leak detection by default;
+two groups pass. On a tree whose Task layout has a row for `tc_UserData` and
+whose refresh does not put the program's value back, 7 of the userdata checks
+fail; on one that does not clear the field in the root Process, the first one
+fails. Sanitized runs disable leak detection by default;
 `ASAN_OPTIONS` can override it.
 
 `--prepare-only --build-dir /tmp/process-streams` emits the actual
@@ -702,6 +717,9 @@ in three steps.
 The checked-in header must be, byte for byte, what `gen_shadow_layouts.py`
 writes from `m68k_offsets.txt`, and every row of its tables must be a
 `SHADOW_FIELD()` row or the end entry, so that no native offset is a number.
+The two `tc_UserData` lines of `m68k_offsets.txt`, of Task and of Process, must
+name no member, and the header must have no row for the field: it belongs to
+the task, so no sync may write it.
 
 `gen_offset_extractor.py`, run over the sample header as its NDK, must name
 in each probe the member it probes and in each size line the header of the

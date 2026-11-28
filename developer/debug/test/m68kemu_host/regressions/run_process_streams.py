@@ -84,6 +84,19 @@ def prepare(source, output):
     ces = re.findall(r'^#define\s+M68K_PR_CES\s+(\d+)', offsets.read_text(), re.M)
     assert not ces or ces == ['224'], ces
     constants.append('#define M68K_PR_CES 224')
+    # tc_UserData has its own name where the tree clears it by name.
+    userdata = re.findall(r'^#define\s+M68K_TC_USERDATA\s+(\d+)', offsets.read_text(), re.M)
+    assert not userdata or userdata == ['88'], userdata
+    constants.append('#define M68K_TC_USERDATA 88')
+    # The rows of the actual generated Task layout. The fixture's sync
+    # writes these m68k fields and no other byte, as the engine does.
+    table = re.search(r'static const struct M68KFieldMap shadow_fields_Task\[\] = \{\n(.*?)\n\};',
+                      layouts.read_text(), re.S)
+    assert table, 'm68kemu_shadow_layouts.h: the Task table was not found'
+    rows = re.findall(r'^    SHADOW_FIELD\(\s*(\d+), ([124]), Task, [\w.]+\),$', table[1], re.M)
+    assert rows and len(rows) + 1 == len(table[1].splitlines()), 'a row of Task is not SHADOW_FIELD()'
+    assert all(int(off) + int(size) <= 92 for off, size in rows), rows
+    (output / 'task-rows.inc').write_text(''.join('    {%s, %s},\n' % row for row in rows))
     # Input (LVO -54) and Output (-60) are manual thunks. SelectInput (-294)
     # and SelectOutput (-300): the manual thunks when the tree registers
     # them, else the generated ones that the generated table registers.
@@ -164,6 +177,8 @@ def prepare(source, output):
         manual_registration={str(lvo): found for lvo, found in registered.items()},
         manual_dispatch_precedes_generated=True,
         process_forget_selected=has_forget,
+        task_layout_rows=len(rows),
+        task_layout_has_userdata_row=('88', '4') in rows,
         actual_functions=handles + ['setup_and_execute', 'm68k_process_of'] + registry +
                          (['m68k_process_streams'] if has_helper else []) +
                          (['m68k_process_stream_selected'] if has_selected else []) +

@@ -32,6 +32,12 @@
 #define M68K_SIZEOF_NODE            14
 #define M68K_SIZEOF_RESIDENT        26
 
+/* ── Task struct offsets (m68k) ──────────────────────────────────── */
+
+/* The task's own field (exec/tasks.h). It has no row in the shadow layouts:
+   the m68k one is the program's, the native one m68kemu's. */
+#define M68K_TC_USERDATA            88
+
 /* ── Process struct offsets (m68k) ───────────────────────────────── */
 
 #define M68K_PR_SEGLIST             128

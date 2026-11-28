@@ -28,7 +28,7 @@ extern ULONG shadow_register(struct M68KEmuContext *ctx, ULONG m68k_addr, void *
 extern void *shadow_lookup(struct M68KEmuContext *ctx, ULONG m68k_addr);
 extern void  shadow_remove(struct M68KEmuContext *ctx, ULONG m68k_addr);
 
-/* ── Generated layout tables (297 structs, 3171 fields) ── */
+/* ── Generated layout tables (297 structs, 3169 fields) ── */
 /*
  * An SMP exec keeps the running task, the quantum and the nest counts per
  * CPU. ExecBase has placeholders of the same size and position there.
@@ -705,6 +705,9 @@ ULONG shadow_init_execbase(struct M68KEmuContext *ctx, ULONG m68k_base, void *na
         if (m68k_proc)
         {
             shadow_sync(ctx, tl, m68k_proc, task);
+            /* tc_UserData is the program's own and no layout row writes it:
+               it starts with 0, in a block the heap does not clear */
+            m68k_write32(ctx, m68k_proc + M68K_TC_USERDATA, 0);
             m68k_task_stack(ctx, m68k_proc, task);
             /* Set pr_CLI if running from CLI — build a real m68k CLI struct */
             if (task->tc_Node.ln_Type == NT_PROCESS)

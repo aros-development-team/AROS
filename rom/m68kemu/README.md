@@ -194,7 +194,7 @@ public AmigaOS structs across exec, dos, intuition, graphics, utility, workbench
 devices, libraries, resources, and datatypes. The offset extractor recurses into
 embedded sub-structs (Node, Message, IORequest, Task, etc.) to map every scalar
 leaf field at its actual offset. The most thoroughly mapped structs include
-GfxBase (65 fields), Screen (62), Process (56), Window (26), ColorMap (19),
+GfxBase (65 fields), Screen (62), Process (55), Window (26), ColorMap (19),
 and IOStdReq (16). See [INTERNALS.md](INTERNALS.md) for the complete struct list.
 
 The `OpenScreen` and `OpenWindow` thunks create shadows with properly wired
@@ -382,7 +382,7 @@ within the emulator.
 |------|-------------|
 | `m68kemu_shadow.h` | Field type enums (SF_BYTE/WORD/LONG/PTR), M68KFieldMap, M68KStructLayout |
 | `m68kemu_shadow.c` | Generic shadow engine: create/sync/destroy with recursive sub-layouts |
-| `m68kemu_shadow_layouts.h` | **Generated**: 297 struct layouts, 3,171 field mappings; native offsets by `offsetof()` |
+| `m68kemu_shadow_layouts.h` | **Generated**: 297 struct layouts, 3,169 field mappings; native offsets by `offsetof()` |
 
 ### Shadow Layout Toolchain
 
