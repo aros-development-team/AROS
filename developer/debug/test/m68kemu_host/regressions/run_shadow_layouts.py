@@ -73,6 +73,14 @@ def check_checked_in(source):
                     'a row of %s is neither SHADOW_FIELD() nor the end entry: %s' % (table, line)
     mapped = len(offsets_of(module / 'm68k_offsets.txt'))
     assert fields == mapped, (fields, mapped)
+    # tc_UserData belongs to the task: the m68k one is the program's and the
+    # native one is not for it. Its lines name no member, so no sync writes it.
+    own = [line.rstrip('|').split('|') for line in (module / 'm68k_offsets.txt').read_text().splitlines()
+           if line.startswith('OFF|') and line.split('|')[2] == 'tc_UserData']
+    assert sorted(parts[1] for parts in own) == ['Process', 'Task'], own
+    assert all(parts[3:] == ['88', '4'] for parts in own), 'a tc_UserData line names a member: %s' % own
+    assert 'tc_UserData' not in header.decode(), 'm68kemu_shadow_layouts.h has a row for tc_UserData'
+    print('tc_UserData: its %d lines name no member and the header has no row for it' % len(own))
     print('checked-in header: %d fields, each a SHADOW_FIELD() row; it is the generator\'s output' % fields)
 
 

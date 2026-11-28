@@ -78,6 +78,10 @@ def prepare(source, output):
     ces = re.findall(r'^#define\s+M68K_PR_CES\s+(\d+)', offsets.read_text(), re.M)
     assert not ces or ces == ['224'], ces
     constants.append('#define M68K_PR_CES 224')
+    # tc_UserData has its own name where the tree clears it by name.
+    userdata = re.findall(r'^#define\s+M68K_TC_USERDATA\s+(\d+)', offsets.read_text(), re.M)
+    assert not userdata or userdata == ['88'], userdata
+    constants.append('#define M68K_TC_USERDATA 88')
     (output / 'constants.inc').write_text('\n'.join(constants) + '\n')
     has_helper = bool(re.search(r'^void m68k_process_streams\(', shadow.read_text(), re.M))
     body = (extract_function(runtime, 'm68k_bptr_out') + '\n' +

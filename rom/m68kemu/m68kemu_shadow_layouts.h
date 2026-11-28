@@ -3364,7 +3364,7 @@ static const struct M68KFieldMap shadow_fields_PrinterSegment[] = {
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* Process: m68k=228B, 56 fields */
+/* Process: m68k=228B, 55 fields */
 static const struct M68KFieldMap shadow_fields_Process[] = {
     SHADOW_FIELD(   0, 4, Process, pr_Task.tc_Node.ln_Succ),
     SHADOW_FIELD(   4, 4, Process, pr_Task.tc_Node.ln_Pred),
@@ -3393,7 +3393,6 @@ static const struct M68KFieldMap shadow_fields_Process[] = {
     SHADOW_FIELD(  82, 4, Process, pr_Task.tc_MemEntry.lh_TailPred),
     SHADOW_FIELD(  86, 1, Process, pr_Task.tc_MemEntry.lh_Type),
     SHADOW_FIELD(  87, 1, Process, pr_Task.tc_MemEntry.l_pad),
-    SHADOW_FIELD(  88, 4, Process, pr_Task.tc_UserData),
     SHADOW_FIELD( 106, 1, Process, pr_MsgPort.mp_Flags),
     SHADOW_FIELD( 107, 1, Process, pr_MsgPort.mp_SigBit),
     SHADOW_FIELD( 108, 4, Process, pr_MsgPort.mp_SigTask),
@@ -4066,7 +4065,7 @@ static const struct M68KFieldMap shadow_fields_TagItem[] = {
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
-/* Task: m68k=92B, 28 fields */
+/* Task: m68k=92B, 27 fields */
 static const struct M68KFieldMap shadow_fields_Task[] = {
     SHADOW_FIELD(   0, 4, Task, tc_Node.ln_Succ),
     SHADOW_FIELD(   4, 4, Task, tc_Node.ln_Pred),
@@ -4095,7 +4094,6 @@ static const struct M68KFieldMap shadow_fields_Task[] = {
     SHADOW_FIELD(  82, 4, Task, tc_MemEntry.lh_TailPred),
     SHADOW_FIELD(  86, 1, Task, tc_MemEntry.lh_Type),
     SHADOW_FIELD(  87, 1, Task, tc_MemEntry.l_pad),
-    SHADOW_FIELD(  88, 4, Task, tc_UserData),
     {    0,    0, SF_END  , 0, 0, NULL }
 };
 
