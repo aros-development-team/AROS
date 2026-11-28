@@ -355,6 +355,14 @@ static IPTR cx_Create(struct M68KEmuContext *ctx, void *cpu)
     case CX_SIGNAL:     return m68k_native_out(ctx, CreateCxObj(type, (IPTR)FindTask(NULL), a2));   /* the program's task is this process */
     case CX_TRANSLATE:  return m68k_native_out(ctx, CreateCxObj(type, 0, 0));                        /* NULL translation: swallow */
     case CX_DEBUG:      return m68k_native_out(ctx, CreateCxObj(type, a1, 0));
+    case CX_CUSTOM:
+        /* The 68k function would be called in the commodities input context,
+           where no 68k code runs (as with 68k input handlers): the object is
+           made without an action. For each message commodities sets the
+           object's ID on it, calls nothing and passes the message on. */
+        m68k_log(ctx, "%s: a 68k commodities custom function is not run",
+                 ctx->program_name[0] ? ctx->program_name : "68k program");
+        return m68k_native_out(ctx, CreateCxObj(type, 0, a2));
     default:
         m68k_log(ctx, "%s: commodities object type %lu needs a 68k callback, not supported yet",
                  ctx->program_name[0] ? ctx->program_name : "68k program", (unsigned long)type);

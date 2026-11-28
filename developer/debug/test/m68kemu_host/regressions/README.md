@@ -964,3 +964,28 @@ production includes without compiling or executing a test. These focused
 checks do not set up a whole ExecBase, run the CPU or any guest code, take a
 real lock, call exec, or qualify a complete library or application; in
 particular they do not show what a program does with the empty lists.
+
+## Commodities objects
+
+Run from the repository root:
+
+```sh
+make -C developer/debug/test/m68kemu_host test-cx-objects
+make -C developer/debug/test/m68kemu_host test-cx-objects-sanitize
+```
+
+The ordinary fixture is part of the host Makefile's `test` target. It needs
+Python 3 and a C++ compiler; ASan/UBSan are optional. `PYTHON` and `CXX`
+select those tools. `CX_OBJECTS_ARGS` passes runner options such as
+`--source-root /path/to/AROS` and `--build-dir /tmp/cx-objects`.
+
+The runner takes the body of the `CreateCxObj` thunk verbatim from
+`m68kemu_math.c` and the `CX_` object types from `libraries/commodities.h`,
+and compiles them with a fixture that records what reaches the native call.
+It checks every object type: the ones passed on with their arguments, the
+ones refused because they need a 68k callback, and `CX_CUSTOM`, which is made
+without an action and keeps its ID, with one log line naming the program.
+
+These checks do not run commodities, the CPU or any guest code; they show
+what the thunk hands to the native function, not what a program then does
+with the object.
