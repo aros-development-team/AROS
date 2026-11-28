@@ -505,6 +505,7 @@ struct BtDevice
     struct BtKeyCfg     bd_Keys;          /* bond keys */
     UBYTE              *bd_SDPCache;      /* SDP records of the last enumeration (SDPC chunk) */
     ULONG               bd_SDPCacheLen;
+    BOOL                bd_SelfReconnect; /* HID: HIDReconnectInitiate, it pages us itself */
     struct BtHWConn    *bd_Conns[2];      /* per-bearer link state: [0]=BR/EDR, [1]=LE (hwconn.c private) */
     /* The address the peer is using right now when it differs from
        bd_Address: a bonded LE peer advertising from a resolvable private

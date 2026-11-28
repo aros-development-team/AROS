@@ -58,6 +58,7 @@ enum {
 
 static void bConnRunEnum(struct BtHWConn *cn);
 static void bConnFinishEnum(struct BtHWConn *cn, LONG error);
+static void bConnSecured(struct BtHWConn *cn);
 static BOOL bHasClassicServices(struct BtDevice *bd);
 static BOOL bHasHIDService(struct BtDevice *bd);
 static struct BtEndpoint * bNextDescEndpoint(struct BtHWConn *cn);
@@ -1049,6 +1050,7 @@ static void bConnUp(struct BtHWConn *cn, UWORD handle, UBYTE role)
     cn->cn_Role = role;
     cn->cn_State = HCNS_CONNECTED;
     cn->cn_NextAttempt = 0;     /* also the tick's authentication retry: set below */
+    cn->cn_AcceptPending = FALSE;
     cn->cn_LastActivity = hc->hc_Tick;
     if(hc->hc_Connecting == cn) {
         hc->hc_Connecting = NULL;
@@ -1178,6 +1180,23 @@ static void bConnUp(struct BtHWConn *cn, UWORD handle, UBYTE role)
      * bConnFinishEnum() releases them, instead of ATT traffic racing the LL
      * encryption. */
     if((cn->cn_EnumState == ENUM_IDLE) && !cn->cn_EncryptPending) {
+        bDispatchWaiting(cn);
+    }
+}
+/* \\\ */
+
+/* /// "bConnSecured()" */
+/* the re-encryption bConnUp() waited for is over: enumerate, or release the
+   requests parked behind it when the services are known already */
+static void bConnSecured(struct BtHWConn *cn)
+{
+    if((cn->cn_State != HCNS_CONNECTED) || (cn->cn_EnumState != ENUM_IDLE)) {
+        return;
+    }
+    if(!cn->cn_Enumerated) {
+        cn->cn_EnumState = (cn->cn_LinkType == BDLT_LE) ? ENUM_GATT_CONNECT : ENUM_SDP_CONNECT;
+        bConnRunEnum(cn);
+    } else {
         bDispatchWaiting(cn);
     }
 }
@@ -1498,6 +1517,28 @@ static struct BtHWConn * bEnsureConnection(struct BtHWCore *hc, struct BtDevice 
         bBgScanBoost(hc);
         return(cn);
     }
+    if((mode == CONN_AUTO) && (linktype == BDLT_ACL) &&
+       ((bd->bd_Flags & (BDFF_REGISTERED|BDFF_BONDED)) == (BDFF_REGISTERED|BDFF_BONDED))) {
+        /* The BR/EDR side of the above. A page to a device that is off
+         * holds the radio, and while it runs the device paging us back is
+         * turned away. So wait for it to connect to us (HC_EVT_CONN_REQUEST
+         * takes this connection); one that does not say it will
+         * (HIDReconnectInitiate) is paged now and then on a doubling
+         * backoff, quietly (bConnTick()). */
+        cn->cn_WaitAdv = TRUE;
+        *pending = TRUE;
+        cn->cn_NextAttempt = bd->bd_SelfReconnect ? 0 :
+            (hc->hc_Tick + (bd->bd_RetryShift ?
+                            (15000UL << ((bd->bd_RetryShift > 5) ? 4 : bd->bd_RetryShift - 1)) : 0)) | 1;
+        if(bd->bd_RetryShift < 15) {
+            bd->bd_RetryShift++;
+        }
+        if(bd->bd_RetryShift == 1) {
+            btAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname),
+                           "Waiting for %s to connect.", bd->bd_Name);
+        }
+        return(cn);
+    }
     /* The radio cannot reliably run an inquiry / LE scan and service a
      * connection's ATT/GATT traffic at the same time, so stop any discovery
      * in progress before we page or initiate the link. */
@@ -1628,6 +1669,7 @@ static void bParseSDPRecord(struct BtBase *BluetoothBase, struct BtDevice *bd, U
     STRPTR name = NULL;
     const UBYTE *hiddesc = NULL;
     UWORD hiddesclen = 0;
+    BOOL selfreconn = FALSE;
     UWORD n;
 
     bt_sdp_element_iter_init(&it, attrs, len);
@@ -1743,6 +1785,9 @@ static void bParseSDPRecord(struct BtBase *BluetoothBase, struct BtDevice *bd, U
                 }
             }
             break;
+        case 0x0205: /* HIDReconnectInitiate */
+            selfreconn = (val.type == BT_SDP_ELEM_BOOL) && val.uint;
+            break;
         case 0x0206: /* HIDDescriptorList: list of { descriptor type, descriptor value } */
             if(val.type == BT_SDP_ELEM_SEQUENCE) {
                 struct bt_sdp_element_iter lit;
@@ -1776,6 +1821,9 @@ static void bParseSDPRecord(struct BtBase *BluetoothBase, struct BtDevice *bd, U
     }
 
     btLockWriteDevice(bd);
+    if(numclassids && (classids[0] == 0x1124)) {
+        bd->bd_SelfReconnect = selfreconn;
+    }
     /* a bound service survived bClearServices(): same class and transport
        endpoint means the same record - refresh it rather than add a twin
        (a twin got btpan bound twice to one unit) */
@@ -2411,10 +2459,14 @@ static void bConnRunEnum(struct BtHWConn *cn)
             /* only the attributes the parser uses - a phone's full records
                (icons, OBEX details, long strings) run to kilobytes:
                ServiceClassIDList, ProtocolDescriptorList,
-               BluetoothProfileDescriptorList, ServiceName, HIDDescriptorList */
-            static const uint8_t attrids[] = { 0x35, 0x0f,
+               BluetoothProfileDescriptorList,
+               AdditionalProtocolDescriptorLists (HID interrupt PSM 0x13),
+               ServiceName, HIDReconnectInitiate, HIDDescriptorList
+               (a change here needs a new BT_SDPCACHE_FORMAT) */
+            static const uint8_t attrids[] = { 0x35, 0x15,
                 0x09, 0x00, 0x01, 0x09, 0x00, 0x04, 0x09, 0x00, 0x09,
-                0x09, 0x01, 0x00, 0x09, 0x02, 0x06 };
+                0x09, 0x00, 0x0d, 0x09, 0x01, 0x00, 0x09, 0x02, 0x05,
+                0x09, 0x02, 0x06 };
             if(bt_sdp_client_get_attributes(&cn->cn_SDP, cn->cn_EnumHandles[cn->cn_EnumIndex], 2048,
                                             attrids, sizeof(attrids), bSDPEnumCB, cn, now) != BT_OK) {
                 bConnFinishEnum(cn, BTIOERR_HOSTERROR);
@@ -3381,7 +3433,21 @@ BOOL bConnHandleEvent(struct BtHWCore *hc, UBYTE code, const UBYTE *params, ULON
             }
             cn->cn_Role = BDR_PERIPHERAL;
         }
-        if(status) {
+        if(status && cn->cn_AcceptPending) {
+            /* our page, cancelled for the peer's: take that one now */
+            UBYTE reply[7];
+            cn->cn_AcceptPending = FALSE;
+            if(hc->hc_Connecting == cn) {
+                hc->hc_Connecting = NULL;
+            }
+            cn->cn_Role = BDR_PERIPHERAL;
+            cn->cn_Reason = 0;
+            cn->cn_LastActivity = hc->hc_Tick;
+            CopyMem((APTR) &params[3], reply, 6);
+            reply[6] = 0x01; /* remain peripheral */
+            bSubmitCmd(hc, HC_OP_ACCEPT_CONN_REQ, reply, 7, bIgnoreCompletion, hc);
+            bStartNextConnect(hc);
+        } else if(status) {
             bConnDown(cn, BTIOERR_CONNFAILED, status);
             bStartNextConnect(hc);
         } else {
@@ -3436,6 +3502,28 @@ BOOL bConnHandleEvent(struct BtHWCore *hc, UBYTE code, const UBYTE *params, ULON
             }
         }
         CopyMem((APTR) params, reply, 6);
+        if(accept && bd && (cn = bd->bd_Conns[0]) && (cn->cn_State == HCNS_CONNECTING) && !cn->cn_Handle) {
+            if(cn->cn_WaitAdv || (cn->cn_Role == BDR_NONE)) {
+                /* nothing of ours in flight: the link a class waits for */
+                cn->cn_WaitAdv = FALSE;
+                cn->cn_Role = BDR_PERIPHERAL;
+                cn->cn_LastActivity = hc->hc_Tick;
+                reply[6] = 0x01; /* remain peripheral */
+                btAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname),
+                               "%s is connecting to us.", bd->bd_Name);
+                bSubmitCmd(hc, HC_OP_ACCEPT_CONN_REQ, reply, 7, bIgnoreCompletion, hc);
+                return(TRUE);
+            }
+            if((hc->hc_Connecting == cn) && !cn->cn_AcceptPending) {
+                /* our page to it is still out: cancel it, and accept once
+                   its Connection Complete says it is gone */
+                cn->cn_AcceptPending = TRUE;
+                btAddErrorMsg(RETURN_OK, (STRPTR) GM_UNIQUENAME(libname),
+                               "%s is connecting to us - cancelling our page.", bd->bd_Name);
+                bSubmitCmd(hc, HC_OP_CREATE_CONN_CANCEL, bd->bd_Address.bd_Addr, 6, bIgnoreCompletion, hc);
+                return(TRUE);
+            }
+        }
         if(accept && bd && !bd->bd_Conns[0]) {
             cn = bAllocConn(hc, bd, BDLT_ACL);
             if(cn) {
@@ -3544,11 +3632,7 @@ BOOL bConnHandleEvent(struct BtHWCore *hc, UBYTE code, const UBYTE *params, ULON
                                    (cn->cn_LinkType == BDLT_LE) ? "LE" : "link",
                                    btNumToStr(BNTS_HCISTATUS, params[0], "unknown"));
                 }
-                /* the enumeration bConnUp() held back can run now */
-                if(!cn->cn_Enumerated && (cn->cn_EnumState == ENUM_IDLE) && (cn->cn_State == HCNS_CONNECTED)) {
-                    cn->cn_EnumState = (cn->cn_LinkType == BDLT_LE) ? ENUM_GATT_CONNECT : ENUM_SDP_CONNECT;
-                    bConnRunEnum(cn);
-                }
+                bConnSecured(cn);
             }
             if(cn->cn_Encrypted && !was && (cn->cn_LinkType == BDLT_LE) && !cn->cn_SMPActive) {
                 /* protected characteristics (HID report maps...) are readable now: let the classes retry */
@@ -3595,18 +3679,12 @@ BOOL bConnHandleEvent(struct BtHWCore *hc, UBYTE code, const UBYTE *params, ULON
                 btAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
                                "%s: the stored link key was rejected (%s) - remove the device and pair it again.",
                                cn->cn_Device->bd_Name, btNumToStr(BNTS_HCISTATUS, params[0], "unknown"));
-                if(!cn->cn_Enumerated && (cn->cn_EnumState == ENUM_IDLE) && (cn->cn_State == HCNS_CONNECTED)) {
-                    cn->cn_EnumState = ENUM_SDP_CONNECT;
-                    bConnRunEnum(cn);
-                }
+                bConnSecured(cn);
             } else if(cn->cn_Encrypted) {
                 /* the peer authenticated and encrypted the link before our
                    own request went through: nothing left to switch on */
                 cn->cn_EncryptPending = FALSE;
-                if(!cn->cn_Enumerated && (cn->cn_EnumState == ENUM_IDLE) && (cn->cn_State == HCNS_CONNECTED)) {
-                    cn->cn_EnumState = ENUM_SDP_CONNECT;
-                    bConnRunEnum(cn);
-                }
+                bConnSecured(cn);
             } else {
                 UBYTE p[3];
                 p[0] = handle & 0xff;
@@ -4551,8 +4629,9 @@ static void bConnClassicTick(struct BtHWCore *hc)
         LONG err;
         if(((bd->bd_Flags & (BDFF_CLASSIC|BDFF_REGISTERED|BDFF_BONDED)) !=
             (BDFF_CLASSIC|BDFF_REGISTERED|BDFF_BONDED)) ||
-           !bd->bd_PoPoCfg.bpc_AutoConnect || bd->bd_AutoHold || bd->bd_Conns[0]) {
-            continue;
+           !bd->bd_PoPoCfg.bpc_AutoConnect || bd->bd_AutoHold || bd->bd_Conns[0] ||
+           bd->bd_SelfReconnect) {
+            continue;   /* (a device that pages us itself is not paged) */
         }
         if((LONG) (hc->hc_Tick - bd->bd_NextAttempt) < 0) {
             continue;
@@ -4592,6 +4671,21 @@ void bConnTick(struct BtHWCore *hc)
                must not hang whoever asked for the connection: cancel after
                10 s, and give up outright if even the cancel gets no answer */
             LONG waited = (LONG) (hc->hc_Tick - cn->cn_LastActivity);
+            if(cn->cn_WaitAdv && (cn->cn_LinkType == BDLT_ACL)) {
+                /* waiting for the peer to connect to us: on the backoff
+                   deadline page it once, without filling the log */
+                if(cn->cn_NextAttempt && ((LONG) (hc->hc_Tick - cn->cn_NextAttempt) >= 0)) {
+                    if(!hc->hc_Connecting && !(hc->hc_Hardware->bth_Flags & BTHF_DISCOVERING)) {
+                        cn->cn_WaitAdv = FALSE;
+                        cn->cn_AutoRetry = TRUE;
+                        cn->cn_LastActivity = hc->hc_Tick;
+                        bStartNextConnect(hc);
+                    } else {
+                        cn->cn_NextAttempt = hc->hc_Tick + 5000; /* radio busy: look again soon */
+                    }
+                }
+                continue;
+            }
             if(cn->cn_WaitAdv) {
                 /* waiting for an advert; on the backoff deadline try one
                    direct connect (the controller then listens for that peer
@@ -4663,10 +4757,7 @@ void bConnTick(struct BtHWCore *hc)
             btAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname),
                            "%s: no answer to the encryption request - continuing %s.",
                            cn->cn_Device->bd_Name, cn->cn_Encrypted ? (STRPTR) "encrypted" : (STRPTR) "unencrypted");
-            if(!cn->cn_Enumerated && (cn->cn_EnumState == ENUM_IDLE)) {
-                cn->cn_EnumState = (cn->cn_LinkType == BDLT_LE) ? ENUM_GATT_CONNECT : ENUM_SDP_CONNECT;
-                bConnRunEnum(cn);
-            }
+            bConnSecured(cn);
         }
         if(cn->cn_NextAttempt &&
            ((cn->cn_PairState == PAIR_AUTH) || cn->cn_EncryptPending) &&

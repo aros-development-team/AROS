@@ -312,10 +312,12 @@ struct BtHWConn
     UBYTE               cn_SMPLTK[16];    /* key handed to LE Start Encryption (HCI byte order) */
     ULONG               cn_LastActivity;
     /* HCNS_CONNECTING without an HCI connect in flight: a class wants the
-       (bonded, sleeping) LE peer and the background scan connects as soon as
-       it advertises - no 10 s timeout, no controller time wasted paging. */
+       (bonded, sleeping) peer. LE: the background scan connects as soon as
+       it advertises. BR/EDR: the peer connects to us, or is paged at
+       cn_NextAttempt - no 10 s timeout, no controller time wasted paging. */
     BOOL                cn_WaitAdv;
     ULONG               cn_NextAttempt;   /* hc_Tick: while waiting, when to try a direct connect */
+    BOOL                cn_AcceptPending; /* our page is being cancelled for the peer's own */
     /* an unattended page from bConnClassicTick(): failures are expected
        (the peer may simply be away) - keep them out of the log and off the
        device's dead-count */
