@@ -898,6 +898,43 @@ production includes without compiling or executing a test. These focused
 checks do not create a native process, take a real lock, execute the CPU or
 any guest code, or qualify a complete library or application.
 
+## BOOPSI class storage
+
+Run from the repository root:
+
+```sh
+make -C developer/debug/test/m68kemu_host test-class-storage
+make -C developer/debug/test/m68kemu_host test-class-storage-sanitize
+```
+
+The ordinary fixture is part of the host Makefile's `test` target; the
+sanitizer target is optional. `PYTHON` and `CXX` select the tools and
+`CLASS_STORAGE_ARGS` passes runner options such as `--build-dir`.
+
+The runner extracts `class_slot`, `class_room`, `class_drop` and `class_rec`
+from `m68kemu_boopsi.c` and the two class block constants from
+`m68kemu_intern.h`. The records of the classes a 68k program makes live in a
+first block in the context and in more blocks allocated as the program makes
+more classes. The fixture makes classes past the first block and up to the
+limit, checks that a record never moves while the table grows (its native
+class keeps the record's address in its dispatcher hook), that freeing a
+class moves the last record into the freed slot together with its hook, that
+an allocation failure and the limit refuse cleanly, and that the blocks are
+given back.
+
+The runner also extracts `m68k_MakeClass` itself, with the size of a class,
+the offset of its ID and its shadow type. Every class takes an entry in the
+shadow table, which it shares with objects, ports and tasks. With that table
+full the fixture checks that `MakeClass()` returns 0, that the native class,
+the block of the program's memory and the copy of the name are each freed
+once, that no record is made and the classes made before are unchanged, and
+that the class is made once an entry is free again; the same on the 33rd
+class, where the new block of records is kept and used later. The registers
+are a plain structure and what `MakeClass()` calls counts its calls.
+
+No CPU and no native BOOPSI run. It prints `m68kemu class storage: <checks>
+checks, <n> failed` and exits with 1 when a check failed.
+
 ## ExecBase lists and scheduler fields of the program
 
 Run from the repository root:

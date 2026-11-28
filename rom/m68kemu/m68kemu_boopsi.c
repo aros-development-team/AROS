@@ -89,12 +89,51 @@ static struct M68KBoopsiObj *bobj_of(struct M68KEmuContext *ctx, ULONG m68k)
     return NULL;
 }
 
+/* The record of the i-th class the program made (i < num_m68kclasses, or
+   the next one once class_room() said there is room) */
+static struct M68KClassRec *class_slot(struct M68KEmuContext *ctx, UWORD i)
+{
+    return i < M68KEMU_CLASS_BLOCK ? &ctx->m68kclasses[i]
+                                   : &ctx->m68kclass_more[i / M68KEMU_CLASS_BLOCK - 1][i % M68KEMU_CLASS_BLOCK];
+}
+
+/* Room for one more class: a new block of records when the last is full.
+   FALSE, with nothing changed, at the last block or without memory for one;
+   the records there are stay where they are either way. */
+static BOOL class_room(struct M68KEmuContext *ctx)
+{
+    UWORD n = ctx->num_m68kclasses, b = n / M68KEMU_CLASS_BLOCK;
+
+    if (n >= M68KEMU_CLASS_BLOCK * M68KEMU_CLASS_BLOCKS)
+        return FALSE;
+    if (b && !ctx->m68kclass_more[b - 1] &&
+        !(ctx->m68kclass_more[b - 1] = (struct M68KClassRec *)AllocVec(M68KEMU_CLASS_BLOCK * sizeof(struct M68KClassRec),
+                                                                       MEMF_ANY | MEMF_CLEAR)))
+        return FALSE;
+    return TRUE;
+}
+
+/* The record of a freed class goes: the last record takes its place, and the
+   hook of its class follows it. A block emptied this way is kept for reuse. */
+static void class_drop(struct M68KEmuContext *ctx, struct M68KClassRec *rec)
+{
+    struct M68KClassRec *last = class_slot(ctx, --ctx->num_m68kclasses);
+
+    *rec = *last;
+    if (rec != last)
+        rec->native->cl_Dispatcher.h_Data = rec;
+}
+
 /* a class the program made, and the body its objects need */
 static struct M68KClassRec *class_rec(struct M68KEmuContext *ctx, Class *cl)
 {
     for (UWORD i = 0; cl && i < ctx->num_m68kclasses; i++)
-        if (ctx->m68kclasses[i].native == cl)
-            return &ctx->m68kclasses[i];
+    {
+        struct M68KClassRec *r = class_slot(ctx, i);
+
+        if (r->native == cl)
+            return r;
+    }
     return NULL;
 }
 
@@ -1116,6 +1155,8 @@ void m68k_boopsi_cleanup(struct M68KEmuContext *ctx)
             CloseLibrary(ctx->clibs[i].native);
     for (int i = 0; i < M68KEMU_MAX_BLISTS; i++)
         FreeVec(ctx->blists[i].native);
+    for (int i = 0; i < M68KEMU_CLASS_BLOCKS - 1; i++)
+        FreeVec(ctx->m68kclass_more[i]);
 }
 
 /* ---------------------------------------------------------------------- */
@@ -1259,7 +1300,7 @@ IPTR m68k_MakeClass(struct M68KEmuContext *ctx, void *cpu)
     ULONG off;
 
     boopsi_init(ctx);
-    if ((THUNK_A(2) && !super) || ctx->num_m68kclasses >= sizeof(ctx->m68kclasses) / sizeof(ctx->m68kclasses[0]))
+    if ((THUNK_A(2) && !super) || !class_room(ctx))
         return 0;
     if (mid && mid < ctx->mem_size && (id = AllocVec(strlen((char *)ctx->mem + mid) + 1, MEMF_ANY)))
         strcpy(id, (char *)ctx->mem + mid);
@@ -1286,7 +1327,16 @@ IPTR m68k_MakeClass(struct M68KEmuContext *ctx, void *cpu)
     m68k_write16(ctx, mc + 32, off);
     m68k_write16(ctx, mc + 34, size);
 
-    rec = &ctx->m68kclasses[ctx->num_m68kclasses++];
+    /* the shadow table is shared with objects, ports and tasks and may be full:
+       without its entry the program could neither use nor free the class */
+    if (!shadow_register(ctx, mc, cl, SHADOW_BCLASS))
+    {
+        M68KEmu_HeapFree(ctx, mc, CL_SIZE + 64);
+        FreeClass(cl);
+        FreeVec(id);
+        return 0;
+    }
+    rec = class_slot(ctx, ctx->num_m68kclasses++);
     rec->ctx = ctx;
     rec->m68k = mc;
     rec->native = cl;
@@ -1294,7 +1344,6 @@ IPTR m68k_MakeClass(struct M68KEmuContext *ctx, void *cpu)
     rec->id = id;
     cl->cl_Dispatcher.h_Entry = (HOOKFUNC)m68k_class_hook;
     cl->cl_Dispatcher.h_Data = rec;
-    shadow_register(ctx, mc, cl, SHADOW_BCLASS);
     return mc;
 }
 
@@ -1327,9 +1376,7 @@ IPTR m68k_FreeClass(struct M68KEmuContext *ctx, void *cpu)
     FreeVec(rec->id);
     shadow_remove(ctx, mc);
     M68KEmu_HeapFree(ctx, mc, CL_SIZE + 64);
-    *rec = ctx->m68kclasses[--ctx->num_m68kclasses];
-    if (rec != &ctx->m68kclasses[ctx->num_m68kclasses])
-        rec->native->cl_Dispatcher.h_Data = rec;
+    class_drop(ctx, rec);
     return TRUE;
 }
 
