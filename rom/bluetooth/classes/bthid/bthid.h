@@ -532,6 +532,13 @@ struct BTHidBinding
     struct BtDevice    *nhb_Device;       /* Up linkage */
     struct BtService   *nhb_Service;      /* the HID service bound - NULL for the class defaults */
     BOOL                nhb_Classic;      /* HIDP over L2CAP rather than HID over GATT */
+    APTR                nhb_CtrlCh;       /* HIDP control channel, held open (classic) */
+    APTR                nhb_CtrlRdCh;     /* reads its replies, so they do not pile up */
+    UBYTE               nhb_CtrlBuf[BTHID_MAXREPORT + 2];
+    UBYTE               nhb_CtrlRdBuf[64];
+    BOOL                nhb_CtrlBusy;     /* a SET_PROTOCOL is out on nhb_CtrlCh */
+    BOOL                nhb_CtrlReading;  /* a read is out on nhb_CtrlRdCh */
+    BOOL                nhb_ReadsHeld;    /* input reads wait for the control channel */
     /* input report channels: one per notifying HOGP Report characteristic, or
        the HIDP interrupt channel */
     APTR                nhb_ReadCh[BTHID_MAXCHANNELS];

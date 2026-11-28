@@ -895,6 +895,8 @@ UBYTE usbkeymap[256] =
 #undef  BluetoothBase
 #define BluetoothBase nhb->nhb_Base
 
+static void bCtrlDone(struct BTHidBinding *nhb);
+
 /* /// "bSendReport()" */
 /* Delivers an output (type 2) or feature (type 3) report to the device.
    HOGP: written to the Report characteristic with that Report Reference
@@ -922,15 +924,33 @@ static void bSendReport(struct BTHidBinding *nhb, UWORD reportid, UBYTE type, UB
         }
         CopyMem(data, &pkt[plen], len);
         plen += len;
-        bep = btFindEndpoint(nhb->nhb_Service, NULL, BEA_PSM, (type == 2) ? 0x0013 : 0x0011, TAG_END);
-        if(bep && (ch = btAllocChannel(nhb->nhb_Device, nhb->nhb_TaskMsgPort, bep)))
+        if(type == 3)
         {
-            btSetAttrs(BGA_CHANNEL, ch, BCHA_AutoConnect, TRUE, TAG_END);
-            btChannelSetup(ch, BTPR_WRITE, 0, 0);
-            ioerr = btDoChannel(ch, pkt, plen);
-            btFreeChannel(ch);
+            /* on the held control channel: a channel of its own would close it */
+            if(nhb->nhb_CtrlCh)
+            {
+                if(nhb->nhb_CtrlBusy)
+                {
+                    btWaitChannel(nhb->nhb_CtrlCh);
+                    bCtrlDone(nhb);
+                }
+                CopyMem(pkt, nhb->nhb_CtrlBuf, plen);
+                ioerr = btDoChannel(nhb->nhb_CtrlCh, nhb->nhb_CtrlBuf, plen);
+                bCtrlDone(nhb);
+            } else {
+                ioerr = BTIOERR_NOTSUPPORTED;
+            }
         } else {
-            ioerr = BTIOERR_NOTSUPPORTED;
+            bep = btFindEndpoint(nhb->nhb_Service, NULL, BEA_PSM, 0x0013, TAG_END);
+            if(bep && (ch = btAllocChannel(nhb->nhb_Device, nhb->nhb_TaskMsgPort, bep)))
+            {
+                btSetAttrs(BGA_CHANNEL, ch, BCHA_AutoConnect, TRUE, TAG_END);
+                btChannelSetup(ch, BTPR_WRITE, 0, 0);
+                ioerr = btDoChannel(ch, pkt, plen);
+                btFreeChannel(ch);
+            } else {
+                ioerr = BTIOERR_NOTSUPPORTED;
+            }
         }
     } else {
         struct BtEndpoint *bep = NULL;
@@ -961,6 +981,84 @@ static void bSendReport(struct BTHidBinding *nhb, UWORD reportid, UBYTE type, UB
                        "Sending %s report %ld (%ld bytes) failed: %s (%ld).",
                        (type == 2) ? "output" : "feature", (ULONG) reportid, len,
                        btNumToStr(BNTS_IOERR, ioerr, "unknown"), ioerr);
+    }
+}
+/* \\\ */
+
+/* /// "bOpenControl()" */
+/* HIDP: the host opens the control channel (PSM 0x11) before the interrupt
+   channel, or the device refuses the latter. SET_PROTOCOL(Report) opens it;
+   holding the channel keeps it open. Not waited for: a page can take long,
+   so the input reads are held until the reply reaches the task loop. */
+static void bOpenControl(struct BTHidBinding *nhb)
+{
+    struct BtEndpoint *bep;
+
+    if(!nhb->nhb_CtrlCh)
+    {
+        bep = btFindEndpoint(nhb->nhb_Service, NULL, BEA_PSM, 0x0011, TAG_END);
+        if(!bep || !(nhb->nhb_CtrlCh = btAllocChannel(nhb->nhb_Device, nhb->nhb_TaskMsgPort, bep)))
+        {
+            return;
+        }
+        btSetAttrs(BGA_CHANNEL, nhb->nhb_CtrlCh, BCHA_AutoConnect, TRUE, TAG_END);
+        btChannelSetup(nhb->nhb_CtrlCh, BTPR_WRITE, 0, 0);
+        /* the reads never bring the link up themselves */
+        if((nhb->nhb_CtrlRdCh = btAllocChannel(nhb->nhb_Device, nhb->nhb_TaskMsgPort, bep)))
+        {
+            btSetAttrs(BGA_CHANNEL, nhb->nhb_CtrlRdCh, BCHA_AutoConnect, FALSE, TAG_END);
+            btChannelSetup(nhb->nhb_CtrlRdCh, BTPR_READ, 0, 0);
+        }
+    }
+    if(nhb->nhb_CtrlBusy)
+    {
+        return;
+    }
+    nhb->nhb_CtrlBuf[0] = 0x71;
+    btSendChannel(nhb->nhb_CtrlCh, nhb->nhb_CtrlBuf, 1);
+    nhb->nhb_CtrlBusy = TRUE;
+    nhb->nhb_ReadsHeld = TRUE;
+}
+/* \\\ */
+
+/* /// "bCtrlDone()" */
+/* A write on the control channel is back. Once it went through the channel
+   is open: read its replies (HANDSHAKE) from now on, and let the input
+   reads go. */
+static void bCtrlDone(struct BTHidBinding *nhb)
+{
+    UWORD n;
+
+    nhb->nhb_CtrlBusy = FALSE;
+    if(!btGetChannelError(nhb->nhb_CtrlCh) && nhb->nhb_CtrlRdCh && !nhb->nhb_CtrlReading)
+    {
+        btSendChannel(nhb->nhb_CtrlRdCh, nhb->nhb_CtrlRdBuf, sizeof(nhb->nhb_CtrlRdBuf));
+        nhb->nhb_CtrlReading = TRUE;
+    }
+    if(nhb->nhb_ReadsHeld)
+    {
+        nhb->nhb_ReadsHeld = FALSE;
+        for(n = 0; n < nhb->nhb_NumCh; n++)
+        {
+            btSendChannel(nhb->nhb_ReadCh[n], nhb->nhb_ReadBuf[n], nhb->nhb_ReadBufSize);
+        }
+    }
+}
+/* \\\ */
+
+/* /// "bCtrlRead()" */
+/* Something came on the control channel; nothing in it is needed, so a
+   long one is cut short too. The read stops with the link and starts again
+   with the next write. */
+static void bCtrlRead(struct BTHidBinding *nhb)
+{
+    LONG ioerr = btGetChannelError(nhb->nhb_CtrlRdCh);
+
+    nhb->nhb_CtrlReading = FALSE;
+    if((!ioerr || (ioerr == BTIOERR_OVERFLOW)) && !(SetSignal(0, 0) & SIGBREAKF_CTRL_C))
+    {
+        btSendChannel(nhb->nhb_CtrlRdCh, nhb->nhb_CtrlRdBuf, sizeof(nhb->nhb_CtrlRdBuf));
+        nhb->nhb_CtrlReading = TRUE;
     }
 }
 /* \\\ */
@@ -1042,8 +1140,13 @@ static void bHandleReport(struct BTHidBinding *nhb, UWORD n)
             nhb->nhb_LastErr = ioerr;
         }
         btDelayMS(250);
+        /* a re-paged device wants the control channel first again */
+        if(nhb->nhb_Classic && (ioerr == BTIOERR_REFUSED))
+        {
+            bOpenControl(nhb);
+        }
     }
-    if(!(SetSignal(0, 0) & SIGBREAKF_CTRL_C))
+    if(!(SetSignal(0, 0) & SIGBREAKF_CTRL_C) && !nhb->nhb_ReadsHeld)
     {
         btSendChannel(ch, nhb->nhb_ReadBuf[n], nhb->nhb_ReadBufSize);
     }
@@ -1096,8 +1199,9 @@ AROS_UFH0(void, GM_UNIQUENAME(bHidTask))
         }
         nhb->nhb_ReloadCfg = FALSE;
         nhb->nhb_Running = TRUE;
-        /* the first read on every input report channel */
-        for(n = 0; n < nhb->nhb_NumCh; n++)
+        /* the first read on every input report channel, unless they wait
+           for the control channel (bCtrlDone()) */
+        for(n = 0; (n < nhb->nhb_NumCh) && !nhb->nhb_ReadsHeld; n++)
         {
             btSendChannel(nhb->nhb_ReadCh[n], nhb->nhb_ReadBuf[n], nhb->nhb_ReadBufSize);
         }
@@ -1107,6 +1211,16 @@ AROS_UFH0(void, GM_UNIQUENAME(bHidTask))
             sigs = Wait(sigmask);
             while((ch = (APTR) GetMsg(nhb->nhb_TaskMsgPort)))
             {
+                if(ch == nhb->nhb_CtrlCh)
+                {
+                    bCtrlDone(nhb);
+                    continue;
+                }
+                if(ch == nhb->nhb_CtrlRdCh)
+                {
+                    bCtrlRead(nhb);
+                    continue;
+                }
                 for(n = 0; n < nhb->nhb_NumCh; n++)
                 {
                     if(ch == nhb->nhb_ReadCh[n])
@@ -1223,6 +1337,7 @@ static BOOL bOpenReportChannels(struct BTHidBinding *nhb)
 
     if(nhb->nhb_Classic)
     {
+        bOpenControl(nhb);
         bep = btFindEndpoint(nhb->nhb_Service, NULL, BEA_PSM, 0x0013, TAG_END);
         if(bep && (nhb->nhb_ReadCh[0] = btAllocChannel(nhb->nhb_Device, nhb->nhb_TaskMsgPort, bep)))
         {
@@ -1297,8 +1412,12 @@ static void bCloseReportChannels(struct BTHidBinding *nhb)
     {
         if(nhb->nhb_ReadCh[n])
         {
-            btAbortChannel(nhb->nhb_ReadCh[n]);
-            btWaitChannel(nhb->nhb_ReadCh[n]);
+            /* held reads are not out, and may already have been taken */
+            if(!nhb->nhb_ReadsHeld)
+            {
+                btAbortChannel(nhb->nhb_ReadCh[n]);
+                btWaitChannel(nhb->nhb_ReadCh[n]);
+            }
             btFreeChannel(nhb->nhb_ReadCh[n]);
             nhb->nhb_ReadCh[n] = NULL;
         }
@@ -1306,6 +1425,28 @@ static void bCloseReportChannels(struct BTHidBinding *nhb)
         nhb->nhb_ReadBuf[n] = NULL;
     }
     nhb->nhb_NumCh = 0;
+    if(nhb->nhb_CtrlRdCh)
+    {
+        if(nhb->nhb_CtrlReading)
+        {
+            btAbortChannel(nhb->nhb_CtrlRdCh);
+            btWaitChannel(nhb->nhb_CtrlRdCh);
+            nhb->nhb_CtrlReading = FALSE;
+        }
+        btFreeChannel(nhb->nhb_CtrlRdCh);
+        nhb->nhb_CtrlRdCh = NULL;
+    }
+    if(nhb->nhb_CtrlCh)
+    {
+        if(nhb->nhb_CtrlBusy)
+        {
+            btAbortChannel(nhb->nhb_CtrlCh);
+            btWaitChannel(nhb->nhb_CtrlCh);
+            nhb->nhb_CtrlBusy = FALSE;
+        }
+        btFreeChannel(nhb->nhb_CtrlCh);
+        nhb->nhb_CtrlCh = NULL;
+    }
 }
 /* \\\ */
 

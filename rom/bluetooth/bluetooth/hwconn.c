@@ -2288,10 +2288,12 @@ static void bConnRunEnum(struct BtHWConn *cn)
             /* only the attributes the parser uses - a phone's full records
                (icons, OBEX details, long strings) run to kilobytes:
                ServiceClassIDList, ProtocolDescriptorList,
-               BluetoothProfileDescriptorList, ServiceName, HIDDescriptorList */
-            static const uint8_t attrids[] = { 0x35, 0x0f,
+               BluetoothProfileDescriptorList,
+               AdditionalProtocolDescriptorLists (HID interrupt PSM 0x13),
+               ServiceName, HIDDescriptorList */
+            static const uint8_t attrids[] = { 0x35, 0x12,
                 0x09, 0x00, 0x01, 0x09, 0x00, 0x04, 0x09, 0x00, 0x09,
-                0x09, 0x01, 0x00, 0x09, 0x02, 0x06 };
+                0x09, 0x00, 0x0d, 0x09, 0x01, 0x00, 0x09, 0x02, 0x06 };
             if(bt_sdp_client_get_attributes(&cn->cn_SDP, cn->cn_EnumHandles[cn->cn_EnumIndex], 2048,
                                             attrids, sizeof(attrids), bSDPEnumCB, cn, now) != BT_OK) {
                 bConnFinishEnum(cn, BTIOERR_HOSTERROR);
@@ -4544,7 +4546,10 @@ void bConnTick(struct BtHWCore *hc)
         }
         for(en = cn->cn_Endpoints.mlh_Head; (enext = en->mln_Succ); en = enext) {
             struct BtHWEndpoint *hep = (struct BtHWEndpoint *) en;
-            if(hep->hep_CloseTick && !hep->hep_UseCnt && ((LONG) (hc->hc_Tick - hep->hep_CloseTick) >= 0)) {
+            /* hep_UseCnt misses channels allocated before the link came up:
+               one with a request out still uses the endpoint */
+            if(hep->hep_CloseTick && !hep->hep_UseCnt && ((LONG) (hc->hc_Tick - hep->hep_CloseTick) >= 0) &&
+               !hep->hep_ReadReqs.mlh_Head->mln_Succ && !hep->hep_WriteReqs.mlh_Head->mln_Succ) {
                 hep->hep_CloseTick = 0;
                 if((hep->hep_Endpoint->bep_Type == BEPT_L2CAP) ||
                    (hep->hep_Endpoint->bep_Type == BEPT_RFCOMM)) {
