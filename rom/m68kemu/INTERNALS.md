@@ -639,9 +639,11 @@ The library tables together hold 395 entries.
   `CopyMem` and `CopyMemQuick` within the program's memory: both spans must
   lie wholly in it, or the copy is refused with a line in the log (a shadow is
   copied as the program's own copy, a handle is refused); under `low_guard` the
-  part of the destination below 0x400 follows `m68k_write_allowed()`, the copy
-  counting as long writes from the destination on, then a word and a byte, so
-  a vector the program may write with `MOVE.L` it may also copy to;
+  destination follows the rule of the program's own writes
+  (`m68k_guest_write_guarded()`, the two ranges the CPU's `write8`/`write16`
+  drop): a span that touches the reset vectors (0-7) or the emulator's stubs
+  and cells (0x100-0x1BF) is refused whole, any other is copied to, so a vector
+  the program may write with `MOVE.L` it may also copy to;
   `CacheClearU` no-op;
   `CacheControl` keeps the bits in `ctx->cacr`
 - Lists: `Insert`..`Enqueue`, `NewMinList`, `FindName` in the program's memory (`FindName` on
@@ -657,10 +659,12 @@ The library tables together hold 395 entries.
 - Messages: `PutMsg`, `GetMsg`, `ReplyMsg`, `WaitPort`; `AddPort` makes the
   message list of a port in the program's memory empty and names the port in
   `ctx->pubports[16]`, where `FindPort` looks before the system's ports;
-  a port with a native one behind it, as `CreateMsgPort()` gives, is named
+  a shadow of the `MsgPort` layout, as `CreateMsgPort()` gives, is named
   there too, by the name the program put in its copy, and its native message
   list is left alone (native `FindPort()` callers do not see it: that would
-  need a native copy of the name); `RemPort` takes it out
+  need a native copy of the name); a port registered by hand (type 4: a
+  window's `UserPort`, the twin of a reply port) is left alone; `RemPort`
+  takes it out
 - Semaphores: 11 functions (see above)
 - Libraries: `OpenLibrary`, `OldOpenLibrary`, `CloseLibrary` (no-op),
   `OpenResource` (only a base that already has thunks; a native resource base

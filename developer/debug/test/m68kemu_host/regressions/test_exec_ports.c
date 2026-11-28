@@ -218,21 +218,14 @@ static void ports(struct M68KEmuContext *ctx)
        names its copy and makes it public; FindPort finds it by that name, and
        neither the copy nor the native port and its message list is written */
     {
-        static const UWORD kinds[] = { SHADOW_TYPE_MSGPORT, SHADOW_PORT };
-        static const char *const label[2][5] = {
-            { "AddPort of a CreateMsgPort() port: in the table for FindPort, no trap, no log line",
-              "AddPort of a CreateMsgPort() port: the program's copy and the native port are not written",
-              "FindPort finds the CreateMsgPort() port by the name in the program's copy, without asking the system",
-              "AddPort of a CreateMsgPort() port twice: one entry",
-              "after RemPort FindPort does not find the CreateMsgPort() port" },
-            { "AddPort of a port registered by hand: in the table for FindPort, no trap, no log line",
-              "AddPort of a port registered by hand: the program's copy and the native port are not written",
-              "FindPort finds the port registered by hand by the name in the program's copy",
-              "AddPort of a port registered by hand twice: one entry",
-              "after RemPort FindPort does not find the port registered by hand" } };
+        static const char *const label[5] = {
+            "AddPort of a CreateMsgPort() port: in the table for FindPort, no trap, no log line",
+            "AddPort of a CreateMsgPort() port: the program's copy and the native port are not written",
+            "FindPort finds the CreateMsgPort() port by the name in the program's copy, without asking the system",
+            "AddPort of a CreateMsgPort() port twice: one entry",
+            "after RemPort FindPort does not find the CreateMsgPort() port" };
         const ULONG C = 0x2400, cname = 0x2500;
 
-        for (int k = 0; k < 2; k++)
         {
             UBYTE copy[34];
             unsigned asked;
@@ -245,21 +238,21 @@ static void ports(struct M68KEmuContext *ctx)
             memset(native_port, 0x55, sizeof(native_port));
             ctx->shadow_map[0].m68k_addr = C;
             ctx->shadow_map[0].native_ptr = native_port;
-            ctx->shadow_map[0].type = kinds[k];
+            ctx->shadow_map[0].type = SHADOW_TYPE_MSGPORT;
             ctx->num_shadows = 1;
             cpu.a[1] = C;
             thunk_exec_AddPort(ctx, &cpu);
-            check(ctx->pubports[0] == C && low_traps == 0 && logs == 0, label[k][0]);
-            check(memcmp(arena + C, copy, 34) == 0 && untouched(native_port, sizeof(native_port), 0x55), label[k][1]);
+            check(ctx->pubports[0] == C && low_traps == 0 && logs == 0, label[0]);
+            check(memcmp(arena + C, copy, 34) == 0 && untouched(native_port, sizeof(native_port), 0x55), label[1]);
             cpu.a[1] = cname;
             asked = native_findport;
-            check(thunk_exec_FindPort(ctx, &cpu) == C && native_findport == asked, label[k][2]);
+            check(thunk_exec_FindPort(ctx, &cpu) == C && native_findport == asked, label[2]);
             cpu.a[1] = C;
             thunk_exec_AddPort(ctx, &cpu);
-            check(ctx->pubports[0] == C && ctx->pubports[1] == 0, label[k][3]);
+            check(ctx->pubports[0] == C && ctx->pubports[1] == 0, label[3]);
             thunk_exec_RemPort(ctx, &cpu);
             cpu.a[1] = cname;
-            check(ctx->pubports[0] == 0 && thunk_exec_FindPort(ctx, &cpu) == 0, label[k][4]);
+            check(ctx->pubports[0] == 0 && thunk_exec_FindPort(ctx, &cpu) == 0, label[4]);
         }
         /* without a MsgPort layout a shadow of that type cannot be told from another structure */
         reset(ctx);
@@ -271,6 +264,21 @@ static void ports(struct M68KEmuContext *ctx)
         cpu.a[1] = C;
         thunk_exec_AddPort(ctx, &cpu);
         check(ctx->pubports[0] == 0 && arena[C + 8] == 0, "AddPort of a shadow without a MsgPort layout: untouched, not named");
+        /* a port registered by hand (type 4: a window's UserPort, the twin of a reply port) is
+           left alone: the copy of a UserPort goes with ModifyIDCMP, and a name would outlive it */
+        reset(ctx);
+        put_string(cname, "MYPORT");
+        memset(arena + C, 0xAA, 34);
+        m68k_write32(ctx, C + 10, cname);
+        ctx->shadow_map[0].m68k_addr = C;
+        ctx->shadow_map[0].native_ptr = native_port;
+        ctx->shadow_map[0].type = 4;
+        ctx->num_shadows = 1;
+        cpu.a[1] = C;
+        thunk_exec_AddPort(ctx, &cpu);
+        cpu.a[1] = cname;
+        check(ctx->pubports[0] == 0 && untouched(arena + C, 10, 0xAA) && untouched(arena + C + 14, 20, 0xAA) &&
+              thunk_exec_FindPort(ctx, &cpu) == 0, "AddPort of a port registered by hand: untouched, not named, not found");
         reset(ctx);
     }
 
@@ -536,27 +544,32 @@ static void copies(struct M68KEmuContext *ctx)
     check(m68k_read32(ctx, 0x3000) == 0 && logs == 3, "CopyMem from NULL: refused, a line in the log");
 
     /* CopyMem to destinations below 0x400 while low_guard is active follows the
-       rule of the accessors, m68k_write_allowed(): the copy counts as long
-       writes from the destination on, then a word and a byte. A write that
-       rule refuses refuses the whole copy, before memmove. */
+       rule of the program's own writes, m68k_guest_write_guarded(): the reset
+       vectors (0-7) and the emulator's stubs and cells (0x100-0x1BF) are not
+       the program's to change, the rest of the vector table is. A span that
+       touches either is refused whole, before memmove. */
     {
         static const struct { ULONG to, size; } low_copies[] = {
-            { 0x200, 10 },
-            { 0x10, 8 },        /* the second long, at 0x14 */
-            { 0x6C, 8 },        /* the second long, at 0x70 */
-            { 0x6E, 2 },        /* a word inside the vector at 0x6C, as MOVE.W there */
-            { 0x6C, 5 },        /* the byte at 0x70 */
-            { 0x13C, 8 },       /* the first long, before 0x140 */
-            { 0x18C, 8 },       /* the second long, at 0x190 */
-            { 0x3FC, 8 },
+            { 0x4, 4 },         /* the reset PC */
+            { 0x6, 4 },         /* its last two bytes and the next vector */
+            { 0xFE, 4 },        /* runs into 0x100 */
+            { 0x100, 4 },
+            { 0x140, 10 },      /* the vertical blank stub */
+            { 0x142, 0x50 },    /* starts inside the stubs and runs into the CIA stub at 0x190 */
+            { 0x18E, 4 },       /* crosses 0x190 */
+            { 0x1BC, 8 },       /* the last cell, up to 0x1BF, and beyond */
+            { 0xF0, 0x200 },    /* over the whole of 0x100-0x1BF */
         };
         static const struct { ULONG to, size; } vector_copies[] = {
             { 0x6C, 4 },        /* CopyMem(&v, (APTR)0x6C, 4), where MOVE.L works */
             { 0x10, 4 },
             { 0x28, 8 },        /* the vectors at 0x28 and 0x2C */
-            { 0x6C, 2 },        /* a word at 0x6C, as MOVE.W there */
-            { 0x140, 10 },      /* two longs and a word in 0x140-0x18F */
-            { 0x140, 0x50 },    /* all of 0x140-0x18F */
+            { 0x6E, 2 },        /* a word inside a vector, as MOVE.W there */
+            { 0x8, 0xF8 },      /* all of 0x8-0xFF */
+            { 0xFC, 4 },        /* ends where 0x100 begins */
+            { 0x1C0, 0x40 },    /* begins where 0x1BF ends */
+            { 0x200, 10 },
+            { 0x3FC, 8 },       /* across 0x400 */
         };
         for (size_t i = 0; i < sizeof(vector_copies) / sizeof(vector_copies[0]); i++)
         {
@@ -571,7 +584,7 @@ static void copies(struct M68KEmuContext *ctx)
             check(low_traps == traps_before && logs == logs_before &&
                   untouched(arena + dst, len, (UBYTE)(0x30 + i)) &&
                   untouched(arena + dst - 4, 4, 0xCC) && untouched(arena + dst + len, 4, 0xCC),
-                  "CopyMem to a vector the program may write under low_guard: copied, no more");
+                  "CopyMem below 0x400 where the program's own writes go under low_guard: copied, no more");
         }
         for (size_t i = 0; i < sizeof(low_copies) / sizeof(low_copies[0]); i++)
         {

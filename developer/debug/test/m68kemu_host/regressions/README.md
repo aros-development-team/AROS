@@ -414,10 +414,11 @@ The 89 checks: `AddPort` makes the message list of a port in the program's
 memory empty, sets its type and names it for `FindPort`, once; a shadow that
 is not a port, a port past the end of memory, and a port below 0x400 under
 `low_guard` are left alone (and not named); a seventeenth port gets a
-line in the log. A port with a native one behind it, as `CreateMsgPort()`
-gives, and one registered by hand are named for `FindPort` by the name in the
-program's copy, once, with neither the copy nor the native port written, and
-`RemPort` takes them out. `FindPort` finds the program's port without asking the
+line in the log. A shadow of the `MsgPort` layout, as `CreateMsgPort()`
+gives, is named for `FindPort` by the name in the program's copy, once, with
+neither the copy nor the native port written, and `RemPort` takes it out; a
+port registered by hand (type 4) is left alone and not named.
+`FindPort` finds the program's port without asking the
 system, a system port as a shadow, an unknown name as 0, and no longer
 finds a port after `RemPort`. `CreateIORequest` gives the size asked for,
 cleared, in the program's memory, with `ln_Type`, `mn_ReplyPort` and
@@ -429,10 +430,13 @@ structures untouched.
 `AddTask` returns NULL with a line in the log; `RemTask` of NULL or of the
 calling task stops that CPU, of another task only logs. `CopyMem` copies
 inside the program's memory, overlapping spans as `memmove`, and refuses a
-span that would run past the end. Under `low_guard` a destination below 0x400
-follows `m68k_write_allowed()`: copies to the vectors the program may write
-(0x10, 0x28, 0x2C, 0x6C, 0x140-0x18F) are made and write no byte more, and a
-copy with one long, word or byte write that rule refuses is refused whole.
+span that would run past the end. Under `low_guard` the destination follows
+the rule of the program's own writes: a span that touches the reset vectors
+(0-7) or the emulator's stubs and cells (0x100-0x1BF), also one that starts
+inside them or runs across their end, is refused whole and nothing is written;
+copies to the rest of the area below 0x400 are made and write no byte more.
+The runner stops when the CPU's `write8`/`write16` no longer drop those two
+ranges, since `m68k_guest_write_guarded()` repeats them.
 `NewMinList` writes an empty list of 12
 bytes in the program's memory and calls the native one for a system list.
 

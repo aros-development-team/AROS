@@ -501,14 +501,13 @@ static IPTR thunk_exec_Permit(struct M68KEmuContext *ctx, void *cpu) { if (ctx->
 
 /* -624: CopyMem(A0=source, A1=dest, D0=size), and -630: CopyMemQuick with
    the same registers. Both spans must lie wholly in the program's memory,
-   or the copy is refused. While low_guard is active, the part of the
-   destination below 0x400 follows m68k_write_allowed(), the rule of the
-   accessors: the copy counts as the long writes a program would make from
-   the destination on, then a word and a byte for what is left, and one
-   that is not allowed refuses the whole copy. The addresses are taken as
-   they are: a shadow is copied as the program's own copy of the structure,
-   which is there, and the native object behind a shadow or a handle is
-   never read or written. */
+   or the copy is refused. While low_guard is active the destination follows
+   the rule of the program's own writes, m68k_guest_write_guarded(): a span
+   that touches the reset vectors or the emulator's stubs and cells is
+   refused whole, and any other destination below 0x400 is copied to, as a
+   MOVE there is carried out. The addresses are taken as they are: a shadow
+   is copied as the program's own copy of the structure, which is there, and
+   the native object behind a shadow or a handle is never read or written. */
 static IPTR thunk_exec_CopyMem(struct M68KEmuContext *ctx, void *cpu)
 {
     ULONG from = THUNK_A(0);
@@ -524,22 +523,11 @@ static IPTR thunk_exec_CopyMem(struct M68KEmuContext *ctx, void *cpu)
                  (unsigned long)from, (unsigned long)to);
         return 0;
     }
-    if (ctx->low_guard && to < 0x400)
+    if (m68k_guest_write_guarded(ctx, to, size))
     {
-        ULONG at = to, left = size;
-
-        while (left && at < 0x400)
-        {
-            ULONG step = left >= 4 ? 4 : left >= 2 ? 2 : 1;
-
-            if (!m68k_write_allowed(ctx, at))
-            {
-                m68k_low_write_trap(ctx, at, "CopyMem");
-                return 0;
-            }
-            at += step;
-            left -= step;
-        }
+        /* the first byte of the span that is not the program's to write */
+        m68k_low_write_trap(ctx, (to >= 8 && to < 0x100) ? 0x100 : to, "CopyMem");
+        return 0;
     }
     memmove(ctx->mem + to, ctx->mem + from, size);
     return 0;
@@ -861,18 +849,15 @@ static IPTR thunk_exec_FindSemaphore(struct M68KEmuContext *ctx, void *cpu)
     return ss ? m68k_bptr_out(ctx, (BPTR)ss) : 0;
 }
 
-/* a MsgPort registered by hand: a window's UserPort, the native twin of a
-   reply port (m68k_port_twin) */
-#define SHADOW_PORT 4
-
 /* -354: AddPort(A1=port): a port in the program's memory becomes a public
    one of the program: its message list is made empty, as exec does, and
-   its name goes to a table for FindPort. A port with a native one behind it,
+   its name goes to a table for FindPort. A shadow of the MsgPort layout,
    as CreateMsgPort() gives, goes to the same table: FindPort reads the name
    the program put in its copy. Its messages are in the native list, which
-   stays as it is, and so does the copy. Another structure the program got
-   from the system, or a port below 0x400 while low_guard is active, is left
-   as it is. */
+   stays as it is, and so does the copy. Any other shadow is left as it is,
+   also a port registered by hand (a window's UserPort, the twin of a reply
+   port): the copy of a UserPort goes with ModifyIDCMP. So is a port below
+   0x400 while low_guard is active. */
 static IPTR thunk_exec_AddPort(struct M68KEmuContext *ctx, void *cpu)
 {
     ULONG mp = THUNK_A(1), l = mp + 20;
@@ -886,8 +871,7 @@ static IPTR thunk_exec_AddPort(struct M68KEmuContext *ctx, void *cpu)
         {
             const struct M68KStructLayout *layout = shadow_find_layout("MsgPort");
 
-            if (ctx->shadow_map[s].type != SHADOW_PORT &&
-                (!layout || ctx->shadow_map[s].type != layout->shadow_type))
+            if (!layout || ctx->shadow_map[s].type != layout->shadow_type)
                 return 0;
             native = TRUE;
             break;

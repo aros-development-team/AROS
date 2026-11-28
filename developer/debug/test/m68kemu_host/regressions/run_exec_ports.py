@@ -19,7 +19,7 @@ THUNKS = ('thunk_exec_CopyMem', 'thunk_exec_AddPort', 'thunk_exec_RemPort',
           'thunk_exec_FindPort', 'thunk_exec_CreateIORequest_m', 'thunk_exec_DeleteIORequest_m',
           'thunk_exec_AddTask_m', 'thunk_exec_RemTask_m', 'thunk_exec_NewMinList_m')
 ACCESSORS = ('m68k_to_host', 'm68k_to_host_or_shadow', 'm68k_in_mem', 'm68k_read16', 'm68k_read32',
-             'm68k_write_allowed', 'm68k_write16', 'm68k_write32')
+             'm68k_write_allowed', 'm68k_guest_write_guarded', 'm68k_write16', 'm68k_write32')
 ENTRIES = (('390', 'thunk_exec_FindPort'), ('630', 'thunk_exec_CopyMem'),
            ('654', 'thunk_exec_CreateIORequest_m'), ('660', 'thunk_exec_DeleteIORequest_m'),
            ('282', 'thunk_exec_AddTask_m'), ('288', 'thunk_exec_RemTask_m'),
@@ -62,9 +62,11 @@ def run(args, output):
     native = re.search(r'^#define ML_NATIVE\(a\).*$', text, re.M)
     if not native:
         raise ValueError('ML_NATIVE not found')
-    port = re.search(r'^#define SHADOW_PORT\s+\d+$', text, re.M)
-    if not port:
-        raise ValueError('SHADOW_PORT not found')
+    # CopyMem's low-memory rule repeats the two ranges that the CPU's write8 and
+    # write16 drop. When those change, m68k_guest_write_guarded() has to follow.
+    cpu_rule = 'ctx->low_guard && (addr < 8 || (addr >= 0x100 && addr < 0x1C0))'
+    if (bridge / 'm68kemu_moira.cpp').read_text(encoding='latin1').count(cpu_rule) != 2:
+        raise ValueError('write8/write16 no longer drop 0-7 and 0x100-0x1BF: review m68k_guest_write_guarded()')
     output.mkdir(parents=True, exist_ok=True)
     head = header.read_text(encoding='latin1')
     layouts = (bridge / 'm68kemu_shadow_layouts.h').read_text(encoding='latin1')
@@ -81,7 +83,7 @@ def run(args, output):
         constants.append('#define %s %s' % (macro, m[1]))
     (output / 'constants.inc').write_text('\n'.join(constants) + '\n')
     (output / 'accessors.inc').write_text(''.join(function(header, n) for n in ACCESSORS))
-    (output / 'thunks.inc').write_text(native[0] + '\n' + port[0] + '\n' + ''.join(function(thunks, n) for n in THUNKS))
+    (output / 'thunks.inc').write_text(native[0] + '\n' + ''.join(function(thunks, n) for n in THUNKS))
     if args.prepare_only:
         return
     command = shlex.split(args.cc) + ['-std=c99', '-Wall', '-Wextra', '-Werror', '-Wno-unused-function',
