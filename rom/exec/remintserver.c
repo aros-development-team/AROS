@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Remove an interrupt handler.
 */
@@ -35,6 +35,10 @@
     RESULT
 
     NOTES
+        On SMP the chain is locked while its servers run. This function
+        returns once the server is off the chain and is not running on
+        any other CPU. It must not be called from an interrupt server:
+        that would wait for the chain the caller itself keeps locked.
 
     EXAMPLE
 

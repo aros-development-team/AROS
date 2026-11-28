@@ -131,7 +131,7 @@
 
     D(bug("[KMS] %s: using seglist @ 0x%p\n", __func__, km_seg);)
 
-    kmn = BADDR(km_seg) + sizeof(BPTR);
+    kmn = AROS_SEG_DATA(km_seg);
     if (kmr)
     {
         Forbid();

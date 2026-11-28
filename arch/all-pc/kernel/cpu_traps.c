@@ -105,6 +105,20 @@ void cpu_Trap(struct ExceptionContext *regs, unsigned long error_code, unsigned 
                 goto trapDone;
             }
         }
+        else if (IsKernelBaseReady(SysBase) && (irq_number < X86_CPU_EXCEPT_COUNT) &&
+                 (irq_number != 2) && (irq_number != 18) && INTR_FROMUSERMODE)
+        {
+            /*
+             * A CPU exception with no Amiga trap of its own (SIMD floating
+             * point, #19, among them), raised by task code. That is the
+             * task's fault and goes to its trap handler, as a coprocessor
+             * error or an illegal instruction; the CPU is not halted for
+             * it. NMI and machine check are the machine's, and an
+             * exception in supervisor code is the system's: those halt.
+             */
+            if (core_Trap((irq_number == 19) ? 11 : 4, regs))
+                goto trapDone;
+        }
 
         /* Halt for all unhandled exceptions except spurious interrupts */
         if (irq_number != APIC_EXCEPT_SPURIOUS)

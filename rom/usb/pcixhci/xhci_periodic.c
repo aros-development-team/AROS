@@ -89,7 +89,14 @@ void xhciScheduleIntTDs(struct PCIController *hc)
             pciusbError("xHCI",
                         DEBUGWARNCOLOR_SET "xHCI: Missing prepared transfer context for Dev=%u EP=%u" DEBUGCOLOR_RESET" \n",
                         ioreq->iouh_DevAddr, ioreq->iouh_Endpoint);
+#if defined(__AROSEXEC_SMP__)
+            /* the request queues are shared with other tasks and the NAK timeout soft interrupt */
+            xhciUnitLock(unit);
+#endif
             Remove(&ioreq->iouh_Req.io_Message.mn_Node);
+#if defined(__AROSEXEC_SMP__)
+            xhciUnitUnlock(unit);
+#endif
             ioreq->iouh_Req.io_Error = UHIOERR_HOSTERROR;
             ReplyMsg(&ioreq->iouh_Req.io_Message);
             continue;
@@ -104,7 +111,13 @@ void xhciScheduleIntTDs(struct PCIController *hc)
             }
 
             /****** SETUP COMPLETE ************/
+#if defined(__AROSEXEC_SMP__)
+            xhciUnitLock(unit);
+#endif
             Remove(&ioreq->iouh_Req.io_Message.mn_Node);
+#if defined(__AROSEXEC_SMP__)
+            xhciUnitUnlock(unit);
+#endif
             unit->hu_NakTimeoutFrame[devadrep] =
                 (ioreq->iouh_Flags & UHFF_NAKTIMEOUT) ? hc->hc_FrameCounter + (ioreq->iouh_NakTimeout << XHCI_NAKTOSHIFT) : 0;
             pciusbXHCIDebugV("xHCI", DEBUGCOLOR_SET "%u + %u nak timeout set" DEBUGCOLOR_RESET" \n", hc->hc_FrameCounter,
@@ -119,7 +132,13 @@ void xhciScheduleIntTDs(struct PCIController *hc)
                 queued = xhciQueuePayloadTRBs(hc, ioreq, driprivate, epring, trbflags, TRUE);
 
                 if(queued != -1) {
+#if defined(__AROSEXEC_SMP__)
+                    xhciUnitLock(unit);
+#endif
                     AddTail(&hc->hc_PeriodicTDQueue, (struct Node *) ioreq);
+#if defined(__AROSEXEC_SMP__)
+                    xhciUnitUnlock(unit);
+#endif
                     pciusbXHCIDebugTRB("xHCI", DEBUGCOLOR_SET "Transaction queued in TRB #%u" DEBUGCOLOR_RESET" \n", driprivate->dpTxSTRB);
                     txdone = TRUE;
                 }
@@ -135,10 +154,10 @@ void xhciScheduleIntTDs(struct PCIController *hc)
                 driprivate->dpTxETRB = (UWORD)-1;
                 driprivate->dpSttTRB = (UWORD)-1;
 
-                Disable();
+                xhciUnitLock(unit);
                 pciusbError("xHCI", DEBUGWARNCOLOR_SET "xHCI: Failed to submit transaction" DEBUGCOLOR_RESET" \n");
                 AddHead(&hc->hc_IntXFerQueue, (struct Node *) ioreq);
-                Enable();
+                xhciUnitUnlock(unit);
             } else {
                 xhciRingDoorbell(hc, driprivate->dpDevice->dc_SlotID, driprivate->dpEPID);
             }

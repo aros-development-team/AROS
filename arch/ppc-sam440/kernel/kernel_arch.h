@@ -1,10 +1,10 @@
 /*
- * Machine-specific definitions.
+ * Machine-specific definitions for sam4x0 native kernel.
  *
- * This file needs to be replaced for every machine. Hosted ports
- * may share the same file in arch/all-$(ARCH)/kernel/kernel_arch.h
+ * Derived from the template in rom/kernel/kernel_arch.h.
  *
- * This file is just a sample providing necessary minimum.
+ * Copyright (C) 2012-2026, The AROS Development Team. All rights reserved.
+ *
  */
 #include <asm/amcc440.h>
 #include "kernel_cpu.h"
@@ -14,7 +14,8 @@
 struct KernelBase;
 
 /* Number of IRQs used in the machine. Needed by kernel_base.h */
-#define IRQ_COUNT 256
+#define IRQ_COUNT    256
+#define HW_IRQ_COUNT IRQ_COUNT
 
 /*
  * Interrupt controller functions. Actually have the following prototypes:

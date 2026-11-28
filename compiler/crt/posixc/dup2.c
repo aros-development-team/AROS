@@ -9,6 +9,8 @@
 #include <libraries/fd.h>
 #include "__fdesc.h"
 
+static int duplicate_fd(int oldfd, int newfd, int first_free);
+
 /*****************************************************************************
 
     NAME */
@@ -67,6 +69,27 @@
 
 ******************************************************************************/
 {
+    return duplicate_fd(oldfd, newfd, 0);
+}
+
+int __dupfd_from(int oldfd, int minimum)
+{
+    int result;
+
+    if (minimum < 0)
+    {
+        errno = EINVAL;
+        return -1;
+    }
+    do
+    {
+        result = duplicate_fd(oldfd, minimum, 1);
+    } while (result < 0 && errno == EBUSY);
+    return result;
+}
+
+static int duplicate_fd(int oldfd, int newfd, int first_free)
+{
     fdesc *oldfdesc, *newfdesc;
 
     /* Fail if old FD is invalid */
@@ -81,10 +104,12 @@
         if (hooks && hooks->fdh_dup)
         {
             LONG err = 0;
+            if (first_free)
+                newfd = __getfirstfd(newfd);
             if (oldfd == newfd)
                 return newfd;
             /* Vacate newfd first (close a posixc file or free a reservation). */
-            if (__getfdesc(newfd))
+            if (!first_free && __getfdesc(newfd))
                 close(newfd);
             if (hooks->fdh_dup(data, oldfd, newfd, &err) < 0)
             {
@@ -98,7 +123,7 @@
     }
 
     /* Do nothing if FDs are identical */
-    if (oldfd == newfd)
+    if (!first_free && oldfd == newfd)
         return newfd;
 
     /* Allocate new FD or fail */
@@ -114,7 +139,7 @@
     newfdesc->fcb = oldfdesc->fcb;
 
     /* Put new FD into its slot (and deallocate any FD previously there) */
-    int gotfd = __getfdslot(newfd);
+    int gotfd = first_free ? __getfreefdslot(newfd) : __getfdslot(newfd);
     if (gotfd == -1)
     {
         /* Reservation failed: release the descriptor we just allocated so it

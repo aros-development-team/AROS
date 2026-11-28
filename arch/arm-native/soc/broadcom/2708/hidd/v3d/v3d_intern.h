@@ -14,6 +14,7 @@
 #ifndef V3D_INTERN_H
 #define V3D_INTERN_H
 
+#include <aros/macros.h>
 #include <exec/types.h>
 #include <exec/libraries.h>
 #include <exec/memory.h>

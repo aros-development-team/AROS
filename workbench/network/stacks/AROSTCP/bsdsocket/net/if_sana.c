@@ -97,7 +97,6 @@ struct sana_softc *ssq = NULL;
 /*
  * Local prototypes
  */
-extern void if_detach(struct ifnet *ifp);       /* net/if.c */
 static void sana_run(struct sana_softc *ssc, int requests, struct ifaddr *ifa);
 static void sana_up(struct sana_softc *ssc);
 static struct mbuf *

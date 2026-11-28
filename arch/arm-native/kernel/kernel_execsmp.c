@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2015-2017, The AROS Development Team. All rights reserved.
+    Copyright (C) 2015-2026, The AROS Development Team. All rights reserved.
 */
 
 #include <proto/kernel.h>
@@ -121,7 +121,7 @@ struct Task *cpu_InitBootStrap(struct ExecBase *SysBase)
     }
 
     bsctx->r[11] = 0;
-    bsctx->lr = SysBase->TaskExitCode;
+    bsctx->lr = (ULONG)SysBase->TaskExitCode;
     bsctx->Flags = 0;
 
     return bstask;
@@ -130,7 +130,13 @@ struct Task *cpu_InitBootStrap(struct ExecBase *SysBase)
 
 void cpu_BootStrap(struct Task *bstask, struct ExecBase *SysBase)
 {
+    /* The run list locks are taken with interrupts off, everywhere.
+     * This runs in SVC mode (cpu_Register), with the FIQ already open. */
+    unsigned int __if = EXEC_IRQFIQ_DISABLE();
+
     bstask->tc_State = TS_RUN;
     SET_THIS_TASK(bstask);
+
+    EXEC_IRQFIQ_RESTORE(__if);
 }
 #endif

@@ -60,6 +60,21 @@ typedef uint8_t cpumode_t;
 #undef krnSysCall
 #define krnSysCall(n) asm volatile ("svc %[svc_no]\n\t" : : [svc_no] "I" (n) : "x30");
 
+/* The same with two arguments, in x0 and x1 */
+#define krnSysCall2(n, arg1, arg2) \
+    do { \
+        unsigned long __sc_arg1 = (unsigned long)(arg1); \
+        unsigned long __sc_arg2 = (unsigned long)(arg2); \
+        register unsigned long __sc_x0 asm("x0") = __sc_arg1; \
+        register unsigned long __sc_x1 asm("x1") = __sc_arg2; \
+        asm volatile ("svc %[svc_no]\n\t" \
+            : "+r"(__sc_x0), "+r"(__sc_x1) : [svc_no] "I" (n) : "x30", "memory"); \
+    } while (0)
+
+/* Where the trap handler finds them (rom/kernel/kernel_intr.c) */
+#define KRNSYSCALL_ARG1(regs)   ((regs)->x[0])
+#define KRNSYSCALL_ARG2(regs)   ((regs)->x[1])
+
 void cpu_DumpRegs(regs_t *regs);
 
 /* Logical id from TLS, set by the boot CPU: MPIDR_EL1 is unreliable on
@@ -103,7 +118,8 @@ extern uint64_t aarch64_CPUHwID[AARCH64_MAXCPUS];
 /*
  * Per-core load for KrnGetSystemAttr(KATTR_CPULoad + cpu): the inverse of
  * the idle task's share of the window. Its busy time is already in
- * iet_private2, so only the previous sample is kept here.
+ * iet_private2, so only the previous sample is kept here. A core writes
+ * its own entry, from its tick; cpl_LastLoad is what other cores read.
  */
 struct aarch64_CPULoadData
 {
@@ -112,12 +128,15 @@ struct aarch64_CPULoadData
     ULONG       cpl_LastLoad;       /* the load that sample produced     */
 };
 
-/* Shortest window worth measuring - callers asking again within it are
- * served the previous result. */
-#define CPULOAD_MINWINDOW       100000  /* microseconds */
+/* How long a core's load is measured over, and so how old the figure a
+ * caller gets can be. */
+#define CPULOAD_WINDOW          1000000 /* microseconds */
 
 extern struct Task *aarch64_IdleTask[AARCH64_MAXCPUS];
 extern struct aarch64_CPULoadData aarch64_CPULoad[AARCH64_MAXCPUS];
+
+/* Closes the calling core's window when it is due. From the core's tick. */
+void core_CPULoadTick(void);
 #endif
 
 #endif /* CPU_AARCH64_H_ */

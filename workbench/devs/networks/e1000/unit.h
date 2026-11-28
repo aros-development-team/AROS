@@ -47,7 +47,8 @@ struct e1000Unit *CreateUnit(LIBBASETYPEPTR, OOP_Object *);
 void DeleteUnit(struct e1000Base *, struct e1000Unit *);
 void FlushUnit(LIBBASETYPEPTR, struct e1000Unit *, UBYTE, BYTE);
 BOOL AddressFilter(struct e1000Base *, struct e1000Unit *, UBYTE *);
-VOID CopyPacket(struct e1000Base *, struct e1000Unit *, struct IOSana2Req *, UWORD, UWORD, struct eth_frame *);
+BOOL CopyPacket(struct e1000Base *, struct e1000Unit *, struct IOSana2Req *, UWORD, UWORD, struct eth_frame *);
+struct MsgPort *e1000func_queue_port(struct e1000Unit *, struct IOSana2Req *);
 VOID ReportEvents(struct e1000Base *, struct e1000Unit *, ULONG);
 struct TypeStats *FindTypeStats(struct e1000Base *, struct e1000Unit *, struct MinList *, ULONG);
 

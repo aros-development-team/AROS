@@ -52,7 +52,7 @@ LONG printx(LONG nargs, ...)
 
     if (DOSBase) {
         for (i = 0; i < nargs; i++) {
-            Printf("\t%ld: %ld\n", i, baseval + (LONG)va_arg(args, STACKED LONG));
+            Printf("\t%ld: %ld\n", i, baseval + (LONG)va_arg(args, STACKLONG));
         }
     }
 

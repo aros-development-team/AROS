@@ -50,8 +50,6 @@
 extern const char *__inet_ntop(int af, const void *src, char *dst, socklen_t size, struct SocketBase *SocketBase);
 extern int __inet_pton(int af, const char *src, void *dst, struct SocketBase *SocketBase);
 
-extern struct hostent *__gethostbyaddr(UBYTE *, int, int, struct SocketBase *);
-
 #undef SocketBase
 #define SocketBase MiamiBase->_SocketBase
 #define UserGroupBase MiamiBase->_UserGroupBase
@@ -59,7 +57,6 @@ extern struct hostent *__gethostbyaddr(UBYTE *, int, int, struct SocketBase *);
 typedef VOID (* f_void)(APTR args, ...);
 
 extern f_void Miami_UserFuncTable[];
-extern struct ifnet *ifnet;
 
 void __MiamiLIB_Cleanup(struct MiamiBase *MiamiBase)
 {

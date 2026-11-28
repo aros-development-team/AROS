@@ -57,7 +57,6 @@ struct Library *logDOSBase = NULL;
 struct Library *logUtilityBase = NULL;
 
 extern struct Task *AROSTCP_Task;
-extern struct DosLibrary *DOSBase;
 
 extern void REGARGFUN stuffchar();
 extern int logname_changed(void *p, IPTR new);

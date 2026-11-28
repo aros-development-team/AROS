@@ -25,11 +25,6 @@ CFILES := \
         createcontext \
         kernel_ipi \
         kernel_scheduler \
-        spininit \
-        spinislocked \
-        spintrylock \
-        spinlock \
-        spinunlock \
         platform_init \
         platform_post \
         kernel_debug \
@@ -44,9 +39,12 @@ CFILES := \
         getcpumask \
         getcpunumber \
         schedulecpu \
+        schedule \
         maygetchar \
         tags \
         intr \
+        modifyirq \
+        getirq \
         kernel_systimer \
         syscall \
         mmu \

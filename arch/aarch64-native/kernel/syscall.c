@@ -182,7 +182,7 @@ void handle_syscall(void *regs)
 
     D(bug("[Kernel] ## SVC %d @ 0x%p\n", svc_no, ((struct ExceptionContext *)regs)->pc));
 
-    if (svc_no <= SC_USERSTATE || svc_no == SC_REBOOT || svc_no == SC_POWEROFF)
+    if (svc_no <= SC_REMSWITCH || svc_no == SC_REBOOT || svc_no == SC_POWEROFF)
     {
         DREGS(cpu_DumpRegs(regs));
 

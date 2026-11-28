@@ -377,13 +377,6 @@ void cpu_Switch(regs_t *regs)
     /* Cache running task's context */
     STORE_TASKSTATE(task, regs)
 
-#if defined(__AROSEXEC_SMP__)
-    /* Wait() carries tc_SpinLock across KrnSwitch so no other CPU can
-     * dispatch this task before its context is saved. Stored now. */
-    if (task->tc_State == TS_WAIT)
-        KrnSpinUnLock(&task->tc_SpinLock);
-#endif
-
     /* iet_private1 == 0 = never dispatched (boot and bootstrap tasks are
      * installed with SET_THIS_TASK); a delta would charge them the whole
      * uptime. */
@@ -436,6 +429,12 @@ void cpu_Dispatch(regs_t *regs)
          * HANDLED to make a task ready - open a brief window for it. */
         asm volatile("wfi");
         asm volatile("msr daifclr, #3\n\tisb\n\tmsr daifset, #3" ::: "memory");
+        /*
+         * An interrupt handler in that window may have called Cause(), and
+         * with no task to return to there is no way out of an interrupt to
+         * run it from. Returns with interrupts masked.
+         */
+        core_RunSoftInts();
     }
 
     DSCHED(bug("[Kernel:%02d] cpu_Dispatch: 0x%p [R  ] '%s'\n", cpunum, task, task->tc_Node.ln_Name));

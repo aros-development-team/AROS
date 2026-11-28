@@ -1043,7 +1043,7 @@ void * tlsf_allocabs(struct MemHeaderExt * mhe, IPTR size, void * ptr)
     region_end = region_start + region_size; /* region_size is modified in MAPPING_SEARCH */
 
     /* Start looking now :) */
-    for (; fl < MAX_FLI; fl++)
+    for (; fl < REAL_FLI; fl++)
     {
         for (; sl < MAX_SLI; sl++)
         {

@@ -23,6 +23,7 @@ struct dma_data
 {
    port_t           au_DMAPort;
    struct PRDEntry *ab_PRD;
+   volatile UBYTE  *au_DMAStatus;
 };
 
 /* SFF-8038i DMA registers */

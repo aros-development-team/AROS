@@ -158,14 +158,6 @@ void cpu_Switch(regs_t *regs)
         }
     }
 
-#if defined(__AROSEXEC_SMP__)
-    /* Wait() carries tc_SpinLock across KrnSwitch so no other CPU can
-     * dispatch this task before its context is saved. Released last, once
-     * the FPU state and the accounting are stored too (as x86_64-pc). */
-    if (task->tc_State == TS_WAIT)
-        Kernel_53_KrnSpinUnLock(&task->tc_SpinLock, NULL);
-#endif
-
     core_Switch();
 }
 
@@ -187,8 +179,8 @@ void cpu_Dispatch(regs_t *regs)
         asm volatile("wfi");
         csr_clear(sstatus, SSTATUS_SIE);
 
-        if (SysBase->SysFlags & SFF_SoftInt)
-            core_Cause(INTB_SOFTINT, 1L << INTB_SOFTINT);
+        /* Returns with traps masked: the tick below and core_Dispatch() are next */
+        core_RunSoftInts();
 
 #if defined(__AROSEXEC_SMP__)
         /* The load figure is the boot CPU's (kernel_timer.c) */

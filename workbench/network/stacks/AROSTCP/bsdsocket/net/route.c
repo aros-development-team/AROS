@@ -142,9 +142,7 @@ static int rtinits_done = 0;
 struct radix_node_head *ns_rnhead = 0, *in_rnhead = 0;
 #if INET6
 struct radix_node_head *in6_rnhead = 0;
-extern struct ifnet *ifnet;     /* net/if.c */
 #endif
-struct radix_node *rn_match(), *rn_delete(), *rn_addroute();
 
 void
 rtinitheads()
@@ -479,7 +477,7 @@ struct sockaddr	*dst, *gateway;
             return (0);
     }
     if(ifa->ifa_addr->sa_family != dst->sa_family) {
-        struct ifaddr *oifa = ifa, *ifaof_ifpforaddr();
+        struct ifaddr *oifa = ifa;
         ifa = ifaof_ifpforaddr(dst, ifa->ifa_ifp);
         if(ifa == 0)
             ifa = oifa;
@@ -500,7 +498,7 @@ struct rtentry **ret_nrt;
     register struct rtentry *rt;
     register struct radix_node *rn;
     register struct radix_node_head *rnh;
-    struct ifaddr *ifa, *ifa_ifwithdstaddr();
+    struct ifaddr *ifa;
     struct sockaddr *ndst;
     u_char af = dst->sa_family;
 #define senderr(x) { error = x ; goto bad; }

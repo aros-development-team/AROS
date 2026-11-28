@@ -1528,6 +1528,27 @@ diff -ruN gcc-16.2.0/libatomic/libatomic_i.h gcc-16.2.0.aros/libatomic/libatomic
  
  /* Macros for handing sub-word sized quantities.  */
  #define MASK_1		((UWORD)0xff)
+diff -ruN gcc-16.2.0/libgcc/config/aarch64/t-aros gcc-16.2.0.aros/libgcc/config/aarch64/t-aros
+--- gcc-16.2.0/libgcc/config/aarch64/t-aros	1970-01-01 00:00:00.000000000 +0000
++++ gcc-16.2.0.aros/libgcc/config/aarch64/t-aros	2026-11-26 14:30:00.000000000 +0000
+@@ -0,0 +1,17 @@
++# The routines t-aarch64 adds, without its $(WERROR): with it the build
++# trips over warnings in the target headers gthr pulls in. The unwinder
++# calls the SME runtime, and __builtin___clear_cache needs sync-cache.c.
++# AROS has no shared libgcc, so the EH objects land in libgcc.a and the
++# SME symbol map is not needed. cpuinfo.c is empty without <sys/auxv.h>.
++LIB2ADD += $(srcdir)/config/aarch64/sync-cache.c
++LIB2ADD += $(srcdir)/config/aarch64/cpuinfo.c
++
++LIB2ADDEH += \
++	$(srcdir)/config/aarch64/__aarch64_have_sme.c \
++	$(srcdir)/config/aarch64/__arm_get_current_vg.S \
++	$(srcdir)/config/aarch64/__arm_sme_state.S \
++	$(srcdir)/config/aarch64/__arm_tpidr2_restore.S \
++	$(srcdir)/config/aarch64/__arm_tpidr2_save.S \
++	$(srcdir)/config/aarch64/__arm_za_disable.S
++
++LIBGCC2_CFLAGS += -Wno-prio-ctor-dtor
 diff -ruN gcc-16.2.0/libgcc/config/arm/t-aros gcc-16.2.0.aros/libgcc/config/arm/t-aros
 --- gcc-16.2.0/libgcc/config/arm/t-aros	1970-01-01 00:00:00.000000000 +0000
 +++ gcc-16.2.0.aros/libgcc/config/arm/t-aros	2020-12-27 16:58:14.310000000 +0000
@@ -1785,9 +1806,9 @@ diff -ruN gcc-16.2.0/libgcc/config.host gcc-16.2.0.aros/libgcc/config.host
 +	# one declaring the helpers unwind-dw2-execute_cfa.h calls.
 +	md_unwind_def_header=aarch64/aarch64-unwind-def.h
 +	md_unwind_header=aarch64/aarch64-unwind.h
-+	# Out-of-line atomics and TFmode soft float. The generic aros case
-+	# below leaves tmake_file empty, which is not enough on aarch64.
-+	tmake_file="${tmake_file} ${cpu_type}/t-lse ${cpu_type}/t-softfp t-softfp"
++	# The aarch64 routines (the SME runtime the unwinder calls among them),
++	# LSE atomics and TFmode soft float: the generic aros case sets none.
++	tmake_file="${tmake_file} ${cpu_type}/t-aros ${cpu_type}/t-lse ${cpu_type}/t-softfp t-softfp"
 +	;;
 +*-*-aros*)
 +	tmake_file=

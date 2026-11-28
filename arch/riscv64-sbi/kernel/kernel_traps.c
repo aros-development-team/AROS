@@ -261,9 +261,17 @@ static int krnTrapDispatch(struct ExceptionContext *ctx, unsigned long scause,
          * Only the outermost trap can do this - a fault taken inside
          * another trap has no task context to give the crash to.
          */
-        if ((KRN_TRAPDEPTH == 1) && getKernelBase() &&
-            (code < sizeof(exc_trap)) && (exc_trap[code] != -1))
+        if ((KRN_TRAPDEPTH == 1) && getKernelBase())
         {
+            /*
+             * At depth 1 it is task code that faulted, whatever the
+             * cause: the task gets it, and the hart is not halted. A
+             * cause with no trap of its own goes as an illegal
+             * instruction.
+             */
+            int trapnum = ((code < sizeof(exc_trap)) && (exc_trap[code] != -1))
+                            ? exc_trap[code] : 4;
+
             /*
              * Say so on serial before exec takes over: the Alert()
              * requester may never appear (input.device itself may be
@@ -282,7 +290,7 @@ static int krnTrapDispatch(struct ExceptionContext *ctx, unsigned long scause,
             krnSBIPutStr(" ra=");
             krnSBIPutHex(ctx->x[0]);
             krnSBIPutStr(" -> exec\n");
-            if (core_Trap(exc_trap[code], ctx))
+            if (core_Trap(trapnum, ctx))
                 return TRAP_DONE;
         }
 
@@ -337,8 +345,13 @@ static int krnTrapDispatch(struct ExceptionContext *ctx, unsigned long scause,
     krnDumpBacktrace(ctx);
 
     krnSBIPutStr("[trap] fatal - halting hart.\n");
+#if defined(__AROSEXEC_SMP__)
+    /* It runs nothing more, but still answers the other harts */
+    core_HaltCPU();
+#else
     for (;;)
         asm volatile("wfi");
+#endif
 
     return TRAP_DONE;
 }

@@ -11,6 +11,12 @@
 
 #define KERNEL_TAG_BASE	                (TAG_USER + 0x0ABA0000)
 
+/*
+ * The CPUs an interrupt may be delivered to: TASKAFFINITY_BOOT (the
+ * default), TASKAFFINITY_ANY or a CPU mask from KrnAllocCPUMask().
+ * KrnModifyIRQA() takes the least loaded of them, once; KrnGetIRQA()
+ * returns the number of the CPU the interrupt is delivered to.
+ */
 #define KERNELTAG_IRQ_AFFINITY	        (KERNEL_TAG_BASE + 0x00000001)
 #define KERNELTAG_IRQ_POLARITY	        (KERNEL_TAG_BASE + 0x00000002)
 #define KERNELTAG_IRQ_TRIGGERLEVEL      (KERNEL_TAG_BASE + 0x00000003)

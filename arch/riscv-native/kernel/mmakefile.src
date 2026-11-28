@@ -33,12 +33,7 @@ CFILES := \
         clearcpumask \
         getcpumask \
         cpuinmask \
-        schedulecpu \
-        spininit \
-        spinislocked \
-        spintrylock \
-        spinlock \
-        spinunlock
+        schedulecpu
 
 %set_archincludes mainmmake=kernel-kernel maindir=rom/kernel \
   modname=kernel pri=4 arch=native-riscv \

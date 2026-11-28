@@ -44,7 +44,10 @@ static int g_NumCPUs;
 
 #define MAP_LOOPS       200
 #define MAP_SLOTS       16          /* pages each phase-2 worker cycles over */
-#define MAP_FLAGS       (MAP_Readable | MAP_Writable)
+/* What RAM has in the boot mapping. Without the execute permission the pages
+   go back to exec's pool unable to hold code where the port enforces it, and
+   whatever is loaded there later takes an instruction fault. */
+#define MAP_FLAGS       (MAP_Readable | MAP_Writable | MAP_Executable)
 
 struct MapWorker
 {

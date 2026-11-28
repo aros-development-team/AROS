@@ -36,6 +36,7 @@ CFILES := \
         getsystemattr \
         allocirq \
         freeirq \
+        getirq \
         modifyirq \
         platform_init \
         maygetchar \

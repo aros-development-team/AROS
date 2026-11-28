@@ -102,15 +102,27 @@ void handle_sync(regs_t *regs)
  * ABOVE the recorded ceiling means somebody moved SP_EL1 up -- report
  * the interrupted context the FIRST time it happens, at the moment of
  * corruption, instead of crashing much later on garbage stack data.
+ *
+ * SP_EL1 is banked and each core has its own exception stack, so each
+ * core has its own ceiling: against one shared ceiling a core with a
+ * higher stack reports a fault that is none, and a core with a lower one
+ * is not watched at all. The TLS is set before the vectors on every core.
  */
 void krnCheckExcStack(regs_t *regs)
 {
-    static uintptr_t sp_ceiling = 0;
+    static uintptr_t sp_ceilings[AARCH64_MAXCPUS];
     uintptr_t top = (uintptr_t)regs + AARCH64_FRAME_SIZE;
+    unsigned int cpu = GetCPUNumber();
+    uintptr_t sp_ceiling;
+
+    if (cpu >= AARCH64_MAXCPUS)
+        return;
+
+    sp_ceiling = sp_ceilings[cpu];
 
     if (!sp_ceiling)
     {
-        sp_ceiling = top;
+        sp_ceilings[cpu] = top;
     }
     else if (top > sp_ceiling)
     {
@@ -119,7 +131,7 @@ void krnCheckExcStack(regs_t *regs)
         bug("[Kernel] !!! interrupted ctx: pc=%p lr=%p sp=%p spsr=%p\n",
             (void *)regs->pc, (void *)regs->lr, (void *)regs->sp,
             (void *)regs->cpsr);
-        sp_ceiling = top;   /* re-arm at new level to avoid log floods */
+        sp_ceilings[cpu] = top;     /* re-arm at new level to avoid log floods */
     }
 }
 

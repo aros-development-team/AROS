@@ -27,11 +27,6 @@ CFILES := \
         kernel_cpu \
         kernel_ipi \
         kernel_scheduler \
-        spininit \
-        spinislocked \
-        spintrylock \
-        spinlock \
-        spinunlock \
         platform_init \
         kernel_debug \
         getsystemattr \
@@ -47,12 +42,16 @@ CFILES := \
         maygetchar \
         tags \
         intr \
+        modifyirq \
+        getirq \
         kernel_systimer \
         syscall \
         mmu \
         issuper \
         cli \
         sti \
+        cause \
+        schedule \
         virtualtophysical \
         setprotection \
         mapglobal \

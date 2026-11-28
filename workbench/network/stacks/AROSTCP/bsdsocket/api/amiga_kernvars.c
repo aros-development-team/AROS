@@ -10,7 +10,6 @@
 #include <sys/synch.h>
 #include <api/amiga_api.h>      /* syscall_semaphore */
 
-extern struct ifnet *ifnet;
 extern struct rtstat rtstat;
 extern struct radix_node_head *rt_tables[];
 extern struct SignalSemaphore spl_semaphore;

@@ -12,18 +12,13 @@
 
 void task_CleanList(struct Task * task, struct TaskResBase *TaskResBase)
 {
+    struct TaskListEntry *taskEntry, *tetmp;
+
+    task_ListLock(TaskResBase);
+
     /* Are there any lock holders?, if not, do housecleaning */
     if (IsListEmpty(&TaskResBase->trb_LockedLists))
     {
-        struct TaskListEntry *taskEntry, *tetmp;
-
-#if !defined(__AROSEXEC_SMP__)
-        /* Don't let any other task interfere with us at the moment */
-        Forbid();
-#else
-        EXEC_SPINLOCK_LOCK(&TaskResBase->TaskListSpinLock, NULL, SPINLOCK_MODE_WRITE);
-#endif
-
         ForeachNodeSafe(&TaskResBase->trb_TaskList, taskEntry, tetmp)
         {
             if ((!taskEntry->tle_Task) ||
@@ -39,25 +34,16 @@ void task_CleanList(struct Task * task, struct TaskResBase *TaskResBase)
             Remove(&taskEntry->tle_Node);
             AddTail(&TaskResBase->trb_TaskList, &taskEntry->tle_Node);
         }
-
-#if !defined(__AROSEXEC_SMP__)
-        Permit();
-#else
-        EXEC_SPINLOCK_UNLOCK(&TaskResBase->TaskListSpinLock);
-#endif
     }
+
+    task_ListUnlock(TaskResBase);
 }
 
 struct TaskListEntry *GetTaskEntry(struct Task *task, struct TaskResBase *TaskResBase)
 {
     struct TaskListEntry *currNode, *retval = NULL;
 
-#if !defined(__AROSEXEC_SMP__)
-        /* Don't let any other task interfere with us at the moment */
-        Forbid();
-#else
-        EXEC_SPINLOCK_LOCK(&TaskResBase->TaskListSpinLock, NULL, SPINLOCK_MODE_WRITE);
-#endif
+    task_ListLock(TaskResBase);
 
     ForeachNode(&TaskResBase->trb_TaskList, currNode)
     {
@@ -68,11 +54,7 @@ struct TaskListEntry *GetTaskEntry(struct Task *task, struct TaskResBase *TaskRe
         }
     }
 
-#if !defined(__AROSEXEC_SMP__)
-        Permit();
-#else
-        EXEC_SPINLOCK_UNLOCK(&TaskResBase->TaskListSpinLock);
-#endif
+    task_ListUnlock(TaskResBase);
 
     return retval;
 }

@@ -5,9 +5,9 @@
 
           The cross-CPU Signal() path queues an IPI entry carrying a raw
           Task pointer on the target CPU. If the task is torn down and its
-          memory freed before that CPU drains its queue, signal_hook spins
-          on a freed (mungwall-poisoned) tc_SpinLock inside the FIQ handler
-          and the CPU wedges. This test makes that window deterministic:
+          memory freed before that CPU drains its queue, signal_hook runs
+          Signal() on freed (mungwall-poisoned) memory inside the IPI
+          handler. This test makes that window deterministic:
 
           Phase 0: functional check - a cross-CPU Signal() must still wake
           a waiting task (guards against lost wakeups in the fixed path).

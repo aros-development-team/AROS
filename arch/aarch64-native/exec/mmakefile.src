@@ -27,7 +27,7 @@ PRIV_EXEC_INCLUDES = \
 
 CFILES          := \
         platform_init exec_idle superstate userstate coldreboot shutdowna cachepredma cachepostdma cachecleare \
-        preparecontext
+        preparecontext intserver_vblank
 
 #MM kernel-exec-raspi-aarch64 : kernel-kernel-aarch64-includes kernel-kernel-includes
 

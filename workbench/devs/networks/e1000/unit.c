@@ -56,15 +56,18 @@
  */
 VOID ReportEvents(struct e1000Base *e1KBase, struct e1000Unit *unit, ULONG events)
 {
+    struct MsgPort *port = unit->e1ku_request_ports[EVENT_QUEUE];
     struct IOSana2Req *request, *tail, *next_request;
-    struct List *list;
+    struct List *list, matched;
 
-    list = &unit->e1ku_request_ports[EVENT_QUEUE]->mp_MsgList;
+    NEWLIST(&matched);
+    list = &port->mp_MsgList;
+
+    /* Go through list of event listeners. Take the ones waiting for one of
+     * these events off the port, and reply them once the port is unlocked */
+    e1000func_lock_port(e1KBase, port);
     next_request = (APTR)list->lh_Head;
     tail = (APTR)&list->lh_Tail;
-
-    /* Go through list of event listeners. If send messages to receivers if event found */
-    Disable();
     while(next_request != tail)
     {
         request = next_request;
@@ -74,10 +77,13 @@ VOID ReportEvents(struct e1000Base *e1KBase, struct e1000Unit *unit, ULONG event
         {
             request->ios2_WireError = events;
             Remove((APTR)request);
-            ReplyMsg((APTR)request);
+            AddTail(&matched, (APTR)request);
         }
     }
-    Enable();
+    e1000func_unlock_port(e1KBase, port);
+
+    while ((request = (APTR)RemHead(&matched)) != NULL)
+        ReplyMsg((APTR)request);
 
     return;
 }
@@ -194,30 +200,47 @@ static AROS_INTH1(e1000func_TX_Int, struct e1000Unit *,  unit)
 
     while(proceed && (!IsMsgPortEmpty(port)))
     {
+        /* Ring-full guard: never hand the NIC a descriptor it has not given
+         * back yet. Overrunning next_to_clean would reuse a buffer the NIC is
+         * still DMAing from and make TDT pass TDH (the NIC then sees an empty
+         * ring and stops). Leave the rest queued; e1000func_IntHandler causes
+         * this soft interrupt again once e1000func_clean_tx_irq frees slots. */
+        if (((tx_ring->next_to_clean > i) ? 0 : tx_ring->count) +
+            tx_ring->next_to_clean - i - 1 == 0)
+            break;
+
+        /* GetMsg() takes the port lock: the request is ours from here on */
+        if ((request = (APTR)GetMsg(port)) == NULL)
+            break;
+
         error = 0;
-        request = (APTR)port->mp_MsgList.lh_Head;
+        wire_error = 0;
         data_size = packet_size = request->ios2_DataLength;
 
         opener = (APTR)request->ios2_BufferManagement;
 
         buffer_info = &tx_ring->buffer_info[i];
 
-        if ((buffer_info->buffer = AllocMem(unit->e1ku_frame_max, MEMF_PUBLIC|MEMF_CLEAR)) != NULL)
+        /* Preallocated at ring setup: no AllocMem() in interrupt context */
+        frame = buffer_info->buffer;
+
+        if((request->ios2_Req.io_Flags & SANA2IOF_RAW) == 0)
+            packet_size += ETH_PACKET_DATA;
+
+        if (frame == NULL)
         {
-            frame = buffer_info->buffer;
-
-            if ((buffer_info->dma = HIDD_PCIDriver_CPUtoPCI(unit->e1ku_PCIDriver, buffer_info->buffer)) == NULL)
-            {
-                D(bug("[%s] ## %s: Failed to Map Tx DMA buffer\n", unit->e1ku_name, __func__));
-            }
-            else
-            {
-                D(bug("[%s] ## %s: Tx DMA buffer %d @ %p\n", unit->e1ku_name, __func__, i, buffer_info->dma));
-            }
-
+            error = S2ERR_NO_RESOURCES;
+            wire_error = S2WERR_BUFF_ERROR;
+        }
+        else if (packet_size > tx_ring->buf_size)
+        {
+            error = S2ERR_MTU_EXCEEDED;
+            wire_error = S2WERR_GENERIC_ERROR;
+        }
+        else
+        {
             if((request->ios2_Req.io_Flags & SANA2IOF_RAW) == 0)
             {
-                packet_size += ETH_PACKET_DATA;
                 CopyMem(request->ios2_DstAddr, frame->eth_packet_dest, ETH_ADDRESSSIZE);
                 CopyMem(unit->e1ku_dev_addr, frame->eth_packet_source, ETH_ADDRESSSIZE);
                 frame->eth_packet_type = AROS_WORD2BE(request->ios2_PacketType);
@@ -235,57 +258,36 @@ static AROS_INTH1(e1000func_TX_Int, struct e1000Unit *,  unit)
                     S2EVENT_ERROR | S2EVENT_SOFTWARE | S2EVENT_BUFF
                     | S2EVENT_TX);
             }
-
-            /* Now the packet is already in TX buffer, update flags for NIC */
-            if (error == 0)
-            {
-                Disable();
-                D(bug("[%s] ## %s: packet %d [type = %d] queued for transmission.\n", unit->e1ku_name, __func__, i, AROS_BE2WORD(frame->eth_packet_type)));
-
-              /* DEBUG? Dump frame if so */
-#ifdef DEBUG
-                {
-                    int j;
-                    D(bug("[%s] Tx Buffer %d Packet Dump -:", unit->e1ku_name, i));
-                    for (j = 0; j < packet_size; j++) {
-                        if ((j%16) == 0)
-                        {
-                            D(
-                            bug("\n");
-                            bug("[%s]:     %03x:", unit->e1ku_name, j);
-                            )
-                        }
-                        D(bug(" %02x", ((unsigned char*)frame)[j]));
-                    }
-                    D(bug("\n"));
-                }
-#endif
-                Enable();
-
-                /* Set the ring details for the packet .. */
-                buffer_info->length = packet_size;
-
-                tx_desc = E1000_TX_DESC(tx_ring, i);
-                tx_desc->buffer_addr = (IPTR)buffer_info->dma;
-                tx_desc->lower.data = AROS_LONG2LE(txd_lower | buffer_info->length);
-                tx_desc->upper.data = AROS_LONG2LE(txd_upper);
-                tx_desc->lower.data |= AROS_LONG2LE(unit->txd_cmd);
-            }
         }
 
-        buffer_info->next_to_watch = i;
+        /* Only a fully built frame consumes a descriptor. A failed request
+         * is replied with its error and leaves the slot untouched: advancing
+         * past an unwritten descriptor would resubmit the previous lap's
+         * stale descriptor to the NIC. */
+        if (error == 0)
+        {
+            D(bug("[%s] ## %s: packet %d [type = %d] queued for transmission.\n", unit->e1ku_name, __func__, i, AROS_BE2WORD(frame->eth_packet_type)));
 
-        if (++i == tx_ring->count) i = 0;
+            /* Set the ring details for the packet .. */
+            buffer_info->length = packet_size;
+
+            tx_desc = E1000_TX_DESC(tx_ring, i);
+            tx_desc->buffer_addr = (IPTR)buffer_info->dma;
+            tx_desc->lower.data = AROS_LONG2LE(txd_lower | buffer_info->length);
+            tx_desc->upper.data = AROS_LONG2LE(txd_upper);
+            tx_desc->lower.data |= AROS_LONG2LE(unit->txd_cmd);
+
+            buffer_info->next_to_watch = i;
+
+            if (++i == tx_ring->count) i = 0;
+        }
 
         /* Reply packet */
         request->ios2_Req.io_Error = error;
         request->ios2_WireError = wire_error;
-        Disable();
-        Remove((APTR)request);
-        Enable();
-        ReplyMsg((APTR)request);
 
-        /* Update statistics */
+        /* Update statistics before ReplyMsg(): the request belongs to the
+         * client again once it has been replied */
         if(error == 0)
         {
             tracker = FindTypeStats(LIBBASE, unit, &unit->e1ku_type_trackers, request->ios2_PacketType);
@@ -296,11 +298,16 @@ static AROS_INTH1(e1000func_TX_Int, struct e1000Unit *,  unit)
                 tracker->stats.BytesSent += packet_size;
             }
         }
+
+        ReplyMsg((APTR)request);
     }
 
-    tx_ring->next_to_use = i;
+    if (tx_ring->next_to_use != i)
+    {
+        tx_ring->next_to_use = i;
 
-    MMIO_W32((APTR)(((struct e1000_hw *)unit->e1ku_Private00)->hw_addr + tx_ring->tdt), tx_ring->next_to_use);
+        MMIO_W32((APTR)(((struct e1000_hw *)unit->e1ku_Private00)->hw_addr + tx_ring->tdt), tx_ring->next_to_use);
+    }
 
     return 0;
 
@@ -384,6 +391,11 @@ AROS_INTH1(e1000func_IntHandler,struct e1000Unit *,unit)
 
         if (!rx_cleaned && !tx_cleaned)
             break;
+
+        /* Descriptors were given back: resume any writes the Tx soft
+         * interrupt left queued because the ring was full */
+        if (tx_cleaned && !IsMsgPortEmpty(unit->e1ku_request_ports[WRITE_QUEUE]))
+            Cause(&unit->e1ku_tx_int);
     }
 
 //	if (adapter->itr_setting & 3)
@@ -396,7 +408,11 @@ AROS_INTH1(e1000func_IntHandler,struct e1000Unit *,unit)
    AROS_INTFUNC_EXIT
 }
 
-VOID CopyPacket(struct e1000Base *e1KBase, struct e1000Unit *unit, 
+/*
+ * Called with the request's port locked. Returns TRUE when the request has
+ * been taken off its port: the caller replies it after unlocking the port.
+ */
+BOOL CopyPacket(struct e1000Base *e1KBase, struct e1000Unit *unit, 
     struct IOSana2Req *request, UWORD packet_size, UWORD packet_type,
     struct eth_frame *buffer)
 {
@@ -468,11 +484,27 @@ VOID CopyPacket(struct e1000Base *e1KBase, struct e1000Unit *unit,
         {
             D(bug("SUCCESS!!\n"));
         }
-        Disable();
         Remove((APTR)request);
-        Enable();
-        ReplyMsg((APTR)request);
-        D(bug("[%s] %s: opener notified.\n", unit->e1ku_name, __func__));
+        return TRUE;
+    }
+
+    return FALSE;
+}
+
+/* The port a request waits on, as queued by the command handlers */
+struct MsgPort *e1000func_queue_port(struct e1000Unit *unit, struct IOSana2Req *request)
+{
+    struct Opener *opener = request->ios2_BufferManagement;
+
+    switch (request->ios2_Req.io_Command)
+    {
+    case CMD_READ:          return opener ? &opener->read_port : NULL;
+    case CMD_WRITE:
+    case S2_BROADCAST:
+    case S2_MULTICAST:      return unit->e1ku_request_ports[WRITE_QUEUE];
+    case S2_ONEVENT:        return unit->e1ku_request_ports[EVENT_QUEUE];
+    case S2_READORPHAN:     return unit->e1ku_request_ports[ADOPT_QUEUE];
+    default:                return unit->e1ku_input_port;
     }
 }
 
@@ -629,11 +661,46 @@ AROS_UFH3(void, e1000func_Schedular,
  */
 static ULONG e1000_unit_max_mtu(struct e1000_hw *hw)
 {
-    /* The original 82542 cannot handle jumbo frames; the rest of the 8254x
-     * family can, up to MAX_JUMBO_FRAME_SIZE on the wire. */
-    if (hw->mac.type == e1000_82542)
+    ULONG frame_max;
+
+    switch (hw->mac.type)
+    {
+    /* The 8254x family, except the original 82542 */
+    case e1000_82543:
+    case e1000_82544:
+    case e1000_82540:
+    case e1000_82545:
+    case e1000_82545_rev_3:
+    case e1000_82546:
+    case e1000_82546_rev_3:
+    case e1000_82541:
+    case e1000_82541_rev_2:
+    case e1000_82547:
+    case e1000_82547_rev_2:
+        frame_max = MAX_JUMBO_FRAME_SIZE;
+        break;
+
+    case e1000_82571:
+    case e1000_82572:
+    case e1000_82574:
+    case e1000_80003es2lan:
+    case e1000_ich9lan:
+    case e1000_ich10lan:
+        frame_max = 9234;
+        break;
+
+    case e1000_pchlan:
+        frame_max = 4096;
+        break;
+
+    /* No jumbo frames: 82542, 82573, 82583, ICH8. PCH2 and later could take
+     * 9234 bytes, but only with e1000_lv_jumbo_workaround_ich8lan() and
+     * RCTL.SECRC, which this driver does not use yet. */
+    default:
         return ETH_MTU;
-    return MAX_JUMBO_FRAME_SIZE - ETH_HEADERSIZE - ETH_CRCSIZE;
+    }
+
+    return frame_max - ETH_HEADERSIZE - ETH_CRCSIZE;
 }
 
 static ULONG e1000_unit_rx_bufsize(ULONG frame_max)
@@ -1107,6 +1174,9 @@ void DeleteUnit(struct e1000Base *e1KBase, struct e1000Unit *unit)
 
         if (unit->e1ku_name)
             FreeVec(unit->e1ku_name);
+
+        if (unit->e1ku_rx_scratch)
+            FreeMem(unit->e1ku_rx_scratch, unit->rx_buffer_len);
 
         FreeMem(unit, sizeof(struct e1000Unit));
     }

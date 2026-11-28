@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2025, The AROS Development Team. All rights reserved.
+    Copyright (C) 2025-2026, The AROS Development Team. All rights reserved.
 	
 	This code is to help debug crashes early in the kernels startup code
 */
@@ -15,8 +15,6 @@
 #include <proto/arossupport.h>
 #include <proto/exec.h>
 
-#include <inttypes.h>
-
 #include "boot_utils.h"
 #include "kernel_base.h"
 #include "kernel_intern.h"
@@ -25,11 +23,11 @@
 #include "kernel_mmap.h"
 #include "kernel_romtags.h"
 
-extern void boot_crashhandler(uint64_t int_no, uint64_t err_code);
+extern void boot_crashhandler(UQUAD int_no, UQUAD err_code);
 
 static x86vectgate_t boot_gates[16];
 
-#define VGA_ADDR ((volatile uint16_t*)0xB8000)
+#define VGA_ADDR ((volatile UWORD*)0xB8000)
 #define VGA_COLOR_WHITE_ON_BLUE  0x1F  // 0x1 = white (foreground), 0xF = blue (background)
 #define VGA_COLOR_RED_ON_BLACK  0x04  // 0x4 = red (foreground), 0x0 = black (background)
 #define VGA_COLOR_RED_BACK  0x4F
@@ -81,10 +79,10 @@ ISR_NOERR(15)  // Reserved
 static const char hex_digits[] = "0123456789ABCDEF";
 static char buf[21];
 
-static volatile uint16_t *vga_cursor;
+static volatile UWORD *vga_cursor;
 
-static void draw_frame(uint16_t border_char) {
-    volatile uint16_t* vga = VGA_ADDR;
+static void draw_frame(UWORD border_char) {
+    volatile UWORD* vga = VGA_ADDR;
 
     // Top and bottom rows
     for (int x = 0; x < VGA_WIDTH; x++) {
@@ -99,9 +97,9 @@ static void draw_frame(uint16_t border_char) {
     }
 }
 
-static int print_char(char c, volatile uint16_t** cursor) {
-    volatile uint16_t* vga_base = VGA_ADDR;
-    uintptr_t pos = *cursor - vga_base;
+static int print_char(char c, volatile UWORD** cursor) {
+    volatile UWORD* vga_base = VGA_ADDR;
+    IPTR pos = *cursor - vga_base;
 
     if (pos >= VGA_LIMIT) {
         return -1; // fail if cursor is out of bounds
@@ -116,10 +114,10 @@ static int print_char(char c, volatile uint16_t** cursor) {
         *cursor = vga_base + pos + 1;
     } else {
         // Calculate current column (0 to 79)
-        size_t col = pos % VGA_WIDTH;
+        IPTR col = pos % VGA_WIDTH;
 
         // Print character
-        **cursor = ((uint16_t)VGA_COLOR << 8) | c;
+        **cursor = ((UWORD)VGA_COLOR << 8) | c;
         (*cursor)++;
 
         pos++;
@@ -137,7 +135,7 @@ static int print_char(char c, volatile uint16_t** cursor) {
     return 0; // success
 }
 
-static int print_str(const char* str, volatile uint16_t** cursor) {
+static int print_str(CONST_STRPTR str, volatile UWORD** cursor) {
     while (*str) {
         if (print_char(*str++, cursor) != 0) {
             return -1;  // stop printing on failure
@@ -146,9 +144,9 @@ static int print_str(const char* str, volatile uint16_t** cursor) {
     return 0;
 }
 
-static void print_uint64(uint64_t val, volatile uint16_t **cursor) {
+static void print_uint64(UQUAD val, volatile UWORD **cursor) {
 
-    char *p = buf + sizeof(buf) - 1;
+    STRPTR p = buf + sizeof(buf) - 1;
     *p = '\0';
 
     if (val == 0) {
@@ -165,45 +163,45 @@ static void print_uint64(uint64_t val, volatile uint16_t **cursor) {
         print_char(*p++, cursor);
 }
 
-static void uint8_as_hex(uint8_t value, char* buf) {
+static void uint8_as_hex(UBYTE value, STRPTR buf) {
     buf[0] = hex_digits[(value >> 4) & 0xF];
     buf[1] = hex_digits[value & 0xF];
     buf[2] = '\0';
 }
 
-static void uint8_to_hex(uint8_t val, char* buf) {
+static void uint8_to_hex(UBYTE val, STRPTR buf) {
     buf[0] = '0';
     buf[1] = 'x';
 	uint8_as_hex(val, &buf[2]);
 }
 
-static void uint32_as_hex(uint32_t val, char* buf) {
+static void uint32_as_hex(ULONG val, STRPTR buf) {
     for (int i = 0; i < 8; ++i) {
         buf[i] = hex_digits[(val >> ((15 - i) * 4)) & 0xF];
     }
     buf[8] = '\0';
 }
 
-static void uint32_to_hex(uint32_t val, char* buf) {
+static void uint32_to_hex(ULONG val, STRPTR buf) {
     buf[0] = '0';
     buf[1] = 'x';
     uint32_as_hex(val, &buf[2]);
 }
 
-static void uint64_as_hex(uint64_t val, char* buf) {
+static void uint64_as_hex(UQUAD val, STRPTR buf) {
     for (int i = 0; i < 16; ++i) {
         buf[i] = hex_digits[(val >> ((15 - i) * 4)) & 0xF];
     }
     buf[16] = '\0';
 }
 
-static void uint64_to_hex(uint64_t val, char* buf) {
+static void uint64_to_hex(UQUAD val, STRPTR buf) {
     buf[0] = '0';
     buf[1] = 'x';
     uint64_as_hex(val, &buf[2]);
 }
 
-static void print_crash_type(uint64_t int_no, volatile uint16_t **cursor) {
+static void print_crash_type(UQUAD int_no, volatile UWORD **cursor) {
 	switch (int_no)
 	{
 	case 0:  print_str("Divide by zero", cursor); break;
@@ -225,17 +223,17 @@ static void print_crash_type(uint64_t int_no, volatile uint16_t **cursor) {
 	}
 }
 
-static void print_crash_info(uint64_t *stack) {
-    uint64_t int_no   = stack[15]; // offset 120 / 8
-    uint64_t err_code = stack[16]; // offset 128 / 8
-    uint64_t rip      = stack[17]; // offset 136 / 8
-	uint16_t frame = (uint16_t)' ';
+static void print_crash_info(UQUAD *stack) {
+    UQUAD int_no   = stack[15]; // offset 120 / 8
+    UQUAD err_code = stack[16]; // offset 128 / 8
+    UQUAD rip      = stack[17]; // offset 136 / 8
+	UWORD frame = (UWORD)' ';
 
 	do
 	{
-		vga_cursor = (volatile uint16_t*)VGA_ADDR;
+		vga_cursor = (volatile UWORD*)VGA_ADDR;
 		if ((frame & 0xFF00) == 0)
-			frame |= ((uint16_t)VGA_COLOR_RED_BACK << 8);
+			frame |= ((UWORD)VGA_COLOR_RED_BACK << 8);
 		else
 			frame &=  0xFF;
 		draw_frame(frame);
@@ -323,7 +321,7 @@ static void print_crash_info(uint64_t *stack) {
 			uint64_to_hex(rip, buf);
 			print_str(buf, &vga_cursor);
 			print_char('\n', &vga_cursor);
-			uint8_t* ptr = (uint8_t*)rip;
+			UBYTE* ptr = (UBYTE*)rip;
 			for (int i = 0; i < 32; ++i) {
 				uint8_as_hex(ptr[i], buf);
 				print_str(buf, &vga_cursor);
@@ -332,19 +330,19 @@ static void print_crash_info(uint64_t *stack) {
 			print_char('\n', &vga_cursor);
 		}
 
-		volatile uint64_t i;
+		volatile UQUAD i;
 		for (i = 0; i < 50000000; ++i) {
 			__asm__ volatile ("pause");
 		}
 	}
-	while (true);
+	while (TRUE);
 
     __asm__ __volatile__ (
         "hlt\n\t"
 		);
 }
 
-__attribute__((naked)) void boot_crashhandler(uint64_t int_no, uint64_t err_code) {
+__attribute__((naked)) void boot_crashhandler(UQUAD int_no, UQUAD err_code) {
     __asm__ __volatile__ (
         "cli\n\t"
 

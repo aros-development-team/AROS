@@ -105,12 +105,21 @@ void apicInitVectorMap(void)
     }
 }
 
+/*
+ * The map is read at interrupt time without a lock. That is safe because an
+ * entry is written once, before the vector's gate is made present and its
+ * source is unmasked, and is never changed again.
+ *
+ * Only the interrupt controllers' init code registers vectors, on the boot
+ * CPU before the others are started.
+ */
 void apicRegisterVector(UBYTE vector, ULONG irq)
 {
     VECTOR_SET(vector);
     apicIRQVectorMap[vector] = irq;
 }
 
+/* Runs on any CPU. The caller holds ictl_Lock(), which is what guards the bitmap. */
 UBYTE apicAllocVector(ULONG irq)
 {
     int i;
@@ -346,6 +355,22 @@ void core_SetupIDT(apicid_t _APICID, x86vectgate_t *IGATES)
     DIDT(bug("[Kernel]" DEBUGCOLOR_SET " %s(%u): IDT configured" DEBUGCOLOR_RESET "\n", __func__, _APICID));
 }
 
+/*
+ * A CPU started after the interrupt controllers were set up gets the device
+ * vector gates the boot CPU has: its IDT is the one every enable reaches.
+ * core_SetupIDT() has installed the handlers; only the present bits differ.
+ *
+ * The caller holds ictl_Lock() from before its core_SetupIDT(), so that no
+ * gate enabled on all CPUs meanwhile is lost between the two.
+ */
+void core_CopyDeviceGates(x86vectgate_t *IGATES, const x86vectgate_t *bootIGATES)
+{
+    int i;
+
+    for (i = HW_IRQ_BASE; i < APIC_CPU_EXCEPT_BASE; i++)
+        IGATES[i].p = bootIGATES[i].p;
+}
+
 void core_InvalidateIDT()
 {
     struct segment_selector IDT_sel;
@@ -371,6 +396,10 @@ void core_IRQHandle(struct ExceptionContext *regs, unsigned long error_code, uns
 {
     struct KernelBase *KernelBase = getKernelBase();
     struct PlatformData *pdata = NULL;
+    /* Where this CPU's context flags and last interrupt are kept; set with pdata */
+    IPTR *ctxFlags = NULL;
+    ULONG *lastState = NULL;
+    UWORD *lastInt = NULL;
 
 #if DEBUG_XMM
 CREATEPSEUDOSTACK
@@ -394,9 +423,29 @@ SAVE_XMM_INTO_AREA(localarea)
 
     if (KernelBase && (pdata = (struct PlatformData *)KernelBase->kb_PlatformData) != NULL)
     {
+        struct CPUData *cpuData = core_APIC_GetCPUData(pdata->kb_APIC);
+
+        /*
+         * Per CPU where there is per-CPU data: two CPUs in here at once
+         * must not share these, and kb_PDFlags holds other flags too.
+         * The same places are used on the way out.
+         */
+        if (cpuData)
+        {
+            ctxFlags = &cpuData->cpu_IntrFlags;
+            lastState = &cpuData->cpu_LastState;
+            lastInt = &cpuData->cpu_LastInt;
+        }
+        else
+        {
+            ctxFlags = &pdata->kb_PDFlags;
+            lastState = &pdata->kb_LastState;
+            lastInt = &pdata->kb_LastInt;
+        }
+
         /* cache the current state */
-        pdata->kb_LastState = ((pdata->kb_PDFlags & (PLATFORMF_INIRQ|PLATFORMF_INEXCPT)) << 16) | pdata->kb_LastInt;
-        pdata->kb_LastInt = int_number;
+        *lastState = ((*ctxFlags & (PLATFORMF_INIRQ|PLATFORMF_INEXCPT)) << 16) | *lastInt;
+        *lastInt = int_number;
     }
 
     // An IRQ which arrived at the CPU is *either* an exception (let it be syscall, cpu exception,
@@ -413,7 +462,7 @@ SAVE_XMM_INTO_AREA(localarea)
         /* Store the error code for later retrieval */
         if (pdata)
         {
-            pdata->kb_PDFlags |= PLATFORMF_INEXCPT;
+            *ctxFlags |= PLATFORMF_INEXCPT;
             switch (int_number)
             {
             /*
@@ -482,7 +531,20 @@ SAVE_XMM_INTO_AREA(localarea)
             bug("[Kernel]" DEBUGCOLOR_SET " %s(%u): CPU Trap returned" DEBUGCOLOR_RESET "\n", __func__, int_number);
         )
         if (pdata)
-            pdata->kb_PDFlags &= ~PLATFORMF_INEXCPT;
+            *ctxFlags &= ~PLATFORMF_INEXCPT;
+
+        /*
+         * The LAPIC timer and IPIs are the only interrupts an AP takes, so
+         * like a device IRQ they take a pending task switch on the way back
+         * to user mode; the heartbeat only sets the flag. cpu_Trap() has
+         * sent the EOI.
+         */
+        if ((exception_number >= X86_CPU_EXCEPT_COUNT) && (exception_number < APIC_EXCEPT_SYSCALL) &&
+            (SysBase != NULL) && INTR_FROMUSERMODE)
+        {
+            __asm__ __volatile__("cld;");
+            core_ExitInterrupt(regs);
+        }
     }
     else
     {
@@ -494,7 +556,7 @@ SAVE_XMM_INTO_AREA(localarea)
 
         if (pdata)
         {
-            pdata->kb_PDFlags |= PLATFORMF_INIRQ;
+            *ctxFlags |= PLATFORMF_INIRQ;
         }
         if (KernelBase && irq_number != 0xFFFFFFFF && irq_number < HW_IRQ_COUNT)
         {
@@ -522,7 +584,7 @@ SAVE_XMM_INTO_AREA(localarea)
         }
         if (pdata)
         {
-            pdata->kb_PDFlags &= ~PLATFORMF_INIRQ;
+            *ctxFlags &= ~PLATFORMF_INIRQ;
         }
         /*
          * Upon exit from the lowest-level device IRQ, if we are returning to user mode,
@@ -544,6 +606,9 @@ SAVE_XMM_INTO_AREA(localarea)
     DIRQ(
         bug("[Kernel]" DEBUGCOLOR_SET " %s(%u): calling LeaveInterrupt...(%08X)" DEBUGCOLOR_RESET "\n", __func__, int_number, regs->Flags);
     )
+
+    /* core_ExitInterrupt() may return with interrupts on (SoftIntDispatch() ends in KrnSti()) */
+    __asm__ __volatile__("cli");
 
 #if (__WORDSIZE==64)
     /* Restore first four XMM registers. They could have been modified by any interrupt handler.

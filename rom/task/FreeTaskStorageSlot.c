@@ -58,9 +58,9 @@
         bug("[TaskRes] %s: Task '%s' Freed SlotID #%u\n", __func__, thisTask->tc_Node.ln_Name, slotid);
     )
 
-    Forbid();
+    task_ListLock(TaskResBase);
     AddHead((struct List *)&TaskResBase->trb_TaskStorageSlots, (struct Node *)freeTaskStorageSlot);
-    Permit();
+    task_ListUnlock(TaskResBase);
 #endif
 
     AROS_LIBFUNC_EXIT

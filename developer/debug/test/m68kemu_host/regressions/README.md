@@ -549,7 +549,7 @@ The runner extracts `M68KEmu_LoadM68KLibrary`, `m68k_init_struct` and
 `M68KEmu_FreeImage` from `m68kemu_memory.c`, the memory accessors from
 `m68kemu_intern.h` and the `M68K_*` constants they use from
 `m68kemu_offsets.h`. DOS, the heap and the placement of the hunks of a
-library image are recording fixtures; no CPU runs. The 27 cases load
+library image are recording fixtures; no CPU runs. The 35 cases load
 well-formed libraries (relative function tables, a Resident in the second
 hunk, every init table command, a base filled to its last byte, a function
 table cut at 1000) and malformed ones: data sizes that wrap or exceed
@@ -559,7 +559,12 @@ containment, a Resident that is not whole inside its hunk or lies between
 two hunks of the image, and each refusal on the way, which must give back
 exactly the blocks of the attempt and nothing of the running program. The
 program's entry point, segment start and load span must be its own again
-after a library was loaded or refused. The fixture prints `ok` or `FAIL`
+after a library was loaded or refused. Eight cases keep the caller's
+`IoErr()` across the loader's own file search and read: a missing library
+leaves the caller's 0 and the caller's own error, not the error of the
+probes, also for a path name, after a native file in `LIBS:` is passed over,
+when the library is found after failed probes, and when the file cannot be
+sized, gets no buffer or comes short. The fixture prints `ok` or `FAIL`
 for each case and `m68kemu 68k library loading bounds: <cases> cases,
 <n> failed, <checks> checks`; it exits with 1 when a case failed.
 

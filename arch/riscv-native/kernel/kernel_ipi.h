@@ -23,15 +23,8 @@
 #define IPI_REMTASK             0x100
 #define IPI_REBOOT              0x200
 
-#include <utility/hooks.h>
-
-#define IPI_CALL_HOOK_MAX_ARGS  5
-
-struct IPIHook
-{
-    struct Hook ih_Hook;
-    IPTR        ih_Args[IPI_CALL_HOOK_MAX_ARGS];
-};
+/* struct IPIHook, the pending words and the call queues are shared by all ports */
+#include <kernel_ipicall.h>
 
 extern void core_IPIInit(void);
 /* Post msg to every CPU in the (resolved) mask and interrupt them */
@@ -43,19 +36,10 @@ extern int core_DoCallIPI(struct Hook *hook, void *cpu_mask, int async,
                           int nargs, IPTR *args, APTR _KB);
 
 /*
- * Split claim/commit plus cancellation, so exec can validate the
- * target's lifetime atomically with the enqueue and flush stale calls
- * at teardown. KERNEL_IPI_CALL_CANCELABLE keys exec's lifetime-safe
- * path off this (rom/exec/signal.c).
+ * Drop the queued calls of a hook whose second argument matches, and wait
+ * out one that is running; exec uses it when a task is removed, for the
+ * Signal() calls still on their way to it.
  */
-struct CallIPIEntry;
-
-extern struct CallIPIEntry *core_ClaimCallIPI(int cpu);
-extern void core_CommitCallIPI(struct CallIPIEntry *cie, int cpu,
-                               struct Hook *hook, int nargs, IPTR *args);
-extern void core_AbortCallIPI(struct CallIPIEntry *cie, int cpu);
 extern void core_CancelCallIPIs(APTR hookEntry, IPTR matchArg);
-
-#define KERNEL_IPI_CALL_CANCELABLE
 
 #endif

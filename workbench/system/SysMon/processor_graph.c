@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2017-2023, The AROS Development Team. All rights reserved.
+    Copyright (C) 2017-2026, The AROS Development Team. All rights reserved.
 */
 
 #define DEBUG 0
@@ -129,15 +129,17 @@ Object *ProcessorGraph__OM_NEW(Class *CLASS, Object *self, struct opSet *message
     }
     else
     {
-        if (processorcount <= 4)
-            cpupr = processorcount;
-        else if ((cpupr = cpusperrow(processorcount)) < 4)
-        {
-            if (processorcount <= 4)
-                cpupr = processorcount;
-            else
-                cpupr = 4;
-        }
+        /*
+         * Every row holds the same number of cores, so the column count
+         * divides the core count: the smallest divisor no less than its
+         * square root, for the squarest grid that is not taller than it is
+         * wide.
+         */
+        cpupr = cpusperrow(processorcount);
+        if (cpupr * cpupr < processorcount)
+            cpupr++;
+        while (processorcount % cpupr)
+            cpupr++;
 
         self = (Object *) DoSuperNewTags(CLASS, self, NULL,
                 MUIA_Group_Columns, cpupr,
@@ -193,10 +195,6 @@ Object *ProcessorGraph__OM_NEW(Class *CLASS, Object *self, struct opSet *message
             data->pg_GraphReadHooks[i].h_Data = (APTR)i;
 
             DoMethod(procGuage, MUIM_Graph_SetSourceAttrib, procDataSource, MUIV_Graph_Source_ReadHook, &data->pg_GraphReadHooks[i]);
-        }
-        for (i %= cpupr; (i > 0) && (i < cpupr); i ++)
-        {
-            DoMethod(self, OM_ADDMEMBER, (IPTR)HVSpace);
         }
     }
 

@@ -38,6 +38,13 @@ int APICHeartbeatServer(struct ExceptionContext *regs, struct KernelBase *Kernel
         bug("[Kernel:APIC.%03u] %s()\n", cpuNum, __func__);
       )
 
+    /* The last heartbeat the reset handler asked for: it is not relaunched */
+    if (pdata->kb_PDFlags & PLATFORMF_ENDHEARTBEAT)
+    {
+        pdata->kb_PDFlags &= ~PLATFORMF_HAVEHEARTBEAT;
+        return 1;
+    }
+
     if (apicData->flags & APF_TIMER)
     {
 #if defined(__AROSEXEC_SMP__)

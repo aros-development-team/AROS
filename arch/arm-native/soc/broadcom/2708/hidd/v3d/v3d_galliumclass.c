@@ -16,6 +16,8 @@
 #include <aros/debug.h>
 #include <proto/oop.h>
 #include <proto/exec.h>
+#include <proto/utility.h>
+#include <proto/alib.h>
 #include <proto/graphics.h>
 #include <proto/layers.h>
 #include <proto/cybergraphics.h>

@@ -80,7 +80,9 @@
         tsstorage[__TS_FIRSTSLOT] = slotalloccnt;
 
         /* Replacing of the pointer needs to be atomic due to GetParentTaskStorageSlot() */
+        task_SlotsLock(thisTask, TRUE, TaskResBase);
         et->et_Reserved[ETASK_RSVD_SLOTID] = tsstorage;
+        task_SlotsUnlock(thisTask, TaskResBase);
     } else if (tsstorage[__TS_FIRSTSLOT] <= slotid) {
         IPTR *newts;
         ULONG newslots = ((slotid + TASKSTORAGEPUDDLE) / TASKSTORAGEPUDDLE) * TASKSTORAGEPUDDLE;
@@ -98,11 +100,18 @@
                 (oldslots-1) * sizeof(tsstorage[0]));
         memset(&newts[oldslots], 0, (newslots - oldslots) * sizeof(tsstorage[0]));
 
-        /* Replacing of the pointer needs to be atomic due to GetParentTaskStorageSlot() */
+        /*
+         * A child reading through GetParentTaskStorageSlot() holds this
+         * task's lock for as long as it uses the array: swap under it,
+         * free after.
+         */
+        task_SlotsLock(thisTask, TRUE, TaskResBase);
         et->et_Reserved[ETASK_RSVD_SLOTID] = newts;
+        task_SlotsUnlock(thisTask, TaskResBase);
         FreeMem(tsstorage, oldslots * sizeof(tsstorage[0]));
     }
 
+    /* Only this task replaces the array; a child reads the slot as one word */
     tsstorage = (IPTR *)et->et_Reserved[ETASK_RSVD_SLOTID];
     if (tsstorage != NULL)
         tsstorage[slotid] = value;

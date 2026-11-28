@@ -18,6 +18,8 @@ FILES := screenppm \
     showvisregion \
     showvisshape \
     textbug \
+    textextents \
+    textlong \
     truecolorpens \
     weightamatch
 

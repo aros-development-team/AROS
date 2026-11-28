@@ -3,9 +3,9 @@
 
     Desc: KrnGetCPUAttr() - AArch64.
 
-    The documented per-CPU form of the attributes. The load itself is
-    computed by KrnGetSystemAttr(KATTR_CPULoad + n), the older form,
-    which stays for compatibility.
+    The documented per-CPU form of the attributes. The load is read
+    through KrnGetSystemAttr(KATTR_CPULoad + n), the older form, which
+    stays for compatibility; each core works its own out from its tick.
 */
 
 #include <aros/kernel.h>

@@ -60,11 +60,6 @@
 #include <stdio.h>
 #include <api/apicalls.h>
 
-/* External functions */
-int ultoa(unsigned long ul, char *buffer);
-
-extern struct Task *AROSTCP_Task; /* referenced by sendbreak() */
-
 /* Parsing error messages */
 UBYTE ERR_UNKNOWN[]     = "Unknown command";
 UBYTE ERR_ILLEGAL_VAR[] = "%s: unknown variable %s";

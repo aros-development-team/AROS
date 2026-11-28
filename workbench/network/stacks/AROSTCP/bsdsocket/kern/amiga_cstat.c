@@ -517,7 +517,6 @@ cstat_rtflags(struct CSource *res, const char *format, register int f)
     }
 }
 
-extern int sethostname(const char *name, size_t namelen);
 extern struct Library *SocketBase; /* base opened by NETTRACE */
 
 LONG

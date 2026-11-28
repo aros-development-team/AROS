@@ -69,7 +69,7 @@
         {
             if (typeEntry->tlhe_Node.ln_Pri >= 0)
             {
-                hookEntry = AllocMem(sizeof(struct TaskListHookNode *), MEMF_PUBLIC|MEMF_CLEAR);
+                hookEntry = AllocMem(sizeof(struct TaskListHookNode), MEMF_PUBLIC|MEMF_CLEAR);
                 hookEntry->tln_Hook = tHook;
                 AddTail((struct List *)&typeEntry->tlhe_Hooks, (struct Node *)&hookEntry->tln_Hook->h_MinNode);
             }

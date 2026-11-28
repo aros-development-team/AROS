@@ -73,8 +73,6 @@
 #include "tcp_compat.h"
 #include <net/netcore_map.h>        /* always the last include */
 
-extern int tcp_do_pmtud;
-
 #ifdef notyet
 extern struct mbuf *m_copypack();
 #endif

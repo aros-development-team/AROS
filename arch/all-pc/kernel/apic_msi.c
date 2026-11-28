@@ -34,6 +34,12 @@ ULONG core_APIC_AllocMSI(ULONG count)
 
     if (apicPrivate->msibase)
     {
+        /*
+         * Callers on two CPUs must not be handed the same range: find it
+         * and move msilast past it in one step. The lock is let go before
+         * the interrupts are enabled, as enabling takes it itself.
+         */
+        IPTR lockState = ictl_Lock();
         UWORD first = apicPrivate->msilast;
         if (!first)
             first = apicPrivate->msibase;
@@ -64,6 +70,10 @@ ULONG core_APIC_AllocMSI(ULONG count)
         }
 
         if (cpuIRQ != (UWORD)-1)
+            apicPrivate->msilast = cpuIRQ + count;
+        ictl_Unlock(lockState);
+
+        if (cpuIRQ != (UWORD)-1)
         {
             D(bug("[APIC:MSI] %s: Enabling IRQ's #%u -> #%u\n", __func__, cpuIRQ, cpuIRQ + count);)
 
@@ -74,7 +84,6 @@ ULONG core_APIC_AllocMSI(ULONG count)
             msiIRQ = cpuIRQ;
 
             D(bug("[APIC:MSI] %s: New MSI IRQ ID Base = %u, for %d IRQs\n", __func__, msiIRQ, count);)
-            apicPrivate->msilast = cpuIRQ + count;
         }
         else
         {

@@ -56,18 +56,20 @@
     /* Be sure no other tasks access the information when it is in an
        inconsistent state
     */
-    Forbid();
+    task_SlotsLock(thisTask, TRUE, TaskResBase);
 
     tsstorage = (IPTR *)et->et_Reserved[ETASK_RSVD_SLOTID];
-    if (tsstorage != NULL) {
-        IPTR slotalloccnt = tsstorage[__TS_FIRSTSLOT];
-        FreeMem(et->et_Reserved[ETASK_RSVD_SLOTID], slotalloccnt * sizeof(IPTR));
-    }
 
     /* Restore content of TaskStorage */
     et->et_Reserved[ETASK_RSVD_SLOTID] = tsrestore;
 
-    Permit();
+    task_SlotsUnlock(thisTask, TaskResBase);
+
+    /* The old array goes once no child can be reading it */
+    if (tsstorage != NULL) {
+        IPTR slotalloccnt = tsstorage[__TS_FIRSTSLOT];
+        FreeMem(tsstorage, slotalloccnt * sizeof(IPTR));
+    }
 #endif
 
     AROS_LIBFUNC_EXIT

@@ -63,6 +63,12 @@
     if (thisET != NULL)
     {
 #if defined(__AROSEXEC_SMP__)
+        /*
+         * The lock is also taken under Disable(). A reader that could be
+         * switched out while it holds it would keep such a writer on the
+         * same CPU waiting for ever.
+         */
+        Forbid();
         EXEC_SPINLOCK_LOCK(&IntETask(thisET)->iet_TaskLock, NULL, SPINLOCK_MODE_READ);
 #endif
         ForeachNode (&thisET->et_Children, et)
@@ -75,6 +81,7 @@
         }
 #if defined(__AROSEXEC_SMP__)
         EXEC_SPINLOCK_UNLOCK(&IntETask(thisET)->iet_TaskLock);
+        Permit();
 #endif
         if (!retVal)
         {
@@ -151,7 +158,7 @@ Exec_InitETask(struct Task *task, struct Task *parent, struct ExecBase *SysBase)
         if (piet)
         {
             Disable();
-            EXEC_SPINLOCK_LOCK(&parent->tc_SpinLock, NULL, SPINLOCK_MODE_READ);
+            EXEC_SPINLOCK_LOCK(&piet->iet_TaskLock, NULL, SPINLOCK_MODE_READ);
             paff = piet->iet_CpuAffinity;
             if (paff && (IPTR)paff != TASKAFFINITY_ANY)
             {
@@ -161,7 +168,7 @@ Exec_InitETask(struct Task *task, struct Task *parent, struct ExecBase *SysBase)
                     if (KrnCPUInMask(i, paff))
                         KrnGetCPUMask(i, aff);
             }
-            EXEC_SPINLOCK_UNLOCK(&parent->tc_SpinLock);
+            EXEC_SPINLOCK_UNLOCK(&piet->iet_TaskLock);
             Enable();
         }
 
@@ -394,9 +401,8 @@ BOOL Exec_CheckTask(struct Task *task, struct ExecBase *SysBase)
 
 #if defined(__AROSEXEC_SMP__)
     /*
-     * Disable(), not Forbid(): the FIQ-delivered IPI takes these same
-     * locks for writing, and a writer spins while a reader holds them.
-     * Only Disable() masks that FIQ.
+     * Disable(), not Forbid(): the run list locks are also taken in
+     * interrupt context, so a task holds them with interrupts off.
      */
     Disable();
     EXEC_SPINLOCK_LOCK(&PrivExecBase(SysBase)->TaskRunningSpinLock, NULL, SPINLOCK_MODE_READ);

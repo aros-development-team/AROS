@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2017, The AROS Development Team. All rights reserved.
+    Copyright (C) 1995-2026, The AROS Development Team. All rights reserved.
 
     Desc: Change the priority of a task.
 */
@@ -64,6 +64,7 @@
     BOOL doResched = FALSE, doRemote = FALSE;
     int cpunum = KrnGetCPUNumber();
     void *remoteCpuAffinity = NULL;
+    ULONG state;
 #endif
     BYTE old;
 
@@ -73,26 +74,35 @@
     Disable();
 #if defined(__AROSEXEC_SMP__)
     /*
-     * Take the task lock before picking the list lock: tc_State tells us
-     * which list the task is on, and only the task lock keeps it still.
+     * The task's state says which list it is on, and so which lock keeps
+     * it there. The state can change until that lock is held, so read it
+     * again once it is and start over if it did.
      */
-    EXEC_SPINLOCK_LOCK(&task->tc_SpinLock, NULL, SPINLOCK_MODE_WRITE);
-    switch (task->tc_State)
+    for (;;)
     {
-        case TS_RUN:
-            task_listlock =&PrivExecBase(SysBase)->TaskRunningSpinLock;
+        state = task->tc_State;
+        switch (state)
+        {
+            case TS_RUN:
+                task_listlock = &PrivExecBase(SysBase)->TaskRunningSpinLock;
+                break;
+            case TS_WAIT:
+                task_listlock = &PrivExecBase(SysBase)->TaskWaitSpinLock;
+                break;
+            default:
+                task_listlock = &PrivExecBase(SysBase)->TaskReadySpinLock;
+                break;
+        }
+        if (state == TS_READY)
+            EXEC_LOCK_WRITE(task_listlock);
+        else
+            EXEC_LOCK_READ(task_listlock);
+
+        if (task->tc_State == state)
             break;
-        case TS_WAIT:
-            task_listlock = &PrivExecBase(SysBase)->TaskWaitSpinLock;
-            break;
-        default:
-            task_listlock = &PrivExecBase(SysBase)->TaskReadySpinLock;
-            break;
+
+        EXEC_UNLOCK(task_listlock);
     }
-    if (task->tc_State == TS_READY)
-        EXEC_LOCK_WRITE(task_listlock);
-    else
-        EXEC_LOCK_READ(task_listlock);
 #endif
 
     /* Get returncode */
@@ -102,22 +112,33 @@
     task->tc_Node.ln_Pri = priority;
 
     /* Check if the task is willing to run. */
+#if defined(__AROSEXEC_SMP__)
+    /* The state the lock was taken for; the lock holds the task in it */
+    if (state != TS_WAIT)
+    {
+        /* If it is in the ready list remove and reinsert it. */
+        if (state == TS_READY)
+        {
+#else
     if (task->tc_State != TS_WAIT)
     {
         /* If it is in the ready list remove and reinsert it. */
         if (task->tc_State == TS_READY)
         {
+#endif
             Remove(&task->tc_Node);
             Enqueue(&SysBase->TaskReady, &task->tc_Node);
         }
 
 #if defined(__AROSEXEC_SMP__)
+        /*
+         * Read what the wake-up needs while the lock still holds the task
+         * in place, and do not look at the task once it is released.
+         */
         if (IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuNumber == cpunum)
             doResched = (task->tc_Node.ln_Pri > thisTask->tc_Node.ln_Pri);
-        else if (task->tc_State == TS_RUN)
+        else if (state == TS_RUN)
         {
-            /* Read the affinity while still locked - the ETask can be
-             * freed the moment we let go. */
             remoteCpuAffinity = IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuAffinity;
             doRemote = TRUE;
         }
@@ -132,9 +153,7 @@
 
     /* All done. */
 #if defined(__AROSEXEC_SMP__)
-    /* Drop both locks before kicking any scheduler path. */
     EXEC_UNLOCK(task_listlock);
-    EXEC_SPINLOCK_UNLOCK(&task->tc_SpinLock);
 
     if (doResched)
     {
@@ -143,7 +162,7 @@
     }
     else if (doRemote)
     {
-        D(bug("[Exec] SetTaskPri: changing priority of task running on another cpu (%03u)\n", remoteCpuNumber);)
+        D(bug("[Exec] SetTaskPri: changing priority of task running on another cpu\n");)
         KrnScheduleCPU(remoteCpuAffinity);
     }
 #endif

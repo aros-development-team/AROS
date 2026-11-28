@@ -236,9 +236,9 @@ WORD xhciPrepareTransfer(struct IOUsbHWReq *ioreq,
             }
 
 _xhci_setaddr_complete:
-            Disable();
+            xhciUnitLock(unit);
             AddTail(&hc->hc_TDQueue, &ioreq->iouh_Req.io_Message.mn_Node);
-            Enable();
+            xhciUnitUnlock(unit);
 
             SureCause(base, &hc->hc_CompleteInt);
             return RC_DONTREPLY;

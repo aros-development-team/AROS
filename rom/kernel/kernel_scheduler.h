@@ -7,3 +7,10 @@
 BOOL core_Schedule(void);			/* Reschedule the current task if needed */
 void core_Switch(void);				/* Switch away from the current task     */
 struct Task *core_Dispatch(void);		/* Select the new task for execution     */
+
+#if defined(__AROSEXEC_SMP__)
+struct Task;
+
+/* Move a task to the run list for a state, for exec (SC_RESCHEDTASK) */
+void core_ReschedTask(struct Task *task, ULONG newState);
+#endif

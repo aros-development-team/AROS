@@ -36,6 +36,22 @@ extern uint32_t __arm_affinitymask;
 #undef krnSysCall
 #define krnSysCall(n) asm volatile ("swi %[swi_no]\n\t" : : [swi_no] "I" (n) : "lr");
 
+/*
+ * The same with two arguments, in r0 and r1. lr is named as clobbered
+ * because a caller in SVC mode loses its lr to the svc.
+ */
+#define krnSysCall2(n, arg1, arg2) \
+    do { \
+        register unsigned long __sc_r0 asm("r0") = (unsigned long)(arg1); \
+        register unsigned long __sc_r1 asm("r1") = (unsigned long)(arg2); \
+        asm volatile ("swi %[swi_no]\n\t" \
+            : "+r"(__sc_r0), "+r"(__sc_r1) : [swi_no] "I" (n) : "lr", "memory"); \
+    } while (0)
+
+/* Where the trap handler finds them (rom/kernel/kernel_intr.c) */
+#define KRNSYSCALL_ARG1(regs)   ((regs)->r[0])
+#define KRNSYSCALL_ARG2(regs)   ((regs)->r[1])
+
 void cpu_DumpRegs(regs_t *regs);
 
 /*

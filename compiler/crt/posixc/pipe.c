@@ -104,7 +104,7 @@
     InitSemaphore(&rfcb->io_lock);
     InitSemaphore(&wfcb->io_lock);
 
-    rfd = __getfdslot(__getfirstfd(0));
+    rfd = __getfreefdslot(0);
     if (rfd < 0)
         goto err;
     rdesc->fdflags = 0;
@@ -114,7 +114,7 @@
     rdesc->fcb->opencount = 1;
     __setfdesc(rfd, rdesc);
 
-    wfd = __getfdslot(__getfirstfd(rfd));
+    wfd = __getfreefdslot(rfd);
     if (wfd < 0)
         goto err;
     wdesc->fdflags = 0;

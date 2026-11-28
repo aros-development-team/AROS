@@ -64,6 +64,10 @@ static void m68k_engine_invalidate(M68KEmuContext *) {}    /* no engine here */
 static void m68k_low_write_trap(M68KEmuContext *, ULONG, const char *) { std::abort(); }
 static M68KTaskState *m68k_ts(M68KEmuContext *ctx) { return &ctx->task; }
 static APTR FindTask(APTR) { return &process; }
+/* the caller's DOS error, which the loader keeps across its file search */
+static LONG dos_err;
+static LONG IoErr() { return dos_err; }
+static LONG SetIoErr(LONG err) { LONG old = dos_err; dos_err = err; return old; }
 static BPTR Open(const char *, LONG) { ++active->opens; active->file_pos = 0; return 1; }
 static void Close(BPTR) {}
 static LONG Seek(BPTR, LONG, LONG mode)

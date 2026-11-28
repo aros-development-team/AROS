@@ -9,6 +9,7 @@
 #include <aros/libcall.h>
 
 #include <kernel_base.h>
+#include <kernel_spinlock.h>
 
 /*****************************************************************************
 
@@ -32,8 +33,10 @@
     RESULT
 
     NOTES
-        Unlocking is architecture-specific; the generic fallback
-        does not modify the lock.
+        The behaviour is the same on every port with real spinlocks.
+        Releasing a lock that is not held leaves it unchanged.
+
+        Ports without real spinlocks do not modify the lock.
 
     EXAMPLE
 
@@ -48,7 +51,17 @@
 {
     AROS_LIBFUNC_INIT
 
-    /* The implementation of this function is architecture-specific */
+#if defined(KRN_SPINLOCK_ATOMICS)
+    if (lock->lock & SPINLOCKF_WRITE)
+    {
+        /* The owner goes first: once the word is free it is someone else's */
+        lock->s_Owner = NULL;
+        krnSpinReleaseWrite(lock);
+    }
+    else
+        krnSpinReleaseRead(lock);
+#endif
+
     return;
 
     AROS_LIBFUNC_EXIT

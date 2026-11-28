@@ -165,7 +165,7 @@ AROS_UFP3(void, AROS_SLIB_ENTRY(FreeFunc, AddDataTypes, 0),
 
 /********************************* CONSTANTS *********************************/
 
-const TEXT Version[] = "$VER: AddDataTypes 42.3 (27.09.2026)\n";
+const TEXT Version[] = "$VER: AddDataTypes 42.4 (22.11.2026)\n";
 
 #define EXCL_LEN 18
 UBYTE ExcludePattern[] = "#?.(info|dbg|backdrop|ppc|arm|i386|x86_64)";
@@ -918,7 +918,7 @@ struct CompoundDataType *CreateDataType(struct StackVars *sv,
                             D(bug("[AddDataTypes] DTCD Chunk Seg @ 0x%p\n", SegList);)
 
                             cdt->SegList = SegList;
-                            cdt->Function = BADDR(SegList) + sizeof(BPTR);
+                            cdt->Function = AROS_SEG_DATA(SegList);
                         }
 
                     } /* if((func = AllocVec(prop->sp_Size, MEMF_PUBLIC | MEMF_CLEAR))) */
@@ -934,7 +934,7 @@ struct CompoundDataType *CreateDataType(struct StackVars *sv,
                 {
                     D(bug("[AddDataTypes] Found!\n");)
                     cdt->SegList = SegList;
-                    cdt->Function = BADDR(SegList) + sizeof(BPTR);
+                    cdt->Function = AROS_SEG_DATA(SegList);
                     D(bug("[AddDataTypes] Entry @ 0x%p\n", cdt->Function);)
                 }
 #endif
@@ -1130,7 +1130,7 @@ struct CompoundDataType *AddDataType(struct StackVars *sv,
                                             if((SegList = InternalLoadSeg((BPTR)(sv), BNULL, (LONG_FUNC *)FunctionArray, &DefaultStack)))
                                             {
                                                 cdt->SegList = SegList;
-                                                cdt->Function = BADDR(SegList) + sizeof(BPTR);
+                                                cdt->Function = AROS_SEG_DATA(SegList);
                                             }
                                         }
                                         else

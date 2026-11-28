@@ -106,6 +106,25 @@ static void krnTaskUsage(struct Task *t, uint64_t window)
     iet->iet_private2 = 0;
 }
 
+/*
+ * A CPU's load over a window: the part of it not slept, scaled to
+ * 0..0xffffffff. A window with no sleep in it at all - a CPU that ran
+ * a busy task throughout - scales to exactly 1 << 32, which does not
+ * fit the 32 bits the figure is kept in and would read back as 0, the
+ * least loaded a CPU can be; it is the top of the scale instead.
+ * slept is never more than window: the callers have clamped it.
+ */
+static uint32_t krnLoadScale(uint64_t window, uint64_t slept)
+{
+    uint64_t load;
+
+    if (!window)
+        return 0;
+
+    load = ((window - slept) << 32) / window;
+    return (load > 0xffffffffULL) ? 0xffffffffU : (uint32_t)load;
+}
+
 #if defined(KRNDEBUG_POKE)
 
 static struct ExceptionContext *dbgTaskCtx(struct Task *t)
@@ -344,7 +363,7 @@ static void krnTimerTickCore(uint32_t cpu)
             slept = window;
         if (hd)
         {
-            hd->hd_Load = (uint32_t)(((window - slept) << 32) / window);
+            hd->hd_Load = krnLoadScale(window, slept);
             hd->hd_SleepTime = slept;
             hd->hd_LastLoadTime = now;
         }
@@ -468,7 +487,7 @@ void krnTimerTick(struct ExceptionContext *ctx)
 
         if (slept > window)
             slept = window;
-        __cpu_load = (uint32_t)(((window - slept) << 32) / window);
+        __cpu_load = krnLoadScale(window, slept);
         __cpu_sleeptime = 0;
         last_idle_time = idle;
         last_load_time = now;

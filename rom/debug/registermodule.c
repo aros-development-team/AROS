@@ -360,7 +360,7 @@ static void RegisterModule_Hunk(const char *name, BPTR segList, ULONG DebugType,
 
             D(bug("[Debug] Adding segment %d 0x%p (%p-%p)\n", i, segList, seg->s_lowest, seg->s_highest));
         }
-        segList = *(BPTR *)BADDR(segList);
+        segList = AROS_SEG_NEXT(segList);
         i++;
     }
 
@@ -446,7 +446,7 @@ void RegisterModule_ELF(const char *name, BPTR segList, struct elfheader *eh, st
                     }
 
                     /* Advance to next DOS segment */
-                    if (!segListSkip) segList = *(BPTR *)BADDR(segList);
+                    if (!segListSkip) segList = AROS_SEG_NEXT(segList);
                 }
             }
         }

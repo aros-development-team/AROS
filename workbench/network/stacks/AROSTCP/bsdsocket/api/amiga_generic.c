@@ -51,7 +51,6 @@
 #if defined(ENABLE_FDLIBRARY)
 #include <libraries/fd.h>
 #include <proto/fd.h>
-extern struct Library *FDBase;      /* opened in amiga_fdhooks.c */
 #endif
 
 #include <net/if_protos.h>

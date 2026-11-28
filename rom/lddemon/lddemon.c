@@ -241,12 +241,11 @@ static struct Library *LDInit(BPTR seglist, struct List *list, STRPTR resname, s
 
     while(seg)
     {
-        STRPTR addr = (STRPTR)((IPTR)BADDR(seg) - sizeof(ULONG));
-        ULONG size = *(ULONG *)addr;
+        STRPTR addr = AROS_SEG_DATA(seg);
+        ULONG size = AROS_SEG_DATALEN(seg);
 
         for(
-            addr += sizeof(BPTR) + sizeof(ULONG),
-                size -= sizeof(BPTR) + sizeof(ULONG);
+            ;
             size >= sizeofresident;
             size -= 2, addr += 2
 //          size -= AROS_PTRALIGN, addr += AROS_PTRALIGN
@@ -274,14 +273,14 @@ static struct Library *LDInit(BPTR seglist, struct List *list, STRPTR resname, s
                 return (struct Library*)node;
             }
         }
-        seg = *(BPTR *)BADDR(seg);
+        seg = AROS_SEG_NEXT(seg);
     }
     D(bug("[LDInit] Couldn't find Resident for %p\n", seglist));
 #ifdef __mc68000
     /* If struct Resident was not found, just run the code. SegList in A0.
      * Required to load WB1.x devs:narrator.device. */
     Forbid();
-    AROS_UFC1NR(void, BADDR(seglist) + sizeof(ULONG), AROS_UFCA(BPTR, seglist, A0));
+    AROS_UFC1NR(void, AROS_SEG_DATA(seglist), AROS_UFCA(BPTR, seglist, A0));
     node = FindName(list, resname);
     Permit();
     D(bug("[LDInit] Done direct calling %s, seg %p, node %p\n", resname, BADDR(seglist), node));

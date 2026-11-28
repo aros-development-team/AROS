@@ -76,31 +76,25 @@ BOOL isPointerInSeglist(APTR pointer,BPTR seglist,ULONG minsize);
 // The code here is partly taken from AROS/rom/dos/lddemon.c - LDInit()
 
 	while(seg!=BNULL){
-		addr=(STRPTR)(BADDR(seg)-sizeof(ULONG));
-		size=*(ULONG *)addr;
+		addr=AROS_SEG_DATA(seg);
+		size=AROS_SEG_DATALEN(seg);
 
 		/* A module loaded into one arena (ELF_MODULE_ARENA) has hunks whose
 		   stored size is 0: their memory belongs to the container hunk at
-		   the end of the list, which is scanned instead. Subtracting the
-		   header from 0 would wrap and scan to the end of memory. */
-		if(size<=sizeof(BPTR)+sizeof(ULONG)){
-			seg=*(BPTR *)BADDR(seg);
+		   the end of the list, which is scanned instead. */
+		if(size==0){
+			seg=AROS_SEG_NEXT(seg);
 			continue;
 		}
 
-		addr+=sizeof(BPTR)+sizeof(ULONG);
-		size-=sizeof(BPTR)+sizeof(ULONG);
-
-		/* MidiDeviceData is aligned in memory, but a hunk's data need not
-		   start aligned: the hunk header is sizeof(ULONG) + sizeof(BPTR),
-		   which is not a multiple of the pointer alignment on 64-bit
-		   targets, and the arena container's data holds sections placed
-		   at aligned addresses. Stepping from an unaligned start would
-		   never meet the structure, so start at the first aligned
-		   address. */
+		/* MidiDeviceData is aligned in memory, but a hunk's payload need
+		   not hold it at the start: the arena container's data holds
+		   sections placed at aligned addresses. Stepping from an unaligned
+		   start would never meet the structure, so start at the first
+		   aligned address. */
 		skip=AROS_ROUNDUP2((IPTR)addr,AROS_PTRALIGN)-(IPTR)addr;
 		if(size<skip){
-			seg=*(BPTR *)BADDR(seg);
+			seg=AROS_SEG_NEXT(seg);
 			continue;
 		}
 		addr+=skip;
@@ -179,7 +173,7 @@ BOOL isPointerInSeglist(APTR pointer,BPTR seglist,ULONG minsize);
 			size-=AROS_PTRALIGN;
 			addr+=AROS_PTRALIGN;
 		}
-		seg=*(BPTR *)BADDR(seg);
+		seg=AROS_SEG_NEXT(seg);
 	}
 
 	UnLoadSeg(seglist);
@@ -238,19 +232,17 @@ BOOL isPointerInSeglist(APTR pointer,BPTR seglist,ULONG minsize){
 	ULONG size;
 
 	while(seglist!=0){
-		addr=(STRPTR)(BADDR(seglist)-sizeof(ULONG));
-		size=*(ULONG *)addr;
-		if(size<=sizeof(BPTR)+sizeof(ULONG)+minsize){
+		addr=AROS_SEG_DATA(seglist);
+		size=AROS_SEG_DATALEN(seglist);
+		if(size<=minsize){
 			/* an arena hunk (size 0) or too small: the container covers it */
-			seglist=*(BPTR *)BADDR(seglist);
+			seglist=AROS_SEG_NEXT(seglist);
 			continue;
 		}
-		addr+=sizeof(BPTR)+sizeof(ULONG);
-		size-=sizeof(BPTR)+sizeof(ULONG);
 		if((STRPTR)pointer>=addr && (STRPTR)pointer<=addr+size-minsize){
 			return TRUE;
 		}
-		seglist=*(BPTR *)BADDR(seglist);
+		seglist=AROS_SEG_NEXT(seglist);
 	}
 
 	return FALSE;

@@ -150,11 +150,10 @@ struct krnFDTInfo
        interrupts-extended list, or -1 if it was not described */
     int         plic_context;
     /*
-     * Every supervisor context the controller offers, in hart order.
-     * S-mode cannot read its own hart id, so which of these is "ours"
-     * rests on what the firmware said the boot hart was - and that is
-     * not always right. Sources are enabled on all of them so delivery
-     * does not depend on getting it correct.
+     * Every supervisor context the controller offers, in hart order:
+     * entry n is taken to be the context of the nth hart described
+     * (platform_init.c), and a source is enabled only in the context of
+     * the CPU it is delivered to (kernel_plic.c).
      */
 #define KRN_MAX_PLIC_CONTEXTS   16
     int         plic_contexts[KRN_MAX_PLIC_CONTEXTS];
@@ -185,9 +184,19 @@ int  krnACPIHartInfo(struct krnFDTInfo *info, unsigned long boothart);
 
 /* Platform interrupt controller (kernel_plic.c) */
 int krnPLICInit(struct krnFDTInfo *info);
-unsigned int krnPLICClaim(void);
-void krnPLICComplete(unsigned int irq);
-void krnPLICEnable(unsigned int irq, int enable);
+/* A claim reports the context it came from; the completion goes back to it */
+unsigned int krnPLICClaim(int *ctx);
+void krnPLICComplete(int ctx, unsigned int irq);
+/* Returns whether the source was enabled before the call */
+int krnPLICEnable(unsigned int irq, int enable);
+/* The calling hart takes external interrupts through this context */
+void krnPLICInitCore(int ctx);
+/* The CPU a source is delivered to. Setting returns 0 when the CPU can
+   not take it; getting returns -1 for a source the PLIC does not drive */
+int krnPLICSetTarget(unsigned int irq, unsigned int cpu);
+int krnPLICGetTarget(unsigned int irq);
+int krnPLICCPUUsable(unsigned int cpu);
+void krnPLICCountTargets(unsigned int *given, unsigned int cpus);
 void krnPLICDumpState(unsigned int irq);
 
 /* Hardware interrupt dispatch (intr.c) */
@@ -226,7 +235,9 @@ struct krnMSIController
     unsigned int    count;      /* how many vectors it has       */
 };
 extern struct krnMSIController __msi_ctrl[KRN_MAX_MSI_CONTROLLERS];
-struct krnMSIController *krnFindMSIController(unsigned int irq);
+/* Copies the controller collecting onto irq to *mc; 0 when there is none */
+int krnGetMSIController(struct KernelBase *KernelBase, unsigned int irq,
+                        struct krnMSIController *mc);
 
 /*
  * Sources above the controller's own, for interrupts with no wire -

@@ -112,7 +112,7 @@ static BOOL RemoveSegmentRange(module_t * mod, LONG firstidx, LONG count);
         }
 
         /* Advance to next DOS segment */
-        segList = *(BPTR *)BADDR(segList);
+        segList = AROS_SEG_NEXT(segList);
     }
 
     if (mod != NULL && rangestart > -1)

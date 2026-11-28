@@ -35,8 +35,6 @@
 
 #include <proto/exec.h>
 
-extern struct Task *AROSTCP_Task;
-
 /*
  * Note about spl-functions: this implementation does NOT check for software
  * interrupts when returning to level spl 0 (not needed on AmigaOS, see the

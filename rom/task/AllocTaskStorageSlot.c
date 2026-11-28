@@ -50,7 +50,9 @@
 
     if (iet)
     {
-        Forbid();
+        struct TaskStorageFreeSlot *spent = NULL;
+
+        task_ListLock(TaskResBase);
         freeTaskStorageSlot = (struct TaskStorageFreeSlot *)
             GetHead(&TaskResBase->trb_TaskStorageSlots);
         if (!freeTaskStorageSlot)
@@ -71,9 +73,13 @@
         else
         {
             Remove((struct Node *) freeTaskStorageSlot);
-            FreeMem(freeTaskStorageSlot, sizeof(struct TaskStorageFreeSlot));
+            spent = freeTaskStorageSlot;
         }
-        Permit();
+        task_ListUnlock(TaskResBase);
+
+        /* Freed outside the lock */
+        if (spent)
+            FreeMem(spent, sizeof(struct TaskStorageFreeSlot));
     }
 #endif
 

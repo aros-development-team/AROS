@@ -182,6 +182,9 @@ void xhciHandleFinishedTDs(struct PCIController *hc, struct timerequest *timerre
 void xhciFreeAsyncContext(struct PCIController *hc, struct PCIUnit *unit, struct IOUsbHWReq *ioreq);
 void xhciFreePeriodicContext(struct PCIController *hc, struct PCIUnit *unit, struct IOUsbHWReq *ioreq);
 void xhciFinishRequest(struct PCIController *hc, struct PCIUnit *unit, struct IOUsbHWReq *ioreq);
+#if defined(__AROSEXEC_SMP__)
+void xhciFreeDeferredPrivates(struct PCIController *hc);
+#endif
 
 WORD xhciInitIsochIO(struct PCIController *hc, struct RTIsoNode *rtn);
 WORD xhciQueueIsochIO(struct PCIController *hc, struct RTIsoNode *rtn);

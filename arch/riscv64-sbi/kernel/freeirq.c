@@ -12,6 +12,9 @@
 #include <kernel_intern.h>
 
 #include <proto/kernel.h>
+#if defined(__AROSEXEC_SMP__)
+#include <proto/exec.h>
+#endif
 
 /*****************************************************************************
 
@@ -53,7 +56,16 @@
 {
     AROS_LIBFUNC_INIT
 
+#if defined(__AROSEXEC_SMP__)
+    /* The same lock KrnAllocIRQ() searches the map under */
+    Disable();
+    KrnSpinLock(&KernelBase->kb_IntrSpinLock, NULL, SPINLOCK_MODE_WRITE);
+#endif
     krnFreeVirtualIRQ(start, count);
+#if defined(__AROSEXEC_SMP__)
+    KrnSpinUnLock(&KernelBase->kb_IntrSpinLock);
+    Enable();
+#endif
 
     AROS_LIBFUNC_EXIT
 }

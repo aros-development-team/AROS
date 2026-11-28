@@ -9,6 +9,16 @@
 #include <aros/libcall.h>
 
 #include <kernel_base.h>
+#include <kernel_spinlock.h>
+
+#if defined(KRN_SPINLOCK_ATOMICS)
+#include <exec/tasks.h>
+#include <proto/exec.h>
+
+/* Called directly: it takes no base, and the lock is used before the base exists */
+extern int AROS_SLIB_ENTRY(KrnIsSuper, Kernel, 13)(void);
+#define krnSpinIsSuper()        AROS_SLIB_ENTRY(KrnIsSuper, Kernel, 13)()
+#endif
 
 /*****************************************************************************
 
@@ -37,8 +47,12 @@
         be obtained on an implementation with spinlock support.
 
     NOTES
-        The generic fallback returns lock without acquiring it.
-        The implementation and availability are architecture-specific.
+        The behaviour is the same on every port with real spinlocks. A
+        write lock taken by a task records the task as the owner; see
+        KrnSpinLock(). A read lock is refused only while the lock is held
+        for writing.
+
+        Ports without real spinlocks return lock without acquiring it.
 
     EXAMPLE
 
@@ -53,7 +67,18 @@
 {
     AROS_LIBFUNC_INIT
 
-    /* The implementation of this function is architecture-specific */
+#if defined(KRN_SPINLOCK_ATOMICS)
+    if (mode == SPINLOCK_MODE_WRITE)
+    {
+        if (!krnSpinTryWrite(lock))
+            return NULL;
+
+        lock->s_Owner = krnSpinIsSuper() ? NULL : krnSpinThisTask();
+    }
+    else if (!krnSpinTryRead(lock))
+        return NULL;
+#endif
+
     return lock;
 
     AROS_LIBFUNC_EXIT

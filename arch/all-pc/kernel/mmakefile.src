@@ -23,6 +23,7 @@ FUNCS	 := \
              maygetchar \
              allocirq \
              addirqhandler \
+             remirqhandler \
              getirq \
              modifyirq \
              exitinterrupt \
@@ -35,11 +36,6 @@ FUNCS	 := \
              freecpumask \
              getcpumask \
              cpuinmask \
-             spininit \
-             spinislocked \
-             spintrylock \
-             spinlock \
-             spinunlock \
              schedulecpu \
              getsystemattr \
              getcpuattr \

@@ -23,7 +23,7 @@
  */
 static LONG dma_Setup(APTR addr, ULONG len, BOOL read, struct PRDEntry* array)
 {
-    ULONG rem = 0, flg = read ? DMA_ReadFromRAM : 0;
+    ULONG rem = 0, flg = read ? 0 : DMA_ReadFromRAM;
     volatile ULONG tmp = 0;
     LONG items = 0;
     IPTR phy_mem;
@@ -132,7 +132,7 @@ void dma_Cleanup(struct dma_data *unit, APTR addr, IPTR len, BOOL read)
     /* Stop DMA engine */
     outb(inb(port) & ~DMA_START, port);
 
-    flg = read ? DMA_ReadFromRAM : 0;
+    flg = read ? 0 : DMA_ReadFromRAM;
     while (len > 0)
     {
         tmp = len;
@@ -147,6 +147,7 @@ VOID dma_StartDMA(struct dma_data *unit)
 {
     port_t port = dma_Command + unit->au_DMAPort;
 
+    *unit->au_DMAStatus = 0;
     outb(inb(port) | DMA_START, port);
 }
 
@@ -154,7 +155,8 @@ ULONG dma_CheckErr(struct dma_data *unit)
 {
     UBYTE stat = inb(dma_Status + unit->au_DMAPort);
 
-    return (stat & DMAF_Error) ? HFERR_DMA : 0;
+    /* Software completion can run before a hardware interrupt. */
+    return ((stat | *unit->au_DMAStatus) & DMAF_Error) ? HFERR_DMA : 0;
 }
 
 const APTR dma_FuncTable[]=

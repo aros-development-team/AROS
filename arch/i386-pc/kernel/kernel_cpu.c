@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2011-2020, The AROS Development Team. All rights reserved.
+    Copyright (C) 2011-2026, The AROS Development Team. All rights reserved.
 
     Desc: i386 native CPU supplementals for task scheduler
 */
@@ -37,8 +37,8 @@ void cpu_Dispatch(struct ExceptionContext *regs)
         /* Sleep almost forever ;) */
         __asm__ __volatile__("sti; hlt; cli");
 
-        if (SysBase->SysFlags & SFF_SoftInt)
-            core_Cause(INTB_SOFTINT, 1l << INTB_SOFTINT);
+        /* Returns with interrupts masked: core_Dispatch() is next */
+        core_RunSoftInts();
     }
 
     /* TODO: Handle exception

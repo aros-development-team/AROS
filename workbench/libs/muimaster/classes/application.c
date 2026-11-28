@@ -502,6 +502,10 @@ struct timerequest_ext
 *       NULL table. Constructor tag order matters: a later UseRexx tag can
 *       override it. Optional port creation failure does not fail the
 *       application. Setting Commands later does not create a missing port.
+*       During disposal the public port is unpublished before window teardown;
+*       queued requests are replied to when the port is released later. This
+*       does not synchronize senders already holding a port pointer. Stop
+*       external senders before disposing the application.
 *
 */
 /****** Application.mui/MUIA_Application_Commands ************
@@ -1630,9 +1634,10 @@ static IPTR Application__OM_NEW(struct IClass *cl, Object *obj,
 /**************************************************************************
  OM_DISPOSE
 **************************************************************************/
-/* After callbacks and external users have stopped, snapshot and optionally
- * save positions, remove and dispose child windows, and release owned
- * application resources before calling Notify disposal. Return the
+/* After callbacks and external users have stopped, unpublish the public
+ * Rexx port, snapshot and optionally save positions, remove and dispose
+ * child windows, and release owned application resources before calling
+ * Notify disposal. Return the
  * superclass result. This can block on I/O/timer work; it neither frees
  * pending method-queue nodes nor unregisters each timer handler.
  */
@@ -1643,6 +1648,11 @@ static IPTR Application__OM_DISPOSE(struct IClass *cl, Object *obj,
     struct RIDNode *rid;
 
     long positionmode;
+
+    /* Unpublish the ARexx port before tearing down the application. */
+    if (data->app_RexxPort)
+        RemPort(data->app_RexxPort);
+
     if (data->app_Base)
     {
         char filename[255];
@@ -1788,7 +1798,6 @@ static IPTR Application__OM_DISPOSE(struct IClass *cl, Object *obj,
         {
             ReplyMsg(msg);
         }
-        RemPort(data->app_RexxPort);
 
         FreeVec(data->app_RexxPort->mp_Node.ln_Name);
         DeleteMsgPort(data->app_RexxPort);

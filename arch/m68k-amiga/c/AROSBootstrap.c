@@ -1357,7 +1357,7 @@ static struct BootStruct *CreateBootStruct(BPTR ROMSeg, UBYTE *cmdline)
     boots->reslist = bmh->res;
     boots->FakeBase = &bmh->FakeBase;
     boots->bootcode = &bmh->bootcode;
-    bmh->entrypoint = BADDR(ROMSeg) + sizeof(ULONG);
+    bmh->entrypoint = AROS_SEG_DATA(ROMSeg);
     tags = bmh->ktags;
     /* cmdline is a BCPL string! */
     if (cmdline && cmdline[0])

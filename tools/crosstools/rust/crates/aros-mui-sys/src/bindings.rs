@@ -1988,7 +1988,6 @@ pub struct Task {
     pub tc_Launch: ::core::option::Option<unsafe extern "C" fn()>,
     pub tc_MemEntry: List,
     pub tc_UserData: APTR,
-    pub tc_SpinLock: spinlock_t,
 }
 #[repr(C)]
 #[derive(Copy, Clone)]

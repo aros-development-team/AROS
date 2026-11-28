@@ -1,0 +1,13 @@
+# Copyright (C) 2026, The AROS Development Team. All rights reserved.
+
+include $(SRCDIR)/config/aros.cfg
+USER_LDFLAGS := -static
+
+#MM- test : test-intuition-screenposition
+#MM- test-quick : test-intuition-screenposition-quick
+#MM test-intuition-screenposition : includes linklibs
+
+%build_progs mmake=test-intuition-screenposition \
+    files=screenposition targetdir=$(AROS_TESTS)/intuition/screenposition
+
+%common

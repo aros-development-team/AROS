@@ -117,7 +117,6 @@ void icmp6_fasttimo(void)
 }
 
 extern void frag6_slowtimo(void);
-extern void in6_tmpaddrtimer(void);
 
 static int icmp6_slow_ticks = 0;    /* icmp6_slowtimo()'s, for its trace */
 

@@ -86,9 +86,6 @@
 
 #include <net/netcore.h>
 
-extern struct SignalSemaphore syscall_semaphore;    /* the fence (api/amiga_api.c) */
-extern struct Task *AROSTCP_Task;                   /* the stack's own (kern/amiga_main.c) */
-
 /* One loaded module library. */
 struct netmodlib {
     struct MinNode    nl_node;

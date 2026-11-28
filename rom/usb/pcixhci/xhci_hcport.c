@@ -445,7 +445,14 @@ BOOL xhciClearFeature(struct PCIUnit *unit, struct PCIController *hc,
         pciusbXHCIDebug("xHCI",
                         DEBUGCOLOR_SET "xHCI: Clearing Connection Change"
                         DEBUGCOLOR_RESET " \n");
+#if defined(__AROSEXEC_SMP__)
+        /* the change map is shared with the interrupt handler */
+        xhciUnitLock(unit);
+#endif
         hc->hc_PortChangeMap[hciport] &= ~UPSF_PORT_CONNECTION;
+#if defined(__AROSEXEC_SMP__)
+        xhciUnitUnlock(unit);
+#endif
         clearbits |= XHCIF_PR_PORTSC_CSC;
         cmdgood = TRUE;
         break;
@@ -454,7 +461,13 @@ BOOL xhciClearFeature(struct PCIUnit *unit, struct PCIController *hc,
         pciusbXHCIDebug("xHCI",
                         DEBUGCOLOR_SET "xHCI: Clearing Enable Change"
                         DEBUGCOLOR_RESET " \n");
+#if defined(__AROSEXEC_SMP__)
+        xhciUnitLock(unit);
+#endif
         hc->hc_PortChangeMap[hciport] &= ~UPSF_PORT_ENABLE;
+#if defined(__AROSEXEC_SMP__)
+        xhciUnitUnlock(unit);
+#endif
         clearbits |= XHCIF_PR_PORTSC_PEC;
         cmdgood = TRUE;
         break;
@@ -463,7 +476,13 @@ BOOL xhciClearFeature(struct PCIUnit *unit, struct PCIController *hc,
         pciusbXHCIDebug("xHCI",
                         DEBUGCOLOR_SET "xHCI: Clearing Suspend Change"
                         DEBUGCOLOR_RESET " \n");
+#if defined(__AROSEXEC_SMP__)
+        xhciUnitLock(unit);
+#endif
         hc->hc_PortChangeMap[hciport] &= ~UPSF_PORT_SUSPEND;
+#if defined(__AROSEXEC_SMP__)
+        xhciUnitUnlock(unit);
+#endif
         clearbits |= XHCIF_PR_PORTSC_PLC;
         cmdgood = TRUE;
         break;
@@ -472,7 +491,13 @@ BOOL xhciClearFeature(struct PCIUnit *unit, struct PCIController *hc,
         pciusbXHCIDebug("xHCI",
                         DEBUGCOLOR_SET "xHCI: Clearing Over-Current Change"
                         DEBUGCOLOR_RESET " \n");
+#if defined(__AROSEXEC_SMP__)
+        xhciUnitLock(unit);
+#endif
         hc->hc_PortChangeMap[hciport] &= ~UPSF_PORT_OVER_CURRENT;
+#if defined(__AROSEXEC_SMP__)
+        xhciUnitUnlock(unit);
+#endif
         clearbits |= XHCIF_PR_PORTSC_OCC;
         cmdgood = TRUE;
         break;
@@ -481,7 +506,13 @@ BOOL xhciClearFeature(struct PCIUnit *unit, struct PCIController *hc,
         pciusbXHCIDebug("xHCI",
                         DEBUGCOLOR_SET "xHCI: Clearing Reset Change"
                         DEBUGCOLOR_RESET " \n");
+#if defined(__AROSEXEC_SMP__)
+        xhciUnitLock(unit);
+#endif
         hc->hc_PortChangeMap[hciport] &= ~UPSF_PORT_RESET;
+#if defined(__AROSEXEC_SMP__)
+        xhciUnitUnlock(unit);
+#endif
         /* Clear both USB2 (PRC) and USB3 (WRC) reset-change bits */
         clearbits |= (XHCIF_PR_PORTSC_PRC | XHCIF_PR_PORTSC_WRC);
         cmdgood = TRUE;
@@ -511,11 +542,18 @@ BOOL xhciClearFeature(struct PCIUnit *unit, struct PCIController *hc,
             writeval = AROS_LE2LONG(xhciports[hciport].portsc);
         }
 
+#if defined(__AROSEXEC_SMP__)
+        /* the port's bit follows its change map: both under the unit lock */
+        xhciUnitLock(unit);
+#endif
         if(hc->hc_PortChangeMap[hciport]) {
             hc->hc_Unit->hu_RootPortChanges |= (1UL << (hciport + 1));
         } else {
             hc->hc_Unit->hu_RootPortChanges &= ~(1UL << (hciport + 1));
         }
+#if defined(__AROSEXEC_SMP__)
+        xhciUnitUnlock(unit);
+#endif
 
         pciusbXHCIDebug("xHCI",
                         DEBUGCOLOR_SET "xHCI: Port %ld CLEAR_FEATURE old $%08lx write $%08lx"
@@ -646,6 +684,10 @@ BOOL xhciGetStatus(struct PCIController *hc, UWORD *mptr,
      */
     mptr++;
 
+#if defined(__AROSEXEC_SMP__)
+    /* the change map is shared with the interrupt handler */
+    xhciUnitLock(hc->hc_Unit);
+#endif
     if(oldportsc & XHCIF_PR_PORTSC_PEC) {
         hc->hc_PortChangeMap[hciport] |= UPSF_PORT_ENABLE;
     }
@@ -664,6 +706,9 @@ BOOL xhciGetStatus(struct PCIController *hc, UWORD *mptr,
     }
 
     *mptr = AROS_WORD2LE(hc->hc_PortChangeMap[hciport]);
+#if defined(__AROSEXEC_SMP__)
+    xhciUnitUnlock(hc->hc_Unit);
+#endif
 
     pciusbXHCIDebug("xHCI",
                     DEBUGCOLOR_SET "xHCI: Port %ld Change $%08lx"

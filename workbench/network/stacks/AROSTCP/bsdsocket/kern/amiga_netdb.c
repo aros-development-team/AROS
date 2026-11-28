@@ -298,8 +298,6 @@ static struct MinList ndb_ops;  /* NewList()ed by init_netdb() */
 /* Without the lock, the stack task queues; any other task may wait. */
 static BOOL ndb_lock(void)
 {
-    extern struct Task *AROSTCP_Task;
-
     if(FindTask(NULL) != AROSTCP_Task) {
         ObtainSemaphore(&DynDB.dyn_Lock);
         return TRUE;

@@ -24,6 +24,12 @@
 
 #include "dos_intern.h"
 
+#if defined(DOS_VERIFYLOADS)
+#include <string.h>
+#include <proto/bootloader.h>
+#include <aros/bootloader.h>
+#endif
+
 static const UBYTE version[];
 extern const char LIBEND;
 
@@ -186,6 +192,27 @@ AROS_UFH3S(struct DosLibrary *, DosInit,
         }
 
         DOSBase->dl_Root->rn_Info = MKBADDR(dosinfo);
+
+#if defined(DOS_VERIFYLOADS)
+        /*
+         * "verifyloads" on the command line: the loader reads every block
+         * twice and only accepts it when the two reads agree, for a boot
+         * device whose transfers are not trusted.
+         */
+        {
+            APTR BootLoaderBase = OpenResource("bootloader.resource");
+            struct List *args = BootLoaderBase ? GetBootInfo(BL_Args) : NULL;
+            struct Node *node;
+
+            if (args)
+                for (node = args->lh_Head; node->ln_Succ; node = node->ln_Succ)
+                    if (!strcasecmp(node->ln_Name, "verifyloads"))
+                    {
+                        ((struct IntDosBase *)DOSBase)->verifyLoads = TRUE;
+                        bug("[DOS] loader reads are verified by a second read\n");
+                    }
+        }
+#endif
 
         /* initialize segment data list */
         NEWLIST(&((struct IntDosBase *)DOSBase)->segdata);

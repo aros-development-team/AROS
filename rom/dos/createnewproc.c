@@ -210,12 +210,12 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
     {
         BPTR seg;
 
-        for (seg = (BPTR) defaults[0].ti_Data; seg; seg = *(BPTR *)BADDR(seg))
+        for (seg = (BPTR) defaults[0].ti_Data; seg; seg = AROS_SEG_NEXT(seg))
         {
             if
             (
                 (UBYTE *)defaults[1].ti_Data >= (UBYTE *)BADDR(seg) &&
-                (UBYTE *)defaults[1].ti_Data <= ((UBYTE *)BADDR(seg) + *((ULONG *)BADDR(seg) - 1) - sizeof(BPTR))
+                (UBYTE *)defaults[1].ti_Data <= ((UBYTE *)AROS_SEG_DATA(seg) + AROS_SEG_DATALEN(seg))
             )
             {
                 break;
@@ -509,7 +509,7 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
         segList = CreateSegList(entry);
         process->pr_Flags |= PRF_FREESEGLIST;
     } else if (entry == NULL) {
-        entry = BADDR(segList) + sizeof(BPTR);
+        entry = AROS_SEG_DATA(segList);
     }
 
     segArray = AllocVec(sizeof(BPTR) * (SEGARRAY_LENGTH+1), MEMF_ANY | MEMF_CLEAR);
@@ -839,7 +839,7 @@ static void DosEntry(void)
 
     segArray = BADDR(me->pr_SegList);
     if (initialPC == NULL)
-        initialPC = BADDR(segArray[3]) + sizeof(BPTR);
+        initialPC = AROS_SEG_DATA(segArray[3]);
 
     D(bug("[DosEntry %p] entry=%p, CIS=%p, COS=%p, argsize=%d, arguments=\"%s\"\n", me, initialPC, BADDR(me->pr_CIS), BADDR(me->pr_COS), argSize, me->pr_Arguments));
 

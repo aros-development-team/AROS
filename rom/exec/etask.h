@@ -66,6 +66,7 @@ struct IntETask
     IPTR                iet_CpuNumber;          /* core this task is currently running on  */
     cpumask_t           *iet_CpuAffinity;        /* bitmap of cores this task can run on    */
     spinlock_t          *iet_SpinLock;          /* pointer to spinlock task is spinning on */
+    ULONG               iet_Evict;              /* another core's RemTask() wants this running task off its core */
 #endif
 #ifndef __mc68000
     /* Last CPU-usage sample, for arches that sweep iet_CpuUsage. */
@@ -91,6 +92,7 @@ struct IntETask
 /* iet_AlertFlags */
 #define AF_Alert    0x01    /* The task is in alert state      */
 #define AF_Location 0x02    /* iet_AlertLocation is filled in */
+#define AF_Suspend  0x04    /* The task was sent to be suspended after a crash */
 
 /*
  * This function resets a task's crash status:

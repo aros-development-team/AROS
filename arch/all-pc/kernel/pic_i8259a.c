@@ -48,6 +48,7 @@ BOOL i8259a_DisableIRQ(APTR icPrivate, icinstid_t icInstance, irqid_t intNum)
 {
     struct i8259a_Private *xtpicPriv= (struct i8259a_Private *)icPrivate;
     struct i8259a_Instance *xtPic = (struct i8259a_Instance *)&xtpicPriv->irq_ic[icInstance];
+    IPTR lockState;
 
     DINT(bug("[Kernel:i8259a] %s(0x%p, %d, %d)\n", __func__, icPrivate, icInstance, intNum));
 
@@ -58,12 +59,22 @@ BOOL i8259a_DisableIRQ(APTR icPrivate, icinstid_t icInstance, irqid_t intNum)
         /* IRQ2 must never be disabled. Doing so breaks communication between two 8259s */
         return FALSE;
     }
+
+    /*
+     * The mask is one word for all sixteen lines. A task on another CPU
+     * changes it here while the boot CPU, which takes these interrupts,
+     * changes it in i8259a_AckIntr().
+     */
+    lockState = ictl_Lock();
+
     xtPic->irq_mask |= 1 << intNum;
 
     if (intNum >= 8)
         outb((xtPic->irq_mask >> 8) & 0xff, SLAVE8259_MASKREG);
     else
         outb(xtPic->irq_mask & 0xff, MASTER8259_MASKREG);
+
+    ictl_Unlock(lockState);
 
     return TRUE;
 }
@@ -72,6 +83,7 @@ BOOL i8259a_EnableIRQ(APTR icPrivate, icinstid_t icInstance, irqid_t intNum) // 
 {
     struct i8259a_Private *xtpicPriv= (struct i8259a_Private *)icPrivate;
     struct i8259a_Instance *xtPic = (struct i8259a_Instance *)&xtpicPriv->irq_ic[icInstance];
+    IPTR lockState;
 
     DINT(bug("[Kernel:i8259a] %s(0x%p, %d, %d)\n", __func__, icPrivate, icInstance, intNum));
 
@@ -83,12 +95,18 @@ BOOL i8259a_EnableIRQ(APTR icPrivate, icinstid_t icInstance, irqid_t intNum) // 
          * appropriate to report failure */
         return FALSE;
     }
+
+    /* See i8259a_DisableIRQ */
+    lockState = ictl_Lock();
+
     xtPic->irq_mask &= ~(1 << intNum);
 
     if (intNum >= 8)
         outb((xtPic->irq_mask >> 8) & 0xff, SLAVE8259_MASKREG);
     else
         outb(xtPic->irq_mask & 0xff, MASTER8259_MASKREG);
+
+    ictl_Unlock(lockState);
 
     return TRUE;
 }
@@ -101,10 +119,15 @@ BOOL i8259a_AckIntr(APTR icPrivate, icinstid_t icInstance, irqid_t intNum) // ui
 {
     struct i8259a_Private *xtpicPriv= (struct i8259a_Private *)icPrivate;
     struct i8259a_Instance *xtPic = (struct i8259a_Instance *)&xtpicPriv->irq_ic[icInstance];
+    IPTR lockState;
 
     DINT(bug("[Kernel:i8259a] %s(0x%p, %d, %d)\n", __func__, icPrivate, icInstance, intNum));
 
     intNum &= 15;
+
+    /* See i8259a_DisableIRQ */
+    lockState = ictl_Lock();
+
     xtPic->irq_mask |= 1 << intNum;
 
     if (intNum >= 8)
@@ -118,6 +141,8 @@ BOOL i8259a_AckIntr(APTR icPrivate, icinstid_t icInstance, irqid_t intNum) // ui
         outb(xtPic->irq_mask & 0xff, MASTER8259_MASKREG);
         outb(0x20, MASTER8259_CMDREG);
     }
+
+    ictl_Unlock(lockState);
 
     return TRUE;
 }

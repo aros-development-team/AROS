@@ -116,6 +116,25 @@ apicid_t core_APIC_GetNumber(struct APICData *data)
 #endif
 }
 
+/*
+ * The calling CPU's entry in cores[], for the interrupt state kept there.
+ * NULL while there is no APIC data (early boot, a machine without an APIC)
+ * and on one CPU, where the caller keeps using PlatformData.
+ */
+struct CPUData *core_APIC_GetCPUData(struct APICData *data)
+{
+#if defined(__AROSEXEC_SMP__)
+    if (data)
+    {
+        apicid_t cpuNo = core_APIC_GetNumber(data);
+
+        if (cpuNo < data->apic_count)
+            return &data->cores[cpuNo];
+    }
+#endif
+    return NULL;
+}
+
 void core_APIC_GetMask(struct APICData *data, apicid_t cpuNo, cpumask_t *mask)
 {
     ULONG *apicMask;

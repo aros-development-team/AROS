@@ -493,7 +493,7 @@ void DisposeConvDiskFont(struct DiskFontHeader *dfh,
     if (dfh!=NULL)
     {
         StripFont(&dfh->dfh_TF);
-        UnLoadSeg(MKBADDR(((BPTR *)dfh)-1));
+        UnLoadSeg(MAKE_REAL_SEGMENT(dfh));
     }
 }
 

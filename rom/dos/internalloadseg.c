@@ -12,6 +12,7 @@
 #include <dos/dosextens.h>
 
 #include "dos_intern.h"
+#include <stddef.h>
 #include "internalloadseg.h"
 
 /*****************************************************************************
@@ -156,40 +157,49 @@ int read_block(BPTR file, APTR buffer, ULONG size, SIPTR * funcarray, struct Dos
   return 0;
 }
 
+/* These two implement the public seglist layout from dos/bptr.h, which
+   everything that builds or walks a seglist by hand depends on. */
+_Static_assert(offsetof(struct AROSSegment, seg_Next) == sizeof(BPTR),
+               "the seglist link must sit one BPTR into the allocation");
+_Static_assert(offsetof(struct AROSSegment, seg_Size) == sizeof(BPTR) - sizeof(ULONG),
+               "the allocation size must sit directly in front of the link");
+
+/* size is the payload the caller asks for; the segment header is added here,
+   so no caller has to know the layout. Returns the seglist link, which is
+   what BADDR() of the resulting BPTR addresses. */
 APTR _ilsAllocVec(SIPTR *funcarray, ULONG size, ULONG req)
 {
-    UBYTE *p;
+    struct AROSSegment *seg;
+    ULONG total;
 
-    /* Callers include one ULONG for the size. On 64-bit targets extend
-       that prefix to a BPTR so that seglist links and hunk tables keep
-       the allocator's native alignment. The size remains at buf - 4. */
-#if __WORDSIZE > 32
-    if (size > ~(ULONG)0 - (sizeof(BPTR) - sizeof(ULONG)))
+    if (size > ~(ULONG)0 - (ULONG)AROS_SEG_HEADER)
         return NULL;
-    size += sizeof(BPTR) - sizeof(ULONG);
-#endif
-    p = ilsAllocMem(size, req);
+    total = AROS_SEG_MEMSIZE4LEN(size);
 
-    D(bug("allocmem %p %d\n", p, size));
-    if (!p)
+    seg = ilsAllocMem(total, req);
+
+    D(bug("allocmem %p %d\n", seg, total));
+    if (!seg)
         return NULL;
-        
-    p += sizeof(BPTR);
-    ((ULONG *)p)[-1] = size;
-    return p;
+
+    seg->seg_Size = total;
+    return AROS_SEG_TOLINK(seg);
 }
 
 void _ilsFreeVec(SIPTR *funcarray, void *buf)
 {
-    UBYTE *p = (UBYTE*)buf;
+    struct AROSSegment *seg;
     ULONG size;
+
     if (!buf)
         return;
-    size = ((ULONG *)p)[-1];
-    p -= sizeof(BPTR);
-    D(bug("freemem %p %d\n", p, size));
+
+    seg = AROS_SEG_FROMLINK(buf);
+    size = seg->seg_Size;
+    D(bug("freemem %p %d\n", seg, size));
+    /* A size of zero marks a segment that does not own its memory */
     if (!size)
         return;
 
-    ilsFreeMem(p, size);
+    ilsFreeMem(seg, size);
 }

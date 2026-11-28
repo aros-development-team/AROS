@@ -14,6 +14,8 @@
 #include <kernel_interrupts.h>
 #include <kernel_objects.h>
 
+#include "apic.h"
+
 #define D(x)
 
 /*****************************************************************************
@@ -85,7 +87,28 @@
 
             if (irq < HW_IRQ_COUNT)
             {
+#if defined(__AROSEXEC_SMP__)
+                /*
+                 * Disable() only stops this CPU; another core may be walking
+                 * this chain in krnRunIRQHandlers() right now.
+                 *
+                 * Unlike the generic version this lets go of the lock before
+                 * the interrupt is enabled. Enabling can enter supervisor
+                 * mode (the IDT is written there), that is a syscall, and
+                 * every syscall takes this lock for reading on its way
+                 * through krnRunExceptionHandlers(): held for writing here it
+                 * would wait for itself. The controllers have their own lock
+                 * (ictl_Lock()). The order still holds against a remove: that
+                 * disables the interrupt inside its write lock and only when
+                 * it left the chain empty, so either it sees this handler and
+                 * disables nothing, or its disable comes before this enable.
+                 */
+                KrnSpinLock(&KernelBase->kb_IntrSpinLock, NULL, SPINLOCK_MODE_WRITE);
+#endif
                 ADDHEAD(&KERNELIRQ_LIST(irq), &handle->in_Node);
+#if defined(__AROSEXEC_SMP__)
+                KrnSpinUnLock(&KernelBase->kb_IntrSpinLock);
+#endif
 
                 ictl_enable_irq(irq, KernelBase);
             }
@@ -104,18 +127,45 @@
 /* Invoke registered IRQ callbacks with their stored arguments. */
 void krnRunIRQHandlers(struct KernelBase *KernelBase, irqid_t irq)
 {
-    struct IntrNode **in, *in1, *in2;
+    struct IntrNode *in, *in2, *in1;
+    struct IntrNode **lastIntr = &in1;
     struct PlatformData *pdata;
 
+    /*
+     * The handler being run is recorded for KrnFmtAlertInfo(). The walk
+     * itself uses locals: the record is per CPU only where there is per-CPU
+     * data, and an iterator in a place two CPUs share would send both down
+     * each other's chain.
+     */
     if ((pdata = (struct PlatformData *)KernelBase->kb_PlatformData) != NULL)
-        in = &pdata->kb_LastIntr;
-    else
-        in = &in1;
-
-    ForeachNodeSafe(&KERNELIRQ_LIST(irq), (*in), in2)
     {
-        irqhandler_t h = (*in)->in_Handler;
+        struct CPUData *cpuData = core_APIC_GetCPUData(pdata->kb_APIC);
 
-        h((*in)->in_HandlerData, (*in)->in_HandlerData2);
+        if (cpuData)
+            lastIntr = &cpuData->cpu_LastIntr;
+        else
+            lastIntr = &pdata->kb_LastIntr;
     }
+
+#if defined(__AROSEXEC_SMP__)
+    /*
+     * Hold the chain in READ mode so a concurrent KrnAdd/RemIRQHandler()
+     * on another CPU cannot mutate it mid-walk, or free the node being
+     * run. Consequence: a handler must not add/remove IRQ handlers from
+     * within itself - that would self-deadlock on the WRITE acquire.
+     */
+    KrnSpinLock(&KernelBase->kb_IntrSpinLock, NULL, SPINLOCK_MODE_READ);
+#endif
+    ForeachNodeSafe(&KERNELIRQ_LIST(irq), in, in2)
+    {
+        irqhandler_t h = in->in_Handler;
+
+        *lastIntr = in;
+        h(in->in_HandlerData, in->in_HandlerData2);
+    }
+#if defined(__AROSEXEC_SMP__)
+    KrnSpinUnLock(&KernelBase->kb_IntrSpinLock);
+#endif
+    /* As before: what is left behind is the end of the chain, not a handler */
+    *lastIntr = in;
 }

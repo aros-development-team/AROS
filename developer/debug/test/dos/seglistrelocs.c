@@ -73,9 +73,9 @@ int main(void)
     {
         struct HunkRelocTable *table = NULL;
         struct TagItem tags[] = { { GSLI_68KRELOCS, (IPTR)&table }, { TAG_DONE, 0 } };
-        ULONG *h0 = (ULONG *)((UBYTE *)BADDR(seg) + sizeof(BPTR));
-        BPTR seg1 = *(BPTR *)BADDR(seg);
-        ULONG *h1 = (ULONG *)((UBYTE *)BADDR(seg1) + sizeof(BPTR));
+        ULONG *h0 = (ULONG *)AROS_SEG_DATA(seg);
+        BPTR seg1 = AROS_SEG_NEXT(seg);
+        ULONG *h1 = (ULONG *)AROS_SEG_DATA(seg1);
         ULONG got = GetSegListInfo(seg, tags);
 
         check(seg1 != BNULL, "the seglist has a second segment");

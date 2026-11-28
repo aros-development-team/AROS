@@ -16,7 +16,20 @@ AROS_LH0I(void, KrnSti,
 {
     AROS_LIBFUNC_INIT
 
-    krnSysCall(SC_STI);
+    unsigned long spsel;
+
+    asm volatile("mrs %0, spsel" : "=r"(spsel));
+
+    if (spsel & 1)
+    {
+        /* Kernel context (EL1h): open IRQ and FIQ here, no system call */
+        asm volatile("msr daifclr, #3" ::: "memory");
+    }
+    else
+    {
+        /* A task: the system call opens both in the task's saved state */
+        krnSysCall(SC_STI);
+    }
 
     AROS_LIBFUNC_EXIT
 }

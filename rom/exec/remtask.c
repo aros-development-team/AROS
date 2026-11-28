@@ -98,17 +98,45 @@
             task->tc_State = TS_REMOVED;
             Remove(&task->tc_Node);
 #else
-            /* Disable(), not Forbid(): only it masks the FIQ whose
-             * signal_hook would re-enter these same locks. */
-            Disable();
             krnSysCallReschedTask(task, TS_REMOVED);
-            Enable();
+#if defined(__AROSEXEC_SMP__)
+            /*
+             * If the task was running on another CPU it is still there,
+             * marked, and only that CPU can take it off itself. Ask it to
+             * reschedule, which is when it drops the task, and wait until
+             * it has: it makes the task TS_INVALID once nothing of it is
+             * in use there. Nothing of the task is freed before that, here
+             * or by our caller.
+             */
+            if ((task->tc_Flags & TF_ETASK) && IntETask(task->tc_UnionETask.tc_ETask)->iet_Evict)
+            {
+                ULONG mask[8] = { 0, 0, 0, 0, 0, 0, 0, 0 }; // CPU mask large enough for 256 CPUs...
+                ULONG spins = 0;
+
+                DREMTASK("Running on CPU %u, waiting for it to let go",
+                         (unsigned)IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuNumber);
+
+                KrnGetCPUMask(IntETask(task->tc_UnionETask.tc_ETask)->iet_CpuNumber, (void *)mask);
+                KrnScheduleCPU((void *)mask);
+
+                while (__atomic_load_n(&task->tc_State, __ATOMIC_ACQUIRE) != TS_INVALID)
+                {
+                    /*
+                     * The request is not lost, but the CPU acts on it only
+                     * when it returns to the task; ask again now and then
+                     * in case it was busy elsewhere.
+                     */
+                    if ((++spins & 0xFFFFF) == 0)
+                        KrnScheduleCPU((void *)mask);
+                }
+            }
+#endif
 #endif
         }
 
 #if defined(__AROSEXEC_SMP__)
-        /* Terminal now, so no new IPIs can be queued - flush the ones
-         * already in flight before any memory is freed. */
+        /* Drop the Signal() calls still queued for this task on any CPU,
+         * before any of its memory is freed. */
         CancelSignalIPIs(task);
 #endif
 

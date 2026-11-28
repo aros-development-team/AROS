@@ -53,6 +53,7 @@ static void smp_Entry(IPTR stackBase, spinlock_t *apicReadyLock, struct KernelBa
     struct Task *apicBSTask;
 #endif
 #if (__WORDSIZE==64)
+    IPTR lockState;
 
     /* Enable fxsave/fxrstor */
     wrcr(cr4, rdcr(cr4) | _CR4_OSFXSR | _CR4_OSXMMEXCPT);
@@ -94,7 +95,18 @@ static void smp_Entry(IPTR stackBase, spinlock_t *apicReadyLock, struct KernelBa
 
     D(bug("[Kernel:SMP] %s[%03u]: Core IDT @ 0x%p\n", __func__, apicCPUNo, apicCPU->cpu_IDT));
 #if (__WORDSIZE==64)
+    /*
+     * Running CPUs enable and disable device vector gates in every IDT,
+     * this one included, from the moment it was allocated. Setting it up
+     * resets them all, so that and taking over the boot CPU's gates is one
+     * step under the lock those CPUs hold: afterwards this CPU has the gate
+     * of every device vector enabled so far, and gets the later ones with
+     * the rest.
+     */
+    lockState = ictl_Lock();
     core_SetupIDT(apicCPUNo, apicCPU->cpu_IDT);
+    core_CopyDeviceGates((x86vectgate_t *)apicCPU->cpu_IDT, (x86vectgate_t *)apicData->cores[0].cpu_IDT);
+    ictl_Unlock(lockState);
 
     if (!core_SetIDTGate((x86vectgate_t *)apicCPU->cpu_IDT, APIC_CPU_EXCEPT_TO_VECTOR(APIC_EXCEPT_SYSCALL), (uintptr_t)IntrDefaultGates[APIC_CPU_EXCEPT_TO_VECTOR(APIC_EXCEPT_SYSCALL)], TRUE, TRUE))
     {
@@ -348,39 +360,12 @@ int smp_Initialize(void)
 
     if (pdata->kb_APIC && (pdata->kb_APIC->apic_count > 1))
     {
-        int number_of_ipi_messages = 0;
-        struct IPIHook *hooks;
-        int i;
-
 #if defined(__AROSEXEC_SMP__)
         cpu_PrepareExec(SysBase);
 #endif
 
-        D(bug("[Kernel:SMP] %s: Initializing Lists for IPI messages ...\n", __func__));
-        NEWLIST(&pdata->kb_FreeIPIHooks);
-        NEWLIST(&pdata->kb_BusyIPIHooks);
-        KrnSpinInit(&pdata->kb_FreeIPIHooksLock);
-        KrnSpinInit(&pdata->kb_BusyIPIHooksLock);
-        
-        number_of_ipi_messages = pdata->kb_APIC->apic_count * 10;
-        D(bug("[Kernel:SMP] %s: Allocating %d IPI CALL_HOOK messages ...\n", __func__, number_of_ipi_messages));
-        hooks = AllocMem((sizeof(struct IPIHook) * number_of_ipi_messages + 127), MEMF_PUBLIC | MEMF_CLEAR);
-        hooks = (struct IPIHook *)(((IPTR)hooks + 127) & ~127);
-        if (hooks)
-        {
-            for (i=0; i < number_of_ipi_messages; i++)
-            {
-                hooks[i].ih_CPUDone = KrnAllocCPUMask();
-                hooks[i].ih_CPURequested = KrnAllocCPUMask();
-                KrnSpinInit(&hooks[i].ih_Lock);
-
-                ADDHEAD(&pdata->kb_FreeIPIHooks, &hooks[i]);
-            }
-        }
-        else
-        {
-            bug("[Kernel:SMP] %s: Failed to get IPI slots!\n", __func__);
-        }
+        /* The request words and call queues every CPU sends to the others with */
+        krnIPICallInit(pdata->kb_APIC->apic_count);
 
         if (!smp_Setup(KernelBase))
         {

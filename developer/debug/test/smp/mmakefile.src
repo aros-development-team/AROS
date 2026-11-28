@@ -63,6 +63,10 @@ USER_CFLAGS := $(PARANOIA_CFLAGS)
     files=smppthreadsnet targetdir=$(EXEDIR) \
     progname=SMP-PThreads-Net uselibs="pthread"
 
+%build_prog mmake=test-smp-multiwake \
+    files=smpmultiwake targetdir=$(EXEDIR) \
+    progname=SMP-MultiWake uselibs="pthread"
+
 %build_prog mmake=test-smp-timer \
     files=smptimer targetdir=$(EXEDIR) \
     progname=SMP-Timer
@@ -71,8 +75,32 @@ USER_CFLAGS := $(PARANOIA_CFLAGS)
     files=smpmmap targetdir=$(EXEDIR) \
     progname=SMP-MMap
 
+%build_prog mmake=test-smp-remrun \
+    files=smpremrun targetdir=$(EXEDIR) \
+    progname=SMP-RemRun
+
+%build_prog mmake=test-smp-crash \
+    files=smpcrash targetdir=$(EXEDIR) \
+    progname=SMP-Crash
+
 %build_prog mmake=test-smp-intctx \
     files=smpintctx targetdir=$(EXEDIR) \
     progname=SMP-IntCtx
+
+%build_prog mmake=test-smp-irqchurn \
+    files=smpirqchurn targetdir=$(EXEDIR) \
+    progname=SMP-IrqChurn
+
+%build_prog mmake=test-smp-softint \
+    files=smpsoftint targetdir=$(EXEDIR) \
+    progname=SMP-SoftInt
+
+%build_prog mmake=test-smp-irqaff \
+    files=smpirqaff targetdir=$(EXEDIR) \
+    progname=SMP-IrqAffinity
+
+%build_prog mmake=test-smp-msiaff \
+    files=smpmsiaff targetdir=$(EXEDIR) \
+    progname=SMP-MsiAffinity
 
 %common

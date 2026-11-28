@@ -422,6 +422,18 @@ ahci_pci_attach(device_t dev)
             return (ENXIO);
     }
 
+#if defined(__AROSEXEC_SMP__)
+    /*
+     * Have the MSI vector delivered to the least busy CPU.  The
+     * controller has just been reset: GHC.IE is clear and stays clear
+     * until the master enable below, so it cannot raise the vector
+     * while it is moved, and no handler is installed yet.  The vector
+     * stays on the boot CPU if this fails.
+     */
+    if (sc->sc_irq_type == 1)
+        pci_intr_affinity_any(dev);
+#endif
+
     /*
      * Get the AHCI capabilities and max number of concurrent
      * command tags and set up the DMA tags.  Adjust the saved

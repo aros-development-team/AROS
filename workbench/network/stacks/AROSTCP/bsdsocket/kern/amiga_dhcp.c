@@ -9,8 +9,6 @@
 #include <net/netmodule.h>
 #include <api/netservice_api.h>
 
-extern struct ifnet *ifnet;
-
 /*
  * DHCP client launching has been EXTERNALISED to the dhcp service daemon
  * (workbench/network/stacks/AROSTCP/services/dhcp, installed as

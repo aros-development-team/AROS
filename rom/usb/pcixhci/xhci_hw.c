@@ -49,6 +49,10 @@ void xhciRingDoorbell(struct PCIController *hc, ULONG slot, ULONG value)
 /*
  * Submit a command to the xHCI command TRB
  * returns -1 on failure, or the completion code
+ *
+ * The command is queued and its result slot armed in one step under the
+ * unit lock: another task's doorbell starts this command as well, and the
+ * interrupt handler may write the result as soon as the lock is released.
  */
 LONG xhciCmdSubmit(struct PCIController *hc,
                    APTR dmaaddr,
@@ -65,7 +69,7 @@ LONG xhciCmdSubmit(struct PCIController *hc,
         (cmd_type == TRBB_FLAG_CRTYPE_CONFIGURE_ENDPOINT) ||
         (cmd_type == TRBB_FLAG_CRTYPE_EVALUATE_CONTEXT);
 
-    Disable();
+    xhciUnitLock(hc->hc_Unit);
     if(dmaaddr && needs_context) {
         ULONG portsc = 0;
         UBYTE port = 0;
@@ -98,7 +102,7 @@ LONG xhciCmdSubmit(struct PCIController *hc,
             if(port == 0 || port > hc->hc_NumPorts) {
                 pciusbWarn("xHCI", DEBUGWARNCOLOR_SET "%s: invalid port in slot context (slot=%u port=%u)" DEBUGCOLOR_RESET" \n",
                            __func__, (trbflags >> 24) & 0xFF, port);
-                Enable();
+                xhciUnitUnlock(hc->hc_Unit);
                 return -1;
             }
 
@@ -111,7 +115,7 @@ LONG xhciCmdSubmit(struct PCIController *hc,
             pciusbWarn("xHCI", DEBUGWARNCOLOR_SET "%s: port disconnected (slot=%u port=%u portsc=%08lx)" DEBUGCOLOR_RESET" \n",
                        __func__, (trbflags >> 24) & 0xFF, (UWORD)port, (unsigned long)portsc);
 
-            Enable();
+            xhciUnitUnlock(hc->hc_Unit);
             return -1;
         }
         /* Flush the input context to memory before writing to command ring */
@@ -131,14 +135,19 @@ LONG xhciCmdSubmit(struct PCIController *hc,
     } else {
         pciusbError("xHCI", DEBUGWARNCOLOR_SET "%s: Failed to queue command" DEBUGCOLOR_RESET" \n", __func__);
     }
-    Enable();
+    xhciUnitUnlock(hc->hc_Unit);
 
     if(queued != -1) {
         xhciRingDoorbell(hc, 0, 0);
 
         /* Wait for completion with a bounded timeout to avoid hanging */
         for(ULONG waitms = 0; waitms < 1000; waitms++) {
+#if defined(__AROSEXEC_SMP__)
+            /* written last by the interrupt handler, perhaps on another CPU */
+            if(__atomic_load_n(&xhcic->xhc_CmdResults[queued].status, __ATOMIC_ACQUIRE) != 0xFFFFFFFF) {
+#else
             if(xhcic->xhc_CmdResults[queued].status != 0xFFFFFFFF) {
+#endif
                 /* Only the context commands are handed a CPU address;
                    Set TR Dequeue Pointer carries a bus address with the
                    cycle state in bit 0, which is not ours to invalidate. */
@@ -286,7 +295,7 @@ LONG xhciCmdSubmitAsync(struct PCIController *hc,
     if(!ioreq)
         return -1;
 
-    Disable();
+    xhciUnitLock(hc->hc_Unit);
     if(dmaaddr) {
         ULONG portsc = 0;
         UBYTE port = 0;
@@ -318,7 +327,7 @@ LONG xhciCmdSubmitAsync(struct PCIController *hc,
                 portsc = AROS_LE2LONG(xhciports[port - 1].portsc);
         }
         if(!(slot) || !(portsc & XHCIF_PR_PORTSC_CCS)) {
-            Enable();
+            xhciUnitUnlock(hc->hc_Unit);
             return -1;
         }
         queued = xhciQueueTRB_IO(hc, cmdring, (UQUAD)(IPTR)dmaaddr, 0, trbflags,
@@ -330,7 +339,7 @@ LONG xhciCmdSubmitAsync(struct PCIController *hc,
         xhcic->xhc_CmdResults[queued].flags = 0xFFFFFFFF;
         xhcic->xhc_CmdResults[queued].status = 0xFFFFFFFF;
     }
-    Enable();
+    xhciUnitUnlock(hc->hc_Unit);
 
     if(queued != -1) {
         xhciRingDoorbell(hc, 0, 0);
@@ -536,6 +545,10 @@ AROS_UFH0(void, xhciEventRingTask)
             xhciHandleFinishedTDs(hc, xhcic->xhc_EventTask.xet_TimerReq);
             /* what the interrupt could not free (xhciReleaseDMABuffer) */
             xhciFreeDeferredBounces(hc);
+#if defined(__AROSEXEC_SMP__)
+            /* private data of the requests finished since the last pass */
+            xhciFreeDeferredPrivates(hc);
+#endif
 
             if(hc->hc_IntXFerQueue.lh_Head->ln_Succ)
                 xhciScheduleIntTDs(hc);

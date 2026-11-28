@@ -150,7 +150,7 @@
 
     args.Args[0] = (IPTR)argptr;
     args.Args[1] = argsize;
-    args.Args[2] = (IPTR)BADDR(segList) + sizeof(BPTR);
+    args.Args[2] = (IPTR)AROS_SEG_DATA(segList);
     args.Args[3] = (IPTR)me;
 
     /* Multi-user: a setuid executable runs with the owner of its file */

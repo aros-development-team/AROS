@@ -135,12 +135,18 @@ void X86_HandleSysHaltSC(struct ExceptionContext *regs)
 {
     D(bug("[Kernel] %s()\n", __func__));
 #if defined(__AROSEXEC_SMP__)
-    //TODO: Halt other CPU cores.
-#endif
+    /*
+     * The other CPUs are not halted, and this one keeps answering them
+     * (core_HaltCPU(), rom/kernel/kernel_intr.c), with interrupts off.
+     */
+    __asm__ __volatile__("cli;");
+    core_HaltCPU();
+#else
     for(;;)
     {
         __asm__ __volatile__("cli; hlt;");
     }
+#endif
 }
 
 struct syscallx86_Handler x86_SCSysHaltHandler =
@@ -190,8 +196,8 @@ void X86_HandleChangePMStateSC(struct ExceptionContext *regs)
 
         D(bug("[Kernel] %s: Woke from idling; checking for softints...\n",
             __func__);)
-        if (SysBase->SysFlags & SFF_SoftInt)
-            core_Cause(INTB_SOFTINT, 1L << INTB_SOFTINT);
+        /* Returns with interrupts masked, as the way out of this trap needs */
+        core_RunSoftInts();
     }
     else
     {

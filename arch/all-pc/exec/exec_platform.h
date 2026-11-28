@@ -96,16 +96,20 @@ extern void Kernel_53_KrnSpinUnLock(spinlock_t *, void *);
 #define FLAG_SCHEDSWITCH_SET            TLS_LOCK_OR_L(Sched.ScheduleFlags, TLSSF_Switch)
 #define FLAG_SCHEDDISPATCH_CLEAR        TLS_LOCK_AND_L(Sched.ScheduleFlags, ~TLSSF_Dispatch)
 #define FLAG_SCHEDDISPATCH_SET          TLS_LOCK_OR_L(Sched.ScheduleFlags, TLSSF_Dispatch)
-
 /*
- * Block IRQ-exit dispatch without going through Forbid()/Permit() (Permit's
- * decrement can trigger Reschedule() which yields - exactly what we don't
- * want while holding a scheduler list spinlock). Used by the scheduler-list
- * helpers in rom/exec/exec_intern.h. Maps to the per-CPU task-dispatch nest
- * count, mirroring arm-native's EXEC_BLOCK_DISPATCH_INC/DEC.
+ * Set by Wait() under Disable(), consumed by the switch it then asks for:
+ * the scheduler parks the task, and sets TS_WAIT as it does.
  */
-#define EXEC_BLOCK_DISPATCH_INC         TDNESTCOUNT_INC
-#define EXEC_BLOCK_DISPATCH_DEC         TDNESTCOUNT_DEC
+#define FLAG_SCHEDPARK_CLEAR            TLS_LOCK_AND_L(Sched.ScheduleFlags, ~TLSSF_Park)
+#define FLAG_SCHEDPARK_SET              TLS_LOCK_OR_L(Sched.ScheduleFlags, TLSSF_Park)
+/*
+ * Set when this CPU has dropped a task another CPU's RemTask() asked for.
+ * ThisTask still names it until the next task is dispatched, but its
+ * memory may be gone: while the flag is set the scheduler has no outgoing
+ * task.
+ */
+#define FLAG_SCHEDEVICT_CLEAR           TLS_LOCK_AND_L(Sched.ScheduleFlags, ~TLSSF_Evict)
+#define FLAG_SCHEDEVICT_SET             TLS_LOCK_OR_L(Sched.ScheduleFlags, TLSSF_Evict)
 
 #define SCHEDQUANTUM_SET(val)           TLS_SET(Sched.Quantum, (UWORD)(val))
 #define SCHEDQUANTUM_GET                TLS_GET(Sched.Quantum)
@@ -118,6 +122,8 @@ extern void Kernel_53_KrnSpinUnLock(spinlock_t *, void *);
 #define FLAG_SCHEDQUANTUM_ISSET         ((BOOL)((TLS_GET(Sched.ScheduleFlags) & TLSSF_Quantum) != 0))
 #define FLAG_SCHEDSWITCH_ISSET          ((BOOL)((TLS_GET(Sched.ScheduleFlags) & TLSSF_Switch) != 0))
 #define FLAG_SCHEDDISPATCH_ISSET        ((BOOL)((TLS_GET(Sched.ScheduleFlags) & TLSSF_Dispatch) != 0))
+#define FLAG_SCHEDPARK_ISSET            ((BOOL)((TLS_GET(Sched.ScheduleFlags) & TLSSF_Park) != 0))
+#define FLAG_SCHEDEVICT_ISSET           ((BOOL)((TLS_GET(Sched.ScheduleFlags) & TLSSF_Evict) != 0))
 #define GET_THIS_TASK                   TLS_GET(Sched.RunningTask)
 #define SET_THIS_TASK(x)         \
     ({ \
@@ -126,6 +132,13 @@ extern void Kernel_53_KrnSpinUnLock(spinlock_t *, void *);
         TLS_SET(Sched.RunningTask, __newtask); \
         AddHead(&PrivExecBase(SysBase)->TaskRunning, (struct Node *)__newtask); \
         EXEC_SPINLOCK_UNLOCK(&PrivExecBase(SysBase)->TaskRunningSpinLock);  \
+    })
+/* The same for a caller that holds TaskRunningSpinLock (core_Dispatch) */
+#define SET_THIS_TASK_LOCKED(x)         \
+    ({ \
+        struct Task *__newtask = (x); \
+        TLS_SET(Sched.RunningTask, __newtask); \
+        AddHead(&PrivExecBase(SysBase)->TaskRunning, (struct Node *)__newtask); \
     })
 
 #else /* !__AROSEXEC_SMP__ */

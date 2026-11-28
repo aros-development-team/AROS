@@ -1328,7 +1328,7 @@ case "$target_cpu" in
                 aarch64_isa_extra+="--target=aarch64-unknown-aros -fno-pic -fno-pie "
             ;;
         esac
-        aarch64_isa_extra+="-mcmodel=large"
+        aarch64_isa_extra+="-mcmodel=large $""(CFLAGS_NO_OUTLINE_ATOMICS)"
         ;;
     *armhf*)
         if test "$gcc_default_endian" = ""; then
