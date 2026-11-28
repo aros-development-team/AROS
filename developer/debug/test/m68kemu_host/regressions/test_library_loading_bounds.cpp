@@ -34,6 +34,8 @@ using BOOL = int;
 #define OFFSET_END 1
 #define OFFSET_BEGINNING -1
 #define MEMF_ANY 0
+#define MEMF_PUBLIC (1 << 0)
+#define MEMF_CLEAR (1 << 16)
 #define LIBF_SUMUSED (1 << 2)
 #define LIBF_CHANGED 2
 #define NT_LIBRARY 9
@@ -57,7 +59,7 @@ struct Failure { std::string what; };
 static unsigned checks;
 #define CHECK(c, label) do { ++checks; if (!(c)) throw Failure{label}; } while (0)
 
-struct M68KTaskState { ULONG tail_pc = 0, tail_d0 = 0, tail_a0 = 0; };
+struct M68KTaskState { ULONG tail_pc = 0, tail_d0 = 0, tail_a0 = 0, tail_a6 = 0; };
 
 /* What the fixture heap hands out: address and size of every live block */
 struct Block { ULONG size; bool image; };
@@ -69,6 +71,7 @@ struct M68KEmuContext
     ULONG entry_point = 0x00011110, seg_start = 0x00022220;
     ULONG load_lo = 0x00033330, load_hi = 0x00044440;
     bool trace_calls = false, low_guard = false;
+    ULONG m68k_sysbase = 0x0000F000;
     M68KTaskState task;
     struct { char name[64]; ULONG base, reopen; } m68klibs[16] = {};
     UWORD num_m68klibs = 0;
@@ -76,6 +79,7 @@ struct M68KEmuContext
     /* the fixture's own state */
     ULONG heap = HEAP_BASE, file_pos = 0;
     unsigned heap_calls = 0, fail_call = 0, wild_call = 0, bad_frees = 0, clears_outside = 0;
+    unsigned invalidations = 0, invalidations_at_free = 0;  /* engine invalidations, all and before the last free */
     /* the DOS side of the file the loader looks for: Open() fails fail_opens
        times with probe_err, then finds native_opens files that are no hunk
        file, then the library; the read can fail on the way */
@@ -99,7 +103,7 @@ static M68KEmuContext *active;
 static void fixture_bug(const char *, ...) {}
 #define bug(...) fixture_bug(__VA_ARGS__)
 static void m68k_log(M68KEmuContext *, const char *, ...) {}
-static void m68k_engine_invalidate(M68KEmuContext *) {}    /* no engine here */
+static void m68k_engine_invalidate(M68KEmuContext *ctx) { ++ctx->invalidations; }    /* no engine here: counted */
 static void m68k_low_write_trap(M68KEmuContext *, ULONG, const char *) { throw Failure{"write into the low memory guard"}; }
 static M68KTaskState *m68k_ts(M68KEmuContext *ctx) { return &ctx->task; }
 /* the caller's DOS error, as IoErr() shows it */
@@ -166,6 +170,7 @@ static ULONG M68KEmu_HeapAlloc(M68KEmuContext *ctx, ULONG size, ULONG)
 static void M68KEmu_HeapFree(M68KEmuContext *ctx, ULONG addr, ULONG size)
 {
     auto it = ctx->live.find(addr);
+    ctx->invalidations_at_free = ctx->invalidations;
     if (it == ctx->live.end() || it->second.size != size) { ++ctx->bad_frees; return; }
     ctx->live.erase(it);
 }
@@ -370,6 +375,21 @@ int main()
         CHECK(out.base != 0 && get16(ctx, out.base + 16) == 12, "two functions");
         CHECK(get32(ctx, out.base - 6 + 2) == a + FUNCS + 0xA0 && get32(ctx, out.base - 12 + 2) == a + FUNCS + 0xA4,
               "offsets count from the table");
+    });
+
+    run("a zero relative function offset uses exec's empty vector", [&] {
+        M68KEmuContext ctx;
+        Outcome out = load(ctx, one, [](M68KEmuContext &c, const std::vector<ULONG> &a) {
+            standard(c, a[0]);
+            put16(c, a[0] + FUNCS, 0xFFFF);
+            put16(c, a[0] + FUNCS + 2, 0);
+            put16(c, a[0] + FUNCS + 4, 0xFFFF);
+        });
+        CHECK(out.base != 0 && get16(ctx, out.base + M68K_LIB_NEGSIZE) == 6,
+              "the existing loader accepts one relative function");
+        CHECK(get16(ctx, out.base - 6) == M68K_OP_JMP_ABS_L &&
+              get32(ctx, out.base - 4) == (M68K_EMPTY_VECTOR | (1u << 8)),
+              "zero displacement follows exec's empty-vector semantics");
     });
 
     run("the Resident in the second hunk", [&] {
@@ -593,6 +613,224 @@ int main()
         ctx.wild_call = 2;
         Outcome out = load(ctx, one, [](M68KEmuContext &c, const std::vector<ULONG> &a) { standard(c, a[0]); });
         refused_cleanly(ctx, out);
+    });
+
+    /* ---- exec MakeFunctions() and MakeLibrary() for 68k code ---- */
+
+    auto fresh = [](M68KEmuContext &ctx) {
+        std::fill(host.begin(), host.begin() + ARENA, UBYTE(0));
+        std::fill(host.begin() + ARENA, host.end(), BEYOND_BYTE);
+        active = &ctx;
+    };
+    auto slot_is = [](M68KEmuContext &ctx, ULONG base, ULONG n, ULONG to) {
+        ULONG s = base - n * M68K_JT_SLOT_SIZE;
+        return get16(ctx, s) == M68K_OP_JMP_ABS_L && get32(ctx, s + 2) == to;
+    };
+    const ULONG TAB = 0x20000, DISP = 0x21000, TARGET = 0x30000;
+
+    run("MakeFunctions: addresses, and a zero entry gets exec's empty vector", [&] {
+        M68KEmuContext ctx;
+        fresh(ctx);
+        put32(ctx, TAB, 0x2000); put32(ctx, TAB + 4, 0); put32(ctx, TAB + 8, 0x2010);
+        put32(ctx, TAB + 12, M68K_FUNCTABLE_END);
+        CHECK(M68KEmu_MakeFunctions(&ctx, TARGET, TAB, 0) == 24, "exec's result for three vectors, (3 + 1) * 6");
+        CHECK(slot_is(ctx, TARGET, 1, 0x2000) && slot_is(ctx, TARGET, 3, 0x2010), "vectors 1 and 3 jump to their addresses");
+        CHECK(slot_is(ctx, TARGET, 2, 0xC0ED0201), "vector 2, a zero entry, is exec's empty vector 2");
+        CHECK(get16(ctx, TARGET - 20) == 0 && get16(ctx, TARGET) == 0, "nothing below the table or at the target");
+        CHECK(beyond_untouched(), "nothing outside containment was written");
+        CHECK(ctx.invalidations == 1, "the engine is told once that code was written");
+    });
+
+    run("MakeFunctions: WORD displacements from a base, signed", [&] {
+        M68KEmuContext ctx;
+        fresh(ctx);
+        put16(ctx, TAB, 0x0010); put16(ctx, TAB + 2, 0xFFFC); put16(ctx, TAB + 4, 0); put16(ctx, TAB + 6, 0xFFFF);
+        CHECK(M68KEmu_MakeFunctions(&ctx, TARGET, TAB, DISP) == 24, "exec's result for three vectors, (3 + 1) * 6");
+        CHECK(slot_is(ctx, TARGET, 1, DISP + 0x10) && slot_is(ctx, TARGET, 2, DISP - 4), "displacements from the base");
+        CHECK(slot_is(ctx, TARGET, 3, 0xC0ED0301), "a zero displacement is exec's empty vector");
+    });
+
+    run("MakeFunctions: a zero entry at vector 512 keeps its whole number, as exec's empty vector does", [&] {
+        M68KEmuContext ctx;
+        fresh(ctx);
+        for (ULONG i = 0; i < 513; ++i) put32(ctx, TAB + 4 * i, 0x2000);
+        put32(ctx, TAB + 4 * 255, 0); put32(ctx, TAB + 4 * 511, 0);
+        put32(ctx, TAB + 4 * 513, M68K_FUNCTABLE_END);
+        CHECK(M68KEmu_MakeFunctions(&ctx, TARGET, TAB, 0) == 514 * M68K_JT_SLOT_SIZE, "exec's result for 513 vectors");
+        CHECK(slot_is(ctx, TARGET, 256, 0xC0ED0001), "vector 256: 0xC0ED0000 | 256 << 8 | 1, where bit 16 is set already");
+        CHECK(slot_is(ctx, TARGET, 512, 0xC0EF0001), "vector 512: 0xC0ED0000 | 512 << 8 | 1, not cut to 8 bits");
+        CHECK(slot_is(ctx, TARGET, 511, 0x2000) && slot_is(ctx, TARGET, 513, 0x2000), "its neighbours jump to their addresses");
+    });
+
+    run("MakeFunctions: an empty table writes nothing, and exec's result is 6", [&] {
+        M68KEmuContext ctx;
+        fresh(ctx);
+        std::fill(host.begin() + TARGET - 16, host.begin() + TARGET + 4, UBYTE(0xA5));
+        put32(ctx, TAB, M68K_FUNCTABLE_END);
+        CHECK(M68KEmu_MakeFunctions(&ctx, TARGET, TAB, 0) == 6, "(0 + 1) * 6");
+        CHECK(std::all_of(host.begin() + TARGET - 16, host.begin() + TARGET + 4, [](UBYTE b) { return b == 0xA5; }),
+              "no byte around the target was written");
+        put16(ctx, TAB, 0xFFFF);
+        CHECK(M68KEmu_MakeFunctions(&ctx, TARGET, TAB, DISP) == 6, "an empty displacement table, the same");
+        CHECK(std::all_of(host.begin() + TARGET - 16, host.begin() + TARGET + 4, [](UBYTE b) { return b == 0xA5; }),
+              "no byte around the target was written");
+    });
+
+    run("MakeFunctions: one vector takes 6 bytes, and exec's result is 12", [&] {
+        M68KEmuContext ctx;
+        fresh(ctx);
+        std::fill(host.begin() + TARGET - 16, host.begin() + TARGET + 4, UBYTE(0xA5));
+        put32(ctx, TAB, 0x2000); put32(ctx, TAB + 4, M68K_FUNCTABLE_END);
+        CHECK(M68KEmu_MakeFunctions(&ctx, TARGET, TAB, 0) == 12, "(1 + 1) * 6");
+        CHECK(slot_is(ctx, TARGET, 1, 0x2000), "the slot below the target");
+        CHECK(std::all_of(host.begin() + TARGET - 16, host.begin() + TARGET - 6, [](UBYTE b) { return b == 0xA5; }) &&
+              std::all_of(host.begin() + TARGET, host.begin() + TARGET + 4, [](UBYTE b) { return b == 0xA5; }),
+              "nothing outside the one slot was written");
+    });
+
+    run("MakeFunctions and MakeLibrary: a table with no end within 1000 vectors is refused", [&] {
+        M68KEmuContext ctx;
+        fresh(ctx);
+        for (ULONG i = 0; i <= M68K_MAX_VECTORS; ++i) put32(ctx, TAB + 4 * i, 0x2000);
+        CHECK(M68KEmu_MakeFunctions(&ctx, TARGET, TAB, 0) == 0, "MakeFunctions refuses it");
+        CHECK(get32(ctx, TARGET - 4) == 0, "and writes nothing");
+        CHECK(M68KEmu_MakeLibrary(&ctx, TAB, 0, 0, 40, 0) == 0 && ctx.heap_calls == 0, "MakeLibrary refuses it without memory");
+        put32(ctx, TAB + 4 * M68K_MAX_VECTORS, M68K_FUNCTABLE_END);
+        CHECK(M68KEmu_MakeFunctions(&ctx, TARGET, TAB, 0) == (M68K_MAX_VECTORS + 1) * M68K_JT_SLOT_SIZE,
+              "a table of exactly 1000 vectors is taken whole");
+        CHECK(slot_is(ctx, TARGET, M68K_MAX_VECTORS, 0x2000) && get32(ctx, TARGET - 6006) == 0, "its last slot, and nothing below");
+    });
+
+    run("MakeFunctions: no slot or table outside containment", [&] {
+        M68KEmuContext ctx;
+        fresh(ctx);
+        put32(ctx, TAB, 0x2000); put32(ctx, TAB + 4, M68K_FUNCTABLE_END);
+        CHECK(M68KEmu_MakeFunctions(&ctx, 4, TAB, 0) == 0, "a target with no room below it");
+        CHECK(M68KEmu_MakeFunctions(&ctx, ARENA + 6, TAB, 0) == 0, "a target past containment");
+        put32(ctx, ARENA - 4, 0x2000);
+        CHECK(M68KEmu_MakeFunctions(&ctx, TARGET, ARENA - 4, 0) == 0, "a table that runs out of containment");
+        CHECK(get32(ctx, TARGET - 4) == 0 && get32(ctx, 0) == 0, "nothing was written");
+        CHECK(beyond_untouched(), "nothing outside containment was written");
+        CHECK(ctx.invalidations == 0, "no code written, no invalidation");
+    });
+
+    run("MakeLibrary: WORD displacements from the function table", [&] {
+        M68KEmuContext ctx;
+        fresh(ctx);
+        put16(ctx, TAB, 0xFFFF); put16(ctx, TAB + 2, 0x0040); put16(ctx, TAB + 4, 0xFFFF);
+        ULONG base = M68KEmu_MakeLibrary(&ctx, TAB, 0, 0, 40, 0);
+        CHECK(base != 0, "a base");
+        CHECK(ctx.live.size() == 1 && ctx.live.count(base - 8) == 1 && ctx.live[base - 8].size == 48,
+              "one heap block: the table rounded up to a LONG, then the base");
+        CHECK(slot_is(ctx, base, 1, TAB + 0x40), "the vector jumps to its displacement from the table");
+        CHECK(get16(ctx, base + M68K_LIB_NEGSIZE) == 8 && get16(ctx, base + M68K_LIB_POSSIZE) == 40, "lib_NegSize and lib_PosSize");
+        CHECK(get16(ctx, base - 8) == 0, "the bytes of the rounding stay clear");
+        CHECK(ctx.task.tail_pc == 0, "no init: no code is queued");
+        CHECK(ctx.invalidations == 1, "the engine is told once that the jump table was written");
+    });
+
+    run("MakeLibrary: the largest representable lib_PosSize is retained", [&] {
+        M68KEmuContext ctx;
+        fresh(ctx);
+        put32(ctx, TAB, M68K_FUNCTABLE_END);
+        ULONG base = M68KEmu_MakeLibrary(&ctx, TAB, 0, 0, 0xFFFFu, 0);
+        CHECK(base != 0 && ctx.live.count(base) == 1 && ctx.live[base].size == 0xFFFFu,
+              "one allocation has the full representable size");
+        CHECK(get16(ctx, base + M68K_LIB_POSSIZE) == 0xFFFFu,
+              "lib_PosSize retains the allocation size");
+    });
+
+    run("MakeLibrary: an unrepresentable lib_PosSize is refused before allocation", [&] {
+        M68KEmuContext ctx;
+        fresh(ctx);
+        put32(ctx, TAB, M68K_FUNCTABLE_END);
+        CHECK(M68KEmu_MakeLibrary(&ctx, TAB, 0, 0, 0x10000u, 0) == 0,
+              "a size that would truncate to zero is refused");
+        CHECK(ctx.heap_calls == 0 && ctx.live.empty() && ctx.task.tail_pc == 0,
+              "no allocation or init is retained on refusal");
+    });
+
+    run("MakeLibrary: addresses, an InitStruct() table and an init", [&] {
+        M68KEmuContext ctx;
+        fresh(ctx);
+        const ULONG S = 0x20100, I = 0x2400, SEG = 0x1234;
+        put32(ctx, TAB, 0x2100); put32(ctx, TAB + 4, 0x2104); put32(ctx, TAB + 8, 0x2108);
+        put32(ctx, TAB + 12, M68K_FUNCTABLE_END);
+        bytes(ctx, S, {0x90, M68K_LIB_VERSION, 0x00, 0x07, 0x00});   /* WORD 7 at lib_Version */
+        ULONG base = M68KEmu_MakeLibrary(&ctx, TAB, S, I, 64, SEG);
+        CHECK(base != 0, "a base");
+        CHECK(ctx.live.size() == 1 && ctx.live.count(base - 20) == 1 && ctx.live[base - 20].size == 84,
+              "18 bytes of table rounded up to 20, then 64 bytes of base, in one block");
+        CHECK(slot_is(ctx, base, 1, 0x2100) && slot_is(ctx, base, 2, 0x2104) && slot_is(ctx, base, 3, 0x2108), "the three vectors");
+        CHECK(get16(ctx, base + M68K_LIB_VERSION) == 7, "the InitStruct() table was applied to the base");
+        CHECK(get16(ctx, base + M68K_LIB_NEGSIZE) == 20 && get16(ctx, base + M68K_LIB_POSSIZE) == 64, "lib_NegSize and lib_PosSize");
+        CHECK(ctx.task.tail_pc == I && ctx.task.tail_d0 == base && ctx.task.tail_a0 == SEG && ctx.task.tail_a6 == ctx.m68k_sysbase,
+              "init is queued with D0 the base, A0 the segList and A6 SysBase");
+    });
+
+    run("MakeLibrary: an empty table, the base at the start of its block", [&] {
+        M68KEmuContext ctx;
+        fresh(ctx);
+        put32(ctx, TAB, M68K_FUNCTABLE_END);                      /* first WORD -1: read as displacements, as exec does */
+        ULONG base = M68KEmu_MakeLibrary(&ctx, TAB, 0, 0, 40, 0);
+        CHECK(base != 0 && ctx.live.size() == 1 && ctx.live.count(base) == 1 && ctx.live[base].size == 40, "one block, the base alone");
+        CHECK(get16(ctx, base + M68K_LIB_NEGSIZE) == 0 && get16(ctx, base + M68K_LIB_POSSIZE) == 40, "lib_NegSize 0");
+    });
+
+    run("MakeLibrary: an odd init, or one outside containment, takes no memory", [&] {
+        M68KEmuContext ctx;
+        fresh(ctx);
+        put16(ctx, TAB, 0xFFFF); put16(ctx, TAB + 2, 0x0040); put16(ctx, TAB + 4, 0xFFFF);
+        CHECK(M68KEmu_MakeLibrary(&ctx, TAB, 0, 0x2401, 40, 0) == 0, "an odd init");
+        CHECK(M68KEmu_MakeLibrary(&ctx, TAB, 0, ARENA + 0x10, 40, 0) == 0, "an init past containment");
+        CHECK(ctx.heap_calls == 0 && ctx.live.empty() && ctx.task.tail_pc == 0, "no block, no code queued");
+    });
+
+    run("MakeLibrary: a base smaller than a Library takes no memory", [&] {
+        M68KEmuContext ctx;
+        fresh(ctx);
+        put16(ctx, TAB, 0xFFFF); put16(ctx, TAB + 2, 0x0040); put16(ctx, TAB + 4, 0xFFFF);
+        CHECK(M68KEmu_MakeLibrary(&ctx, TAB, 0, 0, M68K_SIZEOF_LIBRARY - 1, 0) == 0, "refused");
+        CHECK(ctx.heap_calls == 0 && ctx.live.empty(), "no heap block was taken");
+    });
+
+    run("MakeLibrary: no memory, or a heap that answers outside containment", [&] {
+        for (int wild = 0; wild < 2; ++wild)
+        {
+            M68KEmuContext ctx;
+            fresh(ctx);
+            (wild ? ctx.wild_call : ctx.fail_call) = 1;
+            put16(ctx, TAB, 0xFFFF); put16(ctx, TAB + 2, 0x0040); put16(ctx, TAB + 4, 0xFFFF);
+            CHECK(M68KEmu_MakeLibrary(&ctx, TAB, 0, 0x2400, 40, 0) == 0, "refused");
+            CHECK(ctx.bad_frees == 0 && ctx.clears_outside == 0 && ctx.live.empty(), "nothing given back that is not a block");
+            CHECK(ctx.task.tail_pc == 0, "no init is queued");
+            CHECK(beyond_untouched(), "nothing outside containment was written");
+            CHECK(ctx.invalidations == 0, "no code written, no invalidation");
+        }
+    });
+
+    run("MakeLibrary: an InitStruct() table that does not fit gives the block back", [&] {
+        M68KEmuContext ctx;
+        fresh(ctx);
+        const ULONG S = 0x20100;
+        put16(ctx, TAB, 0xFFFF); put16(ctx, TAB + 2, 0x0040); put16(ctx, TAB + 4, 0xFFFF);
+        bytes(ctx, S, {0x90, 200, 0x00, 0x07, 0x00});              /* past a base of 64 bytes */
+        CHECK(M68KEmu_MakeLibrary(&ctx, TAB, S, 0x2400, 64, 0) == 0, "refused");
+        CHECK(ctx.heap_calls == 1 && ctx.live.empty() && ctx.bad_frees == 0, "the block went back with its own size");
+        CHECK(ctx.task.tail_pc == 0, "no init is queued");
+        CHECK(ctx.invalidations == 1 && ctx.invalidations_at_free == 1,
+              "the jump table written into the block was invalidated before the block went back");
+    });
+
+    run("MakeLibrary: a table that runs out of containment takes no memory", [&] {
+        M68KEmuContext ctx;
+        fresh(ctx);
+        put16(ctx, ARENA - 2, 0x1234);                             /* a LONG table cut by the end */
+        CHECK(M68KEmu_MakeLibrary(&ctx, ARENA - 2, 0, 0, 40, 0) == 0, "an address table");
+        put16(ctx, ARENA - 4, 0xFFFF); put16(ctx, ARENA - 2, 0x0010);
+        CHECK(M68KEmu_MakeLibrary(&ctx, ARENA - 4, 0, 0, 40, 0) == 0, "a displacement table");
+        CHECK(M68KEmu_MakeLibrary(&ctx, ARENA, 0, 0, 40, 0) == 0, "a table past containment");
+        CHECK(ctx.heap_calls == 0 && ctx.live.empty(), "no heap block was taken");
     });
 
     /* ---- the running program ---- */

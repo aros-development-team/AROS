@@ -94,6 +94,55 @@ static BOOL m68k_init_struct(struct M68KEmuContext *ctx, ULONG tab, ULONG mem, U
     return TRUE;
 }
 
+/* The vectors of a function table, as exec's MakeFunctions() reads them:
+   LONG addresses ending in -1, or, with rel, WORD displacements ending in
+   the WORD -1. The table is not trusted: every entry that counts has to lie
+   in containment. The number of vectors before the end; -1 when the table
+   runs out of containment first; M68K_MAX_VECTORS + 1 when there is no end
+   within M68K_MAX_VECTORS vectors. The loader cuts such a table at
+   M68K_MAX_VECTORS, as it always has; MakeLibrary() and MakeFunctions()
+   refuse it rather than build a library with vectors missing. */
+static LONG m68k_count_vectors(struct M68KEmuContext *ctx, ULONG array, BOOL rel)
+{
+    for (LONG n = 0; n <= M68K_MAX_VECTORS; n++)
+    {
+        ULONG at = rel ? array + n * 2 : array + n * 4;
+
+        if (!m68k_in_mem(ctx, at, rel ? 2 : 4))
+            return n < M68K_MAX_VECTORS ? -1 : M68K_MAX_VECTORS + 1;
+        if (rel ? m68k_read16(ctx, at) == 0xFFFF : m68k_read32(ctx, at) == M68K_FUNCTABLE_END)
+            return n;
+    }
+    return M68K_MAX_VECTORS + 1;
+}
+
+/* The jump table below target, as exec's MakeFunctions() builds it: vector
+   n, at target - 6n, is a JMP to the n-th address of the table, or, with
+   rel, to disp plus the n-th displacement. A zero entry gets exec's empty
+   vector. The table was counted by m68k_count_vectors(), and the caller has
+   checked that the count slots below target lie in containment. Only 68k
+   addresses go into the slots. */
+static void m68k_put_vectors(struct M68KEmuContext *ctx, ULONG target, ULONG array, BOOL rel, ULONG disp, ULONG count)
+{
+    for (ULONG i = 0; i < count; i++)
+    {
+        ULONG slot = target - (i + 1) * M68K_JT_SLOT_SIZE;
+        ULONG func;
+
+        if (rel)
+        {
+            WORD d = (WORD)m68k_read16(ctx, array + i * 2);
+            func = d ? disp + (LONG)d : 0;
+        }
+        else
+            func = m68k_read32(ctx, array + i * 4);
+        if (!func)
+            func = M68K_EMPTY_VECTOR | ((i + 1) << 8);
+        m68k_write16(ctx, slot, M68K_OP_JMP_ABS_L);
+        m68k_write32(ctx, slot + 2, func);
+    }
+}
+
 /* Nothing of an attempt that did not get as far as a usable library is
    kept. What goes back is exactly what that attempt took from the heap: the
    base with its jump table, when it was allocated already, and the hunks of
@@ -269,20 +318,14 @@ ULONG M68KEmu_LoadM68KLibrary(struct M68KEmuContext *ctx, const char *name, ULON
        before its end is not one. */
     if (!m68k_in_mem(ctx, funcTable, 2)) return m68k_library_abandon(ctx, entry, 0, 0);
     BOOL rel = m68k_read16(ctx, funcTable) == 0xFFFF;
-    UWORD numFuncs = 0;
-    while (numFuncs < 1000)
+    ULONG vectors = rel ? funcTable + 2 : funcTable;
+    LONG counted = m68k_count_vectors(ctx, vectors, rel);
+    if (counted < 0)
     {
-        ULONG at = rel ? funcTable + 2 + numFuncs * 2 : funcTable + numFuncs * 4;
-
-        if (!m68k_in_mem(ctx, at, rel ? 2 : 4))
-        {
-            m68k_log(ctx, "68k library %s: its function table runs out of memory", name);
-            return m68k_library_abandon(ctx, entry, 0, 0);
-        }
-        if (rel ? m68k_read16(ctx, at) == 0xFFFF : m68k_read32(ctx, at) == M68K_FUNCTABLE_END)
-            break;
-        numFuncs++;
+        m68k_log(ctx, "68k library %s: its function table runs out of memory", name);
+        return m68k_library_abandon(ctx, entry, 0, 0);
     }
+    UWORD numFuncs = (UWORD)(counted > M68K_MAX_VECTORS ? M68K_MAX_VECTORS : counted);
 
     if (numFuncs == 0) return m68k_library_abandon(ctx, entry, 0, 0);
 
@@ -318,15 +361,7 @@ ULONG M68KEmu_LoadM68KLibrary(struct M68KEmuContext *ctx, const char *name, ULON
     base = region + jt_size;  /* base is after the jump table */
 
     /* Build jump table: JMP abs.l for each function */
-    for (UWORD i = 0; i < numFuncs; i++)
-    {
-        ULONG func_addr = rel ? funcTable + (LONG)(WORD)m68k_read16(ctx, funcTable + 2 + i * 2)
-                              : m68k_read32(ctx, funcTable + i * 4);
-
-        ULONG slot = base - ((ULONG)(i + 1) * M68K_JT_SLOT_SIZE);
-        m68k_write16(ctx, slot,     M68K_OP_JMP_ABS_L);
-        m68k_write32(ctx, slot + 2, func_addr);
-    }
+    m68k_put_vectors(ctx, base, vectors, rel, funcTable, numFuncs);
 
     memset(ctx->mem + base, 0, dataSize);
 
@@ -415,5 +450,119 @@ ULONG M68KEmu_LoadM68KLibrary(struct M68KEmuContext *ctx, const char *name, ULON
     if (ctx->trace_calls) bug("[m68kemu] m68klib: %s loaded at base=0x%lx (%d funcs)\n",
         name, (unsigned long)base, numFuncs);
 
+    return base;
+}
+
+/* exec MakeFunctions() for 68k code: the jump table below target, from a
+   table of addresses, or of WORD displacements from disp when disp is not
+   0. The count slots written take count * 6 bytes. The result is what
+   exec's MakeFunctions() returns: makefunctions.c measures from target to
+   the slot below the last one written, (count + 1) * 6, 6 for an empty
+   table. 0, with nothing written, when the table or the slots below target
+   are not in containment. */
+ULONG M68KEmu_MakeFunctions(struct M68KEmuContext *ctx, ULONG target, ULONG array, ULONG disp)
+{
+    LONG count = m68k_count_vectors(ctx, array, disp != 0);
+    ULONG size;
+
+    if (count < 0 || count > M68K_MAX_VECTORS)
+    {
+        m68k_log(ctx, "MakeFunctions: the function table at 0x%lx has no end in memory", (unsigned long)array);
+        return 0;
+    }
+    size = (ULONG)count * M68K_JT_SLOT_SIZE;
+    if (target < size || !m68k_in_mem(ctx, target - size, size))
+    {
+        m68k_log(ctx, "MakeFunctions: a jump table of %lu bytes below 0x%lx is outside memory",
+                 (unsigned long)size, (unsigned long)target);
+        return 0;
+    }
+    m68k_put_vectors(ctx, target, array, disp != 0, disp, count);
+    m68k_engine_invalidate(ctx);
+    return size + M68K_JT_SLOT_SIZE;
+}
+
+/* exec MakeLibrary() for 68k code. As exec does: the jump table, from a
+   table of addresses or, when it starts with the WORD -1, of displacements
+   from it; lib_NegSize, the table's size rounded up to a LONG, and
+   lib_PosSize, dataSize; the InitStruct() table, when there is one; then
+   the library's init, when there is one, with D0 the base, A0 segList and
+   A6 SysBase, and what it returns is the result. Init runs as 68k code when
+   the caller's call returns, and its RTS returns to the caller.
+   The base and its jump table are one block of the program's heap, cleared,
+   as AllocMem() from 68k code gives one: the library's Expunge gives it back
+   with FreeMem() of lib_NegSize + lib_PosSize bytes at base - lib_NegSize.
+   0 when the table is not in containment, when init is odd or not in
+   containment (exec would jump there), when dataSize is smaller than a
+   Library (exec would write past the block), when the heap has no block,
+   or when the InitStruct() table does not fit in the base (exec would write
+   past it); a block allocated already is given back then. */
+ULONG M68KEmu_MakeLibrary(struct M68KEmuContext *ctx, ULONG funcInit, ULONG structInit, ULONG libInit,
+                          ULONG dataSize, ULONG segList)
+{
+    ULONG vectors, negsize, total, region, base;
+    LONG count;
+    BOOL rel;
+
+    if (!m68k_in_mem(ctx, funcInit, 2))
+    {
+        m68k_log(ctx, "MakeLibrary: the function table at 0x%lx is outside memory", (unsigned long)funcInit);
+        return 0;
+    }
+    rel = m68k_read16(ctx, funcInit) == 0xFFFF;
+    vectors = rel ? funcInit + 2 : funcInit;
+    count = m68k_count_vectors(ctx, vectors, rel);
+    if (count < 0 || count > M68K_MAX_VECTORS)
+    {
+        m68k_log(ctx, "MakeLibrary: the function table at 0x%lx has no end in memory", (unsigned long)funcInit);
+        return 0;
+    }
+    if (libInit && ((libInit & 1) || !m68k_in_mem(ctx, libInit, 2)))
+    {
+        m68k_log(ctx, "MakeLibrary: the init at 0x%lx is not 68k code in memory", (unsigned long)libInit);
+        return 0;
+    }
+    negsize = ((ULONG)count * M68K_JT_SLOT_SIZE + 3) & ~3u;
+    /* lib_PosSize is a UWORD. A larger allocation could not be freed using
+       the size published in the library header. */
+    if (dataSize < M68K_SIZEOF_LIBRARY || dataSize > 0xFFFFu ||
+        negsize > ctx->mem_size || dataSize > ctx->mem_size - negsize)
+    {
+        m68k_log(ctx, "MakeLibrary: a base of %lu bytes is not usable", (unsigned long)dataSize);
+        return 0;
+    }
+    total = negsize + dataSize;
+    region = M68KEmu_HeapAlloc(ctx, total, MEMF_PUBLIC | MEMF_CLEAR);
+    if (!region)
+        return 0;
+    /* what is not a span of containment is not used, and not given back */
+    if (!m68k_in_mem(ctx, region, total))
+    {
+        m68k_log(ctx, "MakeLibrary: the heap gave a base outside memory");
+        return 0;
+    }
+    memset(ctx->mem + region, 0, total);
+    base = region + negsize;
+
+    m68k_put_vectors(ctx, base, vectors, rel, funcInit, count);
+    m68k_engine_invalidate(ctx);       /* the jump table, kept or given back below */
+    m68k_write16(ctx, base + M68K_LIB_NEGSIZE, (UWORD)negsize);
+    m68k_write16(ctx, base + M68K_LIB_POSSIZE, (UWORD)dataSize);
+    if (structInit && !m68k_init_struct(ctx, structInit, base, dataSize))
+    {
+        m68k_log(ctx, "MakeLibrary: the InitStruct() table at 0x%lx does not fit in the base", (unsigned long)structInit);
+        M68KEmu_HeapFree(ctx, region, total);
+        return 0;
+    }
+
+    if (libInit)
+    {
+        struct M68KTaskState *ts = m68k_ts(ctx);
+
+        ts->tail_pc = libInit;
+        ts->tail_d0 = base;
+        ts->tail_a0 = segList;
+        ts->tail_a6 = ctx->m68k_sysbase;
+    }
     return base;
 }

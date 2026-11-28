@@ -30,8 +30,9 @@ def prepare(args, output):
                  for name in ('M68KEmu_ImageHunk', 'M68KEmu_FreeImage')
                  if re.search(r'\b' + name + r'\s*\(', memory)]
     functions += [helper.extract_function(library, name, 'm68kemu_m68klib.c')
-                  for name in ('m68k_init_struct', 'm68k_library_abandon',
-                               'M68KEmu_LoadM68KLibrary')
+                  for name in ('m68k_init_struct', 'm68k_count_vectors', 'm68k_put_vectors',
+                               'm68k_library_abandon', 'M68KEmu_LoadM68KLibrary',
+                               'M68KEmu_MakeFunctions', 'M68KEmu_MakeLibrary')
                   if re.search(r'\b' + name + r'\s*\(', library)]
     (output / 'library_loading.inc').write_text('\n'.join(functions))
     # The production offsets header also includes native DOS types. Retain

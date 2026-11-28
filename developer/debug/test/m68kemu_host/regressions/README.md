@@ -497,13 +497,16 @@ sanitizer target is optional. `PYTHON` and `CXX` select the tools and
 `--build-dir /tmp/loading-bounds` or `--prepare-only`, which writes the
 extracted sources and stops before the compiler.
 
-The runner extracts `M68KEmu_LoadM68KLibrary`, `m68k_init_struct` and
-`m68k_library_abandon` from `m68kemu_m68klib.c`, `M68KEmu_ImageHunk` and
+The runner extracts `M68KEmu_LoadM68KLibrary`, `M68KEmu_MakeFunctions`,
+`M68KEmu_MakeLibrary`, `m68k_count_vectors`, `m68k_put_vectors`,
+`m68k_init_struct` and `m68k_library_abandon` from `m68kemu_m68klib.c`, `M68KEmu_ImageHunk` and
 `M68KEmu_FreeImage` from `m68kemu_memory.c`, the memory accessors from
 `m68kemu_intern.h` and the `M68K_*` constants they use from
 `m68kemu_offsets.h`. DOS, the heap and the placement of the hunks of a
-library image are recording fixtures; no CPU runs. The 35 cases load
-well-formed libraries (relative function tables, a Resident in the second
+library image are recording fixtures; no CPU runs. The 53 cases
+include 36 library-loading cases that load
+well-formed libraries (relative function tables including exec's empty
+vector for a zero displacement, a Resident in the second
 hunk, every init table command, a base filled to its last byte, a function
 table cut at 1000) and malformed ones: data sizes that wrap or exceed
 containment, init tables and items outside the base or containment, an
@@ -517,7 +520,16 @@ after a library was loaded or refused. Eight cases keep the caller's
 leaves the caller's 0 and the caller's own error, not the error of the
 probes, also for a path name, after a native file in `LIBS:` is passed over,
 when the library is found after failed probes, and when the file cannot be
-sized, gets no buffer or comes short. The fixture prints `ok` or `FAIL`
+sized, gets no buffer or comes short. Seventeen cases exercise
+`MakeFunctions()` and `MakeLibrary()` directly: address and signed `WORD`
+displacement tables, zero entries receiving exec's empty vector (also at
+vector 512, whose number does not fit in 8 bits), empty
+and 1000-vector tables, `InitStruct()` application and failure rollback
+(with pre-free engine invalidation), `libInit` tail-call queuing (`D0`
+base, `A0` segList, `A6` SysBase), and refusals for oversized or
+unterminated tables, odd or out-of-containment `libInit`, undersized
+bases, a `lib_PosSize` at the 16-bit limit and refusal above that limit,
+and allocation or containment failures. The fixture prints `ok` or `FAIL`
 for each case and `m68kemu 68k library loading bounds: <cases> cases,
 <n> failed, <checks> checks`; it exits with 1 when a case failed.
 
