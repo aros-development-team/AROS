@@ -247,23 +247,27 @@ _xhci_setaddr_complete:
     }
 
     /*
-     * Hub port connection change handling (downstream disconnects).
+     * Hub port connection changes and resets.
      *
      * When a hub clears C_PORT_CONNECTION for a downstream port, the device
-     * on that port may have disappeared. Build the child route string and
-     * drop any matching xHCI device context to release slot/resources.
+     * on that port may have disappeared. When a hub port is reset, the device
+     * returns to address 0, and a slot kept across it fails every transfer
+     * with cc=4, as on a root port. Build the child route string and drop
+     * any matching xHCI device context to release slot/resources.
      */
     /*
      * Not gated on UHFF_HUB: that flag is set on the pipe enumeration used
      * to identify the device, not on the EP0 pipe the hub class later opens
      * to run its ports, so the requests that matter here never carry it.
      * The request identifies itself anyway - a class/OTHER CLEAR_FEATURE of
-     * C_PORT_CONNECTION is a hub port request and nothing else issues one.
+     * C_PORT_CONNECTION or SET_FEATURE of a port reset is a hub port request
+     * and nothing else issues one.
      */
     if(txtype == UHCMD_CONTROLXFER) {
         if((bmRequestType == (URTF_CLASS | URTF_OTHER)) &&
-                (bRequest == USR_CLEAR_FEATURE) &&
-                (wValue == UFS_C_PORT_CONNECTION)) {
+                (((bRequest == USR_CLEAR_FEATURE) && (wValue == UFS_C_PORT_CONNECTION)) ||
+                 ((bRequest == USR_SET_FEATURE) &&
+                  ((wValue == UFS_PORT_RESET) || (wValue == UFS_BH_PORT_RESET))))) {
             UWORD port = wIndex & 0xFF;
 
             if(port > 0 && port <= 0x0F) {
@@ -285,8 +289,10 @@ _xhci_setaddr_complete:
                         xhciFindRouteDevice(hc, route, rootPortIndex);
                     if(child) {
                         pciusbXHCIDebug("xHCI",
-                                        "Hub port %u cleared C_PORT_CONNECTION, disconnecting route 0x%05lx\n",
-                                        (unsigned)port, route);
+                                        "Hub port %u %s, disconnecting route 0x%05lx\n",
+                                        (unsigned)port,
+                                        (bRequest == USR_SET_FEATURE) ? "reset" : "cleared C_PORT_CONNECTION",
+                                        route);
                         xhciDisconnectDevice(hc, child, unit->hu_TimerReq);
                     }
                 }

@@ -8667,12 +8667,14 @@ static void pReleaseAfterDOSBindings(LIBBASETYPEPTR ps)
 
         Without that forced-device path, classes are offered the device one
         binding-priority tier at a time (see UCCA_Priority), highest first.
-        Each tier is first tried on the unbound interfaces across eligible
-        configurations and alternate settings, in configuration and class
+        Each tier is first tried on the current setting of the unbound
+        interfaces across eligible configurations, in configuration and class
         order, and then, if the device has no interface binding at all, at
         device level. A lower-priority tier only sees what the higher tiers
-        declined. Existing interface bindings restrict configuration
-        selection. Forced interface names restrict class selection.
+        declined. Only when every tier has declined are the alternate settings
+        of the interfaces still unbound tried, again tier by tier. Existing
+        interface bindings restrict configuration selection. Forced interface
+        names restrict class selection.
 
         Successful bindings update class use counts and send EHMB_ADDBINDING.
         Configuration and alternate-setting selection can change even when no
@@ -8716,6 +8718,7 @@ static void pReleaseAfterDOSBindings(LIBBASETYPEPTR ps)
     BOOL mainif;
     STRPTR owner;
     BYTE tierpri;
+    BOOL altpass;
 
     KPRINTF(5, ("psdHubClassScan()\n"));
 
@@ -8772,7 +8775,11 @@ static void pReleaseAfterDOSBindings(LIBBASETYPEPTR ps)
            device once every class of a higher priority has declined it, at
            device level as well as at interface level. Within a tier the
            historical order holds: interface bindings first, in configuration
-           and class order, then device bindings. */
+           and class order, then device bindings.
+           The first pass offers only the current settings. Alternate settings
+           follow in a second pass, so a device is not switched through them
+           (a UAS disk to UAS and back) before a lower tier binds the first. */
+        altpass = FALSE;
         tierpuc = (struct PsdUsbClass *) ps->ps_Classes.lh_Head;
         while(tierpuc->puc_Node.ln_Succ) {
             tierpri = tierpuc->puc_Node.ln_Pri;
@@ -8798,8 +8805,14 @@ static void pReleaseAfterDOSBindings(LIBBASETYPEPTR ps)
                             KPRINTF(5, ("    Interface %ld\n", pif->pif_IfNum));
                             firstpif = pif;
                             mainif = TRUE;
-                            if(!pif->pif_IfBinding) {
+                            if(!pif->pif_IfBinding &&
+                               ((!altpass) || pif->pif_AlterIfs.lh_Head->ln_Succ)) {
                                 binding = NULL;
+                                if(altpass) {
+                                    /* the current setting was offered in the first pass */
+                                    pif = (struct PsdInterface *) pif->pif_AlterIfs.lh_Head;
+                                    mainif = FALSE;
+                                }
                                 do {
                                     if(!psdSetAltInterface(pp, pif)) {
                                         pif->pif_IfBinding = NULL;
@@ -8864,7 +8877,7 @@ static void pReleaseAfterDOSBindings(LIBBASETYPEPTR ps)
                                         Permit();
                                         puc = (struct PsdUsbClass *) puc->puc_Node.ln_Succ;
                                     }
-                                    if(binding) {
+                                    if(binding || !altpass) {
                                         break;
                                     }
                                     //break; /* FIXME: DISABLED ALTSCANNING */
@@ -8898,7 +8911,7 @@ static void pReleaseAfterDOSBindings(LIBBASETYPEPTR ps)
             /* No interface binding so far, offer the whole device to this tier.
                A forced device owner was handled before the tier loop, so only
                ordinary attempts are made here. */
-            if(!hasifbinding) {
+            if(!altpass && !hasifbinding) {
                 binding = NULL;
                 puc = tierpuc;
                 while(puc != tierend) {
@@ -8917,6 +8930,11 @@ static void pReleaseAfterDOSBindings(LIBBASETYPEPTR ps)
                 }
             }
             tierpuc = tierend;
+            /* Every tier declined the current settings: try the alternate ones */
+            if(!tierpuc->puc_Node.ln_Succ && !altpass) {
+                altpass = TRUE;
+                tierpuc = (struct PsdUsbClass *) ps->ps_Classes.lh_Head;
+            }
         }
         break;
     }

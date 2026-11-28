@@ -196,6 +196,7 @@ BOOL xhciSetFeature(struct PCIUnit *unit, struct PCIController *hc,
     ULONG writeval = 0;
     ULONG tmpval;
     struct pciusbXHCIDevice *devCtx;
+    BOOL  devlocked = FALSE;
 
     pciusbXHCIDebug("xHCI",
                     DEBUGFUNCCOLOR_SET "xHCI: %s(0x%p, 0x%p, %04x, %04x, %04x, 0x%p)"
@@ -272,18 +273,16 @@ BOOL xhciSetFeature(struct PCIUnit *unit, struct PCIController *hc,
                         DEBUGCOLOR_RESET " \n");
 
         /*
-         * If there was a device and we own a slot for it...
-         *
-         * - During initial bring-up, this driver creates a slot at address 0
-         *   (Address Device command) before the stack issues SET_ADDRESS.
-         *   A hub-driver PORT_RESET in that window is part of normal
-         *   enumeration; do not tear down the slot.
-         *
-         * - For an already addressed device (dc_DevAddr != 0), PORT_RESET is
-         *   treated as a re-enumeration trigger; drop the old context.
+         * Address Device ran with BSR=0, so the device holds an address even
+         * while dc_DevAddr is 0. The reset returns it to address 0 and a slot
+         * kept across it fails every transfer with cc=4. Always drop it, and
+         * hold xhc_DevLock until the reset has started, so the port task
+         * cannot create a slot on the still enabled port in between.
          */
+        ObtainSemaphore(&xhcic->xhc_DevLock);
+        devlocked = TRUE;
         devCtx = xhciFindPortDevice(hc, hciport);
-        if(devCtx && devCtx->dc_DevAddr != 0) {
+        if(devCtx) {
             pciusbXHCIDebug("xHCI",
                             DEBUGCOLOR_SET "xHCI: PORT_RESET: disabling device slot (%u) for re-enumeration"
                             DEBUGCOLOR_RESET "\n", devCtx->dc_SlotID);
@@ -360,6 +359,9 @@ BOOL xhciSetFeature(struct PCIUnit *unit, struct PCIController *hc,
                         DEBUGCOLOR_RESET " \n",
                         idx, oldval);
     }
+
+    if(devlocked)
+        ReleaseSemaphore(&xhcic->xhc_DevLock);
 
     return cmdgood;
 }
@@ -769,6 +771,8 @@ AROS_UFH0(void, xhciPortTask)
             UWORD hciport;
             pciusbXHCIDebug("xHCI",
                             DEBUGCOLOR_SET "Port change detected" DEBUGCOLOR_RESET" \n");
+            /* Serialise with the transfer path, which auto-creates DevAddr 0 contexts */
+            ObtainSemaphore(&xhcic->xhc_DevLock);
             for(hciport = 0; hciport < hc->hc_NumPorts; hciport++) {
                 ULONG portsc  = AROS_LE2LONG(xhciports[hciport].portsc);
                 devCtx = xhciFindPortDevice(hc, hciport);
@@ -831,6 +835,7 @@ AROS_UFH0(void, xhciPortTask)
                     xhciDisconnectDevice(hc, devCtx, xhcic->xhc_PortTask.xpt_TimerReq);
                 }
             }
+            ReleaseSemaphore(&xhcic->xhc_DevLock);
             uhwCheckRootHubChanges(hc->hc_Unit);
         }
     }

@@ -183,8 +183,14 @@ static BOOL xhciObtainHWEndpoint(struct PCIController *hc, struct IOUsbHWReq *io
     struct pciusbXHCIDevice *devCtx = NULL;
     ULONG txep;
     BOOL autoCreated = FALSE;
+    const BOOL lockCreate = allowEp0AutoCreate &&
+                            (ioreq->iouh_DevAddr == 0) && (ioreq->iouh_Endpoint == 0);
 
     (void)ownerList;
+
+    /* The port task may be creating this context right now; don't make a second one */
+    if(lockCreate)
+        ObtainSemaphore(&xhciGetHCPrivate(hc)->xhc_DevLock);
 
     /*
      * DevAddr 0 is ambiguous when multiple devices are in the Default state.
@@ -212,6 +218,9 @@ static BOOL xhciObtainHWEndpoint(struct PCIController *hc, struct IOUsbHWReq *io
         if(devCtx)
             autoCreated = TRUE;
     }
+
+    if(lockCreate)
+        ReleaseSemaphore(&xhciGetHCPrivate(hc)->xhc_DevLock);
 
     if(!devCtx) {
         pciusbWarn("xHCI",
