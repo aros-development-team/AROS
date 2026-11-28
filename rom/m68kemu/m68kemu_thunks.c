@@ -501,10 +501,10 @@ static IPTR thunk_exec_Permit(struct M68KEmuContext *ctx, void *cpu) { if (ctx->
 
 /* -624: CopyMem(A0=source, A1=dest, D0=size), and -630: CopyMemQuick with
    the same registers. Both spans must lie wholly in the program's memory,
-   or the copy is refused with a line in the log. The addresses are taken as
-   they are: a shadow is copied as the program's own copy of the structure,
-   which is there, and the native object behind a shadow or a handle is
-   never read or written. */
+   and while low_guard is active the destination must not reach below 0x400,
+   or the copy is refused. The addresses are taken as they are: a shadow is
+   copied as the program's own copy of the structure, which is there, and
+   the native object behind a shadow or a handle is never read or written. */
 static IPTR thunk_exec_CopyMem(struct M68KEmuContext *ctx, void *cpu)
 {
     ULONG from = THUNK_A(0);
@@ -518,6 +518,11 @@ static IPTR thunk_exec_CopyMem(struct M68KEmuContext *ctx, void *cpu)
         m68k_log(ctx, "%s: CopyMem of %lu bytes from %08lx to %08lx is not wholly in the program's memory: not copied",
                  ctx->program_name[0] ? ctx->program_name : "68k program", (unsigned long)size,
                  (unsigned long)from, (unsigned long)to);
+        return 0;
+    }
+    if (ctx->low_guard && to < 0x400)
+    {
+        m68k_low_write_trap(ctx, to, "CopyMem");
         return 0;
     }
     memmove(ctx->mem + to, ctx->mem + from, size);
@@ -843,7 +848,7 @@ static IPTR thunk_exec_FindSemaphore(struct M68KEmuContext *ctx, void *cpu)
 /* -354: AddPort(A1=port): a port in the program's memory becomes a public
    one of the program: its message list is made empty, as exec does, and
    its name goes to a table for FindPort. A port the program got from the
-   system is left as it is. */
+   system, or below 0x400 while low_guard is active, is left as it is. */
 static IPTR thunk_exec_AddPort(struct M68KEmuContext *ctx, void *cpu)
 {
     ULONG mp = THUNK_A(1), l = mp + 20;
@@ -851,6 +856,11 @@ static IPTR thunk_exec_AddPort(struct M68KEmuContext *ctx, void *cpu)
 
     if (!m68k_in_mem(ctx, mp, 34) || shadow_lookup(ctx, mp))
         return 0;
+    if (ctx->low_guard && mp < 0x400)
+    {
+        m68k_low_write_trap(ctx, mp, "AddPort");
+        return 0;
+    }
     ctx->mem[mp + 8] = NT_MSGPORT;              /* ln_Type */
     m68k_write32(ctx, l + 0, l + 4);            /* mp_MsgList: lh_Head */
     m68k_write32(ctx, l + 4, 0);                /* lh_Tail */
@@ -911,20 +921,38 @@ static IPTR thunk_exec_CreateIORequest_m(struct M68KEmuContext *ctx, void *cpu)
 }
 
 /* -660: DeleteIORequest(A0=ioRequest): one of CreateIORequest, by its
-   mn_Length; a request the program got from the system goes back to it */
+   mn_Length; a request still open on a device is refused, a request the
+   program got from the system goes back to it, and a shadow of another
+   structure is left untouched */
 static IPTR thunk_exec_DeleteIORequest_m(struct M68KEmuContext *ctx, void *cpu)
 {
     ULONG io = THUNK_A(0);
-    APTR native;
 
     if (!io)
         return 0;
-    if ((native = shadow_lookup(ctx, io)))
-    {
-        DeleteIORequest(native);
-        shadow_destroy(ctx, shadow_find_layout("IORequest"), io);
-        return 0;
-    }
+    for (int i = 0; i < M68KEMU_MAX_IOREQS; i++)
+        if (ctx->ioreqs[i].m68k == io && ctx->ioreqs[i].native)
+        {
+            m68k_log(ctx, "%s: DeleteIORequest(%08lx) while device is still open: ignored",
+                     ctx->program_name[0] ? ctx->program_name : "68k program",
+                     (unsigned long)io);
+            return 0;
+        }
+    for (UWORD i = 0; i < ctx->num_shadows; i++)
+        if (ctx->shadow_map[i].m68k_addr == io)
+        {
+            const struct M68KStructLayout *layout = shadow_find_layout("IORequest");
+
+            if (layout && ctx->shadow_map[i].type == layout->shadow_type &&
+                ctx->shadow_map[i].native_ptr)
+            {
+                APTR native = ctx->shadow_map[i].native_ptr;
+
+                DeleteIORequest(native);
+                shadow_destroy(ctx, layout, io);
+            }
+            return 0;
+        }
     if (m68k_in_mem(ctx, io, 32))
     {
         ULONG size = m68k_read16(ctx, io + 18);
