@@ -48,6 +48,9 @@ static LONG tp_LibUsers = 0;
 struct ThemePreview_DATA
 {
     char                    *tp_Theme;          /* Theme path (THEMES:<name>) */
+    ULONG                    tp_Size;           /* Image size to show it in (0 = its default) */
+    LONG                     tp_Width;          /* Dimensions of the preview, which grow with */
+    LONG                     tp_Height;         /* the image size of the theme */
     struct Screen           *tp_Screen;         /* Screen we render for (between Setup/Cleanup) */
     struct DecorTheme       *tp_DecorTheme;     /* Our private theme instance */
     struct DecorThemeScreen *tp_ScreenTheme;    /* ... instantiated for tp_Screen */
@@ -57,6 +60,34 @@ struct ThemePreview_DATA
 
 /*** Macros *****************************************************************/
 #define SETUP_INST_DATA struct ThemePreview_DATA *data = INST_DATA(CLASS, self)
+
+/*** Libraries **************************************************************/
+
+void ThemePreview_OpenLibs(void)
+{
+    if (tp_LibUsers++ == 0)
+    {
+        DecoratorBase = OpenLibrary("decorator.library", 0);
+        DecorThemeBase = OpenLibrary("decortheme.library", 0);
+    }
+}
+
+void ThemePreview_CloseLibs(void)
+{
+    if (--tp_LibUsers == 0)
+    {
+        if (DecorThemeBase)
+        {
+            CloseLibrary(DecorThemeBase);
+            DecorThemeBase = NULL;
+        }
+        if (DecoratorBase)
+        {
+            CloseLibrary(DecoratorBase);
+            DecoratorBase = NULL;
+        }
+    }
+}
 
 /*** Rendering **************************************************************/
 
@@ -86,6 +117,8 @@ static void ThemePreview__DisposeBuffer(struct ThemePreview_DATA *data)
         FreeBitMap(data->tp_BM);
         data->tp_BM = NULL;
     }
+    data->tp_Width = 0;
+    data->tp_Height = 0;
 }
 
 static void ThemePreview__FillRect(struct RastPort *rp, LONG x0, LONG y0, LONG x1, LONG y1, ULONG argb)
@@ -94,9 +127,54 @@ static void ThemePreview__FillRect(struct RastPort *rp, LONG x0, LONG y0, LONG x
     RectFill(rp, x0, y0, x1, y1);
 }
 
+/* Draws a bar title the way the decoration does: vertically centred on
+   the bar, in the theme's colours, outlined or shadowed if it says so */
+static void ThemePreview__Text(struct RastPort *rp, struct TextFont *font, CONST_STRPTR text,
+    LONG tx, LONG top, LONG barh, ULONG color, ULONG shadow, BOOL outline, BOOL shadowed)
+{
+    LONG len = strlen(text);
+    LONG tymax = barh - (font->tf_YSize - font->tf_Baseline) - 1;
+    LONG ty = (barh + font->tf_Baseline - 1) >> 1;
+
+    if (ty > tymax) ty = tymax;
+    ty += top;
+
+    SetDrMd(rp, JAM1);
+    if (outline)
+    {
+        static const BYTE off[8][2] = { {1,0}, {2,0}, {0,0}, {0,1}, {0,2}, {1,2}, {2,1}, {2,2} };
+        int i;
+
+        SetRPAttrs(rp, RPTAG_PenMode, FALSE, RPTAG_FgColor, shadow, TAG_DONE);
+        for (i = 0; i < 8; i++)
+        {
+            Move(rp, tx + off[i][0], ty + off[i][1]);
+            Text(rp, text, len);
+        }
+        tx++;
+        ty++;
+    }
+    else if (shadowed)
+    {
+        SetRPAttrs(rp, RPTAG_PenMode, FALSE, RPTAG_FgColor, shadow, TAG_DONE);
+        Move(rp, tx + 1, ty + 1);
+        Text(rp, text, len);
+    }
+
+    /* the theme's title colours only apply to outlined and shadowed
+       titles; a plain title is drawn with the screen's text pen */
+    if (!outline && !shadowed)
+        color = 0x00000000;
+
+    SetRPAttrs(rp, RPTAG_PenMode, FALSE, RPTAG_FgColor, color, TAG_DONE);
+    Move(rp, tx, ty);
+    Text(rp, text, len);
+}
+
 /* Builds (or rebuilds) the offscreen preview of the currently selected
    theme. Rendering is a mock scene - screen bar, a window with titlebar,
-   gadgets and a scrollbar - composed entirely from theme elements. */
+   gadgets and a scrollbar - composed entirely from theme elements, laid
+   out with the sizes the theme defines as the decoration does it. */
 static void ThemePreview__RenderPreview(struct ThemePreview_DATA *data)
 {
     struct DecorThemeScreen *dts;
@@ -105,10 +183,12 @@ static void ThemePreview__RenderPreview(struct ThemePreview_DATA *data)
     struct DecorImages      *di;
     struct RastPort         *rp;
     BOOL                     truecolor;
+    struct TextFont         *font;
     LONG                     sbarh, barh, gcols;
-    LONG                     wx0, wy0, ww, wh, wx1;
+    LONG                     bl, br, bb, sdepthw = 0;
+    LONG                     pw, ph;
+    LONG                     wx0, wy0, ww, wh, wx1, wy1;
     LONG                     x, y, tx;
-    ULONG                    col;
 
     ThemePreview__FreeTheme(data);
 
@@ -120,7 +200,7 @@ static void ThemePreview__RenderPreview(struct ThemePreview_DATA *data)
 
     D(bug("[ThemePreview] %s: loading '%s'\n", __func__, data->tp_Theme));
 
-    data->tp_DecorTheme = DTLoadTheme(data->tp_Theme);
+    data->tp_DecorTheme = DTLoadThemeSize(data->tp_Theme, data->tp_Size);
     if (!data->tp_DecorTheme)
     {
         ThemePreview__DisposeBuffer(data);
@@ -137,9 +217,24 @@ static void ThemePreview__RenderPreview(struct ThemePreview_DATA *data)
         return;
     }
 
+    dts = data->tp_ScreenTheme;
+    dc = data->tp_DecorTheme->dt_Config;
+
+    /* The scene is drawn at the scale of the theme: a theme shown in a
+       size larger than the standard one gets a preview that much larger. */
+    pw = PREVIEW_WIDTH;
+    ph = PREVIEW_HEIGHT;
+    if (dc->ImageSize > DECORTHEME_DEFSIZE)
+    {
+        pw = (PREVIEW_WIDTH * dc->ImageSize) / DECORTHEME_DEFSIZE;
+        ph = (PREVIEW_HEIGHT * dc->ImageSize) / DECORTHEME_DEFSIZE;
+    }
+    if (data->tp_Buffer && ((pw != data->tp_Width) || (ph != data->tp_Height)))
+        ThemePreview__DisposeBuffer(data);
+
     if (!data->tp_Buffer)
     {
-        if ((data->tp_BM = AllocBitMap(PREVIEW_WIDTH, PREVIEW_HEIGHT, 1, BMF_CLEAR,
+        if ((data->tp_BM = AllocBitMap(pw, ph, 1, BMF_CLEAR,
                                        data->tp_Screen->RastPort.BitMap)) == NULL)
             return;
         if ((data->tp_Buffer = CreateRastPort()) == NULL)
@@ -148,55 +243,85 @@ static void ThemePreview__RenderPreview(struct ThemePreview_DATA *data)
             return;
         }
         data->tp_Buffer->BitMap = data->tp_BM;
+        data->tp_Width = pw;
+        data->tp_Height = ph;
     }
 
-    dts = data->tp_ScreenTheme;
-    dc = data->tp_DecorTheme->dt_Config;
     els = dts->dts_Elements;
     di = dts->dts_Images;
     rp = data->tp_Buffer;
 
     gcols = dc->GadgetsThreeState ? 3 : 4;
+    font = data->tp_Screen->RastPort.Font;
+    SetFont(rp, font);
 
+    /* The sizes are the ones the theme defines, as the decoration uses
+       them: the bars have the heights and the borders the widths given
+       in its configuration, and gadgets the size of their images. */
     sbarh = dc->SBarHeight;
-    if (sbarh < 10) sbarh = 10;
-    if (sbarh > 28) sbarh = 28;
-
+    if (sbarh < 1) sbarh = font->tf_YSize + 2;
     barh = dc->BarHeight;
-    if (barh < 10) barh = 10;
-    if (barh > 30) barh = 30;
+    if (barh < 1) barh = font->tf_YSize + 2;
 
     /* Desktop background */
-    ThemePreview__FillRect(rp, 0, 0, PREVIEW_WIDTH - 1, PREVIEW_HEIGHT - 1, 0x00AAAAAA);
+    ThemePreview__FillRect(rp, 0, 0, pw - 1, ph - 1, 0x00AAAAAA);
 
     /* == Screen bar == */
-    DRenderElement(&els[DECOR_ELEM_ScrBarFill], rp, 0, 0, 0, PREVIEW_WIDTH, sbarh, 0);
-    DRenderElement(&els[DECOR_ELEM_ScrBarLogo], rp, 0, dc->SLogoOffset,
-        (sbarh - di->img_sbarlogo->h) / 2, di->img_sbarlogo->w, di->img_sbarlogo->h, 0);
     if (di->img_sdepth->ok)
+        sdepthw = di->img_sdepth->w >> 1;
+    if (di->img_stitlebar->ok)
     {
-        LONG dw = di->img_sdepth->w >> 1;
-        DRenderElement(&els[DECOR_ELEM_ScrDepth], rp, IDS_NORMAL,
-            PREVIEW_WIDTH - dw - 2, (sbarh - di->img_sdepth->h) / 2, -1, -1, 0);
+        LONG gadx = pw - sdepthw - dc->SBarGadPost_s - dc->SBarGadPre_s;
+
+        /* the bar ends in a section for the gadgets if the theme has one */
+        if ((dc->SBarGadPre_s > 0) && (gadx > 0))
+        {
+            DRenderElement(&els[DECOR_ELEM_ScrBarFill], rp, 0, 0, 0, gadx, sbarh, 0);
+            x = DRenderElement(&els[DECOR_ELEM_ScrBarGadPre], rp, 0, gadx, 0, dc->SBarGadPre_s, sbarh, 0);
+            if (sdepthw > 0)
+                DRenderElement(&els[DECOR_ELEM_ScrBarGadFill], rp, 0,
+                    gadx + dc->SBarGadPre_s, 0, sdepthw, sbarh, 0);
+            if (dc->SBarGadPost_s > 0)
+                DRenderElement(&els[DECOR_ELEM_ScrBarGadPost], rp, 0,
+                    pw - dc->SBarGadPost_s, 0, dc->SBarGadPost_s, sbarh, 0);
+        }
+        else
+            DRenderElement(&els[DECOR_ELEM_ScrBarFill], rp, 0, 0, 0, pw, sbarh, 0);
     }
+    if (di->img_sbarlogo->ok)
+        DRenderElement(&els[DECOR_ELEM_ScrBarLogo], rp, 0, dc->SLogoOffset,
+            (sbarh - di->img_sbarlogo->h) / 2, di->img_sbarlogo->w, di->img_sbarlogo->h, 0);
+    if (sdepthw > 0)
+        DRenderElement(&els[DECOR_ELEM_ScrDepth], rp, IDS_NORMAL,
+            pw - sdepthw - dc->SBarGadPost_s,
+            (sbarh - di->img_sdepth->h) >> 1, -1, -1, 0);
 
     /* Screen title */
-    col = (dc->STitleColorText != 0xFFFFFFFF) ? dc->STitleColorText : 0x00CCCCCC;
-    SetRPAttrs(rp, RPTAG_PenMode, FALSE, RPTAG_FgColor, col, TAG_DONE);
-    SetDrMd(rp, JAM1);
-    Move(rp, dc->STitleOffset + 2, (sbarh >> 1) + 3);
-    Text(rp, "AROS", 4);
+    ThemePreview__Text(rp, font, "AROS", dc->STitleOffset, 0, sbarh,
+        dc->STitleColorText, dc->STitleColorShadow,
+        truecolor && dc->STitleOutline, truecolor && dc->STitleShadow);
 
-    /* == Mock window == */
-    wx0 = 14;
-    wy0 = sbarh + 10;
-    ww = PREVIEW_WIDTH - 28;
-    wh = PREVIEW_HEIGHT - wy0 - 10;
+    /* == Mock window ==
+       An active window with close, zoom and depth gadgets, and with a
+       scroller, arrows and the size gadget in its right border. */
+    bl = dc->LeftBorder;
+    bb = dc->BottomBorder;
+    br = (dc->RightBorderGadgets > 0) ? dc->RightBorderGadgets : dc->RightBorder;
+
+    wx0 = pw / 18;
+    wy0 = sbarh + (ph / 18);
+    ww = pw - (2 * wx0);
+    wh = ph - wy0 - (ph / 18);
+    if (wh < barh + bb + 8)
+        wh = barh + bb + 8;
     wx1 = wx0 + ww;
+    wy1 = wy0 + wh;
 
-    /* Window border background */
-    if (di->img_border_normal->ok)
-        DRenderElement(&els[DECOR_ELEM_WinBorderNormal], rp, 0, wx0, wy0, ww, wh, 0);
+    /* Borders (and the title bar area, when the theme fills it) */
+    if (di->img_border_normal->ok && !dc->UseGradients)
+    {
+        DHorizVertRepeatDecorImage(di->img_border_normal, 0x00cccccc, 0, 0, rp, wx0, wy0, ww, wh);
+    }
     else
     {
         struct GradientSpec spec;
@@ -217,87 +342,143 @@ static void ThemePreview__RenderPreview(struct ThemePreview_DATA *data)
     }
 
     /* Window inner area */
-    ThemePreview__FillRect(rp,
-        wx0 + dc->LeftBorder, wy0 + barh,
-        wx1 - 1 - dc->RightBorder, wy0 + wh - 1 - dc->BottomBorder,
-        0x00F4F4F4);
+    if ((wx1 - br > wx0 + bl) && (wy1 - bb > wy0 + barh))
+        ThemePreview__FillRect(rp, wx0 + bl, wy0 + barh, wx1 - 1 - br, wy1 - 1 - bb, 0x00F4F4F4);
 
-    /* Titlebar - composed from the theme's bar section elements.
-       Subimage row 0 selects the active state */
+    /* Titlebar - the theme's bar sections in the order the decoration
+       lays them out. Subimage row 0 selects the active state */
     if (di->img_winbar_normal->ok)
     {
         LONG closew = di->img_close->ok ? di->img_close->w / gcols : 0;
         LONG zoomw = di->img_zoom->ok ? di->img_zoom->w / gcols : 0;
         LONG depthw = di->img_depth->ok ? di->img_depth->w / gcols : 0;
-        LONG rgadx, titlew;
+        LONG lgadw = dc->CloseGadgetOnRight ? 0 : closew;
+        LONG rgadw = zoomw + depthw + (dc->CloseGadgetOnRight ? closew : 0);
+        LONG xr0 = wx1 - dc->BarPostGadget_s - rgadw;
+        LONG textw = TextLength(rp, "Preview", 7);
+        LONG gx;
 
         x = wx0;
-        x = DRenderElement(&els[DECOR_ELEM_WinBarPreGadget], rp, 0, x, wy0, dc->BarPreGadget_s, barh, wx1);
-        if (closew)
+        if (lgadw > 0)
         {
+            x = DRenderElement(&els[DECOR_ELEM_WinBarPreGadget], rp, 0, x, wy0, dc->BarPreGadget_s, barh, wx1);
+            gx = x;
+            x = DRenderElement(&els[DECOR_ELEM_WinBarLGadgetFill], rp, 0, x, wy0, lgadw, barh, wx1);
             DRenderElement(&els[DECOR_ELEM_WinClose], rp, IDS_NORMAL,
-                x, wy0 + ((barh - di->img_close->h) / 2), -1, -1, 0);
-            x += closew;
+                gx, wy0 + ((barh - di->img_close->h) / 2), -1, -1, 0);
         }
+        else
+            x = DRenderElement(&els[DECOR_ELEM_WinBarPre], rp, 0, x, wy0, dc->BarPreGadget_s, barh, wx1);
+
         x = DRenderElement(&els[DECOR_ELEM_WinBarJoinGB], rp, 0, x, wy0, dc->BarJoinGB_s, barh, wx1);
         x = DRenderElement(&els[DECOR_ELEM_WinBarJoinBT], rp, 0, x, wy0, dc->BarJoinBT_s, barh, wx1);
-        tx = x + 3;
-
-        rgadx = wx1 - dc->BarPostGadget_s - zoomw - depthw;
-        titlew = rgadx - x - dc->BarJoinTB_s - dc->BarJoinBG_s;
-        if (titlew > 0)
-            x = DRenderElement(&els[DECOR_ELEM_WinBarTitleFill], rp, 0, x, wy0, titlew, barh, wx1);
+        tx = x;
+        if (x + textw + dc->BarJoinTB_s + dc->BarJoinBG_s > xr0)
+            textw = xr0 - x - dc->BarJoinTB_s - dc->BarJoinBG_s;
+        if (textw > 0)
+            x = DRenderElement(&els[DECOR_ELEM_WinBarTitleFill], rp, 0, x, wy0, textw, barh, wx1);
         x = DRenderElement(&els[DECOR_ELEM_WinBarJoinTB], rp, 0, x, wy0, dc->BarJoinTB_s, barh, wx1);
+
+        /* the part between the title and the gadgets on the right */
+        if (xr0 - x - dc->BarJoinBG_s > 0)
+            x = DRenderElement(&els[DECOR_ELEM_WinBarRFill], rp, 0, x, wy0, xr0 - x - dc->BarJoinBG_s, barh, wx1);
         x = DRenderElement(&els[DECOR_ELEM_WinBarJoinBG], rp, 0, x, wy0, dc->BarJoinBG_s, barh, wx1);
+        gx = x;
+        if (rgadw > 0)
+        {
+            x = DRenderElement(&els[DECOR_ELEM_WinBarRGadgetFill], rp, 0, x, wy0, rgadw, barh, wx1);
+            DRenderElement(&els[DECOR_ELEM_WinBarPostGadget], rp, 0, x, wy0, dc->BarPostGadget_s, barh, wx1);
+        }
+        else
+            DRenderElement(&els[DECOR_ELEM_WinBarPost], rp, 0, x, wy0, dc->BarPost_s, barh, wx1);
+
+        /* zoom, close (for themes having it on the right) and depth */
         if (zoomw)
         {
             DRenderElement(&els[DECOR_ELEM_WinZoom], rp, IDS_NORMAL,
-                x, wy0 + ((barh - di->img_zoom->h) / 2), -1, -1, 0);
-            x += zoomw;
+                gx, wy0 + ((barh - di->img_zoom->h) / 2), -1, -1, 0);
+            gx += zoomw;
+        }
+        if (dc->CloseGadgetOnRight && closew)
+        {
+            DRenderElement(&els[DECOR_ELEM_WinClose], rp, IDS_NORMAL,
+                gx, wy0 + ((barh - di->img_close->h) / 2), -1, -1, 0);
+            gx += closew;
         }
         if (depthw)
-        {
             DRenderElement(&els[DECOR_ELEM_WinDepth], rp, IDS_NORMAL,
-                x, wy0 + ((barh - di->img_depth->h) / 2), -1, -1, 0);
-            x += depthw;
-        }
-        DRenderElement(&els[DECOR_ELEM_WinBarPostGadget], rp, 0, x, wy0, dc->BarPostGadget_s, barh, wx1);
+                gx, wy0 + ((barh - di->img_depth->h) / 2), -1, -1, 0);
 
         /* Window title */
-        col = (dc->TitleColorText != 0xFFFFFFFF) ? dc->TitleColorText : 0x00FFFFFF;
-        SetRPAttrs(rp, RPTAG_PenMode, FALSE, RPTAG_FgColor, col, TAG_DONE);
-        SetDrMd(rp, JAM1);
-        Move(rp, tx, wy0 + (barh >> 1) + 3);
-        Text(rp, "Preview", 7);
+        if (textw > 0)
+            ThemePreview__Text(rp, font, "Preview", tx, wy0, barh,
+                dc->TitleColorText, dc->TitleColorShadow,
+                truecolor && dc->TitleOutline, truecolor && dc->TitleShadow);
     }
 
-    /* Vertical scrollbar - container with a knob */
-    if (di->img_verticalcontainer->ok)
+    /* Right border: scroller, arrows and size gadget, each of the size
+       of its image and centred in the border */
+    if (br > 0)
     {
-        LONG contw = di->img_verticalcontainer->w >> 1;
-        LONG vx = wx1 - contw - 1;
-        LONG vy0 = wy0 + barh + 1;
-        LONG vy1 = wy0 + wh - 1 - dc->BottomBorder;
-        LONG mid = (vy1 - vy0) - dc->ContainerTop_s - dc->ContainerBottom_s;
+        LONG bx = wx1 - br;
+        LONG y1 = wy1;
+        LONG y0 = wy0 + barh;
 
-        y = vy0;
-        y = DRenderElement(&els[DECOR_ELEM_VContainerTop], rp, 0, vx, y, 0, dc->ContainerTop_s, 0);
-        if (mid > 0)
-            y = DRenderElement(&els[DECOR_ELEM_VContainerTile], rp, 0, vx, y, 0, mid, 0);
-        DRenderElement(&els[DECOR_ELEM_VContainerBottom], rp, 0, vx, y, 0, dc->ContainerBottom_s, 0);
-
-        if (di->img_verticalknob->ok)
+        if (di->img_size->ok)
         {
-            LONG knobw = di->img_verticalknob->w / 3;
-            LONG kx = vx + ((contw - knobw) / 2);
-            LONG kh = ((vy1 - vy0) * 2) / 5;
-            LONG ktile = kh - dc->KnobTop_s - dc->KnobBottom_s;
+            LONG w = di->img_size->w / gcols, h = di->img_size->h;
 
-            y = vy0 + 2;
-            y = DRenderElement(&els[DECOR_ELEM_VKnobTop], rp, 0, kx, y, 0, dc->KnobTop_s, 0);
-            if (ktile > 0)
-                y = DRenderElement(&els[DECOR_ELEM_VKnobTileTop], rp, 0, kx, y, 0, ktile, 0);
-            DRenderElement(&els[DECOR_ELEM_VKnobBottom], rp, 0, kx, y, 0, dc->KnobBottom_s, 0);
+            y1 -= (dc->BottomBorderGadgets > h) ? dc->BottomBorderGadgets : h;
+            DDrawStatefulGadgetImageToRP(rp, di->img_size, IDS_NORMAL,
+                bx + ((br - w) / 2), y1 + (((wy1 - y1) - h) / 2));
+        }
+        if (di->img_down->ok)
+        {
+            LONG w = di->img_down->w / gcols, h = di->img_down->h + dc->UpDownAddY;
+
+            y1 -= h;
+            DDrawStatefulGadgetImageToRP(rp, di->img_down, IDS_NORMAL,
+                bx + ((br - w) / 2), y1 + (dc->UpDownAddY / 2));
+        }
+        if (di->img_up->ok)
+        {
+            LONG w = di->img_up->w / gcols, h = di->img_up->h + dc->UpDownAddY;
+
+            y1 -= h;
+            DDrawStatefulGadgetImageToRP(rp, di->img_up, IDS_NORMAL,
+                bx + ((br - w) / 2), y1 + (dc->UpDownAddY / 2));
+        }
+
+        /* in a window too low for all of it the scroller is left out */
+        if (di->img_verticalcontainer->ok && (y1 - y0 > dc->ContainerTop_s + dc->ContainerBottom_s))
+        {
+            LONG contw = di->img_verticalcontainer->w >> 1;
+            LONG vx = bx + ((br - contw) / 2);
+            LONG mid = (y1 - y0) - dc->ContainerTop_s - dc->ContainerBottom_s;
+
+            y = y0;
+            y = DRenderElement(&els[DECOR_ELEM_VContainerTop], rp, 0, vx, y, 0, dc->ContainerTop_s, 0);
+            if (mid > 0)
+                y = DRenderElement(&els[DECOR_ELEM_VContainerTile], rp, 0, vx, y, 0, mid, 0);
+            DRenderElement(&els[DECOR_ELEM_VContainerBottom], rp, 0, vx, y, 0, dc->ContainerBottom_s, 0);
+
+            if (di->img_verticalknob->ok)
+            {
+                LONG knobw = di->img_verticalknob->w / 3;
+                LONG kx = vx + ((contw - knobw) / 2);
+                LONG kh = ((y1 - y0) * 2) / 5;
+                LONG ktile = kh - dc->KnobTop_s - dc->KnobBottom_s - dc->KnobVertGripper_s;
+
+                y = y0 + 2;
+                y = DRenderElement(&els[DECOR_ELEM_VKnobTop], rp, 0, kx, y, 0, dc->KnobTop_s, 0);
+                if (ktile > 1)
+                    y = DRenderElement(&els[DECOR_ELEM_VKnobTileTop], rp, 0, kx, y, 0, ktile / 2, 0);
+                if (dc->KnobVertGripper_s > 0)
+                    y = DRenderElement(&els[DECOR_ELEM_VKnobGripper], rp, 0, kx, y, 0, dc->KnobVertGripper_s, 0);
+                if (ktile > 1)
+                    y = DRenderElement(&els[DECOR_ELEM_VKnobTileBottom], rp, 0, kx, y, 0, ktile - (ktile / 2), 0);
+                DRenderElement(&els[DECOR_ELEM_VKnobBottom], rp, 0, kx, y, 0, dc->KnobBottom_s, 0);
+            }
         }
     }
 }
@@ -322,11 +503,9 @@ Object *ThemePreview__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         SETUP_INST_DATA;
         STRPTR theme;
 
-        if (tp_LibUsers++ == 0)
-        {
-            DecoratorBase = OpenLibrary("decorator.library", 0);
-            DecorThemeBase = OpenLibrary("decortheme.library", 0);
-        }
+        ThemePreview_OpenLibs();
+
+        data->tp_Size = GetTagData(MUIA_ThemePreview_Size, 0, message->ops_AttrList);
 
         theme = (STRPTR)GetTagData(MUIA_ThemePreview_Theme, (IPTR)NULL, message->ops_AttrList);
         if (theme)
@@ -350,19 +529,7 @@ IPTR ThemePreview__OM_DISPOSE(Class *CLASS, Object *self, Msg message)
     ThemePreview__DisposeBuffer(data);
     FreeVec(data->tp_Theme);
 
-    if (--tp_LibUsers == 0)
-    {
-        if (DecorThemeBase)
-        {
-            CloseLibrary(DecorThemeBase);
-            DecorThemeBase = NULL;
-        }
-        if (DecoratorBase)
-        {
-            CloseLibrary(DecoratorBase);
-            DecoratorBase = NULL;
-        }
-    }
+    ThemePreview_CloseLibs();
 
     return DoSuperMethodA(CLASS, self, message);
 }
@@ -371,11 +538,20 @@ IPTR ThemePreview__OM_SET(Class *CLASS, Object *self, struct opSet *message)
 {
     SETUP_INST_DATA;
     struct TagItem *tags, *tag;
+    BOOL changed = FALSE;
 
     for (tags = message->ops_AttrList; (tag = NextTagItem(&tags)); )
     {
         switch (tag->ti_Tag)
         {
+            case MUIA_ThemePreview_Size:
+                if (data->tp_Size != (ULONG)tag->ti_Data)
+                {
+                    data->tp_Size = (ULONG)tag->ti_Data;
+                    changed = TRUE;
+                }
+                break;
+
             case MUIA_ThemePreview_Theme:
             {
                 STRPTR theme = (STRPTR)tag->ti_Data;
@@ -396,15 +572,28 @@ IPTR ThemePreview__OM_SET(Class *CLASS, Object *self, struct opSet *message)
                     if (data->tp_Theme)
                         strcpy(data->tp_Theme, theme);
                 }
-
-                if (data->tp_Screen)
-                {
-                    ThemePreview__RenderPreview(data);
-                    MUI_Redraw(self, MADF_DRAWOBJECT);
-                }
+                changed = TRUE;
                 break;
             }
         }
+    }
+
+    if (changed && data->tp_Screen)
+    {
+        LONG width = data->tp_Width, height = data->tp_Height;
+
+        ThemePreview__RenderPreview(data);
+
+        if ((data->tp_Width != width) || (data->tp_Height != height))
+        {
+            /* the preview needs another amount of room */
+            Object *parent = NULL;
+
+            GET(self, MUIA_Parent, &parent);
+            if (parent && DoMethod(parent, MUIM_Group_InitChange))
+                DoMethod(parent, MUIM_Group_ExitChange);
+        }
+        MUI_Redraw(self, MADF_DRAWOBJECT);
     }
 
     return DoSuperMethodA(CLASS, self, message);
@@ -416,6 +605,10 @@ IPTR ThemePreview__OM_GET(Class *CLASS, Object *self, struct opGet *message)
 
     switch (message->opg_AttrID)
     {
+        case MUIA_ThemePreview_Size:
+            *message->opg_Storage = (IPTR)data->tp_Size;
+            return TRUE;
+
         case MUIA_ThemePreview_Theme:
             *message->opg_Storage = (IPTR)data->tp_Theme;
             break;
@@ -452,15 +645,18 @@ IPTR ThemePreview__MUIM_Cleanup(struct IClass *CLASS, Object *self, Msg message)
 
 IPTR ThemePreview__MUIM_AskMinMax(struct IClass *CLASS, Object *self, struct MUIP_AskMinMax *message)
 {
+    SETUP_INST_DATA;
     ULONG       rc = DoSuperMethodA(CLASS, self, (Msg) message);
+    LONG        pw = data->tp_Width ? data->tp_Width : PREVIEW_WIDTH;
+    LONG        ph = data->tp_Height ? data->tp_Height : PREVIEW_HEIGHT;
 
     D(bug("[ThemePreview] %s()\n", __PRETTY_FUNCTION__));
 
-    message->MinMaxInfo->MinWidth  += PREVIEW_WIDTH;
-    message->MinMaxInfo->MinHeight += PREVIEW_HEIGHT;
+    message->MinMaxInfo->MinWidth  += pw;
+    message->MinMaxInfo->MinHeight += ph;
 
-    message->MinMaxInfo->DefWidth  += PREVIEW_WIDTH;
-    message->MinMaxInfo->DefHeight += PREVIEW_HEIGHT;
+    message->MinMaxInfo->DefWidth  += pw;
+    message->MinMaxInfo->DefHeight += ph;
 
     message->MinMaxInfo->MaxWidth = MUI_MAXMAX;
     message->MinMaxInfo->MaxHeight = MUI_MAXMAX;
@@ -481,8 +677,8 @@ IPTR ThemePreview__MUIM_Draw(struct IClass *CLASS, Object *self, struct MUIP_Dra
     if (data->tp_Buffer)
     {
         /* Centre the preview in the object area */
-        LONG px = _mleft(self) + (((_mright(self) - _mleft(self) + 1) - PREVIEW_WIDTH) / 2);
-        LONG py = _mtop(self) + (((_mbottom(self) - _mtop(self) + 1) - PREVIEW_HEIGHT) / 2);
+        LONG px = _mleft(self) + (((_mright(self) - _mleft(self) + 1) - data->tp_Width) / 2);
+        LONG py = _mtop(self) + (((_mbottom(self) - _mtop(self) + 1) - data->tp_Height) / 2);
 
         if (px < _mleft(self)) px = _mleft(self);
         if (py < _mtop(self)) py = _mtop(self);
@@ -492,7 +688,7 @@ IPTR ThemePreview__MUIM_Draw(struct IClass *CLASS, Object *self, struct MUIP_Dra
                   0, 0,
                   _rp(self),
                   px, py,
-                  PREVIEW_WIDTH, PREVIEW_HEIGHT,
+                  data->tp_Width, data->tp_Height,
                   0xC0);
         MUI_RemoveClipping(muiRenderInfo(self), clip);
     }

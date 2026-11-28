@@ -29,6 +29,13 @@
 #include "appearanceeditor.h"
 #include "themepreview.h"
 
+#include <dos/var.h>
+#include <libraries/decortheme.h>
+#include <proto/decortheme.h>
+
+/* most image sizes of a theme offered for selection */
+#define THEMESIZES_MAX  DECORTHEME_MAXSIZES
+
 /*** Instance Data **********************************************************/
 
 struct AppearanceEditor_DATA
@@ -37,7 +44,11 @@ struct AppearanceEditor_DATA
 
     Object *ae_ThemePreview;
     Object *ae_ThemeEnable;
-    Object *ae_ThemeChoice;
+    Object *ae_ThemeCycle;      /* the theme ... */
+    Object *ae_StyleGrp;
+    Object *ae_StyleCycle;      /* ... its style, for themes that have styles ... */
+    Object *ae_SizeGrp;
+    Object *ae_SizeCycle;       /* ... and the size of its images */
     Object *ae_ThemePalette;
     Object *ae_OptionPalette;
     Object *ae_ThemeFont;
@@ -61,14 +72,24 @@ struct AppearanceEditor_DATA
     Object *ae_CompScale;
     Object *ae_CompNative;
 
-    IPTR   *ae_ThemeArray;
+    IPTR   *ae_ThemeArray;      /* every selectable theme, as its path in THEMES: */
+    IPTR    ae_ThemeActive;     /* the one selected */
+    STRPTR *ae_ThemeNames;      /* themes offered by the theme cycle */
+    STRPTR *ae_StyleLabels;     /* styles of the selected theme */
+    STRPTR  ae_SizeLabels[THEMESIZES_MAX + 1];
+    TEXT    ae_SizeText[THEMESIZES_MAX][12];
+    ULONG   ae_Sizes[THEMESIZES_MAX];
+    ULONG   ae_SizeCount;
     struct Hook ae_PreviewHook;
+    struct Hook ae_SelectHook;
 };
 
 static    STRPTR THEMES_DEFAULT;
 static    STRPTR THEMES_AMIGAOS = "AmigaOS3.x";
 static    CONST_STRPTR THEMES_BASE = "THEMES:";
 static    CONST_STRPTR THEMES_ENVPATH = "SYS/theme.var";
+/* file holding the image size selected for the theme, beside the above */
+static    CONST_STRPTR THEMES_SIZEFILE = "themesize.var";
 static    CONST_STRPTR COMPOSITE_ENVPATH = "SYS/compositor.prefs";
 static    CONST_STRPTR THEMES_DEFPATH = "SYS:Prefs/Presets/theme.default";
 static    CONST_STRPTR THEMES_OPTZUNEPATH = "Zune/usethemeprefs";
@@ -91,6 +112,233 @@ enum
 
 /*** Macros *****************************************************************/
 #define SETUP_INST_DATA struct AppearanceEditor_DATA *data = INST_DATA(CLASS, self)
+
+/*** Theme, style and size selection ****************************************/
+
+/*
+    Every selectable theme is an entry of ae_ThemeArray, named by its path
+    in THEMES:. A theme that comes in styles has an entry for each style
+    ("<theme>/<style>"), all next to each other. The theme cycle offers
+    the themes and the style cycle the styles of the selected one; together
+    they give the selected entry. The size cycle offers the image sizes of
+    that entry.
+*/
+
+static ULONG AppearanceEditor__NameLen(CONST_STRPTR theme)
+{
+    CONST_STRPTR sep = strchr(theme, '/');
+
+    return sep ? (ULONG)(sep - theme) : strlen(theme);
+}
+
+static BOOL AppearanceEditor__SameTheme(CONST_STRPTR a, CONST_STRPTR b)
+{
+    ULONG len = AppearanceEditor__NameLen(a);
+
+    return (len == AppearanceEditor__NameLen(b)) && !strncmp(a, b, len);
+}
+
+/* First entry of the theme at position 'theme' of the theme cycle */
+static IPTR AppearanceEditor__FirstOfTheme(struct AppearanceEditor_DATA *data, IPTR theme)
+{
+    IPTR index = 0, count = 0;
+
+    while (data->ae_ThemeArray[index])
+    {
+        if ((index == 0) || !AppearanceEditor__SameTheme((STRPTR)data->ae_ThemeArray[index],
+                (STRPTR)data->ae_ThemeArray[index - 1]))
+        {
+            if (count++ == theme)
+                return index;
+        }
+        index++;
+    }
+
+    return 0;
+}
+
+/* Position in the theme cycle of the theme the entry 'index' belongs to */
+static IPTR AppearanceEditor__ThemeOf(struct AppearanceEditor_DATA *data, IPTR index)
+{
+    IPTR i, theme = 0;
+
+    for (i = 1; (i <= index) && data->ae_ThemeArray[i]; i++)
+    {
+        if (!AppearanceEditor__SameTheme((STRPTR)data->ae_ThemeArray[i],
+                (STRPTR)data->ae_ThemeArray[i - 1]))
+            theme++;
+    }
+
+    return theme;
+}
+
+/* The themes offered by the theme cycle: each theme once */
+static STRPTR *AppearanceEditor__MakeThemeNames(IPTR *themes)
+{
+    STRPTR *names;
+    IPTR index, count = 0;
+
+    for (index = 0; themes[index]; index++)
+        ;
+    names = AllocVec(sizeof(STRPTR) * (index + 1), MEMF_CLEAR);
+    if (!names)
+        return NULL;
+
+    for (index = 0; themes[index]; index++)
+    {
+        STRPTR theme = (STRPTR)themes[index];
+        ULONG len = AppearanceEditor__NameLen(theme);
+
+        if ((index > 0) && AppearanceEditor__SameTheme(theme, (STRPTR)themes[index - 1]))
+            continue;
+
+        if ((names[count] = AllocVec(len + 1, MEMF_CLEAR)) == NULL)
+            break;
+        CopyMem(theme, names[count], len);
+        count++;
+    }
+
+    return names;
+}
+
+/* The image size the user selected for the theme in use; 0 if none */
+static ULONG AppearanceEditor__SavedSize(void)
+{
+    TEXT buffer[16];
+    ULONG size = 0, i;
+
+    if (GetVar(DECORTHEME_SIZEVAR, buffer, sizeof(buffer), GVF_GLOBAL_ONLY) <= 0)
+        return 0;
+    for (i = 0; (buffer[i] >= '0') && (buffer[i] <= '9') && (size < 1024); i++)
+        size = (size * 10) + (buffer[i] - '0');
+
+    return size;
+}
+
+static ULONG AppearanceEditor__SelectedSize(struct AppearanceEditor_DATA *data)
+{
+    IPTR active = XGET(data->ae_SizeCycle, MUIA_Cycle_Active);
+
+    return (active < data->ae_SizeCount) ? data->ae_Sizes[active] : 0;
+}
+
+/* Offers the styles of the selected theme */
+static void AppearanceEditor__UpdateStyles(struct AppearanceEditor_DATA *data)
+{
+    static CONST_STRPTR nostyles[] = { "", NULL };
+    IPTR first = AppearanceEditor__FirstOfTheme(data,
+        AppearanceEditor__ThemeOf(data, data->ae_ThemeActive));
+    IPTR count = 0, i;
+    STRPTR *labels = NULL;
+
+    while (data->ae_ThemeArray[first + count] &&
+           AppearanceEditor__SameTheme((STRPTR)data->ae_ThemeArray[first],
+                (STRPTR)data->ae_ThemeArray[first + count]))
+        count++;
+
+    /* only a theme that is listed with styles has any */
+    if (strchr((STRPTR)data->ae_ThemeArray[first], '/'))
+        labels = AllocVec(sizeof(STRPTR) * (count + 1), MEMF_CLEAR);
+
+    if (labels)
+    {
+        for (i = 0; i < count; i++)
+        {
+            STRPTR theme = (STRPTR)data->ae_ThemeArray[first + i];
+
+            labels[i] = theme + AppearanceEditor__NameLen(theme) + 1;
+        }
+        SET(data->ae_StyleCycle, MUIA_Cycle_Entries, (IPTR)labels);
+        NNSET(data->ae_StyleCycle, MUIA_Cycle_Active, data->ae_ThemeActive - first);
+    }
+    else
+        SET(data->ae_StyleCycle, MUIA_Cycle_Entries, (IPTR)nostyles);
+
+    FreeVec(data->ae_StyleLabels);
+    data->ae_StyleLabels = labels;
+
+    /* a selector that is not shown must not take the keyboard focus */
+    SET(data->ae_StyleCycle, MUIA_CycleChain, labels != NULL);
+    SET(data->ae_StyleGrp, MUIA_ShowMe, labels != NULL);
+}
+
+/* Offers the image sizes of the selected theme, selecting 'wanted' if
+   the theme has it and the theme's default size otherwise */
+static void AppearanceEditor__UpdateSizes(struct AppearanceEditor_DATA *data, ULONG wanted)
+{
+    TEXT path[256];
+    ULONG defsize = 0, i;
+    IPTR active = 0;
+    BOOL found = FALSE;
+
+    data->ae_SizeCount = 0;
+    if (DecorThemeBase && data->ae_ThemeArray[data->ae_ThemeActive])
+    {
+        snprintf(path, sizeof(path), "%s%s", THEMES_BASE, (char *)data->ae_ThemeArray[data->ae_ThemeActive]);
+        data->ae_SizeCount = DTGetThemeSizes(path, data->ae_Sizes, THEMESIZES_MAX, &defsize);
+    }
+
+    for (i = 0; i < data->ae_SizeCount; i++)
+    {
+        snprintf(data->ae_SizeText[i], sizeof(data->ae_SizeText[i]), "%lupt", (unsigned long)data->ae_Sizes[i]);
+        data->ae_SizeLabels[i] = data->ae_SizeText[i];
+        if (data->ae_Sizes[i] == wanted)
+        {
+            active = i;
+            found = TRUE;
+        }
+        else if (!found && (data->ae_Sizes[i] == defsize))
+            active = i;
+    }
+    if (data->ae_SizeCount == 0)
+    {
+        data->ae_SizeText[0][0] = '\0';
+        data->ae_SizeLabels[0] = data->ae_SizeText[0];
+        i = 1;
+    }
+    data->ae_SizeLabels[i] = NULL;
+
+    SET(data->ae_SizeCycle, MUIA_Cycle_Entries, (IPTR)data->ae_SizeLabels);
+    NNSET(data->ae_SizeCycle, MUIA_Cycle_Active, active);
+
+    /* nothing to choose from unless there are several sizes */
+    SET(data->ae_SizeCycle, MUIA_CycleChain, data->ae_SizeCount > 1);
+    SET(data->ae_SizeGrp, MUIA_ShowMe, data->ae_SizeCount > 1);
+}
+
+/* Makes the entry 'index' the selected theme, in the size 'size' if it
+   has that size (0 selects its default size) */
+static void AppearanceEditor__SelectTheme(struct AppearanceEditor_DATA *data, IPTR index, ULONG size)
+{
+    data->ae_ThemeActive = index;
+    NNSET(data->ae_ThemeCycle, MUIA_Cycle_Active, AppearanceEditor__ThemeOf(data, index));
+    AppearanceEditor__UpdateStyles(data);
+    AppearanceEditor__UpdateSizes(data, size);
+}
+
+static void AppearanceEditor__DisableSelectors(struct AppearanceEditor_DATA *data, BOOL disable)
+{
+    SET(data->ae_ThemeCycle, MUIA_Disabled, disable);
+    SET(data->ae_StyleCycle, MUIA_Disabled, disable);
+    SET(data->ae_SizeCycle, MUIA_Disabled, disable);
+}
+
+/* Shows the selected theme in the preview, or nothing */
+static void AppearanceEditor__ShowPreview(struct AppearanceEditor_DATA *data, BOOL show)
+{
+    TEXT path[256];
+
+    if (show && data->ae_ThemeArray[data->ae_ThemeActive])
+    {
+        snprintf(path, sizeof(path), "%s%s", THEMES_BASE, (char *)data->ae_ThemeArray[data->ae_ThemeActive]);
+        SetAttrs(data->ae_ThemePreview,
+            MUIA_ThemePreview_Size, AppearanceEditor__SelectedSize(data),
+            MUIA_ThemePreview_Theme, (IPTR)path,
+            TAG_DONE);
+    }
+    else
+        SET(data->ae_ThemePreview, MUIA_ThemePreview_Theme, (IPTR)NULL);
+}
 
 static IPTR AppearanceEditor__ListToArray(struct List *ThemeList)
 {
@@ -136,9 +384,9 @@ AROS_UFH3(static void, AppearanceEditor__PreviewHookFunc,
     D(bug("[AppearanceEditor] %s()\n", __func__));
 
     themeEnable = (BOOL)XGET(data->ae_ThemeEnable, MUIA_Selected);
-    SET(data->ae_ThemeChoice, MUIA_Disabled, !(themeEnable));
+    AppearanceEditor__DisableSelectors(data, !(themeEnable));
 
-    themeActive = XGET(data->ae_ThemeChoice, MUIA_Cycle_Active);
+    themeActive = data->ae_ThemeActive;
     if (data->ae_ThemeArray[themeActive])
     {
         themeoptDisable = !(themeEnable);
@@ -219,15 +467,43 @@ AROS_UFH3(static void, AppearanceEditor__PreviewHookFunc,
     SET(data->ae_CompScale, MUIA_Disabled, !(compEnable));
     SET(data->ae_CompNative, MUIA_Disabled, !(compEnable) || !XGET(data->ae_CompScale, MUIA_Selected));
 
-    if (themeEnable && data->ae_ThemeArray[themeActive])
-    {
-        sprintf(themeFileTmp, "%s%s", THEMES_BASE, (char *)data->ae_ThemeArray[themeActive]);
-        SET(data->ae_ThemePreview, MUIA_ThemePreview_Theme, (IPTR)themeFileTmp);
-    }
-    else
-        SET(data->ae_ThemePreview, MUIA_ThemePreview_Theme, (IPTR)NULL);
+    AppearanceEditor__ShowPreview(data, themeEnable);
 
     SET(self, MUIA_PrefsEditor_Changed, TRUE);
+
+    AROS_USERFUNC_EXIT
+}
+
+/* A theme or a style was chosen with the cycles */
+AROS_UFH3(static void, AppearanceEditor__SelectHookFunc,
+          AROS_UFHA(struct Hook *, h, A0),
+          AROS_UFHA(Object *, self, A2),
+          AROS_UFHA(APTR, msg, A1))
+{
+    AROS_USERFUNC_INIT
+    struct AppearanceEditor_DATA *data = h->h_Data;
+    IPTR theme = XGET(data->ae_ThemeCycle, MUIA_Cycle_Active);
+
+    if (theme != AppearanceEditor__ThemeOf(data, data->ae_ThemeActive))
+    {
+        /* another theme: its first style, in its default size */
+        AppearanceEditor__SelectTheme(data, AppearanceEditor__FirstOfTheme(data, theme), 0);
+    }
+    else
+    {
+        IPTR index = AppearanceEditor__FirstOfTheme(data, theme);
+
+        if (data->ae_StyleLabels)
+            index += XGET(data->ae_StyleCycle, MUIA_Cycle_Active);
+        if (index != data->ae_ThemeActive)
+        {
+            /* another style: keep the size if this one has it too */
+            data->ae_ThemeActive = index;
+            AppearanceEditor__UpdateSizes(data, AppearanceEditor__SelectedSize(data));
+        }
+    }
+
+    CallHookPkt(&data->ae_PreviewHook, self, NULL);
 
     AROS_USERFUNC_EXIT
 }
@@ -247,6 +523,95 @@ static Object *MakeCheckmark(BOOL selected)
 #define kExallBufSize          (4096)
 
 /*** Methods ****************************************************************/
+/*
+    Theme discovery
+
+    A directory in THEMES: is a theme if decortheme.library can load it;
+    directories holding themes written for another theme layout, or
+    something else, are not offered. A theme that comes in several styles
+    keeps every style in a sub-directory of its own, each being a
+    complete theme:
+
+        THEMES:<theme>/<style>/...
+
+    Such styles are listed, and selected, as "<theme>/<style>".
+*/
+
+static BOOL AppearanceEditor__Exists(CONST_STRPTR theme, CONST_STRPTR part)
+{
+    TEXT path[256];
+    BPTR lock;
+
+    snprintf(path, sizeof(path), "THEMES:%s/%s", theme, part);
+    if ((lock = Lock(path, SHARED_LOCK)) == BNULL)
+        return FALSE;
+    UnLock(lock);
+
+    return TRUE;
+}
+
+/* A theme is offered when it is one the decoration can load, which is
+   for decortheme.library to tell */
+static BOOL AppearanceEditor__IsTheme(CONST_STRPTR theme)
+{
+    TEXT path[256];
+
+    if (!DecorThemeBase)
+        return AppearanceEditor__Exists(theme, "System/Config");
+
+    snprintf(path, sizeof(path), "THEMES:%s", theme);
+    return DTCheckTheme(path) != 0;
+}
+
+static void AppearanceEditor__AddTheme(struct List *themes, CONST_STRPTR theme)
+{
+    struct Node *entry = AllocVec(sizeof(struct Node), MEMF_CLEAR);
+
+    if (entry)
+    {
+        if ((entry->ln_Name = StrDup(theme)) != NULL)
+            AddTail(themes, entry);
+        else
+            FreeVec(entry);
+    }
+}
+
+/* Adds the styles found in a theme directory; returns how many there are */
+static ULONG AppearanceEditor__AddStyles(struct List *themes, CONST_STRPTR theme)
+{
+    struct FileInfoBlock *fib;
+    TEXT path[256];
+    ULONG count = 0;
+    BPTR lock;
+
+    snprintf(path, sizeof(path), "THEMES:%s", theme);
+    if ((lock = Lock(path, SHARED_LOCK)) == BNULL)
+        return 0;
+
+    if ((fib = AllocDosObject(DOS_FIB, NULL)) != NULL)
+    {
+        if (Examine(lock, fib))
+        {
+            while (ExNext(lock, fib))
+            {
+                if (fib->fib_DirEntryType <= 0)
+                    continue;
+
+                snprintf(path, sizeof(path), "%s/%s", theme, fib->fib_FileName);
+                if (AppearanceEditor__IsTheme(path))
+                {
+                    AppearanceEditor__AddTheme(themes, path);
+                    count++;
+                }
+            }
+        }
+        FreeDosObject(DOS_FIB, fib);
+    }
+    UnLock(lock);
+
+    return count;
+}
+
 Object *AppearanceEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 {
     UBYTE               *ExAllBuffer = NULL;
@@ -255,6 +620,10 @@ Object *AppearanceEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *messa
     Object              *_ThemePreviewObj;
     Object              *_ThemeEnable;
     Object              *_ThemeSelectionObj;
+    Object              *_ThemeStyleGrp, *_ThemeStyleObj;
+    Object              *_ThemeSizeGrp, *_ThemeSizeObj;
+    STRPTR              *_ThemeNames;
+    static CONST_STRPTR  _NoEntries[] = { "", NULL };
 
     Object              *_ThemePalettePrefsGrp, *_ThemePalettePrefsObj,
                         *_ThemeZunePrefsGrp, *_ThemeZunePrefsObj,
@@ -282,6 +651,9 @@ Object *AppearanceEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *messa
     D(bug("[AppearanceEditor] %s()\n", __func__));
 
     NewList(&_ThemesAvailable);
+
+    /* decortheme.library tells which directories are usable themes */
+    ThemePreview_OpenLibs();
 
     // Find Available Themes
     if ((ExAllBuffer = AllocVec(kExallBufSize, MEMF_CLEAR|MEMF_PUBLIC)) != NULL)
@@ -312,9 +684,13 @@ Object *AppearanceEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *messa
                     do {
                         if (ead->ed_Type == ST_USERDIR)
                         {
-                            _ThemeEntry = AllocVec(sizeof(struct Node), MEMF_CLEAR);
-                            _ThemeEntry->ln_Name = StrDup(ead->ed_Name);
-                            AddTail(&_ThemesAvailable, _ThemeEntry);
+                            /* A directory is either a theme, or holds the
+                               styles of a theme (e.g. "Light" and "Dark")
+                               as themes of their own. */
+                            if (AppearanceEditor__IsTheme(ead->ed_Name))
+                                AppearanceEditor__AddTheme(&_ThemesAvailable, ead->ed_Name);
+                            else
+                                AppearanceEditor__AddStyles(&_ThemesAvailable, ead->ed_Name);
                         }
                         ead = ead->ed_Next;
                     } while (ead);
@@ -336,6 +712,7 @@ Object *AppearanceEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *messa
     }
 
     _ThemeArray =  AppearanceEditor__ListToArray(&_ThemesAvailable);
+    _ThemeNames = AppearanceEditor__MakeThemeNames((IPTR *)_ThemeArray);
 
     self = (Object *) DoSuperNewTags
     (
@@ -362,9 +739,25 @@ Object *AppearanceEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *messa
                         Child, (IPTR)Label1(_(MSG_SELECTEDTHEME)),
                         Child, (IPTR)(_ThemeSelectionObj = CycleObject,
                             MUIA_CycleChain, 1,
-                            MUIA_Cycle_Entries, (IPTR)_ThemeArray,
+                            MUIA_Cycle_Entries, (IPTR)_ThemeNames,
                         End),
                     End,
+                    Child, (IPTR)(_ThemeStyleGrp = HGroup,
+                        MUIA_ShowMe, FALSE,
+                        Child, (IPTR)Label1(_(MSG_SELECTEDSTYLE)),
+                        Child, (IPTR)(_ThemeStyleObj = CycleObject,
+                            MUIA_CycleChain, 0,
+                            MUIA_Cycle_Entries, (IPTR)_NoEntries,
+                        End),
+                    End),
+                    Child, (IPTR)(_ThemeSizeGrp = HGroup,
+                        MUIA_ShowMe, FALSE,
+                        Child, (IPTR)Label1(_(MSG_SELECTEDSIZE)),
+                        Child, (IPTR)(_ThemeSizeObj = CycleObject,
+                            MUIA_CycleChain, 0,
+                            MUIA_Cycle_Entries, (IPTR)_NoEntries,
+                        End),
+                    End),
 
 
                     Child, (IPTR)(_ThemeDescGrp = VGroup,
@@ -473,7 +866,11 @@ Object *AppearanceEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *messa
 
         data->ae_ThemePreview = _ThemePreviewObj;
         data->ae_ThemeEnable = _ThemeEnable;
-        data->ae_ThemeChoice = _ThemeSelectionObj;
+        data->ae_ThemeCycle = _ThemeSelectionObj;
+        data->ae_StyleGrp = _ThemeStyleGrp;
+        data->ae_StyleCycle = _ThemeStyleObj;
+        data->ae_SizeGrp = _ThemeSizeGrp;
+        data->ae_SizeCycle = _ThemeSizeObj;
         data->ae_ThemePalette = _ThemePalettePrefsGrp;
         data->ae_OptionPalette = _ThemePalettePrefsObj;
         data->ae_ThemeFont = _ThemeFontPrefsGrp;
@@ -498,6 +895,8 @@ Object *AppearanceEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *messa
         data->ae_CompNative = _CompNative;
 
         data->ae_ThemeArray = (IPTR *)_ThemeArray;
+        data->ae_ThemeNames = _ThemeNames;
+        data->ae_ThemeActive = 0;
 
         data->ae_readBuff = AllocMem(1024, MEMF_ANY);
 
@@ -510,9 +909,28 @@ Object *AppearanceEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *messa
             (IPTR) self, 3, MUIM_CallHook, (IPTR)&data->ae_PreviewHook, (IPTR)NULL
         );
 
+        data->ae_SelectHook.h_Entry = (HOOKFUNC)AppearanceEditor__SelectHookFunc;
+        data->ae_SelectHook.h_Data = data;
+
+        /* start out with the first theme, until the settings are read */
+        if (data->ae_ThemeArray[0])
+            AppearanceEditor__SelectTheme(data, 0, 0);
+
         DoMethod
         (
-            data->ae_ThemeChoice, MUIM_Notify, MUIA_Cycle_Active, MUIV_EveryTime,
+            data->ae_ThemeCycle, MUIM_Notify, MUIA_Cycle_Active, MUIV_EveryTime,
+            (IPTR) self, 3, MUIM_CallHook, (IPTR)&data->ae_SelectHook, (IPTR)NULL
+        );
+
+        DoMethod
+        (
+            data->ae_StyleCycle, MUIM_Notify, MUIA_Cycle_Active, MUIV_EveryTime,
+            (IPTR) self, 3, MUIM_CallHook, (IPTR)&data->ae_SelectHook, (IPTR)NULL
+        );
+
+        DoMethod
+        (
+            data->ae_SizeCycle, MUIM_Notify, MUIA_Cycle_Active, MUIV_EveryTime,
             (IPTR) self, 3, MUIM_CallHook, (IPTR)&data->ae_PreviewHook, (IPTR)NULL
         );
 
@@ -591,8 +1009,18 @@ IPTR AppearanceEditor__OM_DISPOSE(Class *CLASS, Object *self, struct opSet *mess
     }
     FreeVec((APTR)data->ae_ThemeArray);
 
+    if (data->ae_ThemeNames)
+    {
+        for (index = 0; data->ae_ThemeNames[index]; index++)
+            FreeVec(data->ae_ThemeNames[index]);
+        FreeVec(data->ae_ThemeNames);
+    }
+    FreeVec(data->ae_StyleLabels);
+
     if (THEMES_DEFAULT != THEMES_AMIGAOS)
         FreeVec(THEMES_DEFAULT);
+
+    ThemePreview_CloseLibs();
 
     return DoSuperMethodA(CLASS, self, message);
 }
@@ -612,7 +1040,7 @@ IPTR AppearanceEditor__MUIM_PrefsEditor_Import
     if ((fh = Open(message->filename, MODE_OLDFILE)) != BNULL)
     {
         NNSET(data->ae_ThemeEnable, MUIA_Selected, TRUE);
-        SET(data->ae_ThemeChoice, MUIA_Disabled, FALSE);
+        AppearanceEditor__DisableSelectors(data, FALSE);
         SET(data->ae_ThemeZune, MUIA_Disabled, FALSE);
         SET(data->ae_ThemeWand, MUIA_Disabled, FALSE);
         SET(data->ae_ThemePalette, MUIA_Disabled, FALSE);
@@ -624,7 +1052,7 @@ IPTR AppearanceEditor__MUIM_PrefsEditor_Import
     else
     {
         NNSET(data->ae_ThemeEnable, MUIA_Selected, FALSE);
-        SET(data->ae_ThemeChoice, MUIA_Disabled, TRUE);
+        AppearanceEditor__DisableSelectors(data, TRUE);
         SET(data->ae_ThemeZune, MUIA_Disabled, TRUE);
         SET(data->ae_ThemeWand, MUIA_Disabled, TRUE);
         SET(data->ae_ThemePalette, MUIA_Disabled, TRUE);
@@ -653,18 +1081,30 @@ IPTR AppearanceEditor__MUIM_PrefsEditor_ImportFH (
     {
         if (FGets(message->fh, importBuffer, 1024))
         {
-            char *tmpThemeFile = FilePart(importBuffer);
+            char *tmpThemeFile;
+
+            /* The theme is named relative to THEMES:, which for a style
+               of a theme includes the theme ("<theme>/<style>"). */
+            if (Strnicmp(importBuffer, THEMES_BASE, strlen(THEMES_BASE)) == 0)
+                tmpThemeFile = importBuffer + strlen(THEMES_BASE);
+            else
+                tmpThemeFile = FilePart(importBuffer);
 
             D(bug("[AppearanceEditor] %s: Prefs Theme = '%s'\n", __func__, tmpThemeFile));
 
             while (data->ae_ThemeArray[index] != (IPTR)NULL)
             {
-                if (strncmp((char *)data->ae_ThemeArray[index], tmpThemeFile, strlen((char *)data->ae_ThemeArray[index])) == 0)
+                size_t themeLen = strlen((char *)data->ae_ThemeArray[index]);
+
+                /* the whole name has to match, not just its beginning */
+                if ((strncmp((char *)data->ae_ThemeArray[index], tmpThemeFile, themeLen) == 0) &&
+                    ((tmpThemeFile[themeLen] == '\0') || (tmpThemeFile[themeLen] == '\n') ||
+                     (tmpThemeFile[themeLen] == '\r')))
                 {
                     char themeFileTmp[256];
                     BPTR tmpLock;
 
-                    NNSET(data->ae_ThemeChoice, MUIA_Cycle_Active, index);
+                    AppearanceEditor__SelectTheme(data, index, AppearanceEditor__SavedSize());
 
                     sprintf(themeFileTmp, "THEMES:%s/Env-Archive/Zune/global.prefs", (char *)data->ae_ThemeArray[index]);
                     if ((tmpLock = Lock(themeFileTmp, ACCESS_READ)) == BNULL)
@@ -787,17 +1227,7 @@ IPTR AppearanceEditor__MUIM_PrefsEditor_ImportFH (
         }
     }
 
-    {
-        IPTR themeActive = XGET(data->ae_ThemeChoice, MUIA_Cycle_Active);
-
-        if ((BOOL)XGET(data->ae_ThemeEnable, MUIA_Selected) && data->ae_ThemeArray[themeActive])
-        {
-            sprintf(importBuffer, "%s%s", THEMES_BASE, (char *)data->ae_ThemeArray[themeActive]);
-            SET(data->ae_ThemePreview, MUIA_ThemePreview_Theme, (IPTR)importBuffer);
-        }
-        else
-            SET(data->ae_ThemePreview, MUIA_ThemePreview_Theme, (IPTR)NULL);
-    }
+    AppearanceEditor__ShowPreview(data, (BOOL)XGET(data->ae_ThemeEnable, MUIA_Selected));
 
     return success;
 }
@@ -954,18 +1384,43 @@ IPTR AppearanceEditor__MUIM_PrefsEditor_ExportFH
     if ((exportBuffer = AllocVec(1024, MEMF_CLEAR)) != NULL)
     {
         /* Check if the generic prefs editor class is just making a backup */
+        TEXT sizeFile[1024];
+        char *varName;
+
         NameFromFH(message->fh, exportBuffer, 1024);
         backup = strstr(exportBuffer, "theme.var") == NULL;
 
+        /* The image size selected for the theme is kept in a file of
+           its own, beside the one naming the theme. */
+        sizeFile[0] = '\0';
+        if (!backup)
+        {
+            strlcpy(sizeFile, exportBuffer, sizeof(sizeFile));
+            varName = strstr(sizeFile, "theme.var");
+            *varName = '\0';
+            strlcat(sizeFile, THEMES_SIZEFILE, sizeof(sizeFile));
+        }
+
         if (message->fh)
         {
-            GET(data->ae_ThemeChoice, MUIA_Cycle_Active, &active);
+            active = data->ae_ThemeActive;
             D(bug("[AppearanceEditor] %s: Selected Theme = [%02d] '%s'\n", __func__, active, data->ae_ThemeArray[active]));
 
             sprintf(exportBuffer, "%s%s", THEMES_BASE, (char *)data->ae_ThemeArray[active]);
 
             if (FPuts(message->fh, exportBuffer))
                 success = FALSE;
+
+            if (sizeFile[0] && AppearanceEditor__SelectedSize(data))
+            {
+                BPTR sizeFH = Open(sizeFile, MODE_NEWFILE);
+
+                if (sizeFH)
+                {
+                    FPrintf(sizeFH, "%lu", (IPTR)AppearanceEditor__SelectedSize(data));
+                    Close(sizeFH);
+                }
+            }
 
             if (!backup)
             {
@@ -1093,7 +1548,8 @@ IPTR AppearanceEditor__MUIM_PrefsEditor_SetDefaults
             char themeFileTmp[256];
             BPTR tmpLock;
 
-            SET(data->ae_ThemeChoice, MUIA_Cycle_Active, index);
+            AppearanceEditor__SelectTheme(data, index, 0);
+            CallHookPkt(&data->ae_PreviewHook, self, NULL);
 
             sprintf(themeFileTmp, "THEMES:%s/Env-Archive/Zune/global.prefs", (char *)data->ae_ThemeArray[index]);
             if ((tmpLock = Lock(themeFileTmp, ACCESS_READ)) == BNULL)
