@@ -61,6 +61,7 @@ def prepare(source, output):
     native = [source / 'compiler/include' / name for name in (
         'dos/dostags.h', 'utility/tagitem.h', 'exec/nodes.h', 'exec/memory.h')]
     doshunks = source / 'compiler/include/dos/doshunks.h'
+    bptr = source / 'compiler/include/dos/bptr.h'
     # The official headers retain Latin-1 bytes. Keep their raw source
     # unchanged; only ASCII macro lines enter the fixture.
     text = '\n'.join(f.read_text(encoding='latin1')
@@ -120,6 +121,12 @@ def prepare(source, output):
             if name == 'M68KEmu_LoadHunks':
                 raise
     (output / 'seglist.inc').write_text('\n'.join(seglist.values()))
+    bptr_text = bptr.read_text(encoding='latin1')
+    start = bptr_text.index('struct AROSSegment\n')
+    layout = bptr_text[start:bptr_text.index('/* BCPL strings', start)]
+    if not layout.isascii() or '#define AROS_SEG_DATALEN' not in layout:
+        raise ValueError(f'{bptr}: missing ASCII seglist layout')
+    (output / 'seglist_layout.inc').write_text(layout)
     # The relocation list dos keeps for a 68k seglist, as the tree's header
     # has it: the HUNKRELOC_* kinds, struct HunkRelocGroup and struct
     # HunkRelocTable, each taken by itself. A kind the header defines more
@@ -145,7 +152,7 @@ def prepare(source, output):
         return hashlib.sha256(p.read_bytes()).hexdigest()
     record = dict(
         source_inputs={str(p): sha(p) for p in (header, offsets, thunks, tasks, tags, memory,
-                                                *native, doshunks)},
+                                                *native, doshunks, bptr)},
         actual_functions=children + ['m68k_process_of'] + registry + lifetime + walker + list(seglist),
         actual_structure='struct M68KChild',
         relocation_list='struct HunkRelocGroup, HUNKRELOC_*, struct HunkRelocTable',

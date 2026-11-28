@@ -9,6 +9,7 @@
     CPU runs. This is not an AROS image test.
 */
 #include <algorithm>
+#include <cstddef>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
@@ -31,6 +32,18 @@ using BOOL = int;
 /* a BPTR is a plain pointer on every target but m68k (AROS_FAST_BPTR) */
 using BPTR = void *;
 #define BADDR(a) ((APTR)(a))
+#ifndef __WORDSIZE
+#define __WORDSIZE (__SIZEOF_POINTER__ * 8)
+#endif
+#include "seglist_layout.inc"
+static_assert(sizeof(BPTR) == sizeof(void *), "AROS_FAST_BPTR expects host pointer width");
+static_assert(sizeof(BPTR) * 8 == __WORDSIZE, "AROSSegment __WORDSIZE must match BPTR width");
+static_assert(offsetof(struct AROSSegment, seg_Next) == AROS_SEG_PREFIX,
+              "AROSSegment seg_Next must sit at AROS_SEG_PREFIX");
+static_assert(offsetof(struct AROSSegment, seg_Size) + sizeof(ULONG) == AROS_SEG_PREFIX,
+              "AROSSegment seg_Size must sit immediately before seg_Next");
+static_assert(offsetof(struct AROSSegment, seg_Data) == AROS_SEG_HEADER,
+              "AROSSegment seg_Data must sit at AROS_SEG_HEADER");
 #define TRUE 1
 #define FALSE 0
 #define MEMF_CLEAR (1u << 16)
@@ -185,13 +198,10 @@ static void M68KEmu_FreeHunks(M68KEmuContext *, ULONG) {}
 
 /* ---- seglists -------------------------------------------------------------- */
 
-/* A seglist as LoadSeg() leaves it: one allocation per segment that begins
-   with a ULONG, the size of the allocation, then the BPTR of the next
-   segment, then the data; the BPTR of a segment is the address of that
-   link. dos puts the link four bytes after an eight-byte boundary. Here it
-   lies on one, so that reading it through a BPTR pointer, as the copy and
-   dos itself do, is an aligned read for the sanitizer. Nothing else of the
-   layout differs. */
+/* A seglist as LoadSeg() leaves it: the canonical AROSSegment header from
+   dos/bptr.h, with seg_Size immediately before the BPTR link and payload
+   after it. The link sits at AROS_SEG_PREFIX (aligned for the sanitizer).
+   All offsets follow dos/bptr.h on both 32-bit and 64-bit hosts. */
 struct Segment
 {
     std::unique_ptr<uint64_t[]> store;
@@ -206,12 +216,12 @@ struct SegList
     void add(ULONG n)
     {
         Segment s;
-        s.store = std::make_unique<uint64_t[]>((n + 16 + 7) / 8 + 1);
+        s.store = std::make_unique<uint64_t[]>((n + AROS_SEG_HEADER + 7) / 8 + 1);
         UBYTE *base = reinterpret_cast<UBYTE *>(s.store.get());
-        ULONG total = n + static_cast<ULONG>(sizeof(ULONG) + sizeof(BPTR));
-        s.link = base + 8;
+        ULONG total = n + static_cast<ULONG>(AROS_SEG_HEADER);
+        s.link = base + AROS_SEG_PREFIX;
         s.bytes = n;
-        std::memcpy(base + 4, &total, sizeof total);
+        std::memcpy(s.link - sizeof(ULONG), &total, sizeof total);
         if (!segs.empty())
         {
             BPTR next = s.link;
@@ -233,7 +243,7 @@ struct SegList
         p[0] = static_cast<UBYTE>(v >> 24); p[1] = static_cast<UBYTE>(v >> 16);
         p[2] = static_cast<UBYTE>(v >> 8); p[3] = static_cast<UBYTE>(v);
     }
-    void size_word(size_t i, ULONG v) const { std::memcpy(segs[i].link - 4, &v, sizeof v); }
+    void size_word(size_t i, ULONG v) const { std::memcpy(segs[i].link - sizeof(ULONG), &v, sizeof v); }
 };
 
 struct Many { size_t count; ULONG each; };
@@ -527,6 +537,30 @@ int main()
         p.segs.size_word(0, 4);
         refused_cleanly(ctx, load(ctx, p));
         CHECK(ctx.heap_calls == 0, "nothing was placed");
+    });
+
+    run("a segment whose size is zero (unowned arena sentinel)", [] {
+        M68KEmuContext ctx;
+        Program p{8};
+        p.segs.size_word(0, 0);
+        refused_cleanly(ctx, load(ctx, p));
+        CHECK(ctx.heap_calls == 0, "nothing was placed");
+    });
+
+    run("a segment whose size is short of its canonical AROSSegment header", [] {
+        M68KEmuContext ctx;
+        Program p{8};
+        p.segs.size_word(0, static_cast<ULONG>(AROS_SEG_HEADER - 1));
+        refused_cleanly(ctx, load(ctx, p));
+        CHECK(ctx.heap_calls == 0, "nothing was placed");
+        if (sizeof(ULONG) + sizeof(BPTR) < static_cast<size_t>(AROS_SEG_HEADER))
+        {
+            M68KEmuContext ctx_legacy;
+            Program p_legacy{8};
+            p_legacy.segs.size_word(0, static_cast<ULONG>(sizeof(ULONG) + sizeof(BPTR)));
+            refused_cleanly(ctx_legacy, load(ctx_legacy, p_legacy));
+            CHECK(ctx_legacy.heap_calls == 0, "legacy unpadded header size is refused");
+        }
     });
 
     run("more segments than containment can hold", [] {
