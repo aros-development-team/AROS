@@ -389,7 +389,10 @@ void FreeLock(struct ExtFileLock *fl, struct Globals *glob)
     sb = fl->sb;
 
     if (fl->do_notify)
+    {
         SendNotifyByLock(fl->ioh.sb, fl->gl);
+        SendNotifyByParent(fl->ioh.sb, fl->gl->dir_cluster);
+    }
 
     /*
      * Removing a node that is no longer on a list writes through stale

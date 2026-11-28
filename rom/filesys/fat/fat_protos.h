@@ -139,6 +139,7 @@ void FreeLock(struct ExtFileLock *fl, struct Globals *glob);
 void SendNotify(struct NotifyRequest *nr, struct Globals *glob);
 void SendNotifyByLock(struct FSSuper *sb, struct GlobalLock *gl);
 void SendNotifyByDirEntry(struct FSSuper *sb, struct DirEntry *de);
+void SendNotifyByParent(struct FSSuper *sb, ULONG dir_cluster);
 void ProcessNotify(struct Globals *glob);
 
 /* validate.c */

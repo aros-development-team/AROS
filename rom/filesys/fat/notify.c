@@ -134,6 +134,66 @@ void SendNotifyByDirEntry(struct FSSuper *sb, struct DirEntry *de)
     }
 }
 
+/*
+ * Send a notification to the requests on the directory whose entries start
+ * at dir_cluster, for a change to something in it: the AmigaOS contract for
+ * a request on a directory, and what ram-handler and SFS do. A request whose
+ * directory is not locked is found by its name, which needs the disk, so it
+ * is only looked for on the volume that is in the drive.
+ */
+void SendNotifyByParent(struct FSSuper *sb, ULONG dir_cluster)
+{
+    struct Globals *glob = sb->glob;
+    struct NotifyNode *nn;
+    struct DirHandle sdh;
+    struct DirEntry sde;
+    ULONG cluster;
+
+    /* Inside the loop we may reuse the dirhandle, so here we explicitly mark
+       it as uninitialised */
+    sdh.ioh.sb = NULL;
+
+    /* The root has no entry of its own: a root lock and a ".." entry pointing
+     * at the root both carry cluster 0 */
+    if (dir_cluster == 0)
+        dir_cluster = sb->rootdir_cluster;
+
+    D(bug("[fat] notifying for contents of dir at cluster %ld\n",
+        dir_cluster));
+
+    ForeachNode(&sb->info->notifies, nn)
+    {
+        if (nn->gl != NULL)
+        {
+            if (!(nn->gl->attr & ATTR_DIRECTORY))
+                continue;
+            cluster = nn->gl->first_cluster;
+        }
+        else
+        {
+            if (sb != glob->sb)
+                continue;
+
+            InitDirHandle(sb, 0, &sdh, TRUE, glob);
+            if (GetDirEntryByPath(&sdh, nn->nr->nr_FullName,
+                strlen(nn->nr->nr_FullName), &sde, glob) != 0
+                || !(sde.e.entry.attr & ATTR_DIRECTORY))
+                continue;
+            cluster = FIRST_FILE_CLUSTER(&sde);
+        }
+
+        /* A directory lock taken through a ".." entry that points at the
+         * root has 0xffffffff, LockFile()'s mark for "no clusters" */
+        if (cluster == 0 || cluster == 0xffffffff)
+            cluster = sb->rootdir_cluster;
+        if (cluster == dir_cluster)
+            SendNotify(nn->nr, glob);
+    }
+
+    if (sdh.ioh.sb != NULL)
+        ReleaseDirHandle(&sdh, glob);
+}
+
 /* Handle returned notify messages */
 void ProcessNotify(struct Globals *glob)
 {

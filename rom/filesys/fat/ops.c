@@ -359,6 +359,9 @@ LONG OpOpenFile(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen,
 
         D(bug("[fat] file truncated, returning the lock\n"));
 
+        /* Its contents changed even if nothing is written before Close() */
+        lock->do_notify = TRUE;
+
         /* File is empty, go */
         *filelock = lock;
 
@@ -543,6 +546,7 @@ LONG OpDeleteFile(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen,
 
     /* Notify */
     SendNotifyByLock(lock->ioh.sb, lock->gl);
+    SendNotifyByParent(lock->ioh.sb, lock->gl->dir_cluster);
 
     /* This lock is now completely meaningless */
     FreeLock(lock, glob);
@@ -814,6 +818,9 @@ LONG OpRenameFile(struct ExtFileLock *sdirlock, UBYTE *sname,
 
     /* Notify */
     SendNotifyByDirEntry(sdh.ioh.sb, &dde);
+    SendNotifyByParent(sdh.ioh.sb, sde.cluster);
+    if (dde.cluster != sde.cluster)
+        SendNotifyByParent(sdh.ioh.sb, dde.cluster);
 
     ReleaseDirHandle(&ddh, glob);
     ReleaseDirHandle(&sdh, glob);
@@ -978,7 +985,11 @@ LONG OpCreateDir(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen,
 
     /* Notify */
     if (err == 0)
+    {
         SendNotifyByLock((*newdirlock)->ioh.sb, (*newdirlock)->gl);
+        SendNotifyByParent((*newdirlock)->ioh.sb,
+            (*newdirlock)->gl->dir_cluster);
+    }
 
     return err;
 
@@ -1273,6 +1284,7 @@ LONG OpSetFileSize(struct ExtFileLock *lock, LONG offset, LONG whence,
     lock->gl->first_cluster = lock->ioh.first_cluster = first ? first : 0xffffffff;
     RESET_HANDLE(&lock->ioh);
     *newsize = size;
+    lock->do_notify = TRUE;
     if (tail >= 2 && tail < sb->eoc_mark - 7)
     {
         if (keep != 0 && !SET_NEXT_CLUSTER(sb, keep, sb->eoc_mark))
@@ -1342,6 +1354,7 @@ LONG OpSetProtect(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen,
     D(bug("[fat] new protection is 0x%08x\n", de.e.entry.attr));
 
     SendNotifyByDirEntry(glob->sb, &de);
+    SendNotifyByParent(glob->sb, de.cluster);
 
     /* If it's a directory, we also need to update the protections for the
      * directory's . entry */
@@ -1409,7 +1422,10 @@ LONG OpSetDate(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen,
     de.e.entry.last_access_date = wdate;
     err = UpdateDirEntry(&de, glob);
     if (err == 0)
+    {
         SendNotifyByDirEntry(glob->sb, &de);
+        SendNotifyByParent(glob->sb, de.cluster);
+    }
 
     ReleaseDirHandle(&dh, glob);
 
