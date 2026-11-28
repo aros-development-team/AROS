@@ -964,3 +964,50 @@ production includes without compiling or executing a test. These focused
 checks do not set up a whole ExecBase, run the CPU or any guest code, take a
 real lock, call exec, or qualify a complete library or application; in
 particular they do not show what a program does with the empty lists.
+
+## DeleteMsgPort shadow lifecycle
+
+Run from the repository root:
+
+```sh
+make -C developer/debug/test/m68kemu_host test-deletemsgport-shadow
+make -C developer/debug/test/m68kemu_host test-deletemsgport-shadow-sanitize
+```
+
+The ordinary regression is also a prerequisite of the host Makefile's `test`
+target. It needs Python 3.9+ and a C++17 compiler, with ASan/UBSan for the
+sanitizer target. `PYTHON` and `CXX` select them; `DELETEMSGPORT_SHADOW_ARGS`
+passes runner options such as `--build-dir /tmp/deletemsgport-shadow`.
+
+The runner verifies byte-for-byte parity between `m68kemu_thunkgen.py` and the
+checked-in `thunk_exec_CreateMsgPort` / `thunk_exec_DeleteMsgPort` in
+`m68kemu_thunks_gen.c`, extracts the verbatim shadow helpers (`shadow_register`,
+`shadow_lookup`, `shadow_remove`, `sync_fields`, `shadow_find_layout`,
+`shadow_create`, `shadow_destroy`, `shadow_create_by_name`,
+`msgport_is_embedded_proc_port`, `msgport_invalidate_aliases`,
+`m68k_msgport_own`, `m68k_msgport_destroy`), the `MsgPort` layout and `Task`
+shadow type, and `thunk_exec_CreateMsgPort` / `thunk_exec_DeleteMsgPort` /
+`thunk_exec_FindPort`, and compiles them with `test_deletemsgport_shadow.cpp`.
+
+The checks cover: single `CreateMsgPort`/`DeleteMsgPort` cleanup of
+`shadow_map`, `owned_ports`, 68k heap and signal bit; 1200 sequential
+create/delete cycles past `M68KEMU_MAX_SHADOWS` (1024) with distinct native
+addresses; recycled native `MsgPort` addresses without stale guest aliasing;
+cross-type reuse of a recycled native address without phantom `MsgPort`
+entries; `NULL` and double `DeleteMsgPort` while preserving a live neighbor
+port; wrong-type shadows (`type 4`, `type 0`, non-`MsgPort` type, `NULL`
+native pointer, and raw containment addresses); 16 simultaneous live ports
+with swap-with-last compaction; deduplicated `CreateMsgPort` -> `FindPort` ->
+`DeleteMsgPort`; distinct-shadow alias invalidation (`CreateMsgPort` ->
+`AddPort`/`FindPort` distinct shadow `p2 != p1` -> `DeleteMsgPort(p1)` or
+`DeleteMsgPort(p2)` invalidates all aliases, including mixed `type 4` aliases,
+leaving zero dangling pointers on subsequent alias use); ownership refusal for
+foreign `FindPort` ports and embedded `Process->pr_MsgPort`; duplicate guest
+address single-free safety; recycled-native stale `FindPort` guest-heap balance
+(zero guest-heap leak across repeated reuse while preserving embedded `type 4`
+and `Process->pr_MsgPort` blocks); and native rollback when `owned_ports` or
+`shadow_map` is full.
+
+`--prepare-only --build-dir /tmp/deletemsgport-shadow` checks generator parity
+and emits the production includes without compiling or running the C++ fixture.
+The fixture does not run a 68k CPU or native exec.

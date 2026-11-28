@@ -455,6 +455,136 @@ void shadow_destroy(struct M68KEmuContext *ctx,
     M68KEmu_HeapFree(ctx, m68k_addr, layout->m68k_size);
 }
 
+/* True when m68k_addr is an embedded Process->pr_MsgPort registered inside a
+   Process shadow (m68k_process_of) rather than a standalone HeapAlloc block. */
+static BOOL msgport_is_embedded_proc_port(const struct M68KEmuContext *ctx,
+                                          ULONG m68k_addr)
+{
+    const struct M68KStructLayout *tl;
+    ULONG proc_addr;
+
+    if (m68k_addr < (ULONG)M68K_PR_MSGPORT)
+        return FALSE;
+    proc_addr = m68k_addr - (ULONG)M68K_PR_MSGPORT;
+    if (!proc_addr)
+        return FALSE;
+    if (ctx->m68k_proc && proc_addr == ctx->m68k_proc)
+        return TRUE;
+    tl = shadow_find_layout("Task");
+    if (!tl)
+        return FALSE;
+    for (UWORD k = 0; k < ctx->num_shadows; k++)
+        if (ctx->shadow_map[k].type == tl->shadow_type &&
+            ctx->shadow_map[k].m68k_addr == proc_addr)
+            return TRUE;
+    return FALSE;
+}
+
+/* Remove every shadow_map[] entry pointing to native. Free guest heap space
+   strictly for standalone MsgPort shadows (layout->shadow_type), preserving
+   embedded type-4 blocks, embedded Process->pr_MsgPort blocks, non-MsgPort
+   shadows, and any guest address still referenced by another shadow entry. */
+static void msgport_invalidate_aliases(struct M68KEmuContext *ctx,
+                                       const struct M68KStructLayout *layout,
+                                       struct MsgPort *native)
+{
+    for (UWORD i = 0; i < ctx->num_shadows; )
+    {
+        if (ctx->shadow_map[i].native_ptr == (void *)native)
+        {
+            ULONG alias_addr = ctx->shadow_map[i].m68k_addr;
+            UWORD alias_type = ctx->shadow_map[i].type;
+            ctx->shadow_map[i] = ctx->shadow_map[--ctx->num_shadows];
+            if (layout && alias_type == layout->shadow_type &&
+                !msgport_is_embedded_proc_port(ctx, alias_addr))
+            {
+                BOOL still_mapped = FALSE;
+                for (UWORD j = 0; j < ctx->num_shadows; j++)
+                    if (ctx->shadow_map[j].m68k_addr == alias_addr)
+                    {
+                        still_mapped = TRUE;
+                        break;
+                    }
+                if (!still_mapped)
+                    M68KEmu_HeapFree(ctx, alias_addr, layout->m68k_size);
+            }
+        }
+        else
+        {
+            i++;
+        }
+    }
+}
+
+/* Track a freshly created CreateMsgPort() native port as owned by this
+   context. Drops any stale shadow_map[] entries left at a recycled native
+   address (freeing stale standalone type-193 shadows while preserving
+   embedded type-4 and Process->pr_MsgPort blocks), creates a fresh MsgPort
+   shadow, and rolls back DeleteMsgPort() if tracking or shadow creation
+   fails. */
+ULONG m68k_msgport_own(struct M68KEmuContext *ctx, struct MsgPort *native)
+{
+    const struct M68KStructLayout *layout = shadow_find_layout("MsgPort");
+    ULONG m;
+
+    if (!native)
+        return 0;
+    if (!layout || ctx->num_owned_ports >= M68KEMU_MAX_OWNED_PORTS)
+    {
+        DeleteMsgPort(native);
+        return 0;
+    }
+    msgport_invalidate_aliases(ctx, layout, native);
+    m = shadow_create(ctx, layout, native);
+    if (!m)
+    {
+        DeleteMsgPort(native);
+        return 0;
+    }
+    for (UWORD i = 0; i < ctx->num_owned_ports; i++)
+        if (ctx->owned_ports[i] == native)
+            return m;
+    ctx->owned_ports[ctx->num_owned_ports++] = native;
+    return m;
+}
+
+/* Destroy a CreateMsgPort()-owned native MsgPort referenced by m68k_port
+   (either the original handle or a distinct MsgPort shadow alias such as from
+   FindPort) and invalidate every shadow_map[] entry pointing to that native
+   port so no alias dangles to freed native memory. Refuses foreign FindPort(),
+   Process->pr_MsgPort, DOS handler ports, type-4 twin/UserPort, non-MsgPort
+   shadows, NULL-native entries, and raw containment addresses. */
+void m68k_msgport_destroy(struct M68KEmuContext *ctx, ULONG m68k_port)
+{
+    const struct M68KStructLayout *layout = shadow_find_layout("MsgPort");
+    struct MsgPort *native = NULL;
+    UWORD owned_idx = M68KEMU_MAX_OWNED_PORTS;
+
+    if (!m68k_port || !layout)
+        return;
+    for (UWORD i = 0; i < ctx->num_shadows; i++)
+        if (ctx->shadow_map[i].m68k_addr == m68k_port &&
+            ctx->shadow_map[i].type == layout->shadow_type)
+        {
+            native = (struct MsgPort *)ctx->shadow_map[i].native_ptr;
+            break;
+        }
+    if (!native)
+        return;
+    for (UWORD i = 0; i < ctx->num_owned_ports; i++)
+        if (ctx->owned_ports[i] == native)
+        {
+            owned_idx = i;
+            break;
+        }
+    if (owned_idx == M68KEMU_MAX_OWNED_PORTS)
+        return;
+
+    ctx->owned_ports[owned_idx] = ctx->owned_ports[--ctx->num_owned_ports];
+    DeleteMsgPort(native);
+    msgport_invalidate_aliases(ctx, layout, native);
+}
+
 /* ── Layout lookup by name ── */
 
 const struct M68KStructLayout *shadow_find_layout(const char *name)

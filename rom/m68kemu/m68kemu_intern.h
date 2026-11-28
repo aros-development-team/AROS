@@ -297,6 +297,13 @@ struct M68KEmuContext
     } shadow_map[M68KEMU_MAX_SHADOWS];
     UWORD num_shadows;
 
+    /* Native MsgPorts created by CreateMsgPort() in this context, tracked
+       separately from shadow_map[] so DeleteMsgPort() destroys only owned
+       ports and invalidates every shadow alias pointing to the freed port. */
+    #define M68KEMU_MAX_OWNED_PORTS M68KEMU_MAX_SHADOWS
+    struct MsgPort *owned_ports[M68KEMU_MAX_OWNED_PORTS];
+    UWORD num_owned_ports;
+
     /* Program name for GetProgramName */
     char    program_name[256];
 

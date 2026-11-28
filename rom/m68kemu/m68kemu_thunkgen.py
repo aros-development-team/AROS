@@ -191,6 +191,18 @@ SHADOW_RETURNS = {
     "FindTaskByPID": "Task",
 }
 
+# Functions that create an owned shadowed struct: register ownership and roll
+# back native creation if tracking or shadow creation fails
+SHADOW_CREATES = {
+    "CreateMsgPort": ("MsgPort", "m68k_msgport_own"),
+}
+
+# Functions that destroy an owned shadowed struct: verify ownership, call
+# native destroyer once, and invalidate every shadow alias pointing to it
+SHADOW_DESTROYS = {
+    "DeleteMsgPort": ("MsgPort", "m68k_msgport_destroy"),
+}
+
 # Functions that return one of their arguments: the dispatcher turns the
 # native address back into the program's (returns_arg_pointer() in
 # m68kemu_moira.cpp), so their thunks return it as it is
@@ -535,6 +547,29 @@ def gen_thunk(libname, funcname, bias, args, regs, protos):
         f"static IPTR thunk_{libname}_{funcname}(struct M68KEmuContext *ctx, void *cpu)",
         "{",
     ]
+
+    create_spec = SHADOW_CREATES.get(funcname)
+    if create_spec and len(args) == 0:
+        sname, helper = create_spec
+        lines.extend([
+            f"    struct {sname} *_ret = (struct {sname} *){funcname}();",
+            "    if (!_ret) return 0;",
+            f"    return {helper}(ctx, _ret);",
+            "}\n",
+        ])
+        return "\n".join(lines)
+
+    destroy_spec = SHADOW_DESTROYS.get(funcname)
+    if destroy_spec and len(args) == 1:
+        _, helper = destroy_spec
+        reg = regs[0]
+        macro = f"THUNK_A({reg[1]})" if reg[0] == "a" else f"THUNK_D({reg[1]})"
+        lines.extend([
+            f"    {helper}(ctx, {macro});",
+            "    return 0;",
+            "}\n",
+        ])
+        return "\n".join(lines)
 
     call_args = []
     cleanup = []
