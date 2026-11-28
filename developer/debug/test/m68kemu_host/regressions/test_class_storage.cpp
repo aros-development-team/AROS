@@ -140,15 +140,22 @@ static M68KClassRec *make(M68KEmuContext &ctx, IClass &cl, int tag)
     return rec;
 }
 
-/* the program's MakeClass(name, NULL, NULL, size, 0): its name in its memory, its registers */
-static ULONG make68k(M68KEmuContext &ctx, const char *name, ULONG size)
+/* the program's MakeClass(NULL, NULL, NULL, size, 0): its registers */
+static ULONG make68k(M68KEmuContext &ctx, ULONG size)
 {
     Regs regs = {};
-    if (name)
-    {
-        std::strcpy((char *)ctx.mem + 0x100, name);
-        regs.a[0] = 0x100;
-    }
+    regs.d[0] = size;
+    return m68k_MakeClass(&ctx, &regs);
+}
+
+/* and MakeClass(name, NULL, NULL, size, 0): the name, a string literal whose
+   size comes from its type, goes into the program's memory */
+template <std::size_t N>
+static ULONG make68k(M68KEmuContext &ctx, const char (&name)[N], ULONG size)
+{
+    Regs regs = {};
+    std::memcpy(ctx.mem + 0x100, name, N);
+    regs.a[0] = 0x100;
     regs.d[0] = size;
     return m68k_MakeClass(&ctx, &regs);
 }
@@ -255,10 +262,10 @@ int main()
         CHECK(world.registered == 1 && world.reg_m68k == first && world.reg_native == cl1 && world.reg_type == SHADOW_BCLASS,
               "its shadow entry names the block and the native class");
         CHECK(r1 && r1->m68k == first && r1->native == cl1 && r1->body == 20 && cl1->cl_Dispatcher.h_Data == r1 &&
-              cl1->cl_Dispatcher.h_Entry == (HOOKFUNC)m68k_class_hook,
+              cl1->cl_Dispatcher.h_Entry == m68k_class_hook,
               "its record names the block and the class, and the class's hook names the record");
         CHECK(r1 && r1->id && !std::strcmp(r1->id, "first.class") && allocs == 1 && !frees &&
-              read32(ctx, first + CL_ID) == first + CL_SIZE && !std::strcmp((char *)ctx.mem + first + CL_SIZE, "first.class"),
+              read32(ctx, first + CL_ID) == first + CL_SIZE && !std::memcmp(ctx.mem + first + CL_SIZE, "first.class", sizeof "first.class"),
               "its name is kept, natively and in the program's class");
         CHECK(read32(ctx, first + 24) == 0x2000, "the program's class names its superclass");
 
@@ -292,17 +299,17 @@ int main()
         ctx.mem = mem.data(); ctx.mem_size = mem.size();
         world = {}; allocs = frees = 0;
         bool all = true;
-        for (int i = 0; i < 32; i++) all = all && make68k(ctx, nullptr, 4);
+        for (int i = 0; i < 32; i++) all = all && make68k(ctx, 4);
         CHECK(all && ctx.num_m68kclasses == 32 && allocs == 0, "32 classes without a name, in the first block");
 
         world.shadow_full = true;
-        CHECK(make68k(ctx, nullptr, 4) == 0 && ctx.num_m68kclasses == 32, "the 33rd is refused with the shadow table full");
+        CHECK(make68k(ctx, 4) == 0 && ctx.num_m68kclasses == 32, "the 33rd is refused with the shadow table full");
         CHECK(world.made == 33 && world.freed == 1 && world.last_freed == world.last_made && world.heap_allocs == 33 &&
               world.heap_frees == 1 && world.heap_freed == world.heap_last, "its native class and its block are freed");
         CHECK(allocs == 1 && frees == 0 && ctx.m68kclass_more[0], "the block of records made for it is kept");
 
         world.shadow_full = false;
-        ULONG later = make68k(ctx, nullptr, 4);
+        ULONG later = make68k(ctx, 4);
         CHECK(later && ctx.num_m68kclasses == 33 && allocs == 1 && class_rec(&ctx, world.last_made) == &ctx.m68kclass_more[0][0],
               "the 33rd made later takes the first record of that block, which is not made again");
         CHECK(world.freed == 1 && world.heap_frees == 1, "nothing more is freed");
