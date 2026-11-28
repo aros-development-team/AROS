@@ -80,6 +80,8 @@
 /* ── Library struct offsets (m68k) ───────────────────────────────── */
 
 #define M68K_LIB_LNNAME            10
+#define M68K_LIB_NEGSIZE           16
+#define M68K_LIB_POSSIZE           18
 #define M68K_LIB_VERSION           20
 #define M68K_LIB_REVISION          22
 
@@ -275,6 +277,10 @@
 /* ── Function table terminator ───────────────────────────────────── */
 
 #define M68K_FUNCTABLE_END          0xFFFFFFFF
+#define M68K_MAX_VECTORS            1000
+/* exec's empty vector on m68k (aros/cpu.h): an odd address, ORed with the
+   vector's number shifted left by 8, so that a call of it stops at once */
+#define M68K_EMPTY_VECTOR           0xC0ED0001
 
 /* ── LINEA exception vector ──────────────────────────────────────── */
 

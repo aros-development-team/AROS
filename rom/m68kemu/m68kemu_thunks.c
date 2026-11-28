@@ -388,6 +388,19 @@ static IPTR thunk_exec_FreeMem(struct M68KEmuContext *ctx, void *cpu)
     return 0;
 }
 
+/* -84: MakeLibrary(A0=funcInit, A1=structInit, A2=libInit, D0=dataSize, D1=segList) -> D0=library;
+   the library is built in the program's memory, and its init runs as 68k code */
+static IPTR thunk_exec_MakeLibrary(struct M68KEmuContext *ctx, void *cpu)
+{
+    return (IPTR)M68KEmu_MakeLibrary(ctx, THUNK_A(0), THUNK_A(1), THUNK_A(2), THUNK_D(0), THUNK_D(1));
+}
+
+/* -90: MakeFunctions(A0=target, A1=functionArray, A2=funcDispBase) -> D0=tableSize */
+static IPTR thunk_exec_MakeFunctions(struct M68KEmuContext *ctx, void *cpu)
+{
+    return (IPTR)M68KEmu_MakeFunctions(ctx, THUNK_A(0), THUNK_A(1), THUNK_A(2));
+}
+
 /* -294: FindTask(A1=name) -> D0=task */
 /* the m68k Process standing in for a native task, made on first sight;
    a process's pr_MsgPort is a port the program can use */
@@ -2020,6 +2033,8 @@ const struct M68KThunkEntry m68kemu_thunks_exec[] = {
     { 414, thunk_exec_CloseLibrary },
     { 198, thunk_exec_AllocMem },
     { 210, thunk_exec_FreeMem },
+    {  84, thunk_exec_MakeLibrary },
+    {  90, thunk_exec_MakeFunctions },
     { 294, thunk_exec_FindTask },
     { 132, thunk_exec_Forbid },
     { 120, thunk_exec_Disable_m },

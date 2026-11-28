@@ -608,10 +608,10 @@ Counts exclude the `{ 0, NULL }` terminators, which the dispatcher skips.
 
 | Table | Library | Entries | File |
 |-------|---------|---------|------|
-| `m68kemu_thunks_exec` | exec.library | 71 | `m68kemu_thunks.c` |
-| `m68kemu_thunks_dos` | dos.library | 66 | `m68kemu_thunks.c` |
-| `m68kemu_thunks_intuition_manual` | intuition.library | 48 | `m68kemu_thunks.c` |
-| `m68kemu_thunks_graphics_manual` | graphics.library | 42 | `m68kemu_thunks.c` |
+| `m68kemu_thunks_exec` | exec.library | 74 | `m68kemu_thunks.c` |
+| `m68kemu_thunks_dos` | dos.library | 70 | `m68kemu_thunks.c` |
+| `m68kemu_thunks_intuition_manual` | intuition.library | 49 | `m68kemu_thunks.c` |
+| `m68kemu_thunks_graphics_manual` | graphics.library | 44 | `m68kemu_thunks.c` |
 | `m68kemu_thunks_gadtools_manual` | gadtools.library | 15 | `m68kemu_thunks.c` |
 | `m68kemu_thunks_utility_manual` | utility.library | 20 | `m68kemu_thunks.c`, `m68kemu_tags.c` |
 | `m68kemu_thunks_locale_manual` | locale.library | 3 | `m68kemu_thunks.c` |
@@ -626,7 +626,7 @@ Counts exclude the `{ 0, NULL }` terminators, which the dispatcher skips.
 | `boopsi_tab` | "boopsi" pseudo-library | 1 | `m68kemu_boopsi.c` |
 | `clib_plain`, `clib_layout`, `clib_nodes`, `clib_listbrowser` | class libraries | 1, 3, 5, 6 | `m68kemu_boopsi.c` |
 
-The library tables together hold 395 entries.
+The library tables together hold 405 entries.
 
 ### Handling Families
 
@@ -648,7 +648,9 @@ The library tables together hold 395 entries.
 - Semaphores: 11 functions (see above)
 - Libraries: `OpenLibrary`, `OldOpenLibrary`, `CloseLibrary` (no-op),
   `OpenResource` (only a base that already has thunks; a native resource base
-  cannot be called from 68k code)
+  cannot be called from 68k code); `MakeFunctions` and `MakeLibrary` build the
+  jump table and the base in the program's memory, as exec does, and the
+  library's init runs as 68k code
 - Interrupts: `AddIntServer`/`RemIntServer`, vertical blank only
 - Devices: `OpenDevice`, `CloseDevice`, `DoIO`, `SendIO`, `CheckIO`, `WaitIO`,
   `AbortIO` (see [Device I/O Path](#device-io-path))
